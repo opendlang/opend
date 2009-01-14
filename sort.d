@@ -1,9 +1,12 @@
 /**A comprehensive sorting library for statistical functions.  Each function
  * takes N arguments, which are arrays or array-like objects, sorts the first
- * and sorts the rest in lockstep.  For the stable sorts, if the last argument
- * is a ulong*, increments the dereference of this ulong* by the bubble sort
- * distance between the first argument and the sorted version of the first
+ * and sorts the rest in lockstep.  For merge and insertion sort, if the last
+ * argument is a ulong*, increments the dereference of this ulong* by the bubble
+ * sort distance between the first argument and the sorted version of the first
  * argument.  This is useful for some statistical calculations.
+ *
+ * All sorting functions have the precondition that all parallel input arrays
+ * must have the same length.
  *
  * Examples:
  * ---
@@ -59,7 +62,7 @@ version(unittest) {
     }
 }
 
-void rotateLeft(T)(T[] input) {
+private void rotateLeft(T)(T[] input) {
     if(input.length < 2) return;
     T temp = input[0];
     foreach(i; 1..input.length) {
@@ -68,7 +71,7 @@ void rotateLeft(T)(T[] input) {
     input[$-1] = temp;
 }
 
-void rotateRight(T)(T[] input) {
+private void rotateRight(T)(T[] input) {
     if(input.length < 2) return;
     T temp = input[$-1];
     for(size_t i = input.length - 1; i > 0; i--) {
@@ -128,7 +131,14 @@ bool greaterThan(T)(T lhs, T rhs) {
  *
  * 3.  After a much larger than expected amount of recursion has occured,
  *     this function transitions to a heap sort.*/
-T[0] qsort(alias compFun = lessThan, T...)(T data) {
+T[0] qsort(alias compFun = lessThan, T...)(T data)
+in {
+    assert(data.length > 0);
+    size_t len = data[0].length;
+    foreach(array; data[1..$]) {
+        assert(array.length == len);
+    }
+} body {
     // Because we transition to insertion sort at N = 50 elements,
     // using the ideal recursion depth to determine the transition point
     // to heap sort is reasonable.
@@ -145,7 +155,6 @@ void qsortImpl(alias compFun, T...)(T data, uint TTL) {
          return;
     }
     if(TTL == 0) {
-        // If it takes > 40 recursions, we likely have a pathological case.
         heapSort!(compFun)(data);
         return;
     }
@@ -189,7 +198,9 @@ void qsortImpl(alias compFun, T...)(T data, uint TTL) {
         less[ti] = array[0..min(lessI, greaterI + 1)];
         greater[ti] = array[lessI + 1..$];
     }
-    // Allow tail recursion optimization for larger block.
+    // Allow tail recursion optimization for larger block.  This guarantees
+    // that, given a reasonable amount of stack space, no stack overflow will
+    // occur even in pathological cases.
     if(greater[0].length > less[0].length) {
         qsortImpl!(compFun)(less, TTL);
         qsortImpl!(compFun)(greater, TTL);
@@ -232,7 +243,8 @@ unittest {
     writeln("Passed qsort test.");
 }
 
-//Keeps track of what array merge sort data is in.
+/* Keeps track of what array merge sort data is in.  This is a speed hack to
+ * copy back and forth less.*/
 private enum {
     DATA,
     TEMP
@@ -243,7 +255,15 @@ private enum {
  * the dereference of the ulong* will be incremented by the bubble sort
  * distance between the input array and the sorted version.  This is useful
  * in some statistics functions such as Kendall's tau.*/
-T[0] mergeSort(alias compFun = lessThan, T...)(T data) {
+T[0] mergeSort(alias compFun = lessThan, T...)(T data)
+in {
+    assert(data.length > 0);
+    size_t len = data[0].length;
+    foreach(array; data[1..$]) {
+        static if(!is(typeof(array) == ulong*))
+            assert(array.length == len);
+    }
+} body {
     if(data[0].length < 65) {  //Avoid mem allocation.
         return insertionSort!(compFun)(data);
     }
@@ -332,7 +352,15 @@ unittest {
  * and U is a ulong* for calculating bubble sort distance, this can be called
  * as mergeSortTemp(D, D, D, T, T, T, U) or mergeSortTemp(D, D, D, T, T, T)
  * where each D has a T of corresponding type.*/
-T[0] mergeSortTemp(alias compFun = lessThan, T...)(T data) {
+T[0] mergeSortTemp(alias compFun = lessThan, T...)(T data)
+in {
+    assert(data.length > 0);
+    size_t len = data[0].length;
+    foreach(array; data[1..$]) {
+        static if(!is(typeof(array) == ulong*))
+            assert(array.length == len);
+    }
+} body {
     static if(is(T[$ - 1] == ulong*)) {
         enum dl = data.length - 1;
     } else {
@@ -348,7 +376,7 @@ T[0] mergeSortTemp(alias compFun = lessThan, T...)(T data) {
     return data[0];
 }
 
-uint mergeSortImpl(alias compFun = lessThan, T...)(T dataIn) {
+private uint mergeSortImpl(alias compFun = lessThan, T...)(T dataIn) {
     static if(is(T[$ - 1] == ulong*)) {
         alias dataIn[$ - 1] swapCount;
         alias dataIn[0..dataIn.length / 2] data;
@@ -372,6 +400,11 @@ uint mergeSortImpl(alias compFun = lessThan, T...)(T dataIn) {
         tempRight[ti] = temp[ti][half..$];
     }
 
+    /* Implementation note:  The lloc, rloc stuff is a hack to avoid constantly
+     * copying data back and forth between the data and temp arrays.
+     * Instad of copying every time, I keep track of which array the last merge
+     * went into, and only copy at the end or if the two sides ended up in
+     * different arrays.*/
     uint lloc = mergeSortImpl!(compFun)(left, tempLeft, swapCount);
     uint rloc = mergeSortImpl!(compFun)(right, tempRight, swapCount);
     if(lloc == DATA && rloc == TEMP) {
@@ -393,7 +426,7 @@ uint mergeSortImpl(alias compFun = lessThan, T...)(T dataIn) {
     }
 }
 
-void merge(alias compFun, T...)(T data) {
+private void merge(alias compFun, T...)(T data) {
     alias binaryFun!(compFun) comp;
 
     static if(is(T[$ - 1] == ulong*)) {
@@ -439,9 +472,146 @@ void merge(alias compFun, T...)(T data) {
     }
 }
 
+/**In-place merge sort, based on C++ STL's stable_sort().  O(N * log(N) ^2)
+ * time complexity, O(1) space complexity, stable.  Much slower than plain
+ * old mergeSort(), so only use it if you really need the O(1) space.*/
+T[0] mergeSortInPlace(alias compFun = "a < b", T...)(T data)
+in {
+    assert(data.length > 0);
+    size_t len = data[0].length;
+    foreach(array; data[1..$]) {
+        assert(array.length == len);
+    }
+} body {
+    if (data[0].length <= 100)
+        return insertionSort!(compFun)(data);
+
+    T left, right;
+    foreach(ti, array; data) {
+        left[ti] = array[0..$ / 2];
+        right[ti] = array[$ / 2..$];
+    }
+
+    mergeSortInPlace!(compFun, T)(right);
+    mergeSortInPlace!(compFun, T)(left);
+    mergeInPlace!(compFun)(data, data[0].length / 2);
+    return data[0];
+}
+
+unittest {
+    uint[] test = new uint[1_000], stability = new uint[1_000];
+    foreach(ref e; test) {
+        e = uniform(gen, 0, 100);  //Lots of ties.
+    }
+    foreach(i; 0..1000) {
+        foreach(j, ref e; stability) {
+            e = j;
+        }
+        randomMultiShuffle(gen, test);
+        uint len = uniform(gen, 0, 1_000);
+        mergeSortInPlace(test[0..len], stability[0..len]);
+        assert(isSorted(test[0..len]));
+        foreach(j; 1..len) {
+            if(test[j - 1] == test[j]) {
+                assert(stability[j - 1] < stability[j]);
+            }
+        }
+    }
+    writeln("Passed mergeSortInPlace test.");
+}
+
+// Loosely based on C++ STL's __merge_without_buffer().
+private void mergeInPlace(alias compFun = "a < b", T...)(T data, size_t middle) {
+    static size_t largestLess(alias compFun, T)(T[] data, T value) {
+        alias binaryFun!(compFun) comp;
+        size_t len = data.length, first, last = data.length, half, middle;
+
+        while (len > 0) {
+            half = len / 2;
+            middle = first + half;
+            if (comp(data[middle], value)) {
+                first = middle + 1;
+                len = len - half - 1;
+            } else
+                len = half;
+        }
+        return first;
+    }
+
+    static size_t smallestGr(alias compFun, T)(T[] data, T value) {
+        alias binaryFun!(compFun) comp;
+        size_t len = data.length, first, last = data.length, half, middle;
+
+        while (len > 0) {
+            half = len / 2;
+            middle = first + half;
+            if (comp(value, data[middle]))
+                len = half;
+            else {
+                first = middle + 1;
+                len = len - half - 1;
+            }
+        }
+        return first;
+    }
+
+
+    alias binaryFun!(compFun) comp;
+    if (data[0].length < 2 || middle == 0 || middle == data[0].length)
+        return;
+    if (data[0].length == 2) {
+        if(comp(data[0][1], data[0][0])) {
+            foreach(array; data) {
+                swap(array[0], array[1]);
+            }
+        }
+        return;
+    }
+
+    size_t half1, half2, firstCut, secondCut;
+
+    if (middle > data[0].length - middle) {
+        half1 = middle / 2;
+        auto pivot = data[0][half1];
+        half2 = largestLess!(compFun)(data[0][middle..$], pivot);
+    } else {
+        half2 = (data[0].length - middle) / 2;
+        auto pivot = data[0][half2 + middle];
+        half1 = smallestGr!(compFun)(data[0][0..middle], pivot);
+    }
+
+    foreach(array; data) {
+        rotate(array[half1..middle + half2], array.ptr + middle);
+    }
+    size_t newMiddle = half1 + half2;
+
+    T left, right;
+    foreach(ti, array; data) {
+        left[ti] = array[0..newMiddle];
+        right[ti] = array[newMiddle..$];
+    }
+
+    mergeInPlace!(compFun, T)(left, half1);
+    mergeInPlace!(compFun, T)(right, half2 + middle - newMiddle);
+}
+
+
 /**Heap sort.  Unstable, O(N log N) time average and worst case, O(1) space,
  * large constant term in time complexity.*/
-T[0] heapSort(alias compFun = lessThan, T...)(T input) {
+T[0] heapSort(alias compFun = lessThan, T...)(T input)
+in {
+    assert(input.length > 0);
+    size_t len = input[0].length;
+    foreach(array; input[1..$]) {
+        assert(array.length == len);
+    }
+} body {
+    // Heap sort has such a huge constant that insertion sort's faster for N <
+    // 100 (for reals, even larger for smaller types).
+    if(input[0].length <= 100) {
+        return insertionSort!(compFun)(input);
+    }
+
     alias binaryFun!(compFun) comp;
     if(input[0].length < 2) return input[0];
     makeMultiHeap!(compFun)(input);
@@ -504,7 +674,15 @@ void multiSiftDown(alias compFun = lessThan, T...)
  * divide and conquer algorithms.  If last argument is a ulong*, increments
  * the dereference of this argument by the bubble sort distance between the
  * input array and the sorted version of the input.*/
-T[0] insertionSort(alias compFun = lessThan, T...)(T data) {
+T[0] insertionSort(alias compFun = lessThan, T...)(T data)
+in {
+    assert(data.length > 0);
+    size_t len = data[0].length;
+    foreach(array; data[1..$]) {
+        static if(!is(typeof(array) == ulong*))
+            assert(array.length == len);
+    }
+} body {
     alias binaryFun!(compFun) comp;
     static if(is(T[$ - 1] == ulong*)) invariant uint dl = data.length - 1;
     else invariant uint dl = data.length;
@@ -560,28 +738,30 @@ unittest {
 // testing more complex sort functions against.  Especially useful for bubble
 // sort distance, since it's straightforward with a bubble sort, and not with
 // a merge sort or insertion sort.
-T[0] bubbleSort(alias compFun = lessThan, T...)(T data) {
-    alias binaryFun!(compFun) comp;
-    static if(is(T[$ - 1] == ulong*))
-        invariant uint dl = data.length - 1;
-    else invariant uint dl = data.length;
-    if(data[0].length < 2)
-        return data[0];
-    bool swapExecuted;
-    foreach(i; 0..data[0].length) {
-        swapExecuted = false;
-        foreach(j; 1..data[0].length) {
-            if(comp(data[0][j], data[0][j - 1])) {
-                swapExecuted = true;
-                static if(is(T[$ - 1] == ulong*))
-                    (*(data[$-1]))++;
-                foreach(array; data[0..dl])
-                    swap(array[j-1], array[j]);
+version(unittest) {
+    T[0] bubbleSort(alias compFun = lessThan, T...)(T data) {
+        alias binaryFun!(compFun) comp;
+        static if(is(T[$ - 1] == ulong*))
+            invariant uint dl = data.length - 1;
+        else invariant uint dl = data.length;
+        if(data[0].length < 2)
+            return data[0];
+        bool swapExecuted;
+        foreach(i; 0..data[0].length) {
+            swapExecuted = false;
+            foreach(j; 1..data[0].length) {
+                if(comp(data[0][j], data[0][j - 1])) {
+                    swapExecuted = true;
+                    static if(is(T[$ - 1] == ulong*))
+                        (*(data[$-1]))++;
+                    foreach(array; data[0..dl])
+                        swap(array[j-1], array[j]);
+                }
             }
+            if(!swapExecuted) return data[0];
         }
-        if(!swapExecuted) return data[0];
+        return data[0];
     }
-    return data[0];
 }
 
 unittest {
@@ -699,7 +879,14 @@ unittest {
 /**Returns the kth largest/smallest element (depending on compFun, 0-indexed)
  * in the input array in O(N) time.  Allocates memory, does not modify input
  * array.*/
-T quickSelect(alias compFun = lessThan, T)(const T[] data, int k) {
+T quickSelect(alias compFun = lessThan, T)(const T[] data, int k)
+in {
+    assert(data.length > 0);
+    size_t len = data[0].length;
+    foreach(array; data[1..$]) {
+        assert(array.length == len);
+    }
+} body {
     auto TAState = TempAlloc.getState;
     auto dataDup = data.tempdup(TAState);  scope(exit) TempAlloc.free(TAState);
     return partitionK!(compFun, T)(dataDup, k);
@@ -726,7 +913,14 @@ T quickSelect(alias compFun = lessThan, T)(const T[] data, int k) {
  * }
  *
  * Returns:  The kth element of the array.*/
-ArrayElemType!(T[0]) partitionK(alias compFun = lessThan, T...)(T data, int k) {
+ArrayElemType!(T[0]) partitionK(alias compFun = lessThan, T...)(T data, int k)
+in {
+    assert(data.length > 0);
+    size_t len = data[0].length;
+    foreach(array; data[1..$]) {
+        assert(array.length == len);
+    }
+} body {
     alias binaryFun!(compFun) comp;
 
     size_t middle = data[0].length / 2;

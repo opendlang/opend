@@ -396,4 +396,4 @@ auto tempdup(T)(T[] data, TempAlloc.State state) {
  * are allocated, due to caching of data stored in thread-local
  * storage.*/
 invariant char[] newFrame =
-          "TempAlloc.frameInit;\nscope(exit) TempAlloc.frameFree;";
+          "TempAlloc.frameInit; scope(exit) TempAlloc.frameFree;";
