@@ -472,10 +472,10 @@ private void merge(alias compFun, T...)(T data) {
     }
 }
 
-/**In-place merge sort, based on C++ STL's stable_sort().  O(N * log(N) ^2)
+/**In-place merge sort, based on C++ STL's stable_sort().  O(N * log(N)^2)
  * time complexity, O(1) space complexity, stable.  Much slower than plain
  * old mergeSort(), so only use it if you really need the O(1) space.*/
-T[0] mergeSortInPlace(alias compFun = "a < b", T...)(T data)
+T[0] mergeSortInPlace(alias compFun = lessThan, T...)(T data)
 in {
     assert(data.length > 0);
     size_t len = data[0].length;
@@ -503,14 +503,16 @@ unittest {
     foreach(ref e; test) {
         e = uniform(gen, 0, 100);  //Lots of ties.
     }
+    uint[] test2 = test.dup;
     foreach(i; 0..1000) {
         foreach(j, ref e; stability) {
             e = j;
         }
-        randomMultiShuffle(gen, test);
+        randomMultiShuffle(gen, test, test2);
         uint len = uniform(gen, 0, 1_000);
-        mergeSortInPlace(test[0..len], stability[0..len]);
+        mergeSortInPlace(test[0..len], test2[0..len], stability[0..len]);
         assert(isSorted(test[0..len]));
+        assert(test == test2);
         foreach(j; 1..len) {
             if(test[j - 1] == test[j]) {
                 assert(stability[j - 1] < stability[j]);
@@ -521,7 +523,7 @@ unittest {
 }
 
 // Loosely based on C++ STL's __merge_without_buffer().
-private void mergeInPlace(alias compFun = "a < b", T...)(T data, size_t middle) {
+private void mergeInPlace(alias compFun = lessThan, T...)(T data, size_t middle) {
     static size_t largestLess(alias compFun, T)(T[] data, T value) {
         alias binaryFun!(compFun) comp;
         size_t len = data.length, first, last = data.length, half, middle;
