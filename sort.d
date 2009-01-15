@@ -344,6 +344,20 @@ unittest {
             }
         }
     }
+    { // Test lockstep.
+        double[] testL = new double[1_000];
+        foreach(ref e; testL) {
+            e = uniform(gen, 0.0, 100_000);
+        }
+        auto testL2 = testL.dup;
+        foreach(i; 0..1_000) {
+            randomMultiShuffle(gen, testL, testL2);
+            uint len = uniform(gen, 0, 1_000);
+            mergeSort!("a > b")(testL[0..len], testL2[0..len]);
+            assert(isSorted!("a > b")(testL[0..len]));
+            assert(testL == testL2);
+        }
+    }
     writeln("Passed mergeSort test.");
 }
 
@@ -441,33 +455,33 @@ private void merge(alias compFun, T...)(T data) {
     alias  data[dl / 3..dl * 2 / 3] right;
     alias data[dl * 2 / 3..dl] result;
     static assert(left.length == right.length && right.length == result.length);
-    size_t i = 0;
-    while(left[0].length && right[0].length) {
-        if(comp(right[0][0], left[0][0])) {
+    size_t i = 0, l = 0, r = 0;
+    while(l < left[0].length && r < right[0].length) {
+        if(comp(right[0][r], left[0][l])) {
 
             static if(is(T[$ - 1] == ulong*)) {
-                *swapCount += left[0].length;
+                *swapCount += left[0].length - l;
             }
 
             foreach(ti, array; result) {
-                result[ti][i] = right[ti][0];
-                right[ti] = right[ti][1..$];
+                result[ti][i] = right[ti][r];
             }
+            r++;
         } else {
             foreach(ti, array; result) {
-                result[ti][i] = left[ti][0];
-                left[ti] = left[ti][1..$];
+                result[ti][i] = left[ti][l];
             }
+            l++;
         }
         i++;
     }
-    if(right[0].length) {
+    if(right[0].length > r) {
         foreach(ti, array; result) {
-            result[ti][i..$] = right[ti];
+            result[ti][i..$] = right[ti][r..$];
         }
     } else {
         foreach(ti, array; result) {
-            result[ti][i..$] = left[ti];
+            result[ti][i..$] = left[ti][l..$];
         }
     }
 }
