@@ -4,30 +4,33 @@
  *
  * Author:  David Simcha
  *
-* Copyright (c) 2009, David Simcha
-* All rights reserved.
-*
-* Redistribution and use in source and binary forms, with or without
-* modification, are permitted provided that the following conditions are met:
-*     * Redistributions of source code must retain the above copyright
-*       notice, this list of conditions and the following disclaimer.
-*     * Redistributions in binary form must reproduce the above copyright
-*       notice, this list of conditions and the following disclaimer in the
-*       documentation and/or other materials provided with the distribution.
-*     * Neither the name of the <organization> nor the
-*       names of its contributors may be used to endorse or promote products
-*       derived from this software without specific prior written permission.
-*
-* THIS SOFTWARE IS PROVIDED ''AS IS'' AND ANY
-* EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-* WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-* DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDERS BE LIABLE FOR ANY
-* DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-* (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-* LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-* ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-* (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-* SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.*/
+ * Copyright (c) 2009, David Simcha
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ *     * Redistributions of source code must retain the above copyright
+ *       notice, this list of conditions and the following disclaimer.
+ *
+ *     * Redistributions in binary form must reproduce the above copyright
+ *       notice, this list of conditions and the following disclaimer in the
+ *       documentation and/or other materials provided with the distribution.
+ *
+ *     * Neither the name of the authors nor the
+ *       names of its contributors may be used to endorse or promote products
+ *       derived from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED ''AS IS'' AND ANY
+ * EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDERS BE LIABLE FOR ANY
+ * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.*/
 
 module dstats.base;
 
@@ -41,8 +44,15 @@ enum : size_t {
     staticFacTableLen = 10_000,
 }
 
+/**Parameter in some functions to determine where results are returned.
+ * Alloc.HEAP returns on the GC heap and is always the default.  Alloc.STACK
+ * returns on the TempAlloc stack, and can be a useful optimization in some
+ * cases.*/
 enum Alloc {
+    ///Return on TempAlloc stack.
     STACK,
+
+    ///Return on GC heap.
     HEAP
 }
 
@@ -67,7 +77,7 @@ version(unittest) {
     }
 }
 
-/**Bins data into N equal width bins, indexed from
+/**Bins data into nbin equal width bins, indexed from
  * 0 to nbin - 1, with 0 being the smallest bin, etc.
  * The values returned are the counts for each bin.  Returns results on the GC
  * heap by default, but uses TempAlloc stack if alloc == Alloc.STACK.*/
@@ -117,7 +127,7 @@ unittest {
     writeln("Passed binCounts unittest.");
 }
 
-/**Bins data into N equal width bins, indexed from
+/**Bins data into nbin equal width bins, indexed from
  * 0 to nbin - 1, with 0 being the smallest bin, etc.
  * The values returned are the bin index for each element.  Returns on GC
  * heap by default, but TempAlloc stack if alloc == Alloc.STACK.*/
@@ -167,7 +177,7 @@ unittest {
     writeln("Passed bin unittest.");
 }
 
-/**Bins data into N equal frequency bins, indexed from
+/**Bins data into nbin equal frequency bins, indexed from
  * 0 to nbin - 1, with 0 being the smallest bin, etc.
  * The values returned are the bin index for each element.  Returns on GC
  * heap by default, but TempAlloc stack if alloc == Alloc.STACK.*/
@@ -476,7 +486,8 @@ private:
     size_t len;
 
 public:
-    /**Generate a sequence of [0..len) to permute based on.*/
+    /**Generate a sequence of seq(0, length) to permute based on.
+     * Exists only if T == uint.*/
     static if(is(T == uint)) {
         this(uint length) {
             perm = (new uint[length]).ptr;
@@ -813,6 +824,11 @@ private:
 
 public:
     this(size_t nElem) {
+        // Obviously, the caller can never mean zero, because this struct
+        // can't work at all with nElem == 0, so assume it's a mistake and fix
+        // it here.
+        if(nElem == 0)
+            nElem++;
         TAState = TempAlloc.getState;
         roots = newStack!(Node)(nElem, TAState);
         usedSentinel = cast(Node*) roots.ptr;
@@ -1118,6 +1134,11 @@ private:
 
 public:
     this(size_t nElem) {
+        // Obviously, the caller can never mean zero, because this struct
+        // can't work at all with nElem == 0, so assume it's a mistake and fix
+        // it here.
+        if(nElem == 0)
+            nElem++;
         TAState = TempAlloc.getState;
         roots = newStack!(Node)(nElem, TAState);
         usedSentinel = cast(Node*) roots.ptr;
