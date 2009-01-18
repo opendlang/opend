@@ -1,30 +1,33 @@
 /**Allocation functions.
  * Author:  David Simcha
  *
-* Copyright (c) 2009, David Simcha
-* All rights reserved.
-*
-* Redistribution and use in source and binary forms, with or without
-* modification, are permitted provided that the following conditions are met:
-*     * Redistributions of source code must retain the above copyright
-*       notice, this list of conditions and the following disclaimer.
-*     * Redistributions in binary form must reproduce the above copyright
-*       notice, this list of conditions and the following disclaimer in the
-*       documentation and/or other materials provided with the distribution.
-*     * Neither the name of the <organization> nor the
-*       names of its contributors may be used to endorse or promote products
-*       derived from this software without specific prior written permission.
-*
-* THIS SOFTWARE IS PROVIDED ''AS IS'' AND ANY
-* EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-* WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-* DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDERS BE LIABLE FOR ANY
-* DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-* (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-* LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-* ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-* (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-* SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.*/
+ * Copyright (c) 2009, David Simcha
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ *     * Redistributions of source code must retain the above copyright
+ *       notice, this list of conditions and the following disclaimer.
+ *
+ *     * Redistributions in binary form must reproduce the above copyright
+ *       notice, this list of conditions and the following disclaimer in the
+ *       documentation and/or other materials provided with the distribution.
+ *
+ *     * Neither the name of the authors nor the
+ *       names of its contributors may be used to endorse or promote products
+ *       derived from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED ''AS IS'' AND ANY
+ * EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDERS BE LIABLE FOR ANY
+ * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.*/
 
 module dstats.alloc;
 
@@ -147,12 +150,30 @@ unittest {
     writefln("Passed appendDelOld test.");
 }
 
+// C functions, marked w/ nothrow.
+extern(C) nothrow int printf(in char *,...);
+extern(C) nothrow void exit(int);
+extern(C) nothrow void* malloc(size_t);
+extern(C) nothrow void* realloc(void*, size_t);
+extern(C) nothrow void* free(void*);
+alias malloc cstdmalloc;
+alias realloc cstdrealloc;
+alias free cfree;
+
 /**TempAlloc struct.  See TempAlloc project on Scrapple.*/
 struct TempAlloc {
     struct block {
         void* space;
         size_t used;
         block* prev;
+
+        void freeAll() {
+            if(prev !is null)
+                prev.freeAll();
+            if(space !is null)
+                cfree(space);
+            cfree(&this);
+        }
     }
 
     final class State {
@@ -163,30 +184,83 @@ struct TempAlloc {
          void*[] lastAlloc;
          block* current;
          block* freelist;
+
+         ~this() {
+            cfree(lastAlloc.ptr);
+            if(current !is null)  // Should never be null, but better to be safe.
+                current.freeAll();
+            if(freelist !is null)
+                freelist.freeAll();
+         }
     }
 
+    // core.thread.Thread.thread_needLock() is nothrow (read the code if you
+    // don't believe me) but not marked as such because nothrow is such a new
+    // feature in D.  This is a workaround until that gets fixed.
+    static enum tnl = cast(bool function() nothrow) &thread_needLock;
+
     enum blockSize = 4U * 1024U * 1024U;
+    enum nBookKeep = 1_048_576;
     enum alignBytes = 16U;
     static __thread State state;
     static State mainThreadState;
+
+    static void die() nothrow {
+        printf("TempAlloc error: Out of memory.\0".ptr);
+        exit(1);
+    }
+
+    static void doubleSize(ref void*[] lastAlloc) nothrow {
+        size_t newSize = lastAlloc.length * 2;
+        void** ptr = cast(void**) crealloc(lastAlloc.ptr, newSize);
+        return ptr[0..newSize];
+    }
+
+    static void* cmalloc(size_t size) nothrow {
+        void* ret = cstdmalloc(size);
+        if(ret is null) {
+            try { GC.collect(); } catch {}
+            ret = cstdmalloc(size);
+
+            if(ret is null)
+                die();
+        }
+        return ret;
+    }
+
+    static void* crealloc(void* ptr, size_t size) nothrow {
+        void* ret = cstdrealloc(ptr, size);
+        if(ret is null) {
+            try { GC.collect(); } catch {}
+            ret = cstdrealloc(ptr, size);
+
+            if(ret is null)
+                die();
+        }
+        return ret;
+    }
 
     static size_t getAligned(size_t nbytes) pure nothrow {
         size_t rem = nbytes % alignBytes;
         return (rem == 0) ? nbytes : nbytes - rem + alignBytes;
     }
 
-    static State stateInit() {
-        auto stateCopy = new State;
+    static State stateInit() nothrow {
+        State stateCopy;
+        try {
+            stateCopy = new State;
+        } catch { die; }
 
         with(stateCopy) {
-            current = new block;
-            current.space = GC.malloc(blockSize, GC.BlkAttr.NO_SCAN);
-            lastAlloc = cast(void*[]) new size_t[262_144];
+            current = cast(block*) cmalloc(block.sizeof);
+            *current = block.init;
+            current.space = cmalloc(blockSize);
+            lastAlloc = (cast(void**) cmalloc(nBookKeep))[0..nBookKeep / (void*).sizeof];
             nblocks++;
         }
 
         state = stateCopy;
-        if(!thread_needLock)
+        if(!tnl())
             mainThreadState = stateCopy;
         return stateCopy;
     }
@@ -195,10 +269,10 @@ struct TempAlloc {
      * parameter.  This is ugly, but results in a speed boost that can be
      * significant in some cases because it avoids a thread-local storage
      * lookup.  Also used internally.*/
-    static State getState() {
+    static State getState() nothrow {
         // Believe it or not, even with builtin TLS, the thread_needLock()
         // is worth it to avoid the TLS lookup.
-        State stateCopy = (thread_needLock) ?
+        State stateCopy = (tnl()) ?
                           state :
                           mainThreadState;
         return (stateCopy is null) ? stateInit : stateCopy;
@@ -208,16 +282,16 @@ struct TempAlloc {
      * Memory past the position at which this was last called will be
      * freed when frameFree() is called.  Returns a reference to the
      * State class in case the caller wants to cache it for speed.*/
-    static State frameInit() {
+    static State frameInit() nothrow {
         return frameInit(getState);
     }
 
     /**Same as frameInit() but uses stateCopy cached on stack by caller
      * to avoid a thread-local storage lookup.  Strictly a speed hack.*/
-    static State frameInit(State stateCopy) {
+    static State frameInit(State stateCopy) nothrow {
         with(stateCopy) {
         if(totalAllocs == lastAlloc.length) // Should happen very infrequently.
-            lastAlloc.length = lastAlloc.length * 2;
+            doubleSize(lastAlloc);
         lastAlloc[totalAllocs] = cast(void*) frameIndex;
         frameIndex = totalAllocs;
         totalAllocs++;
@@ -227,13 +301,13 @@ struct TempAlloc {
 
     /**Frees all memory allocated by TempAlloc since the last call to
      * frameInit().*/
-    static void frameFree() {
+    static void frameFree() nothrow {
         frameFree(getState);
     }
 
     /**Same as frameFree() but uses stateCopy cached on stack by caller
     * to avoid a thread-local storage lookup.  Strictly a speed hack.*/
-    static void frameFree(State stateCopy) {
+    static void frameFree(State stateCopy) nothrow {
         with(stateCopy) {
         while(totalAllocs > frameIndex + 1) {
             free(stateCopy);
@@ -243,7 +317,7 @@ struct TempAlloc {
     }
 
     /**Purely a convenience overload, forwards arguments to TempAlloc.malloc().*/
-    static void* opCall(T...)(T args) {
+    static void* opCall(T...)(T args) nothrow {
         return TempAlloc.malloc(args);
     }
 
@@ -256,13 +330,13 @@ struct TempAlloc {
      * This is necessary for performance and to avoid false pointer issues.
      * Do not store the only reference to a GC-allocated object in
      * TempAlloc-allocated memory.*/
-    static void* malloc(size_t nbytes)  {
+    static void* malloc(size_t nbytes) nothrow {
         return malloc(nbytes, getState);
     }
 
     /**Same as malloc() but uses stateCopy cached on stack by caller
     * to avoid a thread-local storage lookup.  Strictly a speed hack.*/
-    static void* malloc(size_t nbytes, State stateCopy) {
+    static void* malloc(size_t nbytes, State stateCopy) nothrow {
         nbytes = getAligned(nbytes);
         with(stateCopy) {
             void* ret;
@@ -270,7 +344,7 @@ struct TempAlloc {
                 ret = current.space + current.used;
                 current.used += nbytes;
             } else if(nbytes > blockSize) {
-                ret = GC.malloc(nbytes, GC.BlkAttr.NO_SCAN);
+                ret = cmalloc(nbytes);
             } else if(nfree > 0) {
                 block* prev = freelist.prev;
                 freelist.prev = current;
@@ -281,8 +355,9 @@ struct TempAlloc {
                 nblocks++;
                 ret = current.space;
             } else { // Allocate more space.
-                block* newBlock = new block;
-                newBlock.space = GC.malloc(blockSize, GC.BlkAttr.NO_SCAN);
+                block* newBlock = cast(block*) cmalloc(block.sizeof);
+                *newBlock = block.init;
+                newBlock.space = cmalloc(blockSize);
                 nblocks++;
                 newBlock.prev = current;
                 newBlock.used = nbytes;
@@ -290,7 +365,7 @@ struct TempAlloc {
                 ret = current.space;
             }
             if(totalAllocs == lastAlloc.length) // Should happen very infrequently.
-                lastAlloc.length = lastAlloc.length * 2;
+                doubleSize(lastAlloc);
             lastAlloc[totalAllocs++] = ret;
             return ret;
         }
@@ -300,20 +375,20 @@ struct TempAlloc {
      * all memory must be allocated and freed in strict LIFO order,
      * there's no need to pass a pointer in.  All bookkeeping for figuring
      * out what to free is done internally.*/
-    static void free() {
+    static void free() nothrow {
         free(getState);
     }
 
     /**Same as free() but uses stateCopy cached on stack by caller
     * to avoid a thread-local storage lookup.  Strictly a speed hack.*/
-    static void free(State stateCopy) {
+    static void free(State stateCopy) nothrow {
         with(stateCopy) {
             void* lastPos = lastAlloc[--totalAllocs];
 
             // Handle large blocks.
             if(lastPos > current.space + blockSize ||
                lastPos < current.space) {
-               GC.free(lastPos);
+               cfree(lastPos);
                return;
             }
 
@@ -332,8 +407,8 @@ struct TempAlloc {
                     foreach(i; 0..nfree / 2) {
                         block* last = freelist;
                         freelist = freelist.prev;
-                        GC.free(last.space);
-                        GC.free(last);
+                        cfree(last.space);
+                        cfree(last);
                         nfree--;
                     }
                 }
@@ -353,7 +428,7 @@ struct TempAlloc {
  * Bugs: Do not store the only reference to a GC-allocated reference object
  * in an array allocated by newStack because this memory is not
  * scanned by the GC.*/
-T[] newStack(T)(size_t size) {
+T[] newStack(T)(size_t size) nothrow {
     size_t bytes = size * T.sizeof;
     T* ptr = cast(T*) TempAlloc.malloc(bytes);
     return ptr[0..size];
@@ -361,14 +436,14 @@ T[] newStack(T)(size_t size) {
 
 /**Same as newStack(size_t) but uses stateCopy cached on stack by caller
 * to avoid a thread-local storage lookup.  Strictly a speed hack.*/
-T[] newStack(T)(size_t size, TempAlloc.State state) {
+T[] newStack(T)(size_t size, TempAlloc.State state) nothrow {
     size_t bytes = size * T.sizeof;
     T* ptr = cast(T*) TempAlloc.malloc(bytes, state);
     return ptr[0..size];
 }
 
 /**Creates a duplicate of an array on the TempAlloc struct.*/
-auto tempdup(T)(T[] data) {
+auto tempdup(T)(T[] data) nothrow {
     alias Mutable!(T) U;
     U[] ret = newStack!(U)(data.length);
     ret[] = data[];
@@ -377,7 +452,7 @@ auto tempdup(T)(T[] data) {
 
 /**Same as tempdup(T[]) but uses stateCopy cached on stack by caller
  * to avoid a thread-local storage lookup.  Strictly a speed hack.*/
-auto tempdup(T)(T[] data, TempAlloc.State state) {
+auto tempdup(T)(T[] data, TempAlloc.State state) nothrow {
     alias Mutable!(T) U;
     U[] ret = newStack!(U)(data.length, state);
     ret[] = data;

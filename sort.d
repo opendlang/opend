@@ -15,37 +15,42 @@
  * qsort(foo, bar);
  * assert(foo == [1, 2, 3, 4, 5]);
  * assert(bar == [6, 7, 8, 5, 3]);
- * mergeSort!("a > b")(bar, foo);
+ * auto baz = [1.0, 0, -1, -2, -3].dup;
+ * mergeSort!("a > b")(bar, foo, baz);
  * assert(bar == [8, 7, 6, 5, 3]);
  * assert(foo == [3, 2, 1, 4, 5]);
+ * assert(baz == [-1.0, 0, 1, -2, -3]);
  * ---
  *
  * Author:  David Simcha
  *
-* Copyright (c) 2009, David Simcha
-* All rights reserved.
-*
-* Redistribution and use in source and binary forms, with or without
-* modification, are permitted provided that the following conditions are met:
-*     * Redistributions of source code must retain the above copyright
-*       notice, this list of conditions and the following disclaimer.
-*     * Redistributions in binary form must reproduce the above copyright
-*       notice, this list of conditions and the following disclaimer in the
-*       documentation and/or other materials provided with the distribution.
-*     * Neither the name of the <organization> nor the
-*       names of its contributors may be used to endorse or promote products
-*       derived from this software without specific prior written permission.
-*
-* THIS SOFTWARE IS PROVIDED ''AS IS'' AND ANY
-* EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-* WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-* DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDERS BE LIABLE FOR ANY
-* DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-* (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-* LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-* ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-* (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-* SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.*/
+ * Copyright (c) 2009, David Simcha
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ *     * Redistributions of source code must retain the above copyright
+ *       notice, this list of conditions and the following disclaimer.
+ *
+ *     * Redistributions in binary form must reproduce the above copyright
+ *       notice, this list of conditions and the following disclaimer in the
+ *       documentation and/or other materials provided with the distribution.
+ *
+ *     * Neither the name of the authors nor the
+ *       names of its contributors may be used to endorse or promote products
+ *       derived from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED ''AS IS'' AND ANY
+ * EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDERS BE LIABLE FOR ANY
+ * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.*/
 
 module dstats.sort;
 
@@ -62,7 +67,7 @@ version(unittest) {
     }
 }
 
-private void rotateLeft(T)(T[] input) {
+void rotateLeft(T)(T[] input) {
     if(input.length < 2) return;
     T temp = input[0];
     foreach(i; 1..input.length) {
@@ -71,7 +76,7 @@ private void rotateLeft(T)(T[] input) {
     input[$-1] = temp;
 }
 
-private void rotateRight(T)(T[] input) {
+void rotateRight(T)(T[] input) {
     if(input.length < 2) return;
     T temp = input[$-1];
     for(size_t i = input.length - 1; i > 0; i--) {
@@ -115,11 +120,11 @@ bool greaterThan(T)(T lhs, T rhs) {
     }
 }
 
-/**Quick sort.  Unstable, O(N log N) time average, O(N^2) time worst
+/**Quick sort.  Unstable, O(N log N) time average, worst
  * case, O(log N) space, small constant term in time complexity.
  *
- * In this implementation, the following steps are taken to avoid the O(N^2)
- * worst case:
+ * In this implementation, the following steps are taken to avoid the
+ * O(N<sup>2</sup>) worst case of naive quick sorts:
  *
  * 1.  At each recursion, the median of the first, middle and last elements of
  *     the array is used as the pivot.
@@ -130,7 +135,8 @@ bool greaterThan(T)(T lhs, T rhs) {
  *     in other cases.
  *
  * 3.  After a much larger than expected amount of recursion has occured,
- *     this function transitions to a heap sort.*/
+ *     this function transitions to a heap sort.  This guarantees an O(N log N)
+ *     worst case.*/
 T[0] qsort(alias compFun = lessThan, T...)(T data)
 in {
     assert(data.length > 0);
@@ -365,7 +371,23 @@ unittest {
  * recycling instead of repeated allocations.  If D is data, T is temp,
  * and U is a ulong* for calculating bubble sort distance, this can be called
  * as mergeSortTemp(D, D, D, T, T, T, U) or mergeSortTemp(D, D, D, T, T, T)
- * where each D has a T of corresponding type.*/
+ * where each D has a T of corresponding type.
+ *
+ * Examples:
+ * ---
+ * int[] foo = [3, 1, 2, 4, 5].dup;
+ * int[] temp = new uint[5];
+ * mergeSortTemp!("a < b")(foo, temp);
+ * assert(foo == [1, 2, 3, 4, 5]); // The contents of temp will be undefined.
+ * foo = [3, 1, 2, 4, 5].dup;
+ * real bar = [3.14L, 15.9, 26.5, 35.8, 97.9];
+ * real temp2 = new real[5];
+ * mergeSortTemp(foo, bar, temp, temp2);
+ * assert(foo == [1, 2, 3, 4, 5]);
+ * assert(bar == [15.9L, 26.5, 3.14, 35.8, 97.9]);
+ * // The contents of both temp and temp2 will be undefined.
+ * ---
+ */
 T[0] mergeSortTemp(alias compFun = lessThan, T...)(T data)
 in {
     assert(data.length > 0);
@@ -486,7 +508,7 @@ private void merge(alias compFun, T...)(T data) {
     }
 }
 
-/**In-place merge sort, based on C++ STL's stable_sort().  O(N * log(N)^2)
+/**In-place merge sort, based on C++ STL's stable_sort().  O(N log<sup>2</sup> N)
  * time complexity, O(1) space complexity, stable.  Much slower than plain
  * old mergeSort(), so only use it if you really need the O(1) space.*/
 T[0] mergeSortInPlace(alias compFun = lessThan, T...)(T data)
@@ -685,8 +707,8 @@ void multiSiftDown(alias compFun = lessThan, T...)
     }
 }
 
-/**Insertion sort.  O(N^2) time worst, average case, O(1) space, VERY small
- * constant, which is why it's useful for sorting small subarrays in
+/**Insertion sort.  O(N<sup>2</sup>) time worst, average case, O(1) space, VERY
+ * small constant, which is why it's useful for sorting small subarrays in
  * divide and conquer algorithms.  If last argument is a ulong*, increments
  * the dereference of this argument by the bubble sort distance between the
  * input array and the sorted version of the input.*/
@@ -793,105 +815,6 @@ unittest {
     writeln("Passed bubbleSort test.");
 }
 
-/**Given a set of data points entered through the addElement function,
- * maintains the invariant that the top N according to compFun will be
- * contained in the data structure.  Uses a heap internally, O(log N) insertion
- * time.  Good for finding the top N elements of a very large dataset that
- * cannot be sorted quickly in its entirety.  If less than N datapoints
- * have been entered, all are contained in the structure.
- *
- * Examples:
- * ---
-    Random gen;
-    gen.seed(unpredictableSeed);
-    uint[] nums = seq(0U, 100U);
-    auto less = TopN!(uint, "a < b")(10);
-    auto more = TopN!(uint, "a > b")(10);
-    randomShuffle(nums, gen);
-    foreach(n; nums) {
-        less.addElement(n);
-        more.addElement(n);
-    }
-    assert(less.getSorted == [0U, 1,2,3,4,5,6,7,8,9]);
-    assert(more.getSorted == [99U, 98, 97, 96, 95, 94, 93, 92, 91, 90]);
-    ---*/
-struct TopN(T, alias compFun = greaterThan) {
-private:
-    alias binaryFun!(compFun) comp;
-    uint n;
-    uint nAdded;
-
-    T[] nodes;
-public:
-    /**The variable ntop controls how many elements are retained.*/
-    this(uint ntop) {
-        n = ntop;
-        nodes = new T[n];
-    }
-
-    /**Insert an element into the topN struct.*/
-    void addElement(T elem) {
-        if(nAdded < n) {
-            nodes[nAdded] = elem;
-            if(nAdded == n - 1) {
-                makeMultiHeap!(comp)(nodes);
-            }
-            nAdded++;
-        } else if(nAdded >= n) {
-             if(comp(elem, nodes[0])) {
-                nodes[0] = elem;
-                multiSiftDown!(comp)(nodes, 0, nodes.length);
-            }
-        }
-    }
-
-    /**Get the elements currently in the struct.  Returns a reference to
-     * internal state, elements will be in an arbitrary order.  Cheap.*/
-    const(T)[] getElements() const {
-        return nodes[0..min(n, nAdded)];
-    }
-
-    /**Returns the elements sorted by compFun.  The array returned is a
-     * duplicate of the input array.  Not cheap.*/
-    T[] getSorted() const {
-        return qsort!(comp)(nodes[0..min(n, nAdded)].dup);
-    }
-}
-
-unittest {
-    alias TopN!(uint, "a < b") TopNLess;
-    alias TopN!(uint, "a > b") TopNGreater;
-    Random gen;
-    gen.seed(unpredictableSeed);
-    uint[] nums = new uint[100];
-    foreach(i, ref n; nums) {
-        n = i;
-    }
-    foreach(i; 0..100) {
-        auto less = TopNLess(10);
-        auto more = TopNGreater(10);
-        randomShuffle(nums, gen);
-        foreach(n; nums) {
-            less.addElement(n);
-            more.addElement(n);
-        }
-        assert(less.getSorted == [0U, 1,2,3,4,5,6,7,8,9]);
-        assert(more.getSorted == [99U, 98, 97, 96, 95, 94, 93, 92, 91, 90]);
-    }
-    foreach(i; 0..100) {
-        auto less = TopNLess(10);
-        auto more = TopNGreater(10);
-        randomShuffle(nums, gen);
-        foreach(n; nums[0..5]) {
-            less.addElement(n);
-            more.addElement(n);
-        }
-        assert(less.getSorted == qsort!("a < b")(nums[0..5]));
-        assert(more.getSorted == qsort!("a > b")(nums[0..5]));
-    }
-    writeln("Passed TopN test.");
-}
-
 /**Returns the kth largest/smallest element (depending on compFun, 0-indexed)
  * in the input array in O(N) time.  Allocates memory, does not modify input
  * array.*/
@@ -919,16 +842,18 @@ in {
  * Examples:
  * ---
  * auto foo = [3, 1, 5, 4, 2].dup;
- * auto secondElem = partitionK(foo, 1);
- * assert(secondElem == 2);
+ * auto secondSmallest = partitionK(foo, 1);
+ * assert(secondSmallest == 2);
  * foreach(elem; foo[0..1]) {
  *     assert(elem <= foo[1]);
  * }
  * foreach(elem; foo[2..$]) {
- *     assert(elem >= foo);
+ *     assert(elem >= foo[1]);
  * }
+ * ---
  *
- * Returns:  The kth element of the array.*/
+ * Returns:  The kth element of the array.
+ */
 ArrayElemType!(T[0]) partitionK(alias compFun = lessThan, T...)(T data, int k)
 in {
     assert(data.length > 0);
@@ -1021,6 +946,107 @@ unittest {
     writeln("Passed quickSelect/partitionK test.");
 }
 
+/**Given a set of data points entered through the addElement function,
+ * maintains the invariant that the top N according to compFun will be
+ * contained in the data structure.  Uses a heap internally, O(log N) insertion
+ * time.  Good for finding the largest/smallest N elements of a very large
+ * dataset that cannot be sorted quickly in its entirety, and may not even fit
+ * in memory. If less than N datapoints have been entered, all are contained in
+ * the structure.
+ *
+ * Examples:
+ * ---
+ * Random gen;
+ * gen.seed(unpredictableSeed);
+ * uint[] nums = seq(0U, 100U);
+ * auto less = TopN!(uint, "a < b")(10);
+ * auto more = TopN!(uint, "a > b")(10);
+ * randomShuffle(nums, gen);
+ * foreach(n; nums) {
+ *     less.addElement(n);
+ *     more.addElement(n);
+ * }
+ *  assert(less.getSorted == [0U, 1,2,3,4,5,6,7,8,9]);
+ *  assert(more.getSorted == [99U, 98, 97, 96, 95, 94, 93, 92, 91, 90]);
+ *  ---
+ */
+struct TopN(T, alias compFun = greaterThan) {
+private:
+    alias binaryFun!(compFun) comp;
+    uint n;
+    uint nAdded;
+
+    T[] nodes;
+public:
+    /** The variable ntop controls how many elements are retained.*/
+    this(uint ntop) {
+        n = ntop;
+        nodes = new T[n];
+    }
+
+    /** Insert an element into the topN struct.*/
+    void addElement(T elem) {
+        if(nAdded < n) {
+            nodes[nAdded] = elem;
+            if(nAdded == n - 1) {
+                makeMultiHeap!(comp)(nodes);
+            }
+            nAdded++;
+        } else if(nAdded >= n) {
+             if(comp(elem, nodes[0])) {
+                nodes[0] = elem;
+                multiSiftDown!(comp)(nodes, 0, nodes.length);
+            }
+        }
+    }
+
+    /**Get the elements currently in the struct.  Returns a reference to
+     * internal state, elements will be in an arbitrary order.  Cheap.*/
+    const(T)[] getElements() const {
+        return nodes[0..min(n, nAdded)];
+    }
+
+    /**Returns the elements sorted by compFun.  The array returned is a
+     * duplicate of the input array.  Not cheap.*/
+    T[] getSorted() const {
+        return qsort!(comp)(nodes[0..min(n, nAdded)].dup);
+    }
+}
+
+unittest {
+    alias TopN!(uint, "a < b") TopNLess;
+    alias TopN!(uint, "a > b") TopNGreater;
+    Random gen;
+    gen.seed(unpredictableSeed);
+    uint[] nums = new uint[100];
+    foreach(i, ref n; nums) {
+        n = i;
+    }
+    foreach(i; 0..100) {
+        auto less = TopNLess(10);
+        auto more = TopNGreater(10);
+        randomShuffle(nums, gen);
+        foreach(n; nums) {
+            less.addElement(n);
+            more.addElement(n);
+        }
+        assert(less.getSorted == [0U, 1,2,3,4,5,6,7,8,9]);
+        assert(more.getSorted == [99U, 98, 97, 96, 95, 94, 93, 92, 91, 90]);
+    }
+    foreach(i; 0..100) {
+        auto less = TopNLess(10);
+        auto more = TopNGreater(10);
+        randomShuffle(nums, gen);
+        foreach(n; nums[0..5]) {
+            less.addElement(n);
+            more.addElement(n);
+        }
+        assert(less.getSorted == qsort!("a < b")(nums[0..5]));
+        assert(more.getSorted == qsort!("a > b")(nums[0..5]));
+    }
+    writeln("Passed TopN test.");
+}
+
 // Verify that there are no TempAlloc memory leaks anywhere in the code covered
 // by the unittest.  This should always be the last unittest of the module.
 unittest {
@@ -1028,3 +1054,4 @@ unittest {
     assert(TAState.current.used == 0);
     assert(TAState.nblocks < 2);
 }
+
