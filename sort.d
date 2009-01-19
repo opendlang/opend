@@ -90,7 +90,7 @@ version(unittest) {
     void randomMultiShuffle(SomeRandomGen, T...)(ref SomeRandomGen r, T array) {
         foreach (i; 0 .. array[0].length) {
             // generate a random number i .. n
-            invariant which = i + uniform!(size_t)(r, 0u, array[0].length - i);
+            immutable which = i + uniform!(size_t)(r, 0u, array[0].length - i);
             foreach(ti, element; array) {
                 swap(element[i], element[which]);
             }
@@ -101,7 +101,7 @@ version(unittest) {
 /**Less than, except a NAN is less than anything except another NAN. This
  * behavior is totally arbitrary, but something has to be done with NANs by default
  * to avoid totally breaking the sorting algorithms when they occur.*/
-bool lessThan(T)(T lhs, T rhs) {
+bool lessThan(T)(const T lhs, const T rhs) {
     static if(isFloatingPoint!(T)) {
         return ((lhs < rhs) || (isnan(lhs) && !isnan(rhs)));
     } else {
@@ -112,13 +112,48 @@ bool lessThan(T)(T lhs, T rhs) {
 /**Greater than, except anything except another NAN > a NAN.  This behavior
  * is totally arbitrary, but something has to be done with NANs by default
  * to avoid totally breaking the sorting algorithms when they occur.*/
-bool greaterThan(T)(T lhs, T rhs) {
+bool greaterThan(T)(const T lhs, const T rhs) {
     static if(isFloatingPoint!(T)) {
         return ((lhs > rhs) || !isnan(lhs) && isnan(rhs));
     } else {
         return lhs > rhs;
     }
 }
+
+
+/* Returns the index, NOT the value, of the median of the first, middle, last
+ * elements of data.*/
+private size_t medianOf3(alias compFun, T)(const T[] data) {
+    alias binaryFun!(compFun) comp;
+    immutable size_t mid = data.length / 2;
+    immutable uint result = ((cast(uint) (comp(data[0], data[mid]))) << 2) |
+                            ((cast(uint) (comp(data[0], data[$ - 1]))) << 1) |
+                            (cast(uint) (comp(data[mid], data[$ - 1])));
+
+    assert(result != 2 && result != 5 && result < 8); // Cases 2, 5 can't happen.
+    switch(result) {
+        case 1:  // 001
+        case 6:  // 110
+            return data.length - 1;
+        case 3:  // 011
+        case 4:  // 100
+            return 0;
+        case 0:  // 000
+        case 7:  // 111
+            return mid;
+    }
+}
+
+unittest {
+    assert(medianOf3!(lessThan)([1,2,3,4,5]) == 2);
+    assert(medianOf3!(lessThan)([1,2,5,4,3]) == 4);
+    assert(medianOf3!(lessThan)([3,2,1,4,5]) == 0);
+    assert(medianOf3!(lessThan)([5,2,3,4,1]) == 2);
+    assert(medianOf3!(lessThan)([5,2,1,4,3]) == 4);
+    assert(medianOf3!(lessThan)([3,2,5,4,1]) == 0);
+    writeln("Passed medianOf3 unittest.");
+}
+
 
 /**Quick sort.  Unstable, O(N log N) time average, worst
  * case, O(log N) space, small constant term in time complexity.
@@ -165,27 +200,16 @@ void qsortImpl(alias compFun, T...)(T data, uint TTL) {
         return;
     }
     TTL--;
-    size_t middle = data[0].length / 2;
 
-    //Compute median of 3.
-    if((!comp(data[0][middle], data[0][$-1]) &&
-       !comp(data[0][0], data[0][middle])) ||
-        (!comp(data[0][$-1], data[0][middle]) &&
-        !comp(data[0][middle], data[0][0]))) {  //Middle is median of 3
-        foreach(array; data)
-            swap(array[middle], array[$-1]);
-    } else if((!comp(data[0][0], data[0][$-1]) &&
-              !comp(data[0][middle], data[0][0])) ||
-              (!comp(data[0][$-1], data[0][0]) &&
-              !comp(data[0][0], data[0][middle]))) {  //First is median of 3.
-        foreach(array; data)
-            swap(array[0], array[$-1]);
+    {
+        immutable size_t med3 = medianOf3!(comp)(data[0]);
+        foreach(array; data) {
+            swap(array[med3], array[$ - 1]);
+        }
     }
-    // Else, last is median of 3, already good.
-    // Begin meat of algorithm.
 
     T less, greater;
-    int lessI = -1, greaterI = data[0].length - 1;
+    ptrdiff_t lessI = -1, greaterI = data[0].length - 1;
 
     auto pivot = data[0][$ - 1];
     while(true) {
@@ -722,8 +746,8 @@ in {
     }
 } body {
     alias binaryFun!(compFun) comp;
-    static if(is(T[$ - 1] == ulong*)) invariant uint dl = data.length - 1;
-    else invariant uint dl = data.length;
+    static if(is(T[$ - 1] == ulong*)) enum dl = data.length - 1;
+    else enum dl = data.length;
     if(data[0].length < 2) {return data[0];}
     foreach_reverse(i; 0..data[0].length - 1) {
         size_t j = i;
@@ -780,8 +804,8 @@ version(unittest) {
     T[0] bubbleSort(alias compFun = lessThan, T...)(T data) {
         alias binaryFun!(compFun) comp;
         static if(is(T[$ - 1] == ulong*))
-            invariant uint dl = data.length - 1;
-        else invariant uint dl = data.length;
+            enum dl = data.length - 1;
+        else enum dl = data.length;
         if(data[0].length < 2)
             return data[0];
         bool swapExecuted;
@@ -864,25 +888,14 @@ in {
 } body {
     alias binaryFun!(compFun) comp;
 
-    size_t middle = data[0].length / 2;
-
-    //Compute median of 3.
-    if((!comp(data[0][middle], data[0][$-1]) &&
-       !comp(data[0][0], data[0][middle])) ||
-        (!comp(data[0][$-1], data[0][middle]) &&
-        !comp(data[0][middle], data[0][0]))) {  //Middle is median of 3
-        foreach(array; data)
-            swap(array[middle], array[$-1]);
-    } else if((!comp(data[0][0], data[0][$-1]) &&
-              !comp(data[0][middle], data[0][0])) ||
-              (!comp(data[0][$-1], data[0][0]) &&
-              !comp(data[0][0], data[0][middle]))) {  //First is median of 3.
-        foreach(array; data)
-            swap(array[0], array[$-1]);
+    {
+        immutable size_t med3 = medianOf3!(comp)(data[0]);
+        foreach(array; data) {
+            swap(array[med3], array[$ - 1]);
+        }
     }
-    // Else, last is median of 3, already good.
 
-    int lessI = -1, greaterI = data[0].length - 1;
+    ptrdiff_t lessI = -1, greaterI = data[0].length - 1;
     auto pivot = data[0][$ - 1];
     while(true) {
         while(comp(data[0][++lessI], pivot)) {}
