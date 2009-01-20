@@ -31,7 +31,7 @@
 
 module dstats.alloc;
 
-import std.traits, core.memory, core.thread;
+import std.traits, core.memory, core.thread, std.c.stdio : stderr;
 
 version(unittest) {
     import std.stdio;
@@ -151,17 +151,12 @@ unittest {
 }
 
 // C functions, marked w/ nothrow.
-extern(C) nothrow int printf(in char *,...);
+extern(C) nothrow int fprintf(void*, in char *,...);
 extern(C) nothrow void exit(int);
-extern(C) nothrow void* malloc(size_t);
-extern(C) nothrow void* realloc(void*, size_t);
-extern(C) nothrow void* free(void*);
-alias malloc cstdmalloc;
-alias realloc cstdrealloc;
-alias free cfree;
 
 /**TempAlloc struct.  See TempAlloc project on Scrapple.*/
 struct TempAlloc {
+private:
     struct block {
         void* space;
         size_t used;
@@ -171,8 +166,8 @@ struct TempAlloc {
             if(prev !is null)
                 prev.freeAll();
             if(space !is null)
-                cfree(space);
-            cfree(&this);
+                ntFree(space);
+            ntFree(&this);
         }
     }
 
@@ -185,8 +180,8 @@ struct TempAlloc {
          block* current;
          block* freelist;
 
-         ~this() {
-            cfree(lastAlloc.ptr);
+         ~this() {  // Blocks are pretty large.  Prevent false ptrs.
+            ntFree(lastAlloc.ptr);
             if(current !is null)  // Should never be null, but better to be safe.
                 current.freeAll();
             if(freelist !is null)
@@ -200,44 +195,38 @@ struct TempAlloc {
     static enum tnl = cast(bool function() nothrow) &thread_needLock;
 
     enum blockSize = 4U * 1024U * 1024U;
-    enum nBookKeep = 1_048_576;
+    enum nBookKeep = 1_048_576;  // How many bytes to allocate upfront for bookkeeping.
     enum alignBytes = 16U;
     static __thread State state;
     static State mainThreadState;
 
     static void die() nothrow {
-        printf("TempAlloc error: Out of memory.\0".ptr);
+        fprintf(stderr, "TempAlloc error: Out of memory.\0".ptr);
         exit(1);
     }
 
     static void doubleSize(ref void*[] lastAlloc) nothrow {
         size_t newSize = lastAlloc.length * 2;
-        void** ptr = cast(void**) crealloc(lastAlloc.ptr, newSize);
-        return ptr[0..newSize];
+        void** ptr = cast(void**)
+            ntRealloc(lastAlloc.ptr, newSize * (void*).sizeof, GC.BlkAttr.NO_SCAN);
+
+        if(lastAlloc.ptr != ptr) {
+            ntFree(lastAlloc.ptr);
+        }
+
+        lastAlloc = ptr[0..newSize];
     }
 
-    static void* cmalloc(size_t size) nothrow {
-        void* ret = cstdmalloc(size);
-        if(ret is null) {
-            try { GC.collect(); } catch {}
-            ret = cstdmalloc(size);
-
-            if(ret is null)
-                die();
-        }
-        return ret;
+    static void* ntMalloc(size_t size, GC.BlkAttr attr) nothrow {
+        try { return GC.malloc(size, attr); } catch { die(); }
     }
 
-    static void* crealloc(void* ptr, size_t size) nothrow {
-        void* ret = cstdrealloc(ptr, size);
-        if(ret is null) {
-            try { GC.collect(); } catch {}
-            ret = cstdrealloc(ptr, size);
+    static void* ntRealloc(void* ptr, size_t size, GC.BlkAttr attr) nothrow {
+        try { return GC.realloc(ptr, size, attr); } catch { die(); }
+    }
 
-            if(ret is null)
-                die();
-        }
-        return ret;
+    static void ntFree(void* ptr) nothrow {
+        try { GC.free(ptr); } catch {}
     }
 
     static size_t getAligned(size_t nbytes) pure nothrow {
@@ -249,13 +238,14 @@ struct TempAlloc {
         State stateCopy;
         try {
             stateCopy = new State;
-        } catch { die; }
+        } catch { die(); }
 
         with(stateCopy) {
-            current = cast(block*) cmalloc(block.sizeof);
+            current = cast(block*) ntMalloc(block.sizeof, cast(GC.BlkAttr) 0);
             *current = block.init;
-            current.space = cmalloc(blockSize);
-            lastAlloc = (cast(void**) cmalloc(nBookKeep))[0..nBookKeep / (void*).sizeof];
+            current.space = ntMalloc(blockSize, GC.BlkAttr.NO_SCAN);
+            lastAlloc = (cast(void**) ntMalloc(nBookKeep, GC.BlkAttr.NO_SCAN))
+                        [0..nBookKeep / (void*).sizeof];
             nblocks++;
         }
 
@@ -265,6 +255,7 @@ struct TempAlloc {
         return stateCopy;
     }
 
+public:
     /**Allows caller to cache the state class on the stack and pass it in as a
      * parameter.  This is ugly, but results in a speed boost that can be
      * significant in some cases because it avoids a thread-local storage
@@ -344,7 +335,7 @@ struct TempAlloc {
                 ret = current.space + current.used;
                 current.used += nbytes;
             } else if(nbytes > blockSize) {
-                ret = cmalloc(nbytes);
+                ret = ntMalloc(nbytes, GC.BlkAttr.NO_SCAN);
             } else if(nfree > 0) {
                 block* prev = freelist.prev;
                 freelist.prev = current;
@@ -355,17 +346,19 @@ struct TempAlloc {
                 nblocks++;
                 ret = current.space;
             } else { // Allocate more space.
-                block* newBlock = cast(block*) cmalloc(block.sizeof);
+                block* newBlock = cast(block*)
+                                  ntMalloc(block.sizeof, cast(GC.BlkAttr) 0);
                 *newBlock = block.init;
-                newBlock.space = cmalloc(blockSize);
+                newBlock.space = ntMalloc(blockSize, GC.BlkAttr.NO_SCAN);
                 nblocks++;
                 newBlock.prev = current;
                 newBlock.used = nbytes;
                 current = newBlock;
                 ret = current.space;
             }
-            if(totalAllocs == lastAlloc.length) // Should happen very infrequently.
+            if(totalAllocs == lastAlloc.length) { // Should happen very infrequently.
                 doubleSize(lastAlloc);
+            }
             lastAlloc[totalAllocs++] = ret;
             return ret;
         }
@@ -388,7 +381,7 @@ struct TempAlloc {
             // Handle large blocks.
             if(lastPos > current.space + blockSize ||
                lastPos < current.space) {
-               cfree(lastPos);
+               ntFree(lastPos);
                return;
             }
 
@@ -407,8 +400,8 @@ struct TempAlloc {
                     foreach(i; 0..nfree / 2) {
                         block* last = freelist;
                         freelist = freelist.prev;
-                        cfree(last.space);
-                        cfree(last);
+                        ntFree(last.space);
+                        ntFree(last);
                         nfree--;
                     }
                 }
@@ -472,3 +465,4 @@ auto tempdup(T)(T[] data, TempAlloc.State state) nothrow {
  * storage.*/
 invariant char[] newFrame =
           "TempAlloc.frameInit; scope(exit) TempAlloc.frameFree;";
+
