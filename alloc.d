@@ -61,14 +61,14 @@ template isReferenceType(Types...) {  //Thanks to Bearophile.
             const bool isReferenceType = false;
         } else static if ( is(Types[0] == struct) ) {
             const bool isReferenceType =
-                       isReferenceType!(FieldTypeTuple!(Types[0]));
+            isReferenceType!(FieldTypeTuple!(Types[0]));
         } else static if (isStaticArray!(Types[0])) {
             const bool isReferenceType = isReferenceType!(ArrayType1!(Types[0]));
         } else
             const bool isReferenceType = true;
     } else
         const bool isReferenceType = isReferenceType!(Types[0]) |
-                                     isReferenceType!(Types[1 .. $]);
+        isReferenceType!(Types[1 .. $]);
 } // end isReferenceType!()
 
 unittest {
@@ -89,7 +89,7 @@ unittest {
 }
 
 template blockAttribute(T) {
-    static if(isReferenceType!(T))
+    static if (isReferenceType!(T))
         enum blockAttribute = 0;
     else enum blockAttribute = GC.BlkAttr.NO_SCAN;
 }
@@ -106,12 +106,12 @@ void lengthVoid(T)(ref T[] input, int newLength) {
 
 ///Lengthens an array w/o initializing new elements.
 void lengthVoid(T)(ref T[] input, size_t newLength) {
-    if(newLength <= input.length ||
-       GC.sizeOf(input.ptr) >= newLength * T.sizeof) {
+    if (newLength <= input.length ||
+            GC.sizeOf(input.ptr) >= newLength * T.sizeof) {
         input = input.ptr[0..newLength];  //Don't realloc if I don't have to.
     } else {
         T* newPtr = cast(T*) GC.realloc(input.ptr,
-                             T.sizeof * newLength, blockAttribute!(T));
+                                        T.sizeof * newLength, blockAttribute!(T));
         input = newPtr[0..newLength];
     }
 }
@@ -123,7 +123,7 @@ void reserve(T)(ref T[] input, int newLength) {
 /**Reserves more space for an array w/o changing its length or initializing
  * the space.*/
 void reserve(T)(ref T[] input, size_t newLength) {
-    if(newLength <= input.length || capacity(input.ptr) >= newLength * T.sizeof)
+    if (newLength <= input.length || capacity(input.ptr) >= newLength * T.sizeof)
         return;
     T* newPtr = cast(T*) GC.realloc(input.ptr, T.sizeof * newLength);
     staticSetTypeInfo!(T)(newPtr);
@@ -132,10 +132,10 @@ void reserve(T)(ref T[] input, size_t newLength) {
 
 ///Appends to an array, deleting the old array if it has to be realloced.
 void appendDelOld(T, U)(ref T[] to, U from)
-if(is(Mutable!(T) : Mutable!(U)) || is(Mutable!(T[0]) : Mutable!(U))) {
+if (is(Mutable!(T) : Mutable!(U)) || is(Mutable!(T[0]) : Mutable!(U))) {
     auto oldPtr = to.ptr;
     to ~= from;
-    if(oldPtr != to.ptr)
+    if (oldPtr != to.ptr)
         delete oldPtr;
 }
 
@@ -157,36 +157,59 @@ extern(C) nothrow void exit(int);
 /**TempAlloc struct.  See TempAlloc project on Scrapple.*/
 struct TempAlloc {
 private:
-    struct block {
-        void* space;
-        size_t used;
-        block* prev;
+    struct Stack(T) {  // Simple, fast stack w/o error checking.
+        private size_t capacity;
+        private size_t index;
+        private T* data;
+        private enum sz = T.sizeof;
 
-        void freeAll() {
-            if(prev !is null)
-                prev.freeAll();
-            if(space !is null)
-                ntFree(space);
-            ntFree(&this);
+        private static size_t max(size_t lhs, size_t rhs) pure nothrow {
+            return (rhs > lhs) ? rhs : lhs;
+        }
+
+        void push(T elem) nothrow {
+            if (capacity == index) {
+                capacity = max(16, capacity * 2);
+                data = cast(T*) ntRealloc(data, capacity * sz, cast(GC.BlkAttr) 0);
+            }
+            data[index++] = elem;
+        }
+
+        T pop() nothrow {
+            return data[--index];
         }
     }
 
-    final class State {
-         uint nblocks;
-         uint nfree;
-         size_t totalAllocs;
-         size_t frameIndex;
-         void*[] lastAlloc;
-         block* current;
-         block* freelist;
+    struct Block {
+        size_t used;
+        void* space;
+    }
 
-         ~this() {  // Blocks are pretty large.  Prevent false ptrs.
+    final class State {
+        size_t used;
+        void* space;
+        size_t totalAllocs;
+        void*[] lastAlloc;
+        uint nblocks;
+        uint nfree;
+        size_t frameIndex;
+
+        // Holds info for all blocks except the one currently being allocated:
+        Stack!(Block) inUse;
+        Stack!(void*) freelist;
+
+        ~this() {  // Blocks are pretty large.  Prevent false ptrs.
             ntFree(lastAlloc.ptr);
-            if(current !is null)  // Should never be null, but better to be safe.
-                current.freeAll();
-            if(freelist !is null)
-                freelist.freeAll();
-         }
+            while(nblocks > 1) {
+                ntFree((inUse.pop()).space);
+                nblocks--;
+            }
+            ntFree(space);
+            while(nfree > 0) {
+                ntFree(freelist.pop);
+                nfree--;
+            }
+        }
     }
 
     // core.thread.Thread.thread_needLock() is nothrow (read the code if you
@@ -208,9 +231,9 @@ private:
     static void doubleSize(ref void*[] lastAlloc) nothrow {
         size_t newSize = lastAlloc.length * 2;
         void** ptr = cast(void**)
-            ntRealloc(lastAlloc.ptr, newSize * (void*).sizeof, GC.BlkAttr.NO_SCAN);
+        ntRealloc(lastAlloc.ptr, newSize * (void*).sizeof, GC.BlkAttr.NO_SCAN);
 
-        if(lastAlloc.ptr != ptr) {
+        if (lastAlloc.ptr != ptr) {
             ntFree(lastAlloc.ptr);
         }
 
@@ -236,21 +259,17 @@ private:
 
     static State stateInit() nothrow {
         State stateCopy;
-        try {
-            stateCopy = new State;
-        } catch { die(); }
+        try { stateCopy = new State; } catch { die(); }
 
         with(stateCopy) {
-            current = cast(block*) ntMalloc(block.sizeof, cast(GC.BlkAttr) 0);
-            *current = block.init;
-            current.space = ntMalloc(blockSize, GC.BlkAttr.NO_SCAN);
+            space = ntMalloc(blockSize, GC.BlkAttr.NO_SCAN);
             lastAlloc = (cast(void**) ntMalloc(nBookKeep, GC.BlkAttr.NO_SCAN))
                         [0..nBookKeep / (void*).sizeof];
             nblocks++;
         }
 
         state = stateCopy;
-        if(!tnl())
+        if (!tnl())
             mainThreadState = stateCopy;
         return stateCopy;
     }
@@ -263,9 +282,7 @@ public:
     static State getState() nothrow {
         // Believe it or not, even with builtin TLS, the thread_needLock()
         // is worth it to avoid the TLS lookup.
-        State stateCopy = (tnl()) ?
-                          state :
-                          mainThreadState;
+        State stateCopy = (tnl()) ? state : mainThreadState;
         return (stateCopy is null) ? stateInit : stateCopy;
     }
 
@@ -281,11 +298,11 @@ public:
      * to avoid a thread-local storage lookup.  Strictly a speed hack.*/
     static State frameInit(State stateCopy) nothrow {
         with(stateCopy) {
-        if(totalAllocs == lastAlloc.length) // Should happen very infrequently.
-            doubleSize(lastAlloc);
-        lastAlloc[totalAllocs] = cast(void*) frameIndex;
-        frameIndex = totalAllocs;
-        totalAllocs++;
+            if (totalAllocs == lastAlloc.length) // Should happen very infrequently.
+                doubleSize(lastAlloc);
+            lastAlloc[totalAllocs] = cast(void*) frameIndex;
+            frameIndex = totalAllocs;
+            totalAllocs++;
         }
         return stateCopy;
     }
@@ -300,10 +317,10 @@ public:
     * to avoid a thread-local storage lookup.  Strictly a speed hack.*/
     static void frameFree(State stateCopy) nothrow {
         with(stateCopy) {
-        while(totalAllocs > frameIndex + 1) {
-            free(stateCopy);
-        }
-        frameIndex = cast(size_t) lastAlloc[--totalAllocs];
+            while (totalAllocs > frameIndex + 1) {
+                free(stateCopy);
+            }
+            frameIndex = cast(size_t) lastAlloc[--totalAllocs];
         }
     }
 
@@ -331,32 +348,26 @@ public:
         nbytes = getAligned(nbytes);
         with(stateCopy) {
             void* ret;
-            if(blockSize - current.used >= nbytes) {
-                ret = current.space + current.used;
-                current.used += nbytes;
-            } else if(nbytes > blockSize) {
+            if (blockSize - used >= nbytes) {
+                ret = space + used;
+                used += nbytes;
+            } else if (nbytes > blockSize) {
                 ret = ntMalloc(nbytes, GC.BlkAttr.NO_SCAN);
-            } else if(nfree > 0) {
-                block* prev = freelist.prev;
-                freelist.prev = current;
-                current = freelist;
-                freelist = prev;
-                current.used = nbytes;
+            } else if (nfree > 0) {
+                inUse.push(Block(used, space));
+                space = freelist.pop;
+                used = nbytes;
                 nfree--;
                 nblocks++;
-                ret = current.space;
+                ret = space;
             } else { // Allocate more space.
-                block* newBlock = cast(block*)
-                                  ntMalloc(block.sizeof, cast(GC.BlkAttr) 0);
-                *newBlock = block.init;
-                newBlock.space = ntMalloc(blockSize, GC.BlkAttr.NO_SCAN);
+                inUse.push(Block(used, space));
+                space = ntMalloc(blockSize, GC.BlkAttr.NO_SCAN);
                 nblocks++;
-                newBlock.prev = current;
-                newBlock.used = nbytes;
-                current = newBlock;
-                ret = current.space;
+                used = nbytes;
+                ret = space;
             }
-            if(totalAllocs == lastAlloc.length) { // Should happen very infrequently.
+            if (totalAllocs == lastAlloc.length) {
                 doubleSize(lastAlloc);
             }
             lastAlloc[totalAllocs++] = ret;
@@ -379,29 +390,23 @@ public:
             void* lastPos = lastAlloc[--totalAllocs];
 
             // Handle large blocks.
-            if(lastPos > current.space + blockSize ||
-               lastPos < current.space) {
-               ntFree(lastPos);
-               return;
+            if (lastPos > space + blockSize || lastPos < space) {
+                ntFree(lastPos);
+                return;
             }
 
-            size_t diff = (cast(size_t) current.space) + current.used
-                             - (cast(size_t) lastPos);
-            current.used -= diff;
-            if(nblocks > 1 && current.used == 0) {
-                block* prev = current.prev;
-                current.prev = freelist;
-                freelist = current;
-                current = prev;
+            used = (cast(size_t) lastPos) - (cast(size_t) space);
+            if (nblocks > 1 && used == 0) {
+                freelist.push(space);
+                Block newHead = inUse.pop;
+                space = newHead.space;
+                used = newHead.used;
                 nblocks--;
                 nfree++;
 
-                if(nfree >= nblocks * 2) {
+                if (nfree >= nblocks * 2) {
                     foreach(i; 0..nfree / 2) {
-                        block* last = freelist;
-                        freelist = freelist.prev;
-                        ntFree(last.space);
-                        ntFree(last);
+                        ntFree(freelist.pop);
                         nfree--;
                     }
                 }
@@ -464,5 +469,85 @@ auto tempdup(T)(T[] data, TempAlloc.State state) nothrow {
  * are allocated, due to caching of data stored in thread-local
  * storage.*/
 invariant char[] newFrame =
-          "TempAlloc.frameInit; scope(exit) TempAlloc.frameFree;";
+    "TempAlloc.frameInit; scope(exit) TempAlloc.frameFree;";
 
+unittest {
+    /* Not a particularly good unittest in that it depends on knowing the
+     * internals of TempAlloc, but it's the best I could come up w/.  This
+     * is really more of a stress test/sanity check than a normal unittest.*/
+
+     // First test to make sure a large number of allocations does what it's
+     // supposed to in terms of reallocing lastAlloc[], etc.
+     enum nIter =  TempAlloc.blockSize * 5 / TempAlloc.alignBytes;
+     foreach(i; 0..nIter) {
+         TempAlloc(TempAlloc.alignBytes);
+     }
+     assert(TempAlloc.getState.nblocks == 5);
+     assert(TempAlloc.getState.nfree == 0);
+     foreach(i; 0..nIter) {
+        TempAlloc.free;
+    }
+    assert(TempAlloc.getState.nblocks == 1);
+    assert(TempAlloc.getState.nfree == 2);
+
+    // Make sure logic for freeing excess blocks works.  If it doesn't this
+    // test will run out of memory.
+    enum allocSize = TempAlloc.blockSize / 2;
+    void*[] oldStates;
+    foreach(i; 0..50) {
+        foreach(j; 0..50) {
+            TempAlloc(allocSize);
+        }
+        foreach(j; 0..50) {
+            TempAlloc.free;
+        }
+        oldStates ~= cast(void*) TempAlloc.state;
+        oldStates ~= cast(void*) TempAlloc.mainThreadState;
+        TempAlloc.state = null;
+        TempAlloc.mainThreadState = null;
+    }
+    oldStates = null;
+
+    // Make sure data is stored properly.
+    foreach(i; 0..10) {
+        TempAlloc(allocSize);
+    }
+    foreach(i; 0..5) {
+        TempAlloc.free;
+    }
+    GC.collect;  // Make sure nothing that shouldn't is getting GC'd.
+    void* space = TempAlloc.mainThreadState.space;
+    size_t used = TempAlloc.mainThreadState.used;
+
+    TempAlloc.frameInit;
+    uint[][] arrays;
+    foreach(i; 0..10) {
+        uint[] data = newStack!(uint)(250_000);
+        foreach(j, ref e; data) {
+            e = j * (i + 1);  // Arbitrary values that can be read back later.
+        }
+        arrays ~= data;
+    }
+
+    // Make stuff get overwrriten if blocks are getting GC'd when they're not
+    // supposed to.
+    GC.minimize;  // Free up all excess pools.
+    uint[][] foo;
+    foreach(i; 0..40) {
+        foo ~= new uint[1_048_576];
+    }
+    foo = null;
+
+    for(size_t i = 9; i != size_t.max; i--) {
+        foreach(j, e; arrays[i]) {
+            assert(e == j * (i + 1));
+        }
+    }
+    TempAlloc.frameFree;
+    assert(space == TempAlloc.mainThreadState.space);
+    assert(used == TempAlloc.mainThreadState.used);
+    while(TempAlloc.state.nblocks > 1 || TempAlloc.state.used > 0) {
+        TempAlloc.free;
+    }
+
+}

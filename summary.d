@@ -527,6 +527,6 @@ Summary summary(T)(const T[] data) {
 // by the unittest.  This should always be the last unittest of the module.
 unittest {
     auto TAState = TempAlloc.getState;
-    assert(TAState.current.used == 0);
+    assert(TAState.used == 0);
     assert(TAState.nblocks < 2);
 }
