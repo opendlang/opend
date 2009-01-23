@@ -194,7 +194,8 @@ private:
         uint nfree;
         size_t frameIndex;
 
-        // Holds info for all blocks except the one currently being allocated:
+        // inUse holds info for all blocks except the one currently being
+        // allocated from.  freelist holds space ptrs for all free blocks.
         Stack!(Block) inUse;
         Stack!(void*) freelist;
 
@@ -520,13 +521,17 @@ unittest {
     size_t used = TempAlloc.mainThreadState.used;
 
     TempAlloc.frameInit;
-    uint[][] arrays;
+    // This array of arrays should not be scanned by the GC because otherwise
+    // bugs caused th not having the GC scan certain internal things in
+    // TempAlloc that it should would not be exposed.
+    uint[][] arrays = (cast(uint[]*) GC.malloc((uint[]).sizeof * 10,
+                       GC.BlkAttr.NO_SCAN))[0..10];
     foreach(i; 0..10) {
         uint[] data = newStack!(uint)(250_000);
         foreach(j, ref e; data) {
             e = j * (i + 1);  // Arbitrary values that can be read back later.
         }
-        arrays ~= data;
+        arrays[i] = data;
     }
 
     // Make stuff get overwrriten if blocks are getting GC'd when they're not
@@ -549,5 +554,5 @@ unittest {
     while(TempAlloc.state.nblocks > 1 || TempAlloc.state.used > 0) {
         TempAlloc.free;
     }
-
+    fprintf(stderr, "Passed TempAlloc test.\n\0".ptr);
 }
