@@ -81,7 +81,7 @@ version(unittest) {
  * 0 to nbin - 1, with 0 being the smallest bin, etc.
  * The values returned are the counts for each bin.  Returns results on the GC
  * heap by default, but uses TempAlloc stack if alloc == Alloc.STACK.*/
-uint[] binCounts(T)(const T[] data, uint nbin, Alloc alloc = Alloc.HEAP)
+Ret[] binCounts(Ret = ushort, T)(const T[] data, uint nbin, Alloc alloc = Alloc.HEAP)
 in {
     assert(data.length > 0);
     assert(nbin > 0);
@@ -95,11 +95,11 @@ in {
     }
     T range = max - min;
 
-    uint[] bins;
+    Ret[] bins;
     if(alloc == Alloc.HEAP) {
-        bins = new uint[nbin];
+        bins = new Ret[nbin];
     } else {
-        bins = newStack!(uint)(nbin);
+        bins = newStack!(Ret)(nbin);
         bins[] = 0U;
     }
 
@@ -120,9 +120,9 @@ in {
 unittest {
     double[] data = [0.0, .01, .03, .05, .11, .3, .5, .7, .89, 1];
     auto res = binCounts(data, 10);
-    assert(res == [4U, 1, 0, 1, 0, 1, 0, 1, 1, 1]);
+    assert(res == [cast(ushort) 4, 1, 0, 1, 0, 1, 0, 1, 1, 1]);
     res = binCounts(data, 10, Alloc.STACK);
-    assert(res == [4U, 1, 0, 1, 0, 1, 0, 1, 1, 1]);
+    assert(res == [cast(ushort) 4, 1, 0, 1, 0, 1, 0, 1, 1, 1]);
     TempAlloc.free;
     writeln("Passed binCounts unittest.");
 }
@@ -131,7 +131,7 @@ unittest {
  * 0 to nbin - 1, with 0 being the smallest bin, etc.
  * The values returned are the bin index for each element.  Returns on GC
  * heap by default, but TempAlloc stack if alloc == Alloc.STACK.*/
-uint[] bin(T)(const T[] data, uint nbin, Alloc alloc = Alloc.HEAP)
+Ret[] bin(Ret = ushort, T)(const T[] data, uint nbin, Alloc alloc = Alloc.HEAP)
 in {
     assert(data.length > 0);
     assert(nbin > 0);
@@ -145,11 +145,11 @@ in {
     }
     T range = max - min;
 
-    uint[] bins;
+    Ret[] bins;
     if(alloc == Alloc.HEAP) {
-        bins = newVoid!(uint)(data.length);
+        bins = newVoid!(Ret)(data.length);
     } else {
-        bins = newStack!(uint)(data.length);
+        bins = newStack!(Ret)(data.length);
     }
 
     foreach(i, elem; data) {
@@ -170,9 +170,9 @@ unittest {
     mixin(newFrame);
     double[] data = [0.0, .01, .03, .05, .11, .3, .5, .7, .89, 1];
     auto res = bin(data, 10);
-    assert(res == [0U, 0, 0, 0, 1, 3, 5, 7, 8, 9]);
+    assert(res == [cast(ushort) 0, 0, 0, 0, 1, 3, 5, 7, 8, 9]);
     res = bin(data, 10, Alloc.STACK);
-    assert(res == [0U, 0, 0, 0, 1, 3, 5, 7, 8, 9]);
+    assert(res == [cast(ushort) 0, 0, 0, 0, 1, 3, 5, 7, 8, 9]);
     TempAlloc.free;
     writeln("Passed bin unittest.");
 }
@@ -181,17 +181,17 @@ unittest {
  * 0 to nbin - 1, with 0 being the smallest bin, etc.
  * The values returned are the bin index for each element.  Returns on GC
  * heap by default, but TempAlloc stack if alloc == Alloc.STACK.*/
-uint[] frqBin(T)(const T[] data, uint nbin, Alloc alloc = Alloc.HEAP)
+Ret[] frqBin(Ret = ushort, T)(const T[] data, uint nbin, Alloc alloc = Alloc.HEAP)
 in {
     assert(data.length > 0);
     assert(nbin > 0);
     assert(nbin <= data.length);
 } body {
-    uint[] result;
+    Ret[] result;
     if(alloc == Alloc.HEAP) {
-        result = newVoid!(uint)(data.length);
+        result = newVoid!(Ret)(data.length);
     } else {
-        result = newStack!(uint)(data.length);
+        result = newStack!(Ret)(data.length);
     }
 
     auto perm = newStack!(uint)(data.length); scope(exit) TempAlloc.free;
@@ -202,7 +202,7 @@ in {
     TempAlloc.free;
 
     uint rem = data.length % nbin;
-    uint bin = 0, i = 0, frq = data.length / nbin;
+    Ret bin = 0, i = 0, frq = data.length / nbin;
     while(i < data.length) {
         foreach(j; 0..(bin < rem) ? frq + 1 : frq) {
             result[perm[i++]] = bin;
@@ -215,13 +215,13 @@ in {
 unittest {
     double[] data = [5U, 1, 3, 8, 30, 10, 7];
     auto res = frqBin(data, 3);
-    assert(res == [0U, 0, 0, 1, 2, 2, 1]);
+    assert(res == [cast(ushort) 0, 0, 0, 1, 2, 2, 1]);
     data = [3, 1, 4, 1, 5, 9, 2, 6, 5];
     res = frqBin(data, 4, Alloc.STACK);
-    assert(res == [1U, 0, 1, 0, 2, 3, 0, 3, 2]);
+    assert(res == [cast(ushort) 1, 0, 1, 0, 2, 3, 0, 3, 2]);
     data = [3U, 1, 4, 1, 5, 9, 2, 6, 5, 3, 4, 8, 9, 7, 9, 2];
     res = frqBin(data, 4);
-    assert(res == [1U, 0, 1, 0, 2, 3, 0, 2, 2, 1, 1, 3, 3, 2, 3, 0]);
+    assert(res == [cast(ushort) 1, 0, 1, 0, 2, 3, 0, 2, 2, 1, 1, 3, 3, 2, 3, 0]);
     TempAlloc.free;
     writeln("Passed frqBin unittest.");
 }
