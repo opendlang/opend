@@ -123,7 +123,7 @@ bool greaterThan(T)(const T lhs, const T rhs) {
 
 /* Returns the index, NOT the value, of the median of the first, middle, last
  * elements of data.*/
-private size_t medianOf3(alias compFun, T)(const T[] data) {
+size_t medianOf3(alias compFun, T)(const T[] data) {
     alias binaryFun!(compFun) comp;
     immutable size_t mid = data.length / 2;
     immutable uint result = ((cast(uint) (comp(data[0], data[mid]))) << 2) |

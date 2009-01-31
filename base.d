@@ -202,7 +202,8 @@ in {
     TempAlloc.free;
 
     uint rem = data.length % nbin;
-    Ret bin = 0, i = 0, frq = data.length / nbin;
+    Ret bin = 0;
+    uint i = 0, frq = data.length / nbin;
     while(i < data.length) {
         foreach(j; 0..(bin < rem) ? frq + 1 : frq) {
             result[perm[i++]] = bin;
@@ -1030,6 +1031,16 @@ public:
 
    size_t length() {
        return _length;
+   }
+
+   real efficiency() {
+       uint used = 0;
+       foreach(root; roots) {
+           if(root.next != usedSentinel) {
+               used++;
+           }
+       }
+       return cast(real) used / roots.length;
    }
 }
 

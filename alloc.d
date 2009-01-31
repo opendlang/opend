@@ -171,18 +171,22 @@ private:
             if (capacity == index) {
                 capacity = max(16, capacity * 2);
                 data = cast(T*) ntRealloc(data, capacity * sz, cast(GC.BlkAttr) 0);
+                data[index..capacity] = T.init;  // Prevent false ptrs.
             }
             data[index++] = elem;
         }
 
         T pop() nothrow {
-            return data[--index];
+            index--;
+            auto ret = data[index];
+            data[index] = T.init;  // Prevent false ptrs.
+            return ret;
         }
     }
 
     struct Block {
-        size_t used;
-        void* space;
+        size_t used = 0;
+        void* space = null;
     }
 
     final class State {
@@ -441,7 +445,28 @@ T[] newStack(T)(size_t size, TempAlloc.State state) nothrow {
     return ptr[0..size];
 }
 
-/**Creates a duplicate of an array on the TempAlloc struct.*/
+/**Concatenate any number of arrays of the same type, placing results on
+ * the TempAlloc stack.*/
+T[0] stackCat(T...)(T data) {
+    foreach(array; data) {
+        static assert(is(typeof(array) == typeof(data[0])));
+    }
+
+    size_t totalLen = 0;
+    foreach(array; data) {
+        totalLen += array.length;
+    }
+    auto ret = newStack!(Mutable!(typeof(T[0][0])))(totalLen);
+
+    size_t offset = 0;
+    foreach(array; data) {
+        ret[offset..offset + array.length] = array[0..$];
+        offset += array.length;
+    }
+    return cast(T[0]) ret;
+}
+
+/**Creates a duplicate of an array on the TempAlloc stack.*/
 auto tempdup(T)(T[] data) nothrow {
     alias Mutable!(T) U;
     U[] ret = newStack!(U)(data.length);
