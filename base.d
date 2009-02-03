@@ -776,18 +776,21 @@ unittest {
     writeln("Passed Comb test.");
 }
 
+// This should be encapsulated within StackHash.  Workaround for bug 1629.
+struct SHNode(K, V) {
+    alias SHNode!(K, V) SomeType;
+    SomeType* next;
+    Mutable!(K) key;
+    Mutable!(V) val;
+}
+
 /* A hash table that uses TempAlloc to allocate space.  Useful for building
  * a quick symbol table in a performance-critical function that can't be
  * performing tons of heap allocations.  Intentionally lacking ddoc because
  * the design or even existence of this is still likely to change.*/
 struct StackHash(K, V) {
 private:
-    struct Node {
-        Node* next;
-        K key;
-        V val;
-    }
-
+    alias SHNode!(K, V) Node;
     Node[] roots;
     TempAlloc.State TAState;
     TypeInfo keyTI;
@@ -796,15 +799,15 @@ private:
 
     Node* newNode(K key) {
         Node* ret = cast(Node*) TempAlloc(Node.sizeof, TAState);
-        ret.key = key;
-        ret.val = V.init;
+        ret.key =  key;
+        ret.val =  V.init;
         ret.next = null;
         return ret;
     }
 
     Node* newNode(K key, V val) {
         Node* ret = cast(Node*) TempAlloc(Node.sizeof, TAState);
-        ret.key = key;
+        ret.key =  key;
         ret.val = val;
         ret.next = null;
         return ret;
@@ -834,7 +837,7 @@ public:
         roots = newStack!(Node)(nElem, TAState);
         usedSentinel = cast(Node*) roots.ptr;
         foreach(ref root; roots) {
-            root.key = K.init;
+            root.key =  K.init;
             root.val = V.init;
             root.next = usedSentinel;
         }
@@ -845,7 +848,7 @@ public:
         hash_t hash = getHash(key);
 
         if(roots[hash].next == usedSentinel) {
-            roots[hash].key = key;
+            roots[hash].key =  key;
             roots[hash].next = null;
             _length++;
             return roots[hash].val;
@@ -854,7 +857,7 @@ public:
         } else {  // Collision.  Start chaining.
             Node** next = &(roots[hash].next);
             while(*next !is null) {
-                if((**next).key == key) {
+                if((**next).key ==  key) {
                     return (**next).val;
                 }
                 next = &((**next).next);
@@ -869,12 +872,12 @@ public:
         hash_t hash = getHash(key);
 
         if(roots[hash].next == usedSentinel) {
-            roots[hash].key = key;
+            roots[hash].key =  key;
             roots[hash].val = val;
             roots[hash].next = null;
             _length++;
             return val;
-        } else if(roots[hash].key == key) {
+        } else if(roots[hash].key ==  key) {
             roots[hash].val = val;
             return val;
         } else {  // Collision.  Start chaining.
@@ -917,23 +920,23 @@ public:
         return space;
     }
 
-    K[] keys() {
-        auto space = newVoid!(K)(_length);
+    Mutable!(K)[] keys() const {
+        auto space = newVoid!(Mutable!(K))(_length);
         return keys(space);
     }
 
-    K[] keyStack() {
-        auto space = newStack!(K)(_length);
+    Mutable!(K)[] keyStack() const {
+        auto space = newStack!(Mutable!(K))(_length);
         return keys(space);
     }
 
-    K[] keys(K[] space) {
+    Mutable!(K)[] keys(Mutable!(K)[] space) const {
         size_t pos;
         foreach(r; roots) {
             if(r.next == usedSentinel)
                 continue;
             space[pos++] = r.key;
-            Node* next = r.next;
+            const(Node)* next = r.next;
             while(next !is null) {
                 space[pos++] = next.key;
                 next = next.next;

@@ -79,6 +79,34 @@ unittest {
     writefln("Passed entropyCounts unittest.");
 }
 
+// Should be encapsulated within entropy().  Workaround for bug 1629.
+struct ObsEnt(T...) {
+    atomsOfArrayTuple!(T) compRep;
+
+    hash_t toHash() {
+        hash_t sum = 0;
+        foreach(i, elem; this.tupleof) {
+            static if(is(elem : long) && elem.sizeof <= hash_t.sizeof) {
+                sum += elem << i;
+            } else static if(__traits(compiles, elem.toHash)) {
+                sum += elem.toHash << i;
+            } else {
+                auto ti = typeid(typeof(elem));
+                sum += ti.getHash(&elem) << i;
+            }
+        }
+        return sum;
+    }
+
+    bool opEquals(typeof(this) rhs) {
+        foreach(ti, elem; this.tupleof) {
+            if(elem != rhs.tupleof[ti])
+                return false;
+        }
+        return true;
+    }
+}
+
 /**Calculates the joint entropy of a set of observations.  Each array represets
  * a vector of observations. If only one array is given, this reduces to the
  * plain old entropy.
@@ -93,7 +121,7 @@ unittest {
  * assert(approxEqual(jointEntropyFooBar, log2(9)));
  * ---
  */
-real entropy(T...)(T data)
+real entropy(T...)(const T data)
 in {
     static assert(data.length > 0);
     size_t zeroLen = data[0].length;
@@ -103,32 +131,7 @@ in {
 } body {
 
     static if(data.length > 1) {
-        struct Obs {
-            atomsOfArrayTuple!(T) compRep;
-
-            hash_t toHash() {
-                hash_t sum = 0;
-                foreach(i, elem; this.tupleof) {
-                    static if(is(elem : long) && elem.sizeof <= hash_t.sizeof) {
-                        sum += elem << i;
-                    } else static if(__traits(compiles, elem.toHash)) {
-                        sum += elem.toHash << i;
-                    } else {
-                        auto ti = typeid(typeof(elem));
-                        sum += ti.getHash(&elem) << i;
-                    }
-                }
-                return sum;
-            }
-
-            bool opEquals(Obs rhs) {
-                foreach(ti, elem; this.tupleof) {
-                    if(elem != rhs.tupleof[ti])
-                        return false;
-                }
-                return true;
-            }
-        }
+        alias ObsEnt!(T) Obs;
     }
 
     TempAlloc.frameInit;
