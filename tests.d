@@ -708,7 +708,7 @@ real wilcoxSRPExact(uint W, uint N, Alt alt = Alt.TWOSIDE) {
     cache[0..(N + 1) * (W + 1)] = 0;
     cachePrev[0..(N + 1) * (W + 1)] = 0;
 
-    real comb = pow(2, -(cast(real) N));
+    real comb = pow(2.0L, -(cast(real) N));
     real floatMax = cast(real) float.max;
     cache[0] = cast(float) (comb * floatMax);
     cachePrev[0] = cast(float) (comb * floatMax);
