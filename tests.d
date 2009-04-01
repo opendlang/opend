@@ -205,7 +205,7 @@ unittest {
 }
 
 /**Wilcoxon rank-sum test statistic.  This is a non-parametric test for a
- * difference in the medians of two sets of numbers.  The tieSum parameter is
+ * difference in the mean ranks of two sets of numbers.  The tieSum parameter is
  * mostly for use internally, and if included will place a value in the
  * dereference that can be used in wilcoxonRankSumPval() to adjust for ties in
  * the input data.
@@ -254,9 +254,9 @@ unittest {
 }
 
 /**Computes a P-value for a Wilcoxon rank sum test score against the given
- * alternative. Alt.LESS means that median(sample1) < median(sample2).
- * Alt.GREATER means median(sample1) > median(sample2).  Alt.TWOSIDE means
- * median(sample1) != median(sample2).
+ * alternative. Alt.LESS means that mean rank(sample1) < mean rank(sample2).
+ * Alt.GREATER means mean rank(sample1) > mean rank(sample2).  Alt.TWOSIDE means
+ * mean rank(sample1) != mean rank(sample2).
  *
  * exactThresh
  * is the threshold value of (n1 + n2) at which this function switches from
@@ -305,9 +305,9 @@ unittest {
 
 /**Computes Wilcoxon rank sum test P-value for
  * a set of observations against another set, using the given alternative.
- * Alt.LESS means that median(sample1) < median(sample2).  Alt.GREATER means
- * median(sample1) > median(sample2).  Alt.TWOSIDE means median(sample1) !=
- * median(sample2).
+ * Alt.LESS means that mean rank(sample1) < mean rank(sample2).  Alt.GREATER means
+ * mean rank(sample1) > mean rank(sample2).  Alt.TWOSIDE means mean rank(sample1) !=
+ * mean rank(sample2).
  *
  * tieSum is a parameter that is used  internally to adjust for
  * ties in the data.  It is computed by wilcoxonRankSum().
@@ -897,8 +897,6 @@ if(is(Func == function) || is(Func == delegate)) {
     real D = 0;
 
     foreach(FPos, Xi; Femp) {
-        if(FPos < Femp.length - 1 && Femp[FPos + 1] == Xi)
-            continue;  //Handle ties.
         real diff = cast(real) FPos / Femp.length - F(Xi);
         if(abs(diff) > abs(D))
             D = diff;
@@ -908,9 +906,12 @@ if(is(Func == function) || is(Func == delegate)) {
 }
 
 unittest {
+    // Testing against values from R.
     auto stdNormal = parametrize!(normalCDF)(0.0L, 1.0L);
     assert(approxEqual(ksTestDestructive([1,2,3,4,5], stdNormal), -.8413));
     assert(approxEqual(ksTestDestructive([-1,0,2,8, 6], stdNormal), -.5772));
+    auto lotsOfTies = [5,1,2,2,2,2,2,2,3,4];
+    assert(approxEqual(ksTestDestructive(lotsOfTies, stdNormal), -0.8772));
     writeln("Passed 1-sample ksTestDestructive.");
 }
 
