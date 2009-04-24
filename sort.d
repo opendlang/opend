@@ -22,9 +22,41 @@
  * assert(baz == [-1.0, 0, 1, -2, -3]);
  * ---
  *
- * Author:  David Simcha
+ * Author:  David Simcha*/
+ /*
+ * You may use this software under your choice of either of the following
+ * licenses.  YOU NEED ONLY OBEY THE TERMS OF EXACTLY ONE OF THE TWO LICENSES.
+ * IF YOU CHOOSE TO USE THE PHOBOS LICENSE, YOU DO NOT NEED TO OBEY THE TERMS OF
+ * THE BSD LICENSE.  IF YOU CHOOSE TO USE THE BSD LICENSE, YOU DO NOT NEED
+ * TO OBEY THE TERMS OF THE PHOBOS LICENSE.  IF YOU ARE A LAWYER LOOKING FOR
+ * LOOPHOLES AND RIDICULOUSLY NON-EXISTENT AMBIGUITIES IN THE PREVIOUS STATEMENT,
+ * GET A LIFE.
  *
- * Copyright (c) 2009, David Simcha
+ * ---------------------Phobos License: ---------------------------------------
+ *
+ *  Copyright (C) 2008-2009 by David Simcha.
+ *
+ *  This software is provided 'as-is', without any express or implied
+ *  warranty. In no event will the authors be held liable for any damages
+ *  arising from the use of this software.
+ *
+ *  Permission is granted to anyone to use this software for any purpose,
+ *  including commercial applications, and to alter it and redistribute it
+ *  freely, in both source and binary form, subject to the following
+ *  restrictions:
+ *
+ *  o  The origin of this software must not be misrepresented; you must not
+ *     claim that you wrote the original software. If you use this software
+ *     in a product, an acknowledgment in the product documentation would be
+ *     appreciated but is not required.
+ *  o  Altered source versions must be plainly marked as such, and must not
+ *     be misrepresented as being the original software.
+ *  o  This notice may not be removed or altered from any source
+ *     distribution.
+ *
+ * --------------------BSD License:  -----------------------------------------
+ *
+ * Copyright (c) 2008-2009, David Simcha
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -50,52 +82,41 @@
  * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.*/
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
 
 module dstats.sort;
 
 import std.traits, std.algorithm, std.math, std.functional, std.math,
-       std.typetuple;
+       std.typetuple, std.range, std.array;
 
 import dstats.alloc;
 
 version(unittest) {
     import std.stdio, std.random;
-    Random gen;
 
     void main (){
     }
 }
 
-void rotateLeft(T)(T[] input) {
+void rotateLeft(T)(T input)
+if(isRandomAccessRange!(T)) {
     if(input.length < 2) return;
-    T temp = input[0];
+    ElementType!(T) temp = input[0];
     foreach(i; 1..input.length) {
         input[i-1] = input[i];
     }
     input[$-1] = temp;
 }
 
-void rotateRight(T)(T[] input) {
+void rotateRight(T)(T input)
+if(isRandomAccessRange!(T)) {
     if(input.length < 2) return;
-    T temp = input[$-1];
+    ElementType!(T) temp = input[$-1];
     for(size_t i = input.length - 1; i > 0; i--) {
         input[i] = input[i-1];
     }
     input[0] = temp;
-}
-
-// For testing purposes for stable sorts.  Shuffles N arrays in lockstep.
-version(unittest) {
-    void randomMultiShuffle(SomeRandomGen, T...)(ref SomeRandomGen r, T array) {
-        foreach (i; 0 .. array[0].length) {
-            // generate a random number i .. n
-            immutable which = i + uniform!(size_t)(r, 0u, array[0].length - i);
-            foreach(ti, element; array) {
-                swap(element[i], element[which]);
-            }
-        }
-    }
 }
 
 /**Less than, except a NAN is less than anything except another NAN. This
@@ -241,16 +262,15 @@ void qsortImpl(alias compFun, T...)(T data, uint TTL) {
 }
 
 unittest {
-    gen.seed(unpredictableSeed);
     {  // Test integer.
         uint[] test = new uint[1_000];
         foreach(ref e; test) {
-            e = uniform(gen, 0, 100);
+            e = uniform(0, 100);
         }
         auto test2 = test.dup;
         foreach(i; 0..1_000) {
-            randomMultiShuffle(gen, test, test2);
-            uint len = uniform(gen, 0, 1_000);
+            randomShuffle(zip(test, test2));
+            uint len = uniform(0, 1_000);
             qsort(test[0..len], test2[0..len]);
             assert(isSorted(test[0..len]));
             assert(test == test2);
@@ -259,12 +279,12 @@ unittest {
     { // Test float.
         double[] test = new double[1_000];
         foreach(ref e; test) {
-            e = uniform(gen, 0.0, 100_000);
+            e = uniform(0.0, 100_000);
         }
         auto test2 = test.dup;
         foreach(i; 0..1_000) {
-            randomMultiShuffle(gen, test, test2);
-            uint len = uniform(gen, 0, 1_000);
+            randomShuffle(zip(test, test2));
+            uint len = uniform(0, 1_000);
             qsort!("a > b")(test[0..len], test2[0..len]);
             assert(isSorted!("a > b")(test[0..len]));
             assert(test == test2);
@@ -329,15 +349,15 @@ unittest {
     uint[] test = new uint[1_000], stability = new uint[1_000];
     uint[] temp1 = new uint[1_000], temp2 = new uint[1_000];
     foreach(ref e; test) {
-        e = uniform(gen, 0, 100);  //Lots of ties.
+        e = uniform(0, 100);  //Lots of ties.
     }
     foreach(i; 0..100) {
         ulong mergeCount = 0, bubbleCount = 0;
         foreach(j, ref e; stability) {
             e = j;
         }
-        randomMultiShuffle(gen, test);
-        uint len = uniform(gen, 0, 1_000);
+        randomShuffle(test);
+        uint len = uniform(0, 1_000);
         // Testing bubble sort distance against bubble sort,
         // since bubble sort distance computed by bubble sort
         // is straightforward, unlikely to contain any subtle bugs.
@@ -360,8 +380,8 @@ unittest {
         foreach(j, ref e; stability) {
             e = j;
         }
-        randomMultiShuffle(gen, test);
-        uint len = uniform(gen, 0, 1_000);
+        randomShuffle(test);
+        uint len = uniform(0, 1_000);
         if(i & 1)  // Test both temp and non-temp branches.
             mergeSort(test[0..len], stability[0..len]);
         else
@@ -377,12 +397,12 @@ unittest {
     { // Test lockstep.
         double[] testL = new double[1_000];
         foreach(ref e; testL) {
-            e = uniform(gen, 0.0, 100_000);
+            e = uniform(0.0, 100_000);
         }
         auto testL2 = testL.dup;
         foreach(i; 0..1_000) {
-            randomMultiShuffle(gen, testL, testL2);
-            uint len = uniform(gen, 0, 1_000);
+            randomShuffle(zip(testL, testL2));
+            uint len = uniform(0, 1_000);
             mergeSort!("a > b")(testL[0..len], testL2[0..len]);
             assert(isSorted!("a > b")(testL[0..len]));
             assert(testL == testL2);
@@ -561,15 +581,15 @@ in {
 unittest {
     uint[] test = new uint[1_000], stability = new uint[1_000];
     foreach(ref e; test) {
-        e = uniform(gen, 0, 100);  //Lots of ties.
+        e = uniform(0, 100);  //Lots of ties.
     }
     uint[] test2 = test.dup;
     foreach(i; 0..1000) {
         foreach(j, ref e; stability) {
             e = j;
         }
-        randomMultiShuffle(gen, test, test2);
-        uint len = uniform(gen, 0, 1_000);
+        randomShuffle(zip(test, test2));
+        uint len = uniform(0, 1_000);
         mergeSortInPlace(test[0..len], test2[0..len], stability[0..len]);
         assert(isSorted(test[0..len]));
         assert(test == test2);
@@ -643,7 +663,7 @@ private void mergeInPlace(alias compFun = lessThan, T...)(T data, size_t middle)
     }
 
     foreach(array; data) {
-        rotate(array[half1..middle + half2], array.ptr + middle);
+        bringToFront(array[half1..middle], array[middle..middle + half2]);
     }
     size_t newMiddle = half1 + half2;
 
@@ -687,15 +707,14 @@ in {
 }
 
 unittest {
-    gen.seed(unpredictableSeed);
     uint[] test = new uint[1_000];
     foreach(ref e; test) {
-        e = uniform(gen, 0, 100_000);
+        e = uniform(0, 100_000);
     }
     auto test2 = test.dup;
     foreach(i; 0..1_000) {
-        randomMultiShuffle(gen, test, test2);
-        uint len = uniform(gen, 0, 1_000);
+        randomShuffle(zip(test, test2));
+        uint len = uniform(0, 1_000);
         heapSort(test[0..len], test2[0..len]);
         assert(isSorted(test[0..len]));
         assert(test == test2);
@@ -768,18 +787,17 @@ in {
 }
 
 unittest {
-    gen.seed(unpredictableSeed);
     uint[] test = new uint[100], stability = new uint[100];
     foreach(ref e; test) {
-        e = uniform(gen, 0, 100);  //Lots of ties.
+        e = uniform(0, 100);  //Lots of ties.
     }
     foreach(i; 0..1_000) {
         ulong insertCount = 0, bubbleCount = 0;
         foreach(j, ref e; stability) {
             e = j;
         }
-        randomMultiShuffle(gen, test);
-        uint len = uniform(gen, 0, 100);
+        randomShuffle(test);
+        uint len = uniform(0, 100);
         // Testing bubble sort distance against bubble sort,
         // since bubble sort distance computed by bubble sort
         // is straightforward, unlikely to contain any subtle bugs.
@@ -931,21 +949,19 @@ template ArrayElemType(T : T[]) {
 }
 
 unittest {
-    gen.seed(unpredictableSeed);
     enum n = 1000;
     uint[] test = new uint[n];
     uint[] test2 = new uint[n];
     uint[] lockstep = new uint[n];
     foreach(ref e; test) {
-        e = uniform(gen, 0, 1000);
+        e = uniform(0, 1000);
     }
     foreach(i; 0..1_000) {
-        randomShuffle(test, gen);
         test2[] = test[];
         lockstep[] = test[];
-        uint len = uniform(gen, 0, n - 1) + 1;
+        uint len = uniform(0, n - 1) + 1;
         qsort!("a > b")(test2[0..len]);
-        int k = uniform(gen, 0, len);
+        int k = uniform(0, len);
         auto qsRes = partitionK!("a > b")(test[0..len], lockstep[0..len], k);
         assert(qsRes == test2[k]);
         foreach(elem; test[0..k]) {
@@ -959,7 +975,7 @@ unittest {
     writeln("Passed quickSelect/partitionK test.");
 }
 
-/**Given a set of data points entered through the addElement function,
+/**Given a set of data points entered through the put function, this output range
  * maintains the invariant that the top N according to compFun will be
  * contained in the data structure.  Uses a heap internally, O(log N) insertion
  * time.  Good for finding the largest/smallest N elements of a very large
@@ -976,8 +992,8 @@ unittest {
  * auto more = TopN!(uint, "a > b")(10);
  * randomShuffle(nums, gen);
  * foreach(n; nums) {
- *     less.addElement(n);
- *     more.addElement(n);
+ *     less.put(n);
+ *     more.put(n);
  * }
  *  assert(less.getSorted == [0U, 1,2,3,4,5,6,7,8,9]);
  *  assert(more.getSorted == [99U, 98, 97, 96, 95, 94, 93, 92, 91, 90]);
@@ -998,7 +1014,7 @@ public:
     }
 
     /** Insert an element into the topN struct.*/
-    void addElement(T elem) {
+    void put(T elem) {
         if(nAdded < n) {
             nodes[nAdded] = elem;
             if(nAdded == n - 1) {
@@ -1040,8 +1056,8 @@ unittest {
         auto more = TopNGreater(10);
         randomShuffle(nums, gen);
         foreach(n; nums) {
-            less.addElement(n);
-            more.addElement(n);
+            less.put(n);
+            more.put(n);
         }
         assert(less.getSorted == [0U, 1,2,3,4,5,6,7,8,9]);
         assert(more.getSorted == [99U, 98, 97, 96, 95, 94, 93, 92, 91, 90]);
@@ -1051,8 +1067,8 @@ unittest {
         auto more = TopNGreater(10);
         randomShuffle(nums, gen);
         foreach(n; nums[0..5]) {
-            less.addElement(n);
-            more.addElement(n);
+            less.put(n);
+            more.put(n);
         }
         assert(less.getSorted == qsort!("a < b")(nums[0..5]));
         assert(more.getSorted == qsort!("a > b")(nums[0..5]));

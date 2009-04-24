@@ -1,7 +1,40 @@
 /**Allocation functions.
- * Author:  David Simcha
  *
- * Copyright (c) 2009, David Simcha
+ * Author:  David Simcha*/
+ /*
+ * You may use this software under your choice of either of the following
+ * licenses.  YOU NEED ONLY OBEY THE TERMS OF EXACTLY ONE OF THE TWO LICENSES.
+ * IF YOU CHOOSE TO USE THE PHOBOS LICENSE, YOU DO NOT NEED TO OBEY THE TERMS OF
+ * THE BSD LICENSE.  IF YOU CHOOSE TO USE THE BSD LICENSE, YOU DO NOT NEED
+ * TO OBEY THE TERMS OF THE PHOBOS LICENSE.  IF YOU ARE A LAWYER LOOKING FOR
+ * LOOPHOLES AND RIDICULOUSLY NON-EXISTENT AMBIGUITIES IN THE PREVIOUS STATEMENT,
+ * GET A LIFE.
+ *
+ * ---------------------Phobos License: ---------------------------------------
+ *
+ *  Copyright (C) 2008-2009 by David Simcha.
+ *
+ *  This software is provided 'as-is', without any express or implied
+ *  warranty. In no event will the authors be held liable for any damages
+ *  arising from the use of this software.
+ *
+ *  Permission is granted to anyone to use this software for any purpose,
+ *  including commercial applications, and to alter it and redistribute it
+ *  freely, in both source and binary form, subject to the following
+ *  restrictions:
+ *
+ *  o  The origin of this software must not be misrepresented; you must not
+ *     claim that you wrote the original software. If you use this software
+ *     in a product, an acknowledgment in the product documentation would be
+ *     appreciated but is not required.
+ *  o  Altered source versions must be plainly marked as such, and must not
+ *     be misrepresented as being the original software.
+ *  o  This notice may not be removed or altered from any source
+ *     distribution.
+ *
+ * --------------------BSD License:  -----------------------------------------
+ *
+ * Copyright (c) 2008-2009, David Simcha
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,14 +60,16 @@
  * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.*/
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
 
 module dstats.alloc;
 
-import std.traits, core.memory, core.thread, std.c.stdio : stderr;
+import std.traits, core.memory, core.thread, std.array, std.range, dstats.base;
+static import std.c.stdio;
 
 version(unittest) {
-    import std.stdio;
+    import std.stdio, std.conv, dstats.sort;
     void main() {}
 }
 
@@ -54,7 +89,7 @@ template isReferenceType(Types...) {  //Thanks to Bearophile.
     static if (Types.length == 0) {
         const bool isReferenceType = false;
     } else static if (Types.length == 1) {
-        static if (IsType!(Mutable!(Types[0]), bool, byte, ubyte, short, ushort,
+        static if (IsType!(Unqual!(Types[0]), bool, byte, ubyte, short, ushort,
                            int, uint, long, ulong, float, double, real, ifloat,
                            idouble, ireal, cfloat, cdouble, creal, char, dchar,
                            wchar) ) {
@@ -130,9 +165,19 @@ void reserve(T)(ref T[] input, size_t newLength) {
     input = newPtr[0..input.length];
 }
 
+private template Appends(T, U) {
+    enum bool Appends = AppendsImpl!(T, U).ret;
+}
+
+private template AppendsImpl(T, U) {
+    T[] a;
+    U b;
+    enum bool ret = is(typeof(a ~= b));
+}
+
 ///Appends to an array, deleting the old array if it has to be realloced.
 void appendDelOld(T, U)(ref T[] to, U from)
-if (is(Mutable!(T) : Mutable!(U)) || is(Mutable!(T[0]) : Mutable!(U))) {
+if(Appends!(T, U)) {
     auto oldPtr = to.ptr;
     to ~= from;
     if (oldPtr != to.ptr)
@@ -202,19 +247,6 @@ private:
         // allocated from.  freelist holds space ptrs for all free blocks.
         Stack!(Block) inUse;
         Stack!(void*) freelist;
-
-        ~this() {  // Blocks are pretty large.  Prevent false ptrs.
-            ntFree(lastAlloc.ptr);
-            while(nblocks > 1) {
-                ntFree((inUse.pop()).space);
-                nblocks--;
-            }
-            ntFree(space);
-            while(nfree > 0) {
-                ntFree(freelist.pop);
-                nfree--;
-            }
-        }
     }
 
     // core.thread.Thread.thread_needLock() is nothrow (read the code if you
@@ -229,7 +261,7 @@ private:
     static State mainThreadState;
 
     static void die() nothrow {
-        fprintf(stderr, "TempAlloc error: Out of memory.\0".ptr);
+        fprintf(std.c.stdio.stderr, "TempAlloc error: Out of memory.\0".ptr);
         exit(1);
     }
 
@@ -456,7 +488,7 @@ T[0] stackCat(T...)(T data) {
     foreach(array; data) {
         totalLen += array.length;
     }
-    auto ret = newStack!(Mutable!(typeof(T[0][0])))(totalLen);
+    auto ret = newStack!(Unqual!(typeof(T[0][0])))(totalLen);
 
     size_t offset = 0;
     foreach(array; data) {
@@ -466,21 +498,111 @@ T[0] stackCat(T...)(T data) {
     return cast(T[0]) ret;
 }
 
-/**Creates a duplicate of an array on the TempAlloc stack.*/
-auto tempdup(T)(T[] data) nothrow {
-    alias Mutable!(T) U;
-    U[] ret = newStack!(U)(data.length);
-    ret[] = data[];
-    return ret;
+void rangeCopy(T, U)(T to, U from) {
+    static if(is(typeof(to[] = from[]))) {
+        to[] = from[];
+    } else static if(isRandomAccessRange!(T)) {
+        size_t i = 0;
+        foreach(elem; from) {
+            to[i++] = elem;
+        }
+    }
 }
 
-/**Same as tempdup(T[]) but uses stateCopy cached on stack by caller
- * to avoid a thread-local storage lookup.  Strictly a speed hack.*/
-auto tempdup(T)(T[] data, TempAlloc.State state) nothrow {
-    alias Mutable!(T) U;
-    U[] ret = newStack!(U)(data.length, state);
-    ret[] = data;
-    return ret;
+/**Creates a duplicate of a range on the TempAlloc stack.  Much faster
+ * if the range has a length, but works even if it doesn't.*/
+Unqual!(ElementType!(T))[] tempdup(T)(T data)
+if(isInputRange!(T)) {
+    alias ElementType!(T) E;
+    alias Unqual!(E) U;
+    static if(dstats.base.hasLength!(T)) {
+        U[] ret = newStack!(U)(data.length);
+        rangeCopy(ret, data);
+        return ret;
+    } else {
+        auto state = TempAlloc.getState;
+        auto startPtr = TempAlloc(0, state);
+        size_t bytesCopied = 0;
+
+        while(!data.empty) {  // Make sure range interface is being used.
+            auto elem = data.front;
+            if(state.used + U.sizeof <= TempAlloc.blockSize) {
+                data.popFront;
+                *(cast(U*) (startPtr + bytesCopied)) = elem;
+                bytesCopied += U.sizeof;
+                state.used += U.sizeof;
+            } else {
+                if(bytesCopied + U.sizeof >= TempAlloc.blockSize / 2) {
+                    // Then just heap-allocate.
+                    U[] result = newVoid!(U)(bytesCopied / U.sizeof);
+                    result[] = (cast(U*) startPtr)[0..result.length];
+                    finishCopy(result, data);
+                    TempAlloc.free;
+                    state.lastAlloc[++state.totalAllocs] = result.ptr;
+                    return result;
+                } else {
+                    U[] oldData = (cast(U*) startPtr)[0..bytesCopied / U.sizeof];
+                    state.used -= bytesCopied;
+                    state.totalAllocs--;
+                    U[] newArray = newStack!(U)(bytesCopied / U.sizeof + 1, state);
+                    newArray[0..oldData.length] = oldData[];
+                    startPtr = state.space;
+                    newArray[$ - 1] = elem;
+                    bytesCopied += U.sizeof;
+                    data.popFront;
+                }
+            }
+        }
+        auto rem = bytesCopied % TempAlloc.alignBytes;
+        if(rem != 0) {
+            auto toAdd = 16 - rem;
+            if(state.used + toAdd < TempAlloc.blockSize) {
+                state.used += toAdd;
+            } else {
+                state.used = TempAlloc.blockSize;
+            }
+        }
+        return (cast(U*) startPtr)[0..bytesCopied / U.sizeof];
+    }
+}
+
+private void finishCopy(T, U)(ref T[] result, U range) {
+    auto app = appender(&result);
+    foreach(elem; range) {
+        app.put(elem);
+    }
+}
+
+unittest {
+    // Create quick and dirty finite but lengthless range.
+    struct Count {
+        uint num;
+        uint upTo;
+        uint front() {
+            return num;
+        }
+        void popFront() {
+            num++;
+        }
+        bool empty() {
+            return num >= upTo;
+        }
+    }
+
+    TempAlloc(1024 * 1024 * 3);
+    Count count;
+    count.upTo = 1024 * 1025;
+    auto asArray = tempdup(count);
+    foreach(i, elem; asArray) {
+        assert(i == elem, to!(string)(i) ~ "\t" ~ to!(string)(elem));
+    }
+    assert(asArray.length == 1024 * 1025);
+    TempAlloc.free;
+    TempAlloc.free;
+    while(TempAlloc.getState.freelist.index > 0) {
+        TempAlloc.getState.freelist.pop;
+    }
+    writeln("Passed tempdup unittest.");
 }
 
 /**A string to mixin at the beginning of a scope, purely for
@@ -494,7 +616,7 @@ auto tempdup(T)(T[] data, TempAlloc.State state) nothrow {
  * large amounts of allocations, such as arrays of arrays,
  * are allocated, due to caching of data stored in thread-local
  * storage.*/
-invariant char[] newFrame =
+immutable char[] newFrame =
     "TempAlloc.frameInit; scope(exit) TempAlloc.frameFree;";
 
 unittest {
@@ -508,7 +630,7 @@ unittest {
      foreach(i; 0..nIter) {
          TempAlloc(TempAlloc.alignBytes);
      }
-     assert(TempAlloc.getState.nblocks == 5);
+     assert(TempAlloc.getState.nblocks == 5, to!string(TempAlloc.getState.nblocks));
      assert(TempAlloc.getState.nfree == 0);
      foreach(i; 0..nIter) {
         TempAlloc.free;
@@ -579,5 +701,573 @@ unittest {
     while(TempAlloc.state.nblocks > 1 || TempAlloc.state.used > 0) {
         TempAlloc.free;
     }
-    fprintf(stderr, "Passed TempAlloc test.\n\0".ptr);
+    fprintf(std.c.stdio.stderr, "Passed TempAlloc test.\n\0".ptr);
+}
+
+struct SHNode(K, V) {
+    alias SHNode!(K, V) SomeType;
+    SomeType* next;
+    Unqual!(K) key;
+    Unqual!(V) val;
+}
+
+/**Forward range struct for iterating over the keys or values of a
+ * StackHash or StackSet.  The lifetime of this object must not exceed that
+ * of the underlying StackHash or StackSet.*/
+struct HashRange(K, S, bool vals = false) {
+private:
+    S* set;
+    size_t index;
+    S.Node* next;
+    K* frontElem;
+    size_t _length;
+
+    this(S* set) {
+        this.set = set;
+        if(set.rNext[0] == set.usedSentinel) {
+            this.popFront;
+        } else {
+            static if(vals) {
+                frontElem = set.rVals.ptr;
+            } else {
+                frontElem = set.rKeys.ptr;
+            }
+            next = set.rNext[0];
+        }
+        this._length = set.length;
+    }
+
+public:
+    ///
+    void popFront() {
+        this._length--;
+        if(next is null) {
+            do {
+                index++;
+                if(index >= set.rNext.length) {
+                    index = size_t.max;  // Sentinel for empty.
+                    return;
+                }
+                next = set.rNext[index];
+            } while(set.rNext[index] == set.usedSentinel);
+            static if(vals) {
+                frontElem = &(set.rVals[index]);
+            } else {
+                frontElem = &(set.rKeys[index]);
+            }
+        } else {
+            static if(vals) {
+                frontElem = &(next.val);
+            } else {
+                frontElem = &(next.key);
+            }
+            next = next.next;
+        }
+    }
+
+    ///
+    Unqual!(K) front() {
+        return *frontElem;
+    }
+
+    ///
+    bool empty() {
+        return index == size_t.max;
+    }
+
+    ///
+    size_t length() {
+        return _length;
+    }
+}
+
+/**A hash table that allocates its memory on TempAlloc.  Good for building a
+ * temporary hash tables that will not escape the current scope.
+ *
+ * To avoid TempAlloc memory leaks, use mixin(newFrame).
+ *
+ * Examples:
+ * ---
+ * mixin(newFrame);  // To make sure all memory gets freed at end of scope.
+ * auto ss = StackHash!(uint)(5);
+ * foreach(i; 0..5) {
+ *     ss[i]++;
+ * }
+ * assert(ss[3] == 1);
+ * ---
+ */
+struct StackHash(K, V) {
+private:
+    alias SHNode!(K, V) Node;
+
+    // Using parallel arrays instead of structs to save on alignment overhead:
+    Unqual!(K)[] rKeys;
+    Unqual!(V)[] rVals;
+    Unqual!(Node*)[] rNext;
+
+    TempAlloc.State TAState;
+    TypeInfo keyTI;
+    size_t _length;
+    Node* usedSentinel;
+
+    Node* newNode(K key) {
+        Node* ret = cast(Node*) TempAlloc(Node.sizeof, TAState);
+        ret.key =  key;
+        ret.val =  V.init;
+        ret.next = null;
+        return ret;
+    }
+
+    Node* newNode(K key, V val) {
+        Node* ret = cast(Node*) TempAlloc(Node.sizeof, TAState);
+        ret.key =  key;
+        ret.val = val;
+        ret.next = null;
+        return ret;
+    }
+
+    hash_t getHash(K key) {
+        static if(is(K : long) && K.sizeof <= hash_t.sizeof) {
+            hash_t hash = cast(hash_t) key;
+        } else static if(__traits(compiles, key.toHash())) {
+            hash_t hash = key.toHash();
+        } else {
+            hash_t hash = keyTI.getHash(&key);
+        }
+        hash %= rNext.length;
+        return hash;
+    }
+
+
+public:
+    /**Due to the nature of TempAlloc, you must specify on object creation
+     * the approximate number of elements your table will have.  Too large a
+     * number will waste space and incur poor cache performance.  Too low a
+     * number will make this struct perform like a linked list.  Generally,
+     * if you're building a table from some other range, some fraction of the
+     * size of that range is a good guess.*/
+    this(size_t nElem) {
+        // Obviously, the caller can never mean zero, because this struct
+        // can't work at all with nElem == 0, so assume it's a mistake and fix
+        // it here.
+        if(nElem == 0)
+            nElem++;
+        TAState = TempAlloc.getState;
+        rKeys = newStack!(K)(nElem, TAState);
+        rVals = newStack!(V)(nElem, TAState);
+        rNext = newStack!(Node*)(nElem, TAState);
+        usedSentinel = cast(Node*) rNext.ptr;
+        foreach(ref rKey; rKeys) {
+            rKey =  K.init;
+        }
+        foreach(ref rVal; rVals) {
+            rVal = V.init;
+        }
+        foreach(ref r; rNext) {
+            r = usedSentinel;
+        }
+        keyTI = typeid(K);
+    }
+
+    /**Index an element of the range.  If it does not exist, it will be created
+     * and initialized to V.init.*/
+    ref V opIndex(K key) {
+        hash_t hash = getHash(key);
+
+        if(rNext[hash] == usedSentinel) {
+            rKeys[hash] =  key;
+            rNext[hash] = null;
+            _length++;
+            return rVals[hash];
+        } else if(rKeys[hash] == key) {
+            return rVals[hash];
+        } else {  // Collision.  Start chaining.
+            Node** next = &(rNext[hash]);
+            while(*next !is null) {
+                if((**next).key ==  key) {
+                    return (**next).val;
+                }
+                next = &((**next).next);
+            }
+            *next = newNode(key);
+            _length++;
+            return (**next).val;
+        }
+    }
+
+    ///
+    V opIndexAssign(V val, K key) {
+        hash_t hash = getHash(key);
+
+        if(rNext[hash] == usedSentinel) {
+            rKeys[hash] =  key;
+            rVals[hash] = val;
+            rNext[hash] = null;
+            _length++;
+            return val;
+        } else if(rKeys[hash] ==  key) {
+            rVals[hash] = val;
+            return val;
+        } else {  // Collision.  Start chaining.
+            Node** next = &(rNext[hash]);
+            while(*next !is null) {
+                if((**next).key == key) {
+                    (**next).val = val;
+                    return val;
+                }
+                next = &((**next).next);
+            }
+            _length++;
+            *next = newNode(key, val);
+            return val;
+        }
+    }
+
+    ///
+    V* opIn_r(K key) {
+        hash_t hash = getHash(key);
+
+        if(rNext[hash] == usedSentinel) {
+            return null;
+        } else if(rKeys[hash] == key) {
+            return &(rVals[hash]);
+        } else {  // Collision.  Start chaining.
+            Node* next = rNext[hash];
+            while(next !is null) {
+                if(next.key == key) {
+                    return &(next.val);
+                }
+                next = next.next;
+            }
+            return null;
+        }
+   }
+
+    ///
+    void remove(K key) {
+        hash_t hash = getHash(key);
+
+        Node** next = &(rNext[hash]);
+        if(rNext[hash] == usedSentinel) {
+            return;
+        } else if(rKeys[hash] == key) {
+            _length--;
+            if(rNext[hash] is null) {
+                rKeys[hash] = K.init;
+                rVals[hash] = V.init;
+                rNext[hash] = usedSentinel;
+                return;
+            } else {
+                rKeys[hash] = (**next).key;
+                rVals[hash] = (**next).val;
+                rNext[hash] = (**next).next;
+                return;
+            }
+        } else {  // Collision.  Start chaining.
+            while(*next !is null) {
+                if((**next).key == key) {
+                    _length--;
+                    *next = (**next).next;
+                    break;
+                }
+                next = &((**next).next);
+            }
+            return;
+        }
+   }
+
+    /**Returns a forward range to iterate over the keys of this table.
+     * The lifetime of the HashRange must not exceed the lifetime of this
+     * StackHash.*/
+    HashRange!(K, StackHash!(K, V)) keys() {
+        return typeof(return)(&this);
+    }
+
+    /**Returns a forward range to iterate over the values of this table.
+     * The lifetime of the HashRange must not exceed the lifetime of this
+     * StackHash.*/
+    HashRange!(V, StackHash!(K, V), true) values() {
+       return typeof(return)(&this);
+    }
+
+    ///
+    size_t length() const {
+        return _length;
+    }
+
+    real efficiency() {
+       uint used = 0;
+       foreach(root; rNext) {
+           if(root != usedSentinel) {
+               used++;
+           }
+       }
+       return cast(real) used / rNext.length;
+    }
+}
+
+unittest {
+    alias StackHash!(string, uint) mySh;
+    mixin(newFrame);
+    auto data = mySh(2);  // Make sure we get some collisions.
+    data["foo"] = 1;
+    data["bar"] = 2;
+    data["baz"] = 3;
+    data["waldo"] = 4;
+    assert(!("foobar" in data));
+    assert(*("foo" in data) == 1);
+    assert(*("bar" in data) == 2);
+    assert(*("baz" in data) == 3);
+    assert(*("waldo" in data) == 4);
+    assert(data["foo"] == 1);
+    assert(data["bar"] == 2);
+    assert(data["baz"] == 3);
+    assert(data["waldo"] == 4);
+    auto myKeys = toArray(data.keys);
+    qsort(myKeys);
+    assert(myKeys == cast(string[]) ["bar", "baz", "foo", "waldo"]);
+    auto myValues = toArray(data.values);
+    qsort(myValues);
+    assert(myValues == [1U, 2, 3, 4]);
+    {
+        auto k = data.keys;
+        auto v = data.values;
+        while(!k.empty) {
+            assert(data[k.front] == v.front);
+            k.popFront;
+            v.popFront;
+        }
+    }
+    foreach(v; data.values) {
+        assert(v > 0 && v < 5);
+    }
+
+    // Test remove.
+
+    alias StackHash!(uint, uint) mySh2;
+    auto foo = mySh2(7);
+    for(uint i = 0; i < 200; i++) {
+        foo[i] = i;
+    }
+    assert(foo.length == 200);
+    for(uint i = 0; i < 200; i += 2) {
+        foo.remove(i);
+    }
+    foreach(i; 20..200) {
+        foo.remove(i);
+    }
+    for(uint i = 0; i < 20; i++) {
+        if(i & 1) {
+            assert(*(i in foo) == i);
+        } else {
+            assert(!(i in foo));
+        }
+    }
+    auto vals = toArray(foo.values);
+    assert(foo.length == 10);
+    assert(vals.qsort == [1U, 3, 5, 7, 9, 11, 13, 15, 17, 19]);
+
+    writeln("Passed StackHash test.");
+}
+
+/**A hash set that allocates its memory on TempAlloc.  Good for building a
+ * temporary set that will not escape the current scope.
+ *
+ * To avoid TempAlloc memory leaks, use mixin(newFrame).
+ *
+ * Examples:
+ * ---
+ * mixin(newFrame);  // To make sure all memory gets freed at end of scope.
+ * auto ss = StackSet!(uint)(5);
+ * foreach(i; 0..5) {
+ *     ss.insert(i);
+ * }
+ * assert(3 in ss);
+ * ---
+ */
+struct StackSet(K) {
+private:
+    // Choose smallest representation of the data.
+    struct Node1 {
+        Node1* next;
+        K key;
+    }
+
+    struct Node2 {
+        K key;
+        Node2* next;
+    }
+
+    static if(Node1.sizeof < Node2.sizeof) {
+        alias Node1 Node;
+    } else {
+        alias Node2 Node;
+    }
+
+    Unqual!(K)[] rKeys;
+    Node*[] rNext;
+    TempAlloc.State TAState;
+    size_t _length;
+    Node* usedSentinel;
+
+    Node* newNode(K key) {
+        Node* ret = cast(Node*) TempAlloc(Node.sizeof, TAState);
+        ret.key = key;
+        ret.next = null;
+        return ret;
+    }
+
+    hash_t getHash(K key) {
+        static if(is(K : long) && K.sizeof <= hash_t.sizeof) {
+            hash_t hash = cast(hash_t) key;
+        } else static if(__traits(compiles, key.toHash())) {
+            hash_t hash = key.toHash();
+        } else {
+            hash_t hash = typeid(K).getHash(&key);
+        }
+        hash %= rNext.length;
+        return hash;
+    }
+
+public:
+    /**Due to the nature of TempAlloc, you must specify on object creation
+     * the approximate number of elements your set will have.  Too large a
+     * number will waste space and incur poor cache performance.  Too low a
+     * number will make this struct perform like a linked list.  Generally,
+     * if you're building a set from some other range, some fraction of the
+     * size of that range is a good guess.*/
+    this(size_t nElem) {
+        // Obviously, the caller can never mean zero, because this struct
+        // can't work at all with nElem == 0, so assume it's a mistake and fix
+        // it here.
+        if(nElem == 0)
+            nElem++;
+        TAState = TempAlloc.getState;
+        rNext = newStack!(Node*)(nElem, TAState);
+        rKeys = newStack!(Unqual!(K))(nElem, TAState);
+        usedSentinel = cast(Node*) rNext.ptr;
+        foreach(ref root; rKeys) {
+            root = K.init;
+        }
+        foreach(ref root; rNext) {
+            root = usedSentinel;
+        }
+    }
+
+    ///
+    void insert(K key) {
+        hash_t hash = getHash(key);
+
+        if(rNext[hash] == usedSentinel) {
+            rKeys[hash] = key;
+            rNext[hash] = null;
+            _length++;
+            return;
+        } else if(rKeys[hash] == key) {
+            return;
+        } else {  // Collision.  Start chaining.
+            Node** next = &(rNext[hash]);
+            while(*next !is null) {
+                if((**next).key == key) {
+                    return;
+                }
+                next = &((**next).next);
+            }
+            *next = newNode(key);
+            _length++;
+            return;
+        }
+    }
+
+    /**Returns a forward range of the elements of this struct.  The range's
+     * lifetime must not exceed the lifetime of this object.*/
+    HashRange!(K, typeof(this)) elems() {
+        auto ret = typeof(return)(&this);
+        return ret;
+    }
+
+    ///
+    bool opIn_r(K key) {
+        hash_t hash = getHash(key);
+
+        if(rNext[hash] == usedSentinel) {
+            return false;
+        } else if(rKeys[hash] == key) {
+            return true;
+        } else {  // Collision.  Start chaining.
+            Node* next = rNext[hash];
+            while(next !is null) {
+                if(next.key == key) {
+                    return true;
+                }
+                next = next.next;
+            }
+            return false;
+        }
+   }
+
+    ///
+    void remove(K key) {
+        hash_t hash = getHash(key);
+
+        Node** next = &(rNext[hash]);
+        if(rNext[hash] == usedSentinel) {
+            return;
+        } else if(rKeys[hash] == key) {
+            _length--;
+            if(rNext[hash] is null) {
+                rKeys[hash] = K.init;
+                rNext[hash] = usedSentinel;
+                return;
+            } else {
+                rKeys[hash] = (**next).key;
+                rNext[hash] = (**next).next;
+                return;
+            }
+        } else {  // Collision.  Start chaining.
+            while(*next !is null) {
+                if((**next).key == key) {
+                    _length--;
+                    *next = (**next).next;
+                    break;
+                }
+                next = &((**next).next);
+            }
+            return;
+        }
+   }
+
+    ///
+    size_t length() {
+       return _length;
+    }
+}
+
+unittest {
+    mixin(newFrame);
+    alias StackSet!(uint) mySS;
+    mySS set = mySS(12);
+    foreach(i; 0..20) {
+        set.insert(i);
+    }
+    assert(toArray(set.elems).qsort == seq(0U, 20U));
+
+    for(uint i = 0; i < 20; i += 2) {
+        set.remove(i);
+    }
+
+    foreach(i; 0..20) {
+        if(i & 1) {
+            assert(i in set);
+        } else {
+            assert(!(i in set));
+        }
+    }
+    uint[] contents;
+
+    foreach(elem; set.elems) {
+        contents ~= elem;
+    }
+    assert(contents.qsort == [1U,3,5,7,9,11,13,15,17,19]);
+    writeln("Passed StackSet test.");
 }

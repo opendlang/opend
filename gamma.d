@@ -4,8 +4,8 @@
  * and b/c I did not want to create a dependency on Tango.  Obviously, if anyone
  * is trying to integrate the rest of this library into Tango,
  * tango.math.GammaFunction would be a drop-in replacement.
- *
- * Copyright: Based on the CEPHES math library, which is
+ **/
+ /* Copyright: Based on the CEPHES math library, which is
  *            Copyright (C) 1994 Stephen L. Moshier (moshier@world.std.com).
  * Authors:   Stephen L. Moshier (original C code). Conversion to D by Don Clugston
  *            A few minor adaptations made by David Simcha

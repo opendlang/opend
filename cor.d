@@ -1,8 +1,40 @@
 /**Pearson, Spearman and Kendall correlations, covariance.
  *
- * Author:  David Simcha
+ * Author:  David Simcha*/
+ /*
+ * You may use this software under your choice of either of the following
+ * licenses.  YOU NEED ONLY OBEY THE TERMS OF EXACTLY ONE OF THE TWO LICENSES.
+ * IF YOU CHOOSE TO USE THE PHOBOS LICENSE, YOU DO NOT NEED TO OBEY THE TERMS OF
+ * THE BSD LICENSE.  IF YOU CHOOSE TO USE THE BSD LICENSE, YOU DO NOT NEED
+ * TO OBEY THE TERMS OF THE PHOBOS LICENSE.  IF YOU ARE A LAWYER LOOKING FOR
+ * LOOPHOLES AND RIDICULOUSLY NON-EXISTENT AMBIGUITIES IN THE PREVIOUS STATEMENT,
+ * GET A LIFE.
  *
- * Copyright (c) 2009, David Simcha
+ * ---------------------Phobos License: ---------------------------------------
+ *
+ *  Copyright (C) 2008-2009 by David Simcha.
+ *
+ *  This software is provided 'as-is', without any express or implied
+ *  warranty. In no event will the authors be held liable for any damages
+ *  arising from the use of this software.
+ *
+ *  Permission is granted to anyone to use this software for any purpose,
+ *  including commercial applications, and to alter it and redistribute it
+ *  freely, in both source and binary form, subject to the following
+ *  restrictions:
+ *
+ *  o  The origin of this software must not be misrepresented; you must not
+ *     claim that you wrote the original software. If you use this software
+ *     in a product, an acknowledgment in the product documentation would be
+ *     appreciated but is not required.
+ *  o  Altered source versions must be plainly marked as such, and must not
+ *     be misrepresented as being the original software.
+ *  o  This notice may not be removed or altered from any source
+ *     distribution.
+ *
+ * --------------------BSD License:  -----------------------------------------
+ *
+ * Copyright (c) 2008-2009, David Simcha
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,11 +60,12 @@
  * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.*/
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
 
 module dstats.cor;
 
-import core.memory;
+import core.memory, std.range;
 
 import dstats.sort, dstats.base, dstats.alloc;
 
@@ -48,23 +81,46 @@ version(unittest) {
 
 /**Pearson correlation.  When the term correlation is used unqualified, it is
  * usually referring to this quantity.  Pearson correlation assumes the input
- * data is normally distributed and is therefore a parametric test.*/
-real pcor(T, U)(const T[] input1, const U[] input2)
-in {
-    assert(input1.length == input2.length);
-} body {
+ * data is normally distributed and is therefore a parametric test.
+ * This function works with any pair of input ranges.  If they are of different
+ * lengths, it uses the first min(input1.length, input2.length) elements.*/
+real pcor(T, U)(T input1, U input2)
+if(realInput!(T) && realInput!(U)) {
     OnlinePcor corCalc;
-    foreach(i; 0..input1.length) {
-        corCalc.addElement(input1[i], input2[i]);
+    while(!input1.empty && !input2.empty) {
+        corCalc.put(input1.front, input2.front);
+        input1.popFront;
+        input2.popFront;
     }
 
     return corCalc.cor;
 }
 
 unittest {
-    assert(approxEqual(pcor([1,2,3,4,5], [1,2,3,4,5]), 1));
-    assert(approxEqual(pcor([1,2,3,4,5], [10.0, 8.0, 6.0, 4.0, 2.0]), -1));
-    assert(approxEqual(pcor([2, 4, 1, 6, 19], [4, 5, 1, 3, 2]), -.2382314));
+    assert(approxEqual(pcor([1,2,3,4,5].dup, [1,2,3,4,5].dup), 1));
+    assert(approxEqual(pcor([1,2,3,4,5].dup, [10.0, 8.0, 6.0, 4.0, 2.0].dup), -1));
+    assert(approxEqual(pcor([2, 4, 1, 6, 19].dup, [4, 5, 1, 3, 2].dup), -.2382314));
+
+        // Make sure everything works with lowest common denominator range type.
+    struct Count {
+        uint num;
+        uint upTo;
+        uint front() {
+            return num;
+        }
+        void popFront() {
+            num++;
+        }
+        bool empty() {
+            return num >= upTo;
+        }
+    }
+
+    Count a, b;
+    a.upTo = 100;
+    b.upTo = 100;
+    assert(approxEqual(pcor(a, b), 1));
+
     writefln("Passed pcor unittest.");
 }
 
@@ -77,7 +133,7 @@ private:
     real _mean1 = 0, _mean2 = 0, _var1 = 0, _var2 = 0, _cov = 0, _k = 0;
 public:
     ///
-    void addElement(T, U)(T elem1, U elem2) {
+    void put(T, U)(T elem1, U elem2) {
         _k++;
         real kNeg1 = 1.0L / _k;
         _cov += (elem1 * elem2 - _cov) * kNeg1;
@@ -134,29 +190,35 @@ public:
 }
 
 ///
-real covariance(T, U)(const T[] input1, const U[] input2)
-in {
-    assert(input1.length == input2.length);
-} body {
+real covariance(T, U)(T input1, U input2)
+if(realInput!(T) && realInput!(U)) {
     OnlinePcor covCalc;
-    foreach(i; 0..input1.length) {
-        covCalc.addElement(input1[i], input2[i]);
+    while(!input1.empty && !input2.empty) {
+        covCalc.put(input1.front, input2.front);
+        input1.popFront;
+        input2.popFront;
     }
     return covCalc.cov;
 }
 
 unittest {
-    assert(approxEqual(covariance([1,4,2,6,3], [3,1,2,6,2]), 2.05));
+    assert(approxEqual(covariance([1,4,2,6,3].dup, [3,1,2,6,2].dup), 2.05));
     writeln("Passed covariance test.");
 }
 
 /**Spearman's rank correlation.  Non-parametric.  This is essentially the
  * Pearson correlation of the ranks of the data, with ties dealt with by
- * averaging.*/
-real scor(T, U)(const T[] input1, const U[] input2)
+ * averaging.
+ *
+ * Currently only works on input ranges with a length property.*/
+real scor(R, S)(R input1, S input2)
+if(isInputRange!(R) && isInputRange!(S) &&
+   dstats.base.hasLength!(R) && dstats.base.hasLength!(S))
 in {
     assert(input1.length == input2.length);
-} body {  // Not using rank() so I can recycle some allocations.
+} body {
+    alias ElementType!(R) T;
+    alias ElementType!(S) U;
     if(input1.length < 2)
         return real.nan;
 
@@ -170,7 +232,7 @@ in {
     size_t largerSize = (T.sizeof > U.sizeof) ? T.sizeof : U.sizeof;
     iDup = (cast(T*) TempAlloc.malloc(largerSize * input1.length))
            [0..input1.length];
-    iDup[] = input1[];
+    rangeCopy(iDup, input1);
     qsort(iDup, perms);
 
     float[] i1Ranks = newStack!(float)(input1.length),
@@ -188,7 +250,7 @@ in {
     // This works because I previously made sure that the array was big enough
     // for the larger of T, U.
     U[] iDup2 = (cast(U*) iDup.ptr)[0..input2.length];
-    iDup2[] = input2[];
+    rangeCopy(iDup2, input2);
 
     qsort(iDup2, perms);
     foreach(i; 0..perms.length)  {
@@ -201,28 +263,28 @@ in {
 
 unittest {
     //Test against a few known values.
-    assert(approxEqual(scor([1,2,3,4,5,6], [3,1,2,5,4,6]), 0.77143));
-    assert(approxEqual(scor([3,1,2,5,4,6], [1,2,3,4,5,6] ), 0.77143));
-    assert(approxEqual(scor([3,6,7,35,75], [1,63,53,67,3]), 0.3));
-    assert(approxEqual(scor([1,63,53,67,3], [3,6,7,35,75]), 0.3));
-    assert(approxEqual(scor([1.5,6.3,7.8,4.2,1.5], [1,63,53,67,3]), .56429));
-    assert(approxEqual(scor([1,63,53,67,3], [1.5,6.3,7.8,4.2,1.5]), .56429));
-    assert(approxEqual(scor([1.5,6.3,7.8,7.8,1.5], [1,63,53,67,3]), .79057));
-    assert(approxEqual(scor([1,63,53,67,3], [1.5,6.3,7.8,7.8,1.5]), .79057));
-    assert(approxEqual(scor([1.5,6.3,7.8,6.3,1.5], [1,63,53,67,3]), .63246));
-    assert(approxEqual(scor([1,63,53,67,3], [1.5,6.3,7.8,6.3,1.5]), .63246));
-    assert(approxEqual(scor([3,4,1,5,2,1,6,4], [1,3,2,6,4,2,6,7]), .6829268));
-    assert(approxEqual(scor([1,3,2,6,4,2,6,7], [3,4,1,5,2,1,6,4]), .6829268));
+    assert(approxEqual(scor([1,2,3,4,5,6].dup, [3,1,2,5,4,6].dup), 0.77143));
+    assert(approxEqual(scor([3,1,2,5,4,6].dup, [1,2,3,4,5,6].dup ), 0.77143));
+    assert(approxEqual(scor([3,6,7,35,75].dup, [1,63,53,67,3].dup), 0.3));
+    assert(approxEqual(scor([1,63,53,67,3].dup, [3,6,7,35,75].dup), 0.3));
+    assert(approxEqual(scor([1.5,6.3,7.8,4.2,1.5].dup, [1,63,53,67,3].dup), .56429));
+    assert(approxEqual(scor([1,63,53,67,3].dup, [1.5,6.3,7.8,4.2,1.5].dup), .56429));
+    assert(approxEqual(scor([1.5,6.3,7.8,7.8,1.5].dup, [1,63,53,67,3].dup), .79057));
+    assert(approxEqual(scor([1,63,53,67,3].dup, [1.5,6.3,7.8,7.8,1.5].dup), .79057));
+    assert(approxEqual(scor([1.5,6.3,7.8,6.3,1.5].dup, [1,63,53,67,3].dup), .63246));
+    assert(approxEqual(scor([1,63,53,67,3].dup, [1.5,6.3,7.8,6.3,1.5].dup), .63246));
+    assert(approxEqual(scor([3,4,1,5,2,1,6,4].dup, [1,3,2,6,4,2,6,7].dup), .6829268));
+    assert(approxEqual(scor([1,3,2,6,4,2,6,7].dup, [3,4,1,5,2,1,6,4].dup), .6829268));
     uint[] one = new uint[1000], two = new uint[1000];
     foreach(i; 0..100) {  //Further sanity checks for things like commutativity.
-        size_t lowerBound = uniform(gen, 0, one.length);
-        size_t upperBound = uniform(gen, 0, one.length);
+        size_t lowerBound = uniform(0, one.length);
+        size_t upperBound = uniform(0, one.length);
         if(lowerBound > upperBound) swap(lowerBound, upperBound);
         foreach(ref o; one) {
-            o = uniform(gen, 1, 10);  //Generate lots of ties.
+            o = uniform(1, 10);  //Generate lots of ties.
         }
         foreach(ref o; two) {
-             o = uniform(gen, 1, 10);  //Generate lots of ties.
+             o = uniform(1, 10);  //Generate lots of ties.
         }
         real sOne =
              scor(one[lowerBound..upperBound], two[lowerBound..upperBound]);
@@ -244,7 +306,31 @@ unittest {
         assert(approxEqual(sThree, sFour) || (isnan(sThree) && isnan(sFour)));
         assert(approxEqual(sFour, sFive) || (isnan(sFour) && isnan(sFive)));
     }
-    writefln("Passed scor unittest.");
+
+    // Test input ranges.
+    struct Count {
+        uint num;
+        uint upTo;
+        uint front() {
+            return num;
+        }
+        void popFront() {
+            num++;
+        }
+        bool empty() {
+            return num >= upTo;
+        }
+        uint length() {
+            return upTo - num;
+        }
+    }
+
+    Count a, b;
+    a.upTo = 100;
+    b.upTo = 100;
+    assert(scor(a, b) == 1);
+
+    writeln("Passed scor unittest.");
 }
 
 
@@ -254,7 +340,7 @@ unittest {
   * even for small N.  Advantage is that it's a very direct translation from
   * standard formulas, and therefore unlikely to have weird, subtle bugs.*/
 
-real kcorOld(T, U)(const T[] input1, const U[] input2)
+private real kcorOld(T, U)(const T[] input1, const U[] input2)
 in {
     assert(input1.length == input2.length);
 } body {
@@ -293,17 +379,23 @@ in {
 /**Kendall's Tau, O(N log N) version.  This can be defined in terms of the
  * bubble sort distance, or the number of swaps that would be needed in a
  * bubble sort to sort input2 into the same order as input1.  It is
- * a robust, non-parametric correlation metric.*/
-real kcor(T, U)(const T[] input1, const U[] input2) {
-    auto i1d = input1.tempdup;
+ * a robust, non-parametric correlation metric.
+ *
+ * Since a copy of the inputs is made anyhow because they need to be sorted,
+ * this function can work with any input range.  However, the ranges must
+ * have the same length.*/
+real kcor(T, U)(T input1, U input2)
+if(isInputRange!(T) && isInputRange!(U)) {
+    auto i1d = tempdup(input1);
     scope(exit) TempAlloc.free;
-    auto i2d = input2.tempdup;
+    auto i2d = tempdup(input2);
     scope(exit) TempAlloc.free;
     return kcorDestructive(i1d, i2d);
 }
 
 /**Kendall's Tau O(N log N) destroys input vectors but requires
- * O(1) auxilliary space provided T.sizeof == U.sizeof.*/
+ * O(1) auxilliary space provided T.sizeof == U.sizeof.
+ * Also only works on arrays.*/
 real kcorDestructive(T, U)(T[] input1, U[] input2)
 in {
     assert(input1.length == input2.length);
@@ -368,28 +460,48 @@ in {
 
 unittest {
     //Test against known values.
-    assert(approxEqual(kcor([1,2,3,4,5], [3,1,7,4,3]), 0.1054093));
-    assert(approxEqual(kcor([3,6,7,35,75],[1,63,53,67,3]), 0.2));
-    assert(approxEqual(kcor([1.5,6.3,7.8,4.2,1.5], [1,63,53,67,3]), .3162287));
+    assert(approxEqual(kcor([1,2,3,4,5].dup, [3,1,7,4,3].dup), 0.1054093));
+    assert(approxEqual(kcor([3,6,7,35,75].dup,[1,63,53,67,3].dup), 0.2));
+    assert(approxEqual(kcor([1.5,6.3,7.8,4.2,1.5].dup, [1,63,53,67,3].dup), .3162287));
     uint[] one = new uint[1000], two = new uint[1000];
     // Test complex, fast implementation against straightforward,
     // slow implementation.
     foreach(i; 0..100) {
-        size_t lowerBound = uniform(gen, 0, 1000);
-        size_t upperBound = uniform(gen, 0, 1000);
+        size_t lowerBound = uniform(0, 1000);
+        size_t upperBound = uniform(0, 1000);
         if(lowerBound > upperBound) swap(lowerBound, upperBound);
         foreach(ref o; one) {
-            o = uniform(gen, 1, 10);
+            o = uniform(1, 10);
         }
         foreach(ref o; two) {
-             o = uniform(gen, 1, 10);
+             o = uniform(1, 10);
         }
         real kOne =
              kcor(one[lowerBound..upperBound], two[lowerBound..upperBound]);
         real kTwo =
              kcorOld(one[lowerBound..upperBound], two[lowerBound..upperBound]);
-        assert(approxEqual(kOne, kTwo));
+        assert(approxEqual(kOne, kTwo) || (isNaN(kOne) && isNaN(kTwo)));
     }
+
+    // Make sure everything works with lowest common denominator range type.
+    struct Count {
+        uint num;
+        uint upTo;
+        uint front() {
+            return num;
+        }
+        void popFront() {
+            num++;
+        }
+        bool empty() {
+            return num >= upTo;
+        }
+    }
+
+    Count a, b;
+    a.upTo = 100;
+    b.upTo = 100;
+    assert(approxEqual(kcor(a, b), 1));
     writefln("Passed kcor unittest.");
 }
 

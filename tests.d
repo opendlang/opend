@@ -1,8 +1,41 @@
-/**Hypothesis testing beyond simple CDFs.
+/**Hypothesis testing beyond simple CDFs.  All functions work with input
+ * ranges with elements implicitly convertible to real unless otherwise noted.
  *
- * Author:  David Simcha
+ * Author:  David Simcha*/
+ /*
+ * You may use this software under your choice of either of the following
+ * licenses.  YOU NEED ONLY OBEY THE TERMS OF EXACTLY ONE OF THE TWO LICENSES.
+ * IF YOU CHOOSE TO USE THE PHOBOS LICENSE, YOU DO NOT NEED TO OBEY THE TERMS OF
+ * THE BSD LICENSE.  IF YOU CHOOSE TO USE THE BSD LICENSE, YOU DO NOT NEED
+ * TO OBEY THE TERMS OF THE PHOBOS LICENSE.  IF YOU ARE A LAWYER LOOKING FOR
+ * LOOPHOLES AND RIDICULOUSLY NON-EXISTENT AMBIGUITIES IN THE PREVIOUS STATEMENT,
+ * GET A LIFE.
  *
- * Copyright (c) 2009, David Simcha
+ * ---------------------Phobos License: ---------------------------------------
+ *
+ *  Copyright (C) 2008-2009 by David Simcha.
+ *
+ *  This software is provided 'as-is', without any express or implied
+ *  warranty. In no event will the authors be held liable for any damages
+ *  arising from the use of this software.
+ *
+ *  Permission is granted to anyone to use this software for any purpose,
+ *  including commercial applications, and to alter it and redistribute it
+ *  freely, in both source and binary form, subject to the following
+ *  restrictions:
+ *
+ *  o  The origin of this software must not be misrepresented; you must not
+ *     claim that you wrote the original software. If you use this software
+ *     in a product, an acknowledgment in the product documentation would be
+ *     appreciated but is not required.
+ *  o  Altered source versions must be plainly marked as such, and must not
+ *     be misrepresented as being the original software.
+ *  o  This notice may not be removed or altered from any source
+ *     distribution.
+ *
+ * --------------------BSD License:  -----------------------------------------
+ *
+ * Copyright (c) 2008-2009, David Simcha
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,11 +61,12 @@
  * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.*/
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
 module dstats.tests;
 
 import dstats.base, dstats.distrib, dstats.alloc, dstats.summary, dstats.sort,
-       std.algorithm, std.functional;
+       std.algorithm, std.functional, std.range;
 
 version(unittest) {
     import std.stdio, std.random;
@@ -60,8 +94,10 @@ enum Alt {
  * a fixed value.  Alternatives are Alt.LESS, meaning mean(data) < mean,
  * Alt.GREATER, meaning mean(data) > mean, and Alt.TWOSIDE, meaning mean(data)
  * != mean.
+ *
  * Returns:  The p-value against the given alternative.*/
-real studentsTTest(T)(const T[] data, real mean, Alt alt = Alt.TWOSIDE) {
+real studentsTTest(T)(T data, real mean, Alt alt = Alt.TWOSIDE)
+if(realInput!(T)) {
     auto meanSd = meanStdev(data);
     real t = (meanSd.mean - mean) / (meanSd.SD / sqrt(cast(real) data.length));
     if(alt == Alt.LESS)
@@ -74,9 +110,9 @@ real studentsTTest(T)(const T[] data, real mean, Alt alt = Alt.TWOSIDE) {
 }
 
 unittest {
-    assert(approxEqual(studentsTTest([1, 2, 3, 4, 5], 2), .2302));
-    assert(approxEqual(studentsTTest([1, 2, 3, 4, 5], 2, Alt.LESS), .8849));
-    assert(approxEqual(studentsTTest([1, 2, 3, 4, 5], 2, Alt.GREATER), .1151));
+    assert(approxEqual(studentsTTest([1, 2, 3, 4, 5].dup, 2), .2302));
+    assert(approxEqual(studentsTTest([1, 2, 3, 4, 5].dup, 2, Alt.LESS), .8849));
+    assert(approxEqual(studentsTTest([1, 2, 3, 4, 5].dup, 2, Alt.GREATER), .1151));
     writeln("Passed 1-sample studentsTTest test.");
 }
 
@@ -85,13 +121,20 @@ unittest {
  * mean(sample1) < mean(sample2), Alt.GREATER, meaning mean(sample1) >
  * mean(sample2), and Alt.TWOSIDE, meaning mean(sample1) != mean(sample2).
  * Returns:  The p-value against the given alternative.*/
-real studentsTTest(T, U)(const T[] sample1, const U[] sample2, Alt alt = Alt.TWOSIDE) {
-    size_t n1 = sample1.length;
-    size_t n2 = sample2.length;
+real studentsTTest(T, U)(T sample1, U sample2, Alt alt = Alt.TWOSIDE)
+if(realInput!(T) && realInput!(U)) {
+    size_t n1, n2;
+    OnlineMeanSD s1summ, s2summ;
+    foreach(elem; sample1) {
+        s1summ.put(elem);
+        n1++;
+    }
+    foreach(elem; sample2) {
+        s2summ.put(elem);
+        n2++;
+    }
 
-    auto s1summ = meanVariance(sample1);
-    auto s2summ = meanVariance(sample2);
-    real sx1x2 = sqrt(((n1 - 1) * s1summ.SD + (n2 - 1) * s2summ.SD) /
+    real sx1x2 = sqrt(((n1 - 1) * s1summ.var + (n2 - 1) * s2summ.var) /
                  (n1 + n2 - 2));
     real t = (s1summ.mean - s2summ.mean) /
              (sx1x2 * sqrt((1.0L / n1) + (1.0L / n2)));
@@ -106,15 +149,15 @@ real studentsTTest(T, U)(const T[] sample1, const U[] sample2, Alt alt = Alt.TWO
 
 unittest {
     // Values from R.
-    assert(approxEqual(studentsTTest([1,2,3,4,5], [1,3,4,5,7,9]), 0.2346));
-    assert(approxEqual(studentsTTest([1,2,3,4,5], [1,3,4,5,7,9], Alt.LESS),
+    assert(approxEqual(studentsTTest([1,2,3,4,5].dup, [1,3,4,5,7,9].dup), 0.2346));
+    assert(approxEqual(studentsTTest([1,2,3,4,5].dup, [1,3,4,5,7,9].dup, Alt.LESS),
            0.1173));
-    assert(approxEqual(studentsTTest([1,2,3,4,5], [1,3,4,5,7,9], Alt.GREATER),
+    assert(approxEqual(studentsTTest([1,2,3,4,5].dup, [1,3,4,5,7,9].dup, Alt.GREATER),
            0.8827));
-    assert(approxEqual(studentsTTest([1,3,5,7,9,11], [2,2,1,3,4]), 0.06985));
-    assert(approxEqual(studentsTTest([1,3,5,7,9,11], [2,2,1,3,4], Alt.LESS),
+    assert(approxEqual(studentsTTest([1,3,5,7,9,11].dup, [2,2,1,3,4].dup), 0.06985));
+    assert(approxEqual(studentsTTest([1,3,5,7,9,11].dup, [2,2,1,3,4].dup, Alt.LESS),
            0.965));
-    assert(approxEqual(studentsTTest([1,3,5,7,9,11], [2,2,1,3,4], Alt.GREATER),
+    assert(approxEqual(studentsTTest([1,3,5,7,9,11].dup, [2,2,1,3,4].dup, Alt.GREATER),
            0.03492));
     writeln("Passed 2-sample studentsTTest test.");
 }
@@ -125,19 +168,27 @@ unittest {
  * meaning mean(sample1) > mean(sample2), and Alt.TWOSIDE, meaning mean(sample1)
  * != mean(sample2).
  * Returns:  The p-value against the given alternative.*/
-real welchTTest(T, U)(const T[] sample1, const U[] sample2, Alt alt = Alt.TWOSIDE) {
-    size_t n1 = sample1.length;
-    size_t n2 = sample2.length;
+real welchTTest(T, U)(T sample1, U sample2, Alt alt = Alt.TWOSIDE)
+if(realInput!(T) && realInput!(U)) {
+    size_t n1, n2;
+    OnlineMeanSD s1summ, s2summ;
+    foreach(elem; sample1) {
+        s1summ.put(elem);
+        n1++;
+    }
+    foreach(elem; sample2) {
+        s2summ.put(elem);
+        n2++;
+    }
 
-    auto s1summ = meanVariance(sample1);
-    auto s2summ = meanVariance(sample2);
-    real sx1x2 = sqrt(s1summ.SD / n1 + s2summ.SD / n2);
+    auto v1 = s1summ.var, v2 = s2summ.var;
+    real sx1x2 = sqrt(v1 / n1 + v2 / n2);
     real t = (s1summ.mean - s2summ.mean) / sx1x2;
-    real numerator = s1summ.SD / n1 + s2summ.SD / n2;
+    real numerator = v1 / n1 + v2 / n2;
     numerator *= numerator;
-    real denom1 = s1summ.SD / n1;
+    real denom1 = v1 / n1;
     denom1 = denom1 * denom1 / (n1 - 1);
-    real denom2 = s2summ.SD / n2;
+    real denom2 = v2 / n2;
     denom2 = denom2 * denom2 / (n2 - 1);
     real df = numerator / (denom1 + denom2);
     if(alt == Alt.LESS)
@@ -150,15 +201,15 @@ real welchTTest(T, U)(const T[] sample1, const U[] sample2, Alt alt = Alt.TWOSID
 
 unittest {
         // Values from R.
-    assert(approxEqual(welchTTest([1,2,3,4,5], [1,3,4,5,7,9]), 0.2159));
-    assert(approxEqual(welchTTest([1,2,3,4,5], [1,3,4,5,7,9], Alt.LESS),
+    assert(approxEqual(welchTTest([1,2,3,4,5].dup, [1,3,4,5,7,9].dup), 0.2159));
+    assert(approxEqual(welchTTest([1,2,3,4,5].dup, [1,3,4,5,7,9].dup, Alt.LESS),
            0.1079));
-    assert(approxEqual(welchTTest([1,2,3,4,5], [1,3,4,5,7,9], Alt.GREATER),
+    assert(approxEqual(welchTTest([1,2,3,4,5].dup, [1,3,4,5,7,9].dup, Alt.GREATER),
            0.892));
-    assert(approxEqual(welchTTest([1,3,5,7,9,11], [2,2,1,3,4]), 0.06616));
-    assert(approxEqual(welchTTest([1,3,5,7,9,11], [2,2,1,3,4], Alt.LESS),
+    assert(approxEqual(welchTTest([1,3,5,7,9,11].dup, [2,2,1,3,4].dup), 0.06616));
+    assert(approxEqual(welchTTest([1,3,5,7,9,11].dup, [2,2,1,3,4].dup, Alt.LESS),
            0.967));
-    assert(approxEqual(welchTTest([1,3,5,7,9,11], [2,2,1,3,4], Alt.GREATER),
+    assert(approxEqual(welchTTest([1,3,5,7,9,11].dup, [2,2,1,3,4].dup, Alt.GREATER),
            0.03308));
     writeln("Passed welchTTest test.");
 }
@@ -169,38 +220,40 @@ unittest {
  * is less than testMean, Alt.GREATER, meaning the true mean difference is
  * greater than testMean, and Alt.TWOSIDE, meaning the true mean difference is not
  * equal to testMean.
+ *
  * Returns:  The p-value against the given alternative.*/
-real pairedTTest(T, U)(const T[] before, const U[] after,
-                       Alt alt = Alt.TWOSIDE, real testMean = 0)
-in {
-    assert(before.length == after.length);
-} body {
+real pairedTTest(T, U)(T before, U after, Alt alt = Alt.TWOSIDE, real testMean = 0)
+if(realInput!(T) && realInput!(U)) {
     OnlineMeanSD msd;
-    foreach(i; 0..before.length) {
-        real diff = cast(real) before[i] - cast(real) after[i];
-        msd.addElement(diff);
+    size_t len = 0;
+    while(!before.empty && !after.empty) {
+        real diff = cast(real) before.front - cast(real) after.front;
+        before.popFront;
+        after.popFront;
+        msd.put(diff);
+        len++;
     }
-    real t = (msd.mean - testMean) / msd.stdev * sqrt(cast(real) before.length);
+    real t = (msd.mean - testMean) / msd.stdev * sqrt(cast(real) len);
 
     if(alt == Alt.LESS) {
-        return studentsTCDF(t, before.length - 1);
+        return studentsTCDF(t, len - 1);
     } else if(alt == Alt.GREATER) {
-        return studentsTCDF(-t, before.length - 1);
+        return studentsTCDF(-t, len - 1);
     } else if(t > 0) {
-        return 2 * studentsTCDF(-t, before.length - 1);
+        return 2 * studentsTCDF(-t, len - 1);
     } else {
-        return 2 * studentsTCDF(t, before.length - 1);
+        return 2 * studentsTCDF(t, len - 1);
     }
 }
 
 unittest {
     // Values from R.
-    assert(approxEqual(pairedTTest([3,2,3,4,5], [2,3,5,5,6], Alt.LESS), 0.0889));
-    assert(approxEqual(pairedTTest([3,2,3,4,5], [2,3,5,5,6], Alt.GREATER), 0.9111));
-    assert(approxEqual(pairedTTest([3,2,3,4,5], [2,3,5,5,6], Alt.TWOSIDE), 0.1778));
-    assert(approxEqual(pairedTTest([3,2,3,4,5], [2,3,5,5,6], Alt.LESS, 1), 0.01066));
-    assert(approxEqual(pairedTTest([3,2,3,4,5], [2,3,5,5,6], Alt.GREATER, 1), 0.9893));
-    assert(approxEqual(pairedTTest([3,2,3,4,5], [2,3,5,5,6], Alt.TWOSIDE, 1), 0.02131));
+    assert(approxEqual(pairedTTest([3,2,3,4,5].dup, [2,3,5,5,6].dup, Alt.LESS), 0.0889));
+    assert(approxEqual(pairedTTest([3,2,3,4,5].dup, [2,3,5,5,6].dup, Alt.GREATER), 0.9111));
+    assert(approxEqual(pairedTTest([3,2,3,4,5].dup, [2,3,5,5,6].dup, Alt.TWOSIDE), 0.1778));
+    assert(approxEqual(pairedTTest([3,2,3,4,5].dup, [2,3,5,5,6].dup, Alt.LESS, 1), 0.01066));
+    assert(approxEqual(pairedTTest([3,2,3,4,5].dup, [2,3,5,5,6].dup, Alt.GREATER, 1), 0.9893));
+    assert(approxEqual(pairedTTest([3,2,3,4,5].dup, [2,3,5,5,6].dup, Alt.TWOSIDE, 1), 0.02131));
     writeln("Passed pairedTTest unittest.");
 }
 
@@ -209,16 +262,20 @@ unittest {
  * mostly for use internally, and if included will place a value in the
  * dereference that can be used in wilcoxonRankSumPval() to adjust for ties in
  * the input data.
+ *
+ * Input ranges for this function must define a length.
+ *
  * Returns:  The Wilcoxon test statistic W.*/
-real wilcoxonRankSum(T)(const T[] sample1, const T[] sample2, real* tieSum = null) {
-        ulong n1 = sample1.length, n2 = sample2.length, N = n1 + n2;
-    auto combined = newStack!(Mutable!(T))(N);
-    combined[0..n1] = sample1[];
-    combined[n1..$] = sample2[];
+real wilcoxonRankSum(T)(T sample1, T sample2, real* tieSum = null)
+if(isInputRange!(T) && dstats.base.hasLength!(T)) {
+    ulong n1 = sample1.length, n2 = sample2.length, N = n1 + n2;
+    auto combined = newStack!(Unqual!(ElementType!(T)))(N);
+    rangeCopy(combined[0..n1], sample1);
+    rangeCopy(combined[n1..$], sample2);
 
     float[] ranks = newStack!(float)(N);
     rankSort(combined, ranks);
-    real w = sum!(float, real)(ranks[0..n1]) - n1 * (n1 + 1) / 2UL;
+    real w = reduce!("a + b")(0.0L, ranks[0..n1]) - n1 * (n1 + 1) / 2UL;
     TempAlloc.free;  // Free ranks.
 
     if(tieSum !is null) {
@@ -247,9 +304,9 @@ real wilcoxonRankSum(T)(const T[] sample1, const T[] sample2, real* tieSum = nul
 }
 
 unittest {
-    assert(wilcoxonRankSum([1, 2, 3, 4, 5], [2, 4, 6, 8, 10]) == 5);
-    assert(wilcoxonRankSum([2, 4, 6, 8, 10], [1, 2, 3, 4, 5]) == 20);
-    assert(wilcoxonRankSum([3, 7, 21, 5, 9], [2, 4, 6, 8, 10]) == 15);
+    assert(wilcoxonRankSum([1, 2, 3, 4, 5].dup, [2, 4, 6, 8, 10].dup) == 5);
+    assert(wilcoxonRankSum([2, 4, 6, 8, 10].dup, [1, 2, 3, 4, 5].dup) == 20);
+    assert(wilcoxonRankSum([3, 7, 21, 5, 9].dup, [2, 4, 6, 8, 10].dup) == 15);
     writeln("Passed wilcoxonRankSum test.");
 }
 
@@ -297,7 +354,7 @@ unittest {
     assert(approxEqual(wilcoxonRankSumPval(1200, 50, 50, Alt.LESS), .3670));
     assert(approxEqual(wilcoxonRankSumPval(1500, 50, 50, Alt.LESS), .957903));
     assert(approxEqual(wilcoxonRankSumPval(8500, 100, 200, Alt.LESS), .01704));
-    auto w = wilcoxonRankSum([2,4,6,8,12], [1,3,5,7,11,9]);
+    auto w = wilcoxonRankSum([2,4,6,8,12].dup, [1,3,5,7,11,9].dup);
     assert(approxEqual(wilcoxonRankSumPval(w, 5, 6), 0.9273));
     assert(approxEqual(wilcoxonRankSumPval(w, 5, 6, Alt.GREATER), 0.4636));
     assert(approxEqual(wilcoxonRankSumPval(w, 5, 6, Alt.LESS), 0.6079));
@@ -324,9 +381,12 @@ unittest {
  * there were ties in the data, because it is not computationally feasible.
  * In these cases, exactThresh will be ignored.
  *
+ * Input ranges for this function must define a length.
+ *
  * Returns:  The p-value against the given alternative.*/
-real wilcoxonRankSumPval(T)(const T[] sample1, const T[] sample2,
-                         Alt alt = Alt.TWOSIDE, uint exactThresh = 50) {
+real wilcoxonRankSumPval(T)(T sample1, T sample2, Alt alt = Alt.TWOSIDE,
+    uint exactThresh = 50) if(isInputRange!(T) && dstats.base.hasLength!(T)) {
+
     real tieSum;
     real W = wilcoxonRankSum(sample1, sample2, &tieSum);
     return wilcoxonRankSumPval(W, sample1.length, sample2.length, alt, tieSum,
@@ -336,57 +396,57 @@ real wilcoxonRankSumPval(T)(const T[] sample1, const T[] sample2,
  unittest {
      // Values from R.  Simple stuff (no ties) first.  Testing approximate
      // calculation first.
-     assert(approxEqual(wilcoxonRankSumPval([2,4,6,8,12], [1,3,5,7,11,9],
+     assert(approxEqual(wilcoxonRankSumPval([2,4,6,8,12].dup, [1,3,5,7,11,9].dup,
            Alt.TWOSIDE, 0), 0.9273));
-     assert(approxEqual(wilcoxonRankSumPval([2,4,6,8,12], [1,3,5,7,11,9],
+     assert(approxEqual(wilcoxonRankSumPval([2,4,6,8,12].dup, [1,3,5,7,11,9].dup,
            Alt.LESS, 0), 0.6079));
-     assert(approxEqual(wilcoxonRankSumPval([2,4,6,8,12], [1,3,5,7,11,9],
+     assert(approxEqual(wilcoxonRankSumPval([2,4,6,8,12].dup, [1,3,5,7,11,9].dup,
            Alt.GREATER, 0), 0.4636));
-     assert(approxEqual(wilcoxonRankSumPval([1,2,6,10,12], [3,5,7,8,13,15],
+     assert(approxEqual(wilcoxonRankSumPval([1,2,6,10,12].dup, [3,5,7,8,13,15].dup,
             Alt.TWOSIDE, 0), 0.4113));
-     assert(approxEqual(wilcoxonRankSumPval([1,2,6,10,12], [3,5,7,8,13,15],
+     assert(approxEqual(wilcoxonRankSumPval([1,2,6,10,12].dup, [3,5,7,8,13,15].dup,
             Alt.LESS, 0), 0.2057));
-     assert(approxEqual(wilcoxonRankSumPval([1,2,6,10,12], [3,5,7,8,13,15],
+     assert(approxEqual(wilcoxonRankSumPval([1,2,6,10,12].dup, [3,5,7,8,13,15].dup,
             Alt.GREATER, 0), 0.8423));
-     assert(approxEqual(wilcoxonRankSumPval([1,3,5,7,9], [2,4,6,8,10],
+     assert(approxEqual(wilcoxonRankSumPval([1,3,5,7,9].dup, [2,4,6,8,10].dup,
             Alt.TWOSIDE, 0), .6745));
-     assert(approxEqual(wilcoxonRankSumPval([1,3,5,7,9], [2,4,6,8,10],
+     assert(approxEqual(wilcoxonRankSumPval([1,3,5,7,9].dup, [2,4,6,8,10].dup,
             Alt.LESS, 0), .3372));
-     assert(approxEqual(wilcoxonRankSumPval([1,3,5,7,9], [2,4,6,8,10],
+     assert(approxEqual(wilcoxonRankSumPval([1,3,5,7,9].dup, [2,4,6,8,10].dup,
             Alt.GREATER, 0), .7346));
 
     // Now, lots of ties.
-    assert(approxEqual(wilcoxonRankSumPval([1,2,3,4,5], [2,3,4,5,6],
+    assert(approxEqual(wilcoxonRankSumPval([1,2,3,4,5].dup, [2,3,4,5,6].dup,
            Alt.TWOSIDE, 0), 0.3976));
-    assert(approxEqual(wilcoxonRankSumPval([1,2,3,4,5], [2,3,4,5,6],
+    assert(approxEqual(wilcoxonRankSumPval([1,2,3,4,5].dup, [2,3,4,5,6].dup,
            Alt.LESS, 0), 0.1988));
-    assert(approxEqual(wilcoxonRankSumPval([1,2,3,4,5], [2,3,4,5,6],
+    assert(approxEqual(wilcoxonRankSumPval([1,2,3,4,5].dup, [2,3,4,5,6].dup,
            Alt.GREATER, 0), 0.8548));
-    assert(approxEqual(wilcoxonRankSumPval([1,2,1,1,2], [1,2,3,1,1],
+    assert(approxEqual(wilcoxonRankSumPval([1,2,1,1,2].dup, [1,2,3,1,1].dup,
            Alt.TWOSIDE, 0), 0.9049));
-    assert(approxEqual(wilcoxonRankSumPval([1,2,1,1,2], [1,2,3,1,1],
+    assert(approxEqual(wilcoxonRankSumPval([1,2,1,1,2].dup, [1,2,3,1,1].dup,
            Alt.LESS, 0), 0.4524));
-    assert(approxEqual(wilcoxonRankSumPval([1,2,1,1,2], [1,2,3,1,1],
+    assert(approxEqual(wilcoxonRankSumPval([1,2,1,1,2].dup, [1,2,3,1,1].dup,
            Alt.GREATER, 0), 0.64));
 
     // Now, testing the exact calculation on the same data.
-     assert(approxEqual(wilcoxonRankSumPval([2,4,6,8,12], [1,3,5,7,11,9],
+     assert(approxEqual(wilcoxonRankSumPval([2,4,6,8,12].dup, [1,3,5,7,11,9].dup,
        Alt.TWOSIDE), 0.9307));
-     assert(approxEqual(wilcoxonRankSumPval([2,4,6,8,12], [1,3,5,7,11,9],
+     assert(approxEqual(wilcoxonRankSumPval([2,4,6,8,12].dup, [1,3,5,7,11,9].dup,
            Alt.LESS), 0.6039));
-     assert(approxEqual(wilcoxonRankSumPval([2,4,6,8,12], [1,3,5,7,11,9],
+     assert(approxEqual(wilcoxonRankSumPval([2,4,6,8,12].dup, [1,3,5,7,11,9].dup,
            Alt.GREATER), 0.4654));
-     assert(approxEqual(wilcoxonRankSumPval([1,2,6,10,12], [3,5,7,8,13,15],
+     assert(approxEqual(wilcoxonRankSumPval([1,2,6,10,12].dup, [3,5,7,8,13,15].dup,
             Alt.TWOSIDE), 0.4286));
-     assert(approxEqual(wilcoxonRankSumPval([1,2,6,10,12], [3,5,7,8,13,15],
+     assert(approxEqual(wilcoxonRankSumPval([1,2,6,10,12].dup, [3,5,7,8,13,15].dup,
             Alt.LESS), 0.2143));
-     assert(approxEqual(wilcoxonRankSumPval([1,2,6,10,12], [3,5,7,8,13,15],
+     assert(approxEqual(wilcoxonRankSumPval([1,2,6,10,12].dup, [3,5,7,8,13,15].dup,
             Alt.GREATER), 0.8355));
-     assert(approxEqual(wilcoxonRankSumPval([1,3,5,7,9], [2,4,6,8,10],
+     assert(approxEqual(wilcoxonRankSumPval([1,3,5,7,9].dup, [2,4,6,8,10].dup,
             Alt.TWOSIDE), .6905));
-     assert(approxEqual(wilcoxonRankSumPval([1,3,5,7,9], [2,4,6,8,10],
+     assert(approxEqual(wilcoxonRankSumPval([1,3,5,7,9].dup, [2,4,6,8,10].dup,
             Alt.LESS), .3452));
-     assert(approxEqual(wilcoxonRankSumPval([1,3,5,7,9], [2,4,6,8,10],
+     assert(approxEqual(wilcoxonRankSumPval([1,3,5,7,9].dup, [2,4,6,8,10].dup,
             Alt.GREATER), .7262));
     writeln("Passed wilcoxonRankSumPval test.");
  }
@@ -500,9 +560,13 @@ unittest {
  * mostly for use internally, and if included will place a value in the
  * dereference that can be used in wilcoxonRankSumPval() to adjust for ties in
  * the input data.
+ *
+ * Input ranges for this function must define a length.
+ *
  * Returns:  The Wilcoxon test statistic W.*/
-real wilcoxonSignedRank(T, U)(const T[] before, const U[] after,
-      real* tieSum = null) {
+real wilcoxonSignedRank(T, U)(T before, U after, real* tieSum = null)
+if(realInput!(T) && realInput!(U) &&
+   dstats.base.hasLength!(T) && dstats.base.hasLength!(U)) {
     mixin(newFrame);
     float[] diffRanks = newStack!(float)(before.length);
     byte[] signs = newStack!(byte)(before.length);
@@ -516,10 +580,14 @@ real wilcoxonSignedRank(T, U)(const T[] before, const U[] after,
         return 0;
     }
 
-    foreach(i; 0..before.length) {
-        real diff = cast(real) before[i] - cast(real) after[i];
-        signs[i] = sign(diff);
-        diffs[i] = abs(diff);
+    size_t ii = 0;
+    while(!before.empty && !after.empty) {
+        real diff = cast(real) before.front - cast(real) after.front;
+        signs[ii] = sign(diff);
+        diffs[ii] = abs(diff);
+        ii++;
+        before.popFront;
+        after.popFront;
     }
     rankSort(diffs, diffRanks);
 
@@ -555,9 +623,9 @@ real wilcoxonSignedRank(T, U)(const T[] before, const U[] after,
 }
 
 unittest {
-    assert(wilcoxonSignedRank([1,2,3,4,5], [2,1,4,5,3]) == 7.5);
-    assert(wilcoxonSignedRank([3,1,4,1,5], [2,7,1,8,2]) == 6);
-    assert(wilcoxonSignedRank([8,6,7,5,3], [0,9,8,6,7]) == 5);
+    assert(wilcoxonSignedRank([1,2,3,4,5].dup, [2,1,4,5,3].dup) == 7.5);
+    assert(wilcoxonSignedRank([3,1,4,1,5].dup, [2,7,1,8,2].dup) == 6);
+    assert(wilcoxonSignedRank([8,6,7,5,3].dup, [0,9,8,6,7].dup) == 5);
     writeln("Passed wilcoxonSignedRank unittest.");
 }
 
@@ -582,43 +650,50 @@ unittest {
  * passing the W value into wilcoxonSignedRankPval in the presence of ties
  * or equal pairs.
  *
+ * The input ranges for this function must define a length and must be
+ * forward ranges.
+ *
  * Returns:  The p-value against the given alternative.*/
-real wilcoxonSignedRankPval(T)(const T[] before, const T[] after,
+real wilcoxonSignedRankPval(T)(T before, T after,
       Alt alt = Alt.TWOSIDE, uint exactThresh = 50)
+if(realInput!(T) && dstats.base.hasLength!(T) && isForwardRange!(T))
 in {
     assert(before.length == after.length);
 } body {
-      real tieSum;
-      real W = wilcoxonSignedRank(before, after, &tieSum);
-      ulong N = before.length;
-      foreach(i; 0..before.length) {
-          if(before[i] == after[i])
+    real tieSum;
+    real W = wilcoxonSignedRank(before, after, &tieSum);
+    ulong N = before.length;
+    while(!before.empty && !after.empty) {
+        if(before.front == after.front)
             N--;
-      }
-      return wilcoxonSignedRankPval(W, N, alt, tieSum, exactThresh);
+        before.popFront;
+        after.popFront;
+
+    }
+    return wilcoxonSignedRankPval(W, N, alt, tieSum, exactThresh);
 }
 
 unittest {
     // Values from R.
     alias approxEqual ae;
     // With ties, normal approx.
-    assert(ae(wilcoxonSignedRankPval([1,2,3,4,5], [2,1,4,5,3]), 1));
-    assert(ae(wilcoxonSignedRankPval([3,1,4,1,5], [2,7,1,8,2]), 0.7865));
-    assert(ae(wilcoxonSignedRankPval([8,6,7,5,3], [0,9,8,6,7]), 0.5879));
-    assert(ae(wilcoxonSignedRankPval([1,2,3,4,5], [2,1,4,5,3], Alt.LESS), 0.5562));
-    assert(ae(wilcoxonSignedRankPval([3,1,4,1,5], [2,7,1,8,2], Alt.LESS), 0.3932));
-    assert(ae(wilcoxonSignedRankPval([8,6,7,5,3], [0,9,8,6,7], Alt.LESS), 0.2940));
-    assert(ae(wilcoxonSignedRankPval([1,2,3,4,5], [2,1,4,5,3], Alt.GREATER), 0.5562));
-    assert(ae(wilcoxonSignedRankPval([3,1,4,1,5], [2,7,1,8,2], Alt.GREATER), 0.706));
-    assert(ae(wilcoxonSignedRankPval([8,6,7,5,3], [0,9,8,6,7], Alt.GREATER), 0.7918));
+    assert(ae(wilcoxonSignedRankPval([1,2,3,4,5].dup, [2,1,4,5,3].dup), 1));
+    assert(ae(wilcoxonSignedRankPval([3,1,4,1,5].dup, [2,7,1,8,2].dup), 0.7865));
+    assert(ae(wilcoxonSignedRankPval([8,6,7,5,3].dup, [0,9,8,6,7].dup), 0.5879));
+    assert(ae(wilcoxonSignedRankPval([1,2,3,4,5].dup, [2,1,4,5,3].dup, Alt.LESS), 0.5562));
+    assert(ae(wilcoxonSignedRankPval([3,1,4,1,5].dup, [2,7,1,8,2].dup, Alt.LESS), 0.3932));
+    assert(ae(wilcoxonSignedRankPval([8,6,7,5,3].dup, [0,9,8,6,7].dup, Alt.LESS), 0.2940));
+    assert(ae(wilcoxonSignedRankPval([1,2,3,4,5].dup, [2,1,4,5,3].dup, Alt.GREATER), 0.5562));
+    assert(ae(wilcoxonSignedRankPval([3,1,4,1,5].dup, [2,7,1,8,2].dup, Alt.GREATER), 0.706));
+    assert(ae(wilcoxonSignedRankPval([8,6,7,5,3].dup, [0,9,8,6,7].dup, Alt.GREATER), 0.7918));
 
     // Exact.
-    assert(ae(wilcoxonSignedRankPval([1,2,3,4,5], [2,-4,-8,16,32]), 0.625));
-    assert(ae(wilcoxonSignedRankPval([1,2,3,4,5], [2,-4,-8,16,32], Alt.LESS), 0.3125));
-    assert(ae(wilcoxonSignedRankPval([1,2,3,4,5], [2,-4,-8,16,32], Alt.GREATER), 0.7812));
-    assert(ae(wilcoxonSignedRankPval([1,2,3,4,5], [2,-4,-8,-16,32]), 0.8125));
-    assert(ae(wilcoxonSignedRankPval([1,2,3,4,5], [2,-4,-8,-16,32], Alt.LESS), 0.6875));
-    assert(ae(wilcoxonSignedRankPval([1,2,3,4,5], [2,-4,-8,-16,32], Alt.GREATER), 0.4062));
+    assert(ae(wilcoxonSignedRankPval([1,2,3,4,5].dup, [2,-4,-8,16,32].dup), 0.625));
+    assert(ae(wilcoxonSignedRankPval([1,2,3,4,5].dup, [2,-4,-8,16,32].dup, Alt.LESS), 0.3125));
+    assert(ae(wilcoxonSignedRankPval([1,2,3,4,5].dup, [2,-4,-8,16,32].dup, Alt.GREATER), 0.7812));
+    assert(ae(wilcoxonSignedRankPval([1,2,3,4,5].dup, [2,-4,-8,-16,32].dup), 0.8125));
+    assert(ae(wilcoxonSignedRankPval([1,2,3,4,5].dup, [2,-4,-8,-16,32].dup, Alt.LESS), 0.6875));
+    assert(ae(wilcoxonSignedRankPval([1,2,3,4,5].dup, [2,-4,-8,-16,32].dup, Alt.GREATER), 0.4062));
     writeln("Passed wilcoxonSignedRankPval unittest.");
 }
 
@@ -754,17 +829,17 @@ unittest {
  * Alt.GREATER, meaning elements of before are typically greater than
  * elements of after, and Alt.TWOSIDE, meaning that there is a significant
  * difference in either direction.*/
-real signTest(T)(const T[] before, const T[] after, Alt alt = Alt.TWOSIDE)
-in {
-    assert(before.length == after.length);
-} body {
+real signTest(T)(T before, T after, Alt alt = Alt.TWOSIDE)
+if(realInput!(T)) {
     uint greater, less;
-    foreach(i; 0..before.length) {
-        if(before[i] < after[i])
+    while(!before.empty && !after.empty) {
+        if(before.front < after.front)
             less++;
-        else if(after[i] < before[i])
+        else if(after.front < before.front)
             greater++;
         // Ignore equals.
+        before.popFront;
+        after.popFront;
     }
     if(alt == Alt.LESS) {
         return binomialCDF(greater, less + greater, 0.5);
@@ -779,12 +854,12 @@ in {
 
 unittest {
     alias approxEqual ae;
-    assert(ae(signTest([1,3,4,2,5], [1,2,4,8,16]), 1));
-    assert(ae(signTest([1,3,4,2,5], [1,2,4,8,16], Alt.LESS), 0.5));
-    assert(ae(signTest([1,3,4,2,5], [1,2,4,8,16], Alt.GREATER), 0.875));
-    assert(ae(signTest([5,3,4,6,8], [1,2,3,4,5], Alt.GREATER), 0.03125));
-    assert(ae(signTest([5,3,4,6,8], [1,2,3,4,5], Alt.LESS), 1));
-    assert(ae(signTest([5,3,4,6,8], [1,2,3,4,5]), 0.0625));
+    assert(ae(signTest([1,3,4,2,5].dup, [1,2,4,8,16].dup), 1));
+    assert(ae(signTest([1,3,4,2,5].dup, [1,2,4,8,16].dup, Alt.LESS), 0.5));
+    assert(ae(signTest([1,3,4,2,5].dup, [1,2,4,8,16].dup, Alt.GREATER), 0.875));
+    assert(ae(signTest([5,3,4,6,8].dup, [1,2,3,4,5].dup, Alt.GREATER), 0.03125));
+    assert(ae(signTest([5,3,4,6,8].dup, [1,2,3,4,5].dup, Alt.LESS), 1));
+    assert(ae(signTest([5,3,4,6,8].dup, [1,2,3,4,5].dup), 0.0625));
 }
 
 /**Sign test for differences between a set of values and an a priori
@@ -794,13 +869,13 @@ unittest {
  * Alt.GREATER, meaning elements of before are typically greater than
  * elements of after, and Alt.TWOSIDE, meaning that there is a significant
  * difference in either direction.*/
-real signTest(T, U)(const T[] data, U median, Alt alt = Alt.TWOSIDE)
-if(!isArray!(U)) {
+real signTest(T, U)(T data, U median, Alt alt = Alt.TWOSIDE)
+if(realInput!(T) && isNumeric!(U)) {
     uint greater, less;
-    foreach(i; 0..data.length) {
-        if(data[i] < median)
+    foreach(elem; data) {
+        if(elem < median)
             less++;
-        else if(median < data[i])
+        else if(median < elem)
             greater++;
         // Ignore equals.
     }
@@ -816,7 +891,7 @@ if(!isArray!(U)) {
 }
 
 unittest {
-    assert(approxEqual(signTest([1,2,6,7,9], 2), 0.625));
+    assert(approxEqual(signTest([1,2,6,7,9].dup, 2), 0.625));
     writeln("Passed signTest unittest.");
 }
 
@@ -827,18 +902,22 @@ unittest {
  * the direction of the difference between distributions.
  * To get the D value used in standard notation,
  * simply take the absolute value of this D value.*/
-real ksTest(T, U)(const T[] F, const U[] Fprime) {
+real ksTest(T, U)(T F, U Fprime)
+if(isInputRange!(T) && isInputRange!(U)) {
     auto TAState = TempAlloc.getState;
     scope(exit) {
         TempAlloc.free(TAState);
         TempAlloc.free(TAState);
     }
-    return ksTestDestructive(F.tempdup(TAState), Fprime.tempdup(TAState));
+    return ksTestDestructive(tempdup(F), tempdup(Fprime));
 }
 
 /**Same as ksTest, but sorts input data in place instead of duplicating
- * data.  Therefore, less "safe" but doesn't allocate memory.*/
-real ksTestDestructive(T, U)(T[] F, U[] Fprime) {
+ * data.  Therefore, less "safe" but doesn't allocate memory.  F,
+ * Fprime must both be random access ranges w/ lengths.*/
+real ksTestDestructive(T, U)(T F, U Fprime)
+if(isRandomAccessRange!(U) && isRandomAccessRange!(T) &&
+   dstats.base.hasLength!(T) && dstats.base.hasLength!(U)) {
     qsort(F);
     qsort(Fprime);
     real D = 0;
@@ -864,12 +943,12 @@ real ksTestDestructive(T, U)(T[] F, U[] Fprime) {
 
 unittest {
     // Values from R.
-    assert(approxEqual(ksTestDestructive([1,2,3,4,5], [1,2,3,4,5]), 0));
-    assert(approxEqual(ksTestDestructive([1,2,3,4,5], [1,2,2,3,5]), -.2));
-    assert(approxEqual(ksTestDestructive([-1,0,2,8, 6], [1,2,2,3,5]), .4));
-    assert(approxEqual(ksTestDestructive([1,2,3,4,5], [1,2,2,3,5,7,8]), .2857));
-    assert(approxEqual(ksTestDestructive([1, 2, 3, 4, 4, 4, 5],
-           [1, 2, 3, 4, 5, 5, 5]), .2857));
+    assert(approxEqual(ksTestDestructive([1,2,3,4,5].dup, [1,2,3,4,5].dup), 0));
+    assert(approxEqual(ksTestDestructive([1,2,3,4,5].dup, [1,2,2,3,5].dup), -.2));
+    assert(approxEqual(ksTestDestructive([-1,0,2,8, 6].dup, [1,2,2,3,5].dup), .4));
+    assert(approxEqual(ksTestDestructive([1,2,3,4,5].dup, [1,2,2,3,5,7,8].dup), .2857));
+    assert(approxEqual(ksTestDestructive([1, 2, 3, 4, 4, 4, 5].dup,
+           [1, 2, 3, 4, 5, 5, 5].dup), .2857));
     writeln("Passed 2-sample ksTestDestructive.");
 }
 
@@ -884,15 +963,17 @@ unittest {
  * real D = ksTest(empirical, stdNormal);
  * ---
  */
-real ksTest(T, Func)(const T[] Femp, Func F)
-if(is(Func == function) || is(Func == delegate)) {
+real ksTest(T, Func)(T Femp, Func F)
+if(realInput!(T) && (is(Func == function) || is(Func == delegate))) {
     scope(exit) TempAlloc.free;
-    return ksTestDestructive(Femp.tempdup, F);
+    return ksTestDestructive(tempdup(Femp), F);
 }
 
-/**One-sample KS test, sorts in place.*/
-real ksTestDestructive(T, Func)(T[] Femp, Func F)
-if(is(Func == function) || is(Func == delegate)) {
+/**One-sample KS test, sorts in place.  Femp must be a random access range
+ * with length.*/
+real ksTestDestructive(T, Func)(T Femp, Func F)
+if(isRandomAccessRange!(T) && dstats.base.hasLength!(T) &&
+    (is(Func == function) || is(Func == delegate))) {
     qsort(Femp);
     real D = 0;
 
@@ -908,9 +989,9 @@ if(is(Func == function) || is(Func == delegate)) {
 unittest {
     // Testing against values from R.
     auto stdNormal = parametrize!(normalCDF)(0.0L, 1.0L);
-    assert(approxEqual(ksTestDestructive([1,2,3,4,5], stdNormal), -.8413));
-    assert(approxEqual(ksTestDestructive([-1,0,2,8, 6], stdNormal), -.5772));
-    auto lotsOfTies = [5,1,2,2,2,2,2,2,3,4];
+    assert(approxEqual(ksTestDestructive([1,2,3,4,5].dup, stdNormal), -.8413));
+    assert(approxEqual(ksTestDestructive([-1,0,2,8, 6].dup, stdNormal), -.5772));
+    auto lotsOfTies = [5,1,2,2,2,2,2,2,3,4].dup;
     assert(approxEqual(ksTestDestructive(lotsOfTies, stdNormal), -0.8772));
     writeln("Passed 1-sample ksTestDestructive.");
 }
@@ -939,29 +1020,30 @@ in {
 
 /**KS-test, returns 2-sided P-val instead of D.
  * Bugs:  Exact calculation not implemented.  Uses asymptotic approximation.*/
-real ksPval(T, U)(const T[] F, const U[] Fprime) {
+real ksPval(T, U)(T F, U Fprime)
+if(realInput!(T) && realInput!(U)) {
     return ksPvalD(F.length, Fprime.length, ksTest(F, Fprime));
 }
 
 unittest {
-    assert(approxEqual(ksPval([1, 2, 3, 4, 4, 4, 5], [1, 2, 3, 4, 5, 5, 5]),
+    assert(approxEqual(ksPval([1, 2, 3, 4, 4, 4, 5].dup, [1, 2, 3, 4, 5, 5, 5].dup),
            .9375));
     writeln("Passed ksPval 2-sample test.");
 }
 
 /**One-sided K-S test, returns P-val instead of D.
  * Bugs:  Exact calculation not implemented.  Uses asymptotic approximation.*/
-real ksPval(T, Func)(const T[] Femp, Func F)
-if(is(Func == function) || is(Func == delegate)) {
+real ksPval(T, Func)(T Femp, Func F)
+if(realInput!(T) && (is(Func == function) || is(Func == delegate))) {
     return ksPvalD(Femp.length, ksTest(Femp, F));
 }
 
 unittest {
     auto stdNormal = parametrize!(normalCDF)(0.0L, 1.0L);
-    assert(approxEqual(ksPval([0,1,2,3,4], stdNormal), .03271));
+    assert(approxEqual(ksPval([0,1,2,3,4].dup, stdNormal), .03271));
 
     auto uniform01 = parametrize!(uniformCDF)(0, 1);
-    assert(approxEqual(ksPval([0.1, 0.3, 0.5, 0.9, 1], uniform01), 0.7591));
+    assert(approxEqual(ksPval([0.1, 0.3, 0.5, 0.9, 1].dup, uniform01), 0.7591));
 
     writeln("Passed ksPval 1-sample test.");
 }
@@ -1013,19 +1095,19 @@ in {
 
     alias contingencyTable c;
 
-    invariant uint n1 = c[0][0] + c[0][1],
+    immutable uint n1 = c[0][0] + c[0][1],
                    n2 = c[1][0] + c[1][1],
                    n  = c[0][0] + c[1][0];
 
-    invariant uint mode =
+    immutable uint mode =
         cast(uint) ((cast(real) (n + 1) * (n1 + 1)) / (n1 + n2 + 2));
-    invariant real pExact = hypergeometricPMF(c[0][0], n1, n2, n);
-    invariant real pMode = hypergeometricPMF(mode, n1, n2, n);
+    immutable real pExact = hypergeometricPMF(c[0][0], n1, n2, n);
+    immutable real pMode = hypergeometricPMF(mode, n1, n2, n);
 
     if(approxEqual(pExact, pMode, 1e-7)) {
         return 1;
     } else if(c[0][0] < mode) {
-        invariant real pLower = hypergeometricCDF(c[0][0], n1, n2, n);
+        immutable real pLower = hypergeometricCDF(c[0][0], n1, n2, n);
 
         // Special case to prevent binary search from getting stuck.
         if(hypergeometricPMF(n, n1, n2, n) > pExact) {
@@ -1038,7 +1120,7 @@ in {
             guess = (max == min + 1 && guess == min) ? max :
                     (cast(ulong) max + cast(ulong) min) / 2UL;
 
-            invariant real pGuess = hypergeometricPMF(guess, n1, n2, n);
+            immutable real pGuess = hypergeometricPMF(guess, n1, n2, n);
             if(pGuess <= pExact &&
                 hypergeometricPMF(guess - 1, n1, n2, n) > pExact) {
                 break;
@@ -1052,7 +1134,7 @@ in {
         return std.algorithm.min(pLower +
                hypergeometricCDFR(guess, n1, n2, n), 1.0L);
     } else {
-        invariant real pUpper = hypergeometricCDFR(c[0][0], n1, n2, n);
+        immutable real pUpper = hypergeometricCDFR(c[0][0], n1, n2, n);
 
         // Special case to prevent binary search from getting stuck.
         if(hypergeometricPMF(0, n1, n2, n) > pExact) {
@@ -1085,13 +1167,13 @@ in {
 unittest {
     // Simple, naive impl. of two-sided to test against.
     static real naive(const uint[][] c) {
-        invariant uint n1 = c[0][0] + c[0][1],
+        immutable uint n1 = c[0][0] + c[0][1],
                    n2 = c[1][0] + c[1][1],
                    n  = c[0][0] + c[1][0];
-        invariant uint mode =
+        immutable uint mode =
             cast(uint) ((cast(real) (n + 1) * (n1 + 1)) / (n1 + n2 + 2));
-        invariant real pExact = hypergeometricPMF(c[0][0], n1, n2, n);
-        invariant real pMode = hypergeometricPMF(mode, n1, n2, n);
+        immutable real pExact = hypergeometricPMF(c[0][0], n1, n2, n);
+        immutable real pMode = hypergeometricPMF(mode, n1, n2, n);
         if(approxEqual(pExact, pMode, 1e-7))
             return 1;
         real sum = 0;
@@ -1106,10 +1188,10 @@ unittest {
     uint[][] c = new uint[][](2, 2);
 
     foreach(i; 0..1000) {
-        c[0][0] = uniform(gen, 0U, 51U);
-        c[0][1] = uniform(gen, 0U, 51U);
-        c[1][0] = uniform(gen, 0U, 51U);
-        c[1][1] = uniform(gen, 0U, 51U);
+        c[0][0] = uniform(0U, 51U);
+        c[0][1] = uniform(0U, 51U);
+        c[1][0] = uniform(0U, 51U);
+        c[1][1] = uniform(0U, 51U);
         real naiveAns = naive(c);
         real fastAns = fisherExact(c);
         assert(approxEqual(naiveAns, fastAns));
@@ -1172,10 +1254,11 @@ unittest {
  *
  * Bugs:  No exact calculation of the P-value.  Asymptotic approximation only.
  */
-real runsTest(alias positive = "a > 0", T)(const T[] obs, Alt alt = Alt.TWOSIDE) {
-    OnlineRunsTest!(positive, T) r;
+real runsTest(alias positive = "a > 0", T)(T obs, Alt alt = Alt.TWOSIDE)
+if(isInputRange!(T)) {
+    OnlineRunsTest!(positive, ElementType!(T)) r;
     foreach(elem; obs) {
-        r.addElement(elem);
+        r.put(elem);
     }
     return r.pVal(alt);
 }
@@ -1184,7 +1267,7 @@ unittest {
     // Values from R lawstat package, for which "a < median(data)" is
     // hard-coded as the equivalent to positive().  The median of this data
     // is 0.5, so everything works.
-    invariant int[] data = [1,0,0,0,1,1,0,0,1,0,1,0,1,0,1,1,1,0,0,1].idup;
+    immutable int[] data = [1,0,0,0,1,1,0,0,1,0,1,0,1,0,1,1,1,0,0,1].idup;
     assert(approxEqual(runsTest(data), 0.3581));
     assert(approxEqual(runsTest(data, Alt.LESS), 0.821));
     assert(approxEqual(runsTest(data, Alt.GREATER), 0.1791));
@@ -1205,7 +1288,7 @@ private:
 public:
 
     ///
-    void addElement(T elem) {
+    void put(T elem) {
         bool curPos = pos(elem);
         if(nRun == 0) {
             nRun = 1;
@@ -1344,10 +1427,11 @@ unittest {
  * statistic, and assumes all hypotheses are independent.
  * Returns:   An array of Q-values with indices
  * corresponding to the indices of the p-values passed in.*/
-real[] falseDiscoveryRate(T)(const T[] pVals) {
+real[] falseDiscoveryRate(T)(T pVals)
+if(realInput!(T)) {
     // Not optimized at all because I can't imagine anyone writing code where
     // FDR calculations are the main bottleneck.
-    auto p = pVals.tempdup;  scope(exit) TempAlloc.free;
+    auto p = tempdup(pVals);  scope(exit) TempAlloc.free;
     auto perm = newStack!(uint)(pVals.length);  scope(exit) TempAlloc.free;
     foreach(i, ref elem; perm)
         elem = i;
@@ -1374,7 +1458,7 @@ real[] falseDiscoveryRate(T)(const T[] pVals) {
 
 unittest {
     // Comparing results to R's qvalue package.
-    auto pVals = [.90, .01, .03, .03, .70, .60, .01];
+    auto pVals = [.90, .01, .03, .03, .70, .60, .01].dup;
     auto qVals = falseDiscoveryRate(pVals);
     assert(approxEqual(qVals[0], .9));
     assert(approxEqual(qVals[1], .035));

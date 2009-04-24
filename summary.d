@@ -1,12 +1,49 @@
-/**Summary dstats such as mean, median, sum, variance, skewness, kurtosis.
+/**Summary statistics such as mean, median, sum, variance, skewness, kurtosis.
+ * Except for median, which cannot be calculated online, all summary statistics
+ * have both an input range interface and an output range interface.
  *
  * Bugs:  This whole module assumes that input will be reals or types implicitly
  *        convertible to real.  No allowances are made for user-defined numeric
- *        types such as BigInts.  This is necessary for simplicity.
+ *        types such as BigInts.  This is necessary for simplicity.  However,
+ *        if you have a function that converts your data to reals, most of
+ *        these functions work with any input range, so you can simply map
+ *        this function onto your range.
  *
- * Author:  David Simcha
+ * Author:  David Simcha*/
+ /*
+ * You may use this software under your choice of either of the following
+ * licenses.  YOU NEED ONLY OBEY THE TERMS OF EXACTLY ONE OF THE TWO LICENSES.
+ * IF YOU CHOOSE TO USE THE PHOBOS LICENSE, YOU DO NOT NEED TO OBEY THE TERMS OF
+ * THE BSD LICENSE.  IF YOU CHOOSE TO USE THE BSD LICENSE, YOU DO NOT NEED
+ * TO OBEY THE TERMS OF THE PHOBOS LICENSE.  IF YOU ARE A LAWYER LOOKING FOR
+ * LOOPHOLES AND RIDICULOUSLY NON-EXISTENT AMBIGUITIES IN THE PREVIOUS STATEMENT,
+ * GET A LIFE.
  *
- * Copyright (c) 2009, David Simcha
+ * ---------------------Phobos License: ---------------------------------------
+ *
+ *  Copyright (C) 2008-2009 by David Simcha.
+ *
+ *  This software is provided 'as-is', without any express or implied
+ *  warranty. In no event will the authors be held liable for any damages
+ *  arising from the use of this software.
+ *
+ *  Permission is granted to anyone to use this software for any purpose,
+ *  including commercial applications, and to alter it and redistribute it
+ *  freely, in both source and binary form, subject to the following
+ *  restrictions:
+ *
+ *  o  The origin of this software must not be misrepresented; you must not
+ *     claim that you wrote the original software. If you use this software
+ *     in a product, an acknowledgment in the product documentation would be
+ *     appreciated but is not required.
+ *  o  Altered source versions must be plainly marked as such, and must not
+ *     be misrepresented as being the original software.
+ *  o  This notice may not be removed or altered from any source
+ *     distribution.
+ *
+ * --------------------BSD License:  -----------------------------------------
+ *
+ * Copyright (c) 2008-2009, David Simcha
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -32,35 +69,39 @@
  * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.*/
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
 
 
 module dstats.summary;
 
-import std.algorithm, std.functional, std.conv, std.string;
+import std.algorithm, std.functional, std.conv, std.string, std.range,
+       std.array;
 
 import dstats.sort, dstats.base, dstats.alloc;
 
 version(unittest) {
-    import std.stdio, std.random;
-
-    Random gen;
+    import std.stdio, std.random, std.algorithm, std.conv;
 
     void main() {
     }
 }
 
-/**Finds median in O(N) time on average.  In the case of an even number of
- * elements, the mean of the two middle elements is returned.  This is a
- * convenience founction designed specifically for numeric types, where the
- * averaging of the two middle elements is desired.  A more general selection
- * algorithm that can handle any type with a total ordering, as well as
- * selecting any position in the ordering, can be found at
+/**Finds median of an input range in O(N) time on average.  In the case of an
+ * even number of elements, the mean of the two middle elements is returned.
+ * This is a convenience founction designed specifically for numeric types,
+ * where the averaging of the two middle elements is desired.  A more general
+ * selection algorithm that can handle any type with a total ordering, as well
+ * as selecting any position in the ordering, can be found at
  * dstats.sort.quickSelect() and dstats.sort.partitionK().
  * Allocates memory, does not reorder input data.*/
-real median(T)(const T[] data) {
-    auto TAState = TempAlloc.getState;
-    auto dataDup = data.tempdup(TAState);  scope(exit) TempAlloc.free(TAState);
+real median(T)(T data)
+if(realInput!(T)) {
+    // Allocate once on TempAlloc if possible, i.e. if we know the length.
+    // This can be done on TempAlloc.  Otherwise, have to use GC heap
+    // and appending.
+    auto dataDup = tempdup(data);
+    scope(exit) TempAlloc.free;
     return medianPartition(dataDup);
 }
 
@@ -68,30 +109,33 @@ real median(T)(const T[] data) {
  * elements less than the median will have smaller indices than that of the
  * median, and elements larger than the median will have larger indices than
  * that of the median. Useful both for its partititioning and to avoid
- * memory allocations.*/
-real medianPartition(T)(T[] data)
+ * memory allocations.  Requires a random access range with swappable
+ * elements.*/
+real medianPartition(T)(T data)
+if(isRandomAccessRange!(T) &&
+   is(ElementType!(T) : real) &&
+   hasSwappableElements!(T) &&
+   dstats.base.hasLength!(T))
 in {
     assert(data.length > 0);
 } body {
     // Upper half of median in even length case is just the smallest element
     // with an index larger than the lower median, after the array is
     // partially sorted.
-    static T min(T[] data) {
-        T min = data[0];
-        foreach(d; data[1..$]) {
-            if(d < min)
-                min = d;
-        }
-        return min;
-    }
-
     if(data.length == 1) {
         return data[0];
     } else if(data.length & 1) {  //Is odd.
         return cast(real) partitionK(data, data.length / 2);
     } else {
         auto lower = partitionK(data, data.length / 2 - 1);
-        auto upper = min(data[data.length / 2..$]);
+        auto upper = ElementType!(T).max;
+
+        // Avoid requiring slicing to be supported.
+        foreach(i; data.length / 2..data.length) {
+            if(data[i] < upper) {
+                upper = data[i];
+            }
+        }
         return lower * 0.5L + upper * 0.5L;
     }
 }
@@ -104,16 +148,15 @@ unittest {
         return (foo[$ / 2] + foo[$ / 2 - 1]) / 2;
     }
 
-    gen.seed(unpredictableSeed);
     float[] test = new float[1000];
     uint upperBound, lowerBound;
     foreach(testNum; 0..1000) {
         foreach(ref e; test) {
-            e = uniform(gen, 0f, 1000f);
+            e = uniform(0f, 1000f);
         }
         do {
-            upperBound = uniform(gen, 0u, test.length);
-            lowerBound = uniform(gen, 0u, test.length);
+            upperBound = uniform(0u, test.length);
+            lowerBound = uniform(0u, test.length);
         } while(lowerBound == upperBound);
         if(lowerBound > upperBound) {
             swap(lowerBound, upperBound);
@@ -125,30 +168,51 @@ unittest {
         // No idea why, but it's too small a rounding error to care about.
         assert(approxEqual(quickRes, accurateRes));
     }
+
+    // Make sure everything works with lowest common denominator range type.
+    struct Count {
+        uint num;
+        uint upTo;
+        uint front() {
+            return num;
+        }
+        void popFront() {
+            num++;
+        }
+        bool empty() {
+            return num >= upTo;
+        }
+    }
+
+    Count a;
+    a.upTo = 100;
+    assert(approxEqual(median(a), 49.5));
     writeln("Passed median unittest.");
 }
 
-///
-real mean(T)(const T[] data) {
+/**Finds the arithmetic mean of any input range whose elements are implicitly
+ * convertible to real.*/
+real mean(T)(T data)
+if(realInput!(T)) {
     OnlineMean meanCalc;
     foreach(element; data) {
-        meanCalc.addElement(element);
+        meanCalc.put(element);
     }
     return meanCalc.mean;
 }
 
-/**Struct to calculate the mean online.  Getter for mean costs a branch to
+/**Output range to calculate the mean online.  Getter for mean costs a branch to
  * check for N == 0.  This struct uses O(1) space and does *NOT* store the
  * individual elements.
  *
  * Examples:
  * ---
  * OnlineMean summ;
- * summ.addElement(1);
- * summ.addElement(2);
- * summ.addElement(3);
- * summ.addElement(4);
- * summ.addElement(5);
+ * summ.put(1);
+ * summ.put(2);
+ * summ.put(3);
+ * summ.put(4);
+ * summ.put(5);
  * assert(summ.mean == 3);
  * ---*/
 struct OnlineMean {
@@ -156,8 +220,11 @@ private:
     real result = 0;
     real k = 0;
 public:
+    /// Allow implicit casting to real, by returning the current mean.
+    alias mean this;
+
     ///
-    void addElement(real element) {
+    void put(real element) {
         result += (element - result) / ++k;
     }
 
@@ -177,19 +244,59 @@ public:
     }
 }
 
-///Returns mean of absolute values.
-real absMean(T)(const T[] data) {
-    OnlineMean meanCalc;
-    foreach(element; data) {
-        meanCalc.addElement(abs(element));
+///
+struct OnlineGeometricMean {
+private:
+    OnlineMean m;
+public:
+    ///Allow implicit casting to real, by returning current geometric mean.
+    alias geoMean this;
+
+    ///
+    void put(real element) {
+        m.put(log2(element));
     }
-    return meanCalc.mean;
+
+    ///
+    real geoMean() const {
+        return exp2(m.mean);
+    }
+
+    ///
+    real N() const {
+        return m.k;
+    }
+
+    ///
+    string toString() {
+        return to!(string)(geoMean);
+    }
 }
 
-/**User has option of making U a different type than T to prevent overflows
+///
+real geometricMean(T)(T data)
+if(realInput!(T)) {
+    OnlineGeometricMean m;
+    foreach(elem; data) {
+        m.put(elem);
+    }
+    return m.geoMean;
+}
+
+unittest {
+    string[] data = ["1", "2", "3", "4", "5"];
+    auto result = geometricMean(map!(to!(uint, string))(data));
+    assert(approxEqual(result, 2.60517));
+    writeln("Passed geometricMean unittest.");
+}
+
+
+/**Finds the sum of an input range whose elements implicitly convert to real.
+ * User has option of making U a different type than T to prevent overflows
  * on large array summing operations.  However, by default, return type is
  * T (same as input type).*/
-U sum(T, U = Mutable!(T))(const T[] data) {
+U sum(T, U = Unqual!(ElementType!(T)))(T data)
+if(realInput!(T)) {
     U sum = 0;
     foreach(value; data) {
         sum += value;
@@ -197,30 +304,17 @@ U sum(T, U = Mutable!(T))(const T[] data) {
     return sum;
 }
 
-/**User has option of making U a different type than T
- * to prevent overflows on large array summing operations.
- * However, by default, return type is T (same as input type).*/
-U absSum(T, U = Mutable!(T))(const T[] data) {
-    U sum=0;
-    foreach(value; data) {
-        sum+=abs(value);
-    }
-    return sum;
-}
-
 unittest {
-    assert(sum([1,2,3,4,5])==15);
-    assert(sum([40.0, 40.1, 5.2])==85.3);
-    assert(mean([1,2,3])==2);
-    assert(mean([1.0, 2.0, 3.0])==2.0);
-    assert(mean([1, 2, 5, 10, 17]) == 7);
-    assert(absSum([-1, 2, 3, -4, 5]) == 15);
-    assert(absMean([-1, 2, 3, -4, 5]) == 3);
+    assert(sum(cast(int[]) [1,2,3,4,5])==15);
+    assert(approxEqual( sum(cast(int[]) [40.0, 40.1, 5.2]), 85.3));
+    assert(mean(cast(int[]) [1,2,3]) == 2);
+    assert(mean(cast(int[]) [1.0, 2.0, 3.0]) == 2.0);
+    assert(mean(cast(int[]) [1, 2, 5, 10, 17]) == 7);
     writefln("Passed sum/mean unittest.");
 }
 
 
-/**Allows computation of mean, stdev, variance online.  Getter methods
+/**Outpu range to compute mean, stdev, variance online.  Getter methods
  * for stdev, var cost a few floating point ops.  Getter for mean costs
  * a single branch to check for N == 0.  Relatively expensive floating point
  * ops, if you only need mean, try OnlineMean.  This struct uses O(1) space and
@@ -229,11 +323,11 @@ unittest {
  * Examples:
  * ---
  * OnlineMeanSD summ;
- * summ.addElement(1);
- * summ.addElement(2);
- * summ.addElement(3);
- * summ.addElement(4);
- * summ.addElement(5);
+ * summ.put(1);
+ * summ.put(2);
+ * summ.put(3);
+ * summ.put(4);
+ * summ.put(5);
  * assert(summ.mean == 3);
  * assert(summ.stdev == sqrt(2.5));
  * assert(summ.var == 2.5);
@@ -245,7 +339,7 @@ private:
     real _k = 0;
 public:
     ///
-    void addElement(real element) {
+    void put(real element) {
         real kNeg1 = 1.0L / ++_k;
         _var += (element * element - _var) * kNeg1;
         _mean += (element - _mean) * kNeg1;
@@ -291,51 +385,52 @@ struct MeanSD {
     }
 }
 
-///
-real variance(T)(const T[] data) {
+/**Finds the variance of an input range with members implicitly convertible
+ * to reals.*/
+real variance(T)(T data)
+if(realInput!(T)) {
     return meanVariance(data).SD;
 }
 
-/// Calculates both mean and variance in one pass, returns a MeanSD struct.
-MeanSD meanVariance(T)(const T[] data) {
+/**Calculates both mean and variance of an input range, returns a MeanSD
+ * struct.*/
+MeanSD meanVariance(T)(T data)
+if(realInput!(T)) {
     OnlineMeanSD meanSDCalc;
     foreach(element; data) {
-        meanSDCalc.addElement(element);
+        meanSDCalc.put(element);
     }
 
     return MeanSD(meanSDCalc.mean, meanSDCalc.var);
 }
 
-/// Computes mean and standard deviation in one pass, returns both in a struct.
-MeanSD meanStdev(T)(const T[] data) {
+/**Calculates both mean and standard deviation of an input range, returns a
+ * MeanSD struct.*/
+MeanSD meanStdev(T)(T data)
+if(realInput!(T)) {
     auto ret = meanVariance(data);
     ret.SD = sqrt(ret.SD);
     return ret;
 }
 
-///
-real stdev(T)(const T[] data) {
+/**Calculate the standard deviation of an input range with members
+ * implicitly converitble to real.*/
+real stdev(T)(T data)
+if(realInput!(T)) {
     return meanStdev(data).SD;
 }
 
 unittest {
-    auto res = meanStdev([3, 1, 4, 5]);
+    auto res = meanStdev(cast(int[]) [3, 1, 4, 5]);
     assert(approxEqual(res.SD, 1.7078));
     assert(approxEqual(res.mean, 3.25));
-    res = meanStdev([1.0, 2.0, 3.0, 4.0, 5.0]);
+    res = meanStdev(cast(double[]) [1.0, 2.0, 3.0, 4.0, 5.0]);
     assert(approxEqual(res.SD, 1.5811));
     assert(approxEqual(res.mean, 3));
     writefln("Passed variance/standard deviation unittest.");
 }
 
-///
-real percentVariance(T) (const T[] data) {
-    MeanSD stats = meanStdev(data);
-    real PV = 100 * abs(stats.SD / stats.mean);
-    return abs(PV);
-}
-
-/**Allows computation of mean, stdev, variance, skewness, kurtosis, min, and
+/**Output range to compute mean, stdev, variance, skewness, kurtosis, min, and
  * max online. Using this struct is relatively expensive, so if you just need
  * mean and/or stdev, try OnlineMeanSD or OnlineMean. Getter methods for stdev,
  * var cost a few floating point ops.  Getter for mean costs a single branch to
@@ -346,11 +441,11 @@ real percentVariance(T) (const T[] data) {
  * Examples:
  * ---
  * OnlineSummary summ;
- * summ.addElement(1);
- * summ.addElement(2);
- * summ.addElement(3);
- * summ.addElement(4);
- * summ.addElement(5);
+ * summ.put(1);
+ * summ.put(2);
+ * summ.put(3);
+ * summ.put(4);
+ * summ.put(5);
  * assert(summ.N == 5);
  * assert(summ.mean == 3);
  * assert(summ.stdev == sqrt(2.5));
@@ -370,8 +465,8 @@ private:
     real _max = -real.infinity;
 public:
     ///
-    void addElement(real element) {
-        invariant real kNeg1 = 1.0L / ++_k;
+    void put(real element) {
+        immutable real kNeg1 = 1.0L / ++_k;
         _min = (element < _min) ? element : _min;
         _max = (element > _max) ? element : _max;
         _mean += (element - _mean) * kNeg1;
@@ -437,40 +532,49 @@ public:
 /**Excess kurtosis relative to normal distribution.  High kurtosis means that
  * the variance is due to infrequent, large deviations from the mean.  Low
  * kurtosis means that the variance is due to frequent, small deviations from
- * the mean.  The normal distribution is defined as having kurtosis of 0.*/
-real kurtosis(T)(const T[] data) {
+ * the mean.  The normal distribution is defined as having kurtosis of 0.
+ * Input must be an input range with elements implicitly convertible to real.*/
+real kurtosis(T)(T data)
+if(realInput!(T)) {
     OnlineSummary kCalc;
     foreach(elem; data) {
-        kCalc.addElement(elem);
+        kCalc.put(elem);
     }
     return kCalc.kurtosis;
 }
 
 unittest {
     // Values from Octave.
-    assert(approxEqual(kurtosis([1, 1, 1, 1, 10]), -.92));
-    assert(approxEqual(kurtosis([2.5, 3.5, 4.5, 5.5]), -2.0775));
-    assert(approxEqual(kurtosis([1,2,2,2,2,2,100]), 0.79523));
+    assert(approxEqual(kurtosis([1, 1, 1, 1, 10].dup), -.92));
+    assert(approxEqual(kurtosis([2.5, 3.5, 4.5, 5.5].dup), -2.0775));
+    assert(approxEqual(kurtosis([1,2,2,2,2,2,100].dup), 0.79523));
     writefln("Passed kurtosis unittest.");
 }
 
 /**Skewness is a measure of symmetry of a distribution.  Positive skewness
  * means that the right tail is longer/fatter than the left tail.  Negative
  * skewness means the left tail is longer/fatter than the right tail.  Zero
- * skewness indicates a symmetrical distribution.*/
-real skewness(T)(const T[] data) {
+ * skewness indicates a symmetrical distribution.  Input must be an input
+ * range with elements implicitly convertible to real.*/
+real skewness(T)(T data)
+if(realInput!(T)) {
     OnlineSummary sCalc;
     foreach(elem; data) {
-        sCalc.addElement(elem);
+        sCalc.put(elem);
     }
     return sCalc.skewness;
 }
 
 unittest {
     // Values from Octave.
-    assert(approxEqual(skewness([1,2,3,4,5]), 0));
-    assert(approxEqual(skewness([3,1,4,1,5,9,2,6,5]), 0.45618));
-    assert(approxEqual(skewness([2,7,1,8,2,8,1,8,2,8,4,5,9]), -0.076783));
+    assert(approxEqual(skewness([1,2,3,4,5].dup), 0));
+    assert(approxEqual(skewness([3,1,4,1,5,9,2,6,5].dup), 0.45618));
+    assert(approxEqual(skewness([2,7,1,8,2,8,1,8,2,8,4,5,9].dup), -0.076783));
+
+    // Test handling of ranges that are not arrays.
+    string[] stringy = ["3", "1", "4", "1", "5", "9", "2", "6", "5"];
+    auto intified = map!(to!(int, string))(stringy);
+    assert(approxEqual(skewness(intified), 0.45618));
     writeln("Passed skewness test.");
 }
 
@@ -509,12 +613,14 @@ struct Summary {
     }
 }
 
-/**Calculates all summary dstats (mean, variance, standard dev., skewness
- * and kurtosis) on an array.  Returns the results in a Summary struct.*/
-Summary summary(T)(const T[] data) {
+/**Calculates all summary stats (mean, variance, standard dev., skewness
+ * and kurtosis) on an input range with elements that can be implicitly
+ * converted to real.  Returns the results in a Summary struct.*/
+Summary summary(T)(T data)
+if(realInput!(T)) {
     OnlineSummary summ;
     foreach(elem; data) {
-        summ.addElement(elem);
+        summ.put(elem);
     }
     return Summary(data.length, summ.mean, summ.var, summ.stdev, summ.skewness,
                    summ.kurtosis, summ.min, summ.max);

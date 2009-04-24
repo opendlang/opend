@@ -1,10 +1,43 @@
 /**Relatively low-level primitives on which to build higher-level math/stat
  * functionality.  Some are used internally, some are just things that may be
- * useful to users of this library.
+ * useful to users of this library.  This module is starting to take on the
+ * appearance of a small utility library.
  *
- * Author:  David Simcha
+ * Author:  David Simcha*/
+ /*
+ * You may use this software under your choice of either of the following
+ * licenses.  YOU NEED ONLY OBEY THE TERMS OF EXACTLY ONE OF THE TWO LICENSES.
+ * IF YOU CHOOSE TO USE THE PHOBOS LICENSE, YOU DO NOT NEED TO OBEY THE TERMS OF
+ * THE BSD LICENSE.  IF YOU CHOOSE TO USE THE BSD LICENSE, YOU DO NOT NEED
+ * TO OBEY THE TERMS OF THE PHOBOS LICENSE.  IF YOU ARE A LAWYER LOOKING FOR
+ * LOOPHOLES AND RIDICULOUSLY NON-EXISTENT AMBIGUITIES IN THE PREVIOUS STATEMENT,
+ * GET A LIFE.
  *
- * Copyright (c) 2009, David Simcha
+ * ---------------------Phobos License: ---------------------------------------
+ *
+ *  Copyright (C) 2008-2009 by David Simcha.
+ *
+ *  This software is provided 'as-is', without any express or implied
+ *  warranty. In no event will the authors be held liable for any damages
+ *  arising from the use of this software.
+ *
+ *  Permission is granted to anyone to use this software for any purpose,
+ *  including commercial applications, and to alter it and redistribute it
+ *  freely, in both source and binary form, subject to the following
+ *  restrictions:
+ *
+ *  o  The origin of this software must not be misrepresented; you must not
+ *     claim that you wrote the original software. If you use this software
+ *     in a product, an acknowledgment in the product documentation would be
+ *     appreciated but is not required.
+ *  o  Altered source versions must be plainly marked as such, and must not
+ *     be misrepresented as being the original software.
+ *  o  This notice may not be removed or altered from any source
+ *     distribution.
+ *
+ * --------------------BSD License:  -----------------------------------------
+ *
+ * Copyright (c) 2008-2009, David Simcha
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -30,18 +63,31 @@
  * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.*/
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
 
 module dstats.base;
 
 public import std.math, std.traits, dstats.gamma, dstats.alloc;
-private import dstats.sort, std.c.stdlib, std.bigint,
-               std.functional, std.algorithm;
+private import dstats.sort, std.c.stdlib, std.bigint, std.typecons,
+               std.functional, std.algorithm, std.range, std.bitmanip;
 
 invariant real[] staticLogFacTable;
 
 enum : size_t {
     staticFacTableLen = 10_000,
+}
+
+// Tests whether T is an input range whose elements can be implicitly
+// converted to reals.
+template realInput(T) {
+    enum realInput = isInputRange!(T) && is(ElementType!(T) : real);
+}
+
+// See Bugzilla 2873.  This can be removed once that's fixed.
+template hasLength(R) {
+    enum bool hasLength = is(typeof(R.init.length) : ulong) ||
+                      is(typeof(R.init.length()) : ulong);
 }
 
 /**Parameter in some functions to determine where results are returned.
@@ -77,23 +123,60 @@ version(unittest) {
     }
 }
 
+/**Converts any range to an array on the GC heap by the most efficient means
+ * available.  If it is already an array, duplicates the range.*/
+Unqual!(ElementType!(T))[] toArray(T)(T range) if(isInputRange!(T)) {
+    static if(isArray!(T)) {
+        return range.dup;
+    } else static if(hasLength!(T)) {
+        auto ret = newVoid!(Unqual!(ElementType!(T)))(range.length);
+        static if(is(typeof(ret[] = range[]))) {
+            ret[] = range[];
+        } else {
+            size_t pos = 0;
+            foreach(elem; range) {
+                ret[pos++] = elem;
+            }
+        }
+        return ret;
+    } else {
+        Unqual!(ElementType!(T))[] ret;
+        mate(range, appender(&ret));
+        return ret;
+    }
+}
+
+/**Writes the contents of an input range to an output range.
+ *
+ * Returns:  The output range.*/
+O mate(I, O)(I input, O output)
+if(isInputRange!(I) && isOutputRange!(O, ElementType!(I))) {
+    foreach(elem; input) {
+        output.put(elem);
+    }
+    return output;
+}
+
 /**Bins data into nbin equal width bins, indexed from
  * 0 to nbin - 1, with 0 being the smallest bin, etc.
  * The values returned are the counts for each bin.  Returns results on the GC
- * heap by default, but uses TempAlloc stack if alloc == Alloc.STACK.*/
-Ret[] binCounts(Ret = ushort, T)(const T[] data, uint nbin, Alloc alloc = Alloc.HEAP)
+ * heap by default, but uses TempAlloc stack if alloc == Alloc.STACK.
+ *
+ * Works with any forward range with elements implicitly convertible to real.*/
+Ret[] binCounts(Ret = ushort, T)(T data, uint nbin, Alloc alloc = Alloc.HEAP)
+if(isForwardRange!(T) && realInput!(T))
 in {
-    assert(data.length > 0);
     assert(nbin > 0);
 } body {
-    T min = data[0], max = data[0];
+    alias Unqual!(ElementType!(T)) E;
+    E min = data[0], max = data[0];
     foreach(elem; data[1..$]) {
         if(elem > max)
             max = elem;
         else if(elem < min)
             min = elem;
     }
-    T range = max - min;
+    E range = max - min;
 
     Ret[] bins;
     if(alloc == Alloc.HEAP) {
@@ -129,21 +212,32 @@ unittest {
 
 /**Bins data into nbin equal width bins, indexed from
  * 0 to nbin - 1, with 0 being the smallest bin, etc.
- * The values returned are the bin index for each element.  Returns on GC
- * heap by default, but TempAlloc stack if alloc == Alloc.STACK.*/
-Ret[] bin(Ret = ushort, T)(const T[] data, uint nbin, Alloc alloc = Alloc.HEAP)
+ * The values returned are the bin index for each element.
+ *
+ * Returns on GC heap by default, but TempAlloc stack if alloc == Alloc.STACK.
+ * Works with any forward range with elements implicitly convertible to real.
+ *
+ * Default return type is ubyte, because in the dstats.infotheory,
+ * entropy() and related functions specialize on ubytes, and become
+ * substandially faster.  However, if you're using more than 255 bins,
+ * you'll have to provide a different return type as a template parameter.*/
+Ret[] bin(Ret = ubyte, T)(T data, uint nbin, Alloc alloc = Alloc.HEAP)
+if(isForwardRange!(T) && realInput!(T) && isIntegral!(Ret))
 in {
-    assert(data.length > 0);
+    assert(nbin <= Ret.max + 1);
     assert(nbin > 0);
 } body {
-    Mutable!(T) min = data[0], max = data[0];
-    foreach(elem; data[1..$]) {
+    alias ElementType!(T) E;
+    Unqual!(E) min = data.front, max = data.front;
+    auto dminmax = data;
+    dminmax.popFront;
+    foreach(elem; dminmax) {
         if(elem > max)
             max = elem;
         else if(elem < min)
             min = elem;
     }
-    T range = max - min;
+    E range = max - min;
 
     Ret[] bins;
     if(alloc == Alloc.HEAP) {
@@ -170,22 +264,31 @@ unittest {
     mixin(newFrame);
     double[] data = [0.0, .01, .03, .05, .11, .3, .5, .7, .89, 1];
     auto res = bin(data, 10);
-    assert(res == [cast(ushort) 0, 0, 0, 0, 1, 3, 5, 7, 8, 9]);
+    assert(res == [cast(ubyte) 0, 0, 0, 0, 1, 3, 5, 7, 8, 9]);
     res = bin(data, 10, Alloc.STACK);
-    assert(res == [cast(ushort) 0, 0, 0, 0, 1, 3, 5, 7, 8, 9]);
+    assert(res == [cast(ubyte) 0, 0, 0, 0, 1, 3, 5, 7, 8, 9]);
     TempAlloc.free;
     writeln("Passed bin unittest.");
 }
 
 /**Bins data into nbin equal frequency bins, indexed from
  * 0 to nbin - 1, with 0 being the smallest bin, etc.
- * The values returned are the bin index for each element.  Returns on GC
- * heap by default, but TempAlloc stack if alloc == Alloc.STACK.*/
-Ret[] frqBin(Ret = ushort, T)(const T[] data, uint nbin, Alloc alloc = Alloc.HEAP)
+ * The values returned are the bin index for each element.
+ *
+ * Returns on GC heap by default, but TempAlloc stack if alloc == Alloc.STACK.
+ * Works with any forward range with elements implicitly convertible to real
+ * and a length property.
+ *
+ * Default return type is ubyte, because in the dstats.infotheory,
+ * entropy() and related functions specialize on ubytes, and become
+ * substandially faster.  However, if you're using more than 256 bins,
+ * you'll have to provide a different return type as a template parameter.*/
+Ret[] frqBin(Ret = ubyte, T)(T data, uint nbin, Alloc alloc = Alloc.HEAP)
+if(realInput!(T) && isForwardRange!(T) && hasLength!(T) && isIntegral!(Ret))
 in {
-    assert(data.length > 0);
     assert(nbin > 0);
     assert(nbin <= data.length);
+    assert(nbin <= Ret.max + 1);
 } body {
     Ret[] result;
     if(alloc == Alloc.HEAP) {
@@ -197,7 +300,7 @@ in {
     auto perm = newStack!(uint)(data.length); scope(exit) TempAlloc.free;
     foreach(i, ref e; perm)
         e = i;
-    auto dd = data.tempdup;
+    auto dd = tempdup(data);
     qsort(dd, perm);
     TempAlloc.free;
 
@@ -216,19 +319,19 @@ in {
 unittest {
     double[] data = [5U, 1, 3, 8, 30, 10, 7];
     auto res = frqBin(data, 3);
-    assert(res == [cast(ushort) 0, 0, 0, 1, 2, 2, 1]);
+    assert(res == [cast(ubyte) 0, 0, 0, 1, 2, 2, 1]);
     data = [3, 1, 4, 1, 5, 9, 2, 6, 5];
     res = frqBin(data, 4, Alloc.STACK);
-    assert(res == [cast(ushort) 1, 0, 1, 0, 2, 3, 0, 3, 2]);
+    assert(res == [cast(ubyte) 1, 0, 1, 0, 2, 3, 0, 3, 2]);
     data = [3U, 1, 4, 1, 5, 9, 2, 6, 5, 3, 4, 8, 9, 7, 9, 2];
     res = frqBin(data, 4);
-    assert(res == [cast(ushort) 1, 0, 1, 0, 2, 3, 0, 2, 2, 1, 1, 3, 3, 2, 3, 0]);
+    assert(res == [cast(ubyte) 1, 0, 1, 0, 2, 3, 0, 2, 2, 1, 1, 3, 3, 2, 3, 0]);
     TempAlloc.free;
     writeln("Passed frqBin unittest.");
 }
 
 /**Generates a sequence from [start..end] by increment.  Includes start,
- * excludes end.
+ * excludes end.  Does so eagerly as an array.
  *
  * Examples:
  * ---
@@ -253,15 +356,17 @@ T[] seq(T)(T start, T end, T increment = 1, Alloc alloc = Alloc.HEAP) {
 unittest {
     auto s = seq(0, 5);
     assert(s == [0, 1, 2, 3, 4]);
-    writeln(stderr, "Passed seq test.");
+    writeln("Passed seq test.");
 }
 
 /**Given an input array, outputs an array containing the rank from
  * [1, input.length] corresponding to each element.  Ties are dealt with by
- * averaging.  This function duplicates the input array, and does not reorder
+ * averaging.  This function duplicates the input range, and does not reorder
  * it.  Return type is float[] by default, but if you are sure you have no ties,
  * ints can be used for efficiency, and if you need more precision when
  * averaging ties, you can use double or real.
+ *
+ * Works with any input range.
  *
  * Examples:
  * ---
@@ -270,15 +375,17 @@ unittest {
  * assert(test == [3U, 5, 3, 1, 2]);
  * ---*/
 Ret[] rank(Ret = float, T)(const T[] input) {
-    auto iDup = input.tempdup;
+    auto iDup = tempdup(input);
     scope(exit) TempAlloc.free;
     return rankSort!(Ret)(iDup);
 }
 
-/**Same as rank(), but sorts the input array in ascending order rather than
+/**Same as rank(), but sorts the input range in ascending order rather than
  * duping it and working on a copy.  The array returned will still be
  * identical to that returned by rank(), i.e. the rank of each element will
  * correspond to the ranks of the elements in the input array before sorting.
+ *
+ * Works with any random access range with a length property.
  *
  * Examples:
  * ---
@@ -286,14 +393,15 @@ Ret[] rank(Ret = float, T)(const T[] input) {
  * assert(rank(test) == [3.5f, 5f, 3.5f, 1f, 2f]);
  * assert(test == [1U, 2, 3, 4, 5]);
  * ---*/
-Ret[] rankSort(Ret = float, T)(T[] input) {
+Ret[] rankSort(Ret = float, T)(T input)
+if(isRandomAccessRange!(T)) {
     Ret[] ranks = newVoid!(Ret)(input.length);
     rankSort!(Ret, T)(input, ranks);
     return ranks;
 }
 
 // Speed hack used internally.
-void rankSort(Ret, T)(T[] input, Ret[] ranks) {
+void rankSort(Ret, T)(T input, Ret[] ranks) {
     size_t[] perms = newStack!(size_t)(input.length);
     scope(exit) TempAlloc.free;
 
@@ -315,11 +423,11 @@ unittest {
     assert(rank!(double)(test) == [3.5, 5, 3.5, 1, 2]);
     assert(rankSort(test) == [3.5f, 5f, 3.5f, 1f, 2f]);
     assert(test == [1U,2,3,3,5]);
-    writeln(stderr, "Passed rank test.");
+    writeln("Passed rank test.");
 }
 
 // Used internally by rank().
-void averageTies(T, U)(T[] sortedInput, U[] ranks, uint[] perms) nothrow
+void averageTies(T, U)(T sortedInput, U[] ranks, uint[] perms) nothrow
 in {
     assert(sortedInput.length == ranks.length);
     assert(ranks.length == perms.length);
@@ -349,7 +457,7 @@ in {
     }
 }
 
-/**Returns an AA of counts of every element in input.
+/**Returns an AA of counts of every element in input.  Works w/ any input range.
  *
  * Examples:
  * ---
@@ -359,8 +467,9 @@ in {
  * assert(frq[1] == 2);
  * assert(frq[4] == 1);
  * ---*/
-uint[T] frequency(T)(const T[] input) pure nothrow {
-    uint[T] output;
+uint[ElementType!(T)] frequency(T)(T input)
+if(isInputRange!(T)) {
+    typeof(return) output;
     foreach(i; input) {
         output[i]++;
     }
@@ -376,15 +485,8 @@ unittest {
     writeln("Passed frequency test.");
 }
 
-unittest {
-    uint[int] temp=frequency([1,2,2,1,2]);
-    assert(temp[1]==2);
-    assert(temp[2]==3);
-    writefln("Passed frequency unittest.");
-}
-
 ///
-int sign(T)(T num) pure nothrow {
+T sign(T)(T num) pure nothrow {
     if (num > 0) return 1;
     if (num < 0) return -1;
     return 0;
@@ -402,7 +504,7 @@ unittest {
  * an invariant global array, for performance.  After this point, the gamma
  * function is used, because caching would take up too much memory, and if
  * done lazily, would cause threading issues.*/
- real logFactorial(uint n) {
+real logFactorial(uint n) {
     //Input is uint, can't be less than 0, no need to check.
     if(n < staticFacTableLen) {
         return staticLogFacTable[n];
@@ -439,30 +541,31 @@ unittest {
     writefln("Passed logNcomb unit test.");
 }
 
-///No, nothing this horribly inefficient is used internally.
-BigInt factorial(uint N) {
-    BigInt result = 1;
-    for(uint i = 2; i <= N; i++) {
-        result *= i;
-    }
-    return result;
-}
-
-unittest {
-    assert(factorial(4) == 24);
-    assert(factorial(5) == 120);
-    assert(factorial(6) == 720);
-    assert(factorial(7) == 5040);
-    assert(factorial(3) == 6);
-    writefln("Passed factorial test.");
-}
+/////No, nothing this horribly inefficient is used internally.
+//BigInt factorial(uint N) {
+//    BigInt result = 1;
+//    for(uint i = 2; i <= N; i++) {
+//        result *= i;
+//    }
+//    return result;
+//}
+//
+//unittest {
+//    assert(factorial(4) == 24);
+//    assert(factorial(5) == 120);
+//    assert(factorial(6) == 720);
+//    assert(factorial(7) == 5040);
+//    assert(factorial(3) == 6);
+//    writefln("Passed factorial test.");
+//}
 
 /**A struct that generates all possible permutations of a sequence,
  * and can be iterated over with foreach.  Note that permutations are
  * output in undefined order.  Also note that the returned permutations
  * are references to the internal permutation state.  This is dangerous, but
  * necessary for performance.  Therefore, you
- * will have to dup them if you expect them not to change.
+ * will have to dup them if you expect them not to change.  This is also
+ * the rationale for not making this struct an input range.
  *
  * Examples:
  * ---
@@ -487,25 +590,15 @@ private:
     size_t len;
 
 public:
-    /**Generate a sequence of seq(0, length) to permute based on.
-     * Exists only if T == uint.*/
-    static if(is(T == uint)) {
-        this(uint length) {
-            perm = (new uint[length]).ptr;
-            foreach(i; 0..length) {
-                perm[i] = i;
-            }
-            Is = (new size_t[length]).ptr;
-            len = length;
-        }
-    }
-
-    /**Use user-provided sequence.  Creates a duplicate of this sequence
+    /**Generate permutations from an input range.
+     * Create a duplicate of this sequence
      * so that the original sequence is not modified.*/
-    this(T[] input) {
-        perm = input.dup.ptr;
-        Is = (new size_t[input.length]).ptr;
-        len = input.length;
+    this(U)(U input)
+    if(isForwardRange!(U)) {
+        auto arr = toArray(input);
+        Is = (new size_t[arr.length]).ptr;
+        len = arr.length;
+        perm = arr.ptr;
     }
 
     /**Get the next permutation in the sequence.*/
@@ -544,38 +637,71 @@ public:
 
 }
 
+private template PermRet(T...) {
+    static if(isForwardRange!(T[0])) {
+        alias Perm!(ElementType!(T[0])) PermRet;
+    } else static if(T.length == 1) {
+        alias Perm!uint PermRet;
+    } else alias Perm!(T[0]) PermRet;
+}
+
+/**Create a Perm struct from a range or of a set of bounds.
+ *
+ * Note:  PermRet is just a template to figure out what this should return.
+ * I would use auto if not for bug 2251.
+ *
+ * Examples:
+ * ---
+ * auto p = perm([1,2,3]);
+ * auto p = perm(5);  // Permutations of integers on range [0, 5].
+ * auto p = perm(-1, 2); // Permutations of integers on range [-1, 2].
+ * ---
+ */
+PermRet!(T) perm(T...)(T stuff) {
+    alias typeof(return) rt;
+    static if(isForwardRange!(T[0])) {
+        return rt(stuff);
+    } else static if(T.length == 1) {
+        static assert(isIntegral!(T[0]));
+        return rt(seq(0U, cast(uint) stuff[0]));
+    } else {
+        return rt(seq(stuff));
+    }
+}
+
+
 unittest {
     double[][] res;
-    alias Perm!(double) PermD;
-    auto perm = PermD(cast(double[]) [1.0, 2.0, 3.0]);
-    foreach(p; perm) {
+    auto p1 = perm(cast(double[]) [1.0, 2.0, 3.0]);
+    foreach(p; p1) {
         res ~= p.dup;
     }
-    assert(res.canFind([1.0, 2.0, 3.0]));
-    assert(res.canFind([1.0, 3.0, 2.0]));
-    assert(res.canFind([2.0, 1.0, 3.0]));
-    assert(res.canFind([2.0, 3.0, 1.0]));
-    assert(res.canFind([3.0, 1.0, 2.0]));
-    assert(res.canFind([3.0, 2.0, 1.0]));
+    sort(res);
+    assert(res.canFindSorted([1.0, 2.0, 3.0]));
+    assert(res.canFindSorted([1.0, 3.0, 2.0]));
+    assert(res.canFindSorted([2.0, 1.0, 3.0]));
+    assert(res.canFindSorted([2.0, 3.0, 1.0]));
+    assert(res.canFindSorted([3.0, 1.0, 2.0]));
+    assert(res.canFindSorted([3.0, 2.0, 1.0]));
     assert(res.length == 6);
     uint[][] res2;
-    alias Perm!(uint) PermU;
-    auto perm2 = PermU(3);
+    auto perm2 = perm(3);
     foreach(p; perm2) {
         res2 ~= p.dup;
     }
-    assert(res2.canFind([0u, 1, 2]));
-    assert(res2.canFind([0u, 2, 1]));
-    assert(res2.canFind([1u, 0, 2]));
-    assert(res2.canFind([1u, 2, 0]));
-    assert(res2.canFind([2u, 0, 1]));
-    assert(res2.canFind([2u, 1, 0]));
+    sort(res2);
+    assert(res2.canFindSorted([0u, 1, 2]));
+    assert(res2.canFindSorted([0u, 2, 1]));
+    assert(res2.canFindSorted([1u, 0, 2]));
+    assert(res2.canFindSorted([1u, 2, 0]));
+    assert(res2.canFindSorted([2u, 0, 1]));
+    assert(res2.canFindSorted([2u, 1, 0]));
     assert(res2.length == 6);
 
     // Indirect tests:  If the elements returned are unique, there are N! of
     // them, and they contain what they're supposed to contain, the result is
     // correct.
-    auto perm3 = PermU(6);
+    auto perm3 = perm(6);
     bool[uint[]] table;
     foreach(p; perm3) {
         table[p.dup] = true;
@@ -584,7 +710,7 @@ unittest {
     foreach(elem, val; table) {
         assert(elem.dup.insertionSort == [0U, 1, 2, 3, 4, 5]);
     }
-    auto perm4 = PermU(5);
+    auto perm4 = perm(5);
     bool[uint[]] table2;
     foreach(p; perm4) {
         table2[p.dup] = true;
@@ -593,7 +719,35 @@ unittest {
     foreach(elem, val; table2) {
         assert(elem.dup.insertionSort == [0U, 1, 2, 3, 4]);
     }
-    writeln(stderr, "Passed Perm test.");
+    writeln("Passed Perm test.");
+}
+
+private template CombRet(T) {
+    static if(isForwardRange!(T)) {
+        alias Comb!(Unqual!(ElementType!(T))) CombRet;
+    } else static if(is(T : uint)) {
+        alias Comb!uint CombRet;
+    } else static assert(0, "comb can only be created with range or uint.");
+}
+
+/**Create a Comb struct from a range or of a set of bounds.
+ *
+ * Note:  CombRet is just a template to figure out what this should return.
+ * I would use auto if not for bug 2251.
+ *
+ * Examples:
+ * ---
+ * auto p = comb([1,2,3]);
+ * auto p = comb(5);  // Permutations of integers on range [0, 5].
+ * ---
+ */
+CombRet!(T) comb(T)(T stuff, uint r) {
+    alias typeof(return) rt;
+    static if(isForwardRange!(T)) {
+        return rt(stuff, r);
+    } else {
+        return rt(seq(0U, cast(uint) stuff), r);
+    }
 }
 
 /**Generates every possible combination of r elements of the given sequence, or r
@@ -601,7 +755,9 @@ unittest {
  * be iterated over with a foreach loop.  Note that the combinations returned
  * are const references to the internal state of the Comb object.  This is
  * dangerous but necessary for performance.  If you want to save them past the
- * next  iteration, you'll have to dup them yourself.
+ * next  iteration, you'll have to dup them yourself.  This is also the
+ * rationale for not making this struct an input range.
+ *
  * Examples:
  * ---
     auto comb1 = Comb!(uint)(5, 2);
@@ -718,39 +874,41 @@ public:
 
 unittest {
     // Test indexing verison first.
-    auto comb1 = Comb!(uint)(5, 2);
+    auto comb1 = comb(5, 2);
     uint[][] vals;
     foreach(c; comb1) {
         vals ~= c.dup;
     }
-    assert(vals.canFind([0u,1].dup));
-    assert(vals.canFind([0u,2].dup));
-    assert(vals.canFind([0u,3].dup));
-    assert(vals.canFind([0u,4].dup));
-    assert(vals.canFind([1u,2].dup));
-    assert(vals.canFind([1u,3].dup));
-    assert(vals.canFind([1u,4].dup));
-    assert(vals.canFind([2u,3].dup));
-    assert(vals.canFind([2u,4].dup));
-    assert(vals.canFind([3u,4].dup));
+    sort(vals);
+    assert(vals.canFindSorted([0u,1].dup));
+    assert(vals.canFindSorted([0u,2].dup));
+    assert(vals.canFindSorted([0u,3].dup));
+    assert(vals.canFindSorted([0u,4].dup));
+    assert(vals.canFindSorted([1u,2].dup));
+    assert(vals.canFindSorted([1u,3].dup));
+    assert(vals.canFindSorted([1u,4].dup));
+    assert(vals.canFindSorted([2u,3].dup));
+    assert(vals.canFindSorted([2u,4].dup));
+    assert(vals.canFindSorted([3u,4].dup));
     assert(vals.length == 10);
 
     // Now, test the array version.
-    auto comb2 = Comb!(uint)(seq(5U, 10U), 3);
+    auto comb2 = comb(seq(5U, 10U), 3);
     vals = null;
     foreach(c; comb2) {
         vals ~= c.dup;
     }
-    assert(vals.canFind([5u, 6, 7].dup));
-    assert(vals.canFind([5u, 6, 8].dup));
-    assert(vals.canFind([5u, 6, 9].dup));
-    assert(vals.canFind([5u, 7, 8].dup));
-    assert(vals.canFind([5u, 7, 9].dup));
-    assert(vals.canFind([5u, 8, 9].dup));
-    assert(vals.canFind([6U, 7, 8].dup));
-    assert(vals.canFind([6u, 7, 9].dup));
-    assert(vals.canFind([6u, 8, 9].dup));
-    assert(vals.canFind([7u, 8, 9].dup));
+    sort(vals);
+    assert(vals.canFindSorted([5u, 6, 7].dup));
+    assert(vals.canFindSorted([5u, 6, 8].dup));
+    assert(vals.canFindSorted([5u, 6, 9].dup));
+    assert(vals.canFindSorted([5u, 7, 8].dup));
+    assert(vals.canFindSorted([5u, 7, 9].dup));
+    assert(vals.canFindSorted([5u, 8, 9].dup));
+    assert(vals.canFindSorted([6U, 7, 8].dup));
+    assert(vals.canFindSorted([6u, 7, 9].dup));
+    assert(vals.canFindSorted([6u, 8, 9].dup));
+    assert(vals.canFindSorted([7u, 8, 9].dup));
     assert(vals.length == 10);
 
     // Now a test of a larger dataset where more subtle bugs could hide.
@@ -774,543 +932,6 @@ unittest {
     }
     assert(results.length == 924);  // (12 choose 6).
     writeln("Passed Comb test.");
-}
-
-// This should be encapsulated within StackHash.  Workaround for bug 1629.
-struct SHNode(K, V) {
-    alias SHNode!(K, V) SomeType;
-    SomeType* next;
-    Mutable!(K) key;
-    Mutable!(V) val;
-}
-
-/* A hash table that uses TempAlloc to allocate space.  Useful for building
- * a quick symbol table in a performance-critical function that can't be
- * performing tons of heap allocations.  Intentionally lacking ddoc because
- * the design or even existence of this is still likely to change.*/
-struct StackHash(K, V) {
-private:
-    alias SHNode!(K, V) Node;
-    Node[] roots;
-    TempAlloc.State TAState;
-    TypeInfo keyTI;
-    size_t _length;
-    Node* usedSentinel;
-
-    Node* newNode(K key) {
-        Node* ret = cast(Node*) TempAlloc(Node.sizeof, TAState);
-        ret.key =  key;
-        ret.val =  V.init;
-        ret.next = null;
-        return ret;
-    }
-
-    Node* newNode(K key, V val) {
-        Node* ret = cast(Node*) TempAlloc(Node.sizeof, TAState);
-        ret.key =  key;
-        ret.val = val;
-        ret.next = null;
-        return ret;
-    }
-
-    hash_t getHash(K key) {
-        static if(is(K : long) && K.sizeof <= hash_t.sizeof) {
-            hash_t hash = cast(hash_t) key;
-        } else static if(__traits(compiles, key.toHash())) {
-            hash_t hash = key.toHash();
-        } else {
-            hash_t hash = keyTI.getHash(&key);
-        }
-        hash %= roots.length;
-        return hash;
-    }
-
-
-public:
-    this(size_t nElem) {
-        // Obviously, the caller can never mean zero, because this struct
-        // can't work at all with nElem == 0, so assume it's a mistake and fix
-        // it here.
-        if(nElem == 0)
-            nElem++;
-        TAState = TempAlloc.getState;
-        roots = newStack!(Node)(nElem, TAState);
-        usedSentinel = cast(Node*) roots.ptr;
-        foreach(ref root; roots) {
-            root.key =  K.init;
-            root.val = V.init;
-            root.next = usedSentinel;
-        }
-        keyTI = typeid(K);
-    }
-
-    ref V opIndex(K key) {
-        hash_t hash = getHash(key);
-
-        if(roots[hash].next == usedSentinel) {
-            roots[hash].key =  key;
-            roots[hash].next = null;
-            _length++;
-            return roots[hash].val;
-        } else if(roots[hash].key == key) {
-            return roots[hash].val;
-        } else {  // Collision.  Start chaining.
-            Node** next = &(roots[hash].next);
-            while(*next !is null) {
-                if((**next).key ==  key) {
-                    return (**next).val;
-                }
-                next = &((**next).next);
-            }
-            *next = newNode(key);
-            _length++;
-            return (**next).val;
-        }
-    }
-
-    V opIndexAssign(V val, K key) {
-        hash_t hash = getHash(key);
-
-        if(roots[hash].next == usedSentinel) {
-            roots[hash].key =  key;
-            roots[hash].val = val;
-            roots[hash].next = null;
-            _length++;
-            return val;
-        } else if(roots[hash].key ==  key) {
-            roots[hash].val = val;
-            return val;
-        } else {  // Collision.  Start chaining.
-            Node** next = &(roots[hash].next);
-            while(*next !is null) {
-                if((**next).key == key) {
-                    (**next).val = val;
-                    return val;
-                }
-                next = &((**next).next);
-            }
-            _length++;
-            *next = newNode(key, val);
-            return val;
-        }
-    }
-
-    V[] values() {
-        auto space = newVoid!(V)(_length);
-        return values(space);
-    }
-
-    V[] valStack() {
-        auto space = newStack!(V)(_length);
-        return values(space);
-    }
-
-    V[] values(V[] space) {
-        size_t pos;
-        foreach(r; roots) {
-            if(r.next == usedSentinel)
-                continue;
-            space[pos++] = r.val;
-            Node* next = r.next;
-            while(next !is null) {
-                space[pos++] = next.val;
-                next = next.next;
-            }
-        }
-        return space;
-    }
-
-    Mutable!(K)[] keys() const {
-        auto space = newVoid!(Mutable!(K))(_length);
-        return keys(space);
-    }
-
-    Mutable!(K)[] keyStack() const {
-        auto space = newStack!(Mutable!(K))(_length);
-        return keys(space);
-    }
-
-    Mutable!(K)[] keys(Mutable!(K)[] space) const {
-        size_t pos;
-        foreach(r; roots) {
-            if(r.next == usedSentinel)
-                continue;
-            space[pos++] = r.key;
-            const(Node)* next = r.next;
-            while(next !is null) {
-                space[pos++] = next.key;
-                next = next.next;
-            }
-        }
-        return space;
-    }
-
-    int opApply(int delegate(ref V value) dg) {
-        int res = 0;
-        outer:
-        foreach(r; roots) {
-            if(r.next == usedSentinel)
-                continue;
-            res = dg(r.val);
-            if (res) break;
-            Node* next = r.next;
-            while(next !is null) {
-                res = dg(next.val);
-                if(res) break outer;
-                next = next.next;
-            }
-        }
-        return res;
-   }
-
-   int opApply(int delegate(ref K key, ref V value) dg) {
-        int res = 0;
-        outer:
-        foreach(r; roots) {
-            if(r.next == usedSentinel)
-                continue;
-            res = dg(r.key, r.val);
-            if (res) break;
-            Node* next = r.next;
-            while(next !is null) {
-                res = dg(next.key, next.val);
-                if(res) break outer;
-                next = next.next;
-            }
-        }
-        return res;
-   }
-
-   V* opIn_r(K key) {
-        hash_t hash = getHash(key);
-
-        if(roots[hash].next == usedSentinel) {
-            return null;
-        } else if(roots[hash].key == key) {
-            return &(roots[hash].val);
-        } else {  // Collision.  Start chaining.
-            Node* next = roots[hash].next;
-            while(next !is null) {
-                if(next.key == key) {
-                    return &(next.val);
-                }
-                next = next.next;
-            }
-            return null;
-        }
-   }
-
-   void remove(K key) {
-        hash_t hash = getHash(key);
-
-        Node** next = &(roots[hash].next);
-        if(roots[hash].next == usedSentinel) {
-            return;
-        } else if(roots[hash].key == key) {
-            _length--;
-            if(roots[hash].next is null) {
-                roots[hash].key = K.init;
-                roots[hash].val = V.init;
-                roots[hash].next = usedSentinel;
-                return;
-            } else {
-                roots[hash].key = (**next).key;
-                roots[hash].val = (**next).val;
-                roots[hash].next = (**next).next;
-                return;
-            }
-        } else {  // Collision.  Start chaining.
-            while(*next !is null) {
-                if((**next).key == key) {
-                    _length--;
-                    *next = (**next).next;
-                    break;
-                }
-                next = &((**next).next);
-            }
-            return;
-        }
-   }
-
-   size_t length() {
-       return _length;
-   }
-
-   real efficiency() {
-       uint used = 0;
-       foreach(root; roots) {
-           if(root.next != usedSentinel) {
-               used++;
-           }
-       }
-       return cast(real) used / roots.length;
-   }
-}
-
-unittest {
-    alias StackHash!(string, uint) mySh;
-    mixin(newFrame);
-    auto data = mySh(2);  // Make sure we get some collisions.
-    data["foo"] = 1;
-    data["bar"] = 2;
-    data["baz"] = 3;
-    data["waldo"] = 4;
-    assert(!("foobar" in data));
-    assert(*("foo" in data) == 1);
-    assert(*("bar" in data) == 2);
-    assert(*("baz" in data) == 3);
-    assert(*("waldo" in data) == 4);
-    assert(data["foo"] == 1);
-    assert(data["bar"] == 2);
-    assert(data["baz"] == 3);
-    assert(data["waldo"] == 4);
-    assert(data.keys.sort == ["bar", "baz", "foo", "waldo"]);
-    assert(data.values.sort == [1U, 2, 3, 4]);
-    foreach(k, v; data) {
-        assert(data[k] == v);
-    }
-    foreach(v; data) {
-        assert(v > 0 && v < 5);
-    }
-
-    // Test remove.
-
-    alias StackHash!(uint, uint) mySh2;
-    auto foo = mySh2(7);
-    for(uint i = 0; i < 20; i++) {
-        foo[i] = i;
-    }
-    assert(foo.length == 20);
-    for(uint i = 0; i < 20; i += 2) {
-        foo.remove(i);
-    }
-    for(uint i = 0; i < 20; i++) {
-        if(i & 1) {
-            assert(*(i in foo) == i);
-        } else {
-            assert(!(i in foo));
-        }
-    }
-    auto vals = foo.values;
-    assert(foo.length == 10);
-    assert(vals.qsort == [1U, 3, 5, 7, 9, 11, 13, 15, 17, 19]);
-
-    writeln("Passed StackHash test.");
-}
-
-/* A hash set that uses TempAlloc to allocate space.  Useful for building
- * a quick set in a performance-critical function that can't be
- * performing tons of heap allocations.  Intentionally lacking ddoc because
- * the design or even existence of this is still likely to change.*/
-struct StackSet(K) {
-private:
-    // Choose smallest representation of the data.
-    struct Node1 {
-        Node1* next;
-        K key;
-    }
-
-    struct Node2 {
-        K key;
-        Node2* next;
-    }
-
-    static if(Node1.sizeof < Node2.sizeof) {
-        alias Node1 Node;
-    } else {
-        alias Node2 Node;
-    }
-
-    Node[] roots;
-    TempAlloc.State TAState;
-    TypeInfo keyTI;
-    size_t _length;
-    Node* usedSentinel;
-
-    Node* newNode(K key) {
-        Node* ret = cast(Node*) TempAlloc(Node.sizeof, TAState);
-        ret.key = key;
-        ret.next = null;
-        return ret;
-    }
-
-    hash_t getHash(K key) {
-        static if(is(K : long) && K.sizeof <= hash_t.sizeof) {
-            hash_t hash = cast(hash_t) key;
-        } else static if(__traits(compiles, key.toHash())) {
-            hash_t hash = key.toHash();
-        } else {
-            hash_t hash = keyTI.getHash(&key);
-        }
-        hash %= roots.length;
-        return hash;
-    }
-
-public:
-    this(size_t nElem) {
-        // Obviously, the caller can never mean zero, because this struct
-        // can't work at all with nElem == 0, so assume it's a mistake and fix
-        // it here.
-        if(nElem == 0)
-            nElem++;
-        TAState = TempAlloc.getState;
-        roots = newStack!(Node)(nElem, TAState);
-        usedSentinel = cast(Node*) roots.ptr;
-        foreach(ref root; roots) {
-            root.key = K.init;
-            root.next = usedSentinel;
-        }
-        keyTI = typeid(K);
-    }
-
-    void insert(K key) {
-        hash_t hash = getHash(key);
-
-        if(roots[hash].next == usedSentinel) {
-            roots[hash].key = key;
-            roots[hash].next = null;
-            _length++;
-            return;
-        } else if(roots[hash].key == key) {
-            return;
-        } else {  // Collision.  Start chaining.
-            Node** next = &(roots[hash].next);
-            while(*next !is null) {
-                if((**next).key == key) {
-                    return;
-                }
-                next = &((**next).next);
-            }
-            *next = newNode(key);
-            _length++;
-            return;
-        }
-    }
-
-    K[] elems() {
-        auto space = newVoid!(K)(_length);
-        return elems(space);
-    }
-
-    K[] elemStack() {
-        auto space = newStack!(K)(_length);
-        return elems(space);
-    }
-
-    K[] elems(K[] space) {
-        size_t pos;
-        foreach(r; roots) {
-            if(r.next == usedSentinel)
-                continue;
-            space[pos++] = r.key;
-            Node* next = r.next;
-            while(next !is null) {
-                space[pos++] = next.key;
-                next = next.next;
-            }
-        }
-        return space;
-    }
-
-   int opApply(int delegate(ref K key) dg) {
-        int res = 0;
-        outer:
-        foreach(r; roots) {
-            if(r.next == usedSentinel)
-                continue;
-            res = dg(r.key);
-            if (res) break;
-            Node* next = r.next;
-            while(next !is null) {
-                res = dg(next.key);
-                if(res) break outer;
-                next = next.next;
-            }
-        }
-        return res;
-   }
-
-   bool opIn_r(K key) {
-        hash_t hash = getHash(key);
-
-        if(roots[hash].next == usedSentinel) {
-            return false;
-        } else if(roots[hash].key == key) {
-            return true;
-        } else {  // Collision.  Start chaining.
-            Node* next = roots[hash].next;
-            while(next !is null) {
-                if(next.key == key) {
-                    return true;
-                }
-                next = next.next;
-            }
-            return false;
-        }
-   }
-
-   void remove(K key) {
-        hash_t hash = getHash(key);
-
-        Node** next = &(roots[hash].next);
-        if(roots[hash].next == usedSentinel) {
-            return;
-        } else if(roots[hash].key == key) {
-            _length--;
-            if(roots[hash].next is null) {
-                roots[hash].key = K.init;
-                roots[hash].next = usedSentinel;
-                return;
-            } else {
-                roots[hash].key = (**next).key;
-                roots[hash].next = (**next).next;
-                return;
-            }
-        } else {  // Collision.  Start chaining.
-            while(*next !is null) {
-                if((**next).key == key) {
-                    _length--;
-                    *next = (**next).next;
-                    break;
-                }
-                next = &((**next).next);
-            }
-            return;
-        }
-   }
-
-   size_t length() {
-       return _length;
-   }
-}
-
-unittest {
-    mixin(newFrame);
-    alias StackSet!(uint) mySS;
-    mySS set = mySS(12);
-    foreach(i; 0..20) {
-        set.insert(i);
-    }
-    assert(set.elems.qsort == seq(0U, 20U));
-    assert(set.elemStack.qsort == seq(0U, 20U));
-
-    for(uint i = 0; i < 20; i += 2) {
-        set.remove(i);
-    }
-
-    foreach(i; 0..20) {
-        if(i & 1) {
-            assert(i in set);
-        } else {
-            assert(!(i in set));
-        }
-    }
-    uint[] contents;
-    foreach(elem; set) {
-        contents ~= elem;
-    }
-    assert(contents.qsort == [1U,3,5,7,9,11,13,15,17,19]);
-    writeln("Passed StackSet test.");
 }
 
 /**Computes the intersect of two arrays, i.e. the elements that are in both
@@ -1342,11 +963,15 @@ T[] intersect(T)(const(T)[] first, const(T)[] second, Alloc alloc = Alloc.HEAP) 
     }
 
     size_t pos;
-    foreach(key, count; firstSet) {
-        if(count > 0)
-            result[pos++] = key;
+    auto key = firstSet.keys;
+    auto count = firstSet.values;
+    while(!key.empty) {
+        if(count.front > 0) {
+            result[pos++] = key.front;
+        }
+        key.popFront;
+        count.popFront;
     }
-
     return result[0..pos];
 }
 
@@ -1401,7 +1026,6 @@ in {
             rightPos++;
         }
     }
-
     return result[0..resPos];
 }
 
@@ -1414,9 +1038,9 @@ unittest {
     uint[] second = new uint[1000];
     foreach(i; 0..1000) {
         foreach(ref f; first)
-            f = uniform(gen, 0U, 2500);
+            f = uniform(0U, 2500);
         foreach(ref s; second)
-            s = uniform(gen, 0U, 5000);
+            s = uniform(0U, 5000);
         auto hash = qsort!("a > b")(intersect(first, second));
         auto sort = intersectSorted!("a > b")
                     (qsort!("a > b")(first), qsort!("a > b")(second));

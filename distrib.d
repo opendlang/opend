@@ -1,7 +1,7 @@
 /**Probability distribution CDFs, PDFs/PMFs, and a few inverse CDFs.
  *
- * Authors:  David Simcha, Don Clugston
- *
+ * Authors:  David Simcha, Don Clugston*/
+ /*
  * Acknowledgements:  Some of this module was borrowed the mathstat module
  * of Don Clugston's MathExtra library.  This was done to create a
  * coherent, complete library without massive dependencies, and without
@@ -250,14 +250,13 @@ in {
 }
 
 unittest {
-   Random gen = Random(unpredictableSeed);
    foreach(i; 0..1_000) {
        // Restricted variable ranges are because, in the tails, more than one
        // value of k can map to the same p-value at machine precision.
        // Obviously, this is one of those corner cases that nothing can be
        // done about.
-       real lambda = uniform(gen, .05L, 8.0L);
-       uint k = uniform(gen, 0UL, cast(uint) ceil(3.0L * lambda));
+       real lambda = uniform(.05L, 8.0L);
+       uint k = uniform(0UL, cast(uint) ceil(3.0L * lambda));
        real pVal = poissonCDF(k, lambda);
        assert(invPoissonCDF(pVal, lambda) == k);
    }
@@ -376,9 +375,9 @@ unittest {
        // value of k can map to the same p-value at machine precision.
        // Obviously, this is one of those corner cases that nothing can be
        // done about.  Using small n's, moderate p's prevents this.
-       uint n = uniform(gen, 5L, 10L);
-       uint k = uniform(gen, 0L, n);
-       real p = uniform(gen, 0.1L, 0.9L);
+       uint n = uniform(5L, 10L);
+       uint k = uniform(0L, n);
+       real p = uniform(0.1L, 0.9L);
        real pVal = binomialCDF(k, n, p);
        assert(invBinomialCDF(pVal, n, p) == k);
    }
@@ -504,7 +503,7 @@ unittest {
 }
 
 real hyperExact(ulong x, ulong n1, ulong n2, ulong n, ulong startAt = 0) {
-    invariant real constPart = logFactorial(n1) + logFactorial(n2) +
+    immutable real constPart = logFactorial(n1) + logFactorial(n2) +
         logFactorial(n) + logFactorial(n1 + n2 - n) - logFactorial(n1 + n2);
     real sum = 0;
     for(ulong i = x; i != startAt - 1; i--) {
@@ -662,7 +661,7 @@ const real SQRT2PI =   0x1.40d931ff62705966p+1;    // 2.5066282746310005024
 const real EXP_2  = 0.13533528323661269189L; /* exp(-2) */
 
 private {
-invariant static real P0[] = [
+immutable static real P0[] = [
    -0x1.758f4d969484bfdcp-7,    // -0.011400139698853582732
    0x1.53cee17a59259dd2p-3, // 0.16592193750979583221
    -0x1.ea01e4400a9427a2p-1,    // -0.95704568177942689081
@@ -673,7 +672,7 @@ invariant static real P0[] = [
    0x1.1fb149fd3f83600cp-7  // 0.0087796794200550691607
 ];
 
-invariant static real Q0[] = [
+immutable static real Q0[] = [
    -0x1.64b92ae791e64bb2p-7,    // -0.010886331510064192632
    0x1.7585c7d597298286p-3, // 0.1823840725000038842
    -0x1.40011be4f7591ce6p+0,    // -1.2500169214248199725
@@ -684,7 +683,7 @@ invariant static real Q0[] = [
    0x1p+0   // 1
 ];
 
-invariant static real P1[] = [
+immutable static real P1[] = [
    0x1.20ceea49ea142f12p-13,    // 0.00013771451113809605662
    0x1.cbe8a7267aea80bp-7,  // 0.014035302749980729871
    0x1.79fea765aa787c48p-2, // 0.36913549001712241224
@@ -697,7 +696,7 @@ invariant static real P1[] = [
    0x1.1361e3eb6e3cc20ap+2  // 4.3028497504355521807
 ];
 
-invariant static real Q1[] = [
+immutable static real Q1[] = [
    0x1.3a4ce1406cea98fap-13,    // 0.00014987006762866754669
    0x1.f45332623335cda2p-7, // 0.015268706895221911913
    0x1.98f28bbd4b98db1p-2,  // 0.39936273901812389627
@@ -710,7 +709,7 @@ invariant static real Q1[] = [
    0x1p+0   // 1
 ];
 
-invariant static real P2[] = [
+immutable static real P2[] = [
    0x1.8c124a850116a6d8p-21,    // 7.3774056430545041787e-07
    0x1.534abda3c2fb90bap-13,    // 0.0001617870121822776094
    0x1.29a055ec93a4718cp-7, // 0.0090828342009931074419
@@ -721,7 +720,7 @@ invariant static real P2[] = [
    0x1.9f4c9e749ff35f62p+1  // 3.2445257253129069325
 ];
 
-invariant static real Q2[] = [
+immutable static real Q2[] = [
    0x1.af03f4fc0655e006p-21,    // 8.0282885006885383316e-07
    0x1.713192048d11fb2p-13, // 0.00017604524340842589303
    0x1.4357e5bbf5fef536p-7, // 0.0098676559208996361084
@@ -732,7 +731,7 @@ invariant static real Q2[] = [
    0x1p+0   // 1
 ];
 
-invariant static real P3[] = [
+immutable static real P3[] = [
    -0x1.55da447ae3806168p-34,   // -7.7728283809481633868e-11
    -0x1.145635641f8778a6p-24,   // -6.4339663876133447143e-08
    -0x1.abf46d6b48040128p-17,   // -1.2754046756102807876e-05
@@ -743,7 +742,7 @@ invariant static real P3[] = [
    0x1.029a358e1e630f64p+1  // 2.0203310913027725356
 ];
 
-invariant static real Q3[] = [
+immutable static real Q3[] = [
    -0x1.74022dd5523e6f84p-34,   // -8.4584942637876803775e-11
    -0x1.2cb60d61e29ee836p-24,   // -7.0014768675591937804e-08
    -0x1.d19e6ec03a85e556p-17,   // -1.3876523894802171788e-05
@@ -832,14 +831,14 @@ unittest {
     // normalCDF function trivial given ERF, unlikely to contain subtle bugs.
     // Just make sure invNormalCDF works like it should as the inverse.
     foreach(i; 0..1000) {
-        real x = uniform(gen, 0.0L, 1.0L);
-        real mean = uniform(gen, 0.0L, 100.0L);
-        real sd = uniform(gen, 1.0L, 3.0L);
+        real x = uniform(0.0L, 1.0L);
+        real mean = uniform(0.0L, 100.0L);
+        real sd = uniform(1.0L, 3.0L);
         real inv = invNormalCDF(x, mean, sd);
         real rec = normalCDF(inv, mean, sd);
         assert(approxEqual(x, rec));
     }
-    writeln(stderr, "Passed invNormalCDF unittest.");
+    writeln("Passed invNormalCDF unittest.");
 }
 
 ///
@@ -918,7 +917,7 @@ assert(approxEqual(invStudentsTCDF(0.6, 8), 0.261_921_096_769_043L));
 assert(approxEqual(invStudentsTCDF(0.4, 18), -0.257_123_042_655_869L));
 assert(approxEqual(studentsTCDF(invStudentsTCDF(0.4L, 18), 18), .4L));
 assert(approxEqual(studentsTCDF( invStudentsTCDF(0.9L, 11), 11), 0.9L));
-writeln(stderr, "Passed studentsTCDF.");
+writeln("Passed studentsTCDF.");
 }
 
 /**
@@ -1160,9 +1159,9 @@ unittest {
     Random gen = Random(unpredictableSeed);
     uint nSkipped;
     foreach(i; 0..1000) {
-        uint n = uniform(gen, 1u, 10u);
-        real p = uniform(gen, 0.0L, 1L);
-        uint k = uniform(gen, 0, 20);
+        uint n = uniform(1u, 10u);
+        real p = uniform(0.0L, 1L);
+        uint k = uniform(0, 20);
         real pVal = negBinomCDF(k, n, p);
 
         // In extreme tails, p-values can alias, giving incorrect results.
