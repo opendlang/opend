@@ -564,7 +564,7 @@ unittest {
  *  x  = the $(POWER &chi;,2) variable. Must be positive.
  *
  */
-real chiSqrCDF(real v, real x)
+real chiSqrCDF(real x, real v)
 in {
  assert(x>=0);
  assert(v>=1.0);
@@ -574,7 +574,7 @@ body{
 }
 
 /** ditto */
-real chiSqrCDFR(real v, real x)
+real chiSqrCDFR(real x, real v)
 in {
  assert(x>=0);
  assert(v>=1.0);
@@ -606,8 +606,8 @@ body
 }
 
 unittest {
-  assert(feqrel(chiSqrCDFR(3.5L, invChiSqCDFR(3.5L, 0.1L)), 0.1L)>=real.mant_dig-3);
-  assert(chiSqrCDF(19.02L, 0.4L) + chiSqrCDFR(19.02L, 0.4L) ==1.0L);
+  assert(feqrel(chiSqrCDFR(invChiSqCDFR(3.5L, 0.1L), 3.5L), 0.1L)>=real.mant_dig-3);
+  assert(chiSqrCDF(0.4L, 19.02L) + chiSqrCDFR(0.4L, 19.02L) ==1.0L);
   writeln("Passed chi-square unittest.");
 }
 
