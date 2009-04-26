@@ -78,30 +78,6 @@ enum : size_t {
     staticFacTableLen = 10_000,
 }
 
-// Tests whether T is an input range whose elements can be implicitly
-// converted to reals.
-template realInput(T) {
-    enum realInput = isInputRange!(T) && is(ElementType!(T) : real);
-}
-
-// See Bugzilla 2873.  This can be removed once that's fixed.
-template hasLength(R) {
-    enum bool hasLength = is(typeof(R.init.length) : ulong) ||
-                      is(typeof(R.init.length()) : ulong);
-}
-
-/**Parameter in some functions to determine where results are returned.
- * Alloc.HEAP returns on the GC heap and is always the default.  Alloc.STACK
- * returns on the TempAlloc stack, and can be a useful optimization in some
- * cases.*/
-enum Alloc {
-    ///Return on TempAlloc stack.
-    STACK,
-
-    ///Return on GC heap.
-    HEAP
-}
-
 static this() {
     // Allocating on heap instead of static data segment to avoid
     // false pointer GC issues.
@@ -123,27 +99,87 @@ version(unittest) {
     }
 }
 
-/**Converts any range to an array on the GC heap by the most efficient means
- * available.  If it is already an array, duplicates the range.*/
-Unqual!(ElementType!(T))[] toArray(T)(T range) if(isInputRange!(T)) {
-    static if(isArray!(T)) {
-        return range.dup;
-    } else static if(hasLength!(T)) {
-        auto ret = newVoid!(Unqual!(ElementType!(T)))(range.length);
-        static if(is(typeof(ret[] = range[]))) {
-            ret[] = range[];
-        } else {
-            size_t pos = 0;
-            foreach(elem; range) {
-                ret[pos++] = elem;
-            }
-        }
-        return ret;
+/**Parameter in some functions to determine where results are returned.
+ * Alloc.HEAP returns on the GC heap and is always the default.  Alloc.STACK
+ * returns on the TempAlloc stack, and can be a useful optimization in some
+ * cases.*/
+enum Alloc {
+    ///Return on TempAlloc stack.
+    STACK,
+
+    ///Return on GC heap.
+    HEAP
+}
+
+/** Tests whether T is an input range whose elements can be implicitly
+ * converted to reals.*/
+template realInput(T) {
+    enum realInput = isInputRange!(T) && is(ElementType!(T) : real);
+}
+
+// See Bugzilla 2873.  This can be removed once that's fixed.
+template hasLength(R) {
+    enum bool hasLength = is(typeof(R.init.length) : ulong) ||
+                      is(typeof(R.init.length()) : ulong);
+}
+
+
+/**Tests whether T can be iterated over using foreach.  This is a superset
+ * of isInputRange, as it also accepts things that use opApply, builtin
+ * arrays, builtin associative arrays, etc.  Useful when all you need is
+ * lowest common denominator iteration functionality and don't care about
+ * more advanced range features.*/
+template isIterable(T)
+{
+    static if (is(typeof({foreach(elem; T.init) {}}))) {
+        enum bool isIterable = true;
     } else {
-        Unqual!(ElementType!(T))[] ret;
-        mate(range, appender(&ret));
-        return ret;
+        enum bool isIterable = false;
     }
+}
+
+unittest {
+    struct Foo {  // For testing opApply.
+
+        int opApply(int delegate(ref uint) dg) { assert(0); }
+    }
+
+    static assert(isIterable!(uint[]));
+    static assert(!isIterable!(uint));
+    static assert(isIterable!(Foo));
+    static assert(isIterable!(uint[string]));
+    static assert(isIterable!(Chain!(uint[], uint[])));
+}
+
+/**Determine the iterable type of any iterable object, regardless of whether
+ * it uses ranges, opApply, etc.  This is typeof(elem) if one does
+ * foreach(elem; T.init) {}.*/
+template IterType(T) {
+    alias ReturnType!(
+        {
+            foreach(elem; T.init) {
+                return elem;
+            }
+        }) IterType;
+}
+
+unittest {
+    struct Foo {  // For testing opApply.
+        // For testing.
+
+        int opApply(int delegate(ref uint) dg) { assert(0); }
+    }
+
+    static assert(is(IterType!(uint[]) == uint));
+    static assert(is(IterType!(Foo) == uint));
+    static assert(is(IterType!(uint[string]) == uint));
+    static assert(is(IterType!(Chain!(uint[], uint[])) == uint));
+}
+
+/**Tests whether T is iterable and has elements of a type implicitly
+ * convertible to real.*/
+template realIterable(T) {
+    enum realIterable = isIterable!(T) && is(IterType!(T) : real);
 }
 
 /**Writes the contents of an input range to an output range.
@@ -169,8 +205,8 @@ in {
     assert(nbin > 0);
 } body {
     alias Unqual!(ElementType!(T)) E;
-    E min = data[0], max = data[0];
-    foreach(elem; data[1..$]) {
+    E min = data.front, max = data.front;
+    foreach(elem; data) {
         if(elem > max)
             max = elem;
         else if(elem < min)
@@ -457,7 +493,7 @@ in {
     }
 }
 
-/**Returns an AA of counts of every element in input.  Works w/ any input range.
+/**Returns an AA of counts of every element in input.  Works w/ any iterable.
  *
  * Examples:
  * ---
@@ -467,8 +503,8 @@ in {
  * assert(frq[1] == 2);
  * assert(frq[4] == 1);
  * ---*/
-uint[ElementType!(T)] frequency(T)(T input)
-if(isInputRange!(T)) {
+uint[IterType!(T)] frequency(T)(T input)
+if(isIterable!(T)) {
     typeof(return) output;
     foreach(i; input) {
         output[i]++;
@@ -976,6 +1012,7 @@ T[] intersect(T)(const(T)[] first, const(T)[] second, Alloc alloc = Alloc.HEAP) 
 }
 
 unittest {
+    mixin(newFrame);
     assert(intersect([1,3,1,3,6,4,6], [6,6,4,4,2,2,9,10]).sort == [4, 6]);
 }
 
@@ -1030,6 +1067,7 @@ in {
 }
 
 unittest {
+    mixin(newFrame);
     assert(intersectSorted([1,3,1,3,6,4,6].sort, [6,6,4,4,2,2,9,10].sort) == [4,6]);
 
     // We have two different methods, they shoouldn't be wrong in the same way.

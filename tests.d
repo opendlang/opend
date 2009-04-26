@@ -97,9 +97,15 @@ enum Alt {
  *
  * Returns:  The p-value against the given alternative.*/
 real studentsTTest(T)(T data, real mean, Alt alt = Alt.TWOSIDE)
-if(realInput!(T)) {
-    auto meanSd = meanStdev(data);
-    real t = (meanSd.mean - mean) / (meanSd.SD / sqrt(cast(real) data.length));
+if(realIterable!(T)) {
+    OnlineMeanSD meanSd;
+    uint len;
+    foreach(elem; data) {
+        len++;
+        meanSd.put(elem);
+    }
+
+    real t = (meanSd.mean - mean) / (meanSd.stdev / sqrt(cast(real) len));
     if(alt == Alt.LESS)
         return studentsTCDF(t, data.length - 1);
     else if(alt == Alt.GREATER)
@@ -122,7 +128,7 @@ unittest {
  * mean(sample2), and Alt.TWOSIDE, meaning mean(sample1) != mean(sample2).
  * Returns:  The p-value against the given alternative.*/
 real studentsTTest(T, U)(T sample1, U sample2, Alt alt = Alt.TWOSIDE)
-if(realInput!(T) && realInput!(U)) {
+if(realIterable!(T) && realIterable!(U)) {
     size_t n1, n2;
     OnlineMeanSD s1summ, s2summ;
     foreach(elem; sample1) {
@@ -169,7 +175,7 @@ unittest {
  * != mean(sample2).
  * Returns:  The p-value against the given alternative.*/
 real welchTTest(T, U)(T sample1, U sample2, Alt alt = Alt.TWOSIDE)
-if(realInput!(T) && realInput!(U)) {
+if(realIterable!(T) && realIterable!(U)) {
     size_t n1, n2;
     OnlineMeanSD s1summ, s2summ;
     foreach(elem; sample1) {
@@ -1255,8 +1261,8 @@ unittest {
  * Bugs:  No exact calculation of the P-value.  Asymptotic approximation only.
  */
 real runsTest(alias positive = "a > 0", T)(T obs, Alt alt = Alt.TWOSIDE)
-if(isInputRange!(T)) {
-    OnlineRunsTest!(positive, ElementType!(T)) r;
+if(isIterable!(T)) {
+    OnlineRunsTest!(positive, IterType!(T)) r;
     foreach(elem; obs) {
         r.put(elem);
     }

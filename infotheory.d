@@ -73,7 +73,7 @@ import std.traits, std.math, std.typetuple, std.functional, std.range,
 import dstats.sort, dstats.summary, dstats.base, dstats.alloc;
 
 version(unittest) {
-    import std.stdio, std.bigint;
+    import std.stdio, std.bigint, std.algorithm : map;
 
     void main() {}
 }
@@ -96,7 +96,7 @@ if(isForwardRange!(T)) {
 }
 
 real entropyCounts(T)(T data, real n)
-if(isForwardRange!(T)) {
+if(isIterable!(T)) {
     real nNeg1 = 1.0L / n;
     real entropy = 0;
     foreach(value; data) {
@@ -277,6 +277,31 @@ struct ObsEnt(T...) {
 
 }
 
+// Whether we can use StackHash, or whether we have to use a regular AA for
+// entropy.
+private template NeedsHeap(T) {
+    static if(!isReferenceType!(IterType!(T))) {
+        enum bool NeedsHeap = false;
+    } else static if(isArray!(T)) {
+        enum bool NeedsHeap = false;
+    } else static if(is(T == Joint!(typeof(T.init.tupleof)))
+           && allSatisfy!(isArray, typeof(T.init.tupleof))) {
+        enum bool NeedsHeap = false;
+    } else {
+        enum bool NeedsHeap = true;
+    }
+}
+
+unittest {
+    auto foo = map!("a.dup")(cast(uint[][]) [[1]]);
+    auto bar = map!("a + 2")(cast(uint[]) [1,2,3]);
+    static assert(NeedsHeap!(typeof(foo)));
+    static assert(!NeedsHeap!(typeof(bar)));
+    static assert(NeedsHeap!(Joint!(uint[], typeof(foo))));
+    static assert(!NeedsHeap!(Joint!(uint[], typeof(bar))));
+    static assert(!NeedsHeap!(Joint!(uint[], uint[])));
+}
+
 /**Calculates the joint entropy of a set of observations.  Each input range
  * represents a vector of observations. If only one range is given, this reduces
  * to the plain old entropy.  Input range must have a length.
@@ -296,26 +321,31 @@ struct ObsEnt(T...) {
  * ---
  */
 real entropy(T)(T data)
-if(isInputRange!(T) && dstats.base.hasLength!(T)) {
-    if(data.length <= ubyte.max) {
-        return entropyImpl!(ubyte, T)(data);
-    } else if(data.length <= ushort.max) {
-        return entropyImpl!(ushort, T)(data);
-    } else {
+if(isIterable!(T)) {
+    static if(!dstats.base.hasLength!(T)) {
         return entropyImpl!(uint, T)(data);
+    } else {
+        if(data.length <= ubyte.max) {
+            return entropyImpl!(ubyte, T)(data);
+        } else if(data.length <= ushort.max) {
+            return entropyImpl!(ushort, T)(data);
+        } else {
+            return entropyImpl!(uint, T)(data);
+        }
     }
 }
 
 private real entropyImpl(U, T)(T data)
-if(ElementType!(T).sizeof > 1) {  // Generic version.
-    alias typeof(data.front()) E;
+if(IterType!(T).sizeof > 1 && !NeedsHeap!(T)) {  // Generic version.
+    alias IterType!(T) E;
 
     TempAlloc.frameInit;
     alias StackHash!(E, U) mySh;
-    immutable len = data.length;  // In case length calculation is expensive.
+    uint len = 0;  // In case length calculation is expensive.
     mySh counts = mySh(len / 5);
 
     foreach(elem; data)  {
+        len++;
         counts[elem]++;
     }
 
@@ -324,14 +354,28 @@ if(ElementType!(T).sizeof > 1) {  // Generic version.
     return ans;
 }
 
+private real entropyImpl(U, T)(T data)
+if(IterType!(T).sizeof > 1 && NeedsHeap!(T)) {  // Generic version.
+    alias IterType!(T) E;
+
+    uint len = 0;
+    U[E] counts;
+    foreach(elem; data) {
+        len++;
+        counts[elem]++;
+    }
+    return entropyCounts(counts, len);
+}
+
 private real entropyImpl(U, T)(T data)  // byte/char specialization
-if(ElementType!(T).sizeof == 1) {
-    alias typeof(data.front()) E;
+if(IterType!(T).sizeof == 1) {
+    alias IterType!(T) E;
 
     U[ubyte.max + 1] counts;
 
-    uint min = ubyte.max, max = 0;
+    uint min = ubyte.max, max = 0, len = 0;
     foreach(elem; data)  {
+        len++;
         static if(is(E == byte)) {
             // Keep adjacent elements adjacent.  In real world use cases,
             // probably will have ranges like [-1, 1].
@@ -348,7 +392,7 @@ if(ElementType!(T).sizeof == 1) {
         }
     }
 
-    return entropyCounts(counts.ptr[min..max + 1], data.length);
+    return entropyCounts(counts.ptr[min..max + 1], len);
 }
 
 unittest {
@@ -367,6 +411,11 @@ unittest {
         assert(approxEqual(entropyFoo, log2(3)));
         string bar = "ACTGGCTA";
         assert(entropy(bar) == 2);
+    }
+    { // NeedsHeap version.
+        string[] arr = ["1", "1", "1", "2", "2", "2", "3", "3", "3"];
+        auto m = map!("a")(arr);
+        assert(approxEqual(entropy(m), log2(3)));
     }
     writeln("Passed entropy unittest.");
 }

@@ -247,6 +247,13 @@ private:
         // allocated from.  freelist holds space ptrs for all free blocks.
         Stack!(Block) inUse;
         Stack!(void*) freelist;
+
+        void putLast(void* last) nothrow {
+            // Add an element to lastAlloc, checking length first.
+            if (totalAllocs == lastAlloc.length)
+                doubleSize(lastAlloc);
+            lastAlloc[totalAllocs++] = cast(void*) last;
+        }
     }
 
     // core.thread.Thread.thread_needLock() is nothrow (read the code if you
@@ -335,11 +342,8 @@ public:
      * to avoid a thread-local storage lookup.  Strictly a speed hack.*/
     static State frameInit(State stateCopy) nothrow {
         with(stateCopy) {
-            if (totalAllocs == lastAlloc.length) // Should happen very infrequently.
-                doubleSize(lastAlloc);
-            lastAlloc[totalAllocs] = cast(void*) frameIndex;
             frameIndex = totalAllocs;
-            totalAllocs++;
+            putLast( cast(void*) frameIndex );
         }
         return stateCopy;
     }
@@ -404,10 +408,7 @@ public:
                 used = nbytes;
                 ret = space;
             }
-            if (totalAllocs == lastAlloc.length) {
-                doubleSize(lastAlloc);
-            }
-            lastAlloc[totalAllocs++] = ret;
+            putLast(ret);
             return ret;
         }
     }
@@ -509,10 +510,17 @@ void rangeCopy(T, U)(T to, U from) {
     }
 }
 
-/**Creates a duplicate of a range on the TempAlloc stack.  Much faster
- * if the range has a length, but works even if it doesn't.*/
+/**Creates a duplicate of a range for temporary use within a function in the
+ * best wsy that can be done safely.  If ElementType!(T) is a value type
+ * or T is an array, the results can safely be placed in TempAlloc because
+ * either it doesn't need to be scanned by the GC or there's guaranteed to be
+ * another reference to the contents somewhere. Otherwise, the results
+ * are placed on the GC heap.
+ *
+ * This function is much faster if T has a length, but works even if it doesn't.
+ */
 Unqual!(ElementType!(T))[] tempdup(T)(T data)
-if(isInputRange!(T)) {
+if(isInputRange!(T) && (isArray!(T) || !isReferenceType!(ElementType!(T)))) {
     alias ElementType!(T) E;
     alias Unqual!(E) U;
     static if(dstats.base.hasLength!(T)) {
@@ -538,7 +546,7 @@ if(isInputRange!(T)) {
                     result[] = (cast(U*) startPtr)[0..result.length];
                     finishCopy(result, data);
                     TempAlloc.free;
-                    state.lastAlloc[++state.totalAllocs] = result.ptr;
+                    state.putLast(result.ptr);
                     return result;
                 } else {
                     U[] oldData = (cast(U*) startPtr)[0..bytesCopied / U.sizeof];
@@ -566,10 +574,46 @@ if(isInputRange!(T)) {
     }
 }
 
+Unqual!(ElementType!(T))[] tempdup(T)(T data)
+if(isInputRange!(T) && !(isArray!(T) || !isReferenceType!(ElementType!(T)))) {
+    auto ret = toArray(data);
+    TempAlloc.getState.putLast(ret.ptr);
+    return ret;
+}
+
 private void finishCopy(T, U)(ref T[] result, U range) {
     auto app = appender(&result);
     foreach(elem; range) {
         app.put(elem);
+    }
+}
+
+// See Bugzilla 2873.  This can be removed once that's fixed.
+template hasLength(R) {
+    enum bool hasLength = is(typeof(R.init.length) : ulong) ||
+                      is(typeof(R.init.length()) : ulong);
+}
+
+/**Converts any range to an array on the GC heap by the most efficient means
+ * available.  If it is already an array, duplicates the range.*/
+Unqual!(ElementType!(T))[] toArray(T)(T range) if(isInputRange!(T)) {
+    static if(isArray!(T)) {
+        return range.dup;
+    } else static if(hasLength!(T)) {
+        auto ret = newVoid!(Unqual!(ElementType!(T)))(range.length);
+        static if(is(typeof(ret[] = range[]))) {
+            ret[] = range[];
+        } else {
+            size_t pos = 0;
+            foreach(elem; range) {
+                ret[pos++] = elem;
+            }
+        }
+        return ret;
+    } else {
+        Unqual!(ElementType!(T))[] ret;
+        mate(range, appender(&ret));
+        return ret;
     }
 }
 

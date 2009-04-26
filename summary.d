@@ -193,7 +193,7 @@ unittest {
 /**Finds the arithmetic mean of any input range whose elements are implicitly
  * convertible to real.*/
 real mean(T)(T data)
-if(realInput!(T)) {
+if(realIterable!(T)) {
     OnlineMean meanCalc;
     foreach(element; data) {
         meanCalc.put(element);
@@ -273,9 +273,11 @@ public:
     }
 }
 
+
+
 ///
 real geometricMean(T)(T data)
-if(realInput!(T)) {
+if(realIterable!(T)) {
     OnlineGeometricMean m;
     foreach(elem; data) {
         m.put(elem);
@@ -285,6 +287,8 @@ if(realInput!(T)) {
 
 unittest {
     string[] data = ["1", "2", "3", "4", "5"];
+    auto foo = map!(to!(uint, string))(data);
+
     auto result = geometricMean(map!(to!(uint, string))(data));
     assert(approxEqual(result, 2.60517));
     writeln("Passed geometricMean unittest.");
@@ -295,8 +299,8 @@ unittest {
  * User has option of making U a different type than T to prevent overflows
  * on large array summing operations.  However, by default, return type is
  * T (same as input type).*/
-U sum(T, U = Unqual!(ElementType!(T)))(T data)
-if(realInput!(T)) {
+U sum(T, U = Unqual!(IterType!(T)))(T data)
+if(realIterable!(T)) {
     U sum = 0;
     foreach(value; data) {
         sum += value;
@@ -388,14 +392,14 @@ struct MeanSD {
 /**Finds the variance of an input range with members implicitly convertible
  * to reals.*/
 real variance(T)(T data)
-if(realInput!(T)) {
+if(realIterable!(T)) {
     return meanVariance(data).SD;
 }
 
 /**Calculates both mean and variance of an input range, returns a MeanSD
  * struct.*/
 MeanSD meanVariance(T)(T data)
-if(realInput!(T)) {
+if(realIterable!(T)) {
     OnlineMeanSD meanSDCalc;
     foreach(element; data) {
         meanSDCalc.put(element);
@@ -407,7 +411,7 @@ if(realInput!(T)) {
 /**Calculates both mean and standard deviation of an input range, returns a
  * MeanSD struct.*/
 MeanSD meanStdev(T)(T data)
-if(realInput!(T)) {
+if(realIterable!(T)) {
     auto ret = meanVariance(data);
     ret.SD = sqrt(ret.SD);
     return ret;
@@ -416,7 +420,7 @@ if(realInput!(T)) {
 /**Calculate the standard deviation of an input range with members
  * implicitly converitble to real.*/
 real stdev(T)(T data)
-if(realInput!(T)) {
+if(realIterable!(T)) {
     return meanStdev(data).SD;
 }
 
@@ -535,7 +539,7 @@ public:
  * the mean.  The normal distribution is defined as having kurtosis of 0.
  * Input must be an input range with elements implicitly convertible to real.*/
 real kurtosis(T)(T data)
-if(realInput!(T)) {
+if(realIterable!(T)) {
     OnlineSummary kCalc;
     foreach(elem; data) {
         kCalc.put(elem);
@@ -557,7 +561,7 @@ unittest {
  * skewness indicates a symmetrical distribution.  Input must be an input
  * range with elements implicitly convertible to real.*/
 real skewness(T)(T data)
-if(realInput!(T)) {
+if(realIterable!(T)) {
     OnlineSummary sCalc;
     foreach(elem; data) {
         sCalc.put(elem);
@@ -617,7 +621,7 @@ struct Summary {
  * and kurtosis) on an input range with elements that can be implicitly
  * converted to real.  Returns the results in a Summary struct.*/
 Summary summary(T)(T data)
-if(realInput!(T)) {
+if(realIterable!(T)) {
     OnlineSummary summ;
     foreach(elem; data) {
         summ.put(elem);
@@ -696,12 +700,13 @@ public:
 }
 
 /**Returns a range with whatever properties T has (forward range, random
- * access range, bidirectional range, hasLength, etc.,
+ * access range, bidirectional range, hasLength, etc.),
  * of the z-scores of the underlying
  * range.  A z-score of an element in a range is defined as
  * (element - mean(range)) / stdev(range).
  *
  * Notes:
+ *
  * If the data contained in the range is a sample of a larger population,
  * rather than an entire population, then technically, the results output
  * from the ZScore range are T statistics, not Z statistics.  This is because
@@ -715,7 +720,7 @@ public:
  * mean and standard deviation.
  */
 ZScore!(T) zScore(T)(T range)
-if(isForwardRange!(T)) {
+if(isForwardRange!(T) && realInput!(T)) {
     return ZScore!(T)(range);
 }
 
@@ -723,7 +728,7 @@ if(isForwardRange!(T)) {
  * stdev.
  */
 ZScore!(T) zScore(T)(T range, real mean, real sd)
-if(isForwardRange!(T)) {
+if(isForwardRange!(T) && realInput!(T)) {
     return ZScore!(T)(range, mean, sd);
 }
 
