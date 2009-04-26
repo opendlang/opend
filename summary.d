@@ -628,6 +628,124 @@ if(realInput!(T)) {
 // Just a convenience function for a well-tested struct.  No unittest really
 // necessary.  (Famous last words.)
 
+///
+struct ZScore(T) if(isForwardRange!(T) && is(ElementType!(T) : real)) {
+private:
+    T range;
+    real mean;
+    real sdNeg1;
+
+    real z(real elem) {
+        return (elem - mean) * sdNeg1;
+    }
+
+public:
+    this(T range) {
+        this.range = range;
+        auto msd = meanStdev(range);
+        this.mean = msd.mean;
+        this.sdNeg1 = 1.0L / msd.SD;
+    }
+
+    this(T range, real mean, real sd) {
+        this.range = range;
+        this.mean = mean;
+        this.sdNeg1 = 1.0L / sd;
+    }
+
+    ///
+    real front() {
+        return z(range.front);
+    }
+
+    ///
+    void popFront() {
+        range.popFront;
+    }
+
+    ///
+    bool empty() {
+        return range.empty;
+    }
+
+    static if(isRandomAccessRange!(T)) {
+        ///
+        real opIndex(size_t index) {
+            return z(range[index]);
+        }
+    }
+
+    static if(isBidirectionalRange!(T)) {
+        ///
+        real back() {
+            return z(range.back);
+        }
+
+        ///
+        void popBack() {
+            range.popBack;
+        }
+    }
+
+    static if(dstats.base.hasLength!(T)) {
+        ///
+        size_t length() {
+            return range.length;
+        }
+    }
+}
+
+/**Returns a range with whatever properties T has (forward range, random
+ * access range, bidirectional range, hasLength, etc.,
+ * of the z-scores of the underlying
+ * range.  A z-score of an element in a range is defined as
+ * (element - mean(range)) / stdev(range).
+ *
+ * Notes:
+ * If the data contained in the range is a sample of a larger population,
+ * rather than an entire population, then technically, the results output
+ * from the ZScore range are T statistics, not Z statistics.  This is because
+ * the sample mean and standard deviation are only estimates of the population
+ * parameters.  This does not affect the mechanics of using this range,
+ * but it does affect the interpretation of its output.
+ *
+ * Accessing elements of this range is fairly expensive, as a
+ * floating point multiply is involved.  Also, constructing this range is
+ * costly, as the entire input range has to be iterated over to find the
+ * mean and standard deviation.
+ */
+ZScore!(T) zScore(T)(T range)
+if(isForwardRange!(T)) {
+    return ZScore!(T)(range);
+}
+
+/**Allows the construction of a ZScore range with precomputed mean and
+ * stdev.
+ */
+ZScore!(T) zScore(T)(T range, real mean, real sd)
+if(isForwardRange!(T)) {
+    return ZScore!(T)(range, mean, sd);
+}
+
+unittest {
+    int[] arr = [1,2,3,4,5];
+    auto m = mean(arr);
+    auto sd = stdev(arr);
+    auto z = zScore(arr);
+
+    size_t pos = 0;
+    foreach(elem; z) {
+        assert(elem == (arr[pos++] - m) / sd);
+    }
+
+    assert(z.length == 5);
+    foreach(i; 0..z.length) {
+        assert(z[i] == (arr[i] - m) / sd);
+    }
+    writeln("Passed zScore test.");
+}
+
+
 
 // Verify that there are no TempAlloc memory leaks anywhere in the code covered
 // by the unittest.  This should always be the last unittest of the module.
