@@ -871,9 +871,9 @@ unittest {
 /**Sign test for differences between a set of values and an a priori
  * median.  This is a very robust  but very low power test.
  * Alternatives are Alt.LESS, meaning elements
- * of before are typically less than corresponding elements of after,
- * Alt.GREATER, meaning elements of before are typically greater than
- * elements of after, and Alt.TWOSIDE, meaning that there is a significant
+ * of data are typically less than median,
+ * Alt.GREATER, meaning elements of data are typically greater than
+ * median, and Alt.TWOSIDE, meaning that there is a significant
  * difference in either direction.*/
 real signTest(T, U)(T data, U median, Alt alt = Alt.TWOSIDE)
 if(realInput!(T) && isNumeric!(U)) {
@@ -899,6 +899,60 @@ if(realInput!(T) && isNumeric!(U)) {
 unittest {
     assert(approxEqual(signTest([1,2,6,7,9].dup, 2), 0.625));
     writeln("Passed signTest unittest.");
+}
+
+/**Performs a one-way chi-square goodness of fit test between a range of
+ * observed and a range of expected values.  This is a useful statistical test
+ * for testing whether a set of observations fits a discrete distribution.
+ *
+ * Returns:  The P-value for the alternative hypothesis that observed is not
+ * a sample from expected against the null that observed is a sample from
+ * expected.
+ *
+ * Notes:  The chi-square test relies on asymptotic statistical properties
+ * and is therefore not considered valid when expected values are below 5.
+ *
+ * This implementation does not use Yates's continuity correction, which
+ * is primarily used for 2x2 contingency tables.  For 2x2 tables, you're
+ * probably better off using the Fisher exact (fisherExact()) test anyhow.
+ *
+ * This is, for all practical purposes, an inherently non-directional test.
+ * Therefore, the one-sided verses two-sided option is not provided.
+ *
+ * Examples:
+ * ---
+ * // Test to see whether a set of categorical observations differs
+ * // statistically from a discrete uniform distribution.
+ *
+ * uint[] observed = [980, 1028, 1001, 964, 1102];
+ * auto expected = repeat(cast(real) sum(observed) / observed.length);
+ * auto pVal = chiSqrFit(observed, expected);
+ * assert(approxEqual(pVal, 0.0207));
+ * ---
+ */
+real chiSqrFit(T, U)(T observed, U expected)
+if(realInput!(T) && realInput!(U)) {
+    uint len = 0;
+    real chiSq = 0;
+    while(!observed.empty && !expected.empty) {
+        real e = expected.front;
+        real diff = cast(real) observed.front - e;
+        chiSq += (diff * diff) / e;
+        observed.popFront;
+        expected.popFront;
+        len++;
+    }
+    return chiSqrCDFR(chiSq, len - 1);
+}
+
+unittest {
+    // Test to see whether a set of categorical observations differs
+    // statistically from a discrete uniform distribution.
+    uint[] observed = [980, 1028, 1001, 964, 1102];
+    auto expected = repeat(cast(real) sum(observed) / observed.length);
+    auto pVal = chiSqrFit(observed, expected);
+    assert(approxEqual(pVal, 0.0207));
+    writeln("Passed chiSqrFit test.");
 }
 
 /**Performs a Kolmogorov-Smirnov (K-S) 2-sample test and returns
@@ -1068,11 +1122,6 @@ unittest {
  * real res = fisherExact([[2u, 7], [8, 2]], Alt.LESS);
  * assert(approxEqual(res, 0.01852));  // Odds ratio is very small in this case.
  * ---
- *
- * Note:  Since this function uses dstats.distrib.hypergeometricCDF, which
- * makes approximations when justified, it will work even for very large
- * values.  No separate implementation of Pearson or Yates's chi-square is
- * needed to handle these situations.
  * */
 real fisherExact(const uint[][] contingencyTable, Alt alt = Alt.TWOSIDE)
 in {
