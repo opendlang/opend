@@ -66,7 +66,7 @@
 module dstats.tests;
 
 import dstats.base, dstats.distrib, dstats.alloc, dstats.summary, dstats.sort,
-       std.algorithm, std.functional, std.range;
+       std.algorithm, std.functional, std.range, std.c.stdlib;
 
 version(unittest) {
     import std.stdio, std.random;
@@ -912,10 +912,6 @@ unittest {
  * Notes:  The chi-square test relies on asymptotic statistical properties
  * and is therefore not considered valid when expected values are below 5.
  *
- * This implementation does not use Yates's continuity correction, which
- * is primarily used for 2x2 contingency tables.  For 2x2 tables, you're
- * probably better off using the Fisher exact (fisherExact()) test anyhow.
- *
  * This is, for all practical purposes, an inherently non-directional test.
  * Therefore, the one-sided verses two-sided option is not provided.
  *
@@ -954,6 +950,136 @@ unittest {
     assert(approxEqual(pVal, 0.0207));
     writeln("Passed chiSqrFit test.");
 }
+
+// Used as a mixin in both the array and tuple overload of chiSqrContingeny().
+private enum string chiSqrContingencyTempl =  q{
+    real[] colSums = (cast(real*) alloca(real.sizeof * ranges.length))
+                     [0..ranges.length];
+    colSums[] = 0;
+    size_t nCols = 0;
+    size_t nRows = ranges.length;
+    foreach(ri, range; ranges) {
+        size_t curLen = 0;
+        foreach(elem; range) {
+            colSums[ri] += cast(real) elem;
+            curLen++;
+        }
+        if(ri == 0) {
+            nCols = curLen;
+        } else {
+            assert(curLen == nCols);
+        }
+    }
+
+    bool noneEmpty() {
+        foreach(range; ranges) {
+            if(range.empty) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    void popAll() {
+        foreach(i, range; ranges) {
+            ranges[i].popFront;
+        }
+    }
+
+    real sumRow() {
+        real rowSum = 0;
+        foreach(range; ranges) {
+            rowSum += cast(real) range.front;
+        }
+        return rowSum;
+    }
+
+    real chiSq = 0;
+    real NNeg1 = 1.0L / sum(colSums);
+
+    while(noneEmpty) {
+        auto rowSum = sumRow();
+
+        foreach(ri, range; ranges) {
+            real expected = NNeg1 * rowSum * colSums[ri];
+            real diff = cast(real) range.front - expected;
+            diff *= diff;
+            chiSq += diff / expected;
+        }
+        popAll();
+    }
+    return chiSqrCDFR(chiSq, (nRows - 1) * (nCols - 1));
+};
+
+/**Performs a chi-square test on a contingency table of arbitrary dimensions.
+ * Takes a set of finite forward ranges, one for each column in the contingency
+ * table.  Returns a P-value for the alternative hypothesis that frequencies
+ * in each row of the contingency table depend on the column against the
+ * null that they don't.
+ *
+ * Notes:  The chi-square test relies on asymptotic statistical properties
+ * and is therefore not considered valid when expected values are below 5.
+ *
+ * This is, for all practical purposes, an inherently non-directional test.
+ * Therefore, the one-sided verses two-sided option is not provided.
+ *
+ * For 2x2 contingency tables, fisherExact is a more accurate test.
+ *
+ * Examples:
+ * ---
+ * // Test to see whether the relative frequency of outcome 0, 1, and 2
+ * // depends on the treatment in some hypothetical experiment.
+ * uint[] drug1 = [1000, 2000, 1500];
+ * uint[] drug2 = [1500, 3000, 2300];
+ * uint[] placebo = [500, 1100, 750];
+ * assert(approxEqual(chiSqrContingency(drug1, drug2, placebo), 0.2397));
+ * ---
+ */
+real chiSqrContingency(T...)(T ranges)
+if(T.length > 1 && allSatisfy!(isForwardRange, T)) {
+    mixin(chiSqrContingencyTempl);
+}
+
+/**Same as chiSqrContingency(T...), but represents contingency table as an
+ * array of arrays instead of a tuple of ranges.*/
+real chiSqrContingency(T)(const T[][] rangesIn) {
+    T[][] ranges = (cast(T[]*) alloca((T[]).sizeof * rangesIn.length))
+                   [0..rangesIn.length];
+    ranges[] = rangesIn[];
+    mixin(chiSqrContingencyTempl);
+}
+
+unittest {
+    // Test array version.  Using VassarStat's chi-square calculator.
+    uint[][] table1 = [[60, 80, 70],
+                       [20, 50, 40],
+                       [10, 15, 11]];
+    uint[][] table2 = [[60, 20, 10],
+                       [80, 50, 15],
+                       [70, 40, 11]];
+    assert(approxEqual(chiSqrContingency(table1), 0.3449));
+    assert(approxEqual(chiSqrContingency(table2), 0.3449));
+
+    // Test tuple version.
+    auto p1 = chiSqrContingency(cast(uint[]) [31, 41, 59],
+                                cast(uint[]) [26, 53, 58],
+                                cast(uint[]) [97, 93, 93]);
+    assert(approxEqual(p1, 0.0059));
+
+    auto p2 = chiSqrContingency(cast(uint[]) [31, 26, 97],
+                                cast(uint[]) [41, 53, 93],
+                                cast(uint[]) [59, 58, 93]);
+    assert(approxEqual(p2, 0.0059));
+
+    uint[] drug1 = [1000, 2000, 1500];
+    uint[] drug2 = [1500, 3000, 2300];
+    uint[] placebo = [500, 1100, 750];
+    assert(approxEqual(chiSqrContingency(drug1, drug2, placebo), 0.2397));
+
+    writeln("Passed chiSqrContingency test.");
+}
+
+
 
 /**Performs a Kolmogorov-Smirnov (K-S) 2-sample test and returns
  * the D value.  The K-S test is a non-parametric test for a difference between
