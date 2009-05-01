@@ -53,15 +53,15 @@
  *
  * poissonCDF <=> poissonDistribution
  *
- * chiSqrCDF <=> chiSqrDistribution
+ * chiSqrCDF <=> chiSqrDistribution (Note reversed arg order)
  *
- * chiSqrCDFR <=> chiSqrDistributionCompl
+ * chiSqrCDFR <=> chiSqrDistributionCompl (Note reversed arg order)
  *
  * invChiSqCDFR <=> chiSqrDistributionComplInv
  *
- * fisherCDF <=> fDistribution
+ * fisherCDF <=> fDistribution (Note reversed arg order)
  *
- * fisherCDFR <=> fDistributionCompl
+ * fisherCDFR <=> fDistributionCompl (Note reversed arg order)
  *
  * invFisherCDFR <=> fDistributionComplInv
  *
@@ -841,6 +841,41 @@ unittest {
     writeln("Passed invNormalCDF unittest.");
 }
 
+// For K-S test in dstats.random.  Todo:  Flesh out, make a full member of
+// distrib.
+real logNormalCDF(real x, real mu = 0, real sigma = 1) {
+    return 0.5L + 0.5L * erf((log(x) - mu) / (sigma * SQRT2));
+}
+
+unittest {
+    assert(approxEqual(logNormalCDF(4), 0.9171715));
+    assert(approxEqual(logNormalCDF(1, -2, 3), 0.7475075));
+}
+
+// For K-S test in dstats.random.  Todo:  Flesh out.
+real weibullCDF(real x, real shape, real scale = 1) {
+    real exponent = pow(x / scale, shape);
+    return 1 - exp(-exponent);
+}
+
+unittest {
+    assert(approxEqual(weibullCDF(2, 3, 4), 0.1175031));
+}
+
+// For K-S tests in dstats.random.  Todo:  Flesh out.
+real waldCDF(real x, real mu, real lambda) {
+    real sqr = sqrt(lambda / (2 * x));
+    real term1 = 1 + erf(sqr * (x / mu - 1));
+    real term2 = exp(2 * lambda / mu);
+    real term3 = 1 - erf(sqr * (x / mu + 1));
+    return 0.5L * term1 + 0.5L * term2 * term3;
+}
+
+// ditto.
+real rayleighCDF(real x, real mode) {
+    return 1.0L - exp(-x * x / (2 * mode * mode));
+}
+
 ///
 real studentsTCDF(real t, real df)   {
     real x = (t + sqrt(t * t + df)) / (2 * sqrt(t * t + df));
@@ -942,7 +977,7 @@ writeln("Passed studentsTCDF.");
  *  df2 = Degrees of freedom of the second variable. Must be >= 1
  *  x  = Must be >= 0
  */
-real fisherCDF(ulong df1, ulong df2, real x)
+real fisherCDF(real x, real df1, real df2)
 in {
  assert(df1>=1 && df2>=1);
  assert(x>=0);
@@ -956,7 +991,7 @@ body{
 }
 
 /** ditto */
-real fisherCDFR(ulong df1, ulong df2, real x)
+real fisherCDFR(real x, real df1, real df2)
 in {
  assert(df1>=1 && df2>=1);
  assert(x>=0);
@@ -989,7 +1024,7 @@ body{
 */
 
 /** ditto */
-real invFisherCDFR(ulong df1, ulong df2, real p )
+real invFisherCDFR(real df1, real df2, real p )
 in {
  assert(df1>=1 && df2>=1);
  assert(p>=0 && p<=1.0);
@@ -1012,12 +1047,12 @@ body{
 
 unittest {
     // fDistCompl(df1, df2, x) = Excel's FDIST(x, df1, df2)
-      assert(fabs(fisherCDFR(6, 4, 16.5) - 0.00858719177897249L)< 0.0000000000005L);
-      assert(fabs((1-fisherCDF(12, 23, 0.1)) - 0.99990562845505L)< 0.0000000000005L);
+      assert(fabs(fisherCDFR(16.5, 6, 4) - 0.00858719177897249L)< 0.0000000000005L);
+      assert(fabs((1-fisherCDF(0.1, 12, 23)) - 0.99990562845505L)< 0.0000000000005L);
       assert(fabs(invFisherCDFR(8, 34, 0.2) - 1.48267037661408L)< 0.0000000005L);
       assert(fabs(invFisherCDFR(4, 16, 0.008) - 5.043_537_593_48596L)< 0.0000000005L);
       // This one used to fail because of a bug in the definition of MINLOG.
-      assert(approxEqual(fisherCDFR(4, 16, invFisherCDFR(4,16, 0.008)), 0.008));
+      assert(approxEqual(fisherCDFR(invFisherCDFR(4,16, 0.008), 4, 16), 0.008));
       writeln("Passed fisherCDF unittest.");
 }
 
@@ -1218,6 +1253,19 @@ unittest {
 }
 
 ///
+real cauchyPMF(real X, real X0 = 0, real gamma = 1) {
+    real toSquare = (X - X0) / gamma;
+    return 1.0L / (
+        PI * gamma * (1 + toSquare * toSquare));
+}
+
+unittest {
+    assert(approxEqual(cauchyPMF(5), 0.01224269));
+    assert(approxEqual(cauchyPMF(2), 0.06366198));
+}
+
+
+///
 real cauchyCDF(real X, real X0 = 0, real gamma = 1) {
     return M_1_PI * atan((X - X0) / gamma) + 0.5L;
 }
@@ -1251,6 +1299,12 @@ unittest {
     assert(approxEqual(invCauchyCDF(cauchyCDF(.99)), .99));
     assert(approxEqual(invCauchyCDF(cauchyCDF(.03)), .03));
     writeln("Passed invCauchyCDF unittest.");
+}
+
+// For K-S tests in dstats.random.  To be fleshed out later.  Intentionally
+// lacking ddoc.
+real logisticCDF(real x, real loc, real shape) {
+    return 1.0L / (1 + exp(-(x - loc) / shape));
 }
 
 ///
