@@ -116,7 +116,7 @@
 
 module dstats.random;
 
-import std.math, std.algorithm, dstats.distrib, std.traits;
+import std.math, std.algorithm, dstats.distrib, std.traits, std.typetuple;
 public import std.random; //For uniform distrib.
 
 version(unittest) {
@@ -125,58 +125,59 @@ version(unittest) {
 }
 
 ///
-struct RandRange(alias randFun, RGen) {
+struct RandRange(alias randFun, T...) {
 private:
-    ParameterTypeTuple!(randFun!(RGen))[0..$ - 1] params;
-    RGen gen;
-    ReturnType!(randFun) frontElem;
+    T args;
+    typeof(randFun(args)) frontElem;
 public:
     enum bool empty = false;
 
-    this(typeof(params) params, RGen gen) {
-        this.params = params;
-        this.gen = gen;
+    this(T args) {
+        this.args = args;
         popFront;
     }
 
-    ReturnType!(randFun) front() {
+    typeof(randFun(args)) front() {
         return frontElem;
     }
 
     void popFront() {
-        frontElem = randFun(params, gen);
+        this.frontElem = randFun(args);
     }
-}
-
-private template Params(alias fun) {
-    alias ParameterTypeTuple!(fun)[0..$ - 1] Params;
 }
 
 /**Turn a random number generator function into an infinite range.
  * Params is a tuple of the distribution parameters.  This is specified
- * in the same order as when calling the function directly.  The gen variable
- * is the underlying random number generator (Mersenne twister, MinstdRand,
- * etc.).
+ * in the same order as when calling the function directly.
+ *
+ * Note:  The state of this range can be saved, and it can be iterated through
+ * multiple times, yielding identical results each time.  This is because the
+ * state of the underlying random number generator is local to each copy of the
+ * RandRange struct.
+ *
  *
  * Examples:
  * ---
- * auto norms = randRange!(rNorm, Random)(0.0L, 1.0L, Random(unpredictableSeed));
- * real rndNum = norms.front;
- * norms.popFront;
+ * // Print out some summary statistics for 10,000 Poisson-distributed
+ * // random numbers.
+ *
+ * auto gen = Random(unpredictableSeed);
+ * auto pois1k = take(10_000, randRange!rPoisson(2, gen));
+ * writeln( summary(pois1k) );
+ * writeln( summary(pois1k) );  // Exact same results as first call.
  * ---
  */
-RandRange!(randFun!(RGen), RGen) randRange(alias randFun, RGen)
-(Params!(randFun!(RGen)) params, RGen gen) {
-    alias RandRange!(randFun!(RGen), RGen) RT;
-    return RT(params, gen);
+RandRange!(randFun, T) randRange(alias randFun, T...)(T params) {
+    alias RandRange!(randFun, T) RT;
+    return RT(params);
 }
 
 unittest {
     // Just make sure it compiles and stuff.
-    auto norms = randRange!(rNorm, Random)(0.0L, 1.0L, Random(unpredictableSeed));
-    real num = norms.front;
-    norms.popFront;
-    assert(!norms.empty);
+    auto pois = randRange!(rPoisson)(3.0, Random(unpredictableSeed));
+    real num = pois.front;
+    pois.popFront;
+    assert(!pois.empty);
 }
 
 
