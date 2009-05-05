@@ -155,12 +155,14 @@ public:
  * state of the underlying random number generator is local to each copy of the
  * RandRange struct.
  *
+ * Bugs:  Saving the state does not work for normal and binomial distributions
+ * because these distributions save additional state in thread-local storage.
+ *
  *
  * Examples:
  * ---
  * // Print out some summary statistics for 10,000 Poisson-distributed
- * // random numbers.
- *
+ * // random numbers w/ Poisson parameter 2.
  * auto gen = Random(unpredictableSeed);
  * auto pois1k = take(10_000, randRange!rPoisson(2, gen));
  * writeln( summary(pois1k) );

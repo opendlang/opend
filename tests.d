@@ -1234,6 +1234,24 @@ unittest {
     writeln("Passed ksPval 1-sample test.");
 }
 
+/**Convenience function.  Converts a dynamic array to a static one, then
+ * calls the overload.*/
+real fisherExact(T)(const T[][] contingencyTable, Alt alt = Alt.TWOSIDE)
+if(isIntegral!(T))
+in {
+    assert(contingencyTable.length == 2);
+    assert(contingencyTable[0].length == 2);
+    assert(contingencyTable[1].length == 2);
+} body {
+    uint[2][2] newTable;
+    newTable[0][0] = contingencyTable[0][0];
+    newTable[0][1] = contingencyTable[0][1];
+    newTable[1][1] = contingencyTable[1][1];
+    newTable[1][0] = contingencyTable[1][0];
+    return fisherExact(newTable, alt);
+}
+
+
 /**Fisher's Exact test for difference in odds between rows/columns
  * in a 2x2 contingency table.  Specifically, this function tests the odds
  * ratio, which is defined, for a contingency table c, as (c[0][0] * c[1][1])
@@ -1249,20 +1267,16 @@ unittest {
  * assert(approxEqual(res, 0.01852));  // Odds ratio is very small in this case.
  * ---
  * */
-real fisherExact(const uint[][] contingencyTable, Alt alt = Alt.TWOSIDE)
-in {
-    assert(contingencyTable.length == 2);
-    assert(contingencyTable[0].length == 2);
-    assert(contingencyTable[1].length == 2);
-} body {
+real fisherExact(T)(const T[2][2] contingencyTable, Alt alt = Alt.TWOSIDE)
+if(isIntegral!(T)) {
 
-    static real fisherLower(const uint[][] contingencyTable) {
+    static real fisherLower(const uint[2][2] contingencyTable) {
         alias contingencyTable c;
         return hypergeometricCDF(c[0][0], c[0][0] + c[0][1], c[1][0] + c[1][1],
                                  c[0][0] + c[1][0]);
     }
 
-    static real fisherUpper(const uint[][] contingencyTable) {
+    static real fisherUpper(const uint[2][2] contingencyTable) {
         alias contingencyTable c;
         return hypergeometricCDFR(c[0][0], c[0][0] + c[0][1], c[1][0] + c[1][1],
                                  c[0][0] + c[1][0]);
@@ -1608,7 +1622,7 @@ unittest {
  * statistic, and assumes all hypotheses are independent.
  * Returns:   An array of Q-values with indices
  * corresponding to the indices of the p-values passed in.*/
-real[] falseDiscoveryRate(T)(T pVals)
+float[] falseDiscoveryRate(T)(T pVals)
 if(realInput!(T)) {
     // Not optimized at all because I can't imagine anyone writing code where
     // FDR calculations are the main bottleneck.
@@ -1617,14 +1631,14 @@ if(realInput!(T)) {
     foreach(i, ref elem; perm)
         elem = i;
     qsort(p, perm);
-    real[] qVals = new real[p.length];
+    float[] qVals = new float[p.length];
 
     foreach(i; 0..p.length) {
         qVals[i] = min(1.0L,
                    p[i] * cast(real) p.length / (cast(real) i + 1));
     }
 
-    real smallestSeen = real.max;
+    float smallestSeen = float.max;
     foreach_reverse(ref q; qVals) {
         if(q < smallestSeen) {
             smallestSeen = q;
