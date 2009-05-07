@@ -1253,7 +1253,7 @@ unittest {
 }
 
 ///
-real cauchyPMF(real X, real X0 = 0, real gamma = 1) {
+real cauchyPMF(real X, real X0 = 0, real gamma = 1) pure nothrow {
     real toSquare = (X - X0) / gamma;
     return 1.0L / (
         PI * gamma * (1 + toSquare * toSquare));
@@ -1289,7 +1289,7 @@ unittest {
 }
 
 ///
-real invCauchyCDF(real p, real X0 = 0, real gamma = 1) {
+real invCauchyCDF(real p, real X0 = 0, real gamma = 1) pure nothrow {
     return X0 + gamma * tan(PI * (p - 0.5L));
 }
 
@@ -1308,7 +1308,7 @@ real logisticCDF(real x, real loc, real shape) {
 }
 
 ///
-real laplaceCDF(real X, real mu = 0, real b = 1)  {
+real laplaceCDF(real X, real mu = 0, real b = 1) pure nothrow {
     real diff = (X - mu);
     real sign = (diff > 0) ? 1 : -1;
     return 0.5L *(1 + sign * (1 - exp(-abs(diff) / b)));
@@ -1322,7 +1322,7 @@ unittest {
 }
 
 ///
-real laplaceCDFR(real X, real mu = 0, real b = 1) {
+real laplaceCDFR(real X, real mu = 0, real b = 1) pure nothrow {
     real diff = (mu - X);
     real sign = (diff > 0) ? 1 : -1;
     return 0.5L *(1 + sign * (1 - exp(-abs(diff) / b)));
@@ -1351,7 +1351,7 @@ unittest {
 
 
 /**Kolmogorov distribution.  Used in Kolmogorov-Smirnov testing.*/
-real kolmDist(real X) {
+real kolmDist(real X) pure nothrow {
     if(X == 0) {
         //Handle as a special case.  Otherwise, get NAN b/c of divide by zero.
         return 0;

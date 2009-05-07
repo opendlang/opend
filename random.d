@@ -209,8 +209,8 @@ unittest {
     real[] observ = new real[100_000];
     foreach(ref elem; observ)
     elem = rNorm();
-    auto ksRes = ksPval(observ, parametrize!(normalCDF)(0.0L, 1.0L));
-    writeln("100k samples from normal(0, 1):  K-S P-val:  ", ksRes);
+    auto ksRes = ksTest(observ, parametrize!(normalCDF)(0.0L, 1.0L));
+    writeln("100k samples from normal(0, 1):  K-S P-val:  ", ksRes.p);
     writeln("\tMean Expected: 0  Observed:  ", mean(observ));
     writeln("\tMedian Expected: 0  Observed:  ", median(observ));
     writeln("\tStdev Expected:  1  Observed:  ", stdev(observ));
@@ -228,8 +228,8 @@ unittest {
     real[] observ = new real[100_000];
     foreach(ref elem; observ)
     elem = rCauchy(2, 5);
-    auto ksRes = ksPval(observ, parametrize!(cauchyCDF)(2.0L, 5.0L));
-    writeln("100k samples from Cauchy(2, 5):  K-S P-val:  ", ksRes);
+    auto ksRes = ksTest(observ, parametrize!(cauchyCDF)(2.0L, 5.0L));
+    writeln("100k samples from Cauchy(2, 5):  K-S P-val:  ", ksRes.p);
     writeln("\tMean Expected: N/A  Observed:  ", mean(observ));
     writeln("\tMedian Expected: 2  Observed:  ", median(observ));
     writeln("\tStdev Expected:  N/A  Observed:  ", stdev(observ));
@@ -250,8 +250,8 @@ unittest {
     real[] observ = new real[100_000];
     foreach(ref elem; observ)
     elem = rStudentT(5);
-    auto ksRes = ksPval(observ, parametrize!(studentsTCDF)(5));
-    writeln("100k samples from T(5):  K-S P-val:  ", ksRes);
+    auto ksRes = ksTest(observ, parametrize!(studentsTCDF)(5));
+    writeln("100k samples from T(5):  K-S P-val:  ", ksRes.p);
     writeln("\tMean Expected: 0  Observed:  ", mean(observ));
     writeln("\tMedian Expected: 0  Observed:  ", median(observ));
     writeln("\tStdev Expected:  1.2909  Observed:  ", stdev(observ));
@@ -270,8 +270,8 @@ unittest {
     real[] observ = new real[100_000];
     foreach(ref elem; observ)
     elem = rFisher(5, 7);
-    auto ksRes = ksPval(observ, parametrize!(fisherCDF)(5, 7));
-    writeln("100k samples from fisher(5, 7):  K-S P-val:  ", ksRes);
+    auto ksRes = ksTest(observ, parametrize!(fisherCDF)(5, 7));
+    writeln("100k samples from fisher(5, 7):  K-S P-val:  ", ksRes.p);
     writeln("\tMean Expected: ",  7.0 / 5, "  Observed:  ", mean(observ));
     writeln("\tMedian Expected: ??  Observed:  ", median(observ));
     writeln("\tStdev Expected:  ??  Observed:  ", stdev(observ));
@@ -289,8 +289,8 @@ unittest {
     real[] observ = new real[100_000];
     foreach(ref elem; observ)
     elem = rChiSquare(df);
-    auto ksRes = ksPval(observ, parametrize!(chiSqrCDF)(5));
-    writeln("100k samples from Chi-Square:  K-S P-val:  ", ksRes);
+    auto ksRes = ksTest(observ, parametrize!(chiSqrCDF)(5));
+    writeln("100k samples from Chi-Square:  K-S P-val:  ", ksRes.p);
     writeln("\tMean Expected: ", df, "  Observed:  ", mean(observ));
     writeln("\tMedian Expected: ", df - (2.0L / 3.0L), "  Observed:  ", median(observ));
     writeln("\tStdev Expected:  ", sqrt(2 * df), "  Observed:  ", stdev(observ));
@@ -714,7 +714,7 @@ unittest {
         int[] observ = new int[100_000];
         foreach(ref elem; observ)
         elem = rHypergeometric(n1, n2, n);
-        auto ksRes = ksPval(observ, parametrize!(hypergeometricCDF)(n1, n2, n));
+        auto ksRes = ksTest(observ, parametrize!(hypergeometricCDF)(n1, n2, n));
         writeln("100k samples from hypergeom.(", n1, ", ", n2, ", ", n, "):");
         writeln("\tMean Expected: ", n * cast(real) n1 / (n1 + n2),
                 "  Observed:  ", mean(observ));
@@ -820,8 +820,8 @@ unittest {
     real[] observ = new real[100_000];
     foreach(ref elem; observ)
     elem = rLaplace();
-    auto ksRes = ksPval(observ, parametrize!(laplaceCDF)(0.0L, 1.0L));
-    writeln("100k samples from Laplace(0, 1):  K-S P-val:  ", ksRes);
+    auto ksRes = ksTest(observ, parametrize!(laplaceCDF)(0.0L, 1.0L));
+    writeln("100k samples from Laplace(0, 1):  K-S P-val:  ", ksRes.p);
     writeln("\tMean Expected: 0  Observed:  ", mean(observ));
     writeln("\tMedian Expected: 0  Observed:  ", median(observ));
     writeln("\tStdev Expected:  1.414  Observed:  ", stdev(observ));
@@ -840,8 +840,8 @@ unittest {
     real[] observ = new real[100_000];
     foreach(ref elem; observ)
     elem = rExponential(2.0L);
-    auto ksRes = ksPval(observ, parametrize!(gammaCDF)(2, 1));
-    writeln("100k samples from exponential(2):  K-S P-val:  ", ksRes);
+    auto ksRes = ksTest(observ, parametrize!(gammaCDF)(2, 1));
+    writeln("100k samples from exponential(2):  K-S P-val:  ", ksRes.p);
     writeln("\tMean Expected: 0.5  Observed:  ", mean(observ));
     writeln("\tMedian Expected: 0.3465  Observed:  ", median(observ));
     writeln("\tStdev Expected:  0.5  Observed:  ", stdev(observ));
@@ -899,8 +899,8 @@ unittest {
     real[] observ = new real[100_000];
     foreach(ref elem; observ)
     elem = rGamma(2.0L, 3.0L);
-    auto ksRes = ksPval(observ, parametrize!(gammaCDF)(2, 3));
-    writeln("100k samples from gamma(2, 3):  K-S P-val:  ", ksRes);
+    auto ksRes = ksTest(observ, parametrize!(gammaCDF)(2, 3));
+    writeln("100k samples from gamma(2, 3):  K-S P-val:  ", ksRes.p);
     writeln("\tMean Expected: 1.5  Observed:  ", mean(observ));
     writeln("\tMedian Expected: ??  Observed:  ", median(observ));
     writeln("\tStdev Expected:  0.866  Observed:  ", stdev(observ));
@@ -962,9 +962,9 @@ unittest {
         real[] observ = new real[100_000];
         foreach(ref elem; observ)
         elem = rBeta(a, b);
-        auto ksRes = ksPval(observ, paramBeta(a, b));
+        auto ksRes = ksTest(observ, paramBeta(a, b));
         auto summ = summary(observ);
-        writeln("100k samples from beta(", a, ", ", b, "):  K-S P-val:  ", ksRes);
+        writeln("100k samples from beta(", a, ", ", b, "):  K-S P-val:  ", ksRes.p);
         writeln("\tMean Expected: ", a / (a + b), " Observed:  ", summ.mean);
         writeln("\tMedian Expected: ??  Observed:  ", median(observ));
         writeln("\tStdev Expected:  ", betaStdev(a, b), "  Observed:  ", summ.SD);
@@ -987,8 +987,8 @@ unittest {
     real[] observ = new real[100_000];
     foreach(ref elem; observ)
     elem = rLogistic(2.0L, 3.0L);
-    auto ksRes = ksPval(observ, parametrize!(logisticCDF)(2, 3));
-    writeln("100k samples from logistic(2, 3):  K-S P-val:  ", ksRes);
+    auto ksRes = ksTest(observ, parametrize!(logisticCDF)(2, 3));
+    writeln("100k samples from logistic(2, 3):  K-S P-val:  ", ksRes.p);
     writeln("\tMean Expected: 2  Observed:  ", mean(observ));
     writeln("\tMedian Expected: 2  Observed:  ", median(observ));
     writeln("\tStdev Expected:  ", PI * PI * 3, " Observed:  ", stdev(observ));
@@ -1006,8 +1006,8 @@ unittest {
     real[] observ = new real[100_000];
     foreach(ref elem; observ)
     elem = rLogNorm(-2.0L, 1.0L);
-    auto ksRes = ksPval(observ, parametrize!(logNormalCDF)(-2, 1));
-    writeln("100k samples from log-normal(-2, 1):  K-S P-val:  ", ksRes);
+    auto ksRes = ksTest(observ, parametrize!(logNormalCDF)(-2, 1));
+    writeln("100k samples from log-normal(-2, 1):  K-S P-val:  ", ksRes.p);
     writeln("\tMean Expected: ", exp(-1.5), "  Observed:  ", mean(observ));
     writeln("\tMedian Expected: ", exp(-2.0L), "  Observed:  ", median(observ));
     writeln("\tStdev Expected:  ", sqrt((exp(1.) - 1) * exp(-4.0L + 1)),
@@ -1027,8 +1027,8 @@ unittest {
     real[] observ = new real[100_000];
     foreach(ref elem; observ)
     elem = rWeibull(2.0L, 3.0L);
-    auto ksRes = ksPval(observ, parametrize!(weibullCDF)(2.0, 3.0));
-    writeln("100k samples from weibull(2, 3):  K-S P-val:  ", ksRes);
+    auto ksRes = ksTest(observ, parametrize!(weibullCDF)(2.0, 3.0));
+    writeln("100k samples from weibull(2, 3):  K-S P-val:  ", ksRes.p);
     delete observ;
 }
 
@@ -1056,8 +1056,8 @@ unittest {
     foreach(ref elem; observ) {
         elem = rWald(4, 7);
     }
-    auto ksRes = ksPval(observ, parametrize!(waldCDF)(4, 7));
-    writeln("100k samples from wald(4, 7):  K-S P-val:  ", ksRes);
+    auto ksRes = ksTest(observ, parametrize!(waldCDF)(4, 7));
+    writeln("100k samples from wald(4, 7):  K-S P-val:  ", ksRes.p);
     writeln("\tMean Expected: ", 4, "  Observed:  ", mean(observ));
     writeln("\tMedian Expected: ??  Observed:  ", median(observ));
     writeln("\tStdev Expected:  ", sqrt(64.0 / 7), " Observed:  ", stdev(observ));
@@ -1076,8 +1076,8 @@ unittest {
     foreach(ref elem; observ) {
         elem = rRayleigh(3);
     }
-    auto ksRes = ksPval(observ, parametrize!(rayleighCDF)(3));
-    writeln("100k samples from rayleigh(3):  K-S P-val:  ", ksRes);
+    auto ksRes = ksTest(observ, parametrize!(rayleighCDF)(3));
+    writeln("100k samples from rayleigh(3):  K-S P-val:  ", ksRes.p);
 }
 
 

@@ -77,7 +77,7 @@ invariant real MAXGAMMA = 1755.5483429L;
  * Returns -1 if $(GAMMA)(x) < 0,  +1 if $(GAMMA)(x) > 0,
  * $(NAN) if sign is indeterminate.
  */
-real sgnGamma(real x)
+real sgnGamma(real x) pure nothrow
 {
     /* Author: Don Clugston. */
     if (isnan(x)) return x;
@@ -528,7 +528,7 @@ private {
 
 // Continued fraction expansion #1 for incomplete beta integral
 // Use when x < (a+1)/(a+b+2)
-real betaDistExpansion1(real a, real b, real x )
+real betaDistExpansion1(real a, real b, real x ) pure nothrow
 {
     real xk, pk, pkm1, pkm2, qk, qkm1, qkm2;
     real k1, k2, k3, k4, k5, k6, k7, k8;
@@ -611,7 +611,7 @@ real betaDistExpansion1(real a, real b, real x )
 
 // Continued fraction expansion #2 for incomplete beta integral
 // Use when x > (a+1)/(a+b+2)
-real betaDistExpansion2(real a, real b, real x )
+real betaDistExpansion2(real a, real b, real x ) pure nothrow
 {
     real  xk, pk, pkm1, pkm2, qk, qkm1, qkm2;
     real k1, k2, k3, k4, k5, k6, k7, k8;

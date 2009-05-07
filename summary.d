@@ -496,7 +496,7 @@ public:
 
     ///
     real skewness() const {
-        real var = var();
+        real var = _m2 - _mean * _mean;
         real numerator = _m3 - 3 * _mean * _m2 + 2 * _mean * _mean * _mean;
         return numerator / pow(var, 1.5L);
     }
@@ -505,7 +505,7 @@ public:
     real kurtosis() const {
         real mean4 = mean * mean;
         mean4 *= mean4;
-        real vari = var();
+        real vari = _m2 - _mean * _mean;
         return (_m4 - 4 * _mean * _m3 + 6 * _mean * _mean * _m2 - 3 * mean4) /
                (vari * vari) - 3;
     }
@@ -548,10 +548,10 @@ if(realIterable!(T)) {
 }
 
 unittest {
-    // Values from Octave.
-    assert(approxEqual(kurtosis([1, 1, 1, 1, 10].dup), -.92));
-    assert(approxEqual(kurtosis([2.5, 3.5, 4.5, 5.5].dup), -2.0775));
-    assert(approxEqual(kurtosis([1,2,2,2,2,2,100].dup), 0.79523));
+    // Values from Matlab.
+    assert(approxEqual(kurtosis([1, 1, 1, 1, 10].dup), 0.25));
+    assert(approxEqual(kurtosis([2.5, 3.5, 4.5, 5.5].dup), -1.36));
+    assert(approxEqual(kurtosis([1,2,2,2,2,2,100].dup), 2.1657));
     writefln("Passed kurtosis unittest.");
 }
 
@@ -572,13 +572,13 @@ if(realIterable!(T)) {
 unittest {
     // Values from Octave.
     assert(approxEqual(skewness([1,2,3,4,5].dup), 0));
-    assert(approxEqual(skewness([3,1,4,1,5,9,2,6,5].dup), 0.45618));
-    assert(approxEqual(skewness([2,7,1,8,2,8,1,8,2,8,4,5,9].dup), -0.076783));
+    assert(approxEqual(skewness([3,1,4,1,5,9,2,6,5].dup), 0.5443));
+    assert(approxEqual(skewness([2,7,1,8,2,8,1,8,2,8,4,5,9].dup), -0.0866));
 
     // Test handling of ranges that are not arrays.
     string[] stringy = ["3", "1", "4", "1", "5", "9", "2", "6", "5"];
     auto intified = map!(to!(int, string))(stringy);
-    assert(approxEqual(skewness(intified), 0.45618));
+    assert(approxEqual(skewness(intified), 0.5443));
     writeln("Passed skewness test.");
 }
 

@@ -66,7 +66,8 @@
 module dstats.tests;
 
 import dstats.base, dstats.distrib, dstats.alloc, dstats.summary, dstats.sort,
-       std.algorithm, std.functional, std.range, std.c.stdlib;
+       dstats.cor, std.algorithm, std.functional, std.range, std.c.stdlib,
+       std.conv : text;
 
 version(unittest) {
     import std.stdio, std.random;
@@ -90,35 +91,81 @@ enum Alt {
     GREATER
 }
 
+/**A plain old data struct for returning the results of hypothesis tests.*/
+struct TestRes {
+
+    /// The test statistic.  What exactly this is is specific to the test.
+    real testStat;
+
+    /**The P-value against the provided alternative.  This struct can
+     * be implicitly converted to just the P-value via alias this.*/
+    real p;
+
+    /// Allow implicit conversion to the P-value.
+    alias p this;
+
+    ///
+    string toString() {
+        return text("Test Statistic = ", testStat, "\nP = ", p);
+    }
+}
+
+/**A plain old data struct for returning the results of hypothesis tests
+ * that also produce confidence intervals.  Contains, can implicitly convert
+ * to, a TestRes.*/
+struct ConfInt {
+    ///
+    TestRes testRes;
+
+    ///  Lower bound of the confidence interval at the level specified.
+    real lowerBound;
+
+    ///  Upper bound of the confidence interval at the level specified.
+    real upperBound;
+
+    alias testRes this;
+
+    ///
+    string toString() {
+        return text("Test Statistic = ", testRes.testStat, "\nP = ", testRes.p,
+                "\nLower Confidence Bound = ", lowerBound,
+                "\nUpper Confidence Bound = ", upperBound);
+    }
+}
+
 /**One-sample Student's T-test for difference between mean of data and
  * a fixed value.  Alternatives are Alt.LESS, meaning mean(data) < mean,
  * Alt.GREATER, meaning mean(data) > mean, and Alt.TWOSIDE, meaning mean(data)
  * != mean.
  *
- * Returns:  The p-value against the given alternative.*/
-real studentsTTest(T)(T data, real mean, Alt alt = Alt.TWOSIDE)
+ * Returns:  A ConfInt containing T, the P-value and the boundaries of
+ * the confidence interval for mean(T) at the level specified.*/
+ConfInt studentsTTest(T)(T data, real testMean = 0, Alt alt = Alt.TWOSIDE,
+    real confLevel = 0.95)
 if(realIterable!(T)) {
-    OnlineMeanSD meanSd;
-    uint len;
-    foreach(elem; data) {
-        len++;
-        meanSd.put(elem);
-    }
+    return pairedTTest(data, repeat(0), testMean, alt, confLevel);
 
-    real t = (meanSd.mean - mean) / (meanSd.stdev / sqrt(cast(real) len));
-    if(alt == Alt.LESS)
-        return studentsTCDF(t, data.length - 1);
-    else if(alt == Alt.GREATER)
-        return studentsTCDF(-t, data.length - 1);
-    else
-        return 2 * min(studentsTCDF(t, data.length - 1),
-                       studentsTCDF(-t, data.length - 1));
 }
 
 unittest {
-    assert(approxEqual(studentsTTest([1, 2, 3, 4, 5].dup, 2), .2302));
-    assert(approxEqual(studentsTTest([1, 2, 3, 4, 5].dup, 2, Alt.LESS), .8849));
-    assert(approxEqual(studentsTTest([1, 2, 3, 4, 5].dup, 2, Alt.GREATER), .1151));
+    auto t1 = studentsTTest([1, 2, 3, 4, 5].dup, 2);
+    assert(approxEqual(t1.testStat, 1.4142));
+    assert(approxEqual(t1.p, 0.2302));
+    assert(approxEqual(t1.lowerBound, 1.036757));
+    assert(approxEqual(t1.upperBound, 4.963243));
+
+    auto t2 = studentsTTest([1, 2, 3, 4, 5].dup, 2, Alt.LESS);
+    assert(approxEqual(t2, .8849));
+    assert(approxEqual(t2.testStat, 1.4142));
+    assert(t2.lowerBound == -real.infinity);
+    assert(approxEqual(t2.upperBound, 4.507443));
+
+    auto t3 = studentsTTest([1, 2, 3, 4, 5].dup, 2, Alt.GREATER);
+    assert(approxEqual(t3, .1151));
+    assert(approxEqual(t3.testStat, 1.4142));
+    assert(approxEqual(t3.lowerBound, 1.492557));
+    assert(t3.upperBound == real.infinity);
+
     writeln("Passed 1-sample studentsTTest test.");
 }
 
@@ -126,8 +173,12 @@ unittest {
  * assumes variances of samples are equal.  Alteratives are Alt.LESS, meaning
  * mean(sample1) < mean(sample2), Alt.GREATER, meaning mean(sample1) >
  * mean(sample2), and Alt.TWOSIDE, meaning mean(sample1) != mean(sample2).
- * Returns:  The p-value against the given alternative.*/
-real studentsTTest(T, U)(T sample1, U sample2, Alt alt = Alt.TWOSIDE)
+ *
+ * Returns:  A ConfInt containing the T statistic, the P-value, and the
+ * boundaries of the confidence interval for the difference between means
+ * of sample1 and sample2 at the specified level.*/
+ConfInt studentsTTest(T, U)(T sample1, U sample2, real testMean = 0,
+    Alt alt = Alt.TWOSIDE, real confLevel = 0.95)
 if(realIterable!(T) && realIterable!(U)) {
     size_t n1, n2;
     OnlineMeanSD s1summ, s2summ;
@@ -142,29 +193,61 @@ if(realIterable!(T) && realIterable!(U)) {
 
     real sx1x2 = sqrt(((n1 - 1) * s1summ.var + (n2 - 1) * s2summ.var) /
                  (n1 + n2 - 2));
-    real t = (s1summ.mean - s2summ.mean) /
-             (sx1x2 * sqrt((1.0L / n1) + (1.0L / n2)));
-    if(alt == Alt.LESS)
-        return studentsTCDF(t, n1 + n2 - 2);
-    else if(alt == Alt.GREATER)
-        return studentsTCDF(-t, n1 + n2 - 2);
-    else
-        return 2 * min(studentsTCDF(t, n1 + n2 - 2),
-                       studentsTCDF(-t, n1 + n2 - 2));
+    real normSd = (sx1x2 * sqrt((1.0L / n1) + (1.0L / n2)));
+    real meanDiff = s1summ.mean - s2summ.mean;
+    ConfInt ret;
+    ret.testStat = meanDiff / normSd;
+    if(alt == Alt.LESS) {
+        ret.p = studentsTCDF(ret.testStat, n1 + n2 - 2);
+        real delta = invStudentsTCDF(1 - confLevel, n1 + n2 - 2) * normSd;
+        ret.lowerBound = -real.infinity;
+        ret.upperBound = meanDiff - delta;
+    } else if(alt == Alt.GREATER) {
+        ret.p = studentsTCDF(-ret.testStat, n1 + n2 - 2);
+        real delta = invStudentsTCDF(1 - confLevel, n1 + n2 - 2) * normSd;
+        ret.lowerBound = meanDiff + delta;
+        ret.upperBound = real.infinity;
+    } else {
+        ret.p = 2 * min(studentsTCDF(ret.testStat, n1 + n2 - 2),
+                       studentsTCDF(-ret.testStat, n1 + n2 - 2));
+        real delta = invStudentsTCDF(0.5 * (1 - confLevel), n1 + n2 - 2) * normSd;
+        ret.lowerBound = meanDiff + delta;
+        ret.upperBound = meanDiff - delta;
+    }
+    return ret;
 }
 
 unittest {
     // Values from R.
-    assert(approxEqual(studentsTTest([1,2,3,4,5].dup, [1,3,4,5,7,9].dup), 0.2346));
-    assert(approxEqual(studentsTTest([1,2,3,4,5].dup, [1,3,4,5,7,9].dup, Alt.LESS),
+    auto t1 = studentsTTest([1,2,3,4,5].dup, [1,3,4,5,7,9].dup);
+    assert(approxEqual(t1, 0.2346));
+    assert(approxEqual(t1.testStat, -1.274));
+    assert(approxEqual(t1.lowerBound, -5.088787));
+    assert(approxEqual(t1.upperBound, 1.422120));
+
+
+    assert(approxEqual(studentsTTest([1,2,3,4,5].dup, [1,3,4,5,7,9].dup, 0, Alt.LESS),
            0.1173));
-    assert(approxEqual(studentsTTest([1,2,3,4,5].dup, [1,3,4,5,7,9].dup, Alt.GREATER),
+    assert(approxEqual(studentsTTest([1,2,3,4,5].dup, [1,3,4,5,7,9].dup, 0, Alt.GREATER),
            0.8827));
-    assert(approxEqual(studentsTTest([1,3,5,7,9,11].dup, [2,2,1,3,4].dup), 0.06985));
-    assert(approxEqual(studentsTTest([1,3,5,7,9,11].dup, [2,2,1,3,4].dup, Alt.LESS),
-           0.965));
-    assert(approxEqual(studentsTTest([1,3,5,7,9,11].dup, [2,2,1,3,4].dup, Alt.GREATER),
-           0.03492));
+    auto t2 = studentsTTest([1,3,5,7,9,11].dup, [2,2,1,3,4].dup);
+    assert(approxEqual(t2, 0.06985));
+    assert(approxEqual(t2.testStat, 2.0567));
+    assert(approxEqual(t2.lowerBound, -0.3595529));
+    assert(approxEqual(t2.upperBound, 7.5595529));
+
+
+    auto t5 = studentsTTest([1,3,5,7,9,11].dup, [2,2,1,3,4].dup, 0, Alt.LESS);
+    assert(approxEqual(t5, 0.965));
+    assert(approxEqual(t5.testStat, 2.0567));
+    assert(approxEqual(t5.upperBound, 6.80857));
+    assert(t5.lowerBound == -real.infinity);
+
+    auto t6 = studentsTTest([1,3,5,7,9,11].dup, [2,2,1,3,4].dup, 0, Alt.GREATER);
+    assert(approxEqual(t6, 0.03492));
+    assert(approxEqual(t6.testStat, 2.0567));
+    assert(approxEqual(t6.lowerBound, 0.391422));
+    assert(t6.upperBound == real.infinity);
     writeln("Passed 2-sample studentsTTest test.");
 }
 
@@ -173,8 +256,12 @@ unittest {
  * Alteratives are Alt.LESS, meaning mean(sample1) < mean(sample2), Alt.GREATER,
  * meaning mean(sample1) > mean(sample2), and Alt.TWOSIDE, meaning mean(sample1)
  * != mean(sample2).
- * Returns:  The p-value against the given alternative.*/
-real welchTTest(T, U)(T sample1, U sample2, Alt alt = Alt.TWOSIDE)
+ *
+ * Returns:  A ConfInt containing the T statistic, the P-value, and the
+ * boundaries of the confidence interval for the difference between means
+ * of sample1 and sample2 at the specified level.*/
+ConfInt welchTTest(T, U)(T sample1, U sample2, real testMean = 0,
+    Alt alt = Alt.TWOSIDE, real confLevel = 0.95)
 if(realIterable!(T) && realIterable!(U)) {
     size_t n1, n2;
     OnlineMeanSD s1summ, s2summ;
@@ -189,7 +276,8 @@ if(realIterable!(T) && realIterable!(U)) {
 
     auto v1 = s1summ.var, v2 = s2summ.var;
     real sx1x2 = sqrt(v1 / n1 + v2 / n2);
-    real t = (s1summ.mean - s2summ.mean) / sx1x2;
+    real meanDiff = s1summ.mean - s2summ.mean - testMean;
+    real t = meanDiff / sx1x2;
     real numerator = v1 / n1 + v2 / n2;
     numerator *= numerator;
     real denom1 = v1 / n1;
@@ -197,26 +285,51 @@ if(realIterable!(T) && realIterable!(U)) {
     real denom2 = v2 / n2;
     denom2 = denom2 * denom2 / (n2 - 1);
     real df = numerator / (denom1 + denom2);
-    if(alt == Alt.LESS)
-        return studentsTCDF(t, df);
-    else if(alt == Alt.GREATER)
-        return studentsTCDF(-t, df);
-    else
-        return 2 * min(studentsTCDF(t, df), studentsTCDF(-t, df));
+
+    ConfInt ret;
+    ret.testStat = t;
+    if(alt == Alt.LESS) {
+        ret.p = studentsTCDF(t, df);
+        ret.lowerBound = -real.infinity;
+        ret.upperBound = meanDiff + testMean - invStudentsTCDF(1 - confLevel, df) * sx1x2;
+    } else if(alt == Alt.GREATER) {
+        ret.p = studentsTCDF(-t, df);
+        ret.lowerBound = meanDiff + testMean + invStudentsTCDF(1 - confLevel, df) * sx1x2;
+        ret.upperBound = real.infinity;
+    } else {
+        ret.p = 2 * min(studentsTCDF(t, df), studentsTCDF(-t, df));
+        real delta = invStudentsTCDF(0.5 * (1 - confLevel), df) * sx1x2;
+        ret.upperBound = meanDiff + testMean - delta;
+        ret.lowerBound = meanDiff + testMean + delta;
+    }
+    return ret;
 }
 
 unittest {
-        // Values from R.
-    assert(approxEqual(welchTTest([1,2,3,4,5].dup, [1,3,4,5,7,9].dup), 0.2159));
-    assert(approxEqual(welchTTest([1,2,3,4,5].dup, [1,3,4,5,7,9].dup, Alt.LESS),
-           0.1079));
-    assert(approxEqual(welchTTest([1,2,3,4,5].dup, [1,3,4,5,7,9].dup, Alt.GREATER),
-           0.892));
+    // Values from R.
+    auto t1 = welchTTest([1,2,3,4,5].dup, [1,3,4,5,7,9].dup, 2);
+    assert(approxEqual(t1, 0.02285));
+    assert(approxEqual(t1.testStat, -2.8099));
+    assert(approxEqual(t1.lowerBound, -4.979316));
+    assert(approxEqual(t1.upperBound, 1.312649));
+
+    auto t2 = welchTTest([1,2,3,4,5].dup, [1,3,4,5,7,9].dup, -1, Alt.LESS);
+    assert(approxEqual(t2, 0.2791));
+    assert(approxEqual(t2.testStat, -0.6108));
+    assert(t2.lowerBound == -real.infinity);
+    assert(approxEqual(t2.upperBound, 0.7035534));
+
+    auto t3 = welchTTest([1,2,3,4,5].dup, [1,3,4,5,7,9].dup, 0.5, Alt.GREATER);
+    assert(approxEqual(t3, 0.9372));
+    assert(approxEqual(t3.testStat, -1.7104));
+    assert(approxEqual(t3.lowerBound, -4.37022));
+    assert(t3.upperBound == real.infinity);
+
     assert(approxEqual(welchTTest([1,3,5,7,9,11].dup, [2,2,1,3,4].dup), 0.06616));
-    assert(approxEqual(welchTTest([1,3,5,7,9,11].dup, [2,2,1,3,4].dup, Alt.LESS),
-           0.967));
-    assert(approxEqual(welchTTest([1,3,5,7,9,11].dup, [2,2,1,3,4].dup, Alt.GREATER),
-           0.03308));
+    assert(approxEqual(welchTTest([1,3,5,7,9,11].dup, [2,2,1,3,4].dup, 0,
+        Alt.LESS), 0.967));
+    assert(approxEqual(welchTTest([1,3,5,7,9,11].dup, [2,2,1,3,4].dup, 0,
+        Alt.GREATER), 0.03308));
     writeln("Passed welchTTest test.");
 }
 
@@ -227,8 +340,12 @@ unittest {
  * greater than testMean, and Alt.TWOSIDE, meaning the true mean difference is not
  * equal to testMean.
  *
- * Returns:  The p-value against the given alternative.*/
-real pairedTTest(T, U)(T before, U after, Alt alt = Alt.TWOSIDE, real testMean = 0)
+ *
+ * Returns:  A ConfInt containing the T statistic, the P-value, and the
+ * boundaries of the confidence interval for the mean difference between
+ * corresponding elements of sample1 and sample2 at the specified level.*/
+ConfInt pairedTTest(T, U)(T before, U after, real testMean = 0,
+    Alt alt = Alt.TWOSIDE, real confLevel = 0.95)
 if(realInput!(T) && realInput!(U)) {
     OnlineMeanSD msd;
     size_t len = 0;
@@ -239,40 +356,226 @@ if(realInput!(T) && realInput!(U)) {
         msd.put(diff);
         len++;
     }
-    real t = (msd.mean - testMean) / msd.stdev * sqrt(cast(real) len);
 
+    ConfInt ret;
+    ret.testStat = (msd.mean - testMean) / msd.stdev * sqrt(cast(real) len);
+    auto sampleMean = msd.mean;
+    auto sampleSd = msd.stdev;
+    real normSd = sampleSd / sqrt(cast(real) len);
+    ret.testStat = (sampleMean - testMean) / normSd;
     if(alt == Alt.LESS) {
-        return studentsTCDF(t, len - 1);
+        ret.p = studentsTCDF(ret.testStat, len - 1);
+        real delta = invStudentsTCDF(1 - confLevel, len - 1) * normSd;
+        ret.lowerBound = -real.infinity;
+        ret.upperBound = sampleMean - delta;
     } else if(alt == Alt.GREATER) {
-        return studentsTCDF(-t, len - 1);
-    } else if(t > 0) {
-        return 2 * studentsTCDF(-t, len - 1);
+        ret.p = studentsTCDF(-ret.testStat, len - 1);
+        real delta = invStudentsTCDF(1 - confLevel, len - 1) * normSd;
+        ret.lowerBound = sampleMean + delta;
+        ret.upperBound = real.infinity;
     } else {
-        return 2 * studentsTCDF(t, len - 1);
+        ret.p = 2 * min(studentsTCDF(ret.testStat, len - 1),
+                       studentsTCDF(-ret.testStat, len - 1));
+        real delta = invStudentsTCDF(0.5 * (1 - confLevel), len - 1) * normSd;
+        ret.lowerBound = sampleMean + delta;
+        ret.upperBound = sampleMean - delta;
     }
+    return ret;
 }
 
 unittest {
     // Values from R.
-    assert(approxEqual(pairedTTest([3,2,3,4,5].dup, [2,3,5,5,6].dup, Alt.LESS), 0.0889));
-    assert(approxEqual(pairedTTest([3,2,3,4,5].dup, [2,3,5,5,6].dup, Alt.GREATER), 0.9111));
-    assert(approxEqual(pairedTTest([3,2,3,4,5].dup, [2,3,5,5,6].dup, Alt.TWOSIDE), 0.1778));
-    assert(approxEqual(pairedTTest([3,2,3,4,5].dup, [2,3,5,5,6].dup, Alt.LESS, 1), 0.01066));
-    assert(approxEqual(pairedTTest([3,2,3,4,5].dup, [2,3,5,5,6].dup, Alt.GREATER, 1), 0.9893));
-    assert(approxEqual(pairedTTest([3,2,3,4,5].dup, [2,3,5,5,6].dup, Alt.TWOSIDE, 1), 0.02131));
+    auto t1 = pairedTTest([3,2,3,4,5].dup, [2,3,5,5,6].dup, 1);
+    assert(approxEqual(t1.p, 0.02131));
+    assert(approxEqual(t1.testStat, -3.6742));
+    assert(approxEqual(t1.lowerBound, -2.1601748));
+    assert(approxEqual(t1.upperBound, 0.561748));
+
+    assert(approxEqual(pairedTTest([3,2,3,4,5].dup, [2,3,5,5,6].dup, 0, Alt.LESS), 0.0889));
+    assert(approxEqual(pairedTTest([3,2,3,4,5].dup, [2,3,5,5,6].dup, 0, Alt.GREATER), 0.9111));
+    assert(approxEqual(pairedTTest([3,2,3,4,5].dup, [2,3,5,5,6].dup, 0, Alt.TWOSIDE), 0.1778));
+    assert(approxEqual(pairedTTest([3,2,3,4,5].dup, [2,3,5,5,6].dup, 1, Alt.LESS), 0.01066));
+    assert(approxEqual(pairedTTest([3,2,3,4,5].dup, [2,3,5,5,6].dup, 1, Alt.GREATER), 0.9893));
     writeln("Passed pairedTTest unittest.");
 }
 
-/**Wilcoxon rank-sum test statistic.  This is a non-parametric test for a
- * difference in the mean ranks of two sets of numbers.  The tieSum parameter is
- * mostly for use internally, and if included will place a value in the
- * dereference that can be used in wilcoxonRankSumPval() to adjust for ties in
- * the input data.
+/**A test for normality of the distribution of a range of values.  Based on
+ * the assumption that normally distributed values will have a sample skewness
+ * and sample kurtosis very close to zero.
+ *
+ * Returns:  A TestRes with the K statistic, which is Chi-Square distributed
+ * with 2 degrees of freedom under the null, and the P-value for the alternative
+ * that the data has skewness and kurtosis not equal to zero against the null
+ * that skewness and kurtosis are near zero.  A normal distribution always has
+ * skewness and kurtosis that converge to zero as sample size goes to infinity.
+ *
+ * References:
+ * D'Agostino, Ralph B., Albert Belanger, and Ralph B. D'Agostino, Jr.
+ * "A Suggestion for Using Powerful and Informative Tests of Normality",
+ * The American Statistician, Vol. 44, No. 4. (Nov., 1990), pp. 316-321.
+ */
+TestRes dAgostinoK(T)(T range)
+if(realIterable!(T)) {
+    // You are not meant to understand this.  I sure don't.  I just implemented
+    // these formulas off of Wikipedia, which got them from:
+
+    // D'Agostino, Ralph B., Albert Belanger, and Ralph B. D'Agostino, Jr.
+    // "A Suggestion for Using Powerful and Informative Tests of Normality",
+    // The American Statistician, Vol. 44, No. 4. (Nov., 1990), pp. 316-321.
+
+    // Amazing.  I didn't even realize things this complicated were possible
+    // in 1990, before widespread computer algebra systems.
+
+    // Notation from Wikipedia.  Keeping same notation for simplicity.
+    real sqrtb1 = void, b2 = void, n = void;
+    {
+        auto summ = summary(range);
+        sqrtb1 = summ.skew;
+        b2 = summ.kurtosis + 3;
+        n = summ.N;
+    }
+
+    // Calculate transformed skewness.
+    real Y = sqrtb1 * sqrt((n + 1) * (n + 3) / (6 * (n - 2)));
+    real beta2b1Numer = 3 * (n * n + 27 * n - 70) * (n + 1) * (n + 3);
+    real beta2b1Denom = (n - 2) * (n + 5) * (n + 7) * (n + 9);
+    real beta2b1 = beta2b1Numer / beta2b1Denom;
+    real Wsq = -1 + sqrt(2 * (beta2b1 - 1));
+    real delta = 1.0L / sqrt(log(sqrt(Wsq)));
+    real alpha = sqrt( 2.0L / (Wsq - 1));
+    real Zb1 = delta * log(Y / alpha + sqrt(pow(Y / alpha, 2) + 1));
+
+    // Calculate transformed kurtosis.
+    real Eb2 = 3 * (n - 1) / (n + 1);
+    real sigma2b2 = (24 * n * (n - 2) * (n - 3)) / (
+        (n + 1) * (n + 1) * (n + 3) * (n + 5));
+    real x = (b2 - Eb2) / sqrt(sigma2b2);
+
+    real sqBeta1b2 = 6 * (n * n - 5 * n + 2) / ((n + 7) * (n + 9)) *
+         sqrt((6 * (n + 3) * (n + 5)) / (n * (n - 2) * (n - 3)));
+    real A = 6 + 8 / sqBeta1b2 * (2 / sqBeta1b2 + sqrt(1 + 4 / (sqBeta1b2 * sqBeta1b2)));
+    real Zb2 = ((1 - 2 / (9 * A)) -
+        cbrt((1 - 2 / A) / (1 + x * sqrt(2 / (A - 4)))) ) *
+        sqrt(9 * A / 2);
+
+    real K2 = Zb1 * Zb1 + Zb2 * Zb2;
+    return TestRes(K2, chiSqrCDFR(K2, 2));
+}
+
+unittest {
+    // Values from R's fBasics package.
+    int[] arr1 = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20];
+    int[] arr2 = [8,6,7,5,3,0,9,8,6,7,5,3,0,9,3,6,2,4,3,6,8];
+
+    auto r1 = dAgostinoK(arr1);
+    auto r2 = dAgostinoK(arr2);
+
+    assert(approxEqual(r1.testStat, 3.1368));
+    assert(approxEqual(r1.p, 0.2084));
+    writeln("Passed dAgostinoK test.");
+}
+
+
+/**Computes Wilcoxon rank sum test statistic and P-value for
+ * a set of observations against another set, using the given alternative.
+ * Alt.LESS means that sample1 is stochastically less than sample2.
+ * Alt.GREATER means sample1 is stochastically greater than sample2.
+ * Alt.TWOSIDE means sample1 is stochastically less than or greater than
+ * sample2.
+ *
+ * exactThresh is the threshold value of (n1 + n2) at which this function
+ * switches from exact to approximate computation of the p-value.  Exact
+ * computation is very slow for large datasets, and the asymptotic
+ * approximation is good enough for all practical purposes at sample sizes much
+ * smaller than this.  Do not set exactThresh to more than 200, as the exact
+ * calculation is both very slow and not numerically stable past this point,
+ * and the asymptotic calculation is very good for N this large.  To disable
+ * exact calculation entirely, set exactThresh to 0.
+ *
+ * Notes:  Exact p-value computation is never used when ties are present in the
+ * data, because it is not computationally feasible.
  *
  * Input ranges for this function must define a length.
  *
- * Returns:  The Wilcoxon test statistic W.*/
-real wilcoxonRankSum(T)(T sample1, T sample2, real* tieSum = null)
+ * This test is also known as the Mann-Whitney test.
+ *
+ * Returns:  A TestRes containing the W test statistic and the P-value against
+ * the given alternative.*/
+TestRes wilcoxonRankSum(T)(T sample1, T sample2, Alt alt = Alt.TWOSIDE,
+    uint exactThresh = 50) if(isInputRange!(T) && dstats.base.hasLength!(T)) {
+
+    real tieSum;
+    real W = wilcoxonRankSumW(sample1, sample2, &tieSum);
+    real p = wilcoxonRankSumPval(W, sample1.length, sample2.length, alt, tieSum,
+                               exactThresh);
+    return TestRes(W, p);
+}
+
+ unittest {
+     // Values from R.
+
+    assert(wilcoxonRankSum([1, 2, 3, 4, 5].dup, [2, 4, 6, 8, 10].dup).testStat == 5);
+    assert(wilcoxonRankSum([2, 4, 6, 8, 10].dup, [1, 2, 3, 4, 5].dup).testStat == 20);
+    assert(wilcoxonRankSum([3, 7, 21, 5, 9].dup, [2, 4, 6, 8, 10].dup).testStat == 15);
+
+     // Simple stuff (no ties) first.  Testing approximate
+     // calculation first.
+     assert(approxEqual(wilcoxonRankSum([2,4,6,8,12].dup, [1,3,5,7,11,9].dup,
+           Alt.TWOSIDE, 0), 0.9273));
+     assert(approxEqual(wilcoxonRankSum([2,4,6,8,12].dup, [1,3,5,7,11,9].dup,
+           Alt.LESS, 0), 0.6079));
+     assert(approxEqual(wilcoxonRankSum([2,4,6,8,12].dup, [1,3,5,7,11,9].dup,
+           Alt.GREATER, 0), 0.4636));
+     assert(approxEqual(wilcoxonRankSum([1,2,6,10,12].dup, [3,5,7,8,13,15].dup,
+            Alt.TWOSIDE, 0), 0.4113));
+     assert(approxEqual(wilcoxonRankSum([1,2,6,10,12].dup, [3,5,7,8,13,15].dup,
+            Alt.LESS, 0), 0.2057));
+     assert(approxEqual(wilcoxonRankSum([1,2,6,10,12].dup, [3,5,7,8,13,15].dup,
+            Alt.GREATER, 0), 0.8423));
+     assert(approxEqual(wilcoxonRankSum([1,3,5,7,9].dup, [2,4,6,8,10].dup,
+            Alt.TWOSIDE, 0), .6745));
+     assert(approxEqual(wilcoxonRankSum([1,3,5,7,9].dup, [2,4,6,8,10].dup,
+            Alt.LESS, 0), .3372));
+     assert(approxEqual(wilcoxonRankSum([1,3,5,7,9].dup, [2,4,6,8,10].dup,
+            Alt.GREATER, 0), .7346));
+
+    // Now, lots of ties.
+    assert(approxEqual(wilcoxonRankSum([1,2,3,4,5].dup, [2,3,4,5,6].dup,
+           Alt.TWOSIDE, 0), 0.3976));
+    assert(approxEqual(wilcoxonRankSum([1,2,3,4,5].dup, [2,3,4,5,6].dup,
+           Alt.LESS, 0), 0.1988));
+    assert(approxEqual(wilcoxonRankSum([1,2,3,4,5].dup, [2,3,4,5,6].dup,
+           Alt.GREATER, 0), 0.8548));
+    assert(approxEqual(wilcoxonRankSum([1,2,1,1,2].dup, [1,2,3,1,1].dup,
+           Alt.TWOSIDE, 0), 0.9049));
+    assert(approxEqual(wilcoxonRankSum([1,2,1,1,2].dup, [1,2,3,1,1].dup,
+           Alt.LESS, 0), 0.4524));
+    assert(approxEqual(wilcoxonRankSum([1,2,1,1,2].dup, [1,2,3,1,1].dup,
+           Alt.GREATER, 0), 0.64));
+
+    // Now, testing the exact calculation on the same data.
+     assert(approxEqual(wilcoxonRankSum([2,4,6,8,12].dup, [1,3,5,7,11,9].dup,
+       Alt.TWOSIDE), 0.9307));
+     assert(approxEqual(wilcoxonRankSum([2,4,6,8,12].dup, [1,3,5,7,11,9].dup,
+           Alt.LESS), 0.6039));
+     assert(approxEqual(wilcoxonRankSum([2,4,6,8,12].dup, [1,3,5,7,11,9].dup,
+           Alt.GREATER), 0.4654));
+     assert(approxEqual(wilcoxonRankSum([1,2,6,10,12].dup, [3,5,7,8,13,15].dup,
+            Alt.TWOSIDE), 0.4286));
+     assert(approxEqual(wilcoxonRankSum([1,2,6,10,12].dup, [3,5,7,8,13,15].dup,
+            Alt.LESS), 0.2143));
+     assert(approxEqual(wilcoxonRankSum([1,2,6,10,12].dup, [3,5,7,8,13,15].dup,
+            Alt.GREATER), 0.8355));
+     assert(approxEqual(wilcoxonRankSum([1,3,5,7,9].dup, [2,4,6,8,10].dup,
+            Alt.TWOSIDE), .6905));
+     assert(approxEqual(wilcoxonRankSum([1,3,5,7,9].dup, [2,4,6,8,10].dup,
+            Alt.LESS), .3452));
+     assert(approxEqual(wilcoxonRankSum([1,3,5,7,9].dup, [2,4,6,8,10].dup,
+            Alt.GREATER), .7262));
+    writeln("Passed wilcoxonRankSum test.");
+}
+
+real wilcoxonRankSumW(T)(T sample1, T sample2, real* tieSum = null)
 if(isInputRange!(T) && dstats.base.hasLength!(T)) {
     ulong n1 = sample1.length, n2 = sample2.length, N = n1 + n2;
     auto combined = newStack!(Unqual!(ElementType!(T)))(N);
@@ -309,31 +612,6 @@ if(isInputRange!(T) && dstats.base.hasLength!(T)) {
     return w;
 }
 
-unittest {
-    assert(wilcoxonRankSum([1, 2, 3, 4, 5].dup, [2, 4, 6, 8, 10].dup) == 5);
-    assert(wilcoxonRankSum([2, 4, 6, 8, 10].dup, [1, 2, 3, 4, 5].dup) == 20);
-    assert(wilcoxonRankSum([3, 7, 21, 5, 9].dup, [2, 4, 6, 8, 10].dup) == 15);
-    writeln("Passed wilcoxonRankSum test.");
-}
-
-/**Computes a P-value for a Wilcoxon rank sum test score against the given
- * alternative. Alt.LESS means that mean rank(sample1) < mean rank(sample2).
- * Alt.GREATER means mean rank(sample1) > mean rank(sample2).  Alt.TWOSIDE means
- * mean rank(sample1) != mean rank(sample2).
- *
- * exactThresh
- * is the threshold value of (n1 + n2) at which this function switches from
- * exact to approximate computation of the p-value.   Do not set
- * exactThresh to more than 200, as the exact calculation is both very slow and
- * not numerically stable past this point, and the asymptotic calculation is
- * very good for N this large.  To disable exact calculation entirely, set
- * exactThresh to 0.
- *
- * Note:  Exact p-value computation is never used when tieSum > 0, i.e. when
- * there were ties in the data, because it is not computationally feasible.
- * In these cases, exactThresh will be ignored.
- *
- * Returns:  The p-value against the given alternative.*/
 real wilcoxonRankSumPval(T)(T w, ulong n1, ulong n2, Alt alt = Alt.TWOSIDE,
                            real tieSum = 0,  uint exactThresh = 50) {
     ulong N = n1 + n2;
@@ -360,105 +638,13 @@ unittest {
     assert(approxEqual(wilcoxonRankSumPval(1200, 50, 50, Alt.LESS), .3670));
     assert(approxEqual(wilcoxonRankSumPval(1500, 50, 50, Alt.LESS), .957903));
     assert(approxEqual(wilcoxonRankSumPval(8500, 100, 200, Alt.LESS), .01704));
-    auto w = wilcoxonRankSum([2,4,6,8,12].dup, [1,3,5,7,11,9].dup);
+    auto w = wilcoxonRankSumW([2,4,6,8,12].dup, [1,3,5,7,11,9].dup);
     assert(approxEqual(wilcoxonRankSumPval(w, 5, 6), 0.9273));
     assert(approxEqual(wilcoxonRankSumPval(w, 5, 6, Alt.GREATER), 0.4636));
     assert(approxEqual(wilcoxonRankSumPval(w, 5, 6, Alt.LESS), 0.6079));
 }
 
-/**Computes Wilcoxon rank sum test P-value for
- * a set of observations against another set, using the given alternative.
- * Alt.LESS means that mean rank(sample1) < mean rank(sample2).  Alt.GREATER means
- * mean rank(sample1) > mean rank(sample2).  Alt.TWOSIDE means mean rank(sample1) !=
- * mean rank(sample2).
- *
- * tieSum is a parameter that is used  internally to adjust for
- * ties in the data.  It is computed by wilcoxonRankSum().
- * exactThresh is the threshold value of (n1 + n2) at which this function
- * switches from exact to approximate computation of the p-value.  Exact
- * computation is very slow for large datasets, and for anything but very small
- * datasets, the asymptotic approximation is good enough for all practical
- * purposes.  Do not set exactThresh to more than 200, as the exact
- * calculation is both very slow and not numerically stable past this point,
- * and the asymptotic calculation is very good for N this large.  To disable
- * exact calculation entirely, set exactThresh to 0.
- *
- * Note:  Exact p-value computation is never used when tieSum > 0, i.e. when
- * there were ties in the data, because it is not computationally feasible.
- * In these cases, exactThresh will be ignored.
- *
- * Input ranges for this function must define a length.
- *
- * Returns:  The p-value against the given alternative.*/
-real wilcoxonRankSumPval(T)(T sample1, T sample2, Alt alt = Alt.TWOSIDE,
-    uint exactThresh = 50) if(isInputRange!(T) && dstats.base.hasLength!(T)) {
-
-    real tieSum;
-    real W = wilcoxonRankSum(sample1, sample2, &tieSum);
-    return wilcoxonRankSumPval(W, sample1.length, sample2.length, alt, tieSum,
-                               exactThresh);
-}
-
- unittest {
-     // Values from R.  Simple stuff (no ties) first.  Testing approximate
-     // calculation first.
-     assert(approxEqual(wilcoxonRankSumPval([2,4,6,8,12].dup, [1,3,5,7,11,9].dup,
-           Alt.TWOSIDE, 0), 0.9273));
-     assert(approxEqual(wilcoxonRankSumPval([2,4,6,8,12].dup, [1,3,5,7,11,9].dup,
-           Alt.LESS, 0), 0.6079));
-     assert(approxEqual(wilcoxonRankSumPval([2,4,6,8,12].dup, [1,3,5,7,11,9].dup,
-           Alt.GREATER, 0), 0.4636));
-     assert(approxEqual(wilcoxonRankSumPval([1,2,6,10,12].dup, [3,5,7,8,13,15].dup,
-            Alt.TWOSIDE, 0), 0.4113));
-     assert(approxEqual(wilcoxonRankSumPval([1,2,6,10,12].dup, [3,5,7,8,13,15].dup,
-            Alt.LESS, 0), 0.2057));
-     assert(approxEqual(wilcoxonRankSumPval([1,2,6,10,12].dup, [3,5,7,8,13,15].dup,
-            Alt.GREATER, 0), 0.8423));
-     assert(approxEqual(wilcoxonRankSumPval([1,3,5,7,9].dup, [2,4,6,8,10].dup,
-            Alt.TWOSIDE, 0), .6745));
-     assert(approxEqual(wilcoxonRankSumPval([1,3,5,7,9].dup, [2,4,6,8,10].dup,
-            Alt.LESS, 0), .3372));
-     assert(approxEqual(wilcoxonRankSumPval([1,3,5,7,9].dup, [2,4,6,8,10].dup,
-            Alt.GREATER, 0), .7346));
-
-    // Now, lots of ties.
-    assert(approxEqual(wilcoxonRankSumPval([1,2,3,4,5].dup, [2,3,4,5,6].dup,
-           Alt.TWOSIDE, 0), 0.3976));
-    assert(approxEqual(wilcoxonRankSumPval([1,2,3,4,5].dup, [2,3,4,5,6].dup,
-           Alt.LESS, 0), 0.1988));
-    assert(approxEqual(wilcoxonRankSumPval([1,2,3,4,5].dup, [2,3,4,5,6].dup,
-           Alt.GREATER, 0), 0.8548));
-    assert(approxEqual(wilcoxonRankSumPval([1,2,1,1,2].dup, [1,2,3,1,1].dup,
-           Alt.TWOSIDE, 0), 0.9049));
-    assert(approxEqual(wilcoxonRankSumPval([1,2,1,1,2].dup, [1,2,3,1,1].dup,
-           Alt.LESS, 0), 0.4524));
-    assert(approxEqual(wilcoxonRankSumPval([1,2,1,1,2].dup, [1,2,3,1,1].dup,
-           Alt.GREATER, 0), 0.64));
-
-    // Now, testing the exact calculation on the same data.
-     assert(approxEqual(wilcoxonRankSumPval([2,4,6,8,12].dup, [1,3,5,7,11,9].dup,
-       Alt.TWOSIDE), 0.9307));
-     assert(approxEqual(wilcoxonRankSumPval([2,4,6,8,12].dup, [1,3,5,7,11,9].dup,
-           Alt.LESS), 0.6039));
-     assert(approxEqual(wilcoxonRankSumPval([2,4,6,8,12].dup, [1,3,5,7,11,9].dup,
-           Alt.GREATER), 0.4654));
-     assert(approxEqual(wilcoxonRankSumPval([1,2,6,10,12].dup, [3,5,7,8,13,15].dup,
-            Alt.TWOSIDE), 0.4286));
-     assert(approxEqual(wilcoxonRankSumPval([1,2,6,10,12].dup, [3,5,7,8,13,15].dup,
-            Alt.LESS), 0.2143));
-     assert(approxEqual(wilcoxonRankSumPval([1,2,6,10,12].dup, [3,5,7,8,13,15].dup,
-            Alt.GREATER), 0.8355));
-     assert(approxEqual(wilcoxonRankSumPval([1,3,5,7,9].dup, [2,4,6,8,10].dup,
-            Alt.TWOSIDE), .6905));
-     assert(approxEqual(wilcoxonRankSumPval([1,3,5,7,9].dup, [2,4,6,8,10].dup,
-            Alt.LESS), .3452));
-     assert(approxEqual(wilcoxonRankSumPval([1,3,5,7,9].dup, [2,4,6,8,10].dup,
-            Alt.GREATER), .7262));
-    writeln("Passed wilcoxonRankSumPval test.");
- }
-
-
-/* Used internally by wilcoxonRankSumPval.  This function uses dynamic
+/* Used internally by wilcoxonRankSum.  This function uses dynamic
  * programming to count the number of combinations of numbers [1..N] that sum
  * of length n1 that sum to <= W in O(N * W * n1) time.*/
 real wilcoxRSPExact(uint W, uint n1, uint n2, Alt alt = Alt.TWOSIDE) {
@@ -560,17 +746,75 @@ unittest {
     //assert(approxEqual(wilcoxRSPExact(6_000, 120, 120, Alt.LESS), 0.01276508));
 }
 
-/**Wilcoxon signed-rank statistic.  This is a non-parametric test for a
- * difference between paired sets of numbers.  Since this is a paired test,
- * before.length must equal after.length.  The tieSum parameter is
- * mostly for use internally, and if included will place a value in the
- * dereference that can be used in wilcoxonRankSumPval() to adjust for ties in
- * the input data.
+/**Computes a test statistic and P-value for a Wilcoxon signed rank test against
+ * the given alternative. Alt.LESS means that elements of before are stochastically
+ * less than corresponding elements of after.  Alt.GREATER means elements of
+ * before are typically greater than corresponding elements of after.
+ * Alt.TWOSIDE means there is a significant difference in either direction.
  *
- * Input ranges for this function must define a length.
+ * exactThresh is the threshold value of before.length at which this function
+ * switches from exact to approximate computation of the p-value.   Do not set
+ * exactThresh to more than 200, as the exact calculation is both very slow and
+ * not numerically stable past this point, and the asymptotic calculation is
+ * very good for N this large.  To disable exact calculation entirely, set
+ * exactThresh to 0.
  *
- * Returns:  The Wilcoxon test statistic W.*/
-real wilcoxonSignedRank(T, U)(T before, U after, real* tieSum = null)
+ * Notes:  Exact p-value computation is never used when ties are present,
+ * because it is not computationally feasible.
+ *
+ * The input ranges for this function must define a length and must be
+ * forward ranges.
+ *
+ * Returns:  A TestRes of the W statistic and the p-value against the given
+ * alternative.*/
+TestRes wilcoxonSignedRank(T, U)(T before, U after, Alt alt = Alt.TWOSIDE, uint exactThresh = 50)
+if(realInput!(T) && dstats.base.hasLength!(T) && isForwardRange!(T)  &&
+ realInput!(U) && dstats.base.hasLength!(U) && isForwardRange!(U))
+in {
+    assert(before.length == after.length);
+} body {
+    real tieSum;
+    real W = wilcoxonSignedRankW(before, after, &tieSum);
+    ulong N = before.length;
+    while(!before.empty && !after.empty) {
+        if(before.front == after.front)
+            N--;
+        before.popFront;
+        after.popFront;
+
+    }
+    return TestRes(W, wilcoxonSignedRankPval(W, N, alt, tieSum, exactThresh));
+}
+
+unittest {
+    // Values from R.
+    alias approxEqual ae;
+    assert(wilcoxonSignedRank([1,2,3,4,5].dup, [2,1,4,5,3].dup).testStat == 7.5);
+    assert(wilcoxonSignedRank([3,1,4,1,5].dup, [2,7,1,8,2].dup).testStat == 6);
+    assert(wilcoxonSignedRank([8,6,7,5,3].dup, [0,9,8,6,7].dup).testStat == 5);
+
+    // With ties, normal approx.
+    assert(ae(wilcoxonSignedRank([1,2,3,4,5].dup, [2,1,4,5,3].dup), 1));
+    assert(ae(wilcoxonSignedRank([3,1,4,1,5].dup, [2,7,1,8,2].dup), 0.7865));
+    assert(ae(wilcoxonSignedRank([8,6,7,5,3].dup, [0,9,8,6,7].dup), 0.5879));
+    assert(ae(wilcoxonSignedRank([1,2,3,4,5].dup, [2,1,4,5,3].dup, Alt.LESS), 0.5562));
+    assert(ae(wilcoxonSignedRank([3,1,4,1,5].dup, [2,7,1,8,2].dup, Alt.LESS), 0.3932));
+    assert(ae(wilcoxonSignedRank([8,6,7,5,3].dup, [0,9,8,6,7].dup, Alt.LESS), 0.2940));
+    assert(ae(wilcoxonSignedRank([1,2,3,4,5].dup, [2,1,4,5,3].dup, Alt.GREATER), 0.5562));
+    assert(ae(wilcoxonSignedRank([3,1,4,1,5].dup, [2,7,1,8,2].dup, Alt.GREATER), 0.706));
+    assert(ae(wilcoxonSignedRank([8,6,7,5,3].dup, [0,9,8,6,7].dup, Alt.GREATER), 0.7918));
+
+    // Exact.
+    assert(ae(wilcoxonSignedRank([1,2,3,4,5].dup, [2,-4,-8,16,32].dup), 0.625));
+    assert(ae(wilcoxonSignedRank([1,2,3,4,5].dup, [2,-4,-8,16,32].dup, Alt.LESS), 0.3125));
+    assert(ae(wilcoxonSignedRank([1,2,3,4,5].dup, [2,-4,-8,16,32].dup, Alt.GREATER), 0.7812));
+    assert(ae(wilcoxonSignedRank([1,2,3,4,5].dup, [2,-4,-8,-16,32].dup), 0.8125));
+    assert(ae(wilcoxonSignedRank([1,2,3,4,5].dup, [2,-4,-8,-16,32].dup, Alt.LESS), 0.6875));
+    assert(ae(wilcoxonSignedRank([1,2,3,4,5].dup, [2,-4,-8,-16,32].dup, Alt.GREATER), 0.4062));
+    writeln("Passed wilcoxonSignedRank unittest.");
+}
+
+real wilcoxonSignedRankW(T, U)(T before, U after, real* tieSum = null)
 if(realInput!(T) && realInput!(U) &&
    dstats.base.hasLength!(T) && dstats.base.hasLength!(U)) {
     mixin(newFrame);
@@ -628,104 +872,6 @@ if(realInput!(T) && realInput!(U) &&
     return W;
 }
 
-unittest {
-    assert(wilcoxonSignedRank([1,2,3,4,5].dup, [2,1,4,5,3].dup) == 7.5);
-    assert(wilcoxonSignedRank([3,1,4,1,5].dup, [2,7,1,8,2].dup) == 6);
-    assert(wilcoxonSignedRank([8,6,7,5,3].dup, [0,9,8,6,7].dup) == 5);
-    writeln("Passed wilcoxonSignedRank unittest.");
-}
-
-/**Computes a P-value for a Wilcoxon signed rank test score against the given
- * alternative. Alt.LESS means that elements of before are typically less
- * than corresponding elements of after.  Alt.GREATER means elements of
- * before are typically greater than corresponding elements of after.
- * Alt.TWOSIDE means there is a significant difference in either direction.
- *
- * exactThresh is the threshold value of before.length at which this function
- * switches from exact to approximate computation of the p-value.   Do not set
- * exactThresh to more than 200, as the exact calculation is both very slow and
- * not numerically stable past this point, and the asymptotic calculation is
- * very good for N this large.  To disable exact calculation entirely, set
- * exactThresh to 0.
- *
- * Notes:  Exact p-value computation is never used when tieSum > 0, i.e. when
- * there were ties in the data, because it is not computationally feasible.
- * In these cases, exactThresh will be ignored.
- *
- * May give a different answer than calling wilcoxonSignedRank, and then
- * passing the W value into wilcoxonSignedRankPval in the presence of ties
- * or equal pairs.
- *
- * The input ranges for this function must define a length and must be
- * forward ranges.
- *
- * Returns:  The p-value against the given alternative.*/
-real wilcoxonSignedRankPval(T)(T before, T after,
-      Alt alt = Alt.TWOSIDE, uint exactThresh = 50)
-if(realInput!(T) && dstats.base.hasLength!(T) && isForwardRange!(T))
-in {
-    assert(before.length == after.length);
-} body {
-    real tieSum;
-    real W = wilcoxonSignedRank(before, after, &tieSum);
-    ulong N = before.length;
-    while(!before.empty && !after.empty) {
-        if(before.front == after.front)
-            N--;
-        before.popFront;
-        after.popFront;
-
-    }
-    return wilcoxonSignedRankPval(W, N, alt, tieSum, exactThresh);
-}
-
-unittest {
-    // Values from R.
-    alias approxEqual ae;
-    // With ties, normal approx.
-    assert(ae(wilcoxonSignedRankPval([1,2,3,4,5].dup, [2,1,4,5,3].dup), 1));
-    assert(ae(wilcoxonSignedRankPval([3,1,4,1,5].dup, [2,7,1,8,2].dup), 0.7865));
-    assert(ae(wilcoxonSignedRankPval([8,6,7,5,3].dup, [0,9,8,6,7].dup), 0.5879));
-    assert(ae(wilcoxonSignedRankPval([1,2,3,4,5].dup, [2,1,4,5,3].dup, Alt.LESS), 0.5562));
-    assert(ae(wilcoxonSignedRankPval([3,1,4,1,5].dup, [2,7,1,8,2].dup, Alt.LESS), 0.3932));
-    assert(ae(wilcoxonSignedRankPval([8,6,7,5,3].dup, [0,9,8,6,7].dup, Alt.LESS), 0.2940));
-    assert(ae(wilcoxonSignedRankPval([1,2,3,4,5].dup, [2,1,4,5,3].dup, Alt.GREATER), 0.5562));
-    assert(ae(wilcoxonSignedRankPval([3,1,4,1,5].dup, [2,7,1,8,2].dup, Alt.GREATER), 0.706));
-    assert(ae(wilcoxonSignedRankPval([8,6,7,5,3].dup, [0,9,8,6,7].dup, Alt.GREATER), 0.7918));
-
-    // Exact.
-    assert(ae(wilcoxonSignedRankPval([1,2,3,4,5].dup, [2,-4,-8,16,32].dup), 0.625));
-    assert(ae(wilcoxonSignedRankPval([1,2,3,4,5].dup, [2,-4,-8,16,32].dup, Alt.LESS), 0.3125));
-    assert(ae(wilcoxonSignedRankPval([1,2,3,4,5].dup, [2,-4,-8,16,32].dup, Alt.GREATER), 0.7812));
-    assert(ae(wilcoxonSignedRankPval([1,2,3,4,5].dup, [2,-4,-8,-16,32].dup), 0.8125));
-    assert(ae(wilcoxonSignedRankPval([1,2,3,4,5].dup, [2,-4,-8,-16,32].dup, Alt.LESS), 0.6875));
-    assert(ae(wilcoxonSignedRankPval([1,2,3,4,5].dup, [2,-4,-8,-16,32].dup, Alt.GREATER), 0.4062));
-    writeln("Passed wilcoxonSignedRankPval unittest.");
-}
-
-/**Computes Wilcoxon signed rank test P-value for
- * a set of observations against another set, using the given alternative.
- * Alt.LESS means that elements of before are typically less than corresponding
- * elements of after.  Alt.GREATER means elements of before are typically
- * greater than corresponding elements of after.  Alt.TWOSIDE means that
- * there is a significant difference in either direction.
- *
- * tieSum is a parameter that is used  internally to adjust for
- * ties in the data.  It is computed by wilcoxonSignedRank().
- * exactThresh is the threshold value of N at which this function
- * switches from exact to approximate computation of the p-value.  Exact
- * computation is very slow for large datasets, and for anything but very small
- * datasets, the asymptotic approximation is good enough for all practical
- * purposes.  Do not set exactThresh to more than 200, as the exact
- * calculation is both very slow and not numerically stable past this point,
- * and the asymptotic calculation is very good for N this large.  To disable
- * exact calculation entirely, set exactThresh to 0.
- *
- * Note:  Exact p-value computation is never used when tieSum > 0, i.e. when
- * there were ties in the data, because it is not computationally feasible.
- * In these cases, exactThresh will be ignored.
- *
- * Returns:  The p-value against the given alternative.*/
 real wilcoxonSignedRankPval(T)(T W, ulong N, Alt alt = Alt.TWOSIDE,
      real tieSum = 0, uint exactThresh = 50)
 in {
@@ -834,9 +980,13 @@ unittest {
  * of before are typically less than corresponding elements of after,
  * Alt.GREATER, meaning elements of before are typically greater than
  * elements of after, and Alt.TWOSIDE, meaning that there is a significant
- * difference in either direction.*/
-real signTest(T)(T before, T after, Alt alt = Alt.TWOSIDE)
-if(realInput!(T)) {
+ * difference in either direction.
+ *
+ * Returns:  A TestRes with the proportion of elements of before that were
+ * greater than the corresponding element of after, and the P-value against
+ * the given alternative.*/
+TestRes signTest(T, U)(T before, U after, Alt alt = Alt.TWOSIDE)
+if(realInput!(T) && realInput!(U)) {
     uint greater, less;
     while(!before.empty && !after.empty) {
         if(before.front < after.front)
@@ -847,15 +997,16 @@ if(realInput!(T)) {
         before.popFront;
         after.popFront;
     }
+    real propGreater = cast(real) greater / (greater + less);
     if(alt == Alt.LESS) {
-        return binomialCDF(greater, less + greater, 0.5);
+        return TestRes(propGreater, binomialCDF(greater, less + greater, 0.5));
     } else if(alt == Alt.GREATER) {
-        return binomialCDF(less, less + greater, 0.5);
+        return TestRes(propGreater, binomialCDF(less, less + greater, 0.5));
     } else if(less > greater) {
-        return 2 * binomialCDF(greater, less + greater, 0.5);
+        return TestRes(propGreater, 2 * binomialCDF(greater, less + greater, 0.5));
     } else if(greater > less) {
-        return 2 * binomialCDF(less, less + greater, 0.5);
-    } else return 1;
+        return  TestRes(propGreater, 2 * binomialCDF(less, less + greater, 0.5));
+    } else return TestRes(propGreater, 1);
 }
 
 unittest {
@@ -866,50 +1017,36 @@ unittest {
     assert(ae(signTest([5,3,4,6,8].dup, [1,2,3,4,5].dup, Alt.GREATER), 0.03125));
     assert(ae(signTest([5,3,4,6,8].dup, [1,2,3,4,5].dup, Alt.LESS), 1));
     assert(ae(signTest([5,3,4,6,8].dup, [1,2,3,4,5].dup), 0.0625));
-}
 
-/**Sign test for differences between a set of values and an a priori
- * median.  This is a very robust  but very low power test.
- * Alternatives are Alt.LESS, meaning elements
- * of data are typically less than median,
- * Alt.GREATER, meaning elements of data are typically greater than
- * median, and Alt.TWOSIDE, meaning that there is a significant
- * difference in either direction.*/
-real signTest(T, U)(T data, U median, Alt alt = Alt.TWOSIDE)
-if(realInput!(T) && isNumeric!(U)) {
-    uint greater, less;
-    foreach(elem; data) {
-        if(elem < median)
-            less++;
-        else if(median < elem)
-            greater++;
-        // Ignore equals.
-    }
-    if(alt == Alt.LESS) {
-        return binomialCDF(greater, less + greater, 0.5);
-    } else if(alt == Alt.GREATER) {
-        return binomialCDF(less, less + greater, 0.5);
-    } else if(less > greater) {
-        return 2 * binomialCDF(greater, less + greater, 0.5);
-    } else if(greater > less) {
-        return 2 * binomialCDF(less, less + greater, 0.5);
-    } else return 1;
-}
-
-unittest {
-    assert(approxEqual(signTest([1,2,6,7,9].dup, 2), 0.625));
+    assert(approxEqual(signTest([1,2,6,7,9].dup, repeat(2)), 0.625));
+    assert(ae(signTest([1,2,6,7,9].dup, repeat(2)).testStat, 0.75));
     writeln("Passed signTest unittest.");
+}
+
+///For chiSqrFit, is expected value range counts or proportions?
+enum Expected {
+    ///
+    COUNT,
+
+    ///
+    PROPORTION
 }
 
 /**Performs a one-way chi-square goodness of fit test between a range of
  * observed and a range of expected values.  This is a useful statistical test
  * for testing whether a set of observations fits a discrete distribution.
  *
- * Returns:  The P-value for the alternative hypothesis that observed is not
- * a sample from expected against the null that observed is a sample from
- * expected.
+ * Returns:  A TestRes of the chi-square statistic and the P-value for the
+ * alternative hypothesis that observed is not a sample from expected against
+ * the null that observed is a sample from expected.
  *
- * Notes:  The chi-square test relies on asymptotic statistical properties
+ * Notes:  By default, expected is assumed to be a range of expected counts.
+ * By passing Expected.PROPORTION in as the last parameter,
+ * expected counts will be calculated from expected proportions internally.
+ * If this feature is used, observed must be a forward range because it will
+ * be iterated over twice.
+ *
+ * The chi-square test relies on asymptotic statistical properties
  * and is therefore not considered valid when expected values are below 5.
  *
  * This is, for all practical purposes, an inherently non-directional test.
@@ -921,24 +1058,39 @@ unittest {
  * // statistically from a discrete uniform distribution.
  *
  * uint[] observed = [980, 1028, 1001, 964, 1102];
- * auto expected = repeat(cast(real) sum(observed) / observed.length);
- * auto pVal = chiSqrFit(observed, expected);
- * assert(approxEqual(pVal, 0.0207));
+ * auto expected = repeat(1.0L / observed.length);
+ * auto res2 = chiSqrFit(observed, expected, Expected.PROPORTION);
+ * assert(approxEqual(res2, 0.0207));
+ * assert(approxEqual(res2.testStat, 11.59));
  * ---
  */
-real chiSqrFit(T, U)(T observed, U expected)
-if(realInput!(T) && realInput!(U)) {
+TestRes chiSqrFit(T, U)(T observed, U expected, Expected countProp = Expected.COUNT)
+if(realInput!(T) && realInput!(U))
+in {
+    if(countProp == Expected.COUNT) {
+        assert(isForwardRange!(U));
+    }
+} body {
     uint len = 0;
     real chiSq = 0;
+    real multiplier = 1;
+
+    if(countProp == Expected.PROPORTION) {
+        multiplier = 0;
+        foreach(elem; observed) {
+            multiplier += elem;
+        }
+    }
+
     while(!observed.empty && !expected.empty) {
-        real e = expected.front;
+        real e = expected.front * multiplier;
         real diff = cast(real) observed.front - e;
         chiSq += (diff * diff) / e;
         observed.popFront;
         expected.popFront;
         len++;
     }
-    return chiSqrCDFR(chiSq, len - 1);
+    return TestRes(chiSq, chiSqrCDFR(chiSq, len - 1));
 }
 
 unittest {
@@ -946,8 +1098,14 @@ unittest {
     // statistically from a discrete uniform distribution.
     uint[] observed = [980, 1028, 1001, 964, 1102];
     auto expected = repeat(cast(real) sum(observed) / observed.length);
-    auto pVal = chiSqrFit(observed, expected);
-    assert(approxEqual(pVal, 0.0207));
+    auto res = chiSqrFit(observed, expected);
+    assert(approxEqual(res, 0.0207));
+    assert(approxEqual(res.testStat, 11.59));
+
+    expected = repeat(1.0L / observed.length);
+    auto res2 = chiSqrFit(observed, expected, Expected.PROPORTION);
+    assert(approxEqual(res2, 0.0207));
+    assert(approxEqual(res2.testStat, 11.59));
     writeln("Passed chiSqrFit test.");
 }
 
@@ -1079,31 +1237,110 @@ unittest {
     writeln("Passed chiSqrContingency test.");
 }
 
-
-
 /**Performs a Kolmogorov-Smirnov (K-S) 2-sample test and returns
  * the D value.  The K-S test is a non-parametric test for a difference between
  * two empirical distributions or between an empirical distribution and a
- * reference distribution. This implementation uses a signed D value to indicate
- * the direction of the difference between distributions.
- * To get the D value used in standard notation,
- * simply take the absolute value of this D value.*/
-real ksTest(T, U)(T F, U Fprime)
+ * reference distribution.
+ *
+ * Returns:  A TestRes with the K-S D value and a P value for the null that
+ * FPrime is distribuuted identically to F against the alternative that it isn't.
+ * This implementation uses a signed D value to indicate the direction of the
+ * difference between distributions.  To get the D value used in standard
+ * notation, simply take the absolute value of this D value.
+ *
+ * Bugs:  Exact calculation not implemented.  Uses asymptotic approximation.*/
+TestRes ksTest(T, U)(T F, U Fprime)
+if(realInput!(T) && realInput!(U)) {
+    real D = ksTestD(F, Fprime);
+    return TestRes(D, ksPval(F.length, Fprime.length, D));
+}
+
+unittest {
+    assert(approxEqual(ksTest([1,2,3,4,5].dup, [1,2,3,4,5].dup).testStat, 0));
+    assert(approxEqual(ksTestDestructive([1,2,3,4,5].dup, [1,2,2,3,5].dup).testStat, -.2));
+    assert(approxEqual(ksTest([-1,0,2,8, 6].dup, [1,2,2,3,5].dup).testStat, .4));
+    assert(approxEqual(ksTest([1,2,3,4,5].dup, [1,2,2,3,5,7,8].dup).testStat, .2857));
+    assert(approxEqual(ksTestDestructive([1, 2, 3, 4, 4, 4, 5].dup,
+           [1, 2, 3, 4, 5, 5, 5].dup).testStat, .2857));
+
+    assert(approxEqual(ksTest([1, 2, 3, 4, 4, 4, 5].dup, [1, 2, 3, 4, 5, 5, 5].dup),
+           .9375));
+    assert(approxEqual(ksTestDestructive([1, 2, 3, 4, 4, 4, 5].dup,
+        [1, 2, 3, 4, 5, 5, 5].dup), .9375));
+    writeln("Passed ksTest 2-sample test.");
+}
+
+template isArrayLike(T) {
+    enum bool isArrayLike = hasSwappableElements!(T) && hasAssignableElements!(T)
+        && dstats.base.hasLength!(T) && isRandomAccessRange!(T);
+}
+
+/**One-sample KS test against a reference distribution, doesn't modify input
+ * data.  Takes a function pointer or delegate for the CDF of refernce
+ * distribution.
+ *
+ * Returns:  A TestRes with the K-S D value and a P value for the null that
+ * Femp is a sample from F against the alternative that it isn't. This
+ * implementation uses a signed D value to indicate the direction of the
+ * difference between distributions.  To get the D value used in standard
+ * notation, simply take the absolute value of this D value.
+ *
+ * Bugs:  Exact calculation not implemented.  Uses asymptotic approximation.
+ *
+ * Examples:
+ * ---
+ * auto stdNormal = parametrize!(normalCDF)(0.0L, 1.0L);
+ * auto empirical = [1, 2, 3, 4, 5];
+ * real res = ksTest(empirical, stdNormal);
+ * ---
+ */
+TestRes ksTest(T, Func)(T Femp, Func F)
+if(realInput!(T) && (is(Func == function) || is(Func == delegate))) {
+    real D = ksTestD(Femp, F);
+    return TestRes(D, ksPval(Femp.length, D));
+}
+
+unittest {
+    auto stdNormal = parametrize!(normalCDF)(0.0L, 1.0L);
+    assert(approxEqual(ksTest([1,2,3,4,5].dup, stdNormal).testStat, -.8413));
+    assert(approxEqual(ksTestDestructive([-1,0,2,8, 6].dup, stdNormal).testStat, -.5772));
+    auto lotsOfTies = [5,1,2,2,2,2,2,2,3,4].dup;
+    assert(approxEqual(ksTest(lotsOfTies, stdNormal).testStat, -0.8772));
+
+    assert(approxEqual(ksTest([0,1,2,3,4].dup, stdNormal), .03271));
+
+    auto uniform01 = parametrize!(uniformCDF)(0, 1);
+    assert(approxEqual(ksTestDestructive([0.1, 0.3, 0.5, 0.9, 1].dup, uniform01), 0.7591));
+
+    writeln("Passed ksTest 1-sample test.");
+}
+
+/**Same as ksTest, except sorts in place, avoiding memory allocations.*/
+TestRes ksTestDestructive(T, U)(T F, U Fprime)
+if(isArrayLike!(T) && isArrayLike!(U)) {
+    real D = ksTestDDestructive(F, Fprime);
+    return TestRes(D, ksPval(F.length, Fprime.length, D));
+}
+
+///Ditto.
+TestRes ksTestDestructive(T, Func)(T Femp, Func F)
+if(isArrayLike!(T) && (is(Func == function) || is(Func == delegate))) {
+    real D =  ksTestDDestructive(Femp, F);
+    return TestRes(D, ksPval(Femp.length, D));
+}
+
+real ksTestD(T, U)(T F, U Fprime)
 if(isInputRange!(T) && isInputRange!(U)) {
     auto TAState = TempAlloc.getState;
     scope(exit) {
         TempAlloc.free(TAState);
         TempAlloc.free(TAState);
     }
-    return ksTestDestructive(tempdup(F), tempdup(Fprime));
+    return ksTestDDestructive(tempdup(F), tempdup(Fprime));
 }
 
-/**Same as ksTest, but sorts input data in place instead of duplicating
- * data.  Therefore, less "safe" but doesn't allocate memory.  F,
- * Fprime must both be random access ranges w/ lengths.*/
-real ksTestDestructive(T, U)(T F, U Fprime)
-if(isRandomAccessRange!(U) && isRandomAccessRange!(T) &&
-   dstats.base.hasLength!(T) && dstats.base.hasLength!(U)) {
+real ksTestDDestructive(T, U)(T F, U Fprime)
+if(isArrayLike!(T) && isArrayLike!(U)) {
     qsort(F);
     qsort(Fprime);
     real D = 0;
@@ -1127,39 +1364,14 @@ if(isRandomAccessRange!(U) && isRandomAccessRange!(T) &&
     return D;
 }
 
-unittest {
-    // Values from R.
-    assert(approxEqual(ksTestDestructive([1,2,3,4,5].dup, [1,2,3,4,5].dup), 0));
-    assert(approxEqual(ksTestDestructive([1,2,3,4,5].dup, [1,2,2,3,5].dup), -.2));
-    assert(approxEqual(ksTestDestructive([-1,0,2,8, 6].dup, [1,2,2,3,5].dup), .4));
-    assert(approxEqual(ksTestDestructive([1,2,3,4,5].dup, [1,2,2,3,5,7,8].dup), .2857));
-    assert(approxEqual(ksTestDestructive([1, 2, 3, 4, 4, 4, 5].dup,
-           [1, 2, 3, 4, 5, 5, 5].dup), .2857));
-    writeln("Passed 2-sample ksTestDestructive.");
-}
-
-/**One-sample KS test against a reference distribution, doesn't modify input
- * data.  Takes a function pointer or delegate for the CDF of refernce
- * distribution.
- *
- * Examples:
- * ---
- * auto stdNormal = parametrize!(normalCDF)(0.0L, 1.0L);
- * auto empirical = [1, 2, 3, 4, 5];
- * real D = ksTest(empirical, stdNormal);
- * ---
- */
-real ksTest(T, Func)(T Femp, Func F)
+real ksTestD(T, Func)(T Femp, Func F)
 if(realInput!(T) && (is(Func == function) || is(Func == delegate))) {
     scope(exit) TempAlloc.free;
-    return ksTestDestructive(tempdup(Femp), F);
+    return ksTestDDestructive(tempdup(Femp), F);
 }
 
-/**One-sample KS test, sorts in place.  Femp must be a random access range
- * with length.*/
-real ksTestDestructive(T, Func)(T Femp, Func F)
-if(isRandomAccessRange!(T) && dstats.base.hasLength!(T) &&
-    (is(Func == function) || is(Func == delegate))) {
+real ksTestDDestructive(T, Func)(T Femp, Func F)
+if(isArrayLike!(T) && (is(Func == function) || is(Func == delegate))) {
     qsort(Femp);
     real D = 0;
 
@@ -1172,21 +1384,7 @@ if(isRandomAccessRange!(T) && dstats.base.hasLength!(T) &&
     return D;
 }
 
-unittest {
-    // Testing against values from R.
-    auto stdNormal = parametrize!(normalCDF)(0.0L, 1.0L);
-    assert(approxEqual(ksTestDestructive([1,2,3,4,5].dup, stdNormal), -.8413));
-    assert(approxEqual(ksTestDestructive([-1,0,2,8, 6].dup, stdNormal), -.5772));
-    auto lotsOfTies = [5,1,2,2,2,2,2,2,3,4].dup;
-    assert(approxEqual(ksTestDestructive(lotsOfTies, stdNormal), -0.8772));
-    writeln("Passed 1-sample ksTestDestructive.");
-}
-
-/**Computes 2-sided P-val given D, N, Nprime.  N is the number of observations
- * in the first empirical distribution, Nprime is the number of observations
- * in the second empirical distribution.
- * Bugs:  Exact calculation not implemented.  Uses asymptotic approximation.*/
-real ksPvalD(ulong N, ulong Nprime, real D)
+real ksPval(ulong N, ulong Nprime, real D)
 in {
     assert(D >= -1);
     assert(D <= 1);
@@ -1194,63 +1392,13 @@ in {
     return 1 - kolmDist(sqrt(cast(real) (N * Nprime) / (N + Nprime)) * abs(D));
 }
 
-/**One-sided P-val.
- * Bugs:  Exact calculation not implemented.  Uses asymptotic approximation.*/
-real ksPvalD(ulong N, real D)
+real ksPval(ulong N, real D)
 in {
     assert(D >= -1);
     assert(D <= 1);
 } body {
     return 1 - kolmDist(abs(D) * sqrt(cast(real) N));
 }
-
-/**KS-test, returns 2-sided P-val instead of D.
- * Bugs:  Exact calculation not implemented.  Uses asymptotic approximation.*/
-real ksPval(T, U)(T F, U Fprime)
-if(realInput!(T) && realInput!(U)) {
-    return ksPvalD(F.length, Fprime.length, ksTest(F, Fprime));
-}
-
-unittest {
-    assert(approxEqual(ksPval([1, 2, 3, 4, 4, 4, 5].dup, [1, 2, 3, 4, 5, 5, 5].dup),
-           .9375));
-    writeln("Passed ksPval 2-sample test.");
-}
-
-/**One-sided K-S test, returns P-val instead of D.
- * Bugs:  Exact calculation not implemented.  Uses asymptotic approximation.*/
-real ksPval(T, Func)(T Femp, Func F)
-if(realInput!(T) && (is(Func == function) || is(Func == delegate))) {
-    return ksPvalD(Femp.length, ksTest(Femp, F));
-}
-
-unittest {
-    auto stdNormal = parametrize!(normalCDF)(0.0L, 1.0L);
-    assert(approxEqual(ksPval([0,1,2,3,4].dup, stdNormal), .03271));
-
-    auto uniform01 = parametrize!(uniformCDF)(0, 1);
-    assert(approxEqual(ksPval([0.1, 0.3, 0.5, 0.9, 1].dup, uniform01), 0.7591));
-
-    writeln("Passed ksPval 1-sample test.");
-}
-
-/**Convenience function.  Converts a dynamic array to a static one, then
- * calls the overload.*/
-real fisherExact(T)(const T[][] contingencyTable, Alt alt = Alt.TWOSIDE)
-if(isIntegral!(T))
-in {
-    assert(contingencyTable.length == 2);
-    assert(contingencyTable[0].length == 2);
-    assert(contingencyTable[1].length == 2);
-} body {
-    uint[2][2] newTable;
-    newTable[0][0] = contingencyTable[0][0];
-    newTable[0][1] = contingencyTable[0][1];
-    newTable[1][1] = contingencyTable[1][1];
-    newTable[1][0] = contingencyTable[1][0];
-    return fisherExact(newTable, alt);
-}
-
 
 /**Fisher's Exact test for difference in odds between rows/columns
  * in a 2x2 contingency table.  Specifically, this function tests the odds
@@ -1261,13 +1409,18 @@ in {
  *
  * Accepts a 2x2 contingency table as an array of arrays of uints.
  * For now, only does 2x2 contingency tables.
+ *
+ * Returns:  A TestRes of the odds ratio and the P-value against the given
+ * alternative.
+ *
  * Examples:
  * ---
  * real res = fisherExact([[2u, 7], [8, 2]], Alt.LESS);
- * assert(approxEqual(res, 0.01852));  // Odds ratio is very small in this case.
+ * assert(approxEqual(res.p, 0.01852));  // Odds ratio is very small in this case.
+ * assert(approxEqual(res.testStat, 4.0 / 56.0));
  * ---
  * */
-real fisherExact(T)(const T[2][2] contingencyTable, Alt alt = Alt.TWOSIDE)
+TestRes fisherExact(T)(const T[2][2] contingencyTable, Alt alt = Alt.TWOSIDE)
 if(isIntegral!(T)) {
 
     static real fisherLower(const uint[2][2] contingencyTable) {
@@ -1283,12 +1436,13 @@ if(isIntegral!(T)) {
     }
 
 
-    if(alt == Alt.LESS)
-        return fisherLower(contingencyTable);
-    else if(alt == Alt.GREATER)
-        return fisherUpper(contingencyTable);
-
     alias contingencyTable c;
+    real oddsRatio = cast(real) c[0][0] * c[1][1] / c[0][1] / c[1][0];
+    if(alt == Alt.LESS)
+        return TestRes(oddsRatio, fisherLower(contingencyTable));
+    else if(alt == Alt.GREATER)
+        return TestRes(oddsRatio, fisherUpper(contingencyTable));
+
 
     immutable uint n1 = c[0][0] + c[0][1],
                    n2 = c[1][0] + c[1][1],
@@ -1300,13 +1454,13 @@ if(isIntegral!(T)) {
     immutable real pMode = hypergeometricPMF(mode, n1, n2, n);
 
     if(approxEqual(pExact, pMode, 1e-7)) {
-        return 1;
+        return TestRes(oddsRatio, 1);
     } else if(c[0][0] < mode) {
         immutable real pLower = hypergeometricCDF(c[0][0], n1, n2, n);
 
         // Special case to prevent binary search from getting stuck.
         if(hypergeometricPMF(n, n1, n2, n) > pExact) {
-            return pLower;
+            return TestRes(oddsRatio, pLower);
         }
 
         // Binary search for where to begin upper half.
@@ -1326,14 +1480,15 @@ if(isIntegral!(T)) {
         if(guess == uint.max && min == max)
             guess = min;
 
-        return std.algorithm.min(pLower +
+        auto p = std.algorithm.min(pLower +
                hypergeometricCDFR(guess, n1, n2, n), 1.0L);
+        return TestRes(oddsRatio, p);
     } else {
         immutable real pUpper = hypergeometricCDFR(c[0][0], n1, n2, n);
 
         // Special case to prevent binary search from getting stuck.
         if(hypergeometricPMF(0, n1, n2, n) > pExact) {
-            return pUpper;
+            return TestRes(oddsRatio, pUpper);
         }
 
         // Binary search for where to begin lower half.
@@ -1354,9 +1509,27 @@ if(isIntegral!(T)) {
         if(guess == uint.max && min == max)
             guess = min;
 
-        return std.algorithm.min(pUpper +
+        auto p = std.algorithm.min(pUpper +
                hypergeometricCDF(guess, n1, n2, n), 1.0L);
+        return TestRes(oddsRatio, p);
     }
+}
+
+/**Convenience function.  Converts a dynamic array to a static one, then
+ * calls the overload.*/
+TestRes fisherExact(T)(const T[][] contingencyTable, Alt alt = Alt.TWOSIDE)
+if(isIntegral!(T))
+in {
+    assert(contingencyTable.length == 2);
+    assert(contingencyTable[0].length == 2);
+    assert(contingencyTable[1].length == 2);
+} body {
+    uint[2][2] newTable;
+    newTable[0][0] = contingencyTable[0][0];
+    newTable[0][1] = contingencyTable[0][1];
+    newTable[1][1] = contingencyTable[1][1];
+    newTable[1][0] = contingencyTable[1][0];
+    return fisherExact(newTable, alt);
 }
 
 unittest {
@@ -1393,6 +1566,7 @@ unittest {
     }
 
     auto res = fisherExact([[19000u, 80000], [20000, 90000]]);
+    assert(approxEqual(res.testStat, 1.068731));
     assert(approxEqual(res, 3.319e-9));
     res = fisherExact([[18000u, 80000], [20000, 90000]]);
     assert(approxEqual(res, 0.2751));
@@ -1527,107 +1701,189 @@ public:
     }
 }
 
-/**Calculates the significance (P-value) of the given Pearson correlation
- * coefficient against the given alternative, for an input vector of length N.
- * Alternatives are Alt.LESS, meaning the true cor is < 0, Alt.GREATER, meaning
- * the true cor is > 0, and Alt.TWOSIDE, meaning the true cor != 0.
- */
-real pcorSig(real cor, ulong N, Alt alt = Alt.TWOSIDE) {
-    real t = cor / sqrt((1 - cor * cor) / (N - 2));
-
-    switch(alt) {
-        case Alt.TWOSIDE:
-            return 2 * min(studentsTCDF(t, N - 2), studentsTCDFR(t, N - 2));
-        case Alt.LESS:
-            return studentsTCDF(t, N - 2);
-        case Alt.GREATER:
-            return studentsTCDFR(t, N - 2);
-        default:
-            assert(0);
+/**Tests the hypothesis that the Pearson correlation between two ranges is
+ * different from some 0.  Alternatives are
+ * Alt.LESS (pcor(range1, range2) < 0), Alt.GREATER (pcor(range1, range2)
+ * > 0) and Alt.TWOSIDE (pcor(range1, range2) != 0).
+ *
+ * Returns:  A ConfInt of the estimated Pearson correlation of the two ranges,
+ * the P-value against the given alternative, and the confidence interval of
+ * the correlation at the level specified by confLevel.*/
+ConfInt pcorTest(T, U)(T range1, U range2, Alt alt = Alt.TWOSIDE, real confLevel = 0.95)
+if(realInput!(T) && realInput!(U)) {
+    OnlinePcor res;
+    while(!range1.empty && !range2.empty) {
+        res.put(range1.front, range2.front);
+        range1.popFront;
+        range2.popFront;
     }
+    return finishPearsonSpearman(res.cor, res.N, alt, confLevel);
 }
 
 unittest {
     // Values from R.
-    assert(approxEqual(pcorSig(0.9, 5), .03739));
-    assert(approxEqual(pcorSig(0.9, 5, Alt.GREATER), .01869));
-    assert(approxEqual(pcorSig(0.9, 5, Alt.LESS), .9813));
+    auto t1 = pcorTest([1,2,3,4,5].dup, [2,1,4,3,5].dup, Alt.TWOSIDE);
+    auto t2 = pcorTest([1,2,3,4,5].dup, [2,1,4,3,5].dup, Alt.LESS);
+    auto t3 = pcorTest([1,2,3,4,5].dup, [2,1,4,3,5].dup, Alt.GREATER);
+
+    assert(approxEqual(t1.testStat, 0.8));
+    assert(approxEqual(t2.testStat, 0.8));
+    assert(approxEqual(t3.testStat, 0.8));
+
+    assert(approxEqual(t1.p, 0.1041));
+    assert(approxEqual(t2.p, 0.948));
+    assert(approxEqual(t3.p, 0.05204));
+
+    assert(approxEqual(t1.lowerBound, -0.2796400));
+    assert(approxEqual(t3.lowerBound, -0.06438567));
+    assert(approxEqual(t2.lowerBound, -1));
+
+    assert(approxEqual(t1.upperBound, 0.9861962));
+    assert(approxEqual(t2.upperBound, 0.9785289));
+    assert(approxEqual(t3.upperBound, 1));
+
     writeln("Passed pcorSig test.");
 }
 
-/**Calculates the significance (P-value) of the given Spearman rho correlation
- * coefficient against the given alternative, for an input vector of length N.
- * Alternatives are Alt.LESS, meaning the true rho is < 0, Alt.GREATER, meaning
- * the true rho is > 0, and Alt.TWOSIDE, meaning the true rho != 0.
+/**Tests the hypothesis that the Spearman correlation between two ranges is
+ * different from some 0.  Alternatives are
+ * Alt.LESS (scor(range1, range2) < 0), Alt.GREATER (scor(range1, range2)
+ * > 0) and Alt.TWOSIDE (scor(range1, range2) != 0).
  *
- * Bugs:  Exact computation not yet implemented.  Uses asymptotic approximation
- * only.  This is good enough for most practical purposes given reasonably
- * large N, but is not perfectly accurate.  Not valid for data with very large
- * amounts of ties.  */
-real scorSig(real rho, ulong N, Alt alt = Alt.TWOSIDE) {
-    return pcorSig(rho, N, alt);
+ * Returns:  A TestRes containing the Spearman correlation coefficient and
+ * the P-value for the given alternative.
+ *
+ * Bugs:  Exact P-value computation not yet implemented.  Uses asymptotic
+ * approximation only.  This is good enough for most practical purposes given
+ * reasonably large N, but is not perfectly accurate.  Not valid for data with
+ * very large amounts of ties.  */
+TestRes scorTest(T, U)(T range1, U range2, Alt alt = Alt.TWOSIDE)
+if(isInputRange!(T) && isInputRange!(U) &&
+   dstats.base.hasLength!(T) && dstats.base.hasLength!(U)) {
+    real N = range1.length;
+    return finishPearsonSpearman(scor(range1, range2), N, alt, 0);
 }
 
 unittest {
-    // Values from R.  The epsilon here will be relatively large because
-    // I'm comparing my approximate function to R's exact function.  R's
-    // approximate function does not use a continuity correction, and is
-    // therefore quite bad.
-    assert(approxEqual(scorSig(0.3984962, 20), 0.08226, 0.0, .01));
-    assert(approxEqual(scorSig(0.3984962, 20, Alt.LESS), 0.9592, 0.0, .01));
-    assert(approxEqual(scorSig(0.3984962, 20, Alt.GREATER), 0.04113, 0.0, .01));
+    // Values from R.
+    int[] arr1 = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20];
+    int[] arr2 = [8,6,7,5,3,0,9,8,6,7,5,3,0,9,3,6,2,4,3,6,8];
+    auto t1 = scorTest(arr1, arr2, Alt.TWOSIDE);
+    auto t2 = scorTest(arr1, arr2, Alt.LESS);
+    auto t3 = scorTest(arr1, arr2, Alt.GREATER);
+
+    assert(approxEqual(t1.testStat, -0.1769406));
+    assert(approxEqual(t2.testStat, -0.1769406));
+    assert(approxEqual(t3.testStat, -0.1769406));
+
+    assert(approxEqual(t1.p, 0.4429));
+    assert(approxEqual(t3.p, 0.7785));
+    assert(approxEqual(t2.p, 0.2215));
+
     writeln("Passed scorSig test.");
 }
 
-/**Calculates the significance (P-value) of the given Kendall tau correlation
- * coefficient against the given alternative, for an input vector of length N.
- * Alternatives are Alt.LESS, meaning the true tau is < 0, Alt.GREATER, meaning
- * the true tau is > 0, and Alt.TWOSIDE, meaning the true tau != 0.
+private ConfInt finishPearsonSpearman(real cor, real N, Alt alt, real confLevel) {
+    real denom = sqrt((1 - cor * cor) / (N - 2));
+    real t = cor / denom;
+    ConfInt ret;
+    ret.testStat = cor;
+    real sqN = sqrt(N - 3);
+    real z = sqN * atanh(cor);
+    switch(alt) {
+        case Alt.TWOSIDE:
+            ret.p = 2 * min(studentsTCDF(t, N - 2), studentsTCDFR(t, N - 2));
+            real deltaZ = invNormalCDF(0.5 * (1 - confLevel));
+            ret.lowerBound = tanh((z + deltaZ) / sqN);
+            ret.upperBound = tanh((z - deltaZ) / sqN);
+            break;
+        case Alt.LESS:
+            ret.p = studentsTCDF(t, N - 2);
+            real deltaZ = invNormalCDF(1 - confLevel);
+            ret.lowerBound = -1;
+            ret.upperBound = tanh((z - deltaZ) / sqN);
+            break;
+        case Alt.GREATER:
+            ret.p = studentsTCDFR(t, N - 2);
+            real deltaZ = invNormalCDF(1 - confLevel);
+            ret.lowerBound = tanh((z + deltaZ) / sqN);
+            ret.upperBound = 1;
+            break;
+        default:
+            assert(0);
+    }
+    return ret;
+}
+
+/**Tests the hypothesis that the Kendall correlation between two ranges is
+ * different from some 0.  Alternatives are
+ * Alt.LESS (kcor(range1, range2) < 0), Alt.GREATER (kcor(range1, range2)
+ * > 0) and Alt.TWOSIDE (kcor(range1, range2) != 0).
+ *
+ * Returns:  A TestRes containing the Kendall correlation coefficient and
+ * the P-value for the given alternative.
  *
  * Bugs:  Exact computation not yet implemented.  Uses asymptotic approximation
  * only.  This is good enough for most practical purposes given reasonably
  * large N, but is not perfectly accurate.  Not valid for data with very large
  * amounts of ties.  */
-real kcorSig(real tau, ulong N, Alt alt = Alt.TWOSIDE) {
+TestRes kcorTest(T, U)(T range1, U range2, Alt alt = Alt.TWOSIDE)
+if(isInputRange!(T) && isInputRange!(U) && dstats.base.hasLength!(T)
+ && dstats.base.hasLength!(U)) {
+    real tau = kcor(range1, range2);
+    real N = range1.length;
     real cc = 2.0L / (N * (N - 1));  // Continuity correction.
     real sd = sqrt(cast(real) (4 * N + 10) / (9 * N * (N - 1)));
 
     switch(alt) {
         case Alt.TWOSIDE:
-            return 2 * min(normalCDF(tau + cc, 0, sd),
-                           normalCDFR(tau - cc, 0, sd));
+            return TestRes(tau, 2 * min(normalCDF(tau + cc, 0, sd),
+                           normalCDFR(tau - cc, 0, sd)));
         case Alt.LESS:
-            return normalCDF(tau + cc, 0, sd);
+            return TestRes(tau, normalCDF(tau + cc, 0, sd));
         case Alt.GREATER:
-            return normalCDFR(tau - cc, 0, sd);
+            return TestRes(tau, normalCDFR(tau - cc, 0, sd));
         default:
             assert(0);
     }
 }
 
 unittest {
-    // Values from R.  The epsilon here will be relatively large because
-    // I'm comparing my approximate function to R's exact function.  R's
-    // approximate function does not use a continuity correction, and is
+    // Values from R.  The epsilon for P-vals will be relatively large because
+    // R's approximate function does not use a continuity correction, and is
     // therefore quite bad.
-    assert(approxEqual(kcorSig(0.2105263, 20), 0.2086, 0.0, .01));
-    assert(approxEqual(kcorSig(0.2105263, 20, Alt.LESS), 0.907, 0.0, .01));
-    assert(approxEqual(kcorSig(0.2105263, 20, Alt.GREATER), 0.1043, 0.0, .01));
-    writeln("Passed kcorSig test.");
+
+    int[] arr1 = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20];
+    int[] arr2 = [8,6,7,5,3,0,9,8,6,7,5,3,0,9,3,6,2,4,3,6,8];
+    auto t1 = kcorTest(arr1, arr2, Alt.TWOSIDE);
+    auto t2 = kcorTest(arr1, arr2, Alt.LESS);
+    auto t3 = kcorTest(arr1, arr2, Alt.GREATER);
+
+    assert(approxEqual(t1.testStat, -.1448010));
+    assert(approxEqual(t2.testStat, -.1448010));
+    assert(approxEqual(t3.testStat, -.1448010));
+
+    assert(approxEqual(t1.p, 0.3757, 0.0, 0.02));
+    assert(approxEqual(t3.p, 0.8122, 0.0, 0.02));
+    assert(approxEqual(t2.p, 0.1878, 0.0, 0.02));
+
+    writeln("Passed scorSig test.");
 }
 
 /**Computes the false discovery rate statistic given a list of
  * p-values, according to Benjamini and Hochberg (1995).
  * This is the most basic, intuitive version of the false discovery rate
  * statistic, and assumes all hypotheses are independent.
+ *
  * Returns:   An array of Q-values with indices
  * corresponding to the indices of the p-values passed in.*/
 float[] falseDiscoveryRate(T)(T pVals)
 if(realInput!(T)) {
     // Not optimized at all because I can't imagine anyone writing code where
     // FDR calculations are the main bottleneck.
-    auto p = tempdup(pVals);  scope(exit) TempAlloc.free;
-    auto perm = newStack!(uint)(pVals.length);  scope(exit) TempAlloc.free;
+    mixin(newFrame);
+    auto p = tempdup(pVals);
+    auto perm = newStack!(uint)(pVals.length);
     foreach(i, ref elem; perm)
         elem = i;
     qsort(p, perm);
