@@ -1166,7 +1166,7 @@ private enum string chiSqrContingencyTempl =  q{
         }
         popAll();
     }
-    return chiSqrCDFR(chiSq, (nRows - 1) * (nCols - 1));
+    return TestRes(chiSq, chiSqrCDFR(chiSq, (nRows - 1) * (nCols - 1)));
 };
 
 /**Performs a chi-square test on a contingency table of arbitrary dimensions.
@@ -1193,14 +1193,14 @@ private enum string chiSqrContingencyTempl =  q{
  * assert(approxEqual(chiSqrContingency(drug1, drug2, placebo), 0.2397));
  * ---
  */
-real chiSqrContingency(T...)(T ranges)
+TestRes chiSqrContingency(T...)(T ranges)
 if(T.length > 1 && allSatisfy!(isForwardRange, T)) {
     mixin(chiSqrContingencyTempl);
 }
 
 /**Same as chiSqrContingency(T...), but represents contingency table as an
  * array of arrays instead of a tuple of ranges.*/
-real chiSqrContingency(T)(const T[][] rangesIn) {
+TestRes chiSqrContingency(T)(const T[][] rangesIn) {
     T[][] ranges = (cast(T[]*) alloca((T[]).sizeof * rangesIn.length))
                    [0..rangesIn.length];
     ranges[] = rangesIn[];
@@ -1217,6 +1217,7 @@ unittest {
                        [70, 40, 11]];
     assert(approxEqual(chiSqrContingency(table1), 0.3449));
     assert(approxEqual(chiSqrContingency(table2), 0.3449));
+    assert(approxEqual(chiSqrContingency(table1).testStat, 4.48));
 
     // Test tuple version.
     auto p1 = chiSqrContingency(cast(uint[]) [31, 41, 59],
