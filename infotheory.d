@@ -167,6 +167,7 @@ Joint!(FlattenType!(T)) flatten(T...)(T args) {
  * auto foo = [1,2,3,1,1];
  * auto bar = [2,4,6,2,2];
  * auto e = entropy(joint(foo, bar));  // Calculate joint entropy of foo, bar.
+ * ---
  */
 Joint!(FlattenType!(T)) joint(T...)(T args) {
     return jointImpl(flatten(args).tupleof);
