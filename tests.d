@@ -484,10 +484,8 @@ unittest {
  * sample2.
  *
  * exactThresh is the threshold value of (n1 + n2) at which this function
- * switches from exact to approximate computation of the p-value.  Exact
- * computation is very slow for large datasets, and the asymptotic
- * approximation is good enough for all practical purposes at sample sizes much
- * smaller than this.  Do not set exactThresh to more than 200, as the exact
+ * switches from exact to approximate computation of the p-value.  Do not set
+ * exactThresh to more than 200, as the exact
  * calculation is both very slow and not numerically stable past this point,
  * and the asymptotic calculation is very good for N this large.  To disable
  * exact calculation entirely, set exactThresh to 0.
@@ -497,7 +495,7 @@ unittest {
  *
  * Input ranges for this function must define a length.
  *
- * This test is also known as the Mann-Whitney test.
+ * This test is also known as the Mann-Whitney U test.
  *
  * Returns:  A TestRes containing the W test statistic and the P-value against
  * the given alternative.*/
@@ -773,16 +771,67 @@ if(realInput!(T) && dstats.base.hasLength!(T) && isForwardRange!(T)  &&
 in {
     assert(before.length == after.length);
 } body {
-    real tieSum;
-    real W = wilcoxonSignedRankW(before, after, &tieSum);
     ulong N = before.length;
+
+    mixin(newFrame);
+    float[] diffRanks = newStack!(float)(before.length);
+    byte[] signs = newStack!(byte)(before.length);
+    real[] diffs = newStack!(real)(before.length);
+    uint nZero = 0;
+
+    byte sign(real input) {
+        if(input < 0)
+            return -1;
+        if(input > 0)
+            return 1;
+        N--;
+        nZero++;
+        return 0;
+    }
+
+    size_t ii = 0;
     while(!before.empty && !after.empty) {
-        if(before.front == after.front)
-            N--;
+        real diff = cast(real) before.front - cast(real) after.front;
+        signs[ii] = sign(diff);
+        diffs[ii] = abs(diff);
+        ii++;
         before.popFront;
         after.popFront;
-
     }
+    rankSort(diffs, diffRanks);
+
+    real W = 0;
+    foreach(i, dr; diffRanks) {
+        if(signs[i] == 1) {
+            W += dr - nZero;
+        }
+    }
+
+    // Handle ties.
+    real tieSum = 0;
+
+    // combined is sorted by rankSort.  Can use it to figure out how many
+    // ties we have w/o another allocation or sorting.
+    enum denom = 1.0L / 48.0L;
+    ulong nties = 1;
+    foreach(i; 1..diffs.length) {
+        if(diffs[i] == diffs[i - 1] && diffs[i] != 0) {
+            nties++;
+        } else {
+            if(nties == 1)
+                continue;
+            tieSum += ((nties * nties * nties) - nties) * denom;
+            nties = 1;
+        }
+    }
+    // Handle last run.
+    if(nties > 1) {
+        tieSum += ((nties * nties * nties) - nties) * denom;
+    }
+    if(nZero > 0 && tieSum == 0) {
+        tieSum = real.nan;  // Signal that there were zeros and exact p-val can't be computed.
+    }
+
     return TestRes(W, wilcoxonSignedRankPval(W, N, alt, tieSum, exactThresh));
 }
 
@@ -803,6 +852,8 @@ unittest {
     assert(ae(wilcoxonSignedRank([1,2,3,4,5].dup, [2,1,4,5,3].dup, Alt.GREATER), 0.5562));
     assert(ae(wilcoxonSignedRank([3,1,4,1,5].dup, [2,7,1,8,2].dup, Alt.GREATER), 0.706));
     assert(ae(wilcoxonSignedRank([8,6,7,5,3].dup, [0,9,8,6,7].dup, Alt.GREATER), 0.7918));
+    assert(ae(wilcoxonSignedRank(cast(int[]) [1,16,2,4,8], cast(int[]) [1,5,2,3,4]).testStat, 6));
+    assert(ae(wilcoxonSignedRank(cast(int[]) [1,16,2,4,8], cast(int[]) [1,5,2,3,4]), 0.1814));
 
     // Exact.
     assert(ae(wilcoxonSignedRank([1,2,3,4,5].dup, [2,-4,-8,16,32].dup), 0.625));
@@ -811,75 +862,37 @@ unittest {
     assert(ae(wilcoxonSignedRank([1,2,3,4,5].dup, [2,-4,-8,-16,32].dup), 0.8125));
     assert(ae(wilcoxonSignedRank([1,2,3,4,5].dup, [2,-4,-8,-16,32].dup, Alt.LESS), 0.6875));
     assert(ae(wilcoxonSignedRank([1,2,3,4,5].dup, [2,-4,-8,-16,32].dup, Alt.GREATER), 0.4062));
+}
+
+/**Same as the overload, but allows testing whether a range is stochastically
+ * less than or greater than a fixed value mu rather than paired elements of
+ * a second range.*/
+TestRes wilcoxonSignedRank(T)(T data, real mu, Alt alt = Alt.TWOSIDE, uint exactThresh = 50)
+if(realInput!(T) && dstats.base.hasLength!(T) && isForwardRange!(T)) {
+    return wilcoxonSignedRank(data, take(data.length, repeat(mu)), alt, exactThresh);
+}
+
+unittest {
+    auto res = wilcoxonSignedRank([-8,-6,2,4,7].dup, 0);
+    assert(approxEqual(res.testStat, 7));
+    assert(approxEqual(res.p, 1));
     writeln("Passed wilcoxonSignedRank unittest.");
 }
 
-real wilcoxonSignedRankW(T, U)(T before, U after, real* tieSum = null)
-if(realInput!(T) && realInput!(U) &&
-   dstats.base.hasLength!(T) && dstats.base.hasLength!(U)) {
-    mixin(newFrame);
-    float[] diffRanks = newStack!(float)(before.length);
-    byte[] signs = newStack!(byte)(before.length);
-    real[] diffs = newStack!(real)(before.length);
-
-    static byte sign(real input) {
-        if(input < 0)
-            return -1;
-        if(input > 0)
-            return 1;
-        return 0;
-    }
-
-    size_t ii = 0;
-    while(!before.empty && !after.empty) {
-        real diff = cast(real) before.front - cast(real) after.front;
-        signs[ii] = sign(diff);
-        diffs[ii] = abs(diff);
-        ii++;
-        before.popFront;
-        after.popFront;
-    }
-    rankSort(diffs, diffRanks);
-
-    real W = 0;
-    foreach(i, dr; diffRanks) {
-        if(signs[i] == 1)
-            W += dr;
-    }
-
-    if(tieSum !is null) {
-        *tieSum = 0;
-
-        // combined is sorted by rankSort.  Can use it to figure out how many
-        // ties we have w/o another allocation or sorting.
-        enum denom = 1.0L / 48.0L;
-        ulong nties = 1;
-        foreach(i; 1..diffs.length) {
-            if(diffs[i] == diffs[i - 1] && diffs[i] != 0) {
-                nties++;
-            } else {
-                if(nties == 1)
-                    continue;
-                *tieSum += ((nties * nties * nties) - nties) * denom;
-                nties = 1;
-            }
-        }
-        // Handle last run.
-        if(nties > 1) {
-            *tieSum += ((nties * nties * nties) - nties) * denom;
-        }
-    }
-    return W;
-}
 
 real wilcoxonSignedRankPval(T)(T W, ulong N, Alt alt = Alt.TWOSIDE,
      real tieSum = 0, uint exactThresh = 50)
 in {
     assert(N > 0);
-    assert(tieSum >= 0);
+    assert(tieSum >= 0 || isNaN(tieSum));
 } body {
-    if(tieSum == 0 && N <= exactThresh)
+    if(tieSum == 0 && !isNaN(tieSum) && N <= exactThresh) {
         return wilcoxSRPExact(cast(uint) W, N, alt);
+    }
+
+    if(isNaN(tieSum)) {
+        tieSum = 0;
+    }
 
     real expected = N * (N + 1) * 0.25L;
     real sd = sqrt(N * (N + 1) * (2 * N + 1) / 24.0L - tieSum);
@@ -1018,9 +1031,16 @@ unittest {
     assert(ae(signTest([5,3,4,6,8].dup, [1,2,3,4,5].dup, Alt.LESS), 1));
     assert(ae(signTest([5,3,4,6,8].dup, [1,2,3,4,5].dup), 0.0625));
 
-    assert(approxEqual(signTest([1,2,6,7,9].dup, repeat(2)), 0.625));
-    assert(ae(signTest([1,2,6,7,9].dup, repeat(2)).testStat, 0.75));
+    assert(approxEqual(signTest([1,2,6,7,9].dup, 2), 0.625));
+    assert(ae(signTest([1,2,6,7,9].dup, 2).testStat, 0.75));
     writeln("Passed signTest unittest.");
+}
+
+/**Similar to the overload, but allows testing for a difference between a
+ * range and a fixed value mu.*/
+TestRes signTest(T)(T data, real mu, Alt alt = Alt.TWOSIDE)
+if(realInput!(T)) {
+    return signTest(data, repeat(mu), alt);
 }
 
 ///For chiSqrFit, is expected value range counts or proportions?
