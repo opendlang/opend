@@ -70,9 +70,13 @@ module dstats.base;
 
 public import std.math, std.traits, dstats.gamma, dstats.alloc;
 private import dstats.sort, std.c.stdlib, std.bigint, std.typecons,
-               std.functional, std.algorithm, std.range, std.bitmanip;
+               std.functional, std.algorithm, std.range, std.bitmanip,
+               std.stdio;
 
-invariant real[] staticLogFacTable;
+import std.string : strip;
+import std.conv : to;
+
+immutable real[] staticLogFacTable;
 
 enum : size_t {
     staticFacTableLen = 10_000,
@@ -86,17 +90,13 @@ static this() {
     for(uint i = 1; i < staticFacTableLen; i++) {
         sfTemp[i] = sfTemp[i - 1] + log(i);
     }
-    staticLogFacTable = cast(invariant) sfTemp;
+    staticLogFacTable = cast(immutable) sfTemp;
 }
 
 version(unittest) {
-    import std.stdio, std.algorithm, std.random;
+    import std.stdio, std.algorithm, std.random, std.file;
 
-    Random gen;
-
-    void main (){
-        gen.seed(unpredictableSeed);
-    }
+    void main (){}
 }
 
 /**Parameter in some functions to determine where results are returned.
@@ -1085,6 +1085,84 @@ unittest {
         assert(hash == sort);
     }
     writeln("Passed intersect test.");
+}
+
+/**Given a file that contains a line-delimited list of numbers, iterate through
+ * it as a forward range, converting each line to a real and skipping any line
+ * that cannot be converted.
+ *
+ * Examples:
+ * ---
+ * // Find the sum of all the numbers in foo.txt without ever having all of
+ * // them in memory at the same time.
+ *
+ * auto data = NumericFile("foo.txt");
+ * auto sum = reduce!"a + b"(data);
+ * ---
+ */
+struct NumericFile {
+private:
+    real cached;
+    bool _empty;
+    File handle;
+    char[] buf;
+
+public:
+    ///
+    this(string filename) {
+        handle = File(filename, "r");
+        popFront;
+    }
+
+    ///
+    void popFront() {
+        while(!handle.eof) {
+            auto nBytes = handle.readln(buf);
+            auto line = strip(buf[0..nBytes]);
+            try {
+                cached = to!real(line);
+                return;
+            } catch {
+                // Ignore bad lines.
+                continue;
+            }
+        }
+        _empty = true;
+    }
+
+    ///
+    real front() {
+        return cached;
+    }
+
+    ///
+    bool empty() {
+        return _empty;
+    }
+
+    ///
+    void close() {
+        handle.close;
+    }
+}
+
+unittest {
+    string data = "3.14\n2.71\n8.67\nabracadabra\n362436";
+    std.file.write("NumericFileTestDeleteMe.txt", data);
+    scope(exit) std.file.remove("NumericFileTestDeleteMe.txt");
+    auto rng = NumericFile("NumericFileTestDeleteMe.txt");
+    assert(approxEqual(rng.front, 3.14));
+    rng.popFront;
+    assert(approxEqual(rng.front, 2.71));
+    rng.popFront;
+    assert(approxEqual(rng.front, 8.67));
+    rng.popFront;
+    assert(approxEqual(rng.front, 362435));
+    assert(!rng.empty);
+    rng.popFront;
+    assert(rng.empty);
+    rng.close;  // Normally this would be reference counted.
+    writeln("Passed NumericFile unittest.");
 }
 
 // Verify that there are no TempAlloc memory leaks anywhere in the code covered

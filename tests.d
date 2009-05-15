@@ -134,9 +134,9 @@ struct ConfInt {
 }
 
 /**One-sample Student's T-test for difference between mean of data and
- * a fixed value.  Alternatives are Alt.LESS, meaning mean(data) < mean,
- * Alt.GREATER, meaning mean(data) > mean, and Alt.TWOSIDE, meaning mean(data)
- * != mean.
+ * a fixed value.  Alternatives are Alt.LESS, meaning mean(data) < testMean,
+ * Alt.GREATER, meaning mean(data) > testMean, and Alt.TWOSIDE, meaning
+ * mean(data)!= testMean.
  *
  * Returns:  A ConfInt containing T, the P-value and the boundaries of
  * the confidence interval for mean(T) at the level specified.*/
@@ -169,10 +169,11 @@ unittest {
     writeln("Passed 1-sample studentsTTest test.");
 }
 
-/**Two-sample T test for a difference in means of normally distributed data,
+/**Two-sample T test for a difference in means,
  * assumes variances of samples are equal.  Alteratives are Alt.LESS, meaning
- * mean(sample1) < mean(sample2), Alt.GREATER, meaning mean(sample1) >
- * mean(sample2), and Alt.TWOSIDE, meaning mean(sample1) != mean(sample2).
+ * mean(sample1) - mean(sample2) < testMean, Alt.GREATER, meaning
+ * mean(sample1) - mean(sample2) > testMean, and Alt.TWOSIDE, meaning
+ * mean(sample1) - mean(sample2) != testMean.
  *
  * Returns:  A ConfInt containing the T statistic, the P-value, and the
  * boundaries of the confidence interval for the difference between means
@@ -251,11 +252,10 @@ unittest {
     writeln("Passed 2-sample studentsTTest test.");
 }
 
-/**Two-sample T-test for difference in means of normally distributed data.
- * Does NOT assume variances are equal.
- * Alteratives are Alt.LESS, meaning mean(sample1) < mean(sample2), Alt.GREATER,
- * meaning mean(sample1) > mean(sample2), and Alt.TWOSIDE, meaning mean(sample1)
- * != mean(sample2).
+/**Two-sample T-test for difference in means.  Does NOT assume variances are equal.
+ * Alteratives are Alt.LESS, meaning mean(sample1) - mean(sample2) < testMean,
+ * Alt.GREATER, meaning mean(sample1) - mean(sample2) > testMean, and
+ * Alt.TWOSIDE, meaning mean(sample1) - mean(sample2) != testMean.
  *
  * Returns:  A ConfInt containing the T statistic, the P-value, and the
  * boundaries of the confidence interval for the difference between means
@@ -399,83 +399,6 @@ unittest {
     writeln("Passed pairedTTest unittest.");
 }
 
-/**A test for normality of the distribution of a range of values.  Based on
- * the assumption that normally distributed values will have a sample skewness
- * and sample kurtosis very close to zero.
- *
- * Returns:  A TestRes with the K statistic, which is Chi-Square distributed
- * with 2 degrees of freedom under the null, and the P-value for the alternative
- * that the data has skewness and kurtosis not equal to zero against the null
- * that skewness and kurtosis are near zero.  A normal distribution always has
- * skewness and kurtosis that converge to zero as sample size goes to infinity.
- *
- * References:
- * D'Agostino, Ralph B., Albert Belanger, and Ralph B. D'Agostino, Jr.
- * "A Suggestion for Using Powerful and Informative Tests of Normality",
- * The American Statistician, Vol. 44, No. 4. (Nov., 1990), pp. 316-321.
- */
-TestRes dAgostinoK(T)(T range)
-if(realIterable!(T)) {
-    // You are not meant to understand this.  I sure don't.  I just implemented
-    // these formulas off of Wikipedia, which got them from:
-
-    // D'Agostino, Ralph B., Albert Belanger, and Ralph B. D'Agostino, Jr.
-    // "A Suggestion for Using Powerful and Informative Tests of Normality",
-    // The American Statistician, Vol. 44, No. 4. (Nov., 1990), pp. 316-321.
-
-    // Amazing.  I didn't even realize things this complicated were possible
-    // in 1990, before widespread computer algebra systems.
-
-    // Notation from Wikipedia.  Keeping same notation for simplicity.
-    real sqrtb1 = void, b2 = void, n = void;
-    {
-        auto summ = summary(range);
-        sqrtb1 = summ.skew;
-        b2 = summ.kurtosis + 3;
-        n = summ.N;
-    }
-
-    // Calculate transformed skewness.
-    real Y = sqrtb1 * sqrt((n + 1) * (n + 3) / (6 * (n - 2)));
-    real beta2b1Numer = 3 * (n * n + 27 * n - 70) * (n + 1) * (n + 3);
-    real beta2b1Denom = (n - 2) * (n + 5) * (n + 7) * (n + 9);
-    real beta2b1 = beta2b1Numer / beta2b1Denom;
-    real Wsq = -1 + sqrt(2 * (beta2b1 - 1));
-    real delta = 1.0L / sqrt(log(sqrt(Wsq)));
-    real alpha = sqrt( 2.0L / (Wsq - 1));
-    real Zb1 = delta * log(Y / alpha + sqrt(pow(Y / alpha, 2) + 1));
-
-    // Calculate transformed kurtosis.
-    real Eb2 = 3 * (n - 1) / (n + 1);
-    real sigma2b2 = (24 * n * (n - 2) * (n - 3)) / (
-        (n + 1) * (n + 1) * (n + 3) * (n + 5));
-    real x = (b2 - Eb2) / sqrt(sigma2b2);
-
-    real sqBeta1b2 = 6 * (n * n - 5 * n + 2) / ((n + 7) * (n + 9)) *
-         sqrt((6 * (n + 3) * (n + 5)) / (n * (n - 2) * (n - 3)));
-    real A = 6 + 8 / sqBeta1b2 * (2 / sqBeta1b2 + sqrt(1 + 4 / (sqBeta1b2 * sqBeta1b2)));
-    real Zb2 = ((1 - 2 / (9 * A)) -
-        cbrt((1 - 2 / A) / (1 + x * sqrt(2 / (A - 4)))) ) *
-        sqrt(9 * A / 2);
-
-    real K2 = Zb1 * Zb1 + Zb2 * Zb2;
-    return TestRes(K2, chiSqrCDFR(K2, 2));
-}
-
-unittest {
-    // Values from R's fBasics package.
-    int[] arr1 = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20];
-    int[] arr2 = [8,6,7,5,3,0,9,8,6,7,5,3,0,9,3,6,2,4,3,6,8];
-
-    auto r1 = dAgostinoK(arr1);
-    auto r2 = dAgostinoK(arr2);
-
-    assert(approxEqual(r1.testStat, 3.1368));
-    assert(approxEqual(r1.p, 0.2084));
-    writeln("Passed dAgostinoK test.");
-}
-
-
 /**Computes Wilcoxon rank sum test statistic and P-value for
  * a set of observations against another set, using the given alternative.
  * Alt.LESS means that sample1 is stochastically less than sample2.
@@ -498,7 +421,8 @@ unittest {
  * This test is also known as the Mann-Whitney U test.
  *
  * Returns:  A TestRes containing the W test statistic and the P-value against
- * the given alternative.*/
+ * the given alternative.
+ */
 TestRes wilcoxonRankSum(T)(T sample1, T sample2, Alt alt = Alt.TWOSIDE,
     uint exactThresh = 50) if(isInputRange!(T) && dstats.base.hasLength!(T)) {
 
@@ -747,7 +671,7 @@ unittest {
 /**Computes a test statistic and P-value for a Wilcoxon signed rank test against
  * the given alternative. Alt.LESS means that elements of before are stochastically
  * less than corresponding elements of after.  Alt.GREATER means elements of
- * before are typically greater than corresponding elements of after.
+ * before are stochastically greater than corresponding elements of after.
  * Alt.TWOSIDE means there is a significant difference in either direction.
  *
  * exactThresh is the threshold value of before.length at which this function
@@ -1067,7 +991,7 @@ enum Expected {
  * be iterated over twice.
  *
  * The chi-square test relies on asymptotic statistical properties
- * and is therefore not considered valid when expected values are below 5.
+ * and is therefore not considered valid when expected counts are below 5.
  *
  * This is, for all practical purposes, an inherently non-directional test.
  * Therefore, the one-sided verses two-sided option is not provided.
@@ -1129,10 +1053,44 @@ unittest {
     writeln("Passed chiSqrFit test.");
 }
 
-// Used as a mixin in both the array and tuple overload of chiSqrContingeny().
-private enum string chiSqrContingencyTempl =  q{
-    real[] colSums = (cast(real*) alloca(real.sizeof * ranges.length))
-                     [0..ranges.length];
+/**Performs a chi-square test on a contingency table of arbitrary dimensions.
+ * Takes a set of finite forward ranges, one for each column in the contingency
+ * table.  These can be expressed either as a tuple of ranges or a
+ * range of ranges.  Returns a P-value for the alternative hypothesis that
+ * frequencies in each row of the contingency table depend on the column against
+ * the null that they don't.
+ *
+ * Notes:  The chi-square test relies on asymptotic statistical properties
+ * and is therefore not considered valid when expected values are below 5.
+ *
+ * This is, for all practical purposes, an inherently non-directional test.
+ * Therefore, the one-sided verses two-sided option is not provided.
+ *
+ * For 2x2 contingency tables, fisherExact is a more accurate test.
+ *
+ * Examples:
+ * ---
+ * // Test to see whether the relative frequency of outcome 0, 1, and 2
+ * // depends on the treatment in some hypothetical experiment.
+ * uint[] drug1 = [1000, 2000, 1500];
+ * uint[] drug2 = [1500, 3000, 2300];
+ * uint[] placebo = [500, 1100, 750];
+ * assert(approxEqual(chiSqrContingency(drug1, drug2, placebo), 0.2397));
+ * ---
+ */
+TestRes chiSqrContingency(T...)(T rangesIn) {
+    mixin(newFrame);
+    static if(isForwardRange!(T[0]) && T.length == 1 &&
+        isForwardRange!(typeof(rangesIn[0].front()))) {
+        auto ranges = tempdup(rangesIn[0]);
+    } else static if(allSatisfy!(isForwardRange, T)) {
+        alias rangesIn ranges;
+    } else {
+        static assert(0, "Can only perform chi-square contingency table test" ~
+            " on a tuple of ranges or a range of ranges.");
+    }
+
+    real[] colSums = newStack!(real)(ranges.length);
     colSums[] = 0;
     size_t nCols = 0;
     size_t nRows = ranges.length;
@@ -1187,44 +1145,6 @@ private enum string chiSqrContingencyTempl =  q{
         popAll();
     }
     return TestRes(chiSq, chiSqrCDFR(chiSq, (nRows - 1) * (nCols - 1)));
-};
-
-/**Performs a chi-square test on a contingency table of arbitrary dimensions.
- * Takes a set of finite forward ranges, one for each column in the contingency
- * table.  Returns a P-value for the alternative hypothesis that frequencies
- * in each row of the contingency table depend on the column against the
- * null that they don't.
- *
- * Notes:  The chi-square test relies on asymptotic statistical properties
- * and is therefore not considered valid when expected values are below 5.
- *
- * This is, for all practical purposes, an inherently non-directional test.
- * Therefore, the one-sided verses two-sided option is not provided.
- *
- * For 2x2 contingency tables, fisherExact is a more accurate test.
- *
- * Examples:
- * ---
- * // Test to see whether the relative frequency of outcome 0, 1, and 2
- * // depends on the treatment in some hypothetical experiment.
- * uint[] drug1 = [1000, 2000, 1500];
- * uint[] drug2 = [1500, 3000, 2300];
- * uint[] placebo = [500, 1100, 750];
- * assert(approxEqual(chiSqrContingency(drug1, drug2, placebo), 0.2397));
- * ---
- */
-TestRes chiSqrContingency(T...)(T ranges)
-if(T.length > 1 && allSatisfy!(isForwardRange, T)) {
-    mixin(chiSqrContingencyTempl);
-}
-
-/**Same as chiSqrContingency(T...), but represents contingency table as an
- * array of arrays instead of a tuple of ranges.*/
-TestRes chiSqrContingency(T)(const T[][] rangesIn) {
-    T[][] ranges = (cast(T[]*) alloca((T[]).sizeof * rangesIn.length))
-                   [0..rangesIn.length];
-    ranges[] = rangesIn[];
-    mixin(chiSqrContingencyTempl);
 }
 
 unittest {
@@ -1258,13 +1178,12 @@ unittest {
     writeln("Passed chiSqrContingency test.");
 }
 
-/**Performs a Kolmogorov-Smirnov (K-S) 2-sample test and returns
- * the D value.  The K-S test is a non-parametric test for a difference between
- * two empirical distributions or between an empirical distribution and a
- * reference distribution.
+/**Performs a Kolmogorov-Smirnov (K-S) 2-sample test.  The K-S test is a
+ * non-parametric test for a difference between two empirical distributions or
+ * between an empirical distribution and a reference distribution.
  *
  * Returns:  A TestRes with the K-S D value and a P value for the null that
- * FPrime is distribuuted identically to F against the alternative that it isn't.
+ * FPrime is distributed identically to F against the alternative that it isn't.
  * This implementation uses a signed D value to indicate the direction of the
  * difference between distributions.  To get the D value used in standard
  * notation, simply take the absolute value of this D value.
@@ -1889,6 +1808,89 @@ unittest {
     assert(approxEqual(t2.p, 0.1878, 0.0, 0.02));
 
     writeln("Passed scorSig test.");
+}
+
+/**A test for normality of the distribution of a range of values.  Based on
+ * the assumption that normally distributed values will have a sample skewness
+ * and sample kurtosis very close to zero.
+ *
+ * Returns:  A TestRes with the K statistic, which is Chi-Square distributed
+ * with 2 degrees of freedom under the null, and the P-value for the alternative
+ * that the data has skewness and kurtosis not equal to zero against the null
+ * that skewness and kurtosis are near zero.  A normal distribution always has
+ * skewness and kurtosis that converge to zero as sample size goes to infinity.
+ *
+ * Notes:  Contrary to popular belief, tests for normality should usually
+ * not be used to deterimine whether T-tests are valid.  If the sample size is
+ * large, T-tests are valid regardless of the distribution due to the central
+ * limit theorem.  If the sample size is small, a test for normality will
+ * likely not be very powerful, and a priori knowledge or simple inspection
+ * of the data is often a better idea.
+ *
+ * References:
+ * D'Agostino, Ralph B., Albert Belanger, and Ralph B. D'Agostino, Jr.
+ * "A Suggestion for Using Powerful and Informative Tests of Normality",
+ * The American Statistician, Vol. 44, No. 4. (Nov., 1990), pp. 316-321.
+ */
+TestRes dAgostinoK(T)(T range)
+if(realIterable!(T)) {
+    // You are not meant to understand this.  I sure don't.  I just implemented
+    // these formulas off of Wikipedia, which got them from:
+
+    // D'Agostino, Ralph B., Albert Belanger, and Ralph B. D'Agostino, Jr.
+    // "A Suggestion for Using Powerful and Informative Tests of Normality",
+    // The American Statistician, Vol. 44, No. 4. (Nov., 1990), pp. 316-321.
+
+    // Amazing.  I didn't even realize things this complicated were possible
+    // in 1990, before widespread computer algebra systems.
+
+    // Notation from Wikipedia.  Keeping same notation for simplicity.
+    real sqrtb1 = void, b2 = void, n = void;
+    {
+        auto summ = summary(range);
+        sqrtb1 = summ.skew;
+        b2 = summ.kurtosis + 3;
+        n = summ.N;
+    }
+
+    // Calculate transformed skewness.
+    real Y = sqrtb1 * sqrt((n + 1) * (n + 3) / (6 * (n - 2)));
+    real beta2b1Numer = 3 * (n * n + 27 * n - 70) * (n + 1) * (n + 3);
+    real beta2b1Denom = (n - 2) * (n + 5) * (n + 7) * (n + 9);
+    real beta2b1 = beta2b1Numer / beta2b1Denom;
+    real Wsq = -1 + sqrt(2 * (beta2b1 - 1));
+    real delta = 1.0L / sqrt(log(sqrt(Wsq)));
+    real alpha = sqrt( 2.0L / (Wsq - 1));
+    real Zb1 = delta * log(Y / alpha + sqrt(pow(Y / alpha, 2) + 1));
+
+    // Calculate transformed kurtosis.
+    real Eb2 = 3 * (n - 1) / (n + 1);
+    real sigma2b2 = (24 * n * (n - 2) * (n - 3)) / (
+        (n + 1) * (n + 1) * (n + 3) * (n + 5));
+    real x = (b2 - Eb2) / sqrt(sigma2b2);
+
+    real sqBeta1b2 = 6 * (n * n - 5 * n + 2) / ((n + 7) * (n + 9)) *
+         sqrt((6 * (n + 3) * (n + 5)) / (n * (n - 2) * (n - 3)));
+    real A = 6 + 8 / sqBeta1b2 * (2 / sqBeta1b2 + sqrt(1 + 4 / (sqBeta1b2 * sqBeta1b2)));
+    real Zb2 = ((1 - 2 / (9 * A)) -
+        cbrt((1 - 2 / A) / (1 + x * sqrt(2 / (A - 4)))) ) *
+        sqrt(9 * A / 2);
+
+    real K2 = Zb1 * Zb1 + Zb2 * Zb2;
+    return TestRes(K2, chiSqrCDFR(K2, 2));
+}
+
+unittest {
+    // Values from R's fBasics package.
+    int[] arr1 = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20];
+    int[] arr2 = [8,6,7,5,3,0,9,8,6,7,5,3,0,9,3,6,2,4,3,6,8];
+
+    auto r1 = dAgostinoK(arr1);
+    auto r2 = dAgostinoK(arr2);
+
+    assert(approxEqual(r1.testStat, 3.1368));
+    assert(approxEqual(r1.p, 0.2084));
+    writeln("Passed dAgostinoK test.");
 }
 
 /**Computes the false discovery rate statistic given a list of

@@ -1,11 +1,75 @@
 /**A module for performing linear regression.  This module has an unusual
  * interface, as it is range-based instead of matrix based. Values for
- * independent variables are provided as either a tuple or an array of ranges.
+ * independent variables are provided as either a tuple or a range of ranges.
  * This means that one can use, for example, map, to fit high order models and
- * lazily evaluate certain values.  (For details, see examples below.)*/
+ * lazily evaluate certain values.  (For details, see examples below.)
+ *
+ * Author:  David Simcha*/
+  /*
+ * You may use this software under your choice of either of the following
+ * licenses.  YOU NEED ONLY OBEY THE TERMS OF EXACTLY ONE OF THE TWO LICENSES.
+ * IF YOU CHOOSE TO USE THE PHOBOS LICENSE, YOU DO NOT NEED TO OBEY THE TERMS OF
+ * THE BSD LICENSE.  IF YOU CHOOSE TO USE THE BSD LICENSE, YOU DO NOT NEED
+ * TO OBEY THE TERMS OF THE PHOBOS LICENSE.  IF YOU ARE A LAWYER LOOKING FOR
+ * LOOPHOLES AND RIDICULOUSLY NON-EXISTENT AMBIGUITIES IN THE PREVIOUS STATEMENT,
+ * GET A LIFE.
+ *
+ * ---------------------Phobos License: ---------------------------------------
+ *
+ *  Copyright (C) 2009 by David Simcha.
+ *
+ *  This software is provided 'as-is', without any express or implied
+ *  warranty. In no event will the authors be held liable for any damages
+ *  arising from the use of this software.
+ *
+ *  Permission is granted to anyone to use this software for any purpose,
+ *  including commercial applications, and to alter it and redistribute it
+ *  freely, in both source and binary form, subject to the following
+ *  restrictions:
+ *
+ *  o  The origin of this software must not be misrepresented; you must not
+ *     claim that you wrote the original software. If you use this software
+ *     in a product, an acknowledgment in the product documentation would be
+ *     appreciated but is not required.
+ *  o  Altered source versions must be plainly marked as such, and must not
+ *     be misrepresented as being the original software.
+ *  o  This notice may not be removed or altered from any source
+ *     distribution.
+ *
+ * --------------------BSD License:  -----------------------------------------
+ *
+ * Copyright (c) 2009, David Simcha
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ *     * Redistributions of source code must retain the above copyright
+ *       notice, this list of conditions and the following disclaimer.
+ *
+ *     * Redistributions in binary form must reproduce the above copyright
+ *       notice, this list of conditions and the following disclaimer in the
+ *       documentation and/or other materials provided with the distribution.
+ *
+ *     * Neither the name of the authors nor the
+ *       names of its contributors may be used to endorse or promote products
+ *       derived from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED ''AS IS'' AND ANY
+ * EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDERS BE LIABLE FOR ANY
+ * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 module dstats.regress;
 
-import std.math, std.algorithm, std.traits, std.array,
+import std.math, std.algorithm, std.traits, std.array, std.traits,
     dstats.alloc, std.range, std.conv, dstats.distrib, dstats.cor, dstats.base;
 
 ///
@@ -109,7 +173,7 @@ void invert(ref real[][] mat) {
     // Normalize, augment w/ identity.  The matrix is already the right size
     // from rangeMatrixMulTrans.
     foreach(i, row; mat) {
-        real absMax = 1.0L / reduce!(max)(map!("a > 0 ? a : -a")(row[0..mat.length]));
+        real absMax = 1.0L / reduce!(max)(map!(abs)(row[0..mat.length]));
         row[0..mat.length] *= absMax;
         row[i + mat.length] = absMax;
     }
@@ -279,9 +343,9 @@ private Residuals!(U, T) residuals(U, T...)(real[] betas, U Y, T X) {
 
 /**Perform a linear regression and return just the beta values.  The advantages
  * to just returning the beta values are that it's faster and that each range
- * needsd to be iterated over only once, and thus can be just an input range.
+ * needs to be iterated over only once, and thus can be just an input range.
  * The beta values are returned such that the smallest index corresponds to
- * the leftmost element of X.  X can be either a tuple or an array of input
+ * the leftmost element of X.  X can be either a tuple or a range of input
  * ranges.  Y must be an input range.
  *
  * Notes:  The X ranges are traversed in locksep, but the traversal is stopped
@@ -304,7 +368,7 @@ if(allSatisfy!(isInputRange, T) && realInput!(U)) {
     static if(isArray!(T[0]) && isInputRange!(typeof(XIn[0][0])) &&
         T.length == 1) {
         alias typeof(XIn[0].front) E;
-        typeof(XIn[0]) X = tempdup(cast(E[]) XIn[0]);
+        E[] X = tempdup(XIn[0]);
     } else {
         alias XIn X;
     }
@@ -368,12 +432,15 @@ RegressRes linearRegress(U, TC...)(U Y, TC input) {
     }
 
     mixin(newFrame);
-    static if(isArray!(T[0]) && isForwardRange!(typeof(XIn[0].front())) &&
+    static if(isForwardRange!(T[0]) && isForwardRange!(typeof(XIn[0].front())) &&
         T.length == 1) {
         alias typeof(XIn[0].front) E;
-        typeof(XIn[0]) X = tempdup(cast(E[]) XIn[0]);
-    } else {
+        E[] X = tempdup(XIn[0]);
+    } else static if(allSatisfy!(isForwardRange, T)) {
         alias XIn X;
+    } else {
+        static assert(0, "Linear regression can only be performed with " ~
+            "tuples of forward ranges or ranges of forward ranges.");
     }
 
     real[][] xTx;
@@ -507,5 +574,15 @@ unittest {
     assert(approxEqual(res2.upperBound[0], 164.7, 0.01));
     assert(approxEqual(res2.upperBound[1], -99.5, 0.01));
     assert(approxEqual(res2.upperBound[2], 75.2, 0.01));
+
+    auto res3 = linearRegress(weights, repeat(1), heights, map!"a * a"(heights));
+    // Really, everything should be equal, but weird little rounding errors
+    // happen.  For all practical purposes, everything is equal.
+    assert(res2.betas == res3.betas);
+
+    auto beta1 = linearRegressBeta(diseaseSev, repeat(1), temperature);
+    assert(beta1 == res1.betas);
+    auto beta2 = polyFitBeta(weights, heights, 2);
+    assert(beta2 == res2.betas);
     writeln("Passed regression unittest.");
 }

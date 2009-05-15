@@ -196,7 +196,7 @@ unittest {
 }
 
 // C functions, marked w/ nothrow.
-extern(C) nothrow int fprintf(void*, in char *,...);
+extern(C) nothrow int fprintf(shared(void*), in char *,...);
 extern(C) nothrow void exit(int);
 
 /**TempAlloc struct.  See TempAlloc project on Scrapple.*/

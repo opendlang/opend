@@ -8,6 +8,12 @@
  * All sorting functions have the precondition that all parallel input arrays
  * must have the same length.
  *
+ * Note:  These functions only work with arrays and ranges very similar to
+ * arrays.  This will likely remain the case for the foreseeable future because
+ * they were heavily optimized specifically for arrays before ranges existed.
+ * Furthermore, every internal use for them occurs after data has been copied
+ * from generic ranges to arrays.
+ *
  * Examples:
  * ---
  * auto foo = [3, 1, 2, 4, 5].dup;
@@ -225,7 +231,9 @@ void qsortImpl(alias compFun, T...)(T data, uint TTL) {
     {
         immutable size_t med3 = medianOf3!(comp)(data[0]);
         foreach(array; data) {
-            swap(array[med3], array[$ - 1]);
+            auto temp = array[med3];
+            array[med3] = array[$ - 1];
+            array[$ - 1] = temp;
         }
     }
 
@@ -239,13 +247,17 @@ void qsortImpl(alias compFun, T...)(T data, uint TTL) {
 
         if(lessI < greaterI) {
             foreach(array; data) {
-                swap(array[lessI], array[greaterI]);
+                auto temp = array[lessI];
+                array[lessI] = array[greaterI];
+                array[greaterI] = temp;
             }
         } else break;
     }
 
     foreach(ti, array; data) {
-        swap(array[lessI], array[$ - 1]);
+        auto temp = array[$ - 1];
+        array[$ - 1] = array[lessI];
+        array[lessI] = temp;
         less[ti] = array[0..min(lessI, greaterI + 1)];
         greater[ti] = array[lessI + 1..$];
     }
@@ -644,7 +656,9 @@ private void mergeInPlace(alias compFun = lessThan, T...)(T data, size_t middle)
     if (data[0].length == 2) {
         if(comp(data[0][1], data[0][0])) {
             foreach(array; data) {
-                swap(array[0], array[1]);
+                auto temp = array[0];
+                array[0] = array[1];
+                array[1] = temp;
             }
         }
         return;
@@ -699,7 +713,9 @@ in {
     makeMultiHeap!(compFun)(input);
     for(size_t end = input[0].length - 1; end > 0; end--) {
         foreach(ti, ia; input) {
-            swap(ia[end], ia[0]);
+            auto temp = ia[end];
+            ia[end] = ia[0];
+            ia[0] = temp;
         }
         multiSiftDown!(compFun)(input, 0, end);
     }
@@ -742,7 +758,9 @@ void multiSiftDown(alias compFun = lessThan, T...)
         }
         if(comp(a[root], a[child])) {
             foreach(ia; input) {
-                swap(ia[root], ia[child]);
+                auto temp = ia[root];
+                ia[root] = ia[child];
+                ia[child] = temp;
             }
             root = child;
         }
@@ -909,7 +927,9 @@ in {
     {
         immutable size_t med3 = medianOf3!(comp)(data[0]);
         foreach(array; data) {
-            swap(array[med3], array[$ - 1]);
+            auto temp = array[med3];
+            array[med3] = array[$ - 1];
+            array[$ - 1] = temp;
         }
     }
 
@@ -921,12 +941,16 @@ in {
 
         if(lessI < greaterI) {
             foreach(array; data) {
-                swap(array[lessI], array[greaterI]);
+                auto temp = array[lessI];
+                array[lessI] = array[greaterI];
+                array[greaterI] = temp;
             }
         } else break;
     }
     foreach(array; data) {
-        swap(array[lessI], array[$ - 1]);
+        auto temp = array[lessI];
+        array[lessI] = array[$ - 1];
+        array[$ - 1] = temp;
     }
 
     if((greaterI < k && lessI >= k) || lessI == k) {
