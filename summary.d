@@ -626,8 +626,9 @@ if(realIterable!(T)) {
     foreach(elem; data) {
         summ.put(elem);
     }
-    return Summary(data.length, summ.mean, summ.var, summ.stdev, summ.skewness,
-                   summ.kurtosis, summ.min, summ.max);
+    real variance = summ.var;
+    return Summary(lrint(summ.N), summ.mean, variance, sqrt(variance),
+        summ.skewness, summ.kurtosis, summ.min, summ.max);
 }
 // Just a convenience function for a well-tested struct.  No unittest really
 // necessary.  (Famous last words.)

@@ -1115,10 +1115,16 @@ public:
     }
 
     ///
+    this(File handle) {
+        this.handle = handle;
+        popFront;
+    }
+
+    ///
     void popFront() {
         while(!handle.eof) {
-            auto nBytes = handle.readln(buf);
-            auto line = strip(buf[0..nBytes]);
+            handle.readln(buf);
+            auto line = strip(buf);
             try {
                 cached = to!real(line);
                 return;
