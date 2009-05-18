@@ -1898,23 +1898,32 @@ unittest {
  * This is the most basic, intuitive version of the false discovery rate
  * statistic, and assumes all hypotheses are independent.
  *
- * Returns:   An array of Q-values with indices
- * corresponding to the indices of the p-values passed in.*/
+ * Returns:
+ * An array of adjusted P-values with indices corresponding to the order of
+ * the P-values in the input data.
+ *
+ * References:
+ * Benjamini, Y., and Hochberg, Y. (1995). Controlling the false discovery rate:
+ * a practical and powerful approach to multiple testing. Journal of the Royal
+ * Statistical Society Series B, 57, 289-200
+ */
 float[] falseDiscoveryRate(T)(T pVals)
 if(realInput!(T)) {
-    // Not optimized at all because I can't imagine anyone writing code where
-    // FDR calculations are the main bottleneck.
     mixin(newFrame);
-    auto p = tempdup(pVals);
     auto perm = newStack!(uint)(pVals.length);
     foreach(i, ref elem; perm)
         elem = i;
-    qsort(p, perm);
-    float[] qVals = new float[p.length];
 
-    foreach(i; 0..p.length) {
-        qVals[i] = min(1.0L,
-                   p[i] * cast(real) p.length / (cast(real) i + 1));
+    float[] qVals;
+    auto app = appender(&qVals);
+    foreach(elem; pVals) {
+        app.put(cast(float) elem);
+    }
+
+    qsort(qVals, perm);
+
+    foreach(i, ref q; qVals) {
+        q = min(1.0f, q * cast(real) qVals.length / (cast(real) i + 1));
     }
 
     float smallestSeen = float.max;
@@ -1931,18 +1940,149 @@ if(realInput!(T)) {
 }
 
 unittest {
-    // Comparing results to R's qvalue package.
+    // Comparing results to R.
     auto pVals = [.90, .01, .03, .03, .70, .60, .01].dup;
     auto qVals = falseDiscoveryRate(pVals);
-    assert(approxEqual(qVals[0], .9));
-    assert(approxEqual(qVals[1], .035));
-    assert(approxEqual(qVals[2], .052));
-    assert(approxEqual(qVals[3], .052));
-    assert(approxEqual(qVals[4], .816666666667));
-    assert(approxEqual(qVals[5], .816666666667));
-    assert(approxEqual(qVals[6], .035));
+    alias approxEqual ae;
+    assert(ae(qVals[0], .9));
+    assert(ae(qVals[1], .035));
+    assert(ae(qVals[2], .052));
+    assert(ae(qVals[3], .052));
+    assert(ae(qVals[4], .816666666667));
+    assert(ae(qVals[5], .816666666667));
+    assert(ae(qVals[6], .035));
+
+    auto p2 = [.1, .02, .6, .43, .001].dup;
+    auto q2 = falseDiscoveryRate(p2);
+    assert(ae(q2[0], .16666666));
+    assert(ae(q2[1], .05));
+    assert(ae(q2[2], .6));
+    assert(ae(q2[3], .5375));
+    assert(ae(q2[4], .005));
     writeln("Passed falseDiscoveryRate test.");
 }
+
+/**Uses the Hochberg procedure to control the familywise error rate assuming
+ * that hypothesis tests are independent.  This is more powerful than
+ * Holm-Bonferroni correction, but requires the independence assumption.
+ *
+ * Returns:
+ * An array of adjusted P-values with indices corresponding to the order of
+ * the P-values in the input data.
+ *
+ * References:
+ * Hochberg, Y. (1988). A sharper Bonferroni procedure for multiple tests of
+ * significance. Biometrika, 75, 800-803.
+ */
+float[] hochberg(T)(T pVals)
+if(realInput!(T)) {
+    mixin(newFrame);
+    auto perm = newStack!(uint)(pVals.length);
+    foreach(i, ref elem; perm)
+        elem = i;
+
+    float[] qVals;
+    auto app = appender(&qVals);
+    foreach(elem; pVals) {
+        app.put(cast(float) elem);
+    }
+
+    qsort(qVals, perm);
+
+    foreach(i, ref q; qVals) {
+        q = min(1.0f, q * (cast(real) qVals.length - i));
+    }
+
+    float smallestSeen = float.max;
+    foreach_reverse(ref q; qVals) {
+        if(q < smallestSeen) {
+            smallestSeen = q;
+        } else {
+            q = smallestSeen;
+        }
+    }
+
+    qsort(perm, qVals);  //Makes order of qVals correspond to input.
+    return qVals;
+}
+
+unittest {
+    alias approxEqual ae;
+    auto q = hochberg([0.01, 0.02, 0.025, 0.9].dup);
+    assert(ae(q[0], 0.04));
+    assert(ae(q[1], 0.05));
+    assert(ae(q[2], 0.05));
+    assert(ae(q[3], 0.9));
+
+    auto p2 = [.1, .02, .6, .43, .001].dup;
+    auto q2 = hochberg(p2);
+    assert(ae(q2[0], .3));
+    assert(ae(q2[1], .08));
+    assert(ae(q2[2], .6));
+    assert(ae(q2[3], .6));
+    assert(ae(q2[4], .005));
+    writeln("Passed Hochberg unittest.");
+}
+
+/**Uses the Holm-Bonferroni method to adjust a set of P-values in a way that
+ * controls the familywise error rate (The probability of making at least one
+ * Type I error).  This is basically a less conservative version of
+ * Bonferroni correction that is still valid for arbitrary assumptions and
+ * controls the familywise error rate.  Therefore, there aren't too many good
+ * reasons to use regular Bonferroni correction instead.
+ *
+ * Returns:
+ * An array of adjusted P-values with indices corresponding to the order of
+ * the P-values in the input data.
+ *
+ * References:
+ * Holm, S. (1979). A simple sequentially rejective multiple test procedure.
+ * Scandinavian Journal of Statistics, 6, 65-70.
+ */
+float[] holmBonferroni(T)(T pVals)
+if(realInput!(T)) {
+    mixin(newFrame);
+
+    float[] qVals;
+    auto app = appender(&qVals);
+    foreach(elem; pVals) {
+        app.put(cast(float) elem);
+    }
+    auto perm = newStack!(uint)(pVals.length);
+
+    foreach(i, ref elem; perm)
+        elem = i;
+    qsort(qVals, perm);
+
+    foreach(i, ref q; qVals) {
+        q = min(1.0L, q * (cast(real) qVals.length - i));
+    }
+
+    foreach(i; 1..qVals.length) {
+        if(qVals[i] < qVals[i - 1]) {
+            qVals[i] = qVals[i - 1];
+        }
+    }
+
+    qsort(perm, qVals);  //Makes order of qVals correspond to input.
+    return qVals;
+}
+
+unittest {
+    // Values from R.
+    auto ps = holmBonferroni([0.001, 0.2, 0.3, 0.4, 0.7].dup);
+    alias approxEqual ae;
+    assert(ae(ps[0], 0.005));
+    assert(ae(ps[1], 0.8));
+    assert(ae(ps[2], 0.9));
+    assert(ae(ps[3], 0.9));
+    assert(ae(ps[4], 0.9));
+
+    ps = holmBonferroni([0.3, 0.1, 0.4, 0.1, 0.5, 0.9].dup);
+    assert(ps == [1f, 0.6f, 1f, 0.6f, 1f, 1f]);
+    writeln("Passed Holm-Bonferroni unittest.");
+}
+
 
 // Verify that there are no TempAlloc memory leaks anywhere in the code covered
 // by the unittest.  This should always be the last unittest of the module.
