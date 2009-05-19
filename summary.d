@@ -364,6 +364,10 @@ public:
         return (_k < 2) ? real.nan : (_var - _mean * _mean) * (_k / (_k - 1));
     }
 
+    real mse() const {
+        return (_k < 2) ? real.nan : (_var - _mean * _mean);
+    }
+
     ///
     real N() const {
         return _k;
@@ -373,7 +377,7 @@ public:
     string toString() {
         return format("N = ", cast(ulong) _k, "\nMean = ", mean, "\nVariance = ",
                var, "\nStdev = ", stdev);
-}
+    }
 }
 
 /**Simple holder for mean, stdev/variance.  Plain old data, accessing is

@@ -399,6 +399,76 @@ unittest {
     writeln("Passed pairedTTest unittest.");
 }
 
+/**The F-test is a one-way ANOVA extension of the T-test to >2 groups.
+ * It's useful when you have 3 or more groups with equal variance and want
+ * to test whether their means are equal.  Data can be input as either a
+ * tuple of ranges (one range for each group) or a range of ranges
+ * (one element for each group).
+ *
+ * Returns:
+ * A TestRes containing the F statistic and the P-value for the alternative
+ * that the means of the groups are different against the null that they
+ * are identical.
+ */
+TestRes fTest(T...)(T dataIn)
+if(allSatisfy!(isInputRange, T)) {
+    static if(dataIn.length == 1 && isInputRange!(typeof(dataIn[0].front))) {
+        mixin(newFrame);
+        auto data = tempdup(dataIn[0]);
+        auto withins = newStack!OnlineMeanSD(data.length);
+    } else {
+        enum len = dataIn.length;
+        alias dataIn data;
+        OnlineMeanSD[len] withins;
+    }
+
+    OnlineMean overallMean;
+    uint DFGroups = data.length - 1;
+    uint DFDataPoints = 0;
+    foreach(i, range; data) {
+        foreach(elem; range) {
+            withins[i].put(elem);
+            overallMean.put(elem);
+            DFDataPoints++;
+        }
+    }
+    DFDataPoints -= data.length;
+    auto mu = overallMean.mean;
+
+    real totalWithin = 0;
+    real totalBetween = 0;
+    foreach(group; withins) {
+        totalWithin += group.mse * (group.N / DFDataPoints);
+        real diff = (group.mean - mu);
+        diff *= diff;
+        totalBetween += diff * (group.N / DFGroups);
+    }
+    auto F = totalBetween / totalWithin;
+    return TestRes(F, fisherCDFR(F, DFGroups, DFDataPoints));
+
+}
+
+unittest {
+    // Values from R.
+    uint[] thing1 = [3,1,4,1], thing2 = [5,9,2,6,5,3], thing3 = [5,8,9,7,9,3];
+    auto res1 = fTest(thing1, thing2, thing3);
+    assert(approxEqual(res1.testStat, 4.9968));
+    assert(approxEqual(res1.p, 0.02456));
+
+    // Test array case.
+    auto res2 = fTest([thing1, thing2, thing3].dup);
+    assert(res1.testStat == res2.testStat);
+    assert(res1.p == res2.p);
+
+    thing1 = [2,7,1,8,2];
+    thing2 = [8,1,8];
+    thing3 = [2,8,4,5,9];
+    auto res3 = fTest(thing1, thing2, thing3);
+    assert(approxEqual(res3.testStat, 0.377));
+    assert(approxEqual(res3.p, 0.6953));
+    writeln("Passed fTest unittest.");
+}
+
 /**Computes Wilcoxon rank sum test statistic and P-value for
  * a set of observations against another set, using the given alternative.
  * Alt.LESS means that sample1 is stochastically less than sample2.
