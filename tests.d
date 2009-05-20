@@ -85,10 +85,16 @@ version(unittest) {
 enum Alt {
     /// f(input1) != X
     TWOSIDE,
+
     /// f(input1) < X
     LESS,
+
     /// f(input1) > X
-    GREATER
+    GREATER,
+
+    /**Skip P-value computation (and confidence intervals if applicable)
+     * and just return the test statistic.*/
+    NONE
 }
 
 /**A plain old data struct for returning the results of hypothesis tests.*/
@@ -198,7 +204,9 @@ if(realIterable!(T) && realIterable!(U)) {
     real meanDiff = s1summ.mean - s2summ.mean;
     ConfInt ret;
     ret.testStat = meanDiff / normSd;
-    if(alt == Alt.LESS) {
+    if(alt == Alt.NONE) {
+        return ret;
+    } else if(alt == Alt.LESS) {
         ret.p = studentsTCDF(ret.testStat, n1 + n2 - 2);
         real delta = invStudentsTCDF(1 - confLevel, n1 + n2 - 2) * normSd;
         ret.lowerBound = -real.infinity;
@@ -288,7 +296,9 @@ if(realIterable!(T) && realIterable!(U)) {
 
     ConfInt ret;
     ret.testStat = t;
-    if(alt == Alt.LESS) {
+    if(alt == Alt.NONE) {
+        return ret;
+    } else if(alt == Alt.LESS) {
         ret.p = studentsTCDF(t, df);
         ret.lowerBound = -real.infinity;
         ret.upperBound = meanDiff + testMean - invStudentsTCDF(1 - confLevel, df) * sx1x2;
@@ -363,7 +373,10 @@ if(realInput!(T) && realInput!(U)) {
     auto sampleSd = msd.stdev;
     real normSd = sampleSd / sqrt(cast(real) len);
     ret.testStat = (sampleMean - testMean) / normSd;
-    if(alt == Alt.LESS) {
+
+    if(alt == Alt.NONE) {
+        return ret;
+    } else if(alt == Alt.LESS) {
         ret.p = studentsTCDF(ret.testStat, len - 1);
         real delta = invStudentsTCDF(1 - confLevel, len - 1) * normSd;
         ret.lowerBound = -real.infinity;
@@ -469,6 +482,144 @@ unittest {
     writeln("Passed fTest unittest.");
 }
 
+/**The Kruskal-Wallis rank sum test.  Tests the null hypothesis that data in
+ * each group is not stochastically ordered with respect to data in each other
+ * groups.  This is a one-way non-parametric ANOVA and can be thought of
+ * as either a generalization of the Wilcoxon rank sum test to >2 groups or
+ * a non-parametric equivalent to the F-test.  Data can be input as either a
+ * tuple of ranges (one range for each group) or a range of ranges
+ * (one element for each group).
+ *
+ * Bugs:  Asymptotic approximation of P-value only, not exact.  In this case,
+ * I'm not sure a practical way to compute the exact P-value even exists.
+ *
+ * Returns:  A TestRes with the K statistic and the P-value for the null that
+ * no group is stochastically larger than any other against the alternative that
+ * groups are stochastically ordered.
+ */
+TestRes kruskalWallis(T...)(T dataIn) {
+    mixin(newFrame);
+    size_t N = 0;
+    static if(dataIn.length == 1 && isInputRange!(typeof(dataIn[0].front))) {
+        auto data = tempdup(dataIn[0]);
+        alias ElementType!(typeof(data[0])) C;
+        static if(dstats.base.hasLength!(typeof(data[0]))) {
+            enum bool useLength = true;
+        } else {
+            enum bool useLength = false;
+        }
+    } else {
+        enum len = dataIn.length;
+        alias dataIn data;
+        alias staticMap!(ElementType, T) Es;
+        alias CommonType!(Es) C;
+        static if(allSatisfy!(dstats.base.hasLength, T)) {
+            enum bool useLength = true;
+        } else {
+            enum bool useLength = false;
+        }
+    }
+
+    size_t[] lengths = newStack!size_t(data.length);
+    static if(useLength) {
+        foreach(i, rng; data) {
+            auto rngLen = rng.length;
+            lengths[i] = rngLen;
+            N += rngLen;
+        }
+        C[] dataArray = newStack!C(N);
+        size_t pos = 0;
+        foreach(rng; data) {
+            foreach(elem; rng) {
+                dataArray[pos++] = elem;
+            }
+        }
+    } else {
+        C[] dataArray;
+        //scope(exit) delete dataArray;
+        auto app = appender(&dataArray);
+        foreach(i, rng; data) {
+            size_t oldLen = dataArray.length;
+            app.put(rng);
+            lengths[i] = dataArray.length - oldLen;
+            N += lengths[i];
+        }
+    }
+
+    float[] ranks = newStack!float(dataArray.length);
+    rankSort(dataArray, ranks);
+
+    size_t index = 0;
+    real denom = 0, numer = 0;
+    real rBar = 0.5L * (N + 1);
+    foreach(meanI, l; lengths) {
+        OnlineMean groupStats;
+        foreach(i; index..index + l) {
+            groupStats.put( ranks[i]);
+            real diff = ranks[i] - rBar;
+            diff *= diff;
+            denom += diff;
+        }
+        index += l;
+        real nDiff = groupStats.mean - rBar;
+        nDiff *= nDiff;
+        numer += l * nDiff;
+    }
+    real K = (N - 1) * (numer / denom);
+
+    // Tie correction.
+    real tieSum = 0;
+    uint nTies = 1;
+    foreach(i; 1..dataArray.length) {
+        if(dataArray[i] == dataArray[i - 1]) {
+            nTies++;
+        } else if(nTies > 1) {
+            real partialSum = nTies;
+            partialSum = (partialSum * partialSum * partialSum) - partialSum;
+            tieSum += partialSum;
+            nTies = 1;
+        }
+    }
+    if(nTies > 1) {
+        real partialSum = nTies;
+        partialSum = (partialSum * partialSum * partialSum) - partialSum;
+        tieSum += partialSum;
+    }
+    real tieDenom = N;
+    tieDenom = (tieDenom * tieDenom * tieDenom) - tieDenom;
+    tieSum = 1 - (tieSum / tieDenom);
+    K *= tieSum;
+    return TestRes(K, chiSqrCDFR(K, data.length - 1));
+}
+
+unittest {
+    // These values are from the VassarStat web tool at
+    // http://faculty.vassar.edu/lowry/VassarStats.html .
+    // R is actually wrong here because it apparently doesn't use a correction
+    // for ties.
+    auto res1 = kruskalWallis([3,1,4,1].dup, [5,9,2,6].dup, [5,3,5].dup);
+    assert(approxEqual(res1.testStat, 4.15));
+    assert(approxEqual(res1.p, 0.1256));
+
+    // Test for other input types.
+    auto res2 = kruskalWallis([[3,1,4,1].dup, [5,9,2,6].dup, [5,3,5].dup].dup);
+    assert(res2 == res1);
+    auto res3 = kruskalWallis(map!"a"([3,1,4,1].dup), [5,9,2,6].dup, [5,3,5].dup);
+    assert(res3 == res1);
+    auto res4 = kruskalWallis([map!"a"([3,1,4,1].dup),
+                               map!"a"([5,9,2,6].dup),
+                               map!"a"([5,3,5].dup)].dup);
+    assert(res4 == res1);
+
+    // Test w/ one more case, just with one input type.
+    auto res5 = kruskalWallis([2,7,1,8,2].dup, [8,1,8,2].dup, [8,4,5,9,2].dup,
+                              [7,1,8,2,8,1,8].dup);
+    assert(approxEqual(res5.testStat, 1.06));
+    assert(approxEqual(res5.p, 0.7867));
+    writeln("Passed kruskalWallis unittest.");
+}
+
+
 /**Computes Wilcoxon rank sum test statistic and P-value for
  * a set of observations against another set, using the given alternative.
  * Alt.LESS means that sample1 is stochastically less than sample2.
@@ -498,6 +649,10 @@ TestRes wilcoxonRankSum(T)(T sample1, T sample2, Alt alt = Alt.TWOSIDE,
 
     real tieSum;
     real W = wilcoxonRankSumW(sample1, sample2, &tieSum);
+    if(alt == Alt.NONE) {
+        return TestRes(W);
+    }
+
     real p = wilcoxonRankSumPval(W, sample1.length, sample2.length, alt, tieSum,
                                exactThresh);
     return TestRes(W, p);
@@ -801,6 +956,10 @@ in {
         }
     }
 
+    if(alt == Alt.NONE) {
+        return TestRes(W);
+    }
+
     // Handle ties.
     real tieSum = 0;
 
@@ -1005,7 +1164,9 @@ if(realInput!(T) && realInput!(U)) {
         after.popFront;
     }
     real propGreater = cast(real) greater / (greater + less);
-    if(alt == Alt.LESS) {
+    if(alt == Alt.NONE) {
+        return TestRes(propGreater);
+    } else if(alt == Alt.LESS) {
         return TestRes(propGreater, binomialCDF(greater, less + greater, 0.5));
     } else if(alt == Alt.GREATER) {
         return TestRes(propGreater, binomialCDF(less, less + greater, 0.5));
@@ -1448,10 +1609,13 @@ if(isIntegral!(T)) {
 
     alias contingencyTable c;
     real oddsRatio = cast(real) c[0][0] * c[1][1] / c[0][1] / c[1][0];
-    if(alt == Alt.LESS)
+    if(alt == Alt.NONE) {
+        return TestRes(oddsRatio);
+    } else if(alt == Alt.LESS) {
         return TestRes(oddsRatio, fisherLower(contingencyTable));
-    else if(alt == Alt.GREATER)
+    } else if(alt == Alt.GREATER) {
         return TestRes(oddsRatio, fisherUpper(contingencyTable));
+    }
 
 
     immutable uint n1 = c[0][0] + c[0][1],
@@ -1801,6 +1965,8 @@ private ConfInt finishPearsonSpearman(real cor, real N, Alt alt, real confLevel)
     real sqN = sqrt(N - 3);
     real z = sqN * atanh(cor);
     switch(alt) {
+        case Alt.NONE :
+            return ret;
         case Alt.TWOSIDE:
             ret.p = 2 * min(studentsTCDF(t, N - 2), studentsTCDFR(t, N - 2));
             real deltaZ = invNormalCDF(0.5 * (1 - confLevel));
@@ -1846,6 +2012,8 @@ if(isInputRange!(T) && isInputRange!(U) && dstats.base.hasLength!(T)
     real sd = sqrt(cast(real) (4 * N + 10) / (9 * N * (N - 1)));
 
     switch(alt) {
+        case Alt.NONE :
+            return TestRes(tau);
         case Alt.TWOSIDE:
             return TestRes(tau, 2 * min(normalCDF(tau + cc, 0, sd),
                            normalCDFR(tau - cc, 0, sd)));
@@ -1963,10 +2131,20 @@ unittest {
     writeln("Passed dAgostinoK test.");
 }
 
+/// For falseDiscoveryRate.
+enum Dependency {
+    /// Assume that dependency among hypotheses may exist.  (More conservative.)
+    TRUE,
+
+    /// Assume hypotheses are independent.  (Less conservative.)
+    FALSE
+}
+
 /**Computes the false discovery rate statistic given a list of
- * p-values, according to Benjamini and Hochberg (1995).
- * This is the most basic, intuitive version of the false discovery rate
- * statistic, and assumes all hypotheses are independent.
+ * p-values, according to Benjamini and Hochberg (1995) (independent) or
+ * Benjamini and Yekutieli (2001) (dependent).  The Dependency parameter
+ * controls whether hypotheses are assumed to be independent, or whether
+ * the more conservative assumption that they are correlated must be made.
  *
  * Returns:
  * An array of adjusted P-values with indices corresponding to the order of
@@ -1976,24 +2154,32 @@ unittest {
  * Benjamini, Y., and Hochberg, Y. (1995). Controlling the false discovery rate:
  * a practical and powerful approach to multiple testing. Journal of the Royal
  * Statistical Society Series B, 57, 289-200
+ *
+ * Benjamini, Y., and Yekutieli, D. (2001). The control of the false discovery
+ * rate in multiple testing under dependency. Annals of Statistics 29, 1165-1188.
  */
-float[] falseDiscoveryRate(T)(T pVals)
+float[] falseDiscoveryRate(T)(T pVals, Dependency dep = Dependency.FALSE)
 if(realInput!(T)) {
-    mixin(newFrame);
-    auto perm = newStack!(uint)(pVals.length);
-    foreach(i, ref elem; perm)
-        elem = i;
-
     float[] qVals;
     auto app = appender(&qVals);
-    foreach(elem; pVals) {
-        app.put(cast(float) elem);
+    app.put(pVals);
+
+    real C = 1;
+    if(dep == Dependency.TRUE) {
+        foreach(i; 2..qVals.length + 1) {
+            C += 1.0L / i;
+        }
     }
+
+    mixin(newFrame);
+    auto perm = newStack!(uint)(qVals.length);
+    foreach(i, ref elem; perm)
+        elem = i;
 
     qsort(qVals, perm);
 
     foreach(i, ref q; qVals) {
-        q = min(1.0f, q * cast(real) qVals.length / (cast(real) i + 1));
+        q = min(1.0f, q * C * cast(real) qVals.length / (cast(real) i + 1));
     }
 
     float smallestSeen = float.max;
@@ -2029,6 +2215,24 @@ unittest {
     assert(ae(q2[2], .6));
     assert(ae(q2[3], .5375));
     assert(ae(q2[4], .005));
+
+    // Dependent case.
+    qVals = falseDiscoveryRate(pVals, Dependency.TRUE);
+    assert(ae(qVals[0], 1));
+    assert(ae(qVals[1], .09075));
+    assert(ae(qVals[2], .136125));
+    assert(ae(qVals[3], .136125));
+    assert(ae(qVals[4], 1));
+    assert(ae(qVals[5], 1));
+    assert(ae(qVals[6], .09075));
+
+    q2 = falseDiscoveryRate(p2, Dependency.TRUE);
+    assert(ae(q2[0], .38055555));
+    assert(ae(q2[1], .1141667));
+    assert(ae(q2[2], 1));
+    assert(ae(q2[3], 1));
+    assert(ae(q2[4], .01141667));
+
     writeln("Passed falseDiscoveryRate test.");
 }
 
@@ -2046,16 +2250,14 @@ unittest {
  */
 float[] hochberg(T)(T pVals)
 if(realInput!(T)) {
-    mixin(newFrame);
-    auto perm = newStack!(uint)(pVals.length);
-    foreach(i, ref elem; perm)
-        elem = i;
-
     float[] qVals;
     auto app = appender(&qVals);
-    foreach(elem; pVals) {
-        app.put(cast(float) elem);
-    }
+    app.put(pVals);
+
+    mixin(newFrame);
+    auto perm = newStack!(uint)(qVals.length);
+    foreach(i, ref elem; perm)
+        elem = i;
 
     qsort(qVals, perm);
 
@@ -2115,10 +2317,9 @@ if(realInput!(T)) {
 
     float[] qVals;
     auto app = appender(&qVals);
-    foreach(elem; pVals) {
-        app.put(cast(float) elem);
-    }
-    auto perm = newStack!(uint)(pVals.length);
+    app.put(pVals);
+
+    auto perm = newStack!(uint)(qVals.length);
 
     foreach(i, ref elem; perm)
         elem = i;
