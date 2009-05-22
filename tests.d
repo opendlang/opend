@@ -482,6 +482,121 @@ unittest {
     writeln("Passed fTest unittest.");
 }
 
+/**Performs a correlated sample (within-subjects) ANOVA.  This is a
+ * generalization of the paired T-test to 3 or more treatments.  This
+ * function accepts data as either a tuple of ranges (1 for each treatment,
+ * such that a given index represents the same subject in each range) or
+ * similarly as a range of ranges.
+ *
+ * Returns:  A TestRes with the F-statistic and P-value for the null that
+ * the the variable being measured did not vary across treatments against the
+ * alternative that it did.
+ *
+ * Examples:
+ * ---
+ * // Test the hypothesis that alcohol, loud music, caffeine and sleep
+ * // deprivation all have equivalent effects on programming ability.
+ *
+ * uint[] alcohol = [8,6,7,5,3,0,9];
+ * uint[] caffeine = [3,6,2,4,3,6,8];
+ * uint[] noSleep = [3,1,4,1,5,9,2];
+ * uint[] loudMusic = [2,7,1,8,2,8,1];
+ * // Subject 0 had ability of 8 under alcohol, 3 under caffeine, 3 under
+ * // no sleep, 2 under loud music.  Subject 1 had ability of 6 under alcohol,
+ * // 6 under caffeine, 1 under no sleep, and 7 under loud music, etc.
+ * auto result = correlatedAnova(alcohol, caffeine, noSleep, loudMusic);
+ * ---
+ *
+ * References:  "Concepts and Applications of Inferrential Statistics".
+ *              Richard Lowry.  Vassar College.  Online version.
+ *              http://faculty.vassar.edu/lowry/webtext.html
+ */
+TestRes correlatedAnova(T...)(T dataIn)
+if(allSatisfy!(isInputRange, T)) {
+    static if(dataIn.length == 1 && isInputRange!(typeof(dataIn[0].front))) {
+        mixin(newFrame);
+        auto data = tempdup(dataIn[0]);
+        auto withins = newStack!OnlineMeanSD(data.length);
+    } else {
+        enum len = dataIn.length;
+        alias dataIn data;
+        OnlineMeanSD[len] withins;
+    }
+    OnlineMeanSD overallSumm;
+    real nGroupNeg1 = 1.0L / data.length;
+
+    bool someEmpty() {
+        foreach(elem; data) {
+            if(elem.empty) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    uint nSubjects = 0;
+    real subjSum = 0;
+    while(!someEmpty) {
+        real subjSumInner = 0;
+        foreach(i, elem; data) {
+            auto dataPoint = elem.front;
+            subjSumInner += dataPoint;
+            overallSumm.put(dataPoint);
+            withins[i].put(dataPoint);
+            data[i].popFront;
+        }
+        nSubjects++;
+        subjSum += subjSumInner * subjSumInner * nGroupNeg1;
+    }
+    real groupSum = 0;
+    foreach(elem; withins) {
+        groupSum += elem.mean * elem.N;
+    }
+
+    groupSum /= sqrt(cast(real) nSubjects * data.length);
+    groupSum *= groupSum;
+    real subjErr = subjSum - groupSum;
+
+    real betweenDev = 0;
+    real mu = overallSumm.mean;
+    foreach(group; withins) {
+        real diff = (group.mean - mu);
+        diff *= diff;
+        betweenDev += diff * (group.N / (data.length - 1));
+    }
+
+    uint errDf = data.length * nSubjects - data.length - nSubjects + 1;
+    real randError = -subjErr / errDf;
+    foreach(group; withins) {
+        randError += group.mse * (group.N / errDf);
+    }
+
+    real F = betweenDev / randError;
+    return TestRes(F, fisherCDFR(F, data.length - 1, errDf));
+}
+
+unittest {
+    // Values from VassarStats utility at
+    // http://faculty.vassar.edu/lowry/VassarStats.html, but they like to
+    // round a lot, so the approxEqual tolerances are fairly wide.  I
+    // think it's adequate to demonstrate the correctness of this function,
+    // though.
+    uint[] alcohol = [8,6,7,5,3,0,9];
+    uint[] caffeine = [3,6,2,4,3,6,8];
+    uint[] noSleep = [3,1,4,1,5,9,2];
+    uint[] loudMusic = [2,7,1,8,2,8,1];
+    auto result = correlatedAnova(alcohol, caffeine, noSleep, loudMusic);
+    assert(approxEqual(result.testStat, 0.43, 0.0, 0.01));
+    assert(approxEqual(result.p, 0.734, 0.0, 0.01));
+
+    uint[] stuff1 = [3,4,2,6];
+    uint[] stuff2 = [4,1,9,8];
+    auto result2 = correlatedAnova([stuff1, stuff2].dup);
+    assert(approxEqual(result2.testStat, 0.72, 0.0, 0.01));
+    assert(approxEqual(result2.p, 0.4584, 0.0, 0.01));
+    writeln("Passed correlatedAnova unittest.");
+}
+
 /**The Kruskal-Wallis rank sum test.  Tests the null hypothesis that data in
  * each group is not stochastically ordered with respect to data in each other
  * groups.  This is a one-way non-parametric ANOVA and can be thought of
