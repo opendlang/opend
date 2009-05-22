@@ -174,7 +174,10 @@ void invert(ref real[][] mat) {
     // from rangeMatrixMulTrans.
     foreach(i, row; mat) {
         real absMax = 1.0L / reduce!(max)(map!(abs)(row[0..mat.length]));
-        row[0..mat.length] *= absMax;
+        // row[0..mat.length] *= absMax;  // Bug 3006
+        foreach(ref elem; row[0..mat.length]) {
+            elem *= absMax;
+        }
         row[i + mat.length] = absMax;
     }
 
@@ -203,7 +206,10 @@ void invert(ref real[][] mat) {
 
     foreach(i; 0..mat.length) {
         real diagVal = mat[i][i];
-        mat[i][] /= diagVal;
+        //mat[i][] /= diagVal;  // Bug 3006
+        foreach(ref elem; mat[i]) {
+            elem /= diagVal;
+        }
     }
 
     foreach(ref row; mat) {
@@ -348,7 +354,7 @@ private Residuals!(U, T) residuals(U, T...)(real[] betas, U Y, T X) {
  * the leftmost element of X.  X can be either a tuple or a range of input
  * ranges.  Y must be an input range.
  *
- * Notes:  The X ranges are traversed in locksep, but the traversal is stopped
+ * Notes:  The X ranges are traversed in lockstep, but the traversal is stopped
  * at the end of the shortest one.  Therefore, using infinite ranges is safe.
  * For example, using repeat(1) to get an intercept term works.
  *
@@ -412,11 +418,11 @@ if(allSatisfy!(isInputRange, T) && realInput!(U)) {
  * int[] programmingSkill = [2,7,1,8,2,8,1];
  *
  * // Using default confidence interval:
- * auto results = linearRegressBeta(programmingSkill, repeat(1), nBeers, nCoffees,
+ * auto results = linearRegress(programmingSkill, repeat(1), nBeers, nCoffees,
  *     musicVolume, map!"a * a"(musicVolume));
  *
  * // Using user-specified confidence interval:
- * auto results = linearRegressBeta(programmingSkill, repeat(1), nBeers, nCoffees,
+ * auto results = linearRegress(programmingSkill, repeat(1), nBeers, nCoffees,
  *     musicVolume, map!"a * a"(musicVolume), 0.8675309);
  * ---
  */
