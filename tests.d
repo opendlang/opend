@@ -429,6 +429,7 @@ if(allSatisfy!(isInputRange, T)) {
         mixin(newFrame);
         auto data = tempdup(dataIn[0]);
         auto withins = newStack!OnlineMeanSD(data.length);
+        withins[] = OnlineMeanSD.init;
     } else {
         enum len = dataIn.length;
         alias dataIn data;
@@ -517,6 +518,7 @@ if(allSatisfy!(isInputRange, T)) {
         mixin(newFrame);
         auto data = tempdup(dataIn[0]);
         auto withins = newStack!OnlineMeanSD(data.length);
+        withins[] = OnlineMeanSD.init;
     } else {
         enum len = dataIn.length;
         alias dataIn data;
@@ -734,6 +736,80 @@ unittest {
     writeln("Passed kruskalWallis unittest.");
 }
 
+/**The Friedman test is a non-parametric within-subject ANOVA.  It's useful
+ * when parametric assumptions cannot be made.  Usage is identical to
+ * correlatedAnova().*/
+TestRes friedmanTest(T...)(T dataIn)
+if(allSatisfy!(isInputRange, T)) {
+    static if(dataIn.length == 1 && isInputRange!(typeof(dataIn[0].front))) {
+        mixin(newFrame);
+        auto data = tempdup(dataIn[0]);
+        auto ranks = newStack!real(data.length);
+        auto dataPoints = newStack!real(data.length);
+        auto colMeans = newStack!OnlineMean(data.length);
+        colMeans[] = OnlineMean.init;
+    } else {
+        enum len = dataIn.length;
+        alias dataIn data;
+        real[len] ranks, dataPoints;
+        OnlineMean[len] colMeans;
+    }
+    real rBar = cast(real) data.length * (data.length + 1.0L) / 2.0L;
+    OnlineMeanSD overallSumm;
+
+    bool someEmpty() {
+        foreach(elem; data) {
+            if(elem.empty) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    uint N = 0;
+    while(!someEmpty) {
+        foreach(i, range; data) {
+            dataPoints[i] = data[i].front;
+            data[i].popFront;
+        }
+        rankSort(cast(real[]) dataPoints, cast(real[]) ranks);
+        foreach(i, rank; ranks) {
+            colMeans[i].put(rank);
+            overallSumm.put(rank);
+        }
+        N++;
+    }
+
+    real between = 0;
+    real mu = overallSumm.mean;
+    foreach(mean; colMeans) {
+        real diff = mean.mean - overallSumm.mean;
+        between += diff * diff;
+    }
+    between *= N;
+    real within = overallSumm.mse * (overallSumm.N / (overallSumm.N - N));
+    real chiSq = between / within;
+    real df = data.length - 1;
+    return TestRes(chiSq, chiSqrCDFR(chiSq, df));
+}
+
+unittest {
+    // Values from R
+    uint[] alcohol = [8,6,7,5,3,0,9];
+    uint[] caffeine = [3,6,2,4,3,6,8];
+    uint[] noSleep = [3,1,4,1,5,9,2];
+    uint[] loudMusic = [2,7,1,8,2,8,1];
+    auto result = friedmanTest(alcohol, caffeine, noSleep, loudMusic);
+    assert(approxEqual(result.testStat, 1.7463));
+    assert(approxEqual(result.p, 0.6267));
+
+    uint[] stuff1 = [3,4,2,6];
+    uint[] stuff2 = [4,1,9,8];
+    auto result2 = friedmanTest([stuff1, stuff2].dup);
+    assert(approxEqual(result2.testStat, 1));
+    assert(approxEqual(result2.p, 0.3173));
+    writeln("Passed friedmanTest unittest.");
+}
 
 /**Computes Wilcoxon rank sum test statistic and P-value for
  * a set of observations against another set, using the given alternative.
