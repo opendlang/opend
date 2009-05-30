@@ -65,7 +65,7 @@
 
 module dstats.cor;
 
-import core.memory, std.range;
+import core.memory, std.range, std.typecons;
 
 import dstats.sort, dstats.base, dstats.alloc;
 
@@ -400,24 +400,32 @@ real kcorDestructive(T, U)(T[] input1, U[] input2)
 in {
     assert(input1.length == input2.length);
 } body {
+    return kcorDestructiveLowLevel(input1, input2).field[0];
+}
 
-    static ulong getMs(V)(const V[] data) {  //Assumes data is sorted.
-        ulong Ms = 0, tieCount = 0;
+// Used internally in dstats.tests.kcorTest.
+auto kcorDestructiveLowLevel(T, U)(T[] input1, U[] input2) {
+    static Tuple!(ulong, ulong) getMs(V)(const V[] data) {  //Assumes data is sorted.
+        ulong Ms = 0, tieCount = 0, tieCorrect = 0;
         foreach(i; 1..data.length) {
             if(data[i] == data[i-1]) {
                 tieCount++;
             } else if(tieCount) {
                 Ms += (tieCount*(tieCount+1))/2;
+                tieCount++;
+                tieCorrect += tieCount * (tieCount - 1) * (2 * tieCount + 5);
                 tieCount = 0;
             }
         }
         if(tieCount) {
             Ms += (tieCount*(tieCount+1)) / 2;
+            tieCount++;
+            tieCorrect += tieCount * (tieCount - 1) * (2 * tieCount + 5);
         }
-        return Ms;
+        return tuple(Ms, tieCorrect);
     }
 
-    ulong m1 = 0, m2 = 0,
+    ulong m1 = 0, m2 = 0, tieCorrect = 0,
           nPair = (cast(ulong) input1.length *
                   ( cast(ulong) input1.length - 1UL)) / 2UL;
     alias input1 i1d;
@@ -432,14 +440,18 @@ in {
         } else if(tieCount > 0) {
             qsort!("a < b")(i2d[i - tieCount - 1..i]);
             m1 += tieCount * (tieCount + 1) / 2UL;
-            s += getMs(i2d[i - tieCount - 1..i]);
+            s += getMs(i2d[i - tieCount - 1..i]).field[0];
+            tieCount++;
+            tieCorrect += tieCount * (tieCount - 1) * (2 * tieCount + 5);
             tieCount = 0;
         }
     }
     if(tieCount > 0) {
         qsort!("a < b")(i2d[i1d.length - tieCount - 1..i1d.length]);
         m1 += tieCount * (tieCount + 1UL) / 2UL;
-        s += getMs(i2d[i1d.length - tieCount - 1UL..i1d.length]);
+        s += getMs(i2d[i1d.length - tieCount - 1UL..i1d.length]).field[0];
+        tieCount++;
+        tieCorrect += tieCount * (tieCount - 1) * (2 * tieCount + 5);
     }
     ulong swapCount = 0;
 
@@ -450,11 +462,14 @@ in {
         mergeSort!("a < b")(i2d, &swapCount);
     }
 
-    m2 = getMs(i2d);
+    auto tieStuff = getMs(i2d);
+    m2 = tieStuff.field[0];
+    tieCorrect += tieStuff.field[1];
     s -= (m1 + m2) + 2 * swapCount;
     ulong denominator1 = nPair - m1;
     ulong denominator2 = nPair - m2;
-    return s / (sqrt(cast(real) (denominator1)) * sqrt(cast(real) denominator2));
+    real cor = s / (sqrt(cast(real) (denominator1)) * sqrt(cast(real) denominator2));
+    return tuple(cor, s, tieCorrect);
 }
 
 

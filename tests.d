@@ -738,20 +738,23 @@ unittest {
 
 /**The Friedman test is a non-parametric within-subject ANOVA.  It's useful
  * when parametric assumptions cannot be made.  Usage is identical to
- * correlatedAnova().*/
+ * correlatedAnova().
+ *
+ * Bugs:  No exact P-value calculation.  Asymptotic approx. only.*/
 TestRes friedmanTest(T...)(T dataIn)
 if(allSatisfy!(isInputRange, T)) {
     static if(dataIn.length == 1 && isInputRange!(typeof(dataIn[0].front))) {
         mixin(newFrame);
         auto data = tempdup(dataIn[0]);
-        auto ranks = newStack!real(data.length);
+        auto ranks = newStack!float(data.length);
         auto dataPoints = newStack!real(data.length);
         auto colMeans = newStack!OnlineMean(data.length);
         colMeans[] = OnlineMean.init;
     } else {
         enum len = dataIn.length;
         alias dataIn data;
-        real[len] ranks, dataPoints;
+        float[len] ranks;
+        real[len] dataPoints;
         OnlineMean[len] colMeans;
     }
     real rBar = cast(real) data.length * (data.length + 1.0L) / 2.0L;
@@ -772,7 +775,7 @@ if(allSatisfy!(isInputRange, T)) {
             dataPoints[i] = data[i].front;
             data[i].popFront;
         }
-        rankSort(cast(real[]) dataPoints, cast(real[]) ranks);
+        rankSort(cast(real[]) dataPoints, cast(float[]) ranks);
         foreach(i, rank; ranks) {
             colMeans[i].put(rank);
             overallSumm.put(rank);
@@ -2191,27 +2194,33 @@ private ConfInt finishPearsonSpearman(real cor, real N, Alt alt, real confLevel)
  * the P-value for the given alternative.
  *
  * Bugs:  Exact computation not yet implemented.  Uses asymptotic approximation
- * only.  This is good enough for most practical purposes given reasonably
- * large N, but is not perfectly accurate.  Not valid for data with very large
- * amounts of ties.  */
+ * only.  However, this matters very little in practice because, for Kendall
+ * tau, the asymptotic approximation with a continuity correction is very
+ * accurate.
+ */
 TestRes kcorTest(T, U)(T range1, U range2, Alt alt = Alt.TWOSIDE)
-if(isInputRange!(T) && isInputRange!(U) && dstats.base.hasLength!(T)
- && dstats.base.hasLength!(U)) {
-    real tau = kcor(range1, range2);
-    real N = range1.length;
-    real cc = 2.0L / (N * (N - 1));  // Continuity correction.
-    real sd = sqrt(cast(real) (4 * N + 10) / (9 * N * (N - 1)));
+if(isInputRange!(T) && isInputRange!(U)) {
+    mixin(newFrame);
+    auto i1d = tempdup(range1);
+    auto i2d = tempdup(range2);
+    auto res = kcorDestructiveLowLevel(i1d, i2d);
+
+    real n = i1d.length;
+    real sd = sqrt((n * (n - 1) * (2 * n + 5) - res.field[2]) / 18.0L);
+    enum real cc = 1;
+    auto tau = res.field[0];
+    auto s = res.field[1];
 
     switch(alt) {
         case Alt.NONE :
             return TestRes(tau);
         case Alt.TWOSIDE:
-            return TestRes(tau, 2 * min(normalCDF(tau + cc, 0, sd),
-                           normalCDFR(tau - cc, 0, sd)));
+            return TestRes(tau, 2 * min(normalCDF(s + cc, 0, sd),
+                           normalCDFR(s - cc, 0, sd)));
         case Alt.LESS:
-            return TestRes(tau, normalCDF(tau + cc, 0, sd));
+            return TestRes(tau, normalCDF(s + cc, 0, sd));
         case Alt.GREATER:
-            return TestRes(tau, normalCDFR(tau - cc, 0, sd));
+            return TestRes(tau, normalCDFR(s - cc, 0, sd));
         default:
             assert(0);
     }
@@ -2236,7 +2245,7 @@ unittest {
     assert(approxEqual(t3.p, 0.8122, 0.0, 0.02));
     assert(approxEqual(t2.p, 0.1878, 0.0, 0.02));
 
-    writeln("Passed scorSig test.");
+    writeln("Passed kcorTest test.");
 }
 
 /**A test for normality of the distribution of a range of values.  Based on
