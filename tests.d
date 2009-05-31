@@ -984,7 +984,7 @@ unittest {
     assert(approxEqual(wilcoxonRankSumPval(w, 5, 6, Alt.GREATER), 0.4636));
     assert(approxEqual(wilcoxonRankSumPval(w, 5, 6, Alt.LESS), 0.6079));
 }
-
+import std.stdio;
 /* Used internally by wilcoxonRankSum.  This function uses dynamic
  * programming to count the number of combinations of numbers [1..N] that sum
  * of length n1 that sum to <= W in O(N * W * n1) time.*/
@@ -993,7 +993,7 @@ real wilcoxRSPExact(uint W, uint n1, uint n2, Alt alt = Alt.TWOSIDE) {
     uint expected2 = n1 * n2;
     switch(alt) {
         case Alt.LESS:
-            if(W > (N * (N - n1)) / 2)  { // Value impossibly large
+            if(W > (N * (N - n2)) / 2)  { // Value impossibly large
                 return 1;
             } else if(W * 2 <= expected2) {
                 break;
@@ -1001,20 +1001,21 @@ real wilcoxRSPExact(uint W, uint n1, uint n2, Alt alt = Alt.TWOSIDE) {
                 return 1 - wilcoxRSPExact(expected2 - W - 1, n1, n2, Alt.LESS);
             }
         case Alt.GREATER:
-            if(W > (N * (N - n1)) / 2)  { // Value impossibly large
+            if(W > (N * (N - n2)) / 2)  { // Value impossibly large
                 return 0;
-            } else if(W * 2 >= expected2) {
+            }
+            else if(W * 2 >= expected2) {
                 return wilcoxRSPExact(expected2 - W, n1, n2, Alt.LESS);
             } else {
                 return 1 - wilcoxRSPExact(W - 1, n1, n2, Alt.LESS);
             }
         case Alt.TWOSIDE:
             if(W * 2 <= expected2) {
-                return wilcoxRSPExact(W, n1, n2, Alt.LESS) +
-                       wilcoxRSPExact(expected2 - W, n1, n2, Alt.GREATER);
+                return min(1, wilcoxRSPExact(W, n1, n2, Alt.LESS) +
+                       wilcoxRSPExact(expected2 - W, n1, n2, Alt.GREATER));
             } else {
-                return wilcoxRSPExact(W, n1, n2, Alt.GREATER) +
-                       wilcoxRSPExact(expected2 - W, n1, n2, Alt.LESS);
+                return min(1, wilcoxRSPExact(W, n1, n2, Alt.GREATER) +
+                       wilcoxRSPExact(expected2 - W, n1, n2, Alt.LESS));
             }
         default:
             assert(0);
@@ -1280,11 +1281,11 @@ real wilcoxSRPExact(uint W, uint N, Alt alt = Alt.TWOSIDE) {
             }
         case Alt.TWOSIDE:
             if(W * 2 <= expected2) {
-                return wilcoxSRPExact(W, N, Alt.LESS) +
-                       wilcoxSRPExact(expected2 - W, N, Alt.GREATER);
+                return min(1, wilcoxSRPExact(W, N, Alt.LESS) +
+                       wilcoxSRPExact(expected2 - W, N, Alt.GREATER));
             } else {
-                return wilcoxSRPExact(W, N, Alt.GREATER) +
-                       wilcoxSRPExact(expected2 - W, N, Alt.LESS);
+                return min(1, wilcoxSRPExact(W, N, Alt.GREATER) +
+                       wilcoxSRPExact(expected2 - W, N, Alt.LESS));
             }
         default:
             assert(0);
