@@ -888,7 +888,7 @@ public:
         diff = N - R;
         auto temp = array.dup;
         myArray = temp.ptr;
-        chosen = (new uint[r]).ptr;
+        chosen = (new T[r]).ptr;
         foreach(i; 0..r) {
             chosen[i] = myArray[pos[i]];
         }
