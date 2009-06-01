@@ -984,7 +984,7 @@ unittest {
     assert(approxEqual(wilcoxonRankSumPval(w, 5, 6, Alt.GREATER), 0.4636));
     assert(approxEqual(wilcoxonRankSumPval(w, 5, 6, Alt.LESS), 0.6079));
 }
-import std.stdio;
+
 /* Used internally by wilcoxonRankSum.  This function uses dynamic
  * programming to count the number of combinations of numbers [1..N] that sum
  * of length n1 that sum to <= W in O(N * W * n1) time.*/
@@ -1003,8 +1003,7 @@ real wilcoxRSPExact(uint W, uint n1, uint n2, Alt alt = Alt.TWOSIDE) {
         case Alt.GREATER:
             if(W > (N * (N - n2)) / 2)  { // Value impossibly large
                 return 0;
-            }
-            else if(W * 2 >= expected2) {
+            } else if(W * 2 >= expected2) {
                 return wilcoxRSPExact(expected2 - W, n1, n2, Alt.LESS);
             } else {
                 return 1 - wilcoxRSPExact(W - 1, n1, n2, Alt.LESS);
@@ -1661,13 +1660,13 @@ template isArrayLike(T) {
  * ---
  */
 TestRes ksTest(T, Func)(T Femp, Func F)
-if(realInput!(T) && (is(Func == function) || is(Func == delegate))) {
+if(realInput!(T) && is(ReturnType!(Func) : real)) {
     real D = ksTestD(Femp, F);
     return TestRes(D, ksPval(Femp.length, D));
 }
 
 unittest {
-    auto stdNormal = parametrize!(normalCDF)(0.0L, 1.0L);
+    auto stdNormal = paramFunctor!(normalCDF)(0.0L, 1.0L);
     assert(approxEqual(ksTest([1,2,3,4,5].dup, stdNormal).testStat, -.8413));
     assert(approxEqual(ksTestDestructive([-1,0,2,8, 6].dup, stdNormal).testStat, -.5772));
     auto lotsOfTies = [5,1,2,2,2,2,2,2,3,4].dup;
@@ -1690,7 +1689,7 @@ if(isArrayLike!(T) && isArrayLike!(U)) {
 
 ///Ditto.
 TestRes ksTestDestructive(T, Func)(T Femp, Func F)
-if(isArrayLike!(T) && (is(Func == function) || is(Func == delegate))) {
+if(isArrayLike!(T) && is(ReturnType!Func : real)) {
     real D =  ksTestDDestructive(Femp, F);
     return TestRes(D, ksPval(Femp.length, D));
 }
@@ -1731,13 +1730,13 @@ if(isArrayLike!(T) && isArrayLike!(U)) {
 }
 
 real ksTestD(T, Func)(T Femp, Func F)
-if(realInput!(T) && (is(Func == function) || is(Func == delegate))) {
+if(realInput!(T) && is(ReturnType!Func : real)) {
     scope(exit) TempAlloc.free;
     return ksTestDDestructive(tempdup(Femp), F);
 }
 
 real ksTestDDestructive(T, Func)(T Femp, Func F)
-if(isArrayLike!(T) && (is(Func == function) || is(Func == delegate))) {
+if(isArrayLike!(T) && is(ReturnType!Func : real)) {
     qsort(Femp);
     real D = 0;
 

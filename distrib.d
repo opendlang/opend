@@ -30,7 +30,7 @@
  *
  * For all distributions, the test statistic is the first function parameter
  * and the distribution parameters are further down the function parameter
- * list.  This is important for certain generic code, such as K-S tests and
+ * list.  This is important for certain generic code, such as  tests and
  * the parametrize template.
  *
  * The following functions are identical or functionally equivalent to
@@ -136,6 +136,49 @@ real delegate(ParameterTypeTuple!(distrib)[0])
 
     return &calculate;
 }
+
+unittest {
+    // Just basically see if this compiles.
+    auto stdNormal = parametrize!normalCDF(0, 1);
+    assert(stdNormal(2.5) == normalCDF(2.5, 0, 1));
+}
+
+///
+struct ParamFunctor(alias distrib) {
+    ParameterTypeTuple!(distrib)[1..$] parameters;
+
+    real opCall(ParameterTypeTuple!(distrib)[0] arg) {
+        return distrib(arg, parameters);
+    }
+}
+
+/**Takes a distribution function (CDF or PDF/PMF) as a template argument, and
+ * parameters as function arguments in the order that they appear in the
+ * function declaration and returns a functor that binds the supplied
+ * parameters to the distribution function.  Assumes the non-parameter
+ * argument is the first argument to the distribution function.
+ *
+ * Examples:
+ * ---
+ * auto stdNormal = paramFunctor!(normalCDF)(0.0L, 1.0L);
+ * ---
+ *
+ * stdNormal is now a functor for the normal(0, 1) distribution.*/
+ParamFunctor!(distrib) paramFunctor(alias distrib)
+                       (ParameterTypeTuple!(distrib)[1..$] parameters) {
+    ParamFunctor!(distrib) ret;
+    foreach(ti, elem; parameters) {
+        ret.tupleof[ti] = elem;
+    }
+    return ret;
+}
+
+unittest {
+    // Just basically see if this compiles.
+    auto stdNormal = paramFunctor!normalCDF(0, 1);
+    assert(stdNormal(2.5) == normalCDF(2.5, 0, 1));
+}
+
 
 ///
 real uniformCDF(real X, real lower, real upper) pure nothrow
@@ -841,9 +884,29 @@ unittest {
     writeln("Passed invNormalCDF unittest.");
 }
 
-// For K-S test in dstats.random.  Todo:  Flesh out, make a full member of
-// distrib.
-real logNormalCDF(real x, real mu = 0, real sigma = 1) {
+///
+real logNormalPDF(real x, real mu = 0, real sigma = 1)
+in {
+    assert(sigma > 0);
+} body {
+    real mulTerm = 1.0L / (x * sigma * SQ2PI);
+    real expTerm = log(x) - mu;
+    expTerm *= expTerm;
+    expTerm /= 2 * sigma * sigma;
+    return mulTerm * exp(-expTerm);
+}
+
+unittest {
+    // Values from R.
+    assert(approxEqual(logNormalPDF(1, 0, 1), 0.3989423));
+    assert(approxEqual(logNormalPDF(2, 2, 3), 0.06047173));
+}
+
+///
+real logNormalCDF(real x, real mu = 0, real sigma = 1)
+in {
+    assert(sigma > 0);
+} body {
     return 0.5L + 0.5L * erf((log(x) - mu) / (sigma * SQRT2));
 }
 
@@ -852,14 +915,64 @@ unittest {
     assert(approxEqual(logNormalCDF(1, -2, 3), 0.7475075));
 }
 
-// For K-S test in dstats.random.  Todo:  Flesh out.
-real weibullCDF(real x, real shape, real scale = 1) {
+///
+real logNormalCDFR(real x, real mu = 0, real sigma = 1)
+in {
+    assert(sigma > 0);
+} body {
+    return 0.5L - 0.5L * erf((log(x) - mu) / (sigma * SQRT2));
+}
+
+unittest {
+    assert(approxEqual(logNormalCDF(4) + logNormalCDFR(4), 1));
+    assert(approxEqual(logNormalCDF(1, -2, 3) + logNormalCDFR(1, -2, 3), 1));
+    writeln("Passed logNormal tests.");
+}
+
+///
+real weibullPDF(real x, real shape, real scale = 1)
+in {
+    assert(shape > 0);
+    assert(scale > 0);
+} body {
+    if(x < 0) {
+        return 0;
+    }
+    real ret = pow(x / scale, shape - 1) * exp( -pow(x / scale, shape));
+    return ret * (shape / scale);
+}
+
+unittest {
+    assert(approxEqual(weibullPDF(2,1,3), 0.1711390));
+}
+
+///
+real weibullCDF(real x, real shape, real scale = 1)
+in {
+    assert(shape > 0);
+    assert(scale > 0);
+} body {
     real exponent = pow(x / scale, shape);
     return 1 - exp(-exponent);
 }
 
 unittest {
     assert(approxEqual(weibullCDF(2, 3, 4), 0.1175031));
+}
+
+///
+real weibullCDFR(real x, real shape, real scale = 1)
+in {
+    assert(shape > 0);
+    assert(scale > 0);
+} body {
+    real exponent = pow(x / scale, shape);
+    return exp(-exponent);
+}
+
+unittest {
+    assert(approxEqual(weibullCDF(2, 3, 4) + weibullCDFR(2, 3, 4), 1));
+    writeln("Passed weibull tests.");
 }
 
 // For K-S tests in dstats.random.  Todo:  Flesh out.
@@ -1253,15 +1366,15 @@ unittest {
 }
 
 ///
-real cauchyPMF(real X, real X0 = 0, real gamma = 1) pure nothrow {
+real cauchyPDF(real X, real X0 = 0, real gamma = 1) pure nothrow {
     real toSquare = (X - X0) / gamma;
     return 1.0L / (
         PI * gamma * (1 + toSquare * toSquare));
 }
 
 unittest {
-    assert(approxEqual(cauchyPMF(5), 0.01224269));
-    assert(approxEqual(cauchyPMF(2), 0.06366198));
+    assert(approxEqual(cauchyPDF(5), 0.01224269));
+    assert(approxEqual(cauchyPDF(2), 0.06366198));
 }
 
 
