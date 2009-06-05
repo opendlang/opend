@@ -67,10 +67,10 @@ module dstats.tests;
 
 import dstats.base, dstats.distrib, dstats.alloc, dstats.summary, dstats.sort,
        dstats.cor, std.algorithm, std.functional, std.range, std.c.stdlib,
-       std.conv : text;
+       std.conv;
 
 version(unittest) {
-    import std.stdio, std.random;
+    import std.stdio, dstats.random;
 
     Random gen;
 
@@ -1401,9 +1401,9 @@ enum Expected {
     PROPORTION
 }
 
-/**Performs a one-way chi-square goodness of fit test between a range of
- * observed and a range of expected values.  This is a useful statistical test
- * for testing whether a set of observations fits a discrete distribution.
+/**Performs a one-way Pearson's chi-square goodness of fit test between a range
+ * of observed and a range of expected values.  This is a useful statistical
+ * test for testing whether a set of observations fits a discrete distribution.
  *
  * Returns:  A TestRes of the chi-square statistic and the P-value for the
  * alternative hypothesis that observed is not a sample from expected against
@@ -1433,7 +1433,41 @@ enum Expected {
  * assert(approxEqual(res2.testStat, 11.59));
  * ---
  */
-TestRes chiSqrFit(T, U)(T observed, U expected, Expected countProp = Expected.COUNT)
+TestRes chiSqrFit(T, U)(T observed, U expected, Expected countProp = Expected.COUNT) {
+    return goodnessFit!(pearsonChiSqElem, T, U)(observed, expected, countProp);
+}
+
+unittest {
+    // Test to see whether a set of categorical observations differs
+    // statistically from a discrete uniform distribution.
+    uint[] observed = [980, 1028, 1001, 964, 1102];
+    auto expected = repeat(cast(real) sum(observed) / observed.length);
+    auto res = chiSqrFit(observed, expected);
+    assert(approxEqual(res, 0.0207));
+    assert(approxEqual(res.testStat, 11.59));
+
+    expected = repeat(1.0L / observed.length);
+    auto res2 = chiSqrFit(observed, expected, Expected.PROPORTION);
+    assert(approxEqual(res2, 0.0207));
+    assert(approxEqual(res2.testStat, 11.59));
+    writeln("Passed chiSqrFit test.");
+}
+
+/**The G or likelihood ratio chi-square test for goodness of fit.  Roughly
+ * the same as Pearson's chi-square test (chiSqrFit), but may be more
+ * accurate in certain situations.  However, it is still based on
+ * asymptotic distributions, and is not exact. Usage is is identical to
+ * chiSqrFit.
+ */
+TestRes gTestFit(T, U)(T observed, U expected, Expected countProp = Expected.COUNT) {
+    return goodnessFit!(gTestElem, T, U)(observed, expected, countProp);
+}
+// No unittest because I can't find anything to test this against.  However,
+// it's hard to imagine how it could be wrong, given that goodnessFit() and
+// gTestElem() both work, and, as expected, this function produces roughly
+// the same results as chiSqrFit.
+
+private TestRes goodnessFit(alias elemFun, T, U)(T observed, U expected, Expected countProp)
 if(realInput!(T) && realInput!(U))
 in {
     if(countProp == Expected.COUNT) {
@@ -1453,8 +1487,7 @@ in {
 
     while(!observed.empty && !expected.empty) {
         real e = expected.front * multiplier;
-        real diff = cast(real) observed.front - e;
-        chiSq += (diff * diff) / e;
+        chiSq += elemFun(observed.front, e);
         observed.popFront;
         expected.popFront;
         len++;
@@ -1462,31 +1495,18 @@ in {
     return TestRes(chiSq, chiSqrCDFR(chiSq, len - 1));
 }
 
-unittest {
-    // Test to see whether a set of categorical observations differs
-    // statistically from a discrete uniform distribution.
-    uint[] observed = [980, 1028, 1001, 964, 1102];
-    auto expected = repeat(cast(real) sum(observed) / observed.length);
-    auto res = chiSqrFit(observed, expected);
-    assert(approxEqual(res, 0.0207));
-    assert(approxEqual(res.testStat, 11.59));
-
-    expected = repeat(1.0L / observed.length);
-    auto res2 = chiSqrFit(observed, expected, Expected.PROPORTION);
-    assert(approxEqual(res2, 0.0207));
-    assert(approxEqual(res2.testStat, 11.59));
-    writeln("Passed chiSqrFit test.");
-}
-
-/**Performs a chi-square test on a contingency table of arbitrary dimensions.
- * Takes a set of finite forward ranges, one for each column in the contingency
- * table.  These can be expressed either as a tuple of ranges or a
- * range of ranges.  Returns a P-value for the alternative hypothesis that
+/**Performs a Pearson's chi-square test on a contingency table of arbitrary
+ * dimensions.  When the chi-square test is mentioned, this is usually the one
+ * being referred to.  Takes a set of finite forward ranges, one for each column
+ * in the contingency table.  These can be expressed either as a tuple of ranges
+ * or a range of ranges.  Returns a P-value for the alternative hypothesis that
  * frequencies in each row of the contingency table depend on the column against
  * the null that they don't.
  *
  * Notes:  The chi-square test relies on asymptotic statistical properties
  * and is therefore not considered valid when expected values are below 5.
+ * However, this is just a rule of thumb, and for large contingency tables,
+ * it may perform well even when this rule is violated.
  *
  * This is, for all practical purposes, an inherently non-directional test.
  * Therefore, the one-sided verses two-sided option is not provided.
@@ -1503,15 +1523,80 @@ unittest {
  * assert(approxEqual(chiSqrContingency(drug1, drug2, placebo), 0.2397));
  * ---
  */
-TestRes chiSqrContingency(T...)(T rangesIn) {
+TestRes chiSqrContingency(T...)(T inputData) {
+    return testContingency!(pearsonChiSqElem, T)(inputData);
+}
+
+unittest {
+    // Test array version.  Using VassarStat's chi-square calculator.
+    uint[][] table1 = [[60, 80, 70],
+                       [20, 50, 40],
+                       [10, 15, 11]];
+    uint[][] table2 = [[60, 20, 10],
+                       [80, 50, 15],
+                       [70, 40, 11]];
+    assert(approxEqual(chiSqrContingency(table1), 0.3449));
+    assert(approxEqual(chiSqrContingency(table2), 0.3449));
+    assert(approxEqual(chiSqrContingency(table1).testStat, 4.48));
+
+    // Test tuple version.
+    auto p1 = chiSqrContingency(cast(uint[]) [31, 41, 59],
+                                cast(uint[]) [26, 53, 58],
+                                cast(uint[]) [97, 93, 93]);
+    assert(approxEqual(p1, 0.0059));
+
+    auto p2 = chiSqrContingency(cast(uint[]) [31, 26, 97],
+                                cast(uint[]) [41, 53, 93],
+                                cast(uint[]) [59, 58, 93]);
+    assert(approxEqual(p2, 0.0059));
+
+    uint[] drug1 = [1000, 2000, 1500];
+    uint[] drug2 = [1500, 3000, 2300];
+    uint[] placebo = [500, 1100, 750];
+    assert(approxEqual(chiSqrContingency(drug1, drug2, placebo), 0.2397));
+
+    writeln("Passed chiSqrContingency test.");
+}
+
+/**The G or likelihood ratio chi-square test for contingency tables.  Roughly
+ * the same as Pearson's chi-square test (chiSqrContingency), but may be more
+ * accurate in certain situations.  However, it is still based on
+ * asymptotic distributions, and is not exact. Usage is is identical to
+ * chiSqrContingency.
+ */
+TestRes gTestContingency(T...)(T inputData) {
+    return testContingency!(gTestElem, T)(inputData);
+}
+
+unittest {
+    // Values from example at http://udel.edu/~mcdonald/statgtestind.html
+    // Handbook of Biological Statistics.
+    uint[] withoutCHD = [268, 199, 42];
+    uint[] withCHD = [807, 759, 184];
+    auto res = gTestContingency(withoutCHD, withCHD);
+    assert(approxEqual(res.testStat, 7.3));
+    assert(approxEqual(res.p, 0.026));
+
+    uint[] moringa = [127, 99, 264];
+    uint[] vicinus = [116, 67, 161];
+    auto res2 = gTestContingency(moringa, vicinus);
+    assert(approxEqual(res2.testStat, 6.23));
+    assert(approxEqual(res2.p, 0.044));
+    writeln("Passed gTestContingency test.");
+}
+
+// Pearson and likelihood ratio code are pretty much the same.  Factor out
+// the one difference into a function that's a template parameter.  However,
+// for API simplicity, this is hidden and they look like two separate functions.
+private TestRes testContingency(alias elemFun, T...)(T rangesIn) {
     mixin(newFrame);
     static if(isForwardRange!(T[0]) && T.length == 1 &&
         isForwardRange!(typeof(rangesIn[0].front()))) {
         auto ranges = tempdup(rangesIn[0]);
-    } else static if(allSatisfy!(isForwardRange, T)) {
+    } else static if(allSatisfy!(isForwardRange, typeof(rangesIn))) {
         alias rangesIn ranges;
     } else {
-        static assert(0, "Can only perform chi-square contingency table test" ~
+        static assert(0, "Can only perform contingency table test" ~
             " on a tuple of ranges or a range of ranges.");
     }
 
@@ -1557,212 +1642,25 @@ TestRes chiSqrContingency(T...)(T rangesIn) {
 
     real chiSq = 0;
     real NNeg1 = 1.0L / sum(colSums);
-
     while(noneEmpty) {
         auto rowSum = sumRow();
-
         foreach(ri, range; ranges) {
             real expected = NNeg1 * rowSum * colSums[ri];
-            real diff = cast(real) range.front - expected;
-            diff *= diff;
-            chiSq += diff / expected;
+            chiSq += elemFun(range.front, expected);
         }
         popAll();
     }
+
     return TestRes(chiSq, chiSqrCDFR(chiSq, (nRows - 1) * (nCols - 1)));
 }
 
-unittest {
-    // Test array version.  Using VassarStat's chi-square calculator.
-    uint[][] table1 = [[60, 80, 70],
-                       [20, 50, 40],
-                       [10, 15, 11]];
-    uint[][] table2 = [[60, 20, 10],
-                       [80, 50, 15],
-                       [70, 40, 11]];
-    assert(approxEqual(chiSqrContingency(table1), 0.3449));
-    assert(approxEqual(chiSqrContingency(table2), 0.3449));
-    assert(approxEqual(chiSqrContingency(table1).testStat, 4.48));
-
-    // Test tuple version.
-    auto p1 = chiSqrContingency(cast(uint[]) [31, 41, 59],
-                                cast(uint[]) [26, 53, 58],
-                                cast(uint[]) [97, 93, 93]);
-    assert(approxEqual(p1, 0.0059));
-
-    auto p2 = chiSqrContingency(cast(uint[]) [31, 26, 97],
-                                cast(uint[]) [41, 53, 93],
-                                cast(uint[]) [59, 58, 93]);
-    assert(approxEqual(p2, 0.0059));
-
-    uint[] drug1 = [1000, 2000, 1500];
-    uint[] drug2 = [1500, 3000, 2300];
-    uint[] placebo = [500, 1100, 750];
-    assert(approxEqual(chiSqrContingency(drug1, drug2, placebo), 0.2397));
-
-    writeln("Passed chiSqrContingency test.");
+private real pearsonChiSqElem(real observed, real expected) {
+    real diff = observed - expected;
+    return diff * diff / expected;
 }
 
-/**Performs a Kolmogorov-Smirnov (K-S) 2-sample test.  The K-S test is a
- * non-parametric test for a difference between two empirical distributions or
- * between an empirical distribution and a reference distribution.
- *
- * Returns:  A TestRes with the K-S D value and a P value for the null that
- * FPrime is distributed identically to F against the alternative that it isn't.
- * This implementation uses a signed D value to indicate the direction of the
- * difference between distributions.  To get the D value used in standard
- * notation, simply take the absolute value of this D value.
- *
- * Bugs:  Exact calculation not implemented.  Uses asymptotic approximation.*/
-TestRes ksTest(T, U)(T F, U Fprime)
-if(realInput!(T) && realInput!(U)) {
-    real D = ksTestD(F, Fprime);
-    return TestRes(D, ksPval(F.length, Fprime.length, D));
-}
-
-unittest {
-    assert(approxEqual(ksTest([1,2,3,4,5].dup, [1,2,3,4,5].dup).testStat, 0));
-    assert(approxEqual(ksTestDestructive([1,2,3,4,5].dup, [1,2,2,3,5].dup).testStat, -.2));
-    assert(approxEqual(ksTest([-1,0,2,8, 6].dup, [1,2,2,3,5].dup).testStat, .4));
-    assert(approxEqual(ksTest([1,2,3,4,5].dup, [1,2,2,3,5,7,8].dup).testStat, .2857));
-    assert(approxEqual(ksTestDestructive([1, 2, 3, 4, 4, 4, 5].dup,
-           [1, 2, 3, 4, 5, 5, 5].dup).testStat, .2857));
-
-    assert(approxEqual(ksTest([1, 2, 3, 4, 4, 4, 5].dup, [1, 2, 3, 4, 5, 5, 5].dup),
-           .9375));
-    assert(approxEqual(ksTestDestructive([1, 2, 3, 4, 4, 4, 5].dup,
-        [1, 2, 3, 4, 5, 5, 5].dup), .9375));
-    writeln("Passed ksTest 2-sample test.");
-}
-
-template isArrayLike(T) {
-    enum bool isArrayLike = hasSwappableElements!(T) && hasAssignableElements!(T)
-        && dstats.base.hasLength!(T) && isRandomAccessRange!(T);
-}
-
-/**One-sample KS test against a reference distribution, doesn't modify input
- * data.  Takes a function pointer or delegate for the CDF of refernce
- * distribution.
- *
- * Returns:  A TestRes with the K-S D value and a P value for the null that
- * Femp is a sample from F against the alternative that it isn't. This
- * implementation uses a signed D value to indicate the direction of the
- * difference between distributions.  To get the D value used in standard
- * notation, simply take the absolute value of this D value.
- *
- * Bugs:  Exact calculation not implemented.  Uses asymptotic approximation.
- *
- * Examples:
- * ---
- * auto stdNormal = parametrize!(normalCDF)(0.0L, 1.0L);
- * auto empirical = [1, 2, 3, 4, 5];
- * real res = ksTest(empirical, stdNormal);
- * ---
- */
-TestRes ksTest(T, Func)(T Femp, Func F)
-if(realInput!(T) && is(ReturnType!(Func) : real)) {
-    real D = ksTestD(Femp, F);
-    return TestRes(D, ksPval(Femp.length, D));
-}
-
-unittest {
-    auto stdNormal = paramFunctor!(normalCDF)(0.0L, 1.0L);
-    assert(approxEqual(ksTest([1,2,3,4,5].dup, stdNormal).testStat, -.8413));
-    assert(approxEqual(ksTestDestructive([-1,0,2,8, 6].dup, stdNormal).testStat, -.5772));
-    auto lotsOfTies = [5,1,2,2,2,2,2,2,3,4].dup;
-    assert(approxEqual(ksTest(lotsOfTies, stdNormal).testStat, -0.8772));
-
-    assert(approxEqual(ksTest([0,1,2,3,4].dup, stdNormal), .03271));
-
-    auto uniform01 = parametrize!(uniformCDF)(0, 1);
-    assert(approxEqual(ksTestDestructive([0.1, 0.3, 0.5, 0.9, 1].dup, uniform01), 0.7591));
-
-    writeln("Passed ksTest 1-sample test.");
-}
-
-/**Same as ksTest, except sorts in place, avoiding memory allocations.*/
-TestRes ksTestDestructive(T, U)(T F, U Fprime)
-if(isArrayLike!(T) && isArrayLike!(U)) {
-    real D = ksTestDDestructive(F, Fprime);
-    return TestRes(D, ksPval(F.length, Fprime.length, D));
-}
-
-///Ditto.
-TestRes ksTestDestructive(T, Func)(T Femp, Func F)
-if(isArrayLike!(T) && is(ReturnType!Func : real)) {
-    real D =  ksTestDDestructive(Femp, F);
-    return TestRes(D, ksPval(Femp.length, D));
-}
-
-real ksTestD(T, U)(T F, U Fprime)
-if(isInputRange!(T) && isInputRange!(U)) {
-    auto TAState = TempAlloc.getState;
-    scope(exit) {
-        TempAlloc.free(TAState);
-        TempAlloc.free(TAState);
-    }
-    return ksTestDDestructive(tempdup(F), tempdup(Fprime));
-}
-
-real ksTestDDestructive(T, U)(T F, U Fprime)
-if(isArrayLike!(T) && isArrayLike!(U)) {
-    qsort(F);
-    qsort(Fprime);
-    real D = 0;
-    size_t FprimePos = 0;
-    foreach(i; 0..2) {  //Test both w/ Fprime x vals, F x vals.
-        real diffMult = (i == 0) ? 1 : -1;
-        foreach(FPos, Xi; F) {
-            if(FPos < F.length - 1 && F[FPos + 1] == Xi)
-                continue;  //Handle ties.
-            while(FprimePos < Fprime.length && Fprime[FprimePos] <= Xi) {
-                FprimePos++;
-            }
-            real diff = diffMult * (cast(real) (FPos + 1) / F.length -
-                       cast(real) FprimePos / Fprime.length);
-            if(abs(diff) > abs(D))
-                D = diff;
-        }
-        swap(F, Fprime);
-        FprimePos = 0;
-    }
-    return D;
-}
-
-real ksTestD(T, Func)(T Femp, Func F)
-if(realInput!(T) && is(ReturnType!Func : real)) {
-    scope(exit) TempAlloc.free;
-    return ksTestDDestructive(tempdup(Femp), F);
-}
-
-real ksTestDDestructive(T, Func)(T Femp, Func F)
-if(isArrayLike!(T) && is(ReturnType!Func : real)) {
-    qsort(Femp);
-    real D = 0;
-
-    foreach(FPos, Xi; Femp) {
-        real diff = cast(real) FPos / Femp.length - F(Xi);
-        if(abs(diff) > abs(D))
-            D = diff;
-    }
-
-    return D;
-}
-
-real ksPval(ulong N, ulong Nprime, real D)
-in {
-    assert(D >= -1);
-    assert(D <= 1);
-} body {
-    return 1 - kolmDist(sqrt(cast(real) (N * Nprime) / (N + Nprime)) * abs(D));
-}
-
-real ksPval(ulong N, real D)
-in {
-    assert(D >= -1);
-    assert(D <= 1);
-} body {
-    return 1 - kolmDist(abs(D) * sqrt(cast(real) N));
+private real gTestElem(real observed, real expected) {
+    return observed * log(observed / expected) * 2;
 }
 
 /**Fisher's Exact test for difference in odds between rows/columns
@@ -1969,6 +1867,168 @@ unittest {
     res = fisherExact([[5u, 16], [20, 25]], Alt.GREATER);
     assert(approxEqual(res, 0.9723));
     writeln("Passed fisherExact test.");
+}
+
+/**Performs a Kolmogorov-Smirnov (K-S) 2-sample test.  The K-S test is a
+ * non-parametric test for a difference between two empirical distributions or
+ * between an empirical distribution and a reference distribution.
+ *
+ * Returns:  A TestRes with the K-S D value and a P value for the null that
+ * FPrime is distributed identically to F against the alternative that it isn't.
+ * This implementation uses a signed D value to indicate the direction of the
+ * difference between distributions.  To get the D value used in standard
+ * notation, simply take the absolute value of this D value.
+ *
+ * Bugs:  Exact calculation not implemented.  Uses asymptotic approximation.*/
+TestRes ksTest(T, U)(T F, U Fprime)
+if(realInput!(T) && realInput!(U)) {
+    real D = ksTestD(F, Fprime);
+    return TestRes(D, ksPval(F.length, Fprime.length, D));
+}
+
+unittest {
+    assert(approxEqual(ksTest([1,2,3,4,5].dup, [1,2,3,4,5].dup).testStat, 0));
+    assert(approxEqual(ksTestDestructive([1,2,3,4,5].dup, [1,2,2,3,5].dup).testStat, -.2));
+    assert(approxEqual(ksTest([-1,0,2,8, 6].dup, [1,2,2,3,5].dup).testStat, .4));
+    assert(approxEqual(ksTest([1,2,3,4,5].dup, [1,2,2,3,5,7,8].dup).testStat, .2857));
+    assert(approxEqual(ksTestDestructive([1, 2, 3, 4, 4, 4, 5].dup,
+           [1, 2, 3, 4, 5, 5, 5].dup).testStat, .2857));
+
+    assert(approxEqual(ksTest([1, 2, 3, 4, 4, 4, 5].dup, [1, 2, 3, 4, 5, 5, 5].dup),
+           .9375));
+    assert(approxEqual(ksTestDestructive([1, 2, 3, 4, 4, 4, 5].dup,
+        [1, 2, 3, 4, 5, 5, 5].dup), .9375));
+    writeln("Passed ksTest 2-sample test.");
+}
+
+template isArrayLike(T) {
+    enum bool isArrayLike = hasSwappableElements!(T) && hasAssignableElements!(T)
+        && dstats.base.hasLength!(T) && isRandomAccessRange!(T);
+}
+
+/**One-sample KS test against a reference distribution, doesn't modify input
+ * data.  Takes a function pointer or delegate for the CDF of refernce
+ * distribution.
+ *
+ * Returns:  A TestRes with the K-S D value and a P value for the null that
+ * Femp is a sample from F against the alternative that it isn't. This
+ * implementation uses a signed D value to indicate the direction of the
+ * difference between distributions.  To get the D value used in standard
+ * notation, simply take the absolute value of this D value.
+ *
+ * Bugs:  Exact calculation not implemented.  Uses asymptotic approximation.
+ *
+ * Examples:
+ * ---
+ * auto stdNormal = parametrize!(normalCDF)(0.0L, 1.0L);
+ * auto empirical = [1, 2, 3, 4, 5];
+ * real res = ksTest(empirical, stdNormal);
+ * ---
+ */
+TestRes ksTest(T, Func)(T Femp, Func F)
+if(realInput!(T) && is(ReturnType!(Func) : real)) {
+    real D = ksTestD(Femp, F);
+    return TestRes(D, ksPval(Femp.length, D));
+}
+
+unittest {
+    auto stdNormal = paramFunctor!(normalCDF)(0.0L, 1.0L);
+    assert(approxEqual(ksTest([1,2,3,4,5].dup, stdNormal).testStat, -.8413));
+    assert(approxEqual(ksTestDestructive([-1,0,2,8, 6].dup, stdNormal).testStat, -.5772));
+    auto lotsOfTies = [5,1,2,2,2,2,2,2,3,4].dup;
+    assert(approxEqual(ksTest(lotsOfTies, stdNormal).testStat, -0.8772));
+
+    assert(approxEqual(ksTest([0,1,2,3,4].dup, stdNormal), .03271));
+
+    auto uniform01 = parametrize!(uniformCDF)(0, 1);
+    assert(approxEqual(ksTestDestructive([0.1, 0.3, 0.5, 0.9, 1].dup, uniform01), 0.7591));
+
+    writeln("Passed ksTest 1-sample test.");
+}
+
+/**Same as ksTest, except sorts in place, avoiding memory allocations.*/
+TestRes ksTestDestructive(T, U)(T F, U Fprime)
+if(isArrayLike!(T) && isArrayLike!(U)) {
+    real D = ksTestDDestructive(F, Fprime);
+    return TestRes(D, ksPval(F.length, Fprime.length, D));
+}
+
+///Ditto.
+TestRes ksTestDestructive(T, Func)(T Femp, Func F)
+if(isArrayLike!(T) && is(ReturnType!Func : real)) {
+    real D =  ksTestDDestructive(Femp, F);
+    return TestRes(D, ksPval(Femp.length, D));
+}
+
+real ksTestD(T, U)(T F, U Fprime)
+if(isInputRange!(T) && isInputRange!(U)) {
+    auto TAState = TempAlloc.getState;
+    scope(exit) {
+        TempAlloc.free(TAState);
+        TempAlloc.free(TAState);
+    }
+    return ksTestDDestructive(tempdup(F), tempdup(Fprime));
+}
+
+real ksTestDDestructive(T, U)(T F, U Fprime)
+if(isArrayLike!(T) && isArrayLike!(U)) {
+    qsort(F);
+    qsort(Fprime);
+    real D = 0;
+    size_t FprimePos = 0;
+    foreach(i; 0..2) {  //Test both w/ Fprime x vals, F x vals.
+        real diffMult = (i == 0) ? 1 : -1;
+        foreach(FPos, Xi; F) {
+            if(FPos < F.length - 1 && F[FPos + 1] == Xi)
+                continue;  //Handle ties.
+            while(FprimePos < Fprime.length && Fprime[FprimePos] <= Xi) {
+                FprimePos++;
+            }
+            real diff = diffMult * (cast(real) (FPos + 1) / F.length -
+                       cast(real) FprimePos / Fprime.length);
+            if(abs(diff) > abs(D))
+                D = diff;
+        }
+        swap(F, Fprime);
+        FprimePos = 0;
+    }
+    return D;
+}
+
+real ksTestD(T, Func)(T Femp, Func F)
+if(realInput!(T) && is(ReturnType!Func : real)) {
+    scope(exit) TempAlloc.free;
+    return ksTestDDestructive(tempdup(Femp), F);
+}
+
+real ksTestDDestructive(T, Func)(T Femp, Func F)
+if(isArrayLike!(T) && is(ReturnType!Func : real)) {
+    qsort(Femp);
+    real D = 0;
+
+    foreach(FPos, Xi; Femp) {
+        real diff = cast(real) FPos / Femp.length - F(Xi);
+        if(abs(diff) > abs(D))
+            D = diff;
+    }
+
+    return D;
+}
+
+real ksPval(ulong N, ulong Nprime, real D)
+in {
+    assert(D >= -1);
+    assert(D <= 1);
+} body {
+    return 1 - kolmDist(sqrt(cast(real) (N * Nprime) / (N + Nprime)) * abs(D));
+}
+
+real ksPval(ulong N, real D)
+in {
+    assert(D >= -1);
+    assert(D <= 1);
+} body {
+    return 1 - kolmDist(abs(D) * sqrt(cast(real) N));
 }
 
 /**Wald-wolfowitz or runs test for randomness of the distribution of
@@ -2190,15 +2250,17 @@ private ConfInt finishPearsonSpearman(real cor, real N, Alt alt, real confLevel)
  * Alt.LESS (kcor(range1, range2) < 0), Alt.GREATER (kcor(range1, range2)
  * > 0) and Alt.TWOSIDE (kcor(range1, range2) != 0).
  *
+ * exactThresh controls the maximum length of the range for which exact P-value
+ * computation is used.  The default is 50.  Exact calculation is never used
+ * when ties are present because it is not computationally feasible.
+ * Do not set this higher than 100, as it will be very slow
+ * and the asymptotic approximation is pretty good at even a fraction of this
+ * size.
+ *
  * Returns:  A TestRes containing the Kendall correlation coefficient and
  * the P-value for the given alternative.
- *
- * Bugs:  Exact computation not yet implemented.  Uses asymptotic approximation
- * only.  However, this matters very little in practice because, for Kendall
- * tau, the asymptotic approximation with a continuity correction is very
- * accurate.
  */
-TestRes kcorTest(T, U)(T range1, U range2, Alt alt = Alt.TWOSIDE)
+TestRes kcorTest(T, U)(T range1, U range2, Alt alt = Alt.TWOSIDE, uint exactThresh = 50)
 if(isInputRange!(T) && isInputRange!(U)) {
     mixin(newFrame);
     auto i1d = tempdup(range1);
@@ -2211,12 +2273,18 @@ if(isInputRange!(T) && isInputRange!(U)) {
     auto tau = res.field[0];
     auto s = res.field[1];
 
+    if(res.field[2] == 0 && n <= exactThresh) {
+        uint N = i1d.length;
+        uint nSwaps = (N * (N - 1) / 2 - s) / 2;
+        return TestRes(tau, kcorExactP(N, nSwaps, alt));
+    }
+
     switch(alt) {
         case Alt.NONE :
             return TestRes(tau);
         case Alt.TWOSIDE:
             return TestRes(tau, 2 * min(normalCDF(s + cc, 0, sd),
-                           normalCDFR(s - cc, 0, sd)));
+                           normalCDFR(s - cc, 0, sd), 0.5));
         case Alt.LESS:
             return TestRes(tau, normalCDF(s + cc, 0, sd));
         case Alt.GREATER:
@@ -2224,6 +2292,60 @@ if(isInputRange!(T) && isInputRange!(U)) {
         default:
             assert(0);
     }
+}
+
+// Dynamic programming algorithm for computing exact Kendall tau P-values.
+// Thanks to ShreevatsaR from StackOverflow.
+real kcorExactP(uint N, uint swaps, Alt alt) {
+    uint maxSwaps = N * (N - 1) / 2;
+    assert(swaps <= maxSwaps);
+    real expectedSwaps = N * (N - 1) * 0.25L;
+    if(alt == Alt.GREATER) {
+        if(swaps > expectedSwaps) {
+            if(swaps == maxSwaps) {
+                return 1;
+            }
+            return 1.0L - kcorExactP(N, maxSwaps - swaps - 1, Alt.GREATER);
+        }
+    } else if(alt == Alt.LESS) {
+        if(swaps == 0) {
+            return 1;
+        }
+        return kcorExactP(N, maxSwaps - swaps + 0, Alt.GREATER);
+    } else if(alt == Alt.TWOSIDE) {
+        if(swaps < expectedSwaps) {
+            return min(1, 2 * kcorExactP(N, swaps, Alt.GREATER));
+        } else if(swaps > expectedSwaps) {
+            return min(1, 2 * kcorExactP(N, swaps, Alt.LESS));
+        } else {
+            return 1;
+        }
+    } else {  // Alt.NONE
+        return real.nan;
+    }
+
+    real pElem = exp(-logFactorial(N));
+    real[] cur = newStack!real(swaps + 1);
+    real[] prev = newStack!real(swaps + 1);
+
+    prev[] = pElem;
+    cur[0] = pElem;
+    foreach(i; 1..N + 1) {
+        uint nSwapsPossible = i * (i - 1) / 2;
+        uint upTo = min(swaps, nSwapsPossible) + 1;
+        foreach(j; 1..upTo) {
+            if(j < i) {
+                cur[j] = prev[j] + cur[j - 1];
+            } else {
+                cur[j] = prev[j] - prev[j - i] + cur[j - 1];
+            }
+        }
+        cur[upTo..$] = cur[upTo - 1];
+        swap(cur, prev);
+    }
+    TempAlloc.free;
+    TempAlloc.free;
+    return prev[$ - 1];
 }
 
 unittest {
@@ -2245,6 +2367,50 @@ unittest {
     assert(approxEqual(t3.p, 0.8122, 0.0, 0.02));
     assert(approxEqual(t2.p, 0.1878, 0.0, 0.02));
 
+    // Test the exact stuff.  Still using values from R.
+    uint[] foo = [1,2,3,4,5];
+    uint[] bar = [1,2,3,5,4];
+    uint[] baz = [5,3,1,2,4];
+
+    assert(approxEqual(kcorTest(foo, foo).p, 0.01666666));
+    assert(approxEqual(kcorTest(foo, foo, Alt.GREATER).p, 0.008333333));
+    assert(approxEqual(kcorTest(foo, foo, Alt.LESS).p, 1));
+
+    assert(approxEqual(kcorTest(foo, bar).p, 0.083333333));
+    assert(approxEqual(kcorTest(foo, bar, Alt.GREATER).p, 0.041666667));
+    assert(approxEqual(kcorTest(foo, bar, Alt.LESS).p, 0.9917));
+
+    assert(approxEqual(kcorTest(foo, baz).p, 0.8167));
+    assert(approxEqual(kcorTest(foo, baz, Alt.GREATER).p, 0.7583));
+    assert(approxEqual(kcorTest(foo, baz, Alt.LESS).p, .4083));
+
+    assert(approxEqual(kcorTest(bar, baz).p, 0.4833));
+    assert(approxEqual(kcorTest(bar, baz, Alt.GREATER).p, 0.8833));
+    assert(approxEqual(kcorTest(bar, baz, Alt.LESS).p, 0.2417));
+
+    // A little monte carlo unittesting.  For large ranges, the deviation
+    // between the exact and approximate version should be extremely small.
+    foreach(i; 0..100) {
+        uint nToTake = uniform(15, 35);
+        auto lhs = toArray(take(nToTake, randRange!rNorm(0, 1)));
+        auto rhs = toArray(take(nToTake, randRange!rNorm(0, 1)));
+        if(i & 1) {
+            lhs[] += rhs[] * 0.2;  // Make sure there's some correlation.
+        } else {
+            lhs[] -= rhs[] * 0.2;
+        }
+        real exact = kcorTest(lhs, rhs).p;
+        real approx = kcorTest(lhs, rhs, Alt.TWOSIDE, 0).p;
+        assert(abs(exact - approx) < 0.01);
+
+        exact = kcorTest(lhs, rhs, Alt.GREATER).p;
+        approx = kcorTest(lhs, rhs, Alt.GREATER, 0).p;
+        assert(abs(exact - approx) < 0.01);
+
+        exact = kcorTest(lhs, rhs, Alt.LESS).p;
+        approx = kcorTest(lhs, rhs, Alt.LESS, 0).p;
+        assert(abs(exact - approx) < 0.01);
+    }
     writeln("Passed kcorTest test.");
 }
 
@@ -2329,6 +2495,44 @@ unittest {
     assert(approxEqual(r1.testStat, 3.1368));
     assert(approxEqual(r1.p, 0.2084));
     writeln("Passed dAgostinoK test.");
+}
+
+/**Fisher's method of meta-analyzing a set of P-values to determine whether
+ * there are more significant results than would be expected by chance.
+ * Based on a chi-square statistic for the sum of the logs of the P-values.
+ *
+ * Returns:  A TestRes containing the chi-square statistic and a P-value for
+ * the alternative hypothesis that more small P-values than would be expected
+ * by chance are present against the alternative that the distribution of
+ * P-values is uniform or enriched for large P-values.
+ *
+ * References:  Fisher, R. A. (1948) "Combining independent tests of
+ * significance", American Statistician, vol. 2, issue 5, page 30.
+ * (In response to Question 14)
+ */
+TestRes fishersMethod(R)(R pVals)
+if(realInput!R) {
+    real chiSq = 0;
+    uint df = 0;
+    foreach(pVal; pVals) {
+        chiSq += log( cast(real) pVal);
+        df += 2;
+    }
+    chiSq *= -2;
+    return TestRes(chiSq, chiSqrCDFR(chiSq, df));
+}
+
+unittest {
+    // First, basic sanity check.  Make sure w/ one P-value, we get back that
+    // P-value.
+    for(real p = 0.01; p < 1; p += 0.01) {
+        assert(approxEqual(fishersMethod([p].dup).p, p));
+    }
+    float[] ps = [0.739, 0.0717, 0.01932, 0.03809];
+    auto res = fishersMethod(ps);
+    assert(approxEqual(res.testStat, 20.31));
+    assert(res.p < 0.01);
+    writeln("Passed fishersMethod test.");
 }
 
 /// For falseDiscoveryRate.
