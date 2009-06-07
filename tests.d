@@ -1392,7 +1392,92 @@ if(realInput!(T)) {
     return signTest(data, repeat(mu), alt);
 }
 
-///For chiSqrFit, is expected value range counts or proportions?
+/**Two-sided binomial test for whether P(success) == p.  The one-sided
+ * alternatives are covered by dstats.distrib.binomialCDF and binomialCDFR.
+ * k is the number of successes observed, n is the number of trials, p
+ * is the probability of success under the null.
+ *
+ * Returns:  The P-value for the alternative that P(success) != p against
+ * the null that P(success) == p.
+ *
+ * Notes:  This test can also be performed using multinomialTest(), but this
+ * implementation is much faster and easier to use.
+ */
+real binomialTest(uint k, uint n, real p) {
+    immutable mode = cast(uint) ((n + 1) * p);
+    if(k == mode ||
+       approxEqual(binomialPMF(k, n, p), binomialPMF(mode, n, p), 1e-7)) {
+        return 1;
+    } else if(k > mode) {
+        immutable upperPart = binomialCDFR(k, n, p);
+        immutable pExact = binomialPMF(k, n, p);
+        uint ulim = mode, llim = 0, guess;
+        while(ulim - llim > 1) {
+            // Not worrying about overflow b/c for values that large, there
+            // are probably bigger numerical stability issues, etc. anyhow.
+            guess = (ulim + llim) / 2;
+            real pGuess = binomialPMF(guess, n, p);
+
+            if(approxEqual(pGuess, pExact, 1e-7)) {
+                ulim = guess;
+                llim = guess;
+                break;
+            } else if(pGuess < pExact) {
+                llim = guess;
+            } else {
+                ulim = guess;
+            }
+        }
+        guess = (binomialPMF(ulim, n, p) > pExact) ? llim : ulim;
+        if(guess == 0 && binomialPMF(0, n, p) > pExact) {
+            return upperPart;
+        }
+        return upperPart + binomialCDF(guess, n, p);
+    } else {
+        real myPMF(uint k, uint n, real p) {
+            return k > n ? 0 : binomialPMF(k, n, p);
+        }
+        immutable lowerPart = binomialCDF(k, n, p);
+        immutable pExact = binomialPMF(k, n, p);
+        uint ulim = n + 1, llim = mode, guess;
+        while(ulim - llim > 1) {
+            // Not worrying about overflow b/c for values that large, there
+            // are probably bigger numerical stability issues, etc. anyhow.
+            guess = (ulim + llim) / 2;
+            real pGuess = myPMF(guess, n, p);
+            if(approxEqual(pGuess, pExact, 1e-7)) {
+                ulim = guess;
+                llim = guess;
+                break;
+            } else if(pGuess < pExact) {
+                ulim = guess;
+            } else {
+                llim = guess;
+            }
+        }
+        guess = (myPMF(llim, n, p) > pExact) ? ulim : llim;
+        return lowerPart + ((guess > n) ? 0 : binomialCDFR(guess, n, p));
+    }
+}
+
+unittest {
+    // Values from R.
+    assert(approxEqual(binomialTest(6, 88, 0.1), 0.3784));
+    assert(approxEqual(binomialTest(3, 4, 0.5), 0.625));
+    assert(approxEqual(binomialTest(4, 7, 0.8), 0.1480));
+    assert(approxEqual(binomialTest(3, 9, 0.8), 0.003066));
+    assert(approxEqual(binomialTest(9, 9, 0.7), 0.06565));
+    assert(approxEqual(binomialTest(2, 11, 0.1), 0.3026));
+    assert(approxEqual(binomialTest(1, 11, 0.1), 1));
+    assert(approxEqual(binomialTest(5, 11, 0.1), 0.002751));
+    assert(approxEqual(binomialTest(5, 12, 0.5), 0.7744));
+    assert(approxEqual(binomialTest(12, 12, 0.5), 0.0004883));
+    assert(approxEqual(binomialTest(12, 13, 0.6), 0.02042));
+    assert(approxEqual(binomialTest(0, 9, 0.1), 1));
+    writeln("Passed binomialTest test.");
+}
+
+///For chiSqrFit and gTestFit, is expected value range counts or proportions?
 enum Expected {
     ///
     COUNT,
@@ -1409,14 +1494,17 @@ enum Expected {
  * alternative hypothesis that observed is not a sample from expected against
  * the null that observed is a sample from expected.
  *
- * Notes:  By default, expected is assumed to be a range of expected counts.
- * By passing Expected.PROPORTION in as the last parameter,
- * expected counts will be calculated from expected proportions internally.
- * If this feature is used, observed must be a forward range because it will
- * be iterated over twice.
+ * Notes:  By default, expected is assumed to be a range of expected proportions.
+ * These proportions are automatically normalized, and can sum to any number.
+ * By passing Expected.COUNT in as the last parameter, calculating expected
+ * counts will be skipped, and expected will assume to already be properly
+ * normalized.  This is slightly faster, but more importantly
+ * allows input ranges to be used.
  *
  * The chi-square test relies on asymptotic statistical properties
- * and is therefore not considered valid when expected counts are below 5.
+ * and is therefore not considered valid, as a rule of thumb,  when expected
+ * counts are below 5.  However, this rule is likely to be unnecessarily
+ * stringent in most cases.
  *
  * This is, for all practical purposes, an inherently non-directional test.
  * Therefore, the one-sided verses two-sided option is not provided.
@@ -1427,13 +1515,13 @@ enum Expected {
  * // statistically from a discrete uniform distribution.
  *
  * uint[] observed = [980, 1028, 1001, 964, 1102];
- * auto expected = repeat(1.0L / observed.length);
- * auto res2 = chiSqrFit(observed, expected, Expected.PROPORTION);
+ * auto expected = repeat(1.0L);
+ * auto res2 = chiSqrFit(observed, expected);
  * assert(approxEqual(res2, 0.0207));
  * assert(approxEqual(res2.testStat, 11.59));
  * ---
  */
-TestRes chiSqrFit(T, U)(T observed, U expected, Expected countProp = Expected.COUNT) {
+TestRes chiSqrFit(T, U)(T observed, U expected, Expected countProp = Expected.PROPORTION) {
     return goodnessFit!(pearsonChiSqElem, T, U)(observed, expected, countProp);
 }
 
@@ -1442,12 +1530,12 @@ unittest {
     // statistically from a discrete uniform distribution.
     uint[] observed = [980, 1028, 1001, 964, 1102];
     auto expected = repeat(cast(real) sum(observed) / observed.length);
-    auto res = chiSqrFit(observed, expected);
+    auto res = chiSqrFit(observed, expected, Expected.COUNT);
     assert(approxEqual(res, 0.0207));
     assert(approxEqual(res.testStat, 11.59));
 
-    expected = repeat(1.0L / observed.length);
-    auto res2 = chiSqrFit(observed, expected, Expected.PROPORTION);
+    expected = repeat(5.0L);
+    auto res2 = chiSqrFit(observed, expected);
     assert(approxEqual(res2, 0.0207));
     assert(approxEqual(res2.testStat, 11.59));
     writeln("Passed chiSqrFit test.");
@@ -1455,11 +1543,11 @@ unittest {
 
 /**The G or likelihood ratio chi-square test for goodness of fit.  Roughly
  * the same as Pearson's chi-square test (chiSqrFit), but may be more
- * accurate in certain situations.  However, it is still based on
- * asymptotic distributions, and is not exact. Usage is is identical to
- * chiSqrFit.
+ * accurate in certain situations and less accurate in others.  However, it is
+ * still based on asymptotic distributions, and is not exact. Usage is is
+ * identical to chiSqrFit.
  */
-TestRes gTestFit(T, U)(T observed, U expected, Expected countProp = Expected.COUNT) {
+TestRes gTestFit(T, U)(T observed, U expected, Expected countProp = Expected.PROPORTION) {
     return goodnessFit!(gTestElem, T, U)(observed, expected, countProp);
 }
 // No unittest because I can't find anything to test this against.  However,
@@ -1479,10 +1567,17 @@ in {
     real multiplier = 1;
 
     if(countProp == Expected.PROPORTION) {
+        real expectSum = 0;
         multiplier = 0;
-        foreach(elem; observed) {
-            multiplier += elem;
+        auto obsCopy = observed;
+        auto expCopy = expected;
+        while(!obsCopy.empty && !expCopy.empty) {
+            multiplier += obsCopy.front;
+            expectSum += expCopy.front;
+            obsCopy.popFront;
+            expCopy.popFront;
         }
+        multiplier /= expectSum;
     }
 
     while(!observed.empty && !expected.empty) {
@@ -1495,6 +1590,110 @@ in {
     return TestRes(chiSq, chiSqrCDFR(chiSq, len - 1));
 }
 
+/**The exact multinomial goodness of fit test for whether a set of counts
+ * fits a hypothetical distribution.  counts is an input range of counts.
+ * proportions is an input range of expected proportions.  These are normalized
+ * automatically, so they can sum to any value.
+ *
+ * Returns:  The P-value for the null that counts is a sample from proportions
+ * against the alternative that it isn't.
+ *
+ * Notes:  This test is EXTREMELY slow for anything but very small samples and
+ * degrees of freedom.  The Pearson's chi-square (chiSqrFit()) or likelihood
+ * ratio chi-square (gTestFit()) are good enough approximations unless sample
+ * size is very small.
+ */
+real multinomialTest(U, F)(U counts, F proportions)
+if(isInputRange!U && isInputRange!F &&
+   isIntegral!(ElementType!U) && isFloatingPoint!(ElementType!(F))) {
+    mixin(newFrame);
+    uint N = sum(counts);
+
+    real[] logPs;
+    static if(std.range.hasLength!F) {
+        logPs = newStack!real(proportions.length);
+        size_t pIndex;
+        foreach(p; proportions) {
+            logPs[pIndex++] = p;
+        }
+    } else {
+        auto app = appender(&logPs);
+        foreach(p; proportions) {
+            app.put(p);
+        }
+    }
+    logPs[] /= reduce!"a + b"(logPs);
+    foreach(ref elem; logPs) {
+        elem = log(elem);
+    }
+
+    real[] logs = newStack!real(N + 1);
+    logs[0] = 0;
+    foreach(i; 1..logs.length) {
+        logs[i] = log(i);
+    }
+
+    real nFact = logFactorial(N);
+    real pVal = 0;
+    uint nLeft = N;
+    real pSoFar = nFact;
+
+    real pActual = nFact;
+    foreach(i, count; counts) {
+        pActual += logPs[i] * count - logFactorial(count);
+    }
+    pActual -= pActual * 1e-6;  // Epsilon to handle numerical inaccuracy.
+
+    void doIt(uint pos) {
+        if(pos == counts.length - 1) {
+            immutable pOld = pSoFar;
+            pSoFar += logPs[$ - 1] * nLeft - logFactorial(nLeft);
+
+            if(pSoFar <= pActual) {
+                pVal += exp(pSoFar);
+            }
+            pSoFar = pOld;
+            return;
+        }
+
+        uint nLeftOld = nLeft;
+        immutable pOld = pSoFar;
+        real pAdd = 0;
+
+        foreach(i; 0..nLeft + 1) {
+            if(i > 0) {
+                pAdd += logPs[pos] - logs[i];
+            }
+            pSoFar = pOld + pAdd;
+            doIt(pos + 1);
+            nLeft--;
+        }
+        nLeft = nLeftOld;
+        pSoFar = pOld;
+    }
+    doIt(0);
+    return pVal;
+}
+
+unittest {
+    // Nothing to test this against for more than 1 df, but it matches
+    // chi-square roughly and should take the same paths for 2 vs. N degrees
+    // of freedom.
+    for(uint n = 4; n <= 100; n += 4) {
+        foreach(k; 0..n + 1) {
+            for(real p = 0.05; p <= 0.95; p += 0.05) {
+                real bino = binomialTest(k, n, p);
+                real[] ps = [p, 1 - p];
+                uint[] counts = [k, n - k];
+                real multino = multinomialTest(counts, ps);
+                //writeln(k, "\t", n, "\t", p, "\t", bino, "\t", multino);
+                assert(approxEqual(bino, multino));
+            }
+        }
+    }
+    writeln("Passed multinomialTest test.");
+}
+
 /**Performs a Pearson's chi-square test on a contingency table of arbitrary
  * dimensions.  When the chi-square test is mentioned, this is usually the one
  * being referred to.  Takes a set of finite forward ranges, one for each column
@@ -1504,14 +1703,20 @@ in {
  * the null that they don't.
  *
  * Notes:  The chi-square test relies on asymptotic statistical properties
- * and is therefore not considered valid when expected values are below 5.
- * However, this is just a rule of thumb, and for large contingency tables,
- * it may perform well even when this rule is violated.
+ * and is therefore not exact.  The typical rule of thumb is that each cell
+ * should have an expected value of at least 5.  However, this is likely to
+ * be unnecessarily stringent.
+ *
+ * Yates's continuity correction is never used in this implementation.  If
+ * you want something conservative, use fisherExact().
  *
  * This is, for all practical purposes, an inherently non-directional test.
  * Therefore, the one-sided verses two-sided option is not provided.
  *
- * For 2x2 contingency tables, fisherExact is a more accurate test.
+ * For 2x2 contingency tables, fisherExact is a more conservative test, in that
+ * the type I error rate is guaranteed to never be above the nominal P-value.
+ * However, even for small sample sizes this test may produce results closer
+ * to the true P-value, at the risk of possibly being non-conservative.
  *
  * Examples:
  * ---
@@ -1560,9 +1765,9 @@ unittest {
 
 /**The G or likelihood ratio chi-square test for contingency tables.  Roughly
  * the same as Pearson's chi-square test (chiSqrContingency), but may be more
- * accurate in certain situations.  However, it is still based on
- * asymptotic distributions, and is not exact. Usage is is identical to
- * chiSqrContingency.
+ * accurate in certain situations and less accurate in others.  However, it
+ * is still based on asymptotic distributions, and is not exact. Usage is is
+ * identical to chiSqrContingency.
  */
 TestRes gTestContingency(T...)(T inputData) {
     return testContingency!(gTestElem, T)(inputData);
@@ -1672,6 +1877,13 @@ private real gTestElem(real observed, real expected) {
  *
  * Accepts a 2x2 contingency table as an array of arrays of uints.
  * For now, only does 2x2 contingency tables.
+ *
+ * Notes:  Although this test is "exact" in that it does not rely on asymptotic
+ * approximations, it is very statistically conservative when the marginals
+ * are not truly fixed in the experimental design in question.  If a
+ * closer but possibly non-conservative approximation of the true P-value is
+ * desired, Pearson's chi-square test (chiSqrContingency) may perform better,
+ * even for small samples.
  *
  * Returns:  A TestRes of the odds ratio and the P-value against the given
  * alternative.
