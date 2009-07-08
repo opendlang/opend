@@ -168,7 +168,10 @@ size_t medianOf3(alias compFun, T)(const T[] data) {
         case 0:  // 000
         case 7:  // 111
             return mid;
+        default:
+            assert(0);
     }
+    assert(0);
 }
 
 unittest {

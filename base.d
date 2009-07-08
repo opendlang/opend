@@ -160,6 +160,7 @@ template IterType(T) {
             foreach(elem; T.init) {
                 return elem;
             }
+            assert(0);
         }) IterType;
 }
 
@@ -290,7 +291,7 @@ in {
         if(whichBin == nbin)
             whichBin--;
 
-        bins[i] = whichBin;
+        bins[i] = cast(Ret) whichBin;
     }
 
     return bins;
@@ -540,10 +541,10 @@ unittest {
  * an invariant global array, for performance.  After this point, the gamma
  * function is used, because caching would take up too much memory, and if
  * done lazily, would cause threading issues.*/
-real logFactorial(uint n) {
+real logFactorial(ulong n) {
     //Input is uint, can't be less than 0, no need to check.
     if(n < staticFacTableLen) {
-        return staticLogFacTable[n];
+        return staticLogFacTable[cast(size_t) n];
     } else return lgamma(cast(real) (n + 1));
 }
 
@@ -561,7 +562,7 @@ unittest {
 }
 
 ///Log of (n choose k).
-real logNcomb(uint n, uint k)
+real logNcomb(ulong n, ulong k)
 in {
     assert(k <= n);
 } body {

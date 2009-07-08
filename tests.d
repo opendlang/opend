@@ -918,14 +918,14 @@ TestRes wilcoxonRankSum(T)(T sample1, T sample2, Alt alt = Alt.TWOSIDE,
 
 real wilcoxonRankSumW(T)(T sample1, T sample2, real* tieSum = null)
 if(isInputRange!(T) && dstats.base.hasLength!(T)) {
-    ulong n1 = sample1.length, n2 = sample2.length, N = n1 + n2;
+    uint n1 = sample1.length, n2 = sample2.length, N = n1 + n2;
     auto combined = newStack!(Unqual!(ElementType!(T)))(N);
     rangeCopy(combined[0..n1], sample1);
     rangeCopy(combined[n1..$], sample2);
 
     float[] ranks = newStack!(float)(N);
     rankSort(combined, ranks);
-    real w = reduce!("a + b")(0.0L, ranks[0..n1]) - n1 * (n1 + 1) / 2UL;
+    real w = reduce!("a + b")(0.0L, ranks[0..n1]) - cast(ulong) n1 * (n1 + 1) / 2UL;
     TempAlloc.free;  // Free ranks.
 
     if(tieSum !is null) {
@@ -958,7 +958,7 @@ real wilcoxonRankSumPval(T)(T w, ulong n1, ulong n2, Alt alt = Alt.TWOSIDE,
     ulong N = n1 + n2;
 
     if(N < exactThresh && tieSum == 0) {
-        return wilcoxRSPExact(cast(uint) w, n1, n2, alt);
+        return wilcoxRSPExact(cast(uint) w, cast(uint) n1, cast(uint) n2, alt);
     }
 
     real sd = sqrt(cast(real) (n1 * n2) / (N * (N - 1)) *
@@ -971,6 +971,7 @@ real wilcoxonRankSumPval(T)(T w, ulong n1, ulong n2, Alt alt = Alt.TWOSIDE,
         return normalCDF(w + .5, mean, sd);
     else if(alt == Alt.GREATER)
         return normalCDFR(w - .5, mean, sd);
+    assert(0);
 }
 
 unittest {
@@ -993,7 +994,7 @@ real wilcoxRSPExact(uint W, uint n1, uint n2, Alt alt = Alt.TWOSIDE) {
     uint expected2 = n1 * n2;
     switch(alt) {
         case Alt.LESS:
-            if(W > (N * (N - n2)) / 2)  { // Value impossibly large
+            if(W >= (N * (N - n2)) / 2)  { // Value impossibly large
                 return 1;
             } else if(W * 2 <= expected2) {
                 break;
@@ -1005,6 +1006,8 @@ real wilcoxRSPExact(uint W, uint n1, uint n2, Alt alt = Alt.TWOSIDE) {
                 return 0;
             } else if(W * 2 >= expected2) {
                 return wilcoxRSPExact(expected2 - W, n1, n2, Alt.LESS);
+            } else if(W == 0) {
+                return 1;
             } else {
                 return 1 - wilcoxRSPExact(W - 1, n1, n2, Alt.LESS);
             }
@@ -1234,7 +1237,7 @@ in {
     assert(tieSum >= 0 || isNaN(tieSum));
 } body {
     if(tieSum == 0 && !isNaN(tieSum) && N <= exactThresh) {
-        return wilcoxSRPExact(cast(uint) W, N, alt);
+        return wilcoxSRPExact(cast(uint) W, cast(uint) N, alt);
     }
 
     if(isNaN(tieSum)) {
@@ -1944,8 +1947,9 @@ if(isIntegral!(T)) {
         // Binary search for where to begin upper half.
         uint min = mode, max = n, guess = uint.max;
         while(min != max) {
-            guess = (max == min + 1 && guess == min) ? max :
-                    (cast(ulong) max + cast(ulong) min) / 2UL;
+            guess = cast(uint) (
+                    (max == min + 1 && guess == min) ? max :
+                    (cast(ulong) max + cast(ulong) min) / 2UL);
 
             immutable real pGuess = hypergeometricPMF(guess, n1, n2, n);
             if(pGuess <= pExact &&
@@ -1972,8 +1976,9 @@ if(isIntegral!(T)) {
         // Binary search for where to begin lower half.
         uint min = 0, max = mode, guess = uint.max;
         while(min != max) {
-            guess = (max == min + 1 && guess == min) ? max :
-                    (cast(ulong) max + cast(ulong) min) / 2UL;
+            guess = cast(uint) (
+                    (max == min + 1 && guess == min) ? max :
+                    (cast(ulong) max + cast(ulong) min) / 2UL);
             real pGuess = hypergeometricPMF(guess, n1, n2, n);
 
             if(pGuess <= pExact &&
@@ -2487,7 +2492,7 @@ if(isInputRange!(T) && isInputRange!(U)) {
 
     if(res.field[2] == 0 && n <= exactThresh) {
         uint N = i1d.length;
-        uint nSwaps = (N * (N - 1) / 2 - s) / 2;
+        uint nSwaps = (N * (N - 1) / 2 - cast(uint) s) / 2;
         return TestRes(tau, kcorExactP(N, nSwaps, alt));
     }
 
@@ -2511,7 +2516,7 @@ if(isInputRange!(T) && isInputRange!(U)) {
 real kcorExactP(uint N, uint swaps, Alt alt) {
     uint maxSwaps = N * (N - 1) / 2;
     assert(swaps <= maxSwaps);
-    real expectedSwaps = N * (N - 1) * 0.25L;
+    real expectedSwaps = cast(ulong) N * (N - 1) * 0.25L;
     if(alt == Alt.GREATER) {
         if(swaps > expectedSwaps) {
             if(swaps == maxSwaps) {
@@ -2537,8 +2542,8 @@ real kcorExactP(uint N, uint swaps, Alt alt) {
     }
 
     real pElem = exp(-logFactorial(N));
-    real[] cur = newStack!real(swaps + 1);
-    real[] prev = newStack!real(swaps + 1);
+    real[] cur = newStack!real( cast(size_t) swaps + 1);
+    real[] prev = newStack!real( cast(size_t) swaps + 1);
 
     prev[] = pElem;
     cur[0] = pElem;
@@ -2777,8 +2782,16 @@ enum Dependency {
 float[] falseDiscoveryRate(T)(T pVals, Dependency dep = Dependency.FALSE)
 if(realInput!(T)) {
     float[] qVals;
-    auto app = appender(&qVals);
-    app.put(pVals);
+    static if(dstats.base.hasLength!T) {
+        qVals.length = pVals.length;
+        foreach(i, elem; pVals) {
+            qVals[i] = cast(float) elem;
+        }
+    } else {
+        foreach(elem; pVals) {
+            qVals ~= cast(float) elem;
+        }
+    }
 
     real C = 1;
     if(dep == Dependency.TRUE) {
@@ -2787,7 +2800,6 @@ if(realInput!(T)) {
         }
     }
 
-    mixin(newFrame);
     auto perm = newStack!(uint)(qVals.length);
     foreach(i, ref elem; perm)
         elem = i;
@@ -2808,6 +2820,7 @@ if(realInput!(T)) {
     }
 
     qsort(perm, qVals);  //Makes order of qVals correspond to input.
+    TempAlloc.free;
     return qVals;
 }
 

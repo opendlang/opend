@@ -433,8 +433,8 @@ auto kcorDestructiveLowLevel(T, U)(T[] input1, U[] input2) {
     qsort!("a < b")(i1d, i2d);
     long s = cast(long) nPair;
 
-    ulong tieCount = 0;
-    foreach(i; 1UL..i1d.length) {
+    uint tieCount = 0;
+    foreach(i; 1..i1d.length) {
         if(i1d[i] == i1d[i-1]) {
             tieCount++;
         } else if(tieCount > 0) {
@@ -442,16 +442,16 @@ auto kcorDestructiveLowLevel(T, U)(T[] input1, U[] input2) {
             m1 += tieCount * (tieCount + 1) / 2UL;
             s += getMs(i2d[i - tieCount - 1..i]).field[0];
             tieCount++;
-            tieCorrect += tieCount * (tieCount - 1) * (2 * tieCount + 5);
+            tieCorrect += cast(ulong) tieCount * (tieCount - 1) * (2 * tieCount + 5);
             tieCount = 0;
         }
     }
     if(tieCount > 0) {
         qsort!("a < b")(i2d[i1d.length - tieCount - 1..i1d.length]);
         m1 += tieCount * (tieCount + 1UL) / 2UL;
-        s += getMs(i2d[i1d.length - tieCount - 1UL..i1d.length]).field[0];
+        s += getMs(i2d[i1d.length - tieCount - 1..i1d.length]).field[0];
         tieCount++;
-        tieCorrect += tieCount * (tieCount - 1) * (2 * tieCount + 5);
+        tieCorrect += cast(ulong) tieCount * (tieCount - 1) * (2 * tieCount + 5);
     }
     ulong swapCount = 0;
 

@@ -349,6 +349,7 @@ int rPoisson(RGen = Random)(real lam, ref RGen gen = rndGen) {
                 return X;
             }
         }
+        assert(0);
     }
 
     enum real LS2PI = 0.91893853320467267;
@@ -380,6 +381,7 @@ int rPoisson(RGen = Random)(real lam, ref RGen gen = rndGen) {
                 return k;
             }
         }
+        assert(0);
     }
 
 
@@ -964,6 +966,7 @@ real rBeta(RGen = Random)(real a, real b, ref RGen gen = rndGen) {
         Gb = stdGamma(b, gen);
         return Ga/(Ga + Gb);
     }
+    assert(0);
 }
 
 unittest {

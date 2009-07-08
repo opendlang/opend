@@ -286,14 +286,17 @@ private:
 
     static void* ntMalloc(size_t size, GC.BlkAttr attr) nothrow {
         try { return GC.malloc(size, attr); } catch { die(); }
+        return null;  // Can't assert b/c then it would throw.
     }
 
     static void* ntRealloc(void* ptr, size_t size, GC.BlkAttr attr) nothrow {
         try { return GC.realloc(ptr, size, attr); } catch { die(); }
+        return null;
     }
 
     static void ntFree(void* ptr) nothrow {
         try { GC.free(ptr); } catch {}
+        return null;
     }
 
     static size_t getAligned(size_t nbytes) pure nothrow {

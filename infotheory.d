@@ -380,7 +380,7 @@ if(IterType!(T).sizeof == 1) {
         static if(is(E == byte)) {
             // Keep adjacent elements adjacent.  In real world use cases,
             // probably will have ranges like [-1, 1].
-            ubyte e = cast(ubyte) (elem) + byte.max;
+            ubyte e = cast(ubyte) (cast(ubyte) (elem) + byte.max);
         } else {
             ubyte e = cast(ubyte) elem;
         }

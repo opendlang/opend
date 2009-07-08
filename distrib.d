@@ -299,7 +299,7 @@ unittest {
        // Obviously, this is one of those corner cases that nothing can be
        // done about.
        real lambda = uniform(.05L, 8.0L);
-       uint k = uniform(0UL, cast(uint) ceil(3.0L * lambda));
+       uint k = uniform(0U, cast(uint) ceil(3.0L * lambda));
        real pVal = poissonCDF(k, lambda);
        assert(invPoissonCDF(pVal, lambda) == k);
    }
@@ -418,8 +418,8 @@ unittest {
        // value of k can map to the same p-value at machine precision.
        // Obviously, this is one of those corner cases that nothing can be
        // done about.  Using small n's, moderate p's prevents this.
-       uint n = uniform(5L, 10L);
-       uint k = uniform(0L, n);
+       uint n = uniform(5U, 10U);
+       uint k = uniform(0U, n);
        real p = uniform(0.1L, 0.9L);
        real pVal = binomialCDF(k, n, p);
        assert(invBinomialCDF(pVal, n, p) == k);
@@ -488,18 +488,18 @@ in {
     if(bSc1 >= 50 && bSc1 > bSc2) {
         // Same hack as normal approximation for rel. acc. in lower tail.
         if(x <= expec + NEXACT / 2) {
-            return min(1, binomialCDF(x - NEXACT, n, p) +
+            return min(1, binomialCDF(cast(uint) (x - NEXACT), cast(uint) n, p) +
                 hyperExact(x, n1, n2, n, x - NEXACT + 1));
         } else {
-            return binomialCDF(x, n, p);
+            return binomialCDF(cast(uint) x, cast(uint)  n, p);
         }
     } else if(bSc2 >= 50 && bSc2 > bSc1) {
         real p2 = cast(real) n / (n1 + n2);
         if(x <= expec + NEXACT / 2) {
-            return min(1, binomialCDF(x - NEXACT, n1, p2) +
+            return min(1, binomialCDF(cast(uint) (x - NEXACT), cast(uint)  n1, p2) +
                 hyperExact(x, n1, n2, n, x - NEXACT + 1));
         } else {
-            return binomialCDF(x, n1, p2);
+            return binomialCDF(cast(uint) x, cast(uint) n1, p2);
         }
     } else {
         return hyperExact(x, n1, n2, n);
