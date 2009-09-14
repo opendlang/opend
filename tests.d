@@ -1859,6 +1859,10 @@ private TestRes testContingency(alias elemFun, T...)(T rangesIn) {
         popAll();
     }
 
+    if(isNaN(chiSq)) {
+        return TestRes(real.nan, real.nan);
+    }
+
     return TestRes(chiSq, chiSqrCDFR(chiSq, (nRows - 1) * (nCols - 1)));
 }
 

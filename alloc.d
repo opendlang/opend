@@ -345,8 +345,8 @@ public:
      * to avoid a thread-local storage lookup.  Strictly a speed hack.*/
     static State frameInit(State stateCopy) nothrow {
         with(stateCopy) {
-            frameIndex = totalAllocs;
             putLast( cast(void*) frameIndex );
+            frameIndex = totalAllocs;
         }
         return stateCopy;
     }
@@ -361,7 +361,7 @@ public:
     * to avoid a thread-local storage lookup.  Strictly a speed hack.*/
     static void frameFree(State stateCopy) nothrow {
         with(stateCopy) {
-            while (totalAllocs > frameIndex + 1) {
+            while (totalAllocs > frameIndex) {
                 free(stateCopy);
             }
             frameIndex = cast(size_t) lastAlloc[--totalAllocs];
