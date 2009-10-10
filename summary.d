@@ -116,9 +116,10 @@ if(isRandomAccessRange!(T) &&
    is(ElementType!(T) : real) &&
    hasSwappableElements!(T) &&
    dstats.base.hasLength!(T))
-in {
-    assert(data.length > 0);
-} body {
+{
+    if(data.length == 0) {
+        return real.nan;
+    }
     // Upper half of median in even length case is just the smallest element
     // with an index larger than the lower median, after the array is
     // partially sorted.
@@ -190,6 +191,27 @@ unittest {
     writeln("Passed median unittest.");
 }
 
+real medianAbsDev(T)(T data)
+if(realInput!(T)) {
+    // Allocate once on TempAlloc if possible, i.e. if we know the length.
+    // This can be done on TempAlloc.  Otherwise, have to use GC heap
+    // and appending.
+    auto dataDup = tempdup(data);
+    immutable med = medianPartition(dataDup);
+    immutable len = dataDup.length;
+    TempAlloc.free;
+
+    real[] devs = newStack!real(len);
+
+    size_t i = 0;
+    foreach(elem; data) {
+        devs[i++] = abs(med - elem);
+    }
+    auto ret = medianPartition(devs);
+    TempAlloc.free;
+    return ret;
+}
+
 /**Finds the arithmetic mean of any input range whose elements are implicitly
  * convertible to real.*/
 real mean(T)(T data)
@@ -221,7 +243,7 @@ private:
     real k = 0;
 public:
     /// Allow implicit casting to real, by returning the current mean.
-    alias mean this;
+   // alias mean this;
 
     ///
     void put(real element) {

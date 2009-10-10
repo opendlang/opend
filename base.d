@@ -411,7 +411,7 @@ unittest {
  * assert(rank(test) == [3.5f, 5f, 3.5f, 1f, 2f]);
  * assert(test == [3U, 5, 3, 1, 2]);
  * ---*/
-Ret[] rank(Ret = float, T)(const T[] input) {
+Ret[] rank(Ret = float, T)(T input) {
     auto iDup = tempdup(input);
     scope(exit) TempAlloc.free;
     return rankSort!(Ret)(iDup);

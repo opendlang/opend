@@ -601,8 +601,10 @@ template hasLength(R) {
  * available.  If it is already an array, duplicates the range.*/
 Unqual!(ElementType!(T))[] toArray(T)(T range) if(isInputRange!(T)) {
     static if(isArray!(T)) {
+        // Allow fast copying by assuming that the input is an array.
         return range.dup;
     } else static if(hasLength!(T)) {
+        // Preallocate array, then copy.
         auto ret = newVoid!(Unqual!(ElementType!(T)))(range.length);
         static if(is(typeof(ret[] = range[]))) {
             ret[] = range[];
@@ -614,8 +616,12 @@ Unqual!(ElementType!(T))[] toArray(T)(T range) if(isInputRange!(T)) {
         }
         return ret;
     } else {
+        // Don't have length, have to use appending.
         Unqual!(ElementType!(T))[] ret;
-        mate(range, appender(&ret));
+        auto app = appender(&ret);
+        foreach(elem; range) {
+            app.put(elem);
+        }
         return ret;
     }
 }

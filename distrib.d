@@ -672,8 +672,11 @@ real normalCDF(real x, real mean = 0, real stdev = 1)
 in {
     assert(stdev > 0);
 } body {
-    real Z = (x - mean) / stdev;
-    return .5 + erf(Z*SQRT1_2)/2;
+    // Using a slightly non-obvious implementation in terms of erfc because
+    // it seems more accurate than erf for very small values of Z.
+
+    real Z = (-x + mean) / stdev;
+    return erfc(Z*SQRT1_2)/2;
 }
 
 unittest {
@@ -704,7 +707,7 @@ const real SQRT2PI =   0x1.40d931ff62705966p+1;    // 2.5066282746310005024
 const real EXP_2  = 0.13533528323661269189L; /* exp(-2) */
 
 private {
-immutable static real P0[] = [
+immutable real P0[8] = [
    -0x1.758f4d969484bfdcp-7,    // -0.011400139698853582732
    0x1.53cee17a59259dd2p-3, // 0.16592193750979583221
    -0x1.ea01e4400a9427a2p-1,    // -0.95704568177942689081
@@ -715,7 +718,7 @@ immutable static real P0[] = [
    0x1.1fb149fd3f83600cp-7  // 0.0087796794200550691607
 ];
 
-immutable static real Q0[] = [
+immutable real Q0[8] = [
    -0x1.64b92ae791e64bb2p-7,    // -0.010886331510064192632
    0x1.7585c7d597298286p-3, // 0.1823840725000038842
    -0x1.40011be4f7591ce6p+0,    // -1.2500169214248199725
@@ -726,7 +729,7 @@ immutable static real Q0[] = [
    0x1p+0   // 1
 ];
 
-immutable static real P1[] = [
+immutable real P1[10] = [
    0x1.20ceea49ea142f12p-13,    // 0.00013771451113809605662
    0x1.cbe8a7267aea80bp-7,  // 0.014035302749980729871
    0x1.79fea765aa787c48p-2, // 0.36913549001712241224
@@ -739,7 +742,7 @@ immutable static real P1[] = [
    0x1.1361e3eb6e3cc20ap+2  // 4.3028497504355521807
 ];
 
-immutable static real Q1[] = [
+immutable real Q1[10] = [
    0x1.3a4ce1406cea98fap-13,    // 0.00014987006762866754669
    0x1.f45332623335cda2p-7, // 0.015268706895221911913
    0x1.98f28bbd4b98db1p-2,  // 0.39936273901812389627
@@ -752,7 +755,7 @@ immutable static real Q1[] = [
    0x1p+0   // 1
 ];
 
-immutable static real P2[] = [
+immutable real P2[8] = [
    0x1.8c124a850116a6d8p-21,    // 7.3774056430545041787e-07
    0x1.534abda3c2fb90bap-13,    // 0.0001617870121822776094
    0x1.29a055ec93a4718cp-7, // 0.0090828342009931074419
@@ -763,7 +766,7 @@ immutable static real P2[] = [
    0x1.9f4c9e749ff35f62p+1  // 3.2445257253129069325
 ];
 
-immutable static real Q2[] = [
+immutable real Q2[8] = [
    0x1.af03f4fc0655e006p-21,    // 8.0282885006885383316e-07
    0x1.713192048d11fb2p-13, // 0.00017604524340842589303
    0x1.4357e5bbf5fef536p-7, // 0.0098676559208996361084
@@ -774,7 +777,7 @@ immutable static real Q2[] = [
    0x1p+0   // 1
 ];
 
-immutable static real P3[] = [
+immutable real P3[8] = [
    -0x1.55da447ae3806168p-34,   // -7.7728283809481633868e-11
    -0x1.145635641f8778a6p-24,   // -6.4339663876133447143e-08
    -0x1.abf46d6b48040128p-17,   // -1.2754046756102807876e-05
@@ -785,7 +788,7 @@ immutable static real P3[] = [
    0x1.029a358e1e630f64p+1  // 2.0203310913027725356
 ];
 
-immutable static real Q3[] = [
+immutable real Q3[8] = [
    -0x1.74022dd5523e6f84p-34,   // -8.4584942637876803775e-11
    -0x1.2cb60d61e29ee836p-24,   // -7.0014768675591937804e-08
    -0x1.d19e6ec03a85e556p-17,   // -1.3876523894802171788e-05
