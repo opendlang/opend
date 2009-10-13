@@ -296,7 +296,7 @@ private:
 
     static void ntFree(void* ptr) nothrow {
         try { GC.free(ptr); } catch {}
-        return null;
+        return;
     }
 
     static size_t getAligned(size_t nbytes) pure nothrow {

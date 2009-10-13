@@ -450,7 +450,6 @@ void rankSort(Ret, T)(T input, Ret[] ranks) {
         ranks[perms[i]] = i + 1;
     }
     averageTies(input, ranks, perms);
-    return ranks;
 }
 
 unittest {
