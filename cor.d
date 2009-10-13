@@ -80,8 +80,8 @@ version(unittest) {
 }
 
 /**Pearson correlation.  When the term correlation is used unqualified, it is
- * usually referring to this quantity.  Pearson correlation assumes the input
- * data is normally distributed and is therefore a parametric test.
+ * usually referring to this quantity.  This is a parametric correlation
+ * metric and should not be used with extremely ill-behaved data.
  * This function works with any pair of input ranges.  If they are of different
  * lengths, it uses the first min(input1.length, input2.length) elements.*/
 real pcor(T, U)(T input1, U input2)

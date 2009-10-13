@@ -191,11 +191,14 @@ unittest {
     writeln("Passed median unittest.");
 }
 
+/**Calculates the median absolute deviation of a dataset.  This is the median
+ * of all absolute differences from the median of the dataset.
+ *
+ * Notes:  No bias correction is used in this implementation, since using
+ * one would require assumptions about the underlying distribution of the data.
+ */
 real medianAbsDev(T)(T data)
 if(realInput!(T)) {
-    // Allocate once on TempAlloc if possible, i.e. if we know the length.
-    // This can be done on TempAlloc.  Otherwise, have to use GC heap
-    // and appending.
     auto dataDup = tempdup(data);
     immutable med = medianPartition(dataDup);
     immutable len = dataDup.length;
@@ -210,6 +213,12 @@ if(realInput!(T)) {
     auto ret = medianPartition(devs);
     TempAlloc.free;
     return ret;
+}
+
+unittest {
+    assert(approxEqual(medianAbsDev([7,1,8,2,8,1,9,2,8,4,5,9].dup), 2.5L));
+    assert(approxEqual(medianAbsDev([8,6,7,5,3,0,999].dup), 2.0L));
+    writeln("Passed medianAbsDev unittest.");
 }
 
 /**Finds the arithmetic mean of any input range whose elements are implicitly
