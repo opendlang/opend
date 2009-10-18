@@ -1,4 +1,8 @@
 /**Convenience module that simply publicly imports everything else.*/
+/*
+ * License:
+ * If you think this module is even copyrightable, you have issues.
+ */
 
 module dstats.stats;
 

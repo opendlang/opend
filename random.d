@@ -1002,9 +1002,9 @@ unittest {
         writeln("100k samples from beta(", a, ", ", b, "):  K-S P-val:  ", ksRes.p);
         writeln("\tMean Expected: ", a / (a + b), " Observed:  ", summ.mean);
         writeln("\tMedian Expected: ??  Observed:  ", median(observ));
-        writeln("\tStdev Expected:  ", betaStdev(a, b), "  Observed:  ", summ.SD);
+        writeln("\tStdev Expected:  ", betaStdev(a, b), "  Observed:  ", summ.stdev);
         writeln("\tKurtosis Expected:  ", betaKurtosis(a, b), "  Observed:  ", summ.kurtosis);
-        writeln("\tSkewness Expected:  ", betaSkew(a, b), "  Observed:  ", summ.skew);
+        writeln("\tSkewness Expected:  ", betaSkew(a, b), "  Observed:  ", summ.skewness);
         delete observ;
     }
 

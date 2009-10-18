@@ -73,6 +73,7 @@
  * because in Tango/MathExtra they represent P(X > x) while in dstats they
  * represent P(X >= x).
  *
+ *
  * Copyright (c) 2008-2009, David Simcha and Don Clugston
  * All rights reserved.
  *
@@ -105,7 +106,7 @@ module dstats.distrib;
 
 import dstats.base, std.algorithm;
 
-enum SQ2PI = 2.5066282746310005024157652848110452530069867406099383166299L;
+enum SQ2PI = sqrt(2 * PI);
 
 version(unittest) {
     import std.stdio, std.random;
@@ -178,7 +179,6 @@ unittest {
     auto stdNormal = paramFunctor!normalCDF(0, 1);
     assert(stdNormal(2.5) == normalCDF(2.5, 0, 1));
 }
-
 
 ///
 real uniformCDF(real X, real lower, real upper) pure nothrow
@@ -573,8 +573,9 @@ real hypergeometricPMF(long x, long n1, long n2, long n)
 in {
     assert(x <= n);
 } body {
-    if(x > n1 || x < (n - n2))
+    if(x > n1 || x < (n - n2)) {
         return 0;
+    }
     real result = logNcomb(n1, x) + logNcomb(n2, n - x) - logNcomb(n1 + n2, n);
     return exp(result);
 }
@@ -651,6 +652,7 @@ body
 unittest {
   assert(feqrel(chiSqrCDFR(invChiSqCDFR(3.5L, 0.1L), 3.5L), 0.1L)>=real.mant_dig-3);
   assert(chiSqrCDF(0.4L, 19.02L) + chiSqrCDFR(0.4L, 19.02L) ==1.0L);
+  assert(approxEqual( invChiSqCDFR( 3, chiSqrCDFR(1, 3)), 1));
   writeln("Passed chi-square unittest.");
 }
 
@@ -1119,7 +1121,7 @@ body{
     return betaIncomplete( 0.5L*b, 0.5L*a, w );
 }
 
-/*
+/**
  * Inverse of complemented Fisher distribution
  *
  * Finds the F density argument x such that the integral
@@ -1421,6 +1423,17 @@ unittest {
 // lacking ddoc.
 real logisticCDF(real x, real loc, real shape) {
     return 1.0L / (1 + exp(-(x - loc) / shape));
+}
+
+///
+real laplacePDF(real x, real mu = 0, real b = 1) pure nothrow {
+    return (exp(-abs(x - mu) / b)) / (2 * b);
+}
+
+unittest {
+    // Values from Maxima.
+    assert(approxEqual(laplacePDF(3, 2, 1), 0.18393972058572));
+    assert(approxEqual(laplacePDF(-8, 6, 7), 0.0096668059454723));
 }
 
 ///
