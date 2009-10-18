@@ -110,20 +110,37 @@ template isSummary(T) {
  * Alt.GREATER, meaning mean(data) > testMean, and Alt.TWOSIDE, meaning
  * mean(data)!= testMean.
  *
+ * data may be either an iterable with elements implicitly convertible to
+ * real or a summary struct (see isSummary).
+ *
+ * Examples:
+ * ---
+ * uint[] data = [1,2,3,4,5];
+ *
+ * // Test the null hypothesis that the mean of data is >= 1 against the
+ * // alternative that the mean of data is < 1.  Calculate confidence
+ * // intervals at 90%.
+ * auto result1 = studentsTTest(data, 1, Alt.LESS, 0.9);
+ *
+ * // Do the same thing, only this time we've already calculated the summary
+ * // statistics explicitly before passing them to studensTTest.
+ * auto summary = meanStdev(data);
+ * writeln(summary.stdev);
+ * result2 = studentsTTest(summary, 1, Alt.LESS, 0.9);  // Same as result1.
+ * assert(result1 == result2);
+ * ---
+ *
  * Returns:  A ConfInt containing T, the P-value and the boundaries of
- * the confidence interval for mean(T) at the level specified.*/
+ * the confidence interval for mean(T) at the level specified.
+ */
 ConfInt studentsTTest(T)(T data, real testMean = 0, Alt alt = Alt.TWOSIDE,
     real confLevel = 0.95)
-if(realIterable!(T)) {
-    return studentsTTest( meanStdev(data), testMean, alt, confLevel);
-
-}
-
-/**Calculate the test directly from summary statistics of the data.*/
-ConfInt studentsTTest(T)(T summary, real testMean = 0, Alt alt = Alt.TWOSIDE,
-    real confLevel = 0.95)
-if(isSummary!T) {
-    return pairedTTest(summary, testMean, alt, confLevel);
+if( (isSummary!T || realIterable!T)) {
+    static if(isSummary!T) {
+        return pairedTTest(data, testMean, alt, confLevel);
+    } else static if(realIterable!T) {
+        return pairedTTest( meanStdev(data), testMean, alt, confLevel);
+    }
 }
 
 unittest {
@@ -132,6 +149,7 @@ unittest {
     assert(approxEqual(t1.p, 0.2302));
     assert(approxEqual(t1.lowerBound, 1.036757));
     assert(approxEqual(t1.upperBound, 4.963243));
+    assert(t1 == studentsTTest( meanStdev([1,2,3,4,5].dup), 2));
 
     auto t2 = studentsTTest([1, 2, 3, 4, 5].dup, 2, Alt.LESS);
     assert(approxEqual(t2, .8849));
@@ -139,7 +157,7 @@ unittest {
     assert(t2.lowerBound == -real.infinity);
     assert(approxEqual(t2.upperBound, 4.507443));
 
-    auto t3 = studentsTTest([1, 2, 3, 4, 5].dup, 2, Alt.GREATER);
+    auto t3 = studentsTTest( summary([1, 2, 3, 4, 5].dup), 2, Alt.GREATER);
     assert(approxEqual(t3, .1151));
     assert(approxEqual(t3.testStat, 1.4142));
     assert(approxEqual(t3.lowerBound, 1.492557));
@@ -154,23 +172,26 @@ unittest {
  * mean(sample1) - mean(sample2) > testMean, and Alt.TWOSIDE, meaning
  * mean(sample1) - mean(sample2) != testMean.
  *
+ * sample1 and sample2 may be either iterables with elements implicitly
+ * convertible to real or summary structs (see isSummary).
+ *
  * Returns:  A ConfInt containing the T statistic, the P-value, and the
  * boundaries of the confidence interval for the difference between means
  * of sample1 and sample2 at the specified level.*/
 ConfInt studentsTTest(T, U)(T sample1, U sample2, real testMean = 0,
     Alt alt = Alt.TWOSIDE, real confLevel = 0.95)
-if(realIterable!(T) && realIterable!(U)) {
-    return studentsTTest( meanStdev(sample1), meanStdev(sample2),
-        testMean, alt, confLevel);
-}
+if( (realIterable!T || isSummary!T) && (realIterable!U || isSummary!U)) {
+    static if(isSummary!T) {
+        alias sample1 s1summ;
+    } else {
+        auto s1summ = meanStdev(sample1);
+    }
 
-/**Calculate the test directly from summary statistics for each sample.*/
-ConfInt studentsTTest(T, U)(T sample1Summary, U sample2Summary,
-    real testMean = 0, Alt alt = Alt.TWOSIDE, real confLevel = 0.95)
-if(isSummary!T && isSummary!U) {
-    // Save some typing.
-    alias sample1Summary s1summ;
-    alias sample2Summary s2summ;
+    static if(isSummary!U) {
+        alias sample2 s2summ;
+    } else {
+        auto s2summ = meanStdev(sample2);
+    }
 
     real n1 = s1summ.N,
          n2 = s2summ.N;
@@ -242,23 +263,26 @@ unittest {
  * Alt.GREATER, meaning mean(sample1) - mean(sample2) > testMean, and
  * Alt.TWOSIDE, meaning mean(sample1) - mean(sample2) != testMean.
  *
+ * sample1 and sample2 may be either iterables with elements implicitly
+ * convertible to real or summary structs (see isSummary).
+ *
  * Returns:  A ConfInt containing the T statistic, the P-value, and the
  * boundaries of the confidence interval for the difference between means
  * of sample1 and sample2 at the specified level.*/
 ConfInt welchTTest(T, U)(T sample1, U sample2, real testMean = 0,
     Alt alt = Alt.TWOSIDE, real confLevel = 0.95)
-if(realIterable!(T) && realIterable!(U)) {
-    return welchTTest( meanStdev(sample1), meanStdev(sample2),
-        testMean, alt, confLevel);
-}
+if( (isSummary!T || realIterable!T) && (isSummary!U || realIterable!U)) {
+    static if(isSummary!T) {
+        alias sample1 s1summ;
+    } else {
+        auto s1summ = meanStdev(sample1);
+    }
 
-/**Calculate the test directly from summary statistics for each sample.*/
-ConfInt welchTTest(T, U)(T sample1Summary, U sample2Summary, real testMean = 0,
-    Alt alt = Alt.TWOSIDE, real confLevel = 0.95)
-if(isSummary!(T) && isSummary!(U)) {
-    // Save typing.
-    alias sample1Summary s1summ;
-    alias sample2Summary s2summ;
+    static if(isSummary!U) {
+        alias sample2 s2summ;
+    } else {
+        auto s2summ = meanStdev(sample2);
+    }
 
     real n1 = s1summ.N,
          n2 = s2summ.N;
@@ -282,10 +306,12 @@ if(isSummary!(T) && isSummary!(U)) {
     } else if(alt == Alt.LESS) {
         ret.p = studentsTCDF(t, df);
         ret.lowerBound = -real.infinity;
-        ret.upperBound = meanDiff + testMean - invStudentsTCDF(1 - confLevel, df) * sx1x2;
+        ret.upperBound = meanDiff +
+            testMean - invStudentsTCDF(1 - confLevel, df) * sx1x2;
     } else if(alt == Alt.GREATER) {
         ret.p = studentsTCDF(-t, df);
-        ret.lowerBound = meanDiff + testMean + invStudentsTCDF(1 - confLevel, df) * sx1x2;
+        ret.lowerBound = meanDiff +
+            testMean + invStudentsTCDF(1 - confLevel, df) * sx1x2;
         ret.upperBound = real.infinity;
     } else {
         ret.p = 2 * min(studentsTCDF(t, df), studentsTCDF(-t, df));
@@ -298,13 +324,13 @@ if(isSummary!(T) && isSummary!(U)) {
 
 unittest {
     // Values from R.
-    auto t1 = welchTTest([1,2,3,4,5].dup, [1,3,4,5,7,9].dup, 2);
+    auto t1 = welchTTest( meanStdev([1,2,3,4,5].dup), [1,3,4,5,7,9].dup, 2);
     assert(approxEqual(t1, 0.02285));
     assert(approxEqual(t1.testStat, -2.8099));
     assert(approxEqual(t1.lowerBound, -4.979316));
     assert(approxEqual(t1.upperBound, 1.312649));
 
-    auto t2 = welchTTest([1,2,3,4,5].dup, [1,3,4,5,7,9].dup, -1, Alt.LESS);
+    auto t2 = welchTTest([1,2,3,4,5].dup, summary([1,3,4,5,7,9].dup), -1, Alt.LESS);
     assert(approxEqual(t2, 0.2791));
     assert(approxEqual(t2.testStat, -0.6108));
     assert(t2.lowerBound == -real.infinity);
@@ -331,13 +357,15 @@ unittest {
  * greater than testMean, and Alt.TWOSIDE, meaning the true mean difference is not
  * equal to testMean.
  *
+ * before and after must be input ranges with elements implicitly convertible
+ * to real.
  *
  * Returns:  A ConfInt containing the T statistic, the P-value, and the
  * boundaries of the confidence interval for the mean difference between
  * corresponding elements of sample1 and sample2 at the specified level.*/
 ConfInt pairedTTest(T, U)(T before, U after, real testMean = 0,
     Alt alt = Alt.TWOSIDE, real confLevel = 0.95)
-if(realInput!(T) && realInput!(U)) {
+if(realInput!(T) && realInput!(U) && isInputRange!T && isInputRange!U) {
     MeanSD msd;
     while(!before.empty && !after.empty) {
         real diff = cast(real) before.front - cast(real) after.front;
@@ -350,7 +378,26 @@ if(realInput!(T) && realInput!(U)) {
 }
 
 /**Compute the test directly from summary statistics of the differences between
- * corresponding samples.*/
+ * corresponding samples.
+ *
+ * Examples:
+ * ---
+ * float[] data1 = getSomeDataSet();
+ * float[] data2 = getSomeOtherDataSet();
+ * assert(data1.length == data2.length);
+ *
+ * // Calculate summary statistics on difference explicitly.
+ * MeanSD summary;
+ * foreach(i; 0..data1.length) {
+ *     summary.put(data1[i] - data2[i]);
+ * }
+ *
+ * // Test the null hypothesis that the mean difference between corresponding
+ * // elements (data1[i] - data2[i]) is greater than 5 against the null that it
+ * // is <= 5.  Calculate confidence intervals at 99%.
+ * auto result = pairedTTest(summary, 5, alt, 0.99);
+ * ---
+ */
 ConfInt pairedTTest(T)(T diffSummary, real testMean = 0,
     Alt alt = Alt.TWOSIDE, real confLevel = 0.95)
 if(isSummary!T) {
