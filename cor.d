@@ -110,7 +110,7 @@ public:
     alias cor this;
 
     ///
-    void put(T, U)(T elem1, U elem2) {
+    void put(T, U)(T elem1, U elem2) nothrow {
         _k++;
         real kNeg1 = 1.0L / _k;
         _cov += (elem1 * elem2 - _cov) * kNeg1;
@@ -121,37 +121,37 @@ public:
     }
 
     ///
-    real var1() const {
+    real var1() const pure nothrow {
         return (_k < 2) ? real.nan : (_var1 - _mean1 * _mean1) * (_k / (_k - 1));
     }
 
     ///
-    real var2() const {
+    real var2() const pure nothrow {
         return (_k < 2) ? real.nan : (_var2 - _mean2 * _mean2) * (_k / (_k - 1));
     }
 
     ///
-    real stdev1() const {
+    real stdev1() const pure nothrow {
         return sqrt(var1);
     }
 
     ///
-    real stdev2() const {
+    real stdev2() const pure nothrow {
         return sqrt(var2);
     }
 
     ///
-    real cor() const {
+    real cor() const pure nothrow {
         return cov / stdev1 / stdev2;
     }
 
     ///
-    real cov() const {
+    real cov() const pure nothrow {
         return (_k < 2) ? real.nan : (_cov - _mean1 * _mean2) * (_k / (_k - 1));
     }
 
     ///
-    real mean1() const {
+    real mean1() const pure nothrow {
         return (_k == 0) ? real.nan : _mean1;
     }
 
@@ -161,7 +161,7 @@ public:
     }
 
     ///
-    real N() const {
+    real N() const pure nothrow {
         return _k;
     }
 }

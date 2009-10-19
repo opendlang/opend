@@ -220,22 +220,22 @@ public:
    // alias mean this;
 
     ///
-    void put(real element) {
+    void put(real element) nothrow {
         result += (element - result) / ++k;
     }
 
     ///
-    real mean() const {
+    real mean() const pure nothrow {
         return (k == 0) ? real.nan : result;
     }
 
     ///
-    real N() const {
+    real N() const pure nothrow {
         return k;
     }
 
     ///
-    string toString() {
+    string toString() const {
         return to!(string)(mean);
     }
 }
@@ -254,17 +254,17 @@ public:
     }
 
     ///
-    real geoMean() const {
+    real geoMean() const pure nothrow {
         return exp2(m.mean);
     }
 
     ///
-    real N() const {
+    real N() const pure nothrow {
         return m.k;
     }
 
     ///
-    string toString() {
+    string toString() const {
         return to!(string)(geoMean);
     }
 }
@@ -337,39 +337,39 @@ private:
     real _k = 0;
 public:
     ///
-    void put(real element) {
+    void put(real element) nothrow {
         real kNeg1 = 1.0L / ++_k;
         _var += (element * element - _var) * kNeg1;
         _mean += (element - _mean) * kNeg1;
     }
 
     ///
-    real mean() const {
+    real mean() const pure nothrow {
         return (_k == 0) ? real.nan : _mean;
     }
 
     ///
-    real stdev() const {
+    real stdev() const pure nothrow {
         return sqrt(var);
     }
 
     ///
-    real var() const {
+    real var() const pure nothrow {
         return (_k < 2) ? real.nan : (_var - _mean * _mean) * (_k / (_k - 1));
     }
 
     // Undocumented on purpose b/c it's for internal use only.
-    real mse() const {
+    real mse() const pure nothrow {
         return (_k < 2) ? real.nan : (_var - _mean * _mean);
     }
 
     ///
-    real N() const {
+    real N() const pure nothrow {
         return _k;
     }
 
     ///
-    string toString() {
+    string toString() const {
         return text("N = ", cast(ulong) _k, "\nMean = ", mean, "\nVariance = ",
                var, "\nStdev = ", stdev);
     }
@@ -445,7 +445,7 @@ private:
     real _max = -real.infinity;
 public:
     ///
-    void put(real element) {
+    void put(real element) nothrow {
         immutable real kNeg1 = 1.0L / ++_k;
         _min = (element < _min) ? element : _min;
         _max = (element > _max) ? element : _max;
@@ -456,21 +456,22 @@ public:
     }
 
     ///
-    real mean() const {
+    real mean() const pure nothrow {
         return (_k == 0) ? real.nan : _mean;
     }
 
     ///
-    real stdev() const {
+    real stdev() const pure nothrow {
         return sqrt(var);
     }
 
     ///
-    real var() const {
+    real var() const pure nothrow {
         return (_k == 0) ? real.nan : (_m2 - _mean * _mean) * (_k / (_k - 1));
     }
 
     ///
+    // Can't make pure nothrow b/c of pow.
     real skewness() const {
         real var = _m2 - _mean * _mean;
         real numerator = _m3 - 3 * _mean * _m2 + 2 * _mean * _mean * _mean;
@@ -478,7 +479,7 @@ public:
     }
 
     ///
-    real kurtosis() const {
+    real kurtosis() const pure nothrow {
         real mean4 = mean * mean;
         mean4 *= mean4;
         real vari = _m2 - _mean * _mean;
@@ -487,22 +488,22 @@ public:
     }
 
     ///
-    real N() const {
+    real N() const pure nothrow {
         return _k;
     }
 
     ///
-    real min() const {
+    real min() const pure nothrow {
         return _min;
     }
 
     ///
-    real max() const {
+    real max() const pure nothrow {
         return _max;
     }
 
     ///
-    string toString() {
+    string toString() const {
         return text("N = ", cast(ulong) _k, "\nMean = ", mean, "\nVariance = ",
                var, "\nStdev = ", stdev, "\nSkewness = ", skewness,
                "\nKurtosis = ", kurtosis, "\nMin = ", _min, "\nMax = ", _max);
