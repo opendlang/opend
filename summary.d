@@ -471,11 +471,15 @@ public:
     }
 
     ///
-    // Can't make pure nothrow b/c of pow.
-    real skewness() const {
+    real skewness() const pure nothrow {
         real var = _m2 - _mean * _mean;
         real numerator = _m3 - 3 * _mean * _m2 + 2 * _mean * _mean * _mean;
-        return numerator / pow(var, 1.5L);
+
+        // Raising var to the power of 1.5.  Non-obvious method is faater than
+        // calling pow and allows this funciton to be pure nothrow.
+        real sd = sqrt(var);
+        real var15 = sd * sd * sd;
+        return numerator / var15;
     }
 
     ///
@@ -504,9 +508,14 @@ public:
 
     ///
     string toString() const {
-        return text("N = ", cast(ulong) _k, "\nMean = ", mean, "\nVariance = ",
-               var, "\nStdev = ", stdev, "\nSkewness = ", skewness,
-               "\nKurtosis = ", kurtosis, "\nMin = ", _min, "\nMax = ", _max);
+        return text("N = ", roundTo!long(_k),
+                  "\nMean = ", mean,
+                  "\nVariance = ", var,
+                  "\nStdev = ", stdev,
+                  "\nSkewness = ", skewness,
+                  "\nKurtosis = ", kurtosis,
+                  "\nMin = ", _min,
+                  "\nMax = ", _max);
     }
 }
 

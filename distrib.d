@@ -104,7 +104,7 @@
 
 module dstats.distrib;
 
-import dstats.base, std.algorithm;
+import dstats.base, std.algorithm, std.conv;
 
 enum SQ2PI = sqrt(2 * PI);
 
@@ -199,7 +199,7 @@ in {
 }
 
 ///
-real poissonPMF(uint k, real lambda) {
+real poissonPMF(ulong k, real lambda) {
     return exp(cast(real) k * log(lambda) -
             (lambda + logFactorial(k)));  //Grouped for best precision.
 }
@@ -209,9 +209,21 @@ unittest {
     writefln("Passed poissonPMF test.");
 }
 
+enum POISSON_NORMAL = 1UL << 12;  // Where to switch to normal approx.
+
+// The gamma incomplete function is too unstable and the distribution
+// is for all practical purposes normal anyhow.
+private real normApproxPoisCDF(ulong k, real lambda) {
+    real sd = sqrt(lambda);
+    // mean == lambda.
+    return normalCDF(k + 0.5L, lambda, sd);
+}
+
 /**P(K <= k) where K is r.v.*/
-real poissonCDF(uint k, real lambda) {
-    return gammaIncompleteCompl(k + 1, lambda);
+real poissonCDF(ulong k, real lambda) {
+    return (max(k, lambda) >= POISSON_NORMAL) ?
+           normApproxPoisCDF(k, lambda) :
+           gammaIncompleteCompl(k + 1, lambda);
 }
 
 unittest {
@@ -227,12 +239,38 @@ unittest {
 
     assert(approxEqual(poissonCDF(1, 0.5), pmfSum(1, 0.5)));
     assert(approxEqual(poissonCDF(3, 0.7), pmfSum(3, 0.7)));
+
+    // Absurdly huge values:  Test normal approximation.
+    // Values from R.
+    real ans = poissonCDF( (1UL << 50) - 10_000_000, 1UL << 50);
+    assert(approxEqual(ans, 0.3828427));
+
+    // Make sure cutoff is reasonable, i.e. make sure gamma incomplete branch
+    // and normal branch get roughly the same answer near the cutoff.
+    for(real lambda = POISSON_NORMAL / 2; lambda <= POISSON_NORMAL * 2; lambda += 100) {
+        for(ulong k = POISSON_NORMAL / 2; k <= POISSON_NORMAL * 2; k += 100) {
+            real normAns = normApproxPoisCDF(k, lambda);
+            real gammaAns = gammaIncompleteCompl(k + 1, lambda);
+            assert(abs(normAns - gammaAns) < 0.01, text(normAns, '\t', gammaAns));
+        }
+    }
+
     writeln("Passed poissonCDF test.");
 }
 
+// The gamma incomplete function is too unstable and the distribution
+// is for all practical purposes normal anyhow.
+private real normApproxPoisCDFR(ulong k, real lambda) {
+    real sd = sqrt(lambda);
+    // mean == lambda.
+    return normalCDFR(k - 0.5L, lambda, sd);
+}
+
 /**P(K >= k) where K is r.v.*/
-real poissonCDFR(uint k, real lambda) {
-    return gammaIncomplete(k, lambda);
+real poissonCDFR(ulong k, real lambda) {
+    return (max(k, lambda) >= POISSON_NORMAL) ?
+            normApproxPoisCDFR(k, lambda) :
+            gammaIncomplete(k, lambda);
 }
 
 unittest {
@@ -248,6 +286,22 @@ unittest {
 
     assert(approxEqual(poissonCDFR(1, 0.5), 1 - pmfSum(0, 0.5)));
     assert(approxEqual(poissonCDFR(3, 0.7), 1 - pmfSum(2, 0.7)));
+
+    // Absurdly huge value to test normal approximation.
+    // Values from R.
+    real ans = poissonCDFR( (1UL << 50) - 10_000_000, 1UL << 50);
+    assert(approxEqual(ans, 0.6171573));
+
+    // Make sure cutoff is reasonable, i.e. make sure gamma incomplete branch
+    // and normal branch get roughly the same answer near the cutoff.
+    for(real lambda = POISSON_NORMAL / 2; lambda <= POISSON_NORMAL * 2; lambda += 100) {
+        for(ulong k = POISSON_NORMAL / 2; k <= POISSON_NORMAL * 2; k += 100) {
+            real normAns = normApproxPoisCDFR(k, lambda);
+            real gammaAns = gammaIncomplete(k, lambda);
+            assert(abs(normAns - gammaAns) < 0.01, text(normAns, '\t', gammaAns));
+        }
+    }
+
     writeln("Passed poissonCDFR test.");
 }
 
@@ -307,7 +361,7 @@ unittest {
 }
 
 ///
-real binomialPMF(uint k, uint n, real p)
+real binomialPMF(ulong k, ulong n, real p)
 in {
     assert(k <= n);
     assert(p >= 0 && p <= 1);
@@ -321,16 +375,46 @@ unittest {
     writefln("Passed binomialPMF test.");
 }
 
+// Determines what value of n we switch to normal approximation at b/c
+// betaIncomplete becomes unstable.
+private enum BINOM_APPROX = 1UL << 24;
+
+// Cutoff value of n * p for deciding whether to go w/ normal or poisson approx
+// when betaIncomplete becomes unstable.
+private enum BINOM_POISSON = 1_024;
+
+// betaIncomplete is numerically unstable for huge values of n.
+// Luckily this is exactly when the normal approximation becomes
+// for all practical purposes exact.
+private real normApproxBinomCDF(real k, real n, real p) {
+    real mu = p * n;
+    real sd = sqrt( to!real(n) ) * sqrt(p) * sqrt(1 - p);
+    real xCC = k + 0.5L;
+    return normalCDF(xCC, mu, sd);
+}
+
 ///P(K <= k) where K is random variable.
-real binomialCDF(uint k, uint n, real p)
+real binomialCDF(ulong k, ulong n, real p)
 in {
     assert(k <= n);
     assert(p >= 0 && p <= 1);
 } body {
-    if(k == n)
+    if(k == n) {
         return 1;
-    if(k == 0)
+    } else if(k == 0) {
         return pow(1.0L - p,  cast(real) n);
+    }
+
+    if(n > BINOM_APPROX) {
+        if(n * p < BINOM_POISSON) {
+            return poissonCDF(k, n * p);
+        } else if(n * (1 - p) < BINOM_POISSON) {
+            return poissonCDFR(n - k, n * (1 - p));
+        } else {
+            return normApproxBinomCDF(k, n, p);
+        }
+    }
+
     return betaIncomplete(n - k, k + 1, 1.0L - p);
 }
 
@@ -340,23 +424,79 @@ unittest {
     assert(approxEqual(binomialCDF(50, 1000, .04), 0.95093595));
     assert(approxEqual(binomialCDF(7600, 15000, .5), .9496193045414));
     assert(approxEqual(binomialCDF(0, 10, 0.2), 0.1073742));
+
+    // Absurdly huge numbers:
+    {
+        ulong k = (1UL << 60) - 100_000_000;
+        ulong n = 1UL << 61;
+        assert(approxEqual(binomialCDF(k, n, 0.5L), 0.4476073));
+    }
+
+    // Test Poisson branch.
+    real poisAns = binomialCDF(85, 1UL << 26, 1.49e-6);
+    assert(approxEqual(poisAns, 0.07085327));
+
+    // Test poissonCDFR branch.
+    poisAns = binomialCDF( (1UL << 25) - 100, 1UL << 25, 0.9999975L);
+    assert(approxEqual(poisAns, 0.04713316));
+
+    // Make sure cutoff is reasonable:  Just below it, we should get similar
+    // results for normal, exact.
+    for(ulong n = BINOM_APPROX / 2; n < BINOM_APPROX; n += 200_000) {
+        for(real p = 0.01; p <= 0.99; p += 0.05) {
+
+            long lowerK = roundTo!long( n * p * 0.99);
+            long upperK = roundTo!long( n * p / 0.99);
+
+            for(ulong k = lowerK; k <= min(n, upperK); k += 1_000) {
+                real normRes = normApproxBinomCDF(k, n, p);
+                real exactRes = binomialCDF(k, n, p);
+                assert(abs(normRes - exactRes) < 0.001,
+                    text(normRes, '\t', exactRes));
+            }
+        }
+    }
+
     writefln("Passed binomialCDF test.");
 }
 
+// betaIncomplete is numerically unstable for huge values of n.
+// Luckily this is exactly when the normal approximation becomes
+// for all practical purposes exact.
+private real normApproxBinomCDFR(ulong k, ulong n, real p) {
+    real mu = p * n;
+    real sd = sqrt( to!real(n) ) * sqrt(p)  * sqrt(1 - p);
+    real xCC = k - 0.5L;
+    return normalCDFR(xCC, mu, sd);
+}
+
 ///P(K >= k) where K is random variable.
-real binomialCDFR(uint k, uint n, real p)
+real binomialCDFR(ulong k, ulong n, real p)
 in {
     assert(k <= n);
     assert(p >= 0 && p <= 1);
 } body {
-    if(k == 0)
+    if(k == 0) {
         return 1;
-    if(k == n)
+    } else if(k == n) {
         return pow(p, cast(real) n);
+    }
+
+    if(n > BINOM_APPROX) {
+        if(n * p < BINOM_POISSON) {
+            return poissonCDFR(k, n * p);
+        } else if(n * (1 - p) < BINOM_POISSON) {
+            return poissonCDF(n - k, n * (1 - p));
+        } else {
+            return normApproxBinomCDFR(k, n, p);
+        }
+    }
+
     return betaIncomplete(k, n - k + 1, p);
 }
 
 unittest {
+    // Values from R, Maxima.
     assert(approxEqual(binomialCDF(10, 100, .11), 1 -
                       binomialCDFR(11, 100, .11)));
     assert(approxEqual(binomialCDF(15, 100, .12), 1 -
@@ -367,6 +507,39 @@ unittest {
                        binomialCDFR(7601, 15000, .5)));
     assert(approxEqual(binomialCDF(9, 10, 0.3), 1 -
                        binomialCDFR(10, 10, 0.3)));
+
+    // Absurdly huge numbers, test normal branch.
+    {
+        ulong k = (1UL << 60) - 100_000_000;
+        ulong n = 1UL << 61;
+        assert(approxEqual(binomialCDFR(k, n, 0.5L), 0.5523927));
+    }
+
+    // Test Poisson inversion branch.
+    real poisRes = binomialCDFR((1UL << 25) - 70, 1UL << 25, 0.9999975L);
+    assert(approxEqual(poisRes, 0.06883905));
+
+    // Test Poisson branch.
+    poisRes = binomialCDFR(350, 1UL << 25, 1e-5);
+    assert(approxEqual(poisRes, 0.2219235));
+
+    // Make sure cutoff is reasonable:  Just below it, we should get similar
+    // results for normal, exact.
+    for(ulong n = BINOM_APPROX / 2; n < BINOM_APPROX; n += 200_000) {
+        for(real p = 0.01; p <= 0.99; p += 0.05) {
+
+            long lowerK = roundTo!long( n * p * 0.99);
+            long upperK = roundTo!long( n * p / 0.99);
+
+            for(ulong k = lowerK; k <= min(n, upperK); k += 1_000) {
+                real normRes = normApproxBinomCDFR(k, n, p);
+                real exactRes = binomialCDFR(k, n, p);
+                assert(abs(normRes - exactRes) < 0.001,
+                    text(normRes, '\t', exactRes));
+            }
+        }
+    }
+
     writefln("Passed binomialCDFR test.");
 }
 
@@ -1175,7 +1348,7 @@ unittest {
 }
 
 ///
-real negBinomPMF(uint k, uint n, real p)
+real negBinomPMF(ulong k, uint n, real p)
 in {
     assert(n > 0);
     assert(p >= 0 && p <= 1);

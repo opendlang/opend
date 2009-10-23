@@ -307,11 +307,10 @@ if(IterType!(T).sizeof > 1 && !NeedsHeap!(T)) {  // Generic version.
 
     TempAlloc.frameInit;
     alias StackHash!(E, U) mySh;
-    uint len = 0;  // In case length calculation is expensive.
+    immutable len = data.length;  // In case length calculation is expensive.
     mySh counts = mySh(len / 5);
 
     foreach(elem; data)  {
-        len++;
         counts[elem]++;
     }
 

@@ -1396,28 +1396,41 @@ unittest {
  * the given alternative.*/
 TestRes signTest(T, U)(T before, U after, Alt alt = Alt.TWOSIDE)
 if(realInput!(T) && realInput!(U)) {
-    uint greater, less;
+    ulong greater, less;
     while(!before.empty && !after.empty) {
-        if(before.front < after.front)
+        if(before.front < after.front) {
             less++;
-        else if(after.front < before.front)
+        } else if(after.front < before.front) {
             greater++;
+        }
+
         // Ignore equals.
         before.popFront;
         after.popFront;
     }
-    real propGreater = cast(real) greater / (greater + less);
-    if(alt == Alt.NONE) {
-        return TestRes(propGreater);
-    } else if(alt == Alt.LESS) {
-        return TestRes(propGreater, binomialCDF(greater, less + greater, 0.5));
-    } else if(alt == Alt.GREATER) {
-        return TestRes(propGreater, binomialCDF(less, less + greater, 0.5));
-    } else if(less > greater) {
-        return TestRes(propGreater, 2 * binomialCDF(greater, less + greater, 0.5));
-    } else if(greater > less) {
-        return  TestRes(propGreater, 2 * binomialCDF(less, less + greater, 0.5));
-    } else return TestRes(propGreater, 1);
+
+    real propGreater = to!real(greater) / (greater + less);
+
+    final switch(alt) {
+        case Alt.NONE:
+            return TestRes(propGreater);
+        case Alt.LESS:
+            return TestRes(propGreater,
+                binomialCDF(greater, less + greater, 0.5));
+        case Alt.GREATER:
+            return TestRes(propGreater,
+                binomialCDF(less, less + greater, 0.5));
+        case Alt.TWOSIDE:
+            if(less > greater) {
+                return TestRes(propGreater,
+                    2 * binomialCDF(greater, less + greater, 0.5));
+            } else if(greater > less) {
+                return  TestRes(propGreater,
+                    2 * binomialCDF(less, less + greater, 0.5));
+            } else {
+                return TestRes(propGreater, 1);
+            }
+    }
 }
 
 unittest {
@@ -2438,6 +2451,27 @@ unittest {
     assert(approxEqual(t2.upperBound, 0.9785289));
     assert(approxEqual(t3.upperBound, 1));
 
+    // Test special case hack for cor = +- 1.
+    uint[] myArr = [1,2,3,4,5];
+    uint[] myArrReverse = myArr.dup;
+    reverse(myArrReverse);
+
+    auto t4 = pcorTest(myArr, myArr, Alt.TWOSIDE);
+    auto t5 = pcorTest(myArr, myArr, Alt.LESS);
+    auto t6 = pcorTest(myArr, myArr, Alt.GREATER);
+    assert(t4.testStat == 1);
+    assert(t4.p == 0);
+    assert(t5.p == 1);
+    assert(t6.p == 0);
+
+    auto t7 = pcorTest(myArr, myArrReverse, Alt.TWOSIDE);
+    auto t8 = pcorTest(myArr, myArrReverse, Alt.LESS);
+    auto t9 = pcorTest(myArr, myArrReverse, Alt.GREATER);
+    assert(t7.testStat == -1);
+    assert(t7.p == 0);
+    assert(t8.p == 0);
+    assert(t9.p == 1);
+
     writeln("Passed pcorSig test.");
 }
 
@@ -2491,19 +2525,32 @@ private ConfInt finishPearsonSpearman(real cor, real N, Alt alt, real confLevel)
         case Alt.NONE :
             return ret;
         case Alt.TWOSIDE:
-            ret.p = 2 * min(studentsTCDF(t, N - 2), studentsTCDFR(t, N - 2));
+            ret.p = (abs(cor) >= 1) ? 0 :
+                2 * min(studentsTCDF(t, N - 2), studentsTCDFR(t, N - 2));
             real deltaZ = invNormalCDF(0.5 * (1 - confLevel));
             ret.lowerBound = tanh((z + deltaZ) / sqN);
             ret.upperBound = tanh((z - deltaZ) / sqN);
             break;
         case Alt.LESS:
-            ret.p = studentsTCDF(t, N - 2);
+            if(cor >= 1) {
+                ret.p = 1;
+            } else if(cor <= -1) {
+                ret.p = 0;
+            } else {
+                ret.p = studentsTCDF(t, N - 2);
+            }
             real deltaZ = invNormalCDF(1 - confLevel);
             ret.lowerBound = -1;
             ret.upperBound = tanh((z - deltaZ) / sqN);
             break;
         case Alt.GREATER:
-            ret.p = studentsTCDFR(t, N - 2);
+            if(cor >= 1) {
+                ret.p = 0;
+            } else if(cor <= -1) {
+                ret.p = 1;
+            } else {
+                ret.p = studentsTCDFR(t, N - 2);
+            }
             real deltaZ = invNormalCDF(1 - confLevel);
             ret.lowerBound = tanh((z + deltaZ) / sqN);
             ret.upperBound = 1;
