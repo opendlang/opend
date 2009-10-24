@@ -723,9 +723,9 @@ private template PermRet(Buffer bufType, T...) {
  *
  * Examples:
  * ---
- * auto p = perm([1,2,3]);
- * auto p = perm(5);  // Permutations of integers on range [0, 5).
- * auto p = perm(-1, 2); // Permutations of integers on range [-1, 2).
+ * auto p = perm([1,2,3]);  // All permutations of [1,2,3].
+ * auto p = perm(5);  // All permutations of [0,1,2,3,4].
+ * auto p = perm(-1, 2); // All permutations of [-1, 0, 1].
  * ---
  */
 PermRet!(bufType, T) perm(Buffer bufType = Buffer.DUP, T...)(T stuff) {
@@ -736,7 +736,8 @@ PermRet!(bufType, T) perm(Buffer bufType = Buffer.DUP, T...)(T stuff) {
         static assert(isIntegral!(T[0]));
         return rt(seq(0U, cast(uint) stuff[0]));
     } else {
-        return rt(seq(stuff));
+        static assert(stuff.length == 2);
+        return rt(seq(stuff[0], stuff[1]));
     }
 }
 
@@ -772,7 +773,7 @@ unittest {
     // Indirect tests:  If the elements returned are unique, there are N! of
     // them, and they contain what they're supposed to contain, the result is
     // correct.
-    auto perm3 = perm(6);
+    auto perm3 = perm(0U, 6U);
     bool[uint[]] table;
     foreach(p; perm3) {
         table[p] = true;
@@ -967,8 +968,8 @@ private template CombRet(T, Buffer bufType) {
  *
  * Examples:
  * ---
- * auto p = comb([1,2,3]);
- * auto p = comb(5);  // Permutations of integers on range [0, 5].
+ * auto c1 = comb([1,2,3], 2);  // Any two elements from [1,2,3].
+ * auto c2 = comb(5, 3);  // Any three elements from [0,1,2,3,4].
  * ---
  */
 CombRet!(T, bufType) comb(Buffer bufType = Buffer.DUP, T)(T stuff, uint r) {
