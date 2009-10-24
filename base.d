@@ -712,7 +712,7 @@ private template PermRet(Buffer bufType, T...) {
     static if(isForwardRange!(T[0])) {
         alias Perm!(bufType, ElementType!(T[0])) PermRet;
     } else static if(T.length == 1) {
-        alias Perm!(bufType, uint) PermRet;
+        alias Perm!(bufType, byte) PermRet;
     } else alias Perm!(bufType, T[0]) PermRet;
 }
 
@@ -733,8 +733,18 @@ PermRet!(bufType, T) perm(Buffer bufType = Buffer.DUP, T...)(T stuff) {
     static if(isForwardRange!(T[0])) {
         return rt(stuff);
     } else static if(T.length == 1) {
-        static assert(isIntegral!(T[0]));
-        return rt(seq(0U, cast(uint) stuff[0]));
+        static assert(isIntegral!(T[0]),
+            "If one argument is passed to perm(), it must be an integer.");
+
+        enforce(stuff[0] <= MAX_PERM_LEN, text(
+            "Can't iterate permutations of an array of length ",
+            stuff[0], ".  (Max length:  ", MAX_PERM_LEN, ")"));
+
+        // Optimization:  If we're duplicating the array every time we return
+        // it, we want it to be as small as possible.  Since we know the lower
+        // bound is zero and the upper bound can't be > byte.max, use bytes
+        // instead of bigger integer types.
+        return rt(seq(cast(byte) 0, cast(byte) stuff[0]));
     } else {
         static assert(stuff.length == 2);
         return rt(seq(stuff[0], stuff[1]));
@@ -756,18 +766,18 @@ unittest {
     assert(res.canFindSorted([3.0, 1.0, 2.0]));
     assert(res.canFindSorted([3.0, 2.0, 1.0]));
     assert(res.length == 6);
-    uint[][] res2;
+    byte[][] res2;
     auto perm2 = perm(3);
     foreach(p; perm2) {
         res2 ~= p.dup;
     }
     sort(res2);
-    assert(res2.canFindSorted([0u, 1, 2]));
-    assert(res2.canFindSorted([0u, 2, 1]));
-    assert(res2.canFindSorted([1u, 0, 2]));
-    assert(res2.canFindSorted([1u, 2, 0]));
-    assert(res2.canFindSorted([2u, 0, 1]));
-    assert(res2.canFindSorted([2u, 1, 0]));
+    assert(res2.canFindSorted([cast(byte) 0, 1, 2]));
+    assert(res2.canFindSorted([cast(byte) 0u, 2, 1]));
+    assert(res2.canFindSorted([cast(byte) 1u, 0, 2]));
+    assert(res2.canFindSorted([cast(byte) 1u, 2, 0]));
+    assert(res2.canFindSorted([cast(byte) 2u, 0, 1]));
+    assert(res2.canFindSorted([cast(byte) 2u, 1, 0]));
     assert(res2.length == 6);
 
     // Indirect tests:  If the elements returned are unique, there are N! of
@@ -783,13 +793,13 @@ unittest {
         assert(elem.dup.insertionSort == [0U, 1, 2, 3, 4, 5]);
     }
     auto perm4 = perm(5);
-    bool[uint[]] table2;
+    bool[byte[]] table2;
     foreach(p; perm4) {
         table2[p] = true;
     }
     assert(table2.length == 120);
     foreach(elem, val; table2) {
-        assert(elem.dup.insertionSort == [0U, 1, 2, 3, 4]);
+        assert(elem.dup.insertionSort == [cast(byte) 0, 1, 2, 3, 4]);
     }
     writeln("Passed Perm test.");
 }
