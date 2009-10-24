@@ -156,7 +156,7 @@ public:
     }
 
     ///
-    real mean2() const {
+    real mean2() const pure nothrow {
         return (_k == 0) ? real.nan : _mean2;
     }
 

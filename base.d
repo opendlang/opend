@@ -35,7 +35,7 @@ module dstats.base;
 public import std.math, std.traits, dstats.gamma, dstats.alloc;
 private import dstats.sort, std.c.stdlib, std.bigint, std.typecons,
                std.functional, std.algorithm, std.range, std.bitmanip,
-               std.stdio, std.contracts;
+               std.stdio, std.contracts, std.conv;
 
 import std.string : strip;
 import std.conv : to;
@@ -567,36 +567,72 @@ unittest {
     writefln("Passed logNcomb unit test.");
 }
 
+/**Controls whether Perm and Comb duplicate their buffer on each iteration and
+ * return the copy, or recycle it and return an alias of it.
+ * You want to choose RECYCLE if each permutation/combination
+ * will only be needed within the scope of the foreach statement.  If they
+ * may escape this scope, you want to choose DUP.  The default is DUP,
+ * because it's safer, but RECYCLE can avoid lots of unnecessary GC activity.
+ */
+enum Buffer {
+
+    ///
+    DUP,
+
+    ///
+    RECYCLE
+}
+
+static if(size_t.sizeof == 4) {
+    private enum MAX_PERM_LEN = 12;
+} else {
+    private enum MAX_PERM_LEN = 20;
+}
+
 /**A struct that generates all possible permutations of a sequence,
- * and can be iterated over with foreach.  Note that permutations are
- * output in undefined order.  Also note that the returned permutations
- * are references to the internal permutation state.  This is dangerous, but
- * necessary for performance.  Therefore, you
- * will have to dup them if you expect them not to change.  This is also
- * the rationale for not making this struct an input range.
+ * as an input range.  Note that permutations are output in undefined order.
+ *
+ * Bugs:  Only supports iterating over up to size_t.max permutations.
+ * This means the max permutation length is 12 on 32-bit machines, or 20
+ * on 64-bit.  This was a conscious tradeoff to allow this range to have a
+ * length of type size_t, since iterating over such huge permutation spaces
+ * would be insanely slow anyhow.
  *
  * Examples:
  * ---
  *  double[][] res;
- *  auto perm = Perm!(double)(cast(double[]) [1.0, 2.0, 3.0]);
+ *  auto perm = Perm!(double)([1.0, 2.0, 3.0][]);
  *  foreach(p; perm) {
- *      res ~= p.dup;
+ *      res ~= p;
  *  }
- *  assert(res.canFind([1.0, 2.0, 3.0]));
- *  assert(res.canFind([1.0, 3.0, 2.0]));
- *  assert(res.canFind([2.0, 1.0, 3.0]));
- *  assert(res.canFind([2.0, 3.0, 1.0]));
- *  assert(res.canFind([3.0, 1.0, 2.0]));
- *  assert(res.canFind([3.0, 2.0, 1.0]));
+ *
+ *  sort(res);
+ *  assert(res.canFindSorted([1.0, 2.0, 3.0]));
+ *  assert(res.canFindSorted([1.0, 3.0, 2.0]));
+ *  assert(res.canFindSorted([2.0, 1.0, 3.0]));
+ *  assert(res.canFindSorted([2.0, 3.0, 1.0]));
+ *  assert(res.canFindSorted([3.0, 1.0, 2.0]));
+ *  assert(res.canFindSorted([3.0, 2.0, 1.0]));
  *  assert(res.length == 6);
  *  ---
  */
-struct Perm(T = uint) {
+struct Perm(Buffer bufType = Buffer.DUP, T = uint) {
 private:
     T* perm;
     size_t* Is;
-    size_t currentI;
+    size_t currentIndex;
+
+    // The length of these arrays.  Stored once to minimize overhead.
     size_t len;
+
+    // The length of this range.
+    size_t nPerms;
+
+    static if(bufType == Buffer.DUP) {
+        alias T[] PermArray;
+    } else {
+        alias const(T)[] PermArray;
+    }
 
 public:
     /**Generate permutations from an input range.
@@ -607,51 +643,77 @@ public:
         auto arr = toArray(input);
         Is = (new size_t[arr.length]).ptr;
         len = arr.length;
+
+        enforce(len <= MAX_PERM_LEN, text(
+            "Can't iterate permutations of an array of length ",
+            len, ".  (Max length:  ", MAX_PERM_LEN, ")"));
+
         perm = arr.ptr;
+        popFront();
+
+        nPerms = 1;
+        for(size_t i = 2; i <= len; i++) {
+            nPerms *= i;
+        }
+    }
+
+    /**Note:  PermArray is just an alias to either T[] or const(T)[],
+     * depending on whether bufType == Buf.DUP or Buf.RECYCLE.
+     */
+    PermArray front() {
+        static if(bufType == Buffer.DUP) {
+            return perm[0..len].dup;
+        } else {
+            return perm[0..len];
+        }
     }
 
     /**Get the next permutation in the sequence.*/
-    const(T)[] next() {
-        if(currentI == len - 1) {
-            currentI--;
-            return perm[0..len];
+    void popFront() {
+        if(currentIndex == len - 1) {
+            currentIndex--;
+            nPerms--;
+            return;
         }
 
-        uint max = len - currentI;
-        if(Is[currentI] == max) {
-            if(currentI == 0)
-                return [];
-            Is[currentI..len] = 0;
-            currentI--;
-            return next();
+        uint max = len - currentIndex;
+        if(Is[currentIndex] == max) {
+
+            if(currentIndex == 0) {
+                nPerms--;
+                assert(nPerms == 0, to!string(nPerms));
+                return;
+            }
+
+            Is[currentIndex..len] = 0;
+            currentIndex--;
+            return popFront();
         } else {
-            rotateLeft(perm[currentI..len]);
-            Is[currentI]++;
-            currentI++;
-            return next();
+            rotateLeft(perm[currentIndex..len]);
+            Is[currentIndex]++;
+            currentIndex++;
+            return popFront();
         }
     }
 
-    /**Iterate over all permutations of the sequence.*/
-    int opApply(int delegate(ref const(T)[]) dg) {
-        int res = 0;
-        while(true) {
-          auto nextSeq = next();
-          if(nextSeq.length == 0) break;
-          res = dg(nextSeq);
-          if (res) break;
-        }
-        return res;
+    ///
+    bool empty() {
+        return nPerms == 0;
     }
 
+    /**The number of permutations left.
+     */
+    size_t length() {
+        return nPerms;
+    }
 }
 
-private template PermRet(T...) {
+private template PermRet(Buffer bufType, T...) {
     static if(isForwardRange!(T[0])) {
-        alias Perm!(ElementType!(T[0])) PermRet;
+        alias Perm!(bufType, ElementType!(T[0])) PermRet;
     } else static if(T.length == 1) {
-        alias Perm!uint PermRet;
-    } else alias Perm!(T[0]) PermRet;
+        alias Perm!(bufType, uint) PermRet;
+    } else alias Perm!(bufType, T[0]) PermRet;
 }
 
 /**Create a Perm struct from a range or of a set of bounds.
@@ -662,11 +724,11 @@ private template PermRet(T...) {
  * Examples:
  * ---
  * auto p = perm([1,2,3]);
- * auto p = perm(5);  // Permutations of integers on range [0, 5].
- * auto p = perm(-1, 2); // Permutations of integers on range [-1, 2].
+ * auto p = perm(5);  // Permutations of integers on range [0, 5).
+ * auto p = perm(-1, 2); // Permutations of integers on range [-1, 2).
  * ---
  */
-PermRet!(T) perm(T...)(T stuff) {
+PermRet!(bufType, T) perm(Buffer bufType = Buffer.DUP, T...)(T stuff) {
     alias typeof(return) rt;
     static if(isForwardRange!(T[0])) {
         return rt(stuff);
@@ -678,12 +740,12 @@ PermRet!(T) perm(T...)(T stuff) {
     }
 }
 
-
 unittest {
     double[][] res;
-    auto p1 = perm(cast(double[]) [1.0, 2.0, 3.0]);
+    auto p1 = perm([1.0, 2.0, 3.0][]);
+    assert(p1.length == 6);
     foreach(p; p1) {
-        res ~= p.dup;
+        res ~= p;
     }
     sort(res);
     assert(res.canFindSorted([1.0, 2.0, 3.0]));
@@ -713,7 +775,7 @@ unittest {
     auto perm3 = perm(6);
     bool[uint[]] table;
     foreach(p; perm3) {
-        table[p.dup] = true;
+        table[p] = true;
     }
     assert(table.length == 720);
     foreach(elem, val; table) {
@@ -722,7 +784,7 @@ unittest {
     auto perm4 = perm(5);
     bool[uint[]] table2;
     foreach(p; perm4) {
-        table2[p.dup] = true;
+        table2[p] = true;
     }
     assert(table2.length == 120);
     foreach(elem, val; table2) {
@@ -732,33 +794,36 @@ unittest {
 }
 
 /**Generates every possible combination of r elements of the given sequence, or r
- * array indices from zero to N, depending on which ctor is called.  These can
- * be iterated over with a foreach loop.  Note that the combinations returned
- * are const references to the internal state of the Comb object.  This is
- * dangerous but necessary for performance.  If you want to save them past the
- * next  iteration, you'll have to dup them yourself.  This is also the
- * rationale for not making this struct an input range.
+ * array indices from zero to N, depending on which ctor is called.  Uses
+ * an input range interface.
+ *
+ * Bugs:  Only supports iterating over up to size_t.max combinations.
+ * This was a conscious tradeoff to allow this range to have a
+ * length of type size_t, since iterating over such huge combination spaces
+ * would be insanely slow anyhow.
  *
  * Examples:
  * ---
     auto comb1 = Comb!(uint)(5, 2);
     uint[][] vals;
     foreach(c; comb1) {
-        vals ~= c.dup;
+        vals ~= c;
     }
-    assert(vals.canFind([0u,1].dup));
-    assert(vals.canFind([0u,2].dup));
-    assert(vals.canFind([0u,3].dup));
-    assert(vals.canFind([0u,4].dup));
-    assert(vals.canFind([1u,2].dup));
-    assert(vals.canFind([1u,3].dup));
-    assert(vals.canFind([1u,4].dup));
-    assert(vals.canFind([2u,3].dup));
-    assert(vals.canFind([2u,4].dup));
-    assert(vals.canFind([3u,4].dup));
+    sort(vals);
+    assert(vals.canFindSorted([0u,1].dup));
+    assert(vals.canFindSorted([0u,2].dup));
+    assert(vals.canFindSorted([0u,3].dup));
+    assert(vals.canFindSorted([0u,4].dup));
+    assert(vals.canFindSorted([1u,2].dup));
+    assert(vals.canFindSorted([1u,3].dup));
+    assert(vals.canFindSorted([1u,4].dup));
+    assert(vals.canFindSorted([2u,3].dup));
+    assert(vals.canFindSorted([2u,4].dup));
+    assert(vals.canFindSorted([3u,4].dup));
     assert(vals.length == 10);
-    ---*/
-struct Comb(T) {
+    ---
+ */
+struct Comb(T, Buffer bufType = Buffer.DUP) {
 private:
     int N;
     int R;
@@ -766,25 +831,36 @@ private:
     uint* pos;
     T* myArray;
     T* chosen;
+    size_t _length;
 
-    const(uint)* nextNum() {
+    static if(bufType == Buffer.DUP) {
+        alias T[] CombArray;
+    } else {
+        alias const(T)[] CombArray;
+    }
+
+    void popFrontNum() {
         int index = R - 1;
         for(; index != -1 && pos[index] == diff + index; --index) {}
         if(index == -1) {
-            return null;
+            _length--;
+            assert(_length == 0);
+            return;
         }
         pos[index]++;
         for(size_t i = index + 1; i < R; ++i) {
             pos[i] = pos[index] + i - index;
         }
-        return pos;
+        _length--;
     }
 
-    const(T)* nextArray() {
+    void popFrontArray() {
         int index = R - 1;
         for(; index != -1 && pos[index] == diff + index; --index) {}
         if(index == -1) {
-            return null;
+            _length--;
+            assert(_length == 0);
+            return;
         }
         pos[index]++;
         chosen[index] = myArray[pos[index]];
@@ -792,20 +868,23 @@ private:
             pos[i] = pos[index] + i - index;
             chosen[i] = myArray[pos[i]];
         }
-        return chosen;
+        _length--;
+    }
+
+    void setLen() {
+        // Used at construction.
+        real rLen = exp( logNcomb(N, R));
+        enforce(rLen < size_t.max, "Too many combinations.");
+        _length = roundTo!size_t(rLen);
     }
 
 public:
-    /**Increment the internal state to the next combination and return a
-     * pointer to the beginning of the array of chosen elements.  The first
-     * r elements are the ones chosen for this combination.*/
-    invariant const(T*) delegate() next;
 
-    static if(is(T == uint)) {
     /**Ctor to generate all possible combinations of array indices for a length r
      * array.  This is a special-case optimization and is faster than simply
      * using the other ctor to generate all length r combinations from
      * seq(0, length).*/
+    static if(is(T == uint)) {
         this(uint n, uint r)
         in {
             assert(r > 0);
@@ -816,7 +895,8 @@ public:
             N = n;
             R = r;
             diff = N - R;
-            next = &nextNum;
+            popFront();
+            setLen();
         }
     }
 
@@ -837,27 +917,46 @@ public:
         foreach(i; 0..r) {
             chosen[i] = myArray[pos[i]];
         }
-        next = &nextArray;
+        popFront();
+        setLen();
     }
 
-    /**Iterate over all combinations.*/
-    int opApply(int delegate(ref const(T)[]) dg) {
-        int res = 0;
-        while(true) {
-          auto nextSeq = next();
-          if(nextSeq is null) break;
-          res = dg(nextSeq[0..R]);
-          if (res) break;
+    CombArray front() {
+        static if(bufType == Buffer.RECYCLE) {
+            static if(!is(T == uint)) {
+                return chosen[0..R].dup;
+            } else {
+                return (myArray is null) ? pos[0..R] : chosen[0..R];
+            }
+        } else {
+            static if(!is(T == uint)) {
+                return chosen[0..R].dup;
+            } else {
+                return (myArray is null) ? pos[0..R].dup : chosen[0..R].dup;
+            }
         }
-        return res;
+    }
+
+    void popFront() {
+        return (myArray is null) ? popFrontNum() : popFrontArray();
+    }
+
+    ///
+    bool empty() {
+        return length == 0;
+    }
+
+    ///
+    size_t length() {
+        return _length;
     }
 }
 
-private template CombRet(T) {
+private template CombRet(T, Buffer bufType) {
     static if(isForwardRange!(T)) {
-        alias Comb!(Unqual!(ElementType!(T))) CombRet;
-    } else static if(is(T : uint)) {
-        alias Comb!uint CombRet;
+        alias Comb!(Unqual!(ElementType!(T)), bufType) CombRet;
+    } else static if(isIntegral!T) {
+        alias Comb!(uint, bufType) CombRet;
     } else static assert(0, "comb can only be created with range or uint.");
 }
 
@@ -872,12 +971,13 @@ private template CombRet(T) {
  * auto p = comb(5);  // Permutations of integers on range [0, 5].
  * ---
  */
-CombRet!(T) comb(T)(T stuff, uint r) {
+CombRet!(T, bufType) comb(Buffer bufType = Buffer.DUP, T)(T stuff, uint r) {
     alias typeof(return) rt;
     static if(isForwardRange!(T)) {
         return rt(stuff, r);
     } else {
-        return rt(seq(0U, cast(uint) stuff), r);
+        static assert(isIntegral!T, "Can only call comb on ints and ranges.");
+        return rt(cast(uint) stuff, r);
     }
 }
 
@@ -886,8 +986,9 @@ unittest {
     auto comb1 = comb(5, 2);
     uint[][] vals;
     foreach(c; comb1) {
-        vals ~= c.dup;
+        vals ~= c;
     }
+
     sort(vals);
     assert(vals.canFindSorted([0u,1].dup));
     assert(vals.canFindSorted([0u,2].dup));
@@ -905,7 +1006,7 @@ unittest {
     auto comb2 = comb(seq(5U, 10U), 3);
     vals = null;
     foreach(c; comb2) {
-        vals ~= c.dup;
+        vals ~= c;
     }
     sort(vals);
     assert(vals.canFindSorted([5u, 6, 7].dup));
@@ -1060,88 +1161,111 @@ unittest {
     writeln("Passed intersect test.");
 }
 
-/**Given a file that contains a line-delimited list of numbers, iterate through
- * it as a forward range, converting each line to a real and skipping any line
- * that cannot be converted.
+/**Converts a range with arbitrary element types (usually strings) to a
+ * range of reals lazily.  Ignores any elements that could not be successfully
+ * converted.  Useful for creating an input range that can be used with this
+ * lib out of a File without having to read the whole file into an array first.
+ * The advantages to this over just using std.algorithm.map are that it's
+ * less typing and that it ignores non-convertible elements, such as blank
+ * lines.
+ *
+ * If rangeIn is an inputRange, then the result of this function is an input
+ * range.  Otherwise, the result is a forward range.
+ *
+ * Note:  The reason this struct doesn't have length or random access,
+ * even if this is supported by rangeIn, is because it has to be able to
+ * filter out non-convertible elements.
  *
  * Examples:
  * ---
- * // Find the sum of all the numbers in foo.txt without ever having all of
- * // them in memory at the same time.
+ * // Perform a T-test to see whether the mean of the data being input as text
+ * // from stdin is different from zero.  This data might not even fit in memory
+ * // if it were read in eagerly.
  *
- * auto data = NumericFile("foo.txt");
- * auto sum = reduce!"a + b"(data);
+ * auto myRange = toNumericRange( stdin.byLine() );
+ * TestRes result = studentsTTest(myRange);
+ * writeln(result);
  * ---
  */
-struct NumericFile {
+ToNumericRange!R toNumericRange(R)(R rangeIn) if(isInputRange!R) {
+    alias ToNumericRange!R RT;
+    return RT(rangeIn);
+}
+
+///
+struct ToNumericRange(R) if(isInputRange!R) {
 private:
-    real cached;
-    bool _empty;
-    File handle;
-    char[] buf;
+    alias ElementType!R E;
+    R inputRange;
+    real _front;
 
 public:
-    ///
-    this(string filename) {
-        handle = File(filename, "r");
-        popFront;
+    this(R inputRange) {
+        this.inputRange = inputRange;
+        try {
+            _front = to!real(inputRange.front);
+        } catch(ConvError) {
+            popFront();
+        }
     }
 
-    ///
-    this(File handle) {
-        this.handle = handle;
-        popFront;
+    real front() {
+        return _front;
     }
 
-    ///
     void popFront() {
-        while(!handle.eof) {
-            handle.readln(buf);
-            auto line = strip(buf);
-            try {
-                cached = to!real(line);
+        while(true) {
+            inputRange.popFront();
+            if(inputRange.empty) {
                 return;
-            } catch {
-                // Ignore bad lines.
+            }
+            auto inFront = inputRange.front;
+
+            // If inFront is some string, strip the whitespace.
+            static if( is(typeof(strip(inFront)))) {
+                inFront = strip(inFront);
+            }
+
+            try {
+                _front = to!real(inFront);
+                return;
+            } catch(ConvError) {
                 continue;
             }
         }
-        _empty = true;
     }
 
-    ///
-    real front() {
-        return cached;
-    }
-
-    ///
     bool empty() {
-        return _empty;
-    }
-
-    ///
-    void close() {
-        handle.close;
+        return inputRange.empty;
     }
 }
 
 unittest {
-    string data = "3.14\n2.71\n8.67\nabracadabra\n362436";
-    std.file.write("NumericFileTestDeleteMe.txt", data);
-    scope(exit) std.file.remove("NumericFileTestDeleteMe.txt");
-    auto rng = NumericFile("NumericFileTestDeleteMe.txt");
-    assert(approxEqual(rng.front, 3.14));
-    rng.popFront;
-    assert(approxEqual(rng.front, 2.71));
-    rng.popFront;
-    assert(approxEqual(rng.front, 8.67));
-    rng.popFront;
-    assert(approxEqual(rng.front, 362435));
-    assert(!rng.empty);
-    rng.popFront;
-    assert(rng.empty);
-    rng.close;  // Normally this would be reference counted.
-    writeln("Passed NumericFile unittest.");
+    // Test both with non-convertible element as first element and without.
+    // This is because non-convertible elements as the first element are
+    // handled as a special case in the implementation.
+    string[2] dataArr = ["3.14\n2.71\n8.67\nabracadabra\n362436",
+                 "foobar\n3.14\n2.71\n8.67\nabracadabra\n362436"];
+
+    foreach(data; dataArr) {
+        std.file.write("NumericFileTestDeleteMe.txt", data);
+        scope(exit) std.file.remove("NumericFileTestDeleteMe.txt");
+        auto myFile = File("NumericFileTestDeleteMe.txt");
+        auto rng = toNumericRange(myFile.byLine());
+        assert(approxEqual(rng.front, 3.14));
+        rng.popFront;
+        assert(approxEqual(rng.front, 2.71));
+        rng.popFront;
+        assert(approxEqual(rng.front, 8.67));
+        rng.popFront;
+        assert(approxEqual(rng.front, 362435));
+        assert(!rng.empty);
+        rng.popFront;
+        assert(rng.empty);
+        myFile.close();
+    }
+
+    writeln("Passed toNumericRange unittest.");
 }
 
 // Verify that there are no TempAlloc memory leaks anywhere in the code covered
