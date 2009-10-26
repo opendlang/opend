@@ -589,8 +589,11 @@ static if(size_t.sizeof == 4) {
     private enum MAX_PERM_LEN = 20;
 }
 
-/**A struct that generates all possible permutations of a sequence,
- * as an input range.  Note that permutations are output in undefined order.
+/**A struct that generates all possible permutations of a sequence.  Due to
+ * some optimizations done under the hood, this works as an input range if
+ * T.sizeof > 1, or a forward range if T.sizeof == 1.
+ *
+ * Note:  Permutations are output in undefined order.
  *
  * Bugs:  Only supports iterating over up to size_t.max permutations.
  * This means the max permutation length is 12 on 32-bit machines, or 20
@@ -616,17 +619,26 @@ static if(size_t.sizeof == 4) {
  *  assert(res.length == 6);
  *  ---
  */
-struct Perm(Buffer bufType = Buffer.DUP, T = uint) {
+struct Perm(Buffer bufType = Buffer.DUP, T) {
 private:
-    T* perm;
-    size_t* Is;
-    size_t currentIndex;
 
-    // The length of these arrays.  Stored once to minimize overhead.
-    size_t len;
+    // Optimization:  Since we know this thing can't get too big (there's
+    // an enforce statement for it in the c'tor), just use arrays of the max
+    // possible size for stuff and store them inline, if it's all just bytes.
+    static if(T.sizeof == 1) {
+        T[MAX_PERM_LEN] perm;
+    } else {
+        T* perm;
+    }
 
     // The length of this range.
     size_t nPerms;
+
+    ubyte[MAX_PERM_LEN] Is;
+    ubyte currentIndex;
+
+    // The length of these arrays.  Stored once to minimize overhead.
+    ubyte len;
 
     static if(bufType == Buffer.DUP) {
         alias T[] PermArray;
@@ -640,15 +652,24 @@ public:
      * so that the original sequence is not modified.*/
     this(U)(U input)
     if(isForwardRange!(U)) {
-        auto arr = toArray(input);
-        Is = (new size_t[arr.length]).ptr;
-        len = arr.length;
 
-        enforce(len <= MAX_PERM_LEN, text(
-            "Can't iterate permutations of an array of length ",
-            len, ".  (Max length:  ", MAX_PERM_LEN, ")"));
+        static if(ElementType!(U).sizeof > 1) {
+            auto arr = toArray(input);
+            enforce(arr.length <= MAX_PERM_LEN, text(
+                "Can't iterate permutations of an array this long.  (Max length:  ",
+                        MAX_PERM_LEN, ")"));
+            len = cast(ubyte) arr.length;
+            perm = arr.ptr;
+        } else {
+            foreach(elem; input) {
+                enforce(len < MAX_PERM_LEN, text(
+                    "Can't iterate permutations of an array this long.  (Max length:  ",
+                        MAX_PERM_LEN, ")"));
 
-        perm = arr.ptr;
+                perm[len++] = elem;
+            }
+        }
+
         popFront();
 
         nPerms = 1;
