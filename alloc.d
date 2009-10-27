@@ -224,13 +224,11 @@ private:
     // core.thread.Thread.thread_needLock() is nothrow (read the code if you
     // don't believe me) but not marked as such because nothrow is such a new
     // feature in D.  This is a workaround until that gets fixed.
-    static enum tnl = cast(bool function() nothrow) &thread_needLock;
 
     enum blockSize = 4U * 1024U * 1024U;
     enum nBookKeep = 1_048_576;  // How many bytes to allocate upfront for bookkeeping.
     enum alignBytes = 16U;
-    static __thread State state;
-    static State mainThreadState;
+    static State state;
 
     static void die() nothrow {
         fprintf(std.c.stdio.stderr, "TempAlloc error: Out of memory.\0".ptr);
@@ -281,8 +279,6 @@ private:
         }
 
         state = stateCopy;
-        if (!tnl())
-            mainThreadState = stateCopy;
         return stateCopy;
     }
 
@@ -292,9 +288,7 @@ public:
      * significant in some cases because it avoids a thread-local storage
      * lookup.  Also used internally.*/
     static State getState() nothrow {
-        // Believe it or not, even with builtin TLS, the thread_needLock()
-        // is worth it to avoid the TLS lookup.
-        State stateCopy = (tnl()) ? state : mainThreadState;
+        State stateCopy = state;
         return (stateCopy is null) ? stateInit : stateCopy;
     }
 
@@ -668,9 +662,7 @@ unittest {
             TempAlloc.free;
         }
         oldStates ~= cast(void*) TempAlloc.state;
-        oldStates ~= cast(void*) TempAlloc.mainThreadState;
         TempAlloc.state = null;
-        TempAlloc.mainThreadState = null;
     }
     oldStates = null;
 
@@ -682,8 +674,8 @@ unittest {
         TempAlloc.free;
     }
     GC.collect;  // Make sure nothing that shouldn't is getting GC'd.
-    void* space = TempAlloc.mainThreadState.space;
-    size_t used = TempAlloc.mainThreadState.used;
+    void* space = TempAlloc.state.space;
+    size_t used = TempAlloc.state.used;
 
     TempAlloc.frameInit;
     // This array of arrays should not be scanned by the GC because otherwise
@@ -714,8 +706,8 @@ unittest {
         }
     }
     TempAlloc.frameFree;
-    assert(space == TempAlloc.mainThreadState.space);
-    assert(used == TempAlloc.mainThreadState.used);
+    assert(space == TempAlloc.state.space);
+    assert(used == TempAlloc.state.used);
     while(TempAlloc.state.nblocks > 1 || TempAlloc.state.used > 0) {
         TempAlloc.free;
     }
