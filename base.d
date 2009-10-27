@@ -691,6 +691,10 @@ public:
 
     /**Get the next permutation in the sequence.*/
     void popFront() {
+        if(len == 0) {
+            nPerms--;
+            return;
+        }
         if(currentIndex == len - 1) {
             currentIndex--;
             nPerms--;
@@ -773,6 +777,14 @@ PermRet!(bufType, T) perm(Buffer bufType = Buffer.DUP, T...)(T stuff) {
 }
 
 unittest {
+    // Test degenerate case of len == 0;
+    uint nZero = 0;
+    foreach(elem; perm(0)) {
+        assert(elem.length == 0);
+        nZero++;
+    }
+    assert(nZero == 1);
+
     double[][] res;
     auto p1 = perm([1.0, 2.0, 3.0][]);
     assert(p1.length == 6);
@@ -876,7 +888,6 @@ private:
         for(; index != -1 && pos[index] == diff + index; --index) {}
         if(index == -1) {
             _length--;
-            assert(_length == 0);
             return;
         }
         pos[index]++;
@@ -891,7 +902,6 @@ private:
         for(; index != -1 && pos[index] == diff + index; --index) {}
         if(index == -1) {
             _length--;
-            assert(_length == 0);
             return;
         }
         pos[index]++;
@@ -919,11 +929,12 @@ public:
     static if(is(T == uint)) {
         this(uint n, uint r)
         in {
-            assert(r > 0);
             assert(n >= r);
         } body {
-            pos = (seq(0U, r)).ptr;
-            pos[r - 1]--;
+            if(r > 0) {
+                pos = (seq(0U, r)).ptr;
+                pos[r - 1]--;
+            }
             N = n;
             R = r;
             diff = N - R;
@@ -934,12 +945,11 @@ public:
 
     /**General ctor.  array is a sequence from which to generate the
      * combinations.  r is the length of the combinations to be generated.*/
-    this(T[] array, uint r)
-    in {
-        assert(r > 0);
-    } body {
-        pos = (seq(0U, r)).ptr;
-        pos[r - 1]--;
+    this(T[] array, uint r) {
+        if(r > 0) {
+            pos = (seq(0U, r)).ptr;
+            pos[r - 1]--;
+        }
         N = array.length;
         R = r;
         diff = N - R;
@@ -1014,6 +1024,22 @@ CombRet!(T, bufType) comb(Buffer bufType = Buffer.DUP, T)(T stuff, uint r) {
 }
 
 unittest {
+    // Test degenerate case of r == 0.  Shouldn't segfault.
+    uint nZero = 0;
+    foreach(elem; comb(5, 0)) {
+        assert(elem.length == 0);
+        nZero++;
+    }
+    assert(nZero == 1);
+
+    nZero = 0;
+    uint[] foo = [1,2,3,4,5];
+    foreach(elem; comb(foo, 0)) {
+        assert(elem.length == 0);
+        nZero++;
+    }
+    assert(nZero == 1);
+
     // Test indexing verison first.
     auto comb1 = comb(5, 2);
     uint[][] vals;
