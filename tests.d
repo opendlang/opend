@@ -992,7 +992,7 @@ if(isInputRange!(T) && dstats.base.hasLength!(T)) {
 }
 
 private
-real wilcoxonRankSumPval(T)(T w, ulong n1, ulong n2, Alt alt = Alt.TWOSIDE,
+real wilcoxonRankSumPval(real w, ulong n1, ulong n2, Alt alt = Alt.TWOSIDE,
                            real tieSum = 0,  uint exactThresh = 50) {
     if(alt == Alt.NONE) {
         return real.nan;
@@ -1001,7 +1001,7 @@ real wilcoxonRankSumPval(T)(T w, ulong n1, ulong n2, Alt alt = Alt.TWOSIDE,
     ulong N = n1 + n2;
 
     if(N < exactThresh && tieSum == 0) {
-        return wilcoxRSPExact(cast(uint) w, cast(uint) n1, cast(uint) n2, alt);
+        return wilcoxRSPExact(roundTo!uint(w), cast(uint) n1, cast(uint) n2, alt);
     }
 
     real sd = sqrt(cast(real) (n1 * n2) / (N * (N - 1)) *
@@ -1027,6 +1027,25 @@ unittest {
     assert(approxEqual(wilcoxonRankSumPval(w, 5, 6), 0.9273));
     assert(approxEqual(wilcoxonRankSumPval(w, 5, 6, Alt.GREATER), 0.4636));
     assert(approxEqual(wilcoxonRankSumPval(w, 5, 6, Alt.LESS), 0.6079));
+
+    // Monte carlo unit testing:  Make sure that the exact and asymptotic
+    // versions agree within a small epsilon;
+    real maxEpsilon = 0;
+    foreach(i; 0..1_000) {
+        uint n1 = uniform(5U, 25U);
+        uint n2 = uniform(5U, 25U);
+        uint testStat = uniform!"[]"(0, (n1 * n2));
+
+        foreach(alt; [Alt.LESS, Alt.GREATER, Alt.TWOSIDE]) {
+            real approxP = wilcoxonRankSumPval(testStat, n1, n2, alt, 0, 0);
+            real exactP = wilcoxonRankSumPval(testStat, n1, n2, alt, 0, 50);
+            real epsilon = abs(approxP - exactP);
+            assert(epsilon < 0.02);
+            maxEpsilon = max(maxEpsilon, epsilon);
+        }
+    }
+    writeln("Passed wilcoxonRankSum normal vs. exact.  (Max epsilon ",
+        maxEpsilon, ".)");
 }
 
 /* Used internally by wilcoxonRankSum.  This function uses dynamic
@@ -1034,34 +1053,38 @@ unittest {
  * of length n1 that sum to <= W in O(N * W * n1) time.*/
 private real wilcoxRSPExact(uint W, uint n1, uint n2, Alt alt = Alt.TWOSIDE) {
     uint N = n1 + n2;
-    uint expected2 = n1 * n2;
+    immutable maxPossible = n1 * n2;
+
     switch(alt) {
         case Alt.LESS:
-            if(W >= (N * (N - n2)) / 2)  { // Value impossibly large
+            if(W >= maxPossible)  { // Value impossibly large
                 return 1;
-            } else if(W * 2 <= expected2) {
+            } else if(W * 2 <= maxPossible) {
                 break;
             } else {
-                return 1 - wilcoxRSPExact(expected2 - W - 1, n1, n2, Alt.LESS);
+                return 1 - wilcoxRSPExact(maxPossible - W - 1, n1, n2, Alt.LESS);
             }
+            assert(0);
         case Alt.GREATER:
-            if(W > (N * (N - n2)) / 2)  { // Value impossibly large
+            if(W > maxPossible)  { // Value impossibly large
                 return 0;
-            } else if(W * 2 >= expected2) {
-                return wilcoxRSPExact(expected2 - W, n1, n2, Alt.LESS);
-            } else if(W == 0) {
+            } else if(W * 2 >= maxPossible) {
+                return wilcoxRSPExact(maxPossible - W, n1, n2, Alt.LESS);
+            } else if(W <= 0) {
                 return 1;
             } else {
                 return 1 - wilcoxRSPExact(W - 1, n1, n2, Alt.LESS);
             }
+            assert(0);
         case Alt.TWOSIDE:
-            if(W * 2 <= expected2) {
+            if(W * 2 <= maxPossible) {
                 return min(1, wilcoxRSPExact(W, n1, n2, Alt.LESS) +
-                       wilcoxRSPExact(expected2 - W, n1, n2, Alt.GREATER));
+                       wilcoxRSPExact(maxPossible - W, n1, n2, Alt.GREATER));
             } else {
                 return min(1, wilcoxRSPExact(W, n1, n2, Alt.GREATER) +
-                       wilcoxRSPExact(expected2 - W, n1, n2, Alt.LESS));
+                       wilcoxRSPExact(maxPossible - W, n1, n2, Alt.LESS));
             }
+            assert(0);
         default:
             assert(0);
     }
@@ -1127,6 +1150,8 @@ unittest {
     assert(approxEqual(wilcoxRSPExact(16, 6, 5), 0.9307));
     assert(approxEqual(wilcoxRSPExact(16, 6, 5, Alt.LESS), 0.6039));
     assert(approxEqual(wilcoxRSPExact(16, 6, 5, Alt.GREATER), 0.4654));
+    assert(approxEqual(wilcoxRSPExact(66, 10, 35, Alt.LESS), 0.001053));
+    assert(approxEqual(wilcoxRSPExact(78, 13, 6, Alt.LESS), 1));
 
     // Mostly to make sure that underflow doesn't happen until
     // the N's are truly unreasonable:
@@ -1196,6 +1221,10 @@ in {
         }
     }
 
+    // Just a sanity check.  Should be mathematically impossible for this
+    // assert to fail.  The 1e-5 is for round-off error.
+    assert(W > -1e-5 && W <= (N * (N + 1) / 2) + 1e-5);
+
     if(alt == Alt.NONE) {
         return TestRes(W);
     }
@@ -1255,6 +1284,24 @@ unittest {
     assert(ae(wilcoxonSignedRank([1,2,3,4,5].dup, [2,-4,-8,-16,32].dup), 0.8125));
     assert(ae(wilcoxonSignedRank([1,2,3,4,5].dup, [2,-4,-8,-16,32].dup, Alt.LESS), 0.6875));
     assert(ae(wilcoxonSignedRank([1,2,3,4,5].dup, [2,-4,-8,-16,32].dup, Alt.GREATER), 0.4062));
+
+    // Monte carlo unit testing.  Make sure exact, approx are really,
+    // really close to each other.
+    real maxEpsilon = 0;
+    foreach(i; 0..1_000) {
+        uint N = uniform(10U, 50U);
+        uint testStat = uniform!"[]"(0, N * (N + 1) / 2);
+
+        foreach(alt; [Alt.LESS, Alt.GREATER, Alt.TWOSIDE]) {
+            real approxP = wilcoxonSignedRankPval(testStat, N, alt, 0, 0);
+            real exactP = wilcoxonSignedRankPval(testStat, N, alt, 0, 50);
+            real epsilon = abs(approxP - exactP);
+            assert(epsilon < 0.02);
+            maxEpsilon = max(maxEpsilon, epsilon);
+        }
+    }
+    writeln("Passed wilcoxonSignedRank monte carlo.  (Max epsilon ",
+        maxEpsilon, ".)");
 }
 
 /**Same as the overload, but allows testing whether a range is stochastically
@@ -1272,7 +1319,7 @@ unittest {
     writeln("Passed wilcoxonSignedRank unittest.");
 }
 
-private real wilcoxonSignedRankPval(T)(T W, ulong N, Alt alt = Alt.TWOSIDE,
+private real wilcoxonSignedRankPval(real W, ulong N, Alt alt = Alt.TWOSIDE,
      real tieSum = 0, uint exactThresh = 50)
 in {
     assert(N > 0);
@@ -1283,7 +1330,7 @@ in {
     }
 
     if(tieSum == 0 && !isNaN(tieSum) && N <= exactThresh) {
-        return wilcoxSRPExact(cast(uint) W, cast(uint) N, alt);
+        return wilcoxSRPExact(roundTo!uint(W), to!uint(N), alt);
     }
 
     if(isNaN(tieSum)) {
@@ -1309,31 +1356,34 @@ in {
  * it would be more trouble than it's worth to write one generalized
  * function.*/
 private real wilcoxSRPExact(uint W, uint N, Alt alt = Alt.TWOSIDE) {
-    uint expected2 = N * (N + 1) / 2;
+    immutable maxPossible = N * (N + 1) / 2;
+
     switch(alt) {
         case Alt.LESS:
-            if(W > (N * (N + 1) / 2))  { // Value impossibly large
+            if(W >= maxPossible)  { // Value impossibly large
                 return 1;
-            } else if(W * 2 <= expected2) {
+            } else if(W * 2 <= maxPossible) {
                 break;
             } else {
-                return 1 - wilcoxSRPExact(expected2 - W - 1, N, Alt.LESS);
+                return 1 - wilcoxSRPExact(maxPossible - W - 1, N, Alt.LESS);
             }
         case Alt.GREATER:
-            if(W > (N * (N + 1) / 2))  { // Value impossibly large
+            if(W > maxPossible)  { // Value impossibly large
                 return 0;
-            } else if(W * 2 >= expected2) {
-                return wilcoxSRPExact(expected2 - W, N, Alt.LESS);
+            } else if(W == 0) {
+                return 1;
+            } else if(W * 2 >= maxPossible) {
+                return wilcoxSRPExact(maxPossible - W, N, Alt.LESS);
             } else {
                 return 1 - wilcoxSRPExact(W - 1, N, Alt.LESS);
             }
         case Alt.TWOSIDE:
-            if(W * 2 <= expected2) {
+            if(W * 2 <= maxPossible) {
                 return min(1, wilcoxSRPExact(W, N, Alt.LESS) +
-                       wilcoxSRPExact(expected2 - W, N, Alt.GREATER));
+                       wilcoxSRPExact(maxPossible - W, N, Alt.GREATER));
             } else {
                 return min(1, wilcoxSRPExact(W, N, Alt.GREATER) +
-                       wilcoxSRPExact(expected2 - W, N, Alt.LESS));
+                       wilcoxSRPExact(maxPossible - W, N, Alt.LESS));
             }
         default:
             assert(0);
