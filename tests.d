@@ -2498,7 +2498,8 @@ in {
  * Note:  T must be a numeric type.  The only reason this is a template and
  * not a plain old function is DMD bug 2972.
  */
-ConfInt pcorTest(T)(real cor, T N, Alt alt, real confLevel) if(isNumeric!(T))
+ConfInt pcorTest(T)(real cor, T N, Alt alt = Alt.TWOSIDE, real confLevel = 0.95)
+if(isNumeric!(T))
 in {
     assert(N > 0);
     assert(cor > -1.0L || approxEqual(cor, -1.0L));
@@ -2509,7 +2510,7 @@ in {
     real t = cor / denom;
     ConfInt ret;
     ret.testStat = cor;
-    real sqN = sqrt(N - 3);
+    real sqN = sqrt(N - 3.0L);
     real z = sqN * atanh(cor);
 
     final switch(alt) {
