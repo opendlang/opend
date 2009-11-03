@@ -135,7 +135,10 @@ template isSummary(T) {
  */
 ConfInt studentsTTest(T)(T data, real testMean = 0, Alt alt = Alt.TWOSIDE,
     real confLevel = 0.95)
-if( (isSummary!T || realIterable!T)) {
+if( (isSummary!T || realIterable!T))
+in {
+    assert(confLevel >= 0 && confLevel <= 1);
+} body {
     static if(isSummary!T) {
         return pairedTTest(data, testMean, alt, confLevel);
     } else static if(realIterable!T) {
@@ -180,7 +183,10 @@ unittest {
  * of sample1 and sample2 at the specified level.*/
 ConfInt studentsTTest(T, U)(T sample1, U sample2, real testMean = 0,
     Alt alt = Alt.TWOSIDE, real confLevel = 0.95)
-if( (realIterable!T || isSummary!T) && (realIterable!U || isSummary!U)) {
+if( (realIterable!T || isSummary!T) && (realIterable!U || isSummary!U))
+in {
+    assert(confLevel >= 0 && confLevel <= 1);
+} body {
     static if(isSummary!T) {
         alias sample1 s1summ;
     } else {
@@ -271,7 +277,10 @@ unittest {
  * of sample1 and sample2 at the specified level.*/
 ConfInt welchTTest(T, U)(T sample1, U sample2, real testMean = 0,
     Alt alt = Alt.TWOSIDE, real confLevel = 0.95)
-if( (isSummary!T || realIterable!T) && (isSummary!U || realIterable!U)) {
+if( (isSummary!T || realIterable!T) && (isSummary!U || realIterable!U))
+in {
+    assert(confLevel >= 0 && confLevel <= 1);
+} body {
     static if(isSummary!T) {
         alias sample1 s1summ;
     } else {
@@ -365,7 +374,10 @@ unittest {
  * corresponding elements of sample1 and sample2 at the specified level.*/
 ConfInt pairedTTest(T, U)(T before, U after, real testMean = 0,
     Alt alt = Alt.TWOSIDE, real confLevel = 0.95)
-if(realInput!(T) && realInput!(U) && isInputRange!T && isInputRange!U) {
+if(realInput!(T) && realInput!(U) && isInputRange!T && isInputRange!U)
+in {
+    assert(confLevel >= 0 && confLevel <= 1);
+} body {
     MeanSD msd;
     while(!before.empty && !after.empty) {
         real diff = cast(real) before.front - cast(real) after.front;
@@ -400,7 +412,10 @@ if(realInput!(T) && realInput!(U) && isInputRange!T && isInputRange!U) {
  */
 ConfInt pairedTTest(T)(T diffSummary, real testMean = 0,
     Alt alt = Alt.TWOSIDE, real confLevel = 0.95)
-if(isSummary!T) {
+if(isSummary!T)
+in {
+    assert(confLevel >= 0 && confLevel <= 1);
+} body {
     // Save typing.
     alias diffSummary msd;
 
@@ -2469,14 +2484,70 @@ public:
  * the P-value against the given alternative, and the confidence interval of
  * the correlation at the level specified by confLevel.*/
 ConfInt pcorTest(T, U)(T range1, U range2, Alt alt = Alt.TWOSIDE, real confLevel = 0.95)
-if(realInput!(T) && realInput!(U)) {
-    Pcor res;
-    while(!range1.empty && !range2.empty) {
-        res.put(range1.front, range2.front);
-        range1.popFront;
-        range2.popFront;
+if(realInput!(T) && realInput!(U))
+in {
+    assert(confLevel >= 0 && confLevel <= 1);
+} body {
+    Pcor pearsonRes = pcor(range1, range2);
+    return pcorTest(pearsonRes.cor, pearsonRes.N, alt, confLevel);
+}
+
+/**Same as overload, but uses pre-computed correlation coefficient and sample
+ * size instead of computing them.
+ *
+ * Note:  T must be a numeric type.  The only reason this is a template and
+ * not a plain old function is DMD bug 2972.
+ */
+ConfInt pcorTest(T)(real cor, T N, Alt alt, real confLevel) if(isNumeric!(T))
+in {
+    assert(N > 0);
+    assert(cor > -1.0L || approxEqual(cor, -1.0L));
+    assert(cor < 1.0L || approxEqual(cor, 1.0L));
+    assert(confLevel >= 0 && confLevel <= 1);
+} body {
+    real denom = sqrt((1 - cor * cor) / (N - 2));
+    real t = cor / denom;
+    ConfInt ret;
+    ret.testStat = cor;
+    real sqN = sqrt(N - 3);
+    real z = sqN * atanh(cor);
+
+    final switch(alt) {
+        case Alt.NONE :
+            return ret;
+        case Alt.TWOSIDE:
+            ret.p = (abs(cor) >= 1) ? 0 :
+                2 * min(studentsTCDF(t, N - 2), studentsTCDFR(t, N - 2));
+            real deltaZ = invNormalCDF(0.5 * (1 - confLevel));
+            ret.lowerBound = tanh((z + deltaZ) / sqN);
+            ret.upperBound = tanh((z - deltaZ) / sqN);
+            break;
+        case Alt.LESS:
+            if(cor >= 1) {
+                ret.p = 1;
+            } else if(cor <= -1) {
+                ret.p = 0;
+            } else {
+                ret.p = studentsTCDF(t, N - 2);
+            }
+            real deltaZ = invNormalCDF(1 - confLevel);
+            ret.lowerBound = -1;
+            ret.upperBound = tanh((z - deltaZ) / sqN);
+            break;
+        case Alt.GREATER:
+            if(cor >= 1) {
+                ret.p = 0;
+            } else if(cor <= -1) {
+                ret.p = 1;
+            } else {
+                ret.p = studentsTCDFR(t, N - 2);
+            }
+            real deltaZ = invNormalCDF(1 - confLevel);
+            ret.lowerBound = tanh((z + deltaZ) / sqN);
+            ret.upperBound = 1;
+            break;
     }
-    return finishPearsonSpearman(res.cor, res.N, alt, confLevel);
+    return ret;
 }
 
 unittest {
@@ -2541,7 +2612,7 @@ TestRes scorTest(T, U)(T range1, U range2, Alt alt = Alt.TWOSIDE)
 if(isInputRange!(T) && isInputRange!(U) &&
    dstats.base.hasLength!(T) && dstats.base.hasLength!(U)) {
     real N = range1.length;
-    return finishPearsonSpearman(scor(range1, range2), N, alt, 0);
+    return pcorTest(scor(range1, range2), N, alt, 0);
 }
 
 unittest {
@@ -2561,52 +2632,6 @@ unittest {
     assert(approxEqual(t2.p, 0.2215));
 
     writeln("Passed scorSig test.");
-}
-
-private ConfInt finishPearsonSpearman(real cor, real N, Alt alt, real confLevel) {
-    real denom = sqrt((1 - cor * cor) / (N - 2));
-    real t = cor / denom;
-    ConfInt ret;
-    ret.testStat = cor;
-    real sqN = sqrt(N - 3);
-    real z = sqN * atanh(cor);
-
-    final switch(alt) {
-        case Alt.NONE :
-            return ret;
-        case Alt.TWOSIDE:
-            ret.p = (abs(cor) >= 1) ? 0 :
-                2 * min(studentsTCDF(t, N - 2), studentsTCDFR(t, N - 2));
-            real deltaZ = invNormalCDF(0.5 * (1 - confLevel));
-            ret.lowerBound = tanh((z + deltaZ) / sqN);
-            ret.upperBound = tanh((z - deltaZ) / sqN);
-            break;
-        case Alt.LESS:
-            if(cor >= 1) {
-                ret.p = 1;
-            } else if(cor <= -1) {
-                ret.p = 0;
-            } else {
-                ret.p = studentsTCDF(t, N - 2);
-            }
-            real deltaZ = invNormalCDF(1 - confLevel);
-            ret.lowerBound = -1;
-            ret.upperBound = tanh((z - deltaZ) / sqN);
-            break;
-        case Alt.GREATER:
-            if(cor >= 1) {
-                ret.p = 0;
-            } else if(cor <= -1) {
-                ret.p = 1;
-            } else {
-                ret.p = studentsTCDFR(t, N - 2);
-            }
-            real deltaZ = invNormalCDF(1 - confLevel);
-            ret.lowerBound = tanh((z + deltaZ) / sqN);
-            ret.upperBound = 1;
-            break;
-    }
-    return ret;
 }
 
 /**Tests the hypothesis that the Kendall correlation between two ranges is
