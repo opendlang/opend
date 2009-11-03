@@ -164,7 +164,24 @@ unittest {
 extern(C) nothrow int fprintf(shared(void*), in char *,...);
 extern(C) nothrow void exit(int);
 
-/**TempAlloc struct.  See TempAlloc project on Scrapple.*/
+/**A struct to allocate memory in a strictly first-in last-out order for
+ * things like scratch space.  Technically, memory can safely escape the
+ * scope in which it was allocated.  However, this is a very bad idea
+ * unless being done within the private API of a class, struct or nested
+ * function, where it can be guaranteed that LIFO will not be violated.
+ *
+ * Under the hood, this works by allocating large blocks (currently 4 MB)
+ * from the GC, and sub-allocating these as a stack.  Very large allocations
+ * (currently > 4MB) are simply performed on the heap.  There are two ways to
+ * free memory:  Calling TempAlloc.free() frees the last allocated block.
+ * Calling TempAlloc.frameFree() frees all memory allocated since the last
+ * call to TempAlloc.frameInit().
+ *
+ * All allocations are aligned on 16-byte boundaries using padding, since on x86,
+ * 16-byte alignment is necessary to make SSE2 work.  Note, however, that this
+ * is implemented based on the assumption that the GC allocates using 16-byte
+ * alignment (which appears to be true in druntime.)
+ */
 struct TempAlloc {
 private:
     struct Stack(T) {  // Simple, fast stack w/o error checking.
