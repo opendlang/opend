@@ -34,7 +34,7 @@ import std.traits, core.memory, core.thread, std.array, std.range, dstats.base;
 static import std.c.stdio;
 
 version(unittest) {
-    import std.stdio, std.conv, dstats.sort;
+    import std.stdio, std.conv, std.random, dstats.sort;
     void main() {}
 }
 
@@ -822,6 +822,18 @@ public:
  * }
  * assert(ss[3] == 1);
  * ---
+ *
+ * Warning:
+ * This implementation places removed nodes on an internal free list and
+ * recycles them, since there is no way to delete TempAlloc-allocated data
+ * in a non-LIFO order.  Therefore, you may not retain the address of a
+ * variable stored in a StackHash after deleting it from the StachHash.
+ * For example, DO NOT do this:
+ * ---
+ * SomeType* myPtr = &(myStackHash["foo"]);
+ * myStackHash.remove("foo");
+ * *myPtr = someValue;
+ * ---
  */
 struct StackHash(K, V) {
 private:
@@ -832,13 +844,42 @@ private:
     Unqual!(V)[] rVals;
     Unqual!(Node*)[] rNext;
 
+    // Holds nodes that were deleted by remove().
+    Node** freeList;
+
     TempAlloc.State TAState;
-    TypeInfo keyTI;
     size_t _length;
-    Node* usedSentinel;
+
+    // Tries to allocate off the free list.  Otherwise allocates off
+    // TempAlloc.
+    Node* allocNode() {
+        if(*freeList is null) {
+            return cast(Node*) TempAlloc(Node.sizeof, TAState);
+        }
+        auto ret = *freeList;
+        *freeList = (*freeList).next;
+        return ret;
+    }
+
+    // Add a removed node to the free list.
+    void pushFreeList(Node* node) {
+        if(*freeList is null) {
+            node.next = null;  // Sentinel
+            *freeList = node;
+        } else {
+            node.next = *freeList;
+            *freeList = node;
+        }
+    }
+
+    // rNext.ptr is stored in elements of rNext as a sentinel to indicate
+    // that the corresponding slot is unused.
+    Node* usedSentinel() @property {
+        return cast(Node*) rNext.ptr;
+    }
 
     Node* newNode(K key) {
-        Node* ret = cast(Node*) TempAlloc(Node.sizeof, TAState);
+        Node* ret = allocNode();
         ret.key =  key;
         ret.val =  V.init;
         ret.next = null;
@@ -846,7 +887,7 @@ private:
     }
 
     Node* newNode(K key, V val) {
-        Node* ret = cast(Node*) TempAlloc(Node.sizeof, TAState);
+        Node* ret = allocNode();
         ret.key =  key;
         ret.val = val;
         ret.next = null;
@@ -859,7 +900,7 @@ private:
         } else static if(__traits(compiles, key.toHash())) {
             hash_t hash = key.toHash();
         } else {
-            hash_t hash = keyTI.getHash(&key);
+            hash_t hash = typeid(K).getHash(&key);
         }
         hash %= rNext.length;
         return hash;
@@ -882,8 +923,14 @@ public:
         TAState = TempAlloc.getState;
         rKeys = newStack!(K)(nElem, TAState);
         rVals = newStack!(V)(nElem, TAState);
-        rNext = newStack!(Node*)(nElem, TAState);
-        usedSentinel = cast(Node*) rNext.ptr;
+
+        // Allocate free list in same block with Node ptrs.  That's what the
+        // + 1 is for.
+        rNext = newStack!(Node*)(nElem + 1, TAState);
+        freeList = &(rNext[$ - 1]);
+        *freeList = null;
+        rNext = rNext[0..$ - 1];
+
         foreach(ref rKey; rKeys) {
             rKey =  K.init;
         }
@@ -893,7 +940,8 @@ public:
         foreach(ref r; rNext) {
             r = usedSentinel;
         }
-        keyTI = typeid(K);
+
+
     }
 
     /**Index an element of the range.  If it does not exist, it will be created
@@ -985,16 +1033,24 @@ public:
                 rNext[hash] = usedSentinel;
                 return;
             } else {
+                Node* toPush = *next;
+
                 rKeys[hash] = (**next).key;
                 rVals[hash] = (**next).val;
                 rNext[hash] = (**next).next;
+
+                pushFreeList(toPush);
                 return;
             }
         } else {  // Collision.  Start chaining.
             while(*next !is null) {
                 if((**next).key == key) {
                     _length--;
+
+                    Node* toPush = *next;
                     *next = (**next).next;
+
+                    pushFreeList(toPush);
                     break;
                 }
                 next = &((**next).next);
@@ -1035,64 +1091,103 @@ public:
 
 unittest {
     alias StackHash!(string, uint) mySh;
-    mixin(newFrame);
-    auto data = mySh(2);  // Make sure we get some collisions.
-    data["foo"] = 1;
-    data["bar"] = 2;
-    data["baz"] = 3;
-    data["waldo"] = 4;
-    assert(!("foobar" in data));
-    assert(*("foo" in data) == 1);
-    assert(*("bar" in data) == 2);
-    assert(*("baz" in data) == 3);
-    assert(*("waldo" in data) == 4);
-    assert(data["foo"] == 1);
-    assert(data["bar"] == 2);
-    assert(data["baz"] == 3);
-    assert(data["waldo"] == 4);
-    auto myKeys = toArray(data.keys);
-    qsort(myKeys);
-    assert(myKeys == cast(string[]) ["bar", "baz", "foo", "waldo"]);
-    auto myValues = toArray(data.values);
-    qsort(myValues);
-    assert(myValues == [1U, 2, 3, 4]);
-    {
-        auto k = data.keys;
-        auto v = data.values;
-        while(!k.empty) {
-            assert(data[k.front] == v.front);
-            k.popFront;
-            v.popFront;
+
+    {  // Basic sanity checks.
+        mixin(newFrame);
+        auto data = mySh(2);  // Make sure we get some collisions.
+        data["foo"] = 1;
+        data["bar"] = 2;
+        data["baz"] = 3;
+        data["waldo"] = 4;
+        assert(!("foobar" in data));
+        assert(*("foo" in data) == 1);
+        assert(*("bar" in data) == 2);
+        assert(*("baz" in data) == 3);
+        assert(*("waldo" in data) == 4);
+        assert(data["foo"] == 1);
+        assert(data["bar"] == 2);
+        assert(data["baz"] == 3);
+        assert(data["waldo"] == 4);
+        auto myKeys = toArray(data.keys);
+        qsort(myKeys);
+        assert(myKeys == cast(string[]) ["bar", "baz", "foo", "waldo"]);
+        auto myValues = toArray(data.values);
+        qsort(myValues);
+        assert(myValues == [1U, 2, 3, 4]);
+        {
+            auto k = data.keys;
+            auto v = data.values;
+            while(!k.empty) {
+                assert(data[k.front] == v.front);
+                k.popFront;
+                v.popFront;
+            }
+        }
+        foreach(v; data.values) {
+            assert(v > 0 && v < 5);
         }
     }
-    foreach(v; data.values) {
-        assert(v > 0 && v < 5);
-    }
-
-    // Test remove.
 
     alias StackHash!(uint, uint) mySh2;
-    auto foo = mySh2(7);
-    for(uint i = 0; i < 200; i++) {
-        foo[i] = i;
+    {   // Test remove.
+        mixin(newFrame);
+
+        auto foo = mySh2(7);
+        for(uint i = 0; i < 200; i++) {
+            foo[i] = i;
+        }
+        assert(foo.length == 200);
+        for(uint i = 0; i < 200; i += 2) {
+            foo.remove(i);
+        }
+        foreach(i; 20..200) {
+            foo.remove(i);
+        }
+        for(uint i = 0; i < 20; i++) {
+            if(i & 1) {
+                assert(i in foo);
+                assert(*(i in foo) == i);
+            } else {
+                assert(!(i in foo));
+            }
+        }
+        auto vals = toArray(foo.values);
+        assert(foo.length == 10);
+        assert(vals.qsort == [1U, 3, 5, 7, 9, 11, 13, 15, 17, 19]);
     }
-    assert(foo.length == 200);
-    for(uint i = 0; i < 200; i += 2) {
-        foo.remove(i);
-    }
-    foreach(i; 20..200) {
-        foo.remove(i);
-    }
-    for(uint i = 0; i < 20; i++) {
-        if(i & 1) {
-            assert(*(i in foo) == i);
-        } else {
-            assert(!(i in foo));
+
+    { // Monte carlo unittesting against builtin hash table.
+        mixin(newFrame);
+        uint[uint] builtin;
+        auto monteSh = mySh2(20_000);
+        uint[] nums = newStack!uint(100_000);
+        foreach(ref num; nums) {
+            num = uniform(0U, uint.max);
+        }
+
+        foreach(i; 0..1_000_000) {
+            auto index = uniform(0, nums.length);
+            if(index in builtin) {
+                assert(index in monteSh);
+                assert(builtin[index] == nums[index]);
+                assert(monteSh[index] == nums[index]);
+                builtin.remove(index);
+                monteSh.remove(index);
+            } else {
+                assert(!(index in monteSh));
+                builtin[index] = nums[index];
+                monteSh[index] = nums[index];
+            }
+        }
+
+        assert(builtin.length == monteSh.length);
+        foreach(k, v; builtin) {
+            assert(k in monteSh);
+            assert(*(k in builtin) == *(k in monteSh));
+            assert(monteSh[k] == v);
         }
     }
-    auto vals = toArray(foo.values);
-    assert(foo.length == 10);
-    assert(vals.qsort == [1U, 3, 5, 7, 9, 11, 13, 15, 17, 19]);
+
 
     writeln("Passed StackHash test.");
 }
@@ -1133,12 +1228,40 @@ private:
 
     Unqual!(K)[] rKeys;
     Node*[] rNext;
+
+    Node** freeList;
+
     TempAlloc.State TAState;
     size_t _length;
-    Node* usedSentinel;
+
+    Node* usedSentinel() {
+        return cast(Node*) rNext.ptr;
+    }
+
+    // Tries to allocate off the free list.  Otherwise allocates off
+    // TempAlloc.
+    Node* allocNode() {
+        if(*freeList is null) {
+            return cast(Node*) TempAlloc(Node.sizeof, TAState);
+        }
+        auto ret = *freeList;
+        *freeList = (*freeList).next;
+        return ret;
+    }
+
+    // Add a removed node to the free list.
+    void pushFreeList(Node* node) {
+        if(*freeList is null) {
+            node.next = null;  // Sentinel
+            *freeList = node;
+        } else {
+            node.next = *freeList;
+            *freeList = node;
+        }
+    }
 
     Node* newNode(K key) {
-        Node* ret = cast(Node*) TempAlloc(Node.sizeof, TAState);
+        Node* ret = allocNode();
         ret.key = key;
         ret.next = null;
         return ret;
@@ -1170,14 +1293,20 @@ public:
         if(nElem == 0)
             nElem++;
         TAState = TempAlloc.getState;
-        rNext = newStack!(Node*)(nElem, TAState);
-        rKeys = newStack!(Unqual!(K))(nElem, TAState);
-        usedSentinel = cast(Node*) rNext.ptr;
-        foreach(ref root; rKeys) {
-            root = K.init;
-        }
+
+        // Allocate the free list as the last element of rNext.
+        rNext = newStack!(Node*)(nElem + 1, TAState);
+        freeList = &(rNext[$ - 1]);
+        *freeList = null;
+        rNext = rNext[0..$ - 1];
+
         foreach(ref root; rNext) {
             root = usedSentinel;
+        }
+
+        rKeys = newStack!(Unqual!(K))(nElem, TAState);
+        foreach(ref root; rKeys) {
+            root = K.init;
         }
     }
 
@@ -1247,15 +1376,22 @@ public:
                 rNext[hash] = usedSentinel;
                 return;
             } else {
+                Node* toPush = *next;
+
                 rKeys[hash] = (**next).key;
                 rNext[hash] = (**next).next;
+
+                pushFreeList(toPush);
                 return;
             }
         } else {  // Collision.  Start chaining.
             while(*next !is null) {
                 if((**next).key == key) {
                     _length--;
+                    Node* toPush = *next;
+
                     *next = (**next).next;
+                    pushFreeList(toPush);
                     break;
                 }
                 next = &((**next).next);
@@ -1271,30 +1407,56 @@ public:
 }
 
 unittest {
-    mixin(newFrame);
-    alias StackSet!(uint) mySS;
-    mySS set = mySS(12);
-    foreach(i; 0..20) {
-        set.insert(i);
-    }
-    assert(toArray(set.elems).qsort == seq(0U, 20U));
+    { // "Normal" unittesting.
+        mixin(newFrame);
+        alias StackSet!(uint) mySS;
+        mySS set = mySS(12);
+        foreach(i; 0..20) {
+            set.insert(i);
+        }
+        assert(toArray(set.elems).qsort == seq(0U, 20U));
 
-    for(uint i = 0; i < 20; i += 2) {
-        set.remove(i);
+        for(uint i = 0; i < 20; i += 2) {
+            set.remove(i);
+        }
+
+        foreach(i; 0..20) {
+            if(i & 1) {
+                assert(i in set);
+            } else {
+                assert(!(i in set));
+            }
+        }
+        uint[] contents;
+
+        foreach(elem; set.elems) {
+            contents ~= elem;
+        }
+        assert(contents.qsort == [1U,3,5,7,9,11,13,15,17,19]);
     }
 
-    foreach(i; 0..20) {
-        if(i & 1) {
-            assert(i in set);
-        } else {
-            assert(!(i in set));
+    { // Monte carlo unittesting against builtin hash table.
+        mixin(newFrame);
+        bool[uint] builtin;
+        auto monteSh = StackSet!uint(20_000);
+
+        foreach(i; 0..1_000_000) {
+            auto index = uniform(0, 100_000);
+            if(index in builtin) {
+                assert(index in monteSh);
+                builtin.remove(index);
+                monteSh.remove(index);
+            } else {
+                assert(!(index in monteSh));
+                builtin[index] = 1;
+                monteSh.insert(index);
+            }
+        }
+
+        assert(builtin.length == monteSh.length);
+        foreach(k, v; builtin) {
+            assert(k in monteSh);
         }
     }
-    uint[] contents;
-
-    foreach(elem; set.elems) {
-        contents ~= elem;
-    }
-    assert(contents.qsort == [1U,3,5,7,9,11,13,15,17,19]);
     writeln("Passed StackSet test.");
 }
