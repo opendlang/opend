@@ -1186,6 +1186,15 @@ unittest {
             assert(*(k in builtin) == *(k in monteSh));
             assert(monteSh[k] == v);
         }
+
+        // Make sure nothing is missed in iteration.  Since both keys and
+        // values use the same struct, just with a few static if statements,
+        // if it works for keys and simple tests work for values, it works.
+        foreach(k; monteSh.keys) {
+            builtin.remove(k);
+        }
+        assert(builtin.length == 0);
+
     }
 
 
@@ -1457,6 +1466,11 @@ unittest {
         foreach(k, v; builtin) {
             assert(k in monteSh);
         }
+
+        foreach(k; monteSh.elems) {
+            builtin.remove(k);
+        }
+        assert(builtin.length == 0);
     }
     writeln("Passed StackSet test.");
 }
