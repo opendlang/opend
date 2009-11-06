@@ -312,6 +312,7 @@ unittest {
     delete observ;
 }
 
+///
 real rChiSquare(RGen = Random)(real df, ref RGen gen = rndGen) {
     return 2.0*stdGamma(df/2.0L, gen);
 }

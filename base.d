@@ -3,6 +3,11 @@
  * useful to users of this library.  This module is starting to take on the
  * appearance of a small utility library.
  *
+ * Note:  In several functions in this module that return arrays, the last
+ * parameter is an optional buffer for storing the return value.  If this
+ * parameter is ommitted or the buffer is not large enough, one will be
+ * allocated on the GC heap.
+ *
  * Author:  David Simcha*/
  /*
  * License:
@@ -59,18 +64,6 @@ version(unittest) {
     import std.stdio, std.algorithm, std.random, std.file;
 
     void main (){}
-}
-
-/**Parameter in some functions to determine where results are returned.
- * Alloc.HEAP returns on the GC heap and is always the default.  Alloc.STACK
- * returns on the TempAlloc stack, and can be a useful optimization in some
- * cases.*/
-enum Alloc {
-    ///Return on TempAlloc stack.
-    STACK,
-
-    ///Return on GC heap.
-    HEAP
 }
 
 /** Tests whether T is an input range whose elements can be implicitly
@@ -162,7 +155,7 @@ if(isInputRange!(I) && isOutputRange!(O, ElementType!(I))) {
  * heap by default, but uses TempAlloc stack if alloc == Alloc.STACK.
  *
  * Works with any forward range with elements implicitly convertible to real.*/
-Ret[] binCounts(Ret = ushort, T)(T data, uint nbin, Alloc alloc = Alloc.HEAP)
+Ret[] binCounts(Ret = uint, T)(T data, uint nbin, Ret[] buf = null)
 if(isForwardRange!(T) && realInput!(T))
 in {
     assert(nbin > 0);
@@ -178,11 +171,11 @@ in {
     E range = max - min;
 
     Ret[] bins;
-    if(alloc == Alloc.HEAP) {
+    if(buf.length < nbin) {
         bins = new Ret[nbin];
     } else {
-        bins = newStack!(Ret)(nbin);
-        bins[] = 0U;
+        bins = buf[0..nbin];
+        bins[] = 0;
     }
 
     foreach(elem; data) {
@@ -202,9 +195,15 @@ in {
 unittest {
     double[] data = [0.0, .01, .03, .05, .11, .3, .5, .7, .89, 1];
     auto res = binCounts(data, 10);
-    assert(res == [cast(ushort) 4, 1, 0, 1, 0, 1, 0, 1, 1, 1]);
-    res = binCounts(data, 10, Alloc.STACK);
-    assert(res == [cast(ushort) 4, 1, 0, 1, 0, 1, 0, 1, 1, 1]);
+    assert(res == [4U, 1, 0, 1, 0, 1, 0, 1, 1, 1]);
+
+    auto buf = new uint[10];
+    foreach(ref elem; buf) {
+        elem = uniform(0, 34534);
+    }
+
+    res = binCounts(data, 10, buf);
+    assert(res == [4U, 1, 0, 1, 0, 1, 0, 1, 1, 1]);
     TempAlloc.free;
     writeln("Passed binCounts unittest.");
 }
@@ -213,14 +212,11 @@ unittest {
  * 0 to nbin - 1, with 0 being the smallest bin, etc.
  * The values returned are the bin index for each element.
  *
- * Returns on GC heap by default, but TempAlloc stack if alloc == Alloc.STACK.
- * Works with any forward range with elements implicitly convertible to real.
- *
  * Default return type is ubyte, because in the dstats.infotheory,
  * entropy() and related functions specialize on ubytes, and become
  * substandially faster.  However, if you're using more than 255 bins,
  * you'll have to provide a different return type as a template parameter.*/
-Ret[] bin(Ret = ubyte, T)(T data, uint nbin, Alloc alloc = Alloc.HEAP)
+Ret[] bin(Ret = ubyte, T)(T data, uint nbin, Ret[] buf = null)
 if(isForwardRange!(T) && realInput!(T) && isIntegral!(Ret))
 in {
     assert(nbin > 0);
@@ -244,10 +240,10 @@ in {
     E range = max - min;
 
     Ret[] bins;
-    if(alloc == Alloc.HEAP) {
+    if(buf.length < data.length) {
         bins = newVoid!(Ret)(data.length);
     } else {
-        bins = newStack!(Ret)(data.length);
+        bins = buf[0..data.length];
     }
 
     foreach(i, elem; data) {
@@ -269,9 +265,14 @@ unittest {
     double[] data = [0.0, .01, .03, .05, .11, .3, .5, .7, .89, 1];
     auto res = bin(data, 10);
     assert(res == [cast(ubyte) 0, 0, 0, 0, 1, 3, 5, 7, 8, 9]);
-    res = bin(data, 10, Alloc.STACK);
+
+    auto buf = new ubyte[20];
+    foreach(ref elem; buf) {
+        elem = cast(ubyte) uniform(0U, 255);
+    }
+
+    res = bin(data, 10, buf);
     assert(res == [cast(ubyte) 0, 0, 0, 0, 1, 3, 5, 7, 8, 9]);
-    TempAlloc.free;
 
     // Make sure this throws:
     try {
@@ -288,15 +289,11 @@ unittest {
  * 0 to nbin - 1, with 0 being the smallest bin, etc.
  * The values returned are the bin index for each element.
  *
- * Returns on GC heap by default, but TempAlloc stack if alloc == Alloc.STACK.
- * Works with any forward range with elements implicitly convertible to real
- * and a length property.
- *
  * Default return type is ubyte, because in the dstats.infotheory,
  * entropy() and related functions specialize on ubytes, and become
  * substandially faster.  However, if you're using more than 256 bins,
  * you'll have to provide a different return type as a template parameter.*/
-Ret[] frqBin(Ret = ubyte, T)(T data, uint nbin, Alloc alloc = Alloc.HEAP)
+Ret[] frqBin(Ret = ubyte, T)(T data, uint nbin, Ret[] buf = null)
 if(realInput!(T) && isForwardRange!(T) && hasLength!(T) && isIntegral!(Ret))
 in {
     assert(nbin > 0);
@@ -309,18 +306,30 @@ in {
         Ret.stringof ~ ".");
 
     Ret[] result;
-    if(alloc == Alloc.HEAP) {
+    if(buf.length < data.length) {
         result = newVoid!(Ret)(data.length);
     } else {
-        result = newStack!(Ret)(data.length);
+        result = buf[0..data.length];
     }
 
-    auto perm = newStack!(uint)(data.length); scope(exit) TempAlloc.free;
-    foreach(i, ref e; perm)
+    auto perm = newStack!(size_t)(data.length);
+    scope(exit) TempAlloc.free;
+
+    foreach(i, ref e; perm) {
         e = i;
-    auto dd = tempdup(data);
-    qsort(dd, perm);
-    TempAlloc.free;
+    }
+
+    static if(isRandomAccessRange!(T)) {
+        bool compare(size_t lhs, size_t rhs) {
+            return data[lhs] < data[rhs];
+        }
+
+        qsort!compare(perm);
+    } else {
+        auto dd = tempdup(data);
+        qsort(dd, perm);
+        TempAlloc.free;
+    }
 
     uint rem = data.length % nbin;
     Ret bin = 0;
@@ -339,12 +348,17 @@ unittest {
     auto res = frqBin(data, 3);
     assert(res == [cast(ubyte) 0, 0, 0, 1, 2, 2, 1]);
     data = [3, 1, 4, 1, 5, 9, 2, 6, 5];
-    res = frqBin(data, 4, Alloc.STACK);
+
+    auto buf = new ubyte[32];
+    foreach(i, ref elem; buf) {
+        elem = cast(ubyte) i;
+    }
+
+    res = frqBin(data, 4, buf);
     assert(res == [cast(ubyte) 1, 0, 1, 0, 2, 3, 0, 3, 2]);
     data = [3U, 1, 4, 1, 5, 9, 2, 6, 5, 3, 4, 8, 9, 7, 9, 2];
     res = frqBin(data, 4);
     assert(res == [cast(ubyte) 1, 0, 1, 0, 2, 3, 0, 2, 2, 1, 1, 3, 3, 2, 3, 0]);
-    TempAlloc.free;
 
     // Make sure this throws:
     try {
@@ -366,13 +380,10 @@ unittest {
  * assert(s == [0, 1, 2, 3, 4]);
  * ---
  */
-T[] seq(T)(T start, T end, T increment = 1, Alloc alloc = Alloc.HEAP) {
-    T[] output;
-    if(alloc == Alloc.HEAP) {
-        output = newVoid!(T)(cast(size_t) ((end - start) / increment));
-    } else {
-        output = newStack!(T)(cast(size_t) ((end - start) / increment));
-    }
+CommonType!(T, U)[] seq(T, U, V = uint)(T start, U end, V increment = 1U) {
+    alias CommonType!(T, U) R;
+    auto output = newVoid!(R)(cast(size_t) ((end - start) / increment));
+
     size_t count = 0;
     for(T i = start; i < end; i += increment) {
         output[count++] = i;
@@ -388,8 +399,8 @@ unittest {
 
 /**Given an input array, outputs an array containing the rank from
  * [1, input.length] corresponding to each element.  Ties are dealt with by
- * averaging.  This function duplicates the input range, and does not reorder
- * it.  Return type is float[] by default, but if you are sure you have no ties,
+ * averaging.  This function does not reorder the input range.
+ * Return type is float[] by default, but if you are sure you have no ties,
  * ints can be used for efficiency, and if you need more precision when
  * averaging ties, you can use double or real.
  *
@@ -401,16 +412,58 @@ unittest {
  * assert(rank(test) == [3.5f, 5f, 3.5f, 1f, 2f]);
  * assert(test == [3U, 5, 3, 1, 2]);
  * ---*/
-Ret[] rank(Ret = float, T)(T input) {
-    auto iDup = tempdup(input);
-    scope(exit) TempAlloc.free;
-    return rankSort!(Ret)(iDup);
+Ret[] rank(alias compFun = "a < b", Ret = float, T)(T input, Ret[] buf = null)
+if(isInputRange!(T)) {
+    static if(!isRandomAccessRange!(T) || !hasLength!(T)) {
+        return rankSort!(compFun, Ret)( tempdup(input), buf);
+    } else {
+        mixin(newFrame);
+        size_t[] indices = newStack!size_t(input.length);
+        foreach(i, ref elem; indices) {
+            elem = i;
+        }
+
+        bool compare(size_t lhs, size_t rhs) {
+            alias binaryFun!(compFun) innerComp;
+            return innerComp(input[lhs], input[rhs]);
+        }
+
+        qsort!compare(indices);
+
+        Ret[] ret;
+        if(buf.length < indices.length) {
+            ret = newVoid!Ret(indices.length);
+        } else {
+            ret = buf[0..indices.length];
+        }
+
+        foreach(i, index; indices) {
+            ret[index] = i + 1;
+        }
+
+        auto myIndexed = Indexed!(T)(input, indices);
+        averageTies(myIndexed, ret, indices);
+        return ret;
+    }
 }
 
-/**Same as rank(), but sorts the input range in ascending order rather than
- * duping it and working on a copy.  The array returned will still be
- * identical to that returned by rank(), i.e. the rank of each element will
- * correspond to the ranks of the elements in the input array before sorting.
+private struct Indexed(T) {
+    T someRange;
+    size_t[] indices;
+
+    ElementType!T opIndex(size_t index) {
+        return someRange[indices[index]];
+    }
+
+    size_t length() {
+        return indices.length;
+    }
+}
+
+/**Same as rank(), but also sorts the input range in ascending order.
+ * The array returned will still be identical to that returned by rank(), i.e.
+ * the rank of each element will correspond to the ranks of the elements in the
+ * input array before sorting.
  *
  * Works with any random access range with a length property.
  *
@@ -420,47 +473,48 @@ Ret[] rank(Ret = float, T)(T input) {
  * assert(rank(test) == [3.5f, 5f, 3.5f, 1f, 2f]);
  * assert(test == [1U, 2, 3, 4, 5]);
  * ---*/
-Ret[] rankSort(Ret = float, T)(T input)
-if(isRandomAccessRange!(T)) {
-    Ret[] ranks = newVoid!(Ret)(input.length);
-    rankSort!(Ret, T)(input, ranks);
-    return ranks;
-}
+Ret[] rankSort(alias compFun = "a < b", Ret = float, T)(T input, Ret[] buf = null)
+if(isRandomAccessRange!(T) && hasLength!(T)) {
+    mixin(newFrame);
+    Ret[] ranks;
+    if(buf.length < input.length) {
+        ranks = newVoid!(Ret)(input.length);
+    } else {
+        ranks = buf[0..input.length];
+    }
 
-// Speed hack used internally.
-void rankSort(Ret, T)(T input, Ret[] ranks) {
     size_t[] perms = newStack!(size_t)(input.length);
-    scope(exit) TempAlloc.free;
-
-    foreach(i, ref p; perms)
+    foreach(i, ref p; perms) {
         p = i;
+    }
 
-    qsort(input, perms);
+    qsort!compFun(input, perms);
     foreach(i; 0..perms.length)  {
         ranks[perms[i]] = i + 1;
     }
     averageTies(input, ranks, perms);
+    return ranks;
 }
 
 unittest {
     uint[] test = [3, 5, 3, 1, 2];
     assert(rank(test) == [3.5f, 5f, 3.5f, 1f, 2f]);
     assert(test == [3U, 5, 3, 1, 2]);
-    assert(rank!(double)(test) == [3.5, 5, 3.5, 1, 2]);
+    assert(rank!("a < b", double)(test) == [3.5, 5, 3.5, 1, 2]);
     assert(rankSort(test) == [3.5f, 5f, 3.5f, 1f, 2f]);
     assert(test == [1U,2,3,3,5]);
     writeln("Passed rank test.");
 }
 
 // Used internally by rank() and dstats.cor.scor().
-void averageTies(T, U)(T sortedInput, U[] ranks, uint[] perms) nothrow
+void averageTies(T, U)(T sortedInput, U[] ranks, size_t[] perms)
 in {
     assert(sortedInput.length == ranks.length);
     assert(ranks.length == perms.length);
 } body {
     uint tieCount = 1, tieSum = cast(uint) ranks[perms[0]];
     foreach(i; 1..ranks.length) {
-        if(sortedInput[i] == sortedInput[i-1]) {
+        if(sortedInput[i] == sortedInput[i - 1]) {
             tieCount++;
             tieSum += ranks[perms[i]];
         } else{
@@ -1100,123 +1154,6 @@ unittest {
     }
     assert(results.length == 924);  // (12 choose 6).
     writeln("Passed Comb test.");
-}
-
-/**Computes the intersect of two arrays, i.e. the elements that are in both
- * arrays.  Time and space complexity are O(first.length + second.length).
- * Returns on heap by default, but TempAlloc stack if alloc == Alloc.STACK.
- *
- * TODO:  Generalize to N arrays.*/
-T[] intersect(T)(const(T)[] first, const(T)[] second, Alloc alloc = Alloc.HEAP) {
-    if(first.length > second.length)
-        swap(first, second);
-
-    T[] result;  // Have to do this up here before the newFrame.
-    if(alloc == Alloc.HEAP) {
-        result = newVoid!(T)(first.length);
-    } else if(alloc == Alloc.STACK) {
-        result = newStack!(T)(first.length);
-    }
-
-    alias StackHash!(T, uint) mySh;
-    mixin(newFrame);
-    mySh firstSet = mySh(first.length);
-    foreach(f; first) {
-        firstSet[f] = 0;
-    }
-
-    foreach(s; second) {
-        if(uint* count = s in firstSet)
-            (*count)++;
-    }
-
-    size_t pos;
-    auto key = firstSet.keys;
-    auto count = firstSet.values;
-    while(!key.empty) {
-        if(count.front > 0) {
-            result[pos++] = key.front;
-        }
-        key.popFront;
-        count.popFront;
-    }
-    return result[0..pos];
-}
-
-unittest {
-    mixin(newFrame);
-    assert(intersect([1,3,1,3,6,4,6], [6,6,4,4,2,2,9,10]).sort == [4, 6]);
-}
-
-/**Computes the intersect of two arrays sorted according to compFun, i.e. the
- * elements that are in both arrays.  Time complexity is O(first.length
- * + second.length).  Space complexity is O(min(first.length, second.length)).
- * Faster in practice than intersect() if arrays are both already sorted.
- * Returns on heap by default, but TempAlloc stack if alloc == Alloc.STACK.
- *
- * TODO:  Generalize to N arrays.*/
-T[] intersectSorted(alias compFun = "a < b", T)(const(T)[] first,
-                    const(T)[] second, Alloc alloc = Alloc.HEAP)
-in {
-    assert(isSorted!(compFun)(first));
-    assert(isSorted!(compFun)(second));
-} body {
-    if(first.length > second.length)
-        swap(first, second);
-
-    T[] result;
-    if(alloc == Alloc.HEAP) {
-        result = newVoid!(T)(first.length);
-    } else if(alloc == Alloc.STACK) {
-        result = newStack!(T)(first.length);
-    }
-
-    alias binaryFun!(compFun) comp;
-
-    static bool notEqual(T lhs, T rhs) {
-        return comp(lhs, rhs) || comp(rhs, lhs);
-    }
-
-    size_t leftPos, rightPos, resPos;
-    T lastAdded;
-    bool anyAdded;
-    while(leftPos < first.length && rightPos < second.length) {
-        if(comp(second[rightPos], first[leftPos])) {
-            rightPos++;
-        } else if(comp(first[leftPos], second[rightPos])) {
-            leftPos++;
-        } else {  // Equal
-            if(!anyAdded || notEqual(lastAdded, first[leftPos])) {
-                result[resPos++] = first[leftPos];
-                lastAdded = first[leftPos];
-                anyAdded = true;
-            }
-            leftPos++;
-            rightPos++;
-        }
-    }
-    return result[0..resPos];
-}
-
-unittest {
-    mixin(newFrame);
-    assert(intersectSorted([1,3,1,3,6,4,6].sort, [6,6,4,4,2,2,9,10].sort) == [4,6]);
-
-    // We have two different methods, they shoouldn't be wrong in the same way.
-    // Test one against the other.
-    uint[] first = new uint[500];
-    uint[] second = new uint[1000];
-    foreach(i; 0..1000) {
-        foreach(ref f; first)
-            f = uniform(0U, 2500);
-        foreach(ref s; second)
-            s = uniform(0U, 5000);
-        auto hash = qsort!("a > b")(intersect(first, second));
-        auto sort = intersectSorted!("a > b")
-                    (qsort!("a > b")(first), qsort!("a > b")(second));
-        assert(hash == sort);
-    }
-    writeln("Passed intersect test.");
 }
 
 /**Converts a range with arbitrary element types (usually strings) to a

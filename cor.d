@@ -185,57 +185,35 @@ unittest {
 
 /**Spearman's rank correlation.  Non-parametric.  This is essentially the
  * Pearson correlation of the ranks of the data, with ties dealt with by
- * averaging.
- *
- * Currently only works on input ranges with a length property.*/
+ * averaging.*/
 real scor(R, S)(R input1, S input2)
-if(isInputRange!(R) && isInputRange!(S) &&
-   dstats.base.hasLength!(R) && dstats.base.hasLength!(S))
+if(isInputRange!(R) && isInputRange!(S))
 in {
-    assert(input1.length == input2.length);
+    static if(dstats.base.hasLength!S && dstats.base.hasLength!R) {
+        assert(input1.length == input2.length);
+    }
 } body {
-    alias ElementType!(R) T;
-    alias ElementType!(S) U;
-    if(input1.length < 2)
-        return real.nan;
+    static if(dstats.base.hasLength!S && dstats.base.hasLength!R) {
+        if(input1.length < 2) {
+            return real.nan;
+        }
+    }
 
     mixin(newFrame);
-    uint[] perms = newStack!(uint)(input1.length);
-    foreach(i, ref p; perms) {
-        p = i;
+
+    static float[] scorRank(T)(T someRange) {
+        static if(dstats.base.hasLength!(T)) {
+            float[] ret = newStack!(float)(someRange.length);
+            rank(someRange, ret);
+        } else {
+            auto iDup = tempdup(someRange);
+            float[] ret = newStack!(float)(iDup.length);
+            rankSort(iDup, ret);
+        }
+        return ret;
     }
 
-    T[] iDup;
-    size_t largerSize = (T.sizeof > U.sizeof) ? T.sizeof : U.sizeof;
-    iDup = (cast(T*) TempAlloc.malloc(largerSize * input1.length))
-           [0..input1.length];
-    rangeCopy(iDup, input1);
-    qsort(iDup, perms);
-
-    float[] i1Ranks = newStack!(float)(input1.length),
-            i2Ranks = newStack!(float)(input1.length);
-
-    foreach(i; 0..perms.length)  {
-        i1Ranks[perms[i]] = i + 1;
-    }
-    averageTies(iDup, i1Ranks, perms);
-    foreach(i; 0..iDup.length) {
-        perms[i] = i;
-    }
-
-    // Recycling allocations is good for the environment.
-    // This works because I previously made sure that the array was big enough
-    // for the larger of T, U.
-    U[] iDup2 = (cast(U*) iDup.ptr)[0..input2.length];
-    rangeCopy(iDup2, input2);
-
-    qsort(iDup2, perms);
-    foreach(i; 0..perms.length)  {
-        i2Ranks[perms[i]] = i + 1;
-    }
-    averageTies(iDup2, i2Ranks, perms);
-
-    return pcor(i1Ranks, i2Ranks).cor;
+    return pcor(scorRank(input1), scorRank(input2)).cor;
 }
 
 unittest {
@@ -296,9 +274,6 @@ unittest {
         }
         bool empty() {
             return num >= upTo;
-        }
-        uint length() {
-            return upTo - num;
         }
     }
 
@@ -370,9 +345,9 @@ if(isInputRange!(T) && isInputRange!(U)) {
     return kcorDestructive(i1d, i2d);
 }
 
-/**Kendall's Tau O(N log N) destroys input vectors but requires
- * O(1) auxilliary space provided T.sizeof == U.sizeof.
- * Also only works on arrays.*/
+/**Kendall's Tau O(N log N) populates input arrays with undefined data but
+ * requires O(1) auxilliary space provided T.sizeof == U.sizeof.
+ * Only works on arrays.*/
 real kcorDestructive(T, U)(T[] input1, U[] input2)
 in {
     assert(input1.length == input2.length);

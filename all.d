@@ -4,7 +4,7 @@
  * If you think this module is even copyrightable, you have issues.
  */
 
-module dstats.stats;
+module dstats.all;
 
 public import dstats.sort, dstats.base, dstats.cor,
               dstats.distrib, dstats.infotheory, dstats.random,

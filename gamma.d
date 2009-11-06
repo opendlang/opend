@@ -69,7 +69,7 @@ version(unittest) {
 //------------------------------------------------------------------
 
 /// The maximum value of x for which gamma(x) < real.infinity.
-invariant real MAXGAMMA = 1755.5483429L;
+enum real MAXGAMMA = 1755.5483429L;
 
 /****************
  * The sign of $(GAMMA)(x).
@@ -104,10 +104,10 @@ unittest {
 }
 
 private {
-invariant real MAXLOG = 0x1.62e42fefa39ef358p+13L;  // log(real.max)
-invariant real MINLOG = -0x1.6436716d5406e6d8p+13L; // log(real.min*real.epsilon) = log(smallest denormal)
-invariant real BETA_BIG = 9.223372036854775808e18L;
-invariant real BETA_BIGINV = 1.084202172485504434007e-19L;
+enum real MAXLOG = 0x1.62e42fefa39ef358p+13L;  // log(real.max)
+enum real MINLOG = -0x1.6436716d5406e6d8p+13L; // log(real.min*real.epsilon) = log(smallest denormal)
+enum real BETA_BIG = 9.223372036854775808e18L;
+enum real BETA_BIGINV = 1.084202172485504434007e-19L;
 }
 
 /** Beta function
@@ -551,7 +551,7 @@ real betaDistExpansion1(real a, real b, real x ) pure nothrow
     ans = 1.0L;
     r = 1.0L;
     n = 0;
-    invariant real thresh = 3.0L * real.epsilon;
+    enum real thresh = 3.0L * real.epsilon;
     do  {
         xk = -( x * k1 * k2 )/( k3 * k4 );
         pk = pkm1 +  pkm2 * xk;
@@ -634,7 +634,7 @@ real betaDistExpansion2(real a, real b, real x ) pure nothrow
     ans = 1.0L;
     r = 1.0L;
     int n = 0;
-    const real thresh = 3.0L * real.epsilon;
+    enum real thresh = 3.0L * real.epsilon;
     do {
 
         xk = -( z * k1 * k2 )/( k3 * k4 );
@@ -801,7 +801,7 @@ body {
    // DAC (Cephes bug fix): This is necessary to avoid
    // spurious nans, eg
    // log(x)-x = NaN when x = real.infinity
-    const real MAXLOGL =  1.1356523406294143949492E4L;
+   enum real MAXLOGL =  1.1356523406294143949492E4L;
    if (x > MAXLOGL) return 0; // underflow
 
     real ax = a * log(x) - x - logGamma(a);
@@ -842,7 +842,7 @@ body {
         qkm2 = qkm1;
         qkm1 = qk;
 
-        const real BIG = 9.223372036854775808e18L;
+        enum real BIG = 9.223372036854775808e18L;
 
         if ( fabs(pk) > BIG ) {
             pkm2 /= BIG;
@@ -876,7 +876,7 @@ body {
     if (p==0) return real.infinity;
 
     real y0 = p;
-    invariant real MAXLOGL =  1.1356523406294143949492E4L;
+    enum real MAXLOGL =  1.1356523406294143949492E4L;
     real x0, x1, x, yl, yh, y, d, lgm, dithresh;
     int i, dir;
 
