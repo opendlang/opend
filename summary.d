@@ -1,6 +1,7 @@
 /**Summary statistics such as mean, median, sum, variance, skewness, kurtosis.
- * Except for median, which cannot be calculated online, all summary statistics
- * have both an input range interface and an output range interface.
+ * Except for median and median absolute deviation, which cannot be calculated
+ * online, all summary statistics have both an input range interface and an
+ * output range interface.
  *
  * Bugs:  This whole module assumes that input will be reals or types implicitly
  *        convertible to real.  No allowances are made for user-defined numeric
@@ -186,17 +187,6 @@ unittest {
     writeln("Passed medianAbsDev unittest.");
 }
 
-/**Finds the arithmetic mean of any input range whose elements are implicitly
- * convertible to real.*/
-real mean(T)(T data)
-if(realIterable!(T)) {
-    Mean meanCalc;
-    foreach(element; data) {
-        meanCalc.put(element);
-    }
-    return meanCalc.mean;
-}
-
 /**Output range to calculate the mean online.  Getter for mean costs a branch to
  * check for N == 0.  This struct uses O(1) space and does *NOT* store the
  * individual elements.
@@ -215,13 +205,19 @@ struct Mean {
 private:
     real result = 0;
     real k = 0;
+
 public:
     /// Allow implicit casting to real, by returning the current mean.
-   // alias mean this;
+    alias mean this;
 
     ///
     void put(real element) nothrow {
         result += (element - result) / ++k;
+    }
+
+    ///
+    real sum() const pure nothrow {
+        return result * k;
     }
 
     ///
@@ -238,6 +234,17 @@ public:
     string toString() const {
         return to!(string)(mean);
     }
+}
+
+/**Finds the arithmetic mean of any input range whose elements are implicitly
+ * convertible to real.*/
+Mean mean(T)(T data)
+if(realIterable!(T)) {
+    Mean meanCalc;
+    foreach(element; data) {
+        meanCalc.put(element);
+    }
+    return meanCalc;
 }
 
 ///
@@ -307,12 +314,13 @@ unittest {
     assert(approxEqual( sum(cast(int[]) [40.0, 40.1, 5.2]), 85.3));
     assert(mean(cast(int[]) [1,2,3]) == 2);
     assert(mean(cast(int[]) [1.0, 2.0, 3.0]) == 2.0);
-    assert(mean(cast(int[]) [1, 2, 5, 10, 17]) == 7);
-    writefln("Passed sum/mean unittest.");
+    assert(mean([1, 2, 5, 10, 17][]) == 7);
+    assert(mean([1, 2, 5, 10, 17][]).sum == 35);
+    writeln("Passed sum/mean unittest.");
 }
 
 
-/**Outpu range to compute mean, stdev, variance online.  Getter methods
+/**Output range to compute mean, stdev, variance online.  Getter methods
  * for stdev, var cost a few floating point ops.  Getter for mean costs
  * a single branch to check for N == 0.  Relatively expensive floating point
  * ops, if you only need mean, try Mean.  This struct uses O(1) space and
@@ -341,6 +349,11 @@ public:
         real kNeg1 = 1.0L / ++_k;
         _var += (element * element - _var) * kNeg1;
         _mean += (element - _mean) * kNeg1;
+    }
+
+    ///
+    real sum() const pure nothrow {
+        return _k * _mean;
     }
 
     ///
@@ -407,6 +420,7 @@ unittest {
     res = meanStdev(cast(double[]) [1.0, 2.0, 3.0, 4.0, 5.0]);
     assert(approxEqual(res.stdev, 1.5811));
     assert(approxEqual(res.mean, 3));
+    assert(approxEqual(res.sum, 15));
     writefln("Passed variance/standard deviation unittest.");
 }
 
@@ -433,6 +447,7 @@ unittest {
  * assert(approxEqual(summ.kurtosis, -1.9120));
  * assert(summ.min == 1);
  * assert(summ.max == 5);
+ * assert(summ.sum == 15);
  * ---*/
 struct Summary {
 private:
@@ -453,6 +468,11 @@ public:
         _m2 += (element * element - _m2) * kNeg1;
         _m3 += (element * element * element - _m3) * kNeg1;
         _m4 += (element * element * element * element - _m4) * kNeg1;
+    }
+
+    ///
+    real sum() const pure nothrow {
+        return _mean * _k;
     }
 
     ///
