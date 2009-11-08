@@ -1013,7 +1013,7 @@ real wilcoxonRankSumPval(real w, ulong n1, ulong n2, Alt alt = Alt.TWOSIDE,
         return real.nan;
     }
 
-    ulong N = n1 + n2;
+    real N = n1 + n2;
 
     if(N < exactThresh && tieSum == 0) {
         return wilcoxRSPExact(roundTo!uint(w), cast(uint) n1, cast(uint) n2, alt);
@@ -1530,23 +1530,23 @@ if(realInput!(T)) {
  * Notes:  This test can also be performed using multinomialTest(), but this
  * implementation is much faster and easier to use.
  */
-real binomialTest(uint k, uint n, real p) {
-    immutable mode = cast(uint) ((n + 1) * p);
+real binomialTest(ulong k, ulong n, real p) {
+    enum EPSILON = 1e-10;  // Small but arbitrary constant to deal w/ rounding error.
+
+    immutable mode = cast(long) ((n + 1) * p);
     if(k == mode ||
-       approxEqual(binomialPMF(k, n, p), binomialPMF(mode, n, p), 1e-7)) {
+       approxEqual(binomialPMF(k, n, p), binomialPMF(mode, n, p), EPSILON)) {
         return 1;
     } else if(k > mode) {
         immutable upperPart = binomialCDFR(k, n, p);
         immutable pExact = binomialPMF(k, n, p);
-        uint ulim = mode, llim = 0, guess;
+        ulong ulim = mode, llim = 0, guess;
         while(ulim - llim > 1) {
-            // Not worrying about overflow b/c for values that large, there
-            // are probably bigger numerical stability issues, etc. anyhow.
             guess = (ulim + llim) / 2;
             real pGuess = binomialPMF(guess, n, p);
 
-            if(approxEqual(pGuess, pExact, 1e-7)) {
-                ulim = guess;
+            if(pGuess == pExact) {
+                ulim = guess + 1;
                 llim = guess;
                 break;
             } else if(pGuess < pExact) {
@@ -1555,24 +1555,30 @@ real binomialTest(uint k, uint n, real p) {
                 ulim = guess;
             }
         }
-        guess = (binomialPMF(ulim, n, p) > pExact) ? llim : ulim;
+
+        guess = ulim;
+        while(binomialPMF(guess, n, p) < pExact) {
+            guess++;
+        }
+        while(guess > 0 && binomialPMF(guess, n, p) > pExact + EPSILON) {
+            guess--;
+        }
         if(guess == 0 && binomialPMF(0, n, p) > pExact) {
             return upperPart;
         }
         return upperPart + binomialCDF(guess, n, p);
     } else {
-        real myPMF(uint k, uint n, real p) {
+        static real myPMF(ulong k, ulong n, real p) {
             return k > n ? 0 : binomialPMF(k, n, p);
         }
+
         immutable lowerPart = binomialCDF(k, n, p);
         immutable pExact = binomialPMF(k, n, p);
-        uint ulim = n + 1, llim = mode, guess;
+        ulong ulim = n + 1, llim = mode, guess;
         while(ulim - llim > 1) {
-            // Not worrying about overflow b/c for values that large, there
-            // are probably bigger numerical stability issues, etc. anyhow.
             guess = (ulim + llim) / 2;
             real pGuess = myPMF(guess, n, p);
-            if(approxEqual(pGuess, pExact, 1e-7)) {
+            if(pGuess == pExact) {
                 ulim = guess;
                 llim = guess;
                 break;
@@ -1582,13 +1588,29 @@ real binomialTest(uint k, uint n, real p) {
                 llim = guess;
             }
         }
-        guess = (myPMF(llim, n, p) > pExact) ? ulim : llim;
+
+        // All this stuff is necessary to deal with round-off error properly.
+        guess = llim;
+        while(myPMF(guess, n, p) < pExact && guess > 0) {
+            guess--;
+        }
+        while(myPMF(guess, n, p) > pExact + EPSILON) {
+            guess++;
+        }
+
         return lowerPart + ((guess > n) ? 0 : binomialCDFR(guess, n, p));
     }
 }
 
 unittest {
     // Values from R.
+    assert(approxEqual(binomialTest(46, 96, 0.5), 0.759649));
+    assert(approxEqual(binomialTest(44, 56, 0.5), 2.088e-5));
+    assert(approxEqual(binomialTest(12, 56, 0.5), 2.088e-5));
+    assert(approxEqual(binomialTest(0, 40, 0.25), 2.236e-5));
+    assert(approxEqual(binomialTest(5, 16, 0.5), 0.2101));
+    assert(approxEqual(binomialTest(0, 20, 0.4), 4.16e-5));
+    assert(approxEqual(binomialTest(20, 20, 0.6), 4.16e-5));
     assert(approxEqual(binomialTest(6, 88, 0.1), 0.3784));
     assert(approxEqual(binomialTest(3, 4, 0.5), 0.625));
     assert(approxEqual(binomialTest(4, 7, 0.8), 0.1480));
@@ -1815,7 +1837,8 @@ unittest {
                 uint[] counts = [k, n - k];
                 real multino = multinomialTest(counts, ps);
                 //writeln(k, "\t", n, "\t", p, "\t", bino, "\t", multino);
-                assert(approxEqual(bino, multino));
+                assert(approxEqual(bino, multino),
+                    text(bino, '\t', multino, '\t', k, '\t', n, '\t', p));
             }
         }
     }
