@@ -467,19 +467,33 @@ unittest {
 /**The F-test is a one-way ANOVA extension of the T-test to >2 groups.
  * It's useful when you have 3 or more groups with equal variance and want
  * to test whether their means are equal.  Data can be input as either a
- * tuple of ranges (one range for each group) or a range of ranges
- * (one element for each group).
+ * tuple or a range.  This may contain any combination of ranges of numeric
+ * types, MeanSD structs and Summary structs.
+ *
+ * Examples:
+ * ---
+ * uint[] thing1 = [3,1,4,1],
+ *        thing2 = [5,9,2,6,5,3],
+ *        thing3 = [5,8,9,7,9,3];
+ * auto result = fTest(thing1, meanStdev(thing2), summary(thing3));
+ * assert(approxEqual(result.testStat, 4.9968));
+ * assert(approxEqual(result.p, 0.02456));
+ * ---
  *
  * Returns:
+ *
  * A TestRes containing the F statistic and the P-value for the alternative
  * that the means of the groups are different against the null that they
  * are identical.
  */
-TestRes fTest(T...)(T dataIn)
-if(allSatisfy!(isInputRange, T)) {
-    static if(dataIn.length == 1 && isInputRange!(typeof(dataIn[0].front))) {
+TestRes fTest(T...)(T dataIn) {
+    static if(dataIn.length == 1) {
         mixin(newFrame);
-        auto data = tempdup(dataIn[0]);
+        static if(dstats.base.hasLength!(typeof(dataIn[0]))) {
+            alias dataIn[0] data;
+        } else {
+            auto data = tempdup(dataIn[0]);
+        }
         auto withins = newStack!MeanSD(data.length);
         withins[] = MeanSD.init;
     } else {
@@ -488,18 +502,29 @@ if(allSatisfy!(isInputRange, T)) {
         MeanSD[len] withins;
     }
 
-    Mean overallMean;
     uint DFGroups = data.length - 1;
-    uint DFDataPoints = 0;
+    ulong N = 0;
     foreach(i, range; data) {
-        foreach(elem; range) {
-            withins[i].put(elem);
-            overallMean.put(elem);
-            DFDataPoints++;
+        static if(isInputRange!(typeof(range)) &&
+            is(Unqual!(ElementType!(typeof(range))) : real)) {
+            foreach(elem; range) {
+                withins[i].put(elem);
+                N++;
+            }
+        } else static if(isSummary!(typeof(range))) {
+            withins[i] = range;
+            N += roundTo!long(range.N);
+        } else {
+            static assert(0, "Can only perform F-test on input ranges of " ~
+                "numeric types, MeanSD structs and Summary structs, not a " ~
+                typeof(range).stringof ~ ".");
         }
     }
-    DFDataPoints -= data.length;
-    auto mu = overallMean.mean;
+    immutable ulong DFDataPoints = N - data.length;
+    real mu = 0;
+    foreach(summary; withins) {
+        mu += summary.mean * (summary.N / N);
+    }
 
     real totalWithin = 0;
     real totalBetween = 0;
@@ -516,15 +541,17 @@ if(allSatisfy!(isInputRange, T)) {
 
 unittest {
     // Values from R.
-    uint[] thing1 = [3,1,4,1], thing2 = [5,9,2,6,5,3], thing3 = [5,8,9,7,9,3];
-    auto res1 = fTest(thing1, thing2, thing3);
-    assert(approxEqual(res1.testStat, 4.9968));
-    assert(approxEqual(res1.p, 0.02456));
+    uint[] thing1 = [3,1,4,1],
+           thing2 = [5,9,2,6,5,3],
+           thing3 = [5,8,9,7,9,3];
+    auto result = fTest(thing1, meanStdev(thing2), summary(thing3));
+    assert(approxEqual(result.testStat, 4.9968));
+    assert(approxEqual(result.p, 0.02456));
 
     // Test array case.
     auto res2 = fTest([thing1, thing2, thing3].dup);
-    assert(res1.testStat == res2.testStat);
-    assert(res1.p == res2.p);
+    assert(result.testStat == res2.testStat);
+    assert(result.p == res2.p);
 
     thing1 = [2,7,1,8,2];
     thing2 = [8,1,8];
@@ -532,6 +559,10 @@ unittest {
     auto res3 = fTest(thing1, thing2, thing3);
     assert(approxEqual(res3.testStat, 0.377));
     assert(approxEqual(res3.p, 0.6953));
+
+    auto res4 = fTest([summary(thing1), summary(thing2), summary(thing3)][]);
+    assert(res4.testStat == res3.testStat);
+    assert(res4.testStat == res3.testStat);
     writeln("Passed fTest unittest.");
 }
 
@@ -2053,13 +2084,13 @@ private real gTestElem(real observed, real expected) {
 TestRes fisherExact(T)(const T[2][2] contingencyTable, Alt alt = Alt.TWOSIDE)
 if(isIntegral!(T)) {
 
-    static real fisherLower(const uint[2][2] contingencyTable) {
+    static real fisherLower(const T[2][2] contingencyTable) {
         alias contingencyTable c;
         return hypergeometricCDF(c[0][0], c[0][0] + c[0][1], c[1][0] + c[1][1],
                                  c[0][0] + c[1][0]);
     }
 
-    static real fisherUpper(const uint[2][2] contingencyTable) {
+    static real fisherUpper(const T[2][2] contingencyTable) {
         alias contingencyTable c;
         return hypergeometricCDFR(c[0][0], c[0][0] + c[0][1], c[1][0] + c[1][1],
                                  c[0][0] + c[1][0]);
@@ -2159,7 +2190,7 @@ in {
     assert(contingencyTable[0].length == 2);
     assert(contingencyTable[1].length == 2);
 } body {
-    uint[2][2] newTable;
+    T[2][2] newTable;
     newTable[0][0] = contingencyTable[0][0];
     newTable[0][1] = contingencyTable[0][1];
     newTable[1][1] = contingencyTable[1][1];

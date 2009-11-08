@@ -191,6 +191,8 @@ unittest {
  * check for N == 0.  This struct uses O(1) space and does *NOT* store the
  * individual elements.
  *
+ * Note:  This struct can implicitly convert to the value of the mean.
+ *
  * Examples:
  * ---
  * Mean summ;
@@ -326,6 +328,8 @@ unittest {
  * ops, if you only need mean, try Mean.  This struct uses O(1) space and
  * does *NOT* store the individual elements.
  *
+ * Note:  This struct can implicitly convert to a Mean struct.
+ *
  * Examples:
  * ---
  * MeanSD summ;
@@ -381,6 +385,13 @@ public:
         return _k;
     }
 
+    /**Converts this struct to a Mean struct.  Also called when an
+     * implicit conversion via alias this takes place.
+     */
+    Mean toMean() const pure nothrow {
+        return Mean(_mean, _k);
+    }
+
     ///
     string toString() const {
         return text("N = ", cast(ulong) _k, "\nMean = ", mean, "\nVariance = ",
@@ -431,6 +442,8 @@ unittest {
  * check for N == 0.  Getters for skewness and kurtosis cost a whole bunch of
  * floating point ops.  This struct uses O(1) space and does *NOT* store the
  * individual elements.
+ *
+ * Note:  This struct can implicitly convert to a MeanSD.
  *
  * Examples:
  * ---
@@ -525,6 +538,15 @@ public:
     real max() const pure nothrow {
         return _max;
     }
+
+    /**Converts this struct to a MeanSD.  Called via alias this when an
+     * implicit conversion is attetmpted.
+     */
+    MeanSD toMeanSD() const pure nothrow {
+        return MeanSD(_mean, _m2, _k);
+    }
+
+    alias toMeanSD this;
 
     ///
     string toString() const {
