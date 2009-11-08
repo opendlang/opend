@@ -68,9 +68,9 @@ if(realInput!(T) && realInput!(U)) {
 }
 
 unittest {
-    assert(approxEqual(pcor([1,2,3,4,5].dup, [1,2,3,4,5].dup), 1));
-    assert(approxEqual(pcor([1,2,3,4,5].dup, [10.0, 8.0, 6.0, 4.0, 2.0].dup), -1));
-    assert(approxEqual(pcor([2, 4, 1, 6, 19].dup, [4, 5, 1, 3, 2].dup), -.2382314));
+    assert(approxEqual(pcor([1,2,3,4,5][], [1,2,3,4,5][]).cor, 1));
+    assert(approxEqual(pcor([1,2,3,4,5][], [10.0, 8.0, 6.0, 4.0, 2.0][]).cor, -1));
+    assert(approxEqual(pcor([2, 4, 1, 6, 19][], [4, 5, 1, 3, 2][]).cor, -.2382314));
 
         // Make sure everything works with lowest common denominator range type.
     struct Count {
@@ -90,7 +90,7 @@ unittest {
     Count a, b;
     a.upTo = 100;
     b.upTo = 100;
-    assert(approxEqual(pcor(a, b), 1));
+    assert(approxEqual(pcor(a, b).cor, 1));
 
     writefln("Passed pcor unittest.");
 }
@@ -285,47 +285,48 @@ unittest {
     writeln("Passed scor unittest.");
 }
 
-
 /*  Kendall's Tau correlation, O(N^2) version.  Kept around
   * for testing, but pretty useless otherwise.  Since new version falls back
   * on insertion sorting when N is small, this is likely not faster
   * even for small N.  Advantage is that it's a very direct translation from
   * standard formulas, and therefore unlikely to have weird, subtle bugs.*/
 
-private real kcorOld(T, U)(const T[] input1, const U[] input2)
-in {
-    assert(input1.length == input2.length);
-} body {
-    ulong m1=0, m2=0;
-    int s=0;
-    scope uint[const(T)] f1=frequency(input1);
-    scope uint[const(U)] f2=frequency(input2);
-    foreach(f; f1) {
-        m1+=(f*(f-1))/2;
-    }
-    foreach(f; f2) {
-        m2+=(f*(f-1))/2;
-    }
-    foreach (i; 0..input2.length) {
-        foreach (j; (i+1)..input2.length) {
-            if (input2[i] > input2[j]) {
-                if (input1[i] > input1[j]) {
-                    s++;
-                } else if (input1[i] < input1[j]) {
-                    s--;
-                }
-            } else if (input2[i] < input2[j]) {
-                if (input1[i] > input1[j]) {
-                    s--;
-                } else if (input1[i] < input1[j]) {
-                    s++;
+version(unittest) {
+    private real kcorOld(T, U)(const T[] input1, const U[] input2)
+    in {
+        assert(input1.length == input2.length);
+    } body {
+        ulong m1=0, m2=0;
+        int s=0;
+        scope uint[const(T)] f1=frequency(input1);
+        scope uint[const(U)] f2=frequency(input2);
+        foreach(f; f1) {
+            m1+=(f*(f-1))/2;
+        }
+        foreach(f; f2) {
+            m2+=(f*(f-1))/2;
+        }
+        foreach (i; 0..input2.length) {
+            foreach (j; (i+1)..input2.length) {
+                if (input2[i] > input2[j]) {
+                    if (input1[i] > input1[j]) {
+                        s++;
+                    } else if (input1[i] < input1[j]) {
+                        s--;
+                    }
+                } else if (input2[i] < input2[j]) {
+                    if (input1[i] > input1[j]) {
+                        s--;
+                    } else if (input1[i] < input1[j]) {
+                        s++;
+                    }
                 }
             }
         }
+        ulong denominator1=(input2.length*(input2.length-1))/2 - m1;
+        ulong denominator2=(input2.length*(input2.length-1))/2 - m2;
+        return s/sqrt(cast(real) (denominator1*denominator2));
     }
-    ulong denominator1=(input2.length*(input2.length-1))/2 - m1;
-    ulong denominator2=(input2.length*(input2.length-1))/2 - m2;
-    return s/sqrt(cast(real) (denominator1*denominator2));
 }
 
 /**Kendall's Tau, O(N log N) version.  This can be defined in terms of the
@@ -345,9 +346,10 @@ if(isInputRange!(T) && isInputRange!(U)) {
     return kcorDestructive(i1d, i2d);
 }
 
-/**Kendall's Tau O(N log N) populates input arrays with undefined data but
- * requires O(1) auxilliary space provided T.sizeof == U.sizeof.
- * Only works on arrays.*/
+/**Kendall's Tau O(N log N), overwrites input arrays with undefined data but
+ * uses only O(log N) stack space for sorting, not O(N) space to duplicate
+ * input.  Only works on arrays.
+ */
 real kcorDestructive(T, U)(T[] input1, U[] input2)
 in {
     assert(input1.length == input2.length);
@@ -355,8 +357,18 @@ in {
     return kcorDestructiveLowLevel(input1, input2).field[0];
 }
 
+// Guarantee that T.sizeof >= U.sizeof so we know we can recycle space.
+auto kcorDestructiveLowLevel(T, U)(T[] input1, U[] input2)
+if(T.sizeof < U.sizeof) {
+    return kcorDestructiveLowLevel(input2, input1);
+}
+
 // Used internally in dstats.tests.kcorTest.
-auto kcorDestructiveLowLevel(T, U)(T[] input1, U[] input2) {
+auto kcorDestructiveLowLevel(T, U)(T[] input1, U[] input2)
+if(T.sizeof >= U.sizeof)
+in {
+    assert(input1.length == input2.length);
+} body {
     static Tuple!(ulong, ulong) getMs(V)(const V[] data) {  //Assumes data is sorted.
         ulong Ms = 0, tieCount = 0, tieCorrect = 0;
         foreach(i; 1..data.length) {
@@ -377,50 +389,47 @@ auto kcorDestructiveLowLevel(T, U)(T[] input1, U[] input2) {
         return tuple(Ms, tieCorrect);
     }
 
-    ulong m1 = 0, m2 = 0, tieCorrect = 0,
+    ulong m1 = 0, tieCorrect = 0,
           nPair = (cast(ulong) input1.length *
                   ( cast(ulong) input1.length - 1UL)) / 2UL;
-    alias input1 i1d;
-    alias input2 i2d;
-    qsort!("a < b")(i1d, i2d);
-    long s = cast(long) nPair;
+
+    qsort!("a < b")(input1, input2);
+    long s = nPair;
 
     uint tieCount = 0;
-    foreach(i; 1..i1d.length) {
-        if(i1d[i] == i1d[i-1]) {
+    foreach(i; 1..input1.length) {
+        if(input1[i] == input1[i-1]) {
             tieCount++;
         } else if(tieCount > 0) {
-            qsort!("a < b")(i2d[i - tieCount - 1..i]);
+            qsort!("a < b")(input2[i - tieCount - 1..i]);
             m1 += tieCount * (tieCount + 1) / 2UL;
-            s += getMs(i2d[i - tieCount - 1..i]).field[0];
+            s += getMs(input2[i - tieCount - 1..i]).field[0];
             tieCount++;
             tieCorrect += cast(ulong) tieCount * (tieCount - 1) * (2 * tieCount + 5);
             tieCount = 0;
         }
     }
     if(tieCount > 0) {
-        qsort!("a < b")(i2d[i1d.length - tieCount - 1..i1d.length]);
+        qsort!("a < b")(input2[input1.length - tieCount - 1..input1.length]);
         m1 += tieCount * (tieCount + 1UL) / 2UL;
-        s += getMs(i2d[i1d.length - tieCount - 1..i1d.length]).field[0];
+        s += getMs(input2[input1.length - tieCount - 1..input1.length]).field[0];
         tieCount++;
         tieCorrect += cast(ulong) tieCount * (tieCount - 1) * (2 * tieCount + 5);
     }
+
+    // We've already guaranteed that T.sizeof >= U.sizeof and we own these
+    // arrays and will never use input1 again, so this is safe.
     ulong swapCount = 0;
+    U[] input1Temp = (cast(U*) input1.ptr)[0..input2.length];
+    mergeSortTemp!("a < b")(input2, input1Temp, &swapCount);
 
-    static if(T.sizeof == U.sizeof) {  // Recycle allocations.
-        U[] i1dTemp = (cast(U*) i1d.ptr)[0..input2.length];
-        mergeSortTemp!("a < b")(i2d, i1dTemp, &swapCount);
-    } else {  // Let the mergeSort function handle the allocation.
-        mergeSort!("a < b")(i2d, &swapCount);
-    }
-
-    auto tieStuff = getMs(i2d);
-    m2 = tieStuff.field[0];
+    immutable tieStuff = getMs(input2);
+    immutable m2 = tieStuff.field[0];
     tieCorrect += tieStuff.field[1];
     s -= (m1 + m2) + 2 * swapCount;
-    ulong denominator1 = nPair - m1;
-    ulong denominator2 = nPair - m2;
-    real cor = s / (sqrt(cast(real) (denominator1)) * sqrt(cast(real) denominator2));
+    immutable real denominator1 = nPair - m1;
+    immutable real denominator2 = nPair - m2;
+    real cor = s / sqrt(denominator1) / sqrt(denominator2);
     return tuple(cor, s, tieCorrect);
 }
 
