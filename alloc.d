@@ -1,4 +1,5 @@
-/**Allocation functions.
+/**Stuff having to do with memory management.  Mostly TempAlloc and some data
+ * structure implementations that go with it.
  *
  * Author:  David Simcha*/
  /*
@@ -30,7 +31,8 @@
 
 module dstats.alloc;
 
-import std.traits, core.memory, core.thread, std.array, std.range, dstats.base;
+import std.traits, core.memory, core.thread, std.array, std.range,
+    std.functional, dstats.base, std.algorithm : max;
 static import std.c.stdio;
 
 version(unittest) {
@@ -575,13 +577,13 @@ template hasLength(R) {
 
 /**Converts any range to an array on the GC heap by the most efficient means
  * available.  If it is already an array, duplicates the range.*/
-Unqual!(ElementType!(T))[] toArray(T)(T range) if(isInputRange!(T)) {
+Unqual!(IterType!(T))[] toArray(T)(T range) if(isIterable!(T)) {
     static if(isArray!(T)) {
         // Allow fast copying by assuming that the input is an array.
         return range.dup;
     } else static if(hasLength!(T)) {
         // Preallocate array, then copy.
-        auto ret = newVoid!(Unqual!(ElementType!(T)))(range.length);
+        auto ret = newVoid!(Unqual!(IterType!(T)))(range.length);
         static if(is(typeof(ret[] = range[]))) {
             ret[] = range[];
         } else {
@@ -593,7 +595,7 @@ Unqual!(ElementType!(T))[] toArray(T)(T range) if(isInputRange!(T)) {
         return ret;
     } else {
         // Don't have length, have to use appending.
-        Unqual!(ElementType!(T))[] ret;
+        Unqual!(IterType!(T))[] ret;
         auto app = appender(&ret);
         foreach(elem; range) {
             app.put(elem);
@@ -793,8 +795,14 @@ public:
     }
 
     ///
-    Unqual!(K) front() {
-        return *frontElem;
+    static if(vals) {
+        ref Unqual!(K) front() {
+            return *frontElem;
+        }
+    } else {
+       Unqual!(K) front() {
+            return *frontElem;
+        }
     }
 
     ///
@@ -1076,6 +1084,24 @@ public:
     ///
     size_t length() const {
         return _length;
+    }
+
+    int opApply(int delegate(ref K, ref V) dg) {
+        auto k = this.keys;
+        auto v = this.values;
+        int res;
+
+        while(!k.empty) {
+            auto kFront = k.front;
+            res = dg(kFront, v.front);
+            k.popFront;
+            v.popFront;
+            if(res) {
+                break;
+            }
+        }
+
+        return res;
     }
 
     real efficiency() {
@@ -1473,4 +1499,785 @@ unittest {
         assert(builtin.length == 0);
     }
     writeln("Passed StackSet test.");
+}
+
+private int height(T)(T node) nothrow {
+    return (node is null) ? 0 : node.height;
+}
+
+/* Store the height in the low order bits of the pointers to save space,
+ * since TempAlloc allocates 16-byte aligned memory anyhow.
+ */
+struct AVLNode(T) {
+    T payload;
+    size_t _left;
+    size_t _right;
+
+    enum size_t mask = 0b1111;
+    enum size_t notMask = ~mask;
+
+    typeof(this)* left() nothrow @property {
+        size_t ret = _left & notMask;
+        return cast(typeof(return)) ret;
+    }
+
+    void left(typeof(this)* newLeft) nothrow @property
+    in {
+        assert((cast(size_t) newLeft & mask) == 0);
+    } body {
+        _left &= mask;
+        _left |= cast(size_t) newLeft;
+        assert(left is newLeft);
+    }
+
+    typeof(this)* right() nothrow @property {
+        size_t ret = _right & notMask;
+        return cast(typeof(return)) ret;
+    }
+
+    void right(typeof(this)* newRight) nothrow @property
+    in {
+        assert((cast(size_t) newRight & mask) == 0);
+    } body {
+        _right &= mask;
+        _right |= cast(size_t) newRight;
+        assert(right is newRight);
+    }
+
+    int height() nothrow @property {
+        return (((_left & mask) << 4) |
+                    (_right & mask));
+    }
+
+    void height(int newHeight) nothrow @property {
+        _right &= notMask;
+        _right |= (newHeight & mask);
+        newHeight >>= 4;
+        _left &= notMask;
+        _left |= (newHeight & mask);
+    }
+
+    int balance() nothrow @property {
+        return .height(left) - .height(right);
+    }
+
+    void fixHeight() nothrow {
+        auto leftHeight = .height(left);
+        auto rightHeight = .height(right);
+
+        height = ((leftHeight > rightHeight) ? leftHeight : rightHeight) + 1;
+    }
+
+    bool isLeaf() nothrow @property {
+        return left is null && right is null;
+    }
+}
+
+/**An AVL tree implementation on top of TempAlloc.  If elements are removed,
+ * they are stored on an internal free list and recycled when new elements
+ * are added to the tree.
+ *
+ * Template paramters:
+ *
+ * T = The type to be stored in the tree.
+ *
+ * key = Function to access the key that what you're storing is to be compared
+ *       on.
+ *
+ * compFun = The function for comparing keys.
+ *
+ * Examples:
+ * ---
+ * struct StringNum {
+ *     string someString;
+ *     uint num;
+ * }
+ *
+ * // Create a StackTree of StringNums, sorted in descending order, using
+ * // someString for comparison.
+ * auto myTree = StackTree!(StringNum, "a.someString", "a > b")();
+ *
+ * // Add some elements.
+ * myTree.insert( StringNum("foo", 1));
+ * myTree.insert( StringNum("bar", 2));
+ * myTree.insert( StringNum("foo", 3));
+ *
+ * assert(myTree.find("foo") == StringNum("foo", 3));
+ * assert(myTree.find("bar") == StringNum("bar", 2));
+ * ---
+ *
+ * Note:  This tree supports a compile-time interface similar to StackSet
+ * and can be used as a finite set implementation.
+ *
+ * Warning:
+ * This implementation places removed nodes on an internal free list and
+ * recycles them, since there is no way to delete TempAlloc-allocated data
+ * in a non-LIFO order.  Therefore, you may not retain the address of a
+ * variable stored in a StackTree after deleting it from the StackTree.
+ * For example, DO NOT do this:
+ * ---
+ * SomeType* myPtr = "foo" in myTree;
+ * myTree.remove("foo");
+ * *myPtr = someValue;
+ * ---
+ */
+struct StackTree(T, alias key = "a", alias compFun = "a < b") {
+private:
+
+    alias AVLNode!(T) Node;
+    alias binaryFun!(compFun) comp;
+    alias unaryFun!(key) getKey;
+
+    Node* head;
+    Node** freeList;
+    size_t _length;
+    TempAlloc.State TAState;
+
+    static bool insertComp(T lhs, T rhs) {
+        return comp( getKey(lhs), getKey(rhs));
+    }
+
+    static Node* rotateRight(Node* node)
+    in {
+        assert(node.left !is null);
+        assert( abs(node.balance) <= 2);
+
+    } body {
+        Node* newHead = node.left;
+        node.left = newHead.right;
+        newHead.right = node;
+
+        node.fixHeight();
+        newHead.fixHeight();
+
+        assert( abs(node.balance) < 2);
+        return newHead;
+    }
+
+    static Node* rotateLeft(Node* node)
+    in {
+        assert(node.right !is null);
+        assert( abs(node.balance) <= 2);
+    } body {
+        Node* newHead = node.right;
+        node.right = newHead.left;
+        newHead.left = node;
+
+        node.fixHeight();
+        newHead.fixHeight();
+
+        assert( abs(node.balance) < 2);
+        return newHead;
+    }
+
+    static Node* rebalance(Node* node)
+    in {
+        assert(node is null || abs(node.balance) <= 2);
+    } out(ret) {
+        assert( abs(ret.balance) < 2);
+    } body {
+        if(node is null) {
+            return null;
+        }
+
+        immutable balance = node.balance;
+        if(abs(balance) <= 1) {
+            return node;
+        }
+
+        if(balance == -2) {
+
+            // It should be impossible to have a balance factor of -2 if
+            // node.right is null.
+            assert(node.right !is null);
+            immutable rightBalance = node.right.balance;
+            assert( abs(rightBalance) < 2);
+
+            if(rightBalance == 1) {
+                node.right = rotateRight(node.right);
+                node.fixHeight();
+            }
+
+            assert(node.balance == -2);
+            return rotateLeft(node);
+
+        } else if(balance == 2) {
+            // It should be impossible to have a balance factor of 2 if
+            // node.left is null.
+            assert(node.left !is null);
+            immutable leftBalance = node.left.balance;
+            assert( abs(leftBalance) < 2);
+
+            if(leftBalance == -1) {
+                node.left = rotateLeft(node.left);
+                node.fixHeight();
+            }
+
+            assert(node.balance == 2);
+            return rotateRight(node);
+        }
+
+        // AVL tree invariant is that abs(balance) <= 2 even during
+        // insertion/deletion.
+        assert(0);
+    }
+
+    void pushFreeList(Node* node) {
+        node.left = null;
+        node.right = *freeList;
+        *freeList = node;
+    }
+
+    Node* popFreeList()
+    in {
+        assert(freeList);
+        assert(*freeList);
+    } body {
+        auto ret = *freeList;
+        *freeList = ret.right;
+        return ret;
+    }
+
+    Node* newNode(T payload)
+    in {
+        assert(freeList, "Uninitialized StackTree!(" ~ T.stringof ~ ")");
+        assert(TAState, "Uninitialized StackTree!(" ~ T.stringof ~ ")");
+    } body {
+        Node* ret;
+        if(*freeList !is null) {
+            ret = popFreeList();
+        } else {
+            ret = cast(Node*) TempAlloc.malloc(Node.sizeof, TAState);
+        }
+
+        ret.payload = payload;
+        ret.left = null;
+        ret.right = null;
+        ret.height = 1;
+        return ret;
+    }
+
+public:
+    /**De facto constructor.  Not using a "real" c'tor only because structs
+     * don't support default c'tors yet.  This must be called, or else you will
+     * get an access violation when you try to insert an element.
+     */
+    static typeof(this) opCall() {
+        typeof(this) ret;
+        ret.TAState = TempAlloc.getState();
+        ret.freeList = newStack!(Node*)(1).ptr;
+        *(ret.freeList) = null;
+        return ret;
+    }
+
+    /**Insert an element.*/
+    void insert(T toInsert) {
+        if(head is null) {
+            head = newNode(toInsert);
+            _length++;
+        } else {
+            head = insertImpl(toInsert, head);
+        }
+    }
+
+    Node* insertImpl(T toInsert, Node* insertInto) {
+        if( insertComp(toInsert, insertInto.payload) ) {
+            if(insertInto.left is null) {
+                insertInto.left = newNode(toInsert);
+                _length++;
+            } else {
+                insertInto.left = insertImpl(toInsert, insertInto.left);
+            }
+        } else if( insertComp(insertInto.payload, toInsert) ) {
+            if(insertInto.right is null) {
+                insertInto.right = newNode(toInsert);
+                _length++;
+            } else {
+                insertInto.right = insertImpl(toInsert, insertInto.right);
+            }
+        } else {
+            // This is correct:  If the comparison key is only part of the
+            // payload, the old payload may not be equal to the new payload,
+            // even if the comparison keys are equal.
+            insertInto.payload = toInsert;
+            return insertInto;
+        }
+
+        insertInto.fixHeight();
+        return rebalance(insertInto);
+    }
+
+    /**Remove an element from this tree.  The type of U is expected to be the
+     * type of the key that this tree is sorted on.
+     */
+    void remove(U)(U whatToRemove) {
+        Node* removedNode;
+        Node* leftMost;
+
+        Node* removeLeftMost(Node* node) {
+            if(node.left is null) {
+                auto ret = node.right;
+                node.right = null;
+                leftMost = node;
+                return ret;
+            }
+
+            node.left = removeLeftMost(node.left);
+            node.fixHeight();
+            return rebalance(node);
+        }
+
+        Node* removeSuccessor(Node* node) {
+            if(node.right is null) {
+                assert(node.left.isLeaf);
+                leftMost = node.left;
+
+                node.left = null;
+                return node;
+            }
+
+            node.right = removeLeftMost(node.right);
+            node.fixHeight();
+            return node;
+        }
+
+        Node* removeImpl(U whatToRemove, Node* whereToRemove) {
+            static bool findComp(V, W)(V lhs, W rhs) {
+                static if(is(V == T)) {
+                    static assert(is(W == U));
+                    return comp( getKey(lhs), rhs);
+                } else {
+                    static assert(is(V == U));
+                    static assert(is(W == T));
+                    return comp(lhs, getKey(rhs) );
+                }
+            }
+
+            if(whereToRemove is null) {
+                return null;
+            }
+
+            if( findComp(whatToRemove, whereToRemove.payload) ){
+                whereToRemove.left = removeImpl(whatToRemove, whereToRemove.left);
+                whereToRemove.fixHeight();
+                return rebalance(whereToRemove);
+            } else if( findComp(whereToRemove.payload, whatToRemove) ) {
+                whereToRemove.right = removeImpl(whatToRemove, whereToRemove.right);
+                whereToRemove.fixHeight();
+                return rebalance(whereToRemove);
+            } else {
+                // We've found it.
+                _length--;
+                removedNode = whereToRemove;
+                if(whereToRemove.isLeaf) {
+                    return null;
+                }
+
+                whereToRemove = removeSuccessor(whereToRemove);
+                if(leftMost is null) {
+                    return null;
+                }
+
+                leftMost.left = whereToRemove.left;
+                leftMost.right = whereToRemove.right;
+                leftMost.fixHeight();
+                return rebalance(leftMost);
+            }
+        }
+
+        head = removeImpl(whatToRemove, head);
+
+        debug(EXPENSIVE) assertAvl(head);
+
+        if(removedNode !is null) {
+            pushFreeList(removedNode);
+        }
+    }
+
+    /**Find an element and return it.  Throw an exception if it is not
+     * present.  U is expected to be the type of the key that this tree is
+     * sorted on.*/
+    T find(U)(U whatToFind) {
+        T* ptr = enforce( opIn_r!(U)(whatToFind),
+            "Item not found:  " ~ to!string(whatToFind));
+        return *ptr;
+    }
+
+    /**Find an element and return a pointer to it, or null if not present.*/
+    T* opIn_r(U)(U whatToFind) {
+        auto ret = findImpl!(U)(whatToFind, head);
+        if(ret is null) {
+            return null;
+        }
+        return &(ret.payload);
+    }
+
+    Node* findImpl(U)(U whatToFind, Node* whereToFind) {
+        static bool findComp(V, W)(V lhs, W rhs) {
+            static if(is(V == T)) {
+                static assert(is(W == U));
+                return comp( getKey(lhs), rhs );
+            } else {
+                static assert(is(V == U));
+                static assert(is(W == T));
+                return comp( lhs, getKey(rhs) );
+            }
+        }
+
+        if(whereToFind is null) {
+            return null;
+        }
+
+        if( findComp(whatToFind, whereToFind.payload) ){
+            return findImpl!(U)(whatToFind, whereToFind.left);
+        } else if( findComp(whereToFind.payload, whatToFind) ) {
+            return findImpl!(U)(whatToFind, whereToFind.right);
+        } else {
+            // We've found it.
+            return whereToFind;
+        }
+
+        assert(0);
+    }
+
+    /**Iterate over the elements of this tree in sorted order.*/
+    int opApply( int delegate(ref T) dg) {
+        int res;
+        int opApplyImpl(Node* node) {
+            if(node is null) {
+                return 0;
+            }
+            res = opApplyImpl(node.left);
+            if(res) {
+                return res;
+            }
+            res = dg(node.payload);
+            if(res) {
+                return res;
+            }
+            res = opApplyImpl(node.right);
+            return res;
+        }
+
+        return opApplyImpl(head);
+    }
+
+    /**Number of elements in the tree.*/
+    size_t length() const pure nothrow @property {
+        return _length;
+    }
+}
+
+private int assertAvl(T)(T node) {
+    if(node is null) {
+        return 0;
+    }
+
+    int leftHeight = assertAvl(node.left);
+    int rightHeight = assertAvl(node.right);
+    assert(node.height == max(leftHeight, rightHeight) + 1);
+    assert( abs(node.balance) < 2,
+        text( height(node.left), '\t', height(node.right)));
+
+    if(node.left) {
+        assert(node.left.payload < node.payload);
+    }
+
+    if(node.right) {
+        assert(node.right.payload > node.payload,
+            text(node.payload, ' ', node.right.payload));
+    }
+
+    return node.height;
+}
+
+
+unittest {
+    // Test against StackSet on random data.
+    StackTree!(uint) myTree = StackTree!(uint)();
+    StackSet!(uint) ss = StackSet!(uint)(500);
+    foreach(i; 0..1_000_000) {
+        uint num = uniform(0, 1_000);
+        if(num in ss) {
+            assert(num in myTree);
+            assert(*(num in myTree) == num);
+            ss.remove(num);
+            myTree.remove(num);
+        } else {
+            assert(!(num in myTree));
+            ss.insert(num);
+            myTree.insert(num);
+        }
+    }
+    assertAvl(myTree.head);
+    writeln("Passed StackTree test.");
+}
+
+/**Struct that iterates over keys or values of a StackTreeAA.
+ *
+ * Bugs:  Uses opApply instead of the more flexible ranges, because I
+ * haven't figured out how to iterate efficiently and in sorted order over a
+ * tree without control of the stack.
+ */
+struct TreeAaIter(T, alias mapFun) {
+    alias unaryFun!(mapFun) mFun;
+    T tree;
+    alias typeof(*(tree.head)) Node;
+
+//    TreeRange!(T, mapFun) asRange() {
+//        enforce(0, "Not implemented yet.");
+//    }
+
+    alias typeof( mFun( typeof(tree.head.payload).init) ) IterType;
+
+    ///
+    int opApply( int delegate(ref IterType) dg) {
+        int res;
+        int opApplyImpl(Node* node) {
+            if(node is null) {
+                return 0;
+            }
+            res = opApplyImpl(node.left);
+            if(res) {
+                return res;
+            }
+
+            static if(__traits(compiles, dg(mFun(node.payload)))) {
+                res = dg(mFun(node.payload));
+            } else {
+                auto toDg = mFun(node.payload);
+                res = dg(toDg);
+            }
+
+            if(res) {
+                return res;
+            }
+            res = opApplyImpl(node.right);
+            return res;
+        }
+
+        return opApplyImpl(tree.head);
+    }
+
+    ///
+    size_t length() const pure nothrow {
+        return tree.length;
+    }
+}
+
+private struct StackTreeAANode(K, V) {
+    Unqual!(K) key;
+    Unqual!(V) value;
+}
+
+/**An associative array implementation based on StackTree.  Lookups and
+ * insertions are O(log N).  This is significantly slower in both theory and
+ * practice than StackHash, but you may want to use it if:
+ *
+ * 1.  You don't know the approximate size of the table you will be creating
+ *     in advance.  Unlike StackHash, this AA implementation does not need
+ *     to pre-allocate anything.
+ *
+ * 2.  You care more about worst-case performance than average-case
+ *     performance.
+ *
+ * 3.  You have a good comparison function for your type, but not a good hash
+ *     function.
+ *
+ */
+struct StackTreeAA(K, V) {
+    alias StackTreeAANode!(K, V) Node;
+    StackTree!(Node, "a.key") tree;
+
+    static typeof(this) opCall() {
+        typeof(this) ret;
+        ret.tree = typeof(tree)();
+        return ret;
+    }
+
+    /**Looks up key in the table, returns it by reference.  If it does not
+     * exist, it will be created and initialized to V.init.  This is handy,
+     * for example, when counting things with integer types.
+     */
+    ref V opIndex(K key) {
+        Node* result = key in tree;
+        if(result is null) {
+            tree.insert( Node(key, V.init));
+            result = key in tree;
+        }
+
+        return result.value;
+    }
+
+    ///
+    V opIndexAssign(V val, K key) {
+        tree.insert( Node(key, val));
+        return val;
+    }
+
+    ///
+    V* opIn_r(K key) {
+        auto nodePtr = key in tree;
+        if(nodePtr is null) {
+            return null;
+        }
+
+        return &(nodePtr.value);
+    }
+
+    ///
+    void remove(K key) {
+        tree.remove(key);
+    }
+
+    ///
+    size_t length() const pure nothrow {
+        return tree.length;
+    }
+
+    ///
+    TreeAaIter!( typeof(tree), "a.key") keys() @property {
+        typeof(return) ret;
+        ret.tree = tree;
+        return ret;
+    }
+
+    private static ref Unqual!(V) getVal(Node node) {
+        return node.value;
+    }
+
+    ///
+    TreeAaIter!( typeof(tree), getVal) values() @property {
+        return typeof(return)(tree);
+    }
+
+    /**Iterate over both the keys and values of this associative array.*/
+    int opApply( int delegate(ref Unqual!(K), ref Unqual!(V)) dg) {
+        alias AVLNode!(Node) TreeNode;
+        int res;
+        int opApplyImpl(TreeNode* node) {
+            if(node is null) {
+                return 0;
+            }
+            res = opApplyImpl(node.left);
+            if(res) {
+                return res;
+            }
+            res = dg(node.payload.key, node.payload.value);
+            if(res) {
+                return res;
+            }
+            res = opApplyImpl(node.right);
+            return res;
+        }
+
+        return opApplyImpl(tree.head);
+    }
+
+}
+
+
+
+unittest {
+    // Test against builtin AA on random data.
+    {
+        mixin(newFrame);
+        alias StackTreeAA!(string, uint) mySh;
+        auto data = mySh();
+        data["foo"] = 1;
+        data["bar"] = 2;
+        data["baz"] = 3;
+        data["waldo"] = 4;
+        assert(!("foobar" in data));
+        assert(*("foo" in data) == 1);
+        assert(*("bar" in data) == 2);
+        assert(*("baz" in data) == 3);
+        assert(*("waldo" in data) == 4);
+        assert(data["foo"] == 1);
+        assert(data["bar"] == 2);
+        assert(data["baz"] == 3);
+        assert(data["waldo"] == 4);
+
+        assert(data.length == 4);
+        auto myKeys = toArray(data.keys);
+        qsort(myKeys);
+        assert(myKeys == cast(string[]) ["bar", "baz", "foo", "waldo"]);
+        auto myValues = toArray(data.values);
+        qsort(myValues);
+        assert(myValues == [1U, 2, 3, 4]);
+
+        foreach(v; data.values) {
+            assert(v > 0 && v < 5);
+        }
+    }
+
+    alias StackTreeAA!(uint, uint) mySh2;
+    {   // Test remove.
+        mixin(newFrame);
+
+        auto foo = mySh2();
+        for(uint i = 0; i < 200; i++) {
+            foo[i] = i;
+        }
+        assert(foo.length == 200);
+        for(uint i = 0; i < 200; i += 2) {
+            foo.remove(i);
+        }
+        foreach(i; 20..200) {
+            foo.remove(i);
+        }
+        for(uint i = 0; i < 20; i++) {
+            if(i & 1) {
+                assert(i in foo);
+                assert(*(i in foo) == i);
+            } else {
+                assert(!(i in foo));
+            }
+        }
+        auto vals = toArray(foo.values);
+        assert(foo.length == 10);
+        assert(vals.qsort == [1U, 3, 5, 7, 9, 11, 13, 15, 17, 19]);
+    }
+
+    { // Monte carlo unittesting against builtin hash table.
+        mixin(newFrame);
+        uint[uint] builtin;
+        auto monteSh = mySh2();
+        uint[] nums = newStack!uint(100_000);
+        foreach(ref num; nums) {
+            num = uniform(0U, uint.max);
+        }
+
+        foreach(i; 0..100_000) {
+            auto index = uniform(0, nums.length);
+            if(index in builtin) {
+                assert(index in monteSh);
+                assert(builtin[index] == nums[index]);
+                assert(monteSh[index] == nums[index]);
+                builtin.remove(index);
+                monteSh.remove(index);
+            } else {
+                assert(!(index in monteSh));
+                builtin[index] = nums[index];
+                monteSh[index] = nums[index];
+            }
+        }
+
+        assert(builtin.length == monteSh.length);
+        foreach(k, v; builtin) {
+            assert(k in monteSh);
+            assert(*(k in builtin) == *(k in monteSh));
+            assert(monteSh[k] == v);
+        }
+
+        // Make sure nothing is missed in iteration.  Since both keys and
+        // values use the same struct, just with a few static if statements,
+        // if it works for keys and simple tests work for values, it works.
+        foreach(k; monteSh.keys) {
+            builtin.remove(k);
+        }
+        assert(builtin.length == 0);
+    }
+
+    writeln("Passed StackTreeAA test.");
 }
