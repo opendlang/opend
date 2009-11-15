@@ -240,13 +240,9 @@ private:
         }
     }
 
-    // core.thread.Thread.thread_needLock() is nothrow (read the code if you
-    // don't believe me) but not marked as such because nothrow is such a new
-    // feature in D.  This is a workaround until that gets fixed.
-
+    enum size_t alignBytes = 16U;
     enum blockSize = 4U * 1024U * 1024U;
     enum nBookKeep = 1_048_576;  // How many bytes to allocate upfront for bookkeeping.
-    enum alignBytes = 16U;
     static State state;
 
     static void die() nothrow {
@@ -281,11 +277,6 @@ private:
         return;
     }
 
-    static size_t getAligned(size_t nbytes) pure nothrow {
-        size_t rem = nbytes % alignBytes;
-        return (rem == 0) ? nbytes : nbytes - rem + alignBytes;
-    }
-
     static State stateInit() nothrow {
         State stateCopy;
         try { stateCopy = new State; } catch { die(); }
@@ -299,6 +290,11 @@ private:
 
         state = stateCopy;
         return stateCopy;
+    }
+
+    size_t getAligned(size_t nbytes) pure nothrow {
+        size_t rem = nbytes % alignBytes;
+        return (rem == 0) ? nbytes : nbytes - rem + alignBytes;
     }
 
 public:
@@ -1505,10 +1501,33 @@ private int height(T)(T node) nothrow {
     return (node is null) ? 0 : node.height;
 }
 
+struct AVLNodeRealHeight(T) {
+    T payload;
+    typeof(this)* left;
+    typeof(this)* right;
+    int height;
+
+    int balance() nothrow @property {
+        return .height(left) - .height(right);
+    }
+
+    void fixHeight() nothrow {
+        auto leftHeight = .height(left);
+        auto rightHeight = .height(right);
+
+        height = ((leftHeight > rightHeight) ? leftHeight : rightHeight) + 1;
+    }
+
+    bool isLeaf() nothrow @property {
+        return left is null && right is null;
+    }
+}
+
 /* Store the height in the low order bits of the pointers to save space,
- * since TempAlloc allocates 16-byte aligned memory anyhow.
+ * since TempAlloc allocates 16-byte aligned memory anyhow, but only if
+ * this would be smaller after considering alignment.
  */
-struct AVLNode(T) {
+struct AVLNodeBitwise(T) {
     T payload;
     size_t _left;
     size_t _right;
@@ -1573,6 +1592,15 @@ struct AVLNode(T) {
     }
 }
 
+private template GetAligned(uint size) {
+    static if(size % TempAlloc.alignBytes == 0) {
+        enum GetAligned = 0;
+    } else {
+        enum GetAligned =
+            size - size % TempAlloc.alignBytes + TempAlloc.alignBytes;
+    }
+}
+
 /**An AVL tree implementation on top of TempAlloc.  If elements are removed,
  * they are stored on an internal free list and recycled when new elements
  * are added to the tree.
@@ -1624,7 +1652,18 @@ struct AVLNode(T) {
 struct StackTree(T, alias key = "a", alias compFun = "a < b") {
 private:
 
-    alias AVLNode!(T) Node;
+    alias AVLNodeBitwise!(T) BitwiseNode;
+    alias AVLNodeRealHeight!(T) RealNode;
+
+    enum size_t bitSize = GetAligned!(BitwiseNode.sizeof);
+    enum size_t realHeightSize = GetAligned!(RealNode.sizeof);
+
+    static if( bitSize < realHeightSize ) {
+        alias AVLNodeBitwise!(T) Node;
+    } else {
+        alias AVLNodeRealHeight!(T) Node;
+    }
+
     alias binaryFun!(compFun) comp;
     alias unaryFun!(key) getKey;
 
@@ -2153,7 +2192,7 @@ struct StackTreeAA(K, V) {
 
     /**Iterate over both the keys and values of this associative array.*/
     int opApply( int delegate(ref Unqual!(K), ref Unqual!(V)) dg) {
-        alias AVLNode!(Node) TreeNode;
+        alias typeof(*(tree.head)) TreeNode;
         int res;
         int opApplyImpl(TreeNode* node) {
             if(node is null) {
