@@ -292,7 +292,7 @@ private:
         return stateCopy;
     }
 
-    size_t getAligned(size_t nbytes) pure nothrow {
+    static size_t getAligned(size_t nbytes) pure nothrow {
         size_t rem = nbytes % alignBytes;
         return (rem == 0) ? nbytes : nbytes - rem + alignBytes;
     }
