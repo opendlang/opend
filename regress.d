@@ -201,6 +201,9 @@ struct RegressRes {
     /**The coefficient of determination.*/
     real R2;
 
+    /**The adjusted coefficient of determination.*/
+    real adjustedR2;
+
     /**The root mean square of the residuals.*/
     real residualError;
 
@@ -219,7 +222,9 @@ struct RegressRes {
         return "Betas:  " ~ arrStr(betas) ~ "\nLower Conf. Int.:  " ~
             arrStr(lowerBound) ~ "\nUpper Conf. Int.:  " ~ arrStr(upperBound) ~
             "\nStd. Err:  " ~ arrStr(stdErr) ~ "\nP Values:  " ~ arrStr(p) ~
-            "\nR^2:  " ~ text(R2) ~ "\nStd. Residual Error:  " ~ text(residualError)
+            "\nR^2:  " ~ text(R2) ~
+            "\nAdjusted R^2:  " ~ text(adjustedR2) ~
+            "\nStd. Residual Error:  " ~ text(residualError)
             ~ "\nOverall P:  " ~ text(overallP);
     }
 }
@@ -362,12 +367,18 @@ if(allSatisfy!(isInputRange, T) && realInput!(U)) {
  * for inference, each range must be traversed twice.  This means:
  *
  * 1.  They have to be forward ranges, not input ranges.
+ *
  * 2.  If you have a large amount of data and you're mapping it to some
  *     expensive function, you may want to do this eagerly instead of lazily.
  *
  * Notes:  The X ranges are traversed in locksep, but the traversal is stopped
  * at the end of the shortest one.  Therefore, using infinite ranges is safe.
  * For example, using repeat(1) to get an intercept term works.
+ *
+ * Bugs:  The statistical tests performed in this function assume that an
+ * intercept term is included in your regression model.  If no intercept term
+ * is included, the P-values, confidence intervals and adjusted R^2 values
+ * calculated by this function will be wrong.
  *
  * Examples:
  * ---
@@ -423,7 +434,7 @@ RegressRes linearRegress(U, TC...)(U Y, TC input) {
     alias Residuals!(U, T) RT;
     auto residuals = RT(betas, Y, X);
     real S = 0;
-    uint n = 0;
+    ulong n = 0;
     Pcor R2Calc;
     for(; !residuals.empty; residuals.popFront) {
         real residual = residuals.front;
@@ -433,9 +444,11 @@ RegressRes linearRegress(U, TC...)(U Y, TC input) {
         R2Calc.put(predicted, Yfront);
         n++;
     }
-    uint df =  n - X.length;
+    ulong df =  n - X.length;
     real R2 = R2Calc.cor();
     R2 *= R2;
+    real adjustedR2 = 1.0L - (1.0L - R2) * ((n - 1.0L) / df);
+
     real sigma2 = S / (n - X.length);
 
     real[] stdErr = new real[betas.length];
@@ -458,7 +471,8 @@ RegressRes linearRegress(U, TC...)(U Y, TC input) {
     real F = (R2 / (X.length - 1)) / ((1 - R2) / (n - X.length));
     real overallP = fisherCDFR(F, X.length - 1, n - X.length);
 
-    return RegressRes(betas, stdErr, lowerBound, upperBound, p, R2, sqrt(sigma2), overallP);
+    return RegressRes(betas, stdErr, lowerBound, upperBound, p, R2,
+        adjustedR2, sqrt(sigma2), overallP);
 }
 
 /**Convenience function that takes a forward range X and a forward range Y,
@@ -519,20 +533,27 @@ unittest {
     assert(approxEqual(res1.p[0], 0.0419));
     assert(approxEqual(res1.p[1], 0.0052));
     assert(approxEqual(res1.R2, 0.644));
+    assert(approxEqual(res1.adjustedR2, 0.6001));
     assert(approxEqual(res1.residualError, 2.03));
     assert(approxEqual(res1.overallP, 0.00518));
 
-    // Values from Wikipedia.  Note that the confidence intervals come out
-    // slightly different than what Wikipedia gets.  This is because different
-    // sources disagree on how many degrees of freedom to use.  For reasonably
-    // large sample sizes this is of little consequence anyhow, since it only
+
     auto res2 = polyFit(weights, heights, 2);
-    assert(approxEqual(res2.betas[0], 129));
-    assert(approxEqual(res2.betas[1], -143));
-    assert(approxEqual(res2.betas[2], 62));
-    assert(approxEqual(round(res2.stdErr[0]), 16));
-    assert(approxEqual(round(res2.stdErr[1]), 20));
-    assert(approxEqual(round(res2.stdErr[2]), 6));
+    assert(approxEqual(res2.betas[0], 128.813));
+    assert(approxEqual(res2.betas[1], -143.162));
+    assert(approxEqual(res2.betas[2], 61.960));
+
+    assert(approxEqual(res2.stdErr[0], 16.308));
+    assert(approxEqual(res2.stdErr[1], 19.833));
+    assert(approxEqual(res2.stdErr[2], 6.008));
+
+    assert(approxEqual(res2.p[0], 4.28e-6));
+    assert(approxEqual(res2.p[1], 1.06e-5));
+    assert(approxEqual(res2.p[2], 2.57e-7));
+
+    assert(approxEqual(res2.R2, 0.9989, 0.0001));
+    assert(approxEqual(res2.adjustedR2, 0.9987, 0.0001));
+
     assert(approxEqual(res2.lowerBound[0], 92.9, 0.01));
     assert(approxEqual(res2.lowerBound[1], -186.8, 0.01));
     assert(approxEqual(res2.lowerBound[2], 48.7, 0.01));
@@ -541,8 +562,6 @@ unittest {
     assert(approxEqual(res2.upperBound[2], 75.2, 0.01));
 
     auto res3 = linearRegress(weights, repeat(1), heights, map!"a * a"(heights));
-    // Really, everything should be equal, but weird little rounding errors
-    // happen.  For all practical purposes, everything is equal.
     assert(res2.betas == res3.betas);
 
     auto beta1 = linearRegressBeta(diseaseSev, repeat(1), temperature);

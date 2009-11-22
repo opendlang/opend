@@ -2181,7 +2181,7 @@ struct StackTreeAA(K, V) {
         return ret;
     }
 
-    private static ref Unqual!(V) getVal(Node node) {
+    private static ref Unqual!(V) getVal(ref Node node) {
         return node.value;
     }
 

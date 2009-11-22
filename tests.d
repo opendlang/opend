@@ -2936,6 +2936,10 @@ unittest {
 
     assert(approxEqual(r1.testStat, 3.1368));
     assert(approxEqual(r1.p, 0.2084));
+
+    assert(approxEqual(r2.testStat, 1.1816));
+    assert(approxEqual(r2.p, 0.5539));
+
     writeln("Passed dAgostinoK test.");
 }
 
