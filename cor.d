@@ -105,19 +105,18 @@ unittest {
  */
 struct Pcor {
 private:
-    real _mean1 = 0, _mean2 = 0, _var1 = 0, _var2 = 0, _cov = 0, _k = 0;
+    real _k = 0, _mean1 = 0, _mean2 = 0, _var1 = 0, _var2 = 0, _cov = 0;
 public:
     alias cor this;
 
     ///
-    void put(T, U)(T elem1, U elem2) nothrow {
-        _k++;
-        real kNeg1 = 1.0L / _k;
-        _cov += (elem1 * elem2 - _cov) * kNeg1;
-        _var1 += (elem1 * elem1 - _var1) * kNeg1;
-        _var2 += (elem2 * elem2 - _var2) * kNeg1;
-        _mean1 += (elem1 - _mean1) * kNeg1;
-        _mean2 += (elem2 - _mean2) * kNeg1;
+    void put(real elem1, real elem2) nothrow {
+        immutable kNeg1 = 1 / ++_k;
+          _cov += (elem1 * elem2 - _cov)  * kNeg1;
+         _var1 += (elem1 * elem1 - _var1) * kNeg1;
+        _mean1 += (elem1 - _mean1)        * kNeg1;
+         _var2 += (elem2 * elem2 - _var2) * kNeg1;
+        _mean2 += (elem2 - _mean2)        * kNeg1;
     }
 
     ///
