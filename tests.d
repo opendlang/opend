@@ -747,7 +747,7 @@ TestRes kruskalWallis(T...)(T dataIn) {
         }
     }
 
-    float[] ranks = newStack!float(dataArray.length);
+    double[] ranks = newStack!double(dataArray.length);
     rankSort(dataArray, ranks);
 
     size_t index = 0;
@@ -824,20 +824,21 @@ unittest {
  * when parametric assumptions cannot be made.  Usage is identical to
  * correlatedAnova().
  *
- * Bugs:  No exact P-value calculation.  Asymptotic approx. only.*/
+ * Bugs:  No exact P-value calculation.  Asymptotic approx. only.
+ */
 TestRes friedmanTest(T...)(T dataIn)
 if(allSatisfy!(isInputRange, T)) {
     static if(dataIn.length == 1 && isInputRange!(typeof(dataIn[0].front))) {
         mixin(newFrame);
         auto data = tempdup(dataIn[0]);
-        auto ranks = newStack!float(data.length);
+        auto ranks = newStack!double(data.length);
         auto dataPoints = newStack!real(data.length);
         auto colMeans = newStack!Mean(data.length);
         colMeans[] = Mean.init;
     } else {
         enum len = dataIn.length;
         alias dataIn data;
-        float[len] ranks;
+        double[len] ranks;
         real[len] dataPoints;
         Mean[len] colMeans;
     }
@@ -859,7 +860,7 @@ if(allSatisfy!(isInputRange, T)) {
             dataPoints[i] = data[i].front;
             data[i].popFront;
         }
-        rankSort(cast(real[]) dataPoints, cast(float[]) ranks);
+        rankSort(dataPoints[], ranks[]);
         foreach(i, rank; ranks) {
             colMeans[i].put(rank);
             overallSumm.put(rank);
@@ -1007,7 +1008,7 @@ if(isInputRange!(T) && dstats.base.hasLength!(T)) {
     rangeCopy(combined[0..n1], sample1);
     rangeCopy(combined[n1..$], sample2);
 
-    float[] ranks = newStack!(float)(N);
+    double[] ranks = newStack!(double)(N);
     rankSort(combined, ranks);
     real w = reduce!("a + b")(0.0L, ranks[0..n1]) - cast(ulong) n1 * (n1 + 1) / 2UL;
     TempAlloc.free;  // Free ranks.
@@ -1234,7 +1235,7 @@ in {
     ulong N = before.length;
 
     mixin(newFrame);
-    float[] diffRanks = newStack!(float)(before.length);
+    double[] diffRanks = newStack!(double)(before.length);
     byte[] signs = newStack!(byte)(before.length);
     real[] diffs = newStack!(real)(before.length);
     uint nZero = 0;

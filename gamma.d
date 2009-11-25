@@ -80,7 +80,7 @@ enum real MAXGAMMA = 1755.5483429L;
 real sgnGamma(real x) pure nothrow
 {
     /* Author: Don Clugston. */
-    if (isnan(x)) return x;
+    if (isNaN(x)) return x;
     if (x > 0) return 1.0;
     if (x < -1/real.epsilon) {
         // Large negatives lose all precision
@@ -96,10 +96,10 @@ real sgnGamma(real x) pure nothrow
 
 unittest {
     assert(sgnGamma(5.0) == 1.0);
-    assert(isnan(sgnGamma(-3.0)));
+    assert(isNaN(sgnGamma(-3.0)));
     assert(sgnGamma(-0.1) == -1.0);
     assert(sgnGamma(-55.1) == 1.0);
-    assert(isnan(sgnGamma(-real.infinity)));
+    assert(isNaN(sgnGamma(-real.infinity)));
     writeln("Passed sgnGamma unittest.");
 }
 
@@ -146,12 +146,12 @@ real beta(real x, real y)
 real betaIncomplete(real aa, real bb, real xx)
 {
     if (!(aa>0 && bb>0)) {
-         if (isnan(aa)) return aa;
-         if (isnan(bb)) return bb;
+         if (isNaN(aa)) return aa;
+         if (isNaN(bb)) return bb;
          return real.nan; // domain error
     }
     if (!(xx>0 && xx<1.0)) {
-        if (isnan(xx)) return xx;
+        if (isNaN(xx)) return xx;
         if ( xx == 0.0L ) return 0.0;
         if ( xx == 1.0L )  return 1.0;
         return real.nan; // domain error
@@ -248,9 +248,9 @@ real betaIncompleteInv(real aa, real bb, real yy0 )
     real a, b, y0, d, y, x, x0, x1, lgm, yp, di, dithresh, yl, yh, xt;
     int i, rflg, dir, nflg;
 
-    if (isnan(yy0)) return yy0;
-    if (isnan(aa)) return aa;
-    if (isnan(bb)) return bb;
+    if (isNaN(yy0)) return yy0;
+    if (isNaN(aa)) return aa;
+    if (isNaN(bb)) return bb;
     if( yy0 <= 0.0L )
         return 0.0L;
     if( yy0 >= 1.0L )
@@ -470,11 +470,11 @@ done:
 }
 
 unittest { // also tested by the normal distribution
-  assert(isnan(betaIncomplete(-1, 2, 3)));
+  assert(isNaN(betaIncomplete(-1, 2, 3)));
 
   assert(betaIncomplete(1, 2, 0)==0);
   assert(betaIncomplete(1, 2, 1)==1);
-  assert(isnan(betaIncomplete(1, 2, 3)));
+  assert(isNaN(betaIncomplete(1, 2, 3)));
   assert(betaIncompleteInv(1, 1, 0)==0);
   assert(betaIncompleteInv(1, 1, 1)==1);
 
@@ -517,7 +517,7 @@ unittest { // also tested by the normal distribution
 
     // --- Problematic cases ---
     // This is a situation where the series expansion fails to converge
-    assert( isnan(betaIncompleteInv(0.12167, 4.0640301659679627772e19L, 0.0813601)));
+    assert( isNaN(betaIncompleteInv(0.12167, 4.0640301659679627772e19L, 0.0813601)));
     // This next result is almost certainly erroneous.
     assert(betaIncomplete(1.16251e20, 2.18e39, 5.45e-20)==-real.infinity);
     writeln("Passed betaIncomplete unittest.");

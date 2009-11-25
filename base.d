@@ -409,15 +409,15 @@ unittest {
  * Examples:
  * ---
  * uint[] test = [3, 5, 3, 1, 2];
- * assert(rank(test) == [3.5f, 5f, 3.5f, 1f, 2f]);
+ * assert(rank!("a < b", float)(test) == [3.5f, 5f, 3.5f, 1f, 2f]);
  * assert(test == [3U, 5, 3, 1, 2]);
  * ---*/
-Ret[] rank(alias compFun = "a < b", Ret = float, T)(T input, Ret[] buf = null)
+Ret[] rank(alias compFun = "a < b", Ret = double, T)(T input, Ret[] buf = null)
 if(isInputRange!(T)) {
+    mixin(newFrame);
     static if(!isRandomAccessRange!(T) || !hasLength!(T)) {
         return rankSort!(compFun, Ret)( tempdup(input), buf);
     } else {
-        mixin(newFrame);
         size_t[] indices = newStack!size_t(input.length);
         foreach(i, ref elem; indices) {
             elem = i;
@@ -451,16 +451,16 @@ private struct Indexed(T) {
     T someRange;
     size_t[] indices;
 
-    ElementType!T opIndex(size_t index) {
+    ElementType!T opIndex(size_t index) const pure nothrow {
         return someRange[indices[index]];
     }
 
-    size_t length() {
+    size_t length() const pure nothrow {
         return indices.length;
     }
 }
 
-/**Same as rank(), but also sorts the input range in ascending order.
+/**Same as rank(), but also sorts the input range.
  * The array returned will still be identical to that returned by rank(), i.e.
  * the rank of each element will correspond to the ranks of the elements in the
  * input array before sorting.
@@ -470,10 +470,10 @@ private struct Indexed(T) {
  * Examples:
  * ---
  * uint[] test = [3, 5, 3, 1, 2];
- * assert(rank(test) == [3.5f, 5f, 3.5f, 1f, 2f]);
+ * assert(rankSort(test) == [3.5, 5, 3.5, 1.0, 2.0]);
  * assert(test == [1U, 2, 3, 4, 5]);
  * ---*/
-Ret[] rankSort(alias compFun = "a < b", Ret = float, T)(T input, Ret[] buf = null)
+Ret[] rankSort(alias compFun = "a < b", Ret = double, T)(T input, Ret[] buf = null)
 if(isRandomAccessRange!(T) && hasLength!(T)) {
     mixin(newFrame);
     Ret[] ranks;
@@ -498,38 +498,38 @@ if(isRandomAccessRange!(T) && hasLength!(T)) {
 
 unittest {
     uint[] test = [3, 5, 3, 1, 2];
-    assert(rank(test) == [3.5f, 5f, 3.5f, 1f, 2f]);
+    assert(rank!("a < b", float)(test) == [3.5f, 5f, 3.5f, 1f, 2f]);
     assert(test == [3U, 5, 3, 1, 2]);
     assert(rank!("a < b", double)(test) == [3.5, 5, 3.5, 1, 2]);
-    assert(rankSort(test) == [3.5f, 5f, 3.5f, 1f, 2f]);
+    assert(rankSort(test) == [3.5, 5.0, 3.5, 1.0, 2.0]);
     assert(test == [1U,2,3,3,5]);
     writeln("Passed rank test.");
 }
 
-// Used internally by rank() and dstats.cor.scor().
-void averageTies(T, U)(T sortedInput, U[] ranks, size_t[] perms)
+private void averageTies(T, U)(T sortedInput, U[] ranks, size_t[] perms) nothrow
 in {
     assert(sortedInput.length == ranks.length);
     assert(ranks.length == perms.length);
 } body {
-    uint tieCount = 1, tieSum = cast(uint) ranks[perms[0]];
+    int tieCount = 1;
+    real tieSum = ranks[perms[0]];
     foreach(i; 1..ranks.length) {
         if(sortedInput[i] == sortedInput[i - 1]) {
             tieCount++;
             tieSum += ranks[perms[i]];
         } else{
             if(tieCount > 1){
-                real avg = cast(real) tieSum / tieCount;
+                real avg = tieSum / tieCount;
                 foreach(perm; perms[i - tieCount..i]) {
                     ranks[perm] = avg;
                 }
                 tieCount = 1;
             }
-            tieSum = cast(uint) ranks[perms[i]];
+            tieSum = ranks[perms[i]];
         }
     }
     if(tieCount > 1) { // Handle the end.
-        real avg = cast(real) tieSum / tieCount;
+        real avg = tieSum / tieCount;
         foreach(perm; perms[perms.length - tieCount..$]) {
             ranks[perm] = avg;
         }
@@ -776,13 +776,13 @@ public:
     }
 
     ///
-    bool empty() {
+    bool empty() const pure nothrow {
         return nPerms == 0;
     }
 
     /**The number of permutations left.
      */
-    size_t length() {
+    size_t length() const pure nothrow {
         return nPerms;
     }
 }
@@ -1038,12 +1038,12 @@ public:
     }
 
     ///
-    bool empty() {
+    bool empty() const pure nothrow {
         return length == 0;
     }
 
     ///
-    size_t length() {
+    size_t length() const pure nothrow {
         return _length;
     }
 }

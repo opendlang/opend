@@ -217,6 +217,34 @@ public:
         result += (element - result) / ++k;
     }
 
+    /**Adds the contents of rhs to this instance.
+     *
+     * Examples:
+     * ---
+     * Mean mean1, mean2, combined;
+     * foreach(i; 0..5) {
+     *     mean1.put(i);
+     * }
+     *
+     * foreach(i; 5..10) {
+     *     mean2.put(i);
+     * }
+     *
+     * mean1.put(mean2);
+     *
+     * foreach(i; 0..10) {
+     *     combined.put(i);
+     * }
+     *
+     * assert(approxEqual(combined.mean, mean1.mean));
+     * ---
+     */
+     void put(const ref typeof(this) rhs) nothrow {
+         immutable totalN = k + rhs.k;
+         result = result * (k / totalN) + rhs.result * (rhs,k / totalN);
+         k = totalN;
+     }
+
     ///
     real sum() const pure nothrow {
         return result * k;
@@ -258,8 +286,13 @@ public:
     alias geoMean this;
 
     ///
-    void put(real element) {
+    void put(real element) nothrow {
         m.put(log2(element));
+    }
+
+    /// Combine two GeometricMean's.
+    void put(const ref typeof(this) rhs) nothrow {
+        m.put(rhs.m);
     }
 
     ///
@@ -294,6 +327,25 @@ unittest {
 
     auto result = geometricMean(map!(to!(uint, string))(data));
     assert(approxEqual(result, 2.60517));
+
+    Mean mean1, mean2, combined;
+    foreach(i; 0..5) {
+      mean1.put(i);
+    }
+
+    foreach(i; 5..10) {
+      mean2.put(i);
+    }
+
+    mean1.put(mean2);
+
+    foreach(i; 0..10) {
+      combined.put(i);
+    }
+
+    assert(approxEqual(combined.mean, mean1.mean));
+    assert(combined.N == mean1.N);
+
     writeln("Passed geometricMean unittest.");
 }
 
@@ -353,6 +405,14 @@ public:
         real kNeg1 = 1.0L / ++_k;
         _var += (element * element - _var) * kNeg1;
         _mean += (element - _mean) * kNeg1;
+    }
+
+    /// Combine two MeanSD's.
+    void put(const ref typeof(this) rhs) nothrow {
+        immutable totalN = _k + rhs._k;
+        _mean = _mean * (_k / totalN) + rhs._mean * (rhs._k / totalN);
+        _var = _var * (_k / totalN) + rhs._var * (rhs._k / totalN);
+        _k = totalN;
     }
 
     ///
@@ -432,6 +492,26 @@ unittest {
     assert(approxEqual(res.stdev, 1.5811));
     assert(approxEqual(res.mean, 3));
     assert(approxEqual(res.sum, 15));
+
+    MeanSD mean1, mean2, combined;
+    foreach(i; 0..5) {
+      mean1.put(i);
+    }
+
+    foreach(i; 5..10) {
+      mean2.put(i);
+    }
+
+    mean1.put(mean2);
+
+    foreach(i; 0..10) {
+      combined.put(i);
+    }
+
+    assert(approxEqual(combined.mean, mean1.mean));
+    assert(approxEqual(combined.stdev, mean1.stdev));
+    assert(combined.N == mean1.N);
+
     writefln("Passed variance/standard deviation unittest.");
 }
 
@@ -481,6 +561,18 @@ public:
         _m2 += (element * element - _m2) * kNeg1;
         _m3 += (element * element * element - _m3) * kNeg1;
         _m4 += (element * element * element * element - _m4) * kNeg1;
+    }
+
+    /// Combine two Summary's.
+    void put(const ref typeof(this) rhs) nothrow {
+        immutable totalN = _k + rhs._k;
+        _mean = _mean * (_k / totalN) + rhs._mean * (rhs._k / totalN);
+        _m2 = _m2 * (_k / totalN) + rhs._m2 * (rhs._k / totalN);
+        _m3 = _m3 * (_k / totalN) + rhs._m3 * (rhs._k / totalN);
+        _m4 = _m4 * (_k / totalN) + rhs._m4 * (rhs._k / totalN);
+        _min = (_min < rhs._min) ? _min : rhs._min;
+        _max = (_max > rhs._max) ? _max : rhs._max;
+        _k = totalN;
     }
 
     ///
@@ -558,6 +650,30 @@ public:
                   "\nKurtosis = ", kurtosis,
                   "\nMin = ", _min,
                   "\nMax = ", _max);
+    }
+}
+
+unittest {
+    // Everything else is tested indirectly through kurtosis, skewness.  Test
+    // put(typeof(this)).
+
+    Summary mean1, mean2, combined;
+    foreach(i; 0..5) {
+      mean1.put(i);
+    }
+
+    foreach(i; 5..10) {
+      mean2.put(i);
+    }
+
+    mean1.put(mean2);
+
+    foreach(i; 0..10) {
+      combined.put(i);
+    }
+
+    foreach(ti, elem; mean1.tupleof) {
+        assert(approxEqual(elem, combined.tupleof[ti]));
     }
 }
 

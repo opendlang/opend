@@ -92,6 +92,15 @@ unittest {
     b.upTo = 100;
     assert(approxEqual(pcor(a, b).cor, 1));
 
+    Pcor cor1 = pcor([1,2,4][], [2,3,5][]);
+    Pcor cor2 = pcor([4,2,9][], [2,8,7][]);
+    Pcor combined = pcor([1,2,4,4,2,9][], [2,3,5,2,8,7][]);
+    cor1.put(cor2);
+
+    foreach(ti, elem; cor1.tupleof) {
+        assert(approxEqual(elem, combined.tupleof[ti]));
+    }
+
     writefln("Passed pcor unittest.");
 }
 
@@ -117,6 +126,17 @@ public:
         _mean1 += (elem1 - _mean1)        * kNeg1;
          _var2 += (elem2 * elem2 - _var2) * kNeg1;
         _mean2 += (elem2 - _mean2)        * kNeg1;
+    }
+
+    /// Combine two Pcor's.
+    void put(const ref typeof(this) rhs) nothrow {
+        immutable totalN = _k + rhs._k;
+        _mean1 = _mean1 * (_k / totalN) + rhs._mean1 * (rhs._k / totalN);
+        _mean2 = _mean2 * (_k / totalN) + rhs._mean2 * (rhs._k / totalN);
+        _var1 = _var1 * (_k / totalN) + rhs._var1 * (rhs._k / totalN);
+        _var2 = _var2 * (_k / totalN) + rhs._var2 * (rhs._k / totalN);
+        _cov = _cov * (_k / totalN) + rhs._cov * (rhs._k / totalN);
+        _k = totalN;
     }
 
     ///
@@ -200,13 +220,13 @@ in {
 
     mixin(newFrame);
 
-    static float[] scorRank(T)(T someRange) {
+    static double[] scorRank(T)(T someRange) {
         static if(dstats.base.hasLength!(T)) {
-            float[] ret = newStack!(float)(someRange.length);
+            double[] ret = newStack!(double)(someRange.length);
             rank(someRange, ret);
         } else {
             auto iDup = tempdup(someRange);
-            float[] ret = newStack!(float)(iDup.length);
+            double[] ret = newStack!(double)(iDup.length);
             rankSort(iDup, ret);
         }
         return ret;
