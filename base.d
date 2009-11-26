@@ -451,11 +451,11 @@ private struct Indexed(T) {
     T someRange;
     size_t[] indices;
 
-    ElementType!T opIndex(size_t index) const pure nothrow {
+    ElementType!T opIndex(size_t index) {
         return someRange[indices[index]];
     }
 
-    size_t length() const pure nothrow {
+    size_t length() {
         return indices.length;
     }
 }
@@ -506,7 +506,7 @@ unittest {
     writeln("Passed rank test.");
 }
 
-private void averageTies(T, U)(T sortedInput, U[] ranks, size_t[] perms) nothrow
+private void averageTies(T, U)(T sortedInput, U[] ranks, size_t[] perms)
 in {
     assert(sortedInput.length == ranks.length);
     assert(ranks.length == perms.length);
