@@ -1159,6 +1159,8 @@ private real wilcoxRSPExact(uint W, uint n1, uint n2, Alt alt = Alt.TWOSIDE) {
      *     answers, it would be so slow that any reasonable person would use the
      *     asymptotic approximation anyhow.*/
 
+
+    // Algorithm based on StackOverflow question 376003.
     real comb = exp(-logNcomb(N, n1));
     real floatMax = cast(real) float.max;
     cache[0] = cast(float) (comb * floatMax);
@@ -2767,20 +2769,44 @@ private real kcorExactP(uint N, uint swaps, Alt alt) {
         return real.nan;
     }
 
-    real pElem = exp(-logFactorial(N));
-    real[] cur = newStack!real( cast(size_t) swaps + 1);
-    real[] prev = newStack!real( cast(size_t) swaps + 1);
+    /* This algorithm was obtained from Question 948341 on stackoverflow.com
+     * and works as follows:
+     *
+     * swaps is the number of swaps that would be necessary in a bubble sort
+     * to sort one list in the same order as the other.  N is the sample size.
+     * We want to find the number of ways that we could get a bubble sort
+     * distance of at least swaps, and divide it by the total number of
+     * permutations, pElem.
+     *
+     * The number of swaps necessary to sort a list is equivalent to the
+     * number of inversions in the list, i.e. where i > j, but
+     * list[i] < list[j].  This is a bottom-up dynamic programming algorithm
+     * based on this principle.
+     *
+     * Assume c(N, k) is the number of permutations that require <= swaps
+     * inversions.
+     * We use the recurrence relation:
+     * When k ≤ N - 1, c(N,k) = c(N,k-1) + c(N-1,k)
+     * When k ≥ N,   c(N,k) = c(N,k-1) + c(N-1,k) - c(N-1,k-N)
+     *
+     * We also divide every value by the constant N! to turn this count into a
+     * probability.
+     */
+
+    immutable double pElem = exp(-logFactorial(N));
+    double[] cur = newStack!double(swaps + 1);
+    double[] prev = newStack!double(swaps + 1);
 
     prev[] = pElem;
     cur[0] = pElem;
-    foreach(i; 1..N + 1) {
-        uint nSwapsPossible = i * (i - 1) / 2;
-        uint upTo = min(swaps, nSwapsPossible) + 1;
+    foreach(k; 1..N + 1) {
+        immutable uint nSwapsPossible = k * (k - 1) / 2;
+        immutable uint upTo = min(swaps, nSwapsPossible) + 1;
         foreach(j; 1..upTo) {
-            if(j < i) {
+            if(j < k) {
                 cur[j] = prev[j] + cur[j - 1];
             } else {
-                cur[j] = prev[j] - prev[j - i] + cur[j - 1];
+                cur[j] = prev[j] - prev[j - k] + cur[j - 1];
             }
         }
         cur[upTo..$] = cur[upTo - 1];
@@ -2834,7 +2860,7 @@ unittest {
     // A little monte carlo unittesting.  For large ranges, the deviation
     // between the exact and approximate version should be extremely small.
     foreach(i; 0..100) {
-        uint nToTake = uniform(15, 35);
+        uint nToTake = uniform(15, 65);
         auto lhs = toArray(take(nToTake, randRange!rNorm(0, 1)));
         auto rhs = toArray(take(nToTake, randRange!rNorm(0, 1)));
         if(i & 1) {
