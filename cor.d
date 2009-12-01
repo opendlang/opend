@@ -51,13 +51,13 @@ version(unittest) {
  * This function works with any pair of input ranges.  If they are of different
  * lengths, it uses the first min(input1.length, input2.length) elements.
  *
- * Note:  The Pcor struct returned by this function is alias this'd to the
+ * Note:  The PearsonCor struct returned by this function is alias this'd to the
  * correlation coefficient.  Therefore, the result from this function can
  * be treated simply as a floating point number.
  */
-Pcor pcor(T, U)(T input1, U input2)
+PearsonCor pearsonCor(T, U)(T input1, U input2)
 if(realInput!(T) && realInput!(U)) {
-    Pcor corCalc;
+    PearsonCor corCalc;
     while(!input1.empty && !input2.empty) {
         corCalc.put(input1.front, input2.front);
         input1.popFront;
@@ -68,9 +68,9 @@ if(realInput!(T) && realInput!(U)) {
 }
 
 unittest {
-    assert(approxEqual(pcor([1,2,3,4,5][], [1,2,3,4,5][]).cor, 1));
-    assert(approxEqual(pcor([1,2,3,4,5][], [10.0, 8.0, 6.0, 4.0, 2.0][]).cor, -1));
-    assert(approxEqual(pcor([2, 4, 1, 6, 19][], [4, 5, 1, 3, 2][]).cor, -.2382314));
+    assert(approxEqual(pearsonCor([1,2,3,4,5][], [1,2,3,4,5][]).cor, 1));
+    assert(approxEqual(pearsonCor([1,2,3,4,5][], [10.0, 8.0, 6.0, 4.0, 2.0][]).cor, -1));
+    assert(approxEqual(pearsonCor([2, 4, 1, 6, 19][], [4, 5, 1, 3, 2][]).cor, -.2382314));
 
         // Make sure everything works with lowest common denominator range type.
     struct Count {
@@ -90,18 +90,18 @@ unittest {
     Count a, b;
     a.upTo = 100;
     b.upTo = 100;
-    assert(approxEqual(pcor(a, b).cor, 1));
+    assert(approxEqual(pearsonCor(a, b).cor, 1));
 
-    Pcor cor1 = pcor([1,2,4][], [2,3,5][]);
-    Pcor cor2 = pcor([4,2,9][], [2,8,7][]);
-    Pcor combined = pcor([1,2,4,4,2,9][], [2,3,5,2,8,7][]);
+    PearsonCor cor1 = pearsonCor([1,2,4][], [2,3,5][]);
+    PearsonCor cor2 = pearsonCor([4,2,9][], [2,8,7][]);
+    PearsonCor combined = pearsonCor([1,2,4,4,2,9][], [2,3,5,2,8,7][]);
     cor1.put(cor2);
 
     foreach(ti, elem; cor1.tupleof) {
         assert(approxEqual(elem, combined.tupleof[ti]));
     }
 
-    writefln("Passed pcor unittest.");
+    writefln("Passed pearsonCor unittest.");
 }
 
 /**Allows computation of mean, stdev, variance, covariance, Pearson correlation online.
@@ -109,10 +109,10 @@ unittest {
  * for means cost a single branch to check for N == 0.  This struct uses O(1)
  * space.
  *
- * Pcor.cor is alias this'd, so if this struct is used as a real, it will
+ * PearsonCor.cor is alias this'd, so if this struct is used as a real, it will
  * be converted to a simple correlation coefficient automatically.
  */
-struct Pcor {
+struct PearsonCor {
 private:
     real _k = 0, _mean1 = 0, _mean2 = 0, _var1 = 0, _var2 = 0, _cov = 0;
 public:
@@ -128,7 +128,7 @@ public:
         _mean2 += (elem2 - _mean2)        * kNeg1;
     }
 
-    /// Combine two Pcor's.
+    /// Combine two PearsonCor's.
     void put(const ref typeof(this) rhs) nothrow {
         immutable totalN = _k + rhs._k;
         _mean1 = _mean1 * (_k / totalN) + rhs._mean1 * (rhs._k / totalN);
@@ -188,7 +188,7 @@ public:
 ///
 real covariance(T, U)(T input1, U input2)
 if(realInput!(T) && realInput!(U)) {
-    Pcor covCalc;
+    PearsonCor covCalc;
     while(!input1.empty && !input2.empty) {
         covCalc.put(input1.front, input2.front);
         input1.popFront;
@@ -205,7 +205,7 @@ unittest {
 /**Spearman's rank correlation.  Non-parametric.  This is essentially the
  * Pearson correlation of the ranks of the data, with ties dealt with by
  * averaging.*/
-real scor(R, S)(R input1, S input2)
+real spearmanCor(R, S)(R input1, S input2)
 if(isInputRange!(R) && isInputRange!(S))
 in {
     static if(dstats.base.hasLength!S && dstats.base.hasLength!R) {
@@ -220,7 +220,7 @@ in {
 
     mixin(newFrame);
 
-    static double[] scorRank(T)(T someRange) {
+    static double[] spearmanCorRank(T)(T someRange) {
         static if(dstats.base.hasLength!(T)) {
             double[] ret = newStack!(double)(someRange.length);
             rank(someRange, ret);
@@ -232,23 +232,23 @@ in {
         return ret;
     }
 
-    return pcor(scorRank(input1), scorRank(input2)).cor;
+    return pearsonCor(spearmanCorRank(input1), spearmanCorRank(input2)).cor;
 }
 
 unittest {
     //Test against a few known values.
-    assert(approxEqual(scor([1,2,3,4,5,6].dup, [3,1,2,5,4,6].dup), 0.77143));
-    assert(approxEqual(scor([3,1,2,5,4,6].dup, [1,2,3,4,5,6].dup ), 0.77143));
-    assert(approxEqual(scor([3,6,7,35,75].dup, [1,63,53,67,3].dup), 0.3));
-    assert(approxEqual(scor([1,63,53,67,3].dup, [3,6,7,35,75].dup), 0.3));
-    assert(approxEqual(scor([1.5,6.3,7.8,4.2,1.5].dup, [1,63,53,67,3].dup), .56429));
-    assert(approxEqual(scor([1,63,53,67,3].dup, [1.5,6.3,7.8,4.2,1.5].dup), .56429));
-    assert(approxEqual(scor([1.5,6.3,7.8,7.8,1.5].dup, [1,63,53,67,3].dup), .79057));
-    assert(approxEqual(scor([1,63,53,67,3].dup, [1.5,6.3,7.8,7.8,1.5].dup), .79057));
-    assert(approxEqual(scor([1.5,6.3,7.8,6.3,1.5].dup, [1,63,53,67,3].dup), .63246));
-    assert(approxEqual(scor([1,63,53,67,3].dup, [1.5,6.3,7.8,6.3,1.5].dup), .63246));
-    assert(approxEqual(scor([3,4,1,5,2,1,6,4].dup, [1,3,2,6,4,2,6,7].dup), .6829268));
-    assert(approxEqual(scor([1,3,2,6,4,2,6,7].dup, [3,4,1,5,2,1,6,4].dup), .6829268));
+    assert(approxEqual(spearmanCor([1,2,3,4,5,6].dup, [3,1,2,5,4,6].dup), 0.77143));
+    assert(approxEqual(spearmanCor([3,1,2,5,4,6].dup, [1,2,3,4,5,6].dup ), 0.77143));
+    assert(approxEqual(spearmanCor([3,6,7,35,75].dup, [1,63,53,67,3].dup), 0.3));
+    assert(approxEqual(spearmanCor([1,63,53,67,3].dup, [3,6,7,35,75].dup), 0.3));
+    assert(approxEqual(spearmanCor([1.5,6.3,7.8,4.2,1.5].dup, [1,63,53,67,3].dup), .56429));
+    assert(approxEqual(spearmanCor([1,63,53,67,3].dup, [1.5,6.3,7.8,4.2,1.5].dup), .56429));
+    assert(approxEqual(spearmanCor([1.5,6.3,7.8,7.8,1.5].dup, [1,63,53,67,3].dup), .79057));
+    assert(approxEqual(spearmanCor([1,63,53,67,3].dup, [1.5,6.3,7.8,7.8,1.5].dup), .79057));
+    assert(approxEqual(spearmanCor([1.5,6.3,7.8,6.3,1.5].dup, [1,63,53,67,3].dup), .63246));
+    assert(approxEqual(spearmanCor([1,63,53,67,3].dup, [1.5,6.3,7.8,6.3,1.5].dup), .63246));
+    assert(approxEqual(spearmanCor([3,4,1,5,2,1,6,4].dup, [1,3,2,6,4,2,6,7].dup), .6829268));
+    assert(approxEqual(spearmanCor([1,3,2,6,4,2,6,7].dup, [3,4,1,5,2,1,6,4].dup), .6829268));
     uint[] one = new uint[1000], two = new uint[1000];
     foreach(i; 0..100) {  //Further sanity checks for things like commutativity.
         size_t lowerBound = uniform(0, one.length);
@@ -261,20 +261,20 @@ unittest {
              o = uniform(1, 10);  //Generate lots of ties.
         }
         real sOne =
-             scor(one[lowerBound..upperBound], two[lowerBound..upperBound]);
+             spearmanCor(one[lowerBound..upperBound], two[lowerBound..upperBound]);
         real sTwo =
-             scor(two[lowerBound..upperBound], one[lowerBound..upperBound]);
+             spearmanCor(two[lowerBound..upperBound], one[lowerBound..upperBound]);
         foreach(ref o; one)
             o*=-1;
         real sThree =
-             -scor(one[lowerBound..upperBound], two[lowerBound..upperBound]);
+             -spearmanCor(one[lowerBound..upperBound], two[lowerBound..upperBound]);
         real sFour =
-             -scor(two[lowerBound..upperBound], one[lowerBound..upperBound]);
+             -spearmanCor(two[lowerBound..upperBound], one[lowerBound..upperBound]);
         foreach(ref o; two) o*=-1;
         one[lowerBound..upperBound].reverse;
         two[lowerBound..upperBound].reverse;
         real sFive =
-             scor(one[lowerBound..upperBound], two[lowerBound..upperBound]);
+             spearmanCor(one[lowerBound..upperBound], two[lowerBound..upperBound]);
         assert(approxEqual(sOne, sTwo) || (isnan(sOne) && isnan(sTwo)));
         assert(approxEqual(sTwo, sThree) || (isnan(sThree) && isnan(sTwo)));
         assert(approxEqual(sThree, sFour) || (isnan(sThree) && isnan(sFour)));
@@ -299,9 +299,9 @@ unittest {
     Count a, b;
     a.upTo = 100;
     b.upTo = 100;
-    assert(scor(a, b) == 1);
+    assert(spearmanCor(a, b) == 1);
 
-    writeln("Passed scor unittest.");
+    writeln("Passed spearmanCor unittest.");
 }
 
 /*  Kendall's Tau correlation, O(N^2) version.  Kept around
@@ -311,7 +311,7 @@ unittest {
   * standard formulas, and therefore unlikely to have weird, subtle bugs.*/
 
 version(unittest) {
-    private real kcorOld(T, U)(const T[] input1, const U[] input2)
+    private real kendallCorOld(T, U)(const T[] input1, const U[] input2)
     in {
         assert(input1.length == input2.length);
     } body {
@@ -348,7 +348,7 @@ version(unittest) {
     }
 }
 
-/**Kendall's Tau, O(N log N) version.  This can be defined in terms of the
+/**Kendall's Tau B, O(N log N) version.  This can be defined in terms of the
  * bubble sort distance, or the number of swaps that would be needed in a
  * bubble sort to sort input2 into the same order as input1.  It is
  * a robust, non-parametric correlation metric.
@@ -356,34 +356,34 @@ version(unittest) {
  * Since a copy of the inputs is made anyhow because they need to be sorted,
  * this function can work with any input range.  However, the ranges must
  * have the same length.*/
-real kcor(T, U)(T input1, U input2)
+real kendallCor(T, U)(T input1, U input2)
 if(isInputRange!(T) && isInputRange!(U)) {
     auto i1d = tempdup(input1);
     scope(exit) TempAlloc.free;
     auto i2d = tempdup(input2);
     scope(exit) TempAlloc.free;
-    return kcorDestructive(i1d, i2d);
+    return kendallCorDestructive(i1d, i2d);
 }
 
 /**Kendall's Tau O(N log N), overwrites input arrays with undefined data but
  * uses only O(log N) stack space for sorting, not O(N) space to duplicate
  * input.  Only works on arrays.
  */
-real kcorDestructive(T, U)(T[] input1, U[] input2)
+real kendallCorDestructive(T, U)(T[] input1, U[] input2)
 in {
     assert(input1.length == input2.length);
 } body {
-    return kcorDestructiveLowLevel(input1, input2).field[0];
+    return kendallCorDestructiveLowLevel(input1, input2).field[0];
 }
 
 // Guarantee that T.sizeof >= U.sizeof so we know we can recycle space.
-auto kcorDestructiveLowLevel(T, U)(T[] input1, U[] input2)
+auto kendallCorDestructiveLowLevel(T, U)(T[] input1, U[] input2)
 if(T.sizeof < U.sizeof) {
-    return kcorDestructiveLowLevel(input2, input1);
+    return kendallCorDestructiveLowLevel(input2, input1);
 }
 
-// Used internally in dstats.tests.kcorTest.
-auto kcorDestructiveLowLevel(T, U)(T[] input1, U[] input2)
+// Used internally in dstats.tests.kendallCorTest.
+auto kendallCorDestructiveLowLevel(T, U)(T[] input1, U[] input2)
 if(T.sizeof >= U.sizeof)
 in {
     assert(input1.length == input2.length);
@@ -455,9 +455,9 @@ in {
 
 unittest {
     //Test against known values.
-    assert(approxEqual(kcor([1,2,3,4,5].dup, [3,1,7,4,3].dup), 0.1054093));
-    assert(approxEqual(kcor([3,6,7,35,75].dup,[1,63,53,67,3].dup), 0.2));
-    assert(approxEqual(kcor([1.5,6.3,7.8,4.2,1.5].dup, [1,63,53,67,3].dup), .3162287));
+    assert(approxEqual(kendallCor([1,2,3,4,5].dup, [3,1,7,4,3].dup), 0.1054093));
+    assert(approxEqual(kendallCor([3,6,7,35,75].dup,[1,63,53,67,3].dup), 0.2));
+    assert(approxEqual(kendallCor([1.5,6.3,7.8,4.2,1.5].dup, [1,63,53,67,3].dup), .3162287));
     uint[] one = new uint[1000], two = new uint[1000];
     // Test complex, fast implementation against straightforward,
     // slow implementation.
@@ -472,9 +472,9 @@ unittest {
              o = uniform(1, 10);
         }
         real kOne =
-             kcor(one[lowerBound..upperBound], two[lowerBound..upperBound]);
+             kendallCor(one[lowerBound..upperBound], two[lowerBound..upperBound]);
         real kTwo =
-             kcorOld(one[lowerBound..upperBound], two[lowerBound..upperBound]);
+             kendallCorOld(one[lowerBound..upperBound], two[lowerBound..upperBound]);
         assert(approxEqual(kOne, kTwo) || (isNaN(kOne) && isNaN(kTwo)));
     }
 
@@ -496,9 +496,17 @@ unittest {
     Count a, b;
     a.upTo = 100;
     b.upTo = 100;
-    assert(approxEqual(kcor(a, b), 1));
-    writefln("Passed kcor unittest.");
+    assert(approxEqual(kendallCor(a, b), 1));
+    writefln("Passed kendallCor unittest.");
 }
+
+// Alias to old correlation function names, but don't document them.  These will
+// eventually be deprecated.
+alias PearsonCor Pcor;
+alias pearsonCor pcor;
+alias spearmanCor scor;
+alias kendallCor kcor;
+alias kendallCorDestructive kcorDestructive;
 
 // Verify that there are no TempAlloc memory leaks anywhere in the code covered
 // by the unittest.  This should always be the last unittest of the module.

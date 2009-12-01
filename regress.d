@@ -435,7 +435,7 @@ RegressRes linearRegress(U, TC...)(U Y, TC input) {
     auto residuals = RT(betas, Y, X);
     real S = 0;
     ulong n = 0;
-    Pcor R2Calc;
+    PearsonCor R2Calc;
     for(; !residuals.empty; residuals.popFront) {
         real residual = residuals.front;
         S += residual * residual;

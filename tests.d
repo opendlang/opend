@@ -2534,19 +2534,19 @@ public:
 
 /**Tests the hypothesis that the Pearson correlation between two ranges is
  * different from some 0.  Alternatives are
- * Alt.LESS (pcor(range1, range2) < 0), Alt.GREATER (pcor(range1, range2)
- * > 0) and Alt.TWOSIDE (pcor(range1, range2) != 0).
+ * Alt.LESS (pearsonCor(range1, range2) < 0), Alt.GREATER (pearsonCor(range1, range2)
+ * > 0) and Alt.TWOSIDE (pearsonCor(range1, range2) != 0).
  *
  * Returns:  A ConfInt of the estimated Pearson correlation of the two ranges,
  * the P-value against the given alternative, and the confidence interval of
  * the correlation at the level specified by confLevel.*/
-ConfInt pcorTest(T, U)(T range1, U range2, Alt alt = Alt.TWOSIDE, real confLevel = 0.95)
+ConfInt pearsonCorTest(T, U)(T range1, U range2, Alt alt = Alt.TWOSIDE, real confLevel = 0.95)
 if(realInput!(T) && realInput!(U))
 in {
     assert(confLevel >= 0 && confLevel <= 1);
 } body {
-    Pcor pearsonRes = pcor(range1, range2);
-    return pcorTest(pearsonRes.cor, pearsonRes.N, alt, confLevel);
+    PearsonCor pearsonRes = pearsonCor(range1, range2);
+    return pearsonCorTest(pearsonRes.cor, pearsonRes.N, alt, confLevel);
 }
 
 /**Same as overload, but uses pre-computed correlation coefficient and sample
@@ -2555,7 +2555,7 @@ in {
  * Note:  T must be a numeric type.  The only reason this is a template and
  * not a plain old function is DMD bug 2972.
  */
-ConfInt pcorTest(T)(real cor, T N, Alt alt = Alt.TWOSIDE, real confLevel = 0.95)
+ConfInt pearsonCorTest(T)(real cor, T N, Alt alt = Alt.TWOSIDE, real confLevel = 0.95)
 if(isNumeric!(T))
 in {
     assert(N > 0);
@@ -2610,9 +2610,9 @@ in {
 
 unittest {
     // Values from R.
-    auto t1 = pcorTest([1,2,3,4,5].dup, [2,1,4,3,5].dup, Alt.TWOSIDE);
-    auto t2 = pcorTest([1,2,3,4,5].dup, [2,1,4,3,5].dup, Alt.LESS);
-    auto t3 = pcorTest([1,2,3,4,5].dup, [2,1,4,3,5].dup, Alt.GREATER);
+    auto t1 = pearsonCorTest([1,2,3,4,5].dup, [2,1,4,3,5].dup, Alt.TWOSIDE);
+    auto t2 = pearsonCorTest([1,2,3,4,5].dup, [2,1,4,3,5].dup, Alt.LESS);
+    auto t3 = pearsonCorTest([1,2,3,4,5].dup, [2,1,4,3,5].dup, Alt.GREATER);
 
     assert(approxEqual(t1.testStat, 0.8));
     assert(approxEqual(t2.testStat, 0.8));
@@ -2635,29 +2635,29 @@ unittest {
     uint[] myArrReverse = myArr.dup;
     reverse(myArrReverse);
 
-    auto t4 = pcorTest(myArr, myArr, Alt.TWOSIDE);
-    auto t5 = pcorTest(myArr, myArr, Alt.LESS);
-    auto t6 = pcorTest(myArr, myArr, Alt.GREATER);
+    auto t4 = pearsonCorTest(myArr, myArr, Alt.TWOSIDE);
+    auto t5 = pearsonCorTest(myArr, myArr, Alt.LESS);
+    auto t6 = pearsonCorTest(myArr, myArr, Alt.GREATER);
     assert(t4.testStat == 1);
     assert(t4.p == 0);
     assert(t5.p == 1);
     assert(t6.p == 0);
 
-    auto t7 = pcorTest(myArr, myArrReverse, Alt.TWOSIDE);
-    auto t8 = pcorTest(myArr, myArrReverse, Alt.LESS);
-    auto t9 = pcorTest(myArr, myArrReverse, Alt.GREATER);
+    auto t7 = pearsonCorTest(myArr, myArrReverse, Alt.TWOSIDE);
+    auto t8 = pearsonCorTest(myArr, myArrReverse, Alt.LESS);
+    auto t9 = pearsonCorTest(myArr, myArrReverse, Alt.GREATER);
     assert(t7.testStat == -1);
     assert(t7.p == 0);
     assert(t8.p == 0);
     assert(t9.p == 1);
 
-    writeln("Passed pcorSig test.");
+    writeln("Passed pearsonCorSig test.");
 }
 
 /**Tests the hypothesis that the Spearman correlation between two ranges is
  * different from some 0.  Alternatives are
- * Alt.LESS (scor(range1, range2) < 0), Alt.GREATER (scor(range1, range2)
- * > 0) and Alt.TWOSIDE (scor(range1, range2) != 0).
+ * Alt.LESS (spearmanCor(range1, range2) < 0), Alt.GREATER (spearmanCor(range1, range2)
+ * > 0) and Alt.TWOSIDE (spearmanCor(range1, range2) != 0).
  *
  * Returns:  A TestRes containing the Spearman correlation coefficient and
  * the P-value for the given alternative.
@@ -2666,20 +2666,20 @@ unittest {
  * approximation only.  This is good enough for most practical purposes given
  * reasonably large N, but is not perfectly accurate.  Not valid for data with
  * very large amounts of ties.  */
-TestRes scorTest(T, U)(T range1, U range2, Alt alt = Alt.TWOSIDE)
+TestRes spearmanCorTest(T, U)(T range1, U range2, Alt alt = Alt.TWOSIDE)
 if(isInputRange!(T) && isInputRange!(U) &&
    dstats.base.hasLength!(T) && dstats.base.hasLength!(U)) {
     real N = range1.length;
-    return pcorTest(scor(range1, range2), N, alt, 0);
+    return pearsonCorTest(spearmanCor(range1, range2), N, alt, 0);
 }
 
 unittest {
     // Values from R.
     int[] arr1 = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20];
     int[] arr2 = [8,6,7,5,3,0,9,8,6,7,5,3,0,9,3,6,2,4,3,6,8];
-    auto t1 = scorTest(arr1, arr2, Alt.TWOSIDE);
-    auto t2 = scorTest(arr1, arr2, Alt.LESS);
-    auto t3 = scorTest(arr1, arr2, Alt.GREATER);
+    auto t1 = spearmanCorTest(arr1, arr2, Alt.TWOSIDE);
+    auto t2 = spearmanCorTest(arr1, arr2, Alt.LESS);
+    auto t3 = spearmanCorTest(arr1, arr2, Alt.GREATER);
 
     assert(approxEqual(t1.testStat, -0.1769406));
     assert(approxEqual(t2.testStat, -0.1769406));
@@ -2689,13 +2689,13 @@ unittest {
     assert(approxEqual(t3.p, 0.7785));
     assert(approxEqual(t2.p, 0.2215));
 
-    writeln("Passed scorSig test.");
+    writeln("Passed spearmanCorSig test.");
 }
 
 /**Tests the hypothesis that the Kendall correlation between two ranges is
  * different from some 0.  Alternatives are
- * Alt.LESS (kcor(range1, range2) < 0), Alt.GREATER (kcor(range1, range2)
- * > 0) and Alt.TWOSIDE (kcor(range1, range2) != 0).
+ * Alt.LESS (kendallCor(range1, range2) < 0), Alt.GREATER (kendallCor(range1, range2)
+ * > 0) and Alt.TWOSIDE (kendallCor(range1, range2) != 0).
  *
  * exactThresh controls the maximum length of the range for which exact P-value
  * computation is used.  The default is 50.  Exact calculation is never used
@@ -2707,12 +2707,12 @@ unittest {
  * Returns:  A TestRes containing the Kendall correlation coefficient and
  * the P-value for the given alternative.
  */
-TestRes kcorTest(T, U)(T range1, U range2, Alt alt = Alt.TWOSIDE, uint exactThresh = 50)
+TestRes kendallCorTest(T, U)(T range1, U range2, Alt alt = Alt.TWOSIDE, uint exactThresh = 50)
 if(isInputRange!(T) && isInputRange!(U)) {
     mixin(newFrame);
     auto i1d = tempdup(range1);
     auto i2d = tempdup(range2);
-    auto res = kcorDestructiveLowLevel(i1d, i2d);
+    auto res = kendallCorDestructiveLowLevel(i1d, i2d);
 
     real n = i1d.length;
     real sd = sqrt((n * (n - 1) * (2 * n + 5) - res.field[2]) / 18.0L);
@@ -2723,7 +2723,7 @@ if(isInputRange!(T) && isInputRange!(U)) {
     if(res.field[2] == 0 && n <= exactThresh) {
         uint N = i1d.length;
         uint nSwaps = (N * (N - 1) / 2 - cast(uint) s) / 2;
-        return TestRes(tau, kcorExactP(N, nSwaps, alt));
+        return TestRes(tau, kendallCorExactP(N, nSwaps, alt));
     }
 
     final switch(alt) {
@@ -2741,7 +2741,7 @@ if(isInputRange!(T) && isInputRange!(U)) {
 
 // Dynamic programming algorithm for computing exact Kendall tau P-values.
 // Thanks to ShreevatsaR from StackOverflow.
-private real kcorExactP(uint N, uint swaps, Alt alt) {
+private real kendallCorExactP(uint N, uint swaps, Alt alt) {
     uint maxSwaps = N * (N - 1) / 2;
     assert(swaps <= maxSwaps);
     real expectedSwaps = cast(ulong) N * (N - 1) * 0.25L;
@@ -2750,18 +2750,18 @@ private real kcorExactP(uint N, uint swaps, Alt alt) {
             if(swaps == maxSwaps) {
                 return 1;
             }
-            return 1.0L - kcorExactP(N, maxSwaps - swaps - 1, Alt.GREATER);
+            return 1.0L - kendallCorExactP(N, maxSwaps - swaps - 1, Alt.GREATER);
         }
     } else if(alt == Alt.LESS) {
         if(swaps == 0) {
             return 1;
         }
-        return kcorExactP(N, maxSwaps - swaps + 0, Alt.GREATER);
+        return kendallCorExactP(N, maxSwaps - swaps + 0, Alt.GREATER);
     } else if(alt == Alt.TWOSIDE) {
         if(swaps < expectedSwaps) {
-            return min(1, 2 * kcorExactP(N, swaps, Alt.GREATER));
+            return min(1, 2 * kendallCorExactP(N, swaps, Alt.GREATER));
         } else if(swaps > expectedSwaps) {
-            return min(1, 2 * kcorExactP(N, swaps, Alt.LESS));
+            return min(1, 2 * kendallCorExactP(N, swaps, Alt.LESS));
         } else {
             return 1;
         }
@@ -2824,9 +2824,9 @@ unittest {
 
     int[] arr1 = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20];
     int[] arr2 = [8,6,7,5,3,0,9,8,6,7,5,3,0,9,3,6,2,4,3,6,8];
-    auto t1 = kcorTest(arr1, arr2, Alt.TWOSIDE);
-    auto t2 = kcorTest(arr1, arr2, Alt.LESS);
-    auto t3 = kcorTest(arr1, arr2, Alt.GREATER);
+    auto t1 = kendallCorTest(arr1, arr2, Alt.TWOSIDE);
+    auto t2 = kendallCorTest(arr1, arr2, Alt.LESS);
+    auto t3 = kendallCorTest(arr1, arr2, Alt.GREATER);
 
     assert(approxEqual(t1.testStat, -.1448010));
     assert(approxEqual(t2.testStat, -.1448010));
@@ -2841,21 +2841,21 @@ unittest {
     uint[] bar = [1,2,3,5,4];
     uint[] baz = [5,3,1,2,4];
 
-    assert(approxEqual(kcorTest(foo, foo).p, 0.01666666));
-    assert(approxEqual(kcorTest(foo, foo, Alt.GREATER).p, 0.008333333));
-    assert(approxEqual(kcorTest(foo, foo, Alt.LESS).p, 1));
+    assert(approxEqual(kendallCorTest(foo, foo).p, 0.01666666));
+    assert(approxEqual(kendallCorTest(foo, foo, Alt.GREATER).p, 0.008333333));
+    assert(approxEqual(kendallCorTest(foo, foo, Alt.LESS).p, 1));
 
-    assert(approxEqual(kcorTest(foo, bar).p, 0.083333333));
-    assert(approxEqual(kcorTest(foo, bar, Alt.GREATER).p, 0.041666667));
-    assert(approxEqual(kcorTest(foo, bar, Alt.LESS).p, 0.9917));
+    assert(approxEqual(kendallCorTest(foo, bar).p, 0.083333333));
+    assert(approxEqual(kendallCorTest(foo, bar, Alt.GREATER).p, 0.041666667));
+    assert(approxEqual(kendallCorTest(foo, bar, Alt.LESS).p, 0.9917));
 
-    assert(approxEqual(kcorTest(foo, baz).p, 0.8167));
-    assert(approxEqual(kcorTest(foo, baz, Alt.GREATER).p, 0.7583));
-    assert(approxEqual(kcorTest(foo, baz, Alt.LESS).p, .4083));
+    assert(approxEqual(kendallCorTest(foo, baz).p, 0.8167));
+    assert(approxEqual(kendallCorTest(foo, baz, Alt.GREATER).p, 0.7583));
+    assert(approxEqual(kendallCorTest(foo, baz, Alt.LESS).p, .4083));
 
-    assert(approxEqual(kcorTest(bar, baz).p, 0.4833));
-    assert(approxEqual(kcorTest(bar, baz, Alt.GREATER).p, 0.8833));
-    assert(approxEqual(kcorTest(bar, baz, Alt.LESS).p, 0.2417));
+    assert(approxEqual(kendallCorTest(bar, baz).p, 0.4833));
+    assert(approxEqual(kendallCorTest(bar, baz, Alt.GREATER).p, 0.8833));
+    assert(approxEqual(kendallCorTest(bar, baz, Alt.LESS).p, 0.2417));
 
     // A little monte carlo unittesting.  For large ranges, the deviation
     // between the exact and approximate version should be extremely small.
@@ -2868,19 +2868,19 @@ unittest {
         } else {
             lhs[] -= rhs[] * 0.2;
         }
-        real exact = kcorTest(lhs, rhs).p;
-        real approx = kcorTest(lhs, rhs, Alt.TWOSIDE, 0).p;
+        real exact = kendallCorTest(lhs, rhs).p;
+        real approx = kendallCorTest(lhs, rhs, Alt.TWOSIDE, 0).p;
         assert(abs(exact - approx) < 0.01);
 
-        exact = kcorTest(lhs, rhs, Alt.GREATER).p;
-        approx = kcorTest(lhs, rhs, Alt.GREATER, 0).p;
+        exact = kendallCorTest(lhs, rhs, Alt.GREATER).p;
+        approx = kendallCorTest(lhs, rhs, Alt.GREATER, 0).p;
         assert(abs(exact - approx) < 0.01);
 
-        exact = kcorTest(lhs, rhs, Alt.LESS).p;
-        approx = kcorTest(lhs, rhs, Alt.LESS, 0).p;
+        exact = kendallCorTest(lhs, rhs, Alt.LESS).p;
+        approx = kendallCorTest(lhs, rhs, Alt.LESS, 0).p;
         assert(abs(exact - approx) < 0.01);
     }
-    writeln("Passed kcorTest test.");
+    writeln("Passed kendallCorTest test.");
 }
 
 /**A test for normality of the distribution of a range of values.  Based on
