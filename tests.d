@@ -2567,18 +2567,25 @@ in {
     real t = cor / denom;
     ConfInt ret;
     ret.testStat = cor;
-    real sqN = sqrt(N - 3.0L);
-    real z = sqN * atanh(cor);
+
+    real sqN, z;
+    if(confLevel > 0) {
+        sqN = sqrt(N - 3.0L);
+        z = sqN * atanh(cor);
+    }
 
     final switch(alt) {
         case Alt.NONE :
             return ret;
         case Alt.TWOSIDE:
             ret.p = (abs(cor) >= 1) ? 0 :
-                2 * min(studentsTCDF(t, N - 2), studentsTCDFR(t, N - 2));
-            real deltaZ = invNormalCDF(0.5 * (1 - confLevel));
-            ret.lowerBound = tanh((z + deltaZ) / sqN);
-            ret.upperBound = tanh((z - deltaZ) / sqN);
+                2 * ((t < 0) ? studentsTCDF(t, N - 2) : studentsTCDFR(t, N - 2));
+
+            if(confLevel > 0) {
+                real deltaZ = invNormalCDF(0.5 * (1 - confLevel));
+                ret.lowerBound = tanh((z + deltaZ) / sqN);
+                ret.upperBound = tanh((z - deltaZ) / sqN);
+            }
             break;
         case Alt.LESS:
             if(cor >= 1) {
@@ -2588,9 +2595,13 @@ in {
             } else {
                 ret.p = studentsTCDF(t, N - 2);
             }
-            real deltaZ = invNormalCDF(1 - confLevel);
-            ret.lowerBound = -1;
-            ret.upperBound = tanh((z - deltaZ) / sqN);
+
+            if(confLevel > 0) {
+                real deltaZ = invNormalCDF(1 - confLevel);
+                ret.lowerBound = -1;
+                ret.upperBound = tanh((z - deltaZ) / sqN);
+            }
+
             break;
         case Alt.GREATER:
             if(cor >= 1) {
@@ -2600,9 +2611,13 @@ in {
             } else {
                 ret.p = studentsTCDFR(t, N - 2);
             }
-            real deltaZ = invNormalCDF(1 - confLevel);
-            ret.lowerBound = tanh((z + deltaZ) / sqN);
-            ret.upperBound = 1;
+
+            if(confLevel > 0) {
+                real deltaZ = invNormalCDF(1 - confLevel);
+                ret.lowerBound = tanh((z + deltaZ) / sqN);
+                ret.upperBound = 1;
+            }
+
             break;
     }
     return ret;
