@@ -2563,8 +2563,8 @@ in {
     assert(cor < 1.0L || approxEqual(cor, 1.0L));
     assert(confLevel >= 0 && confLevel <= 1);
 } body {
-    real denom = sqrt((1 - cor * cor) / (N - 2));
-    real t = cor / denom;
+    immutable real denom = sqrt((1 - cor * cor) / (N - 2));
+    immutable real t = cor / denom;
     ConfInt ret;
     ret.testStat = cor;
 
@@ -2585,7 +2585,11 @@ in {
                 real deltaZ = invNormalCDF(0.5 * (1 - confLevel));
                 ret.lowerBound = tanh((z + deltaZ) / sqN);
                 ret.upperBound = tanh((z - deltaZ) / sqN);
+            } else {
+                ret.lowerBound = cor;
+                ret.upperBound = cor;
             }
+
             break;
         case Alt.LESS:
             if(cor >= 1) {
@@ -2600,6 +2604,9 @@ in {
                 real deltaZ = invNormalCDF(1 - confLevel);
                 ret.lowerBound = -1;
                 ret.upperBound = tanh((z - deltaZ) / sqN);
+            } else {
+                ret.lowerBound = -1;
+                ret.upperBound = cor;
             }
 
             break;
@@ -2615,6 +2622,9 @@ in {
             if(confLevel > 0) {
                 real deltaZ = invNormalCDF(1 - confLevel);
                 ret.lowerBound = tanh((z + deltaZ) / sqN);
+                ret.upperBound = 1;
+            } else {
+                ret.lowerBound = cor;
                 ret.upperBound = 1;
             }
 
