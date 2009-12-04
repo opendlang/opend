@@ -56,6 +56,7 @@ enum Alt {
 
 /**A plain old data struct for returning the results of hypothesis tests.*/
 struct TestRes {
+    this(this) {}  // Workaround for bug 2943
 
     /// The test statistic.  What exactly this is is specific to the test.
     real testStat;
@@ -77,6 +78,8 @@ struct TestRes {
  * that also produce confidence intervals.  Contains, can implicitly convert
  * to, a TestRes.*/
 struct ConfInt {
+    this(this) {}  // Workaround for bug 2943
+
     ///
     TestRes testRes;
 
@@ -207,25 +210,45 @@ in {
     real normSd = (sx1x2 * sqrt((1.0L / n1) + (1.0L / n2)));
     real meanDiff = s1summ.mean - s2summ.mean;
     ConfInt ret;
-    ret.testStat = meanDiff / normSd;
+    ret.testStat = (meanDiff - testMean) / normSd;
     if(alt == Alt.NONE) {
         return ret;
     } else if(alt == Alt.LESS) {
         ret.p = studentsTCDF(ret.testStat, n1 + n2 - 2);
-        real delta = invStudentsTCDF(1 - confLevel, n1 + n2 - 2) * normSd;
+
         ret.lowerBound = -real.infinity;
-        ret.upperBound = meanDiff - delta;
+        if(confLevel > 0) {
+            real delta = invStudentsTCDF(1 - confLevel, n1 + n2 - 2) * normSd;
+            ret.upperBound = meanDiff - delta;
+        } else {
+            ret.upperBound = meanDiff;
+        }
+
     } else if(alt == Alt.GREATER) {
         ret.p = studentsTCDF(-ret.testStat, n1 + n2 - 2);
-        real delta = invStudentsTCDF(1 - confLevel, n1 + n2 - 2) * normSd;
-        ret.lowerBound = meanDiff + delta;
+
         ret.upperBound = real.infinity;
+        if(confLevel > 0) {
+            real delta = invStudentsTCDF(1 - confLevel, n1 + n2 - 2) * normSd;
+            ret.lowerBound = meanDiff + delta;
+        } else {
+            ret.lowerBound = meanDiff;
+        }
+
     } else {
-        ret.p = 2 * min(studentsTCDF(ret.testStat, n1 + n2 - 2),
-                       studentsTCDF(-ret.testStat, n1 + n2 - 2));
-        real delta = invStudentsTCDF(0.5 * (1 - confLevel), n1 + n2 - 2) * normSd;
-        ret.lowerBound = meanDiff + delta;
-        ret.upperBound = meanDiff - delta;
+        real t = ret.testStat;
+        ret.p = 2 * ((t < 0) ?
+                    studentsTCDF(t, n1 + n2 - 2) :
+                    studentsTCDFR(t, n1 + n2 - 2));
+
+        if(confLevel > 0) {
+            real delta = invStudentsTCDF(0.5 * (1 - confLevel), n1 + n2 - 2) * normSd;
+            ret.lowerBound = meanDiff + delta;
+            ret.upperBound = meanDiff - delta;
+        } else {
+            ret.lowerBound = meanDiff;
+            ret.upperBound = meanDiff;
+        }
     }
     return ret;
 }
@@ -243,9 +266,9 @@ unittest {
            0.1173));
     assert(approxEqual(studentsTTest([1,2,3,4,5].dup, [1,3,4,5,7,9].dup, 0, Alt.GREATER),
            0.8827));
-    auto t2 = studentsTTest([1,3,5,7,9,11].dup, [2,2,1,3,4].dup);
-    assert(approxEqual(t2, 0.06985));
-    assert(approxEqual(t2.testStat, 2.0567));
+    auto t2 = studentsTTest([1,3,5,7,9,11].dup, [2,2,1,3,4].dup, 5);
+    assert(approxEqual(t2, 0.44444));
+    assert(approxEqual(t2.testStat, -0.7998));
     assert(approxEqual(t2.lowerBound, -0.3595529));
     assert(approxEqual(t2.upperBound, 7.5595529));
 
@@ -293,20 +316,20 @@ in {
         auto s2summ = meanStdev(sample2);
     }
 
-    real n1 = s1summ.N,
-         n2 = s2summ.N;
+    immutable real n1 = s1summ.N,
+                   n2 = s2summ.N;
 
-    auto v1 = s1summ.var, v2 = s2summ.var;
-    real sx1x2 = sqrt(v1 / n1 + v2 / n2);
-    real meanDiff = s1summ.mean - s2summ.mean - testMean;
-    real t = meanDiff / sx1x2;
+    immutable v1 = s1summ.var, v2 = s2summ.var;
+    immutable real sx1x2 = sqrt(v1 / n1 + v2 / n2);
+    immutable real meanDiff = s1summ.mean - s2summ.mean - testMean;
+    immutable real t = meanDiff / sx1x2;
     real numerator = v1 / n1 + v2 / n2;
     numerator *= numerator;
     real denom1 = v1 / n1;
     denom1 = denom1 * denom1 / (n1 - 1);
     real denom2 = v2 / n2;
     denom2 = denom2 * denom2 / (n2 - 1);
-    real df = numerator / (denom1 + denom2);
+    immutable real df = numerator / (denom1 + denom2);
 
     ConfInt ret;
     ret.testStat = t;
@@ -315,18 +338,37 @@ in {
     } else if(alt == Alt.LESS) {
         ret.p = studentsTCDF(t, df);
         ret.lowerBound = -real.infinity;
-        ret.upperBound = meanDiff +
-            testMean - invStudentsTCDF(1 - confLevel, df) * sx1x2;
+
+        if(confLevel > 0) {
+            ret.upperBound = meanDiff +
+                testMean - invStudentsTCDF(1 - confLevel, df) * sx1x2;
+        } else {
+            ret.upperBound = meanDiff + testMean;
+        }
+
     } else if(alt == Alt.GREATER) {
         ret.p = studentsTCDF(-t, df);
-        ret.lowerBound = meanDiff +
-            testMean + invStudentsTCDF(1 - confLevel, df) * sx1x2;
+
+        if(confLevel > 0) {
+            ret.lowerBound = meanDiff +
+                testMean + invStudentsTCDF(1 - confLevel, df) * sx1x2;
+        } else {
+            ret.lowerBound = meanDiff + testMean;
+        }
+
         ret.upperBound = real.infinity;
     } else {
-        ret.p = 2 * min(studentsTCDF(t, df), studentsTCDF(-t, df));
-        real delta = invStudentsTCDF(0.5 * (1 - confLevel), df) * sx1x2;
-        ret.upperBound = meanDiff + testMean - delta;
-        ret.lowerBound = meanDiff + testMean + delta;
+        ret.p = 2 * ((t < 0) ?
+                     studentsTCDF(t, df) :
+                     studentsTCDF(-t, df));
+
+        if(confLevel > 0) {
+            real delta = invStudentsTCDF(0.5 * (1 - confLevel), df) * sx1x2;
+            ret.upperBound = meanDiff + testMean - delta;
+            ret.lowerBound = meanDiff + testMean + delta;
+        } else {
+            ret.upperBound = meanDiff + testMean;
+        }
     }
     return ret;
 }
@@ -430,20 +472,40 @@ in {
         return ret;
     } else if(alt == Alt.LESS) {
         ret.p = studentsTCDF(ret.testStat, msd.N - 1);
-        real delta = invStudentsTCDF(1 - confLevel, msd.N - 1) * normSd;
         ret.lowerBound = -real.infinity;
-        ret.upperBound = sampleMean - delta;
+
+        if(confLevel > 0) {
+            real delta = invStudentsTCDF(1 - confLevel, msd.N - 1) * normSd;
+            ret.upperBound = sampleMean - delta;
+        } else {
+            ret.upperBound = sampleMean;
+        }
+
     } else if(alt == Alt.GREATER) {
         ret.p = studentsTCDF(-ret.testStat, msd.N - 1);
-        real delta = invStudentsTCDF(1 - confLevel, msd.N - 1) * normSd;
-        ret.lowerBound = sampleMean + delta;
         ret.upperBound = real.infinity;
+
+        if(confLevel > 0) {
+            real delta = invStudentsTCDF(1 - confLevel, msd.N - 1) * normSd;
+            ret.lowerBound = sampleMean + delta;
+        } else {
+            ret.lowerBound = sampleMean;
+        }
+
     } else {
-        ret.p = 2 * min(studentsTCDF(ret.testStat, msd.N - 1),
-                       studentsTCDF(-ret.testStat, msd.N - 1));
-        real delta = invStudentsTCDF(0.5 * (1 - confLevel), msd.N - 1) * normSd;
-        ret.lowerBound = sampleMean + delta;
-        ret.upperBound = sampleMean - delta;
+        immutable real t = ret.testStat;
+        ret.p = 2 * ((t < 0) ?
+                      studentsTCDF(t, msd.N - 1) :
+                      studentsTCDF(-t, msd.N - 1));
+
+        if(confLevel > 0) {
+            real delta = invStudentsTCDF(0.5 * (1 - confLevel), msd.N - 1) * normSd;
+            ret.lowerBound = sampleMean + delta;
+            ret.upperBound = sampleMean - delta;
+        } else {
+            ret.lowerBound = ret.upperBound = sampleMean;
+        }
+
     }
     return ret;
 }
@@ -1045,22 +1107,31 @@ real wilcoxonRankSumPval(real w, ulong n1, ulong n2, Alt alt = Alt.TWOSIDE,
         return real.nan;
     }
 
-    real N = n1 + n2;
+    immutable real N = n1 + n2;
 
     if(N < exactThresh && tieSum == 0) {
         return wilcoxRSPExact(roundTo!uint(w), cast(uint) n1, cast(uint) n2, alt);
     }
 
-    real sd = sqrt(cast(real) (n1 * n2) / (N * (N - 1)) *
+    immutable real sd = sqrt(cast(real) (n1 * n2) / (N * (N - 1)) *
              ((N * N * N - N) / 12 - tieSum));
-    real mean = (n1 * n2) / 2.0L;
-    if(alt == Alt.TWOSIDE)
-        return 2.0L * min(normalCDF(w + .5, mean, sd),
-                          normalCDFR(w - .5, mean, sd), 0.5L);
-    else if(alt == Alt.LESS)
-        return normalCDF(w + .5, mean, sd);
-    else if(alt == Alt.GREATER)
-        return normalCDFR(w - .5, mean, sd);
+    immutable real mean = (n1 * n2) / 2.0L;
+
+    if(alt == Alt.TWOSIDE) {
+        if(abs(w - mean) < 0.5) {
+            return 1;
+        } else if(w < mean) {
+            return 2 * normalCDF(w + 0.5, mean, sd);
+        } else {
+            assert(w > mean);
+            return 2 * normalCDFR(w - 0.5, mean, sd);
+        }
+    } else if(alt == Alt.LESS) {
+        return normalCDF(w + 0.5, mean, sd);
+    } else if(alt == Alt.GREATER) {
+        return normalCDFR(w - 0.5, mean, sd);
+    }
+
     assert(0);
 }
 
@@ -1386,16 +1457,23 @@ in {
         tieSum = 0;
     }
 
-    real expected = N * (N + 1) * 0.25L;
-    real sd = sqrt(N * (N + 1) * (2 * N + 1) / 24.0L - tieSum);
+    immutable real expected = N * (N + 1) * 0.25L;
+    immutable real sd = sqrt(N * (N + 1) * (2 * N + 1) / 24.0L - tieSum);
 
     if(alt == Alt.LESS) {
         return normalCDF(W + 0.5, expected, sd);
     } else if(alt == Alt.GREATER) {
         return normalCDFR(W - 0.5, expected, sd);
     } else {
-        return 2 * min(normalCDF(W + 0.5, expected, sd),
-                       normalCDFR(W - 0.5, expected, sd), 0.5L);
+        assert(alt == Alt.TWOSIDE);
+        if(abs(W - expected) <= 0.5) {
+            return 1;
+        } else if(W < expected) {
+            return 2 * normalCDF(W + 0.5, expected, sd);
+        } else {
+            assert(W > expected);
+            return 2 * normalCDFR(W - 0.5, expected, sd);
+        }
     }
 }
 // Tested indirectly through other overload.
@@ -2526,8 +2604,9 @@ public:
         } else if(alt == Alt.GREATER) {
             return normalCDFR(nRun, expected, sd);
         } else {
-            return 2 * min(normalCDF(nRun, expected, sd),
-                           normalCDFR(nRun, expected, sd));
+            return 2 * ((nRun < expected) ?
+                        normalCDF(nRun, expected, sd) :
+                        normalCDFR(nRun, expected, sd));
         }
     }
 }
@@ -2755,8 +2834,16 @@ if(isInputRange!(T) && isInputRange!(U)) {
         case Alt.NONE :
             return TestRes(tau);
         case Alt.TWOSIDE:
-            return TestRes(tau, 2 * min(normalCDF(s + cc, 0, sd),
-                           normalCDFR(s - cc, 0, sd), 0.5));
+            if(abs(s) <= cc) {
+                return TestRes(tau, 1);
+            } else if(s < 0) {
+                return TestRes(tau, 2 * normalCDF(s + cc, 0, sd));
+            } else {
+                assert(s > 0);
+                return TestRes(tau, 2 * normalCDFR(s - cc, 0, sd));
+            }
+            assert(0);
+
         case Alt.LESS:
             return TestRes(tau, normalCDF(s + cc, 0, sd));
         case Alt.GREATER:
@@ -3231,8 +3318,10 @@ if(realInput!(T)) {
 
     auto perm = newStack!(uint)(qVals.length);
 
-    foreach(i, ref elem; perm)
+    foreach(i, ref elem; perm) {
         elem = i;
+    }
+
     qsort(qVals, perm);
 
     foreach(i, ref q; qVals) {

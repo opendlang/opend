@@ -1658,12 +1658,17 @@ real kolmDist(real X) pure nothrow {
         //Handle as a special case.  Otherwise, get NAN b/c of divide by zero.
         return 0;
     }
-    real delta = real.max, result = 0;
+    real result = 0;
     real i = 1;
-    while(delta > real.epsilon) {
-        delta = exp(-(2 * i - 1) * (2 * i - 1) * PI * PI  / (8 * X * X));
+    while(true) {
+        immutable delta = exp(-(2 * i - 1) * (2 * i - 1) * PI * PI  / (8 * X * X));
         i++;
+
+        immutable oldResult = result;
         result += delta;
+        if(isNaN(result) || oldResult == result) {
+            break;
+        }
     }
     result *= (sqrt(2 * PI) / X);
     return result;
