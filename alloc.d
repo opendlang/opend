@@ -441,19 +441,23 @@ public:
  * Bugs: Do not store the only reference to a GC-allocated reference object
  * in an array allocated by newStack because this memory is not
  * scanned by the GC.*/
-T[] newStack(T)(size_t size) nothrow {
-    size_t bytes = size * T.sizeof;
-    T* ptr = cast(T*) TempAlloc.malloc(bytes);
-    return ptr[0..size];
-}
+T[] newStack(T)(size_t size, TempAlloc.State state = null) nothrow {
+    if(state is null) {
+        state = TempAlloc.getState();
+    }
 
-/**Same as newStack(size_t) but uses stateCopy cached on stack by caller
-* to avoid a thread-local storage lookup.  Strictly a speed hack.*/
-T[] newStack(T)(size_t size, TempAlloc.State state) nothrow {
     size_t bytes = size * T.sizeof;
     T* ptr = cast(T*) TempAlloc.malloc(bytes, state);
     return ptr[0..size];
 }
+
+///**Same as newStack(size_t) but uses stateCopy cached on stack by caller
+//* to avoid a thread-local storage lookup.  Strictly a speed hack.*/
+//T[] newStack(T)(size_t size, TempAlloc.State state) nothrow {
+//    size_t bytes = size * T.sizeof;
+//    T* ptr = cast(T*) TempAlloc.malloc(bytes, state);
+//    return ptr[0..size];
+//}
 
 /**Concatenate any number of arrays of the same type, placing results on
  * the TempAlloc stack.*/
@@ -1497,7 +1501,7 @@ unittest {
     writeln("Passed StackSet test.");
 }
 
-private int height(T)(T node) nothrow {
+private int height(T)(const T node) nothrow {
     return (node is null) ? 0 : node.height;
 }
 
@@ -1507,7 +1511,7 @@ struct AVLNodeRealHeight(T) {
     typeof(this)* right;
     int height;
 
-    int balance() nothrow @property {
+    int balance() const nothrow @property {
         return .height(left) - .height(right);
     }
 
@@ -1536,8 +1540,11 @@ struct AVLNodeBitwise(T) {
     enum size_t notMask = ~mask;
 
     typeof(this)* left() nothrow @property {
-        size_t ret = _left & notMask;
-        return cast(typeof(return)) ret;
+        return cast(typeof(return)) (_left & notMask);
+    }
+
+    const(typeof(this))* left() const nothrow @property {
+        return cast(typeof(return)) (_left & notMask);
     }
 
     void left(typeof(this)* newLeft) nothrow @property
@@ -1550,8 +1557,11 @@ struct AVLNodeBitwise(T) {
     }
 
     typeof(this)* right() nothrow @property {
-        size_t ret = _right & notMask;
-        return cast(typeof(return)) ret;
+        return cast(typeof(return)) (_right & notMask);
+    }
+
+    const(typeof(this))* right() const nothrow @property {
+        return cast(typeof(return)) (_right & notMask);
     }
 
     void right(typeof(this)* newRight) nothrow @property
@@ -1563,7 +1573,7 @@ struct AVLNodeBitwise(T) {
         assert(right is newRight);
     }
 
-    int height() nothrow @property {
+    int height() const nothrow @property {
         return (((_left & mask) << 4) |
                     (_right & mask));
     }
@@ -1576,7 +1586,7 @@ struct AVLNodeBitwise(T) {
         _left |= (newHeight & mask);
     }
 
-    int balance() nothrow @property {
+    int balance() const nothrow @property {
         return .height(left) - .height(right);
     }
 
@@ -1587,7 +1597,7 @@ struct AVLNodeBitwise(T) {
         height = ((leftHeight > rightHeight) ? leftHeight : rightHeight) + 1;
     }
 
-    bool isLeaf() nothrow @property {
+    bool isLeaf() const nothrow @property {
         return left is null && right is null;
     }
 }

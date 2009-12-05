@@ -220,7 +220,7 @@ struct ObsEnt(T...) {
         return sum;
     }
 
-    bool opEquals(ref typeof(this) rhs) {
+    bool opEquals(const ref typeof(this) rhs) const {
         foreach(ti, elem; this.tupleof) {
             if(elem != rhs.tupleof[ti])
                 return false;

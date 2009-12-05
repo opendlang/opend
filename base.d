@@ -264,7 +264,7 @@ unittest {
     mixin(newFrame);
     double[] data = [0.0, .01, .03, .05, .11, .3, .5, .7, .89, 1];
     auto res = bin(data, 10);
-    assert(res == [cast(ubyte) 0, 0, 0, 0, 1, 3, 5, 7, 8, 9]);
+    assert(res == to!(ubyte[])([0, 0, 0, 0, 1, 3, 5, 7, 8, 9]));
 
     auto buf = new ubyte[20];
     foreach(ref elem; buf) {
@@ -272,7 +272,7 @@ unittest {
     }
 
     res = bin(data, 10, buf);
-    assert(res == [cast(ubyte) 0, 0, 0, 0, 1, 3, 5, 7, 8, 9]);
+    assert(res == to!(ubyte[])([0, 0, 0, 0, 1, 3, 5, 7, 8, 9]));
 
     // Make sure this throws:
     try {
@@ -324,7 +324,7 @@ in {
             return data[lhs] < data[rhs];
         }
 
-        qsort!compare(perm);
+        dstats.sort.qsort!compare(perm);
     } else {
         auto dd = tempdup(data);
         qsort(dd, perm);
@@ -346,7 +346,7 @@ in {
 unittest {
     double[] data = [5U, 1, 3, 8, 30, 10, 7];
     auto res = frqBin(data, 3);
-    assert(res == [cast(ubyte) 0, 0, 0, 1, 2, 2, 1]);
+    assert(res == to!(ubyte[])([0, 0, 0, 1, 2, 2, 1]));
     data = [3, 1, 4, 1, 5, 9, 2, 6, 5];
 
     auto buf = new ubyte[32];
@@ -355,10 +355,10 @@ unittest {
     }
 
     res = frqBin(data, 4, buf);
-    assert(res == [cast(ubyte) 1, 0, 1, 0, 2, 3, 0, 3, 2]);
+    assert(res == to!(ubyte[])([1, 0, 1, 0, 2, 3, 0, 3, 2]));
     data = [3U, 1, 4, 1, 5, 9, 2, 6, 5, 3, 4, 8, 9, 7, 9, 2];
     res = frqBin(data, 4);
-    assert(res == [cast(ubyte) 1, 0, 1, 0, 2, 3, 0, 2, 2, 1, 1, 3, 3, 2, 3, 0]);
+    assert(res == to!(ubyte[])([1, 0, 1, 0, 2, 3, 0, 2, 2, 1, 1, 3, 3, 2, 3, 0]));
 
     // Make sure this throws:
     try {
@@ -428,7 +428,7 @@ if(isInputRange!(T)) {
             return innerComp(input[lhs], input[rhs]);
         }
 
-        qsort!compare(indices);
+        dstats.sort.qsort!compare(indices);
 
         Ret[] ret;
         if(buf.length < indices.length) {
@@ -488,7 +488,7 @@ if(isRandomAccessRange!(T) && hasLength!(T)) {
         p = i;
     }
 
-    qsort!compFun(input, perms);
+    dstats.sort.qsort!compFun(input, perms);
     foreach(i; 0..perms.length)  {
         ranks[perms[i]] = i + 1;
     }
@@ -859,12 +859,12 @@ unittest {
         res2 ~= p.dup;
     }
     sort(res2);
-    assert(res2.canFindSorted([cast(byte) 0, 1, 2]));
-    assert(res2.canFindSorted([cast(byte) 0u, 2, 1]));
-    assert(res2.canFindSorted([cast(byte) 1u, 0, 2]));
-    assert(res2.canFindSorted([cast(byte) 1u, 2, 0]));
-    assert(res2.canFindSorted([cast(byte) 2u, 0, 1]));
-    assert(res2.canFindSorted([cast(byte) 2u, 1, 0]));
+    assert(res2.canFindSorted( to!(byte[])([0, 1, 2])));
+    assert(res2.canFindSorted( to!(byte[])([0, 2, 1])));
+    assert(res2.canFindSorted( to!(byte[])([1, 0, 2])));
+    assert(res2.canFindSorted( to!(byte[])([1, 2, 0])));
+    assert(res2.canFindSorted( to!(byte[])([2, 0, 1])));
+    assert(res2.canFindSorted( to!(byte[])([2, 1, 0])));
     assert(res2.length == 6);
 
     // Indirect tests:  If the elements returned are unique, there are N! of
@@ -886,7 +886,7 @@ unittest {
     }
     assert(table2.length == 120);
     foreach(elem, val; table2) {
-        assert(elem.dup.insertionSort == [cast(byte) 0, 1, 2, 3, 4]);
+        assert(elem.dup.insertionSort == to!(byte[])([0, 1, 2, 3, 4]));
     }
     writeln("Passed Perm test.");
 }

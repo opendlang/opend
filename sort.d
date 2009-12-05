@@ -179,7 +179,7 @@ in {
     // using the ideal recursion depth to determine the transition point
     // to heap sort is reasonable.
     uint TTL = cast(uint) log2(cast(real) data[0].length);
-    qsortImpl!(compFun)(data, TTL);
+    qsortImpl!(compFun, T)(data, TTL);
     return data[0];
 }
 

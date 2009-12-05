@@ -141,6 +141,7 @@ ConfInt studentsTTest(T)(T data, real testMean = 0, Alt alt = Alt.TWOSIDE,
 if( (isSummary!T || realIterable!T))
 in {
     assert(confLevel >= 0 && confLevel <= 1);
+    assert(isFinite(testMean));
 } body {
     static if(isSummary!T) {
         return pairedTTest(data, testMean, alt, confLevel);
@@ -189,6 +190,7 @@ ConfInt studentsTTest(T, U)(T sample1, U sample2, real testMean = 0,
 if( (realIterable!T || isSummary!T) && (realIterable!U || isSummary!U))
 in {
     assert(confLevel >= 0 && confLevel <= 1);
+    assert(isFinite(testMean));
 } body {
     static if(isSummary!T) {
         alias sample1 s1summ;
@@ -303,6 +305,7 @@ ConfInt welchTTest(T, U)(T sample1, U sample2, real testMean = 0,
 if( (isSummary!T || realIterable!T) && (isSummary!U || realIterable!U))
 in {
     assert(confLevel >= 0 && confLevel <= 1);
+    assert(isFinite(testMean));
 } body {
     static if(isSummary!T) {
         alias sample1 s1summ;
@@ -419,6 +422,7 @@ ConfInt pairedTTest(T, U)(T before, U after, real testMean = 0,
 if(realInput!(T) && realInput!(U) && isInputRange!T && isInputRange!U)
 in {
     assert(confLevel >= 0 && confLevel <= 1);
+    assert(isFinite(testMean));
 } body {
     MeanSD msd;
     while(!before.empty && !after.empty) {
@@ -457,6 +461,7 @@ ConfInt pairedTTest(T)(T diffSummary, real testMean = 0,
 if(isSummary!T)
 in {
     assert(confLevel >= 0 && confLevel <= 1);
+    assert(isFinite(testMean));
 } body {
     // Save typing.
     alias diffSummary msd;
