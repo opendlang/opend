@@ -795,7 +795,7 @@ TestRes kruskalWallis(T...)(T dataIn) {
             lengths[i] = rngLen;
             N += rngLen;
         }
-        C[] dataArray = newStack!C(N);
+        auto dataArray = newStack!(Unqual!C)(N);
         size_t pos = 0;
         foreach(rng; data) {
             foreach(elem; rng) {
@@ -803,7 +803,7 @@ TestRes kruskalWallis(T...)(T dataIn) {
             }
         }
     } else {
-        C[] dataArray;
+        Unqual!(C)[] dataArray;
         //scope(exit) delete dataArray;
         auto app = appender(&dataArray);
         foreach(i, rng; data) {
@@ -865,12 +865,12 @@ unittest {
     // http://faculty.vassar.edu/lowry/VassarStats.html .
     // R is actually wrong here because it apparently doesn't use a correction
     // for ties.
-    auto res1 = kruskalWallis([3,1,4,1].dup, [5,9,2,6].dup, [5,3,5].dup);
+    auto res1 = kruskalWallis([3,1,4,1].idup, [5,9,2,6].dup, [5,3,5].dup);
     assert(approxEqual(res1.testStat, 4.15));
     assert(approxEqual(res1.p, 0.1256));
 
     // Test for other input types.
-    auto res2 = kruskalWallis([[3,1,4,1].dup, [5,9,2,6].dup, [5,3,5].dup].dup);
+    auto res2 = kruskalWallis([[3,1,4,1].idup, [5,9,2,6].idup, [5,3,5].idup].idup);
     assert(res2 == res1);
     auto res3 = kruskalWallis(map!"a"([3,1,4,1].dup), [5,9,2,6].dup, [5,3,5].dup);
     assert(res3 == res1);
@@ -927,7 +927,7 @@ if(allSatisfy!(isInputRange, T)) {
             dataPoints[i] = data[i].front;
             data[i].popFront;
         }
-        rankSort(dataPoints[], ranks[]);
+        rank(dataPoints[], ranks[]);
         foreach(i, rank; ranks) {
             colMeans[i].put(rank);
             overallSumm.put(rank);
