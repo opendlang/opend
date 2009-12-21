@@ -351,6 +351,7 @@ in {
 
     } else if(alt == Alt.GREATER) {
         ret.p = studentsTCDF(-t, df);
+        ret.upperBound = real.infinity;
 
         if(confLevel > 0) {
             ret.lowerBound = meanDiff +
@@ -359,7 +360,6 @@ in {
             ret.lowerBound = meanDiff + testMean;
         }
 
-        ret.upperBound = real.infinity;
     } else {
         ret.p = 2 * ((t < 0) ?
                      studentsTCDF(t, df) :
@@ -371,6 +371,7 @@ in {
             ret.lowerBound = meanDiff + testMean + delta;
         } else {
             ret.upperBound = meanDiff + testMean;
+            ret.lowerBound = meanDiff + testMean;
         }
     }
     return ret;
