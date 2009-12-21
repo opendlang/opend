@@ -532,6 +532,51 @@ unittest {
     writeln("Passed pairedTTest unittest.");
 }
 
+/**Tests the null hypothesis that the variances of all groups are equal against
+ * the alternative that heteroscedasticity exists.  data must be either a
+ * tuple of ranges or a range of ranges.  central is an alias for the measure
+ * of central tendency to be used.  This can be any function that maps a
+ * forward range of numeric types to a numeric type.  The commonly used ones
+ * are median (default) and mean (less robust).  Trimmed mean is sometimes
+ * useful, but is currently not implemented in dstats.summary.
+ *
+ * References:
+ * Levene, Howard (1960). "Robust tests for equality of variances". in Ingram
+ * Olkin, Harold Hotelling et al. Contributions to Probability and Statistics:
+ * Essays in Honor of Harold Hotelling. Stanford University Press. pp. 278-292.
+ *
+ * Examples:
+ * ---
+ * int[] sample1 = [1,2,3,4,5];
+ * int[] sample2 = [100,200,300,400,500];
+ * auto result = levenesTest(sample1, sample2);
+ *
+ * // Clearly the variances are different between these two samples.
+ * assert( approxEqual(result.testStat, 10.08));
+ * assert( approxEqual(result.p, 0.01310));
+ * ---
+ */
+TestRes levenesTest(alias central = median, T...)(T data) {
+    return fLevene!(true, central, T)(data);
+}
+
+unittest {
+    // Values from R's car package, which uses the median definition
+    // exclusively.
+    auto res1 = levenesTest([1,2,3,4,5][], [2,4,8,16,32][]);
+    assert(approxEqual(res1.testStat, 3.0316));
+    assert(approxEqual(res1.p, 0.1198));
+
+    auto res2 = levenesTest([[1,2,3,4,5][], [100,200,300,400,500,600][]][]);
+    assert(approxEqual(res2.testStat, 13.586));
+    assert(approxEqual(res2.p, 0.005029));
+
+    auto res3 = levenesTest([8,6,7,5,3,0,9][], [3,6,2,4,3,6][]);
+    assert(approxEqual(res3.testStat, 1.1406));
+    assert(approxEqual(res3.p, 0.3084));
+    writeln("Passed levenesTest test.");
+}
+
 /**The F-test is a one-way ANOVA extension of the T-test to >2 groups.
  * It's useful when you have 3 or more groups with equal variance and want
  * to test whether their means are equal.  Data can be input as either a
@@ -554,14 +599,18 @@ unittest {
  * that the means of the groups are different against the null that they
  * are identical.
  */
-TestRes fTest(T...)(T dataIn) {
+TestRes fTest(T...)(T data) {
+    return fLevene!(false, "dummy", T)(data);
+}
+
+// Levene's Test and the F test have massive overlap at the implementation
+// level but very little at the conceptual level, so I've combined the
+// implementations into one templated function but left the interfaces as
+// two unrelated functions.
+private TestRes fLevene(bool levine, alias central, T...)(T dataIn) {
     static if(dataIn.length == 1) {
         mixin(newFrame);
-        static if(dstats.base.hasLength!(typeof(dataIn[0]))) {
-            alias dataIn[0] data;
-        } else {
-            auto data = tempdup(dataIn[0]);
-        }
+        auto data = tempdup(dataIn[0]);
         auto withins = newStack!MeanSD(data.length);
         withins[] = MeanSD.init;
     } else {
@@ -570,17 +619,47 @@ TestRes fTest(T...)(T dataIn) {
         MeanSD[len] withins;
     }
 
+    static if(levine) {
+        static if(dataIn.length == 1) {
+            auto centers = newStack!real(data.length);
+        } else {
+            real[len] centers;
+        }
+
+        foreach(i, category; data) {
+            static assert( isForwardRange!(typeof(category)) &&
+                is(Unqual!(ElementType!(typeof(category))) : real),
+                "Can only perform Levene's test on input ranges of elements " ~
+                "implicitly convertible to reals.");
+
+            // The cast is to force conversions to real on alias this'd stuff
+            // like the Mean struct.
+            centers[i] = cast(real) central(category);
+        }
+
+        real preprocess(real dataPoint, size_t category) {
+            return abs(dataPoint - centers[category]);
+        }
+    } else {
+        static real preprocess(real dataPoint, size_t category) {
+            return dataPoint;
+        }
+    }
+
+
     uint DFGroups = data.length - 1;
     ulong N = 0;
-    foreach(i, range; data) {
+
+    foreach(category, range; data) {
         static if(isInputRange!(typeof(range)) &&
             is(Unqual!(ElementType!(typeof(range))) : real)) {
             foreach(elem; range) {
-                withins[i].put(elem);
+                real preprocessed = preprocess(elem, category);
+                withins[category].put(preprocessed);
                 N++;
             }
         } else static if(isSummary!(typeof(range))) {
-            withins[i] = range;
+            withins[category] = range;
             N += roundTo!long(range.N);
         } else {
             static assert(0, "Can only perform F-test on input ranges of " ~
@@ -604,7 +683,6 @@ TestRes fTest(T...)(T dataIn) {
     }
     auto F = totalBetween / totalWithin;
     return TestRes(F, fisherCDFR(F, DFGroups, DFDataPoints));
-
 }
 
 unittest {
