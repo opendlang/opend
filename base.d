@@ -565,6 +565,65 @@ unittest {
     writeln("Passed frequency test.");
 }
 
+/**Given a range of values and a range of categories, separates values
+ * by category.  This function also guarantees that the order within each
+ * category will be maintained.
+ *
+ * Note:  While the general convention of this library is to try to avoid
+ * heap allocations whenever possible so that multithreaded code scales well and
+ * false pointers aren't an issue, this function allocates like crazy
+ * because there's basically no other way to implement it.  Don't use it in
+ * performance-critical multithreaded code.
+ *
+ * Examples:
+ * ---
+ * uint[] values = [1,2,3,4,5,6,7,8];
+ * bool[] categories = [false, false, false, false, true, true, true, true];
+ * auto separated = byCategory(values, categories);
+ * auto tResult = studentsTTest(separated.values);
+ * ---
+ */
+ElementType!(V)[][ElementType!(C)] byCategory(V, C)(V values, C categories)
+if(isInputRange!(V) && isInputRange!(C)) {
+    alias ElementType!(V) EV;
+    alias ElementType!(C) EC;
+
+    Appender!(EV[], EV)[EC] aa;
+    while(!values.empty && !categories.empty) {
+        scope(exit) {
+            values.popFront();
+            categories.popFront();
+        }
+
+        auto category = categories.front;
+        auto ptr = category in aa;
+        if(ptr is null) {
+            aa[category] = typeof(aa[category]).init;
+            ptr = category in aa;
+        }
+
+        ptr.put(values.front);
+    }
+
+    EV[][EC] ret;
+    foreach(k, v; aa) {
+        ret[k] = v.data;
+    }
+
+    return ret;
+}
+
+unittest {
+    int[] nums = [1,2,3,4,5,6,7,8,9];
+    int[] categories = [0,1,2,0,1,2,0,1,2];
+
+    auto result = byCategory(nums, categories);
+    assert(result[0] == [1,4,7]);
+    assert(result[1] == [2,5,8]);
+    assert(result[2] == [3,6,9]);
+    writeln("Passed byCategory unittest.");
+}
+
 ///
 T sign(T)(T num) pure nothrow {
     if (num > 0) return 1;
