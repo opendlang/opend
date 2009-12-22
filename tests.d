@@ -557,7 +557,7 @@ unittest {
  * ---
  */
 TestRes levenesTest(alias central = median, T...)(T data) {
-    return fLevene!(true, central, T)(data);
+    return anovaLevene!(true, false, central, T)(data);
 }
 
 unittest {
@@ -583,6 +583,10 @@ unittest {
  * tuple or a range.  This may contain any combination of ranges of numeric
  * types, MeanSD structs and Summary structs.
  *
+ * Note:  This test makes the assumption that all groups have equal variances,
+ * also known as homoskedasticity.  For a similar test that does not make these
+ * assumptions, see welchAnova.
+ *
  * Examples:
  * ---
  * uint[] thing1 = [3,1,4,1],
@@ -600,14 +604,63 @@ unittest {
  * are identical.
  */
 TestRes fTest(T...)(T data) {
-    return fLevene!(false, "dummy", T)(data);
+    return anovaLevene!(false, false, "dummy", T)(data);
 }
 
-// Levene's Test and the F test have massive overlap at the implementation
-// level but very little at the conceptual level, so I've combined the
-// implementations into one templated function but left the interfaces as
-// two unrelated functions.
-private TestRes fLevene(bool levine, alias central, T...)(T dataIn) {
+/**Same as fTest, except that this test does not require the assumption of
+ * equal variances.  In exchange it's slightly less powerful.
+ *
+ * References:
+ *
+ * B.L. Welch. On the Comparison of Several Mean Values: An Alternative Approach
+ * Biometrika, Vol. 38, No. 3/4 (Dec., 1951), pp. 330-336.
+ */
+TestRes welchAnova(T...)(T data) {
+    return anovaLevene!(false, true, "dummy", T)(data);
+}
+
+unittest {
+    // Values from R.
+    uint[] thing1 = [3,1,4,1],
+           thing2 = [5,9,2,6,5,3],
+           thing3 = [5,8,9,7,9,3];
+    auto result = fTest(thing1, meanStdev(thing2), summary(thing3));
+    assert(approxEqual(result.testStat, 4.9968));
+    assert(approxEqual(result.p, 0.02456));
+
+    auto welchRes1 = welchAnova(thing1, thing2, thing3);
+    assert( approxEqual(welchRes1.testStat, 6.7813));
+    assert( approxEqual(welchRes1.p, 0.01706));
+
+    // Test array case.
+    auto res2 = fTest([thing1, thing2, thing3].dup);
+    assert(result.testStat == res2.testStat);
+    assert(result.p == res2.p);
+
+    thing1 = [2,7,1,8,2];
+    thing2 = [8,1,8];
+    thing3 = [2,8,4,5,9];
+    auto res3 = fTest(thing1, thing2, thing3);
+    assert(approxEqual(res3.testStat, 0.377));
+    assert(approxEqual(res3.p, 0.6953));
+
+    auto res4 = fTest([summary(thing1), summary(thing2), summary(thing3)][]);
+    assert(res4.testStat == res3.testStat);
+    assert(res4.testStat == res3.testStat);
+
+    auto welchRes2 = welchAnova(summary(thing1), thing2, thing3);
+    assert( approxEqual(welchRes2.testStat, 0.342));
+    assert( approxEqual(welchRes2.p, 0.7257));
+
+    writeln("Passed ANOVA unittest.");
+}
+
+// Levene's Test, Welch ANOVA and F test have massive overlap at the
+// implementation level but less at the conceptual level, so I've combined
+// the implementations into one horribly complicated but well-encapsulated
+// templated function but left the interfaces as three unrelated functions.
+private TestRes anovaLevene(bool levene, bool welch, alias central,  T...)
+(T dataIn) {
     static if(dataIn.length == 1) {
         mixin(newFrame);
         auto data = tempdup(dataIn[0]);
@@ -619,7 +672,7 @@ private TestRes fLevene(bool levine, alias central, T...)(T dataIn) {
         MeanSD[len] withins;
     }
 
-    static if(levine) {
+    static if(levene) {
         static if(dataIn.length == 1) {
             auto centers = newStack!real(data.length);
         } else {
@@ -662,54 +715,60 @@ private TestRes fLevene(bool levine, alias central, T...)(T dataIn) {
             withins[category] = range;
             N += roundTo!long(range.N);
         } else {
-            static assert(0, "Can only perform F-test on input ranges of " ~
+            static assert(0, "Can only perform ANOVA on input ranges of " ~
                 "numeric types, MeanSD structs and Summary structs, not a " ~
                 typeof(range).stringof ~ ".");
         }
     }
-    immutable ulong DFDataPoints = N - data.length;
-    real mu = 0;
-    foreach(summary; withins) {
-        mu += summary.mean * (summary.N / N);
+
+    static if(!welch) {
+        immutable ulong DFDataPoints = N - data.length;
+        real mu = 0;
+        foreach(summary; withins) {
+            mu += summary.mean * (summary.N / N);
+        }
+
+        real totalWithin = 0;
+        real totalBetween = 0;
+        foreach(group; withins) {
+            totalWithin += group.mse * (group.N / DFDataPoints);
+            immutable diffSq = (group.mean - mu) ^^ 2;
+            totalBetween += diffSq * (group.N / DFGroups);
+        }
+
+        immutable  F = totalBetween / totalWithin;
+        return TestRes(F, fisherCDFR(F, DFGroups, DFDataPoints));
+    } else {
+        immutable real k = data.length;
+        real sumW = 0;
+        foreach(summary; withins) {
+            sumW += summary.N / summary.var;
+        }
+
+        real sumFt = 0;
+        foreach(summary; withins) {
+            sumFt += ((1 - summary.N / summary.var / sumW) ^^ 2) / (summary.N - 1);
+        }
+
+        immutable kSqM1 = (k * k - 1.0L);
+        immutable df2 = 1.0L / (3.0L / kSqM1 * sumFt);
+        immutable denom = 1 + 2 * (k - 2.0L) / kSqM1 * sumFt;
+
+        real yHat = 0;
+        foreach(i, summary; withins) {
+            yHat += summary.mean * (summary.N / summary.var);
+        }
+        yHat /= sumW;
+
+        real numerator = 0;
+        foreach(i, summary; withins) {
+            numerator += summary.N / summary.var * ((summary.mean - yHat) ^^ 2);
+        }
+        numerator /= (k - 1);
+
+        immutable F = numerator / denom;
+        return TestRes(F, fisherCDFR(F, DFGroups, df2));
     }
-
-    real totalWithin = 0;
-    real totalBetween = 0;
-    foreach(group; withins) {
-        totalWithin += group.mse * (group.N / DFDataPoints);
-        real diff = (group.mean - mu);
-        diff *= diff;
-        totalBetween += diff * (group.N / DFGroups);
-    }
-    auto F = totalBetween / totalWithin;
-    return TestRes(F, fisherCDFR(F, DFGroups, DFDataPoints));
-}
-
-unittest {
-    // Values from R.
-    uint[] thing1 = [3,1,4,1],
-           thing2 = [5,9,2,6,5,3],
-           thing3 = [5,8,9,7,9,3];
-    auto result = fTest(thing1, meanStdev(thing2), summary(thing3));
-    assert(approxEqual(result.testStat, 4.9968));
-    assert(approxEqual(result.p, 0.02456));
-
-    // Test array case.
-    auto res2 = fTest([thing1, thing2, thing3].dup);
-    assert(result.testStat == res2.testStat);
-    assert(result.p == res2.p);
-
-    thing1 = [2,7,1,8,2];
-    thing2 = [8,1,8];
-    thing3 = [2,8,4,5,9];
-    auto res3 = fTest(thing1, thing2, thing3);
-    assert(approxEqual(res3.testStat, 0.377));
-    assert(approxEqual(res3.p, 0.6953));
-
-    auto res4 = fTest([summary(thing1), summary(thing2), summary(thing3)][]);
-    assert(res4.testStat == res3.testStat);
-    assert(res4.testStat == res3.testStat);
-    writeln("Passed fTest unittest.");
 }
 
 /**Performs a correlated sample (within-subjects) ANOVA.  This is a
