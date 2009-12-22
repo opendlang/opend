@@ -1,4 +1,5 @@
-/**Generates random samples from a various probability distributions. */
+/**Generates random samples from a various probability distributions.
+ * These are mostly D ports of the NumPy random number generators.*/
 
 /* This library is a D port of a large portion of the Numpy random number
  * library.  A few distributions were excluded because they were too obscure
@@ -119,10 +120,36 @@ module dstats.random;
 import std.math, std.algorithm, dstats.distrib, std.traits, std.typetuple;
 public import std.random; //For uniform distrib.
 
+import dstats.alloc;
+
 version(unittest) {
-    import std.stdio, dstats.tests, dstats.summary, dstats.alloc, dstats.gamma,
+    import std.stdio, dstats.tests, dstats.summary, dstats.gamma,
            std.range;
     void main() {}
+}
+
+/**Convenience function to allow one-statement creation of arrays of random
+ * numbers.
+ *
+ * Examples:
+ * ---
+ * // Create an array of 10 random numbers distributed Normal(0, 1).
+ * auto normals = randArray!rNorm(10, 0, 1);
+ * ---
+ */
+auto randArray(alias randFun, Args...)(size_t N, Args args) {
+    auto ret = newVoid!(typeof(randFun(args)))(N);
+    foreach(ref elem; ret) {
+        elem = randFun(args);
+    }
+
+    return ret;
+}
+
+unittest {
+    // Just check if it compiles.
+    auto nums = randArray!rNorm(5, 0, 1);
+    auto nums2 = randArray!rBinomial(10, 5, 0.5);
 }
 
 ///
@@ -238,17 +265,16 @@ real rNorm(RGen = Random)(real mean, real sd, ref RGen gen = rndGen) {
 
 
 unittest {
-    real[] observ = new real[100_000];
-    foreach(ref elem; observ)
-    elem = rNorm(0, 1);
+    auto observ = randArray!rNorm(100_000, 0, 1);
     auto ksRes = ksTest(observ, parametrize!(normalCDF)(0.0L, 1.0L));
+    auto summ = summary(observ);
+
     writeln("100k samples from normal(0, 1):  K-S P-val:  ", ksRes.p);
-    writeln("\tMean Expected: 0  Observed:  ", mean(observ));
+    writeln("\tMean Expected: 0  Observed:  ", summ.mean);
     writeln("\tMedian Expected: 0  Observed:  ", median(observ));
-    writeln("\tStdev Expected:  1  Observed:  ", stdev(observ));
-    writeln("\tKurtosis Expected:  0  Observed:  ", kurtosis(observ));
-    writeln("\tSkewness Expected:  0  Observed:  ", skewness(observ));
-    delete observ;
+    writeln("\tStdev Expected:  1  Observed:  ", summ.stdev);
+    writeln("\tKurtosis Expected:  0  Observed:  ", summ.kurtosis);
+    writeln("\tSkewness Expected:  0  Observed:  ", summ.skewness);
 }
 
 ///
@@ -257,17 +283,16 @@ real rCauchy(RGen = Random)(real X0, real gamma, ref RGen gen = rndGen) {
 }
 
 unittest {
-    real[] observ = new real[100_000];
-    foreach(ref elem; observ)
-    elem = rCauchy(2, 5);
+    auto observ = randArray!rCauchy(100_000, 2, 5);
     auto ksRes = ksTest(observ, parametrize!(cauchyCDF)(2.0L, 5.0L));
+
+    auto summ = summary(observ);
     writeln("100k samples from Cauchy(2, 5):  K-S P-val:  ", ksRes.p);
-    writeln("\tMean Expected: N/A  Observed:  ", mean(observ));
+    writeln("\tMean Expected: N/A  Observed:  ", summ.mean);
     writeln("\tMedian Expected: 2  Observed:  ", median(observ));
-    writeln("\tStdev Expected:  N/A  Observed:  ", stdev(observ));
-    writeln("\tKurtosis Expected:  N/A  Observed:  ", kurtosis(observ));
-    writeln("\tSkewness Expected:  N/A  Observed:  ", skewness(observ));
-    delete observ;
+    writeln("\tStdev Expected:  N/A  Observed:  ", summ.stdev);
+    writeln("\tKurtosis Expected:  N/A  Observed:  ", summ.kurtosis);
+    writeln("\tSkewness Expected:  N/A  Observed:  ", summ.skewness);
 }
 
 ///
@@ -279,17 +304,16 @@ real rStudentT(RGen = Random)(real df, ref RGen gen = rndGen) {
 }
 
 unittest {
-    real[] observ = new real[100_000];
-    foreach(ref elem; observ)
-    elem = rStudentT(5);
+    auto observ = randArray!rStudentT(100_000, 5);
     auto ksRes = ksTest(observ, parametrize!(studentsTCDF)(5));
+
+    auto summ = summary(observ);
     writeln("100k samples from T(5):  K-S P-val:  ", ksRes.p);
-    writeln("\tMean Expected: 0  Observed:  ", mean(observ));
+    writeln("\tMean Expected: 0  Observed:  ", summ.mean);
     writeln("\tMedian Expected: 0  Observed:  ", median(observ));
-    writeln("\tStdev Expected:  1.2909  Observed:  ", stdev(observ));
-    writeln("\tKurtosis Expected:  6  Observed:  ", kurtosis(observ));
-    writeln("\tSkewness Expected:  0  Observed:  ", skewness(observ));
-    delete observ;
+    writeln("\tStdev Expected:  1.2909  Observed:  ", summ.stdev);
+    writeln("\tKurtosis Expected:  6  Observed:  ", summ.kurtosis);
+    writeln("\tSkewness Expected:  0  Observed:  ", summ.skewness);
 }
 
 ///
