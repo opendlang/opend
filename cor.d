@@ -30,7 +30,7 @@
 
 module dstats.cor;
 
-import core.memory, std.range, std.typecons;
+import core.memory, std.range, std.typecons, std.contracts;
 
 import dstats.sort, dstats.base, dstats.alloc;
 
@@ -64,6 +64,8 @@ if(realInput!(T) && realInput!(U)) {
         input2.popFront;
     }
 
+    enforce(input1.empty && input2.empty,
+        "Ranges must be same length for Pearson correlation.");
     return corCalc;
 }
 
@@ -194,6 +196,9 @@ if(realInput!(T) && realInput!(U)) {
         input1.popFront;
         input2.popFront;
     }
+
+    enforce(input1.empty && input2.empty,
+        "Ranges must be same length for covariance.");
     return covCalc.cov;
 }
 
@@ -206,12 +211,10 @@ unittest {
  * Pearson correlation of the ranks of the data, with ties dealt with by
  * averaging.*/
 real spearmanCor(R, S)(R input1, S input2)
-if(isInputRange!(R) && isInputRange!(S))
-in {
-    static if(dstats.base.hasLength!S && dstats.base.hasLength!R) {
-        assert(input1.length == input2.length);
-    }
-} body {
+if(isInputRange!(R) && isInputRange!(S) &&
+is(typeof(input1.front < input1.front) == bool) &&
+is(typeof(input2.front < input2.front) == bool)) {
+
     static if(dstats.base.hasLength!S && dstats.base.hasLength!R) {
         if(input1.length < 2) {
             return real.nan;
@@ -221,7 +224,7 @@ in {
     mixin(newFrame);
 
     static double[] spearmanCorRank(T)(T someRange) {
-        static if(dstats.base.hasLength!(T)) {
+        static if(dstats.base.hasLength!(T) && isRandomAccessRange!(T)) {
             double[] ret = newStack!(double)(someRange.length);
             rank(someRange, ret);
         } else {
@@ -232,7 +235,12 @@ in {
         return ret;
     }
 
-    return pearsonCor(spearmanCorRank(input1), spearmanCorRank(input2)).cor;
+    auto ranks1 = spearmanCorRank(input1);
+    auto ranks2 = spearmanCorRank(input2);
+    enforce(ranks1.length == ranks2.length,
+        "Ranges must be same length for Spearman correlation.");
+
+    return pearsonCor(ranks1, ranks2).cor;
 }
 
 unittest {
@@ -362,6 +370,9 @@ if(isInputRange!(T) && isInputRange!(U)) {
     scope(exit) TempAlloc.free;
     auto i2d = tempdup(input2);
     scope(exit) TempAlloc.free;
+
+    enforce(i1d.length == i2d.length,
+        "Ranges must be same length for Kendall correlation.");
     return kendallCorDestructive(i1d, i2d);
 }
 
@@ -369,10 +380,9 @@ if(isInputRange!(T) && isInputRange!(U)) {
  * uses only O(log N) stack space for sorting, not O(N) space to duplicate
  * input.  Only works on arrays.
  */
-real kendallCorDestructive(T, U)(T[] input1, U[] input2)
-in {
-    assert(input1.length == input2.length);
-} body {
+real kendallCorDestructive(T, U)(T[] input1, U[] input2) {
+    enforce(input1.length == input2.length,
+        "Ranges must be same length for Kendall correlation.");
     return kendallCorDestructiveLowLevel(input1, input2).field[0];
 }
 

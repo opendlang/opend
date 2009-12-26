@@ -31,11 +31,17 @@
 module dstats.tests;
 
 import dstats.base, dstats.distrib, dstats.alloc, dstats.summary, dstats.sort,
-       dstats.cor, std.algorithm, std.functional, std.range, std.conv;
+       dstats.cor, std.algorithm, std.functional, std.range, std.conv,
+       std.contracts;
 
 version(unittest) {
     import std.stdio, dstats.random;
     void main(){}
+}
+
+private void enforceConfidence(real conf) {
+    enforce(conf >= 0 && conf <= 1,
+        "Confidence intervals must be between 0 and 1.");
 }
 
 /**Alternative hypotheses.  Exact meaning varies with test used.*/
@@ -138,11 +144,10 @@ template isSummary(T) {
  */
 ConfInt studentsTTest(T)(T data, real testMean = 0, Alt alt = Alt.TWOSIDE,
     real confLevel = 0.95)
-if( (isSummary!T || realIterable!T))
-in {
-    assert(confLevel >= 0 && confLevel <= 1);
-    assert(isFinite(testMean));
-} body {
+if( (isSummary!T || realIterable!T)) {
+    enforceConfidence(confLevel);
+    enforce(isFinite(testMean), "testMean must not be infinite or nan.");
+
     static if(isSummary!T) {
         return pairedTTest(data, testMean, alt, confLevel);
     } else static if(realIterable!T) {
@@ -187,11 +192,10 @@ unittest {
  * of sample1 and sample2 at the specified level.*/
 ConfInt studentsTTest(T, U)(T sample1, U sample2, real testMean = 0,
     Alt alt = Alt.TWOSIDE, real confLevel = 0.95)
-if( (realIterable!T || isSummary!T) && (realIterable!U || isSummary!U))
-in {
-    assert(confLevel >= 0 && confLevel <= 1);
-    assert(isFinite(testMean));
-} body {
+if( (realIterable!T || isSummary!T) && (realIterable!U || isSummary!U)) {
+    enforceConfidence(confLevel);
+    enforce(isFinite(testMean), "testMean must not be infinite or nan.");
+
     static if(isSummary!T) {
         alias sample1 s1summ;
     } else {
@@ -302,11 +306,10 @@ unittest {
  * of sample1 and sample2 at the specified level.*/
 ConfInt welchTTest(T, U)(T sample1, U sample2, real testMean = 0,
     Alt alt = Alt.TWOSIDE, real confLevel = 0.95)
-if( (isSummary!T || realIterable!T) && (isSummary!U || realIterable!U))
-in {
-    assert(confLevel >= 0 && confLevel <= 1);
-    assert(isFinite(testMean));
-} body {
+if( (isSummary!T || realIterable!T) && (isSummary!U || realIterable!U)) {
+    enforceConfidence(confLevel);
+    enforce(isFinite(testMean), "testMean cannot be infinite or nan.");
+
     static if(isSummary!T) {
         alias sample1 s1summ;
     } else {
@@ -420,11 +423,10 @@ unittest {
  * corresponding elements of sample1 and sample2 at the specified level.*/
 ConfInt pairedTTest(T, U)(T before, U after, real testMean = 0,
     Alt alt = Alt.TWOSIDE, real confLevel = 0.95)
-if(realInput!(T) && realInput!(U) && isInputRange!T && isInputRange!U)
-in {
-    assert(confLevel >= 0 && confLevel <= 1);
-    assert(isFinite(testMean));
-} body {
+if(realInput!(T) && realInput!(U) && isInputRange!T && isInputRange!U) {
+    enforceConfidence(confLevel);
+    enforce(isFinite(testMean), "testMean cannot be infinite or nan.");
+
     MeanSD msd;
     while(!before.empty && !after.empty) {
         real diff = cast(real) before.front - cast(real) after.front;
@@ -459,11 +461,10 @@ in {
  */
 ConfInt pairedTTest(T)(T diffSummary, real testMean = 0,
     Alt alt = Alt.TWOSIDE, real confLevel = 0.95)
-if(isSummary!T)
-in {
-    assert(confLevel >= 0 && confLevel <= 1);
-    assert(isFinite(testMean));
-} body {
+if(isSummary!T) {
+    enforceConfidence(confLevel);
+    enforce(isFinite(testMean), "testMean cannot be infinite or nan.");
+
     // Save typing.
     alias diffSummary msd;
 
@@ -902,7 +903,8 @@ unittest {
  * no group is stochastically larger than any other against the alternative that
  * groups are stochastically ordered.
  */
-TestRes kruskalWallis(T...)(T dataIn) {
+TestRes kruskalWallis(T...)(T dataIn)
+if(realInput!(typeof(dataIn[0].front)) || allSatisfy!(realInput, T)) {
     mixin(newFrame);
     size_t N = 0;
 
@@ -942,7 +944,6 @@ TestRes kruskalWallis(T...)(T dataIn) {
         }
     } else {
         Unqual!(C)[] dataArray;
-        //scope(exit) delete dataArray;
         auto app = appender(&dataArray);
         foreach(i, rng; data) {
             size_t oldLen = dataArray.length;
@@ -1032,7 +1033,7 @@ unittest {
  * Bugs:  No exact P-value calculation.  Asymptotic approx. only.
  */
 TestRes friedmanTest(T...)(T dataIn)
-if(allSatisfy!(isInputRange, T)) {
+if(realInput!(typeof(dataIn[0].front)) || allSatisfy!(realInput, T)) {
     static if(dataIn.length == 1 && isInputRange!(typeof(dataIn[0].front))) {
         mixin(newFrame);
         auto data = tempdup(dataIn[0]);
@@ -1128,18 +1129,68 @@ unittest {
  * Returns:  A TestRes containing the W test statistic and the P-value against
  * the given alternative.
  */
-TestRes wilcoxonRankSum(T)(T sample1, T sample2, Alt alt = Alt.TWOSIDE,
-    uint exactThresh = 50) if(isInputRange!(T) && dstats.base.hasLength!(T)) {
+TestRes wilcoxonRankSum(T, U)
+(T sample1, U sample2, Alt alt = Alt.TWOSIDE, uint exactThresh = 50)
+if(isInputRange!T && isInputRange!U &&
+is(typeof(sample1.front < sample2.front) == bool) &&
+is(CommonType!(ElementType!T, ElementType!U))) {
 
-    real tieSum;
-    real W = wilcoxonRankSumW(sample1, sample2, &tieSum);
-    if(alt == Alt.NONE) {
-        return TestRes(W);
+    mixin(newFrame);
+    alias Unqual!(CommonType!(ElementType!(T), ElementType!(U))) C;
+
+    static if(dstats.base.hasLength!T && dstats.base.hasLength!U) {
+        uint n1 = sample1.length, n2 = sample2.length, N = n1 + n2;
+        auto combined = newStack!(C)(N);
+        rangeCopy(combined[0..n1], sample1);
+        rangeCopy(combined[n1..$], sample2);
+    } else {
+        C[] combined;
+        auto app = appender(&combined);
+
+        foreach(elem; sample1) {
+            app.put(elem);
+        }
+
+        uint n1 = combined.length;
+        foreach(elem; sample2) {
+            app.put(elem);
+        }
+
+        uint N = combined.length;
+        uint n2 = N - n1;
     }
 
-    real p = wilcoxonRankSumPval(W, sample1.length, sample2.length, alt, tieSum,
-                               exactThresh);
-    return TestRes(W, p);
+    double[] ranks = newStack!(double)(N);
+    rankSort(combined, ranks);
+    real w = reduce!("a + b")(0.0L, ranks[0..n1]) - cast(ulong) n1 * (n1 + 1) / 2UL;
+
+    if(alt == Alt.NONE) {
+        return TestRes(w);
+    }
+
+    real tieSum = 0;
+    // combined is sorted by rankSort.  Can use it to figure out how many
+    // ties we have w/o another allocation or sorting.
+    enum oneOverTwelve = 1.0L / 12.0L;
+    tieSum = 0;
+    ulong nties = 1;
+    foreach(i; 1..N) {
+        if(combined[i] == combined[i - 1]) {
+            nties++;
+        } else {
+            if(nties == 1)
+                continue;
+            tieSum += ((nties * nties * nties) - nties) * oneOverTwelve;
+            nties = 1;
+        }
+    }
+    // Handle last run.
+    if(nties > 1) {
+        tieSum += ((nties * nties * nties) - nties) * oneOverTwelve;
+    }
+
+    immutable p = wilcoxonRankSumPval(w, n1, n2, alt, tieSum, exactThresh);
+    return TestRes(w, p);
 }
 
  unittest {
@@ -1161,8 +1212,8 @@ TestRes wilcoxonRankSum(T)(T sample1, T sample2, Alt alt = Alt.TWOSIDE,
             Alt.TWOSIDE, 0), 0.4113));
      assert(approxEqual(wilcoxonRankSum([1,2,6,10,12].dup, [3,5,7,8,13,15].dup,
             Alt.LESS, 0), 0.2057));
-     assert(approxEqual(wilcoxonRankSum([1,2,6,10,12].dup, [3,5,7,8,13,15].dup,
-            Alt.GREATER, 0), 0.8423));
+     assert(approxEqual(wilcoxonRankSum([1,2,6,10,12].dup,
+        map!"a"([3,5,7,8,13,15].dup), Alt.GREATER, 0), 0.8423));
      assert(approxEqual(wilcoxonRankSum([1,3,5,7,9].dup, [2,4,6,8,10].dup,
             Alt.TWOSIDE, 0), .6745));
      assert(approxEqual(wilcoxonRankSum([1,3,5,7,9].dup, [2,4,6,8,10].dup,
@@ -1206,43 +1257,6 @@ TestRes wilcoxonRankSum(T)(T sample1, T sample2, Alt alt = Alt.TWOSIDE,
     writeln("Passed wilcoxonRankSum test.");
 }
 
-private real wilcoxonRankSumW(T)(T sample1, T sample2, real* tieSum = null)
-if(isInputRange!(T) && dstats.base.hasLength!(T)) {
-    uint n1 = sample1.length, n2 = sample2.length, N = n1 + n2;
-    auto combined = newStack!(Unqual!(ElementType!(T)))(N);
-    rangeCopy(combined[0..n1], sample1);
-    rangeCopy(combined[n1..$], sample2);
-
-    double[] ranks = newStack!(double)(N);
-    rankSort(combined, ranks);
-    real w = reduce!("a + b")(0.0L, ranks[0..n1]) - cast(ulong) n1 * (n1 + 1) / 2UL;
-    TempAlloc.free;  // Free ranks.
-
-    if(tieSum !is null) {
-        // combined is sorted by rankSort.  Can use it to figure out how many
-        // ties we have w/o another allocation or sorting.
-        enum oneOverTwelve = 1.0L / 12.0L;
-        *tieSum = 0;
-        ulong nties = 1;
-        foreach(i; 1..N) {
-            if(combined[i] == combined[i - 1]) {
-                nties++;
-            } else {
-                if(nties == 1)
-                    continue;
-                *tieSum += ((nties * nties * nties) - nties) * oneOverTwelve;
-                nties = 1;
-            }
-        }
-        // Handle last run.
-        if(nties > 1) {
-            *tieSum += ((nties * nties * nties) - nties) * oneOverTwelve;
-        }
-    }
-    TempAlloc.free;  // Free combined.
-    return w;
-}
-
 private
 real wilcoxonRankSumPval(real w, ulong n1, ulong n2, Alt alt = Alt.TWOSIDE,
                            real tieSum = 0,  uint exactThresh = 50) {
@@ -1284,7 +1298,7 @@ unittest {
     assert(approxEqual(wilcoxonRankSumPval(1200, 50, 50, Alt.LESS), .3670));
     assert(approxEqual(wilcoxonRankSumPval(1500, 50, 50, Alt.LESS), .957903));
     assert(approxEqual(wilcoxonRankSumPval(8500, 100, 200, Alt.LESS), .01704));
-    auto w = wilcoxonRankSumW([2,4,6,8,12].dup, [1,3,5,7,11,9].dup);
+    auto w = wilcoxonRankSum([2,4,6,8,12].dup, [1,3,5,7,11,9].dup).testStat;
     assert(approxEqual(wilcoxonRankSumPval(w, 5, 6), 0.9273));
     assert(approxEqual(wilcoxonRankSumPval(w, 5, 6, Alt.GREATER), 0.4636));
     assert(approxEqual(wilcoxonRankSumPval(w, 5, 6, Alt.LESS), 0.6079));
@@ -1443,39 +1457,56 @@ unittest {
  * Returns:  A TestRes of the W statistic and the p-value against the given
  * alternative.*/
 TestRes wilcoxonSignedRank(T, U)(T before, U after, Alt alt = Alt.TWOSIDE, uint exactThresh = 50)
-if(realInput!(T) && dstats.base.hasLength!(T) && isForwardRange!(T)  &&
- realInput!(U) && dstats.base.hasLength!(U) && isForwardRange!(U))
-in {
-    assert(before.length == after.length);
-} body {
-    ulong N = before.length;
-
-    mixin(newFrame);
-    double[] diffRanks = newStack!(double)(before.length);
-    byte[] signs = newStack!(byte)(before.length);
-    real[] diffs = newStack!(real)(before.length);
+if(realInput!(T) && realInput!(U) &&
+is(typeof(before.front - after.front) : real)) {
     uint nZero = 0;
-
     byte sign(real input) {
         if(input < 0)
             return -1;
         if(input > 0)
             return 1;
-        N--;
         nZero++;
         return 0;
     }
 
-    size_t ii = 0;
-    while(!before.empty && !after.empty) {
-        real diff = cast(real) before.front - cast(real) after.front;
-        signs[ii] = sign(diff);
-        diffs[ii] = abs(diff);
-        ii++;
-        before.popFront;
-        after.popFront;
+    mixin(newFrame);
+
+    static if(dstats.base.hasLength!T && dstats.base.hasLength!U) {
+        enforce(before.length == after.length,
+            "Ranges must have same lengths for wilcoxonSignedRank.");
+
+        double[] diffRanks = newStack!(double)(before.length);
+        byte[] signs = newStack!(byte)(before.length);
+        real[] diffs = newStack!(real)(before.length);
+
+        size_t ii = 0;
+        while(!before.empty && !after.empty) {
+            real diff = cast(real) before.front - cast(real) after.front;
+            signs[ii] = sign(diff);
+            diffs[ii] = abs(diff);
+            ii++;
+            before.popFront;
+            after.popFront;
+        }
+    } else {
+        double[] diffRanks;
+        byte[] signs;
+        real[] diffs;
+        auto diffApp = appender(&diffs);
+        auto signApp = appender(&signs);
+
+        while(!before.empty && !after.empty) {
+            real diff = cast(real) before.front - cast(real) after.front;
+            signApp.put(sign(diff));
+            diffApp.put(abs(diff));
+            before.popFront;
+            after.popFront;
+        }
+
+        diffRanks = newStack!double(diffs.length);
     }
     rankSort(diffs, diffRanks);
+    ulong N = diffs.length - nZero;
 
     real W = 0;
     foreach(i, dr; diffRanks) {
@@ -1529,7 +1560,7 @@ unittest {
 
     // With ties, normal approx.
     assert(ae(wilcoxonSignedRank([1,2,3,4,5].dup, [2,1,4,5,3].dup), 1));
-    assert(ae(wilcoxonSignedRank([3,1,4,1,5].dup, [2,7,1,8,2].dup), 0.7865));
+    assert(ae(wilcoxonSignedRank([3,1,4,1,5].dup, map!"a"([2,7,1,8,2].dup)), 0.7865));
     assert(ae(wilcoxonSignedRank([8,6,7,5,3].dup, [0,9,8,6,7].dup), 0.5879));
     assert(ae(wilcoxonSignedRank([1,2,3,4,5].dup, [2,1,4,5,3].dup, Alt.LESS), 0.5562));
     assert(ae(wilcoxonSignedRank([3,1,4,1,5].dup, [2,7,1,8,2].dup, Alt.LESS), 0.3932));
@@ -1571,7 +1602,7 @@ unittest {
  * less than or greater than a fixed value mu rather than paired elements of
  * a second range.*/
 TestRes wilcoxonSignedRank(T)(T data, real mu, Alt alt = Alt.TWOSIDE, uint exactThresh = 50)
-if(realInput!(T) && dstats.base.hasLength!(T) && isForwardRange!(T)) {
+if(realInput!(T) && is(typeof(data.front - mu) : real)) {
     return wilcoxonSignedRank(data, take(data.length, repeat(mu)), alt, exactThresh);
 }
 
@@ -1715,7 +1746,8 @@ unittest {
  * greater than the corresponding element of after, and the P-value against
  * the given alternative.*/
 TestRes signTest(T, U)(T before, U after, Alt alt = Alt.TWOSIDE)
-if(realInput!(T) && realInput!(U)) {
+if(realInput!(T) && realInput!(U) &&
+is(typeof(before.front < after.front) == bool)) {
     ulong greater, less;
     while(!before.empty && !after.empty) {
         if(before.front < after.front) {
@@ -1770,7 +1802,7 @@ unittest {
 /**Similar to the overload, but allows testing for a difference between a
  * range and a fixed value mu.*/
 TestRes signTest(T)(T data, real mu, Alt alt = Alt.TWOSIDE)
-if(realInput!(T)) {
+if(realInput!(T) && is(typeof(data.front < mu) == bool)) {
     return signTest(data, repeat(mu), alt);
 }
 
@@ -1786,6 +1818,9 @@ if(realInput!(T)) {
  * implementation is much faster and easier to use.
  */
 real binomialTest(ulong k, ulong n, real p) {
+    enforce(k <= n, "k must be <= n for binomial test.");
+    enforce(p >= 0 && p <= 1, "p must be between 0, 1 for binomial test.");
+
     enum EPSILON = 1e-10;  // Small but arbitrary constant to deal w/ rounding error.
 
     immutable mode = cast(long) ((n + 1) * p);
@@ -1925,7 +1960,8 @@ enum Expected {
  * assert(approxEqual(res2.testStat, 11.59));
  * ---
  */
-TestRes chiSqrFit(T, U)(T observed, U expected, Expected countProp = Expected.PROPORTION) {
+TestRes chiSqrFit(T, U)(T observed, U expected, Expected countProp = Expected.PROPORTION)
+if(realInput!(T) && realInput!(U)) {
     return goodnessFit!(pearsonChiSqElem, T, U)(observed, expected, countProp);
 }
 
@@ -1951,7 +1987,8 @@ unittest {
  * still based on asymptotic distributions, and is not exact. Usage is is
  * identical to chiSqrFit.
  */
-TestRes gTestFit(T, U)(T observed, U expected, Expected countProp = Expected.PROPORTION) {
+TestRes gTestFit(T, U)(T observed, U expected, Expected countProp = Expected.PROPORTION)
+if(realInput!(T) && realInput!(U)) {
     return goodnessFit!(gTestElem, T, U)(observed, expected, countProp);
 }
 // No unittest because I can't find anything to test this against.  However,
@@ -1960,12 +1997,12 @@ TestRes gTestFit(T, U)(T observed, U expected, Expected countProp = Expected.PRO
 // the same results as chiSqrFit.
 
 private TestRes goodnessFit(alias elemFun, T, U)(T observed, U expected, Expected countProp)
-if(realInput!(T) && realInput!(U))
-in {
-    if(countProp == Expected.COUNT) {
-        assert(isForwardRange!(U));
+if(realInput!(T) && realInput!(U)) {
+    if(countProp == Expected.PROPORTION) {
+        enforce(isForwardRange!(U),
+            "Can't use expected proportions instead of counts with input ranges.");
     }
-} body {
+
     uint len = 0;
     real chiSq = 0;
     real multiplier = 1;
@@ -2008,10 +2045,17 @@ in {
  * ratio chi-square (gTestFit()) are good enough approximations unless sample
  * size is very small.
  */
-real multinomialTest(U, F)(U counts, F proportions)
+real multinomialTest(U, F)(U countsIn, F proportions)
 if(isInputRange!U && isInputRange!F &&
    isIntegral!(ElementType!U) && isFloatingPoint!(ElementType!(F))) {
     mixin(newFrame);
+
+    static if(isRandomAccessRange!U && dstats.base.hasLength!U) {
+        alias countsIn counts;
+    } else {
+        auto counts = tempdup(countsIn);
+    }
+
     uint N = sum(counts);
 
     real[] logPs;
@@ -2027,10 +2071,12 @@ if(isInputRange!U && isInputRange!F &&
             app.put(p);
         }
     }
-    logPs[] /= reduce!"a + b"(logPs);
+
+    logPs[] /= reduce!"a + b"(0.0L, logPs);
     foreach(ref elem; logPs) {
         elem = log(elem);
     }
+
 
     real[] logs = newStack!real(N + 1);
     logs[0] = 0;
@@ -2307,6 +2353,12 @@ private real gTestElem(real observed, real expected) {
  * */
 TestRes fisherExact(T)(const T[2][2] contingencyTable, Alt alt = Alt.TWOSIDE)
 if(isIntegral!(T)) {
+    foreach(range; contingencyTable) {
+        foreach(elem; range) {
+            enforce(elem >= 0,
+                "Cannot have negative elements in a contingency table.");
+        }
+    }
 
     static real fisherLower(const T[2][2] contingencyTable) {
         alias contingencyTable c;
@@ -2408,12 +2460,12 @@ if(isIntegral!(T)) {
 /**Convenience function.  Converts a dynamic array to a static one, then
  * calls the overload.*/
 TestRes fisherExact(T)(const T[][] contingencyTable, Alt alt = Alt.TWOSIDE)
-if(isIntegral!(T))
-in {
-    assert(contingencyTable.length == 2);
-    assert(contingencyTable[0].length == 2);
-    assert(contingencyTable[1].length == 2);
-} body {
+if(isIntegral!(T)) {
+    enforce(contingencyTable.length == 2 &&
+            contingencyTable[0].length == 2 &&
+            contingencyTable[1].length == 2,
+            "Fisher exact only supports 2x2 tables.");
+
     T[2][2] newTable;
     newTable[0][0] = contingencyTable[0][0];
     newTable[0][1] = contingencyTable[0][1];
@@ -2763,10 +2815,9 @@ public:
  * the P-value against the given alternative, and the confidence interval of
  * the correlation at the level specified by confLevel.*/
 ConfInt pearsonCorTest(T, U)(T range1, U range2, Alt alt = Alt.TWOSIDE, real confLevel = 0.95)
-if(realInput!(T) && realInput!(U))
-in {
-    assert(confLevel >= 0 && confLevel <= 1);
-} body {
+if(realInput!(T) && realInput!(U)) {
+    enforceConfidence(confLevel);
+
     PearsonCor pearsonRes = pearsonCor(range1, range2);
     return pearsonCorTest(pearsonRes.cor, pearsonRes.N, alt, confLevel);
 }
@@ -2778,13 +2829,14 @@ in {
  * not a plain old function is DMD bug 2972.
  */
 ConfInt pearsonCorTest(T)(real cor, T N, Alt alt = Alt.TWOSIDE, real confLevel = 0.95)
-if(isNumeric!(T))
-in {
-    assert(N > 0);
-    assert(cor > -1.0L || approxEqual(cor, -1.0L));
-    assert(cor < 1.0L || approxEqual(cor, 1.0L));
-    assert(confLevel >= 0 && confLevel <= 1);
-} body {
+if(isNumeric!(T)) {
+    enforce(N >= 0, "N must be >= 0 for pearsonCorTest.");
+    enforce(cor > -1.0L || approxEqual(cor, -1.0L),
+        "Correlation must be between 0, 1.");
+    enforce(cor < 1.0L || approxEqual(cor, 1.0L),
+         "Correlation must be between 0, 1.");
+    enforceConfidence(confLevel);
+
     immutable real denom = sqrt((1 - cor * cor) / (N - 2));
     immutable real t = cor / denom;
     ConfInt ret;
@@ -2915,8 +2967,17 @@ unittest {
  * very large amounts of ties.  */
 TestRes spearmanCorTest(T, U)(T range1, U range2, Alt alt = Alt.TWOSIDE)
 if(isInputRange!(T) && isInputRange!(U) &&
-   dstats.base.hasLength!(T) && dstats.base.hasLength!(U)) {
-    real N = range1.length;
+is(typeof(range1.front < range1.front) == bool) &&
+is(typeof(range2.front < range2.front) == bool)) {
+
+    static if(!dstats.base.hasLength!T) {
+        auto r1 = tempdup(range1);
+        scope(exit) TempAlloc.free();
+    } else {
+        alias range1 r1;
+    }
+    real N = r1.length;
+
     return pearsonCorTest(spearmanCor(range1, range2), N, alt, 0);
 }
 

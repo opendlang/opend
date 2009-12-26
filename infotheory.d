@@ -55,13 +55,13 @@ version(unittest) {
  * ---
  */
 real entropyCounts(T)(T data)
-if(isForwardRange!(T)) {
+if(isForwardRange!(T) && realInput!(T)) {
     auto save = data;
     return entropyCounts(save, sum!(T, real)(data));
 }
 
 real entropyCounts(T)(T data, real n)
-if(isIterable!(T)) {
+if(isIterable!(T) && is(ElementType!(T) : real)) {
     real nNeg1 = 1.0L / n;
     real entropy = 0;
     foreach(value; data) {

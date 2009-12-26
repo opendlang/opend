@@ -156,10 +156,9 @@ if(isInputRange!(I) && isOutputRange!(O, ElementType!(I))) {
  *
  * Works with any forward range with elements implicitly convertible to real.*/
 Ret[] binCounts(Ret = uint, T)(T data, uint nbin, Ret[] buf = null)
-if(isForwardRange!(T) && realInput!(T))
-in {
-    assert(nbin > 0);
-} body {
+if(isForwardRange!(T) && realInput!(T)) {
+    enforce(nbin > 0, "Cannot bin data into zero bins.");
+
     alias Unqual!(ElementType!(T)) E;
     E min = data.front, max = data.front;
     foreach(elem; data) {
@@ -217,12 +216,8 @@ unittest {
  * substandially faster.  However, if you're using more than 255 bins,
  * you'll have to provide a different return type as a template parameter.*/
 Ret[] bin(Ret = ubyte, T)(T data, uint nbin, Ret[] buf = null)
-if(isForwardRange!(T) && realInput!(T) && isIntegral!(Ret))
-in {
-    assert(nbin > 0);
-} body {
-    // This condition is too important, too non-obvious and too cheap to check
-    // to be turned off in release mode:
+if(isForwardRange!(T) && realInput!(T) && isIntegral!(Ret)) {
+    enforce(nbin > 0, "Cannot bin data into zero bins.");
     enforce(nbin <= (cast(uint) Ret.max) + 1, "Cannot bin into " ~
         to!string(nbin) ~ " bins and store the results in a " ~
         Ret.stringof ~ ".");
@@ -294,13 +289,10 @@ unittest {
  * substandially faster.  However, if you're using more than 256 bins,
  * you'll have to provide a different return type as a template parameter.*/
 Ret[] frqBin(Ret = ubyte, T)(T data, uint nbin, Ret[] buf = null)
-if(realInput!(T) && isForwardRange!(T) && hasLength!(T) && isIntegral!(Ret))
-in {
-    assert(nbin > 0);
-    assert(nbin <= data.length);
-} body {
-    // This condition is too important, too non-obvious and too cheap to check
-    // to be turned off in release mode:
+if(realInput!(T) && isForwardRange!(T) && hasLength!(T) && isIntegral!(Ret)) {
+    enforce(nbin > 0, "Cannot bin data into zero bins.");
+    enforce(nbin <= data.length,
+        "Cannot equal frequency bin data into more than data.length bins.");
     enforce(nbin <= (cast(uint) Ret.max) + 1, "Cannot bin into " ~
         to!string(nbin) ~ " bins and store the results in a " ~
         Ret.stringof ~ ".");
@@ -381,6 +373,9 @@ unittest {
  * ---
  */
 CommonType!(T, U)[] seq(T, U, V = uint)(T start, U end, V increment = 1U) {
+    enforce(increment > 0, "Cannot have a seq increment <= 0.");
+    enforce(end >= start, "End must be >= start in seq.");
+
     alias CommonType!(T, U) R;
     auto output = newVoid!(R)(cast(size_t) ((end - start) / increment));
 
@@ -413,7 +408,7 @@ unittest {
  * assert(test == [3U, 5, 3, 1, 2]);
  * ---*/
 Ret[] rank(alias compFun = "a < b", Ret = double, T)(T input, Ret[] buf = null)
-if(isInputRange!(T)) {
+if(isInputRange!(T) && is(typeof(input.front < input.front))) {
     mixin(newFrame);
     static if(!isRandomAccessRange!(T) || !hasLength!(T)) {
         return rankSort!(compFun, Ret)( tempdup(input), buf);
@@ -474,7 +469,7 @@ private struct Indexed(T) {
  * assert(test == [1U, 2, 3, 4, 5]);
  * ---*/
 Ret[] rankSort(alias compFun = "a < b", Ret = double, T)(T input, Ret[] buf = null)
-if(isRandomAccessRange!(T) && hasLength!(T)) {
+if(isRandomAccessRange!(T) && hasLength!(T) && is(typeof(input.front < input.front))) {
     mixin(newFrame);
     Ret[] ranks;
     if(buf.length < input.length) {
@@ -625,7 +620,7 @@ unittest {
 }
 
 ///
-T sign(T)(T num) pure nothrow {
+T sign(T)(T num) pure nothrow if(is(typeof(num < 0))) {
     if (num > 0) return 1;
     if (num < 0) return -1;
     return 0;
@@ -670,7 +665,7 @@ in {
 } body {
     if(n < k) return -real.infinity;
     //Extra parentheses increase numerical accuracy.
-    return logFactorial(n) - (logFactorial(k) + logFactorial(n-k));
+    return logFactorial(n) - (logFactorial(k) + logFactorial(n - k));
 }
 
 unittest {
@@ -874,6 +869,7 @@ PermRet!(bufType, T) perm(Buffer bufType = Buffer.DUP, T...)(T stuff) {
         static assert(isIntegral!(T[0]),
             "If one argument is passed to perm(), it must be an integer.");
 
+        enforce(stuff[0] > 0, "Cannot generate permutations of length <= 0.");
         enforce(stuff[0] <= MAX_PERM_LEN, text(
             "Can't iterate permutations of an array of length ",
             stuff[0], ".  (Max length:  ", MAX_PERM_LEN, ")"));
