@@ -34,8 +34,13 @@
 
 module dstats.regress;
 
-import std.math, std.algorithm, std.traits, std.array, std.traits,
+import std.math, std.algorithm, std.traits, std.array, std.traits, std.contracts,
     dstats.alloc, std.range, std.conv, dstats.distrib, dstats.cor, dstats.base;
+
+private void enforceConfidence(real conf) {
+    enforce(conf >= 0 && conf <= 1,
+        "Confidence intervals must be between 0 and 1.");
+}
 
 ///
 struct PowMap(ExpType, T)
@@ -399,6 +404,7 @@ if(allSatisfy!(isInputRange, T) && realInput!(U)) {
 RegressRes linearRegress(U, TC...)(U Y, TC input) {
     static if(is(TC[$ - 1] : real)) {
         real confLvl = input[$ - 1];
+        enforceConfidence(confLvl);
         alias TC[0..$ - 1] T;
         alias input[0..$ - 1] XIn;
     } else {
@@ -499,6 +505,7 @@ real[] polyFitBeta(T, U)(U Y, T X, uint N) {
  * Returns:  A PolyFitRes containing the array of PowMap structs created and
  * a RegressRes.  The PolyFitRes is alias this'd to the RegressRes.*/
 PolyFitRes!(PowMap!(uint, T)[]) polyFit(T, U)(U Y, T X, uint N, real confInt = 0.95) {
+    enforceConfidence(confInt);
     auto pows = new PowMap!(uint, T)[N + 1];
     foreach(exponent; 0..N + 1) {
         pows[exponent] = powMap(X, exponent);

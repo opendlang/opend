@@ -117,7 +117,8 @@
 
 module dstats.random;
 
-import std.math, std.algorithm, dstats.distrib, std.traits, std.typetuple;
+import std.math, std.algorithm, dstats.distrib, std.traits, std.typetuple,
+    std.contracts;
 public import std.random; //For uniform distrib.
 
 import dstats.alloc;
@@ -246,6 +247,8 @@ private static real lastNorm = real.nan;
 
 ///
 real rNorm(RGen = Random)(real mean, real sd, ref RGen gen = rndGen) {
+    enforce(sd > 0, "Standard deviation must be > 0 for rNorm.");
+
     real lr = lastNorm;
     if (!isNaN(lr)) {
         lastNorm = real.nan;
@@ -279,6 +282,8 @@ unittest {
 
 ///
 real rCauchy(RGen = Random)(real X0, real gamma, ref RGen gen = rndGen) {
+    enforce(gamma > 0, "gamma must be > 0 for Cauchy distribution.");
+
     return (rNorm(0, 1, gen) / rNorm(0, 1, gen)) * gamma + X0;
 }
 
@@ -297,9 +302,11 @@ unittest {
 
 ///
 real rStudentT(RGen = Random)(real df, ref RGen gen = rndGen) {
+    enforce(df > 0, "Student's T distribution must have >0 degrees of freedom.");
+
     real N = rNorm(0, 1, gen);
-    real G = stdGamma(df/2, gen);
-    real X = sqrt(df/2)*N/sqrt(G);
+    real G = stdGamma(df / 2, gen);
+    real X = sqrt(df / 2) * N / sqrt(G);
     return X;
 }
 
@@ -318,6 +325,9 @@ unittest {
 
 ///
 real rFisher(RGen = Random)(real df1, real df2, ref RGen gen = rndGen) {
+    enforce(df1 > 0 && df2 > 0,
+        "df1 and df2 must be >0 for the Fisher distribution.");
+
     return (rChiSquare(df1, gen) * df2) /
            (rChiSquare(df2, gen) * df1);
 }
@@ -338,7 +348,9 @@ unittest {
 
 ///
 real rChiSquare(RGen = Random)(real df, ref RGen gen = rndGen) {
-    return 2.0*stdGamma(df/2.0L, gen);
+    enforce(df > 0, "df must be > 0 for chiSquare distribution.");
+
+    return 2.0 * stdGamma(df / 2.0L, gen);
 }
 
 unittest {
@@ -358,6 +370,7 @@ unittest {
 
 ///
 int rPoisson(RGen = Random)(real lam, ref RGen gen = rndGen) {
+    enforce(lam > 0, "lambda must be >0 for Poisson distribution.");
 
     static int poissonMult(ref RGen gen, real lam) {
         real U = void;
@@ -439,6 +452,8 @@ unittest {
 
 ///
 int rBernoulli(RGen = Random)(real P = 0.5, ref RGen gen = rndGen) {
+    enforce(P >= 0 && P <= 1, "P must be between 0, 1 for Bernoulli distribution.");
+
     real pVal = uniform(0.0L, 1.0L, gen);
     return cast(int) (pVal <= P);
 }
@@ -633,6 +648,9 @@ private int rBinomialInversion(RGen = Random)(int n, real p, ref RGen gen = rndG
 
 ///
 int rBinomial(RGen = Random)(int n, real p, ref RGen gen = rndGen) {
+    enforce(n >= 0, "n must be >= 0 for binomial distribution.");
+    enforce(p >= 0 && p <= 1, "p must be between 0, 1 for binomial distribution.");
+
     if (p <= 0.5) {
         if (p*n <= 30.0) {
             return rBinomialInversion(n, p, gen);
@@ -744,6 +762,10 @@ private int hypergeoHrua(RGen = Random)(int good, int bad, int sample, ref RGen 
 
 ///
 int rHypergeometric(RGen = Random)(int n1, int n2, int n, ref RGen gen = rndGen) {
+    enforce(n <= n1 + n2, "n must be <= n1 + n2 for hypergeometric distribution.");
+    enforce(n1 >= 0 && n2 >= 0 && n >= 0,
+        "n, n1, n2 must be >= 0 for hypergeometric distribution.");
+
     alias n1 good;
     alias n2 bad;
     alias n sample;
@@ -807,6 +829,8 @@ private int rGeomInvers(RGen = Random)(real p, ref RGen gen = rndGen) {
 }
 
 int rGeometric(RGen = Random)(real p, ref RGen gen = rndGen) {
+    enforce(p >= 0 && p <= 1, "p must be between 0, 1 for geometric distribution.");
+
     if (p >= 0.333333333333333333333333) {
         return rGeomSearch(p, gen);
     } else {
@@ -841,6 +865,10 @@ unittest {
 
 ///
 int rNegBinom(RGen = Random)(real n, real p, ref RGen gen = rndGen) {
+    enforce(n >= 0, "n must be >= 0 for negative binomial distribution.");
+    enforce(p >= 0 && p <= 1,
+        "p must be between 0, 1 for negative binomial distribution.");
+
     real Y = stdGamma(n, gen);
     Y *= (1 - p) / p;
     return rPoisson(Y, gen);
@@ -869,6 +897,8 @@ unittest {
 
 ///
 real rLaplace(RGen = Random)(real mu = 0, real b = 1, ref RGen gen = rndGen) {
+    enforce(b > 0, "b must be > 0 for Laplace distribution.");
+
     real p = uniform(0.0L, 1.0L, gen);
     return invLaplaceCDF(p, mu, b);
 }
@@ -891,6 +921,8 @@ unittest {
 
 ///
 real rExponential(RGen = Random)(real lambda, ref RGen gen = rndGen) {
+    enforce(lambda > 0, "lambda must be > 0 for exponential distribution.");
+
     real p = uniform(0.0L, 1.0L, gen);
     return -log(p) / lambda;
 }
@@ -951,6 +983,9 @@ private real stdGamma(RGen = Random)(real shape, ref RGen gen) {
 
 ///
 real rGamma(RGen = Random)(real a, real b, ref RGen gen = rndGen) {
+    enforce(a > 0, "a must be > 0 for gamma distribution.");
+    enforce(b > 0, "b must be > 0 for gamma distribution.");
+
     return stdGamma(b, gen) / a;
 }
 
@@ -970,6 +1005,9 @@ unittest {
 
 ///
 real rBeta(RGen = Random)(real a, real b, ref RGen gen = rndGen) {
+    enforce(a > 0, "a must be > 0 for beta distribution.");
+    enforce(b > 0, "b must be > 0 for beta distribution.");
+
     real Ga = void, Gb = void;
 
     if ((a <= 1.0) && (b <= 1.0)) {
@@ -1039,6 +1077,8 @@ unittest {
 
 ///
 real rLogistic(RGen = Random)(real loc, real scale, ref RGen gen = rndGen) {
+    enforce(scale > 0, "scale must be > 0 for logistic distribution.");
+
     real U = uniform(0.0L, 1.0L, gen);
     return loc + scale * log(U/(1.0 - U));
 }
@@ -1059,27 +1099,31 @@ unittest {
 
 ///
 real rLogNorm(RGen = Random)(real mu, real sigma, ref RGen gen = rndGen) {
+    enforce(sigma > 0, "sigma must be > 0 for log-normal distribution.");
+
     return exp(rNorm(mu, sigma, gen));
 }
 
 unittest {
-    real[] observ = new real[100_000];
-    foreach(ref elem; observ)
-    elem = rLogNorm(-2.0L, 1.0L);
-    auto ksRes = ksTest(observ, parametrize!(logNormalCDF)(-2, 1));
+    auto observ = randArray!rLogNorm(100_000, -2, 1);
+    auto ksRes = ksTest(observ, paramFunctor!(logNormalCDF)(-2, 1));
+
+    auto summ = summary(observ);
     writeln("100k samples from log-normal(-2, 1):  K-S P-val:  ", ksRes.p);
-    writeln("\tMean Expected: ", exp(-1.5), "  Observed:  ", mean(observ));
+    writeln("\tMean Expected: ", exp(-1.5), "  Observed:  ", summ.mean);
     writeln("\tMedian Expected: ", exp(-2.0L), "  Observed:  ", median(observ));
     writeln("\tStdev Expected:  ", sqrt((exp(1.) - 1) * exp(-4.0L + 1)),
-            " Observed:  ", stdev(observ));
-    writeln("\tKurtosis Expected:  ?? Observed:  ", kurtosis(observ));
+            " Observed:  ", summ.stdev);
+    writeln("\tKurtosis Expected:  ?? Observed:  ", summ.kurtosis);
     writeln("\tSkewness Expected:  ", (exp(1.) + 2) * sqrt(exp(1.) - 1),
-            " Observed:  ", skewness(observ));
-    delete observ;
+            " Observed:  ", summ.skewness);
 }
 
 ///
 real rWeibull(RGen = Random)(real shape, real scale = 1, ref RGen gen = rndGen) {
+    enforce(shape > 0, "shape must be > 0 for weibull distribution.");
+    enforce(scale > 0, "scale must be > 0 for weibull distribution.");
+
     return pow(rExponential(1, gen), 1. / shape) * scale;
 }
 
@@ -1094,6 +1138,9 @@ unittest {
 
 ///
 real rWald(RGen = Random)(real mu, real lambda, ref RGen gen = rndGen) {
+    enforce(mu > 0, "mu must be > 0 for Wald distribution.");
+    enforce(lambda > 0, "lambda must be > 0 for Wald distribution.");
+
     alias mu mean;
     alias lambda scale;
 
@@ -1112,30 +1159,27 @@ real rWald(RGen = Random)(real mu, real lambda, ref RGen gen = rndGen) {
 }
 
 unittest {
-    real[] observ = new real[100_000];
-    foreach(ref elem; observ) {
-        elem = rWald(4, 7);
-    }
+    auto observ = randArray!rWald(100_000, 4, 7);
     auto ksRes = ksTest(observ, parametrize!(waldCDF)(4, 7));
+
+    auto summ = summary(observ);
     writeln("100k samples from wald(4, 7):  K-S P-val:  ", ksRes.p);
-    writeln("\tMean Expected: ", 4, "  Observed:  ", mean(observ));
+    writeln("\tMean Expected: ", 4, "  Observed:  ", summ.mean);
     writeln("\tMedian Expected: ??  Observed:  ", median(observ));
-    writeln("\tStdev Expected:  ", sqrt(64.0 / 7), " Observed:  ", stdev(observ));
-    writeln("\tKurtosis Expected:  ", 15.0 * 4 / 7, " Observed:  ", kurtosis(observ));
-    writeln("\tSkewness Expected:  ", 3 * sqrt(4.0 / 7), " Observed:  ", skewness(observ));
-    delete observ;
+    writeln("\tStdev Expected:  ", sqrt(64.0 / 7), " Observed:  ", summ.stdev);
+    writeln("\tKurtosis Expected:  ", 15.0 * 4 / 7, " Observed:  ", summ.kurtosis);
+    writeln("\tSkewness Expected:  ", 3 * sqrt(4.0 / 7), " Observed:  ", summ.skewness);
 }
 
 ///
 real rRayleigh(RGen = Random)(real mode, ref RGen gen = rndGen) {
+    enforce(mode > 0, "mode must be > 0 for Rayleigh distribution.");
+
     return mode*sqrt(-2.0 * log(1.0 - uniform(0.0L, 1.0L, gen)));
 }
 
 unittest {
-    real[] observ = new real[100_000];
-    foreach(ref elem; observ) {
-        elem = rRayleigh(3);
-    }
+    auto observ = randArray!rRayleigh(100_000, 3);
     auto ksRes = ksTest(observ, parametrize!(rayleighCDF)(3));
     writeln("100k samples from rayleigh(3):  K-S P-val:  ", ksRes.p);
 }

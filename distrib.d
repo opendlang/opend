@@ -795,6 +795,25 @@ alias chiSquareCDF chiSqrCDF;
 alias chiSquareCDFR chiSqrCDFR;
 alias invChiSquareCDFR invChiSqCDFR;
 
+///
+real chiSquarePDF(real x, real v) {
+    enforce(x >= 0, "x must be >= 0 in chi-square distribution.");
+    enforce(v >= 1.0, "Must have at least 1 degree of freedom for chi-square.");
+
+    // Calculate in log space for stability.
+    immutable logX = log(x);
+    immutable numerator = logX * (0.5 * v - 1) - 0.5 * x;
+    immutable denominator = LN2 * (0.5 * v) + lgamma(0.5 * v);
+    return exp(numerator - denominator);
+}
+
+unittest {
+    assert( approxEqual(chiSquarePDF(1, 2), 0.3032653));
+    assert( approxEqual(chiSquarePDF(2, 1), 0.1037769));
+
+    writeln("Passed chiSquarePDF unittest.");
+}
+
 /**
  *  $(POWER &chi;,2) distribution function and its complement.
  *
