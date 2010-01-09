@@ -996,7 +996,7 @@ if(realInput!(typeof(dataIn[0].front)) || allSatisfy!(realInput, T)) {
     tieDenom = (tieDenom * tieDenom * tieDenom) - tieDenom;
     tieSum = 1 - (tieSum / tieDenom);
     K *= tieSum;
-    return TestRes(K, chiSqrCDFR(K, data.length - 1));
+    return TestRes(K, chiSquareCDFR(K, data.length - 1));
 }
 
 unittest {
@@ -1084,7 +1084,7 @@ if(realInput!(typeof(dataIn[0].front)) || allSatisfy!(realInput, T)) {
     real within = overallSumm.mse * (overallSumm.N / (overallSumm.N - N));
     real chiSq = between / within;
     real df = data.length - 1;
-    return TestRes(chiSq, chiSqrCDFR(chiSq, df));
+    return TestRes(chiSq, chiSquareCDFR(chiSq, df));
 }
 
 unittest {
@@ -1916,7 +1916,7 @@ unittest {
     writeln("Passed binomialTest test.");
 }
 
-///For chiSqrFit and gTestFit, is expected value range counts or proportions?
+///For chiSquareFit and gTestFit, is expected value range counts or proportions?
 enum Expected {
     ///
     COUNT,
@@ -1955,12 +1955,12 @@ enum Expected {
  *
  * uint[] observed = [980, 1028, 1001, 964, 1102];
  * auto expected = repeat(1.0L);
- * auto res2 = chiSqrFit(observed, expected);
+ * auto res2 = chiSquareFit(observed, expected);
  * assert(approxEqual(res2, 0.0207));
  * assert(approxEqual(res2.testStat, 11.59));
  * ---
  */
-TestRes chiSqrFit(T, U)(T observed, U expected, Expected countProp = Expected.PROPORTION)
+TestRes chiSquareFit(T, U)(T observed, U expected, Expected countProp = Expected.PROPORTION)
 if(realInput!(T) && realInput!(U)) {
     return goodnessFit!(pearsonChiSqElem, T, U)(observed, expected, countProp);
 }
@@ -1970,22 +1970,26 @@ unittest {
     // statistically from a discrete uniform distribution.
     uint[] observed = [980, 1028, 1001, 964, 1102];
     auto expected = repeat(cast(real) sum(observed) / observed.length);
-    auto res = chiSqrFit(observed, expected, Expected.COUNT);
+    auto res = chiSquareFit(observed, expected, Expected.COUNT);
     assert(approxEqual(res, 0.0207));
     assert(approxEqual(res.testStat, 11.59));
 
     expected = repeat(5.0L);
-    auto res2 = chiSqrFit(observed, expected);
+    auto res2 = chiSquareFit(observed, expected);
     assert(approxEqual(res2, 0.0207));
     assert(approxEqual(res2.testStat, 11.59));
-    writeln("Passed chiSqrFit test.");
+    writeln("Passed chiSquareFit test.");
 }
 
+// Alias for old name, for backwards compatibility.  Don't document it
+// because it will be deprecated eventually.
+alias chiSquareFit chiSqrFit;
+
 /**The G or likelihood ratio chi-square test for goodness of fit.  Roughly
- * the same as Pearson's chi-square test (chiSqrFit), but may be more
+ * the same as Pearson's chi-square test (chiSquareFit), but may be more
  * accurate in certain situations and less accurate in others.  However, it is
  * still based on asymptotic distributions, and is not exact. Usage is is
- * identical to chiSqrFit.
+ * identical to chiSquareFit.
  */
 TestRes gTestFit(T, U)(T observed, U expected, Expected countProp = Expected.PROPORTION)
 if(realInput!(T) && realInput!(U)) {
@@ -1994,7 +1998,7 @@ if(realInput!(T) && realInput!(U)) {
 // No unittest because I can't find anything to test this against.  However,
 // it's hard to imagine how it could be wrong, given that goodnessFit() and
 // gTestElem() both work, and, as expected, this function produces roughly
-// the same results as chiSqrFit.
+// the same results as chiSquareFit.
 
 private TestRes goodnessFit(alias elemFun, T, U)(T observed, U expected, Expected countProp)
 if(realInput!(T) && realInput!(U)) {
@@ -2029,7 +2033,7 @@ if(realInput!(T) && realInput!(U)) {
         expected.popFront;
         len++;
     }
-    return TestRes(chiSq, chiSqrCDFR(chiSq, len - 1));
+    return TestRes(chiSq, chiSquareCDFR(chiSq, len - 1));
 }
 
 /**The exact multinomial goodness of fit test for whether a set of counts
@@ -2041,7 +2045,7 @@ if(realInput!(T) && realInput!(U)) {
  * against the alternative that it isn't.
  *
  * Notes:  This test is EXTREMELY slow for anything but very small samples and
- * degrees of freedom.  The Pearson's chi-square (chiSqrFit()) or likelihood
+ * degrees of freedom.  The Pearson's chi-square (chiSquareFit()) or likelihood
  * ratio chi-square (gTestFit()) are good enough approximations unless sample
  * size is very small.
  */
@@ -2177,10 +2181,10 @@ unittest {
  * uint[] drug1 = [1000, 2000, 1500];
  * uint[] drug2 = [1500, 3000, 2300];
  * uint[] placebo = [500, 1100, 750];
- * assert(approxEqual(chiSqrContingency(drug1, drug2, placebo), 0.2397));
+ * assert(approxEqual(chiSquareContingency(drug1, drug2, placebo), 0.2397));
  * ---
  */
-TestRes chiSqrContingency(T...)(T inputData) {
+TestRes chiSquareContingency(T...)(T inputData) {
     return testContingency!(pearsonChiSqElem, T)(inputData);
 }
 
@@ -2192,17 +2196,17 @@ unittest {
     uint[][] table2 = [[60, 20, 10],
                        [80, 50, 15],
                        [70, 40, 11]];
-    assert(approxEqual(chiSqrContingency(table1), 0.3449));
-    assert(approxEqual(chiSqrContingency(table2), 0.3449));
-    assert(approxEqual(chiSqrContingency(table1).testStat, 4.48));
+    assert(approxEqual(chiSquareContingency(table1), 0.3449));
+    assert(approxEqual(chiSquareContingency(table2), 0.3449));
+    assert(approxEqual(chiSquareContingency(table1).testStat, 4.48));
 
     // Test tuple version.
-    auto p1 = chiSqrContingency(cast(uint[]) [31, 41, 59],
+    auto p1 = chiSquareContingency(cast(uint[]) [31, 41, 59],
                                 cast(uint[]) [26, 53, 58],
                                 cast(uint[]) [97, 93, 93]);
     assert(approxEqual(p1, 0.0059));
 
-    auto p2 = chiSqrContingency(cast(uint[]) [31, 26, 97],
+    auto p2 = chiSquareContingency(cast(uint[]) [31, 26, 97],
                                 cast(uint[]) [41, 53, 93],
                                 cast(uint[]) [59, 58, 93]);
     assert(approxEqual(p2, 0.0059));
@@ -2210,16 +2214,20 @@ unittest {
     uint[] drug1 = [1000, 2000, 1500];
     uint[] drug2 = [1500, 3000, 2300];
     uint[] placebo = [500, 1100, 750];
-    assert(approxEqual(chiSqrContingency(drug1, drug2, placebo), 0.2397));
+    assert(approxEqual(chiSquareContingency(drug1, drug2, placebo), 0.2397));
 
-    writeln("Passed chiSqrContingency test.");
+    writeln("Passed chiSquareContingency test.");
 }
 
+// Alias for old name, for backwards compatibility.  Don't document it
+// because it will be deprecated eventually.
+alias chiSquareContingency chiSqrContingency;
+
 /**The G or likelihood ratio chi-square test for contingency tables.  Roughly
- * the same as Pearson's chi-square test (chiSqrContingency), but may be more
+ * the same as Pearson's chi-square test (chiSquareContingency), but may be more
  * accurate in certain situations and less accurate in others.  However, it
  * is still based on asymptotic distributions, and is not exact. Usage is is
- * identical to chiSqrContingency.
+ * identical to chiSquareContingency.
  */
 TestRes gTestContingency(T...)(T inputData) {
     return testContingency!(gTestElem, T)(inputData);
@@ -2312,7 +2320,7 @@ private TestRes testContingency(alias elemFun, T...)(T rangesIn) {
         return TestRes(real.nan, real.nan);
     }
 
-    return TestRes(chiSq, chiSqrCDFR(chiSq, (nRows - 1) * (nCols - 1)));
+    return TestRes(chiSq, chiSquareCDFR(chiSq, (nRows - 1) * (nCols - 1)));
 }
 
 private real pearsonChiSqElem(real observed, real expected) {
@@ -2338,7 +2346,7 @@ private real gTestElem(real observed, real expected) {
  * approximations, it is very statistically conservative when the marginals
  * are not truly fixed in the experimental design in question.  If a
  * closer but possibly non-conservative approximation of the true P-value is
- * desired, Pearson's chi-square test (chiSqrContingency) may perform better,
+ * desired, Pearson's chi-square test (chiSquareContingency) may perform better,
  * even for small samples.
  *
  * Returns:  A TestRes of the odds ratio and the P-value against the given
@@ -2806,6 +2814,11 @@ public:
     }
 }
 
+// Aliases for old names for correlation tests.
+alias pearsonCorTest pcorTest;
+alias spearmanCorTest scorTest;
+alias kendallCorTest kcorTest;
+
 /**Tests the hypothesis that the Pearson correlation between two ranges is
  * different from some 0.  Alternatives are
  * Alt.LESS (pearsonCor(range1, range2) < 0), Alt.GREATER (pearsonCor(range1, range2)
@@ -3266,7 +3279,7 @@ if(realIterable!(T)) {
         sqrt(9 * A / 2);
 
     real K2 = Zb1 * Zb1 + Zb2 * Zb2;
-    return TestRes(K2, chiSqrCDFR(K2, 2));
+    return TestRes(K2, chiSquareCDFR(K2, 2));
 }
 
 unittest {
@@ -3308,7 +3321,7 @@ if(realInput!R) {
         df += 2;
     }
     chiSq *= -2;
-    return TestRes(chiSq, chiSqrCDFR(chiSq, df));
+    return TestRes(chiSq, chiSquareCDFR(chiSq, df));
 }
 
 unittest {

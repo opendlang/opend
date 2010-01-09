@@ -245,8 +245,8 @@ struct PolyFitRes(T) {
     alias regressRes this;
 }
 
-// Used internally.  May eventually become public, documented.
-private struct Residuals(U, T...) {
+/**Forward Range for holding the residuals from a regression analysis.*/
+struct Residuals(F, U, T...) {
     static if(T.length == 1 && isForwardRange!(typeof(T[0].front()))) {
         alias T[0] R;
     } else {
@@ -255,7 +255,7 @@ private struct Residuals(U, T...) {
 
     U Y;
     R X;
-    real[] betas;
+    F[] betas;
     real residual;
     bool _empty;
 
@@ -269,7 +269,15 @@ private struct Residuals(U, T...) {
         residual = sum - Y.front;
     }
 
-    this(real[] betas, U Y, R X) {
+    this(F[] betas, U Y, R X) {
+        static if(is(typeof(X.length))) {
+            enforce(X.length == betas.length,
+                "Betas and X must have same length for residuals.");
+        } else {
+            enforce(walkLength(X) == betas.length,
+                "Betas and X must have same length for residuals.");
+        }
+
         this.X = X;
         this.Y = Y;
         this.betas = betas;
@@ -311,8 +319,12 @@ private struct Residuals(U, T...) {
     }
 }
 
-private Residuals!(U, T) residuals(U, T...)(real[] betas, U Y, T X) {
-    alias Residuals!(U, T) RT;
+/**Given the beta coefficients from a linear regression, and X and Y values,
+ * returns a range that lazily computes the residuals.
+ */
+Residuals!(F, U, T) residuals(F, U, T...)(F[] betas, U Y, T X)
+if(isFloatingPoint!F && isForwardRange!U && allSatisfy!(isForwardRange, T)) {
+    alias Residuals!(F, U, T) RT;
     return RT(betas, Y, X);
 }
 
@@ -437,8 +449,7 @@ RegressRes linearRegress(U, TC...)(U Y, TC input) {
         }
     }
 
-    alias Residuals!(U, T) RT;
-    auto residuals = RT(betas, Y, X);
+    auto residuals = residuals(betas, Y, X);
     real S = 0;
     ulong n = 0;
     PearsonCor R2Calc;

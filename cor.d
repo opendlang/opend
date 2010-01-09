@@ -32,7 +32,7 @@ module dstats.cor;
 
 import core.memory, std.range, std.typecons, std.contracts;
 
-import dstats.sort, dstats.base, dstats.alloc;
+import dstats.sort, dstats.base, dstats.alloc, dstats.regress : invert;
 
 version(unittest) {
     import std.stdio, std.random, std.algorithm;
@@ -517,6 +517,87 @@ alias pearsonCor pcor;
 alias spearmanCor scor;
 alias kendallCor kcor;
 alias kendallCorDestructive kcorDestructive;
+
+/**Computes the partial correlation between vec1, vec2 given
+ * conditions.  conditions can be either a tuple of ranges, a range of ranges,
+ * or (for a single condition) a single range.
+ *
+ * cor is the correlation metric to use.  It can be either pearsonCor,
+ * spearmanCor, kendallCor, or any custom correlation metric you can come up
+ * with.
+ *
+ * Examples:
+ * ---
+ * uint[] stock1Price = [8, 6, 7, 5, 3, 0, 9];
+ * uint[] stock2Price = [3, 1, 4, 1, 5, 9, 2];
+ * uint[] economicHealth = [2, 7, 1, 8, 2, 8, 1];
+ * uint[] consumerFear = [1, 2, 3, 4, 5, 6, 7];
+ *
+ * // See whether the prices of stock 1 and stock 2 are correlated even
+ * // after adjusting for the overall condition of the economy and consumer
+ * // fear.
+ * real partialCor =
+ *   partial!pearsonCor(stock1Price, stock2Price, economicHealth, consumerFear);
+ * ---
+ */
+real partial(alias cor, T, U, V...)(T vec1, U vec2, V conditionsIn)
+if(isInputRange!T && isInputRange!U && allSatisfy!(isInputRange, V)) {
+    mixin(newFrame);
+    static if(V.length == 1 && isInputRange!(ElementType!(V[0]))) {
+        // Range of ranges.
+        static if(isArray!(V[0])) {
+            alias conditionsIn[0] cond;
+        } else {
+            auto cond = tempdup(cond[0]);
+        }
+    } else {
+        alias conditionsIn cond;
+    }
+
+    auto corMatrix = newStack!(real[])(cond.length + 2);
+    foreach(i, ref elem; corMatrix) {
+        elem = newStack!real((cond.length + 2) * 2);
+        elem[] = 0;
+        elem[i] = 1;
+    }
+
+    corMatrix[0][1] = corMatrix[1][0] = cast(real) cor(vec1, vec2);
+    foreach(i, condition; cond) {
+        immutable conditionIndex = i + 2;
+        corMatrix[0][conditionIndex] = cast(real) cor(vec1, condition);
+        corMatrix[conditionIndex][0] =  corMatrix[0][conditionIndex];
+        corMatrix[1][conditionIndex] = cast(real) cor(vec2, condition);
+        corMatrix[conditionIndex][1] = corMatrix[1][conditionIndex];
+    }
+
+    foreach(i, condition1; cond) {
+        foreach(j, condition2; cond[i + 1..$]) {
+            immutable index1 = i + 2;
+            immutable index2 = index1 + j + 1;
+            corMatrix[index1][index2] = cast(real) cor(condition1, condition2);
+            corMatrix[index2][index1] = corMatrix[index1][index2];
+        }
+    }
+
+    invert(corMatrix);
+    return -corMatrix[0][1] / sqrt(corMatrix[0][0] * corMatrix[1][1]);
+}
+
+unittest {
+    // values from Matlab.
+    uint[] stock1Price = [8, 6, 7, 5, 3, 0, 9];
+    uint[] stock2Price = [3, 1, 4, 1, 5, 9, 2];
+    uint[] economicHealth = [2, 7, 1, 8, 2, 8, 1];
+    uint[] consumerFear = [1, 2, 3, 4, 5, 6, 7];
+    real partialCor =
+    partial!pearsonCor(stock1Price, stock2Price, [economicHealth, consumerFear][]);
+    assert(approxEqual(partialCor, -0.857818));
+
+    real spearmanPartial =
+    partial!spearmanCor(stock1Price, stock2Price, economicHealth, consumerFear);
+    assert(approxEqual(spearmanPartial, -0.7252));
+    writeln("Passed partial correlation unittest.");
+}
 
 // Verify that there are no TempAlloc memory leaks anywhere in the code covered
 // by the unittest.  This should always be the last unittest of the module.
