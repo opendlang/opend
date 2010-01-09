@@ -996,6 +996,11 @@ if(realInput!(typeof(dataIn[0].front)) || allSatisfy!(realInput, T)) {
     tieDenom = (tieDenom * tieDenom * tieDenom) - tieDenom;
     tieSum = 1 - (tieSum / tieDenom);
     K *= tieSum;
+
+    if(isNaN(K)) {
+        return TestRes(real.nan, real.nan);
+    }
+
     return TestRes(K, chiSquareCDFR(K, data.length - 1));
 }
 
@@ -1974,8 +1979,9 @@ unittest {
     assert(approxEqual(res, 0.0207));
     assert(approxEqual(res.testStat, 11.59));
 
-    expected = repeat(5.0L);
-    auto res2 = chiSquareFit(observed, expected);
+    auto expected2 = [5.0, 5, 5, 5, 5, 0];
+    observed ~= 0;
+    auto res2 = chiSquareFit(observed, expected2);
     assert(approxEqual(res2, 0.0207));
     assert(approxEqual(res2.testStat, 11.59));
     writeln("Passed chiSquareFit test.");
@@ -2027,12 +2033,28 @@ if(realInput!(T) && realInput!(U)) {
     }
 
     while(!observed.empty && !expected.empty) {
+        scope(exit) {
+            observed.popFront();
+            expected.popFront();
+        }
         real e = expected.front * multiplier;
+
+        // If e is zero, then we should just treat the cell as if it didn't
+        // exist.
+        if(e == 0) {
+            enforce(observed.front == 0,
+                "Can't have non-zero observed value w/ zero expected value.");
+            continue;
+        }
+
         chiSq += elemFun(observed.front, e);
-        observed.popFront;
-        expected.popFront;
         len++;
     }
+
+    if(isNaN(chiSq)) {
+        return TestRes(real.nan, real.nan);
+    }
+
     return TestRes(chiSq, chiSquareCDFR(chiSq, len - 1));
 }
 
@@ -3279,6 +3301,11 @@ if(realIterable!(T)) {
         sqrt(9 * A / 2);
 
     real K2 = Zb1 * Zb1 + Zb2 * Zb2;
+
+    if(isNaN(K2)) {
+        return TestRes(real.nan, real.nan);
+    }
+
     return TestRes(K2, chiSquareCDFR(K2, 2));
 }
 
@@ -3317,6 +3344,8 @@ if(realInput!R) {
     real chiSq = 0;
     uint df = 0;
     foreach(pVal; pVals) {
+        enforce(pVal >= 0 && pVal <= 1,
+            "P-values must be between 0, 1 for Fisher's Method.");
         chiSq += log( cast(real) pVal);
         df += 2;
     }
@@ -3370,6 +3399,8 @@ if(realInput!(T)) {
     static if(dstats.base.hasLength!T) {
         qVals.length = pVals.length;
         foreach(i, elem; pVals) {
+            enforce(elem >= 0 && elem <= 1,
+                "P-values must be between 0, 1 for falseDiscoveryRate.");
             qVals[i] = cast(float) elem;
         }
     } else {
@@ -3476,6 +3507,8 @@ if(realInput!(T)) {
     qsort(qVals, perm);
 
     foreach(i, ref q; qVals) {
+        enforce(q >= 0 && q <= 1,
+            "P-values must be between 0, 1 for hochberg.");
         q = min(1.0f, q * (cast(real) qVals.length - i));
     }
 
@@ -3542,6 +3575,8 @@ if(realInput!(T)) {
     qsort(qVals, perm);
 
     foreach(i, ref q; qVals) {
+        enforce(q >= 0 && q <= 1,
+            "P-values must be between 0, 1 for holmBonferroni.");
         q = min(1.0L, q * (cast(real) qVals.length - i));
     }
 
