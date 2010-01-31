@@ -49,7 +49,7 @@ immutable real[] staticLogFacTable;
 
 private enum size_t staticFacTableLen = 10_000;
 
-static this() {
+shared static this() {
     // Allocating on heap instead of static data segment to avoid
     // false pointer GC issues.
     real[] sfTemp = new real[staticFacTableLen];
@@ -869,7 +869,7 @@ PermRet!(bufType, T) perm(Buffer bufType = Buffer.DUP, T...)(T stuff) {
         static assert(isIntegral!(T[0]),
             "If one argument is passed to perm(), it must be an integer.");
 
-        enforce(stuff[0] > 0, "Cannot generate permutations of length <= 0.");
+        enforce(stuff[0] >= 0, "Cannot generate permutations of length < 0.");
         enforce(stuff[0] <= MAX_PERM_LEN, text(
             "Can't iterate permutations of an array of length ",
             stuff[0], ".  (Max length:  ", MAX_PERM_LEN, ")"));
