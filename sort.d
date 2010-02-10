@@ -59,7 +59,7 @@
 module dstats.sort;
 
 import std.traits, std.algorithm, std.math, std.functional, std.math,
-       std.typetuple, std.range, std.array;
+       std.typetuple, std.range, std.array, std.string : whitespace;
 
 import dstats.alloc;
 
@@ -67,6 +67,188 @@ version(unittest) {
     import std.stdio, std.random;
 
     void main (){
+    }
+}
+
+class SortException : Exception {
+    this(string msg) {
+        super(msg);
+    }
+}
+
+/* CTFE function.  Used in isSimpleComparison.*/
+/*private*/ string removeWhitespace(string input) pure nothrow {
+    string ret;
+    foreach(elem; input) {
+        bool shouldAppend = true;
+        foreach(whiteChar; whitespace) {
+            if(elem == whiteChar) {
+                shouldAppend = false;
+                break;
+            }
+        }
+
+        if(shouldAppend) {
+            ret ~= elem;
+        }
+    }
+    return ret;
+}
+
+/* Conservatively tests whether the comparison function is simple enough that
+ * we can get away with comparing floats as if they were ints.
+ */
+/*private*/ template isSimpleComparison(alias comp) {
+    static if(!isSomeString!(typeof(comp))) {
+        enum bool isSimpleComparison = false;
+    } else {
+        enum bool isSimpleComparison =
+            removeWhitespace(comp) == "a<b" ||
+            removeWhitespace(comp) == "a>b";
+    }
+}
+
+/*private*/ bool intIsNaN(I)(I i) {
+    static if(is(I == int) || is(I == uint)) {
+        // IEEE 754 single precision float has a 23-bit significand stored in the
+        // lowest order bits, followed by an 8-bit exponent.  A NaN is when the
+        // exponent bits are all ones and the significand is nonzero.
+        enum uint significandMask = 0b111_1111_1111_1111_1111_1111UL;
+        enum uint exponentMask = 0b1111_1111UL << 23;
+    } else static if(is(I == long) || is(I == ulong)) {
+        // IEEE 754 double precision float has a 52-bit significand stored in the
+        // lowest order bits, followed by an 11-bit exponent.  A NaN is when the
+        // exponent bits are all ones and the significand is nonzero.
+        enum ulong significandMask =
+            0b1111_1111_1111_1111_1111_1111_1111_1111_1111_1111_1111_1111_1111UL;
+        enum ulong exponentMask = 0b111_1111_1111UL << 52;
+    } else {
+        static assert(0);
+    }
+
+    return ((i & exponentMask) == exponentMask) && ((i & significandMask) != 0);
+}
+
+unittest {
+    // Test on randomly generated integers punned to floats.  We expect that
+    // about 1 in 256 will be NaNs.
+    foreach(i; 0..10_000) {
+        uint randInt = uniform(0U, uint.max);
+        assert(std.math.isNaN(*(cast(float*) &randInt)) == intIsNaN(randInt));
+    }
+
+    // Test on randomly generated integers punned to doubles.  We expect that
+    // about 1 in 2048 will be NaNs.
+    foreach(i; 0..1_000_000) {
+        ulong randInt = (cast(ulong) uniform(0U, uint.max) << 32) + uniform(0U, uint.max);
+        assert(std.math.isNaN(*(cast(double*) &randInt)) == intIsNaN(randInt));
+    }
+}
+
+/*private*/ T prepareForSorting(alias comp, T)(T arr)
+if(!isFloatingPoint!(ElementType!T)) {
+    return arr;
+}
+
+/* Check for NaNs and throw an exception if they're present.*/
+ real[] prepareForSorting(alias comp, F)(F arr)
+if(is(F == real[])) {
+    foreach(elem; arr) {
+        if(isNaN(elem)) {
+            throw new SortException("Can't sort NaNs.");
+        }
+    }
+
+    return arr;
+}
+
+/* Check for NaN and do some bit twiddling so that a float or double can be
+ * compared as an integer.  This results in approximately a 40% speedup
+ * compared to just sorting as floats.
+ */
+ auto prepareForSorting(alias comp, F)(F arr)
+if(is(F == double[]) || is(F == float[])) {
+    static if(is(F == double[])) {
+        alias long Int;
+        enum mask = 1UL << 63;
+    } else {
+        alias int Int;
+        enum mask = 1U << 31;
+    }
+
+    Int[] intArr = cast(Int[]) arr;
+    foreach(ref elem; intArr) {
+        if(intIsNaN(elem)) {
+            throw new SortException("Can't sort NaNs.");
+        }
+
+        static if(isSimpleComparison!comp) {
+            if(elem & mask) {
+                // Negative.
+                elem ^= mask;
+                elem = ~elem;
+            }
+        }
+    }
+
+    static if(isSimpleComparison!comp) {
+        return intArr;
+    } else {
+        return arr;
+    }
+}
+
+/*private*/ void postProcess(alias comp, T)(T arr)
+if(!isSimpleComparison!comp || (!is(T == double[]) && !is(T == float[]))) {}
+
+/* Undo bit twiddling from prepareForSorting() to get back original
+ * floating point numbers.
+ */
+/*private*/ void postProcess(alias comp, F)(F arr)
+if((is(F == double[]) || is(F == float[])) && isSimpleComparison!comp) {
+    static if(is(F == double[])) {
+        alias long Int;
+        enum mask = 1UL << 63;
+    } else {
+        alias int Int;
+        enum mask = 1U << 31;
+    }
+
+    Int[] useMe = cast(Int[]) arr;
+    foreach(ref elem; useMe) {
+        if(elem & mask) {
+            elem = ~elem;
+            elem ^= mask;
+        }
+    }
+}
+
+version(unittest) {
+    static void testFloating(alias fun, F)() {
+        F[] testL = new F[1_000];
+        foreach(ref e; testL) {
+            e = uniform(-1_000_000, 1_000_000);
+        }
+        auto testL2 = testL.dup;
+
+        static if(__traits(isSame, fun, mergeSortTemp)) {
+            auto temp1 = testL.dup;
+            auto temp2 = testL.dup;
+        }
+
+        foreach(i; 0..200) {
+            randomShuffle(zip(testL, testL2));
+            uint len = uniform(0, 1_000);
+
+            static if(__traits(isSame, fun, mergeSortTemp)) {
+                fun!"a > b"(testL[0..len], testL2[0..len], temp1[0..len], temp2[0..len]);
+            } else {
+                fun!("a > b")(testL[0..len], testL2[0..len]);
+            }
+
+            assert(isSorted!("a > b")(testL[0..len]));
+            assert(testL == testL2, fun.stringof ~ '\t' ~ F.stringof);
+        }
     }
 }
 
@@ -89,29 +271,6 @@ if(isRandomAccessRange!(T)) {
     }
     input[0] = temp;
 }
-
-/**Less than, except a NAN is less than anything except another NAN. This
- * behavior is totally arbitrary, but something has to be done with NANs by default
- * to avoid totally breaking the sorting algorithms when they occur.*/
-bool lessThan(T)(const T lhs, const T rhs) {
-    static if(isFloatingPoint!(T)) {
-        return ((lhs < rhs) || (isnan(lhs) && !isnan(rhs)));
-    } else {
-        return lhs < rhs;
-    }
-}
-
-/**Greater than, except anything except another NAN > a NAN.  This behavior
- * is totally arbitrary, but something has to be done with NANs by default
- * to avoid totally breaking the sorting algorithms when they occur.*/
-bool greaterThan(T)(const T lhs, const T rhs) {
-    static if(isFloatingPoint!(T)) {
-        return ((lhs > rhs) || !isnan(lhs) && isnan(rhs));
-    } else {
-        return lhs > rhs;
-    }
-}
-
 
 /* Returns the index, NOT the value, of the median of the first, middle, last
  * elements of data.*/
@@ -140,12 +299,12 @@ size_t medianOf3(alias compFun, T)(const T[] data) {
 }
 
 unittest {
-    assert(medianOf3!(lessThan)([1,2,3,4,5]) == 2);
-    assert(medianOf3!(lessThan)([1,2,5,4,3]) == 4);
-    assert(medianOf3!(lessThan)([3,2,1,4,5]) == 0);
-    assert(medianOf3!(lessThan)([5,2,3,4,1]) == 2);
-    assert(medianOf3!(lessThan)([5,2,1,4,3]) == 4);
-    assert(medianOf3!(lessThan)([3,2,5,4,1]) == 0);
+    assert(medianOf3!("a < b")([1,2,3,4,5]) == 2);
+    assert(medianOf3!("a < b")([1,2,5,4,3]) == 4);
+    assert(medianOf3!("a < b")([3,2,1,4,5]) == 0);
+    assert(medianOf3!("a < b")([5,2,3,4,1]) == 2);
+    assert(medianOf3!("a < b")([5,2,1,4,3]) == 4);
+    assert(medianOf3!("a < b")([3,2,5,4,1]) == 0);
     writeln("Passed medianOf3 unittest.");
 }
 
@@ -167,7 +326,7 @@ unittest {
  * 3.  After a much larger than expected amount of recursion has occured,
  *     this function transitions to a heap sort.  This guarantees an O(N log N)
  *     worst case.*/
-T[0] qsort(alias compFun = lessThan, T...)(T data)
+T[0] qsort(alias compFun = "a < b", T...)(T data)
 in {
     assert(data.length > 0);
     size_t len = data[0].length;
@@ -179,7 +338,11 @@ in {
     // using the ideal recursion depth to determine the transition point
     // to heap sort is reasonable.
     uint TTL = cast(uint) log2(cast(real) data[0].length);
-    qsortImpl!(compFun, T)(data, TTL);
+
+    auto toSort = prepareForSorting!compFun(data[0]);
+    qsortImpl!(compFun)(toSort, data[1..$], TTL);
+    postProcess!compFun(data[0]);
+
     return data[0];
 }
 
@@ -187,11 +350,11 @@ in {
 void qsortImpl(alias compFun, T...)(T data, uint TTL) {
     alias binaryFun!(compFun) comp;
     if(data[0].length < 50) {
-         insertionSort!(compFun)(data);
+         insertionSortImpl!(compFun)(data);
          return;
     }
     if(TTL == 0) {
-        heapSort!(compFun)(data);
+        heapSortImpl!(compFun)(data);
         return;
     }
     TTL--;
@@ -256,26 +419,23 @@ unittest {
             assert(test == test2);
         }
     }
-    { // Test float.
-        double[] test = new double[1_000];
-        foreach(ref e; test) {
-            e = uniform(0.0, 100_000);
-        }
-        auto test2 = test.dup;
-        foreach(i; 0..1_000) {
-            randomShuffle(zip(test, test2));
-            uint len = uniform(0, 1_000);
-            qsort!("a > b")(test[0..len], test2[0..len]);
-            assert(isSorted!("a > b")(test[0..len]));
-            assert(test == test2);
-        }
-    }
+
+    testFloating!(qsort, float)();
+    testFloating!(qsort, double)();
+    testFloating!(qsort, real)();
+
+    auto nanArr = [double.nan, 1.0];
+    try {
+        qsort(nanArr);
+        assert(0);
+    } catch(SortException) {}
+
     writeln("Passed qsort test.");
 }
 
 /* Keeps track of what array merge sort data is in.  This is a speed hack to
  * copy back and forth less.*/
-private enum {
+/*private*/ enum {
     DATA,
     TEMP
 }
@@ -285,7 +445,7 @@ private enum {
  * the dereference of the ulong* will be incremented by the bubble sort
  * distance between the input array and the sorted version.  This is useful
  * in some statistics functions such as Kendall's tau.*/
-T[0] mergeSort(alias compFun = lessThan, T...)(T data)
+T[0] mergeSort(alias compFun = "a < b", T...)(T data)
 in {
     assert(data.length > 0);
     size_t len = data[0].length;
@@ -295,7 +455,7 @@ in {
     }
 } body {
     if(data[0].length < 65) {  //Avoid mem allocation.
-        return insertionSort!(compFun)(data);
+        return insertionSortImpl!(compFun)(data);
     }
     static if(is(T[$ - 1] == ulong*)) {
         enum dl = data.length - 1;
@@ -305,16 +465,19 @@ in {
         alias TypeTuple!() swapCount; // Place holder.
     }
 
+    auto keyArr = prepareForSorting!compFun(data[0]);
+    auto toSort = TypeTuple!(keyArr, data[1..dl]);
+
     auto stateCache = TempAlloc.getState;
-    typeof(data[0..dl]) temp;
+    typeof(toSort) temp;
     foreach(i, array; temp) {
-        temp[i] = newStack!(typeof(data[i][0]))(data[i].length, stateCache);
+        temp[i] = newStack!(typeof(temp[i][0]))(data[i].length, stateCache);
     }
 
-    uint res = mergeSortImpl!(compFun)(data[0..dl], temp, swapCount);
+    uint res = mergeSortImpl!(compFun)(toSort, temp, swapCount);
     if(res == TEMP) {
         foreach(ti, array; temp) {
-            data[ti][0..$] = temp[ti][0..$];
+            toSort[ti][0..$] = temp[ti][0..$];
         }
     }
 
@@ -322,6 +485,7 @@ in {
         TempAlloc.free(stateCache);
     }
 
+    postProcess!compFun(data[0]);
     return data[0];
 }
 
@@ -374,20 +538,15 @@ unittest {
             }
         }
     }
-    { // Test lockstep.
-        double[] testL = new double[1_000];
-        foreach(ref e; testL) {
-            e = uniform(0.0, 100_000);
-        }
-        auto testL2 = testL.dup;
-        foreach(i; 0..1_000) {
-            randomShuffle(zip(testL, testL2));
-            uint len = uniform(0, 1_000);
-            mergeSort!("a > b")(testL[0..len], testL2[0..len]);
-            assert(isSorted!("a > b")(testL[0..len]));
-            assert(testL == testL2);
-        }
-    }
+
+    testFloating!(mergeSort, float)();
+    testFloating!(mergeSort, double)();
+    testFloating!(mergeSort, real)();
+
+    testFloating!(mergeSortTemp, float)();
+    testFloating!(mergeSortTemp, double)();
+    testFloating!(mergeSortTemp, real)();
+
     writeln("Passed mergeSort test.");
 }
 
@@ -412,7 +571,7 @@ unittest {
  * // The contents of both temp and temp2 will be undefined.
  * ---
  */
-T[0] mergeSortTemp(alias compFun = lessThan, T...)(T data)
+T[0] mergeSortTemp(alias compFun = "a < b", T...)(T data)
 in {
     assert(data.length > 0);
     size_t len = data[0].length;
@@ -426,17 +585,29 @@ in {
     } else {
         enum dl = data.length;
     }
-    uint res = mergeSortImpl!(compFun)(data);
+
+    auto keyArr = prepareForSorting!compFun(data[0]);
+    auto keyTemp = cast(typeof(keyArr)) data[dl / 2];
+    auto toSort = TypeTuple!(
+        keyArr,
+        data[1..dl / 2],
+        keyTemp,
+        data[dl / 2 + 1..$]
+    );
+
+    uint res = mergeSortImpl!(compFun)(toSort);
 
     if(res == TEMP) {
-        foreach(ti, array; data[0..$ / 2]) {
-            data[ti][0..$] = data[ti + dl / 2][0..$];
+        foreach(ti, array; toSort[0..$ / 2]) {
+            toSort[ti][0..$] = toSort[ti + dl / 2][0..$];
         }
     }
+
+    postProcess!compFun(data[0]);
     return data[0];
 }
 
-private uint mergeSortImpl(alias compFun = lessThan, T...)(T dataIn) {
+/*private*/ uint mergeSortImpl(alias compFun = "a < b", T...)(T dataIn) {
     static if(is(T[$ - 1] == ulong*)) {
         alias dataIn[$ - 1] swapCount;
         alias dataIn[0..dataIn.length / 2] data;
@@ -448,7 +619,7 @@ private uint mergeSortImpl(alias compFun = lessThan, T...)(T dataIn) {
     }
 
     if(data[0].length < 50) {
-        insertionSort!(compFun)(data, swapCount);
+        insertionSortImpl!(compFun)(data, swapCount);
         return DATA;
     }
     size_t half = data[0].length / 2;
@@ -486,7 +657,7 @@ private uint mergeSortImpl(alias compFun = lessThan, T...)(T dataIn) {
     }
 }
 
-private void merge(alias compFun, T...)(T data) {
+/*private*/ void merge(alias compFun, T...)(T data) {
     alias binaryFun!(compFun) comp;
 
     static if(is(T[$ - 1] == ulong*)) {
@@ -535,7 +706,7 @@ private void merge(alias compFun, T...)(T data) {
 /**In-place merge sort, based on C++ STL's stable_sort().  O(N log<sup>2</sup> N)
  * time complexity, O(1) space complexity, stable.  Much slower than plain
  * old mergeSort(), so only use it if you really need the O(1) space.*/
-T[0] mergeSortInPlace(alias compFun = lessThan, T...)(T data)
+T[0] mergeSortInPlace(alias compFun = "a < b", T...)(T data)
 in {
     assert(data.length > 0);
     size_t len = data[0].length;
@@ -543,8 +714,15 @@ in {
         assert(array.length == len);
     }
 } body {
+    auto toSort = prepareForSorting!compFun(data[0]);
+    mergeSortInPlaceImpl!compFun(toSort, data[1..$]);
+    postProcess!compFun(data[0]);
+    return data[0];
+}
+
+/*private*/ T[0] mergeSortInPlaceImpl(alias compFun, T...)(T data) {
     if (data[0].length <= 100)
-        return insertionSort!(compFun)(data);
+        return insertionSortImpl!(compFun)(data);
 
     T left, right;
     foreach(ti, array; data) {
@@ -579,11 +757,16 @@ unittest {
             }
         }
     }
+
+    testFloating!(mergeSortInPlace, float)();
+    testFloating!(mergeSortInPlace, double)();
+    testFloating!(mergeSortInPlace, real)();
+
     writeln("Passed mergeSortInPlace test.");
 }
 
 // Loosely based on C++ STL's __merge_without_buffer().
-private void mergeInPlace(alias compFun = lessThan, T...)(T data, size_t middle) {
+/*private*/ void mergeInPlace(alias compFun = "a < b", T...)(T data, size_t middle) {
     static size_t largestLess(alias compFun, T)(T[] data, T value) {
         alias binaryFun!(compFun) comp;
         size_t len = data.length, first, last = data.length, half, middle;
@@ -662,18 +845,25 @@ private void mergeInPlace(alias compFun = lessThan, T...)(T data, size_t middle)
 
 /**Heap sort.  Unstable, O(N log N) time average and worst case, O(1) space,
  * large constant term in time complexity.*/
-T[0] heapSort(alias compFun = lessThan, T...)(T input)
+T[0] heapSort(alias compFun = "a < b", T...)(T data)
 in {
-    assert(input.length > 0);
-    size_t len = input[0].length;
-    foreach(array; input[1..$]) {
+    assert(data.length > 0);
+    size_t len = data[0].length;
+    foreach(array; data[1..$]) {
         assert(array.length == len);
     }
 } body {
+    auto toSort = prepareForSorting!compFun(data[0]);
+    heapSortImpl!compFun(toSort, data[1..$]);
+    postProcess!compFun(data[0]);
+    return data[0];
+}
+
+/*private*/ T[0] heapSortImpl(alias compFun, T...)(T input) {
     // Heap sort has such a huge constant that insertion sort's faster for N <
     // 100 (for reals, even larger for smaller types).
     if(input[0].length <= 100) {
-        return insertionSort!(compFun)(input);
+        return insertionSortImpl!(compFun)(input);
     }
 
     alias binaryFun!(compFun) comp;
@@ -703,10 +893,15 @@ unittest {
         assert(isSorted(test[0..len]));
         assert(test == test2);
     }
+
+    testFloating!(heapSort, float)();
+    testFloating!(heapSort, double)();
+    testFloating!(heapSort, real)();
+
     writeln("Passed heapSort test.");
 }
 
-void makeMultiHeap(alias compFun = lessThan, T...)(T input) {
+void makeMultiHeap(alias compFun = "a < b", T...)(T input) {
     if(input[0].length < 2)
         return;
     alias binaryFun!(compFun) comp;
@@ -715,7 +910,7 @@ void makeMultiHeap(alias compFun = lessThan, T...)(T input) {
     }
 }
 
-void multiSiftDown(alias compFun = lessThan, T...)
+void multiSiftDown(alias compFun = "a < b", T...)
      (T input, size_t root, size_t end) {
     alias binaryFun!(compFun) comp;
     alias input[0] a;
@@ -741,7 +936,7 @@ void multiSiftDown(alias compFun = lessThan, T...)
  * divide and conquer algorithms.  If last argument is a ulong*, increments
  * the dereference of this argument by the bubble sort distance between the
  * input array and the sorted version of the input.*/
-T[0] insertionSort(alias compFun = lessThan, T...)(T data)
+T[0] insertionSort(alias compFun = "a < b", T...)(T data)
 in {
     assert(data.length > 0);
     size_t len = data[0].length;
@@ -750,6 +945,13 @@ in {
             assert(array.length == len);
     }
 } body {
+    auto toSort = prepareForSorting!compFun(data[0]);
+    insertionSortImpl!compFun(toSort, data[1..$]);
+    postProcess!compFun(data[0]);
+    return data[0];
+}
+
+/*private*/ T[0] insertionSortImpl(alias compFun, T...)(T data) {
     alias binaryFun!(compFun) comp;
     static if(is(T[$ - 1] == ulong*)) enum dl = data.length - 1;
     else enum dl = data.length;
@@ -805,7 +1007,7 @@ unittest {
 // sort distance, since it's straightforward with a bubble sort, and not with
 // a merge sort or insertion sort.
 version(unittest) {
-    T[0] bubbleSort(alias compFun = lessThan, T...)(T data) {
+    T[0] bubbleSort(alias compFun = "a < b", T...)(T data) {
         alias binaryFun!(compFun) comp;
         static if(is(T[$ - 1] == ulong*))
             enum dl = data.length - 1;
@@ -846,7 +1048,7 @@ unittest {
 /**Returns the kth largest/smallest element (depending on compFun, 0-indexed)
  * in the input array in O(N) time.  Allocates memory, does not modify input
  * array.*/
-T quickSelect(alias compFun = lessThan, T)(const T[] data, int k)
+T quickSelect(alias compFun = "a < b", T)(const T[] data, int k)
 in {
     assert(data.length > 0);
     size_t len = data[0].length;
@@ -882,7 +1084,7 @@ in {
  *
  * Returns:  The kth element of the array.
  */
-ArrayElemType!(T[0]) partitionK(alias compFun = lessThan, T...)(T data, int k)
+ArrayElemType!(T[0]) partitionK(alias compFun = "a < b", T...)(T data, int k)
 in {
     assert(data.length > 0);
     size_t len = data[0].length;
@@ -890,6 +1092,13 @@ in {
         assert(array.length == len);
     }
 } body {
+    auto toSort = prepareForSorting!compFun(data[0]);
+    partitionKImpl!compFun(toSort, data[1..$], k);
+    postProcess!compFun(data[0]);
+    return data[0][k];
+}
+
+/*private*/ ArrayElemType!(T[0]) partitionKImpl(alias compFun, T...)(T data, int k) {
     alias binaryFun!(compFun) comp;
 
     {

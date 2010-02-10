@@ -61,7 +61,7 @@ if(isForwardRange!(T) && realInput!(T)) {
 }
 
 real entropyCounts(T)(T data, real n)
-if(isIterable!(T) && is(ElementType!(T) : real)) {
+if(isIterable!(T)) {
     real nNeg1 = 1.0L / n;
     real entropy = 0;
     foreach(value; data) {
@@ -147,7 +147,7 @@ Joint!(T) jointImpl(T...)(T args) {
 struct Joint(T...) {
     T _jointRanges;
 
-    auto front() {
+    ObsEnt!(ElementsTuple!(T)) front() {
         alias ElementsTuple!(T) E;
         alias ObsEnt!(E) rt;
         rt ret;

@@ -325,8 +325,8 @@ version(unittest) {
     } body {
         ulong m1=0, m2=0;
         int s=0;
-        scope uint[const(T)] f1=frequency(input1);
-        scope uint[const(U)] f2=frequency(input2);
+        uint[const(T)] f1=frequency(input1);
+        uint[const(U)] f2=frequency(input2);
         foreach(f; f1) {
             m1+=(f*(f-1))/2;
         }
@@ -386,12 +386,14 @@ real kendallCorDestructive(T, U)(T[] input1, U[] input2) {
     return kendallCorDestructiveLowLevel(input1, input2).field[0];
 }
 
+//bool compFun(T)(T lhs, T rhs) { return lhs < rhs; }
+enum compFun = "a < b";
+
 // Guarantee that T.sizeof >= U.sizeof so we know we can recycle space.
 auto kendallCorDestructiveLowLevel(T, U)(T[] input1, U[] input2)
 if(T.sizeof < U.sizeof) {
     return kendallCorDestructiveLowLevel(input2, input1);
 }
-
 // Used internally in dstats.tests.kendallCorTest.
 auto kendallCorDestructiveLowLevel(T, U)(T[] input1, U[] input2)
 if(T.sizeof >= U.sizeof)
@@ -422,7 +424,7 @@ in {
           nPair = (cast(ulong) input1.length *
                   ( cast(ulong) input1.length - 1UL)) / 2UL;
 
-    qsort!("a < b")(input1, input2);
+    qsort!(compFun)(input1, input2);
     long s = nPair;
 
     uint tieCount = 0;
@@ -430,7 +432,7 @@ in {
         if(input1[i] == input1[i-1]) {
             tieCount++;
         } else if(tieCount > 0) {
-            qsort!("a < b")(input2[i - tieCount - 1..i]);
+            qsort!(compFun)(input2[i - tieCount - 1..i]);
             m1 += tieCount * (tieCount + 1) / 2UL;
             s += getMs(input2[i - tieCount - 1..i]).field[0];
             tieCount++;
@@ -439,7 +441,7 @@ in {
         }
     }
     if(tieCount > 0) {
-        qsort!("a < b")(input2[input1.length - tieCount - 1..input1.length]);
+        qsort!(compFun)(input2[input1.length - tieCount - 1..input1.length]);
         m1 += tieCount * (tieCount + 1UL) / 2UL;
         s += getMs(input2[input1.length - tieCount - 1..input1.length]).field[0];
         tieCount++;
@@ -450,7 +452,7 @@ in {
     // arrays and will never use input1 again, so this is safe.
     ulong swapCount = 0;
     U[] input1Temp = (cast(U*) input1.ptr)[0..input2.length];
-    mergeSortTemp!("a < b")(input2, input1Temp, &swapCount);
+    mergeSortTemp!(compFun)(input2, input1Temp, &swapCount);
 
     immutable tieStuff = getMs(input2);
     immutable m2 = tieStuff.field[0];
@@ -468,25 +470,32 @@ unittest {
     assert(approxEqual(kendallCor([1,2,3,4,5].dup, [3,1,7,4,3].dup), 0.1054093));
     assert(approxEqual(kendallCor([3,6,7,35,75].dup,[1,63,53,67,3].dup), 0.2));
     assert(approxEqual(kendallCor([1.5,6.3,7.8,4.2,1.5].dup, [1,63,53,67,3].dup), .3162287));
-    uint[] one = new uint[1000], two = new uint[1000];
-    // Test complex, fast implementation against straightforward,
-    // slow implementation.
-    foreach(i; 0..100) {
-        size_t lowerBound = uniform(0, 1000);
-        size_t upperBound = uniform(0, 1000);
-        if(lowerBound > upperBound) swap(lowerBound, upperBound);
-        foreach(ref o; one) {
-            o = uniform(1, 10);
+
+    static void doKendallTest(T)() {
+        T[] one = new T[1000], two = new T[1000];
+        // Test complex, fast implementation against straightforward,
+        // slow implementation.
+        foreach(i; 0..100) {
+            size_t lowerBound = uniform(0, 1000);
+            size_t upperBound = uniform(0, 1000);
+            if(lowerBound > upperBound) swap(lowerBound, upperBound);
+            foreach(ref o; one) {
+                o = uniform(cast(T) -10, cast(T) 10);
+            }
+            foreach(ref o; two) {
+                 o = uniform(cast(T) -10, cast(T) 10);
+            }
+            real kOne =
+                 kendallCor(one[lowerBound..upperBound], two[lowerBound..upperBound]);
+            real kTwo =
+                 kendallCorOld(one[lowerBound..upperBound], two[lowerBound..upperBound]);
+            assert(approxEqual(kOne, kTwo) || (isNaN(kOne) && isNaN(kTwo)));
         }
-        foreach(ref o; two) {
-             o = uniform(1, 10);
-        }
-        real kOne =
-             kendallCor(one[lowerBound..upperBound], two[lowerBound..upperBound]);
-        real kTwo =
-             kendallCorOld(one[lowerBound..upperBound], two[lowerBound..upperBound]);
-        assert(approxEqual(kOne, kTwo) || (isNaN(kOne) && isNaN(kTwo)));
     }
+
+    doKendallTest!int();
+    doKendallTest!float();
+    doKendallTest!double();
 
     // Make sure everything works with lowest common denominator range type.
     struct Count {
