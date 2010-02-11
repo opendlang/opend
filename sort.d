@@ -334,6 +334,12 @@ in {
         assert(array.length == len);
     }
 } body {
+    if(data[0].length < 50) {
+        // Skip computing logarithm rather than waiting until qsortImpl to
+        // do this.
+        return insertionSort!compFun(data);
+    }
+
     // Because we transition to insertion sort at N = 50 elements,
     // using the ideal recursion depth to determine the transition point
     // to heap sort is reasonable.
@@ -1092,10 +1098,9 @@ in {
         assert(array.length == len);
     }
 } body {
-    auto toSort = prepareForSorting!compFun(data[0]);
-    partitionKImpl!compFun(toSort, data[1..$], k);
-    postProcess!compFun(data[0]);
-    return data[0][k];
+    // Don't use the float-to-int trick because it's actually slower here
+    // because the main part of the algorithm is O(N), not O(N log N).
+    return partitionKImpl!compFun(data, k);
 }
 
 /*private*/ ArrayElemType!(T[0]) partitionKImpl(alias compFun, T...)(T data, int k) {
