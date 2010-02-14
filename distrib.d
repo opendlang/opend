@@ -104,7 +104,9 @@
 
 module dstats.distrib;
 
-import dstats.base, std.algorithm, std.conv, std.contracts;
+import std.algorithm, std.conv, std.contracts, std.math, std.traits;
+
+import dstats.base, dstats.gamma;
 
 enum SQ2PI = sqrt(2 * PI);
 
@@ -1725,12 +1727,4 @@ unittest {
     assert(approxEqual(1 - kolmDist(.9), 0.39273070));
     assert(approxEqual(1 - kolmDist(1.2), 0.112249666));
     writeln("Passed kolmDist unittest.");
-}
-
-// Verify that there are no TempAlloc memory leaks anywhere in the code covered
-// by the unittest.  This should always be the last unittest of the module.
-unittest {
-    auto TAState = TempAlloc.getState;
-    assert(TAState.used == 0);
-    assert(TAState.nblocks < 2);
 }

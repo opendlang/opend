@@ -31,9 +31,10 @@
 
 module dstats.alloc;
 
-import std.traits, core.memory, core.thread, std.array, std.range,
-    std.functional, dstats.base, std.algorithm : max;
-static import std.c.stdio;
+import std.traits, core.memory, std.array, std.range,
+    std.functional, std.math, std.algorithm : max;
+
+import dstats.base;
 
 version(unittest) {
     import std.stdio, std.conv, std.random, dstats.sort;

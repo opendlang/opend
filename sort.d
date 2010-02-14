@@ -8,11 +8,19 @@
  * All sorting functions have the precondition that all parallel input arrays
  * must have the same length.
  *
- * Note:  These functions only work with arrays and ranges very similar to
- * arrays.  This will likely remain the case for the foreseeable future because
- * they were heavily optimized specifically for arrays before ranges existed.
- * Furthermore, every internal use for them occurs after data has been copied
- * from generic ranges to arrays.
+ * Notes:  These functions are heavily optimized for sorting arrays of
+ * ints and floats (by far the most common case when doing statistical
+ * calculations).  In these cases, they can be several times faster than the
+ * equivalent functions in std.algorithm.  Since sorting is extremely important
+ * for non-parametric statistics, this results in important real-world
+ * performance gains.  However, it comes at a price in terms of generality:
+ *
+ * 1.  They assume that what they are sorting is cheap to copy via normal
+ *     assignment.
+ * 2.  They don't work at all with general ranges, only arrays and maybe
+ *     ranges very similar to arrays.
+ * 3.  All tuning and micro-optimization is done with ints and floats, not
+ *     classes, large structs, strings, etc.
  *
  * Examples:
  * ---
@@ -343,7 +351,7 @@ in {
     // Because we transition to insertion sort at N = 50 elements,
     // using the ideal recursion depth to determine the transition point
     // to heap sort is reasonable.
-    uint TTL = cast(uint) log2(cast(real) data[0].length);
+    uint TTL = cast(uint) (log2(cast(real) data[0].length) * 2);
 
     auto toSort = prepareForSorting!compFun(data[0]);
     qsortImpl!(compFun)(toSort, data[1..$], TTL);
@@ -405,9 +413,10 @@ void qsortImpl(alias compFun, T...)(T data, uint TTL) {
         qsortImpl!(compFun)(less, TTL);
         qsortImpl!(compFun)(greater, TTL);
         return;
+    } else {
+        qsortImpl!(compFun)(greater, TTL);
+        qsortImpl!(compFun)(less, TTL);
     }
-    qsortImpl!(compFun)(greater, TTL);
-    qsortImpl!(compFun)(less, TTL);
 }
 
 unittest {
@@ -867,7 +876,7 @@ in {
 
 /*private*/ T[0] heapSortImpl(alias compFun, T...)(T input) {
     // Heap sort has such a huge constant that insertion sort's faster for N <
-    // 100 (for reals, even larger for smaller types).
+    // 100 (for reals; even larger for smaller types).
     if(input[0].length <= 100) {
         return insertionSortImpl!(compFun)(input);
     }
@@ -959,25 +968,40 @@ in {
 
 /*private*/ T[0] insertionSortImpl(alias compFun, T...)(T data) {
     alias binaryFun!(compFun) comp;
-    static if(is(T[$ - 1] == ulong*)) enum dl = data.length - 1;
-    else enum dl = data.length;
-    if(data[0].length < 2) {return data[0];}
-    foreach_reverse(i; 0..data[0].length - 1) {
+    static if(is(T[$ - 1] == ulong*)) {
+        enum dl = data.length - 1;
+        alias data[$ - 1] swapCount;
+    } else {
+        enum dl = data.length;
+    }
+
+    alias data[0] keyArray;
+    if(keyArray.length < 2) {
+        return keyArray;
+    }
+
+    // Yes, I measured this, caching this value is actually faster on DMD.
+    immutable maxJ = keyArray.length - 1;
+    for(size_t i = keyArray.length - 2; i != size_t.max; --i) {
         size_t j = i;
-        auto val = data[0][i];
-        for(; j < data[0].length - 1; j++) {
-            if(!comp(data[0][j + 1], val)) {
-                break;
-            }
-            data[0][j] = data[0][j + 1];
+        auto val = keyArray[i];
+
+        for(; j < maxJ && comp(keyArray[j + 1], val); ++j) {
+            keyArray[j] = keyArray[j + 1];
         }
-        data[0][j] = val;
-        foreach(array; data[1..dl]) rotateLeft(array[i..j + 1]);
-        static if(is(T[$ - 1] == ulong*)) {
-            (*(data[$-1])) += (j - i);  //Increment swapCount variable.
+
+        keyArray[j] = val;
+
+        foreach(array; data[1..dl]) {
+             rotateLeft(array[i..j + 1]);
+        }
+
+        static if(is(typeof(swapCount))) {
+            *swapCount += (j - i);  //Increment swapCount variable.
         }
     }
-    return data[0];
+
+    return keyArray;
 }
 
 unittest {
@@ -1054,17 +1078,10 @@ unittest {
 /**Returns the kth largest/smallest element (depending on compFun, 0-indexed)
  * in the input array in O(N) time.  Allocates memory, does not modify input
  * array.*/
-T quickSelect(alias compFun = "a < b", T)(const T[] data, int k)
-in {
-    assert(data.length > 0);
-    size_t len = data[0].length;
-    foreach(array; data[1..$]) {
-        assert(array.length == len);
-    }
-} body {
-    auto TAState = TempAlloc.getState;
-    auto dataDup = data.tempdup(TAState);  scope(exit) TempAlloc.free(TAState);
-    return partitionK!(compFun, T)(dataDup, k);
+T quickSelect(alias compFun = "a < b", T)(const T[] data, int k) {
+    auto dataDup = data.tempdup;
+    scope(exit) TempAlloc.free;
+    return partitionK!(compFun)(dataDup, k);
 }
 
 /**Partitions the input data according to compFun, such that position k contains
@@ -1090,7 +1107,7 @@ in {
  *
  * Returns:  The kth element of the array.
  */
-ArrayElemType!(T[0]) partitionK(alias compFun = "a < b", T...)(T data, int k)
+ElementType!(T[0]) partitionK(alias compFun = "a < b", T...)(T data, int k)
 in {
     assert(data.length > 0);
     size_t len = data[0].length;
@@ -1103,7 +1120,7 @@ in {
     return partitionKImpl!compFun(data, k);
 }
 
-/*private*/ ArrayElemType!(T[0]) partitionKImpl(alias compFun, T...)(T data, int k) {
+/*private*/ ElementType!(T[0]) partitionKImpl(alias compFun, T...)(T data, int k) {
     alias binaryFun!(compFun) comp;
 
     {

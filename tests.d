@@ -30,9 +30,11 @@
  */
 module dstats.tests;
 
-import dstats.base, dstats.distrib, dstats.alloc, dstats.summary, dstats.sort,
-       dstats.cor, std.algorithm, std.functional, std.range, std.conv,
+import std.algorithm, std.functional, std.range, std.conv, std.math, std.traits,
        std.contracts;
+
+import dstats.base, dstats.distrib, dstats.alloc, dstats.summary, dstats.sort,
+       dstats.cor;
 
 version(unittest) {
     import std.stdio, dstats.random;
@@ -557,6 +559,7 @@ unittest {
  * assert( approxEqual(result.p, 0.01310));
  * ---
  */
+
 TestRes levenesTest(alias central = median, T...)(T data) {
     return anovaLevene!(true, false, central, T)(data);
 }
@@ -733,7 +736,7 @@ private TestRes anovaLevene(bool levene, bool welch, alias central,  T...)
         real totalBetween = 0;
         foreach(group; withins) {
             totalWithin += group.mse * (group.N / DFDataPoints);
-            immutable diffSq = (group.mean - mu) ^^ 2;
+            immutable diffSq = (group.mean - mu) * (group.mean - mu);
             totalBetween += diffSq * (group.N / DFGroups);
         }
 
@@ -3404,8 +3407,9 @@ if(realInput!(T)) {
             qVals[i] = cast(float) elem;
         }
     } else {
+        auto app = appender(&qVals);
         foreach(elem; pVals) {
-            qVals ~= cast(float) elem;
+            app.put(cast(float) elem);
         }
     }
 
@@ -3416,9 +3420,11 @@ if(realInput!(T)) {
         }
     }
 
+    mixin(newFrame);
     auto perm = newStack!(uint)(qVals.length);
-    foreach(i, ref elem; perm)
+    foreach(i, ref elem; perm) {
         elem = i;
+    }
 
     qsort(qVals, perm);
 
@@ -3427,7 +3433,7 @@ if(realInput!(T)) {
     }
 
     float smallestSeen = float.max;
-    foreach_reverse(ref q; qVals) {
+    foreach(ref q; retro(qVals)) {
         if(q < smallestSeen) {
             smallestSeen = q;
         } else {
@@ -3436,7 +3442,6 @@ if(realInput!(T)) {
     }
 
     qsort(perm, qVals);  //Makes order of qVals correspond to input.
-    TempAlloc.free;
     return qVals;
 }
 
@@ -3513,7 +3518,7 @@ if(realInput!(T)) {
     }
 
     float smallestSeen = float.max;
-    foreach_reverse(ref q; qVals) {
+    foreach(ref q; retro(qVals)) {
         if(q < smallestSeen) {
             smallestSeen = q;
         } else {

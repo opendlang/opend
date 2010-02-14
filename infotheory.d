@@ -35,10 +35,10 @@ module dstats.infotheory;
 import std.traits, std.math, std.typetuple, std.functional, std.range,
        std.array, std.typecons;
 
-import dstats.sort, dstats.summary, dstats.base, dstats.alloc;
+import dstats.base, dstats.alloc, dstats.summary : sum;
 
 version(unittest) {
-    import std.stdio, std.bigint, std.algorithm : map;
+    import std.stdio, std.bigint, std.algorithm : map, sort;
 
     void main() {}
 }
@@ -473,7 +473,9 @@ if(isInputRange!(T)) {
 
 unittest {
     uint[] foo = [1U,2,3,1,3,2,6,3,1,6,3,2,2,1,3,5,2,1].dup;
-    assert(approxEqual(entropySorted(foo.dup.qsort), entropy(foo)));
+    auto sorted = foo.dup;
+    sort(sorted);
+    assert(approxEqual(entropySorted(sorted), entropy(foo)));
     writeln("Passed entroySorted test.");
 }
 

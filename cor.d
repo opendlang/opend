@@ -30,12 +30,12 @@
 
 module dstats.cor;
 
-import core.memory, std.range, std.typecons, std.contracts;
+import std.range, std.typecons, std.contracts, std.math, std.traits;
 
 import dstats.sort, dstats.base, dstats.alloc, dstats.regress : invert;
 
 version(unittest) {
-    import std.stdio, std.random, std.algorithm;
+    import std.stdio, std.random, std.algorithm : map, swap;
 
     Random gen;
 

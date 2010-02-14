@@ -49,7 +49,10 @@ Macros:
  *  NAN = $(RED NAN)
  */
 module dstats.gamma;
-private import std.math, dstats.distrib;
+
+import std.math;
+
+import dstats.distrib;
 
 alias std.math.lgamma logGamma;
 alias std.math.tgamma gamma;

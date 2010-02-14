@@ -37,15 +37,14 @@
  */
 module dstats.base;
 
-public import std.math, std.traits, dstats.gamma, dstats.alloc;
-private import dstats.sort, std.c.stdlib, std.bigint, std.typecons,
-               std.functional, std.algorithm, std.range, std.bitmanip,
-               std.stdio, std.contracts, std.conv;
+import std.math, std.traits, std.typecons, std.algorithm, std.range,
+    std.contracts, std.conv, std.functional;
+
+import dstats.alloc, dstats.sort, dstats.gamma;
 
 import std.string : strip;
-import std.conv : to;
 
-immutable real[] staticLogFacTable;
+immutable real[] logFactorialTable;
 
 private enum size_t staticFacTableLen = 10_000;
 
@@ -57,11 +56,11 @@ shared static this() {
     for(uint i = 1; i < staticFacTableLen; i++) {
         sfTemp[i] = sfTemp[i - 1] + log(i);
     }
-    staticLogFacTable = cast(immutable) sfTemp;
+    logFactorialTable = assumeUnique(sfTemp);
 }
 
 version(unittest) {
-    import std.stdio, std.algorithm, std.random, std.file;
+    import std.stdio, std.random, std.file;
 
     void main (){}
 }
@@ -316,7 +315,7 @@ if(realInput!(T) && isForwardRange!(T) && hasLength!(T) && isIntegral!(Ret)) {
             return data[lhs] < data[rhs];
         }
 
-        dstats.sort.qsort!compare(perm);
+        qsort!compare(perm);
     } else {
         auto dd = tempdup(data);
         qsort(dd, perm);
@@ -641,7 +640,7 @@ unittest {
 real logFactorial(ulong n) {
     //Input is uint, can't be less than 0, no need to check.
     if(n < staticFacTableLen) {
-        return staticLogFacTable[cast(size_t) n];
+        return logFactorialTable[cast(size_t) n];
     } else return lgamma(cast(real) (n + 1));
 }
 

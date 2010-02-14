@@ -41,13 +41,13 @@
 
 module dstats.summary;
 
-import std.algorithm, std.functional, std.conv, std.string, std.range,
-       std.array;
+import std.algorithm, std.functional, std.conv, std.range, std.array,
+    std.traits, std.math;
 
 import dstats.sort, dstats.base, dstats.alloc;
 
 version(unittest) {
-    import std.stdio, std.random, std.algorithm, std.conv;
+    import std.stdio, std.random;
 
     void main() {
     }
