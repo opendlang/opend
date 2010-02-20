@@ -139,18 +139,33 @@ version(unittest) {
  * ---
  */
 auto randArray(alias randFun, Args...)(size_t N, Args args) {
-    auto ret = newVoid!(typeof(randFun(args)))(N);
-    foreach(ref elem; ret) {
-        elem = randFun(args);
-    }
-
-    return ret;
+    alias typeof(randFun(args)) R;
+    return randArray!(R, randFun, Args)(N, args);
 }
 
 unittest {
     // Just check if it compiles.
     auto nums = randArray!rNorm(5, 0, 1);
     auto nums2 = randArray!rBinomial(10, 5, 0.5);
+}
+
+/**Allows the creation of an array of random numbers with an explicitly
+ * specified type.  Useful, for example, when single-precision floats are all
+ * you need.
+ *
+ * Examples:
+ * ---
+ * // Create an array of 10 million floats distributed Normal(0, 1).
+ * float[] normals = randArray!(float, rNorm)(10, 0, 1);
+ * ---
+ */
+R[] randArray(R, alias randFun, Args...)(size_t N, Args args) {
+    auto ret = newVoid!(typeof(randFun(args)))(N);
+    foreach(ref elem; ret) {
+        elem = randFun(args);
+    }
+
+    return ret;
 }
 
 ///
@@ -333,9 +348,7 @@ real rFisher(RGen = Random)(real df1, real df2, ref RGen gen = rndGen) {
 }
 
 unittest {
-    real[] observ = new real[100_000];
-    foreach(ref elem; observ)
-    elem = rFisher(5, 7);
+    auto observ = randArray!rFisher(100_000, 5, 7);
     auto ksRes = ksTest(observ, parametrize!(fisherCDF)(5, 7));
     writeln("100k samples from fisher(5, 7):  K-S P-val:  ", ksRes.p);
     writeln("\tMean Expected: ",  7.0 / 5, "  Observed:  ", mean(observ));

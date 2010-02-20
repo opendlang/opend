@@ -383,7 +383,7 @@ void qsortImpl(alias compFun, T...)(T data, uint TTL) {
     }
 
     T less, greater;
-    ptrdiff_t lessI = -1, greaterI = data[0].length - 1;
+    size_t lessI = size_t.max, greaterI = data[0].length - 1;
 
     auto pivot = data[0][$ - 1];
     while(true) {
