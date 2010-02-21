@@ -160,7 +160,7 @@ unittest {
  * ---
  */
 R[] randArray(R, alias randFun, Args...)(size_t N, Args args) {
-    auto ret = newVoid!(typeof(randFun(args)))(N);
+    auto ret = newVoid!(R)(N);
     foreach(ref elem; ret) {
         elem = randFun(args);
     }

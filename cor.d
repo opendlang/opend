@@ -312,48 +312,11 @@ unittest {
     writeln("Passed spearmanCor unittest.");
 }
 
-/*  Kendall's Tau correlation, O(N^2) version.  Kept around
-  * for testing, but pretty useless otherwise.  Since new version falls back
-  * on insertion sorting when N is small, this is likely not faster
-  * even for small N.  Advantage is that it's a very direct translation from
-  * standard formulas, and therefore unlikely to have weird, subtle bugs.*/
-
 version(unittest) {
-    private real kendallCorOld(T, U)(const T[] input1, const U[] input2)
-    in {
-        assert(input1.length == input2.length);
-    } body {
-        ulong m1=0, m2=0;
-        int s=0;
-        uint[const(T)] f1=frequency(input1);
-        uint[const(U)] f2=frequency(input2);
-        foreach(f; f1) {
-            m1+=(f*(f-1))/2;
-        }
-        foreach(f; f2) {
-            m2+=(f*(f-1))/2;
-        }
-        foreach (i; 0..input2.length) {
-            foreach (j; (i+1)..input2.length) {
-                if (input2[i] > input2[j]) {
-                    if (input1[i] > input1[j]) {
-                        s++;
-                    } else if (input1[i] < input1[j]) {
-                        s--;
-                    }
-                } else if (input2[i] < input2[j]) {
-                    if (input1[i] > input1[j]) {
-                        s--;
-                    } else if (input1[i] < input1[j]) {
-                        s++;
-                    }
-                }
-            }
-        }
-        ulong denominator1=(input2.length*(input2.length-1))/2 - m1;
-        ulong denominator2=(input2.length*(input2.length-1))/2 - m2;
-        return s/sqrt(cast(real) (denominator1*denominator2));
-    }
+    // Make sure when we call kendallCor, the large N version always executes.
+    private enum kendallSmallN = 1;
+} else {
+    private enum kendallSmallN = 15;
 }
 
 /**Kendall's Tau B, O(N log N) version.  This can be defined in terms of the
@@ -366,6 +329,14 @@ version(unittest) {
  * have the same length.*/
 real kendallCor(T, U)(T input1, U input2)
 if(isInputRange!(T) && isInputRange!(U)) {
+    static if(isArray!(T) && isArray!(U)) {
+        enforce(input1.length == input2.length,
+            "Ranges must be same length for Kendall correlation.");
+        if(input1.length <= kendallSmallN) {
+            return kendallCorSmallN(input1, input2);
+        }
+    }
+
     auto i1d = tempdup(input1);
     scope(exit) TempAlloc.free;
     auto i2d = tempdup(input2);
@@ -373,7 +344,12 @@ if(isInputRange!(T) && isInputRange!(U)) {
 
     enforce(i1d.length == i2d.length,
         "Ranges must be same length for Kendall correlation.");
-    return kendallCorDestructive(i1d, i2d);
+
+    if(i1d.length <= kendallSmallN) {
+        return kendallCorSmallN(i1d, i2d);
+    } else {
+        return kendallCorDestructive(i1d, i2d);
+    }
 }
 
 /**Kendall's Tau O(N log N), overwrites input arrays with undefined data but
@@ -387,7 +363,7 @@ real kendallCorDestructive(T, U)(T[] input1, U[] input2) {
 }
 
 //bool compFun(T)(T lhs, T rhs) { return lhs < rhs; }
-enum compFun = "a < b";
+private enum compFun = "a < b";
 
 // Guarantee that T.sizeof >= U.sizeof so we know we can recycle space.
 auto kendallCorDestructiveLowLevel(T, U)(T[] input1, U[] input2)
@@ -464,6 +440,55 @@ in {
     return tuple(cor, s, tieCorrect);
 }
 
+/* Kendall's Tau correlation, O(N^2) version.  This is faster than the
+ * more asymptotically efficient version for N <= about 15, and is also useful
+ * for testing.
+ */
+private real kendallCorSmallN(T, U)(const T[] input1, const U[] input2)
+in {
+    assert(input1.length == input2.length);
+
+    // This function should never be used for any inputs even close to this
+    // large because it's a small-N optimization and a more efficient
+    // implementation exists in this module for large N, but when N gets this
+    // large it's not even correct due to overflow errors.
+    assert(input1.length < 1 << 15);
+} body {
+    uint m1 = 0, m2 = 0;
+    int s = 0;
+
+    foreach(i; 0..input2.length) {
+        foreach (j; i + 1..input2.length) {
+            if(input1[i] == input1[j]) {
+                m1++;
+            }
+
+            if(input2[i] == input2[j]) {
+                m2++;
+            }
+
+            if(input2[i] > input2[j]) {
+                if (input1[i] > input1[j]) {
+                    s++;
+                } else if(input1[i] < input1[j]) {
+                    s--;
+                }
+            } else if(input2[i] < input2[j]) {
+                if (input1[i] > input1[j]) {
+                    s--;
+                } else if(input1[i] < input1[j]) {
+                    s++;
+                }
+            }
+        }
+    }
+
+    immutable nCombination = input2.length * (input2.length - 1) / 2;
+    immutable real denominator1 = nCombination - m1;
+    immutable real denominator2 = nCombination - m2;
+    return s / sqrt(denominator1) / sqrt(denominator2);
+}
+
 
 unittest {
     //Test against known values.
@@ -488,8 +513,8 @@ unittest {
             real kOne =
                  kendallCor(one[lowerBound..upperBound], two[lowerBound..upperBound]);
             real kTwo =
-                 kendallCorOld(one[lowerBound..upperBound], two[lowerBound..upperBound]);
-            assert(approxEqual(kOne, kTwo) || (isNaN(kOne) && isNaN(kTwo)));
+                 kendallCorSmallN(one[lowerBound..upperBound], two[lowerBound..upperBound]);
+            assert(isIdentical(kOne, kTwo));
         }
     }
 
