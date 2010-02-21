@@ -342,7 +342,7 @@ in {
         assert(array.length == len);
     }
 } body {
-    if(data[0].length < 50) {
+    if(data[0].length < 25) {
         // Skip computing logarithm rather than waiting until qsortImpl to
         // do this.
         return insertionSort!compFun(data);
@@ -363,7 +363,7 @@ in {
 //TTL = time to live, before transitioning to heap sort.
 void qsortImpl(alias compFun, T...)(T data, uint TTL) {
     alias binaryFun!(compFun) comp;
-    if(data[0].length < 50) {
+    if(data[0].length < 25) {
          insertionSortImpl!(compFun)(data);
          return;
     }
