@@ -442,7 +442,10 @@ in {
 
 /* Kendall's Tau correlation, O(N^2) version.  This is faster than the
  * more asymptotically efficient version for N <= about 15, and is also useful
- * for testing.
+ * for testing.  Yes, the sorts for the large N impl fall back on insertion
+ * sorting for moderately small N, but due to additive constants and O(N) terms
+ * this algorithm is still faster for very small N.  (Besides, I can't
+ * delete it anyhow because I need it for testing.)
  */
 private real kendallCorSmallN(T, U)(const T[] input1, const U[] input2)
 in {
@@ -454,36 +457,49 @@ in {
     // large it's not even correct due to overflow errors.
     assert(input1.length < 1 << 15);
 } body {
-    uint m1 = 0, m2 = 0;
+    int m1 = 0, m2 = 0;
     int s = 0;
 
     foreach(i; 0..input2.length) {
         foreach (j; i + 1..input2.length) {
-            if(input1[i] == input1[j]) {
-                m1++;
-            }
-
-            if(input2[i] == input2[j]) {
-                m2++;
-            }
-
             if(input2[i] > input2[j]) {
                 if (input1[i] > input1[j]) {
                     s++;
                 } else if(input1[i] < input1[j]) {
                     s--;
+                } else if(input1[i] == input1[j]) {
+                    m1++;
+                } else {
+                    enforce(0, "Can't compute Kendall's Tau with NaNs.");
                 }
             } else if(input2[i] < input2[j]) {
                 if (input1[i] > input1[j]) {
                     s--;
                 } else if(input1[i] < input1[j]) {
                     s++;
+                } else if(input1[i] == input1[j]) {
+                    m1++;
+                } else {
+                    enforce(0, "Can't compute Kendall's Tau with NaNs.");
                 }
+            } else if(input2[i] == input2[j]) {
+                m2++;
+
+                if(input1[i] < input1[j]) {
+                } else if(input1[i] > input1[j]) {
+                } else if(input1[i] == input1[j]) {
+                    m1++;
+                } else {
+                    enforce(0, "Can't compute Kendall's Tau with NaNs.");
+                }
+
+            } else {
+                enforce(0, "Can't compute Kendall's Tau with NaNs.");
             }
         }
     }
 
-    immutable nCombination = input2.length * (input2.length - 1) / 2;
+    immutable int nCombination = input2.length * (input2.length - 1) / 2;
     immutable real denominator1 = nCombination - m1;
     immutable real denominator2 = nCombination - m2;
     return s / sqrt(denominator1) / sqrt(denominator2);
