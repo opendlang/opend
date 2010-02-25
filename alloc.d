@@ -243,7 +243,7 @@ private:
 
     enum size_t alignBytes = 16U;
     enum blockSize = 4U * 1024U * 1024U;
-    enum nBookKeep = 1_048_576;  // How many bytes to allocate upfront for bookkeeping.
+    enum nBookKeep = blockSize / alignBytes * (void*).sizeof;
     static State state;
 
     static void die() nothrow {
@@ -429,6 +429,12 @@ public:
             }
         }
     }
+
+    /**Returns how many bytes are available in the current frame.*/
+    static size_t slack() nothrow @property {
+        return blockSize - getState().used;
+    }
+
 }
 
 /**Allocates an array of type T and size size using TempAlloc.

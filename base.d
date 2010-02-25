@@ -395,8 +395,9 @@ unittest {
  * [1, input.length] corresponding to each element.  Ties are dealt with by
  * averaging.  This function does not reorder the input range.
  * Return type is float[] by default, but if you are sure you have no ties,
- * ints can be used for efficiency, and if you need more precision when
- * averaging ties, you can use double or real.
+ * ints can be used for efficiency (in which case ties will not be averaged),
+ * and if you need more precision when averaging ties, you can use double or
+ * real.
  *
  * Works with any input range.
  *
@@ -408,37 +409,66 @@ unittest {
  * ---*/
 Ret[] rank(alias compFun = "a < b", Ret = double, T)(T input, Ret[] buf = null)
 if(isInputRange!(T) && is(typeof(input.front < input.front))) {
-    mixin(newFrame);
     static if(!isRandomAccessRange!(T) || !hasLength!(T)) {
+        mixin(newFrame);
         return rankSort!(compFun, Ret)( tempdup(input), buf);
     } else {
-        size_t[] indices = newStack!size_t(input.length);
-        foreach(i, ref elem; indices) {
-            elem = i;
-        }
 
-        bool compare(size_t lhs, size_t rhs) {
-            alias binaryFun!(compFun) innerComp;
-            return innerComp(input[lhs], input[rhs]);
-        }
-
-        dstats.sort.qsort!compare(indices);
-
-        Ret[] ret;
-        if(buf.length < indices.length) {
-            ret = newVoid!Ret(indices.length);
+        /* It's faster to duplicate the input and then use rankSort on the
+         * duplicate, but more space efficient to create an index array.  Check
+         * TempAlloc to see whether we can fit everything we need on the current
+         * frame.  If yes, use the faster algorithm since we're effectively
+         * not saving any space by using the space-efficient algorithm.
+         * If no, use the more space-efficient algorithm.
+         */
+        auto bytesNeeded = input.length * (ElementType!(T).sizeof + size_t.sizeof);
+        if(bytesNeeded < TempAlloc.slack) {
+            mixin(newFrame);
+            return rankSort!(compFun, Ret)( tempdup(input), buf);
         } else {
-            ret = buf[0..indices.length];
+            return rankUsingIndex!(compFun, Ret)(input, buf);
         }
-
-        foreach(i, index; indices) {
-            ret[index] = i + 1;
-        }
-
-        auto myIndexed = Indexed!(T)(input, indices);
-        averageTies(myIndexed, ret, indices);
-        return ret;
     }
+
+    assert(0);
+}
+
+/* Space-efficient but slow way of computing ranks.  The extra indirection
+ * caused by creating the index array wreaks havock with CPU caches, especially
+ * for large arrays that don't fit entirely in cache.
+ */
+private Ret[] rankUsingIndex(alias compFun, Ret, T)(T input, Ret[] buf) {
+    mixin(newFrame);
+    size_t[] indices = newStack!size_t(input.length);
+    foreach(i, ref elem; indices) {
+        elem = i;
+    }
+
+    bool compare(size_t lhs, size_t rhs) {
+        alias binaryFun!(compFun) innerComp;
+        return innerComp(input[lhs], input[rhs]);
+    }
+
+    dstats.sort.qsort!compare(indices);
+
+    Ret[] ret;
+    if(buf.length < indices.length) {
+        ret = newVoid!Ret(indices.length);
+    } else {
+        ret = buf[0..indices.length];
+    }
+
+    foreach(i, index; indices) {
+        ret[index] = i + 1;
+    }
+
+    auto myIndexed = Indexed!(T)(input, indices);
+
+    static if(!isIntegral!Ret) {
+        averageTies(myIndexed, ret, indices);
+    }
+
+    return ret;
 }
 
 private struct Indexed(T) {
@@ -459,14 +489,13 @@ private struct Indexed(T) {
  * the rank of each element will correspond to the ranks of the elements in the
  * input array before sorting.
  *
- * Works with any random access range with a length property.
- *
  * Examples:
  * ---
  * uint[] test = [3, 5, 3, 1, 2];
  * assert(rankSort(test) == [3.5, 5, 3.5, 1.0, 2.0]);
  * assert(test == [1U, 2, 3, 4, 5]);
- * ---*/
+ * ---
+ */
 Ret[] rankSort(alias compFun = "a < b", Ret = double, T)(T input, Ret[] buf = null)
 if(isRandomAccessRange!(T) && hasLength!(T) && is(typeof(input.front < input.front))) {
     mixin(newFrame);
@@ -486,17 +515,28 @@ if(isRandomAccessRange!(T) && hasLength!(T) && is(typeof(input.front < input.fro
     foreach(i; 0..perms.length)  {
         ranks[perms[i]] = i + 1;
     }
-    averageTies(input, ranks, perms);
+
+    static if(!isIntegral!Ret) {
+        averageTies(input, ranks, perms);
+    }
+
     return ranks;
 }
 
 unittest {
     uint[] test = [3, 5, 3, 1, 2];
-    assert(rank!("a < b", float)(test) == [3.5f, 5f, 3.5f, 1f, 2f]);
+
+    float[] dummy;
+    assert(rankUsingIndex!("a < b", float)(test, dummy) == [3.5f, 5f, 3.5f, 1f, 2f]);
     assert(test == [3U, 5, 3, 1, 2]);
-    assert(rank!("a < b", double)(test) == [3.5, 5, 3.5, 1, 2]);
+
+    double[] dummy2;
+    assert(rankUsingIndex!("a < b", double)(test, dummy2) == [3.5, 5, 3.5, 1, 2]);
     assert(rankSort(test) == [3.5, 5.0, 3.5, 1.0, 2.0]);
     assert(test == [1U,2,3,3,5]);
+
+    uint[] test2 = [3,3,1,2];
+    assert(rank(test2) == [3.5,3.5,1,2]);
     writeln("Passed rank test.");
 }
 
@@ -505,29 +545,36 @@ in {
     assert(sortedInput.length == ranks.length);
     assert(ranks.length == perms.length);
 } body {
-    int tieCount = 1;
-    real tieSum = ranks[perms[0]];
+    size_t tieCount = 1;
     foreach(i; 1..ranks.length) {
         if(sortedInput[i] == sortedInput[i - 1]) {
             tieCount++;
-            tieSum += ranks[perms[i]];
-        } else{
-            if(tieCount > 1){
-                real avg = tieSum / tieCount;
-                foreach(perm; perms[i - tieCount..i]) {
-                    ranks[perm] = avg;
-                }
-                tieCount = 1;
+        } else if(tieCount > 1) {
+            real avg = 0;
+            immutable increment = 1.0L / tieCount;
+
+            foreach(perm; perms[i - tieCount..i]) {
+                avg += ranks[perm] * increment;
             }
-            tieSum = ranks[perms[i]];
+
+            foreach(perm; perms[i - tieCount..i]) {
+                ranks[perm] = avg;
+            }
+            tieCount = 1;
         }
     }
+
     if(tieCount > 1) { // Handle the end.
-        real avg = tieSum / tieCount;
+        real avg = 0;
+        immutable increment = 1.0L / tieCount;
+
+        foreach(perm; perms[perms.length - tieCount..$]) {
+            avg += ranks[perm] * increment;
+        }
+
         foreach(perm; perms[perms.length - tieCount..$]) {
             ranks[perm] = avg;
         }
-        tieCount = 1;
     }
 }
 

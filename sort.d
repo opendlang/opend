@@ -8,7 +8,12 @@
  * All sorting functions have the precondition that all parallel input arrays
  * must have the same length.
  *
- * Notes:  These functions are heavily optimized for sorting arrays of
+ * Notes:
+ *
+ * Comparison functions must be written such that compFun(x, x) == false.
+ * For example, "a < b" is good, "a <= b" is not.
+ *
+ * These functions are heavily optimized for sorting arrays of
  * ints and floats (by far the most common case when doing statistical
  * calculations).  In these cases, they can be several times faster than the
  * equivalent functions in std.algorithm.  Since sorting is extremely important
@@ -36,7 +41,8 @@
  * assert(baz == [-1.0, 0, 1, -2, -3]);
  * ---
  *
- * Author:  David Simcha*/
+ * Author:  David Simcha
+ */
  /*
  * License:
  * Boost Software License - Version 1.0 - August 17th, 2003
@@ -178,22 +184,26 @@ if(is(F == real[])) {
 if(is(F == double[]) || is(F == float[])) {
     static if(is(F == double[])) {
         alias long Int;
-        enum mask = 1UL << 63;
+        enum signMask = 1UL << 63;
     } else {
         alias int Int;
-        enum mask = 1U << 31;
+        enum signMask = 1U << 31;
     }
 
     Int[] intArr = cast(Int[]) arr;
-    foreach(ref elem; intArr) {
+    foreach(i, ref elem; intArr) {
         if(intIsNaN(elem)) {
+            // Roll back the bit twiddling in case someone catches the
+            // exception, so that they don't see corrupted values.
+            postProcess!comp(intArr[0..i]);
+
             throw new SortException("Can't sort NaNs.");
         }
 
         static if(isSimpleComparison!comp) {
-            if(elem & mask) {
+            if(elem & signMask) {
                 // Negative.
-                elem ^= mask;
+                elem ^= signMask;
                 elem = ~elem;
             }
         }
@@ -386,6 +396,11 @@ void qsortImpl(alias compFun, T...)(T data, uint TTL) {
     size_t lessI = size_t.max, greaterI = data[0].length - 1;
 
     auto pivot = data[0][$ - 1];
+    if(comp(pivot, pivot)) {
+        throw new SortException
+            ("Comparison function must be such that compFun(x, x) == false.");
+    }
+
     while(true) {
         while(comp(data[0][++lessI], pivot)) {}
         while(greaterI > 0 && comp(pivot, data[0][--greaterI])) {}
