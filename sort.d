@@ -364,8 +364,16 @@ in {
     uint TTL = cast(uint) (log2(cast(real) data[0].length) * 2);
 
     auto toSort = prepareForSorting!compFun(data[0]);
-    qsortImpl!(compFun)(toSort, data[1..$], TTL);
-    postProcess!compFun(data[0]);
+
+    /* qsort() throws if an invalid comparison function is passed.  Even in
+     * this case, the data should be post-processed so the bit twiddling
+     * hacks for floats can be undone.
+     */
+    try {
+        qsortImpl!(compFun)(toSort, data[1..$], TTL);
+    } finally {
+        postProcess!compFun(data[0]);
+    }
 
     return data[0];
 }
