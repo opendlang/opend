@@ -172,7 +172,7 @@ R[] randArray(R, alias randFun, Args...)(size_t N, Args args) {
 struct RandRange(alias randFun, T...) {
 private:
     T args;
-    real normData = real.nan;  // TLS stuff for normal.
+    double normData = double.nan;  // TLS stuff for normal.
     typeof(randFun(args)) frontElem;
 public:
     enum bool empty = false;
@@ -258,25 +258,25 @@ unittest {
 }
 
 // Thread local data for normal distrib. that is preserved across calls.
-private static real lastNorm = real.nan;
+private static double lastNorm = double.nan;
 
 ///
-real rNorm(RGen = Random)(real mean, real sd, ref RGen gen = rndGen) {
+double rNorm(RGen = Random)(double mean, double sd, ref RGen gen = rndGen) {
     enforce(sd > 0, "Standard deviation must be > 0 for rNorm.");
 
-    real lr = lastNorm;
+    double lr = lastNorm;
     if (!isNaN(lr)) {
-        lastNorm = real.nan;
+        lastNorm = double.nan;
         return lr * sd + mean;
     }
 
-    real x1 = void, x2 = void, r2 = void;
+    double x1 = void, x2 = void, r2 = void;
     do {
         x1 = uniform(-1.0L, 1.0L, gen);
         x2 = uniform(-1.0L, 1.0L, gen);
         r2 = x1 * x1 + x2 * x2;
     } while (r2 > 1.0L || r2 == 0.0L);
-    real f = sqrt(-2.0L * log(r2) / r2);
+    double f = sqrt(-2.0L * log(r2) / r2);
     lastNorm = f * x1;
     return f * x2 * sd + mean;
 }
@@ -296,7 +296,7 @@ unittest {
 }
 
 ///
-real rCauchy(RGen = Random)(real X0, real gamma, ref RGen gen = rndGen) {
+double rCauchy(RGen = Random)(double X0, double gamma, ref RGen gen = rndGen) {
     enforce(gamma > 0, "gamma must be > 0 for Cauchy distribution.");
 
     return (rNorm(0, 1, gen) / rNorm(0, 1, gen)) * gamma + X0;
@@ -316,12 +316,12 @@ unittest {
 }
 
 ///
-real rStudentT(RGen = Random)(real df, ref RGen gen = rndGen) {
+double rStudentT(RGen = Random)(double df, ref RGen gen = rndGen) {
     enforce(df > 0, "Student's T distribution must have >0 degrees of freedom.");
 
-    real N = rNorm(0, 1, gen);
-    real G = stdGamma(df / 2, gen);
-    real X = sqrt(df / 2) * N / sqrt(G);
+    double N = rNorm(0, 1, gen);
+    double G = stdGamma(df / 2, gen);
+    double X = sqrt(df / 2) * N / sqrt(G);
     return X;
 }
 
@@ -339,7 +339,7 @@ unittest {
 }
 
 ///
-real rFisher(RGen = Random)(real df1, real df2, ref RGen gen = rndGen) {
+double rFisher(RGen = Random)(double df1, double df2, ref RGen gen = rndGen) {
     enforce(df1 > 0 && df2 > 0,
         "df1 and df2 must be >0 for the Fisher distribution.");
 
@@ -360,15 +360,15 @@ unittest {
 }
 
 ///
-real rChiSquare(RGen = Random)(real df, ref RGen gen = rndGen) {
+double rChiSquare(RGen = Random)(double df, ref RGen gen = rndGen) {
     enforce(df > 0, "df must be > 0 for chiSquare distribution.");
 
     return 2.0 * stdGamma(df / 2.0L, gen);
 }
 
 unittest {
-    real df = 5;
-    real[] observ = new real[100_000];
+    double df = 5;
+    double[] observ = new double[100_000];
     foreach(ref elem; observ)
     elem = rChiSquare(df);
     auto ksRes = ksTest(observ, parametrize!(chiSqrCDF)(5));
@@ -382,15 +382,15 @@ unittest {
 }
 
 ///
-int rPoisson(RGen = Random)(real lam, ref RGen gen = rndGen) {
+int rPoisson(RGen = Random)(double lam, ref RGen gen = rndGen) {
     enforce(lam > 0, "lambda must be >0 for Poisson distribution.");
 
-    static int poissonMult(ref RGen gen, real lam) {
-        real U = void;
+    static int poissonMult(ref RGen gen, double lam) {
+        double U = void;
 
-        real enlam = exp(-lam);
+        double enlam = exp(-lam);
         int X = 0;
-        real prod = 1.0;
+        double prod = 1.0;
         while (true) {
             U = uniform(0.0L, 1.0L, gen);
             prod *= U;
@@ -403,18 +403,18 @@ int rPoisson(RGen = Random)(real lam, ref RGen gen = rndGen) {
         assert(0);
     }
 
-    enum real LS2PI = 0.91893853320467267;
-    enum real TWELFTH = 0.083333333333333333333333;
-    static int poissonPtrs(ref RGen gen, real lam) {
+    enum double LS2PI = 0.91893853320467267;
+    enum double TWELFTH = 0.083333333333333333333333;
+    static int poissonPtrs(ref RGen gen, double lam) {
         int k;
-        real U = void, V = void, us = void;
+        double U = void, V = void, us = void;
 
-        real slam = sqrt(lam);
-        real loglam = log(lam);
-        real b = 0.931 + 2.53*slam;
-        real a = -0.059 + 0.02483*b;
-        real invalpha = 1.1239 + 1.1328/(b-3.4);
-        real vr = 0.9277 - 3.6224/(b-2);
+        double slam = sqrt(lam);
+        double loglam = log(lam);
+        double b = 0.931 + 2.53*slam;
+        double a = -0.059 + 0.02483*b;
+        double invalpha = 1.1239 + 1.1328/(b-3.4);
+        double vr = 0.9277 - 3.6224/(b-2);
 
         while (true) {
             U = uniform(-0.5L, 0.5L, gen);
@@ -446,7 +446,7 @@ int rPoisson(RGen = Random)(real lam, ref RGen gen = rndGen) {
 }
 
 unittest {
-    real lambda = 15L;
+    double lambda = 15L;
     int[] observ = new int[100_000];
     foreach(ref elem; observ)
     elem = rPoisson(lambda);
@@ -464,20 +464,20 @@ unittest {
 }
 
 ///
-int rBernoulli(RGen = Random)(real P = 0.5, ref RGen gen = rndGen) {
+int rBernoulli(RGen = Random)(double P = 0.5, ref RGen gen = rndGen) {
     enforce(P >= 0 && P <= 1, "P must be between 0, 1 for Bernoulli distribution.");
 
-    real pVal = uniform(0.0L, 1.0L, gen);
+    double pVal = uniform(0.0L, 1.0L, gen);
     return cast(int) (pVal <= P);
 }
 
 private struct BinoState {
     bool has_binomial;
     int nsave;
-    real psave;
+    double psave;
     int m;
-    real r,q,fm,p1,xm,xl,xr,c,laml,lamr,p2,p3,p4;
-    real a,u,v,s,F,rho,t,A,nrq,x1,x2,f1,f2,z,z2,w,w2,x;
+    double r,q,fm,p1,xm,xl,xr,c,laml,lamr,p2,p3,p4;
+    double a,u,v,s,F,rho,t,A,nrq,x1,x2,f1,f2,z,z2,w,w2,x;
 }
 
 private BinoState* binoState() {
@@ -621,9 +621,9 @@ Step60:
     return y;
 }
 
-private int rBinomialInversion(RGen = Random)(int n, real p, ref RGen gen = rndGen) {
+private int rBinomialInversion(RGen = Random)(int n, double p, ref RGen gen = rndGen) {
     auto state = binoState;
-    real q, qn, np, px, U;
+    double q, qn, np, px, U;
     int X, bound;
 
     if (!(state.has_binomial) ||
@@ -660,7 +660,7 @@ private int rBinomialInversion(RGen = Random)(int n, real p, ref RGen gen = rndG
 }
 
 ///
-int rBinomial(RGen = Random)(int n, real p, ref RGen gen = rndGen) {
+int rBinomial(RGen = Random)(int n, double p, ref RGen gen = rndGen) {
     enforce(n >= 0, "n must be >= 0 for binomial distribution.");
     enforce(p >= 0 && p <= 1, "p must be between 0, 1 for binomial distribution.");
 
@@ -671,7 +671,7 @@ int rBinomial(RGen = Random)(int n, real p, ref RGen gen = rndGen) {
             return rBinomialBtpe(n, p, gen);
         }
     } else {
-        real q = 1.0-p;
+        double q = 1.0-p;
         if (q*n <= 30.0) {
             return n - rBinomialInversion(n, q, gen);
         } else {
@@ -681,7 +681,7 @@ int rBinomial(RGen = Random)(int n, real p, ref RGen gen = rndGen) {
 }
 
 unittest {
-    void testBinom(int n, real p) {
+    void testBinom(int n, double p) {
         int[] observ = new int[100_000];
         foreach(ref elem; observ)
         elem = rBinomial(n, p);
@@ -704,12 +704,12 @@ unittest {
 
 private int hypergeoHyp(RGen = Random)(int good, int bad, int sample, ref RGen gen = rndGen) {
     int Z = void;
-    real U = void;
+    double U = void;
 
     int d1 = bad + good - sample;
-    real d2 = cast(real)min(bad, good);
+    double d2 = cast(double)min(bad, good);
 
-    real Y = d2;
+    double Y = d2;
     int K = sample;
     while (Y > 0.0) {
         U = uniform(0.0L, 1.0L, gen);
@@ -722,25 +722,25 @@ private int hypergeoHyp(RGen = Random)(int good, int bad, int sample, ref RGen g
     return Z;
 }
 
-private enum real D1 = 1.7155277699214135;
-private enum real D2 = 0.8989161620588988;
+private enum double D1 = 1.7155277699214135;
+private enum double D2 = 0.8989161620588988;
 private int hypergeoHrua(RGen = Random)(int good, int bad, int sample, ref RGen gen = rndGen) {
     int Z = void;
-    real T = void, W = void, X = void, Y = void;
+    double T = void, W = void, X = void, Y = void;
 
     int mingoodbad = min(good, bad);
     int popsize = good + bad;
     int maxgoodbad = max(good, bad);
     int m = min(sample, popsize - sample);
-    real d4 = (cast(real)mingoodbad) / popsize;
-    real d5 = 1.0 - d4;
-    real d6 = m*d4 + 0.5;
-    real d7 = sqrt((popsize - m) * sample * d4 *d5 / (popsize-1) + 0.5);
-    real d8 = D1*d7 + D2;
-    int d9 = cast(int)floor(cast(real)((m+1)*(mingoodbad+1))/(popsize+2));
-    real d10 = (lgamma(d9+1) + lgamma(mingoodbad-d9+1) + lgamma(m-d9+1) +
+    double d4 = (cast(double)mingoodbad) / popsize;
+    double d5 = 1.0 - d4;
+    double d6 = m*d4 + 0.5;
+    double d7 = sqrt((popsize - m) * sample * d4 *d5 / (popsize-1) + 0.5);
+    double d8 = D1*d7 + D2;
+    int d9 = cast(int)floor(cast(double)((m+1)*(mingoodbad+1))/(popsize+2));
+    double d10 = (lgamma(d9+1) + lgamma(mingoodbad-d9+1) + lgamma(m-d9+1) +
                 lgamma(maxgoodbad-m+d9+1));
-    real d11 = min(min(m, mingoodbad)+1.0, floor(d6+16*d7));
+    double d11 = min(min(m, mingoodbad)+1.0, floor(d6+16*d7));
     /* 16 for 16-decimal-digit precision in D1 and D2 */
 
     while (true) {
@@ -791,16 +791,16 @@ int rHypergeometric(RGen = Random)(int n1, int n2, int n, ref RGen gen = rndGen)
 
 unittest {
 
-    static real hyperStdev(int n1, int n2, int n) {
-        return sqrt(cast(real) n * (cast(real) n1 / (n1 + n2))
-        * (1 - cast(real) n1 / (n1 + n2)) * (n1 + n2 - n) / (n1 + n2 - 1));
+    static double hyperStdev(int n1, int n2, int n) {
+        return sqrt(cast(double) n * (cast(double) n1 / (n1 + n2))
+        * (1 - cast(double) n1 / (n1 + n2)) * (n1 + n2 - n) / (n1 + n2 - 1));
     }
 
-    static real hyperSkew(real n1, real n2, real n) {
-        real N = n1 + n2;
+    static double hyperSkew(double n1, double n2, double n) {
+        double N = n1 + n2;
         alias n1 m;
-        real numer = (N - 2 * m) * sqrt(N - 1) * (N - 2 * n);
-        real denom = sqrt(n * m * (N - m) * (N - n)) * (N - 2);
+        double numer = (N - 2 * m) * sqrt(N - 1) * (N - 2 * n);
+        double denom = sqrt(n * m * (N - m) * (N - n)) * (N - 2);
         return numer / denom;
     }
 
@@ -810,7 +810,7 @@ unittest {
         elem = rHypergeometric(n1, n2, n);
         auto ksRes = ksTest(observ, parametrize!(hypergeometricCDF)(n1, n2, n));
         writeln("100k samples from hypergeom.(", n1, ", ", n2, ", ", n, "):");
-        writeln("\tMean Expected: ", n * cast(real) n1 / (n1 + n2),
+        writeln("\tMean Expected: ", n * cast(double) n1 / (n1 + n2),
                 "  Observed:  ", mean(observ));
         writeln("\tMedian Expected: ??  Observed:  ", median(observ));
         writeln("\tStdev Expected:  ", hyperStdev(n1, n2, n),
@@ -824,11 +824,11 @@ unittest {
     testHyper(120, 105, 70);
 }
 
-private int rGeomSearch(RGen = Random)(real p, ref RGen gen = rndGen) {
+private int rGeomSearch(RGen = Random)(double p, ref RGen gen = rndGen) {
     int X = 1;
-    real sum = p, prod = p;
-    real q = 1.0 - p;
-    real U = uniform(0.0L, 1.0L, gen);
+    double sum = p, prod = p;
+    double q = 1.0 - p;
+    double U = uniform(0.0L, 1.0L, gen);
     while (U > sum) {
         prod *= q;
         sum += prod;
@@ -837,11 +837,11 @@ private int rGeomSearch(RGen = Random)(real p, ref RGen gen = rndGen) {
     return X;
 }
 
-private int rGeomInvers(RGen = Random)(real p, ref RGen gen = rndGen) {
+private int rGeomInvers(RGen = Random)(double p, ref RGen gen = rndGen) {
     return cast(int)ceil(log(1.0-uniform(0.0L, 1.0L, gen))/log(1.0-p));
 }
 
-int rGeometric(RGen = Random)(real p, ref RGen gen = rndGen) {
+int rGeometric(RGen = Random)(double p, ref RGen gen = rndGen) {
     enforce(p >= 0 && p <= 1, "p must be between 0, 1 for geometric distribution.");
 
     if (p >= 0.333333333333333333333333) {
@@ -853,7 +853,7 @@ int rGeometric(RGen = Random)(real p, ref RGen gen = rndGen) {
 
 unittest {
 
-    void testGeom(real p) {
+    void testGeom(double p) {
         int[] observ = new int[100_000];
         foreach(ref elem; observ)
         elem = rGeometric(p);
@@ -877,12 +877,12 @@ unittest {
 }
 
 ///
-int rNegBinom(RGen = Random)(real n, real p, ref RGen gen = rndGen) {
+int rNegBinom(RGen = Random)(double n, double p, ref RGen gen = rndGen) {
     enforce(n >= 0, "n must be >= 0 for negative binomial distribution.");
     enforce(p >= 0 && p <= 1,
         "p must be between 0, 1 for negative binomial distribution.");
 
-    real Y = stdGamma(n, gen);
+    double Y = stdGamma(n, gen);
     Y *= (1 - p) / p;
     return rPoisson(Y, gen);
 }
@@ -890,7 +890,7 @@ int rNegBinom(RGen = Random)(real n, real p, ref RGen gen = rndGen) {
 unittest {
     Random gen;
     gen.seed(unpredictableSeed);
-    real p = 0.3L;
+    double p = 0.3L;
     int n = 30;
     int[] observ = new int[100_000];
     foreach(ref elem; observ)
@@ -909,17 +909,17 @@ unittest {
 }
 
 ///
-real rLaplace(RGen = Random)(real mu = 0, real b = 1, ref RGen gen = rndGen) {
+double rLaplace(RGen = Random)(double mu = 0, double b = 1, ref RGen gen = rndGen) {
     enforce(b > 0, "b must be > 0 for Laplace distribution.");
 
-    real p = uniform(0.0L, 1.0L, gen);
+    double p = uniform(0.0L, 1.0L, gen);
     return invLaplaceCDF(p, mu, b);
 }
 
 unittest {
     Random gen;
     gen.seed(unpredictableSeed);
-    real[] observ = new real[100_000];
+    double[] observ = new double[100_000];
     foreach(ref elem; observ)
     elem = rLaplace();
     auto ksRes = ksTest(observ, parametrize!(laplaceCDF)(0.0L, 1.0L));
@@ -933,15 +933,15 @@ unittest {
 }
 
 ///
-real rExponential(RGen = Random)(real lambda, ref RGen gen = rndGen) {
+double rExponential(RGen = Random)(double lambda, ref RGen gen = rndGen) {
     enforce(lambda > 0, "lambda must be > 0 for exponential distribution.");
 
-    real p = uniform(0.0L, 1.0L, gen);
+    double p = uniform(0.0L, 1.0L, gen);
     return -log(p) / lambda;
 }
 
 unittest {
-    real[] observ = new real[100_000];
+    double[] observ = new double[100_000];
     foreach(ref elem; observ)
     elem = rExponential(2.0L);
     auto ksRes = ksTest(observ, parametrize!(gammaCDF)(2, 1));
@@ -954,18 +954,18 @@ unittest {
     delete observ;
 }
 
-private real stdGamma(RGen = Random)(real shape, ref RGen gen) {
-    real b = void, c = void;
-    real U = void, V = void, X = void, Y = void;
+private double stdGamma(RGen = Random)(double shape, ref RGen gen) {
+    double b = void, c = void;
+    double U = void, V = void, X = void, Y = void;
 
     if (shape == 1.0) {
-        return rExponential(1.0L, gen);
+        return rExponential(1.0, gen);
     } else if (shape < 1.0) {
         for (;;) {
-            U = uniform(0.0L, 1.0L, gen);
-            V = rExponential(1.0L, gen);
+            U = uniform(0.0L, 1.0, gen);
+            V = rExponential(1.0, gen);
             if (U <= 1.0 - shape) {
-                X = pow(U, 1.0L/shape);
+                X = pow(U, 1.0/shape);
                 if (X <= V) {
                     return X;
                 }
@@ -995,7 +995,7 @@ private real stdGamma(RGen = Random)(real shape, ref RGen gen) {
 }
 
 ///
-real rGamma(RGen = Random)(real a, real b, ref RGen gen = rndGen) {
+double rGamma(RGen = Random)(double a, double b, ref RGen gen = rndGen) {
     enforce(a > 0, "a must be > 0 for gamma distribution.");
     enforce(b > 0, "b must be > 0 for gamma distribution.");
 
@@ -1003,7 +1003,7 @@ real rGamma(RGen = Random)(real a, real b, ref RGen gen = rndGen) {
 }
 
 unittest {
-    real[] observ = new real[100_000];
+    double[] observ = new double[100_000];
     foreach(ref elem; observ)
     elem = rGamma(2.0L, 3.0L);
     auto ksRes = ksTest(observ, parametrize!(gammaCDF)(2, 3));
@@ -1017,14 +1017,14 @@ unittest {
 }
 
 ///
-real rBeta(RGen = Random)(real a, real b, ref RGen gen = rndGen) {
+double rBeta(RGen = Random)(double a, double b, ref RGen gen = rndGen) {
     enforce(a > 0, "a must be > 0 for beta distribution.");
     enforce(b > 0, "b must be > 0 for beta distribution.");
 
-    real Ga = void, Gb = void;
+    double Ga = void, Gb = void;
 
     if ((a <= 1.0) && (b <= 1.0)) {
-        real U, V, X, Y;
+        double U, V, X, Y;
         /* Use Jonk's algorithm */
 
         while (1) {
@@ -1046,31 +1046,31 @@ real rBeta(RGen = Random)(real a, real b, ref RGen gen = rndGen) {
 }
 
 unittest {
-    real delegate(real) paramBeta(real a, real b) {
-        real parametrizedBeta(real x) {
+    double delegate(double) paramBeta(double a, double b) {
+        double parametrizedBeta(double x) {
             return betaIncomplete(a, b, x);
         }
         return &parametrizedBeta;
     }
 
-    static real betaStdev(real a, real b) {
+    static double betaStdev(double a, double b) {
         return sqrt(a * b / ((a + b) * (a + b) * (a + b + 1)));
     }
 
-    static real betaSkew(real a, real b) {
+    static double betaSkew(double a, double b) {
         auto numer = 2 * (b - a) * sqrt(a + b + 1);
         auto denom = (a + b + 2) * sqrt(a * b);
         return numer / denom;
     }
 
-    static real betaKurtosis(real a, real b) {
-        real numer = a * a * a - a * a * (2 * b - 1) + b * b * (b + 1) - 2 * a * b * (b + 2);
-        real denom = a * b * (a + b + 2) * (a + b + 3);
+    static double betaKurtosis(double a, double b) {
+        double numer = a * a * a - a * a * (2 * b - 1) + b * b * (b + 1) - 2 * a * b * (b + 2);
+        double denom = a * b * (a + b + 2) * (a + b + 3);
         return 6 * numer / denom;
     }
 
-    void testBeta(real a, real b) {
-        real[] observ = new real[100_000];
+    void testBeta(double a, double b) {
+        double[] observ = new double[100_000];
         foreach(ref elem; observ)
         elem = rBeta(a, b);
         auto ksRes = ksTest(observ, paramBeta(a, b));
@@ -1089,15 +1089,15 @@ unittest {
 }
 
 ///
-real rLogistic(RGen = Random)(real loc, real scale, ref RGen gen = rndGen) {
+double rLogistic(RGen = Random)(double loc, double scale, ref RGen gen = rndGen) {
     enforce(scale > 0, "scale must be > 0 for logistic distribution.");
 
-    real U = uniform(0.0L, 1.0L, gen);
+    double U = uniform(0.0L, 1.0L, gen);
     return loc + scale * log(U/(1.0 - U));
 }
 
 unittest {
-    real[] observ = new real[100_000];
+    double[] observ = new double[100_000];
     foreach(ref elem; observ)
     elem = rLogistic(2.0L, 3.0L);
     auto ksRes = ksTest(observ, parametrize!(logisticCDF)(2, 3));
@@ -1111,7 +1111,7 @@ unittest {
 }
 
 ///
-real rLogNorm(RGen = Random)(real mu, real sigma, ref RGen gen = rndGen) {
+double rLogNorm(RGen = Random)(double mu, double sigma, ref RGen gen = rndGen) {
     enforce(sigma > 0, "sigma must be > 0 for log-normal distribution.");
 
     return exp(rNorm(mu, sigma, gen));
@@ -1133,7 +1133,7 @@ unittest {
 }
 
 ///
-real rWeibull(RGen = Random)(real shape, real scale = 1, ref RGen gen = rndGen) {
+double rWeibull(RGen = Random)(double shape, double scale = 1, ref RGen gen = rndGen) {
     enforce(shape > 0, "shape must be > 0 for weibull distribution.");
     enforce(scale > 0, "scale must be > 0 for weibull distribution.");
 
@@ -1141,7 +1141,7 @@ real rWeibull(RGen = Random)(real shape, real scale = 1, ref RGen gen = rndGen) 
 }
 
 unittest {
-    real[] observ = new real[100_000];
+    double[] observ = new double[100_000];
     foreach(ref elem; observ)
     elem = rWeibull(2.0L, 3.0L);
     auto ksRes = ksTest(observ, parametrize!(weibullCDF)(2.0, 3.0));
@@ -1150,18 +1150,18 @@ unittest {
 }
 
 ///
-real rWald(RGen = Random)(real mu, real lambda, ref RGen gen = rndGen) {
+double rWald(RGen = Random)(double mu, double lambda, ref RGen gen = rndGen) {
     enforce(mu > 0, "mu must be > 0 for Wald distribution.");
     enforce(lambda > 0, "lambda must be > 0 for Wald distribution.");
 
     alias mu mean;
     alias lambda scale;
 
-    real mu_2l = mean / (2*scale);
-    real Y = rNorm(0, 1, gen);
+    double mu_2l = mean / (2*scale);
+    double Y = rNorm(0, 1, gen);
     Y = mean*Y*Y;
-    real X = mean + mu_2l*(Y - sqrt(4*scale*Y + Y*Y));
-    real U = uniform(0.0L, 1.0L, gen);
+    double X = mean + mu_2l*(Y - sqrt(4*scale*Y + Y*Y));
+    double U = uniform(0.0L, 1.0L, gen);
     if (U <= mean/(mean+X)) {
         return X;
     } else
@@ -1185,7 +1185,7 @@ unittest {
 }
 
 ///
-real rRayleigh(RGen = Random)(real mode, ref RGen gen = rndGen) {
+double rRayleigh(RGen = Random)(double mode, ref RGen gen = rndGen) {
     enforce(mode > 0, "mode must be > 0 for Rayleigh distribution.");
 
     return mode*sqrt(-2.0 * log(1.0 - uniform(0.0L, 1.0L, gen)));

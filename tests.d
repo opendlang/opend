@@ -1,5 +1,5 @@
 /**Hypothesis testing beyond simple CDFs.  All functions work with input
- * ranges with elements implicitly convertible to real unless otherwise noted.
+ * ranges with elements implicitly convertible to double unless otherwise noted.
  *
  * Author:  David Simcha*/
  /*
@@ -41,7 +41,7 @@ version(unittest) {
     void main(){}
 }
 
-private void enforceConfidence(real conf) {
+private void enforceConfidence(double conf) {
     enforce(conf >= 0 && conf <= 1,
         "Confidence intervals must be between 0 and 1.");
 }
@@ -67,11 +67,11 @@ struct TestRes {
     this(this) {}  // Workaround for bug 2943
 
     /// The test statistic.  What exactly this is is specific to the test.
-    real testStat;
+    double testStat;
 
     /**The P-value against the provided alternative.  This struct can
      * be implicitly converted to just the P-value via alias this.*/
-    real p;
+    double p;
 
     /// Allow implicit conversion to the P-value.
     alias p this;
@@ -92,10 +92,10 @@ struct ConfInt {
     TestRes testRes;
 
     ///  Lower bound of the confidence interval at the level specified.
-    real lowerBound;
+    double lowerBound;
 
     ///  Upper bound of the confidence interval at the level specified.
-    real upperBound;
+    double upperBound;
 
     alias testRes this;
 
@@ -122,7 +122,7 @@ template isSummary(T) {
  * mean(data)!= testMean.
  *
  * data may be either an iterable with elements implicitly convertible to
- * real or a summary struct (see isSummary).
+ * double or a summary struct (see isSummary).
  *
  * Examples:
  * ---
@@ -144,15 +144,15 @@ template isSummary(T) {
  * Returns:  A ConfInt containing T, the P-value and the boundaries of
  * the confidence interval for mean(T) at the level specified.
  */
-ConfInt studentsTTest(T)(T data, real testMean = 0, Alt alt = Alt.TWOSIDE,
-    real confLevel = 0.95)
-if( (isSummary!T || realIterable!T)) {
+ConfInt studentsTTest(T)(T data, double testMean = 0, Alt alt = Alt.TWOSIDE,
+    double confLevel = 0.95)
+if( (isSummary!T || doubleIterable!T)) {
     enforceConfidence(confLevel);
     enforce(isFinite(testMean), "testMean must not be infinite or nan.");
 
     static if(isSummary!T) {
         return pairedTTest(data, testMean, alt, confLevel);
-    } else static if(realIterable!T) {
+    } else static if(doubleIterable!T) {
         return pairedTTest( meanStdev(data), testMean, alt, confLevel);
     }
 }
@@ -168,14 +168,14 @@ unittest {
     auto t2 = studentsTTest([1, 2, 3, 4, 5].dup, 2, Alt.LESS);
     assert(approxEqual(t2, .8849));
     assert(approxEqual(t2.testStat, 1.4142));
-    assert(t2.lowerBound == -real.infinity);
+    assert(t2.lowerBound == -double.infinity);
     assert(approxEqual(t2.upperBound, 4.507443));
 
     auto t3 = studentsTTest( summary([1, 2, 3, 4, 5].dup), 2, Alt.GREATER);
     assert(approxEqual(t3, .1151));
     assert(approxEqual(t3.testStat, 1.4142));
     assert(approxEqual(t3.lowerBound, 1.492557));
-    assert(t3.upperBound == real.infinity);
+    assert(t3.upperBound == double.infinity);
 
     writeln("Passed 1-sample studentsTTest test.");
 }
@@ -187,14 +187,14 @@ unittest {
  * mean(sample1) - mean(sample2) != testMean.
  *
  * sample1 and sample2 may be either iterables with elements implicitly
- * convertible to real or summary structs (see isSummary).
+ * convertible to double or summary structs (see isSummary).
  *
  * Returns:  A ConfInt containing the T statistic, the P-value, and the
  * boundaries of the confidence interval for the difference between means
  * of sample1 and sample2 at the specified level.*/
-ConfInt studentsTTest(T, U)(T sample1, U sample2, real testMean = 0,
-    Alt alt = Alt.TWOSIDE, real confLevel = 0.95)
-if( (realIterable!T || isSummary!T) && (realIterable!U || isSummary!U)) {
+ConfInt studentsTTest(T, U)(T sample1, U sample2, double testMean = 0,
+    Alt alt = Alt.TWOSIDE, double confLevel = 0.95)
+if( (doubleIterable!T || isSummary!T) && (doubleIterable!U || isSummary!U)) {
     enforceConfidence(confLevel);
     enforce(isFinite(testMean), "testMean must not be infinite or nan.");
 
@@ -210,13 +210,13 @@ if( (realIterable!T || isSummary!T) && (realIterable!U || isSummary!U)) {
         auto s2summ = meanStdev(sample2);
     }
 
-    real n1 = s1summ.N,
+    double n1 = s1summ.N,
          n2 = s2summ.N;
 
-    real sx1x2 = sqrt(((n1 - 1) * s1summ.var + (n2 - 1) * s2summ.var) /
+    double sx1x2 = sqrt(((n1 - 1) * s1summ.var + (n2 - 1) * s2summ.var) /
                  (n1 + n2 - 2));
-    real normSd = (sx1x2 * sqrt((1.0L / n1) + (1.0L / n2)));
-    real meanDiff = s1summ.mean - s2summ.mean;
+    double normSd = (sx1x2 * sqrt((1.0 / n1) + (1.0 / n2)));
+    double meanDiff = s1summ.mean - s2summ.mean;
     ConfInt ret;
     ret.testStat = (meanDiff - testMean) / normSd;
     if(alt == Alt.NONE) {
@@ -224,9 +224,9 @@ if( (realIterable!T || isSummary!T) && (realIterable!U || isSummary!U)) {
     } else if(alt == Alt.LESS) {
         ret.p = studentsTCDF(ret.testStat, n1 + n2 - 2);
 
-        ret.lowerBound = -real.infinity;
+        ret.lowerBound = -double.infinity;
         if(confLevel > 0) {
-            real delta = invStudentsTCDF(1 - confLevel, n1 + n2 - 2) * normSd;
+            double delta = invStudentsTCDF(1 - confLevel, n1 + n2 - 2) * normSd;
             ret.upperBound = meanDiff - delta;
         } else {
             ret.upperBound = meanDiff;
@@ -235,22 +235,22 @@ if( (realIterable!T || isSummary!T) && (realIterable!U || isSummary!U)) {
     } else if(alt == Alt.GREATER) {
         ret.p = studentsTCDF(-ret.testStat, n1 + n2 - 2);
 
-        ret.upperBound = real.infinity;
+        ret.upperBound = double.infinity;
         if(confLevel > 0) {
-            real delta = invStudentsTCDF(1 - confLevel, n1 + n2 - 2) * normSd;
+            double delta = invStudentsTCDF(1 - confLevel, n1 + n2 - 2) * normSd;
             ret.lowerBound = meanDiff + delta;
         } else {
             ret.lowerBound = meanDiff;
         }
 
     } else {
-        real t = ret.testStat;
+        double t = ret.testStat;
         ret.p = 2 * ((t < 0) ?
                     studentsTCDF(t, n1 + n2 - 2) :
                     studentsTCDFR(t, n1 + n2 - 2));
 
         if(confLevel > 0) {
-            real delta = invStudentsTCDF(0.5 * (1 - confLevel), n1 + n2 - 2) * normSd;
+            double delta = invStudentsTCDF(0.5 * (1 - confLevel), n1 + n2 - 2) * normSd;
             ret.lowerBound = meanDiff + delta;
             ret.upperBound = meanDiff - delta;
         } else {
@@ -285,13 +285,13 @@ unittest {
     assert(approxEqual(t5, 0.965));
     assert(approxEqual(t5.testStat, 2.0567));
     assert(approxEqual(t5.upperBound, 6.80857));
-    assert(t5.lowerBound == -real.infinity);
+    assert(t5.lowerBound == -double.infinity);
 
     auto t6 = studentsTTest([1,3,5,7,9,11].dup, [2,2,1,3,4].dup, 0, Alt.GREATER);
     assert(approxEqual(t6, 0.03492));
     assert(approxEqual(t6.testStat, 2.0567));
     assert(approxEqual(t6.lowerBound, 0.391422));
-    assert(t6.upperBound == real.infinity);
+    assert(t6.upperBound == double.infinity);
     writeln("Passed 2-sample studentsTTest test.");
 }
 
@@ -301,14 +301,14 @@ unittest {
  * Alt.TWOSIDE, meaning mean(sample1) - mean(sample2) != testMean.
  *
  * sample1 and sample2 may be either iterables with elements implicitly
- * convertible to real or summary structs (see isSummary).
+ * convertible to double or summary structs (see isSummary).
  *
  * Returns:  A ConfInt containing the T statistic, the P-value, and the
  * boundaries of the confidence interval for the difference between means
  * of sample1 and sample2 at the specified level.*/
-ConfInt welchTTest(T, U)(T sample1, U sample2, real testMean = 0,
-    Alt alt = Alt.TWOSIDE, real confLevel = 0.95)
-if( (isSummary!T || realIterable!T) && (isSummary!U || realIterable!U)) {
+ConfInt welchTTest(T, U)(T sample1, U sample2, double testMean = 0,
+    Alt alt = Alt.TWOSIDE, double confLevel = 0.95)
+if( (isSummary!T || doubleIterable!T) && (isSummary!U || doubleIterable!U)) {
     enforceConfidence(confLevel);
     enforce(isFinite(testMean), "testMean cannot be infinite or nan.");
 
@@ -324,20 +324,20 @@ if( (isSummary!T || realIterable!T) && (isSummary!U || realIterable!U)) {
         auto s2summ = meanStdev(sample2);
     }
 
-    immutable real n1 = s1summ.N,
+    immutable double n1 = s1summ.N,
                    n2 = s2summ.N;
 
     immutable v1 = s1summ.var, v2 = s2summ.var;
-    immutable real sx1x2 = sqrt(v1 / n1 + v2 / n2);
-    immutable real meanDiff = s1summ.mean - s2summ.mean - testMean;
-    immutable real t = meanDiff / sx1x2;
-    real numerator = v1 / n1 + v2 / n2;
+    immutable double sx1x2 = sqrt(v1 / n1 + v2 / n2);
+    immutable double meanDiff = s1summ.mean - s2summ.mean - testMean;
+    immutable double t = meanDiff / sx1x2;
+    double numerator = v1 / n1 + v2 / n2;
     numerator *= numerator;
-    real denom1 = v1 / n1;
+    double denom1 = v1 / n1;
     denom1 = denom1 * denom1 / (n1 - 1);
-    real denom2 = v2 / n2;
+    double denom2 = v2 / n2;
     denom2 = denom2 * denom2 / (n2 - 1);
-    immutable real df = numerator / (denom1 + denom2);
+    immutable double df = numerator / (denom1 + denom2);
 
     ConfInt ret;
     ret.testStat = t;
@@ -345,7 +345,7 @@ if( (isSummary!T || realIterable!T) && (isSummary!U || realIterable!U)) {
         return ret;
     } else if(alt == Alt.LESS) {
         ret.p = studentsTCDF(t, df);
-        ret.lowerBound = -real.infinity;
+        ret.lowerBound = -double.infinity;
 
         if(confLevel > 0) {
             ret.upperBound = meanDiff +
@@ -356,7 +356,7 @@ if( (isSummary!T || realIterable!T) && (isSummary!U || realIterable!U)) {
 
     } else if(alt == Alt.GREATER) {
         ret.p = studentsTCDF(-t, df);
-        ret.upperBound = real.infinity;
+        ret.upperBound = double.infinity;
 
         if(confLevel > 0) {
             ret.lowerBound = meanDiff +
@@ -371,7 +371,7 @@ if( (isSummary!T || realIterable!T) && (isSummary!U || realIterable!U)) {
                      studentsTCDF(-t, df));
 
         if(confLevel > 0) {
-            real delta = invStudentsTCDF(0.5 * (1 - confLevel), df) * sx1x2;
+            double delta = invStudentsTCDF(0.5 * (1 - confLevel), df) * sx1x2;
             ret.upperBound = meanDiff + testMean - delta;
             ret.lowerBound = meanDiff + testMean + delta;
         } else {
@@ -393,14 +393,14 @@ unittest {
     auto t2 = welchTTest([1,2,3,4,5].dup, summary([1,3,4,5,7,9].dup), -1, Alt.LESS);
     assert(approxEqual(t2, 0.2791));
     assert(approxEqual(t2.testStat, -0.6108));
-    assert(t2.lowerBound == -real.infinity);
+    assert(t2.lowerBound == -double.infinity);
     assert(approxEqual(t2.upperBound, 0.7035534));
 
     auto t3 = welchTTest([1,2,3,4,5].dup, [1,3,4,5,7,9].dup, 0.5, Alt.GREATER);
     assert(approxEqual(t3, 0.9372));
     assert(approxEqual(t3.testStat, -1.7104));
     assert(approxEqual(t3.lowerBound, -4.37022));
-    assert(t3.upperBound == real.infinity);
+    assert(t3.upperBound == double.infinity);
 
     assert(approxEqual(welchTTest([1,3,5,7,9,11].dup, [2,2,1,3,4].dup), 0.06616));
     assert(approxEqual(welchTTest([1,3,5,7,9,11].dup, [2,2,1,3,4].dup, 0,
@@ -418,20 +418,20 @@ unittest {
  * equal to testMean.
  *
  * before and after must be input ranges with elements implicitly convertible
- * to real.
+ * to double.
  *
  * Returns:  A ConfInt containing the T statistic, the P-value, and the
  * boundaries of the confidence interval for the mean difference between
  * corresponding elements of sample1 and sample2 at the specified level.*/
-ConfInt pairedTTest(T, U)(T before, U after, real testMean = 0,
-    Alt alt = Alt.TWOSIDE, real confLevel = 0.95)
-if(realInput!(T) && realInput!(U) && isInputRange!T && isInputRange!U) {
+ConfInt pairedTTest(T, U)(T before, U after, double testMean = 0,
+    Alt alt = Alt.TWOSIDE, double confLevel = 0.95)
+if(doubleInput!(T) && doubleInput!(U) && isInputRange!T && isInputRange!U) {
     enforceConfidence(confLevel);
     enforce(isFinite(testMean), "testMean cannot be infinite or nan.");
 
     MeanSD msd;
     while(!before.empty && !after.empty) {
-        real diff = cast(real) before.front - cast(real) after.front;
+        double diff = cast(double) before.front - cast(double) after.front;
         before.popFront;
         after.popFront;
         msd.put(diff);
@@ -461,8 +461,8 @@ if(realInput!(T) && realInput!(U) && isInputRange!T && isInputRange!U) {
  * auto result = pairedTTest(summary, 5, alt, 0.99);
  * ---
  */
-ConfInt pairedTTest(T)(T diffSummary, real testMean = 0,
-    Alt alt = Alt.TWOSIDE, real confLevel = 0.95)
+ConfInt pairedTTest(T)(T diffSummary, double testMean = 0,
+    Alt alt = Alt.TWOSIDE, double confLevel = 0.95)
 if(isSummary!T) {
     enforceConfidence(confLevel);
     enforce(isFinite(testMean), "testMean cannot be infinite or nan.");
@@ -474,17 +474,17 @@ if(isSummary!T) {
     ret.testStat = (msd.mean - testMean) / msd.stdev * sqrt(msd.N);
     auto sampleMean = msd.mean;
     auto sampleSd = msd.stdev;
-    real normSd = sampleSd / sqrt(msd.N);
+    double normSd = sampleSd / sqrt(msd.N);
     ret.testStat = (sampleMean - testMean) / normSd;
 
     if(alt == Alt.NONE) {
         return ret;
     } else if(alt == Alt.LESS) {
         ret.p = studentsTCDF(ret.testStat, msd.N - 1);
-        ret.lowerBound = -real.infinity;
+        ret.lowerBound = -double.infinity;
 
         if(confLevel > 0) {
-            real delta = invStudentsTCDF(1 - confLevel, msd.N - 1) * normSd;
+            double delta = invStudentsTCDF(1 - confLevel, msd.N - 1) * normSd;
             ret.upperBound = sampleMean - delta;
         } else {
             ret.upperBound = sampleMean;
@@ -492,23 +492,23 @@ if(isSummary!T) {
 
     } else if(alt == Alt.GREATER) {
         ret.p = studentsTCDF(-ret.testStat, msd.N - 1);
-        ret.upperBound = real.infinity;
+        ret.upperBound = double.infinity;
 
         if(confLevel > 0) {
-            real delta = invStudentsTCDF(1 - confLevel, msd.N - 1) * normSd;
+            double delta = invStudentsTCDF(1 - confLevel, msd.N - 1) * normSd;
             ret.lowerBound = sampleMean + delta;
         } else {
             ret.lowerBound = sampleMean;
         }
 
     } else {
-        immutable real t = ret.testStat;
+        immutable double t = ret.testStat;
         ret.p = 2 * ((t < 0) ?
                       studentsTCDF(t, msd.N - 1) :
                       studentsTCDF(-t, msd.N - 1));
 
         if(confLevel > 0) {
-            real delta = invStudentsTCDF(0.5 * (1 - confLevel), msd.N - 1) * normSd;
+            double delta = invStudentsTCDF(0.5 * (1 - confLevel), msd.N - 1) * normSd;
             ret.lowerBound = sampleMean + delta;
             ret.upperBound = sampleMean - delta;
         } else {
@@ -678,27 +678,27 @@ private TestRes anovaLevene(bool levene, bool welch, alias central,  T...)
 
     static if(levene) {
         static if(dataIn.length == 1) {
-            auto centers = newStack!real(data.length);
+            auto centers = newStack!double(data.length);
         } else {
-            real[len] centers;
+            double[len] centers;
         }
 
         foreach(i, category; data) {
             static assert( isForwardRange!(typeof(category)) &&
-                is(Unqual!(ElementType!(typeof(category))) : real),
+                is(Unqual!(ElementType!(typeof(category))) : double),
                 "Can only perform Levene's test on input ranges of elements " ~
-                "implicitly convertible to reals.");
+                "implicitly convertible to doubles.");
 
-            // The cast is to force conversions to real on alias this'd stuff
+            // The cast is to force conversions to double on alias this'd stuff
             // like the Mean struct.
-            centers[i] = cast(real) central(category);
+            centers[i] = cast(double) central(category);
         }
 
-        real preprocess(real dataPoint, size_t category) {
+        double preprocess(double dataPoint, size_t category) {
             return abs(dataPoint - centers[category]);
         }
     } else {
-        static real preprocess(real dataPoint, size_t category) {
+        static double preprocess(double dataPoint, size_t category) {
             return dataPoint;
         }
     }
@@ -709,9 +709,9 @@ private TestRes anovaLevene(bool levene, bool welch, alias central,  T...)
 
     foreach(category, range; data) {
         static if(isInputRange!(typeof(range)) &&
-            is(Unqual!(ElementType!(typeof(range))) : real)) {
+            is(Unqual!(ElementType!(typeof(range))) : double)) {
             foreach(elem; range) {
-                real preprocessed = preprocess(elem, category);
+                double preprocessed = preprocess(elem, category);
                 withins[category].put(preprocessed);
                 N++;
             }
@@ -727,13 +727,13 @@ private TestRes anovaLevene(bool levene, bool welch, alias central,  T...)
 
     static if(!welch) {
         immutable ulong DFDataPoints = N - data.length;
-        real mu = 0;
+        double mu = 0;
         foreach(summary; withins) {
             mu += summary.mean * (summary.N / N);
         }
 
-        real totalWithin = 0;
-        real totalBetween = 0;
+        double totalWithin = 0;
+        double totalBetween = 0;
         foreach(group; withins) {
             totalWithin += group.mse * (group.N / DFDataPoints);
             immutable diffSq = (group.mean - mu) * (group.mean - mu);
@@ -743,28 +743,28 @@ private TestRes anovaLevene(bool levene, bool welch, alias central,  T...)
         immutable  F = totalBetween / totalWithin;
         return TestRes(F, fisherCDFR(F, DFGroups, DFDataPoints));
     } else {
-        immutable real k = data.length;
-        real sumW = 0;
+        immutable double k = data.length;
+        double sumW = 0;
         foreach(summary; withins) {
             sumW += summary.N / summary.var;
         }
 
-        real sumFt = 0;
+        double sumFt = 0;
         foreach(summary; withins) {
             sumFt += ((1 - summary.N / summary.var / sumW) ^^ 2) / (summary.N - 1);
         }
 
-        immutable kSqM1 = (k * k - 1.0L);
-        immutable df2 = 1.0L / (3.0L / kSqM1 * sumFt);
-        immutable denom = 1 + 2 * (k - 2.0L) / kSqM1 * sumFt;
+        immutable kSqM1 = (k * k - 1.0);
+        immutable df2 = 1.0 / (3.0 / kSqM1 * sumFt);
+        immutable denom = 1 + 2 * (k - 2.0) / kSqM1 * sumFt;
 
-        real yHat = 0;
+        double yHat = 0;
         foreach(i, summary; withins) {
             yHat += summary.mean * (summary.N / summary.var);
         }
         yHat /= sumW;
 
-        real numerator = 0;
+        double numerator = 0;
         foreach(i, summary; withins) {
             numerator += summary.N / summary.var * ((summary.mean - yHat) ^^ 2);
         }
@@ -817,7 +817,7 @@ if(allSatisfy!(isInputRange, T)) {
         MeanSD[len] withins;
     }
     MeanSD overallSumm;
-    real nGroupNeg1 = 1.0L / data.length;
+    double nGroupNeg1 = 1.0 / data.length;
 
     bool someEmpty() {
         foreach(elem; data) {
@@ -829,9 +829,9 @@ if(allSatisfy!(isInputRange, T)) {
     }
 
     uint nSubjects = 0;
-    real subjSum = 0;
+    double subjSum = 0;
     while(!someEmpty) {
-        real subjSumInner = 0;
+        double subjSumInner = 0;
         foreach(i, elem; data) {
             auto dataPoint = elem.front;
             subjSumInner += dataPoint;
@@ -842,30 +842,30 @@ if(allSatisfy!(isInputRange, T)) {
         nSubjects++;
         subjSum += subjSumInner * subjSumInner * nGroupNeg1;
     }
-    real groupSum = 0;
+    double groupSum = 0;
     foreach(elem; withins) {
         groupSum += elem.mean * elem.N;
     }
 
-    groupSum /= sqrt(cast(real) nSubjects * data.length);
+    groupSum /= sqrt(cast(double) nSubjects * data.length);
     groupSum *= groupSum;
-    real subjErr = subjSum - groupSum;
+    immutable subjErr = subjSum - groupSum;
 
-    real betweenDev = 0;
-    real mu = overallSumm.mean;
+    double betweenDev = 0;
+    immutable mu = overallSumm.mean;
     foreach(group; withins) {
-        real diff = (group.mean - mu);
+        double diff = (group.mean - mu);
         diff *= diff;
         betweenDev += diff * (group.N / (data.length - 1));
     }
 
     uint errDf = data.length * nSubjects - data.length - nSubjects + 1;
-    real randError = -subjErr / errDf;
+    double randError = -subjErr / errDf;
     foreach(group; withins) {
         randError += group.mse * (group.N / errDf);
     }
 
-    real F = betweenDev / randError;
+    immutable F = betweenDev / randError;
     return TestRes(F, fisherCDFR(F, data.length - 1, errDf));
 }
 
@@ -907,7 +907,7 @@ unittest {
  * groups are stochastically ordered.
  */
 TestRes kruskalWallis(T...)(T dataIn)
-if(realInput!(typeof(dataIn[0].front)) || allSatisfy!(realInput, T)) {
+if(doubleInput!(typeof(dataIn[0].front)) || allSatisfy!(doubleInput, T)) {
     mixin(newFrame);
     size_t N = 0;
 
@@ -960,48 +960,48 @@ if(realInput!(typeof(dataIn[0].front)) || allSatisfy!(realInput, T)) {
     rankSort(dataArray, ranks);
 
     size_t index = 0;
-    real denom = 0, numer = 0;
-    real rBar = 0.5L * (N + 1);
+    double denom = 0, numer = 0;
+    double rBar = 0.5 * (N + 1);
     foreach(meanI, l; lengths) {
         Mean groupStats;
         foreach(i; index..index + l) {
             groupStats.put( ranks[i]);
-            real diff = ranks[i] - rBar;
+            double diff = ranks[i] - rBar;
             diff *= diff;
             denom += diff;
         }
         index += l;
-        real nDiff = groupStats.mean - rBar;
+        double nDiff = groupStats.mean - rBar;
         nDiff *= nDiff;
         numer += l * nDiff;
     }
-    real K = (N - 1) * (numer / denom);
+    double K = (N - 1) * (numer / denom);
 
     // Tie correction.
-    real tieSum = 0;
+    double tieSum = 0;
     uint nTies = 1;
     foreach(i; 1..dataArray.length) {
         if(dataArray[i] == dataArray[i - 1]) {
             nTies++;
         } else if(nTies > 1) {
-            real partialSum = nTies;
+            double partialSum = nTies;
             partialSum = (partialSum * partialSum * partialSum) - partialSum;
             tieSum += partialSum;
             nTies = 1;
         }
     }
     if(nTies > 1) {
-        real partialSum = nTies;
+        double partialSum = nTies;
         partialSum = (partialSum * partialSum * partialSum) - partialSum;
         tieSum += partialSum;
     }
-    real tieDenom = N;
+    double tieDenom = N;
     tieDenom = (tieDenom * tieDenom * tieDenom) - tieDenom;
     tieSum = 1 - (tieSum / tieDenom);
     K *= tieSum;
 
     if(isNaN(K)) {
-        return TestRes(real.nan, real.nan);
+        return TestRes(double.nan, double.nan);
     }
 
     return TestRes(K, chiSquareCDFR(K, data.length - 1));
@@ -1041,22 +1041,22 @@ unittest {
  * Bugs:  No exact P-value calculation.  Asymptotic approx. only.
  */
 TestRes friedmanTest(T...)(T dataIn)
-if(realInput!(typeof(dataIn[0].front)) || allSatisfy!(realInput, T)) {
+if(doubleInput!(typeof(dataIn[0].front)) || allSatisfy!(doubleInput, T)) {
     static if(dataIn.length == 1 && isInputRange!(typeof(dataIn[0].front))) {
         mixin(newFrame);
         auto data = tempdup(dataIn[0]);
         auto ranks = newStack!double(data.length);
-        auto dataPoints = newStack!real(data.length);
+        auto dataPoints = newStack!double(data.length);
         auto colMeans = newStack!Mean(data.length);
         colMeans[] = Mean.init;
     } else {
         enum len = dataIn.length;
         alias dataIn data;
         double[len] ranks;
-        real[len] dataPoints;
+        double[len] dataPoints;
         Mean[len] colMeans;
     }
-    real rBar = cast(real) data.length * (data.length + 1.0L) / 2.0L;
+    double rBar = cast(double) data.length * (data.length + 1.0) / 2.0;
     MeanSD overallSumm;
 
     bool someEmpty() {
@@ -1082,16 +1082,16 @@ if(realInput!(typeof(dataIn[0].front)) || allSatisfy!(realInput, T)) {
         N++;
     }
 
-    real between = 0;
-    real mu = overallSumm.mean;
+    double between = 0;
+    double mu = overallSumm.mean;
     foreach(mean; colMeans) {
-        real diff = mean.mean - overallSumm.mean;
+        double diff = mean.mean - overallSumm.mean;
         between += diff * diff;
     }
     between *= N;
-    real within = overallSumm.mse * (overallSumm.N / (overallSumm.N - N));
-    real chiSq = between / within;
-    real df = data.length - 1;
+    double within = overallSumm.mse * (overallSumm.N / (overallSumm.N - N));
+    double chiSq = between / within;
+    double df = data.length - 1;
     return TestRes(chiSq, chiSquareCDFR(chiSq, df));
 }
 
@@ -1170,16 +1170,16 @@ is(CommonType!(ElementType!T, ElementType!U))) {
 
     double[] ranks = newStack!(double)(N);
     rankSort(combined, ranks);
-    real w = reduce!("a + b")(0.0L, ranks[0..n1]) - cast(ulong) n1 * (n1 + 1) / 2UL;
+    double w = reduce!("a + b")(0.0, ranks[0..n1]) - cast(ulong) n1 * (n1 + 1) / 2UL;
 
     if(alt == Alt.NONE) {
         return TestRes(w);
     }
 
-    real tieSum = 0;
+    double tieSum = 0;
     // combined is sorted by rankSort.  Can use it to figure out how many
     // ties we have w/o another allocation or sorting.
-    enum oneOverTwelve = 1.0L / 12.0L;
+    enum oneOverTwelve = 1.0 / 12.0;
     tieSum = 0;
     ulong nties = 1;
     foreach(i; 1..N) {
@@ -1266,21 +1266,21 @@ is(CommonType!(ElementType!T, ElementType!U))) {
 }
 
 private
-real wilcoxonRankSumPval(real w, ulong n1, ulong n2, Alt alt = Alt.TWOSIDE,
-                           real tieSum = 0,  uint exactThresh = 50) {
+double wilcoxonRankSumPval(double w, ulong n1, ulong n2, Alt alt = Alt.TWOSIDE,
+                           double tieSum = 0,  uint exactThresh = 50) {
     if(alt == Alt.NONE) {
-        return real.nan;
+        return double.nan;
     }
 
-    immutable real N = n1 + n2;
+    immutable double N = n1 + n2;
 
     if(N < exactThresh && tieSum == 0) {
         return wilcoxRSPExact(roundTo!uint(w), cast(uint) n1, cast(uint) n2, alt);
     }
 
-    immutable real sd = sqrt(cast(real) (n1 * n2) / (N * (N - 1)) *
+    immutable sd = sqrt(cast(double) (n1 * n2) / (N * (N - 1)) *
              ((N * N * N - N) / 12 - tieSum));
-    immutable real mean = (n1 * n2) / 2.0L;
+    immutable mean = (n1 * n2) / 2.0;
 
     if(alt == Alt.TWOSIDE) {
         if(abs(w - mean) < 0.5) {
@@ -1313,16 +1313,16 @@ unittest {
 
     // Monte carlo unit testing:  Make sure that the exact and asymptotic
     // versions agree within a small epsilon;
-    real maxEpsilon = 0;
+    double maxEpsilon = 0;
     foreach(i; 0..1_000) {
         uint n1 = uniform(5U, 25U);
         uint n2 = uniform(5U, 25U);
         uint testStat = uniform!"[]"(0, (n1 * n2));
 
         foreach(alt; [Alt.LESS, Alt.GREATER, Alt.TWOSIDE]) {
-            real approxP = wilcoxonRankSumPval(testStat, n1, n2, alt, 0, 0);
-            real exactP = wilcoxonRankSumPval(testStat, n1, n2, alt, 0, 50);
-            real epsilon = abs(approxP - exactP);
+            double approxP = wilcoxonRankSumPval(testStat, n1, n2, alt, 0, 0);
+            double exactP = wilcoxonRankSumPval(testStat, n1, n2, alt, 0, 50);
+            double epsilon = abs(approxP - exactP);
             assert(epsilon < 0.02);
             maxEpsilon = max(maxEpsilon, epsilon);
         }
@@ -1334,7 +1334,7 @@ unittest {
 /* Used internally by wilcoxonRankSum.  This function uses dynamic
  * programming to count the number of combinations of numbers [1..N] that sum
  * of length n1 that sum to <= W in O(N * W * n1) time.*/
-private real wilcoxRSPExact(uint W, uint n1, uint n2, Alt alt = Alt.TWOSIDE) {
+private double wilcoxRSPExact(uint W, uint n1, uint n2, Alt alt = Alt.TWOSIDE) {
     uint N = n1 + n2;
     immutable maxPossible = n1 * n2;
 
@@ -1379,7 +1379,7 @@ private real wilcoxRSPExact(uint W, uint n1, uint n2, Alt alt = Alt.TWOSIDE) {
     cache[0..(n1 + 1) * (W + 1)] = 0;
     cachePrev[0..(n1 + 1) * (W + 1)] = 0;
 
-    /* Using reals for the intermediate steps is too slow, but I didn't want to
+    /* Using doubles for the intermediate steps is too slow, but I didn't want to
      * lose too much precision.  Since my sums must be between 0 and 1, I am
      * using the entire bit space of a float to hold numbers between zero and
      * one.  This is precise to at least 1e-7.  This is good enough for a few
@@ -1397,8 +1397,8 @@ private real wilcoxRSPExact(uint W, uint n1, uint n2, Alt alt = Alt.TWOSIDE) {
 
 
     // Algorithm based on StackOverflow question 376003.
-    real comb = exp(-logNcomb(N, n1));
-    real floatMax = cast(real) float.max;
+    double comb = exp(-logNcomb(N, n1));
+    double floatMax = cast(double) float.max;
     cache[0] = cast(float) (comb * floatMax);
     cachePrev[0] = cast(float) (comb * floatMax);
 
@@ -1417,10 +1417,10 @@ private real wilcoxRSPExact(uint W, uint n1, uint n2, Alt alt = Alt.TWOSIDE) {
         }
     }
 
-    real sum = 0;
+    double sum = 0;
     float* lastLine = cache + n1 * (W + 1);
     foreach(w; 1..W + 1) {
-        sum += (cast(real) lastLine[w] / floatMax);
+        sum += (cast(double) lastLine[w] / floatMax);
     }
     TempAlloc.free;
     TempAlloc.free;
@@ -1465,10 +1465,10 @@ unittest {
  * Returns:  A TestRes of the W statistic and the p-value against the given
  * alternative.*/
 TestRes wilcoxonSignedRank(T, U)(T before, U after, Alt alt = Alt.TWOSIDE, uint exactThresh = 50)
-if(realInput!(T) && realInput!(U) &&
-is(typeof(before.front - after.front) : real)) {
+if(doubleInput!(T) && doubleInput!(U) &&
+is(typeof(before.front - after.front) : double)) {
     uint nZero = 0;
-    byte sign(real input) {
+    byte sign(double input) {
         if(input < 0)
             return -1;
         if(input > 0)
@@ -1485,11 +1485,11 @@ is(typeof(before.front - after.front) : real)) {
 
         double[] diffRanks = newStack!(double)(before.length);
         byte[] signs = newStack!(byte)(before.length);
-        real[] diffs = newStack!(real)(before.length);
+        double[] diffs = newStack!(double)(before.length);
 
         size_t ii = 0;
         while(!before.empty && !after.empty) {
-            real diff = cast(real) before.front - cast(real) after.front;
+            double diff = cast(double) before.front - cast(double) after.front;
             signs[ii] = sign(diff);
             diffs[ii] = abs(diff);
             ii++;
@@ -1499,12 +1499,12 @@ is(typeof(before.front - after.front) : real)) {
     } else {
         double[] diffRanks;
         byte[] signs;
-        real[] diffs;
+        double[] diffs;
         auto diffApp = appender(&diffs);
         auto signApp = appender(&signs);
 
         while(!before.empty && !after.empty) {
-            real diff = cast(real) before.front - cast(real) after.front;
+            double diff = cast(double) before.front - cast(double) after.front;
             signApp.put(sign(diff));
             diffApp.put(abs(diff));
             before.popFront;
@@ -1516,7 +1516,7 @@ is(typeof(before.front - after.front) : real)) {
     rankSort(diffs, diffRanks);
     ulong N = diffs.length - nZero;
 
-    real W = 0;
+    double W = 0;
     foreach(i, dr; diffRanks) {
         if(signs[i] == 1) {
             W += dr - nZero;
@@ -1532,11 +1532,11 @@ is(typeof(before.front - after.front) : real)) {
     }
 
     // Handle ties.
-    real tieSum = 0;
+    double tieSum = 0;
 
     // combined is sorted by rankSort.  Can use it to figure out how many
     // ties we have w/o another allocation or sorting.
-    enum denom = 1.0L / 48.0L;
+    enum denom = 1.0 / 48.0;
     ulong nties = 1;
     foreach(i; 1..diffs.length) {
         if(diffs[i] == diffs[i - 1] && diffs[i] != 0) {
@@ -1553,7 +1553,7 @@ is(typeof(before.front - after.front) : real)) {
         tieSum += ((nties * nties * nties) - nties) * denom;
     }
     if(nZero > 0 && tieSum == 0) {
-        tieSum = real.nan;  // Signal that there were zeros and exact p-val can't be computed.
+        tieSum = double.nan;  // Signal that there were zeros and exact p-val can't be computed.
     }
 
     return TestRes(W, wilcoxonSignedRankPval(W, N, alt, tieSum, exactThresh));
@@ -1589,15 +1589,15 @@ unittest {
 
     // Monte carlo unit testing.  Make sure exact, approx are really,
     // really close to each other.
-    real maxEpsilon = 0;
+    double maxEpsilon = 0;
     foreach(i; 0..1_000) {
         uint N = uniform(10U, 50U);
         uint testStat = uniform!"[]"(0, N * (N + 1) / 2);
 
         foreach(alt; [Alt.LESS, Alt.GREATER, Alt.TWOSIDE]) {
-            real approxP = wilcoxonSignedRankPval(testStat, N, alt, 0, 0);
-            real exactP = wilcoxonSignedRankPval(testStat, N, alt, 0, 50);
-            real epsilon = abs(approxP - exactP);
+            double approxP = wilcoxonSignedRankPval(testStat, N, alt, 0, 0);
+            double exactP = wilcoxonSignedRankPval(testStat, N, alt, 0, 50);
+            double epsilon = abs(approxP - exactP);
             assert(epsilon < 0.02);
             maxEpsilon = max(maxEpsilon, epsilon);
         }
@@ -1609,8 +1609,8 @@ unittest {
 /**Same as the overload, but allows testing whether a range is stochastically
  * less than or greater than a fixed value mu rather than paired elements of
  * a second range.*/
-TestRes wilcoxonSignedRank(T)(T data, real mu, Alt alt = Alt.TWOSIDE, uint exactThresh = 50)
-if(realInput!(T) && is(typeof(data.front - mu) : real)) {
+TestRes wilcoxonSignedRank(T)(T data, double mu, Alt alt = Alt.TWOSIDE, uint exactThresh = 50)
+if(doubleInput!(T) && is(typeof(data.front - mu) : double)) {
     return wilcoxonSignedRank(data, take(data.length, repeat(mu)), alt, exactThresh);
 }
 
@@ -1621,14 +1621,14 @@ unittest {
     writeln("Passed wilcoxonSignedRank unittest.");
 }
 
-private real wilcoxonSignedRankPval(real W, ulong N, Alt alt = Alt.TWOSIDE,
-     real tieSum = 0, uint exactThresh = 50)
+private double wilcoxonSignedRankPval(double W, ulong N, Alt alt = Alt.TWOSIDE,
+     double tieSum = 0, uint exactThresh = 50)
 in {
     assert(N > 0);
     assert(tieSum >= 0 || isNaN(tieSum));
 } body {
     if(alt == Alt.NONE) {
-        return real.nan;
+        return double.nan;
     }
 
     if(tieSum == 0 && !isNaN(tieSum) && N <= exactThresh) {
@@ -1639,8 +1639,8 @@ in {
         tieSum = 0;
     }
 
-    immutable real expected = N * (N + 1) * 0.25L;
-    immutable real sd = sqrt(N * (N + 1) * (2 * N + 1) / 24.0L - tieSum);
+    immutable expected = N * (N + 1) * 0.25;
+    immutable sd = sqrt(N * (N + 1) * (2 * N + 1) / 24.0 - tieSum);
 
     if(alt == Alt.LESS) {
         return normalCDF(W + 0.5, expected, sd);
@@ -1664,7 +1664,7 @@ in {
  * but this function and wilcoxRSPExact are just different enough that
  * it would be more trouble than it's worth to write one generalized
  * function.*/
-private real wilcoxSRPExact(uint W, uint N, Alt alt = Alt.TWOSIDE) {
+private double wilcoxSRPExact(uint W, uint N, Alt alt = Alt.TWOSIDE) {
     immutable maxPossible = N * (N + 1) / 2;
 
     switch(alt) {
@@ -1703,8 +1703,8 @@ private real wilcoxSRPExact(uint W, uint N, Alt alt = Alt.TWOSIDE) {
     cache[0..(N + 1) * (W + 1)] = 0;
     cachePrev[0..(N + 1) * (W + 1)] = 0;
 
-    real comb = pow(2.0L, -(cast(real) N));
-    real floatMax = cast(real) float.max;
+    double comb = pow(2.0, -(cast(double) N));
+    double floatMax = cast(double) float.max;
     cache[0] = cast(float) (comb * floatMax);
     cachePrev[0] = cast(float) (comb * floatMax);
 
@@ -1723,9 +1723,9 @@ private real wilcoxSRPExact(uint W, uint N, Alt alt = Alt.TWOSIDE) {
         }
     }
 
-    real sum  = 0;
+    double sum  = 0;
     foreach(elem; cache[0..(N + 1) * (W + 1)]) {
-        sum += cast(real) elem / (cast(real) float.max);
+        sum += cast(double) elem / (cast(double) float.max);
     }
     TempAlloc.free;
     TempAlloc.free;
@@ -1754,7 +1754,7 @@ unittest {
  * greater than the corresponding element of after, and the P-value against
  * the given alternative.*/
 TestRes signTest(T, U)(T before, U after, Alt alt = Alt.TWOSIDE)
-if(realInput!(T) && realInput!(U) &&
+if(doubleInput!(T) && doubleInput!(U) &&
 is(typeof(before.front < after.front) == bool)) {
     ulong greater, less;
     while(!before.empty && !after.empty) {
@@ -1769,7 +1769,7 @@ is(typeof(before.front < after.front) == bool)) {
         after.popFront;
     }
 
-    real propGreater = to!real(greater) / (greater + less);
+    double propGreater = to!double(greater) / (greater + less);
 
     final switch(alt) {
         case Alt.NONE:
@@ -1809,8 +1809,8 @@ unittest {
 
 /**Similar to the overload, but allows testing for a difference between a
  * range and a fixed value mu.*/
-TestRes signTest(T)(T data, real mu, Alt alt = Alt.TWOSIDE)
-if(realInput!(T) && is(typeof(data.front < mu) == bool)) {
+TestRes signTest(T)(T data, double mu, Alt alt = Alt.TWOSIDE)
+if(doubleInput!(T) && is(typeof(data.front < mu) == bool)) {
     return signTest(data, repeat(mu), alt);
 }
 
@@ -1825,23 +1825,23 @@ if(realInput!(T) && is(typeof(data.front < mu) == bool)) {
  * Notes:  This test can also be performed using multinomialTest(), but this
  * implementation is much faster and easier to use.
  */
-real binomialTest(ulong k, ulong n, real p) {
+double binomialTest(ulong k, ulong n, double p) {
     enforce(k <= n, "k must be <= n for binomial test.");
     enforce(p >= 0 && p <= 1, "p must be between 0, 1 for binomial test.");
 
-    enum EPSILON = 1e-10;  // Small but arbitrary constant to deal w/ rounding error.
+    enum epsilon = 1 - 1e-6;  // Small but arbitrary constant to deal w/ rounding error.
 
     immutable mode = cast(long) ((n + 1) * p);
     if(k == mode ||
-       approxEqual(binomialPMF(k, n, p), binomialPMF(mode, n, p), EPSILON)) {
+       approxEqual(binomialPMF(k, n, p), binomialPMF(mode, n, p), 1 - epsilon)) {
         return 1;
     } else if(k > mode) {
-        immutable upperPart = binomialCDFR(k, n, p);
+        immutable double upperPart = binomialCDFR(k, n, p);
         immutable pExact = binomialPMF(k, n, p);
         ulong ulim = mode, llim = 0, guess;
         while(ulim - llim > 1) {
             guess = (ulim + llim) / 2;
-            real pGuess = binomialPMF(guess, n, p);
+            immutable double pGuess = binomialPMF(guess, n, p);
 
             if(pGuess == pExact) {
                 ulim = guess + 1;
@@ -1855,18 +1855,18 @@ real binomialTest(ulong k, ulong n, real p) {
         }
 
         guess = ulim;
-        while(binomialPMF(guess, n, p) < pExact) {
+        while(binomialPMF(guess, n, p) < pExact * epsilon) {
             guess++;
         }
-        while(guess > 0 && binomialPMF(guess, n, p) > pExact + EPSILON) {
+        while(guess > 0 && binomialPMF(guess, n, p) > pExact / epsilon) {
             guess--;
         }
-        if(guess == 0 && binomialPMF(0, n, p) > pExact) {
+        if(guess == 0 && binomialPMF(0, n, p) > pExact / epsilon) {
             return upperPart;
         }
         return upperPart + binomialCDF(guess, n, p);
     } else {
-        static real myPMF(ulong k, ulong n, real p) {
+        static double myPMF(ulong k, ulong n, double p) {
             return k > n ? 0 : binomialPMF(k, n, p);
         }
 
@@ -1875,7 +1875,7 @@ real binomialTest(ulong k, ulong n, real p) {
         ulong ulim = n + 1, llim = mode, guess;
         while(ulim - llim > 1) {
             guess = (ulim + llim) / 2;
-            real pGuess = myPMF(guess, n, p);
+            immutable double pGuess = myPMF(guess, n, p);
             if(pGuess == pExact) {
                 ulim = guess;
                 llim = guess;
@@ -1889,10 +1889,10 @@ real binomialTest(ulong k, ulong n, real p) {
 
         // All this stuff is necessary to deal with round-off error properly.
         guess = llim;
-        while(myPMF(guess, n, p) < pExact && guess > 0) {
+        while(myPMF(guess, n, p) < pExact * epsilon && guess > 0) {
             guess--;
         }
-        while(myPMF(guess, n, p) > pExact + EPSILON) {
+        while(myPMF(guess, n, p) > pExact / epsilon) {
             guess++;
         }
 
@@ -1962,14 +1962,14 @@ enum Expected {
  * // statistically from a discrete uniform distribution.
  *
  * uint[] observed = [980, 1028, 1001, 964, 1102];
- * auto expected = repeat(1.0L);
+ * auto expected = repeat(1.0);
  * auto res2 = chiSquareFit(observed, expected);
  * assert(approxEqual(res2, 0.0207));
  * assert(approxEqual(res2.testStat, 11.59));
  * ---
  */
 TestRes chiSquareFit(T, U)(T observed, U expected, Expected countProp = Expected.PROPORTION)
-if(realInput!(T) && realInput!(U)) {
+if(doubleInput!(T) && doubleInput!(U)) {
     return goodnessFit!(pearsonChiSqElem, T, U)(observed, expected, countProp);
 }
 
@@ -1977,7 +1977,7 @@ unittest {
     // Test to see whether a set of categorical observations differs
     // statistically from a discrete uniform distribution.
     uint[] observed = [980, 1028, 1001, 964, 1102];
-    auto expected = repeat(cast(real) sum(observed) / observed.length);
+    auto expected = repeat(cast(double) sum(observed) / observed.length);
     auto res = chiSquareFit(observed, expected, Expected.COUNT);
     assert(approxEqual(res, 0.0207));
     assert(approxEqual(res.testStat, 11.59));
@@ -2001,7 +2001,7 @@ alias chiSquareFit chiSqrFit;
  * identical to chiSquareFit.
  */
 TestRes gTestFit(T, U)(T observed, U expected, Expected countProp = Expected.PROPORTION)
-if(realInput!(T) && realInput!(U)) {
+if(doubleInput!(T) && doubleInput!(U)) {
     return goodnessFit!(gTestElem, T, U)(observed, expected, countProp);
 }
 // No unittest because I can't find anything to test this against.  However,
@@ -2010,19 +2010,19 @@ if(realInput!(T) && realInput!(U)) {
 // the same results as chiSquareFit.
 
 private TestRes goodnessFit(alias elemFun, T, U)(T observed, U expected, Expected countProp)
-if(realInput!(T) && realInput!(U)) {
+if(doubleInput!(T) && doubleInput!(U)) {
     if(countProp == Expected.PROPORTION) {
         enforce(isForwardRange!(U),
             "Can't use expected proportions instead of counts with input ranges.");
     }
 
     uint len = 0;
-    real chiSq = 0;
-    real multiplier = 1;
+    double chiSq = 0;
+    double multiplier = 1;
 
     // Normalize proportions to add up to the sum of the data.
     if(countProp == Expected.PROPORTION) {
-        real expectSum = 0;
+        double expectSum = 0;
         multiplier = 0;
         auto obsCopy = observed;
         auto expCopy = expected;
@@ -2040,7 +2040,7 @@ if(realInput!(T) && realInput!(U)) {
             observed.popFront();
             expected.popFront();
         }
-        real e = expected.front * multiplier;
+        double e = expected.front * multiplier;
 
         // If e is zero, then we should just treat the cell as if it didn't
         // exist.
@@ -2055,7 +2055,7 @@ if(realInput!(T) && realInput!(U)) {
     }
 
     if(isNaN(chiSq)) {
-        return TestRes(real.nan, real.nan);
+        return TestRes(double.nan, double.nan);
     }
 
     return TestRes(chiSq, chiSquareCDFR(chiSq, len - 1));
@@ -2074,7 +2074,7 @@ if(realInput!(T) && realInput!(U)) {
  * ratio chi-square (gTestFit()) are good enough approximations unless sample
  * size is very small.
  */
-real multinomialTest(U, F)(U countsIn, F proportions)
+double multinomialTest(U, F)(U countsIn, F proportions)
 if(isInputRange!U && isInputRange!F &&
    isIntegral!(ElementType!U) && isFloatingPoint!(ElementType!(F))) {
     mixin(newFrame);
@@ -2087,9 +2087,9 @@ if(isInputRange!U && isInputRange!F &&
 
     uint N = sum(counts);
 
-    real[] logPs;
+    double[] logPs;
     static if(std.range.hasLength!F) {
-        logPs = newStack!real(proportions.length);
+        logPs = newStack!double(proportions.length);
         size_t pIndex;
         foreach(p; proportions) {
             logPs[pIndex++] = p;
@@ -2101,24 +2101,24 @@ if(isInputRange!U && isInputRange!F &&
         }
     }
 
-    logPs[] /= reduce!"a + b"(0.0L, logPs);
+    logPs[] /= reduce!"a + b"(0.0, logPs);
     foreach(ref elem; logPs) {
         elem = log(elem);
     }
 
 
-    real[] logs = newStack!real(N + 1);
+    double[] logs = newStack!double(N + 1);
     logs[0] = 0;
     foreach(i; 1..logs.length) {
         logs[i] = log(i);
     }
 
-    real nFact = logFactorial(N);
-    real pVal = 0;
+    double nFact = logFactorial(N);
+    double pVal = 0;
     uint nLeft = N;
-    real pSoFar = nFact;
+    double pSoFar = nFact;
 
-    real pActual = nFact;
+    double pActual = nFact;
     foreach(i, count; counts) {
         pActual += logPs[i] * count - logFactorial(count);
     }
@@ -2138,7 +2138,7 @@ if(isInputRange!U && isInputRange!F &&
 
         uint nLeftOld = nLeft;
         immutable pOld = pSoFar;
-        real pAdd = 0;
+        double pAdd = 0;
 
         foreach(i; 0..nLeft + 1) {
             if(i > 0) {
@@ -2161,11 +2161,11 @@ unittest {
     // of freedom.
     for(uint n = 4; n <= 100; n += 4) {
         foreach(k; 0..n + 1) {
-            for(real p = 0.05; p <= 0.95; p += 0.05) {
-                real bino = binomialTest(k, n, p);
-                real[] ps = [p, 1 - p];
+            for(double p = 0.05; p <= 0.95; p += 0.05) {
+                double bino = binomialTest(k, n, p);
+                double[] ps = [p, 1 - p];
                 uint[] counts = [k, n - k];
-                real multino = multinomialTest(counts, ps);
+                double multino = multinomialTest(counts, ps);
                 //writeln(k, "\t", n, "\t", p, "\t", bino, "\t", multino);
                 assert(approxEqual(bino, multino),
                     text(bino, '\t', multino, '\t', k, '\t', n, '\t', p));
@@ -2290,14 +2290,14 @@ private TestRes testContingency(alias elemFun, T...)(T rangesIn) {
             " on a tuple of ranges or a range of ranges.");
     }
 
-    real[] colSums = newStack!(real)(ranges.length);
+    double[] colSums = newStack!(double)(ranges.length);
     colSums[] = 0;
     size_t nCols = 0;
     size_t nRows = ranges.length;
     foreach(ri, range; ranges) {
         size_t curLen = 0;
         foreach(elem; range) {
-            colSums[ri] += cast(real) elem;
+            colSums[ri] += cast(double) elem;
             curLen++;
         }
         if(ri == 0) {
@@ -2322,38 +2322,38 @@ private TestRes testContingency(alias elemFun, T...)(T rangesIn) {
         }
     }
 
-    real sumRow() {
-        real rowSum = 0;
+    double sumRow() {
+        double rowSum = 0;
         foreach(range; ranges) {
-            rowSum += cast(real) range.front;
+            rowSum += cast(double) range.front;
         }
         return rowSum;
     }
 
-    real chiSq = 0;
-    real NNeg1 = 1.0L / sum(colSums);
+    double chiSq = 0;
+    double NNeg1 = 1.0 / sum(colSums);
     while(noneEmpty) {
         auto rowSum = sumRow();
         foreach(ri, range; ranges) {
-            real expected = NNeg1 * rowSum * colSums[ri];
+            double expected = NNeg1 * rowSum * colSums[ri];
             chiSq += elemFun(range.front, expected);
         }
         popAll();
     }
 
     if(isNaN(chiSq)) {
-        return TestRes(real.nan, real.nan);
+        return TestRes(double.nan, double.nan);
     }
 
     return TestRes(chiSq, chiSquareCDFR(chiSq, (nRows - 1) * (nCols - 1)));
 }
 
-private real pearsonChiSqElem(real observed, real expected) {
-    real diff = observed - expected;
+private double pearsonChiSqElem(double observed, double expected) {
+    double diff = observed - expected;
     return diff * diff / expected;
 }
 
-private real gTestElem(real observed, real expected) {
+private double gTestElem(double observed, double expected) {
     return observed * log(observed / expected) * 2;
 }
 
@@ -2379,7 +2379,7 @@ private real gTestElem(real observed, real expected) {
  *
  * Examples:
  * ---
- * real res = fisherExact([[2u, 7], [8, 2]], Alt.LESS);
+ * double res = fisherExact([[2u, 7], [8, 2]], Alt.LESS);
  * assert(approxEqual(res.p, 0.01852));  // Odds ratio is very small in this case.
  * assert(approxEqual(res.testStat, 4.0 / 56.0));
  * ---
@@ -2393,13 +2393,13 @@ if(isIntegral!(T)) {
         }
     }
 
-    static real fisherLower(const T[2][2] contingencyTable) {
+    static double fisherLower(const T[2][2] contingencyTable) {
         alias contingencyTable c;
         return hypergeometricCDF(c[0][0], c[0][0] + c[0][1], c[1][0] + c[1][1],
                                  c[0][0] + c[1][0]);
     }
 
-    static real fisherUpper(const T[2][2] contingencyTable) {
+    static double fisherUpper(const T[2][2] contingencyTable) {
         alias contingencyTable c;
         return hypergeometricCDFR(c[0][0], c[0][0] + c[0][1], c[1][0] + c[1][1],
                                  c[0][0] + c[1][0]);
@@ -2407,7 +2407,7 @@ if(isIntegral!(T)) {
 
 
     alias contingencyTable c;
-    real oddsRatio = cast(real) c[0][0] * c[1][1] / c[0][1] / c[1][0];
+    immutable oddsRatio = cast(double) c[0][0] * c[1][1] / c[0][1] / c[1][0];
     if(alt == Alt.NONE) {
         return TestRes(oddsRatio);
     } else if(alt == Alt.LESS) {
@@ -2422,17 +2422,17 @@ if(isIntegral!(T)) {
                    n  = c[0][0] + c[1][0];
 
     immutable uint mode =
-        cast(uint) ((cast(real) (n + 1) * (n1 + 1)) / (n1 + n2 + 2));
-    immutable real pExact = hypergeometricPMF(c[0][0], n1, n2, n);
-    immutable real pMode = hypergeometricPMF(mode, n1, n2, n);
+        cast(uint) ((cast(double) (n + 1) * (n1 + 1)) / (n1 + n2 + 2));
+    immutable double pExact = hypergeometricPMF(c[0][0], n1, n2, n);
+    immutable double pMode = hypergeometricPMF(mode, n1, n2, n);
 
-    if(approxEqual(pExact, pMode, 1e-7)) {
+    enum epsilon = 1 - 1e-6;
+    if(approxEqual(pExact, pMode, 1 - epsilon)) {
         return TestRes(oddsRatio, 1);
     } else if(c[0][0] < mode) {
-        immutable real pLower = hypergeometricCDF(c[0][0], n1, n2, n);
+        immutable double pLower = hypergeometricCDF(c[0][0], n1, n2, n);
 
-        // Special case to prevent binary search from getting stuck.
-        if(hypergeometricPMF(n, n1, n2, n) > pExact) {
+        if(hypergeometricPMF(n, n1, n2, n) > pExact / epsilon) {
             return TestRes(oddsRatio, pLower);
         }
 
@@ -2443,7 +2443,7 @@ if(isIntegral!(T)) {
                     (max == min + 1 && guess == min) ? max :
                     (cast(ulong) max + cast(ulong) min) / 2UL);
 
-            immutable real pGuess = hypergeometricPMF(guess, n1, n2, n);
+            immutable double pGuess = hypergeometricPMF(guess, n1, n2, n);
             if(pGuess <= pExact &&
                 hypergeometricPMF(guess - 1, n1, n2, n) > pExact) {
                 break;
@@ -2451,17 +2451,27 @@ if(isIntegral!(T)) {
                 max = guess;
             } else min = guess;
         }
-        if(guess == uint.max && min == max)
-            guess = min;
 
-        auto p = std.algorithm.min(pLower +
-               hypergeometricCDFR(guess, n1, n2, n), 1.0L);
+        if(guess == uint.max && min == max) {
+            guess = min;
+        }
+
+        while(guess < std.algorithm.min(n1, n) &&
+            hypergeometricPMF(guess, n1, n2, n) < pExact * epsilon) {
+            guess--;
+        }
+
+        while(guess > 0 && hypergeometricPMF(guess, n1, n2, n) > pExact / epsilon) {
+            guess++;
+        }
+
+        double p = std.algorithm.min(pLower +
+               hypergeometricCDFR(guess, n1, n2, n), 1.0);
         return TestRes(oddsRatio, p);
     } else {
-        immutable real pUpper = hypergeometricCDFR(c[0][0], n1, n2, n);
+        immutable double pUpper = hypergeometricCDFR(c[0][0], n1, n2, n);
 
-        // Special case to prevent binary search from getting stuck.
-        if(hypergeometricPMF(0, n1, n2, n) > pExact) {
+        if(hypergeometricPMF(0, n1, n2, n) > pExact / epsilon) {
             return TestRes(oddsRatio, pUpper);
         }
 
@@ -2471,7 +2481,7 @@ if(isIntegral!(T)) {
             guess = cast(uint) (
                     (max == min + 1 && guess == min) ? max :
                     (cast(ulong) max + cast(ulong) min) / 2UL);
-            real pGuess = hypergeometricPMF(guess, n1, n2, n);
+            immutable double pGuess = hypergeometricPMF(guess, n1, n2, n);
 
             if(pGuess <= pExact &&
                 hypergeometricPMF(guess + 1, n1, n2, n) > pExact) {
@@ -2481,11 +2491,21 @@ if(isIntegral!(T)) {
             } else max = guess;
         }
 
-        if(guess == uint.max && min == max)
+        if(guess == uint.max && min == max) {
             guess = min;
+        }
 
-        auto p = std.algorithm.min(pUpper +
-               hypergeometricCDF(guess, n1, n2, n), 1.0L);
+        while(guess > 0 && hypergeometricPMF(guess, n1, n2, n) < pExact * epsilon) {
+            guess++;
+        }
+
+        while(guess < std.algorithm.min(n, n1) &&
+            hypergeometricPMF(guess, n1, n2, n) > pExact / epsilon) {
+            guess--;
+        }
+
+        double p = std.algorithm.min(pUpper +
+               hypergeometricCDF(guess, n1, n2, n), 1.0);
         return TestRes(oddsRatio, p);
     }
 }
@@ -2509,20 +2529,20 @@ if(isIntegral!(T)) {
 
 unittest {
     // Simple, naive impl. of two-sided to test against.
-    static real naive(const uint[][] c) {
+    static double naive(const uint[][] c) {
         immutable uint n1 = c[0][0] + c[0][1],
                    n2 = c[1][0] + c[1][1],
                    n  = c[0][0] + c[1][0];
         immutable uint mode =
-            cast(uint) ((cast(real) (n + 1) * (n1 + 1)) / (n1 + n2 + 2));
-        immutable real pExact = hypergeometricPMF(c[0][0], n1, n2, n);
-        immutable real pMode = hypergeometricPMF(mode, n1, n2, n);
+            cast(uint) ((cast(double) (n + 1) * (n1 + 1)) / (n1 + n2 + 2));
+        immutable double pExact = hypergeometricPMF(c[0][0], n1, n2, n);
+        immutable double pMode = hypergeometricPMF(mode, n1, n2, n);
         if(approxEqual(pExact, pMode, 1e-7))
             return 1;
-        real sum = 0;
+        double sum = 0;
         foreach(i; 0..n + 1) {
-            real pCur = hypergeometricPMF(i, n1, n2, n);
-            if(pCur <= pExact)
+            double pCur = hypergeometricPMF(i, n1, n2, n);
+            if(pCur <= pExact / (1 - 1e-6))
                 sum += pCur;
         }
         return sum;
@@ -2535,9 +2555,9 @@ unittest {
         c[0][1] = uniform(0U, 51U);
         c[1][0] = uniform(0U, 51U);
         c[1][1] = uniform(0U, 51U);
-        real naiveAns = naive(c);
-        real fastAns = fisherExact(c);
-        assert(approxEqual(naiveAns, fastAns));
+        double naiveAns = naive(c);
+        double fastAns = fisherExact(c);
+        assert(approxEqual(naiveAns, fastAns), text(c, naiveAns, fastAns));
     }
 
     auto res = fisherExact([[19000u, 80000], [20000, 90000]]);
@@ -2590,8 +2610,8 @@ unittest {
  *
  * Bugs:  Exact calculation not implemented.  Uses asymptotic approximation.*/
 TestRes ksTest(T, U)(T F, U Fprime)
-if(realInput!(T) && realInput!(U)) {
-    real D = ksTestD(F, Fprime);
+if(doubleInput!(T) && doubleInput!(U)) {
+    double D = ksTestD(F, Fprime);
     return TestRes(D, ksPval(F.length, Fprime.length, D));
 }
 
@@ -2629,19 +2649,19 @@ template isArrayLike(T) {
  *
  * Examples:
  * ---
- * auto stdNormal = parametrize!(normalCDF)(0.0L, 1.0L);
+ * auto stdNormal = parametrize!(normalCDF)(0.0, 1.0);
  * auto empirical = [1, 2, 3, 4, 5];
- * real res = ksTest(empirical, stdNormal);
+ * double res = ksTest(empirical, stdNormal);
  * ---
  */
 TestRes ksTest(T, Func)(T Femp, Func F)
-if(realInput!(T) && is(ReturnType!(Func) : real)) {
-    real D = ksTestD(Femp, F);
+if(doubleInput!(T) && is(ReturnType!(Func) : double)) {
+    double D = ksTestD(Femp, F);
     return TestRes(D, ksPval(Femp.length, D));
 }
 
 unittest {
-    auto stdNormal = paramFunctor!(normalCDF)(0.0L, 1.0L);
+    auto stdNormal = paramFunctor!(normalCDF)(0.0, 1.0);
     assert(approxEqual(ksTest([1,2,3,4,5].dup, stdNormal).testStat, -.8413));
     assert(approxEqual(ksTestDestructive([-1,0,2,8, 6].dup, stdNormal).testStat, -.5772));
     auto lotsOfTies = [5,1,2,2,2,2,2,2,3,4].dup;
@@ -2658,18 +2678,18 @@ unittest {
 /**Same as ksTest, except sorts in place, avoiding memory allocations.*/
 TestRes ksTestDestructive(T, U)(T F, U Fprime)
 if(isArrayLike!(T) && isArrayLike!(U)) {
-    real D = ksTestDDestructive(F, Fprime);
+    double D = ksTestDDestructive(F, Fprime);
     return TestRes(D, ksPval(F.length, Fprime.length, D));
 }
 
 ///Ditto.
 TestRes ksTestDestructive(T, Func)(T Femp, Func F)
-if(isArrayLike!(T) && is(ReturnType!Func : real)) {
-    real D =  ksTestDDestructive(Femp, F);
+if(isArrayLike!(T) && is(ReturnType!Func : double)) {
+    double D =  ksTestDDestructive(Femp, F);
     return TestRes(D, ksPval(Femp.length, D));
 }
 
-private real ksTestD(T, U)(T F, U Fprime)
+private double ksTestD(T, U)(T F, U Fprime)
 if(isInputRange!(T) && isInputRange!(U)) {
     auto TAState = TempAlloc.getState;
     scope(exit) {
@@ -2679,22 +2699,22 @@ if(isInputRange!(T) && isInputRange!(U)) {
     return ksTestDDestructive(tempdup(F), tempdup(Fprime));
 }
 
-private real ksTestDDestructive(T, U)(T F, U Fprime)
+private double ksTestDDestructive(T, U)(T F, U Fprime)
 if(isArrayLike!(T) && isArrayLike!(U)) {
     qsort(F);
     qsort(Fprime);
-    real D = 0;
+    double D = 0;
     size_t FprimePos = 0;
     foreach(i; 0..2) {  //Test both w/ Fprime x vals, F x vals.
-        real diffMult = (i == 0) ? 1 : -1;
+        double diffMult = (i == 0) ? 1 : -1;
         foreach(FPos, Xi; F) {
             if(FPos < F.length - 1 && F[FPos + 1] == Xi)
                 continue;  //Handle ties.
             while(FprimePos < Fprime.length && Fprime[FprimePos] <= Xi) {
                 FprimePos++;
             }
-            real diff = diffMult * (cast(real) (FPos + 1) / F.length -
-                       cast(real) FprimePos / Fprime.length);
+            double diff = diffMult * (cast(double) (FPos + 1) / F.length -
+                       cast(double) FprimePos / Fprime.length);
             if(abs(diff) > abs(D))
                 D = diff;
         }
@@ -2704,19 +2724,19 @@ if(isArrayLike!(T) && isArrayLike!(U)) {
     return D;
 }
 
-private real ksTestD(T, Func)(T Femp, Func F)
-if(realInput!(T) && is(ReturnType!Func : real)) {
+private double ksTestD(T, Func)(T Femp, Func F)
+if(doubleInput!(T) && is(ReturnType!Func : double)) {
     scope(exit) TempAlloc.free;
     return ksTestDDestructive(tempdup(Femp), F);
 }
 
-private real ksTestDDestructive(T, Func)(T Femp, Func F)
-if(isArrayLike!(T) && is(ReturnType!Func : real)) {
+private double ksTestDDestructive(T, Func)(T Femp, Func F)
+if(isArrayLike!(T) && is(ReturnType!Func : double)) {
     qsort(Femp);
-    real D = 0;
+    double D = 0;
 
     foreach(FPos, Xi; Femp) {
-        real diff = cast(real) FPos / Femp.length - F(Xi);
+        double diff = cast(double) FPos / Femp.length - F(Xi);
         if(abs(diff) > abs(D))
             D = diff;
     }
@@ -2724,20 +2744,20 @@ if(isArrayLike!(T) && is(ReturnType!Func : real)) {
     return D;
 }
 
-private real ksPval(ulong N, ulong Nprime, real D)
+private double ksPval(ulong N, ulong Nprime, double D)
 in {
     assert(D >= -1);
     assert(D <= 1);
 } body {
-    return 1 - kolmDist(sqrt(cast(real) (N * Nprime) / (N + Nprime)) * abs(D));
+    return 1 - kolmDist(sqrt(cast(double) (N * Nprime) / (N + Nprime)) * abs(D));
 }
 
-private real ksPval(ulong N, real D)
+private double ksPval(ulong N, double D)
 in {
     assert(D >= -1);
     assert(D <= 1);
 } body {
-    return 1 - kolmDist(abs(D) * sqrt(cast(real) N));
+    return 1 - kolmDist(abs(D) * sqrt(cast(double) N));
 }
 
 /**Wald-wolfowitz or runs test for randomness of the distribution of
@@ -2760,7 +2780,7 @@ in {
  *
  * Bugs:  No exact calculation of the P-value.  Asymptotic approximation only.
  */
-real runsTest(alias positive = "a > 0", T)(T obs, Alt alt = Alt.TWOSIDE)
+double runsTest(alias positive = "a > 0", T)(T obs, Alt alt = Alt.TWOSIDE)
 if(isIterable!(T)) {
     RunsTest!(positive, IterType!(T)) r;
     foreach(elem; obs) {
@@ -2823,10 +2843,10 @@ public:
     }
 
     ///
-    real p(Alt alt = Alt.TWOSIDE) {
+    double p(Alt alt = Alt.TWOSIDE) {
         uint N = nPos + nNeg;
-        real expected = 2.0L * nPos * nNeg / N + 1;
-        real sd = sqrt((expected - 1) * (expected - 2) / (N - 1));
+        double expected = 2.0 * nPos * nNeg / N + 1;
+        double sd = sqrt((expected - 1) * (expected - 2) / (N - 1));
         if(alt == Alt.LESS) {
             return normalCDF(nRun, expected, sd);
         } else if(alt == Alt.GREATER) {
@@ -2852,8 +2872,8 @@ alias kendallCorTest kcorTest;
  * Returns:  A ConfInt of the estimated Pearson correlation of the two ranges,
  * the P-value against the given alternative, and the confidence interval of
  * the correlation at the level specified by confLevel.*/
-ConfInt pearsonCorTest(T, U)(T range1, U range2, Alt alt = Alt.TWOSIDE, real confLevel = 0.95)
-if(realInput!(T) && realInput!(U)) {
+ConfInt pearsonCorTest(T, U)(T range1, U range2, Alt alt = Alt.TWOSIDE, double confLevel = 0.95)
+if(doubleInput!(T) && doubleInput!(U)) {
     enforceConfidence(confLevel);
 
     PearsonCor pearsonRes = pearsonCor(range1, range2);
@@ -2866,23 +2886,23 @@ if(realInput!(T) && realInput!(U)) {
  * Note:  T must be a numeric type.  The only reason this is a template and
  * not a plain old function is DMD bug 2972.
  */
-ConfInt pearsonCorTest(T)(real cor, T N, Alt alt = Alt.TWOSIDE, real confLevel = 0.95)
+ConfInt pearsonCorTest(T)(double cor, T N, Alt alt = Alt.TWOSIDE, double confLevel = 0.95)
 if(isNumeric!(T)) {
     enforce(N >= 0, "N must be >= 0 for pearsonCorTest.");
-    enforce(cor > -1.0L || approxEqual(cor, -1.0L),
+    enforce(cor > -1.0 || approxEqual(cor, -1.0),
         "Correlation must be between 0, 1.");
-    enforce(cor < 1.0L || approxEqual(cor, 1.0L),
+    enforce(cor < 1.0 || approxEqual(cor, 1.0),
          "Correlation must be between 0, 1.");
     enforceConfidence(confLevel);
 
-    immutable real denom = sqrt((1 - cor * cor) / (N - 2));
-    immutable real t = cor / denom;
+    immutable double denom = sqrt((1 - cor * cor) / (N - 2));
+    immutable double t = cor / denom;
     ConfInt ret;
     ret.testStat = cor;
 
-    real sqN, z;
+    double sqN, z;
     if(confLevel > 0) {
-        sqN = sqrt(N - 3.0L);
+        sqN = sqrt(N - 3.0);
         z = sqN * atanh(cor);
     }
 
@@ -2894,7 +2914,7 @@ if(isNumeric!(T)) {
                 2 * ((t < 0) ? studentsTCDF(t, N - 2) : studentsTCDFR(t, N - 2));
 
             if(confLevel > 0) {
-                real deltaZ = invNormalCDF(0.5 * (1 - confLevel));
+                double deltaZ = invNormalCDF(0.5 * (1 - confLevel));
                 ret.lowerBound = tanh((z + deltaZ) / sqN);
                 ret.upperBound = tanh((z - deltaZ) / sqN);
             } else {
@@ -2913,7 +2933,7 @@ if(isNumeric!(T)) {
             }
 
             if(confLevel > 0) {
-                real deltaZ = invNormalCDF(1 - confLevel);
+                double deltaZ = invNormalCDF(1 - confLevel);
                 ret.lowerBound = -1;
                 ret.upperBound = tanh((z - deltaZ) / sqN);
             } else {
@@ -2932,7 +2952,7 @@ if(isNumeric!(T)) {
             }
 
             if(confLevel > 0) {
-                real deltaZ = invNormalCDF(1 - confLevel);
+                double deltaZ = invNormalCDF(1 - confLevel);
                 ret.lowerBound = tanh((z + deltaZ) / sqN);
                 ret.upperBound = 1;
             } else {
@@ -3014,7 +3034,7 @@ is(typeof(range2.front < range2.front) == bool)) {
     } else {
         alias range1 r1;
     }
-    real N = r1.length;
+    double N = r1.length;
 
     return pearsonCorTest(spearmanCor(range1, range2), N, alt, 0);
 }
@@ -3060,9 +3080,9 @@ if(isInputRange!(T) && isInputRange!(U)) {
     auto i2d = tempdup(range2);
     auto res = kendallCorDestructiveLowLevel(i1d, i2d);
 
-    real n = i1d.length;
-    real sd = sqrt((n * (n - 1) * (2 * n + 5) - res.field[2]) / 18.0L);
-    enum real cc = 1;
+    double n = i1d.length;
+    double sd = sqrt((n * (n - 1) * (2 * n + 5) - res.field[2]) / 18.0);
+    enum double cc = 1;
     auto tau = res.field[0];
     auto s = res.field[1];
 
@@ -3095,16 +3115,16 @@ if(isInputRange!(T) && isInputRange!(U)) {
 
 // Dynamic programming algorithm for computing exact Kendall tau P-values.
 // Thanks to ShreevatsaR from StackOverflow.
-private real kendallCorExactP(uint N, uint swaps, Alt alt) {
+private double kendallCorExactP(uint N, uint swaps, Alt alt) {
     uint maxSwaps = N * (N - 1) / 2;
     assert(swaps <= maxSwaps);
-    real expectedSwaps = cast(ulong) N * (N - 1) * 0.25L;
+    immutable expectedSwaps = cast(ulong) N * (N - 1) * 0.25;
     if(alt == Alt.GREATER) {
         if(swaps > expectedSwaps) {
             if(swaps == maxSwaps) {
                 return 1;
             }
-            return 1.0L - kendallCorExactP(N, maxSwaps - swaps - 1, Alt.GREATER);
+            return 1.0 - kendallCorExactP(N, maxSwaps - swaps - 1, Alt.GREATER);
         }
     } else if(alt == Alt.LESS) {
         if(swaps == 0) {
@@ -3120,7 +3140,7 @@ private real kendallCorExactP(uint N, uint swaps, Alt alt) {
             return 1;
         }
     } else {  // Alt.NONE
-        return real.nan;
+        return double.nan;
     }
 
     /* This algorithm was obtained from Question 948341 on stackoverflow.com
@@ -3222,8 +3242,8 @@ unittest {
         } else {
             lhs[] -= rhs[] * 0.2;
         }
-        real exact = kendallCorTest(lhs, rhs).p;
-        real approx = kendallCorTest(lhs, rhs, Alt.TWOSIDE, 0).p;
+        double exact = kendallCorTest(lhs, rhs).p;
+        double approx = kendallCorTest(lhs, rhs, Alt.TWOSIDE, 0).p;
         assert(abs(exact - approx) < 0.01);
 
         exact = kendallCorTest(lhs, rhs, Alt.GREATER).p;
@@ -3260,7 +3280,7 @@ unittest {
  * The American Statistician, Vol. 44, No. 4. (Nov., 1990), pp. 316-321.
  */
 TestRes dAgostinoK(T)(T range)
-if(realIterable!(T)) {
+if(doubleIterable!(T)) {
     // You are not meant to understand this.  I sure don't.  I just implemented
     // these formulas off of Wikipedia, which got them from:
 
@@ -3272,7 +3292,7 @@ if(realIterable!(T)) {
     // in 1990, before widespread computer algebra systems.
 
     // Notation from Wikipedia.  Keeping same notation for simplicity.
-    real sqrtb1 = void, b2 = void, n = void;
+    double sqrtb1 = void, b2 = void, n = void;
     {
         auto summ = summary(range);
         sqrtb1 = summ.skewness;
@@ -3281,32 +3301,32 @@ if(realIterable!(T)) {
     }
 
     // Calculate transformed skewness.
-    real Y = sqrtb1 * sqrt((n + 1) * (n + 3) / (6 * (n - 2)));
-    real beta2b1Numer = 3 * (n * n + 27 * n - 70) * (n + 1) * (n + 3);
-    real beta2b1Denom = (n - 2) * (n + 5) * (n + 7) * (n + 9);
-    real beta2b1 = beta2b1Numer / beta2b1Denom;
-    real Wsq = -1 + sqrt(2 * (beta2b1 - 1));
-    real delta = 1.0L / sqrt(log(sqrt(Wsq)));
-    real alpha = sqrt( 2.0L / (Wsq - 1));
-    real Zb1 = delta * log(Y / alpha + sqrt(pow(Y / alpha, 2) + 1));
+    double Y = sqrtb1 * sqrt((n + 1) * (n + 3) / (6 * (n - 2)));
+    double beta2b1Numer = 3 * (n * n + 27 * n - 70) * (n + 1) * (n + 3);
+    double beta2b1Denom = (n - 2) * (n + 5) * (n + 7) * (n + 9);
+    double beta2b1 = beta2b1Numer / beta2b1Denom;
+    double Wsq = -1 + sqrt(2 * (beta2b1 - 1));
+    double delta = 1.0 / sqrt(log(sqrt(Wsq)));
+    double alpha = sqrt( 2.0 / (Wsq - 1));
+    double Zb1 = delta * log(Y / alpha + sqrt(pow(Y / alpha, 2) + 1));
 
     // Calculate transformed kurtosis.
-    real Eb2 = 3 * (n - 1) / (n + 1);
-    real sigma2b2 = (24 * n * (n - 2) * (n - 3)) / (
+    double Eb2 = 3 * (n - 1) / (n + 1);
+    double sigma2b2 = (24 * n * (n - 2) * (n - 3)) / (
         (n + 1) * (n + 1) * (n + 3) * (n + 5));
-    real x = (b2 - Eb2) / sqrt(sigma2b2);
+    double x = (b2 - Eb2) / sqrt(sigma2b2);
 
-    real sqBeta1b2 = 6 * (n * n - 5 * n + 2) / ((n + 7) * (n + 9)) *
+    double sqBeta1b2 = 6 * (n * n - 5 * n + 2) / ((n + 7) * (n + 9)) *
          sqrt((6 * (n + 3) * (n + 5)) / (n * (n - 2) * (n - 3)));
-    real A = 6 + 8 / sqBeta1b2 * (2 / sqBeta1b2 + sqrt(1 + 4 / (sqBeta1b2 * sqBeta1b2)));
-    real Zb2 = ((1 - 2 / (9 * A)) -
+    double A = 6 + 8 / sqBeta1b2 * (2 / sqBeta1b2 + sqrt(1 + 4 / (sqBeta1b2 * sqBeta1b2)));
+    double Zb2 = ((1 - 2 / (9 * A)) -
         cbrt((1 - 2 / A) / (1 + x * sqrt(2 / (A - 4)))) ) *
         sqrt(9 * A / 2);
 
-    real K2 = Zb1 * Zb1 + Zb2 * Zb2;
+    double K2 = Zb1 * Zb1 + Zb2 * Zb2;
 
     if(isNaN(K2)) {
-        return TestRes(real.nan, real.nan);
+        return TestRes(double.nan, double.nan);
     }
 
     return TestRes(K2, chiSquareCDFR(K2, 2));
@@ -3343,13 +3363,13 @@ unittest {
  * (In response to Question 14)
  */
 TestRes fishersMethod(R)(R pVals)
-if(realInput!R) {
-    real chiSq = 0;
+if(doubleInput!R) {
+    double chiSq = 0;
     uint df = 0;
     foreach(pVal; pVals) {
         enforce(pVal >= 0 && pVal <= 1,
             "P-values must be between 0, 1 for Fisher's Method.");
-        chiSq += log( cast(real) pVal);
+        chiSq += log( cast(double) pVal);
         df += 2;
     }
     chiSq *= -2;
@@ -3359,7 +3379,7 @@ if(realInput!R) {
 unittest {
     // First, basic sanity check.  Make sure w/ one P-value, we get back that
     // P-value.
-    for(real p = 0.01; p < 1; p += 0.01) {
+    for(double p = 0.01; p < 1; p += 0.01) {
         assert(approxEqual(fishersMethod([p].dup).p, p));
     }
     float[] ps = [0.739, 0.0717, 0.01932, 0.03809];
@@ -3397,7 +3417,7 @@ enum Dependency {
  * rate in multiple testing under dependency. Annals of Statistics 29, 1165-1188.
  */
 float[] falseDiscoveryRate(T)(T pVals, Dependency dep = Dependency.FALSE)
-if(realInput!(T)) {
+if(doubleInput!(T)) {
     float[] qVals;
     static if(dstats.base.hasLength!T) {
         qVals.length = pVals.length;
@@ -3413,10 +3433,10 @@ if(realInput!(T)) {
         }
     }
 
-    real C = 1;
+    double C = 1;
     if(dep == Dependency.TRUE) {
         foreach(i; 2..qVals.length + 1) {
-            C += 1.0L / i;
+            C += 1.0 / i;
         }
     }
 
@@ -3429,7 +3449,7 @@ if(realInput!(T)) {
     qsort(qVals, perm);
 
     foreach(i, ref q; qVals) {
-        q = min(1.0f, q * C * cast(real) qVals.length / (cast(real) i + 1));
+        q = min(1.0f, q * C * cast(double) qVals.length / (cast(double) i + 1));
     }
 
     float smallestSeen = float.max;
@@ -3499,7 +3519,7 @@ unittest {
  * significance. Biometrika, 75, 800-803.
  */
 float[] hochberg(T)(T pVals)
-if(realInput!(T)) {
+if(doubleInput!(T)) {
     float[] qVals;
     auto app = appender(&qVals);
     app.put(pVals);
@@ -3514,7 +3534,7 @@ if(realInput!(T)) {
     foreach(i, ref q; qVals) {
         enforce(q >= 0 && q <= 1,
             "P-values must be between 0, 1 for hochberg.");
-        q = min(1.0f, q * (cast(real) qVals.length - i));
+        q = min(1.0f, q * (cast(double) qVals.length - i));
     }
 
     float smallestSeen = float.max;
@@ -3564,7 +3584,7 @@ unittest {
  * Scandinavian Journal of Statistics, 6, 65-70.
  */
 float[] holmBonferroni(T)(T pVals)
-if(realInput!(T)) {
+if(doubleInput!(T)) {
     mixin(newFrame);
 
     float[] qVals;
@@ -3582,7 +3602,7 @@ if(realInput!(T)) {
     foreach(i, ref q; qVals) {
         enforce(q >= 0 && q <= 1,
             "P-values must be between 0, 1 for holmBonferroni.");
-        q = min(1.0L, q * (cast(real) qVals.length - i));
+        q = min(1.0, q * (cast(double) qVals.length - i));
     }
 
     foreach(i; 1..qVals.length) {

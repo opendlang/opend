@@ -56,16 +56,28 @@ version(unittest) {
  * be treated simply as a floating point number.
  */
 PearsonCor pearsonCor(T, U)(T input1, U input2)
-if(realInput!(T) && realInput!(U)) {
+if(doubleInput!(T) && doubleInput!(U)) {
     PearsonCor corCalc;
-    while(!input1.empty && !input2.empty) {
-        corCalc.put(input1.front, input2.front);
-        input1.popFront;
-        input2.popFront;
+
+    static if(isArray!T && isArray!U) {
+        // Common case optimization of loop, since DMD can't inline range
+        // ops for arrays and it's by far the most common case.
+        enforce(input1.length == input2.length,
+            "Ranges must be same length for Pearson correlation.");
+        foreach(i; 0..input1.length) {
+            corCalc.put(input1[i], input2[i]);
+        }
+    } else {
+        while(!input1.empty && !input2.empty) {
+            corCalc.put(input1.front, input2.front);
+            input1.popFront;
+            input2.popFront;
+        }
+
+        enforce(input1.empty && input2.empty,
+            "Ranges must be same length for Pearson correlation.");
     }
 
-    enforce(input1.empty && input2.empty,
-        "Ranges must be same length for Pearson correlation.");
     return corCalc;
 }
 
@@ -111,17 +123,17 @@ unittest {
  * for means cost a single branch to check for N == 0.  This struct uses O(1)
  * space.
  *
- * PearsonCor.cor is alias this'd, so if this struct is used as a real, it will
+ * PearsonCor.cor is alias this'd, so if this struct is used as a float, it will
  * be converted to a simple correlation coefficient automatically.
  */
 struct PearsonCor {
 private:
-    real _k = 0, _mean1 = 0, _mean2 = 0, _var1 = 0, _var2 = 0, _cov = 0;
+    double _k = 0, _mean1 = 0, _mean2 = 0, _var1 = 0, _var2 = 0, _cov = 0;
 public:
     alias cor this;
 
     ///
-    void put(real elem1, real elem2) nothrow {
+    void put(double elem1, double elem2) nothrow {
         immutable kNeg1 = 1 / ++_k;
           _cov += (elem1 * elem2 - _cov)  * kNeg1;
          _var1 += (elem1 * elem1 - _var1) * kNeg1;
@@ -142,54 +154,54 @@ public:
     }
 
     ///
-    real var1() const pure nothrow {
-        return (_k < 2) ? real.nan : (_var1 - _mean1 * _mean1) * (_k / (_k - 1));
+    double var1() const pure nothrow {
+        return (_k < 2) ? double.nan : (_var1 - _mean1 * _mean1) * (_k / (_k - 1));
     }
 
     ///
-    real var2() const pure nothrow {
-        return (_k < 2) ? real.nan : (_var2 - _mean2 * _mean2) * (_k / (_k - 1));
+    double var2() const pure nothrow {
+        return (_k < 2) ? double.nan : (_var2 - _mean2 * _mean2) * (_k / (_k - 1));
     }
 
     ///
-    real stdev1() const pure nothrow {
+    double stdev1() const pure nothrow {
         return sqrt(var1);
     }
 
     ///
-    real stdev2() const pure nothrow {
+    double stdev2() const pure nothrow {
         return sqrt(var2);
     }
 
     ///
-    real cor() const pure nothrow {
+    double cor() const pure nothrow {
         return cov / stdev1 / stdev2;
     }
 
     ///
-    real cov() const pure nothrow {
-        return (_k < 2) ? real.nan : (_cov - _mean1 * _mean2) * (_k / (_k - 1));
+    double cov() const pure nothrow {
+        return (_k < 2) ? double.nan : (_cov - _mean1 * _mean2) * (_k / (_k - 1));
     }
 
     ///
-    real mean1() const pure nothrow {
-        return (_k == 0) ? real.nan : _mean1;
+    double mean1() const pure nothrow {
+        return (_k == 0) ? double.nan : _mean1;
     }
 
     ///
-    real mean2() const pure nothrow {
-        return (_k == 0) ? real.nan : _mean2;
+    double mean2() const pure nothrow {
+        return (_k == 0) ? double.nan : _mean2;
     }
 
     ///
-    real N() const pure nothrow {
+    double N() const pure nothrow {
         return _k;
     }
 }
 
 ///
-real covariance(T, U)(T input1, U input2)
-if(realInput!(T) && realInput!(U)) {
+double covariance(T, U)(T input1, U input2)
+if(doubleInput!(T) && doubleInput!(U)) {
     PearsonCor covCalc;
     while(!input1.empty && !input2.empty) {
         covCalc.put(input1.front, input2.front);
@@ -210,14 +222,14 @@ unittest {
 /**Spearman's rank correlation.  Non-parametric.  This is essentially the
  * Pearson correlation of the ranks of the data, with ties dealt with by
  * averaging.*/
-real spearmanCor(R, S)(R input1, S input2)
+double spearmanCor(R, S)(R input1, S input2)
 if(isInputRange!(R) && isInputRange!(S) &&
 is(typeof(input1.front < input1.front) == bool) &&
 is(typeof(input2.front < input2.front) == bool)) {
 
     static if(dstats.base.hasLength!S && dstats.base.hasLength!R) {
         if(input1.length < 2) {
-            return real.nan;
+            return double.nan;
         }
     }
 
@@ -268,20 +280,20 @@ unittest {
         foreach(ref o; two) {
              o = uniform(1, 10);  //Generate lots of ties.
         }
-        real sOne =
+        double sOne =
              spearmanCor(one[lowerBound..upperBound], two[lowerBound..upperBound]);
-        real sTwo =
+        double sTwo =
              spearmanCor(two[lowerBound..upperBound], one[lowerBound..upperBound]);
         foreach(ref o; one)
             o*=-1;
-        real sThree =
+        double sThree =
              -spearmanCor(one[lowerBound..upperBound], two[lowerBound..upperBound]);
-        real sFour =
+        double sFour =
              -spearmanCor(two[lowerBound..upperBound], one[lowerBound..upperBound]);
         foreach(ref o; two) o*=-1;
         one[lowerBound..upperBound].reverse;
         two[lowerBound..upperBound].reverse;
-        real sFive =
+        double sFive =
              spearmanCor(one[lowerBound..upperBound], two[lowerBound..upperBound]);
         assert(approxEqual(sOne, sTwo) || (isnan(sOne) && isnan(sTwo)));
         assert(approxEqual(sTwo, sThree) || (isnan(sThree) && isnan(sTwo)));
@@ -307,7 +319,7 @@ unittest {
     Count a, b;
     a.upTo = 100;
     b.upTo = 100;
-    assert(spearmanCor(a, b) == 1);
+    assert(approxEqual(spearmanCor(a, b), 1));
 
     writeln("Passed spearmanCor unittest.");
 }
@@ -327,7 +339,7 @@ version(unittest) {
  * Since a copy of the inputs is made anyhow because they need to be sorted,
  * this function can work with any input range.  However, the ranges must
  * have the same length.*/
-real kendallCor(T, U)(T input1, U input2)
+double kendallCor(T, U)(T input1, U input2)
 if(isInputRange!(T) && isInputRange!(U)) {
     static if(isArray!(T) && isArray!(U)) {
         enforce(input1.length == input2.length,
@@ -356,7 +368,7 @@ if(isInputRange!(T) && isInputRange!(U)) {
  * uses only O(log N) stack space for sorting, not O(N) space to duplicate
  * input.  Only works on arrays.
  */
-real kendallCorDestructive(T, U)(T[] input1, U[] input2) {
+double kendallCorDestructive(T, U)(T[] input1, U[] input2) {
     enforce(input1.length == input2.length,
         "Ranges must be same length for Kendall correlation.");
     return kendallCorDestructiveLowLevel(input1, input2).field[0];
@@ -434,9 +446,9 @@ in {
     immutable m2 = tieStuff.field[0];
     tieCorrect += tieStuff.field[1];
     s -= (m1 + m2) + 2 * swapCount;
-    immutable real denominator1 = nPair - m1;
-    immutable real denominator2 = nPair - m2;
-    real cor = s / sqrt(denominator1) / sqrt(denominator2);
+    immutable double denominator1 = nPair - m1;
+    immutable double denominator2 = nPair - m2;
+    double cor = s / sqrt(denominator1) / sqrt(denominator2);
     return tuple(cor, s, tieCorrect);
 }
 
@@ -447,7 +459,7 @@ in {
  * this algorithm is still faster for very small N.  (Besides, I can't
  * delete it anyhow because I need it for testing.)
  */
-private real kendallCorSmallN(T, U)(const T[] input1, const U[] input2)
+private double kendallCorSmallN(T, U)(const T[] input1, const U[] input2)
 in {
     assert(input1.length == input2.length);
 
@@ -500,8 +512,8 @@ in {
     }
 
     immutable int nCombination = input2.length * (input2.length - 1) / 2;
-    immutable real denominator1 = nCombination - m1;
-    immutable real denominator2 = nCombination - m2;
+    immutable double denominator1 = nCombination - m1;
+    immutable double denominator2 = nCombination - m2;
     return s / sqrt(denominator1) / sqrt(denominator2);
 }
 
@@ -526,9 +538,9 @@ unittest {
             foreach(ref o; two) {
                  o = uniform(cast(T) -10, cast(T) 10);
             }
-            real kOne =
+            double kOne =
                  kendallCor(one[lowerBound..upperBound], two[lowerBound..upperBound]);
-            real kTwo =
+            double kTwo =
                  kendallCorSmallN(one[lowerBound..upperBound], two[lowerBound..upperBound]);
             assert(isIdentical(kOne, kTwo));
         }
@@ -586,11 +598,11 @@ alias kendallCorDestructive kcorDestructive;
  * // See whether the prices of stock 1 and stock 2 are correlated even
  * // after adjusting for the overall condition of the economy and consumer
  * // fear.
- * real partialCor =
+ * double partialCor =
  *   partial!pearsonCor(stock1Price, stock2Price, economicHealth, consumerFear);
  * ---
  */
-real partial(alias cor, T, U, V...)(T vec1, U vec2, V conditionsIn)
+double partial(alias cor, T, U, V...)(T vec1, U vec2, V conditionsIn)
 if(isInputRange!T && isInputRange!U && allSatisfy!(isInputRange, V)) {
     mixin(newFrame);
     static if(V.length == 1 && isInputRange!(ElementType!(V[0]))) {
@@ -604,19 +616,19 @@ if(isInputRange!T && isInputRange!U && allSatisfy!(isInputRange, V)) {
         alias conditionsIn cond;
     }
 
-    auto corMatrix = newStack!(real[])(cond.length + 2);
+    auto corMatrix = newStack!(double[])(cond.length + 2);
     foreach(i, ref elem; corMatrix) {
-        elem = newStack!real((cond.length + 2) * 2);
+        elem = newStack!double((cond.length + 2) * 2);
         elem[] = 0;
         elem[i] = 1;
     }
 
-    corMatrix[0][1] = corMatrix[1][0] = cast(real) cor(vec1, vec2);
+    corMatrix[0][1] = corMatrix[1][0] = cast(double) cor(vec1, vec2);
     foreach(i, condition; cond) {
         immutable conditionIndex = i + 2;
-        corMatrix[0][conditionIndex] = cast(real) cor(vec1, condition);
+        corMatrix[0][conditionIndex] = cast(double) cor(vec1, condition);
         corMatrix[conditionIndex][0] =  corMatrix[0][conditionIndex];
-        corMatrix[1][conditionIndex] = cast(real) cor(vec2, condition);
+        corMatrix[1][conditionIndex] = cast(double) cor(vec2, condition);
         corMatrix[conditionIndex][1] = corMatrix[1][conditionIndex];
     }
 
@@ -624,7 +636,7 @@ if(isInputRange!T && isInputRange!U && allSatisfy!(isInputRange, V)) {
         foreach(j, condition2; cond[i + 1..$]) {
             immutable index1 = i + 2;
             immutable index2 = index1 + j + 1;
-            corMatrix[index1][index2] = cast(real) cor(condition1, condition2);
+            corMatrix[index1][index2] = cast(double) cor(condition1, condition2);
             corMatrix[index2][index1] = corMatrix[index1][index2];
         }
     }
@@ -639,11 +651,11 @@ unittest {
     uint[] stock2Price = [3, 1, 4, 1, 5, 9, 2];
     uint[] economicHealth = [2, 7, 1, 8, 2, 8, 1];
     uint[] consumerFear = [1, 2, 3, 4, 5, 6, 7];
-    real partialCor =
+    double partialCor =
     partial!pearsonCor(stock1Price, stock2Price, [economicHealth, consumerFear][]);
     assert(approxEqual(partialCor, -0.857818));
 
-    real spearmanPartial =
+    double spearmanPartial =
     partial!spearmanCor(stock1Price, stock2Price, economicHealth, consumerFear);
     assert(approxEqual(spearmanPartial, -0.7252));
     writeln("Passed partial correlation unittest.");

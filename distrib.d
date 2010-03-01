@@ -129,11 +129,11 @@ version(unittest) {
  * ---
  *
  * stdNormal is now a delegate for the normal(0, 1) distribution.*/
-real delegate(ParameterTypeTuple!(distrib)[0])
+double delegate(ParameterTypeTuple!(distrib)[0])
               parametrize(alias distrib)(ParameterTypeTuple!(distrib)[1..$]
               parameters) {
 
-    real calculate(ParameterTypeTuple!(distrib)[0] arg) {
+    double calculate(ParameterTypeTuple!(distrib)[0] arg) {
         return distrib(arg, parameters);
     }
 
@@ -143,14 +143,14 @@ real delegate(ParameterTypeTuple!(distrib)[0])
 unittest {
     // Just basically see if this compiles.
     auto stdNormal = parametrize!normalCDF(0, 1);
-    assert(stdNormal(2.5) == normalCDF(2.5, 0, 1));
+    assert(approxEqual(stdNormal(2.5), normalCDF(2.5, 0, 1)));
 }
 
 ///
 struct ParamFunctor(alias distrib) {
     ParameterTypeTuple!(distrib)[1..$] parameters;
 
-    real opCall(ParameterTypeTuple!(distrib)[0] arg) {
+    double opCall(ParameterTypeTuple!(distrib)[0] arg) {
         return distrib(arg, parameters);
     }
 }
@@ -179,18 +179,18 @@ ParamFunctor!(distrib) paramFunctor(alias distrib)
 unittest {
     // Just basically see if this compiles.
     auto stdNormal = paramFunctor!normalCDF(0, 1);
-    assert(stdNormal(2.5) == normalCDF(2.5, 0, 1));
+    assert(approxEqual(stdNormal(2.5), normalCDF(2.5, 0, 1)));
 }
 
 ///
-real uniformPDF(real X, real lower, real upper) {
+double uniformPDF(double X, double lower, double upper) {
     enforce(X >= lower, "Can't have X < lower bound in uniform distribution.");
     enforce(X <= upper, "Can't have X > upper bound in uniform distribution.");
     return 1.0L / (upper - lower);
 }
 
 ///
-real uniformCDF(real X, real lower, real upper) {
+double uniformCDF(double X, double lower, double upper) {
     enforce(X >= lower, "Can't have X < lower bound in uniform distribution.");
     enforce(X <= upper, "Can't have X > upper bound in uniform distribution.");
 
@@ -198,7 +198,7 @@ real uniformCDF(real X, real lower, real upper) {
 }
 
 ///
-real uniformCDFR(real X, real lower, real upper) {
+double uniformCDFR(double X, double lower, double upper) {
     enforce(X >= lower, "Can't have X < lower bound in uniform distribution.");
     enforce(X <= upper, "Can't have X > upper bound in uniform distribution.");
 
@@ -206,10 +206,10 @@ real uniformCDFR(real X, real lower, real upper) {
 }
 
 ///
-real poissonPMF(ulong k, real lambda) {
+double poissonPMF(ulong k, double lambda) {
     enforce(lambda > 0, "Cannot have a Poisson with lambda <= 0 or nan.");
 
-    return exp(cast(real) k * log(lambda) -
+    return exp(cast(double) k * log(lambda) -
             (lambda + logFactorial(k)));  //Grouped for best precision.
 }
 
@@ -222,17 +222,17 @@ enum POISSON_NORMAL = 1UL << 12;  // Where to switch to normal approx.
 
 // The gamma incomplete function is too unstable and the distribution
 // is for all practical purposes normal anyhow.
-private real normApproxPoisCDF(ulong k, real lambda)
+private double normApproxPoisCDF(ulong k, double lambda)
 in {
     assert(lambda > 0);
 } body {
-    real sd = sqrt(lambda);
+    double sd = sqrt(lambda);
     // mean == lambda.
     return normalCDF(k + 0.5L, lambda, sd);
 }
 
 /**P(K <= k) where K is r.v.*/
-real poissonCDF(ulong k, real lambda) {
+double poissonCDF(ulong k, double lambda) {
     enforce(lambda > 0, "Cannot have a poisson with lambda <= 0 or nan.");
 
     return (max(k, lambda) >= POISSON_NORMAL) ?
@@ -243,8 +243,8 @@ real poissonCDF(ulong k, real lambda) {
 unittest {
     // Make sure this jives with adding up PMF elements, since this is a
     // discrete distribution.
-    static real pmfSum(uint k, real lambda) {
-        real ret = 0;
+    static double pmfSum(uint k, double lambda) {
+        double ret = 0;
         foreach(i; 0..k + 1) {
             ret += poissonPMF(i, lambda);
         }
@@ -256,15 +256,15 @@ unittest {
 
     // Absurdly huge values:  Test normal approximation.
     // Values from R.
-    real ans = poissonCDF( (1UL << 50) - 10_000_000, 1UL << 50);
+    double ans = poissonCDF( (1UL << 50) - 10_000_000, 1UL << 50);
     assert(approxEqual(ans, 0.3828427));
 
     // Make sure cutoff is reasonable, i.e. make sure gamma incomplete branch
     // and normal branch get roughly the same answer near the cutoff.
-    for(real lambda = POISSON_NORMAL / 2; lambda <= POISSON_NORMAL * 2; lambda += 100) {
+    for(double lambda = POISSON_NORMAL / 2; lambda <= POISSON_NORMAL * 2; lambda += 100) {
         for(ulong k = POISSON_NORMAL / 2; k <= POISSON_NORMAL * 2; k += 100) {
-            real normAns = normApproxPoisCDF(k, lambda);
-            real gammaAns = gammaIncompleteCompl(k + 1, lambda);
+            double normAns = normApproxPoisCDF(k, lambda);
+            double gammaAns = gammaIncompleteCompl(k + 1, lambda);
             assert(abs(normAns - gammaAns) < 0.01, text(normAns, '\t', gammaAns));
         }
     }
@@ -274,17 +274,17 @@ unittest {
 
 // The gamma incomplete function is too unstable and the distribution
 // is for all practical purposes normal anyhow.
-private real normApproxPoisCDFR(ulong k, real lambda)
+private double normApproxPoisCDFR(ulong k, double lambda)
 in {
     assert(lambda > 0);
 } body {
-    real sd = sqrt(lambda);
+    double sd = sqrt(lambda);
     // mean == lambda.
     return normalCDFR(k - 0.5L, lambda, sd);
 }
 
 /**P(K >= k) where K is r.v.*/
-real poissonCDFR(ulong k, real lambda) {
+double poissonCDFR(ulong k, double lambda) {
     enforce(lambda > 0, "Can't have a poisson with lambda <= 0 or nan.");
 
     return (max(k, lambda) >= POISSON_NORMAL) ?
@@ -295,8 +295,8 @@ real poissonCDFR(ulong k, real lambda) {
 unittest {
     // Make sure this jives with adding up PMF elements, since this is a
     // discrete distribution.
-    static real pmfSum(uint k, real lambda) {
-        real ret = 0;
+    static double pmfSum(uint k, double lambda) {
+        double ret = 0;
         foreach(i; 0..k + 1)  {
             ret += poissonPMF(i, lambda);
         }
@@ -308,15 +308,15 @@ unittest {
 
     // Absurdly huge value to test normal approximation.
     // Values from R.
-    real ans = poissonCDFR( (1UL << 50) - 10_000_000, 1UL << 50);
+    double ans = poissonCDFR( (1UL << 50) - 10_000_000, 1UL << 50);
     assert(approxEqual(ans, 0.6171573));
 
     // Make sure cutoff is reasonable, i.e. make sure gamma incomplete branch
     // and normal branch get roughly the same answer near the cutoff.
-    for(real lambda = POISSON_NORMAL / 2; lambda <= POISSON_NORMAL * 2; lambda += 100) {
+    for(double lambda = POISSON_NORMAL / 2; lambda <= POISSON_NORMAL * 2; lambda += 100) {
         for(ulong k = POISSON_NORMAL / 2; k <= POISSON_NORMAL * 2; k += 100) {
-            real normAns = normApproxPoisCDFR(k, lambda);
-            real gammaAns = gammaIncomplete(k, lambda);
+            double normAns = normApproxPoisCDFR(k, lambda);
+            double gammaAns = gammaIncomplete(k, lambda);
             assert(abs(normAns - gammaAns) < 0.01, text(normAns, '\t', gammaAns));
         }
     }
@@ -327,22 +327,22 @@ unittest {
 /**Returns the value of k for the given p-value and lambda.  If p-val
  * doesn't exactly map to a value of k, the k for which poissonCDF(k, lambda)
  * is closest to pVal is used.*/
-uint invPoissonCDF(real pVal, real lambda) {
+uint invPoissonCDF(double pVal, double lambda) {
     enforce(lambda > 0, "Cannot have a poisson with lambda <= 0 or nan.");
     enforce(pVal >= 0 && pVal <= 1, "P-values must be between 0, 1.");
 
     // Use normal approximation to get approx answer, then brute force search.
     // This works better than you think because for small n, there's not much
-    // search space and for large n, the normal approx. is really good.
+    // search space and for large n, the normal approx. is doublely good.
     uint guess = cast(uint) max(round(
           invNormalCDF(pVal, lambda, sqrt(lambda)) + 0.5), 0.0L);
-    real guessP = poissonCDF(guess, lambda);
+    double guessP = poissonCDF(guess, lambda);
 
     if(guessP == pVal) {
         return guess;
     } else if(guessP < pVal) {
         for(uint k = guess + 1; ; k++) {
-            real newP = guessP + poissonPMF(k, lambda);
+            double newP = guessP + poissonPMF(k, lambda);
             if(newP >= 1)
                 return k;
             if(abs(newP - pVal) > abs(guessP - pVal)) {
@@ -353,7 +353,7 @@ uint invPoissonCDF(real pVal, real lambda) {
         }
     } else {
         for(uint k = guess - 1; k != uint.max; k--) {
-            real newP = guessP - poissonPMF(k + 1, lambda);
+            double newP = guessP - poissonPMF(k + 1, lambda);
             if(abs(newP - pVal) > abs(guessP - pVal)) {
                 return k + 1;
             } else {
@@ -370,23 +370,23 @@ unittest {
        // value of k can map to the same p-value at machine precision.
        // Obviously, this is one of those corner cases that nothing can be
        // done about.
-       real lambda = uniform(.05L, 8.0L);
+       double lambda = uniform(.05L, 8.0L);
        uint k = uniform(0U, cast(uint) ceil(3.0L * lambda));
-       real pVal = poissonCDF(k, lambda);
+       double pVal = poissonCDF(k, lambda);
        assert(invPoissonCDF(pVal, lambda) == k);
    }
    writeln("Passed invPoissonCDF unittest.");
 }
 
 ///
-real binomialPMF(ulong k, ulong n, real p) {
+double binomialPMF(ulong k, ulong n, double p) {
     enforce(k <= n, "k cannot be > n in binomial distribution.");
     enforce(p >= 0 && p <= 1, "p must be between 0, 1 in binomial distribution.");
     return exp(logNcomb(n, k) + k * log(p) + (n - k) * log(1 - p));
 }
 
 unittest {
-    assert(approxEqual(binomialPMF(0, 10, .5), cast(real) 1/1024));
+    assert(approxEqual(binomialPMF(0, 10, .5), cast(double) 1/1024));
     assert(approxEqual(binomialPMF(100, 1000, .11), .024856));
     writefln("Passed binomialPMF test.");
 }
@@ -402,26 +402,26 @@ private enum BINOM_POISSON = 1_024;
 // betaIncomplete is numerically unstable for huge values of n.
 // Luckily this is exactly when the normal approximation becomes
 // for all practical purposes exact.
-private real normApproxBinomCDF(real k, real n, real p)
+private double normApproxBinomCDF(double k, double n, double p)
 in {
     assert(k <= n);
     assert(p >= 0 && p <= 1);
 } body {
-    real mu = p * n;
-    real sd = sqrt( to!real(n) ) * sqrt(p) * sqrt(1 - p);
-    real xCC = k + 0.5L;
+    double mu = p * n;
+    double sd = sqrt( to!double(n) ) * sqrt(p) * sqrt(1 - p);
+    double xCC = k + 0.5L;
     return normalCDF(xCC, mu, sd);
 }
 
 ///P(K <= k) where K is random variable.
-real binomialCDF(ulong k, ulong n, real p) {
+double binomialCDF(ulong k, ulong n, double p) {
     enforce(k <= n, "k cannot be > n in binomial distribution.");
     enforce(p >= 0 && p <= 1, "p must be between 0, 1 in binomial distribution.");
 
     if(k == n) {
         return 1;
     } else if(k == 0) {
-        return pow(1.0L - p,  cast(real) n);
+        return pow(1.0 - p,  cast(double) n);
     }
 
     if(n > BINOM_APPROX) {
@@ -434,7 +434,7 @@ real binomialCDF(ulong k, ulong n, real p) {
         }
     }
 
-    return betaIncomplete(n - k, k + 1, 1.0L - p);
+    return betaIncomplete(n - k, k + 1, 1.0 - p);
 }
 
 unittest {
@@ -452,7 +452,7 @@ unittest {
     }
 
     // Test Poisson branch.
-    real poisAns = binomialCDF(85, 1UL << 26, 1.49e-6);
+    double poisAns = binomialCDF(85, 1UL << 26, 1.49e-6);
     assert(approxEqual(poisAns, 0.07085327));
 
     // Test poissonCDFR branch.
@@ -462,14 +462,14 @@ unittest {
     // Make sure cutoff is reasonable:  Just below it, we should get similar
     // results for normal, exact.
     for(ulong n = BINOM_APPROX / 2; n < BINOM_APPROX; n += 200_000) {
-        for(real p = 0.01; p <= 0.99; p += 0.05) {
+        for(double p = 0.01; p <= 0.99; p += 0.05) {
 
             long lowerK = roundTo!long( n * p * 0.99);
             long upperK = roundTo!long( n * p / 0.99);
 
             for(ulong k = lowerK; k <= min(n, upperK); k += 1_000) {
-                real normRes = normApproxBinomCDF(k, n, p);
-                real exactRes = binomialCDF(k, n, p);
+                double normRes = normApproxBinomCDF(k, n, p);
+                double exactRes = binomialCDF(k, n, p);
                 assert(abs(normRes - exactRes) < 0.001,
                     text(normRes, '\t', exactRes));
             }
@@ -482,26 +482,26 @@ unittest {
 // betaIncomplete is numerically unstable for huge values of n.
 // Luckily this is exactly when the normal approximation becomes
 // for all practical purposes exact.
-private real normApproxBinomCDFR(ulong k, ulong n, real p)
+private double normApproxBinomCDFR(ulong k, ulong n, double p)
 in {
     assert(k <= n);
     assert(p >= 0 && p <= 1);
 } body {
-    real mu = p * n;
-    real sd = sqrt( to!real(n) ) * sqrt(p)  * sqrt(1 - p);
-    real xCC = k - 0.5L;
+    double mu = p * n;
+    double sd = sqrt( to!double(n) ) * sqrt(p)  * sqrt(1 - p);
+    double xCC = k - 0.5L;
     return normalCDFR(xCC, mu, sd);
 }
 
 ///P(K >= k) where K is random variable.
-real binomialCDFR(ulong k, ulong n, real p) {
+double binomialCDFR(ulong k, ulong n, double p) {
     enforce(k <= n, "k cannot be > n in binomial distribution.");
     enforce(p >= 0 && p <= 1, "p must be between 0, 1 in binomial distribution.");
 
     if(k == 0) {
         return 1;
     } else if(k == n) {
-        return pow(p, cast(real) n);
+        return pow(p, cast(double) n);
     }
 
     if(n > BINOM_APPROX) {
@@ -538,7 +538,7 @@ unittest {
     }
 
     // Test Poisson inversion branch.
-    real poisRes = binomialCDFR((1UL << 25) - 70, 1UL << 25, 0.9999975L);
+    double poisRes = binomialCDFR((1UL << 25) - 70, 1UL << 25, 0.9999975L);
     assert(approxEqual(poisRes, 0.06883905));
 
     // Test Poisson branch.
@@ -548,14 +548,14 @@ unittest {
     // Make sure cutoff is reasonable:  Just below it, we should get similar
     // results for normal, exact.
     for(ulong n = BINOM_APPROX / 2; n < BINOM_APPROX; n += 200_000) {
-        for(real p = 0.01; p <= 0.99; p += 0.05) {
+        for(double p = 0.01; p <= 0.99; p += 0.05) {
 
             long lowerK = roundTo!long( n * p * 0.99);
             long upperK = roundTo!long( n * p / 0.99);
 
             for(ulong k = lowerK; k <= min(n, upperK); k += 1_000) {
-                real normRes = normApproxBinomCDFR(k, n, p);
-                real exactRes = binomialCDFR(k, n, p);
+                double normRes = normApproxBinomCDFR(k, n, p);
+                double exactRes = binomialCDFR(k, n, p);
                 assert(abs(normRes - exactRes) < 0.001,
                     text(normRes, '\t', exactRes));
             }
@@ -568,13 +568,13 @@ unittest {
 /**Returns the value of k for the given p-value, n and p.  If p-value does
  * not exactly map to a value of k, the value for which binomialCDF(k, n, p)
  * is closest to pVal is used.*/
-uint invBinomialCDF(real pVal, uint n, real p) {
+uint invBinomialCDF(double pVal, uint n, double p) {
     enforce(pVal >= 0 && pVal <= 1, "p-values must be between 0, 1.");
     enforce(p >= 0 && p <= 1, "p must be between 0, 1 in binomial distribution.");
 
     // Use normal approximation to get approx answer, then brute force search.
     // This works better than you think because for small n, there's not much
-    // search space and for large n, the normal approx. is really good.
+    // search space and for large n, the normal approx. is doublely good.
     uint guess = cast(uint) max(round(
           invNormalCDF(pVal, n * p, sqrt(n * p * (1 - p)))) + 0.5, 0);
     if(guess > n) {
@@ -582,13 +582,13 @@ uint invBinomialCDF(real pVal, uint n, real p) {
             guess = 0;
         else guess = n;
     }
-    real guessP = binomialCDF(guess, n, p);
+    double guessP = binomialCDF(guess, n, p);
 
     if(guessP == pVal) {
         return guess;
     } else if(guessP < pVal) {
         for(uint k = guess + 1; k <= n; k++) {
-            real newP = guessP + binomialPMF(k, n, p);
+            double newP = guessP + binomialPMF(k, n, p);
             if(abs(newP - pVal) > abs(guessP - pVal)) {
                 return k - 1;
             } else {
@@ -598,7 +598,7 @@ uint invBinomialCDF(real pVal, uint n, real p) {
         return n;
     } else {
         for(uint k = guess - 1; k != uint.max; k--) {
-            real newP = guessP - binomialPMF(k + 1, n, p);
+            double newP = guessP - binomialPMF(k + 1, n, p);
             if(abs(newP - pVal) > abs(guessP - pVal)) {
                 return k + 1;
             } else {
@@ -618,22 +618,22 @@ unittest {
        // done about.  Using small n's, moderate p's prevents this.
        uint n = uniform(5U, 10U);
        uint k = uniform(0U, n);
-       real p = uniform(0.1L, 0.9L);
-       real pVal = binomialCDF(k, n, p);
+       double p = uniform(0.1L, 0.9L);
+       double pVal = binomialCDF(k, n, p);
        assert(invBinomialCDF(pVal, n, p) == k);
    }
    writeln("Passed invBinomialCDF unittest.");
 }
 
 ///
-real hypergeometricPMF(long x, long n1, long n2, long n)
+double hypergeometricPMF(long x, long n1, long n2, long n)
 in {
     assert(x <= n);
 } body {
     if(x > n1 || x < (n - n2)) {
         return 0;
     }
-    real result = logNcomb(n1, x) + logNcomb(n2, n - x) - logNcomb(n1 + n2, n);
+    double result = logNcomb(n1, x) + logNcomb(n2, n - x) - logNcomb(n1 + n2, n);
     return exp(result);
 }
 
@@ -651,7 +651,7 @@ unittest {
 // CDFs that are both accurate and fast is just plain hard.  This
 // implementation attempts to strike a balance between the two, so that
 // both speed and accuracy are "good enough" for most practical purposes.
-real hypergeometricCDF(long x, long n1, long n2, long n) {
+double hypergeometricCDF(long x, long n1, long n2, long n) {
     enforce(x <= n, "x must be <= n in hypergeometric distribution.");
     enforce(n <= n1 + n2, "n must be <= n1 + n2 in hypergeometric distribution.");
     enforce(x >= 0, "x must be >= 0 in hypergeometric distribution.");
@@ -678,9 +678,9 @@ real hypergeometricCDF(long x, long n1, long n2, long n) {
     // for determining whether to approximate.
     enum NEXACT = 50L;
 
-    real p = cast(real) n1 / (n1 + n2);
-    real pComp = cast(real) n2 / (n1 + n2);
-    real pMin = min(p, pComp);
+    double p = cast(double) n1 / (n1 + n2);
+    double pComp = cast(double) n2 / (n1 + n2);
+    double pMin = min(p, pComp);
     if(min(n, nComp) * pMin >= 100) {
         // Since high relative error in the lower tail is a significant problem,
         // this is a hack to improve the normal approximation:  Use the normal
@@ -710,7 +710,7 @@ real hypergeometricCDF(long x, long n1, long n2, long n) {
             return binomialCDF(cast(uint) x, cast(uint)  n, p);
         }
     } else if(bSc2 >= 50 && bSc2 > bSc1) {
-        real p2 = cast(real) n / (n1 + n2);
+        double p2 = cast(double) n / (n1 + n2);
         if(x <= expec + NEXACT / 2) {
             return min(1, binomialCDF(cast(uint) (x - NEXACT), cast(uint)  n1, p2) +
                 hyperExact(x, n1, n2, n, x - NEXACT + 1));
@@ -744,7 +744,7 @@ unittest {
 }
 
 ///P(X >= x), where X is random variable.
-real hypergeometricCDFR(ulong x, ulong n1, ulong n2, ulong n) {
+double hypergeometricCDFR(ulong x, ulong n1, ulong n2, ulong n) {
     enforce(x <= n, "x must be <= n in hypergeometric distribution.");
     enforce(n <= n1 + n2, "n must be <= n1 + n2 in hypergeometric distribution.");
     enforce(x >= 0, "x must be >= 0 in hypergeometric distribution.");
@@ -765,16 +765,16 @@ unittest {
     writefln("Passed hypergeometricCDFR unittest.");
 }
 
-real hyperExact(ulong x, ulong n1, ulong n2, ulong n, ulong startAt = 0) {
+double hyperExact(ulong x, ulong n1, ulong n2, ulong n, ulong startAt = 0) {
     enforce(x <= n, "x must be <= n in hypergeometric distribution.");
     enforce(n <= n1 + n2, "n must be <= n1 + n2 in hypergeometric distribution.");
     enforce(x >= 0, "x must be >= 0 in hypergeometric distribution.");
 
-    immutable real constPart = logFactorial(n1) + logFactorial(n2) +
+    immutable double constPart = logFactorial(n1) + logFactorial(n2) +
         logFactorial(n) + logFactorial(n1 + n2 - n) - logFactorial(n1 + n2);
-    real sum = 0;
+    double sum = 0;
     for(ulong i = x; i != startAt - 1; i--) {
-        real oldSum = sum;
+        double oldSum = sum;
         sum += exp(constPart - logFactorial(i) - logFactorial(n1 - i) -
                logFactorial(n2 + i - n) - logFactorial(n - i));
         if(isIdentical(sum, oldSum)) { // At full machine precision.
@@ -784,11 +784,11 @@ real hyperExact(ulong x, ulong n1, ulong n2, ulong n, ulong startAt = 0) {
     return sum;
 }
 
-real normApproxHyper(ulong x, ulong n1, ulong n2, ulong n) {
-    real p1 = cast(real) n1 / (n1 + n2);
-    real p2 = cast(real) n2 / (n1 + n2);
-    real numer = x + 0.5L - n * p1;
-    real denom = sqrt(n * p1 * p2 * (n1 + n2 - n) / (n1 + n2 - 1));
+double normApproxHyper(ulong x, ulong n1, ulong n2, ulong n) {
+    double p1 = cast(double) n1 / (n1 + n2);
+    double p2 = cast(double) n2 / (n1 + n2);
+    double numer = x + 0.5L - n * p1;
+    double denom = sqrt(n * p1 * p2 * (n1 + n2 - n) / (n1 + n2 - 1));
     return normalCDF(numer / denom);
 }
 
@@ -798,7 +798,7 @@ alias chiSquareCDFR chiSqrCDFR;
 alias invChiSquareCDFR invChiSqCDFR;
 
 ///
-real chiSquarePDF(real x, real v) {
+double chiSquarePDF(double x, double v) {
     enforce(x >= 0, "x must be >= 0 in chi-square distribution.");
     enforce(v >= 1.0, "Must have at least 1 degree of freedom for chi-square.");
 
@@ -837,14 +837,14 @@ unittest {
  *  x  = the $(POWER &chi;,2) variable. Must be positive.
  *
  */
-real chiSquareCDF(real x, real v) {
+double chiSquareCDF(double x, double v) {
     enforce(x >= 0, "x must be >= 0 in chi-square distribution.");
     enforce(v >= 1.0, "Must have at least 1 degree of freedom for chi-square.");
     return gammaIncomplete( 0.5*v, 0.5*x);
 }
 
 ///
-real chiSquareCDFR(real x, real v) {
+double chiSquareCDFR(double x, double v) {
     enforce(x >= 0, "x must be >= 0 in chi-square distribution.");
     enforce(v >= 1.0, "Must have at least 1 degree of freedom for chi-square.");
     return gammaIncompleteCompl( 0.5L*v, 0.5L*x );
@@ -862,23 +862,23 @@ real chiSquareCDFR(real x, real v) {
  * v = Degrees of freedom. Must be positive.
  *
  */
-real invChiSquareCDFR(real v, real p) {
+double invChiSquareCDFR(double v, double p) {
     enforce(v >= 1.0, "Must have at least 1 degree of freedom for chi-square.");
     enforce(p >= 0 && p <= 1, "P-values must be between 0, 1.");
     return  2.0 * gammaIncompleteComplInv( 0.5*v, p);
 }
 
 unittest {
-  assert(feqrel(chiSqrCDFR(invChiSqCDFR(3.5L, 0.1L), 3.5L), 0.1L)>=real.mant_dig-3);
+  assert(feqrel(chiSqrCDFR(invChiSqCDFR(3.5, 0.1), 3.5), 0.1)>=double.mant_dig-3);
   assert(chiSqrCDF(0.4L, 19.02L) + chiSqrCDFR(0.4L, 19.02L) ==1.0L);
   assert(approxEqual( invChiSqCDFR( 3, chiSqrCDFR(1, 3)), 1));
   writeln("Passed chi-square unittest.");
 }
 
 ///
-real normalPDF(real x, real mean = 0, real sd = 1) {
+double normalPDF(double x, double mean = 0, double sd = 1) {
     enforce(sd > 0, "Standard deviation must be > 0 for normal distribution.");
-    real dev = x - mean;
+    double dev = x - mean;
     return exp(-(dev * dev) / (2 * sd * sd)) / (sd * SQ2PI);
 }
 
@@ -887,13 +887,13 @@ unittest {
 }
 
 ///P(X < x) for normal distribution where X is random var.
-real normalCDF(real x, real mean = 0, real stdev = 1) {
+double normalCDF(double x, double mean = 0, double stdev = 1) {
     enforce(stdev > 0, "Standard deviation must be > 0 for normal distribution.");
 
     // Using a slightly non-obvious implementation in terms of erfc because
     // it seems more accurate than erf for very small values of Z.
 
-    real Z = (-x + mean) / stdev;
+    double Z = (-x + mean) / stdev;
     return erfc(Z*SQRT1_2)/2;
 }
 
@@ -905,23 +905,23 @@ unittest {
 }
 
 ///P(X > x) for normal distribution where X is random var.
-real normalCDFR(real x, real mean = 0, real stdev = 1) {
+double normalCDFR(double x, double mean = 0, double stdev = 1) {
     enforce(stdev > 0, "Standard deviation must be > 0 for normal distribution.");
 
-    real Z = (x - mean) / stdev;
+    double Z = (x - mean) / stdev;
     return erfc(Z*SQRT1_2)/2;
 }
 
 unittest {
     //Should be essentially a mirror image of normalCDF.
-    for(real i = -8; i < 8; i += .1) {
+    for(double i = -8; i < 8; i += .1) {
         assert(approxEqual(normalCDF(i), normalCDFR(-i)));
     }
     writefln("Passed normalCDFR test.");
 }
 
-const real SQRT2PI =   0x1.40d931ff62705966p+1;    // 2.5066282746310005024
-const real EXP_2  = 0.13533528323661269189L; /* exp(-2) */
+enum real SQRT2PI =   0x1.40d931ff62705966p+1;    // 2.5066282746310005024
+enum real EXP_2  = 0.13533528323661269189L; /* exp(-2) */
 
 private {
 immutable real P0[8] = [
@@ -1025,19 +1025,19 @@ immutable real Q3[8] = [
  * Normal probability density function (integrated from
  * minus infinity to x) is equal to p.
  */
-real invNormalCDF(real p, real mean = 0, real sd = 1) {
+double invNormalCDF(double p, double mean = 0, double sd = 1) {
     enforce(p >= 0 && p <= 1, "P-values must be between 0, 1.");
     enforce(sd > 0, "Standard deviation must be > 0 for normal distribution.");
 
     if (p == 0.0L) {
-        return -real.infinity;
+        return -double.infinity;
     }
     if( p == 1.0L ) {
-        return real.infinity;
+        return double.infinity;
     }
-    real x, z, y2, x0, x1;
+    double x, z, y2, x0, x1;
     int code = 1;
-    real y = p;
+    double y = p;
     if( y > (1.0L - EXP_2) ) {
         y = 1.0L - y;
         code = 0;
@@ -1074,17 +1074,17 @@ unittest {
     // The values below are from Excel 2003.
     assert(fabs(invNormalCDF(0.001) - (-3.09023230616779))< 0.00000000000005);
     assert(fabs(invNormalCDF(1e-50) - (-14.9333375347885))< 0.00000000000005);
-    assert(feqrel(invNormalCDF(0.999), -invNormalCDF(0.001))>real.mant_dig-6);
+    assert(feqrel(invNormalCDF(0.999), -invNormalCDF(0.001))>double.mant_dig-6);
 
     // Excel 2003 gets all the following values wrong!
-    assert(invNormalCDF(0.0)==-real.infinity);
-    assert(invNormalCDF(1.0)==real.infinity);
+    assert(invNormalCDF(0.0)==-double.infinity);
+    assert(invNormalCDF(1.0)==double.infinity);
     assert(invNormalCDF(0.5)==0);
 
     // I don't know the correct result for low values
     // (Excel 2003 returns norminv(p) = -30 for all p < 1e-200).
     // The value tested here is the one the function returned in Jan 2006.
-    real unknown1 = invNormalCDF(1e-250L);
+    double unknown1 = invNormalCDF(1e-250L);
     assert( fabs(unknown1 -(-33.79958617269L) ) < 0.00000005);
 
     Random gen;
@@ -1092,22 +1092,22 @@ unittest {
     // normalCDF function trivial given ERF, unlikely to contain subtle bugs.
     // Just make sure invNormalCDF works like it should as the inverse.
     foreach(i; 0..1000) {
-        real x = uniform(0.0L, 1.0L);
-        real mean = uniform(0.0L, 100.0L);
-        real sd = uniform(1.0L, 3.0L);
-        real inv = invNormalCDF(x, mean, sd);
-        real rec = normalCDF(inv, mean, sd);
+        double x = uniform(0.0L, 1.0L);
+        double mean = uniform(0.0L, 100.0L);
+        double sd = uniform(1.0L, 3.0L);
+        double inv = invNormalCDF(x, mean, sd);
+        double rec = normalCDF(inv, mean, sd);
         assert(approxEqual(x, rec));
     }
     writeln("Passed invNormalCDF unittest.");
 }
 
 ///
-real logNormalPDF(real x, real mu = 0, real sigma = 1) {
+double logNormalPDF(double x, double mu = 0, double sigma = 1) {
     enforce(sigma > 0, "sigma must be > 0 for log-normal distribution.");
 
     immutable mulTerm = 1.0L / (x * sigma * SQ2PI);
-    real expTerm = log(x) - mu;
+    double expTerm = log(x) - mu;
     expTerm *= expTerm;
     expTerm /= 2 * sigma * sigma;
     return mulTerm * exp(-expTerm);
@@ -1120,7 +1120,7 @@ unittest {
 }
 
 ///
-real logNormalCDF(real x, real mu = 0, real sigma = 1) {
+double logNormalCDF(double x, double mu = 0, double sigma = 1) {
     enforce(sigma > 0, "sigma must be > 0 for log-normal distribution.");
 
     return 0.5L + 0.5L * erf((log(x) - mu) / (sigma * SQRT2));
@@ -1132,7 +1132,7 @@ unittest {
 }
 
 ///
-real logNormalCDFR(real x, real mu = 0, real sigma = 1) {
+double logNormalCDFR(double x, double mu = 0, double sigma = 1) {
     enforce(sigma > 0, "sigma must be > 0 for log-normal distribution.");
 
     return 0.5L - 0.5L * erf((log(x) - mu) / (sigma * SQRT2));
@@ -1145,14 +1145,14 @@ unittest {
 }
 
 ///
-real weibullPDF(real x, real shape, real scale = 1) {
+double weibullPDF(double x, double shape, double scale = 1) {
     enforce(shape > 0, "shape must be > 0 for weibull distribution.");
     enforce(scale > 0, "scale must be > 0 for weibull distribution.");
 
     if(x < 0) {
         return 0;
     }
-    real ret = pow(x / scale, shape - 1) * exp( -pow(x / scale, shape));
+    double ret = pow(x / scale, shape - 1) * exp( -pow(x / scale, shape));
     return ret * (shape / scale);
 }
 
@@ -1161,11 +1161,11 @@ unittest {
 }
 
 ///
-real weibullCDF(real x, real shape, real scale = 1) {
+double weibullCDF(double x, double shape, double scale = 1) {
     enforce(shape > 0, "shape must be > 0 for weibull distribution.");
     enforce(scale > 0, "scale must be > 0 for weibull distribution.");
 
-    real exponent = pow(x / scale, shape);
+    double exponent = pow(x / scale, shape);
     return 1 - exp(-exponent);
 }
 
@@ -1174,11 +1174,11 @@ unittest {
 }
 
 ///
-real weibullCDFR(real x, real shape, real scale = 1) {
+double weibullCDFR(double x, double shape, double scale = 1) {
     enforce(shape > 0, "shape must be > 0 for weibull distribution.");
     enforce(scale > 0, "scale must be > 0 for weibull distribution.");
 
-    real exponent = pow(x / scale, shape);
+    double exponent = pow(x / scale, shape);
     return exp(-exponent);
 }
 
@@ -1188,29 +1188,29 @@ unittest {
 }
 
 // For K-S tests in dstats.random.  Todo:  Flesh out.
-real waldCDF(real x, real mu, real lambda) {
-    real sqr = sqrt(lambda / (2 * x));
-    real term1 = 1 + erf(sqr * (x / mu - 1));
-    real term2 = exp(2 * lambda / mu);
-    real term3 = 1 - erf(sqr * (x / mu + 1));
+double waldCDF(double x, double mu, double lambda) {
+    double sqr = sqrt(lambda / (2 * x));
+    double term1 = 1 + erf(sqr * (x / mu - 1));
+    double term2 = exp(2 * lambda / mu);
+    double term3 = 1 - erf(sqr * (x / mu + 1));
     return 0.5L * term1 + 0.5L * term2 * term3;
 }
 
 // ditto.
-real rayleighCDF(real x, real mode) {
+double rayleighCDF(double x, double mode) {
     return 1.0L - exp(-x * x / (2 * mode * mode));
 }
 
 ///
-real studentsTCDF(real t, real df) {
+double studentsTCDF(double t, double df) {
     enforce(df > 0, "Student's T must have >0 degrees of freedom.");
 
-    real x = (t + sqrt(t * t + df)) / (2 * sqrt(t * t + df));
+    double x = (t + sqrt(t * t + df)) / (2 * sqrt(t * t + df));
     return betaIncomplete(df * 0.5L, df * 0.5L, x);
 }
 
 ///
-real studentsTCDFR(real t, real df)   {
+double studentsTCDFR(double t, double df)   {
     return studentsTCDF(-t, df);
 }
 
@@ -1235,21 +1235,21 @@ unittest {
 * df = degrees of freedom. Must be >1
 * p  = probability. 0 < p < 1
 */
-real invStudentsTCDF(real p, real df) {
+double invStudentsTCDF(double p, double df) {
     enforce(p >= 0 && p <= 1, "P-values must be between 0, 1.");
     enforce(df > 0, "Student's T must have >0 degrees of freedom.");
 
-    if (p==0) return -real.infinity;
-    if (p==1) return real.infinity;
+    if (p==0) return -double.infinity;
+    if (p==1) return double.infinity;
 
-    real rk, z;
+    double rk, z;
     rk =  df;
 
     if ( p > 0.25L && p < 0.75L ) {
         if ( p == 0.5L ) return 0;
         z = 1.0L - 2.0L * p;
         z = betaIncompleteInv( 0.5L, 0.5L*rk, fabs(z) );
-        real t = sqrt( rk*z/(1.0L-z) );
+        double t = sqrt( rk*z/(1.0L-z) );
         if( p < 0.5L )
             t = -t;
         return t;
@@ -1261,7 +1261,7 @@ real invStudentsTCDF(real p, real df) {
     }
     z = betaIncompleteInv( 0.5L*rk, 0.5L, 2.0L*p );
 
-    if (z<0) return rflg * real.infinity;
+    if (z<0) return rflg * double.infinity;
     return rflg * sqrt( rk/z - rk );
 }
 
@@ -1300,27 +1300,27 @@ writeln("Passed studentsTCDF.");
  *  df2 = Degrees of freedom of the second variable. Must be >= 1
  *  x  = Must be >= 0
  */
-real fisherCDF(real x, real df1, real df2) {
+double fisherCDF(double x, double df1, double df2) {
     enforce(df1 > 0 && df2 > 0,
         "Fisher distribution must have >0 degrees of freedom.");
     enforce(x > 0, "x must be >0 for Fisher distribution.");
 
-    real a = cast(real)(df1);
-    real b = cast(real)(df2);
-    real w = a * x;
+    double a = cast(double)(df1);
+    double b = cast(double)(df2);
+    double w = a * x;
     w = w/(b + w);
     return betaIncomplete(0.5L*a, 0.5L*b, w);
 }
 
 /** ditto */
-real fisherCDFR(real x, real df1, real df2) {
+double fisherCDFR(double x, double df1, double df2) {
     enforce(df1 > 0 && df2 > 0,
         "Fisher distribution must have >0 degrees of freedom.");
     enforce(x > 0, "x must be >0 for Fisher distribution.");
 
-    real a = cast(real)(df1);
-    real b = cast(real)(df2);
-    real w = b / (b + a * x);
+    double a = cast(double)(df1);
+    double b = cast(double)(df2);
+    double w = b / (b + a * x);
     return betaIncomplete( 0.5L*b, 0.5L*a, w );
 }
 
@@ -1343,15 +1343,15 @@ real fisherCDFR(real x, real df1, real df2) {
  *      z = betaIncompleteInv( df1/2, df2/2, p ),
  *      x = df2 z / (df1 (1-z)).
 */
-real invFisherCDFR(real df1, real df2, real p ) {
+double invFisherCDFR(double df1, double df2, double p ) {
     enforce(df1 > 0 && df2 > 0,
         "Fisher distribution must have >0 degrees of freedom.");
     enforce(p >= 0 && p <= 1, "P-values must be between 0, 1.");
 
-    real a = df1;
-    real b = df2;
+    double a = df1;
+    double b = df2;
     /* Compute probability for x = 0.5.  */
-    real w = betaIncomplete( 0.5L*b, 0.5L*a, 0.5L );
+    double w = betaIncomplete( 0.5L*b, 0.5L*a, 0.5L );
     /* If that is greater than p, then the solution w < .5.
        Otherwise, solve at 1-p to remove cancellation in (b - b*w).  */
     if ( w > p || p < 0.001L) {
@@ -1375,7 +1375,7 @@ unittest {
 }
 
 ///
-real negBinomPMF(ulong k, ulong n, real p) {
+double negBinomPMF(ulong k, ulong n, double p) {
     enforce(p >= 0 && p <= 1,
         "p must be between 0, 1 for negative binomial distribution.");
 
@@ -1412,10 +1412,10 @@ unittest {
  * References:
  * $(LINK http://mathworld.wolfram.com/NegativeBinomialDistribution.html)
  */
-real negBinomCDF(ulong k, ulong n, real p ) {
+double negBinomCDF(ulong k, ulong n, double p ) {
     enforce(p >= 0 && p <= 1,
         "p must be between 0, 1 for negative binomial distribution.");
-    if ( k == 0 ) return pow(p, cast(real) n);
+    if ( k == 0 ) return pow(p, cast(double) n);
     return  betaIncomplete( n, k + 1, p );
 }
 
@@ -1426,7 +1426,7 @@ unittest {
 }
 
 /**Probability that k or more failures precede the nth success.*/
-real negBinomCDFR(ulong k, ulong n, real p) {
+double negBinomCDFR(ulong k, ulong n, double p) {
     enforce(p >= 0 && p <= 1,
         "p must be between 0, 1 for negative binomial distribution.");
 
@@ -1441,19 +1441,19 @@ unittest {
 }
 
 ///
-ulong invNegBinomCDF(real pVal, ulong n, real p) {
+ulong invNegBinomCDF(double pVal, ulong n, double p) {
     enforce(p >= 0 && p <= 1,
         "p must be between 0, 1 for negative binomial distribution.");
     enforce(pVal >= 0 && pVal <= 1,
         "P-values must be between 0, 1.");
 
     // Normal or gamma approx, then adjust.
-    real mean = n * (1 - p) / p;
-    real var = n * (1 - p) / (p * p);
-    real skew = (2 - p) / sqrt(n * (1 - p));
-    real kk = 4.0L / (skew * skew);
-    real theta = sqrt(var / kk);
-    real offset = (kk * theta) - mean + 0.5L;
+    double mean = n * (1 - p) / p;
+    double var = n * (1 - p) / (p * p);
+    double skew = (2 - p) / sqrt(n * (1 - p));
+    double kk = 4.0L / (skew * skew);
+    double theta = sqrt(var / kk);
+    double offset = (kk * theta) - mean + 0.5L;
     ulong guess;
 
     // invGammaCDFR is very expensive, but worth it in cases where normal approx
@@ -1468,15 +1468,15 @@ ulong invNegBinomCDF(real pVal, ulong n, real p) {
 
     // This is pretty arbitrary behavior, but I don't want to use exceptions
     // and it has to be handled as a special case.
-    if(pVal > 1 - real.epsilon)
+    if(pVal > 1 - double.epsilon)
         return ulong.max;
-    real guessP = negBinomCDF(guess, n, p);
+    double guessP = negBinomCDF(guess, n, p);
 
     if(guessP == pVal) {
         return guess;
     } else if(guessP < pVal) {
         for(ulong k = guess + 1; ; k++) {
-            real newP = guessP + negBinomPMF(k, n, p);
+            double newP = guessP + negBinomPMF(k, n, p);
             // Test for aliasing.
             if(newP == guessP)
                 return k - 1;
@@ -1490,7 +1490,7 @@ ulong invNegBinomCDF(real pVal, ulong n, real p) {
         }
     } else {
         for(ulong k = guess - 1; guess != ulong.max; k--) {
-            real newP = guessP - negBinomPMF(k + 1, n, p);
+            double newP = guessP - negBinomPMF(k + 1, n, p);
             // Test for aliasing.
             if(newP == guessP)
                 return k + 1;
@@ -1509,14 +1509,14 @@ unittest {
     uint nSkipped;
     foreach(i; 0..1000) {
         uint n = uniform(1u, 10u);
-        real p = uniform(0.0L, 1L);
+        double p = uniform(0.0L, 1L);
         uint k = uniform(0, 20);
-        real pVal = negBinomCDF(k, n, p);
+        double pVal = negBinomCDF(k, n, p);
 
         // In extreme tails, p-values can alias, giving incorrect results.
         // This is a corner case that nothing can be done about.  Just skip
         // these.
-        if(pVal >= 1 - 10 * real.epsilon) {
+        if(pVal >= 1 - 10 * double.epsilon) {
             nSkipped++;
             continue;
         }
@@ -1538,7 +1538,7 @@ unittest {
  *
  * Also note that the exponential distribution is a special case of the gamma, with b = 1.
  */
-real gammaCDF(real x, real a, real b) {
+double gammaCDF(double x, double a, double b) {
     enforce(x > 0, "x must be >0 in gamma distribution.");
     enforce(a > 0, "a must be >0 in gamma distribution.");
     enforce(b > 0, "b must be >0 in gamma distribution.");
@@ -1547,7 +1547,7 @@ real gammaCDF(real x, real a, real b) {
 }
 
 /** ditto */
-real gammaCDFR(real x, real a, real b) {
+double gammaCDFR(double x, double a, double b) {
     enforce(x > 0, "x must be >0 in gamma distribution.");
     enforce(a > 0, "a must be >0 in gamma distribution.");
     enforce(b > 0, "b must be >0 in gamma distribution.");
@@ -1556,25 +1556,25 @@ real gammaCDFR(real x, real a, real b) {
 }
 
 ///
-real invGammaCDFR(real p, real a, real b) {
+double invGammaCDFR(double p, double a, double b) {
     enforce(p >= 0 && p <= 1, "P-values must be between 0, 1.");
     enforce(a > 0, "a must be >0 in gamma distribution.");
     enforce(b > 0, "b must be >0 in gamma distribution.");
 
-    real ax = gammaIncompleteComplInv(b, p);
+    double ax = gammaIncompleteComplInv(b, p);
     return ax / a;
 }
 
 unittest {
-    real inv = invGammaCDFR(0.78, 2, 1);
+    double inv = invGammaCDFR(0.78, 2, 1);
     assert(approxEqual(gammaCDFR(inv, 2, 1), 0.78));
 }
 
 ///
-real cauchyPDF(real X, real X0 = 0, real gamma = 1) {
+double cauchyPDF(double X, double X0 = 0, double gamma = 1) {
     enforce(gamma > 0, "gamma must be > 0 for Cauchy distribution.");
 
-    real toSquare = (X - X0) / gamma;
+    double toSquare = (X - X0) / gamma;
     return 1.0L / (
         PI * gamma * (1 + toSquare * toSquare));
 }
@@ -1586,7 +1586,7 @@ unittest {
 
 
 ///
-real cauchyCDF(real X, real X0 = 0, real gamma = 1) {
+double cauchyCDF(double X, double X0 = 0, double gamma = 1) {
     enforce(gamma > 0, "gamma must be > 0 for Cauchy distribution.");
 
     return M_1_PI * atan((X - X0) / gamma) + 0.5L;
@@ -1599,7 +1599,7 @@ unittest {
 }
 
 ///
-real cauchyCDFR(real X, real X0 = 0, real gamma = 1) {
+double cauchyCDFR(double X, double X0 = 0, double gamma = 1) {
     enforce(gamma > 0, "gamma must be > 0 for Cauchy distribution.");
 
     return M_1_PI * atan((X0 - X) / gamma) + 0.5L;
@@ -1613,7 +1613,7 @@ unittest {
 }
 
 ///
-real invCauchyCDF(real p, real X0 = 0, real gamma = 1) {
+double invCauchyCDF(double p, double X0 = 0, double gamma = 1) {
     enforce(gamma > 0, "gamma must be > 0 for Cauchy distribution.");
     enforce(p >= 0 && p <= 1, "P-values must be between 0, 1.");
 
@@ -1630,12 +1630,12 @@ unittest {
 
 // For K-S tests in dstats.random.  To be fleshed out later.  Intentionally
 // lacking ddoc.
-real logisticCDF(real x, real loc, real shape) {
+double logisticCDF(double x, double loc, double shape) {
     return 1.0L / (1 + exp(-(x - loc) / shape));
 }
 
 ///
-real laplacePDF(real x, real mu = 0, real b = 1) {
+double laplacePDF(double x, double mu = 0, double b = 1) {
     enforce(b > 0, "b must be > 0 for laplace distribution.");
 
     return (exp(-abs(x - mu) / b)) / (2 * b);
@@ -1648,11 +1648,11 @@ unittest {
 }
 
 ///
-real laplaceCDF(real X, real mu = 0, real b = 1) {
+double laplaceCDF(double X, double mu = 0, double b = 1) {
     enforce(b > 0, "b must be > 0 for laplace distribution.");
 
-    real diff = (X - mu);
-    real sign = (diff > 0) ? 1 : -1;
+    double diff = (X - mu);
+    double sign = (diff > 0) ? 1 : -1;
     return 0.5L *(1 + sign * (1 - exp(-abs(diff) / b)));
 }
 
@@ -1664,11 +1664,11 @@ unittest {
 }
 
 ///
-real laplaceCDFR(real X, real mu = 0, real b = 1) {
+double laplaceCDFR(double X, double mu = 0, double b = 1) {
     enforce(b > 0, "b must be > 0 for laplace distribution.");
 
-    real diff = (mu - X);
-    real sign = (diff > 0) ? 1 : -1;
+    double diff = (mu - X);
+    double sign = (diff > 0) ? 1 : -1;
     return 0.5L *(1 + sign * (1 - exp(-abs(diff) / b)));
 }
 
@@ -1681,12 +1681,12 @@ unittest {
 }
 
 ///
-real invLaplaceCDF(real p, real mu = 0, real b = 1) {
+double invLaplaceCDF(double p, double mu = 0, double b = 1) {
     enforce(p >= 0 && p <= 1, "P-values must be between 0, 1.");
     enforce(b > 0, "b must be > 0 for laplace distribution.");
 
-    real p05 = p - 0.5L;
-    real sign = (p05 < 0) ? -1.0L : 1.0L;
+    double p05 = p - 0.5L;
+    double sign = (p05 < 0) ? -1.0L : 1.0L;
     return mu - b * sign * log(1.0L - 2 * abs(p05));
 }
 
@@ -1698,15 +1698,15 @@ unittest {
 
 
 /**Kolmogorov distribution.  Used in Kolmogorov-Smirnov testing.*/
-real kolmDist(real X) {
+double kolmDist(double X) {
     enforce(X >= 0, "X must be >= 0 for Kolmogorov distribution.");
 
     if(X == 0) {
         //Handle as a special case.  Otherwise, get NAN b/c of divide by zero.
         return 0;
     }
-    real result = 0;
-    real i = 1;
+    double result = 0;
+    double i = 1;
     while(true) {
         immutable delta = exp(-(2 * i - 1) * (2 * i - 1) * PI * PI  / (8 * X * X));
         i++;

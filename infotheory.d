@@ -48,35 +48,35 @@ version(unittest) {
  *
  * Examples:
  * ---
- * real uniform3 = entropyCounts([4, 4, 4]);
+ * double uniform3 = entropyCounts([4, 4, 4]);
  * assert(approxEqual(uniform3, log2(3)));
- * real uniform4 = entropyCounts([5, 5, 5, 5]);
+ * double uniform4 = entropyCounts([5, 5, 5, 5]);
  * assert(approxEqual(uniform4, 2));
  * ---
  */
-real entropyCounts(T)(T data)
-if(isForwardRange!(T) && realInput!(T)) {
+double entropyCounts(T)(T data)
+if(isForwardRange!(T) && doubleInput!(T)) {
     auto save = data;
-    return entropyCounts(save, sum!(T, real)(data));
+    return entropyCounts(save, sum!(T, double)(data));
 }
 
-real entropyCounts(T)(T data, real n)
+double entropyCounts(T)(T data, double n)
 if(isIterable!(T)) {
-    real nNeg1 = 1.0L / n;
-    real entropy = 0;
+    immutable double nNeg1 = 1.0 / n;
+    double entropy = 0;
     foreach(value; data) {
         if(value == 0)
             continue;
-        real pxi = cast(real) value * nNeg1;
+        double pxi = cast(double) value * nNeg1;
         entropy -= pxi * log2(pxi);
     }
     return entropy;
 }
 
 unittest {
-    real uniform3 = entropyCounts([4, 4, 4].dup);
+    double uniform3 = entropyCounts([4, 4, 4].dup);
     assert(approxEqual(uniform3, log2(3)));
-    real uniform4 = entropyCounts([5, 5, 5, 5].dup);
+    double uniform4 = entropyCounts([5, 5, 5, 5].dup);
     assert(approxEqual(uniform4, 2));
     assert(entropyCounts([2,2].dup)==1);
     assert(entropyCounts([5.1,5.1,5.1,5.1].dup)==2);
@@ -279,14 +279,14 @@ unittest {
  * Examples:
  * ---
  * int[] foo = [1, 1, 1, 2, 2, 2, 3, 3, 3];
- * real entropyFoo = entropy(foo);  // Plain old entropy of foo.
+ * double entropyFoo = entropy(foo);  // Plain old entropy of foo.
  * assert(approxEqual(entropyFoo, log2(3)));
  * int[] bar = [1, 2, 3, 1, 2, 3, 1, 2, 3];
- * real HFooBar = entropy(joint(foo, bar));  // Joint entropy of foo and bar.
+ * double HFooBar = entropy(joint(foo, bar));  // Joint entropy of foo and bar.
  * assert(approxEqual(HFooBar, log2(9)));
  * ---
  */
-real entropy(T)(T data)
+double entropy(T)(T data)
 if(isIterable!(T)) {
     static if(!dstats.base.hasLength!(T)) {
         return entropyImpl!(uint, T)(data);
@@ -301,7 +301,7 @@ if(isIterable!(T)) {
     }
 }
 
-private real entropyImpl(U, T)(T data)
+private double entropyImpl(U, T)(T data)
 if(IterType!(T).sizeof > 1 && !NeedsHeap!(T)) {  // Generic version.
     alias IterType!(T) E;
 
@@ -314,12 +314,12 @@ if(IterType!(T).sizeof > 1 && !NeedsHeap!(T)) {  // Generic version.
         counts[elem]++;
     }
 
-    real ans = entropyCounts(counts.values, len);
+    double ans = entropyCounts(counts.values, len);
     TempAlloc.frameFree;
     return ans;
 }
 
-private real entropyImpl(U, T)(T data)
+private double entropyImpl(U, T)(T data)
 if(IterType!(T).sizeof > 1 && NeedsHeap!(T)) {  // Generic version.
     alias IterType!(T) E;
 
@@ -332,7 +332,7 @@ if(IterType!(T).sizeof > 1 && NeedsHeap!(T)) {  // Generic version.
     return entropyCounts(counts, len);
 }
 
-private real entropyImpl(U, T)(T data)  // byte/char specialization
+private double entropyImpl(U, T)(T data)  // byte/char specialization
 if(IterType!(T).sizeof == 1) {
     alias IterType!(T) E;
 
@@ -363,16 +363,16 @@ if(IterType!(T).sizeof == 1) {
 unittest {
     { // Generic version.
         int[] foo = [1, 1, 1, 2, 2, 2, 3, 3, 3];
-        real entropyFoo = entropy(foo);
+        double entropyFoo = entropy(foo);
         assert(approxEqual(entropyFoo, log2(3)));
         int[] bar = [1, 2, 3, 1, 2, 3, 1, 2, 3];
         auto stuff = joint(foo, bar);
-        real jointEntropyFooBar = entropy(joint(foo, bar));
+        double jointEntropyFooBar = entropy(joint(foo, bar));
         assert(approxEqual(jointEntropyFooBar, log2(9)));
     }
     { // byte specialization
         byte[] foo = [-1, -1, -1, 2, 2, 2, 3, 3, 3];
-        real entropyFoo = entropy(foo);
+        double entropyFoo = entropy(foo);
         assert(approxEqual(entropyFoo, log2(3)));
         string bar = "ACTGGCTA";
         assert(entropy(bar) == 2);
@@ -386,7 +386,7 @@ unittest {
 }
 
 /**Calculate the conditional entropy H(data | cond).*/
-real condEntropy(T, U)(T data, U cond)
+double condEntropy(T, U)(T data, U cond)
 if(isInputRange!(T) && isInputRange!(U)) {
     return entropy(joint(data, cond)) - entropy(cond);
 }
@@ -404,7 +404,7 @@ unittest {
 
 /**Calculates the mutual information of two vectors of observations.
  */
-real mutualInfo(T, U)(T x, U y)
+double mutualInfo(T, U)(T x, U y)
 if(isInputRange!(T) && isInputRange!(U)) {
     return entropy(x) + entropy(y) - entropy(joint(x, y));
 }
@@ -422,7 +422,7 @@ unittest {
 }
 
 /**Calculates the conditional mutual information I(x, y | z).*/
-real condMutualInfo(T, U, V)(T x, U y, V z) {
+double condMutualInfo(T, U, V)(T x, U y, V z) {
     return entropy(joint(x, z)) + entropy(joint(y, z)) -
            entropy(joint(x, y, z)) - entropy(z);
 }
@@ -443,29 +443,29 @@ unittest {
  * is sorted by more than one key, i.e. structs, the result will be the joint
  * entropy of all of the keys.  The compFun alias will be used to compare
  * adjacent elements and determine how many instances of each value exist.*/
-real entropySorted(alias compFun = "a == b", T)(T data)
+double entropySorted(alias compFun = "a == b", T)(T data)
 if(isInputRange!(T)) {
     alias ElementType!(T) E;
     alias binaryFun!(compFun) comp;
     immutable n = data.length;
     immutable nrNeg1 = 1.0L / n;
 
-    real sum = 0.0L;
-    real nSame = 1.0L;
+    double sum = 0.0;
+    int nSame = 1;
     auto last = data.front;
     data.popFront;
     foreach(elem; data) {
-        if(comp(elem, last))
+        if(comp(elem, last)) {
             nSame++;
-        else {
-            real p = nSame * nrNeg1;
-            nSame = 1.0L;
+        } else {
+            immutable p = nSame * nrNeg1;
+            nSame = 1;
             sum -= p * log2(p);
         }
         last = elem;
     }
     // Handle last run.
-    real p = nSame * nrNeg1;
+    immutable p = nSame * nrNeg1;
     sum -= p * log2(p);
 
     return sum;

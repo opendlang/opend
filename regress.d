@@ -37,7 +37,7 @@ module dstats.regress;
 import std.math, std.algorithm, std.traits, std.array, std.traits, std.contracts,
     dstats.alloc, std.range, std.conv, dstats.distrib, dstats.cor, dstats.base;
 
-private void enforceConfidence(real conf) {
+private void enforceConfidence(double conf) {
     enforce(conf >= 0 && conf <= 1,
         "Confidence intervals must be between 0 and 1.");
 }
@@ -47,22 +47,27 @@ struct PowMap(ExpType, T)
 if(isForwardRange!(T)) {
     T range;
     ExpType exponent;
-    real cache;
+    double cache;
 
     this(T range, ExpType exponent) {
         this.range = range;
         this.exponent = exponent;
-        cache = pow(cast(real) range.front, exponent);
+
+        static if(isIntegral!ExpType) {
+            cache = pow(cast(double) range.front, exponent);
+        } else {
+            cache = pow(cast(ExpType) range.front, exponent);
+        }
     }
 
-    real front() const pure nothrow {
+    double front() const pure nothrow {
         return cache;
     }
 
     void popFront() {
         range.popFront;
         if(!range.empty) {
-            cache = pow(cast(real) range.front, exponent);
+            cache = pow(cast(double) range.front, exponent);
         }
     }
 
@@ -72,7 +77,7 @@ if(isForwardRange!(T)) {
 }
 
 /**Maps a forward range to a power determined at runtime.  ExpType is the type
- * of the exponent.  Using an int is faster than using a real, but obviously
+ * of the exponent.  Using an int is faster than using a double, but obviously
  * less flexible.*/
 PowMap!(ExpType, T) powMap(ExpType, T)(T range, ExpType exponent) {
     alias PowMap!(ExpType, T) RT;
@@ -81,7 +86,7 @@ PowMap!(ExpType, T) powMap(ExpType, T)(T range, ExpType exponent) {
 
 // Very ad-hoc, does a bunch of matrix ops.  Written specifically to be
 // efficient in the context used here.
-private void rangeMatrixMulTrans(U, T...)(out real[] xTy, out real[][] xTx, U vec, T matIn) {
+private void rangeMatrixMulTrans(U, T...)(out double[] xTy, out double[][] xTx, U vec, T matIn) {
     static if(isArray!(T[0]) && isInputRange!(typeof(matIn[0][0])) && matIn.length == 1) {
         alias typeof(matIn[0].front()) E;
         typeof(matIn[0]) mat = tempdup(cast(E[]) matIn[0]);
@@ -109,12 +114,12 @@ private void rangeMatrixMulTrans(U, T...)(out real[] xTy, out real[][] xTx, U ve
         vec.popFront;
     }
 
-    xTy = newStack!real(mat.length);
+    xTy = newStack!double(mat.length);
     xTy[] = 0;
 
-    xTx = newStack!(real[])(mat.length);
+    xTx = newStack!(double[])(mat.length);
     foreach(ref elem; xTx) {
-        elem = newStack!real(mat.length * 2);
+        elem = newStack!double(mat.length * 2);
     }
 
     foreach(row; xTx) {
@@ -123,12 +128,12 @@ private void rangeMatrixMulTrans(U, T...)(out real[] xTy, out real[][] xTx, U ve
 
     while(!someEmpty) {
         foreach(i, elem1; mat) {
-            real e1Front = cast(real) elem1.front;
-            xTy[i] += cast(real) elem1.front * cast(real) vec.front;
+            double e1Front = cast(double) elem1.front;
+            xTy[i] += cast(double) elem1.front * cast(double) vec.front;
             xTx[i][i] += e1Front * e1Front;
             foreach(jMinusI, elem2; mat[i + 1..$]) {
                 immutable j = i + 1 + jMinusI;
-                real num = e1Front * cast(real) elem2.front;
+                double num = e1Front * cast(double) elem2.front;
                 xTx[i][j] += num;
                 xTx[j][i] += num;
             }
@@ -139,18 +144,18 @@ private void rangeMatrixMulTrans(U, T...)(out real[] xTy, out real[][] xTx, U ve
 
 // Uses Gauss-Jordan elim. w/ row pivoting.  Not that efficient, but for the ad-hoc purposes
 // it was meant for, it should be good enough.
-void invert(ref real[][] mat) {
+void invert(ref double[][] mat) {
     // Normalize, augment w/ identity.  The matrix is already the right size
     // from rangeMatrixMulTrans.
     foreach(i, row; mat) {
-        real absMax = 1.0L / reduce!(max)(map!(abs)(row[0..mat.length]));
+        double absMax = 1.0L / reduce!(max)(map!(abs)(row[0..mat.length]));
         row[0..mat.length] *= absMax;
         row[i + mat.length] = absMax;
     }
 
     foreach(col; 0..mat.length) {
         size_t bestRow;
-        real biggest = 0;
+        double biggest = 0;
         foreach(row; col..mat.length) {
             if(abs(mat[row][col]) > biggest) {
                 bestRow = row;
@@ -163,7 +168,7 @@ void invert(ref real[][] mat) {
             if(row == col) {
                 continue;
             }
-            real ratio = mat[row][col] / mat[col][col];
+            double ratio = mat[row][col] / mat[col][col];
             foreach(i, ref elem; mat[row]) {
                 elem -= mat[col][i] * ratio;
             }
@@ -172,7 +177,7 @@ void invert(ref real[][] mat) {
 
 
     foreach(i; 0..mat.length) {
-        real diagVal = mat[i][i];
+        double diagVal = mat[i][i];
         mat[i][] /= diagVal;
     }
 
@@ -186,36 +191,36 @@ void invert(ref real[][] mat) {
 struct RegressRes {
     /**The coefficients, one for each range in X.  These will be in the order
      * that the X ranges were passed in.*/
-    real[] betas;
+    double[] betas;
 
     /**The standard error terms of the X ranges passed in.*/
-    real[] stdErr;
+    double[] stdErr;
 
     /**The lower confidence bounds of the beta terms, at the confidence level
      * specificied.  (Default 0.95).*/
-    real[] lowerBound;
+    double[] lowerBound;
 
     /**The upper confidence bounds of the beta terms, at the confidence level
      * specificied.  (Default 0.95).*/
-    real[] upperBound;
+    double[] upperBound;
 
     /**The P-value for the alternative that the corresponding beta value is
      * different from zero against the null that it is equal to zero.*/
-    real[] p;
+    double[] p;
 
     /**The coefficient of determination.*/
-    real R2;
+    double R2;
 
     /**The adjusted coefficient of determination.*/
-    real adjustedR2;
+    double adjustedR2;
 
     /**The root mean square of the residuals.*/
-    real residualError;
+    double residualError;
 
     /**The P-value for the model as a whole.  Based on an F-statistic.  The
      * null here is that the model has no predictive value, the alternative
      * is that it does.*/
-    real overallP;
+    double overallP;
 
     // Just used internally.
     private static string arrStr(T)(T arr) {
@@ -256,14 +261,14 @@ struct Residuals(F, U, T...) {
     U Y;
     R X;
     F[] betas;
-    real residual;
+    double residual;
     bool _empty;
 
     void nextResidual() {
-        real sum = 0;
+        double sum = 0;
         size_t i = 0;
         foreach(elem; X) {
-            sum += cast(real) elem.front * betas[i];
+            sum += cast(double) elem.front * betas[i];
             i++;
         }
         residual = sum - Y.front;
@@ -294,7 +299,7 @@ struct Residuals(F, U, T...) {
         nextResidual;
     }
 
-    real front() const pure nothrow {
+    double front() const pure nothrow {
         return residual;
     }
 
@@ -345,12 +350,12 @@ if(isFloatingPoint!F && isForwardRange!U && allSatisfy!(isForwardRange, T)) {
  * int[] nCoffees = [3,6,2,4,3,6,8];
  * int[] musicVolume = [3,1,4,1,5,9,2];
  * int[] programmingSkill = [2,7,1,8,2,8,1];
- * real[] betas = linearRegressBeta(programmingSkill, repeat(1), nBeers, nCoffees,
+ * double[] betas = linearRegressBeta(programmingSkill, repeat(1), nBeers, nCoffees,
  *     musicVolume, map!"a * a"(musicVolume));
  * ---
  */
-real[] linearRegressBeta(U, T...)(U Y, T XIn)
-if(allSatisfy!(isInputRange, T) && realInput!(U)) {
+double[] linearRegressBeta(U, T...)(U Y, T XIn)
+if(allSatisfy!(isInputRange, T) && doubleInput!(U)) {
     mixin(newFrame);
     static if(isArray!(T[0]) && isInputRange!(typeof(XIn[0][0])) &&
         T.length == 1) {
@@ -360,11 +365,11 @@ if(allSatisfy!(isInputRange, T) && realInput!(U)) {
         alias XIn X;
     }
 
-    real[][] xTx;
-    real[] xTy;
+    double[][] xTx;
+    double[] xTy;
     rangeMatrixMulTrans(xTy, xTx, Y, X);
     invert(xTx);
-    real[] ret = new real[X.length];
+    double[] ret = new double[X.length];
     foreach(i; 0..ret.length) {
         ret[i] = 0;
         foreach(j; 0..ret.length) {
@@ -388,7 +393,7 @@ if(allSatisfy!(isInputRange, T) && realInput!(U)) {
  * 2.  If you have a large amount of data and you're mapping it to some
  *     expensive function, you may want to do this eagerly instead of lazily.
  *
- * Notes:  The X ranges are traversed in locksep, but the traversal is stopped
+ * Notes:  The X ranges are traversed in lockstep, but the traversal is stopped
  * at the end of the shortest one.  Therefore, using infinite ranges is safe.
  * For example, using repeat(1) to get an intercept term works.
  *
@@ -414,13 +419,13 @@ if(allSatisfy!(isInputRange, T) && realInput!(U)) {
  * ---
  */
 RegressRes linearRegress(U, TC...)(U Y, TC input) {
-    static if(is(TC[$ - 1] : real)) {
-        real confLvl = input[$ - 1];
+    static if(is(TC[$ - 1] : double)) {
+        double confLvl = input[$ - 1];
         enforceConfidence(confLvl);
         alias TC[0..$ - 1] T;
         alias input[0..$ - 1] XIn;
     } else {
-        real confLvl = 0.95; // Default;
+        double confLvl = 0.95; // Default;
         alias TC T;
         alias input XIn;
     }
@@ -437,11 +442,11 @@ RegressRes linearRegress(U, TC...)(U Y, TC input) {
             "tuples of forward ranges or ranges of forward ranges.");
     }
 
-    real[][] xTx;
-    real[] xTy;
+    double[][] xTx;
+    double[] xTy;
     rangeMatrixMulTrans(xTy, xTx, Y, X);
     invert(xTx);
-    real[] betas = new real[X.length];
+    double[] betas = new double[X.length];
     foreach(i; 0..betas.length) {
         betas[i] = 0;
         foreach(j; 0..betas.length) {
@@ -450,43 +455,43 @@ RegressRes linearRegress(U, TC...)(U Y, TC input) {
     }
 
     auto residuals = residuals(betas, Y, X);
-    real S = 0;
+    double S = 0;
     ulong n = 0;
     PearsonCor R2Calc;
     for(; !residuals.empty; residuals.popFront) {
-        real residual = residuals.front;
+        double residual = residuals.front;
         S += residual * residual;
-        real Yfront = residuals.Y.front();
-        real predicted = residual + Yfront;
+        double Yfront = residuals.Y.front();
+        double predicted = residual + Yfront;
         R2Calc.put(predicted, Yfront);
         n++;
     }
     ulong df =  n - X.length;
-    real R2 = R2Calc.cor();
+    double R2 = R2Calc.cor();
     R2 *= R2;
-    real adjustedR2 = 1.0L - (1.0L - R2) * ((n - 1.0L) / df);
+    double adjustedR2 = 1.0L - (1.0L - R2) * ((n - 1.0L) / df);
 
-    real sigma2 = S / (n - X.length);
+    double sigma2 = S / (n - X.length);
 
-    real[] stdErr = new real[betas.length];
+    double[] stdErr = new double[betas.length];
     foreach(i, ref elem; stdErr) {
         elem = sqrt( S * xTx[i][i] / df);
     }
 
-    real[] lowerBound = new real[betas.length],
-           upperBound = new real[betas.length],
-           p = new real[betas.length];
+    double[] lowerBound = new double[betas.length],
+           upperBound = new double[betas.length],
+           p = new double[betas.length];
     foreach(i, beta; betas) {
         p[i] = 2 * min(studentsTCDF(beta / stdErr[i], df),
                        studentsTCDFR(beta / stdErr[i], df));
-        real delta = invStudentsTCDF(0.5 * (1 - confLvl), df) *
+        double delta = invStudentsTCDF(0.5 * (1 - confLvl), df) *
              stdErr[i];
         upperBound[i] = beta - delta;
         lowerBound[i] = beta + delta;
     }
 
-    real F = (R2 / (X.length - 1)) / ((1 - R2) / (n - X.length));
-    real overallP = fisherCDFR(F, X.length - 1, n - X.length);
+    double F = (R2 / (X.length - 1)) / ((1 - R2) / (n - X.length));
+    double overallP = fisherCDFR(F, X.length - 1, n - X.length);
 
     return RegressRes(betas, stdErr, lowerBound, upperBound, p, R2,
         adjustedR2, sqrt(sigma2), overallP);
@@ -496,11 +501,11 @@ RegressRes linearRegress(U, TC...)(U Y, TC input) {
  * creates an array of PowMap structs for integer powers from 0 through N,
  * and calls linearRegressBeta.
  *
- * Returns:  An array of reals.  The index of each element corresponds to
+ * Returns:  An array of doubles.  The index of each element corresponds to
  * the exponent.  For example, the X<sup>2</sup> term will have an index of
  * 2.
  */
-real[] polyFitBeta(T, U)(U Y, T X, uint N) {
+double[] polyFitBeta(T, U)(U Y, T X, uint N) {
     mixin(newFrame);
     auto pows = newStack!(PowMap!(uint, T))(N + 1);
     foreach(exponent; 0..N + 1) {
@@ -515,7 +520,7 @@ real[] polyFitBeta(T, U)(U Y, T X, uint N) {
  *
  * Returns:  A PolyFitRes containing the array of PowMap structs created and
  * a RegressRes.  The PolyFitRes is alias this'd to the RegressRes.*/
-PolyFitRes!(PowMap!(uint, T)[]) polyFit(T, U)(U Y, T X, uint N, real confInt = 0.95) {
+PolyFitRes!(PowMap!(uint, T)[]) polyFit(T, U)(U Y, T X, uint N, double confInt = 0.95) {
     enforceConfidence(confInt);
     auto pows = new PowMap!(uint, T)[N + 1];
     foreach(exponent; 0..N + 1) {
@@ -535,9 +540,9 @@ version(unittest) {
 
 unittest {
     // These are a bunch of values gleaned from various examples on the Web.
-    real[] heights = [1.47,1.5,1.52,1.55,1.57,1.60,1.63,1.65,1.68,1.7,1.73,1.75,
+    double[] heights = [1.47,1.5,1.52,1.55,1.57,1.60,1.63,1.65,1.68,1.7,1.73,1.75,
         1.78,1.8,1.83];
-    real[] weights = [52.21,53.12,54.48,55.84,57.2,58.57,59.93,61.29,63.11,64.47,
+    double[] weights = [52.21,53.12,54.48,55.84,57.2,58.57,59.93,61.29,63.11,64.47,
         66.28,68.1,69.92,72.19,74.46];
     float[] diseaseSev = [1.9,3.1,3.3,4.8,5.3,6.1,6.4,7.6,9.8,12.4];
     ubyte[] temperature = [2,1,5,5,20,20,23,10,30,25];

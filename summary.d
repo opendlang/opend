@@ -3,14 +3,15 @@
  * online, all summary statistics have both an input range interface and an
  * output range interface.
  *
- * Bugs:  This whole module assumes that input will be reals or types implicitly
- *        convertible to real.  No allowances are made for user-defined numeric
+ * Bugs:  This whole module assumes that input will be doubles or types implicitly
+ *        convertible to double.  No allowances are made for user-defined numeric
  *        types such as BigInts.  This is necessary for simplicity.  However,
- *        if you have a function that converts your data to reals, most of
+ *        if you have a function that converts your data to doubles, most of
  *        these functions work with any input range, so you can simply map
  *        this function onto your range.
  *
- * Author:  David Simcha*/
+ * Author:  David Simcha
+ */
  /*
  * License:
  * Boost Software License - Version 1.0 - August 17th, 2003
@@ -61,8 +62,8 @@ version(unittest) {
  * as selecting any position in the ordering, can be found at
  * dstats.sort.quickSelect() and dstats.sort.partitionK().
  * Allocates memory, does not reorder input data.*/
-real median(T)(T data)
-if(realInput!(T)) {
+double median(T)(T data)
+if(doubleInput!(T)) {
     // Allocate once on TempAlloc if possible, i.e. if we know the length.
     // This can be done on TempAlloc.  Otherwise, have to use GC heap
     // and appending.
@@ -77,14 +78,14 @@ if(realInput!(T)) {
  * that of the median. Useful both for its partititioning and to avoid
  * memory allocations.  Requires a random access range with swappable
  * elements.*/
-real medianPartition(T)(T data)
+double medianPartition(T)(T data)
 if(isRandomAccessRange!(T) &&
-   is(ElementType!(T) : real) &&
+   is(ElementType!(T) : double) &&
    hasSwappableElements!(T) &&
    dstats.base.hasLength!(T))
 {
     if(data.length == 0) {
-        return real.nan;
+        return double.nan;
     }
     // Upper half of median in even length case is just the smallest element
     // with an index larger than the lower median, after the array is
@@ -92,7 +93,7 @@ if(isRandomAccessRange!(T) &&
     if(data.length == 1) {
         return data[0];
     } else if(data.length & 1) {  //Is odd.
-        return cast(real) partitionK(data, data.length / 2);
+        return cast(double) partitionK(data, data.length / 2);
     } else {
         auto lower = partitionK(data, data.length / 2 - 1);
         auto upper = ElementType!(T).max;
@@ -103,7 +104,7 @@ if(isRandomAccessRange!(T) &&
                 upper = data[i];
             }
         }
-        return lower * 0.5L + upper * 0.5L;
+        return lower * 0.5 + upper * 0.5;
     }
 }
 
@@ -163,14 +164,14 @@ unittest {
  * Notes:  No bias correction is used in this implementation, since using
  * one would require assumptions about the underlying distribution of the data.
  */
-real medianAbsDev(T)(T data)
-if(realInput!(T)) {
+double medianAbsDev(T)(T data)
+if(doubleInput!(T)) {
     auto dataDup = tempdup(data);
     immutable med = medianPartition(dataDup);
     immutable len = dataDup.length;
     TempAlloc.free;
 
-    real[] devs = newStack!real(len);
+    double[] devs = newStack!double(len);
 
     size_t i = 0;
     foreach(elem; data) {
@@ -205,15 +206,15 @@ unittest {
  * ---*/
 struct Mean {
 private:
-    real result = 0;
-    real k = 0;
+    double result = 0;
+    double k = 0;
 
 public:
-    /// Allow implicit casting to real, by returning the current mean.
+    /// Allow implicit casting to double, by returning the current mean.
     alias mean this;
 
     ///
-    void put(real element) nothrow {
+    void put(double element) nothrow {
         result += (element - result) / ++k;
     }
 
@@ -246,17 +247,17 @@ public:
      }
 
     ///
-    real sum() const pure nothrow {
+    double sum() const pure nothrow {
         return result * k;
     }
 
     ///
-    real mean() const pure nothrow {
-        return (k == 0) ? real.nan : result;
+    double mean() const pure nothrow {
+        return (k == 0) ? double.nan : result;
     }
 
     ///
-    real N() const pure nothrow {
+    double N() const pure nothrow {
         return k;
     }
 
@@ -267,9 +268,9 @@ public:
 }
 
 /**Finds the arithmetic mean of any input range whose elements are implicitly
- * convertible to real.*/
+ * convertible to double.*/
 Mean mean(T)(T data)
-if(realIterable!(T)) {
+if(doubleIterable!(T)) {
     Mean meanCalc;
     foreach(element; data) {
         meanCalc.put(element);
@@ -282,11 +283,11 @@ struct GeometricMean {
 private:
     Mean m;
 public:
-    ///Allow implicit casting to real, by returning current geometric mean.
+    ///Allow implicit casting to double, by returning current geometric mean.
     alias geoMean this;
 
     ///
-    void put(real element) nothrow {
+    void put(double element) nothrow {
         m.put(log2(element));
     }
 
@@ -296,12 +297,12 @@ public:
     }
 
     ///
-    real geoMean() const pure nothrow {
+    double geoMean() const pure nothrow {
         return exp2(m.mean);
     }
 
     ///
-    real N() const pure nothrow {
+    double N() const pure nothrow {
         return m.k;
     }
 
@@ -312,8 +313,8 @@ public:
 }
 
 ///
-real geometricMean(T)(T data)
-if(realIterable!(T)) {
+double geometricMean(T)(T data)
+if(doubleIterable!(T)) {
     GeometricMean m;
     foreach(elem; data) {
         m.put(elem);
@@ -350,12 +351,12 @@ unittest {
 }
 
 
-/**Finds the sum of an input range whose elements implicitly convert to real.
+/**Finds the sum of an input range whose elements implicitly convert to double.
  * User has option of making U a different type than T to prevent overflows
  * on large array summing operations.  However, by default, return type is
  * T (same as input type).*/
 U sum(T, U = Unqual!(IterType!(T)))(T data)
-if(realIterable!(T)) {
+if(doubleIterable!(T)) {
     U sum = 0;
     foreach(value; data) {
         sum += value;
@@ -396,13 +397,13 @@ unittest {
  * ---*/
 struct MeanSD {
 private:
-    real _mean = 0;
-    real _var = 0;
-    real _k = 0;
+    double _mean = 0;
+    double _var = 0;
+    double _k = 0;
 public:
     ///
-    void put(real element) nothrow {
-        real kNeg1 = 1.0L / ++_k;
+    void put(double element) nothrow {
+        double kNeg1 = 1.0L / ++_k;
         _var += (element * element - _var) * kNeg1;
         _mean += (element - _mean) * kNeg1;
     }
@@ -416,32 +417,32 @@ public:
     }
 
     ///
-    real sum() const pure nothrow {
+    double sum() const pure nothrow {
         return _k * _mean;
     }
 
     ///
-    real mean() const pure nothrow {
-        return (_k == 0) ? real.nan : _mean;
+    double mean() const pure nothrow {
+        return (_k == 0) ? double.nan : _mean;
     }
 
     ///
-    real stdev() const pure nothrow {
+    double stdev() const pure nothrow {
         return sqrt(var);
     }
 
     ///
-    real var() const pure nothrow {
-        return (_k < 2) ? real.nan : (_var - _mean * _mean) * (_k / (_k - 1));
+    double var() const pure nothrow {
+        return (_k < 2) ? double.nan : (_var - _mean * _mean) * (_k / (_k - 1));
     }
 
     // Undocumented on purpose b/c it's for internal use only.
-    real mse() const pure nothrow {
-        return (_k < 2) ? real.nan : (_var - _mean * _mean);
+    double mse() const pure nothrow {
+        return (_k < 2) ? double.nan : (_var - _mean * _mean);
     }
 
     ///
-    real N() const pure nothrow {
+    double N() const pure nothrow {
         return _k;
     }
 
@@ -462,7 +463,7 @@ public:
 /**Convenience function that puts all elements of data into a MeanSD struct,
  * then returns this struct.*/
 MeanSD meanStdev(T)(T data)
-if(realIterable!(T)) {
+if(doubleIterable!(T)) {
     MeanSD ret;
     foreach(elem; data) {
         ret.put(elem);
@@ -471,16 +472,16 @@ if(realIterable!(T)) {
 }
 
 /**Finds the variance of an input range with members implicitly convertible
- * to reals.*/
-real variance(T)(T data)
-if(realIterable!(T)) {
+ * to doubles.*/
+double variance(T)(T data)
+if(doubleIterable!(T)) {
     return meanStdev(data).var;
 }
 
 /**Calculate the standard deviation of an input range with members
- * implicitly converitble to real.*/
-real stdev(T)(T data)
-if(realIterable!(T)) {
+ * implicitly converitble to double.*/
+double stdev(T)(T data)
+if(doubleIterable!(T)) {
     return meanStdev(data).stdev;
 }
 
@@ -544,17 +545,17 @@ unittest {
  * ---*/
 struct Summary {
 private:
-    real _mean = 0;
-    real _m2 = 0;
-    real _m3 = 0;
-    real _m4 = 0;
-    real _k = 0;
-    real _min = real.infinity;
-    real _max = -real.infinity;
+    double _mean = 0;
+    double _m2 = 0;
+    double _m3 = 0;
+    double _m4 = 0;
+    double _k = 0;
+    double _min = double.infinity;
+    double _max = -double.infinity;
 public:
     ///
-    void put(real element) nothrow {
-        immutable real kNeg1 = 1.0L / ++_k;
+    void put(double element) nothrow {
+        immutable kNeg1 = 1.0 / ++_k;
         _min = (element < _min) ? element : _min;
         _max = (element > _max) ? element : _max;
         _mean += (element - _mean) * kNeg1;
@@ -576,58 +577,58 @@ public:
     }
 
     ///
-    real sum() const pure nothrow {
+    double sum() const pure nothrow {
         return _mean * _k;
     }
 
     ///
-    real mean() const pure nothrow {
-        return (_k == 0) ? real.nan : _mean;
+    double mean() const pure nothrow {
+        return (_k == 0) ? double.nan : _mean;
     }
 
     ///
-    real stdev() const pure nothrow {
+    double stdev() const pure nothrow {
         return sqrt(var);
     }
 
     ///
-    real var() const pure nothrow {
-        return (_k == 0) ? real.nan : (_m2 - _mean * _mean) * (_k / (_k - 1));
+    double var() const pure nothrow {
+        return (_k == 0) ? double.nan : (_m2 - _mean * _mean) * (_k / (_k - 1));
     }
 
     ///
-    real skewness() const pure nothrow {
-        real var = _m2 - _mean * _mean;
-        real numerator = _m3 - 3 * _mean * _m2 + 2 * _mean * _mean * _mean;
+    double skewness() const pure nothrow {
+        double var = _m2 - _mean * _mean;
+        double numerator = _m3 - 3 * _mean * _m2 + 2 * _mean * _mean * _mean;
 
         // Raising var to the power of 1.5.  Non-obvious method is faater than
         // calling pow and allows this funciton to be pure nothrow.
-        real sd = sqrt(var);
-        real var15 = sd * sd * sd;
+        double sd = sqrt(var);
+        double var15 = sd * sd * sd;
         return numerator / var15;
     }
 
     ///
-    real kurtosis() const pure nothrow {
-        real mean4 = mean * mean;
+    double kurtosis() const pure nothrow {
+        double mean4 = mean * mean;
         mean4 *= mean4;
-        real vari = _m2 - _mean * _mean;
+        double vari = _m2 - _mean * _mean;
         return (_m4 - 4 * _mean * _m3 + 6 * _mean * _mean * _m2 - 3 * mean4) /
                (vari * vari) - 3;
     }
 
     ///
-    real N() const pure nothrow {
+    double N() const pure nothrow {
         return _k;
     }
 
     ///
-    real min() const pure nothrow {
+    double min() const pure nothrow {
         return _min;
     }
 
     ///
-    real max() const pure nothrow {
+    double max() const pure nothrow {
         return _max;
     }
 
@@ -681,9 +682,9 @@ unittest {
  * the variance is due to infrequent, large deviations from the mean.  Low
  * kurtosis means that the variance is due to frequent, small deviations from
  * the mean.  The normal distribution is defined as having kurtosis of 0.
- * Input must be an input range with elements implicitly convertible to real.*/
-real kurtosis(T)(T data)
-if(realIterable!(T)) {
+ * Input must be an input range with elements implicitly convertible to double.*/
+double kurtosis(T)(T data)
+if(doubleIterable!(T)) {
     Summary kCalc;
     foreach(elem; data) {
         kCalc.put(elem);
@@ -703,9 +704,9 @@ unittest {
  * means that the right tail is longer/fatter than the left tail.  Negative
  * skewness means the left tail is longer/fatter than the right tail.  Zero
  * skewness indicates a symmetrical distribution.  Input must be an input
- * range with elements implicitly convertible to real.*/
-real skewness(T)(T data)
-if(realIterable!(T)) {
+ * range with elements implicitly convertible to double.*/
+double skewness(T)(T data)
+if(doubleIterable!(T)) {
     Summary sCalc;
     foreach(elem; data) {
         sCalc.put(elem);
@@ -729,7 +730,7 @@ unittest {
 /**Convenience function.  Puts all elements of data into a Summary struct,
  * and returns this struct.*/
 Summary summary(T)(T data)
-if(realIterable!(T)) {
+if(doubleIterable!(T)) {
     Summary summ;
     foreach(elem; data) {
         summ.put(elem);
@@ -740,13 +741,13 @@ if(realIterable!(T)) {
 // necessary.  (Famous last words.)
 
 ///
-struct ZScore(T) if(isForwardRange!(T) && is(ElementType!(T) : real)) {
+struct ZScore(T) if(isForwardRange!(T) && is(ElementType!(T) : double)) {
 private:
     T range;
-    real mean;
-    real sdNeg1;
+    double mean;
+    double sdNeg1;
 
-    real z(real elem) {
+    double z(double elem) {
         return (elem - mean) * sdNeg1;
     }
 
@@ -758,14 +759,14 @@ public:
         this.sdNeg1 = 1.0L / msd.stdev;
     }
 
-    this(T range, real mean, real sd) {
+    this(T range, double mean, double sd) {
         this.range = range;
         this.mean = mean;
         this.sdNeg1 = 1.0L / sd;
     }
 
     ///
-    real front() {
+    double front() {
         return z(range.front);
     }
 
@@ -781,14 +782,14 @@ public:
 
     static if(isRandomAccessRange!(T)) {
         ///
-        real opIndex(size_t index) {
+        double opIndex(size_t index) {
             return z(range[index]);
         }
     }
 
     static if(isBidirectionalRange!(T)) {
         ///
-        real back() {
+        double back() {
             return z(range.back);
         }
 
@@ -827,15 +828,15 @@ public:
  * mean and standard deviation.
  */
 ZScore!(T) zScore(T)(T range)
-if(isForwardRange!(T) && realInput!(T)) {
+if(isForwardRange!(T) && doubleInput!(T)) {
     return ZScore!(T)(range);
 }
 
 /**Allows the construction of a ZScore range with precomputed mean and
  * stdev.
  */
-ZScore!(T) zScore(T)(T range, real mean, real sd)
-if(isForwardRange!(T) && realInput!(T)) {
+ZScore!(T) zScore(T)(T range, double mean, double sd)
+if(isForwardRange!(T) && doubleInput!(T)) {
     return ZScore!(T)(range, mean, sd);
 }
 
@@ -847,12 +848,12 @@ unittest {
 
     size_t pos = 0;
     foreach(elem; z) {
-        assert(elem == (arr[pos++] - m) / sd);
+        assert(approxEqual(elem, (arr[pos++] - m) / sd));
     }
 
     assert(z.length == 5);
     foreach(i; 0..z.length) {
-        assert(z[i] == (arr[i] - m) / sd);
+        assert(approxEqual(z[i], (arr[i] - m) / sd));
     }
     writeln("Passed zScore test.");
 }

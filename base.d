@@ -44,14 +44,14 @@ import dstats.alloc, dstats.sort, dstats.gamma;
 
 import std.string : strip;
 
-immutable real[] logFactorialTable;
+immutable double[] logFactorialTable;
 
 private enum size_t staticFacTableLen = 10_000;
 
 shared static this() {
     // Allocating on heap instead of static data segment to avoid
     // false pointer GC issues.
-    real[] sfTemp = new real[staticFacTableLen];
+    double[] sfTemp = new double[staticFacTableLen];
     sfTemp[0] = 0;
     for(uint i = 1; i < staticFacTableLen; i++) {
         sfTemp[i] = sfTemp[i - 1] + log(i);
@@ -66,9 +66,9 @@ version(unittest) {
 }
 
 /** Tests whether T is an input range whose elements can be implicitly
- * converted to reals.*/
-template realInput(T) {
-    enum realInput = isInputRange!(T) && is(ElementType!(T) : real);
+ * converted to doubles.*/
+template doubleInput(T) {
+    enum doubleInput = isInputRange!(T) && is(ElementType!(T) : double);
 }
 
 // See Bugzilla 2873.  This can be removed once that's fixed.
@@ -132,9 +132,9 @@ unittest {
 }
 
 /**Tests whether T is iterable and has elements of a type implicitly
- * convertible to real.*/
-template realIterable(T) {
-    enum realIterable = isIterable!(T) && is(IterType!(T) : real);
+ * convertible to double.*/
+template doubleIterable(T) {
+    enum doubleIterable = isIterable!(T) && is(IterType!(T) : double);
 }
 
 /**Writes the contents of an input range to an output range.
@@ -153,9 +153,9 @@ if(isInputRange!(I) && isOutputRange!(O, ElementType!(I))) {
  * The values returned are the counts for each bin.  Returns results on the GC
  * heap by default, but uses TempAlloc stack if alloc == Alloc.STACK.
  *
- * Works with any forward range with elements implicitly convertible to real.*/
+ * Works with any forward range with elements implicitly convertible to double.*/
 Ret[] binCounts(Ret = uint, T)(T data, uint nbin, Ret[] buf = null)
-if(isForwardRange!(T) && realInput!(T)) {
+if(isForwardRange!(T) && doubleInput!(T)) {
     enforce(nbin > 0, "Cannot bin data into zero bins.");
 
     alias Unqual!(ElementType!(T)) E;
@@ -215,7 +215,7 @@ unittest {
  * substandially faster.  However, if you're using more than 255 bins,
  * you'll have to provide a different return type as a template parameter.*/
 Ret[] bin(Ret = ubyte, T)(T data, uint nbin, Ret[] buf = null)
-if(isForwardRange!(T) && realInput!(T) && isIntegral!(Ret)) {
+if(isForwardRange!(T) && doubleInput!(T) && isIntegral!(Ret)) {
     enforce(nbin > 0, "Cannot bin data into zero bins.");
     enforce(nbin <= (cast(uint) Ret.max) + 1, "Cannot bin into " ~
         to!string(nbin) ~ " bins and store the results in a " ~
@@ -288,7 +288,7 @@ unittest {
  * substandially faster.  However, if you're using more than 256 bins,
  * you'll have to provide a different return type as a template parameter.*/
 Ret[] frqBin(Ret = ubyte, T)(T data, uint nbin, Ret[] buf = null)
-if(realInput!(T) && isForwardRange!(T) && hasLength!(T) && isIntegral!(Ret)) {
+if(doubleInput!(T) && isForwardRange!(T) && hasLength!(T) && isIntegral!(Ret)) {
     enforce(nbin > 0, "Cannot bin data into zero bins.");
     enforce(nbin <= data.length,
         "Cannot equal frequency bin data into more than data.length bins.");
@@ -550,8 +550,8 @@ in {
         if(sortedInput[i] == sortedInput[i - 1]) {
             tieCount++;
         } else if(tieCount > 1) {
-            real avg = 0;
-            immutable increment = 1.0L / tieCount;
+            double avg = 0;
+            immutable increment = 1.0 / tieCount;
 
             foreach(perm; perms[i - tieCount..i]) {
                 avg += ranks[perm] * increment;
@@ -565,8 +565,8 @@ in {
     }
 
     if(tieCount > 1) { // Handle the end.
-        real avg = 0;
-        immutable increment = 1.0L / tieCount;
+        double avg = 0;
+        immutable increment = 1.0 / tieCount;
 
         foreach(perm; perms[perms.length - tieCount..$]) {
             avg += ranks[perm] * increment;
@@ -684,11 +684,11 @@ unittest {
  * an immutable global array, for performance.  After this point, the gamma
  * function is used, because caching would take up too much memory, and if
  * done lazily, would cause threading issues.*/
-real logFactorial(ulong n) {
+double logFactorial(ulong n) {
     //Input is uint, can't be less than 0, no need to check.
     if(n < staticFacTableLen) {
         return logFactorialTable[cast(size_t) n];
-    } else return lgamma(cast(real) (n + 1));
+    } else return lgamma(n + 1);
 }
 
 unittest {
@@ -705,11 +705,11 @@ unittest {
 }
 
 ///Log of (n choose k).
-real logNcomb(ulong n, ulong k)
+double logNcomb(ulong n, ulong k)
 in {
     assert(k <= n);
 } body {
-    if(n < k) return -real.infinity;
+    if(n < k) return -double.infinity;
     //Extra parentheses increase numerical accuracy.
     return logFactorial(n) - (logFactorial(k) + logFactorial(n - k));
 }
@@ -1070,7 +1070,7 @@ private:
 
     void setLen() {
         // Used at construction.
-        real rLen = exp( logNcomb(N, R));
+        auto rLen = exp( logNcomb(N, R));
         enforce(rLen < size_t.max, "Too many combinations.");
         _length = roundTo!size_t(rLen);
     }
