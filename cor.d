@@ -134,33 +134,43 @@ public:
 
     ///
     void put(double elem1, double elem2) nothrow {
+        immutable kMinus1 = _k;
         immutable kNeg1 = 1 / ++_k;
-          _cov += (elem1 * elem2 - _cov)  * kNeg1;
-         _var1 += (elem1 * elem1 - _var1) * kNeg1;
-        _mean1 += (elem1 - _mean1)        * kNeg1;
-         _var2 += (elem2 * elem2 - _var2) * kNeg1;
-        _mean2 += (elem2 - _mean2)        * kNeg1;
+        immutable delta1 = elem1 - _mean1;
+        immutable delta2 = elem2 - _mean2;
+        immutable delta1N = delta1 * kNeg1;
+        immutable delta2N = delta2 * kNeg1;
+
+        _mean1 += delta1N;
+        _mean2 += delta2N;
+        _var1  += kMinus1 * delta1N * delta1;
+        _var2  += kMinus1 * delta2N * delta2;
+        _cov   += kMinus1 * delta1N * delta2;
     }
 
     /// Combine two PearsonCor's.
     void put(const ref typeof(this) rhs) nothrow {
         immutable totalN = _k + rhs._k;
+        immutable delta1 = rhs.mean1 - mean1;
+        immutable delta2 = rhs.mean2 - mean2;
+
         _mean1 = _mean1 * (_k / totalN) + rhs._mean1 * (rhs._k / totalN);
         _mean2 = _mean2 * (_k / totalN) + rhs._mean2 * (rhs._k / totalN);
-        _var1 = _var1 * (_k / totalN) + rhs._var1 * (rhs._k / totalN);
-        _var2 = _var2 * (_k / totalN) + rhs._var2 * (rhs._k / totalN);
-        _cov = _cov * (_k / totalN) + rhs._cov * (rhs._k / totalN);
+
+        _var1 = _var1 + rhs._var1 + (_k / totalN * rhs._k * delta1 * delta1 );
+        _var2 = _var2 + rhs._var2 + (_k / totalN * rhs._k * delta2 * delta2 );
+        _cov  =  _cov + rhs._cov  + (_k / totalN * rhs._k * delta1 * delta2 );
         _k = totalN;
     }
 
     ///
     double var1() const pure nothrow {
-        return (_k < 2) ? double.nan : (_var1 - _mean1 * _mean1) * (_k / (_k - 1));
+        return (_k < 2) ? double.nan : _var1 / (_k - 1);
     }
 
     ///
     double var2() const pure nothrow {
-        return (_k < 2) ? double.nan : (_var2 - _mean2 * _mean2) * (_k / (_k - 1));
+        return (_k < 2) ? double.nan : _var2 / (_k - 1);
     }
 
     ///
@@ -180,7 +190,7 @@ public:
 
     ///
     double cov() const pure nothrow {
-        return (_k < 2) ? double.nan : (_cov - _mean1 * _mean2) * (_k / (_k - 1));
+        return (_k < 2) ? double.nan : _cov / (_k - 1);
     }
 
     ///
