@@ -406,14 +406,12 @@ private:
 public:
     ///
     void put(double element) nothrow {
-        // As inefficient as this code looks, according to benchmarks I've
-        // done it's actually faster than dividing once and storing the
-        // result, probably because it's straightforward and easy for the
-        // compiler to micro-optimize.
+        immutable kMinus1 = _k;
         immutable delta = element - _mean;
-        _mean += delta / (_k + 1);
-        _var += _k / (_k + 1) * delta * delta;
-        _k++;
+        immutable deltaN = delta / ++_k;
+
+        _mean += deltaN;
+        _var += kMinus1 * deltaN * delta;
     }
 
     /// Combine two MeanSD's.
