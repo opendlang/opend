@@ -638,7 +638,7 @@ unittest {
 
     // Test array case.
     auto res2 = fTest([thing1, thing2, thing3].dup);
-    assert(result.testStat == res2.testStat);
+    assert(approxEqual(result.testStat, res2.testStat));
     assert(result.p == res2.p);
 
     thing1 = [2,7,1,8,2];
@@ -649,8 +649,8 @@ unittest {
     assert(approxEqual(res3.p, 0.6953));
 
     auto res4 = fTest([summary(thing1), summary(thing2), summary(thing3)][]);
-    assert(res4.testStat == res3.testStat);
-    assert(res4.testStat == res3.testStat);
+    assert(approxEqual(res4.testStat, res3.testStat));
+    assert(approxEqual(res4.testStat, res3.testStat));
 
     auto welchRes2 = welchAnova(summary(thing1), thing2, thing3);
     assert( approxEqual(welchRes2.testStat, 0.342));
@@ -2426,7 +2426,7 @@ if(isIntegral!(T)) {
     immutable double pExact = hypergeometricPMF(c[0][0], n1, n2, n);
     immutable double pMode = hypergeometricPMF(mode, n1, n2, n);
 
-    enum epsilon = 1 - 1e-6;
+    enum epsilon = 1 - 1e-5;
     if(approxEqual(pExact, pMode, 1 - epsilon)) {
         return TestRes(oddsRatio, 1);
     } else if(c[0][0] < mode) {
@@ -2456,8 +2456,7 @@ if(isIntegral!(T)) {
             guess = min;
         }
 
-        while(guess < std.algorithm.min(n1, n) &&
-            hypergeometricPMF(guess, n1, n2, n) < pExact * epsilon) {
+        while(hypergeometricPMF(guess, n1, n2, n) < pExact * epsilon) {
             guess--;
         }
 
@@ -2495,11 +2494,11 @@ if(isIntegral!(T)) {
             guess = min;
         }
 
-        while(guess > 0 && hypergeometricPMF(guess, n1, n2, n) < pExact * epsilon) {
+        while(hypergeometricPMF(guess, n1, n2, n) < pExact * epsilon) {
             guess++;
         }
 
-        while(guess < std.algorithm.min(n, n1) &&
+        while(guess > 0 &&
             hypergeometricPMF(guess, n1, n2, n) > pExact / epsilon) {
             guess--;
         }
@@ -2542,7 +2541,7 @@ unittest {
         double sum = 0;
         foreach(i; 0..n + 1) {
             double pCur = hypergeometricPMF(i, n1, n2, n);
-            if(pCur <= pExact / (1 - 1e-6))
+            if(pCur <= pExact / (1 - 1e-5))
                 sum += pCur;
         }
         return sum;
@@ -2550,7 +2549,7 @@ unittest {
 
     uint[][] c = new uint[][](2, 2);
 
-    foreach(i; 0..1000) {
+    foreach(i; 0..100_000) {
         c[0][0] = uniform(0U, 51U);
         c[0][1] = uniform(0U, 51U);
         c[1][0] = uniform(0U, 51U);

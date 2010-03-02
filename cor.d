@@ -125,6 +125,9 @@ unittest {
  *
  * PearsonCor.cor is alias this'd, so if this struct is used as a float, it will
  * be converted to a simple correlation coefficient automatically.
+ *
+ * References: Computing Higher-Order Moments Online.
+ * http://people.xiph.org/~tterribe/notes/homs.html
  */
 struct PearsonCor {
 private:
@@ -142,10 +145,10 @@ public:
         immutable delta2N = delta2 * kNeg1;
 
         _mean1 += delta1N;
-        _mean2 += delta2N;
         _var1  += kMinus1 * delta1N * delta1;
-        _var2  += kMinus1 * delta2N * delta2;
         _cov   += kMinus1 * delta1N * delta2;
+        _var2  += kMinus1 * delta2N * delta2;
+        _mean2 += delta2N;
     }
 
     /// Combine two PearsonCor's.

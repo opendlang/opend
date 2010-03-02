@@ -383,6 +383,9 @@ unittest {
  *
  * Note:  This struct can implicitly convert to a Mean struct.
  *
+ * References: Computing Higher-Order Moments Online.
+ * http://people.xiph.org/~tterribe/notes/homs.html
+ *
  * Examples:
  * ---
  * MeanSD summ;
@@ -403,16 +406,23 @@ private:
 public:
     ///
     void put(double element) nothrow {
-        double kNeg1 = 1.0L / ++_k;
-        _var += (element * element - _var) * kNeg1;
-        _mean += (element - _mean) * kNeg1;
+        // As inefficient as this code looks, according to benchmarks I've
+        // done it's actually faster than dividing once and storing the
+        // result, probably because it's straightforward and easy for the
+        // compiler to micro-optimize.
+        immutable delta = element - _mean;
+        _mean += delta / (_k + 1);
+        _var += _k / (_k + 1) * delta * delta;
+        _k++;
     }
 
     /// Combine two MeanSD's.
     void put(const ref typeof(this) rhs) nothrow {
         immutable totalN = _k + rhs._k;
+        immutable delta = rhs.mean - mean;
         _mean = _mean * (_k / totalN) + rhs._mean * (rhs._k / totalN);
-        _var = _var * (_k / totalN) + rhs._var * (rhs._k / totalN);
+
+        _var = _var + rhs._var + (_k / totalN * rhs._k * delta * delta);
         _k = totalN;
     }
 
@@ -433,12 +443,12 @@ public:
 
     ///
     double var() const pure nothrow {
-        return (_k < 2) ? double.nan : (_var - _mean * _mean) * (_k / (_k - 1));
+        return (_k < 2) ? double.nan : _var / (_k - 1);
     }
 
     // Undocumented on purpose b/c it's for internal use only.
     double mse() const pure nothrow {
-        return (_k < 2) ? double.nan : (_var - _mean * _mean);
+        return (_k < 2) ? double.nan : _var / _k;
     }
 
     ///
@@ -526,6 +536,9 @@ unittest {
  *
  * Note:  This struct can implicitly convert to a MeanSD.
  *
+ * References: Computing Higher-Order Moments Online.
+ * http://people.xiph.org/~tterribe/notes/homs.html
+ *
  * Examples:
  * ---
  * Summary summ;
@@ -555,25 +568,45 @@ private:
 public:
     ///
     void put(double element) nothrow {
+        immutable kMinus1 = _k;
         immutable kNeg1 = 1.0 / ++_k;
         _min = (element < _min) ? element : _min;
         _max = (element > _max) ? element : _max;
-        _mean += (element - _mean) * kNeg1;
-        _m2 += (element * element - _m2) * kNeg1;
-        _m3 += (element * element * element - _m3) * kNeg1;
-        _m4 += (element * element * element * element - _m4) * kNeg1;
+
+        immutable delta = element - mean;
+        immutable deltaN = delta * kNeg1;
+        _mean += deltaN;
+
+        _m4 += kMinus1 * deltaN * (_k * _k - 3 * _k + 3) * deltaN * deltaN * delta +
+            6 * _m2 * deltaN * deltaN - 4 * deltaN * _m3;
+        _m3 += kMinus1 * deltaN * (_k - 2) * deltaN * delta - 3 * delta * _m2 * kNeg1;
+        _m2 += kMinus1 * deltaN * delta;
     }
 
     /// Combine two Summary's.
     void put(const ref typeof(this) rhs) nothrow {
         immutable totalN = _k + rhs._k;
+        immutable delta = rhs.mean - mean;
+        immutable deltaN = delta / totalN;
         _mean = _mean * (_k / totalN) + rhs._mean * (rhs._k / totalN);
-        _m2 = _m2 * (_k / totalN) + rhs._m2 * (rhs._k / totalN);
-        _m3 = _m3 * (_k / totalN) + rhs._m3 * (rhs._k / totalN);
-        _m4 = _m4 * (_k / totalN) + rhs._m4 * (rhs._k / totalN);
-        _min = (_min < rhs._min) ? _min : rhs._min;
-        _max = (_max > rhs._max) ? _max : rhs._max;
+
+        _m4 = _m4 + rhs._m4 +
+            deltaN * _k * deltaN * rhs._k * deltaN * delta *
+            (_k * _k - _k * rhs._k + rhs._k * rhs._k) +
+            6 * deltaN * _k * deltaN * _k * rhs._m2 +
+            6 * deltaN * rhs._k * deltaN * rhs._k * _m2 +
+            4 * deltaN * _k * rhs._m3 -
+            4 * deltaN * rhs._k * _m3;
+
+        _m3 = _m3 + rhs._m3 + deltaN * _k * deltaN * rhs._k * (_k - rhs._k) +
+            3 * deltaN * _k * rhs._m2 -
+            3 * deltaN * rhs._k * _m2;
+
+        _m2 = _m2 + rhs._m2 + (_k / totalN * rhs._k * delta * delta);
+
         _k = totalN;
+        _max = (_max > rhs._max) ? _max : rhs._max;
+        _min = (_min < rhs._min) ? _min : rhs._min;
     }
 
     ///
@@ -593,28 +626,18 @@ public:
 
     ///
     double var() const pure nothrow {
-        return (_k == 0) ? double.nan : (_m2 - _mean * _mean) * (_k / (_k - 1));
+        return (_k == 0) ? double.nan : _m2 / (_k - 1);
     }
 
     ///
     double skewness() const pure nothrow {
-        double var = _m2 - _mean * _mean;
-        double numerator = _m3 - 3 * _mean * _m2 + 2 * _mean * _mean * _mean;
-
-        // Raising var to the power of 1.5.  Non-obvious method is faater than
-        // calling pow and allows this funciton to be pure nothrow.
-        double sd = sqrt(var);
-        double var15 = sd * sd * sd;
-        return numerator / var15;
+        immutable sqM2 = sqrt(_m2);
+        return _m3 / (sqM2 * sqM2 * sqM2) * sqrt(_k);
     }
 
     ///
     double kurtosis() const pure nothrow {
-        double mean4 = mean * mean;
-        mean4 *= mean4;
-        double vari = _m2 - _mean * _mean;
-        return (_m4 - 4 * _mean * _m3 + 6 * _mean * _mean * _m2 - 3 * mean4) /
-               (vari * vari) - 3;
+        return _m4 / _m2 * _k  / _m2 - 3;
     }
 
     ///
@@ -756,13 +779,13 @@ public:
         this.range = range;
         auto msd = meanStdev(range);
         this.mean = msd.mean;
-        this.sdNeg1 = 1.0L / msd.stdev;
+        this.sdNeg1 = 1.0 / msd.stdev;
     }
 
     this(T range, double mean, double sd) {
         this.range = range;
         this.mean = mean;
-        this.sdNeg1 = 1.0L / sd;
+        this.sdNeg1 = 1.0 / sd;
     }
 
     ///
