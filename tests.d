@@ -2438,7 +2438,7 @@ if(isIntegral!(T)) {
 
         // Binary search for where to begin upper half.
         uint min = mode, max = n, guess = uint.max;
-        while(min != max) {
+        while(max - min > 1) {
             guess = cast(uint) (
                     (max == min + 1 && guess == min) ? max :
                     (cast(ulong) max + cast(ulong) min) / 2UL);
@@ -2452,15 +2452,15 @@ if(isIntegral!(T)) {
             } else min = guess;
         }
 
-        if(guess == uint.max && min == max) {
+        if(guess == uint.max) {
             guess = min;
         }
 
-        while(hypergeometricPMF(guess, n1, n2, n) < pExact * epsilon) {
+        while(guess > 0 && hypergeometricPMF(guess, n1, n2, n) < pExact * epsilon) {
             guess--;
         }
 
-        while(guess > 0 && hypergeometricPMF(guess, n1, n2, n) > pExact / epsilon) {
+        while(hypergeometricPMF(guess, n1, n2, n) > pExact / epsilon) {
             guess++;
         }
 
@@ -2476,7 +2476,7 @@ if(isIntegral!(T)) {
 
         // Binary search for where to begin lower half.
         uint min = 0, max = mode, guess = uint.max;
-        while(min != max) {
+        while(max - min > 1) {
             guess = cast(uint) (
                     (max == min + 1 && guess == min) ? max :
                     (cast(ulong) max + cast(ulong) min) / 2UL);
@@ -2490,7 +2490,7 @@ if(isIntegral!(T)) {
             } else max = guess;
         }
 
-        if(guess == uint.max && min == max) {
+        if(guess == uint.max) {
             guess = min;
         }
 

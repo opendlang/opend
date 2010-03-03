@@ -242,7 +242,7 @@ public:
      */
      void put(const ref typeof(this) rhs) nothrow {
          immutable totalN = k + rhs.k;
-         result = result * (k / totalN) + rhs.result * (rhs,k / totalN);
+         result = result * (k / totalN) + rhs.result * (rhs.k / totalN);
          k = totalN;
      }
 
@@ -271,11 +271,48 @@ public:
  * convertible to double.*/
 Mean mean(T)(T data)
 if(doubleIterable!(T)) {
-    Mean meanCalc;
-    foreach(element; data) {
-        meanCalc.put(element);
+
+    static if(isRandomAccessRange!T && dstats.base.hasLength!T) {
+        // This is optimized for maximum instruction level parallelism:
+        // The loop is unrolled such that there are 1 / (nILP)th the data
+        // dependencies of the naive algorithm.
+        enum nILP = 4;
+
+        Mean ret;
+        size_t i = 0;
+        if(data.length > nILP) {
+            double k = 0;
+            double[nILP] means = 0;
+            for(; i + nILP < data.length; i += nILP) {
+                immutable kNeg1 = 1 / ++k;
+
+                foreach(j; 0..nILP) {
+                    means[j] += (data[i + j] - means[j]) * kNeg1;
+                }
+            }
+
+            ret.k = k;
+            ret.result = means[0];
+            foreach(m; means[1..$]) {
+                ret.put( Mean(m, k));
+            }
+        }
+
+        // Handle the remainder.
+        for(; i < data.length; i++) {
+            ret.put(data[i]);
+        }
+        return ret;
+
+    } else {
+        // Just submit everything to a single Mean struct and return it.
+        Mean meanCalc;
+
+        foreach(element; data) {
+            meanCalc.put(element);
+        }
+        return meanCalc;
     }
-    return meanCalc;
 }
 
 ///
@@ -315,6 +352,8 @@ public:
 ///
 double geometricMean(T)(T data)
 if(doubleIterable!(T)) {
+    // This is relatively seldom used and the log function is the bottleneck
+    // anyhow, not worth ILP optimizing.
     GeometricMean m;
     foreach(elem; data) {
         m.put(elem);
@@ -371,6 +410,17 @@ unittest {
     assert(mean(cast(int[]) [1.0, 2.0, 3.0]) == 2.0);
     assert(mean([1, 2, 5, 10, 17][]) == 7);
     assert(mean([1, 2, 5, 10, 17][]).sum == 35);
+    assert(approxEqual(mean([8,6,7,5,3,0,9,3,6,2,4,3,6][]).mean, 4.769231));
+
+    // Test the OO struct a little, since we're using the new ILP algorithm.
+    Mean m;
+    m.put(1);
+    m.put(2);
+    m.put(5);
+    m.put(10);
+    m.put(17);
+    assert(m.mean == 7);
+
     writeln("Passed sum/mean unittest.");
 }
 
@@ -472,9 +522,48 @@ public:
  * then returns this struct.*/
 MeanSD meanStdev(T)(T data)
 if(doubleIterable!(T)) {
+
     MeanSD ret;
-    foreach(elem; data) {
-        ret.put(elem);
+
+    static if(isRandomAccessRange!T && dstats.base.hasLength!T) {
+        // Optimize for instruction level parallelism.
+        enum nILP = 6;
+        double k = 0;
+        double[nILP] means = 0;
+        double[nILP] variances = 0;
+        size_t i = 0;
+
+        if(data.length > nILP) {
+            for(; i + nILP < data.length; i += nILP) {
+                immutable kMinus1 = k;
+                immutable kNeg1 = 1 / ++k;
+
+                foreach(j; 0..nILP) {
+                    immutable double delta = data[i + j] - means[j];
+                    immutable deltaN = delta * kNeg1;
+
+                    means[j] += deltaN;
+                    variances[j] += kMinus1 * deltaN * delta;
+                }
+            }
+
+            ret._mean = means[0];
+            ret._var = variances[0];
+            ret._k = k;
+
+            foreach(j; 1..nILP) {
+                ret.put( MeanSD(means[j], variances[j], k));
+            }
+        }
+
+        // Handle remainder.
+        for(; i < data.length; i++) {
+            ret.put(data[i]);
+        }
+    } else {
+        foreach(elem; data) {
+            ret.put(elem);
+        }
     }
     return ret;
 }
@@ -497,10 +586,10 @@ unittest {
     auto res = meanStdev(cast(int[]) [3, 1, 4, 5]);
     assert(approxEqual(res.stdev, 1.7078));
     assert(approxEqual(res.mean, 3.25));
-    res = meanStdev(cast(double[]) [1.0, 2.0, 3.0, 4.0, 5.0]);
-    assert(approxEqual(res.stdev, 1.5811));
-    assert(approxEqual(res.mean, 3));
-    assert(approxEqual(res.sum, 15));
+    res = meanStdev(cast(double[]) [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0]);
+    assert(approxEqual(res.stdev, 2.160247));
+    assert(approxEqual(res.mean, 4));
+    assert(approxEqual(res.sum, 28));
 
     MeanSD mean1, mean2, combined;
     foreach(i; 0..5) {
@@ -520,6 +609,8 @@ unittest {
     assert(approxEqual(combined.mean, mean1.mean));
     assert(approxEqual(combined.stdev, mean1.stdev));
     assert(combined.N == mean1.N);
+    assert(approxEqual(combined.mean, 4.5));
+    assert(approxEqual(combined.stdev, 3.027650));
 
     writefln("Passed variance/standard deviation unittest.");
 }
@@ -706,6 +797,8 @@ unittest {
  * Input must be an input range with elements implicitly convertible to double.*/
 double kurtosis(T)(T data)
 if(doubleIterable!(T)) {
+    // This is too infrequently used and has too much ILP within a single
+    // iteration to be worth ILP optimizing.
     Summary kCalc;
     foreach(elem; data) {
         kCalc.put(elem);
@@ -728,6 +821,8 @@ unittest {
  * range with elements implicitly convertible to double.*/
 double skewness(T)(T data)
 if(doubleIterable!(T)) {
+    // This is too infrequently used and has too much ILP within a single
+    // iteration to be worth ILP optimizing.
     Summary sCalc;
     foreach(elem; data) {
         sCalc.put(elem);
@@ -752,6 +847,8 @@ unittest {
  * and returns this struct.*/
 Summary summary(T)(T data)
 if(doubleIterable!(T)) {
+    // This is too infrequently used and has too much ILP within a single
+    // iteration to be worth ILP optimizing.
     Summary summ;
     foreach(elem; data) {
         summ.put(elem);
