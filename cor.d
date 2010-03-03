@@ -35,7 +35,7 @@ import std.range, std.typecons, std.contracts, std.math, std.traits;
 import dstats.sort, dstats.base, dstats.alloc, dstats.regress : invert;
 
 version(unittest) {
-    import std.stdio, std.random, std.algorithm : map, swap;
+    import std.stdio, dstats.random, std.algorithm : map, swap;
 
     Random gen;
 
@@ -59,14 +59,60 @@ PearsonCor pearsonCor(T, U)(T input1, U input2)
 if(doubleInput!(T) && doubleInput!(U)) {
     PearsonCor corCalc;
 
-    static if(isArray!T && isArray!U) {
-        // Common case optimization of loop, since DMD can't inline range
-        // ops for arrays and it's by far the most common case.
+    static if(isRandomAccessRange!T && isRandomAccessRange!U &&
+        dstats.base.hasLength!T && dstats.base.hasLength!U) {
+
+        // ILP parallelization optimization.  Sharing a k between a bunch
+        // of implicit PearsonCor structs cuts down on the amount of divisions
+        // necessary.  Using nILP of them instead of one improves CPU pipeline
+        // performance by reducing data dependency.  When the stack is
+        // properly aligned, this can result in about 2x speedups compared
+        // to simply submitting everything to a single PearsonCor struct.
         enforce(input1.length == input2.length,
             "Ranges must be same length for Pearson correlation.");
-        foreach(i; 0..input1.length) {
+
+        enum nILP = 8;
+        size_t i = 0;
+        if(input1.length > nILP) {
+
+            double _k = 0;
+            double[nILP] _mean1 = 0, _mean2 = 0, _var1 = 0, _var2 = 0, _cov = 0;
+
+            for(; i + nILP < input1.length; i += nILP) {
+                immutable kMinus1 = _k;
+                immutable kNeg1 = 1 / ++_k;
+
+                foreach(j; 0..nILP) {
+                    immutable double delta1 = input1[i + j] - _mean1[j];
+                    immutable double delta2 = input2[i + j] - _mean2[j];
+                    immutable delta1N = delta1 * kNeg1;
+                    immutable delta2N = delta2 * kNeg1;
+
+                    _mean1[j] += delta1N;
+                    _var1[j]  += kMinus1 * delta1N * delta1;
+                    _cov[j]   += kMinus1 * delta1N * delta2;
+                    _var2[j]  += kMinus1 * delta2N * delta2;
+                    _mean2[j] += delta2N;
+                }
+            }
+
+            corCalc._k = _k;
+            corCalc._mean1 = _mean1[0];
+            corCalc._mean2 = _mean2[0];
+            corCalc._var1 = _var1[0];
+            corCalc._var2 = _var2[0];
+            corCalc._cov = _cov[0];
+
+            foreach(j; 1..nILP) {
+                corCalc.put( PearsonCor(_k, _mean1[j], _mean2[j], _var1[j], _var2[j], _cov[j]));
+            }
+        }
+
+        // Handle remainder.
+        for(; i < input1.length; i++) {
             corCalc.put(input1[i], input2[i]);
         }
+
     } else {
         while(!input1.empty && !input2.empty) {
             corCalc.put(input1.front, input2.front);
@@ -114,6 +160,26 @@ unittest {
     foreach(ti, elem; cor1.tupleof) {
         assert(approxEqual(elem, combined.tupleof[ti]));
     }
+
+    assert(approxEqual(pearsonCor([1,2,3,4,5,6,7,8,9,10][],
+        [8,6,7,5,3,0,9,3,6,2][]).cor, -0.4190758));
+
+    foreach(iter; 0..1000) {
+        // Make sure results for the ILP-optimized and non-optimized versions
+        // agree.
+        auto foo = randArray!(rNorm)(uniform(5, 100), 0, 1);
+        auto bar = randArray!(rNorm)(foo.length, 0, 1);
+        auto res1 = pearsonCor(foo, bar);
+        PearsonCor res2;
+        foreach(i; 0..foo.length) {
+            res2.put(foo[i], bar[i]);
+        }
+
+        foreach(ti, elem; res1.tupleof) {
+            assert(approxEqual(elem, res2.tupleof[ti]));
+        }
+    }
+
 
     writefln("Passed pearsonCor unittest.");
 }

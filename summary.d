@@ -396,14 +396,43 @@ unittest {
  * T (same as input type).*/
 U sum(T, U = Unqual!(IterType!(T)))(T data)
 if(doubleIterable!(T)) {
-    U sum = 0;
-    foreach(value; data) {
-        sum += value;
+
+    static if(isRandomAccessRange!T && dstats.base.hasLength!T) {
+        enum nILP = 8;
+        U[nILP] sum = 0;
+
+        size_t i = 0;
+        if(data.length > nILP) {
+
+            for(; i + nILP < data.length; i += nILP) {
+                foreach(j; 0..nILP) {
+                    sum[j] += data[i + j];
+                }
+            }
+
+            foreach(j; 1..nILP) {
+                sum[0] += sum[j];
+            }
+        }
+
+        for(; i < data.length; i++) {
+            sum[0] += data[i];
+        }
+
+        return sum[0];
+    } else {
+        U sum = 0;
+        foreach(elem; data) {
+            sum += elem;
+        }
+
+        return sum;
     }
-    return sum;
 }
 
 unittest {
+    assert(sum([1,2,3,4,5,6,7,8,9,10][]) == 55);
+    assert(sum(filter!"true"([1,2,3,4,5,6,7,8,9,10][])) == 55);
     assert(sum(cast(int[]) [1,2,3,4,5])==15);
     assert(approxEqual( sum(cast(int[]) [40.0, 40.1, 5.2]), 85.3));
     assert(mean(cast(int[]) [1,2,3]) == 2);
