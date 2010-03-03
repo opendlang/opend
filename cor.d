@@ -555,7 +555,7 @@ unittest {
                  kendallCor(one[lowerBound..upperBound], two[lowerBound..upperBound]);
             double kTwo =
                  kendallCorSmallN(one[lowerBound..upperBound], two[lowerBound..upperBound]);
-            assert(isIdentical(kOne, kTwo));
+            assert(approxEqual(kOne, kTwo) || (isNaN(kOne) && isNaN(kTwo)));
         }
     }
 
