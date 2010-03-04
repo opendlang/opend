@@ -48,8 +48,7 @@ version(unittest) {
  * When the term correlation is used unqualified, it is
  * usually referring to this quantity.  This is a parametric correlation
  * metric and should not be used with extremely ill-behaved data.
- * This function works with any pair of input ranges.  If they are of different
- * lengths, it uses the first min(input1.length, input2.length) elements.
+ * This function works with any pair of input ranges.
  *
  * Note:  The PearsonCor struct returned by this function is alias this'd to the
  * correlation coefficient.  Therefore, the result from this function can
