@@ -281,16 +281,7 @@ public:
 ///
 double covariance(T, U)(T input1, U input2)
 if(doubleInput!(T) && doubleInput!(U)) {
-    PearsonCor covCalc;
-    while(!input1.empty && !input2.empty) {
-        covCalc.put(input1.front, input2.front);
-        input1.popFront;
-        input2.popFront;
-    }
-
-    enforce(input1.empty && input2.empty,
-        "Ranges must be same length for covariance.");
-    return covCalc.cov;
+    return pearsonCor(input1, input2).cov;
 }
 
 unittest {
