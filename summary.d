@@ -48,7 +48,7 @@ import std.algorithm, std.functional, std.conv, std.range, std.array,
 import dstats.sort, dstats.base, dstats.alloc;
 
 version(unittest) {
-    import std.stdio, std.random;
+    import std.stdio, dstats.random;
 
     void main() {
     }
@@ -276,11 +276,11 @@ if(doubleIterable!(T)) {
         // This is optimized for maximum instruction level parallelism:
         // The loop is unrolled such that there are 1 / (nILP)th the data
         // dependencies of the naive algorithm.
-        enum nILP = 4;
+        enum nILP = 8;
 
         Mean ret;
         size_t i = 0;
-        if(data.length > nILP) {
+        if(data.length > 2 * nILP) {
             double k = 0;
             double[nILP] means = 0;
             for(; i + nILP < data.length; i += nILP) {
@@ -402,7 +402,7 @@ if(doubleIterable!(T)) {
         U[nILP] sum = 0;
 
         size_t i = 0;
-        if(data.length > nILP) {
+        if(data.length > 2 * nILP) {
 
             for(; i + nILP < data.length; i += nILP) {
                 foreach(j; 0..nILP) {
@@ -449,6 +449,20 @@ unittest {
     m.put(10);
     m.put(17);
     assert(m.mean == 7);
+
+    foreach(i; 0..100) {
+        // Monte carlo test the unrolled version.
+        auto foo = randArray!rNorm(uniform(5, 100), 0, 1);
+        auto res1 = mean(foo);
+        Mean res2;
+        foreach(elem; foo) {
+            res2.put(elem);
+        }
+
+        foreach(ti, elem; res1.tupleof) {
+            assert(approxEqual(elem, res2.tupleof[ti]));
+        }
+    }
 
     writeln("Passed sum/mean unittest.");
 }
@@ -562,7 +576,7 @@ if(doubleIterable!(T)) {
         double[nILP] variances = 0;
         size_t i = 0;
 
-        if(data.length > nILP) {
+        if(data.length > 2 * nILP) {
             for(; i + nILP < data.length; i += nILP) {
                 immutable kMinus1 = k;
                 immutable kNeg1 = 1 / ++k;
@@ -640,6 +654,20 @@ unittest {
     assert(combined.N == mean1.N);
     assert(approxEqual(combined.mean, 4.5));
     assert(approxEqual(combined.stdev, 3.027650));
+
+    foreach(i; 0..100) {
+        // Monte carlo test the unrolled version.
+        auto foo = randArray!rNorm(uniform(5, 100), 0, 1);
+        auto res1 = meanStdev(foo);
+        MeanSD res2;
+        foreach(elem; foo) {
+            res2.put(elem);
+        }
+
+        foreach(ti, elem; res1.tupleof) {
+            assert(approxEqual(elem, res2.tupleof[ti]));
+        }
+    }
 
     writefln("Passed variance/standard deviation unittest.");
 }

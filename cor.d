@@ -73,7 +73,7 @@ if(doubleInput!(T) && doubleInput!(U)) {
 
         enum nILP = 8;
         size_t i = 0;
-        if(input1.length > nILP) {
+        if(input1.length > 2 * nILP) {
 
             double _k = 0;
             double[nILP] _mean1 = 0, _mean2 = 0, _var1 = 0, _var2 = 0, _cov = 0;
