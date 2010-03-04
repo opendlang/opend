@@ -158,13 +158,28 @@ unittest {
     writeln("Passed median unittest.");
 }
 
+/**Plain old data holder struct for median, median absolute deviation.
+ * Alias this'd to the median absolute deviation member.
+ */
+struct MedianAbsDev {
+    double median;
+    double medianAbsDev;
+
+    this(this) {}  // Workaround for bug 2943
+
+    alias medianAbsDev this;
+}
+
 /**Calculates the median absolute deviation of a dataset.  This is the median
  * of all absolute differences from the median of the dataset.
+ *
+ * Returns:  A MedianAbsDev struct that contains the median (since it is
+ * computed anyhow) and the median absolute deviation.
  *
  * Notes:  No bias correction is used in this implementation, since using
  * one would require assumptions about the underlying distribution of the data.
  */
-double medianAbsDev(T)(T data)
+MedianAbsDev medianAbsDev(T)(T data)
 if(doubleInput!(T)) {
     auto dataDup = tempdup(data);
     immutable med = medianPartition(dataDup);
@@ -179,7 +194,7 @@ if(doubleInput!(T)) {
     }
     auto ret = medianPartition(devs);
     TempAlloc.free;
-    return ret;
+    return MedianAbsDev(med, ret);
 }
 
 unittest {
