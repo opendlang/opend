@@ -202,34 +202,45 @@ private template Comparable(T) {
         return a < b; }));
 }
 
+static assert(Comparable!ubyte);
+static assert(Comparable!ubyte);
+
 struct ObsEnt(T...) {
     T compRep;
 
-    hash_t toHash() {
-        hash_t sum = 0;
-        foreach(i, elem; this.tupleof) {
-            static if(is(elem : long) && elem.sizeof <= hash_t.sizeof) {
-                sum += elem << i;
-            } else static if(__traits(compiles, elem.toHash)) {
-                sum += elem.toHash << i;
-            } else {
-                auto ti = typeid(typeof(elem));
-                sum += ti.getHash(&elem) << i;
+    static if(isReferenceType!(typeof(this))) {
+
+        // Then there's indirection involved.  We can't just do all our
+        // comparison and hashing operations bitwise.
+        hash_t toHash() {
+            hash_t sum = 0;
+            foreach(i, elem; this.tupleof) {
+                sum *= 11;
+                static if(is(elem : long) && elem.sizeof <= hash_t.sizeof) {
+                    sum += elem;
+                } else static if(__traits(compiles, elem.toHash)) {
+                    sum += elem.toHash;
+                } else {
+                    auto ti = typeid(typeof(elem));
+                    sum += ti.getHash(&elem);
+                }
             }
+            return sum;
         }
-        return sum;
-    }
 
-    bool opEquals(const ref typeof(this) rhs) const {
-        foreach(ti, elem; this.tupleof) {
-            if(elem != rhs.tupleof[ti])
-                return false;
+        bool opEquals(const ref typeof(this) rhs) const {
+            foreach(ti, elem; this.tupleof) {
+                if(elem != rhs.tupleof[ti])
+                    return false;
+            }
+            return true;
         }
-        return true;
     }
+    // Else just use the default runtime functions for hash and equality.
 
-    static if(allSatisfy!(Comparable, T)) {
-        int opCmp(ref typeof(this) rhs) {
+
+    static if(0 && allSatisfy!(Comparable, T)) {
+        int opCmp(const ref typeof(this) rhs) const {
             foreach(ti, elem; this.tupleof) {
                 if(rhs.tupleof[ti] < elem) {
                     return -1;
