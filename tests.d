@@ -1611,7 +1611,7 @@ unittest {
  * a second range.*/
 TestRes wilcoxonSignedRank(T)(T data, double mu, Alt alt = Alt.TWOSIDE, uint exactThresh = 50)
 if(doubleInput!(T) && is(typeof(data.front - mu) : double)) {
-    return wilcoxonSignedRank(data, take(data.length, repeat(mu)), alt, exactThresh);
+    return wilcoxonSignedRank(data, replicate(mu, data.length), alt, exactThresh);
 }
 
 unittest {
@@ -2559,40 +2559,40 @@ unittest {
         assert(approxEqual(naiveAns, fastAns), text(c, naiveAns, fastAns));
     }
 
-    auto res = fisherExact([[19000u, 80000], [20000, 90000]]);
+    auto res = fisherExact([[19000, 80000], [20000, 90000]]);
     assert(approxEqual(res.testStat, 1.068731));
     assert(approxEqual(res, 3.319e-9));
-    res = fisherExact([[18000u, 80000], [20000, 90000]]);
+    res = fisherExact([[18000, 80000], [20000, 90000]]);
     assert(approxEqual(res, 0.2751));
-    res = fisherExact([[14500u, 20000], [30000, 40000]]);
+    res = fisherExact([[14500, 20000], [30000, 40000]]);
     assert(approxEqual(res, 0.01106));
-    res = fisherExact([[100u, 2], [1000, 5]]);
+    res = fisherExact([[100, 2], [1000, 5]]);
     assert(approxEqual(res, 0.1301));
-    res = fisherExact([[2u, 7], [8, 2]]);
+    res = fisherExact([[2, 7], [8, 2]]);
     assert(approxEqual(res, 0.0230141));
-    res = fisherExact([[5u, 1], [10, 10]]);
+    res = fisherExact([[5, 1], [10, 10]]);
     assert(approxEqual(res, 0.1973244));
-    res = fisherExact([[5u, 15], [20, 20]]);
+    res = fisherExact([[5, 15], [20, 20]]);
     assert(approxEqual(res, 0.0958044));
-    res = fisherExact([[5u, 16], [20, 25]]);
+    res = fisherExact([[5, 16], [20, 25]]);
     assert(approxEqual(res, 0.1725862));
-    res = fisherExact([[10u, 5], [10, 1]]);
+    res = fisherExact([[10, 5], [10, 1]]);
     assert(approxEqual(res, 0.1973244));
-    res = fisherExact([[2u, 7], [8, 2]], Alt.LESS);
+    res = fisherExact([[2, 7], [8, 2]], Alt.LESS);
     assert(approxEqual(res, 0.01852));
-    res = fisherExact([[5u, 1], [10, 10]], Alt.LESS);
+    res = fisherExact([[5, 1], [10, 10]], Alt.LESS);
     assert(approxEqual(res, 0.9783));
-    res = fisherExact([[5u, 15], [20, 20]], Alt.LESS);
+    res = fisherExact([[5, 15], [20, 20]], Alt.LESS);
     assert(approxEqual(res, 0.05626));
-    res = fisherExact([[5u, 16], [20, 25]], Alt.LESS);
+    res = fisherExact([[5, 16], [20, 25]], Alt.LESS);
     assert(approxEqual(res, 0.08914));
-    res = fisherExact([[2u, 7], [8, 2]], Alt.GREATER);
+    res = fisherExact([[2, 7], [8, 2]], Alt.GREATER);
     assert(approxEqual(res, 0.999));
-    res = fisherExact([[5u, 1], [10, 10]], Alt.GREATER);
+    res = fisherExact([[5, 1], [10, 10]], Alt.GREATER);
     assert(approxEqual(res, 0.1652));
-    res = fisherExact([[5u, 15], [20, 20]], Alt.GREATER);
+    res = fisherExact([[5, 15], [20, 20]], Alt.GREATER);
     assert(approxEqual(res, 0.985));
-    res = fisherExact([[5u, 16], [20, 25]], Alt.GREATER);
+    res = fisherExact([[5, 16], [20, 25]], Alt.GREATER);
     assert(approxEqual(res, 0.9723));
     writeln("Passed fisherExact test.");
 }
@@ -3234,8 +3234,8 @@ unittest {
     // between the exact and approximate version should be extremely small.
     foreach(i; 0..100) {
         uint nToTake = uniform(15, 65);
-        auto lhs = toArray(take(nToTake, randRange!rNorm(0, 1)));
-        auto rhs = toArray(take(nToTake, randRange!rNorm(0, 1)));
+        auto lhs = toArray(take(randRange!rNorm(0, 1), nToTake));
+        auto rhs = toArray(take(randRange!rNorm(0, 1), nToTake));
         if(i & 1) {
             lhs[] += rhs[] * 0.2;  // Make sure there's some correlation.
         } else {
@@ -3521,7 +3521,9 @@ float[] hochberg(T)(T pVals)
 if(doubleInput!(T)) {
     float[] qVals;
     auto app = appender(&qVals);
-    app.put(pVals);
+    foreach(pVal; pVals) {
+        app.put(pVal);
+    }
 
     mixin(newFrame);
     auto perm = newStack!(uint)(qVals.length);
@@ -3588,7 +3590,9 @@ if(doubleInput!(T)) {
 
     float[] qVals;
     auto app = appender(&qVals);
-    app.put(pVals);
+    foreach(pVal; pVals) {
+        app.put(pVal);
+    }
 
     auto perm = newStack!(uint)(qVals.length);
 

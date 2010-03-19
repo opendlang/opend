@@ -77,7 +77,7 @@ template isReferenceType(Types...) {  //Thanks to Bearophile.
 unittest {
     static assert(!isReferenceType!(typeof("Foo"[0])));
     static assert(isReferenceType!(uint*));
-    static assert(!isReferenceType!(typeof([0,1,2])));
+    static assert(!isReferenceType!(int[3]));
     struct noPtrs {
         uint f;
         uint b;
@@ -1675,7 +1675,7 @@ private:
     enum size_t bitSize = GetAligned!(BitwiseNode.sizeof);
     enum size_t realHeightSize = GetAligned!(RealNode.sizeof);
 
-    static if( bitSize < realHeightSize ) {
+    static if(bitSize < realHeightSize ) {
         alias AVLNodeBitwise!(T) Node;
     } else {
         alias AVLNodeRealHeight!(T) Node;
@@ -2050,6 +2050,7 @@ private int assertAvl(T)(T node) {
 
 unittest {
     // Test against StackSet on random data.
+    mixin(newFrame);
     StackTree!(uint) myTree = StackTree!(uint)();
     StackSet!(uint) ss = StackSet!(uint)(500);
     foreach(i; 0..1_000_000) {
@@ -2232,8 +2233,6 @@ struct StackTreeAA(K, V) {
 
 }
 
-
-
 unittest {
     // Test against builtin AA on random data.
     {
@@ -2304,7 +2303,7 @@ unittest {
             num = uniform(0U, uint.max);
         }
 
-        foreach(i; 0..100_000) {
+        foreach(i; 0..10_000) {
             auto index = uniform(0, nums.length);
             if(index in builtin) {
                 assert(index in monteSh);

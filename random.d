@@ -235,21 +235,21 @@ unittest {
     // an underlying RNG.
 
     {
-        auto norms = take(99, randRange!rNorm(0, 1, Random(unpredictableSeed)));
+        auto norms = take(randRange!rNorm(0, 1, Random(unpredictableSeed)), 99);
         auto arr1 = toArray(norms);
         auto arr2 = toArray(norms);
         assert(arr1 == arr2);
     }
 
     {
-        auto binomSmall = take(99, randRange!rBinomial(20, 0.5, Random(unpredictableSeed)));
+        auto binomSmall = take(randRange!rBinomial(20, 0.5, Random(unpredictableSeed)), 99);
         auto arr1 = toArray(binomSmall);
         auto arr2 = toArray(binomSmall);
         assert(arr1 == arr2);
     }
 
     {
-        auto binomLarge = take(99, randRange!rBinomial(20000, 0.4, Random(unpredictableSeed)));
+        auto binomLarge = take(randRange!rBinomial(20000, 0.4, Random(unpredictableSeed)), 99);
         auto arr1 = toArray(binomLarge);
         auto arr2 = toArray(binomLarge);
         assert(arr1 == arr2);

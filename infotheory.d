@@ -239,7 +239,7 @@ struct ObsEnt(T...) {
     // Else just use the default runtime functions for hash and equality.
 
 
-    static if(0 && allSatisfy!(Comparable, T)) {
+    static if(allSatisfy!(Comparable, T)) {
         int opCmp(const ref typeof(this) rhs) const {
             foreach(ti, elem; this.tupleof) {
                 if(rhs.tupleof[ti] < elem) {
@@ -319,7 +319,8 @@ if(IterType!(T).sizeof > 1 && !NeedsHeap!(T)) {  // Generic version.
     TempAlloc.frameInit;
     alias StackHash!(E, U) mySh;
     immutable len = data.length;  // In case length calculation is expensive.
-    mySh counts = mySh(len / 5);
+    //mySh counts = mySh(len / 5);
+    auto counts = StackTreeAA!(E, U)();
 
     foreach(elem; data)  {
         counts[elem]++;
