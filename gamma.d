@@ -71,8 +71,8 @@ version(unittest) {
 
 //------------------------------------------------------------------
 
-/// The maximum value of x for which gamma(x) < double.infinity.
-enum double MAXGAMMA = 1755.5483429L;
+/// The maximum value of x for which gamma(x) < real.infinity.
+enum real MAXGAMMA = 1755.5483429L;
 
 /****************
  * The sign of $(GAMMA)(x).
@@ -80,19 +80,19 @@ enum double MAXGAMMA = 1755.5483429L;
  * Returns -1 if $(GAMMA)(x) < 0,  +1 if $(GAMMA)(x) > 0,
  * $(NAN) if sign is indeterminate.
  */
-double sgnGamma(double x) pure nothrow
+real sgnGamma(real x) pure nothrow
 {
     /* Author: Don Clugston. */
     if (isNaN(x)) return x;
     if (x > 0) return 1.0;
-    if (x < -1/double.epsilon) {
+    if (x < -1/real.epsilon) {
         // Large negatives lose all precision
-        return double.nan;
+        return real.nan;
     }
 //  if (remquo(x, -1.0, n) == 0) {
     int n = cast(int)(x);
     if (x == n) {
-        return x == 0 ?  copysign(1, x) : double.nan;
+        return x == 0 ?  copysign(1, x) : real.nan;
     }
     return n & 1 ? 1.0 : -1.0;
 }
@@ -102,15 +102,15 @@ unittest {
     assert(isNaN(sgnGamma(-3.0)));
     assert(sgnGamma(-0.1) == -1.0);
     assert(sgnGamma(-55.1) == 1.0);
-    assert(isNaN(sgnGamma(-double.infinity)));
+    assert(isNaN(sgnGamma(-real.infinity)));
     writeln("Passed sgnGamma unittest.");
 }
 
 private {
-enum double MAXLOG = 0x1.62e42fefa39ef358p+13L;  // log(double.max)
-enum double MINLOG = -0x1.6436716d5406e6d8p+13L; // log(double.min*double.epsilon) = log(smallest denormal)
-enum double BETA_BIG = 9.223372036854775808e18L;
-enum double BETA_BIGINV = 1.084202172485504434007e-19L;
+enum real MAXLOG = 0x1.62e42fefa39ef358p+13L;  // log(real.max)
+enum real MINLOG = -0x1.6436716d5406e6d8p+13L; // log(real.min*real.epsilon) = log(smallest denormal)
+enum real BETA_BIG = 9.223372036854775808e18L;
+enum real BETA_BIGINV = 1.084202172485504434007e-19L;
 }
 
 /** Beta function
@@ -119,7 +119,7 @@ enum double BETA_BIGINV = 1.084202172485504434007e-19L;
  *
  * beta(x, y) = (&Gamma;(x) &Gamma;(y))/&Gamma;(x + y)
  */
-double beta(double x, double y)
+real beta(real x, real y)
 {
     if ((x+y)> MAXGAMMA) {
         return exp(logGamma(x) + logGamma(y) - logGamma(x+y));
@@ -146,26 +146,26 @@ double beta(double x, double y)
  * The integral is evaluated by a continued fraction expansion
  * or, when b*x is small, by a power series.
  */
-double betaIncomplete(double aa, double bb, double xx)
+real betaIncomplete(real aa, real bb, real xx)
 {
     if (!(aa>0 && bb>0)) {
          if (isNaN(aa)) return aa;
          if (isNaN(bb)) return bb;
-         return double.nan; // domain error
+         return real.nan; // domain error
     }
     if (!(xx>0 && xx<1.0)) {
         if (isNaN(xx)) return xx;
-        if ( xx == 0.0 ) return 0.0;
-        if ( xx == 1.0 )  return 1.0;
-        return double.nan; // domain error
+        if ( xx == 0.0L ) return 0.0;
+        if ( xx == 1.0L )  return 1.0;
+        return real.nan; // domain error
     }
-    if ( (bb * xx) <= 1.0 && xx <= 0.95)   {
+    if ( (bb * xx) <= 1.0L && xx <= 0.95L)   {
         return betaDistPowerSeries(aa, bb, xx);
     }
-    double x;
-    double xc; // = 1 - x
+    real x;
+    real xc; // = 1 - x
 
-    double a, b;
+    real a, b;
     int flag = 0;
 
     /* Reverse a and b if x is greater than the mean. */
@@ -175,25 +175,26 @@ double betaIncomplete(double aa, double bb, double xx)
         a = bb;
         b = aa;
         xc = xx;
-        x = 1.0 - xx;
+        x = 1.0L - xx;
     } else {
         a = aa;
         b = bb;
-        xc = 1.0 - xx;
+        xc = 1.0L - xx;
         x = xx;
     }
 
-    if( flag == 1 && (b * x) <= 1.0 && x <= 0.95) {
+    if( flag == 1 && (b * x) <= 1.0L && x <= 0.95L) {
         // here xx > aa/(aa+bb) and  ((bb*xx>1) or xx>0.95) and (aa*(1-xx)<=1) and xx > 0.05
         return 1.0 - betaDistPowerSeries(a, b, x); // note loss of precision
     }
 
-    double w;
+    real w;
+>>>>>>> .r159
     // Choose expansion for optimal convergence
     // One is for x * (a+b+2) < (a+1),
     // the other is for x * (a+b+2) > (a+1).
-    double y = x * (a+b-2.0) - (a-1.0);
-    if( y < 0.0 ) {
+    real y = x * (a+b-2.0L) - (a-1.0L);
+    if( y < 0.0L ) {
         w = betaDistExpansion1( a, b, x );
     } else {
         w = betaDistExpansion2( a, b, x ) / xc;
@@ -204,7 +205,7 @@ double betaIncomplete(double aa, double bb, double xx)
         x  (1-x)   Gamma(a+b) / ( a Gamma(a) Gamma(b) ) .   */
 
     y = a * log(x);
-    double t = b * log(xc);
+    real t = b * log(xc);
     if ( (a+b) < MAXGAMMA && fabs(y) < MAXLOG && fabs(t) < MAXLOG ) {
         t = pow(xc,b);
         t *= pow(x,a);
@@ -221,7 +222,7 @@ double betaIncomplete(double aa, double bb, double xx)
         // There seems to be a bug in Cephes at this point.
         // Problems occur for y > MAXLOG, not y < MINLOG.
         if( y < MINLOG ) {
-            t = 0.0;
+            t = 0.0L;
         } else {
             t = exp(y);
         }
@@ -229,11 +230,11 @@ double betaIncomplete(double aa, double bb, double xx)
     }
     if( flag == 1 ) {
 /+   // CEPHES includes this code, but I think it is erroneous.
-        if( t <= double.epsilon ) {
-            t = 1.0 - double.epsilon;
+        if( t <= real.epsilon ) {
+            t = 1.0L - real.epsilon;
         } else
 +/
-        t = 1.0 - t;
+        t = 1.0L - t;
     }
     return t;
 }
@@ -246,23 +247,23 @@ double betaIncomplete(double aa, double bb, double xx)
  *
  *  Newton iterations or interval halving is used.
  */
-double betaIncompleteInv(double aa, double bb, double yy0 )
+real betaIncompleteInv(real aa, real bb, real yy0 )
 {
-    double a, b, y0, d, y, x, x0, x1, lgm, yp, di, dithresh, yl, yh, xt;
+    real a, b, y0, d, y, x, x0, x1, lgm, yp, di, dithresh, yl, yh, xt;
     int i, rflg, dir, nflg;
 
     if (isNaN(yy0)) return yy0;
     if (isNaN(aa)) return aa;
     if (isNaN(bb)) return bb;
-    if( yy0 <= 0.0 )
-        return 0.0;
-    if( yy0 >= 1.0 )
-        return 1.0;
-    x0 = 0.0;
-    yl = 0.0;
-    x1 = 1.0;
-    yh = 1.0;
-    if( aa <= 1.0 || bb <= 1.0 ) {
+    if( yy0 <= 0.0L )
+        return 0.0L;
+    if( yy0 >= 1.0L )
+        return 1.0L;
+    x0 = 0.0L;
+    yl = 0.0L;
+    x1 = 1.0L;
+    yh = 1.0L;
+    if( aa <= 1.0L || bb <= 1.0L ) {
         dithresh = 1.0e-7L;
         rflg = 0;
         a = aa;
@@ -281,11 +282,11 @@ double betaIncompleteInv(double aa, double bb, double yy0 )
 
     yp = -invNormalCDF( yy0 );
 
-    if( yy0 > 0.5 ) {
+    if( yy0 > 0.5L ) {
         rflg = 1;
         a = bb;
         b = aa;
-        y0 = 1.0 - yy0;
+        y0 = 1.0L - yy0;
         yp = -yp;
     } else {
         rflg = 0;
@@ -294,14 +295,14 @@ double betaIncompleteInv(double aa, double bb, double yy0 )
         y0 = yy0;
     }
 
-    lgm = (yp * yp - 3.0)/6.0;
-    x = 2.0/( 1.0/(2.0 * a-1.0)  +  1.0/(2.0 * b - 1.0) );
+    lgm = (yp * yp - 3.0L)/6.0L;
+    x = 2.0L/( 1.0L/(2.0L * a-1.0L)  +  1.0L/(2.0L * b - 1.0L) );
     d = yp * sqrt( x + lgm ) / x
-        - ( 1.0/(2.0 * b - 1.0) - 1.0/(2.0 * a - 1.0) )
-        * (lgm + (5.0/6.0) - 2.0/(3.0 * x));
-    d = 2.0 * d;
+        - ( 1.0L/(2.0L * b - 1.0L) - 1.0L/(2.0L * a - 1.0L) )
+        * (lgm + (5.0L/6.0L) - 2.0L/(3.0L * x));
+    d = 2.0L * d;
     if( d < MINLOG ) {
-        x = 1.0;
+        x = 1.0L;
         goto under;
     }
     x = a/( a + b * exp(d) );
@@ -314,14 +315,14 @@ double betaIncompleteInv(double aa, double bb, double yy0 )
 ihalve:
 
     dir = 0;
-    di = 0.5;
+    di = 0.5L;
     for( i=0; i<400; i++ ) {
         if( i != 0 ) {
             x = x0  +  di * (x1 - x0);
-            if( x == 1.0 ) {
-                x = 1.0 - double.epsilon;
+            if( x == 1.0L ) {
+                x = 1.0L - real.epsilon;
             }
-            if( x == 0.0 ) {
+            if( x == 0.0L ) {
                 di = 0.5;
                 x = x0  +  di * (x1 - x0);
                 if( x == 0.0 )
@@ -340,15 +341,15 @@ ihalve:
             yl = y;
             if( dir < 0 ) {
                 dir = 0;
-                di = 0.5;
+                di = 0.5L;
             } else if( dir > 3 )
-                di = 1.0 - (1.0 - di) * (1.0 - di);
+                di = 1.0L - (1.0L - di) * (1.0L - di);
             else if( dir > 1 )
-                di = 0.5 * di + 0.5;
+                di = 0.5L * di + 0.5L;
             else
                 di = (y0 - y)/(yh - yl);
             dir += 1;
-            if( x0 > 0.95 ) {
+            if( x0 > 0.95L ) {
                 if( rflg == 1 ) {
                     rflg = 0;
                     a = aa;
@@ -360,7 +361,7 @@ ihalve:
                     b = aa;
                     y0 = 1.0 - yy0;
                 }
-                x = 1.0 - x;
+                x = 1.0L - x;
                 y = betaIncomplete( a, b, x );
                 x0 = 0.0;
                 yl = 0.0;
@@ -370,19 +371,19 @@ ihalve:
             }
         } else {
             x1 = x;
-            if( rflg == 1 && x1 < double.epsilon ) {
-                x = 0.0;
+            if( rflg == 1 && x1 < real.epsilon ) {
+                x = 0.0L;
                 goto done;
             }
             yh = y;
             if( dir > 0 ) {
                 dir = 0;
-                di = 0.5;
+                di = 0.5L;
             }
             else if( dir < -3 )
                 di = di * di;
             else if( dir < -1 )
-                di = 0.5 * di;
+                di = 0.5L * di;
             else
                 di = (y - y0)/(yh - yl);
             dir -= 1;
@@ -391,15 +392,15 @@ ihalve:
     // loss of precision has occurred
 
     //mtherr( "incbil", PLOSS );
-    if( x0 >= 1.0 ) {
-        x = 1.0 - double.epsilon;
+    if( x0 >= 1.0L ) {
+        x = 1.0L - real.epsilon;
         goto done;
     }
-    if( x <= 0.0 ) {
+    if( x <= 0.0L ) {
 under:
         // underflow has occurred
         //mtherr( "incbil", UNDERFLOW );
-        x = 0.0;
+        x = 0.0L;
         goto done;
     }
 
@@ -428,10 +429,10 @@ newt:
             x1 = x;
             yh = y;
         }
-        if( x == 1.0 || x == 0.0 )
+        if( x == 1.0L || x == 0.0L )
             break;
         /* Compute the derivative of the function at this point. */
-        d = (a - 1.0) * log(x) + (b - 1.0) * log(1.0 - x) + lgm;
+        d = (a - 1.0L) * log(x) + (b - 1.0L) * log(1.0L - x) + lgm;
         if ( d < MINLOG ) {
             goto done;
         }
@@ -444,30 +445,30 @@ newt:
         xt = x - d;
         if ( xt <= x0 ) {
             y = (x - x0) / (x1 - x0);
-            xt = x0 + 0.5 * y * (x - x0);
-            if( xt <= 0.0 )
+            xt = x0 + 0.5L * y * (x - x0);
+            if( xt <= 0.0L )
                 break;
         }
         if ( xt >= x1 ) {
             y = (x1 - x) / (x1 - x0);
-            xt = x1 - 0.5 * y * (x1 - x);
-            if ( xt >= 1.0 )
+            xt = x1 - 0.5L * y * (x1 - x);
+            if ( xt >= 1.0L )
                 break;
         }
         x = xt;
-        if ( fabs(d/x) < (128.0 * double.epsilon) )
+        if ( fabs(d/x) < (128.0L * real.epsilon) )
             goto done;
         }
     /* Did not converge.  */
-    dithresh = 256.0 * double.epsilon;
+    dithresh = 256.0L * real.epsilon;
     goto ihalve;
 
 done:
     if ( rflg ) {
-        if( x <= double.epsilon )
-            x = 1.0 - double.epsilon;
+        if( x <= real.epsilon )
+            x = 1.0L - real.epsilon;
         else
-            x = 1.0 - x;
+            x = 1.0L - x;
     }
     return x;
 }
@@ -489,8 +490,8 @@ unittest { // also tested by the normal distribution
 
   assert(fabs(betaIncomplete(0.0001, 10000, 0.0001) - 0.999978059369989L) < 0.000_000_000_05);
 
-  assert(fabs(betaIncompleteInv(5, 10, 0.2) - 0.229121208190918L) < 0.000_000_5);
-  assert(fabs(betaIncompleteInv(4, 7, 0.8) - 0.483657360076904L) < 0.000_000_5);
+  assert(fabs(betaIncompleteInv(5, 10, 0.2) - 0.229121208190918L) < 0.000_000_5L);
+  assert(fabs(betaIncompleteInv(4, 7, 0.8) - 0.483657360076904L) < 0.000_000_5L);
 
     // Coverage tests. I don't have correct values for these tests, but
     // these values cover most of the code, so they are useful for
@@ -502,27 +503,27 @@ unittest { // also tested by the normal distribution
 // Excel 2003 gives clearly erroneous results (betadist>1) when a and x are tiny and b is huge.
 // The correct results are for these next tests are unknown.
 
-//    double testpoint1 = betaIncomplete(1e-10, 5e20, 8e-21);
+//    real testpoint1 = betaIncomplete(1e-10, 5e20, 8e-21);
 //    assert(testpoint1 == 0x1.ffff_ffff_c906_404cp-1L);
 
     assert(betaIncomplete(0.01, 327726.7, 0.545113) == 1.0);
-    assert(betaIncompleteInv(0.01, 8e-48, 5.45464e-20)==1-double.epsilon);
-    assert(betaIncompleteInv(0.01, 8e-48, 9e-26)==1-double.epsilon);
+    assert(betaIncompleteInv(0.01, 8e-48, 5.45464e-20)==1-real.epsilon);
+    assert(betaIncompleteInv(0.01, 8e-48, 9e-26)==1-real.epsilon);
 
     assert(betaIncomplete(0.01, 498.437, 0.0121433) == 0x1.ffff_8f72_19197402p-1);
-//    assert(1- betaIncomplete(0.01, 328222, 4.0375e-5) == 0x1.5f62926b4p-30);
-  //  version(FailsOnLinux)  assert(betaIncompleteInv(0x1.b3d151fbba0eb18p+1, 1.2265e-19, 2.44859e-18)==0x1.c0110c8531d0952cp-1);
-    double a1;
+    assert(1- betaIncomplete(0.01, 328222, 4.0375e-5) == 0x1.5f62926b4p-30);
+    version(FailsOnLinux)  assert(betaIncompleteInv(0x1.b3d151fbba0eb18p+1, 1.2265e-19, 2.44859e-18)==0x1.c0110c8531d0952cp-1);
+    real a1;
     a1 = 3.40483;
-   // version(FailsOnLinux)  assert(betaIncompleteInv(a1, 4.0640301659679627772e19L, 0.545113)== 0x1.ba8c08108aaf5d14p-109);
-    double b1;
+    version(FailsOnLinux)  assert(betaIncompleteInv(a1, 4.0640301659679627772e19L, 0.545113)== 0x1.ba8c08108aaf5d14p-109);
+    real b1;
     b1= 2.82847e-25;
 
     // --- Problematic cases ---
     // This is a situation where the series expansion fails to converge
     assert( isNaN(betaIncompleteInv(0.12167, 4.0640301659679627772e19L, 0.0813601)));
     // This next result is almost certainly erroneous.
-    //assert(betaIncomplete(1.16251e20, 2.18e39, 5.45e-20)==-double.infinity);
+    assert(betaIncomplete(1.16251e20, 2.18e39, 5.45e-20)==-real.infinity);
     writeln("Passed betaIncomplete unittest.");
 }
 
@@ -531,30 +532,30 @@ private {
 
 // Continued fraction expansion #1 for incomplete beta integral
 // Use when x < (a+1)/(a+b+2)
-double betaDistExpansion1(double a, double b, double x ) pure nothrow
+real betaDistExpansion1(real a, real b, real x ) pure nothrow
 {
-    double xk, pk, pkm1, pkm2, qk, qkm1, qkm2;
-    double k1, k2, k3, k4, k5, k6, k7, k8;
-    double r, t, ans;
+    real xk, pk, pkm1, pkm2, qk, qkm1, qkm2;
+    real k1, k2, k3, k4, k5, k6, k7, k8;
+    real r, t, ans;
     int n;
 
     k1 = a;
     k2 = a + b;
     k3 = a;
-    k4 = a + 1.0;
-    k5 = 1.0;
-    k6 = b - 1.0;
+    k4 = a + 1.0L;
+    k5 = 1.0L;
+    k6 = b - 1.0L;
     k7 = k4;
-    k8 = a + 2.0;
+    k8 = a + 2.0L;
 
-    pkm2 = 0.0;
-    qkm2 = 1.0;
-    pkm1 = 1.0;
-    qkm1 = 1.0;
-    ans = 1.0;
-    r = 1.0;
+    pkm2 = 0.0L;
+    qkm2 = 1.0L;
+    pkm1 = 1.0L;
+    qkm1 = 1.0L;
+    ans = 1.0L;
+    r = 1.0L;
     n = 0;
-    enum double thresh = 3.0 * double.epsilon;
+    enum real thresh = 3.0L * real.epsilon;
     do  {
         xk = -( x * k1 * k2 )/( k3 * k4 );
         pk = pkm1 +  pkm2 * xk;
@@ -572,26 +573,26 @@ double betaDistExpansion1(double a, double b, double x ) pure nothrow
         qkm2 = qkm1;
         qkm1 = qk;
 
-        if( qk != 0.0 )
+        if( qk != 0.0L )
             r = pk/qk;
-        if( r != 0.0 ) {
+        if( r != 0.0L ) {
             t = fabs( (ans - r)/r );
             ans = r;
         } else {
-           t = 1.0;
+           t = 1.0L;
         }
 
         if( t < thresh )
             return ans;
 
-        k1 += 1.0;
-        k2 += 1.0;
-        k3 += 2.0;
-        k4 += 2.0;
-        k5 += 1.0;
-        k6 -= 1.0;
-        k7 += 2.0;
-        k8 += 2.0;
+        k1 += 1.0L;
+        k2 += 1.0L;
+        k3 += 2.0L;
+        k4 += 2.0L;
+        k5 += 1.0L;
+        k6 -= 1.0L;
+        k7 += 2.0L;
+        k8 += 2.0L;
 
         if( (fabs(qk) + fabs(pk)) > BETA_BIG ) {
             pkm2 *= BETA_BIGINV;
@@ -614,30 +615,30 @@ double betaDistExpansion1(double a, double b, double x ) pure nothrow
 
 // Continued fraction expansion #2 for incomplete beta integral
 // Use when x > (a+1)/(a+b+2)
-double betaDistExpansion2(double a, double b, double x ) pure nothrow
+real betaDistExpansion2(real a, real b, real x ) pure nothrow
 {
-    double  xk, pk, pkm1, pkm2, qk, qkm1, qkm2;
-    double k1, k2, k3, k4, k5, k6, k7, k8;
-    double r, t, ans, z;
+    real  xk, pk, pkm1, pkm2, qk, qkm1, qkm2;
+    real k1, k2, k3, k4, k5, k6, k7, k8;
+    real r, t, ans, z;
 
     k1 = a;
-    k2 = b - 1.0;
+    k2 = b - 1.0L;
     k3 = a;
-    k4 = a + 1.0;
-    k5 = 1.0;
+    k4 = a + 1.0L;
+    k5 = 1.0L;
     k6 = a + b;
-    k7 = a + 1.0;
-    k8 = a + 2.0;
+    k7 = a + 1.0L;
+    k8 = a + 2.0L;
 
-    pkm2 = 0.0;
-    qkm2 = 1.0;
-    pkm1 = 1.0;
-    qkm1 = 1.0;
-    z = x / (1.0-x);
-    ans = 1.0;
-    r = 1.0;
+    pkm2 = 0.0L;
+    qkm2 = 1.0L;
+    pkm1 = 1.0L;
+    qkm1 = 1.0L;
+    z = x / (1.0L-x);
+    ans = 1.0L;
+    r = 1.0L;
     int n = 0;
-    enum double thresh = 3.0 * double.epsilon;
+    enum real thresh = 3.0L * real.epsilon;
     do {
 
         xk = -( z * k1 * k2 )/( k3 * k4 );
@@ -656,24 +657,24 @@ double betaDistExpansion2(double a, double b, double x ) pure nothrow
         qkm2 = qkm1;
         qkm1 = qk;
 
-        if( qk != 0.0 )
+        if( qk != 0.0L )
             r = pk/qk;
-        if( r != 0.0 ) {
+        if( r != 0.0L ) {
             t = fabs( (ans - r)/r );
             ans = r;
         } else
-            t = 1.0;
+            t = 1.0L;
 
         if( t < thresh )
             return ans;
-        k1 += 1.0;
-        k2 -= 1.0;
-        k3 += 2.0;
-        k4 += 2.0;
-        k5 += 1.0;
-        k6 += 1.0;
-        k7 += 2.0;
-        k8 += 2.0;
+        k1 += 1.0L;
+        k2 -= 1.0L;
+        k3 += 2.0L;
+        k4 += 2.0L;
+        k5 += 1.0L;
+        k6 += 1.0L;
+        k7 += 2.0L;
+        k8 += 2.0L;
 
         if( (fabs(qk) + fabs(pk)) > BETA_BIG ) {
             pkm2 *= BETA_BIGINV;
@@ -695,22 +696,22 @@ double betaDistExpansion2(double a, double b, double x ) pure nothrow
 
 /* Power series for incomplete gamma integral.
    Use when b*x is small.  */
-double betaDistPowerSeries(double a, double b, double x )
+real betaDistPowerSeries(real a, real b, real x )
 {
-    double ai = 1.0 / a;
-    double u = (1.0 - b) * x;
-    double v = u / (a + 1.0);
-    double t1 = v;
-    double t = u;
-    double n = 2.0;
-    double s = 0.0;
-    double z = double.epsilon * ai;
+    real ai = 1.0L / a;
+    real u = (1.0L - b) * x;
+    real v = u / (a + 1.0L);
+    real t1 = v;
+    real t = u;
+    real n = 2.0L;
+    real s = 0.0L;
+    real z = real.epsilon * ai;
     while( fabs(v) > z ) {
         u = (n - b) * x / n;
         t *= u;
         v = t / (a + n);
         s += v;
-        n += 1.0;
+        n += 1.0L;
     }
     s += t1;
     s += ai;
@@ -723,7 +724,7 @@ double betaDistPowerSeries(double a, double b, double x )
         t = logGamma(a+b) - logGamma(a) - logGamma(b) + u + log(s);
 
         if( t < MINLOG ) {
-            s = 0.0;
+            s = 0.0L;
         } else
             s = exp(t);
     }
@@ -747,7 +748,7 @@ double betaDistPowerSeries(double a, double b, double x )
  * continued fraction expansion, depending on the relative
  * values of a and x.
  */
-double gammaIncomplete(double a, double x )
+real gammaIncomplete(real a, real x )
 in {
    assert(x >= 0);
    assert(a > 0);
@@ -763,89 +764,89 @@ body {
      *
      */
     if (x==0)
-       return 0.0;
+       return 0.0L;
 
-    if ( (x > 1.0) && (x > a ) )
-        return 1.0 - gammaIncompleteCompl(a,x);
+    if ( (x > 1.0L) && (x > a ) )
+        return 1.0L - gammaIncompleteCompl(a,x);
 
-    double ax = a * log(x) - x - logGamma(a);
+    real ax = a * log(x) - x - logGamma(a);
 /+
     if( ax < MINLOGL ) return 0; // underflow
-    //  { mtherr( "igaml", UNDERFLOW ); return( 0.0 ); }
+    //  { mtherr( "igaml", UNDERFLOW ); return( 0.0L ); }
 +/
     ax = exp(ax);
 
     /* power series */
-    double r = a;
-    double c = 1.0;
-    double ans = 1.0;
+    real r = a;
+    real c = 1.0L;
+    real ans = 1.0L;
 
     do  {
-        r += 1.0;
+        r += 1.0L;
         c *= x/r;
         ans += c;
-    } while( c/ans > double.epsilon );
+    } while( c/ans > real.epsilon );
 
     return ans * ax/a;
 }
 
 /** ditto */
-double gammaIncompleteCompl(double a, double x )
+real gammaIncompleteCompl(real a, real x )
 in {
    assert(x >= 0);
    assert(a > 0);
 }
 body {
     if (x==0)
-       return 1.0;
-    if ( (x < 1.0) || (x < a) )
-        return 1.0 - gammaIncomplete(a,x);
+       return 1.0L;
+    if ( (x < 1.0L) || (x < a) )
+        return 1.0L - gammaIncomplete(a,x);
 
    // DAC (Cephes bug fix): This is necessary to avoid
    // spurious nans, eg
-   // log(x)-x = NaN when x = double.infinity
-   enum double MAXLOGL =  1.1356523406294143949492E4L;
+   // log(x)-x = NaN when x = real.infinity
+   enum real MAXLOGL =  1.1356523406294143949492E4L;
    if (x > MAXLOGL) return 0; // underflow
 
-    double ax = a * log(x) - x - logGamma(a);
-//const double MINLOGL = -1.1355137111933024058873E4L;
+    real ax = a * log(x) - x - logGamma(a);
+//const real MINLOGL = -1.1355137111933024058873E4L;
 //  if ( ax < MINLOGL ) return 0; // underflow;
     ax = exp(ax);
 
 
     /* continued fraction */
-    double y = 1.0 - a;
-    double z = x + y + 1.0;
-    double c = 0.0;
+    real y = 1.0L - a;
+    real z = x + y + 1.0L;
+    real c = 0.0L;
 
-    double pk, qk, t;
+    real pk, qk, t;
 
-    double pkm2 = 1.0;
-    double qkm2 = x;
-    double pkm1 = x + 1.0;
-    double qkm1 = z * x;
-    double ans = pkm1/qkm1;
+    real pkm2 = 1.0L;
+    real qkm2 = x;
+    real pkm1 = x + 1.0L;
+    real qkm1 = z * x;
+    real ans = pkm1/qkm1;
 
     do  {
-        c += 1.0;
-        y += 1.0;
-        z += 2.0;
-        double yc = y * c;
+        c += 1.0L;
+        y += 1.0L;
+        z += 2.0L;
+        real yc = y * c;
         pk = pkm1 * z  -  pkm2 * yc;
         qk = qkm1 * z  -  qkm2 * yc;
-        if( qk != 0.0 ) {
-            double r = pk/qk;
+        if( qk != 0.0L ) {
+            real r = pk/qk;
             t = fabs( (ans - r)/r );
             ans = r;
         } else {
-            t = 1.0;
+            t = 1.0L;
         }
     pkm2 = pkm1;
         pkm1 = pk;
         qkm2 = qkm1;
         qkm1 = qk;
 
-        enum double BIG = 9.223372036854775808e18L;
+        enum real BIG = 9.223372036854775808e18L;
 
         if ( fabs(pk) > BIG ) {
             pkm2 /= BIG;
@@ -853,7 +854,7 @@ body {
             qkm2 /= BIG;
             qkm1 /= BIG;
         }
-    } while ( t > double.epsilon );
+    } while ( t > real.epsilon );
 
     return ans * ax;
 }
@@ -870,29 +871,29 @@ body {
  * the routine performs up to 10 Newton iterations to find the
  * root of incompleteGammaCompl(a,x) - p = 0.
  */
-double gammaIncompleteComplInv(double a, double p)
+real gammaIncompleteComplInv(real a, real p)
 in {
   assert(p>=0 && p<= 1);
   assert(a>0);
 }
 body {
-    if (p==0) return double.infinity;
+    if (p==0) return real.infinity;
 
-    double y0 = p;
-    enum double MAXLOGL =  1.1356523406294143949492E4L;
-    double x0, x1, x, yl, yh, y, d, lgm, dithresh;
+    real y0 = p;
+    enum real MAXLOGL =  1.1356523406294143949492E4L;
+    real x0, x1, x, yl, yh, y, d, lgm, dithresh;
     int i, dir;
 
     /* bound the solution */
-    x0 = double.max;
-    yl = 0.0;
-    x1 = 0.0;
-    yh = 1.0;
-    dithresh = 4.0 * double.epsilon;
+    x0 = real.max;
+    yl = 0.0L;
+    x1 = 0.0L;
+    yh = 1.0L;
+    dithresh = 4.0 * real.epsilon;
 
     /* approximation to inverse function */
-    d = 1.0/(9.0*a);
-    y = 1.0 - d - invNormalCDF(y0) * sqrt(d);
+    d = 1.0L/(9.0L*a);
+    y = 1.0L - d - invNormalCDF(y0) * sqrt(d);
     x = a * y * y * y;
 
     lgm = logGamma(a);
@@ -911,7 +912,7 @@ body {
             yh = y;
         }
     /* compute the derivative of the function at this point */
-        d = (a - 1.0) * log(x0) - x0 - lgm;
+        d = (a - 1.0L) * log(x0) - x0 - lgm;
         if ( d < -MAXLOGL )
             goto ihalve;
         d = -exp(d);
@@ -924,12 +925,12 @@ body {
 
     /* Resort to interval halving if Newton iteration did not converge. */
 ihalve:
-    d = 0.0625;
-    if ( x0 == double.max ) {
-        if( x <= 0.0 )
-            x = 1.0;
-        while( x0 == double.max ) {
-            x = (1.0 + d) * x;
+    d = 0.0625L;
+    if ( x0 == real.max ) {
+        if( x <= 0.0L )
+            x = 1.0L;
+        while( x0 == real.max ) {
+            x = (1.0L + d) * x;
             y = gammaIncompleteCompl( a, x );
             if ( y < y0 ) {
                 x0 = x;
@@ -939,7 +940,7 @@ ihalve:
             d = d + d;
         }
     }
-    d = 0.5;
+    d = 0.5L;
     dir = 0;
 
     for( i=0; i<400; i++ ) {
@@ -951,16 +952,16 @@ ihalve:
         lgm = (y - y0)/y0;
         if ( fabs(lgm) < dithresh )
             break;
-        if ( x <= 0.0 )
+        if ( x <= 0.0L )
             break;
         if ( y > y0 ) {
             x1 = x;
             yh = y;
             if ( dir < 0 ) {
                 dir = 0;
-                d = 0.5;
+                d = 0.5L;
             } else if ( dir > 1 )
-                d = 0.5 * d + 0.5;
+                d = 0.5L * d + 0.5L;
             else
                 d = (y0 - yl)/(yh - yl);
             dir += 1;
@@ -969,16 +970,16 @@ ihalve:
             yl = y;
             if ( dir > 0 ) {
                 dir = 0;
-                d = 0.5;
+                d = 0.5L;
             } else if ( dir < -1 )
-                d = 0.5 * d;
+                d = 0.5L * d;
             else
                 d = (y0 - yl)/(yh - yl);
             dir -= 1;
         }
     }
     /+
-    if( x == 0.0 )
+    if( x == 0.0L )
         mtherr( "igamil", UNDERFLOW );
     +/
     return x;
@@ -992,15 +993,15 @@ assert(fabs(gammaIncompleteComplInv(100, 0.8) - 91.5013985848288L) < 0.000005);
 
 assert(gammaIncomplete(1, 0)==0);
 assert(gammaIncompleteCompl(1, 0)==1);
-assert(gammaIncomplete(4545, double.infinity)==1);
+assert(gammaIncomplete(4545, real.infinity)==1);
 
 // Values from Excel's (1-GammaDist(x, alpha, 1, TRUE))
 
-assert(fabs(1.0-gammaIncompleteCompl(0.5, 2) - 0.954499729507309L) < 0.00000005);
+assert(fabs(1.0L-gammaIncompleteCompl(0.5, 2) - 0.954499729507309L) < 0.00000005);
 assert(fabs(gammaIncomplete(0.5, 2) - 0.954499729507309L) < 0.00000005);
 // Fixed Cephes bug:
-assert(gammaIncompleteCompl(384, double.infinity)==0);
-assert(gammaIncompleteComplInv(3, 0)==double.infinity);
+assert(gammaIncompleteCompl(384, real.infinity)==0);
+assert(gammaIncompleteComplInv(3, 0)==real.infinity);
 
 //writefln("%.20g",gammaIncompleteCompl(100, 0));
 //assert(gammaIncompleteComplInv(8, 0));
