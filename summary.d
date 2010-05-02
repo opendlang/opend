@@ -524,6 +524,16 @@ public:
 
     /// Combine two MeanSD's.
     void put(const ref typeof(this) rhs) nothrow {
+        if(_k == 0) {
+            foreach(ti, elem; rhs.tupleof) {
+                this.tupleof[ti] = elem;
+            }
+
+            return;
+        } else if(rhs._k == 0) {
+            return;
+        }
+
         immutable totalN = _k + rhs._k;
         immutable delta = rhs.mean - mean;
         _mean = _mean * (_k / totalN) + rhs._mean * (rhs._k / totalN);
@@ -682,6 +692,14 @@ unittest {
         foreach(ti, elem; res1.tupleof) {
             assert(approxEqual(elem, res2.tupleof[ti]));
         }
+
+        MeanSD resCornerCase;  // Test corner cases where one of the N's is 0.
+        resCornerCase.put(res1);
+        MeanSD dummy;
+        resCornerCase.put(dummy);
+        foreach(ti, elem; res1.tupleof) {
+            assert(elem == resCornerCase.tupleof[ti]);
+        }
     }
 
     writefln("Passed variance/standard deviation unittest.");
@@ -746,6 +764,16 @@ public:
 
     /// Combine two Summary's.
     void put(const ref typeof(this) rhs) nothrow {
+        if(_k == 0) {
+            foreach(ti, elem; rhs.tupleof) {
+                this.tupleof[ti] = elem;
+            }
+
+            return;
+        } else if(rhs._k == 0) {
+            return;
+        }
+
         immutable totalN = _k + rhs._k;
         immutable delta = rhs.mean - mean;
         immutable deltaN = delta / totalN;
@@ -859,6 +887,14 @@ unittest {
 
     foreach(ti, elem; mean1.tupleof) {
         assert(approxEqual(elem, combined.tupleof[ti]));
+    }
+
+    Summary summCornerCase;  // Case where one N is zero.
+    summCornerCase.put(mean1);
+    Summary dummy;
+    summCornerCase.put(dummy);
+    foreach(ti, elem; summCornerCase.tupleof) {
+        assert(elem == mean1.tupleof[ti]);
     }
 }
 

@@ -177,6 +177,14 @@ unittest {
         foreach(ti, elem; res1.tupleof) {
             assert(approxEqual(elem, res2.tupleof[ti]));
         }
+
+        PearsonCor resCornerCase;  // Test where one N is zero.
+        resCornerCase.put(res1);
+        PearsonCor dummy;
+        resCornerCase.put(dummy);
+        foreach(ti, elem; res1.tupleof) {
+            assert(isIdentical(resCornerCase.tupleof[ti], elem));
+        }
     }
 
 
@@ -218,6 +226,15 @@ public:
 
     /// Combine two PearsonCor's.
     void put(const ref typeof(this) rhs) nothrow {
+        if(_k == 0) {
+            foreach(ti, elem; rhs.tupleof) {
+                this.tupleof[ti] = elem;
+            }
+            return;
+        } else if(rhs._k == 0) {
+            return;
+        }
+
         immutable totalN = _k + rhs._k;
         immutable delta1 = rhs.mean1 - mean1;
         immutable delta2 = rhs.mean2 - mean2;
