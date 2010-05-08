@@ -189,7 +189,7 @@ real betaIncomplete(real aa, real bb, real xx)
     }
 
     real w;
->>>>>>> .r159
+
     // Choose expansion for optimal convergence
     // One is for x * (a+b+2) < (a+1),
     // the other is for x * (a+b+2) > (a+1).
