@@ -134,7 +134,11 @@ unittest {
 /**Tests whether T is iterable and has elements of a type implicitly
  * convertible to double.*/
 template doubleIterable(T) {
-    enum doubleIterable = isIterable!(T) && is(IterType!(T) : double);
+    static if(!isIterable!T) {
+        enum doubleIterable = false;
+    } else {
+        enum doubleIterable = is(IterType!(T) : double);
+    }
 }
 
 /**Writes the contents of an input range to an output range.

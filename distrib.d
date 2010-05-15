@@ -1303,7 +1303,7 @@ writeln("Passed studentsTCDF.");
 double fisherCDF(double x, double df1, double df2) {
     enforce(df1 > 0 && df2 > 0,
         "Fisher distribution must have >0 degrees of freedom.");
-    enforce(x > 0, "x must be >0 for Fisher distribution.");
+    enforce(x >= 0, "x must be >=0 for Fisher distribution.");
 
     double a = cast(double)(df1);
     double b = cast(double)(df2);
@@ -1316,7 +1316,7 @@ double fisherCDF(double x, double df1, double df2) {
 double fisherCDFR(double x, double df1, double df2) {
     enforce(df1 > 0 && df2 > 0,
         "Fisher distribution must have >0 degrees of freedom.");
-    enforce(x > 0, "x must be >0 for Fisher distribution.");
+    enforce(x >= 0, "x must be >=0 for Fisher distribution.");
 
     double a = cast(double)(df1);
     double b = cast(double)(df2);
