@@ -35,10 +35,12 @@
 module dstats.regress;
 
 import std.math, std.algorithm, std.traits, std.array, std.traits, std.contracts,
-    dstats.alloc, std.range, std.conv, dstats.distrib, dstats.cor, dstats.base;
+    std.typetuple;
+
+import dstats.alloc, std.range, std.conv, dstats.distrib, dstats.cor, dstats.base;
 
 private void enforceConfidence(double conf) {
-    enforce(conf >= 0 && conf <= 1,
+    dstatsEnforce(conf >= 0 && conf <= 1,
         "Confidence intervals must be between 0 and 1.");
 }
 
@@ -71,7 +73,11 @@ if(isForwardRange!(T)) {
         }
     }
 
-    bool empty() {
+    typeof(this) save() @property {
+        return this;
+    }
+
+    bool empty() @property {
         return range.empty;
     }
 }
@@ -268,7 +274,8 @@ struct Residuals(F, U, T...) {
         double sum = 0;
         size_t i = 0;
         foreach(elem; X) {
-            sum += cast(double) elem.front * betas[i];
+            double frnt = elem.front();
+            sum += frnt * betas[i];
             i++;
         }
         residual = sum - Y.front;
@@ -276,10 +283,10 @@ struct Residuals(F, U, T...) {
 
     this(F[] betas, U Y, R X) {
         static if(is(typeof(X.length))) {
-            enforce(X.length == betas.length,
+            dstatsEnforce(X.length == betas.length,
                 "Betas and X must have same length for residuals.");
         } else {
-            enforce(walkLength(X) == betas.length,
+            dstatsEnforce(walkLength(X) == betas.length,
                 "Betas and X must have same length for residuals.");
         }
 
@@ -433,9 +440,12 @@ RegressRes linearRegress(U, TC...)(U Y, TC input) {
     mixin(newFrame);
     static if(isForwardRange!(T[0]) && isForwardRange!(typeof(XIn[0].front())) &&
         T.length == 1) {
+
+        enum bool arrayX = true;
         alias typeof(XIn[0].front) E;
         E[] X = tempdup(XIn[0]);
     } else static if(allSatisfy!(isForwardRange, T)) {
+        enum bool arrayX = false;
         alias XIn X;
     } else {
         static assert(0, "Linear regression can only be performed with " ~
@@ -444,7 +454,18 @@ RegressRes linearRegress(U, TC...)(U Y, TC input) {
 
     double[][] xTx;
     double[] xTy;
-    rangeMatrixMulTrans(xTy, xTx, Y, X);
+
+    typeof(X) xSaved;
+    static if(arrayX) {
+        xSaved = X.tempdup;
+        foreach(ref elem; xSaved) {
+            elem = elem.save;
+        }
+    } else {
+        xSaved = saveAll(X).expand;
+    }
+
+    rangeMatrixMulTrans(xTy, xTx, Y.save, X);
     invert(xTx);
     double[] betas = new double[X.length];
     foreach(i; 0..betas.length) {

@@ -30,7 +30,7 @@
 
 module dstats.cor;
 
-import std.range, std.typecons, std.contracts, std.math, std.traits;
+import std.range, std.typecons, std.contracts, std.math, std.traits, std.typetuple;
 
 import dstats.sort, dstats.base, dstats.alloc, dstats.regress : invert;
 
@@ -67,7 +67,7 @@ if(doubleInput!(T) && doubleInput!(U)) {
         // performance by reducing data dependency.  When the stack is
         // properly aligned, this can result in about 2x speedups compared
         // to simply submitting everything to a single PearsonCor struct.
-        enforce(input1.length == input2.length,
+        dstatsEnforce(input1.length == input2.length,
             "Ranges must be same length for Pearson correlation.");
 
         enum nILP = 8;
@@ -119,7 +119,7 @@ if(doubleInput!(T) && doubleInput!(U)) {
             input2.popFront;
         }
 
-        enforce(input1.empty && input2.empty,
+        dstatsEnforce(input1.empty && input2.empty,
             "Ranges must be same length for Pearson correlation.");
     }
 
@@ -335,7 +335,7 @@ is(typeof(input2.front < input2.front) == bool)) {
 
     auto ranks1 = spearmanCorRank(input1);
     auto ranks2 = spearmanCorRank(input2);
-    enforce(ranks1.length == ranks2.length,
+    dstatsEnforce(ranks1.length == ranks2.length,
         "Ranges must be same length for Spearman correlation.");
 
     return pearsonCor(ranks1, ranks2).cor;
@@ -428,7 +428,7 @@ version(unittest) {
 double kendallCor(T, U)(T input1, U input2)
 if(isInputRange!(T) && isInputRange!(U)) {
     static if(isArray!(T) && isArray!(U)) {
-        enforce(input1.length == input2.length,
+        dstatsEnforce(input1.length == input2.length,
             "Ranges must be same length for Kendall correlation.");
         if(input1.length <= kendallSmallN) {
             return kendallCorSmallN(input1, input2);
@@ -440,7 +440,7 @@ if(isInputRange!(T) && isInputRange!(U)) {
     auto i2d = tempdup(input2);
     scope(exit) TempAlloc.free;
 
-    enforce(i1d.length == i2d.length,
+    dstatsEnforce(i1d.length == i2d.length,
         "Ranges must be same length for Kendall correlation.");
 
     if(i1d.length <= kendallSmallN) {
@@ -455,7 +455,7 @@ if(isInputRange!(T) && isInputRange!(U)) {
  * input.  Only works on arrays.
  */
 double kendallCorDestructive(T, U)(T[] input1, U[] input2) {
-    enforce(input1.length == input2.length,
+    dstatsEnforce(input1.length == input2.length,
         "Ranges must be same length for Kendall correlation.");
     return kendallCorDestructiveLowLevel(input1, input2).field[0];
 }
@@ -568,7 +568,7 @@ in {
                 } else if(input1[i] == input1[j]) {
                     m1++;
                 } else {
-                    enforce(0, "Can't compute Kendall's Tau with NaNs.");
+                    dstatsEnforce(0, "Can't compute Kendall's Tau with NaNs.");
                 }
             } else if(input2[i] < input2[j]) {
                 if (input1[i] > input1[j]) {
@@ -578,7 +578,7 @@ in {
                 } else if(input1[i] == input1[j]) {
                     m1++;
                 } else {
-                    enforce(0, "Can't compute Kendall's Tau with NaNs.");
+                    dstatsEnforce(0, "Can't compute Kendall's Tau with NaNs.");
                 }
             } else if(input2[i] == input2[j]) {
                 m2++;
@@ -588,11 +588,11 @@ in {
                 } else if(input1[i] == input1[j]) {
                     m1++;
                 } else {
-                    enforce(0, "Can't compute Kendall's Tau with NaNs.");
+                    dstatsEnforce(0, "Can't compute Kendall's Tau with NaNs.");
                 }
 
             } else {
-                enforce(0, "Can't compute Kendall's Tau with NaNs.");
+                dstatsEnforce(0, "Can't compute Kendall's Tau with NaNs.");
             }
         }
     }

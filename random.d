@@ -121,7 +121,7 @@ import std.math, std.algorithm, dstats.distrib, std.traits, std.typetuple,
     std.contracts;
 public import std.random; //For uniform distrib.
 
-import dstats.alloc;
+import dstats.alloc, dstats.base;
 
 version(unittest) {
     import std.stdio, dstats.tests, dstats.summary, dstats.gamma,
@@ -200,6 +200,16 @@ public:
         normData = *lastNormPtr;
         *lastNormPtr = temp;
     }
+
+    typeof(this) save() @property {
+        return this;
+    }
+
+    // Doesn't do anything particularly useful.  It's more a workaround for
+    // bug 4305.
+    typeof(randFun(args)) moveFront() {
+        return frontElem;
+    }
 }
 
 /**Turn a random number generator function into an infinite range.
@@ -262,7 +272,7 @@ private static double lastNorm = double.nan;
 
 ///
 double rNorm(RGen = Random)(double mean, double sd, ref RGen gen = rndGen) {
-    enforce(sd > 0, "Standard deviation must be > 0 for rNorm.");
+    dstatsEnforce(sd > 0, "Standard deviation must be > 0 for rNorm.");
 
     double lr = lastNorm;
     if (!isNaN(lr)) {
@@ -297,7 +307,7 @@ unittest {
 
 ///
 double rCauchy(RGen = Random)(double X0, double gamma, ref RGen gen = rndGen) {
-    enforce(gamma > 0, "gamma must be > 0 for Cauchy distribution.");
+    dstatsEnforce(gamma > 0, "gamma must be > 0 for Cauchy distribution.");
 
     return (rNorm(0, 1, gen) / rNorm(0, 1, gen)) * gamma + X0;
 }
@@ -317,7 +327,7 @@ unittest {
 
 ///
 double rStudentT(RGen = Random)(double df, ref RGen gen = rndGen) {
-    enforce(df > 0, "Student's T distribution must have >0 degrees of freedom.");
+    dstatsEnforce(df > 0, "Student's T distribution must have >0 degrees of freedom.");
 
     double N = rNorm(0, 1, gen);
     double G = stdGamma(df / 2, gen);
@@ -340,7 +350,7 @@ unittest {
 
 ///
 double rFisher(RGen = Random)(double df1, double df2, ref RGen gen = rndGen) {
-    enforce(df1 > 0 && df2 > 0,
+    dstatsEnforce(df1 > 0 && df2 > 0,
         "df1 and df2 must be >0 for the Fisher distribution.");
 
     return (rChiSquare(df1, gen) * df2) /
@@ -361,7 +371,7 @@ unittest {
 
 ///
 double rChiSquare(RGen = Random)(double df, ref RGen gen = rndGen) {
-    enforce(df > 0, "df must be > 0 for chiSquare distribution.");
+    dstatsEnforce(df > 0, "df must be > 0 for chiSquare distribution.");
 
     return 2.0 * stdGamma(df / 2.0L, gen);
 }
@@ -383,7 +393,7 @@ unittest {
 
 ///
 int rPoisson(RGen = Random)(double lam, ref RGen gen = rndGen) {
-    enforce(lam > 0, "lambda must be >0 for Poisson distribution.");
+    dstatsEnforce(lam > 0, "lambda must be >0 for Poisson distribution.");
 
     static int poissonMult(ref RGen gen, double lam) {
         double U = void;
@@ -465,7 +475,7 @@ unittest {
 
 ///
 int rBernoulli(RGen = Random)(double P = 0.5, ref RGen gen = rndGen) {
-    enforce(P >= 0 && P <= 1, "P must be between 0, 1 for Bernoulli distribution.");
+    dstatsEnforce(P >= 0 && P <= 1, "P must be between 0, 1 for Bernoulli distribution.");
 
     double pVal = uniform(0.0L, 1.0L, gen);
     return cast(int) (pVal <= P);
@@ -661,8 +671,8 @@ private int rBinomialInversion(RGen = Random)(int n, double p, ref RGen gen = rn
 
 ///
 int rBinomial(RGen = Random)(int n, double p, ref RGen gen = rndGen) {
-    enforce(n >= 0, "n must be >= 0 for binomial distribution.");
-    enforce(p >= 0 && p <= 1, "p must be between 0, 1 for binomial distribution.");
+    dstatsEnforce(n >= 0, "n must be >= 0 for binomial distribution.");
+    dstatsEnforce(p >= 0 && p <= 1, "p must be between 0, 1 for binomial distribution.");
 
     if (p <= 0.5) {
         if (p*n <= 30.0) {
@@ -775,8 +785,8 @@ private int hypergeoHrua(RGen = Random)(int good, int bad, int sample, ref RGen 
 
 ///
 int rHypergeometric(RGen = Random)(int n1, int n2, int n, ref RGen gen = rndGen) {
-    enforce(n <= n1 + n2, "n must be <= n1 + n2 for hypergeometric distribution.");
-    enforce(n1 >= 0 && n2 >= 0 && n >= 0,
+    dstatsEnforce(n <= n1 + n2, "n must be <= n1 + n2 for hypergeometric distribution.");
+    dstatsEnforce(n1 >= 0 && n2 >= 0 && n >= 0,
         "n, n1, n2 must be >= 0 for hypergeometric distribution.");
 
     alias n1 good;
@@ -842,7 +852,7 @@ private int rGeomInvers(RGen = Random)(double p, ref RGen gen = rndGen) {
 }
 
 int rGeometric(RGen = Random)(double p, ref RGen gen = rndGen) {
-    enforce(p >= 0 && p <= 1, "p must be between 0, 1 for geometric distribution.");
+    dstatsEnforce(p >= 0 && p <= 1, "p must be between 0, 1 for geometric distribution.");
 
     if (p >= 0.333333333333333333333333) {
         return rGeomSearch(p, gen);
@@ -878,8 +888,8 @@ unittest {
 
 ///
 int rNegBinom(RGen = Random)(double n, double p, ref RGen gen = rndGen) {
-    enforce(n >= 0, "n must be >= 0 for negative binomial distribution.");
-    enforce(p >= 0 && p <= 1,
+    dstatsEnforce(n >= 0, "n must be >= 0 for negative binomial distribution.");
+    dstatsEnforce(p >= 0 && p <= 1,
         "p must be between 0, 1 for negative binomial distribution.");
 
     double Y = stdGamma(n, gen);
@@ -910,7 +920,7 @@ unittest {
 
 ///
 double rLaplace(RGen = Random)(double mu = 0, double b = 1, ref RGen gen = rndGen) {
-    enforce(b > 0, "b must be > 0 for Laplace distribution.");
+    dstatsEnforce(b > 0, "b must be > 0 for Laplace distribution.");
 
     double p = uniform(0.0L, 1.0L, gen);
     return invLaplaceCDF(p, mu, b);
@@ -934,7 +944,7 @@ unittest {
 
 ///
 double rExponential(RGen = Random)(double lambda, ref RGen gen = rndGen) {
-    enforce(lambda > 0, "lambda must be > 0 for exponential distribution.");
+    dstatsEnforce(lambda > 0, "lambda must be > 0 for exponential distribution.");
 
     double p = uniform(0.0L, 1.0L, gen);
     return -log(p) / lambda;
@@ -996,8 +1006,8 @@ private double stdGamma(RGen = Random)(double shape, ref RGen gen) {
 
 ///
 double rGamma(RGen = Random)(double a, double b, ref RGen gen = rndGen) {
-    enforce(a > 0, "a must be > 0 for gamma distribution.");
-    enforce(b > 0, "b must be > 0 for gamma distribution.");
+    dstatsEnforce(a > 0, "a must be > 0 for gamma distribution.");
+    dstatsEnforce(b > 0, "b must be > 0 for gamma distribution.");
 
     return stdGamma(b, gen) / a;
 }
@@ -1018,8 +1028,8 @@ unittest {
 
 ///
 double rBeta(RGen = Random)(double a, double b, ref RGen gen = rndGen) {
-    enforce(a > 0, "a must be > 0 for beta distribution.");
-    enforce(b > 0, "b must be > 0 for beta distribution.");
+    dstatsEnforce(a > 0, "a must be > 0 for beta distribution.");
+    dstatsEnforce(b > 0, "b must be > 0 for beta distribution.");
 
     double Ga = void, Gb = void;
 
@@ -1090,7 +1100,7 @@ unittest {
 
 ///
 double rLogistic(RGen = Random)(double loc, double scale, ref RGen gen = rndGen) {
-    enforce(scale > 0, "scale must be > 0 for logistic distribution.");
+    dstatsEnforce(scale > 0, "scale must be > 0 for logistic distribution.");
 
     double U = uniform(0.0L, 1.0L, gen);
     return loc + scale * log(U/(1.0 - U));
@@ -1112,7 +1122,7 @@ unittest {
 
 ///
 double rLogNorm(RGen = Random)(double mu, double sigma, ref RGen gen = rndGen) {
-    enforce(sigma > 0, "sigma must be > 0 for log-normal distribution.");
+    dstatsEnforce(sigma > 0, "sigma must be > 0 for log-normal distribution.");
 
     return exp(rNorm(mu, sigma, gen));
 }
@@ -1134,8 +1144,8 @@ unittest {
 
 ///
 double rWeibull(RGen = Random)(double shape, double scale = 1, ref RGen gen = rndGen) {
-    enforce(shape > 0, "shape must be > 0 for weibull distribution.");
-    enforce(scale > 0, "scale must be > 0 for weibull distribution.");
+    dstatsEnforce(shape > 0, "shape must be > 0 for weibull distribution.");
+    dstatsEnforce(scale > 0, "scale must be > 0 for weibull distribution.");
 
     return pow(rExponential(1, gen), 1. / shape) * scale;
 }
@@ -1151,8 +1161,8 @@ unittest {
 
 ///
 double rWald(RGen = Random)(double mu, double lambda, ref RGen gen = rndGen) {
-    enforce(mu > 0, "mu must be > 0 for Wald distribution.");
-    enforce(lambda > 0, "lambda must be > 0 for Wald distribution.");
+    dstatsEnforce(mu > 0, "mu must be > 0 for Wald distribution.");
+    dstatsEnforce(lambda > 0, "lambda must be > 0 for Wald distribution.");
 
     alias mu mean;
     alias lambda scale;
@@ -1186,7 +1196,7 @@ unittest {
 
 ///
 double rRayleigh(RGen = Random)(double mode, ref RGen gen = rndGen) {
-    enforce(mode > 0, "mode must be > 0 for Rayleigh distribution.");
+    dstatsEnforce(mode > 0, "mode must be > 0 for Rayleigh distribution.");
 
     return mode*sqrt(-2.0 * log(1.0 - uniform(0.0L, 1.0L, gen)));
 }

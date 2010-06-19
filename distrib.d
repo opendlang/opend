@@ -184,30 +184,30 @@ unittest {
 
 ///
 double uniformPDF(double X, double lower, double upper) {
-    enforce(X >= lower, "Can't have X < lower bound in uniform distribution.");
-    enforce(X <= upper, "Can't have X > upper bound in uniform distribution.");
+    dstatsEnforce(X >= lower, "Can't have X < lower bound in uniform distribution.");
+    dstatsEnforce(X <= upper, "Can't have X > upper bound in uniform distribution.");
     return 1.0L / (upper - lower);
 }
 
 ///
 double uniformCDF(double X, double lower, double upper) {
-    enforce(X >= lower, "Can't have X < lower bound in uniform distribution.");
-    enforce(X <= upper, "Can't have X > upper bound in uniform distribution.");
+    dstatsEnforce(X >= lower, "Can't have X < lower bound in uniform distribution.");
+    dstatsEnforce(X <= upper, "Can't have X > upper bound in uniform distribution.");
 
     return (X - lower) / (upper - lower);
 }
 
 ///
 double uniformCDFR(double X, double lower, double upper) {
-    enforce(X >= lower, "Can't have X < lower bound in uniform distribution.");
-    enforce(X <= upper, "Can't have X > upper bound in uniform distribution.");
+    dstatsEnforce(X >= lower, "Can't have X < lower bound in uniform distribution.");
+    dstatsEnforce(X <= upper, "Can't have X > upper bound in uniform distribution.");
 
     return (upper - X) / (upper - lower);
 }
 
 ///
 double poissonPMF(ulong k, double lambda) {
-    enforce(lambda > 0, "Cannot have a Poisson with lambda <= 0 or nan.");
+    dstatsEnforce(lambda > 0, "Cannot have a Poisson with lambda <= 0 or nan.");
 
     return exp(cast(double) k * log(lambda) -
             (lambda + logFactorial(k)));  //Grouped for best precision.
@@ -233,7 +233,7 @@ in {
 
 /**P(K <= k) where K is r.v.*/
 double poissonCDF(ulong k, double lambda) {
-    enforce(lambda > 0, "Cannot have a poisson with lambda <= 0 or nan.");
+    dstatsEnforce(lambda > 0, "Cannot have a poisson with lambda <= 0 or nan.");
 
     return (max(k, lambda) >= POISSON_NORMAL) ?
            normApproxPoisCDF(k, lambda) :
@@ -285,7 +285,7 @@ in {
 
 /**P(K >= k) where K is r.v.*/
 double poissonCDFR(ulong k, double lambda) {
-    enforce(lambda > 0, "Can't have a poisson with lambda <= 0 or nan.");
+    dstatsEnforce(lambda > 0, "Can't have a poisson with lambda <= 0 or nan.");
 
     return (max(k, lambda) >= POISSON_NORMAL) ?
             normApproxPoisCDFR(k, lambda) :
@@ -328,8 +328,8 @@ unittest {
  * doesn't exactly map to a value of k, the k for which poissonCDF(k, lambda)
  * is closest to pVal is used.*/
 uint invPoissonCDF(double pVal, double lambda) {
-    enforce(lambda > 0, "Cannot have a poisson with lambda <= 0 or nan.");
-    enforce(pVal >= 0 && pVal <= 1, "P-values must be between 0, 1.");
+    dstatsEnforce(lambda > 0, "Cannot have a poisson with lambda <= 0 or nan.");
+    dstatsEnforce(pVal >= 0 && pVal <= 1, "P-values must be between 0, 1.");
 
     // Use normal approximation to get approx answer, then brute force search.
     // This works better than you think because for small n, there's not much
@@ -380,8 +380,8 @@ unittest {
 
 ///
 double binomialPMF(ulong k, ulong n, double p) {
-    enforce(k <= n, "k cannot be > n in binomial distribution.");
-    enforce(p >= 0 && p <= 1, "p must be between 0, 1 in binomial distribution.");
+    dstatsEnforce(k <= n, "k cannot be > n in binomial distribution.");
+    dstatsEnforce(p >= 0 && p <= 1, "p must be between 0, 1 in binomial distribution.");
     return exp(logNcomb(n, k) + k * log(p) + (n - k) * log(1 - p));
 }
 
@@ -415,8 +415,8 @@ in {
 
 ///P(K <= k) where K is random variable.
 double binomialCDF(ulong k, ulong n, double p) {
-    enforce(k <= n, "k cannot be > n in binomial distribution.");
-    enforce(p >= 0 && p <= 1, "p must be between 0, 1 in binomial distribution.");
+    dstatsEnforce(k <= n, "k cannot be > n in binomial distribution.");
+    dstatsEnforce(p >= 0 && p <= 1, "p must be between 0, 1 in binomial distribution.");
 
     if(k == n) {
         return 1;
@@ -495,8 +495,8 @@ in {
 
 ///P(K >= k) where K is random variable.
 double binomialCDFR(ulong k, ulong n, double p) {
-    enforce(k <= n, "k cannot be > n in binomial distribution.");
-    enforce(p >= 0 && p <= 1, "p must be between 0, 1 in binomial distribution.");
+    dstatsEnforce(k <= n, "k cannot be > n in binomial distribution.");
+    dstatsEnforce(p >= 0 && p <= 1, "p must be between 0, 1 in binomial distribution.");
 
     if(k == 0) {
         return 1;
@@ -569,8 +569,8 @@ unittest {
  * not exactly map to a value of k, the value for which binomialCDF(k, n, p)
  * is closest to pVal is used.*/
 uint invBinomialCDF(double pVal, uint n, double p) {
-    enforce(pVal >= 0 && pVal <= 1, "p-values must be between 0, 1.");
-    enforce(p >= 0 && p <= 1, "p must be between 0, 1 in binomial distribution.");
+    dstatsEnforce(pVal >= 0 && pVal <= 1, "p-values must be between 0, 1.");
+    dstatsEnforce(p >= 0 && p <= 1, "p must be between 0, 1 in binomial distribution.");
 
     // Use normal approximation to get approx answer, then brute force search.
     // This works better than you think because for small n, there's not much
@@ -652,9 +652,9 @@ unittest {
 // implementation attempts to strike a balance between the two, so that
 // both speed and accuracy are "good enough" for most practical purposes.
 double hypergeometricCDF(long x, long n1, long n2, long n) {
-    enforce(x <= n, "x must be <= n in hypergeometric distribution.");
-    enforce(n <= n1 + n2, "n must be <= n1 + n2 in hypergeometric distribution.");
-    enforce(x >= 0, "x must be >= 0 in hypergeometric distribution.");
+    dstatsEnforce(x <= n, "x must be <= n in hypergeometric distribution.");
+    dstatsEnforce(n <= n1 + n2, "n must be <= n1 + n2 in hypergeometric distribution.");
+    dstatsEnforce(x >= 0, "x must be >= 0 in hypergeometric distribution.");
 
     ulong expec = (n1 * n) / (n1 + n2);
     long nComp = n1 + n2 - n, xComp = n2 + x - n;
@@ -745,9 +745,9 @@ unittest {
 
 ///P(X >= x), where X is random variable.
 double hypergeometricCDFR(ulong x, ulong n1, ulong n2, ulong n) {
-    enforce(x <= n, "x must be <= n in hypergeometric distribution.");
-    enforce(n <= n1 + n2, "n must be <= n1 + n2 in hypergeometric distribution.");
-    enforce(x >= 0, "x must be >= 0 in hypergeometric distribution.");
+    dstatsEnforce(x <= n, "x must be <= n in hypergeometric distribution.");
+    dstatsEnforce(n <= n1 + n2, "n must be <= n1 + n2 in hypergeometric distribution.");
+    dstatsEnforce(x >= 0, "x must be >= 0 in hypergeometric distribution.");
 
     return hypergeometricCDF(n - x, n2, n1, n);
 }
@@ -766,9 +766,9 @@ unittest {
 }
 
 double hyperExact(ulong x, ulong n1, ulong n2, ulong n, ulong startAt = 0) {
-    enforce(x <= n, "x must be <= n in hypergeometric distribution.");
-    enforce(n <= n1 + n2, "n must be <= n1 + n2 in hypergeometric distribution.");
-    enforce(x >= 0, "x must be >= 0 in hypergeometric distribution.");
+    dstatsEnforce(x <= n, "x must be <= n in hypergeometric distribution.");
+    dstatsEnforce(n <= n1 + n2, "n must be <= n1 + n2 in hypergeometric distribution.");
+    dstatsEnforce(x >= 0, "x must be >= 0 in hypergeometric distribution.");
 
     immutable double constPart = logFactorial(n1) + logFactorial(n2) +
         logFactorial(n) + logFactorial(n1 + n2 - n) - logFactorial(n1 + n2);
@@ -799,8 +799,8 @@ alias invChiSquareCDFR invChiSqCDFR;
 
 ///
 double chiSquarePDF(double x, double v) {
-    enforce(x >= 0, "x must be >= 0 in chi-square distribution.");
-    enforce(v >= 1.0, "Must have at least 1 degree of freedom for chi-square.");
+    dstatsEnforce(x >= 0, "x must be >= 0 in chi-square distribution.");
+    dstatsEnforce(v >= 1.0, "Must have at least 1 degree of freedom for chi-square.");
 
     // Calculate in log space for stability.
     immutable logX = log(x);
@@ -838,15 +838,15 @@ unittest {
  *
  */
 double chiSquareCDF(double x, double v) {
-    enforce(x >= 0, "x must be >= 0 in chi-square distribution.");
-    enforce(v >= 1.0, "Must have at least 1 degree of freedom for chi-square.");
+    dstatsEnforce(x >= 0, "x must be >= 0 in chi-square distribution.");
+    dstatsEnforce(v >= 1.0, "Must have at least 1 degree of freedom for chi-square.");
     return gammaIncomplete( 0.5*v, 0.5*x);
 }
 
 ///
 double chiSquareCDFR(double x, double v) {
-    enforce(x >= 0, "x must be >= 0 in chi-square distribution.");
-    enforce(v >= 1.0, "Must have at least 1 degree of freedom for chi-square.");
+    dstatsEnforce(x >= 0, "x must be >= 0 in chi-square distribution.");
+    dstatsEnforce(v >= 1.0, "Must have at least 1 degree of freedom for chi-square.");
     return gammaIncompleteCompl( 0.5L*v, 0.5L*x );
 }
 
@@ -863,8 +863,8 @@ double chiSquareCDFR(double x, double v) {
  *
  */
 double invChiSquareCDFR(double v, double p) {
-    enforce(v >= 1.0, "Must have at least 1 degree of freedom for chi-square.");
-    enforce(p >= 0 && p <= 1, "P-values must be between 0, 1.");
+    dstatsEnforce(v >= 1.0, "Must have at least 1 degree of freedom for chi-square.");
+    dstatsEnforce(p >= 0 && p <= 1, "P-values must be between 0, 1.");
     return  2.0 * gammaIncompleteComplInv( 0.5*v, p);
 }
 
@@ -877,7 +877,7 @@ unittest {
 
 ///
 double normalPDF(double x, double mean = 0, double sd = 1) {
-    enforce(sd > 0, "Standard deviation must be > 0 for normal distribution.");
+    dstatsEnforce(sd > 0, "Standard deviation must be > 0 for normal distribution.");
     double dev = x - mean;
     return exp(-(dev * dev) / (2 * sd * sd)) / (sd * SQ2PI);
 }
@@ -888,7 +888,7 @@ unittest {
 
 ///P(X < x) for normal distribution where X is random var.
 double normalCDF(double x, double mean = 0, double stdev = 1) {
-    enforce(stdev > 0, "Standard deviation must be > 0 for normal distribution.");
+    dstatsEnforce(stdev > 0, "Standard deviation must be > 0 for normal distribution.");
 
     // Using a slightly non-obvious implementation in terms of erfc because
     // it seems more accurate than erf for very small values of Z.
@@ -906,7 +906,7 @@ unittest {
 
 ///P(X > x) for normal distribution where X is random var.
 double normalCDFR(double x, double mean = 0, double stdev = 1) {
-    enforce(stdev > 0, "Standard deviation must be > 0 for normal distribution.");
+    dstatsEnforce(stdev > 0, "Standard deviation must be > 0 for normal distribution.");
 
     double Z = (x - mean) / stdev;
     return erfc(Z*SQRT1_2)/2;
@@ -1026,8 +1026,8 @@ immutable real Q3[8] = [
  * minus infinity to x) is equal to p.
  */
 double invNormalCDF(double p, double mean = 0, double sd = 1) {
-    enforce(p >= 0 && p <= 1, "P-values must be between 0, 1.");
-    enforce(sd > 0, "Standard deviation must be > 0 for normal distribution.");
+    dstatsEnforce(p >= 0 && p <= 1, "P-values must be between 0, 1.");
+    dstatsEnforce(sd > 0, "Standard deviation must be > 0 for normal distribution.");
 
     if (p == 0.0L) {
         return -double.infinity;
@@ -1104,7 +1104,7 @@ unittest {
 
 ///
 double logNormalPDF(double x, double mu = 0, double sigma = 1) {
-    enforce(sigma > 0, "sigma must be > 0 for log-normal distribution.");
+    dstatsEnforce(sigma > 0, "sigma must be > 0 for log-normal distribution.");
 
     immutable mulTerm = 1.0L / (x * sigma * SQ2PI);
     double expTerm = log(x) - mu;
@@ -1121,7 +1121,7 @@ unittest {
 
 ///
 double logNormalCDF(double x, double mu = 0, double sigma = 1) {
-    enforce(sigma > 0, "sigma must be > 0 for log-normal distribution.");
+    dstatsEnforce(sigma > 0, "sigma must be > 0 for log-normal distribution.");
 
     return 0.5L + 0.5L * erf((log(x) - mu) / (sigma * SQRT2));
 }
@@ -1133,7 +1133,7 @@ unittest {
 
 ///
 double logNormalCDFR(double x, double mu = 0, double sigma = 1) {
-    enforce(sigma > 0, "sigma must be > 0 for log-normal distribution.");
+    dstatsEnforce(sigma > 0, "sigma must be > 0 for log-normal distribution.");
 
     return 0.5L - 0.5L * erf((log(x) - mu) / (sigma * SQRT2));
 }
@@ -1146,8 +1146,8 @@ unittest {
 
 ///
 double weibullPDF(double x, double shape, double scale = 1) {
-    enforce(shape > 0, "shape must be > 0 for weibull distribution.");
-    enforce(scale > 0, "scale must be > 0 for weibull distribution.");
+    dstatsEnforce(shape > 0, "shape must be > 0 for weibull distribution.");
+    dstatsEnforce(scale > 0, "scale must be > 0 for weibull distribution.");
 
     if(x < 0) {
         return 0;
@@ -1162,8 +1162,8 @@ unittest {
 
 ///
 double weibullCDF(double x, double shape, double scale = 1) {
-    enforce(shape > 0, "shape must be > 0 for weibull distribution.");
-    enforce(scale > 0, "scale must be > 0 for weibull distribution.");
+    dstatsEnforce(shape > 0, "shape must be > 0 for weibull distribution.");
+    dstatsEnforce(scale > 0, "scale must be > 0 for weibull distribution.");
 
     double exponent = pow(x / scale, shape);
     return 1 - exp(-exponent);
@@ -1175,8 +1175,8 @@ unittest {
 
 ///
 double weibullCDFR(double x, double shape, double scale = 1) {
-    enforce(shape > 0, "shape must be > 0 for weibull distribution.");
-    enforce(scale > 0, "scale must be > 0 for weibull distribution.");
+    dstatsEnforce(shape > 0, "shape must be > 0 for weibull distribution.");
+    dstatsEnforce(scale > 0, "scale must be > 0 for weibull distribution.");
 
     double exponent = pow(x / scale, shape);
     return exp(-exponent);
@@ -1203,7 +1203,7 @@ double rayleighCDF(double x, double mode) {
 
 ///
 double studentsTCDF(double t, double df) {
-    enforce(df > 0, "Student's T must have >0 degrees of freedom.");
+    dstatsEnforce(df > 0, "Student's T must have >0 degrees of freedom.");
 
     double x = (t + sqrt(t * t + df)) / (2 * sqrt(t * t + df));
     return betaIncomplete(df * 0.5L, df * 0.5L, x);
@@ -1236,8 +1236,8 @@ unittest {
 * p  = probability. 0 < p < 1
 */
 double invStudentsTCDF(double p, double df) {
-    enforce(p >= 0 && p <= 1, "P-values must be between 0, 1.");
-    enforce(df > 0, "Student's T must have >0 degrees of freedom.");
+    dstatsEnforce(p >= 0 && p <= 1, "P-values must be between 0, 1.");
+    dstatsEnforce(df > 0, "Student's T must have >0 degrees of freedom.");
 
     if (p==0) return -double.infinity;
     if (p==1) return double.infinity;
@@ -1301,9 +1301,9 @@ writeln("Passed studentsTCDF.");
  *  x  = Must be >= 0
  */
 double fisherCDF(double x, double df1, double df2) {
-    enforce(df1 > 0 && df2 > 0,
+    dstatsEnforce(df1 > 0 && df2 > 0,
         "Fisher distribution must have >0 degrees of freedom.");
-    enforce(x >= 0, "x must be >=0 for Fisher distribution.");
+    dstatsEnforce(x >= 0, "x must be >=0 for Fisher distribution.");
 
     double a = cast(double)(df1);
     double b = cast(double)(df2);
@@ -1314,9 +1314,9 @@ double fisherCDF(double x, double df1, double df2) {
 
 /** ditto */
 double fisherCDFR(double x, double df1, double df2) {
-    enforce(df1 > 0 && df2 > 0,
+    dstatsEnforce(df1 > 0 && df2 > 0,
         "Fisher distribution must have >0 degrees of freedom.");
-    enforce(x >= 0, "x must be >=0 for Fisher distribution.");
+    dstatsEnforce(x >= 0, "x must be >=0 for Fisher distribution.");
 
     double a = cast(double)(df1);
     double b = cast(double)(df2);
@@ -1344,9 +1344,9 @@ double fisherCDFR(double x, double df1, double df2) {
  *      x = df2 z / (df1 (1-z)).
 */
 double invFisherCDFR(double df1, double df2, double p ) {
-    enforce(df1 > 0 && df2 > 0,
+    dstatsEnforce(df1 > 0 && df2 > 0,
         "Fisher distribution must have >0 degrees of freedom.");
-    enforce(p >= 0 && p <= 1, "P-values must be between 0, 1.");
+    dstatsEnforce(p >= 0 && p <= 1, "P-values must be between 0, 1.");
 
     double a = df1;
     double b = df2;
@@ -1376,7 +1376,7 @@ unittest {
 
 ///
 double negBinomPMF(ulong k, ulong n, double p) {
-    enforce(p >= 0 && p <= 1,
+    dstatsEnforce(p >= 0 && p <= 1,
         "p must be between 0, 1 for negative binomial distribution.");
 
     return exp(logNcomb(k - 1 + n, k) +  n * log(p) + k * log(1 - p));
@@ -1413,7 +1413,7 @@ unittest {
  * $(LINK http://mathworld.wolfram.com/NegativeBinomialDistribution.html)
  */
 double negBinomCDF(ulong k, ulong n, double p ) {
-    enforce(p >= 0 && p <= 1,
+    dstatsEnforce(p >= 0 && p <= 1,
         "p must be between 0, 1 for negative binomial distribution.");
     if ( k == 0 ) return pow(p, cast(double) n);
     return  betaIncomplete( n, k + 1, p );
@@ -1427,7 +1427,7 @@ unittest {
 
 /**Probability that k or more failures precede the nth success.*/
 double negBinomCDFR(ulong k, ulong n, double p) {
-    enforce(p >= 0 && p <= 1,
+    dstatsEnforce(p >= 0 && p <= 1,
         "p must be between 0, 1 for negative binomial distribution.");
 
     if(k == 0)
@@ -1442,9 +1442,9 @@ unittest {
 
 ///
 ulong invNegBinomCDF(double pVal, ulong n, double p) {
-    enforce(p >= 0 && p <= 1,
+    dstatsEnforce(p >= 0 && p <= 1,
         "p must be between 0, 1 for negative binomial distribution.");
-    enforce(pVal >= 0 && pVal <= 1,
+    dstatsEnforce(pVal >= 0 && pVal <= 1,
         "P-values must be between 0, 1.");
 
     // Normal or gamma approx, then adjust.
@@ -1539,27 +1539,27 @@ unittest {
  * Also note that the exponential distribution is a special case of the gamma, with b = 1.
  */
 double gammaCDF(double x, double a, double b) {
-    enforce(x > 0, "x must be >0 in gamma distribution.");
-    enforce(a > 0, "a must be >0 in gamma distribution.");
-    enforce(b > 0, "b must be >0 in gamma distribution.");
+    dstatsEnforce(x > 0, "x must be >0 in gamma distribution.");
+    dstatsEnforce(a > 0, "a must be >0 in gamma distribution.");
+    dstatsEnforce(b > 0, "b must be >0 in gamma distribution.");
 
     return gammaIncomplete(b, a*x);
 }
 
 /** ditto */
 double gammaCDFR(double x, double a, double b) {
-    enforce(x > 0, "x must be >0 in gamma distribution.");
-    enforce(a > 0, "a must be >0 in gamma distribution.");
-    enforce(b > 0, "b must be >0 in gamma distribution.");
+    dstatsEnforce(x > 0, "x must be >0 in gamma distribution.");
+    dstatsEnforce(a > 0, "a must be >0 in gamma distribution.");
+    dstatsEnforce(b > 0, "b must be >0 in gamma distribution.");
 
     return gammaIncompleteCompl( b, a * x );
 }
 
 ///
 double invGammaCDFR(double p, double a, double b) {
-    enforce(p >= 0 && p <= 1, "P-values must be between 0, 1.");
-    enforce(a > 0, "a must be >0 in gamma distribution.");
-    enforce(b > 0, "b must be >0 in gamma distribution.");
+    dstatsEnforce(p >= 0 && p <= 1, "P-values must be between 0, 1.");
+    dstatsEnforce(a > 0, "a must be >0 in gamma distribution.");
+    dstatsEnforce(b > 0, "b must be >0 in gamma distribution.");
 
     double ax = gammaIncompleteComplInv(b, p);
     return ax / a;
@@ -1572,7 +1572,7 @@ unittest {
 
 ///
 double cauchyPDF(double X, double X0 = 0, double gamma = 1) {
-    enforce(gamma > 0, "gamma must be > 0 for Cauchy distribution.");
+    dstatsEnforce(gamma > 0, "gamma must be > 0 for Cauchy distribution.");
 
     double toSquare = (X - X0) / gamma;
     return 1.0L / (
@@ -1587,7 +1587,7 @@ unittest {
 
 ///
 double cauchyCDF(double X, double X0 = 0, double gamma = 1) {
-    enforce(gamma > 0, "gamma must be > 0 for Cauchy distribution.");
+    dstatsEnforce(gamma > 0, "gamma must be > 0 for Cauchy distribution.");
 
     return M_1_PI * atan((X - X0) / gamma) + 0.5L;
 }
@@ -1600,7 +1600,7 @@ unittest {
 
 ///
 double cauchyCDFR(double X, double X0 = 0, double gamma = 1) {
-    enforce(gamma > 0, "gamma must be > 0 for Cauchy distribution.");
+    dstatsEnforce(gamma > 0, "gamma must be > 0 for Cauchy distribution.");
 
     return M_1_PI * atan((X0 - X) / gamma) + 0.5L;
 }
@@ -1614,8 +1614,8 @@ unittest {
 
 ///
 double invCauchyCDF(double p, double X0 = 0, double gamma = 1) {
-    enforce(gamma > 0, "gamma must be > 0 for Cauchy distribution.");
-    enforce(p >= 0 && p <= 1, "P-values must be between 0, 1.");
+    dstatsEnforce(gamma > 0, "gamma must be > 0 for Cauchy distribution.");
+    dstatsEnforce(p >= 0 && p <= 1, "P-values must be between 0, 1.");
 
     return X0 + gamma * tan(PI * (p - 0.5L));
 }
@@ -1636,7 +1636,7 @@ double logisticCDF(double x, double loc, double shape) {
 
 ///
 double laplacePDF(double x, double mu = 0, double b = 1) {
-    enforce(b > 0, "b must be > 0 for laplace distribution.");
+    dstatsEnforce(b > 0, "b must be > 0 for laplace distribution.");
 
     return (exp(-abs(x - mu) / b)) / (2 * b);
 }
@@ -1649,7 +1649,7 @@ unittest {
 
 ///
 double laplaceCDF(double X, double mu = 0, double b = 1) {
-    enforce(b > 0, "b must be > 0 for laplace distribution.");
+    dstatsEnforce(b > 0, "b must be > 0 for laplace distribution.");
 
     double diff = (X - mu);
     double sign = (diff > 0) ? 1 : -1;
@@ -1665,7 +1665,7 @@ unittest {
 
 ///
 double laplaceCDFR(double X, double mu = 0, double b = 1) {
-    enforce(b > 0, "b must be > 0 for laplace distribution.");
+    dstatsEnforce(b > 0, "b must be > 0 for laplace distribution.");
 
     double diff = (mu - X);
     double sign = (diff > 0) ? 1 : -1;
@@ -1682,8 +1682,8 @@ unittest {
 
 ///
 double invLaplaceCDF(double p, double mu = 0, double b = 1) {
-    enforce(p >= 0 && p <= 1, "P-values must be between 0, 1.");
-    enforce(b > 0, "b must be > 0 for laplace distribution.");
+    dstatsEnforce(p >= 0 && p <= 1, "P-values must be between 0, 1.");
+    dstatsEnforce(b > 0, "b must be > 0 for laplace distribution.");
 
     double p05 = p - 0.5L;
     double sign = (p05 < 0) ? -1.0L : 1.0L;
@@ -1699,7 +1699,7 @@ unittest {
 
 /**Kolmogorov distribution.  Used in Kolmogorov-Smirnov testing.*/
 double kolmDist(double X) {
-    enforce(X >= 0, "X must be >= 0 for Kolmogorov distribution.");
+    dstatsEnforce(X >= 0, "X must be >= 0 for Kolmogorov distribution.");
 
     if(X == 0) {
         //Handle as a special case.  Otherwise, get NAN b/c of divide by zero.

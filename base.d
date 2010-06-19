@@ -65,6 +65,24 @@ version(unittest) {
     void main (){}
 }
 
+class DstatsArgumentException : Exception {
+    this(string msg) {
+        super(msg);
+    }
+}
+
+T dstatsEnforce(T, string file = __FILE__, int line = __LINE__)
+(T value, lazy const(char)[] msg = null) {
+    if(!value) {
+        auto exceptMsg = (msg !is null) ? msg.idup : "Invalid argument.";
+        throw new DstatsArgumentException(file ~ " (" ~ text(line) ~ ") :  " ~
+            exceptMsg);
+    }
+
+    return value;
+}
+
+
 /** Tests whether T is an input range whose elements can be implicitly
  * converted to doubles.*/
 template doubleInput(T) {
@@ -109,13 +127,13 @@ unittest {
  * it uses ranges, opApply, etc.  This is typeof(elem) if one does
  * foreach(elem; T.init) {}.*/
 template IterType(T) {
-    alias ReturnType!(
+    alias ReturnType!(typeof(
         {
             foreach(elem; T.init) {
                 return elem;
             }
             assert(0);
-        }) IterType;
+        })) IterType;
 }
 
 unittest {
@@ -150,6 +168,23 @@ if(isInputRange!(I) && isOutputRange!(O, ElementType!(I))) {
         output.put(elem);
     }
     return output;
+}
+
+/**Given a tuple possibly containing forward ranges, returns a tuple where
+ * save() has been called on all forward ranges.
+ */
+Tuple!T saveAll(T...)(T args) {
+    Tuple!T ret;
+
+    foreach(ti, elem; args) {
+        static if(isForwardRange!(typeof(elem))) {
+            ret.field[ti] = elem.save;
+        } else {
+            ret.field[ti] = elem;
+        }
+    }
+
+    return ret;
 }
 
 /**Bins data into nbin equal width bins, indexed from
@@ -669,6 +704,100 @@ unittest {
     writeln("Passed byCategory unittest.");
 }
 
+/**Finds the area under the ROC curve (a curve with sensitivity on the Y-axis
+ * and 1 - specificity on the X-axis).  This is a useful metric for
+ * determining how well a test statistic discriminates between two classes.
+ * The following assumptions are made in this implementation:
+ *
+ * 1.  For some cutoff value c and test statistic T, your decision rule is of
+ *     the form "Class A if T > c, Class B if T < c".
+ *
+ * 2.  In the case of ties, i.e. if class A and class B both have an identical
+ *     value, linear interpolation is used.  This is because changing the
+ *     value of c infinitesimally will change both sensitivity and specificity
+ *     in these cases.
+ */
+double auroc(R1, R2)(R1 classATs, R2 classBTs)
+if(isNumeric!(ElementType!R1) && isNumeric!(ElementType!R2)) {
+    mixin(newFrame);
+    auto classA = tempdup(classATs);
+    auto classB = tempdup(classBTs);
+    qsort(classA);
+    qsort(classB);
+
+    // Start cutoff at -infinity, such that we get everything in class A, i.e.
+    // perfect specificity, zero sensitivity.  We arbitrarily define class B
+    // as our "positive" class.
+    double tp = 0, tn = classA.length, fp = 0, fn = classB.length;
+    double[2] lastPoint = 0;
+
+    CommonType!(ElementType!R1, ElementType!R2) currentVal;
+
+    ElementType!R1 popA() {
+        tn--;
+        fp++;
+        auto ret = classA.front();
+        classA.popFront();
+        return ret;
+    }
+
+    ElementType!R2 popB() {
+        fn--;
+        tp++;
+        auto ret = classB.front();
+        classB.popFront();
+        return ret;
+    }
+
+    double area = 0;
+    while(!classA.empty && !classB.empty) {
+        if(classA.front() < classB.front()) {
+            currentVal = popA();
+        } else {
+            currentVal = popB();
+        }
+
+        // Handle ties.
+        while(!classA.empty && classA.front() == currentVal) {
+            popA();
+        }
+
+        while(!classB.empty && classB.front() == currentVal) {
+            popB();
+        }
+
+        double[2] curPoint;
+        curPoint[0] = 1.0 - tn / (fp + tn);
+        curPoint[1] = tp / (tp + fn);
+
+        immutable xDist = curPoint[0] - lastPoint[0];
+        area += xDist * lastPoint[1];  // Rectangular part.
+        area += xDist * 0.5 * (curPoint[1] - lastPoint[1]);  // Triangular part.
+        lastPoint[] = curPoint[];
+    }
+
+    if(classA.length > 0 && classB.length == 0) {
+        // Then we already have a sensitivity of 1, move straight to the right
+        // to the point (1, 1).
+
+        immutable xDist = 1 - lastPoint[0];
+        area += xDist * lastPoint[1];  // Rectangular part.
+        area += xDist * 0.5 * (1 - lastPoint[1]);  // Triangular part.
+    }
+
+    return area;
+}
+
+unittest {
+    // Values worked out by hand on paper.  If you don't believe me, work
+    // them out yourself.
+    assert(auroc([4,5,6], [1,2,3]) == 1);
+    assert(approxEqual(auroc([8,6,7,5,3,0,9], [3,6,2,4,3,6]), 0.6904762));
+    assert(approxEqual(auroc([2,7,1,8,2,8,1,8], [3,1,4,1,5,9,2,6]), 0.546875));
+
+    writeln("Passed auroc unittest.");
+}
+
 ///
 T sign(T)(T num) pure nothrow if(is(typeof(num < 0))) {
     if (num > 0) return 1;
@@ -880,7 +1009,7 @@ public:
     }
 
     ///
-    bool empty() const pure nothrow {
+    bool empty() @property {
         return nPerms == 0;
     }
 

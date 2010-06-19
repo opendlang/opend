@@ -31,7 +31,7 @@
 module dstats.tests;
 
 import std.algorithm, std.functional, std.range, std.conv, std.math, std.traits,
-       std.contracts;
+       std.contracts, std.typetuple;
 
 import dstats.base, dstats.distrib, dstats.alloc, dstats.summary, dstats.sort,
        dstats.cor;
@@ -42,7 +42,7 @@ version(unittest) {
 }
 
 private void enforceConfidence(double conf) {
-    enforce(conf >= 0 && conf <= 1,
+    dstatsEnforce(conf >= 0 && conf <= 1,
         "Confidence intervals must be between 0 and 1.");
 }
 
@@ -148,7 +148,7 @@ ConfInt studentsTTest(T)(T data, double testMean = 0, Alt alt = Alt.TWOSIDE,
     double confLevel = 0.95)
 if( (isSummary!T || doubleIterable!T)) {
     enforceConfidence(confLevel);
-    enforce(isFinite(testMean), "testMean must not be infinite or nan.");
+    dstatsEnforce(isFinite(testMean), "testMean must not be infinite or nan.");
 
     static if(isSummary!T) {
         return pairedTTest(data, testMean, alt, confLevel);
@@ -196,7 +196,7 @@ ConfInt studentsTTest(T, U)(T sample1, U sample2, double testMean = 0,
     Alt alt = Alt.TWOSIDE, double confLevel = 0.95)
 if( (doubleIterable!T || isSummary!T) && (doubleIterable!U || isSummary!U)) {
     enforceConfidence(confLevel);
-    enforce(isFinite(testMean), "testMean must not be infinite or nan.");
+    dstatsEnforce(isFinite(testMean), "testMean must not be infinite or nan.");
 
     static if(isSummary!T) {
         alias sample1 s1summ;
@@ -310,7 +310,7 @@ ConfInt welchTTest(T, U)(T sample1, U sample2, double testMean = 0,
     Alt alt = Alt.TWOSIDE, double confLevel = 0.95)
 if( (isSummary!T || doubleIterable!T) && (isSummary!U || doubleIterable!U)) {
     enforceConfidence(confLevel);
-    enforce(isFinite(testMean), "testMean cannot be infinite or nan.");
+    dstatsEnforce(isFinite(testMean), "testMean cannot be infinite or nan.");
 
     static if(isSummary!T) {
         alias sample1 s1summ;
@@ -427,7 +427,7 @@ ConfInt pairedTTest(T, U)(T before, U after, double testMean = 0,
     Alt alt = Alt.TWOSIDE, double confLevel = 0.95)
 if(doubleInput!(T) && doubleInput!(U) && isInputRange!T && isInputRange!U) {
     enforceConfidence(confLevel);
-    enforce(isFinite(testMean), "testMean cannot be infinite or nan.");
+    dstatsEnforce(isFinite(testMean), "testMean cannot be infinite or nan.");
 
     MeanSD msd;
     while(!before.empty && !after.empty) {
@@ -465,7 +465,7 @@ ConfInt pairedTTest(T)(T diffSummary, double testMean = 0,
     Alt alt = Alt.TWOSIDE, double confLevel = 0.95)
 if(isSummary!T) {
     enforceConfidence(confLevel);
-    enforce(isFinite(testMean), "testMean cannot be infinite or nan.");
+    dstatsEnforce(isFinite(testMean), "testMean cannot be infinite or nan.");
 
     // Save typing.
     alias diffSummary msd;
@@ -639,7 +639,7 @@ unittest {
     // Test array case.
     auto res2 = fTest([thing1, thing2, thing3].dup);
     assert(approxEqual(result.testStat, res2.testStat));
-    assert(result.p == res2.p);
+    assert(approxEqual(result.p, res2.p));
 
     thing1 = [2,7,1,8,2];
     thing2 = [8,1,8];
@@ -691,7 +691,7 @@ private TestRes anovaLevene(bool levene, bool welch, alias central,  T...)
 
             // The cast is to force conversions to double on alias this'd stuff
             // like the Mean struct.
-            centers[i] = cast(double) central(category);
+            centers[i] = cast(double) central(category.save);
         }
 
         double preprocess(double dataPoint, size_t category) {
@@ -1480,7 +1480,7 @@ is(typeof(before.front - after.front) : double)) {
     mixin(newFrame);
 
     static if(dstats.base.hasLength!T && dstats.base.hasLength!U) {
-        enforce(before.length == after.length,
+        dstatsEnforce(before.length == after.length,
             "Ranges must have same lengths for wilcoxonSignedRank.");
 
         double[] diffRanks = newStack!(double)(before.length);
@@ -1826,8 +1826,8 @@ if(doubleInput!(T) && is(typeof(data.front < mu) == bool)) {
  * implementation is much faster and easier to use.
  */
 double binomialTest(ulong k, ulong n, double p) {
-    enforce(k <= n, "k must be <= n for binomial test.");
-    enforce(p >= 0 && p <= 1, "p must be between 0, 1 for binomial test.");
+    dstatsEnforce(k <= n, "k must be <= n for binomial test.");
+    dstatsEnforce(p >= 0 && p <= 1, "p must be between 0, 1 for binomial test.");
 
     enum epsilon = 1 - 1e-6;  // Small but arbitrary constant to deal w/ rounding error.
 
@@ -2012,7 +2012,7 @@ if(doubleInput!(T) && doubleInput!(U)) {
 private TestRes goodnessFit(alias elemFun, T, U)(T observed, U expected, Expected countProp)
 if(doubleInput!(T) && doubleInput!(U)) {
     if(countProp == Expected.PROPORTION) {
-        enforce(isForwardRange!(U),
+        dstatsEnforce(isForwardRange!(U),
             "Can't use expected proportions instead of counts with input ranges.");
     }
 
@@ -2024,8 +2024,8 @@ if(doubleInput!(T) && doubleInput!(U)) {
     if(countProp == Expected.PROPORTION) {
         double expectSum = 0;
         multiplier = 0;
-        auto obsCopy = observed;
-        auto expCopy = expected;
+        auto obsCopy = observed.save;
+        auto expCopy = expected.save;
         while(!obsCopy.empty && !expCopy.empty) {
             multiplier += obsCopy.front;
             expectSum += expCopy.front;
@@ -2045,7 +2045,7 @@ if(doubleInput!(T) && doubleInput!(U)) {
         // If e is zero, then we should just treat the cell as if it didn't
         // exist.
         if(e == 0) {
-            enforce(observed.front == 0,
+            dstatsEnforce(observed.front == 0,
                 "Can't have non-zero observed value w/ zero expected value.");
             continue;
         }
@@ -2296,7 +2296,7 @@ private TestRes testContingency(alias elemFun, T...)(T rangesIn) {
     size_t nRows = ranges.length;
     foreach(ri, range; ranges) {
         size_t curLen = 0;
-        foreach(elem; range) {
+        foreach(elem; range.save) {
             colSums[ri] += cast(double) elem;
             curLen++;
         }
@@ -2388,7 +2388,7 @@ TestRes fisherExact(T)(const T[2][2] contingencyTable, Alt alt = Alt.TWOSIDE)
 if(isIntegral!(T)) {
     foreach(range; contingencyTable) {
         foreach(elem; range) {
-            enforce(elem >= 0,
+            dstatsEnforce(elem >= 0,
                 "Cannot have negative elements in a contingency table.");
         }
     }
@@ -2406,7 +2406,7 @@ if(isIntegral!(T)) {
     }
 
 
-    alias contingencyTable c;
+    alias contingencyTable c;  // Save typing.
     immutable oddsRatio = cast(double) c[0][0] * c[1][1] / c[0][1] / c[1][0];
     if(alt == Alt.NONE) {
         return TestRes(oddsRatio);
@@ -2513,7 +2513,7 @@ if(isIntegral!(T)) {
  * calls the overload.*/
 TestRes fisherExact(T)(const T[][] contingencyTable, Alt alt = Alt.TWOSIDE)
 if(isIntegral!(T)) {
-    enforce(contingencyTable.length == 2 &&
+    dstatsEnforce(contingencyTable.length == 2 &&
             contingencyTable[0].length == 2 &&
             contingencyTable[1].length == 2,
             "Fisher exact only supports 2x2 tables.");
@@ -2887,10 +2887,10 @@ if(doubleInput!(T) && doubleInput!(U)) {
  */
 ConfInt pearsonCorTest(T)(double cor, T N, Alt alt = Alt.TWOSIDE, double confLevel = 0.95)
 if(isNumeric!(T)) {
-    enforce(N >= 0, "N must be >= 0 for pearsonCorTest.");
-    enforce(cor > -1.0 || approxEqual(cor, -1.0),
+    dstatsEnforce(N >= 0, "N must be >= 0 for pearsonCorTest.");
+    dstatsEnforce(cor > -1.0 || approxEqual(cor, -1.0),
         "Correlation must be between 0, 1.");
-    enforce(cor < 1.0 || approxEqual(cor, 1.0),
+    dstatsEnforce(cor < 1.0 || approxEqual(cor, 1.0),
          "Correlation must be between 0, 1.");
     enforceConfidence(confLevel);
 
@@ -3366,7 +3366,7 @@ if(doubleInput!R) {
     double chiSq = 0;
     uint df = 0;
     foreach(pVal; pVals) {
-        enforce(pVal >= 0 && pVal <= 1,
+        dstatsEnforce(pVal >= 0 && pVal <= 1,
             "P-values must be between 0, 1 for Fisher's Method.");
         chiSq += log( cast(double) pVal);
         df += 2;
@@ -3421,7 +3421,7 @@ if(doubleInput!(T)) {
     static if(dstats.base.hasLength!T) {
         qVals.length = pVals.length;
         foreach(i, elem; pVals) {
-            enforce(elem >= 0 && elem <= 1,
+            dstatsEnforce(elem >= 0 && elem <= 1,
                 "P-values must be between 0, 1 for falseDiscoveryRate.");
             qVals[i] = cast(float) elem;
         }
@@ -3533,7 +3533,7 @@ if(doubleInput!(T)) {
     qsort(qVals, perm);
 
     foreach(i, ref q; qVals) {
-        enforce(q >= 0 && q <= 1,
+        dstatsEnforce(q >= 0 && q <= 1,
             "P-values must be between 0, 1 for hochberg.");
         q = min(1.0f, q * (cast(double) qVals.length - i));
     }
@@ -3603,7 +3603,7 @@ if(doubleInput!(T)) {
     qsort(qVals, perm);
 
     foreach(i, ref q; qVals) {
-        enforce(q >= 0 && q <= 1,
+        dstatsEnforce(q >= 0 && q <= 1,
             "P-values must be between 0, 1 for holmBonferroni.");
         q = min(1.0, q * (cast(double) qVals.length - i));
     }

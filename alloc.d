@@ -1954,7 +1954,7 @@ public:
      * present.  U is expected to be the type of the key that this tree is
      * sorted on.*/
     T find(U)(U whatToFind) {
-        T* ptr = enforce( opIn_r!(U)(whatToFind),
+        T* ptr = dstatsEnforce( opIn_r!(U)(whatToFind),
             "Item not found:  " ~ to!string(whatToFind));
         return *ptr;
     }
@@ -2082,7 +2082,7 @@ struct TreeAaIter(T, alias mapFun) {
     alias typeof(*(tree.head)) Node;
 
 //    TreeRange!(T, mapFun) asRange() {
-//        enforce(0, "Not implemented yet.");
+//        dstatsEnforce(0, "Not implemented yet.");
 //    }
 
     alias typeof( mFun( typeof(tree.head.payload).init) ) IterType;

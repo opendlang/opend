@@ -56,7 +56,7 @@ version(unittest) {
  */
 double entropyCounts(T)(T data)
 if(isForwardRange!(T) && doubleInput!(T)) {
-    auto save = data;
+    auto save = data.save();
     return entropyCounts(save, sum!(T, double)(data));
 }
 
@@ -261,7 +261,8 @@ private template NeedsHeap(T) {
         enum bool NeedsHeap = false;
     } else static if(isArray!(T)) {
         enum bool NeedsHeap = false;
-    } else static if(is(T == Joint!(typeof(T.init.tupleof)))
+    } else static if(is(Joint!(typeof(T.init.tupleof)))
+           && is(T == Joint!(typeof(T.init.tupleof)))
            && allSatisfy!(isArray, typeof(T.init.tupleof))) {
         enum bool NeedsHeap = false;
     } else {
@@ -271,7 +272,7 @@ private template NeedsHeap(T) {
 
 unittest {
     auto foo = map!("a.dup")(cast(uint[][]) [[1]]);
-    auto bar = map!("a + 2")(cast(uint[]) [1,2,3]);
+    auto bar = map!("a + 2")([1,2,3][]);
     static assert(NeedsHeap!(typeof(foo)));
     static assert(!NeedsHeap!(typeof(bar)));
     static assert(NeedsHeap!(Joint!(uint[], typeof(foo))));
