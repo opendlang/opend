@@ -53,6 +53,9 @@ version(unittest) {
  * Note:  The PearsonCor struct returned by this function is alias this'd to the
  * correlation coefficient.  Therefore, the result from this function can
  * be treated simply as a floating point number.
+ *
+ * References: Computing Higher-Order Moments Online.
+ * http://people.xiph.org/~tterribe/notes/homs.html
  */
 PearsonCor pearsonCor(T, U)(T input1, U input2)
 if(doubleInput!(T) && doubleInput!(U)) {
@@ -424,7 +427,13 @@ version(unittest) {
  *
  * Since a copy of the inputs is made anyhow because they need to be sorted,
  * this function can work with any input range.  However, the ranges must
- * have the same length.*/
+ * have the same length.
+ *
+ * References:
+ * A Computer Method for Calculating Kendall's Tau with Ungrouped Data,
+ * William R. Knight, Journal of the American Statistical Association, Vol.
+ * 61, No. 314, Part 1 (Jun., 1966), pp. 436-439
+ */
 double kendallCor(T, U)(T input1, U input2)
 if(isInputRange!(T) && isInputRange!(U)) {
     static if(isArray!(T) && isArray!(U)) {

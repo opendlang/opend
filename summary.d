@@ -586,8 +586,9 @@ public:
     }
 }
 
-/**Convenience function that puts all elements of data into a MeanSD struct,
- * then returns this struct.*/
+/**Puts all elements of data into a MeanSD struct,
+ * then returns this struct.  This can be faster than doing this manually
+ * due to ILP optimizations.*/
 MeanSD meanStdev(T)(T data)
 if(doubleIterable!(T)) {
 

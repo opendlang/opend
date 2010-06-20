@@ -143,6 +143,8 @@ template isSummary(T) {
  *
  * Returns:  A ConfInt containing T, the P-value and the boundaries of
  * the confidence interval for mean(T) at the level specified.
+ *
+ * References:  http://en.wikipedia.org/wiki/Student%27s_t-test
  */
 ConfInt studentsTTest(T)(T data, double testMean = 0, Alt alt = Alt.TWOSIDE,
     double confLevel = 0.95)
@@ -191,7 +193,10 @@ unittest {
  *
  * Returns:  A ConfInt containing the T statistic, the P-value, and the
  * boundaries of the confidence interval for the difference between means
- * of sample1 and sample2 at the specified level.*/
+ * of sample1 and sample2 at the specified level.
+ *
+ * References:  http://en.wikipedia.org/wiki/Student%27s_t-test
+ */
 ConfInt studentsTTest(T, U)(T sample1, U sample2, double testMean = 0,
     Alt alt = Alt.TWOSIDE, double confLevel = 0.95)
 if( (doubleIterable!T || isSummary!T) && (doubleIterable!U || isSummary!U)) {
@@ -305,7 +310,10 @@ unittest {
  *
  * Returns:  A ConfInt containing the T statistic, the P-value, and the
  * boundaries of the confidence interval for the difference between means
- * of sample1 and sample2 at the specified level.*/
+ * of sample1 and sample2 at the specified level.
+ *
+ * References:  http://en.wikipedia.org/wiki/Student%27s_t-test
+ */
 ConfInt welchTTest(T, U)(T sample1, U sample2, double testMean = 0,
     Alt alt = Alt.TWOSIDE, double confLevel = 0.95)
 if( (isSummary!T || doubleIterable!T) && (isSummary!U || doubleIterable!U)) {
@@ -422,7 +430,10 @@ unittest {
  *
  * Returns:  A ConfInt containing the T statistic, the P-value, and the
  * boundaries of the confidence interval for the mean difference between
- * corresponding elements of sample1 and sample2 at the specified level.*/
+ * corresponding elements of sample1 and sample2 at the specified level.
+ *
+ * References:  http://en.wikipedia.org/wiki/Student%27s_t-test
+ */
 ConfInt pairedTTest(T, U)(T before, U after, double testMean = 0,
     Alt alt = Alt.TWOSIDE, double confLevel = 0.95)
 if(doubleInput!(T) && doubleInput!(U) && isInputRange!T && isInputRange!U) {
@@ -460,6 +471,8 @@ if(doubleInput!(T) && doubleInput!(U) && isInputRange!T && isInputRange!U) {
  * // is <= 5.  Calculate confidence intervals at 99%.
  * auto result = pairedTTest(summary, 5, alt, 0.99);
  * ---
+ *
+ * References:  http://en.wikipedia.org/wiki/Student%27s_t-test
  */
 ConfInt pairedTTest(T)(T diffSummary, double testMean = 0,
     Alt alt = Alt.TWOSIDE, double confLevel = 0.95)
@@ -600,6 +613,8 @@ unittest {
  * assert(approxEqual(result.testStat, 4.9968));
  * assert(approxEqual(result.p, 0.02456));
  * ---
+ *
+ * References:  http://en.wikipedia.org/wiki/F-test
  *
  * Returns:
  *
@@ -905,6 +920,10 @@ unittest {
  * Returns:  A TestRes with the K statistic and the P-value for the null that
  * no group is stochastically larger than any other against the alternative that
  * groups are stochastically ordered.
+ *
+ * References:  "Concepts and Applications of Inferrential Statistics".
+ *              Richard Lowry.  Vassar College.   version.
+ *              http://faculty.vassar.edu/lowry/webtext.html
  */
 TestRes kruskalWallis(T...)(T dataIn)
 if(doubleInput!(typeof(dataIn[0].front)) || allSatisfy!(doubleInput, T)) {
@@ -1038,6 +1057,10 @@ unittest {
  * when parametric assumptions cannot be made.  Usage is identical to
  * correlatedAnova().
  *
+ * References:  "Concepts and Applications of Inferrential Statistics".
+ *              Richard Lowry.  Vassar College.   version.
+ *              http://faculty.vassar.edu/lowry/webtext.html
+ *
  * Bugs:  No exact P-value calculation.  Asymptotic approx. only.
  */
 TestRes friedmanTest(T...)(T dataIn)
@@ -1136,6 +1159,10 @@ unittest {
  *
  * Returns:  A TestRes containing the W test statistic and the P-value against
  * the given alternative.
+ *
+ * References:  http://en.wikipedia.org/wiki/Mann%E2%80%93Whitney_U
+ *
+ * StackOverflow Question 376003  http://stackoverflow.com/questions/376003
  */
 TestRes wilcoxonRankSum(T, U)
 (T sample1, U sample2, Alt alt = Alt.TWOSIDE, uint exactThresh = 50)
@@ -1333,7 +1360,9 @@ unittest {
 
 /* Used internally by wilcoxonRankSum.  This function uses dynamic
  * programming to count the number of combinations of numbers [1..N] that sum
- * of length n1 that sum to <= W in O(N * W * n1) time.*/
+ * of length n1 that sum to <= W in O(N * W * n1) time.
+ * Algorithm obtained from StackOverflow Question 376003
+ * (http://stackoverflow.com/questions/376003).*/
 private double wilcoxRSPExact(uint W, uint n1, uint n2, Alt alt = Alt.TWOSIDE) {
     uint N = n1 + n2;
     immutable maxPossible = n1 * n2;
@@ -1463,7 +1492,13 @@ unittest {
  * forward ranges.
  *
  * Returns:  A TestRes of the W statistic and the p-value against the given
- * alternative.*/
+ * alternative.
+ *
+ * References:  http://en.wikipedia.org/wiki/Wilcoxon_signed-rank_test
+ *
+ * StackOverflow Question 376003  http://stackoverflow.com/questions/376003
+ *
+ */
 TestRes wilcoxonSignedRank(T, U)(T before, U after, Alt alt = Alt.TWOSIDE, uint exactThresh = 50)
 if(doubleInput!(T) && doubleInput!(U) &&
 is(typeof(before.front - after.front) : double)) {
@@ -1663,7 +1698,11 @@ in {
 /* Yes, a little cut and paste coding was involved here from wilcoxRSPExact,
  * but this function and wilcoxRSPExact are just different enough that
  * it would be more trouble than it's worth to write one generalized
- * function.*/
+ * function.
+ *
+ * Algorithm adapted from StackOverflow question 376003
+ * (http://stackoverflow.com/questions/376003).
+ */
 private double wilcoxSRPExact(uint W, uint N, Alt alt = Alt.TWOSIDE) {
     immutable maxPossible = N * (N + 1) / 2;
 
@@ -1752,7 +1791,8 @@ unittest {
  *
  * Returns:  A TestRes with the proportion of elements of before that were
  * greater than the corresponding element of after, and the P-value against
- * the given alternative.*/
+ * the given alternative.
+ */
 TestRes signTest(T, U)(T before, U after, Alt alt = Alt.TWOSIDE)
 if(doubleInput!(T) && doubleInput!(U) &&
 is(typeof(before.front < after.front) == bool)) {
@@ -1967,6 +2007,8 @@ enum Expected {
  * assert(approxEqual(res2, 0.0207));
  * assert(approxEqual(res2.testStat, 11.59));
  * ---
+ *
+ * References:  http://en.wikipedia.org/wiki/Pearson%27s_chi-square_test
  */
 TestRes chiSquareFit(T, U)(T observed, U expected, Expected countProp = Expected.PROPORTION)
 if(doubleInput!(T) && doubleInput!(U)) {
@@ -1999,6 +2041,9 @@ alias chiSquareFit chiSqrFit;
  * accurate in certain situations and less accurate in others.  However, it is
  * still based on asymptotic distributions, and is not exact. Usage is is
  * identical to chiSquareFit.
+ *
+ * References:  http://en.wikipedia.org/wiki/G_test
+ *
  */
 TestRes gTestFit(T, U)(T observed, U expected, Expected countProp = Expected.PROPORTION)
 if(doubleInput!(T) && doubleInput!(U)) {
@@ -2208,6 +2253,9 @@ unittest {
  * uint[] placebo = [500, 1100, 750];
  * assert(approxEqual(chiSquareContingency(drug1, drug2, placebo), 0.2397));
  * ---
+ *
+ * References: http://en.wikipedia.org/wiki/Pearson%27s_chi-square_test
+ *
  */
 TestRes chiSquareContingency(T...)(T inputData) {
     return testContingency!(pearsonChiSqElem, T)(inputData);
@@ -2253,6 +2301,9 @@ alias chiSquareContingency chiSqrContingency;
  * accurate in certain situations and less accurate in others.  However, it
  * is still based on asymptotic distributions, and is not exact. Usage is is
  * identical to chiSquareContingency.
+ *
+ * References:  http://en.wikipedia.org/wiki/G_test
+ *
  */
 TestRes gTestContingency(T...)(T inputData) {
     return testContingency!(gTestElem, T)(inputData);
@@ -2383,7 +2434,10 @@ private double gTestElem(double observed, double expected) {
  * assert(approxEqual(res.p, 0.01852));  // Odds ratio is very small in this case.
  * assert(approxEqual(res.testStat, 4.0 / 56.0));
  * ---
- * */
+ *
+ * References:  http://en.wikipedia.org/wiki/Fisher%27s_Exact_Test
+ *
+ */
 TestRes fisherExact(T)(const T[2][2] contingencyTable, Alt alt = Alt.TWOSIDE)
 if(isIntegral!(T)) {
     foreach(range; contingencyTable) {
@@ -2607,7 +2661,10 @@ unittest {
  * difference between distributions.  To get the D value used in standard
  * notation, simply take the absolute value of this D value.
  *
- * Bugs:  Exact calculation not implemented.  Uses asymptotic approximation.*/
+ * Bugs:  Exact calculation not implemented.  Uses asymptotic approximation.
+ *
+ * References:  http://en.wikipedia.org/wiki/Kolmogorov%E2%80%93Smirnov_test
+ */
 TestRes ksTest(T, U)(T F, U Fprime)
 if(doubleInput!(T) && doubleInput!(U)) {
     double D = ksTestD(F, Fprime);
@@ -2652,6 +2709,9 @@ template isArrayLike(T) {
  * auto empirical = [1, 2, 3, 4, 5];
  * double res = ksTest(empirical, stdNormal);
  * ---
+ *
+ * References:  http://en.wikipedia.org/wiki/Kolmogorov%E2%80%93Smirnov_test
+ *
  */
 TestRes ksTest(T, Func)(T Femp, Func F)
 if(doubleInput!(T) && is(ReturnType!(Func) : double)) {
@@ -2778,6 +2838,9 @@ in {
  * positive() is true cluster as much as expected by chance.
  *
  * Bugs:  No exact calculation of the P-value.  Asymptotic approximation only.
+ *
+ * References:  http://en.wikipedia.org/wiki/Runs_test
+ *
  */
 double runsTest(alias positive = "a > 0", T)(T obs, Alt alt = Alt.TWOSIDE)
 if(isIterable!(T)) {
@@ -3071,6 +3134,8 @@ unittest {
  *
  * Returns:  A TestRes containing the Kendall correlation coefficient and
  * the P-value for the given alternative.
+ *
+ * References:  StackOverflow Question 948341 (http://stackoverflow.com/questions/948341)
  */
 TestRes kendallCorTest(T, U)(T range1, U range2, Alt alt = Alt.TWOSIDE, uint exactThresh = 50)
 if(isInputRange!(T) && isInputRange!(U)) {
