@@ -30,7 +30,8 @@
 
 module dstats.cor;
 
-import std.range, std.typecons, std.contracts, std.math, std.traits, std.typetuple;
+import std.conv, std.range, std.typecons, std.contracts, std.math,
+    std.traits, std.typetuple;
 
 import dstats.sort, dstats.base, dstats.alloc, dstats.regress : invert;
 
@@ -420,7 +421,7 @@ version(unittest) {
     private enum kendallSmallN = 15;
 }
 
-/**Kendall's Tau B, O(N log N) version.  This can be defined in terms of the
+/**Kendall's Tau-b, O(N log N) version.  This can be defined in terms of the
  * bubble sort distance, or the number of swaps that would be needed in a
  * bubble sort to sort input2 into the same order as input1.  It is
  * a robust, non-parametric correlation metric.
@@ -433,6 +434,9 @@ version(unittest) {
  * A Computer Method for Calculating Kendall's Tau with Ungrouped Data,
  * William R. Knight, Journal of the American Statistical Association, Vol.
  * 61, No. 314, Part 1 (Jun., 1966), pp. 436-439
+ *
+ * The Variance of Tau When Both Rankings Contain Ties.  M.G. Kendall.
+ * Biometrika, Vol 34, No. 3/4 (Dec., 1947), pp. 297-298
  */
 double kendallCor(T, U)(T input1, U input2)
 if(isInputRange!(T) && isInputRange!(U)) {
@@ -459,77 +463,115 @@ if(isInputRange!(T) && isInputRange!(U)) {
     }
 }
 
-/**Kendall's Tau O(N log N), overwrites input arrays with undefined data but
+/**Kendall's Tau-b O(N log N), overwrites input arrays with undefined data but
  * uses only O(log N) stack space for sorting, not O(N) space to duplicate
  * input.  Only works on arrays.
  */
 double kendallCorDestructive(T, U)(T[] input1, U[] input2) {
     dstatsEnforce(input1.length == input2.length,
         "Ranges must be same length for Kendall correlation.");
-    return kendallCorDestructiveLowLevel(input1, input2).field[0];
+    return kendallCorDestructiveLowLevel(input1, input2, false).tau;
 }
 
 //bool compFun(T)(T lhs, T rhs) { return lhs < rhs; }
 private enum compFun = "a < b";
 
 // Guarantee that T.sizeof >= U.sizeof so we know we can recycle space.
-auto kendallCorDestructiveLowLevel(T, U)(T[] input1, U[] input2)
+auto kendallCorDestructiveLowLevel(T, U)(T[] input1, U[] input2, bool needTies)
 if(T.sizeof < U.sizeof) {
-    return kendallCorDestructiveLowLevel(input2, input1);
+    return kendallCorDestructiveLowLevel(input2, input1, needTies);
 }
+
+struct KendallLowLevel {
+    double tau;
+    long s;
+
+    // Notation as in Kendall, 1947, Biometrika
+
+    ulong tieCorrectT1;  // sum{t(t - 1)(2t + 5)}
+    ulong tieCorrectT2;  // sum{t(t - 1)(t - 2)}
+    ulong tieCorrectT3;  // sum{t(t - 1)}
+
+    ulong tieCorrectU1;  // sum{u(u - 1)(2u + 5)}
+    ulong tieCorrectU2;  // sum{u(u - 1)(u - 2)}
+    ulong tieCorrectU3;  // sum{u(u - 1)}
+}
+
 // Used internally in dstats.tests.kendallCorTest.
-auto kendallCorDestructiveLowLevel(T, U)(T[] input1, U[] input2)
+KendallLowLevel kendallCorDestructiveLowLevel
+(T, U)(T[] input1, U[] input2, bool needTies)
 if(T.sizeof >= U.sizeof)
 in {
     assert(input1.length == input2.length);
 } body {
-    static Tuple!(ulong, ulong) getMs(V)(const V[] data) {  //Assumes data is sorted.
-        ulong Ms = 0, tieCount = 0, tieCorrect = 0;
+    static ulong getMs(V)(const V[] data) {  //Assumes data is sorted.
+        ulong Ms = 0, tieCount = 0;
         foreach(i; 1..data.length) {
-            if(data[i] == data[i-1]) {
+            if(data[i] == data[i - 1]) {
                 tieCount++;
             } else if(tieCount) {
-                Ms += (tieCount*(tieCount+1))/2;
-                tieCount++;
-                tieCorrect += tieCount * (tieCount - 1) * (2 * tieCount + 5);
+                Ms += (tieCount * (tieCount + 1)) / 2;
                 tieCount = 0;
             }
         }
         if(tieCount) {
-            Ms += (tieCount*(tieCount+1)) / 2;
-            tieCount++;
-            tieCorrect += tieCount * (tieCount - 1) * (2 * tieCount + 5);
+            Ms += (tieCount * (tieCount + 1)) / 2;
         }
-        return tuple(Ms, tieCorrect);
+        return Ms;
     }
 
-    ulong m1 = 0, tieCorrect = 0,
-          nPair = (cast(ulong) input1.length *
+    void computeTies(V)
+    (V[] arr, ref ulong tie1, ref ulong tie2, ref ulong tie3) {
+        if(!needTies) {
+            return;  // If only computing correlation, this is a waste of time.
+        }
+
+        ulong tieCount = 1;
+        foreach(i; 1..arr.length) {
+            if(arr[i] == arr[i - 1]) {
+                tieCount++;
+            } else if(tieCount > 1) {
+                tie1 += tieCount * (tieCount - 1) * (2 * tieCount + 5);
+                tie2 += tieCount * (tieCount - 1) * (tieCount - 2);
+                tie3 += tieCount * (tieCount - 1);
+                tieCount = 1;
+            }
+        }
+
+        // Handle last run.
+         if(tieCount > 1) {
+            tie1 += tieCount * (tieCount - 1) * (2 * tieCount + 5);
+            tie2 += tieCount * (tieCount - 1) * (tieCount - 2);
+            tie3 += tieCount * (tieCount - 1);
+        }
+    }
+
+    ulong m1 = 0;
+    ulong nPair = (cast(ulong) input1.length *
                   ( cast(ulong) input1.length - 1UL)) / 2UL;
+    KendallLowLevel ret;
+    ret.s = to!long(nPair);
 
     qsort!(compFun)(input1, input2);
-    long s = nPair;
 
     uint tieCount = 0;
     foreach(i; 1..input1.length) {
-        if(input1[i] == input1[i-1]) {
+        if(input1[i] == input1[i - 1]) {
             tieCount++;
         } else if(tieCount > 0) {
             qsort!(compFun)(input2[i - tieCount - 1..i]);
             m1 += tieCount * (tieCount + 1) / 2UL;
-            s += getMs(input2[i - tieCount - 1..i]).field[0];
-            tieCount++;
-            tieCorrect += cast(ulong) tieCount * (tieCount - 1) * (2 * tieCount + 5);
+            ret.s += getMs(input2[i - tieCount - 1..i]);
             tieCount = 0;
         }
     }
     if(tieCount > 0) {
         qsort!(compFun)(input2[input1.length - tieCount - 1..input1.length]);
         m1 += tieCount * (tieCount + 1UL) / 2UL;
-        s += getMs(input2[input1.length - tieCount - 1..input1.length]).field[0];
-        tieCount++;
-        tieCorrect += cast(ulong) tieCount * (tieCount - 1) * (2 * tieCount + 5);
+        ret.s += getMs(input2[input1.length - tieCount - 1..input1.length]);
     }
+
+    computeTies(input1, ret.tieCorrectT1, ret.tieCorrectT2, ret.tieCorrectT3);
 
     // We've already guaranteed that T.sizeof >= U.sizeof and we own these
     // arrays and will never use input1 again, so this is safe.
@@ -537,14 +579,14 @@ in {
     U[] input1Temp = (cast(U*) input1.ptr)[0..input2.length];
     mergeSortTemp!(compFun)(input2, input1Temp, &swapCount);
 
-    immutable tieStuff = getMs(input2);
-    immutable m2 = tieStuff.field[0];
-    tieCorrect += tieStuff.field[1];
-    s -= (m1 + m2) + 2 * swapCount;
+    immutable m2 = getMs(input2);
+    computeTies(input2, ret.tieCorrectU1, ret.tieCorrectU2, ret.tieCorrectU3);
+
+    ret.s -= (m1 + m2) + 2 * swapCount;
     immutable double denominator1 = nPair - m1;
     immutable double denominator2 = nPair - m2;
-    double cor = s / sqrt(denominator1) / sqrt(denominator2);
-    return tuple(cor, s, tieCorrect);
+    ret.tau = ret.s / sqrt(denominator1) / sqrt(denominator2);
+    return ret;
 }
 
 /* Kendall's Tau correlation, O(N^2) version.  This is faster than the

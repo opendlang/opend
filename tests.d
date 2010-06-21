@@ -1163,6 +1163,9 @@ unittest {
  * References:  http://en.wikipedia.org/wiki/Mann%E2%80%93Whitney_U
  *
  * StackOverflow Question 376003  http://stackoverflow.com/questions/376003
+ *
+ * Loughborough University MLSC Statistics 2.3 The Mann-Whitney U Test
+ * http://mlsc.lboro.ac.uk/resources/statistics/Mannwhitney.pdf
  */
 TestRes wilcoxonRankSum(T, U)
 (T sample1, U sample2, Alt alt = Alt.TWOSIDE, uint exactThresh = 50)
@@ -1498,6 +1501,8 @@ unittest {
  *
  * StackOverflow Question 376003  http://stackoverflow.com/questions/376003
  *
+ * Handbook of Parametric and nonparametric statistical procedures. David Sheskin.
+ * Third Edition. (2004)  CRC Press. Pg. 616.
  */
 TestRes wilcoxonSignedRank(T, U)(T before, U after, Alt alt = Alt.TWOSIDE, uint exactThresh = 50)
 if(doubleInput!(T) && doubleInput!(U) &&
@@ -2933,7 +2938,10 @@ alias kendallCorTest kcorTest;
  *
  * Returns:  A ConfInt of the estimated Pearson correlation of the two ranges,
  * the P-value against the given alternative, and the confidence interval of
- * the correlation at the level specified by confLevel.*/
+ * the correlation at the level specified by confLevel.
+ *
+ * References:  http://en.wikipedia.org/wiki/Pearson_correlation
+ */
 ConfInt pearsonCorTest(T, U)(T range1, U range2, Alt alt = Alt.TWOSIDE, double confLevel = 0.95)
 if(doubleInput!(T) && doubleInput!(U)) {
     enforceConfidence(confLevel);
@@ -3120,7 +3128,7 @@ unittest {
     writeln("Passed spearmanCorSig test.");
 }
 
-/**Tests the hypothesis that the Kendall correlation between two ranges is
+/**Tests the hypothesis that the Kendall Tau-b between two ranges is
  * different from some 0.  Alternatives are
  * Alt.LESS (kendallCor(range1, range2) < 0), Alt.GREATER (kendallCor(range1, range2)
  * > 0) and Alt.TWOSIDE (kendallCor(range1, range2) != 0).
@@ -3136,21 +3144,35 @@ unittest {
  * the P-value for the given alternative.
  *
  * References:  StackOverflow Question 948341 (http://stackoverflow.com/questions/948341)
+ *
+ * The Variance of Tau When Both Rankings Contain Ties.  M.G. Kendall.
+ * Biometrika, Vol 34, No. 3/4 (Dec., 1947), pp. 297-298
  */
 TestRes kendallCorTest(T, U)(T range1, U range2, Alt alt = Alt.TWOSIDE, uint exactThresh = 50)
 if(isInputRange!(T) && isInputRange!(U)) {
     mixin(newFrame);
     auto i1d = tempdup(range1);
     auto i2d = tempdup(range2);
-    auto res = kendallCorDestructiveLowLevel(i1d, i2d);
+    immutable res = kendallCorDestructiveLowLevel(i1d, i2d, true);
+    immutable double n = i1d.length;
 
-    double n = i1d.length;
-    double sd = sqrt((n * (n - 1) * (2 * n + 5) - res.field[2]) / 18.0);
+    immutable double var =
+          (2.0 / 9) * n * (n - 1) * (2 * n + 5)
+        - (2.0 / 9) * res.tieCorrectT1
+        - (2.0 / 9) * res.tieCorrectU1
+        + (4 / (9 * n * (n - 1) * (n - 2))) * res.tieCorrectT2 * res.tieCorrectU2
+        + 2 / (n * (n - 1)) * res.tieCorrectT3 * res.tieCorrectU3;
+
+    // Need the / 2 to change C, as used in Kendall's paper to S, as used here.
+    immutable double sd = sqrt(var) / 2;
+
     enum double cc = 1;
-    auto tau = res.field[0];
-    auto s = res.field[1];
+    auto tau = res.tau;
+    auto s = res.s;
 
-    if(res.field[2] == 0 && n <= exactThresh) {
+    immutable bool noTies = res.tieCorrectT1 == 0 && res.tieCorrectU1 == 0;
+
+    if(noTies && n <= exactThresh) {
         uint N = i1d.length;
         uint nSwaps = (N * (N - 1) / 2 - cast(uint) s) / 2;
         return TestRes(tau, kendallCorExactP(N, nSwaps, alt));
@@ -3256,10 +3278,19 @@ private double kendallCorExactP(uint N, uint swaps, Alt alt) {
 }
 
 unittest {
-    // Values from R.  The epsilon for P-vals will be relatively large because
-    // R's approximate function does not use a continuity correction, and is
-    // therefore quite bad.
-
+    /* Values from R, with continuity correction enabled.  Note that large
+     * one-sided inexact P-values are commented out because R seems to have a
+     * slightly different interpretation of the proper continuity correction
+     * than this library.  This library corrects the z-score in the direction
+     * that would make the test more conservative.  R corrects towards zero.
+     * I can't find a reference to support either one, but empirically it seems
+     * like correcting towards more conservative results more accurately mirrors
+     * the results of the exact test.  This isn't too big a deal anyhow since:
+     *
+     * 1.  The difference is small.
+     * 2.  It only occurs on results that are very far from significance
+     *     (P > 0.5).
+     */
     int[] arr1 = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20];
     int[] arr2 = [8,6,7,5,3,0,9,8,6,7,5,3,0,9,3,6,2,4,3,6,8];
     auto t1 = kendallCorTest(arr1, arr2, Alt.TWOSIDE);
@@ -3270,9 +3301,20 @@ unittest {
     assert(approxEqual(t2.testStat, -.1448010));
     assert(approxEqual(t3.testStat, -.1448010));
 
-    assert(approxEqual(t1.p, 0.3757, 0.0, 0.02));
-    assert(approxEqual(t3.p, 0.8122, 0.0, 0.02));
-    assert(approxEqual(t2.p, 0.1878, 0.0, 0.02));
+    assert(approxEqual(t1.p, 0.3923745));
+    //assert(approxEqual(t3.p, 0.8038127));
+    assert(approxEqual(t2.p, 0.1961873));
+
+    // Now, test the case of ties in both arrays.
+    arr1 = [1,1,1,2,2,3,4,5,5,6];
+    arr2 = [1,1,2,3,4,5,5,5,5,6];
+    assert(approxEqual(kendallCorTest(arr1, arr2, Alt.TWOSIDE).p, 0.001216776));
+    //assert(approxEqual(kendallCorTest(arr1, arr2, Alt.LESS).p, 0.9993916));
+    assert(approxEqual(kendallCorTest(arr1, arr2, Alt.GREATER).p, 0.0006083881));
+
+    arr1 = [1,1,1,2,2,2,3,3,3,4,4,4,5,5,5];
+    arr2 = [1,1,1,3,3,3,2,2,2,5,5,5,4,4,4];
+    assert(approxEqual(kendallCorTest(arr1, arr2).p, 0.006123));
 
     // Test the exact stuff.  Still using values from R.
     uint[] foo = [1,2,3,4,5];
