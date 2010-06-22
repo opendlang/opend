@@ -2637,6 +2637,12 @@ unittest {
     assert(approxEqual(res, 0.1725862));
     res = fisherExact([[10, 5], [10, 1]]);
     assert(approxEqual(res, 0.1973244));
+    res = fisherExact([[5, 0], [1, 4]]);
+    assert(approxEqual(res.p, 0.04761904));
+    res = fisherExact([[0, 1], [3, 2]]);
+    assert(approxEqual(res.p, 1.0));
+    res = fisherExact([[0, 2], [6, 4]]);
+    assert(approxEqual(res.p, 0.4545454545));
     res = fisherExact([[2, 7], [8, 2]], Alt.LESS);
     assert(approxEqual(res, 0.01852));
     res = fisherExact([[5, 1], [10, 10]], Alt.LESS);
