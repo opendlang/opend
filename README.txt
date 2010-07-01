@@ -1,0 +1,42 @@
+This library has no dependencies other than the latest versions of Phobos and DMD.  To build,
+simply unpack all the files into an empty directory and do a:
+
+dmd -O -inline -release -lib -ofdstats.lib *.d
+
+You can also combine dstats with other libraries, etc. as you see fit.  I intend to keep the 
+build process trivial for the foreseeable future, so that dstats is as easy as possible to set 
+up and the barrier to entry is as low as possible.
+
+Conventions of this library:
+
+1.  A delicate balance between ease of use, flexibility and performance should be maintained.  
+There are tons of good libraries for hardcore numerics programmers that emphasize performance above 
+all else.  There are also tons of good statistics packages for people who are basically 
+non-programmers and aren't doing large-scale analyses or analyses in the context of larger programs.  
+The distribution seems very bimodal.  This library tries to target the middle ground and recognize
+the principles of tradeoffs and diminishing returns with regard to performance, flexibility 
+and ease of use.
+
+2.  Heap allocations should be minimized.  Whenever temporary space needs to be allocated internally, 
+the call stack or TempAlloc is used if possible.  This allows good multithreaded performance, which 
+matters, for example, when computing large correlation matrices or performing statistical tests
+on every exon in the human genome.
+
+3.  Everything should work with the lowest common denominator generic range possible.  It's 
+frustrating to have to write tons of boilerplate code just to translate data from one format into 
+another.  Also, oftentimes even if the data is in the form of an array it needs to be copied so it 
+can be reordered without the reordering being visible to the caller.  In these cases, it can be 
+copied just as easily whether the input data is in the form of an array or some other range.
+
+4.  Throwing exceptions vs. returning NaN:  The convention here is that an exception should be
+thrown if a primitive parameter (i.e. an int or a float) is not in the acceptable range.  This is
+because such things can trivially be checked upfront and should not occur by accident in most cases,
+except for the case of bugs internal to dstats.  If the errant function parameter is the dataset, 
+i.e. a range of some kind, then a NaN should be returned, because when doing large-scale analyses, 
+a few pieces of data are expected to be defective in ways that are not easy to check upfront and 
+should not halt the whole analysis.
+
+In general, this means that dstats.distrib and dstats.gamma should throw on invalid parameters,
+and all other modules should return a NaN.  Any other result is most likely a bug.  
+Cases where dstats.tests calls into dstats.distrib, resulting in thrown exceptions, are 
+unfortunately too common and need to be fixed.
