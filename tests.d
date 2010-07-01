@@ -2953,6 +2953,10 @@ if(doubleInput!(T) && doubleInput!(U)) {
     enforceConfidence(confLevel);
 
     PearsonCor pearsonRes = pearsonCor(range1, range2);
+    if(isNaN(pearsonRes.cor)) {
+        return ConfInt.init;
+    }
+
     return pearsonCorTest(pearsonRes.cor, pearsonRes.N, alt, confLevel);
 }
 
