@@ -40,3 +40,10 @@ In general, this means that dstats.distrib and dstats.gamma should throw on inva
 and all other modules should return a NaN.  Any other result is most likely a bug.  
 Cases where dstats.tests calls into dstats.distrib, resulting in thrown exceptions, are 
 unfortunately too common and need to be fixed.
+
+5.  License:  Each file contains a license header.  All modules that are exclusively written by
+the main author (David Simcha) are licensed under the Boost license, so that pieces of them may
+freely be incorporated into Phobos and attribution is not required for binaries.  Some modules
+consist of code borrowed from other places and are thus required to conform to the terms of these
+licenses.  All are under permissive (i.e. non-copyleft) open source licenses, but some may require 
+binary attribution.  
