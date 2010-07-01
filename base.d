@@ -731,7 +731,7 @@ if(isNumeric!(ElementType!R1) && isNumeric!(ElementType!R2)) {
     double tp = 0, tn = classA.length, fp = 0, fn = classB.length;
     double[2] lastPoint = 0;
 
-    CommonType!(ElementType!R1, ElementType!R2) currentVal;
+    Unqual!(CommonType!(ElementType!R1, ElementType!R2)) currentVal;
 
     ElementType!R1 popA() {
         tn--;
