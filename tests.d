@@ -756,6 +756,10 @@ private TestRes anovaLevene(bool levene, bool welch, alias central,  T...)
         }
 
         immutable  F = totalBetween / totalWithin;
+        if(isNaN(F)) {
+            return TestRes.init;
+        }
+
         return TestRes(F, fisherCDFR(F, DFGroups, DFDataPoints));
     } else {
         immutable double k = data.length;
@@ -786,6 +790,10 @@ private TestRes anovaLevene(bool levene, bool welch, alias central,  T...)
         numerator /= (k - 1);
 
         immutable F = numerator / denom;
+        if(isNaN(F)) {
+            return TestRes.init;
+        }
+
         return TestRes(F, fisherCDFR(F, DFGroups, df2));
     }
 }
