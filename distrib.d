@@ -1202,6 +1202,16 @@ double rayleighCDF(double x, double mode) {
 }
 
 ///
+double studentsTPDF(double t, double df) {
+    dstatsEnforce(df > 0, "Student's T must have >0 degrees of freedom.");
+
+    immutable logPart = lgamma(0.5 * df + 0.5) - lgamma(0.5 * df);
+    immutable term1 = exp(logPart) / sqrt(df * PI);
+    immutable term2 = (1.0 + t / df * t) ^^ (-0.5 * df - 0.5);
+    return term1 * term2;
+}
+
+///
 double studentsTCDF(double t, double df) {
     dstatsEnforce(df > 0, "Student's T must have >0 degrees of freedom.");
 
@@ -1215,6 +1225,10 @@ double studentsTCDFR(double t, double df)   {
 }
 
 unittest {
+    assert(approxEqual(studentsTPDF(1, 1), 0.1591549));
+    assert(approxEqual(studentsTPDF(3, 10), 0.0114055));
+    assert(approxEqual(studentsTPDF(-4, 5), 0.005123727));
+
     assert(approxEqual(studentsTCDF(1, 1), 0.75));
     assert(approxEqual(studentsTCDF(1.061, 2), 0.8));
     assert(approxEqual(studentsTCDF(5.959, 5), 0.9995));
@@ -1266,16 +1280,16 @@ double invStudentsTCDF(double p, double df) {
 }
 
 unittest {
-// The remaining values listed here are from Excel, and are unlikely to be accurate
-// in the last decimal places. However, they are helpful as a sanity check.
+    // The remaining values listed here are from Excel, and are unlikely to be accurate
+    // in the last decimal places. However, they are helpful as a sanity check.
 
-//  Microsoft Excel 2003 gives TINV(2*(1-0.995), 10) == 3.16927267160917
-assert(approxEqual(invStudentsTCDF(0.995, 10), 3.169_272_67L));
-assert(approxEqual(invStudentsTCDF(0.6, 8), 0.261_921_096_769_043L));
-assert(approxEqual(invStudentsTCDF(0.4, 18), -0.257_123_042_655_869L));
-assert(approxEqual(studentsTCDF(invStudentsTCDF(0.4L, 18), 18), .4L));
-assert(approxEqual(studentsTCDF( invStudentsTCDF(0.9L, 11), 11), 0.9L));
-writeln("Passed studentsTCDF.");
+    //  Microsoft Excel 2003 gives TINV(2*(1-0.995), 10) == 3.16927267160917
+    assert(approxEqual(invStudentsTCDF(0.995, 10), 3.169_272_67L));
+    assert(approxEqual(invStudentsTCDF(0.6, 8), 0.261_921_096_769_043L));
+    assert(approxEqual(invStudentsTCDF(0.4, 18), -0.257_123_042_655_869L));
+    assert(approxEqual(studentsTCDF(invStudentsTCDF(0.4L, 18), 18), .4L));
+    assert(approxEqual(studentsTCDF( invStudentsTCDF(0.9L, 11), 11), 0.9L));
+    writeln("Passed studentsTCDF.");
 }
 
 /**
@@ -1697,7 +1711,10 @@ unittest {
 }
 
 
-/**Kolmogorov distribution.  Used in Kolmogorov-Smirnov testing.*/
+/**Kolmogorov distribution.  Used in Kolmogorov-Smirnov testing.
+ *
+ * References: http://en.wikipedia.org/wiki/Kolmogorov-Smirnov
+ */
 double kolmDist(double X) {
     dstatsEnforce(X >= 0, "X must be >= 0 for Kolmogorov distribution.");
 
