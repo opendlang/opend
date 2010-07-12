@@ -3,6 +3,12 @@
  * online, all summary statistics have both an input range interface and an
  * output range interface.
  *
+ * Notes: The put method on the structs defined in this module returns this by
+ *        ref.  The use case for returning this is to enable these structs
+ *        to be used with std.algorithm.reduce.  The rationale for returning
+ *        by ref is that the return value usually won't be used, and the
+ *        overhead of returning a large struct by value should be avoided.
+ *
  * Bugs:  This whole module assumes that input will be doubles or types implicitly
  *        convertible to double.  No allowances are made for user-defined numeric
  *        types such as BigInts.  This is necessary for simplicity.  However,
@@ -10,9 +16,13 @@
  *        these functions work with any input range, so you can simply map
  *        this function onto your range.
  *
+ *        All alias this statements are currently disabled due to compiler bugs.
+ *
  * Author:  David Simcha
  */
- /*
+/*
+ * Copyright (C) 2008-2010 David Simcha
+ *
  * License:
  * Boost Software License - Version 1.0 - August 17th, 2003
  *
@@ -167,7 +177,7 @@ struct MedianAbsDev {
 
     this(this) {}  // Workaround for bug 2943
 
-    alias medianAbsDev this;
+    //alias medianAbsDev this;
 }
 
 /**Calculates the median absolute deviation of a dataset.  This is the median
@@ -198,8 +208,8 @@ if(doubleInput!(T)) {
 }
 
 unittest {
-    assert(approxEqual(medianAbsDev([7,1,8,2,8,1,9,2,8,4,5,9].dup), 2.5L));
-    assert(approxEqual(medianAbsDev([8,6,7,5,3,0,999].dup), 2.0L));
+    assert(approxEqual(medianAbsDev([7,1,8,2,8,1,9,2,8,4,5,9].dup).medianAbsDev, 2.5L));
+    assert(approxEqual(medianAbsDev([8,6,7,5,3,0,999].dup).medianAbsDev, 2.0L));
     writeln("Passed medianAbsDev unittest.");
 }
 
@@ -225,12 +235,13 @@ private:
     double k = 0;
 
 public:
-    /// Allow implicit casting to double, by returning the current mean.
-    alias mean this;
+    ///// Allow implicit casting to double, by returning the current mean.
+    //alias mean this;
 
     ///
-    void put(double element) nothrow {
+    ref typeof(this) put(double element) nothrow {
         result += (element - result) / ++k;
+        return this;
     }
 
     /**Adds the contents of rhs to this instance.
@@ -255,10 +266,11 @@ public:
      * assert(approxEqual(combined.mean, mean1.mean));
      * ---
      */
-     void put(const ref typeof(this) rhs) nothrow {
+     ref typeof(this) put(const ref typeof(this) rhs) nothrow {
          immutable totalN = k + rhs.k;
          result = result * (k / totalN) + rhs.result * (rhs.k / totalN);
          k = totalN;
+         return this;
      }
 
     ///
@@ -274,6 +286,11 @@ public:
     ///
     double N() const pure nothrow {
         return k;
+    }
+
+    /**Simply returns this.  Useful in generic programming contexts.*/
+    Mean toMean() const pure nothrow {
+        return this;
     }
 
     ///
@@ -335,17 +352,19 @@ struct GeometricMean {
 private:
     Mean m;
 public:
-    ///Allow implicit casting to double, by returning current geometric mean.
-    alias geoMean this;
+    /////Allow implicit casting to double, by returning current geometric mean.
+    //alias geoMean this;
 
     ///
-    void put(double element) nothrow {
+    ref typeof(this) put(double element) nothrow {
         m.put(log2(element));
+        return this;
     }
 
     /// Combine two GeometricMean's.
-    void put(const ref typeof(this) rhs) nothrow {
+    ref typeof(this) put(const ref typeof(this) rhs) nothrow {
         m.put(rhs.m);
+        return this;
     }
 
     ///
@@ -450,9 +469,9 @@ unittest {
     assert(sum(filter!"true"([1,2,3,4,5,6,7,8,9,10][])) == 55);
     assert(sum(cast(int[]) [1,2,3,4,5])==15);
     assert(approxEqual( sum(cast(int[]) [40.0, 40.1, 5.2]), 85.3));
-    assert(mean(cast(int[]) [1,2,3]) == 2);
-    assert(mean(cast(int[]) [1.0, 2.0, 3.0]) == 2.0);
-    assert(mean([1, 2, 5, 10, 17][]) == 7);
+    assert(mean(cast(int[]) [1,2,3]).mean == 2);
+    assert(mean(cast(int[]) [1.0, 2.0, 3.0]).mean == 2.0);
+    assert(mean([1, 2, 5, 10, 17][]).mean == 7);
     assert(mean([1, 2, 5, 10, 17][]).sum == 35);
     assert(approxEqual(mean([8,6,7,5,3,0,9,3,6,2,4,3,6][]).mean, 4.769231));
 
@@ -513,25 +532,26 @@ private:
     double _k = 0;
 public:
     ///
-    void put(double element) nothrow {
+    ref typeof(this) put(double element) nothrow {
         immutable kMinus1 = _k;
         immutable delta = element - _mean;
         immutable deltaN = delta / ++_k;
 
         _mean += deltaN;
         _var += kMinus1 * deltaN * delta;
+        return this;
     }
 
     /// Combine two MeanSD's.
-    void put(const ref typeof(this) rhs) nothrow {
+    ref typeof(this) put(const ref typeof(this) rhs) nothrow {
         if(_k == 0) {
             foreach(ti, elem; rhs.tupleof) {
                 this.tupleof[ti] = elem;
             }
 
-            return;
+            return this;
         } else if(rhs._k == 0) {
-            return;
+            return this;
         }
 
         immutable totalN = _k + rhs._k;
@@ -540,6 +560,7 @@ public:
 
         _var = _var + rhs._var + (_k / totalN * rhs._k * delta * delta);
         _k = totalN;
+        return this;
     }
 
     ///
@@ -577,6 +598,11 @@ public:
      */
     Mean toMean() const pure nothrow {
         return Mean(_mean, _k);
+    }
+
+    /**Simply returns this.  Useful in generic programming contexts.*/
+    MeanSD toMeanSD() const pure nothrow {
+        return this;
     }
 
     ///
@@ -747,7 +773,7 @@ private:
     double _max = -double.infinity;
 public:
     ///
-    void put(double element) nothrow {
+    ref typeof(this) put(double element) nothrow {
         immutable kMinus1 = _k;
         immutable kNeg1 = 1.0 / ++_k;
         _min = (element < _min) ? element : _min;
@@ -761,18 +787,19 @@ public:
             6 * _m2 * deltaN * deltaN - 4 * deltaN * _m3;
         _m3 += kMinus1 * deltaN * (_k - 2) * deltaN * delta - 3 * delta * _m2 * kNeg1;
         _m2 += kMinus1 * deltaN * delta;
+        return this;
     }
 
     /// Combine two Summary's.
-    void put(const ref typeof(this) rhs) nothrow {
+    ref typeof(this) put(const ref typeof(this) rhs) nothrow {
         if(_k == 0) {
             foreach(ti, elem; rhs.tupleof) {
                 this.tupleof[ti] = elem;
             }
 
-            return;
+            return this;
         } else if(rhs._k == 0) {
-            return;
+            return this;
         }
 
         immutable totalN = _k + rhs._k;
@@ -797,6 +824,8 @@ public:
         _k = totalN;
         _max = (_max > rhs._max) ? _max : rhs._max;
         _min = (_min < rhs._min) ? _min : rhs._min;
+
+        return this;
     }
 
     ///
@@ -852,7 +881,7 @@ public:
         return MeanSD(_mean, _m2, _k);
     }
 
-    alias toMeanSD this;
+    //alias toMeanSD this;
 
     ///
     string toString() const {
@@ -880,6 +909,10 @@ unittest {
       mean2.put(i);
     }
 
+    auto m1_2 = mean1;
+    auto m2_2 = mean2;
+    auto combined_2 = reduce!"a.put(b)"([m1_2, m2_2]);
+
     mean1.put(mean2);
 
     foreach(i; 0..10) {
@@ -888,6 +921,7 @@ unittest {
 
     foreach(ti, elem; mean1.tupleof) {
         assert(approxEqual(elem, combined.tupleof[ti]));
+        assert(approxEqual(combined_2.tupleof[ti], combined.tupleof[ti]));
     }
 
     Summary summCornerCase;  // Case where one N is zero.
@@ -1069,7 +1103,7 @@ if(isForwardRange!(T) && doubleInput!(T)) {
 
 unittest {
     int[] arr = [1,2,3,4,5];
-    auto m = mean(arr);
+    auto m = mean(arr).mean;
     auto sd = stdev(arr);
     auto z = zScore(arr);
 

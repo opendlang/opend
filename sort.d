@@ -358,9 +358,7 @@ in {
         return insertionSort!compFun(data);
     }
 
-    // Because we transition to insertion sort at N = 50 elements,
-    // using the ideal recursion depth to determine the transition point
-    // to heap sort is reasonable.
+    // Determines the transition point to a heap sort.
     uint TTL = cast(uint) (log2(cast(real) data[0].length) * 2);
 
     auto toSort = prepareForSorting!compFun(data[0]);

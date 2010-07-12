@@ -168,13 +168,13 @@ unittest {
     assert(t1 == studentsTTest( meanStdev([1,2,3,4,5].dup), 2));
 
     auto t2 = studentsTTest([1, 2, 3, 4, 5].dup, 2, Alt.LESS);
-    assert(approxEqual(t2, .8849));
+    assert(approxEqual(t2.p, .8849));
     assert(approxEqual(t2.testStat, 1.4142));
     assert(t2.lowerBound == -double.infinity);
     assert(approxEqual(t2.upperBound, 4.507443));
 
     auto t3 = studentsTTest( summary([1, 2, 3, 4, 5].dup), 2, Alt.GREATER);
-    assert(approxEqual(t3, .1151));
+    assert(approxEqual(t3.p, .1151));
     assert(approxEqual(t3.testStat, 1.4142));
     assert(approxEqual(t3.lowerBound, 1.492557));
     assert(t3.upperBound == double.infinity);
@@ -269,7 +269,7 @@ if( (doubleIterable!T || isSummary!T) && (doubleIterable!U || isSummary!U)) {
 unittest {
     // Values from R.
     auto t1 = studentsTTest([1,2,3,4,5].dup, [1,3,4,5,7,9].dup);
-    assert(approxEqual(t1, 0.2346));
+    assert(approxEqual(t1.p, 0.2346));
     assert(approxEqual(t1.testStat, -1.274));
     assert(approxEqual(t1.lowerBound, -5.088787));
     assert(approxEqual(t1.upperBound, 1.422120));
@@ -280,20 +280,20 @@ unittest {
     assert(approxEqual(studentsTTest([1,2,3,4,5].dup, [1,3,4,5,7,9].dup, 0, Alt.GREATER),
            0.8827));
     auto t2 = studentsTTest([1,3,5,7,9,11].dup, [2,2,1,3,4].dup, 5);
-    assert(approxEqual(t2, 0.44444));
+    assert(approxEqual(t2.p, 0.44444));
     assert(approxEqual(t2.testStat, -0.7998));
     assert(approxEqual(t2.lowerBound, -0.3595529));
     assert(approxEqual(t2.upperBound, 7.5595529));
 
 
     auto t5 = studentsTTest([1,3,5,7,9,11].dup, [2,2,1,3,4].dup, 0, Alt.LESS);
-    assert(approxEqual(t5, 0.965));
+    assert(approxEqual(t5.p, 0.965));
     assert(approxEqual(t5.testStat, 2.0567));
     assert(approxEqual(t5.upperBound, 6.80857));
     assert(t5.lowerBound == -double.infinity);
 
     auto t6 = studentsTTest([1,3,5,7,9,11].dup, [2,2,1,3,4].dup, 0, Alt.GREATER);
-    assert(approxEqual(t6, 0.03492));
+    assert(approxEqual(t6.p, 0.03492));
     assert(approxEqual(t6.testStat, 2.0567));
     assert(approxEqual(t6.lowerBound, 0.391422));
     assert(t6.upperBound == double.infinity);
@@ -393,28 +393,28 @@ if( (isSummary!T || doubleIterable!T) && (isSummary!U || doubleIterable!U)) {
 unittest {
     // Values from R.
     auto t1 = welchTTest( meanStdev([1,2,3,4,5].dup), [1,3,4,5,7,9].dup, 2);
-    assert(approxEqual(t1, 0.02285));
+    assert(approxEqual(t1.p, 0.02285));
     assert(approxEqual(t1.testStat, -2.8099));
     assert(approxEqual(t1.lowerBound, -4.979316));
     assert(approxEqual(t1.upperBound, 1.312649));
 
     auto t2 = welchTTest([1,2,3,4,5].dup, summary([1,3,4,5,7,9].dup), -1, Alt.LESS);
-    assert(approxEqual(t2, 0.2791));
+    assert(approxEqual(t2.p, 0.2791));
     assert(approxEqual(t2.testStat, -0.6108));
     assert(t2.lowerBound == -double.infinity);
     assert(approxEqual(t2.upperBound, 0.7035534));
 
     auto t3 = welchTTest([1,2,3,4,5].dup, [1,3,4,5,7,9].dup, 0.5, Alt.GREATER);
-    assert(approxEqual(t3, 0.9372));
+    assert(approxEqual(t3.p, 0.9372));
     assert(approxEqual(t3.testStat, -1.7104));
     assert(approxEqual(t3.lowerBound, -4.37022));
     assert(t3.upperBound == double.infinity);
 
-    assert(approxEqual(welchTTest([1,3,5,7,9,11].dup, [2,2,1,3,4].dup), 0.06616));
+    assert(approxEqual(welchTTest([1,3,5,7,9,11].dup, [2,2,1,3,4].dup).p, 0.06616));
     assert(approxEqual(welchTTest([1,3,5,7,9,11].dup, [2,2,1,3,4].dup, 0,
-        Alt.LESS), 0.967));
+        Alt.LESS).p, 0.967));
     assert(approxEqual(welchTTest([1,3,5,7,9,11].dup, [2,2,1,3,4].dup, 0,
-        Alt.GREATER), 0.03308));
+        Alt.GREATER).p, 0.03308));
     writeln("Passed welchTTest test.");
 }
 
@@ -540,11 +540,11 @@ unittest {
     assert(approxEqual(t1.lowerBound, -2.1601748));
     assert(approxEqual(t1.upperBound, 0.561748));
 
-    assert(approxEqual(pairedTTest([3,2,3,4,5].dup, [2,3,5,5,6].dup, 0, Alt.LESS), 0.0889));
-    assert(approxEqual(pairedTTest([3,2,3,4,5].dup, [2,3,5,5,6].dup, 0, Alt.GREATER), 0.9111));
-    assert(approxEqual(pairedTTest([3,2,3,4,5].dup, [2,3,5,5,6].dup, 0, Alt.TWOSIDE), 0.1778));
-    assert(approxEqual(pairedTTest([3,2,3,4,5].dup, [2,3,5,5,6].dup, 1, Alt.LESS), 0.01066));
-    assert(approxEqual(pairedTTest([3,2,3,4,5].dup, [2,3,5,5,6].dup, 1, Alt.GREATER), 0.9893));
+    assert(approxEqual(pairedTTest([3,2,3,4,5].dup, [2,3,5,5,6].dup, 0, Alt.LESS).p, 0.0889));
+    assert(approxEqual(pairedTTest([3,2,3,4,5].dup, [2,3,5,5,6].dup, 0, Alt.GREATER).p, 0.9111));
+    assert(approxEqual(pairedTTest([3,2,3,4,5].dup, [2,3,5,5,6].dup, 0, Alt.TWOSIDE).p, 0.1778));
+    assert(approxEqual(pairedTTest([3,2,3,4,5].dup, [2,3,5,5,6].dup, 1, Alt.LESS).p, 0.01066));
+    assert(approxEqual(pairedTTest([3,2,3,4,5].dup, [2,3,5,5,6].dup, 1, Alt.GREATER).p, 0.9893));
     writeln("Passed pairedTTest unittest.");
 }
 
@@ -731,7 +731,7 @@ private TestRes anovaLevene(bool levene, bool welch, alias central,  T...)
                 N++;
             }
         } else static if(isSummary!(typeof(range))) {
-            withins[category] = range;
+            withins[category] = range.toMeanSD();
             N += roundTo!long(range.N);
         } else {
             static assert(0, "Can only perform ANOVA on input ranges of " ~
@@ -1253,13 +1253,13 @@ is(CommonType!(ElementType!T, ElementType!U))) {
      assert(approxEqual(wilcoxonRankSum([2,4,6,8,12].dup, [1,3,5,7,11,9].dup,
            Alt.LESS, 0), 0.6079));
      assert(approxEqual(wilcoxonRankSum([2,4,6,8,12].dup, [1,3,5,7,11,9].dup,
-           Alt.GREATER, 0), 0.4636));
+           Alt.GREATER, 0).p, 0.4636));
      assert(approxEqual(wilcoxonRankSum([1,2,6,10,12].dup, [3,5,7,8,13,15].dup,
-            Alt.TWOSIDE, 0), 0.4113));
+            Alt.TWOSIDE, 0).p, 0.4113));
      assert(approxEqual(wilcoxonRankSum([1,2,6,10,12].dup, [3,5,7,8,13,15].dup,
-            Alt.LESS, 0), 0.2057));
+            Alt.LESS, 0).p, 0.2057));
      assert(approxEqual(wilcoxonRankSum([1,2,6,10,12].dup,
-        map!"a"([3,5,7,8,13,15].dup), Alt.GREATER, 0), 0.8423));
+        map!"a"([3,5,7,8,13,15].dup), Alt.GREATER, 0).p, 0.8423));
      assert(approxEqual(wilcoxonRankSum([1,3,5,7,9].dup, [2,4,6,8,10].dup,
             Alt.TWOSIDE, 0), .6745));
      assert(approxEqual(wilcoxonRankSum([1,3,5,7,9].dup, [2,4,6,8,10].dup,
