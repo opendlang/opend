@@ -329,6 +329,16 @@ struct Residuals(F, U, T...) {
     bool empty() const pure nothrow {
         return _empty;
     }
+
+    typeof(this) save() @property {
+        auto ret = this;
+        ret.Y = ret.Y.save;
+        foreach(ti, xElem; ret.X) {
+            ret.X[ti] = ret.X[ti].save;
+        }
+
+        return ret;
+    }
 }
 
 /**Given the beta coefficients from a linear regression, and X and Y values,
