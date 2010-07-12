@@ -664,7 +664,7 @@ unittest {
  * ---
  */
 ElementType!(V)[][ElementType!(C)] byCategory(V, C)(V values, C categories)
-if(isInputRange!(V) && isInputRange!(C)) {
+if(isInputRange!(V) && isInputRange!(C) && !is(ElementType!C == bool)) {
     alias ElementType!(V) EV;
     alias ElementType!(C) EC;
 
@@ -693,14 +693,84 @@ if(isInputRange!(V) && isInputRange!(C)) {
     return ret;
 }
 
+/**Special case implementation for when ElementType!C is boolean.*/
+ElementType!(V)[][2] byCategory(V, C)(V values, C categories)
+if(isInputRange!(V) && isInputRange!(C) && is(ElementType!C == bool)) {
+    typeof(return) ret;
+
+    static if(hasLength!V || hasLength!C) {
+        // Preallocate.
+        size_t zeroIndex, oneIndex;
+
+        static if(!hasLength!V) {
+            ret[0].length = categories.length;
+            ret[1].length = values.length;
+        } else static if(!hasLength!C) {
+            ret[0].length = values.length;
+            ret[1].length = values.length;
+        } else {
+            immutable len = min(categories.length, values.length);
+            ret[0].length = len;
+            ret[1].length = len;
+        }
+
+        while(!values.empty && !categories.empty) {
+            scope(exit) {
+                values.popFront();
+                categories.popFront();
+            }
+
+            auto category = categories.front;
+            if(category) {
+                ret[1][oneIndex++] = values.front;
+            } else {
+                ret[0][zeroIndex++] = values.front;
+            }
+        }
+
+        ret[0] = ret[0][0..zeroIndex];
+        ret[1] = ret[1][0..oneIndex];
+    } else {
+        auto app0 = appender(ret.ptr);
+        auto app1 = appender(ret.ptr + 1);
+
+        while(!values.empty && !categories.empty) {
+            scope(exit) {
+                values.popFront();
+                categories.popFront();
+            }
+
+            auto category = categories.front;
+            if(category) {
+                app1.put(values.front);
+            } else {
+                app0.put(values.front);
+            }
+        }
+    }
+
+    return ret;
+}
+
 unittest {
     int[] nums = [1,2,3,4,5,6,7,8,9];
     int[] categories = [0,1,2,0,1,2,0,1,2];
+
+    // The filter is just to prevent having a length.
+    auto categories2 = filter!"a == a"(map!"a % 2 == 0"(nums));
 
     auto result = byCategory(nums, categories);
     assert(result[0] == [1,4,7]);
     assert(result[1] == [2,5,8]);
     assert(result[2] == [3,6,9]);
+
+    auto res2 = byCategory(filter!"a == a"(nums), categories2);
+    assert(res2[0] == [1,3,5,7,9]);
+    assert(res2[1] == [2,4,6,8]);
+
+    auto res3 = byCategory(nums,
+        [false, true, false, true, false, true, false, true, false]);
+    assert(res2 == res3);
     writeln("Passed byCategory unittest.");
 }
 
