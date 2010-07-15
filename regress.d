@@ -614,23 +614,6 @@ PolyFitRes!(PowMap!(uint, T)[]) polyFit(T, U)(U Y, T X, uint N, double confInt =
     return ret;
 }
 
-/**Given betas from a linear regression and X values in the corresponding order,
- * returns the predicted Y value.
- */
-double predict(const double[] betas, double[] X...) {
-    dstatsEnforce(betas.length == X.length,
-        "Cannot perform linear regression predictions when X.length != betas.length.");
-    double result = 0;
-    foreach(i, beta; betas) {
-        result += beta * X[i];
-    }
-    return result;
-}
-
-unittest {
-    assert([1,2,3,4,5].predict(1,2,3,4,5) == 1 + 4 + 9 + 16 + 25);
-}
-
 version(unittest) {
     import std.stdio;
     void main(){}
