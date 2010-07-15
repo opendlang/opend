@@ -35,7 +35,7 @@
 module dstats.regress;
 
 import std.math, std.algorithm, std.traits, std.array, std.traits, std.contracts,
-    std.typetuple, std.typecons;
+    std.typetuple;
 
 import dstats.alloc, std.range, std.conv, dstats.distrib, dstats.cor, dstats.base;
 
@@ -396,36 +396,11 @@ if(allSatisfy!(isInputRange, T) && doubleInput!(U)) {
     return ret;
 }
 
-/**Controls whether linearRegress assumes an intercept term when calculating
- * P-values, confidence intervals, etc.  (By default an intercept term is
- * assumed present.)
- */
-enum Intercept {
-    ///
-    YES,
-
-    ///
-    NO
-}
-
 /**Perform a linear regression as in linearRegressBeta, but return a
- * RegressRes with useful stuff for statistical inference.
- *
- * If a range of ranges is passed in, it is assumed that each element of the
- * range of ranges represents one X variable.  If several ranges are passed in
- * individually, it is assumed that each one represents an X variable.
- *
- * If a floating point number is passed in as one of the variadic arguments,
- * this is used as a confidence interval.  The default confidence interval
- * to calculate is 0.95.
- *
- * If an Intercept enum is passed in as a variadic argument, it determines
- * whether an intercept term is assumed to be included in the regression model
- * for the purpose of calculating P-values and confidence intervals.  The
- * default is to assume an intercept term is present.
- *
- * If multiple Intercept enums or multiple floating points are passed in,
- * it is undefined which one will be used, so don't do it.
+ * RegressRes with useful stuff for statistical inference.  If the last element
+ * of input is a real, this is used to specify the confidence intervals to
+ * be calculated.  Otherwise, the default of 0.95 is used.  The rest of input
+ * should be the elements of X.
  *
  * When using this function, which provides several useful statistics useful
  * for inference, each range must be traversed twice.  This means:
@@ -438,6 +413,11 @@ enum Intercept {
  * Notes:  The X ranges are traversed in lockstep, but the traversal is stopped
  * at the end of the shortest one.  Therefore, using infinite ranges is safe.
  * For example, using repeat(1) to get an intercept term works.
+ *
+ * Bugs:  The statistical tests performed in this function assume that an
+ * intercept term is included in your regression model.  If no intercept term
+ * is included, the P-values, confidence intervals and adjusted R^2 values
+ * calculated by this function will be wrong.
  *
  * Examples:
  * ---
@@ -455,46 +435,17 @@ enum Intercept {
  *     musicVolume, map!"a * a"(musicVolume), 0.8675309);
  * ---
  */
-RegressRes linearRegress(U, T...)(U Y, T input) {
-    // This is really just a front end function that parses all the args and
-    // sends them off to the real thing.
-    return linearRegressFilter(0.95, Intercept.YES, Y, tuple(), tuple(input));
-}
-
-// Extract optional arguments.
-private RegressRes linearRegressFilter(U, T1, T2)
-(double conf, Intercept inter, U Y, T1 filtered, T2 toFilter) {
-    static if(typeof(toFilter.expand).length == 0) {
-        return linearRegressImpl(conf, inter, Y, filtered.expand);
+RegressRes linearRegress(U, TC...)(U Y, TC input) {
+    static if(is(TC[$ - 1] : double)) {
+        double confLvl = input[$ - 1];
+        enforceConfidence(confLvl);
+        alias TC[0..$ - 1] T;
+        alias input[0..$ - 1] XIn;
     } else {
-        auto tf = toFilter.expand;
-
-
-        static if(is(typeof(tf[0]) == Intercept)) {
-            inter = tf[0];
-            return linearRegressFilter(
-                conf, inter, Y, filtered, tuple(tf[1..$]));
-        } else static if(isFloatingPoint!(typeof(tf[0]))) {
-            conf = tf[0];
-            return linearRegressFilter(
-                conf, inter, Y, filtered, tuple(tf[1..$]));
-        } else static if(isForwardRange!(typeof(tf[0]))) {
-            return linearRegressFilter(
-                conf, inter, Y,
-                tuple(filtered.expand, tf[0]),
-                tuple(toFilter.expand[1..$]));
-        } else {
-            static assert(0, "Variadic arguments to linearRegress must be " ~
-                "either input ranges, Intercepts, or floating point numbers " ~
-                "(for confidence intervals).");
-        }
+        double confLvl = 0.95; // Default;
+        alias TC T;
+        alias input XIn;
     }
-}
-
-// Finally, actually perform some regression.
-private RegressRes linearRegressImpl(U, T...)
-(double confLvl, Intercept intercept, U Y, T XIn) {
-    immutable interceptDf = (intercept == Intercept.YES) ? 1 : 0;
 
     mixin(newFrame);
     static if(isForwardRange!(T[0]) && isForwardRange!(typeof(XIn[0].front())) &&
@@ -539,18 +490,17 @@ private RegressRes linearRegressImpl(U, T...)
     ulong n = 0;
     PearsonCor R2Calc;
     for(; !residuals.empty; residuals.popFront) {
-        immutable residual = residuals.front;
+        double residual = residuals.front;
         S += residual * residual;
-        immutable Yfront = residuals.Y.front();
-        immutable predicted = Yfront - residual;
+        double Yfront = residuals.Y.front();
+        double predicted = Yfront - residual;
         R2Calc.put(predicted, Yfront);
         n++;
     }
-
-    immutable ulong df =  n - X.length;
-    double R2 = R2Calc.cor;
+    ulong df =  n - X.length;
+    double R2 = R2Calc.cor();
     R2 *= R2;
-    immutable adjustedR2 = 1.0 - (1.0 - R2) * ((n - 1.0) / df);
+    double adjustedR2 = 1.0L - (1.0L - R2) * ((n - 1.0L) / df);
 
     double sigma2 = S / (n - X.length);
 
@@ -572,7 +522,7 @@ private RegressRes linearRegressImpl(U, T...)
     }
 
     double F = (R2 / (X.length - 1)) / ((1 - R2) / (n - X.length));
-    double overallP = fisherCDFR(F, X.length - interceptDf, df);
+    double overallP = fisherCDFR(F, X.length - 1, n - X.length);
 
     return RegressRes(betas, stdErr, lowerBound, upperBound, p, R2,
         adjustedR2, sqrt(sigma2), overallP);
@@ -682,22 +632,6 @@ unittest {
     assert(approxEqual(res4.residualError, 0.7591));
     assert(approxEqual(res4.lowerBound, [-45.40912, 57.43554]));
     assert(approxEqual(res4.upperBound, [-32.71479, 65.10883]));
-
-    auto res5 = linearRegress(weights, Intercept.NO, heights);
-    assert(res5.p[0] < 2e-16);
-    assert(approxEqual(res5.betas, [37.7131]));
-    assert(approxEqual(res5.stdErr, [0.4362]));
-    assert(approxEqual(res5.p, [0]));
-    assert(approxEqual(res5.residualError, 2.795));
-    assert(approxEqual(res5.lowerBound, [36.77765]));
-    assert(approxEqual(res5.upperBound, [38.64865]));
-
-    // I have no idea why R gives slightly different values for the coeff.
-    // of determination in the no intercept case.  Accordign to
-    // http://en.wikipedia.org/wiki/Coefficient_of_determination,
-    // the coefficient of determination is as defined here.  Given that
-    // calculating no-intercept regressions in R is a kludge, I wouldn't be
-    // surprised if R is wrong.
 
     // Test residuals.
     assert(approxEqual(residuals(res4.betas, weights, repeat(1), heights),
