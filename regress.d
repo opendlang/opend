@@ -373,6 +373,16 @@ if(isFloatingPoint!F && isForwardRange!U && allSatisfy!(isForwardRange, T)) {
  */
 double[] linearRegressBeta(U, T...)(U Y, T XIn)
 if(allSatisfy!(isInputRange, T) && doubleInput!(U)) {
+    double[] dummy;
+    return linearRegressBetaBuf!(U, T)(dummy, Y, XIn);
+}
+
+/**Same as linearRegressBeta, but allows the user to specify a buffer for
+ * the beta terms.  If the buffer is too short, a new one is allocated.
+ * Otherwise, the results are returned in the user-provided buffer.
+ */
+double[] linearRegressBetaBuf(U, T...)(double[] buf, U Y, T XIn)
+if(allSatisfy!(isInputRange, T) && doubleInput!(U)) {
     mixin(newFrame);
     static if(isArray!(T[0]) && isInputRange!(typeof(XIn[0][0])) &&
         T.length == 1) {
@@ -386,7 +396,14 @@ if(allSatisfy!(isInputRange, T) && doubleInput!(U)) {
     double[] xTy;
     rangeMatrixMulTrans(xTy, xTx, Y, X);
     invert(xTx);
-    double[] ret = new double[X.length];
+
+    double[] ret;
+    if(buf.length < X.length) {
+        ret = new double[X.length];
+    } else {
+        ret = buf[0..X.length];
+    }
+
     foreach(i; 0..ret.length) {
         ret[i] = 0;
         foreach(j; 0..ret.length) {
@@ -537,12 +554,21 @@ RegressRes linearRegress(U, TC...)(U Y, TC input) {
  * 2.
  */
 double[] polyFitBeta(T, U)(U Y, T X, uint N) {
+    double[] dummy;
+    return polyFitBetaBuf!(T, U)(dummy, Y, X, N);
+}
+
+/**Same as polyFitBeta, but allows the caller to provide an explicit buffer
+ * to return the coefficients in.  If it's too short, a new one will be
+ * allocated.  Otherwise, results will be returned in the user-provided buffer.
+ */
+double[] polyFitBetaBuf(T, U)(double[] buf, U Y, T X, uint N) {
     mixin(newFrame);
     auto pows = newStack!(PowMap!(uint, T))(N + 1);
     foreach(exponent; 0..N + 1) {
         pows[exponent] = powMap(X, exponent);
     }
-    return linearRegressBeta(Y, pows);
+    return linearRegressBetaBuf(buf, Y, pows);
 }
 
 /**Convenience function that takes a forward range X and a forward range Y,
@@ -551,7 +577,8 @@ double[] polyFitBeta(T, U)(U Y, T X, uint N) {
  *
  * Returns:  A PolyFitRes containing the array of PowMap structs created and
  * a RegressRes.  The PolyFitRes is alias this'd to the RegressRes.*/
-PolyFitRes!(PowMap!(uint, T)[]) polyFit(T, U)(U Y, T X, uint N, double confInt = 0.95) {
+PolyFitRes!(PowMap!(uint, T)[])
+polyFit(T, U)(U Y, T X, uint N, double confInt = 0.95) {
     enforceConfidence(confInt);
     auto pows = new PowMap!(uint, T)[N + 1];
     foreach(exponent; 0..N + 1) {
@@ -618,7 +645,11 @@ unittest {
     auto res3 = linearRegress(weights, repeat(1), heights, map!"a * a"(heights));
     assert(res2.betas == res3.betas);
 
-    auto beta1 = linearRegressBeta(diseaseSev, repeat(1), temperature);
+    double[2] beta1Buf;
+    auto beta1 = linearRegressBetaBuf
+        (beta1Buf[], diseaseSev, repeat(1), temperature);
+    assert(beta1Buf.ptr == beta1.ptr);
+    assert(beta1Buf[] == beta1[]);
     assert(beta1 == res1.betas);
     auto beta2 = polyFitBeta(weights, heights, 2);
     assert(beta2 == res2.betas);
