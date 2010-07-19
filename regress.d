@@ -47,8 +47,8 @@ private void enforceConfidence(double conf) {
 ///
 struct PowMap(ExpType, T)
 if(isForwardRange!(T)) {
-    T range;
-    ExpType exponent;
+    Unqual!T range;
+    Unqual!ExpType exponent;
     double cache;
 
     this(T range, ExpType exponent) {
@@ -92,8 +92,10 @@ PowMap!(ExpType, T) powMap(ExpType, T)(T range, ExpType exponent) {
 
 // Very ad-hoc, does a bunch of matrix ops.  Written specifically to be
 // efficient in the context used here.
-private void rangeMatrixMulTrans(U, T...)(out double[] xTy, out double[][] xTx, U vec, T matIn) {
-    static if(isArray!(T[0]) && isInputRange!(typeof(matIn[0][0])) && matIn.length == 1) {
+private void rangeMatrixMulTrans(U, T...)
+(out double[] xTy, out double[][] xTx, U vec, T matIn) {
+    static if(isArray!(T[0]) &&
+        isInputRange!(typeof(matIn[0][0])) && matIn.length == 1) {
         alias typeof(matIn[0].front()) E;
         typeof(matIn[0]) mat = tempdup(cast(E[]) matIn[0]);
         scope(exit) TempAlloc.free;
@@ -264,8 +266,8 @@ struct Residuals(F, U, T...) {
         alias T R;
     }
 
-    U Y;
-    R X;
+    Unqual!U Y;
+    staticMap!(Unqual, R) X;
     F[] betas;
     double residual;
     bool _empty;
