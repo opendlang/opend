@@ -196,9 +196,6 @@ unittest {
             assert(isIdentical(resCornerCase.tupleof[ti], elem));
         }
     }
-
-
-    writefln("Passed pearsonCor unittest.");
 }
 
 /**Allows computation of mean, stdev, variance, covariance, Pearson correlation online.
@@ -323,7 +320,6 @@ if(doubleInput!(T) && doubleInput!(U)) {
 
 unittest {
     assert(approxEqual(covariance([1,4,2,6,3].dup, [3,1,2,6,2].dup), 2.05));
-    writeln("Passed covariance test.");
 }
 
 /**Spearman's rank correlation.  Non-parametric.  This is essentially the
@@ -427,8 +423,6 @@ unittest {
     a.upTo = 100;
     b.upTo = 100;
     assert(approxEqual(spearmanCor(a, b), 1));
-
-    writeln("Passed spearmanCor unittest.");
 }
 
 version(unittest) {
@@ -577,7 +571,7 @@ in {
             tieCount++;
         } else if(tieCount > 0) {
             qsort!(compFun)(input2[i - tieCount - 1..i]);
-            m1 += tieCount * (tieCount + 1) / 2UL;
+            m1 += tieCount * (tieCount + 1UL) / 2UL;
             ret.s += getMs(input2[i - tieCount - 1..i]);
             tieCount = 0;
         }
@@ -636,7 +630,7 @@ in {
                 } else if(input1[i] == input1[j]) {
                     m1++;
                 } else {
-                    dstatsEnforce(0, "Can't compute Kendall's Tau with NaNs.");
+                    return double.nan;
                 }
             } else if(input2[i] < input2[j]) {
                 if (input1[i] > input1[j]) {
@@ -646,7 +640,7 @@ in {
                 } else if(input1[i] == input1[j]) {
                     m1++;
                 } else {
-                    dstatsEnforce(0, "Can't compute Kendall's Tau with NaNs.");
+                    return double.nan;
                 }
             } else if(input2[i] == input2[j]) {
                 m2++;
@@ -656,11 +650,11 @@ in {
                 } else if(input1[i] == input1[j]) {
                     m1++;
                 } else {
-                    dstatsEnforce(0, "Can't compute Kendall's Tau with NaNs.");
+                    return double.nan;
                 }
 
             } else {
-                dstatsEnforce(0, "Can't compute Kendall's Tau with NaNs.");
+                return double.nan;
             }
         }
     }
@@ -723,7 +717,11 @@ unittest {
     a.upTo = 100;
     b.upTo = 100;
     assert(approxEqual(kendallCor(a, b), 1));
-    writefln("Passed kendallCor unittest.");
+
+    // This test will fail if there are overflow bugs, especially in tie
+    // handling.
+    auto rng = chain(replicate(0, 100_000), replicate(1, 100_000));
+    assert(approxEqual(kendallCor(rng, rng), 1));
 }
 
 // Alias to old correlation function names, but don't document them.  These will
@@ -812,7 +810,6 @@ unittest {
     double spearmanPartial =
     partial!spearmanCor(stock1Price, stock2Price, economicHealth, consumerFear);
     assert(approxEqual(spearmanPartial, -0.7252));
-    writeln("Passed partial correlation unittest.");
 }
 
 // Verify that there are no TempAlloc memory leaks anywhere in the code covered
