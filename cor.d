@@ -215,7 +215,7 @@ unittest {
  * http://people.xiph.org/~tterribe/notes/homs.html
  */
 struct PearsonCor {
-private:
+package:
     double _k = 0, _mean1 = 0, _mean2 = 0, _var1 = 0, _var2 = 0, _cov = 0;
 
     // Temporary kludge to get partialCor working until alias this gets fixed.

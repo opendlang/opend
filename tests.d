@@ -480,6 +480,10 @@ if(isSummary!T) {
     enforceConfidence(confLevel);
     dstatsEnforce(isFinite(testMean), "testMean cannot be infinite or nan.");
 
+    if(diffSummary.N < 2) {
+        return ConfInt.init;
+    }
+
     // Save typing.
     alias diffSummary msd;
 
@@ -889,6 +893,10 @@ if(allSatisfy!(isInputRange, T)) {
     }
 
     immutable F = betweenDev / randError;
+    if(!(F >= 0)) {
+        return TestRes(double.nan, double.nan);
+    }
+
     return TestRes(F, fisherCDFR(F, data.length - 1, errDf));
 }
 
@@ -1318,6 +1326,12 @@ double wilcoxonRankSumPval(double w, ulong n1, ulong n2, Alt alt = Alt.TWOSIDE,
 
     immutable sd = sqrt(cast(double) (n1 * n2) / (N * (N - 1)) *
              ((N * N * N - N) / 12 - tieSum));
+
+    // Can happen if all samples are tied.
+    if(!(sd > 0)) {
+        return double.nan;
+    }
+
     immutable mean = (n1 * n2) / 2.0;
 
     if(alt == Alt.TWOSIDE) {

@@ -215,7 +215,6 @@ double poissonPMF(ulong k, double lambda) {
 
 unittest {
     assert(approxEqual(poissonPMF(1, .1), .0904837));
-    writefln("Passed poissonPMF test.");
 }
 
 enum POISSON_NORMAL = 1UL << 12;  // Where to switch to normal approx.
@@ -268,8 +267,6 @@ unittest {
             assert(abs(normAns - gammaAns) < 0.01, text(normAns, '\t', gammaAns));
         }
     }
-
-    writeln("Passed poissonCDF test.");
 }
 
 // The gamma incomplete function is too unstable and the distribution
@@ -320,8 +317,6 @@ unittest {
             assert(abs(normAns - gammaAns) < 0.01, text(normAns, '\t', gammaAns));
         }
     }
-
-    writeln("Passed poissonCDFR test.");
 }
 
 /**Returns the value of k for the given p-value and lambda.  If p-val
@@ -375,7 +370,6 @@ unittest {
        double pVal = poissonCDF(k, lambda);
        assert(invPoissonCDF(pVal, lambda) == k);
    }
-   writeln("Passed invPoissonCDF unittest.");
 }
 
 ///
@@ -388,7 +382,6 @@ double binomialPMF(ulong k, ulong n, double p) {
 unittest {
     assert(approxEqual(binomialPMF(0, 10, .5), cast(double) 1/1024));
     assert(approxEqual(binomialPMF(100, 1000, .11), .024856));
-    writefln("Passed binomialPMF test.");
 }
 
 // Determines what value of n we switch to normal approximation at b/c
@@ -476,7 +469,6 @@ unittest {
         }
     }
 
-    writefln("Passed binomialCDF test.");
 }
 
 // betaIncomplete is numerically unstable for huge values of n.
@@ -561,8 +553,6 @@ unittest {
             }
         }
     }
-
-    writefln("Passed binomialCDFR test.");
 }
 
 /**Returns the value of k for the given p-value, n and p.  If p-value does
@@ -622,7 +612,6 @@ unittest {
        double pVal = binomialCDF(k, n, p);
        assert(invBinomialCDF(pVal, n, p) == k);
    }
-   writeln("Passed invBinomialCDF unittest.");
 }
 
 ///
@@ -641,7 +630,6 @@ unittest {
     assert(approxEqual(hypergeometricPMF(5, 10, 10, 10), .3437182));
     assert(approxEqual(hypergeometricPMF(9, 12, 10, 15), .27089783));
     assert(approxEqual(hypergeometricPMF(9, 100, 100, 15), .15500003));
-    writefln("Passed hypergeometricPMF unittest.");
 }
 
 /**P(X <= x), where X is random variable.  Uses either direct summation,
@@ -740,7 +728,6 @@ unittest {
     assert(approxEqual(hypergeometricCDF(19840, 2950998, 12624, 19933), 0.2020618));
     assert(approxEqual(hypergeometricCDF(130, 24195, 52354, 295), 0.9999973));
     assert(approxEqual(hypergeometricCDF(103, 901, 49014, 3522), 0.999999));
-    writeln("Passed hypergeometricCDF unittest.");
 }
 
 ///P(X >= x), where X is random variable.
@@ -762,7 +749,6 @@ unittest {
                        hypergeometricCDFR(17, 31, 27, 35)));
     assert(approxEqual(hypergeometricCDF(21, 29, 31, 35),
                        hypergeometricCDFR(14, 31, 29, 35)));
-    writefln("Passed hypergeometricCDFR unittest.");
 }
 
 double hyperExact(ulong x, ulong n1, ulong n2, ulong n, ulong startAt = 0) {
@@ -812,8 +798,6 @@ double chiSquarePDF(double x, double v) {
 unittest {
     assert( approxEqual(chiSquarePDF(1, 2), 0.3032653));
     assert( approxEqual(chiSquarePDF(2, 1), 0.1037769));
-
-    writeln("Passed chiSquarePDF unittest.");
 }
 
 /**
@@ -872,7 +856,6 @@ unittest {
   assert(feqrel(chiSqrCDFR(invChiSqCDFR(3.5, 0.1), 3.5), 0.1)>=double.mant_dig-3);
   assert(chiSqrCDF(0.4L, 19.02L) + chiSqrCDFR(0.4L, 19.02L) ==1.0L);
   assert(approxEqual( invChiSqCDFR( 3, chiSqrCDFR(1, 3)), 1));
-  writeln("Passed chi-square unittest.");
 }
 
 ///
@@ -901,7 +884,6 @@ unittest {
     assert(approxEqual(normalCDF(2), .9772498));
     assert(approxEqual(normalCDF(-2), .02275013));
     assert(approxEqual(normalCDF(1.3), .90319951));
-    writefln("Passed normalCDF test.");
 }
 
 ///P(X > x) for normal distribution where X is random var.
@@ -917,7 +899,6 @@ unittest {
     for(double i = -8; i < 8; i += .1) {
         assert(approxEqual(normalCDF(i), normalCDFR(-i)));
     }
-    writefln("Passed normalCDFR test.");
 }
 
 enum real SQRT2PI =   0x1.40d931ff62705966p+1;    // 2.5066282746310005024
@@ -1099,7 +1080,6 @@ unittest {
         double rec = normalCDF(inv, mean, sd);
         assert(approxEqual(x, rec));
     }
-    writeln("Passed invNormalCDF unittest.");
 }
 
 ///
@@ -1141,7 +1121,6 @@ double logNormalCDFR(double x, double mu = 0, double sigma = 1) {
 unittest {
     assert(approxEqual(logNormalCDF(4) + logNormalCDFR(4), 1));
     assert(approxEqual(logNormalCDF(1, -2, 3) + logNormalCDFR(1, -2, 3), 1));
-    writeln("Passed logNormal tests.");
 }
 
 ///
@@ -1184,7 +1163,6 @@ double weibullCDFR(double x, double shape, double scale = 1) {
 
 unittest {
     assert(approxEqual(weibullCDF(2, 3, 4) + weibullCDFR(2, 3, 4), 1));
-    writeln("Passed weibull tests.");
 }
 
 // For K-S tests in dstats.random.  Todo:  Flesh out.
@@ -1289,7 +1267,6 @@ unittest {
     assert(approxEqual(invStudentsTCDF(0.4, 18), -0.257_123_042_655_869L));
     assert(approxEqual(studentsTCDF(invStudentsTCDF(0.4L, 18), 18), .4L));
     assert(approxEqual(studentsTCDF( invStudentsTCDF(0.9L, 11), 11), 0.9L));
-    writeln("Passed studentsTCDF.");
 }
 
 /**
@@ -1385,7 +1362,6 @@ unittest {
       assert(fabs(invFisherCDFR(4, 16, 0.008) - 5.043_537_593_48596L)< 0.0000000005L);
       // This one used to fail because of a bug in the definition of MINLOG.
       assert(approxEqual(fisherCDFR(invFisherCDFR(4,16, 0.008), 4, 16), 0.008));
-      writeln("Passed fisherCDF unittest.");
 }
 
 ///
@@ -1451,7 +1427,6 @@ double negBinomCDFR(ulong k, ulong n, double p) {
 
 unittest {
     assert(approxEqual(negBinomCDFR(10, 20, 0.5), 1 - negBinomCDF(9, 20, 0.5)));
-    writeln("Passed negBinomCDF test.");
 }
 
 ///
@@ -1536,52 +1511,109 @@ unittest {
         }
         assert(invNegBinomCDF(pVal, n, p) == k);
     }
-    writeln("Passed invNegBinomCDF unittest.  (", nSkipped, " skipped.)");
-}
-
-/**
- * The &Gamma; distribution and its complement
- *
- * The &Gamma; distribution is defined as the integral from 0 to x of the
- * gamma probability density function. The complementary function returns the
- * integral from x to &infin;
- *
- * gammaCDF = ($(INTEGRATE 0, x) $(POWER t, b-1)$(POWER e, -at) dt) $(POWER a, b)/&Gamma;(b)
- *
- * x must be greater than 0.
- *
- * Also note that the exponential distribution is a special case of the gamma, with b = 1.
- */
-double gammaCDF(double x, double a, double b) {
-    dstatsEnforce(x > 0, "x must be >0 in gamma distribution.");
-    dstatsEnforce(a > 0, "a must be >0 in gamma distribution.");
-    dstatsEnforce(b > 0, "b must be >0 in gamma distribution.");
-
-    return gammaIncomplete(b, a*x);
-}
-
-/** ditto */
-double gammaCDFR(double x, double a, double b) {
-    dstatsEnforce(x > 0, "x must be >0 in gamma distribution.");
-    dstatsEnforce(a > 0, "a must be >0 in gamma distribution.");
-    dstatsEnforce(b > 0, "b must be >0 in gamma distribution.");
-
-    return gammaIncompleteCompl( b, a * x );
 }
 
 ///
-double invGammaCDFR(double p, double a, double b) {
-    dstatsEnforce(p >= 0 && p <= 1, "P-values must be between 0, 1.");
-    dstatsEnforce(a > 0, "a must be >0 in gamma distribution.");
-    dstatsEnforce(b > 0, "b must be >0 in gamma distribution.");
+double exponentialPDF(double x, double lambda) {
+    dstatsEnforce(x > 0, "x must be >0 in exponential distribution");
+    dstatsEnforce(lambda > 0, "lambda must be >0 in exponential distribution");
 
-    double ax = gammaIncompleteComplInv(b, p);
-    return ax / a;
+    return lambda * exp(-lambda * x);
+}
+
+///
+double exponentialCDF(double x, double lambda) {
+    dstatsEnforce(x > 0, "x must be >0 in exponential distribution");
+    dstatsEnforce(lambda > 0, "lambda must be >0 in exponential distribution");
+
+    return 1.0 - exp(-lambda * x);
+}
+
+///
+double exponentialCDFR(double x, double lambda) {
+    dstatsEnforce(x > 0, "x must be >0 in exponential distribution");
+    dstatsEnforce(lambda > 0, "lambda must be >0 in exponential distribution");
+
+    return exp(-lambda * x);
+}
+
+///
+double invExponentialCDF(double p, double lambda) {
+    dstatsEnforce(p >= 0 && p <= 1, "p must be between 0, 1 in exponential distribution");
+    dstatsEnforce(lambda > 0, "lambda must be >0 in exponential distribution");
+    return log(-1.0 / (p - 1.0)) / lambda;
 }
 
 unittest {
+    // Values from R.
+    assert(approxEqual(exponentialPDF(0.75, 3), 0.3161977));
+    assert(approxEqual(exponentialCDF(0.75, 3), 0.8946008));
+    assert(approxEqual(exponentialCDFR(0.75, 3), 0.1053992));
+
+    assert(approxEqual(invExponentialCDF(0.8, 2), 0.804719));
+    assert(approxEqual(invExponentialCDF(0.2, 7), 0.03187765));
+}
+
+///
+double gammaPDF(double x, double rate, double shape) {
+    dstatsEnforce(x > 0, "x must be >0 in gamma distribution.");
+    dstatsEnforce(rate > 0, "rate must be >0 in gamma distribution.");
+    dstatsEnforce(shape > 0, "shape must be >0 in gamma distribution.");
+
+    immutable scale = 1.0 / rate;
+    immutable firstPart = x ^^ (shape - 1);
+    immutable logNumer = -x / scale;
+    immutable logDenom = lgamma(shape) + shape * log(scale);
+    return firstPart * exp(logNumer - logDenom);
+}
+
+///
+double gammaCDF(double x, double rate, double shape) {
+    dstatsEnforce(x > 0, "x must be >0 in gamma distribution.");
+    dstatsEnforce(rate > 0, "rate must be >0 in gamma distribution.");
+    dstatsEnforce(shape > 0, "shape must be >0 in gamma distribution.");
+
+    return gammaIncomplete(shape, rate * x);
+}
+
+///
+double gammaCDFR(double x, double rate, double shape) {
+    dstatsEnforce(x > 0, "x must be >0 in gamma distribution.");
+    dstatsEnforce(rate > 0, "rate must be >0 in gamma distribution.");
+    dstatsEnforce(shape > 0, "shape must be >0 in gamma distribution.");
+
+    return gammaIncompleteCompl(shape, rate * x);
+}
+
+/**This just calls invGammaCDFR w/ 1 - p b/c invGammaCDFR is more accurate,
+ * but this function is necessary for consistency.
+ */
+double invGammaCDF(double p, double rate, double shape) {
+    return invGammaCDFR(1.0 - p, rate, shape);
+}
+
+///
+double invGammaCDFR(double p, double rate, double shape) {
+    dstatsEnforce(p >= 0 && p <= 1, "p must be between 0, 1 in gamma distribution.");
+    dstatsEnforce(rate > 0, "rate must be >0 in gamma distribution.");
+    dstatsEnforce(shape > 0, "shape must be >0 in gamma distribution.");
+
+    double ratex = gammaIncompleteComplInv(shape, p);
+    return ratex / rate;
+}
+
+unittest {
+    assert(approxEqual(gammaPDF(1, 2, 5), 0.1804470));
+    assert(approxEqual(gammaPDF(0.5, 8, 4), 1.562935));
+    assert(approxEqual(gammaPDF(3, 2, 7), 0.3212463));
+    assert(approxEqual(gammaCDF(1, 2, 5), 0.05265302));
+    assert(approxEqual(gammaCDFR(1, 2, 5), 0.947347));
+
     double inv = invGammaCDFR(0.78, 2, 1);
     assert(approxEqual(gammaCDFR(inv, 2, 1), 0.78));
+
+    double inv2 = invGammaCDF(0.78, 2, 1);
+    assert(approxEqual(gammaCDF(inv2, 2, 1), 0.78));
 }
 
 ///
@@ -1623,7 +1655,6 @@ unittest {
     // Values from R
     assert(approxEqual(1 - cauchyCDFR(-10), 0.03172552));
     assert(approxEqual(1 - cauchyCDFR(1), 0.75));
-    writeln("Passed cauchyCDF unittest.");
 }
 
 ///
@@ -1639,7 +1670,6 @@ unittest {
     assert(approxEqual(invCauchyCDF(cauchyCDF(.5)), .5));
     assert(approxEqual(invCauchyCDF(cauchyCDF(.99)), .99));
     assert(approxEqual(invCauchyCDF(cauchyCDF(.03)), .03));
-    writeln("Passed invCauchyCDF unittest.");
 }
 
 // For K-S tests in dstats.random.  To be fleshed out later.  Intentionally
@@ -1691,7 +1721,6 @@ unittest {
     assert(approxEqual(1 - laplaceCDFR(5), 0.9963));
     assert(approxEqual(1 - laplaceCDFR(-3.14), .021641));
     assert(approxEqual(1 - laplaceCDFR(0.012), 0.50596));
-    writeln("Passed laplaceCDF unittest.");
 }
 
 ///
@@ -1707,7 +1736,6 @@ double invLaplaceCDF(double p, double mu = 0, double b = 1) {
 unittest {
     assert(approxEqual(invLaplaceCDF(0.012), -3.7297));
     assert(approxEqual(invLaplaceCDF(0.82), 1.0217));
-    writeln("Passed invLaplaceCDF unittest.");
 }
 
 
@@ -1743,5 +1771,4 @@ unittest {
     assert(approxEqual(1 - kolmDist(.5), 0.9639452436));
     assert(approxEqual(1 - kolmDist(.9), 0.39273070));
     assert(approxEqual(1 - kolmDist(1.2), 0.112249666));
-    writeln("Passed kolmDist unittest.");
 }
