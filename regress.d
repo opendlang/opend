@@ -708,7 +708,11 @@ double[] logisticRegressBeta(T, U...)(T yIn, U xIn) {
     }
 
     static if(U.length == 1 && isRoR!U) {
-        auto x = toRandomAccessRoR(y.length, xIn);
+        static if(isForwardRange!U) {
+            auto x = toRandomAccessRoR(y.length, xIn);
+        } else {
+            auto x = toRandomAccessRoR(y.length, tempdup(xIn));
+        }
     } else {
         auto x = toRandomAccessTuple(xIn).expand;
     }
@@ -741,6 +745,11 @@ unittest {
     assert(ae(res2[0], -1.1875));
     assert(ae(res2[1], 0.1021));
     assert(ae(res2[2], 0.1603));
+
+    auto x2Intercept = [1,1,1,1,1,1,1,1,1,1,1,1];
+    auto res2a = logisticRegressBeta(y2,
+        filter!"a.length"([x2Intercept, x2_1, x2_2]));
+    assert(ae(res2a, res2));
 
     // Use a huge range of values to test numerical stability.
 
@@ -927,7 +936,7 @@ auto toRandomAccessRoR(T)(uint len, T ror) {
     alias ElementType!T E;
     static if(isRandomAccessRange!T && isRandomAccessRange!E) {
         return ror;
-    } else static if(!isRandomAccessRange!T && isRandomAccesRange!E) {
+    } else static if(!isRandomAccessRange!T && isRandomAccessRange!E) {
         return tempdup(ror);
     } else {
         auto ret = newStack!(E[])(walkLength(ror.save));
