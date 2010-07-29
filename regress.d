@@ -773,8 +773,8 @@ unittest {
     assert(ae(res4[4], -8.343e-6));
 }
 
-/// The logit function used in logistic regression.
-double logit(double xb) pure nothrow {
+/// The inverse logit function used in logistic regression.
+double inverseLogit(double xb) pure nothrow {
     return 1.0 / (1 + exp(-xb));
 }
 
@@ -806,7 +806,7 @@ double doMLE(T, U...)(double[] beta, T y, U xIn) {
                 prodSum += col[i] * beta[j];
             }
 
-            ps[i] = logit(prodSum);
+            ps[i] = inverseLogit(prodSum);
             assert(ps[i] >= 0, text(ps[i]));
             assert(ps[i] <= 1, text(ps[i]));
         }
