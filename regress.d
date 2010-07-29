@@ -35,7 +35,7 @@
 module dstats.regress;
 
 import std.math, std.algorithm, std.traits, std.array, std.traits, std.contracts,
-    std.typetuple;
+    std.typetuple, std.typecons;
 
 import dstats.alloc, std.range, std.conv, dstats.distrib, dstats.cor, dstats.base;
 
@@ -671,5 +671,291 @@ unittest {
         [1.20184170, 0.27367611,  0.40823237, -0.06993322,  0.06462305,
          -0.40354255, -0.88170814,  -0.74715188, -0.76531747, -0.63076120,
          -0.65892680, -0.06437053, -0.08253613,  0.96202014,  1.39385455]));
-    writeln("Passed regression unittest.");
+}
+
+/**Computes a logistic regression and returns the beta coefficients.  This is
+ * a generalized linear model with the link function f(XB) = 1 / (1 + exp(XB)).
+ * This is generally used to model the probability that a binary Y variable is
+ * in class 1 given a set of X variables.
+ *
+ * For the purpose of this function, Y variables are interpreted as Booleans,
+ * regardless of their type.  X may be either a range of ranges or a tuple of
+ * ranges.  However, note that unlike in linearRegress, they are copied to an
+ * array if they are not random access ranges.  Note that each value is accessed
+ * several times, so if your range is a map to something expensive, you may
+ * want to evaluate it eagerly.
+ *
+ * Also note that, as in linearRegress, repeat(1) can be used for the intercept
+ * term.
+ *
+ * Returns:  The beta coefficients for the regression model.
+ *
+ * TODO:  Add hypothesis testing stuff and generalize to a parametrizable
+ *        generalized linear model function.
+ *
+ * References:
+ * http://en.wikipedia.org/wiki/Logistic_regression
+ * http://socserv.mcmaster.ca/jfox/Courses/UCLA/logistic-regression-notes.pdf
+ */
+double[] logisticRegressBeta(T, U...)(T yIn, U xIn) {
+    mixin(newFrame);
+
+    static assert(!isInfinite!T, "Can't do regression with infinite # of Y's.");
+    static if(isRandomAccessRange!T) {
+        alias yIn y;
+    } else {
+        auto y = toBools(yIn);
+    }
+
+    static if(U.length == 1 && isRoR!U) {
+        auto x = toRandomAccessRoR(y.length, xIn);
+    } else {
+        auto x = toRandomAccessTuple(xIn).expand;
+    }
+
+    auto beta = new double[x.length];
+    beta[] = 0;
+
+    doMLE(beta, y, x);
+
+    return beta;
+}
+
+unittest {
+    // Values from R.
+    alias approxEqual ae;  // Save typing.
+
+    // Start with the basics, with X as a ror.
+    auto y1 =  [1,   0, 0, 0, 1, 0, 0];
+    auto x1 = [[1.0, 1 ,1 ,1 ,1 ,1 ,1],
+              [8.0, 6, 7, 5, 3, 0, 9]];
+    auto res1 = logisticRegressBeta(y1, x1);
+    assert(ae(res1[0], -0.98273));
+    assert(ae(res1[1], 0.01219));
+
+    // Use tuple.
+    auto y2   = [1,0,1,1,0,1,0,0,0,1,0,1];
+    auto x2_1 = [3,1,4,1,5,9,2,6,5,3,5,8];
+    auto x2_2 = [2,7,1,8,2,8,1,8,2,8,4,5];
+    auto res2 = logisticRegressBeta(y2, repeat(1), x2_1, x2_2);
+    assert(ae(res2[0], -1.1875));
+    assert(ae(res2[1], 0.1021));
+    assert(ae(res2[2], 0.1603));
+
+    // Use a huge range of values to test numerical stability.
+
+    // The filter is to make y3 a non-random access range.
+    auto y3 = filter!"a < 2"([1,1,1,1,0,0,0,0]);
+    auto x3_1 = filter!"a > 0"([1, 1e10, 2, 2e10, 3, 3e15, 4, 4e7]);
+    auto x3_2 = [1e8, 1e6, 1e7, 1e5, 1e3, 1e0, 1e9, 1e11];
+    auto x3_3 = [-5e12, 5e2, 6e5, 4e3, -999999, -666, -3e10, -2e10];
+    auto res3 = logisticRegressBeta(y3, repeat(1), x3_1, x3_2, x3_3);
+    assert(ae(res3[0], 1.115e0));
+    assert(ae(res3[1], -4.674e-15));
+    assert(ae(res3[2], -7.026e-9));
+    assert(ae(res3[3], -2.109e-12));
+
+    // Test with a just plain huge dataset that R chokes for several minutes
+    // on.  If you think this unittest is slow, try getting the reference
+    // values from R.
+    auto y4 = chain(
+                take(cycle([0,0,0,0,1]), 500_000),
+                take(cycle([1,1,1,1,0]), 500_000));
+    auto x4_1 = iota(0, 1_000_000);
+    auto x4_2 = map!exp(map!"a / 1_000_000.0"(x4_1));
+    auto x4_3 = take(cycle([1,2,3,4,5]), 1_000_000);
+    auto x4_4 = take(cycle([8,6,7,5,3,0,9]), 1_000_000);
+    auto res4 = logisticRegressBeta(y4, repeat(1), x4_1, x4_2, x4_3, x4_4);
+    assert(ae(res4[0], -1.574));
+    assert(ae(res4[1], 5.625e-6));
+    assert(ae(res4[2], -7.282e-1));
+    assert(ae(res4[3], -4.381e-6));
+    assert(ae(res4[4], -8.343e-6));
+}
+
+/// The logit function used in logistic regression.
+double logit(double xb) pure nothrow {
+    return 1.0 / (1 + exp(-xb));
+}
+
+private:
+double doMLE(T, U...)(double[] beta, T y, U xIn) {
+    // This big, disgusting function uses the Newton-Raphson method as outlined
+    // in http://socserv.mcmaster.ca/jfox/Courses/UCLA/logistic-regression-notes.pdf
+    //
+    // The matrix operations are kind of obfuscated because they're written
+    // using very low-level primitives and with as little temp space as
+    // possible used.
+    static if(isRoR!(U[0]) && U.length == 1) {
+        alias xIn[0] x;
+    } else {
+        alias xIn x;
+    }
+
+    mixin(newFrame);
+    immutable N = y.length;
+
+    auto ps = newStack!double(y.length);
+
+    double[] xRow = newStack!double(beta.length);
+    void evalPs() {
+        foreach(i; 0..N) {
+
+            double prodSum = 0;
+            foreach(j, col; x) {
+                prodSum += col[i] * beta[j];
+            }
+
+            ps[i] = logit(prodSum);
+            assert(ps[i] >= 0, text(ps[i]));
+            assert(ps[i] <= 1, text(ps[i]));
+        }
+    }
+
+    double logLikelihood() {
+        double sum = 0;
+        size_t i = 0;
+        foreach(yVal; y) {
+            scope(exit) i++;
+            if(yVal) {
+                sum -= 2 * log(ps[i]);
+            } else {
+                sum -= 2 * log(1 - ps[i]);
+            }
+        }
+        return sum;
+    }
+
+
+    enum eps = 1e-6;
+    enum maxIter = 1000;
+
+    auto oldLikelihood = double.infinity;
+
+    auto mat = newStack!(double[])(beta.length);
+    foreach(ref row; mat) {
+        // The *2 is for the augmentations scratch space for inversion.
+        row = newStack!double(beta.length * 2);
+    }
+
+    foreach(iter; 0..maxIter) {
+        evalPs();
+        immutable lh = logLikelihood();
+
+        if(oldLikelihood - lh < eps || isNaN(lh)) {
+            return lh;
+        }
+        oldLikelihood = lh;
+
+        foreach(i; 0..beta.length) {
+            mat[i] = mat[i][0..beta.length];
+            mat[i][] = 0;
+        }
+
+        // Calculate X' * W * X in the notation of our reference.  Since
+        // V is a diagonal matrix of ps[] * (1.0 - ps[]), we only have one
+        // dimension representing it.
+        foreach(i, dummy; x) foreach(j, dummy2; x) {
+            foreach(k; 0..ps.length) {
+                mat[i][j] += (ps[k] * (1 - ps[k])) * x[i][k] * x[j][k];
+            }
+        }
+
+        foreach(i; 0..mat.length) {
+            // We allocated this augmentation area, but it got sliced away by
+            // invert().  Put it back.
+            mat[i] = mat[i].ptr[0..beta.length * 2];
+            mat[i][beta.length..$] = 0;
+        }
+
+        // Invert the intermediate matrix.
+        invert(mat);
+
+        // Now, multiply the resulting matrix by X' * (y - p).
+        foreach(betaIndex, ref b; beta) {
+            double diff = 0;
+
+            foreach(pIndex, p; ps) {
+                immutable pDiff = (y[pIndex] != 0) ? (1.0 - p) : -1.0 * p;
+                double sum = 0;
+                foreach(betaIndex2, dummy; x) {
+                    diff += mat[betaIndex][betaIndex2] *
+                            x[betaIndex2][pIndex] * pDiff;
+                }
+            }
+
+            b += diff;
+        }
+
+        debug(print) writeln("Iter:  ", iter);
+    }
+
+    return logLikelihood();
+}
+
+template isRoR(T) {
+    static if(!isInputRange!T) {
+        enum isRoR = false;
+    } else {
+        enum isRoR = isInputRange!(typeof(T.init.front()));
+    }
+}
+
+template isFloatMat(T) {
+    static if(is(T : const(float[][])) ||
+        is(T : const(real[][])) || is(T : const(double[][]))) {
+        enum isFloatMat = true;
+    } else {
+        enum isFloatMat = false;
+    }
+}
+
+template NonRandomToArray(T) {
+    static if(isRandomAccessRange!T) {
+        alias T NonRandomToArray;
+    } else {
+        alias Unqual!(ElementType!(T))[] NonRandomToArray;
+    }
+}
+
+bool[] toBools(R)(R range) {
+    return tempdup(map!"(a) ? true : false"(range));
+}
+
+auto toRandomAccessRoR(T)(uint len, T ror) {
+    static assert(isRoR!T);
+    alias ElementType!T E;
+    static if(isRandomAccessRange!T && isRandomAccessRange!E) {
+        return ror;
+    } else static if(!isRandomAccessRange!T && isRandomAccesRange!E) {
+        return tempdup(ror);
+    } else {
+        auto ret = newStack!(E[])(walkLength(ror.save));
+
+        foreach(ref col; ret) {
+            scope(exit) ror.popFront();
+            col = newStack!E(len);
+
+            size_t i;
+            foreach(elem; ror.front) {
+                col[i++] = elem;
+            }
+        }
+
+        return ret;
+    }
+}
+
+auto toRandomAccessTuple(T...)(T input) {
+    Tuple!(staticMap!(NonRandomToArray, T)) ret;
+
+    foreach(ti, range; input) {
+        static if(isRandomAccessRange!(typeof(range))) {
+            ret.field[ti] = range;
+        } else {
+            ret.field[ti] = tempdup(range);
+        }
+    }
+
+    return ret;
 }
