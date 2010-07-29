@@ -673,10 +673,10 @@ unittest {
          -0.65892680, -0.06437053, -0.08253613,  0.96202014,  1.39385455]));
 }
 
-/**Computes a logistic regression and returns the beta coefficients.  This is
- * a generalized linear model with the link function f(XB) = 1 / (1 + exp(XB)).
- * This is generally used to model the probability that a binary Y variable is
- * in class 1 given a set of X variables.
+/**Computes a logistic regression using a maximum likelihood estimator
+ * and returns the beta coefficients.  This is a generalized linear model with
+ * the link function f(XB) = 1 / (1 + exp(XB)). This is generally used to model
+ * the probability that a binary Y variable is 1 given a set of X variables.
  *
  * For the purpose of this function, Y variables are interpreted as Booleans,
  * regardless of their type.  X may be either a range of ranges or a tuple of
