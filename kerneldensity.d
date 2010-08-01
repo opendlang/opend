@@ -169,6 +169,17 @@ public:
         return new typeof(this)(assumeUnique(binsCooked), minElem, maxElem);
     }
 
+    /**Construct a kernel density estimator from an alias.*/
+    static KernelDensity1D fromAlias(alias kernel, R)
+    (R range, double edgeBuffer = double.nan)
+    if(isForwardRange!R && is(typeof(kernel(2.0)) : double)) {
+        static double kernelFun(double x) {
+            return kernel(x);
+        }
+
+        return fromCallable(range, &kernelFun, edgeBuffer);
+    }
+
     /**Compute the probability density at a given point.*/
     double opCall(double x) const {
         if(x < minElem || x > maxElem) {
@@ -195,4 +206,7 @@ public:
 unittest {
     auto kde = KernelDensity1D.fromCallable([0], parametrize!normalPDF(0, 1));
     assert(approxEqual(kde(1), normalPDF(1)));
+
+    // This is purely to see if fromAlias works.
+    auto cosKde = KernelDensity1D.fromAlias!cos([0], 1);
 }
