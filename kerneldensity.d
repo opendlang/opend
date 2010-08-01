@@ -56,11 +56,14 @@ version(unittest) {
 class KernelDensity1D {
 private:
     immutable double[] bins;
+    immutable double[] cumulative;
     immutable double minElem;
     immutable double maxElem;
 
-    this(immutable double[] bins, double minElem, double maxElem) {
+    this(immutable double[] bins, immutable double[] cumulative,
+         double minElem, double maxElem) {
         this.bins = bins;
+        this.cumulative = cumulative;
         this.minElem = minElem;
         this.maxElem = maxElem;
     }
@@ -166,7 +169,17 @@ public:
 
         binsCooked[] /= sum(binsCooked);
         binsCooked[] *= nBin / (maxElem - minElem);  // Make it a density.
-        return new typeof(this)(assumeUnique(binsCooked), minElem, maxElem);
+
+        auto cumulative = new double[nBin];
+        cumulative[0] = binsCooked[0];
+        foreach(i; 1..nBin) {
+            cumulative[i] = cumulative[i - 1] + binsCooked[i];
+        }
+        cumulative[] /= cumulative[$ - 1];
+
+        return new typeof(this)(
+            assumeUnique(binsCooked), assumeUnique(cumulative),
+            minElem, maxElem);
     }
 
     /**Construct a kernel density estimator from an alias.*/
@@ -201,12 +214,49 @@ public:
         immutable ret = fract * bins[upper] + (1 - fract) * bins[lower];
         return max(0, ret);  // Compensate for roundoff
     }
+
+    /**Compute the cumulative density, i.e. the integral from -infinity to x.*/
+    double cdf(double x) const {
+        if(x <= minElem) {
+            return 0;
+        } else if(x >= maxElem) {
+            return 1;
+        }
+
+        x -= minElem;
+        x /= (maxElem - minElem);
+        x *= bins.length;
+
+        immutable fract = floor(x) - x;
+        immutable upper = to!size_t(ceil(x));
+        immutable lower = to!size_t(floor(x));
+
+        if(upper == cumulative.length) {
+            return 1;
+        }
+
+        return fract * cumulative[upper] + (1 - fract) * cumulative[lower];
+    }
+
+    /**Compute the cumulative density from the rhs, i.e. the integral from
+     * x to infinity.
+     */
+    double cdfr(double x) const {
+        // Here, we can get away with just returning 1 - cdf b/c
+        // there are inaccuracies several orders of magnitude bigger than
+        // the rounding error.
+        return 1.0 - cdf(x);
+    }
 }
 
 unittest {
     auto kde = KernelDensity1D.fromCallable([0], parametrize!normalPDF(0, 1));
     assert(approxEqual(kde(1), normalPDF(1)));
+    assert(approxEqual(kde.cdf(1), normalCDF(1)));
+    assert(approxEqual(kde.cdfr(1), normalCDFR(1)));
 
     // This is purely to see if fromAlias works.
     auto cosKde = KernelDensity1D.fromAlias!cos([0], 1);
 }
+
+
