@@ -1515,7 +1515,7 @@ unittest {
 
 ///
 double exponentialPDF(double x, double lambda) {
-    dstatsEnforce(x > 0, "x must be >0 in exponential distribution");
+    dstatsEnforce(x >= 0, "x must be >0 in exponential distribution");
     dstatsEnforce(lambda > 0, "lambda must be >0 in exponential distribution");
 
     return lambda * exp(-lambda * x);
@@ -1523,7 +1523,7 @@ double exponentialPDF(double x, double lambda) {
 
 ///
 double exponentialCDF(double x, double lambda) {
-    dstatsEnforce(x > 0, "x must be >0 in exponential distribution");
+    dstatsEnforce(x >= 0, "x must be >0 in exponential distribution");
     dstatsEnforce(lambda > 0, "lambda must be >0 in exponential distribution");
 
     return 1.0 - exp(-lambda * x);
@@ -1531,7 +1531,7 @@ double exponentialCDF(double x, double lambda) {
 
 ///
 double exponentialCDFR(double x, double lambda) {
-    dstatsEnforce(x > 0, "x must be >0 in exponential distribution");
+    dstatsEnforce(x >= 0, "x must be >0 in exponential distribution");
     dstatsEnforce(lambda > 0, "lambda must be >0 in exponential distribution");
 
     return exp(-lambda * x);

@@ -38,7 +38,7 @@ import std.traits, std.math, std.typetuple, std.functional, std.range,
 import dstats.base, dstats.alloc, dstats.summary : sum;
 
 version(unittest) {
-    import std.stdio, std.bigint, std.algorithm : map, sort;
+    import std.stdio, std.bigint, std.algorithm;
 
     void main() {}
 }
@@ -251,10 +251,9 @@ struct ObsEnt(T...) {
             return 0;
         }
     }
-
 }
 
-// Whether we can use StackHash, or whether we have to use a regular AA for
+// Whether we can use StackTreeAA, or whether we have to use a regular AA for
 // entropy.
 private template NeedsHeap(T) {
     static if(!isReferenceType!(IterType!(T))) {
@@ -271,8 +270,8 @@ private template NeedsHeap(T) {
 }
 
 unittest {
-    auto foo = map!("a.dup")(cast(uint[][]) [[1]]);
-    auto bar = map!("a + 2")([1,2,3][]);
+    auto foo = filter!"a"(cast(uint[][]) [[1]]);
+    auto bar = filter!("a")([1,2,3][]);
     static assert(NeedsHeap!(typeof(foo)));
     static assert(!NeedsHeap!(typeof(bar)));
     static assert(NeedsHeap!(Joint!(uint[], typeof(foo))));
@@ -314,21 +313,24 @@ if(isIterable!(T)) {
 }
 
 private double entropyImpl(U, T)(T data)
-if(IterType!(T).sizeof > 1 && !NeedsHeap!(T)) {  // Generic version.
+if((IterType!(T).sizeof > 1 || is(IterType!T == struct)) && !NeedsHeap!(T)) {
+    // Generic version.
+    mixin(newFrame);
     alias IterType!(T) E;
 
-    TempAlloc.frameInit;
-    alias StackHash!(E, U) mySh;
-    immutable len = data.length;  // In case length calculation is expensive.
-    //mySh counts = mySh(len / 5);
-    auto counts = StackTreeAA!(E, U)();
+    static if(dstats.base.hasLength!T) {
+        auto counts = StackHash!(E, U)(max(20, data.length / 20));
+    } else {
+        auto counts = StackTreeAA!(E, U)();
+    }
+    uint N;
 
     foreach(elem; data)  {
         counts[elem]++;
+        N++;
     }
 
-    double ans = entropyCounts(counts.values, len);
-    TempAlloc.frameFree;
+    double ans = entropyCounts(counts.values, N);
     return ans;
 }
 
@@ -346,7 +348,7 @@ if(IterType!(T).sizeof > 1 && NeedsHeap!(T)) {  // Generic version.
 }
 
 private double entropyImpl(U, T)(T data)  // byte/char specialization
-if(IterType!(T).sizeof == 1) {
+if(IterType!(T).sizeof == 1 && !is(IterType!T == struct)) {
     alias IterType!(T) E;
 
     U[ubyte.max + 1] counts;
