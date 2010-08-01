@@ -8,4 +8,4 @@ module dstats.all;
 
 public import dstats.alloc, dstats.sort, dstats.base, dstats.cor,
               dstats.distrib, dstats.infotheory, dstats.random,
-              dstats.summary, dstats.tests, dstats.regress;
+              dstats.summary, dstats.tests, dstats.regress, dstats.kerneldensity;
