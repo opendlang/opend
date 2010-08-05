@@ -132,6 +132,7 @@ public:
         maxElem += edgeBuffer;
 
         auto binsRaw = newStack!uint(nBin);
+        binsRaw[] = 0;
         foreach(elemRaw; range) {
             double elem = elemRaw - minElem;
             elem /= (maxElem - minElem);
@@ -203,7 +204,7 @@ public:
         x /= (maxElem - minElem);
         x *= bins.length;
 
-        immutable fract = floor(x) - x;
+        immutable fract = x - floor(x);
         immutable upper = to!size_t(ceil(x));
         immutable lower = to!size_t(floor(x));
 
@@ -227,7 +228,7 @@ public:
         x /= (maxElem - minElem);
         x *= bins.length;
 
-        immutable fract = floor(x) - x;
+        immutable fract = x - floor(x);
         immutable upper = to!size_t(ceil(x));
         immutable lower = to!size_t(floor(x));
 
