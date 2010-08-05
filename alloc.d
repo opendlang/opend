@@ -119,20 +119,6 @@ void lengthVoid(T)(ref T[] input, size_t newLength) {
     }
 }
 
-void reserve(T)(ref T[] input, int newLength) {
-    input.reserve(cast(size_t) newLength);
-}
-
-/**Reserves more space for an array w/o changing its length or initializing
- * the space.*/
-void reserve(T)(ref T[] input, size_t newLength) {
-    if (newLength <= input.length || capacity(input.ptr) >= newLength * T.sizeof)
-        return;
-    T* newPtr = cast(T*) GC.realloc(input.ptr, T.sizeof * newLength);
-    staticSetTypeInfo!(T)(newPtr);
-    input = newPtr[0..input.length];
-}
-
 private template Appends(T, U) {
     enum bool Appends = AppendsImpl!(T, U).ret;
 }
