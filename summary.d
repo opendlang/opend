@@ -165,7 +165,6 @@ unittest {
     Count a;
     a.upTo = 100;
     assert(approxEqual(median(a), 49.5));
-    writeln("Passed median unittest.");
 }
 
 /**Plain old data holder struct for median, median absolute deviation.
@@ -210,7 +209,86 @@ if(doubleInput!(T)) {
 unittest {
     assert(approxEqual(medianAbsDev([7,1,8,2,8,1,9,2,8,4,5,9].dup).medianAbsDev, 2.5L));
     assert(approxEqual(medianAbsDev([8,6,7,5,3,0,999].dup).medianAbsDev, 2.0L));
-    writeln("Passed medianAbsDev unittest.");
+}
+
+/**Computes the interquantile range of data at the given quantile value in O(N)
+ * time complexity.  For example, using a quantile value of either 0.25 or 0.75
+ * will give the interquartile range.  (This is the default since it is
+ * apparently the most common interquantile range in common usage.)
+ * Using a quantile value of 0.2 or 0.8 will give the interquntile range.
+ *
+ * If the quantile point falls between two indices, linear interpolation is
+ * used.
+ *
+ * This function is somewhat more efficient than simply finding the upper and
+ * lower quantile and subtracting them.
+ *
+ * Tip:  A quantile of 0 or 1 is handled as a special case and will compute the
+ *       plain old range of the data in a single pass.
+ */
+double interquantileRange(R)(R data, double quantile = 0.25)
+if(doubleInput!R) {
+    alias quantile q;  // Save typing.
+    dstatsEnforce(q >= 0 && q <= 1,
+        "Quantile must be between 0, 1 for interquantileRange.");
+
+    mixin(newFrame);
+    if(q > 0.5) {
+        q = 1.0 - q;
+    }
+
+    if(q == 0) {  // Special case:  Compute the plain old range.
+        double minElem = double.infinity;
+        double maxElem = -double.infinity;
+
+        foreach(elem; data) {
+            minElem = min(minElem, elem);
+            maxElem = max(maxElem, elem);
+        }
+
+        return maxElem - minElem;
+    }
+
+    // Common case.
+    auto duped = tempdup(data);
+    immutable double N = duped.length;
+    if(duped.length < 2) {
+        return double.nan;  // Can't do it.
+    }
+
+    immutable lowEnd = to!size_t((N - 1) * q);
+    immutable lowFract = (N - 1) * q - lowEnd;
+
+    partitionK(duped, lowEnd);
+    immutable lowQuantile1 = duped[lowEnd];
+    double minAbove = double.infinity;
+
+    foreach(elem; duped[lowEnd + 1..$]) {
+        minAbove = min(minAbove, elem);
+    }
+
+    immutable lowerQuantile =
+        lowFract * minAbove + (1 - lowFract) * lowQuantile1;
+
+    immutable highEnd = to!size_t((N - 1) * (1.0 - q) - lowEnd);
+    immutable highFract = (N - 1) * (1.0 - q) - lowEnd - highEnd;
+    duped = duped[lowEnd..$];
+    assert(highEnd < duped.length - 1);
+
+    partitionK(duped, highEnd);
+    immutable minAbove2 = reduce!min(double.infinity, duped[highEnd + 1..$]);
+    immutable upperQuantile = minAbove2 * highFract
+                            + duped[highEnd] * (1 - highFract);
+
+    return upperQuantile - lowerQuantile;
+}
+
+unittest {
+    // 0 3 5 6 7 8 9
+    assert(approxEqual(interquantileRange([1,2,3,4,5,6,7,8]), 3.5));
+    assert(approxEqual(interquantileRange([1,2,3,4,5,6,7,8,9]), 4));
+    assert(interquantileRange([1,9,2,4,3,6,8], 0) == 8);
+    assert(approxEqual(interquantileRange([8,6,7,5,3,0,9], 0.2), 4.4));
 }
 
 /**Output range to calculate the mean online.  Getter for mean costs a branch to
@@ -419,8 +497,6 @@ unittest {
 
     assert(approxEqual(combined.mean, mean1.mean));
     assert(combined.N == mean1.N);
-
-    writeln("Passed geometricMean unittest.");
 }
 
 
@@ -497,8 +573,6 @@ unittest {
             assert(approxEqual(elem, res2.tupleof[ti]));
         }
     }
-
-    writeln("Passed sum/mean unittest.");
 }
 
 
@@ -728,8 +802,6 @@ unittest {
             assert(elem == resCornerCase.tupleof[ti]);
         }
     }
-
-    writefln("Passed variance/standard deviation unittest.");
 }
 
 /**Output range to compute mean, stdev, variance, skewness, kurtosis, min, and
@@ -954,7 +1026,6 @@ unittest {
     assert(approxEqual(kurtosis([1, 1, 1, 1, 10].dup), 0.25));
     assert(approxEqual(kurtosis([2.5, 3.5, 4.5, 5.5].dup), -1.36));
     assert(approxEqual(kurtosis([1,2,2,2,2,2,100].dup), 2.1657));
-    writefln("Passed kurtosis unittest.");
 }
 
 /**Skewness is a measure of symmetry of a distribution.  Positive skewness
@@ -983,7 +1054,6 @@ unittest {
     string[] stringy = ["3", "1", "4", "1", "5", "9", "2", "6", "5"];
     auto intified = map!(to!(int, string))(stringy);
     assert(approxEqual(skewness(intified), 0.5443));
-    writeln("Passed skewness test.");
 }
 
 /**Convenience function.  Puts all elements of data into a Summary struct,
@@ -1116,7 +1186,6 @@ unittest {
     foreach(i; 0..z.length) {
         assert(approxEqual(z[i], (arr[i] - m) / sd));
     }
-    writeln("Passed zScore test.");
 }
 
 

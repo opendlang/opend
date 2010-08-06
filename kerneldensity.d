@@ -74,13 +74,21 @@ private:
         immutable zeroVal = kernel(0);
         double ret = 1;
 
-        while(kernel(ret) / zeroVal > 1e-3) {
-            ret *= 2;
-        }
+        double factor = 4;
+        double kernelVal;
 
-        while(kernel(ret) / zeroVal < 1e-4) {
-            ret *= 0.5;
-        }
+        do {
+            while(kernel(ret) / zeroVal > 1e-3) {
+                ret *= factor;
+            }
+
+            factor = (factor - 1) / 2 + 1;
+            while(kernel(ret) / zeroVal < 1e-4) {
+                ret /= factor;
+            }
+
+            kernelVal = kernel(ret) / zeroVal;
+        } while((kernelVal > 1e-3 || kernelVal < 1e-4) && factor > 1);
 
         return ret;
     }
@@ -97,7 +105,7 @@ public:
      * Values less than reduce!min(range) - edgeBuffer or greater than
      * reduce!max(range) + edgeBuffer will be assigned a probability of zero.
      * If this value is left at its default, it will be set to a value at which
-     * the kernel is between 1e-3 and 1e-4 times its value at zero.
+     * the kernel is somewhere between 1e-3 and 1e-4 times its value at zero.
      *
      * The bandwidth of the kernel is indirectly selected by parametrizing the
      * kernel function.
@@ -126,7 +134,7 @@ public:
         }
 
         if(isNaN(edgeBuffer)) {
-            edgeBuffer = findEdgeBuffer(kernel) / N;
+            edgeBuffer = findEdgeBuffer(kernel);
         }
         minElem -= edgeBuffer;
         maxElem += edgeBuffer;
@@ -260,4 +268,33 @@ unittest {
     auto cosKde = KernelDensity1D.fromAlias!cos([0], 1);
 }
 
+/**Uses Scott's Rule to select the bandwidth of the Gaussian kernel density
+ * estimator.  This is 1.06 * min(stdev(data), interquartileRange(data) / 1.34)
+ * N ^^ -0.2.  R must be a forward range of numeric types.
+ *
+ * Examples:
+ * ---
+ * immutable bandwidth = scottBandwidth(data);
+ * auto kernel = parametrize!normalPDF(0, bandwidth);
+ * auto kde = KernelDensity1D(data, kernel);
+ * ---
+ *
+ * References:
+ * Scott, D. W. (1992) Multivariate Density Estimation: Theory, Practice,
+ * and Visualization. Wiley.
+ */
+double scottBandwidth(R)(R data)
+if(isForwardRange!R && is(ElementType!R : double)) {
 
+    immutable summary = meanStdev(data.save);
+    immutable interquartile = interquantileRange(data.save, 0.25) / 1.34;
+    immutable sigmaHat = min(summary.stdev, interquartile);
+
+    return 1.06 * sigmaHat * (summary.N ^^ -0.2);
+}
+
+unittest {
+    // Values from R.
+    assert(approxEqual(scottBandwidth([1,2,3,4,5]), 1.14666));
+    assert(approxEqual(scottBandwidth([1,2,2,2,2,8,8,8,8]), 2.242446));
+}
