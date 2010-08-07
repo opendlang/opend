@@ -393,6 +393,12 @@ class KernelDensity {
 
         dstatsEnforce(points.length,
             "Can't construct a zero dimensional kernel density estimator.");
+
+        foreach(arr; points[1..$]) {
+            dstatsEnforce(arr.length == points[0].length,
+                "All ranges must be the same length to construct a KernelDensity.");
+        }
+
         auto ret = new KernelDensity(assumeUnique(points));
         ret.kernel = kernelWrapped;
 
