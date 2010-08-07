@@ -402,7 +402,7 @@ class KernelDensity {
     /**Estimate the density at the point given by x.  The variables in X are
      * provided in the same order as the ranges were provided for estimation.
      */
-    double opCall(double[] x...) {
+    double opCall(double[] x...) const {
         dstatsEnforce(x.length == points.length,
             "Dimension mismatch when evaluating kernel density.");
         double sum = 0;
