@@ -32,26 +32,29 @@
  */
 module dstats.kerneldensity;
 
-import std.conv, std.math, std.algorithm, std.contracts, std.traits, std.range;
+import std.conv, std.math, std.algorithm, std.contracts, std.traits, std.range,
+    std.array, std.typetuple;
 
-import  dstats.alloc, dstats.summary;
+import  dstats.alloc, dstats.base, dstats.summary;
 
 version(unittest) {
 
-    import dstats.distrib, std.stdio;
+    import dstats.distrib, dstats.random, std.stdio;
 
     void main() {}
 }
 
 /**Estimates densities in the 1-dimensional case.  The 1-D case is special
- * enough to be treated as a special case, though eventually a general N-D
- * case will be added.
+ * enough to be treated as a special case, since it's very common and enables
+ * some significant optimizations that are otherwise not feasible.
  *
  * Under the hood, this works by binning the data into a large number of bins
  * (currently 1,000), convolving it with the kernel function to smooth it, and
  * then using linear interpolation to evaluate the density estimates.  This
- * means that constructing this object is relatively expensive, but evaluating
- * a density estimate can be done in O(1) time complexity afterwords.
+ * will produce results that are different from the textbook definition of
+ * kernel density estimation, but to an extent that's negligible in most cases.
+ * It also means that constructing this object is relatively expensive, but
+ * evaluating a density estimate can be done in O(1) time complexity afterwords.
  */
 class KernelDensity1D {
 private:
@@ -114,12 +117,12 @@ public:
      * ---
      * auto randNums = randArray!rNorm(1_000, 0, 1);
      * auto kernel = parametrize!normalPDF(0, 0.01);
-     * auto density = KernelDensity1D(randNums, kernel);
+     * auto density = KernelDensity1D(kernel, randNums);
      * writeln(normalPDF(1, 0, 1), "  ", density(1)).  // Should be about the same.
      * ---
      */
-    static KernelDensity1D fromCallable(R, C)
-    (R range, C kernel, double edgeBuffer = double.nan)
+    static KernelDensity1D fromCallable(C, R)
+    (C kernel, R range, double edgeBuffer = double.nan)
     if(isForwardRange!R && is(typeof(kernel(2.0)) : double)) {
         enum nBin = 1000;
         mixin(newFrame);
@@ -199,7 +202,7 @@ public:
             return kernel(x);
         }
 
-        return fromCallable(range, &kernelFun, edgeBuffer);
+        return fromCallable(&kernelFun, range, edgeBuffer);
     }
 
     /**Compute the probability density at a given point.*/
@@ -259,7 +262,7 @@ public:
 }
 
 unittest {
-    auto kde = KernelDensity1D.fromCallable([0], parametrize!normalPDF(0, 1));
+    auto kde = KernelDensity1D.fromCallable(parametrize!normalPDF(0, 1), [0]);
     assert(approxEqual(kde(1), normalPDF(1)));
     assert(approxEqual(kde.cdf(1), normalCDF(1)));
     assert(approxEqual(kde.cdfr(1), normalCDFR(1)));
@@ -297,4 +300,201 @@ unittest {
     // Values from R.
     assert(approxEqual(scottBandwidth([1,2,3,4,5]), 1.14666));
     assert(approxEqual(scottBandwidth([1,2,2,2,2,8,8,8,8]), 2.242446));
+}
+
+/**Construct an N-dimensional kernel density estimator.  This is done using
+ * the textbook definition of kernel density estimation, since the binning
+ * and convolving method used in the 1-D case would rapidly become
+ * unfeasible w.r.t. memory usage as dimensionality increased.
+ *
+ * Eventually, a 2-D estimator might be added as another special case, but
+ * beyond 2-D, bin-and-convolute clearly isn't feasible.
+ *
+ * This class can be used for 1-D estimation instead of KernelDensity1D, and
+ * will work properly.  This is useful if:
+ *
+ * 1.  You can't accept even the slightest deviation from the results that the
+ *     textbook definition of kernel density estimation would produce.
+ * 2.  You are only going to evaluate at a few points and want to avoid the
+ *     up-front cost of the convolution used in the 1-D case.
+ */
+class KernelDensity {
+    private immutable double[][] points;
+    private double delegate(double[]...) kernel;
+
+    private this(immutable double[][] points) {
+        this.points = points;
+    }
+
+    /**Returns the number of dimensions in the estimator.*/
+    uint nDimensions() const @property {
+        return points.length;
+    }
+
+    /**Construct a kernel density estimator from a kernel provided as a callable
+     * object (such as a function pointer, delegate, or class with overloaded
+     * opCall).  R must be either a range of ranges, multiple ranges passed in
+     * as variadic arguments, or a single range for the 1D case.  Each range
+     * represents the values of one variable in the joint distribution.
+     * kernel must accept either an array of doubles or the same number of
+     * arguments as the number of dimensions, and must return a floating point
+     * number.
+     *
+     * Examples:
+     * ---
+     * // Create an estimate of the density of the joint distribution of
+     * // hours sleep and programming skill.
+     * auto programmingSkill = [8,6,7,5,3,0,9];
+     * auto hoursSleep = [3,6,2,4,3,5,8];
+     *
+     * // Make a 2D Gaussian kernel function with bandwidth 0.5 in both
+     * // dimensions and covariance zero.
+     * static double myKernel(double x1, double x2) {
+     *    return normalPDF(x1, 0, 0.5) * normalPDF(x2, 0, 0.5);
+     * }
+     *
+     * auto estimator = KernelDensity.fromCallable
+     *     (&myKernel, programmingSkill, hoursSleep);
+     *
+     * // Estimate the density at programming skill 1, 2 hours sleep.
+     * auto density = estimator(1, 2);
+     * ---
+     */
+    static KernelDensity fromCallable(C, R...)(C kernel, R ranges)
+    if(allSatisfy!(isInputRange, R)) {
+        auto kernelWrapped = wrapToArrayVariadic(kernel);
+
+        static if(R.length == 1 && isInputRange!(typeof(ranges[0].front))) {
+            alias ranges[0] data;
+        } else {
+            alias ranges data;
+        }
+
+        double[][] points;
+        foreach(range; data) {
+            double[] asDoubles;
+
+            static if(dstats.base.hasLength!(typeof(range))) {
+                asDoubles = newVoid!double(range.length);
+
+                size_t i = 0;
+                foreach(elem; range) {
+                    asDoubles[i++] = elem;
+                }
+            } else {
+                auto app = appender(&asDoubles);
+                foreach(elem; range) {
+                    app.put(elem);
+                }
+            }
+
+            points ~= asDoubles;
+        }
+
+        dstatsEnforce(points.length,
+            "Can't construct a zero dimensional kernel density estimator.");
+        auto ret = new KernelDensity(assumeUnique(points));
+        ret.kernel = kernelWrapped;
+
+        return ret;
+    }
+
+    /**Estimate the density at the point given by x.  The variables in X are
+     * provided in the same order as the ranges were provided for estimation.
+     */
+    double opCall(double[] x...) {
+        dstatsEnforce(x.length == points.length,
+            "Dimension mismatch when evaluating kernel density.");
+        double sum = 0;
+
+        mixin(newFrame);
+        auto dataPoint = newStack!double(points.length);
+        foreach(i; 0..points[0].length) {
+            foreach(j; 0..points.length) {
+                dataPoint[j] = x[j] - points[j][i];
+            }
+
+            sum += kernel(dataPoint);
+        }
+
+        sum /= points[0].length;
+        return sum;
+    }
+}
+
+unittest {
+    auto data = randArray!rNorm(100, 0, 1);
+    auto kernel = parametrize!normalPDF(0, scottBandwidth(data));
+    auto kde = KernelDensity.fromCallable(kernel, data);
+    auto kde1 = KernelDensity1D.fromCallable(kernel, data);
+    foreach(i; 0..5) {
+        assert(abs(kde(i) - kde1(i)) < 0.01);
+    }
+
+    // Make sure example compiles.
+    auto programmingSkill = [8,6,7,5,3,0,9];
+    auto hoursSleep = [3,6,2,4,3,5,8];
+
+    // Make a 2D Gaussian kernel function with bandwidth 0.5 in both
+    // dimensions and covariance zero.
+    static double myKernel(double x1, double x2) {
+        return normalPDF(x1, 0, 0.5) * normalPDF(x2, 0, 0.5);
+    }
+
+    auto estimator = KernelDensity.fromCallable
+        (&myKernel, programmingSkill, hoursSleep);
+
+    // Estimate the density at programming skill 1, 2 hours sleep.
+    auto density = estimator(1, 2);
+
+    // Test instantiating from functor.
+    auto foo = KernelDensity.fromCallable(estimator, hoursSleep);
+}
+
+
+private:
+
+double delegate(double[]...) wrapToArrayVariadic(C)(C callable) {
+    static if(is(C == delegate) || isFunctionPointer!C) {
+        alias callable fun;
+    } else {  // It's a functor.
+        alias callable.opCall fun;
+    }
+
+    alias ParameterTypeTuple!fun params;
+    static if(params.length == 1 && is(params[0] == double[])) {
+        // Already in the right form.
+        static if(is(C == delegate) && is(ReturnType!C == double)) {
+            return callable;
+        } else static if(is(ReturnType!(callable.opCall) == double)) {
+            return &callable.opCall;
+        } else {  // Need to forward.
+            double forward(double[] args...) {
+                return fun(args);
+            }
+
+            return &forward;
+        }
+    } else {  // Need to convert to single arguments and forward.
+        static assert(allSatisfy!(isFloatingPoint, params));
+
+        double doCall(double[] args...) {
+            assert(args.length == params.length);
+            mixin("return fun(" ~ makeCallList(params.length) ~ ");");
+        }
+
+        return &doCall;
+    }
+}
+
+// CTFE function for forwarding elements of an array as single function
+// arguments.
+string makeCallList(uint N) {
+    string ret;
+    foreach(i; 0..N - 1) {
+        ret ~= "args[" ~ to!string(i) ~ "], ";
+    }
+
+    ret ~= "args[" ~ to!string(N - 1) ~ "]";
+    return ret;
 }
