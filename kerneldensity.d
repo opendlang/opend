@@ -49,7 +49,7 @@ version(unittest) {
  * some significant optimizations that are otherwise not feasible.
  *
  * Under the hood, this works by binning the data into a large number of bins
- * (currently 1,000), convolving it with the kernel function to smooth it, and
+ * (currently 1,001), convolving it with the kernel function to smooth it, and
  * then using linear interpolation to evaluate the density estimates.  This
  * will produce results that are different from the textbook definition of
  * kernel density estimation, but to an extent that's negligible in most cases.
@@ -62,6 +62,8 @@ private:
     immutable double[] cumulative;
     immutable double minElem;
     immutable double maxElem;
+    immutable double diffNeg1Nbin;
+
 
     this(immutable double[] bins, immutable double[] cumulative,
          double minElem, double maxElem) {
@@ -69,6 +71,7 @@ private:
         this.cumulative = cumulative;
         this.minElem = minElem;
         this.maxElem = maxElem;
+        this.diffNeg1Nbin = bins.length / (maxElem - minElem);
     }
 
     private static double findEdgeBuffer(C)(C kernel) {
@@ -142,8 +145,10 @@ public:
         minElem -= edgeBuffer;
         maxElem += edgeBuffer;
 
-        auto binsRaw = newStack!uint(nBin);
+        // Using ints here because they convert faster to floats than uints do.
+        auto binsRaw = newStack!int(nBin);
         binsRaw[] = 0;
+
         foreach(elemRaw; range) {
             double elem = elemRaw - minElem;
             elem /= (maxElem - minElem);
@@ -158,16 +163,30 @@ public:
 
         // Convolve the binned data with our kernel.  Since N is fairly small
         // we'll use a simple, accurate, memory efficient and readable
-        // algorithm instead of messing with FFTs, at least until the FFT
-        // algorithm works better than it does now.
+        // algorithm instead of messing with FFTs.  This also allows for
+        // better space efficiency and for taking advantage of kernel symmetry.
         auto binsCooked = new double[nBin];
 
+        auto kernelPoints = newStack!double(nBin);
         immutable stepSize = (maxElem - minElem) / nBin;
-        foreach(i, ref elem; binsCooked) {
-            elem = kernel(0) * binsRaw[i];
 
-            foreach(offset; 1..max(i + 1, nBin - i)) {
-                immutable kernelVal = kernel(stepSize * offset);
+        kernelPoints[0] = kernel(0);
+        immutable stopAt = kernelPoints[0] * 1e-10;
+        foreach(ptrdiff_t i; 1..kernelPoints.length) {
+            kernelPoints[i] = kernel(stepSize * i);
+
+            // Don't bother convolving stuff that contributes negligibly.
+            if(kernelPoints[i] < stopAt) {
+                kernelPoints = kernelPoints[0..i];
+                break;
+            }
+        }
+
+        foreach(i, ref elem; binsCooked) {
+            elem = kernelPoints[0] * binsRaw[i];
+
+            foreach(offset; 1..min(kernelPoints.length, max(i + 1, nBin - i))) {
+                immutable kernelVal = kernelPoints[offset];
 
                 if(i >= offset) {
                     elem += kernelVal * binsRaw[i - offset];
@@ -212,8 +231,7 @@ public:
         }
 
         x -= minElem;
-        x /= (maxElem - minElem);
-        x *= bins.length;
+        x *= diffNeg1Nbin;
 
         immutable fract = x - floor(x);
         immutable upper = to!size_t(ceil(x));
@@ -236,8 +254,7 @@ public:
         }
 
         x -= minElem;
-        x /= (maxElem - minElem);
-        x *= bins.length;
+        x *= diffNeg1Nbin;
 
         immutable fract = x - floor(x);
         immutable upper = to!size_t(ceil(x));
