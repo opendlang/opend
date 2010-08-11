@@ -162,10 +162,23 @@ public:
         }
 
         // Convolve the binned data with our kernel.  Since N is fairly small
-        // we'll use a simple, accurate, memory efficient and readable
-        // algorithm instead of messing with FFTs.  This also allows for
-        // better space efficiency and for taking advantage of kernel symmetry.
-        auto binsCooked = new double[nBin];
+        // we'll use a simple O(N^2) algorithm.  According to my measurements,
+        // this is actually comparable in speed to using an FFT (and a lot
+        // simplier and more space efficient) because:
+        //
+        // 1.  We can take advantage of kernel symmetry.
+        //
+        // 2.  We can take advantage of the sparsity of binsRaw.  (We don't
+        //     need to convolve the zero count bins.)
+        //
+        // 3.  We don't need to do any zero padding to get a non-cyclic
+        //     convolution.
+        //
+        // 4.  We don't need to convolve the tails of the kernel function,
+        //     where the contribution to the final density estimate would be
+        //     negligible.
+        auto binsCooked = newVoid!double(nBin);
+        binsCooked[] = 0;
 
         auto kernelPoints = newStack!double(nBin);
         immutable stepSize = (maxElem - minElem) / nBin;
@@ -182,18 +195,18 @@ public:
             }
         }
 
-        foreach(i, ref elem; binsCooked) {
-            elem = kernelPoints[0] * binsRaw[i];
+        foreach(i, count; binsRaw) if(count > 0) {
+            binsCooked[i] += kernelPoints[0] * count;
 
             foreach(offset; 1..min(kernelPoints.length, max(i + 1, nBin - i))) {
                 immutable kernelVal = kernelPoints[offset];
 
                 if(i >= offset) {
-                    elem += kernelVal * binsRaw[i - offset];
+                    binsCooked[i - offset] += kernelVal * count;
                 }
 
                 if(i + offset < nBin) {
-                    elem += kernelVal * binsRaw[i + offset];
+                    binsCooked[i + offset] += kernelVal * count;
                 }
             }
         }
@@ -201,7 +214,7 @@ public:
         binsCooked[] /= sum(binsCooked);
         binsCooked[] *= nBin / (maxElem - minElem);  // Make it a density.
 
-        auto cumulative = new double[nBin];
+        auto cumulative = newVoid!double(nBin);
         cumulative[0] = binsCooked[0];
         foreach(i; 1..nBin) {
             cumulative[i] = cumulative[i - 1] + binsCooked[i];
