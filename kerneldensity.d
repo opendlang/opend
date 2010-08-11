@@ -1,6 +1,5 @@
 /**This module contains a small but growing library for performing kernel
- * density estimation.  This module is definitely a work in progress and will
- * be fleshed out in the future.
+ * density estimation.
  *
  * Author:  David Simcha
  */
@@ -49,7 +48,7 @@ version(unittest) {
  * some significant optimizations that are otherwise not feasible.
  *
  * Under the hood, this works by binning the data into a large number of bins
- * (currently 1,001), convolving it with the kernel function to smooth it, and
+ * (currently 1,000), convolving it with the kernel function to smooth it, and
  * then using linear interpolation to evaluate the density estimates.  This
  * will produce results that are different from the textbook definition of
  * kernel density estimation, but to an extent that's negligible in most cases.
@@ -109,7 +108,7 @@ public:
      * edgeBuffer determines how much space below and above the smallest and
      * largest observed value will be allocated when doing the binning.
      * Values less than reduce!min(range) - edgeBuffer or greater than
-     * reduce!max(range) + edgeBuffer will be assigned a probability of zero.
+     * reduce!max(range) + edgeBuffer will be assigned a density of zero.
      * If this value is left at its default, it will be set to a value at which
      * the kernel is somewhere between 1e-3 and 1e-4 times its value at zero.
      *
@@ -345,8 +344,12 @@ unittest {
  *
  * 1.  You can't accept even the slightest deviation from the results that the
  *     textbook definition of kernel density estimation would produce.
+ *
  * 2.  You are only going to evaluate at a few points and want to avoid the
  *     up-front cost of the convolution used in the 1-D case.
+ *
+ * 3.  You're using some weird kernel that doesn't meet the assumptions
+ *     required for KernelDensity1D.
  */
 class KernelDensity {
     private immutable double[][] points;

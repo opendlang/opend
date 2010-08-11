@@ -475,9 +475,9 @@ if(doubleIterable!(T)) {
 
 unittest {
     string[] data = ["1", "2", "3", "4", "5"];
-    auto foo = map!(to!(uint, string))(data);
+    auto foo = map!(to!(uint))(data);
 
-    auto result = geometricMean(map!(to!(uint, string))(data));
+    auto result = geometricMean(map!(to!(uint))(data));
     assert(approxEqual(result, 2.60517));
 
     Mean mean1, mean2, combined;
@@ -1052,7 +1052,7 @@ unittest {
 
     // Test handling of ranges that are not arrays.
     string[] stringy = ["3", "1", "4", "1", "5", "9", "2", "6", "5"];
-    auto intified = map!(to!(int, string))(stringy);
+    auto intified = map!(to!(int))(stringy);
     assert(approxEqual(skewness(intified), 0.5443));
 }
 
