@@ -124,7 +124,7 @@ public:
      * ---
      */
     static KernelDensity1D fromCallable(C, R)
-    (C kernel, R range, double edgeBuffer = double.nan)
+    (scope C kernel, R range, double edgeBuffer = double.nan)
     if(isForwardRange!R && is(typeof(kernel(2.0)) : double)) {
         enum nBin = 1000;
         mixin(newFrame);
