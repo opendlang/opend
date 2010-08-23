@@ -182,7 +182,7 @@ public:
         popFront;
     }
 
-    typeof(randFun(args)) front() {
+    @property typeof(randFun(args)) front() {
         return frontElem;
     }
 
@@ -201,7 +201,7 @@ public:
         *lastNormPtr = temp;
     }
 
-    typeof(this) save() @property {
+    @property typeof(this) save() {
         return this;
     }
 }

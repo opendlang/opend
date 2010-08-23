@@ -510,7 +510,7 @@ private struct Indexed(T) {
         return someRange[indices[index]];
     }
 
-    size_t length() {
+    @property size_t length() {
         return indices.length;
     }
 }
@@ -795,7 +795,7 @@ if(isNumeric!(ElementType!R1) && isNumeric!(ElementType!R2)) {
     ElementType!R1 popA() {
         tn--;
         fp++;
-        auto ret = classA.front();
+        auto ret = classA.front;
         classA.popFront();
         return ret;
     }
@@ -803,25 +803,25 @@ if(isNumeric!(ElementType!R1) && isNumeric!(ElementType!R2)) {
     ElementType!R2 popB() {
         fn--;
         tp++;
-        auto ret = classB.front();
+        auto ret = classB.front;
         classB.popFront();
         return ret;
     }
 
     double area = 0;
     while(!classA.empty && !classB.empty) {
-        if(classA.front() < classB.front()) {
+        if(classA.front < classB.front) {
             currentVal = popA();
         } else {
             currentVal = popB();
         }
 
         // Handle ties.
-        while(!classA.empty && classA.front() == currentVal) {
+        while(!classA.empty && classA.front == currentVal) {
             popA();
         }
 
-        while(!classB.empty && classB.front() == currentVal) {
+        while(!classB.empty && classB.front == currentVal) {
             popB();
         }
 
@@ -930,9 +930,7 @@ static if(size_t.sizeof == 4) {
     private enum MAX_PERM_LEN = 20;
 }
 
-/**A struct that generates all possible permutations of a sequence.  Due to
- * some optimizations done under the hood, this works as an input range if
- * T.sizeof > 1, or a forward range if T.sizeof == 1.
+/**A struct that generates all possible permutations of a sequence.
  *
  * Note:  Permutations are output in undefined order.
  *
@@ -1022,7 +1020,7 @@ public:
     /**Note:  PermArray is just an alias to either T[] or const(T)[],
      * depending on whether bufType == Buf.DUP or Buf.RECYCLE.
      */
-    PermArray front() {
+    @property PermArray front() {
         static if(bufType == Buffer.DUP) {
             return perm[0..len].dup;
         } else {
@@ -1063,14 +1061,23 @@ public:
     }
 
     ///
-    bool empty() @property {
+    @property bool empty() {
         return nPerms == 0;
     }
 
     /**The number of permutations left.
      */
-    size_t length() const pure nothrow {
+    @property size_t length() const pure nothrow {
         return nPerms;
+    }
+
+    ///
+    @property typeof(this) save() {
+        auto ret = this;
+        static if(T.sizeof > 1) {
+            ret.perm = (ret.perm[0..len].dup).ptr;
+        }
+        return ret;
     }
 }
 
@@ -1304,7 +1311,7 @@ public:
         setLen();
     }
 
-    CombArray front() {
+    @property CombArray front() {
         static if(bufType == Buffer.RECYCLE) {
             static if(!is(T == uint)) {
                 return chosen[0..R].dup;
@@ -1325,13 +1332,25 @@ public:
     }
 
     ///
-    bool empty() const pure nothrow {
+    @property bool empty() const pure nothrow {
         return length == 0;
     }
 
     ///
-    size_t length() const pure nothrow {
+    @property size_t length() const pure nothrow {
         return _length;
+    }
+
+    ///
+    @property typeof(this) save() {
+        auto ret = this;
+        ret.pos = (pos[0..R].dup).ptr;
+
+        if(chosen !is null) {
+            ret.chosen = (chosen[0..R].dup).ptr;
+        }
+
+        return ret;
     }
 }
 
@@ -1490,7 +1509,7 @@ public:
         }
     }
 
-    real front() {
+    @property real front() {
         return _front;
     }
 
@@ -1516,7 +1535,7 @@ public:
         }
     }
 
-    bool empty() {
+    @property bool empty() {
         return inputRange.empty;
     }
 }

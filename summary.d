@@ -151,13 +151,13 @@ unittest {
     struct Count {
         uint num;
         uint upTo;
-        uint front() {
+        @property size_t front() {
             return num;
         }
         void popFront() {
             num++;
         }
-        bool empty() {
+        @property bool empty() {
             return num >= upTo;
         }
     }
@@ -1097,7 +1097,7 @@ public:
     }
 
     ///
-    double front() {
+    @property double front() {
         return z(range.front);
     }
 
@@ -1107,8 +1107,17 @@ public:
     }
 
     ///
-    bool empty() {
+    @property bool empty() {
         return range.empty;
+    }
+
+    static if(isForwardRange!(T)) {
+        ///
+        @property typeof(this) save() {
+            auto ret = this;
+            ret.range = range.save;
+            return ret;
+        }
     }
 
     static if(isRandomAccessRange!(T)) {
@@ -1120,7 +1129,7 @@ public:
 
     static if(isBidirectionalRange!(T)) {
         ///
-        double back() {
+        @property double back() {
             return z(range.back);
         }
 
@@ -1132,7 +1141,7 @@ public:
 
     static if(dstats.base.hasLength!(T)) {
         ///
-        size_t length() {
+        @property size_t length() {
             return range.length;
         }
     }

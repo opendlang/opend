@@ -139,13 +139,13 @@ unittest {
     struct Count {
         uint num;
         uint upTo;
-        uint front() {
+        @property size_t front() {
             return num;
         }
         void popFront() {
             num++;
         }
-        bool empty() {
+        @property bool empty() {
             return num >= upTo;
         }
     }
@@ -408,13 +408,13 @@ unittest {
     struct Count {
         uint num;
         uint upTo;
-        uint front() {
+        @property size_t front() {
             return num;
         }
         void popFront() {
             num++;
         }
-        bool empty() {
+        @property bool empty() {
             return num >= upTo;
         }
     }
@@ -702,13 +702,13 @@ unittest {
     struct Count {
         uint num;
         uint upTo;
-        uint front() {
+        @property size_t front() {
             return num;
         }
         void popFront() {
             num++;
         }
-        bool empty() {
+        @property bool empty() {
             return num >= upTo;
         }
     }

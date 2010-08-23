@@ -141,12 +141,12 @@ Joint!(T) jointImpl(T...)(T args) {
     return Joint!(T)(args);
 }
 
-/**Iterate over a set of ranges in lockstep and return an ObsEnt,
+/**Iterate over a set of ranges by value in lockstep and return an ObsEnt,
  * which is used internally by entropy functions on each iteration.*/
 struct Joint(T...) {
     T _jointRanges;
 
-    ObsEnt!(ElementsTuple!(T)) front() {
+    @property ObsEnt!(ElementsTuple!(T)) front() {
         alias ElementsTuple!(T) E;
         alias ObsEnt!(E) rt;
         rt ret;
@@ -162,7 +162,7 @@ struct Joint(T...) {
         }
     }
 
-    bool empty() {
+    @property bool empty() {
         foreach(elem; _jointRanges) {
             if(elem.empty) {
                 return true;
@@ -172,8 +172,8 @@ struct Joint(T...) {
     }
 
     static if(T.length > 0 && allSatisfy!(dstats.base.hasLength, T)) {
-        uint length() {
-            uint ret = uint.max;
+        @property size_t length() {
+            size_t ret = size_t.max;
             foreach(range; _jointRanges) {
                 auto len = range.length;
                 if(len < ret) {

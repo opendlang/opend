@@ -62,7 +62,7 @@ if(isForwardRange!(T)) {
         }
     }
 
-    double front() const pure nothrow {
+    @property double front() const pure nothrow {
         return cache;
     }
 
@@ -73,11 +73,11 @@ if(isForwardRange!(T)) {
         }
     }
 
-    typeof(this) save() @property {
+    @property typeof(this) save() {
         return this;
     }
 
-    bool empty() @property {
+    @property bool empty() {
         return range.empty;
     }
 }
@@ -276,7 +276,7 @@ struct Residuals(F, U, T...) {
         double sum = 0;
         size_t i = 0;
         foreach(elem; X) {
-            double frnt = elem.front();
+            double frnt = elem.front;
             sum += frnt * betas[i];
             i++;
         }
@@ -308,7 +308,7 @@ struct Residuals(F, U, T...) {
         nextResidual;
     }
 
-    double front() const pure nothrow {
+    @property double front() const pure nothrow {
         return residual;
     }
 
@@ -328,11 +328,11 @@ struct Residuals(F, U, T...) {
         nextResidual;
     }
 
-    bool empty() const pure nothrow {
+    @property bool empty() const pure nothrow {
         return _empty;
     }
 
-    typeof(this) save() @property {
+    @property typeof(this) save() {
         auto ret = this;
         ret.Y = ret.Y.save;
         foreach(ti, xElem; ret.X) {
@@ -511,7 +511,7 @@ RegressRes linearRegress(U, TC...)(U Y, TC input) {
     for(; !residuals.empty; residuals.popFront) {
         double residual = residuals.front;
         S += residual * residual;
-        double Yfront = residuals.Y.front();
+        double Yfront = residuals.Y.front;
         double predicted = Yfront - residual;
         R2Calc.put(predicted, Yfront);
         n++;

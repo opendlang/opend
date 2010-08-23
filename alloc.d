@@ -600,13 +600,13 @@ unittest {
     struct Count {
         uint num;
         uint upTo;
-        uint front() {
+        @property size_t front() {
             return num;
         }
         void popFront() {
             num++;
         }
-        bool empty() {
+        @property bool empty() {
             return num >= upTo;
         }
     }
@@ -757,7 +757,10 @@ private:
 
 public:
     ///
-    void popFront() {
+    void popFront()
+    in {
+        assert(!empty);
+    } body {
         this._length--;
         if(next is null) {
             do {
@@ -785,23 +788,34 @@ public:
 
     ///
     static if(vals) {
-        ref Unqual!(K) front() {
+        @property ref Unqual!(K) front()
+        in {
+            assert(!empty);
+        } body {
             return *frontElem;
         }
     } else {
-       Unqual!(K) front() {
+       @property Unqual!(K) front()
+       in {
+            assert(!empty);
+       } body {
             return *frontElem;
         }
     }
 
     ///
-    bool empty() {
+    @property bool empty() {
         return index == size_t.max;
     }
 
     ///
-    size_t length() {
+    @property size_t length() {
         return _length;
+    }
+
+    ///
+    @property typeof(this) save() {
+        return this;
     }
 }
 
@@ -1071,7 +1085,7 @@ public:
     }
 
     ///
-    size_t length() const {
+    @property size_t length() const {
         return _length;
     }
 
@@ -1422,7 +1436,7 @@ public:
    }
 
     ///
-    size_t length() {
+    @property size_t length() {
        return _length;
     }
 }
@@ -1997,7 +2011,7 @@ public:
     }
 
     /**Number of elements in the tree.*/
-    size_t length() const pure nothrow @property {
+    @property size_t length() const pure nothrow @property {
         return _length;
     }
 }
@@ -2094,7 +2108,7 @@ struct TreeAaIter(T, alias mapFun) {
     }
 
     ///
-    size_t length() const pure nothrow {
+    @property size_t length() const pure nothrow {
         return tree.length;
     }
 }
@@ -2165,7 +2179,7 @@ struct StackTreeAA(K, V) {
     }
 
     ///
-    size_t length() const pure nothrow {
+    @property size_t length() const pure nothrow {
         return tree.length;
     }
 
