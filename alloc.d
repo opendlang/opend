@@ -88,7 +88,6 @@ unittest {
     }
     static assert(!isReferenceType!(noPtrs));
     static assert(isReferenceType!(ptrs));
-    pragma(msg, "Passed isReferenceType unittest");
 }
 
 template blockAttribute(T) {
@@ -146,7 +145,6 @@ unittest {
     foo.appendDelOld(2);
     foo.appendDelOld(1);
     assert(foo == cast(uint[]) [5,4,3,2,1]);
-    writefln("Passed appendDelOld test.");
 }
 
 // C functions, marked w/ nothrow.
@@ -228,8 +226,8 @@ private:
     }
 
     enum size_t alignBytes = 16U;
-    enum blockSize = 4U * 1024U * 1024U;
-    enum nBookKeep = blockSize / alignBytes * (void*).sizeof;
+    enum size_t blockSize = 4U * 1024U * 1024U;
+    enum size_t nBookKeep = blockSize / alignBytes * (void*).sizeof;
     static State state;
 
     static void die() nothrow {
@@ -626,7 +624,6 @@ unittest {
     while(TempAlloc.getState.freelist.index > 0) {
         TempAlloc.getState.freelist.pop;
     }
-    writeln("Passed tempdup unittest.");
 }
 
 /**A string to mixin at the beginning of a scope, purely for
@@ -723,7 +720,6 @@ unittest {
     while(TempAlloc.state.nblocks > 1 || TempAlloc.state.used > 0) {
         TempAlloc.free;
     }
-    fprintf(std.c.stdio.stderr, "Passed TempAlloc test.\n\0".ptr);
 }
 
 struct SHNode(K, V) {
@@ -1215,9 +1211,6 @@ unittest {
         assert(builtin.length == 0);
 
     }
-
-
-    writeln("Passed StackHash test.");
 }
 
 /**A hash set that allocates its memory on TempAlloc.  Good for building a
@@ -1491,7 +1484,6 @@ unittest {
         }
         assert(builtin.length == 0);
     }
-    writeln("Passed StackSet test.");
 }
 
 private int height(T)(const T node) nothrow {
@@ -2053,7 +2045,6 @@ unittest {
         }
     }
     assertAvl(myTree.head);
-    writeln("Passed StackTree test.");
 }
 
 /**Struct that iterates over keys or values of a StackTreeAA.
@@ -2319,6 +2310,4 @@ unittest {
         }
         assert(builtin.length == 0);
     }
-
-    writeln("Passed StackTreeAA test.");
 }

@@ -38,7 +38,7 @@
 module dstats.base;
 
 import std.math, std.traits, std.typecons, std.algorithm, std.range,
-    std.contracts, std.conv, std.functional;
+    std.exception, std.conv, std.functional;
 
 import dstats.alloc, dstats.sort, dstats.gamma;
 
@@ -96,17 +96,15 @@ template hasLength(R) {
 }
 
 
-/**Tests whether T can be iterated over using foreach.  This is a superset
- * of isInputRange, as it also accepts things that use opApply, builtin
- * arrays, builtin associative arrays, etc.  Useful when all you need is
- * lowest common denominator iteration functionality and don't care about
- * more advanced range features.*/
-template isIterable(T)
-{
-    static if (is(typeof({foreach(elem; T.init) {}}))) {
-        enum bool isIterable = true;
-    } else {
-        enum bool isIterable = false;
+// isIterable was added to SVN versions of Phobos, but not to released ones yet.
+static if(!__traits(compiles, std.traits.isIterable!(uint))) {
+    template isIterable(T)
+    {
+        static if (is(typeof({foreach(elem; T.init) {}}))) {
+            enum bool isIterable = true;
+        } else {
+            enum bool isIterable = false;
+        }
     }
 }
 
@@ -242,7 +240,6 @@ unittest {
     res = binCounts(data, 10, buf);
     assert(res == [4U, 1, 0, 1, 0, 1, 0, 1, 1, 1]);
     TempAlloc.free;
-    writeln("Passed binCounts unittest.");
 }
 
 /**Bins data into nbin equal width bins, indexed from
@@ -314,8 +311,6 @@ unittest {
     } catch(Exception e) {
         // It's supposed to throw.
     }
-
-    writeln("Passed bin unittest.");
 }
 
 /**Bins data into nbin equal frequency bins, indexed from
@@ -397,8 +392,6 @@ unittest {
     } catch(Exception e) {
         // It's supposed to throw.
     }
-
-    writeln("Passed frqBin unittest.");
 }
 
 /**Generates a sequence from [start..end] by increment.  Includes start,
@@ -427,7 +420,6 @@ CommonType!(T, U)[] seq(T, U, V = uint)(T start, U end, V increment = 1U) {
 unittest {
     auto s = seq(0, 5);
     assert(s == [0, 1, 2, 3, 4]);
-    writeln("Passed seq test.");
 }
 
 /**Given an input array, outputs an array containing the rank from
@@ -576,7 +568,6 @@ unittest {
 
     uint[] test2 = [3,3,1,2];
     assert(rank(test2) == [3.5,3.5,1,2]);
-    writeln("Passed rank test.");
 }
 
 private void averageTies(T, U)(T sortedInput, U[] ranks, size_t[] perms)
@@ -642,7 +633,6 @@ unittest {
     assert(frq.length == 4);
     assert(frq[1] == 2);
     assert(frq[4] == 1);
-    writeln("Passed frequency test.");
 }
 
 /**Given a range of values and a range of categories, separates values
@@ -771,7 +761,6 @@ unittest {
     auto res3 = byCategory(nums,
         [false, true, false, true, false, true, false, true, false]);
     assert(res2 == res3);
-    writeln("Passed byCategory unittest.");
 }
 
 /**Finds the area under the ROC curve (a curve with sensitivity on the Y-axis
@@ -864,8 +853,6 @@ unittest {
     assert(auroc([4,5,6], [1,2,3]) == 1);
     assert(approxEqual(auroc([8,6,7,5,3,0,9], [3,6,2,4,3,6]), 0.6904762));
     assert(approxEqual(auroc([2,7,1,8,2,8,1,8], [3,1,4,1,5,9,2,6]), 0.546875));
-
-    writeln("Passed auroc unittest.");
 }
 
 ///
@@ -879,7 +866,6 @@ unittest {
     assert(sign(3.14159265)==1);
     assert(sign(-3)==-1);
     assert(sign(-2.7182818)==-1);
-    writefln("Passed sign unittest.");
 }
 
 ///
@@ -904,7 +890,6 @@ unittest {
     // Gamma branch.
     assert(approxEqual(logFactorial(12000), 1.007175584216837e5, 1e-14));
     assert(approxEqual(logFactorial(14000), 1.196610688711534e5, 1e-14));
-    writefln("Passed logFactorial unit test.");
 }
 
 ///Log of (n choose k).
@@ -921,7 +906,6 @@ unittest {
     assert(cast(uint) round(exp(logNcomb(4,2)))==6);
     assert(cast(uint) round(exp(logNcomb(30,8)))==5852925);
     assert(cast(uint) round(exp(logNcomb(28,5)))==98280);
-    writefln("Passed logNcomb unit test.");
 }
 
 /**Controls whether Perm and Comb duplicate their buffer on each iteration and
@@ -1192,7 +1176,6 @@ unittest {
     foreach(elem, val; table2) {
         assert(elem.dup.insertionSort == to!(byte[])([0, 1, 2, 3, 4]));
     }
-    writeln("Passed Perm test.");
 }
 
 /**Generates every possible combination of r elements of the given sequence, or r
@@ -1457,7 +1440,6 @@ unittest {
         results[dupped] = true;
     }
     assert(results.length == 924);  // (12 choose 6).
-    writeln("Passed Comb test.");
 }
 
 /**Converts a range with arbitrary element types (usually strings) to a
@@ -1563,8 +1545,6 @@ unittest {
         assert(rng.empty);
         myFile.close();
     }
-
-    writeln("Passed toNumericRange unittest.");
 }
 
 // Verify that there are no TempAlloc memory leaks anywhere in the code covered

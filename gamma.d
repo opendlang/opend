@@ -103,7 +103,6 @@ unittest {
     assert(sgnGamma(-0.1) == -1.0);
     assert(sgnGamma(-55.1) == 1.0);
     assert(isNaN(sgnGamma(-real.infinity)));
-    writeln("Passed sgnGamma unittest.");
 }
 
 private {
@@ -524,7 +523,6 @@ unittest { // also tested by the normal distribution
     assert( isNaN(betaIncompleteInv(0.12167, 4.0640301659679627772e19L, 0.0813601)));
     // This next result is almost certainly erroneous.
     assert(betaIncomplete(1.16251e20, 2.18e39, 5.45e-20)==-real.infinity);
-    writeln("Passed betaIncomplete unittest.");
 }
 
 private {
@@ -1011,5 +1009,4 @@ assert(gammaIncompleteComplInv(3, 0)==real.infinity);
 
 //writefln(gammaIncompleteComplInv(8, 1e-50));
 //writefln(gammaIncompleteComplInv(12, 0.99));
-writeln("Passed gammaIncomplete unittest.");
 }

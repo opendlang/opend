@@ -118,7 +118,7 @@
 module dstats.random;
 
 import std.math, std.algorithm, dstats.distrib, std.traits, std.typetuple,
-    std.contracts;
+    std.exception;
 public import std.random; //For uniform distrib.
 
 import dstats.alloc, dstats.base;
@@ -203,12 +203,6 @@ public:
 
     typeof(this) save() @property {
         return this;
-    }
-
-    // Doesn't do anything particularly useful.  It's more a workaround for
-    // bug 4305.
-    typeof(randFun(args)) moveFront() {
-        return frontElem;
     }
 }
 

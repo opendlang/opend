@@ -34,7 +34,7 @@
 
 module dstats.regress;
 
-import std.math, std.algorithm, std.traits, std.array, std.traits, std.contracts,
+import std.math, std.algorithm, std.traits, std.array, std.traits, std.exception,
     std.typetuple, std.typecons;
 
 import dstats.alloc, std.range, std.conv, dstats.distrib, dstats.cor, dstats.base;

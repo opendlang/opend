@@ -104,7 +104,7 @@
 
 module dstats.distrib;
 
-import std.algorithm, std.conv, std.contracts, std.math, std.traits;
+import std.algorithm, std.conv, std.exception, std.math, std.traits;
 
 import dstats.base, dstats.gamma;
 

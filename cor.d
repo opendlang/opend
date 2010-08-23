@@ -30,7 +30,7 @@
 
 module dstats.cor;
 
-import std.conv, std.range, std.typecons, std.contracts, std.math,
+import std.conv, std.range, std.typecons, std.exception, std.math,
     std.traits, std.typetuple;
 
 import dstats.sort, dstats.base, dstats.alloc, dstats.regress : invert;

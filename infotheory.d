@@ -81,7 +81,6 @@ unittest {
     assert(entropyCounts([2,2].dup)==1);
     assert(entropyCounts([5.1,5.1,5.1,5.1].dup)==2);
     assert(approxEqual(entropyCounts([1,2,3,4,5].dup), 2.1492553971685));
-    writefln("Passed entropyCounts unittest.");
 }
 
 template FlattenType(T...) {
@@ -397,7 +396,6 @@ unittest {
         auto m = map!("a")(arr);
         assert(approxEqual(entropy(m), log2(3)));
     }
-    writeln("Passed entropy unittest.");
 }
 
 /**Calculate the conditional entropy H(data | cond).*/
@@ -412,7 +410,6 @@ unittest {
     int[] bar = [1,2,3,1,2];
     assert(approxEqual(entropy(foo) - condEntropy(foo, bar),
            mutualInfo(foo, bar)));
-    writeln("Passed condEntroy unittest.");
 }
 
 
@@ -433,7 +430,6 @@ unittest {
     assert(approxEqual(mutualInfo(bin([1,2,1,1,3,4,3,6].dup, 4),
            bin([2,7,9,6,3,1,7,40].dup, 4)), .5435671));
 
-    writeln("Passed mutualInfo unittest.");
 }
 
 /**Calculates the conditional mutual information I(x, y | z).*/
@@ -450,7 +446,6 @@ unittest {
     res = condMutualInfo([1,2,3,1,2].dup, [2,1,3,2,1].dup,
                          joint([1,1,1,2,2].dup, [2,2,2,1,1].dup));
     assert(approxEqual(res, 1.3510));
-    writeln("Passed condMutualInfo unittest.");
 }
 
 /**Calculates the entropy of any old input range of observations more quickly
@@ -491,7 +486,6 @@ unittest {
     auto sorted = foo.dup;
     sort(sorted);
     assert(approxEqual(entropySorted(sorted), entropy(foo)));
-    writeln("Passed entroySorted test.");
 }
 
 // Verify that there are no TempAlloc memory leaks anywhere in the code covered

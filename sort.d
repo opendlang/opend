@@ -323,7 +323,6 @@ unittest {
     assert(medianOf3!("a < b")([5,2,3,4,1]) == 2);
     assert(medianOf3!("a < b")([5,2,1,4,3]) == 4);
     assert(medianOf3!("a < b")([3,2,5,4,1]) == 0);
-    writeln("Passed medianOf3 unittest.");
 }
 
 
@@ -465,8 +464,6 @@ unittest {
         qsort(nanArr);
         assert(0);
     } catch(SortException) {}
-
-    writeln("Passed qsort test.");
 }
 
 /* Keeps track of what array merge sort data is in.  This is a speed hack to
@@ -582,8 +579,6 @@ unittest {
     testFloating!(mergeSortTemp, float)();
     testFloating!(mergeSortTemp, double)();
     testFloating!(mergeSortTemp, real)();
-
-    writeln("Passed mergeSort test.");
 }
 
 /**Merge sort, allowing caller to provide a temp variable.  This allows
@@ -797,8 +792,6 @@ unittest {
     testFloating!(mergeSortInPlace, float)();
     testFloating!(mergeSortInPlace, double)();
     testFloating!(mergeSortInPlace, real)();
-
-    writeln("Passed mergeSortInPlace test.");
 }
 
 // Loosely based on C++ STL's __merge_without_buffer().
@@ -933,8 +926,6 @@ unittest {
     testFloating!(heapSort, float)();
     testFloating!(heapSort, double)();
     testFloating!(heapSort, real)();
-
-    writeln("Passed heapSort test.");
 }
 
 void makeMultiHeap(alias compFun = "a < b", T...)(T input) {
@@ -1050,7 +1041,6 @@ unittest {
             }
         }
     }
-    writeln("Passed insertionSort test.");
 }
 
 // Kept around only because it's easy to implement, and therefore good for
@@ -1093,13 +1083,12 @@ unittest {
     test = [6, 1, 2, 4, 5, 3];
     bubbleSort(test, &dist);
     assert(dist == 7);
-    writeln("Passed bubbleSort test.");
 }
 
 /**Returns the kth largest/smallest element (depending on compFun, 0-indexed)
  * in the input array in O(N) time.  Allocates memory, does not modify input
  * array.*/
-T quickSelect(alias compFun = "a < b", T)(const T[] data, int k) {
+T quickSelect(alias compFun = "a < b", T)(const T[] data, ptrdiff_t k) {
     auto dataDup = data.tempdup;
     scope(exit) TempAlloc.free;
     return partitionK!(compFun)(dataDup, k);
@@ -1128,7 +1117,7 @@ T quickSelect(alias compFun = "a < b", T)(const T[] data, int k) {
  *
  * Returns:  The kth element of the array.
  */
-ElementType!(T[0]) partitionK(alias compFun = "a < b", T...)(T data, int k)
+ElementType!(T[0]) partitionK(alias compFun = "a < b", T...)(T data, ptrdiff_t k)
 in {
     assert(data.length > 0);
     size_t len = data[0].length;
@@ -1141,7 +1130,7 @@ in {
     return partitionKImpl!compFun(data, k);
 }
 
-/*private*/ ElementType!(T[0]) partitionKImpl(alias compFun, T...)(T data, int k) {
+/*private*/ ElementType!(T[0]) partitionKImpl(alias compFun, T...)(T data, ptrdiff_t k) {
     alias binaryFun!(compFun) comp;
 
     {
@@ -1216,7 +1205,6 @@ unittest {
         }
         assert(test == lockstep);
     }
-    writeln("Passed quickSelect/partitionK test.");
 }
 
 /**Given a set of data points entered through the put function, this output range
@@ -1317,7 +1305,6 @@ unittest {
         assert(less.getSorted == qsort!("a < b")(nums[0..5]));
         assert(more.getSorted == qsort!("a > b")(nums[0..5]));
     }
-    writeln("Passed TopN test.");
 }
 
 // Verify that there are no TempAlloc memory leaks anywhere in the code covered

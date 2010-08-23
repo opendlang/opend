@@ -31,7 +31,7 @@
  */
 module dstats.kerneldensity;
 
-import std.conv, std.math, std.algorithm, std.contracts, std.traits, std.range,
+import std.conv, std.math, std.algorithm, std.exception, std.traits, std.range,
     std.array, std.typetuple;
 
 import  dstats.alloc, dstats.base, dstats.summary;
