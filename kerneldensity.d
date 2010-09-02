@@ -236,6 +236,21 @@ public:
         return fromCallable(&kernelFun, range, edgeBuffer);
     }
 
+    /**Construct a kernel density estimator using the default kernel, which is
+     * a Gaussian kernel with the Scott bandwidth.
+     */
+    static KernelDensity1D fromDefaultKernel(R)
+    (R range, double edgeBuffer = double.nan)
+    if(isForwardRange!R && is(ElementType!R : double)) {
+        immutable bandwidth = scottBandwidth(range.save);
+
+        double kernel(double x) {
+            return normalPDF(x, 0, bandwidth);
+        }
+
+        return fromCallable(&kernel, range, edgeBuffer);
+    }
+
     /**Compute the probability density at a given point.*/
     double opCall(double x) const {
         if(x < minElem || x > maxElem) {
@@ -298,6 +313,9 @@ unittest {
 
     // This is purely to see if fromAlias works.
     auto cosKde = KernelDensity1D.fromAlias!cos([0], 1);
+
+    // Make sure fromDefaultKernel at least instantiates.
+    auto defaultKde = KernelDensity1D.fromDefaultKernel([1, 2, 3]);
 }
 
 /**Uses Scott's Rule to select the bandwidth of the Gaussian kernel density
