@@ -979,14 +979,14 @@ if(doubleInput!(typeof(dataIn[0].front)) || allSatisfy!(doubleInput, T)) {
             }
         }
     } else {
-        Unqual!(C)[] dataArray;
-        auto app = appender(&dataArray);
+        auto app = appender!(Unqual!(C)[])();
         foreach(i, rng; data) {
             size_t oldLen = dataArray.length;
             app.put(rng);
             lengths[i] = dataArray.length - oldLen;
             N += lengths[i];
         }
+        auto dataArray = app.data;
     }
 
     double[] ranks = newStack!double(dataArray.length);
@@ -1194,18 +1194,18 @@ is(CommonType!(ElementType!T, ElementType!U))) {
         rangeCopy(combined[0..n1], sample1);
         rangeCopy(combined[n1..$], sample2);
     } else {
-        C[] combined;
-        auto app = appender(&combined);
+        auto app = appender!(C[])();
 
         foreach(elem; sample1) {
             app.put(elem);
         }
 
-        uint n1 = combined.length;
+        uint n1 = app.data.length;
         foreach(elem; sample2) {
             app.put(elem);
         }
 
+        auto combined = app.data;
         uint N = combined.length;
         uint n2 = N - n1;
     }
@@ -1553,10 +1553,8 @@ is(typeof(before.front - after.front) : double)) {
         }
     } else {
         double[] diffRanks;
-        byte[] signs;
-        double[] diffs;
-        auto diffApp = appender(&diffs);
-        auto signApp = appender(&signs);
+        auto diffApp = appender!(double[])();
+        auto signApp = appender!(byte[])();
 
         while(!before.empty && !after.empty) {
             double diff = cast(double) before.front - cast(double) after.front;
@@ -1566,6 +1564,8 @@ is(typeof(before.front - after.front) : double)) {
             after.popFront;
         }
 
+        auto diffs = diffApp.data;
+        auto signs = signApp.data;
         diffRanks = newStack!double(diffs.length);
     }
     rankSort(diffs, diffRanks);
@@ -2158,10 +2158,11 @@ if(isInputRange!U && isInputRange!F &&
             logPs[pIndex++] = p;
         }
     } else {
-        auto app = appender(&logPs);
+        auto app = appender(logPs);
         foreach(p; proportions) {
             app.put(p);
         }
+        logPs = app.data;
     }
 
     logPs[] /= reduce!"a + b"(0.0, logPs);
@@ -3536,20 +3537,7 @@ enum Dependency {
  */
 float[] falseDiscoveryRate(T)(T pVals, Dependency dep = Dependency.no)
 if(doubleInput!(T)) {
-    float[] qVals;
-    static if(dstats.base.hasLength!T) {
-        qVals.length = pVals.length;
-        foreach(i, elem; pVals) {
-            dstatsEnforce(elem >= 0 && elem <= 1,
-                "P-values must be between 0, 1 for falseDiscoveryRate.");
-            qVals[i] = cast(float) elem;
-        }
-    } else {
-        auto app = appender(&qVals);
-        foreach(elem; pVals) {
-            app.put(cast(float) elem);
-        }
-    }
+    auto qVals = array(map!(to!float)(pVals));
 
     double C = 1;
     if(dep == Dependency.yes) {
@@ -3636,11 +3624,7 @@ unittest {
  */
 float[] hochberg(T)(T pVals)
 if(doubleInput!(T)) {
-    float[] qVals;
-    auto app = appender(&qVals);
-    foreach(pVal; pVals) {
-        app.put(pVal);
-    }
+    auto qVals = array(map!(to!float)(pVals));
 
     mixin(newFrame);
     auto perm = newStack!(uint)(qVals.length);
@@ -3704,12 +3688,7 @@ float[] holmBonferroni(T)(T pVals)
 if(doubleInput!(T)) {
     mixin(newFrame);
 
-    float[] qVals;
-    auto app = appender(&qVals);
-    foreach(pVal; pVals) {
-        app.put(pVal);
-    }
-
+    auto qVals = array(map!(to!float)(pVals));
     auto perm = newStack!(uint)(qVals.length);
 
     foreach(i, ref elem; perm) {

@@ -554,10 +554,12 @@ if(isInputRange!(T) && !(isArray!(T) || !isReferenceType!(ElementType!(T)))) {
 }
 
 private void finishCopy(T, U)(ref T[] result, U range) {
-    auto app = appender(&result);
+    result.assumeSafeAppend();
+    auto app = appender(result);
     foreach(elem; range) {
         app.put(elem);
     }
+    result = app.data;
 }
 
 // See Bugzilla 2873.  This can be removed once that's fixed.
@@ -566,33 +568,33 @@ template hasLength(R) {
                       is(typeof(R.init.length()) : ulong);
 }
 
-/**Converts any range to an array on the GC heap by the most efficient means
- * available.  If it is already an array, duplicates the range.*/
+// Now that Phobos does this well, this just forwards to Phobos.
 Unqual!(IterType!(T))[] toArray(T)(T range) if(isIterable!(T)) {
-    static if(isArray!(T)) {
-        // Allow fast copying by assuming that the input is an array.
-        return range.dup;
-    } else static if(hasLength!(T)) {
-        // Preallocate array, then copy.
-        auto ret = newVoid!(Unqual!(IterType!(T)))(range.length);
-        static if(is(typeof(ret[] = range[]))) {
-            ret[] = range[];
-        } else {
-            size_t pos = 0;
-            foreach(elem; range) {
-                ret[pos++] = elem;
-            }
-        }
-        return ret;
-    } else {
-        // Don't have length, have to use appending.
-        Unqual!(IterType!(T))[] ret;
-        auto app = appender(&ret);
-        foreach(elem; range) {
-            app.put(elem);
-        }
-        return ret;
-    }
+    return std.array.array(range);
+//    static if(isArray!(T)) {
+//        // Allow fast copying by assuming that the input is an array.
+//        return range.dup;
+//    } else static if(hasLength!(T)) {
+//        // Preallocate array, then copy.
+//        auto ret = newVoid!(Unqual!(IterType!(T)))(range.length);
+//        static if(is(typeof(ret[] = range[]))) {
+//            ret[] = range[];
+//        } else {
+//            size_t pos = 0;
+//            foreach(elem; range) {
+//                ret[pos++] = elem;
+//            }
+//        }
+//        return ret;
+//    } else {
+//        // Don't have length, have to use appending.
+//        Unqual!(IterType!(T))[] ret;
+//        auto app = appender(&ret);
+//        foreach(elem; range) {
+//            app.put(elem);
+//        }
+//        return ret;
+//    }
 }
 
 unittest {

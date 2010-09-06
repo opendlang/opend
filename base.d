@@ -721,8 +721,8 @@ if(isInputRange!(V) && isInputRange!(C) && is(ElementType!C == bool)) {
         ret[0] = ret[0][0..zeroIndex];
         ret[1] = ret[1][0..oneIndex];
     } else {
-        auto app0 = appender(ret.ptr);
-        auto app1 = appender(ret.ptr + 1);
+        auto app0 = appender!(ElementType!(V)[])();
+        auto app1 = appender!(ElementType!(V)[])();
 
         while(!values.empty && !categories.empty) {
             scope(exit) {
@@ -737,6 +737,9 @@ if(isInputRange!(V) && isInputRange!(C) && is(ElementType!C == bool)) {
                 app0.put(values.front);
             }
         }
+
+        ret[0] = app0.data;
+        ret[1] = app1.data;
     }
 
     return ret;
