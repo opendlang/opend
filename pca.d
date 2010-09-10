@@ -102,13 +102,16 @@ PrincipalComponent buf = PrincipalComponent.init) {
 
     double oldMagnitude = 0;
 
-    static double maxDiff(double[] a, double[] b) {
-        auto ret = 0.0;
+    static bool approxEqualOrNotFinite(double[] a, double[] b) {
         foreach(i; 0..a.length) {
-            ret = max(ret, abs(a[i] - b[i]));
+            if(!isFinite(a[i]) || !isFinite(b[i])) {
+                return true;
+            } else if(!approxEqual(a[i], b[i], 1e-3, 1e-6)) {
+                return false;
+            }
         }
 
-        return ret;
+        return true;
     }
 
     while(true) {
@@ -124,7 +127,7 @@ PrincipalComponent buf = PrincipalComponent.init) {
         immutable tMagnitude = magnitude(t);
         t[] /= tMagnitude;
 
-        if(maxDiff(t, p) < 1e-6) {
+        if(approxEqualOrNotFinite(t, p)) {
             p[] = t[];
             break;
         }
@@ -160,6 +163,7 @@ void normalizeColumns(Ror)(Ror data) {
     foreach(row; data) {
         size_t i = 0;
         foreach(elem; row) {
+            enforce(i < rowLen, "Matrix must be rectangular for PCA.");
             means[i++].put(elem);
         }
 
