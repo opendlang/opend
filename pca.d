@@ -38,7 +38,7 @@ module dstats.pca;
 
 import std.range, dstats.base, dstats.alloc, std.numeric, std.stdio, std.math,
     std.algorithm, std.array, dstats.summary, dstats.random, std.conv,
-    std.contracts, dstats.regress;
+    std.exception, dstats.regress;
 
 /// Result holder
 struct PrincipalComponent {
@@ -93,6 +93,7 @@ PrincipalComponent buf = PrincipalComponent.init) {
 
     if(data.empty) return typeof(return).init;
     immutable rowLen = data.front.length;
+    immutable colLen = walkLength(data.save);
 
     auto t = newStack!double(rowLen);
     auto p = (buf.rotation.length >= rowLen) ?
@@ -130,12 +131,13 @@ PrincipalComponent buf = PrincipalComponent.init) {
         p[] = t[];
     }
 
-    auto x = (buf.x.length >= rowLen) ?
-              buf.x[0..rowLen] : new double[rowLen];
-    foreach(i, row; data) {
-        x[i] = dotProduct(p, row);
+    auto x = (buf.x.length >= colLen) ?
+              buf.x[0..colLen] : new double[colLen];
+    size_t i = 0;
+    foreach(row; data) {
+        x[i++] = dotProduct(p, row);
     }
-    x[] -= mean(x[]).mean;
+    x[] -= mean(x).mean;
 
     return PrincipalComponent(x, p);
 }
