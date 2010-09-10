@@ -102,10 +102,10 @@ PrincipalComponent buf = PrincipalComponent.init) {
 
     double oldMagnitude = 0;
 
-    static double minDiff(double[] a, double[] b) {
-        auto ret = double.infinity;
+    static double maxDiff(double[] a, double[] b) {
+        auto ret = 0.0;
         foreach(i; 0..a.length) {
-            ret = min(ret, abs(a[i] - b[i]));
+            ret = max(ret, abs(a[i] - b[i]));
         }
 
         return ret;
@@ -115,15 +115,16 @@ PrincipalComponent buf = PrincipalComponent.init) {
         t[] = 0;
         foreach(row; data.save) {
             immutable dp = dotProduct(p, row);
-            foreach(i, elem; row.save) {
-                t[i] += elem * dp;
+            size_t i = 0;
+            foreach(elem; row.save) {
+                t[i++] += elem * dp;
             }
         }
 
         immutable tMagnitude = magnitude(t);
         t[] /= tMagnitude;
 
-        if(minDiff(t, p) < 1e-8) {
+        if(maxDiff(t, p) < 1e-6) {
             p[] = t[];
             break;
         }
