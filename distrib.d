@@ -113,6 +113,8 @@ enum SQ2PI = sqrt(2 * PI);
 version(unittest) {
     import std.stdio, std.random;
 
+    alias std.math.approxEqual ae;
+
     void main(){
     }
 }
@@ -824,14 +826,36 @@ unittest {
 double chiSquareCDF(double x, double v) {
     dstatsEnforce(x >= 0, "x must be >= 0 in chi-square distribution.");
     dstatsEnforce(v >= 1.0, "Must have at least 1 degree of freedom for chi-square.");
-    return gammaIncomplete( 0.5*v, 0.5*x);
+
+    // These are very common special cases where we can make the calculation
+    // a lot faster and/or more accurate.
+    if(v == 1) {
+        // Then it's the square of a normal(0, 1).
+        return 1.0L - erfc(sqrt(x) * SQRT1_2);
+    } else if(v == 2) {
+        // Then it's an exponential w/ lambda == 1/2.
+        return 1.0L - exp(-0.5 * x);
+    } else {
+        return gammaIncomplete(0.5 * v, 0.5 * x);
+    }
 }
 
 ///
 double chiSquareCDFR(double x, double v) {
     dstatsEnforce(x >= 0, "x must be >= 0 in chi-square distribution.");
     dstatsEnforce(v >= 1.0, "Must have at least 1 degree of freedom for chi-square.");
-    return gammaIncompleteCompl( 0.5L*v, 0.5L*x );
+
+    // These are very common special cases where we can make the calculation
+    // a lot faster and/or more accurate.
+    if(v == 1) {
+        // Then it's the square of a normal(0, 1).
+        return erfc(sqrt(x) * SQRT1_2);
+    } else if(v == 2) {
+        // Then it's an exponential w/ lambda == 1/2.
+        return exp(-0.5 * x);
+    } else {
+        return gammaIncompleteCompl(0.5 * v, 0.5 * x);
+    }
 }
 
 /**
@@ -853,9 +877,19 @@ double invChiSquareCDFR(double v, double p) {
 }
 
 unittest {
-  assert(feqrel(chiSqrCDFR(invChiSqCDFR(3.5, 0.1), 3.5), 0.1)>=double.mant_dig-3);
-  assert(chiSqrCDF(0.4L, 19.02L) + chiSqrCDFR(0.4L, 19.02L) ==1.0L);
-  assert(approxEqual( invChiSqCDFR( 3, chiSqrCDFR(1, 3)), 1));
+    assert(feqrel(chiSqrCDFR(invChiSqCDFR(3.5, 0.1), 3.5), 0.1)>=double.mant_dig-3);
+    assert(chiSqrCDF(0.4L, 19.02L) + chiSqrCDFR(0.4L, 19.02L) ==1.0L);
+    assert(ae( invChiSqCDFR( 3, chiSqrCDFR(1, 3)), 1));
+
+    assert(ae(chiSquareCDFR(0.2, 1), 0.6547208));
+    assert(ae(chiSquareCDFR(0.2, 2), 0.9048374));
+    assert(ae(chiSquareCDFR(0.8, 1), 0.3710934));
+    assert(ae(chiSquareCDFR(0.8, 2), 0.67032));
+
+    assert(ae(chiSquareCDF(0.2, 1), 0.3452792));
+    assert(ae(chiSquareCDF(0.2, 2), 0.09516258));
+    assert(ae(chiSquareCDF(0.8, 1), 0.6289066));
+    assert(ae(chiSquareCDF(0.8, 2), 0.3296800));
 }
 
 ///
@@ -891,7 +925,7 @@ double normalCDFR(double x, double mean = 0, double stdev = 1) {
     dstatsEnforce(stdev > 0, "Standard deviation must be > 0 for normal distribution.");
 
     double Z = (x - mean) / stdev;
-    return erfc(Z*SQRT1_2)/2;
+    return erfc(Z * SQRT1_2) / 2;
 }
 
 unittest {

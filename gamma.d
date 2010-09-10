@@ -54,7 +54,6 @@ import std.math;
 
 import dstats.distrib;
 
-alias std.math.lgamma logGamma;
 alias std.math.tgamma gamma;
 
 version(Windows) { // Some tests only pass on DMD Windows
@@ -73,6 +72,20 @@ version(unittest) {
 
 /// The maximum value of x for which gamma(x) < real.infinity.
 enum real MAXGAMMA = 1755.5483429L;
+
+real logGamma(real a) {
+    // This is a cheap speed hack.  When doing high-level analyses, this
+    // function very frequently ends up getting called multiple times in a
+    // row with the same value of a.  Cache the last result in TLS to make
+    // these calls fast.
+    static real lastRet, lastA;
+    if(isIdentical(a, lastA)) {
+        return lastRet;
+    } else {
+        lastA = a;
+        return lastRet = std.math.lgamma(a);
+    }
+}
 
 /****************
  * The sign of $(GAMMA)(x).
@@ -780,7 +793,7 @@ body {
     real ans = 1.0L;
 
     do  {
-        r += 1.0L;
+        r++;
         c *= x/r;
         ans += c;
     } while( c/ans > real.epsilon );
@@ -806,7 +819,7 @@ body {
    enum real MAXLOGL =  1.1356523406294143949492E4L;
    if (x > MAXLOGL) return 0; // underflow
 
-    real ax = a * log(x) - x - logGamma(a);
+   real ax = a * log(x) - x - logGamma(a);
 //const real MINLOGL = -1.1355137111933024058873E4L;
 //  if ( ax < MINLOGL ) return 0; // underflow;
     ax = exp(ax);
@@ -826,20 +839,20 @@ body {
     real ans = pkm1/qkm1;
 
     do  {
-        c += 1.0L;
-        y += 1.0L;
-        z += 2.0L;
+        c++;
+        y++;
+        z += 2;
         real yc = y * c;
         pk = pkm1 * z  -  pkm2 * yc;
         qk = qkm1 * z  -  qkm2 * yc;
-        if( qk != 0.0L ) {
+        if(qk != 0) {
             real r = pk/qk;
             t = fabs( (ans - r)/r );
             ans = r;
         } else {
-            t = 1.0L;
+            t = 1;
         }
-    pkm2 = pkm1;
+        pkm2 = pkm1;
         pkm1 = pk;
         qkm2 = qkm1;
         qkm1 = qk;
@@ -879,22 +892,21 @@ body {
 
     real y0 = p;
     enum real MAXLOGL =  1.1356523406294143949492E4L;
-    real x0, x1, x, yl, yh, y, d, lgm, dithresh;
     int i, dir;
 
     /* bound the solution */
-    x0 = real.max;
-    yl = 0.0L;
-    x1 = 0.0L;
-    yh = 1.0L;
-    dithresh = 4.0 * real.epsilon;
+    real x0 = real.max;
+    real yl = 0;
+    real x1 = 0;
+    real yh = 1;
+    real dithresh = 4 * real.epsilon;
 
     /* approximation to inverse function */
-    d = 1.0L/(9.0L*a);
-    y = 1.0L - d - invNormalCDF(y0) * sqrt(d);
-    x = a * y * y * y;
+    real d = 1.0L/(9.0L*a);
+    real y = 1.0L - d - invNormalCDF(y0) * sqrt(d);
+    real x = a * y * y * y;
 
-    lgm = logGamma(a);
+    real lgm = logGamma(a);
 
     for( i=0; i<10; i++ ) {
         if( x > x0 || x < x1 )
