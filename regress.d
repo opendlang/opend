@@ -262,12 +262,16 @@ struct PolyFitRes(T) {
 struct Residuals(F, U, T...) {
     static if(T.length == 1 && isForwardRange!(typeof(T[0].front()))) {
         alias T[0] R;
+        alias typeof(array(R.init)) XType;
+        enum bool needDup = true;
     } else {
         alias T R;
+        alias staticMap!(Unqual, R) XType;
+        enum bool needDup = false;
     }
 
     Unqual!U Y;
-    staticMap!(Unqual, R) X;
+    XType X;
     F[] betas;
     double residual;
     bool _empty;
@@ -280,7 +284,7 @@ struct Residuals(F, U, T...) {
             sum += frnt * betas[i];
             i++;
         }
-        residual = Y.front - sum;//sum - Y.front;
+        residual = Y.front - sum;
     }
 
     this(F[] betas, U Y, R X) {
@@ -292,7 +296,18 @@ struct Residuals(F, U, T...) {
                 "Betas and X must have same length for residuals.");
         }
 
-        this.X = X;
+        static if(needDup) {
+            this.X = array(X);
+        } else {
+            this.X = X;
+        }
+
+        foreach(i, elem; this.X) {
+            static if(isForwardRange!(typeof(elem))) {
+                this.X[i] = this.X[i].save;
+            }
+        }
+
         this.Y = Y;
         this.betas = betas;
         if(Y.empty) {
