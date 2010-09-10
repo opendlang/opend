@@ -32,13 +32,13 @@
 module dstats.kerneldensity;
 
 import std.conv, std.math, std.algorithm, std.exception, std.traits, std.range,
-    std.array, std.typetuple;
+    std.array, std.typetuple, dstats.distrib;
 
 import  dstats.alloc, dstats.base, dstats.summary;
 
 version(unittest) {
 
-    import dstats.distrib, dstats.random, std.stdio;
+    import dstats.random, std.stdio;
 
     void main() {}
 }

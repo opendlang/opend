@@ -38,7 +38,7 @@ module dstats.pca;
 
 import std.range, dstats.base, dstats.alloc, std.numeric, std.stdio, std.math,
     std.algorithm, std.array, dstats.summary, dstats.random, std.conv,
-    std.exception, dstats.regress;
+    std.exception, dstats.regress, std.traits;
 
 /// Result holder
 struct PrincipalComponent {
@@ -100,9 +100,7 @@ PrincipalComponent buf = PrincipalComponent.init) {
               buf.rotation[0..rowLen] : new double[rowLen];
     p[] = 1;
 
-    double oldMagnitude = 0;
-
-    static bool approxEqualOrNotFinite(double[] a, double[] b) {
+    static bool approxEqualOrNotFinite(const double[] a, const double[] b) {
         foreach(i; 0..a.length) {
             if(!isFinite(a[i]) || !isFinite(b[i])) {
                 return true;
@@ -118,9 +116,14 @@ PrincipalComponent buf = PrincipalComponent.init) {
         t[] = 0;
         foreach(row; data.save) {
             immutable dp = dotProduct(p, row);
-            size_t i = 0;
-            foreach(elem; row.save) {
-                t[i++] += elem * dp;
+            static if( is(typeof(row) : const(double)[] )) {
+                // Use array op optimization if possible.
+                t[] += row[] * dp;
+            } else {
+                size_t i = 0;
+                foreach(elem; row.save) {
+                    t[i++] += elem * dp;
+                }
             }
         }
 
