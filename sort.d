@@ -72,8 +72,8 @@
 
 module dstats.sort;
 
-import std.traits, std.algorithm, std.math, std.functional, std.math,
-       std.typetuple, std.range, std.array, std.string : whitespace;
+import std.traits, std.algorithm, std.math, std.functional, std.math, std.typecons,
+       std.typetuple, std.range, std.array, std.traits, std.string : whitespace;
 
 import dstats.alloc;
 
@@ -978,6 +978,10 @@ in {
     return data[0];
 }
 
+private template IndexType(T) {
+    alias typeof(T.init[0]) IndexType;
+}
+
 /*private*/ T[0] insertionSortImpl(alias compFun, T...)(T data) {
     alias binaryFun!(compFun) comp;
     static if(is(T[$ - 1] == ulong*)) {
@@ -996,16 +1000,26 @@ in {
     immutable maxJ = keyArray.length - 1;
     for(size_t i = keyArray.length - 2; i != size_t.max; --i) {
         size_t j = i;
-        auto val = keyArray[i];
 
-        for(; j < maxJ && comp(keyArray[j + 1], val); ++j) {
-            keyArray[j] = keyArray[j + 1];
+        Tuple!(staticMap!(IndexType, typeof(data[0..dl]))) temp = void;
+        foreach(ti, Type; typeof(data[0..dl])) {
+            static if(hasElaborateAssign!Type) {
+                emplace(&(temp.field[ti]), data[ti][i]);
+            } else {
+                temp.field[ti] = data[ti][i];
+            }
         }
 
-        keyArray[j] = val;
+        for(; j < maxJ && comp(keyArray[j + 1], temp.field[0]); ++j) {
+            // It's faster to do all copying here than to call rotateLeft()
+            // later, probably due to better ILP.
+            foreach(array; data[0..dl]) {
+                array[j] = array[j + 1];
+            }
+        }
 
-        foreach(array; data[1..dl]) {
-             rotateLeft(array[i..j + 1]);
+        foreach(ti, Unused; typeof(temp.field)) {
+            data[ti][j] = temp.field[ti];
         }
 
         static if(is(typeof(swapCount))) {
