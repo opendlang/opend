@@ -1143,26 +1143,26 @@ unittest {
     foreach(p; p1) {
         res ~= p;
     }
-    sort(res);
-    assert(res.canFindSorted([1.0, 2.0, 3.0]));
-    assert(res.canFindSorted([1.0, 3.0, 2.0]));
-    assert(res.canFindSorted([2.0, 1.0, 3.0]));
-    assert(res.canFindSorted([2.0, 3.0, 1.0]));
-    assert(res.canFindSorted([3.0, 1.0, 2.0]));
-    assert(res.canFindSorted([3.0, 2.0, 1.0]));
+    auto sortedRes = sort(res);
+    assert(sortedRes.canFind([1.0, 2.0, 3.0]));
+    assert(sortedRes.canFind([1.0, 3.0, 2.0]));
+    assert(sortedRes.canFind([2.0, 1.0, 3.0]));
+    assert(sortedRes.canFind([2.0, 3.0, 1.0]));
+    assert(sortedRes.canFind([3.0, 1.0, 2.0]));
+    assert(sortedRes.canFind([3.0, 2.0, 1.0]));
     assert(res.length == 6);
     byte[][] res2;
     auto perm2 = perm(3);
     foreach(p; perm2) {
         res2 ~= p.dup;
     }
-    sort(res2);
-    assert(res2.canFindSorted( to!(byte[])([0, 1, 2])));
-    assert(res2.canFindSorted( to!(byte[])([0, 2, 1])));
-    assert(res2.canFindSorted( to!(byte[])([1, 0, 2])));
-    assert(res2.canFindSorted( to!(byte[])([1, 2, 0])));
-    assert(res2.canFindSorted( to!(byte[])([2, 0, 1])));
-    assert(res2.canFindSorted( to!(byte[])([2, 1, 0])));
+    auto sortedRes2 = sort(res2);
+    assert(sortedRes2.canFind( to!(byte[])([0, 1, 2])));
+    assert(sortedRes2.canFind( to!(byte[])([0, 2, 1])));
+    assert(sortedRes2.canFind( to!(byte[])([1, 0, 2])));
+    assert(sortedRes2.canFind( to!(byte[])([1, 2, 0])));
+    assert(sortedRes2.canFind( to!(byte[])([2, 0, 1])));
+    assert(sortedRes2.canFind( to!(byte[])([2, 1, 0])));
     assert(res2.length == 6);
 
     // Indirect tests:  If the elements returned are unique, there are N! of
@@ -1410,17 +1410,17 @@ unittest {
         vals ~= c;
     }
 
-    sort(vals);
-    assert(vals.canFindSorted([0u,1].dup));
-    assert(vals.canFindSorted([0u,2].dup));
-    assert(vals.canFindSorted([0u,3].dup));
-    assert(vals.canFindSorted([0u,4].dup));
-    assert(vals.canFindSorted([1u,2].dup));
-    assert(vals.canFindSorted([1u,3].dup));
-    assert(vals.canFindSorted([1u,4].dup));
-    assert(vals.canFindSorted([2u,3].dup));
-    assert(vals.canFindSorted([2u,4].dup));
-    assert(vals.canFindSorted([3u,4].dup));
+    auto sortedVals = sort(vals);
+    assert(sortedVals.canFind([0u,1].dup));
+    assert(sortedVals.canFind([0u,2].dup));
+    assert(sortedVals.canFind([0u,3].dup));
+    assert(sortedVals.canFind([0u,4].dup));
+    assert(sortedVals.canFind([1u,2].dup));
+    assert(sortedVals.canFind([1u,3].dup));
+    assert(sortedVals.canFind([1u,4].dup));
+    assert(sortedVals.canFind([2u,3].dup));
+    assert(sortedVals.canFind([2u,4].dup));
+    assert(sortedVals.canFind([3u,4].dup));
     assert(vals.length == 10);
 
     // Now, test the array version.
@@ -1429,17 +1429,17 @@ unittest {
     foreach(c; comb2) {
         vals ~= c;
     }
-    sort(vals);
-    assert(vals.canFindSorted([5u, 6, 7].dup));
-    assert(vals.canFindSorted([5u, 6, 8].dup));
-    assert(vals.canFindSorted([5u, 6, 9].dup));
-    assert(vals.canFindSorted([5u, 7, 8].dup));
-    assert(vals.canFindSorted([5u, 7, 9].dup));
-    assert(vals.canFindSorted([5u, 8, 9].dup));
-    assert(vals.canFindSorted([6U, 7, 8].dup));
-    assert(vals.canFindSorted([6u, 7, 9].dup));
-    assert(vals.canFindSorted([6u, 8, 9].dup));
-    assert(vals.canFindSorted([7u, 8, 9].dup));
+    sortedVals = sort(vals);
+    assert(sortedVals.canFind([5u, 6, 7].dup));
+    assert(sortedVals.canFind([5u, 6, 8].dup));
+    assert(sortedVals.canFind([5u, 6, 9].dup));
+    assert(sortedVals.canFind([5u, 7, 8].dup));
+    assert(sortedVals.canFind([5u, 7, 9].dup));
+    assert(sortedVals.canFind([5u, 8, 9].dup));
+    assert(sortedVals.canFind([6U, 7, 8].dup));
+    assert(sortedVals.canFind([6u, 7, 9].dup));
+    assert(sortedVals.canFind([6u, 8, 9].dup));
+    assert(sortedVals.canFind([7u, 8, 9].dup));
     assert(vals.length == 10);
 
     // Now a test of a larger dataset where more subtle bugs could hide.

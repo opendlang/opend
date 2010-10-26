@@ -1050,7 +1050,7 @@ unittest {
     assert(approxEqual(res1.p, 0.1256));
 
     // Test for other input types.
-    auto res2 = kruskalWallis([[3,1,4,1].idup, [5,9,2,6].idup, [5,3,5].idup].idup);
+    auto res2 = kruskalWallis([[3,1,4,1].idup, [5,9,2,6].idup, [5,3,5].idup].dup);
     assert(res2 == res1);
     auto res3 = kruskalWallis(map!"a"([3,1,4,1].dup), [5,9,2,6].dup, [5,3,5].dup);
     assert(res3 == res1);
