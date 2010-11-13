@@ -946,7 +946,7 @@ bool[] toBools(R)(R range) {
     return tempdup(map!"(a) ? true : false"(range));
 }
 
-auto toRandomAccessRoR(T)(uint len, T ror) {
+auto toRandomAccessRoR(T)(size_t len, T ror) {
     static assert(isRoR!T);
     alias ElementType!T E;
     static if(isRandomAccessRange!T && isRandomAccessRange!E) {

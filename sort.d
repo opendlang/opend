@@ -531,7 +531,7 @@ unittest {
     foreach(i; 0..100) {
         ulong mergeCount = 0, bubbleCount = 0;
         foreach(j, ref e; stability) {
-            e = j;
+            e = cast(uint) j;
         }
         randomShuffle(test);
         uint len = uniform(0, 1_000);
@@ -555,7 +555,7 @@ unittest {
     // Test without swapCounts.
     foreach(i; 0..1000) {
         foreach(j, ref e; stability) {
-            e = j;
+            e = cast(uint) j;
         }
         randomShuffle(test);
         uint len = uniform(0, 1_000);
@@ -775,7 +775,7 @@ unittest {
     uint[] test2 = test.dup;
     foreach(i; 0..1000) {
         foreach(j, ref e; stability) {
-            e = j;
+            e = cast(uint) j;
         }
         randomShuffle(zip(test, test2));
         uint len = uniform(0, 1_000);
@@ -932,7 +932,7 @@ void makeMultiHeap(alias compFun = "a < b", T...)(T input) {
     if(input[0].length < 2)
         return;
     alias binaryFun!(compFun) comp;
-    for(int start = (input[0].length - 1) / 2; start >= 0; start--) {
+    for(sizediff_t start = (input[0].length - 1) / 2; start >= 0; start--) {
         multiSiftDown!(compFun)(input, start, input[0].length);
     }
 }
@@ -1038,7 +1038,7 @@ unittest {
     foreach(i; 0..1_000) {
         ulong insertCount = 0, bubbleCount = 0;
         foreach(j, ref e; stability) {
-            e = j;
+            e = cast(uint) j;
         }
         randomShuffle(test);
         uint len = uniform(0, 100);
@@ -1295,7 +1295,7 @@ unittest {
     gen.seed(unpredictableSeed);
     uint[] nums = new uint[100];
     foreach(i, ref n; nums) {
-        n = i;
+        n = cast(uint) i;
     }
     foreach(i; 0..100) {
         auto less = TopNLess(10);

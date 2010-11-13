@@ -127,7 +127,7 @@ unittest {
     }
 
     float[] test = new float[1000];
-    uint upperBound, lowerBound;
+    size_t upperBound, lowerBound;
     foreach(testNum; 0..1000) {
         foreach(ref e; test) {
             e = uniform(0f, 1000f);

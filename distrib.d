@@ -108,7 +108,8 @@ import std.algorithm, std.conv, std.exception, std.math, std.traits;
 
 import dstats.base, dstats.gamma;
 
-enum SQ2PI = sqrt(2 * PI);
+// CTFE doesn't work yet for sqrt() in GDC.  This value is sqrt(2 * PI).
+enum SQ2PI = 2.50662827463100050241576528481104525300698674060993831662992; 
 
 version(unittest) {
     import std.stdio, std.random;

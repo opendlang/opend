@@ -379,7 +379,9 @@ class KernelDensity {
 
     /**Returns the number of dimensions in the estimator.*/
     uint nDimensions() const @property {
-        return points.length;
+        // More than uint.max dimensions is absolutely implausible.
+        assert(points.length <= uint.max);
+        return cast(uint) points.length;
     }
 
     /**Construct a kernel density estimator from a kernel provided as a callable

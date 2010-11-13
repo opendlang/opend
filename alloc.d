@@ -697,7 +697,7 @@ unittest {
     foreach(i; 0..10) {
         uint[] data = newStack!(uint)(250_000);
         foreach(j, ref e; data) {
-            e = j * (i + 1);  // Arbitrary values that can be read back later.
+            e = cast(uint) (j * (i + 1));  // Arbitrary values that can be read back later.
         }
         arrays[i] = data;
     }
@@ -1197,7 +1197,7 @@ unittest {
         }
 
         foreach(i; 0..1_000_000) {
-            auto index = uniform(0, nums.length);
+            auto index = uniform(0, cast(uint) nums.length);
             if(index in builtin) {
                 assert(index in monteSh);
                 assert(builtin[index] == nums[index]);
@@ -2297,7 +2297,7 @@ unittest {
         }
 
         foreach(i; 0..10_000) {
-            auto index = uniform(0, nums.length);
+            auto index = uniform(0, cast(uint) nums.length);
             if(index in builtin) {
                 assert(index in monteSh);
                 assert(builtin[index] == nums[index]);

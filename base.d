@@ -356,9 +356,9 @@ if(doubleInput!(T) && isForwardRange!(T) && hasLength!(T) && isIntegral!(Ret)) {
         TempAlloc.free;
     }
 
-    uint rem = data.length % nbin;
+    auto rem = data.length % nbin;
     Ret bin = 0;
-    uint i = 0, frq = data.length / nbin;
+    auto i = 0, frq = data.length / nbin;
     while(i < data.length) {
         foreach(j; 0..(bin < rem) ? frq + 1 : frq) {
             result[perm[i++]] = bin;
@@ -1242,7 +1242,7 @@ private:
             return;
         }
         pos[index]++;
-        for(size_t i = index + 1; i < R; ++i) {
+        for(uint i = index + 1; i < R; ++i) {
             pos[i] = pos[index] + i - index;
         }
         _length--;
@@ -1257,7 +1257,7 @@ private:
         }
         pos[index]++;
         chosen[index] = myArray[pos[index]];
-        for(size_t i = index + 1; i < R; ++i) {
+        for(uint i = index + 1; i < R; ++i) {
             pos[i] = pos[index] + i - index;
             chosen[i] = myArray[pos[i]];
         }
@@ -1301,7 +1301,7 @@ public:
             pos = (seq(0U, r)).ptr;
             pos[r - 1]--;
         }
-        N = array.length;
+        N = to!uint(array.length);
         R = r;
         diff = N - R;
         auto temp = array.dup;

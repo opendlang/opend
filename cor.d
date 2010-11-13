@@ -659,7 +659,7 @@ in {
         }
     }
 
-    immutable int nCombination = input2.length * (input2.length - 1) / 2;
+    immutable nCombination = input2.length * (input2.length - 1) / 2;
     immutable double denominator1 = nCombination - m1;
     immutable double denominator2 = nCombination - m2;
     return s / sqrt(denominator1) / sqrt(denominator2);

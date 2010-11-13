@@ -722,7 +722,7 @@ private TestRes anovaLevene(bool levene, bool welch, alias central,  T...)
     }
 
 
-    uint DFGroups = data.length - 1;
+    auto DFGroups = data.length - 1;
     ulong N = 0;
 
     foreach(category, range; data) {
@@ -885,7 +885,7 @@ if(allSatisfy!(isInputRange, T)) {
         betweenDev += diff * (group.N / (data.length - 1));
     }
 
-    uint errDf = data.length * nSubjects - data.length - nSubjects + 1;
+    size_t errDf = data.length * nSubjects - data.length - nSubjects + 1;
     double randError = -subjErr / errDf;
     foreach(group; withins) {
         randError += group.mse * (group.N / errDf);
@@ -1189,7 +1189,7 @@ is(CommonType!(ElementType!T, ElementType!U))) {
     alias Unqual!(CommonType!(ElementType!(T), ElementType!(U))) C;
 
     static if(dstats.base.hasLength!T && dstats.base.hasLength!U) {
-        uint n1 = sample1.length, n2 = sample2.length, N = n1 + n2;
+        auto n1 = sample1.length, n2 = sample2.length, N = n1 + n2;
         auto combined = newStack!(C)(N);
         rangeCopy(combined[0..n1], sample1);
         rangeCopy(combined[n1..$], sample2);
@@ -3185,8 +3185,11 @@ if(isInputRange!(T) && isInputRange!(U)) {
     immutable bool noTies = res.tieCorrectT1 == 0 && res.tieCorrectU1 == 0;
 
     if(noTies && n <= exactThresh) {
-        uint N = i1d.length;
-        uint nSwaps = (N * (N - 1) / 2 - cast(uint) s) / 2;
+        // More than uint.max data points for exact calculation is 
+        // not plausible.
+        assert(i1d.length < uint.max);
+        immutable N = cast(uint) i1d.length;
+        immutable nSwaps = (N * (N - 1) / 2 - cast(uint) s) / 2;
         return TestRes(tau, kendallCorExactP(N, nSwaps, alt));
     }
 
@@ -3547,7 +3550,7 @@ if(doubleInput!(T)) {
     }
 
     mixin(newFrame);
-    auto perm = newStack!(uint)(qVals.length);
+    auto perm = newStack!(size_t)(qVals.length);
     foreach(i, ref elem; perm) {
         elem = i;
     }
@@ -3627,7 +3630,7 @@ if(doubleInput!(T)) {
     auto qVals = array(map!(to!float)(pVals));
 
     mixin(newFrame);
-    auto perm = newStack!(uint)(qVals.length);
+    auto perm = newStack!(size_t)(qVals.length);
     foreach(i, ref elem; perm)
         elem = i;
 
@@ -3689,7 +3692,7 @@ if(doubleInput!(T)) {
     mixin(newFrame);
 
     auto qVals = array(map!(to!float)(pVals));
-    auto perm = newStack!(uint)(qVals.length);
+    auto perm = newStack!(size_t)(qVals.length);
 
     foreach(i, ref elem; perm) {
         elem = i;
