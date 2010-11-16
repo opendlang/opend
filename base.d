@@ -218,8 +218,7 @@ if(isForwardRange!(T) && doubleInput!(T)) {
         uint whichBin = cast(uint) ((elem - min) * nbin / range);
 
         // Handle edge case by putting largest item in largest bin.
-        if(whichBin == nbin)
-            whichBin--;
+        if(whichBin == nbin) whichBin--;
 
         bins[whichBin]++;
     }
@@ -228,7 +227,7 @@ if(isForwardRange!(T) && doubleInput!(T)) {
 }
 
 unittest {
-    double[] data = [0.0, .01, .03, .05, .11, .3, .5, .7, .89, 1];
+    double[] data = [0.0, .01, .03, .05, .11, .31, .51, .71, .89, 1];
     auto res = binCounts(data, 10);
     assert(res == [4U, 1, 0, 1, 0, 1, 0, 1, 1, 1]);
 
@@ -292,7 +291,7 @@ if(isForwardRange!(T) && doubleInput!(T) && isIntegral!(Ret)) {
 
 unittest {
     mixin(newFrame);
-    double[] data = [0.0, .01, .03, .05, .11, .3, .5, .7, .89, 1];
+    double[] data = [0.0, .01, .03, .05, .11, .31, .51, .71, .89, 1];
     auto res = bin(data, 10);
     assert(res == to!(ubyte[])([0, 0, 0, 0, 1, 3, 5, 7, 8, 9]));
 
