@@ -647,6 +647,9 @@ unittest {
      * internals of TempAlloc, but it's the best I could come up w/.  This
      * is really more of a stress test/sanity check than a normal unittest.*/
 
+    // Make sure state is completely reset.
+    TempAlloc.state = null;
+
      // First test to make sure a large number of allocations does what it's
      // supposed to in terms of reallocing lastAlloc[], etc.
      enum nIter =  TempAlloc.blockSize * 5 / TempAlloc.alignBytes;
