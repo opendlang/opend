@@ -879,7 +879,8 @@ double invChiSquareCDFR(double v, double p) {
 
 unittest {
     assert(feqrel(chiSqrCDFR(invChiSqCDFR(3.5, 0.1), 3.5), 0.1)>=double.mant_dig-3);
-    assert(chiSqrCDF(0.4L, 19.02L) + chiSqrCDFR(0.4L, 19.02L) ==1.0L);
+    assert(approxEqual(
+        chiSqrCDF(0.4L, 19.02L) + chiSqrCDFR(0.4L, 19.02L), 1.0L));
     assert(ae( invChiSqCDFR( 3, chiSqrCDFR(1, 3)), 1));
 
     assert(ae(chiSquareCDFR(0.2, 1), 0.6547208));

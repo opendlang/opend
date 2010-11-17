@@ -74,7 +74,8 @@ class DstatsArgumentException : Exception {
 T dstatsEnforce(T, string file = __FILE__, int line = __LINE__)
 (T value, lazy const(char)[] msg = null) {
     if(!value) {
-        auto exceptMsg = (msg !is null) ? msg.idup : "Invalid argument.";
+        const(char)[] lazyMsg = msg;
+        auto exceptMsg = (lazyMsg !is null) ? lazyMsg.idup : "Invalid argument.";
         throw new DstatsArgumentException(file ~ " (" ~ text(line) ~ ") :  " ~
             exceptMsg);
     }
@@ -193,7 +194,7 @@ Tuple!T saveAll(T...)(T args) {
  * Works with any forward range with elements implicitly convertible to double.*/
 Ret[] binCounts(Ret = uint, T)(T data, uint nbin, Ret[] buf = null)
 if(isForwardRange!(T) && doubleInput!(T)) {
-    enforce(nbin > 0, "Cannot bin data into zero bins.");
+    dstatsEnforce(nbin > 0, "Cannot bin data into zero bins.");
 
     alias Unqual!(ElementType!(T)) E;
     E min = data.front, max = data.front;
@@ -251,13 +252,13 @@ unittest {
  * you'll have to provide a different return type as a template parameter.*/
 Ret[] bin(Ret = ubyte, T)(T data, uint nbin, Ret[] buf = null)
 if(isForwardRange!(T) && doubleInput!(T) && isIntegral!(Ret)) {
-    enforce(nbin > 0, "Cannot bin data into zero bins.");
-    enforce(nbin <= (cast(uint) Ret.max) + 1, "Cannot bin into " ~
+    dstatsEnforce(nbin > 0, "Cannot bin data into zero bins.");
+    dstatsEnforce(nbin <= (cast(uint) Ret.max + 1), "Cannot bin into " ~
         to!string(nbin) ~ " bins and store the results in a " ~
         Ret.stringof ~ ".");
-
     alias ElementType!(T) E;
     Unqual!(E) min = data.front, max = data.front;
+
     auto dminmax = data;
     dminmax.popFront;
     foreach(elem; dminmax) {
@@ -267,7 +268,6 @@ if(isForwardRange!(T) && doubleInput!(T) && isIntegral!(Ret)) {
             min = elem;
     }
     E range = max - min;
-
     Ret[] bins;
     if(buf.length < data.length) {
         bins = newVoid!(Ret)(data.length);
@@ -322,10 +322,10 @@ unittest {
  * you'll have to provide a different return type as a template parameter.*/
 Ret[] frqBin(Ret = ubyte, T)(T data, uint nbin, Ret[] buf = null)
 if(doubleInput!(T) && isForwardRange!(T) && hasLength!(T) && isIntegral!(Ret)) {
-    enforce(nbin > 0, "Cannot bin data into zero bins.");
-    enforce(nbin <= data.length,
+    dstatsEnforce(nbin > 0, "Cannot bin data into zero bins.");
+    dstatsEnforce(nbin <= data.length,
         "Cannot equal frequency bin data into more than data.length bins.");
-    enforce(nbin <= (cast(uint) Ret.max) + 1, "Cannot bin into " ~
+    dstatsEnforce(nbin <= (cast(uint) Ret.max) + 1, "Cannot bin into " ~
         to!string(nbin) ~ " bins and store the results in a " ~
         Ret.stringof ~ ".");
 
@@ -403,8 +403,8 @@ unittest {
  * ---
  */
 CommonType!(T, U)[] seq(T, U, V = uint)(T start, U end, V increment = 1U) {
-    enforce(increment > 0, "Cannot have a seq increment <= 0.");
-    enforce(end >= start, "End must be >= start in seq.");
+    dstatsEnforce(increment > 0, "Cannot have a seq increment <= 0.");
+    dstatsEnforce(end >= start, "End must be >= start in seq.");
 
     alias CommonType!(T, U) R;
     auto output = newVoid!(R)(cast(size_t) ((end - start) / increment));
@@ -964,7 +964,7 @@ struct Perm(Buffer bufType = Buffer.DUP, T) {
 private:
 
     // Optimization:  Since we know this thing can't get too big (there's
-    // an enforce statement for it in the c'tor), just use arrays of the max
+    // an dstatsEnforce statement for it in the c'tor), just use arrays of the max
     // possible size for stuff and store them inline, if it's all just bytes.
     static if(T.sizeof == 1) {
         T[MAX_PERM_LEN] perm;
@@ -996,14 +996,14 @@ public:
 
         static if(ElementType!(U).sizeof > 1) {
             auto arr = toArray(input);
-            enforce(arr.length <= MAX_PERM_LEN, text(
+            dstatsEnforce(arr.length <= MAX_PERM_LEN, text(
                 "Can't iterate permutations of an array this long.  (Max length:  ",
                         MAX_PERM_LEN, ")"));
             len = cast(ubyte) arr.length;
             perm = arr.ptr;
         } else {
             foreach(elem; input) {
-                enforce(len < MAX_PERM_LEN, text(
+                dstatsEnforce(len < MAX_PERM_LEN, text(
                     "Can't iterate permutations of an array this long.  (Max length:  ",
                         MAX_PERM_LEN, ")"));
 
@@ -1111,8 +1111,8 @@ PermRet!(bufType, T) perm(Buffer bufType = Buffer.DUP, T...)(T stuff) {
         static assert(isIntegral!(T[0]),
             "If one argument is passed to perm(), it must be an integer.");
 
-        enforce(stuff[0] >= 0, "Cannot generate permutations of length < 0.");
-        enforce(stuff[0] <= MAX_PERM_LEN, text(
+        dstatsEnforce(stuff[0] >= 0, "Cannot generate permutations of length < 0.");
+        dstatsEnforce(stuff[0] <= MAX_PERM_LEN, text(
             "Can't iterate permutations of an array of length ",
             stuff[0], ".  (Max length:  ", MAX_PERM_LEN, ")"));
 
@@ -1266,7 +1266,7 @@ private:
     void setLen() {
         // Used at construction.
         auto rLen = exp( logNcomb(N, R));
-        enforce(rLen < size_t.max, "Too many combinations.");
+        dstatsEnforce(rLen < size_t.max, "Too many combinations.");
         _length = roundTo!size_t(rLen);
     }
 

@@ -136,7 +136,7 @@ unittest {
     assert(approxEqual(pearsonCor([2, 4, 1, 6, 19][], [4, 5, 1, 3, 2][]).cor, -.2382314));
 
         // Make sure everything works with lowest common denominator range type.
-    struct Count {
+    static struct Count {
         uint num;
         uint upTo;
         @property size_t front() {
@@ -159,15 +159,10 @@ unittest {
     PearsonCor cor2 = pearsonCor([4,2,9][], [2,8,7][]);
     PearsonCor combined = pearsonCor([1,2,4,4,2,9][], [2,3,5,2,8,7][]);
 
-    auto forReduce1 = cor1;
-    auto forReduce2 = cor2;
-    auto forReduceCombined = reduce!"a.put(b)"([forReduce1, forReduce2]);
-
     cor1.put(cor2);
 
     foreach(ti, elem; cor1.tupleof) {
         assert(approxEqual(elem, combined.tupleof[ti]));
-        assert(approxEqual(forReduceCombined.tupleof[ti], combined.tupleof[ti]));
     }
 
     assert(approxEqual(pearsonCor([1,2,3,4,5,6,7,8,9,10][],
@@ -223,7 +218,7 @@ public:
 //    alias cor this;
 
     ///
-    ref typeof(this) put(double elem1, double elem2) nothrow {
+    void put(double elem1, double elem2) nothrow {
         immutable kMinus1 = _k;
         immutable kNeg1 = 1 / ++_k;
         immutable delta1 = elem1 - _mean1;
@@ -236,19 +231,17 @@ public:
         _cov   += kMinus1 * delta1N * delta2;
         _var2  += kMinus1 * delta2N * delta2;
         _mean2 += delta2N;
-
-        return this;
     }
 
     /// Combine two PearsonCor's.
-    ref typeof(this) put(const ref typeof(this) rhs) nothrow {
+    void put(const ref typeof(this) rhs) nothrow {
         if(_k == 0) {
             foreach(ti, elem; rhs.tupleof) {
                 this.tupleof[ti] = elem;
             }
-            return this;
+            return;
         } else if(rhs._k == 0) {
-            return this;
+            return;
         }
 
         immutable totalN = _k + rhs._k;
@@ -262,8 +255,6 @@ public:
         _var2 = _var2 + rhs._var2 + (_k / totalN * rhs._k * delta2 * delta2 );
         _cov  =  _cov + rhs._cov  + (_k / totalN * rhs._k * delta1 * delta2 );
         _k = totalN;
-
-        return this;
     }
 
     ///
@@ -405,7 +396,7 @@ unittest {
     }
 
     // Test input ranges.
-    struct Count {
+    static struct Count {
         uint num;
         uint upTo;
         @property size_t front() {
@@ -699,7 +690,7 @@ unittest {
     doKendallTest!double();
 
     // Make sure everything works with lowest common denominator range type.
-    struct Count {
+    static struct Count {
         uint num;
         uint upTo;
         @property size_t front() {
