@@ -62,7 +62,7 @@ enum Alt {
     none,
 
     // These are kept for compatibility with the old style, are intentionally
-    // lacking DDoc and may eventually be removed.
+    // lacking DDoc and may eventually be deprecated/removed.
     TWOSIDE = twoSided,
     LESS = less,
     GREATER = greater,
@@ -71,8 +71,6 @@ enum Alt {
 
 /**A plain old data struct for returning the results of hypothesis tests.*/
 struct TestRes {
-    this(this) {}  // Workaround for bug 2943
-
     /// The test statistic.  What exactly this is is specific to the test.
     double testStat;
 
@@ -93,8 +91,6 @@ struct TestRes {
  * that also produce confidence intervals.  Contains, can implicitly convert
  * to, a TestRes.*/
 struct ConfInt {
-    this(this) {}  // Workaround for bug 2943
-
     ///
     TestRes testRes;
 
@@ -990,7 +986,11 @@ if(doubleInput!(typeof(dataIn[0].front)) || allSatisfy!(doubleInput, T)) {
     }
 
     double[] ranks = newStack!double(dataArray.length);
-    rankSort(dataArray, ranks);
+    try {
+        rankSort(dataArray, ranks);
+    } catch(SortException) {
+        return TestRes.init;
+    }
 
     size_t index = 0;
     double denom = 0, numer = 0;
@@ -1110,7 +1110,13 @@ if(doubleInput!(typeof(dataIn[0].front)) || allSatisfy!(doubleInput, T)) {
             dataPoints[i] = data[i].front;
             data[i].popFront;
         }
-        rank(dataPoints[], ranks[]);
+
+        try {
+            rank(dataPoints[], ranks[]);
+        } catch(SortException) {
+            return TestRes.init;
+        }
+
         foreach(i, rank; ranks) {
             colMeans[i].put(rank);
             overallSumm.put(rank);
@@ -1211,8 +1217,13 @@ is(CommonType!(ElementType!T, ElementType!U))) {
     }
 
     double[] ranks = newStack!(double)(N);
-    rankSort(combined, ranks);
-    double w = reduce!("a + b")(0.0, ranks[0..n1]) - cast(ulong) n1 * (n1 + 1) / 2UL;
+    try {
+        rankSort(combined, ranks);
+    } catch(SortException) {
+        return TestRes.init;
+    }
+    double w = reduce!("a + b")
+        (0.0, ranks[0..n1]) - cast(ulong) n1 * (n1 + 1) / 2UL;
 
     if(alt == Alt.none) {
         return TestRes(w);
@@ -1568,7 +1579,12 @@ is(typeof(before.front - after.front) : double)) {
         auto signs = signApp.data;
         diffRanks = newStack!double(diffs.length);
     }
-    rankSort(diffs, diffRanks);
+    try {
+        rankSort(diffs, diffRanks);
+    } catch(SortException) {
+        return TestRes.init;
+    }
+
     ulong N = diffs.length - nZero;
 
     double W = 0;
@@ -3185,7 +3201,7 @@ if(isInputRange!(T) && isInputRange!(U)) {
     immutable bool noTies = res.tieCorrectT1 == 0 && res.tieCorrectU1 == 0;
 
     if(noTies && n <= exactThresh) {
-        // More than uint.max data points for exact calculation is 
+        // More than uint.max data points for exact calculation is
         // not plausible.
         assert(i1d.length < uint.max);
         immutable N = cast(uint) i1d.length;

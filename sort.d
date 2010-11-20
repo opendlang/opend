@@ -292,7 +292,7 @@ if(isRandomAccessRange!(T)) {
 
 /* Returns the index, NOT the value, of the median of the first, middle, last
  * elements of data.*/
-size_t medianOf3(alias compFun, T)(const T[] data) {
+size_t medianOf3(alias compFun, T)(T[] data) {
     alias binaryFun!(compFun) comp;
     immutable size_t mid = data.length / 2;
     immutable uint result = ((cast(uint) (comp(data[0], data[mid]))) << 2) |
@@ -1102,7 +1102,7 @@ unittest {
 /**Returns the kth largest/smallest element (depending on compFun, 0-indexed)
  * in the input array in O(N) time.  Allocates memory, does not modify input
  * array.*/
-T quickSelect(alias compFun = "a < b", T)(const T[] data, ptrdiff_t k) {
+T quickSelect(alias compFun = "a < b", T)(T[] data, sizediff_t k) {
     auto dataDup = data.tempdup;
     scope(exit) TempAlloc.free;
     return partitionK!(compFun)(dataDup, k);
@@ -1277,13 +1277,13 @@ public:
 
     /**Get the elements currently in the struct.  Returns a reference to
      * internal state, elements will be in an arbitrary order.  Cheap.*/
-    const(T)[] getElements() const {
+    T[] getElements() {
         return nodes[0..min(n, nAdded)];
     }
 
     /**Returns the elements sorted by compFun.  The array returned is a
      * duplicate of the input array.  Not cheap.*/
-    T[] getSorted() const {
+    T[] getSorted() {
         return qsort!(comp)(nodes[0..min(n, nAdded)].dup);
     }
 }

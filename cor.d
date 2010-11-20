@@ -218,7 +218,7 @@ public:
 //    alias cor this;
 
     ///
-    void put(double elem1, double elem2) nothrow {
+    void put(double elem1, double elem2) pure nothrow @safe {
         immutable kMinus1 = _k;
         immutable kNeg1 = 1 / ++_k;
         immutable delta1 = elem1 - _mean1;
@@ -234,7 +234,7 @@ public:
     }
 
     /// Combine two PearsonCor's.
-    void put(const ref typeof(this) rhs) nothrow {
+    void put(const ref typeof(this) rhs) pure nothrow @safe {
         if(_k == 0) {
             foreach(ti, elem; rhs.tupleof) {
                 this.tupleof[ti] = elem;
@@ -257,49 +257,53 @@ public:
         _k = totalN;
     }
 
-    ///
-    double var1() const pure nothrow {
-        return (_k < 2) ? double.nan : _var1 / (_k - 1);
-    }
+    const pure nothrow @property @safe {
 
-    ///
-    double var2() const pure nothrow {
-        return (_k < 2) ? double.nan : _var2 / (_k - 1);
-    }
+        ///
+        double var1() {
+            return (_k < 2) ? double.nan : _var1 / (_k - 1);
+        }
 
-    ///
-    double stdev1() const pure nothrow {
-        return sqrt(var1);
-    }
+        ///
+        double var2() {
+            return (_k < 2) ? double.nan : _var2 / (_k - 1);
+        }
 
-    ///
-    double stdev2() const pure nothrow {
-        return sqrt(var2);
-    }
+        ///
+        double stdev1() {
+            return sqrt(var1);
+        }
 
-    ///
-    double cor() const pure nothrow {
-        return cov / stdev1 / stdev2;
-    }
+        ///
+        double stdev2() {
+            return sqrt(var2);
+        }
 
-    ///
-    double cov() const pure nothrow {
-        return (_k < 2) ? double.nan : _cov / (_k - 1);
-    }
+        ///
+        double cor() {
+            return cov / stdev1 / stdev2;
+        }
 
-    ///
-    double mean1() const pure nothrow {
-        return (_k == 0) ? double.nan : _mean1;
-    }
+        ///
+        double cov() {
+            return (_k < 2) ? double.nan : _cov / (_k - 1);
+        }
 
-    ///
-    double mean2() const pure nothrow {
-        return (_k == 0) ? double.nan : _mean2;
-    }
+        ///
+        double mean1() {
+            return (_k == 0) ? double.nan : _mean1;
+        }
 
-    ///
-    double N() const pure nothrow {
-        return _k;
+        ///
+        double mean2() {
+            return (_k == 0) ? double.nan : _mean2;
+        }
+
+        ///
+        double N() {
+            return _k;
+        }
+
     }
 }
 
@@ -341,12 +345,16 @@ is(typeof(input2.front < input2.front) == bool)) {
         return ret;
     }
 
-    auto ranks1 = spearmanCorRank(input1);
-    auto ranks2 = spearmanCorRank(input2);
-    dstatsEnforce(ranks1.length == ranks2.length,
-        "Ranges must be same length for Spearman correlation.");
+    try {
+        auto ranks1 = spearmanCorRank(input1);
+        auto ranks2 = spearmanCorRank(input2);
+        dstatsEnforce(ranks1.length == ranks2.length,
+            "Ranges must be same length for Spearman correlation.");
 
-    return pearsonCor(ranks1, ranks2).cor;
+        return pearsonCor(ranks1, ranks2).cor;
+    } catch(SortException) {
+        return double.nan;
+    }
 }
 
 unittest {
@@ -472,7 +480,11 @@ if(isInputRange!(T) && isInputRange!(U)) {
 double kendallCorDestructive(T, U)(T[] input1, U[] input2) {
     dstatsEnforce(input1.length == input2.length,
         "Ranges must be same length for Kendall correlation.");
-    return kendallCorDestructiveLowLevel(input1, input2, false).tau;
+    try {
+        return kendallCorDestructiveLowLevel(input1, input2, false).tau;
+    } catch(SortException) {
+        return double.nan;
+    }
 }
 
 //bool compFun(T)(T lhs, T rhs) { return lhs < rhs; }

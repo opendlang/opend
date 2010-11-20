@@ -16,8 +16,6 @@
  *        these functions work with any input range, so you can simply map
  *        this function onto your range.
  *
- *        All alias this statements are currently disabled due to compiler bugs.
- *
  * Author:  David Simcha
  */
 /*
@@ -176,7 +174,7 @@ struct MedianAbsDev {
 
     this(this) {}  // Workaround for bug 2943
 
-    //alias medianAbsDev this;
+    alias medianAbsDev this;
 }
 
 /**Calculates the median absolute deviation of a dataset.  This is the median
@@ -314,12 +312,11 @@ private:
 
 public:
     ///// Allow implicit casting to double, by returning the current mean.
-    //alias mean this;
+    alias mean this;
 
     ///
-    ref typeof(this) put(double element) nothrow {
+    void put(double element) pure nothrow @safe {
         result += (element - result) / ++k;
-        return this;
     }
 
     /**Adds the contents of rhs to this instance.
@@ -344,31 +341,33 @@ public:
      * assert(approxEqual(combined.mean, mean1.mean));
      * ---
      */
-     ref typeof(this) put(const ref typeof(this) rhs) nothrow {
+     void put(const ref typeof(this) rhs) pure nothrow @safe {
          immutable totalN = k + rhs.k;
          result = result * (k / totalN) + rhs.result * (rhs.k / totalN);
          k = totalN;
-         return this;
      }
 
-    ///
-    double sum() const pure nothrow {
-        return result * k;
-    }
+    const pure nothrow @property @safe {
 
-    ///
-    double mean() const pure nothrow {
-        return (k == 0) ? double.nan : result;
-    }
+        ///
+        double sum() {
+            return result * k;
+        }
 
-    ///
-    double N() const pure nothrow {
-        return k;
-    }
+        ///
+        double mean() {
+            return (k == 0) ? double.nan : result;
+        }
 
-    /**Simply returns this.  Useful in generic programming contexts.*/
-    Mean toMean() const pure nothrow {
-        return this;
+        ///
+        double N() {
+            return k;
+        }
+
+        /**Simply returns this.  Useful in generic programming contexts.*/
+        Mean toMean() {
+            return this;
+        }
     }
 
     ///
@@ -431,28 +430,28 @@ private:
     Mean m;
 public:
     /////Allow implicit casting to double, by returning current geometric mean.
-    //alias geoMean this;
+    alias geoMean this;
 
     ///
-    ref typeof(this) put(double element) nothrow {
+    void put(double element) pure nothrow {
         m.put(log2(element));
-        return this;
     }
 
     /// Combine two GeometricMean's.
-    ref typeof(this) put(const ref typeof(this) rhs) nothrow {
+    void put(const ref typeof(this) rhs) pure nothrow @safe {
         m.put(rhs.m);
-        return this;
     }
 
-    ///
-    double geoMean() const pure nothrow {
-        return exp2(m.mean);
-    }
+    const pure nothrow @property {
+        ///
+        double geoMean() {
+            return exp2(m.mean);
+        }
 
-    ///
-    double N() const pure nothrow {
-        return m.k;
+        ///
+        double N() {
+            return m.k;
+        }
     }
 
     ///
@@ -606,78 +605,82 @@ private:
     double _k = 0;
 public:
     ///
-    ref typeof(this) put(double element) nothrow {
+    void put(double element) pure nothrow @safe {
         immutable kMinus1 = _k;
         immutable delta = element - _mean;
         immutable deltaN = delta / ++_k;
 
         _mean += deltaN;
         _var += kMinus1 * deltaN * delta;
-        return this;
+        return;
     }
 
     /// Combine two MeanSD's.
-    ref typeof(this) put(const ref typeof(this) rhs) nothrow {
+    void put(const ref typeof(this) rhs) pure nothrow @safe {
         if(_k == 0) {
             foreach(ti, elem; rhs.tupleof) {
                 this.tupleof[ti] = elem;
             }
 
-            return this;
+            return;
         } else if(rhs._k == 0) {
-            return this;
+            return;
         }
 
         immutable totalN = _k + rhs._k;
-        immutable delta = rhs.mean - mean;
+        immutable delta = rhs._mean - _mean;
         _mean = _mean * (_k / totalN) + rhs._mean * (rhs._k / totalN);
 
         _var = _var + rhs._var + (_k / totalN * rhs._k * delta * delta);
         _k = totalN;
-        return this;
     }
 
-    ///
-    double sum() const pure nothrow {
-        return _k * _mean;
+    const pure nothrow @property @safe {
+
+        ///
+        double sum() {
+            return _k * _mean;
+        }
+
+        ///
+        double mean() {
+            return (_k == 0) ? double.nan : _mean;
+        }
+
+        ///
+        double stdev() {
+            return sqrt(var);
+        }
+
+        ///
+        double var() {
+            return (_k < 2) ? double.nan : _var / (_k - 1);
+        }
+
+        // Undocumented on purpose b/c it's for internal use only.
+        double mse() {
+            return (_k < 2) ? double.nan : _var / _k;
+        }
+
+        ///
+        double N() {
+            return _k;
+        }
+
+        /**Converts this struct to a Mean struct.  Also called when an
+         * implicit conversion via alias this takes place.
+         */
+        Mean toMean() {
+            return Mean(_mean, _k);
+        }
+
+        /**Simply returns this.  Useful in generic programming contexts.*/
+        MeanSD toMeanSD() const pure nothrow {
+            return this;
+        }
     }
 
-    ///
-    double mean() const pure nothrow {
-        return (_k == 0) ? double.nan : _mean;
-    }
-
-    ///
-    double stdev() const pure nothrow {
-        return sqrt(var);
-    }
-
-    ///
-    double var() const pure nothrow {
-        return (_k < 2) ? double.nan : _var / (_k - 1);
-    }
-
-    // Undocumented on purpose b/c it's for internal use only.
-    double mse() const pure nothrow {
-        return (_k < 2) ? double.nan : _var / _k;
-    }
-
-    ///
-    double N() const pure nothrow {
-        return _k;
-    }
-
-    /**Converts this struct to a Mean struct.  Also called when an
-     * implicit conversion via alias this takes place.
-     */
-    Mean toMean() const pure nothrow {
-        return Mean(_mean, _k);
-    }
-
-    /**Simply returns this.  Useful in generic programming contexts.*/
-    MeanSD toMeanSD() const pure nothrow {
-        return this;
-    }
+    alias Mean this;
 
     ///
     string toString() const {
@@ -845,13 +848,13 @@ private:
     double _max = -double.infinity;
 public:
     ///
-    ref typeof(this) put(double element) nothrow {
+    void put(double element) pure nothrow @safe {
         immutable kMinus1 = _k;
         immutable kNeg1 = 1.0 / ++_k;
         _min = (element < _min) ? element : _min;
         _max = (element > _max) ? element : _max;
 
-        immutable delta = element - mean;
+        immutable delta = element - _mean;
         immutable deltaN = delta * kNeg1;
         _mean += deltaN;
 
@@ -859,23 +862,22 @@ public:
             6 * _m2 * deltaN * deltaN - 4 * deltaN * _m3;
         _m3 += kMinus1 * deltaN * (_k - 2) * deltaN * delta - 3 * delta * _m2 * kNeg1;
         _m2 += kMinus1 * deltaN * delta;
-        return this;
     }
 
     /// Combine two Summary's.
-    ref typeof(this) put(const ref typeof(this) rhs) nothrow {
+    void put(const ref typeof(this) rhs) pure nothrow @safe {
         if(_k == 0) {
             foreach(ti, elem; rhs.tupleof) {
                 this.tupleof[ti] = elem;
             }
 
-            return this;
+            return;
         } else if(rhs._k == 0) {
-            return this;
+            return;
         }
 
         immutable totalN = _k + rhs._k;
-        immutable delta = rhs.mean - mean;
+        immutable delta = rhs._mean - _mean;
         immutable deltaN = delta / totalN;
         _mean = _mean * (_k / totalN) + rhs._mean * (rhs._k / totalN);
 
@@ -896,64 +898,65 @@ public:
         _k = totalN;
         _max = (_max > rhs._max) ? _max : rhs._max;
         _min = (_min < rhs._min) ? _min : rhs._min;
-
-        return this;
     }
 
-    ///
-    double sum() const pure nothrow {
-        return _mean * _k;
+    const pure nothrow @property @safe {
+
+        ///
+        double sum() {
+            return _mean * _k;
+        }
+
+        ///
+        double mean() {
+            return (_k == 0) ? double.nan : _mean;
+        }
+
+        ///
+        double stdev() {
+            return sqrt(var);
+        }
+
+        ///
+        double var() {
+            return (_k == 0) ? double.nan : _m2 / (_k - 1);
+        }
+
+        ///
+        double skewness() {
+            immutable sqM2 = sqrt(_m2);
+            return _m3 / (sqM2 * sqM2 * sqM2) * sqrt(_k);
+        }
+
+        ///
+        double kurtosis() {
+            return _m4 / _m2 * _k  / _m2 - 3;
+        }
+
+        ///
+        double N() {
+            return _k;
+        }
+
+        ///
+        double min() {
+            return _min;
+        }
+
+        ///
+        double max() {
+            return _max;
+        }
+
+        /**Converts this struct to a MeanSD.  Called via alias this when an
+         * implicit conversion is attetmpted.
+         */
+        MeanSD toMeanSD() {
+            return MeanSD(_mean, _m2, _k);
+        }
     }
 
-    ///
-    double mean() const pure nothrow {
-        return (_k == 0) ? double.nan : _mean;
-    }
-
-    ///
-    double stdev() const pure nothrow {
-        return sqrt(var);
-    }
-
-    ///
-    double var() const pure nothrow {
-        return (_k == 0) ? double.nan : _m2 / (_k - 1);
-    }
-
-    ///
-    double skewness() const pure nothrow {
-        immutable sqM2 = sqrt(_m2);
-        return _m3 / (sqM2 * sqM2 * sqM2) * sqrt(_k);
-    }
-
-    ///
-    double kurtosis() const pure nothrow {
-        return _m4 / _m2 * _k  / _m2 - 3;
-    }
-
-    ///
-    double N() const pure nothrow {
-        return _k;
-    }
-
-    ///
-    double min() const pure nothrow {
-        return _min;
-    }
-
-    ///
-    double max() const pure nothrow {
-        return _max;
-    }
-
-    /**Converts this struct to a MeanSD.  Called via alias this when an
-     * implicit conversion is attetmpted.
-     */
-    MeanSD toMeanSD() const pure nothrow {
-        return MeanSD(_mean, _m2, _k);
-    }
-
-    //alias toMeanSD this;
+    alias toMeanSD this;
 
     ///
     string toString() const {
@@ -983,7 +986,7 @@ unittest {
 
     auto m1_2 = mean1;
     auto m2_2 = mean2;
-    auto combined_2 = reduce!"a.put(b)"([m1_2, m2_2]);
+    m1_2.put(m2_2);
 
     mean1.put(mean2);
 
@@ -993,7 +996,6 @@ unittest {
 
     foreach(ti, elem; mean1.tupleof) {
         assert(approxEqual(elem, combined.tupleof[ti]));
-        assert(approxEqual(combined_2.tupleof[ti], combined.tupleof[ti]));
     }
 
     Summary summCornerCase;  // Case where one N is zero.
