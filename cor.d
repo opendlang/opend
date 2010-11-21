@@ -210,12 +210,8 @@ struct PearsonCor {
 package:
     double _k = 0, _mean1 = 0, _mean2 = 0, _var1 = 0, _var2 = 0, _cov = 0;
 
-    // Temporary kludge to get partialCor working until alias this gets fixed.
-    F opCast(F)() if(isFloatingPoint!F) {
-        return cor;
-    }
 public:
-//    alias cor this;
+    alias cor this;
 
     ///
     void put(double elem1, double elem2) pure nothrow @safe {
