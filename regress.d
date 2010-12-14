@@ -531,12 +531,11 @@ RegressRes linearRegress(U, TC...)(U Y, TC input) {
         R2Calc.put(predicted, Yfront);
         n++;
     }
-    ulong df =  n - X.length;
-    double R2 = R2Calc.cor();
-    R2 *= R2;
-    double adjustedR2 = 1.0L - (1.0L - R2) * ((n - 1.0L) / df);
+    immutable ulong df =  n - X.length;
+    immutable double R2 = R2Calc.cor ^^ 2;
+    immutable double adjustedR2 = 1.0L - (1.0L - R2) * ((n - 1.0L) / df);
 
-    double sigma2 = S / (n - X.length);
+    immutable double sigma2 = S / (n - X.length);
 
     double[] stdErr = new double[betas.length];
     foreach(i, ref elem; stdErr) {
@@ -547,16 +546,30 @@ RegressRes linearRegress(U, TC...)(U Y, TC input) {
            upperBound = new double[betas.length],
            p = new double[betas.length];
     foreach(i, beta; betas) {
-        p[i] = 2 * min(studentsTCDF(beta / stdErr[i], df),
-                       studentsTCDFR(beta / stdErr[i], df));
-        double delta = invStudentsTCDF(0.5 * (1 - confLvl), df) *
-             stdErr[i];
-        upperBound[i] = beta - delta;
-        lowerBound[i] = beta + delta;
+        try {
+            p[i] = 2 * min(studentsTCDF(beta / stdErr[i], df),
+                           studentsTCDFR(beta / stdErr[i], df));
+        } catch(DstatsArgumentException) {
+            // Leave it as a NaN.
+        }
+
+        try {
+            double delta = invStudentsTCDF(0.5 * (1 - confLvl), df) *
+                 stdErr[i];
+            upperBound[i] = beta - delta;
+            lowerBound[i] = beta + delta;
+        } catch(DstatsArgumentException) {
+            // Leave confidence bounds as NaNs.
+        }
     }
 
     double F = (R2 / (X.length - 1)) / ((1 - R2) / (n - X.length));
-    double overallP = fisherCDFR(F, X.length - 1, n - X.length);
+    double overallP;
+    try {
+        overallP = fisherCDFR(F, X.length - 1, n - X.length);
+    } catch(DstatsArgumentException) {
+        // Leave it as a NaN.
+    }
 
     return RegressRes(betas, stdErr, lowerBound, upperBound, p, R2,
         adjustedR2, sqrt(sigma2), overallP);
