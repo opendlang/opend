@@ -634,7 +634,7 @@ public:
         _k = totalN;
     }
 
-    const  @property @safe {
+    const pure nothrow @property @safe {
 
         ///
         double sum() {
@@ -899,7 +899,7 @@ public:
         _min = (_min < rhs._min) ? _min : rhs._min;
     }
 
-    const  @property @safe {
+    const pure nothrow @property @safe {
 
         ///
         double sum() {
