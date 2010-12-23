@@ -104,12 +104,16 @@
 
 module dstats.distrib;
 
-import std.algorithm, std.conv, std.exception, std.math, std.traits;
+import std.algorithm, std.conv, std.exception, std.math, std.traits,
+    std.mathspecial;
 
-import dstats.base, dstats.gamma;
+alias std.mathspecial.erfc erfc;
+alias std.mathspecial.erf erf;
+
+import dstats.base;
 
 // CTFE doesn't work yet for sqrt() in GDC.  This value is sqrt(2 * PI).
-enum SQ2PI = 2.50662827463100050241576528481104525300698674060993831662992; 
+enum SQ2PI = 2.50662827463100050241576528481104525300698674060993831662992;
 
 version(unittest) {
     import std.stdio, std.random;
@@ -874,7 +878,7 @@ double chiSquareCDFR(double x, double v) {
 double invChiSquareCDFR(double v, double p) {
     dstatsEnforce(v >= 1.0, "Must have at least 1 degree of freedom for chi-square.");
     dstatsEnforce(p >= 0 && p <= 1, "P-values must be between 0, 1.");
-    return  2.0 * gammaIncompleteComplInv( 0.5*v, p);
+    return  2.0 * gammaIncompleteComplInverse( 0.5*v, p);
 }
 
 unittest {
@@ -1276,7 +1280,7 @@ double invStudentsTCDF(double p, double df) {
     if ( p > 0.25L && p < 0.75L ) {
         if ( p == 0.5L ) return 0;
         z = 1.0L - 2.0L * p;
-        z = betaIncompleteInv( 0.5L, 0.5L*rk, fabs(z) );
+        z = betaIncompleteInverse( 0.5L, 0.5L*rk, fabs(z) );
         double t = sqrt( rk*z/(1.0L-z) );
         if( p < 0.5L )
             t = -t;
@@ -1287,7 +1291,7 @@ double invStudentsTCDF(double p, double df) {
         p = 1.0L - p;
         rflg = 1;
     }
-    z = betaIncompleteInv( 0.5L*rk, 0.5L, 2.0L*p );
+    z = betaIncompleteInverse( 0.5L*rk, 0.5L, 2.0L*p );
 
     if (z<0) return rflg * double.infinity;
     return rflg * sqrt( rk/z - rk );
@@ -1361,13 +1365,13 @@ double fisherCDFR(double x, double df1, double df2) {
  * This is accomplished using the inverse beta integral
  * function and the relations
  *
- *      z = betaIncompleteInv( df2/2, df1/2, p ),
+ *      z = betaIncompleteInverse( df2/2, df1/2, p ),
  *      x = df2 (1-z) / (df1 z).
  *
  * Note that the following relations hold for the inverse of
  * the uncomplemented F distribution:
  *
- *      z = betaIncompleteInv( df1/2, df2/2, p ),
+ *      z = betaIncompleteInverse( df1/2, df2/2, p ),
  *      x = df2 z / (df1 (1-z)).
 */
 double invFisherCDFR(double df1, double df2, double p ) {
@@ -1382,10 +1386,10 @@ double invFisherCDFR(double df1, double df2, double p ) {
     /* If that is greater than p, then the solution w < .5.
        Otherwise, solve at 1-p to remove cancellation in (b - b*w).  */
     if ( w > p || p < 0.001L) {
-        w = betaIncompleteInv( 0.5L*b, 0.5L*a, p );
+        w = betaIncompleteInverse( 0.5L*b, 0.5L*a, p );
         return (b - b*w)/(a*w);
     } else {
-        w = betaIncompleteInv( 0.5L*a, 0.5L*b, 1.0L - p );
+        w = betaIncompleteInverse( 0.5L*a, 0.5L*b, 1.0L - p );
         return b*w/(a*(1.0L-w));
     }
 }
@@ -1634,7 +1638,7 @@ double invGammaCDFR(double p, double rate, double shape) {
     dstatsEnforce(rate > 0, "rate must be >0 in gamma distribution.");
     dstatsEnforce(shape > 0, "shape must be >0 in gamma distribution.");
 
-    double ratex = gammaIncompleteComplInv(shape, p);
+    double ratex = gammaIncompleteComplInverse(shape, p);
     return ratex / rate;
 }
 

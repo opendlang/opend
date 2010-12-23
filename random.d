@@ -118,14 +118,13 @@
 module dstats.random;
 
 import std.math, std.algorithm, dstats.distrib, std.traits, std.typetuple,
-    std.exception;
+    std.exception, std.mathspecial;
 public import std.random; //For uniform distrib.
 
 import dstats.alloc, dstats.base;
 
 version(unittest) {
-    import std.stdio, dstats.tests, dstats.summary, dstats.gamma,
-           std.range;
+    import std.stdio, dstats.tests, dstats.summary, std.range;
     void main() {}
 }
 

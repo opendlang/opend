@@ -214,7 +214,7 @@ public:
     alias cor this;
 
     ///
-    void put(double elem1, double elem2) pure nothrow @safe {
+    void put(double elem1, double elem2) nothrow @safe {
         immutable kMinus1 = _k;
         immutable kNeg1 = 1 / ++_k;
         immutable delta1 = elem1 - _mean1;
@@ -230,7 +230,7 @@ public:
     }
 
     /// Combine two PearsonCor's.
-    void put(const ref typeof(this) rhs) pure nothrow @safe {
+    void put(const ref typeof(this) rhs) nothrow @safe {
         if(_k == 0) {
             foreach(ti, elem; rhs.tupleof) {
                 this.tupleof[ti] = elem;

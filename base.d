@@ -40,7 +40,7 @@ module dstats.base;
 import std.math, std.traits, std.typecons, std.algorithm, std.range,
     std.exception, std.conv, std.functional;
 
-import dstats.alloc, dstats.sort, dstats.gamma;
+import dstats.alloc, dstats.sort;
 
 import std.string : strip;
 
@@ -83,7 +83,6 @@ T dstatsEnforce(T, string file = __FILE__, int line = __LINE__)
     return value;
 }
 
-
 /** Tests whether T is an input range whose elements can be implicitly
  * converted to doubles.*/
 template doubleInput(T) {
@@ -95,7 +94,6 @@ template hasLength(R) {
     enum bool hasLength = is(typeof(R.init.length) : ulong) ||
                       is(typeof(R.init.length()) : ulong);
 }
-
 
 // isIterable was added to SVN versions of Phobos, but not to released ones yet.
 static if(!__traits(compiles, std.traits.isIterable!(uint))) {
@@ -325,7 +323,7 @@ if(doubleInput!(T) && isForwardRange!(T) && hasLength!(T) && isIntegral!(Ret)) {
     dstatsEnforce(nbin > 0, "Cannot bin data into zero bins.");
     dstatsEnforce(nbin <= data.length,
         "Cannot equal frequency bin data into more than data.length bins.");
-    dstatsEnforce(nbin <= (cast(uint) Ret.max) + 1, "Cannot bin into " ~
+    dstatsEnforce(nbin <= (cast(ulong) Ret.max) + 1UL, "Cannot bin into " ~
         to!string(nbin) ~ " bins and store the results in a " ~
         Ret.stringof ~ ".");
 
@@ -912,18 +910,22 @@ unittest {
 
 /**Controls whether Perm and Comb duplicate their buffer on each iteration and
  * return the copy, or recycle it and return an alias of it.
- * You want to choose RECYCLE if each permutation/combination
+ * You want to choose recycle if each permutation/combination
  * will only be needed within the scope of the foreach statement.  If they
- * may escape this scope, you want to choose DUP.  The default is DUP,
- * because it's safer, but RECYCLE can avoid lots of unnecessary GC activity.
+ * may escape this scope, you want to choose dup.  The default is dup,
+ * because it's safer, but recycle can avoid lots of unnecessary GC activity.
  */
 enum Buffer {
 
     ///
-    DUP,
+    dup,
 
     ///
-    RECYCLE
+    recycle,
+
+    DUP = dup,
+
+    RECYCLE = recycle
 }
 
 static if(size_t.sizeof == 4) {
@@ -960,7 +962,7 @@ static if(size_t.sizeof == 4) {
  *  assert(res.length == 6);
  *  ---
  */
-struct Perm(Buffer bufType = Buffer.DUP, T) {
+struct Perm(Buffer bufType = Buffer.dup, T) {
 private:
 
     // Optimization:  Since we know this thing can't get too big (there's
@@ -981,7 +983,7 @@ private:
     // The length of these arrays.  Stored once to minimize overhead.
     ubyte len;
 
-    static if(bufType == Buffer.DUP) {
+    static if(bufType == Buffer.dup) {
         alias T[] PermArray;
     } else {
         alias const(T)[] PermArray;
@@ -1020,10 +1022,10 @@ public:
     }
 
     /**Note:  PermArray is just an alias to either T[] or const(T)[],
-     * depending on whether bufType == Buf.DUP or Buf.RECYCLE.
+     * depending on whether bufType == Buf.dup or Buf.recycle.
      */
     @property PermArray front() {
-        static if(bufType == Buffer.DUP) {
+        static if(bufType == Buffer.dup) {
             return perm[0..len].dup;
         } else {
             return perm[0..len];
@@ -1103,7 +1105,7 @@ private template PermRet(Buffer bufType, T...) {
  * auto p = perm(-1, 2); // All permutations of [-1, 0, 1].
  * ---
  */
-PermRet!(bufType, T) perm(Buffer bufType = Buffer.DUP, T...)(T stuff) {
+PermRet!(bufType, T) perm(Buffer bufType = Buffer.dup, T...)(T stuff) {
     alias typeof(return) rt;
     static if(isForwardRange!(T[0])) {
         return rt(stuff);
@@ -1170,7 +1172,7 @@ unittest {
     auto perm3 = perm(0U, 6U);
     bool[uint[]] table;
     foreach(p; perm3) {
-        table[p] = true;
+        table[p.idup] = true;
     }
     assert(table.length == 720);
     foreach(elem, val; table) {
@@ -1179,7 +1181,7 @@ unittest {
     auto perm4 = perm(5);
     bool[byte[]] table2;
     foreach(p; perm4) {
-        table2[p] = true;
+        table2[p.idup] = true;
     }
     assert(table2.length == 120);
     foreach(elem, val; table2) {
@@ -1217,7 +1219,7 @@ unittest {
     assert(vals.length == 10);
     ---
  */
-struct Comb(T, Buffer bufType = Buffer.DUP) {
+struct Comb(T, Buffer bufType = Buffer.dup) {
 private:
     int N;
     int R;
@@ -1227,7 +1229,7 @@ private:
     T* chosen;
     size_t _length;
 
-    static if(bufType == Buffer.DUP) {
+    static if(bufType == Buffer.dup) {
         alias T[] CombArray;
     } else {
         alias const(T)[] CombArray;
@@ -1314,7 +1316,7 @@ public:
     }
 
     @property CombArray front() {
-        static if(bufType == Buffer.RECYCLE) {
+        static if(bufType == Buffer.recycle) {
             static if(!is(T == uint)) {
                 return chosen[0..R].dup;
             } else {
@@ -1375,7 +1377,7 @@ private template CombRet(T, Buffer bufType) {
  * auto c2 = comb(5, 3);  // Any three elements from [0,1,2,3,4].
  * ---
  */
-CombRet!(T, bufType) comb(Buffer bufType = Buffer.DUP, T)(T stuff, uint r) {
+CombRet!(T, bufType) comb(Buffer bufType = Buffer.dup, T)(T stuff, uint r) {
     alias typeof(return) rt;
     static if(isForwardRange!(T)) {
         return rt(stuff, r);
@@ -1458,7 +1460,7 @@ unittest {
             assert(dupped[i] > dupped[i - 1]);
             assert(dupped[i] > 9 && dupped[i] < 22);
         }
-        results[dupped] = true;
+        results[dupped.idup] = true;
     }
     assert(results.length == 924);  // (12 choose 6).
 }
@@ -1506,7 +1508,7 @@ public:
         this.inputRange = inputRange;
         try {
             _front = to!real(inputRange.front);
-        } catch(ConvError) {
+        } catch(ConvException) {
             popFront();
         }
     }
@@ -1531,7 +1533,7 @@ public:
             try {
                 _front = to!real(inFront);
                 return;
-            } catch(ConvError) {
+            } catch(ConvException) {
                 continue;
             }
         }

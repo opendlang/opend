@@ -172,8 +172,6 @@ struct MedianAbsDev {
     double median;
     double medianAbsDev;
 
-    this(this) {}  // Workaround for bug 2943
-
     alias medianAbsDev this;
 }
 
@@ -341,7 +339,7 @@ public:
      * assert(approxEqual(combined.mean, mean1.mean));
      * ---
      */
-     void put(const ref typeof(this) rhs) pure nothrow @safe {
+     void put(typeof(this) rhs) pure nothrow @safe {
          immutable totalN = k + rhs.k;
          result = result * (k / totalN) + rhs.result * (rhs.k / totalN);
          k = totalN;
@@ -433,12 +431,12 @@ public:
     alias geoMean this;
 
     ///
-    void put(double element) pure nothrow {
+    void put(double element) pure nothrow @safe {
         m.put(log2(element));
     }
 
     /// Combine two GeometricMean's.
-    void put(const ref typeof(this) rhs) pure nothrow @safe {
+    void put(typeof(this) rhs) pure nothrow @safe {
         m.put(rhs.m);
     }
 
@@ -494,7 +492,8 @@ unittest {
       combined.put(i);
     }
 
-    assert(approxEqual(combined.mean, mean1.mean));
+    assert(approxEqual(combined.mean, mean1.mean),
+        text(combined.mean, "  ", mean1.mean));
     assert(combined.N == mean1.N);
 }
 
@@ -616,7 +615,7 @@ public:
     }
 
     /// Combine two MeanSD's.
-    void put(const ref typeof(this) rhs) pure nothrow @safe {
+    void put(typeof(this) rhs) pure nothrow @safe {
         if(_k == 0) {
             foreach(ti, elem; rhs.tupleof) {
                 this.tupleof[ti] = elem;
@@ -635,7 +634,7 @@ public:
         _k = totalN;
     }
 
-    const pure nothrow @property @safe {
+    const  @property @safe {
 
         ///
         double sum() {
@@ -675,7 +674,7 @@ public:
         }
 
         /**Simply returns this.  Useful in generic programming contexts.*/
-        MeanSD toMeanSD() const pure nothrow {
+        MeanSD toMeanSD() const  {
             return this;
         }
     }
@@ -865,7 +864,7 @@ public:
     }
 
     /// Combine two Summary's.
-    void put(const ref typeof(this) rhs) pure nothrow @safe {
+    void put(typeof(this) rhs) pure nothrow @safe {
         if(_k == 0) {
             foreach(ti, elem; rhs.tupleof) {
                 this.tupleof[ti] = elem;
@@ -900,7 +899,7 @@ public:
         _min = (_min < rhs._min) ? _min : rhs._min;
     }
 
-    const pure nothrow @property @safe {
+    const  @property @safe {
 
         ///
         double sum() {
