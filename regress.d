@@ -39,11 +39,6 @@ import std.math, std.algorithm, std.traits, std.array, std.traits, std.exception
 
 import dstats.alloc, std.range, std.conv, dstats.distrib, dstats.cor, dstats.base;
 
-private void enforceConfidence(double conf) {
-    dstatsEnforce(conf >= 0 && conf <= 1,
-        "Confidence intervals must be between 0 and 1.");
-}
-
 ///
 struct PowMap(ExpType, T)
 if(isForwardRange!(T)) {

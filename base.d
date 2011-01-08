@@ -83,6 +83,12 @@ T dstatsEnforce(T, string file = __FILE__, int line = __LINE__)
     return value;
 }
 
+package void enforceConfidence
+(string file = __FILE__, int line = __LINE__)(double conf) {
+    dstatsEnforce!(bool, file, line)(conf >= 0 && conf <= 1,
+        text("Confidence intervals must be between 0 and 1, not ", conf, "."));
+}
+
 /** Tests whether T is an input range whose elements can be implicitly
  * converted to doubles.*/
 template doubleInput(T) {

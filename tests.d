@@ -41,11 +41,6 @@ version(unittest) {
     void main(){}
 }
 
-private void enforceConfidence(double conf) {
-    dstatsEnforce(conf >= 0 && conf <= 1,
-        "Confidence intervals must be between 0 and 1.");
-}
-
 /**Alternative hypotheses.  Exact meaning varies with test used.*/
 enum Alt {
     /// f(input1) != X
