@@ -2325,9 +2325,13 @@ alias chiSquareContingency chiSqrContingency;
 
 /**The G or likelihood ratio chi-square test for contingency tables.  Roughly
  * the same as Pearson's chi-square test (chiSquareContingency), but may be more
- * accurate in certain situations and less accurate in others.  However, it
- * is still based on asymptotic distributions, and is not exact. Usage is is
- * identical to chiSquareContingency.
+ * accurate in certain situations and less accurate in others.  This test also
+ * has the interpretation of being a test for nonzero mutual information between
+ * two random variables.
+ *
+ * Like Pearson's Chi-square, the G-test is based on asymptotic distributions,
+ * and is not exact. Usage is is identical to chiSquareContingency.
+ *
  *
  * References:  http://en.wikipedia.org/wiki/G_test
  *
@@ -2370,7 +2374,7 @@ private TestRes testContingency(alias elemFun, T...)(T rangesIn) {
     double[] colSums = newStack!(double)(ranges.length);
     colSums[] = 0;
     size_t nCols = 0;
-    size_t nRows = ranges.length;
+    immutable size_t nRows = ranges.length;
     foreach(ri, range; ranges) {
         size_t curLen = 0;
         foreach(elem; range.save) {
@@ -2408,7 +2412,7 @@ private TestRes testContingency(alias elemFun, T...)(T rangesIn) {
     }
 
     double chiSq = 0;
-    double NNeg1 = 1.0 / sum(colSums);
+    immutable double NNeg1 = 1.0 / sum(colSums);
     while(noneEmpty) {
         auto rowSum = sumRow();
         foreach(ri, range; ranges) {
@@ -2425,13 +2429,14 @@ private TestRes testContingency(alias elemFun, T...)(T rangesIn) {
     return TestRes(chiSq, chiSquareCDFR(chiSq, (nRows - 1) * (nCols - 1)));
 }
 
-private double pearsonChiSqElem(double observed, double expected) {
-    double diff = observed - expected;
+private double pearsonChiSqElem(double observed, double expected) pure nothrow {
+    immutable diff = observed - expected;
     return diff * diff / expected;
 }
 
-private double gTestElem(double observed, double expected) {
-    return observed * log(observed / expected) * 2;
+private double gTestElem(double observed, double expected) pure nothrow {
+    return (observed == 0) ? 0 :
+        (observed * log(observed / expected) * 2);
 }
 
 /**Fisher's Exact test for difference in odds between rows/columns
