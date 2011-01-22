@@ -37,6 +37,8 @@ import std.traits, std.math, std.typetuple, std.functional, std.range,
 
 import dstats.base, dstats.alloc, dstats.summary : sum;
 
+import dstats.tests : mutualInfoImpl;
+
 version(unittest) {
     import std.stdio, std.bigint, std.algorithm;
 
@@ -206,6 +208,7 @@ static assert(Comparable!ubyte);
 
 struct ObsEnt(T...) {
     T compRep;
+    alias compRep this;
 
     static if(isReferenceType!(typeof(this))) {
 
@@ -400,7 +403,7 @@ unittest {
 
 /**Calculate the conditional entropy H(data | cond).*/
 double condEntropy(T, U)(T data, U cond)
-if(isInputRange!(T) && isInputRange!(U)) {
+if(isForwardRange!(T) && isForwardRange!(U)) {
     return entropy(joint(data, cond)) - entropy(cond);
 }
 
@@ -412,13 +415,22 @@ unittest {
            mutualInfo(foo, bar)));
 }
 
-
-
 /**Calculates the mutual information of two vectors of observations.
  */
 double mutualInfo(T, U)(T x, U y)
 if(isInputRange!(T) && isInputRange!(U)) {
-    return entropy(x) + entropy(y) - entropy(joint(x, y));
+    static if(!dstats.base.hasLength!T && !dstats.base.hasLength!U) {
+        return mutualInfoImpl!(T, U, uint)(x, y);
+    } else {
+        immutable minLen = min(x.length, y.length);
+        if(minLen <= ubyte.max) {
+            return mutualInfoImpl!(T, U, ubyte)(x, y);
+        } else if(minLen <= ushort.max) {
+            return mutualInfoImpl!(T, U, ushort)(x, y);
+        } else {
+            return mutualInfoImpl!(T, U, uint)(x, y);
+        }
+    }
 }
 
 unittest {
