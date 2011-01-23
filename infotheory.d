@@ -33,14 +33,14 @@
 module dstats.infotheory;
 
 import std.traits, std.math, std.typetuple, std.functional, std.range,
-       std.array, std.typecons;
+       std.array, std.typecons, std.algorithm;
 
 import dstats.base, dstats.alloc, dstats.summary : sum;
 
 import dstats.tests : toContingencyScore, gTestContingency;
 
 version(unittest) {
-    import std.stdio, std.bigint, std.algorithm;
+    import std.stdio, std.bigint;
 
     void main() {}
 }
@@ -476,8 +476,9 @@ Calculates the conditional mutual information I(x, y | z) from a set of
 observations.
 */
 double condMutualInfo(T, U, V)(T x, U y, V z) {
-    return entropy(joint(x, z)) + entropy(joint(y, z)) -
-           entropy(joint(x, y, z)) - entropy(z);
+    auto ret = entropy(joint(x, z)) - entropy(joint(x, y, z)) - entropy(z)
+        + entropy(joint(y, z));
+    return max(ret, 0);
 }
 
 unittest {
@@ -528,6 +529,240 @@ unittest {
     auto sorted = foo.dup;
     sort(sorted);
     assert(approxEqual(entropySorted(sorted), entropy(foo)));
+}
+
+/**
+Much faster implementations of information theory functions for the special
+but common case where all observations are integers on the range [0, nBin).
+This is the case, for example, when the observations have been previously
+binned using, for example, dstats.base.frqBin().
+
+Note that, due to the optimizations used, joint() cannot be used with
+the member functions of this struct, except entropy().
+
+For those looking for hard numbers, this seems to be on the order of 10x
+faster than the generic implementations according to my quick and dirty
+benchmarks.
+*/
+struct DenseInfoTheory {
+    private uint nBin;
+
+    // Saves space and makes things cache efficient by using the smallest
+    // integer width necessary for binning.
+    double selectSize(alias fun, T...)(T args) {
+        static if(allSatisfy!(dstats.base.hasLength, T)) {
+            immutable len = args[0].length;
+
+            if(len <= ubyte.max) {
+                return fun!ubyte(args);
+            } else if(len <= ushort.max) {
+                return fun!ushort(args);
+            } else {
+                return fun!uint(args);
+            }
+
+            // For now, assume that noone is going to have more than
+            // 4 billion observations.
+        } else {
+            return fun!uint(args);
+        }
+    }
+
+    /**
+    Constructs a DenseInfoTheory object for nBin bins.  The values taken by
+    each observation must then be on the interval [0, nBin).
+    */
+    this(uint nBin) {
+        this.nBin = nBin;
+    }
+
+    /**
+    Computes the entropy of a set of observations.  Note that, for this
+    function, the joint() function can be used to compute joint entropies
+    as long as each individual range contains only integers on [0, nBin).
+    */
+    double entropy(R)(R range) if(isIterable!R) {
+        return selectSize!entropyImpl(range);
+    }
+
+    private double entropyImpl(Uint, R)(R range) {
+        mixin(newFrame);
+        uint n = 0;
+
+        static if(is(typeof(range._jointRanges))) {
+            // Compute joint entropy.
+            immutable nRanges = range._jointRanges.length;
+            auto counts = newStack!Uint(nBin ^^ nRanges);
+            counts[] = 0;
+
+            Outer:
+            while(true) {
+                uint multiplier = 1;
+                uint index = 0;
+
+                foreach(ti, Unused; typeof(range._jointRanges)) {
+                    if(range._jointRanges[ti].empty) break Outer;
+                    immutable rFront = range._jointRanges[ti].front;
+                    assert(rFront < nBin);  // Enforce is too costly here.
+
+                    index += multiplier * cast(uint) rFront;
+                    range._jointRanges[ti].popFront();
+                    multiplier *= nBin;
+                }
+
+                counts[index]++;
+                n++;
+            }
+
+            return entropyCounts(counts, n);
+        } else {
+            auto counts = newStack!Uint(nBin);
+
+            counts[] = 0;
+            foreach(elem; range) {
+                counts[elem]++;
+                n++;
+            }
+
+            return entropyCounts(counts, n);
+        }
+    }
+
+    /// I(x; y)
+    double mutualInfo(R1, R2)(R1 x, R2 y)
+    if(isIterable!R1 && isIterable!R2) {
+        return selectSize!mutualInfoImpl(x, y);
+    }
+
+    private double mutualInfoImpl(Uint, R1, R2)(R1 x, R2 y) {
+        mixin(newFrame);
+        auto joint = newStack!Uint(nBin * nBin);
+        auto margx = newStack!Uint(nBin);
+        auto margy = newStack!Uint(nBin);
+        joint[] = 0;
+        margx[] = 0;
+        margy[] = 0;
+        uint n;
+
+        while(!x.empty && !y.empty) {
+            immutable xFront = cast(uint) x.front;
+            immutable yFront = cast(uint) y.front;
+            assert(xFront < nBin);
+            assert(yFront < nBin);
+
+            joint[xFront * nBin + yFront]++;
+            margx[xFront]++;
+            margy[yFront]++;
+            n++;
+            x.popFront();
+            y.popFront();
+        }
+
+        auto ret = entropyCounts(margx, n) + entropyCounts(margy, n) -
+            entropyCounts(joint, n);
+        return max(0, ret);
+    }
+
+    /// H(X | Y)
+    double condEntropy(R1, R2)(R1 x, R2 y)
+    if(isIterable!R1 && isIterable!R2) {
+        return selectSize!condEntropyImpl(x, y);
+    }
+
+    private double condEntropyImpl(Uint, R1, R2)(R1 x, R2 y) {
+        mixin(newFrame);
+        auto joint = newStack!Uint(nBin * nBin);
+        auto margy = newStack!Uint(nBin);
+        joint[] = 0;
+        margy[] = 0;
+        uint n;
+
+        while(!x.empty && !y.empty) {
+            immutable xFront = cast(uint) x.front;
+            immutable yFront = cast(uint) y.front;
+            assert(xFront < nBin);
+            assert(yFront < nBin);
+
+            joint[xFront * nBin + yFront]++;
+            margy[yFront]++;
+            n++;
+            x.popFront();
+            y.popFront();
+        }
+
+        auto ret = entropyCounts(joint, n) - entropyCounts(margy, n);
+        return max(0, ret);
+    }
+
+    /// I(X; Y | Z)
+    double condMutualInfo(R1, R2, R3)(R1 x, R2 y, R3 z)
+    if(allSatisfy!(isIterable, R1, R2, R3)) {
+        return selectSize!condMutualInfoImpl(x, y, z);
+    }
+
+    private double condMutualInfoImpl(Uint, R1, R2, R3)(R1 x, R2 y, R3 z) {
+        mixin(newFrame);
+        immutable nBinSq = nBin * nBin;
+        auto jointxyz = newStack!Uint(nBin * nBin * nBin);
+        auto jointxz = newStack!Uint(nBinSq);
+        auto jointyz = newStack!Uint(nBinSq);
+        auto margz = newStack!Uint(nBin);
+        jointxyz[] = 0;
+        jointxz[] = 0;
+        jointyz[] = 0;
+        margz[] = 0;
+        uint n = 0;
+
+        while(!x.empty && !y.empty && !z.empty) {
+            immutable xFront = cast(uint) x.front;
+            immutable yFront = cast(uint) y.front;
+            immutable zFront = cast(uint) z.front;
+            assert(xFront < nBin);
+            assert(yFront < nBin);
+            assert(zFront < nBin);
+
+            jointxyz[xFront * nBinSq + yFront * nBin + zFront]++;
+            jointxz[xFront * nBin + zFront]++;
+            jointyz[yFront * nBin + zFront]++;
+            margz[zFront]++;
+            n++;
+
+            x.popFront();
+            y.popFront();
+            z.popFront();
+        }
+
+        auto ret = entropyCounts(jointxz, n) - entropyCounts(jointxyz, n) -
+            entropyCounts(margz, n) + entropyCounts(jointyz, n);
+        return max(0, ret);
+    }
+}
+
+unittest {
+    auto dense = DenseInfoTheory(3);
+    auto a = [0, 1, 2, 0, 1, 2, 0, 1, 2, 0, 1, 2];
+    auto b = [1, 2, 2, 2, 0, 0, 1, 1, 1, 1, 0, 0];
+    auto c = [1, 1, 1, 1, 2, 2, 2, 2, 0, 0, 0, 0];
+
+    assert(entropy(a) == dense.entropy(a));
+    assert(entropy(b) == dense.entropy(b));
+    assert(entropy(c) == dense.entropy(c));
+    assert(entropy(joint(a, c)) == dense.entropy(joint(c, a)));
+    assert(entropy(joint(a, b)) == dense.entropy(joint(a, b)));
+    assert(entropy(joint(c, b)) == dense.entropy(joint(c, b)));
+
+    assert(condEntropy(a, c) == dense.condEntropy(a, c));
+    assert(condEntropy(a, b) == dense.condEntropy(a, b));
+    assert(condEntropy(c, b) == dense.condEntropy(c, b));
+
+    alias approxEqual ae;
+    assert(ae(mutualInfo(a, c), dense.mutualInfo(c, a)));
+    assert(ae(mutualInfo(a, b), dense.mutualInfo(a, b)));
+    assert(ae(mutualInfo(c, b), dense.mutualInfo(c, b)));
+
+    assert(ae(condMutualInfo(a, b, c), dense.condMutualInfo(a, b, c)));
+    assert(ae(condMutualInfo(a, c, b), dense.condMutualInfo(a, c, b)));
+    assert(ae(condMutualInfo(b, c, a), dense.condMutualInfo(b, c, a)));
 }
 
 // Verify that there are no TempAlloc memory leaks anywhere in the code covered
