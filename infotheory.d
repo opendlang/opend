@@ -37,7 +37,7 @@ import std.traits, std.math, std.typetuple, std.functional, std.range,
 
 import dstats.base, dstats.alloc, dstats.summary : sum;
 
-import dstats.tests : mutualInfoImpl;
+import dstats.tests : toContingencyScore, gTestContingency;
 
 version(unittest) {
     import std.stdio, std.bigint, std.algorithm;
@@ -415,22 +415,37 @@ unittest {
            mutualInfo(foo, bar)));
 }
 
-/**Calculates the mutual information of two vectors of observations.
+private double miContingency(double observed, double expected) {
+    return (observed == 0) ? 0 :
+           (observed * log2(observed / expected));
+}
+
+
+/**Calculates the mutual information of two vectors of discrete observations.
  */
 double mutualInfo(T, U)(T x, U y)
 if(isInputRange!(T) && isInputRange!(U)) {
+    uint xFreedom, yFreedom, n;
+    typeof(return) ret;
+
     static if(!dstats.base.hasLength!T && !dstats.base.hasLength!U) {
-        return mutualInfoImpl!(T, U, uint)(x, y);
+        ret = toContingencyScore!(T, U, uint)
+            (x, y, &miContingency, xFreedom, yFreedom, n);
     } else {
         immutable minLen = min(x.length, y.length);
         if(minLen <= ubyte.max) {
-            return mutualInfoImpl!(T, U, ubyte)(x, y);
+            ret = toContingencyScore!(T, U, ubyte)
+                (x, y, &miContingency, xFreedom, yFreedom, n);
         } else if(minLen <= ushort.max) {
-            return mutualInfoImpl!(T, U, ushort)(x, y);
+            ret = toContingencyScore!(T, U, ushort)
+                (x, y, &miContingency, xFreedom, yFreedom, n);
         } else {
-            return mutualInfoImpl!(T, U, uint)(x, y);
+            ret = toContingencyScore!(T, U, uint)
+                (x, y, &miContingency, xFreedom, yFreedom, n);
         }
     }
+
+    return ret / n;
 }
 
 unittest {
@@ -444,7 +459,22 @@ unittest {
 
 }
 
-/**Calculates the conditional mutual information I(x, y | z).*/
+/**
+Calculates the mutual information of a contingency table representing a joint
+discrete probability distribution.  Takes a set of finite forward ranges,
+one for each column in the contingency table.  These can be expressed either as
+a tuple of ranges or a range of ranges.
+*/
+double mutualInfoTable(T...)(T table) {
+    // This function is really just included to give conceptual unity to
+    // the infotheory module.
+    return gTestContingency(table).mutualInfo;
+}
+
+/**
+Calculates the conditional mutual information I(x, y | z) from a set of
+observations.
+*/
 double condMutualInfo(T, U, V)(T x, U y, V z) {
     return entropy(joint(x, z)) + entropy(joint(y, z)) -
            entropy(joint(x, y, z)) - entropy(z);

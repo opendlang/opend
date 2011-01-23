@@ -2322,8 +2322,9 @@ unittest {
 }
 
 // Alias for old name, for backwards compatibility.  Don't document it
-// because it will be deprecated eventually.
-alias chiSquareContingency chiSqrContingency;
+// because it is deprecated and has been scheduled for deprecation for
+// ages.
+deprecated alias chiSquareContingency chiSqrContingency;
 
 /**
 This struct is a subtype of TestRes and is used to return the results of
@@ -2331,7 +2332,7 @@ gTestContingency.  Due to the information theoretic interpretation of
 the G test, it contains an extra field to return the mutual information
 in bits.
 */
-struct MutualInfoTestRes {
+struct GTestRes {
     ///
     TestRes testRes;
 
@@ -2345,20 +2346,25 @@ struct MutualInfoTestRes {
     double mutualInfo;
 }
 
-/**The G or likelihood ratio chi-square test for contingency tables.  Roughly
- * the same as Pearson's chi-square test (chiSquareContingency), but may be more
- * accurate in certain situations and less accurate in others.  This test also
- * has the interpretation of being a test for nonzero mutual information between
- * two random variables.
- *
- * Like Pearson's Chi-square, the G-test is based on asymptotic distributions,
- * and is not exact. Usage is is identical to chiSquareContingency.
- *
- *
- * References:  http://en.wikipedia.org/wiki/G_test, last retrieved 1/22/2011
- *
- */
-MutualInfoTestRes gTestContingency(T...)(T inputData) {
+/**
+The G or likelihood ratio chi-square test for contingency tables.  Roughly
+the same as Pearson's chi-square test (chiSquareContingency), but may be more
+accurate in certain situations and less accurate in others.
+
+Like Pearson's Chi-square, the G-test is based on asymptotic distributions,
+and is not exact. Usage is is identical to chiSquareContingency.
+
+Note:  This test can be thought of as a test for nonzero mutual information
+between the random variables represented by the rows and the columns,
+since the test statistic and P-value are strictly increasing
+and strictly decreasing, respectively, in mutual information.  Therefore, this
+function returns a GTestRes, which is a subtype of TestRes and also gives
+the mutual information for use in information theoretic settings.
+
+References:  http://en.wikipedia.org/wiki/G_test, last retrieved 1/22/2011
+
+*/
+GTestRes gTestContingency(T...)(T inputData) {
     return testContingency!(gTestElem, T)(inputData);
 }
 
@@ -2387,7 +2393,7 @@ private enum loge2 = 0.69314718055994530941723212145817656807550013436025525412;
 // Pearson and likelihood ratio code are pretty much the same.  Factor out
 // the one difference into a function that's a template parameter.  However,
 // for API simplicity, this is hidden and they look like two separate functions.
-private MutualInfoTestRes testContingency(alias elemFun, T...)(T rangesIn) {
+private GTestRes testContingency(alias elemFun, T...)(T rangesIn) {
     mixin(newFrame);
     static if(isForwardRange!(T[0]) && T.length == 1 &&
         isForwardRange!(typeof(rangesIn[0].front()))) {
@@ -2451,7 +2457,7 @@ private MutualInfoTestRes testContingency(alias elemFun, T...)(T rangesIn) {
     }
 
     if(isNaN(chiSq)) {
-        return MutualInfoTestRes(TestRes(double.nan, double.nan), double.nan);
+        return GTestRes(TestRes(double.nan, double.nan), double.nan);
     }
 
     immutable pVal = chiSquareCDFR(chiSq, (nRows - 1) * (nCols - 1));
@@ -2465,10 +2471,11 @@ private MutualInfoTestRes testContingency(alias elemFun, T...)(T rangesIn) {
     // but never gets returned by any public function.
     immutable mutualInfo = chiSq * NNeg1 * chiToMi;
 
-    return MutualInfoTestRes(TestRes(chiSq, pVal), mutualInfo);
+    return GTestRes(TestRes(chiSq, pVal), mutualInfo);
 }
 
 private double pearsonChiSqElem(double observed, double expected) pure nothrow {
+    if(observed == 0 && expected == 0) return 0;
     immutable diff = observed - expected;
     return diff * diff / expected;
 }
@@ -2480,11 +2487,10 @@ private double gTestElem(double observed, double expected) pure nothrow {
 
 /**
 Given two vectors of observations of jointly distributed variables x, y, tests
-the null hypothesis that I(x; y) = 0 (the variables are independent) against
-the alternative that I(x; y) > 0 (the variables are not independent).  This
-is done using a likelihood ratio G test.  For a similar test that assumes
-the data has already been tabulated into a contingency table, see
-gTestContingency().
+the null hypothesis that values in x are independent of the corresponding
+values in y.  This is done using Pearson's Chi-Square Test.  For a similar test
+that assumes the data has already been tabulated into a contingency table, see
+chiSquareContingency().
 
 x and y must both be input ranges.  If they are not the same length, an
 exception is thrown.
@@ -2495,41 +2501,99 @@ Examples:
 // appearance of "baz" vs. "xxx".
 auto x = ["foo", "bar", "bar", "foo", "foo"];
 auto y = ["xxx", "baz", "baz", "xxx", "baz"];
-auto result = mutualInfoTest(x, y);
-assert(approxEqual(result.testStat, 2.91103));
-assert(approxEqual(result.p, 0.0879755));
-assert(approxEqual(result.mutualInfo, 0.419973));
+auto result = chiSquareObs(x, y);
 ---
 */
-MutualInfoTestRes mutualInfoTest(T, U)(T x, U y)
+TestRes chiSquareObs(T, U)(T x, U y)
 if(isInputRange!T && isInputRange!U) {
     uint xFreedom, yFreedom, n;
     typeof(return) ret;
 
     static if(!dstats.base.hasLength!T && !dstats.base.hasLength!U) {
-        ret.mutualInfo = mutualInfoImpl!(T, U, uint)
-            (x, y, &xFreedom, &yFreedom, &n);
+        ret.testStat = toContingencyScore!(T, U, uint)
+            (x, y, &pearsonChiSqElem, xFreedom, yFreedom, n);
     } else {
         immutable minLen = min(x.length, y.length);
         if(minLen <= ubyte.max) {
-            ret.mutualInfo = mutualInfoImpl!(T, U, ubyte)
-                (x, y, &xFreedom, &yFreedom, &n);
+            ret.testStat = toContingencyScore!(T, U, ubyte)
+                (x, y, &pearsonChiSqElem, xFreedom, yFreedom, n);
         } else if(minLen <= ushort.max) {
-            ret.mutualInfo = mutualInfoImpl!(T, U, ushort)
-                (x, y, &xFreedom, &yFreedom, &n);
+            ret.testStat = toContingencyScore!(T, U, ushort)
+                (x, y, &pearsonChiSqElem, xFreedom, yFreedom, n);
         } else {
-            ret.mutualInfo = mutualInfoImpl!(T, U, uint)
-                (x, y, &xFreedom, &yFreedom, &n);
+            ret.testStat = toContingencyScore!(T, U, uint)
+                (x, y, &pearsonChiSqElem, xFreedom, yFreedom, n);
         }
     }
 
-    ret.testStat = 2 * n * loge2 * ret.mutualInfo;
     ret.p = chiSquareCDFR(ret.testStat, xFreedom * yFreedom);
     return ret;
 }
 
 unittest {
-    // We know the g test stuff works, so test that the automatic binning
+    // We know the chi-square contingency works, so test that the automatic
+    // binning works, too.
+    ubyte[] obs1 = [1, 2, 3, 1, 2, 3, 1, 2, 3];
+    ubyte[] obs2 = [1, 3, 2, 1, 3, 2, 1, 3, 2];
+
+    uint[][] cTable = [[3, 0, 0],
+                       [0, 0, 3],
+                       [0, 3, 0]];
+    auto gRes = chiSquareContingency(cTable);
+    auto miRes = chiSquareObs(obs1, obs2);
+    foreach(ti, elem; miRes.tupleof) {
+        assert(approxEqual(elem, gRes.tupleof[ti]));
+    }
+
+    auto x = ["foo", "bar", "bar", "foo", "foo"];
+    auto y = ["xxx", "baz", "baz", "xxx", "baz"];
+    auto result = chiSquareObs(x, y);
+    assert(approxEqual(result.testStat, 2.22222222));
+    assert(approxEqual(result.p, 0.136037));
+}
+
+/**
+Given two vectors of observations of jointly distributed variables x, y, tests
+the null hypothesis that values in x are independent of the corresponding
+values in y.  This is done using the Likelihood Ratio G test.  Usage is similar
+to chiSquareObs.  For an otherwise identical test that assumes the data has
+already been tabulated into a contingency table, see gTestContingency().
+
+Note:  This test can be thought of as a test for nonzero mutual information
+between x and y, since the test statistic and P-value are strictly increasing
+and strictly decreasing, respectively, in mutual information.  Therefore, this
+function returns a GTestRes, which is a subtype of TestRes and also gives
+the mutual information for use in information theoretic settings.
+*/
+GTestRes gTestObs(T, U)(T x, U y)
+if(isInputRange!T && isInputRange!U) {
+    uint xFreedom, yFreedom, n;
+    typeof(return) ret;
+
+    static if(!dstats.base.hasLength!T && !dstats.base.hasLength!U) {
+        ret.testStat = toContingencyScore!(T, U, uint)
+            (x, y, &gTestElem, xFreedom, yFreedom, n);
+    } else {
+        immutable minLen = min(x.length, y.length);
+        if(minLen <= ubyte.max) {
+            ret.testStat = toContingencyScore!(T, U, ubyte)
+                (x, y, &gTestElem, xFreedom, yFreedom, n);
+        } else if(minLen <= ushort.max) {
+            ret.testStat = toContingencyScore!(T, U, ushort)
+                (x, y, &gTestElem, xFreedom, yFreedom, n);
+        } else {
+            ret.testStat = toContingencyScore!(T, U, uint)
+                (x, y, &gTestElem, xFreedom, yFreedom, n);
+        }
+    }
+
+    ret.p = chiSquareCDFR(ret.testStat, xFreedom * yFreedom);
+    ret.mutualInfo = ret.testStat / (2 * loge2 * n);
+    return ret;
+}
+
+unittest {
+    // We know the g test contingency works, so test that the automatic binning
     // works, too.
     ubyte[] obs1 = [1, 2, 3, 1, 2, 3, 1, 2, 3];
     ubyte[] obs2 = [1, 3, 2, 1, 3, 2, 1, 3, 2];
@@ -2538,26 +2602,22 @@ unittest {
                        [0, 0, 3],
                        [0, 3, 0]];
     auto gRes = gTestContingency(cTable);
-    auto miRes = mutualInfoTest(obs1, obs2);
-
+    auto miRes = gTestObs(obs1, obs2);
     foreach(ti, elem; miRes.tupleof) {
         assert(approxEqual(elem, gRes.tupleof[ti]));
     }
 
-    // Make sure example compiles.
     auto x = ["foo", "bar", "bar", "foo", "foo"];
     auto y = ["xxx", "baz", "baz", "xxx", "baz"];
-    auto result = mutualInfoTest(x, y);
+    auto result = gTestObs(x, y);
     assert(approxEqual(result.testStat, 2.91103));
     assert(approxEqual(result.p, 0.0879755));
     assert(approxEqual(result.mutualInfo, 0.419973));
 }
 
-// Mutual information is at the intersection of hypothesis testing and
-// information theory, so the lines get a little blurred.  This impl. is
-// used
-package double mutualInfoImpl(T, U, Uint)
-(T x, U y, uint* xFreedom = null, uint* yFreedom = null, uint* nPtr = null) {
+package double toContingencyScore(T, U, Uint)
+(T x, U y, double function(double, double) elemFun,
+ out uint xFreedom, out uint yFreedom, out uint nPtr) {
 
     enum needsHeap = dstats.infotheory.NeedsHeap!T ||
         dstats.infotheory.NeedsHeap!U;
@@ -2593,19 +2653,18 @@ package double mutualInfoImpl(T, U, Uint)
     dstatsEnforce(x.empty && y.empty,
         "Can't calculate mutual info with different length vectors.");
 
-    if(xFreedom !is null && yFreedom !is null && nPtr !is null) {
-        *xFreedom = xCounts.length - 1;
-        *yFreedom = yCounts.length - 1;
-        *nPtr = n;
-    }
+    xFreedom = xCounts.length - 1;
+    yFreedom = yCounts.length - 1;
+    nPtr = n;
 
     double ret = 0;
     immutable double nNeg1 = 1.0 / n;
-    foreach(key, count; jointCounts) {
-        immutable marginalProduct =
-            xCounts[key[0]] * nNeg1 * yCounts[key[1]] * nNeg1;
-        immutable jointProb = count * nNeg1;
-        ret += jointProb * log2(jointProb / marginalProduct);
+    foreach(key1, marg1; xCounts) foreach(key2, marg2; yCounts) {
+        immutable observed = jointCounts.get(
+            ObsType(key1, key2), 0
+        );
+        immutable expected = marg1 * nNeg1 * marg2;
+        ret += elemFun(observed, expected);
     }
 
     return ret;

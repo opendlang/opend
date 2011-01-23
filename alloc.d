@@ -1094,6 +1094,16 @@ public:
         return _length;
     }
 
+    /**
+    Attempt to look up a key and return a default value if the key is not
+    present.
+    */
+    V get(K key, lazy V defaultValue) {
+        auto ptr = key in this;
+        if(ptr) return *ptr;
+        return defaultValue;
+    }
+
     int opApply(int delegate(ref K, ref V) dg) {
         auto k = this.keys;
         auto v = this.values;
