@@ -35,12 +35,14 @@ module dstats.infotheory;
 import std.traits, std.math, std.typetuple, std.functional, std.range,
        std.array, std.typecons, std.algorithm;
 
-import dstats.base, dstats.alloc, dstats.summary : sum;
+import dstats.base, dstats.alloc;
+import dstats.summary : sum;
+import dstats.distrib : chiSquareCDFR;
 
 import dstats.tests : toContingencyScore, gTestContingency;
 
 version(unittest) {
-    import std.stdio, std.bigint;
+    import std.stdio, std.bigint, dstats.tests : gTestObs;
 
     void main() {}
 }
@@ -663,6 +665,22 @@ struct DenseInfoTheory {
         return max(0, ret);
     }
 
+    /**
+    Calculates the P-value for I(X; Y) assuming x and y both have supports
+    of [0, nBin).  The P-value is calculated using a Chi-Square approximation.
+    It is asymptotically correct, but is approximate for finite sample size.
+
+    Parameters:
+    mutualInfo:  I(x; y), in bits
+    n:  The number of samples used to calculate I(x; y)
+    */
+    double mutualInfoPval(double mutualInfo, double n) {
+        immutable df = (nBin - 1) ^^ 2;
+
+        immutable testStat = mutualInfo * 2 * LN2 * n;
+        return chiSquareCDFR(testStat, df);
+    }
+
     /// H(X | Y)
     double condEntropy(R1, R2)(R1 x, R2 y)
     if(isIterable!R1 && isIterable!R2) {
@@ -763,6 +781,11 @@ unittest {
     assert(ae(condMutualInfo(a, b, c), dense.condMutualInfo(a, b, c)));
     assert(ae(condMutualInfo(a, c, b), dense.condMutualInfo(a, c, b)));
     assert(ae(condMutualInfo(b, c, a), dense.condMutualInfo(b, c, a)));
+
+    // Test P-value stuff.
+    immutable pDense = dense.mutualInfoPval(dense.mutualInfo(a, b), a.length);
+    immutable pNotDense = gTestObs(a, b).p;
+    assert(approxEqual(pDense, pNotDense));
 }
 
 // Verify that there are no TempAlloc memory leaks anywhere in the code covered
