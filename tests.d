@@ -2460,6 +2460,11 @@ private GTestRes testContingency(alias elemFun, T...)(T rangesIn) {
         return GTestRes(TestRes(double.nan, double.nan), double.nan);
     }
 
+    // This can happen in some cases due to numerical fuzz.
+    if(chiSq > 1e-5 && chiSq <= 0) {
+        return GTestRes(TestRes(0, 1), 0);
+    }
+
     immutable pVal = chiSquareCDFR(chiSq, (nRows - 1) * (nCols - 1));
 
     // 1 / (2 * loge2), for converting chiSq to mutualInfo.
