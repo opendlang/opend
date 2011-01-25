@@ -2480,13 +2480,12 @@ private GTestRes testContingency(alias elemFun, T...)(T rangesIn) {
 }
 
 private double pearsonChiSqElem(double observed, double expected) pure nothrow {
-    if(observed == 0 && expected == 0) return 0;
     immutable diff = observed - expected;
     return diff * diff / expected;
 }
 
 private double gTestElem(double observed, double expected) pure nothrow {
-    return (observed == 0) ? 0 :
+    return (observed == 0 && expected > 0) ? 0 :
         (observed * log(observed / expected) * 2);
 }
 
