@@ -839,8 +839,6 @@ double doMLE(T, U...)(double[] beta, T y, U xIn) {
             }
 
             ps[i] = inverseLogit(prodSum);
-            assert(ps[i] >= 0, text(ps[i]));
-            assert(ps[i] <= 1, text(ps[i]));
         }
     }
 
@@ -874,9 +872,13 @@ double doMLE(T, U...)(double[] beta, T y, U xIn) {
         evalPs();
         immutable lh = logLikelihood();
 
-        if(oldLikelihood - lh < eps || isNaN(lh)) {
+        if(oldLikelihood - lh < eps) {
+            return lh;
+        } else if(isNaN(lh)) {
+            beta[] = double.nan;
             return lh;
         }
+
         oldLikelihood = lh;
 
         foreach(i; 0..beta.length) {
