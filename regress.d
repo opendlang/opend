@@ -696,32 +696,264 @@ unittest {
          -0.65892680, -0.06437053, -0.08253613,  0.96202014,  1.39385455]));
 }
 
-/**Computes a logistic regression using a maximum likelihood estimator
- * and returns the beta coefficients.  This is a generalized linear model with
- * the link function f(XB) = 1 / (1 + exp(XB)). This is generally used to model
- * the probability that a binary Y variable is 1 given a set of X variables.
- *
- * For the purpose of this function, Y variables are interpreted as Booleans,
- * regardless of their type.  X may be either a range of ranges or a tuple of
- * ranges.  However, note that unlike in linearRegress, they are copied to an
- * array if they are not random access ranges.  Note that each value is accessed
- * several times, so if your range is a map to something expensive, you may
- * want to evaluate it eagerly.
- *
- * Also note that, as in linearRegress, repeat(1) can be used for the intercept
- * term.
- *
- * Returns:  The beta coefficients for the regression model.
- *
- * TODO:  Add hypothesis testing stuff and generalize to a parametrizable
- *        generalized linear model function.
- *
- * References:
- * http://en.wikipedia.org/wiki/Logistic_regression
- * http://socserv.mcmaster.ca/jfox/Courses/UCLA/logistic-regression-notes.pdf
+/**
+Computes a logistic regression using a maximum likelihood estimator
+and returns the beta coefficients.  This is a generalized linear model with
+the link function f(XB) = 1 / (1 + exp(XB)). This is generally used to model
+the probability that a binary Y variable is 1 given a set of X variables.
+
+For the purpose of this function, Y variables are interpreted as Booleans,
+regardless of their type.  X may be either a range of ranges or a tuple of
+ranges.  However, note that unlike in linearRegress, they are copied to an
+array if they are not random access ranges.  Note that each value is accessed
+several times, so if your range is a map to something expensive, you may
+want to evaluate it eagerly.
+
+Also note that, as in linearRegress, repeat(1) can be used for the intercept
+term.
+
+Returns:  The beta coefficients for the regression model.
+
+References:
+$(WEB http://en.wikipedia.org/wiki/Logistic_regression)
+$(WEB http://socserv.mcmaster.ca/jfox/Courses/UCLA/logistic-regression-notes.pdf)
  */
 double[] logisticRegressBeta(T, U...)(T yIn, U xIn) {
+    return logisticRegressImpl!(T, U)(false, yIn, xIn).betas;
+}
+
+
+/**
+Plain old data struct to hold the results of a logistic regression.
+*/
+struct LogisticRes {
+    /**The coefficients, one for each range in X.  These will be in the order
+     * that the X ranges were passed in.*/
+    double[] betas;
+
+    /**The standard error terms of the X ranges passed in.*/
+    double[] stdErr;
+
+    /**
+    The Wald lower confidence bounds of the beta terms, at the confidence level
+    specificied.  (Default 0.95).*/
+    double[] lowerBound;
+
+    /**
+    The Wald upper confidence bounds of the beta terms, at the confidence level
+    specificied.  (Default 0.95).*/
+    double[] upperBound;
+
+    /**
+    The P-value for the alternative that the corresponding beta value is
+    different from zero against the null that it is equal to zero.  These
+    are calculated using the Wald Test.*/
+    double[] p;
+
+    /**
+    The log likelihood for the null model.
+    */
+    double nullLogLikelihood;
+
+    /**
+    The log likelihood for the model fit.
+    */
+    double logLikelihood;
+
+    /**
+    Akaike Information Criterion, which is a complexity-penalized goodness-
+    of-fit score, equal to 2 * k - 2 log(L) where L is the log likelihood and
+    k is the number of parameters.
+    */
+    double aic() const pure nothrow @property @safe {
+        return 2 * (betas.length - logLikelihood);
+    }
+
+    /**
+    The P-value for the model as a whole, based on the likelihood ratio test.
+    The null here is that the model has no predictive value, the alternative
+    is that it does have predictive value.*/
+    double overallP;
+
+    // Just used internally.
+    private static string arrStr(T)(T arr) {
+        return text(arr)[1..$ - 1];
+    }
+
+    /**Print out the results in the default format.*/
+    string toString() {
+        return "Betas:  " ~ arrStr(betas) ~ "\nLower Conf. Int.:  " ~
+            arrStr(lowerBound) ~ "\nUpper Conf. Int.:  " ~ arrStr(upperBound) ~
+            "\nStd. Err:  " ~ arrStr(stdErr) ~ "\nP Values:  " ~ arrStr(p) ~
+            "\nNull Log Likelihood:  " ~ text(nullLogLikelihood) ~
+            "\nLog Likelihood:  " ~ text(logLikelihood) ~
+            "\nAIC:  " ~ text(aic) ~
+            "\nOverall P:  " ~ text(overallP);
+    }
+}
+
+/**
+Similar to logisticRegressBeta, but returns a LogisticRes with useful stuff for
+statistical inference.  If the last element of input is a floating point
+number instead of a range, it is used to specify the confidence interval
+calculated.  Otherwise, the default of 0.95 is used.
+
+References:
+
+$(WEB http://en.wikipedia.org/wiki/Wald_test)
+$(WEB http://en.wikipedia.org/wiki/Akaike_information_criterion)
+*/
+LogisticRes logisticRegress(T, V...)(T yIn, V input) {
+    return logisticRegressImpl!(T, V)(true, yIn, input);
+}
+
+unittest {
+    // Values from R.  Confidence intervals from confint.default().
+    // R doesn't automatically calculate likelihood ratio P-value, and reports
+    // deviations instead of log likelihoods.  Deviations are just
+    // -2 * likelihood.
+    alias approxEqual ae;  // Save typing.
+
+    // Start with the basics, with X as a ror.
+    auto y1 =  [1,   0, 0, 0, 1, 0, 0];
+    auto x1 = [[1.0, 1 ,1 ,1 ,1 ,1 ,1],
+              [8.0, 6, 7, 5, 3, 0, 9]];
+    auto res1 = logisticRegress(y1, x1);
+    assert(ae(res1.betas[0], -0.98273));
+    assert(ae(res1.betas[1], 0.01219));
+    assert(ae(res1.stdErr[0], 1.80803));
+    assert(ae(res1.stdErr[1], 0.29291));
+    assert(ae(res1.p[0], 0.587));
+    assert(ae(res1.p[1], 0.967));
+    assert(ae(res1.aic, 12.374));
+    assert(ae(res1.logLikelihood, -0.5 * 8.3758));
+    assert(ae(res1.nullLogLikelihood, -0.5 * 8.3740));
+    assert(ae(res1.lowerBound[0], -4.5264052));
+    assert(ae(res1.lowerBound[1], -0.5618933));
+    assert(ae(res1.upperBound[0], 2.560939));
+    assert(ae(res1.upperBound[1], 0.586275));
+
+    // Use tuple.
+    auto y2   = [1,0,1,1,0,1,0,0,0,1,0,1];
+    auto x2_1 = [3,1,4,1,5,9,2,6,5,3,5,8];
+    auto x2_2 = [2,7,1,8,2,8,1,8,2,8,4,5];
+    auto res2 = logisticRegress(y2, repeat(1), x2_1, x2_2);
+    assert(ae(res2.betas[0], -1.1875));
+    assert(ae(res2.betas[1], 0.1021));
+    assert(ae(res2.betas[2], 0.1603));
+    assert(ae(res2.stdErr[0], 1.5430));
+    assert(ae(res2.stdErr[1], 0.2507));
+    assert(ae(res2.stdErr[2], 0.2108));
+    assert(ae(res2.p[0], 0.442));
+    assert(ae(res2.p[1], 0.684));
+    assert(ae(res2.p[2], 0.447));
+    assert(ae(res2.aic, 21.81));
+    assert(ae(res2.nullLogLikelihood, -0.5 * 16.636));
+    assert(ae(res2.logLikelihood, -0.5 * 15.810));
+    assert(ae(res2.lowerBound[0], -4.2116584));
+    assert(ae(res2.lowerBound[1], -0.3892603));
+    assert(ae(res2.lowerBound[2], -0.2528110));
+    assert(ae(res2.upperBound[0], 1.8366823));
+    assert(ae(res2.upperBound[1], 0.5934631));
+    assert(ae(res2.upperBound[2], 0.5733693));
+
+    auto x2Intercept = [1,1,1,1,1,1,1,1,1,1,1,1];
+    auto res2a = logisticRegress(y2,
+        filter!"a.length"([x2Intercept, x2_1, x2_2]));
+    foreach(ti, elem; res2a.tupleof) {
+        assert(ae(elem, res2.tupleof[ti]));
+    }
+
+    // Use a huge range of values to test numerical stability.
+
+    // The filter is to make y3 a non-random access range.
+    auto y3 = filter!"a < 2"([1,1,1,1,0,0,0,0]);
+    auto x3_1 = filter!"a > 0"([1, 1e10, 2, 2e10, 3, 3e15, 4, 4e7]);
+    auto x3_2 = [1e8, 1e6, 1e7, 1e5, 1e3, 1e0, 1e9, 1e11];
+    auto x3_3 = [-5e12, 5e2, 6e5, 4e3, -999999, -666, -3e10, -2e10];
+    auto res3 = logisticRegress(y3, repeat(1), x3_1, x3_2, x3_3, 0.99);
+    assert(ae(res3.betas[0], 1.115e0));
+    assert(ae(res3.betas[1], -4.674e-15));
+    assert(ae(res3.betas[2], -7.026e-9));
+    assert(ae(res3.betas[3], -2.109e-12));
+    assert(ae(res3.stdErr[0], 1.158));
+    assert(ae(res3.stdErr[1], 2.098e-13));
+    assert(ae(res3.stdErr[2], 1.878e-8));
+    assert(ae(res3.stdErr[3], 4.789e-11));
+    assert(ae(res3.p[0], 0.336));
+    assert(ae(res3.p[1], 0.982));
+    assert(ae(res3.p[2], 0.708));
+    assert(ae(res3.p[3], 0.965));
+    assert(ae(res3.aic, 12.544));
+    assert(ae(res3.nullLogLikelihood, -0.5 * 11.0904));
+    assert(ae(res3.logLikelihood, -0.5 * 4.5442));
+    // Not testing confidence intervals b/c they'd be so buried in numerical
+    // fuzz.
+
+
+    // Test with a just plain huge dataset that R chokes for several minutes
+    // on.  If you think this unittest is slow, try getting the reference
+    // values from R.
+    auto y4 = chain(
+                take(cycle([0,0,0,0,1]), 500_000),
+                take(cycle([1,1,1,1,0]), 500_000));
+    auto x4_1 = iota(0, 1_000_000);
+    auto x4_2 = map!exp(map!"a / 1_000_000.0"(x4_1));
+    auto x4_3 = take(cycle([1,2,3,4,5]), 1_000_000);
+    auto x4_4 = take(cycle([8,6,7,5,3,0,9]), 1_000_000);
+    auto res4 = logisticRegress(y4, repeat(1), x4_1, x4_2, x4_3, x4_4, 0.99);
+    assert(ae(res4.betas[0], -1.574));
+    assert(ae(res4.betas[1], 5.625e-6));
+    assert(ae(res4.betas[2], -7.282e-1));
+    assert(ae(res4.betas[3], -4.381e-6));
+    assert(ae(res4.betas[4], -8.343e-6));
+    assert(ae(res4.stdErr[0], 3.693e-2));
+    assert(ae(res4.stdErr[1], 7.188e-8));
+    assert(ae(res4.stdErr[2], 4.208e-2));
+    assert(ae(res4.stdErr[3], 1.658e-3));
+    assert(ae(res4.stdErr[4], 8.164e-4));
+    assert(ae(res4.p[0], 0));
+    assert(ae(res4.p[1], 0));
+    assert(ae(res4.p[2], 0));
+    assert(ae(res4.p[3], 0.998));
+    assert(ae(res4.p[4], 0.992));
+    assert(ae(res4.aic, 1089339));
+    assert(ae(res4.nullLogLikelihood, -0.5 * 1386294));
+    assert(ae(res4.logLikelihood, -0.5 * 1089329));
+    assert(ae(res4.lowerBound[0], -1.668899));
+    assert(ae(res4.lowerBound[1], 5.439787e-6));
+    assert(ae(res4.lowerBound[2], -0.8366273));
+    assert(ae(res4.lowerBound[3], -4.27406e-3));
+    assert(ae(res4.lowerBound[4], -2.111240e-3));
+    assert(ae(res4.upperBound[0], -1.478623));
+    assert(ae(res4.upperBound[1], 5.810089e-6));
+    assert(ae(res4.upperBound[2], -6.198418e-1));
+    assert(ae(res4.upperBound[3], 4.265302e-3));
+    assert(ae(res4.upperBound[4], 2.084554e-3));
+}
+
+/// The logistic function used in logistic regression.
+double logistic(double xb) pure nothrow @safe {
+    return 1.0 / (1 + exp(-xb));
+}
+
+// Scheduled for deprecation.  This was a terrble name choice.
+alias logistic inverseLogit;
+
+private:
+LogisticRes logisticRegressImpl(T, V...)(bool inference, T yIn, V input) {
     mixin(newFrame);
+
+    static if(isFloatingPoint!(V[$ - 1])) {
+        alias input[$ - 1] conf;
+        alias V[0..$ - 1] U;
+        alias input[0..$ - 1] xIn;
+        enforceConfidence(conf);
+    } else {
+        alias V U;
+        alias input xIn;
+        enum conf = 0.95;
+    }
 
     static assert(!isInfinite!T, "Can't do regression with infinite # of Y's.");
     static if(isRandomAccessRange!T) {
@@ -740,78 +972,45 @@ double[] logisticRegressBeta(T, U...)(T yIn, U xIn) {
         auto x = toRandomAccessTuple(xIn).expand;
     }
 
-    auto beta = new double[x.length];
-    beta[] = 0;
+    typeof(return) ret;
+    ret.betas.length = x.length;
+    if(inference) ret.stdErr.length = x.length;
+    ret.logLikelihood = doMLE(ret.betas, ret.stdErr, y, x);
 
-    doMLE(beta, y, x);
+    if(!inference) return ret;
 
-    return beta;
+    static bool hasNaNs(R)(R range) {
+        return !filter!isNaN(range).empty;
+    }
+
+    if(isNaN(ret.logLikelihood) || hasNaNs(ret.betas) || hasNaNs(ret.stdErr)) {
+        // Then we didn't converge or our data was defective.
+        return ret;
+    }
+
+    ret.nullLogLikelihood = .priorLikelihood(y);
+    double lratio = ret.logLikelihood - ret.nullLogLikelihood;
+
+    // Compensate for numerical fuzz.
+    if(lratio < 0 && lratio > -1e-5) lratio = 0;
+    if(lratio > 0) {
+        ret.overallP = chiSquareCDFR(2 * lratio, x.length - 1);
+    }
+
+    ret.p.length = x.length;
+    ret.lowerBound.length = x.length;
+    ret.upperBound.length = x.length;
+    immutable nDev = -invNormalCDF((1 - conf) / 2);
+    foreach(i; 0..x.length) {
+        ret.p[i] = 2 * normalCDF(-abs(ret.betas[i]) / ret.stdErr[i]);
+        ret.lowerBound[i] = ret.betas[i] - nDev * ret.stdErr[i];
+        ret.upperBound[i] = ret.betas[i] + nDev * ret.stdErr[i];
+    }
+
+    return ret;
 }
 
-unittest {
-    // Values from R.
-    alias approxEqual ae;  // Save typing.
-
-    // Start with the basics, with X as a ror.
-    auto y1 =  [1,   0, 0, 0, 1, 0, 0];
-    auto x1 = [[1.0, 1 ,1 ,1 ,1 ,1 ,1],
-              [8.0, 6, 7, 5, 3, 0, 9]];
-    auto res1 = logisticRegressBeta(y1, x1);
-    assert(ae(res1[0], -0.98273));
-    assert(ae(res1[1], 0.01219));
-
-    // Use tuple.
-    auto y2   = [1,0,1,1,0,1,0,0,0,1,0,1];
-    auto x2_1 = [3,1,4,1,5,9,2,6,5,3,5,8];
-    auto x2_2 = [2,7,1,8,2,8,1,8,2,8,4,5];
-    auto res2 = logisticRegressBeta(y2, repeat(1), x2_1, x2_2);
-    assert(ae(res2[0], -1.1875));
-    assert(ae(res2[1], 0.1021));
-    assert(ae(res2[2], 0.1603));
-
-    auto x2Intercept = [1,1,1,1,1,1,1,1,1,1,1,1];
-    auto res2a = logisticRegressBeta(y2,
-        filter!"a.length"([x2Intercept, x2_1, x2_2]));
-    assert(ae(res2a, res2));
-
-    // Use a huge range of values to test numerical stability.
-
-    // The filter is to make y3 a non-random access range.
-    auto y3 = filter!"a < 2"([1,1,1,1,0,0,0,0]);
-    auto x3_1 = filter!"a > 0"([1, 1e10, 2, 2e10, 3, 3e15, 4, 4e7]);
-    auto x3_2 = [1e8, 1e6, 1e7, 1e5, 1e3, 1e0, 1e9, 1e11];
-    auto x3_3 = [-5e12, 5e2, 6e5, 4e3, -999999, -666, -3e10, -2e10];
-    auto res3 = logisticRegressBeta(y3, repeat(1), x3_1, x3_2, x3_3);
-    assert(ae(res3[0], 1.115e0));
-    assert(ae(res3[1], -4.674e-15));
-    assert(ae(res3[2], -7.026e-9));
-    assert(ae(res3[3], -2.109e-12));
-
-    // Test with a just plain huge dataset that R chokes for several minutes
-    // on.  If you think this unittest is slow, try getting the reference
-    // values from R.
-    auto y4 = chain(
-                take(cycle([0,0,0,0,1]), 500_000),
-                take(cycle([1,1,1,1,0]), 500_000));
-    auto x4_1 = iota(0, 1_000_000);
-    auto x4_2 = map!exp(map!"a / 1_000_000.0"(x4_1));
-    auto x4_3 = take(cycle([1,2,3,4,5]), 1_000_000);
-    auto x4_4 = take(cycle([8,6,7,5,3,0,9]), 1_000_000);
-    auto res4 = logisticRegressBeta(y4, repeat(1), x4_1, x4_2, x4_3, x4_4);
-    assert(ae(res4[0], -1.574));
-    assert(ae(res4[1], 5.625e-6));
-    assert(ae(res4[2], -7.282e-1));
-    assert(ae(res4[3], -4.381e-6));
-    assert(ae(res4[4], -8.343e-6));
-}
-
-/// The inverse logit function used in logistic regression.
-double inverseLogit(double xb) pure nothrow {
-    return 1.0 / (1 + exp(-xb));
-}
-
-private:
-double doMLE(T, U...)(double[] beta, T y, U xIn) {
+double doMLE(T, U...)(double[] beta, double[] stdError, T y, U xIn) {
     // This big, disgusting function uses the Newton-Raphson method as outlined
     // in http://socserv.mcmaster.ca/jfox/Courses/UCLA/logistic-regression-notes.pdf
     //
@@ -825,6 +1024,8 @@ double doMLE(T, U...)(double[] beta, T y, U xIn) {
     }
 
     mixin(newFrame);
+    beta[] = 0;
+    if(stdError.length) stdError[] = double.nan;
     immutable N = y.length;
 
     auto ps = newStack!double(y.length);
@@ -838,7 +1039,7 @@ double doMLE(T, U...)(double[] beta, T y, U xIn) {
                 prodSum += col[i] * beta[j];
             }
 
-            ps[i] = inverseLogit(prodSum);
+            ps[i] = logistic(prodSum);
         }
     }
 
@@ -848,9 +1049,9 @@ double doMLE(T, U...)(double[] beta, T y, U xIn) {
         foreach(yVal; y) {
             scope(exit) i++;
             if(yVal) {
-                sum -= 2 * log(ps[i]);
+                sum += log(ps[i]);
             } else {
-                sum -= 2 * log(1 - ps[i]);
+                sum += log(1 - ps[i]);
             }
         }
         return sum;
@@ -860,7 +1061,7 @@ double doMLE(T, U...)(double[] beta, T y, U xIn) {
     enum eps = 1e-6;
     enum maxIter = 1000;
 
-    auto oldLikelihood = double.infinity;
+    auto oldLikelihood = -double.infinity;
 
     auto mat = newStack!(double[])(beta.length);
     foreach(ref row; mat) {
@@ -872,7 +1073,13 @@ double doMLE(T, U...)(double[] beta, T y, U xIn) {
         evalPs();
         immutable lh = logLikelihood();
 
-        if(oldLikelihood - lh < eps) {
+        if(lh - oldLikelihood < eps) {
+            if(stdError.length) {
+                foreach(i; 0..beta.length) {
+                    stdError[i] = sqrt(mat[i][i]);
+                }
+            }
+
             return lh;
         } else if(isNaN(lh)) {
             beta[] = double.nan;
@@ -886,7 +1093,7 @@ double doMLE(T, U...)(double[] beta, T y, U xIn) {
             mat[i][] = 0;
         }
 
-        // Calculate X' * W * X in the notation of our reference.  Since
+        // Calculate X' * V * X in the notation of our reference.  Since
         // V is a diagonal matrix of ps[] * (1.0 - ps[]), we only have one
         // dimension representing it.
         foreach(i, dummy; x) foreach(j, dummy2; x) {
@@ -924,7 +1131,10 @@ double doMLE(T, U...)(double[] beta, T y, U xIn) {
         debug(print) writeln("Iter:  ", iter);
     }
 
-    return logLikelihood();
+    // If we got here, we haven't converged.  Return NaNs instead of bogus
+    // values.
+    beta[] = double.nan;
+    return double.nan;
 }
 
 template isRoR(T) {
@@ -950,6 +1160,17 @@ template NonRandomToArray(T) {
     } else {
         alias Unqual!(ElementType!(T))[] NonRandomToArray;
     }
+}
+
+double priorLikelihood(Y)(Y y) {
+    uint nTrue, n;
+    foreach(elem; y) {
+        n++;
+        if(elem) nTrue++;
+    }
+
+    immutable p = cast(double) nTrue / n;
+    return nTrue * log(p) + (n - nTrue) * log(1 - p);
 }
 
 bool[] toBools(R)(R range) {
