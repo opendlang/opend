@@ -1069,17 +1069,20 @@ double doMLE(T, U...)(double[] beta, double[] stdError, T y, U xIn) {
         row = newStack!double(beta.length * 2);
     }
 
+    void doStdErrs() {
+        if(stdError.length) {
+            foreach(i; 0..beta.length) {
+                stdError[i] = sqrt(mat[i][i]);
+            }
+        }
+    }
+
     foreach(iter; 0..maxIter) {
         evalPs();
         immutable lh = logLikelihood();
 
         if(lh - oldLikelihood < eps) {
-            if(stdError.length) {
-                foreach(i; 0..beta.length) {
-                    stdError[i] = sqrt(mat[i][i]);
-                }
-            }
-
+            doStdErrs();
             return lh;
         } else if(isNaN(lh)) {
             beta[] = double.nan;
@@ -1131,10 +1134,16 @@ double doMLE(T, U...)(double[] beta, double[] stdError, T y, U xIn) {
         debug(print) writeln("Iter:  ", iter);
     }
 
-    // If we got here, we haven't converged.  Return NaNs instead of bogus
-    // values.
-    beta[] = double.nan;
-    return double.nan;
+    immutable lh = logLikelihood();
+    if(lh - oldLikelihood < eps) {
+        doStdErrs();
+        return lh;
+    } else {
+        // If we got here, we haven't converged.  Return NaNs instead of bogus
+        // values.
+        beta[] = double.nan;
+        return double.nan;
+    }
 }
 
 template isRoR(T) {
