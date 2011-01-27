@@ -715,8 +715,8 @@ term.
 Returns:  The beta coefficients for the regression model.
 
 References:
-$(WEB http://en.wikipedia.org/wiki/Logistic_regression)
-$(WEB http://socserv.mcmaster.ca/jfox/Courses/UCLA/logistic-regression-notes.pdf)
+http://en.wikipedia.org/wiki/Logistic_regression
+http://socserv.mcmaster.ca/jfox/Courses/UCLA/logistic-regression-notes.pdf
  */
 double[] logisticRegressBeta(T, U...)(T yIn, U xIn) {
     return logisticRegressImpl!(T, U)(false, yIn, xIn).betas;
@@ -800,8 +800,8 @@ calculated.  Otherwise, the default of 0.95 is used.
 
 References:
 
-$(WEB http://en.wikipedia.org/wiki/Wald_test)
-$(WEB http://en.wikipedia.org/wiki/Akaike_information_criterion)
+http://en.wikipedia.org/wiki/Wald_test
+http://en.wikipedia.org/wiki/Akaike_information_criterion
 */
 LogisticRes logisticRegress(T, V...)(T yIn, V input) {
     return logisticRegressImpl!(T, V)(true, yIn, input);
