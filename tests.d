@@ -2657,8 +2657,8 @@ package double toContingencyScore(T, U, Uint)
     dstatsEnforce(x.empty && y.empty,
         "Can't calculate mutual info with different length vectors.");
 
-    xFreedom = xCounts.length - 1;
-    yFreedom = yCounts.length - 1;
+    xFreedom = cast(uint) xCounts.length - 1;
+    yFreedom = cast(uint) yCounts.length - 1;
     nPtr = n;
 
     double ret = 0;
@@ -3332,7 +3332,7 @@ unittest {
     auto t4 = pearsonCorTest(myArr, myArr, Alt.twoSided);
     auto t5 = pearsonCorTest(myArr, myArr, Alt.less);
     auto t6 = pearsonCorTest(myArr, myArr, Alt.greater);
-    assert(t4.testStat == 1);
+    assert(approxEqual(t4.testStat, 1));
     assert(t4.p == 0);
     assert(t5.p == 1);
     assert(t6.p == 0);
@@ -3340,7 +3340,7 @@ unittest {
     auto t7 = pearsonCorTest(myArr, myArrReverse, Alt.twoSided);
     auto t8 = pearsonCorTest(myArr, myArrReverse, Alt.less);
     auto t9 = pearsonCorTest(myArr, myArrReverse, Alt.greater);
-    assert(t7.testStat == -1);
+    assert(approxEqual(t7.testStat, -1));
     assert(t7.p == 0);
     assert(t8.p == 0);
     assert(t9.p == 1);

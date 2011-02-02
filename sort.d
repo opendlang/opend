@@ -1245,7 +1245,7 @@ unittest {
  *  assert(more.getSorted == [99U, 98, 97, 96, 95, 94, 93, 92, 91, 90]);
  *  ---
  */
-struct TopN(T, alias compFun = greaterThan) {
+struct TopN(T, alias compFun = "a > b") {
 private:
     alias binaryFun!(compFun) comp;
     uint n;

@@ -37,7 +37,8 @@ module dstats.regress;
 import std.math, std.algorithm, std.traits, std.array, std.traits, std.exception,
     std.typetuple, std.typecons;
 
-import dstats.alloc, std.range, std.conv, dstats.distrib, dstats.cor, dstats.base;
+import dstats.alloc, std.range, std.conv, dstats.distrib, dstats.cor,
+    dstats.base, dstats.summary;
 
 ///
 struct PowMap(ExpType, T)
@@ -425,45 +426,53 @@ if(allSatisfy!(isInputRange, T) && doubleInput!(U)) {
     return ret;
 }
 
-/**Perform a linear regression as in linearRegressBeta, but return a
- * RegressRes with useful stuff for statistical inference.  If the last element
- * of input is a real, this is used to specify the confidence intervals to
- * be calculated.  Otherwise, the default of 0.95 is used.  The rest of input
- * should be the elements of X.
- *
- * When using this function, which provides several useful statistics useful
- * for inference, each range must be traversed twice.  This means:
- *
- * 1.  They have to be forward ranges, not input ranges.
- *
- * 2.  If you have a large amount of data and you're mapping it to some
- *     expensive function, you may want to do this eagerly instead of lazily.
- *
- * Notes:  The X ranges are traversed in lockstep, but the traversal is stopped
- * at the end of the shortest one.  Therefore, using infinite ranges is safe.
- * For example, using repeat(1) to get an intercept term works.
- *
- * Bugs:  The statistical tests performed in this function assume that an
- * intercept term is included in your regression model.  If no intercept term
- * is included, the P-values, confidence intervals and adjusted R^2 values
- * calculated by this function will be wrong.
- *
- * Examples:
- * ---
- * int[] nBeers = [8,6,7,5,3,0,9];
- * int[] nCoffees = [3,6,2,4,3,6,8];
- * int[] musicVolume = [3,1,4,1,5,9,2];
- * int[] programmingSkill = [2,7,1,8,2,8,1];
- *
- * // Using default confidence interval:
- * auto results = linearRegress(programmingSkill, repeat(1), nBeers, nCoffees,
- *     musicVolume, map!"a * a"(musicVolume));
- *
- * // Using user-specified confidence interval:
- * auto results = linearRegress(programmingSkill, repeat(1), nBeers, nCoffees,
- *     musicVolume, map!"a * a"(musicVolume), 0.8675309);
- * ---
- */
+/**
+Perform a linear regression as in linearRegressBeta, but return a
+RegressRes with useful stuff for statistical inference.  If the last element
+of input is a real, this is used to specify the confidence intervals to
+be calculated.  Otherwise, the default of 0.95 is used.  The rest of input
+should be the elements of X.
+
+When using this function, which provides several useful statistics useful
+for inference, each range must be traversed twice.  This means:
+
+1.  They have to be forward ranges, not input ranges.
+
+2.  If you have a large amount of data and you're mapping it to some
+    expensive function, you may want to do this eagerly instead of lazily.
+
+Notes:
+
+The X ranges are traversed in lockstep, but the traversal is stopped
+at the end of the shortest one.  Therefore, using infinite ranges is safe.
+For example, using repeat(1) to get an intercept term works.
+
+If the confidence interval specified is exactly 0, this is treated as a
+special case and confidence interval calculation is skipped.  This can speed
+things up significantly and therefore can be useful in monte carlo and possibly
+data mining contexts.
+
+Bugs:  The statistical tests performed in this function assume that an
+intercept term is included in your regression model.  If no intercept term
+is included, the P-values, confidence intervals and adjusted R^2 values
+calculated by this function will be wrong.
+
+Examples:
+---
+int[] nBeers = [8,6,7,5,3,0,9];
+int[] nCoffees = [3,6,2,4,3,6,8];
+int[] musicVolume = [3,1,4,1,5,9,2];
+int[] programmingSkill = [2,7,1,8,2,8,1];
+
+// Using default confidence interval:
+auto results = linearRegress(programmingSkill, repeat(1), nBeers, nCoffees,
+    musicVolume, map!"a * a"(musicVolume));
+
+// Using user-specified confidence interval:
+auto results = linearRegress(programmingSkill, repeat(1), nBeers, nCoffees,
+    musicVolume, map!"a * a"(musicVolume), 0.8675309);
+---
+*/
 RegressRes linearRegress(U, TC...)(U Y, TC input) {
     static if(is(TC[$ - 1] : double)) {
         double confLvl = input[$ - 1];
@@ -537,9 +546,17 @@ RegressRes linearRegress(U, TC...)(U Y, TC input) {
         elem = sqrt( S * xTx[i][i] / df);
     }
 
-    double[] lowerBound = new double[betas.length],
-           upperBound = new double[betas.length],
-           p = new double[betas.length];
+    double[] lowerBound, upperBound;
+    if(confLvl == 0) {
+        // Then we're going to skip the computation to save time.  (See below.)
+        lowerBound = betas;
+        upperBound = betas;
+    } else {
+        lowerBound = new double[betas.length];
+        upperBound = new double[betas.length];
+    }
+    auto p = new double[betas.length];
+
     foreach(i, beta; betas) {
         try {
             p[i] = 2 * min(studentsTCDF(beta / stdErr[i], df),
@@ -548,13 +565,18 @@ RegressRes linearRegress(U, TC...)(U Y, TC input) {
             // Leave it as a NaN.
         }
 
-        try {
-            double delta = invStudentsTCDF(0.5 * (1 - confLvl), df) *
-                 stdErr[i];
-            upperBound[i] = beta - delta;
-            lowerBound[i] = beta + delta;
-        } catch(DstatsArgumentException) {
-            // Leave confidence bounds as NaNs.
+        if(confLvl > 0) {
+            // Skip confidence level computation if level is zero, to save
+            // computation time.  This is important in monte carlo and possibly
+            // data mining contexts.
+            try {
+                double delta = invStudentsTCDF(0.5 * (1 - confLvl), df) *
+                     stdErr[i];
+                upperBound[i] = beta - delta;
+                lowerBound[i] = beta + delta;
+            } catch(DstatsArgumentException) {
+                // Leave confidence bounds as NaNs.
+            }
         }
     }
 
@@ -790,6 +812,175 @@ struct LogisticRes {
             "\nAIC:  " ~ text(aic) ~
             "\nOverall P:  " ~ text(overallP);
     }
+}
+
+private struct Normalize(bool mse, R) {
+    R range;
+    double mean;
+
+    static if(mse) {
+        double mul;
+    }
+
+    this(R range) {
+        static if(mse) {
+            auto summ = meanStdev(range.save);
+            mean = summ.mean;
+            mul = 1.0 / sqrt(summ.mse);
+        } else {
+            this.mean = dstats.summary.mean(range.save).mean;
+        }
+
+        this.range = range;
+    }
+
+    double front() @property {
+        static if(mse) {
+            return (range.front - mean) * mul;
+        } else {
+            return range.front - mean;
+        }
+    }
+
+    void popFront() {
+        range.popFront();
+    }
+
+    bool empty() @property {
+        return range.empty;
+    }
+}
+
+private Normalize!(mse, R) normalize(bool mse, R)(R range) {
+    return typeof(return)(range);
+}
+
+private template NormalizeType(T) {
+    alias Normalize!(true, T) NormalizeType;
+}
+
+/**
+Plain old data struct used for returning ridge regression results.  All beta
+value arrays are in the form order
+[intercept term, X_1 term, X_2 term, ..., X_N term], where 1, ..., N are
+the order in which the X values were passed to ridgeRegress().
+*/
+struct RidgeRes {
+    /**
+    The beta values, scaled back to their original scale.  These are the
+    beta values to use for making predictions.
+    */
+    double[] betas;
+
+    /**
+    The beta values on the normalized scale.  Ridge regression is computed by
+    first centering Y to zero mean and standardizing every vector in X to
+    zero mean and unit variance.  These coefficients are useful when you want
+    all of the beta values to be on the same scale.
+    */
+    double[] rawBetas;
+}
+
+/**
+Performs ridge regression, which penalizes the L2 norm of the beta vector and
+therefore favors models with smaller beta terms.  This penalization also helps
+avoid problems caused by multicollinearity and by having more dimensions than
+samples.  However, this comes at the cost of lost inference capabilities.
+For example, confidence intervals and P-values cannot easily be calculated.
+
+The ridgeParam parameter determines the size of the penalty for large L2 norms.
+It must be >= 0, and a larger ridgeParam means a larger penalty.  If ridgeParam
+is exactly zero, ridge regression reduces to ordinary least squares regression.
+
+All ranges passed to this function must be forward ranges to allow for the
+normalization necessary.  In ridge regression, the intercept term is implicit
+and should NOT be passed in.  It will be included as the first term in the
+beta coefficient arrays in the RidgeRes object returned.  Other than these
+caveats, usage is identical to linearRegressBeta().
+
+Bugs:
+
+Like the rest of the functions in this library, this one uses explicit matrix
+inversion (for now).  While this isn't usually a problem, ridge regression
+is sometimes used with huge numbers of variables, and is O(N^3) for an NxN
+matrix.
+
+References:
+
+http://www.mathworks.com/help/toolbox/stats/ridge.html
+
+Venables, W. N. & Ripley, B. D. (2002) Modern Applied Statistics with S.
+Fourth Edition. Springer, New York. ISBN 0-387-95457-0
+(This is the citation for the MASS R package.)
+*/
+RidgeRes ridgeRegress(U, T...)(double ridgeParam, U YIn, T XIn)
+if(allSatisfy!(isForwardRange, T) && doubleInput!(U)) {
+    mixin(newFrame);
+    static if(isArray!(T[0]) && isInputRange!(typeof(XIn[0][0])) &&
+        T.length == 1) {
+        alias typeof(XIn[0].front) E;
+        auto X = tempdup(map!(normalize!true)(XIn[0]));
+    } else {
+        alias staticMap!(NormalizeType, T) XType;
+        XType X;
+        foreach(ti, Type; X) {
+            X[ti] = normalize!true(XIn[ti]);
+        }
+    }
+
+    auto Y = normalize!false(YIn);
+
+    double[][] xTx;
+    double[] xTy;
+    rangeMatrixMulTrans(xTy, xTx, Y, X);
+
+    foreach(diagIndex; 0..X.length) {
+        xTx[diagIndex][diagIndex] += ridgeParam;
+    }
+
+    invert(xTx);
+
+
+    typeof(return) ret;
+    double[] betas = new double[X.length + 1];
+    betas[0] = 0;
+
+    foreach(i; 0..X.length) {
+        betas[i + 1] = 0;
+        foreach(j; 0..X.length) {
+            betas[i + 1] += xTx[i][j] * xTy[j];
+        }
+    }
+
+    ret.rawBetas = betas.dup;
+
+    betas[0] = Y.mean;
+    foreach(i, rng; X) {
+        betas[i + 1] *= rng.mul;
+        betas[0] -= rng.mean * betas[i + 1];
+    }
+
+    ret.betas = betas;
+    return ret;
+}
+
+unittest {
+    // Values from R's MASS package.
+    auto a = [1, 2, 3, 4, 5, 6, 7];
+    auto b = [8, 6, 7, 5, 3, 0, 9];
+    auto c = [2, 7, 1, 8, 2, 8, 1];
+
+    // With a ridge param. of zero, ridge regression reduces to regular
+    // OLS regression.
+    assert(approxEqual(ridgeRegress(0, a, b, c).betas,
+        linearRegressBeta(a, repeat(1), b, c)));
+
+    auto res1 = ridgeRegress(1, a, b, c);
+    auto res2 = ridgeRegress(2, a, b, c);
+    assert(approxEqual(res1.rawBetas, [0, -0.7837959, -0.4132366]));
+    assert(approxEqual(res1.betas, [6.0357757, -0.2729671, -0.1337131]));
+    assert(approxEqual(res2.rawBetas, [0, -0.6446235, -0.3020991]));
+    assert(approxEqual(res2.betas, [5.62367784, -0.22449854, -0.09775174]));
 }
 
 /**
