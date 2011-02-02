@@ -718,102 +718,6 @@ unittest {
          -0.65892680, -0.06437053, -0.08253613,  0.96202014,  1.39385455]));
 }
 
-/**
-Computes a logistic regression using a maximum likelihood estimator
-and returns the beta coefficients.  This is a generalized linear model with
-the link function f(XB) = 1 / (1 + exp(XB)). This is generally used to model
-the probability that a binary Y variable is 1 given a set of X variables.
-
-For the purpose of this function, Y variables are interpreted as Booleans,
-regardless of their type.  X may be either a range of ranges or a tuple of
-ranges.  However, note that unlike in linearRegress, they are copied to an
-array if they are not random access ranges.  Note that each value is accessed
-several times, so if your range is a map to something expensive, you may
-want to evaluate it eagerly.
-
-Also note that, as in linearRegress, repeat(1) can be used for the intercept
-term.
-
-Returns:  The beta coefficients for the regression model.
-
-References:
-http://en.wikipedia.org/wiki/Logistic_regression
-http://socserv.mcmaster.ca/jfox/Courses/UCLA/logistic-regression-notes.pdf
- */
-double[] logisticRegressBeta(T, U...)(T yIn, U xIn) {
-    return logisticRegressImpl!(T, U)(false, yIn, xIn).betas;
-}
-
-
-/**
-Plain old data struct to hold the results of a logistic regression.
-*/
-struct LogisticRes {
-    /**The coefficients, one for each range in X.  These will be in the order
-     * that the X ranges were passed in.*/
-    double[] betas;
-
-    /**The standard error terms of the X ranges passed in.*/
-    double[] stdErr;
-
-    /**
-    The Wald lower confidence bounds of the beta terms, at the confidence level
-    specificied.  (Default 0.95).*/
-    double[] lowerBound;
-
-    /**
-    The Wald upper confidence bounds of the beta terms, at the confidence level
-    specificied.  (Default 0.95).*/
-    double[] upperBound;
-
-    /**
-    The P-value for the alternative that the corresponding beta value is
-    different from zero against the null that it is equal to zero.  These
-    are calculated using the Wald Test.*/
-    double[] p;
-
-    /**
-    The log likelihood for the null model.
-    */
-    double nullLogLikelihood;
-
-    /**
-    The log likelihood for the model fit.
-    */
-    double logLikelihood;
-
-    /**
-    Akaike Information Criterion, which is a complexity-penalized goodness-
-    of-fit score, equal to 2 * k - 2 log(L) where L is the log likelihood and
-    k is the number of parameters.
-    */
-    double aic() const pure nothrow @property @safe {
-        return 2 * (betas.length - logLikelihood);
-    }
-
-    /**
-    The P-value for the model as a whole, based on the likelihood ratio test.
-    The null here is that the model has no predictive value, the alternative
-    is that it does have predictive value.*/
-    double overallP;
-
-    // Just used internally.
-    private static string arrStr(T)(T arr) {
-        return text(arr)[1..$ - 1];
-    }
-
-    /**Print out the results in the default format.*/
-    string toString() {
-        return "Betas:  " ~ arrStr(betas) ~ "\nLower Conf. Int.:  " ~
-            arrStr(lowerBound) ~ "\nUpper Conf. Int.:  " ~ arrStr(upperBound) ~
-            "\nStd. Err:  " ~ arrStr(stdErr) ~ "\nP Values:  " ~ arrStr(p) ~
-            "\nNull Log Likelihood:  " ~ text(nullLogLikelihood) ~
-            "\nLog Likelihood:  " ~ text(logLikelihood) ~
-            "\nAIC:  " ~ text(aic) ~
-            "\nOverall P:  " ~ text(overallP);
-    }
-}
-
 private struct Normalize(bool mse, R) {
     R range;
     double mean;
@@ -981,6 +885,102 @@ unittest {
     assert(approxEqual(res1.betas, [6.0357757, -0.2729671, -0.1337131]));
     assert(approxEqual(res2.rawBetas, [0, -0.6446235, -0.3020991]));
     assert(approxEqual(res2.betas, [5.62367784, -0.22449854, -0.09775174]));
+}
+
+
+/**
+Computes a logistic regression using a maximum likelihood estimator
+and returns the beta coefficients.  This is a generalized linear model with
+the link function f(XB) = 1 / (1 + exp(XB)). This is generally used to model
+the probability that a binary Y variable is 1 given a set of X variables.
+
+For the purpose of this function, Y variables are interpreted as Booleans,
+regardless of their type.  X may be either a range of ranges or a tuple of
+ranges.  However, note that unlike in linearRegress, they are copied to an
+array if they are not random access ranges.  Note that each value is accessed
+several times, so if your range is a map to something expensive, you may
+want to evaluate it eagerly.
+
+Also note that, as in linearRegress, repeat(1) can be used for the intercept
+term.
+
+Returns:  The beta coefficients for the regression model.
+
+References:
+http://en.wikipedia.org/wiki/Logistic_regression
+http://socserv.mcmaster.ca/jfox/Courses/UCLA/logistic-regression-notes.pdf
+ */
+double[] logisticRegressBeta(T, U...)(T yIn, U xIn) {
+    return logisticRegressImpl!(T, U)(false, yIn, xIn).betas;
+}
+
+/**
+Plain old data struct to hold the results of a logistic regression.
+*/
+struct LogisticRes {
+    /**The coefficients, one for each range in X.  These will be in the order
+     * that the X ranges were passed in.*/
+    double[] betas;
+
+    /**The standard error terms of the X ranges passed in.*/
+    double[] stdErr;
+
+    /**
+    The Wald lower confidence bounds of the beta terms, at the confidence level
+    specificied.  (Default 0.95).*/
+    double[] lowerBound;
+
+    /**
+    The Wald upper confidence bounds of the beta terms, at the confidence level
+    specificied.  (Default 0.95).*/
+    double[] upperBound;
+
+    /**
+    The P-value for the alternative that the corresponding beta value is
+    different from zero against the null that it is equal to zero.  These
+    are calculated using the Wald Test.*/
+    double[] p;
+
+    /**
+    The log likelihood for the null model.
+    */
+    double nullLogLikelihood;
+
+    /**
+    The log likelihood for the model fit.
+    */
+    double logLikelihood;
+
+    /**
+    Akaike Information Criterion, which is a complexity-penalized goodness-
+    of-fit score, equal to 2 * k - 2 log(L) where L is the log likelihood and
+    k is the number of parameters.
+    */
+    double aic() const pure nothrow @property @safe {
+        return 2 * (betas.length - logLikelihood);
+    }
+
+    /**
+    The P-value for the model as a whole, based on the likelihood ratio test.
+    The null here is that the model has no predictive value, the alternative
+    is that it does have predictive value.*/
+    double overallP;
+
+    // Just used internally.
+    private static string arrStr(T)(T arr) {
+        return text(arr)[1..$ - 1];
+    }
+
+    /**Print out the results in the default format.*/
+    string toString() {
+        return "Betas:  " ~ arrStr(betas) ~ "\nLower Conf. Int.:  " ~
+            arrStr(lowerBound) ~ "\nUpper Conf. Int.:  " ~ arrStr(upperBound) ~
+            "\nStd. Err:  " ~ arrStr(stdErr) ~ "\nP Values:  " ~ arrStr(p) ~
+            "\nNull Log Likelihood:  " ~ text(nullLogLikelihood) ~
+            "\nLog Likelihood:  " ~ text(logLikelihood) ~
+            "\nAIC:  " ~ text(aic) ~
+            "\nOverall P:  " ~ text(overallP);
+    }
 }
 
 /**
