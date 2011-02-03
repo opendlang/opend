@@ -92,9 +92,7 @@ private void rangeMatrixMulTrans(U, T...)
 (out double[] xTy, out double[][] xTx, U vec, ref T matIn) {
     static if(isArray!(T[0]) &&
         isInputRange!(typeof(matIn[0][0])) && matIn.length == 1) {
-        alias typeof(matIn[0].front()) E;
-        typeof(matIn[0]) mat = tempdup(cast(E[]) matIn[0]);
-        scope(exit) TempAlloc.free;
+        alias matIn[0] mat;
     } else {
         alias matIn mat;
     }
@@ -832,7 +830,7 @@ unittest {
     // Test the ridge regression. Values from R MASS package.
     auto ridge1 = linearRegressBeta(a, repeat(1), b, c, 1);
     auto ridge2 = linearRegressBeta(a, repeat(1), b, c, 2);
-    auto ridge3 = linearRegressBeta(c, repeat(1), a, b, 10);
+    auto ridge3 = linearRegressBeta(c, [[1,1,1,1,1,1,1], a, b], 10);
     assert(approxEqual(ridge1, [6.0357757, -0.2729671, -0.1337131]));
     assert(approxEqual(ridge2, [5.62367784, -0.22449854, -0.09775174]));
     assert(approxEqual(ridge3, [5.82653624, -0.05197246, -0.27185592 ]));
