@@ -35,7 +35,7 @@
 module dstats.regress;
 
 import std.math, std.algorithm, std.traits, std.array, std.traits, std.exception,
-    std.typetuple, std.typecons;
+    std.typetuple, std.typecons, std.numeric;
 
 import dstats.alloc, std.range, std.conv, dstats.distrib, dstats.cor,
     dstats.base, dstats.summary;
@@ -89,7 +89,7 @@ PowMap!(ExpType, T) powMap(ExpType, T)(T range, ExpType exponent) {
 // Very ad-hoc, does a bunch of matrix ops.  Written specifically to be
 // efficient in the context used here.
 private void rangeMatrixMulTrans(U, T...)
-(out double[] xTy, out double[][] xTx, U vec, T matIn) {
+(out double[] xTy, out double[][] xTx, U vec, ref T matIn) {
     static if(isArray!(T[0]) &&
         isInputRange!(typeof(matIn[0][0])) && matIn.length == 1) {
         alias typeof(matIn[0].front()) E;
@@ -152,7 +152,7 @@ void invert(ref double[][] mat) {
     // Normalize, augment w/ identity.  The matrix is already the right size
     // from rangeMatrixMulTrans.
     foreach(i, row; mat) {
-        double absMax = 1.0L / reduce!(max)(map!(abs)(row[0..mat.length]));
+        double absMax = 1.0 / reduce!(max)(map!(abs)(row[0..mat.length]));
         row[0..mat.length] *= absMax;
         row[i + mat.length] = absMax;
     }
@@ -172,10 +172,9 @@ void invert(ref double[][] mat) {
             if(row == col) {
                 continue;
             }
-            double ratio = mat[row][col] / mat[col][col];
-            foreach(i, ref elem; mat[row]) {
-                elem -= mat[col][i] * ratio;
-            }
+
+            immutable ratio = mat[row][col] / mat[col][col];
+            mat[row][] -= mat[col][] * ratio;
         }
     }
 
@@ -241,17 +240,6 @@ struct RegressRes {
             "\nStd. Residual Error:  " ~ text(residualError)
             ~ "\nOverall P:  " ~ text(overallP);
     }
-}
-
-/**Struct returned by polyFit.*/
-struct PolyFitRes(T) {
-
-    /**The array of PowMap ranges created by polyFit.*/
-    T X;
-
-    /**The rest of the results.  This is alias this'd.*/
-    RegressRes regressRes;
-    alias regressRes this;
 }
 
 /**Forward Range for holding the residuals from a regression analysis.*/
@@ -363,51 +351,144 @@ if(isFloatingPoint!F && isForwardRange!U && allSatisfy!(isForwardRange, T)) {
     return RT(betas, Y, X);
 }
 
-/**Perform a linear regression and return just the beta values.  The advantages
- * to just returning the beta values are that it's faster and that each range
- * needs to be iterated over only once, and thus can be just an input range.
- * The beta values are returned such that the smallest index corresponds to
- * the leftmost element of X.  X can be either a tuple or a range of input
- * ranges.  Y must be an input range.
- *
- * Notes:  The X ranges are traversed in lockstep, but the traversal is stopped
- * at the end of the shortest one.  Therefore, using infinite ranges is safe.
- * For example, using repeat(1) to get an intercept term works.
- *
- * Examples:
- * ---
- * int[] nBeers = [8,6,7,5,3,0,9];
- * int[] nCoffees = [3,6,2,4,3,6,8];
- * int[] musicVolume = [3,1,4,1,5,9,2];
- * int[] programmingSkill = [2,7,1,8,2,8,1];
- * double[] betas = linearRegressBeta(programmingSkill, repeat(1), nBeers, nCoffees,
- *     musicVolume, map!"a * a"(musicVolume));
- * ---
+// Compiles summary statistics while iterating, to allow ridge regression over
+// input ranges.
+private struct SummaryIter(R) {
+    R range;
+    MeanSD summ;
+
+    this(R range) {
+        this.range = range;
+    }
+
+    double front() @property {
+        return range.front;
+    }
+
+    void popFront() {
+        summ.put(range.front);
+        range.popFront();
+    }
+
+    bool empty() @property {
+        return range.empty;
+    }
+
+    double mse() @property const pure nothrow { return summ.mse; }
+}
+
+private template SummaryType(R) {
+    alias SummaryIter!R SummaryType;
+}
+
+/**
+Perform a linear regression and return just the beta values.  The advantages
+to just returning the beta values are that it's faster and that each range
+needs to be iterated over only once, and thus can be just an input range.
+The beta values are returned such that the smallest index corresponds to
+the leftmost element of X.  X can be either a tuple or a range of input
+ranges.  Y must be an input range.
+
+If, after all X variables are passed in, a numeric type is passed as the last
+parameter, this is treated as a ridge parameter and ridge regression is
+performed.  Ridge regression is a form of regression that penalizes the L2 norm
+of the beta vector and therefore results in more parsimonious models.
+However, it makes statistical inference such as that supported by
+linearRegress() difficult to impossible.  Therefore, linearRegress() doesn't
+support ridges.
+
+If no ridge parameter is passed, or equivalently if the ridge parameter is
+zero, then ordinary least squares regression is performed.
+
+Notes:  The X ranges are traversed in lockstep, but the traversal is stopped
+at the end of the shortest one.  Therefore, using infinite ranges is safe.
+For example, using repeat(1) to get an intercept term works.
+
+References:
+
+http://www.mathworks.com/help/toolbox/stats/ridge.html
+
+Venables, W. N. & Ripley, B. D. (2002) Modern Applied Statistics with S.
+Fourth Edition. Springer, New York. ISBN 0-387-95457-0
+(This is the citation for the MASS R package.)
+
+Examples:
+---
+int[] nBeers = [8,6,7,5,3,0,9];
+int[] nCoffees = [3,6,2,4,3,6,8];
+int[] musicVolume = [3,1,4,1,5,9,2];
+int[] programmingSkill = [2,7,1,8,2,8,1];
+double[] betas = linearRegressBeta(programmingSkill, repeat(1), nBeers, nCoffees,
+    musicVolume, map!"a * a"(musicVolume));
+
+// Now throw in a ridge parameter of 2.5.
+double[] ridgeBetas = linearRegressBeta(programmingSkill, repeat(1), nBeers,
+    nCoffees, musicVolume, map!"a * a"(musicVolume), 2.5);
+---
  */
 double[] linearRegressBeta(U, T...)(U Y, T XIn)
-if(allSatisfy!(isInputRange, T) && doubleInput!(U)) {
+if(doubleInput!(U)) {
     double[] dummy;
     return linearRegressBetaBuf!(U, T)(dummy, Y, XIn);
 }
 
-/**Same as linearRegressBeta, but allows the user to specify a buffer for
- * the beta terms.  If the buffer is too short, a new one is allocated.
- * Otherwise, the results are returned in the user-provided buffer.
+/**
+Same as linearRegressBeta, but allows the user to specify a buffer for
+the beta terms.  If the buffer is too short, a new one is allocated.
+Otherwise, the results are returned in the user-provided buffer.
  */
-double[] linearRegressBetaBuf(U, T...)(double[] buf, U Y, T XIn)
-if(allSatisfy!(isInputRange, T) && doubleInput!(U)) {
+double[] linearRegressBetaBuf(U, TRidge...)(double[] buf, U Y, TRidge XRidge)
+if(doubleInput!(U)) {
     mixin(newFrame);
+
+    static if(isFloatingPoint!(TRidge[$ - 1]) || isIntegral!(TRidge[$ - 1])) {
+        // ridge param.
+        alias XRidge[$ - 1] ridgeParam;
+        alias TRidge[0..$ - 1] T;
+        alias XRidge[0..$ - 1] XIn;
+        enum bool ridge = true;
+        dstatsEnforce(ridgeParam >= 0,
+            "Cannot do ridge regerssion with ridge param <= 0.");
+
+        SummaryIter!R summaryIter(R)(R range) { return typeof(return)(range); }
+    } else {
+        enum bool ridge = false;
+        enum ridgeParam = 0;
+        alias TRidge T;
+        alias XRidge XIn;
+
+        R summaryIter(R)(R range) { return range; }
+    }
+
     static if(isArray!(T[0]) && isInputRange!(typeof(XIn[0][0])) &&
         T.length == 1) {
-        alias typeof(XIn[0].front) E;
-        E[] X = tempdup(XIn[0]);
+        auto X = tempdup(map!(summaryIter)(XIn[0]));
+        alias typeof(X[0]) E;
     } else {
-        alias XIn X;
+        static if(ridge) {
+            alias staticMap!(SummaryType, T) XType;
+            XType X;
+
+            foreach(ti, elem; XIn) {
+                X[ti] = summaryIter(elem);
+            }
+        } else {
+            alias XIn X;
+        }
     }
 
     double[][] xTx;
     double[] xTy;
     rangeMatrixMulTrans(xTy, xTx, Y, X);
+
+    static if(ridge) {
+        if(ridgeParam > 0) {
+            foreach(i, range; X) {
+                xTx[i][i] += ridgeParam * range.mse;
+            }
+        }
+    }
+
     invert(xTx);
 
     double[] ret;
@@ -510,7 +591,9 @@ RegressRes linearRegress(U, TC...)(U Y, TC input) {
             elem = elem.save;
         }
     } else {
-        xSaved = saveAll(X).expand;
+        foreach(ti, Type; X) {
+            xSaved[ti] = X[ti].save;
+        }
     }
 
     rangeMatrixMulTrans(xTy, xTx, Y.save, X);
@@ -523,6 +606,7 @@ RegressRes linearRegress(U, TC...)(U Y, TC input) {
         }
     }
 
+    X = xSaved;
     auto residuals = residuals(betas, Y, X);
     double S = 0;
     ulong n = 0;
@@ -592,6 +676,18 @@ RegressRes linearRegress(U, TC...)(U Y, TC input) {
         adjustedR2, sqrt(sigma2), overallP);
 }
 
+
+/**Struct returned by polyFit.*/
+struct PolyFitRes(T) {
+
+    /**The array of PowMap ranges created by polyFit.*/
+    T X;
+
+    /**The rest of the results.  This is alias this'd.*/
+    RegressRes regressRes;
+    alias regressRes this;
+}
+
 /**Convenience function that takes a forward range X and a forward range Y,
  * creates an array of PowMap structs for integer powers from 0 through N,
  * and calls linearRegressBeta.
@@ -600,7 +696,7 @@ RegressRes linearRegress(U, TC...)(U Y, TC input) {
  * the exponent.  For example, the X<sup>2</sup> term will have an index of
  * 2.
  */
-double[] polyFitBeta(T, U)(U Y, T X, uint N) {
+double[] polyFitBeta(T, U)(U Y, T X, uint N, double ridge = 0) {
     double[] dummy;
     return polyFitBetaBuf!(T, U)(dummy, Y, X, N);
 }
@@ -609,13 +705,18 @@ double[] polyFitBeta(T, U)(U Y, T X, uint N) {
  * to return the coefficients in.  If it's too short, a new one will be
  * allocated.  Otherwise, results will be returned in the user-provided buffer.
  */
-double[] polyFitBetaBuf(T, U)(double[] buf, U Y, T X, uint N) {
+double[] polyFitBetaBuf(T, U)(double[] buf, U Y, T X, uint N, double ridge = 0) {
     mixin(newFrame);
     auto pows = newStack!(PowMap!(uint, T))(N + 1);
     foreach(exponent; 0..N + 1) {
         pows[exponent] = powMap(X, exponent);
     }
-    return linearRegressBetaBuf(buf, Y, pows);
+
+    if(ridge == 0) {
+        return linearRegressBetaBuf(buf, Y, pows);
+    } else {
+        return linearRegressBetaBuf(buf, Y, pows, ridge);
+    }
 }
 
 /**Convenience function that takes a forward range X and a forward range Y,
@@ -716,177 +817,26 @@ unittest {
         [1.20184170, 0.27367611,  0.40823237, -0.06993322,  0.06462305,
          -0.40354255, -0.88170814,  -0.74715188, -0.76531747, -0.63076120,
          -0.65892680, -0.06437053, -0.08253613,  0.96202014,  1.39385455]));
-}
 
-private struct Normalize(bool mse, R) {
-    R range;
-    double mean;
-
-    static if(mse) {
-        double mul;
-    }
-
-    this(R range) {
-        static if(mse) {
-            auto summ = meanStdev(range.save);
-            mean = summ.mean;
-            mul = 1.0 / sqrt(summ.mse);
-        } else {
-            this.mean = dstats.summary.mean(range.save).mean;
-        }
-
-        this.range = range;
-    }
-
-    double front() @property {
-        static if(mse) {
-            return (range.front - mean) * mul;
-        } else {
-            return range.front - mean;
-        }
-    }
-
-    void popFront() {
-        range.popFront();
-    }
-
-    bool empty() @property {
-        return range.empty;
-    }
-}
-
-private Normalize!(mse, R) normalize(bool mse, R)(R range) {
-    return typeof(return)(range);
-}
-
-private template NormalizeType(T) {
-    alias Normalize!(true, T) NormalizeType;
-}
-
-/**
-Plain old data struct used for returning ridge regression results.  All beta
-value arrays are in the form order
-[intercept term, X_1 term, X_2 term, ..., X_N term], where 1, ..., N are
-the order in which the X values were passed to ridgeRegress().
-*/
-struct RidgeRes {
-    /**
-    The beta values, scaled back to their original scale.  These are the
-    beta values to use for making predictions.
-    */
-    double[] betas;
-
-    /**
-    The beta values on the normalized scale.  Ridge regression is computed by
-    first centering Y to zero mean and standardizing every vector in X to
-    zero mean and unit variance.  These coefficients are useful when you want
-    all of the beta values to be on the same scale.
-    */
-    double[] rawBetas;
-}
-
-/**
-Performs ridge regression, which penalizes the L2 norm of the beta vector and
-therefore favors models with smaller beta terms.  This penalization also helps
-avoid problems caused by multicollinearity and by having more dimensions than
-samples.  However, this comes at the cost of lost inference capabilities.
-For example, confidence intervals and P-values cannot easily be calculated.
-
-The ridgeParam parameter determines the size of the penalty for large L2 norms.
-It must be >= 0, and a larger ridgeParam means a larger penalty.  If ridgeParam
-is exactly zero, ridge regression reduces to ordinary least squares regression.
-
-All ranges passed to this function must be forward ranges to allow for the
-normalization necessary.  In ridge regression, the intercept term is implicit
-and should NOT be passed in.  It will be included as the first term in the
-beta coefficient arrays in the RidgeRes object returned.  Other than these
-caveats, usage is identical to linearRegressBeta().
-
-Bugs:
-
-Like the rest of the functions in this library, this one uses explicit matrix
-inversion (for now).  While this isn't usually a problem, ridge regression
-is sometimes used with huge numbers of variables, and is O(N^3) for an NxN
-matrix.
-
-References:
-
-http://www.mathworks.com/help/toolbox/stats/ridge.html
-
-Venables, W. N. & Ripley, B. D. (2002) Modern Applied Statistics with S.
-Fourth Edition. Springer, New York. ISBN 0-387-95457-0
-(This is the citation for the MASS R package.)
-*/
-RidgeRes ridgeRegress(U, T...)(double ridgeParam, U YIn, T XIn)
-if(allSatisfy!(isForwardRange, T) && doubleInput!(U)) {
-    mixin(newFrame);
-    static if(isArray!(T[0]) && isInputRange!(typeof(XIn[0][0])) &&
-        T.length == 1) {
-        alias typeof(XIn[0].front) E;
-        auto X = tempdup(map!(normalize!true)(XIn[0]));
-    } else {
-        alias staticMap!(NormalizeType, T) XType;
-        XType X;
-        foreach(ti, Type; X) {
-            X[ti] = normalize!true(XIn[ti]);
-        }
-    }
-
-    auto Y = normalize!false(YIn);
-
-    double[][] xTx;
-    double[] xTy;
-    rangeMatrixMulTrans(xTy, xTx, Y, X);
-
-    foreach(diagIndex; 0..X.length) {
-        xTx[diagIndex][diagIndex] += ridgeParam;
-    }
-
-    invert(xTx);
-
-
-    typeof(return) ret;
-    double[] betas = new double[X.length + 1];
-    betas[0] = 0;
-
-    foreach(i; 0..X.length) {
-        betas[i + 1] = 0;
-        foreach(j; 0..X.length) {
-            betas[i + 1] += xTx[i][j] * xTy[j];
-        }
-    }
-
-    ret.rawBetas = betas.dup;
-
-    betas[0] = Y.mean;
-    foreach(i, rng; X) {
-        betas[i + 1] *= rng.mul;
-        betas[0] -= rng.mean * betas[i + 1];
-    }
-
-    ret.betas = betas;
-    return ret;
-}
-
-unittest {
-    // Values from R's MASS package.
+    // Test nonzero ridge parameters.
+        // Values from R's MASS package.
     auto a = [1, 2, 3, 4, 5, 6, 7];
     auto b = [8, 6, 7, 5, 3, 0, 9];
     auto c = [2, 7, 1, 8, 2, 8, 1];
 
     // With a ridge param. of zero, ridge regression reduces to regular
     // OLS regression.
-    assert(approxEqual(ridgeRegress(0, a, b, c).betas,
+    assert(approxEqual(linearRegressBeta(a, repeat(1), b, c, 0),
         linearRegressBeta(a, repeat(1), b, c)));
 
-    auto res1 = ridgeRegress(1, a, b, c);
-    auto res2 = ridgeRegress(2, a, b, c);
-    assert(approxEqual(res1.rawBetas, [0, -0.7837959, -0.4132366]));
-    assert(approxEqual(res1.betas, [6.0357757, -0.2729671, -0.1337131]));
-    assert(approxEqual(res2.rawBetas, [0, -0.6446235, -0.3020991]));
-    assert(approxEqual(res2.betas, [5.62367784, -0.22449854, -0.09775174]));
+    // Test the ridge regression. Values from R MASS package.
+    auto ridge1 = linearRegressBeta(a, repeat(1), b, c, 1);
+    auto ridge2 = linearRegressBeta(a, repeat(1), b, c, 2);
+    auto ridge3 = linearRegressBeta(c, repeat(1), a, b, 10);
+    assert(approxEqual(ridge1, [6.0357757, -0.2729671, -0.1337131]));
+    assert(approxEqual(ridge2, [5.62367784, -0.22449854, -0.09775174]));
+    assert(approxEqual(ridge3, [5.82653624, -0.05197246, -0.27185592 ]));
 }
-
 
 /**
 Computes a logistic regression using a maximum likelihood estimator
@@ -901,17 +851,53 @@ array if they are not random access ranges.  Note that each value is accessed
 several times, so if your range is a map to something expensive, you may
 want to evaluate it eagerly.
 
+If the last parameter passed in is a numeric value instead of a range,
+it is interpreted as a ridge parameter and ridge regression is performed.  This
+penalizes the L2 norm of the beta vector (in a scaled space) and results
+in more parsimonious models.  It limits the usefulness of inference techniques
+(p-values, confidence intervals), however, and is therefore not offered
+in logisticRegres().
+
+If no ridge parameter is passed, or equivalenty if the ridge parameter is
+zero, then ordinary maximum likelihood regression is performed.
+
+Note that, while this implementation of ridge regression was tested against
+the R Design Package implementation, it uses slightly different conventions
+that make the results not comparable without transformation.  dstats uses a
+biased estimate of the variance to scale the beta vector penalties, while
+Design uses an unbiased estimate.  Furthermore, Design penalizes by 1/2 of the
+L2 norm, whereas dstats penalizes by the L2 norm.  Therefore, if n is the
+sample size, and lambda is the penalty used with dstats, the proper penalty
+to use in Design to get the same results is 2 * (n - 1) * lambda / n.
+
 Also note that, as in linearRegress, repeat(1) can be used for the intercept
 term.
 
 Returns:  The beta coefficients for the regression model.
 
 References:
+
 http://en.wikipedia.org/wiki/Logistic_regression
+
 http://socserv.mcmaster.ca/jfox/Courses/UCLA/logistic-regression-notes.pdf
+
+S. Le Cessie and J. C. Van Houwelingen.  Ridge Estimators in Logistic
+Regression.  Journal of the Royal Statistical Society. Series C
+(Applied Statistics), Vol. 41, No. 1(1992), pp. 191-201
+
+Frank E Harrell Jr (2009). Design: Design Package. R package version 2.3-0.
+http://CRAN.R-project.org/package=Design
  */
-double[] logisticRegressBeta(T, U...)(T yIn, U xIn) {
-    return logisticRegressImpl!(T, U)(false, yIn, xIn).betas;
+double[] logisticRegressBeta(T, U...)(T yIn, U xRidge) {
+    static if(isFloatingPoint!(U[$ - 1]) || isIntegral!(U[$ - 1])) {
+        alias xRidge[$ - 1] ridge;
+        alias xRidge[0..$ - 1] xIn;
+    } else {
+        enum double ridge = 0.0;
+        alias xRidge xIn;
+    }
+
+    return logisticRegressImpl(false, ridge, yIn, xIn).betas;
 }
 
 /**
@@ -995,7 +981,7 @@ http://en.wikipedia.org/wiki/Wald_test
 http://en.wikipedia.org/wiki/Akaike_information_criterion
 */
 LogisticRes logisticRegress(T, V...)(T yIn, V input) {
-    return logisticRegressImpl!(T, V)(true, yIn, input);
+    return logisticRegressImpl!(T, V)(true, 0, yIn, input);
 }
 
 unittest {
@@ -1121,6 +1107,17 @@ unittest {
     assert(ae(res4.upperBound[2], -6.198418e-1));
     assert(ae(res4.upperBound[3], 4.265302e-3));
     assert(ae(res4.upperBound[4], 2.084554e-3));
+
+    // Test ridge stuff.
+    auto ridge2 = logisticRegressBeta(y2, repeat(1), x2_1, x2_2, 3);
+    assert(ae(ridge2[0], -0.40279319));
+    assert(ae(ridge2[1], 0.03575638));
+    assert(ae(ridge2[2], 0.05313875));
+
+    auto ridge2_2 = logisticRegressBeta(y2, repeat(1), x2_1, x2_2, 2);
+    assert(ae(ridge2_2[0], -0.51411490));
+    assert(ae(ridge2_2[1], 0.04536590));
+    assert(ae(ridge2_2[2], 0.06809964));
 }
 
 /// The logistic function used in logistic regression.
@@ -1132,7 +1129,8 @@ double logistic(double xb) pure nothrow @safe {
 alias logistic inverseLogit;
 
 private:
-LogisticRes logisticRegressImpl(T, V...)(bool inference, T yIn, V input) {
+LogisticRes logisticRegressImpl(T, V...)
+(bool inference, double ridge, T yIn, V input) {
     mixin(newFrame);
 
     static if(isFloatingPoint!(V[$ - 1])) {
@@ -1166,7 +1164,7 @@ LogisticRes logisticRegressImpl(T, V...)(bool inference, T yIn, V input) {
     typeof(return) ret;
     ret.betas.length = x.length;
     if(inference) ret.stdErr.length = x.length;
-    ret.logLikelihood = doMLE(ret.betas, ret.stdErr, y, x);
+    ret.logLikelihood = doMLE(ret.betas, ret.stdErr, ridge, y, x);
 
     if(!inference) return ret;
 
@@ -1201,7 +1199,41 @@ LogisticRes logisticRegressImpl(T, V...)(bool inference, T yIn, V input) {
     return ret;
 }
 
-double doMLE(T, U...)(double[] beta, double[] stdError, T y, U xIn) {
+// Calculate the mean squared error of all ranges.  This is delicate, though,
+// because some may be infinite and we want to stop at the shortest range.
+//
+// HERE BE DRAGONS:  Returns on TempAlloc.
+double[] calculateMSEs(U...)(U xIn) {
+    static if(isRoR!(U[0]) && U.length == 1) {
+        alias xIn[0] x;
+    } else {
+        alias xIn x;
+    }
+
+    size_t minLen = size_t.max;
+    foreach(r; x) {
+        static if(!isInfinite!(typeof(r))) {
+            static assert(dstats.base.hasLength!(typeof(r)),
+                "Ranges passed to doMLE should be random access, meaning " ~
+                "either infinite or with length.");
+
+            minLen = min(minLen, r.length);
+        }
+    }
+
+    dstatsEnforce(minLen < size_t.max,
+        "Can't do logistic regression if all of the ranges are infinite.");
+
+    auto ret = newStack!double(x.length);
+    foreach(ti, range; x) {
+        ret[ti] = meanStdev(take(range.save, minLen)).mse;
+    }
+
+    return ret;
+}
+
+double doMLE(T, U...)
+(double[] beta, double[] stdError, double ridge, T y, U xIn) {
     // This big, disgusting function uses the Newton-Raphson method as outlined
     // in http://socserv.mcmaster.ca/jfox/Courses/UCLA/logistic-regression-notes.pdf
     //
@@ -1215,15 +1247,18 @@ double doMLE(T, U...)(double[] beta, double[] stdError, T y, U xIn) {
     }
 
     mixin(newFrame);
+
+    double[] mses;  // Used for ridge.
+    if(ridge > 0) {
+        mses = calculateMSEs(x);
+    }
+
     beta[] = 0;
     if(stdError.length) stdError[] = double.nan;
-    immutable N = y.length;
 
     auto ps = newStack!double(y.length);
-
-    double[] xRow = newStack!double(beta.length);
     void evalPs() {
-        foreach(i; 0..N) {
+        foreach(i; 0..y.length) {
 
             double prodSum = 0;
             foreach(j, col; x) {
@@ -1248,13 +1283,13 @@ double doMLE(T, U...)(double[] beta, double[] stdError, T y, U xIn) {
         return sum;
     }
 
-
     enum eps = 1e-6;
     enum maxIter = 1000;
 
     auto oldLikelihood = -double.infinity;
-
+    auto firstDerivTerms = newStack!double(beta.length);
     auto mat = newStack!(double[])(beta.length);
+
     foreach(ref row; mat) {
         // The *2 is for the augmentations scratch space for inversion.
         row = newStack!double(beta.length * 2);
@@ -1290,9 +1325,9 @@ double doMLE(T, U...)(double[] beta, double[] stdError, T y, U xIn) {
         // Calculate X' * V * X in the notation of our reference.  Since
         // V is a diagonal matrix of ps[] * (1.0 - ps[]), we only have one
         // dimension representing it.
-        foreach(i, dummy; x) foreach(j, dummy2; x) {
+        foreach(i, xi; x) foreach(j, xj; x) {
             foreach(k; 0..ps.length) {
-                mat[i][j] += (ps[k] * (1 - ps[k])) * x[i][k] * x[j][k];
+                mat[i][j] += (ps[k] * (1 - ps[k])) * xi[k] * xj[k];
             }
         }
 
@@ -1303,23 +1338,34 @@ double doMLE(T, U...)(double[] beta, double[] stdError, T y, U xIn) {
             mat[i][beta.length..$] = 0;
         }
 
+        // Convert ps to ys - ps.
+        foreach(pIndex, ref p; ps) {
+            p = (y[pIndex] == 0) ? -p : (1 - p);
+        }
+
+        // Compute X'(y - p).
+        foreach(ti, xRange; x) {
+            firstDerivTerms[ti] = 0;
+
+            foreach(pIndex, p; ps) {
+                firstDerivTerms[ti] += xRange[pIndex] * p;
+            }
+        }
+
+        // Add ridge penalties, if any.
+        if(ridge > 0) {
+            foreach(diagIndex, mse; mses) {
+                mat[diagIndex][diagIndex] += 2 * ridge * mse;
+                firstDerivTerms[diagIndex] -= 2 * ridge * mse * beta[diagIndex];
+            }
+        }
+
         // Invert the intermediate matrix.
         invert(mat);
 
-        // Now, multiply the resulting matrix by X' * (y - p).
-        foreach(betaIndex, ref b; beta) {
-            double diff = 0;
-
-            foreach(pIndex, p; ps) {
-                immutable pDiff = (y[pIndex] != 0) ? (1.0 - p) : -1.0 * p;
-                double sum = 0;
-                foreach(betaIndex2, dummy; x) {
-                    diff += mat[betaIndex][betaIndex2] *
-                            x[betaIndex2][pIndex] * pDiff;
-                }
-            }
-
-            b += diff;
+        // Update betas.
+        foreach(rowIndex, ref b; beta) {
+            b += dotProduct(mat[rowIndex], firstDerivTerms);
         }
 
         debug(print) writeln("Iter:  ", iter);
