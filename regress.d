@@ -1317,8 +1317,13 @@ double doMLE(T, U...)
 
         oldLikelihood = lh;
 
-        foreach(i; 0..beta.length) {
-            mat[i] = mat[i][0..beta.length];
+        foreach(i; 0..mat.length) {
+            // We allocated this augmentation area, but it got sliced away
+            // by invert().  Put it back.
+            if(iter > 0) {
+                mat[i] = (mat[i].ptr - beta.length)[0..beta.length * 2];
+            }
+
             mat[i][] = 0;
         }
 
@@ -1329,13 +1334,6 @@ double doMLE(T, U...)
             foreach(k; 0..ps.length) {
                 mat[i][j] += (ps[k] * (1 - ps[k])) * xi[k] * xj[k];
             }
-        }
-
-        foreach(i; 0..mat.length) {
-            // We allocated this augmentation area, but it got sliced away by
-            // invert().  Put it back.
-            mat[i] = mat[i].ptr[0..beta.length * 2];
-            mat[i][beta.length..$] = 0;
         }
 
         // Convert ps to ys - ps.
