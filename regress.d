@@ -130,19 +130,32 @@ private void rangeMatrixMulTrans(U, T...)
 
     while(!someEmpty) {
         foreach(i, elem1; mat) {
-            double e1Front = cast(double) elem1.front;
-            xTy[i] += cast(double) elem1.front * cast(double) vec.front;
+            immutable e1Front = cast(double) elem1.front;
+            xTy[i] += e1Front * cast(double) vec.front;
             xTx[i][i] += e1Front * e1Front;
+
             foreach(jMinusI, elem2; mat[i + 1..$]) {
                 immutable j = i + 1 + jMinusI;
                 double num = e1Front * cast(double) elem2.front;
-                xTx[i][j] += num;
                 xTx[j][i] += num;
             }
         }
-        popAll;
+
+        popAll();
+    }
+
+    symmetrize(xTx);
+}
+
+// Copies values from lower triangle to upper triangle.
+private void symmetrize(double[][] mat) pure nothrow {
+    foreach(i; 1..mat.length) {
+        foreach(j; 0..i) {
+            mat[j][i] = mat[i][j];
+        }
     }
 }
+
 
 // Uses Gauss-Jordan elim. w/ row pivoting.  Not that efficient, but for the ad-hoc purposes
 // it was meant for, it should be good enough.
@@ -1327,12 +1340,15 @@ double doMLE(T, U...)
 
         // Calculate X' * V * X in the notation of our reference.  Since
         // V is a diagonal matrix of ps[] * (1.0 - ps[]), we only have one
-        // dimension representing it.
-        foreach(i, xi; x) foreach(j, xj; x) {
+        // dimension representing it.  Do this for the lower half, then
+        // symmetrize the matrix.
+        foreach(i, xi; x) foreach(j, xj; x[0..i + 1]) {
             foreach(k; 0..ps.length) {
                 mat[i][j] += (ps[k] * (1 - ps[k])) * xi[k] * xj[k];
             }
         }
+
+        symmetrize(mat);
 
         // Convert ps to ys - ps.
         foreach(pIndex, ref p; ps) {
@@ -1422,9 +1438,11 @@ bool[] toBools(R)(R range) {
 auto toRandomAccessRoR(T)(size_t len, T ror) {
     static assert(isRoR!T);
     alias ElementType!T E;
-    static if(isRandomAccessRange!T && isRandomAccessRange!E) {
+    static if(isArray!T && isRandomAccessRange!E) {
         return ror;
-    } else static if(!isRandomAccessRange!T && isRandomAccessRange!E) {
+    } else static if(!isArray!T && isRandomAccessRange!E) {
+        // Shallow copy so we know it has cheap slicing and stuff,
+        // even if it is random access.
         return tempdup(ror);
     } else {
         auto ret = newStack!(E[])(walkLength(ror.save));
