@@ -133,11 +133,10 @@ private void rangeMatrixMulTrans(U, T...)
             immutable e1Front = cast(double) elem1.front;
             xTy[i] += e1Front * cast(double) vec.front;
             xTx[i][i] += e1Front * e1Front;
+            auto xTxi = xTx[i];
 
-            foreach(jMinusI, elem2; mat[i + 1..$]) {
-                immutable j = i + 1 + jMinusI;
-                double num = e1Front * cast(double) elem2.front;
-                xTx[j][i] += num;
+            foreach(j, elem2; mat[0..i]) {
+                xTxi[j] += e1Front * cast(double) elem2.front;;
             }
         }
 
