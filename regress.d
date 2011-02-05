@@ -128,15 +128,24 @@ private void rangeMatrixMulTrans(U, T...)
         row[] = 0;
     }
 
+    auto fronts = newStack!double(mat.length);
+    scope(exit) TempAlloc.free();
+
     while(!someEmpty) {
-        foreach(i, elem1; mat) {
-            immutable e1Front = cast(double) elem1.front;
-            xTy[i] += e1Front * cast(double) vec.front;
-            xTx[i][i] += e1Front * e1Front;
+        // It is usually more cache efficient, etc. to copy to an array once
+        // and then use this than to keep iterating "across the grain"
+        // over a range of ranges or tuple of ranges.
+        foreach(i, elem; mat) {
+            fronts[i] = cast(double) elem.front;
+        }
+
+        foreach(i, elem1; fronts) {
+            xTy[i] += elem1 * cast(double) vec.front;
+            xTx[i][i] += elem1 * elem1;
             auto xTxi = xTx[i];
 
-            foreach(j, elem2; mat[0..i]) {
-                xTxi[j] += e1Front * cast(double) elem2.front;;
+            foreach(j, elem2; fronts[0..i]) {
+                xTxi[j] += elem1 * elem2;
             }
         }
 
@@ -176,18 +185,18 @@ void invert(ref double[][] mat) {
                 biggest = abs(mat[row][col]);
             }
         }
+
         swap(mat[col], mat[bestRow]);
+        immutable pivotFactor = mat[col][col];
 
-        foreach(row; 0..mat.length) {
-            if(row == col) {
-                continue;
-            }
+        foreach(row; 0..mat.length) if(row != col) {
+            immutable ratio = mat[row][col] / pivotFactor;
 
-            immutable ratio = mat[row][col] / mat[col][col];
+            // If you're ever looking to optimize this code, good luck.  The
+            // bottleneck is almost ENTIRELY this one line:
             mat[row][] -= mat[col][] * ratio;
         }
     }
-
 
     foreach(i; 0..mat.length) {
         double diagVal = mat[i][i];
@@ -1268,15 +1277,24 @@ double doMLE(T, U...)
 
     auto ps = newStack!double(y.length);
     void evalPs() {
-        foreach(i; 0..y.length) {
+        ps[] = 0;
 
-            double prodSum = 0;
-            foreach(j, col; x) {
-                prodSum += col[i] * beta[j];
+        foreach(i, range; x) {
+            static if(is(typeof(range) == double[])) {
+                // Take advantage of array ops.
+                ps[] += beta[i] * range[0..ps.length];
+            } else {
+                immutable b = beta[i];
+
+                size_t j = 0;
+                foreach(elem; range) {
+                    if(j >= ps.length) break;
+                    ps[j++] += b * elem;
+                }
             }
-
-            ps[i] = logistic(prodSum);
         }
+
+        foreach(ref elem; ps) elem = logistic(elem);
     }
 
     double logLikelihood() {
