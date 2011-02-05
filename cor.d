@@ -769,7 +769,7 @@ if(isInputRange!T && isInputRange!U && allSatisfy!(isInputRange, V)) {
 
     auto corMatrix = newStack!(double[])(cond.length + 2);
     foreach(i, ref elem; corMatrix) {
-        elem = newStack!double((cond.length + 2) * 2);
+        elem = newStack!double((cond.length + 2));
         elem[] = 0;
         elem[i] = 1;
     }
@@ -792,8 +792,15 @@ if(isInputRange!T && isInputRange!U && allSatisfy!(isInputRange, V)) {
         }
     }
 
-    invert(corMatrix);
-    return -corMatrix[0][1] / sqrt(corMatrix[0][0] * corMatrix[1][1]);
+    auto invMatrix = newStack!(double[])(cond.length + 2);
+    foreach(i, ref elem; invMatrix) {
+        elem = newStack!double((cond.length + 2));
+        elem[] = 0;
+        elem[i] = 1;
+    }
+
+    invert(corMatrix, invMatrix);
+    return -invMatrix[0][1] / sqrt(invMatrix[0][0] * invMatrix[1][1]);
 }
 
 unittest {

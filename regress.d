@@ -86,10 +86,11 @@ PowMap!(ExpType, T) powMap(ExpType, T)(T range, ExpType exponent) {
     return RT(range, exponent);
 }
 
-// Very ad-hoc, does a bunch of matrix ops.  Written specifically to be
-// efficient in the context used here.
+// Very ad-hoc, does a bunch of matrix ops for linearRegress and
+// linearRegressBeta.  Specifically, computes xTx and xTy.
+// Written specifically to be efficient in the context used here.
 private void rangeMatrixMulTrans(U, T...)
-(out double[] xTy, out double[][] xTx, U vec, ref T matIn) {
+(ref double[] xTy, out double[][] xTx, U vec, ref T matIn) {
     static if(isArray!(T[0]) &&
         isInputRange!(typeof(matIn[0][0])) && matIn.length == 1) {
         alias matIn[0] mat;
@@ -116,12 +117,11 @@ private void rangeMatrixMulTrans(U, T...)
         vec.popFront;
     }
 
-    xTy = newStack!double(mat.length);
     xTy[] = 0;
 
     xTx = newStack!(double[])(mat.length);
     foreach(ref elem; xTx) {
-        elem = newStack!double(mat.length * 2);
+        elem = newStack!double(mat.length);
     }
 
     foreach(row; xTx) {
@@ -164,19 +164,70 @@ private void symmetrize(double[][] mat) pure nothrow {
     }
 }
 
-
-// Uses Gauss-Jordan elim. w/ row pivoting.  Not that efficient, but for the ad-hoc purposes
-// it was meant for, it should be good enough.
-void invert(ref double[][] mat) {
-    // Normalize, augment w/ identity.  The matrix is already the right size
-    // from rangeMatrixMulTrans.
-    foreach(i, row; mat) {
-        double absMax = 1.0 / reduce!(max)(map!(abs)(row[0..mat.length]));
-        row[0..mat.length] *= absMax;
-        row[i + mat.length] = absMax;
+// Uses Gauss-Jordan elim. w/ row pivoting to invert from.  Stores the results
+// in to and leaves from in an undefined state.
+package void invert(double[][] from, double[][] to) {
+    // Normalize.
+    foreach(i, row; from) {
+        double absMax = 1.0 / reduce!(max)(map!(abs)(row[0..from.length]));
+        row[] *= absMax;
+        to[i][] = 0;
+        to[i][i] = absMax;
     }
 
-    foreach(col; 0..mat.length) {
+    foreach(col; 0..from.length) {
+        size_t bestRow;
+        double biggest = 0;
+        foreach(row; col..from.length) {
+            if(abs(from[row][col]) > biggest) {
+                bestRow = row;
+                biggest = abs(from[row][col]);
+            }
+        }
+
+        swap(from[col], from[bestRow]);
+        swap(to[col], to[bestRow]);
+        immutable pivotFactor = from[col][col];
+
+        foreach(row; 0..from.length) if(row != col) {
+            immutable ratio = from[row][col] / pivotFactor;
+
+            // If you're ever looking to optimize this code, good luck.  The
+            // bottleneck is almost ENTIRELY this one line:
+            from[row][] -= from[col][] * ratio;
+            to[row][] -= to[col][] * ratio;
+        }
+    }
+
+    foreach(i; 0..from.length) {
+        immutable diagVal = from[i][i];
+        from[i][] /= diagVal;
+        to[i][] /= diagVal;
+    }
+}
+
+unittest {
+    auto mat = [[1.0, 2, 3], [4.0, 7, 6], [7.0, 8, 9]];
+    auto toMat = [new double[3], new double[3], new double[3]];
+    invert(mat, toMat);
+    assert(approxEqual(toMat[0], [-0.625, -0.25, 0.375]));
+    assert(approxEqual(toMat[1], [-0.25, 0.5, -0.25]));
+    assert(approxEqual(toMat[2], [0.708333, -0.25, 0.041667]));
+}
+
+// Solve a system of linear equations mat * b = vec for b.  The result is
+// stored in vec, and mat is left in an undefined state. Uses Gaussian
+// elimination w/ row pivoting.  Roughly 4x faster than using inversion to
+// solve the system, and uses roughly half the memory.
+private void solve(double[][] mat, double[] vec) {
+    // Normalize.
+    foreach(i, row; mat) {
+        double absMax = 1.0 / reduce!(max)(map!(abs)(row[0..mat.length]));
+        row[] *= absMax;
+        vec[i] *= absMax;
+    }
+
+    foreach(col; 0..mat.length - 1) {
         size_t bestRow;
         double biggest = 0;
         foreach(row; col..mat.length) {
@@ -187,25 +238,43 @@ void invert(ref double[][] mat) {
         }
 
         swap(mat[col], mat[bestRow]);
+        swap(vec[col], vec[bestRow]);
         immutable pivotFactor = mat[col][col];
 
-        foreach(row; 0..mat.length) if(row != col) {
+        foreach(row; col + 1..mat.length) {
             immutable ratio = mat[row][col] / pivotFactor;
 
             // If you're ever looking to optimize this code, good luck.  The
             // bottleneck is almost ENTIRELY this one line:
             mat[row][] -= mat[col][] * ratio;
+            vec[row] -= vec[col] * ratio;
         }
     }
 
     foreach(i; 0..mat.length) {
         double diagVal = mat[i][i];
         mat[i][] /= diagVal;
+        vec[i] /= diagVal;
     }
 
-    foreach(ref row; mat) {
-        row = row[mat.length..$];
+    // Do back substitution.
+    for(size_t row = mat.length - 1; row != size_t.max; row--) {
+        auto v1 = vec[row + 1..$];
+        auto v2 = mat[row][$ - v1.length..$];
+        vec[row] -= dotProduct(v1, v2);
     }
+}
+
+unittest {
+    auto mat = [[2.0, 1, -1], [-3.0, -1, 2], [-2.0, 1, 2]];
+    auto vec = [8.0, -11, -3];
+    solve(mat, vec);
+    assert(approxEqual(vec, [2, 3, -1]));
+
+    auto mat2 = [[1.0, 2, 3], [4.0, 7, 6], [7.0, 8, 9]];
+    auto vec2 = [8.0, 6, 7];
+    solve(mat2, vec2);
+    assert(approxEqual(vec2, [-3.875, -0.75, 4.45833]));
 }
 
 /**Struct that holds the results of a linear regression.  It's a plain old
@@ -498,6 +567,12 @@ if(doubleInput!(U)) {
 
     double[][] xTx;
     double[] xTy;
+    if(buf.length < X.length) {
+        xTy = new double[X.length];
+    } else {
+        xTy = buf[0..X.length];
+    }
+
     rangeMatrixMulTrans(xTy, xTx, Y, X);
 
     static if(ridge) {
@@ -508,22 +583,8 @@ if(doubleInput!(U)) {
         }
     }
 
-    invert(xTx);
-
-    double[] ret;
-    if(buf.length < X.length) {
-        ret = new double[X.length];
-    } else {
-        ret = buf[0..X.length];
-    }
-
-    foreach(i; 0..ret.length) {
-        ret[i] = 0;
-        foreach(j; 0..ret.length) {
-            ret[i] += xTx[i][j] * xTy[j];
-        }
-    }
-    return ret;
+    solve(xTx, xTy);
+    return xTy;  // After solve, it's now the solution to the system.
 }
 
 /**
@@ -600,8 +661,18 @@ RegressRes linearRegress(U, TC...)(U Y, TC input) {
             "tuples of forward ranges or ranges of forward ranges.");
     }
 
-    double[][] xTx;
-    double[] xTy;
+    double[][] xTx = newStack!(double[])(X.length),
+        xTxNeg1 = newStack!(double[])(X.length);
+
+    foreach(i; 0..X.length) {
+        xTx[i] = newStack!double(X.length);
+    }
+
+    double[] xTy = newStack!double(X.length);
+
+    foreach(i; 0..X.length) {
+        xTxNeg1[i] = newStack!double(X.length);
+    }
 
     typeof(X) xSaved;
     static if(arrayX) {
@@ -616,12 +687,12 @@ RegressRes linearRegress(U, TC...)(U Y, TC input) {
     }
 
     rangeMatrixMulTrans(xTy, xTx, Y.save, X);
-    invert(xTx);
+    invert(xTx, xTxNeg1);
     double[] betas = new double[X.length];
     foreach(i; 0..betas.length) {
         betas[i] = 0;
         foreach(j; 0..betas.length) {
-            betas[i] += xTx[i][j] * xTy[j];
+            betas[i] += xTxNeg1[i][j] * xTy[j];
         }
     }
 
@@ -646,7 +717,7 @@ RegressRes linearRegress(U, TC...)(U Y, TC input) {
 
     double[] stdErr = new double[betas.length];
     foreach(i, ref elem; stdErr) {
-        elem = sqrt( S * xTx[i][i] / df);
+        elem = sqrt( S * xTxNeg1[i][i] / df);
     }
 
     double[] lowerBound, upperBound;
@@ -817,9 +888,9 @@ unittest {
         (beta1Buf[], diseaseSev, repeat(1), temperature);
     assert(beta1Buf.ptr == beta1.ptr);
     assert(beta1Buf[] == beta1[]);
-    assert(beta1 == res1.betas);
+    assert(approxEqual(beta1, res1.betas));
     auto beta2 = polyFitBeta(weights, heights, 2);
-    assert(beta2 == res2.betas);
+    assert(approxEqual(beta2, res2.betas));
 
     auto res4 = linearRegress(weights, repeat(1), heights);
     assert(approxEqual(res4.p, 3.604e-14));
@@ -1316,15 +1387,31 @@ double doMLE(T, U...)
 
     auto oldLikelihood = -double.infinity;
     auto firstDerivTerms = newStack!double(beta.length);
-    auto mat = newStack!(double[])(beta.length);
 
-    foreach(ref row; mat) {
-        // The *2 is for the augmentations scratch space for inversion.
-        row = newStack!double(beta.length * 2);
+    // matSaved saves mat for inverting to find std. errors, only if we
+    // care about std. errors.
+    auto mat = newStack!(double[])(beta.length);
+    foreach(ref row; mat) row = newStack!double(beta.length);
+    double[][] matSaved;
+
+    if(stdError.length) {
+        matSaved = newStack!(double[])(beta.length);
+        foreach(ref row; matSaved) row = newStack!double(beta.length);
+    }
+
+    void saveMat() {
+        foreach(i, row; mat) {
+            matSaved[i][] = row[];
+        }
     }
 
     void doStdErrs() {
         if(stdError.length) {
+            // Here, we actually need to invert the information matrix.
+            // We can use mat as scratch space since we don't need it
+            // anymore.
+            invert(matSaved, mat);
+
             foreach(i; 0..beta.length) {
                 stdError[i] = sqrt(mat[i][i]);
             }
@@ -1346,12 +1433,6 @@ double doMLE(T, U...)
         oldLikelihood = lh;
 
         foreach(i; 0..mat.length) {
-            // We allocated this augmentation area, but it got sliced away
-            // by invert().  Put it back.
-            if(iter > 0) {
-                mat[i] = (mat[i].ptr - beta.length)[0..beta.length * 2];
-            }
-
             mat[i][] = 0;
         }
 
@@ -1366,6 +1447,10 @@ double doMLE(T, U...)
         }
 
         symmetrize(mat);
+
+        if(stdError.length) {
+            saveMat();
+        }
 
         // Convert ps to ys - ps.
         foreach(pIndex, ref p; ps) {
@@ -1389,13 +1474,9 @@ double doMLE(T, U...)
             }
         }
 
-        // Invert the intermediate matrix.
-        invert(mat);
-
-        // Update betas.
-        foreach(rowIndex, ref b; beta) {
-            b += dotProduct(mat[rowIndex], firstDerivTerms);
-        }
+        solve(mat, firstDerivTerms);
+        // FirstDerivTerms is actually update vals now.
+        beta[] += firstDerivTerms[];
 
         debug(print) writeln("Iter:  ", iter);
     }
