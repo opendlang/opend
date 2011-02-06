@@ -1,9 +1,9 @@
 /**
-This module does a small but growing amount of stuff related to principal
-component analysis.  It's a work in progress and experimental.
+This module contains a basic implementation of principal component analysis.
 
 References:
-http://en.wikipedia.org/wiki/Principal_component_analysis#Computing_principal_components_with_expectation_maximization
+
+en.wikipedia.org/wiki/Principal_component_analysis#Computing_principal_components_iteratively
 
 Author:  David Simcha
 */
@@ -45,55 +45,144 @@ struct PrincipalComponent {
     /// The projection of the data onto the first principal component.
     double[] x;
 
-    /// The vector representing the first principal component.
+    /// The vector representing the first principal component loadings.
     double[] rotation;
 }
 
 /**
-Uses expectation-maximization to compute the first principal component.
-This algorithm can be used along with removeComponent() to compute
-the first few principal components.  However, it's a bad idea to use it
-to compute more than a few principal components because for these use cases
-there are more efficient and numerically stable algorithms.  dataIn must be
-a rectangular range of ranges representing your data.  buf is an optional
-PrincipalComponent struct whose memory will be recycled for returning the
-output if possible.
-
-Note that dataIn is copied, so column normalization will not be reflected in it.
+Sets options for principal component analysis.  The default options are
+also the values in PrinCompOptions.init.
 */
-PrincipalComponent firstComponent(Ror)(Ror dataIn,
-PrincipalComponent buf = PrincipalComponent.init) {
-    mixin(newFrame);
+struct PrinCompOptions {
+    ///  Center each column to zero mean.  Default value:  true.
+    bool zeroMean = true;
 
-    // Convert the matrix to a double[][].
-    static double[] doubleTempdup(R)(R range) {
-        return tempdup(map!(to!double)(range));
+    /**
+    Scale each column to unit variance.  Note that, if this option is set to
+    true, zeroMean is ignored and the mean of each column is set to zero even
+    if zeroMean is false.  Default value:  false.
+    */
+    bool unitVariance = false;
+
+    /**
+    Overwrite input matrix instead of copying.  Ignored if the matrix
+    passed in does not have assignable, lvalue elements and centering or
+    scaling is enabled.  Default value:  false.
+    */
+    bool destructive = false;
+
+    /**
+    Effectively transpose the matrix.  If enabled, treat each column as a
+    data points and each row as a dimension.  If disabled, do the opposite.
+    Note that, if this is enabled, each row will be scaled and centered,
+    not each column.  Default value:  false.
+    */
+    bool transpose = false;
+
+    private void doCenterScaleTransposed(R)(R data) {
+        foreach(row; data.save) {
+            immutable msd = meanStdev(row.save);
+
+            foreach(ref elem; row) {
+                // Already checked for whether we're supposed to be normalizing.
+                elem -= msd.mean;
+                if(unitVariance) elem /= msd.stdev;
+            }
+        }
     }
 
-    auto data = tempdup(
-        map!doubleTempdup(dataIn)
-    );
+    private void doCenterScale(R)(R data) {
+        if(!zeroMean && !unitVariance) return;
+        if(data.empty) {
+            return;
+        }
 
-    if(data.empty) {
-        return PrincipalComponent.init;
+        if(transpose) return doCenterScaleTransposed(data);
+
+        mixin(newFrame);
+        immutable rowLen = walkLength(data.front.save);
+
+        auto summs = newStack!MeanSD(rowLen);
+        summs[] = MeanSD.init;
+        foreach(row; data) {
+            size_t i = 0;
+            foreach(elem; row) {
+                enforce(i < rowLen, "Matrix must be rectangular for PCA.");
+                summs[i++].put(elem);
+            }
+
+            enforce(i == rowLen, "Matrix must be rectangular for PCA.");
+        }
+
+        foreach(row; data) {
+            size_t i = 0;
+            foreach(ref elem; row) {
+                elem -= summs[i].mean;
+                if(unitVariance) elem /= summs[i].stdev;
+                i++;
+            }
+        }
     }
-
-    normalizeColumns(data);
-    return firstComponentNormalized(data, buf);
 }
 
+
 /**
-Finds the first principal component assuming that the column means are already
-zero, this avoiding duplicating the data.  Since this is an efficiency hack,
-it also doesn't bother checking for rectangularness.
+Uses expectation-maximization to compute the first principal component of mat.
+Since there are a lot of options, they are controlled by a PrinCompOptions
+struct.  (See above.  PrinCompOptions.init contains the default values.)
+To have the results returned in a pre-allocated space, pass an explicit value
+for buf.
 */
-PrincipalComponent firstComponentNormalized(Ror)(Ror data,
-PrincipalComponent buf = PrincipalComponent.init) {
+PrincipalComponent firstComponent(Ror)(
+    Ror data,
+    PrinCompOptions opts = PrinCompOptions.init,
+    PrincipalComponent buf = PrincipalComponent.init
+) {
+    mixin(newFrame);
+
+    PrincipalComponent doNonDestructive() {
+        double[][] dataFixed;
+
+        if(opts.transpose) {
+            dataFixed = transposeDup(data);
+        } else {
+            dataFixed = tempdup(map!doubleTempdup(data));
+        }
+
+        opts.transpose = false;  // We already transposed if necessary.
+        opts.doCenterScale(dataFixed);
+        return firstComponentImpl(dataFixed, buf);
+    }
+
+    static if(!hasLvalueElements!(ElementType!Ror) ||
+    !hasAssignableElements!(ElementType!Ror)) {
+        if(opts.zeroMean || opts.unitVariance) {
+            return doNonDestructive();
+        } else {
+            return firstComponentImpl(data, buf, opts.transpose);
+        }
+    } else {
+        if(!opts.destructive) {
+            return doNonDestructive;
+        }
+
+        opts.doCenterScale(data);
+        return firstComponentImpl(data, buf, opts.transpose);
+    }
+}
+
+private PrincipalComponent firstComponentImpl(Ror)(
+    Ror data,
+    PrincipalComponent buf,
+    bool transposed = false
+) {
     mixin(newFrame);
 
     if(data.empty) return typeof(return).init;
-    immutable rowLen = data.front.length;
-    immutable colLen = walkLength(data.save);
+    size_t rowLen = walkLength(data.front.save);
+    size_t colLen = walkLength(data.save);
+
+    if(transposed) swap(rowLen, colLen);
 
     auto t = newStack!double(rowLen);
     auto p = (buf.rotation.length >= rowLen) ?
@@ -104,7 +193,7 @@ PrincipalComponent buf = PrincipalComponent.init) {
         foreach(i; 0..a.length) {
             if(!isFinite(a[i]) || !isFinite(b[i])) {
                 return true;
-            } else if(!approxEqual(a[i], b[i], 1e-3, 1e-6)) {
+            } else if(!approxEqual(a[i], b[i], 1e-4, 1e-7)) {
                 return false;
             }
         }
@@ -114,15 +203,45 @@ PrincipalComponent buf = PrincipalComponent.init) {
 
     while(true) {
         t[] = 0;
-        foreach(row; data.save) {
-            immutable dp = dotProduct(p, row);
-            static if( is(typeof(row) : const(double)[] )) {
-                // Use array op optimization if possible.
-                t[] += row[] * dp;
-            } else {
-                size_t i = 0;
-                foreach(elem; row.save) {
-                    t[i++] += elem * dp;
+
+        if(transposed) {
+            auto dps = newStack!double(colLen);
+            scope(exit) TempAlloc.free();
+            dps[] = 0;
+
+            size_t i = 0;
+            foreach(row; data.save) {
+                scope(exit) i++;
+                size_t j = 0;
+
+                foreach(elem; row) {
+                    scope(exit) j++;
+                    dps[j] += p[i] * elem;
+                }
+            }
+
+            i = 0;
+            foreach(row; data.save) {
+                scope(exit) i++;
+                size_t j = 0;
+
+                foreach(elem; row) {
+                    scope(exit) j++;
+                    t[i] += elem * dps[j];
+                }
+            }
+
+        } else {
+            foreach(row; data.save) {
+                immutable dp = dotProduct(p, row);
+                static if( is(typeof(row) : const(double)[] )) {
+                    // Use array op optimization if possible.
+                    t[] += row[] * dp;
+                } else {
+                    size_t i = 0;
+                    foreach(elem; row.save) {
+                        t[i++] += elem * dp;
+                    }
                 }
             }
         }
@@ -141,73 +260,198 @@ PrincipalComponent buf = PrincipalComponent.init) {
     auto x = (buf.x.length >= colLen) ?
               buf.x[0..colLen] : new double[colLen];
     size_t i = 0;
-    foreach(row; data) {
-        x[i++] = dotProduct(p, row);
+
+    if(transposed) {
+        x[] = 0;
+
+        size_t rowIndex = 0;
+        foreach(row; data) {
+            scope(exit) rowIndex++;
+            size_t colIndex = 0;
+
+            foreach(elem; row) {
+                scope(exit) colIndex++;
+                x[colIndex] += p[rowIndex] * elem;
+            }
+        }
+
+    } else {
+        foreach(row; data) {
+            x[i++] = dotProduct(p, row);
+        }
     }
-    x[] -= mean(x).mean;
 
     return PrincipalComponent(x, p);
 }
 
-/**
-Normalize a matrix such that each row has a mean of 0.  Throws DstatsException
-if matrix is not rectangular.
-*/
-void normalizeColumns(Ror)(Ror data) {
-    if(data.empty) {
-        return;
-    }
+/// Used for removeComponent().
+enum Transposed : bool {
 
-    mixin(newFrame);
-    immutable rowLen = data.front.length;
+    ///
+    yes = true,
 
-    auto means = newStack!Mean(rowLen);
-    means[] = Mean.init;
-    foreach(row; data) {
-        size_t i = 0;
-        foreach(elem; row) {
-            enforce(i < rowLen, "Matrix must be rectangular for PCA.");
-            means[i++].put(elem);
-        }
-
-        enforce(i == rowLen, "Matrix must be rectangular for PCA.");
-    }
-
-    foreach(row; data) {
-        size_t i = 0;
-        foreach(ref elem; row) {
-            elem -= means[i++].mean;
-        }
-    }
+    ///
+    no = false
 }
 
 /**
 Remove the principal component specified by the given rotation vector from
-data.  data must have assignable elements.
+data.  data must have assignable elements.  Transposed controls whether
+rotation is considered a loading for the transposed matrix or the matrix
+as-is.
 */
-void removeComponent(Ror, R)(Ror data, R rotation) {
+void removeComponent(Ror, R)(
+    Ror data,
+    R rotation,
+    Transposed transposed = Transposed.no
+) {
     double[2] regressBuf;
 
-    immutable rotMagNeg1 = 1.0 / magnitude(rotation);
-    foreach(row; data) {
-        immutable dotProd = dotProduct(rotation, row);
-        immutable coeff = dotProd * rotMagNeg1;
+    immutable rotMagNeg1 = 1.0 / magnitude(rotation.save);
 
-        auto rs = row.save;
-        auto rots = rotation.save;
-        while(!rs.empty && !rots.empty) {
-            scope(exit) {
-                rs.popFront();
-                rots.popFront();
+    if(transposed) {
+        mixin(newFrame);
+        auto dps = newStack!double(walkLength(data.front.save));
+        dps[] = 0;
+
+        auto r2 = rotation.save;
+        foreach(row; data.save) {
+            scope(exit) r2.popFront();
+
+            size_t j = 0;
+
+            foreach(elem; row) {
+                scope(exit) j++;
+                dps[j] += r2.front * elem;
             }
+        }
 
-            rs.front = rs.front - rots.front * coeff;
+        dps[] *= rotMagNeg1;
+
+        r2 = rotation.save;
+        foreach(row; data.save) {
+            scope(exit) r2.popFront();
+
+            auto rs = row.save;
+            for(size_t j = 0; !rs.empty; rs.popFront, j++) {
+                rs.front = rs.front - r2.front * dps[j];
+            }
+        }
+
+    } else {
+        foreach(row; data.save) {
+            immutable dotProd = dotProduct(rotation, row);
+            immutable coeff = dotProd * rotMagNeg1;
+
+            auto rs = row.save;
+            auto rots = rotation.save;
+            while(!rs.empty && !rots.empty) {
+                scope(exit) {
+                    rs.popFront();
+                    rots.popFront();
+                }
+
+                rs.front = rs.front - rots.front * coeff;
+            }
         }
     }
 }
 
+/**
+Computes the first N principal components of the matrix.  More efficient than
+calling firstComponent and removeComponent repeatedly because copying and
+transposing, if enabled, only happen once.
+*/
+PrincipalComponent[] firstNComponents(Ror)(
+    Ror data,
+    uint n,
+    PrinCompOptions opts = PrinCompOptions.init,
+    PrincipalComponent[] buf = null
+) {
+
+    mixin(newFrame);
+
+    PrincipalComponent[] doNonDestructive() {
+        double[][] dataFixed;
+
+        if(opts.transpose) {
+            dataFixed = transposeDup(data);
+        } else {
+            dataFixed = tempdup(map!doubleTempdup(data));
+        }
+
+        opts.transpose = false;  // We already transposed if necessary.
+        opts.doCenterScale(dataFixed);
+        return firstNComponentsImpl(dataFixed, n, opts, buf);
+    }
+
+    static if(!hasLvalueElements!(ElementType!Ror) ||
+    !hasAssignableElements!(ElementType!Ror)) {
+        return doNonDestructive();
+    } else {
+        if(!opts.destructive) {
+            return doNonDestructive();
+        }
+
+        opts.doCenterScale(data);
+        return firstNComponentsImpl(data, n, opts, buf);
+    }
+}
+
+private PrincipalComponent[] firstNComponentsImpl(Ror)(Ror data, uint n,
+    PrinCompOptions opts, PrincipalComponent[] buf = null) {
+
+    opts.destructive = true;  // We already copied if necessary.
+    opts.unitVariance = false;  // Already did this.
+
+    buf.length = n;
+    foreach(comp; 0..n) {
+        if(comp != 0) {
+            removeComponent(data, buf[comp - 1].rotation,
+                cast(Transposed) opts.transpose);
+        }
+
+        buf[comp] = firstComponent(data, opts, buf[comp]);
+    }
+
+    return buf;
+}
+
 private double magnitude(R)(R x) {
     return sqrt(reduce!"a + b * b"(0.0, x));
+}
+
+// Convert the matrix to a double[][].
+double[] doubleTempdup(R)(R range) {
+    return tempdup(map!(to!double)(range));
+}
+
+private double[][] transposeDup(Ror)(Ror data) {
+    if(data.empty) return null;
+
+    immutable rowLen = walkLength(data.front.save);
+    immutable colLen = walkLength(data.save);
+
+    auto ret = newStack!(double[])(rowLen);
+    foreach(ref elem; ret) elem = newStack!double(colLen);
+
+    size_t i = 0;
+    foreach(row; data) {
+        scope(exit) i++;
+        if(i == colLen) break;
+
+        size_t j = 0;
+        foreach(col; row) {
+            scope(exit) j++;
+            if(j == rowLen) break;
+            ret[j][i] = col;
+        }
+
+        dstatsEnforce(j == rowLen, "Matrices must be rectangular for PCA.");
+    }
+
+    dstatsEnforce(i == colLen, "Matrices must be rectangular for PCA.");
+    return ret;
 }
 
 version(unittest) {
@@ -221,23 +465,124 @@ version(unittest) {
 }
 
 unittest {
-    // Values from R.
+    // Values from R's prcomp function.  Not testing the 4th component because
+    // it's mostly numerical fuzz.
 
-    double[][] mat = [[3,6,2,4], [3,6,8,8], [6,7,5,3], [0,9,3,1]];
+    static double[][] getMat() {
+        return [[3,6,2,4], [3,6,8,8], [6,7,5,3], [0,9,3,1]];
+    }
+
+    auto mat = getMat();
+    auto allComps = firstNComponents(mat, 3);
+
+    assert(plusMinusAe(allComps[0].x, [1.19, -5.11, -0.537, 4.45]));
+    assert(plusMinusAe(allComps[0].rotation, [-0.314, 0.269, -0.584, -0.698]));
+
+    assert(plusMinusAe(allComps[1].x, [0.805, -1.779, 2.882, -1.908]));
+    assert(plusMinusAe(allComps[1].rotation, [0.912, -0.180, -0.2498, -0.2713]));
+
+    assert(plusMinusAe(allComps[2].x, [2.277, -0.1055, -1.2867, -0.8849]));
+    assert(plusMinusAe(allComps[2].rotation, [-0.1578, -0.5162, -0.704, 0.461]));
+
     auto comp1 = firstComponent(mat);
-    assert(plusMinusAe(comp1.x, [1.19, -5.11, -0.537, 4.45]));
-    assert(plusMinusAe(comp1.rotation, [-0.314, 0.269, -0.584, -0.698]));
+    assert(plusMinusAe(comp1.x, allComps[0].x));
+    assert(plusMinusAe(comp1.rotation, allComps[0].rotation));
 
-    removeComponent(mat, comp1.rotation);
-    normalizeColumns(mat);
-    auto comp2 = firstComponentNormalized(mat);
-    assert(plusMinusAe(comp2.x, [0.805, -1.779, 2.882, -1.908]));
-    assert(plusMinusAe(comp2.rotation, [0.912, -0.180, -0.2498, -0.2713]));
+    // Test transposed.
+    PrinCompOptions opts;
+    opts.transpose = true;
+    const(double)[][] m2 = mat;
+    auto allCompsT = firstNComponents(m2, 3, opts);
 
-    removeComponent(mat, comp2.rotation);
-    auto comp3 = firstComponent(mat);
-    assert(plusMinusAe(comp3.x, [2.277, -0.1055, -1.2867, -0.8849]));
-    assert(plusMinusAe(comp3.rotation, [-0.1578, -0.5162, -0.704, 0.461]));
+    assert(plusMinusAe(allCompsT[0].x, [-3.2045, 6.3829695, -0.7227162, -2.455]));
+    assert(plusMinusAe(allCompsT[0].rotation, [0.3025, 0.05657, 0.25142, 0.91763]));
 
-    // Not testing comp4 b/c basically all that's left is numerical fuzz.
+    assert(plusMinusAe(allCompsT[1].x, [-3.46136, -0.6365, 1.75111, 2.3468]));
+    assert(plusMinusAe(allCompsT[1].rotation,
+        [-0.06269096,  0.88643747, -0.4498119, 0.08926183]));
+
+    assert(plusMinusAe(allCompsT[2].x,
+        [2.895362e-03,  3.201053e-01, -1.631345e+00,  1.308344e+00]));
+    assert(plusMinusAe(allCompsT[2].rotation,
+        [0.87140678, -0.14628160, -0.4409721, -0.15746595]));
+
+    auto comp1T = firstComponent(m2, opts);
+    assert(plusMinusAe(comp1T.x, allCompsT[0].x));
+    assert(plusMinusAe(comp1T.rotation, allCompsT[0].rotation));
+
+    // Test with scaling.
+    opts.unitVariance = true;
+    opts.transpose = false;
+    auto allCompsScale = firstNComponents(mat, 3, opts);
+    assert(plusMinusAe(allCompsScale[0].x,
+        [6.878307e-02, -1.791647e+00, -3.733826e-01,  2.096247e+00]));
+    assert(plusMinusAe(allCompsScale[0].rotation,
+        [-0.3903603,  0.5398265, -0.4767623, -0.5735014]));
+
+    assert(plusMinusAe(allCompsScale[1].x,
+        [6.804833e-01, -9.412491e-01,  9.231432e-01, -6.623774e-01]));
+    assert(plusMinusAe(allCompsScale[1].rotation,
+        [0.7355678, -0.2849885, -0.5068900, -0.3475401]));
+
+    assert(plusMinusAe(allCompsScale[2].x,
+        [9.618048e-01,  1.428492e-02, -8.120905e-01, -1.639992e-01]));
+    assert(plusMinusAe(allCompsScale[2].rotation,
+            [-0.4925027, -0.5721616, -0.5897120, 0.2869006]));
+
+    auto comp1S = firstComponent(m2, opts);
+    assert(plusMinusAe(comp1S.x, allCompsScale[0].x));
+    assert(plusMinusAe(comp1S.rotation, allCompsScale[0].rotation));
+
+    opts.transpose = true;
+    auto allTScale = firstNComponents(mat, 3, opts);
+
+    assert(plusMinusAe(allTScale[0].x,
+        [-1.419319e-01,  2.141908e+00, -8.368606e-01, -1.163116e+00]));
+    assert(plusMinusAe(allTScale[0].rotation,
+        [0.5361711, -0.2270814,  0.5685768,  0.5810981]));
+
+    assert(plusMinusAe(allTScale[1].x,
+        [-1.692899e+00,  4.929717e-01,  3.049089e-01,  8.950189e-01]));
+    assert(plusMinusAe(allTScale[1].rotation,
+        [0.3026505,  0.7906601, -0.3652524,  0.3871047]));
+
+    assert(plusMinusAe(allTScale[2].x,
+        [ 2.035977e-01,  2.705193e-02, -9.113051e-01,  6.806556e-01]));
+    assert(plusMinusAe(allTScale[2].rotation,
+            [0.7333168, -0.3396207, -0.4837054, -0.3360555]));
+
+    auto comp1ST = firstComponent(m2, opts);
+    assert(plusMinusAe(comp1ST.x, allTScale[0].x));
+    assert(plusMinusAe(comp1ST.rotation, allTScale[0].rotation));
+
+    void compAll(PrincipalComponent[] lhs, PrincipalComponent[] rhs) {
+        assert(lhs.length == rhs.length);
+        foreach(i, elem; lhs) {
+            assert(plusMinusAe(elem.x, rhs[i].x));
+            assert(plusMinusAe(elem.rotation, rhs[i].rotation));
+        }
+    }
+
+    opts.destructive = true;
+    auto allDestructive = firstNComponents(mat, 3, opts);
+    compAll(allTScale, allDestructive);
+    compAll([firstComponent(getMat(), opts)], allDestructive[0..1]);
+
+    mat = getMat();
+    opts.transpose = false;
+    allDestructive = firstNComponents(mat, 3, opts);
+    compAll(allDestructive, allCompsScale);
+    compAll([firstComponent(getMat(), opts)], allDestructive[0..1]);
+
+    mat = getMat();
+    opts.unitVariance = false;
+    allDestructive = firstNComponents(mat, 3, opts);
+    compAll(allDestructive, allComps);
+    compAll([firstComponent(getMat(), opts)], allDestructive[0..1]);
+
+    mat = getMat();
+    opts.transpose = true;
+    allDestructive = firstNComponents(mat, 3, opts);
+    compAll(allDestructive, allCompsT);
+    compAll([firstComponent(getMat(), opts)], allDestructive[0..1]);
 }
