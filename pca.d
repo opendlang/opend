@@ -1,5 +1,10 @@
 /**
-This module contains a basic implementation of principal component analysis.
+This module contains a basic implementation of principal component analysis,
+based on the NIPALS algorithm.  This is fast when you only need the first
+few components (which is usually the case since PCA's main uses are
+visualization and dimensionality reduction).  However, convergence slows
+drastically after the first few components have been removed and most of
+the matrix is just noise.
 
 References:
 
@@ -79,6 +84,24 @@ struct PrinCompOptions {
     */
     bool transpose = false;
 
+    /**
+    Relative error at which to stop the optimization procedure.  Default: 1e-4
+    */
+    double relError = 1.0e-4;
+
+    /**
+    Absolute error at which to stop the optimization procedure.  Default:  1e-5
+    */
+    double absError = 1.0e-5;
+
+    /**
+    Maximum iterations for the optimization procedure.  After this many
+    iterations, the algorithm gives up and calls teh solution "good enough"
+    no matter what.  For exploratory analyses, "good enough" solutions
+    can be had fast sometimes by making this value small.  Default:  uint.max
+    */
+    uint maxIter = uint.max;
+
     private void doCenterScaleTransposed(R)(R data) {
         foreach(row; data.save) {
             immutable msd = meanStdev(row.save);
@@ -151,7 +174,7 @@ PrincipalComponent firstComponent(Ror)(
 
         opts.transpose = false;  // We already transposed if necessary.
         opts.doCenterScale(dataFixed);
-        return firstComponentImpl(dataFixed, buf);
+        return firstComponentImpl(dataFixed, buf, opts);
     }
 
     static if(!hasLvalueElements!(ElementType!Ror) ||
@@ -159,7 +182,7 @@ PrincipalComponent firstComponent(Ror)(
         if(opts.zeroMean || opts.unitVariance) {
             return doNonDestructive();
         } else {
-            return firstComponentImpl(data, buf, opts.transpose);
+            return firstComponentImpl(data, buf, opts);
         }
     } else {
         if(!opts.destructive) {
@@ -167,14 +190,14 @@ PrincipalComponent firstComponent(Ror)(
         }
 
         opts.doCenterScale(data);
-        return firstComponentImpl(data, buf, opts.transpose);
+        return firstComponentImpl(data, buf, opts);
     }
 }
 
 private PrincipalComponent firstComponentImpl(Ror)(
     Ror data,
     PrincipalComponent buf,
-    bool transposed = false
+    PrinCompOptions opts
 ) {
     mixin(newFrame);
 
@@ -182,6 +205,7 @@ private PrincipalComponent firstComponentImpl(Ror)(
     size_t rowLen = walkLength(data.front.save);
     size_t colLen = walkLength(data.save);
 
+    immutable transposed = opts.transpose;
     if(transposed) swap(rowLen, colLen);
 
     auto t = newStack!double(rowLen);
@@ -189,11 +213,11 @@ private PrincipalComponent firstComponentImpl(Ror)(
               buf.rotation[0..rowLen] : new double[rowLen];
     p[] = 1;
 
-    static bool approxEqualOrNotFinite(const double[] a, const double[] b) {
+    bool approxEqualOrNotFinite(const double[] a, const double[] b) {
         foreach(i; 0..a.length) {
             if(!isFinite(a[i]) || !isFinite(b[i])) {
                 return true;
-            } else if(!approxEqual(a[i], b[i], 1e-4, 1e-7)) {
+            } else if(!approxEqual(a[i], b[i], opts.relError, opts.absError)) {
                 return false;
             }
         }
@@ -201,7 +225,8 @@ private PrincipalComponent firstComponentImpl(Ror)(
         return true;
     }
 
-    while(true) {
+    uint iter;
+    for(; iter < opts.maxIter; iter++) {
         t[] = 0;
 
         if(transposed) {
@@ -212,23 +237,23 @@ private PrincipalComponent firstComponentImpl(Ror)(
             size_t i = 0;
             foreach(row; data.save) {
                 scope(exit) i++;
-                size_t j = 0;
 
-                foreach(elem; row) {
-                    scope(exit) j++;
-                    dps[j] += p[i] * elem;
+                static if(is(typeof(row) : const(double)[])) {
+                    // Take advantage of array ops.
+                    dps[] += p[i] * row[];
+                } else {
+                    size_t j = 0;
+                    foreach(elem; row) {
+                        scope(exit) j++;
+                        dps[j] += p[i] * elem;
+                    }
                 }
             }
 
             i = 0;
             foreach(row; data.save) {
                 scope(exit) i++;
-                size_t j = 0;
-
-                foreach(elem; row) {
-                    scope(exit) j++;
-                    t[i] += elem * dps[j];
-                }
+                t[i] += dotProduct(row, dps);
             }
 
         } else {
