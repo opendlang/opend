@@ -928,6 +928,171 @@ unittest {
     assert(approxEqual(ridge3, [5.82653624, -0.05197246, -0.27185592 ]));
 }
 
+version(none) {  // Not finished.
+private MeanSD[] calculateSummaries(X...)(X xIn) {
+    // This is slightly wasteful because it sticks this shallow dup in
+    // an unfreeable pos on TempAlloc.
+    static if(X.length == 1 && isRoR!(X[0])) {
+        auto ret = newStack!MeanSD(xIn[0].length);
+        mixin(newFrame);
+        auto x = tempdup(xIn[0]);
+
+        foreach(ref range; x) {
+            range = range.save;
+        }
+    } else {
+        auto ret = newStack!MeanSD(xIn.length);
+        alias xIn x;
+
+        foreach(ti, R; X) {
+            x[ti] = x[ti].save;
+        }
+    }
+
+    ret[] = MeanSD.init;
+
+    bool someEmpty() {
+        foreach(range; x) {
+            if(range.empty) return true;
+        }
+
+        return false;
+    }
+
+    void popAll() {
+        foreach(ti, elem; x) {
+            x[ti].popFront();
+        }
+    }
+
+    while(!someEmpty) {
+        foreach(i, range; x) {
+            ret[i].put(range.front);
+        }
+        popAll();
+    }
+
+    return ret;
+}
+
+private double softThresh(double z, double gamma) {
+    if(gamma >= abs(z)) {
+        return 0;
+    } else if(z > 0) {
+        return z - gamma;
+    } else {
+        return z + gamma;
+    }
+}
+
+double[] linearRegressPenalized(Y, X...)
+(Y yIn, X xIn, double lasso, double ridge) {
+    mixin(newFrame);
+
+    static if(X.length == 1 && isRoR!(X[0])) {
+        auto xRaw = tempdup(xIn[0]);
+    } else {
+        alias xIn xRaw;
+    }
+
+    auto summaries = calculateSummaries(xRaw);
+    immutable minLen = to!size_t(
+        reduce!min(
+            map!"a.N"(summaries)
+        )
+    );
+
+    // Apparently this is necessary to make the definition of the ridge param
+    // consistent with that of linearRegressBeta and several other packages.
+    ridge /= minLen;
+    lasso /= minLen;
+
+    auto x = newStack!(double[])(summaries.length);
+    foreach(i, range; xRaw) {
+        x[i] = tempdup(map!(to!double)(take(range, minLen)));
+        x[i][] -= summaries[i].mean;
+        x[i][] /= sqrt(summaries[i].mse);
+    }
+
+    auto y = tempdup(map!(to!double)(take(yIn, minLen)));
+    immutable yMean = mean(y).mean;
+    y[] -= yMean;
+
+    auto betasFull = new double[x.length + 1];
+    betasFull[] = 0;
+    auto betas = betasFull[1..$];
+    auto predictions = newStack!double(minLen);
+    predictions[] = 0;
+    auto residuals = newStack!double(minLen);
+
+    uint iter = 0;
+    enum relEpsilon = 1e-4;
+    enum absEpsilon = 1e-10;
+    immutable n = cast(double) minLen;
+
+    for(; ; iter++) {
+        double maxRelError = 0;
+        foreach(j, ref b; betas) {
+            if(b == 0) {
+                residuals[] = (-predictions[] + y[]) / n;
+            } else {
+                residuals[] = (-predictions[] + x[j][] * b + y[]) / n;
+                predictions[] -= x[j][] * b;
+            }
+
+            immutable z = dotProduct(residuals, x[j]);
+            auto newB = softThresh(z, lasso) / (1.0 + ridge);
+
+            immutable absErr = abs(b - newB);
+            immutable err = abs(b - newB) / max(abs(b), abs(newB));
+
+            if(absErr > absEpsilon) {
+                maxRelError = max(maxRelError, err);
+            }
+
+            b = newB;
+            if(b != 0) {
+                predictions[] += x[j][] * b;
+            }
+        }
+
+        if(maxRelError < relEpsilon) break;
+        if(iter % 100 == 0) stderr.writeln(iter, "   ", maxRelError);
+    }
+stderr.writefln("Converged in %s iterations.", iter);
+    foreach(i, ref elem; betas) {
+        elem /= sqrt(summaries[i].mse);
+    }
+
+
+    betasFull[0] = yMean;
+    foreach(i, beta; betas) {
+        betasFull[0] -= beta * summaries[i].mean;
+    }
+
+    return betasFull;
+}
+import dstats.random;
+unittest {
+//    auto a = [1, 2, 3, 4, 5, 6, 0, 6];
+//    auto b = [8, 6, 7, 5, 3, 0, 9, 8];
+//    auto c = [2, 7, 1, 8, 2, 8, 1, 3];
+//    auto d = [4, 3, 1, 6, 4, 8, 9, 2];
+//
+//    writeln("Reg:  ", linearRegressBeta(a, repeat(1), b, c, 2));
+//    writeln("Zero:  ", linearRegressPenalized(a, b, c, 0, 2));
+
+    auto y = randArray!rNorm(100, 0, 1);
+    auto x = new double[][1000];
+    foreach(ref elem; x) elem = randArray!rNorm(100, 0, 1);
+    auto res = linearRegressPenalized(y, x, 1, 2);
+    x = array(replicate(1.0, 100)) ~ x;
+    auto res2 = linearRegressBeta(y, x, 2);
+    writeln(approxEqual(res2, res));
+    foreach(i, elem; res) writeln(elem, '\t', res2[i]);
+}
+}
+
 /**
 Computes a logistic regression using a maximum likelihood estimator
 and returns the beta coefficients.  This is a generalized linear model with
@@ -1382,10 +1547,22 @@ double doMLE(T, U...)
         return sum;
     }
 
+    double getPenalty() {
+        if(ridge == 0) return 0;
+
+        double ret = 0;
+        foreach(i, b; beta) {
+            ret += ridge * mses[i] * b ^^ 2;
+        }
+
+        return ret;
+    }
+
     enum eps = 1e-6;
     enum maxIter = 1000;
 
     auto oldLikelihood = -double.infinity;
+    double oldPenalty = -double.infinity;
     auto firstDerivTerms = newStack!double(beta.length);
 
     // matSaved saves mat for inverting to find std. errors, only if we
@@ -1421,8 +1598,9 @@ double doMLE(T, U...)
     foreach(iter; 0..maxIter) {
         evalPs();
         immutable lh = logLikelihood();
+        immutable penalty = getPenalty();
 
-        if(lh - oldLikelihood < eps) {
+        if(lh - oldLikelihood < eps && abs(penalty - oldPenalty) < eps) {
             doStdErrs();
             return lh;
         } else if(isNaN(lh)) {
@@ -1431,6 +1609,7 @@ double doMLE(T, U...)
         }
 
         oldLikelihood = lh;
+        oldPenalty = penalty;
 
         foreach(i; 0..mat.length) {
             mat[i][] = 0;
@@ -1459,11 +1638,7 @@ double doMLE(T, U...)
 
         // Compute X'(y - p).
         foreach(ti, xRange; x) {
-            firstDerivTerms[ti] = 0;
-
-            foreach(pIndex, p; ps) {
-                firstDerivTerms[ti] += xRange[pIndex] * p;
-            }
+            firstDerivTerms[ti] = dotProduct(take(xRange, ps.length), ps);
         }
 
         // Add ridge penalties, if any.
@@ -1482,7 +1657,8 @@ double doMLE(T, U...)
     }
 
     immutable lh = logLikelihood();
-    if(lh - oldLikelihood < eps) {
+    immutable penalty = getPenalty();
+    if(lh - oldLikelihood < eps && abs(penalty - oldPenalty) < eps) {
         doStdErrs();
         return lh;
     } else {
