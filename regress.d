@@ -246,7 +246,7 @@ private void solve(double[][] mat, double[] vec) {
 
             // If you're ever looking to optimize this code, good luck.  The
             // bottleneck is almost ENTIRELY this one line:
-            mat[row][] -= mat[col][] * ratio;
+            mat[row][col..$] -= mat[col][col..$] * ratio;
             vec[row] -= vec[col] * ratio;
         }
     }
@@ -275,6 +275,68 @@ unittest {
     auto vec2 = [8.0, 6, 7];
     solve(mat2, vec2);
     assert(approxEqual(vec2, [-3.875, -0.75, 4.45833]));
+}
+
+// Cholesky decomposition functions adapted from Don Clugston's MathExtra
+// lib, used w/ permission.
+void choleskyDecompose(double[][] a, double[] diag) {
+    immutable N = diag.length;
+
+    foreach(i; 0..N) {
+        const ai = a[i];
+        double sum = ai[i];
+
+        for(sizediff_t k = i - 1; k >= 0; --k) {
+            sum -= ai[k] * ai[k];
+        }
+
+        if (sum > 0.0) {
+            diag[i] = sqrt(sum);
+
+            foreach(j; i + 1..N) {
+                sum = ai[j] - dotProduct(ai[0..i], a[j][0..i]);
+                a[j][i] = sum / diag[i];
+            }
+        } else {
+            // not positive definite (could be caused by rounding errors)
+            diag[i] = 0;
+            // make this whole row zero so they have no further effect
+            foreach(j; i + 1..N) a[j][i] = 0;
+        }
+    }
+}
+
+void choleskySolve(double[][] a, double[] diag, double[] b, double[] x) {
+    immutable N = x.length;
+
+    foreach(i; 0..N) {
+        const ai = a[i];
+
+        if(diag[i] > 0)  {
+            double sum = b[i];
+            sum -= dotProduct(ai[0..i], x[0..i]);
+            x[i] = sum / diag[i];
+        } else x[i] = 0; // skip pos definite rows
+    }
+
+    for(sizediff_t i = N - 1; i >= 0; --i) {
+        if (diag[i] > 0) {
+            double sum = x[i];
+            for(sizediff_t k = i + 1; k < N; ++k) sum -= a[k][i] * x[k];
+            x[i] = sum / diag[i];
+        } else x[i] = 0; // skip pos definite rows
+    }
+    // Convert failed columns in solution to NANs if required.
+    foreach(i; 0..N) {
+        if(diag[i] !> 0) x[i] = double.nan;
+    }
+}
+
+void choleskySolve(double[][] a, double[] b, double[] x) {
+    mixin(newFrame);
+    auto diag = newStack!double(x.length);
+    choleskyDecompose(a, diag);
+    choleskySolve(a, diag, b, x);
 }
 
 /**Struct that holds the results of a linear regression.  It's a plain old
@@ -566,11 +628,12 @@ if(doubleInput!(U)) {
     }
 
     double[][] xTx;
-    double[] xTy;
+    double[] xTy = newStack!double(X.length);
+    double[] ret;
     if(buf.length < X.length) {
-        xTy = new double[X.length];
+        ret = new double[X.length];
     } else {
-        xTy = buf[0..X.length];
+        ret = buf[0..X.length];
     }
 
     rangeMatrixMulTrans(xTy, xTx, Y, X);
@@ -583,8 +646,8 @@ if(doubleInput!(U)) {
         }
     }
 
-    solve(xTx, xTy);
-    return xTy;  // After solve, it's now the solution to the system.
+    choleskySolve(xTx, xTy, ret);
+    return ret;
 }
 
 /**
@@ -1021,12 +1084,13 @@ double[] linearRegressPenalized(Y, X...)
     auto betasFull = new double[x.length + 1];
     betasFull[] = 0;
     auto betas = betasFull[1..$];
+
     auto predictions = newStack!double(minLen);
     predictions[] = 0;
     auto residuals = newStack!double(minLen);
 
     uint iter = 0;
-    enum relEpsilon = 1e-4;
+    enum relEpsilon = 1e-2;
     enum absEpsilon = 1e-10;
     immutable n = cast(double) minLen;
 
@@ -1084,12 +1148,12 @@ unittest {
 
     auto y = randArray!rNorm(100, 0, 1);
     auto x = new double[][1000];
-    foreach(ref elem; x) elem = randArray!rNorm(100, 0, 1);
-    auto res = linearRegressPenalized(y, x, 1, 2);
-    x = array(replicate(1.0, 100)) ~ x;
-    auto res2 = linearRegressBeta(y, x, 2);
-    writeln(approxEqual(res2, res));
-    foreach(i, elem; res) writeln(elem, '\t', res2[i]);
+    foreach(ref elem; x) elem = randArray!rNorm(100, 1, 1);
+    auto res = linearRegressPenalized(y, x, 0.01, 1);
+//    x = array(replicate(1.0, 100)) ~ x;
+//    auto res2 = linearRegressBeta(y, x, 2);
+//    writeln(approxEqual(res2, res));
+//    foreach(i, elem; res) writeln(elem, '\t', res2[i]);
 }
 }
 
@@ -1595,6 +1659,7 @@ double doMLE(T, U...)
         }
     }
 
+    auto updates = newStack!double(beta.length);
     foreach(iter; 0..maxIter) {
         evalPs();
         immutable lh = logLikelihood();
@@ -1649,9 +1714,8 @@ double doMLE(T, U...)
             }
         }
 
-        solve(mat, firstDerivTerms);
-        // FirstDerivTerms is actually update vals now.
-        beta[] += firstDerivTerms[];
+        choleskySolve(mat, firstDerivTerms, updates);
+        beta[] += updates[];
 
         debug(print) writeln("Iter:  ", iter);
     }
