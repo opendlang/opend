@@ -38,7 +38,12 @@ import std.math, std.algorithm, std.traits, std.array, std.traits, std.exception
     std.typetuple, std.typecons, std.numeric;
 
 import dstats.alloc, std.range, std.conv, dstats.distrib, dstats.cor,
-    dstats.base, dstats.summary;
+    dstats.base, dstats.summary, dstats.sort;
+
+version(unittest) {
+    import std.stdio, dstats.random;
+    void main(){}
+}
 
 ///
 struct PowMap(ExpType, T)
@@ -892,11 +897,6 @@ polyFit(T, U)(U Y, T X, uint N, double confInt = 0.95) {
     return ret;
 }
 
-version(unittest) {
-    import std.stdio;
-    void main(){}
-}
-
 unittest {
     // These are a bunch of values gleaned from various examples on the Web.
     double[] heights = [1.47,1.5,1.52,1.55,1.57,1.60,1.63,1.65,1.68,1.7,1.73,1.75,
@@ -991,7 +991,6 @@ unittest {
     assert(approxEqual(ridge3, [5.82653624, -0.05197246, -0.27185592 ]));
 }
 
-version(none) {  // Not finished.
 private MeanSD[] calculateSummaries(X...)(X xIn) {
     // This is slightly wasteful because it sticks this shallow dup in
     // an unfreeable pos on TempAlloc.
@@ -1048,10 +1047,15 @@ private double softThresh(double z, double gamma) {
     }
 }
 
-double[] linearRegressPenalized(Y, X...)
-(Y yIn, X xIn, double lasso, double ridge) {
-    mixin(newFrame);
+private struct PreprocessedData {
+    MeanSD[] xSumm;
+    MeanSD ySumm;
+    double[] y;
+    double[][] x;
+}
 
+private PreprocessedData preprocessStandardize(Y, X...)
+(Y yIn, X xIn) {
     static if(X.length == 1 && isRoR!(X[0])) {
         auto xRaw = tempdup(xIn[0]);
     } else {
@@ -1065,11 +1069,6 @@ double[] linearRegressPenalized(Y, X...)
         )
     );
 
-    // Apparently this is necessary to make the definition of the ridge param
-    // consistent with that of linearRegressBeta and several other packages.
-    ridge /= minLen;
-    lasso /= minLen;
-
     auto x = newStack!(double[])(summaries.length);
     foreach(i, range; xRaw) {
         x[i] = tempdup(map!(to!double)(take(range, minLen)));
@@ -1078,23 +1077,97 @@ double[] linearRegressPenalized(Y, X...)
     }
 
     auto y = tempdup(map!(to!double)(take(yIn, minLen)));
-    immutable yMean = mean(y).mean;
-    y[] -= yMean;
+    immutable ySumm = meanStdev(y);
+    y[] -= ySumm.mean;
+
+    return PreprocessedData(summaries, ySumm, y, x);
+}
+
+/**
+Performs lasso (L1) or ridge (L2) penalized linear regression.  Due to the
+way the data is standardized, no intercept term should be included in x
+(unlike linearRegress and linearRegressBeta).  Usage is otherwise identical.
+
+Note:  Setting lasso equal to zero is equivalent to performing ridge regression.
+       This can also be done with linearRegressBeta.  However, the
+       linearRegressBeta algorithm is optimized for memory efficiency and
+       large samples.  This algorithm is optimized for large feature sets.
+
+References:
+
+Friedman J, et al Pathwise coordinate optimization. Ann. Appl. Stat.
+2007;2:302-332.
+
+Goeman, J. J., L1 penalized estimation in the Cox proportional hazards model.
+Biometrical Journal 52(1), 70{84.
+*/
+double[] linearRegressPenalized(Y, X...)
+(Y yIn, X xIn, double lasso, double ridge) {
+    mixin(newFrame);
+
+    auto preproc = preprocessStandardize(yIn, xIn);
+
+    auto summaries = preproc.xSumm;
+    auto ySumm = preproc.ySumm;
+    auto x = preproc.x;
+    auto y = preproc.y;
 
     auto betasFull = new double[x.length + 1];
     betasFull[] = 0;
     auto betas = betasFull[1..$];
 
-    auto predictions = newStack!double(minLen);
+    if(lasso > 0) {
+        coordDescent(y, x, betas, lasso, ridge, null);
+    } else if(y.length > x.length) {
+        // Correct for different )#*$# scaling conventions.
+        foreach(i, feature; x) {
+            feature[] /= sqrt(summaries[i].mse);
+        }
+
+        linearRegressBetaBuf(betas, y, x, ridge);
+
+        // More correction for diff. scaling factors.
+        foreach(i, ref b; betas) {
+            b /= sqrt(summaries[i].mse);
+        }
+
+    } else {
+        ridgeLargeP(y, x, ridge, betas, null);
+    }
+
+    foreach(i, ref elem; betas) {
+        elem /= sqrt(summaries[i].mse);
+    }
+
+    betasFull[0] = ySumm.mean;
+    foreach(i, beta; betas) {
+        betasFull[0] -= beta * summaries[i].mean;
+    }
+
+    return betasFull;
+}
+
+private void coordDescent
+(double[] y, double[][] x, double[] betas, double lasso, double ridge, double[] w) {
+    mixin(newFrame);
+
+    // Apparently this is necessary to make the definition of the ridge param
+    // consistent with that of linearRegressBeta and several other packages.
+    ridge /= y.length;
+    lasso /= y.length;
+
+    auto predictions = newStack!double(y.length);
     predictions[] = 0;
-    auto residuals = newStack!double(minLen);
+    auto residuals = newStack!double(y.length);
 
     uint iter = 0;
-    enum relEpsilon = 1e-2;
+    enum relEpsilon = 1e-5;
     enum absEpsilon = 1e-10;
-    immutable n = cast(double) minLen;
+    immutable n = cast(double) y.length;
+    auto perm = tempdup(iota(0U, x.length));
 
-    for(; ; iter++) {
+    // Returns true if converged.
+    double doIter(double[] betas, double[][] x, double mul) {
         double maxRelError = 0;
         foreach(j, ref b; betas) {
             if(b == 0) {
@@ -1105,7 +1178,7 @@ double[] linearRegressPenalized(Y, X...)
             }
 
             immutable z = dotProduct(residuals, x[j]);
-            auto newB = softThresh(z, lasso) / (1.0 + ridge);
+            auto newB = softThresh(z, lasso * mul) / (1.0 + ridge * mul);
 
             immutable absErr = abs(b - newB);
             immutable err = abs(b - newB) / max(abs(b), abs(newB));
@@ -1120,41 +1193,170 @@ double[] linearRegressPenalized(Y, X...)
             }
         }
 
-        if(maxRelError < relEpsilon) break;
-        if(iter % 100 == 0) stderr.writeln(iter, "   ", maxRelError);
-    }
-stderr.writefln("Converged in %s iterations.", iter);
-    foreach(i, ref elem; betas) {
-        elem /= sqrt(summaries[i].mse);
+        return maxRelError;
     }
 
+    void toConvergence(double mul) {
+        double maxRelErr = doIter(betas, x, mul);
+        iter++;
+        if(maxRelErr < relEpsilon) return;
 
-    betasFull[0] = yMean;
-    foreach(i, beta; betas) {
-        betasFull[0] -= beta * summaries[i].mean;
+        static bool absGreater(double x, double y) { return abs(x) > abs(y); }
+
+        while(1) {
+            size_t split = 0;
+            while(split < betas.length && abs(betas[split]) > 0) {
+                split++;
+            }
+
+            qsort!absGreater(betas, x, perm);
+
+            maxRelErr = double.infinity;
+            for(; !(maxRelErr < relEpsilon) && split < betas.length; iter++) {
+                maxRelErr = doIter(betas[0..split], x[0..split], mul);
+            }
+
+
+            maxRelErr = doIter(betas, x, mul);
+            iter++;
+            if(maxRelErr < relEpsilon) break;
+        }
+
+        //stderr.writefln("Converged in %s iterations for %s mult.", iter, mul);
     }
 
-    return betasFull;
+    toConvergence(1);
+    qsort(perm, x, betas);
 }
-import dstats.random;
+
+// Compute(X X')' = C.
+double[][] makeC(double[][] x) {
+    if(x.length == 0) return null;
+    immutable n = x[0].length;
+    auto c = newStack!(double[])(n);
+
+    // Only need lower half.
+    foreach(i, ref elem; c) {
+        elem = newStack!double(i + 1);
+        elem[] = 0;
+    }
+
+    foreach(col; x) {
+        foreach(i; 0..n) {
+            foreach(j; i..n) {
+                c[j][i] += col[i] * col[j];
+            }
+        }
+    }
+
+    return c;
+}
+
+private double[][] doCTWC(double[][] c, double[] w = null) {
+    auto ret = newStack!(double[])(c.length);
+    foreach(i, ref elem; ret) elem = newStack!double(c.length);
+
+    double getElem(size_t i, size_t j) {
+        return (i >= j) ? c[i][j] : c[j][i];
+    }
+
+    foreach(i; 0..c.length) foreach(j; 0..i + 1) {
+        ret[i][j] = 0;
+
+        foreach(k; 0..c.length) {
+            auto toAdd = getElem(i, k) * getElem(j, k);
+            if(w.length) toAdd *= w[k];
+            ret[i][j] += toAdd;
+        }
+    }
+
+    symmetrize(ret);
+    return ret;
+}
+
+// An implementation of ridge regression for large dimension.
+private void ridgeLargeP
+(double[] y, double[][] x, double lambda, double[] betas, double[] w = null) {
+    mixin(newFrame);
+    auto c = makeC(x);
+    auto cwc = doCTWC(c, w);
+    foreach(i, row; c) foreach(j, elem; row) {
+        cwc[j][i] += lambda * elem;
+        if(i != j) cwc[i][j] += lambda * elem;
+    }
+
+    // Multiply c' * y.  c is symmetric, so it doesn't matter that I'm really
+    // multiplying the transpose.
+    auto cTy = newStack!double(y.length);
+    cTy[] = 0;
+    foreach(i; 0..c.length) foreach(j; 0..c.length) {
+        if(i >= j) {
+            cTy[j] += y[i] * c[i][j];
+        } else {
+            cTy[j] += y[i] * c[j][i];
+        }
+    }
+
+    solve(cwc, cTy);
+
+    // Multiply X' * csi to get answer.
+    betas[] = 0;
+    foreach(i, col; x) {
+        betas[i] = dotProduct(cTy, col);
+    }
+}
+
 unittest {
-//    auto a = [1, 2, 3, 4, 5, 6, 0, 6];
-//    auto b = [8, 6, 7, 5, 3, 0, 9, 8];
-//    auto c = [2, 7, 1, 8, 2, 8, 1, 3];
-//    auto d = [4, 3, 1, 6, 4, 8, 9, 2];
-//
-//    writeln("Reg:  ", linearRegressBeta(a, repeat(1), b, c, 2));
-//    writeln("Zero:  ", linearRegressPenalized(a, b, c, 0, 2));
+    // Test ridge regression.  We have three impls for all kinds of diff.
+    // scenarios.  See if they all agree.  Note that the ridiculously small but
+    // nonzero lasso param is to force the use of the coord descent algo.
+    auto y = new double[12];
+    auto x = new double[][16];
+    foreach(ref elem; x) elem = new double[12];
+    x[0][] = 1;
+    auto gen = Random(31415);  // For random but repeatable results.
 
-    auto y = randArray!rNorm(100, 0, 1);
-    auto x = new double[][1000];
-    foreach(ref elem; x) elem = randArray!rNorm(100, 1, 1);
-    auto res = linearRegressPenalized(y, x, 0.01, 1);
-//    x = array(replicate(1.0, 100)) ~ x;
-//    auto res2 = linearRegressBeta(y, x, 2);
-//    writeln(approxEqual(res2, res));
-//    foreach(i, elem; res) writeln(elem, '\t', res2[i]);
-}
+    foreach(iter; 0..1000) {
+        foreach(col; x[1..$]) foreach(ref elem; col) elem = rNorm(0, 1, gen);
+        foreach(ref elem; y) elem = rNorm(0, 1, gen);
+        immutable ridge = uniform(0.1, 10.0, gen);
+
+        auto normalEq = linearRegressBeta(y, x, ridge);
+        auto coordDescent = linearRegressPenalized(
+            y, x[1..$], double.min_normal, ridge);
+        auto linalgTrick = linearRegressPenalized(y, x[1..$], 0, ridge);
+
+        // Every once in a blue moon coordinate descent doesn't converge that
+        // well.  These small errors are of no practical significance, hence
+        // the wide tolerance.  However, if the direct normal equations
+        // and linalg trick don't agree extremely closely, then something's
+        // fundamentally wrong.
+        assert(approxEqual(normalEq, coordDescent, 0.02, 1e-4), text(
+            normalEq, coordDescent));
+        assert(approxEqual(linalgTrick, coordDescent, 0.02, 1e-4), text(
+            linalgTrick, coordDescent));
+        assert(approxEqual(normalEq, linalgTrick, 1e-6, 1e-8), text(
+            normalEq, linalgTrick));
+    }
+
+    // Test stuff that's got some lasso in it.  Values from R's Penalized
+    // package.
+    y = [1.0, 2.0, 3, 4, 5, 6, 7];
+    x = [[8.0, 6, 7, 5, 3, 0, 9],
+         [3.0, 6, 2, 4, 3, 6, 8],
+         [3.0, 1, 4, 1, 5, 9, 2],
+         [2.0, 7, 1, 8, 2, 8, 1]];
+
+    assert(approxEqual(linearRegressPenalized(y, x, 1, 0),
+        [4.16316, -0.3603197, 0.6308278, 0, -0.2633263]));
+    assert(approxEqual(linearRegressPenalized(y, x, 1, 3),
+        [2.519590, -0.09116883, 0.38067757, 0.13122413, -0.05637939]));
+    assert(approxEqual(linearRegressPenalized(y, x, 2, 0.1),
+        [1.247235, 0, 0.4440735, 0.2023602, 0]));
+    assert(approxEqual(linearRegressPenalized(y, x, 5, 7),
+        [3.453787, 0, 0.10968736, 0.01253992, 0]));
+
+    stderr.writeln("PASSED");
 }
 
 /**
