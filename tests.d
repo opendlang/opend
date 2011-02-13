@@ -581,7 +581,7 @@ unittest {
     // exclusively.
     auto res1 = levenesTest([1,2,3,4,5][], [2,4,8,16,32][]);
     assert(approxEqual(res1.testStat, 3.0316));
-    assert(approxEqual(res1.p, 0.1198));
+    assert(approxEqual(res1.p, 0.1198), res1.toString());
 
     auto res2 = levenesTest([[1,2,3,4,5][], [100,200,300,400,500,600][]][]);
     assert(approxEqual(res2.testStat, 13.586));

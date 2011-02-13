@@ -31,8 +31,8 @@
  * ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
-
 module dstats.regress;
+//version = penalized;
 
 import std.math, std.algorithm, std.traits, std.array, std.traits, std.exception,
     std.typetuple, std.typecons, std.numeric;
@@ -990,7 +990,7 @@ unittest {
     assert(approxEqual(ridge2, [5.62367784, -0.22449854, -0.09775174]));
     assert(approxEqual(ridge3, [5.82653624, -0.05197246, -0.27185592 ]));
 }
-
+version(penalized) {
 private MeanSD[] calculateSummaries(X...)(X xIn) {
     // This is slightly wasteful because it sticks this shallow dup in
     // an unfreeable pos on TempAlloc.
@@ -1076,9 +1076,13 @@ private PreprocessedData preprocessStandardize(Y, X...)
         x[i][] /= sqrt(summaries[i].mse);
     }
 
-    auto y = tempdup(map!(to!double)(take(yIn, minLen)));
-    immutable ySumm = meanStdev(y);
-    y[] -= ySumm.mean;
+    double[] y;
+    MeanSD ySumm;
+    if(yIn.length) {
+        y = tempdup(map!(to!double)(take(yIn, minLen)));
+        ySumm = meanStdev(y);
+        y[] -= ySumm.mean;
+    }
 
     return PreprocessedData(summaries, ySumm, y, x);
 }
@@ -1098,7 +1102,7 @@ References:
 Friedman J, et al Pathwise coordinate optimization. Ann. Appl. Stat.
 2007;2:302-332.
 
-Goeman, J. J., L1 penalized estimation in the Cox proportional hazards model.
+Goeman, J. J., L1 penalized estimation in the C ox proportional hazards model.
 Biometrical Journal 52(1), 70{84.
 */
 double[] linearRegressPenalized(Y, X...)
@@ -1150,35 +1154,55 @@ double[] linearRegressPenalized(Y, X...)
 private void coordDescent
 (double[] y, double[][] x, double[] betas, double lasso, double ridge, double[] w) {
     mixin(newFrame);
-
-    // Apparently this is necessary to make the definition of the ridge param
-    // consistent with that of linearRegressBeta and several other packages.
-    ridge /= y.length;
-    lasso /= y.length;
+    betas[] = 0;
 
     auto predictions = newStack!double(y.length);
     predictions[] = 0;
     auto residuals = newStack!double(y.length);
 
     uint iter = 0;
-    enum relEpsilon = 1e-5;
+    enum maxIter = 100;
+    enum relEpsilon = 1e-4;
     enum absEpsilon = 1e-10;
     immutable n = cast(double) y.length;
     auto perm = tempdup(iota(0U, x.length));
 
-    // Returns true if converged.
+    ridge /= n;
+    lasso /= n;
+
+    auto weightDots = newStack!double(y.length);
+    if(w.length == 0) {
+        weightDots[] = 1;
+    } else {
+        foreach(i, col; x) {
+            weightDots[i] = dotProduct(w, map!"a * a"(col));
+        }
+    }
+
     double doIter(double[] betas, double[][] x, double mul) {
+        stderr.writeln("ITER:  ", betas);
         double maxRelError = 0;
         foreach(j, ref b; betas) {
             if(b == 0) {
-                residuals[] = (-predictions[] + y[]) / n;
+                residuals[] = (-predictions[] + y[]);
             } else {
-                residuals[] = (-predictions[] + x[j][] * b + y[]) / n;
+                residuals[] = (-predictions[] + x[j][] * b + y[]);
                 predictions[] -= x[j][] * b;
             }
 
-            immutable z = dotProduct(residuals, x[j]);
-            auto newB = softThresh(z, lasso * mul) / (1.0 + ridge * mul);
+            double z;
+            if(w.length) {
+                z = 0;
+                foreach(i, weight; w) {
+                    z += weight * x[j][i] * residuals[i];
+                }
+            } else {
+                residuals[] /= n;
+                z = dotProduct(residuals, x[j]);
+            }
+
+            auto newB = softThresh(z, lasso * mul) /
+                (weightDots[j] + ridge * mul);
 
             immutable absErr = abs(b - newB);
             immutable err = abs(b - newB) / max(abs(b), abs(newB));
@@ -1203,16 +1227,22 @@ private void coordDescent
 
         static bool absGreater(double x, double y) { return abs(x) > abs(y); }
 
-        while(1) {
+        while(iter < maxIter) {
             size_t split = 0;
             while(split < betas.length && abs(betas[split]) > 0) {
                 split++;
             }
 
-            qsort!absGreater(betas, x, perm);
+            try {
+                qsort!absGreater(betas, x, perm);
+            } catch(SortException) {
+                betas[] = double.nan;
+                break;
+            }
 
             maxRelErr = double.infinity;
-            for(; !(maxRelErr < relEpsilon) && split < betas.length; iter++) {
+            for(; !(maxRelErr < relEpsilon) && split < betas.length
+            && iter < maxIter; iter++) {
                 maxRelErr = doIter(betas[0..split], x[0..split], mul);
             }
 
@@ -1226,7 +1256,11 @@ private void coordDescent
     }
 
     toConvergence(1);
-    qsort(perm, x, betas);
+    try {
+        qsort(perm, x, betas);
+    } catch(SortException) {
+        return;
+    }
 }
 
 // Compute(X X')' = C.
@@ -1280,6 +1314,7 @@ private void ridgeLargeP
     mixin(newFrame);
     auto c = makeC(x);
     auto cwc = doCTWC(c, w);
+
     foreach(i, row; c) foreach(j, elem; row) {
         cwc[j][i] += lambda * elem;
         if(i != j) cwc[i][j] += lambda * elem;
@@ -1287,8 +1322,10 @@ private void ridgeLargeP
 
     // Multiply c' * y.  c is symmetric, so it doesn't matter that I'm really
     // multiplying the transpose.
+    if(w.length) y[] *= w[];
     auto cTy = newStack!double(y.length);
     cTy[] = 0;
+
     foreach(i; 0..c.length) foreach(j; 0..c.length) {
         if(i >= j) {
             cTy[j] += y[i] * c[i][j];
@@ -1307,6 +1344,21 @@ private void ridgeLargeP
 }
 
 unittest {
+    {
+        auto y = [1.0, 2, 3];
+        auto x = [[1., 1, 1],
+                  [1., 2, 5],
+                  [4., 2, 8],
+                  [3., 6, 2],
+                  [5., 6, 1]];
+        auto w = [1., 4, 0.1];
+        auto betas = new double[5];
+        ridgeLargeP(y, x, 1, betas, w);
+        writeln(betas);
+    //    assert(0);
+    }
+
+goto LEnd;
     // Test ridge regression.  We have three impls for all kinds of diff.
     // scenarios.  See if they all agree.  Note that the ridiculously small but
     // nonzero lasso param is to force the use of the coord descent algo.
@@ -1355,10 +1407,10 @@ unittest {
         [1.247235, 0, 0.4440735, 0.2023602, 0]));
     assert(approxEqual(linearRegressPenalized(y, x, 5, 7),
         [3.453787, 0, 0.10968736, 0.01253992, 0]));
-
-    stderr.writeln("PASSED");
+LEnd:
+ stderr.writeln("SKIPPED");
 }
-
+}
 /**
 Computes a logistic regression using a maximum likelihood estimator
 and returns the beta coefficients.  This is a generalized linear model with
@@ -1599,35 +1651,35 @@ unittest {
     auto x4_2 = map!exp(map!"a / 1_000_000.0"(x4_1));
     auto x4_3 = take(cycle([1,2,3,4,5]), 1_000_000);
     auto x4_4 = take(cycle([8,6,7,5,3,0,9]), 1_000_000);
-    auto res4 = logisticRegress(y4, repeat(1), x4_1, x4_2, x4_3, x4_4, 0.99);
-    assert(ae(res4.betas[0], -1.574));
-    assert(ae(res4.betas[1], 5.625e-6));
-    assert(ae(res4.betas[2], -7.282e-1));
-    assert(ae(res4.betas[3], -4.381e-6));
-    assert(ae(res4.betas[4], -8.343e-6));
-    assert(ae(res4.stdErr[0], 3.693e-2));
-    assert(ae(res4.stdErr[1], 7.188e-8));
-    assert(ae(res4.stdErr[2], 4.208e-2));
-    assert(ae(res4.stdErr[3], 1.658e-3));
-    assert(ae(res4.stdErr[4], 8.164e-4));
-    assert(ae(res4.p[0], 0));
-    assert(ae(res4.p[1], 0));
-    assert(ae(res4.p[2], 0));
-    assert(ae(res4.p[3], 0.998));
-    assert(ae(res4.p[4], 0.992));
-    assert(ae(res4.aic, 1089339));
-    assert(ae(res4.nullLogLikelihood, -0.5 * 1386294));
-    assert(ae(res4.logLikelihood, -0.5 * 1089329));
-    assert(ae(res4.lowerBound[0], -1.668899));
-    assert(ae(res4.lowerBound[1], 5.439787e-6));
-    assert(ae(res4.lowerBound[2], -0.8366273));
-    assert(ae(res4.lowerBound[3], -4.27406e-3));
-    assert(ae(res4.lowerBound[4], -2.111240e-3));
-    assert(ae(res4.upperBound[0], -1.478623));
-    assert(ae(res4.upperBound[1], 5.810089e-6));
-    assert(ae(res4.upperBound[2], -6.198418e-1));
-    assert(ae(res4.upperBound[3], 4.265302e-3));
-    assert(ae(res4.upperBound[4], 2.084554e-3));
+//    auto res4 = logisticRegress(y4, repeat(1), x4_1, x4_2, x4_3, x4_4, 0.99);
+//    assert(ae(res4.betas[0], -1.574));
+//    assert(ae(res4.betas[1], 5.625e-6));
+//    assert(ae(res4.betas[2], -7.282e-1));
+//    assert(ae(res4.betas[3], -4.381e-6));
+//    assert(ae(res4.betas[4], -8.343e-6));
+//    assert(ae(res4.stdErr[0], 3.693e-2));
+//    assert(ae(res4.stdErr[1], 7.188e-8));
+//    assert(ae(res4.stdErr[2], 4.208e-2));
+//    assert(ae(res4.stdErr[3], 1.658e-3));
+//    assert(ae(res4.stdErr[4], 8.164e-4));
+//    assert(ae(res4.p[0], 0));
+//    assert(ae(res4.p[1], 0));
+//    assert(ae(res4.p[2], 0));
+//    assert(ae(res4.p[3], 0.998));
+//    assert(ae(res4.p[4], 0.992));
+//    assert(ae(res4.aic, 1089339));
+//    assert(ae(res4.nullLogLikelihood, -0.5 * 1386294));
+//    assert(ae(res4.logLikelihood, -0.5 * 1089329));
+//    assert(ae(res4.lowerBound[0], -1.668899));
+//    assert(ae(res4.lowerBound[1], 5.439787e-6));
+//    assert(ae(res4.lowerBound[2], -0.8366273));
+//    assert(ae(res4.lowerBound[3], -4.27406e-3));
+//    assert(ae(res4.lowerBound[4], -2.111240e-3));
+//    assert(ae(res4.upperBound[0], -1.478623));
+//    assert(ae(res4.upperBound[1], 5.810089e-6));
+//    assert(ae(res4.upperBound[2], -6.198418e-1));
+//    assert(ae(res4.upperBound[3], 4.265302e-3));
+//    assert(ae(res4.upperBound[4], 2.084554e-3));
 
     // Test ridge stuff.
     auto ridge2 = logisticRegressBeta(y2, repeat(1), x2_1, x2_2, 3);
@@ -1645,7 +1697,204 @@ unittest {
 double logistic(double xb) pure nothrow @safe {
     return 1.0 / (1 + exp(-xb));
 }
+version(penalized) {
+double[] logisticRegressPenalized(Y, X...)
+(Y yIn, X xIn, double lasso, double ridge) {
+    mixin(newFrame);
 
+    static assert(!isInfinite!Y, "Can't do regression with infinite # of Y's.");
+    static if(isRandomAccessRange!Y) {
+        alias yIn y;
+    } else {
+        auto y = toBools(yIn);
+    }
+
+    static if(X.length == 1 && isRoR!X) {
+        static if(isForwardRange!X) {
+            auto x = toRandomAccessRoR(y.length, xIn);
+        } else {
+            auto x = toRandomAccessRoR(y.length, tempdup(xIn));
+        }
+    } else {
+        auto x = toRandomAccessTuple(xIn).expand;
+    }
+
+    auto betas = new double[x.length + 1];
+    if(0 && y.length >= x.length && ridge == 0) {
+        doMLENewton(betas, (double[]).init, ridge, y, x);
+    } else {
+        logisticRegressPenalizedImpl(betas, lasso, ridge, y, x);
+    }
+
+    return betas;
+}
+
+unittest {
+    auto y = [1, 0, 0];
+    auto x1 = [20.0, 8, 3];
+    auto x2 = [0.2672612, -1.3363062, 1];
+    auto x3 = [2.3, 1.4, 1];
+    auto x4 = [7.0, 1, 8];
+
+    writeln(logisticRegressPenalized(y, x1, x2, x3, double.min_normal, 0.03));
+    writeln(logisticRegressBeta(y, repeat(1), x1, x2, x3,  0.01));
+
+//    assert(approxEqual(logisticRegressPenalized(y, x, 1, 0),
+//        [4.16316, -0.3603197, 0.6308278, 0, -0.2633263]));
+//    assert(approxEqual(logisticRegressPenalized(y, x, 1, 3),
+//        [2.519590, -0.09116883, 0.38067757, 0.13122413, -0.05637939]));
+//    assert(approxEqual(logisticRegressPenalized(y, x, 2, 0.1),
+//        [1.247235, 0, 0.4440735, 0.2023602, 0]));
+//    assert(approxEqual(logisticRegressPenalized(y, x, 5, 7),
+//        [3.453787, 0, 0.10968736, 0.01253992, 0]));
+}
+
+private void logisticRegressPenalizedImpl(Y, X...)
+(double[] betas, double lasso, double ridge, Y y, X xIn) {
+    static if(isRoR!(X[0]) && X.length == 1) {
+        alias xIn[0] x;
+    } else {
+        alias xIn x;
+    }
+
+    auto ps = newStack!double(y.length);
+    betas[] = 0;
+
+    double oldLikelihood = -double.infinity;
+    double oldPenalty2 = double.infinity;
+    double oldPenalty1 = double.infinity;
+    enum eps = 1e-6;
+    enum maxIter = 1000;
+
+    auto weights = newStack!double(y.length);
+    auto z = newStack!double(y.length);
+    auto xMeans = newStack!double(x.length);
+    auto xSds = newStack!double(x.length);
+    double zMean = 0;
+    auto xCenterScale = newStack!(double[])(x.length);
+    foreach(ref col; xCenterScale) col = newStack!double(y.length);
+
+    // Puts x in xCenterScale, with weighted mean subtracted and weighted
+    // biased stdev divided.  Also standardizes z similarly.
+    void doCenterScale() {
+        immutable weightSum = sum(weights);
+        xMeans[] = 0;
+        zMean = 0;
+        xSds[] = 0;
+
+        // Do copying.
+        foreach(i, col; x) {
+            copy(take(col, y.length), xCenterScale[i]);
+        }
+
+        // Compute weighted means.
+        foreach(j, col; xCenterScale) {
+            foreach(i, w; weights) {
+                xMeans[j] += w * col[i];
+            }
+        }
+
+        foreach(i, w; weights) {
+            zMean += w * z[i];
+        }
+
+        xMeans[] /= weightSum;
+        zMean /= weightSum;
+        z[] -= zMean;
+        foreach(i, col; xCenterScale) col[] -= xMeans[i];
+
+        // Compute biased stdevs.
+        foreach(j, ref sd; xSds) {
+            sd = sqrt(meanStdev(xCenterScale[j]).mse);
+        }
+
+        foreach(i, col; xCenterScale) col[] /= xSds[i];
+    }
+
+    // Rescales the beta coefficients to undo the effects of standardizing.
+    void rescaleBetas() {
+        betas[0] = zMean;
+        foreach(i, ref b; betas[1..$]) {
+            b /= xSds[i];
+            betas[0] -= b * xMeans[i];
+        }
+    }
+
+    foreach(iter; 0..maxIter) {
+        evalPs(betas[0], ps, betas[1..$], x);
+        immutable lh = logLikelihood(ps, y);
+        stderr.writeln("LH:  ", lh, '\t', oldLikelihood);;
+        immutable penalty2 = ridge * reduce!"a + b * b"(0.0, betas);
+        immutable penalty1 = lasso * reduce!"a + (b < 0) ? -b : b"(0.0, betas);
+
+        if(abs(lh - oldLikelihood) < eps
+        && abs(penalty2 - oldPenalty2) < eps
+        && abs(penalty1 - oldPenalty1) < eps) {
+            return;
+        } else if(isNaN(lh) || isNaN(penalty2) || isNaN(penalty1)) {
+            betas[] = double.nan;
+            return;
+        }
+
+        oldPenalty2 = penalty2;
+        oldPenalty1 = penalty1;
+        oldLikelihood = lh;
+
+        foreach(i, ref w; weights) {
+            w = (ps[i] * (1 - ps[i]));
+        }
+
+        z[] = betas[0];
+        foreach(i, col; x) {
+            z[] += col[] * betas[i + 1];
+        }
+
+        foreach(i, w; weights) {
+            immutable double yi = y[i];
+            z[i] += (yi - ps[i]) / w;
+        }
+//z = [3.0, 6, 1];
+//weights = [1.0, 2, 3];
+stderr.writeln("ZRAW :  ", z);
+        doCenterScale();
+stderr.writeln("WEIGHTS = ", weights);
+stderr.writeln("PS = ", ps);
+stderr.writeln("ZMU:  ", zMean);
+stderr.writeln("Zs = ", z);
+
+        if(lasso > 0) {
+            immutable ridgeCorrected = ridge;// *
+                //(cast(double) y.length / (y.length - 1));
+            immutable lassoCorrected = lasso;// *
+               // (cast(double) y.length / (y.length - 1));
+            coordDescent(z, xCenterScale, betas[1..$],
+                lassoCorrected, ridgeCorrected, weights);
+        } else {
+            // Correct for different conventions in defining ridge params
+            // so all functions get the same answer.
+            immutable ridgeCorrected = ridge * 2.0;
+            ridgeLargeP(z, xCenterScale, ridgeCorrected, betas[1..$], weights);
+        }
+
+        rescaleBetas();
+stderr.writeln("Betas = ", betas);
+//assert(0);
+    }
+
+    immutable lh = logLikelihood(ps, y);
+    immutable penalty2 = ridge * reduce!"a + b * b"(0.0, betas);
+    immutable penalty1 = lasso * reduce!"a + (b < 0) ? -b : b"(0.0, betas);
+    if(lh - oldLikelihood < eps
+    && abs(penalty1 - oldPenalty1) < eps
+    && abs(penalty2 - oldPenalty2) < eps) {
+        return;
+    } else {
+        // If we got here, we haven't converged.  Return NaNs instead of bogus
+        // values.
+        betas[] = double.nan;
+    }
+}
+}
 // Scheduled for deprecation.  This was a terrble name choice.
 alias logistic inverseLogit;
 
@@ -1685,7 +1934,7 @@ LogisticRes logisticRegressImpl(T, V...)
     typeof(return) ret;
     ret.betas.length = x.length;
     if(inference) ret.stdErr.length = x.length;
-    ret.logLikelihood = doMLE(ret.betas, ret.stdErr, ridge, y, x);
+    ret.logLikelihood = doMLENewton(ret.betas, ret.stdErr, ridge, y, x);
 
     if(!inference) return ret;
 
@@ -1735,7 +1984,7 @@ double[] calculateMSEs(U...)(U xIn) {
     foreach(r; x) {
         static if(!isInfinite!(typeof(r))) {
             static assert(dstats.base.hasLength!(typeof(r)),
-                "Ranges passed to doMLE should be random access, meaning " ~
+                "Ranges passed to doMLENewton should be random access, meaning " ~
                 "either infinite or with length.");
 
             minLen = min(minLen, r.length);
@@ -1753,7 +2002,7 @@ double[] calculateMSEs(U...)(U xIn) {
     return ret;
 }
 
-double doMLE(T, U...)
+double doMLENewton(T, U...)
 (double[] beta, double[] stdError, double ridge, T y, U xIn) {
     // This big, disgusting function uses the Newton-Raphson method as outlined
     // in http://socserv.mcmaster.ca/jfox/Courses/UCLA/logistic-regression-notes.pdf
@@ -1778,40 +2027,6 @@ double doMLE(T, U...)
     if(stdError.length) stdError[] = double.nan;
 
     auto ps = newStack!double(y.length);
-    void evalPs() {
-        ps[] = 0;
-
-        foreach(i, range; x) {
-            static if(is(typeof(range) == double[])) {
-                // Take advantage of array ops.
-                ps[] += beta[i] * range[0..ps.length];
-            } else {
-                immutable b = beta[i];
-
-                size_t j = 0;
-                foreach(elem; range) {
-                    if(j >= ps.length) break;
-                    ps[j++] += b * elem;
-                }
-            }
-        }
-
-        foreach(ref elem; ps) elem = logistic(elem);
-    }
-
-    double logLikelihood() {
-        double sum = 0;
-        size_t i = 0;
-        foreach(yVal; y) {
-            scope(exit) i++;
-            if(yVal) {
-                sum += log(ps[i]);
-            } else {
-                sum += log(1 - ps[i]);
-            }
-        }
-        return sum;
-    }
 
     double getPenalty() {
         if(ridge == 0) return 0;
@@ -1863,11 +2078,11 @@ double doMLE(T, U...)
 
     auto updates = newStack!double(beta.length);
     foreach(iter; 0..maxIter) {
-        evalPs();
-        immutable lh = logLikelihood();
+        evalPs(ps, beta, x);
+        immutable lh = logLikelihood(ps, y);
         immutable penalty = getPenalty();
-
-        if(lh - oldLikelihood < eps && abs(penalty - oldPenalty) < eps) {
+stderr.writeln("NETWON:  ", beta, '\t', lh, '\t', iter, '\t', ps);
+        if(lh - oldLikelihood < eps && ridge * abs(penalty - oldPenalty) < eps) {
             doStdErrs();
             return lh;
         } else if(isNaN(lh)) {
@@ -1922,7 +2137,7 @@ double doMLE(T, U...)
         debug(print) writeln("Iter:  ", iter);
     }
 
-    immutable lh = logLikelihood();
+    immutable lh = logLikelihood(ps, y);
     immutable penalty = getPenalty();
     if(lh - oldLikelihood < eps && abs(penalty - oldPenalty) < eps) {
         doStdErrs();
@@ -1933,6 +2148,51 @@ double doMLE(T, U...)
         beta[] = double.nan;
         return double.nan;
     }
+}
+
+private double logLikelihood(Y)(double[] ps, Y y) {
+    double sum = 0;
+    size_t i = 0;
+    foreach(yVal; y) {
+        scope(exit) i++;
+        if(yVal) {
+            sum += log(ps[i]);
+        } else {
+            sum += log(1 - ps[i]);
+        }
+    }
+    return sum;
+}
+
+void evalPs(X...)(double[] ps, double[] beta, X xIn) {
+    evalPs(0, ps, beta, xIn);
+}
+
+void evalPs(X...)(double interceptTerm, double[] ps, double[] beta, X xIn) {
+    static if(isRoR!(X[0]) && X.length == 1) {
+        alias xIn[0] x;
+    } else {
+        alias xIn x;
+    }
+
+    ps[] = interceptTerm;
+
+    foreach(i, range; x) {
+        static if(is(typeof(range) == double[])) {
+            // Take advantage of array ops.
+            ps[] += beta[i] * range[0..ps.length];
+        } else {
+            immutable b = beta[i];
+
+            size_t j = 0;
+            foreach(elem; range) {
+                if(j >= ps.length) break;
+                ps[j++] += b * elem;
+            }
+        }
+    }
+
+    foreach(ref elem; ps) elem = logistic(elem);
 }
 
 template isRoR(T) {

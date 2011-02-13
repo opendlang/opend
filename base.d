@@ -19,8 +19,7 @@
  * execute, and transmit the Software, and to prepare derivative works of the
  * Software, and to permit third-parties to whom the Software is furnished to
  * do so, all subject to the following:
- *
- * The copyright notices in the Software and this entire statement, including
+ ** The copyright notices in the Software and this entire statement, including
  * the above license grant, this restriction and the following disclaimer,
  * must be included in all copies of the Software, in whole or in part, and
  * all derivative works of the Software, unless such copies or derivative
