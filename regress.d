@@ -1162,10 +1162,20 @@ double[] linearRegressPenalized(Y, X...)
 private void coordDescent
 (double[] y, double[][] x, double[] betas, double lasso, double ridge, double[] w) {
     mixin(newFrame);
-    betas[] = 0;
 
     auto predictions = newStack!double(y.length);
     predictions[] = 0;
+
+    void makePredictions() {
+        foreach(j, beta; betas) {
+            predictions[] += x[j][] * beta;
+        }
+    }
+
+    if(reduce!max(0.0, map!abs(betas)) > 0) {
+        makePredictions();
+    }
+
     auto residuals = newStack!double(y.length);
 
     uint iter = 0;
@@ -1924,6 +1934,9 @@ private void logisticRegressPenalizedImpl(Y, X...)
     auto ps = newStack!double(y.length);
     betas[] = 0;
 
+    mixin(newFrame);
+    auto betasRaw = tempdup(betas[1..$]);
+
     double oldLikelihood = -double.infinity;
     double oldPenalty2 = double.infinity;
     double oldPenalty1 = double.infinity;
@@ -1978,9 +1991,9 @@ private void logisticRegressPenalizedImpl(Y, X...)
     // Rescales the beta coefficients to undo the effects of standardizing.
     void rescaleBetas() {
         betas[0] = zMean;
-        foreach(i, ref b; betas[1..$]) {
-            b /= xSds[i];
-            betas[0] -= b * xMeans[i];
+        foreach(i, b; betasRaw) {
+            betas[i + 1] = b / xSds[i];
+            betas[0] -= betas[i + 1] * xMeans[i];
         }
     }
 
@@ -2029,13 +2042,13 @@ private void logisticRegressPenalizedImpl(Y, X...)
             // Correct for different conventions in defining ridge params
             // so all functions get the same answer.
             immutable ridgeCorrected = ridge * 2.0;
-            coordDescent(z, xCenterScale, betas[1..$],
+            coordDescent(z, xCenterScale, betasRaw,
                 lasso, ridgeCorrected, weights);
         } else {
             // Correct for different conventions in defining ridge params
             // so all functions get the same answer.
             immutable ridgeCorrected = ridge * 2.0;
-            ridgeLargeP(z, xCenterScale, ridgeCorrected, betas[1..$], weights);
+            ridgeLargeP(z, xCenterScale, ridgeCorrected, betasRaw, weights);
         }
 
         rescaleBetas();
@@ -2213,7 +2226,7 @@ double doMLENewton(T, U...)
         if(ridge > 0) {
             foreach(diagIndex, mse; mses) {
                 mat[diagIndex][diagIndex] += 2 * ridge * mse;
-                firstDerivTerms[diagIndex] -= 2 * ridge * mse * beta[diagIndex];
+                firstDerivTerms[diagIndex] -= beta[diagIndex] * 2 * ridge * mse;
             }
         }
 
@@ -2271,7 +2284,7 @@ void evalPs(X...)(double interceptTerm, double[] ps, double[] beta, X xIn) {
 
         static if(is(typeof(range) == double[])) {
             // Take advantage of array ops.
-            ps[] += beta[i] * range[0..ps.length];
+            ps[] += range[0..ps.length] * beta[i];
         } else {
             immutable b = beta[i];
 
