@@ -605,14 +605,19 @@ if(doubleInput!(U)) {
         dstatsEnforce(ridgeParam >= 0,
             "Cannot do ridge regerssion with ridge param <= 0.");
 
-        SummaryIter!R summaryIter(R)(R range) { return typeof(return)(range); }
+        static SummaryIter!R summaryIter(R)(R range) {
+            return typeof(return)(range);
+        }
+
     } else {
         enum bool ridge = false;
         enum ridgeParam = 0;
         alias TRidge T;
         alias XRidge XIn;
 
-        R summaryIter(R)(R range) { return range; }
+        static R summaryIter(R)(R range) {
+            return range;
+        }
     }
 
     static if(isArray!(T[0]) && isInputRange!(typeof(XIn[0][0])) &&
