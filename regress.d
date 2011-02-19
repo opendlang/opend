@@ -1375,6 +1375,8 @@ private void ridgeLargeP
 // Used if we end up singular in ridgeLargeP.
 private void ridgeFallback
 (double[] yIn, double[][] x, double lambda, double[] betas, double[] w) {
+    mixin(newFrame);
+
     // Compute xTx or xT * w * x depending on whether w is null.
     auto xTx = newStack!(double[])(x.length);
     foreach(ref row; xTx) row = newStack!double(x.length);
