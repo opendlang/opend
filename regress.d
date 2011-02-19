@@ -1327,37 +1327,87 @@ private double[][] doCTWC(double[][] c, double[] w = null) {
 
 // An implementation of ridge regression for large dimension.
 private void ridgeLargeP
-(double[] y, double[][] x, double lambda, double[] betas, double[] w = null) {
-    mixin(newFrame);
-    auto c = makeC(x);
-    auto cwc = doCTWC(c, w);
+(double[] yIn, double[][] x, double lambda, double[] betas, double[] w = null) {
+    {
+        mixin(newFrame);
+        auto y = (w is null) ? yIn : tempdup(yIn);
+        auto c = makeC(x);
+        auto cwc = doCTWC(c, w);
 
-    foreach(i, row; c) foreach(j, elem; row) {
-        cwc[j][i] += lambda * elem;
-        if(i != j) cwc[i][j] += lambda * elem;
-    }
+        foreach(i, row; c) foreach(j, elem; row) {
+            cwc[j][i] += lambda * elem;
+            if(i != j) cwc[i][j] += lambda * elem;
+        }
 
-    // Multiply c' * y.  c is symmetric, so it doesn't matter that I'm really
-    // multiplying the transpose.
-    if(w.length) y[] *= w[];
-    auto cTy = newStack!double(y.length);
-    cTy[] = 0;
+        // Multiply c' * y.  c is symmetric, so it doesn't matter that I'm really
+        // multiplying the transpose.
+        if(w.length) y[] *= w[];
+        auto cTy = newStack!double(y.length);
+        cTy[] = 0;
 
-    foreach(i; 0..c.length) foreach(j; 0..c.length) {
-        if(i >= j) {
-            cTy[j] += y[i] * c[i][j];
-        } else {
-            cTy[j] += y[i] * c[j][i];
+        foreach(i; 0..c.length) foreach(j; 0..c.length) {
+            if(i >= j) {
+                cTy[j] += y[i] * c[i][j];
+            } else {
+                cTy[j] += y[i] * c[j][i];
+            }
+        }
+
+        solve(cwc, cTy);
+
+        // Multiply X' * csi to get answer.
+        betas[] = 0;
+        foreach(i, col; x) {
+            betas[i] = dotProduct(cTy, col);
         }
     }
 
-    solve(cwc, cTy);
+    static bool notFinite(double num) { return !isFinite(num); }
 
-    // Multiply X' * csi to get answer.
-    betas[] = 0;
-    foreach(i, col; x) {
-        betas[i] = dotProduct(cTy, col);
+    // In a few pathological cases this algo ends up singular to machine
+    // precision, and NaNs or infs up in betas.  Fall back to solving the
+    // normal equations directly.
+    if(filter!notFinite(betas).empty) return;
+    version(unittest) stderr.writeln("SINGULAR");
+    ridgeFallback(yIn, x, lambda, betas, w);
+}
+
+// Used if we end up singular in ridgeLargeP.
+private void ridgeFallback
+(double[] yIn, double[][] x, double lambda, double[] betas, double[] w) {
+    // Compute xTx or xT * w * x depending on whether w is null.
+    auto xTx = newStack!(double[])(x.length);
+    foreach(ref row; xTx) row = newStack!double(x.length);
+
+    foreach(i, xi; x) foreach(j, xj; x[0..i + 1]) {
+        xTx[i][j] = 0;
+        foreach(k; 0..xi.length) {
+            immutable weight = (w.length) ? w[k] : 1.0;
+            xTx[i][j] += xi[k] * weight * xj[k];
+        }
     }
+
+    symmetrize(xTx);
+
+    double[] y;
+    if(w.length) {
+        y = tempdup(yIn);
+        y[] *= w[];
+    } else {
+        y = yIn;
+    }
+
+    auto xTy = newStack!double(x.length);
+    foreach(i, ref val; xTy) {
+        val = dotProduct(y, x[i]);
+    }
+
+    // Add in the penalty.
+    foreach(i; 0..xTx.length) {
+        xTx[i][i] += lambda;
+    }
+
+    choleskySolve(xTx, xTy, betas);
 }
 
 unittest {
@@ -1392,6 +1442,19 @@ unittest {
         assert(approxEqual(normalEq, linalgTrick, 1e-6, 1e-8), text(
             normalEq, linalgTrick));
     }
+
+    // Make sure fallback and largeP algo get same answers.
+    auto fb = new double[x.length];
+    auto lp = new double[x.length];
+    ridgeFallback(y, x, 1, fb, null);
+    ridgeLargeP(y, x, 1, lp);
+    assert(approxEqual(fb, lp));
+
+    // With weights.
+    auto w = randArray!uniform(y.length, 0.1, 1, gen);
+    ridgeFallback(y, x, 1, fb, w);
+    ridgeLargeP(y, x, 1, lp, w);
+    assert(approxEqual(fb, lp));
 
     // Test stuff that's got some lasso in it.  Values from R's Penalized
     // package.
