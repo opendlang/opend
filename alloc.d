@@ -131,10 +131,9 @@ private template AppendsImpl(T, U) {
 ///Appends to an array, deleting the old array if it has to be realloced.
 void appendDelOld(T, U)(ref T[] to, U from)
 if(Appends!(T, U)) {
-    auto oldPtr = to.ptr;
+    auto old = to;
     to ~= from;
-    if (oldPtr != to.ptr)
-        delete oldPtr;
+    if (old.ptr !is to.ptr && old.ptr !is null) delete old;
 }
 
 unittest {
