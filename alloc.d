@@ -32,7 +32,7 @@
 module dstats.alloc;
 
 import std.traits, core.memory, std.array, std.range,
-    std.functional, std.math, std.algorithm : max;
+    std.functional, std.math, std.algorithm : max, copy;
 
 import dstats.base;
 
@@ -470,17 +470,6 @@ T[0] stackCat(T...)(T data) {
     return cast(T[0]) ret;
 }
 
-void rangeCopy(T, U)(T to, U from) {
-    static if(is(typeof(to[] = from[]))) {
-        to[] = from[];
-    } else static if(isRandomAccessRange!(T)) {
-        size_t i = 0;
-        foreach(elem; from) {
-            to[i++] = elem;
-        }
-    }
-}
-
 /**Creates a duplicate of a range for temporary use within a function in the
  * best wsy that can be done safely.  If ElementType!(T) is a value type
  * or T is an array, the results can safely be placed in TempAlloc because
@@ -496,7 +485,7 @@ if(isInputRange!(T) && (isArray!(T) || !isReferenceType!(ElementType!(T)))) {
     alias Unqual!(E) U;
     static if(dstats.base.hasLength!(T)) {
         U[] ret = newStack!(U)(data.length);
-        rangeCopy(ret, data);
+        copy(data, ret);
         return ret;
     } else {
         auto state = TempAlloc.getState;
