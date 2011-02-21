@@ -170,7 +170,7 @@ extern(C) nothrow void exit(int);
  */
 struct TempAlloc {
 private:
-    struct Stack(T) {  // Simple, fast stack w/o error checking.
+    static struct Stack(T) {  // Simple, fast stack w/o error checking.
         private size_t capacity;
         private size_t index;
         private T* data;
