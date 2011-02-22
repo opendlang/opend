@@ -155,7 +155,7 @@ unittest {
 
 // Memory allocation routines.  These wrap malloc(), free() and realloc(),
 // and guarantee alignment.
-private enum alignBytes = 16;
+private enum size_t alignBytes = 16;
 
 
 static void outOfMemory()  {
