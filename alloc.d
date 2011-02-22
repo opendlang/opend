@@ -31,8 +31,12 @@
 
 module dstats.alloc;
 
-import std.traits, core.memory, std.array, std.range,
-    std.functional, std.math, std.algorithm : max, copy;
+import std.traits, core.memory, std.array, std.range, core.exception,
+    std.functional, std.math, std.algorithm : max;
+
+import core.stdc.stdio;
+
+static import core.stdc.stdlib;
 
 import dstats.base;
 
@@ -40,6 +44,9 @@ version(unittest) {
     import std.stdio, std.conv, std.random, dstats.sort;
     void main() {}
 }
+
+// This is just for convenience/code readability/saving typing.
+enum ptrSize = (void*).sizeof;
 
 template IsType(T, Types...) {
     // Original idea by Burton Radons, modified
@@ -146,9 +153,65 @@ unittest {
     assert(foo == cast(uint[]) [5,4,3,2,1]);
 }
 
-// C functions, marked w/ nothrow.
-extern(C) nothrow int fprintf(shared(void*), in char *,...);
-extern(C) nothrow void exit(int);
+// Memory allocation routines.  These wrap malloc(), free() and realloc(),
+// and guarantee alignment.
+private enum alignBytes = 16;
+
+
+static void outOfMemory()  {
+    throw new OutOfMemoryError("Out of memory in TempAlloc.");
+}
+
+private void* alignedMalloc(size_t size, bool shouldAddRange = false) {
+    // We need (alignBytes - 1) extra bytes to guarantee alignment, 1 byte
+    // to store the shouldAddRange flag, and ptrSize bytes to store
+    // the pointer to the beginning of the block.
+    void* toFree = core.stdc.stdlib.malloc(
+        alignBytes + ptrSize + size
+    );
+
+    if(toFree is null) outOfMemory();
+
+    // Add the offset for the flag and the base pointer.
+    auto intPtr = cast(size_t) toFree + ptrSize + 1;
+
+    // Align it.
+    intPtr = (intPtr + alignBytes - 1) & (~(alignBytes - 1));
+    auto ret = cast(void**) intPtr;
+
+    // Store base pointer.
+    (cast(void**) ret)[-1] = toFree;
+
+    // Store flag.
+    (cast(bool*) ret)[-1 - ptrSize] = shouldAddRange;
+
+    if(shouldAddRange) {
+        GC.addRange(ret, size);
+    }
+
+    return ret;
+}
+
+private void alignedFree(void* ptr) {
+    // If it was allocated with alignedMalloc() then the pointer to the
+    // beginning is at ptr[-1].
+    auto addedRange = (cast(bool**) ptr)[-1 - ptrSize];
+
+    if(addedRange) {
+        GC.removeRange(ptr);
+    }
+
+    core.stdc.stdlib.free( (cast(void**) ptr)[-1]);
+}
+
+private void* alignedRealloc(void* ptr, size_t newLen, size_t oldLen) {
+    auto storedRange = (cast(bool*) ptr)[-1 - ptrSize];
+    auto newPtr = alignedMalloc(newLen, storedRange);
+    memcpy(newPtr, ptr, oldLen);
+
+    alignedFree(ptr);
+    return newPtr;
+}
 
 /**A struct to allocate memory in a strictly first-in last-out order for
  * things like scratch space.  Technically, memory can safely escape the
@@ -176,24 +239,30 @@ private:
         private T* data;
         private enum sz = T.sizeof;
 
-        private static size_t max(size_t lhs, size_t rhs) pure nothrow {
+        private static size_t max(size_t lhs, size_t rhs) pure {
             return (rhs > lhs) ? rhs : lhs;
         }
 
-        void push(T elem) nothrow {
+        void push(T elem) {
             if (capacity == index) {
                 capacity = max(16, capacity * 2);
-                data = cast(T*) ntRealloc(data, capacity * sz, cast(GC.BlkAttr) 0);
-                data[index..capacity] = T.init;  // Prevent false ptrs.
+                data = cast(T*) core.stdc.stdlib.realloc(data, capacity * sz);
             }
             data[index++] = elem;
         }
 
-        T pop() nothrow {
+        T pop() {
             index--;
             auto ret = data[index];
             data[index] = T.init;  // Prevent false ptrs.
             return ret;
+        }
+
+        void destroy() {
+            if(data) {
+                core.stdc.stdlib.free(data);
+                data = null;
+            }
         }
     }
 
@@ -216,59 +285,73 @@ private:
         Stack!(Block) inUse;
         Stack!(void*) freelist;
 
-        void putLast(void* last) nothrow {
+        void putLast(void* last) {
             // Add an element to lastAlloc, checking length first.
             if (totalAllocs == lastAlloc.length)
                 doubleSize(lastAlloc);
-            lastAlloc[totalAllocs++] = cast(void*) last;
+            lastAlloc[totalAllocs] = cast(void*) last;
+            totalAllocs++;
+        }
+
+        void destroy() {
+            if(space) {
+                alignedFree(space);
+                space = null;
+            }
+
+            if(lastAlloc) {
+                core.stdc.stdlib.free(lastAlloc.ptr);
+                lastAlloc = null;
+            }
+
+            while(inUse.index > 0) {
+                auto toFree = inUse.pop();
+                alignedFree(toFree.space);
+            }
+
+            while(freelist.index > 0) {
+                auto toFree = freelist.pop();
+                alignedFree(toFree);
+            }
+
+            inUse.destroy();
+            freelist.destroy();
+        }
+
+        ~this() {
+            destroy();
+        }
+    }
+
+    static ~this() {
+        if(state) {
+            state.destroy();
+            state = null;
         }
     }
 
     enum size_t alignBytes = 16U;
     enum size_t blockSize = 4U * 1024U * 1024U;
-    enum size_t nBookKeep = blockSize / alignBytes * (void*).sizeof;
+    enum size_t nBookKeep = blockSize / alignBytes * ptrSize;
     static State state;
 
-    static void die() nothrow {
-        fprintf(std.c.stdio.stderr, "TempAlloc error: Out of memory.\0".ptr);
-        exit(1);
-    }
-
-    static void doubleSize(ref void*[] lastAlloc) nothrow {
+    static void doubleSize(ref void*[] lastAlloc) {
         size_t newSize = lastAlloc.length * 2;
-        void** ptr = cast(void**)
-        ntRealloc(lastAlloc.ptr, newSize * (void*).sizeof, GC.BlkAttr.NO_SCAN);
-
-        if (lastAlloc.ptr != ptr) {
-            ntFree(lastAlloc.ptr);
-        }
-
+        void** ptr = cast(void**) core.stdc.stdlib.realloc(
+            lastAlloc.ptr, newSize * ptrSize);
         lastAlloc = ptr[0..newSize];
     }
 
-    static void* ntMalloc(size_t size, GC.BlkAttr attr) nothrow {
-        try { return GC.malloc(size, attr); } catch { die(); }
-        return null;  // Can't assert b/c then it would throw.
-    }
-
-    static void* ntRealloc(void* ptr, size_t size, GC.BlkAttr attr) nothrow {
-        try { return GC.realloc(ptr, size, attr); } catch { die(); }
-        return null;
-    }
-
-    static void ntFree(void* ptr) nothrow {
-        try { GC.free(ptr); } catch {}
-        return;
-    }
-
-    static State stateInit() nothrow {
+    static State stateInit() {
         State stateCopy;
-        try { stateCopy = new State; } catch { die(); }
+        try { stateCopy = new State; } catch { outOfMemory(); }
 
         with(stateCopy) {
-            space = ntMalloc(blockSize, GC.BlkAttr.NO_SCAN);
-            lastAlloc = (cast(void**) ntMalloc(nBookKeep, GC.BlkAttr.NO_SCAN))
-                        [0..nBookKeep / (void*).sizeof];
+            space = alignedMalloc(blockSize);
+
+            // We don't need 16-byte alignment for the bookkeeping array.
+            lastAlloc = (cast(void**) core.stdc.stdlib.malloc(nBookKeep))
+                        [0..nBookKeep / ptrSize];
             nblocks++;
         }
 
@@ -276,9 +359,10 @@ private:
         return stateCopy;
     }
 
-    static size_t getAligned(size_t nbytes) pure nothrow {
-        size_t rem = nbytes % alignBytes;
-        return (rem == 0) ? nbytes : nbytes - rem + alignBytes;
+    static size_t getAligned(size_t nbytes) pure {
+        // Only works if alignBytes is a power of two, but I think that's
+        // a pretty safe assumption.
+        return (nbytes + (alignBytes - 1)) & (~(alignBytes - 1));
     }
 
 public:
@@ -286,7 +370,7 @@ public:
      * parameter.  This is ugly, but results in a speed boost that can be
      * significant in some cases because it avoids a thread-local storage
      * lookup.  Also used internally.*/
-    static State getState() nothrow {
+    static State getState() {
         State stateCopy = state;
         return (stateCopy is null) ? stateInit : stateCopy;
     }
@@ -295,13 +379,13 @@ public:
      * Memory past the position at which this was last called will be
      * freed when frameFree() is called.  Returns a reference to the
      * State class in case the caller wants to cache it for speed.*/
-    static State frameInit() nothrow {
+    static State frameInit() {
         return frameInit(getState);
     }
 
     /**Same as frameInit() but uses stateCopy cached on stack by caller
      * to avoid a thread-local storage lookup.  Strictly a speed hack.*/
-    static State frameInit(State stateCopy) nothrow {
+    static State frameInit(State stateCopy) {
         with(stateCopy) {
             putLast( cast(void*) frameIndex );
             frameIndex = totalAllocs;
@@ -311,13 +395,13 @@ public:
 
     /**Frees all memory allocated by TempAlloc since the last call to
      * frameInit().*/
-    static void frameFree() nothrow {
+    static void frameFree() {
         frameFree(getState);
     }
 
     /**Same as frameFree() but uses stateCopy cached on stack by caller
     * to avoid a thread-local storage lookup.  Strictly a speed hack.*/
-    static void frameFree(State stateCopy) nothrow {
+    static void frameFree(State stateCopy) {
         with(stateCopy) {
             while (totalAllocs > frameIndex) {
                 free(stateCopy);
@@ -327,7 +411,7 @@ public:
     }
 
     /**Purely a convenience overload, forwards arguments to TempAlloc.malloc().*/
-    static void* opCall(T...)(T args) nothrow {
+    static void* opCall(T...)(T args) {
         return TempAlloc.malloc(args);
     }
 
@@ -340,13 +424,13 @@ public:
      * This is necessary for performance and to avoid false pointer issues.
      * Do not store the only reference to a GC-allocated object in
      * TempAlloc-allocated memory.*/
-    static void* malloc(size_t nbytes) nothrow {
+    static void* malloc(size_t nbytes) {
         return malloc(nbytes, getState);
     }
 
     /**Same as malloc() but uses stateCopy cached on stack by caller
     * to avoid a thread-local storage lookup.  Strictly a speed hack.*/
-    static void* malloc(size_t nbytes, State stateCopy) nothrow {
+    static void* malloc(size_t nbytes, State stateCopy) {
         nbytes = getAligned(nbytes);
         with(stateCopy) {
             void* ret;
@@ -354,7 +438,7 @@ public:
                 ret = space + used;
                 used += nbytes;
             } else if (nbytes > blockSize) {
-                ret = ntMalloc(nbytes, GC.BlkAttr.NO_SCAN);
+                ret = alignedMalloc(nbytes);
             } else if (nfree > 0) {
                 inUse.push(Block(used, space));
                 space = freelist.pop;
@@ -364,7 +448,7 @@ public:
                 ret = space;
             } else { // Allocate more space.
                 inUse.push(Block(used, space));
-                space = ntMalloc(blockSize, GC.BlkAttr.NO_SCAN);
+                space = alignedMalloc(blockSize);
                 nblocks++;
                 used = nbytes;
                 ret = space;
@@ -378,19 +462,19 @@ public:
      * all memory must be allocated and freed in strict LIFO order,
      * there's no need to pass a pointer in.  All bookkeeping for figuring
      * out what to free is done internally.*/
-    static void free() nothrow {
+    static void free() {
         free(getState);
     }
 
     /**Same as free() but uses stateCopy cached on stack by caller
     * to avoid a thread-local storage lookup.  Strictly a speed hack.*/
-    static void free(State stateCopy) nothrow {
+    static void free(State stateCopy) {
         with(stateCopy) {
             void* lastPos = lastAlloc[--totalAllocs];
 
             // Handle large blocks.
             if (lastPos > space + blockSize || lastPos < space) {
-                ntFree(lastPos);
+                alignedFree(lastPos);
                 return;
             }
 
@@ -405,7 +489,7 @@ public:
 
                 if (nfree >= nblocks * 2) {
                     foreach(i; 0..nfree / 2) {
-                        ntFree(freelist.pop);
+                        alignedFree(freelist.pop);
                         nfree--;
                     }
                 }
@@ -414,7 +498,7 @@ public:
     }
 
     /**Returns how many bytes are available in the current frame.*/
-    static size_t slack() nothrow @property {
+    static size_t slack() @property {
         return blockSize - getState().used;
     }
 
@@ -431,7 +515,7 @@ public:
  * Bugs: Do not store the only reference to a GC-allocated reference object
  * in an array allocated by newStack because this memory is not
  * scanned by the GC.*/
-T[] newStack(T)(size_t size, TempAlloc.State state = null) nothrow {
+T[] newStack(T)(size_t size, TempAlloc.State state = null) {
     if(state is null) {
         state = TempAlloc.getState();
     }
@@ -470,6 +554,17 @@ T[0] stackCat(T...)(T data) {
     return cast(T[0]) ret;
 }
 
+void rangeCopy(T, U)(T to, U from) {
+    static if(is(typeof(to[] = from[]))) {
+        to[] = from[];
+    } else static if(isRandomAccessRange!(T)) {
+        size_t i = 0;
+        foreach(elem; from) {
+            to[i++] = elem;
+        }
+    }
+}
+
 /**Creates a duplicate of a range for temporary use within a function in the
  * best wsy that can be done safely.  If ElementType!(T) is a value type
  * or T is an array, the results can safely be placed in TempAlloc because
@@ -485,7 +580,7 @@ if(isInputRange!(T) && (isArray!(T) || !isReferenceType!(ElementType!(T)))) {
     alias Unqual!(E) U;
     static if(dstats.base.hasLength!(T)) {
         U[] ret = newStack!(U)(data.length);
-        copy(data, ret);
+        rangeCopy(ret, data);
         return ret;
     } else {
         auto state = TempAlloc.getState;
@@ -502,9 +597,12 @@ if(isInputRange!(T) && (isArray!(T) || !isReferenceType!(ElementType!(T)))) {
             } else {
                 if(bytesCopied + U.sizeof >= TempAlloc.blockSize / 2) {
                     // Then just heap-allocate.
-                    U[] result = newVoid!(U)(bytesCopied / U.sizeof);
-                    result[] = (cast(U*) startPtr)[0..result.length];
-                    finishCopy(result, data);
+                    U[] result = (cast(U*) alignedMalloc(bytesCopied * 2))
+                        [0..bytesCopied / U.sizeof * 2];
+
+                    immutable elemsCopied = bytesCopied / U.sizeof;
+                    result[0..elemsCopied] = (cast(U*) startPtr)[0..elemsCopied];
+                    finishCopy(result, data, elemsCopied);
                     TempAlloc.free;
                     state.putLast(result.ptr);
                     return result;
@@ -536,18 +634,39 @@ if(isInputRange!(T) && (isArray!(T) || !isReferenceType!(ElementType!(T)))) {
 
 Unqual!(ElementType!(T))[] tempdup(T)(T data)
 if(isInputRange!(T) && !(isArray!(T) || !isReferenceType!(ElementType!(T)))) {
-    auto ret = toArray(data);
-    TempAlloc.getState.putLast(ret.ptr);
-    return ret;
+    // Initial guess of how much space to allocate.  It's relatively large b/c
+    // the object will be short lived, so speed is more important than space
+    // efficiency.
+    enum initialGuess = 128;
+
+    alias Unqual!(ElementType!T) E;
+    auto arr = (cast(E*) alignedMalloc(E.sizeof * initialGuess, true))
+        [0..initialGuess];
+
+    finishCopy(arr, data, 0);
+    TempAlloc.getState.putLast(arr.ptr);
+    return arr;
 }
 
-private void finishCopy(T, U)(ref T[] result, U range) {
-    result.assumeSafeAppend();
-    auto app = appender(result);
-    foreach(elem; range) {
-        app.put(elem);
+// Finishes copying a range to a C heap allocated array.  Assumes the first
+// half of the input array is stuff already copied and the second half is
+// free space.
+private void finishCopy(T, U)(ref T[] result, U range, size_t alreadyCopied) {
+
+    void doRealloc() {
+        auto newPtr = cast(T*) alignedRealloc(
+            result.ptr, result.length * T.sizeof * 2, result.length * T.sizeof
+        );
+        result = newPtr[0..result.length * 2];
     }
-    result = app.data;
+
+    auto index = alreadyCopied;
+    foreach(elem; range) {
+        if(index == result.length) doRealloc();
+        result[index++] = elem;
+    }
+
+    result = result[0..index];
 }
 
 // See Bugzilla 2873.  This can be removed once that's fixed.
@@ -612,7 +731,7 @@ unittest {
     TempAlloc.free;
     TempAlloc.free;
     while(TempAlloc.getState.freelist.index > 0) {
-        TempAlloc.getState.freelist.pop;
+        alignedFree(TempAlloc.getState.freelist.pop);
     }
 }
 
@@ -636,6 +755,7 @@ unittest {
      * is really more of a stress test/sanity check than a normal unittest.*/
 
     // Make sure state is completely reset.
+    if(TempAlloc.state) TempAlloc.state.destroy();
     TempAlloc.state = null;
 
      // First test to make sure a large number of allocations does what it's
@@ -655,7 +775,6 @@ unittest {
     // Make sure logic for freeing excess blocks works.  If it doesn't this
     // test will run out of memory.
     enum allocSize = TempAlloc.blockSize / 2;
-    void*[] oldStates;
     foreach(i; 0..50) {
         foreach(j; 0..50) {
             TempAlloc(allocSize);
@@ -663,10 +782,7 @@ unittest {
         foreach(j; 0..50) {
             TempAlloc.free;
         }
-        oldStates ~= cast(void*) TempAlloc.state;
-        TempAlloc.state = null;
     }
-    oldStates = null;
 
     // Make sure data is stored properly.
     foreach(i; 0..10) {
@@ -675,7 +791,6 @@ unittest {
     foreach(i; 0..5) {
         TempAlloc.free;
     }
-    GC.collect;  // Make sure nothing that shouldn't is getting GC'd.
     void* space = TempAlloc.state.space;
     size_t used = TempAlloc.state.used;
 
@@ -712,6 +827,22 @@ unittest {
     assert(used == TempAlloc.state.used);
     while(TempAlloc.state.nblocks > 1 || TempAlloc.state.used > 0) {
         TempAlloc.free;
+    }
+
+    // Test that everything is really getting destroyed properly when
+    // destroy() is called.  If not then this test will run out of memory.
+    foreach(i; 0..1000) {
+        TempAlloc.state.destroy();
+        TempAlloc.state = null;
+
+        foreach(j; 0..1_000) {
+            auto ptr = TempAlloc.malloc(20_000);
+            assert((cast(size_t) ptr) % TempAlloc.alignBytes == 0);
+        }
+
+        foreach(j; 0..500) {
+            TempAlloc.free();
+        }
     }
 }
 

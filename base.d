@@ -242,7 +242,6 @@ unittest {
 
     res = binCounts(data, 10, buf);
     assert(res == [4U, 1, 0, 1, 0, 1, 0, 1, 1, 1]);
-    TempAlloc.free;
 }
 
 /**Bins data into nbin equal width bins, indexed from
