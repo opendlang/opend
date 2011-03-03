@@ -2023,8 +2023,13 @@ private void logisticRegressPenalizedImpl(Y, X...)
 
     // Puts x in xCenterScale, with weighted mean subtracted and weighted
     // biased stdev divided.  Also standardizes z similarly.
-    void doCenterScale() {
+    //
+    // Returns:  true if successful, false if weightSum is so small that the
+    //           algorithm has converged for all practical purposes.
+    bool doCenterScale() {
         immutable weightSum = sum(weights);
+        if(weightSum < eps) return false;
+
         xMeans[] = 0;
         zMean = 0;
         xSds[] = 0;
@@ -2056,6 +2061,7 @@ private void logisticRegressPenalizedImpl(Y, X...)
         }
 
         foreach(i, col; xCenterScale) col[] /= xSds[i];
+        return true;
     }
 
     // Rescales the beta coefficients to undo the effects of standardizing.
@@ -2106,7 +2112,12 @@ private void logisticRegressPenalizedImpl(Y, X...)
             z[i] += (yi - ps[i]) / w;
         }
 
-        doCenterScale();
+        immutable centerScaleRes = doCenterScale();
+
+        // If this is false then weightSum is so small that all probabilities
+        // are for all practical purposes either 0 or 1.  We can declare
+        // convergence and go home.
+        if(!centerScaleRes) return;
 
         if(lasso > 0) {
             // Correct for different conventions in defining ridge params
