@@ -656,7 +656,9 @@ public:
             return (_k < 2) ? double.nan : _var / (_k - 1);
         }
 
-        // Undocumented on purpose b/c it's for internal use only.
+        /**
+        Mean squared error.  In other words, a biased estimate of variance.
+        */
         double mse() {
             return (_k < 2) ? double.nan : _var / _k;
         }
@@ -918,7 +920,14 @@ public:
 
         ///
         double var() {
-            return (_k == 0) ? double.nan : _m2 / (_k - 1);
+            return (_k < 2) ? double.nan : _m2 / (_k - 1);
+        }
+
+        /**
+        Mean squared error.  In other words, a biased estimate of variance.
+        */
+        double mse() {
+            return (_k < 2) ? double.nan : _m2 / _k;
         }
 
         ///
