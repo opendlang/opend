@@ -48,6 +48,10 @@ version(unittest) {
 // This is just for convenience/code readability/saving typing.
 enum ptrSize = (void*).sizeof;
 
+// This was accidentally assumed in a few places and I'm too lazy to fix it
+// until I see proof that it needs to be fixed.
+static assert(bool.sizeof == 1);
+
 template IsType(T, Types...) {
     // Original idea by Burton Radons, modified
     static if (Types.length == 0)
@@ -195,7 +199,7 @@ private void* alignedMalloc(size_t size, bool shouldAddRange = false) {
 private void alignedFree(void* ptr) {
     // If it was allocated with alignedMalloc() then the pointer to the
     // beginning is at ptr[-1].
-    auto addedRange = (cast(bool**) ptr)[-1 - ptrSize];
+    auto addedRange = (cast(bool*) ptr)[-1 - ptrSize];
 
     if(addedRange) {
         GC.removeRange(ptr);
