@@ -2083,9 +2083,9 @@ private void logisticRegressPenalizedImpl(Y, X...)
         immutable penalty2 = ridge * reduce!"a + b * b"(0.0, betas);
         immutable penalty1 = lasso * reduce!"a + (b < 0) ? -b : b"(0.0, betas);
 
-        if(abs(lh - oldLikelihood) / (absMax(lh, oldLikelihood) + 0.1) < eps
-        && abs(penalty2 - oldPenalty2) / (absMax(penalty2, oldPenalty2) + 0.1) < eps
-        && abs(penalty1 - oldPenalty1) / (absMax(penalty1, oldPenalty1) + 0.1) < eps) {
+        if((lh - oldLikelihood) / (absMax(lh, oldLikelihood) + 0.1) < eps
+        && (oldPenalty2 - penalty2) / (absMax(penalty2, oldPenalty2) + 0.1) < eps
+        && (oldPenalty1 - penalty1) / (absMax(penalty1, oldPenalty1) + 0.1) < eps) {
             return;
         } else if(isNaN(lh) || isNaN(penalty2) || isNaN(penalty1)) {
             betas[] = double.nan;
@@ -2143,9 +2143,9 @@ private void logisticRegressPenalizedImpl(Y, X...)
     immutable penalty2 = ridge * reduce!"a + b * b"(0.0, betas);
     immutable penalty1 = lasso * reduce!"a + (b < 0) ? -b : b"(0.0, betas);
 
-    if(abs(lh - oldLikelihood) / (absMax(lh, oldLikelihood) + 0.1) < eps
-    && abs(penalty2 - oldPenalty2) / (absMax(penalty2, oldPenalty2) + 0.1) < eps
-    && abs(penalty1 - oldPenalty1) / (absMax(penalty1, oldPenalty1) + 0.1) < eps) {
+    if((lh - oldLikelihood) / (absMax(lh, oldLikelihood) + 0.1) < eps
+    && (oldPenalty2 - penalty2) / (absMax(penalty2, oldPenalty2) + 0.1) < eps
+    && (oldPenalty1 - penalty1) / (absMax(penalty1, oldPenalty1) + 0.1) < eps) {
         return;
     } else {
         // If we got here, we haven't converged.  Return NaNs instead of bogus
@@ -2267,8 +2267,8 @@ double doMLENewton(T, U...)
         immutable lh = logLikelihood(ps, y);
         immutable penalty = getPenalty();
 
-    if(abs(lh - oldLikelihood) / (absMax(lh, oldLikelihood) + 0.1) < eps
-    && abs(penalty - oldPenalty) / (absMax(penalty, oldPenalty) + 0.1) < eps) {
+        if((lh - oldLikelihood) / (absMax(lh, oldLikelihood) + 0.1) < eps
+        && (oldPenalty - penalty) / (absMax(penalty, oldPenalty) + 0.1) < eps) {
             doStdErrs();
             return lh;
         } else if(isNaN(lh)) {
@@ -2325,8 +2325,8 @@ double doMLENewton(T, U...)
 
     immutable lh = logLikelihood(ps, y);
     immutable penalty = getPenalty();
-    if(abs(lh - oldLikelihood) / (absMax(lh, oldLikelihood) + 0.1) < eps
-    && abs(penalty - oldPenalty) / (absMax(penalty, oldPenalty) + 0.1) < eps) {
+    if((lh - oldLikelihood) / (absMax(lh, oldLikelihood) + 0.1) < eps
+    && (oldPenalty - penalty) / (absMax(penalty, oldPenalty) + 0.1) < eps) {
         doStdErrs();
         return lh;
     } else {
