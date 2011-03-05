@@ -1335,8 +1335,16 @@ private void ridgeLargeP
 (double[] yIn, double[][] x, double lambda, double[] betas, double[] w = null) {
     {
         mixin(newFrame);
-        auto y = (w is null) ? yIn : tempdup(yIn);
+        auto y = tempdup(yIn);
         auto c = makeC(x);
+
+        // This scaling preserves numerical stability when the distrib. of
+        // x has a long tail.
+        auto maxElem = reduce!max(0.0, map!abs(joiner(c)));
+        foreach(col; c) col[] /= maxElem;
+        y[] /= (maxElem);
+        lambda /= maxElem;
+
         auto cwc = doCTWC(c, w);
 
         foreach(i, row; c) foreach(j, elem; row) {
@@ -2112,8 +2120,12 @@ private void logisticRegressPenalizedImpl(Y, X...)
         }
 
         foreach(i, w; weights) {
-            immutable double yi = (y[i] == 0) ? 0.0 : 1.0;
-            z[i] += (yi - ps[i]) / w;
+            if(w == 0){
+                z[i] = 0;
+            } else {
+                immutable double yi = (y[i] == 0) ? 0.0 : 1.0;
+                z[i] += (yi - ps[i]) / w;
+            }
         }
 
         immutable centerScaleRes = doCenterScale();
