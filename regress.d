@@ -95,7 +95,7 @@ PowMap!(ExpType, T) powMap(ExpType, T)(T range, ExpType exponent) {
 // linearRegressBeta.  Specifically, computes xTx and xTy.
 // Written specifically to be efficient in the context used here.
 private void rangeMatrixMulTrans(U, T...)
-(ref double[] xTy, out double[][] xTx, U vec, ref T matIn) {
+(ref double[] xTy, out double[][] xTx, U y, ref T matIn) {
     static if(isArray!(T[0]) &&
         isInputRange!(typeof(matIn[0][0])) && matIn.length == 1) {
         alias matIn[0] mat;
@@ -104,7 +104,7 @@ private void rangeMatrixMulTrans(U, T...)
     }
 
     bool someEmpty() {
-        if(vec.empty) {
+        if(y.empty) {
             return true;
         }
         foreach(range; mat) {
@@ -119,7 +119,7 @@ private void rangeMatrixMulTrans(U, T...)
         foreach(ti, range; mat) {
             mat[ti].popFront;
         }
-        vec.popFront;
+        y.popFront;
     }
 
     xTy[] = 0;
@@ -133,30 +133,55 @@ private void rangeMatrixMulTrans(U, T...)
         row[] = 0;
     }
 
-    auto fronts = newStack!double(mat.length);
-    scope(exit) TempAlloc.free();
+    mixin(newFrame);
+    auto deltas = newStack!double(mat.length);
+
+    // Using an algorithm similar to the one for Pearson cor to improve
+    // numerical stability.  Calculate means and covariances, then
+    // combine them:  Sum of squares = mean1 * N * mean2 + N * cov.
+    double k = 0;
+    double[] means = newStack!(double)(mat.length);
+    means[] = 0;
+    double yMean = 0;
 
     while(!someEmpty) {
-        // It is usually more cache efficient, etc. to copy to an array once
-        // and then use this than to keep iterating "across the grain"
-        // over a range of ranges or tuple of ranges.
         foreach(i, elem; mat) {
-            fronts[i] = cast(double) elem.front;
+            deltas[i] = cast(double) elem.front;
         }
 
-        foreach(i, elem1; fronts) {
-            xTy[i] += elem1 * cast(double) vec.front;
-            xTx[i][i] += elem1 * elem1;
+        immutable kMinus1 = k;
+        immutable kNeg1 = 1 / ++k;
+        deltas[] -= means[];
+        means[] += deltas[] * kNeg1;
+
+        immutable yDelta = cast(double) y.front - yMean;
+        yMean += yDelta * kNeg1;
+
+        foreach(i, delta1; deltas) {
+            xTy[i] += kMinus1 * delta1 * kNeg1 * yDelta;
+            xTx[i][i] += kMinus1 * delta1 * kNeg1 * delta1;
             auto xTxi = xTx[i];
 
-            foreach(j, elem2; fronts[0..i]) {
-                xTxi[j] += elem1 * elem2;
+            foreach(j, delta2; deltas[0..i]) {
+                xTxi[j] += kMinus1 * delta1 * kNeg1 * delta2;
             }
         }
-
         popAll();
     }
 
+    // k is n now that we're done looping over the data.
+    alias k n;
+
+    // mat now consists of covariance * n.    Add mean1 * n * mean2
+    // to get sum of products.
+    foreach(i; 0..xTx.length) foreach(j; 0..i + 1) {
+        xTx[i][j] += means[i] * n * means[j];
+    }
+
+    // Similarly for the xTy vector
+    foreach(i, ref elem; xTy) {
+        elem += yMean * n * means[i];
+    }
     symmetrize(xTx);
 }
 
@@ -908,7 +933,7 @@ unittest {
         1.78,1.8,1.83];
     double[] weights = [52.21,53.12,54.48,55.84,57.2,58.57,59.93,61.29,63.11,64.47,
         66.28,68.1,69.92,72.19,74.46];
-    float[] diseaseSev = [1.9,3.1,3.3,4.8,5.3,6.1,6.4,7.6,9.8,12.4];
+    float[] diseaseSev = [1.9, 3.1, 3.3, 4.8, 5.3, 6.1, 6.4, 7.6, 9.8, 12.4];
     ubyte[] temperature = [2,1,5,5,20,20,23,10,30,25];
 
     // Values from R.
