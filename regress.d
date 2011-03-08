@@ -172,15 +172,17 @@ private void rangeMatrixMulTrans(U, T...)
     // k is n now that we're done looping over the data.
     alias k n;
 
-    // mat now consists of covariance * n.    Add mean1 * n * mean2
+    // mat now consists of covariance * n.    Divide by n and add mean1 * mean2
     // to get sum of products.
     foreach(i; 0..xTx.length) foreach(j; 0..i + 1) {
-        xTx[i][j] += means[i] * n * means[j];
+        xTx[i][j] /= n;
+        xTx[i][j] += means[i] * means[j];
     }
 
     // Similarly for the xTy vector
     foreach(i, ref elem; xTy) {
-        elem += yMean * n * means[i];
+        xTy[i] /= n;
+        elem += yMean * means[i];
     }
     symmetrize(xTx);
 }
@@ -555,6 +557,8 @@ private struct SummaryIter(R) {
     }
 
     double mse() @property const pure nothrow { return summ.mse; }
+
+    double N() @property const pure nothrow { return summ.N; }
 }
 
 private template SummaryType(R) {
@@ -676,7 +680,9 @@ if(doubleInput!(U)) {
     static if(ridge) {
         if(ridgeParam > 0) {
             foreach(i, range; X) {
-                xTx[i][i] += ridgeParam * range.mse;
+                // The whole matrix is scaled by N, as well as the xTy vector,
+                // so scale the ridge param similarly.
+                xTx[i][i] += ridgeParam * range.mse / range.N;
             }
         }
     }
@@ -815,7 +821,7 @@ RegressRes linearRegress(U, TC...)(U Y, TC input) {
 
     double[] stdErr = new double[betas.length];
     foreach(i, ref elem; stdErr) {
-        elem = sqrt( S * xTxNeg1[i][i] / df);
+        elem = sqrt( S * xTxNeg1[i][i] / df / n);
     }
 
     double[] lowerBound, upperBound;
