@@ -1363,7 +1363,7 @@ private double[][] doCTWC(double[][] c, double[] w = null) {
 
 // An implementation of ridge regression for large dimension.
 private void ridgeLargeP
-(double[] yIn, double[][] x, double lambda, double[] betas, double[] w = null) {
+(double[] yIn, double[][] x, double lambdaIn, double[] betas, double[] w = null) {
     {
         mixin(newFrame);
         auto y = tempdup(yIn);
@@ -1374,8 +1374,7 @@ private void ridgeLargeP
         auto maxElem = reduce!max(0.0, map!abs(joiner(c)));
         foreach(col; c) col[] /= maxElem;
         y[] /= (maxElem);
-        lambda /= maxElem;
-
+        auto lambda = lambdaIn / maxElem;
         auto cwc = doCTWC(c, w);
 
         foreach(i, row; c) foreach(j, elem; row) {
@@ -1413,7 +1412,7 @@ private void ridgeLargeP
     // normal equations directly.
     if(filter!notFinite(betas).empty) return;
     version(unittest) stderr.writeln("SINGULAR");
-    ridgeFallback(yIn, x, lambda, betas, w);
+    ridgeFallback(yIn, x, lambdaIn, betas, w);
 }
 
 // Used if we end up singular in ridgeLargeP.
