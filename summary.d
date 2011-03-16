@@ -146,7 +146,7 @@ unittest {
     }
 
     // Make sure everything works with lowest common denominator range type.
-    struct Count {
+    static struct Count {
         uint num;
         uint upTo;
         @property size_t front() {

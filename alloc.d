@@ -656,7 +656,6 @@ if(isInputRange!(T) && !(isArray!(T) || !isReferenceType!(ElementType!(T)))) {
 // half of the input array is stuff already copied and the second half is
 // free space.
 private void finishCopy(T, U)(ref T[] result, U range, size_t alreadyCopied) {
-
     void doRealloc() {
         auto newPtr = cast(T*) alignedRealloc(
             result.ptr, result.length * T.sizeof * 2, result.length * T.sizeof
@@ -710,7 +709,7 @@ Unqual!(IterType!(T))[] toArray(T)(T range) if(isIterable!(T)) {
 
 unittest {
     // Create quick and dirty finite but lengthless range.
-    struct Count {
+    static struct Count {
         uint num;
         uint upTo;
         @property size_t front() {
