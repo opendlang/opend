@@ -32,7 +32,6 @@
  * DEALINGS IN THE SOFTWARE.
  */
 module dstats.regress;
-version = penalized;
 
 import std.math, std.algorithm, std.traits, std.array, std.traits, std.exception,
     std.typetuple, std.typecons, std.numeric;
@@ -41,7 +40,7 @@ import dstats.alloc, std.range, std.conv, dstats.distrib, dstats.cor,
     dstats.base, dstats.summary, dstats.sort;
 
 version(unittest) {
-    import std.stdio, dstats.random;
+    import std.stdio, dstats.random, std.functional;
     void main(){}
 }
 
@@ -778,13 +777,13 @@ RegressRes linearRegress(U, TC...)(U Y, TC input) {
         xTxNeg1[i] = newStack!double(X.length);
     }
 
-    typeof(X) xSaved;
     static if(arrayX) {
-        xSaved = X.tempdup;
+        auto xSaved = X.tempdup;
         foreach(ref elem; xSaved) {
             elem = elem.save;
         }
     } else {
+        auto xSaved = X;
         foreach(ti, Type; X) {
             xSaved[ti] = X[ti].save;
         }
@@ -1756,7 +1755,7 @@ unittest {
                 take(cycle([0,0,0,0,1]), 500_000),
                 take(cycle([1,1,1,1,0]), 500_000));
     auto x4_1 = iota(0, 1_000_000);
-    auto x4_2 = map!exp(map!"a / 1_000_000.0"(x4_1));
+    auto x4_2 = array(map!(compose!(exp, "a / 1_000_000.0"))(x4_1));
     auto x4_3 = take(cycle([1,2,3,4,5]), 1_000_000);
     auto x4_4 = take(cycle([8,6,7,5,3,0,9]), 1_000_000);
     auto res4 = logisticRegress(y4, repeat(1), x4_1, x4_2, x4_3, x4_4, 0.99);

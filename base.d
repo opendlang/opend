@@ -122,7 +122,9 @@ unittest {
     static assert(!isIterable!(uint));
     static assert(isIterable!(Foo));
     static assert(isIterable!(uint[string]));
-    static assert(isIterable!(Chain!(uint[], uint[])));
+
+    auto c = chain((uint[]).init, (uint[]).init);
+    static assert(isIterable!(typeof(c)));
 }
 
 /**Determine the iterable type of any iterable object, regardless of whether
@@ -148,7 +150,9 @@ unittest {
     static assert(is(IterType!(uint[]) == uint));
     static assert(is(IterType!(Foo) == uint));
     static assert(is(IterType!(uint[string]) == uint));
-    static assert(is(IterType!(Chain!(uint[], uint[])) == uint));
+
+    auto c = chain((uint[]).init, (uint[]).init);
+    static assert(is(IterType!(typeof(c)) == uint));
 }
 
 /**Tests whether T is iterable and has elements of a type implicitly
