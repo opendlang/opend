@@ -204,22 +204,21 @@ if( (doubleIterable!T || isSummary!T) && (doubleIterable!U || isSummary!U)) {
     static if(isSummary!T) {
         alias sample1 s1summ;
     } else {
-        auto s1summ = meanStdev(sample1);
+        immutable s1summ = meanStdev(sample1);
     }
 
     static if(isSummary!U) {
         alias sample2 s2summ;
     } else {
-        auto s2summ = meanStdev(sample2);
+        immutable s2summ = meanStdev(sample2);
     }
 
-    double n1 = s1summ.N,
-         n2 = s2summ.N;
+    immutable n1 = s1summ.N, n2 = s2summ.N;
 
-    double sx1x2 = sqrt(((n1 - 1) * s1summ.var + (n2 - 1) * s2summ.var) /
+    immutable sx1x2 = sqrt((n1 * s1summ.mse + n2 * s2summ.mse) /
                  (n1 + n2 - 2));
-    double normSd = (sx1x2 * sqrt((1.0 / n1) + (1.0 / n2)));
-    double meanDiff = s1summ.mean - s2summ.mean;
+    immutable normSd = (sx1x2 * sqrt((1.0 / n1) + (1.0 / n2)));
+    immutable meanDiff = s1summ.mean - s2summ.mean;
     ConfInt ret;
     ret.testStat = (meanDiff - testMean) / normSd;
     if(alt == Alt.none) {
@@ -229,7 +228,8 @@ if( (doubleIterable!T || isSummary!T) && (doubleIterable!U || isSummary!U)) {
 
         ret.lowerBound = -double.infinity;
         if(confLevel > 0) {
-            double delta = invStudentsTCDF(1 - confLevel, n1 + n2 - 2) * normSd;
+            immutable delta = invStudentsTCDF(1 - confLevel, n1 + n2 - 2)
+                * normSd;
             ret.upperBound = meanDiff - delta;
         } else {
             ret.upperBound = meanDiff;
@@ -240,20 +240,22 @@ if( (doubleIterable!T || isSummary!T) && (doubleIterable!U || isSummary!U)) {
 
         ret.upperBound = double.infinity;
         if(confLevel > 0) {
-            double delta = invStudentsTCDF(1 - confLevel, n1 + n2 - 2) * normSd;
+            immutable delta = invStudentsTCDF(1 - confLevel, n1 + n2 - 2)
+                * normSd;
             ret.lowerBound = meanDiff + delta;
         } else {
             ret.lowerBound = meanDiff;
         }
 
     } else {
-        double t = ret.testStat;
+        immutable t = ret.testStat;
         ret.p = 2 * ((t < 0) ?
                     studentsTCDF(t, n1 + n2 - 2) :
                     studentsTCDFR(t, n1 + n2 - 2));
 
         if(confLevel > 0) {
-            double delta = invStudentsTCDF(0.5 * (1 - confLevel), n1 + n2 - 2) * normSd;
+            immutable delta = invStudentsTCDF(
+                0.5 * (1 - confLevel), n1 + n2 - 2) * normSd;
             ret.lowerBound = meanDiff + delta;
             ret.upperBound = meanDiff - delta;
         } else {
@@ -295,6 +297,13 @@ unittest {
     assert(approxEqual(t6.testStat, 2.0567));
     assert(approxEqual(t6.lowerBound, 0.391422));
     assert(t6.upperBound == double.infinity);
+
+    auto t7 = studentsTTest([1, 2, 4], [3]);
+    assert(approxEqual(t7.p, 0.7418));
+    assert(approxEqual(t7.testStat, 0.-.378));
+    assert(approxEqual(t7.lowerBound, -8.255833));
+    assert(approxEqual(t7.upperBound, 6.922499));
+
 }
 
 /**Two-sample T-test for difference in means.  Does NOT assume variances are equal.
@@ -668,6 +677,10 @@ unittest {
     auto welchRes2 = welchAnova(summary(thing1), thing2, thing3);
     assert( approxEqual(welchRes2.testStat, 0.342));
     assert( approxEqual(welchRes2.p, 0.7257));
+
+    auto res5 = fTest([1, 2, 4], [3]);
+    assert(approxEqual(res5.testStat, 0.1429));
+    assert(approxEqual(res5.p, 0.7418));
 }
 
 // Levene's Test, Welch ANOVA and F test have massive overlap at the

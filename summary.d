@@ -660,7 +660,7 @@ public:
         Mean squared error.  In other words, a biased estimate of variance.
         */
         double mse() {
-            return (_k < 2) ? double.nan : _var / _k;
+            return (_k < 1) ? double.nan : _var / _k;
         }
 
         ///
@@ -927,7 +927,7 @@ public:
         Mean squared error.  In other words, a biased estimate of variance.
         */
         double mse() {
-            return (_k < 2) ? double.nan : _m2 / _k;
+            return (_k < 1) ? double.nan : _m2 / _k;
         }
 
         ///
