@@ -105,7 +105,7 @@
 module dstats.distrib;
 
 import std.algorithm, std.conv, std.exception, std.math, std.traits,
-    std.mathspecial;
+    std.mathspecial, std.range;
 
 alias std.mathspecial.erfc erfc;
 alias std.mathspecial.erf erf;
@@ -1706,6 +1706,53 @@ unittest {
 
     assert(approxEqual(invBetaCDF(0.3483, 2, 3), 0.3));
     assert(approxEqual(invBetaCDF(0.9980752, 0.9, 4), 0.78));
+}
+
+/**
+The Dirichlet probability density.
+
+Params:
+
+x = An input range of observed values.  All must be between [0, 1].  They
+must also sum to 1, though this is not checked because small deviations from
+this may result due to numerical error.
+
+alpha = A forward range of parameters.  This must have the same length as
+x.
+*/
+double dirichletPDF(X, A)(X x, A alpha)
+if(isInputRange!X && isForwardRange!A && is(ElementType!X : double) &&
+is(ElementType!A : double)) {
+
+    // Evaluating the multinomial beta function = product(gamma(alpha_1)) over
+    // gamma(sum(alpha)), in log space.
+    double logNormalizer = 0;
+    double sumAlpha = 0;
+
+    foreach(a; alpha.save) {
+        dstatsEnforce(a > 0, "All alpha values must be > 0 for Dirichlet distribution.");
+        logNormalizer += lgamma(a);
+        sumAlpha += a;
+    }
+
+    logNormalizer -= lgamma(sumAlpha);
+    double sum = 0;
+    foreach(xElem, a; lockstep(x, alpha)) {
+        dstatsEnforce(xElem > 0, "All x values must be > 0 for Dirichlet distribution.");
+        sum += log(xElem) * (a - 1);
+    }
+
+    sum -= logNormalizer;
+    return exp(sum);
+}
+
+unittest {
+    // Test against beta
+    assert(approxEqual(dirichletPDF([0.1, 0.9], [2, 3]), betaPDF(0.1, 2, 3)));
+
+    // A few values from R's gregmisc package
+    assert(approxEqual(dirichletPDF([0.1, 0.2, 0.7], [4, 5, 6]), 1.356672));
+    assert(approxEqual(dirichletPDF([0.8, 0.05, 0.15], [8, 5, 6]), 0.04390199));
 }
 
 ///
