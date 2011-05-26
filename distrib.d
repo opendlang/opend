@@ -1657,6 +1657,58 @@ unittest {
 }
 
 ///
+double betaPDF(double x, double alpha, double beta) {
+    dstatsEnforce(alpha > 0, "Alpha must be >0 for beta distribution.");
+    dstatsEnforce(beta > 0, "Beta must be >0 for beta distribution.");
+    dstatsEnforce(x >= 0 && x <= 1, "x must be between 0, 1 for beta distribution.");
+
+    return x ^^ (alpha - 1) * (1 - x) ^^ (beta - 1) /
+        std.mathspecial.beta(alpha, beta);
+}
+
+///
+double betaCDF(double x, double alpha, double beta) {
+    dstatsEnforce(alpha > 0, "Alpha must be >0 for beta distribution.");
+    dstatsEnforce(beta > 0, "Beta must be >0 for beta distribution.");
+    dstatsEnforce(x >= 0 && x <= 1, "x must be between 0, 1 for beta distribution.");
+
+    return std.mathspecial.betaIncomplete(alpha, beta, x);
+}
+
+///
+double betaCDFR(double x, double alpha, double beta) {
+    dstatsEnforce(alpha > 0, "Alpha must be >0 for beta distribution.");
+    dstatsEnforce(beta > 0, "Beta must be >0 for beta distribution.");
+    dstatsEnforce(x >= 0 && x <= 1, "x must be between 0, 1 for beta distribution.");
+
+    return std.mathspecial.betaIncomplete(beta, alpha, 1 - x);
+}
+
+///
+double invBetaCDF(double p, double alpha, double beta) {
+    dstatsEnforce(alpha > 0, "Alpha must be >0 for beta distribution.");
+    dstatsEnforce(beta > 0, "Beta must be >0 for beta distribution.");
+    dstatsEnforce(p >= 0 && p <= 1, "p must be between 0, 1 for beta distribution.");
+
+    return std.mathspecial.betaIncompleteInverse(alpha, beta, p);
+}
+
+unittest {
+    // Values from R.
+    assert(approxEqual(betaPDF(0.3, 2, 3), 1.764));
+    assert(approxEqual(betaPDF(0.78, 0.9, 4), 0.03518569));
+
+    assert(approxEqual(betaCDF(0.3, 2, 3), 0.3483));
+    assert(approxEqual(betaCDF(0.78, 0.9, 4), 0.9980752));
+
+    assert(approxEqual(betaCDFR(0.3, 2, 3), 0.6517));
+    assert(approxEqual(betaCDFR(0.78, 0.9, 4), 0.001924818));
+
+    assert(approxEqual(invBetaCDF(0.3483, 2, 3), 0.3));
+    assert(approxEqual(invBetaCDF(0.9980752, 0.9, 4), 0.78));
+}
+
+///
 double cauchyPDF(double X, double X0 = 0, double gamma = 1) {
     dstatsEnforce(gamma > 0, "gamma must be > 0 for Cauchy distribution.");
 

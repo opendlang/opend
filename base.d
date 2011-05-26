@@ -65,8 +65,8 @@ version(unittest) {
 }
 
 class DstatsArgumentException : Exception {
-    this(string msg) {
-        super(msg);
+    this(string msg, string file, int line) {
+        super(msg, file, line);
     }
 }
 
@@ -75,8 +75,7 @@ T dstatsEnforce(T, string file = __FILE__, int line = __LINE__)
     if(!value) {
         const(char)[] lazyMsg = msg;
         auto exceptMsg = (lazyMsg !is null) ? lazyMsg.idup : "Invalid argument.";
-        throw new DstatsArgumentException(file ~ " (" ~ text(line) ~ ") :  " ~
-            exceptMsg);
+        throw new DstatsArgumentException(exceptMsg, file, line);
     }
 
     return value;
