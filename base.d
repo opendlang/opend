@@ -37,7 +37,7 @@
 module dstats.base;
 
 import std.math, std.traits, std.typecons, std.algorithm, std.range,
-    std.exception, std.conv, std.functional;
+    std.exception, std.conv, std.functional, std.typetuple;
 
 import dstats.alloc, dstats.sort;
 
@@ -1574,6 +1574,15 @@ unittest {
         rng.popFront;
         assert(rng.empty);
         myFile.close();
+    }
+}
+
+// Used for ILP optimizations.
+package template StaticIota(size_t upTo) {
+    static if(upTo == 0) {
+        alias TypeTuple!() StaticIota;
+    } else {
+        alias TypeTuple!(StaticIota!(upTo - 1), upTo - 1) StaticIota;
     }
 }
 

@@ -85,7 +85,7 @@ if(doubleInput!(T) && doubleInput!(U)) {
                 immutable kMinus1 = _k;
                 immutable kNeg1 = 1 / ++_k;
 
-                foreach(j; 0..nILP) {
+                foreach(j; StaticIota!nILP) {
                     immutable double delta1 = input1[i + j] - _mean1[j];
                     immutable double delta2 = input2[i + j] - _mean2[j];
                     immutable delta1N = delta1 * kNeg1;

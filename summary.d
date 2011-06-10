@@ -393,7 +393,7 @@ if(doubleIterable!(T)) {
             for(; i + nILP < data.length; i += nILP) {
                 immutable kNeg1 = 1 / ++k;
 
-                foreach(j; 0..nILP) {
+                foreach(j; StaticIota!nILP) {
                     means[j] += (data[i + j] - means[j]) * kNeg1;
                 }
             }
@@ -513,7 +513,7 @@ if(doubleIterable!(T)) {
         if(data.length > 2 * nILP) {
 
             for(; i + nILP < data.length; i += nILP) {
-                foreach(j; 0..nILP) {
+                foreach(j; StaticIota!nILP) {
                     sum[j] += data[i + j];
                 }
             }
@@ -711,7 +711,7 @@ if(doubleIterable!(T)) {
                 immutable kMinus1 = k;
                 immutable kNeg1 = 1 / ++k;
 
-                foreach(j; 0..nILP) {
+                foreach(j; StaticIota!nILP) {
                     immutable double delta = data[i + j] - means[j];
                     immutable deltaN = delta * kNeg1;
 
