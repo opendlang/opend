@@ -2143,7 +2143,7 @@ private void logisticRegressPenalizedImpl(Y, X...)
                 z[] += col[] * betas[i + 1];
             } else {
                 foreach(j, ref elem; z) {
-                    elem += col[j] + betas[i + 1];
+                    elem += col[j] * betas[i + 1];
                 }
             }
         }
@@ -2478,11 +2478,12 @@ auto toRandomAccessRoR(T)(size_t len, T ror) {
         // even if it is random access.
         return tempdup(ror);
     } else {
-        auto ret = newStack!(E[])(walkLength(ror.save));
+        alias ElementType!E EE;
+        auto ret = newStack!(EE[])(walkLength(ror.save));
 
         foreach(ref col; ret) {
             scope(exit) ror.popFront();
-            col = newStack!E(len);
+            col = newStack!EE(len);
 
             size_t i;
             foreach(elem; ror.front) {
