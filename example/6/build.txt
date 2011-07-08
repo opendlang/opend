@@ -1,0 +1,2 @@
+==Basic build command==
+dmd main.d -I../../src -version=CAIRO_HAS_SVG_SURFACE -L-lcairod -L-lcairo -L-L../../
