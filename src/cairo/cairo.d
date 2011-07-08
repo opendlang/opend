@@ -829,6 +829,9 @@ public class Device
 
 public class Surface
 {
+    private:
+        bool _disposed;
+
     protected:
         void checkError()
         {
@@ -837,7 +840,9 @@ public class Surface
     
     public:
         cairo_surface_t* nativePointer;
-        
+
+        /* Warning: ptr reference count is not increased by this function!
+         * Adjust reference count before calling it if necessary*/
         this(cairo_surface_t* ptr)
         {
             this.nativePointer = ptr;
@@ -847,7 +852,23 @@ public class Surface
             }
             checkError();
         }
-        
+
+        ~this()
+        {
+            dispose();
+        }
+
+        void dispose()
+        {
+            if(!_disposed)
+            {
+                cairo_surface_destroy(this.nativePointer);
+                debug
+                    this.nativePointer = null;
+                _disposed = true;
+            }
+        }
+
         static Surface castFrom(Surface other)
         {
             return other;
@@ -858,13 +879,16 @@ public class Surface
             return T.castFrom(this);
         }
         
-        static Surface createFromNative(cairo_surface_t* ptr)
+        static Surface createFromNative(cairo_surface_t* ptr, bool adjRefCount = true)
         {
             if(!ptr)
             {
                 throw new CairoException(cairo_status_t.CAIRO_STATUS_NULL_POINTER);
             }
             throwError(cairo_surface_status(ptr));
+            //Adjust reference count
+            if(adjRefCount)
+                cairo_surface_reference(ptr);
             switch(cairo_surface_get_type(ptr))
             {
                 case cairo_surface_type_t.CAIRO_SURFACE_TYPE_IMAGE:
@@ -908,25 +932,13 @@ public class Surface
         
         static Surface createSimilar(Surface other, Content content, int width, int height)
         {
-            return createFromNative(cairo_surface_create_similar(other.nativePointer, content, width, height));
+            return createFromNative(cairo_surface_create_similar(other.nativePointer, content, width, height), false);
         }
         
         static Surface createForRectangle(Surface target, Rectangle rect)
         {
             return createFromNative(cairo_surface_create_for_rectangle(target.nativePointer,
-                rect.point.x, rect.point.y, rect.width, rect.height));
-        }
-        
-        void reference()
-        {
-            cairo_surface_reference(this.nativePointer);
-            checkError();
-        }
-        
-        void destroy()
-        {
-            cairo_surface_destroy(this.nativePointer);
-            checkError();
+                rect.point.x, rect.point.y, rect.width, rect.height), false);
         }
         
         void finish()
@@ -946,6 +958,7 @@ public class Surface
             auto ptr = cairo_surface_get_device(this.nativePointer);
             if(!ptr)
                 return null;
+            cairo_device_reference(ptr);
             return new Device(ptr);
         }
         
@@ -1010,14 +1023,8 @@ public class Surface
                 checkError();
             return cairo_surface_get_type(this.nativePointer);
         }
-        
-        uint getReferenceCount()
-        {
-            scope(exit)
-                checkError();
-            return cairo_surface_get_reference_count(this.nativePointer);
-        }
-        
+
+        /*
         void setUserData(const cairo_user_data_key_t* key, void* data, cairo_destroy_func_t destroy)
         {
             cairo_surface_set_user_data(this.nativePointer, key, data, destroy);
@@ -1029,7 +1036,7 @@ public class Surface
             scope(exit)
                 checkError();
             return cairo_surface_get_user_data(this.nativePointer, key);
-        }
+        }*/
         
         void copyPage()
         {
@@ -1071,6 +1078,8 @@ public class ImageSurface : Surface
     protected ubyte[] _data;
     
     public:
+        /* Warning: ptr reference count is not increased by this function!
+         * Adjust reference count before calling it if necessary*/
         this(cairo_surface_t* ptr)
         {
             super(ptr);
@@ -1095,7 +1104,10 @@ public class ImageSurface : Surface
             auto type = cairo_surface_get_type(other.nativePointer);
             throwError(cairo_surface_status(other.nativePointer));
             if(type == cairo_surface_type_t.CAIRO_SURFACE_TYPE_IMAGE)
+            {
+                cairo_surface_reference(other.nativePointer);
                 return new ImageSurface(other.nativePointer);
+            }
             else
                 return null;
         }
