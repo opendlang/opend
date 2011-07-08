@@ -19,6 +19,10 @@ version(CAIRO_HAS_SVG_SURFACE)
 {
     import cairo.svg;
 }
+version(CAIRO_HAS_WIN32_SURFACE)
+{
+    import cairo.win32;
+}
 public alias cairo_content_t Content;
 public alias cairo_antialias_t AntiAlias;
 public alias cairo_subpixel_order_t SubpixelOrder;
@@ -699,6 +703,13 @@ public class Surface
                 {
                     case cairo_surface_type_t.CAIRO_SURFACE_TYPE_SVG:
                         return new SVGSurface(ptr);
+                }
+                version(CAIRO_HAS_WIN32_SURFACE)
+                {
+                    case cairo_surface_type_t.CAIRO_SURFACE_TYPE_WIN32:
+                        return new Win32Surface(ptr);
+                    case cairo_surface_type_t.CAIRO_SURFACE_TYPE_WIN32_PRINTING:
+                        return new Win32Surface(ptr);
                 }
                 default:
                     return new Surface(ptr);
