@@ -1,6 +1,6 @@
-module cairo.base;
+module cairo.cairo;
 
-import cairo.c.base;
+import cairo.c.cairo;
 
 import std.conv;
 import std.string;
@@ -637,7 +637,7 @@ public class Device
 
 public class Surface
 {
-    private:
+    protected:
         void checkError()
         {
             throwError(cairo_surface_status(nativePointer));
