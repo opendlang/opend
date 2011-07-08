@@ -35,13 +35,15 @@
  *	Carl D. Worth <cworth@cworth.org>
  */
 
+/*Contains cairo.h and cairo-version.h stuff*/
+
 module cairo.c.cairo;
 
 import std.conv;
 
 enum CAIRO_VERSION_MAJOR = 1;
 enum CAIRO_VERSION_MINOR = 10;
-enum CAIRO_VERSION_MICRO = 0;
+enum CAIRO_VERSION_MICRO = 2;
 
 ulong CAIRO_VERSION_ENCODE(uint major, uint minor, uint micro)
 {
