@@ -1,0 +1,19 @@
+* Revisit C bindings and check for const vs immutable. Example: cairo_ps_level_to_string
+  should maybe return immutable(char*) instead of const(char*)
+* Properties vs. functions. Cairo binding docs suggest not to use properties instead of functions
+  as new overloads might be added later. Still some function make a lot more sense as properties  
+  (cairo.ps.PSSurface.setEPS)
+* Error handling might be to conservative in some cases. Some scope(exit) checkError(); might not be
+  necessary
+* Streaming output (cairo_*_surface_create_for_stream) is not implemented. Needs new streaming
+  model from phobos
+* Documentation
+* Missing surfaces: At least
+    + cairo-drm.h
+    + cairo-gl.h
+    + cairo-qt.h
+    + cairo-quartz.h
+    + cairo-skia.h
+* Split Win32Surface in CAIRO_SURFACE_TYPE_WIN32_PRINTING and CAIRO_SURFACE_TYPE_WIN32 surface?
+* For scopes which cannot throw Exceptions, scope(exit) checkError(); is overkill. Rewrite those
+* Font support
