@@ -27,6 +27,11 @@ version(CAIRO_HAS_XCB_SURFACE)
 {
     import cairo.xcb;
 }
+version(CAIRO_HAS_DIRECTFB_SURFACE)
+{
+    import cairo.directfb;
+}
+
 public alias cairo_content_t Content;
 public alias cairo_antialias_t AntiAlias;
 public alias cairo_subpixel_order_t SubpixelOrder;
@@ -719,6 +724,11 @@ public class Surface
                 {
                     case cairo_surface_type_t.CAIRO_SURFACE_TYPE_XCB:
                         return new XCBSurface(ptr);
+                }
+                version(CAIRO_HAS_DIRECTFB_SURFACE)
+                {
+                    case cairo_surface_type_t.CAIRO_SURFACE_TYPE_DIRECTFB:
+                        return new DirectFBSurface(ptr);
                 }
                 default:
                     return new Surface(ptr);
