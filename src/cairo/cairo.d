@@ -7,6 +7,10 @@ import std.string;
 import std.traits;
 import core.exception;
 
+version(CAIRO_HAS_PS_SURFACE)
+{
+    import cairo.ps;
+}
 version(CAIRO_HAS_PDF_SURFACE)
 {
     import cairo.pdf;
@@ -677,6 +681,11 @@ public class Surface
             {
                 case cairo_surface_type_t.CAIRO_SURFACE_TYPE_IMAGE:
                     return new ImageSurface(ptr);
+                version(CAIRO_HAS_PS_SURFACE)
+                {
+                    case cairo_surface_type_t.CAIRO_SURFACE_TYPE_PS:
+                        return new PSSurface(ptr);
+                }
                 version(CAIRO_HAS_PDF_SURFACE)
                 {
                     case cairo_surface_type_t.CAIRO_SURFACE_TYPE_PDF:
