@@ -7,6 +7,10 @@ import std.string;
 import std.traits;
 import core.exception;
 
+version(CAIRO_HAS_PDF_SURFACE)
+{
+    import cairo.pdf;
+}
 public alias cairo_content_t Content;
 public alias cairo_antialias_t AntiAlias;
 public alias cairo_subpixel_order_t SubpixelOrder;
@@ -673,6 +677,11 @@ public class Surface
             {
                 case cairo_surface_type_t.CAIRO_SURFACE_TYPE_IMAGE:
                     return new ImageSurface(ptr);
+                version(CAIRO_HAS_PDF_SURFACE)
+                {
+                    case cairo_surface_type_t.CAIRO_SURFACE_TYPE_PDF:
+                        return new PDFSurface(ptr);
+                }
                 default:
                     return new Surface(ptr);
             }

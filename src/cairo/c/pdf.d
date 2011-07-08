@@ -36,7 +36,7 @@
 
 module cairo.c.pdf;
 
-import cairo.c.base;
+import cairo.c.cairo;
 
 version(CAIRO_HAS_PDF_SURFACE)
 {
@@ -74,7 +74,7 @@ version(CAIRO_HAS_PDF_SURFACE)
                                cairo_pdf_version_t  	 ver);
         
         void
-        cairo_pdf_get_versions (const cairo_pdf_version_t	**versions,
+        cairo_pdf_get_versions (const(cairo_pdf_version_t*)* versions,
                                 int                      	 *num_versions);
         
         const(char*)
@@ -85,4 +85,8 @@ version(CAIRO_HAS_PDF_SURFACE)
                         double		 width_in_points,
                         double		 height_in_points);
     }
+}
+else
+{
+    //static assert(false, "CairoD was not compiled with support for the pdf backend");
 }
