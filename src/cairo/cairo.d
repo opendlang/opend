@@ -957,7 +957,6 @@ public struct Context
         void destroy()
         {
             cairo_destroy(this.nativePointer);
-            checkError();
         }
         
         void save()
