@@ -23,6 +23,10 @@ version(CAIRO_HAS_WIN32_SURFACE)
 {
     import cairo.win32;
 }
+version(CAIRO_HAS_XCB_SURFACE)
+{
+    import cairo.xcb;
+}
 public alias cairo_content_t Content;
 public alias cairo_antialias_t AntiAlias;
 public alias cairo_subpixel_order_t SubpixelOrder;
@@ -710,6 +714,11 @@ public class Surface
                         return new Win32Surface(ptr);
                     case cairo_surface_type_t.CAIRO_SURFACE_TYPE_WIN32_PRINTING:
                         return new Win32Surface(ptr);
+                }
+                version(CAIRO_HAS_XCB_SURFACE)
+                {
+                    case cairo_surface_type_t.CAIRO_SURFACE_TYPE_XCB:
+                        return new XCBSurface(ptr);
                 }
                 default:
                     return new Surface(ptr);
