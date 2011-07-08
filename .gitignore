@@ -1,0 +1,12 @@
+#Ignore built library
+libcairod.a
+
+#Ignore object files
+*.o
+
+#Ignore example binaries
+example/*/main
+
+#Ignore example output
+example/*/*.svg
+example/*/*.png
