@@ -1165,109 +1165,144 @@ public class ImageSurface : Surface
 public struct Context
 {
     private:
+        struct Impl
+        {
+            cairo_t* nativePointer;
+            uint refs = uint.max / 2;
+            this(cairo_t* np, uint r)
+            {
+                nativePointer = np;
+                refs = r;
+            }
+        }
+        Impl* p;
+    
+        void close()
+        {
+            if (!p) return; // succeed vacuously
+            if (!p.nativePointer)
+            {
+                p = null; // start a new life
+                return;
+            }
+
+            cairo_destroy(p.nativePointer);
+            p.nativePointer = null; // nullify the handle anyway
+            --p.refs;
+            p = null;
+        }
+
         void checkError()
         {
-            throwError(cairo_status(nativePointer));
+            throwError(cairo_status(p.nativePointer));
         }
+        
     
     public:
-        cairo_t* nativePointer;
-        
         this(Surface target)
         {
-            nativePointer = cairo_create(target.nativePointer);
-            checkError();
+            auto ptr = cairo_create(target.nativePointer);
+            throwError(cairo_status(ptr));
+            p = new Impl(ptr, 1);
+        }
+
+        ~this()
+        {
+            if (!p) return;
+            if (p.refs == 1) close;
+            else --p.refs;
         }
         
-        void reference()
+        this(this)
         {
-            cairo_reference(this.nativePointer);
-            checkError();
+            if (!p) return;
+            assert(p.refs);
+            ++p.refs;
         }
-        
-        void destroy()
+
+        void opAssign(Context rhs)
         {
-            cairo_destroy(this.nativePointer);
+            p = rhs.p;
         }
         
         void save()
         {
-            cairo_save(this.nativePointer);
+            cairo_save(this.p.nativePointer);
             checkError();
         }
         
         void restore()
         {
-            cairo_restore(this.nativePointer);
+            cairo_restore(this.p.nativePointer);
             checkError();
         }
         
         Surface getTarget()
         {
-            return Surface.createFromNative(cairo_get_target(this.nativePointer));
+            return Surface.createFromNative(cairo_get_target(this.p.nativePointer));
         }
         
         void pushGroup()
         {
-            cairo_push_group(this.nativePointer);
+            cairo_push_group(this.p.nativePointer);
             checkError();
         }
         
         void pushGroup(Content cont)
         {
-            cairo_push_group_with_content(this.nativePointer, cont);
+            cairo_push_group_with_content(this.p.nativePointer, cont);
             checkError();
         }
         
         void popGroup()
         {
-            cairo_pop_group(this.nativePointer);
+            cairo_pop_group(this.p.nativePointer);
             checkError();
         }
         
         void popGroupToSource()
         {
-            cairo_pop_group_to_source(this.nativePointer);
+            cairo_pop_group_to_source(this.p.nativePointer);
             checkError();
         }
         
         Surface getGroupTarget()
         {
-            return Surface.createFromNative(cairo_get_group_target(this.nativePointer));
+            return Surface.createFromNative(cairo_get_group_target(this.p.nativePointer));
         }
         
         void setSourceRBG(double red, double green, double blue)
         {
-            cairo_set_source_rgb(this.nativePointer, red, green, blue);
+            cairo_set_source_rgb(this.p.nativePointer, red, green, blue);
             checkError();
         }
         
         void setSourceRGBA(double red, double green, double blue, double alpha)
         {
-            cairo_set_source_rgba(this.nativePointer, red, green, blue, alpha);
+            cairo_set_source_rgba(this.p.nativePointer, red, green, blue, alpha);
             checkError();
         }
         
         void setSource(Pattern pat)
         {
-            cairo_set_source(this.nativePointer, pat.nativePointer);
+            cairo_set_source(this.p.nativePointer, pat.nativePointer);
             checkError();
         }
         
         void setSourceSurface(Surface sur, double x, double y)
         {
-            cairo_set_source_surface(this.nativePointer, sur.nativePointer, x, y);
+            cairo_set_source_surface(this.p.nativePointer, sur.nativePointer, x, y);
             checkError();
         }
         
         Pattern getSource()
         {
-            return Pattern.createFromNative(cairo_get_source(this.nativePointer));
+            return Pattern.createFromNative(cairo_get_source(this.p.nativePointer));
         }
         
         void setAntiAlias(AntiAlias antialias)
         {
-            cairo_set_antialias(this.nativePointer, antialias);
+            cairo_set_antialias(this.p.nativePointer, antialias);
             checkError();
         }
         
@@ -1275,12 +1310,12 @@ public struct Context
         {
             scope(exit)
                 checkError();
-            return cairo_get_antialias(this.nativePointer);
+            return cairo_get_antialias(this.p.nativePointer);
         }
         
         void setDash(const(double[]) dashes, double offset)
         {
-            cairo_set_dash(this.nativePointer, dashes.ptr, dashes.length, offset);
+            cairo_set_dash(this.p.nativePointer, dashes.ptr, dashes.length, offset);
             checkError();
         }
         
@@ -1288,21 +1323,21 @@ public struct Context
         {
             scope(exit)
                 checkError();
-            return cairo_get_dash_count(this.nativePointer);
+            return cairo_get_dash_count(this.p.nativePointer);
         }
         
         double[] getDash(out double offset)
         {
             double[] dashes;
             dashes.length = this.getDashCount();
-            cairo_get_dash(this.nativePointer, dashes.ptr, &offset);
+            cairo_get_dash(this.p.nativePointer, dashes.ptr, &offset);
             checkError();
             return dashes;
         }
         
         void setFillRule(FillRule rule)
         {
-            cairo_set_fill_rule(this.nativePointer, rule);
+            cairo_set_fill_rule(this.p.nativePointer, rule);
             checkError();
         }
         
@@ -1310,12 +1345,12 @@ public struct Context
         {
             scope(exit)
                 checkError();
-            return cairo_get_fill_rule(this.nativePointer);
+            return cairo_get_fill_rule(this.p.nativePointer);
         }
         
         void setLineCap(LineCap cap)
         {
-            cairo_set_line_cap(this.nativePointer, cap);
+            cairo_set_line_cap(this.p.nativePointer, cap);
             checkError();
         }
         
@@ -1323,12 +1358,12 @@ public struct Context
         {
             scope(exit)
                 checkError();
-            return cairo_get_line_cap(this.nativePointer);
+            return cairo_get_line_cap(this.p.nativePointer);
         }
         
         void setLineJoin(LineJoin join)
         {
-            cairo_set_line_join(this.nativePointer, join);
+            cairo_set_line_join(this.p.nativePointer, join);
             checkError();
         }
         
@@ -1336,12 +1371,12 @@ public struct Context
         {
             scope(exit)
                 checkError();
-            return cairo_get_line_join(this.nativePointer);
+            return cairo_get_line_join(this.p.nativePointer);
         }
         
         void setLineWidth(double width)
         {
-            cairo_set_line_width(this.nativePointer, width);
+            cairo_set_line_width(this.p.nativePointer, width);
             checkError();
         }
         
@@ -1349,12 +1384,12 @@ public struct Context
         {
             scope(exit)
                 checkError();
-            return cairo_get_line_width(this.nativePointer);
+            return cairo_get_line_width(this.p.nativePointer);
         }
         
         void setMiterLimit(double limit)
         {
-            cairo_set_miter_limit(this.nativePointer, limit);
+            cairo_set_miter_limit(this.p.nativePointer, limit);
             checkError();
         }
         
@@ -1362,12 +1397,12 @@ public struct Context
         {
             scope(exit)
                 checkError();
-            return cairo_get_miter_limit(this.nativePointer);
+            return cairo_get_miter_limit(this.p.nativePointer);
         }
         
         void setOperator(Operator op)
         {
-            cairo_set_operator(this.nativePointer, op);
+            cairo_set_operator(this.p.nativePointer, op);
             checkError();
         }
         
@@ -1375,12 +1410,12 @@ public struct Context
         {
             scope(exit)
                 checkError();
-            return cairo_get_operator(this.nativePointer);
+            return cairo_get_operator(this.p.nativePointer);
         }
         
         void setTolerance(double tolerance)
         {
-            cairo_set_tolerance(this.nativePointer, tolerance);
+            cairo_set_tolerance(this.p.nativePointer, tolerance);
             checkError();
         }
         
@@ -1388,25 +1423,25 @@ public struct Context
         {
             scope(exit)
                 checkError();
-            return cairo_get_tolerance(this.nativePointer);
+            return cairo_get_tolerance(this.p.nativePointer);
         }
         
         void clip()
         {
-            cairo_clip(this.nativePointer);
+            cairo_clip(this.p.nativePointer);
             checkError();
         }
         
         void clipPreserve()
         {
-            cairo_clip_preserve(this.nativePointer);
+            cairo_clip_preserve(this.p.nativePointer);
             checkError();
         }
         
         Box clipExtents()
         {
             Box tmp;
-            cairo_clip_extents(this.nativePointer, &tmp.point1.x, &tmp.point1.y, &tmp.point2.x, &tmp.point2.y);
+            cairo_clip_extents(this.p.nativePointer, &tmp.point1.x, &tmp.point1.y, &tmp.point2.x, &tmp.point2.y);
             checkError();
             return tmp;
         }
@@ -1415,19 +1450,19 @@ public struct Context
         {
             scope(exit)
                 checkError();
-            return cairo_in_clip(this.nativePointer, point.x, point.y) ? true : false;
+            return cairo_in_clip(this.p.nativePointer, point.x, point.y) ? true : false;
         }
         
         void resetClip()
         {
-            cairo_reset_clip(this.nativePointer);
+            cairo_reset_clip(this.p.nativePointer);
             checkError();
         }
         
         Rectangle[] copyClipRectangles()
         {
             Rectangle[] list;
-            auto nList = cairo_copy_clip_rectangle_list(this.nativePointer);
+            auto nList = cairo_copy_clip_rectangle_list(this.p.nativePointer);
             scope(exit)
                 cairo_rectangle_list_destroy(nList);
             checkError();
@@ -1444,20 +1479,20 @@ public struct Context
         
         void fill()
         {
-            cairo_fill(this.nativePointer);
+            cairo_fill(this.p.nativePointer);
             checkError();
         }
         
         void fillPreserve()
         {
-            cairo_fill_preserve(this.nativePointer);
+            cairo_fill_preserve(this.p.nativePointer);
             checkError();
         }
         
         Box fillExtends()
         {
             Box tmp;
-            cairo_fill_extents(this.nativePointer, &tmp.point1.x, &tmp.point1.y, &tmp.point2.x, &tmp.point2.y);
+            cairo_fill_extents(this.p.nativePointer, &tmp.point1.x, &tmp.point1.y, &tmp.point2.x, &tmp.point2.y);
             checkError();
             return tmp;
         }
@@ -1466,49 +1501,49 @@ public struct Context
         {
             scope(exit)
                 checkError();
-            return cairo_in_fill(this.nativePointer, point.x, point.y) ? true : false;
+            return cairo_in_fill(this.p.nativePointer, point.x, point.y) ? true : false;
         }
         
         void mask(Pattern pattern)
         {
-            cairo_mask(this.nativePointer, pattern.nativePointer);
+            cairo_mask(this.p.nativePointer, pattern.nativePointer);
             checkError();
         }
         
         void maskSurface(Surface surface, Point location)
         {
-            cairo_mask_surface(this.nativePointer, surface.nativePointer, location.x, location.y);
+            cairo_mask_surface(this.p.nativePointer, surface.nativePointer, location.x, location.y);
             checkError();
         }
         
         void paint()
         {
-            cairo_paint(this.nativePointer);
+            cairo_paint(this.p.nativePointer);
             checkError();
         }
         
         void paintWithAlpha(double alpha)
         {
-            cairo_paint_with_alpha(this.nativePointer, alpha);
+            cairo_paint_with_alpha(this.p.nativePointer, alpha);
             checkError();
         }
         
         void stroke()
         {
-            cairo_stroke(this.nativePointer);
+            cairo_stroke(this.p.nativePointer);
             checkError();
         }
         
         void strokePreserve()
         {
-            cairo_stroke_preserve(this.nativePointer);
+            cairo_stroke_preserve(this.p.nativePointer);
             checkError();
         }
         
         Box strokeExtends()
         {
             Box tmp;
-            cairo_stroke_extents(this.nativePointer, &tmp.point1.x, &tmp.point1.y, &tmp.point2.x, &tmp.point2.y);
+            cairo_stroke_extents(this.p.nativePointer, &tmp.point1.x, &tmp.point1.y, &tmp.point2.x, &tmp.point2.y);
             checkError();
             return tmp;
         }
@@ -1517,18 +1552,18 @@ public struct Context
         {
             scope(exit)
                 checkError();
-            return cairo_in_stroke(this.nativePointer, point.x, point.y) ? true : false;
+            return cairo_in_stroke(this.p.nativePointer, point.x, point.y) ? true : false;
         }
         
         void copyPage()
         {
-            cairo_copy_page(this.nativePointer);
+            cairo_copy_page(this.p.nativePointer);
             checkError();
         }
         
         void showPage()
         {
-            cairo_show_page(this.nativePointer);
+            cairo_show_page(this.p.nativePointer);
             checkError();
         }
         
@@ -1536,12 +1571,12 @@ public struct Context
         {
             scope(exit)
                 checkError();
-            return cairo_get_reference_count(this.nativePointer);
+            return cairo_get_reference_count(this.p.nativePointer);
         }
         
         void setUserData(const cairo_user_data_key_t* key, void* data, cairo_destroy_func_t destroy)
         {
-            cairo_set_user_data(this.nativePointer, key, data, destroy);
+            cairo_set_user_data(this.p.nativePointer, key, data, destroy);
             checkError();
         }
         
@@ -1549,23 +1584,22 @@ public struct Context
         {
             scope(exit)
                 checkError();
-            return cairo_get_user_data(this.nativePointer, key);
+            return cairo_get_user_data(this.p.nativePointer, key);
         }
         
         Path copyPath()
         {
-            return Path(cairo_copy_path(this.nativePointer));
+            return Path(cairo_copy_path(this.p.nativePointer));
         }
         
         Path copyPathFlat()
         {
-            return Path(cairo_copy_path_flat(this.nativePointer));
+            return Path(cairo_copy_path_flat(this.p.nativePointer));
         }
         
-        //TODO: implement for custom Ranges
         void appendPath(T)(T path) if (is(T == PathRange))
         {
-            cairo_append_path(this.nativePointer, path.path.p.path);
+            cairo_append_path(this.p.nativePointer, path.path.p.path);
             checkError();
         }
         
@@ -1573,172 +1607,172 @@ public struct Context
         {
             scope(exit)
                 checkError();
-            return cairo_has_current_point(this.nativePointer) ? true : false;
+            return cairo_has_current_point(this.p.nativePointer) ? true : false;
         }
         
         Point getCurrentPoint()
         {
             Point tmp;
-            cairo_get_current_point(this.nativePointer, &tmp.x, &tmp.y);
+            cairo_get_current_point(this.p.nativePointer, &tmp.x, &tmp.y);
             checkError();
             return tmp;
         }
         
         void newPath()
         {
-            cairo_new_path(this.nativePointer);
+            cairo_new_path(this.p.nativePointer);
             checkError();
         }
         
         void newSubPath()
         {
-            cairo_new_sub_path(this.nativePointer);
+            cairo_new_sub_path(this.p.nativePointer);
             checkError();
         }
         
         void closePath()
         {
-            cairo_close_path(this.nativePointer);
+            cairo_close_path(this.p.nativePointer);
             checkError();
         }
         
         void arc(Point center, double radius, double angle1, double angle2)
         {
-            cairo_arc(this.nativePointer, center.x, center.y, radius, angle1, angle2);
+            cairo_arc(this.p.nativePointer, center.x, center.y, radius, angle1, angle2);
             checkError();
         }
         
         void arcNegative(Point center, double radius, double angle1, double angle2)
         {
-            cairo_arc_negative(this.nativePointer, center.x, center.y, radius, angle1, angle2);
+            cairo_arc_negative(this.p.nativePointer, center.x, center.y, radius, angle1, angle2);
             checkError();
         }
         
         void curveTo(Point p1, Point p2, Point p3)
         {
-            cairo_curve_to(this.nativePointer, p1.x, p1.y, p2.x, p2.y, p3.x, p3.y);
+            cairo_curve_to(this.p.nativePointer, p1.x, p1.y, p2.x, p2.y, p3.x, p3.y);
             checkError();
         }
         
         void lineTo(Point p1)
         {
-            cairo_line_to(this.nativePointer, p1.x, p1.y);
+            cairo_line_to(this.p.nativePointer, p1.x, p1.y);
             checkError();
         }
         
         void moveTo(Point p1)
         {
-            cairo_move_to(this.nativePointer, p1.x, p1.y);
+            cairo_move_to(this.p.nativePointer, p1.x, p1.y);
             checkError();
         }
         
         void rectangle(Rectangle r)
         {
-            cairo_rectangle(this.nativePointer, r.point.x, r.point.y, r.width, r.height);
+            cairo_rectangle(this.p.nativePointer, r.point.x, r.point.y, r.width, r.height);
             checkError();
         }
         
         //TODO: Glyph path
         void textPath(string text)
         {
-            cairo_text_path(this.nativePointer, toStringz(text));
+            cairo_text_path(this.p.nativePointer, toStringz(text));
             checkError();
         }
         
         void relCurveTo(Point rp1, Point rp2, Point rp3)
         {
-            cairo_rel_curve_to(this.nativePointer, rp1.x, rp1.y, rp2.x, rp2.y, rp3.x, rp3.y);
+            cairo_rel_curve_to(this.p.nativePointer, rp1.x, rp1.y, rp2.x, rp2.y, rp3.x, rp3.y);
             checkError();
         }
         
         void relLineTo(Point rp1)
         {
-            cairo_rel_line_to(this.nativePointer, rp1.x, rp1.y);
+            cairo_rel_line_to(this.p.nativePointer, rp1.x, rp1.y);
             checkError();
         }
         
         void relMoveTo(Point rp1)
         {
-            cairo_rel_move_to(this.nativePointer, rp1.x, rp1.y);
+            cairo_rel_move_to(this.p.nativePointer, rp1.x, rp1.y);
             checkError();
         }
         
         Box pathExtends()
         {
             Box tmp;
-            cairo_path_extents(this.nativePointer, &tmp.point1.x, &tmp.point1.y, &tmp.point2.x, &tmp.point2.y);
+            cairo_path_extents(this.p.nativePointer, &tmp.point1.x, &tmp.point1.y, &tmp.point2.x, &tmp.point2.y);
             checkError();
             return tmp;
         }
         
         void translate(double tx, double ty)
         {
-            cairo_translate(this.nativePointer, tx, ty);
+            cairo_translate(this.p.nativePointer, tx, ty);
             checkError();
         }
         
         void scale(double sx, double sy)
         {
-            cairo_scale(this.nativePointer, sx, sy);
+            cairo_scale(this.p.nativePointer, sx, sy);
             checkError();
         }
         
         void rotate(double angle)
         {
-            cairo_rotate(this.nativePointer, angle);
+            cairo_rotate(this.p.nativePointer, angle);
             checkError();
         }
         
         void transform(const Matrix matrix)
         {
-            cairo_transform(this.nativePointer, &matrix.nativeMatrix);
+            cairo_transform(this.p.nativePointer, &matrix.nativeMatrix);
             checkError();
         }
         
         void setMatrix(const Matrix matrix)
         {
-            cairo_set_matrix(this.nativePointer, &matrix.nativeMatrix);
+            cairo_set_matrix(this.p.nativePointer, &matrix.nativeMatrix);
             checkError();
         }
         
         Matrix getMatrix()
         {
             Matrix m;
-            cairo_get_matrix(this.nativePointer, &m.nativeMatrix);
+            cairo_get_matrix(this.p.nativePointer, &m.nativeMatrix);
             checkError();
             return m;
         }
         
         void identityMatrix()
         {
-            cairo_identity_matrix(this.nativePointer);
+            cairo_identity_matrix(this.p.nativePointer);
             checkError();
         }
         
         Point userToDevice(Point inp)
         {
-            cairo_user_to_device(this.nativePointer, &inp.x, &inp.y);
+            cairo_user_to_device(this.p.nativePointer, &inp.x, &inp.y);
             checkError();
             return inp;
         }
         
         Point userToDeviceDistance(Point inp)
         {
-            cairo_user_to_device_distance(this.nativePointer, &inp.x, &inp.y);
+            cairo_user_to_device_distance(this.p.nativePointer, &inp.x, &inp.y);
             checkError();
             return inp;
         }
         
         Point deviceToUser(Point inp)
         {
-            cairo_device_to_user(this.nativePointer, &inp.x, &inp.y);
+            cairo_device_to_user(this.p.nativePointer, &inp.x, &inp.y);
             checkError();
             return inp;
         }
         
         Point deviceToUserDistance(Point inp)
         {
-            cairo_device_to_user_distance(this.nativePointer, &inp.x, &inp.y);
+            cairo_device_to_user_distance(this.p.nativePointer, &inp.x, &inp.y);
             checkError();
             return inp;
         }
