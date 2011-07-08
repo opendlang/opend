@@ -17,3 +17,4 @@
 * Split Win32Surface in CAIRO_SURFACE_TYPE_WIN32_PRINTING and CAIRO_SURFACE_TYPE_WIN32 surface?
 * For scopes which cannot throw Exceptions, scope(exit) checkError(); is overkill. Rewrite those
 * Font support
+* Right now cairo_path_t/Path must be obtained from cairo. Add support for user defined Paths

@@ -141,17 +141,100 @@ public struct RGB
     public double red, green, blue;
 }
 
-public struct PathRange
+//TODO: user defined paths
+public struct Path
 {
     private:
-        cairo_path_t* path;
-        int pos = 0;
+        struct Impl
+        {
+            cairo_path_t* path;
+            uint refs = uint.max / 2;
+            this(cairo_path_t* pa, uint r)
+            {
+                path = pa;
+                refs = r;
+            }
+        }
+        Impl* p;
     
+        void close()
+        {
+            if (!p) return; // succeed vacuously
+            if (!p.path)
+            {
+                p = null; // start a new life
+                return;
+            }
+            scope(exit)
+            {
+                p.path = null; // nullify the handle anyway
+                --p.refs;
+                p = null;
+            }
+    
+            cairo_path_destroy(p.path);
+        }
+
+        cairo_status_t status()
+        {
+            assert(p);
+            return p.path.status;
+        }
+
+        cairo_path_data_t* data()
+        {
+            assert(p);
+            return p.path.data;
+        }
+
+        int num_data()
+        {
+            assert(p);
+            return p.path.num_data;
+        }
+
     public:
         this(cairo_path_t* path)
         {
-            this.path = path;
             throwError(path.status);
+            p = new Impl(path, 1);
+        }
+
+        ~this()
+        {
+            if (!p) return;
+            if (p.refs == 1) close;
+            else --p.refs;
+        }
+        
+        this(this)
+        {
+            if (!p) return;
+            assert(p.refs);
+            ++p.refs;
+        }
+
+        void opAssign(Path rhs)
+        {
+            p = rhs.p;
+        }
+
+        PathRange opSlice()
+        {
+            return PathRange(this);
+        }
+}
+
+public struct PathRange
+{
+    private:
+        Path path;
+        int pos = 0;
+    
+    public:
+        this(Path path)
+        {
+            this.path = path;
         }
         
         //TODO: Refcounting? & cairo_path_destroy()
@@ -1369,20 +1452,20 @@ public struct Context
             return cairo_get_user_data(this.nativePointer, key);
         }
         
-        PathRange copyPath()
+        Path copyPath()
         {
-            return PathRange(cairo_copy_path(this.nativePointer));
+            return Path(cairo_copy_path(this.nativePointer));
         }
         
-        PathRange copyPathFlat()
+        Path copyPathFlat()
         {
-            return PathRange(cairo_copy_path_flat(this.nativePointer));
+            return Path(cairo_copy_path_flat(this.nativePointer));
         }
         
         //TODO: implement for custom Ranges
         void appendPath(T)(T path) if (is(T == PathRange))
         {
-            cairo_append_path(this.nativePointer, path.path);
+            cairo_append_path(this.nativePointer, path.path.p.path);
             checkError();
         }
         
