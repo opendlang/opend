@@ -636,68 +636,117 @@ public class RadialGradient : Gradient
         }
 }
 
-public class FontOptions
+/**
+ * Warning: Instances must be created with opCall!
+ * Correct:
+ * --------
+ * auto options = FontOptions();
+ * --------
+ * Wrong:
+ * --------
+ * FontOptions options;
+ * --------
+ */
+public struct FontOptions
 {
     private:
+        struct Impl
+        {
+            cairo_font_options_t* nativePointer;
+            uint refs = uint.max / 2;
+            this(cairo_font_options_t* np, uint r)
+            {
+                nativePointer = np;
+                refs = r;
+            }
+        }
+        Impl* p;
+    
+        void close()
+        {
+            if (!p) return; // succeed vacuously
+            if (!p.nativePointer)
+            {
+                p = null; // start a new life
+                return;
+            }
+            cairo_font_options_destroy(p.nativePointer);
+            p.nativePointer = null; // nullify the handle anyway
+            --p.refs;
+            p = null;
+        }
+        
         void checkError()
         {
-            throwError(cairo_font_options_status(nativePointer));
+            throwError(cairo_font_options_status(p.nativePointer));
         }
     
     public:
-        cairo_font_options_t* nativePointer;
-        
-        this()
+        static FontOptions opCall()
         {
-            this.nativePointer = cairo_font_options_create();
-            checkError();
+            FontOptions opt;
+            auto ptr = cairo_font_options_create();
+            throwError(cairo_font_options_status(ptr));
+            opt.p = new Impl(ptr, 1);
+            return opt;
         }
-        
+
         this(cairo_font_options_t* ptr)
         {
-            this.nativePointer = ptr;
             if(!ptr)
             {
                 throw new CairoException(cairo_status_t.CAIRO_STATUS_NULL_POINTER);
             }
-            checkError();
+            throwError(cairo_font_options_status(ptr));
+            p = new Impl(ptr, 1);
+        }
+
+        ~this()
+        {
+            if (!p) return;
+            if (p.refs == 1) close;
+            else --p.refs;
         }
         
+        this(this)
+        {
+            if (!p) return;
+            assert(p.refs);
+            ++p.refs;
+        }
+
+        void opAssign(FontOptions rhs)
+        {
+            p = rhs.p;
+        }
+
         FontOptions copy()
         {
-            return new FontOptions(cairo_font_options_copy(this.nativePointer));
-        }
-        
-        void destroy()
-        {
-            cairo_font_options_destroy(this.nativePointer);
+            return FontOptions(cairo_font_options_copy(this.p.nativePointer));
         }
         
         void merge(FontOptions other)
         {
-            cairo_font_options_merge(this.nativePointer, other.nativePointer);
+            cairo_font_options_merge(this.p.nativePointer, other.p.nativePointer);
             checkError();
         }
         
         //TODO: how to merge that with toHash?
         ulong hash()
         {
-            ulong hash = cairo_font_options_hash(this.nativePointer);
+            ulong hash = cairo_font_options_hash(this.p.nativePointer);
             checkError();
             return hash;
         }
         
-        bool opEquals(FontOptions other)
+        const bool opEquals(ref const(FontOptions) other)
         {
-            scope(exit)
-                checkError();
-            
-            return cairo_font_options_equal(this.nativePointer, other.nativePointer) ? true : false;
+            return cairo_font_options_equal(this.p.nativePointer, other.p.nativePointer) ? true : false;
         }
         
         void setAntiAlias(AntiAlias antialias)
         {
-            cairo_font_options_set_antialias(this.nativePointer, antialias);
+            cairo_font_options_set_antialias(this.p.nativePointer, antialias);
             checkError();
         }
         
@@ -705,12 +754,12 @@ public class FontOptions
         {
             scope(exit)
                 checkError();
-            return cairo_font_options_get_antialias(this.nativePointer);
+            return cairo_font_options_get_antialias(this.p.nativePointer);
         }
         
         void setSubpixelOrder(SubpixelOrder order)
         {
-            cairo_font_options_set_subpixel_order(this.nativePointer, order);
+            cairo_font_options_set_subpixel_order(this.p.nativePointer, order);
             checkError();
         }
         
@@ -718,12 +767,12 @@ public class FontOptions
         {
             scope(exit)
                 checkError();
-            return cairo_font_options_get_subpixel_order(this.nativePointer);
+            return cairo_font_options_get_subpixel_order(this.p.nativePointer);
         }
         
         void setHintStyle(HintStyle style)
         {
-            cairo_font_options_set_hint_style(this.nativePointer, style);
+            cairo_font_options_set_hint_style(this.p.nativePointer, style);
             checkError();
         }
         
@@ -731,12 +780,12 @@ public class FontOptions
         {
             scope(exit)
                 checkError();
-            return cairo_font_options_get_hint_style(this.nativePointer);
+            return cairo_font_options_get_hint_style(this.p.nativePointer);
         }
         
         void setHintMetrics(HintMetrics metrics)
         {
-            cairo_font_options_set_hint_metrics(this.nativePointer, metrics);
+            cairo_font_options_set_hint_metrics(this.p.nativePointer, metrics);
             checkError();
         }
         
@@ -744,7 +793,7 @@ public class FontOptions
         {
             scope(exit)
                 checkError();
-            return cairo_font_options_get_hint_metrics(this.nativePointer);
+            return cairo_font_options_get_hint_metrics(this.p.nativePointer);
         }
 }
 
@@ -883,8 +932,8 @@ public class Surface
         
         FontOptions getFontOptions()
         {
-            FontOptions fo = new FontOptions();
-            cairo_surface_get_font_options(this.nativePointer, fo.nativePointer);
+            FontOptions fo = FontOptions();
+            cairo_surface_get_font_options(this.nativePointer, fo.p.nativePointer);
             fo.checkError();
             return fo;
         }
