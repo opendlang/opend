@@ -15,6 +15,10 @@ version(CAIRO_HAS_PDF_SURFACE)
 {
     import cairo.pdf;
 }
+version(CAIRO_HAS_SVG_SURFACE)
+{
+    import cairo.svg;
+}
 public alias cairo_content_t Content;
 public alias cairo_antialias_t AntiAlias;
 public alias cairo_subpixel_order_t SubpixelOrder;
@@ -690,6 +694,11 @@ public class Surface
                 {
                     case cairo_surface_type_t.CAIRO_SURFACE_TYPE_PDF:
                         return new PDFSurface(ptr);
+                }
+                version(CAIRO_HAS_SVG_SURFACE)
+                {
+                    case cairo_surface_type_t.CAIRO_SURFACE_TYPE_SVG:
+                        return new SVGSurface(ptr);
                 }
                 default:
                     return new Surface(ptr);
