@@ -237,7 +237,6 @@ public struct PathRange
             this.path = path;
         }
         
-        //TODO: Refcounting? & cairo_path_destroy()
         //TODO: save function for ranges
         @property bool empty()
         {
@@ -376,10 +375,13 @@ public class Pattern
         {
             throwError(cairo_pattern_status(nativePointer));
         }
+        bool _disposed = false;
     
     public:
         cairo_pattern_t* nativePointer;
-        
+
+        /* Warning: ptr reference count is not increased by this function!
+         * Adjust reference count before calling it if necessary*/
         this(cairo_pattern_t* ptr)
         {
             this.nativePointer = ptr;
@@ -389,6 +391,11 @@ public class Pattern
             }
             checkError();
         }
+
+        ~this()
+        {
+            dispose();
+        }
         
         static Pattern createFromNative(cairo_pattern_t* ptr)
         {
@@ -397,6 +404,8 @@ public class Pattern
                 throw new CairoException(cairo_status_t.CAIRO_STATUS_NULL_POINTER);
             }
             throwError(cairo_pattern_status(ptr));
+            //Adjust reference count
+            cairo_pattern_reference(ptr);
             switch(cairo_pattern_get_type(ptr))
             {
                 case cairo_pattern_type_t.CAIRO_PATTERN_TYPE_LINEAR:
@@ -411,17 +420,16 @@ public class Pattern
                     return new Pattern(ptr);
             }
         }
-        
-        void reference()
+
+        void dispose()
         {
-            cairo_pattern_reference(this.nativePointer);
-            checkError();
-        }
-        
-        void destroy()
-        {
-            cairo_pattern_destroy(this.nativePointer);
-            checkError();
+            if(!_disposed)
+            {
+                cairo_pattern_destroy(this.nativePointer);
+                debug
+                    this.nativePointer = null;
+                _disposed = true;
+            }
         }
         
         void setExtend(Extend ext)
@@ -495,6 +503,8 @@ public class Pattern
 public class SolidPattern : Pattern
 {
     public:
+        /* Warning: ptr reference count is not increased by this function!
+         * Adjust reference count before calling it if necessary*/
         this(cairo_pattern_t* ptr)
         {
             super(ptr);
@@ -526,7 +536,9 @@ public class SurfacePattern : Pattern
         {
             super(cairo_pattern_create_for_surface(surface.nativePointer));
         }
-        
+
+        /* Warning: ptr reference count is not increased by this function!
+         * Adjust reference count before calling it if necessary*/
         this(cairo_pattern_t* ptr)
         {
             super(ptr);
@@ -543,6 +555,8 @@ public class SurfacePattern : Pattern
 public class Gradient : Pattern
 {
     public:
+        /* Warning: ptr reference count is not increased by this function!
+         * Adjust reference count before calling it if necessary*/
         this(cairo_pattern_t* ptr)
         {
             super(ptr);
@@ -584,6 +598,9 @@ public class LinearGradient : Gradient
         {
             super(cairo_pattern_create_linear(p1.x, p1.y, p2.x, p2.y));
         }
+
+        /* Warning: ptr reference count is not increased by this function!
+         * Adjust reference count before calling it if necessary*/
         this(cairo_pattern_t* ptr)
         {
             super(ptr);
@@ -604,6 +621,9 @@ public class RadialGradient : Gradient
         {
             super(cairo_pattern_create_radial(c0.x, c0.y, radius0, c1.x, c1.y, radius1));
         }
+
+        /* Warning: ptr reference count is not increased by this function!
+         * Adjust reference count before calling it if necessary*/
         this(cairo_pattern_t* ptr)
         {
             super(ptr);
