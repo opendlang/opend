@@ -799,13 +799,32 @@ public struct FontOptions
 
 public class Device
 {
-    public:
+    private:
         cairo_device_t* nativePointer;
-    
-    public this(cairo_device_t* ptr)
-    {
-        this.nativePointer = ptr;
-    }
+        bool _disposed = false;
+
+    public:
+        /* Warning: ptr reference count is not increased by this function!
+         * Adjust reference count before calling it if necessary*/
+        this(cairo_device_t* ptr)
+        {
+            this.nativePointer = ptr;
+        }
+        ~this()
+        {
+            dispose();
+        }
+
+        void dispose()
+        {
+            if(!_disposed)
+            {
+                cairo_device_destroy(this.nativePointer);
+                debug
+                    this.nativePointer = null;
+                _disposed = true;
+            }
+        }
 }
 
 public class Surface
