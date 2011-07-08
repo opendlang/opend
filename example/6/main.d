@@ -7,8 +7,9 @@ void main()
     auto surface = new SVGSurface("test.svg", 400, 400);
     auto context = Context(surface);
     sample6(context);
-    context.destroy();
-    surface.destroy();
+    surface.dispose(); //Not strictly needed, GC can take care of that
+    //uncomment the above line to test that.
+    //It's recommended to call dispose manually, though.
 }
 
 void sample6(Context context)
@@ -20,7 +21,7 @@ void sample6(Context context)
     context.rectangle(Rectangle(Point(0, 0), 256, 256));
     context.setSource(pat);
     context.fill();
-    pat.destroy();
+    pat.dispose();
     
     pat = new RadialGradient(Point(115.2, 102.4), 25.6,
                              Point(102.4, 102.4), 128.0);
@@ -30,5 +31,5 @@ void sample6(Context context)
     context.setSource(pat);
     context.arc(Point(128, 128), 76.8, 0, 2*PI);
     context.fill();
-    pat.destroy();
+    pat.dispose();
 }
