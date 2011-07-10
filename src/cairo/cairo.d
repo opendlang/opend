@@ -656,7 +656,7 @@ public class RadialGradient : Gradient
 
 public class Device
 {
-    private:
+    protected:
         bool _disposed = false;
 
         void checkError()
@@ -1921,7 +1921,7 @@ public struct TextGlyph
 
 public class ScaledFont
 {
-    private:
+    protected:
         bool _disposed = false;
 
         void checkError()
