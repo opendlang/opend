@@ -869,13 +869,6 @@ public class Surface
             checkError();
             return res;
         }
-        
-        SurfaceType getType()
-        {
-            scope(exit)
-                checkError();
-            return cairo_surface_get_type(this.nativePointer);
-        }
 
         /*
         void setUserData(const cairo_user_data_key_t* key, void* data, cairo_destroy_func_t destroy)
