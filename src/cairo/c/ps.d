@@ -68,10 +68,10 @@ version(CAIRO_HAS_PS_SURFACE)
     void cairo_ps_surface_restrict_to_level (cairo_surface_t* surface,
                                         cairo_ps_level_t    level);
     
-    void cairo_ps_get_levels (const(cairo_ps_level_t*)*  levels,
+    void cairo_ps_get_levels (immutable(cairo_ps_level_t*)*  levels,
                          int*    num_levels);
     
-    const (char*) cairo_ps_level_to_string (cairo_ps_level_t level);
+    immutable(char)* cairo_ps_level_to_string (cairo_ps_level_t level);
     
     void cairo_ps_surface_set_eps (cairo_surface_t*    surface,
                   cairo_bool_t           eps);

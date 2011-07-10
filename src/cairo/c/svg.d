@@ -64,10 +64,10 @@ version(CAIRO_HAS_SVG_SURFACE)
                            cairo_svg_version_t  	 vers);
     
     void
-    cairo_svg_get_versions (const(cairo_svg_version_t*)* versions,
+    cairo_svg_get_versions (immutable(cairo_svg_version_t*)* versions,
                             int*                    num_versions);
     
-    const (char*)
+    immutable(char)*
     cairo_svg_version_to_string (cairo_svg_version_t vers);
 }
 else

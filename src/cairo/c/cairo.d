@@ -66,7 +66,7 @@ extern(C)
 {
     int cairo_version();
     
-    const(char*) cairo_version_string();
+    immutable(char)* cairo_version_string();
     
     /**
      * cairo_bool_t:
@@ -168,7 +168,6 @@ extern(C)
         double xy; double yy;
         double x0; double y0;
     }
-    //alias _cairo_matrix
     
     /**
      * cairo_pattern_t:
@@ -215,7 +214,6 @@ extern(C)
     {
         int unused;
     }
-    //_cairo_user_data_key
     
     /**
      * cairo_status_t:
@@ -310,7 +308,6 @@ extern(C)
     
         CAIRO_STATUS_LAST_STATUS
     }
-    //_cairo_status
     
     /**
      * cairo_content_t:
@@ -332,7 +329,6 @@ extern(C)
         CAIRO_CONTENT_ALPHA = 0x2000,
         CAIRO_CONTENT_COLOR_ALPHA = 0x3000
     }
-    //_cairo_content
     
     /**
      * cairo_write_func_t:
@@ -514,7 +510,6 @@ extern(C)
         CAIRO_OPERATOR_HSL_COLOR,
         CAIRO_OPERATOR_HSL_LUMINOSITY
     }
-    //_cairo_operator
     
      void cairo_set_operator(cairo_t* cr, cairo_operator_t op);
     
@@ -1482,7 +1477,7 @@ extern(C)
                     cairo_font_slant_t    slant,
                     cairo_font_weight_t   weight);
     
-     const(char*)
+     const(char)*
     cairo_toy_font_face_get_family (cairo_font_face_t *font_face);
     
      cairo_font_slant_t
@@ -1928,7 +1923,7 @@ extern(C)
      cairo_status_t
     cairo_status (cairo_t* cr);
     
-     const(char*)
+     immutable(char)*
     cairo_status_to_string (cairo_status_t status);
     
     /* Backend device manipulation */

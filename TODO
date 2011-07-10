@@ -1,5 +1,3 @@
-* Revisit C bindings and check for const vs immutable. Example: cairo_ps_level_to_string
-  should maybe return immutable(char*) instead of const(char*)
 * Properties vs. functions. Cairo binding docs suggest not to use properties instead of functions
   as new overloads might be added later. Still some function make a lot more sense as properties  
   (cairo.ps.PSSurface.setEPS)
