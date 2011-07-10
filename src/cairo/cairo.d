@@ -657,7 +657,6 @@ public class RadialGradient : Gradient
 public class Device
 {
     private:
-        cairo_device_t* nativePointer;
         bool _disposed = false;
 
         void checkError()
@@ -666,6 +665,8 @@ public class Device
         }
 
     public:
+        cairo_device_t* nativePointer;
+
         /* Warning: ptr reference count is not increased by this function!
          * Adjust reference count before calling it if necessary*/
         this(cairo_device_t* ptr)
@@ -1021,11 +1022,6 @@ public struct Context
             p = null;
         }
 
-        @property cairo_t* nativePointer()
-        {
-            return this.p.nativePointer;
-        }
-
         void checkError()
         {
             throwError(cairo_status(p.nativePointer));
@@ -1033,6 +1029,11 @@ public struct Context
         
     
     public:
+        @property cairo_t* nativePointer()
+        {
+            return this.p.nativePointer;
+        }
+
         this(Surface target)
         {
             auto ptr = cairo_create(target.nativePointer);
@@ -1782,11 +1783,6 @@ public struct FontOptions
             --p.refs;
             p = null;
         }
-
-        @property nativePointer()
-        {
-            return p.nativePointer;
-        }
         
         void checkError()
         {
@@ -1794,6 +1790,11 @@ public struct FontOptions
         }
     
     public:
+        @property nativePointer()
+        {
+            return p.nativePointer;
+        }
+
         static FontOptions opCall()
         {
             FontOptions opt;
@@ -1921,7 +1922,6 @@ public struct TextGlyph
 public class ScaledFont
 {
     private:
-        cairo_scaled_font_t* nativePointer;
         bool _disposed = false;
 
         void checkError()
@@ -1930,6 +1930,8 @@ public class ScaledFont
         }
 
     public:
+        cairo_scaled_font_t* nativePointer;
+
         /* Warning: ptr reference count is not increased by this function!
          * Adjust reference count before calling it if necessary*/
         this(cairo_scaled_font_t* ptr)
@@ -2126,7 +2128,6 @@ public class ScaledFont
 public class FontFace
 {
     protected:
-        cairo_font_face_t* nativePointer;
         bool _disposed = false;
 
         void checkError()
@@ -2135,6 +2136,8 @@ public class FontFace
         }
 
     public:
+        cairo_font_face_t* nativePointer;
+
         /* Warning: ptr reference count is not increased by this function!
          * Adjust reference count before calling it if necessary*/
         this(cairo_font_face_t* ptr)
