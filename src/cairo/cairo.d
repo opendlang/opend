@@ -660,12 +660,18 @@ public class Device
         cairo_device_t* nativePointer;
         bool _disposed = false;
 
+        void checkError()
+        {
+            throwError(cairo_device_status(nativePointer));
+        }
+
     public:
         /* Warning: ptr reference count is not increased by this function!
          * Adjust reference count before calling it if necessary*/
         this(cairo_device_t* ptr)
         {
             this.nativePointer = ptr;
+            checkError();
         }
         ~this()
         {
@@ -1942,9 +1948,8 @@ public class ScaledFont
         this(FontFace font_face, Matrix font_matrix, Matrix ctm,
              FontOptions options)
         {
-            this.nativePointer = cairo_scaled_font_create(font_face.nativePointer,
-                &font_matrix.nativeMatrix, &ctm.nativeMatrix, options.nativePointer);
-            checkError();
+            this(cairo_scaled_font_create(font_face.nativePointer,
+                &font_matrix.nativeMatrix, &ctm.nativeMatrix, options.nativePointer));
         }
 
         ~this()
