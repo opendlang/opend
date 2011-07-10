@@ -74,7 +74,7 @@ version(CAIRO_HAS_PDF_SURFACE)
                                cairo_pdf_version_t  	 ver);
         
         void
-        cairo_pdf_get_versions (immutable(char*)* versions,
+        cairo_pdf_get_versions (immutable(cairo_pdf_version_t*)* versions,
                                 int                      	 *num_versions);
         
         immutable(char)*

@@ -14,7 +14,7 @@ version(CAIRO_HAS_PS_SURFACE)
     PSLevel[] getPSLevels()
     {
         int num;
-        const(cairo_ps_level_t*) levels;
+        immutable(cairo_ps_level_t*) levels;
         cairo_ps_get_levels(&levels, &num);
         PSLevel[] dlevels;
         for(int i = 0; i < num; i++)

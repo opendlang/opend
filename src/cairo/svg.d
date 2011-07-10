@@ -14,7 +14,7 @@ version(CAIRO_HAS_SVG_SURFACE)
     SVGVersion[] getSVGVersions()
     {
         int num;
-        const(cairo_svg_version_t*) vers;
+        immutable(cairo_svg_version_t*) vers;
         cairo_svg_get_versions(&vers, &num);
         SVGVersion[] dvers;
         for(int i = 0; i < num; i++)

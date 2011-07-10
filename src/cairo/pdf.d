@@ -13,7 +13,7 @@ version(CAIRO_HAS_PDF_SURFACE)
     PDFVersion[] getPDFVersions()
     {
         int num;
-        const(cairo_pdf_version_t*) vers;
+        immutable(cairo_pdf_version_t*) vers;
         cairo_pdf_get_versions(&vers, &num);
         PDFVersion[] dvers;
         for(int i = 0; i < num; i++)
