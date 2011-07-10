@@ -47,6 +47,13 @@ public alias cairo_line_cap_t LineCap;
 public alias cairo_line_join_t LineJoin;
 public alias cairo_operator_t Operator;
 public alias cairo_path_data_type_t PathElementType;
+public alias cairo_font_extents_t FontExtents;
+public alias cairo_text_extents_t TextExtents;
+public alias cairo_glyph_t Glyph;
+public alias cairo_text_cluster_t TextCluster;
+public alias cairo_text_cluster_flags_t TextClusterFlags;
+public alias cairo_font_slant_t FontSlant;
+public alias cairo_font_weight_t FontWeight;
 
 void throwError(cairo_status_t status)
 {
@@ -1775,6 +1782,431 @@ public struct Context
             cairo_device_to_user_distance(this.p.nativePointer, &inp.x, &inp.y);
             checkError();
             return inp;
+        }
+        void selectFontFace(string family, FontSlant slant, FontWeight weight)
+        {
+            cairo_select_font_face(this.nativePointer, toStringz(family), slant, weight);
+            checkError();
+        }
+
+        void setFontSize(double size)
+        {
+            cairo_set_font_size(this.nativePointer, size);
+            checkError();
+        }
+
+        void setFontMatrix(Matrix matrix)
+        {
+            cairo_set_font_matrix(this.nativePointer, &matrix.nativeMatrix);
+            checkError();
+        }
+
+        Matrix getFontMatrix()
+        {
+            Matrix res;
+            cairo_get_font_matrix(this.nativePointer, &res.nativeMatrix);
+            checkError();
+            return res;
+        }
+
+        void setFontOptions(FontOptions options)
+        {
+            cairo_set_font_options(this.nativePointer, options.nativePointer);
+            checkError();
+        }
+
+        FontOptions getFontOptions()
+        {
+            auto opt = FontOptions();
+            cairo_get_font_options(this.nativePointer, opt.nativePointer);
+            checkError();
+            return opt;
+        }
+
+        void setFontFace()
+        {
+            cairo_set_font_face(this.nativePointer, null);
+            checkError();
+        }
+
+        void setFontFace(FontFace font_face)
+        {
+            cairo_set_font_face(this.nativePointer, font_face.nativePointer);
+            checkError();
+        }
+
+        FontFace getFontFace()
+        {
+            return FontFace.createFromNative(cairo_get_font_face(this.nativePointer));
+        }
+
+        void setScaledFont(ScaledFont scaled_font)
+        {
+            cairo_set_scaled_font(this.nativePointer, scaled_font.nativePointer);
+            checkError();
+        }
+
+        ScaledFont getScaledFont()
+        {
+            return ScaledFont.createFromNative(cairo_get_scaled_font(this.nativePointer));
+        }
+
+        void showText(string text)
+        {
+            cairo_show_text(this.nativePointer, toStringz(text));
+            checkError();
+        }
+
+        void showGlyphs(Glyph[] glyphs)
+        {
+            cairo_show_glyphs(this.nativePointer, glyphs.ptr, glyphs.length);
+            checkError();
+        }
+
+        void showTextGlyphs(TextGlyph glyph)
+        {
+            cairo_show_text_glyphs(this.nativePointer, glyph.text.ptr,
+                glyph.text.length, glyph.glyphs.ptr, glyph.glyphs.length,
+                glyph.cluster.ptr, glyph.cluster.length, glyph.flags);
+            checkError();
+        }
+
+        FontExtents fontExtents()
+        {
+            FontExtents res;
+            cairo_font_extents(this.nativePointer, &res);
+            checkError();
+            return res;
+        }
+
+        TextExtents textExtents(string text)
+        {
+            TextExtents res;
+            cairo_text_extents(this.nativePointer, toStringz(text), &res);
+            checkError();
+            return res;
+        }
+
+        TextExtents glyphExtents(Glyph[] glyphs)
+        {
+            TextExtents res;
+            cairo_glyph_extents(this.nativePointer, glyphs.ptr, glyphs.length, &res);
+            checkError();
+            return res;
+        }
+}
+
+/* ------------------------------- Fonts ------------------------------ */
+public struct TextGlyph
+{
+    public:
+        Glyph[] glyphs;
+        TextCluster[] cluster;
+        string text;
+        TextClusterFlags flags;
+}
+
+public class ScaledFont
+{
+    private:
+        cairo_scaled_font_t* nativePointer;
+        bool _disposed = false;
+
+        void checkError()
+        {
+            throwError(cairo_scaled_font_status(nativePointer));
+        }
+
+    public:
+        /* Warning: ptr reference count is not increased by this function!
+         * Adjust reference count before calling it if necessary*/
+        this(cairo_scaled_font_t* ptr)
+        {
+            this.nativePointer = ptr;
+            checkError();
+        }
+
+        this(FontFace font_face, Matrix font_matrix, Matrix ctm,
+             FontOptions options)
+        {
+            this.nativePointer = cairo_scaled_font_create(font_face.nativePointer,
+                &font_matrix.nativeMatrix, &ctm.nativeMatrix, options.nativePointer);
+            checkError();
+        }
+
+        ~this()
+        {
+            dispose();
+        }
+
+        void dispose()
+        {
+            if(!_disposed)
+            {
+                cairo_scaled_font_destroy(this.nativePointer);
+                debug
+                    this.nativePointer = null;
+                _disposed = true;
+            }
+        }
+
+        static ScaledFont createFromNative(cairo_scaled_font_t* ptr, bool adjRefCount = true)
+        {
+            if(!ptr)
+            {
+                throw new CairoException(cairo_status_t.CAIRO_STATUS_NULL_POINTER);
+            }
+            throwError(cairo_scaled_font_status(ptr));
+            //Adjust reference count
+            if(adjRefCount)
+                cairo_scaled_font_reference(ptr);
+            switch(cairo_scaled_font_get_type(ptr))
+            {
+                version(CAIRO_HAS_WIN32_FONT)
+                {
+                    case cairo_font_type_t.CAIRO_FONT_TYPE_WIN32:
+                        return new Win32ScaledFont(ptr);
+                }
+                default:
+                    return new ScaledFont(ptr);
+            }
+        }
+
+        FontExtents extents()
+        {
+            FontExtents res;
+            cairo_scaled_font_extents(this.nativePointer, &res);
+            checkError();
+            return res;
+        }
+
+        TextExtents textExtents(string text)
+        {
+            TextExtents res;
+            cairo_scaled_font_text_extents(this.nativePointer, toStringz(text),
+                &res);
+            checkError();
+            return res;
+        }
+
+        TextExtents glyphExtents(Glyph[] glyphs)
+        {
+            TextExtents res;
+            cairo_scaled_font_glyph_extents(this.nativePointer, glyphs.ptr,
+                glyphs.length, &res);
+            checkError();
+            return res;
+        }
+
+        Glyph[] textToGlyphs(double x, double y, string text, Glyph[] glyphBuffer = [])
+        {
+            Glyph* gPtr = null;
+            int gLen = 0;
+            if(glyphBuffer.length != 0)
+            {
+                gPtr = glyphBuffer.ptr;
+                gLen = glyphBuffer.length;
+            }
+
+            throwError(cairo_scaled_font_text_to_glyphs(this.nativePointer, x, y,
+                text.ptr, text.length, &gPtr, &gLen, null, null, null));
+
+            if(gPtr == glyphBuffer.ptr)
+            {
+                return glyphBuffer[0 .. gLen];
+            }
+            else
+            {
+                Glyph[] gCopy = gPtr[0 .. gLen].dup;
+                cairo_glyph_free(gPtr);
+                return gCopy;
+            }
+        }
+        
+        TextGlyph textToTextGlyph(double x, double y, string text, Glyph[] glyphBuffer = [],
+            TextCluster[] clusterBuffer = [])
+        {
+            TextGlyph res;
+
+            Glyph* gPtr = null;
+            int gLen = 0;
+            TextCluster* cPtr = null;
+            int cLen = 0;
+            TextClusterFlags cFlags;
+            if(glyphBuffer.length != 0)
+            {
+                gPtr = glyphBuffer.ptr;
+                gLen = glyphBuffer.length;
+            }
+            if(clusterBuffer.length != 0)
+            {
+                cPtr = clusterBuffer.ptr;
+                cLen = clusterBuffer.length;
+            }
+
+            throwError(cairo_scaled_font_text_to_glyphs(this.nativePointer, x, y,
+                text.ptr, text.length, &gPtr, &gLen, &cPtr, &cLen, &cFlags));
+
+            if(gPtr == glyphBuffer.ptr)
+            {
+                res.glyphs = glyphBuffer[0 .. gLen];
+            }
+            else
+            {
+                res.glyphs = gPtr[0 .. gLen].dup;
+                cairo_glyph_free(gPtr);
+            }
+            if(cPtr == clusterBuffer.ptr)
+            {
+                res.cluster = clusterBuffer[0 .. cLen];
+            }
+            else
+            {
+                res.cluster = cPtr[0 .. cLen].dup;
+                cairo_text_cluster_free(cPtr);
+            }
+
+            res.text = text;
+            res.flags = cFlags;
+            return res;
+        }
+
+        FontFace getFontFace()
+        {
+            auto face = cairo_scaled_font_get_font_face(this.nativePointer);
+            checkError();
+            return FontFace.createFromNative(face);
+        }
+
+        FontOptions getFontOptions()
+        {
+            //TODO: verify if this is correct
+            FontOptions fo = FontOptions();
+            cairo_scaled_font_get_font_options(this.nativePointer, fo.nativePointer);
+            checkError();
+            return fo;
+        }
+
+        Matrix getFontMatrix()
+        {
+            Matrix mat;
+            cairo_scaled_font_get_font_matrix(this.nativePointer, &mat.nativeMatrix);
+            checkError();
+            return mat;
+        }
+
+        Matrix getCTM()
+        {
+            Matrix mat;
+            cairo_scaled_font_get_ctm(this.nativePointer, &mat.nativeMatrix);
+            checkError();
+            return mat;
+        }
+
+        Matrix getScaleMatrix()
+        {
+            Matrix mat;
+            cairo_scaled_font_get_scale_matrix(this.nativePointer, &mat.nativeMatrix);
+            checkError();
+            return mat;
+        }
+}
+
+public class FontFace
+{
+    protected:
+        cairo_font_face_t* nativePointer;
+        bool _disposed = false;
+
+        void checkError()
+        {
+            throwError(cairo_font_face_status(nativePointer));
+        }
+
+    public:
+        /* Warning: ptr reference count is not increased by this function!
+         * Adjust reference count before calling it if necessary*/
+        this(cairo_font_face_t* ptr)
+        {
+            this.nativePointer = ptr;
+            checkError();
+        }
+
+        ~this()
+        {
+            dispose();
+        }
+
+        void dispose()
+        {
+            if(!_disposed)
+            {
+                cairo_font_face_destroy(this.nativePointer);
+                debug
+                    this.nativePointer = null;
+                _disposed = true;
+            }
+        }
+
+        static FontFace createFromNative(cairo_font_face_t* ptr, bool adjRefCount = true)
+        {
+            if(!ptr)
+            {
+                throw new CairoException(cairo_status_t.CAIRO_STATUS_NULL_POINTER);
+            }
+            throwError(cairo_font_face_status(ptr));
+            //Adjust reference count
+            if(adjRefCount)
+                cairo_font_face_reference(ptr);
+            switch(cairo_font_face_get_type(ptr))
+            {
+                case cairo_font_type_t.CAIRO_FONT_TYPE_TOY:
+                    return new ToyFontFace(ptr);
+                version(CAIRO_HAS_WIN32_FONT)
+                {
+                    case cairo_font_type_t.CAIRO_FONT_TYPE_WIN32:
+                        return new Win32FontFace(ptr);
+                }
+                default:
+                    return new FontFace(ptr);
+            }
+        }
+}
+
+public class ToyFontFace : FontFace
+{
+    public:
+        /* Warning: ptr reference count is not increased by this function!
+         * Adjust reference count before calling it if necessary*/
+        this(cairo_font_face_t* ptr)
+        {
+            super(ptr);
+        }
+
+        this(string family, FontSlant slant, FontWeight weight)
+        {
+            super(cairo_toy_font_face_create(toStringz(family), slant, weight));
+        }
+
+        string getFamily()
+        {
+            auto ptr = cairo_toy_font_face_get_family(this.nativePointer);
+            checkError();
+            return to!string(ptr);
+        }
+
+        FontSlant getSlant()
+        {
+            auto res = cairo_toy_font_face_get_slant(this.nativePointer);
+            checkError();
+            return res;
+        }
+
+        FontWeight getWeight()
+        {
+            auto res = cairo_toy_font_face_get_weight(this.nativePointer);
+            checkError();
+            return res;
         }
 }
 
