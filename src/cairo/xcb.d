@@ -40,20 +40,6 @@ version(CAIRO_HAS_XCB_SURFACE)
                       screen, drawable, format, width, height));
             }
 
-            static XCBSurface castFrom(Surface other)
-            {
-                if(!other.nativePointer)
-                {
-                    throw new CairoException(cairo_status_t.CAIRO_STATUS_NULL_POINTER);
-                }
-                auto type = cairo_surface_get_type(other.nativePointer);
-                throwError(cairo_surface_status(other.nativePointer));
-                if(type == cairo_surface_type_t.CAIRO_SURFACE_TYPE_XCB)
-                    return new XCBSurface(other.nativePointer);
-                else
-                    return null;
-            }
-
             void setSize(int width, int height)
             {
                 cairo_xcb_surface_set_size(this.nativePointer, width, height);

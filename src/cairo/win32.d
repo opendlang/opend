@@ -39,21 +39,6 @@ version(CAIRO_HAS_WIN32_SURFACE)
                 super(cairo_win32_surface_create_with_dib(format, width, height));
             }
 
-            static Win32Surface castFrom(Surface other)
-            {
-                if(!other.nativePointer)
-                {
-                    throw new CairoException(cairo_status_t.CAIRO_STATUS_NULL_POINTER);
-                }
-                auto type = cairo_surface_get_type(other.nativePointer);
-                throwError(cairo_surface_status(other.nativePointer));
-                if(type == cairo_surface_type_t.CAIRO_SURFACE_TYPE_WIN32 ||
-                   type == cairo_surface_type_t.CAIRO_SURFACE_TYPE_WIN32_PRINTING)
-                    return new Win32Surface(other.nativePointer);
-                else
-                    return null;
-            }
-
             HDC getDC()
             {
                 scope(exit)

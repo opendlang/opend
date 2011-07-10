@@ -725,16 +725,6 @@ public class Surface
                 _disposed = true;
             }
         }
-
-        static Surface castFrom(Surface other)
-        {
-            return other;
-        }
-        
-        T opCast(T)() if(isImplicitlyConvertible!(T, Surface))
-        {
-            return T.castFrom(this);
-        }
         
         static Surface createFromNative(cairo_surface_t* ptr, bool adjRefCount = true)
         {
@@ -950,23 +940,6 @@ public class ImageSurface : Surface
         {
             this._data = data;
             super(cairo_image_surface_create_for_data(data.ptr, format, width, height, stride));
-        }
-        
-        static ImageSurface castFrom(Surface other)
-        {
-            if(!other.nativePointer)
-            {
-                throw new CairoException(cairo_status_t.CAIRO_STATUS_NULL_POINTER);
-            }
-            auto type = cairo_surface_get_type(other.nativePointer);
-            throwError(cairo_surface_status(other.nativePointer));
-            if(type == cairo_surface_type_t.CAIRO_SURFACE_TYPE_IMAGE)
-            {
-                cairo_surface_reference(other.nativePointer);
-                return new ImageSurface(other.nativePointer);
-            }
-            else
-                return null;
         }
         
         ubyte* getData()
