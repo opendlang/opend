@@ -9,7 +9,9 @@ import cairo.c.cairo;
 version(CAIRO_HAS_WIN32_SURFACE)
 {
     import cairo.c.win32;
-    import core.sys.windows.windows;
+    //Requires WindowsAPI: http://www.dsource.org/projects/bindings/wiki/WindowsApi
+    import win32.windef;
+    import win32.wingdi;
     
     public class Win32Surface : Surface
     {

@@ -36,11 +36,14 @@
 
 module cairo.c.win32;
 
-import core.sys.windows.windows;
 import cairo.c.cairo;
 
 version(CAIRO_HAS_WIN32_SURFACE)
 {
+    //Requires WindowsAPI: http://www.dsource.org/projects/bindings/wiki/WindowsApi
+    import win32.windef;
+    import win32.wingdi;
+
     extern(C):
     
     cairo_surface_t* cairo_win32_surface_create (HDC hdc);
@@ -66,25 +69,6 @@ version(CAIRO_HAS_WIN32_SURFACE)
         /*
          * Win32 font support
          */
-        pragma(msg, "cairo.c.win32: LOGFONTW should move to druntime");
-        enum size_t LF_FACESIZE = 32;
-        struct LOGFONTW
-        {
-            LONG lfHeight;
-            LONG lfWidth;
-            LONG lfEscapement;
-            LONG lfOrientation;
-            LONG lfWeight;
-            BYTE lfItalic;
-            BYTE lfUnderline;
-            BYTE lfStrikeOut;
-            BYTE lfCharSet;
-            BYTE lfOutPrecision;
-            BYTE lfClipPrecision;
-            BYTE lfQuality;
-            BYTE lfPitchAndFamily;
-            WCHAR[LF_FACESIZE] lfFaceName;
-        }
         
         cairo_font_face_t* cairo_win32_font_face_create_for_logfontw (LOGFONTW *logfont);
         
