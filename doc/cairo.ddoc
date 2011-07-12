@@ -37,7 +37,6 @@ DDOC = <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
 
 <div id="top">
 	<div id="header">
-		<a href="http://d-programming-language.org"><img id="logo" width="125" height="95" border="0" alt="D Logo" src="../images/dlogo.png"></a>
 		<a id="d-language" href="https://github.com/jpf91/cairoD">cairod api reference</a>
 	</div>
 </div>
