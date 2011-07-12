@@ -2226,12 +2226,31 @@ public class ToyFontFace : FontFace
 
 public struct Version
 {
-    public uint Major, Minor, Micro;
+    public:
+        uint major, minor, micro;
 
-    public this(int encoded)
-    {
-        this.Major = encoded / 10000;
-        this.Minor = (encoded % 10000) / 100;
-        this.Micro = (encoded % 10000) % 100;
-    }
+        this(int encoded)
+        {
+            this.major = encoded / 10000;
+            this.minor = (encoded % 10000) / 100;
+            this.micro = (encoded % 10000) % 100;
+        }
+
+        this(uint major, uint minor, uint micro)
+        {
+            this.major = major;
+            this.minor = minor;
+            this.micro = micro;
+        }
+    
+        static @property Version cairoVersion()
+        {
+            return Version(cairo_version);
+        }
+    
+        static @property Version bindingVersion()
+        {
+            return Version(CAIRO_VERSION_MAJOR, CAIRO_VERSION_MINOR,
+                CAIRO_VERSION_MICRO);
+        }
 }
