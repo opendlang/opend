@@ -43,7 +43,7 @@
  *  %CAIRO_DIRECTFB_ARGB_FONT (boolean)
  *      if found, enables using ARGB fonts instead of A8
  */
-
+///
 module cairo.c.directfb;
 
 import cairo.c.cairo;
@@ -56,6 +56,7 @@ version(CAIRO_HAS_DIRECTFB_SURFACE)
     alias void IDirectFBSurface;
 
     extern(C):
+    ///
     cairo_surface_t*
     cairo_directfb_surface_create (IDirectFB *dfb, IDirectFBSurface *surface);
 }

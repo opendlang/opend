@@ -33,7 +33,7 @@
  * Contributor(s):
  *    Carl D. Worth <cworth@cworth.org>
  */
-
+///
 module cairo.c.ps;
 
 import cairo.c.cairo;
@@ -44,7 +44,7 @@ version(CAIRO_HAS_PS_SURFACE)
 
     /* PS-surface functions */
     /**
-     * cairo_ps_level_t is used to describe the language level of the
+     * $(D cairo_ps_level_t) is used to describe the language level of the
      * PostScript Language Reference that a generated PostScript file will
      * conform to.
      */
@@ -55,38 +55,38 @@ version(CAIRO_HAS_PS_SURFACE)
         ///The language level 3 of the PostScript specification.
         CAIRO_PS_LEVEL_3
     }
-    
+    ///
     cairo_surface_t* cairo_ps_surface_create (const (char*) filename,
                  double             width_in_points,
                  double             height_in_points);
-    
+    ///
     cairo_surface_t* cairo_ps_surface_create_for_stream (cairo_write_func_t write_func,
                         void*         closure,
                         double        width_in_points,
                         double        height_in_points);
-    
+    ///
     void cairo_ps_surface_restrict_to_level (cairo_surface_t* surface,
                                         cairo_ps_level_t    level);
-    
+    ///
     void cairo_ps_get_levels (immutable(cairo_ps_level_t*)*  levels,
                          int*    num_levels);
-    
+    ///
     immutable(char)* cairo_ps_level_to_string (cairo_ps_level_t level);
-    
+    ///
     void cairo_ps_surface_set_eps (cairo_surface_t*    surface,
                   cairo_bool_t           eps);
-    
+    ///
     cairo_bool_t cairo_ps_surface_get_eps (cairo_surface_t    *surface);
-    
+    ///
     void cairo_ps_surface_set_size (cairo_surface_t* surface,
                    double         width_in_points,
                    double         height_in_points);
-    
+    ///
     void cairo_ps_surface_dsc_comment (cairo_surface_t*  surface,
                       const(char*)    comment);
-    
+    ///
     void cairo_ps_surface_dsc_begin_setup (cairo_surface_t *surface);
-    
+    ///
     void cairo_ps_surface_dsc_begin_page_setup (cairo_surface_t *surface);
 }
 else
