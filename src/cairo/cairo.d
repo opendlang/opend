@@ -3,6 +3,7 @@ module cairo.cairo;
 import cairo.c.cairo;
 
 import std.conv;
+import std.range; //For PathRange unittests
 import std.string;
 import std.traits;
 import core.exception;
@@ -148,7 +149,12 @@ public struct RGB
     public double red, green, blue;
 }
 
-//TODO: user defined paths
+/* From cairo binding documentation:
+ * You should not present an API for mutating or for creating new cairo_path_t
+ * objects. In the future, these guidelines may be extended to present an API
+ * for creating a cairo_path_t from scratch for use with cairo_append_path()
+ * but the current expectation is that cairo_append_path() will mostly be
+ * used with paths from cairo_copy_path().*/
 public struct Path
 {
     private:
@@ -172,29 +178,32 @@ public struct Path
                 p = null; // start a new life
                 return;
             }
-            scope(exit)
-            {
-                p.path = null; // nullify the handle anyway
-                --p.refs;
-                p = null;
-            }
-    
+
             cairo_path_destroy(p.path);
+
+            p.path = null; // nullify the handle anyway
+            --p.refs;
+            p = null;
         }
 
-        cairo_status_t status()
+        @property cairo_path_t* path()
+        {
+            assert(p);
+            return p.path;
+        }
+        @property cairo_status_t status()
         {
             assert(p);
             return p.path.status;
         }
 
-        cairo_path_data_t* data()
+        @property cairo_path_data_t* data()
         {
             assert(p);
             return p.path.data;
         }
 
-        int num_data()
+        @property int num_data()
         {
             assert(p);
             return p.path.num_data;
@@ -237,14 +246,23 @@ public struct PathRange
     private:
         Path path;
         int pos = 0;
+        this(Path path, int pos)
+        {
+            this.path = path;
+            this.pos = pos;
+        }
     
     public:
         this(Path path)
         {
             this.path = path;
         }
-        
-        //TODO: save function for ranges
+
+        @property PathRange save()
+        {
+            return PathRange(path, pos);
+        }
+
         @property bool empty()
         {
             assert(pos <= path.num_data);
@@ -263,6 +281,11 @@ public struct PathRange
         }
 }
 
+unittest
+{
+    static assert(isForwardRange!PathRange);
+}
+
 public struct PathElement
 {
     private:
@@ -273,7 +296,7 @@ public struct PathElement
             this.data = data;
         }
     public:
-        @property PathElementType Type()
+        @property PathElementType type()
         {
             return data.header.type;
         }
@@ -1444,9 +1467,20 @@ public struct Context
             return Path(cairo_copy_path_flat(this.nativePointer));
         }
         
-        void appendPath(T)(T path) if (is(T == PathRange))
+        void appendPath(Path p)
         {
-            cairo_append_path(this.nativePointer, path.path.p.path);
+            cairo_append_path(this.nativePointer, p.path);
+            checkError();
+        }
+
+        /**
+         * appendPath for user created paths. There is no high level API
+         * for user defined paths. Use $(D appendPath(Path p)) for paths
+         * which were obtained from cairo.
+         */
+        void appendPath(cairo_path_t* path)
+        {
+            cairo_append_path(this.nativePointer, path);
             checkError();
         }
         

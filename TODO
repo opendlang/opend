@@ -20,5 +20,4 @@
     + Quartz Fonts
     + User Fonts
     + Pango?
-* Right now cairo_path_t/Path must be obtained from cairo. Add support for user defined Paths
 * Regions
