@@ -2263,11 +2263,11 @@ public struct Version
     public:
         uint major, minor, micro;
 
-        this(int encoded)
+        this(ulong encoded)
         {
-            this.major = encoded / 10000;
-            this.minor = (encoded % 10000) / 100;
-            this.micro = (encoded % 10000) % 100;
+            this.major = cast(uint)(encoded / 10000);
+            this.minor = cast(uint)((encoded % 10000) / 100);
+            this.micro = cast(uint)((encoded % 10000) % 100);
         }
 
         this(uint major, uint minor, uint micro)
@@ -2286,5 +2286,10 @@ public struct Version
         {
             return Version(CAIRO_VERSION_MAJOR, CAIRO_VERSION_MINOR,
                 CAIRO_VERSION_MICRO);
+        }
+
+        ulong encode()
+        {
+            return CAIRO_VERSION_ENCODE(major, minor, micro);
         }
 }
