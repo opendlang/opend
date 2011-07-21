@@ -2017,7 +2017,7 @@ LogisticRes logisticRegressImpl(T, V...)
 
     // Compensate for numerical fuzz.
     if(lratio < 0 && lratio > -1e-5) lratio = 0;
-    if(lratio > 0) {
+    if(lratio >= 0 && x.length >= 2) {
         ret.overallP = chiSquareCDFR(2 * lratio, x.length - 1);
     }
 
