@@ -1,2 +1,2 @@
-==Basic build command==
+## Basic build command
 dmd main.d -I../../src -version=CAIRO_HAS_PNG_FUNCTIONS -L-lcairod -L-lcairo -L-L../../

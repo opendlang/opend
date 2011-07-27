@@ -1,23 +1,23 @@
-==Basic build command==
+## Basic build command
 dmd cairo/c/cairo.d cairo/c/pdf.d cairo/c/svg.d cairo/c/xcb.d cairo/c/directfb.d cairo/c/ps.d cairo/c/win32.d cairo/cairo.d cairo/util.d cairo/directfb.d cairo/pdf.d cairo/ps.d cairo/svg.d cairo/win32.d cairo/xcb.d -lib -L-lcairo -of../libcairod.a
 
-==Available version switches==
-CAIRO_HAS_PS_SURFACE
-CAIRO_HAS_PDF_SURFACE
-CAIRO_HAS_SVG_SURFACE
-CAIRO_HAS_WIN32_SURFACE
-CAIRO_HAS_XCB_SURFACE
-CAIRO_HAS_DIRECTFB_SURFACE
-CAIRO_HAS_PNG_FUNCTIONS
-CAIRO_HAS_WIN32_FONT
+## Available version switches
+* CAIRO_HAS_PS_SURFACE
+* CAIRO_HAS_PDF_SURFACE
+* CAIRO_HAS_SVG_SURFACE
+* CAIRO_HAS_WIN32_SURFACE
+* CAIRO_HAS_XCB_SURFACE
+* CAIRO_HAS_DIRECTFB_SURFACE
+* CAIRO_HAS_PNG_FUNCTIONS
+* CAIRO_HAS_WIN32_FONT
 
-==Available debug switches==
-RefCounted
+## Available debug switches
+* RefCounted (See <https://github.com/jpf91/cairoD/wiki/Memory-Management#debugging>)
 
-==Standard Posix build command==
+## Standard Posix build command
 dmd cairo/c/cairo.d cairo/c/pdf.d cairo/c/svg.d cairo/c/xcb.d cairo/c/directfb.d cairo/c/ps.d cairo/c/win32.d cairo/cairo.d cairo/util.d cairo/directfb.d cairo/pdf.d cairo/ps.d cairo/svg.d cairo/win32.d cairo/xcb.d -lib -L-lcairo -of../libcairod.a -version=CAIRO_HAS_PS_SURFACE -version=CAIRO_HAS_PDF_SURFACE -version=CAIRO_HAS_SVG_SURFACE -version=CAIRO_HAS_PNG_FUNCTIONS
 
-==Standard Windows build command==
+## Standard Windows build command
 dmd cairo/c/cairo.d cairo/c/pdf.d cairo/c/svg.d cairo/c/xcb.d cairo/c/directfb.d cairo/c/ps.d cairo/c/win32.d cairo/cairo.d cairo/util.d cairo/directfb.d cairo/pdf.d cairo/ps.d cairo/svg.d cairo/win32.d cairo/xcb.d -lib -L-lcairo -of../libcairod.a -version=CAIRO_HAS_PS_SURFACE -version=CAIRO_HAS_PDF_SURFACE -version=CAIRO_HAS_SVG_SURFACE -version=CAIRO_HAS_WIN32_SURFACE -version=CAIRO_HAS_PNG_FUNCTIONS -version=CAIRO_HAS_WIN32_FONT -I../../WindowsAPI
 
 (replace -I../../WindowsAPI with the correct path to the WindowsAPI headers)
