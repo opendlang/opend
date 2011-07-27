@@ -71,7 +71,7 @@ void sample5(Context context)
     }
     context.closePath();
     
-    context.setSourceRBG(0.5, 0.5, 1);
+    context.setSourceRGB(0.5, 0.5, 1);
     context.fillPreserve();
     context.setSourceRGBA(0.5, 0, 0, 0.5);
     context.setLineWidth(10.0);

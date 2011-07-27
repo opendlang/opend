@@ -19,7 +19,7 @@ void sample3(Context context)
                         consumed by cairo_clip() */
     context.rectangle(Rectangle(Point(0, 0), 256, 256));
     context.fill();
-    context.setSourceRBG(0, 1, 0);
+    context.setSourceRGB(0, 1, 0);
     context.moveTo(Point(0, 0));
     context.lineTo(Point(256, 256));
     context.moveTo(Point(256, 0));
