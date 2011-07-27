@@ -1,12 +1,20 @@
 module cairo.cairo;
 
 import cairo.c.cairo;
+import cairo.util;
 
 import std.conv;
 import std.range; //For PathRange unittests
 import std.string;
 import std.traits;
 import core.exception;
+import std.algorithm;
+import std.typecons;
+
+debug(RefCounted)
+{
+    import std.stdio;
+}
 
 version(CAIRO_HAS_PS_SURFACE)
 {
@@ -158,81 +166,67 @@ public struct RGB
 public struct Path
 {
     private:
-        struct Impl
+        struct Payload
         {
-            cairo_path_t* path;
-            uint refs = uint.max / 2;
-            this(cairo_path_t* pa, uint r)
+            cairo_path_t* _payload;
+            this(cairo_path_t* h)
             {
-                path = pa;
-                refs = r;
+                _payload = h;
             }
-        }
-        Impl* p;
+            ~this()
+            {
+                if(_payload)
+                {
+                    cairo_path_destroy(_payload);
+                    _payload = null;
+                }
+            }
     
-        void close()
-        {
-            if (!p) return; // succeed vacuously
-            if (!p.path)
-            {
-                p = null; // start a new life
-                return;
-            }
-
-            cairo_path_destroy(p.path);
-
-            p.path = null; // nullify the handle anyway
-            --p.refs;
-            p = null;
-        }
-
-        @property cairo_path_t* path()
-        {
-            assert(p);
-            return p.path;
-        }
+            // Should never perform these operations
+            this(this) { assert(false); }
+            void opAssign(FontOptions.Payload rhs) { assert(false); }
+        }    
+        alias RefCounted!(Payload, RefCountedAutoInitialize.no) Data;
+        Data _data;
+        
         @property cairo_status_t status()
         {
-            assert(p);
-            return p.path.status;
+            return nativePointer.status;
         }
 
         @property cairo_path_data_t* data()
         {
-            assert(p);
-            return p.path.data;
+            return nativePointer.data;
         }
 
         @property int num_data()
         {
-            assert(p);
-            return p.path.num_data;
+            return nativePointer.num_data;
         }
 
     public:
         this(cairo_path_t* path)
         {
             throwError(path.status);
-            p = new Impl(path, 1);
+            _data.RefCounted.initialize(path);
         }
 
-        ~this()
+        @property cairo_path_t* nativePointer()
         {
-            if (!p) return;
-            if (p.refs == 1) close;
-            else --p.refs;
-        }
-        
-        this(this)
-        {
-            if (!p) return;
-            assert(p.refs);
-            ++p.refs;
+            return _data._payload;
         }
 
-        void opAssign(Path rhs)
+        debug(RefCounted)
         {
-            p = rhs.p;
+            @property bool debugging()
+            {
+                return _data.RefCounted.debugging;
+            }
+            
+            @property void debugging(bool value)
+            {
+                _data.RefCounted.debugging = value;
+            }
         }
 
         PathRange opSlice()
@@ -401,15 +395,15 @@ public class CairoException : Exception
 
 public class Pattern
 {
+    mixin CairoCountedClass!(cairo_pattern_t*, "cairo_pattern_");
+    
     protected:
         void checkError()
         {
             throwError(cairo_pattern_status(nativePointer));
         }
-        bool _disposed = false;
     
     public:
-        cairo_pattern_t* nativePointer;
 
         /* Warning: ptr reference count is not increased by this function!
          * Adjust reference count before calling it if necessary*/
@@ -421,11 +415,6 @@ public class Pattern
                 throw new CairoException(cairo_status_t.CAIRO_STATUS_NULL_POINTER);
             }
             checkError();
-        }
-
-        ~this()
-        {
-            dispose();
         }
         
         static Pattern createFromNative(cairo_pattern_t* ptr)
@@ -449,17 +438,6 @@ public class Pattern
                     return new SurfacePattern(ptr);
                 default:
                     return new Pattern(ptr);
-            }
-        }
-
-        void dispose()
-        {
-            if(!_disposed)
-            {
-                cairo_pattern_destroy(this.nativePointer);
-                debug
-                    this.nativePointer = null;
-                _disposed = true;
             }
         }
         
@@ -508,13 +486,6 @@ public class Pattern
             scope(exit)
                 checkError();
             return cairo_pattern_get_type(this.nativePointer);
-        }
-        
-        uint getReferenceCount()
-        {
-            scope(exit)
-                checkError();
-            return cairo_pattern_get_reference_count(this.nativePointer);
         }
         
         void setUserData(const cairo_user_data_key_t* key, void* data, cairo_destroy_func_t destroy)
@@ -679,16 +650,15 @@ public class RadialGradient : Gradient
 
 public class Device
 {
-    protected:
-        bool _disposed = false;
+    mixin CairoCountedClass!(cairo_device_t*, "cairo_device_");
 
+    protected:
         void checkError()
         {
             throwError(cairo_device_status(nativePointer));
         }
 
     public:
-        cairo_device_t* nativePointer;
 
         /* Warning: ptr reference count is not increased by this function!
          * Adjust reference count before calling it if necessary*/
@@ -697,28 +667,12 @@ public class Device
             this.nativePointer = ptr;
             checkError();
         }
-        ~this()
-        {
-            dispose();
-        }
-
-        void dispose()
-        {
-            if(!_disposed)
-            {
-                cairo_device_destroy(this.nativePointer);
-                debug
-                    this.nativePointer = null;
-                _disposed = true;
-            }
-        }
 }
 
 public class Surface
 {
-    private:
-        bool _disposed;
-
+    mixin CairoCountedClass!(cairo_surface_t*, "cairo_surface_");
+    
     protected:
         void checkError()
         {
@@ -726,8 +680,6 @@ public class Surface
         }
     
     public:
-        cairo_surface_t* nativePointer;
-
         /* Warning: ptr reference count is not increased by this function!
          * Adjust reference count before calling it if necessary*/
         this(cairo_surface_t* ptr)
@@ -738,22 +690,6 @@ public class Surface
                 throw new CairoException(cairo_status_t.CAIRO_STATUS_NULL_POINTER);
             }
             checkError();
-        }
-
-        ~this()
-        {
-            dispose();
-        }
-
-        void dispose()
-        {
-            if(!_disposed)
-            {
-                cairo_surface_destroy(this.nativePointer);
-                debug
-                    this.nativePointer = null;
-                _disposed = true;
-            }
         }
         
         static Surface createFromNative(cairo_surface_t* ptr, bool adjRefCount = true)
@@ -842,7 +778,7 @@ public class Surface
         FontOptions getFontOptions()
         {
             FontOptions fo = FontOptions();
-            cairo_surface_get_font_options(this.nativePointer, fo.p.nativePointer);
+            cairo_surface_get_font_options(this.nativePointer, fo._data._payload);
             fo.checkError();
             return fo;
         }
@@ -1015,72 +951,113 @@ public class ImageSurface : Surface
         }
 }
 
+
 public struct Context
 {
+    /*---------------------------Reference counting stuff---------------------------*/
     private:
-        struct Impl
+        @property uint _count()
         {
-            cairo_t* nativePointer;
-            uint refs = uint.max / 2;
-            this(cairo_t* np, uint r)
+            return cairo_get_reference_count(this.nativePointer);
+        }
+
+        void _reference()
+        {
+            cairo_reference(this.nativePointer);
+        }
+
+        void _dereference()
+        {
+            cairo_destroy(this.nativePointer);
+        }
+
+    public:
+        cairo_t* nativePointer;
+        debug(RefCounted)
+        {
+            bool debugging = false;
+        }
+    
+        /**
+        Constructor that tracks the reference count appropriately. If $(D
+        !refCountedIsInitialized), does nothing.
+         */
+        this(this)
+        {
+            if (this.nativePointer is null)
+                return;
+            this._reference();
+            debug(RefCounted)
+                if (this.debugging)
             {
-                nativePointer = np;
-                refs = r;
+                     writeln(typeof(this).stringof,
+                    "@", cast(void*) this.nativePointer, ": bumped refcount to ",
+                    this._count);
             }
         }
-        Impl* p;
     
-        void close()
+        ~this()
         {
-            if (!p) return; // succeed vacuously
-            if (!p.nativePointer)
+            this.dispose();
+        }
+    
+        void dispose()
+        {
+            if (this.nativePointer is null)
+                return;
+            assert(this._count > 0);
+            if (this._count > 1)
             {
-                p = null; // start a new life
+                debug(RefCounted)
+                    if (this.debugging)
+                {
+                         writeln(typeof(this).stringof,
+                        "@", cast(void*)this.nativePointer,
+                        ": decrement refcount to ", this._count - 1);
+                }
+                this._dereference();
+                this.nativePointer = null;
                 return;
             }
-
-            cairo_destroy(p.nativePointer);
-            p.nativePointer = null; // nullify the handle anyway
-            --p.refs;
-            p = null;
+            debug(RefCounted)
+                if (this.debugging)
+            {
+                write(typeof(this).stringof,
+                        "@", cast(void*)this.nativePointer, ": freeing... ");
+                stdout.flush();
+            }
+            //Done, deallocate is done by cairo
+            this._dereference();
+            this.nativePointer = null;
+            debug(RefCounted) if (this.debugging) writeln("done!");
         }
+        /**
+        Assignment operators
+         */
+        void opAssign(typeof(this) rhs)
+        {
+            //Black magic?
+            swap(this.nativePointer, rhs.nativePointer);
+            debug(RefCounted)
+                this.debugging = rhs.debugging;
+        }
+    /*------------------------End of Reference counting stuff-----------------------*/
 
+
+    private:
         void checkError()
         {
-            throwError(cairo_status(p.nativePointer));
+            throwError(cairo_status(nativePointer));
         }
         
     
     public:
-        @property cairo_t* nativePointer()
-        {
-            return this.p.nativePointer;
-        }
-
         this(Surface target)
         {
-            auto ptr = cairo_create(target.nativePointer);
-            throwError(cairo_status(ptr));
-            p = new Impl(ptr, 1);
-        }
-
-        ~this()
-        {
-            if (!p) return;
-            if (p.refs == 1) close;
-            else --p.refs;
-        }
-        
-        this(this)
-        {
-            if (!p) return;
-            assert(p.refs);
-            ++p.refs;
-        }
-
-        void opAssign(Context rhs)
-        {
-            p = rhs.p;
+            //cairo_create already references the pointer, so _reference
+            //isn't necessary
+            nativePointer = cairo_create(target.nativePointer);
+            throwError(cairo_status(nativePointer));
         }
         
         void save()
@@ -1437,13 +1414,6 @@ public struct Context
             checkError();
         }
         
-        uint getReferenceCount()
-        {
-            scope(exit)
-                checkError();
-            return cairo_get_reference_count(this.nativePointer);
-        }
-        
         void setUserData(const cairo_user_data_key_t* key, void* data, cairo_destroy_func_t destroy)
         {
             cairo_set_user_data(this.nativePointer, key, data, destroy);
@@ -1469,7 +1439,7 @@ public struct Context
         
         void appendPath(Path p)
         {
-            cairo_append_path(this.nativePointer, p.path);
+            cairo_append_path(this.nativePointer, p.nativePointer);
             checkError();
         }
 
@@ -1792,41 +1762,53 @@ public struct Context
 public struct FontOptions
 {
     private:
-        struct Impl
+        struct Payload
         {
-            cairo_font_options_t* nativePointer;
-            uint refs = uint.max / 2;
-            this(cairo_font_options_t* np, uint r)
+            cairo_font_options_t* _payload;
+            this(cairo_font_options_t* h)
             {
-                nativePointer = np;
-                refs = r;
+                _payload = h;
             }
-        }
-        Impl* p;
+            ~this()
+            {
+                if(_payload)
+                {
+                    cairo_font_options_destroy(_payload);
+                    _payload = null;
+                }
+            }
     
-        void close()
-        {
-            if (!p) return; // succeed vacuously
-            if (!p.nativePointer)
-            {
-                p = null; // start a new life
-                return;
-            }
-            cairo_font_options_destroy(p.nativePointer);
-            p.nativePointer = null; // nullify the handle anyway
-            --p.refs;
-            p = null;
+            // Should never perform these operations
+            this(this) { assert(false); }
+            void opAssign(FontOptions.Payload rhs) { assert(false); }
         }
+    
+        alias RefCounted!(Payload, RefCountedAutoInitialize.no) Data;
+        Data _data;
+    
         
         void checkError()
         {
-            throwError(cairo_font_options_status(p.nativePointer));
+            throwError(cairo_font_options_status(nativePointer));
         }
     
     public:
-        @property nativePointer()
+        @property cairo_font_options_t* nativePointer()
         {
-            return p.nativePointer;
+            return _data._payload;
+        }
+
+        debug(RefCounted)
+        {
+            @property bool debugging()
+            {
+                return _data.RefCounted.debugging;
+            }
+            
+            @property void debugging(bool value)
+            {
+                _data.RefCounted.debugging = value;
+            }
         }
 
         static FontOptions opCall()
@@ -1834,7 +1816,7 @@ public struct FontOptions
             FontOptions opt;
             auto ptr = cairo_font_options_create();
             throwError(cairo_font_options_status(ptr));
-            opt.p = new Impl(ptr, 1);
+            opt._data.RefCounted.initialize(ptr);
             return opt;
         }
 
@@ -1845,55 +1827,37 @@ public struct FontOptions
                 throw new CairoException(cairo_status_t.CAIRO_STATUS_NULL_POINTER);
             }
             throwError(cairo_font_options_status(ptr));
-            p = new Impl(ptr, 1);
-        }
-
-        ~this()
-        {
-            if (!p) return;
-            if (p.refs == 1) close;
-            else --p.refs;
-        }
-        
-        this(this)
-        {
-            if (!p) return;
-            assert(p.refs);
-            ++p.refs;
-        }
-
-        void opAssign(FontOptions rhs)
-        {
-            p = rhs.p;
+            _data.RefCounted.initialize(ptr);
         }
 
         FontOptions copy()
         {
-            return FontOptions(cairo_font_options_copy(this.p.nativePointer));
+            return FontOptions(cairo_font_options_copy(nativePointer));
         }
         
         void merge(FontOptions other)
         {
-            cairo_font_options_merge(this.p.nativePointer, other.p.nativePointer);
+            cairo_font_options_merge(nativePointer, other.nativePointer);
             checkError();
         }
         
         //TODO: how to merge that with toHash?
         ulong hash()
         {
-            ulong hash = cairo_font_options_hash(this.p.nativePointer);
+            ulong hash = cairo_font_options_hash(nativePointer);
             checkError();
             return hash;
         }
         
         const bool opEquals(ref const(FontOptions) other)
         {
-            return cairo_font_options_equal(this.p.nativePointer, other.p.nativePointer) ? true : false;
+            return cairo_font_options_equal((cast(FontOptions)this).nativePointer,
+                (cast(FontOptions)other).nativePointer) ? true : false;
         }
         
         void setAntiAlias(AntiAlias antialias)
         {
-            cairo_font_options_set_antialias(this.p.nativePointer, antialias);
+            cairo_font_options_set_antialias(nativePointer, antialias);
             checkError();
         }
         
@@ -1901,12 +1865,12 @@ public struct FontOptions
         {
             scope(exit)
                 checkError();
-            return cairo_font_options_get_antialias(this.p.nativePointer);
+            return cairo_font_options_get_antialias(nativePointer);
         }
         
         void setSubpixelOrder(SubpixelOrder order)
         {
-            cairo_font_options_set_subpixel_order(this.p.nativePointer, order);
+            cairo_font_options_set_subpixel_order(nativePointer, order);
             checkError();
         }
         
@@ -1914,12 +1878,12 @@ public struct FontOptions
         {
             scope(exit)
                 checkError();
-            return cairo_font_options_get_subpixel_order(this.p.nativePointer);
+            return cairo_font_options_get_subpixel_order(nativePointer);
         }
         
         void setHintStyle(HintStyle style)
         {
-            cairo_font_options_set_hint_style(this.p.nativePointer, style);
+            cairo_font_options_set_hint_style(nativePointer, style);
             checkError();
         }
         
@@ -1927,12 +1891,12 @@ public struct FontOptions
         {
             scope(exit)
                 checkError();
-            return cairo_font_options_get_hint_style(this.p.nativePointer);
+            return cairo_font_options_get_hint_style(nativePointer);
         }
         
         void setHintMetrics(HintMetrics metrics)
         {
-            cairo_font_options_set_hint_metrics(this.p.nativePointer, metrics);
+            cairo_font_options_set_hint_metrics(nativePointer, metrics);
             checkError();
         }
         
@@ -1940,7 +1904,7 @@ public struct FontOptions
         {
             scope(exit)
                 checkError();
-            return cairo_font_options_get_hint_metrics(this.p.nativePointer);
+            return cairo_font_options_get_hint_metrics(nativePointer);
         }
 }
 
@@ -1955,17 +1919,15 @@ public struct TextGlyph
 
 public class ScaledFont
 {
-    protected:
-        bool _disposed = false;
+    mixin CairoCountedClass!(cairo_scaled_font_t*, "cairo_scaled_font_");
 
+    protected:
         void checkError()
         {
             throwError(cairo_scaled_font_status(nativePointer));
         }
 
     public:
-        cairo_scaled_font_t* nativePointer;
-
         /* Warning: ptr reference count is not increased by this function!
          * Adjust reference count before calling it if necessary*/
         this(cairo_scaled_font_t* ptr)
@@ -1979,22 +1941,6 @@ public class ScaledFont
         {
             this(cairo_scaled_font_create(font_face.nativePointer,
                 &font_matrix.nativeMatrix, &ctm.nativeMatrix, options.nativePointer));
-        }
-
-        ~this()
-        {
-            dispose();
-        }
-
-        void dispose()
-        {
-            if(!_disposed)
-            {
-                cairo_scaled_font_destroy(this.nativePointer);
-                debug
-                    this.nativePointer = null;
-                _disposed = true;
-            }
         }
 
         static ScaledFont createFromNative(cairo_scaled_font_t* ptr, bool adjRefCount = true)
@@ -2161,39 +2107,21 @@ public class ScaledFont
 
 public class FontFace
 {
-    protected:
-        bool _disposed = false;
+    mixin CairoCountedClass!(cairo_font_face_t*, "cairo_font_face_");
 
+    protected:
         void checkError()
         {
             throwError(cairo_font_face_status(nativePointer));
         }
 
     public:
-        cairo_font_face_t* nativePointer;
-
         /* Warning: ptr reference count is not increased by this function!
          * Adjust reference count before calling it if necessary*/
         this(cairo_font_face_t* ptr)
         {
             this.nativePointer = ptr;
             checkError();
-        }
-
-        ~this()
-        {
-            dispose();
-        }
-
-        void dispose()
-        {
-            if(!_disposed)
-            {
-                cairo_font_face_destroy(this.nativePointer);
-                debug
-                    this.nativePointer = null;
-                _disposed = true;
-            }
         }
 
         static FontFace createFromNative(cairo_font_face_t* ptr, bool adjRefCount = true)
