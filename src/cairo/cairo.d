@@ -77,6 +77,7 @@ void throwError(cairo_status_t status)
     }
 }
 
+public alias cairo_device_type_t DeviceType; ///ditto
 int formatStrideForWidth(Format format, int width)
 {
     return cairo_format_stride_for_width(format, width);
@@ -665,6 +666,32 @@ public class Device
         this(cairo_device_t* ptr)
         {
             this.nativePointer = ptr;
+            checkError();
+        }
+        void finish()
+        {
+            cairo_device_finish(this.nativePointer);
+            checkError();
+        }
+        void flush()
+        {
+            cairo_device_flush(this.nativePointer);
+            checkError();
+        }
+        DeviceType getType()
+        {
+            auto tmp = cairo_device_get_type(this.nativePointer);
+            checkError();
+            return tmp;
+        }
+        void acquire()
+        {
+            cairo_device_acquire(this.nativePointer);
+            checkError();
+        }
+        void release()
+        {
+            cairo_device_release(this.nativePointer);
             checkError();
         }
 }
