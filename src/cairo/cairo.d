@@ -1,3 +1,12 @@
+/**
+ * This module contains wrappers for most of cairo's fuctionality.
+ * Additional wrappers for subsets of cairo are available in the
+ * cairo.* modules.
+ *
+ * Note:
+ * Most cairoD functions could throw an OutOfMemoryError. This is therefore not
+ * explicitly stated in the functions' api documenation.
+ */
 module cairo.cairo;
 
 import cairo.c.cairo;
@@ -41,29 +50,13 @@ version(CAIRO_HAS_DIRECTFB_SURFACE)
     import cairo.directfb;
 }
 
-public alias cairo_content_t Content;
-public alias cairo_antialias_t AntiAlias;
-public alias cairo_subpixel_order_t SubpixelOrder;
-public alias cairo_hint_style_t HintStyle;
-public alias cairo_hint_metrics_t HintMetrics;
-public alias cairo_surface_type_t SurfaceType;
-public alias cairo_format_t Format;
-public alias cairo_extend_t Extend;
-public alias cairo_filter_t Filter;
-public alias cairo_pattern_type_t PatternType;
-public alias cairo_fill_rule_t FillRule;
-public alias cairo_line_cap_t LineCap;
-public alias cairo_line_join_t LineJoin;
-public alias cairo_operator_t Operator;
-public alias cairo_path_data_type_t PathElementType;
-public alias cairo_font_extents_t FontExtents;
-public alias cairo_text_extents_t TextExtents;
-public alias cairo_glyph_t Glyph;
-public alias cairo_text_cluster_t TextCluster;
-public alias cairo_text_cluster_flags_t TextClusterFlags;
-public alias cairo_font_slant_t FontSlant;
-public alias cairo_font_weight_t FontWeight;
-
+/**
+ * Mainly used internally by cairoD.
+ * If status is CAIRO_STATUS_NO_MEMORY a OutOfMemoryError is thrown.
+ * If status is  CAIRO_STATUS_SUCCESS nothing happens.
+ * For all other statuses, this functions throws
+ * a $(D CairoException) with the status value. 
+ */
 void throwError(cairo_status_t status)
 {
     switch(status)
@@ -77,64 +70,168 @@ void throwError(cairo_status_t status)
     }
 }
 
+/**
+ * Exception thrown by cairoD if an error occurs.
+ */
+public class CairoException : Exception
+{
+    public:
+        /**
+         * Cairo's error status.
+         * Gives further information about the error.
+         */
+        cairo_status_t status;
+
+        ///
+        this(cairo_status_t stat)
+        {
+            this.status = stat;
+            super(to!string(this.status) ~ ": " ~ to!string(cairo_status_to_string(this.status)));
+        }
+}
+
+/**
+ * Aliases for simple cairo enums and structs.
+ * Theses aliases provide D-like names when
+ * using the cairoD API.
+ *
+ * BUGS:
+ * DDOC doesn't document what an alias actually aliases.
+ * If you can't guess the corresponding cairo C types, you should
+ * have a look at the cairo.d source.
+ */
+public alias cairo_content_t Content;
+public alias cairo_antialias_t AntiAlias; ///ditto
+public alias cairo_subpixel_order_t SubpixelOrder; ///ditto
+public alias cairo_hint_style_t HintStyle; ///ditto
+public alias cairo_hint_metrics_t HintMetrics; ///ditto
+public alias cairo_surface_type_t SurfaceType; ///ditto
+public alias cairo_format_t Format; ///ditto
+public alias cairo_extend_t Extend; ///ditto
+public alias cairo_filter_t Filter; ///ditto
+public alias cairo_pattern_type_t PatternType; ///ditto
+public alias cairo_fill_rule_t FillRule; ///ditto
+public alias cairo_line_cap_t LineCap; ///ditto
+public alias cairo_line_join_t LineJoin; ///ditto
+public alias cairo_operator_t Operator; ///ditto
+public alias cairo_path_data_type_t PathElementType; ///ditto
+public alias cairo_font_extents_t FontExtents; ///ditto
+public alias cairo_text_extents_t TextExtents; ///ditto
+public alias cairo_glyph_t Glyph; ///ditto
+public alias cairo_text_cluster_t TextCluster; ///ditto
+public alias cairo_text_cluster_flags_t TextClusterFlags; ///ditto
+public alias cairo_font_slant_t FontSlant; ///ditto
+public alias cairo_font_weight_t FontWeight; ///ditto
 public alias cairo_device_type_t DeviceType; ///ditto
+
+/**
+ * This function provides a stride value that will respect all alignment
+ * requirements of the accelerated image-rendering code within cairo.
+ *
+ * Examples:
+ * -----------------------------------
+ * int stride;
+ * ubyte[] data;
+ * Surface surface;
+ * 
+ * stride = formatStrideForWidth(format, width);
+ * data = new ubyte[](stride * height); //could also use malloc
+ * surface = new ImageSurface(data, format, width, height, stride);
+ * -----------------------------------
+ *
+ * Params:
+ * format = The desired Format of an image surface to be created
+ * width = The desired width of an image surface to be created
+ *
+ * Returns:
+ * the appropriate stride to use given the desired format and width, or
+ * -1 if either the format is invalid or the width too large.
+ */
 int formatStrideForWidth(Format format, int width)
 {
     return cairo_format_stride_for_width(format, width);
 }
 
+/**
+ * A simple struct to store the coordinates of a point.
+ */
 public struct Point
 {
+    ///
     public this(double x, double y)
     {
         this.x = x;
         this.y = y;
     }
-    
+
+    ///
     double x;
+    ///
     double y;
 }
 
+/**
+ * A simple struct representing a rectangle
+ */
 public struct Rectangle
 {
+    ///
     public this(Point point, double width, double height)
     {
         this.point = point;
         this.width = width;
         this.height = height;
     }
-    
+
+    ///TOP-LEFT point of the rectangle
     Point point;
+    ///
     double width;
+    ///
     double height;
 }
 
+/**
+ * A simple struct representing a box.
+ * Used for Extents.
+ */
 public struct Box
 {
+    ///
     public this(Point point1, Point point2)
     {
         this.point1 = point1;
         this.point2 = point2;
     }
-    
-    Point point1, point2;
+    ///Top-left point
+    Point point1;
+    ///Bottom-right point
+    Point point2;
 }
 
+/**
+ * A simple struct representing a resolution
+ */
 public struct Resolution
 {
+    ///
     public this(double resX, double resY)
     {
         this.x = resX;
         this.y = resY;
     }
     
-    ///Pixels per inch
+    ///In pixels per inch
     double x, y;
 }
 
 //TODO: merge those?
+/**
+ * Struct representing a RGBA color
+ */
 public struct RGBA
 {
+    ///
     public this(double red, double green, double blue, double alpha)
     {
         this.red = red;
@@ -142,19 +239,23 @@ public struct RGBA
         this.blue = blue;
         this.alpha = alpha;
     }
-    
+    ///
     public double red, green, blue, alpha;
 }
 
+/**
+ * Struct representing a RGB color
+ */
 public struct RGB
 {
+    ///
     public this(double red, double green, double blue)
     {
         this.red = red;
         this.green = green;
         this.blue = blue;
     }
-    
+    ///
     public double red, green, blue;
 }
 
@@ -164,6 +265,11 @@ public struct RGB
  * for creating a cairo_path_t from scratch for use with cairo_append_path()
  * but the current expectation is that cairo_append_path() will mostly be
  * used with paths from cairo_copy_path().*/
+ /**
+  * Reference counted wrapper around $(D cairo_path_t).
+  * This struct can only be obtained from cairoD. It should not be created
+  * manually. 
+  */
 public struct Path
 {
     private:
@@ -206,18 +312,49 @@ public struct Path
         }
 
     public:
+        /**
+         * Create a Path from a existing $(D cairo_path_t*).
+         * Path is a reference-counted type. It will call $(D cairo_path_destroy)
+         * when there are no more references to the path.
+         *
+         * This means you should not destroy the $(D cairo_path_t*) manually
+         * and you should not use $(D cairo_path_t*) anymore after you created a Path
+         * with this constructor.
+         *
+         * Warning:
+         * $(RED Only use this if you know what your doing!
+         * This function should not be needed for standard cairoD usage.)
+         */
         this(cairo_path_t* path)
         {
             throwError(path.status);
             _data.RefCounted.initialize(path);
         }
 
+        /**
+         * The underlying $(D cairo_path_t*) handle
+         */
         @property cairo_path_t* nativePointer()
         {
             return _data._payload;
         }
 
-        debug(RefCounted)
+        version(D_Ddoc)
+        {
+            /**
+             * Enable / disable memory management debugging for this Path
+             * instance. Only available if both cairoD and the cairoD user
+             * code were compiled with "debug=RefCounted"
+             *
+             * Output is written to stdout, see 
+             * $(LINK https://github.com/jpf91/cairoD/wiki/Memory-Management#debugging)
+             * for more information
+             */
+            @property bool debugging();
+            ///ditto
+            @property void debugging(bool value);
+        }
+        else debug(RefCounted)
         {
             @property bool debugging()
             {
@@ -230,12 +367,37 @@ public struct Path
             }
         }
 
+        /**
+         * Get a $(D PathRange) for this path to iterate the paths
+         * elements.
+         *
+         * Examples:
+         * --------------------------
+         * auto path = context.copyPath();
+         * foreach(PathElement element; path[])
+         * {
+         *     switch(element.type)
+         *     {
+         *          case PathElementType.CAIRO_PATH_MOVE_TO:
+         *          {
+         *              writefln("Move to %s:%s", element.getPoint(0).x,
+         *                       element.getPoint(0).y);
+         *          }
+         *     }
+         * }
+         * --------------------------
+         */
         PathRange opSlice()
         {
             return PathRange(this);
         }
 }
 
+/**
+ * ForwardRange to iterate a cairo path.
+ * This range keeps a reference to its $(D Path) object,
+ * so it can be passed around without thinking about memory management.
+ */
 public struct PathRange
 {
     private:
@@ -248,28 +410,37 @@ public struct PathRange
         }
     
     public:
+        /**
+         * Constructor to get a PathRange for a $(D Path) object.
+         * You should usually use $(D Path)'s opSlice method insted, see
+         * the $(D Path) documentation for an example.
+         */ 
         this(Path path)
         {
             this.path = path;
         }
 
+        ///ForwardRange implementation
         @property PathRange save()
         {
             return PathRange(path, pos);
         }
 
+        ///ditto
         @property bool empty()
         {
             assert(pos <= path.num_data);
             return (pos == path.num_data);
         }
-        
+
+        ///ditto
         void popFront()
         {
             pos += path.data[pos].header.length;
             assert(pos <= path.num_data);
         }
-        
+
+        ///ditto
         @property PathElement front()
         {
             return PathElement(&path.data[pos]);
@@ -281,6 +452,10 @@ unittest
     static assert(isForwardRange!PathRange);
 }
 
+/**
+ * An element of a cairo $(D Path) and the objects iterated by a
+ * $(D PathRange).
+ */
 public struct PathElement
 {
     private:
@@ -291,11 +466,23 @@ public struct PathElement
             this.data = data;
         }
     public:
+        ///The type of this element.
         @property PathElementType type()
         {
             return data.header.type;
         }
-        
+
+        /**
+         * Get a point from this element.
+         * Index is zero-based. The number of available points
+         * depends on the elements $(D type):
+         * --------------------
+         *     CAIRO_PATH_MOVE_TO:     1 point
+         *     CAIRO_PATH_LINE_TO:     1 point
+         *     CAIRO_PATH_CURVE_TO:    3 points
+         *     CAIRO_PATH_CLOSE_PATH:  0 points
+         * --------------------
+         */
         Point getPoint(int index)
         {
             //length = 1 + number of points, index 0 based
@@ -310,71 +497,198 @@ public struct PathElement
         }
 }
 
+/**
+ * Wrapper for cairo's $(D cairo_matrix_t).
+ * A $(D cairo_matrix_t) holds an affine transformation, such as a scale,
+ * rotation, shear, or a combination of those. The transformation of
+ * a point (x, y) is given by:
+ * --------------------------------------
+ *     x_new = xx * x + xy * y + x0;
+ *     y_new = yx * x + yy * y + y0;
+ * --------------------------------------
+ **/
 public struct Matrix
 {
     public:
+        /**
+         * Cairo's $(D cairo_matrix_t) struct
+         */
         cairo_matrix_t nativeMatrix;
+        /**
+         * Alias, so that $(D cairo_matrix_t) members also work
+         * with this $(D Matrix) struct
+         */
         alias nativeMatrix this;
-        
+
+        /**
+         * Sets matrix to be the affine transformation given by xx, yx, xy, yy, x0, y0.
+         * The transformation is given by:
+         * ----------------------
+         *  x_new = xx * x + xy * y + x0;
+         *  y_new = yx * x + yy * y + y0;
+         * ----------------------
+         *
+         * Params:
+         * xx = xx component of the affine transformation
+         * yx = yx component of the affine transformation
+         * xy = xy component of the affine transformation
+         * yy = yy component of the affine transformation
+         * x0 = X translation component of the affine transformation
+         * y0 = Y translation component of the affine transformation
+         */
         this(double xx, double yx, double xy, double yy,
             double x0, double y0)
         {
             cairo_matrix_init(&this.nativeMatrix, xx, yx, xy, yy, x0, y0);
         }
-        
+
+        /**
+         * Modifies matrix to be an identity transformation.
+         */
         void initIdentity()
         {
             cairo_matrix_init_identity(&this.nativeMatrix);
         }
-        
+
+        /**
+         * Initializes matrix to a transformation that translates by tx
+         * and ty in the X and Y dimensions, respectively.
+         *
+         * Params:
+         * tx = amount to translate in the X direction
+         * ty = amount to translate in the Y direction
+         */
         void initTranslate(double tx, double ty)
         {
             cairo_matrix_init_translate(&this.nativeMatrix, tx, ty);
         }
-        
+
+        /**
+         * nitializes matrix to a transformation that scales by sx and sy
+         * in the X and Y dimensions, respectively.
+         *
+         * Params:
+         * sx = scale factor in the X direction
+         * sy = scale factor in the Y direction
+         */
         void initScale(double sx, double sy)
         {
             cairo_matrix_init_scale(&this.nativeMatrix, sx, sy);
         }
-        
+
+        /**
+         * Initialized matrix to a transformation that rotates by radians.
+         *
+         * Params:
+         * radians = angle of rotation, in radians. The direction of
+         *     rotation is defined such that positive angles rotate in
+         *     the direction from the positive X axis toward the positive
+         *     Y axis. With the default axis orientation of cairo,
+         *     positive angles rotate in a clockwise direction
+         */
         void initRotate(double radians)
         {
             cairo_matrix_init_rotate(&this.nativeMatrix, radians);
         }
-        
+
+        /**
+         * Applies a translation by tx, ty to the transformation in matrix.
+         * The effect of the new transformation is to first translate the
+         * coordinates by tx and ty, then apply the original transformation
+         * to the coordinates.
+         *
+         * Params:
+         * tx = amount to translate in the X direction
+         * ty = amount to translate in the Y direction
+         */
         void translate(double tx, double ty)
         {
             cairo_matrix_translate(&this.nativeMatrix, tx, ty);
         }
-        
+
+        /**
+         * Applies scaling by sx, sy to the transformation in matrix.
+         * The effect of the new transformation is to first scale the
+         * coordinates by sx and sy, then apply the original transformation
+         * to the coordinates.
+         *
+         * Params:
+         * sx = scale factor in the X direction
+         * sy = scale factor in the Y direction
+         */
         void scale(double sx, double sy)
         {
             cairo_matrix_scale(&this.nativeMatrix, sx, sy);
         }
-        
+
+        /**
+         * Applies rotation by radians to the transformation in matrix.
+         * The effect of the new transformation is to first rotate the
+         * coordinates by radians, then apply the original transformation
+         * to the coordinates.
+         *
+         * Params:
+         * radians = angle of rotation, in radians. The direction of
+         * rotation is defined such that positive angles rotate in the
+         * direction from the positive X axis toward the positive Y axis.
+         * With the default axis orientation of cairo, positive angles
+         * rotate in a clockwise direction.
+         */
         void rotate(double radians)
         {
             cairo_matrix_rotate(&this.nativeMatrix, radians);
         }
-        
+
+        /**
+         * Changes matrix to be the inverse of its original value.
+         * Not all transformation matrices have inverses; if the matrix
+         * collapses points together (it is degenerate), then it has no
+         * inverse and this function will fail.
+         *
+         * Throws:
+         * If matrix has an inverse, modifies matrix to be the inverse matrix.
+         * Otherwise, throws a cairo exception
+         * with CAIRO_STATUS_INVALID_MATRIX type.
+         */
         void invert()
         {
             throwError(cairo_matrix_invert(&this.nativeMatrix));
         }
-        
+
+        /**
+         * Multiplies the affine transformations in a and b together and
+         * returns the result. The effect of the resulting transformation
+         * is to first apply the transformation in a to the coordinates
+         * and then apply the transformation in b to the coordinates.
+         * 
+         * It is allowable for result to be identical to either a or b.
+         */
         Matrix opBinary(string op)(Matrix rhs) if(op == "*")
         {
             Matrix result;
             cairo_matrix_multiply(&result.nativeMatrix, &this.nativeMatrix, &rhs.nativeMatrix);
             return result;
         }
-        
+
+        /**
+         * Transforms the distance vector (dx,dy) by matrix. This is similar
+         * to $(D transformPoint) except that the translation
+         * components of the transformation are ignored. The calculation
+         * of the returned vector is as follows:
+         * ------------------
+         * dx2 = dx1 * a + dy1 * c;
+         * dy2 = dx1 * b + dy1 * d;
+         * ------------------
+         */
         Point transformDistance(Point dist)
         {
             cairo_matrix_transform_distance(&this.nativeMatrix, &dist.x, &dist.y);
             return dist;
         }
-        
+
+        /**
+         * Transforms the point (x, y) by matrix.
+         */
         Point transformPoint(Point point)
         {
             cairo_matrix_transform_point(&this.nativeMatrix, &point.x, &point.y);
@@ -382,32 +696,58 @@ public struct Matrix
         }
 }
 
-public class CairoException : Exception
-{
-    public:
-        cairo_status_t status;
-    
-        this(cairo_status_t stat)
-        {
-            this.status = stat;
-            super(to!string(this.status) ~ ": " ~ to!string(cairo_status_to_string(this.status)));
-        }
-}
-
+/**
+ * A $(D Pattern) represents a source when drawing onto a
+ * $(D Surface). There are different subtypes of $(D Pattern),
+ * for different types of sources; for example,
+ * $(D SolidPattern.fromRGB) creates a pattern for a solid
+ * opaque color.
+ *
+ * Other than various $(D Pattern) subclasses,
+ * some of the pattern types can be implicitly created
+ * using various $(D Context.setSource) functions;
+ * for example $(D Context.setSourceRGB).
+ *
+ * The C type of a pattern can be queried with $(D getType()),
+ * although D polymorphism features also work.
+ *
+ * Memory management of $(D Pattern) can be done with the $(D dispose())
+ * method, see $(LINK https://github.com/jpf91/cairoD/wiki/Memory-Management#3-RC-class)
+ *
+ * Note:
+ * This class uses the $(D CairoCountedClass) mixin, so all it's members
+ * are also available in $(D Pattern) classes, although they do not show
+ * up in the documentation because of a limitation in ddoc.
+ **/
 public class Pattern
 {
+    ///
     mixin CairoCountedClass!(cairo_pattern_t*, "cairo_pattern_");
     
     protected:
+        /**
+         * Method for use in subclasses.
+         * Calls $(D cairo_pattern_status(nativePointer)) and throws
+         * an exception if the status isn't CAIRO_STATUS_SUCCESS
+         */
         void checkError()
         {
             throwError(cairo_pattern_status(nativePointer));
         }
     
     public:
-
-        /* Warning: ptr reference count is not increased by this function!
-         * Adjust reference count before calling it if necessary*/
+        /**
+         * Create a $(D Pattern) from a existing $(D cairo_pattern_t*).
+         * Pattern is a garbage collected class. It will call $(D cairo_pattern_destroy)
+         * when it gets collected by the GC or when $(D dispose()) is called.
+         *
+         * Warning:
+         * $(D ptr)'s reference count is not increased by this function!
+         * Adjust reference count before calling it if necessary
+         *
+         * $(RED Only use this if you know what your doing!
+         * This function should not be needed for standard cairoD usage.)
+         */
         this(cairo_pattern_t* ptr)
         {
             this.nativePointer = ptr;
@@ -417,7 +757,16 @@ public class Pattern
             }
             checkError();
         }
-        
+
+        /**
+         * The createFromNative method for the Pattern classes.
+         * See $(LINK https://github.com/jpf91/cairoD/wiki/Memory-Management#createFromNative)
+         * for more information.
+         *
+         * Warning:
+         * $(RED Only use this if you know what your doing!
+         * This function should not be needed for standard cairoD usage.)
+         */
         static Pattern createFromNative(cairo_pattern_t* ptr)
         {
             if(!ptr)
@@ -441,39 +790,97 @@ public class Pattern
                     return new Pattern(ptr);
             }
         }
-        
+
+        /**
+         * Sets the mode to be used for drawing outside the area of a pattern.
+         * See $(D Extend) for details on the semantics of each extend strategy.
+         * The default extend mode is CAIRO_EXTEND_NONE for surface patterns
+         * and CAIRO_EXTEND_PAD for gradient patterns.
+         */
         void setExtend(Extend ext)
         {
             cairo_pattern_set_extend(this.nativePointer, ext);
             checkError();
         }
-        
+
+        /**
+         * Gets the current extend mode for a pattern. See $(D Extend)
+         * for details on the semantics of each extend strategy.
+         */
         Extend getExtend()
         {
             scope(exit)
                 checkError();
             return cairo_pattern_get_extend(this.nativePointer);
         }
-        
+
+        /**
+         * Sets the filter to be used for resizing when using this pattern.
+         * See $(D Filter) for details on each filter.
+         *
+         * Note:
+         * You might want to control filtering even when you do not have
+         * an explicit cairo_pattern_t object, (for example when using
+         * $(D context.setSourceSourface())). In these cases, it is convenient
+         * to use $(D Context.getSource()) to get access to the pattern
+         * that cairo creates implicitly.
+         * For example:
+         * ------------------------
+         * context.setSourceSurface(image, x, y);
+         * context.getSource().setFilter(Filter.CAIRO_FILTER_NEAREST);
+         * ------------------------
+         */
         void setFilter(Filter fil)
         {
             cairo_pattern_set_filter(this.nativePointer, fil);
             checkError();
         }
-        
+
+        /**
+         * Gets the current filter for a pattern. See $(D Filter) for details on each filter.
+         */
         Filter getFilter()
         {
             scope(exit)
                 checkError();
             return cairo_pattern_get_filter(this.nativePointer);
         }
-        
+
+        /**
+         * Sets the pattern's transformation matrix to matrix.
+         * This matrix is a transformation from user space to pattern space.
+         * 
+         * When a pattern is first created it always has the identity matrix
+         * for its transformation matrix, which means that pattern space
+         * is initially identical to user space.
+         * Important: Please note that the direction of this transformation
+         * matrix is from user space to pattern space. This means that if
+         * you imagine the flow from a pattern to user space (and on to
+         * device space), then coordinates in that flow will be transformed
+         * by the inverse of the pattern matrix.
+         * 
+         * For example, if you want to make a pattern appear twice as large
+         * as it does by default the correct code to use is:
+         * -------------------
+         * Matrix matrix;
+         * matrix.initScale(0.5, 0.5);
+         * pattern.setMatrix(matrix);
+         * -------------------
+         * Meanwhile, using values of 2.0 rather than 0.5 in the code above
+         * would cause the pattern to appear at half of its default size.
+         *
+         * Also, please note the discussion of the user-space locking semantics
+         * of $(D Context.setSource()).
+         */
         void setMatrix(Matrix mat)
         {
             cairo_pattern_set_matrix(this.nativePointer, &mat.nativeMatrix);
             checkError();
         }
-        
+
+        /**
+         * Returns the pattern's transformation matrix.
+         */
         Matrix getMatrix()
         {
             Matrix ma;
@@ -481,14 +888,20 @@ public class Pattern
             checkError();
             return ma;
         }
-        
+
+        /**
+         * This function returns the C type of a pattern. See $(D PatternType)
+         * for available types.
+         */
         PatternType getType()
         {
             scope(exit)
                 checkError();
             return cairo_pattern_get_type(this.nativePointer);
         }
-        
+
+        //Cairo binding guidelines say we shouldn't wrap these
+        /*
         void setUserData(const cairo_user_data_key_t* key, void* data, cairo_destroy_func_t destroy)
         {
             cairo_pattern_set_user_data(this.nativePointer, key, data, destroy);
@@ -500,39 +913,71 @@ public class Pattern
             scope(exit)
                 checkError();
             return cairo_pattern_get_user_data(this.nativePointer, key);
-        }
+        }*/
 }
 
+/**
+ * A solid pattern.
+ *
+ * Use the $(D fromRGB) and $(D fromRGBA) methods to create an
+ * instance.
+ */
 public class SolidPattern : Pattern
 {
     public:
-        /* Warning: ptr reference count is not increased by this function!
-         * Adjust reference count before calling it if necessary*/
+        /**
+         * Create a $(D SolidPattern) from a existing $(D cairo_pattern_t*).
+         * SolidPattern is a garbage collected class. It will call $(D cairo_pattern_destroy)
+         * when it gets collected by the GC or when $(D dispose()) is called.
+         *
+         * Warning:
+         * $(D ptr)'s reference count is not increased by this function!
+         * Adjust reference count before calling it if necessary
+         *
+         * $(RED Only use this if you know what your doing!
+         * This function should not be needed for standard cairoD usage.)
+         */
         this(cairo_pattern_t* ptr)
         {
             super(ptr);
         }
-        
+
+        /**
+         * Creates a new $(D SolidPattern) corresponding to an opaque color.
+         * The color components are floating point numbers in the range 0
+         * to 1. If the values passed in are outside that range, they will
+         * be clamped.
+         */
         static SolidPattern fromRGB(double red, double green, double blue)
         {
             return new SolidPattern(cairo_pattern_create_rgb(red, green, blue));
         }
 
+        ///ditto
         static SolidPattern fromRGB(RGB rgb)
         {
             return new SolidPattern(cairo_pattern_create_rgb(rgb.red, rgb.green, rgb.blue));
         }
-        
+
+        /**
+         * Creates a new $(D SolidPattern) corresponding to a translucent color.
+         * The color components are floating point numbers in the range 0 to 1.
+         * If the values passed in are outside that range, they will be clamped.
+         */
         static SolidPattern fromRGBA(double red, double green, double blue, double alpha)
         {
             return new SolidPattern(cairo_pattern_create_rgba(red, green, blue, alpha));
         }
 
+        ///ditto
         static SolidPattern fromRGBA(RGBA rgba)
         {
             return new SolidPattern(cairo_pattern_create_rgba(rgba.red,rgba. green, rgba.blue, rgba.alpha));
         }
-        
+
+        /**
+         * Gets the solid color for a solid color pattern.
+         */
         RGBA getRGBA()
         {
             RGBA col;
@@ -542,21 +987,43 @@ public class SolidPattern : Pattern
         }
 }
 
+/**
+ * A surface pattern.
+ *
+ * Use the $(this(Surface)) constructor to create an
+ * instance.
+ */
 public class SurfacePattern : Pattern
 {
     public:
+        /**
+         * Create a $(D SurfacePattern) from a existing $(D cairo_pattern_t*).
+         * SurfacePattern is a garbage collected class. It will call $(D cairo_pattern_destroy)
+         * when it gets collected by the GC or when $(D dispose()) is called.
+         *
+         * Warning:
+         * $(D ptr)'s reference count is not increased by this function!
+         * Adjust reference count before calling it if necessary
+         *
+         * $(RED Only use this if you know what your doing!
+         * This function should not be needed for standard cairoD usage.)
+         */
+        this(cairo_pattern_t* ptr)
+        {
+            super(ptr);
+        }
+
+        /**
+         * Create a new $(D SurfacePattern) for the given surface.
+         */
         this(Surface surface)
         {
             super(cairo_pattern_create_for_surface(surface.nativePointer));
         }
 
-        /* Warning: ptr reference count is not increased by this function!
-         * Adjust reference count before calling it if necessary*/
-        this(cairo_pattern_t* ptr)
-        {
-            super(ptr);
-        }
-        
+        /**
+         * Gets the $(D Surface) of a SurfacePattern.
+         */
         Surface getSurface()
         {
             cairo_surface_t* ptr;
@@ -565,30 +1032,111 @@ public class SurfacePattern : Pattern
         }
 }
 
+/**
+ * Base class for $(D LinearGradient) and $(D RadialGradient).
+ *
+ * It's not possible to create instances of this class.
+ */
 public class Gradient : Pattern
 {
     public:
-        /* Warning: ptr reference count is not increased by this function!
-         * Adjust reference count before calling it if necessary*/
+        /**
+         * Create a $(D Gradient) from a existing $(D cairo_pattern_t*).
+         * Gradient is a garbage collected class. It will call $(D cairo_pattern_destroy)
+         * when it gets collected by the GC or when $(D dispose()) is called.
+         *
+         * Warning:
+         * $(D ptr)'s reference count is not increased by this function!
+         * Adjust reference count before calling it if necessary
+         *
+         * $(RED Only use this if you know what your doing!
+         * This function should not be needed for standard cairoD usage.)
+         */
         this(cairo_pattern_t* ptr)
         {
             super(ptr);
         }
-        
+
+        /**
+         * Adds an opaque color stop to a gradient pattern. The offset
+         * specifies the location along the gradient's control vector.
+         * For example, a $(D LinearGradient)'s control vector is from
+         * (x0,y0) to (x1,y1) while a $(D RadialGradient)'s control vector is
+         * from any point on the start circle to the corresponding point
+         * on the end circle.
+         * 
+         * The color is specified in the same way as in $(D context.setSourceRGB()).
+         * 
+         * If two (or more) stops are specified with identical offset
+         * values, they will be sorted according to the order in which the
+         * stops are added, (stops added earlier will compare less than
+         * stops added later). This can be useful for reliably making sharp
+         * color transitions instead of the typical blend.
+         *
+         * Params:
+         * offset = an offset in the range [0.0 .. 1.0]
+         * 
+         * Note: If the pattern is not a gradient pattern, (eg. a linear
+         * or radial pattern), then the pattern will be put into an error
+         * status with a status of CAIRO_STATUS_PATTERN_TYPE_MISMATCH.
+         */
         void addColorStopRGB(double offset, RGB color)
         {
             cairo_pattern_add_color_stop_rgb(this.nativePointer, offset,
                 color.red, color.green, color.blue);
             checkError();
         }
-        
+
+        ///ditto
+        void addColorStopRGB(double offset, double red, double green, double blue)
+        {
+            cairo_pattern_add_color_stop_rgb(this.nativePointer, offset,
+                red, green, blue);
+            checkError();
+        }
+
+        /**
+         * Adds a translucent color stop to a gradient pattern. The offset
+         * specifies the location along the gradient's control vector. For
+         * example, a linear gradient's control vector is from (x0,y0) to
+         * (x1,y1) while a radial gradient's control vector is from any point
+         * on the start circle to the corresponding point on the end circle.
+         *
+         * The color is specified in the same way as in
+         * $(D context.setSourceRGBA()).
+         * 
+         * If two (or more) stops are specified with identical offset values,
+         * they will be sorted according to the order in which the stops are added,
+         * (stops added earlier will compare less than stops added later).
+         * This can be useful for reliably making sharp color transitions
+         * instead of the typical blend.
+         * 
+         * Params:
+         * offset = an offset in the range [0.0 .. 1.0]
+         * 
+         * Note: If the pattern is not a gradient pattern, (eg. a linear
+         * or radial pattern), then the pattern will be put into an error
+         * status with a status of CAIRO_STATUS_PATTERN_TYPE_MISMATCH.
+         */
         void addColorStopRGBA(double offset, RGBA color)
         {
             cairo_pattern_add_color_stop_rgba(this.nativePointer, offset,
                 color.red, color.green, color.blue, color.alpha);
             checkError();
         }
-        
+
+        ///ditto
+        void addColorStopRGBA(double offset, double red, double green,
+            double blue, double alpha)
+        {
+            cairo_pattern_add_color_stop_rgba(this.nativePointer, offset,
+                red, green, blue, alpha);
+            checkError();
+        }
+
+        /**
+         * Gets the number of color stops specified in the given gradient pattern.
+         */
         int getColorStopCount()
         {
             int tmp;
@@ -596,29 +1144,79 @@ public class Gradient : Pattern
             checkError();
             return tmp;
         }
-        
-        void getColorStopRGBA(int index, out double offset, out RGBA Color)
+
+        /**
+         * Gets the color and offset information at the given index for a
+         * gradient pattern. Values of index are 0 to 1 less than the number
+         * returned by $(D getColorStopCount()).
+         *
+         * Params:
+         * index = index of the stop to return data for
+         * offset = output: Returns the offset of the color stop
+         * color = output: Returns the color of the color stop
+         * 
+         * TODO: Array/Range - like interface?
+         */
+        void getColorStopRGBA(int index, out double offset, out RGBA color)
         {
             throwError(cairo_pattern_get_color_stop_rgba(this.nativePointer, index, &offset,
-                &Color.red, &Color.green, &Color.blue, &Color.alpha));
+                &color.red, &color.green, &color.blue, &color.alpha));
         }
 }
 
+/**
+ * A linear gradient.
+ *
+ * Use the $(D this(Point p1, Point p2)) constructor to create an
+ * instance.
+ */
 public class LinearGradient : Gradient
 {
     public:
+        /**
+         * Create a $(D LinearGradient) from a existing $(D cairo_pattern_t*).
+         * LinearGradient is a garbage collected class. It will call $(D cairo_pattern_destroy)
+         * when it gets collected by the GC or when $(D dispose()) is called.
+         *
+         * Warning:
+         * $(D ptr)'s reference count is not increased by this function!
+         * Adjust reference count before calling it if necessary
+         *
+         * $(RED Only use this if you know what your doing!
+         * This function should not be needed for standard cairoD usage.)
+         */
+        this(cairo_pattern_t* ptr)
+        {
+            super(ptr);
+        }
+
+        /**
+         * Create a new linear gradient $(D Pattern) along the line defined
+         * by p1 and p2. Before using the gradient pattern, a number of
+         * color stops should be defined using $(D Gradient.addColorStopRGB())
+         * or  $(D Gradient.addColorStopRGBA()).
+         *
+         * Params:
+         * p1 = the start point
+         * p2 = the end point
+         * 
+         * Note: The coordinates here are in pattern space. For a new pattern,
+         * pattern space is identical to user space, but the relationship
+         * between the spaces can be changed with $(D Pattern.setMatrix()).
+         */
         this(Point p1, Point p2)
         {
             super(cairo_pattern_create_linear(p1.x, p1.y, p2.x, p2.y));
         }
 
-        /* Warning: ptr reference count is not increased by this function!
-         * Adjust reference count before calling it if necessary*/
-        this(cairo_pattern_t* ptr)
-        {
-            super(ptr);
-        }
-        
+        /**
+         * Gets the gradient endpoints for a linear gradient.
+         *
+         * Returns:
+         * Point[0] = the first point
+         * 
+         * Point[1] = the second point
+         */
         Point[2] getLinearPoints()
         {
             Point[2] tmp;
@@ -627,21 +1225,59 @@ public class LinearGradient : Gradient
             return tmp;
         }
 }
+
+/**
+ * A radial gradient.
+ *
+ * Use the $(D this(Point c0, double radius0, Point c1, double radius1))
+ * constructor to create an instance.
+ */
 public class RadialGradient : Gradient
 {
     public:
+        /**
+         * Create a $(D RadialGradient) from a existing $(D cairo_pattern_t*).
+         * RadialGradient is a garbage collected class. It will call $(D cairo_pattern_destroy)
+         * when it gets collected by the GC or when $(D dispose()) is called.
+         *
+         * Warning:
+         * $(D ptr)'s reference count is not increased by this function!
+         * Adjust reference count before calling it if necessary
+         *
+         * $(RED Only use this if you know what your doing!
+         * This function should not be needed for standard cairoD usage.)
+         */
+        this(cairo_pattern_t* ptr)
+        {
+            super(ptr);
+        }
+
+        /**
+         * Creates a new radial gradient $(D pattern) between the two
+         * circles defined by (c0, radius0) and (c1, radius1). Before
+         * using the gradient pattern, a number of color stops should
+         * be defined using $(D Pattern.addColorStopRGB()) or
+         * $(D Pattern.addColorStopRGBA()).
+         *
+         * Params:
+         * c0 = center of the start circle
+         * radius0 = radius of the start circle
+         * c1 = center of the end circle
+         * radius1 = radius of the end circle
+         * 
+         * Note: The coordinates here are in pattern space. For a new pattern,
+         * pattern space is identical to user space, but the relationship
+         * between the spaces can be changed with $(D Pattern.setMatrix()).
+         */
         this(Point c0, double radius0, Point c1, double radius1)
         {
             super(cairo_pattern_create_radial(c0.x, c0.y, radius0, c1.x, c1.y, radius1));
         }
 
-        /* Warning: ptr reference count is not increased by this function!
-         * Adjust reference count before calling it if necessary*/
-        this(cairo_pattern_t* ptr)
-        {
-            super(ptr);
-        }
-        
+        /**
+         * Gets the gradient endpoint circles for a radial gradient,
+         * each specified as a center coordinate and a radius.
+         */
         void getRadialCircles(out Point c0, out Point c1, out double radius0, out double radius1)
         {
             throwError(cairo_pattern_get_radial_circles(this.nativePointer, &c0.x, &c0.y, &radius0,
@@ -649,46 +1285,174 @@ public class RadialGradient : Gradient
         }
 }
 
+/**
+ * Devices are the abstraction Cairo employs for the rendering system used
+ * by a $(D Surface). You can get the device of a surface using
+ * $(D Surface.getDevice()).
+ * 
+ * Devices are created using custom functions specific to the rendering
+ * system you want to use. See the documentation for the surface types
+ * for those functions.
+ * 
+ * An important function that devices fulfill is sharing access to the
+ * rendering system between Cairo and your application. If you want to access
+ * a device directly that you used to draw to with Cairo, you must first
+ * call $(D Device.flush()) to ensure that Cairo finishes all operations
+ * on the device and resets it to a clean state.
+ *
+ * Cairo also provides the functions $(D Device.acquire()) and
+ * $(D Device.release()) to synchronize access to the rendering system
+ * in a multithreaded environment. This is done internally, but can also
+ * be used by applications.
+ *
+ * Note:
+ * Please refer to the documentation of each backend for additional usage
+ * requirements, guarantees provided, and interactions with existing surface
+ * API of the device functions for surfaces of that type.
+ * 
+ * Examples:
+ * -------------------------
+ * void my_device_modifying_function(Device device)
+ * {
+ *     // Ensure the device is properly reset
+ *     device.flush();
+ *     try
+ *     {
+ *         // Try to acquire the device
+ *         device.acquire();
+ *     }
+ *     catch(CairoException e)
+ *     {
+ *         writeln("");
+ *     }
+ *
+ *     // Release the device when done.
+ *     scope(exit)
+ *         device.release();
+ *
+ *     // Do the custom operations on the device here.
+ *     // But do not call any Cairo functions that might acquire devices.
+ * 
+ * }
+ * -------------------------
+*/
 public class Device
 {
     mixin CairoCountedClass!(cairo_device_t*, "cairo_device_");
 
     protected:
+        /**
+         * Method for use in subclasses.
+         * Calls $(D cairo_device_status(nativePointer)) and throws
+         * an exception if the status isn't CAIRO_STATUS_SUCCESS
+         */
         void checkError()
         {
             throwError(cairo_device_status(nativePointer));
         }
 
     public:
-
-        /* Warning: ptr reference count is not increased by this function!
-         * Adjust reference count before calling it if necessary*/
+        /**
+         * Create a $(D Device) from a existing $(D cairo_device_t*).
+         * Device is a garbage collected class. It will call $(D cairo_pattern_destroy)
+         * when it gets collected by the GC or when $(D dispose()) is called.
+         *
+         * Warning:
+         * $(D ptr)'s reference count is not increased by this function!
+         * Adjust reference count before calling it if necessary
+         *
+         * $(RED Only use this if you know what your doing!
+         * This function should not be needed for standard cairoD usage.)
+         */
         this(cairo_device_t* ptr)
         {
             this.nativePointer = ptr;
             checkError();
         }
+
+        /**
+         * This function finishes the device and drops all references to
+         * external resources. All surfaces, fonts and other objects created
+         * for this device will be finished, too. Further operations on
+         * the device will not affect the device but will instead trigger
+         * a CAIRO_STATUS_DEVICE_FINISHED exception.
+         *
+         * When the reference count reaches zero, cairo will call $(D finish())
+         * if it hasn't been called already, before freeing the resources
+         * associated with the device.
+         *
+         * This function may acquire devices.
+         *
+         * BUGS: How does "All surfaces, fonts and other objects created
+         * for this device will be finished" interact with the cairoD?
+         */
         void finish()
         {
             cairo_device_finish(this.nativePointer);
             checkError();
         }
+
+        /**
+         * Finish any pending operations for the device and also restore
+         * any temporary modifications cairo has made to the device's state.
+         * This function must be called before switching from using the
+         * device with Cairo to operating on it directly with native APIs.
+         * If the device doesn't support direct access, then this function does nothing.
+         *
+         * This function may acquire devices.
+         */
         void flush()
         {
             cairo_device_flush(this.nativePointer);
             checkError();
         }
+
+        /**
+         * This function returns the C type of a Device. See $(D DeviceType)
+         * for available types.
+         */
         DeviceType getType()
         {
             auto tmp = cairo_device_get_type(this.nativePointer);
             checkError();
             return tmp;
         }
+
+        /**
+         * Acquires the device for the current thread. This function will
+         * block until no other thread has acquired the device.
+         *
+         * If no Exception is thrown, you successfully
+         * acquired the device. From now on your thread owns the device
+         * and no other thread will be able to acquire it until a matching
+         * call to $(D Device.release()). It is allowed to recursively
+         * acquire the device multiple times from the same thread.
+         *
+         * Note:
+         * You must never acquire two different devices at the same time
+         * unless this is explicitly allowed. Otherwise the possibility
+         * of deadlocks exist.
+         *
+         * As various Cairo functions can acquire devices when called,
+         * these functions may also cause deadlocks when you call them
+         * with an acquired device. So you must not have a device acquired
+         * when calling them. These functions are marked in the documentation.
+         *
+         * Throws:
+         * An exception if the device is in an error state and could not
+         * be acquired. After a successful call to acquire, a matching call
+         * to $(D Device.release()) is required.
+         */
         void acquire()
         {
             cairo_device_acquire(this.nativePointer);
             checkError();
         }
+
+        /**
+         * Releases a device previously acquired using $(D Device.acquire()).
+         * See that function for details.
+         */
         void release()
         {
             cairo_device_release(this.nativePointer);

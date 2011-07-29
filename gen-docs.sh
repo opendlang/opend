@@ -8,4 +8,7 @@ dmd ../doc/cairo.ddoc -c -o- -wi -D -Dd../doc/generated/ -Dfcairo_c_ps.html -I..
 dmd ../doc/cairo.ddoc -c -o- -wi -D -Dd../doc/generated/ -Dfcairo_c_svg.html -I../../WindowsAPI $VERSIONS cairo/c/svg.d
 dmd ../doc/cairo.ddoc -c -o- -wi -D -Dd../doc/generated/ -Dfcairo_c_win32.html -I../../WindowsAPI $VERSIONS cairo/c/win32.d
 dmd ../doc/cairo.ddoc -c -o- -wi -D -Dd../doc/generated/ -Dfcairo_c_xcb.html -I../../WindowsAPI $VERSIONS cairo/c/xcb.d
+
+dmd ../doc/cairo.ddoc -c -o- -wi -D -Dd../doc/generated/ -Dfcairo_util.html -I../../WindowsAPI $VERSIONS cairo/util.d
+dmd ../doc/cairo.ddoc -c -o- -wi -D -Dd../doc/generated/ -Dfcairo_cairo.html -I../../WindowsAPI $VERSIONS cairo/cairo.d
 cd ../
