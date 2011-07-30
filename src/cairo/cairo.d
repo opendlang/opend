@@ -764,7 +764,7 @@ public class Pattern
          * $(RED Only use this if you know what your doing!
          * This function should not be needed for standard cairoD usage.)
          */
-        static Pattern createFromNative(cairo_pattern_t* ptr)
+        static Pattern createFromNative(cairo_pattern_t* ptr, bool adjRefCount = true)
         {
             if(!ptr)
             {
@@ -772,7 +772,8 @@ public class Pattern
             }
             throwError(cairo_pattern_status(ptr));
             //Adjust reference count
-            cairo_pattern_reference(ptr);
+            if(adjRefCount)
+                cairo_pattern_reference(ptr);
             switch(cairo_pattern_get_type(ptr))
             {
                 case cairo_pattern_type_t.CAIRO_PATTERN_TYPE_LINEAR:
@@ -2309,10 +2310,10 @@ public struct Context
             checkError();
         }
         
-        void popGroup()
+        Pattern popGroup()
         {
-            cairo_pop_group(this.nativePointer);
-            checkError();
+            auto ptr = cairo_pop_group(this.nativePointer);
+            return Pattern.createFromNative(ptr, false);
         }
         
         void popGroupToSource()
