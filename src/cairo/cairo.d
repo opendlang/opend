@@ -2163,7 +2163,19 @@ public class ImageSurface : Surface
         }
 }
 
-
+/**
+ * The cairo drawing context
+ *
+ * $(D Context) is the main object used when drawing with cairo. To draw
+ * with cairo, you create a $(D Context), set the target surface, and drawing
+ * options for the $(D Context), create shapes with functions like $(D Context.moveTo())
+ * and $(D Context.lineTo()), and then draw shapes with $(D Context.stroke())
+ * or $(D Context.fill()).
+ *
+ * $(D Context)'s can be pushed to a stack via $(D Context.save()).
+ * They may then safely be changed, without loosing the current state.
+ * Use $(D Context.restore()) to restore to the saved state.
+ */
 public struct Context
 {
     /*---------------------------Reference counting stuff---------------------------*/
@@ -2188,7 +2200,20 @@ public struct Context
          * The underlying $(D cairo_t*) handle
          */
         cairo_t* nativePointer;
-        debug(RefCounted)
+        version(D_Ddoc)
+        {
+             /**
+             * Enable / disable memory management debugging for this Context
+             * instance. Only available if both cairoD and the cairoD user
+             * code were compiled with "debug=RefCounted"
+             *
+             * Output is written to stdout, see 
+             * $(LINK https://github.com/jpf91/cairoD/wiki/Memory-Management#debugging)
+             * for more information
+             */
+             bool debugging = false;
+        }
+        else debug(RefCounted)
         {
             bool debugging = false;
         }
@@ -2265,7 +2290,7 @@ public struct Context
     /*------------------------End of Reference counting stuff-----------------------*/
 
 
-    private:
+    protected:
         void checkError()
         {
             throwError(cairo_status(nativePointer));
@@ -2273,6 +2298,16 @@ public struct Context
         
     
     public:
+        /**
+         * Creates a new $(D Context) with all graphics state parameters set
+         * to default values and with target as a target surface. The
+         * target surface should be constructed with a backend-specific
+         * function such as $(D new ImageSurface()).
+         *
+         * This function references target, so you can immediately call
+         * $(D Surface.dispose()) on it if you don't need to maintain
+         * a separate reference to it.
+         */
         this(Surface target)
         {
             //cairo_create already references the pointer, so _reference
@@ -2282,231 +2317,646 @@ public struct Context
         }
 
         /**
+         * Create a $(D Context) from a existing $(D cairo_t*).
+         * Context is a garbage collected class. It will call $(D cairo_destroy)
+         * when it gets collected by the GC or when $(D dispose()) is called.
+         *
+         * Warning:
+         * $(D ptr)'s reference count is not increased by this function!
+         * Adjust reference count before calling it if necessary
+         *
+         * $(RED Only use this if you know what your doing!
+         * This function should not be needed for standard cairoD usage.)
+         */
+        this(cairo_t* ptr)
+        {
+            this.nativePointer = ptr;
+            if(!ptr)
+            {
+                throw new CairoException(cairo_status_t.CAIRO_STATUS_NULL_POINTER);
+            }
+            checkError();
+        }
+
+        /**
+         * Makes a copy of the current state of cr and saves it on an
+         * internal stack of saved states for cr. When $(D Context.restore())
+         * is called, cr will be restored to the saved state. Multiple
+         * calls to $(D Context.save()) and  $(D Context.restore()) can be nested; each
+         * call to  $(D Context.restore()) restores the state from the matching
+         * paired $(D Context.save()).
+         *
+         * It isn't necessary to clear all saved states before a $(D Context)
+         * is freed. If the reference count of a $(D Context) drops to zero
+         * , any saved states will be freed along with the $(D Context).
+         */
         void save()
         {
             cairo_save(this.nativePointer);
             checkError();
         }
-        
+
+        /**
+         * Restores cr to the state saved by a preceding call to
+         * $(D Context.save()) and removes that state from the stack of
+         * saved states.
+         */
         void restore()
         {
             cairo_restore(this.nativePointer);
             checkError();
         }
-        
+
+        /**
+         * Gets the target surface for the cairo context as passed to
+         * the constructor.
+         */
         Surface getTarget()
         {
             return Surface.createFromNative(cairo_get_target(this.nativePointer));
         }
-        
+
+        /**
+         * Temporarily redirects drawing to an intermediate surface known
+         * as a group. The redirection lasts until the group is completed
+         * by a call to $(D Context.popGroup()) or $(D Context.popGroupToSource()).
+         * These calls provide the result of any drawing to the group
+         * as a pattern, (either as an explicit object, or set as the
+         * source pattern).
+         *
+         * This group functionality can be convenient for performing
+         * intermediate compositing. One common use of a group is to render
+         * objects as opaque within the group, (so that they occlude each other),
+         * and then blend the result with translucence onto the destination.
+         *
+         * Groups can be nested arbitrarily deep by making balanced calls
+         * to $(D Context.pushGgroup())/$(D Context.popGroup()). Each call pushes/pops
+         * the new target group onto/from a stack.
+         *
+         * The $(D Context.pushGroup()) function calls $(D Context.save()) so that any
+         * changes to the graphics state will not be visible outside the
+         * group, (the $(D Context.popGroup) functions call $(D Context.restore())).
+         *
+         * By default the intermediate group will have a content type of
+         * CAIRO_CONTENT_COLOR_ALPHA. Other content types can be chosen
+         * for the group by using $(D Context.pushGroup(Content)) instead.
+         *
+         * As an example, here is how one might fill and stroke a path with
+         * translucence, but without any portion of the fill being visible
+         * under the stroke:
+         * -------------------------------
+         * cr.pushGroup();
+         * cr.setSource(fill_pattern);
+         * cr.fillPreserve();
+         * cr.setSource(stroke_pattern);
+         * cr.stroke();
+         * cr.popGroupToSource();
+         * cr.paintWithAlpha(alpha);
+         * -------------------------------
+         */
         void pushGroup()
         {
             cairo_push_group(this.nativePointer);
             checkError();
         }
-        
+
+        /**
+         * Temporarily redirects drawing to an intermediate surface known
+         * as a group. The redirection lasts until the group is completed
+         * by a call to $(D Context.popGroup()) or $(D Context.popGroupToSource()).
+         * These calls provide the result of any drawing to the group as
+         * a pattern, (either as an explicit object, or set as the source
+         * pattern).
+         *
+         * The group will have a content type of content. The ability to
+         * control this content type is the only distinction between this
+         * function and $(D Context.pushGroup()) which you should see for a more
+         * detailed description of group rendering.
+         */
         void pushGroup(Content cont)
         {
             cairo_push_group_with_content(this.nativePointer, cont);
             checkError();
         }
-        
+
+        /**
+         * Terminates the redirection begun by a call to $(D Context.pushGroup())
+         * or $(D Context.pushGroup(Content)) and returns a new pattern
+         * containing the results of all drawing operations performed to
+         * the group.
+         *
+         * The $(D Context.popGroup()) function calls $(D Context.restore()), (balancing
+         * a call to $(D Context.save()) by the $(D Context.pushGroup()) function), so that any
+         * changes to the graphics state will not be visible outside the group.
+         */
         Pattern popGroup()
         {
             auto ptr = cairo_pop_group(this.nativePointer);
             return Pattern.createFromNative(ptr, false);
         }
-        
+
+        /**
+         * Terminates the redirection begun by a call to $(D Context.pushGroup())
+         * or $(D Context.pushGroup(Content)) and installs the resulting
+         * pattern as the source pattern in the given cairo context.
+         *
+         * The behavior of this function is equivalent to the sequence
+         * of operations:
+         * -----------------------
+         * Pattern group = cr.popGroup();
+         * cr.setSource(group);
+         * group.dispose();
+         * -----------------------
+         * but is more convenient as their is no need for a variable to
+         * store the short-lived pointer to the pattern.
+         *
+         * The $(D Context.popGroup()) function calls $(D Context.restore()),
+         * (balancing a call to $(D Context.save()) by the $(D Context.pushGroup()) function),
+         * so that any changes to the graphics state will not be
+         * visible outside the group.
+         */
         void popGroupToSource()
         {
             cairo_pop_group_to_source(this.nativePointer);
             checkError();
         }
-        
+
+        /**
+         * Gets the current destination surface for the context.
+         * This is either the original target surface as passed to
+         * the Context constructor or the target surface for the current
+         * group as started by the most recent call to
+         *  $(D Context.pushGroup()) or  $(D Context.pushGroup(Content)).
+         */
         Surface getGroupTarget()
         {
             return Surface.createFromNative(cairo_get_group_target(this.nativePointer));
         }
-        
+
+        /**
+         * Sets the source pattern within cr to an opaque color.
+         * This opaque color will then be used for any subsequent
+         * drawing operation until a new source pattern is set.
+         *
+         * The color components are floating point numbers in the range
+         * 0 to 1. If the values passed in are outside that range,
+         * they will be clamped.
+         *
+         * The default source pattern is opaque black,
+         * (that is, it is equivalent to setSourceRGB(0.0, 0.0, 0.0)).
+         */
         void setSourceRGB(double red, double green, double blue)
         {
             cairo_set_source_rgb(this.nativePointer, red, green, blue);
             checkError();
         }
 
+        ///ditto
         void setSourceRGB(RGB rgb)
         {
             cairo_set_source_rgb(this.nativePointer, rgb.red, rgb.green, rgb.blue);
             checkError();
         }
-        
+
+        /**
+         * Sets the source pattern within cr to a translucent color.
+         * This color will then be used for any subsequent drawing
+         * operation until a new source pattern is set.
+         *
+         * The color and alpha components are floating point numbers in
+         * the range 0 to 1. If the values passed in are outside that
+         * range, they will be clamped.
+         *
+         * The default source pattern is opaque black, (that is, it is
+         * equivalent to setSourceRGBA(0.0, 0.0, 0.0, 1.0)).
+         */
         void setSourceRGBA(double red, double green, double blue, double alpha)
         {
             cairo_set_source_rgba(this.nativePointer, red, green, blue, alpha);
             checkError();
         }
 
+        ///ditto
         void setSourceRGBA(RGBA rgba)
         {
             cairo_set_source_rgba(this.nativePointer, rgba.red, rgba.green, rgba.blue, rgba.alpha);
             checkError();
         }
-        
+
+        /**
+         * Sets the source pattern within cr to source. This pattern will
+         * then be used for any subsequent drawing operation until
+         * a new source pattern is set.
+         *
+         * Note: The pattern's transformation matrix will be locked to
+         * the user space in effect at the time of setSource(). This
+         * means that further modifications of the current transformation
+         * matrix will not affect the source pattern.
+         * See $(D Pattern.setMatrix()).
+         *
+         * The default source pattern is a solid pattern that is opaque
+         * black, (that is, it is equivalent
+         * to setSourceRGB(0.0, 0.0, 0.0)).
+         */
         void setSource(Pattern pat)
         {
             cairo_set_source(this.nativePointer, pat.nativePointer);
             checkError();
         }
-        
+
+        /**
+         * This is a convenience function for creating a pattern from
+         * surface and setting it as the source in cr with $(D Context.setSource()).
+         *
+         * The x and y parameters give the user-space coordinate at
+         * which the surface origin should appear. (The surface origin
+         * is its upper-left corner before any transformation has been
+         * applied.) The x and y parameters are negated and then set
+         * as translation values in the pattern matrix.
+         *
+         * Other than the initial translation pattern matrix,
+         * as described above, all other pattern attributes,
+         * (such as its extend mode), are set to the default values as
+         * in $(D new SurfacePattern()). The resulting pattern can be
+         * queried with $(D Context.getSource()) so that these
+         * attributes can be modified if desired, (eg. to create a
+         * repeating pattern with $(D Pattern.setExtend())).
+         *
+         * Params:
+         * x = User-space X coordinate for surface origin
+         * y = User-space Y coordinate for surface origin
+         */
         void setSourceSurface(Surface sur, double x, double y)
         {
             cairo_set_source_surface(this.nativePointer, sur.nativePointer, x, y);
             checkError();
         }
-        
+
+        /**
+         * Gets the current source pattern for cr.
+         */
         Pattern getSource()
         {
             return Pattern.createFromNative(cairo_get_source(this.nativePointer));
         }
-        
+
+        /**
+         * Set the antialiasing mode of the rasterizer used for
+         * drawing shapes. This value is a hint, and a particular
+         * backend may or may not support a particular value. At
+         * the current time, no backend supports CAIRO_ANTIALIAS_SUBPIXEL
+         * when drawing shapes.
+         *
+         * Note that this option does not affect text rendering,
+         * instead see $(D FontOptions.setAntialias()).
+         */
         void setAntiAlias(AntiAlias antialias)
         {
             cairo_set_antialias(this.nativePointer, antialias);
             checkError();
         }
-        
+
+        /**
+         * Gets the current shape antialiasing mode, as set by $(D setAntiAlias).
+         */
         AntiAlias getAntiAlias()
         {
             scope(exit)
                 checkError();
             return cairo_get_antialias(this.nativePointer);
         }
-        
+
+        /**
+         * Sets the dash pattern to be used by $(D stroke()). A dash
+         * pattern is specified by dashes, an array of positive values.
+         * Each value provides the length of alternate "on" and
+         * "off" portions of the stroke. The offset specifies an offset
+         * into the pattern at which the stroke begins.
+         *
+         * Each "on" segment will have caps applied as if the segment
+         * were a separate sub-path. In particular, it is valid to use
+         * an "on" length of 0.0 with CAIRO_LINE_CAP_ROUND or
+         * CAIRO_LINE_CAP_SQUARE in order to distributed dots
+         * or squares along a path.
+         *
+         * Note: The length values are in user-space units as
+         * evaluated at the time of stroking. This is not necessarily
+         * the same as the user space at the time of $(D setDash()).
+         *
+         * If dashes is empty dashing is disabled.
+         *
+         * If dashes.length is 1 a symmetric pattern is assumed with alternating
+         * on and off portions of the size specified by the single value
+         * in dashes.
+         *
+         * If any value in dashes is negative, or if all values are 0, then
+         * cr will be put into an error state with a
+         * status of CAIRO_STATUS_INVALID_DASH.
+         *
+         * Params:
+         * dashes = an array specifying alternate lengths of on and off stroke portions
+         * offset = an offset into the dash pattern at which the stroke should start
+         */
         void setDash(const(double[]) dashes, double offset)
         {
             cairo_set_dash(this.nativePointer, dashes.ptr, dashes.length, offset);
             checkError();
         }
-        
+
+        /**
+         * This function returns the length of the dash array in cr
+         * (0 if dashing is not currently in effect).
+         */
         int getDashCount()
         {
             scope(exit)
                 checkError();
             return cairo_get_dash_count(this.nativePointer);
         }
-        
+
+        /**
+         * Gets the current dash array.
+         */
         double[] getDash(out double offset)
         {
-            double[] dashes;
-            dashes.length = this.getDashCount();
+            double[] dashes = new double[](this.getDashCount());
             cairo_get_dash(this.nativePointer, dashes.ptr, &offset);
             checkError();
             return dashes;
         }
-        
+
+        /**
+         * Set the current fill rule within the cairo context. The fill
+         * rule is used to determine which regions are inside or outside
+         * a complex (potentially self-intersecting) path. The current
+         * fill rule affects both $(D fill()) and $(D clip()). See
+         * $(D FillRule) for details on the semantics of each
+         * available fill rule.
+         *
+         * The default fill rule is CAIRO_FILL_RULE_WINDING.
+         */
         void setFillRule(FillRule rule)
         {
             cairo_set_fill_rule(this.nativePointer, rule);
             checkError();
         }
-        
+
+        /**
+         * Gets the current fill rule, as set by $(D setFillRule).
+         */
         FillRule getFillRule()
         {
             scope(exit)
                 checkError();
             return cairo_get_fill_rule(this.nativePointer);
         }
-        
+
+        /**
+         * Sets the current line cap style within the cairo context.
+         * See $(D LineCap) for details about how the available
+         * line cap styles are drawn.
+         *
+         * As with the other stroke parameters, the current line cap
+         * style is examined by $(D stroke()), $(D strokeExtents())
+         * and $(D strokeToPath()), but does not have any
+         * effect during path construction.
+         *
+         * The default line cap style is CAIRO_LINE_CAP_BUTT.
+         */
         void setLineCap(LineCap cap)
         {
             cairo_set_line_cap(this.nativePointer, cap);
             checkError();
         }
-        
+
+        /**
+         * Gets the current line cap style, as set by $(D setLineCap()).
+         */
         LineCap getLineCap()
         {
             scope(exit)
                 checkError();
             return cairo_get_line_cap(this.nativePointer);
         }
-        
+
+        /**
+         * Sets the current line join style within the cairo context.
+         * See $(D LineJoin) for details about how the available
+         * line join styles are drawn.
+         *
+         * As with the other stroke parametes, the current line join
+         * style is examined by $(D stroke()), $(D strokeExtents())
+         * and $(D strokeToPath()), but does not have any effect
+         * during path construction.
+         *
+         * The default line join style is CAIRO_LINE_JOIN_MITER.
+         */
         void setLineJoin(LineJoin join)
         {
             cairo_set_line_join(this.nativePointer, join);
             checkError();
         }
-        
+
+        /**
+         * Gets the current line join style, as set by $(D setLineJoin)
+         */
         LineJoin getLineJoin()
         {
             scope(exit)
                 checkError();
             return cairo_get_line_join(this.nativePointer);
         }
-        
+
+        /**
+         * Sets the current line width within the cairo context. The line
+         * width value specifies the diameter of a pen that is circular
+         * in user space, (though device-space pen may be an ellipse
+         * in general due to scaling/shear/rotation of the CTM).
+         *
+         * Note: When the description above refers to user space and CTM
+         * it refers to the user space and CTM in effect at the time
+         * of the stroking operation, not the user space and CTM in
+         * effect at the time of the call to $(D setLineWidth()).
+         * The simplest usage makes both of these spaces identical.
+         * That is, if there is no change to the CTM between a call to
+         * $(D setLineWidth()) and the stroking operation, then one
+         * can just pass user-space values to $(D setLineWidth()) and
+         * ignore this note.
+         *
+         * As with the other stroke parameters, the current line width is
+         * examined by $(D stroke()), $(D strokeExtents())
+         * and $(D strokeToPath()), but does not have any effect during
+         * path construction.
+         *
+         * The default line width value is 2.0.
+         */
         void setLineWidth(double width)
         {
             cairo_set_line_width(this.nativePointer, width);
             checkError();
         }
-        
+
+        /**
+         * This function returns the current line width value exactly
+         * as set by cairo_set_line_width(). Note that the value is
+         * unchanged even if the CTM has changed between the calls
+         * to $(D setLineWidth()) and $(D getLineWidth()).
+         */
         double getLineWidth()
         {
             scope(exit)
                 checkError();
             return cairo_get_line_width(this.nativePointer);
         }
-        
+
+        /**
+         * Sets the current miter limit within the cairo context.
+         *
+         * If the current line join style is set to
+         * CAIRO_LINE_JOIN_MITER (see cairo_set_line_join()), the miter
+         * limit is used to determine whether the lines should be joined
+         * with a bevel instead of a miter. Cairo divides the length of
+         * the miter by the line width. If the result is greater than the
+         * miter limit, the style is converted to a bevel.
+         *
+         * As with the other stroke parameters, the current line miter
+         * limit is examined by $(D stroke()), $(D strokeExtents())
+         * and $(D strokeToPath()), but does not have any effect
+         * during path construction.
+         *
+         * The default miter limit value is 10.0, which will convert
+         * joins with interior angles less than 11 degrees to bevels
+         * instead of miters. For reference, a miter limit of 2.0 makes
+         * the miter cutoff at 60 degrees, and a miter limit of 1.414
+         * makes the cutoff at 90 degrees.
+         *
+         * A miter limit for a desired angle can be computed as: miter
+         * limit = 1/sin(angle/2)
+         */
         void setMiterLimit(double limit)
         {
             cairo_set_miter_limit(this.nativePointer, limit);
             checkError();
         }
-        
+
+        /**
+         * Gets the current miter limit, as set by $(D setMiterLimit)
+         */
         double getMiterLimit()
         {
             scope(exit)
                 checkError();
             return cairo_get_miter_limit(this.nativePointer);
         }
-        
+
+        /**
+         * Sets the compositing operator to be used for all
+         * drawing operations. See $(D Operator) for details on
+         * the semantics of each available compositing operator.
+         *
+         * The default operator is CAIRO_OPERATOR_OVER.
+         */
         void setOperator(Operator op)
         {
             cairo_set_operator(this.nativePointer, op);
             checkError();
         }
-        
+
+        /**
+         * Gets the current compositing operator for a cairo context.
+         */
         Operator getOperator()
         {
             scope(exit)
                 checkError();
             return cairo_get_operator(this.nativePointer);
         }
-        
+
+        /**
+         * Sets the tolerance used when converting paths into trapezoids.
+         * Curved segments of the path will be subdivided until the maximum
+         * deviation between the original path and the polygonal
+         * approximation is less than tolerance. The default value
+         * is 0.1. A larger value will give better performance, a smaller
+         * value, better appearance. (Reducing the value from the
+         * default value of 0.1 is unlikely to improve appearance
+         * significantly.) The accuracy of paths within Cairo is limited
+         * by the precision of its internal arithmetic, and the prescribed
+         * tolerance is restricted to the smallest representable
+         * internal value.
+         */
         void setTolerance(double tolerance)
         {
             cairo_set_tolerance(this.nativePointer, tolerance);
             checkError();
         }
-        
+
+        /**
+         * Gets the current tolerance value, as set by $(D setTolerance)
+         */
         double getTolerance()
         {
             scope(exit)
                 checkError();
             return cairo_get_tolerance(this.nativePointer);
         }
-        
+
+        /**
+         * Establishes a new clip region by intersecting the current
+         * clip region with the current path as it would be filled by
+         * $(D fill()) and according to the current
+         * fill rule (see $(D setFillRule())).
+         *
+         * After $(D clip()), the current path will be cleared from the
+         * cairo context.
+         *
+         * The current clip region affects all drawing operations by
+         * effectively masking out any changes to the surface that are
+         * outside the current clip region.
+         *
+         * Calling $(D clip()) can only make the clip region smaller,
+         * never larger. But the current clip is part of the graphics state,
+         * so a temporary restriction of the clip region can be achieved
+         * by calling $(D clip()) within a $(D save())/$(D restore())
+         * pair. The only other means of increasing the size of the clip
+         * region is $(D resetClip()).
+         */
         void clip()
         {
             cairo_clip(this.nativePointer);
             checkError();
         }
-        
+
+        /**
+         * Establishes a new clip region by intersecting the current clip
+         * region with the current path as it would be filled by
+         * $(D fill()) and according to the current fill rule
+         * (see $(D setFillRule())).
+         *
+         * Unlike $(D clip()), $(D clipPreserve()) preserves the
+         * path within the cairo context.
+         *
+         * The current clip region affects all drawing operations by
+         * effectively masking out any changes to the surface that are
+         * outside the current clip region.
+         *
+         * Calling $(D clipPreserve()) can only make the clip region
+         * smaller, never larger. But the current clip is part of the
+         * graphics state, so a temporary restriction of the clip region
+         * can be achieved by calling $(D clip()) within a $(D save())/$(D restore())
+         * pair. The only other means of increasing the size of the clip
+         * region is $(D resetClip()).
+         */
         void clipPreserve()
         {
             cairo_clip_preserve(this.nativePointer);
             checkError();
         }
-        
+
+        /**
+         * Computes a bounding box in user coordinates covering the area
+         * inside the current clip.
+         */
         Box clipExtents()
         {
             Box tmp;
@@ -2514,27 +2964,51 @@ public struct Context
             checkError();
             return tmp;
         }
-        
+
+        /**
+         * Tests whether the given point is inside the area that would
+         * be visible through the current clip, i.e. the area that
+         * would be filled by a cairo_paint() operation.
+         *
+         * See $(D clip()), and $(D clipPreserve()).
+         */
         bool inClip(Point point)
         {
             scope(exit)
                 checkError();
             return cairo_in_clip(this.nativePointer, point.x, point.y) ? true : false;
         }
-        
+
+        /**
+         * Reset the current clip region to its original, unrestricted
+         * state. That is, set the clip region to an infinitely
+         * large shape containing the target surface. Equivalently,
+         * if infinity is too hard to grasp, one can imagine the clip
+         * region being reset to the exact bounds of the target surface.
+         *
+         * Note that code meant to be reusable should not call
+         * $(D resetClip()) as it will cause results unexpected by
+         * higher-level code which calls $(D clip()). Consider using
+         * $(D save()) and $(D restore()) around $(D clip()) as a
+         * more robust means of temporarily restricting the clip region.
+         */
         void resetClip()
         {
             cairo_reset_clip(this.nativePointer);
             checkError();
         }
-        
+
+        /**
+         * Gets the current clip region as a list of rectangles in user
+         * coordinates.
+         */
         Rectangle[] copyClipRectangles()
         {
             Rectangle[] list;
             auto nList = cairo_copy_clip_rectangle_list(this.nativePointer);
             scope(exit)
                 cairo_rectangle_list_destroy(nList);
-            checkError();
+            throwError(nList.status);
             list.length = nList.num_rectangles;
             for(int i = 0; i < list.length; i++)
             {
@@ -2545,19 +3019,51 @@ public struct Context
             }
             return list;
         }
-        
+
+        /**
+         * A drawing operator that fills the current path according to
+         * the current fill rule, (each sub-path is implicitly closed
+         * before being filled). After c$(D fill()), the current
+         * path will be cleared from the cairo context. See
+         * $(D setFillRule()) and $(D fillPreserve()).
+         */
         void fill()
         {
             cairo_fill(this.nativePointer);
             checkError();
         }
-        
+
+        /**
+         * A drawing operator that fills the current path according to
+         * the current fill rule, (each sub-path is implicitly closed
+         * before being filled). Unlike $(D fill()), $(D fillPreserve())
+         * preserves the path within the cairo context.
+         */
         void fillPreserve()
         {
             cairo_fill_preserve(this.nativePointer);
             checkError();
         }
-        
+
+        /**
+         * Computes a bounding box in user coordinates covering the area
+         * that would be affected, (the "inked" area), by a
+         * $(D fill()) operation given the current path and fill parameters.
+         * If the current path is empty, returns an empty rectangle
+         * ((0,0), (0,0)). Surface dimensions and clipping are not
+         * taken into account.
+         *
+         * Contrast with $(D pathExtents()), which is similar, but
+         * returns non-zero extents for some paths with no inked area,
+         * (such as a simple line segment).
+         *
+         * Note that $(D fillExtents()) must necessarily do more work
+         * to compute the precise inked areas in light of the fill rule,
+         * so $(D pathExtents()) may be more desirable for sake of
+         * performance if the non-inked path extents are desired.
+         *
+         * See $(D fill()), $(D setFillRule()) and $(D fillPreserve()).
+         */
         Box fillExtends()
         {
             Box tmp;
@@ -2565,50 +3071,143 @@ public struct Context
             checkError();
             return tmp;
         }
-        
+
+        /**
+         * Tests whether the given point is inside the area that would
+         * be affected by a cairo_fill() operation given the current path
+         * and filling parameters. Surface dimensions and clipping are not
+         * taken into account.
+         *
+         * See $(D fill()), $(D setFillRule()) and $(D fillPreserve()).
+         */
         bool inFill(Point point)
         {
             scope(exit)
                 checkError();
             return cairo_in_fill(this.nativePointer, point.x, point.y) ? true : false;
         }
-        
+
+        /**
+         * A drawing operator that paints the current source using the
+         * alpha channel of pattern as a mask. (Opaque areas of pattern
+         * are painted with the source, transparent areas are not painted.)
+         */
         void mask(Pattern pattern)
         {
             cairo_mask(this.nativePointer, pattern.nativePointer);
             checkError();
         }
-        
+
+        /**
+         * A drawing operator that paints the current source using
+         * the alpha channel of surface as a mask. (Opaque areas of
+         * surface are painted with the source, transparent areas
+         * are not painted.)
+         *
+         * Params:
+         * location = coordinates at which to place the origin of surface
+         */
         void maskSurface(Surface surface, Point location)
         {
             cairo_mask_surface(this.nativePointer, surface.nativePointer, location.x, location.y);
             checkError();
         }
-        
+
+        /**
+         * A drawing operator that paints the current source everywhere
+         * within the current clip region.
+         */
         void paint()
         {
             cairo_paint(this.nativePointer);
             checkError();
         }
-        
+
+        /**
+         * A drawing operator that paints the current source everywhere
+         * within the current clip region using a mask of constant alpha
+         * value alpha. The effect is similar to $(D paint()), but
+         * the drawing is faded out using the alpha value.
+         */
         void paintWithAlpha(double alpha)
         {
             cairo_paint_with_alpha(this.nativePointer, alpha);
             checkError();
         }
-        
+
+        /**
+         * A drawing operator that strokes the current path according to
+         * the current line width, line join, line cap, and dash settings.
+         * After $(D stroke()), the current path will be cleared from
+         * the cairo context. See $(D setLineWidth()),
+         * $(D setLineJoin()), $(D setLineCap()), $(D setDash()),
+         * and $(D strokePreserve()).
+         *
+         * Note: Degenerate segments and sub-paths are treated specially
+         * and provide a useful result. These can result in two
+         * different situations:
+         *
+         * 1. Zero-length "on" segments set in cairo_set_dash(). If the
+         * cap style is CAIRO_LINE_CAP_ROUND or CAIRO_LINE_CAP_SQUARE
+         * then these segments will be drawn as circular dots or squares
+         * respectively. In the case of CAIRO_LINE_CAP_SQUARE, the
+         * orientation of the squares is determined by the direction
+         * of the underlying path.
+         *
+         * 2. A sub-path created by $(D moveTo()) followed by either a
+         * $(D closePath()) or one or more calls to $(D lineTo()) to
+         * the same coordinate as the $(D moveTo()). If the cap style
+         * is CAIRO_LINE_CAP_ROUND then these sub-paths will be drawn as
+         * circular dots. Note that in the case of CAIRO_LINE_CAP_SQUARE
+         * a degenerate sub-path will not be drawn at all, (since the
+         * correct orientation is indeterminate).
+         *
+         * In no case will a cap style of CAIRO_LINE_CAP_BUTT cause
+         * anything to be drawn in the case of either degenerate
+         * segments or sub-paths.
+         */
         void stroke()
         {
             cairo_stroke(this.nativePointer);
             checkError();
         }
-        
+
+        /**
+         * A drawing operator that strokes the current path according to
+         * the current line width, line join, line cap, and dash settings.
+         * Unlike $(D stroke()), $(D strokePreserve()) preserves
+         * the path within the cairo context.
+         *
+         * See $(D setLineWidth()), $(D setLineJoin()),
+         * $(D setLineCap()), $(D set_dash()), and $(D strokePreserve()).
+         */
         void strokePreserve()
         {
             cairo_stroke_preserve(this.nativePointer);
             checkError();
         }
-        
+
+        /**
+         * Computes a bounding box in user coordinates covering the area
+         * that would be affected, (the "inked" area), by a $(D stroke())
+         * operation given the current path and stroke parameters. If the
+         * current path is empty, returns an empty rectangle ((0,0), (0,0)).
+         * Surface dimensions and clipping are not taken into account.
+         *
+         * Note that if the line width is set to exactly zero, then
+         * $(D strokeExtents()) will return an empty rectangle.
+         * Contrast with $(D pathExtents()) which can be used to
+         * compute the non-empty bounds as the line width approaches zero.
+         *
+         * Note that $(D strokeExtents()) must necessarily do more
+         * work to compute the precise inked areas in light of the
+         * stroke parameters, so $(D pathExtents()) may be more
+         * desirable for sake of performance if non-inked path extents
+         * are desired.
+         *
+         * See $(D stroke()), $(D setLineWidth()), $(D setLineJoin()),
+         * $(D setLineCap()), $(D set_dash()), and $(D strokePreserve()).
+         */
         Box strokeExtends()
         {
             Box tmp;
@@ -2616,26 +3215,54 @@ public struct Context
             checkError();
             return tmp;
         }
-        
+
+        /**
+         * Tests whether the given point is inside the area that would be
+         * affected by a cairo_stroke() operation given the current path
+         * and stroking parameters. Surface dimensions and clipping are
+         * not taken into account.
+         *
+         * See $(D stroke()), $(D setLineWidth()), $(D setLineJoin()),
+         * $(D setLineCap()), $(D set_dash()), and $(D strokePreserve()).
+         */
         bool inStroke(Point point)
         {
             scope(exit)
                 checkError();
             return cairo_in_stroke(this.nativePointer, point.x, point.y) ? true : false;
         }
-        
+
+        /**
+         * Emits the current page for backends that support multiple
+         * pages, but doesn't clear it, so, the contents of the current
+         * page will be retained for the next page too.
+         * Use $(D showPage()) if you want to get an empty page after
+         * the emission.
+         *
+         * This is a convenience function that simply calls $(D Surface.copyPage())
+         * on this's target.
+         */
         void copyPage()
         {
             cairo_copy_page(this.nativePointer);
             checkError();
         }
-        
+
+        /**
+         * Emits and clears the current page for backends that support
+         * multiple pages. Use $(D copyPage()) if you don't want to
+         * clear the page.
+         *
+         * This is a convenience function that simply calls
+         * $(D Surface.showPage()) on this's target.
+         */
         void showPage()
         {
             cairo_show_page(this.nativePointer);
             checkError();
         }
-        
+
+        /*
         void setUserData(const cairo_user_data_key_t* key, void* data, cairo_destroy_func_t destroy)
         {
             cairo_set_user_data(this.nativePointer, key, data, destroy);
