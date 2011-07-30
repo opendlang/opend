@@ -6,6 +6,9 @@
  * Note:
  * Most cairoD functions could throw an OutOfMemoryError. This is therefore not
  * explicitly stated in the functions' api documenation.
+ *
+ * See also:
+ * $(LINK http://cairographics.org/documentation/)
  */
 module cairo.cairo;
 
@@ -125,34 +128,6 @@ public alias cairo_font_weight_t FontWeight; ///ditto
 public alias cairo_device_type_t DeviceType; ///ditto
 
 /**
- * This function provides a stride value that will respect all alignment
- * requirements of the accelerated image-rendering code within cairo.
- *
- * Examples:
- * -----------------------------------
- * int stride;
- * ubyte[] data;
- * Surface surface;
- * 
- * stride = formatStrideForWidth(format, width);
- * data = new ubyte[](stride * height); //could also use malloc
- * surface = new ImageSurface(data, format, width, height, stride);
- * -----------------------------------
- *
- * Params:
- * format = The desired Format of an image surface to be created
- * width = The desired width of an image surface to be created
- *
- * Returns:
- * the appropriate stride to use given the desired format and width, or
- * -1 if either the format is invalid or the width too large.
- */
-int formatStrideForWidth(Format format, int width)
-{
-    return cairo_format_stride_for_width(format, width);
-}
-
-/**
  * A simple struct to store the coordinates of a point.
  */
 public struct Point
@@ -189,6 +164,28 @@ public struct Rectangle
     double width;
     ///
     double height;
+}
+
+/**
+ * A simple struct representing a rectangle with only $(D int) values
+ */
+public struct RectangleInt
+{
+    ///
+    public this(int x, int y, int width, int height)
+    {
+        this.x = x;
+        this.y = y;
+        this.width = width;
+        this.height = height;
+    }
+
+    ///TOP-LEFT point of the rectangle: X coordinate
+    int x;
+    ///TOP-LEFT point of the rectangle: Y coordinate
+    int y;
+    ///
+    int width, height;
 }
 
 /**
@@ -1338,6 +1335,7 @@ public class RadialGradient : Gradient
 */
 public class Device
 {
+    ///
     mixin CairoCountedClass!(cairo_device_t*, "cairo_device_");
 
     protected:
@@ -1367,6 +1365,10 @@ public class Device
         this(cairo_device_t* ptr)
         {
             this.nativePointer = ptr;
+            if(!ptr)
+            {
+                throw new CairoException(cairo_status_t.CAIRO_STATUS_NULL_POINTER);
+            }
             checkError();
         }
 
@@ -1460,19 +1462,47 @@ public class Device
         }
 }
 
+/**
+ * Surface is the abstract type representing all different drawing targets
+ * that cairo can render to. The actual drawings are performed using a cairo context.
+ *
+ * A cairo surface is created by using backend-specific classes,
+ * typically of the form $(D BackendSurface).
+ *
+ * Most surface types allow accessing the surface without using Cairo
+ * functions. If you do this, keep in mind that it is mandatory that
+ * you call $(D Surface.flush()) before reading from or writing to the
+ * surface and that you must use $(D Surface.markDirty()) after modifying it.
+ */
 public class Surface
 {
+    ///
     mixin CairoCountedClass!(cairo_surface_t*, "cairo_surface_");
     
     protected:
+        /**
+         * Method for use in subclasses.
+         * Calls $(D cairo_surface_status(nativePointer)) and throws
+         * an exception if the status isn't CAIRO_STATUS_SUCCESS
+         */
         void checkError()
         {
             throwError(cairo_surface_status(nativePointer));
         }
     
     public:
-        /* Warning: ptr reference count is not increased by this function!
-         * Adjust reference count before calling it if necessary*/
+        /**
+         * Create a $(D Surface) from a existing $(D cairo_surface_t*).
+         * Surface is a garbage collected class. It will call $(D cairo_surface_destroy)
+         * when it gets collected by the GC or when $(D dispose()) is called.
+         *
+         * Warning:
+         * $(D ptr)'s reference count is not increased by this function!
+         * Adjust reference count before calling it if necessary
+         *
+         * $(RED Only use this if you know what your doing!
+         * This function should not be needed for standard cairoD usage.)
+         */
         this(cairo_surface_t* ptr)
         {
             this.nativePointer = ptr;
@@ -1482,7 +1512,16 @@ public class Surface
             }
             checkError();
         }
-        
+
+        /**
+         * The createFromNative method for the Surface classes.
+         * See $(LINK https://github.com/jpf91/cairoD/wiki/Memory-Management#createFromNative)
+         * for more information.
+         *
+         * Warning:
+         * $(RED Only use this if you know what your doing!
+         * This function should not be needed for standard cairoD usage.)
+         */
         static Surface createFromNative(cairo_surface_t* ptr, bool adjRefCount = true)
         {
             if(!ptr)
@@ -1533,30 +1572,93 @@ public class Surface
                     return new Surface(ptr);
             }
         }
-        
+
+        /**
+         * Create a new surface that is as compatible as possible with
+         * an existing surface. For example the new surface will have the
+         * same fallback resolution and font options as other. Generally,
+         * the new surface will also use the same backend as other, unless
+         * that is not possible for some reason. The type of the returned
+         * surface may be examined with $(D Surface.getType()).
+         *
+         * Initially the surface contents are all 0 (transparent if
+         * contents have transparency, black otherwise.)
+         *
+         * Params:
+         * other = an existing surface used to select the backend of the new surface
+         * content = the content for the new surface
+         * width = width of the new surface, (in device-space units)
+         * height = height of the new surface (in device-space units)
+         */
         static Surface createSimilar(Surface other, Content content, int width, int height)
         {
             return createFromNative(cairo_surface_create_similar(other.nativePointer, content, width, height), false);
         }
-        
+
+        /**
+         * Create a new surface that is a rectangle within the target surface.
+         * All operations drawn to this surface are then clipped and translated
+         * onto the target surface. Nothing drawn via this sub-surface
+         * outside of its bounds is drawn onto the target surface,
+         * making this a useful method for passing constrained child
+         * surfaces to library routines that draw directly onto the parent
+         * surface, i.e. with no further backend allocations, double
+         * buffering or copies.
+         *
+         * Note:
+         * The semantics of subsurfaces have not been finalized yet unless
+         * the rectangle is in full device units, is contained within
+         * the extents of the target surface, and the target or
+         * subsurface's device transforms are not changed.
+         *
+         * Params:
+         * target = an existing surface for which the sub-surface will point to
+         * rect = location of the subsurface
+         */
         static Surface createForRectangle(Surface target, Rectangle rect)
         {
             return createFromNative(cairo_surface_create_for_rectangle(target.nativePointer,
                 rect.point.x, rect.point.y, rect.width, rect.height), false);
         }
-        
+
+        /**
+         * This function finishes the surface and drops all references
+         * to external resources. For example, for the Xlib backend it
+         * means that cairo will no longer access the drawable, which
+         * can be freed. After calling $(D Surface.finish()) the only
+         * valid operations on a surface are getting and setting user,
+         * referencing and destroying, and flushing and finishing it.
+         *
+         * Further drawing to the surface will not affect the surface
+         * but will instead trigger a CAIRO_STATUS_SURFACE_FINISHED exception.
+         *
+         * When the reference count id decreased to zero, cairo will call
+         * $(D Surface.finish()) if it hasn't been called already, before
+         * freeing the resources associated with the surface.
+         */
         void finish()
         {
             cairo_surface_finish(this.nativePointer);
             checkError();
         }
-        
+
+        /**
+         * Do any pending drawing for the surface and also restore any temporary
+         * modifications cairo has made to the surface's state. This function
+         * must be called before switching from drawing on the surface
+         * with cairo to drawing on it directly with native APIs. If the
+         * surface doesn't support direct access, then this function does
+         * nothing.
+         */
         void flush()
         {
             cairo_surface_flush(this.nativePointer);
             checkError();
         }
-        
+
+        /**
+         * This function returns the device for a surface. See $(D Device).
+         */
         Device getDevice()
         {
             auto ptr = cairo_surface_get_device(this.nativePointer);
@@ -1565,7 +1667,14 @@ public class Surface
             cairo_device_reference(ptr);
             return new Device(ptr);
         }
-        
+
+        /**
+         * Retrieves the default font rendering options for the surface.
+         * This allows display surfaces to report the correct subpixel
+         * order for rendering on them, print surfaces to disable hinting
+         * of metrics and so forth. The result can then be used with
+         * $(new ScaledFont()).
+         */
         FontOptions getFontOptions()
         {
             FontOptions fo = FontOptions();
@@ -1573,32 +1682,89 @@ public class Surface
             fo.checkError();
             return fo;
         }
-        
+
+        /**
+         * This function returns the content type of surface which indicates
+         * whether the surface contains color and/or alpha information.
+         * See $(D Content).
+         */
         Content getContent()
         {
             scope(exit)
                 checkError();
             return cairo_surface_get_content(this.nativePointer);
         }
-        
+
+        /**
+         * Tells cairo that drawing has been done to surface using means
+         * other than cairo, and that cairo should reread any cached areas.
+         * Note that you must call $(D Surface.flush()) before doing such drawing.
+         */
         void markDirty()
         {
             cairo_surface_mark_dirty(this.nativePointer);
             checkError();
         }
-        
+
+        /**
+         * Like $(D Surface.markDirty()), but drawing has been done only
+         * to the specified rectangle, so that cairo can retain cached
+         * contents for other parts of the surface.
+         *
+         * Any cached clip set on the surface will be reset by this function,
+         * to make sure that future cairo calls have the clip set that they expect.
+         */
         void markDirtyRectangle(int x, int y, int width, int height)
         {
             cairo_surface_mark_dirty_rectangle(this.nativePointer, x, y, width, height);
             checkError();
         }
-        
+
+        ///ditto
+        void markDirtyRectangle(RectangleInt rect)
+        {
+            cairo_surface_mark_dirty_rectangle(this.nativePointer, rect.x,
+                rect.y, rect.width, rect.height);
+            checkError();
+        }
+
+        /**
+         * Sets an offset that is added to the device coordinates determined
+         * by the CTM when drawing to surface. One use case for this function
+         * is when we want to create a $(D Surface) that redirects drawing
+         * for a portion of an onscreen surface to an offscreen surface
+         * in a way that is completely invisible to the user of the cairo API.
+         * Setting a transformation via $(D Context.translate()) isn't sufficient
+         * to do this, since functions like $(D Context.deviceToUser()) will
+         * expose the hidden offset.
+         *
+         * Note:
+         * the offset affects drawing to the surface as well as using the
+         * surface in a source pattern.
+         *
+         * Params:
+         * x_offset = the offset in the X direction, in device units
+         * y_offset = the offset in the Y direction, in device units
+         */
+        void setDeviceOffset(double x_offset, double y_offset)
+        {
+            cairo_surface_set_device_offset(this.nativePointer, x_offset, y_offset);
+            checkError();
+        }
+        ///ditto
         void setDeviceOffset(Point offset)
         {
             cairo_surface_set_device_offset(this.nativePointer, offset.x, offset.y);
             checkError();
         }
-        
+
+        /**
+         * This function returns the previous device offset set
+         * by $(D Surface.setDeviceOffset()).
+         *
+         * Returns:
+         * Offset in device units
+         */
         Point getDeviceOffset()
         {
             Point tmp;
@@ -1606,19 +1772,61 @@ public class Surface
             checkError();
             return tmp;
         }
-        
+
+        /**
+         * Set the horizontal and vertical resolution for image fallbacks.
+         *
+         * When certain operations aren't supported natively by a backend,
+         * cairo will fallback by rendering operations to an image and
+         * then overlaying that image onto the output. For backends that
+         * are natively vector-oriented, this function can be used to set
+         * the resolution used for these image fallbacks, (larger values
+         * will result in more detailed images, but also larger file sizes).
+         *
+         * Some examples of natively vector-oriented backends are the ps,
+         * pdf, and svg backends.
+         *
+         * For backends that are natively raster-oriented, image fallbacks
+         * are still possible, but they are always performed at the native
+         * device resolution. So this function has no effect on those backends.
+         *
+         * Note:
+         * The fallback resolution only takes effect at the time of
+         * completing a page (with $(D Context.showPage()) or $(D Context.copyPage()))
+         * so there is currently no way to have more than one fallback
+         * resolution in effect on a single page.
+         *
+         * The default fallback resoultion is 300 pixels per inch in both
+         * dimensions.
+         */
         void setFallbackResolution(Resolution res)
         {
             cairo_surface_set_fallback_resolution(this.nativePointer, res.x, res.y);
             checkError();
         }
-        
+
+        /**
+         * This function returns the previous fallback resolution set
+         * by $(D setFallbackResolution()), or default
+         * fallback resolution if never set.
+         */
         Resolution getFallbackResolution()
         {
             Resolution res;
             cairo_surface_get_fallback_resolution(this.nativePointer, &res.x, &res.y);
             checkError();
             return res;
+        }
+
+        /**
+         * This function returns the C type of a Surface. See $(D SurfaceType)
+         * for available types.
+         */
+        SurfaceType getType()
+        {
+            auto tmp = cairo_surface_get_type(this.nativePointer);
+            checkError();
+            return tmp;
         }
 
         /*
@@ -1634,34 +1842,116 @@ public class Surface
                 checkError();
             return cairo_surface_get_user_data(this.nativePointer, key);
         }*/
-        
+
+        /**
+         * Emits the current page for backends that support multiple pages,
+         * but doesn't clear it, so that the contents of the current page
+         * will be retained for the next page. Use $(D Surface.showPage())
+         * if you want to get an empty page after the emission.
+         *
+         * There is a convenience function for this that can be called on
+         * a $(D Context), namely $(D Context.copyPage()).
+         */
         void copyPage()
         {
             cairo_surface_copy_page(this.nativePointer);
             checkError();
         }
-        
+
+        /**
+         * Emits and clears the current page for backends that support
+         * multiple pages. Use $(D Surface.copyPage()) if you don't
+         * want to clear the page.
+         *
+         * There is a convenience function for this that can be called on
+         * a $(D Context), namely $(D Context.showPage()).
+         */
         void showPage()
         {
             cairo_surface_show_page(this.nativePointer);
             checkError();
         }
-        
+
+        /**
+         * Returns whether the surface supports sophisticated $(D showTextGlyphs())
+         * operations. That is, whether it actually uses the provided text
+         * and cluster data to a $(D showTextGlyphs()) call.
+         *
+         * Note:
+         * Even if this function returns false, a $(D showTextGlyphs())
+         * operation targeted at surface will still succeed. It just will
+         * act like a $(D showGlyphs()) operation. Users can use this
+         * function to avoid computing UTF-8 text and cluster mapping
+         * if the target surface does not use it.
+         *
+         * Returns:
+         * true if surface supports $(D showTextGlyphs()), false otherwise
+         */
         bool hasShowTextGlyphs()
         {
             scope(exit)
                 checkError();
             return cairo_surface_has_show_text_glyphs(this.nativePointer) ? true : false;
         }
-        
-        //TODO: make this better
+
+        /**
+         * Attach an image in the format mime_type to surface. To remove
+         * the data from a surface, call this function with same mime
+         * type and NULL for data.
+         *
+         * The attached image (or filename) data can later be used by
+         * backends which support it (currently: PDF, PS, SVG and Win32
+         * Printing surfaces) to emit this data instead of making a snapshot
+         * of the surface. This approach tends to be faster and requires
+         * less memory and disk space.
+         *
+         * The recognized MIME types are the following: CAIRO_MIME_TYPE_JPEG,
+         * CAIRO_MIME_TYPE_PNG, CAIRO_MIME_TYPE_JP2, CAIRO_MIME_TYPE_URI.
+         *
+         * See corresponding backend surface docs for details about which
+         * MIME types it can handle.
+         *
+         * Caution: the associated MIME data will be discarded if you draw
+         * on the surface afterwards. Use this function with care.
+         *
+         * Params:
+         * mime_type = the MIME type of the image data
+         * data = the image data to attach to the surface
+         * length = the length of the image data
+         * destroy = a cairo_destroy_func_t which will be called when the
+         *     surface is destroyed or when new image data is attached using
+         *     the same mime type.
+         * closure = the data to be passed to the destroy notifier
+         *
+         * Throws:
+         * OutOfMemoryError if a slot could not be allocated for the user data.
+         * 
+         * TODO: More D-like API
+         *
+         * Note:
+         * $(RED Only use this if you know what your doing! Make sure you get
+         * memory management of the passed in data right!)
+         */
         void setMimeData(string type, ubyte* data, ulong length, cairo_destroy_func_t destroy, void* closure)
         {
             throwError(cairo_surface_set_mime_data(this.nativePointer, toStringz(type),
                 data, length, destroy, closure));
         }
-        
-        //TODO: make this better
+
+        /**
+         * Return mime data previously attached to surface using the
+         * specified mime type. If no data has been attached with the given
+         * mime type, data is set null.
+         *
+         * Params:
+         * type = the mime type of the image data
+         * 
+         * TODO: More D-like API
+         *
+         * Note:
+         * $(RED Only use this if you know what your doing! Make sure you get
+         * memory management of the data right!)
+         */
         void getMimeData(string type, out ubyte* data, out ulong length)
         {
             cairo_surface_get_mime_data(this.nativePointer, toStringz(type), &data, &length);
@@ -1669,65 +1959,195 @@ public class Surface
         }
 }
 
+/**
+ * This function provides a stride value that will respect all alignment
+ * requirements of the accelerated image-rendering code within cairo.
+ *
+ * Examples:
+ * -----------------------------------
+ * int stride;
+ * ubyte[] data;
+ * Surface surface;
+ * 
+ * stride = formatStrideForWidth(format, width);
+ * data = new ubyte[](stride * height); //could also use malloc
+ * surface = new ImageSurface(data, format, width, height, stride);
+ * -----------------------------------
+ *
+ * Params:
+ * format = The desired Format of an image surface to be created
+ * width = The desired width of an image surface to be created
+ *
+ * Returns:
+ * the appropriate stride to use given the desired format and width, or
+ * -1 if either the format is invalid or the width too large.
+ */
+int formatStrideForWidth(Format format, int width)
+{
+    return cairo_format_stride_for_width(format, width);
+}
+
+/**
+ * Image Surfaces — Rendering to memory buffers
+ *
+ * Image surfaces provide the ability to render to memory buffers either
+ * allocated by cairo or by the calling code. The supported image
+ * formats are those defined in $(D Format).
+ */
 public class ImageSurface : Surface
 {
-    //need to keep this around to prevent the GC from collecting it
-    protected ubyte[] _data;
-    
     public:
-        /* Warning: ptr reference count is not increased by this function!
-         * Adjust reference count before calling it if necessary*/
+        /**
+         * Create a $(D ImageSurface) from a existing $(D cairo_surface_t*).
+         * ImageSurface is a garbage collected class. It will call $(D cairo_surface_destroy)
+         * when it gets collected by the GC or when $(D dispose()) is called.
+         *
+         * Warning:
+         * $(D ptr)'s reference count is not increased by this function!
+         * Adjust reference count before calling it if necessary
+         *
+         * $(RED Only use this if you know what your doing!
+         * This function should not be needed for standard cairoD usage.)
+         */
         this(cairo_surface_t* ptr)
         {
             super(ptr);
         }
-        
+
+        /**
+         * Creates an image surface of the specified format and dimensions.
+         * Initially the surface contents are all 0. (Specifically, within
+         * each pixel, each color or alpha channel belonging to format will
+         * be 0. The contents of bits within a pixel, but not belonging
+         * to the given format are undefined).
+         *
+         * Params:
+         * format = format of pixels in the surface to create
+         * width = width of the surface, in pixels
+         * height = height of the surface, in pixels
+         */
         this(Format format, int width, int height)
         {
             super(cairo_image_surface_create(format, width, height));
         }
+
+        /**
+         * Creates an image surface for the provided pixel data.
+         * $(RED The output buffer must be kept around until the $(D Surface)
+         * is destroyed or $(D Surface.finish()) is called on the surface.)
+         * The initial contents of data will be used as the initial image
+         * contents; you must explicitly clear the buffer, using, for
+         * example, $(D Context.rectangle()) and $(D Context.fill()) if you
+         * want it cleared.
+         *
+         * Note that the stride may be larger than width*bytes_per_pixel
+         * to provide proper alignment for each pixel and row.
+         * This alignment is required to allow high-performance rendering
+         * within cairo. The correct way to obtain a legal stride value is
+         * to call $(D formatStrideForWidth) with the desired format and
+         * maximum image width value, and then use the resulting stride
+         * value to allocate the data and to create the image surface.
+         * See $(D formatStrideForWidth) for example code.
+         *
+         * Params:
+         * data = a pointer to a buffer supplied by the application in
+         *     which to write contents. This pointer must be suitably aligned
+         *     for any kind of variable, (for example, a pointer returned by malloc).
+         * format = the format of pixels in the buffer
+         * width = the width of the image to be stored in the buffer
+         * height = the height of the image to be stored in the buffer
+         * stride = the number of bytes between the start of rows in the
+         *     buffer as allocated. This value should always be computed
+         *     by $(D formatStrideForWidth) before allocating
+         *     the data buffer.
+         */
         this(ubyte[] data, Format format, int width, int height, int stride)
         {
-            this._data = data;
             super(cairo_image_surface_create_for_data(data.ptr, format, width, height, stride));
         }
-        
+
+        /**
+         * Get a pointer to the data of the image surface,
+         * for direct inspection or modification.
+         *
+         * Warning: There's no way to get the size of the buffer from
+         * cairo, so you'll only get a $(D ubyte*). Be careful!
+         */
         ubyte* getData()
         {
             scope(exit)
                 checkError();
             return cairo_image_surface_get_data(this.nativePointer);
         }
-        
+
+        /**
+         * Get the format of the surface.
+         */
         Format getFormat()
         {
             scope(exit)
                 checkError();
             return cairo_image_surface_get_format(this.nativePointer);
         }
-        
+
+        /**
+         * Get the width of the image surface in pixels.
+         */
         int getWidth()
         {
             scope(exit)
                 checkError();
             return cairo_image_surface_get_width(this.nativePointer);
         }
-        
+
+        /**
+         * Get the height of the image surface in pixels.
+         */
         int getHeight()
         {
             scope(exit)
                 checkError();
             return cairo_image_surface_get_height(this.nativePointer);
         }
-        
+
+        /**
+         * Get the stride of the image surface in bytes.
+         */
         int getStride()
         {
             scope(exit)
                 checkError();
             return cairo_image_surface_get_stride(this.nativePointer);
         }
-        
-        version(CAIRO_HAS_PNG_FUNCTIONS)
+
+        version(D_Ddoc)
+        {
+            /**
+             * Creates a new image surface and initializes the contents to the given PNG file.
+             *
+             * Params:
+             * file = name of PNG file to load
+             *
+             * Note:
+             * Only available if cairo, cairoD and the cairoD user
+             * code were compiled with "version=CAIRO_HAS_PNG_FUNCTIONS"
+             */
+            static ImageSurface fromPng(string file);
+            //TODO: fromPNGStream when phobos gets new streaming api
+            /**
+             * Writes the contents of surface to a new file filename as a PNG image.
+             *
+             * Params:
+             * file = the name of a file to write to
+             * 
+             * Note:
+             * Only available if cairo, cairoD and the cairoD user
+             * code were compiled with "version=CAIRO_HAS_PNG_FUNCTIONS"
+             */
+            void writeToPNG(string file);
+            //TODO: toPNGStream when phobos gets new streaming api
+        }
+        else version(CAIRO_HAS_PNG_FUNCTIONS)
         {
             static ImageSurface fromPng(string file)
             {
@@ -1746,7 +2166,7 @@ public class ImageSurface : Surface
 public struct Context
 {
     /*---------------------------Reference counting stuff---------------------------*/
-    private:
+    protected:
         @property uint _count()
         {
             return cairo_get_reference_count(this.nativePointer);
@@ -1763,6 +2183,9 @@ public struct Context
         }
 
     public:
+        /**
+         * The underlying $(D cairo_t*) handle
+         */
         cairo_t* nativePointer;
         debug(RefCounted)
         {
@@ -1770,8 +2193,8 @@ public struct Context
         }
     
         /**
-        Constructor that tracks the reference count appropriately. If $(D
-        !refCountedIsInitialized), does nothing.
+         * Constructor that tracks the reference count appropriately. If $(D
+         * !refCountedIsInitialized), does nothing.
          */
         this(this)
         {
@@ -1791,7 +2214,13 @@ public struct Context
         {
             this.dispose();
         }
-    
+
+        /**
+         * Explicitly drecrease the reference count.
+         *
+         * See $(LINK https://github.com/jpf91/cairoD/wiki/Memory-Management#2.1-structs)
+         * for more information.
+         */
         void dispose()
         {
             if (this.nativePointer is null)
@@ -1823,7 +2252,7 @@ public struct Context
             debug(RefCounted) if (this.debugging) writeln("done!");
         }
         /**
-        Assignment operators
+         * Assignment operator
          */
         void opAssign(typeof(this) rhs)
         {
