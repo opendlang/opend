@@ -2280,7 +2280,8 @@ public struct Context
             nativePointer = cairo_create(target.nativePointer);
             throwError(cairo_status(nativePointer));
         }
-        
+
+        /**
         void save()
         {
             cairo_save(this.nativePointer);
@@ -2647,6 +2648,7 @@ public struct Context
                 checkError();
             return cairo_get_user_data(this.nativePointer, key);
         }
+        */
         
         Path copyPath()
         {
