@@ -3276,17 +3276,38 @@ public struct Context
             return cairo_get_user_data(this.nativePointer, key);
         }
         */
-        
+
+        /**
+         * Creates a copy of the current path and returns it to the user
+         * as a $(D Path). See $(D PathRange) for hints on how to
+         * iterate over the returned data structure.
+         */
         Path copyPath()
         {
             return Path(cairo_copy_path(this.nativePointer));
         }
-        
+
+        /**
+         * Gets a flattened copy of the current path and returns it to
+         * the user as a $(D Path). See $(D PathRange) for hints
+         * on how to iterate over the returned data structure.
+         *
+         * This function is like $(D copyPath()) except that any
+         * curves in the path will be approximated with piecewise-linear
+         * approximations, (accurate to within the current tolerance value).
+         * That is, the result is guaranteed to not have any elements of
+         * type CAIRO_PATH_CURVE_TO which will instead be replaced by
+         * a series of CAIRO_PATH_LINE_TO elements.
+         */
         Path copyPathFlat()
         {
             return Path(cairo_copy_path_flat(this.nativePointer));
         }
-        
+
+        /**
+         * Append the path onto the current path. The path may be
+         * the return value from one of $(D copyPath()) or $(D copyPathFlat()).
+         */
         void appendPath(Path p)
         {
             cairo_append_path(this.nativePointer, p.nativePointer);
@@ -3297,20 +3318,56 @@ public struct Context
          * appendPath for user created paths. There is no high level API
          * for user defined paths. Use $(D appendPath(Path p)) for paths
          * which were obtained from cairo.
+         *
+         * See $(D cairo_path_t) for details
+         * on how the path data structure should be initialized,
+         * and note that path.status must be initialized to CAIRO_STATUS_SUCCESS.
+         *
+         * Warning:
+         * $(RED Only use this if you know what your doing!
+         * This function should not be needed for standard cairoD usage.)
          */
         void appendPath(cairo_path_t* path)
         {
             cairo_append_path(this.nativePointer, path);
             checkError();
         }
-        
+
+        /**
+         * Returns whether a current point is defined on the current path.
+         * See $(D getCurrentPoint()) for details on the current point.
+         */
         bool hasCurrentPoint()
         {
             scope(exit)
                 checkError();
             return cairo_has_current_point(this.nativePointer) ? true : false;
         }
-        
+
+        /**
+         * Gets the current point of the current path, which is conceptually
+         * the final point reached by the path so far.
+         *
+         * The current point is returned in the user-space coordinate system.
+         * If there is no defined current point or if cr is in an error status,
+         * x and y will both be set to 0.0. It is possible to check
+         * this in advance with $(D hasCurrentPoint()).
+         *
+         * Most path construction functions alter the current point. See
+         * the following for details on how they affect the current point:
+         * $(D newPath()), $(D newSubPath()), $(D appendPath()),
+         * $(D closePath()), $(D moveTo()), $(D lineTo()),
+         * $(D curveTo()), $(D relMoveTo()), $(D relLineTo()),
+         * $(D relCurveTo()), $(D arc()), $(D arcNegative()),
+         * $(D rectangle()), $(D textPath()), $(D glyphPath()),
+         * $(D strokeToPath()).
+         *
+         * Some functions use and alter the current point but do not
+         * otherwise change current path: $(D showText()).
+         *
+         * Some functions unset the current path and as a result,
+         * current point: $(D fill()), $(D stroke()).
+         */
         Point getCurrentPoint()
         {
             Point tmp;
@@ -3318,91 +3375,325 @@ public struct Context
             checkError();
             return tmp;
         }
-        
+
+        /**
+         * Clears the current path. After this call there will be no path
+         * and no current point.
+         */
         void newPath()
         {
             cairo_new_path(this.nativePointer);
             checkError();
         }
-        
+
+        /**
+         * Begin a new sub-path. Note that the existing path is not affected.
+         * After this call there will be no current point.
+         *
+         * In many cases, this call is not needed since new sub-paths are
+         * frequently started with cairo_move_to().
+         *
+         * A call to $(D newSubPath()) is particularly useful when
+         * beginning a new sub-path with one of the $(D arc()) calls.
+         * This makes things easier as it is no longer necessary to
+         * manually compute the arc's initial coordinates for a call
+         * to $(D moveTo()).
+         */
         void newSubPath()
         {
             cairo_new_sub_path(this.nativePointer);
             checkError();
         }
-        
+
+        /**
+         * Adds a line segment to the path from the current point to
+         * the beginning of the current sub-path, (the most recent
+         * point passed to $(D moveTo())), and closes this sub-path.
+         * After this call the current point will be at the joined
+         * endpoint of the sub-path.
+         *
+         * The behavior of $(D closePath()) is distinct from simply
+         * calling $(D lineTo()) with the equivalent coordinate in
+         * the case of stroking. When a closed sub-path is stroked,
+         * there are no caps on the ends of the sub-path. Instead,
+         * there is a line join connecting the final and initial
+         * segments of the sub-path.
+         *
+         * If there is no current point before the call to $(D closePath()),
+         * this function will have no effect.
+         *
+         * Note: As of cairo version 1.2.4 any call to $(D closePath())
+         * will place an explicit MOVE_TO element into the path immediately
+         * after the CLOSE_PATH element, (which can be seen in
+         * $(D copyPath()) for example). This can simplify path processing
+         * in some cases as it may not be necessary to save the "last
+         * move_to point" during processing as the MOVE_TO immediately
+         * after the CLOSE_PATH will provide that point.
+         */
         void closePath()
         {
             cairo_close_path(this.nativePointer);
             checkError();
         }
-        
+
+        /**
+         * Adds a circular arc of the given radius to the current path.
+         * The arc is centered at center, begins at angle1 and proceeds in
+         * the direction of increasing angles to end at angle2.
+         * If angle2 is less than angle1 it will be progressively
+         * increased by 2*PI until it is greater than angle1.
+         *
+         * If there is a current point, an initial line segment will be
+         * added to the path to connect the current point to the beginning
+         * of the arc. If this initial line is undesired, it can be
+         * avoided by calling $(D newSubPath()) before calling $(D arc()).
+         *
+         * Angles are measured in radians. An angle of 0.0 is in the
+         * direction of the positive X axis (in user space). An angle
+         * of PI/2.0 radians (90 degrees) is in the direction of the
+         * positive Y axis (in user space). Angles increase in the
+         * direction from the positive X axis toward the positive Y
+         * axis. So with the default transformation matrix, angles
+         * increase in a clockwise direction.
+         *
+         * (To convert from degrees to radians, use degrees * (PI / 180))
+         *
+         * This function gives the arc in the direction of increasing angles;
+         * see $(D arcNegative()) to get the arc in the direction of decreasing angles.
+         *
+         * The arc is circular in user space. To achieve an elliptical arc,
+         * you can scale the current transformation matrix by different
+         * amounts in the X and Y directions. For example, to draw an
+         * ellipse in the box given by x, y, width, height:
+         * -------------------
+         * cr.save();
+         * cr.translate(x + width / 2, y + height / 2);
+         * cr.scale(width / 2, height / 2);
+         * cr.arc(Point(0, 0), 1, 0, 2 * PI);
+         * cr.restore();
+         * -------------------
+         * Params:
+         * radius = the radius of the arc
+         * angle1 = the start angle, in radians
+         * angle2 = the end angle, in radians
+         */
         void arc(Point center, double radius, double angle1, double angle2)
         {
             cairo_arc(this.nativePointer, center.x, center.y, radius, angle1, angle2);
             checkError();
         }
-        
+
+        /**
+         * Adds a circular arc of the given radius to the current path.
+         * The arc is centered at center, begins at angle1 and proceeds
+         * in the direction of decreasing angles to end at angle2.
+         * If angle2 is greater than angle1 it will be progressively
+         * decreased by 2*PI until it is less than angle1.
+         *
+         * See $(D arc()) for more details. This function differs only
+         * in the direction of the arc between the two angles.
+         * 
+         * Params:
+         * radius = the radius of the arc
+         * angle1 = the start angle, in radians
+         * angle2 = the end angle, in radians
+         */
         void arcNegative(Point center, double radius, double angle1, double angle2)
         {
             cairo_arc_negative(this.nativePointer, center.x, center.y, radius, angle1, angle2);
             checkError();
         }
-        
+
+        /**
+         * Adds a cubic Bézier spline to the path from the current
+         * point to position p3 in user-space coordinates, using p1 and p2
+         * as the control points. After this call the current point will be p3.
+         *
+         * If there is no current point before the call to $(D curveTo())
+         * this function will behave as if preceded by a call to
+         * $(D moveTo(p1)).
+         *
+         * Params:
+         * p1 = First control point
+         * p2 = Second control point
+         * p3 = End of the curve
+         */
         void curveTo(Point p1, Point p2, Point p3)
         {
             cairo_curve_to(this.nativePointer, p1.x, p1.y, p2.x, p2.y, p3.x, p3.y);
             checkError();
         }
-        
+
+        /**
+         * Adds a line to the path from the current point to position p1
+         * in user-space coordinates. After this call the current point
+         * will be p1.
+         *
+         * If there is no current point before the call to $(D lineTo())
+         * this function will behave as $(D moveTo(p1)).
+         *
+         * Params:
+         * p1 = End of the line
+         */
         void lineTo(Point p1)
         {
             cairo_line_to(this.nativePointer, p1.x, p1.y);
             checkError();
         }
-        
+
+        /**
+         * Begin a new sub-path. After this call the current point will be p1.
+         */
         void moveTo(Point p1)
         {
             cairo_move_to(this.nativePointer, p1.x, p1.y);
             checkError();
         }
-        
+
+        /**
+         * Adds a closed sub-path rectangle of the given size to the
+         * current path at position r.point in user-space coordinates.
+         * This function is logically equivalent to:
+         * ---------------------
+         * cr.moveTo(r.point);
+         * cr.relLineTo(r.width, 0);
+         * cr.relLineTo(0, r.height);
+         * cr.relLineTo(-r.width, 0);
+         * cr.closePath();
+         * ---------------------
+         */
         void rectangle(Rectangle r)
         {
             cairo_rectangle(this.nativePointer, r.point.x, r.point.y, r.width, r.height);
             checkError();
         }
-        
+
+        /**
+         * Adds closed paths for the glyphs to the current path.
+         * The generated path if filled, achieves an effect
+         * similar to that of $(D showGlyphs()).
+         */
         void glyphPath(Glyph[] glyphs)
         {
             cairo_glyph_path(this.nativePointer, glyphs.ptr, glyphs.length);
             checkError();
         }
 
+        /**
+         * Adds closed paths for text to the current path. The generated
+         * path if filled, achieves an effect similar to that of
+         * $(D showText()).
+         *
+         * Text conversion and positioning is done similar to $(D showText()).
+         *
+         * Like $(D showText()), After this call the current point is moved
+         * to the origin of where the next glyph would be placed in this
+         * same progression. That is, the current point will be at the
+         * origin of the final glyph offset by its advance values. This
+         * allows for chaining multiple calls to to $(D textPath())
+         * without having to set current point in between.
+         * 
+         * Note: The $(D textPath()) function call is part of what the
+         * cairo designers call the "toy" text API. It is convenient for
+         * short demos and simple programs, but it is not expected
+         * to be adequate for serious text-using applications. See
+         * $(D glyphPath()) for the "real" text path API in cairo.
+         */
         void textPath(string text)
         {
             cairo_text_path(this.nativePointer, toStringz(text));
             checkError();
         }
-        
+
+        /**
+         * Relative-coordinate version of $(D curveTo()).
+         * All offsets are relative to the current point. Adds a
+         * cubic Bézier spline to the path from the current point
+         * to a point offset from the current point by rp3,
+         * using points offset by rp1 and rp2 as the
+         * control points. After this call the current point will
+         * be offset by rp3.
+         *
+         * Given a current point of (x, y),
+         * cairo_rel_curve_to(cr, dx1, dy1, dx2, dy2, dx3, dy3) is logically
+         * equivalent to
+         * cairo_curve_to(cr, x+dx1, y+dy1, x+dx2, y+dy2, x+dx3, y+dy3).
+         *
+         * It is an error to call this function with no current point.
+         * Doing so will cause an CairoException with a
+         * status of CAIRO_STATUS_NO_CURRENT_POINT.
+         *
+         * Params:
+         * rp1 = First control point
+         * rp2 = Second control point
+         * rp3 = offset to the end of the curve
+         */
         void relCurveTo(Point rp1, Point rp2, Point rp3)
         {
             cairo_rel_curve_to(this.nativePointer, rp1.x, rp1.y, rp2.x, rp2.y, rp3.x, rp3.y);
             checkError();
         }
-        
+
+        /**
+         * Relative-coordinate version of $(D lineTo()). Adds a line
+         * to the path from the current point to a point that is
+         * offset from the current point by rp1 in user space.
+         * After this call the current point will be offset by rp1.
+         *
+         * Given a current point of (x, y), cairo_rel_line_to(cr, dx, dy)
+         * is logically equivalent to cairo_line_to(cr, x + dx, y + dy).
+         *
+         * It is an error to call this function with no current point.
+         * Doing so will cause an CairoException with a
+         * status of CAIRO_STATUS_NO_CURRENT_POINT.
+         */
         void relLineTo(Point rp1)
         {
             cairo_rel_line_to(this.nativePointer, rp1.x, rp1.y);
             checkError();
         }
-        
+
+        /**
+         * Begin a new sub-path. After this call the current point will
+         * offset by rp1.
+         *
+         * Given a current point of (x, y), cairo_rel_move_to(cr, dx, dy)
+         * is logically equivalent to cairo_move_to(cr, x + dx, y + dy).
+         *
+         * It is an error to call this function with no current point.
+         * Doing so will cause an CairoException with a status of
+         * CAIRO_STATUS_NO_CURRENT_POINT.
+         */
         void relMoveTo(Point rp1)
         {
             cairo_rel_move_to(this.nativePointer, rp1.x, rp1.y);
             checkError();
         }
-        
+
+        /**
+         * Computes a bounding box in user-space coordinates covering
+         * the points on the current path. If the current path is empty,
+         * returns an empty Box ((0,0), (0,0)). Stroke parameters,
+         * fill rule, surface dimensions and clipping are not taken
+         * into account.
+         *
+         * Contrast with $(D fillExtents()) and $(D strokeExtents())
+         * which return the extents of only the area that would be "inked"
+         * by the corresponding drawing operations.
+         *
+         * The result of $(D pathExtents()) is defined as equivalent
+         * to the limit of $(D strokeExtents()) with CAIRO_LINE_CAP_ROUND
+         * as the line width approaches 0.0, (but never reaching the
+         * empty-rectangle returned by $(D strokeExtents()) for a
+         * line width of 0.0).
+         *
+         * Specifically, this means that zero-area sub-paths such as
+         * $(D moveTo());$(D lineTo()) segments, (even degenerate
+         * cases where the coordinates to both calls are identical),
+         * will be considered as contributing to the extents. However,
+         * a lone $(D moveTo()) will not contribute to the
+         * results of $(D pathExtents()).
+         */
         Box pathExtends()
         {
             Box tmp;
@@ -3410,37 +3701,88 @@ public struct Context
             checkError();
             return tmp;
         }
-        
+
+        /**
+         * Modifies the current transformation matrix (CTM) by translating
+         * the user-space origin by (tx, ty). This offset is interpreted
+         * as a user-space coordinate according to the CTM in place
+         * before the new call to $(D translate()). In other words,
+         * the translation of the user-space origin takes place
+         * after any existing transformation.
+         *
+         * Params:
+         * tx = amount to translate in the X direction
+         * ty = amount to translate in the Y direction
+         */
         void translate(double tx, double ty)
         {
             cairo_translate(this.nativePointer, tx, ty);
             checkError();
         }
-        
+
+        /**
+         * Modifies the current transformation matrix (CTM) by scaling
+         * the X and Y user-space axes by sx and sy respectively.
+         * The scaling of the axes takes place after any existing
+         * transformation of user space.
+         *
+         * Params:
+         * sx = scale factor for the X dimension
+         * sy = scale factor for the Y dimension
+         */
         void scale(double sx, double sy)
         {
             cairo_scale(this.nativePointer, sx, sy);
             checkError();
         }
-        
+
+        /**
+         * Modifies the current transformation matrix (CTM) by rotating
+         * the user-space axes by angle radians. The rotation of the
+         * axes takes places after any existing transformation of user
+         * space. The rotation direction for positive angles is from
+         * the positive X axis toward the positive Y axis.
+         *
+         * Params:
+         * angle = angle (in radians) by which the user-space axes will be rotated
+         */
         void rotate(double angle)
         {
             cairo_rotate(this.nativePointer, angle);
             checkError();
         }
-        
+
+        /**
+         * Modifies the current transformation matrix (CTM) by applying
+         * matrix as an additional transformation. The new
+         * transformation of user space takes place after any
+         * existing transformation.
+         *
+         * Params:
+         * matrix = a transformation to be applied to the user-space axes
+         */
         void transform(const Matrix matrix)
         {
             cairo_transform(this.nativePointer, &matrix.nativeMatrix);
             checkError();
         }
-        
+
+        /**
+         * Modifies the current transformation matrix (CTM) by setting it
+         * equal to matrix.
+         *
+         * Params:
+         * Matrix = a transformation matrix from user space to device space
+         */
         void setMatrix(const Matrix matrix)
         {
             cairo_set_matrix(this.nativePointer, &matrix.nativeMatrix);
             checkError();
         }
-        
+
+        /**
+         * Returns the current transformation matrix (CTM) 
+         */
         Matrix getMatrix()
         {
             Matrix m;
@@ -3448,34 +3790,62 @@ public struct Context
             checkError();
             return m;
         }
-        
+
+        /**
+         * Resets the current transformation matrix (CTM) by setting it
+         * equal to the identity matrix. That is, the user-space and
+         * device-space axes will be aligned and one user-space unit
+         * will transform to one device-space unit.
+         */
         void identityMatrix()
         {
             cairo_identity_matrix(this.nativePointer);
             checkError();
         }
-        
+
+        /**
+         * Transform a coordinate from user space to device space by
+         * multiplying the given point by the current
+         * transformation matrix (CTM).
+         */
         Point userToDevice(Point inp)
         {
             cairo_user_to_device(this.nativePointer, &inp.x, &inp.y);
             checkError();
             return inp;
         }
-        
+
+        /**
+         * Transform a distance vector from user space to device space.
+         * This function is similar to $(D userToDevice()) except that
+         * the translation components of the CTM will be ignored when
+         * transforming inp.
+         */
         Point userToDeviceDistance(Point inp)
         {
             cairo_user_to_device_distance(this.nativePointer, &inp.x, &inp.y);
             checkError();
             return inp;
         }
-        
+
+        /**
+         * Transform a coordinate from device space to user space by
+         * multiplying the given point by the inverse of the current
+         * transformation matrix (CTM).
+         */
         Point deviceToUser(Point inp)
         {
             cairo_device_to_user(this.nativePointer, &inp.x, &inp.y);
             checkError();
             return inp;
         }
-        
+
+        /**
+         * Transform a distance vector from device space to user space.
+         * This function is similar to $(D deviceToUser()) except that
+         * the translation components of the inverse CTM will be ignored
+         * when transforming inp.
+         */
         Point deviceToUserDistance(Point inp)
         {
             cairo_device_to_user_distance(this.nativePointer, &inp.x, &inp.y);
@@ -3483,24 +3853,107 @@ public struct Context
             return inp;
         }
 
+        /**
+         * Note: The $(D selectFontFace()) function call is part of
+         * what the cairo designers call the "toy" text API. It
+         * is convenient for short demos and simple programs, but
+         * it is not expected to be adequate for serious text-using
+         * applications.
+         *
+         * Selects a family and style of font from a simplified description
+         * as a family name, slant and weight. Cairo provides no
+         * operation to list available family names on the system
+         * (this is a "toy", remember), but the standard CSS2 generic
+         * family names, ("serif", "sans-serif", "cursive", "fantasy",
+         * "monospace"), are likely to work as expected.
+         *
+         * If family starts with the string "cairo:", or if no native
+         * font backends are compiled in, cairo will use an internal
+         * font family. The internal font family recognizes many
+         * modifiers in the family string, most notably, it recognizes
+         * the string "monospace". That is, the family name
+         * "cairo:monospace" will use the monospace version of the
+         * internal font family.
+         *
+         * For "real" font selection, see the font-backend-specific
+         * $(D FontFace) classes for the font backend you are using.
+         * (For example, if you are using the freetype-based cairo-ft
+         * font backend, see $(D FTFontFace))
+         *
+         * The resulting font face could then be used
+         * with $(D ScaledFont) and $(D Context.setScaledFont()).
+         *
+         * Similarly, when using the "real" font support, you can call
+         * directly into the underlying font system, (such as
+         * fontconfig or freetype), for operations such as listing
+         * available fonts, etc.
+         *
+         * It is expected that most applications will need to use a more
+         * comprehensive font handling and text layout library,
+         * (for example, pango), in conjunction with cairo.
+         *
+         * If text is drawn without a call to $(D selectFontFace()),
+         * (nor $(D setFontFace()) nor $(D setScaledFont())),
+         * the default family is platform-specific, but is essentially
+         * "sans-serif". Default slant is CAIRO_FONT_SLANT_NORMAL,
+         * and default weight is CAIRO_FONT_WEIGHT_NORMAL.
+         *
+         * This function is equivalent to a call to
+         * $(D toyFontFaceCreate()) followed by $(D setFontFace()).
+         *
+         * Params:
+         * family = a font family name, encoded in UTF-8
+         * slant = the slant for the font
+         * weight = the weight for the font
+         */
         void selectFontFace(string family, FontSlant slant, FontWeight weight)
         {
             cairo_select_font_face(this.nativePointer, toStringz(family), slant, weight);
             checkError();
         }
 
+        /**
+         * Sets the current font matrix to a scale by a factor of size,
+         * replacing any font matrix previously set with $(D setFontSize())
+         * or $(D setFontMatrix()). This results in a font size of
+         * size user space units. (More precisely, this matrix will
+         * result in the font's em-square being a size by size
+         * square in user space.)
+         *
+         * If text is drawn without a call to $(D setFontSize()),
+         * (nor $(D setFontMatrix()) nor $(D setScaledFont())),
+         * the default font size is 10.0.
+         *
+         * Params:
+         * size = the new font size, in user space units
+         */
         void setFontSize(double size)
         {
             cairo_set_font_size(this.nativePointer, size);
             checkError();
         }
 
+        /**
+         * Sets the current font matrix to matrix. The font matrix gives
+         * a transformation from the design space of the font (in this
+         * space, the em-square is 1 unit by 1 unit) to user space.
+         * Normally, a simple scale is used (see $(D setFontSize())),
+         * but a more complex font matrix can be used to shear the font
+         * or stretch it unequally along the two axes
+         * 
+         * Params:
+         * matrix = a $(D Matrix) describing a transform to be applied
+         * to the current font.
+         */
         void setFontMatrix(Matrix matrix)
         {
             cairo_set_font_matrix(this.nativePointer, &matrix.nativeMatrix);
             checkError();
         }
 
+        /**
+         * Returns the current font matrix. See $(D setFontMatrix).
+         */
         Matrix getFontMatrix()
         {
             Matrix res;
@@ -3509,12 +3962,25 @@ public struct Context
             return res;
         }
 
+        /**
+         * Sets a set of custom font rendering options for the
+         * $(D Context). Rendering options are derived by merging these
+         * options with the options derived from underlying surface;
+         * if the value in options has a default value (like CAIRO_ANTIALIAS_DEFAULT),
+         * then the value from the surface is used.
+         */
         void setFontOptions(FontOptions options)
         {
             cairo_set_font_options(this.nativePointer, options.nativePointer);
             checkError();
         }
 
+        /**
+         * Retrieves font rendering options set via $(D setFontOptions()).
+         * Note that the returned options do not include any options
+         * derived from the underlying surface; they are literally
+         * the options passed to $(D setFontOptions()).
+         */
         FontOptions getFontOptions()
         {
             auto opt = FontOptions();
@@ -3523,46 +3989,106 @@ public struct Context
             return opt;
         }
 
-        void setFontFace()
-        {
-            cairo_set_font_face(this.nativePointer, null);
-            checkError();
-        }
-
+        /**
+         * Replaces the current $(D FontFace) object in the $(D Context)
+         * with font_face. The replaced font face in the $(D Context) will
+         * be destroyed if there are no other references to it.
+         */
         void setFontFace(FontFace font_face)
         {
             cairo_set_font_face(this.nativePointer, font_face.nativePointer);
             checkError();
         }
 
+        /**
+         * Replaces the current $(D FontFace) object in the $(D Context)
+         * with the default font.
+         */
+        void setFontFace()
+        {
+            cairo_set_font_face(this.nativePointer, null);
+            checkError();
+        }
+
+        /**
+         * Gets the current font face for a $(D Context).
+         */
         FontFace getFontFace()
         {
             return FontFace.createFromNative(cairo_get_font_face(this.nativePointer));
         }
 
+        /**
+         * Replaces the current font face, font matrix, and font options
+         * in the $(D Context) with those of the $(D ScaledFont). Except
+         * for some translation, the current CTM of the cairo_t should be
+         * the same as that of the $(D ScaledFont), which can be
+         * accessed using $(D ScaledFont.getCTM()).
+         */
         void setScaledFont(ScaledFont scaled_font)
         {
             cairo_set_scaled_font(this.nativePointer, scaled_font.nativePointer);
             checkError();
         }
 
+        /**
+         * Gets the current scaled font for a $(D Context).
+         */
         ScaledFont getScaledFont()
         {
             return ScaledFont.createFromNative(cairo_get_scaled_font(this.nativePointer));
         }
 
+        /**
+         * A drawing operator that generates the shape from a string of
+         * UTF-8 characters, rendered according to the current
+         * fontFace, fontSize (fontMatrix), and fontOptions.
+         *
+         * This function first computes a set of glyphs for the string
+         * of text. The first glyph is placed so that its origin is
+         * at the current point. The origin of each subsequent glyph
+         * is offset from that of the previous glyph by the advance
+         * values of the previous glyph.
+         *
+         * After this call the current point is moved to the origin
+         * of where the next glyph would be placed in this same
+         * progression. That is, the current point will be at the
+         * origin of the final glyph offset by its advance values.
+         * This allows for easy display of a single logical string
+         * with multiple calls to $(D showText()).
+         *
+         * Note: The $(D showText()) function call is part of
+         * what the cairo designers call the "toy" text API. It
+         * is convenient for short demos and simple programs, but
+         * it is not expected to be adequate for serious text-using
+         * applications. See $(D showGlyphs()) for the "real" text
+         * display API in cairo.
+         */
         void showText(string text)
         {
             cairo_show_text(this.nativePointer, toStringz(text));
             checkError();
         }
 
+        /**
+         * A drawing operator that generates the shape from an array of
+         * glyphs, rendered according to the current fontFace,
+         * fontSize (fontMatrix), and font options.
+         */
         void showGlyphs(Glyph[] glyphs)
         {
             cairo_show_glyphs(this.nativePointer, glyphs.ptr, glyphs.length);
             checkError();
         }
 
+        /**
+         * This operation has rendering effects similar to $(D showGlyphs())
+         * but, if the target surface supports it, uses the provided
+         * text and cluster mapping to embed the text for the glyphs
+         * shown in the output. If the target does not support the
+         * extended attributes, this function acts like the basic
+         * $(D showGlyphs()).
+         */
         void showTextGlyphs(TextGlyph glyph)
         {
             cairo_show_text_glyphs(this.nativePointer, glyph.text.ptr,
@@ -3571,6 +4097,9 @@ public struct Context
             checkError();
         }
 
+        /**
+         * Gets the font extents for the currently selected font.
+         */
         FontExtents fontExtents()
         {
             FontExtents res;
@@ -3579,6 +4108,21 @@ public struct Context
             return res;
         }
 
+        /**
+         * Gets the extents for a string of text. The extents describe
+         * a user-space rectangle that encloses the "inked"
+         * portion of the text, (as it would be drawn by $(D showText())).
+         * Additionally, the x_advance and y_advance values indicate
+         * the amount by which the current point would be advanced
+         * by $(D showText()).
+         *
+         * Note that whitespace characters do not directly contribute
+         * to the size of the rectangle (extents.width and extents.height).
+         * They do contribute indirectly by changing the position of
+         * non-whitespace characters. In particular, trailing whitespace
+         * characters are likely to not affect the size of the rectangle,
+         * though they will affect the x_advance and y_advance values.
+         */
         TextExtents textExtents(string text)
         {
             TextExtents res;
@@ -3587,6 +4131,17 @@ public struct Context
             return res;
         }
 
+        /**
+         * Gets the extents for an array of glyphs. The extents describe
+         * a user-space rectangle that encloses the "inked" portion of
+         * the glyphs, (as they would be drawn by $(D showGlyphs())).
+         * Additionally, the x_advance and y_advance values indicate
+         * the amount by which the current point would be advanced by
+         * $(D showGlyphs()).
+         * 
+         * Note that whitespace glyphs do not contribute to the size of
+         * the rectangle (extents.width and extents.height).
+         */
         TextExtents glyphExtents(Glyph[] glyphs)
         {
             TextExtents res;
@@ -3758,12 +4313,31 @@ public struct FontOptions
         }
 }
 
+/**
+ * The mapping between utf8 and glyphs is provided by an array
+ * of clusters. Each cluster covers a number of text bytes and
+ * glyphs, and neighboring clusters cover neighboring areas of
+ * utf8 and glyphs. The clusters should collectively cover
+ * utf8 and glyphs in entirety.
+ *
+ * The first cluster always covers bytes from the beginning of
+ * utf8. If cluster_flags do not have the
+ * CAIRO_TEXT_CLUSTER_FLAG_BACKWARD set, the first cluster also
+ * covers the beginning of glyphs, otherwise it covers the end
+ * of the glyphs array and following clusters move backward.
+ *
+ * See cairo_text_cluster_t for constraints on valid clusters.
+ */
 public struct TextGlyph
 {
     public:
+        ///array of glyphs
         Glyph[] glyphs;
+        ///array of cluster mapping information
         TextCluster[] cluster;
+        ///a string of text encoded in UTF-8
         string text;
+        ///cluster mapping flags
         TextClusterFlags flags;
 }
 
