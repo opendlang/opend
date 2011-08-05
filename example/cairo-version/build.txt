@@ -1,0 +1,2 @@
+## Basic build command
+dmd main.d -I../../src -L-lcairod -L-lcairo -L-L../../
