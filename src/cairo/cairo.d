@@ -145,6 +145,7 @@ public alias cairo_text_cluster_flags_t TextClusterFlags; ///ditto
 public alias cairo_font_slant_t FontSlant; ///ditto
 public alias cairo_font_weight_t FontWeight; ///ditto
 public alias cairo_device_type_t DeviceType; ///ditto
+public alias cairo_font_type_t FontType; ///ditto
 
 /**
  * A simple struct to store the coordinates of a point.
@@ -4173,14 +4174,28 @@ public struct Context
 /* ------------------------------- Fonts ------------------------------ */
 
 /**
+ * $(D FontOptions) - How a font should be rendered
+ *
+ * The font options specify how fonts should be rendered. Most of the
+ * time the font options implied by a surface are just right and do
+ * not need any changes, but for pixel-based targets tweaking font
+ * options may result in superior output on a particular display.
+ * 
  * Warning: Instances must be created with opCall!
- * Correct:
  * --------
- * auto options = FontOptions();
+ * auto options = FontOptions(); //Correct
+ * options.toHash();
  * --------
- * Wrong:
+ * 
+ * --------
+ * FontOptions options; //Wrong
+ * options.toHash();
+ * --------
+ * 
  * --------
  * FontOptions options;
+ * options = FontOptions(); //Correct
+ * options.toHash();
  * --------
  */
 public struct FontOptions
@@ -4210,19 +4225,37 @@ public struct FontOptions
         alias RefCounted!(Payload, RefCountedAutoInitialize.no) Data;
         Data _data;
     
-        
+    protected:
         void checkError()
         {
             throwError(cairo_font_options_status(nativePointer));
         }
     
     public:
+        /**
+         * The underlying $(D cairo_font_options_t*) handle
+         */
         @property cairo_font_options_t* nativePointer()
         {
             return _data._payload;
         }
 
-        debug(RefCounted)
+        version(D_Ddoc)
+        {
+            /**
+             * Enable / disable memory management debugging for this FontOptions
+             * instance. Only available if both cairoD and the cairoD user
+             * code were compiled with "debug=RefCounted"
+             *
+             * Output is written to stdout, see 
+             * $(LINK https://github.com/jpf91/cairoD/wiki/Memory-Management#debugging)
+             * for more information
+             */
+            @property bool debugging();
+            ///ditto
+            @property void debugging(bool value);
+        }
+        else debug(RefCounted)
         {
             @property bool debugging()
             {
@@ -4235,6 +4268,10 @@ public struct FontOptions
             }
         }
 
+        /**
+         * Allocates a new font options object with all
+         * options initialized to default values.
+         */
         static FontOptions opCall()
         {
             FontOptions opt;
@@ -4244,6 +4281,17 @@ public struct FontOptions
             return opt;
         }
 
+        /**
+         * Create $(D FontOptions) from a existing $(D cairo_font_options_t*).
+         * FontOptions is a reference counted struct. It will call
+         * $(D cairo_font_options_destroy) when it's reference count is 0.
+         * See $(LINK https://github.com/jpf91/cairoD/wiki/Memory-Management#2.2-structs)
+         * for more information.
+         *
+         * Warning:
+         * $(RED Only use this if you know what your doing!
+         * This function should not be needed for standard cairoD usage.)
+         */
         this(cairo_font_options_t* ptr)
         {
             if(!ptr)
@@ -4254,76 +4302,142 @@ public struct FontOptions
             _data.RefCounted.initialize(ptr);
         }
 
+        /**
+         * Allocates a new font options object copying the option values
+         * from original.
+         *
+         * This new object's reference counting is independent from the
+         * current object's.
+         */
         FontOptions copy()
         {
             return FontOptions(cairo_font_options_copy(nativePointer));
         }
-        
+
+        /**
+         * Merges non-default options from other into this object,
+         * replacing existing values. This operation can be thought
+         * of as somewhat similar to compositing other onto options
+         * with the operation of CAIRO_OPERATION_OVER.
+         */
         void merge(FontOptions other)
         {
             cairo_font_options_merge(nativePointer, other.nativePointer);
             checkError();
         }
-        
-        //TODO: how to merge that with toHash?
-        ulong hash()
+
+        /**
+         * Compute a hash for the font options object; this value
+         * will be useful when storing an object containing a
+         * FontOptions in a hash table.
+         */
+        /*
+         * Cairo docs say hash can be casted to a 32bit value, if needed
+         */
+        size_t toHash()
         {
-            ulong hash = cairo_font_options_hash(nativePointer);
+            auto hash = cast(size_t)cairo_font_options_hash(nativePointer);
             checkError();
             return hash;
         }
-        
+
+        /**
+         * Compares two font options objects for equality.
+         *
+         * Returns:
+         * true if all fields of the two font options objects match.
+         * Note that this function will return false if either object is
+         * in error.
+         */
         const bool opEquals(ref const(FontOptions) other)
         {
             return cairo_font_options_equal((cast(FontOptions)this).nativePointer,
                 (cast(FontOptions)other).nativePointer) ? true : false;
         }
-        
+
+        /**
+         * Sets the antialiasing mode for the font options object. This
+         * specifies the type of antialiasing to do when rendering text.
+         */
         void setAntiAlias(AntiAlias antialias)
         {
             cairo_font_options_set_antialias(nativePointer, antialias);
             checkError();
         }
-        
+
+        /**
+         * Gets the antialiasing mode for the font options object.
+         */
         AntiAlias getAntiAlias()
         {
             scope(exit)
                 checkError();
             return cairo_font_options_get_antialias(nativePointer);
         }
-        
+
+        /**
+         * Sets the subpixel order for the font options object.
+         * The subpixel order specifies the order of color elements
+         * within each pixel on the display device when rendering with
+         * an antialiasing mode of CAIRO_ANTIALIAS_SUBPIXEL.
+         * See the documentation for $(D SubpixelOrder) for full details.
+         */
         void setSubpixelOrder(SubpixelOrder order)
         {
             cairo_font_options_set_subpixel_order(nativePointer, order);
             checkError();
         }
-        
+
+        /**
+         * Gets the subpixel order for the font options object.
+         * See the documentation for $(D SubpixelOrder) for full details.
+         */
         SubpixelOrder getSubpixelOrder()
         {
             scope(exit)
                 checkError();
             return cairo_font_options_get_subpixel_order(nativePointer);
         }
-        
+
+        /**
+         * Sets the hint style for font outlines for the font options object.
+         * This controls whether to fit font outlines to the pixel grid,
+         * and if so, whether to optimize for fidelity or contrast.
+         * See the documentation for $(D HintStyle) for full details.
+         */
         void setHintStyle(HintStyle style)
         {
             cairo_font_options_set_hint_style(nativePointer, style);
             checkError();
         }
-        
+
+        /**
+         * Gets the hint style for font outlines for the font options object.
+         * See the documentation for $(D HintStyle) for full details.
+         */
         HintStyle getHintStyle()
         {
             scope(exit)
                 checkError();
             return cairo_font_options_get_hint_style(nativePointer);
         }
-        
+
+        /**
+         * Sets the metrics hinting mode for the font options object.
+         * This controls whether metrics are quantized to integer
+         * values in device units. See the documentation for
+         * $(D HintMetrics) for full details.
+         */
         void setHintMetrics(HintMetrics metrics)
         {
             cairo_font_options_set_hint_metrics(nativePointer, metrics);
             checkError();
         }
-        
+
+        /**
+         * Gets the metrics hinting mode for the font options object.
+         * See the documentation for $(D HintMetrics) for full details.
+         */
         HintMetrics getHintMetrics()
         {
             scope(exit)
@@ -4360,25 +4474,61 @@ public struct TextGlyph
         TextClusterFlags flags;
 }
 
+/**
+ * Font face at particular size and options
+ *
+ * $(D ScaledFont) represents a realization of a font face at a particular
+ * size and transformation and a certain set of font options.
+ */
 public class ScaledFont
 {
+    ///
     mixin CairoCountedClass!(cairo_scaled_font_t*, "cairo_scaled_font_");
 
     protected:
+        /**
+         * Method for use in subclasses.
+         * Calls $(D cairo_scaled_font_status(nativePointer)) and throws
+         * an exception if the status isn't CAIRO_STATUS_SUCCESS
+         */
         void checkError()
         {
             throwError(cairo_scaled_font_status(nativePointer));
         }
 
     public:
-        /* Warning: ptr reference count is not increased by this function!
-         * Adjust reference count before calling it if necessary*/
+        /**
+         * Create a $(D ScaledFont) from a existing $(D cairo_scaled_font_t*).
+         * ScaledFont is a garbage collected class. It will call $(D cairo_scaled_font_destroy)
+         * when it gets collected by the GC or when $(D dispose()) is called.
+         *
+         * Warning:
+         * $(D ptr)'s reference count is not increased by this function!
+         * Adjust reference count before calling it if necessary
+         *
+         * $(RED Only use this if you know what your doing!
+         * This function should not be needed for standard cairoD usage.)
+         */
         this(cairo_scaled_font_t* ptr)
         {
             this.nativePointer = ptr;
             checkError();
         }
 
+        /**
+         * Creates a $(D ScaledFont) object from a font face and
+         * matrices that describe the size of the font and the
+         * environment in which it will be used.
+         *
+         * Params:
+         * font_matrix = font space to user space transformation matrix
+         *   for the font. In the simplest case of a N point font, this
+         *   matrix is just a scale by N, but it can also be used to
+         *   shear the font or stretch it unequally along the two axes.
+         *   See $(D Context.setFontMatrix()).
+         * ctm = user to device transformation matrix with which
+         *   the font will be used.
+         */
         this(FontFace font_face, Matrix font_matrix, Matrix ctm,
              FontOptions options)
         {
@@ -4386,6 +4536,15 @@ public class ScaledFont
                 &font_matrix.nativeMatrix, &ctm.nativeMatrix, options.nativePointer));
         }
 
+        /**
+         * The createFromNative method for the ScaledFont classes.
+         * See $(LINK https://github.com/jpf91/cairoD/wiki/Memory-Management#createFromNative)
+         * for more information.
+         *
+         * Warning:
+         * $(RED Only use this if you know what your doing!
+         * This function should not be needed for standard cairoD usage.)
+         */
         static ScaledFont createFromNative(cairo_scaled_font_t* ptr, bool adjRefCount = true)
         {
             if(!ptr)
@@ -4408,6 +4567,9 @@ public class ScaledFont
             }
         }
 
+        /**
+         * Gets the metrics for a $(D ScaledFont).
+         */
         FontExtents extents()
         {
             FontExtents res;
@@ -4416,6 +4578,24 @@ public class ScaledFont
             return res;
         }
 
+        /**
+         * Gets the extents for a string of text. The extents describe a
+         * user-space rectangle that encloses the "inked" portion of the
+         * text drawn at the origin (0,0) (as it would be drawn by
+         * $(D Context.showText()) if the cairo graphics state were set
+         * to the same fontFace, fontMatrix, ctm, and fontOptions
+         * as $(D ScaledFont)). Additionally, the x_advance and y_advance
+         * values indicate the amount by which the current point would
+         * be advanced by $(D Context.showText()).
+         *
+         * Note that whitespace characters do not directly contribute
+         * to the size of the rectangle (extents.width and extents.height).
+         * They do contribute indirectly by changing the position of
+         * non-whitespace characters. In particular, trailing whitespace
+         * characters are likely to not affect the size of the
+         * rectangle, though they will affect the x_advance
+         * and y_advance values.
+         */
         TextExtents textExtents(string text)
         {
             TextExtents res;
@@ -4425,6 +4605,18 @@ public class ScaledFont
             return res;
         }
 
+        /**
+         * Gets the extents for an array of glyphs. The extents describe
+         * a user-space rectangle that encloses the "inked" portion
+         * of the glyphs, (as they would be drawn by $(D Context.showGlyphs())
+         * if the cairo graphics state were set to the same fontFace,
+         * fontMatrix, ctm, and fontOptions as scaled_font). Additionally,
+         * the x_advance and y_advance values indicate the amount by
+         * which the current point would be advanced by $(D Context.showGlyphs()).
+         *
+         * Note that whitespace glyphs do not contribute to the size
+         * of the rectangle (extents.width and extents.height).
+         */
         TextExtents glyphExtents(Glyph[] glyphs)
         {
             TextExtents res;
@@ -4434,6 +4626,49 @@ public class ScaledFont
             return res;
         }
 
+        /**
+         * Converts UTF-8 text to an array of glyphs, optionally with
+         * cluster mapping, that can be used to render later using ScaledFont.
+         *
+         * If glyphBuffer initially points to a non-empty array, that array is
+         * used as a glyph buffer. If the provided glyph array is too
+         * short for the conversion, a new glyph array is allocated and returned.
+         *
+         * If clusterBuffer is not empty a cluster mapping will be computed.
+         * The semantics of how cluster array allocation works is similar to the glyph array.
+         * That is, if clusterBuffer initially points to a non-empty array,
+         * that array is used as a cluster buffer.
+         * If the provided cluster array is too short for the conversion,
+         * a new cluster array is allocated and returned.
+         *
+         * In the simplest case, glyphs and clusters can be omitted 
+         * or set to an empty array and a suitable array will be allocated.
+         * In code
+         * -----------------
+         * auto glyphs = scaled_font.textToTextGlyph(x, y, text);
+         * cr.showTextGlyphs(glyphs);
+         * -----------------
+         * If no cluster mapping is needed
+         * -----------------
+         * auto glyphs = scaled_font.textToGlyphs(x, y, text);
+         * cr.showGlyphs(glyphs);
+         * -----------------
+         * If stack-based glyph and cluster arrays are to be used for small arrays
+         * -----------------
+         * Glyph[40] stack_glyphs;
+         * TextCluster[40] stack_clusters;
+         * auto glyphs = scaled_font.textToTextGlyph(x, y, text, stack_glyphs, stack_clusters);
+         * cr.showTextGlyphs(glyphs);
+         * -----------------
+         *
+         * The output values can be readily passed to $(D Context.showTextGlyphs())
+         * $(D Context.showGlyphs()), or related functions, assuming that
+         * the exact same ScaledFont is used for the operation.
+         *
+         * Params:
+         * x = X position to place first glyph
+         * y = Y position to place first glyph
+         */
         Glyph[] textToGlyphs(double x, double y, string text, Glyph[] glyphBuffer = [])
         {
             Glyph* gPtr = null;
@@ -4458,7 +4693,7 @@ public class ScaledFont
                 return gCopy;
             }
         }
-        
+        ///ditto
         TextGlyph textToTextGlyph(double x, double y, string text, Glyph[] glyphBuffer = [],
             TextCluster[] clusterBuffer = [])
         {
@@ -4507,6 +4742,10 @@ public class ScaledFont
             return res;
         }
 
+        /**
+         * Gets the font face that this scaled font uses. This is the
+         * font face passed to $(D new ScaledFont()).
+         */
         FontFace getFontFace()
         {
             auto face = cairo_scaled_font_get_font_face(this.nativePointer);
@@ -4514,6 +4753,10 @@ public class ScaledFont
             return FontFace.createFromNative(face);
         }
 
+        /**
+         * Returns the font options with which ScaledFont
+         * was created.
+         */
         FontOptions getFontOptions()
         {
             //TODO: verify if this is correct
@@ -4523,6 +4766,10 @@ public class ScaledFont
             return fo;
         }
 
+        /**
+         * Returns the font matrix with which ScaledFont
+         * was created.
+         */
         Matrix getFontMatrix()
         {
             Matrix mat;
@@ -4531,6 +4778,12 @@ public class ScaledFont
             return mat;
         }
 
+        /**
+         * Returns the CTM with which ScaledFont was created.
+         * Note that the translation offsets (x0, y0) of the CTM are
+         * ignored by $(D new ScaledFont()). So, the matrix this function
+         * returns always has 0,0 as x0,y0.
+         */
         Matrix getCTM()
         {
             Matrix mat;
@@ -4539,6 +4792,12 @@ public class ScaledFont
             return mat;
         }
 
+        /**
+         * Returns the scale matrix of ScaledFont.
+         * The scale matrix is product of the font matrix and the
+         * ctm associated with the scaled font, and hence is the
+         * matrix mapping from font space to device space.
+         */
         Matrix getScaleMatrix()
         {
             Matrix mat;
@@ -4546,27 +4805,74 @@ public class ScaledFont
             checkError();
             return mat;
         }
+
+        /**
+         * This function returns the C type of a ScaledFont. See $(D FontType)
+         * for available types.
+         */
+        FontType getType()
+        {
+            auto tmp = cairo_scaled_font_get_type(this.nativePointer);
+            checkError();
+            return tmp;
+        }
 }
 
+/**
+ * Base class for font faces
+ *
+ * $(D FontFace) represents a particular font at a particular weight,
+ * slant, and other characteristic but no size, transformation, or size.
+ *
+ * Font faces are created using font-backend-specific classes,
+ * typically of the form $(D *FontFace), or implicitly
+ * using the toy text API by way of $(D Context.selectFontFace()). The
+ * resulting face can be accessed using $(D Context.getFontFace()).
+ */
 public class FontFace
 {
+    ///
     mixin CairoCountedClass!(cairo_font_face_t*, "cairo_font_face_");
 
     protected:
+        /**
+         * Method for use in subclasses.
+         * Calls $(D cairo_font_face_status(nativePointer)) and throws
+         * an exception if the status isn't CAIRO_STATUS_SUCCESS
+         */
         void checkError()
         {
             throwError(cairo_font_face_status(nativePointer));
         }
 
     public:
-        /* Warning: ptr reference count is not increased by this function!
-         * Adjust reference count before calling it if necessary*/
+        /**
+         * Create a $(D FontFace) from a existing $(D cairo_font_face_t*).
+         * FontFace is a garbage collected class. It will call $(D cairo_font_face_destroy)
+         * when it gets collected by the GC or when $(D dispose()) is called.
+         *
+         * Warning:
+         * $(D ptr)'s reference count is not increased by this function!
+         * Adjust reference count before calling it if necessary
+         *
+         * $(RED Only use this if you know what your doing!
+         * This function should not be needed for standard cairoD usage.)
+         */
         this(cairo_font_face_t* ptr)
         {
             this.nativePointer = ptr;
             checkError();
         }
 
+        /**
+         * The createFromNative method for the FontFace classes.
+         * See $(LINK https://github.com/jpf91/cairoD/wiki/Memory-Management#createFromNative)
+         * for more information.
+         *
+         * Warning:
+         * $(RED Only use this if you know what your doing!
+         * This function should not be needed for standard cairoD usage.)
+         */
         static FontFace createFromNative(cairo_font_face_t* ptr, bool adjRefCount = true)
         {
             if(!ptr)
@@ -4590,23 +4896,62 @@ public class FontFace
                     return new FontFace(ptr);
             }
         }
+
+        /**
+         * This function returns the C type of a FontFace. See $(D FontType)
+         * for available types.
+         */
+        FontType getType()
+        {
+            auto tmp = cairo_font_face_get_type(this.nativePointer);
+            checkError();
+            return tmp;
+        }
 }
 
+/**
+ * Cairo toy font api's FontFace
+ */
 public class ToyFontFace : FontFace
 {
     public:
-        /* Warning: ptr reference count is not increased by this function!
-         * Adjust reference count before calling it if necessary*/
+        /**
+         * Create a $(D ToyFontFace) from a existing $(D cairo_font_face_t*).
+         * ToyFontFace is a garbage collected class. It will call $(D cairo_surface_destroy)
+         * when it gets collected by the GC or when $(D dispose()) is called.
+         *
+         * Warning:
+         * $(D ptr)'s reference count is not increased by this function!
+         * Adjust reference count before calling it if necessary
+         *
+         * $(RED Only use this if you know what your doing!
+         * This function should not be needed for standard cairoD usage.)
+         */
         this(cairo_font_face_t* ptr)
         {
             super(ptr);
         }
 
+        /**
+         * Creates a font face from a triplet of family, slant, and weight.
+         * These font faces are used in implementation of the the cairo "toy" font API.
+         *
+         * If family is the zero-length string "", the platform-specific
+         * default family is assumed. The default family then
+         * can be queried using $(D getFamily()).
+         *
+         * The $(D Context.selectFontFace()) function uses this to create
+         * font faces. See that function for limitations and
+         * other details of toy font faces.
+         */
         this(string family, FontSlant slant, FontWeight weight)
         {
             super(cairo_toy_font_face_create(toStringz(family), slant, weight));
         }
 
+        /**
+         * Gets the familly name of a toy font.
+         */
         string getFamily()
         {
             auto ptr = cairo_toy_font_face_get_family(this.nativePointer);
@@ -4614,6 +4959,9 @@ public class ToyFontFace : FontFace
             return to!string(ptr);
         }
 
+        /**
+         * Gets the slant a toy font.
+         */
         FontSlant getSlant()
         {
             auto res = cairo_toy_font_face_get_slant(this.nativePointer);
@@ -4621,6 +4969,9 @@ public class ToyFontFace : FontFace
             return res;
         }
 
+        /**
+         * Gets the weight of a toy font.
+         */
         FontWeight getWeight()
         {
             auto res = cairo_toy_font_face_get_weight(this.nativePointer);
@@ -4629,11 +4980,20 @@ public class ToyFontFace : FontFace
         }
 }
 
+/**
+ * Cairo version information
+ */
 public struct Version
 {
     public:
-        uint major, minor, micro;
+        ///Major, Minor and Micro versions
+        uint major;
+        uint minor; ///ditto
+        uint micro; ///ditto
 
+        /**
+         * Construct a version object from a encoded version.
+         */
         this(ulong encoded)
         {
             this.major = cast(uint)(encoded / 10000);
@@ -4641,26 +5001,47 @@ public struct Version
             this.micro = cast(uint)((encoded % 10000) % 100);
         }
 
+        /**
+         * Construct a version object from version components.
+         */
         this(uint major, uint minor, uint micro)
         {
             this.major = major;
             this.minor = minor;
             this.micro = micro;
         }
-    
+
+        /**
+         * Return the (runtime) version of the used cairo
+         * library.
+         */
         static @property Version cairoVersion()
         {
-            return Version(cairo_version);
+            return Version(cairo_version());
         }
-    
+
+        /**
+         * Returns the (compile time) version of this binding / wrapper. 
+         */
         static @property Version bindingVersion()
         {
             return Version(CAIRO_VERSION_MAJOR, CAIRO_VERSION_MINOR,
                 CAIRO_VERSION_MICRO);
         }
 
+        /**
+         * Returns the version in encoded form.
+         */
         ulong encode()
         {
             return CAIRO_VERSION_ENCODE(major, minor, micro);
+        }
+
+        /**
+         * toString implementation
+         */
+        string toString()
+        {
+            return CAIRO_VERSION_STRINGIZE(major, minor, micro);
         }
 }

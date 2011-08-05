@@ -20,31 +20,66 @@
  */
 module cairo.util;
 
+/**
+ * Mixin used by cairoD classes which wrap a reference counted
+ * cairo handle.
+ */
 mixin template CairoCountedClass(T, string prefix)
 {
     protected:
+        /**
+         * Reference count. For use in child classes
+         */
         @property uint _count()
         {
             mixin("return " ~ prefix ~ "get_reference_count(this.nativePointer);");
         }
 
+        /**
+         * Increase reference count. For use in child classes
+         */
         void _reference()
         {
             mixin(prefix ~ "reference(this.nativePointer);");
         }
 
+        /**
+         * Decrease reference count. For use in child classes
+         */
         void _dereference()
         {
             mixin(prefix ~ "destroy(this.nativePointer);");
         }
     
     public:
+        /**
+         * The underlying $(T) handle
+         */
         T nativePointer;
-        debug(RefCounted)
+        version(D_Ddoc)
+        {
+            /**
+             * Enable / disable memory management debugging for this
+             * instance. Only available if both cairoD and the cairoD user
+             * code were compiled with "debug=RefCounted"
+             *
+             * Output is written to stdout, see 
+             * $(LINK https://github.com/jpf91/cairoD/wiki/Memory-Management#debugging)
+             * for more information
+             */
+            bool debugging;
+        }
+        else debug(RefCounted)
         {
             bool debugging;
         }
-        
+
+        /**
+         * Explicitly drecrease the reference count.
+         *
+         * See $(LINK https://github.com/jpf91/cairoD/wiki/Memory-Management#3-RC-class)
+         * for more information.
+         */
         void dispose()
         {
             debug(RefCounted)
@@ -67,6 +102,9 @@ mixin template CairoCountedClass(T, string prefix)
             }
         }
 
+        /**
+         * Destructor. Call $(D dispose()) if it hasn't been called manually.
+         */
         ~this()
         {
             debug(RefCounted)

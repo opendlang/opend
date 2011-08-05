@@ -30,14 +30,28 @@ version(CAIRO_HAS_XCB_SURFACE)
 {
     import cairo.c.xcb;
 
+    ///
     public class XCBSurface : Surface
     {
         public:
+            /**
+             * Create a $(D XCBSurface) from a existing $(D cairo_surface_t*).
+             * XCBSurface is a garbage collected class. It will call $(D cairo_surface_destroy)
+             * when it gets collected by the GC or when $(D dispose()) is called.
+             *
+             * Warning:
+             * $(D ptr)'s reference count is not increased by this function!
+             * Adjust reference count before calling it if necessary
+             *
+             * $(RED Only use this if you know what your doing!
+             * This function should not be needed for standard cairoD usage.)
+             */
             this(cairo_surface_t* ptr)
             {
                 super(ptr);
             }
 
+            ///
             this(xcb_connection_t* connection, xcb_drawable_t drawable,
                 xcb_visualtype_t* visual, int width, int height)
             {
@@ -45,6 +59,7 @@ version(CAIRO_HAS_XCB_SURFACE)
                       visual, width, height));
             }
 
+            ///
             this(xcb_connection_t* connection, xcb_screen_t* screen,
                 xcb_pixmap_t bitmap, int width, int height)
             {
@@ -52,6 +67,7 @@ version(CAIRO_HAS_XCB_SURFACE)
                       bitmap, width, height));
             }
 
+            ///
             this(xcb_connection_t* connection, xcb_screen_t* screen,
                 xcb_drawable_t drawable, xcb_render_pictforminfo_t* format,
                 int width, int height)
@@ -60,6 +76,7 @@ version(CAIRO_HAS_XCB_SURFACE)
                       screen, drawable, format, width, height));
             }
 
+            ///
             void setSize(int width, int height)
             {
                 cairo_xcb_surface_set_size(this.nativePointer, width, height);

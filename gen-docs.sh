@@ -11,4 +11,10 @@ dmd ../doc/cairo.ddoc -c -o- -wi -D -Dd../doc/generated/ -Dfcairo_c_xcb.html -I.
 
 dmd ../doc/cairo.ddoc -c -o- -wi -D -Dd../doc/generated/ -Dfcairo_util.html -I../../WindowsAPI $VERSIONS cairo/util.d
 dmd ../doc/cairo.ddoc -c -o- -wi -D -Dd../doc/generated/ -Dfcairo_cairo.html -I../../WindowsAPI $VERSIONS cairo/cairo.d
+dmd ../doc/cairo.ddoc -c -o- -wi -D -Dd../doc/generated/ -Dfcairo_directfb.html -I../../WindowsAPI $VERSIONS cairo/directfb.d
+dmd ../doc/cairo.ddoc -c -o- -wi -D -Dd../doc/generated/ -Dfcairo_pdf.html -I../../WindowsAPI $VERSIONS cairo/pdf.d
+dmd ../doc/cairo.ddoc -c -o- -wi -D -Dd../doc/generated/ -Dfcairo_ps.html -I../../WindowsAPI $VERSIONS cairo/ps.d
+dmd ../doc/cairo.ddoc -c -o- -wi -D -Dd../doc/generated/ -Dfcairo_svg.html -I../../WindowsAPI $VERSIONS cairo/svg.d
+dmd ../doc/cairo.ddoc -c -o- -wi -D -Dd../doc/generated/ -Dfcairo_win32.html -I../../WindowsAPI $VERSIONS cairo/win32.d
+dmd ../doc/cairo.ddoc -c -o- -wi -D -Dd../doc/generated/ -Dfcairo_xcb.html -I../../WindowsAPI $VERSIONS cairo/xcb.d
 cd ../
