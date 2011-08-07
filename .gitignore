@@ -4,6 +4,9 @@ libcairod.a
 #Ignore object files
 *.o
 
+#Ignore core files
+core
+
 #Ignore example binaries
 example/*/main
 
