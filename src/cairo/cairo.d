@@ -71,6 +71,10 @@ version(CAIRO_HAS_DIRECTFB_SURFACE)
 {
     import cairo.directfb;
 }
+version(CAIRO_HAS_FT_FONT)
+{
+    import cairo.ft;
+}
 
 /**
  * Mainly used internally by cairoD.
@@ -4562,6 +4566,11 @@ public class ScaledFont
                     case cairo_font_type_t.CAIRO_FONT_TYPE_WIN32:
                         return new Win32ScaledFont(ptr);
                 }
+                version(CAIRO_HAS_FT_FONT)
+                {
+                    case cairo_font_type_t.CAIRO_FONT_TYPE_FT:
+                        return new FTScaledFont(ptr);
+                }
                 default:
                     return new ScaledFont(ptr);
             }
@@ -4891,6 +4900,11 @@ public class FontFace
                 {
                     case cairo_font_type_t.CAIRO_FONT_TYPE_WIN32:
                         return new Win32FontFace(ptr);
+                }
+                version(CAIRO_HAS_FT_FONT)
+                {
+                    case cairo_font_type_t.CAIRO_FONT_TYPE_FT:
+                        return new FTFontFace(ptr);
                 }
                 default:
                     return new FontFace(ptr);
