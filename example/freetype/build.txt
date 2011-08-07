@@ -1,3 +1,2 @@
 ## Basic build command
-dmd main.d -I../../src -version=CAIRO_HAS_PNG_FUNCTIONS -L-lcairod -L-lcairo -L-L../../
 dmd main.d -I../../src -I../../../Derelict2/import -version=CAIRO_HAS_FT_FONT -version=CAIRO_HAS_PNG_FUNCTIONS -L-lcairo -L-lfreetype -L-lDerelictFT -L-lDerelictUtil -L-L../../ -L-lcairod -L-L../../../Derelict2/lib
