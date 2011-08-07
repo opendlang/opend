@@ -36,26 +36,33 @@
  */
 module dstats.base;
 
-import std.math, std.traits, std.typecons, std.algorithm, std.range,
-    std.exception, std.conv, std.functional, std.typetuple;
+import std.math, std.mathspecial, std.traits, std.typecons, std.algorithm,
+    std.range, std.exception, std.conv, std.functional, std.typetuple;
 
 import dstats.alloc, dstats.sort;
 
 import std.string : strip;
 
-immutable double[] logFactorialTable;
+version(GNU) {
+    // Workaround for GDC issue 214
+    private enum size_t staticFacTableLen = 1;
+    immutable double[1] logFactorialTable = 0;
+} else {
 
-private enum size_t staticFacTableLen = 10_000;
+    immutable double[] logFactorialTable;
 
-shared static this() {
-    // Allocating on heap instead of static data segment to avoid
-    // false pointer GC issues.
-    double[] sfTemp = new double[staticFacTableLen];
-    sfTemp[0] = 0;
-    for(uint i = 1; i < staticFacTableLen; i++) {
-        sfTemp[i] = sfTemp[i - 1] + log(i);
+    private enum size_t staticFacTableLen = 10_000;
+
+    shared static this() {
+        // Allocating on heap instead of static data segment to avoid
+        // false pointer GC issues.
+        double[] sfTemp = new double[staticFacTableLen];
+        sfTemp[0] = 0;
+        for(uint i = 1; i < staticFacTableLen; i++) {
+            sfTemp[i] = sfTemp[i - 1] + log(i);
+        }
+        logFactorialTable = assumeUnique(sfTemp);
     }
-    logFactorialTable = assumeUnique(sfTemp);
 }
 
 version(unittest) {
@@ -884,7 +891,7 @@ double logFactorial(ulong n) {
     //Input is uint, can't be less than 0, no need to check.
     if(n < staticFacTableLen) {
         return logFactorialTable[cast(size_t) n];
-    } else return lgamma(n + 1);
+    } else return logGamma(n + 1);
 }
 
 unittest {

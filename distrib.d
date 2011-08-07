@@ -798,7 +798,7 @@ double chiSquarePDF(double x, double v) {
     // Calculate in log space for stability.
     immutable logX = log(x);
     immutable numerator = logX * (0.5 * v - 1) - 0.5 * x;
-    immutable denominator = LN2 * (0.5 * v) + lgamma(0.5 * v);
+    immutable denominator = LN2 * (0.5 * v) + logGamma(0.5 * v);
     return exp(numerator - denominator);
 }
 
@@ -1223,7 +1223,7 @@ double rayleighCDF(double x, double mode) {
 double studentsTPDF(double t, double df) {
     dstatsEnforce(df > 0, "Student's T must have >0 degrees of freedom.");
 
-    immutable logPart = lgamma(0.5 * df + 0.5) - lgamma(0.5 * df);
+    immutable logPart = logGamma(0.5 * df + 0.5) - logGamma(0.5 * df);
     immutable term1 = exp(logPart) / sqrt(df * PI);
     immutable term2 = (1.0 + t / df * t) ^^ (-0.5 * df - 0.5);
     return term1 * term2;
@@ -1603,7 +1603,7 @@ double gammaPDF(double x, double rate, double shape) {
     immutable scale = 1.0 / rate;
     immutable firstPart = x ^^ (shape - 1);
     immutable logNumer = -x / scale;
-    immutable logDenom = lgamma(shape) + shape * log(scale);
+    immutable logDenom = logGamma(shape) + shape * log(scale);
     return firstPart * exp(logNumer - logDenom);
 }
 
@@ -1731,11 +1731,11 @@ is(ElementType!A : double)) {
 
     foreach(a; alpha.save) {
         dstatsEnforce(a > 0, "All alpha values must be > 0 for Dirichlet distribution.");
-        logNormalizer += lgamma(a);
+        logNormalizer += logGamma(a);
         sumAlpha += a;
     }
 
-    logNormalizer -= lgamma(sumAlpha);
+    logNormalizer -= logGamma(sumAlpha);
     double sum = 0;
     foreach(xElem, a; lockstep(x, alpha)) {
         dstatsEnforce(xElem > 0, "All x values must be > 0 for Dirichlet distribution.");
