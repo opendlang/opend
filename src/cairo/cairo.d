@@ -75,6 +75,10 @@ version(CAIRO_HAS_FT_FONT)
 {
     import cairo.ft;
 }
+version(CAIRO_HAS_XLIB_SURFACE)
+{
+    import cairo.xlib;
+}
 
 /**
  * Mainly used internally by cairoD.
@@ -1592,6 +1596,11 @@ public class Surface
                 {
                     case cairo_surface_type_t.CAIRO_SURFACE_TYPE_DIRECTFB:
                         return new DirectFBSurface(ptr);
+                }
+                version(CAIRO_HAS_XLIB_SURFACE)
+                {
+                    case cairo_surface_type_t.CAIRO_SURFACE_TYPE_XLIB:
+                        return new XlibSurface(ptr);
                 }
                 default:
                     return new Surface(ptr);

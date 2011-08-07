@@ -78,6 +78,7 @@ NAVIGATION_PHOBOS=
     $(LI <a href="cairo_win32.html" title="">cairo.win32</a>)
     $(LI <a href="cairo_xcb.html" title="">cairo.xcb</a>)
     $(LI <a href="cairo_ft.html" title="">cairo.ft</a>)
+    $(LI <a href="cairo_xlib.html" title="">cairo.xlib</a>)
     $(LI <a href="cairo_util.html" title="">cairo.util</a>)
     )
     <h2><a href="" title="cairo D bindings">cairo.c</a></h2>
@@ -90,6 +91,7 @@ NAVIGATION_PHOBOS=
     $(LI <a href="cairo_c_win32.html" title="">cairo.c.win32</a>)
     $(LI <a href="cairo_c_xcb.html" title="">cairo.c.xcb</a>)
     $(LI <a href="cairo_c_ft.html" title="">cairo.c.ft</a>)
+    $(LI <a href="cairo_c_xlib.html" title="">cairo.c.xlib</a>)
     )
 </div>
 

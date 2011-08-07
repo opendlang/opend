@@ -11,6 +11,7 @@ dmd cairo/c/cairo.d cairo/c/pdf.d cairo/c/svg.d cairo/c/xcb.d cairo/c/directfb.d
 * CAIRO_HAS_PNG_FUNCTIONS
 * CAIRO_HAS_WIN32_FONT
 * CAIRO_HAS_FT_FONT
+* CAIRO_HAS_XLIB_SURFACE
 
 ## Available debug switches
 * RefCounted (See <https://github.com/jpf91/cairoD/wiki/Memory-Management#debugging>)
@@ -26,3 +27,8 @@ dmd cairo/c/cairo.d cairo/c/pdf.d cairo/c/svg.d cairo/c/xcb.d cairo/c/directfb.d
 ## External libraries ##
 [WindowsAPI](http://dsource.org/projects/bindings/wiki/WindowsApi) for Win32 Surface/Font support
 [Derelict](http://www.dsource.org/projects/derelict) for FreeType Font support
+[Xlib](www.dsource.org/projects/bindings/browser/trunk/X11) for xlib support
+
+Warning: The xlib bindings are currently not working.
+For example most if not all 'long's have to be changed to 'c_long'
+and 'ulong's to 'c_ulong' in the xlib bindings!
