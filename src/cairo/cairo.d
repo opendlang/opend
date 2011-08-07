@@ -185,6 +185,14 @@ public struct Rectangle
         this.width = width;
         this.height = height;
     }
+    ///ditto
+    public this(double x, double y, double width, double height)
+    {
+        this.point.x = x;
+        this.point.y = y;
+        this.width = width;
+        this.height = height;
+    }
 
     ///TOP-LEFT point of the rectangle
     Point point;
@@ -227,6 +235,14 @@ public struct Box
     {
         this.point1 = point1;
         this.point2 = point2;
+    }
+    ///
+    public this(double x1, double y1, double x2, double y2)
+    {
+        this.point1.x = x1;
+        this.point1.y = y1;
+        this.point2.x = x2;
+        this.point2.y = y2;
     }
     ///Top-left point
     Point point1;
@@ -1234,6 +1250,11 @@ public class LinearGradient : Gradient
         {
             super(cairo_pattern_create_linear(p1.x, p1.y, p2.x, p2.y));
         }
+        ///ditto
+        this(double x1, double y1, double x2, double y2)
+        {
+            super(cairo_pattern_create_linear(x1, y1, x2, y2));
+        }
 
         /**
          * Gets the gradient endpoints for a linear gradient.
@@ -1298,6 +1319,11 @@ public class RadialGradient : Gradient
         this(Point c0, double radius0, Point c1, double radius1)
         {
             super(cairo_pattern_create_radial(c0.x, c0.y, radius0, c1.x, c1.y, radius1));
+        }
+        ///ditto
+        this(double c0x, double c0y, double radius0, double c1x, double c1y, double radius1)
+        {
+            super(cairo_pattern_create_radial(c0x, c0y, radius0, c1x, c1y, radius1));
         }
 
         /**
@@ -2624,6 +2650,12 @@ public struct Context
             cairo_set_source_surface(this.nativePointer, sur.nativePointer, x, y);
             checkError();
         }
+        ///ditto
+        void setSourceSurface(Surface sur, Point p1)
+        {
+            cairo_set_source_surface(this.nativePointer, sur.nativePointer, p1.x, p1.y);
+            checkError();
+        }
 
         /**
          * Gets the current source pattern for cr.
@@ -3145,6 +3177,12 @@ public struct Context
             cairo_mask_surface(this.nativePointer, surface.nativePointer, location.x, location.y);
             checkError();
         }
+        ///ditto
+        void maskSurface(Surface surface, double x, double y)
+        {
+            cairo_mask_surface(this.nativePointer, surface.nativePointer, x, y);
+            checkError();
+        }
 
         /**
          * A drawing operator that paints the current source everywhere
@@ -3263,6 +3301,13 @@ public struct Context
             scope(exit)
                 checkError();
             return cairo_in_stroke(this.nativePointer, point.x, point.y) ? true : false;
+        }
+        ///ditto
+        bool inStroke(double x, double y)
+        {
+            scope(exit)
+                checkError();
+            return cairo_in_stroke(this.nativePointer, x, y) ? true : false;
         }
 
         /**
@@ -3515,6 +3560,12 @@ public struct Context
             cairo_arc(this.nativePointer, center.x, center.y, radius, angle1, angle2);
             checkError();
         }
+        ///ditto
+        void arc(double centerX, double centerY, double radius, double angle1, double angle2)
+        {
+            cairo_arc(this.nativePointer, centerX, centerY, radius, angle1, angle2);
+            checkError();
+        }
 
         /**
          * Adds a circular arc of the given radius to the current path.
@@ -3534,6 +3585,12 @@ public struct Context
         void arcNegative(Point center, double radius, double angle1, double angle2)
         {
             cairo_arc_negative(this.nativePointer, center.x, center.y, radius, angle1, angle2);
+            checkError();
+        }
+        ///ditto
+        void arcNegative(double centerX, double centerY, double radius, double angle1, double angle2)
+        {
+            cairo_arc_negative(this.nativePointer, centerX, centerY, radius, angle1, angle2);
             checkError();
         }
 
@@ -3556,6 +3613,13 @@ public struct Context
             cairo_curve_to(this.nativePointer, p1.x, p1.y, p2.x, p2.y, p3.x, p3.y);
             checkError();
         }
+        ///ditto
+        void curveTo(double p1x, double p1y, double p2x, double p2y,
+            double p3x, double p3y)
+        {
+            cairo_curve_to(this.nativePointer, p1x, p1y, p2x, p2y, p3x, p3y);
+            checkError();
+        }
 
         /**
          * Adds a line to the path from the current point to position p1
@@ -3573,6 +3637,12 @@ public struct Context
             cairo_line_to(this.nativePointer, p1.x, p1.y);
             checkError();
         }
+        ///ditto
+        void lineTo(double x, double y)
+        {
+            cairo_line_to(this.nativePointer, x, y);
+            checkError();
+        } 
 
         /**
          * Begin a new sub-path. After this call the current point will be p1.
@@ -3580,6 +3650,12 @@ public struct Context
         void moveTo(Point p1)
         {
             cairo_move_to(this.nativePointer, p1.x, p1.y);
+            checkError();
+        }
+        ///ditto
+        void moveTo(double x, double y)
+        {
+            cairo_move_to(this.nativePointer, x, y);
             checkError();
         }
 
@@ -3598,6 +3674,12 @@ public struct Context
         void rectangle(Rectangle r)
         {
             cairo_rectangle(this.nativePointer, r.point.x, r.point.y, r.width, r.height);
+            checkError();
+        }
+        ///ditto
+        void rectangle(double x, double y, double width, double height)
+        {
+            cairo_rectangle(this.nativePointer, x, y, width, height);
             checkError();
         }
 
@@ -3666,6 +3748,13 @@ public struct Context
             cairo_rel_curve_to(this.nativePointer, rp1.x, rp1.y, rp2.x, rp2.y, rp3.x, rp3.y);
             checkError();
         }
+        ///ditto
+        void relCurveTo(double rp1x, double rp1y, double rp2x, double rp2y,
+            double rp3x, double rp3y)
+        {
+            cairo_rel_curve_to(this.nativePointer, rp1x, rp1y, rp2x, rp2y, rp3x, rp3y);
+            checkError();
+        }
 
         /**
          * Relative-coordinate version of $(D lineTo()). Adds a line
@@ -3685,6 +3774,12 @@ public struct Context
             cairo_rel_line_to(this.nativePointer, rp1.x, rp1.y);
             checkError();
         }
+        ///ditto
+        void relLineTo(double x, double y)
+        {
+            cairo_rel_line_to(this.nativePointer, x, y);
+            checkError();
+        }
 
         /**
          * Begin a new sub-path. After this call the current point will
@@ -3700,6 +3795,12 @@ public struct Context
         void relMoveTo(Point rp1)
         {
             cairo_rel_move_to(this.nativePointer, rp1.x, rp1.y);
+            checkError();
+        }
+        ///ditto
+        void relMoveTo(double x, double y)
+        {
+            cairo_rel_move_to(this.nativePointer, x, y);
             checkError();
         }
 
@@ -4712,6 +4813,11 @@ public class ScaledFont
             }
         }
         ///ditto
+        Glyph[] textToGlyphs(Point p1, string text, Glyph[] glyphBuffer = [])
+        {
+            return textToGlyphs(p1.x, p1.y, text, glyphBuffer);
+        }
+        ///ditto
         TextGlyph textToTextGlyph(double x, double y, string text, Glyph[] glyphBuffer = [],
             TextCluster[] clusterBuffer = [])
         {
@@ -4758,6 +4864,12 @@ public class ScaledFont
             res.text = text;
             res.flags = cFlags;
             return res;
+        }
+        ///ditto
+        TextGlyph textToTextGlyph(Point p1, string text, Glyph[] glyphBuffer = [],
+            TextCluster[] clusterBuffer = [])
+        {
+            return textToTextGlyph(p1.x, p1.y, text, glyphBuffer, clusterBuffer);
         }
 
         /**
