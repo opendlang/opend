@@ -1,0 +1,6 @@
+## Basic build command
+dmd main.d ../../../xlib/std/c/linux/X11/X.d ../../../xlib/std/c/linux/X11/Xlib.d -I../../src -I../../../xlib -version=CAIRO_HAS_XLIB_SURFACE -L-lcairod -L-lcairo -L-L../../
+
+## Note:
+Current XLIB bindings are flawed and don't work. See build.txt in the
+cairoD root directory for more information.
