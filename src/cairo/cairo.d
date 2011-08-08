@@ -282,6 +282,12 @@ public struct RGBA
     }
     ///
     public double red, green, blue, alpha;
+
+    ///convert RGBA struct to RGB struct. Alpha is discarded
+    public RGB opCast(RGB)()
+    {
+        return RGB(red, green, blue);
+    }
 }
 
 /**
@@ -298,6 +304,28 @@ public struct RGB
     }
     ///
     public double red, green, blue;
+
+    ///convert RGBA struct to RGB struct. Alpha is set to '1.0'
+    public RGBA opCast(RGBA)()
+    {
+        return RGBA(red, green, blue, 1);
+    }
+}
+
+unittest
+{
+    auto rgb1 = RGB(0.1, 0.2, 0.3);
+    auto rgba1 = cast(RGBA)rgb1;
+    assert(rgba1.red == rgb1.red);
+    assert(rgba1.green == rgb1.green);
+    assert(rgba1.blue == rgb1.blue);
+    assert(rgba1.alpha == 1.0);
+
+    auto rgba2 = RGBA(0.3, 0.2, 0.1, 0.5);
+    auto rgb2 = cast(RGB)rgba2;
+    assert(rgba2.red == rgb2.red);
+    assert(rgba2.green == rgb2.green);
+    assert(rgba2.blue == rgb2.blue);
 }
 
 /* From cairo binding documentation:
