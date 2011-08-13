@@ -1236,9 +1236,9 @@ private void coordDescent
         double maxRelError = 0;
         foreach(j, ref b; betas) {
             if(b == 0) {
-                residuals[] = (-predictions[] + y[]);
+                residuals[] = y[] - predictions[];
             } else {
-                residuals[] = (-predictions[] + x[j][] * b + y[]);
+                residuals[] = x[j][] * b - predictions[] + y[];
                 predictions[] -= x[j][] * b;
             }
 
@@ -1249,8 +1249,7 @@ private void coordDescent
                     z += weight * x[j][i] * residuals[i];
                 }
             } else {
-                residuals[] /= n;
-                z = dotProduct(residuals, x[j]);
+                z = dotProduct(residuals, x[j]) / n;
             }
 
             auto newB = softThresh(z, lasso * mul) /
