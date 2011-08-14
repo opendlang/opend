@@ -431,7 +431,7 @@ int rPoisson(RGen = Random)(double lam, ref RGen gen = rndGen) {
                 continue;
             }
             if ((log(V) + log(invalpha) - log(a/(us*us)+b)) <=
-                    (-lam + k*loglam - lgamma(k+1))) {
+                    (-lam + k*loglam - logGamma(k+1))) {
                 return k;
             }
         }
@@ -741,8 +741,8 @@ private int hypergeoHrua(RGen = Random)(int good, int bad, int sample, ref RGen 
     double d7 = sqrt((popsize - m) * sample * d4 *d5 / (popsize-1) + 0.5);
     double d8 = D1*d7 + D2;
     int d9 = cast(int)floor(cast(double)((m+1)*(mingoodbad+1))/(popsize+2));
-    double d10 = (lgamma(d9+1) + lgamma(mingoodbad-d9+1) + lgamma(m-d9+1) +
-                lgamma(maxgoodbad-m+d9+1));
+    double d10 = (logGamma(d9+1) + logGamma(mingoodbad-d9+1) + logGamma(m-d9+1) +
+                logGamma(maxgoodbad-m+d9+1));
     double d11 = min(min(m, mingoodbad)+1.0, floor(d6+16*d7));
     /* 16 for 16-decimal-digit precision in D1 and D2 */
 
@@ -755,8 +755,8 @@ private int hypergeoHrua(RGen = Random)(int good, int bad, int sample, ref RGen 
         if ((W < 0.0) || (W >= d11)) continue;
 
         Z = cast(int)floor(W);
-        T = d10 - (lgamma(Z+1) + lgamma(mingoodbad-Z+1) + lgamma(m-Z+1) +
-                   lgamma(maxgoodbad-m+Z+1));
+        T = d10 - (logGamma(Z+1) + logGamma(mingoodbad-Z+1) + logGamma(m-Z+1) +
+                   logGamma(maxgoodbad-m+Z+1));
 
         /* fast acceptance: */
         if ((X*(4.0-X)-3.0) <= T) break;
