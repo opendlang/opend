@@ -231,6 +231,44 @@ unittest
 }
 
 /**
+ * A simple struct representing a size with only $(D int) values
+ */
+public struct Size(T) if (is(T == int))
+{
+    ///
+    public this(int width, int height)
+    {
+        this.width = width;
+        this.height = height;
+    }
+
+    ///
+    int width, height;
+}
+
+/**
+ * A simple struct representing a size with $(D double) values
+ */
+public struct Size(T) if (is(T == double))
+{
+    ///
+    public this(double width, double height)
+    {
+        this.width = width;
+        this.height = height;
+    }
+
+    ///
+    double width, height;
+}
+
+unittest
+{
+    auto a = Size!int(10, 10);
+    auto b = Size!double(5, 5);
+}
+
+/**
  * A simple struct representing a box.
  * Used for Extents.
  */
