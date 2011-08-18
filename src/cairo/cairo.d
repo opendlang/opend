@@ -176,7 +176,7 @@ public struct Point
 /**
  * A simple struct representing a rectangle
  */
-public struct Rectangle
+public struct Rectangle(T) if (is(T == double))
 {
     ///
     public this(Point point, double width, double height)
@@ -205,7 +205,7 @@ public struct Rectangle
 /**
  * A simple struct representing a rectangle with only $(D int) values
  */
-public struct RectangleInt
+public struct Rectangle(T) if (is(T == int))
 {
     ///
     public this(int x, int y, int width, int height)
@@ -222,6 +222,12 @@ public struct RectangleInt
     int y;
     ///
     int width, height;
+}
+
+unittest
+{
+    auto a = Rectangle!int(1, 1, 4, 4);
+    auto b = Rectangle(0.99, 0.99, 3.99, 3.99);
 }
 
 /**
@@ -1715,7 +1721,7 @@ public class Surface
          * target = an existing surface for which the sub-surface will point to
          * rect = location of the subsurface
          */
-        static Surface createForRectangle(Surface target, Rectangle rect)
+        static Surface createForRectangle(Surface target, Rectangle!double rect)
         {
             return createFromNative(cairo_surface_create_for_rectangle(target.nativePointer,
                 rect.point.x, rect.point.y, rect.width, rect.height), false);
@@ -1821,7 +1827,7 @@ public class Surface
         }
 
         ///ditto
-        void markDirtyRectangle(RectangleInt rect)
+        void markDirtyRectangle(Rectangle!int rect)
         {
             cairo_surface_mark_dirty_rectangle(this.nativePointer, rect.x,
                 rect.y, rect.width, rect.height);
@@ -3107,9 +3113,9 @@ public struct Context
          * Gets the current clip region as a list of rectangles in user
          * coordinates.
          */
-        Rectangle[] copyClipRectangles()
+        Rectangle!(double)[] copyClipRectangles()
         {
-            Rectangle[] list;
+            Rectangle!(double)[] list;
             auto nList = cairo_copy_clip_rectangle_list(this.nativePointer);
             scope(exit)
                 cairo_rectangle_list_destroy(nList);
@@ -3711,7 +3717,7 @@ public struct Context
          * cr.closePath();
          * ---------------------
          */
-        void rectangle(Rectangle r)
+        void rectangle(Rectangle!double r)
         {
             cairo_rectangle(this.nativePointer, r.point.x, r.point.y, r.width, r.height);
             checkError();
