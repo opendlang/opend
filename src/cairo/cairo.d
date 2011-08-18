@@ -855,7 +855,7 @@ public class Pattern
          * Calls $(D cairo_pattern_status(nativePointer)) and throws
          * an exception if the status isn't CAIRO_STATUS_SUCCESS
          */
-        void checkError()
+        final void checkError()
         {
             throwError(cairo_pattern_status(nativePointer));
         }
@@ -1483,7 +1483,7 @@ public class Device
          * Calls $(D cairo_device_status(nativePointer)) and throws
          * an exception if the status isn't CAIRO_STATUS_SUCCESS
          */
-        void checkError()
+        final void checkError()
         {
             throwError(cairo_device_status(nativePointer));
         }
@@ -1624,7 +1624,7 @@ public class Surface
          * Calls $(D cairo_surface_status(nativePointer)) and throws
          * an exception if the status isn't CAIRO_STATUS_SUCCESS
          */
-        void checkError()
+        final void checkError()
         {
             throwError(cairo_surface_status(nativePointer));
         }
@@ -2434,7 +2434,7 @@ public struct Context
 
 
     protected:
-        void checkError()
+        final void checkError()
         {
             throwError(cairo_status(nativePointer));
         }
@@ -4430,7 +4430,7 @@ public struct FontOptions
         Data _data;
     
     protected:
-        void checkError()
+        final void checkError()
         {
             throwError(cairo_font_options_status(nativePointer));
         }
@@ -4695,7 +4695,7 @@ public class ScaledFont
          * Calls $(D cairo_scaled_font_status(nativePointer)) and throws
          * an exception if the status isn't CAIRO_STATUS_SUCCESS
          */
-        void checkError()
+        final void checkError()
         {
             throwError(cairo_scaled_font_status(nativePointer));
         }
@@ -5060,7 +5060,7 @@ public class FontFace
          * Calls $(D cairo_font_face_status(nativePointer)) and throws
          * an exception if the status isn't CAIRO_STATUS_SUCCESS
          */
-        void checkError()
+        final void checkError()
         {
             throwError(cairo_font_face_status(nativePointer));
         }
