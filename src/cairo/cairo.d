@@ -645,6 +645,12 @@ public struct Matrix
             cairo_matrix_init_scale(&this.nativeMatrix, sx, sy);
         }
 
+        ///ditto
+        void initScale(Point point)
+        {
+            initScale(point.x, point.y);
+        }
+
         /**
          * Initialized matrix to a transformation that rotates by radians.
          *
@@ -688,6 +694,12 @@ public struct Matrix
         void scale(double sx, double sy)
         {
             cairo_matrix_scale(&this.nativeMatrix, sx, sy);
+        }
+
+        ///ditto
+        void scale(Point point)
+        {
+            scale(point.x, point.y);
         }
 
         /**
@@ -3896,6 +3908,12 @@ public struct Context
         {
             cairo_scale(this.nativePointer, sx, sy);
             checkError();
+        }
+
+        ///ditto
+        void scale(Point point)
+        {
+            scale(point.x, point.y);
         }
 
         /**
