@@ -133,7 +133,7 @@ private void rangeMatrixMulTrans(U, T...)
     }
 
     auto alloc2 = newRegionAllocator();
-    auto deltas = alloc.uninitializedArray!(double[])(mat.length);
+    auto deltas = alloc2.uninitializedArray!(double[])(mat.length);
 
     // Using an algorithm similar to the one for Pearson cor to improve
     // numerical stability.  Calculate means and covariances, then
@@ -1850,7 +1850,8 @@ double[] logisticRegressPenalized(Y, X...)
         }
     } else {
         enum bool tupleMode = true;
-        auto x = toRandomAccessTuple(xIn, alloc).expand;
+        auto xx = toRandomAccessTuple(xIn, alloc);
+        auto x = xx.expand;
     }
 
     auto betas = new double[x.length + 1];
@@ -1992,7 +1993,8 @@ LogisticRes logisticRegressImpl(T, V...)
             auto x = toRandomAccessRoR(y.length, alloc.array(xIn), alloc);
         }
     } else {
-        auto x = toRandomAccessTuple(xIn, alloc).expand;
+        auto xx = toRandomAccessTuple(xIn, alloc);
+        auto x = xx.expand;        
     }
 
     typeof(return) ret;

@@ -170,15 +170,13 @@ public:
     }
 }
 
-/**A hash table that allocates its memory on TempAlloc.  Good for building a
+/**A hash table that allocates its memory on RegionAllocator.  Good for building a
  * temporary hash tables that will not escape the current scope.
- *
- * To avoid TempAlloc memory leaks, use mixin(newFrame).
  *
  * Examples:
  * ---
- * auto alloc = newRegionAllocator();  // To make sure all memory gets freed at end of scope.
- * auto ss = StackHash!(uint)(5);
+ * auto alloc = newRegionAllocator(); 
+ * auto ss = StackHash!(uint)(5, alloc);
  * foreach(i; 0..5) {
  *     ss[i]++;
  * }
@@ -187,7 +185,7 @@ public:
  *
  * Warning:
  * This implementation places removed nodes on an internal free list and
- * recycles them, since there is no way to delete TempAlloc-allocated data
+ * recycles them, since there is no way to delete RegionAllocator-allocated data
  * in a non-LIFO order.  Therefore, you may not retain the address of a
  * variable stored in a StackHash after deleting it from the StachHash.
  * For example, DO NOT do this:
@@ -213,7 +211,7 @@ private:
     size_t _length;
 
     // Tries to allocate off the free list.  Otherwise allocates off
-    // TempAlloc.
+    // RegionAllocator.
     Node* allocNode() {
         if(*freeList is null) {
             return cast(Node*) alloc.allocate(Node.sizeof);
@@ -270,7 +268,7 @@ private:
 
 
 public:
-    /**Due to the nature of TempAlloc, you must specify on object creation
+    /**Due to the nature of RegionAllocator, you must specify on object creation
      * the approximate number of elements your table will have.  Too large a
      * number will waste space and incur poor cache performance.  Too low a
      * number will make this struct perform like a linked list.  Generally,
@@ -588,15 +586,13 @@ unittest {
     }
 }
 
-/**A hash set that allocates its memory on TempAlloc.  Good for building a
+/**A hash set that allocates its memory on RegionAllocator.  Good for building a
  * temporary set that will not escape the current scope.
- *
- * To avoid TempAlloc memory leaks, use mixin(newFrame).
  *
  * Examples:
  * ---
- * auto alloc = newRegionAllocator();  // To make sure all memory gets freed at end of scope.
- * auto ss = StackSet!(uint)(5);
+ * auto alloc = newRegionAllocator(); 
+ * auto ss = StackSet!(uint)(5, alloc);
  * foreach(i; 0..5) {
  *     ss.insert(i);
  * }
@@ -634,7 +630,7 @@ private:
     }
 
     // Tries to allocate off the free list.  Otherwise allocates off
-    // TempAlloc.
+    // RegionAllocator.
     Node* allocNode() {
         if(*freeList is null) {
             return cast(Node*) alloc.allocate(Node.sizeof);
@@ -675,7 +671,7 @@ private:
     }
 
 public:
-    /**Due to the nature of TempAlloc, you must specify on object creation
+    /**Due to the nature of RegionAllocator, you must specify on object creation
      * the approximate number of elements your set will have.  Too large a
      * number will waste space and incur poor cache performance.  Too low a
      * number will make this struct perform like a linked list.  Generally,
@@ -887,7 +883,7 @@ struct AVLNodeRealHeight(T) {
 }
 
 /* Store the height in the low order bits of the pointers to save space,
- * since TempAlloc allocates 16-byte aligned memory anyhow, but only if
+ * since RegionAllocator allocates 16-byte aligned memory anyhow, but only if
  * this would be smaller after considering alignment.
  */
 struct AVLNodeBitwise(T) {
@@ -970,7 +966,7 @@ private template GetAligned(uint size) {
     }
 }
 
-/**An AVL tree implementation on top of TempAlloc.  If elements are removed,
+/**An AVL tree implementation on top of RegionAllocator.  If elements are removed,
  * they are stored on an internal free list and recycled when new elements
  * are added to the tree.
  *
@@ -992,7 +988,8 @@ private template GetAligned(uint size) {
  *
  * // Create a StackTree of StringNums, sorted in descending order, using
  * // someString for comparison.
- * auto myTree = StackTree!(StringNum, "a.someString", "a > b")();
+ * auto alloc = newRegionAllocator();
+ * auto myTree = StackTree!(StringNum, "a.someString", "a > b")(alloc);
  *
  * // Add some elements.
  * myTree.insert( StringNum("foo", 1));
@@ -1008,7 +1005,7 @@ private template GetAligned(uint size) {
  *
  * Warning:
  * This implementation places removed nodes on an internal free list and
- * recycles them, since there is no way to delete TempAlloc-allocated data
+ * recycles them, since there is no way to delete RegionAllocator-allocated data
  * in a non-LIFO order.  Therefore, you may not retain the address of a
  * variable stored in a StackTree after deleting it from the StackTree.
  * For example, DO NOT do this:
