@@ -2398,9 +2398,6 @@ unittest {
     assert(approxEqual(res2.mutualInfo, 0.00538613));
 }
 
-// For converting between base e and base 2 logarithms.
-private enum loge2 = 0.69314718055994530941723212145817656807550013436025525412;
-
 // Pearson and likelihood ratio code are pretty much the same.  Factor out
 // the one difference into a function that's a template parameter.  However,
 // for API simplicity, this is hidden and they look like two separate functions.
@@ -2476,10 +2473,11 @@ private GTestRes testContingency(alias elemFun, T...)(T rangesIn) {
         return GTestRes(TestRes(0, 1), 0);
     }
 
-    immutable pVal = chiSquareCDFR(chiSq, (nRows - 1) * (nCols - 1));
+    immutable pVal = (chiSq >= 0) ?
+        chiSquareCDFR(chiSq, (nRows - 1) * (nCols - 1)) : double.nan;
 
-    // 1 / (2 * loge2), for converting chiSq to mutualInfo.
-    enum chiToMi = 1 / (2 * loge2);
+    // 1 / (2 * LN2), for converting chiSq to mutualInfo.
+    enum chiToMi = 1 / (2 * LN2);
 
     // This is the mutual information between the two random variables
     // represented by the contingency table, only if we're doing a G test.
@@ -2603,7 +2601,7 @@ if(isInputRange!T && isInputRange!U) {
     }
 
     ret.p = chiSquareCDFR(ret.testStat, xFreedom * yFreedom);
-    ret.mutualInfo = ret.testStat / (2 * loge2 * n);
+    ret.mutualInfo = ret.testStat / (2 * LN2 * n);
     return ret;
 }
 

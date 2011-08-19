@@ -2481,7 +2481,7 @@ auto toRandomAccessRoR(T)(size_t len, T ror, RegionAllocator alloc) {
 
         foreach(ref col; ret) {
             scope(exit) ror.popFront();
-            col = alloc.uninitializedArray!EE(len);
+            col = alloc.uninitializedArray!(EE[])(len);
 
             size_t i;
             foreach(elem; ror.front) {
