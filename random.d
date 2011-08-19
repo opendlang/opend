@@ -159,7 +159,7 @@ unittest {
  * ---
  */
 R[] randArray(R, alias randFun, Args...)(size_t N, Args args) {
-    auto ret = newVoid!(R)(N);
+    auto ret = uninitializedArray!(R[])(N);
     foreach(ref elem; ret) {
         elem = randFun(args);
     }
@@ -239,22 +239,22 @@ unittest {
 
     {
         auto norms = take(randRange!rNorm(0, 1, Random(unpredictableSeed)), 99);
-        auto arr1 = toArray(norms);
-        auto arr2 = toArray(norms);
+        auto arr1 = array(norms);
+        auto arr2 = array(norms);
         assert(arr1 == arr2);
     }
 
     {
         auto binomSmall = take(randRange!rBinomial(20, 0.5, Random(unpredictableSeed)), 99);
-        auto arr1 = toArray(binomSmall);
-        auto arr2 = toArray(binomSmall);
+        auto arr1 = array(binomSmall);
+        auto arr2 = array(binomSmall);
         assert(arr1 == arr2);
     }
 
     {
         auto binomLarge = take(randRange!rBinomial(20000, 0.4, Random(unpredictableSeed)), 99);
-        auto arr1 = toArray(binomLarge);
-        auto arr2 = toArray(binomLarge);
+        auto arr1 = array(binomLarge);
+        auto arr2 = array(binomLarge);
         assert(arr1 == arr2);
     }
     writeln("Passed RandRange test.");

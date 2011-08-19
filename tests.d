@@ -690,9 +690,9 @@ unittest {
 private TestRes anovaLevene(bool levene, bool welch, alias central,  T...)
 (T dataIn) {
     static if(dataIn.length == 1) {
-        mixin(newFrame);
-        auto data = tempdup(dataIn[0]);
-        auto withins = newStack!MeanSD(data.length);
+        auto alloc = newRegionAllocator();
+        auto data = alloc.array(dataIn[0]);
+        auto withins = alloc.uninitializedArray!(MeanSD[])(data.length);
         withins[] = MeanSD.init;
     } else {
         enum len = dataIn.length;
@@ -702,7 +702,7 @@ private TestRes anovaLevene(bool levene, bool welch, alias central,  T...)
 
     static if(levene) {
         static if(dataIn.length == 1) {
-            auto centers = newStack!double(data.length);
+            auto centers = alloc.uninitializedArray!(double[])(data.length);
         } else {
             double[len] centers;
         }
@@ -839,10 +839,9 @@ private TestRes anovaLevene(bool levene, bool welch, alias central,  T...)
 TestRes correlatedAnova(T...)(T dataIn)
 if(allSatisfy!(isInputRange, T)) {
     static if(dataIn.length == 1 && isInputRange!(typeof(dataIn[0].front))) {
-        mixin(newFrame);
-        auto data = tempdup(dataIn[0]);
-        auto withins = newStack!MeanSD(data.length);
-        withins[] = MeanSD.init;
+        auto alloc = newRegionAllocator();
+        auto data = alloc.array(dataIn[0]);
+        auto withins = alloc.newArray!(MeanSD[])(data.length);
     } else {
         enum len = dataIn.length;
         alias dataIn data;
@@ -947,13 +946,13 @@ unittest {
  */
 TestRes kruskalWallis(T...)(T dataIn)
 if(doubleInput!(typeof(dataIn[0].front)) || allSatisfy!(doubleInput, T)) {
-    mixin(newFrame);
+    auto alloc = newRegionAllocator();
     size_t N = 0;
 
     static if(dataIn.length == 1 && isInputRange!(typeof(dataIn[0].front))) {
-        auto data = tempdup(dataIn[0]);
+        auto data = alloc.array(dataIn[0]);
         alias ElementType!(typeof(data[0])) C;
-        static if(dstats.base.hasLength!(typeof(data[0]))) {
+        static if(hasLength!(typeof(data[0]))) {
             enum bool useLength = true;
         } else {
             enum bool useLength = false;
@@ -963,21 +962,21 @@ if(doubleInput!(typeof(dataIn[0].front)) || allSatisfy!(doubleInput, T)) {
         alias dataIn data;
         alias staticMap!(ElementType, T) Es;
         alias CommonType!(Es) C;
-        static if(allSatisfy!(dstats.base.hasLength, T)) {
+        static if(allSatisfy!(hasLength, T)) {
             enum bool useLength = true;
         } else {
             enum bool useLength = false;
         }
     }
 
-    size_t[] lengths = newStack!size_t(data.length);
+    size_t[] lengths = alloc.uninitializedArray!(size_t[])(data.length);
     static if(useLength) {
         foreach(i, rng; data) {
             auto rngLen = rng.length;
             lengths[i] = rngLen;
             N += rngLen;
         }
-        auto dataArray = newStack!(Unqual!C)(N);
+        auto dataArray = alloc.uninitializedArray!(Unqual!(C)[])(N);
         size_t pos = 0;
         foreach(rng; data) {
             foreach(elem; rng) {
@@ -995,7 +994,7 @@ if(doubleInput!(typeof(dataIn[0].front)) || allSatisfy!(doubleInput, T)) {
         auto dataArray = app.data;
     }
 
-    double[] ranks = newStack!double(dataArray.length);
+    double[] ranks = alloc.uninitializedArray!(double[])(dataArray.length);
     try {
         rankSort(dataArray, ranks);
     } catch(SortException) {
@@ -1089,12 +1088,11 @@ unittest {
 TestRes friedmanTest(T...)(T dataIn)
 if(doubleInput!(typeof(dataIn[0].front)) || allSatisfy!(doubleInput, T)) {
     static if(dataIn.length == 1 && isInputRange!(typeof(dataIn[0].front))) {
-        mixin(newFrame);
-        auto data = tempdup(dataIn[0]);
-        auto ranks = newStack!double(data.length);
-        auto dataPoints = newStack!double(data.length);
-        auto colMeans = newStack!Mean(data.length);
-        colMeans[] = Mean.init;
+        auto alloc = newRegionAllocator();
+        auto data = alloc.array(dataIn[0]);
+        auto ranks = alloc.uninitializedArray!(double[])(data.length);
+        auto dataPoints = alloc.uninitializedArray!(double[])(data.length);
+        auto colMeans = alloc.newArray!(Mean[])(data.length);
     } else {
         enum len = dataIn.length;
         alias dataIn data;
@@ -1201,14 +1199,14 @@ if(isInputRange!T && isInputRange!U &&
 is(typeof(sample1.front < sample2.front) == bool) &&
 is(CommonType!(ElementType!T, ElementType!U))) {
 
-    mixin(newFrame);
+    auto alloc = newRegionAllocator();
     alias Unqual!(CommonType!(ElementType!(T), ElementType!(U))) C;
 
-    static if(dstats.base.hasLength!T && dstats.base.hasLength!U) {
+    static if(hasLength!T && hasLength!U) {
         auto n1 = sample1.length, n2 = sample2.length, N = n1 + n2;
-        auto combined = newStack!(C)(N);
-        rangeCopy(combined[0..n1], sample1);
-        rangeCopy(combined[n1..$], sample2);
+        auto combined = alloc.uninitializedArray!(C[])(N);
+        copy(sample1, combined[0..n1]);
+        copy(sample2, combined[n1..$]);
     } else {
         auto app = appender!(C[])();
 
@@ -1226,7 +1224,7 @@ is(CommonType!(ElementType!T, ElementType!U))) {
         uint n2 = N - n1;
     }
 
-    double[] ranks = newStack!(double)(N);
+    double[] ranks = alloc.uninitializedArray!(double[])(N);
     try {
         rankSort(combined, ranks);
     } catch(SortException) {
@@ -1442,8 +1440,9 @@ private double wilcoxRSPExact(uint W, uint n1, uint n2, Alt alt = Alt.twoSided) 
 
     W += n1 * (n1 + 1) / 2UL;
 
-    float* cache = (newStack!(float)((n1 + 1) * (W + 1))).ptr;
-    float* cachePrev = (newStack!(float)((n1 + 1) * (W + 1))).ptr;
+    auto alloc = newRegionAllocator();
+    float* cache = (alloc.uninitializedArray!(float[])((n1 + 1) * (W + 1))).ptr;
+    float* cachePrev = (alloc.uninitializedArray!(float[])((n1 + 1) * (W + 1))).ptr;
     cache[0..(n1 + 1) * (W + 1)] = 0;
     cachePrev[0..(n1 + 1) * (W + 1)] = 0;
 
@@ -1490,8 +1489,7 @@ private double wilcoxRSPExact(uint W, uint n1, uint n2, Alt alt = Alt.twoSided) 
     foreach(w; 1..W + 1) {
         sum += (cast(double) lastLine[w] / floatMax);
     }
-    TempAlloc.free;
-    TempAlloc.free;
+
     return sum;
 }
 
@@ -1553,15 +1551,15 @@ is(typeof(before.front - after.front) : double)) {
         return 0;
     }
 
-    mixin(newFrame);
+    auto alloc = newRegionAllocator();
 
-    static if(dstats.base.hasLength!T && dstats.base.hasLength!U) {
+    static if(hasLength!T && hasLength!U) {
         dstatsEnforce(before.length == after.length,
             "Ranges must have same lengths for wilcoxonSignedRank.");
 
-        double[] diffRanks = newStack!(double)(before.length);
-        byte[] signs = newStack!(byte)(before.length);
-        double[] diffs = newStack!(double)(before.length);
+        double[] diffRanks = alloc.uninitializedArray!(double[])(before.length);
+        byte[] signs = alloc.uninitializedArray!(byte[])(before.length);
+        double[] diffs = alloc.uninitializedArray!(double[])(before.length);
 
         size_t ii = 0;
         while(!before.empty && !after.empty) {
@@ -1587,7 +1585,7 @@ is(typeof(before.front - after.front) : double)) {
 
         auto diffs = diffApp.data;
         auto signs = signApp.data;
-        diffRanks = newStack!double(diffs.length);
+        diffRanks = alloc.uninitializedArray!(double[])(diffs.length);
     }
     try {
         rankSort(diffs, diffRanks);
@@ -1780,8 +1778,9 @@ private double wilcoxSRPExact(uint W, uint N, Alt alt = Alt.twoSided) {
             assert(0);
     }
 
-    float* cache = (newStack!(float)((N + 1) * (W + 1))).ptr;
-    float* cachePrev = (newStack!(float)((N + 1) * (W + 1))).ptr;
+    auto alloc = newRegionAllocator();
+    float* cache = (alloc.uninitializedArray!(float[])((N + 1) * (W + 1))).ptr;
+    float* cachePrev = (alloc.uninitializedArray!(float[])((N + 1) * (W + 1))).ptr;
     cache[0..(N + 1) * (W + 1)] = 0;
     cachePrev[0..(N + 1) * (W + 1)] = 0;
 
@@ -1809,8 +1808,7 @@ private double wilcoxSRPExact(uint W, uint N, Alt alt = Alt.twoSided) {
     foreach(elem; cache[0..(N + 1) * (W + 1)]) {
         sum += cast(double) elem / (cast(double) float.max);
     }
-    TempAlloc.free;
-    TempAlloc.free;
+
     return sum;
 }
 
@@ -2166,19 +2164,19 @@ if(doubleInput!(T) && doubleInput!(U)) {
 double multinomialTest(U, F)(U countsIn, F proportions)
 if(isInputRange!U && isInputRange!F &&
    isIntegral!(ElementType!U) && isFloatingPoint!(ElementType!(F))) {
-    mixin(newFrame);
+    auto alloc = newRegionAllocator();
 
-    static if(isRandomAccessRange!U && dstats.base.hasLength!U) {
+    static if(isRandomAccessRange!U && hasLength!U) {
         alias countsIn counts;
     } else {
-        auto counts = tempdup(countsIn);
+        auto counts = alloc.array(countsIn);
     }
 
     uint N = sum(counts);
 
     double[] logPs;
     static if(std.range.hasLength!F) {
-        logPs = newStack!double(proportions.length);
+        logPs = alloc.uninitializedArray!(double[])(proportions.length);
         size_t pIndex;
         foreach(p; proportions) {
             logPs[pIndex++] = p;
@@ -2197,7 +2195,7 @@ if(isInputRange!U && isInputRange!F &&
     }
 
 
-    double[] logs = newStack!double(N + 1);
+    double[] logs = alloc.uninitializedArray!(double[])(N + 1);
     logs[0] = 0;
     foreach(i; 1..logs.length) {
         logs[i] = log(i);
@@ -2407,10 +2405,10 @@ private enum loge2 = 0.69314718055994530941723212145817656807550013436025525412;
 // the one difference into a function that's a template parameter.  However,
 // for API simplicity, this is hidden and they look like two separate functions.
 private GTestRes testContingency(alias elemFun, T...)(T rangesIn) {
-    mixin(newFrame);
+    auto alloc = newRegionAllocator();
     static if(isForwardRange!(T[0]) && T.length == 1 &&
         isForwardRange!(typeof(rangesIn[0].front()))) {
-        auto ranges = tempdup(rangesIn[0]);
+        auto ranges = alloc.array(rangesIn[0]);
     } else static if(allSatisfy!(isForwardRange, typeof(rangesIn))) {
         alias rangesIn ranges;
     } else {
@@ -2418,7 +2416,7 @@ private GTestRes testContingency(alias elemFun, T...)(T rangesIn) {
             " on a tuple of ranges or a range of ranges.");
     }
 
-    double[] colSums = newStack!(double)(ranges.length);
+    double[] colSums = alloc.uninitializedArray!(double[])(ranges.length);
     colSums[] = 0;
     size_t nCols = 0;
     immutable size_t nRows = ranges.length;
@@ -2526,7 +2524,7 @@ if(isInputRange!T && isInputRange!U) {
     uint xFreedom, yFreedom, n;
     typeof(return) ret;
 
-    static if(!dstats.base.hasLength!T && !dstats.base.hasLength!U) {
+    static if(!hasLength!T && !hasLength!U) {
         ret.testStat = toContingencyScore!(T, U, uint)
             (x, y, &pearsonChiSqElem, xFreedom, yFreedom, n);
     } else {
@@ -2587,7 +2585,7 @@ if(isInputRange!T && isInputRange!U) {
     uint xFreedom, yFreedom, n;
     typeof(return) ret;
 
-    static if(!dstats.base.hasLength!T && !dstats.base.hasLength!U) {
+    static if(!hasLength!T && !hasLength!U) {
         ret.testStat = toContingencyScore!(T, U, uint)
             (x, y, &gTestElem, xFreedom, yFreedom, n);
     } else {
@@ -2645,13 +2643,13 @@ package double toContingencyScore(T, U, Uint)
         Uint[ElementType!T] xCounts;
         Uint[ElementType!U] yCounts;
     } else {
-        mixin(newFrame);
+        auto alloc = newRegionAllocator();
         dstatsEnforce(x.length == y.length,
             "Can't calculate mutual info with different length vectors.");
         immutable len = x.length;
-        auto jointCounts = StackHash!(ObsType, Uint)(max(20, len / 20));
-        auto xCounts = StackHash!(ElementType!T, Uint)(max(10, len / 40));
-        auto yCounts = StackHash!(ElementType!U, Uint)(max(10, len / 40));
+        auto jointCounts = StackHash!(ObsType, Uint)(max(20, len / 20), alloc);
+        auto xCounts = StackHash!(ElementType!T, Uint)(max(10, len / 40), alloc);
+        auto yCounts = StackHash!(ElementType!U, Uint)(max(10, len / 40), alloc);
     }
 
     uint n = 0;
@@ -2971,7 +2969,7 @@ unittest {
 
 template isArrayLike(T) {
     enum bool isArrayLike = hasSwappableElements!(T) && hasAssignableElements!(T)
-        && dstats.base.hasLength!(T) && isRandomAccessRange!(T);
+        && hasLength!(T) && isRandomAccessRange!(T);
 }
 
 /**One-sample KS test against a reference distribution, doesn't modify input
@@ -3032,12 +3030,8 @@ if(isArrayLike!(T) && is(ReturnType!Func : double)) {
 
 private double ksTestD(T, U)(T F, U Fprime)
 if(isInputRange!(T) && isInputRange!(U)) {
-    auto TAState = TempAlloc.getState;
-    scope(exit) {
-        TempAlloc.free(TAState);
-        TempAlloc.free(TAState);
-    }
-    return ksTestDDestructive(tempdup(F), tempdup(Fprime));
+    auto alloc = newRegionAllocator();
+    return ksTestDDestructive(alloc.array(F), alloc.array(Fprime));
 }
 
 private double ksTestDDestructive(T, U)(T F, U Fprime)
@@ -3067,8 +3061,8 @@ if(isArrayLike!(T) && isArrayLike!(U)) {
 
 private double ksTestD(T, Func)(T Femp, Func F)
 if(doubleInput!(T) && is(ReturnType!Func : double)) {
-    scope(exit) TempAlloc.free;
-    return ksTestDDestructive(tempdup(Femp), F);
+    auto alloc = newRegionAllocator();
+    return ksTestDDestructive(alloc.array(Femp), F);
 }
 
 private double ksTestDDestructive(T, Func)(T Femp, Func F)
@@ -3376,8 +3370,8 @@ if(isInputRange!(T) && isInputRange!(U) &&
 is(typeof(range1.front < range1.front) == bool) &&
 is(typeof(range2.front < range2.front) == bool)) {
 
-    static if(!dstats.base.hasLength!T) {
-        auto r1 = tempdup(range1);
+    static if(!hasLength!T) {
+        auto r1 = alloc.array(range1);
         scope(exit) TempAlloc.free();
     } else {
         alias range1 r1;
@@ -3426,9 +3420,9 @@ unittest {
  */
 TestRes kendallCorTest(T, U)(T range1, U range2, Alt alt = Alt.twoSided, uint exactThresh = 50)
 if(isInputRange!(T) && isInputRange!(U)) {
-    mixin(newFrame);
-    auto i1d = tempdup(range1);
-    auto i2d = tempdup(range2);
+    auto alloc = newRegionAllocator();
+    auto i1d = alloc.array(range1);
+    auto i2d = alloc.array(range2);
     immutable res = kendallCorDestructiveLowLevel(i1d, i2d, true);
     immutable double n = i1d.length;
 
@@ -3533,8 +3527,9 @@ private double kendallCorExactP(uint N, uint swaps, Alt alt) {
      */
 
     immutable double pElem = exp(-logFactorial(N));
-    double[] cur = newStack!double(swaps + 1);
-    double[] prev = newStack!double(swaps + 1);
+    auto alloc = newRegionAllocator();
+    double[] cur = alloc.uninitializedArray!(double[])(swaps + 1);
+    double[] prev = alloc.uninitializedArray!(double[])(swaps + 1);
 
     prev[] = pElem;
     cur[0] = pElem;
@@ -3551,8 +3546,7 @@ private double kendallCorExactP(uint N, uint swaps, Alt alt) {
         cur[upTo..$] = cur[upTo - 1];
         swap(cur, prev);
     }
-    TempAlloc.free;
-    TempAlloc.free;
+
     return prev[$ - 1];
 }
 
@@ -3620,8 +3614,8 @@ unittest {
     // between the exact and approximate version should be extremely small.
     foreach(i; 0..100) {
         uint nToTake = uniform(15, 65);
-        auto lhs = toArray(take(randRange!rNorm(0, 1), nToTake));
-        auto rhs = toArray(take(randRange!rNorm(0, 1), nToTake));
+        auto lhs = array(take(randRange!rNorm(0, 1), nToTake));
+        auto rhs = array(take(randRange!rNorm(0, 1), nToTake));
         if(i & 1) {
             lhs[] += rhs[] * 0.2;  // Make sure there's some correlation.
         } else {
@@ -3813,8 +3807,8 @@ if(doubleInput!(T)) {
         }
     }
 
-    mixin(newFrame);
-    auto perm = newStack!(size_t)(qVals.length);
+    auto alloc = newRegionAllocator();
+    auto perm = alloc.uninitializedArray!(size_t[])(qVals.length);
     foreach(i, ref elem; perm) {
         elem = i;
     }
@@ -3893,8 +3887,8 @@ float[] hochberg(T)(T pVals)
 if(doubleInput!(T)) {
     auto qVals = array(map!(to!float)(pVals));
 
-    mixin(newFrame);
-    auto perm = newStack!(size_t)(qVals.length);
+    auto alloc = newRegionAllocator();
+    auto perm = alloc.uninitializedArray!(size_t[])(qVals.length);
     foreach(i, ref elem; perm)
         elem = i;
 
@@ -3953,10 +3947,10 @@ unittest {
  */
 float[] holmBonferroni(T)(T pVals)
 if(doubleInput!(T)) {
-    mixin(newFrame);
+    auto alloc = newRegionAllocator();
 
     auto qVals = array(map!(to!float)(pVals));
-    auto perm = newStack!(size_t)(qVals.length);
+    auto perm = alloc.uninitializedArray!(size_t[])(qVals.length);
 
     foreach(i, ref elem; perm) {
         elem = i;
@@ -3992,13 +3986,4 @@ unittest {
 
     ps = holmBonferroni([0.3, 0.1, 0.4, 0.1, 0.5, 0.9].dup);
     assert(ps == [1f, 0.6f, 1f, 0.6f, 1f, 1f]);
-}
-
-
-// Verify that there are no TempAlloc memory leaks anywhere in the code covered
-// by the unittest.  This should always be the last unittest of the module.
-unittest {
-    auto TAState = TempAlloc.getState;
-    assert(TAState.used == 0);
-    assert(TAState.nblocks < 2);
 }

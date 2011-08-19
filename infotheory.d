@@ -175,7 +175,7 @@ struct Joint(T...) {
         return false;
     }
 
-    static if(T.length > 0 && allSatisfy!(dstats.base.hasLength, T)) {
+    static if(T.length > 0 && allSatisfy!(hasLength, T)) {
         @property size_t length() {
             size_t ret = size_t.max;
             foreach(range; _jointRanges) {
@@ -212,7 +212,7 @@ struct ObsEnt(T...) {
     T compRep;
     alias compRep this;
 
-    static if(isReferenceType!(typeof(this))) {
+    static if(hasIndirections!(typeof(this))) {
 
         // Then there's indirection involved.  We can't just do all our
         // comparison and hashing operations bitwise.
@@ -260,7 +260,7 @@ struct ObsEnt(T...) {
 // Whether we can use StackTreeAA, or whether we have to use a regular AA for
 // entropy.
 private template NeedsHeap(T) {
-    static if(!isReferenceType!(IterType!(T))) {
+    static if(!hasIndirections!(IterType!(T))) {
         enum bool NeedsHeap = false;
     } else static if(isArray!(T)) {
         enum bool NeedsHeap = false;
@@ -303,7 +303,7 @@ unittest {
  */
 double entropy(T)(T data)
 if(isIterable!(T)) {
-    static if(!dstats.base.hasLength!(T)) {
+    static if(!hasLength!(T)) {
         return entropyImpl!(uint, T)(data);
     } else {
         if(data.length <= ubyte.max) {
@@ -319,13 +319,13 @@ if(isIterable!(T)) {
 private double entropyImpl(U, T)(T data)
 if((IterType!(T).sizeof > 1 || is(IterType!T == struct)) && !NeedsHeap!(T)) {
     // Generic version.
-    mixin(newFrame);
+    auto alloc = newRegionAllocator();
     alias IterType!(T) E;
 
-    static if(dstats.base.hasLength!T) {
-        auto counts = StackHash!(E, U)(max(20, data.length / 20));
+    static if(hasLength!T) {
+        auto counts = StackHash!(E, U)(max(20, data.length / 20), alloc);
     } else {
-        auto counts = StackTreeAA!(E, U)();
+        auto counts = StackTreeAA!(E, U)(alloc);
     }
     uint N;
 
@@ -430,7 +430,7 @@ if(isInputRange!(T) && isInputRange!(U)) {
     uint xFreedom, yFreedom, n;
     typeof(return) ret;
 
-    static if(!dstats.base.hasLength!T && !dstats.base.hasLength!U) {
+    static if(!hasLength!T && !hasLength!U) {
         ret = toContingencyScore!(T, U, uint)
             (x, y, &miContingency, xFreedom, yFreedom, n);
     } else {
@@ -552,7 +552,7 @@ struct DenseInfoTheory {
     // Saves space and makes things cache efficient by using the smallest
     // integer width necessary for binning.
     double selectSize(alias fun, T...)(T args) {
-        static if(allSatisfy!(dstats.base.hasLength, T)) {
+        static if(allSatisfy!(hasLength, T)) {
             immutable len = args[0].length;
 
             if(len <= ubyte.max) {
@@ -588,13 +588,13 @@ struct DenseInfoTheory {
     }
 
     private double entropyImpl(Uint, R)(R range) {
-        mixin(newFrame);
+        auto alloc = newRegionAllocator();
         uint n = 0;
 
         static if(is(typeof(range._jointRanges))) {
             // Compute joint entropy.
             immutable nRanges = range._jointRanges.length;
-            auto counts = newStack!Uint(nBin ^^ nRanges);
+            auto counts = alloc.uninitializedArray!(Uint[])(nBin ^^ nRanges);
             counts[] = 0;
 
             Outer:
@@ -618,7 +618,7 @@ struct DenseInfoTheory {
 
             return entropyCounts(counts, n);
         } else {
-            auto counts = newStack!Uint(nBin);
+            auto counts = alloc.uninitializedArray!(Uint[])(nBin);
 
             counts[] = 0;
             foreach(elem; range) {
@@ -637,10 +637,10 @@ struct DenseInfoTheory {
     }
 
     private double mutualInfoImpl(Uint, R1, R2)(R1 x, R2 y) {
-        mixin(newFrame);
-        auto joint = newStack!Uint(nBin * nBin);
-        auto margx = newStack!Uint(nBin);
-        auto margy = newStack!Uint(nBin);
+        auto alloc = newRegionAllocator();
+        auto joint = alloc.uninitializedArray!(Uint[])(nBin * nBin);
+        auto margx = alloc.uninitializedArray!(Uint[])(nBin);
+        auto margy = alloc.uninitializedArray!(Uint[])(nBin);
         joint[] = 0;
         margx[] = 0;
         margy[] = 0;
@@ -688,9 +688,9 @@ struct DenseInfoTheory {
     }
 
     private double condEntropyImpl(Uint, R1, R2)(R1 x, R2 y) {
-        mixin(newFrame);
-        auto joint = newStack!Uint(nBin * nBin);
-        auto margy = newStack!Uint(nBin);
+        auto alloc = newRegionAllocator();
+        auto joint = alloc.uninitializedArray!(Uint[])(nBin * nBin);
+        auto margy = alloc.uninitializedArray!(Uint[])(nBin);
         joint[] = 0;
         margy[] = 0;
         uint n;
@@ -719,12 +719,12 @@ struct DenseInfoTheory {
     }
 
     private double condMutualInfoImpl(Uint, R1, R2, R3)(R1 x, R2 y, R3 z) {
-        mixin(newFrame);
+        auto alloc = newRegionAllocator();
         immutable nBinSq = nBin * nBin;
-        auto jointxyz = newStack!Uint(nBin * nBin * nBin);
-        auto jointxz = newStack!Uint(nBinSq);
-        auto jointyz = newStack!Uint(nBinSq);
-        auto margz = newStack!Uint(nBin);
+        auto jointxyz = alloc.uninitializedArray!(Uint[])(nBin * nBin * nBin);
+        auto jointxz = alloc.uninitializedArray!(Uint[])(nBinSq);
+        auto jointyz = alloc.uninitializedArray!(Uint[])(nBinSq);
+        auto margz = alloc.uninitializedArray!(Uint[])(nBin);
         jointxyz[] = 0;
         jointxz[] = 0;
         jointyz[] = 0;
@@ -786,12 +786,4 @@ unittest {
     immutable pDense = dense.mutualInfoPval(dense.mutualInfo(a, b), a.length);
     immutable pNotDense = gTestObs(a, b).p;
     assert(approxEqual(pDense, pNotDense));
-}
-
-// Verify that there are no TempAlloc memory leaks anywhere in the code covered
-// by the unittest.  This should always be the last unittest of the module.
-unittest {
-    auto TAState = TempAlloc.getState;
-    assert(TAState.used == 0);
-    assert(TAState.nblocks < 2);
 }

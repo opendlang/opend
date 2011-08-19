@@ -94,7 +94,7 @@ PowMap!(ExpType, T) powMap(ExpType, T)(T range, ExpType exponent) {
 // linearRegressBeta.  Specifically, computes xTx and xTy.
 // Written specifically to be efficient in the context used here.
 private void rangeMatrixMulTrans(U, T...)
-(ref double[] xTy, out double[][] xTx, U y, ref T matIn) {
+(ref double[] xTy, out double[][] xTx, U y, ref T matIn, RegionAllocator alloc) {
     static if(isArray!(T[0]) &&
         isInputRange!(typeof(matIn[0][0])) && matIn.length == 1) {
         alias matIn[0] mat;
@@ -123,23 +123,23 @@ private void rangeMatrixMulTrans(U, T...)
 
     xTy[] = 0;
 
-    xTx = newStack!(double[])(mat.length);
+    xTx = alloc.uninitializedArray!(double[][])(mat.length);
     foreach(ref elem; xTx) {
-        elem = newStack!double(mat.length);
+        elem = alloc.uninitializedArray!(double[])(mat.length);
     }
 
     foreach(row; xTx) {
         row[] = 0;
     }
 
-    mixin(newFrame);
-    auto deltas = newStack!double(mat.length);
+    auto alloc2 = newRegionAllocator();
+    auto deltas = alloc.uninitializedArray!(double[])(mat.length);
 
     // Using an algorithm similar to the one for Pearson cor to improve
     // numerical stability.  Calculate means and covariances, then
     // combine them:  Sum of squares = mean1 * N * mean2 + N * cov.
     double k = 0;
-    double[] means = newStack!(double)(mat.length);
+    double[] means = alloc2.uninitializedArray!(double[])(mat.length);
     means[] = 0;
     double yMean = 0;
 
@@ -364,8 +364,8 @@ private void choleskySolve(double[][] a, double[] diag, double[] b, double[] x) 
 }
 
 private void choleskySolve(double[][] a, double[] b, double[] x) {
-    mixin(newFrame);
-    auto diag = newStack!double(x.length);
+    auto alloc = newRegionAllocator();
+    auto diag = alloc.uninitializedArray!(double[])(x.length);
     choleskyDecompose(a, diag);
     choleskySolve(a, diag, b, x);
 }
@@ -622,7 +622,7 @@ Otherwise, the results are returned in the user-provided buffer.
  */
 double[] linearRegressBetaBuf(U, TRidge...)(double[] buf, U Y, TRidge XRidge)
 if(doubleInput!(U)) {
-    mixin(newFrame);
+    auto alloc = newRegionAllocator();
 
     static if(isFloatingPoint!(TRidge[$ - 1]) || isIntegral!(TRidge[$ - 1])) {
         // ridge param.
@@ -650,7 +650,7 @@ if(doubleInput!(U)) {
 
     static if(isArray!(T[0]) && isInputRange!(typeof(XIn[0][0])) &&
         T.length == 1) {
-        auto X = tempdup(map!(summaryIter)(XIn[0]));
+        auto X = alloc.array(map!(summaryIter)(XIn[0]));
         alias typeof(X[0]) E;
     } else {
         static if(ridge) {
@@ -666,7 +666,7 @@ if(doubleInput!(U)) {
     }
 
     double[][] xTx;
-    double[] xTy = newStack!double(X.length);
+    double[] xTy = alloc.uninitializedArray!(double[])(X.length);
     double[] ret;
     if(buf.length < X.length) {
         ret = new double[X.length];
@@ -674,7 +674,7 @@ if(doubleInput!(U)) {
         ret = buf[0..X.length];
     }
 
-    rangeMatrixMulTrans(xTy, xTx, Y, X);
+    rangeMatrixMulTrans(xTy, xTx, Y, X, alloc);
 
     static if(ridge) {
         if(ridgeParam > 0) {
@@ -749,13 +749,13 @@ RegressRes linearRegress(U, TC...)(U Y, TC input) {
         alias input XIn;
     }
 
-    mixin(newFrame);
+    auto alloc = newRegionAllocator();
     static if(isForwardRange!(T[0]) && isForwardRange!(typeof(XIn[0].front())) &&
         T.length == 1) {
 
         enum bool arrayX = true;
         alias typeof(XIn[0].front) E;
-        E[] X = tempdup(XIn[0]);
+        E[] X = alloc.array(XIn[0]);
     } else static if(allSatisfy!(isForwardRange, T)) {
         enum bool arrayX = false;
         alias XIn X;
@@ -764,21 +764,21 @@ RegressRes linearRegress(U, TC...)(U Y, TC input) {
             "tuples of forward ranges or ranges of forward ranges.");
     }
 
-    double[][] xTx = newStack!(double[])(X.length),
-        xTxNeg1 = newStack!(double[])(X.length);
+    double[][] xTx = alloc.uninitializedArray!(double[][])(X.length),
+        xTxNeg1 = alloc.uninitializedArray!(double[][])(X.length);
 
     foreach(i; 0..X.length) {
-        xTx[i] = newStack!double(X.length);
+        xTx[i] = alloc.uninitializedArray!(double[])(X.length);
     }
 
-    double[] xTy = newStack!double(X.length);
+    double[] xTy = alloc.uninitializedArray!(double[])(X.length);
 
     foreach(i; 0..X.length) {
-        xTxNeg1[i] = newStack!double(X.length);
+        xTxNeg1[i] = alloc.uninitializedArray!(double[])(X.length);
     }
 
     static if(arrayX) {
-        auto xSaved = X.tempdup;
+        auto xSaved = alloc.array(X);
         foreach(ref elem; xSaved) {
             elem = elem.save;
         }
@@ -789,7 +789,7 @@ RegressRes linearRegress(U, TC...)(U Y, TC input) {
         }
     }
 
-    rangeMatrixMulTrans(xTy, xTx, Y.save, X);
+    rangeMatrixMulTrans(xTy, xTx, Y.save, X, alloc);
     invert(xTx, xTxNeg1);
     double[] betas = new double[X.length];
     foreach(i; 0..betas.length) {
@@ -899,8 +899,8 @@ double[] polyFitBeta(T, U)(U Y, T X, uint N, double ridge = 0) {
  * allocated.  Otherwise, results will be returned in the user-provided buffer.
  */
 double[] polyFitBetaBuf(T, U)(double[] buf, U Y, T X, uint N, double ridge = 0) {
-    mixin(newFrame);
-    auto pows = newStack!(PowMap!(uint, T))(N + 1);
+    auto alloc = newRegionAllocator();
+    auto pows = alloc.uninitializedArray!(PowMap!(uint, T)[])(N + 1);
     foreach(exponent; 0..N + 1) {
         pows[exponent] = powMap(X, exponent);
     }
@@ -1026,19 +1026,19 @@ unittest {
     assert(approxEqual(ridge3, [5.82653624, -0.05197246, -0.27185592 ]));
 }
 
-private MeanSD[] calculateSummaries(X...)(X xIn) {
+private MeanSD[] calculateSummaries(X...)(X xIn, RegionAllocator alloc) {
     // This is slightly wasteful because it sticks this shallow dup in
     // an unfreeable pos on TempAlloc.
     static if(X.length == 1 && isRoR!(X[0])) {
-        auto ret = newStack!MeanSD(xIn[0].length);
-        mixin(newFrame);
-        auto x = tempdup(xIn[0]);
+        auto ret = alloc.uninitializedArray!(MeanSD[])(xIn[0].length);
+        auto alloc2 = newRegionAllocator();
+        auto x = alloc2.array(xIn[0]);
 
         foreach(ref range; x) {
             range = range.save;
         }
     } else {
-        auto ret = newStack!MeanSD(xIn.length);
+        auto ret = alloc2.uninitializedArray!MeanSD(xIn.length);
         alias xIn x;
 
         foreach(ti, R; X) {
@@ -1090,23 +1090,23 @@ private struct PreprocessedData {
 }
 
 private PreprocessedData preprocessStandardize(Y, X...)
-(Y yIn, X xIn) {
+(Y yIn, X xIn, RegionAllocator alloc) {
     static if(X.length == 1 && isRoR!(X[0])) {
-        auto xRaw = tempdup(xIn[0]);
+        auto xRaw = alloc.array(xIn[0]);
     } else {
         alias xIn xRaw;
     }
 
-    auto summaries = calculateSummaries(xRaw);
+    auto summaries = calculateSummaries(xRaw, alloc);
     immutable minLen = to!size_t(
         reduce!min(
             map!"a.N"(summaries)
         )
     );
 
-    auto x = newStack!(double[])(summaries.length);
+    auto x = alloc.uninitializedArray!(double[][])(summaries.length);
     foreach(i, range; xRaw) {
-        x[i] = tempdup(map!(to!double)(take(range, minLen)));
+        x[i] = alloc.array(map!(to!double)(take(range, minLen)));
         x[i][] -= summaries[i].mean;
         x[i][] /= sqrt(summaries[i].mse);
     }
@@ -1114,7 +1114,7 @@ private PreprocessedData preprocessStandardize(Y, X...)
     double[] y;
     MeanSD ySumm;
     if(yIn.length) {
-        y = tempdup(map!(to!double)(take(yIn, minLen)));
+        y = alloc.array(map!(to!double)(take(yIn, minLen)));
         ySumm = meanStdev(y);
         y[] -= ySumm.mean;
     }
@@ -1150,9 +1150,9 @@ Progress in Biomedical Optics and Images vol. 4266, pp. 187-198
 */
 double[] linearRegressPenalized(Y, X...)
 (Y yIn, X xIn, double lasso, double ridge) {
-    mixin(newFrame);
+    auto alloc = newRegionAllocator();
 
-    auto preproc = preprocessStandardize(yIn, xIn);
+    auto preproc = preprocessStandardize(yIn, xIn, alloc);
 
     auto summaries = preproc.xSumm;
     auto ySumm = preproc.ySumm;
@@ -1196,9 +1196,9 @@ double[] linearRegressPenalized(Y, X...)
 
 private void coordDescent
 (double[] y, double[][] x, double[] betas, double lasso, double ridge, double[] w) {
-    mixin(newFrame);
+    auto alloc = newRegionAllocator();
 
-    auto predictions = newStack!double(y.length);
+    auto predictions = alloc.uninitializedArray!(double[])(y.length);
     predictions[] = 0;
 
     void makePredictions() {
@@ -1211,16 +1211,16 @@ private void coordDescent
         makePredictions();
     }
 
-    auto residuals = newStack!double(y.length);
+    auto residuals = alloc.uninitializedArray!(double[])(y.length);
 
     uint iter = 0;
     enum maxIter = 10_000;
     enum relEpsilon = 1e-5;
     enum absEpsilon = 1e-10;
     immutable n = cast(double) y.length;
-    auto perm = tempdup(iota(0U, x.length));
+    auto perm = alloc.array(iota(0U, x.length));
 
-    auto weightDots = newStack!double(x.length);
+    auto weightDots = alloc.uninitializedArray!(double[])(x.length);
     if(w.length == 0) {
         ridge /= n;
         lasso /= n;
@@ -1315,14 +1315,14 @@ private void coordDescent
 }
 
 // Compute(X X')' = C.
-double[][] makeC(double[][] x) {
+double[][] makeC(double[][] x, RegionAllocator alloc) {
     if(x.length == 0) return null;
     immutable n = x[0].length;
-    auto c = newStack!(double[])(n);
+    auto c = alloc.uninitializedArray!(double[][])(n);
 
     // Only need lower half.
     foreach(i, ref elem; c) {
-        elem = newStack!double(i + 1);
+        elem = alloc.uninitializedArray!(double[])(i + 1);
         elem[] = 0;
     }
 
@@ -1337,9 +1337,9 @@ double[][] makeC(double[][] x) {
     return c;
 }
 
-private double[][] doCTWC(double[][] c, double[] w = null) {
-    auto ret = newStack!(double[])(c.length);
-    foreach(i, ref elem; ret) elem = newStack!double(c.length);
+private double[][] doCTWC(double[][] c, double[] w, RegionAllocator alloc) {
+    auto ret = alloc.uninitializedArray!(double[][])(c.length);
+    foreach(i, ref elem; ret) elem = alloc.uninitializedArray!(double[])(c.length);
 
     double getElem(size_t i, size_t j) {
         return (i >= j) ? c[i][j] : c[j][i];
@@ -1363,9 +1363,9 @@ private double[][] doCTWC(double[][] c, double[] w = null) {
 private void ridgeLargeP
 (double[] yIn, double[][] x, double lambdaIn, double[] betas, double[] w = null) {
     {
-        mixin(newFrame);
-        auto y = tempdup(yIn);
-        auto c = makeC(x);
+        auto alloc = newRegionAllocator();
+        auto y = alloc.array(yIn);
+        auto c = makeC(x, alloc);
 
         // This scaling preserves numerical stability when the distrib. of
         // x has a long tail.
@@ -1373,7 +1373,7 @@ private void ridgeLargeP
         foreach(col; c) col[] /= maxElem;
         y[] /= (maxElem);
         auto lambda = lambdaIn / maxElem;
-        auto cwc = doCTWC(c, w);
+        auto cwc = doCTWC(c, w, alloc);
 
         foreach(i, row; c) foreach(j, elem; row) {
             cwc[j][i] += lambda * elem;
@@ -1383,7 +1383,7 @@ private void ridgeLargeP
         // Multiply c' * y.  c is symmetric, so it doesn't matter that I'm really
         // multiplying the transpose.
         if(w.length) y[] *= w[];
-        auto cTy = newStack!double(y.length);
+        auto cTy = alloc.uninitializedArray!(double[])(y.length);
         cTy[] = 0;
 
         foreach(i; 0..c.length) foreach(j; 0..c.length) {
@@ -1416,11 +1416,11 @@ private void ridgeLargeP
 // Used if we end up singular in ridgeLargeP.
 private void ridgeFallback
 (double[] yIn, double[][] x, double lambda, double[] betas, double[] w) {
-    mixin(newFrame);
+    auto alloc = newRegionAllocator();
 
     // Compute xTx or xT * w * x depending on whether w is null.
-    auto xTx = newStack!(double[])(x.length);
-    foreach(ref row; xTx) row = newStack!double(x.length);
+    auto xTx = alloc.uninitializedArray!(double[][])(x.length);
+    foreach(ref row; xTx) row = alloc.uninitializedArray!(double[])(x.length);
 
     foreach(i, xi; x) foreach(j, xj; x[0..i + 1]) {
         xTx[i][j] = 0;
@@ -1434,13 +1434,13 @@ private void ridgeFallback
 
     double[] y;
     if(w.length) {
-        y = tempdup(yIn);
+        y = alloc.array(yIn);
         y[] *= w[];
     } else {
         y = yIn;
     }
 
-    auto xTy = newStack!double(x.length);
+    auto xTy = alloc.uninitializedArray!(double[])(x.length);
     foreach(i, ref val; xTy) {
         val = dotProduct(y, x[i]);
     }
@@ -1832,7 +1832,7 @@ Progress in Biomedical Optics and Images vol. 4266, pp. 187-198
 */
 double[] logisticRegressPenalized(Y, X...)
 (Y yIn, X xIn, double lasso, double ridge) {
-    mixin(newFrame);
+    auto alloc = newRegionAllocator();
 
     static assert(!isInfinite!Y, "Can't do regression with infinite # of Y's.");
     static if(isRandomAccessRange!Y) {
@@ -1844,13 +1844,13 @@ double[] logisticRegressPenalized(Y, X...)
     static if(X.length == 1 && isRoR!X) {
         enum bool tupleMode = false;
         static if(isForwardRange!X) {
-            auto x = toRandomAccessRoR(y.length, xIn);
+            auto x = toRandomAccessRoR(y.length, xIn, alloc);
         } else {
-            auto x = toRandomAccessRoR(y.length, tempdup(xIn));
+            auto x = toRandomAccessRoR(y.length, alloc.array(xIn), alloc);
         }
     } else {
         enum bool tupleMode = true;
-        auto x = toRandomAccessTuple(xIn).expand;
+        auto x = toRandomAccessTuple(xIn, alloc).expand;
     }
 
     auto betas = new double[x.length + 1];
@@ -1859,17 +1859,17 @@ double[] logisticRegressPenalized(Y, X...)
         static if(tupleMode) {
             doMLENewton(betas, (double[]).init, ridge, y, repeat(1), x);
         } else static if(is(x == double[][])) {
-            auto xInt = newStack!(double[])(betas.length);
+            auto xInt = alloc.uninitializedArray!(double[])(betas.length);
             xInt[1..$] = x[];
-            xInt[0] = tempdup(replicate(1.0, y.length));
+            xInt[0] = alloc.array(replicate(1.0, y.length));
             doMLENewton(betas, (double[]).init, ridge, y, xInt);
         } else {
             // No choice but to dup the whole thing.
-            auto xInt = newStack!(double[])(betas.length);
-            xInt[0] = tempdup(replicate(1.0, y.length));
+            auto xInt = alloc.uninitializedArray!(double[][])(betas.length);
+            xInt[0] = alloc.array(replicate(1.0, y.length));
 
             foreach(i, ref arr; xInt[1..$]) {
-                arr = tempdup(
+                arr = alloc.array(
                     map!(to!double)(take(x[i], y.length))
                 );
             }
@@ -1965,7 +1965,7 @@ double absMax(double a, double b) {
 
 LogisticRes logisticRegressImpl(T, V...)
 (bool inference, double ridge, T yIn, V input) {
-    mixin(newFrame);
+    auto alloc = newRegionAllocator();
 
     static if(isFloatingPoint!(V[$ - 1])) {
         alias input[$ - 1] conf;
@@ -1982,17 +1982,17 @@ LogisticRes logisticRegressImpl(T, V...)
     static if(isRandomAccessRange!T) {
         alias yIn y;
     } else {
-        auto y = toBools(yIn);
+        auto y = toBools(yIn, alloc);
     }
 
     static if(U.length == 1 && isRoR!U) {
         static if(isForwardRange!U) {
-            auto x = toRandomAccessRoR(y.length, xIn);
+            auto x = toRandomAccessRoR(y.length, xIn, alloc);
         } else {
-            auto x = toRandomAccessRoR(y.length, tempdup(xIn));
+            auto x = toRandomAccessRoR(y.length, alloc.array(xIn), alloc);
         }
     } else {
-        auto x = toRandomAccessTuple(xIn).expand;
+        auto x = toRandomAccessTuple(xIn, alloc).expand;
     }
 
     typeof(return) ret;
@@ -2040,12 +2040,11 @@ private void logisticRegressPenalizedImpl(Y, X...)
     } else {
         alias xIn x;
     }
-
-    auto ps = newStack!double(y.length);
+    
+    auto alloc = newRegionAllocator();
+    auto ps = alloc.uninitializedArray!(double[])(y.length);
     betas[] = 0;
-
-    mixin(newFrame);
-    auto betasRaw = tempdup(betas[1..$]);
+    auto betasRaw = alloc.array(betas[1..$]);
 
     double oldLikelihood = -double.infinity;
     double oldPenalty2 = double.infinity;
@@ -2053,13 +2052,13 @@ private void logisticRegressPenalizedImpl(Y, X...)
     enum eps = 1e-6;
     enum maxIter = 1000;
 
-    auto weights = newStack!double(y.length);
-    auto z = newStack!double(y.length);
-    auto xMeans = newStack!double(x.length);
-    auto xSds = newStack!double(x.length);
+    auto weights = alloc.uninitializedArray!(double[])(y.length);
+    auto z = alloc.uninitializedArray!(double[])(y.length);
+    auto xMeans = alloc.uninitializedArray!(double[])(x.length);
+    auto xSds = alloc.uninitializedArray!(double[])(x.length);
     double zMean = 0;
-    auto xCenterScale = newStack!(double[])(x.length);
-    foreach(ref col; xCenterScale) col = newStack!double(y.length);
+    auto xCenterScale = alloc.uninitializedArray!(double[][])(x.length);
+    foreach(ref col; xCenterScale) col = alloc.uninitializedArray!(double[])(y.length);
 
     // Puts x in xCenterScale, with weighted mean subtracted and weighted
     // biased stdev divided.  Also standardizes z similarly.
@@ -2196,9 +2195,7 @@ private void logisticRegressPenalizedImpl(Y, X...)
 
 // Calculate the mean squared error of all ranges.  This is delicate, though,
 // because some may be infinite and we want to stop at the shortest range.
-//
-// HERE BE DRAGONS:  Returns on TempAlloc.
-double[] calculateMSEs(U...)(U xIn) {
+double[] calculateMSEs(U...)(U xIn, RegionAllocator alloc) {
     static if(isRoR!(U[0]) && U.length == 1) {
         alias xIn[0] x;
     } else {
@@ -2208,7 +2205,7 @@ double[] calculateMSEs(U...)(U xIn) {
     size_t minLen = size_t.max;
     foreach(r; x) {
         static if(!isInfinite!(typeof(r))) {
-            static assert(dstats.base.hasLength!(typeof(r)),
+            static assert(hasLength!(typeof(r)),
                 "Ranges passed to doMLENewton should be random access, meaning " ~
                 "either infinite or with length.");
 
@@ -2219,7 +2216,7 @@ double[] calculateMSEs(U...)(U xIn) {
     dstatsEnforce(minLen < size_t.max,
         "Can't do logistic regression if all of the ranges are infinite.");
 
-    auto ret = newStack!double(x.length);
+    auto ret = alloc.uninitializedArray!(double[])(x.length);
     foreach(ti, range; x) {
         ret[ti] = meanStdev(take(range.save, minLen)).mse;
     }
@@ -2241,17 +2238,17 @@ double doMLENewton(T, U...)
         alias xIn x;
     }
 
-    mixin(newFrame);
+    auto alloc = newRegionAllocator();
 
     double[] mses;  // Used for ridge.
     if(ridge > 0) {
-        mses = calculateMSEs(x);
+        mses = calculateMSEs(x, alloc);
     }
 
     beta[] = 0;
     if(stdError.length) stdError[] = double.nan;
 
-    auto ps = newStack!double(y.length);
+    auto ps = alloc.uninitializedArray!(double[])(y.length);
 
     double getPenalty() {
         if(ridge == 0) return 0;
@@ -2269,17 +2266,17 @@ double doMLENewton(T, U...)
 
     auto oldLikelihood = -double.infinity;
     double oldPenalty = -double.infinity;
-    auto firstDerivTerms = newStack!double(beta.length);
+    auto firstDerivTerms = alloc.uninitializedArray!(double[])(beta.length);
 
     // matSaved saves mat for inverting to find std. errors, only if we
     // care about std. errors.
-    auto mat = newStack!(double[])(beta.length);
-    foreach(ref row; mat) row = newStack!double(beta.length);
+    auto mat = alloc.uninitializedArray!(double[][])(beta.length);
+    foreach(ref row; mat) row = alloc.uninitializedArray!(double[])(beta.length);
     double[][] matSaved;
 
     if(stdError.length) {
-        matSaved = newStack!(double[])(beta.length);
-        foreach(ref row; matSaved) row = newStack!double(beta.length);
+        matSaved = alloc.uninitializedArray!(double[][])(beta.length);
+        foreach(ref row; matSaved) row = alloc.uninitializedArray!(double[])(beta.length);
     }
 
     void saveMat() {
@@ -2301,7 +2298,7 @@ double doMLENewton(T, U...)
         }
     }
 
-    auto updates = newStack!double(beta.length);
+    auto updates = alloc.uninitializedArray!(double[])(beta.length);
     foreach(iter; 0..maxIter) {
         evalPs(ps, beta, x);
         immutable lh = logLikelihood(ps, y);
@@ -2406,7 +2403,7 @@ void evalPs(X...)(double interceptTerm, double[] ps, double[] beta, X xIn) {
     ps[] = interceptTerm;
 
     foreach(i, range; x) {
-        static if(dstats.base.hasLength!(typeof(range))) {
+        static if(hasLength!(typeof(range))) {
             assert(range.length == ps.length);
         }
 
@@ -2463,11 +2460,11 @@ double priorLikelihood(Y)(Y y) {
     return nTrue * log(p) + (n - nTrue) * log(1 - p);
 }
 
-bool[] toBools(R)(R range) {
-    return tempdup(map!"(a) ? true : false"(range));
+bool[] toBools(R)(R range, RegionAllocator alloc) {
+    return alloc.array(map!"(a) ? true : false"(range));
 }
 
-auto toRandomAccessRoR(T)(size_t len, T ror) {
+auto toRandomAccessRoR(T)(size_t len, T ror, RegionAllocator alloc) {
     static assert(isRoR!T);
     alias ElementType!T E;
     static if(isArray!T && isRandomAccessRange!E) {
@@ -2475,14 +2472,14 @@ auto toRandomAccessRoR(T)(size_t len, T ror) {
     } else static if(!isArray!T && isRandomAccessRange!E) {
         // Shallow copy so we know it has cheap slicing and stuff,
         // even if it is random access.
-        return tempdup(ror);
+        return alloc.array(ror);
     } else {
         alias ElementType!E EE;
-        auto ret = newStack!(EE[])(walkLength(ror.save));
+        auto ret = alloc.uninitializedArray!(EE[])(walkLength(ror.save));
 
         foreach(ref col; ret) {
             scope(exit) ror.popFront();
-            col = newStack!EE(len);
+            col = alloc.uninitializedArray!EE(len);
 
             size_t i;
             foreach(elem; ror.front) {
@@ -2494,14 +2491,14 @@ auto toRandomAccessRoR(T)(size_t len, T ror) {
     }
 }
 
-auto toRandomAccessTuple(T...)(T input) {
+auto toRandomAccessTuple(T...)(T input, RegionAllocator alloc) {
     Tuple!(staticMap!(NonRandomToArray, T)) ret;
 
     foreach(ti, range; input) {
         static if(isRandomAccessRange!(typeof(range))) {
             ret.field[ti] = range;
         } else {
-            ret.field[ti] = tempdup(range);
+            ret.field[ti] = alloc.array(range);
         }
     }
 

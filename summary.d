@@ -72,11 +72,8 @@ version(unittest) {
  * Allocates memory, does not reorder input data.*/
 double median(T)(T data)
 if(doubleInput!(T)) {
-    // Allocate once on TempAlloc if possible, i.e. if we know the length.
-    // This can be done on TempAlloc.  Otherwise, have to use GC heap
-    // and appending.
-    auto dataDup = tempdup(data);
-    scope(exit) TempAlloc.free;
+    auto alloc = newRegionAllocator();
+    auto dataDup = alloc.array(data);
     return medianPartition(dataDup);
 }
 
@@ -90,7 +87,7 @@ double medianPartition(T)(T data)
 if(isRandomAccessRange!(T) &&
    is(ElementType!(T) : double) &&
    hasSwappableElements!(T) &&
-   dstats.base.hasLength!(T))
+   hasLength!(T))
 {
     if(data.length == 0) {
         return double.nan;
@@ -186,19 +183,20 @@ struct MedianAbsDev {
  */
 MedianAbsDev medianAbsDev(T)(T data)
 if(doubleInput!(T)) {
-    auto dataDup = tempdup(data);
+    auto alloc = newRegionAllocator();
+    auto dataDup = alloc.array(data);
     immutable med = medianPartition(dataDup);
     immutable len = dataDup.length;
-    TempAlloc.free;
+    alloc.freeLast();
 
-    double[] devs = newStack!double(len);
+    double[] devs = alloc.uninitializedArray!(double[])(len);
 
     size_t i = 0;
     foreach(elem; data) {
         devs[i++] = abs(med - elem);
     }
     auto ret = medianPartition(devs);
-    TempAlloc.free;
+    alloc.freeLast();
     return MedianAbsDev(med, ret);
 }
 
@@ -228,7 +226,7 @@ if(doubleInput!R) {
     dstatsEnforce(q >= 0 && q <= 1,
         "Quantile must be between 0, 1 for interquantileRange.");
 
-    mixin(newFrame);
+    auto alloc = newRegionAllocator();
     if(q > 0.5) {
         q = 1.0 - q;
     }
@@ -246,7 +244,7 @@ if(doubleInput!R) {
     }
 
     // Common case.
-    auto duped = tempdup(data);
+    auto duped = alloc.array(data);
     immutable double N = duped.length;
     if(duped.length < 2) {
         return double.nan;  // Can't do it.
@@ -379,7 +377,7 @@ public:
 Mean mean(T)(T data)
 if(doubleIterable!(T)) {
 
-    static if(isRandomAccessRange!T && dstats.base.hasLength!T) {
+    static if(isRandomAccessRange!T && hasLength!T) {
         // This is optimized for maximum instruction level parallelism:
         // The loop is unrolled such that there are 1 / (nILP)th the data
         // dependencies of the naive algorithm.
@@ -505,7 +503,7 @@ unittest {
 U sum(T, U = Unqual!(IterType!(T)))(T data)
 if(doubleIterable!(T)) {
 
-    static if(isRandomAccessRange!T && dstats.base.hasLength!T) {
+    static if(isRandomAccessRange!T && hasLength!T) {
         enum nILP = 8;
         U[nILP] sum = 0;
 
@@ -698,7 +696,7 @@ if(doubleIterable!(T)) {
 
     MeanSD ret;
 
-    static if(isRandomAccessRange!T && dstats.base.hasLength!T) {
+    static if(isRandomAccessRange!T && hasLength!T) {
         // Optimize for instruction level parallelism.
         enum nILP = 6;
         double k = 0;
@@ -1149,7 +1147,7 @@ public:
         }
     }
 
-    static if(dstats.base.hasLength!(T)) {
+    static if(hasLength!(T)) {
         ///
         @property size_t length() {
             return range.length;
@@ -1205,14 +1203,4 @@ unittest {
     foreach(i; 0..z.length) {
         assert(approxEqual(z[i], (arr[i] - m) / sd));
     }
-}
-
-
-
-// Verify that there are no TempAlloc memory leaks anywhere in the code covered
-// by the unittest.  This should always be the last unittest of the module.
-unittest {
-    auto TAState = TempAlloc.getState;
-    assert(TAState.used == 0);
-    assert(TAState.nblocks < 2);
 }

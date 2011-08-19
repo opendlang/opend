@@ -100,12 +100,6 @@ template doubleInput(T) {
     enum doubleInput = isInputRange!(T) && is(ElementType!(T) : double);
 }
 
-// See Bugzilla 2873.  This can be removed once that's fixed.
-template hasLength(R) {
-    enum bool hasLength = is(typeof(R.init.length) : ulong) ||
-                      is(typeof(R.init.length()) : ulong);
-}
-
 // isIterable was added to SVN versions of Phobos, but not to released ones yet.
 static if(!__traits(compiles, std.traits.isIterable!(uint))) {
     template isIterable(T)
@@ -282,7 +276,7 @@ if(isForwardRange!(T) && doubleInput!(T) && isIntegral!(Ret)) {
     E range = max - min;
     Ret[] bins;
     if(buf.length < data.length) {
-        bins = newVoid!(Ret)(data.length);
+        bins = uninitializedArray!(Ret[])(data.length);
     } else {
         bins = buf[0..data.length];
     }
@@ -302,7 +296,7 @@ if(isForwardRange!(T) && doubleInput!(T) && isIntegral!(Ret)) {
 }
 
 unittest {
-    mixin(newFrame);
+    auto alloc = newRegionAllocator();
     double[] data = [0.0, .01, .03, .05, .11, .31, .51, .71, .89, 1];
     auto res = bin(data, 10);
     assert(res == to!(ubyte[])([0, 0, 0, 0, 1, 3, 5, 7, 8, 9]));
@@ -343,13 +337,13 @@ if(doubleInput!(T) && isForwardRange!(T) && hasLength!(T) && isIntegral!(Ret)) {
 
     Ret[] result;
     if(buf.length < data.length) {
-        result = newVoid!(Ret)(data.length);
+        result = uninitializedArray!(Ret[])(data.length);
     } else {
         result = buf[0..data.length];
     }
 
-    auto perm = newStack!(size_t)(data.length);
-    scope(exit) TempAlloc.free;
+    auto alloc = newRegionAllocator();
+    auto perm = alloc.uninitializedArray!(size_t[])(data.length);
 
     foreach(i, ref e; perm) {
         e = i;
@@ -362,9 +356,9 @@ if(doubleInput!(T) && isForwardRange!(T) && hasLength!(T) && isIntegral!(Ret)) {
 
         qsort!compare(perm);
     } else {
-        auto dd = tempdup(data);
+        auto dd = alloc.array(data);
         qsort(dd, perm);
-        TempAlloc.free;
+        alloc.freeLast();
     }
 
     auto rem = data.length % nbin;
@@ -419,7 +413,8 @@ CommonType!(T, U)[] seq(T, U, V = uint)(T start, U end, V increment = 1U) {
     dstatsEnforce(end >= start, "End must be >= start in seq.");
 
     alias CommonType!(T, U) R;
-    auto output = newVoid!(R)(cast(size_t) ((end - start) / increment));
+    auto output = uninitializedArray!(R[])
+        (cast(size_t) ((end - start) / increment));
 
     size_t count = 0;
     for(T i = start; i < end; i += increment) {
@@ -451,9 +446,10 @@ unittest {
  * ---*/
 Ret[] rank(alias compFun = "a < b", Ret = double, T)(T input, Ret[] buf = null)
 if(isInputRange!(T) && is(typeof(input.front < input.front))) {
+    auto alloc = newRegionAllocator();
+    
     static if(!isRandomAccessRange!(T) || !hasLength!(T)) {
-        mixin(newFrame);
-        return rankSort!(compFun, Ret)( tempdup(input), buf);
+        return rankSort!(compFun, Ret)( alloc.array(input), buf);
     } else {
 
         /* It's faster to duplicate the input and then use rankSort on the
@@ -464,9 +460,8 @@ if(isInputRange!(T) && is(typeof(input.front < input.front))) {
          * If no, use the more space-efficient algorithm.
          */
         auto bytesNeeded = input.length * (ElementType!(T).sizeof + size_t.sizeof);
-        if(bytesNeeded < TempAlloc.slack) {
-            mixin(newFrame);
-            return rankSort!(compFun, Ret)( tempdup(input), buf);
+        if(bytesNeeded < alloc.segmentSlack) {
+            return rankSort!(compFun, Ret)( alloc.array(input), buf);
         } else {
             return rankUsingIndex!(compFun, Ret)(input, buf);
         }
@@ -480,8 +475,8 @@ if(isInputRange!(T) && is(typeof(input.front < input.front))) {
  * for large arrays that don't fit entirely in cache.
  */
 private Ret[] rankUsingIndex(alias compFun, Ret, T)(T input, Ret[] buf) {
-    mixin(newFrame);
-    size_t[] indices = newStack!size_t(input.length);
+    auto alloc = newRegionAllocator();
+    size_t[] indices = alloc.uninitializedArray!(size_t[])(input.length);
     foreach(i, ref elem; indices) {
         elem = i;
     }
@@ -495,7 +490,7 @@ private Ret[] rankUsingIndex(alias compFun, Ret, T)(T input, Ret[] buf) {
 
     Ret[] ret;
     if(buf.length < indices.length) {
-        ret = newVoid!Ret(indices.length);
+        ret = uninitializedArray!(Ret[])(indices.length);
     } else {
         ret = buf[0..indices.length];
     }
@@ -540,15 +535,15 @@ private struct Indexed(T) {
  */
 Ret[] rankSort(alias compFun = "a < b", Ret = double, T)(T input, Ret[] buf = null)
 if(isRandomAccessRange!(T) && hasLength!(T) && is(typeof(input.front < input.front))) {
-    mixin(newFrame);
+    auto alloc = newRegionAllocator();
     Ret[] ranks;
     if(buf.length < input.length) {
-        ranks = newVoid!(Ret)(input.length);
+        ranks = uninitializedArray!(Ret[])(input.length);
     } else {
         ranks = buf[0..input.length];
     }
 
-    size_t[] perms = newStack!(size_t)(input.length);
+    size_t[] perms = alloc.uninitializedArray!(size_t[])(input.length);
     foreach(i, ref p; perms) {
         p = i;
     }
@@ -792,9 +787,9 @@ unittest {
  */
 double auroc(R1, R2)(R1 classATs, R2 classBTs)
 if(isNumeric!(ElementType!R1) && isNumeric!(ElementType!R2)) {
-    mixin(newFrame);
-    auto classA = tempdup(classATs);
-    auto classB = tempdup(classBTs);
+    auto alloc = newRegionAllocator();
+    auto classA = alloc.array(classATs);
+    auto classB = alloc.array(classBTs);
     qsort(classA);
     qsort(classB);
 
@@ -1011,7 +1006,7 @@ public:
     if(isForwardRange!(U)) {
 
         static if(ElementType!(U).sizeof > 1) {
-            auto arr = toArray(input);
+            auto arr = array(input);
             dstatsEnforce(arr.length <= MAX_PERM_LEN, text(
                 "Can't iterate permutations of an array this long.  (Max length:  ",
                         MAX_PERM_LEN, ")"));
@@ -1591,12 +1586,4 @@ package template StaticIota(size_t upTo) {
     } else {
         alias TypeTuple!(StaticIota!(upTo - 1), upTo - 1) StaticIota;
     }
-}
-
-// Verify that there are no TempAlloc memory leaks anywhere in the code covered
-// by the unittest.  This should always be the last unittest of the module.
-unittest {
-    auto TAState = TempAlloc.getState;
-    assert(TAState.used == 0);
-    assert(TAState.nblocks < 2);
 }

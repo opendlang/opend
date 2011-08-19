@@ -127,7 +127,7 @@ public:
     (scope C kernel, R range, double edgeBuffer = double.nan)
     if(isForwardRange!R && is(typeof(kernel(2.0)) : double)) {
         enum nBin = 1000;
-        mixin(newFrame);
+        auto alloc = newRegionAllocator();
 
         uint N = 0;
         double minElem = double.infinity;
@@ -145,7 +145,7 @@ public:
         maxElem += edgeBuffer;
 
         // Using ints here because they convert faster to floats than uints do.
-        auto binsRaw = newStack!int(nBin);
+        auto binsRaw = alloc.uninitializedArray!(int[])(nBin);
         binsRaw[] = 0;
 
         foreach(elemRaw; range) {
@@ -176,10 +176,10 @@ public:
         // 4.  We don't need to convolve the tails of the kernel function,
         //     where the contribution to the final density estimate would be
         //     negligible.
-        auto binsCooked = newVoid!double(nBin);
+        auto binsCooked = uninitializedArray!(double[])(nBin);
         binsCooked[] = 0;
 
-        auto kernelPoints = newStack!double(nBin);
+        auto kernelPoints = alloc.uninitializedArray!(double[])(nBin);
         immutable stepSize = (maxElem - minElem) / nBin;
 
         kernelPoints[0] = kernel(0);
@@ -213,7 +213,7 @@ public:
         binsCooked[] /= sum(binsCooked);
         binsCooked[] *= nBin / (maxElem - minElem);  // Make it a density.
 
-        auto cumulative = newVoid!double(nBin);
+        auto cumulative = uninitializedArray!(double[])(nBin);
         cumulative[0] = binsCooked[0];
         foreach(i; 1..nBin) {
             cumulative[i] = cumulative[i - 1] + binsCooked[i];
@@ -427,8 +427,8 @@ class KernelDensity {
         foreach(range; data) {
             double[] asDoubles;
 
-            static if(dstats.base.hasLength!(typeof(range))) {
-                asDoubles = newVoid!double(range.length);
+            static if(hasLength!(typeof(range))) {
+                asDoubles = uninitializedArray!(double[])(range.length);
 
                 size_t i = 0;
                 foreach(elem; range) {
@@ -466,8 +466,8 @@ class KernelDensity {
             "Dimension mismatch when evaluating kernel density.");
         double sum = 0;
 
-        mixin(newFrame);
-        auto dataPoint = newStack!double(points.length);
+        auto alloc = newRegionAllocator();
+        auto dataPoint = alloc.uninitializedArray!(double[])(points.length);
         foreach(i; 0..points[0].length) {
             foreach(j; 0..points.length) {
                 dataPoint[j] = x[j] - points[j][i];

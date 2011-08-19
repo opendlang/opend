@@ -63,7 +63,7 @@ if(doubleInput!(T) && doubleInput!(U)) {
     PearsonCor corCalc;
 
     static if(isRandomAccessRange!T && isRandomAccessRange!U &&
-        dstats.base.hasLength!T && dstats.base.hasLength!U) {
+        hasLength!T && hasLength!U) {
 
         // ILP parallelization optimization.  Sharing a k between a bunch
         // of implicit PearsonCor structs cuts down on the amount of divisions
@@ -321,21 +321,21 @@ if(isInputRange!(R) && isInputRange!(S) &&
 is(typeof(input1.front < input1.front) == bool) &&
 is(typeof(input2.front < input2.front) == bool)) {
 
-    static if(dstats.base.hasLength!S && dstats.base.hasLength!R) {
+    static if(hasLength!S && hasLength!R) {
         if(input1.length < 2) {
             return double.nan;
         }
     }
 
-    mixin(newFrame);
+    auto alloc = newRegionAllocator();
 
-    static double[] spearmanCorRank(T)(T someRange) {
-        static if(dstats.base.hasLength!(T) && isRandomAccessRange!(T)) {
-            double[] ret = newStack!(double)(someRange.length);
+    double[] spearmanCorRank(T)(T someRange) {
+        static if(hasLength!(T) && isRandomAccessRange!(T)) {
+            double[] ret = alloc.uninitializedArray!(double[])(someRange.length);
             rank(someRange, ret);
         } else {
-            auto iDup = tempdup(someRange);
-            double[] ret = newStack!(double)(iDup.length);
+            auto iDup = alloc.array(someRange);
+            double[] ret = alloc.uninitializedArray!(double[])(iDup.length);
             rankSort(iDup, ret);
         }
         return ret;
@@ -453,11 +453,10 @@ if(isInputRange!(T) && isInputRange!(U)) {
             return kendallCorSmallN(input1, input2);
         }
     }
-
-    auto i1d = tempdup(input1);
-    scope(exit) TempAlloc.free;
-    auto i2d = tempdup(input2);
-    scope(exit) TempAlloc.free;
+    
+    auto alloc = newRegionAllocator();
+    auto i1d = alloc.array(input1);
+    auto i2d = alloc.array(input2);
 
     dstatsEnforce(i1d.length == i2d.length,
         "Ranges must be same length for Kendall correlation.");
@@ -755,7 +754,7 @@ alias kendallCorDestructive kcorDestructive;
  */
 double partial(alias cor, T, U, V...)(T vec1, U vec2, V conditionsIn)
 if(isInputRange!T && isInputRange!U && allSatisfy!(isInputRange, V)) {
-    mixin(newFrame);
+    auto alloc = newRegionAllocator();
     static if(V.length == 1 && isInputRange!(ElementType!(V[0]))) {
         // Range of ranges.
         static if(isArray!(V[0])) {
@@ -767,9 +766,9 @@ if(isInputRange!T && isInputRange!U && allSatisfy!(isInputRange, V)) {
         alias conditionsIn cond;
     }
 
-    auto corMatrix = newStack!(double[])(cond.length + 2);
+    auto corMatrix = alloc.uninitializedArray!(double[][])
+        (cond.length + 2, cond.length + 2);
     foreach(i, ref elem; corMatrix) {
-        elem = newStack!double((cond.length + 2));
         elem[] = 0;
         elem[i] = 1;
     }
@@ -792,9 +791,9 @@ if(isInputRange!T && isInputRange!U && allSatisfy!(isInputRange, V)) {
         }
     }
 
-    auto invMatrix = newStack!(double[])(cond.length + 2);
+    auto invMatrix = alloc.uninitializedArray!(double[][])
+        (cond.length + 2, cond.length + 2);
     foreach(i, ref elem; invMatrix) {
-        elem = newStack!double((cond.length + 2));
         elem[] = 0;
         elem[i] = 1;
     }
@@ -816,12 +815,4 @@ unittest {
     double spearmanPartial =
     partial!spearmanCor(stock1Price, stock2Price, economicHealth, consumerFear);
     assert(approxEqual(spearmanPartial, -0.7252));
-}
-
-// Verify that there are no TempAlloc memory leaks anywhere in the code covered
-// by the unittest.  This should always be the last unittest of the module.
-unittest {
-    auto TAState = TempAlloc.getState;
-    assert(TAState.used == 0);
-    assert(TAState.nblocks < 2);
 }

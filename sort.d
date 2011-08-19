@@ -501,10 +501,10 @@ in {
     auto keyArr = prepareForSorting!compFun(data[0]);
     auto toSort = TypeTuple!(keyArr, data[1..dl]);
 
-    auto stateCache = TempAlloc.getState;
     typeof(toSort) temp;
+    auto alloc = newRegionAllocator();
     foreach(i, array; temp) {
-        temp[i] = newStack!(typeof(temp[i][0]))(data[i].length, stateCache);
+        temp[i] = alloc.uninitializedArray!(typeof(temp[i][0])[])(data[i].length);
     }
 
     uint res = mergeSortImpl!(compFun)(toSort, temp, swapCount);
@@ -512,10 +512,6 @@ in {
         foreach(ti, array; temp) {
             toSort[ti][0..$] = temp[ti][0..$];
         }
-    }
-
-    foreach(array; temp) {
-        TempAlloc.free(stateCache);
     }
 
     postProcess!compFun(data[0]);
@@ -1319,13 +1315,5 @@ unittest {
         assert(less.getSorted == qsort!("a < b")(nums[0..5]));
         assert(more.getSorted == qsort!("a > b")(nums[0..5]));
     }
-}
-
-// Verify that there are no TempAlloc memory leaks anywhere in the code covered
-// by the unittest.  This should always be the last unittest of the module.
-unittest {
-    auto TAState = TempAlloc.getState;
-    assert(TAState.used == 0);
-    assert(TAState.nblocks < 2);
 }
 

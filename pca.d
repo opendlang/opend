@@ -122,10 +122,10 @@ struct PrinCompOptions {
 
         if(transpose) return doCenterScaleTransposed(data);
 
-        mixin(newFrame);
+        auto alloc = newRegionAllocator();
         immutable rowLen = walkLength(data.front.save);
 
-        auto summs = newStack!MeanSD(rowLen);
+        auto summs = alloc.uninitializedArray!(MeanSD[])(rowLen);
         summs[] = MeanSD.init;
         foreach(row; data) {
             size_t i = 0;
@@ -161,15 +161,15 @@ PrincipalComponent firstComponent(Ror)(
     PrinCompOptions opts = PrinCompOptions.init,
     PrincipalComponent buf = PrincipalComponent.init
 ) {
-    mixin(newFrame);
+    auto alloc = newRegionAllocator();
 
     PrincipalComponent doNonDestructive() {
         double[][] dataFixed;
 
         if(opts.transpose) {
-            dataFixed = transposeDup(data);
+            dataFixed = transposeDup(data, alloc);
         } else {
-            dataFixed = tempdup(map!doubleTempdup(data));
+            dataFixed = doubleTempdupMatrix(data, alloc);
         }
 
         opts.transpose = false;  // We already transposed if necessary.
@@ -199,7 +199,7 @@ private PrincipalComponent firstComponentImpl(Ror)(
     PrincipalComponent buf,
     PrinCompOptions opts
 ) {
-    mixin(newFrame);
+    auto alloc = newRegionAllocator();
 
     if(data.empty) return typeof(return).init;
     size_t rowLen = walkLength(data.front.save);
@@ -208,7 +208,7 @@ private PrincipalComponent firstComponentImpl(Ror)(
     immutable transposed = opts.transpose;
     if(transposed) swap(rowLen, colLen);
 
-    auto t = newStack!double(rowLen);
+    auto t = alloc.uninitializedArray!(double[])(rowLen);
     auto p = (buf.rotation.length >= rowLen) ?
               buf.rotation[0..rowLen] : new double[rowLen];
     p[] = 1;
@@ -230,8 +230,8 @@ private PrincipalComponent firstComponentImpl(Ror)(
         t[] = 0;
 
         if(transposed) {
-            auto dps = newStack!double(colLen);
-            scope(exit) TempAlloc.free();
+            auto dps = alloc.uninitializedArray!(double[])(colLen);
+            scope(exit) alloc.freeLast();
             dps[] = 0;
 
             size_t i = 0;
@@ -335,8 +335,9 @@ void removeComponent(Ror, R)(
     immutable rotMagNeg1 = 1.0 / magnitude(rotation.save);
 
     if(transposed) {
-        mixin(newFrame);
-        auto dps = newStack!double(walkLength(data.front.save));
+        auto alloc = newRegionAllocator();
+        auto dps = alloc.uninitializedArray!(double[])
+            (walkLength(data.front.save));
         dps[] = 0;
 
         auto r2 = rotation.save;
@@ -394,15 +395,15 @@ PrincipalComponent[] firstNComponents(Ror)(
     PrincipalComponent[] buf = null
 ) {
 
-    mixin(newFrame);
+    auto alloc = newRegionAllocator();
 
     PrincipalComponent[] doNonDestructive() {
         double[][] dataFixed;
 
         if(opts.transpose) {
-            dataFixed = transposeDup(data);
+            dataFixed = transposeDup(data, alloc);
         } else {
-            dataFixed = tempdup(map!doubleTempdup(data));
+            dataFixed = doubleTempdupMatrix(data, alloc);
         }
 
         opts.transpose = false;  // We already transposed if necessary.
@@ -447,18 +448,26 @@ private double magnitude(R)(R x) {
 }
 
 // Convert the matrix to a double[][].
-double[] doubleTempdup(R)(R range) {
-    return tempdup(map!(to!double)(range));
+double[] doubleTempdup(R)(R range, RegionAllocator alloc) {
+    return alloc.array(map!(to!double)(range));
 }
 
-private double[][] transposeDup(Ror)(Ror data) {
+private double[][] doubleTempdupMatrix(R)(R data, RegionAllocator alloc) {
+    auto dataFixed = alloc.uninitializedArray!(double[][])
+        (data.length);
+    foreach(i, ref elem; dataFixed) {
+        elem = doubleTempdup(data[i], alloc);
+    }
+    
+    return dataFixed;
+}
+
+private double[][] transposeDup(Ror)(Ror data, RegionAllocator alloc) {
     if(data.empty) return null;
 
     immutable rowLen = walkLength(data.front.save);
     immutable colLen = walkLength(data.save);
-
-    auto ret = newStack!(double[])(rowLen);
-    foreach(ref elem; ret) elem = newStack!double(colLen);
+    auto ret = alloc.uninitializedArray!(double[][])(rowLen, colLen);
 
     size_t i = 0;
     foreach(row; data) {
