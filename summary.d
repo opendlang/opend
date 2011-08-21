@@ -500,7 +500,7 @@ unittest {
  * User has option of making U a different type than T to prevent overflows
  * on large array summing operations.  However, by default, return type is
  * T (same as input type).*/
-U sum(T, U = Unqual!(IterType!(T)))(T data)
+U sum(T, U = Unqual!(ForeachType!(T)))(T data)
 if(doubleIterable!(T)) {
 
     static if(isRandomAccessRange!T && hasLength!T) {

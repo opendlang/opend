@@ -54,19 +54,16 @@ enum Alt {
     /// f(input1) > X
     greater,
 
-    /**Skip P-value computation (and confidence intervals if applicable)
-     * and just return the test statistic.*/
-    none,
-
-    // These are kept for compatibility with the old style, are intentionally
-    // lacking DDoc and may eventually be deprecated/removed.
-    TWOSIDE = twoSided,
-    LESS = less,
-    GREATER = greater,
-    NONE = none
+    /**
+    Skip P-value computation (and confidence intervals if applicable)
+    and just return the test statistic.
+    */
+    none
 }
 
-/**A plain old data struct for returning the results of hypothesis tests.*/
+/**
+A plain old data struct for returning the results of hypothesis tests.
+*/
 struct TestRes {
     /// The test statistic.  What exactly this is is specific to the test.
     double testStat;
@@ -84,11 +81,13 @@ struct TestRes {
     }
 }
 
-/**A plain old data struct for returning the results of hypothesis tests
- * that also produce confidence intervals.  Contains, can implicitly convert
- * to, a TestRes.*/
+/**
+A plain old data struct for returning the results of hypothesis tests
+that also produce confidence intervals.  Contains, can implicitly convert
+to, a TestRes.
+*/
 struct ConfInt {
-    ///
+    ///  This is alias this'd.
     TestRes testRes;
 
     ///  Lower bound of the confidence interval at the level specified.
@@ -107,55 +106,60 @@ struct ConfInt {
     }
 }
 
-/**Tests whether a struct/class has the necessary information for calculating
- * a T-test.  It must have a property .mean (mean), .stdev (stdandard deviation),
- * .var (variance), and .N (sample size).
- */
+/**
+Tests whether a struct/class has the necessary information for calculating
+a T-test.  It must have a property .mean (mean), .stdev (stdandard deviation),
+.var (variance), and .N (sample size).
+*/
 template isSummary(T) {
     enum bool isSummary = is(typeof(T.init.mean)) && is(typeof(T.init.stdev)) &&
         is(typeof(T.init.var)) && is(typeof(T.init.N));
 }
 
-/**One-sample Student's T-test for difference between mean of data and
- * a fixed value.  Alternatives are Alt.less, meaning mean(data) < testMean,
- * Alt.greater, meaning mean(data) > testMean, and Alt.twoSided, meaning
- * mean(data)!= testMean.
+/**
+One-sample Student's T-test for difference between mean of data and
+ a fixed value.  Alternatives are Alt.less, meaning mean(data) < testMean,
+ Alt.greater, meaning mean(data) > testMean, and Alt.twoSided, meaning
+ mean(data)!= testMean.
+ 
+ data may be either an iterable with elements implicitly convertible to
+ double or a summary struct (see isSummary).
  *
- * data may be either an iterable with elements implicitly convertible to
- * double or a summary struct (see isSummary).
- *
- * Examples:
- * ---
- * uint[] data = [1,2,3,4,5];
- *
- * // Test the null hypothesis that the mean of data is >= 1 against the
- * // alternative that the mean of data is < 1.  Calculate confidence
- * // intervals at 90%.
- * auto result1 = studentsTTest(data, 1, Alt.less, 0.9);
- *
- * // Do the same thing, only this time we've already calculated the summary
- * // statistics explicitly before passing them to studensTTest.
- * auto summary = meanStdev(data);
- * writeln(summary.stdev);
- * result2 = studentsTTest(summary, 1, Alt.less, 0.9);  // Same as result1.
- * assert(result1 == result2);
- * ---
- *
- * Returns:  A ConfInt containing T, the P-value and the boundaries of
- * the confidence interval for mean(T) at the level specified.
- *
- * References:  http://en.wikipedia.org/wiki/Student%27s_t-test
+ Examples:
+ ---
+ uint[] data = [1,2,3,4,5];
+ 
+ // Test the null hypothesis that the mean of data is >= 1 against the
+ // alternative that the mean of data is < 1.  Calculate confidence
+ // intervals at 90%.
+ auto result1 = studentsTTest(data, 1, Alt.less, 0.9);
+ 
+ // Do the same thing, only this time we've already calculated the summary
+ // statistics explicitly before passing them to studensTTest.
+ auto summary = meanStdev(data);
+ writeln(summary.stdev);
+ result2 = studentsTTest(summary, 1, Alt.less, 0.9);  // Same as result1.
+ assert(result1 == result2);
+ ---
+ 
+ Returns:  A ConfInt containing T, the P-value and the boundaries of
+ the confidence interval for mean(data) at the level specified.
+ 
+ References:  http://en.wikipedia.org/wiki/Student%27s_t-test
  */
-ConfInt studentsTTest(T)(T data, double testMean = 0, Alt alt = Alt.twoSided,
-    double confLevel = 0.95)
-if( (isSummary!T || doubleIterable!T)) {
+ConfInt studentsTTest(T)(
+    T data, 
+    double testMean = 0, 
+    Alt alt = Alt.twoSided,
+    double confLevel = 0.95
+) if( (isSummary!T || doubleIterable!T)) {
     enforceConfidence(confLevel);
-    dstatsEnforce(isFinite(testMean), "testMean must not be infinite or nan.");
+    dstatsEnforce(isFinite(testMean), "testMean must not be infinite or NaN.");
 
     static if(isSummary!T) {
         return pairedTTest(data, testMean, alt, confLevel);
     } else static if(doubleIterable!T) {
-        return pairedTTest( meanStdev(data), testMean, alt, confLevel);
+        return pairedTTest(meanStdev(data), testMean, alt, confLevel);
     }
 }
 
@@ -180,24 +184,29 @@ unittest {
     assert(t3.upperBound == double.infinity);
 }
 
-/**Two-sample T test for a difference in means,
- * assumes variances of samples are equal.  Alteratives are Alt.less, meaning
- * mean(sample1) - mean(sample2) < testMean, Alt.greater, meaning
- * mean(sample1) - mean(sample2) > testMean, and Alt.twoSided, meaning
- * mean(sample1) - mean(sample2) != testMean.
- *
- * sample1 and sample2 may be either iterables with elements implicitly
- * convertible to double or summary structs (see isSummary).
- *
- * Returns:  A ConfInt containing the T statistic, the P-value, and the
- * boundaries of the confidence interval for the difference between means
- * of sample1 and sample2 at the specified level.
- *
- * References:  http://en.wikipedia.org/wiki/Student%27s_t-test
+/**
+Two-sample T test for a difference in means,
+assumes variances of samples are equal.  Alteratives are Alt.less, meaning
+mean(sample1) - mean(sample2) < testMean, Alt.greater, meaning
+mean(sample1) - mean(sample2) > testMean, and Alt.twoSided, meaning
+mean(sample1) - mean(sample2) != testMean.
+
+sample1 and sample2 may be either iterables with elements implicitly
+convertible to double or summary structs (see isSummary).
+
+Returns:  A ConfInt containing the T statistic, the P-value, and the
+boundaries of the confidence interval for the difference between means
+of sample1 and sample2 at the specified level.
+
+References:  http://en.wikipedia.org/wiki/Student%27s_t-test
  */
-ConfInt studentsTTest(T, U)(T sample1, U sample2, double testMean = 0,
-    Alt alt = Alt.twoSided, double confLevel = 0.95)
-if( (doubleIterable!T || isSummary!T) && (doubleIterable!U || isSummary!U)) {
+ConfInt studentsTTest(T, U)(
+    T sample1, 
+    U sample2, 
+    double testMean = 0,
+    Alt alt = Alt.twoSided, 
+    double confLevel = 0.95
+) if( (doubleIterable!T || isSummary!T) && (doubleIterable!U || isSummary!U)) {
     enforceConfidence(confLevel);
     dstatsEnforce(isFinite(testMean), "testMean must not be infinite or nan.");
 
@@ -268,31 +277,31 @@ if( (doubleIterable!T || isSummary!T) && (doubleIterable!U || isSummary!U)) {
 
 unittest {
     // Values from R.
-    auto t1 = studentsTTest([1,2,3,4,5].dup, [1,3,4,5,7,9].dup);
+    auto t1 = studentsTTest([1,2,3,4,5], [1,3,4,5,7,9]);
     assert(approxEqual(t1.p, 0.2346));
     assert(approxEqual(t1.testStat, -1.274));
     assert(approxEqual(t1.lowerBound, -5.088787));
     assert(approxEqual(t1.upperBound, 1.422120));
 
 
-    assert(approxEqual(studentsTTest([1,2,3,4,5].dup, [1,3,4,5,7,9].dup, 0, Alt.less),
+    assert(approxEqual(studentsTTest([1,2,3,4,5], [1,3,4,5,7,9], 0, Alt.less),
            0.1173));
-    assert(approxEqual(studentsTTest([1,2,3,4,5].dup, [1,3,4,5,7,9].dup, 0, Alt.greater),
+    assert(approxEqual(studentsTTest([1,2,3,4,5], [1,3,4,5,7,9], 0, Alt.greater),
            0.8827));
-    auto t2 = studentsTTest([1,3,5,7,9,11].dup, [2,2,1,3,4].dup, 5);
+    auto t2 = studentsTTest([1,3,5,7,9,11], [2,2,1,3,4], 5);
     assert(approxEqual(t2.p, 0.44444));
     assert(approxEqual(t2.testStat, -0.7998));
     assert(approxEqual(t2.lowerBound, -0.3595529));
     assert(approxEqual(t2.upperBound, 7.5595529));
 
 
-    auto t5 = studentsTTest([1,3,5,7,9,11].dup, [2,2,1,3,4].dup, 0, Alt.less);
+    auto t5 = studentsTTest([1,3,5,7,9,11], [2,2,1,3,4], 0, Alt.less);
     assert(approxEqual(t5.p, 0.965));
     assert(approxEqual(t5.testStat, 2.0567));
     assert(approxEqual(t5.upperBound, 6.80857));
     assert(t5.lowerBound == -double.infinity);
 
-    auto t6 = studentsTTest([1,3,5,7,9,11].dup, [2,2,1,3,4].dup, 0, Alt.greater);
+    auto t6 = studentsTTest([1,3,5,7,9,11], [2,2,1,3,4], 0, Alt.greater);
     assert(approxEqual(t6.p, 0.03492));
     assert(approxEqual(t6.testStat, 2.0567));
     assert(approxEqual(t6.lowerBound, 0.391422));
@@ -306,25 +315,26 @@ unittest {
 
 }
 
-/**Two-sample T-test for difference in means.  Does NOT assume variances are equal.
- * Alteratives are Alt.less, meaning mean(sample1) - mean(sample2) < testMean,
- * Alt.greater, meaning mean(sample1) - mean(sample2) > testMean, and
- * Alt.twoSided, meaning mean(sample1) - mean(sample2) != testMean.
- *
- * sample1 and sample2 may be either iterables with elements implicitly
- * convertible to double or summary structs (see isSummary).
- *
- * Returns:  A ConfInt containing the T statistic, the P-value, and the
- * boundaries of the confidence interval for the difference between means
- * of sample1 and sample2 at the specified level.
- *
- * References:  http://en.wikipedia.org/wiki/Student%27s_t-test
+/**
+Two-sample T-test for difference in means.  Does not assume variances are equal.
+Alteratives are Alt.less, meaning mean(sample1) - mean(sample2) < testMean,
+Alt.greater, meaning mean(sample1) - mean(sample2) > testMean, and
+Alt.twoSided, meaning mean(sample1) - mean(sample2) != testMean.
+
+sample1 and sample2 may be either iterables with elements implicitly
+convertible to double or summary structs (see isSummary).
+
+Returns:  A ConfInt containing the T statistic, the P-value, and the
+boundaries of the confidence interval for the difference between means
+of sample1 and sample2 at the specified level.
+
+References:  http://en.wikipedia.org/wiki/Student%27s_t-test
  */
 ConfInt welchTTest(T, U)(T sample1, U sample2, double testMean = 0,
     Alt alt = Alt.twoSided, double confLevel = 0.95)
 if( (isSummary!T || doubleIterable!T) && (isSummary!U || doubleIterable!U)) {
     enforceConfidence(confLevel);
-    dstatsEnforce(isFinite(testMean), "testMean cannot be infinite or nan.");
+    dstatsEnforce(isFinite(testMean), "testMean cannot be infinite or NaN.");
 
     static if(isSummary!T) {
         alias sample1 s1summ;
@@ -398,90 +408,104 @@ if( (isSummary!T || doubleIterable!T) && (isSummary!U || doubleIterable!U)) {
 
 unittest {
     // Values from R.
-    auto t1 = welchTTest( meanStdev([1,2,3,4,5].dup), [1,3,4,5,7,9].dup, 2);
+    auto t1 = welchTTest( meanStdev([1,2,3,4,5]), [1,3,4,5,7,9], 2);
     assert(approxEqual(t1.p, 0.02285));
     assert(approxEqual(t1.testStat, -2.8099));
     assert(approxEqual(t1.lowerBound, -4.979316));
     assert(approxEqual(t1.upperBound, 1.312649));
 
-    auto t2 = welchTTest([1,2,3,4,5].dup, summary([1,3,4,5,7,9].dup), -1, Alt.less);
+    auto t2 = welchTTest([1,2,3,4,5], summary([1,3,4,5,7,9]), -1, Alt.less);
     assert(approxEqual(t2.p, 0.2791));
     assert(approxEqual(t2.testStat, -0.6108));
     assert(t2.lowerBound == -double.infinity);
     assert(approxEqual(t2.upperBound, 0.7035534));
 
-    auto t3 = welchTTest([1,2,3,4,5].dup, [1,3,4,5,7,9].dup, 0.5, Alt.greater);
+    auto t3 = welchTTest([1,2,3,4,5], [1,3,4,5,7,9], 0.5, Alt.greater);
     assert(approxEqual(t3.p, 0.9372));
     assert(approxEqual(t3.testStat, -1.7104));
     assert(approxEqual(t3.lowerBound, -4.37022));
     assert(t3.upperBound == double.infinity);
 
-    assert(approxEqual(welchTTest([1,3,5,7,9,11].dup, [2,2,1,3,4].dup).p, 0.06616));
-    assert(approxEqual(welchTTest([1,3,5,7,9,11].dup, [2,2,1,3,4].dup, 0,
+    assert(approxEqual(welchTTest([1,3,5,7,9,11], [2,2,1,3,4]).p, 0.06616));
+    assert(approxEqual(welchTTest([1,3,5,7,9,11], [2,2,1,3,4], 0,
         Alt.less).p, 0.967));
-    assert(approxEqual(welchTTest([1,3,5,7,9,11].dup, [2,2,1,3,4].dup, 0,
+    assert(approxEqual(welchTTest([1,3,5,7,9,11], [2,2,1,3,4], 0,
         Alt.greater).p, 0.03308));
 }
 
-/**Paired T test.  Tests the hypothesis that the mean difference between
- * corresponding elements of before and after is testMean.  Alternatives are
- * Alt.less, meaning the that the true mean difference (before[i] - after[i])
- * is less than testMean, Alt.greater, meaning the true mean difference is
- * greater than testMean, and Alt.twoSided, meaning the true mean difference is not
- * equal to testMean.
- *
- * before and after must be input ranges with elements implicitly convertible
- * to double.
- *
- * Returns:  A ConfInt containing the T statistic, the P-value, and the
- * boundaries of the confidence interval for the mean difference between
- * corresponding elements of sample1 and sample2 at the specified level.
- *
- * References:  http://en.wikipedia.org/wiki/Student%27s_t-test
- */
-ConfInt pairedTTest(T, U)(T before, U after, double testMean = 0,
-    Alt alt = Alt.twoSided, double confLevel = 0.95)
-if(doubleInput!(T) && doubleInput!(U) && isInputRange!T && isInputRange!U) {
+/**
+Paired T test.  Tests the hypothesis that the mean difference between
+corresponding elements of before and after is testMean.  Alternatives are
+Alt.less, meaning the that the true mean difference (before[i] - after[i])
+is less than testMean, Alt.greater, meaning the true mean difference is
+greater than testMean, and Alt.twoSided, meaning the true mean difference is not
+equal to testMean.
+
+before and after must be input ranges with elements implicitly convertible
+to double and must have the same length.
+
+Returns:  A ConfInt containing the T statistic, the P-value, and the
+boundaries of the confidence interval for the mean difference between
+corresponding elements of sample1 and sample2 at the specified level.
+
+References:  http://en.wikipedia.org/wiki/Student%27s_t-test
+*/
+ConfInt pairedTTest(T, U)(
+    T before, 
+    U after, 
+    double testMean = 0,
+    Alt alt = Alt.twoSided, 
+    double confLevel = 0.95
+) if(doubleInput!(T) && doubleInput!(U) && isInputRange!T && isInputRange!U) {
     enforceConfidence(confLevel);
     dstatsEnforce(isFinite(testMean), "testMean cannot be infinite or nan.");
 
     MeanSD msd;
     while(!before.empty && !after.empty) {
-        double diff = cast(double) before.front - cast(double) after.front;
-        before.popFront;
-        after.popFront;
+        immutable diff = cast(double) before.front - cast(double) after.front;
+        before.popFront();
+        after.popFront();
         msd.put(diff);
     }
 
+    dstatsEnforce(before.empty && after.empty, 
+        "before and after have different lengths in pairedTTest.");
+        
     return pairedTTest(msd, testMean, alt, confLevel);
 }
 
-/**Compute the test directly from summary statistics of the differences between
- * corresponding samples.
- *
- * Examples:
- * ---
- * float[] data1 = getSomeDataSet();
- * float[] data2 = getSomeOtherDataSet();
- * assert(data1.length == data2.length);
- *
- * // Calculate summary statistics on difference explicitly.
- * MeanSD summary;
- * foreach(i; 0..data1.length) {
- *     summary.put(data1[i] - data2[i]);
- * }
- *
- * // Test the null hypothesis that the mean difference between corresponding
- * // elements (data1[i] - data2[i]) is greater than 5 against the null that it
- * // is <= 5.  Calculate confidence intervals at 99%.
- * auto result = pairedTTest(summary, 5, alt, 0.99);
- * ---
- *
- * References:  http://en.wikipedia.org/wiki/Student%27s_t-test
+/**
+Compute a paired T test directly from summary statistics of the differences 
+between corresponding samples.
+ 
+Examples:
+---
+float[] data1 = [8, 6, 7, 5, 3, 0, 9];
+float[] data2 = [3, 6, 2, 4, 3, 6, 8];
+
+// Calculate summary statistics on difference explicitly.
+MeanSD summary;
+foreach(i; 0..data1.length) {
+    summary.put(data1[i] - data2[i]);
+}
+
+// Test the null hypothesis that the mean difference between corresponding
+// elements (data1[i] - data2[i]) is greater than 5 against the null that it
+// is <= 5.  Calculate confidence intervals at 99%.
+auto result = pairedTTest(summary, 5, Alt.twoSided, 0.99);
+
+// This is equivalent to:
+auto result2 = pairedTTest(data1, data2, 5, Alt.twoSided, 0.99);
+---
+
+References:  http://en.wikipedia.org/wiki/Student%27s_t-test
  */
-ConfInt pairedTTest(T)(T diffSummary, double testMean = 0,
-    Alt alt = Alt.twoSided, double confLevel = 0.95)
-if(isSummary!T) {
+ConfInt pairedTTest(T)(
+    T diffSummary, 
+    double testMean = 0,
+    Alt alt = Alt.twoSided, 
+    double confLevel = 0.95
+) if(isSummary!T) {
     enforceConfidence(confLevel);
     dstatsEnforce(isFinite(testMean), "testMean cannot be infinite or nan.");
 
@@ -543,44 +567,44 @@ if(isSummary!T) {
 
 unittest {
     // Values from R.
-    auto t1 = pairedTTest([3,2,3,4,5].dup, [2,3,5,5,6].dup, 1);
+    auto t1 = pairedTTest([3,2,3,4,5], [2,3,5,5,6], 1);
     assert(approxEqual(t1.p, 0.02131));
     assert(approxEqual(t1.testStat, -3.6742));
     assert(approxEqual(t1.lowerBound, -2.1601748));
     assert(approxEqual(t1.upperBound, 0.561748));
 
-    assert(approxEqual(pairedTTest([3,2,3,4,5].dup, [2,3,5,5,6].dup, 0, Alt.less).p, 0.0889));
-    assert(approxEqual(pairedTTest([3,2,3,4,5].dup, [2,3,5,5,6].dup, 0, Alt.greater).p, 0.9111));
-    assert(approxEqual(pairedTTest([3,2,3,4,5].dup, [2,3,5,5,6].dup, 0, Alt.twoSided).p, 0.1778));
-    assert(approxEqual(pairedTTest([3,2,3,4,5].dup, [2,3,5,5,6].dup, 1, Alt.less).p, 0.01066));
-    assert(approxEqual(pairedTTest([3,2,3,4,5].dup, [2,3,5,5,6].dup, 1, Alt.greater).p, 0.9893));
+    assert(approxEqual(pairedTTest([3,2,3,4,5], [2,3,5,5,6], 0, Alt.less).p, 0.0889));
+    assert(approxEqual(pairedTTest([3,2,3,4,5], [2,3,5,5,6], 0, Alt.greater).p, 0.9111));
+    assert(approxEqual(pairedTTest([3,2,3,4,5], [2,3,5,5,6], 0, Alt.twoSided).p, 0.1778));
+    assert(approxEqual(pairedTTest([3,2,3,4,5], [2,3,5,5,6], 1, Alt.less).p, 0.01066));
+    assert(approxEqual(pairedTTest([3,2,3,4,5], [2,3,5,5,6], 1, Alt.greater).p, 0.9893));
 }
 
-/**Tests the null hypothesis that the variances of all groups are equal against
- * the alternative that heteroscedasticity exists.  data must be either a
- * tuple of ranges or a range of ranges.  central is an alias for the measure
- * of central tendency to be used.  This can be any function that maps a
- * forward range of numeric types to a numeric type.  The commonly used ones
- * are median (default) and mean (less robust).  Trimmed mean is sometimes
- * useful, but is currently not implemented in dstats.summary.
- *
- * References:
- * Levene, Howard (1960). "Robust tests for equality of variances". in Ingram
- * Olkin, Harold Hotelling et al. Contributions to Probability and Statistics:
- * Essays in Honor of Harold Hotelling. Stanford University Press. pp. 278-292.
- *
- * Examples:
- * ---
- * int[] sample1 = [1,2,3,4,5];
- * int[] sample2 = [100,200,300,400,500];
- * auto result = levenesTest(sample1, sample2);
- *
- * // Clearly the variances are different between these two samples.
- * assert( approxEqual(result.testStat, 10.08));
- * assert( approxEqual(result.p, 0.01310));
- * ---
- */
+/**
+Tests the null hypothesis that the variances of all groups are equal against
+the alternative that heteroscedasticity exists.  data must be either a
+tuple of ranges or a range of ranges.  central is an alias for the measure
+of central tendency to be used.  This can be any function that maps a
+forward range of numeric types to a numeric type.  The commonly used ones
+are median (default) and mean (less robust).  Trimmed mean is sometimes
+useful, but is currently not implemented in dstats.summary.
 
+References:
+Levene, Howard (1960). "Robust tests for equality of variances". in Ingram
+Olkin, Harold Hotelling et al. Contributions to Probability and Statistics:
+Essays in Honor of Harold Hotelling. Stanford University Press. pp. 278-292.
+
+Examples:
+---
+int[] sample1 = [1,2,3,4,5];
+int[] sample2 = [100,200,300,400,500];
+auto result = levenesTest(sample1, sample2);
+
+// Clearly the variances are different between these two samples.
+assert( approxEqual(result.testStat, 10.08));
+assert( approxEqual(result.p, 0.01310));
+---
+*/
 TestRes levenesTest(alias central = median, T...)(T data) {
     return anovaLevene!(true, false, central, T)(data);
 }
@@ -601,45 +625,47 @@ unittest {
     assert(approxEqual(res3.p, 0.3084));
 }
 
-/**The F-test is a one-way ANOVA extension of the T-test to >2 groups.
- * It's useful when you have 3 or more groups with equal variance and want
- * to test whether their means are equal.  Data can be input as either a
- * tuple or a range.  This may contain any combination of ranges of numeric
- * types, MeanSD structs and Summary structs.
- *
- * Note:  This test makes the assumption that all groups have equal variances,
- * also known as homoskedasticity.  For a similar test that does not make these
- * assumptions, see welchAnova.
- *
- * Examples:
- * ---
- * uint[] thing1 = [3,1,4,1],
- *        thing2 = [5,9,2,6,5,3],
- *        thing3 = [5,8,9,7,9,3];
- * auto result = fTest(thing1, meanStdev(thing2), summary(thing3));
- * assert(approxEqual(result.testStat, 4.9968));
- * assert(approxEqual(result.p, 0.02456));
- * ---
- *
- * References:  http://en.wikipedia.org/wiki/F-test
- *
- * Returns:
- *
- * A TestRes containing the F statistic and the P-value for the alternative
- * that the means of the groups are different against the null that they
- * are identical.
- */
+/**
+The F-test is a one-way ANOVA extension of the T-test to >2 groups.
+It's useful when you have 3 or more groups with equal variance and want
+to test whether their means are equal.  Data can be input as either a
+tuple or a range.  This may contain any combination of ranges of numeric
+types, MeanSD structs and Summary structs.
+
+Note:  This test makes the assumption that all groups have equal variances,
+also known as homoskedasticity.  For a similar test that does not make these
+assumptions, see welchAnova.
+
+Examples:
+---
+uint[] thing1 = [3,1,4,1],
+       thing2 = [5,9,2,6,5,3],
+       thing3 = [5,8,9,7,9,3];
+auto result = fTest(thing1, meanStdev(thing2), summary(thing3));
+assert(approxEqual(result.testStat, 4.9968));
+assert(approxEqual(result.p, 0.02456));
+---
+
+References:  http://en.wikipedia.org/wiki/F-test
+
+Returns:
+
+A TestRes containing the F statistic and the P-value for the alternative
+that the means of the groups are different against the null that they
+are identical.
+*/
 TestRes fTest(T...)(T data) {
     return anovaLevene!(false, false, "dummy", T)(data);
 }
 
-/**Same as fTest, except that this test does not require the assumption of
- * equal variances.  In exchange it's slightly less powerful.
- *
- * References:
- *
- * B.L. Welch. On the Comparison of Several Mean Values: An Alternative Approach
- * Biometrika, Vol. 38, No. 3/4 (Dec., 1951), pp. 330-336.
+/**
+Same as fTest, except that this test does not require the assumption of
+equal variances.  In exchange it's slightly less powerful.
+
+References:
+
+B.L. Welch. On the Comparison of Several Mean Values: An Alternative Approach
+Biometrika, Vol. 38, No. 3/4 (Dec., 1951), pp. 330-336.
  */
 TestRes welchAnova(T...)(T data) {
     return anovaLevene!(false, true, "dummy", T)(data);
@@ -3082,7 +3108,7 @@ in {
     assert(D >= -1);
     assert(D <= 1);
 } body {
-    return 1 - kolmDist(sqrt(cast(double) (N * Nprime) / (N + Nprime)) * abs(D));
+    return 1 - kolmogorovDistrib(sqrt(cast(double) (N * Nprime) / (N + Nprime)) * abs(D));
 }
 
 private double ksPval(ulong N, double D)
@@ -3090,7 +3116,7 @@ in {
     assert(D >= -1);
     assert(D <= 1);
 } body {
-    return 1 - kolmDist(abs(D) * sqrt(cast(double) N));
+    return 1 - kolmogorovDistrib(abs(D) * sqrt(cast(double) N));
 }
 
 /**Wald-wolfowitz or runs test for randomness of the distribution of
@@ -3118,7 +3144,7 @@ in {
  */
 double runsTest(alias positive = "a > 0", T)(T obs, Alt alt = Alt.twoSided)
 if(isIterable!(T)) {
-    RunsTest!(positive, IterType!(T)) r;
+    RunsTest!(positive, ForeachType!(T)) r;
     foreach(elem; obs) {
         r.put(elem);
     }

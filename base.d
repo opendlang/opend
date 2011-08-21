@@ -71,6 +71,9 @@ version(unittest) {
     void main (){}
 }
 
+/**
+This is the exception that is thrown on invalid arguments to a dstats function.
+*/
 class DstatsArgumentException : Exception {
     this(string msg, string file, int line) {
         super(msg, file, line);
@@ -94,65 +97,11 @@ package void enforceConfidence
         text("Confidence intervals must be between 0 and 1, not ", conf, "."));
 }
 
-/** Tests whether T is an input range whose elements can be implicitly
- * converted to doubles.*/
+/** 
+Tests whether T is an input range whose elements can be implicitly
+converted to doubles.*/
 template doubleInput(T) {
     enum doubleInput = isInputRange!(T) && is(ElementType!(T) : double);
-}
-
-// isIterable was added to SVN versions of Phobos, but not to released ones yet.
-static if(!__traits(compiles, std.traits.isIterable!(uint))) {
-    template isIterable(T)
-    {
-        static if (is(typeof({foreach(elem; T.init) {}}))) {
-            enum bool isIterable = true;
-        } else {
-            enum bool isIterable = false;
-        }
-    }
-}
-
-unittest {
-    struct Foo {  // For testing opApply.
-
-        int opApply(int delegate(ref uint) dg) { assert(0); }
-    }
-
-    static assert(isIterable!(uint[]));
-    static assert(!isIterable!(uint));
-    static assert(isIterable!(Foo));
-    static assert(isIterable!(uint[string]));
-
-    auto c = chain((uint[]).init, (uint[]).init);
-    static assert(isIterable!(typeof(c)));
-}
-
-/**Determine the iterable type of any iterable object, regardless of whether
- * it uses ranges, opApply, etc.  This is typeof(elem) if one does
- * foreach(elem; T.init) {}.*/
-template IterType(T) {
-    alias ReturnType!(typeof(
-        {
-            foreach(elem; T.init) {
-                return elem;
-            }
-            assert(0);
-        })) IterType;
-}
-
-unittest {
-    struct Foo {  // For testing opApply.
-        // For testing.
-
-        int opApply(int delegate(ref uint) dg) { assert(0); }
-    }
-
-    static assert(is(IterType!(uint[]) == uint));
-    static assert(is(IterType!(Foo) == uint));
-    static assert(is(IterType!(uint[string]) == uint));
-
-    auto c = chain((uint[]).init, (uint[]).init);
-    static assert(is(IterType!(typeof(c)) == uint));
 }
 
 /**Tests whether T is iterable and has elements of a type implicitly
@@ -161,23 +110,13 @@ template doubleIterable(T) {
     static if(!isIterable!T) {
         enum doubleIterable = false;
     } else {
-        enum doubleIterable = is(IterType!(T) : double);
+        enum doubleIterable = is(ForeachType!(T) : double);
     }
 }
 
-/**Writes the contents of an input range to an output range.
- *
- * Returns:  The output range.*/
-O mate(I, O)(I input, O output)
-if(isInputRange!(I) && isOutputRange!(O, ElementType!(I))) {
-    foreach(elem; input) {
-        output.put(elem);
-    }
-    return output;
-}
-
-/**Given a tuple possibly containing forward ranges, returns a tuple where
- * save() has been called on all forward ranges.
+/**
+Given a tuple possibly containing forward ranges, returns a tuple where
+save() has been called on all forward ranges.
  */
 Tuple!T saveAll(T...)(T args) {
     Tuple!T ret;
@@ -195,10 +134,10 @@ Tuple!T saveAll(T...)(T args) {
 
 /**Bins data into nbin equal width bins, indexed from
  * 0 to nbin - 1, with 0 being the smallest bin, etc.
- * The values returned are the counts for each bin.  Returns results on the GC
- * heap by default, but uses TempAlloc stack if alloc == Alloc.STACK.
+ * The values returned are the counts for each bin.
  *
- * Works with any forward range with elements implicitly convertible to double.*/
+ * Works with any forward range with elements implicitly convertible to double.
+ */
 Ret[] binCounts(Ret = uint, T)(T data, uint nbin, Ret[] buf = null)
 if(isForwardRange!(T) && doubleInput!(T)) {
     dstatsEnforce(nbin > 0, "Cannot bin data into zero bins.");
@@ -614,7 +553,8 @@ in {
     }
 }
 
-/**Returns an AA of counts of every element in input.  Works w/ any iterable.
+/**Returns an associative array of counts of every element in input.  
+ * Works w/ any iterable.
  *
  * Examples:
  * ---
@@ -624,7 +564,7 @@ in {
  * assert(frq[1] == 2);
  * assert(frq[4] == 1);
  * ---*/
-uint[IterType!(T)] frequency(T)(T input)
+uint[ForeachType!(T)] frequency(T)(T input)
 if(isIterable!(T)) {
     typeof(return) output;
     foreach(i; input) {
@@ -917,61 +857,48 @@ unittest {
     assert(cast(uint) round(exp(logNcomb(28,5)))==98280);
 }
 
-/**Controls whether Perm and Comb duplicate their buffer on each iteration and
- * return the copy, or recycle it and return an alias of it.
- * You want to choose recycle if each permutation/combination
- * will only be needed within the scope of the foreach statement.  If they
- * may escape this scope, you want to choose dup.  The default is dup,
- * because it's safer, but recycle can avoid lots of unnecessary GC activity.
- */
-enum Buffer {
-
-    ///
-    dup,
-
-    ///
-    recycle,
-
-    DUP = dup,
-
-    RECYCLE = recycle
-}
-
 static if(size_t.sizeof == 4) {
     private enum MAX_PERM_LEN = 12;
 } else {
     private enum MAX_PERM_LEN = 20;
 }
 
-/**A struct that generates all possible permutations of a sequence.
- *
- * Note:  Permutations are output in undefined order.
- *
- * Bugs:  Only supports iterating over up to size_t.max permutations.
- * This means the max permutation length is 12 on 32-bit machines, or 20
- * on 64-bit.  This was a conscious tradeoff to allow this range to have a
- * length of type size_t, since iterating over such huge permutation spaces
- * would be insanely slow anyhow.
- *
- * Examples:
- * ---
- *  double[][] res;
- *  auto perm = Perm!(double)([1.0, 2.0, 3.0][]);
- *  foreach(p; perm) {
- *      res ~= p;
- *  }
- *
- *  sort(res);
- *  assert(res.canFindSorted([1.0, 2.0, 3.0]));
- *  assert(res.canFindSorted([1.0, 3.0, 2.0]));
- *  assert(res.canFindSorted([2.0, 1.0, 3.0]));
- *  assert(res.canFindSorted([2.0, 3.0, 1.0]));
- *  assert(res.canFindSorted([3.0, 1.0, 2.0]));
- *  assert(res.canFindSorted([3.0, 2.0, 1.0]));
- *  assert(res.length == 6);
- *  ---
+/**
+A struct that generates all possible permutations of a sequence.
+
+Notes:  
+
+Permutations are output in undefined order.
+
+The array returned by front is recycled across iterations.  To preserve
+it across iterations, wrap this range using map!"a.dup" or 
+map!"a.idup".
+
+Bugs:  Only supports iterating over up to size_t.max permutations.
+This means the max permutation length is 12 on 32-bit machines, or 20
+on 64-bit.  This was a conscious tradeoff to allow this range to have a
+length of type size_t, since iterating over such huge permutation spaces
+would be insanely slow anyhow.
+
+Examples:
+---
+double[][] res;
+auto perm = map!"a.dup"(Perm!(double)([1.0, 2.0, 3.0][]));
+foreach(p; perm) {
+     res ~= p;
+}
+
+auto sorted = sort(res);
+assert(sorted.canFind([1.0, 2.0, 3.0]));
+assert(sorted.canFind([1.0, 3.0, 2.0]));
+assert(sorted.canFind([2.0, 1.0, 3.0]));
+assert(sorted.canFind([2.0, 3.0, 1.0]));
+assert(sorted.canFind([3.0, 1.0, 2.0]));
+assert(sorted.canFind([3.0, 2.0, 1.0]));
+assert(sorted.length == 6);
+---
  */
-struct Perm(Buffer bufType = Buffer.dup, T) {
+struct Perm(T) {
 private:
 
     // Optimization:  Since we know this thing can't get too big (there's
@@ -991,12 +918,7 @@ private:
 
     // The length of these arrays.  Stored once to minimize overhead.
     ubyte len;
-
-    static if(bufType == Buffer.dup) {
-        alias T[] PermArray;
-    } else {
-        alias const(T)[] PermArray;
-    }
+    alias const(T)[] PermArray;
 
 public:
     /**Generate permutations from an input range.
@@ -1030,18 +952,19 @@ public:
         }
     }
 
-    /**Note:  PermArray is just an alias to either T[] or const(T)[],
-     * depending on whether bufType == Buf.dup or Buf.recycle.
-     */
-    @property PermArray front() {
-        static if(bufType == Buffer.dup) {
-            return perm[0..len].dup;
-        } else {
-            return perm[0..len];
-        }
+    /**
+    Returns the current permutation.  The array is const because it is
+    recycled across iterations and modifying it would destroy the state of
+    the permutation generator.
+    */
+    @property const(T)[] front() {
+        return perm[0..len];
     }
 
-    /**Get the next permutation in the sequence.*/
+    /**
+    Get the next permutation in the sequence.  This will overwrite the
+    contents of the array returned by the last call to front.
+    */
     void popFront() {
         if(len == 0) {
             nPerms--;
@@ -1078,7 +1001,8 @@ public:
         return nPerms == 0;
     }
 
-    /**The number of permutations left.
+    /**
+    The number of permutations left.
      */
     @property size_t length() const pure nothrow {
         return nPerms;
@@ -1094,30 +1018,19 @@ public:
     }
 }
 
-private template PermRet(Buffer bufType, T...) {
-    static if(isForwardRange!(T[0])) {
-        alias Perm!(bufType, ElementType!(T[0])) PermRet;
-    } else static if(T.length == 1) {
-        alias Perm!(bufType, byte) PermRet;
-    } else alias Perm!(bufType, T[0]) PermRet;
-}
+/**
+Create a Perm struct from a range or of a set of bounds.
 
-/**Create a Perm struct from a range or of a set of bounds.
- *
- * Note:  PermRet is just a template to figure out what this should return.
- * I would use auto if not for bug 2251.
- *
- * Examples:
- * ---
- * auto p = perm([1,2,3]);  // All permutations of [1,2,3].
- * auto p = perm(5);  // All permutations of [0,1,2,3,4].
- * auto p = perm(-1, 2); // All permutations of [-1, 0, 1].
- * ---
+Examples:
+---
+auto p = perm([1,2,3]);  // All permutations of [1,2,3].
+auto p = perm(5);  // All permutations of [0,1,2,3,4].
+auto p = perm(-1, 2); // All permutations of [-1, 0, 1].
+---
  */
-PermRet!(bufType, T) perm(Buffer bufType = Buffer.dup, T...)(T stuff) {
-    alias typeof(return) rt;
+auto perm(T...)(T stuff) {
     static if(isForwardRange!(T[0])) {
-        return rt(stuff);
+        return Perm!(ElementType!T)(stuff);
     } else static if(T.length == 1) {
         static assert(isIntegral!(T[0]),
             "If one argument is passed to perm(), it must be an integer.");
@@ -1127,14 +1040,13 @@ PermRet!(bufType, T) perm(Buffer bufType = Buffer.dup, T...)(T stuff) {
             "Can't iterate permutations of an array of length ",
             stuff[0], ".  (Max length:  ", MAX_PERM_LEN, ")"));
 
-        // Optimization:  If we're duplicating the array every time we return
-        // it, we want it to be as small as possible.  Since we know the lower
+        // Optimization:  Since we know the lower
         // bound is zero and the upper bound can't be > byte.max, use bytes
         // instead of bigger integer types.
-        return rt(seq(cast(byte) 0, cast(byte) stuff[0]));
+        return Perm!byte(seq(cast(byte) 0, cast(byte) stuff[0]));
     } else {
         static assert(stuff.length == 2);
-        return rt(seq(stuff[0], stuff[1]));
+        return Perm!(CommonType!(T[0], T[1]))(seq(stuff[0], stuff[1]));
     }
 }
 
@@ -1148,7 +1060,7 @@ unittest {
     assert(nZero == 1);
 
     double[][] res;
-    auto p1 = perm([1.0, 2.0, 3.0][]);
+    auto p1 = map!"a.dup"(perm([1.0, 2.0, 3.0][]));
     assert(p1.length == 6);
     foreach(p; p1) {
         res ~= p;
@@ -1162,9 +1074,9 @@ unittest {
     assert(sortedRes.canFind([3.0, 2.0, 1.0]));
     assert(res.length == 6);
     byte[][] res2;
-    auto perm2 = perm(3);
+    auto perm2 = map!"a.dup"(perm(3));
     foreach(p; perm2) {
-        res2 ~= p.dup;
+        res2 ~= p;
     }
     auto sortedRes2 = sort(res2);
     assert(sortedRes2.canFind( to!(byte[])([0, 1, 2])));
@@ -1198,37 +1110,41 @@ unittest {
     }
 }
 
-/**Generates every possible combination of r elements of the given sequence, or r
- * array indices from zero to N, depending on which ctor is called.  Uses
- * an input range interface.
- *
- * Bugs:  Only supports iterating over up to size_t.max combinations.
- * This was a conscious tradeoff to allow this range to have a
- * length of type size_t, since iterating over such huge combination spaces
- * would be insanely slow anyhow.
- *
- * Examples:
- * ---
-    auto comb1 = Comb!(uint)(5, 2);
-    uint[][] vals;
-    foreach(c; comb1) {
-        vals ~= c;
-    }
-    sort(vals);
-    assert(vals.canFindSorted([0u,1].dup));
-    assert(vals.canFindSorted([0u,2].dup));
-    assert(vals.canFindSorted([0u,3].dup));
-    assert(vals.canFindSorted([0u,4].dup));
-    assert(vals.canFindSorted([1u,2].dup));
-    assert(vals.canFindSorted([1u,3].dup));
-    assert(vals.canFindSorted([1u,4].dup));
-    assert(vals.canFindSorted([2u,3].dup));
-    assert(vals.canFindSorted([2u,4].dup));
-    assert(vals.canFindSorted([3u,4].dup));
-    assert(vals.length == 10);
-    ---
+/**
+Generates every possible combination of r elements of the given sequence, or 
+array indices from zero to N, depending on which c'tor is called.  Uses
+an input range interface.
+
+Note:  The buffer that is returned by front is recycled across iterations.
+To duplicate it instead, use map!"a.dup" or map!"a.idup".
+
+Bugs:  Only supports iterating over up to size_t.max combinations.
+This was a conscious tradeoff to allow this range to have a
+length of type size_t, since iterating over such huge combination spaces
+would be insanely slow anyhow.
+
+Examples:
+---
+auto comb1 = map!"a.dup"(Comb!(uint)(5, 2));
+uint[][] vals;
+foreach(c; comb1) {
+    vals ~= c;
+}
+auto sorted = sort(vals);
+assert(sorted.canFind([0u,1]));
+assert(sorted.canFind([0u,2]));
+assert(sorted.canFind([0u,3]));
+assert(sorted.canFind([0u,4]));
+assert(sorted.canFind([1u,2]));
+assert(sorted.canFind([1u,3]));
+assert(sorted.canFind([1u,4]));
+assert(sorted.canFind([2u,3]));
+assert(sorted.canFind([2u,4]));
+assert(sorted.canFind([3u,4]));
+assert(sorted.length == 10);
+---
  */
-struct Comb(T, Buffer bufType = Buffer.dup) {
+struct Comb(T) {
 private:
     int N;
     int R;
@@ -1238,11 +1154,7 @@ private:
     T* chosen;
     size_t _length;
 
-    static if(bufType == Buffer.dup) {
-        alias T[] CombArray;
-    } else {
-        alias const(T)[] CombArray;
-    }
+    alias const(T)[] CombArray;
 
     void popFrontNum() {
         int index = R - 1;
@@ -1324,22 +1236,21 @@ public:
         setLen();
     }
 
-    @property CombArray front() {
-        static if(bufType == Buffer.recycle) {
-            static if(!is(T == uint)) {
-                return chosen[0..R].dup;
-            } else {
-                return (myArray is null) ? pos[0..R] : chosen[0..R];
-            }
+    /**
+    Gets the current combination.
+    */
+    @property const(T)[] front() {
+        static if(!is(T == uint)) {
+            return chosen[0..R].dup;
         } else {
-            static if(!is(T == uint)) {
-                return chosen[0..R].dup;
-            } else {
-                return (myArray is null) ? pos[0..R].dup : chosen[0..R].dup;
-            }
+            return (myArray is null) ? pos[0..R] : chosen[0..R];
         }
     }
 
+    /**
+    Advances to the next combination.  The array returned by front will be
+    overwritten with the new results.
+    */
     void popFront() {
         return (myArray is null) ? popFrontNum() : popFrontArray();
     }
@@ -1367,18 +1278,7 @@ public:
     }
 }
 
-private template CombRet(T, Buffer bufType) {
-    static if(isForwardRange!(T)) {
-        alias Comb!(Unqual!(ElementType!(T)), bufType) CombRet;
-    } else static if(isIntegral!T) {
-        alias Comb!(uint, bufType) CombRet;
-    } else static assert(0, "comb can only be created with range or uint.");
-}
-
 /**Create a Comb struct from a range or of a set of bounds.
- *
- * Note:  CombRet is just a template to figure out what this should return.
- * I would use auto if not for bug 2251.
  *
  * Examples:
  * ---
@@ -1386,13 +1286,12 @@ private template CombRet(T, Buffer bufType) {
  * auto c2 = comb(5, 3);  // Any three elements from [0,1,2,3,4].
  * ---
  */
-CombRet!(T, bufType) comb(Buffer bufType = Buffer.dup, T)(T stuff, uint r) {
-    alias typeof(return) rt;
+auto comb(T)(T stuff, uint r) {
     static if(isForwardRange!(T)) {
-        return rt(stuff, r);
+        return Comb!(ElementType!T)(stuff, r);
     } else {
         static assert(isIntegral!T, "Can only call comb on ints and ranges.");
-        return rt(cast(uint) stuff, r);
+        return Comb!(uint)(cast(uint) stuff, r);
     }
 }
 
@@ -1414,7 +1313,7 @@ unittest {
     assert(nZero == 1);
 
     // Test indexing verison first.
-    auto comb1 = comb(5, 2);
+    auto comb1 = map!"a.dup"(comb(5, 2));
     uint[][] vals;
     foreach(c; comb1) {
         vals ~= c;
@@ -1434,7 +1333,7 @@ unittest {
     assert(vals.length == 10);
 
     // Now, test the array version.
-    auto comb2 = comb(seq(5U, 10U), 3);
+    auto comb2 = map!"a.dup"(comb(seq(5U, 10U), 3));
     vals = null;
     foreach(c; comb2) {
         vals ~= c;

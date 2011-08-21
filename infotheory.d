@@ -260,7 +260,7 @@ struct ObsEnt(T...) {
 // Whether we can use StackTreeAA, or whether we have to use a regular AA for
 // entropy.
 private template NeedsHeap(T) {
-    static if(!hasIndirections!(IterType!(T))) {
+    static if(!hasIndirections!(ForeachType!(T))) {
         enum bool NeedsHeap = false;
     } else static if(isArray!(T)) {
         enum bool NeedsHeap = false;
@@ -317,10 +317,10 @@ if(isIterable!(T)) {
 }
 
 private double entropyImpl(U, T)(T data)
-if((IterType!(T).sizeof > 1 || is(IterType!T == struct)) && !NeedsHeap!(T)) {
+if((ForeachType!(T).sizeof > 1 || is(ForeachType!T == struct)) && !NeedsHeap!(T)) {
     // Generic version.
     auto alloc = newRegionAllocator();
-    alias IterType!(T) E;
+    alias ForeachType!(T) E;
 
     static if(hasLength!T) {
         auto counts = StackHash!(E, U)(max(20, data.length / 20), alloc);
@@ -339,8 +339,8 @@ if((IterType!(T).sizeof > 1 || is(IterType!T == struct)) && !NeedsHeap!(T)) {
 }
 
 private double entropyImpl(U, T)(T data)
-if(IterType!(T).sizeof > 1 && NeedsHeap!(T)) {  // Generic version.
-    alias IterType!(T) E;
+if(ForeachType!(T).sizeof > 1 && NeedsHeap!(T)) {  // Generic version.
+    alias ForeachType!(T) E;
 
     uint len = 0;
     U[E] counts;
@@ -352,8 +352,8 @@ if(IterType!(T).sizeof > 1 && NeedsHeap!(T)) {  // Generic version.
 }
 
 private double entropyImpl(U, T)(T data)  // byte/char specialization
-if(IterType!(T).sizeof == 1 && !is(IterType!T == struct)) {
-    alias IterType!(T) E;
+if(ForeachType!(T).sizeof == 1 && !is(ForeachType!T == struct)) {
+    alias ForeachType!(T) E;
 
     U[ubyte.max + 1] counts;
 

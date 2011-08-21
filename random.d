@@ -374,7 +374,7 @@ unittest {
     double[] observ = new double[100_000];
     foreach(ref elem; observ)
     elem = rChiSquare(df);
-    auto ksRes = ksTest(observ, parametrize!(chiSqrCDF)(5));
+    auto ksRes = ksTest(observ, parametrize!(chiSquareCDF)(5));
     writeln("100k samples from Chi-Square:  K-S P-val:  ", ksRes.p);
     writeln("\tMean Expected: ", df, "  Observed:  ", mean(observ));
     writeln("\tMedian Expected: ", df - (2.0L / 3.0L), "  Observed:  ", median(observ));

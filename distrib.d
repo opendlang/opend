@@ -786,9 +786,11 @@ double normApproxHyper(ulong x, ulong n1, ulong n2, ulong n) {
 }
 
 // Aliases for old names.  Not documented because new names should be used.
-alias chiSquareCDF chiSqrCDF;
-alias chiSquareCDFR chiSqrCDFR;
-alias invChiSquareCDFR invChiSqCDFR;
+deprecated {
+    alias chiSquareCDF chiSqrCDF;
+    alias chiSquareCDFR chiSqrCDFR;
+    alias invChiSquareCDFR invChiSqCDFR;
+}
 
 ///
 double chiSquarePDF(double x, double v) {
@@ -882,10 +884,10 @@ double invChiSquareCDFR(double v, double p) {
 }
 
 unittest {
-    assert(feqrel(chiSqrCDFR(invChiSqCDFR(3.5, 0.1), 3.5), 0.1)>=double.mant_dig-3);
+    assert(feqrel(chiSquareCDFR(invChiSquareCDFR(3.5, 0.1), 3.5), 0.1)>=double.mant_dig-3);
     assert(approxEqual(
-        chiSqrCDF(0.4L, 19.02L) + chiSqrCDFR(0.4L, 19.02L), 1.0L));
-    assert(ae( invChiSqCDFR( 3, chiSqrCDFR(1, 3)), 1));
+        chiSquareCDF(0.4L, 19.02L) + chiSquareCDFR(0.4L, 19.02L), 1.0L));
+    assert(ae( invChiSquareCDFR( 3, chiSquareCDFR(1, 3)), 1));
 
     assert(ae(chiSquareCDFR(0.2, 1), 0.6547208));
     assert(ae(chiSquareCDFR(0.2, 2), 0.9048374));
@@ -941,103 +943,8 @@ unittest {
     }
 }
 
-enum real SQRT2PI =   0x1.40d931ff62705966p+1;    // 2.5066282746310005024
-enum real EXP_2  = 0.13533528323661269189L; /* exp(-2) */
-
-private {
-immutable real P0[8] = [
-   -0x1.758f4d969484bfdcp-7,    // -0.011400139698853582732
-   0x1.53cee17a59259dd2p-3, // 0.16592193750979583221
-   -0x1.ea01e4400a9427a2p-1,    // -0.95704568177942689081
-   0x1.61f7504a0105341ap+1, // 2.7653599130008302859
-   -0x1.09475a594d0399f6p+2,    // -4.1449800369337538286
-   0x1.7c59e7a0df99e3e2p+1, // 2.971493676711545292
-   -0x1.87a81da52edcdf14p-1,    // -0.76495449677843806914
-   0x1.1fb149fd3f83600cp-7  // 0.0087796794200550691607
-];
-
-immutable real Q0[8] = [
-   -0x1.64b92ae791e64bb2p-7,    // -0.010886331510064192632
-   0x1.7585c7d597298286p-3, // 0.1823840725000038842
-   -0x1.40011be4f7591ce6p+0,    // -1.2500169214248199725
-   0x1.1fc067d8430a425ep+2, // 4.4961185085232139506
-   -0x1.21008ffb1e7ccdf2p+3,    // -9.0313186554593813887
-   0x1.3d1581cf9bc12fccp+3, // 9.9088753752567182205
-   -0x1.53723a89fd8f083cp+2,    // -5.3038469646037218604
-   0x1p+0   // 1
-];
-
-immutable real P1[10] = [
-   0x1.20ceea49ea142f12p-13,    // 0.00013771451113809605662
-   0x1.cbe8a7267aea80bp-7,  // 0.014035302749980729871
-   0x1.79fea765aa787c48p-2, // 0.36913549001712241224
-   0x1.d1f59faa1f4c4864p+1, // 3.6403083401370131097
-   0x1.1c22e426a013bb96p+4, // 17.75851836288460008
-   0x1.a8675a0c51ef3202p+5, // 53.050464721918523919
-   0x1.75782c4f83614164p+6, // 93.367356531518738722
-   0x1.7a2f3d90948f1666p+6, // 94.546133288447683183
-   0x1.5cd116ee4c088c3ap+5, // 43.602094518370966827
-   0x1.1361e3eb6e3cc20ap+2  // 4.3028497504355521807
-];
-
-immutable real Q1[10] = [
-   0x1.3a4ce1406cea98fap-13,    // 0.00014987006762866754669
-   0x1.f45332623335cda2p-7, // 0.015268706895221911913
-   0x1.98f28bbd4b98db1p-2,  // 0.39936273901812389627
-   0x1.ec3b24f9c698091cp+1, // 3.8455549449546995474
-   0x1.1cc56ecda7cf58e4p+4, // 17.79820137342627204
-   0x1.92c6f7376bf8c058p+5, // 50.347151215536627131
-   0x1.4154c25aa47519b4p+6, // 80.332772651946720635
-   0x1.1b321d3b927849eap+6, // 70.798939638914882544
-   0x1.403a5f5a4ce7b202p+4, // 20.014251091705301368
-   0x1p+0   // 1
-];
-
-immutable real P2[8] = [
-   0x1.8c124a850116a6d8p-21,    // 7.3774056430545041787e-07
-   0x1.534abda3c2fb90bap-13,    // 0.0001617870121822776094
-   0x1.29a055ec93a4718cp-7, // 0.0090828342009931074419
-   0x1.6468e98aad6dd474p-3, // 0.17402822927913678347
-   0x1.3dab2ef4c67a601cp+0, // 1.2408933017345389353
-   0x1.e1fb3a1e70c67464p+1, // 3.7654793404231444828
-   0x1.b6cce8035ff57b02p+2, // 6.8562564881284157607
-   0x1.9f4c9e749ff35f62p+1  // 3.2445257253129069325
-];
-
-immutable real Q2[8] = [
-   0x1.af03f4fc0655e006p-21,    // 8.0282885006885383316e-07
-   0x1.713192048d11fb2p-13, // 0.00017604524340842589303
-   0x1.4357e5bbf5fef536p-7, // 0.0098676559208996361084
-   0x1.7fdac8749985d43cp-3, // 0.18742901426157036096
-   0x1.4a080c813a2d8e84p+0, // 1.2891853156563028786
-   0x1.c3a4b423cdb41bdap+1, // 3.528463857156936774
-   0x1.8160694e24b5557ap+2, // 6.0215094817275106307
-   0x1p+0   // 1
-];
-
-immutable real P3[8] = [
-   -0x1.55da447ae3806168p-34,   // -7.7728283809481633868e-11
-   -0x1.145635641f8778a6p-24,   // -6.4339663876133447143e-08
-   -0x1.abf46d6b48040128p-17,   // -1.2754046756102807876e-05
-   -0x1.7da550945da790fcp-11,   // -0.00072793152007373443093
-   -0x1.aa0b2a31157775fap-8,    // -0.0065009096152460679857
-   0x1.b11d97522eed26bcp-3, // 0.21148222178987070632
-   0x1.1106d22f9ae89238p+1, // 2.1330206615874130532
-   0x1.029a358e1e630f64p+1  // 2.0203310913027725356
-];
-
-immutable real Q3[8] = [
-   -0x1.74022dd5523e6f84p-34,   // -8.4584942637876803775e-11
-   -0x1.2cb60d61e29ee836p-24,   // -7.0014768675591937804e-08
-   -0x1.d19e6ec03a85e556p-17,   // -1.3876523894802171788e-05
-   -0x1.9ea2a7b4422f6502p-11,   // -0.00079085420887378582886
-   -0x1.c54b1e852f107162p-8,    // -0.0069167088997199649828
-   0x1.e05268dd3c07989ep-3, // 0.23453218388704381964
-   0x1.239c6aff14afbf82p+1, // 2.2782109971534491995
-   0x1p+0   // 1
-];
-
-}
+private enum SQRT2PI =   0x1.40d931ff62705966p+1;    // 2.5066282746310005024
+private enum EXP_2  = 0.13533528323661269189L; /* exp(-2) */
 
 /******************************
  * Inverse of Normal distribution function
@@ -1050,44 +957,7 @@ double invNormalCDF(double p, double mean = 0, double sd = 1) {
     dstatsEnforce(p >= 0 && p <= 1, "P-values must be between 0, 1.");
     dstatsEnforce(sd > 0, "Standard deviation must be > 0 for normal distribution.");
 
-    if (p == 0.0L) {
-        return -double.infinity;
-    }
-    if( p == 1.0L ) {
-        return double.infinity;
-    }
-    double x, z, y2, x0, x1;
-    int code = 1;
-    double y = p;
-    if( y > (1.0L - EXP_2) ) {
-        y = 1.0L - y;
-        code = 0;
-    }
-
-    if ( y > EXP_2 ) {
-        y = y - 0.5L;
-        y2 = y * y;
-        x = y + y * (y2 * poly( y2, P0)/poly( y2, Q0));
-        x = x * SQRT2PI;
-        return x * sd + mean;
-    }
-
-    x = sqrt( -2.0L * log(y) );
-    x0 = x - log(x)/x;
-    z = 1.0L/x;
-    if( x < 8.0L ) {
-        x1 = z * poly( z, P1)/poly( z, Q1);
-    } else if( x < 32.0L ) {
-        x1 = z * poly( z, P2)/poly( z, Q2);
-    } else {
-//  assert(0);
-        x1 = z * poly( z, P3)/poly( z, Q3);
-    }
-    x = x0 - x1;
-    if( code != 0 ) {
-        x = -x;
-    }
-    return x * sd + mean;
+    return normalDistributionInverse(p) * sd + mean;
 }
 
 
@@ -1877,22 +1747,30 @@ unittest {
     assert(approxEqual(invLaplaceCDF(0.82), 1.0217));
 }
 
+double kolmDist()(double x) {
+    pragma(msg, "kolmDist is scheduled for deprecation.  Please use " ~
+        "kolmogorovDistrib instead.");
+        
+    return kolmogorovDistrib(x);
+}
 
 /**Kolmogorov distribution.  Used in Kolmogorov-Smirnov testing.
  *
  * References: http://en.wikipedia.org/wiki/Kolmogorov-Smirnov
  */
-double kolmDist(double X) {
-    dstatsEnforce(X >= 0, "X must be >= 0 for Kolmogorov distribution.");
+double kolmogorovDistrib(immutable double x) {
+    dstatsEnforce(x >= 0, "x must be >= 0 for Kolmogorov distribution.");
 
-    if(X == 0) {
+    if(x == 0) {
         //Handle as a special case.  Otherwise, get NAN b/c of divide by zero.
         return 0;
     }
+    
     double result = 0;
     double i = 1;
+    immutable xSquared = x * x;
     while(true) {
-        immutable delta = exp(-(2 * i - 1) * (2 * i - 1) * PI * PI  / (8 * X * X));
+        immutable delta = exp(-(2 * i - 1) * (2 * i - 1) * PI * PI  / (8 * xSquared));
         i++;
 
         immutable oldResult = result;
@@ -1901,7 +1779,7 @@ double kolmDist(double X) {
             break;
         }
     }
-    result *= (sqrt(2 * PI) / X);
+    result *= (sqrt(2 * PI) / x);
     return result;
 }
 
