@@ -173,20 +173,46 @@ public struct Point
     double y;
 }
 
-/**
- * A simple struct representing a rectangle
- */
-public struct Rectangle(T) if (is(T == double))
+///ditto
+public struct PointInt
 {
     ///
-    public this(Point point, double width, double height)
+    public this(int x, int y)
+    {
+        this.x = x;
+        this.y = y;
+    }
+
+    ///
+    int x;
+    ///
+    int y;    
+}
+
+/**
+ * A simple struct representing a rectangle with $(D int) or $(double) values
+ */
+public struct Rectangle(T) if (is(T == double) || is(T == int))
+{
+    static if (is(T == double))
+    {
+        alias Point PointType;
+    }
+    else static if (is(T == int))
+    {
+        alias PointInt PointType;
+    }
+    
+    ///
+    public this(PointType point, T width, T height)
     {
         this.point = point;
         this.width = width;
         this.height = height;
     }
+    
     ///ditto
-    public this(double x, double y, double width, double height)
+    public this(T x, T y, T width, T height)
     {
         this.point.x = x;
         this.point.y = y;
@@ -195,39 +221,33 @@ public struct Rectangle(T) if (is(T == double))
     }
 
     ///TOP-LEFT point of the rectangle
-    Point point;
+    PointType point;
+    
     ///
-    double width;
+    T width;
     ///
-    double height;
+    T height;   
 }
 
 /**
- * A simple struct representing a rectangle with only $(D int) values
+ * Convenience function to create a $(D Rectangle!int) or $(D Rectangle!double)
+ * depending on the argument types.
+ *
+ * Examples:
+ * --------------------------------------------------------
+ * auto a = rectangle(1, 1, 4, 4);
+ * auto b = rectangle(0.99, 0.99, 3.99, 3.99);
+ * --------------------------------------------------------
  */
-public struct Rectangle(T) if (is(T == int))
+auto rectangle(T)(T x, T y, T width, T height) if (is(T == double) || is(T == int))
 {
-    ///
-    public this(int x, int y, int width, int height)
-    {
-        this.x = x;
-        this.y = y;
-        this.width = width;
-        this.height = height;
-    }
-
-    ///TOP-LEFT point of the rectangle: X coordinate
-    int x;
-    ///TOP-LEFT point of the rectangle: Y coordinate
-    int y;
-    ///
-    int width, height;
+    return Rectangle!(T)(x, y, width, height);
 }
 
 unittest
 {
-    auto a = Rectangle!int(1, 1, 4, 4);
-    auto b = Rectangle(0.99, 0.99, 3.99, 3.99);
+    auto a = rectangle(1, 1, 4, 4);
+    auto b = rectangle(0.99, 0.99, 3.99, 3.99);
 }
 
 /**
@@ -1867,8 +1887,8 @@ public class Surface
         ///ditto
         void markDirtyRectangle(Rectangle!int rect)
         {
-            cairo_surface_mark_dirty_rectangle(this.nativePointer, rect.x,
-                rect.y, rect.width, rect.height);
+            cairo_surface_mark_dirty_rectangle(this.nativePointer, rect.point.x,
+                rect.point.y, rect.width, rect.height);
             checkError();
         }
 
