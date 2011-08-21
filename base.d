@@ -1195,10 +1195,16 @@ private:
 
 public:
 
-    /**Ctor to generate all possible combinations of array indices for a length r
-     * array.  This is a special-case optimization and is faster than simply
-     * using the other ctor to generate all length r combinations from
-     * seq(0, length).*/
+    /**
+    Ctor to generate all possible combinations of array indices for a length r
+    array.  This is a special-case optimization and is faster than simply
+    using the other ctor to generate all length r combinations from
+    seq(0, length).
+    
+    For efficiency, uint is used instead of size_t since, on a 64-bit system,
+    generating all possible combinations of an array bigger than uint.max
+    wouldn't be feasible anyhow.
+    */
     static if(is(T == uint)) {
         this(uint n, uint r)
         in {

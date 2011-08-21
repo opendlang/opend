@@ -1919,16 +1919,17 @@ if(doubleInput!(T) && is(typeof(data.front < mu) == bool)) {
     return signTest(data, repeat(mu), alt);
 }
 
-/**Two-sided binomial test for whether P(success) == p.  The one-sided
- * alternatives are covered by dstats.distrib.binomialCDF and binomialCDFR.
- * k is the number of successes observed, n is the number of trials, p
- * is the probability of success under the null.
- *
- * Returns:  The P-value for the alternative that P(success) != p against
- * the null that P(success) == p.
- *
- * Notes:  This test can also be performed using multinomialTest(), but this
- * implementation is much faster and easier to use.
+/**
+Two-sided binomial test for whether P(success) == p.  The one-sided
+alternatives are covered by dstats.distrib.binomialCDF and binomialCDFR.
+k is the number of successes observed, n is the number of trials, p
+is the probability of success under the null.
+
+Returns:  The P-value for the alternative that P(success) != p against
+the null that P(success) == p.
+
+Notes:  This test can also be performed using multinomialTest, but this
+implementation is much faster and easier to use.
  */
 double binomialTest(ulong k, ulong n, double p) {
     dstatsEnforce(k <= n, "k must be <= n for binomial test.");
@@ -2034,53 +2035,48 @@ enum Expected {
     count,
 
     ///
-    proportion,
-
-    // Kept for compatibility w/ old style, intentionally not documented, may
-    // eventually be removed.
-    COUNT = count,
-    PROPORTION = proportion
+    proportion
 }
 
 /**Performs a one-way Pearson's chi-square goodness of fit test between a range
- * of observed and a range of expected values.  This is a useful statistical
- * test for testing whether a set of observations fits a discrete distribution.
+of observed and a range of expected values.  This is a useful statistical
+test for testing whether a set of observations fits a discrete distribution.
+ 
+Returns:  A TestRes of the chi-square statistic and the P-value for the
+alternative hypothesis that observed is not a sample from expected against
+the null that observed is a sample from expected.
+ 
+Notes:  By default, expected is assumed to be a range of expected proportions.
+These proportions are automatically normalized, and can sum to any number.
+By passing Expected.count in as the last parameter, calculating expected
+counts will be skipped, and expected will assume to already be properly
+normalized.  This is slightly faster, but more importantly
+allows input ranges to be used.
+ 
+The chi-square test relies on asymptotic statistical properties
+and is therefore not considered valid, as a rule of thumb,  when expected
+counts are below 5.  However, this rule is likely to be unnecessarily
+stringent in most cases.
+ 
+Examples:
+---
+// Test to see whether a set of categorical observations differs
+// statistically from a discrete uniform distribution.
+ 
+uint[] observed = [980, 1028, 1001, 964, 1102];
+auto expected = repeat(1.0);
+auto res2 = chiSquareFit(observed, expected);
+assert(approxEqual(res2, 0.0207));
+assert(approxEqual(res2.testStat, 11.59));
+---
  *
- * Returns:  A TestRes of the chi-square statistic and the P-value for the
- * alternative hypothesis that observed is not a sample from expected against
- * the null that observed is a sample from expected.
- *
- * Notes:  By default, expected is assumed to be a range of expected proportions.
- * These proportions are automatically normalized, and can sum to any number.
- * By passing Expected.count in as the last parameter, calculating expected
- * counts will be skipped, and expected will assume to already be properly
- * normalized.  This is slightly faster, but more importantly
- * allows input ranges to be used.
- *
- * The chi-square test relies on asymptotic statistical properties
- * and is therefore not considered valid, as a rule of thumb,  when expected
- * counts are below 5.  However, this rule is likely to be unnecessarily
- * stringent in most cases.
- *
- * This is, for all practical purposes, an inherently non-directional test.
- * Therefore, the one-sided verses two-sided option is not provided.
- *
- * Examples:
- * ---
- * // Test to see whether a set of categorical observations differs
- * // statistically from a discrete uniform distribution.
- *
- * uint[] observed = [980, 1028, 1001, 964, 1102];
- * auto expected = repeat(1.0);
- * auto res2 = chiSquareFit(observed, expected);
- * assert(approxEqual(res2, 0.0207));
- * assert(approxEqual(res2.testStat, 11.59));
- * ---
- *
- * References:  http://en.wikipedia.org/wiki/Pearson%27s_chi-square_test
+References:  http://en.wikipedia.org/wiki/Pearson%27s_chi-square_test
  */
-TestRes chiSquareFit(T, U)(T observed, U expected, Expected countProp = Expected.proportion)
-if(doubleInput!(T) && doubleInput!(U)) {
+TestRes chiSquareFit(T, U)(
+    T observed, 
+    U expected, 
+    Expected countProp = Expected.proportion
+) if(doubleInput!(T) && doubleInput!(U)) {
     return goodnessFit!(pearsonChiSqElem, T, U)(observed, expected, countProp);
 }
 
@@ -2174,18 +2170,19 @@ if(doubleInput!(T) && doubleInput!(U)) {
     return TestRes(chiSq, chiSquareCDFR(chiSq, len - 1));
 }
 
-/**The exact multinomial goodness of fit test for whether a set of counts
- * fits a hypothetical distribution.  counts is an input range of counts.
- * proportions is an input range of expected proportions.  These are normalized
- * automatically, so they can sum to any value.
- *
- * Returns:  The P-value for the null that counts is a sample from proportions
- * against the alternative that it isn't.
- *
- * Notes:  This test is EXTREMELY slow for anything but very small samples and
- * degrees of freedom.  The Pearson's chi-square (chiSquareFit()) or likelihood
- * ratio chi-square (gTestFit()) are good enough approximations unless sample
- * size is very small.
+/**
+The exact multinomial goodness of fit test for whether a set of counts
+fits a hypothetical distribution.  counts is an input range of counts.
+proportions is an input range of expected proportions.  These are normalized
+automatically, so they can sum to any value.
+
+Returns:  The P-value for the null that counts is a sample from proportions
+against the alternative that it isn't.
+
+Notes:  This test is EXTREMELY slow for anything but very small samples and
+degrees of freedom.  The Pearson's chi-square (chiSquareFit()) or likelihood
+ratio chi-square (gTestFit()) are good enough approximations unless sample
+size is very small.
  */
 double multinomialTest(U, F)(U countsIn, F proportions)
 if(isInputRange!U && isInputRange!F &&
@@ -2288,41 +2285,49 @@ unittest {
     }
 }
 
-/**Performs a Pearson's chi-square test on a contingency table of arbitrary
- * dimensions.  When the chi-square test is mentioned, this is usually the one
- * being referred to.  Takes a set of finite forward ranges, one for each column
- * in the contingency table.  These can be expressed either as a tuple of ranges
- * or a range of ranges.  Returns a P-value for the alternative hypothesis that
- * frequencies in each row of the contingency table depend on the column against
- * the null that they don't.
- *
- * Notes:  The chi-square test relies on asymptotic statistical properties
- * and is therefore not exact.  The typical rule of thumb is that each cell
- * should have an expected value of at least 5.  However, this is likely to
- * be unnecessarily stringent.
- *
- * Yates's continuity correction is never used in this implementation.  If
- * you want something that's guaranteed to be conservative, use fisherExact().
- *
- * This is, for all practical purposes, an inherently non-directional test.
- * Therefore, the one-sided verses two-sided option is not provided.
- *
- * For 2x2 contingency tables, fisherExact is a more conservative test, in that
- * the type I error rate is guaranteed to never be above the nominal P-value.
- * However, even for small sample sizes this test may produce results closer
- * to the true P-value, at the risk of possibly being non-conservative.
- *
- * Examples:
- * ---
- * // Test to see whether the relative frequency of outcome 0, 1, and 2
- * // depends on the treatment in some hypothetical experiment.
- * uint[] drug1 = [1000, 2000, 1500];
- * uint[] drug2 = [1500, 3000, 2300];
- * uint[] placebo = [500, 1100, 750];
- * assert(approxEqual(chiSquareContingency(drug1, drug2, placebo), 0.2397));
- * ---
- *
- * References: http://en.wikipedia.org/wiki/Pearson%27s_chi-square_test
+/**
+Performs a Pearson's chi-square test on a contingency table of arbitrary
+dimensions.  When the chi-square test is mentioned, this is usually the one
+being referred to.  Takes a set of finite forward ranges, one for each column
+in the contingency table.  These can be expressed either as a tuple of ranges
+or a range of ranges.  Returns a P-value for the alternative hypothesis that
+frequencies in each row of the contingency table depend on the column against
+the null that they don't.
+ 
+Notes:  The chi-square test relies on asymptotic statistical properties
+and is therefore not exact.  The typical rule of thumb is that each cell
+should have an expected value of at least 5.  However, this is likely to
+be unnecessarily stringent.
+ 
+Yates's continuity correction is never used in this implementation.  If
+you want something that's guaranteed to be conservative, use fisherExact().
+ 
+This is, for all practical purposes, an inherently non-directional test.
+Therefore, the one-sided verses two-sided option is not provided.
+ 
+For 2x2 contingency tables, fisherExact is a more conservative test, in that
+the type I error rate is guaranteed to never be above the nominal P-value.
+However, even for small sample sizes this test may produce results closer
+to the true P-value, at the risk of possibly being non-conservative.
+ 
+Examples:
+---
+// Test to see whether the relative frequency of outcome 0, 1, and 2
+// depends on the treatment (drug1, drug2 or placebo) in some hypothetical 
+// experiment.  For example, 1500 people had outcome 2 if they were treated
+// with drug1 and 1100 had outcome 1 if treated with placebo.
+uint[] drug1 = [1000, 2000, 1500];
+uint[] drug2 = [1500, 3000, 2300];
+uint[] placebo = [500, 1100, 750];
+auto result1 = chiSquareContingency(drug1, drug2, placebo);
+
+// The following uses a range of ranges instead of an array of ranges,
+// and will produce equivalent results.
+auto rangeOfRanges = [drug1, drug2, placebo];
+auto result2 = chiSquareContingency(rangeOfRanges);
+---
+ 
+References: http://en.wikipedia.org/wiki/Pearson%27s_chi-square_test
  *
  */
 TestRes chiSquareContingency(T...)(T inputData) {
@@ -2365,8 +2370,8 @@ deprecated alias chiSquareContingency chiSqrContingency;
 
 /**
 This struct is a subtype of TestRes and is used to return the results of
-gTestContingency.  Due to the information theoretic interpretation of
-the G test, it contains an extra field to return the mutual information
+gTestContingency and gTestObs.  Due to the information theoretic interpretation
+of the G test, it contains an extra field to return the mutual information
 in bits.
 */
 struct GTestRes {
@@ -2399,7 +2404,6 @@ function returns a GTestRes, which is a subtype of TestRes and also gives
 the mutual information for use in information theoretic settings.
 
 References:  http://en.wikipedia.org/wiki/G_test, last retrieved 1/22/2011
-
 */
 GTestRes gTestContingency(T...)(T inputData) {
     return testContingency!(gTestElem, T)(inputData);
@@ -2429,11 +2433,17 @@ unittest {
 // for API simplicity, this is hidden and they look like two separate functions.
 private GTestRes testContingency(alias elemFun, T...)(T rangesIn) {
     auto alloc = newRegionAllocator();
-    static if(isForwardRange!(T[0]) && T.length == 1 &&
+    static if(isInputRange!(T[0]) && T.length == 1 &&
         isForwardRange!(typeof(rangesIn[0].front()))) {
         auto ranges = alloc.array(rangesIn[0]);
+        
+        foreach(ref range; ranges) {
+            range = range.save;
+        }
+        
     } else static if(allSatisfy!(isForwardRange, typeof(rangesIn))) {
-        alias rangesIn ranges;
+        auto saved = saveAll(rangesIn);
+        auto ranges = saved.expand;
     } else {
         static assert(0, "Can only perform contingency table test" ~
             " on a tuple of ranges or a range of ranges.");
@@ -2529,10 +2539,10 @@ Given two vectors of observations of jointly distributed variables x, y, tests
 the null hypothesis that values in x are independent of the corresponding
 values in y.  This is done using Pearson's Chi-Square Test.  For a similar test
 that assumes the data has already been tabulated into a contingency table, see
-chiSquareContingency().
+chiSquareContingency.
 
-x and y must both be input ranges.  If they are not the same length, an
-exception is thrown.
+x and y must both be input ranges.  If they are not the same length, a
+DstatsArgumentException is thrown.
 
 Examples:
 ---
@@ -2541,6 +2551,16 @@ Examples:
 auto x = ["foo", "bar", "bar", "foo", "foo"];
 auto y = ["xxx", "baz", "baz", "xxx", "baz"];
 auto result = chiSquareObs(x, y);
+
+// This is equivalent to:
+auto contingency = new uint[][](2, 2);
+foreach(i; 0..x.length) {
+    immutable index1 = (x[i] == "foo");
+    immutable index2 = (y[i] == "xxx");
+    contingency[index1][index2]++;
+}
+
+auto result2 = chiSquareContingency(contingency);
 ---
 */
 TestRes chiSquareObs(T, U)(T x, U y)
@@ -2589,14 +2609,25 @@ unittest {
     auto result = chiSquareObs(x, y);
     assert(approxEqual(result.testStat, 2.22222222));
     assert(approxEqual(result.p, 0.136037));
+    
+    auto contingency = new uint[][](2, 2);
+    foreach(i; 0..x.length) {
+        immutable index1 = (x[i] == "foo");
+        immutable index2 = (y[i] == "xxx");
+        contingency[index1][index2]++;
+    }
+    
+    auto result2 = chiSquareContingency(contingency);
+    assert(result.testStat == result2.testStat);
+    assert(result.p == result2.p);
 }
 
 /**
-Given two vectors of observations of jointly distributed variables x, y, tests
+Given two ranges of observations of jointly distributed variables x, y, tests
 the null hypothesis that values in x are independent of the corresponding
 values in y.  This is done using the Likelihood Ratio G test.  Usage is similar
 to chiSquareObs.  For an otherwise identical test that assumes the data has
-already been tabulated into a contingency table, see gTestContingency().
+already been tabulated into a contingency table, see gTestContingency.
 
 Note:  This test can be thought of as a test for nonzero mutual information
 between x and y, since the test statistic and P-value are strictly increasing
@@ -2709,36 +2740,36 @@ package double toContingencyScore(T, U, Uint)
     return ret;
 }
 
-/**Fisher's Exact test for difference in odds between rows/columns
- * in a 2x2 contingency table.  Specifically, this function tests the odds
- * ratio, which is defined, for a contingency table c, as (c[0][0] * c[1][1])
- *  / (c[1][0] * c[0][1]).  Alternatives are Alt.less, meaning true odds ratio
- * < 1, Alt.greater, meaning true odds ratio > 1, and Alt.twoSided, meaning
- * true odds ratio != 1.
- *
- * Accepts a 2x2 contingency table as an array of arrays of uints.
- * For now, only does 2x2 contingency tables.
- *
- * Notes:  Although this test is "exact" in that it does not rely on asymptotic
- * approximations, it is very statistically conservative when the marginals
- * are not truly fixed in the experimental design in question.  If a
- * closer but possibly non-conservative approximation of the true P-value is
- * desired, Pearson's chi-square test (chiSquareContingency) may perform better,
- * even for small samples.
- *
- * Returns:  A TestRes of the odds ratio and the P-value against the given
- * alternative.
- *
- * Examples:
- * ---
- * double res = fisherExact([[2u, 7], [8, 2]], Alt.less);
- * assert(approxEqual(res.p, 0.01852));  // Odds ratio is very small in this case.
- * assert(approxEqual(res.testStat, 4.0 / 56.0));
- * ---
- *
- * References:  http://en.wikipedia.org/wiki/Fisher%27s_Exact_Test
- *
- */
+/**
+Fisher's Exact test for difference in odds between rows/columns
+in a 2x2 contingency table.  Specifically, this function tests the odds
+ratio, which is defined, for a contingency table c, as (c[0][0] * c[1][1])
+ / (c[1][0] * c[0][1]).  Alternatives are Alt.less, meaning true odds ratio
+< 1, Alt.greater, meaning true odds ratio > 1, and Alt.twoSided, meaning
+true odds ratio != 1.
+
+Accepts a 2x2 contingency table as an array of arrays of uints.
+For now, only does 2x2 contingency tables.
+
+Notes:  Although this test is "exact" in that it does not rely on asymptotic
+approximations, it is very statistically conservative when the marginals
+are not truly fixed in the experimental design in question.  If a
+closer but possibly non-conservative approximation of the true P-value is
+desired, Pearson's chi-square test (chiSquareContingency) may perform better,
+even for small samples.
+
+Returns:  A TestRes of the odds ratio and the P-value against the given
+alternative.
+
+Examples:
+---
+double res = fisherExact([[2u, 7], [8, 2]], Alt.less);
+assert(approxEqual(res.p, 0.01852));  // Odds ratio is very small in this case.
+assert(approxEqual(res.testStat, 4.0 / 56.0));
+---
+
+References:  http://en.wikipedia.org/wiki/Fisher%27s_Exact_Test
+*/
 TestRes fisherExact(T)(const T[2][2] contingencyTable, Alt alt = Alt.twoSided)
 if(isIntegral!(T)) {
     foreach(range; contingencyTable) {
@@ -2864,8 +2895,10 @@ if(isIntegral!(T)) {
     }
 }
 
-/**Convenience function.  Converts a dynamic array to a static one, then
- * calls the overload.*/
+/**
+Convenience function.  Converts a dynamic array to a static one, then
+calls the overload.
+*/
 TestRes fisherExact(T)(const T[][] contingencyTable, Alt alt = Alt.twoSided)
 if(isIntegral!(T)) {
     dstatsEnforce(contingencyTable.length == 2 &&
@@ -2957,19 +2990,20 @@ unittest {
     assert(approxEqual(res, 0.9723));
 }
 
-/**Performs a Kolmogorov-Smirnov (K-S) 2-sample test.  The K-S test is a
- * non-parametric test for a difference between two empirical distributions or
- * between an empirical distribution and a reference distribution.
- *
- * Returns:  A TestRes with the K-S D value and a P value for the null that
- * FPrime is distributed identically to F against the alternative that it isn't.
- * This implementation uses a signed D value to indicate the direction of the
- * difference between distributions.  To get the D value used in standard
- * notation, simply take the absolute value of this D value.
- *
- * Bugs:  Exact calculation not implemented.  Uses asymptotic approximation.
- *
- * References:  http://en.wikipedia.org/wiki/Kolmogorov%E2%80%93Smirnov_test
+/**
+Performs a Kolmogorov-Smirnov (K-S) 2-sample test.  The K-S test is a
+non-parametric test for a difference between two empirical distributions or
+between an empirical distribution and a reference distribution.
+
+Returns:  A TestRes with the K-S D value and a P value for the null that
+FPrime is distributed identically to F against the alternative that it isn't.
+This implementation uses a signed D value to indicate the direction of the
+difference between distributions.  To get the D value used in standard
+notation, simply take the absolute value of this D value.
+
+Bugs:  Exact calculation not implemented.  Uses asymptotic approximation.
+
+References:  http://en.wikipedia.org/wiki/Kolmogorov%E2%80%93Smirnov_test
  */
 TestRes ksTest(T, U)(T F, U Fprime)
 if(doubleInput!(T) && doubleInput!(U)) {
@@ -2978,17 +3012,17 @@ if(doubleInput!(T) && doubleInput!(U)) {
 }
 
 unittest {
-    assert(approxEqual(ksTest([1,2,3,4,5].dup, [1,2,3,4,5].dup).testStat, 0));
-    assert(approxEqual(ksTestDestructive([1,2,3,4,5].dup, [1,2,2,3,5].dup).testStat, -.2));
-    assert(approxEqual(ksTest([-1,0,2,8, 6].dup, [1,2,2,3,5].dup).testStat, .4));
-    assert(approxEqual(ksTest([1,2,3,4,5].dup, [1,2,2,3,5,7,8].dup).testStat, .2857));
-    assert(approxEqual(ksTestDestructive([1, 2, 3, 4, 4, 4, 5].dup,
-           [1, 2, 3, 4, 5, 5, 5].dup).testStat, .2857));
+    assert(approxEqual(ksTest([1,2,3,4,5], [1,2,3,4,5]).testStat, 0));
+    assert(approxEqual(ksTestDestructive([1,2,3,4,5], [1,2,2,3,5]).testStat, -.2));
+    assert(approxEqual(ksTest([-1,0,2,8, 6], [1,2,2,3,5]).testStat, .4));
+    assert(approxEqual(ksTest([1,2,3,4,5], [1,2,2,3,5,7,8]).testStat, .2857));
+    assert(approxEqual(ksTestDestructive([1, 2, 3, 4, 4, 4, 5],
+           [1, 2, 3, 4, 5, 5, 5]).testStat, .2857));
 
-    assert(approxEqual(ksTest([1, 2, 3, 4, 4, 4, 5].dup, [1, 2, 3, 4, 5, 5, 5].dup),
+    assert(approxEqual(ksTest([1, 2, 3, 4, 4, 4, 5], [1, 2, 3, 4, 5, 5, 5]),
            .9375));
-    assert(approxEqual(ksTestDestructive([1, 2, 3, 4, 4, 4, 5].dup,
-        [1, 2, 3, 4, 5, 5, 5].dup), .9375));
+    assert(approxEqual(ksTestDestructive([1, 2, 3, 4, 4, 4, 5],
+        [1, 2, 3, 4, 5, 5, 5]), .9375));
 }
 
 template isArrayLike(T) {
@@ -2996,27 +3030,26 @@ template isArrayLike(T) {
         && hasLength!(T) && isRandomAccessRange!(T);
 }
 
-/**One-sample KS test against a reference distribution, doesn't modify input
- * data.  Takes a function pointer or delegate for the CDF of refernce
- * distribution.
- *
- * Returns:  A TestRes with the K-S D value and a P value for the null that
- * Femp is a sample from F against the alternative that it isn't. This
- * implementation uses a signed D value to indicate the direction of the
- * difference between distributions.  To get the D value used in standard
- * notation, simply take the absolute value of this D value.
- *
- * Bugs:  Exact calculation not implemented.  Uses asymptotic approximation.
- *
- * Examples:
- * ---
- * auto stdNormal = parametrize!(normalCDF)(0.0, 1.0);
- * auto empirical = [1, 2, 3, 4, 5];
- * double res = ksTest(empirical, stdNormal);
- * ---
- *
- * References:  http://en.wikipedia.org/wiki/Kolmogorov%E2%80%93Smirnov_test
- *
+/**
+One-sample Kolmogorov-Smirnov test against a reference distribution.  
+Takes a callable object for the CDF of refernce distribution.
+
+Returns:  A TestRes with the Kolmogorov-Smirnov D value and a P value for the 
+null that Femp is a sample from F against the alternative that it isn't. This
+implementation uses a signed D value to indicate the direction of the
+difference between distributions.  To get the D value used in standard
+notation, simply take the absolute value of this D value.
+
+Bugs:  Exact calculation not implemented.  Uses asymptotic approximation.
+
+Examples:
+---
+auto stdNormal = parametrize!(normalCDF)(0.0, 1.0);
+auto empirical = [1, 2, 3, 4, 5];
+auto res = ksTest(empirical, stdNormal);
+---
+
+References:  http://en.wikipedia.org/wiki/Kolmogorov%E2%80%93Smirnov_test
  */
 TestRes ksTest(T, Func)(T Femp, Func F)
 if(doubleInput!(T) && is(ReturnType!(Func) : double)) {
@@ -3119,29 +3152,29 @@ in {
     return 1 - kolmogorovDistrib(abs(D) * sqrt(cast(double) N));
 }
 
-/**Wald-wolfowitz or runs test for randomness of the distribution of
- * elements for which positive() evaluates to true.  For example, given
- * a sequence of coin flips [H,H,H,H,H,T,T,T,T,T] and a positive() function of
- * "a == 'H'", this test would determine that the heads are non-randomly
- * distributed, since they are all at the beginning of obs.  This is done
- * by counting the number of runs of consecutive elements for which
- * positive() evaluates to true, and the number of consecutive runs for which
- * it evaluates to false.  In the example above, we have 2 runs.  These are the
- * block of 5 consecutive heads at the beginning and the 5 consecutive tails
- * at the end.
- *
- * Alternatives are Alt.less, meaning that less runs than expected have been
- * observed and data for which positive() is true tends to cluster,
- * Alt.greater, which means that more runs than expected have been observed
- * and data for which positive() is true tends to not cluster even moreso than
- * expected by chance, and Alt.twoSided, meaning that elements for which
- * positive() is true cluster as much as expected by chance.
- *
- * Bugs:  No exact calculation of the P-value.  Asymptotic approximation only.
- *
- * References:  http://en.wikipedia.org/wiki/Runs_test
- *
- */
+/**
+Wald-wolfowitz or runs test for randomness of the distribution of
+elements for which positive() evaluates to true.  For example, given
+a sequence of coin flips [H,H,H,H,H,T,T,T,T,T] and a positive() function of
+"a == 'H'", this test would determine that the heads are non-randomly
+distributed, since they are all at the beginning of obs.  This is done
+by counting the number of runs of consecutive elements for which
+positive() evaluates to true, and the number of consecutive runs for which
+it evaluates to false.  In the example above, we have 2 runs.  These are the
+block of 5 consecutive heads at the beginning and the 5 consecutive tails
+at the end.
+
+Alternatives are Alt.less, meaning that less runs than expected have been
+observed and data for which positive() is true tends to cluster,
+Alt.greater, which means that more runs than expected have been observed
+and data for which positive() is true tends to not cluster even moreso than
+expected by chance, and Alt.twoSided, meaning that elements for which
+positive() is true cluster as much as expected by chance.
+
+Bugs:  No exact calculation of the P-value.  Asymptotic approximation only.
+
+References:  http://en.wikipedia.org/wiki/Runs_test
+*/
 double runsTest(alias positive = "a > 0", T)(T obs, Alt alt = Alt.twoSided)
 if(isIterable!(T)) {
     RunsTest!(positive, ForeachType!(T)) r;
@@ -3161,8 +3194,10 @@ unittest {
     assert(approxEqual(runsTest(data, Alt.greater), 0.1791));
 }
 
-/**Runs test as in runsTest(), except calculates online instead of from stored
- * array elements.*/
+/**
+Runs test as in runsTest(), except calculates online instead of from stored
+array elements.
+*/
 struct RunsTest(alias positive = "a > 0", T) {
 private:
     uint nPos;
@@ -3220,24 +3255,31 @@ public:
     }
 }
 
-// Aliases for old names for correlation tests.
-alias pearsonCorTest pcorTest;
-alias spearmanCorTest scorTest;
-alias kendallCorTest kcorTest;
+deprecated {
+    // Aliases for old names for correlation tests.
+    alias pearsonCorTest pcorTest;
+    alias spearmanCorTest scorTest;
+    alias kendallCorTest kcorTest;
+}
 
-/**Tests the hypothesis that the Pearson correlation between two ranges is
- * different from some 0.  Alternatives are
- * Alt.less (pearsonCor(range1, range2) < 0), Alt.greater (pearsonCor(range1, range2)
- * > 0) and Alt.twoSided (pearsonCor(range1, range2) != 0).
- *
- * Returns:  A ConfInt of the estimated Pearson correlation of the two ranges,
- * the P-value against the given alternative, and the confidence interval of
- * the correlation at the level specified by confLevel.
- *
- * References:  http://en.wikipedia.org/wiki/Pearson_correlation
- */
-ConfInt pearsonCorTest(T, U)(T range1, U range2, Alt alt = Alt.twoSided, double confLevel = 0.95)
-if(doubleInput!(T) && doubleInput!(U)) {
+/**
+Tests the hypothesis that the Pearson correlation between two ranges is
+different from some 0.  Alternatives are Alt.less 
+(pearsonCor(range1, range2) < 0), Alt.greater (pearsonCor(range1, range2)
+ 0) and Alt.twoSided (pearsonCor(range1, range2) != 0).
+
+Returns:  A ConfInt of the estimated Pearson correlation of the two ranges,
+the P-value against the given alternative, and the confidence interval of
+the correlation at the level specified by confLevel.
+
+References:  http://en.wikipedia.org/wiki/Pearson_correlation
+*/
+ConfInt pearsonCorTest(T, U)(
+    T range1, 
+    U range2, 
+    Alt alt = Alt.twoSided, 
+    double confLevel = 0.95
+) if(doubleInput!(T) && doubleInput!(U)) {
     enforceConfidence(confLevel);
 
     PearsonCor pearsonRes = pearsonCor(range1, range2);
@@ -3248,14 +3290,18 @@ if(doubleInput!(T) && doubleInput!(U)) {
     return pearsonCorTest(pearsonRes.cor, pearsonRes.N, alt, confLevel);
 }
 
-/**Same as overload, but uses pre-computed correlation coefficient and sample
- * size instead of computing them.
- *
- * Note:  T must be a numeric type.  The only reason this is a template and
- * not a plain old function is DMD bug 2972.
+/**
+Same as overload, but uses pre-computed correlation coefficient and sample
+size instead of computing them.
+
+Note:  This is a template only because of DMD Bug 2972.
  */
-ConfInt pearsonCorTest(T)(double cor, T N, Alt alt = Alt.twoSided, double confLevel = 0.95)
-if(isNumeric!(T)) {
+ConfInt pearsonCorTest()(
+    double cor, 
+    double N, 
+    Alt alt = Alt.twoSided, 
+    double confLevel = 0.95
+) {
     dstatsEnforce(N >= 0, "N must be >= 0 for pearsonCorTest.");
     dstatsEnforce(cor > -1.0 || approxEqual(cor, -1.0),
         "Correlation must be between 0, 1.");
@@ -3377,30 +3423,32 @@ unittest {
     assert(t9.p == 1);
 }
 
-/**Tests the hypothesis that the Spearman correlation between two ranges is
- * different from some 0.  Alternatives are
- * Alt.less (spearmanCor(range1, range2) < 0), Alt.greater (spearmanCor(range1, range2)
- * > 0) and Alt.twoSided (spearmanCor(range1, range2) != 0).
- *
- * Returns:  A TestRes containing the Spearman correlation coefficient and
- * the P-value for the given alternative.
- *
- * Bugs:  Exact P-value computation not yet implemented.  Uses asymptotic
- * approximation only.  This is good enough for most practical purposes given
- * reasonably large N, but is not perfectly accurate.  Not valid for data with
- * very large amounts of ties.  */
+/**
+Tests the hypothesis that the Spearman correlation between two ranges is
+different from some 0.  Alternatives are
+Alt.less (spearmanCor(range1, range2) < 0), Alt.greater (spearmanCor(range1, range2)
+> 0) and Alt.twoSided (spearmanCor(range1, range2) != 0).
+
+Returns:  A TestRes containing the Spearman correlation coefficient and
+the P-value for the given alternative.
+
+Bugs:  Exact P-value computation not yet implemented.  Uses asymptotic
+approximation only.  This is good enough for most practical purposes given
+reasonably large N, but is not perfectly accurate.  Not valid for data with
+very large amounts of ties.  
+*/
 TestRes spearmanCorTest(T, U)(T range1, U range2, Alt alt = Alt.twoSided)
 if(isInputRange!(T) && isInputRange!(U) &&
 is(typeof(range1.front < range1.front) == bool) &&
 is(typeof(range2.front < range2.front) == bool)) {
 
     static if(!hasLength!T) {
+        auto alloc = newRegionAllocator();
         auto r1 = alloc.array(range1);
-        scope(exit) TempAlloc.free();
     } else {
         alias range1 r1;
     }
-    double N = r1.length;
+    immutable double N = r1.length;
 
     return pearsonCorTest(spearmanCor(range1, range2), N, alt, 0);
 }
@@ -3422,28 +3470,34 @@ unittest {
     assert(approxEqual(t2.p, 0.2215));
 }
 
-/**Tests the hypothesis that the Kendall Tau-b between two ranges is
- * different from some 0.  Alternatives are
- * Alt.less (kendallCor(range1, range2) < 0), Alt.greater (kendallCor(range1, range2)
- * > 0) and Alt.twoSided (kendallCor(range1, range2) != 0).
- *
- * exactThresh controls the maximum length of the range for which exact P-value
- * computation is used.  The default is 50.  Exact calculation is never used
- * when ties are present because it is not computationally feasible.
- * Do not set this higher than 100, as it will be very slow
- * and the asymptotic approximation is pretty good at even a fraction of this
- * size.
- *
- * Returns:  A TestRes containing the Kendall correlation coefficient and
- * the P-value for the given alternative.
- *
- * References:  StackOverflow Question 948341 (http://stackoverflow.com/questions/948341)
- *
- * The Variance of Tau When Both Rankings Contain Ties.  M.G. Kendall.
- * Biometrika, Vol 34, No. 3/4 (Dec., 1947), pp. 297-298
+/**
+Tests the hypothesis that the Kendall Tau-b between two ranges is
+different from 0.  Alternatives are Alt.less (kendallCor(range1, range2) < 0), 
+Alt.greater (kendallCor(range1, range2) > 0) and Alt.twoSided 
+(kendallCor(range1, range2) != 0).
+
+ 
+exactThresh controls the maximum length of the range for which exact P-value
+computation is used.  The default is 50.  Exact calculation is never used
+when ties are present because it is not computationally feasible.
+Do not set this higher than 100, as it will be very slow
+and the asymptotic approximation is pretty good at even a fraction of this
+size.
+
+Returns:  A TestRes containing the Kendall correlation coefficient and
+the P-value for the given alternative.
+
+References:  StackOverflow Question 948341 (http://stackoverflow.com/questions/948341)
+
+The Variance of Tau When Both Rankings Contain Ties.  M.G. Kendall.
+Biometrika, Vol 34, No. 3/4 (Dec., 1947), pp. 297-298
  */
-TestRes kendallCorTest(T, U)(T range1, U range2, Alt alt = Alt.twoSided, uint exactThresh = 50)
-if(isInputRange!(T) && isInputRange!(U)) {
+TestRes kendallCorTest(T, U)(
+    T range1, 
+    U range2, 
+    Alt alt = Alt.twoSided, 
+    uint exactThresh = 50
+) if(isInputRange!(T) && isInputRange!(U)) {
     auto alloc = newRegionAllocator();
     auto i1d = alloc.array(range1);
     auto i2d = alloc.array(range2);
@@ -3789,36 +3843,38 @@ unittest {
 }
 
 /// For falseDiscoveryRate.
-enum Dependency {
-    /// Assume that dependency among hypotheses may exist.  (More conservative.)
-    yes,
+enum Dependency : bool {
+    /**
+    Assume that dependency among hypotheses may exist.  (More conservative,
+    Benjamini-Yekutieli procedure.
+    */
+    yes = true,
 
-    /// Assume hypotheses are independent.  (Less conservative.)
-    no,
-
-    // Kept for compatibility with old style, intentionally not documented,
-    // may eventually be removed.
-    TRUE = yes,
-    FALSE = no
+    /**
+    Assume hypotheses are independent.  (Less conservative, Benjamine-
+    Hochberg procedure.) 
+    */
+    no = false
 }
 
-/**Computes the false discovery rate statistic given a list of
- * p-values, according to Benjamini and Hochberg (1995) (independent) or
- * Benjamini and Yekutieli (2001) (dependent).  The Dependency parameter
- * controls whether hypotheses are assumed to be independent, or whether
- * the more conservative assumption that they are correlated must be made.
- *
- * Returns:
- * An array of adjusted P-values with indices corresponding to the order of
- * the P-values in the input data.
- *
- * References:
- * Benjamini, Y., and Hochberg, Y. (1995). Controlling the false discovery rate:
- * a practical and powerful approach to multiple testing. Journal of the Royal
- * Statistical Society Series B, 57, 289-200
- *
- * Benjamini, Y., and Yekutieli, D. (2001). The control of the false discovery
- * rate in multiple testing under dependency. Annals of Statistics 29, 1165-1188.
+/**
+Computes the false discovery rate statistic given a list of
+p-values, according to Benjamini and Hochberg (1995) (independent) or
+Benjamini and Yekutieli (2001) (dependent).  The Dependency parameter
+controls whether hypotheses are assumed to be independent, or whether
+the more conservative assumption that they are correlated must be made.
+
+Returns:
+An array of adjusted P-values with indices corresponding to the order of
+the P-values in the input data.
+
+References:
+Benjamini, Y., and Hochberg, Y. (1995). Controlling the false discovery rate:
+a practical and powerful approach to multiple testing. Journal of the Royal
+Statistical Society Series B, 57, 289-200
+
+Benjamini, Y., and Yekutieli, D. (2001). The control of the false discovery
+rate in multiple testing under dependency. Annals of Statistics 29, 1165-1188.
  */
 float[] falseDiscoveryRate(T)(T pVals, Dependency dep = Dependency.no)
 if(doubleInput!(T)) {
@@ -3878,7 +3934,7 @@ unittest {
     assert(ae(q2[4], .005));
 
     // Dependent case.
-    qVals = falseDiscoveryRate(pVals, Dependency.TRUE);
+    qVals = falseDiscoveryRate(pVals, Dependency.yes);
     assert(ae(qVals[0], 1));
     assert(ae(qVals[1], .09075));
     assert(ae(qVals[2], .136125));
@@ -3887,7 +3943,7 @@ unittest {
     assert(ae(qVals[5], 1));
     assert(ae(qVals[6], .09075));
 
-    q2 = falseDiscoveryRate(p2, Dependency.TRUE);
+    q2 = falseDiscoveryRate(p2, Dependency.yes);
     assert(ae(q2[0], .38055555));
     assert(ae(q2[1], .1141667));
     assert(ae(q2[2], 1));
