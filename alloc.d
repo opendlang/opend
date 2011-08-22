@@ -1684,10 +1684,6 @@ version(scid) {
     version = noscid;
 }
 
-// Add RegionAllocator if not being compiled with SciD.  Else use SciD's copy.
-version(noscid):
-    
-
 import std.traits, core.memory, std.range, core.exception, std.conv,
     std.algorithm, std.typetuple, std.exception, std.typecons;
 
@@ -1708,8 +1704,8 @@ $(D RegionAllocatorStack).  This exception is not thrown on out of memory.
 An $(D OutOfMemoryError) is thrown instead.
 */
 class RegionAllocatorException : Exception {
-    this(string msg) {
-        super(msg);
+    this(string msg, string file, int line) {
+        super(msg, file, line);
     }
 }
 
@@ -1793,7 +1789,8 @@ public:
         this._gcScanned = shouldScan;
         if(segmentSize == 0) {
             throw new RegionAllocatorException( 
-                "Cannot create a RegionAllocatorStack with segment size of 0."
+                "Cannot create a RegionAllocatorStack with segment size of 0.",
+                __FILE__, __LINE__
             );
         }
         
@@ -1809,7 +1806,9 @@ public:
             throw new RegionAllocatorException(
                 "Cannot create a RegionAllocator from an " ~
                 "uninitialized RegionAllocatorStack.  Did you call " ~
-                "RegionAllocatorStack's constructor?"
+                "RegionAllocatorStack's constructor?",
+                __FILE__,
+                __LINE__
             );
         }
         
@@ -1832,24 +1831,24 @@ private struct RegionAllocatorStackImpl {
 
         // We don't need 16-byte alignment for the bookkeeping array.
         immutable nBookKeep = segmentSize / alignBytes;
-        lastAlloc = (cast(void**) core.stdc.stdlib.malloc(nBookKeep))
-                    [0..nBookKeep / ptrSize];
+        bookkeep = (cast(SizetPtr*) core.stdc.stdlib.malloc(nBookKeep))
+                    [0..nBookKeep / SizetPtr.sizeof];
         
-        if(!lastAlloc.ptr) {
+        if(!bookkeep.ptr) {
             outOfMemory();
         }
         
-        nblocks++;
+        nBlocks++;
     }
     
     size_t segmentSize;  // The size of each segment.
     
     size_t used;
     void* space;
-    size_t totalAllocs;
-    void*[] lastAlloc;
-    uint nblocks;
-    uint nfree;
+    size_t bookkeepIndex;
+    SizetPtr[] bookkeep;
+    uint nBlocks;
+    uint nFree;
     size_t regionIndex = size_t.max;
 
     // inUse holds info for all blocks except the one currently being
@@ -1862,42 +1861,70 @@ private struct RegionAllocatorStackImpl {
     
     SimpleStack!(Block) inUse;
     SimpleStack!(void*) freeList;
-    
 
-    void doubleSize(ref void*[] lastAlloc) {
-        size_t newSize = lastAlloc.length * 2;
-        void** ptr = cast(void**) core.stdc.stdlib.realloc(
-            lastAlloc.ptr, newSize * ptrSize);
+    void doubleSize(ref SizetPtr[] bookkeep) {
+        size_t newSize = bookkeep.length * 2;
+        auto ptr = cast(SizetPtr*) core.stdc.stdlib.realloc(
+            bookkeep.ptr, newSize * SizetPtr.sizeof);
             
         if(!ptr) {
             outOfMemory();
         }
         
-        lastAlloc = ptr[0..newSize];
+        bookkeep = ptr[0..newSize];
     }
 
-    // Add an element to lastAlloc, checking length first.
+    // Add an element to bookkeep, checking length first.
     void putLast(void* last) {
-        if (totalAllocs == lastAlloc.length) doubleSize(lastAlloc);
-        lastAlloc[totalAllocs] = cast(void*) last;
-        totalAllocs++;
+        if (bookkeepIndex == bookkeep.length) doubleSize(bookkeep);
+        bookkeep[bookkeepIndex].p = last;
+        bookkeepIndex++;
     }
 
-    // Hacky use of the same array to store frame indices, reference
-    // counts and previous pointers.
     void putLast(size_t num) {
         return putLast(cast(void*) num);
     }
+    
+    // The number of objects allocated on the C heap instead of here.
+    ref size_t nLargeObjects() @property pure nothrow {
+        return bookkeep[regionIndex - 4].i;
+    }
+    
+    // The number of extra segments that have been allocated in the current
+    // region beyond the base segment of the region.
+    ref size_t nExtraSegments() @property pure nothrow {
+        return bookkeep[regionIndex - 3].i;
+    }
+    
+    // Pushes a segment to the internal free list and frees segments to the
+    // heap if there are more than 2x as many segments on the free list as
+    // in use.
+    void freeSegment() {
+        nExtraSegments--;
+        freeList.push(space);
+        auto newHead = inUse.pop();
+        space = newHead.space;
+        used = newHead.used;
+        nBlocks--;
+        nFree++;
 
+        if (nFree >= nBlocks * 2) {
+            foreach(i; 0..nFree / 2) {
+                alignedFree(freeList.pop);
+                nFree--;
+            }
+        }
+    }
+    
     void destroy() {
         if(space) {
             alignedFree(space);
             space = null;
         }
 
-        if(lastAlloc) {
-            core.stdc.stdlib.free(lastAlloc.ptr);
-            lastAlloc = null;
+        if(bookkeep) {
+            core.stdc.stdlib.free(bookkeep.ptr);
+            bookkeep = null;
         }
 
         while(inUse.index > 0) {
@@ -1937,7 +1964,9 @@ size_t threadLocalSegmentSize(size_t newSize) @property @safe {
     if(threadLocalInitialized) {
         throw new RegionAllocatorException(
             "Cannot set threadLocalSegmentSize after the thread-local " ~
-            "RegionAllocatorStack has been used for the first time."
+            "RegionAllocatorStack has been used for the first time.",
+            __FILE__,
+            __LINE__
         );
     }
     
@@ -1954,7 +1983,7 @@ regionallocator, GCScan) for details.)
 The setter is only effective before the global function
 $(D newRegionAllocator) has been called for the first time in the current
 thread.  Attempts to set this property after the first call to this
-function from the current thread throw an $(D Exception).
+function from the current thread throw a $(D RegionAllocatorException).
 */
 bool scanThreadLocalStack() @property nothrow @safe {
     return _scanThreadLocalStack;
@@ -1965,7 +1994,9 @@ bool scanThreadLocalStack(bool shouldScan) @property @safe {
     if(threadLocalInitialized) {
         throw new RegionAllocatorException(
             "Cannot set scanThreadLocalStack after the thread-local " ~
-            "RegionAllocatorStack has been used for the first time."
+            "RegionAllocatorStack has been used for the first time.",
+            __FILE__,
+            __LINE__
         );
     }
     
@@ -2022,7 +2053,7 @@ void foo() {
     auto ptr1 = bar(alloc);
     auto ptr2 = alloc.allocate(42);
 
-    // The last instance of the region allocator used to allocate ptr1
+    // The last copy of the RegionAllocator object used to allocate ptr1
     // and ptr2 is going out of scope here.  The memory pointed to by
     // both ptr1 and ptr2 will be freed.
 }
@@ -2035,7 +2066,7 @@ void* bar(RegionAllocator alloc) {
 
     // ptr3 was allocated using alloc2, which is going out of scope.
     // Its memory will therefore be freed.  ret was allocated using alloc.
-    // An instance of this RegionAllocator is still alive in foo() after
+    // A copy of this RegionAllocator is still alive in foo() after
     // bar() executes.  Therefore, ret will not be freed on returning and
     // is still valid after bar() returns.
 
@@ -2078,6 +2109,16 @@ void uninitialized() {
     auto ptr4 = alloc.allocate(42);  // Ok.
 }    
 ---
+
+Note:  Allocations larger than $(D this.segmentSize) are handled as a special
+case and fall back to allocating directly from the C heap.  These large 
+allocations are freed as if they were allocated on a $(D RegionAllocatorStack) 
+when $(D free) or $(D freeLast) is called or the last copy of a 
+$(D RegionAllocator) instance goes out of scope.  However, due to the extra 
+bookkeeping required, destroying a region (as happens when the last copy of
+a $(D RegionAllocator) instance goes out of scope) will require time linear
+instead of constant in the number of allocations for regions where these
+large allocations are present.
 */
 struct RegionAllocator {
 private:
@@ -2093,9 +2134,11 @@ private:
         this.stack = stack;
         
         with(*impl) {
-            putLast(regionIndex);
-            putLast(1);
-            regionIndex = totalAllocs;
+            putLast(0);            // nLargeObjects.
+            putLast(0);            // nExtraSegments.
+            putLast(regionIndex);  // Old regionIndex.
+            putLast(1);            // Ref count of current RegionAllocator.
+            regionIndex = bookkeepIndex;
             correctRegionIndex = regionIndex;
         }
     }
@@ -2116,7 +2159,9 @@ private:
         if(!initialized) {
             throw new RegionAllocatorException(
                 "RegionAllocator instance not initialized.  Please use " ~
-                "newRegionAllocator() to create a RegionAllocator object."
+                "newRegionAllocator() to create a RegionAllocator object.",
+                __FILE__,
+                __LINE__
             );
         }
         
@@ -2125,28 +2170,44 @@ private:
 
     void incrementRefCount() {
         mixin(getStackImplMixin);
-        impl.lastAlloc[correctRegionIndex - 1]++;
+        impl.bookkeep[correctRegionIndex - 1].i++;
     }
 
     void decrementRefCount() {
         mixin(getStackImplMixin);
-        impl.lastAlloc[correctRegionIndex - 1]--;
+        impl.bookkeep[correctRegionIndex - 1].i--;
         
-        if(cast(size_t) impl.lastAlloc[correctRegionIndex - 1] == 0) {
+        if(impl.bookkeep[correctRegionIndex - 1].i == 0) {
             if(impl.regionIndex != correctRegionIndex) {
                 throw new RegionAllocatorException(
                     "Cannot free RegionAlloc regions in non-last in first " ~
                     "out order.  Did you return a RegionAllocator from a " ~
-                    "function?"
+                    "function?", 
+                    __FILE__,
+                    __LINE__
                 );
             }
 
             with(*impl) {
-                while (totalAllocs > regionIndex) {
+                // Free allocations one at a time until we don't have any
+                // more large objects.
+                while (nLargeObjects > 0 && bookkeepIndex > regionIndex) {
+                    assert(bookkeepIndex > regionIndex);
                     freeLast();
                 }
-                totalAllocs -= 2;  // Reference count, frame index.
-                regionIndex = cast(size_t) lastAlloc[totalAllocs];
+                
+                // Free any extra segments that were used by this region.
+                while(nExtraSegments > 0) {
+                    freeSegment();
+                }
+                
+                if(bookkeepIndex > regionIndex) {
+                    // Then there's something left to free.
+                    used = bookkeep[regionIndex].i - cast(size_t) space;
+                }
+                
+                bookkeepIndex = regionIndex - 4;
+                regionIndex = bookkeep[regionIndex - 2].i;
             }
         }
     }
@@ -2187,12 +2248,14 @@ private:
                         finishCopy(result, range, elemsCopied);
                         freeLast();
                         impl.putLast(result.ptr);
+                        impl.nLargeObjects++;
                         return result;
                     } else {
+                        // Force allocation of a new segment.
                         U[] oldData = (cast(U*) startPtr)
                             [0..bytesCopied / U.sizeof];
                         impl.used -= bytesCopied;
-                        impl.totalAllocs--;
+                        impl.bookkeepIndex--;
                         U[] arr = uninitializedArray!(U[])
                             (bytesCopied / U.sizeof + 1);
                         arr[0..oldData.length] = oldData[];
@@ -2222,16 +2285,17 @@ private:
         // space efficiency.
         enum initialGuess = 128;
 
+        mixin(getStackImplMixin);
         alias Unqual!(ElementType!R) E;
         auto arr = (cast(E*) alignedMalloc(E.sizeof * initialGuess, true))
             [0..initialGuess];
 
         finishCopy(arr, range, 0);
-        mixin(getStackImplMixin);
         impl.putLast(arr.ptr);
+        impl.nLargeObjects++;
         return arr;
     }
-
+    
 public:
     
     this(this) {
@@ -2256,13 +2320,20 @@ public:
     $(D RegionAllocator.free) or $(D RegionAllocator.freeLast) or will be
     automatically freed when the last copy of this $(D RegionAllocator)
     instance goes out of scope.
+    
+    Allocation requests larger than $(D segmentSize) are
+    allocated directly on the C heap, are scanned by the GC iff
+    the $(D RegionAllocatorStack) instance that this object uses is scanned by
+    the GC, and are freed according to the same rules as described above.
     */
     void* allocate(size_t nBytes) {
         mixin(getStackImplMixin);
         if(impl.regionIndex != this.correctRegionIndex) {
             throw new RegionAllocatorException(
                 "Cannot allocate memory from a RegionAllocator that is not " ~
-                "currently at the top of the stack."
+                "currently at the top of the stack.",
+                __FILE__,
+                __LINE__
             );
         }
         
@@ -2274,17 +2345,20 @@ public:
                 used += nBytes;
             } else if (nBytes > segmentSize) {
                 ret = alignedMalloc(nBytes, gcScanned);
-            } else if (nfree > 0) {
+                impl.nLargeObjects++;
+            } else if (nFree > 0) {
+                nExtraSegments++;
                 inUse.push(Block(used, space));
                 space = freeList.pop;
                 used = nBytes;
-                nfree--;
-                nblocks++;
+                nFree--;
+                nBlocks++;
                 ret = space;
             } else { // Allocate more space.
+                nExtraSegments++;
                 inUse.push(Block(used, space));
                 space = alignedMalloc(segmentSize, gcScanned);
-                nblocks++;
+                nBlocks++;
                 used = nBytes;
                 ret = space;
             }
@@ -2305,34 +2379,25 @@ public:
             throw new RegionAllocatorException(
                 "Cannot free memory to a RegionAllocator that is not " ~
                 "currently at the top of the stack, or memory that has not " ~
-                "been allocated with this instance."
+                "been allocated with this instance.",
+                __FILE__,
+                __LINE__
             );
         }
 
         with(*impl) {
-            void* lastPos = lastAlloc[--totalAllocs];
+            auto lastPos = bookkeep[--bookkeepIndex].p;
 
             // Handle large blocks.
-            if (lastPos > space + segmentSize || lastPos < space) {
+            if(lastPos > space + segmentSize || lastPos < space) {
                 alignedFree(lastPos);
+                impl.nLargeObjects--;
                 return;
             }
 
             used = (cast(size_t) lastPos) - (cast(size_t) space);
-            if (nblocks > 1 && used == 0) {
-                freeList.push(space);
-                Block newHead = inUse.pop;
-                space = newHead.space;
-                used = newHead.used;
-                nblocks--;
-                nfree++;
-
-                if (nfree >= nblocks * 2) {
-                    foreach(i; 0..nfree / 2) {
-                        alignedFree(freeList.pop);
-                        nfree--;
-                    }
-                }
+            if (nBlocks > 1 && used == 0) {
+                impl.freeSegment();
             }
         }
     }
@@ -2345,14 +2410,59 @@ public:
     */
     void free(void* ptr) {
         mixin(getStackImplMixin);
-        void* lastPos = impl.lastAlloc[impl.totalAllocs - 1];
+        auto lastPos = impl.bookkeep[impl.bookkeepIndex - 1].p;
         if(ptr !is lastPos) {
             throw new RegionAllocatorException(
-                "Cannot free RegionAllocator memory in non-LIFO order."
+                "Cannot free RegionAllocator memory in non-LIFO order.",
+                __FILE__,
+                __LINE__
             );
         }
         
         freeLast();
+    }
+    
+    /**
+    Attempts to resize a previously allocated block of memory in place.  
+    This is possible only if $(D ptr) points to the beginning of the last
+    block allocated by this $(D RegionAllocator) instance and, in the
+    case where $(D newSize) is greater than the old size, there is
+    additional space in the segment that $(D ptr) was allocated from.  
+    Additionally, blocks larger than this $(D RegionAllocator)'s segment size
+    cannot be grown or shrunk.
+    
+    Returns:  True if the block was successfully resized, false otherwise.
+    */
+    bool resize(const(void)* ptr, size_t newSize) {
+        mixin(getStackImplMixin);
+        
+        // This works since we always allocate in increments of alignBytes
+        // no matter what the allocation size.
+        newSize = allocSize(newSize);
+        
+        with(*impl) {
+            auto lastPos = bookkeep[bookkeepIndex - 1].p;
+            if(ptr !is lastPos) {
+                return false;
+            }
+
+            // If it's a large block directly allocated on the heap,
+            // then we definitely can't resize it in place.
+            if(lastPos > space + segmentSize || lastPos < space) {
+                return false;
+            }           
+        
+            immutable blockSize = used - ((cast(size_t) lastPos) -
+                cast(size_t) space);
+            immutable sizediff_t diff = newSize - blockSize;
+            
+            if(cast(sizediff_t) (impl.segmentSize - used) >= diff) {
+                used += diff;
+                return true;
+            }
+        }
+        
+        return false;
     }
     
     /**
@@ -2424,14 +2534,6 @@ public:
     }
 
     /**
-    Dummy implementation for compatibility with allocator interface.
-    Always returns false.
-    */
-    static bool resize(void* p, size_t newSize) {
-        return false;
-    }
-
-    /**
     Returns the number of bytes to which an allocation of size nBytes is
     guaranteed to be aligned.
     */
@@ -2468,7 +2570,8 @@ public:
     enum freeIsChecked = true;
 
     /**
-    Returns the segment size of this $(D RegionAllocator).
+    Returns the segment size of the $(D RegionAllocatorStack) used by this
+    $(D RegionAllocator).
     */
     size_t segmentSize() @property {
         mixin(getStackImplMixin);
@@ -2621,7 +2724,7 @@ unittest {
     threadLocalInitialized = false;
 
      // First test to make sure a large number of allocations does what it's
-     // supposed to in terms of reallocing lastAlloc[], etc.
+     // supposed to in terms of reallocing bookkeep[], etc.
      enum nIter =  defaultSegmentSize * 5 / alignBytes;
 
     {
@@ -2629,14 +2732,14 @@ unittest {
          foreach(i; 0..nIter) {
              alloc.allocate(alignBytes);
          }
-         assert(alloc.stack.impl.refCountedPayload.nblocks == 5,
-            to!string(alloc.stack.impl.refCountedPayload.nblocks));
-         assert(alloc.stack.impl.refCountedPayload.nfree == 0);
+         assert(alloc.stack.impl.refCountedPayload.nBlocks == 5,
+            to!string(alloc.stack.impl.refCountedPayload.nBlocks));
+         assert(alloc.stack.impl.refCountedPayload.nFree == 0);
          foreach(i; 0..nIter) {
             alloc.freeLast();
         }
-        assert(alloc.stack.impl.refCountedPayload.nblocks == 1);
-        assert(alloc.stack.impl.refCountedPayload.nfree == 2);
+        assert(alloc.stack.impl.refCountedPayload.nBlocks == 1);
+        assert(alloc.stack.impl.refCountedPayload.nFree == 2);
 
         // Make sure logic for freeing excess blocks works.  If it doesn't this
         // test will run out of memory.
@@ -2690,8 +2793,9 @@ unittest {
 
         assert(space == alloc.stack.impl.refCountedPayload.space,
             text(space, '\t', alloc.stack.impl.refCountedPayload.space));
-        assert(used == alloc.stack.impl.refCountedPayload.used);
-        while(alloc.stack.impl.refCountedPayload.nblocks > 1 || 
+        assert(used == alloc.stack.impl.refCountedPayload.used,
+            text(used, '\t', alloc.stack.impl.refCountedPayload.used));
+        while(alloc.stack.impl.refCountedPayload.nBlocks > 1 || 
         alloc.stack.impl.refCountedPayload.used > 0) {
             alloc.freeLast();
         }
@@ -2734,6 +2838,30 @@ unittest {
     foreach(i; 0..100_000) {
         auto stack = RegionAllocatorStack(4 * 1024 * 1024, GCScan.no);
     }
+}
+
+unittest {
+    // Make sure resize works properly.
+    auto alloc = newRegionAllocator();
+    auto arr1 = alloc.array(iota(4));
+    auto res = alloc.resize(arr1.ptr, 8 * int.sizeof);
+    assert(res);
+    arr1 = arr1.ptr[0..8];
+    copy(iota(4, 8), arr1[4..$]);
+    
+    auto arr2 = alloc.newArray!(int[])(8);
+    
+    // If resizing resizes to something too small, this will have been 
+    // overwritten:
+    assert(arr1 == [0, 1, 2, 3, 4, 5, 6, 7], text(arr1));
+    
+    alloc.free(arr2.ptr);
+    auto res2 = alloc.resize(arr1.ptr, 4 * int.sizeof);
+    assert(res2);
+    arr2 = alloc.newArray!(int[])(8);
+    
+    // This time the memory in arr1 should have been overwritten.
+    assert(arr1 == [0, 1, 2, 3, 0, 0, 0, 0]);
 }
 
 unittest {
@@ -2800,6 +2928,7 @@ private  void outOfMemory()  {
     throw new OutOfMemoryError("Out of memory in RegionAllocator.");
 }
 
+// Memory allocation routines.  These wrap allocate(), free() and realloc(),
 // and guarantee alignment.
 private enum size_t alignBytes = 16;
 
@@ -2854,4 +2983,9 @@ private void* alignedRealloc(void* ptr, size_t newLen, size_t oldLen) {
 
     alignedFree(ptr);
     return newPtr;
+}
+
+private union SizetPtr {
+    size_t i;
+    void* p;
 }
