@@ -1,47 +1,50 @@
-/**A comprehensive sorting library for statistical functions.  Each function
- * takes N arguments, which are arrays or array-like objects, sorts the first
- * and sorts the rest in lockstep.  For merge and insertion sort, if the last
- * argument is a ulong*, increments the dereference of this ulong* by the bubble
- * sort distance between the first argument and the sorted version of the first
- * argument.  This is useful for some statistical calculations.
- *
- * All sorting functions have the precondition that all parallel input arrays
- * must have the same length.
- *
- * Notes:
- *
- * Comparison functions must be written such that compFun(x, x) == false.
- * For example, "a < b" is good, "a <= b" is not.
- *
- * These functions are heavily optimized for sorting arrays of
- * ints and floats (by far the most common case when doing statistical
- * calculations).  In these cases, they can be several times faster than the
- * equivalent functions in std.algorithm.  Since sorting is extremely important
- * for non-parametric statistics, this results in important real-world
- * performance gains.  However, it comes at a price in terms of generality:
- *
- * 1.  They assume that what they are sorting is cheap to copy via normal
- *     assignment.
- * 2.  They don't work at all with general ranges, only arrays and maybe
- *     ranges very similar to arrays.
- * 3.  All tuning and micro-optimization is done with ints and floats, not
- *     classes, large structs, strings, etc.
- *
- * Examples:
- * ---
- * auto foo = [3, 1, 2, 4, 5].dup;
- * auto bar = [8, 6, 7, 5, 3].dup;
- * qsort(foo, bar);
- * assert(foo == [1, 2, 3, 4, 5]);
- * assert(bar == [6, 7, 8, 5, 3]);
- * auto baz = [1.0, 0, -1, -2, -3].dup;
- * mergeSort!("a > b")(bar, foo, baz);
- * assert(bar == [8, 7, 6, 5, 3]);
- * assert(foo == [3, 2, 1, 4, 5]);
- * assert(baz == [-1.0, 0, 1, -2, -3]);
- * ---
- *
- * Author:  David Simcha
+/**
+A comprehensive sorting library for statistical functions.  Each function
+takes N arguments, which are arrays or array-like objects, sorts the first
+and sorts the rest in lockstep.  For merge and insertion sort, if the last
+argument is a ulong*, increments the dereference of this ulong* by the bubble
+sort distance between the first argument and the sorted version of the first
+argument.  This is useful for some statistical calculations.
+ 
+All sorting functions have the precondition that all parallel input arrays
+must have the same length.
+ 
+Notes:
+ 
+Comparison functions must be written such that compFun(x, x) == false.
+For example, "a < b" is good, "a <= b" is not.
+ 
+These functions are heavily optimized for sorting arrays of
+ints and floats (by far the most common case when doing statistical
+calculations).  In these cases, they can be several times faster than the
+equivalent functions in std.algorithm.  Since sorting is extremely important
+for non-parametric statistics, this results in important real-world
+performance gains.  However, it comes at a price in terms of generality:
+ 
+1.  They assume that what they are sorting is cheap to copy via normal
+    assignment.
+    
+2.  They don't work at all with general ranges, only arrays and maybe
+    ranges very similar to arrays.
+    
+3.  All tuning and micro-optimization is done with ints and floats, not
+    classes, large structs, strings, etc.
+ 
+Examples:
+---
+auto foo = [3, 1, 2, 4, 5].dup;
+auto bar = [8, 6, 7, 5, 3].dup;
+qsort(foo, bar);
+assert(foo == [1, 2, 3, 4, 5]);
+assert(bar == [6, 7, 8, 5, 3]);
+auto baz = [1.0, 0, -1, -2, -3].dup;
+mergeSort!("a > b")(bar, foo, baz);
+assert(bar == [8, 7, 6, 5, 3]);
+assert(foo == [3, 2, 1, 4, 5]);
+assert(baz == [-1.0, 0, 1, -2, -3]);
+---
+
+Author:  David Simcha
  */
  /*
  * License:
@@ -792,43 +795,22 @@ unittest {
 
 // Loosely based on C++ STL's __merge_without_buffer().
 /*private*/ void mergeInPlace(alias compFun = "a < b", T...)(T data, size_t middle) {
-    static size_t largestLess(alias compFun, T)(T[] data, T value) {
-        alias binaryFun!(compFun) comp;
-        size_t len = data.length, first, last = data.length, half, middle;
-
-        while (len > 0) {
-            half = len / 2;
-            middle = first + half;
-            if (comp(data[middle], value)) {
-                first = middle + 1;
-                len = len - half - 1;
-            } else
-                len = half;
-        }
-        return first;
-    }
-
-    static size_t smallestGr(alias compFun, T)(T[] data, T value) {
-        alias binaryFun!(compFun) comp;
-        size_t len = data.length, first, last = data.length, half, middle;
-
-        while (len > 0) {
-            half = len / 2;
-            middle = first + half;
-            if (comp(value, data[middle]))
-                len = half;
-            else {
-                first = middle + 1;
-                len = len - half - 1;
-            }
-        }
-        return first;
-    }
-
-
     alias binaryFun!(compFun) comp;
-    if (data[0].length < 2 || middle == 0 || middle == data[0].length)
+
+    static size_t largestLess(T)(T[] data, T value) {
+        return assumeSorted!(comp)(data).lowerBound(value).length;
+    }
+
+    static size_t smallestGr(T)(T[] data, T value) {
+        return data.length - 
+            assumeSorted!(comp)(data).upperBound(value).length;
+    }
+
+
+    if (data[0].length < 2 || middle == 0 || middle == data[0].length) {
         return;
+    }
+    
     if (data[0].length == 2) {
         if(comp(data[0][1], data[0][0])) {
             foreach(array; data) {
@@ -845,11 +827,11 @@ unittest {
     if (middle > data[0].length - middle) {
         half1 = middle / 2;
         auto pivot = data[0][half1];
-        half2 = largestLess!(compFun)(data[0][middle..$], pivot);
+        half2 = largestLess(data[0][middle..$], pivot);
     } else {
         half2 = (data[0].length - middle) / 2;
         auto pivot = data[0][half2 + middle];
-        half1 = smallestGr!(compFun)(data[0][0..middle], pivot);
+        half1 = smallestGr(data[0][0..middle], pivot);
     }
 
     foreach(array; data) {
