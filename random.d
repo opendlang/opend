@@ -118,7 +118,7 @@
 module dstats.random;
 
 import std.math, std.algorithm, dstats.distrib, std.traits, std.typetuple,
-    std.exception, std.mathspecial;
+    std.exception, std.mathspecial, std.array;
 public import std.random; //For uniform distrib.
 
 import dstats.alloc, dstats.base;
@@ -137,7 +137,7 @@ version(unittest) {
  * auto normals = randArray!rNorm(10, 0, 1);
  * ---
  */
-auto randArray(alias randFun, Args...)(size_t N, Args args) {
+auto randArray(alias randFun, Args...)(size_t N, auto ref Args args) {
     alias typeof(randFun(args)) R;
     return randArray!(R, randFun, Args)(N, args);
 }
@@ -158,7 +158,7 @@ unittest {
  * float[] normals = randArray!(float, rNorm)(10, 0, 1);
  * ---
  */
-R[] randArray(R, alias randFun, Args...)(size_t N, Args args) {
+R[] randArray(R, alias randFun, Args...)(size_t N, auto ref Args args) {
     auto ret = uninitializedArray!(R[])(N);
     foreach(ref elem; ret) {
         elem = randFun(args);

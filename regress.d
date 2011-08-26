@@ -1194,8 +1194,14 @@ double[] linearRegressPenalized(Y, X...)
     return betasFull;
 }
 
-private void coordDescent
-(double[] y, double[][] x, double[] betas, double lasso, double ridge, double[] w) {
+private void coordDescent(
+    double[] y, 
+    double[][] x, 
+    double[] betas, 
+    double lasso, 
+    double ridge, 
+    double[] w
+) {
     auto alloc = newRegionAllocator();
 
     auto predictions = alloc.uninitializedArray!(double[])(y.length);
@@ -1231,15 +1237,18 @@ private void coordDescent
         }
     }
 
-    double doIter(double[] betas, double[][] x, double mul) {
-//        stderr.writeln("ITER:  ", betas, '\t', predictions);
+    double doIter(double[] betas, double[][] x) {
         double maxRelError = 0;
+        bool predictionsChanged = true;
+        
         foreach(j, ref b; betas) {
             if(b == 0) {
-                residuals[] = y[] - predictions[];
+                if(predictionsChanged) {
+                    residuals[] = y[] - predictions[];
+                }
             } else {
-                residuals[] = x[j][] * b - predictions[] + y[];
                 predictions[] -= x[j][] * b;
+                residuals[] = y[] - predictions[];
             }
 
             double z;
@@ -1252,14 +1261,18 @@ private void coordDescent
                 z = dotProduct(residuals, x[j]) / n;
             }
 
-            auto newB = softThresh(z, lasso * mul) /
-                (weightDots[j] + ridge * mul);
-
+            immutable newB = softThresh(z, lasso) / (weightDots[j] + ridge);
             immutable absErr = abs(b - newB);
-            immutable err = abs(b - newB) / max(abs(b), abs(newB));
+            immutable err = absErr / max(abs(b), abs(newB));
 
             if(absErr > absEpsilon) {
                 maxRelError = max(maxRelError, err);
+            }
+
+            if(b == 0 && newB == 0) {
+                predictionsChanged = false;
+            } else {
+                predictionsChanged = true;
             }
 
             b = newB;
@@ -1271,8 +1284,8 @@ private void coordDescent
         return maxRelError;
     }
 
-    void toConvergence(double mul) {
-        double maxRelErr = doIter(betas, x, mul);
+    void toConvergence() {
+        double maxRelErr = doIter(betas, x);
         iter++;
         if(maxRelErr < relEpsilon) return;
 
@@ -1294,19 +1307,16 @@ private void coordDescent
             maxRelErr = double.infinity;
             for(; !(maxRelErr < relEpsilon) && split < betas.length
             && iter < maxIter; iter++) {
-                maxRelErr = doIter(betas[0..split], x[0..split], mul);
+                maxRelErr = doIter(betas[0..split], x[0..split]);
             }
 
-
-            maxRelErr = doIter(betas, x, mul);
+            maxRelErr = doIter(betas, x);
             iter++;
             if(maxRelErr < relEpsilon) break;
         }
-
-        //stderr.writefln("Converged in %s iterations for %s mult.", iter, mul);
     }
 
-    toConvergence(1);
+    toConvergence();
     try {
         qsort(perm, x, betas);
     } catch(SortException) {
