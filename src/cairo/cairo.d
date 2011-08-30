@@ -254,15 +254,15 @@ public struct Rectangle(T) if (isOneOf!(T, int, double))
  * auto b = rectangle(0.99, 0.99, 3.99, 3.99);
  * --------------------------------------------------------
  */
-auto rectangle(T...)(T t)
+auto rectangle(T...)(T args)
 {
     static if (isOneOf!(float, T) || isOneOf!(double, T))
     {
-        return Rectangle!(double)(t);
+        return Rectangle!(double)(args);
     }
     else
     {
-        return Rectangle!(int)(t);
+        return Rectangle!(int)(args);
     }
 }
 
