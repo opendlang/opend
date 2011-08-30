@@ -34,13 +34,14 @@ module cairo.cairo;
 import cairo.c.cairo;
 import cairo.util;
 
+import core.exception;
+import std.algorithm;
 import std.conv;
 import std.range; //For PathRange unittests
 import std.string;
 import std.traits;
-import core.exception;
-import std.algorithm;
 import std.typecons;
+import std.typetuple;
 
 debug(RefCounted)
 {
@@ -190,9 +191,33 @@ public struct PointInt
 }
 
 /**
+ * Checks whether TargetType matches any subsequent types.
+ * Use as: isOneOf!(TargetType, Type1, Type2..);
+ */
+template isOneOf(X, T...)
+{
+    static if (!T.length)
+        enum bool isOneOf = false;
+    else static if (is (X == T[0]))
+        enum bool isOneOf = true;
+    else
+        enum bool isOneOf = isOneOf!(X, T[1..$]);
+}
+
+/**
+ * Returns true for any type which is implicitly convertible
+ * to int our double, which are Rectangle's element types.
+ */
+template isRectElementConvertible(T)
+{
+    enum bool isRectElementConvertible = staticIndexOf!(Unqual!(T), byte,
+            ubyte, short, ushort, int, uint, float, double) >= 0;
+}
+
+/**
  * A simple struct representing a rectangle with $(D int) or $(double) values
  */
-public struct Rectangle(T) if (is(T == double) || is(T == int))
+public struct Rectangle(T) if (isOneOf!(T, int, double))
 {
     static if (is(T == double))
     {
@@ -230,8 +255,9 @@ public struct Rectangle(T) if (is(T == double) || is(T == int))
 }
 
 /**
- * Convenience function to create a $(D Rectangle!int) or $(D Rectangle!double)
- * depending on the argument types.
+ * Convenience function to create a $(D Rectangle!int) or $(D Rectangle!double).
+ * If any of the arguments are of a floating-point type, 
+ * Rectangle!double is constructed.
  *
  * Examples:
  * --------------------------------------------------------
@@ -239,15 +265,32 @@ public struct Rectangle(T) if (is(T == double) || is(T == int))
  * auto b = rectangle(0.99, 0.99, 3.99, 3.99);
  * --------------------------------------------------------
  */
-auto rectangle(T)(T x, T y, T width, T height) if (is(T == double) || is(T == int))
+auto rectangle(T...)(T t)
+    if (allSatisfy!(isRectElementConvertible, T))
 {
-    return Rectangle!(T)(x, y, width, height);
+    static if (isOneOf!(float, T) || isOneOf!(double, T))
+    {
+        return Rectangle!(double)(t);
+    }
+    else
+    {
+        return Rectangle!(int)(t);
+    }
 }
 
 unittest
 {
     auto a = rectangle(1, 1, 4, 4);
     auto b = rectangle(0.99, 0.99, 3.99, 3.99);
+    
+    auto rect1 = rectangle(0, 0, 10, 10);
+    Rectangle!int rectInt = rect1;
+    
+    auto rect2 = rectangle(0, 0, 10.0, 10);
+    Rectangle!double rectDouble = rect2; 
+
+    auto rect3 = rectangle(cast(byte)0, cast(short)0, cast(int)10, cast(uint)10);
+    Rectangle!int rectInt2 = rect3;
 }
 
 /**
