@@ -41,7 +41,6 @@ import std.range; //For PathRange unittests
 import std.string;
 import std.traits;
 import std.typecons;
-import std.typetuple;
 
 debug(RefCounted)
 {
@@ -205,16 +204,6 @@ template isOneOf(X, T...)
 }
 
 /**
- * Returns true for any type which is implicitly convertible
- * to int our double, which are Rectangle's element types.
- */
-template isRectElementConvertible(T)
-{
-    enum bool isRectElementConvertible = staticIndexOf!(Unqual!(T), byte,
-            ubyte, short, ushort, int, uint, float, double) >= 0;
-}
-
-/**
  * A simple struct representing a rectangle with $(D int) or $(double) values
  */
 public struct Rectangle(T) if (isOneOf!(T, int, double))
@@ -266,7 +255,6 @@ public struct Rectangle(T) if (isOneOf!(T, int, double))
  * --------------------------------------------------------
  */
 auto rectangle(T...)(T t)
-    if (allSatisfy!(isRectElementConvertible, T))
 {
     static if (isOneOf!(float, T) || isOneOf!(double, T))
     {
