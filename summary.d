@@ -679,7 +679,7 @@ public:
         }
     }
 
-    alias Mean this;
+    alias toMean this;
 
     ///
     string toString() const {
