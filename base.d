@@ -43,26 +43,19 @@ import dstats.alloc, dstats.sort;
 
 import std.string : strip;
 
-version(GNU) {
-    // Workaround for GDC issue 214
-    private enum size_t staticFacTableLen = 1;
-    immutable double[1] logFactorialTable = 0;
-} else {
+immutable double[] logFactorialTable;
 
-    immutable double[] logFactorialTable;
+private enum size_t staticFacTableLen = 10_000;
 
-    private enum size_t staticFacTableLen = 10_000;
-
-    shared static this() {
-        // Allocating on heap instead of static data segment to avoid
-        // false pointer GC issues.
-        double[] sfTemp = new double[staticFacTableLen];
-        sfTemp[0] = 0;
-        for(uint i = 1; i < staticFacTableLen; i++) {
-            sfTemp[i] = sfTemp[i - 1] + log(i);
-        }
-        logFactorialTable = assumeUnique(sfTemp);
+shared static this() {
+    // Allocating on heap instead of static data segment to avoid
+    // false pointer GC issues.
+    double[] sfTemp = new double[staticFacTableLen];
+    sfTemp[0] = 0;
+    for(uint i = 1; i < staticFacTableLen; i++) {
+        sfTemp[i] = sfTemp[i - 1] + log(i);
     }
+    logFactorialTable = assumeUnique(sfTemp);
 }
 
 version(unittest) {
