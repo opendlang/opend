@@ -5324,6 +5324,9 @@ public struct Version
 
 public class Region
 {
+    // @BUG@ workaround for missing refcount
+    int cairo_region_get_reference_count(cairo_region_t*) { return 0; }
+
     ///
     mixin CairoCountedClass!(cairo_region_t*, "cairo_region_");
 
@@ -5364,14 +5367,14 @@ public class Region
             this(cairo_region_create_rectangles(cast(cairo_rectangle_int_t*)rects.ptr, rects.length));
         }
 
-        bool opEquals(Region a, Region b)
+        const bool opEquals(ref const(Region) other)
         {
-            return cast(bool)cairo_region_equal(a.nativePointer, b.nativePointer);
+            return cast(bool)cairo_region_equal(this.nativePointer, other.nativePointer);
         }
 
         Rectangle!int getExtents()
         {
-            Rect!int extents;
+            Rectangle!int extents;
             cairo_region_get_extents(this.nativePointer, cast(cairo_rectangle_int_t*)&extents);
             checkError();
             return extents;
@@ -5384,7 +5387,7 @@ public class Region
 
         Rectangle!int getRectangle(int index)
         {
-            Rect!int rect;
+            Rectangle!int rect;
             cairo_region_get_rectangle(this.nativePointer, index, cast(cairo_rectangle_int_t*)&rect);
             checkError();
             return rect;
