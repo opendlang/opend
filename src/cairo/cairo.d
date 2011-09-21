@@ -5536,8 +5536,6 @@ unittest
     assert(region.numRectangles == 1);
     assert(!region.isEmpty);
     
-    auto res = region.containsRectangle(Rectangle!int(0, 0, 200, 10));
-    
     assert(region.containsPoint(PointInt(50, 0)));
     assert(!region.containsPoint(PointInt(100, 0)));  // 100 is over the range of 0 .. 100 (99 is max)
     
