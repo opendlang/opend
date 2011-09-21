@@ -5372,8 +5372,12 @@ public class Region
             this(cairo_region_create_rectangles(cast(cairo_rectangle_int_t*)rects.ptr, rects.length));
         }
 
-        const bool opEquals(ref const(Region) other)
+        override bool opEquals(Object rhs)
         {
+            auto other = cast(typeof(this))rhs;
+            if (other is null)
+                return false;
+            
             return cast(bool)cairo_region_equal(this.nativePointer, other.nativePointer);
         }
 
@@ -5569,4 +5573,8 @@ unittest
     
     region -= rect1;
     assert(region.isEmpty);             // first rectangle also gone, region is empty
+
+    auto region1 = new Region(rect1);
+    auto region2 = new Region(rect1);
+    assert(region1 == region2);
 }    
