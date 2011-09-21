@@ -5372,15 +5372,6 @@ public class Region
             this(cairo_region_create_rectangles(cast(cairo_rectangle_int_t*)rects.ptr, rects.length));
         }
 
-        override bool opEquals(Object rhs)
-        {
-            auto other = cast(typeof(this))rhs;
-            if (other is null)
-                return false;
-            
-            return cast(bool)cairo_region_equal(this.nativePointer, other.nativePointer);
-        }
-
         Rectangle!int getExtents()
         {
             Rectangle!int extents;
@@ -5423,6 +5414,15 @@ public class Region
             checkError();
         }
 
+        override bool opEquals(Object rhs)
+        {
+            auto other = cast(typeof(this))rhs;
+            if (other is null)
+                return false;
+            
+            return cast(bool)cairo_region_equal(this.nativePointer, other.nativePointer);
+        }
+        
         ///subtract
         Region opBinary(string op)(Region rhs) if(op == "-")
         {
