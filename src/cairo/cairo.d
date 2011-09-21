@@ -5437,6 +5437,7 @@ public class Region
             return result;
         }
 
+        ///union
         Region opBinary(string op)(Rectangle!int rhs) if(op == "|")
         {
             auto result = new Region;
@@ -5451,6 +5452,7 @@ public class Region
             return result;
         }
 
+        ///xor
         Region opBinary(string op)(Rectangle!int rhs) if(op == "^")
         {
             auto result = new Region;
