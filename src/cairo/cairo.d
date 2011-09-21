@@ -5469,6 +5469,20 @@ public struct Region
             return rect;
         }
 
+        Rectangle!int[] getRectangles()
+        {
+            immutable count = numRectangles();
+            Rectangle!int[] result;
+            result.length = count;
+            
+            foreach (index; 0 .. count)
+            {
+                result[index] = getRectangle(index);
+            }
+            
+            return result;
+        }        
+        
         bool isEmpty()
         {
             return cast(bool)cairo_region_is_empty(this.nativePointer);
