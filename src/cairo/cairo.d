@@ -5322,14 +5322,105 @@ public struct Version
         }
 }
 
-public class Region
+public struct Region
 {
-    // @BUG@ workaround for missing refcount
-    int cairo_region_get_reference_count(cairo_region_t*) { return 0; }
+    private:
+        struct Payload
+        {
+            cairo_region_t* _payload;
+            this(cairo_region_t* h)
+            {
+                _payload = h;
+            }
+            ~this()
+            {
+                if(_payload)
+                {
+                    cairo_region_destroy(_payload);
+                    _payload = null;
+                }
+            }
 
-    ///
-    mixin CairoCountedClass!(cairo_region_t*, "cairo_region_");
+            // Should never perform these operations
+            this(this) { assert(false); }
+            void opAssign(Region.Payload rhs) { assert(false); }
+        }
+        alias RefCounted!(Payload, RefCountedAutoInitialize.no) Data;
+        Data _data;
 
+    public:
+        this(cairo_region_t* ptr)
+        {
+            _data.RefCounted.initialize(ptr);
+            checkError();
+        }    
+
+        /**
+         * The underlying $(D cairo_region_t*) handle
+         */
+        @property void nativePointer(cairo_region_t* ptr)
+        {
+            _data._payload = ptr;
+        }
+        
+        @property cairo_region_t* nativePointer()
+        {
+            return _data._payload;
+        }
+        
+        // opEquals requires const property function
+        @property const(cairo_region_t*) nativePointer() const
+        {
+            return _data._payload;
+        }        
+
+        version(D_Ddoc)
+        {
+            /**
+             * Enable / disable memory management debugging for this Path
+             * instance. Only available if both cairoD and the cairoD user
+             * code were compiled with "debug=RefCounted"
+             *
+             * Output is written to stdout, see
+             * $(LINK https://github.com/jpf91/cairoD/wiki/Memory-Management#debugging)
+             * for more information
+             */
+            @property bool debugging();
+            ///ditto
+            @property void debugging(bool value);
+        }
+        else debug(RefCounted)
+        {
+            @property bool debugging()
+            {
+                return _data.RefCounted.debugging;
+            }
+
+            @property void debugging(bool value)
+            {
+                _data.RefCounted.debugging = value;
+            }
+        }
+
+        /**
+         * Assignment operator
+         */
+        void opAssign(Region rhs)
+        {
+            this.nativePointer = cairo_region_copy(rhs.nativePointer);
+            debug(RefCounted)
+                this.debugging = rhs.debugging;
+        }
+    /*------------------------End of Reference counting-----------------------*/
+
+    public:
+        this(Region region)
+        {
+            this(cairo_region_copy(region.nativePointer));
+            debug(RefCounted)
+                this.debugging = region.debugging;
+        }
+        
     protected:
         /**
          * Method for use in subclasses.
@@ -5342,24 +5433,9 @@ public class Region
         }
 
     public:
-        this()
+        void newRegion()
         {
-            this(cairo_region_create());
-        }
-
-        this(cairo_region_t* ptr)
-        {
-            this.nativePointer = ptr;
-            if(!ptr)
-            {
-                throw new CairoException(cairo_status_t.CAIRO_STATUS_NULL_POINTER);
-            }
-            checkError();
-        }
-
-        this(Region region)
-        {
-            this(cairo_region_copy(region.nativePointer));
+            this = Region(cairo_region_create());
         }
         
         this(Rectangle!int rect)
@@ -5414,19 +5490,15 @@ public class Region
             checkError();
         }
 
-        override bool opEquals(Object rhs)
+        const bool opEquals(ref const(Region) other)
         {
-            auto other = cast(typeof(this))rhs;
-            if (other is null)
-                return false;
-            
             return cast(bool)cairo_region_equal(this.nativePointer, other.nativePointer);
-        }
+        }        
         
         ///subtract
         Region opBinary(string op)(Region rhs) if(op == "-")
         {
-            auto result = new Region(this);
+            auto result = Region(this);
             throwError(cairo_region_subtract(result.nativePointer, rhs.nativePointer));
             return result;
         }
@@ -5439,7 +5511,7 @@ public class Region
 
         Region opBinary(string op)(Rectangle!int rhs) if(op == "-")
         {
-            auto result = new Region(this);
+            auto result = Region(this);
             throwError(cairo_region_subtract_rectangle(result.nativePointer, cast(cairo_rectangle_int_t*)&rhs));
             return result;
         }
@@ -5453,7 +5525,7 @@ public class Region
         ///intersect
         Region opBinary(string op)(Region rhs) if(op == "&")
         {
-            auto result = new Region(this);
+            auto result = Region(this);
             throwError(cairo_region_intersect(result.nativePointer, rhs.nativePointer));
             return result;
         }
@@ -5466,7 +5538,7 @@ public class Region
         
         Region opBinary(string op)(Rectangle!int rhs) if(op == "&")
         {
-            auto result = new Region(this);
+            auto result = Region(this);
             throwError(cairo_region_intersect_rectangle(result.nativePointer, cast(cairo_rectangle_int_t*)&rhs));
             return result;
         }
@@ -5480,7 +5552,7 @@ public class Region
         ///union
         Region opBinary(string op)(Region rhs) if(op == "|")
         {
-            auto result = new Region(this);
+            auto result = Region(this);
             throwError(cairo_region_union(result.nativePointer, rhs.nativePointer));
             return result;
         }
@@ -5493,7 +5565,7 @@ public class Region
         
         Region opBinary(string op)(Rectangle!int rhs) if(op == "|")
         {
-            auto result = new Region(this);
+            auto result = Region(this);
             throwError(cairo_region_union_rectangle(result.nativePointer, cast(cairo_rectangle_int_t*)&rhs));
             return result;
         }
@@ -5507,7 +5579,7 @@ public class Region
         ///xor
         Region opBinary(string op)(Region rhs) if(op == "^")
         {
-            auto result = new Region(this);
+            auto result = Region(this);
             throwError(cairo_region_xor(result.nativePointer, rhs.nativePointer));
             return result;
         }
@@ -5520,7 +5592,7 @@ public class Region
         
         Region opBinary(string op)(Rectangle!int rhs) if(op == "^")
         {
-            auto result = new Region(this);
+            auto result = Region(this);
             throwError(cairo_region_xor_rectangle(result.nativePointer, cast(cairo_rectangle_int_t*)&rhs));
             return result;
         }
@@ -5535,7 +5607,7 @@ public class Region
 unittest
 {
     auto rect1 = Rectangle!int(0, 0, 100, 100);
-    auto region = new Region(rect1);
+    auto region = Region(rect1);
     
     assert(region.numRectangles == 1);
     assert(!region.isEmpty);
@@ -5551,15 +5623,15 @@ unittest
     assert(region.isEmpty);
     
     auto rect2 = Rectangle!int(99, 0, 100, 100);
-    region = new Region([rect1, rect2]);
+    region = Region([rect1, rect2]);
     assert(region.numRectangles == 1);  // note the cleverness: cairo merges the two rectangles as they
                                         // form a closed rectangle path.
 
     rect2.point.x = 120;
-    region = new Region([rect1, rect2]);
+    region = Region([rect1, rect2]);
     assert(region.numRectangles == 2);  // now they can't be merged
     
-    region = new Region(rect1);
+    region = Region(rect1);
     region = region | rect2;
     assert(region.numRectangles == 2);  // same thing when using a union
     
@@ -5574,7 +5646,7 @@ unittest
     region -= rect1;
     assert(region.isEmpty);             // first rectangle also gone, region is empty
 
-    auto region1 = new Region(rect1);
-    auto region2 = new Region(rect1);
+    auto region1 = Region(rect1);
+    auto region2 = Region(rect1);
     assert(region1 == region2);
 }    
