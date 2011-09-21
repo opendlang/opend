@@ -5357,6 +5357,11 @@ public class Region
             checkError();
         }
 
+        this(Region region)
+        {
+            this(cairo_region_copy(region.nativePointer));
+        }
+        
         this(Rectangle!int rect)
         {
             this(cairo_region_create_rectangle(cast(cairo_rectangle_int_t*)&rect));
@@ -5417,14 +5422,14 @@ public class Region
         ///subtract
         Region opBinary(string op)(Region rhs) if(op == "-")
         {
-            auto result = new Region;
+            auto result = new Region(this);
             throwError(cairo_region_subtract(result.nativePointer, rhs.nativePointer));
             return result;
         }
 
         Region opBinary(string op)(Rectangle!int rhs) if(op == "-")
         {
-            auto result = new Region;
+            auto result = new Region(this);
             throwError(cairo_region_subtract_rectangle(result.nativePointer, cast(cairo_rectangle_int_t*)&rect));
             return result;
         }
@@ -5432,14 +5437,14 @@ public class Region
         ///intersect
         Region opBinary(string op)(Region rhs) if(op == "&")
         {
-            auto result = new Region;
+            auto result = new Region(this);
             throwError(cairo_region_intersect(result.nativePointer, rhs.nativePointer));
             return result;
         }
 
         Region opBinary(string op)(Rectangle!int rhs) if(op == "&")
         {
-            auto result = new Region;
+            auto result = new Region(this);
             throwError(cairo_region_intersect_rectangle(result.nativePointer, cast(cairo_rectangle_int_t*)&rect));
             return result;
         }
@@ -5447,14 +5452,14 @@ public class Region
         ///union
         Region opBinary(string op)(Region rhs) if(op == "|")
         {
-            auto result = new Region;
+            auto result = new Region(this);
             throwError(cairo_region_union(result.nativePointer, rhs.nativePointer));
             return result;
         }
 
         Region opBinary(string op)(Rectangle!int rhs) if(op == "|")
         {
-            auto result = new Region;
+            auto result = new Region(this);
             throwError(cairo_region_union_rectangle(result.nativePointer, cast(cairo_rectangle_int_t*)&rect));
             return result;
         }
@@ -5462,14 +5467,14 @@ public class Region
         ///xor
         Region opBinary(string op)(Region rhs) if(op == "^")
         {
-            auto result = new Region;
+            auto result = new Region(this);
             throwError(cairo_region_xor(result.nativePointer, rhs.nativePointer));
             return result;
         }
 
         Region opBinary(string op)(Rectangle!int rhs) if(op == "^")
         {
-            auto result = new Region;
+            auto result = new Region(this);
             throwError(cairo_region_xor_rectangle(result.nativePointer, cast(cairo_rectangle_int_t*)&rect));
             return result;
         }
