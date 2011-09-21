@@ -5527,3 +5527,48 @@ public class Region
             return this;
         }        
 }
+
+unittest
+{
+    auto rect1 = Rectangle!int(0, 0, 100, 100);
+    auto region = new Region(rect1);
+    
+    assert(region.numRectangles == 1);
+    assert(!region.isEmpty);
+    
+    auto res = region.containsRectangle(Rectangle!int(0, 0, 200, 10));
+    
+    assert(region.containsPoint(PointInt(50, 0)));
+    assert(!region.containsPoint(PointInt(100, 0)));  // 100 is over the range of 0 .. 100 (99 is max)
+    
+    region.translate(10, 0);
+    assert(region.containsPoint(PointInt(100, 0)));   // range is now 10 .. 110
+    assert(!region.containsPoint(PointInt(0, 0)));    // 0 is below the minimum of 10
+    
+    region = region ^ region;  // xor, 1 ^ 1 == 0 :)
+    assert(region.isEmpty);
+    
+    auto rect2 = Rectangle!int(99, 0, 100, 100);
+    region = new Region([rect1, rect2]);
+    assert(region.numRectangles == 1);  // note the cleverness: cairo merges the two rectangles as they
+                                        // form a closed rectangle path.
+
+    rect2.point.x = 120;
+    region = new Region([rect1, rect2]);
+    assert(region.numRectangles == 2);  // now they can't be merged
+    
+    region = new Region(rect1);
+    region = region | rect2;
+    assert(region.numRectangles == 2);  // same thing when using a union
+    
+    rect2.point.x += 10;
+    region = region - rect2;
+    assert(region.numRectangles == 2);  // still two rectangles due to extra edge
+    
+    rect2.point.x -= 10;
+    region = region - rect2;
+    assert(region.numRectangles == 1);  // and now the second rectangle is completely gone
+    
+    region -= rect1;
+    assert(region.isEmpty);             // first rectangle also gone, region is empty
+}    
