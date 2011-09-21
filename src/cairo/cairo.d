@@ -5373,6 +5373,7 @@ public class Region
         {
             Rect!int extents;
             cairo_region_get_extents(this.nativePointer, cast(cairo_rectangle_int_t*)&extents);
+            checkError();
             return extents;
         }
 
@@ -5385,6 +5386,7 @@ public class Region
         {
             Rect!int rect;
             cairo_region_get_rectangle(this.nativePointer, index, cast(cairo_rectangle_int_t*)&rect);
+            checkError();
             return rect;
         }
 
@@ -5406,8 +5408,10 @@ public class Region
         void translate(int dx, int dy)
         {
             cairo_region_translate(this.nativePointer, dx, dy);
+            checkError();
         }
 
+        ///subtract
         Region opBinary(string op)(Region rhs) if(op == "-")
         {
             auto result = new Region;
