@@ -5430,7 +5430,7 @@ public class Region
         }
 
         ///intersect
-        Region opBinary(string op)(Rectangle!int rhs) if(op == "&")
+        Region opBinary(string op)(Region rhs) if(op == "&")
         {
             auto result = new Region;
             throwError(cairo_region_intersect(result.nativePointer, rhs.nativePointer));
@@ -5445,7 +5445,7 @@ public class Region
         }
 
         ///union
-        Region opBinary(string op)(Rectangle!int rhs) if(op == "|")
+        Region opBinary(string op)(Region rhs) if(op == "|")
         {
             auto result = new Region;
             throwError(cairo_region_union(result.nativePointer, rhs.nativePointer));
@@ -5460,7 +5460,7 @@ public class Region
         }
 
         ///xor
-        Region opBinary(string op)(Rectangle!int rhs) if(op == "^")
+        Region opBinary(string op)(Region rhs) if(op == "^")
         {
             auto result = new Region;
             throwError(cairo_region_xor(result.nativePointer, rhs.nativePointer));
