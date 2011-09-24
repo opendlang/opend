@@ -432,7 +432,7 @@ unittest
  * used with paths from cairo_copy_path().*/
  /**
   * Reference counted wrapper around $(D cairo_path_t).
-  * This struct can only be obtained from cairoD. It should not be created
+  * This struct can only be obtained from cairoD. It cannot be created
   * manually.
   */
 public struct Path
@@ -456,7 +456,7 @@ public struct Path
 
             // Should never perform these operations
             this(this) { assert(false); }
-            void opAssign(FontOptions.Payload rhs) { assert(false); }
+            void opAssign(Path.Payload rhs) { assert(false); }
         }
         alias RefCounted!(Payload, RefCountedAutoInitialize.no) Data;
         Data _data;
@@ -477,6 +477,9 @@ public struct Path
         }
 
     public:
+        // @BUG@: Can't pass as range if default ctor is disabled
+        // @disable this();
+    
         /**
          * Create a Path from a existing $(D cairo_path_t*).
          * Path is a reference-counted type. It will call $(D cairo_path_destroy)
@@ -660,6 +663,9 @@ public struct PathElement
             p.y = data[index+1].point.y;
             return p;
         }
+        
+        ///Convenience operator overload.
+        alias getPoint opIndex;
 }
 
 /**
@@ -1023,7 +1029,19 @@ public class Pattern
                 checkError();
             return cairo_pattern_get_filter(this.nativePointer);
         }
-
+        
+        ///Convenience property
+        void filter(Filter fil)
+        {
+            setFilter(fil);
+        }
+        
+        ///ditto
+        Filter filter()
+        {
+            return getFilter();
+        }
+        
         /**
          * Sets the pattern's transformation matrix to matrix.
          * This matrix is a transformation from user space to pattern space.
@@ -1067,6 +1085,18 @@ public class Pattern
             return ma;
         }
 
+        ///Convenience property
+        @property void matrix(Matrix mat)
+        {
+            setMatrix(mat);
+        }
+        
+        ///ditto
+        @property Matrix matrix()
+        {
+            return getMatrix();
+        }        
+        
         /**
          * This function returns the C type of a pattern. See $(D PatternType)
          * for available types.
@@ -1078,6 +1108,12 @@ public class Pattern
             return cairo_pattern_get_type(this.nativePointer);
         }
 
+        ///Convenience property
+        @property PatternType type()
+        {
+            return getType();
+        }
+        
         //Cairo binding guidelines say we shouldn't wrap these
         /*
         void setUserData(const cairo_user_data_key_t* key, void* data, cairo_destroy_func_t destroy)
@@ -1163,6 +1199,12 @@ public class SolidPattern : Pattern
             checkError();
             return col;
         }
+        
+        ///Convenience property (todo: dubious due to lowercase requirement)
+        @property RGBA rgba()
+        {
+            return getRGBA();
+        }           
 }
 
 /**
@@ -1208,6 +1250,12 @@ public class SurfacePattern : Pattern
             throwError(cairo_pattern_get_surface(this.nativePointer, &ptr));
             return Surface.createFromNative(ptr);
         }
+        
+        ///Convenience property
+        @property Surface surface()
+        {
+            return getSurface();
+        }           
 }
 
 /**
@@ -1311,7 +1359,7 @@ public class Gradient : Pattern
                 red, green, blue, alpha);
             checkError();
         }
-
+        
         /**
          * Gets the number of color stops specified in the given gradient pattern.
          */
@@ -1323,6 +1371,9 @@ public class Gradient : Pattern
             return tmp;
         }
 
+        ///Convenience alias
+        alias getColorStopCount colorStopCount;
+        
         /**
          * Gets the color and offset information at the given index for a
          * gradient pattern. Values of index are 0 to 1 less than the number
@@ -1407,6 +1458,9 @@ public class LinearGradient : Gradient
                 &tmp[1].x, &tmp[1].y));
             return tmp;
         }
+        
+        ///Convenience alias
+        alias getLinearPoints linearPoints;
 }
 
 /**
@@ -1611,6 +1665,9 @@ public class Device
             return tmp;
         }
 
+        ///Convenience alias
+        alias getType type;
+        
         /**
          * Acquires the device for the current thread. This function will
          * block until no other thread has acquired the device.
@@ -1864,6 +1921,9 @@ public class Surface
             return new Device(ptr);
         }
 
+        ///Convenience alias
+        alias getDevice device;
+        
         /**
          * Retrieves the default font rendering options for the surface.
          * This allows display surfaces to report the correct subpixel
@@ -1879,6 +1939,9 @@ public class Surface
             return fo;
         }
 
+        ///Convenience alias
+        alias getFontOptions fontOptions;
+        
         /**
          * This function returns the content type of surface which indicates
          * whether the surface contains color and/or alpha information.
@@ -1891,6 +1954,9 @@ public class Surface
             return cairo_surface_get_content(this.nativePointer);
         }
 
+        ///Convenience alias
+        alias getContent content;
+        
         /**
          * Tells cairo that drawing has been done to surface using means
          * other than cairo, and that cairo should reread any cached areas.
@@ -1953,7 +2019,7 @@ public class Surface
             cairo_surface_set_device_offset(this.nativePointer, offset.x, offset.y);
             checkError();
         }
-
+        
         /**
          * This function returns the previous device offset set
          * by $(D Surface.setDeviceOffset()).
@@ -1967,6 +2033,25 @@ public class Surface
             cairo_surface_get_device_offset(this.nativePointer, &tmp.x, &tmp.y);
             checkError();
             return tmp;
+        }        
+        
+        ///Convenience property function
+        // todo: enable when new D tuples are implemented
+        /+@property void deviceOffset(double x_offset, double y_offset)
+        {
+            setDeviceOffset(x_offset, y_offset);
+        }+/
+        
+        ///ditto
+        @property void deviceOffset(Point offset)
+        {
+            setDeviceOffset(offset);
+        }
+        
+        ///ditto
+        @property Point deviceOffset()
+        {
+            return getDeviceOffset();
         }
 
         /**
@@ -2014,6 +2099,18 @@ public class Surface
             return res;
         }
 
+        ///Convenience property function
+        @property void fallbackResolution(Resolution res)
+        {
+            setFallbackResolution(res);
+        }
+        
+        ///ditto
+        @property Resolution fallbackResolution()
+        {
+            return getFallbackResolution();
+        }
+        
         /**
          * This function returns the C type of a Surface. See $(D SurfaceType)
          * for available types.
@@ -2025,6 +2122,9 @@ public class Surface
             return tmp;
         }
 
+        ///convenience alias
+        alias getType type;
+        
         /*
         void setUserData(const cairo_user_data_key_t* key, void* data, cairo_destroy_func_t destroy)
         {
@@ -2276,6 +2376,9 @@ public class ImageSurface : Surface
             return cairo_image_surface_get_data(this.nativePointer);
         }
 
+        ///convenience alias
+        alias getData data;
+        
         /**
          * Get the format of the surface.
          */
@@ -2286,6 +2389,9 @@ public class ImageSurface : Surface
             return cairo_image_surface_get_format(this.nativePointer);
         }
 
+        ///convenience alias
+        alias getFormat format;
+        
         /**
          * Get the width of the image surface in pixels.
          */
@@ -2296,6 +2402,9 @@ public class ImageSurface : Surface
             return cairo_image_surface_get_width(this.nativePointer);
         }
 
+        ///convenience alias
+        alias getWidth width;
+        
         /**
          * Get the height of the image surface in pixels.
          */
@@ -2306,6 +2415,9 @@ public class ImageSurface : Surface
             return cairo_image_surface_get_height(this.nativePointer);
         }
 
+        ///convenience alias
+        alias getHeight height;
+        
         /**
          * Get the stride of the image surface in bytes.
          */
@@ -2316,6 +2428,9 @@ public class ImageSurface : Surface
             return cairo_image_surface_get_stride(this.nativePointer);
         }
 
+        ///convenience alias
+        alias getStride stride;
+        
         version(D_Ddoc)
         {
             /**
@@ -2570,6 +2685,9 @@ public struct Context
         {
             return Surface.createFromNative(cairo_get_target(this.nativePointer));
         }
+        
+        ///convenience alias
+        alias getTarget target;
 
         /**
          * Temporarily redirects drawing to an intermediate surface known
@@ -2688,6 +2806,9 @@ public struct Context
             return Surface.createFromNative(cairo_get_group_target(this.nativePointer));
         }
 
+        ///convenience alias
+        alias getGroupTarget groupTarget;
+        
         /**
          * Sets the source pattern within cr to an opaque color.
          * This opaque color will then be used for any subsequent
@@ -2760,6 +2881,26 @@ public struct Context
         }
 
         /**
+         * Gets the current source pattern for cr.
+         */
+        Pattern getSource()
+        {
+            return Pattern.createFromNative(cairo_get_source(this.nativePointer));
+        }        
+        
+        ///Convenience property
+        @property void source(Pattern pat)
+        {
+            setSource(pat);
+        }      
+        
+        ///ditto
+        @property Pattern source()
+        {
+            return getSource();
+        }
+        
+        /**
          * This is a convenience function for creating a pattern from
          * surface and setting it as the source in cr with $(D Context.setSource()).
          *
@@ -2794,14 +2935,6 @@ public struct Context
         }
 
         /**
-         * Gets the current source pattern for cr.
-         */
-        Pattern getSource()
-        {
-            return Pattern.createFromNative(cairo_get_source(this.nativePointer));
-        }
-
-        /**
          * Set the antialiasing mode of the rasterizer used for
          * drawing shapes. This value is a hint, and a particular
          * backend may or may not support a particular value. At
@@ -2827,6 +2960,18 @@ public struct Context
             return cairo_get_antialias(this.nativePointer);
         }
 
+        ///Convenience property
+        @property void antiAlias(AntiAlias aa)
+        {
+            setAntiAlias(aa);
+        }
+        
+        ///ditto
+        @property AntiAlias antiAlias()
+        {
+            return getAntiAlias();
+        }
+        
         /**
          * Sets the dash pattern to be used by $(D stroke()). A dash
          * pattern is specified by dashes, an array of positive values.
@@ -2865,17 +3010,6 @@ public struct Context
         }
 
         /**
-         * This function returns the length of the dash array in cr
-         * (0 if dashing is not currently in effect).
-         */
-        int getDashCount()
-        {
-            scope(exit)
-                checkError();
-            return cairo_get_dash_count(this.nativePointer);
-        }
-
-        /**
          * Gets the current dash array.
          */
         double[] getDash(out double offset)
@@ -2886,6 +3020,17 @@ public struct Context
             return dashes;
         }
 
+        /**
+         * This function returns the length of the dash array in cr
+         * (0 if dashing is not currently in effect).
+         */
+        int getDashCount()
+        {
+            scope(exit)
+                checkError();
+            return cairo_get_dash_count(this.nativePointer);
+        }
+        
         /**
          * Set the current fill rule within the cairo context. The fill
          * rule is used to determine which regions are inside or outside
@@ -2912,6 +3057,18 @@ public struct Context
             return cairo_get_fill_rule(this.nativePointer);
         }
 
+        ///Convenience property
+        @property void fillRule(FillRule rule)
+        {
+            setFillRule(rule);
+        }
+        
+        ///ditto
+        @property FillRule fillRule()
+        {
+            return getFillRule();
+        }
+        
         /**
          * Sets the current line cap style within the cairo context.
          * See $(D LineCap) for details about how the available
@@ -2940,6 +3097,18 @@ public struct Context
             return cairo_get_line_cap(this.nativePointer);
         }
 
+        ///Convenience property
+        @property void lineCap(LineCap cap)
+        {
+            setLineCap(cap);
+        }
+        
+        ///ditto
+        @property LineCap lineCap()
+        {
+            return getLineCap();
+        }
+        
         /**
          * Sets the current line join style within the cairo context.
          * See $(D LineJoin) for details about how the available
@@ -2968,6 +3137,18 @@ public struct Context
             return cairo_get_line_join(this.nativePointer);
         }
 
+        ///Convenience property
+        @property void lineJoin(LineJoin join)
+        {
+            setLineJoin(join);
+        }
+        
+        ///ditto
+        @property LineJoin lineJoin()
+        {
+            return getLineJoin();
+        }        
+        
         /**
          * Sets the current line width within the cairo context. The line
          * width value specifies the diameter of a pen that is circular
@@ -3010,6 +3191,18 @@ public struct Context
             return cairo_get_line_width(this.nativePointer);
         }
 
+        ///Convenience property
+        @property void lineWidth(double width)
+        {
+            setLineWidth(width);
+        }
+        
+        ///ditto
+        @property double lineWidth()
+        {
+            return getLineWidth();
+        }           
+        
         /**
          * Sets the current miter limit within the cairo context.
          *
@@ -3050,6 +3243,18 @@ public struct Context
             return cairo_get_miter_limit(this.nativePointer);
         }
 
+        ///Convenience property
+        @property void miterLimit(double limit)
+        {
+            setMiterLimit(limit);
+        }
+        
+        ///ditto
+        @property double miterLimit()
+        {
+            return getMiterLimit();
+        }               
+        
         /**
          * Sets the compositing operator to be used for all
          * drawing operations. See $(D Operator) for details on
@@ -3073,6 +3278,18 @@ public struct Context
             return cairo_get_operator(this.nativePointer);
         }
 
+        ///Convenience property
+        @property void operator(Operator op)
+        {
+            setOperator(op);
+        }
+        
+        ///ditto
+        @property Operator operator()
+        {
+            return getOperator();
+        }               
+        
         /**
          * Sets the tolerance used when converting paths into trapezoids.
          * Curved segments of the path will be subdivided until the maximum
@@ -3102,6 +3319,18 @@ public struct Context
             return cairo_get_tolerance(this.nativePointer);
         }
 
+        ///Convenience property
+        @property void tolerance(double tolerance)
+        {
+            setTolerance(tolerance);
+        }
+        
+        ///ditto
+        @property double tolerance()
+        {
+            return getTolerance();
+        }    
+        
         /**
          * Establishes a new clip region by intersecting the current
          * clip region with the current path as it would be filled by
@@ -3590,6 +3819,9 @@ public struct Context
             return tmp;
         }
 
+        ///convenience alias
+        alias getCurrentPoint currentPoint;
+        
         /**
          * Clears the current path. After this call there will be no path
          * and no current point.
@@ -4067,6 +4299,18 @@ public struct Context
             return m;
         }
 
+        ///Convenience property
+        @property void matrix(const Matrix matrix)
+        {
+            setMatrix(matrix);
+        }
+        
+        ///ditto
+        @property Matrix matrix()
+        {
+            return getMatrix();
+        }  
+        
         /**
          * Resets the current transformation matrix (CTM) by setting it
          * equal to the identity matrix. That is, the user-space and
@@ -4238,6 +4482,18 @@ public struct Context
             return res;
         }
 
+        ///Convenience property
+        @property void fontMatrix(Matrix matrix)
+        {
+            setFontMatrix(matrix);
+        }
+        
+        ///ditto
+        @property Matrix fontMatrix()
+        {
+            return getFontMatrix();
+        }  
+        
         /**
          * Sets a set of custom font rendering options for the
          * $(D Context). Rendering options are derived by merging these
@@ -4265,6 +4521,18 @@ public struct Context
             return opt;
         }
 
+        ///Convenience property
+        @property void fontOptions(FontOptions options)
+        {
+            setFontOptions(options);
+        }
+        
+        ///ditto
+        @property FontOptions fontOptions()
+        {
+            return getFontOptions();
+        }  
+        
         /**
          * Replaces the current $(D FontFace) object in the $(D Context)
          * with font_face. The replaced font face in the $(D Context) will
@@ -4285,6 +4553,11 @@ public struct Context
             cairo_set_font_face(this.nativePointer, null);
             checkError();
         }
+        
+        // todo: setFontFace should be renamed to resetFontFace, using alias
+        // instead for backwards-compatibility.
+        ///convenience alias
+        alias setFontFace resetFontFace;
 
         /**
          * Gets the current font face for a $(D Context).
@@ -4294,6 +4567,18 @@ public struct Context
             return FontFace.createFromNative(cairo_get_font_face(this.nativePointer));
         }
 
+        ///Convenience property
+        @property void fontFace(FontFace font_face)
+        {
+            setFontFace(font_face);
+        }
+        
+        ///ditto
+        @property FontFace fontFace()
+        {
+            return getFontFace();
+        }        
+        
         /**
          * Replaces the current font face, font matrix, and font options
          * in the $(D Context) with those of the $(D ScaledFont). Except
@@ -4315,6 +4600,18 @@ public struct Context
             return ScaledFont.createFromNative(cairo_get_scaled_font(this.nativePointer));
         }
 
+        ///Convenience property
+        @property void scaledFont(ScaledFont scaled_font)
+        {
+            setScaledFont(scaled_font);
+        }
+        
+        ///ditto
+        @property ScaledFont scaledFont()
+        {
+            return getScaledFont();
+        }     
+        
         /**
          * A drawing operator that generates the shape from a string of
          * UTF-8 characters, rendered according to the current
@@ -4631,6 +4928,18 @@ public struct FontOptions
             return cairo_font_options_get_antialias(nativePointer);
         }
 
+        ///Convenience property
+        @property void antiAlias(AntiAlias aa)
+        {
+            setAntiAlias(aa);
+        }
+        
+        ///ditto
+        @property AntiAlias antiAlias()
+        {
+            return getAntiAlias();
+        }
+        
         /**
          * Sets the subpixel order for the font options object.
          * The subpixel order specifies the order of color elements
@@ -4655,6 +4964,9 @@ public struct FontOptions
             return cairo_font_options_get_subpixel_order(nativePointer);
         }
 
+        ///convenience alias
+        alias getSubpixelOrder subpixelOrder;
+        
         /**
          * Sets the hint style for font outlines for the font options object.
          * This controls whether to fit font outlines to the pixel grid,
@@ -4677,7 +4989,19 @@ public struct FontOptions
                 checkError();
             return cairo_font_options_get_hint_style(nativePointer);
         }
-
+        
+        ///Convenience property
+        @property void hintStyle(HintStyle style)
+        {
+            setHintStyle(style);
+        }
+        
+        ///ditto
+        @property HintStyle hintStyle()
+        {
+            return getHintStyle();
+        }
+        
         /**
          * Sets the metrics hinting mode for the font options object.
          * This controls whether metrics are quantized to integer
@@ -4700,6 +5024,18 @@ public struct FontOptions
                 checkError();
             return cairo_font_options_get_hint_metrics(nativePointer);
         }
+        
+        ///Convenience property
+        @property void hintMetrics(HintMetrics metrics)
+        {
+            setHintMetrics(metrics);
+        }
+        
+        ///ditto
+        @property HintMetrics hintMetrics()
+        {
+            return getHintMetrics();
+        }        
 }
 
 /**
@@ -5025,6 +5361,9 @@ public class ScaledFont
             return FontFace.createFromNative(face);
         }
 
+        ///convenience alias
+        alias getFontFace fontFace;
+        
         /**
          * Returns the font options with which ScaledFont
          * was created.
@@ -5038,6 +5377,9 @@ public class ScaledFont
             return fo;
         }
 
+        ///convenience alias
+        alias getFontOptions fontOptions;
+        
         /**
          * Returns the font matrix with which ScaledFont
          * was created.
@@ -5050,6 +5392,9 @@ public class ScaledFont
             return mat;
         }
 
+        ///convenience alias
+        alias getFontMatrix fontMatrix;
+        
         /**
          * Returns the CTM with which ScaledFont was created.
          * Note that the translation offsets (x0, y0) of the CTM are
@@ -5063,6 +5408,9 @@ public class ScaledFont
             checkError();
             return mat;
         }
+        
+        ///convenience alias
+        alias getCTM CTM;
 
         /**
          * Returns the scale matrix of ScaledFont.
@@ -5078,6 +5426,9 @@ public class ScaledFont
             return mat;
         }
 
+        ///convenience alias
+        alias getScaleMatrix scaleMatrix;
+        
         /**
          * This function returns the C type of a ScaledFont. See $(D FontType)
          * for available types.
@@ -5088,6 +5439,9 @@ public class ScaledFont
             checkError();
             return tmp;
         }
+        
+        ///convenience alias
+        alias getType type;
 }
 
 /**
@@ -5184,6 +5538,9 @@ public class FontFace
             checkError();
             return tmp;
         }
+        
+        ///convenience alias
+        alias getType type;
 }
 
 /**
@@ -5236,6 +5593,9 @@ public class ToyFontFace : FontFace
             return to!string(ptr);
         }
 
+        ///convenience alias
+        alias getFamily family;
+        
         /**
          * Gets the slant a toy font.
          */
@@ -5246,6 +5606,9 @@ public class ToyFontFace : FontFace
             return res;
         }
 
+        ///convenience alias
+        alias getSlant slant;
+        
         /**
          * Gets the weight of a toy font.
          */
@@ -5255,6 +5618,9 @@ public class ToyFontFace : FontFace
             checkError();
             return res;
         }
+        
+        ///convenience alias
+        alias getWeight weight;
 }
 
 /**
@@ -5479,12 +5845,15 @@ public struct Region
             checkError();
             return extents;
         }
-
+        
+        ///convenience alias
+        alias getExtents extents;
+        
         int numRectangles()
         {
             return cairo_region_num_rectangles(this.nativePointer);
         }
-
+        
         Rectangle!int getRectangle(int index)
         {
             Rectangle!int rect;
@@ -5492,7 +5861,7 @@ public struct Region
             checkError();
             return rect;
         }
-
+        
         Rectangle!int[] getRectangles()
         {
             immutable count = numRectangles();
@@ -5506,6 +5875,9 @@ public struct Region
             
             return result;
         }
+        
+        ///convenience alias
+        alias getRectangles rectangles;
         
         @property bool empty()
         {
@@ -5688,3 +6060,37 @@ unittest
     auto region2 = Region(rect1);
     assert(region1 == region2);
 }    
+
+unittest
+{
+    auto surface = new ImageSurface(Format.CAIRO_FORMAT_ARGB32, 100, 100);
+    auto ctx = Context(surface);
+    
+    ctx.rectangle(10, 20, 100, 100);
+    auto path = ctx.copyPath();
+    
+    size_t index;
+    foreach (element; path[])
+    {
+        switch (element.type)
+        {
+             case PathElementType.CAIRO_PATH_MOVE_TO:
+             {
+                 assert(element[0].x == 10 && element[0].y == 20);
+                 break;
+             }
+             case PathElementType.CAIRO_PATH_LINE_TO:
+             {
+                 if (index == 1)
+                     assert(element[0].x == 110 && element[0].y == 20);
+                 else if (index == 2)
+                     assert(element[0].x == 110 && element[0].y == 120);
+                 else if (index == 3)
+                     assert(element[0].x == 10 && element[0].y == 120);
+                 break;
+             }
+             default:
+        }
+        index++;
+    }    
+}
