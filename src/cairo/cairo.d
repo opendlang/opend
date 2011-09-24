@@ -432,7 +432,7 @@ unittest
  * used with paths from cairo_copy_path().*/
  /**
   * Reference counted wrapper around $(D cairo_path_t).
-  * This struct can only be obtained from cairoD. It should not be created
+  * This struct can only be obtained from cairoD. It cannot be created
   * manually.
   */
 public struct Path
@@ -477,6 +477,9 @@ public struct Path
         }
 
     public:
+        // @BUG@: Can't pass as range if default ctor is disabled
+        // @disable this();
+    
         /**
          * Create a Path from a existing $(D cairo_path_t*).
          * Path is a reference-counted type. It will call $(D cairo_path_destroy)
@@ -660,6 +663,9 @@ public struct PathElement
             p.y = data[index+1].point.y;
             return p;
         }
+        
+        ///Convenience operator overload.
+        alias getPoint opIndex;
 }
 
 /**
@@ -5688,3 +5694,30 @@ unittest
     auto region2 = Region(rect1);
     assert(region1 == region2);
 }    
+
+unittest
+{
+    import std.stdio;
+    auto surface = new ImageSurface(Format.CAIRO_FORMAT_ARGB32, 100, 100);
+    auto ctx = Context(surface);
+    
+    ctx.rectangle(10, 20, 100, 100);
+    auto path = ctx.copyPath();
+    foreach (PathElement element; path[])
+    {
+        switch (element.type)
+        {
+             case PathElementType.CAIRO_PATH_MOVE_TO:
+             {
+                 writefln("Move to %s:%s", element[0].x, element[0].y);
+                 break;
+             }
+             case PathElementType.CAIRO_PATH_LINE_TO:
+             {
+                 writefln("Line to %s:%s", element.getPoint(0).x, element.getPoint(0).y);
+                 break;
+             }
+             default:
+        }
+    }    
+}
