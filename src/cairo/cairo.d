@@ -21,6 +21,7 @@
  * Authors:
  * $(BOOKTABLE ,
  *   $(TR $(TD Johannes Pfau) $(TD cairoD))
+ *   $(TR $(TD Andrej Mitrovic) $(TD cairoD))
  *   $(TR $(TD $(LINK2 http://cairographics.org, _cairo team)) $(TD _cairo))
  * )
  */
