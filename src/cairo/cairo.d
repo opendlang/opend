@@ -5324,84 +5324,85 @@ public struct Version
 
 public struct Region
 {
-    private:
-        struct Payload
+    /*---------------------------Reference counting stuff---------------------------*/
+    protected:
+        void _reference()
         {
-            cairo_region_t* _payload;
-            this(cairo_region_t* h)
-            {
-                _payload = h;
-            }
-            ~this()
-            {
-                if(_payload)
-                {
-                    cairo_region_destroy(_payload);
-                    _payload = null;
-                }
-            }
-
-            // Should never perform these operations
-            this(this) { assert(false); }
-            void opAssign(Region.Payload rhs) { assert(false); }
+            cairo_region_reference(this.nativePointer);
         }
-        alias RefCounted!(Payload, RefCountedAutoInitialize.no) Data;
-        Data _data;
+
+        void _dereference()
+        {
+            cairo_region_destroy(this.nativePointer);
+        }
 
     public:
-        this(cairo_region_t* ptr)
-        {
-            _data.RefCounted.initialize(ptr);
-            checkError();
-        }    
-
         /**
-         * The underlying $(D cairo_region_t*) handle
+         * The underlying $(D cairo_t*) handle
          */
-        @property void nativePointer(cairo_region_t* ptr)
-        {
-            _data._payload = ptr;
-        }
-        
-        @property cairo_region_t* nativePointer()
-        {
-            return _data._payload;
-        }
-        
-        // opEquals requires const property function
-        @property const(cairo_region_t*) nativePointer() const
-        {
-            return _data._payload;
-        }        
-
+        cairo_region_t* nativePointer;
         version(D_Ddoc)
         {
-            /**
-             * Enable / disable memory management debugging for this Path
+             /**
+             * Enable / disable memory management debugging for this Context
              * instance. Only available if both cairoD and the cairoD user
              * code were compiled with "debug=RefCounted"
              *
-             * Output is written to stdout, see
+             * Output is written to stdout, see 
              * $(LINK https://github.com/jpf91/cairoD/wiki/Memory-Management#debugging)
              * for more information
              */
-            @property bool debugging();
-            ///ditto
-            @property void debugging(bool value);
+             bool debugging = false;
         }
         else debug(RefCounted)
         {
-            @property bool debugging()
+            bool debugging = false;
+        }
+    
+        /**
+         * Constructor that tracks the reference count appropriately. If $(D
+         * !refCountedIsInitialized), does nothing.
+         */
+        this(this)
+        {
+            if (this.nativePointer is null)
+                return;
+            this._reference();
+            debug(RefCounted)
+                if (this.debugging)
             {
-                return _data.RefCounted.debugging;
-            }
-
-            @property void debugging(bool value)
-            {
-                _data.RefCounted.debugging = value;
+                     writeln(typeof(this).stringof,
+                    "@", cast(void*) this.nativePointer, ": bumped refcount.");
             }
         }
+    
+        ~this()
+        {
+            this.dispose();
+        }
 
+        /**
+         * Explicitly drecrease the reference count.
+         *
+         * See $(LINK https://github.com/jpf91/cairoD/wiki/Memory-Management#2.1-structs)
+         * for more information.
+         */
+        void dispose()
+        {
+           if (this.nativePointer is null)
+                return;
+
+            debug(RefCounted)
+                if (this.debugging)
+            {
+                     writeln(typeof(this).stringof,
+                    "@", cast(void*)this.nativePointer,
+                    ": decrement refcount");
+            }
+            this._dereference();
+            this.nativePointer = null;
+        }
+        
         /**
          * Assignment operator
          */
@@ -5420,6 +5421,28 @@ public struct Region
             debug(RefCounted)
                 this.debugging = region.debugging;
         }
+        
+        /**
+         * Create a $(D Region) from a existing $(D cairo_region_t*).
+         * Context is a garbage collected class. It will call $(D cairo_region_destroy)
+         * when it gets collected by the GC or when $(D dispose()) is called.
+         *
+         * Warning:
+         * $(D ptr)'s reference count is not increased by this function!
+         * Adjust reference count before calling it if necessary
+         *
+         * $(RED Only use this if you know what your doing!
+         * This function should not be needed for standard cairoD usage.)
+         */
+        this(cairo_region_t* ptr)
+        {
+            this.nativePointer = ptr;
+            if(!ptr)
+            {
+                throw new CairoException(cairo_status_t.CAIRO_STATUS_NULL_POINTER);
+            }
+            checkError();
+        }        
         
     protected:
         /**
@@ -5481,9 +5504,9 @@ public struct Region
             }
             
             return result;
-        }        
+        }
         
-        bool isEmpty()
+        @property bool empty()
         {
             return cast(bool)cairo_region_is_empty(this.nativePointer);
         }
@@ -5624,7 +5647,7 @@ unittest
     auto region = Region(rect1);
     
     assert(region.numRectangles == 1);
-    assert(!region.isEmpty);
+    assert(!region.empty);
     
     assert(region.containsPoint(PointInt(50, 0)));
     assert(!region.containsPoint(PointInt(100, 0)));  // 100 is over the range of 0 .. 100 (99 is max)
@@ -5634,11 +5657,11 @@ unittest
     assert(!region.containsPoint(PointInt(0, 0)));    // 0 is below the minimum of 10
     
     region = region ^ region;  // xor, 1 ^ 1 == 0 :)
-    assert(region.isEmpty);
+    assert(region.empty);
     
     auto rect2 = Rectangle!int(99, 0, 100, 100);
     region = Region([rect1, rect2]);
-    assert(region.numRectangles == 1);  // note the cleverness: cairo merges the two rectangles as they
+    assert(region.numRectangles == 1);  // note: cairo merges the two rectangles as they
                                         // form a closed rectangle path.
 
     rect2.point.x = 120;
@@ -5658,7 +5681,7 @@ unittest
     assert(region.numRectangles == 1);  // and now the second rectangle is completely gone
     
     region -= rect1;
-    assert(region.isEmpty);             // first rectangle also gone, region is empty
+    assert(region.empty);             // first rectangle also gone, region is empty
 
     auto region1 = Region(rect1);
     auto region2 = Region(rect1);
