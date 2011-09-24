@@ -3,7 +3,7 @@
  *
  * This module only contains basic documentation. For more information
  * see $(LINK http://cairographics.org/manual/)
- * 
+ *
  * License:
  * $(BOOKTABLE ,
  *   $(TR $(TD cairoD wrapper/bindings)
@@ -29,7 +29,7 @@ import std.conv;
 
 /**
  * Cairo binding version. Use the cairo_version() function to get
- * version information about the cairo library. 
+ * version information about the cairo library.
  */
 enum CAIRO_VERSION_MAJOR = 1;
 ///ditto
@@ -65,7 +65,7 @@ extern(C)
 
     ///Library version string
     immutable(char)* cairo_version_string();
-    
+
     /**
      * cairo_bool_t is used for boolean values. Returns of type
      * cairo_bool_t will always be either 0 or 1, but testing against
@@ -80,7 +80,7 @@ extern(C)
      * ----------------------------------------
      **/
     alias int cairo_bool_t;
-    
+
     /**
      * A cairo_t contains the current state of the rendering device,
      * including coordinates of yet to be drawn shapes.
@@ -93,7 +93,7 @@ extern(C)
      * cairo_reference() and cairo_destroy().
      **/
     struct cairo_t {};
-    
+
     /**
      * A cairo_surface_t represents an image, either as the destination
      * of a drawing operation or as source when drawing onto another
@@ -118,7 +118,7 @@ extern(C)
      * cairo_surface_reference() and cairo_surface_destroy().
      **/
     struct cairo_surface_t {};
-    
+
     /**
      * A cairo_device_t represents the driver interface for drawing
      * operations to a cairo_surface_t.  There are different subtypes of
@@ -134,7 +134,7 @@ extern(C)
      * Since: 1.10
      **/
     struct cairo_device_t {};
-    
+
     /**
      * A $(D cairo_matrix_t) holds an affine transformation, such as a scale,
      * rotation, shear, or a combination of those. The transformation of
@@ -153,7 +153,7 @@ extern(C)
         double x0; ///X translation component of the affine transformation
         double y0; ///Y translation component of the affine transformation
     }
-    
+
     /**
      * A $(D cairo_pattern_t) represents a source when drawing onto a
      * surface. There are different subtypes of $(D cairo_pattern_t),
@@ -172,17 +172,17 @@ extern(C)
      * cairo_pattern_reference() and cairo_pattern_destroy().
      **/
     struct cairo_pattern_t {};
-    
+
     /**
      * $(D cairo_destroy_func_t) the type of function which is called when a
      * data element is destroyed. It is passed the pointer to the data
      * element and should free any memory and resources allocated for it.
-     * 
+     *
      * Params:
      * data = The data element being destroyed.
      **/
     alias extern(C) void function(void* data) cairo_destroy_func_t;
-    
+
     /**
      * $(D cairo_user_data_key_t) is used for attaching user data to cairo
      * data structures.  The actual contents of the struct is never used,
@@ -195,7 +195,7 @@ extern(C)
         ///not used; ignore.
         int unused;
     }
-    
+
     /**
 
      * $(D cairo_status_t) is used to indicate errors that can occur when
@@ -209,7 +209,7 @@ extern(C)
     enum cairo_status_t
     {
         CAIRO_STATUS_SUCCESS = 0, ///no error has occurred
-    
+
         CAIRO_STATUS_NO_MEMORY, ///out of memory
         CAIRO_STATUS_INVALID_RESTORE, ///cairo_restore() called without matching cairo_save()
         CAIRO_STATUS_INVALID_POP_GROUP, ///no saved group to pop, i.e. cairo_pop_group() without matching cairo_push_group()
@@ -251,9 +251,9 @@ extern(C)
          * that the version of cairo at run-time may have additional status values
          * defined than the value of this symbol at compile-time. (Since 1.10)
          */
-        CAIRO_STATUS_LAST_STATUS 
+        CAIRO_STATUS_LAST_STATUS
     }
-    
+
     /**
      * $(D cairo_content_t) is used to describe the content that a surface will
      * contain, whether color information, alpha information (translucence
@@ -269,7 +269,7 @@ extern(C)
         CAIRO_CONTENT_ALPHA = 0x2000, ///The surface will hold alpha content only.
         CAIRO_CONTENT_COLOR_ALPHA = 0x3000 ///The surface will hold color and alpha content.
     }
-    
+
     /**
      * $(D cairo_write_func_t) is the type of function which is called when a
      * backend needs to write data to an output stream.  It is passed the
@@ -278,16 +278,16 @@ extern(C)
      * data in bytes.  The write function should return
      * $(D CAIRO_STATUS_SUCCESS) if all the data was successfully written,
      * $(D CAIRO_STATUS_WRITE_ERROR) otherwise.
-     * 
+     *
      * Params:
      * closure = the output closure
      * data = the buffer containing the data to write
      * length = the amount of data to write
-     * 
+     *
      * Returns: the status code of the write operation
      **/
     alias extern(C) cairo_status_t function(void* closure, const ubyte* data, uint length) cairo_write_func_t;
-    
+
     /**
      * $(D cairo_read_func_t) is the type of function which is called when a
      * backend needs to read data from an input stream.  It is passed the
@@ -301,11 +301,11 @@ extern(C)
      * closure = the input closure
      * data = the buffer into which to read the data
      * length = the amount of data to read
-     * 
+     *
      * Returns: the status code of the read operation
      **/
     alias extern(C) cairo_status_t function(void* closure, ubyte* data, uint length) cairo_read_func_t;
-    
+
      /** Functions for manipulating state objects */
      cairo_t* cairo_create(cairo_surface_t* target);
      ///ditto
@@ -332,9 +332,9 @@ extern(C)
      cairo_pattern_t* cairo_pop_group(cairo_t* cr);
      ///ditto
      void cairo_pop_group_to_source(cairo_t* cr);
-    
+
     /* Modify state */
-    
+
     /**
      * $(D cairo_operator_t) is used to set the compositing operator for all cairo
      * drawing operations.
@@ -357,23 +357,23 @@ extern(C)
     enum cairo_operator_t
     {
         CAIRO_OPERATOR_CLEAR,///clear destination layer (bounded)
-    
+
         CAIRO_OPERATOR_SOURCE,///replace destination layer (bounded)
         CAIRO_OPERATOR_OVER,///draw source layer on top of destination layer (bounded)
         CAIRO_OPERATOR_IN,///draw source where there was destination content (unbounded)
         CAIRO_OPERATOR_OUT,///draw source where there was no destination content (unbounded)
         CAIRO_OPERATOR_ATOP,///draw source on top of destination content and only there
-    
+
         CAIRO_OPERATOR_DEST,///ignore the source
         CAIRO_OPERATOR_DEST_OVER,///draw destination on top of source
         CAIRO_OPERATOR_DEST_IN,///leave destination only where there was source content (unbounded)
         CAIRO_OPERATOR_DEST_OUT,///leave destination only where there was no source content
         CAIRO_OPERATOR_DEST_ATOP,///leave destination on top of source content and only there (unbounded)
-    
+
         CAIRO_OPERATOR_XOR,///source and destination are shown where there is only one of them
         CAIRO_OPERATOR_ADD,///source and destination layers are accumulated
         CAIRO_OPERATOR_SATURATE,///like over, but assuming source and dest are disjoint geometries
-    
+
         CAIRO_OPERATOR_MULTIPLY,///source and destination layers are multiplied. This causes the result to be at least as dark as the darker inputs.
         CAIRO_OPERATOR_SCREEN,///source and destination are complemented and multiplied. This causes the result to be at least as light as the lighter inputs.
         CAIRO_OPERATOR_OVERLAY,///multiplies or screens, depending on the lightness of the destination color.
@@ -421,7 +421,7 @@ extern(C)
      ///ditto
      void
     cairo_set_tolerance (cairo_t* cr, double tolerance);
-    
+
     /**
      * Specifies the type of antialiasing to do when rendering text or shapes.
      **/
@@ -444,7 +444,7 @@ extern(C)
     ///
      void
     cairo_set_antialias (cairo_t* cr, cairo_antialias_t antialias);
-    
+
     /**
      * $(D cairo_fill_rule_t) is used to select how paths are filled. For both
      * fill rules, whether or not a point is included in the fill is
@@ -483,7 +483,7 @@ extern(C)
     ///
      void
     cairo_set_line_width (cairo_t* cr, double width);
-    
+
     /**
      * Specifies how to render the endpoints of the path when stroking.
      *
@@ -498,7 +498,7 @@ extern(C)
     ///
      void
     cairo_set_line_cap (cairo_t* cr, cairo_line_cap_t line_cap);
-    
+
     /**
      * Specifies how to render the junction of two lines when stroking.
      *
@@ -562,7 +562,7 @@ extern(C)
     ///
      void
     cairo_device_to_user_distance (cairo_t* cr, double *dx, double *dy);
-    
+
     /** Path creation functions */
      void
     cairo_new_path (cairo_t* cr);
@@ -593,7 +593,7 @@ extern(C)
                 double xc, double yc,
                 double radius,
                 double angle1, double angle2);
-    
+
     /* XXX: NYI
      void
     cairo_arc_to (cairo_t* cr,
@@ -618,7 +618,7 @@ extern(C)
     cairo_rectangle (cairo_t* cr,
              double x, double y,
              double width, double height);
-    
+
     /* XXX: NYI
      void
     cairo_stroke_to_path (cairo_t* cr);
@@ -631,7 +631,7 @@ extern(C)
     cairo_path_extents (cairo_t* cr,
                 double *x1, double *y1,
                 double *x2, double *y2);
-    
+
     /** Painting functions */
      void
     cairo_paint (cairo_t* cr);
@@ -667,7 +667,7 @@ extern(C)
     ///ditto
      void
     cairo_show_page (cairo_t* cr);
-    
+
     /** Insideness testing */
      cairo_bool_t
     cairo_in_stroke (cairo_t* cr, double x, double y);
@@ -677,7 +677,7 @@ extern(C)
     ///ditto
      cairo_bool_t
     cairo_in_clip (cairo_t* cr, double x, double y);
-    
+
     /** Rectangular extents */
      void
     cairo_stroke_extents (cairo_t* cr,
@@ -688,7 +688,7 @@ extern(C)
     cairo_fill_extents (cairo_t* cr,
                 double *x1, double *y1,
                 double *x2, double *y2);
-    
+
     /** Clipping */
      void
     cairo_reset_clip (cairo_t* cr);
@@ -703,7 +703,7 @@ extern(C)
     cairo_clip_extents (cairo_t* cr,
                 double *x1, double *y1,
                 double *x2, double *y2);
-    
+
     /**
      * A data structure for holding a rectangle.
      *
@@ -716,7 +716,7 @@ extern(C)
         double width; ///width of the rectangle
         double height; ///height of the rectangle
     }
-    
+
     /**
      * A data structure for holding a dynamically allocated
      * array of rectangles.
@@ -735,9 +735,9 @@ extern(C)
     ///
      void
     cairo_rectangle_list_destroy (cairo_rectangle_list_t *rectangle_list);
-    
+
     /* Font/Text functions */
-    
+
     /**
      * A $(D cairo_scaled_font_t) is a font scaled to a particular size and device
      * resolution. A $(D cairo_scaled_font_t) is most useful for low-level font
@@ -752,7 +752,7 @@ extern(C)
      * cairo_scaled_font_reference() and cairo_scaled_font_destroy().
      **/
     struct cairo_scaled_font_t {};
-    
+
     /**
      * A $(D cairo_font_face_t) specifies all aspects of a font other
      * than the size or font matrix (a font matrix is used to distort
@@ -769,7 +769,7 @@ extern(C)
      * cairo_font_face_reference() and cairo_font_face_destroy().
      **/
     struct cairo_font_face_t {};
-    
+
     /**
      * The $(D cairo_glyph_t) structure holds information about a single glyph
      * when drawing or measuring text. A font is (in simple terms) a
@@ -810,7 +810,7 @@ extern(C)
     ///
      void
     cairo_glyph_free (cairo_glyph_t *glyphs);
-    
+
     /**
      * The $(D cairo_text_cluster_t) structure holds information about a single
      * $(I text cluster).  A text cluster is a minimal
@@ -838,7 +838,7 @@ extern(C)
     ///
      void
     cairo_text_cluster_free (cairo_text_cluster_t *clusters);
-    
+
     /**
      * Specifies properties of a text cluster mapping.
      *
@@ -852,7 +852,7 @@ extern(C)
          */
         CAIRO_TEXT_CLUSTER_FLAG_BACKWARD = 0x00000001
     }
-    
+
     /**
      * The $(D cairo_text_extents_t) structure stores the extents of a single
      * glyph or a string of glyphs in user-space coordinates. Because text
@@ -899,7 +899,7 @@ extern(C)
          */
         double y_advance;
     }
-    
+
     /**
      * The $(D cairo_font_extents_t) structure stores metric information for
      * a font. Values are given in the current user-space coordinate
@@ -957,7 +957,7 @@ extern(C)
          */
         double max_y_advance;
     }
-    
+
     /**
      * Specifies variants of a font face based on their slant.
      **/
@@ -967,7 +967,7 @@ extern(C)
         CAIRO_FONT_SLANT_ITALIC, ///Italic font style
         CAIRO_FONT_SLANT_OBLIQUE ///Oblique font style
     }
-    
+
     /**
      * Specifies variants of a font face based on their weight.
      **/
@@ -976,7 +976,7 @@ extern(C)
         CAIRO_FONT_WEIGHT_NORMAL, ///Normal font weight
         CAIRO_FONT_WEIGHT_BOLD ///Bold font weight
     }
-    
+
     /**
      * The subpixel order specifies the order of color elements within
      * each pixel on the display device when rendering with an
@@ -1010,7 +1010,7 @@ extern(C)
          */
         CAIRO_SUBPIXEL_ORDER_VBGR
     }
-    
+
     /**
      * Specifies the type of hinting to do on font outlines. Hinting
      * is the process of fitting outlines to the pixel grid in order
@@ -1039,7 +1039,7 @@ extern(C)
         CAIRO_HINT_STYLE_MEDIUM,
         CAIRO_HINT_STYLE_FULL ///Hint outlines to maximize contrast
     }
-    
+
     /**
      * Specifies whether to hint font metrics; hinting font metrics
      * means quantizing them so that they are integer values in
@@ -1057,7 +1057,7 @@ extern(C)
         CAIRO_HINT_METRICS_OFF, ///Do not hint font metrics
         CAIRO_HINT_METRICS_ON ///Hint font metrics
     }
-    
+
     /**
      * An opaque structure holding all options that are used when
      * rendering fonts.
@@ -1129,7 +1129,7 @@ extern(C)
     ///
      cairo_hint_metrics_t
     cairo_font_options_get_hint_metrics (const cairo_font_options_t *options);
-    
+
     /* This interface is for dealing with text as text, not caring about the
        font object inside the the cairo_t. */
     ///
@@ -1207,7 +1207,7 @@ extern(C)
      void
     cairo_font_extents (cairo_t              *cr,
                 cairo_font_extents_t *extents);
-    
+
     /* Generic identifier for a font style */
     ///
      cairo_font_face_t *
@@ -1221,8 +1221,8 @@ extern(C)
     ///
      cairo_status_t
     cairo_font_face_status (cairo_font_face_t *font_face);
-    
-    
+
+
     /**
      * $(D cairo_font_type_t) is used to describe the type of a given font
      * face or scaled font. The font types are also known as "font
@@ -1274,9 +1274,9 @@ extern(C)
                        const cairo_user_data_key_t *key,
                        void			   *user_data,
                        cairo_destroy_func_t	    destroy);
-    
+
     /** Portable interface to general font features. */
-    
+
      cairo_scaled_font_t *
     cairo_scaled_font_create (cairo_font_face_t          *font_face,
                   const cairo_matrix_t       *font_matrix,
@@ -1353,10 +1353,10 @@ extern(C)
      void
     cairo_scaled_font_get_font_options (cairo_scaled_font_t		*scaled_font,
                         cairo_font_options_t	*options);
-    
-    
+
+
     /** Toy fonts */
-    
+
      cairo_font_face_t *
     cairo_toy_font_face_create (const char           *family,
                     cairo_font_slant_t    slant,
@@ -1370,15 +1370,15 @@ extern(C)
     ///ditto
      cairo_font_weight_t
     cairo_toy_font_face_get_weight (cairo_font_face_t *font_face);
-    
-    
+
+
     /** User fonts */
-    
+
      cairo_font_face_t *
     cairo_user_font_face_create ();
-    
+
     /* User-font method signatures */
-    
+
     /**
      * $(D cairo_user_scaled_font_init_func_t) is the type of function which is
      * called when a scaled-font needs to be created for a user font-face.
@@ -1406,7 +1406,7 @@ extern(C)
      * scaled_font = the scaled-font being created
      * cr = a cairo context, in font space
      * extents = font extents to fill in, in font space
-     * 
+     *
      * Returns: $(D CAIRO_STATUS_SUCCESS) upon success, or an error status on error.
      *
      * Since: 1.8
@@ -1414,7 +1414,7 @@ extern(C)
     alias extern(C) cairo_status_t function(cairo_scaled_font_t  *scaled_font,
                                       cairo_t              *cr,
                                       cairo_font_extents_t *extents) cairo_user_scaled_font_init_func_t;
-    
+
     /**
      *
      * $(D cairo_user_scaled_font_render_glyph_func_t) is the type of function which
@@ -1453,7 +1453,7 @@ extern(C)
      * glyph = glyph code to render
      * cr = cairo context to draw to, in font space
      * extents = glyph extents to fill in, in font space
-     * 
+     *
      * Returns: $(D CAIRO_STATUS_SUCCESS) upon success, or
      * $(D CAIRO_STATUS_USER_FONT_ERROR) or any other error status on error.
      *
@@ -1463,7 +1463,7 @@ extern(C)
                                           ulong         glyph,
                                           cairo_t              *cr,
                                           cairo_text_extents_t *extents) cairo_user_scaled_font_render_glyph_func_t;
-    
+
     /**
      * $(D cairo_user_scaled_font_text_to_glyphs_func_t) is the type of function which
      * is called to convert input text to an array of glyphs.  This is used by the
@@ -1535,7 +1535,7 @@ extern(C)
                                         cairo_text_cluster_t      **clusters,
                                         int		           *num_clusters,
                                         cairo_text_cluster_flags_t *cluster_flags) cairo_user_scaled_font_text_to_glyphs_func_t;
-    
+
     /**
      * $(D cairo_user_scaled_font_unicode_to_glyph_func_t) is the type of function which
      * is called to convert an input Unicode character to a single glyph.
@@ -1567,7 +1567,7 @@ extern(C)
      * scaled_font = the scaled-font being created
      * unicode = input unicode character code-point
      * glyph_index = output glyph index
-     * 
+     *
      * Returns: $(D CAIRO_STATUS_SUCCESS) upon success,
      * $(D CAIRO_STATUS_USER_FONT_NOT_IMPLEMENTED) if fallback options should be tried,
      * or $(D CAIRO_STATUS_USER_FONT_ERROR) or any other error status on error.
@@ -1577,9 +1577,9 @@ extern(C)
     alias extern(C) cairo_status_t function(cairo_scaled_font_t *scaled_font,
                                           ulong        unicode,
                                           ulong       *glyph_index) cairo_user_scaled_font_unicode_to_glyph_func_t;
-    
+
     /** User-font method setters */
-    
+
      void
     cairo_user_font_face_set_init_func (cairo_font_face_t                  *font_face,
                         cairo_user_scaled_font_init_func_t  init_func);
@@ -1595,9 +1595,9 @@ extern(C)
      void
     cairo_user_font_face_set_unicode_to_glyph_func (cairo_font_face_t                              *font_face,
                                 cairo_user_scaled_font_unicode_to_glyph_func_t  unicode_to_glyph_func);
-    
+
     /** User-font method getters */
-    
+
      cairo_user_scaled_font_init_func_t
     cairo_user_font_face_get_init_func (cairo_font_face_t *font_face);
     ///ditto
@@ -1609,10 +1609,10 @@ extern(C)
     ///ditto
      cairo_user_scaled_font_unicode_to_glyph_func_t
     cairo_user_font_face_get_unicode_to_glyph_func (cairo_font_face_t *font_face);
-    
-    
+
+
     /** Query functions */
-    
+
      cairo_operator_t
     cairo_get_operator (cairo_t* cr);
     ///ditto
@@ -1660,7 +1660,7 @@ extern(C)
     ///ditto
      cairo_surface_t *
     cairo_get_group_target (cairo_t* cr);
-    
+
     /**
      * $(D cairo_path_data_t) is used to describe the type of one portion
      * of a path when represented as a $(D cairo_path_t).
@@ -1673,7 +1673,7 @@ extern(C)
         CAIRO_PATH_CURVE_TO, ///A curve-to operation
         CAIRO_PATH_CLOSE_PATH ///A close-path operation
     }
-    
+
     /**
      * $(D cairo_path_data_t) is used to represent the path data inside a
      * $(D cairo_path_t).
@@ -1706,9 +1706,9 @@ extern(C)
      *      int i;
      *      cairo_path_t *path;
      *      cairo_path_data_t *data;
-     * 
+     *
      *      path = cairo_copy_path (cr);
-     * 
+     *
      *      for (i=0; i < path->num_data; i += path->data[i].header.length) {
      *          data = &amp;path->data[i];
      *          switch (data->header.type) {
@@ -1758,7 +1758,7 @@ extern(C)
     {
         double x, y; ///
     }
-    
+
     /**
      * A data structure for holding a path. This data structure serves as
      * the return value for cairo_copy_path() and
@@ -1792,20 +1792,20 @@ extern(C)
     ///
      void
     cairo_path_destroy (cairo_path_t *path);
-    
+
     /** Error status queries */
-    
+
      cairo_status_t
     cairo_status (cairo_t* cr);
     ///ditto
      immutable(char)*
     cairo_status_to_string (cairo_status_t status);
-    
+
     /** Backend device manipulation */
-    
+
      cairo_device_t *
     cairo_device_reference (cairo_device_t *device);
-    
+
     /**
      * $(D cairo_device_type_t) is used to describe the type of a given
      * device. The devices types are also known as "backends" within cairo.
@@ -1868,10 +1868,10 @@ extern(C)
                     const cairo_user_data_key_t *key,
                     void			 *user_data,
                     cairo_destroy_func_t	  destroy);
-    
-    
+
+
     /** Surface manipulation */
-    
+
      cairo_surface_t *
     cairo_surface_create_similar (cairo_surface_t  *other,
                       cairo_content_t	content,
@@ -1902,7 +1902,7 @@ extern(C)
     ///ditto
      cairo_status_t
     cairo_surface_status (cairo_surface_t *surface);
-    
+
     /**
      * $(D cairo_surface_type_t) is used to describe the type of a given
      * surface. The surface types are also known as "backends" or "surface
@@ -1964,7 +1964,7 @@ extern(C)
     ///
      cairo_content_t
     cairo_surface_get_content (cairo_surface_t *surface);
-    
+
     version(CAIRO_HAS_PNG_FUNCTIONS)
     {
     ///requires -version=CAIRO_HAS_PNG_FUNCTIONS
@@ -1976,7 +1976,7 @@ extern(C)
     cairo_surface_write_to_png_stream (cairo_surface_t	*surface,
                        cairo_write_func_t	write_func,
                        void			*closure);
-    
+
     }
     ///
      void *
@@ -2056,9 +2056,9 @@ extern(C)
     ///
      cairo_bool_t
     cairo_surface_has_show_text_glyphs (cairo_surface_t *surface);
-    
+
     /* Image-surface functions */
-    
+
     /**
      * $(D cairo_format_t) is used to identify the memory format of
      * image data.
@@ -2134,7 +2134,7 @@ extern(C)
     ///
      int
     cairo_image_surface_get_stride (cairo_surface_t *surface);
-    
+
     version(CAIRO_HAS_PNG_FUNCTIONS)
     {
     ///requires -version=CAIRO_HAS_PNG_FUNCTIONS
@@ -2144,11 +2144,11 @@ extern(C)
      cairo_surface_t *
     cairo_image_surface_create_from_png_stream (cairo_read_func_t	read_func,
                             void		*closure);
-    
+
     }
-    
+
     /** Recording-surface functions */
-    
+
      cairo_surface_t *
     cairo_recording_surface_create (cairo_content_t		 content,
                                     const cairo_rectangle_t *extents);
@@ -2159,9 +2159,9 @@ extern(C)
                                          double *y0,
                                          double *width,
                                          double *height);
-    
+
     /** Pattern creation functions */
-    
+
      cairo_pattern_t *
     cairo_pattern_create_rgb (double red, double green, double blue);
     ///ditto
@@ -2201,7 +2201,7 @@ extern(C)
                      const cairo_user_data_key_t *key,
                      void			 *user_data,
                      cairo_destroy_func_t	  destroy);
-    
+
     /**
      * $(D cairo_pattern_type_t) is used to describe the type of a given pattern.
      *
@@ -2258,7 +2258,7 @@ extern(C)
      void
     cairo_pattern_get_matrix (cairo_pattern_t *pattern,
                   cairo_matrix_t  *matrix);
-    
+
     /**
      * $(D cairo_extend_t) is used to describe how pattern color/alpha will be
      * determined for areas "outside" the pattern's natural area, (for
@@ -2296,7 +2296,7 @@ extern(C)
     ///
      cairo_extend_t
     cairo_pattern_get_extend (cairo_pattern_t *pattern);
-    
+
     /**
      * $(D cairo_filter_t) is used to indicate what filtering should be
      * applied when reading pixel values from patterns. See
@@ -2349,7 +2349,7 @@ extern(C)
      cairo_status_t
     cairo_pattern_get_surface (cairo_pattern_t *pattern,
                    cairo_surface_t **surface);
-    
+
     ///
      cairo_status_t
     cairo_pattern_get_color_stop_rgba (cairo_pattern_t *pattern,
@@ -2370,9 +2370,9 @@ extern(C)
     cairo_pattern_get_radial_circles (cairo_pattern_t *pattern,
                       double *x0, double *y0, double *r0,
                       double *x1, double *y1, double *r1);
-    
+
     /** Matrix functions */
-    
+
      void
     cairo_matrix_init (cairo_matrix_t *matrix,
                double  xx, double  yx,
@@ -2418,9 +2418,9 @@ extern(C)
      void
     cairo_matrix_transform_point (const cairo_matrix_t *matrix,
                       double *x, double *y);
-    
+
     /* Region functions */
-    
+
     /**
      * A $(D cairo_region_t) represents a set of integer-aligned rectangles.
      *
@@ -2433,13 +2433,13 @@ extern(C)
      * Since: 1.10
      **/
     struct cairo_region_t {};
-    
+
     /**
      * A data structure for holding a rectangle with integer coordinates.
      *
      * Since: 1.10
      **/
-    
+
     struct cairo_rectangle_int_t
     {
         int x; ///X coordinate of the left side of the rectangle
@@ -2532,7 +2532,7 @@ extern(C)
      cairo_status_t
     cairo_region_xor_rectangle (cairo_region_t *dst,
                     const cairo_rectangle_int_t *rectangle);
-    
+
     /** Functions to be used while debugging (not intended for use in production code) */
      void
     cairo_debug_reset_static_data ();
