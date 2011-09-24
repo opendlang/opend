@@ -9,7 +9,7 @@
  *
  * See_Also:
  * $(LINK http://cairographics.org/documentation/)
- * 
+ *
  * License:
  * $(BOOKTABLE ,
  *   $(TR $(TD cairoD wrapper/bindings)
@@ -21,6 +21,7 @@
  * Authors:
  * $(BOOKTABLE ,
  *   $(TR $(TD Johannes Pfau) $(TD cairoD))
+ *   $(TR $(TD Andrej Mitrovic) $(TD cairoD))
  *   $(TR $(TD $(LINK2 http://cairographics.org, _cairo team)) $(TD _cairo))
  * )
  */
@@ -34,12 +35,12 @@ module cairo.cairo;
 import cairo.c.cairo;
 import cairo.util;
 
+import core.exception;
+import std.algorithm;
 import std.conv;
 import std.range; //For PathRange unittests
 import std.string;
 import std.traits;
-import core.exception;
-import std.algorithm;
 import std.typecons;
 
 debug(RefCounted)
@@ -85,7 +86,7 @@ version(CAIRO_HAS_XLIB_SURFACE)
  * If status is CAIRO_STATUS_NO_MEMORY a OutOfMemoryError is thrown.
  * If status is  CAIRO_STATUS_SUCCESS nothing happens.
  * For all other statuses, this functions throws
- * a $(D CairoException) with the status value. 
+ * a $(D CairoException) with the status value.
  */
 void throwError(cairo_status_t status)
 {
@@ -154,6 +155,7 @@ public alias cairo_font_slant_t FontSlant; ///ditto
 public alias cairo_font_weight_t FontWeight; ///ditto
 public alias cairo_device_type_t DeviceType; ///ditto
 public alias cairo_font_type_t FontType; ///ditto
+public alias cairo_region_overlap_t RegionOverlap; ///ditto
 
 /**
  * A simple struct to store the coordinates of a point.
@@ -186,13 +188,27 @@ public struct PointInt
     ///
     int x;
     ///
-    int y;    
+    int y;
+}
+
+/**
+ * Checks whether TargetType matches any subsequent types.
+ * Use as: isOneOf!(TargetType, Type1, Type2..);
+ */
+template isOneOf(X, T...)
+{
+    static if (!T.length)
+        enum bool isOneOf = false;
+    else static if (is (X == T[0]))
+        enum bool isOneOf = true;
+    else
+        enum bool isOneOf = isOneOf!(X, T[1..$]);
 }
 
 /**
  * A simple struct representing a rectangle with $(D int) or $(double) values
  */
-public struct Rectangle(T) if (is(T == double) || is(T == int))
+public struct Rectangle(T) if (isOneOf!(T, int, double))
 {
     static if (is(T == double))
     {
@@ -202,7 +218,7 @@ public struct Rectangle(T) if (is(T == double) || is(T == int))
     {
         alias PointInt PointType;
     }
-    
+
     ///
     public this(PointType point, T width, T height)
     {
@@ -210,7 +226,7 @@ public struct Rectangle(T) if (is(T == double) || is(T == int))
         this.width = width;
         this.height = height;
     }
-    
+
     ///ditto
     public this(T x, T y, T width, T height)
     {
@@ -222,16 +238,16 @@ public struct Rectangle(T) if (is(T == double) || is(T == int))
 
     ///TOP-LEFT point of the rectangle
     PointType point;
-    
     ///
     T width;
     ///
-    T height;   
+    T height;
 }
 
 /**
- * Convenience function to create a $(D Rectangle!int) or $(D Rectangle!double)
- * depending on the argument types.
+ * Convenience function to create a $(D Rectangle!int) or $(D Rectangle!double).
+ * If any of the arguments are of a floating-point type,
+ * Rectangle!double is constructed.
  *
  * Examples:
  * --------------------------------------------------------
@@ -239,15 +255,31 @@ public struct Rectangle(T) if (is(T == double) || is(T == int))
  * auto b = rectangle(0.99, 0.99, 3.99, 3.99);
  * --------------------------------------------------------
  */
-auto rectangle(T)(T x, T y, T width, T height) if (is(T == double) || is(T == int))
+auto rectangle(T...)(T args)
 {
-    return Rectangle!(T)(x, y, width, height);
+    static if (isOneOf!(float, T) || isOneOf!(double, T))
+    {
+        return Rectangle!(double)(args);
+    }
+    else
+    {
+        return Rectangle!(int)(args);
+    }
 }
 
 unittest
 {
     auto a = rectangle(1, 1, 4, 4);
     auto b = rectangle(0.99, 0.99, 3.99, 3.99);
+
+    auto rect1 = rectangle(0, 0, 10, 10);
+    Rectangle!int rectInt = rect1;
+
+    auto rect2 = rectangle(0, 0, 10.0, 10);
+    Rectangle!double rectDouble = rect2;
+
+    auto rect3 = rectangle(cast(byte)0, cast(short)0, cast(int)10, cast(uint)10);
+    Rectangle!int rectInt2 = rect3;
 }
 
 /**
@@ -325,7 +357,7 @@ public struct Resolution
         this.x = resX;
         this.y = resY;
     }
-    
+
     ///In pixels per inch
     double x, y;
 }
@@ -401,7 +433,7 @@ unittest
  /**
   * Reference counted wrapper around $(D cairo_path_t).
   * This struct can only be obtained from cairoD. It should not be created
-  * manually. 
+  * manually.
   */
 public struct Path
 {
@@ -421,14 +453,14 @@ public struct Path
                     _payload = null;
                 }
             }
-    
+
             // Should never perform these operations
             this(this) { assert(false); }
             void opAssign(FontOptions.Payload rhs) { assert(false); }
-        }    
+        }
         alias RefCounted!(Payload, RefCountedAutoInitialize.no) Data;
         Data _data;
-        
+
         @property cairo_status_t status()
         {
             return nativePointer.status;
@@ -479,7 +511,7 @@ public struct Path
              * instance. Only available if both cairoD and the cairoD user
              * code were compiled with "debug=RefCounted"
              *
-             * Output is written to stdout, see 
+             * Output is written to stdout, see
              * $(LINK https://github.com/jpf91/cairoD/wiki/Memory-Management#debugging)
              * for more information
              */
@@ -493,7 +525,7 @@ public struct Path
             {
                 return _data.RefCounted.debugging;
             }
-            
+
             @property void debugging(bool value)
             {
                 _data.RefCounted.debugging = value;
@@ -541,13 +573,13 @@ public struct PathRange
             this.path = path;
             this.pos = pos;
         }
-    
+
     public:
         /**
          * Constructor to get a PathRange for a $(D Path) object.
          * You should usually use $(D Path)'s opSlice method insted, see
          * the $(D Path) documentation for an example.
-         */ 
+         */
         this(Path path)
         {
             this.path = path;
@@ -593,7 +625,7 @@ public struct PathElement
 {
     private:
         cairo_path_data_t* data;
-        
+
         this(cairo_path_data_t* data)
         {
             this.data = data;
@@ -805,7 +837,7 @@ public struct Matrix
          * returns the result. The effect of the resulting transformation
          * is to first apply the transformation in a to the coordinates
          * and then apply the transformation in b to the coordinates.
-         * 
+         *
          * It is allowable for result to be identical to either a or b.
          */
         Matrix opBinary(string op)(Matrix rhs) if(op == "*")
@@ -868,7 +900,7 @@ public class Pattern
 {
     ///
     mixin CairoCountedClass!(cairo_pattern_t*, "cairo_pattern_");
-    
+
     protected:
         /**
          * Method for use in subclasses.
@@ -879,7 +911,7 @@ public class Pattern
         {
             throwError(cairo_pattern_status(nativePointer));
         }
-    
+
     public:
         /**
          * Create a $(D Pattern) from a existing $(D cairo_pattern_t*).
@@ -995,7 +1027,7 @@ public class Pattern
         /**
          * Sets the pattern's transformation matrix to matrix.
          * This matrix is a transformation from user space to pattern space.
-         * 
+         *
          * When a pattern is first created it always has the identity matrix
          * for its transformation matrix, which means that pattern space
          * is initially identical to user space.
@@ -1004,7 +1036,7 @@ public class Pattern
          * you imagine the flow from a pattern to user space (and on to
          * device space), then coordinates in that flow will be transformed
          * by the inverse of the pattern matrix.
-         * 
+         *
          * For example, if you want to make a pattern appear twice as large
          * as it does by default the correct code to use is:
          * -------------------
@@ -1053,7 +1085,7 @@ public class Pattern
             cairo_pattern_set_user_data(this.nativePointer, key, data, destroy);
             checkError();
         }
-        
+
         void* getUserData(const cairo_user_data_key_t* key)
         {
             scope(exit)
@@ -1210,9 +1242,9 @@ public class Gradient : Pattern
          * (x0,y0) to (x1,y1) while a $(D RadialGradient)'s control vector is
          * from any point on the start circle to the corresponding point
          * on the end circle.
-         * 
+         *
          * The color is specified in the same way as in $(D context.setSourceRGB()).
-         * 
+         *
          * If two (or more) stops are specified with identical offset
          * values, they will be sorted according to the order in which the
          * stops are added, (stops added earlier will compare less than
@@ -1221,7 +1253,7 @@ public class Gradient : Pattern
          *
          * Params:
          * offset = an offset in the range [0.0 .. 1.0]
-         * 
+         *
          * Note: If the pattern is not a gradient pattern, (eg. a linear
          * or radial pattern), then the pattern will be put into an error
          * status with a status of CAIRO_STATUS_PATTERN_TYPE_MISMATCH.
@@ -1250,16 +1282,16 @@ public class Gradient : Pattern
          *
          * The color is specified in the same way as in
          * $(D context.setSourceRGBA()).
-         * 
+         *
          * If two (or more) stops are specified with identical offset values,
          * they will be sorted according to the order in which the stops are added,
          * (stops added earlier will compare less than stops added later).
          * This can be useful for reliably making sharp color transitions
          * instead of the typical blend.
-         * 
+         *
          * Params:
          * offset = an offset in the range [0.0 .. 1.0]
-         * 
+         *
          * Note: If the pattern is not a gradient pattern, (eg. a linear
          * or radial pattern), then the pattern will be put into an error
          * status with a status of CAIRO_STATUS_PATTERN_TYPE_MISMATCH.
@@ -1300,7 +1332,7 @@ public class Gradient : Pattern
          * index = index of the stop to return data for
          * offset = output: Returns the offset of the color stop
          * color = output: Returns the color of the color stop
-         * 
+         *
          * TODO: Array/Range - like interface?
          */
         void getColorStopRGBA(int index, out double offset, out RGBA color)
@@ -1345,7 +1377,7 @@ public class LinearGradient : Gradient
          * Params:
          * p1 = the start point
          * p2 = the end point
-         * 
+         *
          * Note: The coordinates here are in pattern space. For a new pattern,
          * pattern space is identical to user space, but the relationship
          * between the spaces can be changed with $(D Pattern.setMatrix()).
@@ -1365,7 +1397,7 @@ public class LinearGradient : Gradient
          *
          * Returns:
          * Point[0] = the first point
-         * 
+         *
          * Point[1] = the second point
          */
         Point[2] getLinearPoints()
@@ -1415,7 +1447,7 @@ public class RadialGradient : Gradient
          * radius0 = radius of the start circle
          * c1 = center of the end circle
          * radius1 = radius of the end circle
-         * 
+         *
          * Note: The coordinates here are in pattern space. For a new pattern,
          * pattern space is identical to user space, but the relationship
          * between the spaces can be changed with $(D Pattern.setMatrix()).
@@ -1445,11 +1477,11 @@ public class RadialGradient : Gradient
  * Devices are the abstraction Cairo employs for the rendering system used
  * by a $(D Surface). You can get the device of a surface using
  * $(D Surface.getDevice()).
- * 
+ *
  * Devices are created using custom functions specific to the rendering
  * system you want to use. See the documentation for the surface types
  * for those functions.
- * 
+ *
  * An important function that devices fulfill is sharing access to the
  * rendering system between Cairo and your application. If you want to access
  * a device directly that you used to draw to with Cairo, you must first
@@ -1465,7 +1497,7 @@ public class RadialGradient : Gradient
  * Please refer to the documentation of each backend for additional usage
  * requirements, guarantees provided, and interactions with existing surface
  * API of the device functions for surfaces of that type.
- * 
+ *
  * Examples:
  * -------------------------
  * void my_device_modifying_function(Device device)
@@ -1488,7 +1520,7 @@ public class RadialGradient : Gradient
  *
  *     // Do the custom operations on the device here.
  *     // But do not call any Cairo functions that might acquire devices.
- * 
+ *
  * }
  * -------------------------
 */
@@ -1637,7 +1669,7 @@ public class Surface
 {
     ///
     mixin CairoCountedClass!(cairo_surface_t*, "cairo_surface_");
-    
+
     protected:
         /**
          * Method for use in subclasses.
@@ -1648,7 +1680,7 @@ public class Surface
         {
             throwError(cairo_surface_status(nativePointer));
         }
-    
+
     public:
         /**
          * Create a $(D Surface) from a existing $(D cairo_surface_t*).
@@ -1999,7 +2031,7 @@ public class Surface
             cairo_surface_set_user_data(this.nativePointer, key, data, destroy);
             checkError();
         }
-        
+
         void* getUserData(const cairo_user_data_key_t* key)
         {
             scope(exit)
@@ -2089,7 +2121,7 @@ public class Surface
          *
          * Throws:
          * OutOfMemoryError if a slot could not be allocated for the user data.
-         * 
+         *
          * TODO: More D-like API
          *
          * Note:
@@ -2109,7 +2141,7 @@ public class Surface
          *
          * Params:
          * type = the mime type of the image data
-         * 
+         *
          * TODO: More D-like API
          *
          * Note:
@@ -2132,7 +2164,7 @@ public class Surface
  * int stride;
  * ubyte[] data;
  * Surface surface;
- * 
+ *
  * stride = formatStrideForWidth(format, width);
  * data = new ubyte[](stride * height); //could also use malloc
  * surface = new ImageSurface(data, format, width, height, stride);
@@ -2303,7 +2335,7 @@ public class ImageSurface : Surface
              *
              * Params:
              * file = the name of a file to write to
-             * 
+             *
              * Note:
              * Only available if cairo, cairoD and the cairoD user
              * code were compiled with "version=CAIRO_HAS_PNG_FUNCTIONS"
@@ -2370,7 +2402,7 @@ public struct Context
              * instance. Only available if both cairoD and the cairoD user
              * code were compiled with "debug=RefCounted"
              *
-             * Output is written to stdout, see 
+             * Output is written to stdout, see
              * $(LINK https://github.com/jpf91/cairoD/wiki/Memory-Management#debugging)
              * for more information
              */
@@ -2380,7 +2412,7 @@ public struct Context
         {
             bool debugging = false;
         }
-    
+
         /**
          * Constructor that tracks the reference count appropriately. If $(D
          * !refCountedIsInitialized), does nothing.
@@ -2398,7 +2430,7 @@ public struct Context
                     this._count);
             }
         }
-    
+
         ~this()
         {
             this.dispose();
@@ -2458,8 +2490,8 @@ public struct Context
         {
             throwError(cairo_status(nativePointer));
         }
-        
-    
+
+
     public:
         /**
          * Creates a new $(D Context) with all graphics state parameters set
@@ -3450,7 +3482,7 @@ public struct Context
             cairo_set_user_data(this.nativePointer, key, data, destroy);
             checkError();
         }
-        
+
         void* getUserData(const cairo_user_data_key_t* key)
         {
             scope(exit)
@@ -3680,7 +3712,7 @@ public struct Context
          *
          * See $(D arc()) for more details. This function differs only
          * in the direction of the arc between the two angles.
-         * 
+         *
          * Params:
          * radius = the radius of the arc
          * angle1 = the start angle, in radians
@@ -3746,7 +3778,7 @@ public struct Context
         {
             cairo_line_to(this.nativePointer, x, y);
             checkError();
-        } 
+        }
 
         /**
          * Begin a new sub-path. After this call the current point will be p1.
@@ -3811,7 +3843,7 @@ public struct Context
          * origin of the final glyph offset by its advance values. This
          * allows for chaining multiple calls to to $(D textPath())
          * without having to set current point in between.
-         * 
+         *
          * Note: The $(D textPath()) function call is part of what the
          * cairo designers call the "toy" text API. It is convenient for
          * short demos and simple programs, but it is not expected
@@ -4025,7 +4057,7 @@ public struct Context
         }
 
         /**
-         * Returns the current transformation matrix (CTM) 
+         * Returns the current transformation matrix (CTM)
          */
         Matrix getMatrix()
         {
@@ -4184,7 +4216,7 @@ public struct Context
          * Normally, a simple scale is used (see $(D setFontSize())),
          * but a more complex font matrix can be used to shear the font
          * or stretch it unequally along the two axes
-         * 
+         *
          * Params:
          * matrix = a $(D Matrix) describing a transform to be applied
          * to the current font.
@@ -4382,7 +4414,7 @@ public struct Context
          * Additionally, the x_advance and y_advance values indicate
          * the amount by which the current point would be advanced by
          * $(D showGlyphs()).
-         * 
+         *
          * Note that whitespace glyphs do not contribute to the size of
          * the rectangle (extents.width and extents.height).
          */
@@ -4404,18 +4436,18 @@ public struct Context
  * time the font options implied by a surface are just right and do
  * not need any changes, but for pixel-based targets tweaking font
  * options may result in superior output on a particular display.
- * 
+ *
  * Warning: Instances must be created with opCall!
  * --------
  * auto options = FontOptions(); //Correct
  * options.toHash();
  * --------
- * 
+ *
  * --------
  * FontOptions options; //Wrong
  * options.toHash();
  * --------
- * 
+ *
  * --------
  * FontOptions options;
  * options = FontOptions(); //Correct
@@ -4440,21 +4472,21 @@ public struct FontOptions
                     _payload = null;
                 }
             }
-    
+
             // Should never perform these operations
             this(this) { assert(false); }
             void opAssign(FontOptions.Payload rhs) { assert(false); }
         }
-    
+
         alias RefCounted!(Payload, RefCountedAutoInitialize.no) Data;
         Data _data;
-    
+
     protected:
         final void checkError()
         {
             throwError(cairo_font_options_status(nativePointer));
         }
-    
+
     public:
         /**
          * The underlying $(D cairo_font_options_t*) handle
@@ -4471,7 +4503,7 @@ public struct FontOptions
              * instance. Only available if both cairoD and the cairoD user
              * code were compiled with "debug=RefCounted"
              *
-             * Output is written to stdout, see 
+             * Output is written to stdout, see
              * $(LINK https://github.com/jpf91/cairoD/wiki/Memory-Management#debugging)
              * for more information
              */
@@ -4485,7 +4517,7 @@ public struct FontOptions
             {
                 return _data.RefCounted.debugging;
             }
-            
+
             @property void debugging(bool value)
             {
                 _data.RefCounted.debugging = value;
@@ -4870,7 +4902,7 @@ public class ScaledFont
          * If the provided cluster array is too short for the conversion,
          * a new cluster array is allocated and returned.
          *
-         * In the simplest case, glyphs and clusters can be omitted 
+         * In the simplest case, glyphs and clusters can be omitted
          * or set to an empty array and a suitable array will be allocated.
          * In code
          * -----------------
@@ -5266,7 +5298,7 @@ public struct Version
         }
 
         /**
-         * Returns the (compile time) version of this binding / wrapper. 
+         * Returns the (compile time) version of this binding / wrapper.
          */
         static @property Version bindingVersion()
         {
@@ -5290,3 +5322,369 @@ public struct Version
             return CAIRO_VERSION_STRINGIZE(major, minor, micro);
         }
 }
+
+public struct Region
+{
+    /*---------------------------Reference counting stuff---------------------------*/
+    protected:
+        void _reference()
+        {
+            cairo_region_reference(this.nativePointer);
+        }
+
+        void _dereference()
+        {
+            cairo_region_destroy(this.nativePointer);
+        }
+
+    public:
+        /**
+         * The underlying $(D cairo_t*) handle
+         */
+        cairo_region_t* nativePointer;
+        version(D_Ddoc)
+        {
+             /**
+             * Enable / disable memory management debugging for this Context
+             * instance. Only available if both cairoD and the cairoD user
+             * code were compiled with "debug=RefCounted"
+             *
+             * Output is written to stdout, see 
+             * $(LINK https://github.com/jpf91/cairoD/wiki/Memory-Management#debugging)
+             * for more information
+             */
+             bool debugging = false;
+        }
+        else debug(RefCounted)
+        {
+            bool debugging = false;
+        }
+    
+        /**
+         * Constructor that tracks the reference count appropriately. If $(D
+         * !refCountedIsInitialized), does nothing.
+         */
+        this(this)
+        {
+            if (this.nativePointer is null)
+                return;
+            this._reference();
+            debug(RefCounted)
+                if (this.debugging)
+            {
+                     writeln(typeof(this).stringof,
+                    "@", cast(void*) this.nativePointer, ": bumped refcount.");
+            }
+        }
+    
+        ~this()
+        {
+            this.dispose();
+        }
+
+        /**
+         * Explicitly drecrease the reference count.
+         *
+         * See $(LINK https://github.com/jpf91/cairoD/wiki/Memory-Management#2.1-structs)
+         * for more information.
+         */
+        void dispose()
+        {
+           if (this.nativePointer is null)
+                return;
+
+            debug(RefCounted)
+                if (this.debugging)
+            {
+                     writeln(typeof(this).stringof,
+                    "@", cast(void*)this.nativePointer,
+                    ": decrement refcount");
+            }
+            this._dereference();
+            this.nativePointer = null;
+        }
+        
+        /**
+         * Assignment operator
+         */
+        void opAssign(Region rhs)
+        {
+            this.nativePointer = cairo_region_copy(rhs.nativePointer);
+            debug(RefCounted)
+                this.debugging = rhs.debugging;
+        }
+    /*------------------------End of Reference counting-----------------------*/
+
+    public:
+        this(Region region)
+        {
+            this(cairo_region_copy(region.nativePointer));
+            debug(RefCounted)
+                this.debugging = region.debugging;
+        }
+        
+        /**
+         * Create a $(D Region) from a existing $(D cairo_region_t*).
+         * Context is a garbage collected class. It will call $(D cairo_region_destroy)
+         * when it gets collected by the GC or when $(D dispose()) is called.
+         *
+         * Warning:
+         * $(D ptr)'s reference count is not increased by this function!
+         * Adjust reference count before calling it if necessary
+         *
+         * $(RED Only use this if you know what your doing!
+         * This function should not be needed for standard cairoD usage.)
+         */
+        this(cairo_region_t* ptr)
+        {
+            this.nativePointer = ptr;
+            if(!ptr)
+            {
+                throw new CairoException(cairo_status_t.CAIRO_STATUS_NULL_POINTER);
+            }
+            checkError();
+        }        
+        
+    protected:
+        /**
+         * Method for use in subclasses.
+         * Calls $(D cairo_region_status(nativePointer)) and throws
+         * an exception if the status isn't CAIRO_STATUS_SUCCESS
+         */
+        final void checkError()
+        {
+            throwError(cairo_region_status(nativePointer));
+        }
+
+    public:
+        void newRegion()
+        {
+            this = Region(cairo_region_create());
+        }
+        
+        this(Rectangle!int rect)
+        {
+            this(cairo_region_create_rectangle(cast(cairo_rectangle_int_t*)&rect));
+        }
+
+        this(Rectangle!int[] rects)
+        {
+            this(cairo_region_create_rectangles(cast(cairo_rectangle_int_t*)rects.ptr, rects.length));
+        }
+
+        Rectangle!int getExtents()
+        {
+            Rectangle!int extents;
+            cairo_region_get_extents(this.nativePointer, cast(cairo_rectangle_int_t*)&extents);
+            checkError();
+            return extents;
+        }
+
+        int numRectangles()
+        {
+            return cairo_region_num_rectangles(this.nativePointer);
+        }
+
+        Rectangle!int getRectangle(int index)
+        {
+            Rectangle!int rect;
+            cairo_region_get_rectangle(this.nativePointer, index, cast(cairo_rectangle_int_t*)&rect);
+            checkError();
+            return rect;
+        }
+
+        Rectangle!int[] getRectangles()
+        {
+            immutable count = numRectangles();
+            Rectangle!int[] result;
+            result.length = count;
+            
+            foreach (index; 0 .. count)
+            {
+                result[index] = getRectangle(index);
+            }
+            
+            return result;
+        }
+        
+        @property bool empty()
+        {
+            return cast(bool)cairo_region_is_empty(this.nativePointer);
+        }
+
+        RegionOverlap containsRectangle(Rectangle!int rect)
+        {
+            return cairo_region_contains_rectangle(this.nativePointer, cast(cairo_rectangle_int_t*)&rect);
+        }
+
+        bool containsPoint(PointInt point)
+        {
+            return cast(bool)cairo_region_contains_point(this.nativePointer, point.x, point.y);
+        }
+
+        void translate(int dx, int dy)
+        {
+            cairo_region_translate(this.nativePointer, dx, dy);
+            checkError();
+        }
+
+        const bool opEquals(ref const(Region) other)
+        {
+            return cast(bool)cairo_region_equal(this.nativePointer, other.nativePointer);
+        }        
+        
+        ///subtract
+        Region opBinary(string op)(Region rhs) if(op == "-")
+        {
+            auto result = Region(this);
+            throwError(cairo_region_subtract(result.nativePointer, rhs.nativePointer));
+            return result;
+        }
+        
+        Region opOpAssign(string op)(Region rhs) if(op == "-")
+        {
+            throwError(cairo_region_subtract(this.nativePointer, rhs.nativePointer));
+            return this;
+        }        
+
+        Region opBinary(string op)(Rectangle!int rhs) if(op == "-")
+        {
+            auto result = Region(this);
+            throwError(cairo_region_subtract_rectangle(result.nativePointer, cast(cairo_rectangle_int_t*)&rhs));
+            return result;
+        }
+        
+        Region opOpAssign(string op)(Rectangle!int rhs) if(op == "-")
+        {
+            throwError(cairo_region_subtract_rectangle(this.nativePointer, cast(cairo_rectangle_int_t*)&rhs));
+            return this;
+        }
+        
+        ///intersect
+        Region opBinary(string op)(Region rhs) if(op == "&")
+        {
+            auto result = Region(this);
+            throwError(cairo_region_intersect(result.nativePointer, rhs.nativePointer));
+            return result;
+        }
+
+        Region opOpAssign(string op)(Region rhs) if(op == "&")
+        {
+            throwError(cairo_region_intersect(this.nativePointer, rhs.nativePointer));
+            return this;
+        }        
+        
+        Region opBinary(string op)(Rectangle!int rhs) if(op == "&")
+        {
+            auto result = Region(this);
+            throwError(cairo_region_intersect_rectangle(result.nativePointer, cast(cairo_rectangle_int_t*)&rhs));
+            return result;
+        }
+        
+        Region opOpAssign(string op)(Rectangle!int rhs) if(op == "&")
+        {
+            throwError(cairo_region_intersect_rectangle(this.nativePointer, cast(cairo_rectangle_int_t*)&rhs));
+            return this;
+        }
+        
+        ///union
+        Region opBinary(string op)(Region rhs) if(op == "|")
+        {
+            auto result = Region(this);
+            throwError(cairo_region_union(result.nativePointer, rhs.nativePointer));
+            return result;
+        }
+
+        Region opOpAssign(string op)(Region rhs) if(op == "|")
+        {
+            throwError(cairo_region_union(this.nativePointer, rhs.nativePointer));
+            return this;
+        }        
+        
+        Region opBinary(string op)(Rectangle!int rhs) if(op == "|")
+        {
+            auto result = Region(this);
+            throwError(cairo_region_union_rectangle(result.nativePointer, cast(cairo_rectangle_int_t*)&rhs));
+            return result;
+        }
+
+        Region opOpAssign(string op)(Rectangle!int rhs) if(op == "|")
+        {
+            throwError(cairo_region_union_rectangle(this.nativePointer, cast(cairo_rectangle_int_t*)&rhs));
+            return this;
+        }        
+        
+        ///xor
+        Region opBinary(string op)(Region rhs) if(op == "^")
+        {
+            auto result = Region(this);
+            throwError(cairo_region_xor(result.nativePointer, rhs.nativePointer));
+            return result;
+        }
+
+        Region opOpAssign(string op)(Region rhs) if(op == "^")
+        {
+            throwError(cairo_region_xor(this.nativePointer, rhs.nativePointer));
+            return this;
+        }        
+        
+        Region opBinary(string op)(Rectangle!int rhs) if(op == "^")
+        {
+            auto result = Region(this);
+            throwError(cairo_region_xor_rectangle(result.nativePointer, cast(cairo_rectangle_int_t*)&rhs));
+            return result;
+        }
+        
+        Region opOpAssign(string op)(Rectangle!int rhs) if(op == "^")
+        {
+            throwError(cairo_region_xor_rectangle(this.nativePointer, cast(cairo_rectangle_int_t*)&rhs));
+            return this;
+        }        
+}
+
+unittest
+{
+    auto rect1 = Rectangle!int(0, 0, 100, 100);
+    auto region = Region(rect1);
+    
+    assert(region.numRectangles == 1);
+    assert(!region.empty);
+    
+    assert(region.containsPoint(PointInt(50, 0)));
+    assert(!region.containsPoint(PointInt(100, 0)));  // 100 is over the range of 0 .. 100 (99 is max)
+    
+    region.translate(10, 0);
+    assert(region.containsPoint(PointInt(100, 0)));   // range is now 10 .. 110
+    assert(!region.containsPoint(PointInt(0, 0)));    // 0 is below the minimum of 10
+    
+    region = region ^ region;  // xor, 1 ^ 1 == 0 :)
+    assert(region.empty);
+    
+    auto rect2 = Rectangle!int(99, 0, 100, 100);
+    region = Region([rect1, rect2]);
+    assert(region.numRectangles == 1);  // note: cairo merges the two rectangles as they
+                                        // form a closed rectangle path.
+
+    rect2.point.x = 120;
+    region = Region([rect1, rect2]);
+    assert(region.numRectangles == 2);  // now they can't be merged
+    
+    region = Region(rect1);
+    region = region | rect2;
+    assert(region.numRectangles == 2);  // same thing when using a union
+    
+    rect2.point.x += 10;
+    region = region - rect2;
+    assert(region.numRectangles == 2);  // still two rectangles due to extra edge
+    
+    rect2.point.x -= 10;
+    region = region - rect2;
+    assert(region.numRectangles == 1);  // and now the second rectangle is completely gone
+    
+    region -= rect1;
+    assert(region.empty);             // first rectangle also gone, region is empty
+
+    auto region1 = Region(rect1);
+    auto region2 = Region(rect1);
+    assert(region1 == region2);
+}    

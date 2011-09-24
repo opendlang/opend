@@ -1,5 +1,6 @@
 #Ignore built library
 libcairod.a
+libcairod.lib
 
 #Ignore object files
 *.o
