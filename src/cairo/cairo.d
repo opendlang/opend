@@ -5785,23 +5785,23 @@ unittest
     auto region = Region(rect1);
     region += rect2;
     
-    assert(region.clips.length == 2);
-    assert(region.clips[].length == 2);
-    assert(array(region.clips) == [rect1, rect2]);
+    assert(region.rectangles.length == 2);
+    assert(region.rectangles[].length == 2);
+    assert(array(region.rectangles) == [rect1, rect2]);
     
-    assert(region.clips[1..2].length == 1);
-    assert(region.clips[1..2][0] == rect2);
+    assert(region.rectangles[1..2].length == 1);
+    assert(region.rectangles[1..2][0] == rect2);
     
-    assert(region.clips[0] == rect1);
-    assert(region.clips[1] == rect2);
+    assert(region.rectangles[0] == rect1);
+    assert(region.rectangles[1] == rect2);
     
     foreach (i, clip; [rect1, rect2])
     {
-        assert(region.clips[i] == clip);
+        assert(region.rectangles[i] == clip);
     }
     
     /* @BUG@ Access Violation */
-    foreach (regRect, oldRect; lockstep(region.clips, [rect1, rect2]))
+    foreach (regRect, oldRect; lockstep(region.rectangles, [rect1, rect2]))
     {
         //~ assert(regRect == oldRect);
     }
