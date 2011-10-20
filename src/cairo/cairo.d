@@ -5689,6 +5689,125 @@ public struct Version
         }
 }
 
+
+/**
+ * RandomAccessRange to iterate or index into Clips of a Cairo Region.
+ * This range keeps a reference to its $(D Region) object,
+ * so it can be passed around without thinking about memory management.
+ */
+import std.exception : enforce;
+
+public struct ClipRange
+{
+    private Region _outer;
+    private size_t _a, _b;
+
+    this(Region data)
+    {
+        _outer = data;
+        _b = _outer.numRectangles();
+    }
+    
+    this(Region data, size_t a, size_t b)
+    {
+        _outer = data;
+        _a = a;
+        _b = b;
+    }
+
+    @property bool empty() // const
+    {
+        assert(_outer.numRectangles() >= _b);
+        return _a >= _b;
+    }
+
+    @property typeof(this) save()
+    {
+        return this;
+    }
+
+    @property Rectangle!int front()
+    {
+        enforce(!empty);
+        return _outer.getRectangle(_a);
+    }
+
+    @property Rectangle!int back()
+    {
+        enforce(!empty);
+        return _outer.getRectangle(_b - 1);
+    }
+
+    void popFront()
+    {
+        enforce(!empty);
+        ++_a;
+    }
+
+    void popBack()
+    {
+        enforce(!empty);
+        --_b;
+    }
+
+    Rectangle!int opIndex(size_t i)
+    {
+        i += _a;
+        enforce(i < _b && _b <= _outer.numRectangles);
+        return _outer.getRectangle(i);
+    }
+
+    typeof(this) opSlice()
+    {
+        return this;
+    }    
+    
+    typeof(this) opSlice(size_t a, size_t b)
+    {
+        return typeof(this)(_outer, a + _a, b + _a);
+    }
+
+    @property size_t length() const {
+        return _b - _a;
+    }
+}
+
+unittest
+{
+    static assert(isRandomAccessRange!ClipRange);
+}
+
+unittest
+{
+    auto rect1 = Rectangle!int(0, 0, 100, 100);
+    auto rect2 = Rectangle!int(200, 200, 100, 100);
+    
+    auto region = Region(rect1);
+    region += rect2;
+    
+    assert(region.clips.length == 2);
+    assert(region.clips[].length == 2);
+    assert(array(region.clips) == [rect1, rect2]);
+    
+    assert(region.clips[1..2].length == 1);
+    assert(region.clips[1..2][0] == rect2);
+    
+    assert(region.clips[0] == rect1);
+    assert(region.clips[1] == rect2);
+    
+    foreach (i, clip; [rect1, rect2])
+    {
+        assert(region.clips[i] == clip);
+    }
+    
+    /* @BUG@ Access Violation */
+    foreach (regRect, oldRect; lockstep(region.clips, [rect1, rect2]))
+    {
+        //~ assert(regRect == oldRect);
+    }
+}
+
+
 public struct Region
 {
     /*---------------------------Reference counting stuff---------------------------*/
@@ -5862,19 +5981,10 @@ public struct Region
             return rect;
         }
         
-        Rectangle!int[] getRectangles()
+        @property auto getRectangles()
         {
-            immutable count = numRectangles();
-            Rectangle!int[] result;
-            result.length = count;
-            
-            foreach (index; 0 .. count)
-            {
-                result[index] = getRectangle(index);
-            }
-            
-            return result;
-        }
+            return ClipRange(this);
+        }        
         
         ///convenience alias
         alias getRectangles rectangles;
