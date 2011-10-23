@@ -958,11 +958,12 @@ struct AVLNodeBitwise(T) {
 }
 
 private template GetAligned(uint size) {
-    static if(size % alignBytes == 0) {
+    static if(size % RegionAllocator.alignBytes(size) == 0) {
         enum GetAligned = 0;
     } else {
         enum GetAligned =
-            size - size % alignBytes + alignBytes;
+            size - size % RegionAllocator.alignBytes(size) + 
+                RegionAllocator.alignBytes(size);
     }
 }
 
@@ -1145,7 +1146,6 @@ private:
 
     Node* newNode(T payload)
     in {
-        assert(alloc.initialized, "Uninitialized StackTree!(" ~ T.stringof ~ ")");
         assert(freeList, "Uninitialized StackTree!(" ~ T.stringof ~ ")");
     } body {
         Node* ret;
@@ -1683,6 +1683,8 @@ version(scid) {
 } else {
     version = noscid;
 }
+
+version(noscid):
 
 import std.traits, core.memory, std.range, core.exception, std.conv,
     std.algorithm, std.typetuple, std.exception, std.typecons;
