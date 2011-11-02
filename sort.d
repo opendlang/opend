@@ -5,31 +5,31 @@ and sorts the rest in lockstep.  For merge and insertion sort, if the last
 argument is a ulong*, increments the dereference of this ulong* by the bubble
 sort distance between the first argument and the sorted version of the first
 argument.  This is useful for some statistical calculations.
- 
+
 All sorting functions have the precondition that all parallel input arrays
 must have the same length.
- 
+
 Notes:
- 
+
 Comparison functions must be written such that compFun(x, x) == false.
 For example, "a < b" is good, "a <= b" is not.
- 
+
 These functions are heavily optimized for sorting arrays of
 ints and floats (by far the most common case when doing statistical
 calculations).  In these cases, they can be several times faster than the
 equivalent functions in std.algorithm.  Since sorting is extremely important
 for non-parametric statistics, this results in important real-world
 performance gains.  However, it comes at a price in terms of generality:
- 
+
 1.  They assume that what they are sorting is cheap to copy via normal
     assignment.
-    
+
 2.  They don't work at all with general ranges, only arrays and maybe
     ranges very similar to arrays.
-    
+
 3.  All tuning and micro-optimization is done with ints and floats, not
     classes, large structs, strings, etc.
- 
+
 Examples:
 ---
 auto foo = [3, 1, 2, 4, 5].dup;
@@ -802,7 +802,7 @@ unittest {
     }
 
     static size_t smallestGr(T)(T[] data, T value) {
-        return data.length - 
+        return data.length -
             assumeSorted!(comp)(data).upperBound(value).length;
     }
 
@@ -810,7 +810,7 @@ unittest {
     if (data[0].length < 2 || middle == 0 || middle == data[0].length) {
         return;
     }
-    
+
     if (data[0].length == 2) {
         if(comp(data[0][1], data[0][0])) {
             foreach(array; data) {
@@ -1081,8 +1081,8 @@ unittest {
  * in the input array in O(N) time.  Allocates memory, does not modify input
  * array.*/
 T quickSelect(alias compFun = "a < b", T)(T[] data, sizediff_t k) {
-    auto dataDup = data.tempdup;
-    scope(exit) TempAlloc.free;
+    auto alloc = newRegionAllocator();
+    auto dataDup = alloc.array(data);
     return partitionK!(compFun)(dataDup, k);
 }
 
