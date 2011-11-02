@@ -2618,8 +2618,9 @@ unittest {
     }
     
     auto result2 = chiSquareContingency(contingency);
-    assert(result.testStat == result2.testStat);
-    assert(result.p == result2.p);
+    assert(approxEqual(result.testStat, result2.testStat),
+        text(result.testStat, ' ', result2.testStat));
+    assert(approxEqual(result.p, result2.p));
 }
 
 /**
