@@ -107,7 +107,10 @@ if(doubleInput!(T) && doubleInput!(U)) {
             corCalc._cov = _cov[0];
 
             foreach(j; 1..nILP) {
-                corCalc.put( PearsonCor(_k, _mean1[j], _mean2[j], _var1[j], _var2[j], _cov[j]));
+                corCalc.put( 
+                    PearsonCor(_k, _mean1[j], _mean2[j], 
+                        _var1[j], _var2[j], _cov[j])
+                );
             }
         }
 
@@ -427,22 +430,67 @@ version(unittest) {
     private enum kendallSmallN = 15;
 }
 
-/**Kendall's Tau-b, O(N log N) version.  This can be defined in terms of the
- * bubble sort distance, or the number of swaps that would be needed in a
- * bubble sort to sort input2 into the same order as input1.  It is
- * a robust, non-parametric correlation metric.
- *
- * Since a copy of the inputs is made anyhow because they need to be sorted,
- * this function can work with any input range.  However, the ranges must
- * have the same length.
- *
- * References:
- * A Computer Method for Calculating Kendall's Tau with Ungrouped Data,
- * William R. Knight, Journal of the American Statistical Association, Vol.
- * 61, No. 314, Part 1 (Jun., 1966), pp. 436-439
- *
- * The Variance of Tau When Both Rankings Contain Ties.  M.G. Kendall.
- * Biometrika, Vol 34, No. 3/4 (Dec., 1947), pp. 297-298
+private template isDefaultSorted(R) {
+    static if(!is(typeof(R.init.release()))) {
+        enum isDefaultSorted = false;
+    } else {
+        enum isDefaultSorted = 
+            is(R == SortedRange!(typeof(R.init.release()), "a < b"));
+    }
+}
+
+unittest {
+    import std.algorithm;
+    auto foo = sort([1, 2, 3]);
+    auto bar = sort!"a > b"([1, 2, 3]);
+    static assert(isDefaultSorted!(typeof(foo)));
+    static assert(!isDefaultSorted!(typeof(bar)));
+    static assert(!isDefaultSorted!(typeof([1, 2, 3])));
+}
+
+/**
+Kendall's Tau-b, O(N log N) version.  This is a non-parametric measure
+of monotonic association and can be defined in terms of the
+bubble sort distance, or the number of swaps that would be needed in a
+bubble sort to sort input2 into the same order as input1. 
+
+Since a copy of the inputs is made anyhow because they need to be sorted,
+this function can work with any input range.  However, the ranges must
+have the same length.
+
+Note:
+
+As an optimization, when a range is a SortedRange with predicate "a < b",
+it is assumed already sorted and not sorted a second time by this function.
+This is useful when applying this function multiple times with one of the
+arguments the same every time:
+
+---
+auto lhs = randArray!rNorm(1_000, 0, 1);
+auto indices = new size_t[1_000];
+makeIndex(lhs, indices);
+
+foreach(i; 0..1_000) {
+    auto rhs = randArray!rNorm(1_000, 0, 1);
+    auto lhsSorted = assumeSorted(
+        indexed(lhs, indices)
+    );
+    
+    // Rearrange rhs according to the sorting permutation of lhs.
+    // kendallCor(lhsSorted, rhsRearranged) will be much faster than
+    // kendallCor(lhs, rhs).
+    auto rhsRearranged = indexed(rhs, indices);
+    assert(kendallCor(lhsSorted, rhsRearranged) == kendallCor(lhs, rhs));
+}
+---
+
+References:
+A Computer Method for Calculating Kendall's Tau with Ungrouped Data,
+William R. Knight, Journal of the American Statistical Association, Vol.
+61, No. 314, Part 1 (Jun., 1966), pp. 436-439
+
+The Variance of Tau When Both Rankings Contain Ties.  M.G. Kendall.
+Biometrika, Vol 34, No. 3/4 (Dec., 1947), pp. 297-298
  */
 double kendallCor(T, U)(T input1, U input2)
 if(isInputRange!(T) && isInputRange!(U)) {
@@ -455,24 +503,39 @@ if(isInputRange!(T) && isInputRange!(U)) {
     }
     
     auto alloc = newRegionAllocator();
-    auto i1d = alloc.array(input1);
-    auto i2d = alloc.array(input2);
+    
+    auto prepare(V)(V range) {
+        static if(isDefaultSorted!V) {
+            return range;
+        } else {
+            return prepareForSorting!compFun(alloc.array(range));
+        }
+    }
+    
+    try {
+        auto i1d = prepare(input1);
+        auto i2d = prepare(input2);
 
-    dstatsEnforce(i1d.length == i2d.length,
-        "Ranges must be same length for Kendall correlation.");
+        dstatsEnforce(i1d.length == i2d.length,
+            "Ranges must be same length for Kendall correlation.");
 
-    if(i1d.length <= kendallSmallN) {
-        return kendallCorSmallN(i1d, i2d);
-    } else {
-        return kendallCorDestructive(i1d, i2d);
+        if(i1d.length <= kendallSmallN) {
+            return kendallCorSmallN(i1d, i2d);
+        } else {
+            return kendallCorDestructive(i1d, i2d);
+        }
+    } catch(SortException) {
+        return double.nan;
     }
 }
 
-/**Kendall's Tau-b O(N log N), overwrites input arrays with undefined data but
- * uses only O(log N) stack space for sorting, not O(N) space to duplicate
- * input.  Only works on arrays.
+/**
+Kendall's Tau-b O(N log N), overwrites input arrays with undefined data but
+uses only O(log N) stack space for sorting, not O(N) space to duplicate
+input.  R1 and R2 must be either SortedRange structs with the default predicate
+or arrays.
  */
-double kendallCorDestructive(T, U)(T[] input1, U[] input2) {
+double kendallCorDestructive(R1, R2)(R1 input1, R2 input2) {
     dstatsEnforce(input1.length == input2.length,
         "Ranges must be same length for Kendall correlation.");
     try {
@@ -485,10 +548,26 @@ double kendallCorDestructive(T, U)(T[] input1, U[] input2) {
 //bool compFun(T)(T lhs, T rhs) { return lhs < rhs; }
 private enum compFun = "a < b";
 
-// Guarantee that T.sizeof >= U.sizeof so we know we can recycle space.
-auto kendallCorDestructiveLowLevel(T, U)(T[] input1, U[] input2, bool needTies)
-if(T.sizeof < U.sizeof) {
-    return kendallCorDestructiveLowLevel(input2, input1, needTies);
+// Make sure arguments are in the right order, etc. to simplify implementation
+// an dallow buffer recycling.
+auto kendallCorDestructiveLowLevel(R1, R2)
+(R1 input1, R2 input2, bool needTies) {
+    static if(isDefaultSorted!R1) {
+        return kendallCorDestructiveLowLevelImpl(input1, input2, needTies);
+    } else static if(isDefaultSorted!R2) {
+        return kendallCorDestructiveLowLevelImpl(input2, input1, needTies);
+    } else {
+        static assert(isArray!R1);
+        static assert(isArray!R2);
+        alias typeof(R1.init[0]) T;
+        alias typeof(R2.init[0]) U;
+        
+        static if(T.sizeof > U.sizeof) {
+            return kendallCorDestructiveLowLevelImpl(input1, input2, needTies);
+        } else {
+            return kendallCorDestructiveLowLevelImpl(input2, input1, needTies);
+        }
+    }
 }
 
 struct KendallLowLevel {
@@ -506,14 +585,12 @@ struct KendallLowLevel {
     ulong tieCorrectU3;  // sum{u(u - 1)}
 }
 
-// Used internally in dstats.tests.kendallCorTest.
-KendallLowLevel kendallCorDestructiveLowLevel
-(T, U)(T[] input1, U[] input2, bool needTies)
-if(T.sizeof >= U.sizeof)
+package KendallLowLevel kendallCorDestructiveLowLevelImpl
+(R1, R2)(R1 input1, R2 input2, bool needTies)
 in {
     assert(input1.length == input2.length);
 } body {
-    static ulong getMs(V)(const V[] data) {  //Assumes data is sorted.
+    static ulong getMs(V)(V data) {  //Assumes data is sorted.
         ulong Ms = 0, tieCount = 0;
         foreach(i; 1..data.length) {
             if(data[i] == data[i - 1]) {
@@ -530,7 +607,7 @@ in {
     }
 
     void computeTies(V)
-    (V[] arr, ref ulong tie1, ref ulong tie2, ref ulong tie3) {
+    (V arr, ref ulong tie1, ref ulong tie2, ref ulong tie3) {
         if(!needTies) {
             return;  // If only computing correlation, this is a waste of time.
         }
@@ -561,32 +638,48 @@ in {
     KendallLowLevel ret;
     ret.s = to!long(nPair);
 
-    qsort!(compFun)(input1, input2);
+    static if(!isDefaultSorted!R1) {
+        qsort!(compFun)(input1, input2);
+    }
 
     uint tieCount = 0;
     foreach(i; 1..input1.length) {
         if(input1[i] == input1[i - 1]) {
             tieCount++;
         } else if(tieCount > 0) {
-            qsort!(compFun)(input2[i - tieCount - 1..i]);
+            static if(!isDefaultSorted!R2) {
+                qsort!(compFun)(input2[i - tieCount - 1..i]);
+            }
             m1 += tieCount * (tieCount + 1UL) / 2UL;
             ret.s += getMs(input2[i - tieCount - 1..i]);
             tieCount = 0;
         }
     }
     if(tieCount > 0) {
-        qsort!(compFun)(input2[input1.length - tieCount - 1..input1.length]);
+        static if(!isDefaultSorted!R2) {
+            qsort!(compFun)(input2[input1.length - tieCount - 1..input1.length]);
+        }
         m1 += tieCount * (tieCount + 1UL) / 2UL;
         ret.s += getMs(input2[input1.length - tieCount - 1..input1.length]);
     }
 
     computeTies(input1, ret.tieCorrectT1, ret.tieCorrectT2, ret.tieCorrectT3);
-
-    // We've already guaranteed that T.sizeof >= U.sizeof and we own these
-    // arrays and will never use input1 again, so this is safe.
-    ulong swapCount = 0;
-    U[] input1Temp = (cast(U*) input1.ptr)[0..input2.length];
-    mergeSortTemp!(compFun)(input2, input1Temp, &swapCount);
+    
+    static if(isArray!R2) {
+        ulong swapCount = 0;
+        static if(isArray!R1) {
+            // We've already guaranteed that input1 is the bigger array by 
+            // bytes and we own these arrays and won't use input1 again, so 
+            // this is safe.
+            alias typeof(input2[0]) U;
+            U[] input1Temp = (cast(U*) input1.ptr)[0..input2.length];
+            mergeSortTemp!(compFun)(input2, input1Temp, &swapCount);
+        } else {
+            mergeSort!(compFun)(input2, &swapCount);
+        }
+    } else {
+        enum ulong swapCount = 0;  // If they're both sorted then tau == 1.
+    }
 
     immutable m2 = getMs(input2);
     computeTies(input2, ret.tieCorrectU1, ret.tieCorrectU2, ret.tieCorrectU3);
@@ -605,7 +698,7 @@ in {
  * this algorithm is still faster for very small N.  (Besides, I can't
  * delete it anyhow because I need it for testing.)
  */
-private double kendallCorSmallN(T, U)(const T[] input1, const U[] input2)
+private double kendallCorSmallN(R1, R2)(R1 input1, R2 input2)
 in {
     assert(input1.length == input2.length);
 
@@ -720,6 +813,35 @@ unittest {
     // handling.
     auto rng = chain(replicate(0, 100_000), replicate(1, 100_000));
     assert(approxEqual(kendallCor(rng, rng), 1));
+    
+    // Test the case where we have one range sorted already.
+    assert(kendallCor(iota(5), [3, 1, 2, 5, 4]) ==
+        kendallCor(assumeSorted(iota(5)), [3, 1, 2, 5, 4])
+    );
+    
+    assert(kendallCor(iota(5), [3, 1, 2, 5, 4]) ==
+        kendallCor([3, 1, 2, 5, 4], assumeSorted(iota(5)))
+    );
+    
+    assert(kendallCor(assumeSorted(iota(5)), assumeSorted(iota(5))) == 1);
+    
+    auto lhs = randArray!rNorm(1_000, 0, 1);
+    auto indices = new size_t[1_000];
+    import std.algorithm;
+    makeIndex(lhs, indices);
+
+    foreach(i; 0..1_000) {
+        auto rhs = randArray!rNorm(1_000, 0, 1);
+        auto lhsSorted = assumeSorted(
+            indexed(lhs, indices)
+        );
+        
+        // Rearrange rhs according to the sorting permutation of lhs.
+        // kendallCor(lhsSorted, rhsRearranged) will be much faster than
+        // kendallCor(lhs, rhs).
+        auto rhsRearranged = indexed(rhs, indices);
+        assert(kendallCor(lhsSorted, rhsRearranged) == kendallCor(lhs, rhs));
+    }
 }
 
 // Alias to old correlation function names, but don't document them.  These will

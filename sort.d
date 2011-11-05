@@ -162,13 +162,13 @@ unittest {
     }
 }
 
-/*private*/ T prepareForSorting(alias comp, T)(T arr)
+T prepareForSorting(alias comp, T)(T arr)
 if(!isFloatingPoint!(ElementType!T)) {
     return arr;
 }
 
 /* Check for NaNs and throw an exception if they're present.*/
- real[] prepareForSorting(alias comp, F)(F arr)
+real[] prepareForSorting(alias comp, F)(F arr)
 if(is(F == real[])) {
     foreach(elem; arr) {
         if(isNaN(elem)) {
@@ -183,7 +183,7 @@ if(is(F == real[])) {
  * compared as an integer.  This results in approximately a 40% speedup
  * compared to just sorting as floats.
  */
- auto prepareForSorting(alias comp, F)(F arr)
+auto prepareForSorting(alias comp, F)(F arr)
 if(is(F == double[]) || is(F == float[])) {
     static if(is(F == double[])) {
         alias long Int;
