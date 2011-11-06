@@ -1024,7 +1024,7 @@ correlations of one vector to several others.
 Note:  These functions are only available when SciD is installed and
        dstats is compiled with version=scid.
 
-Paramters:
+Params:
 
 mat = A range of ranges to be treated as a set of vectors.  This must be
       a finite range, and must be rectangular, i.e. all elements must be
