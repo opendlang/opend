@@ -126,7 +126,7 @@ private void rangeMatrixMulTrans(U, T...)(
     }
 
     xTy[] = 0;
-    xTx = doubleMatrix(mat.length, mat.length);
+    xTx = doubleMatrix(mat.length, mat.length, alloc);
     foreach(i; 0..mat.length) foreach(j; 0..mat.length) {
         xTx[i, j] = 0;
     }
@@ -171,7 +171,7 @@ private void rangeMatrixMulTrans(U, T...)(
 
     // mat now consists of covariance * n.    Divide by n and add mean1 * mean2
     // to get sum of products.
-    foreach(i; 0..xTx.length) foreach(j; 0..i + 1) {
+    foreach(i; 0..xTx.rows) foreach(j; 0..i + 1) {
         xTx[i, j] /= n;
         xTx[i, j] += means[i] * means[j];
     }
@@ -185,8 +185,8 @@ private void rangeMatrixMulTrans(U, T...)(
 }
 
 // Copies values from lower triangle to upper triangle.
-private void symmetrize(ref DoubleMatrix mat) pure nothrow {
-    foreach(i; 1..mat.length) {
+private void symmetrize(ref DoubleMatrix mat) {
+    foreach(i; 1..mat.rows) {
         foreach(j; 0..i) {
             mat[j, i] = mat[i, j];
         }
@@ -504,7 +504,7 @@ if(doubleInput!(U)) {
             foreach(i, range; X) {
                 // The whole matrix is scaled by N, as well as the xTy vector,
                 // so scale the ridge param similarly.
-                xTx[i][i] += ridgeParam * range.mse / range.N;
+                xTx[i, i] += ridgeParam * range.mse / range.N;
             }
         }
     }
@@ -587,18 +587,9 @@ RegressRes linearRegress(U, TC...)(U Y, TC input) {
             "tuples of forward ranges or ranges of forward ranges.");
     }
 
-    auto xTx = doubleMatrix(X.length, X.length);
-    auto xTxNeg1 = doubleMatrix(X.length, X.length);
-
-    foreach(i; 0..X.length) {
-        xTx[i] = alloc.uninitializedArray!(double[])(X.length);
-    }
-
+    auto xTx = doubleMatrix(X.length, X.length, alloc);
+    auto xTxNeg1 = doubleMatrix(X.length, X.length, alloc);
     double[] xTy = alloc.uninitializedArray!(double[])(X.length);
-
-    foreach(i; 0..X.length) {
-        xTxNeg1[i] = alloc.uninitializedArray!(double[])(X.length);
-    }
 
     static if(arrayX) {
         auto xSaved = alloc.array(X);
@@ -643,7 +634,7 @@ RegressRes linearRegress(U, TC...)(U Y, TC input) {
 
     double[] stdErr = new double[betas.length];
     foreach(i, ref elem; stdErr) {
-        elem = sqrt( S * xTxNeg1[i][i] / df / n);
+        elem = sqrt( S * xTxNeg1[i, i] / df / n);
     }
 
     double[] lowerBound, upperBound;
@@ -1170,21 +1161,20 @@ double[][] makeC(double[][] x, RegionAllocator alloc) {
     return c;
 }
 
-private double[][] doCTWC(double[][] c, double[] w, RegionAllocator alloc) {
-    auto ret = alloc.uninitializedArray!(double[][])(c.length);
-    foreach(i, ref elem; ret) elem = alloc.uninitializedArray!(double[])(c.length);
+private DoubleMatrix doCTWC(double[][] c, double[] w, RegionAllocator alloc) {
+    auto ret = doubleMatrix(c.length, c.length, alloc);
 
     double getElem(size_t i, size_t j) {
         return (i >= j) ? c[i][j] : c[j][i];
     }
 
     foreach(i; 0..c.length) foreach(j; 0..i + 1) {
-        ret[i][j] = 0;
+        ret[i, j] = 0;
 
         foreach(k; 0..c.length) {
             auto toAdd = getElem(i, k) * getElem(j, k);
             if(w.length) toAdd *= w[k];
-            ret[i][j] += toAdd;
+            ret[i, j] += toAdd;
         }
     }
 
@@ -1209,8 +1199,8 @@ private void ridgeLargeP
         auto cwc = doCTWC(c, w, alloc);
 
         foreach(i, row; c) foreach(j, elem; row) {
-            cwc[j][i] += lambda * elem;
-            if(i != j) cwc[i][j] += lambda * elem;
+            cwc[j, i] += lambda * elem;
+            if(i != j) cwc[i, j] += lambda * elem;
         }
 
         // Multiply c' * y.  c is symmetric, so it doesn't matter that I'm really
@@ -1227,12 +1217,25 @@ private void ridgeLargeP
             }
         }
 
-        solve(cwc, cTy);
+        version(scid) {
+            auto csi = alloc.uninitializedArray!(double[])(cTy.length);
+            auto csiVec = ExternalVectorView!double(csi);
+            
+            try {
+                csiVec[] = inv(cwc) * externalVectorView(cTy);
+            } catch(Exception) {
+                csi[] = double.nan;
+            }
+            
+        } else {
+            solve(cwc, cTy);
+            alias cTy csi;
+        }
 
         // Multiply X' * csi to get answer.
         betas[] = 0;
         foreach(i, col; x) {
-            betas[i] = dotProduct(cTy, col);
+            betas[i] = dotProduct(csi, col);
         }
     }
 
@@ -1252,14 +1255,13 @@ private void ridgeFallback
     auto alloc = newRegionAllocator();
 
     // Compute xTx or xT * w * x depending on whether w is null.
-    auto xTx = alloc.uninitializedArray!(double[][])(x.length);
-    foreach(ref row; xTx) row = alloc.uninitializedArray!(double[])(x.length);
+    auto xTx = doubleMatrix(x.length, x.length, alloc);
 
     foreach(i, xi; x) foreach(j, xj; x[0..i + 1]) {
-        xTx[i][j] = 0;
+        xTx[i, j] = 0;
         foreach(k; 0..xi.length) {
             immutable weight = (w.length) ? w[k] : 1.0;
-            xTx[i][j] += xi[k] * weight * xj[k];
+            xTx[i, j] += xi[k] * weight * xj[k];
         }
     }
 
@@ -1279,8 +1281,8 @@ private void ridgeFallback
     }
 
     // Add in the penalty.
-    foreach(i; 0..xTx.length) {
-        xTx[i][i] += lambda;
+    foreach(i; 0..xTx.rows) {
+        xTx[i, i] += lambda;
     }
 
     choleskySolve(xTx, xTy, betas);
@@ -2105,18 +2107,16 @@ double doMLENewton(T, U...)
 
     // matSaved saves mat for inverting to find std. errors, only if we
     // care about std. errors.
-    auto mat = alloc.uninitializedArray!(double[][])(beta.length);
-    foreach(ref row; mat) row = alloc.uninitializedArray!(double[])(beta.length);
-    double[][] matSaved;
+    auto mat = doubleMatrix(beta.length, beta.length, alloc);
+    DoubleMatrix matSaved;
 
     if(stdError.length) {
-        matSaved = alloc.uninitializedArray!(double[][])(beta.length);
-        foreach(ref row; matSaved) row = alloc.uninitializedArray!(double[])(beta.length);
+        matSaved = doubleMatrix(beta.length, beta.length, alloc);
     }
 
     void saveMat() {
-        foreach(i, row; mat) {
-            matSaved[i][] = row[];
+        foreach(i; 0..mat.rows) foreach(j; 0..mat.columns) {
+            matSaved[i, j] = mat[i, j];
         }
     }
 
@@ -2128,7 +2128,7 @@ double doMLENewton(T, U...)
             invert(matSaved, mat);
 
             foreach(i; 0..beta.length) {
-                stdError[i] = sqrt(mat[i][i]);
+                stdError[i] = sqrt(mat[i, i]);
             }
         }
     }
@@ -2151,8 +2151,8 @@ double doMLENewton(T, U...)
         oldLikelihood = lh;
         oldPenalty = penalty;
 
-        foreach(i; 0..mat.length) {
-            mat[i][] = 0;
+        foreach(i; 0..mat.rows) foreach(j; 0..mat.columns) {
+            mat[i, j] = 0;
         }
 
         // Calculate X' * V * X in the notation of our reference.  Since
@@ -2161,7 +2161,7 @@ double doMLENewton(T, U...)
         // symmetrize the matrix.
         foreach(i, xi; x) foreach(j, xj; x[0..i + 1]) {
             foreach(k; 0..ps.length) {
-                mat[i][j] += (ps[k] * (1 - ps[k])) * xi[k] * xj[k];
+                mat[i, j] += (ps[k] * (1 - ps[k])) * xi[k] * xj[k];
             }
         }
 
@@ -2184,7 +2184,7 @@ double doMLENewton(T, U...)
         // Add ridge penalties, if any.
         if(ridge > 0) {
             foreach(diagIndex, mse; mses) {
-                mat[diagIndex][diagIndex] += 2 * ridge * mse;
+                mat[diagIndex, diagIndex] += 2 * ridge * mse;
                 firstDerivTerms[diagIndex] -= beta[diagIndex] * 2 * ridge * mse;
             }
         }
@@ -2344,6 +2344,8 @@ auto toRandomAccessTuple(T...)(T input, RegionAllocator alloc) {
 // such as Cholesky decomposition.  Otherwise, some old, crappy routines
 // that were around since before SciD are used.  
 version(scid) {
+    import scid.matvec, scid.linalg, scid.exception;
+    
     alias ExternalMatrixView!double DoubleMatrix;
     
     DoubleMatrix doubleMatrix(
@@ -2358,13 +2360,13 @@ version(scid) {
         choleskyDestructive(a);
         auto ans = externalVectorView(x);
         auto vec = externalVectorView(b);
-        choleskySolve(a, vec, ans);
+        scid.linalg.choleskySolve(a, vec, ans);
     }
     
     void invert(DoubleMatrix from, DoubleMatrix to) {
         try {
             to[] = inv(from);
-        } catch(NumericsException) {
+        } catch(Exception) {
             foreach(i; 0..to.rows) foreach(j; 0..to.columns) {
                 to[i, j] = double.nan;
             }
@@ -2376,7 +2378,7 @@ version(scid) {
     
     struct DoubleMatrix {
         double[][] arrayOfArrays;
-        alias arrayOfArrays this;
+        //alias arrayOfArraysFun this;
         
         const pure nothrow @property {
             size_t rows() {
@@ -2403,6 +2405,10 @@ version(scid) {
             alloc.uninitializedArray!(double[][])(nRows, nColumns)
         );
     }    
+    
+    private void invert(DoubleMatrix from, DoubleMatrix to) {
+        invert(from.arrayOfArrays, to.arrayOfArrays);
+    }
     
     // Uses Gauss-Jordan elim. w/ row pivoting to invert from.  Stores the results
     // in to and leaves from in an undefined state.
@@ -2453,6 +2459,10 @@ version(scid) {
         assert(approxEqual(toMat[0], [-0.625, -0.25, 0.375]));
         assert(approxEqual(toMat[1], [-0.25, 0.5, -0.25]));
         assert(approxEqual(toMat[2], [0.708333, -0.25, 0.041667]));
+    }
+
+    private void solve(DoubleMatrix mat, double[] vec) {
+        solve(mat.arrayOfArrays, vec);
     }
 
     // Solve a system of linear equations mat * b = vec for b.  The result is
@@ -2575,7 +2585,7 @@ version(scid) {
     private void choleskySolve(DoubleMatrix a, double[] b, double[] x) {
         auto alloc = newRegionAllocator();
         auto diag = alloc.uninitializedArray!(double[])(x.length);
-        choleskyDecompose(a, diag);
-        choleskySolve(a, diag, b, x);
+        choleskyDecompose(a.arrayOfArrays, diag);
+        choleskySolve(a.arrayOfArrays, diag, b, x);
     }
 }
