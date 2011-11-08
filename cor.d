@@ -31,12 +31,12 @@
 module dstats.cor;
 
 import std.conv, std.range, std.typecons, std.exception, std.math,
-    std.traits, std.typetuple;
+    std.traits, std.typetuple, std.algorithm;
 
 import dstats.sort, dstats.base, dstats.alloc, dstats.regress : invert;
 
 version(unittest) {
-    import std.stdio, dstats.random, std.algorithm : map, swap, reduce;
+    import std.stdio, dstats.random;
 
     Random gen;
 
@@ -1194,58 +1194,24 @@ private void kendallMatrixImpl(bool makeNewMatrix, RoR, Matrix)
         static assert(is(typeof(ret) == SymmetricMatrix!double));
         ret = SymmetricMatrix!double(walkLength(randomMat));
     }
-    
-    // Pick the smallest index size we can get away with to save space.
-    if(nElems <= ubyte.max + 1) {
-        finishKendall!ubyte(mat, ret, pool, alloc);
-    } else if(nElems <= ushort.max + 1) {
-        finishKendall!ushort(mat, ret, pool, alloc);
-    } else if(nElems <= uint.max + 1) {
-        finishKendall!uint(mat, ret, pool, alloc);
-    } else {
-        // This is guaranteed to run out of address space on 32-bit,
-        // so don't bother instantiating it and bloating the executable.
-        static if(size_t.sizeof == 8) {
-            finishKendall!ulong(mat, ret, pool, alloc);
-        } else {
-            static assert(size_t.sizeof == 4, 
-                "What the heck kind of architecture is this?????"
-            );
-            
-            dstatsEnforce(0, "Out of memory.");
-        }
-    }
-}
-
-private void finishKendall(I, RoR, Matrix)
-(RoR randomMat, ref Matrix ret, TaskPool pool, ref RegionAllocator alloc) {
-    // Cache sorting indices of mat instead of having to do two sorts for
-    // every tau computation.  I is the smallest integer type that can hold
-    // all indices in [0, range.length).
-    I[] getIndices(ElementType!(typeof(randomMat)) range) {
-       auto ret = alloc.uninitializedArray!(I[])(range.length);
-       foreach(i, ref elem; ret) {
-           elem = cast(I) i;
-       }
-        
-       bool less(I a, I b) {
-           return range[a] < range[b];
-       }
-       
-       qsort!less(ret);
-       return ret;
-    }
-    
-    auto indices = alloc.array(
-        delMap(randomMat, &getIndices)
-    );
-    
+      
     // HACK:  Before the multithreaded portion of this algorithm
     // starts, make sure that there's no need to unshare ret if it's
     // using ref-counted COW semantics.
     ret[0, 0] = 0;
     
     foreach(i, row1; pool.parallel(randomMat.save)) {
+        auto alloc2 = newRegionAllocator();
+        auto indices = alloc2.uninitializedArray!(size_t[])(row1.length);
+        foreach(ii, ref elem; indices) elem = ii;
+        
+        bool less(size_t a, size_t b) { 
+            return row1[a] < row1[b];
+        }
+        
+        qsort!less(indices);
+        auto row1Sorted = assumeSorted(indexed(row1, indices));
+                
         size_t j = 0;
         foreach(row2; randomMat.save) {
             scope(exit) j++;
@@ -1254,8 +1220,7 @@ private void finishKendall(I, RoR, Matrix)
                 break;
             }
     
-            auto row1Sorted = assumeSorted(indexed(row1, indices[i]));
-            auto row2Rearranged = indexed(row2, indices[i]);
+            auto row2Rearranged = indexed(row2, indices);
             ret[i, j] = kendallCor(row1Sorted, row2Rearranged);
         }
     }
