@@ -430,7 +430,7 @@ version(unittest) {
     private enum kendallSmallN = 15;
 }
 
-private template isDefaultSorted(R) {
+package template isDefaultSorted(R) {
     static if(!is(typeof(R.init.release()))) {
         enum isDefaultSorted = false;
     } else {

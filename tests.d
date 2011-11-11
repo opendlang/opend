@@ -33,8 +33,9 @@ module dstats.tests;
 import std.algorithm, std.functional, std.range, std.conv, std.math, std.traits,
        std.exception, std.typetuple;
 
-import dstats.base, dstats.distrib, dstats.alloc, dstats.summary, dstats.sort,
-       dstats.cor;
+import dstats.base, dstats.distrib, dstats.alloc, dstats.summary, dstats.sort;
+    
+static import dstats.cor;
 
 private static import dstats.infotheory;
 
@@ -3283,7 +3284,7 @@ ConfInt pearsonCorTest(T, U)(
 ) if(doubleInput!(T) && doubleInput!(U)) {
     enforceConfidence(confLevel);
 
-    PearsonCor pearsonRes = pearsonCor(range1, range2);
+    auto pearsonRes = dstats.cor.pearsonCor(range1, range2);
     if(isNaN(pearsonRes.cor)) {
         return ConfInt.init;
     }
@@ -3451,7 +3452,7 @@ is(typeof(range2.front < range2.front) == bool)) {
     }
     immutable double N = r1.length;
 
-    return pearsonCorTest(spearmanCor(range1, range2), N, alt, 0);
+    return pearsonCorTest(dstats.cor.spearmanCor(range1, range2), N, alt, 0);
 }
 
 unittest {
@@ -3485,6 +3486,13 @@ Do not set this higher than 100, as it will be very slow
 and the asymptotic approximation is pretty good at even a fraction of this
 size.
 
+Note:
+
+As an optimization, when a range is a SortedRange with predicate "a < b",
+it is assumed already sorted and not sorted a second time by this function.
+This is useful when applying this function multiple times with one of the
+arguments the same every time.
+
 Returns:  A TestRes containing the Kendall correlation coefficient and
 the P-value for the given alternative.
 
@@ -3500,9 +3508,20 @@ TestRes kendallCorTest(T, U)(
     uint exactThresh = 50
 ) if(isInputRange!(T) && isInputRange!(U)) {
     auto alloc = newRegionAllocator();
-    auto i1d = alloc.array(range1);
-    auto i2d = alloc.array(range2);
-    immutable res = kendallCorDestructiveLowLevel(i1d, i2d, true);
+    
+    static if(dstats.cor.isDefaultSorted!T) {
+        alias range1 i1d;
+    } else {
+        auto i1d = alloc.array(range1);
+    }
+    
+    static if(dstats.cor.isDefaultSorted!U) {
+        alias range2 i2d;
+    } else {
+        auto i2d = alloc.array(range2);
+    }
+    
+    immutable res = dstats.cor.kendallCorDestructiveLowLevel(i1d, i2d, true);
     immutable double n = i1d.length;
 
     immutable double var =
@@ -3667,6 +3686,7 @@ unittest {
     arr1 = [1,1,1,2,2,2,3,3,3,4,4,4,5,5,5];
     arr2 = [1,1,1,3,3,3,2,2,2,5,5,5,4,4,4];
     assert(approxEqual(kendallCorTest(arr1, arr2).p, 0.006123));
+    assert(approxEqual(kendallCorTest(assumeSorted(arr1), arr2).p, 0.006123));
 
     // Test the exact stuff.  Still using values from R.
     uint[] foo = [1,2,3,4,5];
