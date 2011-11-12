@@ -823,7 +823,9 @@ unittest {
         kendallCor([3, 1, 2, 5, 4], assumeSorted(iota(5)))
     );
     
-    assert(kendallCor(assumeSorted(iota(5)), assumeSorted(iota(5))) == 1);
+    assert(approxEqual(
+        kendallCor(assumeSorted(iota(5)), assumeSorted(iota(5))), 1
+    ));
     
     auto lhs = randArray!rNorm(1_000, 0, 1);
     auto indices = new size_t[1_000];
