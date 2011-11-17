@@ -1202,7 +1202,7 @@ private void kendallMatrixImpl(bool makeNewMatrix, RoR, Matrix)
     // using ref-counted COW semantics.
     ret[0, 0] = 0;
     
-    foreach(i, row1; pool.parallel(randomMat.save)) {
+    foreach(i, row1; pool.parallel(randomMat.save, 1)) {
         auto alloc2 = newRegionAllocator();
         auto indices = alloc2.uninitializedArray!(size_t[])(row1.length);
         foreach(ii, ref elem; indices) elem = ii;
