@@ -33,7 +33,7 @@ module dstats.cor;
 import std.conv, std.range, std.typecons, std.exception, std.math,
     std.traits, std.typetuple, std.algorithm;
 
-import dstats.sort, dstats.base, dstats.alloc, dstats.regress : invert;
+import dstats.sort, dstats.base, dstats.alloc, dstats.regress;
 
 version(unittest) {
     import std.stdio, dstats.random;
@@ -890,40 +890,35 @@ if(isInputRange!T && isInputRange!U && allSatisfy!(isInputRange, V)) {
         alias conditionsIn cond;
     }
 
-    auto corMatrix = alloc.uninitializedArray!(double[][])
-        (cond.length + 2, cond.length + 2);
-    foreach(i, ref elem; corMatrix) {
-        elem[] = 0;
-        elem[i] = 1;
-    }
+    auto corMatrix = doubleMatrix(cond.length + 2, cond.length + 2, alloc);
+    foreach(i; 0..corMatrix.rows) corMatrix[i, i] = 1;
 
-    corMatrix[0][1] = corMatrix[1][0] = cast(double) cor(vec1, vec2);
+    corMatrix[0, 1] = corMatrix[1, 0] = cast(double) cor(vec1, vec2);
     foreach(i, condition; cond) {
         immutable conditionIndex = i + 2;
-        corMatrix[0][conditionIndex] = cast(double) cor(vec1, condition);
-        corMatrix[conditionIndex][0] =  corMatrix[0][conditionIndex];
-        corMatrix[1][conditionIndex] = cast(double) cor(vec2, condition);
-        corMatrix[conditionIndex][1] = corMatrix[1][conditionIndex];
+        corMatrix[0, conditionIndex] = cast(double) cor(vec1, condition);
+        corMatrix[conditionIndex, 0] =  corMatrix[0, conditionIndex];
+        corMatrix[1, conditionIndex] = cast(double) cor(vec2, condition);
+        corMatrix[conditionIndex, 1] = corMatrix[1, conditionIndex];
     }
 
     foreach(i, condition1; cond) {
         foreach(j, condition2; cond[i + 1..$]) {
             immutable index1 = i + 2;
             immutable index2 = index1 + j + 1;
-            corMatrix[index1][index2] = cast(double) cor(condition1, condition2);
-            corMatrix[index2][index1] = corMatrix[index1][index2];
+            corMatrix[index1, index2] = cast(double) cor(condition1, condition2);
+            corMatrix[index2, index1] = corMatrix[index1, index2];
         }
     }
 
-    auto invMatrix = alloc.uninitializedArray!(double[][])
-        (cond.length + 2, cond.length + 2);
-    foreach(i, ref elem; invMatrix) {
-        elem[] = 0;
-        elem[i] = 1;
-    }
-
+    auto invMatrix = doubleMatrix(cond.length + 2, cond.length + 2, alloc);
     invert(corMatrix, invMatrix);
-    return -invMatrix[0][1] / sqrt(invMatrix[0][0] * invMatrix[1][1]);
+    
+    // This code is written so verbosely to work around a compiler segfault
+    // that I have no idea how to reduce.
+    immutable denom = sqrt(invMatrix[0, 0] * invMatrix[1, 1]);
+    immutable negNumer = invMatrix[0, 1];
+    return -negNumer / denom;
 }
 
 unittest {
