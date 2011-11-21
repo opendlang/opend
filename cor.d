@@ -33,7 +33,7 @@ module dstats.cor;
 import std.conv, std.range, std.typecons, std.exception, std.math,
     std.traits, std.typetuple, std.algorithm;
 
-import dstats.sort, dstats.base, dstats.alloc, dstats.regress;
+import dstats.sort, dstats.base, dstats.alloc;
 
 version(unittest) {
     import std.stdio, dstats.random;
