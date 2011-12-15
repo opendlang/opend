@@ -1216,9 +1216,9 @@ private void shermanMorrisonRidge(
             xTxNeg1u[rowIndex] = dotProduct(row, u);
         }
         
-        xTxNeg1u[] /= denom;
-        foreach(i; 0..p) foreach(j; 0..p) {
-            xTxNeg1[i][j] -= xTxNeg1u[i] * vTxTxNeg1[j];
+        foreach(i, row; xTxNeg1) {
+            immutable multiplier = xTxNeg1u[i] / denom;
+            row[] -= multiplier * vTxTxNeg1[];
         }
     }
     
