@@ -958,9 +958,11 @@ Friedman J, et al Pathwise coordinate optimization. Ann. Appl. Stat.
 Goeman, J. J., L1 penalized estimation in the Cox proportional hazards model.
 Biometrical Journal 52(1), 70{84.
 
-Eilers, P., Boer, J., Van Ommen, G., Van Houwelingen, H. 2001 Classification of
-microarray data with penalized logistic regression. Proceedings of SPIE.
-Progress in Biomedical Optics and Images vol. 4266, pp. 187-198
+Douglas M. Hawkins and Xiangrong Yin.  A faster algorithm for ridge regression
+of reduced rank data.  Computational Statistics & Data Analysis Volume 40, 
+Issue 2, 28 August 2002, Pages 253-262 
+
+http://en.wikipedia.org/wiki/Sherman%E2%80%93Morrison_formula
 */
 double[] linearRegressPenalized(Y, X...)
 (Y yIn, X xIn, double lasso, double ridge) {
@@ -993,7 +995,7 @@ double[] linearRegressPenalized(Y, X...)
         }
 
     } else {
-        ridgeLargeP(y, x, ridge, betas, null);
+        shermanMorrisonRidge(y, x, ridge, betas, null);
     }
 
     foreach(i, ref elem; betas) {
@@ -1138,154 +1140,102 @@ private void coordDescent(
     }
 }
 
-// Compute(X X')' = C.
-double[][] makeC(double[][] x, RegionAllocator alloc) {
-    if(x.length == 0) return null;
-    immutable n = x[0].length;
-    auto c = alloc.uninitializedArray!(double[][])(n);
+/*
+This algorithm was adapted from the following paper:
 
-    // Only need lower half.
-    foreach(i, ref elem; c) {
-        elem = alloc.uninitializedArray!(double[])(i + 1);
-        elem[] = 0;
-    }
+Douglas M. Hawkins and Xiangrong Yin.  A faster algorithm for ridge regression
+of reduced rank data.  Computational Statistics & Data Analysis Volume 40, 
+Issue 2, 28 August 2002, Pages 253-262 
 
-    foreach(col; x) {
-        foreach(i; 0..n) {
-            foreach(j; i..n) {
-                c[j][i] += col[i] * col[j];
-            }
-        }
-    }
+It also uses Wikipedia's page on Sherman-Morrison:
 
-    return c;
-}
+http://en.wikipedia.org/wiki/Sherman%E2%80%93Morrison_formula
 
-private DoubleMatrix doCTWC(double[][] c, double[] w, RegionAllocator alloc) {
-    auto ret = doubleMatrix(c.length, c.length, alloc);
-
-    double getElem(size_t i, size_t j) {
-        return (i >= j) ? c[i][j] : c[j][i];
-    }
-
-    foreach(i; 0..c.length) foreach(j; 0..i + 1) {
-        ret[i, j] = 0;
-
-        foreach(k; 0..c.length) {
-            auto toAdd = getElem(i, k) * getElem(j, k);
-            if(w.length) toAdd *= w[k];
-            ret[i, j] += toAdd;
-        }
-    }
-
-    symmetrize(ret);
-    return ret;
-}
-
-// An implementation of ridge regression for large dimension.
-private void ridgeLargeP
-(double[] yIn, double[][] x, double lambdaIn, double[] betas, double[] w = null) {
-    {
-        auto alloc = newRegionAllocator();
-        auto y = alloc.array(yIn);
-        auto c = makeC(x, alloc);
-
-        // This scaling preserves numerical stability when the distrib. of
-        // x has a long tail.
-        auto maxElem = reduce!max(0.0, map!abs(joiner(c)));
-        foreach(col; c) col[] /= maxElem;
-        y[] /= (maxElem);
-        auto lambda = lambdaIn / maxElem;
-        auto cwc = doCTWC(c, w, alloc);
-
-        foreach(i, row; c) foreach(j, elem; row) {
-            cwc[j, i] += lambda * elem;
-            if(i != j) cwc[i, j] += lambda * elem;
-        }
-
-        // Multiply c' * y.  c is symmetric, so it doesn't matter that I'm really
-        // multiplying the transpose.
-        if(w.length) y[] *= w[];
-        auto cTy = alloc.uninitializedArray!(double[])(y.length);
-        cTy[] = 0;
-
-        foreach(i; 0..c.length) foreach(j; 0..c.length) {
-            if(i >= j) {
-                cTy[j] += y[i] * c[i][j];
-            } else {
-                cTy[j] += y[i] * c[j][i];
-            }
-        }
-
-        version(scid) {
-            auto csi = alloc.uninitializedArray!(double[])(cTy.length);
-            auto csiVec = ExternalVectorView!double(csi);
-            
-            try {
-                csiVec[] = inv(cwc) * externalVectorView(cTy);
-            } catch(Exception) {
-                csi[] = double.nan;
-            }
-            
-        } else {
-            solve(cwc, cTy);
-            alias cTy csi;
-        }
-
-        // Multiply X' * csi to get answer.
-        betas[] = 0;
-        foreach(i, col; x) {
-            betas[i] = dotProduct(csi, col);
-        }
-    }
-
-    static bool notFinite(double num) { return !isFinite(num); }
-
-    // In a few pathological cases this algo ends up singular to machine
-    // precision, and NaNs or infs up in betas.  Fall back to solving the
-    // normal equations directly.
-    if(filter!notFinite(betas).empty) return;
-    version(unittest) stderr.writeln("SINGULAR");
-    ridgeFallback(yIn, x, lambdaIn, betas, w);
-}
-
-// Used if we end up singular in ridgeLargeP.
-private void ridgeFallback
-(double[] yIn, double[][] x, double lambda, double[] betas, double[] w) {
+I simplified it by only doing rank-1 updates of inv(x' * x * lambda * I), 
+since I'm just trying to calculate the ridge estimate, not do efficient 
+cross-validation.  The idea is to start with an empty dataset.  Here, 
+inv(x' * x + lambda * I) = 1 / lambda * I.  Then, add each sample (row of x)
+sequentially.  This is equivalent to adding s * s' to (x' * x + lambda * I)
+where s is the vector of predictors for the sample.  This is known as a 
+dyadic product.  If p is the number of features/dimensions, and n is the
+number of samples, we have n updates, each of which is O(P^2) for an 
+O(N * P^2) algorithm.  Naive algoriths would be O(P^3).
+*/
+private void shermanMorrisonRidge(
+    const(double)[] y,
+    const(double[])[] x,  // Column major
+    immutable double lambda,
+    double[] betas,
+    const(double)[] w = null
+) in {
+    assert(lambda > 0);
+    foreach(col; x) assert(col.length == x[0].length);
+    if(x.length) assert(y.length == x[0].length);
+} body {
     auto alloc = newRegionAllocator();
-
-    // Compute xTx or xT * w * x depending on whether w is null.
-    auto xTx = doubleMatrix(x.length, x.length, alloc);
-
-    foreach(i, xi; x) foreach(j, xj; x[0..i + 1]) {
-        xTx[i, j] = 0;
-        foreach(k; 0..xi.length) {
-            immutable weight = (w.length) ? w[k] : 1.0;
-            xTx[i, j] += xi[k] * weight * xj[k];
+    immutable p = x.length;
+    if(p == 0) return;
+    immutable n = x[0].length;
+    
+    auto v = alloc.uninitializedArray!(double[])(p);
+    double[] u;
+    if(w.length) {
+        u = alloc.uninitializedArray!(double[])(p);
+    } else {
+        u = v;
+    }
+    
+    auto vTxTxNeg1 = alloc.uninitializedArray!(double[])(p);
+    auto xTxNeg1u = alloc.uninitializedArray!(double[])(p);
+    
+    // Before any updates are done, x'x = I * lambda, so inv(x'x) = I / lambda.
+    auto xTxNeg1 = alloc.uninitializedArray!(double[][])(p, p);
+    foreach(i; 0..p) foreach(j; 0..p) {
+        xTxNeg1[i][j] = (i == j) ? (1.0 / lambda) : 0;
+    }
+    
+    foreach(sampleIndex; 0..n) {
+        copy(transversal(x[], sampleIndex), v);
+        if(w.length) {
+            u[] = w[sampleIndex] * v[];
+        }
+        
+        // Calculate denominator of update:  1 + v' * xTxNeg1 * u
+        vTxTxNeg1[] = 0;
+        foreach(rowIndex, row; xTxNeg1) {
+            vTxTxNeg1[] += v[rowIndex] * row[];
+        }
+        immutable denom = 1.0 + dotProduct(vTxTxNeg1, u);
+        
+        // Calculate numerator.  The parentheses indicate how the operation
+        // is coded.  This is for computational efficiency.  Removing the
+        // parentheses would be mathematically equivalent due to associativity:  
+        // (xTxNeg1 * u) * (v' * xTxNeg1).
+        xTxNeg1u[] = 0;
+        foreach(rowIndex, row; xTxNeg1) {
+            xTxNeg1u[rowIndex] = dotProduct(row, u);
+        }
+        
+        xTxNeg1u[] /= denom;
+        foreach(i; 0..p) foreach(j; 0..p) {
+            xTxNeg1[i][j] -= xTxNeg1u[i] * vTxTxNeg1[j];
         }
     }
-
-    symmetrize(xTx);
-
-    double[] y;
+    
+    auto xTy = alloc.uninitializedArray!(double[])(p);
     if(w.length) {
-        y = alloc.array(yIn);
-        y[] *= w[];
-    } else {
-        y = yIn;
+        auto yw = alloc.uninitializedArray!(double[])(n);
+        yw[] = y[] * w[];
+        y = yw;
+    } 
+    
+    foreach(colIndex, col; x) {
+        xTy[colIndex] = dotProduct(col[], y[]);
     }
-
-    auto xTy = alloc.uninitializedArray!(double[])(x.length);
-    foreach(i, ref val; xTy) {
-        val = dotProduct(y, x[i]);
+      
+    foreach(rowIndex, row; xTxNeg1) {
+        betas[rowIndex] = dotProduct(row, xTy);
     }
-
-    // Add in the penalty.
-    foreach(i; 0..xTx.rows) {
-        xTx[i, i] += lambda;
-    }
-
-    choleskySolve(xTx, xTy, betas);
 }
 
 unittest {
@@ -1320,19 +1270,6 @@ unittest {
         assert(approxEqual(normalEq, linalgTrick, 1e-6, 1e-8), text(
             normalEq, linalgTrick));
     }
-
-    // Make sure fallback and largeP algo get same answers.
-    auto fb = new double[x.length];
-    auto lp = new double[x.length];
-    ridgeFallback(y, x, 1, fb, null);
-    ridgeLargeP(y, x, 1, lp);
-    assert(approxEqual(fb, lp));
-
-    // With weights.
-    auto w = randArray!uniform(y.length, 0.1, 1, gen);
-    ridgeFallback(y, x, 1, fb, w);
-    ridgeLargeP(y, x, 1, lp, w);
-    assert(approxEqual(fb, lp));
 
     // Test stuff that's got some lasso in it.  Values from R's Penalized
     // package.
@@ -1661,9 +1598,11 @@ Friedman J, et al Pathwise coordinate optimization. Ann. Appl. Stat.
 Goeman, J. J., L1 penalized estimation in the Cox proportional hazards model.
 Biometrical Journal 52(1), 70{84.
 
-Eilers, P., Boer, J., Van Ommen, G., Van Houwelingen, H. 2001 Classification of
-microarray data with penalized logistic regression. Proceedings of SPIE.
-Progress in Biomedical Optics and Images vol. 4266, pp. 187-198
+Douglas M. Hawkins and Xiangrong Yin.  A faster algorithm for ridge regression
+of reduced rank data.  Computational Statistics & Data Analysis Volume 40, 
+Issue 2, 28 August 2002, Pages 253-262 
+
+http://en.wikipedia.org/wiki/Sherman%E2%80%93Morrison_formula
 */
 double[] logisticRegressPenalized(Y, X...)
 (Y yIn, X xIn, double lasso, double ridge) {
@@ -1790,9 +1729,6 @@ unittest {
     assert(approxEqual(logisticRegressPenalized(y, x, 1.2, 7),
         [0.367613 , -0.017227631, 0.000000000, 0.003875104, 0.000000000]));
 }
-
-// This was a terrble name choice.
-deprecated alias logistic inverseLogit;
 
 private:
 double absMax(double a, double b) {
@@ -2009,7 +1945,7 @@ private void logisticRegressPenalizedImpl(Y, X...)
             // Correct for different conventions in defining ridge params
             // so all functions get the same answer.
             immutable ridgeCorrected = ridge * 2.0;
-            ridgeLargeP(z, xCenterScale, ridgeCorrected, betasRaw, weights);
+            shermanMorrisonRidge(z, xCenterScale, ridgeCorrected, betasRaw, weights);
         }
 
         rescaleBetas();
