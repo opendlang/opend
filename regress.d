@@ -958,11 +958,9 @@ Friedman J, et al Pathwise coordinate optimization. Ann. Appl. Stat.
 Goeman, J. J., L1 penalized estimation in the Cox proportional hazards model.
 Biometrical Journal 52(1), 70{84.
 
-Douglas M. Hawkins and Xiangrong Yin.  A faster algorithm for ridge regression
-of reduced rank data.  Computational Statistics & Data Analysis Volume 40, 
-Issue 2, 28 August 2002, Pages 253-262 
-
-http://en.wikipedia.org/wiki/Sherman%E2%80%93Morrison_formula
+Eilers, P., Boer, J., Van Ommen, G., Van Houwelingen, H. 2001 Classification of
+microarray data with penalized logistic regression. Proceedings of SPIE.
+Progress in Biomedical Optics and Images vol. 4266, pp. 187-198
 */
 double[] linearRegressPenalized(Y, X...)
 (Y yIn, X xIn, double lasso, double ridge) {
@@ -995,7 +993,7 @@ double[] linearRegressPenalized(Y, X...)
         }
 
     } else {
-        shermanMorrisonRidge(y, x, ridge, betas, null);
+        ridgeLargeP(y, x, ridge, betas, null);
     }
 
     foreach(i, ref elem; betas) {
@@ -1141,7 +1139,173 @@ private void coordDescent(
 }
 
 /*
-This algorithm was adapted from the following paper:
+Ridge regression, case where P > N, where P is number of features and N
+is number of samples.
+*/
+private void ridgeLargeP(
+    const(double)[] y, 
+    const double[][] x, 
+    immutable double lambda, 
+    double[] betas, 
+    const double[] w = null
+) {
+    if(!eilersRidge(y, x, lambda, betas, w)) {
+        shermanMorrisonRidge(y, x, lambda, betas, w);
+    }
+}        
+
+/* An implementation of ridge regression for large dimension.  Taken from:
+
+Eilers, P., Boer, J., Van Ommen, G., Van Houwelingen, H. 2001 Classification of
+microarray data with penalized logistic regression. Proceedings of SPIE.
+Progress in Biomedical Optics and Images vol. 4266, pp. 187-198
+
+This algorithm is very fast, O(N^2 * P + N^3) where N is the number of samples 
+and P is the number of dimensions.  However, it is numerically unstable
+in some pathological cases.  If we hit such a case, we return false.
+This causes ridgeLargeP (the only place this function is called from)
+to fall back to the Sherman-Morrison algorithm, which is more stable but
+O(N P^2).
+*/
+private bool eilersRidge(
+    const(double)[] y, 
+    const double[][] x, 
+    immutable double lambda, 
+    double[] betas, 
+    const double[] w 
+) {
+    auto alloc = newRegionAllocator();
+    if(x.length == 0) return true;
+    immutable n = x[0].length;
+
+    // Make c = x * x'.
+    auto c = alloc.uninitializedArray!(double[][])(n);
+
+    // Only need lower half because the result should be symmetric.
+    foreach(i, ref elem; c) {
+        elem = alloc.uninitializedArray!(double[])(i + 1);
+        elem[] = 0;
+    }
+
+    foreach(col; x) {
+        foreach(i; 0..n) {
+            foreach(j; i..n) {
+                c[j][i] += col[i] * col[j];
+            }
+        }
+    }
+
+    // Compute c' * W * c.
+    auto cwc = doubleMatrix(c.length, c.length, alloc);
+
+    double getCElem(size_t i, size_t j) nothrow {
+        return (i >= j) ? c[i][j] : c[j][i];
+    }
+
+    foreach(i; 0..c.length) foreach(j; 0..i + 1) {
+        cwc[i, j] = 0;
+
+        foreach(k; 0..c.length) {
+            auto toAdd = getCElem(i, k) * getCElem(j, k);
+            if(w.length) toAdd *= w[k];
+            cwc[i, j] += toAdd;
+        }
+    }
+
+    symmetrize(cwc);
+
+    // Add the ridge stuff.  In this case, we add lambda * c to
+    // cwc, not lambda * I.
+    foreach(i, row; c) foreach(j, elem; row) {
+        cwc[j, i] += lambda * elem;
+        if(i != j) cwc[i, j] += lambda * elem;
+    }
+
+    // Multiply c' * y.  c is symmetric, so it doesn't matter that I'm really
+    // multiplying the transpose.
+    if(w.length) {
+        auto y2 = alloc.uninitializedArray!(double[])(y.length);
+        y2[] = y[] * w[];
+        y = y2;
+    }
+    
+    auto cTy = alloc.uninitializedArray!(double[])(y.length);
+    cTy[] = 0;
+
+    foreach(i; 0..c.length) foreach(j; 0..c.length) {
+        if(i >= j) {
+            cTy[j] += y[i] * c[i][j];
+        } else {
+            cTy[j] += y[i] * c[j][i];
+        }
+    }
+
+    auto csi = alloc.uninitializedArray!(double[])(cTy.length);
+    version(scid) {
+        auto csiVec = ExternalVectorView!double(csi);
+        
+        try {
+            csiVec[] = inv(cwc) * externalVectorView(cTy);
+        } catch(Exception) {
+            csi[] = double.nan;
+        }
+        
+    } else {
+        csi[] = cTy[];
+        
+        // Need to prevent cwc from being overwritten so we can check accuracy.
+        auto alloc2 = newRegionAllocator();
+        auto temp = doubleMatrix(cwc.rows, cwc.rows, alloc2);
+        foreach(i; 0..cwc.rows) foreach(j; 0..cwc.rows) {
+            temp[i, j] = cwc[i, j];
+        }
+        
+        solve(temp, csi);  // csi is still cTy on input, becomes csi on output.
+    }
+    
+    // Make sure we haven't hit a pathological unstable case.  We've just
+    // solved the system cwc * csi = cTy.  If multiplying cwc by csi gives
+    // cTy to within a small epsilon, we're golden.  If not, return false
+    // and let the caller fall back to Sherman-Morrison.
+    foreach(i; 0..cwc.rows) {
+        double dotProd = 0;
+        foreach(j; 0..cwc.columns) {
+            dotProd += csi[j] * cwc[i, j];
+        }
+        
+        // Track how often we have to resort to the fallback algo for testing
+        // purposes.
+        version(unittest) {
+            static int nAttempts;
+            nAttempts++;
+        }
+        
+        if(!approxEqual(dotProd, cTy[i])) {
+            // Keep track of how often this is happening for testing purposes.
+            // In the unittests it should only happen occasionally.
+            version(unittest) {
+                static int nFallback;
+                stderr.writeln("FALLBACK ", ++nFallback, " of ", nAttempts);
+            }
+            
+            return false;
+        }
+    }
+
+    // Multiply X' * csi to get answer.
+    betas[] = 0;
+    foreach(i, col; x) {
+        betas[i] = dotProduct(csi, col);
+    }
+    
+    return true;  // No numerical instability.
+}
+
+/*
+This algorithm is used as a fallback in case the Eilers algorithm fails.
+It's O(N P^2) instead of O(N^2 * P + N^3), but is more numerically stable or
+at least unstable under different circumstances.  It was adapted from the 
+following paper:
 
 Douglas M. Hawkins and Xiangrong Yin.  A faster algorithm for ridge regression
 of reduced rank data.  Computational Statistics & Data Analysis Volume 40, 
@@ -1166,7 +1330,7 @@ private void shermanMorrisonRidge(
     const(double[])[] x,  // Column major
     immutable double lambda,
     double[] betas,
-    const(double)[] w = null
+    const(double)[] w 
 ) in {
     assert(lambda > 0);
     foreach(col; x) assert(col.length == x[0].length);
@@ -1270,6 +1434,21 @@ unittest {
         assert(approxEqual(normalEq, linalgTrick, 1e-6, 1e-8), text(
             normalEq, linalgTrick));
     }
+
+    // Make sure Eilers and Sherman-Morrison algo get same answers.  Due
+    // to a fortunate accident, the last dataset generated is not a 
+    // pathological one that Eilers doesn't work for.
+    auto eilers = new double[x.length];
+    auto sherman = new double[x.length];
+    assert(eilersRidge(y, x, 1, eilers, null));
+    shermanMorrisonRidge(y, x, 1, sherman, null);
+    assert(approxEqual(eilers, sherman));
+
+    // With weights.
+    auto w = randArray!uniform(y.length, 0.1, 1, gen);
+    assert(eilersRidge(y, x, 1, eilers, w));
+    shermanMorrisonRidge(y, x, 1, sherman, w);
+    assert(approxEqual(eilers, sherman));
 
     // Test stuff that's got some lasso in it.  Values from R's Penalized
     // package.
@@ -1598,11 +1777,9 @@ Friedman J, et al Pathwise coordinate optimization. Ann. Appl. Stat.
 Goeman, J. J., L1 penalized estimation in the Cox proportional hazards model.
 Biometrical Journal 52(1), 70{84.
 
-Douglas M. Hawkins and Xiangrong Yin.  A faster algorithm for ridge regression
-of reduced rank data.  Computational Statistics & Data Analysis Volume 40, 
-Issue 2, 28 August 2002, Pages 253-262 
-
-http://en.wikipedia.org/wiki/Sherman%E2%80%93Morrison_formula
+Eilers, P., Boer, J., Van Ommen, G., Van Houwelingen, H. 2001 Classification of
+microarray data with penalized logistic regression. Proceedings of SPIE.
+Progress in Biomedical Optics and Images vol. 4266, pp. 187-198
 */
 double[] logisticRegressPenalized(Y, X...)
 (Y yIn, X xIn, double lasso, double ridge) {
@@ -1729,6 +1906,9 @@ unittest {
     assert(approxEqual(logisticRegressPenalized(y, x, 1.2, 7),
         [0.367613 , -0.017227631, 0.000000000, 0.003875104, 0.000000000]));
 }
+
+// This was a terrble name choice.
+deprecated alias logistic inverseLogit;
 
 private:
 double absMax(double a, double b) {
@@ -1945,7 +2125,7 @@ private void logisticRegressPenalizedImpl(Y, X...)
             // Correct for different conventions in defining ridge params
             // so all functions get the same answer.
             immutable ridgeCorrected = ridge * 2.0;
-            shermanMorrisonRidge(z, xCenterScale, ridgeCorrected, betasRaw, weights);
+            ridgeLargeP(z, xCenterScale, ridgeCorrected, betasRaw, weights);
         }
 
         rescaleBetas();
