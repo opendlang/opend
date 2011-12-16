@@ -1155,9 +1155,15 @@ private void ridgeLargeP(
     double[] betas, 
     const double[] w = null
 ) {
-    if(!eilersRidge(y, x, lambda, betas, w)) {
-        shermanMorrisonRidge(y, x, lambda, betas, w);
-    }
+//    if(!eilersRidge(y, x, lambda, betas, w)) {
+//        shermanMorrisonRidge(y, x, lambda, betas, w);
+//    }
+    // The Eilers algorithm always results in the creation of a singular matrix 
+    // when  the columns of x are centered, due to subtleties not mentioned
+    // in the reference.  Somehow it works most of the time in practice,
+    // because numerical fuzz makes the matrix we need to factor non-singular.
+    // Disabling it until I find a workaround.
+    return shermanMorrisonRidge(y, x, lambda, betas, w);
 }        
 
 /* An implementation of ridge regression for large dimension.  Taken from:
@@ -1179,7 +1185,7 @@ private bool eilersRidge(
     immutable double lambda, 
     double[] betas, 
     const double[] w 
-) {
+) {    
     auto alloc = newRegionAllocator();
     if(x.length == 0) return true;
     immutable n = x[0].length;
