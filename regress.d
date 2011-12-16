@@ -961,6 +961,12 @@ Biometrical Journal 52(1), 70{84.
 Eilers, P., Boer, J., Van Ommen, G., Van Houwelingen, H. 2001 Classification of
 microarray data with penalized logistic regression. Proceedings of SPIE.
 Progress in Biomedical Optics and Images vol. 4266, pp. 187-198
+
+Douglas M. Hawkins and Xiangrong Yin.  A faster algorithm for ridge regression
+of reduced rank data.  Computational Statistics & Data Analysis Volume 40, 
+Issue 2, 28 August 2002, Pages 253-262 
+
+http://en.wikipedia.org/wiki/Sherman%E2%80%93Morrison_formula
 */
 double[] linearRegressPenalized(Y, X...)
 (Y yIn, X xIn, double lasso, double ridge) {
@@ -1780,6 +1786,12 @@ Biometrical Journal 52(1), 70{84.
 Eilers, P., Boer, J., Van Ommen, G., Van Houwelingen, H. 2001 Classification of
 microarray data with penalized logistic regression. Proceedings of SPIE.
 Progress in Biomedical Optics and Images vol. 4266, pp. 187-198
+
+Douglas M. Hawkins and Xiangrong Yin.  A faster algorithm for ridge regression
+of reduced rank data.  Computational Statistics & Data Analysis Volume 40, 
+Issue 2, 28 August 2002, Pages 253-262 
+
+http://en.wikipedia.org/wiki/Sherman%E2%80%93Morrison_formula
 */
 double[] logisticRegressPenalized(Y, X...)
 (Y yIn, X xIn, double lasso, double ridge) {
