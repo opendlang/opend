@@ -1155,168 +1155,92 @@ private void ridgeLargeP(
     double[] betas, 
     const double[] w = null
 ) {
-//    if(!eilersRidge(y, x, lambda, betas, w)) {
-//        shermanMorrisonRidge(y, x, lambda, betas, w);
-//    }
-    // The Eilers algorithm always results in the creation of a singular matrix 
-    // when  the columns of x are centered, due to subtleties not mentioned
-    // in the reference.  Somehow it works most of the time in practice,
-    // because numerical fuzz makes the matrix we need to factor non-singular.
-    // Disabling it until I find a workaround.
-    return shermanMorrisonRidge(y, x, lambda, betas, w);
+    static if(haveSvd) {
+        return eilersRidge(y, x, lambda, betas, w);
+    } else {
+        return shermanMorrisonRidge(y, x, lambda, betas, w);
+    }
 }        
 
-/* An implementation of ridge regression for large dimension.  Taken from:
+version(scid) {
+    version(nodeps) {
+        enum haveSvd = false;
+    } else {
+        enum haveSvd = true;
+    }
+} else {
+    enum haveSvd = false;
+}
+
+/* 
+An implementation of ridge regression for large dimension.  Taken from:
 
 Eilers, P., Boer, J., Van Ommen, G., Van Houwelingen, H. 2001 Classification of
 microarray data with penalized logistic regression. Proceedings of SPIE.
 Progress in Biomedical Optics and Images vol. 4266, pp. 187-198
 
-This algorithm is very fast, O(N^2 * P + N^3) where N is the number of samples 
-and P is the number of dimensions.  However, it is numerically unstable
-in some pathological cases.  If we hit such a case, we return false.
-This causes ridgeLargeP (the only place this function is called from)
-to fall back to the Sherman-Morrison algorithm, which is more stable but
-O(N P^2).
+This algorithm is very fast, O(N^2 * P) but requires singular value 
+decomposition.  Therefore, we only use if we're using SciD with full
+dependency support.
 */
-private bool eilersRidge(
-    const(double)[] y, 
+static if(haveSvd) private void eilersRidge(
+    const(double)[] yArr, 
     const double[][] x, 
     immutable double lambda, 
     double[] betas, 
-    const double[] w 
+    const double[] weightArr
 ) {    
+    if(x.length == 0) return;
     auto alloc = newRegionAllocator();
-    if(x.length == 0) return true;
     immutable n = x[0].length;
-
-    // Make c = x * x'.
-    auto c = alloc.uninitializedArray!(double[][])(n);
-
-    // Only need lower half because the result should be symmetric.
-    foreach(i, ref elem; c) {
-        elem = alloc.uninitializedArray!(double[])(i + 1);
-        elem[] = 0;
-    }
-
-    foreach(col; x) {
-        foreach(i; 0..n) {
-            foreach(j; i..n) {
-                c[j][i] += col[i] * col[j];
-            }
-        }
-    }
-
-    // Compute c' * W * c.
-    auto cwc = doubleMatrix(c.length, c.length, alloc);
-
-    double getCElem(size_t i, size_t j) nothrow {
-        return (i >= j) ? c[i][j] : c[j][i];
-    }
-
-    foreach(i; 0..c.length) foreach(j; 0..i + 1) {
-        cwc[i, j] = 0;
-
-        foreach(k; 0..c.length) {
-            auto toAdd = getCElem(i, k) * getCElem(j, k);
-            if(w.length) toAdd *= w[k];
-            cwc[i, j] += toAdd;
-        }
-    }
-
-    symmetrize(cwc);
-
-    // Add the ridge stuff.  In this case, we add lambda * c to
-    // cwc, not lambda * I.
-    foreach(i, row; c) foreach(j, elem; row) {
-        cwc[j, i] += lambda * elem;
-        if(i != j) cwc[i, j] += lambda * elem;
-    }
-
-    // Multiply c' * y.  c is symmetric, so it doesn't matter that I'm really
-    // multiplying the transpose.
-    if(w.length) {
-        auto y2 = alloc.uninitializedArray!(double[])(y.length);
-        y2[] = y[] * w[];
-        y = y2;
+    immutable p = x.length;
+    
+    auto xMat = ExternalMatrixView!double(n, p, alloc);
+    foreach(i; 0..n) foreach(j; 0..p) {
+        xMat[i, j] = x[j][i];
     }
     
-    auto cTy = alloc.uninitializedArray!(double[])(y.length);
-    cTy[] = 0;
-
-    foreach(i; 0..c.length) foreach(j; 0..c.length) {
-        if(i >= j) {
-            cTy[j] += y[i] * c[i][j];
-        } else {
-            cTy[j] += y[i] * c[j][i];
-        }
-    }
-
-    auto csi = alloc.uninitializedArray!(double[])(cTy.length);
-    version(scid) {
-        auto csiVec = ExternalVectorView!double(csi);
+    auto svdRes = svdDestructive(xMat, SvdType.economy);
+    auto us = eval(svdRes.u * svdRes.s, alloc);
+    auto v = eval(svdRes.vt.t);
+    ExternalMatrixView!double usWus;
+    ExternalVectorView!double usWy;
+    
+    // Have to cast away const because ExternalVectorView doesn't play
+    // nice w/ it yet.
+    auto y = ExternalVectorView!double(cast(double[]) yArr);
+    
+    if(weightArr.length) {
+        // Once we've multiplied s by u, we don't need it anymore.  Overwrite
+        // its contents with the weight array to get weights in the form of
+        // a diagonal matrix.
+        auto w = svdRes.s;
+        svdRes.s = typeof(svdRes.s).init;
         
-        try {
-            csiVec[] = inv(cwc) * externalVectorView(cTy);
-        } catch(Exception) {
-            csi[] = double.nan;
+        foreach(i, weight; weightArr) {
+            w[i, i] = weight;
         }
         
+        usWus = eval(us.t * w * us, alloc);
+        usWy = eval(us.t * w * y, alloc);
     } else {
-        csi[] = cTy[];
-        
-        // Need to prevent cwc from being overwritten so we can check accuracy.
-        auto alloc2 = newRegionAllocator();
-        auto temp = doubleMatrix(cwc.rows, cwc.rows, alloc2);
-        foreach(i; 0..cwc.rows) foreach(j; 0..cwc.rows) {
-            temp[i, j] = cwc[i, j];
-        }
-        
-        solve(temp, csi);  // csi is still cTy on input, becomes csi on output.
+        usWus = eval(us.t * us, alloc);
+        usWy = eval(us.t * y, alloc);
     }
     
-    // Make sure we haven't hit a pathological unstable case.  We've just
-    // solved the system cwc * csi = cTy.  If multiplying cwc by csi gives
-    // cTy to within a small epsilon, we're golden.  If not, return false
-    // and let the caller fall back to Sherman-Morrison.
-    foreach(i; 0..cwc.rows) {
-        double dotProd = 0;
-        foreach(j; 0..cwc.columns) {
-            dotProd += csi[j] * cwc[i, j];
-        }
-        
-        // Track how often we have to resort to the fallback algo for testing
-        // purposes.
-        version(unittest) {
-            static int nAttempts;
-            nAttempts++;
-        }
-        
-        if(!approxEqual(dotProd, cTy[i])) {
-            // Keep track of how often this is happening for testing purposes.
-            // In the unittests it should only happen occasionally.
-            version(unittest) {
-                static int nFallback;
-                stderr.writeln("FALLBACK ", ++nFallback, " of ", nAttempts);
-            }
-            
-            return false;
-        }
-    }
-
-    // Multiply X' * csi to get answer.
-    betas[] = 0;
-    foreach(i, col; x) {
-        betas[i] = dotProduct(csi, col);
+    assert(usWus.rows == usWus.columns);
+    assert(usWus.rows == n);
+    foreach(i; 0..n) {
+        usWus[i, i] += lambda;
     }
     
-    return true;  // No numerical instability.
+    auto theta = eval(inv(usWus) * usWy, alloc);
+    eval(v * theta, betas);
 }
 
 /*
-This algorithm is used as a fallback in case the Eilers algorithm fails.
-It's O(N P^2) instead of O(N^2 * P + N^3), but is more numerically stable or
-at least unstable under different circumstances.  It was adapted from the 
+This algorithm is used as a fallback in case we don't have SVD available.
+It's O(N P^2) instead of O(N^2 * P).  It was adapted from the 
 following paper:
 
 Douglas M. Hawkins and Xiangrong Yin.  A faster algorithm for ridge regression
@@ -1337,6 +1261,7 @@ dyadic product.  If p is the number of features/dimensions, and n is the
 number of samples, we have n updates, each of which is O(P^2) for an 
 O(N * P^2) algorithm.  Naive algoriths would be O(P^3).
 */
+static if(!haveSvd) 
 private void shermanMorrisonRidge(
     const(double)[] y,
     const(double[])[] x,  // Column major
@@ -1446,21 +1371,6 @@ unittest {
         assert(approxEqual(normalEq, linalgTrick, 1e-6, 1e-8), text(
             normalEq, linalgTrick));
     }
-
-    // Make sure Eilers and Sherman-Morrison algo get same answers.  Due
-    // to a fortunate accident, the last dataset generated is not a 
-    // pathological one that Eilers doesn't work for.
-    auto eilers = new double[x.length];
-    auto sherman = new double[x.length];
-    assert(eilersRidge(y, x, 1, eilers, null));
-    shermanMorrisonRidge(y, x, 1, sherman, null);
-    assert(approxEqual(eilers, sherman));
-
-    // With weights.
-    auto w = randArray!uniform(y.length, 0.1, 1, gen);
-    assert(eilersRidge(y, x, 1, eilers, w));
-    shermanMorrisonRidge(y, x, 1, sherman, w);
-    assert(approxEqual(eilers, sherman));
 
     // Test stuff that's got some lasso in it.  Values from R's Penalized
     // package.
