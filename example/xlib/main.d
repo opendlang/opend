@@ -73,7 +73,7 @@ bool showXLIB()
 
 void paint(Context ctx)
 {
-    ctx.rectangle(Rectangle(Point(0, 0), 400, 200));
+    ctx.rectangle(0, 0, 400, 200);
     ctx.setSourceRGB(1, 1, 1); 
     ctx.fill();
     ctx.moveTo(Point(50.0, 50.0));
