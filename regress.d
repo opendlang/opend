@@ -1199,8 +1199,15 @@ static if(haveSvd) private void eilersRidge(
     foreach(i; 0..n) foreach(j; 0..p) {
         xMat[i, j] = x[j][i];
     }
+
+    SvdResult!double svdRes;
+    try {
+        svdRes = svdDestructive(xMat, SvdType.economy);
+    } catch(Exception) {
+        betas[] = double.nan;
+        return;
+    }
     
-    auto svdRes = svdDestructive(xMat, SvdType.economy);
     auto us = eval(svdRes.u * svdRes.s, alloc);
     auto v = eval(svdRes.vt.t);
     ExternalMatrixView!double usWus;
