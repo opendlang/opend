@@ -1008,6 +1008,9 @@ private template isMatrixLike(T) {
     }));
 }
 
+version(scid) {
+import scid.matrix;    
+
 /**
 These functions allow efficient calculation of the Pearson, Spearman and
 Kendall correlation matrices and the covariance matrix respectively.  They
@@ -1039,10 +1042,7 @@ auto input = [[8.0, 6, 7, 5],
 auto pearson = pearsonMatrix(input);
 assert(approxEqual(pearson[0, 0], 1));
 ---
-*/
-version(scid) {
-import scid.matrix;
-    
+*/    
 SymmetricMatrix!double pearsonMatrix(RoR)(RoR mat, TaskPool pool = null)
 if(isInputRange!RoR && isInputRange!(ElementType!RoR) &&
    is(ElementType!(ElementType!RoR) : double) &&
