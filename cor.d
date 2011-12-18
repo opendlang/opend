@@ -31,9 +31,9 @@
 module dstats.cor;
 
 import std.conv, std.range, std.typecons, std.exception, std.math,
-    std.traits, std.typetuple, std.algorithm;
+    std.traits, std.typetuple, std.algorithm, std.parallelism, std.numeric;
 
-import dstats.sort, dstats.base, dstats.alloc;
+import dstats.sort, dstats.base, dstats.alloc, dstats.summary;
 
 version(unittest) {
     import std.stdio, dstats.random;
@@ -936,10 +936,6 @@ unittest {
     assert(approxEqual(spearmanPartial, -0.7252));
 }
 
-version(scid):
-
-import scid.matvec, std.parallelism, dstats.summary, std.numeric;
-
 // Work around std.algorithm.map's deficiencies.
 private struct DelMap(R, Del) {
     R range;
@@ -1044,6 +1040,9 @@ auto pearson = pearsonMatrix(input);
 assert(approxEqual(pearson[0, 0], 1));
 ---
 */
+version(scid) {
+import scid.matrix;
+    
 SymmetricMatrix!double pearsonMatrix(RoR)(RoR mat, TaskPool pool = null)
 if(isInputRange!RoR && isInputRange!(ElementType!RoR) &&
    is(ElementType!(ElementType!RoR) : double) &&
@@ -1080,6 +1079,7 @@ if(isInputRange!RoR && isInputRange!(ElementType!RoR) &&
     pearsonSpearmanCov!true(mat, pool, CorCovType.covariance, ret);
     return ret;
 }
+}
 
 /**
 These overloads allow for correlation and covariance matrices to be computed
@@ -1089,6 +1089,9 @@ elements of a floating point type.  It must have the same number of rows
 as the number of vectors in mat and must have at least enough columns in
 each row to support storing the lower triangle.  If ans is a full rectangular
 matrix/range of ranges, only the lower triangle results will be stored.
+
+Note:  These functions can be used without SciD because they don't return
+       SciD types.
 
 Examples:
 ---
@@ -1309,7 +1312,7 @@ private void dotMatrix(Matrix)(
     // using ref-counted COW semantics.
     ret[0, 0] = 0;
     
-    foreach(i; parallel(iota(0, rows.length), 1)) {
+    foreach(i; pool.parallel(iota(0, rows.length), 1)) {
         auto row1 = rows[i];
         
         foreach(j; 0..i + 1) {
@@ -1322,46 +1325,56 @@ unittest {
     auto input = [[8.0, 6, 7, 5],
                   [3.0, 0, 9, 3],
                   [1.0, 4, 1, 5]];
-    auto pearson = pearsonMatrix(input, taskPool);
-    auto spearman = spearmanMatrix(input, taskPool);
-    auto kendall = kendallMatrix(input, taskPool);
-    auto cov = covarianceMatrix(input, taskPool);
-    
-    // Values from R.
-    
-    alias approxEqual ae; // Save typing.
-    assert(ae(pearson[0, 0], 1));
-    assert(ae(pearson[1, 1], 1));
-    assert(ae(pearson[2, 2], 1));
-    assert(ae(pearson[1, 0], 0.3077935));
-    assert(ae(pearson[2, 0], -0.9393364));
-    assert(ae(pearson[2, 1], -0.6103679));
-    
-    assert(ae(spearman[0, 0], 1));
-    assert(ae(spearman[1, 1], 1));
-    assert(ae(spearman[2, 2], 1));
-    assert(ae(spearman[1, 0], 0.3162278));
-    assert(ae(spearman[2, 0], -0.9486833));
-    assert(ae(spearman[2, 1], -0.5));
-    
-    assert(ae(kendall[0, 0], 1));
-    assert(ae(kendall[1, 1], 1));
-    assert(ae(kendall[2, 2], 1));
-    assert(ae(kendall[1, 0], 0.1825742));
-    assert(ae(kendall[2, 0], -0.9128709));
-    assert(ae(kendall[2, 1], -0.4));
-    
-    assert(ae(cov[0, 0], 1.66666));
-    assert(ae(cov[1, 1], 14.25));
-    assert(ae(cov[2, 2], 4.25));
-    assert(ae(cov[1, 0], 1.5));
-    assert(ae(cov[2, 0], -2.5));
-    assert(ae(cov[2, 1], -4.75));
+                  
     
     static double[][] makeRoR() {
         return [[0.0], [0.0, 0.0], [0.0, 0.0, 0.0]];
     }
+
+    auto pearsonRoR = makeRoR();
+    pearsonMatrix(input, pearsonRoR);
     
+    auto spearmanRoR = makeRoR();
+    spearmanMatrix(input, spearmanRoR);
+    
+    auto kendallRoR = makeRoR();
+    kendallMatrix(input, kendallRoR);
+    
+    auto covRoR = makeRoR();
+    covarianceMatrix(input, covRoR);
+    
+    // Values from R.
+    
+    alias approxEqual ae; // Save typing.
+    assert(ae(pearsonRoR[0][0], 1));
+    assert(ae(pearsonRoR[1][1], 1));
+    assert(ae(pearsonRoR[2][2], 1));
+    assert(ae(pearsonRoR[1][0], 0.3077935));
+    assert(ae(pearsonRoR[2][0], -0.9393364));
+    assert(ae(pearsonRoR[2][1], -0.6103679));
+    
+    assert(ae(spearmanRoR[0][0], 1));
+    assert(ae(spearmanRoR[1][1], 1));
+    assert(ae(spearmanRoR[2][2], 1));
+    assert(ae(spearmanRoR[1][0], 0.3162278));
+    assert(ae(spearmanRoR[2][0], -0.9486833));
+    assert(ae(spearmanRoR[2][1], -0.5));
+    
+    assert(ae(kendallRoR[0][0], 1));
+    assert(ae(kendallRoR[1][1], 1));
+    assert(ae(kendallRoR[2][2], 1));
+    assert(ae(kendallRoR[1][0], 0.1825742));
+    assert(ae(kendallRoR[2][0], -0.9128709));
+    assert(ae(kendallRoR[2][1], -0.4));
+    
+    assert(ae(covRoR[0][0], 1.66666));
+    assert(ae(covRoR[1][1], 14.25));
+    assert(ae(covRoR[2][2], 4.25));
+    assert(ae(covRoR[1][0], 1.5));
+    assert(ae(covRoR[2][0], -2.5));
+    assert(ae(covRoR[2][1], -4.75));
+            
+    version(scid) {
     static bool test(double[][] a, SymmetricMatrix!double b) {
         foreach(i; 0..3) foreach(j; 0..i + 1) {
             if(!ae(a[i][j], b[i, j])) return false;
@@ -1370,19 +1383,14 @@ unittest {
         return true;
     }
     
-    auto pearsonRoR = makeRoR();
-    pearsonMatrix(input, pearsonRoR);
+    auto pearson = pearsonMatrix(input, taskPool);
+    auto spearman = spearmanMatrix(input, taskPool);
+    auto kendall = kendallMatrix(input, taskPool);
+    auto cov = covarianceMatrix(input, taskPool);
+    
     test(pearsonRoR, pearson);
-    
-    auto spearmanRoR = makeRoR();
-    spearmanMatrix(input, spearmanRoR);
     test(spearmanRoR, spearman);
-    
-    auto kendallRoR = makeRoR();
-    kendallMatrix(input, kendallRoR);
     test(kendallRoR, kendall);
-    
-    auto covRoR = makeRoR();
-    covarianceMatrix(input, covRoR);
     test(covRoR, cov);
+    }
 }
