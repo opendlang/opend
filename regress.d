@@ -1200,16 +1200,15 @@ static if(haveSvd) private void eilersRidge(
         xMat[i, j] = x[j][i];
     }
 
-    SvdResult!double svdRes;
+    typeof(svdDestructive(xMat, SvdType.economy, alloc)) svdRes;
     try {
-        svdRes = svdDestructive(xMat, SvdType.economy);
+        svdRes = svdDestructive(xMat, SvdType.economy, alloc);
     } catch(Exception) {
         betas[] = double.nan;
         return;
     }
     
     auto us = eval(svdRes.u * svdRes.s, alloc);
-    auto v = eval(svdRes.vt.t);
     ExternalMatrixView!double usWus;
     ExternalVectorView!double usWy;
     
@@ -1242,6 +1241,12 @@ static if(haveSvd) private void eilersRidge(
     }
     
     auto theta = eval(inv(usWus) * usWy, alloc);
+    
+    // Work around weird SciD bug by transposing matrix manually.
+    auto v = ExternalMatrixView!(double, StorageOrder.RowMajor)(
+        svdRes.vt.columns, 
+        svdRes.vt.data[0..svdRes.vt.rows * svdRes.vt.columns]
+    );
     eval(v * theta, betas);
 }
 
