@@ -94,9 +94,9 @@ PowMap!(ExpType, T) powMap(ExpType, T)(T range, ExpType exponent) {
 // linearRegressBeta.  Specifically, computes xTx and xTy.
 // Written specifically to be efficient in the context used here.
 private void rangeMatrixMulTrans(U, T...)(
-    ref double[] xTy, 
-    ref DoubleMatrix xTx,    
-    U y, ref T matIn, 
+    ref double[] xTy,
+    ref DoubleMatrix xTx,
+    U y, ref T matIn,
     RegionAllocator alloc
 ) {
     static if(isArray!(T[0]) &&
@@ -851,6 +851,9 @@ private MeanSD[] calculateSummaries(X...)(X xIn, RegionAllocator alloc) {
         foreach(ref range; x) {
             range = range.save;
         }
+
+        enum allHaveLength = hasLength!(ElementType!(typeof(x)));
+
     } else {
         auto ret = alloc2.uninitializedArray!MeanSD(xIn.length);
         alias xIn x;
@@ -858,29 +861,43 @@ private MeanSD[] calculateSummaries(X...)(X xIn, RegionAllocator alloc) {
         foreach(ti, R; X) {
             x[ti] = x[ti].save;
         }
+
+        enum allHaveLength = allSatisfy!(hasLength, X);
     }
 
     ret[] = MeanSD.init;
 
-    bool someEmpty() {
+    static if(allHaveLength) {
+        size_t minLen = size_t.max;
         foreach(range; x) {
-            if(range.empty) return true;
+            minLen = min(minLen, range.length);
         }
 
-        return false;
-    }
-
-    void popAll() {
-        foreach(ti, elem; x) {
-            x[ti].popFront();
-        }
-    }
-
-    while(!someEmpty) {
         foreach(i, range; x) {
-            ret[i].put(range.front);
+            ret[i] = meanStdev(take(range, minLen));
         }
-        popAll();
+
+    } else {
+        bool someEmpty() {
+            foreach(range; x) {
+                if(range.empty) return true;
+            }
+
+            return false;
+        }
+
+        void popAll() {
+            foreach(ti, elem; x) {
+                x[ti].popFront();
+            }
+        }
+
+        while(!someEmpty) {
+            foreach(i, range; x) {
+                ret[i].put(range.front);
+            }
+            popAll();
+        }
     }
 
     return ret;
@@ -963,8 +980,8 @@ microarray data with penalized logistic regression. Proceedings of SPIE.
 Progress in Biomedical Optics and Images vol. 4266, pp. 187-198
 
 Douglas M. Hawkins and Xiangrong Yin.  A faster algorithm for ridge regression
-of reduced rank data.  Computational Statistics & Data Analysis Volume 40, 
-Issue 2, 28 August 2002, Pages 253-262 
+of reduced rank data.  Computational Statistics & Data Analysis Volume 40,
+Issue 2, 28 August 2002, Pages 253-262
 
 http://en.wikipedia.org/wiki/Sherman%E2%80%93Morrison_formula
 */
@@ -1015,11 +1032,11 @@ double[] linearRegressPenalized(Y, X...)
 }
 
 private void coordDescent(
-    double[] y, 
-    double[][] x, 
-    double[] betas, 
-    double lasso, 
-    double ridge, 
+    double[] y,
+    double[][] x,
+    double[] betas,
+    double lasso,
+    double ridge,
     double[] w
 ) {
     auto alloc = newRegionAllocator();
@@ -1060,7 +1077,7 @@ private void coordDescent(
     double doIter(double[] betas, double[][] x) {
         double maxRelError = 0;
         bool predictionsChanged = true;
-        
+
         foreach(j, ref b; betas) {
             if(b == 0) {
                 if(predictionsChanged) {
@@ -1149,10 +1166,10 @@ Ridge regression, case where P > N, where P is number of features and N
 is number of samples.
 */
 private void ridgeLargeP(
-    const(double)[] y, 
-    const double[][] x, 
-    immutable double lambda, 
-    double[] betas, 
+    const(double)[] y,
+    const double[][] x,
+    immutable double lambda,
+    double[] betas,
     const double[] w = null
 ) {
     static if(haveSvd) {
@@ -1160,7 +1177,7 @@ private void ridgeLargeP(
     } else {
         return shermanMorrisonRidge(y, x, lambda, betas, w);
     }
-}        
+}
 
 version(scid) {
     version(nodeps) {
@@ -1172,29 +1189,29 @@ version(scid) {
     enum haveSvd = false;
 }
 
-/* 
+/*
 An implementation of ridge regression for large dimension.  Taken from:
 
 Eilers, P., Boer, J., Van Ommen, G., Van Houwelingen, H. 2001 Classification of
 microarray data with penalized logistic regression. Proceedings of SPIE.
 Progress in Biomedical Optics and Images vol. 4266, pp. 187-198
 
-This algorithm is very fast, O(N^2 * P) but requires singular value 
+This algorithm is very fast, O(N^2 * P) but requires singular value
 decomposition.  Therefore, we only use if we're using SciD with full
 dependency support.
 */
 static if(haveSvd) private void eilersRidge(
-    const(double)[] yArr, 
-    const double[][] x, 
-    immutable double lambda, 
-    double[] betas, 
+    const(double)[] yArr,
+    const double[][] x,
+    immutable double lambda,
+    double[] betas,
     const double[] weightArr
-) {    
+) {
     if(x.length == 0) return;
     auto alloc = newRegionAllocator();
     immutable n = x[0].length;
     immutable p = x.length;
-    
+
     auto xMat = ExternalMatrixView!double(n, p, alloc);
     foreach(i; 0..n) foreach(j; 0..p) {
         xMat[i, j] = x[j][i];
@@ -1207,44 +1224,44 @@ static if(haveSvd) private void eilersRidge(
         betas[] = double.nan;
         return;
     }
-    
+
     auto us = eval(svdRes.u * svdRes.s, alloc);
     ExternalMatrixView!double usWus;
     ExternalVectorView!double usWy;
-    
+
     // Have to cast away const because ExternalVectorView doesn't play
     // nice w/ it yet.
     auto y = ExternalVectorView!double(cast(double[]) yArr);
-    
+
     if(weightArr.length) {
         // Once we've multiplied s by u, we don't need it anymore.  Overwrite
         // its contents with the weight array to get weights in the form of
         // a diagonal matrix.
         auto w = svdRes.s;
         svdRes.s = typeof(svdRes.s).init;
-        
+
         foreach(i, weight; weightArr) {
             w[i, i] = weight;
         }
-        
+
         usWus = eval(us.t * w * us, alloc);
         usWy = eval(us.t * w * y, alloc);
     } else {
         usWus = eval(us.t * us, alloc);
         usWy = eval(us.t * y, alloc);
     }
-    
+
     assert(usWus.rows == usWus.columns);
     assert(usWus.rows == n);
     foreach(i; 0..n) {
         usWus[i, i] += lambda;
     }
-    
+
     auto theta = eval(inv(usWus) * usWy, alloc);
-    
+
     // Work around weird SciD bug by transposing matrix manually.
     auto v = ExternalMatrixView!(double, StorageOrder.RowMajor)(
-        svdRes.vt.columns, 
+        svdRes.vt.columns,
         svdRes.vt.data[0..svdRes.vt.rows * svdRes.vt.columns]
     );
     eval(v * theta, betas);
@@ -1252,34 +1269,34 @@ static if(haveSvd) private void eilersRidge(
 
 /*
 This algorithm is used as a fallback in case we don't have SVD available.
-It's O(N P^2) instead of O(N^2 * P).  It was adapted from the 
+It's O(N P^2) instead of O(N^2 * P).  It was adapted from the
 following paper:
 
 Douglas M. Hawkins and Xiangrong Yin.  A faster algorithm for ridge regression
-of reduced rank data.  Computational Statistics & Data Analysis Volume 40, 
-Issue 2, 28 August 2002, Pages 253-262 
+of reduced rank data.  Computational Statistics & Data Analysis Volume 40,
+Issue 2, 28 August 2002, Pages 253-262
 
 It also uses Wikipedia's page on Sherman-Morrison:
 
 http://en.wikipedia.org/wiki/Sherman%E2%80%93Morrison_formula
 
-I simplified it by only doing rank-1 updates of inv(x' * x * lambda * I), 
-since I'm just trying to calculate the ridge estimate, not do efficient 
-cross-validation.  The idea is to start with an empty dataset.  Here, 
+I simplified it by only doing rank-1 updates of inv(x' * x * lambda * I),
+since I'm just trying to calculate the ridge estimate, not do efficient
+cross-validation.  The idea is to start with an empty dataset.  Here,
 inv(x' * x + lambda * I) = 1 / lambda * I.  Then, add each sample (row of x)
 sequentially.  This is equivalent to adding s * s' to (x' * x + lambda * I)
-where s is the vector of predictors for the sample.  This is known as a 
+where s is the vector of predictors for the sample.  This is known as a
 dyadic product.  If p is the number of features/dimensions, and n is the
-number of samples, we have n updates, each of which is O(P^2) for an 
+number of samples, we have n updates, each of which is O(P^2) for an
 O(N * P^2) algorithm.  Naive algoriths would be O(P^3).
 */
-static if(!haveSvd) 
+static if(!haveSvd)
 private void shermanMorrisonRidge(
     const(double)[] y,
     const(double[])[] x,  // Column major
     immutable double lambda,
     double[] betas,
-    const(double)[] w 
+    const(double)[] w
 ) in {
     assert(lambda > 0);
     foreach(col; x) assert(col.length == x[0].length);
@@ -1289,7 +1306,7 @@ private void shermanMorrisonRidge(
     immutable p = x.length;
     if(p == 0) return;
     immutable n = x[0].length;
-    
+
     auto v = alloc.uninitializedArray!(double[])(p);
     double[] u;
     if(w.length) {
@@ -1297,55 +1314,55 @@ private void shermanMorrisonRidge(
     } else {
         u = v;
     }
-    
+
     auto vTxTxNeg1 = alloc.uninitializedArray!(double[])(p);
     auto xTxNeg1u = alloc.uninitializedArray!(double[])(p);
-    
+
     // Before any updates are done, x'x = I * lambda, so inv(x'x) = I / lambda.
     auto xTxNeg1 = alloc.uninitializedArray!(double[][])(p, p);
     foreach(i; 0..p) foreach(j; 0..p) {
         xTxNeg1[i][j] = (i == j) ? (1.0 / lambda) : 0;
     }
-    
+
     foreach(sampleIndex; 0..n) {
         copy(transversal(x[], sampleIndex), v);
         if(w.length) {
             u[] = w[sampleIndex] * v[];
         }
-        
+
         // Calculate denominator of update:  1 + v' * xTxNeg1 * u
         vTxTxNeg1[] = 0;
         foreach(rowIndex, row; xTxNeg1) {
             vTxTxNeg1[] += v[rowIndex] * row[];
         }
         immutable denom = 1.0 + dotProduct(vTxTxNeg1, u);
-        
+
         // Calculate numerator.  The parentheses indicate how the operation
         // is coded.  This is for computational efficiency.  Removing the
-        // parentheses would be mathematically equivalent due to associativity:  
+        // parentheses would be mathematically equivalent due to associativity:
         // (xTxNeg1 * u) * (v' * xTxNeg1).
         xTxNeg1u[] = 0;
         foreach(rowIndex, row; xTxNeg1) {
             xTxNeg1u[rowIndex] = dotProduct(row, u);
         }
-        
+
         foreach(i, row; xTxNeg1) {
             immutable multiplier = xTxNeg1u[i] / denom;
             row[] -= multiplier * vTxTxNeg1[];
         }
     }
-    
+
     auto xTy = alloc.uninitializedArray!(double[])(p);
     if(w.length) {
         auto yw = alloc.uninitializedArray!(double[])(n);
         yw[] = y[] * w[];
         y = yw;
-    } 
-    
+    }
+
     foreach(colIndex, col; x) {
         xTy[colIndex] = dotProduct(col[], y[]);
     }
-      
+
     foreach(rowIndex, row; xTxNeg1) {
         betas[rowIndex] = dotProduct(row, xTy);
     }
@@ -1716,8 +1733,8 @@ microarray data with penalized logistic regression. Proceedings of SPIE.
 Progress in Biomedical Optics and Images vol. 4266, pp. 187-198
 
 Douglas M. Hawkins and Xiangrong Yin.  A faster algorithm for ridge regression
-of reduced rank data.  Computational Statistics & Data Analysis Volume 40, 
-Issue 2, 28 August 2002, Pages 253-262 
+of reduced rank data.  Computational Statistics & Data Analysis Volume 40,
+Issue 2, 28 August 2002, Pages 253-262
 
 http://en.wikipedia.org/wiki/Sherman%E2%80%93Morrison_formula
 */
@@ -1885,7 +1902,7 @@ LogisticRes logisticRegressImpl(T, V...)
         }
     } else {
         auto xx = toRandomAccessTuple(xIn, alloc);
-        auto x = xx.expand;        
+        auto x = xx.expand;
     }
 
     typeof(return) ret;
@@ -1933,7 +1950,7 @@ private void logisticRegressPenalizedImpl(Y, X...)
     } else {
         alias xIn x;
     }
-    
+
     auto alloc = newRegionAllocator();
     auto ps = alloc.uninitializedArray!(double[])(y.length);
     betas[] = 0;
