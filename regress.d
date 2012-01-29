@@ -33,8 +33,8 @@
  */
 module dstats.regress;
 
-import std.math, std.algorithm, std.traits, std.array, std.traits, std.exception,
-    std.typetuple, std.typecons, std.numeric;
+import std.math, std.algorithm, std.traits, std.array, std.traits, std.string,
+    std.exception, std.typetuple, std.typecons, std.numeric, std.parallelism;
 
 import dstats.alloc, std.range, std.conv, dstats.distrib, dstats.cor,
     dstats.base, dstats.summary, dstats.sort;
@@ -1847,10 +1847,368 @@ unittest {
         [0.367613 , -0.017227631, 0.000000000, 0.003875104, 0.000000000]));
 }
 
-// This was a terrble name choice.
-deprecated alias logistic inverseLogit;
+/**
+This function performs loess regression.  Loess regression is a local 
+regression procedure, where a prediction of the dependent (y) variable
+is made from an observation of the independent (x) variable by weighted
+least squares over x values in the neighborhood of the value being evaluated.
+
+In the future a separate function may be included to perform loess regression
+with multiple predictors.  However, one predictor is the much more common 
+case and the multiple predictor case will require a much different API
+and implementation, so for now only one predictor is supported.
+
+Params:
+
+y      = Observations of the dependent variable.
+x      = Observations of the independent variable.
+span   = The fraction of x observations considered to be "in the neighborhood"
+         when performing local regression to predict the y value for a new x.
+         For example, if 8 observations are provided and span == 0.5,
+         the 4 nearest neighbors will be used on evaluation.
+degree = The polynomial degree of the local regression.  Must be less than
+         the number of neighbors (span * x.length).
+         
+Returns:
+
+A Loess1D object.  This object can be used to make predictions based on 
+the loess model.  The computations involved are done lazily, i.e. this 
+function sets up the Loess1D instance and returns without computing
+any regression models.
+
+Examples:
+---
+auto x = [1, 2, 3, 4, 5, 6, 7];
+auto y = [3, 6, 2, 4, 3, 6, 8];
+
+// Build the Loess1D object.
+auto model = loess1D(y, x, 0.5);
+
+// Compute the weights for robust regression.
+model.computeRobustWeights(2);
+
+// Predict the value of y when x == 5.5, using a robustness level of 2.
+auto prediction = model.predict(5.5, 2);
+---
+
+References:
+
+Cleveland, W.S. (1979). "Robust Locally Weighted Regression and Smoothing 
+Scatterplots". Journal of the American Statistical Association 74 (368): 
+829-836. 
+*/
+Loess1D loess1D(RX, RY)(
+    RY y,
+    RX x,
+    double span,
+    int degree = 1
+) {
+    dstatsEnforce(span > 0 && span <= 1, format(
+        "Span must be >0 and <= 1 for loess1D, not %s.", span
+    ));
+    dstatsEnforce(degree >= 0, "Degree must be >= 0 for loess1D.");
+
+    auto ret = new Loess1D;
+    ret._x = array(map!(to!double)(x));
+    ret._y = array(map!(to!double)(y));
+    qsort(ret._x, ret._y);
+    
+    ret.nNeighbors = to!int(ret.x.length * span);
+    dstatsEnforce(ret.nNeighbors > degree, format(
+        "Cannot do degree %s loess with a window of only %s points.  " ~
+        "Increase the span parameter.", degree, ret.nNeighbors
+    ));
+    
+    ret._degree = degree;
+    auto xPoly = new double[][degree];
+    if(degree > 0) xPoly[0] = ret._x;
+
+    foreach(d; 2..degree + 1) {
+        xPoly[d - 1] = ret._x.dup;
+        xPoly[d - 1][] ^^= d;
+    }
+
+    ret.xPoly = xPoly;
+    return ret;
+}
+
+unittest {
+    auto x = [1, 2, 3, 4, 5, 6, 7, 8];
+    auto y = [3, 2, 8, 2, 6, 9, 0, 1];
+    
+    auto loess1 = loess1D(y, x, 0.75, 1);
+    
+    // Values from R's lowess() function.  This gets slightly different
+    // results than loess(), probably due to disagreements bout windowing
+    // details.
+    assert(approxEqual(loess1.predictions(0), 
+        [2.9193046, 3.6620295, 4.2229953, 5.2642335, 5.3433985, 4.4225636,
+         2.7719778, 0.6643268]
+    ));
+    
+    loess1 = loess1D(y, x, 0.5, 1);
+    assert(approxEqual(loess1.predictions(0),
+        [2.1615941, 4.0041736, 4.5642738, 4.8631052, 5.7136895, 5.5642738,
+         2.8631052, -0.1977227]
+    ));
+ 
+    assert(approxEqual(loess1.predictions(2),
+        [2.2079526, 3.9809030, 4.4752888, 4.8849727, 5.7260333, 5.4465225,
+         2.8769120, -0.1116018]
+    ));
+    
+    // Test 0th and 2nd order using R's loess() function since lowess() doesn't
+    // support anything besides first degree.
+    auto loess0 = loess1D(y, x, 0.5, 0);
+    assert(approxEqual(loess0.predictions(0),
+        [3.378961, 4.004174, 4.564274, 4.863105, 5.713689, 5.564274, 2.863105,
+         1.845369]
+    ));
+    
+    // Not testing the last point.  R's loess() consistently gets slightly
+    // different answers for the last point than either this function or
+    // R's lowess() for degree > 0.  (This function and R's lowess() agree 
+    // when this happens.)  It's not clear which is right but the differences
+    // are small and not practically important.
+    auto loess2 = loess1D(y, x, 0.75, 2);
+    assert(approxEqual(loess2.predictions(0)[0..$ - 1],
+        [2.4029984, 4.1021339, 4.8288941, 4.5523535, 6.0000000, 6.4476465,
+         3.7669741]
+    ));
+}
+
+/**
+This class is returned from the loess1D function and holds the state of a
+loess regression with one predictor variable.
+*/
+final class Loess1D {
+private:
+    double[] _x;
+    double[][] xPoly;
+    double[] _y;
+    double[][] yHat;
+    double[][] residualWeights;
+
+    int _degree;
+    int nNeighbors;
+
+    size_t nearestNeighborX(double point) const {
+        auto sortedX = assumeSorted(x);
+        auto trisected = sortedX.trisect(point);
+
+        if(trisected[1].length) return trisected[0].length;
+        if(!trisected[0].length) return 0;
+        if(!trisected[2].length) return trisected[0].length - 1;
+
+        if(point - trisected[0][trisected[0].length - 1] <
+           trisected[2][0] - point
+        ) {
+            return trisected[0].length - 1;
+        }
+
+        return trisected[0].length;
+    }
+    
+    static void computexTWx(
+        const double[][] xPoly,
+        const(double)[] weights,
+        ref DoubleMatrix covMatrix
+    ) {
+        foreach(i; 0..xPoly.length) foreach(j; 0..i + 1) {
+            covMatrix[i + 1, j + 1] = covMatrix[j + 1, i + 1] = threeDot(
+                xPoly[i], weights, xPoly[j]
+            );
+        }
+        
+        // Handle intercept terms
+        foreach(i; 1..covMatrix.rows) {
+            covMatrix[0, i] = covMatrix[i, 0] = dotProduct(weights, xPoly[i - 1]);
+        }
+        
+        covMatrix[0, 0] = sum(weights);
+    }
+
+    static void computexTWy(
+        const(double)[][] xPoly,
+        const(double)[] y,
+        const(double)[] weights,
+        double[] ans
+    ) {
+        foreach(i; 0..xPoly.length) {
+            ans[i + 1] = threeDot(xPoly[i], weights, y);
+        }
+        
+        // Intercept:
+        ans[0] = dotProduct(weights, y);
+    }
+
+public:
+    /**
+    Predict the value of y when x == point, using robustness iterations
+    of the biweight procedure outlined in the reference to make the
+    estimates more robust.
+    
+    Notes:  
+    
+    This function is computationally intensive but may be called
+    from multiple threads simultaneously.  When predicting a
+    large number of points, a parallel foreach loop may be used.
+    
+    Before calling this function with robustness > 0, 
+    computeRobustWeights() must be called.  See this function for details.
+    
+    Returns:  The predicted y value.
+    */
+    double predict(double point, int robustness = 0) const {
+        dstatsEnforce(cast(int) residualWeights.length >= robustness,
+            "For robust loess1D estimates, computeRobustWeights() " ~
+            "must be called with the proper robustness level before " ~
+            "calling predict()."
+        );
+            
+        auto alloc = newRegionAllocator();
+        auto covMatrix = doubleMatrix(degree + 1, degree + 1, alloc);
+        auto xTy = alloc.uninitializedArray!(double[])(degree + 1);
+        auto betas = alloc.uninitializedArray!(double[])(degree + 1);
+        auto xPolyNeighbors = alloc.array(xPoly);
+
+        size_t firstNeighbor = nearestNeighborX(point);
+        size_t lastNeighbor = firstNeighbor;
+
+        while(lastNeighbor - firstNeighbor + 1 < nNeighbors) {
+            immutable upperDiff = (lastNeighbor + 1 >= x.length) ?
+                double.infinity : (x[lastNeighbor + 1] - point);
+            immutable lowerDiff = (firstNeighbor == 0) ?
+                double.infinity : (point - x[firstNeighbor - 1]);
+
+            if(upperDiff < lowerDiff) {
+                lastNeighbor++;
+            } else {
+                firstNeighbor--;
+            }
+        }
+
+        foreach(j, col; xPoly) {
+            xPolyNeighbors[j] = xPoly[j][firstNeighbor..lastNeighbor + 1];
+        }
+        auto yNeighbors = y[firstNeighbor..lastNeighbor + 1];
+        immutable maxDist = computeMaxDist(x[firstNeighbor..lastNeighbor + 1], point);
+        auto w = alloc.uninitializedArray!(double[])(yNeighbors.length);
+        foreach(j, neighbor; x[firstNeighbor..lastNeighbor + 1]) {
+            immutable diff = abs(point - neighbor);
+            w[j] = max(0, (1 - (diff / maxDist) ^^ 3) ^^ 3);
+            if(robustness > 0) {
+                w[j] *= residualWeights[robustness - 1][j + firstNeighbor];
+            }
+        }
+
+        computexTWx(xPolyNeighbors, w, covMatrix);
+        computexTWy(xPolyNeighbors, w, yNeighbors, xTy);
+        choleskySolve(covMatrix, xTy, betas);
+
+        double ret = 0;
+        foreach(d; 0..degree + 1) {
+            ret += betas[d] * point ^^ d;
+        }
+
+        return ret;
+    }    
+
+    /**
+    Compute the weights for robust loess, for all robustness levels <= the 
+    robustness parameter.  This computation is embarrassingly parallel, so if a 
+    TaskPool is provided it will be parallelized.
+    
+    This function must be called before calling predict() with a robustness
+    value > 0.  computeRobustWeights() must be called with a robustness level
+    >= the robustness level predict() is to be called with.  This is not 
+    handled implicitly because computeRobustWeights() is very computationally
+    intensive and because it modifies the state of the Loess1D object, while
+    predict() is const.  Forcing computeRobustWeights() to be called explicitly 
+    allows multiple instances of predict() to be evaluated in parallel.
+    */
+    void computeRobustWeights(int robustness, TaskPool pool = null) {
+        dstatsEnforce(robustness >= 0, "Robustness cannot be <0.");
+        
+        if(cast(int) yHat.length < robustness) {
+            computeRobustWeights(robustness - 1, pool);
+        }
+
+        if(yHat.length >= robustness + 1) {
+            return;
+        }
+
+        if(robustness > 0) {
+            auto resid = new double[y.length];
+            residualWeights ~= resid;
+            resid[] = y[] - yHat[$ - 1][];
+
+            foreach(ref r; resid) r = abs(r);
+            immutable sixMed = 6 * median(resid);
+
+            foreach(ref r; resid) {
+                r = biweight(r / sixMed);
+            }
+        }
+
+        yHat ~= new double[y.length];
+        
+        if(pool is null) {
+            foreach(i, point; x) {
+                yHat[robustness][i] = predict(point, robustness);
+            }
+        } else {
+            foreach(i, point; pool.parallel(x, 1)) {
+                yHat[robustness][i] = predict(point, robustness);
+            }
+        }
+    }
+
+    /**
+    Obtain smoothed predictions of y at the values of x provided on creation
+    of this object, for the given level of robustness.  Evaluating
+    these is computationally expensive and may be parallelized by
+    providing a TaskPool object.
+    */
+    const(double)[] predictions(int robustness, TaskPool pool = null) {
+        dstatsEnforce(robustness >= 0, "Robustness cannot be <0.");
+        computeRobustWeights(robustness, pool);
+        return yHat[robustness];
+    }
+    
+const pure nothrow @property @safe:
+
+    /// The polynomial degree for the local regression.
+    int degree() {
+        return _degree;
+    }
+
+    /// The x values provided on object creation.
+    const(double)[] x() {
+        return _x;
+    }
+
+    /// The y values provided on object creation.
+    const(double)[] y() {
+        return _y;
+    }
+}
 
 private:
+double biweight(double x) pure nothrow @safe {
+    if(abs(x) >= 1) return 0;
+    return (1 - x ^^ 2) ^^ 2;
+}
+
+double computeMaxDist(const double[] stuff, double x) pure nothrow @safe {
+    double ret = 0;
+    foreach(elem; stuff) {
+        ret = max(ret, abs(elem - x));
+    }
+
+    return ret;
+}
+
 double absMax(double a, double b) {
     return max(abs(a), abs(b));
 }
@@ -2394,4 +2752,81 @@ auto toRandomAccessTuple(T...)(T input, RegionAllocator alloc) {
     }
 
     return ret;
+}
+
+// Borrowed and modified from Phobos's dotProduct() function,
+// Copyright Andrei Alexandrescu 2008 - 2009.  Originally licensed
+// under the Boost Software License 1.0.  (License text included
+// at the beginning of this file.)
+private double threeDot(
+    const double[] x1,
+    const double[] x2,
+    const double[] x3
+) in {
+    assert(x1.length == x2.length);
+    assert(x2.length == x3.length);
+} body {
+    immutable n = x1.length;
+    auto avec = x1.ptr, bvec = x2.ptr, cvec = x3.ptr;
+    typeof(return) sum0 = 0, sum1 = 0;
+
+    const all_endp = avec + n;
+    const smallblock_endp = avec + (n & ~3);
+    const bigblock_endp = avec + (n & ~15);
+
+    for (; avec != bigblock_endp; avec += 16, bvec += 16, cvec += 16)
+    {
+        sum0 += avec[0] * bvec[0] * cvec[0];
+        sum1 += avec[1] * bvec[1] * cvec[1];
+        sum0 += avec[2] * bvec[2] * cvec[2];
+        sum1 += avec[3] * bvec[3] * cvec[3];
+        sum0 += avec[4] * bvec[4] * cvec[4];
+        sum1 += avec[5] * bvec[5] * cvec[5];
+        sum0 += avec[6] * bvec[6] * cvec[6];
+        sum1 += avec[7] * bvec[7] * cvec[7];
+        sum0 += avec[8] * bvec[8] * cvec[8];
+        sum1 += avec[9] * bvec[9] * cvec[9];
+        sum0 += avec[10] * bvec[10] * cvec[10];
+        sum1 += avec[11] * bvec[11] * cvec[11];
+        sum0 += avec[12] * bvec[12] * cvec[12];
+        sum1 += avec[13] * bvec[13] * cvec[13];
+        sum0 += avec[14] * bvec[14] * cvec[14];
+        sum1 += avec[15] * bvec[15] * cvec[15];
+    }
+
+    for (; avec != smallblock_endp; avec += 4, bvec += 4, cvec += 4) {
+        sum0 += avec[0] * bvec[0] * cvec[0];
+        sum1 += avec[1] * bvec[1] * cvec[1];
+        sum0 += avec[2] * bvec[2] * cvec[2];
+        sum1 += avec[3] * bvec[3] * cvec[3];
+    }
+
+    sum0 += sum1;
+
+    /* Do trailing portion in naive loop. */
+    while (avec != all_endp)
+    {
+        sum0 += *avec * *bvec * *cvec;
+        ++avec;
+        ++bvec;
+        ++cvec;
+    }
+
+    return sum0;
+}
+
+unittest {
+    auto a = [1.0,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21];
+    auto b = a.dup;
+    b[] *= 2;
+    auto c = b.dup;
+    c[] *= 3;
+    immutable ans1 = threeDot(a, b, c);
+
+    double ans2 = 0;
+    foreach(i; 0..21) {
+        ans2 += a[i] * b[i] * c[i];
+    }
+
+    assert(approxEqual(ans1, ans2));
 }
