@@ -525,7 +525,7 @@ unittest {
     // Test transposed.
     PrinCompOptions opts;
     opts.transpose = true;
-    const(double)[][] m2 = mat;
+    const double[][] m2 = mat;
     auto allCompsT = firstNComponents(m2, 3, opts);
 
     assert(plusMinusAe(allCompsT[0].x, [-3.2045, 6.3829695, -0.7227162, -2.455]));
