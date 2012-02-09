@@ -212,7 +212,7 @@ struct ObsEnt(T...) {
     T compRep;
     alias compRep this;
 
-    static if(hasIndirections!(typeof(this))) {
+    static if(anySatisfy!(hasIndirections, T)) {
 
         // Then there's indirection involved.  We can't just do all our
         // comparison and hashing operations bitwise.
