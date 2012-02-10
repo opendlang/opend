@@ -37,6 +37,7 @@ import std.traits, core.memory, std.array, std.range, core.exception,
     std.functional, std.math, std.algorithm : max;
 
 static import core.stdc.stdlib;
+import core.stdc.string : memcpy;
 
 import dstats.base;
 
@@ -420,17 +421,17 @@ public:
    }
 
     /**Returns a forward range to iterate over the keys of this table.
-     * The lifetime of the HashRange must not exceed the lifetime of this
+     * The lifetime of this range must not exceed the lifetime of this
      * StackHash.*/
-    HashRange!(K, StackHash!(K, V)) keys() {
-        return typeof(return)(&this);
+    auto keys() {
+        return HashRange!(K, StackHash!(K, V))(&this);
     }
 
     /**Returns a forward range to iterate over the values of this table.
-     * The lifetime of the HashRange must not exceed the lifetime of this
+     * The lifetime of this range must not exceed the lifetime of this
      * StackHash.*/
-    HashRange!(V, StackHash!(K, V), true) values() {
-       return typeof(return)(&this);
+    auto values() {
+       return HashRange!(V, StackHash!(K, V), true)(&this);
     }
 
     ///
@@ -728,9 +729,8 @@ public:
 
     /**Returns a forward range of the elements of this struct.  The range's
      * lifetime must not exceed the lifetime of this object.*/
-    HashRange!(K, typeof(this)) elems() {
-        auto ret = typeof(return)(&this);
-        return ret;
+    auto elems() {
+        return HashRange!(K, typeof(this))(&this);
     }
 
     ///
