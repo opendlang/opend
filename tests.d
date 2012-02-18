@@ -3412,17 +3412,17 @@ unittest {
     auto t5 = pearsonCorTest(myArr, myArr, Alt.less);
     auto t6 = pearsonCorTest(myArr, myArr, Alt.greater);
     assert(approxEqual(t4.testStat, 1));
-    assert(t4.p == 0);
-    assert(t5.p == 1);
-    assert(t6.p == 0);
+    assert(approxEqual(t4.p, 0));
+    assert(approxEqual(t5.p, 1));
+    assert(approxEqual(t6.p, 0));
 
     auto t7 = pearsonCorTest(myArr, myArrReverse, Alt.twoSided);
     auto t8 = pearsonCorTest(myArr, myArrReverse, Alt.less);
     auto t9 = pearsonCorTest(myArr, myArrReverse, Alt.greater);
     assert(approxEqual(t7.testStat, -1));
-    assert(t7.p == 0);
-    assert(t8.p == 0);
-    assert(t9.p == 1);
+    assert(approxEqual(t7.p, 0));
+    assert(approxEqual(t8.p, 0));
+    assert(approxEqual(t9.p, 1));
 }
 
 /**

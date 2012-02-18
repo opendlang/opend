@@ -76,7 +76,7 @@ Author:  David Simcha
 module dstats.sort;
 
 import std.traits, std.algorithm, std.math, std.functional, std.math, std.typecons,
-       std.typetuple, std.range, std.array, std.traits, std.string : whitespace;
+       std.typetuple, std.range, std.array, std.traits, std.ascii : whitespace;
 
 import dstats.alloc;
 
