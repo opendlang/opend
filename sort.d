@@ -163,13 +163,13 @@ unittest {
 }
 
 T prepareForSorting(alias comp, T)(T arr)
-if(!isFloatingPoint!(ElementType!T)) {
+if(!isFloatingPoint!(ElementType!T) || !isSimpleComparison!comp) {
     return arr;
 }
 
 /* Check for NaNs and throw an exception if they're present.*/
 real[] prepareForSorting(alias comp, F)(F arr)
-if(is(F == real[])) {
+if(is(F == real[]) && isSimpleComparison!comp) {
     foreach(elem; arr) {
         if(isNaN(elem)) {
             throw new SortException("Can't sort NaNs.");
@@ -184,7 +184,7 @@ if(is(F == real[])) {
  * compared to just sorting as floats.
  */
 auto prepareForSorting(alias comp, F)(F arr)
-if(is(F == double[]) || is(F == float[])) {
+if(is(F == double[]) || is(F == float[]) && isSimpleComparison!comp) {
     static if(is(F == double[])) {
         alias long Int;
         enum signMask = 1UL << 63;
@@ -203,20 +203,14 @@ if(is(F == double[]) || is(F == float[])) {
             throw new SortException("Can't sort NaNs.");
         }
 
-        static if(isSimpleComparison!comp) {
-            if(elem & signMask) {
-                // Negative.
-                elem ^= signMask;
-                elem = ~elem;
-            }
+        if(elem & signMask) {
+            // Negative.
+            elem ^= signMask;
+            elem = ~elem;
         }
     }
 
-    static if(isSimpleComparison!comp) {
-        return intArr;
-    } else {
-        return arr;
-    }
+    return intArr;
 }
 
 /*private*/ void postProcess(alias comp, T)(T arr)
