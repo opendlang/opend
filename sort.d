@@ -162,55 +162,54 @@ unittest {
     }
 }
 
-T prepareForSorting(alias comp, T)(T arr)
-if(!isFloatingPoint!(ElementType!T) || !isSimpleComparison!comp) {
-    return arr;
-}
-
-/* Check for NaNs and throw an exception if they're present.*/
-real[] prepareForSorting(alias comp, F)(F arr)
-if(is(F == real[]) && isSimpleComparison!comp) {
-    foreach(elem; arr) {
-        if(isNaN(elem)) {
-            throw new SortException("Can't sort NaNs.");
-        }
-    }
-
-    return arr;
-}
-
 /* Check for NaN and do some bit twiddling so that a float or double can be
  * compared as an integer.  This results in approximately a 40% speedup
  * compared to just sorting as floats.
  */
-auto prepareForSorting(alias comp, F)(F arr)
-if(is(F == double[]) || is(F == float[]) && isSimpleComparison!comp) {
-    static if(is(F == double[])) {
-        alias long Int;
-        enum signMask = 1UL << 63;
+auto prepareForSorting(alias comp, T)(T arr) {
+    static if(isSimpleComparison!comp) {
+        static if(is(T == real[])) {
+            foreach(elem; arr) {
+                if(isNaN(elem)) {
+                    throw new SortException("Can't sort NaNs.");
+                }
+            }
+            
+            return arr;
+        } else static if(is(T == double[]) || is(T == float[])) {
+            static if(is(T == double[])) {
+                alias long Int;
+                enum signMask = 1UL << 63;
+            } else {
+                alias int Int;
+                enum signMask = 1U << 31;
+            }
+
+            Int[] intArr = cast(Int[]) arr;
+            foreach(i, ref elem; intArr) {
+                if(intIsNaN(elem)) {
+                    // Roll back the bit twiddling in case someone catches the
+                    // exception, so that they don't see corrupted values.
+                    postProcess!comp(intArr[0..i]);
+
+                    throw new SortException("Can't sort NaNs.");
+                }
+
+                if(elem & signMask) {
+                    // Negative.
+                    elem ^= signMask;
+                    elem = ~elem;
+                }
+            }
+
+            return intArr;
+        } else {
+            return arr;
+        }
+        
     } else {
-        alias int Int;
-        enum signMask = 1U << 31;
+        return arr;
     }
-
-    Int[] intArr = cast(Int[]) arr;
-    foreach(i, ref elem; intArr) {
-        if(intIsNaN(elem)) {
-            // Roll back the bit twiddling in case someone catches the
-            // exception, so that they don't see corrupted values.
-            postProcess!comp(intArr[0..i]);
-
-            throw new SortException("Can't sort NaNs.");
-        }
-
-        if(elem & signMask) {
-            // Negative.
-            elem ^= signMask;
-            elem = ~elem;
-        }
-    }
-
-    return intArr;
 }
 
 /*private*/ void postProcess(alias comp, T)(T arr)

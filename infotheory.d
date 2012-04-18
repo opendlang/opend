@@ -405,8 +405,15 @@ unittest {
 
 /**Calculate the conditional entropy H(data | cond).*/
 double condEntropy(T, U)(T data, U cond)
-if(isForwardRange!(T) && isForwardRange!(U)) {
-    return entropy(joint(data, cond)) - entropy(cond);
+if(isInputRange!(T) && isInputRange!(U)) {
+    static if(isForwardRange!U) {
+        alias cond condForward;
+    } else {
+        auto alloc = newRegionAllocator();
+        auto condForward = alloc.array(cond);
+    }
+    
+    return entropy(joint(data, condForward.save)) - entropy(condForward.save);
 }
 
 unittest {

@@ -248,7 +248,7 @@ struct RegressRes {
 
 /**Forward Range for holding the residuals from a regression analysis.*/
 struct Residuals(F, U, T...) {
-    static if(T.length == 1 && isForwardRange!(typeof(T[0].front()))) {
+    static if(T.length == 1 && isForwardRange!(ElementType!(T[0]))) {
         alias T[0] R;
         alias typeof(array(R.init)) XType;
         enum bool needDup = true;
