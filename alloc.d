@@ -2873,10 +2873,12 @@ unittest {
     
     import core.thread;
     foreach(i; 0..100) {
-        auto t = new Thread({ 
+        auto fun = { 
             threadLocalSegmentSize = 100 * 1024 * 1024;
             newRegionAllocator(); 
-        });
+        };
+        
+        auto t = new Thread(fun);
         t.start();
         t.join();
     }
