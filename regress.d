@@ -35,6 +35,8 @@ module dstats.regress;
 
 import std.math, std.algorithm, std.traits, std.array, std.traits, std.string,
     std.exception, std.typetuple, std.typecons, std.numeric, std.parallelism;
+    
+alias std.range.repeat repeat;
 
 import dstats.alloc, std.range, std.conv, dstats.distrib, dstats.cor,
     dstats.base, dstats.summary, dstats.sort;
@@ -1770,12 +1772,12 @@ double[] logisticRegressPenalized(Y, X...)
         } else static if(is(x == double[][])) {
             auto xInt = alloc.uninitializedArray!(double[])(betas.length);
             xInt[1..$] = x[];
-            xInt[0] = alloc.array(replicate(1.0, y.length));
+            xInt[0] = alloc.array(repeat(1.0, y.length));
             doMLENewton(betas, (double[]).init, ridge, y, xInt);
         } else {
             // No choice but to dup the whole thing.
             auto xInt = alloc.uninitializedArray!(double[][])(betas.length);
-            xInt[0] = alloc.array(replicate(1.0, y.length));
+            xInt[0] = alloc.array(repeat(1.0, y.length));
 
             foreach(i, ref arr; xInt[1..$]) {
                 arr = alloc.array(

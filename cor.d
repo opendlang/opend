@@ -811,7 +811,7 @@ unittest {
 
     // This test will fail if there are overflow bugs, especially in tie
     // handling.
-    auto rng = chain(replicate(0, 100_000), replicate(1, 100_000));
+    auto rng = chain(repeat(0, 100_000), repeat(1, 100_000));
     assert(approxEqual(kendallCor(rng, rng), 1));
     
     // Test the case where we have one range sorted already.
