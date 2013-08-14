@@ -126,6 +126,6 @@ enum ShouldThrow {
  functions the loader expects to find, provided of course that the app does not need
  to use those functions.
 +/
-alias ShouldThrow function( string symbolName ) MissingSymbolCallbackFunc;
+alias MissingSymbolCallbackFunc = ShouldThrow function( string symbolName );
 /// Ditto
-alias ShouldThrow delegate( string symbolName ) MissingSymbolCallbackDg;
+alias MissingSymbolCallbackDg = ShouldThrow delegate( string symbolName );

@@ -91,7 +91,7 @@ class SharedLibLoader {
             return _lib.loadSymbol( name );
         }
 
-        SharedLib lib() @property {
+        ref SharedLib lib() @property {
             return _lib;
         }
 

@@ -135,9 +135,9 @@ struct SharedLib {
 
         void* loadSymbol( string symbolName, bool doThrow = true ) {
             void* sym = GetSymbol( _hlib, symbolName );
-            if( doThrow && ( sym is null )) {
+            if( doThrow && ( !sym )) {
                 auto result = ShouldThrow.Yes;
-                if( _onMissingSym )
+                if( _onMissingSym !is null )
                     result = _onMissingSym( symbolName );
                 if( result == ShouldThrow.Yes )
                     throw new SymbolLoadException( _name, symbolName );
