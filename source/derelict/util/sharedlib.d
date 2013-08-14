@@ -139,7 +139,7 @@ struct SharedLib {
                 auto result = ShouldThrow.Yes;
                 if( _onMissingSym )
                     result = _onMissingSym( symbolName );
-                if( !result )
+                if( result == ShouldThrow.Yes )
                     throw new SymbolLoadException( _name, symbolName );
             }
 
