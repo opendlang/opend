@@ -1,0 +1,11 @@
+{
+    "name": "derelictutil",
+    "description": "Cross-platform shared library loader and a number of utility modules used by the Derelict libraries.",
+    "license": "Boost",
+    "authors": [
+        "Mike Parker"
+    ],
+
+    "targetName": "DerelictUtil",
+    "targetPath": "lib",
+}
