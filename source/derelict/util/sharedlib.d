@@ -110,25 +110,6 @@ struct SharedLib {
     }
 
     public {
-        string name() @property {
-            return _name;
-        }
-
-        bool isLoaded() @property {
-            return ( _hlib !is null );
-        }
-
-        void missingSymbolCallback( MissingSymbolCallbackDg callback ) @property {
-            _onMissingSym = callback;
-        }
-
-        void missingSymbolCallback( MissingSymbolCallbackFunc callback ) @property {
-            bool thunk( string symbolName ) {
-                return callback( symbolName );
-            }
-            _onMissingSym = &thunk;
-        }
-
         void load( string[] names ) {
             if( isLoaded )
                 return;
@@ -155,7 +136,7 @@ struct SharedLib {
         void* loadSymbol( string symbolName, bool doThrow = true ) {
             void* sym = GetSymbol( _hlib, symbolName );
             if( doThrow && ( sym is null )) {
-                bool result = false;
+                auto result = ShouldThrow.Yes;
                 if( _onMissingSym )
                     result = _onMissingSym( symbolName );
                 if( !result )
@@ -169,6 +150,27 @@ struct SharedLib {
             if( isLoaded ) {
                 UnloadSharedLib( _hlib );
                 _hlib = null;
+            }
+        }
+
+        @property {
+            string name() {
+                return _name;
+            }
+
+            bool isLoaded() {
+                return ( _hlib !is null );
+            }
+
+            void missingSymbolCallback( MissingSymbolCallbackDg callback ) {
+                _onMissingSym = callback;
+            }
+
+            void missingSymbolCallback( MissingSymbolCallbackFunc callback ) {
+                ShouldThrow thunk( string symbolName ) {
+                    return callback( symbolName );
+                }
+                _onMissingSym = &thunk;
             }
         }
     }

@@ -32,6 +32,7 @@ private {
 	import std.string : strip;
 
     import derelict.util.sharedlib;
+    import derelict.util.exception;
 }
 
 class SharedLibLoader {
@@ -41,8 +42,6 @@ class SharedLibLoader {
     }
 
     public {
-        alias _lib this;
-
         this( string libNames ) {
             _libNames = libNames;
         }
@@ -65,6 +64,24 @@ class SharedLibLoader {
             _lib.load( libNames );
             loadSymbols();
         }
+
+        void unload() {
+            _lib.unload();
+        }
+
+        @property {
+            bool isLoaded() {
+                return _lib.isLoaded;
+            }
+
+            void missingSymbolCallback( MissingSymbolCallbackDg callback ) {
+                _lib.missingSymbolCallback = callback;
+            }
+
+            void missingSymbolCallback( MissingSymbolCallbackFunc callback ) {
+                _lib.missingSymbolCallback = callback;
+            }
+        }
     }
 
     protected {
@@ -79,7 +96,7 @@ class SharedLibLoader {
         }
 
         void bindFunc( void** ptr, string funcName, bool doThrow = true ) {
-            void* func = lib.loadSymbol( funcName, doThrow );
+            void* func = _lib.loadSymbol( funcName, doThrow );
             *ptr = func;
         }
     }
