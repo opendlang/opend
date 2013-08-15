@@ -42,15 +42,54 @@ class SharedLibLoader {
     }
 
     public {
+        /++
+         Constructs a new instance of shared lib loader with a string of one
+         or more shared library names to use as default.
+
+         Params:
+            libNames =      A string containing one or more comma-separated shared
+                            library names.
+        +/
         this( string libNames ) {
             _libNames = libNames;
         }
 
+        /++
+         Finds and loads a shared library, using this loader's default shared library
+         names.
+
+         If multiple library names are specified in as default, the SharedLibLoadException
+         will only be thrown if all of the libraries fail to load. It will be the head
+         of an exceptin chain containing one instance of the exception for each library
+         that failed.
+
+         Throws:    SharedLibLoadException if the shared library or one of its
+                    dependencies cannot be found on the file system.
+                    SymbolLoadException if an expected symbol is missing from the
+                    library.
+        +/
         void load() {
             load( _libNames );
         }
 
-        void load( string libNameString ) {
+        /++
+         Finds and loads a shared library, using libNames to find the library
+         on the file system.
+
+         If multiple library names are specified in libNames, the SharedLibLoadException
+         will only be thrown if all of the libraries fail to load. It will be the head
+         of an exceptin chain containing one instance of the exception for each library
+         that failed.
+
+         Params:
+            libNames =      A string containing one or more comma-separated shared
+                            library names.
+         Throws:    SharedLibLoadException if the shared library or one of its
+                    dependencies cannot be found on the file system.
+                    SymbolLoadException if an expected symbol is missing from the
+                    library.
+        +/
+        void load( string libNames ) {
             assert( libNameString !is null );
 
             string[] libNames = libNameString.split( "," );
@@ -60,24 +99,69 @@ class SharedLibLoader {
             load( libNames );
         }
 
+        /++
+         Finds and loads a shared library, using libNames to find the library
+         on the file system.
+
+         If multiple library names are specified in libNames, the SharedLibLoadException
+         will only be thrown if all of the libraries fail to load. It will be the head
+         of an exceptin chain containing one instance of the exception for each library
+         that failed.
+
+
+         Params:
+            libNames =      An array containing one or more shared library names,
+                            with one name per index.
+         Throws:    SharedLibLoadException if the shared library or one of its
+                    dependencies cannot be found on the file system.
+                    SymbolLoadException if an expected symbol is missing from the
+                    library.
+        +/
         void load( string[] libNames ) {
             _lib.load( libNames );
             loadSymbols();
         }
 
+        /++
+         Unloads the shared library from memory, invalidating all function pointers
+         which were assigned a symbol by one of the load methods.
+        +/
         void unload() {
             _lib.unload();
         }
 
         @property {
+            /++
+             Indicates whether or not the shared library is currently loaded.
+
+             Returns: true if the shared library is loaded, false otherwise.
+            +/
             bool isLoaded() {
                 return _lib.isLoaded;
             }
 
+            /++
+             Sets the callback that will be called when an expected symbol is
+             missing from the shared library.
+
+             Params:
+                callback =      A delegate that returns a value of type
+                                derelict.util.exception.ShouldThrow and accepts
+                                a string as the sole parameter.
+            +/
             void missingSymbolCallback( MissingSymbolCallbackDg callback ) {
                 _lib.missingSymbolCallback = callback;
             }
 
+            /++
+             Sets the callback that will be called when an expected symbol is
+             missing from the shared library.
+
+             Params:
+                callback =      A pointer to a function that returns a value of type
+                                derelict.util.exception.ShouldThrow and accepts
+                                a string as the sole parameter.
+            +/
             void missingSymbolCallback( MissingSymbolCallbackFunc callback ) {
                 _lib.missingSymbolCallback = callback;
             }
@@ -85,16 +169,49 @@ class SharedLibLoader {
     }
 
     protected {
+        /++
+         Must be implemented by subclasses to load all of the symbols from a
+         shared library.
+
+         This method is called by the load methods.
+        +/
         abstract void loadSymbols();
 
+        /++
+         Subclasses can use this as an alternative to bindFunc, but must bind
+         the returned symbol manually.
+
+         Params:
+            name =      The name of the symbol to load.
+         Throws:        SymbolLoadException if the given symbol name is missing
+                        from the shared library.
+         Returns:       The symbol matching the name parameter.
+        +/
         void* loadSymbol( string name ) {
             return _lib.loadSymbol( name );
         }
 
+        /++
+         Returns a reference to the shared library wrapped by this loader.
+        +/
         ref SharedLib lib() @property {
             return _lib;
         }
 
+        /++
+         Subclasses can use this to bind a function pointer to a symbol in the
+         shared library.
+
+         Params:
+            ptr =       Pointer to a function pointer that will be used as the bind
+                        point.
+            funcName =  The name of the symbol to be bound.
+            doThrow =   If true, a SymbolLoadException will be thrown if the symbol
+                        is missing. If false, no exception will be thrown and the
+                        ptr parameter will be set to null.
+         Throws:         SymbolLoadException if doThrow is true and a the symbol
+                        specified by funcName is missing from the shared library.
+        +/
         void bindFunc( void** ptr, string funcName, bool doThrow = true ) {
             void* func = _lib.loadSymbol( funcName, doThrow );
             *ptr = func;

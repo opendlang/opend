@@ -115,7 +115,7 @@ enum ShouldThrow {
 }
 
 /++
- The MissingSymbolCallback allows the prevent the throwing of SymbolLoadExceptions.
+ The MissingSymbolCallback allows one to prevent the throwing of SymbolLoadExceptions.
 
  By default, a SymbolLoadException is thrown when a symbol cannot be found in a shared
  library. Assigning a MissingSymbolCallback to a loader allows the application to override
