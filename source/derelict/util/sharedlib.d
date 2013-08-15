@@ -60,15 +60,15 @@ static if( Derelict_OS_Posix ) {
             return dlopen( libName.toStringz(), RTLD_NOW );
         }
 
-        private void UnloadSharedLib( SharedLibHandle hlib ) {
+        void UnloadSharedLib( SharedLibHandle hlib ) {
             dlclose( hlib );
         }
 
-        private void* GetSymbol( SharedLibHandle hlib, string symbolName ) {
+        void* GetSymbol( SharedLibHandle hlib, string symbolName ) {
             return dlsym( hlib, symbolName.toStringz() );
         }
 
-        private string GetErrorStr() {
+        string GetErrorStr() {
             auto err = dlerror();
             if( err is null )
                 return "Uknown Error";
@@ -102,6 +102,16 @@ static if( Derelict_OS_Posix ) {
     static assert( 0, "Derelict does not support this platform." );
 }
 
+/++
+ Low-level wrapper of the even lower-level operating-specific shared library
+ loading interface.
+
+ While this interface can be used directly in applications, it is recommended
+ to use the interface specified by derelict.util.loader.SharedLibLoader
+ to implement bindings. SharedLib is designed to be the base of a higher-level
+ loader, but can be used in a program if only a handful of functions need to
+ be loaded from a given shared library.
++/
 struct SharedLib {
     private {
         string _name;
@@ -110,6 +120,24 @@ struct SharedLib {
     }
 
     public {
+        /++
+         Finds and loads a shared library, using libNames to find the library
+         on the file system.
+
+         If multiple library names are specified in libNames, a SharedLibLoadException
+         will only be thrown if all of the libraries fail to load. It will be the head
+         of an exceptin chain containing one instance of the exception for each library
+         that failed.
+
+
+         Params:
+            libNames =      An array containing one or more shared library names,
+                            with one name per index.
+         Throws:    SharedLibLoadException if the shared library or one of its
+                    dependencies cannot be found on the file system.
+                    SymbolLoadException if an expected symbol is missing from the
+                    library.
+        +/
         void load( string[] names ) {
             if( isLoaded )
                 return;
@@ -133,9 +161,20 @@ struct SharedLib {
             }
         }
 
+        /++
+         Loads the symbol specified by symbolName from a shared library.
+
+         Params:
+            symbolName =        The name of the symbol to load.
+            doThrow =   If true, a SymbolLoadException will be thrown if the symbol
+                        is missing. If false, no exception will be thrown and the
+                        ptr parameter will be set to null.
+         Throws:        SymbolLoadException if doThrow is true and a the symbol
+                        specified by funcName is missing from the shared library.
+        +/
         void* loadSymbol( string symbolName, bool doThrow = true ) {
             void* sym = GetSymbol( _hlib, symbolName );
-            if( doThrow && ( !sym )) {
+            if( doThrow && !sym ) {
                 auto result = ShouldThrow.Yes;
                 if( _onMissingSym !is null )
                     result = _onMissingSym( symbolName );
@@ -146,6 +185,10 @@ struct SharedLib {
             return sym;
         }
 
+        /++
+         Unloads the shared library from memory, invalidating all function pointers
+         which were assigned a symbol by one of the load methods.
+        +/
         void unload() {
             if( isLoaded ) {
                 UnloadSharedLib( _hlib );
@@ -154,18 +197,38 @@ struct SharedLib {
         }
 
         @property {
+            /// Returns the name of the shared library.
             string name() {
                 return _name;
             }
 
+            /// Returns true if the shared library is currently loaded, false otherwise.
             bool isLoaded() {
                 return ( _hlib !is null );
             }
 
+            /++
+             Sets the callback that will be called when an expected symbol is
+             missing from the shared library.
+
+             Params:
+                callback =      A delegate that returns a value of type
+                                derelict.util.exception.ShouldThrow and accepts
+                                a string as the sole parameter.
+            +/
             void missingSymbolCallback( MissingSymbolCallbackDg callback ) {
                 _onMissingSym = callback;
             }
 
+            /++
+             Sets the callback that will be called when an expected symbol is
+             missing from the shared library.
+
+             Params:
+                callback =      A pointer to a function that returns a value of type
+                                derelict.util.exception.ShouldThrow and accepts
+                                a string as the sole parameter.
+            +/
             void missingSymbolCallback( MissingSymbolCallbackFunc callback ) {
                 ShouldThrow thunk( string symbolName ) {
                     return callback( symbolName );

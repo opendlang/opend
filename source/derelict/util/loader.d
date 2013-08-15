@@ -58,7 +58,7 @@ class SharedLibLoader {
          Finds and loads a shared library, using this loader's default shared library
          names.
 
-         If multiple library names are specified in as default, the SharedLibLoadException
+         If multiple library names are specified in as default, a SharedLibLoadException
          will only be thrown if all of the libraries fail to load. It will be the head
          of an exceptin chain containing one instance of the exception for each library
          that failed.
@@ -76,7 +76,7 @@ class SharedLibLoader {
          Finds and loads a shared library, using libNames to find the library
          on the file system.
 
-         If multiple library names are specified in libNames, the SharedLibLoadException
+         If multiple library names are specified in libNames, a SharedLibLoadException
          will only be thrown if all of the libraries fail to load. It will be the head
          of an exceptin chain containing one instance of the exception for each library
          that failed.
@@ -103,7 +103,7 @@ class SharedLibLoader {
          Finds and loads a shared library, using libNames to find the library
          on the file system.
 
-         If multiple library names are specified in libNames, the SharedLibLoadException
+         If multiple library names are specified in libNames, a SharedLibLoadException
          will only be thrown if all of the libraries fail to load. It will be the head
          of an exceptin chain containing one instance of the exception for each library
          that failed.
@@ -131,11 +131,7 @@ class SharedLibLoader {
         }
 
         @property {
-            /++
-             Indicates whether or not the shared library is currently loaded.
-
-             Returns: true if the shared library is loaded, false otherwise.
-            +/
+            /// Returns: true if the shared library is loaded, false otherwise.
             bool isLoaded() {
                 return _lib.isLoaded;
             }
@@ -182,18 +178,18 @@ class SharedLibLoader {
          the returned symbol manually.
 
          Params:
-            name =      The name of the symbol to load.
-         Throws:        SymbolLoadException if the given symbol name is missing
-                        from the shared library.
+            name =      The name of the symbol to load.doThrow =   If true, a SymbolLoadException will be thrown if the symbol
+                        is missing. If false, no exception will be thrown and the
+                        ptr parameter will be set to null.
+         Throws:        SymbolLoadException if doThrow is true and a the symbol
+                        specified by funcName is missing from the shared library.
          Returns:       The symbol matching the name parameter.
         +/
-        void* loadSymbol( string name ) {
-            return _lib.loadSymbol( name );
+        void* loadSymbol( string name, bool doThrow = true ) {
+            return _lib.loadSymbol( name, doThrow );
         }
 
-        /++
-         Returns a reference to the shared library wrapped by this loader.
-        +/
+        /// Returns a reference to the shared library wrapped by this loader.
         ref SharedLib lib() @property {
             return _lib;
         }
@@ -209,7 +205,7 @@ class SharedLibLoader {
             doThrow =   If true, a SymbolLoadException will be thrown if the symbol
                         is missing. If false, no exception will be thrown and the
                         ptr parameter will be set to null.
-         Throws:         SymbolLoadException if doThrow is true and a the symbol
+         Throws:        SymbolLoadException if doThrow is true and a the symbol
                         specified by funcName is missing from the shared library.
         +/
         void bindFunc( void** ptr, string funcName, bool doThrow = true ) {
