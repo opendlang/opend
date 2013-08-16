@@ -8,18 +8,5 @@
     ],
 
     "targetName": "DerelictUtil",
-    "targetPath": "lib",
-
-    "configurations": [
-        {
-            "name": "lib",
-            "targetType": "library",
-            "targetPath": "lib"
-        },
-        {
-            "name": "test",
-            "targetType": "executable",
-            "targetPath": "bin"
-        }
-    ]
+    "targetPath": "lib"
 }

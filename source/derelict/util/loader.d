@@ -90,13 +90,13 @@ class SharedLibLoader {
                     library.
         +/
         void load( string libNames ) {
-            assert( libNameString !is null );
+            assert( libNames !is null );
 
-            string[] libNames = libNameString.split( "," );
-            foreach( ref string l; libNames )
+            auto lnames = libNames.split( "," );
+            foreach( ref string l; lnames )
                 l = l.strip();
 
-            load( libNames );
+            load( lnames );
         }
 
         /++
