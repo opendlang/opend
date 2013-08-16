@@ -1,5 +1,5 @@
 {
-    "name": "derelictutil",
+    "name": "derelict-util",
     "description": "Cross-platform shared library loader and a number of utility modules used by the Derelict libraries.",
     "homepage": "https://github.com/DerelictOrg/DerelictUtil",
     "license": "Boost",
