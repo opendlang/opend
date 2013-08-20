@@ -496,7 +496,7 @@ public struct Path
         this(cairo_path_t* path)
         {
             throwError(path.status);
-            _data.RefCounted.initialize(path);
+            _data = Data(path);
         }
 
         /**
@@ -4830,7 +4830,7 @@ public struct FontOptions
             FontOptions opt;
             auto ptr = cairo_font_options_create();
             throwError(cairo_font_options_status(ptr));
-            opt._data.RefCounted.initialize(ptr);
+            opt._data = Data(ptr);
             return opt;
         }
 
@@ -4852,7 +4852,7 @@ public struct FontOptions
                 throw new CairoException(cairo_status_t.CAIRO_STATUS_NULL_POINTER);
             }
             throwError(cairo_font_options_status(ptr));
-            _data.RefCounted.initialize(ptr);
+            _data = Data(ptr);
         }
 
         /**
