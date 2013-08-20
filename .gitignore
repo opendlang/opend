@@ -17,10 +17,3 @@ example/*/*.png
 
 #Ignore generated html docs
 doc/generated/*.html
-
-#Ignore unittest directory 
-unittest/*
-
-#Ignore project files
-src/cairo/SciTE.properties
-src/cairo/build.bat
