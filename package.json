@@ -8,5 +8,6 @@
     ],
 
     "targetName": "DerelictUtil",
-    "targetPath": "lib"
+    "targetPath": "lib",
+    "libs-posix": ["dl"]
 }
