@@ -259,8 +259,3 @@ shared static this()
 {
     DerelictCL = new DerelictCLLoader;
 }
-
-shared static ~this()
-{
-    DerelictCL.unload();
-}
