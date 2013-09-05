@@ -27,6 +27,8 @@ DEALINGS IN THE SOFTWARE.
 */
 module derelict.opencl.types;
 
+import core.stdc.config;
+
 // cl_platform.h
 alias byte      cl_char;
 alias ubyte     cl_uchar;
@@ -34,8 +36,8 @@ alias short     cl_short;
 alias ushort    cl_ushort;
 alias int       cl_int;
 alias uint      cl_uint;
-alias long      cl_long;
-alias ulong     cl_ulong;
+alias long      cl_long;   // cl_long and cl_ulong are really intended as 64-bit integers
+alias ulong     cl_ulong;  // so no need to use core.stdc.config.c_long/c_ulong
 
 alias ushort    cl_half;
 alias float     cl_float;
