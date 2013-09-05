@@ -8,8 +8,6 @@
         "p0nce"
     ],
 
-    "importPaths": [ "import" ],
-
     "targetName": "DerelictCL",
     "targetPath": "lib",
 
