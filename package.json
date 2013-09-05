@@ -1,0 +1,17 @@
+{
+    "name": "derelict_extras-opengl",
+    "description": "A dynamic binding to the OpenCL library.",
+    "homepage": "https://github.com/p0nce/DerelictCL",
+    "license": "Boost",
+    "authors": [
+        "vuaru",
+        "p0nce"
+    ],
+
+    "targetName": "DerelictCL",
+    "targetPath": "lib",
+
+    "dependencies": {
+        "derelict-util": "~master"
+    }
+}
