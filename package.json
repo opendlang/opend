@@ -1,5 +1,5 @@
 {
-    "name": "derelict_extras-opengl",
+    "name": "derelict_extras-opencl",
     "description": "A dynamic binding to the OpenCL library.",
     "homepage": "https://github.com/p0nce/DerelictCL",
     "license": "Boost",
