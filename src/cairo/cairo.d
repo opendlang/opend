@@ -102,6 +102,39 @@ void throwError(cairo_status_t status)
 }
 
 /**
+ * Convert a size_t as given from a D arrays .length property
+ * to a cairo count type (int).
+ *
+ * In debug mode an exception is thrown if the size_t value does
+ * not fit into the int type. In release mode all checks are 
+ * removed!
+ */
+private int toCairoCount(size_t length)
+{
+    debug
+    {
+        import std.conv;
+        return to!int(length);
+    }
+    else
+    {
+        return cast(int)length;
+    }
+}
+
+unittest
+{
+    assert(toCairoCount(int.max) == int.max);
+    assert(toCairoCount(0) == 0);
+    assert(toCairoCount(42) == 42);
+    debug
+    {
+        import std.exception;
+        assertThrown(toCairoCount(int.max + 1));
+    }
+}
+
+/**
  * Exception thrown by cairoD if an error occurs.
  */
 public class CairoException : Exception
@@ -3005,7 +3038,7 @@ public struct Context
          */
         void setDash(const(double[]) dashes, double offset)
         {
-            cairo_set_dash(this.nativePointer, dashes.ptr, dashes.length, offset);
+            cairo_set_dash(this.nativePointer, dashes.ptr, dashes.length.toCairoCount(), offset);
             checkError();
         }
 
@@ -4058,7 +4091,7 @@ public struct Context
          */
         void glyphPath(Glyph[] glyphs)
         {
-            cairo_glyph_path(this.nativePointer, glyphs.ptr, glyphs.length);
+            cairo_glyph_path(this.nativePointer, glyphs.ptr, glyphs.length.toCairoCount());
             checkError();
         }
 
@@ -4650,7 +4683,7 @@ public struct Context
          */
         void showGlyphs(Glyph[] glyphs)
         {
-            cairo_show_glyphs(this.nativePointer, glyphs.ptr, glyphs.length);
+            cairo_show_glyphs(this.nativePointer, glyphs.ptr, glyphs.length.toCairoCount());
             checkError();
         }
 
@@ -4665,8 +4698,8 @@ public struct Context
         void showTextGlyphs(TextGlyph glyph)
         {
             cairo_show_text_glyphs(this.nativePointer, glyph.text.ptr,
-                glyph.text.length, glyph.glyphs.ptr, glyph.glyphs.length,
-                glyph.cluster.ptr, glyph.cluster.length, glyph.flags);
+                glyph.text.length.toCairoCount(), glyph.glyphs.ptr, glyph.glyphs.length.toCairoCount(),
+                glyph.cluster.ptr, glyph.cluster.length.toCairoCount(), glyph.flags);
             checkError();
         }
 
@@ -4718,7 +4751,7 @@ public struct Context
         TextExtents glyphExtents(Glyph[] glyphs)
         {
             TextExtents res;
-            cairo_glyph_extents(this.nativePointer, glyphs.ptr, glyphs.length, &res);
+            cairo_glyph_extents(this.nativePointer, glyphs.ptr, glyphs.length.toCairoCount(), &res);
             checkError();
             return res;
         }
@@ -5218,7 +5251,7 @@ public class ScaledFont
         {
             TextExtents res;
             cairo_scaled_font_glyph_extents(this.nativePointer, glyphs.ptr,
-                glyphs.length, &res);
+                glyphs.length.toCairoCount(), &res);
             checkError();
             return res;
         }
@@ -5273,11 +5306,11 @@ public class ScaledFont
             if(glyphBuffer.length != 0)
             {
                 gPtr = glyphBuffer.ptr;
-                gLen = glyphBuffer.length;
+                gLen = glyphBuffer.length.toCairoCount();
             }
 
             throwError(cairo_scaled_font_text_to_glyphs(this.nativePointer, x, y,
-                text.ptr, text.length, &gPtr, &gLen, null, null, null));
+                text.ptr, text.length.toCairoCount(), &gPtr, &gLen, null, null, null));
 
             if(gPtr == glyphBuffer.ptr)
             {
@@ -5309,16 +5342,16 @@ public class ScaledFont
             if(glyphBuffer.length != 0)
             {
                 gPtr = glyphBuffer.ptr;
-                gLen = glyphBuffer.length;
+                gLen = glyphBuffer.length.toCairoCount();
             }
             if(clusterBuffer.length != 0)
             {
                 cPtr = clusterBuffer.ptr;
-                cLen = clusterBuffer.length;
+                cLen = clusterBuffer.length.toCairoCount();
             }
 
             throwError(cairo_scaled_font_text_to_glyphs(this.nativePointer, x, y,
-                text.ptr, text.length, &gPtr, &gLen, &cPtr, &cLen, &cFlags));
+                text.ptr, text.length.toCairoCount(), &gPtr, &gLen, &cPtr, &cLen, &cFlags));
 
             if(gPtr == glyphBuffer.ptr)
             {
@@ -5700,7 +5733,7 @@ import std.exception : enforce;
 public struct ClipRange
 {
     private Region _outer;
-    private size_t _a, _b;
+    private int _a, _b;
 
     this(Region data)
     {
@@ -5708,7 +5741,7 @@ public struct ClipRange
         _b = _outer.numRectangles();
     }
 
-    this(Region data, size_t a, size_t b)
+    this(Region data, int a, int b)
     {
         _outer = data;
         _a = a;
@@ -5750,7 +5783,7 @@ public struct ClipRange
         --_b;
     }
 
-    Rectangle!int opIndex(size_t i)
+    Rectangle!int opIndex(int i)
     {
         i += _a;
         enforce(i < _b && _b <= _outer.numRectangles);
@@ -5762,7 +5795,7 @@ public struct ClipRange
         return this;
     }
 
-    typeof(this) opSlice(size_t a, size_t b)
+    typeof(this) opSlice(int a, int b)
     {
         return typeof(this)(_outer, a + _a, b + _a);
     }
@@ -5954,7 +5987,7 @@ public struct Region
 
         this(Rectangle!int[] rects)
         {
-            this(cairo_region_create_rectangles(cast(cairo_rectangle_int_t*)rects.ptr, rects.length));
+            this(cairo_region_create_rectangles(cast(cairo_rectangle_int_t*)rects.ptr, rects.length.toCairoCount()));
         }
 
         Rectangle!int getExtents()
