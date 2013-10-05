@@ -691,6 +691,30 @@ enum
 }
 
 
+// cl_egl.h
+
+// Command type for events created with clEnqueueAcquireEGLObjectsKHR
+enum
+{
+    CL_COMMAND_EGL_FENCE_SYNC_OBJECT_KHR        = 0x202F,
+    CL_COMMAND_ACQUIRE_EGL_OBJECTS_KHR          = 0x202D,
+    CL_COMMAND_RELEASE_EGL_OBJECTS_KHR          = 0x202E,
+}
+
+// Error type for clCreateFromEGLImageKHR
+enum
+{
+    CL_INVALID_EGL_OBJECT_KHR                   = -1093,
+    CL_EGL_RESOURCE_NOT_ACQUIRED_KHR            = -1092,
+}
+
+// cl_khr_egl_image extension
+enum cl_khr_egl_image                           = 1;
+
+// cl_khr_egl_event extension
+enum cl_khr_egl_event                           = 1;
+
+
 // cl_gl.h
 
 // cl_gl_object_type

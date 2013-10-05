@@ -27,6 +27,7 @@ DEALINGS IN THE SOFTWARE.
 */
 module derelict.opencl.cl_dx9_media_sharing;
 
+import derelict.opencl.loader;
 import derelict.opencl.types;
 
 extern (System)
@@ -61,15 +62,19 @@ package
 
     private __gshared bool _EXT_cl_dx9_media_sharing;
     public bool EXT_cl_dx9_media_sharing() @property { return _EXT_cl_dx9_media_sharing; }
-    private void load_cl_dx9_media_sharing(void delegate(void**, string, bool doThrow) bindFunc)
+    private void load_cl_dx9_media_sharing()
     {
         try
         {
-            bindFunc(cast(void**)&clGetDeviceIDsFromDX9MediaAdapterKHR, "clGetDeviceIDsFromDX9MediaAdapterKHR", true);
-            bindFunc(cast(void**)&clCreateFromDX9MediaSurfaceKHR, "clCreateFromDX9MediaSurfaceKHR", true);
-            bindFunc(cast(void**)&clEnqueueAcquireDX9MediaSurfacesKHR, "clEnqueueAcquireDX9MediaSurfacesKHR", true);
-            bindFunc(cast(void**)&clEnqueueReleaseDX9MediaSurfacesKHR, "clEnqueueReleaseDX9MediaSurfacesKHR", true);
-            _EXT_cl_dx9_media_sharing = true;
+            loadExtensionFunction(cast(void**)&clGetDeviceIDsFromDX9MediaAdapterKHR, "clGetDeviceIDsFromDX9MediaAdapterKHR");
+            loadExtensionFunction(cast(void**)&clCreateFromDX9MediaSurfaceKHR, "clCreateFromDX9MediaSurfaceKHR");
+            loadExtensionFunction(cast(void**)&clEnqueueAcquireDX9MediaSurfacesKHR, "clEnqueueAcquireDX9MediaSurfacesKHR");
+            loadExtensionFunction(cast(void**)&clEnqueueReleaseDX9MediaSurfacesKHR, "clEnqueueReleaseDX9MediaSurfacesKHR");
+
+            _EXT_cl_dx9_media_sharing = clGetDeviceIDsFromDX9MediaAdapterKHR !is null &&
+                                        clCreateFromDX9MediaSurfaceKHR !is null &&
+                                        clEnqueueAcquireDX9MediaSurfacesKHR !is null &&
+                                        clEnqueueReleaseDX9MediaSurfacesKHR !is null;
         }
         catch(Exception e)
         {
@@ -77,12 +82,12 @@ package
         }
     }
 
-    void loadEXT(void delegate(void**, string, bool doThrow) bindFunc, CLVersion clVer)
+    void loadEXT(CLVersion clVer)
     {
         if(clVer >= CLVersion.CL12)
         {
             // OpenCL 1.2
-            load_cl_dx9_media_sharing(bindFunc);
+            load_cl_dx9_media_sharing();
         }
     }
 }

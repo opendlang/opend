@@ -1,4 +1,3 @@
-/*
 
 Boost Software License - Version 1.0 - August 17th, 2003
 
@@ -34,6 +33,7 @@ public
     import derelict.opencl.functions;
 
     import derelict.opencl.cl_ext;
+    import derelict.opencl.cl_egl;
     import derelict.opencl.cl_gl;
     import derelict.opencl.cl_gl_ext;
     import derelict.opencl.cl_d3d10;
@@ -150,15 +150,16 @@ class DerelictCLLoader : SharedLibLoader
 
         void loadEXT()
         {
-            derelict.opencl.cl_ext.loadEXT(&bindFunc, _loadedVersion);
-            derelict.opencl.cl_gl_ext.loadEXT(&bindFunc, _loadedVersion);
-            derelict.opencl.cl_gl.loadEXT(&bindFunc, _loadedVersion);
+            derelict.opencl.cl_ext.loadEXT(_loadedVersion);
+            derelict.opencl.cl_egl.loadEXT(_loadedVersion);
+            derelict.opencl.cl_gl_ext.loadEXT(_loadedVersion);
+            derelict.opencl.cl_gl.loadEXT(_loadedVersion);
             
             if(Derelict_OS_Windows)
             {
-                derelict.opencl.cl_d3d10.loadEXT(&bindFunc, _loadedVersion);
-                derelict.opencl.cl_d3d11.loadEXT(&bindFunc, _loadedVersion);
-                derelict.opencl.cl_dx9_media_sharing.loadEXT(&bindFunc, _loadedVersion);
+                derelict.opencl.cl_d3d10.loadEXT(_loadedVersion);
+                derelict.opencl.cl_d3d11.loadEXT(_loadedVersion);
+                derelict.opencl.cl_dx9_media_sharing.loadEXT(_loadedVersion);
             }
         }
     }

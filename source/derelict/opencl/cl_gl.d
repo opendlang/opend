@@ -27,6 +27,7 @@ DEALINGS IN THE SOFTWARE.
 */
 module derelict.opencl.cl_gl;
 
+import derelict.opencl.loader;
 import derelict.opencl.types;
 
 extern (System)
@@ -96,12 +97,13 @@ package
 
     private __gshared bool _EXT_cl_khr_gl_sharing;
     public bool EXT_cl_khr_gl_sharing() @property { return _EXT_cl_khr_gl_sharing; }
-    private void load_cl_khr_gl_sharing(void delegate(void**, string, bool doThrow) bindFunc)
+    private void load_cl_khr_gl_sharing()
     {
         try
         {
-            bindFunc(cast(void**)&clGetGLContextInfoKHR, "clGetGLContextInfoKHR", true);
-            _EXT_cl_khr_gl_sharing = true;
+            loadExtensionFunction(cast(void**)&clGetGLContextInfoKHR, "clGetGLContextInfoKHR");
+
+            _EXT_cl_khr_gl_sharing = clGetGLContextInfoKHR !is null;
         }
         catch(Exception e)
         {
@@ -109,12 +111,12 @@ package
         }
     }
 
-    void loadEXT(void delegate(void**, string, bool doThrow) bindFunc, CLVersion clVer)
+    void loadEXT(CLVersion clVer)
     {
         if(clVer >= CLVersion.CL10)
         {
             // OpenCL 1.0
-            load_cl_khr_gl_sharing(bindFunc);
+            load_cl_khr_gl_sharing();
         }
     }
 }

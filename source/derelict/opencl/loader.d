@@ -25,57 +25,23 @@ ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 
 */
-module derelict.opencl.cl_gl_ext;
+module derelict.opencl.loader;
 
-import derelict.opencl.loader;
-import derelict.opencl.types;
+import std.string;
 
-extern (System)
+import derelict.opencl.cl;
+
+// All functions tagged at the end by KHR, EXT or vendor-specific (ie. APPLE)
+// need to be queried using this function.
+//
+// From: http://www.khronos.org/registry/cl/sdk/1.1/docs/man/xhtml/clGetExtensionFunctionAddress.html
+// A return value of NULL indicates that the specified function does not exist for the implementation.
+// A non-NULL return value for clGetExtensionFunctionAddress does not guarantee that
+// an extension function is actually supported. The application must also make a corresponding query
+// using clGetPlatformInfo(platform, CL_PLATFORM_EXTENSIONS, ... ) or clGetDeviceInfo(device, CL_DEVICE_EXTENSIONS, ... )
+// to determine if an extension is supported by the OpenCL implementation. 
+void loadExtensionFunction(void** ptr, string funcName)
 {
-    // OpenCL 1.1
-    alias nothrow cl_event function(cl_context, cl_GLsync, cl_int*) da_clCreateEventFromGLsyncKHR;
-}
-
-__gshared
-{
-    // OpenCL 1.1
-    da_clCreateEventFromGLsyncKHR clCreateEventFromGLsyncKHR;
-}
-
-package
-{
-    void loadSymbols(void delegate(void**, string, bool doThrow) bindFunc)
-    {
-
-    }
-
-    CLVersion reload(void delegate(void**, string, bool doThrow) bindFunc, CLVersion clVer)
-    {
-        return clVer;
-    }
-
-    private __gshared bool _EXT_cl_khr_gl_event;
-    public bool EXT_cl_khr_gl_event() @property { return _EXT_cl_khr_gl_event; }
-    private void load_cl_khr_gl_event()
-    {
-        try
-        {
-            loadExtensionFunction(cast(void**)&clCreateEventFromGLsyncKHR, "clCreateEventFromGLsyncKHR");
-
-            _EXT_cl_khr_gl_event = clCreateEventFromGLsyncKHR !is null;
-        }
-        catch(Exception e)
-        {
-            _EXT_cl_khr_gl_event = false;
-        }
-    }
-
-    void loadEXT(CLVersion clVer)
-    {
-        if(clVer >= CLVersion.CL11)
-        {
-            // OpenCL 1.1
-            load_cl_khr_gl_event();
-        }
-    }
+    void* func = clGetExtensionFunctionAddress(funcName.toStringz());
+    *ptr = func;
 }

@@ -27,6 +27,7 @@ DEALINGS IN THE SOFTWARE.
 */
 module derelict.opencl.cl_d3d10;
 
+import derelict.opencl.loader;
 import derelict.opencl.types;
 
 extern (System)
@@ -60,22 +61,28 @@ package
 
     CLVersion reload(void delegate(void**, string, bool doThrow) bindFunc, CLVersion clVer)
     {
-           return clVer;
+        return clVer;
     }
 
     private __gshared bool _EXT_cl_khr_d3d10_sharing;
     public bool EXT_cl_khr_d3d10_sharing() @property { return _EXT_cl_khr_d3d10_sharing; }
-    private void load_cl_khr_d3d10_sharing(void delegate(void**, string, bool doThrow) bindFunc)
+    private void load_cl_khr_d3d10_sharing()
     {
         try
         {
-            bindFunc(cast(void**)&clGetDeviceIDsFromD3D10KHR, "clGetDeviceIDsFromD3D10KHR", true);
-            bindFunc(cast(void**)&clCreateFromD3D10BufferKHR, "clCreateFromD3D10BufferKHR", true);
-            bindFunc(cast(void**)&clCreateFromD3D10Texture2DKHR, "clCreateFromD3D10Texture2DKHR", true);
-            bindFunc(cast(void**)&clCreateFromD3D10Texture3DKHR, "clCreateFromD3D10Texture3DKHR", true);
-            bindFunc(cast(void**)&clEnqueueAcquireD3D10ObjectsKHR, "clEnqueueAcquireD3D10ObjectsKHR", true);
-            bindFunc(cast(void**)&clEnqueueReleaseD3D10ObjectsKHR, "clEnqueueReleaseD3D10ObjectsKHR", true);
-            _EXT_cl_khr_d3d10_sharing = true;
+            loadExtensionFunction(cast(void**)&clGetDeviceIDsFromD3D10KHR, "clGetDeviceIDsFromD3D10KHR");
+            loadExtensionFunction(cast(void**)&clCreateFromD3D10BufferKHR, "clCreateFromD3D10BufferKHR");
+            loadExtensionFunction(cast(void**)&clCreateFromD3D10Texture2DKHR, "clCreateFromD3D10Texture2DKHR");
+            loadExtensionFunction(cast(void**)&clCreateFromD3D10Texture3DKHR, "clCreateFromD3D10Texture3DKHR");
+            loadExtensionFunction(cast(void**)&clEnqueueAcquireD3D10ObjectsKHR, "clEnqueueAcquireD3D10ObjectsKHR");
+            loadExtensionFunction(cast(void**)&clEnqueueReleaseD3D10ObjectsKHR, "clEnqueueReleaseD3D10ObjectsKHR");
+
+            _EXT_cl_khr_d3d10_sharing = clGetDeviceIDsFromD3D10KHR !is null &&
+                                        clCreateFromD3D10BufferKHR !is null &&
+                                        clCreateFromD3D10Texture2DKHR !is null &&
+                                        clCreateFromD3D10Texture3DKHR !is null &&
+                                        clEnqueueAcquireD3D10ObjectsKHR !is null &&
+                                        clEnqueueReleaseD3D10ObjectsKHR !is null;
         }
         catch(Exception e)
         {
@@ -83,12 +90,12 @@ package
         }
     }
 
-    void loadEXT(void delegate(void**, string, bool doThrow) bindFunc, CLVersion clVer)
+    void loadEXT(CLVersion clVer)
     {
         if(clVer >= CLVersion.CL10)
         {
             // OpenCL 1.0
-            load_cl_khr_d3d10_sharing(bindFunc);
+            load_cl_khr_d3d10_sharing();
         }
     }
 }

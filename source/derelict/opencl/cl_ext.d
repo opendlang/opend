@@ -27,6 +27,7 @@ DEALINGS IN THE SOFTWARE.
 */
 module derelict.opencl.cl_ext;
 
+import derelict.opencl.loader;
 import derelict.opencl.types;
 
 extern (System)
@@ -75,12 +76,13 @@ package
 
     private __gshared bool _EXT_cl_APPLE_SetMemObjectDestructor;
     public bool EXT_cl_APPLE_SetMemObjectDestructor() @property { return _EXT_cl_APPLE_SetMemObjectDestructor; }
-    private void load_cl_APPLE_SetMemObjectDestructor(void delegate(void**, string, bool doThrow) bindFunc)
+    private void load_cl_APPLE_SetMemObjectDestructor()
     {
         try
         {
-            bindFunc(cast(void**)&clSetMemObjectDestructorAPPLE, "clSetMemObjectDestructorAPPLE", true);
-            _EXT_cl_APPLE_SetMemObjectDestructor = true;
+            loadExtensionFunction(cast(void**)&clSetMemObjectDestructorAPPLE, "clSetMemObjectDestructorAPPLE");
+
+            _EXT_cl_APPLE_SetMemObjectDestructor = clSetMemObjectDestructorAPPLE !is null;
         }
         catch(Exception e)
         {
@@ -90,14 +92,17 @@ package
 
     private __gshared bool _EXT_cl_APPLE_ContextLoggingFunctions;
     public bool EXT_cl_APPLE_ContextLoggingFunctions() @property { return _EXT_cl_APPLE_ContextLoggingFunctions; }
-    private void load_cl_APPLE_ContextLoggingFunctions(void delegate(void**, string, bool doThrow) bindFunc)
+    private void load_cl_APPLE_ContextLoggingFunctions()
     {
         try
         {
-            bindFunc(cast(void**)&clLogMessagesToSystemLogAPPLE, "clLogMessagesToSystemLogAPPLE", true);
-            bindFunc(cast(void**)&clLogMessagesToStdoutAPPLE, "clLogMessagesToStdoutAPPLE", true);
-            bindFunc(cast(void**)&clLogMessagesToStderrAPPLE, "clLogMessagesToStderrAPPLE", true);
-            _EXT_cl_APPLE_ContextLoggingFunctions = true;
+            loadExtensionFunction(cast(void**)&clLogMessagesToSystemLogAPPLE, "clLogMessagesToSystemLogAPPLE");
+            loadExtensionFunction(cast(void**)&clLogMessagesToStdoutAPPLE, "clLogMessagesToStdoutAPPLE");
+            loadExtensionFunction(cast(void**)&clLogMessagesToStderrAPPLE, "clLogMessagesToStderrAPPLE");
+
+            _EXT_cl_APPLE_ContextLoggingFunctions = clLogMessagesToSystemLogAPPLE !is null &&
+                                                    clLogMessagesToStdoutAPPLE !is null &&
+                                                    clLogMessagesToStderrAPPLE !is null;
         }
         catch(Exception e)
         {
@@ -107,12 +112,13 @@ package
 
     private __gshared bool _EXT_cl_khr_icd;
     public bool EXT_cl_khr_icd() @property { return _EXT_cl_khr_icd; }
-    private void load_cl_khr_icd(void delegate(void**, string, bool doThrow) bindFunc)
+    private void load_cl_khr_icd()
     {
         try
         {
-            bindFunc(cast(void**)&clIcdGetPlatformIDsKHR, "clIcdGetPlatformIDsKHR", true);
-            _EXT_cl_khr_icd = true;
+            loadExtensionFunction(cast(void**)&clIcdGetPlatformIDsKHR, "clIcdGetPlatformIDsKHR");
+
+            _EXT_cl_khr_icd = clIcdGetPlatformIDsKHR !is null;
         }
         catch(Exception e)
         {
@@ -122,14 +128,17 @@ package
 
     private __gshared bool _EXT_cl_ext_device_fission;
     public bool EXT_cl_ext_device_fission() @property { return _EXT_cl_ext_device_fission; }
-    private void load_cl_ext_device_fission(void delegate(void**, string, bool doThrow) bindFunc)
+    private void load_cl_ext_device_fission()
     {
         try
         {
-            bindFunc(cast(void**)&clReleaseDeviceEXT, "clReleaseDeviceEXT", true);
-            bindFunc(cast(void**)&clRetainDeviceEXT, "clRetainDeviceEXT", true);
-            bindFunc(cast(void**)&clCreateSubDevicesEXT, "clCreateSubDevicesEXT", true);
-            _EXT_cl_ext_device_fission = true;
+            loadExtensionFunction(cast(void**)&clReleaseDeviceEXT, "clReleaseDeviceEXT");
+            loadExtensionFunction(cast(void**)&clRetainDeviceEXT, "clRetainDeviceEXT");
+            loadExtensionFunction(cast(void**)&clCreateSubDevicesEXT, "clCreateSubDevicesEXT");
+
+            _EXT_cl_ext_device_fission = clReleaseDeviceEXT !is null &&
+                                         clRetainDeviceEXT !is null &&
+                                         clCreateSubDevicesEXT !is null;
         }
         catch(Exception e)
         {
@@ -139,12 +148,13 @@ package
 
     private __gshared bool _EXT_cl_khr_terminate_context;
     public bool EXT_cl_khr_terminate_context() @property { return _EXT_cl_khr_terminate_context; }
-    private void load_cl_khr_terminate_context(void delegate(void**, string, bool doThrow) bindFunc)
+    private void load_cl_khr_terminate_context()
     {
         try
         {
-            bindFunc(cast(void**)&clTerminateContextKHR, "clTerminateContextKHR", true);
-            _EXT_cl_khr_terminate_context = true;
+            loadExtensionFunction(cast(void**)&clTerminateContextKHR, "clTerminateContextKHR");
+
+            _EXT_cl_khr_terminate_context = clTerminateContextKHR !is null;
         }
         catch(Exception e)
         {
@@ -153,26 +163,26 @@ package
     }
 
 
-    void loadEXT(void delegate(void**, string, bool doThrow) bindFunc, CLVersion clVer)
+    void loadEXT( CLVersion clVer)
     {
         if(clVer >= CLVersion.CL10)
         {
             // OpenCL 1.0
-            load_cl_APPLE_SetMemObjectDestructor(bindFunc);
-            load_cl_APPLE_ContextLoggingFunctions(bindFunc);
-            load_cl_khr_icd(bindFunc);
+            load_cl_APPLE_SetMemObjectDestructor();
+            load_cl_APPLE_ContextLoggingFunctions();
+            load_cl_khr_icd();
         }
 
         if(clVer >= CLVersion.CL11)
         {
             // OpenCL 1.1
-            load_cl_ext_device_fission(bindFunc);
+            load_cl_ext_device_fission();
         }
 
         if(clVer >= CLVersion.CL12)
         {
             // OpenCL 1.2
-            load_cl_khr_terminate_context(bindFunc);
+            load_cl_khr_terminate_context();
         }
     }
 }
