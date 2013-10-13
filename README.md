@@ -15,7 +15,16 @@ import derelict.opencl.cl;
 void main() {
     // Load the OpenCL library.
     DerelictCL.load();
-    
+
+    // Query platforms and devices
+    ...
+
+    // Reload the OpenCL library.
+    DerelictCL.reload(<chosen_version>);
+
+    // Load OpenCL official extensions.
+    DerelictCL.loadEXT(<chosen_platform>);
+
     // Now OpenCL functions can be called.
     ...
 }
