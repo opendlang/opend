@@ -64,13 +64,13 @@ package
 
     private __gshared bool _EXT_cl_khr_egl_image;
     public bool EXT_cl_khr_egl_image() @property { return _EXT_cl_khr_egl_image; }
-    private void load_cl_khr_egl_image()
+    private void load_cl_khr_egl_image(CLVersion clVer, cl_platform_id platform)
     {
         try
         {
-            loadExtensionFunction(cast(void**)&clCreateFromEGLImageKHR, "clCreateFromEGLImageKHR");
-            loadExtensionFunction(cast(void**)&clEnqueueAcquireEGLObjectsKHR, "clEnqueueAcquireEGLObjectsKHR");
-            loadExtensionFunction(cast(void**)&clEnqueueReleaseEGLObjectsKHR, "clEnqueueReleaseEGLObjectsKHR");
+            loadExtensionFunction(cast(void**)&clCreateFromEGLImageKHR, "clCreateFromEGLImageKHR", clVer, platform);
+            loadExtensionFunction(cast(void**)&clEnqueueAcquireEGLObjectsKHR, "clEnqueueAcquireEGLObjectsKHR", clVer, platform);
+            loadExtensionFunction(cast(void**)&clEnqueueReleaseEGLObjectsKHR, "clEnqueueReleaseEGLObjectsKHR", clVer, platform);
 
             _EXT_cl_khr_egl_image = clCreateFromEGLImageKHR !is null &&
                                     clEnqueueAcquireEGLObjectsKHR !is null &&
@@ -84,11 +84,11 @@ package
 
     private __gshared bool _EXT_cl_khr_egl_event;
     public bool EXT_cl_khr_egl_event() @property { return _EXT_cl_khr_egl_event; }
-    private void load_cl_khr_egl_event()
+    private void load_cl_khr_egl_event(CLVersion clVer, cl_platform_id platform)
     {
         try
         {
-            loadExtensionFunction(cast(void**)&clCreateEventFromEGLSyncKHR, "clCreateEventFromEGLSyncKHR");
+            loadExtensionFunction(cast(void**)&clCreateEventFromEGLSyncKHR, "clCreateEventFromEGLSyncKHR", clVer, platform);
 
             _EXT_cl_khr_egl_event = clCreateEventFromEGLSyncKHR !is null;
         }
@@ -98,13 +98,13 @@ package
         }
     }
 
-    void loadEXT(CLVersion clVer)
+    void loadEXT(CLVersion clVer, cl_platform_id platform)
     {
         if(clVer >= CLVersion.CL10)
         {
             // OpenCL 1.0
-            load_cl_khr_egl_image();
-            load_cl_khr_egl_event();
+            load_cl_khr_egl_image(clVer, platform);
+            load_cl_khr_egl_event(clVer, platform);
         }
     }
 }

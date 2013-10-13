@@ -64,14 +64,14 @@ package
 
     private __gshared bool _EXT_cl_dx9_media_sharing;
     public bool EXT_cl_dx9_media_sharing() @property { return _EXT_cl_dx9_media_sharing; }
-    private void load_cl_dx9_media_sharing()
+    private void load_cl_dx9_media_sharing(CLVersion clVer, cl_platform_id platform)
     {
         try
         {
-            loadExtensionFunction(cast(void**)&clGetDeviceIDsFromDX9MediaAdapterKHR, "clGetDeviceIDsFromDX9MediaAdapterKHR");
-            loadExtensionFunction(cast(void**)&clCreateFromDX9MediaSurfaceKHR, "clCreateFromDX9MediaSurfaceKHR");
-            loadExtensionFunction(cast(void**)&clEnqueueAcquireDX9MediaSurfacesKHR, "clEnqueueAcquireDX9MediaSurfacesKHR");
-            loadExtensionFunction(cast(void**)&clEnqueueReleaseDX9MediaSurfacesKHR, "clEnqueueReleaseDX9MediaSurfacesKHR");
+            loadExtensionFunction(cast(void**)&clGetDeviceIDsFromDX9MediaAdapterKHR, "clGetDeviceIDsFromDX9MediaAdapterKHR", clVer, platform);
+            loadExtensionFunction(cast(void**)&clCreateFromDX9MediaSurfaceKHR, "clCreateFromDX9MediaSurfaceKHR", clVer, platform);
+            loadExtensionFunction(cast(void**)&clEnqueueAcquireDX9MediaSurfacesKHR, "clEnqueueAcquireDX9MediaSurfacesKHR", clVer, platform);
+            loadExtensionFunction(cast(void**)&clEnqueueReleaseDX9MediaSurfacesKHR, "clEnqueueReleaseDX9MediaSurfacesKHR", clVer, platform);
 
             _EXT_cl_dx9_media_sharing = clGetDeviceIDsFromDX9MediaAdapterKHR !is null &&
                                         clCreateFromDX9MediaSurfaceKHR !is null &&
@@ -84,12 +84,12 @@ package
         }
     }
 
-    void loadEXT(CLVersion clVer)
+    void loadEXT(CLVersion clVer, cl_platform_id platform)
     {
         if(clVer >= CLVersion.CL12)
         {
             // OpenCL 1.2
-            load_cl_dx9_media_sharing();
+            load_cl_dx9_media_sharing(clVer, platform);
         }
     }
 }

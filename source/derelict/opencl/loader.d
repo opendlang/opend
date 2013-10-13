@@ -42,8 +42,14 @@ import derelict.opencl.cl;
 // an extension function is actually supported. The application must also make a corresponding query
 // using clGetPlatformInfo(platform, CL_PLATFORM_EXTENSIONS, ... ) or clGetDeviceInfo(device, CL_DEVICE_EXTENSIONS, ... )
 // to determine if an extension is supported by the OpenCL implementation. 
-void loadExtensionFunction(void** ptr, string funcName)
+//
+// Note: In OpenCL 1.2 a cl_platform-id is required to retrieve the function adresses.
+void loadExtensionFunction(void** ptr, string funcName, CLVersion clVer, cl_platform_id platform = null)
 {
-    void* func = clGetExtensionFunctionAddress(funcName.toStringz());
-    *ptr = func;
+    // OpenCL 1.1 Deprecated in 1.2
+    if(clVer <= CLVersion.CL11)
+        *ptr = clGetExtensionFunctionAddress(funcName.toStringz());
+    // OpenCL 1.2
+    else
+        *ptr = clGetExtensionFunctionAddressForPlatform(platform, funcName.toStringz());
 }

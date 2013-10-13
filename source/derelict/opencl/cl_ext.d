@@ -78,11 +78,11 @@ package
 
     private __gshared bool _EXT_cl_APPLE_SetMemObjectDestructor;
     public bool EXT_cl_APPLE_SetMemObjectDestructor() @property { return _EXT_cl_APPLE_SetMemObjectDestructor; }
-    private void load_cl_APPLE_SetMemObjectDestructor()
+    private void load_cl_APPLE_SetMemObjectDestructor(CLVersion clVer, cl_platform_id platform)
     {
         try
         {
-            loadExtensionFunction(cast(void**)&clSetMemObjectDestructorAPPLE, "clSetMemObjectDestructorAPPLE");
+            loadExtensionFunction(cast(void**)&clSetMemObjectDestructorAPPLE, "clSetMemObjectDestructorAPPLE", clVer, platform);
 
             _EXT_cl_APPLE_SetMemObjectDestructor = clSetMemObjectDestructorAPPLE !is null;
         }
@@ -94,13 +94,13 @@ package
 
     private __gshared bool _EXT_cl_APPLE_ContextLoggingFunctions;
     public bool EXT_cl_APPLE_ContextLoggingFunctions() @property { return _EXT_cl_APPLE_ContextLoggingFunctions; }
-    private void load_cl_APPLE_ContextLoggingFunctions()
+    private void load_cl_APPLE_ContextLoggingFunctions(CLVersion clVer, cl_platform_id platform)
     {
         try
         {
-            loadExtensionFunction(cast(void**)&clLogMessagesToSystemLogAPPLE, "clLogMessagesToSystemLogAPPLE");
-            loadExtensionFunction(cast(void**)&clLogMessagesToStdoutAPPLE, "clLogMessagesToStdoutAPPLE");
-            loadExtensionFunction(cast(void**)&clLogMessagesToStderrAPPLE, "clLogMessagesToStderrAPPLE");
+            loadExtensionFunction(cast(void**)&clLogMessagesToSystemLogAPPLE, "clLogMessagesToSystemLogAPPLE", clVer, platform);
+            loadExtensionFunction(cast(void**)&clLogMessagesToStdoutAPPLE, "clLogMessagesToStdoutAPPLE", clVer, platform);
+            loadExtensionFunction(cast(void**)&clLogMessagesToStderrAPPLE, "clLogMessagesToStderrAPPLE", clVer, platform);
 
             _EXT_cl_APPLE_ContextLoggingFunctions = clLogMessagesToSystemLogAPPLE !is null &&
                                                     clLogMessagesToStdoutAPPLE !is null &&
@@ -114,11 +114,11 @@ package
 
     private __gshared bool _EXT_cl_khr_icd;
     public bool EXT_cl_khr_icd() @property { return _EXT_cl_khr_icd; }
-    private void load_cl_khr_icd()
+    private void load_cl_khr_icd(CLVersion clVer, cl_platform_id platform)
     {
         try
         {
-            loadExtensionFunction(cast(void**)&clIcdGetPlatformIDsKHR, "clIcdGetPlatformIDsKHR");
+            loadExtensionFunction(cast(void**)&clIcdGetPlatformIDsKHR, "clIcdGetPlatformIDsKHR", clVer, platform);
 
             _EXT_cl_khr_icd = clIcdGetPlatformIDsKHR !is null;
         }
@@ -130,13 +130,13 @@ package
 
     private __gshared bool _EXT_cl_ext_device_fission;
     public bool EXT_cl_ext_device_fission() @property { return _EXT_cl_ext_device_fission; }
-    private void load_cl_ext_device_fission()
+    private void load_cl_ext_device_fission(CLVersion clVer, cl_platform_id platform)
     {
         try
         {
-            loadExtensionFunction(cast(void**)&clReleaseDeviceEXT, "clReleaseDeviceEXT");
-            loadExtensionFunction(cast(void**)&clRetainDeviceEXT, "clRetainDeviceEXT");
-            loadExtensionFunction(cast(void**)&clCreateSubDevicesEXT, "clCreateSubDevicesEXT");
+            loadExtensionFunction(cast(void**)&clReleaseDeviceEXT, "clReleaseDeviceEXT", clVer, platform);
+            loadExtensionFunction(cast(void**)&clRetainDeviceEXT, "clRetainDeviceEXT", clVer, platform);
+            loadExtensionFunction(cast(void**)&clCreateSubDevicesEXT, "clCreateSubDevicesEXT", clVer, platform);
 
             _EXT_cl_ext_device_fission = clReleaseDeviceEXT !is null &&
                                          clRetainDeviceEXT !is null &&
@@ -150,11 +150,11 @@ package
 
     private __gshared bool _EXT_cl_khr_terminate_context;
     public bool EXT_cl_khr_terminate_context() @property { return _EXT_cl_khr_terminate_context; }
-    private void load_cl_khr_terminate_context()
+    private void load_cl_khr_terminate_context(CLVersion clVer, cl_platform_id platform)
     {
         try
         {
-            loadExtensionFunction(cast(void**)&clTerminateContextKHR, "clTerminateContextKHR");
+            loadExtensionFunction(cast(void**)&clTerminateContextKHR, "clTerminateContextKHR", clVer, platform);
 
             _EXT_cl_khr_terminate_context = clTerminateContextKHR !is null;
         }
@@ -165,26 +165,26 @@ package
     }
 
 
-    void loadEXT( CLVersion clVer)
+    void loadEXT(CLVersion clVer, cl_platform_id platform)
     {
         if(clVer >= CLVersion.CL10)
         {
             // OpenCL 1.0
-            load_cl_APPLE_SetMemObjectDestructor();
-            load_cl_APPLE_ContextLoggingFunctions();
-            load_cl_khr_icd();
+            load_cl_APPLE_SetMemObjectDestructor(clVer, platform);
+            load_cl_APPLE_ContextLoggingFunctions(clVer, platform);
+            load_cl_khr_icd(clVer, platform);
         }
 
         if(clVer >= CLVersion.CL11)
         {
             // OpenCL 1.1
-            load_cl_ext_device_fission();
+            load_cl_ext_device_fission(clVer, platform);
         }
 
         if(clVer >= CLVersion.CL12)
         {
             // OpenCL 1.2
-            load_cl_khr_terminate_context();
+            load_cl_khr_terminate_context(clVer, platform);
         }
     }
 }

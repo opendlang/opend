@@ -31,6 +31,8 @@ module derelict.opencl.cl;
 
 public
 {
+    import derelict.util.exception;
+
     import derelict.opencl.types;
     import derelict.opencl.constants;
     import derelict.opencl.functions;
@@ -151,18 +153,23 @@ class DerelictCLLoader : SharedLibLoader
             return clVer;
         }
 
-        void loadEXT()
+        // Load official extensions
+        // In OpenCL 1.2 this is cl_platform dependent
+        void loadEXT(cl_platform_id platform = null)
         {
-            derelict.opencl.cl_ext.loadEXT(_loadedVersion);
-            derelict.opencl.cl_egl.loadEXT(_loadedVersion);
-            derelict.opencl.cl_gl_ext.loadEXT(_loadedVersion);
-            derelict.opencl.cl_gl.loadEXT(_loadedVersion);
+            if(_loadedVersion >= CLVersion.CL12 && platform is null)
+                throw new DerelictException(`OpenCL 1.2 requires a cl_platform_id to load official extension functions`);
+
+            derelict.opencl.cl_ext.loadEXT(_loadedVersion, platform);
+            derelict.opencl.cl_egl.loadEXT(_loadedVersion, platform);
+            derelict.opencl.cl_gl_ext.loadEXT(_loadedVersion, platform);
+            derelict.opencl.cl_gl.loadEXT(_loadedVersion, platform);
             
             if(Derelict_OS_Windows)
             {
-                derelict.opencl.cl_d3d10.loadEXT(_loadedVersion);
-                derelict.opencl.cl_d3d11.loadEXT(_loadedVersion);
-                derelict.opencl.cl_dx9_media_sharing.loadEXT(_loadedVersion);
+                derelict.opencl.cl_d3d10.loadEXT(_loadedVersion, platform);
+                derelict.opencl.cl_d3d11.loadEXT(_loadedVersion, platform);
+                derelict.opencl.cl_dx9_media_sharing.loadEXT(_loadedVersion, platform);
             }
         }
     }

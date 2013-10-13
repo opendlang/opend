@@ -58,11 +58,11 @@ package
 
     private __gshared bool _EXT_cl_khr_gl_event;
     public bool EXT_cl_khr_gl_event() @property { return _EXT_cl_khr_gl_event; }
-    private void load_cl_khr_gl_event()
+    private void load_cl_khr_gl_event(CLVersion clVer, cl_platform_id platform)
     {
         try
         {
-            loadExtensionFunction(cast(void**)&clCreateEventFromGLsyncKHR, "clCreateEventFromGLsyncKHR");
+            loadExtensionFunction(cast(void**)&clCreateEventFromGLsyncKHR, "clCreateEventFromGLsyncKHR", clVer, platform);
 
             _EXT_cl_khr_gl_event = clCreateEventFromGLsyncKHR !is null;
         }
@@ -72,12 +72,12 @@ package
         }
     }
 
-    void loadEXT(CLVersion clVer)
+    void loadEXT(CLVersion clVer, cl_platform_id platform)
     {
         if(clVer >= CLVersion.CL11)
         {
             // OpenCL 1.1
-            load_cl_khr_gl_event();
+            load_cl_khr_gl_event(clVer, platform);
         }
     }
 }

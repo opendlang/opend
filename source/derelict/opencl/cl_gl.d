@@ -99,11 +99,11 @@ package
 
     private __gshared bool _EXT_cl_khr_gl_sharing;
     public bool EXT_cl_khr_gl_sharing() @property { return _EXT_cl_khr_gl_sharing; }
-    private void load_cl_khr_gl_sharing()
+    private void load_cl_khr_gl_sharing(CLVersion clVer, cl_platform_id platform)
     {
         try
         {
-            loadExtensionFunction(cast(void**)&clGetGLContextInfoKHR, "clGetGLContextInfoKHR");
+            loadExtensionFunction(cast(void**)&clGetGLContextInfoKHR, "clGetGLContextInfoKHR", clVer, platform);
 
             _EXT_cl_khr_gl_sharing = clGetGLContextInfoKHR !is null;
         }
@@ -113,12 +113,12 @@ package
         }
     }
 
-    void loadEXT(CLVersion clVer)
+    void loadEXT(CLVersion clVer, cl_platform_id platform)
     {
         if(clVer >= CLVersion.CL10)
         {
             // OpenCL 1.0
-            load_cl_khr_gl_sharing();
+            load_cl_khr_gl_sharing(clVer, platform);
         }
     }
 }

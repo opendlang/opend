@@ -68,16 +68,16 @@ package
 
     private __gshared bool _EXT_cl_khr_d3d11_sharing;
     public bool EXT_cl_khr_d3d11_sharing() @property { return _EXT_cl_khr_d3d11_sharing; }
-    private void load_cl_khr_d3d11_sharing()
+    private void load_cl_khr_d3d11_sharing(CLVersion clVer, cl_platform_id platform)
     {
         try
         {
-            loadExtensionFunction(cast(void**)&clGetDeviceIDsFromD3D11KHR, "clGetDeviceIDsFromD3D11KHR");
-            loadExtensionFunction(cast(void**)&clCreateFromD3D11BufferKHR, "clCreateFromD3D11BufferKHR");
-            loadExtensionFunction(cast(void**)&clCreateFromD3D11Texture2DKHR, "clCreateFromD3D11Texture2DKHR");
-            loadExtensionFunction(cast(void**)&clCreateFromD3D11Texture3DKHR, "clCreateFromD3D11Texture3DKHR");
-            loadExtensionFunction(cast(void**)&clEnqueueAcquireD3D11ObjectsKHR, "clEnqueueAcquireD3D11ObjectsKHR");
-            loadExtensionFunction(cast(void**)&clEnqueueReleaseD3D11ObjectsKHR, "clEnqueueReleaseD3D11ObjectsKHR");
+            loadExtensionFunction(cast(void**)&clGetDeviceIDsFromD3D11KHR, "clGetDeviceIDsFromD3D11KHR", clVer, platform);
+            loadExtensionFunction(cast(void**)&clCreateFromD3D11BufferKHR, "clCreateFromD3D11BufferKHR", clVer, platform);
+            loadExtensionFunction(cast(void**)&clCreateFromD3D11Texture2DKHR, "clCreateFromD3D11Texture2DKHR", clVer, platform);
+            loadExtensionFunction(cast(void**)&clCreateFromD3D11Texture3DKHR, "clCreateFromD3D11Texture3DKHR", clVer, platform);
+            loadExtensionFunction(cast(void**)&clEnqueueAcquireD3D11ObjectsKHR, "clEnqueueAcquireD3D11ObjectsKHR", clVer, platform);
+            loadExtensionFunction(cast(void**)&clEnqueueReleaseD3D11ObjectsKHR, "clEnqueueReleaseD3D11ObjectsKHR", clVer, platform);
 
             _EXT_cl_khr_d3d11_sharing = clGetDeviceIDsFromD3D11KHR !is null &&
                                         clCreateFromD3D11BufferKHR !is null &&
@@ -92,12 +92,12 @@ package
         }
     }
 
-    void loadEXT(CLVersion clVer)
+    void loadEXT(CLVersion clVer, cl_platform_id platform)
     {
         if(clVer >= CLVersion.CL12)
         {
             // OpenCL 1.2
-            load_cl_khr_d3d11_sharing();
+            load_cl_khr_d3d11_sharing(clVer, platform);
         }
     }
 }
