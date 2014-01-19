@@ -1,7 +1,7 @@
 {
     "name": "derelict_extras-opencl",
     "description": "A dynamic binding to the OpenCL library.",
-    "homepage": "https://github.com/p0nce/DerelictCL",
+    "homepage": "https://github.com/MeinMein/DerelictCL",
     "license": "Boost",
     "authors": [
         "Gerbrand Kamphuis (vuaru)",
