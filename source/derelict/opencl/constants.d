@@ -1091,7 +1091,7 @@ mixin(genCLVectorTypes());
 // Usage: createProgram( CL_PROGRAM_STRING_DEBUG_INFO(__LINE__, __FILE__) ~ q{ __kernel code });
 import std.string;
 
-string CL_PROGRAM_STRING_DEBUG_INFO(size_t line, string file)
+string CL_PROGRAM_STRING_DEBUG_INFO(size_t line = __LINE__, string file = __FILE__)
 {
     string ret = "";
 
