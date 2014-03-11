@@ -8,5 +8,6 @@
 	"homepage": "https://github.com/jpf91/cairoD",
 	"name": "cairod",
 	"copyright": "Copyright © 2011-2013, Johannes Pfau",
-	"targetType": "staticLibrary"
+	"targetType": "staticLibrary",
+	"license": "BSL-1.0",
 }
