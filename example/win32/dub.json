@@ -2,7 +2,7 @@
 	"description": "cairoD example",
 	"targetName": "example",
 	"authors": [
-		"Johannes Pfau"
+		"Andrej Mitrovic"
 	],
 	"version": "~master",
 	"homepage": "https://github.com/jpf91/cairoD",
