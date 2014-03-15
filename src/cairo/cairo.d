@@ -5995,21 +5995,43 @@ public struct Region
         }
 
     public:
-        void newRegion()
+        /**
+         * Create a new, empty region
+         *
+         * Note: The Region constructors can be used to create a new Region with Rectangles
+         */
+        static Region create()
         {
-            this = Region(cairo_region_create());
+            return Region(cairo_region_create());
         }
-
+        
+        /**
+         *
+         */
+        Region copy()
+        {
+            return Region(cairo_region_copy(this.nativePointer));
+        }
+        
+        /**
+         *
+         */
         this(Rectangle!int rect)
         {
             this(cairo_region_create_rectangle(cast(cairo_rectangle_int_t*)&rect));
         }
 
+        /**
+         *
+         */
         this(Rectangle!int[] rects)
         {
             this(cairo_region_create_rectangles(cast(cairo_rectangle_int_t*)rects.ptr, rects.length.toCairoCount()));
         }
 
+        /**
+         *
+         */
         Rectangle!int getExtents()
         {
             Rectangle!int extents;
@@ -6018,14 +6040,17 @@ public struct Region
             return extents;
         }
 
-        ///convenience alias
-        alias getExtents extents;
-
+        /**
+         *
+         */
         int numRectangles()
         {
             return cairo_region_num_rectangles(this.nativePointer);
         }
 
+        /**
+         *
+         */
         Rectangle!int getRectangle(int index)
         {
             Rectangle!int rect;
@@ -6034,19 +6059,25 @@ public struct Region
             return rect;
         }
 
-        @property auto getRectangles()
+        /**
+         *
+         */
+        auto getRectangles()
         {
             return ClipRange(this);
         }
 
-        ///convenience alias
-        alias getRectangles rectangles;
-
-        @property bool empty()
+        /**
+         *
+         */
+        bool isEmpty()
         {
             return cast(bool)cairo_region_is_empty(this.nativePointer);
         }
 
+        /**
+         *
+         */
         RegionOverlap containsRectangle(Rectangle!int rect)
         {
             return cairo_region_contains_rectangle(this.nativePointer, cast(cairo_rectangle_int_t*)&rect);
@@ -6060,123 +6091,84 @@ public struct Region
             return cast(bool)cairo_region_contains_point(this.nativePointer, point.x, point.y);
         }
 
+        /**
+         *
+         */
+        const bool opEquals(ref const(Region) other)
+        {
+            return cast(bool)cairo_region_equal(this.nativePointer, other.nativePointer);
+        }
+
+        /**
+         *
+         */
         void translate(int dx, int dy)
         {
             cairo_region_translate(this.nativePointer, dx, dy);
             checkError();
         }
 
-        const bool opEquals(ref const(Region) other)
+        /**
+         *
+         */
+        void intersect(Region other)
         {
-            return cast(bool)cairo_region_equal(this.nativePointer, other.nativePointer);
+            throwError(cairo_region_intersect(this.nativePointer, other.nativePointer));
+        }
+        /**
+         *
+         */
+        void intersect(Rectangle!int other)
+        {
+            throwError(cairo_region_intersect_rectangle(this.nativePointer, cast(cairo_rectangle_int_t*)&other));
+        }
+    
+        /**
+         *
+         */
+        void subtract(Region other)
+        {
+            throwError(cairo_region_subtract_rectangle(this.nativePointer, cast(cairo_rectangle_int_t*)&other));
+        }
+    
+        /**
+         *
+         */
+        void subtract(Rectangle!int other)
+        {
+            throwError(cairo_region_subtract_rectangle(this.nativePointer, cast(cairo_rectangle_int_t*)&other));
+        }
+        
+        /**
+         *
+         */
+        void unionWith(Region other)
+        {
+            throwError(cairo_region_union(this.nativePointer, other.nativePointer));
+        }
+        
+        /**
+         *
+         */
+        void unionWith(Rectangle!int other)
+        {
+            throwError(cairo_region_union_rectangle(this.nativePointer, cast(cairo_rectangle_int_t*)&other));
+        }
+        
+        /**
+         *
+         */
+        void xor(Region other)
+        {
+            throwError(cairo_region_xor(this.nativePointer, other.nativePointer));
         }
 
-        ///subtract
-        Region opBinary(string op)(Region rhs) if(op == "-")
+        /**
+         *
+         */
+        void xor(Rectangle!int other)
         {
-            auto result = Region(this);
-            throwError(cairo_region_subtract(result.nativePointer, rhs.nativePointer));
-            return result;
-        }
-
-        Region opOpAssign(string op)(Region rhs) if(op == "-")
-        {
-            throwError(cairo_region_subtract(this.nativePointer, rhs.nativePointer));
-            return this;
-        }
-
-        Region opBinary(string op)(Rectangle!int rhs) if(op == "-")
-        {
-            auto result = Region(this);
-            throwError(cairo_region_subtract_rectangle(result.nativePointer, cast(cairo_rectangle_int_t*)&rhs));
-            return result;
-        }
-
-        Region opOpAssign(string op)(Rectangle!int rhs) if(op == "-")
-        {
-            throwError(cairo_region_subtract_rectangle(this.nativePointer, cast(cairo_rectangle_int_t*)&rhs));
-            return this;
-        }
-
-        ///intersect
-        Region opBinary(string op)(Region rhs) if(op == "&")
-        {
-            auto result = Region(this);
-            throwError(cairo_region_intersect(result.nativePointer, rhs.nativePointer));
-            return result;
-        }
-
-        Region opOpAssign(string op)(Region rhs) if(op == "&")
-        {
-            throwError(cairo_region_intersect(this.nativePointer, rhs.nativePointer));
-            return this;
-        }
-
-        Region opBinary(string op)(Rectangle!int rhs) if(op == "&")
-        {
-            auto result = Region(this);
-            throwError(cairo_region_intersect_rectangle(result.nativePointer, cast(cairo_rectangle_int_t*)&rhs));
-            return result;
-        }
-
-        Region opOpAssign(string op)(Rectangle!int rhs) if(op == "&")
-        {
-            throwError(cairo_region_intersect_rectangle(this.nativePointer, cast(cairo_rectangle_int_t*)&rhs));
-            return this;
-        }
-
-        ///union
-        Region opBinary(string op)(Region rhs) if(op == "|")
-        {
-            auto result = Region(this);
-            throwError(cairo_region_union(result.nativePointer, rhs.nativePointer));
-            return result;
-        }
-
-        Region opOpAssign(string op)(Region rhs) if(op == "|")
-        {
-            throwError(cairo_region_union(this.nativePointer, rhs.nativePointer));
-            return this;
-        }
-
-        Region opBinary(string op)(Rectangle!int rhs) if(op == "|")
-        {
-            auto result = Region(this);
-            throwError(cairo_region_union_rectangle(result.nativePointer, cast(cairo_rectangle_int_t*)&rhs));
-            return result;
-        }
-
-        Region opOpAssign(string op)(Rectangle!int rhs) if(op == "|")
-        {
-            throwError(cairo_region_union_rectangle(this.nativePointer, cast(cairo_rectangle_int_t*)&rhs));
-            return this;
-        }
-
-        ///xor
-        Region opBinary(string op)(Region rhs) if(op == "^")
-        {
-            auto result = Region(this);
-            throwError(cairo_region_xor(result.nativePointer, rhs.nativePointer));
-            return result;
-        }
-
-        Region opOpAssign(string op)(Region rhs) if(op == "^")
-        {
-            throwError(cairo_region_xor(this.nativePointer, rhs.nativePointer));
-            return this;
-        }
-
-        Region opBinary(string op)(Rectangle!int rhs) if(op == "^")
-        {
-            auto result = Region(this);
-            throwError(cairo_region_xor_rectangle(result.nativePointer, cast(cairo_rectangle_int_t*)&rhs));
-            return result;
-        }
-
-        Region opOpAssign(string op)(Rectangle!int rhs) if(op == "^")
-        {
-            throwError(cairo_region_xor_rectangle(this.nativePointer, cast(cairo_rectangle_int_t*)&rhs));
-            return this;
+            throwError(cairo_region_xor_rectangle(this.nativePointer, cast(cairo_rectangle_int_t*)&other));
         }
 }
 
@@ -6186,17 +6178,17 @@ unittest
     auto region = Region(rect1);
 
     assert(region.numRectangles == 1);
-    assert(!region.empty);
+    assert(!region.isEmpty());
 
-    assert(region.containsPoint(PointInt(50, 0)));
-    assert(!region.containsPoint(PointInt(100, 0)));  // 100 is over the range of 0 .. 100 (99 is max)
+    assert(region.containsPoint(Point!int(50, 0)));
+    assert(!region.containsPoint(Point!int(100, 0)));  // 100 is over the range of 0 .. 100 (99 is max)
 
     region.translate(10, 0);
-    assert(region.containsPoint(PointInt(100, 0)));   // range is now 10 .. 110
-    assert(!region.containsPoint(PointInt(0, 0)));    // 0 is below the minimum of 10
+    assert(region.containsPoint(Point!int(100, 0)));   // range is now 10 .. 110
+    assert(!region.containsPoint(Point!int(0, 0)));    // 0 is below the minimum of 10
 
-    region = region ^ region;  // xor, 1 ^ 1 == 0 :)
-    assert(region.empty);
+    region.xor(region);  // xor, 1 ^ 1 == 0 :)
+    assert(region.isEmpty());
 
     auto rect2 = Rectangle!int(99, 0, 100, 100);
     region = Region([rect1, rect2]);
@@ -6208,19 +6200,19 @@ unittest
     assert(region.numRectangles == 2);  // now they can't be merged
 
     region = Region(rect1);
-    region = region | rect2;
+    region.intersect(rect2);
     assert(region.numRectangles == 2);  // same thing when using a union
 
     rect2.point.x += 10;
-    region = region - rect2;
+    region.subtract(rect2);
     assert(region.numRectangles == 2);  // still two rectangles due to extra edge
 
     rect2.point.x -= 10;
-    region = region - rect2;
+    region.subtract(rect2);
     assert(region.numRectangles == 1);  // and now the second rectangle is completely gone
 
-    region -= rect1;
-    assert(region.empty);             // first rectangle also gone, region is empty
+    region.subtract(rect1);
+    assert(region.isEmpty);             // first rectangle also gone, region is empty
 
     auto region1 = Region(rect1);
     auto region2 = Region(rect1);
