@@ -1997,7 +1997,7 @@ public class Surface
          */
         FontOptions getFontOptions()
         {
-            FontOptions fo = FontOptions.make();
+            FontOptions fo = FontOptions.create();
             cairo_surface_get_font_options(this.nativePointer, fo._data._payload);
             fo.checkError();
             return fo;
@@ -4579,7 +4579,7 @@ public struct Context
          */
         FontOptions getFontOptions()
         {
-            auto opt = FontOptions.make();
+            auto opt = FontOptions.create();
             cairo_get_font_options(this.nativePointer, opt.nativePointer);
             checkError();
             return opt;
@@ -4798,9 +4798,9 @@ public struct Context
  * not need any changes, but for pixel-based targets tweaking font
  * options may result in superior output on a particular display.
  *
- * Warning: Instances must be created with the make static member function!
+ * Warning: Instances must be created with the create static member function!
  * --------
- * auto options = FontOptions.make(); //Correct
+ * auto options = FontOptions.create(); //Correct
  * options.toHash();
  * --------
  *
@@ -4811,7 +4811,7 @@ public struct Context
  *
  * --------
  * FontOptions options;
- * options = FontOptions.make(); //Correct
+ * options = FontOptions.create(); //Correct
  * options.toHash();
  * --------
  */
@@ -4889,7 +4889,7 @@ public struct FontOptions
          * Allocates a new font options object with all
          * options initialized to default values.
          */
-        static FontOptions make()
+        static FontOptions create()
         {
             FontOptions opt;
             auto ptr = cairo_font_options_create();
@@ -5436,7 +5436,7 @@ public class ScaledFont
         FontOptions getFontOptions()
         {
             //TODO: verify if this is correct
-            FontOptions fo = FontOptions.make();
+            FontOptions fo = FontOptions.create();
             cairo_scaled_font_get_font_options(this.nativePointer, fo.nativePointer);
             checkError();
             return fo;
