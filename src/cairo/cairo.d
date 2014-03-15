@@ -320,7 +320,6 @@ public struct Resolution
     double x, y;
 }
 
-//TODO: merge those?
 /**
  * Struct representing a RGBA color
  */
@@ -362,7 +361,7 @@ public struct RGB
     ///convert RGBA struct to RGB struct. Alpha is set to '1.0'
     public RGBA opCast(RGBA)()
     {
-        return RGBA(red, green, blue, 1);
+        return RGBA(red, green, blue, 1.0);
     }
 }
 
@@ -6221,7 +6220,7 @@ unittest
     assert(region.numRectangles == 2);  // now they can't be merged
 
     region = Region(rect1);
-    region.intersect(rect2);
+    region.unionWith(rect2);
     assert(region.numRectangles == 2);  // same thing when using a union
 
     rect2.point.x += 10;

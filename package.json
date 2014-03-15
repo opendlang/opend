@@ -8,6 +8,18 @@
 	"homepage": "https://github.com/jpf91/cairoD",
 	"name": "cairod",
 	"copyright": "Copyright © 2011-2013, Johannes Pfau",
-	"targetType": "staticLibrary",
 	"license": "BSL-1.0",
+	"mainSourceFile": "src/main.d",
+	"-ddoxFilterArgs": ["--unittest-examples"],
+	"configurations": [
+		{
+			"name": "static-lib",
+			"targetType": "staticLibrary"
+		},
+		{
+			"name": "unittest",
+			"targetType": "executable",
+			"libs": ["cairo"]
+		}
+	]
 }
