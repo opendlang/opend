@@ -38,7 +38,7 @@ import cairo.util;
 import core.exception;
 import std.algorithm;
 import std.conv;
-import std.range; //For PathRange unittests
+import std.format : formattedWrite;
 import std.string;
 import std.traits;
 import std.typecons;
@@ -587,13 +587,49 @@ public struct PathRange
         ///ditto
         @property PathElement front()
         {
-            return PathElement(&path.data[pos]);
+            return PathElement(this, &path.data[pos]);
         }
 }
 
 unittest
 {
+    import std.range;
     static assert(isForwardRange!PathRange);
+}
+
+unittest
+{
+    import std.array, std.range;
+    //Let's create a context first and draw some lines
+    auto surf = new ImageSurface(Format.CAIRO_FORMAT_ARGB32, 100, 100);
+    auto ctx = Context(surf);
+    ctx.moveTo(0.0, 0.0);
+    ctx.lineTo(10.0, 10.0);
+    ctx.curveTo(5, 5, 7, 6, 0, 0);
+    ctx.lineTo(10.0, 0.0);
+    
+    auto path = ctx.copyPath();
+    auto pathRange = path[];
+    auto pathRange2 = pathRange.save;
+    pathRange.popFront();
+    auto pathRange3 = pathRange.save;
+    
+    auto pathArray1 = pathRange.array;
+    auto pathArray2 = pathRange2.array;
+    auto pathArray3 = pathRange3.array;          
+    assert(pathArray2[0].type == PathElementType.CAIRO_PATH_MOVE_TO);
+    assert(pathArray2[0][0] == Point!double(0, 0));
+    assert(pathArray2[1].type == PathElementType.CAIRO_PATH_LINE_TO);
+    assert(pathArray2[1][0] == Point!double(10, 10));
+    assert(pathArray2[2].type == PathElementType.CAIRO_PATH_CURVE_TO);
+    assert(pathArray2[2][0] == Point!double(5, 5));
+    assert(pathArray2[2][1] == Point!double(7, 6));
+    assert(pathArray2[2][2] == Point!double(0, 0));
+    assert(pathArray2[3].type == PathElementType.CAIRO_PATH_LINE_TO);
+    assert(pathArray2[3][0] == Point!double(10, 0));
+    
+    assert(pathArray1 == pathArray3);
+    assert(pathArray2.drop(1) == pathArray1);
 }
 
 /**
@@ -604,14 +640,16 @@ public struct PathElement
 {
     private:
         cairo_path_data_t* data;
+        PathRange range;
 
-        this(cairo_path_data_t* data)
+        this(PathRange range, cairo_path_data_t* data)
         {
             this.data = data;
+            this.range = range;
         }
     public:
         ///The type of this element.
-        @property PathElementType type()
+        @property PathElementType type() const
         {
             return data.header.type;
         }
@@ -642,6 +680,35 @@ public struct PathElement
 
         ///Convenience operator overload.
         alias getPoint opIndex;
+
+        void toString(scope void delegate(const(char)[]) sink) const
+        {
+            final switch(type)
+            {
+                case PathElementType.CAIRO_PATH_CLOSE_PATH:
+                    sink("(CAIRO_PATH_CLOSE_PATH)");
+                    break;
+                case PathElementType.CAIRO_PATH_CURVE_TO:
+                    sink("(CAIRO_PATH_CURVE_TO(");
+                    formattedWrite(sink, "%s", this[0]);
+                    sink(",");
+                    formattedWrite(sink, "%s", this[1]);
+                    sink(",");
+                    formattedWrite(sink, "%s", this[2]);
+                    sink("))");
+                    break;
+                case PathElementType.CAIRO_PATH_LINE_TO:
+                    sink("(CAIRO_PATH_LINE_TO(");
+                    formattedWrite(sink, "%s", this[0]);
+                    sink("))");
+                    break;
+                case PathElementType.CAIRO_PATH_MOVE_TO:
+                    sink("(CAIRO_PATH_MOVE_TO(");
+                    formattedWrite(sink, "%s", this[0]);
+                    sink("))");
+                    break;
+            }
+        }
 }
 
 /**
@@ -5759,6 +5826,7 @@ public struct ClipRange
 
 unittest
 {
+    import std.range;
     static assert(isRandomAccessRange!ClipRange);
 }
 
