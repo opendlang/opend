@@ -9,16 +9,16 @@
 	"name": "cairod",
 	"copyright": "Copyright © 2011-2013, Johannes Pfau",
 	"license": "BSL-1.0",
-	"mainSourceFile": "src/main.d",
 	"-ddoxFilterArgs": ["--unittest-examples"],
 	"configurations": [
 		{
 			"name": "static-lib",
-			"targetType": "staticLibrary"
+			"targetType": "staticLibrary",
 		},
 		{
 			"name": "unittest",
 			"targetType": "executable",
+			"sourceFiles": ["unittest.d"],
 			"libs": ["cairo"]
 		}
 	]
