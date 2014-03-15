@@ -25,6 +25,8 @@ import cairo.win32;
 
 alias cairo.cairo.RGB RGB;  // conflicts with win32.wingdi.RGB
 
+static assert(CAIRO_HAS_WIN32_SURFACE);
+
 extern (Windows)
 int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int iCmdShow)
 {
@@ -95,7 +97,7 @@ int myWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int
     return msg.wParam;
 }
 
-void roundedRectangle(Context ctx, int x, int y, int w, int h, int radius_x = 5, int radius_y = 5)
+void roundedRectangle!double(Context ctx, int x, int y, int w, int h, int radius_x = 5, int radius_y = 5)
 {
     enum ARC_TO_BEZIER = 0.55228475;
 
@@ -204,7 +206,7 @@ class Window
         ctx.setSourceRGB(1, 1, 1);
         ctx.paint();
 
-        roundedRectangle(ctx, 50, 50, 250, 250, 10, 10);
+        roundedRectangle!double(ctx, 50, 50, 250, 250, 10, 10);
         
         auto clr = RGB(0.9411764705882353, 0.996078431372549, 0.9137254901960784);
         ctx.setSourceRGB(clr);

@@ -1,4 +1,4 @@
-import cairo.cairo;
+import cairo;
 import std.math;
 
 void main()
@@ -14,7 +14,7 @@ void sample4(Context context)
 {
     int w, h;
     
-    context.arc(Point(128.0, 128.0), 76.8, 0, 2*PI);
+    context.arc(point(128.0, 128.0), 76.8, 0, 2*PI);
     context.clip();
     context.newPath(); /* path not consumed by clip()*/
     

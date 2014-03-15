@@ -1,4 +1,4 @@
-import cairo.cairo;
+import cairo;
 import std.math;
 
 void main()
@@ -14,7 +14,7 @@ void sample2(Context context)
 {
     double xc = 128.0;
     double yc = 128.0;
-    auto point = Point(128.0, 128.0);
+    auto point = point(128.0, 128.0);
     double radius = 100.0;
     double angle1 = 45.0  * (PI/180.0);  /* angles are specified */
     double angle2 = 180.0 * (PI/180.0);  /* in radians           */

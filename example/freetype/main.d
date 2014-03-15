@@ -1,10 +1,11 @@
 import std.stdio; //writeln
 import std.string; //toStringz
 
-import cairo.cairo;
-import cairo.ft;
+import cairo;
 
 import derelict.freetype.ft;
+
+static assert(CAIRO_HAS_FT_FONT);
 
 /**
  * Execute like this:
@@ -47,11 +48,11 @@ void main(string[] args)
 
     context.setFontFace(cairoFont);
     context.setSourceRGB(1 ,1 , 1);
-    context.rectangle(Rectangle(Point(0,0), 400, 400));
+    context.rectangle(Rectangle!double(Point!double(0,0), 400, 400));
     context.fill();
     context.setSourceRGB(0 ,0 , 1);
     context.setFontSize(60);
-    context.moveTo(Point(0, 100));
+    context.moveTo(Point!double(0, 100));
     context.showText("Hello, FreeType!");
     
     surface.writeToPNG("test.png");

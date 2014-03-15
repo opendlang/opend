@@ -1,4 +1,4 @@
-import cairo.cairo;
+import cairo;
 import std.math;
 
 void main()
@@ -29,44 +29,44 @@ void sample5(Context context)
     {
         if (rect_height / 2 < radius)
         {
-            context.moveTo (Point(x0, (y0 + y1)/2));
-            context.curveTo(Point(x0 ,y0), Point(x0, y0), Point((x0 + x1)/2, y0));
-            context.curveTo(Point(x1, y0), Point(x1, y0), Point(x1, (y0 + y1)/2));
-            context.curveTo(Point(x1, y1), Point(x1, y1), Point((x1 + x0)/2, y1));
-            context.curveTo(Point(x0, y1), Point(x0, y1), Point(x0, (y0 + y1)/2));
+            context.moveTo (point(x0, (y0 + y1)/2));
+            context.curveTo(point(x0 ,y0), point(x0, y0), point((x0 + x1)/2, y0));
+            context.curveTo(point(x1, y0), point(x1, y0), point(x1, (y0 + y1)/2));
+            context.curveTo(point(x1, y1), point(x1, y1), point((x1 + x0)/2, y1));
+            context.curveTo(point(x0, y1), point(x0, y1), point(x0, (y0 + y1)/2));
         }
         else
         {
-            context.moveTo (Point(x0, y0 + radius));
-            context.curveTo(Point(x0 ,y0), Point(x0, y0), Point((x0 + x1)/2, y0));
-            context.curveTo(Point(x1, y0), Point(x1, y0), Point(x1, y0 + radius));
-            context.lineTo (Point(x1, y1 - radius));
-            context.curveTo(Point(x1, y1), Point(x1, y1), Point((x1 + x0)/2, y1));
-            context.curveTo(Point(x0, y1), Point(x0, y1), Point(x0, y1- radius));
+            context.moveTo (point(x0, y0 + radius));
+            context.curveTo(point(x0 ,y0), point(x0, y0), point((x0 + x1)/2, y0));
+            context.curveTo(point(x1, y0), point(x1, y0), point(x1, y0 + radius));
+            context.lineTo (point(x1, y1 - radius));
+            context.curveTo(point(x1, y1), point(x1, y1), point((x1 + x0)/2, y1));
+            context.curveTo(point(x0, y1), point(x0, y1), point(x0, y1- radius));
         }
     }
     else
     {
         if (rect_height / 2 < radius)
         {
-            context.moveTo (Point(x0, (y0 + y1)/2));
-            context.curveTo(Point(x0 , y0), Point(x0 , y0), Point(x0 + radius, y0));
-            context.lineTo (Point(x1 - radius, y0));
-            context.curveTo(Point(x1, y0), Point(x1, y0), Point(x1, (y0 + y1)/2));
-            context.curveTo(Point(x1, y1), Point(x1, y1), Point(x1 - radius, y1));
-            context.lineTo (Point(x0 + radius, y1));
-            context.curveTo(Point(x0, y1), Point(x0, y1), Point(x0, (y0 + y1)/2));
+            context.moveTo (point(x0, (y0 + y1)/2));
+            context.curveTo(point(x0 , y0), point(x0 , y0), point(x0 + radius, y0));
+            context.lineTo (point(x1 - radius, y0));
+            context.curveTo(point(x1, y0), point(x1, y0), point(x1, (y0 + y1)/2));
+            context.curveTo(point(x1, y1), point(x1, y1), point(x1 - radius, y1));
+            context.lineTo (point(x0 + radius, y1));
+            context.curveTo(point(x0, y1), point(x0, y1), point(x0, (y0 + y1)/2));
         }
         else
         {
-            context.moveTo(Point(x0, y0 + radius));
-            context.curveTo(Point(x0 , y0), Point(x0 , y0), Point(x0 + radius, y0));
-            context.lineTo(Point(x1 - radius, y0));
-            context.curveTo(Point(x1, y0), Point(x1, y0), Point(x1, y0 + radius));
-            context.lineTo(Point(x1 , y1 - radius));
-            context.curveTo(Point(x1, y1), Point(x1, y1), Point(x1 - radius, y1));
-            context.lineTo(Point(x0 + radius, y1));
-            context.curveTo(Point(x0, y1), Point(x0, y1), Point(x0, y1- radius));
+            context.moveTo(point(x0, y0 + radius));
+            context.curveTo(point(x0 , y0), point(x0 , y0), point(x0 + radius, y0));
+            context.lineTo(point(x1 - radius, y0));
+            context.curveTo(point(x1, y0), point(x1, y0), point(x1, y0 + radius));
+            context.lineTo(point(x1 , y1 - radius));
+            context.curveTo(point(x1, y1), point(x1, y1), point(x1 - radius, y1));
+            context.lineTo(point(x0 + radius, y1));
+            context.curveTo(point(x0, y1), point(x0, y1), point(x0, y1- radius));
         }
     }
     context.closePath();

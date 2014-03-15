@@ -1,4 +1,4 @@
-import cairo.cairo;
+import cairo;
 import std.stdio;
 
 void main()

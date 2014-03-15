@@ -17,10 +17,10 @@ void sample17(Context context)
                                    FontWeight.CAIRO_FONT_WEIGHT_BOLD);
     context.setFontSize(90);
 
-    context.moveTo(Point(10, 135));
+    context.moveTo(Point!double(10, 135));
     context.showText("Hello");
     
-    context.moveTo(Point(70, 165));
+    context.moveTo(Point!double(70, 165));
     context.textPath("void");
     context.setSourceRGB(0.5, 0.5, 1);
     context.fillPreserve();
@@ -30,8 +30,8 @@ void sample17(Context context)
     
     /* draw helping lines */
     context.setSourceRGBA(1, 0.2, 0.2, 0.6);
-    context.arc(Point(10.0, 135.0), 5.12, 0, 2*PI);
+    context.arc(Point!double(10.0, 135.0), 5.12, 0, 2*PI);
     context.closePath();
-    context.arc(Point(70.0, 165.0), 5.12, 0, 2*PI);
+    context.arc(Point!double(70.0, 165.0), 5.12, 0, 2*PI);
     context.fill();
 }

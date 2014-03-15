@@ -19,6 +19,9 @@ import std.c.linux.X11.X;
  * Original code from:
  * http://en.literateprograms.org/Hello_World_(C,_Cairo)#Xlib_backend
  */
+
+static assert(CAIRO_HAS_XLIB_SURFACE);
+ 
 void main()
 {
     showXLIB();
@@ -76,7 +79,7 @@ void paint(Context ctx)
     ctx.rectangle(0, 0, 400, 200);
     ctx.setSourceRGB(1, 1, 1); 
     ctx.fill();
-    ctx.moveTo(Point(50.0, 50.0));
+    ctx.moveTo(Point!double(50.0, 50.0));
     ctx.setSourceRGB(0, 0, 0);
     ctx.setFontSize(50);
     ctx.showText("Hello XLIB!");
