@@ -5761,8 +5761,6 @@ public struct Version
  * This range keeps a reference to its $(D Region) object,
  * so it can be passed around without thinking about memory management.
  */
-import std.exception : enforce;
-
 public struct ClipRange
 {
     private Region _outer;
@@ -5794,32 +5792,32 @@ public struct ClipRange
 
     @property Rectangle!int front()
     {
-        enforce(!empty);
+        assert(!empty);
         return _outer.getRectangle(_a);
     }
 
     @property Rectangle!int back()
     {
-        enforce(!empty);
+        assert(!empty);
         return _outer.getRectangle(_b - 1);
     }
 
     void popFront()
     {
-        enforce(!empty);
+        assert(!empty);
         ++_a;
     }
 
     void popBack()
     {
-        enforce(!empty);
+        assert(!empty);
         --_b;
     }
 
     Rectangle!int opIndex(int i)
     {
         i += _a;
-        enforce(i < _b && _b <= _outer.numRectangles);
+        assert(i < _b && _b <= _outer.numRectangles);
         return _outer.getRectangle(i);
     }
 
