@@ -496,26 +496,59 @@ public struct Path
         /**
          * Get a $(D PathRange) for this path to iterate the paths
          * elements.
-         *
-         * Examples:
-         * --------------------------
-         * auto path = context.copyPath();
-         * foreach(PathElement element; path[])
-         * {
-         *     switch(element.type)
-         *     {
-         *          case PathElementType.CAIRO_PATH_MOVE_TO:
-         *          {
-         *              writefln("Move to %s:%s", element.getPoint(0).x,
-         *                       element.getPoint(0).y);
-         *          }
-         *     }
-         * }
-         * --------------------------
          */
         PathRange opSlice()
         {
             return PathRange(this);
+        }
+        ///
+        unittest
+        {
+            import std.math, std.stdio, std.array;
+            //Let's create a context first and draw some lines
+            auto surf = new ImageSurface(Format.CAIRO_FORMAT_ARGB32, 100, 100);
+            auto ctx = Context(surf);
+            ctx.moveTo(0.0, 0.0);
+            ctx.lineTo(10.0, 10.0);
+            surf.writeToPNG("test2.png");
+
+            auto path = ctx.copyPath();
+            foreach(element; path[])
+            {
+                switch(element.type)
+                {
+                    case PathElementType.CAIRO_PATH_MOVE_TO:
+                        auto destination = element[0];
+                        writefln("Move to %s:%s", destination.x, destination.y);
+                        break;
+                    default:
+                }
+            }
+        }
+
+        unittest
+        {
+            import std.math, std.stdio, std.array;
+            //Let's create a context first and draw some lines
+            auto surf = new ImageSurface(Format.CAIRO_FORMAT_ARGB32, 100, 100);
+            auto ctx = Context(surf);
+            ctx.moveTo(0.0, 0.0);
+            ctx.lineTo(10.0, 10.0);
+            ctx.curveTo(5, 5, 7, 6, 0, 0);
+            ctx.lineTo(10.0, 0.0);
+            
+            auto path = ctx.copyPath();
+            auto pathArray = ctx.copyPath()[].array;            
+            assert(pathArray[0].type == PathElementType.CAIRO_PATH_MOVE_TO);
+            assert(pathArray[0][0] == Point!double(0, 0));
+            assert(pathArray[1].type == PathElementType.CAIRO_PATH_LINE_TO);
+            assert(pathArray[1][0] == Point!double(10, 10));
+            assert(pathArray[2].type == PathElementType.CAIRO_PATH_CURVE_TO);
+            assert(pathArray[2][0] == Point!double(5, 5));
+            assert(pathArray[2][1] == Point!double(7, 6));
+            assert(pathArray[2][2] == Point!double(0, 0));
+            assert(pathArray[3].type == PathElementType.CAIRO_PATH_LINE_TO);
+            assert(pathArray[3][0] == Point!double(10, 0));
         }
 }
 
@@ -5814,31 +5847,37 @@ unittest
 
 unittest
 {
+    import std.array, std.range;
     auto rect1 = Rectangle!int(0, 0, 100, 100);
     auto rect2 = Rectangle!int(200, 200, 100, 100);
 
+    static assert(!hasLvalueElements!ClipRange);
+
     auto region = Region(rect1);
-    region += rect2;
+    region.unionWith(rect2);
 
-    assert(region.rectangles.length == 2);
-    assert(region.rectangles[].length == 2);
-    assert(array(region.rectangles) == [rect1, rect2]);
+    assert(region.getRectangles().length == 2);
+    assert(region.getRectangles()[].length == 2);
+    assert(array(region.getRectangles()) == [rect1, rect2]);
 
-    assert(region.rectangles[1..2].length == 1);
-    assert(region.rectangles[1..2][0] == rect2);
+    assert(region.getRectangles()[1..2].length == 1);
+    assert(region.getRectangles()[1..2][0] == rect2);
 
-    assert(region.rectangles[0] == rect1);
-    assert(region.rectangles[1] == rect2);
+    assert(region.getRectangles()[0] == rect1);
+    assert(region.getRectangles()[1] == rect2);
 
-    foreach (i, clip; [rect1, rect2])
+    foreach (int i, clip; [rect1, rect2])
     {
-        assert(region.rectangles[i] == clip);
+        assert(region.getRectangles()[i] == clip);
     }
 
     /* @BUG@ Access Violation */
-    foreach (regRect, oldRect; lockstep(region.rectangles, [rect1, rect2]))
+    //foreach (regRect, oldRect; lockstep(region.getRectangles(), region.getRectangles()))
+    auto oldRects = [rect1, rect2];
+    size_t i = 0;
+    foreach (Rectangle!int regRect; region.getRectangles())
     {
-        //~ assert(regRect == oldRect);
+        assert(regRect == oldRects[i++]);
     }
 }
 
