@@ -26,7 +26,7 @@ import std.conv;
 import cairo.cairo;
 import cairo.c.cairo;
 
-version(CAIRO_HAS_DIRECTFB_SURFACE)
+static if(CAIRO_HAS_DIRECTFB_SURFACE)
 {
     import cairo.c.directfb;
     ///

@@ -26,6 +26,7 @@
 module cairo.c.cairo;
 
 import std.conv;
+public import cairo.c.config;
 
 /**
  * Cairo binding version. Use the cairo_version() function to get
@@ -1965,7 +1966,7 @@ extern(C)
      cairo_content_t
     cairo_surface_get_content (cairo_surface_t *surface);
 
-    version(CAIRO_HAS_PNG_FUNCTIONS)
+    static if(CAIRO_HAS_PNG_FUNCTIONS)
     {
     ///requires -version=CAIRO_HAS_PNG_FUNCTIONS
      cairo_status_t
@@ -2135,7 +2136,7 @@ extern(C)
      int
     cairo_image_surface_get_stride (cairo_surface_t *surface);
 
-    version(CAIRO_HAS_PNG_FUNCTIONS)
+    static if(CAIRO_HAS_PNG_FUNCTIONS)
     {
     ///requires -version=CAIRO_HAS_PNG_FUNCTIONS
      cairo_surface_t *

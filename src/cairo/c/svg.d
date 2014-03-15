@@ -23,7 +23,7 @@ module cairo.c.svg;
 
 import cairo.c.cairo;
 
-version(CAIRO_HAS_SVG_SURFACE)
+static if(CAIRO_HAS_SVG_SURFACE)
 {
     extern(C):
     /**

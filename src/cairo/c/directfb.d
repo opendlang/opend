@@ -31,7 +31,7 @@ module cairo.c.directfb;
 
 import cairo.c.cairo;
 
-version(CAIRO_HAS_DIRECTFB_SURFACE)
+static if(CAIRO_HAS_DIRECTFB_SURFACE)
 {
     pragma(msg, "cairo.c.directfb: FIX: need proper DirectFB bindings");
     //import directfb;

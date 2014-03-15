@@ -25,7 +25,7 @@ module cairo.xlib;
 import cairo.cairo;
 import cairo.c.cairo;
 
-version(CAIRO_HAS_XLIB_SURFACE)
+static if(CAIRO_HAS_XLIB_SURFACE)
 {
     import cairo.c.xlib;
     //Requires XLIB bindings: http://www.dsource.org/projects/bindings/browser/trunk/X11

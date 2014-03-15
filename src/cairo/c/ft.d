@@ -27,9 +27,10 @@
  */
 module cairo.c.ft;
 
-version(CAIRO_HAS_FT_FONT)
+import cairo.c.cairo;
+
+static if(CAIRO_HAS_FT_FONT)
 {
-    import cairo.c.cairo;
     import derelict.freetype.ft;
 
     extern(C):

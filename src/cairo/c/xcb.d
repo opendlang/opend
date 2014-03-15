@@ -23,7 +23,7 @@ module cairo.c.xcb;
 
 import cairo.c.cairo;
 
-version(CAIRO_HAS_XCB_SURFACE)
+static if(CAIRO_HAS_XCB_SURFACE)
 {
     pragma(msg, "cairo.c.xcb: FIX: need proper xcb bindings");
     //import xcb.xcb;

@@ -48,39 +48,6 @@ debug(RefCounted)
     import std.stdio;
 }
 
-version(CAIRO_HAS_PS_SURFACE)
-{
-    import cairo.ps;
-}
-version(CAIRO_HAS_PDF_SURFACE)
-{
-    import cairo.pdf;
-}
-version(CAIRO_HAS_SVG_SURFACE)
-{
-    import cairo.svg;
-}
-version(CAIRO_HAS_WIN32_SURFACE)
-{
-    import cairo.win32;
-}
-version(CAIRO_HAS_XCB_SURFACE)
-{
-    import cairo.xcb;
-}
-version(CAIRO_HAS_DIRECTFB_SURFACE)
-{
-    import cairo.directfb;
-}
-version(CAIRO_HAS_FT_FONT)
-{
-    import cairo.ft;
-}
-version(CAIRO_HAS_XLIB_SURFACE)
-{
-    import cairo.xlib;
-}
-
 /**
  * Mainly used internally by cairoD.
  * If status is CAIRO_STATUS_NO_MEMORY a OutOfMemoryError is thrown.
@@ -1817,40 +1784,47 @@ public class Surface
             {
                 case cairo_surface_type_t.CAIRO_SURFACE_TYPE_IMAGE:
                     return new ImageSurface(ptr);
-                version(CAIRO_HAS_PS_SURFACE)
+                static if(CAIRO_HAS_PS_SURFACE)
                 {
+                    import cairo.ps;
                     case cairo_surface_type_t.CAIRO_SURFACE_TYPE_PS:
                         return new PSSurface(ptr);
                 }
-                version(CAIRO_HAS_PDF_SURFACE)
+                static if(CAIRO_HAS_PDF_SURFACE)
                 {
+                    import cairo.pdf;
                     case cairo_surface_type_t.CAIRO_SURFACE_TYPE_PDF:
                         return new PDFSurface(ptr);
                 }
-                version(CAIRO_HAS_SVG_SURFACE)
+                static if(CAIRO_HAS_SVG_SURFACE)
                 {
+                    import cairo.svg;
                     case cairo_surface_type_t.CAIRO_SURFACE_TYPE_SVG:
                         return new SVGSurface(ptr);
                 }
-                version(CAIRO_HAS_WIN32_SURFACE)
+                static if(CAIRO_HAS_WIN32_SURFACE)
                 {
+                    import cairo.win32;
                     case cairo_surface_type_t.CAIRO_SURFACE_TYPE_WIN32:
                         return new Win32Surface(ptr);
                     case cairo_surface_type_t.CAIRO_SURFACE_TYPE_WIN32_PRINTING:
                         return new Win32Surface(ptr);
                 }
-                version(CAIRO_HAS_XCB_SURFACE)
+                static if(CAIRO_HAS_XCB_SURFACE)
                 {
+                    import cairo.xcb;
                     case cairo_surface_type_t.CAIRO_SURFACE_TYPE_XCB:
                         return new XCBSurface(ptr);
                 }
-                version(CAIRO_HAS_DIRECTFB_SURFACE)
+                static if(CAIRO_HAS_DIRECTFB_SURFACE)
                 {
+                    import cairo.directfb;
                     case cairo_surface_type_t.CAIRO_SURFACE_TYPE_DIRECTFB:
                         return new DirectFBSurface(ptr);
                 }
-                version(CAIRO_HAS_XLIB_SURFACE)
+                static if(CAIRO_HAS_XLIB_SURFACE)
                 {
+                    import cairo.xlib;
                     case cairo_surface_type_t.CAIRO_SURFACE_TYPE_XLIB:
                         return new XlibSurface(ptr);
                 }
@@ -2491,7 +2465,7 @@ public class ImageSurface : Surface
             void writeToPNG(string file);
             //TODO: toPNGStream when phobos gets new streaming api
         }
-        else version(CAIRO_HAS_PNG_FUNCTIONS)
+        else static if(CAIRO_HAS_PNG_FUNCTIONS)
         {
             static ImageSurface fromPng(string file)
             {
@@ -5182,13 +5156,14 @@ public class ScaledFont
                 cairo_scaled_font_reference(ptr);
             switch(cairo_scaled_font_get_type(ptr))
             {
-                version(CAIRO_HAS_WIN32_FONT)
+                static if(CAIRO_HAS_WIN32_FONT)
                 {
                     case cairo_font_type_t.CAIRO_FONT_TYPE_WIN32:
                         return new Win32ScaledFont(ptr);
                 }
-                version(CAIRO_HAS_FT_FONT)
+                static if(CAIRO_HAS_FT_FONT)
                 {
+                    import cairo.ft;
                     case cairo_font_type_t.CAIRO_FONT_TYPE_FT:
                         return new FTScaledFont(ptr);
                 }
@@ -5546,13 +5521,14 @@ public class FontFace
             {
                 case cairo_font_type_t.CAIRO_FONT_TYPE_TOY:
                     return new ToyFontFace(ptr);
-                version(CAIRO_HAS_WIN32_FONT)
+                static if(CAIRO_HAS_WIN32_FONT)
                 {
                     case cairo_font_type_t.CAIRO_FONT_TYPE_WIN32:
                         return new Win32FontFace(ptr);
                 }
-                version(CAIRO_HAS_FT_FONT)
+                static if(CAIRO_HAS_FT_FONT)
                 {
+                    import cairo.ft;
                     case cairo_font_type_t.CAIRO_FONT_TYPE_FT:
                         return new FTFontFace(ptr);
                 }

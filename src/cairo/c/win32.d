@@ -23,7 +23,7 @@ module cairo.c.win32;
 
 import cairo.c.cairo;
 
-version(CAIRO_HAS_WIN32_SURFACE)
+static if(CAIRO_HAS_WIN32_SURFACE)
 {
     //Requires WindowsAPI: http://www.dsource.org/projects/bindings/wiki/WindowsApi
     import win32.windef;
@@ -48,7 +48,7 @@ version(CAIRO_HAS_WIN32_SURFACE)
     ///
     cairo_surface_t* cairo_win32_surface_get_image (cairo_surface_t* surface);
 
-    version(CAIRO_HAS_WIN32_FONT)
+    static if(CAIRO_HAS_WIN32_FONT)
     {
         extern(C):
         /*

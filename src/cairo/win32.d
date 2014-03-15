@@ -26,7 +26,7 @@ import std.conv;
 import cairo.cairo;
 import cairo.c.cairo;
 
-version(CAIRO_HAS_WIN32_SURFACE)
+static if(CAIRO_HAS_WIN32_SURFACE)
 {
     import cairo.c.win32;
     //Requires WindowsAPI: http://www.dsource.org/projects/bindings/wiki/WindowsApi
@@ -149,7 +149,7 @@ version(CAIRO_HAS_WIN32_SURFACE)
                 return(Surface.createFromNative(cairo_win32_surface_get_image(this.nativePointer)));
             }
     }
-    version(CAIRO_HAS_WIN32_FONT)
+    static if(CAIRO_HAS_WIN32_FONT)
     {
         /**
          * The Microsoft Windows font backend is primarily

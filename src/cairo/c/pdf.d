@@ -23,7 +23,7 @@ module cairo.c.pdf;
 
 import cairo.c.cairo;
 
-version(CAIRO_HAS_PDF_SURFACE)
+static if(CAIRO_HAS_PDF_SURFACE)
 {
     extern(C)
     {

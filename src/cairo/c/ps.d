@@ -23,7 +23,7 @@ module cairo.c.ps;
 
 import cairo.c.cairo;
 
-version(CAIRO_HAS_PS_SURFACE)
+static if(CAIRO_HAS_PS_SURFACE)
 {
     extern(C):
 

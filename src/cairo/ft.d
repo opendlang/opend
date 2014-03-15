@@ -23,7 +23,7 @@ module cairo.ft;
 import cairo.cairo;
 import cairo.c.cairo;
 
-version(CAIRO_HAS_FT_FONT)
+static if(CAIRO_HAS_FT_FONT)
 {
     import cairo.c.ft;
     import derelict.freetype.ft;

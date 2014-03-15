@@ -22,7 +22,7 @@ module cairo.c.xlib;
 
 import cairo.c.cairo;
 
-version(CAIRO_HAS_XLIB_SURFACE)
+static if(CAIRO_HAS_XLIB_SURFACE)
 {
     import std.c.linux.X11.Xlib;
 
