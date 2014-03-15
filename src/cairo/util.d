@@ -116,3 +116,17 @@ mixin template CairoCountedClass(T, string prefix)
             dispose();
         }
 }
+
+/**
+ * Checks whether TargetType matches any subsequent types.
+ * Use as: isOneOf!(TargetType, Type1, Type2..);
+ */
+template isOneOf(X, T...)
+{
+	static if (!T.length)
+		enum bool isOneOf = false;
+	else static if (is (X == T[0]))
+		enum bool isOneOf = true;
+	else
+		enum bool isOneOf = isOneOf!(X, T[1..$]);
+}

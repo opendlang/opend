@@ -12,7 +12,7 @@ void main()
 
 void sample1(Context context)
 {
-    Point center = Point(128, 128);
+    auto center = Point!double(128, 128);
     double radius = 100.0;
     double angle1 = 45.0  * (PI/180.0);  /* angles are specified */
     double angle2 = 180.0 * (PI/180.0);  /* in radians           */

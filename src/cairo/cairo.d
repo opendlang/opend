@@ -153,69 +153,50 @@ public alias cairo_font_type_t FontType; ///ditto
 public alias cairo_region_overlap_t RegionOverlap; ///ditto
 
 /**
- * A simple struct to store the coordinates of a point.
+ * A simple struct to store the coordinates of a point as 
+ * doubles or integers.
  */
-public struct Point
+public struct Point(T) if(isOneOf!(T, int, double))
 {
     ///
-    public this(double x, double y)
+    public this(T x, T y)
     {
         this.x = x;
         this.y = y;
     }
-
+    
     ///
-    double x;
+    T x;
     ///
-    double y;
+    T y;
 }
 
-///ditto
-public struct PointInt
+///
+unittest
 {
-    ///
-    public this(int x, int y)
-    {
-        this.x = x;
-        this.y = y;
-    }
-
-    ///
-    int x;
-    ///
-    int y;
+    auto p = Point!double(10, 10);  //Type Point!double
+    auto p2 = point(10.0, 10.0);    //Type Point!double
+    auto p3 = Point!int(10, 10);    //Type Point!int
+    auto p4 = point(10, 10);        //Type Point!int
+    assert(p == p2);
+    assert(p3 == p4);
 }
 
 /**
- * Checks whether TargetType matches any subsequent types.
- * Use as: isOneOf!(TargetType, Type1, Type2..);
+ * Convenience function to create a $(D Point!int) or $(D Point!double).
  */
-template isOneOf(X, T...)
+auto point(T)(T x, T y) if(is(T == int) || is(T == double))
 {
-    static if (!T.length)
-        enum bool isOneOf = false;
-    else static if (is (X == T[0]))
-        enum bool isOneOf = true;
-    else
-        enum bool isOneOf = isOneOf!(X, T[1..$]);
+    return Point!T(x,y);
 }
 
 /**
- * A simple struct representing a rectangle with $(D int) or $(double) values
+ * A simple struct representing a rectangle with $(D int) or $(D double) values
  */
-public struct Rectangle(T) if (isOneOf!(T, int, double))
+public struct Rectangle(T) if(isOneOf!(T, int, double))
 {
-    static if (is(T == double))
-    {
-        alias Point PointType;
-    }
-    else static if (is(T == int))
-    {
-        alias PointInt PointType;
-    }
-
     ///
-    public this(PointType point, T width, T height)
+    public this(Point!T point, T width, T height)
     {
         this.point = point;
         this.width = width;
@@ -232,7 +213,7 @@ public struct Rectangle(T) if (isOneOf!(T, int, double))
     }
 
     ///TOP-LEFT point of the rectangle
-    PointType point;
+    Point!T point;
     ///
     T width;
     ///
@@ -322,7 +303,7 @@ unittest
 public struct Box
 {
     ///
-    public this(Point point1, Point point2)
+    public this(Point!double point1, Point!double point2)
     {
         this.point1 = point1;
         this.point2 = point2;
@@ -336,9 +317,9 @@ public struct Box
         this.point2.y = y2;
     }
     ///Top-left point
-    Point point1;
+    Point!double point1;
     ///Bottom-right point
-    Point point2;
+    Point!double point2;
 }
 
 /**
@@ -646,14 +627,14 @@ public struct PathElement
          *     CAIRO_PATH_CLOSE_PATH:  0 points
          * --------------------
          */
-        Point getPoint(int index)
+        Point!double getPoint(int index) const
         {
             //length = 1 + number of points, index 0 based
             if(index > (data.header.length - 2))
             {
                 throw new RangeError(__FILE__, __LINE__);
             }
-            Point p;
+            Point!double p;
             p.x = data[index+1].point.x;
             p.y = data[index+1].point.y;
             return p;
@@ -743,7 +724,7 @@ public struct Matrix
         }
 
         ///ditto
-        void initScale(Point point)
+        void initScale(Point!double point)
         {
             initScale(point.x, point.y);
         }
@@ -794,7 +775,7 @@ public struct Matrix
         }
 
         ///ditto
-        void scale(Point point)
+        void scale(Point!double point)
         {
             scale(point.x, point.y);
         }
@@ -858,7 +839,7 @@ public struct Matrix
          * dy2 = dx1 * b + dy1 * d;
          * ------------------
          */
-        Point transformDistance(Point dist)
+        Point!double transformDistance(Point!double dist)
         {
             cairo_matrix_transform_distance(&this.nativeMatrix, &dist.x, &dist.y);
             return dist;
@@ -867,7 +848,7 @@ public struct Matrix
         /**
          * Transforms the point (x, y) by matrix.
          */
-        Point transformPoint(Point point)
+        Point!double transformPoint(Point!double point)
         {
             cairo_matrix_transform_point(&this.nativeMatrix, &point.x, &point.y);
             return point;
@@ -1391,7 +1372,7 @@ public class Gradient : Pattern
 /**
  * A linear gradient.
  *
- * Use the $(D this(Point p1, Point p2)) constructor to create an
+ * Use the $(D this(Point!double p1, Point!double p2)) constructor to create an
  * instance.
  */
 public class LinearGradient : Gradient
@@ -1428,7 +1409,7 @@ public class LinearGradient : Gradient
          * pattern space is identical to user space, but the relationship
          * between the spaces can be changed with $(D Pattern.setMatrix()).
          */
-        this(Point p1, Point p2)
+        this(Point!double p1, Point!double p2)
         {
             super(cairo_pattern_create_linear(p1.x, p1.y, p2.x, p2.y));
         }
@@ -1446,9 +1427,9 @@ public class LinearGradient : Gradient
          *
          * Point[1] = the second point
          */
-        Point[2] getLinearPoints()
+        Point!(double)[2] getLinearPoints()
         {
-            Point[2] tmp;
+            Point!(double)[2] tmp;
             throwError(cairo_pattern_get_linear_points(this.nativePointer, &tmp[0].x, &tmp[0].y,
                 &tmp[1].x, &tmp[1].y));
             return tmp;
@@ -1461,7 +1442,7 @@ public class LinearGradient : Gradient
 /**
  * A radial gradient.
  *
- * Use the $(D this(Point c0, double radius0, Point c1, double radius1))
+ * Use the $(D this(Point!double c0, double radius0, Point!double c1, double radius1))
  * constructor to create an instance.
  */
 public class RadialGradient : Gradient
@@ -1501,7 +1482,7 @@ public class RadialGradient : Gradient
          * pattern space is identical to user space, but the relationship
          * between the spaces can be changed with $(D Pattern.setMatrix()).
          */
-        this(Point c0, double radius0, Point c1, double radius1)
+        this(Point!double c0, double radius0, Point!double c1, double radius1)
         {
             super(cairo_pattern_create_radial(c0.x, c0.y, radius0, c1.x, c1.y, radius1));
         }
@@ -1515,7 +1496,7 @@ public class RadialGradient : Gradient
          * Gets the gradient endpoint circles for a radial gradient,
          * each specified as a center coordinate and a radius.
          */
-        void getRadialCircles(out Point c0, out Point c1, out double radius0, out double radius1)
+        void getRadialCircles(out Point!double c0, out Point!double c1, out double radius0, out double radius1)
         {
             throwError(cairo_pattern_get_radial_circles(this.nativePointer, &c0.x, &c0.y, &radius0,
                 &c1.x, &c1.y, &radius1));
@@ -2016,7 +1997,7 @@ public class Surface
             checkError();
         }
         ///ditto
-        void setDeviceOffset(Point offset)
+        void setDeviceOffset(Point!double offset)
         {
             cairo_surface_set_device_offset(this.nativePointer, offset.x, offset.y);
             checkError();
@@ -2029,9 +2010,9 @@ public class Surface
          * Returns:
          * Offset in device units
          */
-        Point getDeviceOffset()
+        Point!double getDeviceOffset()
         {
-            Point tmp;
+            Point!double tmp;
             cairo_surface_get_device_offset(this.nativePointer, &tmp.x, &tmp.y);
             checkError();
             return tmp;
@@ -2045,13 +2026,13 @@ public class Surface
         }+/
 
         ///ditto
-        @property void deviceOffset(Point offset)
+        @property void deviceOffset(Point!double offset)
         {
             setDeviceOffset(offset);
         }
 
         ///ditto
-        @property Point deviceOffset()
+        @property Point!double deviceOffset()
         {
             return getDeviceOffset();
         }
@@ -2930,7 +2911,7 @@ public struct Context
             checkError();
         }
         ///ditto
-        void setSourceSurface(Surface sur, Point p1)
+        void setSourceSurface(Surface sur, Point!double p1)
         {
             cairo_set_source_surface(this.nativePointer, sur.nativePointer, p1.x, p1.y);
             checkError();
@@ -3404,7 +3385,7 @@ public struct Context
          *
          * See $(D clip()), and $(D clipPreserve()).
          */
-        bool inClip(Point point)
+        bool inClip(Point!double point)
         {
             scope(exit)
                 checkError();
@@ -3512,7 +3493,7 @@ public struct Context
          *
          * See $(D fill()), $(D setFillRule()) and $(D fillPreserve()).
          */
-        bool inFill(Point point)
+        bool inFill(Point!double point)
         {
             scope(exit)
                 checkError();
@@ -3539,7 +3520,7 @@ public struct Context
          * Params:
          * location = coordinates at which to place the origin of surface
          */
-        void maskSurface(Surface surface, Point location)
+        void maskSurface(Surface surface, Point!double location)
         {
             cairo_mask_surface(this.nativePointer, surface.nativePointer, location.x, location.y);
             checkError();
@@ -3663,7 +3644,7 @@ public struct Context
          * See $(D stroke()), $(D setLineWidth()), $(D setLineJoin()),
          * $(D setLineCap()), $(D set_dash()), and $(D strokePreserve()).
          */
-        bool inStroke(Point point)
+        bool inStroke(Point!double point)
         {
             scope(exit)
                 checkError();
@@ -3813,9 +3794,9 @@ public struct Context
          * Some functions unset the current path and as a result,
          * current point: $(D fill()), $(D stroke()).
          */
-        Point getCurrentPoint()
+        Point!double getCurrentPoint()
         {
-            Point tmp;
+            Point!double tmp;
             cairo_get_current_point(this.nativePointer, &tmp.x, &tmp.y);
             checkError();
             return tmp;
@@ -3925,7 +3906,7 @@ public struct Context
          * angle1 = the start angle, in radians
          * angle2 = the end angle, in radians
          */
-        void arc(Point center, double radius, double angle1, double angle2)
+        void arc(Point!double center, double radius, double angle1, double angle2)
         {
             cairo_arc(this.nativePointer, center.x, center.y, radius, angle1, angle2);
             checkError();
@@ -3952,7 +3933,7 @@ public struct Context
          * angle1 = the start angle, in radians
          * angle2 = the end angle, in radians
          */
-        void arcNegative(Point center, double radius, double angle1, double angle2)
+        void arcNegative(Point!double center, double radius, double angle1, double angle2)
         {
             cairo_arc_negative(this.nativePointer, center.x, center.y, radius, angle1, angle2);
             checkError();
@@ -3978,7 +3959,7 @@ public struct Context
          * p2 = Second control point
          * p3 = End of the curve
          */
-        void curveTo(Point p1, Point p2, Point p3)
+        void curveTo(Point!double p1, Point!double p2, Point!double p3)
         {
             cairo_curve_to(this.nativePointer, p1.x, p1.y, p2.x, p2.y, p3.x, p3.y);
             checkError();
@@ -4002,7 +3983,7 @@ public struct Context
          * Params:
          * p1 = End of the line
          */
-        void lineTo(Point p1)
+        void lineTo(Point!double p1)
         {
             cairo_line_to(this.nativePointer, p1.x, p1.y);
             checkError();
@@ -4017,7 +3998,7 @@ public struct Context
         /**
          * Begin a new sub-path. After this call the current point will be p1.
          */
-        void moveTo(Point p1)
+        void moveTo(Point!double p1)
         {
             cairo_move_to(this.nativePointer, p1.x, p1.y);
             checkError();
@@ -4113,7 +4094,7 @@ public struct Context
          * rp2 = Second control point
          * rp3 = offset to the end of the curve
          */
-        void relCurveTo(Point rp1, Point rp2, Point rp3)
+        void relCurveTo(Point!double rp1, Point!double rp2, Point!double rp3)
         {
             cairo_rel_curve_to(this.nativePointer, rp1.x, rp1.y, rp2.x, rp2.y, rp3.x, rp3.y);
             checkError();
@@ -4139,7 +4120,7 @@ public struct Context
          * Doing so will cause an CairoException with a
          * status of CAIRO_STATUS_NO_CURRENT_POINT.
          */
-        void relLineTo(Point rp1)
+        void relLineTo(Point!double rp1)
         {
             cairo_rel_line_to(this.nativePointer, rp1.x, rp1.y);
             checkError();
@@ -4162,7 +4143,7 @@ public struct Context
          * Doing so will cause an CairoException with a status of
          * CAIRO_STATUS_NO_CURRENT_POINT.
          */
-        void relMoveTo(Point rp1)
+        void relMoveTo(Point!double rp1)
         {
             cairo_rel_move_to(this.nativePointer, rp1.x, rp1.y);
             checkError();
@@ -4241,7 +4222,7 @@ public struct Context
         }
 
         ///ditto
-        void scale(Point point)
+        void scale(Point!double point)
         {
             scale(point.x, point.y);
         }
@@ -4330,7 +4311,7 @@ public struct Context
          * multiplying the given point by the current
          * transformation matrix (CTM).
          */
-        Point userToDevice(Point inp)
+        Point!double userToDevice(Point!double inp)
         {
             cairo_user_to_device(this.nativePointer, &inp.x, &inp.y);
             checkError();
@@ -4343,7 +4324,7 @@ public struct Context
          * the translation components of the CTM will be ignored when
          * transforming inp.
          */
-        Point userToDeviceDistance(Point inp)
+        Point!double userToDeviceDistance(Point!double inp)
         {
             cairo_user_to_device_distance(this.nativePointer, &inp.x, &inp.y);
             checkError();
@@ -4355,7 +4336,7 @@ public struct Context
          * multiplying the given point by the inverse of the current
          * transformation matrix (CTM).
          */
-        Point deviceToUser(Point inp)
+        Point!double deviceToUser(Point!double inp)
         {
             cairo_device_to_user(this.nativePointer, &inp.x, &inp.y);
             checkError();
@@ -4368,7 +4349,7 @@ public struct Context
          * the translation components of the inverse CTM will be ignored
          * when transforming inp.
          */
-        Point deviceToUserDistance(Point inp)
+        Point!double deviceToUserDistance(Point!double inp)
         {
             cairo_device_to_user_distance(this.nativePointer, &inp.x, &inp.y);
             checkError();
@@ -5294,7 +5275,7 @@ public class ScaledFont
             }
         }
         ///ditto
-        Glyph[] textToGlyphs(Point p1, string text, Glyph[] glyphBuffer = [])
+        Glyph[] textToGlyphs(Point!double p1, string text, Glyph[] glyphBuffer = [])
         {
             return textToGlyphs(p1.x, p1.y, text, glyphBuffer);
         }
@@ -5347,7 +5328,7 @@ public class ScaledFont
             return res;
         }
         ///ditto
-        TextGlyph textToTextGlyph(Point p1, string text, Glyph[] glyphBuffer = [],
+        TextGlyph textToTextGlyph(Point!double p1, string text, Glyph[] glyphBuffer = [],
             TextCluster[] clusterBuffer = [])
         {
             return textToTextGlyph(p1.x, p1.y, text, glyphBuffer, clusterBuffer);
@@ -6003,7 +5984,10 @@ public struct Region
             return cairo_region_contains_rectangle(this.nativePointer, cast(cairo_rectangle_int_t*)&rect);
         }
 
-        bool containsPoint(PointInt point)
+        /**
+         *
+         */
+        bool containsPoint(Point!int point)
         {
             return cast(bool)cairo_region_contains_point(this.nativePointer, point.x, point.y);
         }
