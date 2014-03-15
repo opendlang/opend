@@ -1,0 +1,19 @@
+{
+	"description": "cairoD example",
+	"targetName": "example",
+	"authors": [
+		"Johannes Pfau"
+	],
+	"version": "~master",
+	"homepage": "https://github.com/jpf91/cairoD",
+	"name": "cairod-example",
+	"copyright": "Copyright © 2011-2013, Johannes Pfau",
+	"license": "BSL-1.0",
+	"dependencies": {
+		"cairod": "~master",
+		"derelict:freetype": "~master"
+	},
+	"libs": ["cairo"],
+	"targetType": "executable",
+	"sourcePaths": ["."]
+}
