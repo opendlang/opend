@@ -222,78 +222,60 @@ public struct Rectangle(T) if(isOneOf!(T, int, double))
 
 /**
  * Convenience function to create a $(D Rectangle!int) or $(D Rectangle!double).
- * If any of the arguments are of a floating-point type,
- * Rectangle!double is constructed.
- *
- * Examples:
- * --------------------------------------------------------
- * auto a = rectangle(1, 1, 4, 4);
- * auto b = rectangle(0.99, 0.99, 3.99, 3.99);
- * --------------------------------------------------------
  */
-auto rectangle(T...)(T args)
+auto rectangle(T)(T x, T y, T width, T height) if(isOneOf!(T, int, double))
 {
-    static if (isOneOf!(float, T) || isOneOf!(double, T))
-    {
-        return Rectangle!(double)(args);
-    }
-    else
-    {
-        return Rectangle!(int)(args);
-    }
+    return Rectangle!(T)(x, y, width, height);
 }
 
+///ditto
+auto rectangle(T)(Point!T point, T width, T height) if(isOneOf!(T, int, double))
+{
+    return Rectangle!(T)(point, width, height);
+}
+
+///
 unittest
 {
     auto a = rectangle(1, 1, 4, 4);
+    Rectangle!int rectInt = a;
     auto b = rectangle(0.99, 0.99, 3.99, 3.99);
-
-    auto rect1 = rectangle(0, 0, 10, 10);
-    Rectangle!int rectInt = rect1;
-
-    auto rect2 = rectangle(0, 0, 10.0, 10);
-    Rectangle!double rectDouble = rect2;
-
-    auto rect3 = rectangle(cast(byte)0, cast(short)0, cast(int)10, cast(uint)10);
-    Rectangle!int rectInt2 = rect3;
+    Rectangle!double rectDouble = b;
 }
 
 /**
- * A simple struct representing a size with only $(D int) values
+ * A simple struct representing a size with only $(D int) or $(D double) values
  */
-public struct Size(T) if (is(T == int))
+public struct Size(T) if(is(T == int) || is(T == double))
 {
     ///
-    public this(int width, int height)
+    public this(T width, T height)
     {
         this.width = width;
         this.height = height;
     }
 
     ///
-    int width, height;
+    T width, height;
 }
 
-/**
- * A simple struct representing a size with $(D double) values
- */
-public struct Size(T) if (is(T == double))
-{
-    ///
-    public this(double width, double height)
-    {
-        this.width = width;
-        this.height = height;
-    }
-
-    ///
-    double width, height;
-}
-
+///
 unittest
 {
     auto a = Size!int(10, 10);
+    auto a2 = size(10, 10);
     auto b = Size!double(5, 5);
+    auto b2 = size(5.0, 5.0);
+    assert(a == a2);
+    assert(b == b2);
+}
+
+/**
+ * Convenience function to create a $(D Size!int) or $(D Size!double).
+ */
+auto size(T)(T width, T height) if(isOneOf!(T, int, double))
+{
+    return Size!(T)(width, height);
 }
 
 /**
