@@ -1,7 +1,7 @@
 /**
  *
  * License:
- * $(BOOKTABLE ,
+ * $(TABLE
  *   $(TR $(TD cairoD wrapper/bindings)
  *     $(TD $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost License 1.0)))
  *   $(TR $(TD $(LINK2 http://cgit.freedesktop.org/cairo/tree/COPYING, _cairo))
@@ -9,7 +9,7 @@
  *     $(LINK2 http://cgit.freedesktop.org/cairo/plain/COPYING-MPL-1.1, MPL 1.1)))
  * )
  * Authors:
- * $(BOOKTABLE ,
+ * $(TABLE
  *   $(TR $(TD Johannes Pfau) $(TD cairoD))
  *   $(TR $(TD $(LINK2 http://cairographics.org, _cairo team)) $(TD _cairo))
  * )

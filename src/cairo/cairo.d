@@ -11,7 +11,7 @@
  * $(LINK http://cairographics.org/documentation/)
  *
  * License:
- * $(BOOKTABLE ,
+ * $(TABLE
  *   $(TR $(TD cairoD wrapper/bindings)
  *     $(TD $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost License 1.0)))
  *   $(TR $(TD $(LINK2 http://cgit.freedesktop.org/cairo/tree/COPYING, _cairo))
@@ -19,7 +19,7 @@
  *     $(LINK2 http://cgit.freedesktop.org/cairo/plain/COPYING-MPL-1.1, MPL 1.1)))
  * )
  * Authors:
- * $(BOOKTABLE ,
+ * $(TABLE
  *   $(TR $(TD Johannes Pfau) $(TD cairoD))
  *   $(TR $(TD Andrej Mitrovic) $(TD cairoD))
  *   $(TR $(TD $(LINK2 http://cairographics.org, _cairo team)) $(TD _cairo))
@@ -125,11 +125,6 @@ public class CairoException : Exception
  * Aliases for simple cairo enums and structs.
  * Theses aliases provide D-like names when
  * using the cairoD API.
- *
- * BUGS:
- * DDOC doesn't document what an alias actually aliases.
- * If you can't guess the corresponding cairo C types, you should
- * have a look at the cairo.d source.
  */
 public alias cairo_content_t Content;
 public alias cairo_antialias_t AntiAlias; ///ditto
