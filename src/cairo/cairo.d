@@ -55,16 +55,16 @@ debug(RefCounted)
  * For all other statuses, this functions throws
  * a $(D CairoException) with the status value.
  */
-void throwError(cairo_status_t status)
+void throwError(cairo_status_t status, string file = __FILE__, int line = __LINE__)
 {
     switch(status)
     {
         case cairo_status_t.CAIRO_STATUS_SUCCESS:
             return;
         case cairo_status_t.CAIRO_STATUS_NO_MEMORY:
-            throw new OutOfMemoryError(__FILE__, __LINE__);
+            throw new OutOfMemoryError(file, line);
         default:
-            throw new CairoException(status);
+            throw new CairoException(status, file, line);
     }
 }
 
@@ -114,10 +114,10 @@ public class CairoException : Exception
         cairo_status_t status;
 
         ///
-        this(cairo_status_t stat)
+        this(cairo_status_t stat, string file = __FILE__, int line = __LINE__)
         {
             this.status = stat;
-            super(to!string(this.status) ~ ": " ~ to!string(cairo_status_to_string(this.status)));
+            super(format("%s: %s", this.status,  to!string(cairo_status_to_string(this.status))));
         }
 }
 
