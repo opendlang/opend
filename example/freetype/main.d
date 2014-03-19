@@ -2,10 +2,12 @@ import std.stdio; //writeln
 import std.string; //toStringz
 
 import cairo;
-
 import derelict.freetype.ft;
+import cairo.example;
 
 static assert(CAIRO_HAS_FT_FONT);
+
+FTFontFace cairoFont;
 
 /**
  * Execute like this:
@@ -23,6 +25,7 @@ void main(string[] args)
         writeln("Couldn't initialize FreeType");
         return;
     }
+
     /* Loading a font */
     FT_Face face;
     error = FT_New_Face(library,
@@ -36,16 +39,15 @@ void main(string[] args)
     scope(exit)
         FT_Done_Face(face);
 
-    /* Cairo FreeType integration */
-    auto surface = new ImageSurface(Format.CAIRO_FORMAT_ARGB32, 400, 400);
-    scope(exit)
-        surface.dispose();
-
-    auto context = Context(surface);
-    auto cairoFont = new FTFontFace(face, 0);
+    cairoFont = new FTFontFace(face, 0);
     scope(exit)
         cairoFont.dispose(); //Must be called before FT_Done_Face
+    
+    runExample(&draw);
+}
 
+void draw(Context context)
+{
     context.setFontFace(cairoFont);
     context.setSourceRGB(1 ,1 , 1);
     context.rectangle(Rectangle!double(Point!double(0,0), 400, 400));
@@ -54,6 +56,4 @@ void main(string[] args)
     context.setFontSize(60);
     context.moveTo(Point!double(0, 100));
     context.showText("Hello, FreeType!");
-    
-    surface.writeToPNG("test.png");
 }

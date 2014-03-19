@@ -1,13 +1,11 @@
 import cairo;
 import std.math;
 
+import cairo.example;
+
 void main()
 {
-    auto surface = new ImageSurface(Format.CAIRO_FORMAT_ARGB32, 400, 400);
-    auto context = Context(surface);
-    sample2(context);
-    surface.writeToPNG("test.png");
-    surface.dispose();
+    runExample(&sample2);
 }
 
 void sample2(Context context)

@@ -1,16 +1,14 @@
 import cairo;
 import std.math;
 
+import cairo.example;
+
 void main()
 {
-    auto surface = new ImageSurface(Format.CAIRO_FORMAT_ARGB32, 400, 400);
-    auto context = Context(surface);
-    sample6(context);
-    surface.writeToPNG("test.png");
-    surface.dispose();
+    runExample(&sample10);
 }
 
-void sample6(Context context)
+void sample10(Context context)
 {
     Gradient pat = new LinearGradient(Point!double(0, 0), Point!double(0, 256));
     pat.addColorStopRGBA(1, RGBA(0, 0, 0, 1));

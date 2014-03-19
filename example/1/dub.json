@@ -9,10 +9,25 @@
 	"name": "cairod-example",
 	"copyright": "Copyright © 2011-2013, Johannes Pfau",
 	"license": "BSL-1.0",
-	"dependencies": {
-		"cairod": "~master",
-	},
 	"libs": ["cairo"],
-	"targetType": "executable",
-	"sourcePaths": ["."]
+	"sourcePaths": [".", "../common", "../../src"],
+	"importPaths": ["../common", "../../src"],
+	"configurations": [
+		{
+			"name": "minimal",
+			"targetType": "executable"
+		},
+		{
+			"name": "gtk3",
+			"targetType": "executable",
+			"libs": ["cairo", "gobject-2.0", "gdk-3", "gtk-3"],
+			"versions": ["GTK", "GTK3"]
+		},
+		{
+			"name": "gtk2",
+			"targetType": "executable",
+			"libs": ["cairo", "gobject-2.0", "gdk-x11-2.0", "gtk-x11-2.0"],
+			"versions": ["GTK"]
+		}
+	]
 }

@@ -1,16 +1,12 @@
 import cairo.cairo;
 import std.math;
 
+import cairo.example;
+
 void main()
 {
-    auto surface = new ImageSurface(Format.CAIRO_FORMAT_ARGB32, 400, 400);
-
-    auto context = Context(surface);
-    sample17(context);
-    surface.writeToPNG("test.png");
-    surface.dispose();
+    runExample(&sample17);
 }
-
 void sample17(Context context)
 {
     context.selectFontFace("Sans", FontSlant.CAIRO_FONT_SLANT_NORMAL,
