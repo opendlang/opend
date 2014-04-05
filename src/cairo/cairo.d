@@ -5215,6 +5215,7 @@ public class ScaledFont
             {
                 static if(CAIRO_HAS_WIN32_FONT)
                 {
+                    import cairo.win32;
                     case cairo_font_type_t.CAIRO_FONT_TYPE_WIN32:
                         return new Win32ScaledFont(ptr);
                 }
@@ -5580,6 +5581,7 @@ public class FontFace
                     return new ToyFontFace(ptr);
                 static if(CAIRO_HAS_WIN32_FONT)
                 {
+                    import cairo.win32;
                     case cairo_font_type_t.CAIRO_FONT_TYPE_WIN32:
                         return new Win32FontFace(ptr);
                 }
