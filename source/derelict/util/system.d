@@ -39,6 +39,9 @@ else enum Derelict_OS_Linux = false;
 version( Posix ) enum Derelict_OS_Posix = true;
 else enum Derelict_OS_Posix = false;
 
+version( Android ) enum Derelict_OS_Android = true;
+else enum Derelict_OS_Android = false;
+
 version( FreeBSD ) {
 	enum Derelict_OS_AnyBSD = true;
 	enum Derelict_OS_FreeBSD = true;
