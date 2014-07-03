@@ -982,6 +982,7 @@ enum CL_INFINITY        = CL_HUGE_VALF;
 // this might look crazy, but eases further changes
 // do a pragma(msg, genCLVectorTypes()); for debugging
 import std.conv;
+version(GNU) import gcc.attribute;
 
 // TODO: finish compiler-specific vector types, e.g. __attribute__((vector_size(16))); for GDC
 // TODO: CPU instruction sets-specific alignment (MMX, SSE*, AVX)
