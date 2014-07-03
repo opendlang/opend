@@ -927,19 +927,6 @@ enum CL_FLT_MIN_10_EXP   = -37;
 enum CL_FLT_MIN_EXP      = -125;
 enum CL_FLT_RADIX        = 2;
 
-/* Temporary fix for linux 'number unrepresentable' error
-version(Windows)
-{
-    enum CL_FLT_MAX      = 340282346638528859811704183484516925440.0f;
-    enum CL_FLT_MIN      = 1.175494350822287507969e-38f;
-}
-else
-{
-    enum CL_FLT_MAX      = 0x1.fffffep127f;
-    enum CL_FLT_MIN      = 0x1.0p-126f;
-}
-*/
-
 enum CL_FLT_MAX          = float.max;
 enum CL_FLT_MIN          = float.min_normal;
 enum CL_FLT_EPSILON      = 0x1.0p-23f;
@@ -951,21 +938,6 @@ enum CL_DBL_MAX_EXP      = +1024;
 enum CL_DBL_MIN_10_EXP   = -307;
 enum CL_DBL_MIN_EXP      = -1021;
 enum CL_DBL_RADIX        = 2;
-
-/* Temporary fix for linux 'number unrepresentable' error
-version(Windows)
-{
-    enum CL_DBL_MAX      = 179769313486231570814527423731704356798070567525844996598917476803157260780028538760589558632766878171540458953514382464234321326889464182768467546703537516986049910576551282076245490090389328944075868508455133942304583236903222948165808559332123348274797826204144723168738177180919299881250404026184124858368.0;
-    enum CL_DBL_MIN      = 2.225073858507201383090e-308;
-    enum CL_DBL_EPSILON  = 2.220446049250313080847e-16;
-}
-else
-{
-    enum CL_DBL_MAX      = 0x1.fffffffffffffp1023;
-    enum CL_DBL_MIN      = 0x1.0p-1022;
-    enum CL_DBL_EPSILON  = 0x1.0p-52;
-}
-*/
 
 enum CL_DBL_MAX      = double.max;
 enum CL_DBL_MIN      = double.min_normal;
