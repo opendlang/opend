@@ -999,27 +999,11 @@ enum CL_M_2_SQRTPI_F    = 1.12837922573090f;
 enum CL_M_SQRT2_F       = 1.41421353816986f;
 enum CL_M_SQRT1_2_F     = 0.70710676908493f;
 
-version(Windows)
-{
-    enum CL_NAN              = (CL_INFINITY - CL_INFINITY);
-    enum CL_HUGE_VALF        = (cast(cl_float) 1e50);
-//    enum CL_HUGE_VAL         = (cast(cl_double) 1e500); //Error: number is not representable
-}
-else version(GNU)
-{
-    enum CL_NAN              = __builtin_nanf( "" );
-    enum CL_HUGE_VALF        = __builtin_huge_valf();
-    enum CL_HUGE_VAL         = __builtin_huge_val();
-}
-else
-{
-    enum CL_NAN              = float.nan;
-    enum CL_HUGE_VALF        = (cast(cl_float) 1e50);
-//    enum CL_HUGE_VAL         = (cast(cl_double) 1e500); //Error: number is not representable
-}
-
-enum CL_MAXFLOAT         = CL_FLT_MAX;
-enum CL_INFINITY         = CL_HUGE_VALF;
+enum CL_NAN             = cl_float.nan;
+enum CL_HUGE_VALF       = cl_float.infinity;
+enum CL_HUGE_VAL        = cl_double.infinity;
+enum CL_MAXFLOAT        = CL_FLT_MAX;
+enum CL_INFINITY        = CL_HUGE_VALF;
 
 
 // generate code for the CL vector types
