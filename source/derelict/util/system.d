@@ -67,3 +67,5 @@ version( FreeBSD ) {
 	enum Derelict_OS_OpenBSD = false;
 	enum Derelict_OS_OtherBSD = false;
 }
+
+static if( __VERSION__ < 2066 ) enum nogc = 1;
