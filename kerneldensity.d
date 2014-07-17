@@ -31,16 +31,15 @@
  */
 module dstats.kerneldensity;
 
-import std.conv, std.math, std.algorithm, std.exception, std.traits, std.range,
+import std.conv, std.math, std.exception, std.traits, std.range,
     std.array, std.typetuple, dstats.distrib;
+
+import std.algorithm : min, max;
 
 import  dstats.alloc, dstats.base, dstats.summary;
 
 version(unittest) {
-
     import dstats.random, std.stdio;
-
-    void main() {}
 }
 
 /**Estimates densities in the 1-dimensional case.  The 1-D case is special

@@ -42,6 +42,25 @@ import std.math, std.mathspecial, std.traits, std.typecons, std.algorithm,
 
 import dstats.alloc, dstats.sort;
 
+// Returns the number of dimensions in an array T.
+package template nDims(T)
+{
+    static if(isArray!T)
+    {
+        enum nDims = 1 + nDims!(typeof(T.init[0]));
+    }
+    else
+    {
+        enum nDims = 0;
+    }
+}
+
+version(unittest)
+{
+    static assert(nDims!(uint[]) == 1);
+    static assert(nDims!(float[][]) == 2);
+}
+
 import std.string : strip;
 
 immutable double[] logFactorialTable;
@@ -61,8 +80,6 @@ shared static this() {
 
 version(unittest) {
     import std.stdio, std.random, std.file;
-
-    void main (){}
 }
 
 /**
@@ -598,7 +615,7 @@ if(isInputRange!(V) && isInputRange!(C) && !is(ElementType!C == bool)) {
     alias ElementType!(V) EV;
     alias ElementType!(C) EC;
 
-    Appender!(EV[], EV)[EC] aa;
+    Appender!(EV[])[EC] aa;
     while(!values.empty && !categories.empty) {
         scope(exit) {
             values.popFront();
@@ -1060,12 +1077,12 @@ unittest {
         res ~= p;
     }
     auto sortedRes = sort(res);
-    assert(sortedRes.canFind([1.0, 2.0, 3.0]));
-    assert(sortedRes.canFind([1.0, 3.0, 2.0]));
-    assert(sortedRes.canFind([2.0, 1.0, 3.0]));
-    assert(sortedRes.canFind([2.0, 3.0, 1.0]));
-    assert(sortedRes.canFind([3.0, 1.0, 2.0]));
-    assert(sortedRes.canFind([3.0, 2.0, 1.0]));
+    assert(sortedRes.contains([1.0, 2.0, 3.0]));
+    assert(sortedRes.contains([1.0, 3.0, 2.0]));
+    assert(sortedRes.contains([2.0, 1.0, 3.0]));
+    assert(sortedRes.contains([2.0, 3.0, 1.0]));
+    assert(sortedRes.contains([3.0, 1.0, 2.0]));
+    assert(sortedRes.contains([3.0, 2.0, 1.0]));
     assert(res.length == 6);
     byte[][] res2;
     auto perm2 = map!"a.dup"(perm(3));
@@ -1073,12 +1090,12 @@ unittest {
         res2 ~= p;
     }
     auto sortedRes2 = sort(res2);
-    assert(sortedRes2.canFind( to!(byte[])([0, 1, 2])));
-    assert(sortedRes2.canFind( to!(byte[])([0, 2, 1])));
-    assert(sortedRes2.canFind( to!(byte[])([1, 0, 2])));
-    assert(sortedRes2.canFind( to!(byte[])([1, 2, 0])));
-    assert(sortedRes2.canFind( to!(byte[])([2, 0, 1])));
-    assert(sortedRes2.canFind( to!(byte[])([2, 1, 0])));
+    assert(sortedRes2.contains( to!(byte[])([0, 1, 2])));
+    assert(sortedRes2.contains( to!(byte[])([0, 2, 1])));
+    assert(sortedRes2.contains( to!(byte[])([1, 0, 2])));
+    assert(sortedRes2.contains( to!(byte[])([1, 2, 0])));
+    assert(sortedRes2.contains( to!(byte[])([2, 0, 1])));
+    assert(sortedRes2.contains( to!(byte[])([2, 1, 0])));
     assert(res2.length == 6);
 
     // Indirect tests:  If the elements returned are unique, there are N! of
@@ -1320,16 +1337,16 @@ unittest {
     }
 
     auto sortedVals = sort(vals);
-    assert(sortedVals.canFind([0u,1].dup));
-    assert(sortedVals.canFind([0u,2].dup));
-    assert(sortedVals.canFind([0u,3].dup));
-    assert(sortedVals.canFind([0u,4].dup));
-    assert(sortedVals.canFind([1u,2].dup));
-    assert(sortedVals.canFind([1u,3].dup));
-    assert(sortedVals.canFind([1u,4].dup));
-    assert(sortedVals.canFind([2u,3].dup));
-    assert(sortedVals.canFind([2u,4].dup));
-    assert(sortedVals.canFind([3u,4].dup));
+    assert(sortedVals.contains([0u,1].dup));
+    assert(sortedVals.contains([0u,2].dup));
+    assert(sortedVals.contains([0u,3].dup));
+    assert(sortedVals.contains([0u,4].dup));
+    assert(sortedVals.contains([1u,2].dup));
+    assert(sortedVals.contains([1u,3].dup));
+    assert(sortedVals.contains([1u,4].dup));
+    assert(sortedVals.contains([2u,3].dup));
+    assert(sortedVals.contains([2u,4].dup));
+    assert(sortedVals.contains([3u,4].dup));
     assert(vals.length == 10);
 
     // Now, test the array version.
@@ -1339,16 +1356,16 @@ unittest {
         vals ~= c;
     }
     sortedVals = sort(vals);
-    assert(sortedVals.canFind([5u, 6, 7].dup));
-    assert(sortedVals.canFind([5u, 6, 8].dup));
-    assert(sortedVals.canFind([5u, 6, 9].dup));
-    assert(sortedVals.canFind([5u, 7, 8].dup));
-    assert(sortedVals.canFind([5u, 7, 9].dup));
-    assert(sortedVals.canFind([5u, 8, 9].dup));
-    assert(sortedVals.canFind([6U, 7, 8].dup));
-    assert(sortedVals.canFind([6u, 7, 9].dup));
-    assert(sortedVals.canFind([6u, 8, 9].dup));
-    assert(sortedVals.canFind([7u, 8, 9].dup));
+    assert(sortedVals.contains([5u, 6, 7].dup));
+    assert(sortedVals.contains([5u, 6, 8].dup));
+    assert(sortedVals.contains([5u, 6, 9].dup));
+    assert(sortedVals.contains([5u, 7, 8].dup));
+    assert(sortedVals.contains([5u, 7, 9].dup));
+    assert(sortedVals.contains([5u, 8, 9].dup));
+    assert(sortedVals.contains([6U, 7, 8].dup));
+    assert(sortedVals.contains([6u, 7, 9].dup));
+    assert(sortedVals.contains([6u, 8, 9].dup));
+    assert(sortedVals.contains([7u, 8, 9].dup));
     assert(vals.length == 10);
 
     // Now a test of a larger dataset where more subtle bugs could hide.

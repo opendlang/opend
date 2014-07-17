@@ -119,9 +119,6 @@ version(unittest) {
     import std.stdio, std.random;
 
     alias std.math.approxEqual ae;
-
-    void main(){
-    }
 }
 
 /**Takes a distribution function (CDF or PDF/PMF) as a template argument, and

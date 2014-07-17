@@ -50,16 +50,15 @@
 
 module dstats.summary;
 
-import std.algorithm, std.functional, std.conv, std.range, std.array,
+import std.functional, std.conv, std.range, std.array,
     std.traits, std.math;
+
+import std.algorithm : reduce, min, max, swap, map, filter;
 
 import dstats.sort, dstats.base, dstats.alloc;
 
 version(unittest) {
     import std.stdio, dstats.random;
-
-    void main() {
-    }
 }
 
 /**Finds median of an input range in O(N) time on average.  In the case of an
@@ -494,7 +493,6 @@ unittest {
         text(combined.mean, "  ", mean1.mean));
     assert(combined.N == mean1.N);
 }
-
 
 /**Finds the sum of an input range whose elements implicitly convert to double.
  * User has option of making U a different type than T to prevent overflows

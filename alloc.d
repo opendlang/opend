@@ -43,7 +43,6 @@ import dstats.base;
 
 version(unittest) {
     import std.stdio, std.conv, std.random, dstats.sort;
-    void main() {}
 }
 
 private template Appends(T, U) {
@@ -1363,7 +1362,7 @@ public:
     }
 
     /**Number of elements in the tree.*/
-    @property size_t length() const pure nothrow @property {
+    @property size_t length() const pure nothrow {
         return _length;
     }
 }
@@ -1428,7 +1427,7 @@ struct TreeAaIter(T, alias mapFun) {
 //        dstatsEnforce(0, "Not implemented yet.");
 //    }
 
-    alias typeof( mFun( typeof(tree.head.payload).init) ) IterType;
+    alias typeof( mFun( tree.head.payload ) ) IterType;
 
     ///
     int opApply( int delegate(ref IterType) dg) {
@@ -1706,7 +1705,7 @@ $(D RegionAllocatorStack).  This exception is not thrown on out of memory.
 An $(D OutOfMemoryError) is thrown instead.
 */
 class RegionAllocatorException : Exception {
-    this(string msg, string file, int line) {
+    this(string msg, string file, int line) @safe {
         super(msg, file, line);
     }
 }
@@ -2517,9 +2516,9 @@ public:
         static assert(sizes.length >= 1,
             "Cannot allocate an array without the size of at least the first " ~
             " dimension.");
-        static assert(sizes.length <= nDimensions!T,
+        static assert(sizes.length <= nDims!T,
             to!string(sizes.length) ~ " dimensions specified for a " ~
-            to!string(nDimensions!T) ~ " dimensional array.");
+            to!string(nDims!T) ~ " dimensional array.");
 
         alias typeof(T.init[0]) E;
 
@@ -2721,7 +2720,7 @@ unittest {
      * is really more of a stress test/sanity check than a normal unittest.*/
 
     // Make sure state is completely reset.
-    clear(threadLocalStack.impl);
+    destroy(threadLocalStack.impl);
     threadLocalStack = RegionAllocatorStack.init;
     threadLocalInitialized = false;
 
@@ -2806,7 +2805,7 @@ unittest {
     // Test that everything is really getting destroyed properly when
     // destroy() is called.  If not then this test will run out of memory.
     foreach(i; 0..1000) {
-        clear(threadLocalStack.impl);
+        destroy(threadLocalStack.impl);
         threadLocalInitialized = false;
 
         auto alloc = newRegionAllocator();

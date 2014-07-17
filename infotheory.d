@@ -43,8 +43,6 @@ import dstats.tests : toContingencyScore, gTestContingency;
 
 version(unittest) {
     import std.stdio, std.bigint, dstats.tests : gTestObs;
-
-    void main() {}
 }
 
 /**This function calculates the Shannon entropy of a forward range that is

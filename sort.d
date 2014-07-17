@@ -82,9 +82,6 @@ import dstats.alloc;
 
 version(unittest) {
     import std.stdio, std.random;
-
-    void main (){
-    }
 }
 
 class SortException : Exception {
@@ -340,6 +337,7 @@ unittest {
  *     this function transitions to a heap sort.  This guarantees an O(N log N)
  *     worst case.*/
 T[0] qsort(alias compFun = "a < b", T...)(T data)
+if(T.length != 0)
 in {
     assert(data.length > 0);
     size_t len = data[0].length;
@@ -475,6 +473,7 @@ unittest {
  * distance between the input array and the sorted version.  This is useful
  * in some statistics functions such as Kendall's tau.*/
 T[0] mergeSort(alias compFun = "a < b", T...)(T data)
+if(T.length != 0)
 in {
     assert(data.length > 0);
     size_t len = data[0].length;
@@ -595,6 +594,7 @@ unittest {
  * ---
  */
 T[0] mergeSortTemp(alias compFun = "a < b", T...)(T data)
+if(T.length != 0)
 in {
     assert(data.length > 0);
     size_t len = data[0].length;
@@ -730,6 +730,7 @@ in {
  * time complexity, O(1) space complexity, stable.  Much slower than plain
  * old mergeSort(), so only use it if you really need the O(1) space.*/
 T[0] mergeSortInPlace(alias compFun = "a < b", T...)(T data)
+if(T.length != 0)
 in {
     assert(data.length > 0);
     size_t len = data[0].length;
@@ -846,6 +847,7 @@ unittest {
 /**Heap sort.  Unstable, O(N log N) time average and worst case, O(1) space,
  * large constant term in time complexity.*/
 T[0] heapSort(alias compFun = "a < b", T...)(T data)
+if(T.length != 0)
 in {
     assert(data.length > 0);
     size_t len = data[0].length;

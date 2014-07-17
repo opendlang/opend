@@ -494,8 +494,6 @@ version(unittest) {
     bool plusMinusAe(T, U)(T lhs, U rhs) {
         return approxEqual(lhs, rhs) || approxEqual(lhs, map!"-a"(rhs));
     }
-    void main() {}
-
 }
 
 unittest {

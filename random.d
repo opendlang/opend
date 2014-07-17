@@ -125,7 +125,6 @@ import dstats.alloc, dstats.base;
 
 version(unittest) {
     import std.stdio, dstats.tests, dstats.summary, std.range;
-    void main() {}
 }
 
 /**Convenience function to allow one-statement creation of arrays of random

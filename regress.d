@@ -33,9 +33,11 @@
  */
 module dstats.regress;
 
-import std.math, std.algorithm, std.traits, std.array, std.traits, std.string,
+import std.math, std.traits, std.array, std.traits, std.string,
     std.exception, std.typetuple, std.typecons, std.numeric, std.parallelism;
-    
+   
+import std.algorithm : map, copy;
+
 alias std.range.repeat repeat;
 
 import dstats.alloc, std.range, std.conv, dstats.distrib, dstats.cor,
@@ -43,7 +45,6 @@ import dstats.alloc, std.range, std.conv, dstats.distrib, dstats.cor,
 
 version(unittest) {
     import std.stdio, dstats.random, std.functional;
-    void main(){}
 }
 
 ///
@@ -2640,6 +2641,7 @@ double doMLENewton(T, U...)
         beta[] = double.nan;
         return double.nan;
     }
+    assert(0); //I could have sworn these weren't necessary now :(
 }
 
 private double logLikelihood(Y)(double[] ps, Y y) {

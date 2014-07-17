@@ -40,7 +40,8 @@ version(unittest) {
 
     Random gen;
 
-    void main() {
+    shared static this()
+    {
         gen.seed(unpredictableSeed);
     }
 }
@@ -107,10 +108,9 @@ if(doubleInput!(T) && doubleInput!(U)) {
             corCalc._cov = _cov[0];
 
             foreach(j; 1..nILP) {
-                corCalc.put( 
-                    PearsonCor(_k, _mean1[j], _mean2[j], 
-                        _var1[j], _var2[j], _cov[j])
-                );
+                auto tmp = PearsonCor(_k, _mean1[j], _mean2[j], 
+                        _var1[j], _var2[j], _cov[j]);
+                corCalc.put(tmp);
             }
         }
 
