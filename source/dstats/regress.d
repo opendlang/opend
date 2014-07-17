@@ -2641,7 +2641,6 @@ double doMLENewton(T, U...)
         beta[] = double.nan;
         return double.nan;
     }
-    assert(0); //I could have sworn these weren't necessary now :(
 }
 
 private double logLikelihood(Y)(double[] ps, Y y) {
