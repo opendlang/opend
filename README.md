@@ -1,18 +1,40 @@
-This library has no mandatory dependencies other than the latest versions of Phobos and DMD.  
+dstats
+======
+
+A statistics library for D, emphasising a middle ground between performance and ease 
+of use.
+
+
+Building
+--------
+
+You can use dub. Simply add dstats as a dependency in your projects dub.json
+
+The SciD version of dstats is not currently supported in dub.
+
+
+Alternatively, here are some manual instructions:
+
+This library has no mandatory dependencies other than the latest versions of Phobos 
+and DMD.
 To build, simply unpack all the files into an empty directory and do a:
 
 dmd -O -inline -release -lib -ofdstats.lib *.d
 
-SciD is an optional dependency, as Dstats is slowly being integrated into it.  
-If used, it enables a few extra features and faster implementations of some algorithms.  
-To build with this enabled, make sure your SciD directory is in your import path and do:
+SciD is an optional dependency, as Dstats is slowly being integrated into it.
+If used, it enables a few extra features and faster implementations of some 
+algorithms.
+To build with this enabled, make sure your SciD directory is in your import path and 
+do:
 
 dmd -O -inline -release -lib -ofdstats.lib -version=scid *.d
 
-You'll then need to link in your SciD library and Blas and Lapack libraries when compiling
+You'll then need to link in your SciD library and Blas and Lapack libraries when 
+compiling
 an application that uses Dstats.
 
-Conventions of this library:
+Conventions
+-----------
 
 1.  A delicate balance between ease of use, flexibility and performance should be maintained.  
 There are tons of good libraries for hardcore numerics programmers that emphasize performance above 
