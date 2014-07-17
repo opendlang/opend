@@ -8,12 +8,12 @@ of use.
 Building
 --------
 
-You can use dub. Simply add dstats as a dependency in your projects dub.json
+###dub
+Simply add dstats as a dependency in your projects dub.json
 
 The SciD version of dstats is not currently supported in dub.
 
-
-Alternatively, here are some manual instructions:
+###manual
 
 This library has no mandatory dependencies other than the latest versions of Phobos 
 and DMD.
@@ -69,3 +69,10 @@ freely be incorporated into Phobos and attribution is not required for binaries.
 consist of code borrowed from other places and are thus required to conform to the terms of these
 licenses.  All are under permissive (i.e. non-copyleft) open source licenses, but some may require 
 binary attribution.  
+
+Known Problems
+--------------
+
+https://issues.dlang.org/show_bug.cgi?id=9449 causes a segfault in ```dstats.tests.friedmanTest``` on the line ```Mean[len] colMeans;```. This is a backend bug and does not affect ldc or gdc.
+
+https://issues.dlang.org/show_bug.cgi?id=13151 (fixed in git HEAD) causes a compile error due to a template ambiguity.
