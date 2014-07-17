@@ -1744,7 +1744,7 @@ version(scid) {
         }
         // Convert failed columns in solution to NANs if required.
         foreach(i; 0..N) {
-            if(diag[i] !> 0) x[i] = double.nan;
+            if(diag[i].isNaN() || diag[i] <= 0) x[i] = double.nan;
         }
     }
 
