@@ -8,12 +8,12 @@ of use.
 Building
 --------
 
-You can use dub. Simply add dstats as a dependency in your projects dub.json
+###dub
+Simply add dstats as a dependency in your projects dub.json
 
 The SciD version of dstats is not currently supported in dub.
 
-
-Alternatively, here are some manual instructions:
+###manual
 
 This library has no mandatory dependencies other than the latest versions of Phobos 
 and DMD.
