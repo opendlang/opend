@@ -195,7 +195,7 @@ version( Windows ) {
 
     struct BITMAPINFO {
         BITMAPINFOHEADER    bmiHeader;
-        RGBQUAD             bmiColors[1];
+        RGBQUAD[1]          bmiColors;
     }
 
     struct RECT {
