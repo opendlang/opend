@@ -54,7 +54,7 @@ class SharedLibLoadException : DerelictException
     private string _sharedLibName;
 
     public {
-        static void throwNew( in char[][] libNames, in char[][] reasons ) {
+        static void throwNew( string[] libNames, string[] reasons ) {
             string msg = "Failed to load one or more shared libraries:";
             foreach( i, n; libNames ) {
                 msg ~= "\n\t" ~ n ~ " - ";
