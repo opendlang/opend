@@ -1461,9 +1461,9 @@ nothrow {
 }
 // Other macros. Second version is D-specific, but works fine.
 template FT_MAKE_TAG( char x1, char x2, char x3, char x4 ) {
-    const uint FT_MAKE_TAG = (( cast( uint )x1 ) << 24 ) + (( cast( uint )x2 ) << 16 ) + (( cast( uint )x3 ) << 8 ) + x4;
+    enum uint FT_MAKE_TAG = (( cast( uint )x1 ) << 24 ) + (( cast( uint )x2 ) << 16 ) + (( cast( uint )x3 ) << 8 ) + x4;
 }
 
 template FT_MAKE_TAG( char[4] x ) {
-    const uint FT_MAKE_TAG = (( cast( uint )x[0] ) << 24 ) + (( cast( uint )x[1] ) << 16 ) + (( cast( uint )x[2] ) << 8 ) + x[3];
+    enum uint FT_MAKE_TAG = (( cast( uint )x[0] ) << 24 ) + (( cast( uint )x[1] ) << 16 ) + (( cast( uint )x[2] ) << 8 ) + x[3];
 }
