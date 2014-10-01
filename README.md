@@ -1,7 +1,7 @@
 DerelictFT
 ==========
 
-A dynamic binding to the [FreeType][1] library, version 2.4, for the D Programming Language.
+A dynamic binding to the [FreeType][1] library, version 2.5.3, for the D Programming Language.
 
 For information on how to build DerelictFT and link it with your programs, please see the post [Using Derelict][2] at The One With D.
 
