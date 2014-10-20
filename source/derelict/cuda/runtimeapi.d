@@ -37,7 +37,7 @@ private
     import derelict.util.system;
 
     static if(Derelict_OS_Windows)
-        enum libNames = "cudart32_65.dll,cudart64_65.dll";    
+        enum libNames = "cudart32_65.dll,cudart64_65.dll";
     else
         static assert(0, "Need to implement CUDA libNames for this operating system.");
 }
@@ -180,7 +180,7 @@ enum : cudaChannelFormatKind
     cudaChannelFormatKindSigned           =   0,
     cudaChannelFormatKindUnsigned         =   1,
     cudaChannelFormatKindFloat            =   2,
-    cudaChannelFormatKindNone             =   3 
+    cudaChannelFormatKindNone             =   3
 }
 
 struct cudaChannelFormatDesc
@@ -201,7 +201,7 @@ alias cudaMemoryType = int;
 enum : cudaMemoryType
 {
     cudaMemoryTypeHost   = 1,
-    cudaMemoryTypeDevice = 2 
+    cudaMemoryTypeDevice = 2
 }
 
 alias cudaMemcpyKind = int;
@@ -211,7 +211,7 @@ enum : cudaMemcpyKind
     cudaMemcpyHostToDevice        =   1,
     cudaMemcpyDeviceToHost        =   2,
     cudaMemcpyDeviceToDevice      =   3,
-    cudaMemcpyDefault             =   4 
+    cudaMemcpyDefault             =   4
 }
 
 struct cudaPitchedPtr
@@ -224,9 +224,9 @@ struct cudaPitchedPtr
 
 struct cudaExtent
 {
-    size_t width;  
-    size_t height; 
-    size_t depth;  
+    size_t width;
+    size_t height;
+    size_t depth;
 }
 
 struct cudaPos
@@ -238,27 +238,27 @@ struct cudaPos
 
 struct cudaMemcpy3DParms
 {
-    cudaArray_t     srcArray; 
-    cudaPos         srcPos;   
+    cudaArray_t     srcArray;
+    cudaPos         srcPos;
     cudaPitchedPtr  srcPtr;
-    cudaArray_t     dstArray; 
-    cudaPos         dstPos;   
+    cudaArray_t     dstArray;
+    cudaPos         dstPos;
     cudaPitchedPtr  dstPtr;
-    cudaExtent      extent;   
-    cudaMemcpyKind  kind;   
+    cudaExtent      extent;
+    cudaMemcpyKind  kind;
 }
 
 struct cudaMemcpy3DPeerParms
 {
-    cudaArray_t     srcArray;  
-    cudaPos         srcPos;    
-    cudaPitchedPtr  srcPtr;    
-    int             srcDevice;  
-    cudaArray_t     dstArray;  
-    cudaPos         dstPos;    
-    cudaPitchedPtr  dstPtr;    
+    cudaArray_t     srcArray;
+    cudaPos         srcPos;
+    cudaPitchedPtr  srcPtr;
+    int             srcDevice;
+    cudaArray_t     dstArray;
+    cudaPos         dstPos;
+    cudaPitchedPtr  dstPtr;
     int             dstDevice;
-    cudaExtent      extent;    
+    cudaExtent      extent;
 }
 
 alias cudaGraphicsRegisterFlags = int;
@@ -268,7 +268,7 @@ enum : cudaGraphicsRegisterFlags
     cudaGraphicsRegisterFlagsReadOnly         = 1,
     cudaGraphicsRegisterFlagsWriteDiscard     = 2,
     cudaGraphicsRegisterFlagsSurfaceLoadStore = 4,
-    cudaGraphicsRegisterFlagsTextureGather    = 8 
+    cudaGraphicsRegisterFlagsTextureGather    = 8
 }
 
 alias cudaGraphicsMapFlags = int;
@@ -276,7 +276,7 @@ enum : cudaGraphicsMapFlags
 {
     cudaGraphicsMapFlagsNone         = 0,
     cudaGraphicsMapFlagsReadOnly     = 1,
-    cudaGraphicsMapFlagsWriteDiscard = 2 
+    cudaGraphicsMapFlagsWriteDiscard = 2
 }
 
 alias cudaGraphicsCubeFace = int;
@@ -287,7 +287,7 @@ enum : cudaGraphicsCubeFace
     cudaGraphicsCubeFacePositiveY = 0x02,
     cudaGraphicsCubeFaceNegativeY = 0x03,
     cudaGraphicsCubeFacePositiveZ = 0x04,
-    cudaGraphicsCubeFaceNegativeZ = 0x05 
+    cudaGraphicsCubeFaceNegativeZ = 0x05
 }
 
 alias cudaResourceType = int;
@@ -296,98 +296,98 @@ enum : cudaResourceType
     cudaResourceTypeArray          = 0x00,
     cudaResourceTypeMipmappedArray = 0x01,
     cudaResourceTypeLinear         = 0x02,
-    cudaResourceTypePitch2D        = 0x03 
+    cudaResourceTypePitch2D        = 0x03
 }
 
 alias cudaResourceViewFormat = int;
 enum : cudaResourceViewFormat
 {
-    cudaResViewFormatNone                      = 0x00, 
-    cudaResViewFormatUnsignedChar1             = 0x01, 
-    cudaResViewFormatUnsignedChar2             = 0x02, 
-    cudaResViewFormatUnsignedChar4             = 0x03, 
-    cudaResViewFormatSignedChar1               = 0x04, 
-    cudaResViewFormatSignedChar2               = 0x05, 
-    cudaResViewFormatSignedChar4               = 0x06, 
-    cudaResViewFormatUnsignedShort1            = 0x07, 
-    cudaResViewFormatUnsignedShort2            = 0x08, 
-    cudaResViewFormatUnsignedShort4            = 0x09, 
-    cudaResViewFormatSignedShort1              = 0x0a, 
-    cudaResViewFormatSignedShort2              = 0x0b, 
-    cudaResViewFormatSignedShort4              = 0x0c, 
-    cudaResViewFormatUnsignedInt1              = 0x0d, 
-    cudaResViewFormatUnsignedInt2              = 0x0e, 
-    cudaResViewFormatUnsignedInt4              = 0x0f, 
-    cudaResViewFormatSignedInt1                = 0x10, 
-    cudaResViewFormatSignedInt2                = 0x11, 
-    cudaResViewFormatSignedInt4                = 0x12, 
-    cudaResViewFormatHalf1                     = 0x13, 
-    cudaResViewFormatHalf2                     = 0x14, 
-    cudaResViewFormatHalf4                     = 0x15, 
-    cudaResViewFormatFloat1                    = 0x16, 
-    cudaResViewFormatFloat2                    = 0x17, 
-    cudaResViewFormatFloat4                    = 0x18, 
-    cudaResViewFormatUnsignedBlockCompressed1  = 0x19, 
-    cudaResViewFormatUnsignedBlockCompressed2  = 0x1a, 
-    cudaResViewFormatUnsignedBlockCompressed3  = 0x1b, 
-    cudaResViewFormatUnsignedBlockCompressed4  = 0x1c, 
-    cudaResViewFormatSignedBlockCompressed4    = 0x1d, 
-    cudaResViewFormatUnsignedBlockCompressed5  = 0x1e, 
-    cudaResViewFormatSignedBlockCompressed5    = 0x1f, 
-    cudaResViewFormatUnsignedBlockCompressed6H = 0x20, 
-    cudaResViewFormatSignedBlockCompressed6H   = 0x21, 
-    cudaResViewFormatUnsignedBlockCompressed7  = 0x22  
+    cudaResViewFormatNone                      = 0x00,
+    cudaResViewFormatUnsignedChar1             = 0x01,
+    cudaResViewFormatUnsignedChar2             = 0x02,
+    cudaResViewFormatUnsignedChar4             = 0x03,
+    cudaResViewFormatSignedChar1               = 0x04,
+    cudaResViewFormatSignedChar2               = 0x05,
+    cudaResViewFormatSignedChar4               = 0x06,
+    cudaResViewFormatUnsignedShort1            = 0x07,
+    cudaResViewFormatUnsignedShort2            = 0x08,
+    cudaResViewFormatUnsignedShort4            = 0x09,
+    cudaResViewFormatSignedShort1              = 0x0a,
+    cudaResViewFormatSignedShort2              = 0x0b,
+    cudaResViewFormatSignedShort4              = 0x0c,
+    cudaResViewFormatUnsignedInt1              = 0x0d,
+    cudaResViewFormatUnsignedInt2              = 0x0e,
+    cudaResViewFormatUnsignedInt4              = 0x0f,
+    cudaResViewFormatSignedInt1                = 0x10,
+    cudaResViewFormatSignedInt2                = 0x11,
+    cudaResViewFormatSignedInt4                = 0x12,
+    cudaResViewFormatHalf1                     = 0x13,
+    cudaResViewFormatHalf2                     = 0x14,
+    cudaResViewFormatHalf4                     = 0x15,
+    cudaResViewFormatFloat1                    = 0x16,
+    cudaResViewFormatFloat2                    = 0x17,
+    cudaResViewFormatFloat4                    = 0x18,
+    cudaResViewFormatUnsignedBlockCompressed1  = 0x19,
+    cudaResViewFormatUnsignedBlockCompressed2  = 0x1a,
+    cudaResViewFormatUnsignedBlockCompressed3  = 0x1b,
+    cudaResViewFormatUnsignedBlockCompressed4  = 0x1c,
+    cudaResViewFormatSignedBlockCompressed4    = 0x1d,
+    cudaResViewFormatUnsignedBlockCompressed5  = 0x1e,
+    cudaResViewFormatSignedBlockCompressed5    = 0x1f,
+    cudaResViewFormatUnsignedBlockCompressed6H = 0x20,
+    cudaResViewFormatSignedBlockCompressed6H   = 0x21,
+    cudaResViewFormatUnsignedBlockCompressed7  = 0x22
 }
 
-struct cudaResourceDesc 
+struct cudaResourceDesc
 {
     cudaResourceType resType;
-    
-    union res_st 
+
+    union res_st
     {
-        struct array_st 
+        struct array_st
         {
             cudaArray_t array;
-        } 
-        array_st array;        
+        }
+        array_st array;
 
         struct mipmap_st
         {
             cudaMipmappedArray_t mipmap;
-        } 
+        }
         mipmap_st mipmap;
 
         struct linear_st
         {
             void *devPtr;
-            cudaChannelFormatDesc desc; 
-            size_t sizeInBytes;                
-        } 
+            cudaChannelFormatDesc desc;
+            size_t sizeInBytes;
+        }
         linear_st linear;
 
         struct pitch2D_st
         {
-            void *devPtr;                      
-            cudaChannelFormatDesc desc; 
-            size_t width;                      
-            size_t height;                     
-            size_t pitchInBytes;               
-        } 
+            void *devPtr;
+            cudaChannelFormatDesc desc;
+            size_t width;
+            size_t height;
+            size_t pitchInBytes;
+        }
         pitch2D_st pitch2D;
-    } 
+    }
     res_st res;
 }
 
 struct cudaResourceViewDesc
 {
-    cudaResourceViewFormat format;           
-    size_t                 width;            
-    size_t                 height;           
-    size_t                 depth;            
-    uint                   firstMipmapLevel; 
-    uint                   lastMipmapLevel;  
-    uint                   firstLayer;       
-    uint                   lastLayer;        
+    cudaResourceViewFormat format;
+    size_t                 width;
+    size_t                 height;
+    size_t                 depth;
+    uint                   firstMipmapLevel;
+    uint                   lastMipmapLevel;
+    uint                   firstLayer;
+    uint                   lastLayer;
 }
 
 struct cudaPointerAttributes
@@ -417,7 +417,7 @@ enum : cudaFuncCache
     cudaFuncCachePreferNone   = 0,
     cudaFuncCachePreferShared = 1,
     cudaFuncCachePreferL1     = 2,
-    cudaFuncCachePreferEqual  = 3 
+    cudaFuncCachePreferEqual  = 3
 }
 
 alias cudaSharedMemConfig = int;
@@ -431,10 +431,10 @@ enum : cudaSharedMemConfig
 alias cudaComputeMode = int;
 enum : cudaComputeMode
 {
-    cudaComputeModeDefault          = 0, 
-    cudaComputeModeExclusive        = 1, 
-    cudaComputeModeProhibited       = 2, 
-    cudaComputeModeExclusiveProcess = 3  
+    cudaComputeModeDefault          = 0,
+    cudaComputeModeExclusive        = 1,
+    cudaComputeModeProhibited       = 2,
+    cudaComputeModeExclusiveProcess = 3
 }
 
 
@@ -445,233 +445,233 @@ enum : cudaLimit
     cudaLimitPrintfFifoSize               = 0x01,
     cudaLimitMallocHeapSize               = 0x02,
     cudaLimitDevRuntimeSyncDepth          = 0x03,
-    cudaLimitDevRuntimePendingLaunchCount = 0x04 
+    cudaLimitDevRuntimePendingLaunchCount = 0x04
 }
 
 alias cudaOutputMode = int;
 enum : cudaOutputMode
 {
     cudaKeyValuePair    = 0x00,
-    cudaCSV             = 0x01 
+    cudaCSV             = 0x01
 }
 
 alias cudaDeviceAttr = int;
 enum : cudaDeviceAttr
 {
-    cudaDevAttrMaxThreadsPerBlock             = 1,  
-    cudaDevAttrMaxBlockDimX                   = 2,  
-    cudaDevAttrMaxBlockDimY                   = 3,  
-    cudaDevAttrMaxBlockDimZ                   = 4,  
-    cudaDevAttrMaxGridDimX                    = 5,  
-    cudaDevAttrMaxGridDimY                    = 6,  
-    cudaDevAttrMaxGridDimZ                    = 7,  
-    cudaDevAttrMaxSharedMemoryPerBlock        = 8,  
-    cudaDevAttrTotalConstantMemory            = 9,  
-    cudaDevAttrWarpSize                       = 10, 
-    cudaDevAttrMaxPitch                       = 11, 
-    cudaDevAttrMaxRegistersPerBlock           = 12, 
-    cudaDevAttrClockRate                      = 13, 
-    cudaDevAttrTextureAlignment               = 14, 
-    cudaDevAttrGpuOverlap                     = 15, 
-    cudaDevAttrMultiProcessorCount            = 16, 
-    cudaDevAttrKernelExecTimeout              = 17, 
-    cudaDevAttrIntegrated                     = 18, 
-    cudaDevAttrCanMapHostMemory               = 19, 
-    cudaDevAttrComputeMode                    = 20, 
-    cudaDevAttrMaxTexture1DWidth              = 21, 
-    cudaDevAttrMaxTexture2DWidth              = 22, 
-    cudaDevAttrMaxTexture2DHeight             = 23, 
-    cudaDevAttrMaxTexture3DWidth              = 24, 
-    cudaDevAttrMaxTexture3DHeight             = 25, 
-    cudaDevAttrMaxTexture3DDepth              = 26, 
-    cudaDevAttrMaxTexture2DLayeredWidth       = 27, 
-    cudaDevAttrMaxTexture2DLayeredHeight      = 28, 
-    cudaDevAttrMaxTexture2DLayeredLayers      = 29, 
-    cudaDevAttrSurfaceAlignment               = 30, 
-    cudaDevAttrConcurrentKernels              = 31, 
-    cudaDevAttrEccEnabled                     = 32, 
-    cudaDevAttrPciBusId                       = 33, 
-    cudaDevAttrPciDeviceId                    = 34, 
-    cudaDevAttrTccDriver                      = 35, 
-    cudaDevAttrMemoryClockRate                = 36, 
-    cudaDevAttrGlobalMemoryBusWidth           = 37, 
-    cudaDevAttrL2CacheSize                    = 38, 
-    cudaDevAttrMaxThreadsPerMultiProcessor    = 39, 
-    cudaDevAttrAsyncEngineCount               = 40, 
-    cudaDevAttrUnifiedAddressing              = 41, 
-    cudaDevAttrMaxTexture1DLayeredWidth       = 42, 
-    cudaDevAttrMaxTexture1DLayeredLayers      = 43, 
-    cudaDevAttrMaxTexture2DGatherWidth        = 45, 
-    cudaDevAttrMaxTexture2DGatherHeight       = 46, 
-    cudaDevAttrMaxTexture3DWidthAlt           = 47, 
-    cudaDevAttrMaxTexture3DHeightAlt          = 48, 
-    cudaDevAttrMaxTexture3DDepthAlt           = 49, 
-    cudaDevAttrPciDomainId                    = 50, 
-    cudaDevAttrTexturePitchAlignment          = 51, 
-    cudaDevAttrMaxTextureCubemapWidth         = 52, 
-    cudaDevAttrMaxTextureCubemapLayeredWidth  = 53, 
-    cudaDevAttrMaxTextureCubemapLayeredLayers = 54, 
-    cudaDevAttrMaxSurface1DWidth              = 55, 
-    cudaDevAttrMaxSurface2DWidth              = 56, 
-    cudaDevAttrMaxSurface2DHeight             = 57, 
-    cudaDevAttrMaxSurface3DWidth              = 58, 
-    cudaDevAttrMaxSurface3DHeight             = 59, 
-    cudaDevAttrMaxSurface3DDepth              = 60, 
-    cudaDevAttrMaxSurface1DLayeredWidth       = 61, 
-    cudaDevAttrMaxSurface1DLayeredLayers      = 62, 
-    cudaDevAttrMaxSurface2DLayeredWidth       = 63, 
-    cudaDevAttrMaxSurface2DLayeredHeight      = 64, 
-    cudaDevAttrMaxSurface2DLayeredLayers      = 65, 
-    cudaDevAttrMaxSurfaceCubemapWidth         = 66, 
-    cudaDevAttrMaxSurfaceCubemapLayeredWidth  = 67, 
-    cudaDevAttrMaxSurfaceCubemapLayeredLayers = 68, 
-    cudaDevAttrMaxTexture1DLinearWidth        = 69, 
-    cudaDevAttrMaxTexture2DLinearWidth        = 70, 
-    cudaDevAttrMaxTexture2DLinearHeight       = 71, 
-    cudaDevAttrMaxTexture2DLinearPitch        = 72, 
-    cudaDevAttrMaxTexture2DMipmappedWidth     = 73, 
-    cudaDevAttrMaxTexture2DMipmappedHeight    = 74, 
-    cudaDevAttrComputeCapabilityMajor         = 75, 
-    cudaDevAttrComputeCapabilityMinor         = 76, 
-    cudaDevAttrMaxTexture1DMipmappedWidth     = 77, 
-    cudaDevAttrStreamPrioritiesSupported      = 78, 
-    cudaDevAttrGlobalL1CacheSupported         = 79, 
-    cudaDevAttrLocalL1CacheSupported          = 80, 
+    cudaDevAttrMaxThreadsPerBlock             = 1,
+    cudaDevAttrMaxBlockDimX                   = 2,
+    cudaDevAttrMaxBlockDimY                   = 3,
+    cudaDevAttrMaxBlockDimZ                   = 4,
+    cudaDevAttrMaxGridDimX                    = 5,
+    cudaDevAttrMaxGridDimY                    = 6,
+    cudaDevAttrMaxGridDimZ                    = 7,
+    cudaDevAttrMaxSharedMemoryPerBlock        = 8,
+    cudaDevAttrTotalConstantMemory            = 9,
+    cudaDevAttrWarpSize                       = 10,
+    cudaDevAttrMaxPitch                       = 11,
+    cudaDevAttrMaxRegistersPerBlock           = 12,
+    cudaDevAttrClockRate                      = 13,
+    cudaDevAttrTextureAlignment               = 14,
+    cudaDevAttrGpuOverlap                     = 15,
+    cudaDevAttrMultiProcessorCount            = 16,
+    cudaDevAttrKernelExecTimeout              = 17,
+    cudaDevAttrIntegrated                     = 18,
+    cudaDevAttrCanMapHostMemory               = 19,
+    cudaDevAttrComputeMode                    = 20,
+    cudaDevAttrMaxTexture1DWidth              = 21,
+    cudaDevAttrMaxTexture2DWidth              = 22,
+    cudaDevAttrMaxTexture2DHeight             = 23,
+    cudaDevAttrMaxTexture3DWidth              = 24,
+    cudaDevAttrMaxTexture3DHeight             = 25,
+    cudaDevAttrMaxTexture3DDepth              = 26,
+    cudaDevAttrMaxTexture2DLayeredWidth       = 27,
+    cudaDevAttrMaxTexture2DLayeredHeight      = 28,
+    cudaDevAttrMaxTexture2DLayeredLayers      = 29,
+    cudaDevAttrSurfaceAlignment               = 30,
+    cudaDevAttrConcurrentKernels              = 31,
+    cudaDevAttrEccEnabled                     = 32,
+    cudaDevAttrPciBusId                       = 33,
+    cudaDevAttrPciDeviceId                    = 34,
+    cudaDevAttrTccDriver                      = 35,
+    cudaDevAttrMemoryClockRate                = 36,
+    cudaDevAttrGlobalMemoryBusWidth           = 37,
+    cudaDevAttrL2CacheSize                    = 38,
+    cudaDevAttrMaxThreadsPerMultiProcessor    = 39,
+    cudaDevAttrAsyncEngineCount               = 40,
+    cudaDevAttrUnifiedAddressing              = 41,
+    cudaDevAttrMaxTexture1DLayeredWidth       = 42,
+    cudaDevAttrMaxTexture1DLayeredLayers      = 43,
+    cudaDevAttrMaxTexture2DGatherWidth        = 45,
+    cudaDevAttrMaxTexture2DGatherHeight       = 46,
+    cudaDevAttrMaxTexture3DWidthAlt           = 47,
+    cudaDevAttrMaxTexture3DHeightAlt          = 48,
+    cudaDevAttrMaxTexture3DDepthAlt           = 49,
+    cudaDevAttrPciDomainId                    = 50,
+    cudaDevAttrTexturePitchAlignment          = 51,
+    cudaDevAttrMaxTextureCubemapWidth         = 52,
+    cudaDevAttrMaxTextureCubemapLayeredWidth  = 53,
+    cudaDevAttrMaxTextureCubemapLayeredLayers = 54,
+    cudaDevAttrMaxSurface1DWidth              = 55,
+    cudaDevAttrMaxSurface2DWidth              = 56,
+    cudaDevAttrMaxSurface2DHeight             = 57,
+    cudaDevAttrMaxSurface3DWidth              = 58,
+    cudaDevAttrMaxSurface3DHeight             = 59,
+    cudaDevAttrMaxSurface3DDepth              = 60,
+    cudaDevAttrMaxSurface1DLayeredWidth       = 61,
+    cudaDevAttrMaxSurface1DLayeredLayers      = 62,
+    cudaDevAttrMaxSurface2DLayeredWidth       = 63,
+    cudaDevAttrMaxSurface2DLayeredHeight      = 64,
+    cudaDevAttrMaxSurface2DLayeredLayers      = 65,
+    cudaDevAttrMaxSurfaceCubemapWidth         = 66,
+    cudaDevAttrMaxSurfaceCubemapLayeredWidth  = 67,
+    cudaDevAttrMaxSurfaceCubemapLayeredLayers = 68,
+    cudaDevAttrMaxTexture1DLinearWidth        = 69,
+    cudaDevAttrMaxTexture2DLinearWidth        = 70,
+    cudaDevAttrMaxTexture2DLinearHeight       = 71,
+    cudaDevAttrMaxTexture2DLinearPitch        = 72,
+    cudaDevAttrMaxTexture2DMipmappedWidth     = 73,
+    cudaDevAttrMaxTexture2DMipmappedHeight    = 74,
+    cudaDevAttrComputeCapabilityMajor         = 75,
+    cudaDevAttrComputeCapabilityMinor         = 76,
+    cudaDevAttrMaxTexture1DMipmappedWidth     = 77,
+    cudaDevAttrStreamPrioritiesSupported      = 78,
+    cudaDevAttrGlobalL1CacheSupported         = 79,
+    cudaDevAttrLocalL1CacheSupported          = 80,
     cudaDevAttrMaxSharedMemoryPerMultiprocessor = 81,
-    cudaDevAttrMaxRegistersPerMultiprocessor  = 82, 
-    cudaDevAttrManagedMemory                  = 83, 
-    cudaDevAttrIsMultiGpuBoard                = 84, 
-    cudaDevAttrMultiGpuBoardGroupID           = 85  
+    cudaDevAttrMaxRegistersPerMultiprocessor  = 82,
+    cudaDevAttrManagedMemory                  = 83,
+    cudaDevAttrIsMultiGpuBoard                = 84,
+    cudaDevAttrMultiGpuBoardGroupID           = 85
 }
 
 struct cudaDeviceProp
 {
-    char[256]   name;                  
-    size_t totalGlobalMem;             
-    size_t sharedMemPerBlock;          
-    int    regsPerBlock;               
-    int    warpSize;                   
-    size_t memPitch;                   
-    int    maxThreadsPerBlock;         
-    int[3]    maxThreadsDim;           
-    int[3]    maxGridSize;             
-    int    clockRate;                  
-    size_t totalConstMem;              
-    int    major;                      
-    int    minor;                      
-    size_t textureAlignment;           
-    size_t texturePitchAlignment;      
-    int    deviceOverlap;              
-    int    multiProcessorCount;        
-    int    kernelExecTimeoutEnabled;   
-    int    integrated;                 
-    int    canMapHostMemory;           
-    int    computeMode;                
-    int    maxTexture1D;               
-    int    maxTexture1DMipmap;         
-    int    maxTexture1DLinear;         
-    int[2]    maxTexture2D;            
-    int[2]    maxTexture2DMipmap;      
-    int[3]    maxTexture2DLinear;      
-    int[2]    maxTexture2DGather;      
-    int[3]    maxTexture3D;            
-    int[3]    maxTexture3DAlt;         
-    int    maxTextureCubemap;          
-    int[2]    maxTexture1DLayered;     
-    int[3]    maxTexture2DLayered;     
+    char[256]   name;
+    size_t totalGlobalMem;
+    size_t sharedMemPerBlock;
+    int    regsPerBlock;
+    int    warpSize;
+    size_t memPitch;
+    int    maxThreadsPerBlock;
+    int[3]    maxThreadsDim;
+    int[3]    maxGridSize;
+    int    clockRate;
+    size_t totalConstMem;
+    int    major;
+    int    minor;
+    size_t textureAlignment;
+    size_t texturePitchAlignment;
+    int    deviceOverlap;
+    int    multiProcessorCount;
+    int    kernelExecTimeoutEnabled;
+    int    integrated;
+    int    canMapHostMemory;
+    int    computeMode;
+    int    maxTexture1D;
+    int    maxTexture1DMipmap;
+    int    maxTexture1DLinear;
+    int[2]    maxTexture2D;
+    int[2]    maxTexture2DMipmap;
+    int[3]    maxTexture2DLinear;
+    int[2]    maxTexture2DGather;
+    int[3]    maxTexture3D;
+    int[3]    maxTexture3DAlt;
+    int    maxTextureCubemap;
+    int[2]    maxTexture1DLayered;
+    int[3]    maxTexture2DLayered;
     int[2]    maxTextureCubemapLayered;
-    int    maxSurface1D;               
+    int    maxSurface1D;
     int[2]    maxSurface2D;
     int[3]    maxSurface3D;
-    int[2]    maxSurface1DLayered;     
-    int[3]    maxSurface2DLayered;     
-    int    maxSurfaceCubemap;          
+    int[2]    maxSurface1DLayered;
+    int[3]    maxSurface2DLayered;
+    int    maxSurfaceCubemap;
     int[2]    maxSurfaceCubemapLayered;
-    size_t surfaceAlignment;           
-    int    concurrentKernels;          
-    int    ECCEnabled;                 
-    int    pciBusID;                   
-    int    pciDeviceID;                
-    int    pciDomainID;                
-    int    tccDriver;                  
-    int    asyncEngineCount;           
-    int    unifiedAddressing;          
-    int    memoryClockRate;            
-    int    memoryBusWidth;             
-    int    l2CacheSize;                
+    size_t surfaceAlignment;
+    int    concurrentKernels;
+    int    ECCEnabled;
+    int    pciBusID;
+    int    pciDeviceID;
+    int    pciDomainID;
+    int    tccDriver;
+    int    asyncEngineCount;
+    int    unifiedAddressing;
+    int    memoryClockRate;
+    int    memoryBusWidth;
+    int    l2CacheSize;
     int    maxThreadsPerMultiProcessor;
-    int    streamPrioritiesSupported;  
-    int    globalL1CacheSupported;     
-    int    localL1CacheSupported;      
-    size_t sharedMemPerMultiprocessor; 
-    int    regsPerMultiprocessor;      
-    int    managedMemory;              
-    int    isMultiGpuBoard;            
-    int    multiGpuBoardGroupID;       
+    int    streamPrioritiesSupported;
+    int    globalL1CacheSupported;
+    int    localL1CacheSupported;
+    size_t sharedMemPerMultiprocessor;
+    int    regsPerMultiprocessor;
+    int    managedMemory;
+    int    isMultiGpuBoard;
+    int    multiGpuBoardGroupID;
 }
 
 static immutable cudaDeviceProp cudaDevicePropDontCare = cudaDeviceProp(
-          "\0",    
-          0,         
-          0,         
-          0,         
-          0,         
-          0,         
-          0,         
-          [0, 0, 0], 
-          [0, 0, 0], 
-          0,         
-          0,         
-          -1,        
-          -1,        
-          0,         
-          0,         
-          -1,        
-          0,         
-          0,         
-          0,         
-          0,         
-          0,         
-          0,         
-          0,         
-          0,         
-          [0, 0],    
-          [0, 0],    
-          [0, 0, 0], 
-          [0, 0],    
-          [0, 0, 0], 
-          [0, 0, 0], 
-          0,         
-          [0, 0],    
-          [0, 0, 0], 
-          [0, 0],    
-          0,         
-          [0, 0],    
-          [0, 0, 0], 
-          [0, 0],    
-          [0, 0, 0], 
-          0,         
-          [0, 0],    
-          0,         
-          0,         
-          0,         
-          0,         
-          0,         
-          0,         
-          0,         
-          0,         
-          0,         
-          0,         
-          0,         
-          0,         
-          0,         
-          0,         
-          0,         
-          0,         
-          0,         
-          0,         
-          0,         
-          0,         
+          "\0",
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          [0, 0, 0],
+          [0, 0, 0],
+          0,
+          0,
+          -1,
+          -1,
+          0,
+          0,
+          -1,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          [0, 0],
+          [0, 0],
+          [0, 0, 0],
+          [0, 0],
+          [0, 0, 0],
+          [0, 0, 0],
+          0,
+          [0, 0],
+          [0, 0, 0],
+          [0, 0],
+          0,
+          [0, 0],
+          [0, 0, 0],
+          [0, 0],
+          [0, 0, 0],
+          0,
+          [0, 0],
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
           0);
 
 enum CUDA_IPC_HANDLE_SIZE = 64;
@@ -681,7 +681,7 @@ struct cudaIpcEventHandle_t
     char[CUDA_IPC_HANDLE_SIZE] reserved;
 }
 
-struct cudaIpcMemHandle_t 
+struct cudaIpcMemHandle_t
 {
     char[CUDA_IPC_HANDLE_SIZE] reserved;
 }
@@ -712,14 +712,14 @@ enum : cudaSurfaceBoundaryMode
 {
     cudaBoundaryModeZero  = 0,
     cudaBoundaryModeClamp = 1,
-    cudaBoundaryModeTrap  = 2 
+    cudaBoundaryModeTrap  = 2
 }
 
 alias cudaSurfaceFormatMode = int;
 enum : cudaSurfaceFormatMode
 {
     cudaFormatModeForced = 0,
-    cudaFormatModeAuto = 1   
+    cudaFormatModeAuto = 1
 }
 
 struct surfaceReference
@@ -743,24 +743,24 @@ enum cudaTextureTypeCubemapLayered  = 0xFC;
 alias cudaTextureAddressMode = int;
 enum : cudaTextureAddressMode
 {
-    cudaAddressModeWrap   = 0, 
-    cudaAddressModeClamp  = 1, 
-    cudaAddressModeMirror = 2, 
-    cudaAddressModeBorder = 3  
+    cudaAddressModeWrap   = 0,
+    cudaAddressModeClamp  = 1,
+    cudaAddressModeMirror = 2,
+    cudaAddressModeBorder = 3
 }
 
 alias cudaTextureFilterMode = int;
 enum : cudaTextureFilterMode
 {
     cudaFilterModePoint  = 0,
-    cudaFilterModeLinear = 1 
+    cudaFilterModeLinear = 1
 }
 
 alias cudaTextureReadMode = int;
 enum : cudaTextureReadMode
 {
-    cudaReadModeElementType     = 0, 
-    cudaReadModeNormalizedFloat = 1  
+    cudaReadModeElementType     = 0,
+    cudaReadModeNormalizedFloat = 1
 }
 
 struct textureReference
@@ -800,8 +800,8 @@ alias cudaTextureObject_t = ulong;
 
 struct dim3
 {
-    uint x = 1, 
-         y = 1, 
+    uint x = 1,
+         y = 1,
          z = 1;
 
     this(uint vx = 1, uint vy = 1, uint vz = 1)
@@ -814,7 +814,6 @@ struct dim3
 
 
 // cuda_runtime_api.h
-
 
 extern(System) nothrow
 {
@@ -1275,7 +1274,7 @@ class DerelictCUDARuntimeLoader : SharedLibLoader
             bindFunc(cast(void**)&cudaGetSurfaceObjectResourceDesc, "cudaGetSurfaceObjectResourceDesc");
             bindFunc(cast(void**)&cudaDriverGetVersion, "cudaDriverGetVersion");
             bindFunc(cast(void**)&cudaRuntimeGetVersion, "cudaRuntimeGetVersion");
-            bindFunc(cast(void**)&cudaGetExportTable, "cudaGetExportTable");     
+            bindFunc(cast(void**)&cudaGetExportTable, "cudaGetExportTable");
         }
     }
 
