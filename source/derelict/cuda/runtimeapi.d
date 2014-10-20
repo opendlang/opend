@@ -30,6 +30,18 @@ module derelict.cuda.runtimeapi;
 // Current API version supported by DerelictCUDA is 6.5
 enum CUDART_VERSION = 6050;
 
+import derelict.util.loader;
+
+private
+{
+    import derelict.util.system;
+
+    static if(Derelict_OS_Windows)
+        enum libNames = "cudart32_65.dll,cudart64_65.dll";    
+    else
+        static assert(0, "Need to implement CUDA libNames for this operating system.");
+}
+
 
 // device_types.h
 
@@ -329,7 +341,7 @@ enum : cudaResourceViewFormat
 
 struct cudaResourceDesc 
 {
-    enum cudaResourceType resType;
+    cudaResourceType resType;
     
     union res_st 
     {
@@ -596,11 +608,10 @@ struct cudaDeviceProp
     int    managedMemory;              
     int    isMultiGpuBoard;            
     int    multiGpuBoardGroupID;       
-};
+}
 
 static immutable cudaDeviceProp cudaDevicePropDontCare = cudaDeviceProp(
-                                                  \
-          ['\0'],    
+          "\0",    
           0,         
           0,         
           0,         
@@ -668,26 +679,618 @@ enum CUDA_IPC_HANDLE_SIZE = 64;
 struct cudaIpcEventHandle_t
 {
     char[CUDA_IPC_HANDLE_SIZE] reserved;
-}cudaIpcEventHandle_t;
+}
 
 struct cudaIpcMemHandle_t 
 {
     char[CUDA_IPC_HANDLE_SIZE] reserved;
-};
+}
 
 alias cudaError_t = cudaError;
 alias cudaStream_t = void*;
 alias cudaEvent_t = void*;
 alias cudaGraphicsResource_t = void*;
 
-/*
-
-What to do with it ????
-
-typedef struct CUuuid_st cudaUUID_t;
-*/
-
+struct CUuuid_st;
+alias cudaUUID_t = CUuuid_st;
 
 alias cudaOutputMode_t = cudaOutputMode;
 
 
+// surface_types.h
+
+enum cudaSurfaceType1D              = 0x01;
+enum cudaSurfaceType2D              = 0x02;
+enum cudaSurfaceType3D              = 0x03;
+enum cudaSurfaceTypeCubemap         = 0x0C;
+enum cudaSurfaceType1DLayered       = 0xF1;
+enum cudaSurfaceType2DLayered       = 0xF2;
+enum cudaSurfaceTypeCubemapLayered  = 0xFC;
+
+alias cudaSurfaceBoundaryMode = int;
+enum : cudaSurfaceBoundaryMode
+{
+    cudaBoundaryModeZero  = 0,
+    cudaBoundaryModeClamp = 1,
+    cudaBoundaryModeTrap  = 2 
+}
+
+alias cudaSurfaceFormatMode = int;
+enum : cudaSurfaceFormatMode
+{
+    cudaFormatModeForced = 0,
+    cudaFormatModeAuto = 1   
+}
+
+struct surfaceReference
+{
+    cudaChannelFormatDesc channelDesc;
+}
+
+alias cudaSurfaceObject_t = ulong;
+
+
+// texture_types.h
+
+enum cudaTextureType1D              = 0x01;
+enum cudaTextureType2D              = 0x02;
+enum cudaTextureType3D              = 0x03;
+enum cudaTextureTypeCubemap         = 0x0C;
+enum cudaTextureType1DLayered       = 0xF1;
+enum cudaTextureType2DLayered       = 0xF2;
+enum cudaTextureTypeCubemapLayered  = 0xFC;
+
+alias cudaTextureAddressMode = int;
+enum : cudaTextureAddressMode
+{
+    cudaAddressModeWrap   = 0, 
+    cudaAddressModeClamp  = 1, 
+    cudaAddressModeMirror = 2, 
+    cudaAddressModeBorder = 3  
+}
+
+alias cudaTextureFilterMode = int;
+enum : cudaTextureFilterMode
+{
+    cudaFilterModePoint  = 0,
+    cudaFilterModeLinear = 1 
+}
+
+alias cudaTextureReadMode = int;
+enum : cudaTextureReadMode
+{
+    cudaReadModeElementType     = 0, 
+    cudaReadModeNormalizedFloat = 1  
+}
+
+struct textureReference
+{
+    int                          normalized;
+    cudaTextureFilterMode   filterMode;
+    cudaTextureAddressMode[3]  addressMode;
+    cudaChannelFormatDesc channelDesc;
+    int                          sRGB;
+    uint                 maxAnisotropy;
+    cudaTextureFilterMode   mipmapFilterMode;
+    float                        mipmapLevelBias;
+    float                        minMipmapLevelClamp;
+    float                        maxMipmapLevelClamp;
+    int[15]                          __cudaReserved;
+}
+
+struct cudaTextureDesc
+{
+    cudaTextureAddressMode[3] addressMode;
+    cudaTextureFilterMode  filterMode;
+    cudaTextureReadMode    readMode;
+    int                         sRGB;
+    int                         normalizedCoords;
+    uint                maxAnisotropy;
+    cudaTextureFilterMode  mipmapFilterMode;
+    float                       mipmapLevelBias;
+    float                       minMipmapLevelClamp;
+    float                       maxMipmapLevelClamp;
+}
+
+alias cudaTextureObject_t = ulong;
+
+
+// vector_types.h
+// only dim3 translated
+
+struct dim3
+{
+    uint x = 1, 
+         y = 1, 
+         z = 1;
+
+    this(uint vx = 1, uint vy = 1, uint vz = 1)
+    {
+        vx = x;
+        vy = y;
+        vz = z;
+    }
+};
+
+
+// cuda_runtime_api.h
+
+
+extern(System) nothrow
+{
+    alias cudaStreamCallback_t = void function(cudaStream_t stream, cudaError_t status, void *userData);
+}
+
+
+extern(System) @nogc nothrow
+{
+    alias da_cudaDeviceReset = cudaError_t function();
+    alias da_cudaDeviceSynchronize = cudaError_t function();
+    alias da_cudaDeviceSetLimit = cudaError_t function(cudaLimit limit, size_t value);
+    alias da_cudaDeviceGetLimit = cudaError_t function(size_t *pValue, cudaLimit limit);
+    alias da_cudaDeviceGetCacheConfig = cudaError_t function(cudaFuncCache *pCacheConfig);
+    alias da_cudaDeviceGetStreamPriorityRange = cudaError_t function(int *leastPriority, int *greatestPriority);
+    alias da_cudaDeviceSetCacheConfig = cudaError_t function(cudaFuncCache cacheConfig);
+    alias da_cudaDeviceGetSharedMemConfig = cudaError_t function(cudaSharedMemConfig *pConfig);
+    alias da_cudaDeviceSetSharedMemConfig = cudaError_t function(cudaSharedMemConfig config);
+    alias da_cudaDeviceGetByPCIBusId = cudaError_t function(int *device, const char *pciBusId);
+    alias da_cudaDeviceGetPCIBusId = cudaError_t function(char *pciBusId, int len, int device);
+    alias da_cudaIpcGetEventHandle = cudaError_t function(cudaIpcEventHandle_t *handle, cudaEvent_t event);
+    alias da_cudaIpcOpenEventHandle = cudaError_t function(cudaEvent_t *event, cudaIpcEventHandle_t handle);
+    alias da_cudaIpcGetMemHandle = cudaError_t function(cudaIpcMemHandle_t *handle, void *devPtr);
+    alias da_cudaIpcOpenMemHandle = cudaError_t function(void **devPtr, cudaIpcMemHandle_t handle, uint flags);
+    alias da_cudaIpcCloseMemHandle = cudaError_t function(void *devPtr);
+    alias da_cudaThreadExit = cudaError_t function();
+    alias da_cudaThreadSynchronize = cudaError_t function();
+    alias da_cudaThreadSetLimit = cudaError_t function(cudaLimit limit, size_t value);
+    alias da_cudaThreadGetLimit = cudaError_t function(size_t *pValue, cudaLimit limit);
+    alias da_cudaThreadGetCacheConfig = cudaError_t function(cudaFuncCache *pCacheConfig);
+    alias da_cudaThreadSetCacheConfig = cudaError_t function(cudaFuncCache cacheConfig);
+    alias da_cudaGetLastError = cudaError_t function();
+    alias da_cudaPeekAtLastError = cudaError_t function();
+    alias da_cudaGetErrorName = const(char)* function(cudaError_t error);
+    alias da_cudaGetErrorString = const(char)* function(cudaError_t error);
+    alias da_cudaGetDeviceCount = cudaError_t function(int *count);
+    alias da_cudaGetDeviceProperties = cudaError_t function(cudaDeviceProp *prop, int device);
+    alias da_cudaDeviceGetAttribute = cudaError_t function(int *value, cudaDeviceAttr attr, int device);
+    alias da_cudaChooseDevice = cudaError_t function(int *device, const cudaDeviceProp *prop);
+    alias da_cudaSetDevice = cudaError_t function(int device);
+    alias da_cudaGetDevice = cudaError_t function(int *device);
+    alias da_cudaSetValidDevices = cudaError_t function(int *device_arr, int len);
+    alias da_cudaSetDeviceFlags = cudaError_t function( uint flags );
+    alias da_cudaStreamCreate = cudaError_t function(cudaStream_t *pStream);
+    alias da_cudaStreamCreateWithFlags = cudaError_t function(cudaStream_t *pStream, uint flags);
+    alias da_cudaStreamCreateWithPriority = cudaError_t function(cudaStream_t *pStream, uint flags, int priority);
+    alias da_cudaStreamGetPriority = cudaError_t function(cudaStream_t hStream, int *priority);
+    alias da_cudaStreamGetFlags = cudaError_t function(cudaStream_t hStream, uint *flags);
+    alias da_cudaStreamDestroy = cudaError_t function(cudaStream_t stream);
+    alias da_cudaStreamWaitEvent = cudaError_t function(cudaStream_t stream, cudaEvent_t event, uint flags);
+    alias da_cudaStreamAddCallback = cudaError_t function(cudaStream_t stream, cudaStreamCallback_t callback, void *userData, uint flags);
+    alias da_cudaStreamSynchronize = cudaError_t function(cudaStream_t stream);
+    alias da_cudaStreamQuery = cudaError_t function(cudaStream_t stream);
+    alias da_cudaStreamAttachMemAsync = cudaError_t function(cudaStream_t stream, void *devPtr, size_t length, uint flags);
+    alias da_cudaEventCreate = cudaError_t function(cudaEvent_t *event);
+    alias da_cudaEventCreateWithFlags = cudaError_t function(cudaEvent_t *event, uint flags);
+    alias da_cudaEventRecord = cudaError_t function(cudaEvent_t event, cudaStream_t stream = null);
+    alias da_cudaEventQuery = cudaError_t function(cudaEvent_t event);
+    alias da_cudaEventSynchronize = cudaError_t function(cudaEvent_t event);
+    alias da_cudaEventDestroy = cudaError_t function(cudaEvent_t event);
+    alias da_cudaEventElapsedTime = cudaError_t function(float *ms, cudaEvent_t start, cudaEvent_t end);
+    alias da_cudaConfigureCall = cudaError_t function(dim3 gridDim, dim3 blockDim, size_t sharedMem = 0, cudaStream_t stream = null);
+    alias da_cudaSetupArgument = cudaError_t function(const void *arg, size_t size, size_t offset);
+    alias da_cudaFuncSetCacheConfig = cudaError_t function(const void *func, cudaFuncCache cacheConfig);
+    alias da_cudaFuncSetSharedMemConfig = cudaError_t function(const void *func, cudaSharedMemConfig config);
+    alias da_cudaLaunch = cudaError_t function(const void *func);
+    alias da_cudaFuncGetAttributes = cudaError_t function(cudaFuncAttributes *attr, const void *func);
+    alias da_cudaSetDoubleForDevice = cudaError_t function(double *d);
+    alias da_cudaSetDoubleForHost = cudaError_t function(double *d);
+    alias da_cudaOccupancyMaxActiveBlocksPerMultiprocessor = cudaError_t function(int *numBlocks, const void *func, int blockSize, size_t dynamicSMemSize);
+    alias da_cudaMallocManaged = cudaError_t function(void **devPtr, size_t size, uint flags);
+    alias da_cudaMalloc = cudaError_t function(void **devPtr, size_t size);
+    alias da_cudaMallocHost = cudaError_t function(void **ptr, size_t size);
+    alias da_cudaMallocPitch = cudaError_t function(void **devPtr, size_t *pitch, size_t width, size_t height);
+    alias da_cudaMallocArray = cudaError_t function(cudaArray_t *array, const cudaChannelFormatDesc *desc, size_t width, size_t height = 0, uint flags = 0);
+    alias da_cudaFree = cudaError_t function(void *devPtr);
+    alias da_cudaFreeHost = cudaError_t function(void *ptr);
+    alias da_cudaFreeArray = cudaError_t function(cudaArray_t array);
+    alias da_cudaFreeMipmappedArray = cudaError_t function(cudaMipmappedArray_t mipmappedArray);
+    alias da_cudaHostAlloc = cudaError_t function(void **pHost, size_t size, uint flags);
+    alias da_cudaHostRegister = cudaError_t function(void *ptr, size_t size, uint flags);
+    alias da_cudaHostUnregister = cudaError_t function(void *ptr);
+    alias da_cudaHostGetDevicePointer = cudaError_t function(void **pDevice, void *pHost, uint flags);
+    alias da_cudaHostGetFlags = cudaError_t function(uint *pFlags, void *pHost);
+    alias da_cudaMalloc3D = cudaError_t function(cudaPitchedPtr* pitchedDevPtr, cudaExtent extent);
+    alias da_cudaMalloc3DArray = cudaError_t function(cudaArray_t *array, const cudaChannelFormatDesc* desc, cudaExtent extent, uint flags = 0);
+    alias da_cudaMallocMipmappedArray = cudaError_t function(cudaMipmappedArray_t *mipmappedArray, const cudaChannelFormatDesc* desc, cudaExtent extent, uint numLevels, uint flags = 0);
+    alias da_cudaGetMipmappedArrayLevel = cudaError_t function(cudaArray_t *levelArray, cudaMipmappedArray_const_t mipmappedArray, uint level);
+    alias da_cudaMemcpy3D = cudaError_t function(const cudaMemcpy3DParms *p);
+    alias da_cudaMemcpy3DPeer = cudaError_t function(const cudaMemcpy3DPeerParms *p);
+    alias da_cudaMemcpy3DAsync = cudaError_t function(const cudaMemcpy3DParms *p, cudaStream_t stream = null);
+    alias da_cudaMemcpy3DPeerAsync = cudaError_t function(const cudaMemcpy3DPeerParms *p, cudaStream_t stream = null);
+    alias da_cudaMemGetInfo = cudaError_t function(size_t *free, size_t *total);
+    alias da_cudaArrayGetInfo = cudaError_t function(cudaChannelFormatDesc *desc, cudaExtent *extent, uint *flags, cudaArray_t array);
+    alias da_cudaMemcpy = cudaError_t function(void *dst, const void *src, size_t count, cudaMemcpyKind kind);
+    alias da_cudaMemcpyPeer = cudaError_t function(void *dst, int dstDevice, const void *src, int srcDevice, size_t count);
+    alias da_cudaMemcpyToArray = cudaError_t function(cudaArray_t dst, size_t wOffset, size_t hOffset, const void *src, size_t count, cudaMemcpyKind kind);
+    alias da_cudaMemcpyFromArray = cudaError_t function(void *dst, cudaArray_const_t src, size_t wOffset, size_t hOffset, size_t count, cudaMemcpyKind kind);
+    alias da_cudaMemcpyArrayToArray = cudaError_t function(cudaArray_t dst, size_t wOffsetDst, size_t hOffsetDst, cudaArray_const_t src, size_t wOffsetSrc, size_t hOffsetSrc, size_t count, cudaMemcpyKind kind = cudaMemcpyDeviceToDevice);
+    alias da_cudaMemcpy2D = cudaError_t function(void *dst, size_t dpitch, const void *src, size_t spitch, size_t width, size_t height, cudaMemcpyKind kind);
+    alias da_cudaMemcpy2DToArray = cudaError_t function(cudaArray_t dst, size_t wOffset, size_t hOffset, const void *src, size_t spitch, size_t width, size_t height, cudaMemcpyKind kind);
+    alias da_cudaMemcpy2DFromArray = cudaError_t function(void *dst, size_t dpitch, cudaArray_const_t src, size_t wOffset, size_t hOffset, size_t width, size_t height, cudaMemcpyKind kind);
+    alias da_cudaMemcpy2DArrayToArray = cudaError_t function(cudaArray_t dst, size_t wOffsetDst, size_t hOffsetDst, cudaArray_const_t src, size_t wOffsetSrc, size_t hOffsetSrc, size_t width, size_t height, cudaMemcpyKind kind = cudaMemcpyDeviceToDevice);
+    alias da_cudaMemcpyToSymbol = cudaError_t function(const void *symbol, const void *src, size_t count, size_t offset = 0, cudaMemcpyKind kind = cudaMemcpyHostToDevice);
+    alias da_cudaMemcpyFromSymbol = cudaError_t function(void *dst, const void *symbol, size_t count, size_t offset = 0, cudaMemcpyKind kind = cudaMemcpyDeviceToHost);
+    alias da_cudaMemcpyAsync = cudaError_t function(void *dst, const void *src, size_t count, cudaMemcpyKind kind, cudaStream_t stream = null);
+    alias da_cudaMemcpyPeerAsync = cudaError_t function(void *dst, int dstDevice, const void *src, int srcDevice, size_t count, cudaStream_t stream = null);
+    alias da_cudaMemcpyToArrayAsync = cudaError_t function(cudaArray_t dst, size_t wOffset, size_t hOffset, const void *src, size_t count, cudaMemcpyKind kind, cudaStream_t stream = null);
+    alias da_cudaMemcpyFromArrayAsync = cudaError_t function(void *dst, cudaArray_const_t src, size_t wOffset, size_t hOffset, size_t count, cudaMemcpyKind kind, cudaStream_t stream = null);
+    alias da_cudaMemcpy2DAsync = cudaError_t function(void *dst, size_t dpitch, const void *src, size_t spitch, size_t width, size_t height, cudaMemcpyKind kind, cudaStream_t stream = null);
+    alias da_cudaMemcpy2DToArrayAsync = cudaError_t function(cudaArray_t dst, size_t wOffset, size_t hOffset, const void *src, size_t spitch, size_t width, size_t height, cudaMemcpyKind kind, cudaStream_t stream = null);
+    alias da_cudaMemcpy2DFromArrayAsync = cudaError_t function(void *dst, size_t dpitch, cudaArray_const_t src, size_t wOffset, size_t hOffset, size_t width, size_t height, cudaMemcpyKind kind, cudaStream_t stream = null);
+    alias da_cudaMemcpyToSymbolAsync = cudaError_t function(const void *symbol, const void *src, size_t count, size_t offset, cudaMemcpyKind kind, cudaStream_t stream = null);
+    alias da_cudaMemcpyFromSymbolAsync = cudaError_t function(void *dst, const void *symbol, size_t count, size_t offset, cudaMemcpyKind kind, cudaStream_t stream = null);
+    alias da_cudaMemset = cudaError_t function(void *devPtr, int value, size_t count);
+    alias da_cudaMemset2D = cudaError_t function(void *devPtr, size_t pitch, int value, size_t width, size_t height);
+    alias da_cudaMemset3D = cudaError_t function(cudaPitchedPtr pitchedDevPtr, int value, cudaExtent extent);
+    alias da_cudaMemsetAsync = cudaError_t function(void *devPtr, int value, size_t count, cudaStream_t stream = null);
+    alias da_cudaMemset2DAsync = cudaError_t function(void *devPtr, size_t pitch, int value, size_t width, size_t height, cudaStream_t stream = null);
+    alias da_cudaMemset3DAsync = cudaError_t function(cudaPitchedPtr pitchedDevPtr, int value, cudaExtent extent, cudaStream_t stream = null);
+    alias da_cudaGetSymbolAddress = cudaError_t function(void **devPtr, const void *symbol);
+    alias da_cudaGetSymbolSize = cudaError_t function(size_t *size, const void *symbol);
+    alias da_cudaPointerGetAttributes = cudaError_t function(cudaPointerAttributes *attributes, const void *ptr);
+    alias da_cudaDeviceCanAccessPeer = cudaError_t function(int *canAccessPeer, int device, int peerDevice);
+    alias da_cudaDeviceEnablePeerAccess = cudaError_t function(int peerDevice, uint flags);
+    alias da_cudaDeviceDisablePeerAccess = cudaError_t function(int peerDevice);
+    alias da_cudaGraphicsUnregisterResource = cudaError_t function(cudaGraphicsResource_t resource);
+    alias da_cudaGraphicsResourceSetMapFlags = cudaError_t function(cudaGraphicsResource_t resource, uint flags);
+    alias da_cudaGraphicsMapResources = cudaError_t function(int count, cudaGraphicsResource_t *resources, cudaStream_t stream = null);
+    alias da_cudaGraphicsUnmapResources = cudaError_t function(int count, cudaGraphicsResource_t *resources, cudaStream_t stream = null);
+    alias da_cudaGraphicsResourceGetMappedPointer = cudaError_t function(void **devPtr, size_t *size, cudaGraphicsResource_t resource);
+    alias da_cudaGraphicsSubResourceGetMappedArray = cudaError_t function(cudaArray_t *array, cudaGraphicsResource_t resource, uint arrayIndex, uint mipLevel);
+    alias da_cudaGraphicsResourceGetMappedMipmappedArray = cudaError_t function(cudaMipmappedArray_t *mipmappedArray, cudaGraphicsResource_t resource);
+    alias da_cudaGetChannelDesc = cudaError_t function(cudaChannelFormatDesc *desc, cudaArray_const_t array);
+    alias da_cudaCreateChannelDesc = cudaChannelFormatDesc function(int x, int y, int z, int w, cudaChannelFormatKind f);
+    alias da_cudaBindTexture = cudaError_t function(size_t *offset, const textureReference *texref, const void *devPtr, const cudaChannelFormatDesc *desc, size_t size = uint.max);
+    alias da_cudaBindTexture2D = cudaError_t function(size_t *offset, const textureReference *texref, const void *devPtr, const cudaChannelFormatDesc *desc, size_t width, size_t height, size_t pitch);
+    alias da_cudaBindTextureToArray = cudaError_t function(const textureReference *texref, cudaArray_const_t array, const cudaChannelFormatDesc *desc);
+    alias da_cudaBindTextureToMipmappedArray = cudaError_t function(const textureReference *texref, cudaMipmappedArray_const_t mipmappedArray, const cudaChannelFormatDesc *desc);
+    alias da_cudaUnbindTexture = cudaError_t function(const textureReference *texref);
+    alias da_cudaGetTextureAlignmentOffset = cudaError_t function(size_t *offset, const textureReference *texref);
+    alias da_cudaGetTextureReference = cudaError_t function(const textureReference **texref, const void *symbol);
+    alias da_cudaBindSurfaceToArray = cudaError_t function(const surfaceReference *surfref, cudaArray_const_t array, const cudaChannelFormatDesc *desc);
+    alias da_cudaGetSurfaceReference = cudaError_t function(const surfaceReference **surfref, const void *symbol);
+    alias da_cudaCreateTextureObject = cudaError_t function(cudaTextureObject_t *pTexObject, const cudaResourceDesc *pResDesc, const cudaTextureDesc *pTexDesc, const cudaResourceViewDesc *pResViewDesc);
+    alias da_cudaDestroyTextureObject = cudaError_t function(cudaTextureObject_t texObject);
+    alias da_cudaGetTextureObjectResourceDesc = cudaError_t function(cudaResourceDesc *pResDesc, cudaTextureObject_t texObject);
+    alias da_cudaGetTextureObjectTextureDesc = cudaError_t function(cudaTextureDesc *pTexDesc, cudaTextureObject_t texObject);
+    alias da_cudaGetTextureObjectResourceViewDesc = cudaError_t function(cudaResourceViewDesc *pResViewDesc, cudaTextureObject_t texObject);
+    alias da_cudaCreateSurfaceObject = cudaError_t function(cudaSurfaceObject_t *pSurfObject, const cudaResourceDesc *pResDesc);
+    alias da_cudaDestroySurfaceObject = cudaError_t function(cudaSurfaceObject_t surfObject);
+    alias da_cudaGetSurfaceObjectResourceDesc = cudaError_t function(cudaResourceDesc *pResDesc, cudaSurfaceObject_t surfObject);
+    alias da_cudaDriverGetVersion = cudaError_t function(int *driverVersion);
+    alias da_cudaRuntimeGetVersion = cudaError_t function(int *runtimeVersion);
+    alias da_cudaGetExportTable = cudaError_t function(const void **ppExportTable, const cudaUUID_t *pExportTableId);
+
+}
+
+__gshared
+{
+    da_cudaDeviceReset cudaDeviceReset;
+    da_cudaDeviceSynchronize cudaDeviceSynchronize;
+    da_cudaDeviceSetLimit cudaDeviceSetLimit;
+    da_cudaDeviceGetLimit cudaDeviceGetLimit;
+    da_cudaDeviceGetCacheConfig cudaDeviceGetCacheConfig;
+    da_cudaDeviceGetStreamPriorityRange cudaDeviceGetStreamPriorityRange;
+    da_cudaDeviceSetCacheConfig cudaDeviceSetCacheConfig;
+    da_cudaDeviceGetSharedMemConfig cudaDeviceGetSharedMemConfig;
+    da_cudaDeviceSetSharedMemConfig cudaDeviceSetSharedMemConfig;
+    da_cudaDeviceGetByPCIBusId cudaDeviceGetByPCIBusId;
+    da_cudaDeviceGetPCIBusId cudaDeviceGetPCIBusId;
+    da_cudaIpcGetEventHandle cudaIpcGetEventHandle;
+    da_cudaIpcOpenEventHandle cudaIpcOpenEventHandle;
+    da_cudaIpcGetMemHandle cudaIpcGetMemHandle;
+    da_cudaIpcOpenMemHandle cudaIpcOpenMemHandle;
+    da_cudaIpcCloseMemHandle cudaIpcCloseMemHandle;
+    da_cudaThreadExit cudaThreadExit;
+    da_cudaThreadSynchronize cudaThreadSynchronize;
+    da_cudaThreadSetLimit cudaThreadSetLimit;
+    da_cudaThreadGetLimit cudaThreadGetLimit;
+    da_cudaThreadGetCacheConfig cudaThreadGetCacheConfig;
+    da_cudaThreadSetCacheConfig cudaThreadSetCacheConfig;
+    da_cudaGetLastError cudaGetLastError;
+    da_cudaPeekAtLastError cudaPeekAtLastError;
+    da_cudaGetErrorName cudaGetErrorName;
+    da_cudaGetErrorString cudaGetErrorString;
+    da_cudaGetDeviceCount cudaGetDeviceCount;
+    da_cudaGetDeviceProperties cudaGetDeviceProperties;
+    da_cudaDeviceGetAttribute cudaDeviceGetAttribute;
+    da_cudaChooseDevice cudaChooseDevice;
+    da_cudaSetDevice cudaSetDevice;
+    da_cudaGetDevice cudaGetDevice;
+    da_cudaSetValidDevices cudaSetValidDevices;
+    da_cudaSetDeviceFlags cudaSetDeviceFlags;
+    da_cudaStreamCreate cudaStreamCreate;
+    da_cudaStreamCreateWithFlags cudaStreamCreateWithFlags;
+    da_cudaStreamCreateWithPriority cudaStreamCreateWithPriority;
+    da_cudaStreamGetPriority cudaStreamGetPriority;
+    da_cudaStreamGetFlags cudaStreamGetFlags;
+    da_cudaStreamDestroy cudaStreamDestroy;
+    da_cudaStreamWaitEvent cudaStreamWaitEvent;
+    da_cudaStreamAddCallback cudaStreamAddCallback;
+    da_cudaStreamSynchronize cudaStreamSynchronize;
+    da_cudaStreamQuery cudaStreamQuery;
+    da_cudaStreamAttachMemAsync cudaStreamAttachMemAsync;
+    da_cudaEventCreate cudaEventCreate;
+    da_cudaEventCreateWithFlags cudaEventCreateWithFlags;
+    da_cudaEventRecord cudaEventRecord;
+    da_cudaEventQuery cudaEventQuery;
+    da_cudaEventSynchronize cudaEventSynchronize;
+    da_cudaEventDestroy cudaEventDestroy;
+    da_cudaEventElapsedTime cudaEventElapsedTime;
+    da_cudaConfigureCall cudaConfigureCall;
+    da_cudaSetupArgument cudaSetupArgument;
+    da_cudaFuncSetCacheConfig cudaFuncSetCacheConfig;
+    da_cudaFuncSetSharedMemConfig cudaFuncSetSharedMemConfig;
+    da_cudaLaunch cudaLaunch;
+    da_cudaFuncGetAttributes cudaFuncGetAttributes;
+    da_cudaSetDoubleForDevice cudaSetDoubleForDevice;
+    da_cudaSetDoubleForHost cudaSetDoubleForHost;
+    da_cudaOccupancyMaxActiveBlocksPerMultiprocessor cudaOccupancyMaxActiveBlocksPerMultiprocessor;
+    da_cudaMallocManaged cudaMallocManaged;
+    da_cudaMalloc cudaMalloc;
+    da_cudaMallocHost cudaMallocHost;
+    da_cudaMallocPitch cudaMallocPitch;
+    da_cudaMallocArray cudaMallocArray;
+    da_cudaFree cudaFree;
+    da_cudaFreeHost cudaFreeHost;
+    da_cudaFreeArray cudaFreeArray;
+    da_cudaFreeMipmappedArray cudaFreeMipmappedArray;
+    da_cudaHostAlloc cudaHostAlloc;
+    da_cudaHostRegister cudaHostRegister;
+    da_cudaHostUnregister cudaHostUnregister;
+    da_cudaHostGetDevicePointer cudaHostGetDevicePointer;
+    da_cudaHostGetFlags cudaHostGetFlags;
+    da_cudaMalloc3D cudaMalloc3D;
+    da_cudaMalloc3DArray cudaMalloc3DArray;
+    da_cudaMallocMipmappedArray cudaMallocMipmappedArray;
+    da_cudaGetMipmappedArrayLevel cudaGetMipmappedArrayLevel;
+    da_cudaMemcpy3D cudaMemcpy3D;
+    da_cudaMemcpy3DPeer cudaMemcpy3DPeer;
+    da_cudaMemcpy3DAsync cudaMemcpy3DAsync;
+    da_cudaMemcpy3DPeerAsync cudaMemcpy3DPeerAsync;
+    da_cudaMemGetInfo cudaMemGetInfo;
+    da_cudaArrayGetInfo cudaArrayGetInfo;
+    da_cudaMemcpy cudaMemcpy;
+    da_cudaMemcpyPeer cudaMemcpyPeer;
+    da_cudaMemcpyToArray cudaMemcpyToArray;
+    da_cudaMemcpyFromArray cudaMemcpyFromArray;
+    da_cudaMemcpyArrayToArray cudaMemcpyArrayToArray;
+    da_cudaMemcpy2D cudaMemcpy2D;
+    da_cudaMemcpy2DToArray cudaMemcpy2DToArray;
+    da_cudaMemcpy2DFromArray cudaMemcpy2DFromArray;
+    da_cudaMemcpy2DArrayToArray cudaMemcpy2DArrayToArray;
+    da_cudaMemcpyToSymbol cudaMemcpyToSymbol;
+    da_cudaMemcpyFromSymbol cudaMemcpyFromSymbol;
+    da_cudaMemcpyAsync cudaMemcpyAsync;
+    da_cudaMemcpyPeerAsync cudaMemcpyPeerAsync;
+    da_cudaMemcpyToArrayAsync cudaMemcpyToArrayAsync;
+    da_cudaMemcpyFromArrayAsync cudaMemcpyFromArrayAsync;
+    da_cudaMemcpy2DAsync cudaMemcpy2DAsync;
+    da_cudaMemcpy2DToArrayAsync cudaMemcpy2DToArrayAsync;
+    da_cudaMemcpy2DFromArrayAsync cudaMemcpy2DFromArrayAsync;
+    da_cudaMemcpyToSymbolAsync cudaMemcpyToSymbolAsync;
+    da_cudaMemcpyFromSymbolAsync cudaMemcpyFromSymbolAsync;
+    da_cudaMemset cudaMemset;
+    da_cudaMemset2D cudaMemset2D;
+    da_cudaMemset3D cudaMemset3D;
+    da_cudaMemsetAsync cudaMemsetAsync;
+    da_cudaMemset2DAsync cudaMemset2DAsync;
+    da_cudaMemset3DAsync cudaMemset3DAsync;
+    da_cudaGetSymbolAddress cudaGetSymbolAddress;
+    da_cudaGetSymbolSize cudaGetSymbolSize;
+    da_cudaPointerGetAttributes cudaPointerGetAttributes;
+    da_cudaDeviceCanAccessPeer cudaDeviceCanAccessPeer;
+    da_cudaDeviceEnablePeerAccess cudaDeviceEnablePeerAccess;
+    da_cudaDeviceDisablePeerAccess cudaDeviceDisablePeerAccess;
+    da_cudaGraphicsUnregisterResource cudaGraphicsUnregisterResource;
+    da_cudaGraphicsResourceSetMapFlags cudaGraphicsResourceSetMapFlags;
+    da_cudaGraphicsMapResources cudaGraphicsMapResources;
+    da_cudaGraphicsUnmapResources cudaGraphicsUnmapResources;
+    da_cudaGraphicsResourceGetMappedPointer cudaGraphicsResourceGetMappedPointer;
+    da_cudaGraphicsSubResourceGetMappedArray cudaGraphicsSubResourceGetMappedArray;
+    da_cudaGraphicsResourceGetMappedMipmappedArray cudaGraphicsResourceGetMappedMipmappedArray;
+    da_cudaGetChannelDesc cudaGetChannelDesc;
+    da_cudaCreateChannelDesc cudaCreateChannelDesc;
+    da_cudaBindTexture cudaBindTexture;
+    da_cudaBindTexture2D cudaBindTexture2D;
+    da_cudaBindTextureToArray cudaBindTextureToArray;
+    da_cudaBindTextureToMipmappedArray cudaBindTextureToMipmappedArray;
+    da_cudaUnbindTexture cudaUnbindTexture;
+    da_cudaGetTextureAlignmentOffset cudaGetTextureAlignmentOffset;
+    da_cudaGetTextureReference cudaGetTextureReference;
+    da_cudaBindSurfaceToArray cudaBindSurfaceToArray;
+    da_cudaGetSurfaceReference cudaGetSurfaceReference;
+    da_cudaCreateTextureObject cudaCreateTextureObject;
+    da_cudaDestroyTextureObject cudaDestroyTextureObject;
+    da_cudaGetTextureObjectResourceDesc cudaGetTextureObjectResourceDesc;
+    da_cudaGetTextureObjectTextureDesc cudaGetTextureObjectTextureDesc;
+    da_cudaGetTextureObjectResourceViewDesc cudaGetTextureObjectResourceViewDesc;
+    da_cudaCreateSurfaceObject cudaCreateSurfaceObject;
+    da_cudaDestroySurfaceObject cudaDestroySurfaceObject;
+    da_cudaGetSurfaceObjectResourceDesc cudaGetSurfaceObjectResourceDesc;
+    da_cudaDriverGetVersion cudaDriverGetVersion;
+    da_cudaRuntimeGetVersion cudaRuntimeGetVersion;
+    da_cudaGetExportTable cudaGetExportTable;
+}
+
+// Runtime API loader
+class DerelictCUDARuntimeLoader : SharedLibLoader
+{
+    protected
+    {
+        override void loadSymbols()
+        {
+            bindFunc(cast(void**)&cudaDeviceReset, "cudaDeviceReset");
+            bindFunc(cast(void**)&cudaDeviceSynchronize, "cudaDeviceSynchronize");
+            bindFunc(cast(void**)&cudaDeviceSetLimit, "cudaDeviceSetLimit");
+            bindFunc(cast(void**)&cudaDeviceGetLimit, "cudaDeviceGetLimit");
+            bindFunc(cast(void**)&cudaDeviceGetCacheConfig, "cudaDeviceGetCacheConfig");
+            bindFunc(cast(void**)&cudaDeviceGetStreamPriorityRange, "cudaDeviceGetStreamPriorityRange");
+            bindFunc(cast(void**)&cudaDeviceSetCacheConfig, "cudaDeviceSetCacheConfig");
+            bindFunc(cast(void**)&cudaDeviceGetSharedMemConfig, "cudaDeviceGetSharedMemConfig");
+            bindFunc(cast(void**)&cudaDeviceSetSharedMemConfig, "cudaDeviceSetSharedMemConfig");
+            bindFunc(cast(void**)&cudaDeviceGetByPCIBusId, "cudaDeviceGetByPCIBusId");
+            bindFunc(cast(void**)&cudaDeviceGetPCIBusId, "cudaDeviceGetPCIBusId");
+            bindFunc(cast(void**)&cudaIpcGetEventHandle, "cudaIpcGetEventHandle");
+            bindFunc(cast(void**)&cudaIpcOpenEventHandle, "cudaIpcOpenEventHandle");
+            bindFunc(cast(void**)&cudaIpcGetMemHandle, "cudaIpcGetMemHandle");
+            bindFunc(cast(void**)&cudaIpcOpenMemHandle, "cudaIpcOpenMemHandle");
+            bindFunc(cast(void**)&cudaIpcCloseMemHandle, "cudaIpcCloseMemHandle");
+            bindFunc(cast(void**)&cudaThreadExit, "cudaThreadExit");
+            bindFunc(cast(void**)&cudaThreadSynchronize, "cudaThreadSynchronize");
+            bindFunc(cast(void**)&cudaThreadSetLimit, "cudaThreadSetLimit");
+            bindFunc(cast(void**)&cudaThreadGetLimit, "cudaThreadGetLimit");
+            bindFunc(cast(void**)&cudaThreadGetCacheConfig, "cudaThreadGetCacheConfig");
+            bindFunc(cast(void**)&cudaThreadSetCacheConfig, "cudaThreadSetCacheConfig");
+            bindFunc(cast(void**)&cudaGetLastError, "cudaGetLastError");
+            bindFunc(cast(void**)&cudaPeekAtLastError, "cudaPeekAtLastError");
+            bindFunc(cast(void**)&cudaGetErrorName, "cudaGetErrorName");
+            bindFunc(cast(void**)&cudaGetErrorString, "cudaGetErrorString");
+            bindFunc(cast(void**)&cudaGetDeviceCount, "cudaGetDeviceCount");
+            bindFunc(cast(void**)&cudaGetDeviceProperties, "cudaGetDeviceProperties");
+            bindFunc(cast(void**)&cudaDeviceGetAttribute, "cudaDeviceGetAttribute");
+            bindFunc(cast(void**)&cudaChooseDevice, "cudaChooseDevice");
+            bindFunc(cast(void**)&cudaSetDevice, "cudaSetDevice");
+            bindFunc(cast(void**)&cudaGetDevice, "cudaGetDevice");
+            bindFunc(cast(void**)&cudaSetValidDevices, "cudaSetValidDevices");
+            bindFunc(cast(void**)&cudaSetDeviceFlags, "cudaSetDeviceFlags");
+            bindFunc(cast(void**)&cudaStreamCreate, "cudaStreamCreate");
+            bindFunc(cast(void**)&cudaStreamCreateWithFlags, "cudaStreamCreateWithFlags");
+            bindFunc(cast(void**)&cudaStreamCreateWithPriority, "cudaStreamCreateWithPriority");
+            bindFunc(cast(void**)&cudaStreamGetPriority, "cudaStreamGetPriority");
+            bindFunc(cast(void**)&cudaStreamGetFlags, "cudaStreamGetFlags");
+            bindFunc(cast(void**)&cudaStreamDestroy, "cudaStreamDestroy");
+            bindFunc(cast(void**)&cudaStreamWaitEvent, "cudaStreamWaitEvent");
+            bindFunc(cast(void**)&cudaStreamAddCallback, "cudaStreamAddCallback");
+            bindFunc(cast(void**)&cudaStreamSynchronize, "cudaStreamSynchronize");
+            bindFunc(cast(void**)&cudaStreamQuery, "cudaStreamQuery");
+            bindFunc(cast(void**)&cudaStreamAttachMemAsync, "cudaStreamAttachMemAsync");
+            bindFunc(cast(void**)&cudaEventCreate, "cudaEventCreate");
+            bindFunc(cast(void**)&cudaEventCreateWithFlags, "cudaEventCreateWithFlags");
+            bindFunc(cast(void**)&cudaEventRecord, "cudaEventRecord");
+            bindFunc(cast(void**)&cudaEventQuery, "cudaEventQuery");
+            bindFunc(cast(void**)&cudaEventSynchronize, "cudaEventSynchronize");
+            bindFunc(cast(void**)&cudaEventDestroy, "cudaEventDestroy");
+            bindFunc(cast(void**)&cudaEventElapsedTime, "cudaEventElapsedTime");
+            bindFunc(cast(void**)&cudaConfigureCall, "cudaConfigureCall");
+            bindFunc(cast(void**)&cudaSetupArgument, "cudaSetupArgument");
+            bindFunc(cast(void**)&cudaFuncSetCacheConfig, "cudaFuncSetCacheConfig");
+            bindFunc(cast(void**)&cudaFuncSetSharedMemConfig, "cudaFuncSetSharedMemConfig");
+            bindFunc(cast(void**)&cudaLaunch, "cudaLaunch");
+            bindFunc(cast(void**)&cudaFuncGetAttributes, "cudaFuncGetAttributes");
+            bindFunc(cast(void**)&cudaSetDoubleForDevice, "cudaSetDoubleForDevice");
+            bindFunc(cast(void**)&cudaSetDoubleForHost, "cudaSetDoubleForHost");
+            bindFunc(cast(void**)&cudaOccupancyMaxActiveBlocksPerMultiprocessor, "cudaOccupancyMaxActiveBlocksPerMultiprocessor");
+            bindFunc(cast(void**)&cudaMallocManaged, "cudaMallocManaged");
+            bindFunc(cast(void**)&cudaMalloc, "cudaMalloc");
+            bindFunc(cast(void**)&cudaMallocHost, "cudaMallocHost");
+            bindFunc(cast(void**)&cudaMallocPitch, "cudaMallocPitch");
+            bindFunc(cast(void**)&cudaMallocArray, "cudaMallocArray");
+            bindFunc(cast(void**)&cudaFree, "cudaFree");
+            bindFunc(cast(void**)&cudaFreeHost, "cudaFreeHost");
+            bindFunc(cast(void**)&cudaFreeArray, "cudaFreeArray");
+            bindFunc(cast(void**)&cudaFreeMipmappedArray, "cudaFreeMipmappedArray");
+            bindFunc(cast(void**)&cudaHostAlloc, "cudaHostAlloc");
+            bindFunc(cast(void**)&cudaHostRegister, "cudaHostRegister");
+            bindFunc(cast(void**)&cudaHostUnregister, "cudaHostUnregister");
+            bindFunc(cast(void**)&cudaHostGetDevicePointer, "cudaHostGetDevicePointer");
+            bindFunc(cast(void**)&cudaHostGetFlags, "cudaHostGetFlags");
+            bindFunc(cast(void**)&cudaMalloc3D, "cudaMalloc3D");
+            bindFunc(cast(void**)&cudaMalloc3DArray, "cudaMalloc3DArray");
+            bindFunc(cast(void**)&cudaMallocMipmappedArray, "cudaMallocMipmappedArray");
+            bindFunc(cast(void**)&cudaGetMipmappedArrayLevel, "cudaGetMipmappedArrayLevel");
+            bindFunc(cast(void**)&cudaMemcpy3D, "cudaMemcpy3D");
+            bindFunc(cast(void**)&cudaMemcpy3DPeer, "cudaMemcpy3DPeer");
+            bindFunc(cast(void**)&cudaMemcpy3DAsync, "cudaMemcpy3DAsync");
+            bindFunc(cast(void**)&cudaMemcpy3DPeerAsync, "cudaMemcpy3DPeerAsync");
+            bindFunc(cast(void**)&cudaMemGetInfo, "cudaMemGetInfo");
+            bindFunc(cast(void**)&cudaArrayGetInfo, "cudaArrayGetInfo");
+            bindFunc(cast(void**)&cudaMemcpy, "cudaMemcpy");
+            bindFunc(cast(void**)&cudaMemcpyPeer, "cudaMemcpyPeer");
+            bindFunc(cast(void**)&cudaMemcpyToArray, "cudaMemcpyToArray");
+            bindFunc(cast(void**)&cudaMemcpyFromArray, "cudaMemcpyFromArray");
+            bindFunc(cast(void**)&cudaMemcpyArrayToArray, "cudaMemcpyArrayToArray");
+            bindFunc(cast(void**)&cudaMemcpy2D, "cudaMemcpy2D");
+            bindFunc(cast(void**)&cudaMemcpy2DToArray, "cudaMemcpy2DToArray");
+            bindFunc(cast(void**)&cudaMemcpy2DFromArray, "cudaMemcpy2DFromArray");
+            bindFunc(cast(void**)&cudaMemcpy2DArrayToArray, "cudaMemcpy2DArrayToArray");
+            bindFunc(cast(void**)&cudaMemcpyToSymbol, "cudaMemcpyToSymbol");
+            bindFunc(cast(void**)&cudaMemcpyFromSymbol, "cudaMemcpyFromSymbol");
+            bindFunc(cast(void**)&cudaMemcpyAsync, "cudaMemcpyAsync");
+            bindFunc(cast(void**)&cudaMemcpyPeerAsync, "cudaMemcpyPeerAsync");
+            bindFunc(cast(void**)&cudaMemcpyToArrayAsync, "cudaMemcpyToArrayAsync");
+            bindFunc(cast(void**)&cudaMemcpyFromArrayAsync, "cudaMemcpyFromArrayAsync");
+            bindFunc(cast(void**)&cudaMemcpy2DAsync, "cudaMemcpy2DAsync");
+            bindFunc(cast(void**)&cudaMemcpy2DToArrayAsync, "cudaMemcpy2DToArrayAsync");
+            bindFunc(cast(void**)&cudaMemcpy2DFromArrayAsync, "cudaMemcpy2DFromArrayAsync");
+            bindFunc(cast(void**)&cudaMemcpyToSymbolAsync, "cudaMemcpyToSymbolAsync");
+            bindFunc(cast(void**)&cudaMemcpyFromSymbolAsync, "cudaMemcpyFromSymbolAsync");
+            bindFunc(cast(void**)&cudaMemset, "cudaMemset");
+            bindFunc(cast(void**)&cudaMemset2D, "cudaMemset2D");
+            bindFunc(cast(void**)&cudaMemset3D, "cudaMemset3D");
+            bindFunc(cast(void**)&cudaMemsetAsync, "cudaMemsetAsync");
+            bindFunc(cast(void**)&cudaMemset2DAsync, "cudaMemset2DAsync");
+            bindFunc(cast(void**)&cudaMemset3DAsync, "cudaMemset3DAsync");
+            bindFunc(cast(void**)&cudaGetSymbolAddress, "cudaGetSymbolAddress");
+            bindFunc(cast(void**)&cudaGetSymbolSize, "cudaGetSymbolSize");
+            bindFunc(cast(void**)&cudaPointerGetAttributes, "cudaPointerGetAttributes");
+            bindFunc(cast(void**)&cudaDeviceCanAccessPeer, "cudaDeviceCanAccessPeer");
+            bindFunc(cast(void**)&cudaDeviceEnablePeerAccess, "cudaDeviceEnablePeerAccess");
+            bindFunc(cast(void**)&cudaDeviceDisablePeerAccess, "cudaDeviceDisablePeerAccess");
+            bindFunc(cast(void**)&cudaGraphicsUnregisterResource, "cudaGraphicsUnregisterResource");
+            bindFunc(cast(void**)&cudaGraphicsResourceSetMapFlags, "cudaGraphicsResourceSetMapFlags");
+            bindFunc(cast(void**)&cudaGraphicsMapResources, "cudaGraphicsMapResources");
+            bindFunc(cast(void**)&cudaGraphicsUnmapResources, "cudaGraphicsUnmapResources");
+            bindFunc(cast(void**)&cudaGraphicsResourceGetMappedPointer, "cudaGraphicsResourceGetMappedPointer");
+            bindFunc(cast(void**)&cudaGraphicsSubResourceGetMappedArray, "cudaGraphicsSubResourceGetMappedArray");
+            bindFunc(cast(void**)&cudaGraphicsResourceGetMappedMipmappedArray, "cudaGraphicsResourceGetMappedMipmappedArray");
+            bindFunc(cast(void**)&cudaGetChannelDesc, "cudaGetChannelDesc");
+            bindFunc(cast(void**)&cudaCreateChannelDesc, "cudaCreateChannelDesc");
+            bindFunc(cast(void**)&cudaBindTexture, "cudaBindTexture");
+            bindFunc(cast(void**)&cudaBindTexture2D, "cudaBindTexture2D");
+            bindFunc(cast(void**)&cudaBindTextureToArray, "cudaBindTextureToArray");
+            bindFunc(cast(void**)&cudaBindTextureToMipmappedArray, "cudaBindTextureToMipmappedArray");
+            bindFunc(cast(void**)&cudaUnbindTexture, "cudaUnbindTexture");
+            bindFunc(cast(void**)&cudaGetTextureAlignmentOffset, "cudaGetTextureAlignmentOffset");
+            bindFunc(cast(void**)&cudaGetTextureReference, "cudaGetTextureReference");
+            bindFunc(cast(void**)&cudaBindSurfaceToArray, "cudaBindSurfaceToArray");
+            bindFunc(cast(void**)&cudaGetSurfaceReference, "cudaGetSurfaceReference");
+            bindFunc(cast(void**)&cudaCreateTextureObject, "cudaCreateTextureObject");
+            bindFunc(cast(void**)&cudaDestroyTextureObject, "cudaDestroyTextureObject");
+            bindFunc(cast(void**)&cudaGetTextureObjectResourceDesc, "cudaGetTextureObjectResourceDesc");
+            bindFunc(cast(void**)&cudaGetTextureObjectTextureDesc, "cudaGetTextureObjectTextureDesc");
+            bindFunc(cast(void**)&cudaGetTextureObjectResourceViewDesc, "cudaGetTextureObjectResourceViewDesc");
+            bindFunc(cast(void**)&cudaCreateSurfaceObject, "cudaCreateSurfaceObject");
+            bindFunc(cast(void**)&cudaDestroySurfaceObject, "cudaDestroySurfaceObject");
+            bindFunc(cast(void**)&cudaGetSurfaceObjectResourceDesc, "cudaGetSurfaceObjectResourceDesc");
+            bindFunc(cast(void**)&cudaDriverGetVersion, "cudaDriverGetVersion");
+            bindFunc(cast(void**)&cudaRuntimeGetVersion, "cudaRuntimeGetVersion");
+            bindFunc(cast(void**)&cudaGetExportTable, "cudaGetExportTable");     
+        }
+    }
+
+    public
+    {
+        this()
+        {
+            super(libNames);
+        }
+    }
+}
+
+__gshared DerelictCUDARuntimeLoader DerelictCUDARuntime;
+
+shared static this()
+{
+    DerelictCUDARuntime = new DerelictCUDARuntimeLoader();
+}

@@ -30,6 +30,23 @@ module derelict.cuda.driverapi;
 // Current API version supported by DerelictCUDA is 6.5
 enum CUDA_VERSION = 6050;
 
+
+import derelict.util.loader;
+
+private
+{
+    import derelict.util.system;
+
+    static if(Derelict_OS_Windows)
+        enum libNames = "nvcuda.dll";
+    else static if (Derelict_OS_Mac)
+        enum libNames = "libcuda.dylib";
+    else static if (Derelict_OS_Linux)
+        enum libNames = "libcuda.so";
+    else
+        static assert(0, "Need to implement CUDA libNames for this operating system.");
+}
+
 alias CUdeviceptr = size_t;
 
 alias CUdevice = int;
@@ -733,22 +750,6 @@ enum CU_LAUNCH_PARAM_BUFFER_POINTER = (cast(void*)0x01);
 enum CU_LAUNCH_PARAM_BUFFER_SIZE    = (cast(void*)0x02);
 enum CU_PARAM_TR_DEFAULT = -1;
 
-
-import derelict.util.loader;
-
-private
-{
-    import derelict.util.system;
-
-    static if(Derelict_OS_Windows)
-        enum libNames = "nvcuda.dll";
-    else static if (Derelict_OS_Mac)
-        enum libNames = "libcuda.dylib";
-    else static if (Derelict_OS_Linux)
-        enum libNames = "libcuda.so";
-    else
-        static assert(0, "Need to implement CUDA libNames for this operating system.");
-}
 
 extern(System) @nogc nothrow
 {
