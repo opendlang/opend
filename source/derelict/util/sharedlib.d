@@ -230,10 +230,8 @@ struct SharedLib {
                                 a string as the sole parameter.
             +/
             void missingSymbolCallback( MissingSymbolCallbackFunc callback ) {
-                ShouldThrow thunk( string symbolName ) {
-                    return callback( symbolName );
-                }
-                _onMissingSym = &thunk;
+                import std.functional : toDelegate;
+                _onMissingSym = toDelegate( callback );
             }
         }
     }
