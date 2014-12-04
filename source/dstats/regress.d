@@ -2489,7 +2489,14 @@ double[] calculateMSEs(U...)(U xIn, RegionAllocator alloc) {
 
     auto ret = alloc.uninitializedArray!(double[])(x.length);
     foreach(ti, range; x) {
-        ret[ti] = meanStdev(take(range.save, minLen)).mse;
+        //Workaround for bug https://issues.dlang.org/show_bug.cgi?id=13151
+        //can be removed once no more need for 2.066.* support
+        static if(is(typeof(range.save) R == Take!T, T)) {
+            auto saved = range.save;
+            ret[ti] = meanStdev(R(saved.source, min(minLen, saved.maxLength))).mse;
+        } else {
+            ret[ti] = meanStdev(take(range.save, minLen)).mse;
+        }
     }
 
     return ret;
@@ -2612,7 +2619,15 @@ double doMLENewton(T, U...)
 
         // Compute X'(y - p).
         foreach(ti, xRange; x) {
-            firstDerivTerms[ti] = dotProduct(take(xRange, ps.length), ps);
+            //Workaround for bug https://issues.dlang.org/show_bug.cgi?id=13151
+            //can be removed once no more need for 2.066.* support
+            static if(is(typeof(xRange) R == Take!T, T)) {
+                firstDerivTerms[ti] = dotProduct(
+                        R(xRange.source, min(ps.length, xRange.maxLength)),
+                        ps);
+            } else {
+                firstDerivTerms[ti] = dotProduct(take(xRange, ps.length), ps);
+            }
         }
 
         // Add ridge penalties, if any.
