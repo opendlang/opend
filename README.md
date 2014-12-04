@@ -75,5 +75,3 @@ Known Problems
 --------------
 
 https://issues.dlang.org/show_bug.cgi?id=9449 causes a segfault in ```dstats.tests.friedmanTest``` on the line ```Mean[len] colMeans;```. This is a backend bug and does not affect ldc or gdc.
-
-https://issues.dlang.org/show_bug.cgi?id=13151 (fixed in git HEAD) causes a compile error due to a template ambiguity.
