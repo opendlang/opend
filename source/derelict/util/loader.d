@@ -35,33 +35,43 @@ private {
     import derelict.util.exception;
 }
 
-class SharedLibLoader {
+struct SharedLibVersion {
+    int major;
+    int minor;
+    int patch;
+}
+
+abstract class SharedLibLoader {
     private {
         string _libNames;
         SharedLib _lib;
     }
 
-    public {
-        /++
-         Constructs a new instance of shared lib loader with a string of one
-         or more shared library names to use as default.
+    /++
+     Constructs a new instance of shared lib loader with a string of one
+     or more shared library names to use as default.
 
-         Params:
-            libNames =      A string containing one or more comma-separated shared
-                            library names.
-        +/
-        this( string libNames ) {
-            _libNames = libNames;
-        }
+     Params:
+        libNames =      A string containing one or more comma-separated shared
+                        library names.
+    +/
+    public this( string libNames ) {
+        _libNames = libNames;
+    }
 
+    public final {
         /++
          Finds and loads a shared library, using this loader's default shared library
-         names.
+         names and default supported shared library version.
 
-         If multiple library names are specified in as default, a SharedLibLoadException
+         If multiple library names are specified as default, a SharedLibLoadException
          will only be thrown if all of the libraries fail to load. It will be the head
          of an exceptin chain containing one instance of the exception for each library
          that failed.
+
+         Examples:  If this loader supports versions 2.0 and 2.1 of a shared libary,
+                    this method will attempt to load 2.1 and will fail if only 2.0
+                    is present on the system.
 
          Throws:    SharedLibLoadException if the shared library or one of its
                     dependencies cannot be found on the file system.
@@ -73,6 +83,35 @@ class SharedLibLoader {
         }
 
         /++
+         Finds and loads any version of a shared library greater than or equal to
+         the required mimimum version, using this loader's default shared library
+         names.
+
+         If multiple library names are specified as default, a SharedLibLoadException
+         will only be thrown if all of the libraries fail to load. It will be the head
+         of an exceptin chain containing one instance of the exception for each library
+         that failed.
+
+         Examples:  If this loader supports versions 2.0 and 2.1 of a shared library,
+                    passing a SharedLibVersion with the major field set to 2 and the
+                    minor field set to 0 will cause the loader to load version 2.0
+                    if version 2.1 is not available on the system.
+
+         Params:
+            minRequiredVersion = the minimum version of the library that is acceptable.
+                                 Subclasses are free to ignore this.
+
+         Throws:    SharedLibLoadException if the shared library or one of its
+                    dependencies cannot be found on the file system.
+                    SymbolLoadException if an expected symbol is missing from the
+                    library.
+        +/
+        void load( SharedLibVersion minRequiredVersion ) {
+            configureMinimumVersion( minRequiredVersion );
+            load();
+        }
+
+        /++
          Finds and loads a shared library, using libNames to find the library
          on the file system.
 
@@ -80,6 +119,10 @@ class SharedLibLoader {
          will only be thrown if all of the libraries fail to load. It will be the head
          of an exceptin chain containing one instance of the exception for each library
          that failed.
+
+         Examples:  If this loader supports versions 2.0 and 2.1 of a shared libary,
+                    this method will attempt to load 2.1 and will fail if only 2.0
+                    is present on the system.
 
          Params:
             libNames =      A string containing one or more comma-separated shared
@@ -100,6 +143,37 @@ class SharedLibLoader {
         }
 
         /++
+         Finds and loads any version of a shared library greater than or equal to
+         the required mimimum version, using libNames to find the library
+         on the file system.
+
+         If multiple library names are specified as default, a SharedLibLoadException
+         will only be thrown if all of the libraries fail to load. It will be the head
+         of an exceptin chain containing one instance of the exception for each library
+         that failed.
+
+         Examples:  If this loader supports versions 2.0 and 2.1 of a shared library,
+                    passing a SharedLibVersion with the major field set to 2 and the
+                    minor field set to 0 will cause the loader to load version 2.0
+                    if version 2.1 is not available on the system.
+
+         Params:
+            libNames =      A string containing one or more comma-separated shared
+                            library names.
+            minRequiredVersion = The minimum version of the library that is acceptable.
+                                 Subclasses are free to ignore this.
+
+         Throws:    SharedLibLoadException if the shared library or one of its
+                    dependencies cannot be found on the file system.
+                    SymbolLoadException if an expected symbol is missing from the
+                    library.
+        +/
+        void load( string libNames, SharedLibVersion minRequiredVersion ) {
+            configureMinimumVersion( minRequiredVersion );
+            load( libNames );
+        }
+
+        /++
          Finds and loads a shared library, using libNames to find the library
          on the file system.
 
@@ -112,6 +186,7 @@ class SharedLibLoader {
          Params:
             libNames =      An array containing one or more shared library names,
                             with one name per index.
+
          Throws:    SharedLibLoadException if the shared library or one of its
                     dependencies cannot be found on the file system.
                     SymbolLoadException if an expected symbol is missing from the
@@ -120,6 +195,38 @@ class SharedLibLoader {
         void load( string[] libNames ) {
             _lib.load( libNames );
             loadSymbols();
+        }
+
+        /++
+         Finds and loads any version of a shared library greater than or equal to
+         the required mimimum version, , using libNames to find the library
+         on the file system.
+
+         If multiple library names are specified in libNames, a SharedLibLoadException
+         will only be thrown if all of the libraries fail to load. It will be the head
+         of an exceptin chain containing one instance of the exception for each library
+         that failed.
+
+         Examples:  If this loader supports versions 2.0 and 2.1 of a shared library,
+                    passing a SharedLibVersion with the major field set to 2 and the
+                    minor field set to 0 will cause the loader to load version 2.0
+                    if version 2.1 is not available on the system.
+
+
+         Params:
+            libNames =      An array containing one or more shared library names,
+                            with one name per index.
+            minRequiredVersion = The minimum version of the library that is acceptable.
+                                 Subclasses are free to ignore this.
+
+         Throws:    SharedLibLoadException if the shared library or one of its
+                    dependencies cannot be found on the file system.
+                    SymbolLoadException if an expected symbol is missing from the
+                    library.
+        +/
+        void load( string[] libNames, SharedLibVersion minRequiredVersion ) {
+            configureMinimumVersion( minRequiredVersion );
+            load( libNames );
         }
 
         /++
@@ -174,6 +281,14 @@ class SharedLibLoader {
         abstract void loadSymbols();
 
         /++
+         Allows a subclass to install an exception handler for specific versions
+         of a library before loadSymbols is called.
+
+         This method is optional. The default implementation does nothing.
+        +/
+        void configureMinimumVersion( SharedLibVersion minVersion ) {}
+
+        /++
          Subclasses can use this as an alternative to bindFunc, but must bind
          the returned symbol manually.
 
@@ -190,7 +305,7 @@ class SharedLibLoader {
         }
 
         /// Returns a reference to the shared library wrapped by this loader.
-        ref SharedLib lib() @property {
+        final ref SharedLib lib() @property {
             return _lib;
         }
 
@@ -208,7 +323,7 @@ class SharedLibLoader {
          Throws:        SymbolLoadException if doThrow is true and a the symbol
                         specified by funcName is missing from the shared library.
         +/
-        void bindFunc( void** ptr, string funcName, bool doThrow = true ) {
+        final void bindFunc( void** ptr, string funcName, bool doThrow = true ) {
             void* func = _lib.loadSymbol( funcName, doThrow );
             *ptr = func;
         }
