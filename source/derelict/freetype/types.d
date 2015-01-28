@@ -27,7 +27,10 @@ DEALINGS IN THE SOFTWARE.
 */
 module derelict.freetype.types;
 
-private import core.stdc.config;
+private {
+    import core.stdc.config;
+    import derelict.util.system;
+}
 
 // config/ftconfig.h
 alias FT_Int16 = short;

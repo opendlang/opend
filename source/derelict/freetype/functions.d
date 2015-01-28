@@ -27,7 +27,10 @@ DEALINGS IN THE SOFTWARE.
 */
 module derelict.freetype.functions;
 
-private import derelict.freetype.types;
+private {
+    import derelict.util.system;
+    import derelict.freetype.types;
+}
 
 extern( C ) @nogc nothrow {
     // freetype.h
