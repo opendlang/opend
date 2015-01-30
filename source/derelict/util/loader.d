@@ -295,9 +295,13 @@ abstract class SharedLibLoader {
          Allows a subclass to install an exception handler for specific versions
          of a library before loadSymbols is called.
 
-         This method is optional. The default implementation does nothing.
+         This method is optional. If the subclass does not implement it, calls to
+         any of the overloads of the load method that take a SharedLibVersion will
+         cause a compile time assert to fire.
         +/
-        void configureMinimumVersion( SharedLibVersion minVersion ) {}
+        void configureMinimumVersion( SharedLibVersion minVersion ) {
+            assert( 0, "SharedLibVersion is not supported by this loader." );
+        }
 
         /++
          Subclasses can use this as an alternative to bindFunc, but must bind
