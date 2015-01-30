@@ -233,6 +233,17 @@ struct SharedLib {
                 import std.functional : toDelegate;
                 _onMissingSym = toDelegate( callback );
             }
+
+            /++
+             Returns the currently active missing symbol callback.
+
+             This exists primarily as a means to save the current callback before
+             setting a new one. It's useful, for example, if the new callback needs
+             to delegate to the old one.
+            +/
+            MissingSymbolCallback missingSymbolCallback() {
+                return _onMissingSym;
+            }
         }
     }
 }

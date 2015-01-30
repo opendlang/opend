@@ -268,6 +268,17 @@ abstract class SharedLibLoader {
             void missingSymbolCallback( MissingSymbolCallbackFunc callback ) {
                 _lib.missingSymbolCallback = callback;
             }
+
+            /++
+             Returns the currently active missing symbol callback.
+
+             This exists primarily as a means to save the current callback before
+             setting a new one. It's useful, for example, if the new callback needs
+             to delegate to the old one.
+            +/
+            MissingSymbolCallback missingSymbolCallback() {
+                return _lib.missingSymbolCallback;
+            }
         }
     }
 

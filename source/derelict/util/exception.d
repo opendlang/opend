@@ -115,7 +115,7 @@ enum ShouldThrow {
 }
 
 /++
- The MissingSymbolCallback allows one to prevent the throwing of SymbolLoadExceptions.
+ The MissingSymbolCallback allows the user to prevent the throwing of SymbolLoadExceptions.
 
  By default, a SymbolLoadException is thrown when a symbol cannot be found in a shared
  library. Assigning a MissingSymbolCallback to a loader allows the application to override
@@ -129,3 +129,6 @@ enum ShouldThrow {
 alias MissingSymbolCallbackFunc = ShouldThrow function( string symbolName );
 /// Ditto
 alias MissingSymbolCallbackDg = ShouldThrow delegate( string symbolName );
+
+/// Convenient alias to use as a return value.
+alias MissingSymbolCallback = MissingSymbolCallbackDg;
