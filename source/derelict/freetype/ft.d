@@ -39,7 +39,7 @@ private {
     static if( Derelict_OS_Windows )
         enum libNames = "freetype.dll,libfreetype.dll,libfreetype-6.dll";
     else static if( Derelict_OS_Mac )
-        enum libNames = "libfreetype.dylib,libfreetype.6.dylib,libfreetype.6.3.16.dylib,/usr/X11/lib/libfreetype.dylib,/usr/X11/lib/libfreetype.6.dylib,/usr/X11/lib/libfreetype.6.3.16.dylib";
+        enum libNames = "libfreetype.dylib,libfreetype.6.dylib,libfreetype.6.3.16.dylib,/usr/X11/lib/libfreetype.dylib,/usr/X11/lib/libfreetype.6.dylib,/usr/X11/lib/libfreetype.6.3.16.dylib,/opt/X11/lib/libfreetype.dylib";
     else static if( Derelict_OS_Posix )
         enum libNames = "libfreetype.so.6,libfreetype.so";
     else
