@@ -26,7 +26,7 @@ void main()
     // write one float encoded in big-endian into an output range
     import std.array;
     ubyte[] arr;
-    auto app = appender(arr2);
+    auto app = appender(arr);
     writeBE!float(app, 1.2f);
 }
 

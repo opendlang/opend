@@ -2,13 +2,11 @@ module binrange;
 
 import std.range,
        std.traits;
-       //std.string,
-       //std.format;
 
 
 public
 {
-    void skipBytes(R)(ref R input, int numBytes) if (isInputRange!R) 
+    void skipBytes(R)(ref R input, int numBytes) if (isInputRange!R)
     {
         for (int i = 0; i < numBytes; ++i)
             popUbyte(input);
@@ -36,7 +34,7 @@ public
     void writeLE(T, R)(ref R output, T n) if (isOutputRange!(R, ubyte))
     {
         writeFunction!(T, R, true)(output, n);
-    }    
+    }
 
     /// Returns: A RIFF chunk header parsed from an input range.
     void readRIFFChunkHeader(R)(ref R input, out uint chunkId, out uint chunkSize) if (isInputRange!R)
@@ -56,7 +54,7 @@ public
     template RIFFChunkId(string id)
     {
         static assert(id.length == 4);
-        uint RIFFChunkId = (cast(ubyte)(id[0]) << 24) 
+        uint RIFFChunkId = (cast(ubyte)(id[0]) << 24)
                          | (cast(ubyte)(id[1]) << 16)
                          | (cast(ubyte)(id[2]) << 8)
                          | (cast(ubyte)(id[3]));
@@ -206,7 +204,7 @@ private
 
 unittest
 {
-    ubyte[] arr = [ 0x00, 0x01, 0x02, 0x03 , 
+    ubyte[] arr = [ 0x00, 0x01, 0x02, 0x03 ,
                     0x00, 0x01, 0x02, 0x03 ];
 
     assert(popLE!uint(arr) == 0x03020100);
