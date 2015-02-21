@@ -99,7 +99,7 @@ private
         return fi.i;
     }
 
-    double uint2double(ulong x) pure nothrow
+    double ulong2double(ulong x) pure nothrow
     {
         double_ulong fi;
         fi.i = x;
@@ -193,9 +193,9 @@ private
     {
         static if(isIntegral!T)
             return popInteger!(R, T.sizeof, isSigned!T, endian)(input);
-        else static if (is(T : float))
+        else static if (is(T == float))
             return uint2float(popInteger!(R, 4, false, endian)(input));
-        else static if (is(T : double))
+        else static if (is(T == double))
             return ulong2double(popInteger!(R, 8, false, endian)(input));
         else
             static assert(false, "Unsupported type " ~ T.stringof);
@@ -218,4 +218,10 @@ unittest
 }
 
 
-
+unittest
+{
+    ubyte[] arr = [0, 0, 0, 0, 0, 0, 0xe0, 0x3f];
+    assert(popLE!double(arr) == 0.5);
+    arr = [0, 0, 0, 0, 0, 0, 0xe0, 0xbf];
+    assert(popLE!double(arr) == -0.5);
+} 
