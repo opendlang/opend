@@ -129,14 +129,19 @@ version(Windows) {
 		}
 	}
 	
-    alias GetSpecialFolderPath = extern(Windows) BOOL function (HWND, wchar*, int, BOOL);
-    private GetSpecialFolderPath SHGetSpecialFolderPath = null;
-    
-    shared static this() 
-    {
-        HMODULE lib = LoadLibraryA("Shell32");
-        if (lib) {
-            SHGetSpecialFolderPath = cast(GetSpecialFolderPath)GetProcAddress(lib, "SHGetSpecialFolderPathW");
+    version(LinkedShell32) {
+        private extern(Windows) BOOL SHGetSpecialFolderPathW(HWND, wchar*, int, BOOL);
+        private alias SHGetSpecialFolderPath = SHGetSpecialFolderPathW;
+    } else {
+        private alias GetSpecialFolderPath = extern(Windows) BOOL function (HWND, wchar*, int, BOOL);
+        private GetSpecialFolderPath SHGetSpecialFolderPath = null;
+        
+        shared static this() 
+        {
+            HMODULE lib = LoadLibraryA("Shell32");
+            if (lib) {
+                SHGetSpecialFolderPath = cast(GetSpecialFolderPath)GetProcAddress(lib, "SHGetSpecialFolderPathW");
+            }
         }
     }
     
@@ -152,8 +157,12 @@ version(Windows) {
     
     string writablePath(StandardPath type)
     {
-        if (!SHGetSpecialFolderPath) {
-            return null;
+        version(LinkedShell32) {}
+        else
+        {
+            if (!SHGetSpecialFolderPath) {
+                return null;
+            }
         }
         
         wchar[MAX_PATH] buf;
@@ -190,8 +199,12 @@ version(Windows) {
     
     string[] standardPaths(StandardPath type)
     {
-        if (!SHGetSpecialFolderPath) {
-            return null;
+        version(LinkedShell32) {}
+        else
+        {
+            if (!SHGetSpecialFolderPath) {
+                return null;
+            }
         }
         
         string commonPath;
@@ -263,7 +276,8 @@ version(Windows) {
         if (err) {
             return null;
         } else {
-            ubyte[2048] path;
+            ubyte[2048] buf;
+            ubyte* path = buf.ptr;
             if (FSRefMakePath(&fsref, path, path.sizeof) == noErr) {
                 const(char)* cpath = cast(const(char)*)path;
                 return fromStringz(cpath).idup;

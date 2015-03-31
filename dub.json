@@ -8,5 +8,5 @@
     "targetPath" : "lib", 
     "targetType" : "library",
 
-    "subPackages" : ["./examples/printdirs", "./examples/findexecutable"]
+    "subPackages" : ["./examples/printdirs", "./examples/findexecutable"],
 }
