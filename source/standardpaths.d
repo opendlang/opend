@@ -12,6 +12,7 @@ version(Windows) {
     private {
         import std.c.windows.windows;
         import std.utf;
+		import std.algorithm : canFind;
     }
 } else version(OSX) {
     private {
@@ -64,6 +65,70 @@ version(Windows) {
 
 version(Windows) {
     
+	private {
+		enum {
+			CSIDL_DESKTOP            =  0,
+			CSIDL_INTERNET,
+			CSIDL_PROGRAMS,
+			CSIDL_CONTROLS,
+			CSIDL_PRINTERS,
+			CSIDL_PERSONAL,
+			CSIDL_FAVORITES,
+			CSIDL_STARTUP,
+			CSIDL_RECENT,
+			CSIDL_SENDTO,
+			CSIDL_BITBUCKET,
+			CSIDL_STARTMENU,      // = 11
+			CSIDL_MYMUSIC            = 13,
+			CSIDL_MYVIDEO,        // = 14
+			CSIDL_DESKTOPDIRECTORY   = 16,
+			CSIDL_DRIVES,
+			CSIDL_NETWORK,
+			CSIDL_NETHOOD,
+			CSIDL_FONTS,
+			CSIDL_TEMPLATES,
+			CSIDL_COMMON_STARTMENU,
+			CSIDL_COMMON_PROGRAMS,
+			CSIDL_COMMON_STARTUP,
+			CSIDL_COMMON_DESKTOPDIRECTORY,
+			CSIDL_APPDATA,
+			CSIDL_PRINTHOOD,
+			CSIDL_LOCAL_APPDATA,
+			CSIDL_ALTSTARTUP,
+			CSIDL_COMMON_ALTSTARTUP,
+			CSIDL_COMMON_FAVORITES,
+			CSIDL_INTERNET_CACHE,
+			CSIDL_COOKIES,
+			CSIDL_HISTORY,
+			CSIDL_COMMON_APPDATA,
+			CSIDL_WINDOWS,
+			CSIDL_SYSTEM,
+			CSIDL_PROGRAM_FILES,
+			CSIDL_MYPICTURES,
+			CSIDL_PROFILE,
+			CSIDL_SYSTEMX86,
+			CSIDL_PROGRAM_FILESX86,
+			CSIDL_PROGRAM_FILES_COMMON,
+			CSIDL_PROGRAM_FILES_COMMONX86,
+			CSIDL_COMMON_TEMPLATES,
+			CSIDL_COMMON_DOCUMENTS,
+			CSIDL_COMMON_ADMINTOOLS,
+			CSIDL_ADMINTOOLS,
+			CSIDL_CONNECTIONS,  // = 49
+			CSIDL_COMMON_MUSIC     = 53,
+			CSIDL_COMMON_PICTURES,
+			CSIDL_COMMON_VIDEO,
+			CSIDL_RESOURCES,
+			CSIDL_RESOURCES_LOCALIZED,
+			CSIDL_COMMON_OEM_LINKS,
+			CSIDL_CDBURN_AREA,  // = 59
+			CSIDL_COMPUTERSNEARME  = 61,
+			CSIDL_FLAG_DONT_VERIFY = 0x4000,
+			CSIDL_FLAG_CREATE      = 0x8000,
+			CSIDL_FLAG_MASK        = 0xFF00
+		}
+	}
+	
     alias GetSpecialFolderPath = extern(Windows) BOOL function (HWND, wchar*, int, BOOL);
     private GetSpecialFolderPath SHGetSpecialFolderPath = null;
     
@@ -78,7 +143,7 @@ version(Windows) {
     private string getCSIDLFolder(wchar* path, int csidl)
     {
         import core.stdc.wchar_ : wcslen;
-        if (SHGetSpecialFolderPath(0, path, csidl, FALSE)) {
+        if (SHGetSpecialFolderPath(null, path, csidl, FALSE)) {
             size_t len = wcslen(path);
             return toUTF8(path[0..len]);
         }
@@ -91,7 +156,8 @@ version(Windows) {
             return null;
         }
         
-        wchar path[MAX_PATH];
+        wchar[MAX_PATH] buf;
+		wchar* path = buf.ptr;
         
         final switch(type) {
             case StandardPath.Config:
@@ -129,7 +195,8 @@ version(Windows) {
         }
         
         string commonPath;
-        wchar path[MAX_PATH];
+        wchar[MAX_PATH] buf;
+		wchar* path = buf.ptr;
         
         switch(type) {
             case StandardPath.Config:
@@ -152,13 +219,15 @@ version(Windows) {
                 commonPath = getCSIDLFolder(path, CSIDL_COMMON_VIDEO);
                 break;
             case StandardPath.Templates:
-                commonPath getCSIDLFolder(path, CSIDL_COMMON_TEMPLATES);
+                commonPath = getCSIDLFolder(path, CSIDL_COMMON_TEMPLATES);
                 break;
             case StandardPath.Fonts:
                 commonPath = getCSIDLFolder(path, CSIDL_FONTS);
                 break;
             case StandardPath.Applications:
                 commonPath = getCSIDLFolder(path, CSIDL_COMMON_PROGRAMS);
+                break;
+            default:
                 break;
         }
         
@@ -173,8 +242,12 @@ version(Windows) {
     
     string[] executableExtensions() 
     {
-        string[] extensions = environment.get("PATHEXT").splitter(pathVarSeparator);
-        if (canFind!(filenameCmp)(extensions, ".exe") == false) {
+        static bool filenamesEqual(string first, string second) {
+            return filenameCmp(first, second) == 0;
+        }
+    
+        string[] extensions = environment.get("PATHEXT").splitter(pathVarSeparator).array;
+        if (canFind!(filenamesEqual)(extensions, ".exe") == false) {
             extensions = [".exe", ".com", ".bat", ".cmd"];
         }
         return extensions;
@@ -190,7 +263,7 @@ version(Windows) {
         if (err) {
             return null;
         } else {
-            ubyte path[2048];
+            ubyte[2048] path;
             if (FSRefMakePath(&fsref, path, path.sizeof) == noErr) {
                 const(char)* cpath = cast(const(char)*)path;
                 return fromStringz(cpath).idup;
@@ -471,8 +544,8 @@ private bool isExecutable(string filePath) {
     } else version(Windows) {
         //Use GetEffectiveRightsFromAclW?
         
-        const(string)[] exeExtenstions = executableExtensions();
-        foreach(ext; exeExtension) {
+        const(string)[] exeExtensions = executableExtensions();
+        foreach(ext; exeExtensions) {
             if (filePath.extension == ext)
                 return true;
         }

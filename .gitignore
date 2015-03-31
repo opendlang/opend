@@ -7,3 +7,5 @@ __dummy.html
 *.lib
 *.so
 *.dll
+*.exe
+bin

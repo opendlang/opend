@@ -19,9 +19,9 @@ int main()
     writeln("Templates: ", writablePath(StandardPath.Templates));
     writeln("Public: ", writablePath(StandardPath.PublicShare));
     
-    writeln("Config dirs: ", standardPaths(StandardPath.Config));
-    writeln("Data dirs: ", standardPaths(StandardPath.Data));
-    writeln("Font dirs: ", standardPaths(StandardPath.Fonts));
+    writefln("Config dirs: %-(%s, %)", standardPaths(StandardPath.Config));
+    writefln("Data dirs: %-(%s, %)", standardPaths(StandardPath.Data));
+    writefln("Font dirs: %-(%s, %)", standardPaths(StandardPath.Fonts));
     
     version(Windows) {
         
