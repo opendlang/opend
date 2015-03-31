@@ -1,0 +1,12 @@
+{
+    "name" : "standardpaths", 
+    "description" : "Library for getting standard paths", 
+    "license" : "BSL-1.0", 
+    "authors" : ["Roman Chistokhodov"], 
+
+    "targetName" : "standardpaths", 
+    "targetPath" : "lib", 
+    "targetType" : "library",
+
+    "subPackages" : ["./examples/printdirs", "./examples/findexecutable"]
+}
