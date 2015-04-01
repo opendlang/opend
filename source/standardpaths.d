@@ -12,7 +12,7 @@ version(Windows) {
     private {
         import std.c.windows.windows;
         import std.utf;
-		import std.algorithm : canFind;
+        import std.algorithm : canFind;
     }
 } else version(OSX) {
     private {
@@ -50,6 +50,13 @@ string homeDir()
     version(Windows) {
         //Use GetUserProfileDirectoryW from Userenv.dll?
         string home = environment.get("USERPROFILE");
+        if (home.empty) {
+            string homeDrive = environment.get("HOMEDRIVE");
+            string homePath = environment.get("HOMEPATH");
+            if (homeDrive.length && homePath.length) {
+                home = homeDrive ~ homePath;
+            }
+        }
         return home;
     } else {
         string home = environment.get("HOME");
@@ -65,90 +72,96 @@ version(Windows) {
 
 version(Windows) {
     
-	private {
-		enum {
-			CSIDL_DESKTOP            =  0,
-			CSIDL_INTERNET,
-			CSIDL_PROGRAMS,
-			CSIDL_CONTROLS,
-			CSIDL_PRINTERS,
-			CSIDL_PERSONAL,
-			CSIDL_FAVORITES,
-			CSIDL_STARTUP,
-			CSIDL_RECENT,
-			CSIDL_SENDTO,
-			CSIDL_BITBUCKET,
-			CSIDL_STARTMENU,      // = 11
-			CSIDL_MYMUSIC            = 13,
-			CSIDL_MYVIDEO,        // = 14
-			CSIDL_DESKTOPDIRECTORY   = 16,
-			CSIDL_DRIVES,
-			CSIDL_NETWORK,
-			CSIDL_NETHOOD,
-			CSIDL_FONTS,
-			CSIDL_TEMPLATES,
-			CSIDL_COMMON_STARTMENU,
-			CSIDL_COMMON_PROGRAMS,
-			CSIDL_COMMON_STARTUP,
-			CSIDL_COMMON_DESKTOPDIRECTORY,
-			CSIDL_APPDATA,
-			CSIDL_PRINTHOOD,
-			CSIDL_LOCAL_APPDATA,
-			CSIDL_ALTSTARTUP,
-			CSIDL_COMMON_ALTSTARTUP,
-			CSIDL_COMMON_FAVORITES,
-			CSIDL_INTERNET_CACHE,
-			CSIDL_COOKIES,
-			CSIDL_HISTORY,
-			CSIDL_COMMON_APPDATA,
-			CSIDL_WINDOWS,
-			CSIDL_SYSTEM,
-			CSIDL_PROGRAM_FILES,
-			CSIDL_MYPICTURES,
-			CSIDL_PROFILE,
-			CSIDL_SYSTEMX86,
-			CSIDL_PROGRAM_FILESX86,
-			CSIDL_PROGRAM_FILES_COMMON,
-			CSIDL_PROGRAM_FILES_COMMONX86,
-			CSIDL_COMMON_TEMPLATES,
-			CSIDL_COMMON_DOCUMENTS,
-			CSIDL_COMMON_ADMINTOOLS,
-			CSIDL_ADMINTOOLS,
-			CSIDL_CONNECTIONS,  // = 49
-			CSIDL_COMMON_MUSIC     = 53,
-			CSIDL_COMMON_PICTURES,
-			CSIDL_COMMON_VIDEO,
-			CSIDL_RESOURCES,
-			CSIDL_RESOURCES_LOCALIZED,
-			CSIDL_COMMON_OEM_LINKS,
-			CSIDL_CDBURN_AREA,  // = 59
-			CSIDL_COMPUTERSNEARME  = 61,
-			CSIDL_FLAG_DONT_VERIFY = 0x4000,
-			CSIDL_FLAG_CREATE      = 0x8000,
-			CSIDL_FLAG_MASK        = 0xFF00
-		}
-	}
-	
-    version(LinkedShell32) {
-        private extern(Windows) BOOL SHGetSpecialFolderPathW(HWND, wchar*, int, BOOL);
-        private alias SHGetSpecialFolderPath = SHGetSpecialFolderPathW;
-    } else {
-        private alias GetSpecialFolderPath = extern(Windows) BOOL function (HWND, wchar*, int, BOOL);
-        private GetSpecialFolderPath SHGetSpecialFolderPath = null;
+    private {
+        enum {
+            CSIDL_DESKTOP            =  0,
+            CSIDL_INTERNET,
+            CSIDL_PROGRAMS,
+            CSIDL_CONTROLS,
+            CSIDL_PRINTERS,
+            CSIDL_PERSONAL,
+            CSIDL_FAVORITES,
+            CSIDL_STARTUP,
+            CSIDL_RECENT,
+            CSIDL_SENDTO,
+            CSIDL_BITBUCKET,
+            CSIDL_STARTMENU,      // = 11
+            CSIDL_MYMUSIC            = 13,
+            CSIDL_MYVIDEO,        // = 14
+            CSIDL_DESKTOPDIRECTORY   = 16,
+            CSIDL_DRIVES,
+            CSIDL_NETWORK,
+            CSIDL_NETHOOD,
+            CSIDL_FONTS,
+            CSIDL_TEMPLATES,
+            CSIDL_COMMON_STARTMENU,
+            CSIDL_COMMON_PROGRAMS,
+            CSIDL_COMMON_STARTUP,
+            CSIDL_COMMON_DESKTOPDIRECTORY,
+            CSIDL_APPDATA,
+            CSIDL_PRINTHOOD,
+            CSIDL_LOCAL_APPDATA,
+            CSIDL_ALTSTARTUP,
+            CSIDL_COMMON_ALTSTARTUP,
+            CSIDL_COMMON_FAVORITES,
+            CSIDL_INTERNET_CACHE,
+            CSIDL_COOKIES,
+            CSIDL_HISTORY,
+            CSIDL_COMMON_APPDATA,
+            CSIDL_WINDOWS,
+            CSIDL_SYSTEM,
+            CSIDL_PROGRAM_FILES,
+            CSIDL_MYPICTURES,
+            CSIDL_PROFILE,
+            CSIDL_SYSTEMX86,
+            CSIDL_PROGRAM_FILESX86,
+            CSIDL_PROGRAM_FILES_COMMON,
+            CSIDL_PROGRAM_FILES_COMMONX86,
+            CSIDL_COMMON_TEMPLATES,
+            CSIDL_COMMON_DOCUMENTS,
+            CSIDL_COMMON_ADMINTOOLS,
+            CSIDL_ADMINTOOLS,
+            CSIDL_CONNECTIONS,  // = 49
+            CSIDL_COMMON_MUSIC     = 53,
+            CSIDL_COMMON_PICTURES,
+            CSIDL_COMMON_VIDEO,
+            CSIDL_RESOURCES,
+            CSIDL_RESOURCES_LOCALIZED,
+            CSIDL_COMMON_OEM_LINKS,
+            CSIDL_CDBURN_AREA,  // = 59
+            CSIDL_COMPUTERSNEARME  = 61,
+            CSIDL_FLAG_DONT_VERIFY = 0x4000,
+            CSIDL_FLAG_CREATE      = 0x8000,
+            CSIDL_FLAG_MASK        = 0xFF00
+        }
+    }
+    
+    private  {
+        alias GetSpecialFolderPath = extern(Windows) BOOL function (HWND, wchar*, int, BOOL);
         
+        version(LinkedShell32) {
+            extern(Windows) BOOL SHGetSpecialFolderPathW(HWND, wchar*, int, BOOL);
+            GetSpecialFolderPath ptrSHGetSpecialFolderPath = &SHGetSpecialFolderPathW;
+        } else {
+            GetSpecialFolderPath ptrSHGetSpecialFolderPath = null;
+        }
+    }
+    
+    version(LinkedShell32) {} else {
         shared static this() 
         {
             HMODULE lib = LoadLibraryA("Shell32");
             if (lib) {
-                SHGetSpecialFolderPath = cast(GetSpecialFolderPath)GetProcAddress(lib, "SHGetSpecialFolderPathW");
+                ptrSHGetSpecialFolderPath = cast(GetSpecialFolderPath)GetProcAddress(lib, "SHGetSpecialFolderPathW");
             }
         }
     }
     
+    
     private string getCSIDLFolder(wchar* path, int csidl)
     {
         import core.stdc.wchar_ : wcslen;
-        if (SHGetSpecialFolderPath(null, path, csidl, FALSE)) {
+        if (ptrSHGetSpecialFolderPath(null, path, csidl, FALSE)) {
             size_t len = wcslen(path);
             return toUTF8(path[0..len]);
         }
@@ -157,16 +170,12 @@ version(Windows) {
     
     string writablePath(StandardPath type)
     {
-        version(LinkedShell32) {}
-        else
-        {
-            if (!SHGetSpecialFolderPath) {
-                return null;
-            }
+        if (!ptrSHGetSpecialFolderPath) {
+            return null;
         }
         
         wchar[MAX_PATH] buf;
-		wchar* path = buf.ptr;
+        wchar* path = buf.ptr;
         
         final switch(type) {
             case StandardPath.Config:
@@ -199,17 +208,13 @@ version(Windows) {
     
     string[] standardPaths(StandardPath type)
     {
-        version(LinkedShell32) {}
-        else
-        {
-            if (!SHGetSpecialFolderPath) {
-                return null;
-            }
+        if (!ptrSHGetSpecialFolderPath) {
+            return null;
         }
         
         string commonPath;
         wchar[MAX_PATH] buf;
-		wchar* path = buf.ptr;
+        wchar* path = buf.ptr;
         
         switch(type) {
             case StandardPath.Config:
@@ -345,10 +350,15 @@ version(Windows) {
     
 } else {
     
+    //Concat two paths, but if the first one is empty, then null string is returned.
+    private string homeConcat(string home, string path) {
+        return home.empty ? null : home ~ path;
+    }
+    
     private string xdgBaseDir(in char[] envvar, string fallback) {
         string dir = environment.get(envvar);
         if (!dir.length) {
-            dir = homeDir() ~ fallback;
+            dir = homeConcat(homeDir(), fallback);
         }
         return dir;
     }
@@ -360,6 +370,7 @@ version(Windows) {
         
         string configDir = writablePath(StandardPath.Config);
         string fileName = configDir ~ "/user-dirs.dirs";
+        string home = homeDir();
         try {
             auto f = File(fileName, "r");
             
@@ -379,7 +390,7 @@ version(Windows) {
                         }
                         
                         if (line.startsWith("$HOME")) {
-                            return homeDir() ~ assumeUnique(line[5..$]);
+                            return homeConcat(home, assumeUnique(line[5..$]));
                         }
                         if (line.length == 0 || line[0] != '/') {
                             continue;
@@ -393,7 +404,7 @@ version(Windows) {
             
         }
         
-        return homeDir() ~ fallback;
+        return homeConcat(home, fallback);
     }
     
     private string[] xdgConfigDirs() {
@@ -415,6 +426,7 @@ version(Windows) {
     }
     
     private string[] fontPaths() {
+        //Should be changed in future since std.xml is deprecated
         import std.xml;
         
         string[] paths;
