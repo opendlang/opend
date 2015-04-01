@@ -1,3 +1,8 @@
+/**
+ * Functions for retrieving standard paths in cross-platform manner.
+ * 
+ */
+
 module standardpaths;
 
 private {
@@ -28,7 +33,11 @@ version(Windows) {
     static assert(false, "Unsupported platform");
 }
 
-///Locations that can be used in writablePath and standardPaths functions
+/** 
+ * Locations that can be passed to writablePath and standardPaths functions.
+ * See_Also:
+ *  writablePath, standardPaths
+ */
 enum StandardPath {
     Data,   ///Location of persisted application data
     Config, ///Location of configuration files
@@ -45,24 +54,50 @@ enum StandardPath {
     Applications, ///User's applications
 }
 
-string homeDir()
+/**
+ * Returns: path to user home directory, or an empty string if could not determine home directory.
+ * Note: this function does not provide caching of its results.
+ */
+string homeDir() nothrow
 {
-    version(Windows) {
-        //Use GetUserProfileDirectoryW from Userenv.dll?
-        string home = environment.get("USERPROFILE");
-        if (home.empty) {
-            string homeDrive = environment.get("HOMEDRIVE");
-            string homePath = environment.get("HOMEPATH");
-            if (homeDrive.length && homePath.length) {
-                home = homeDrive ~ homePath;
+    try { //environment.get may throw on Windows
+        version(Windows) {
+            //Use GetUserProfileDirectoryW from Userenv.dll?
+            string home = environment.get("USERPROFILE");
+            if (home.empty) {
+                string homeDrive = environment.get("HOMEDRIVE");
+                string homePath = environment.get("HOMEPATH");
+                if (homeDrive.length && homePath.length) {
+                    home = homeDrive ~ homePath;
+                }
             }
+            return home;
+        } else {
+            string home = environment.get("HOME");
+            return home;
         }
-        return home;
-    } else {
-        string home = environment.get("HOME");
-        return home;
+    }
+    catch(Exception e) {
+        return null;
     }
 }
+
+/**
+ * Returns: path where files of $(U type) should be written to by current user, or an empty string if could not determine path.
+ * This function does not ensure if the returned path exists and appears to be accessible directory.
+ * Note: this function does not provide caching of its results.
+ */
+string writablePath(StandardPath type);
+
+/**
+ * Returns: array of paths where file of $(U type) belong including one returned by $(B writablePath), or empty array if no paths for $(U type) are defined.
+ * This function does not ensure if all returned paths exist and appear to be accessible directories.
+ * Note: this function does not provide caching of its results. 
+ * It may cause performance impact to call this function often since retrieving some paths can be expensive operation.
+ * See_Also:
+ *  writablePath
+ */
+string[] standardPaths(StandardPath type);
 
 version(Windows) {
     private enum pathVarSeparator = ';';
@@ -258,7 +293,7 @@ version(Windows) {
         return paths;
     }
     
-    string[] executableExtensions() 
+    private string[] executableExtensions() 
     {
         static bool filenamesEqual(string first, string second) {
             return filenameCmp(first, second) == 0;
@@ -351,7 +386,8 @@ version(Windows) {
 } else {
     
     //Concat two paths, but if the first one is empty, then null string is returned.
-    private string homeConcat(string home, string path) {
+    private string homeConcat(string home, string path) nothrow
+    {
         return home.empty ? null : home ~ path;
     }
     
@@ -403,8 +439,9 @@ version(Windows) {
         catch(Exception e) {
             
         }
-        
-        return homeConcat(home, fallback);
+        if (fallback.length)
+            return homeConcat(home, fallback);
+        return null;
     }
     
     private string[] xdgConfigDirs() {
@@ -425,44 +462,63 @@ version(Windows) {
         }
     }
     
-    private string[] fontPaths() {
+    private string[] readFontsConfig(string configFile) nothrow
+    {
         //Should be changed in future since std.xml is deprecated
         import std.xml;
         
         string[] paths;
-        
-        string[] configs = [homeDir() ~ "/.fonts.conf", "/etc/fonts/fonts.conf"];
-        
-        foreach(config; configs) {
-            try {
-                string contents = cast(string)read(config);
-                check(contents);
-                auto parser = new DocumentParser(contents);
-                parser.onEndTag["dir"] = (in Element xml)
-                {
-                    string path = xml.text;
-                    
-                    if (path.length && path[0] == '~') {
-                        path = homeDir() ~ path[1..$];
-                    } else {
-                        const(string)* prefix = "prefix" in xml.tag.attr;
-                        if (prefix && *prefix == "xdg") {
-                            path = buildPath(writablePath(StandardPath.Data), path);
+        try {
+            string contents = cast(string)read(configFile);
+            check(contents);
+            auto parser = new DocumentParser(contents);
+            parser.onEndTag["dir"] = (in Element xml)
+            {
+                string path = xml.text;
+                
+                if (path.length && path[0] == '~') {
+                    path = homeConcat(homeDir(), path[1..$]);
+                } else {
+                    const(string)* prefix = "prefix" in xml.tag.attr;
+                    if (prefix && *prefix == "xdg") {
+                        string dataPath = writablePath(StandardPath.Data);
+                        if (dataPath.length) {
+                            path = buildPath(dataPath, path);
                         }
                     }
+                }
+                if (path.length) {
                     paths ~= path;
-                };
-                parser.parse();
-            }
-            catch(Exception e) {
-                
-            }
+                }
+            };
+            parser.parse();
+        }
+        catch(Exception e) {
+            
         }
         return paths;
     }
     
+    private string[] fontPaths() nothrow
+    {
+        
+        string[] paths;
+        string[] configs = [homeConcat(homeDir(), "/.fonts"), "/etc/fonts/fonts.conf", "/usr/local/etc/fonts/fonts.conf"];
+        
+        foreach(config; configs) {
+            paths ~= readFontsConfig(config);
+        }
+        return paths;
+    }
+    
+    /**
+     * Returns user's runtime directory determined by $(B XDG_RUNTIME_DIR) environment variable. 
+     * If directory does not exist it tries to create one with appropriate permissions. On fail returns an empty string.
+     */
     string runtimeDir() 
     {
+        // Do we need it on BSD systems?
+        
         import core.sys.posix.pwd;
         import core.sys.posix.unistd;
         import core.sys.posix.sys.stat;
@@ -537,12 +593,8 @@ version(Windows) {
             case StandardPath.PublicShare:
                 return xdgUserDir("PUBLICSHARE", "/Public");
             case StandardPath.Fonts:
-            {
-                string[] paths = fontPaths();
-                if (paths.length)
-                    return paths[0];
-                return null;
-            }
+                return homeConcat(homeDir(), "/.fonts");
+                
             case StandardPath.Applications:
                 return null;
         }
@@ -560,7 +612,11 @@ version(Windows) {
             return fontPaths();
         }
         
-        return writablePath(type) ~ paths;
+        string userPath = writablePath(type);
+        if (userPath.length) {
+            paths = userPath ~ paths;
+        }
+        return paths;
     }
 }
 
@@ -595,6 +651,14 @@ private string checkExecutable(string filePath) {
     }
 }
 
+/**
+ * Finds executable by $(B fileName) in the paths specified by $(B paths).
+ * Returns: absolute path to the existing executable file or an empty string if not found.
+ * Params:
+ *  fileName = name of executable to search
+ *  paths = array of directories where executable should be searched. If not set, search in system paths, usually determined by PATH environment variable
+ * Note: on Windows when fileName extension is omitted, executable extensions will be automatically appended during search.
+ */
 string findExecutable(string fileName, in string[] paths = [])
 {
     if (fileName.isAbsolute()) {

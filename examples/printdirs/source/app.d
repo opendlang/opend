@@ -30,8 +30,8 @@ int main()
         writefln("Executable extenstions: %(%s, %)", executableExtensions());
     } else version(OSX) {
         
-    } else version(Posix) {
-        writeln("\nSpecific functions for Posix:");
+    } else version(linux) {
+        writeln("\nSpecific functions for Linux:");
         writeln("Runtime: ", runtimeDir());
     }
     
