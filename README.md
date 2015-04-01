@@ -2,9 +2,9 @@
 
 D library for getting standard paths (e.g. Pictures, Music, Documents). Inspired by QStandardPaths from Qt.
 
-The library is in early development. API may change in future.
+The library is in early development. API may change in future. Join discussions in Issues if you're interested.
 
-Currently works on Windows and Linux (and probably FreeBSD).
+Currently works on Windows, Linux and FreeBSD.
 
 ## Examples
 
@@ -18,9 +18,7 @@ Prints some standard paths to stdout.
 
 Take name of executable as command line argument and search PATH environment variable for retrieving absolute path to file.
 
-    dub build standardpaths:findexecutable --build=release
-    examples\findexecutable\bin\findexecutable cmd # on Windows
-    ./examples/findexecutable/bin/findexecutable chmod # on Linux
+    dub run standardpaths:findexecutable --build=release -- whoami
 
 ## Implementation details   
 
