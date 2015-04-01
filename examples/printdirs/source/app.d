@@ -26,8 +26,7 @@ int main()
     writefln("Font dirs: %-(%s, %)", standardPaths(StandardPath.Fonts));
     
     version(Windows) {
-        writeln("\nSpecific functions for Windows:");
-        writefln("Executable extenstions: %(%s, %)", executableExtensions());
+        
     } else version(OSX) {
         
     } else version(linux) {
