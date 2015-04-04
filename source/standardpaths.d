@@ -18,6 +18,7 @@ version(Windows) {
         import std.c.windows.windows;
         import std.utf;
         import std.algorithm : canFind;
+        import std.uni : toLower, sicmp;
     }
 } else version(OSX) {
     private {
@@ -660,7 +661,7 @@ private bool isExecutable(string filePath) {
         
         const(string)[] exeExtensions = executableExtensions();
         foreach(ext; exeExtensions) {
-            if (filePath.extension == ext)
+            if (sicmp(filePath.extension, ext) == 0)
                 return true;
         }
         return false;
@@ -670,7 +671,7 @@ private bool isExecutable(string filePath) {
     }
 }
 
-private string checkExecutable(string filePath) {
+private string checkExecutable(string filePath) nothrow {
     try {
         if (filePath.isFile && filePath.isExecutable) {
             return buildNormalizedPath(filePath);
@@ -678,7 +679,7 @@ private string checkExecutable(string filePath) {
             return null;
         }
     }
-    catch(FileException e) {
+    catch(Exception e) {
         return null;
     }
 }
@@ -716,7 +717,7 @@ string findExecutable(string fileName, in string[] paths = [])
         version(Windows) {
             if (candidate.extension.empty) {
                 foreach(exeExtension; executableExtensions()) {
-                    toReturn = checkExecutable(setExtension(candidate, exeExtension));
+                    toReturn = checkExecutable(setExtension(candidate, exeExtension.toLower()));
                     if (toReturn.length) {
                         return toReturn;
                     }
