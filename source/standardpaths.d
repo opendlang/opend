@@ -92,7 +92,7 @@ string writablePath(StandardPath type);
 /**
  * Returns: array of paths where file of $(U type) belong including one returned by $(B writablePath), or empty array if no paths for $(U type) are defined.
  * This function does not ensure if all returned paths exist and appear to be accessible directories.
- * Note: this function does not provide caching of its results. 
+ * Note: this function does not provide caching of its results. Also returned strings are not required to be unique.
  * It may cause performance impact to call this function often since retrieving some paths can be expensive operation.
  * See_Also:
  *  writablePath
@@ -176,9 +176,9 @@ version(Windows) {
         
         version(LinkedShell32) {
             extern(Windows) BOOL SHGetSpecialFolderPathW(HWND, wchar*, int, BOOL);
-            GetSpecialFolderPath ptrSHGetSpecialFolderPath = &SHGetSpecialFolderPathW;
+            __gshared GetSpecialFolderPath ptrSHGetSpecialFolderPath = &SHGetSpecialFolderPathW;
         } else {
-            GetSpecialFolderPath ptrSHGetSpecialFolderPath = null;
+            __gshared GetSpecialFolderPath ptrSHGetSpecialFolderPath = null;
         }
     }
     
@@ -385,24 +385,22 @@ version(Windows) {
     
 } else {
     
-    //Concat two paths, but if the first one is empty, then null string is returned.
-    private string homeConcat(string home, string path) nothrow
+    //Concat two strings, but if the first one is empty, then null string is returned.
+    private string maybeConcat(string start, string path) nothrow
     {
-        return home.empty ? null : home ~ path;
+        return start.empty ? null : start ~ path;
     }
     
     private string xdgBaseDir(in char[] envvar, string fallback) {
         string dir = environment.get(envvar);
         if (!dir.length) {
-            dir = homeConcat(homeDir(), fallback);
+            dir = maybeConcat(homeDir(), fallback);
         }
         return dir;
     }
     
-    private string xdgUserDir(in char[] key, string fallback) {
+    private string xdgUserDir(in char[] key, string fallback = null) {
         import std.algorithm : startsWith, countUntil;
-        
-        //Read /etc/xdg/user-dirs.defaults for fallbacks?
         
         string configDir = writablePath(StandardPath.Config);
         string fileName = configDir ~ "/user-dirs.dirs";
@@ -426,7 +424,7 @@ version(Windows) {
                         }
                         
                         if (line.startsWith("$HOME")) {
-                            return homeConcat(home, assumeUnique(line[5..$]));
+                            return maybeConcat(home, assumeUnique(line[5..$]));
                         }
                         if (line.length == 0 || line[0] != '/') {
                             continue;
@@ -435,12 +433,31 @@ version(Windows) {
                     }
                 }
             }
-        }
-        catch(Exception e) {
+        } catch(Exception e) {
             
         }
-        if (fallback.length)
-            return homeConcat(home, fallback);
+        
+        if (home.length) {
+            if (fallback.length) {
+                return home ~ fallback;
+            }
+            try {
+                auto f = File("/etc/xdg/user-dirs.defaults", "r");
+                char[] buf;
+                while(f.readln(buf)) {
+                    char[] line = buf[0..$-1];
+                    if (line.startsWith(key)) {
+                        ptrdiff_t index = line.countUntil('=');
+                        if (index != -1) {
+                            line = line[index+1..$];
+                            return home ~ "/" ~ assumeUnique(line);
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                
+            }
+        }
         return null;
     }
     
@@ -458,7 +475,7 @@ version(Windows) {
         if (dataDirs.length) {
             return splitter(dataDirs, pathVarSeparator).array;
         } else {
-            return ["/usr/local/share/", "/usr/share/"];
+            return ["/usr/local/share", "/usr/share"];
         }
     }
     
@@ -477,7 +494,7 @@ version(Windows) {
                 string path = xml.text;
                 
                 if (path.length && path[0] == '~') {
-                    path = homeConcat(homeDir(), path[1..$]);
+                    path = maybeConcat(homeDir(), path[1..$]);
                 } else {
                     const(string)* prefix = "prefix" in xml.tag.attr;
                     if (prefix && *prefix == "xdg") {
@@ -499,21 +516,31 @@ version(Windows) {
         return paths;
     }
     
-    private string[] fontPaths() nothrow
+    private string[] fontPaths() 
     {
-        
         string[] paths;
-        string[] configs = [homeConcat(homeDir(), "/.fonts"), "/etc/fonts/fonts.conf", "/usr/local/etc/fonts/fonts.conf"];
         
+        string homeConfig = homeFontsConfig();
+        if (homeConfig.length) {
+            paths ~= readFontsConfig(homeConfig);
+        }
+        
+        enum configs = ["/etc/fonts/fonts.conf", //path on linux
+                        "/usr/local/etc/fonts/fonts.conf"]; //path on freebsd
         foreach(config; configs) {
             paths ~= readFontsConfig(config);
         }
         return paths;
     }
     
+    private string homeFontsConfig() {
+        return maybeConcat(writablePath(StandardPath.Config), "/fontconfig/fonts.conf");
+    }
+    
     /**
      * Returns user's runtime directory determined by $(B XDG_RUNTIME_DIR) environment variable. 
      * If directory does not exist it tries to create one with appropriate permissions. On fail returns an empty string.
+     * Note: this function is defined only on $(B Posix) systems (except for OS X)
      */
     string runtimeDir() 
     {
@@ -579,21 +606,26 @@ version(Windows) {
             case StandardPath.Desktop:
                 return xdgUserDir("DESKTOP", "/Desktop");
             case StandardPath.Documents:
-                return xdgUserDir("DOCUMENTS", "/Documents");
+                return xdgUserDir("DOCUMENTS");
             case StandardPath.Pictures:
-                return xdgUserDir("PICTURES", "/Pictures");
+                return xdgUserDir("PICTURES");
             case StandardPath.Music:
-                return xdgUserDir("MUSIC", "/Music");
+                return xdgUserDir("MUSIC");
             case StandardPath.Videos:
-                return xdgUserDir("VIDEOS", "/Videos");
+                return xdgUserDir("VIDEOS");
             case StandardPath.Download:
-                return xdgUserDir("DOWNLOAD", "/Downloads");
+                return xdgUserDir("DOWNLOAD");
             case StandardPath.Templates:
                 return xdgUserDir("TEMPLATES", "/Templates");
             case StandardPath.PublicShare:
                 return xdgUserDir("PUBLICSHARE", "/Public");
             case StandardPath.Fonts:
-                return homeConcat(homeDir(), "/.fonts");
+            {
+                string[] paths = readFontsConfig(homeFontsConfig());
+                if (paths.length)
+                    return paths[0];
+                return null;
+            }
                 
             case StandardPath.Applications:
                 return null;

@@ -5,7 +5,7 @@ int main()
 {
     writeln("Home: ", homeDir());
     
-    writeln("\nUser dirs:");
+    writeln("\nUser directories");
     writeln("Config: ", writablePath(StandardPath.Config));
     writeln("Cache: ", writablePath(StandardPath.Cache));
     writeln("Data: ", writablePath(StandardPath.Data));
@@ -20,10 +20,15 @@ int main()
     writeln("Templates: ", writablePath(StandardPath.Templates));
     writeln("Public: ", writablePath(StandardPath.PublicShare));
     
-    writeln("\nSystem dirs:");
+    writeln("Fonts: ", writablePath(StandardPath.Fonts));
+    writeln("Applications: ", writablePath(StandardPath.Applications));
+    
+    writeln("\nSystem directories");
     writefln("Config dirs: %-(%s, %)", standardPaths(StandardPath.Config));
+    writefln("Cache dirs: %-(%s, %)", standardPaths(StandardPath.Cache));
     writefln("Data dirs: %-(%s, %)", standardPaths(StandardPath.Data));
     writefln("Font dirs: %-(%s, %)", standardPaths(StandardPath.Fonts));
+    writefln("Applications dirs: %-(%s, %)", standardPaths(StandardPath.Applications));
     
     version(Windows) {
         
