@@ -665,7 +665,6 @@ version(Windows) {
                     return paths[0];
                 return null;
             }
-                
             case StandardPath.Applications:
                 return maybeConcat(writablePath(StandardPath.Data), "/applications");
         }
@@ -675,14 +674,20 @@ version(Windows) {
     {
         string[] paths;
         
-        if (type == StandardPath.Data) {
-            paths = xdgDataDirs();
-        } else if (type == StandardPath.Config) {
-            paths = xdgConfigDirs();
-        } else if (type == StandardPath.Applications) {
-            paths = ["/usr/local/share/applications", "/usr/share/applications"];
-        } else if (type == StandardPath.Fonts) {
-            return fontPaths();
+        switch(type) {
+            case StandardPath.Data:
+                paths = xdgDataDirs();
+                break;
+            case StandardPath.Config:
+                paths = xdgConfigDirs();
+                break;
+            case StandardPath.Applications:
+                paths = ["/usr/local/share/applications", "/usr/share/applications"];
+                break;
+            case StandardPath.Fonts:
+                return fontPaths();
+            default:
+                break;
         }
         
         string userPath = writablePath(type);
