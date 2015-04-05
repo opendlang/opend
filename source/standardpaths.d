@@ -355,7 +355,7 @@ version(Windows) {
         }
     }
     
-    string writablePath(StandardPath type) nothrow
+    string writablePath(StandardPath type) nothrow @safe
     {
         final switch(type) {
             case StandardPath.Config:
@@ -387,7 +387,7 @@ version(Windows) {
         }
     }
     
-    string[] standardPaths(StandardPath type) nothrow
+    string[] standardPaths(StandardPath type) nothrow @safe
     {
         string commonPath;
         
@@ -414,12 +414,12 @@ version(Windows) {
 } else {
     
     //Concat two strings, but if the first one is empty, then null string is returned.
-    private string maybeConcat(string start, string path) nothrow
+    private string maybeConcat(string start, string path) nothrow @safe
     {
         return start.empty ? null : start ~ path;
     }
     
-    private string xdgBaseDir(in char[] envvar, string fallback) nothrow {
+    private string xdgBaseDir(in char[] envvar, string fallback) nothrow @trusted {
         string dir = assumeWontThrow(environment.get(envvar));
         if (!dir.length) {
             dir = maybeConcat(homeDir(), fallback);
@@ -427,7 +427,7 @@ version(Windows) {
         return dir;
     }
     
-    private string xdgUserDir(in char[] key, string fallback = null) nothrow {
+    private string xdgUserDir(in char[] key, string fallback = null) nothrow @trusted {
         import std.algorithm : startsWith, countUntil;
         
         string configDir = writablePath(StandardPath.Config);
@@ -489,7 +489,7 @@ version(Windows) {
         return null;
     }
     
-    private string[] xdgConfigDirs() nothrow {
+    private string[] xdgConfigDirs() nothrow @trusted {
         string configDirs = assumeWontThrow(environment.get("XDG_CONFIG_DIRS"));
         try {
             if (configDirs.length) {
@@ -502,7 +502,7 @@ version(Windows) {
         return ["/etc/xdg"];
     }
     
-    private string[] xdgDataDirs() nothrow {
+    private string[] xdgDataDirs() nothrow @trusted {
         string dataDirs = assumeWontThrow(environment.get("XDG_DATA_DIRS"));
         try {
             if (dataDirs.length) {
@@ -514,7 +514,7 @@ version(Windows) {
         return ["/usr/local/share", "/usr/share"];
     }
     
-    private string[] readFontsConfig(string configFile) nothrow
+    private string[] readFontsConfig(string configFile) nothrow @trusted
     {
         //Should be changed in future since std.xml is deprecated
         import std.xml;
@@ -551,7 +551,7 @@ version(Windows) {
         return paths;
     }
     
-    private string[] fontPaths() nothrow
+    private string[] fontPaths() nothrow @trusted
     {
         string[] paths;
         
@@ -568,7 +568,7 @@ version(Windows) {
         return paths;
     }
     
-    private string homeFontsConfig() nothrow {
+    private string homeFontsConfig() nothrow @trusted {
         return maybeConcat(writablePath(StandardPath.Config), "/fontconfig/fonts.conf");
     }
     
@@ -577,7 +577,7 @@ version(Windows) {
      * If directory does not exist it tries to create one with appropriate permissions. On fail returns an empty string.
      * Note: this function is defined only on $(B Posix) systems (except for OS X)
      */
-    string runtimeDir() nothrow
+    string runtimeDir() nothrow @trusted
     {
         // Do we need it on BSD systems?
         
@@ -633,7 +633,7 @@ version(Windows) {
         return runtime;
     }
     
-    string writablePath(StandardPath type) nothrow
+    string writablePath(StandardPath type) nothrow @safe
     {
         final switch(type) {
             case StandardPath.Config:
@@ -671,7 +671,7 @@ version(Windows) {
         }
     }
     
-    string[] standardPaths(StandardPath type) nothrow
+    string[] standardPaths(StandardPath type) nothrow @safe
     {
         string[] paths;
         
@@ -691,7 +691,7 @@ version(Windows) {
     }
 }
 
-private bool isExecutable(string filePath) nothrow @safe {
+private bool isExecutable(string filePath) nothrow @trusted {
     try {
         version(Posix) {
             return (getAttributes(filePath) & octal!100) != 0;
@@ -713,7 +713,7 @@ private bool isExecutable(string filePath) nothrow @safe {
     }
 }
 
-private string checkExecutable(string filePath) nothrow @safe {
+private string checkExecutable(string filePath) nothrow @trusted {
     try {
         if (filePath.isFile && filePath.isExecutable) {
             return buildNormalizedPath(filePath);
