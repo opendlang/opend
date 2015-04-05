@@ -411,7 +411,7 @@ version(Windows) {
         return paths;
     }
     
-} else {
+} else version(Posix) {
     
     //Concat two strings, but if the first one is empty, then null string is returned.
     private string maybeConcat(string start, string path) nothrow @safe
@@ -667,7 +667,7 @@ version(Windows) {
             }
                 
             case StandardPath.Applications:
-                return null;
+                return maybeConcat(writablePath(StandardPath.Data), "/applications");
         }
     }
     
@@ -679,6 +679,8 @@ version(Windows) {
             paths = xdgDataDirs();
         } else if (type == StandardPath.Config) {
             paths = xdgConfigDirs();
+        } else if (type == StandardPath.Applications) {
+            paths = ["/usr/local/share/applications", "/usr/share/applications"];
         } else if (type == StandardPath.Fonts) {
             return fontPaths();
         }
@@ -689,6 +691,8 @@ version(Windows) {
         }
         return paths;
     }
+} else {
+    static assert(false, "Unsupported platform");
 }
 
 private bool isExecutable(string filePath) nothrow @trusted {
