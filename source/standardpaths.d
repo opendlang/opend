@@ -95,7 +95,7 @@ string homeDir() nothrow
  * This function does not ensure if the returned path exists and appears to be accessible directory.
  * Note: this function does not provide caching of its results.
  */
-string writablePath(StandardPath type);
+string writablePath(StandardPath type) nothrow;
 
 /**
  * Returns: array of paths where files of $(U type) belong including one returned by $(B writablePath), or an empty array if no paths are defined for $(U type).
@@ -105,7 +105,7 @@ string writablePath(StandardPath type);
  * See_Also:
  *  writablePath
  */
-string[] standardPaths(StandardPath type);
+string[] standardPaths(StandardPath type) nothrow;
 
 version(Windows) {
     private enum pathVarSeparator = ';';
@@ -201,7 +201,7 @@ version(Windows) {
     }
     
     
-    private string getCSIDLFolder(wchar* path, int csidl)
+    private string getCSIDLFolder(wchar* path, int csidl) nothrow
     {
         import core.stdc.wchar_ : wcslen;
         if (ptrSHGetSpecialFolderPath(null, path, csidl, FALSE)) {
@@ -211,7 +211,7 @@ version(Windows) {
         return null;
     }
     
-    string writablePath(StandardPath type)
+    string writablePath(StandardPath type) nothrow
     {
         if (!ptrSHGetSpecialFolderPath) {
             return null;
@@ -249,7 +249,7 @@ version(Windows) {
         }
     }
     
-    string[] standardPaths(StandardPath type)
+    string[] standardPaths(StandardPath type) nothrow
     {
         if (!ptrSHGetSpecialFolderPath) {
             return null;
@@ -301,21 +301,29 @@ version(Windows) {
         return paths;
     }
     
-    private string[] executableExtensions() 
+    private string[] executableExtensions() nothrow
     {
-        static bool filenamesEqual(string first, string second) {
+        static bool filenamesEqual(string first, string second) nothrow {
             return filenameCmp(first, second) == 0;
         }
-    
-        string[] extensions = environment.get("PATHEXT").splitter(pathVarSeparator).array;
-        if (canFind!(filenamesEqual)(extensions, ".exe") == false) {
+        
+        string[] extensions;
+        try {
+            extensions = environment.get("PATHEXT").splitter(pathVarSeparator).array;
+            if (canFind!(filenamesEqual)(extensions, ".exe") == false) {
+                extensions = [];
+            }
+        } catch (Exception e) {
+            
+        }
+        if (extensions.empty) {
             extensions = [".exe", ".com", ".bat", ".cmd"];
         }
         return extensions;
     }
 } else version(OSX) {
     
-    string fsPath(short domain, OSType type) 
+    string fsPath(short domain, OSType type) nothrow @trusted
     {
         import std.string : fromStringz;
         
@@ -327,7 +335,7 @@ version(Windows) {
             ubyte[2048] buf;
             ubyte* path = buf.ptr;
             if (FSRefMakePath(&fsref, path, path.sizeof) == noErr) {
-                const(char)* cpath = cast(const(char)*)path;
+                auto cpath = cast(const(char)*)path;
                 return fromStringz(cpath).idup;
             } else {
                 return null;
@@ -335,7 +343,7 @@ version(Windows) {
         }
     }
     
-    string writablePath(StandardPath type)
+    string writablePath(StandardPath type) nothrow
     {
         final switch(type) {
             case StandardPath.Config:
@@ -367,7 +375,7 @@ version(Windows) {
         }
     }
     
-    string[] standardPaths(StandardPath type)
+    string[] standardPaths(StandardPath type) nothrow
     {
         string commonPath;
         
@@ -407,7 +415,7 @@ version(Windows) {
         return dir;
     }
     
-    private string xdgUserDir(in char[] key, string fallback = null) {
+    private string xdgUserDir(in char[] key, string fallback = null) nothrow {
         import std.algorithm : startsWith, countUntil;
         
         string configDir = writablePath(StandardPath.Config);
@@ -469,22 +477,29 @@ version(Windows) {
         return null;
     }
     
-    private string[] xdgConfigDirs() {
+    private string[] xdgConfigDirs() nothrow {
         string configDirs = assumeWontThrow(environment.get("XDG_CONFIG_DIRS"));
-        if (configDirs.length) {
-            return splitter(configDirs, pathVarSeparator).array;
-        } else {
-            return ["/etc/xdg"];
+        try {
+            if (configDirs.length) {
+                return splitter(configDirs, pathVarSeparator).array;
+            }
         }
+        catch(Exception e) {
+            
+        }
+        return ["/etc/xdg"];
     }
     
-    private string[] xdgDataDirs() {
+    private string[] xdgDataDirs() nothrow {
         string dataDirs = assumeWontThrow(environment.get("XDG_DATA_DIRS"));
-        if (dataDirs.length) {
-            return splitter(dataDirs, pathVarSeparator).array;
-        } else {
-            return ["/usr/local/share", "/usr/share"];
+        try {
+            if (dataDirs.length) {
+                return splitter(dataDirs, pathVarSeparator).array;
+            }
+        } catch(Exception e) {
+            
         }
+        return ["/usr/local/share", "/usr/share"];
     }
     
     private string[] readFontsConfig(string configFile) nothrow
@@ -524,7 +539,7 @@ version(Windows) {
         return paths;
     }
     
-    private string[] fontPaths() 
+    private string[] fontPaths() nothrow
     {
         string[] paths;
         
@@ -541,7 +556,7 @@ version(Windows) {
         return paths;
     }
     
-    private string homeFontsConfig() {
+    private string homeFontsConfig() nothrow {
         return maybeConcat(writablePath(StandardPath.Config), "/fontconfig/fonts.conf");
     }
     
@@ -550,7 +565,7 @@ version(Windows) {
      * If directory does not exist it tries to create one with appropriate permissions. On fail returns an empty string.
      * Note: this function is defined only on $(B Posix) systems (except for OS X)
      */
-    string runtimeDir() 
+    string runtimeDir() nothrow
     {
         // Do we need it on BSD systems?
         
@@ -573,17 +588,22 @@ version(Windows) {
             passwd* pw = getpwuid(uid);
             endpwent();
             
-            if (pw && pw.pw_name) {
-                runtime = tempDir() ~ "/runtime-" ~ assumeUnique(fromStringz(pw.pw_name));
-                
-                if (!(runtime.exists && runtime.isDir)) {
-                    if (mkdir(runtime.toStringz, runtimeMode) != 0) {
-                        debug(standardpaths) stderr.writefln("Failed to create runtime directory %s: %s", runtime, fromStringz(strerror(errno)));
-                        return null;
+            try {
+                if (pw && pw.pw_name) {
+                    runtime = tempDir() ~ "/runtime-" ~ assumeUnique(fromStringz(pw.pw_name));
+                    
+                    if (!(runtime.exists && runtime.isDir)) {
+                        if (mkdir(runtime.toStringz, runtimeMode) != 0) {
+                            debug(standardpaths) stderr.writefln("Failed to create runtime directory %s: %s", runtime, fromStringz(strerror(errno)));
+                            return null;
+                        }
                     }
+                } else {
+                    debug(standardpaths) stderr.writefln("Failed to get user name to create runtime directory");
+                    return null;
                 }
-            } else {
-                debug(standardpaths) stderr.writefln("Failed to get user name to create runtime directory");
+            } catch(Exception e) {
+                debug(standardpaths) stderr.writeln(e.msg);
                 return null;
             }
         }
@@ -601,7 +621,7 @@ version(Windows) {
         return runtime;
     }
     
-    string writablePath(StandardPath type)
+    string writablePath(StandardPath type) nothrow
     {
         final switch(type) {
             case StandardPath.Config:
@@ -639,7 +659,7 @@ version(Windows) {
         }
     }
     
-    string[] standardPaths(StandardPath type)
+    string[] standardPaths(StandardPath type) nothrow
     {
         string[] paths;
         
@@ -659,21 +679,25 @@ version(Windows) {
     }
 }
 
-private bool isExecutable(string filePath) {
-    version(Posix) {
-        return (getAttributes(filePath) & octal!100) != 0;
-    } else version(Windows) {
-        //Use GetEffectiveRightsFromAclW?
-        
-        const(string)[] exeExtensions = executableExtensions();
-        foreach(ext; exeExtensions) {
-            if (sicmp(filePath.extension, ext) == 0)
-                return true;
+private bool isExecutable(string filePath) nothrow {
+    try {
+        version(Posix) {
+            return (getAttributes(filePath) & octal!100) != 0;
+        } else version(Windows) {
+            //Use GetEffectiveRightsFromAclW?
+            
+            const(string)[] exeExtensions = executableExtensions();
+            foreach(ext; exeExtensions) {
+                if (sicmp(filePath.extension, ext) == 0)
+                    return true;
+            }
+            return false;
+            
+        } else {
+            static assert(false, "Unsupported platform");
         }
+    } catch(Exception e) {
         return false;
-        
-    } else {
-        static assert(false, "Unsupported platform");
     }
 }
 
@@ -698,43 +722,47 @@ private string checkExecutable(string filePath) nothrow {
  *  paths = array of directories where executable should be searched. If not set, search in system paths, usually determined by PATH environment variable
  * Note: on Windows when fileName extension is omitted, executable extensions will be automatically appended during search.
  */
-string findExecutable(string fileName, in string[] paths = [])
+string findExecutable(string fileName, in string[] paths = []) nothrow
 {
-    if (fileName.isAbsolute()) {
-        return checkExecutable(fileName);
-    }
-    
-    const(string)[] searchPaths = paths;
-    if (searchPaths.empty) {
-        string pathVar = environment.get("PATH");
-        if (pathVar.length) {
-            searchPaths = splitter(pathVar, pathVarSeparator).array;
+    try {
+        if (fileName.isAbsolute()) {
+            return checkExecutable(fileName);
         }
-    }
-    
-    if (searchPaths.empty) {
-        return null;
-    }
-    
-    string toReturn;
-    foreach(string path; searchPaths) {
-        string candidate = buildPath(absolutePath(path), fileName);
         
-        version(Windows) {
-            if (candidate.extension.empty) {
-                foreach(exeExtension; executableExtensions()) {
-                    toReturn = checkExecutable(setExtension(candidate, exeExtension.toLower()));
-                    if (toReturn.length) {
-                        return toReturn;
-                    }
-                }
+        const(string)[] searchPaths = paths;
+        if (searchPaths.empty) {
+            string pathVar = environment.get("PATH");
+            if (pathVar.length) {
+                searchPaths = splitter(pathVar, pathVarSeparator).array;
             }
         }
         
-        toReturn = checkExecutable(candidate);
-        if (toReturn.length) {
-            return toReturn;
+        if (searchPaths.empty) {
+            return null;
         }
+        
+        string toReturn;
+        foreach(string path; searchPaths) {
+            string candidate = buildPath(absolutePath(path), fileName);
+            
+            version(Windows) {
+                if (candidate.extension.empty) {
+                    foreach(exeExtension; executableExtensions()) {
+                        toReturn = checkExecutable(setExtension(candidate, exeExtension.toLower()));
+                        if (toReturn.length) {
+                            return toReturn;
+                        }
+                    }
+                }
+            }
+            
+            toReturn = checkExecutable(candidate);
+            if (toReturn.length) {
+                return toReturn;
+            }
+        }
+    } catch (Exception e) {
+        
     }
     return null;
 }
