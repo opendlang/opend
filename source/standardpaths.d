@@ -11,6 +11,10 @@ private {
     import std.path;
     import std.file;
     import std.algorithm : splitter;
+    
+    debug(standardpaths) {
+        import std.stdio : stderr;
+    }
 }
 
 version(Windows) {
@@ -27,7 +31,7 @@ version(Windows) {
 } else version(Posix) {
     private {
         import std.stdio : File, StdioException;
-        import std.exception : assumeUnique;
+        import std.exception : assumeUnique, assumeWontThrow;
         import std.conv : octal;
     }
 } else {
@@ -61,8 +65,9 @@ enum StandardPath {
  */
 string homeDir() nothrow
 {
-    try { //environment.get may throw on Windows
-        version(Windows) {
+    version(Windows) {
+        try { //environment.get may throw on Windows
+            
             //Use GetUserProfileDirectoryW from Userenv.dll?
             string home = environment.get("USERPROFILE");
             if (home.empty) {
@@ -73,14 +78,16 @@ string homeDir() nothrow
                 }
             }
             return home;
-        } else {
-            string home = environment.get("HOME");
-            return home;
         }
+        catch(Exception e) {
+            debug(standardpaths) stderr.writeln(e.msg);
+            return null;
+        }
+    } else {
+        string home = assumeWontThrow(environment.get("HOME"));
+        return home;
     }
-    catch(Exception e) {
-        return null;
-    }
+    
 }
 
 /**
@@ -91,7 +98,7 @@ string homeDir() nothrow
 string writablePath(StandardPath type);
 
 /**
- * Returns: array of paths where file of $(U type) belong including one returned by $(B writablePath), or empty array if no paths for $(U type) are defined.
+ * Returns: array of paths where files of $(U type) belong including one returned by $(B writablePath), or an empty array if no paths are defined for $(U type).
  * This function does not ensure if all returned paths exist and appear to be accessible directories.
  * Note: this function does not provide caching of its results. Also returned strings are not required to be unique.
  * It may cause performance impact to call this function often since retrieving some paths can be expensive operation.
@@ -392,8 +399,8 @@ version(Windows) {
         return start.empty ? null : start ~ path;
     }
     
-    private string xdgBaseDir(in char[] envvar, string fallback) {
-        string dir = environment.get(envvar);
+    private string xdgBaseDir(in char[] envvar, string fallback) nothrow {
+        string dir = assumeWontThrow(environment.get(envvar));
         if (!dir.length) {
             dir = maybeConcat(homeDir(), fallback);
         }
@@ -463,7 +470,7 @@ version(Windows) {
     }
     
     private string[] xdgConfigDirs() {
-        string configDirs = environment.get("XDG_CONFIG_DIRS");
+        string configDirs = assumeWontThrow(environment.get("XDG_CONFIG_DIRS"));
         if (configDirs.length) {
             return splitter(configDirs, pathVarSeparator).array;
         } else {
@@ -472,7 +479,7 @@ version(Windows) {
     }
     
     private string[] xdgDataDirs() {
-        string dataDirs = environment.get("XDG_DATA_DIRS");
+        string dataDirs = assumeWontThrow(environment.get("XDG_DATA_DIRS"));
         if (dataDirs.length) {
             return splitter(dataDirs, pathVarSeparator).array;
         } else {
@@ -555,10 +562,9 @@ version(Windows) {
         import core.stdc.string;
         
         import std.string : fromStringz, toStringz;
-        import std.stdio : stderr;
         
         const uid_t uid = getuid();
-        string runtime = environment.get("XDG_RUNTIME_DIR");
+        string runtime = assumeWontThrow(environment.get("XDG_RUNTIME_DIR"));
         
         mode_t runtimeMode = octal!700;
         
@@ -572,23 +578,23 @@ version(Windows) {
                 
                 if (!(runtime.exists && runtime.isDir)) {
                     if (mkdir(runtime.toStringz, runtimeMode) != 0) {
-                        stderr.writefln("Failed to create runtime directory %s: %s", runtime, fromStringz(strerror(errno)));
+                        debug(standardpaths) stderr.writefln("Failed to create runtime directory %s: %s", runtime, fromStringz(strerror(errno)));
                         return null;
                     }
                 }
             } else {
-                stderr.writefln("Failed to get user name to create runtime directory");
+                debug(standardpaths) stderr.writefln("Failed to get user name to create runtime directory");
                 return null;
             }
         }
         stat_t statbuf;
         stat(runtime.toStringz, &statbuf);
         if (statbuf.st_uid != uid) {
-            stderr.writefln("Wrong ownership of runtime directory %s, %d instead of %d", runtime, statbuf.st_uid, uid);
+            debug(standardpaths) stderr.writefln("Wrong ownership of runtime directory %s, %d instead of %d", runtime, statbuf.st_uid, uid);
             return null;
         }
         if ((statbuf.st_mode & octal!777) != runtimeMode) {
-            stderr.writefln("Wrong permissions on runtime directory %s, %o instead of %o", runtime, statbuf.st_mode, runtimeMode);
+            debug(standardpaths) stderr.writefln("Wrong permissions on runtime directory %s, %o instead of %o", runtime, statbuf.st_mode, runtimeMode);
             return null;
         }
         
