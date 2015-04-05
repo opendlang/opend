@@ -180,10 +180,10 @@ version(Windows) {
     }
     
     private  {
-        alias GetSpecialFolderPath = extern(Windows) BOOL function (HWND, wchar*, int, BOOL);
+        alias GetSpecialFolderPath = extern(Windows) BOOL function (HWND, wchar*, int, BOOL) nothrow;
         
         version(LinkedShell32) {
-            extern(Windows) BOOL SHGetSpecialFolderPathW(HWND, wchar*, int, BOOL);
+            extern(Windows) BOOL SHGetSpecialFolderPathW(HWND, wchar*, int, BOOL) nothrow;
             __gshared GetSpecialFolderPath ptrSHGetSpecialFolderPath = &SHGetSpecialFolderPathW;
         } else {
             __gshared GetSpecialFolderPath ptrSHGetSpecialFolderPath = null;
@@ -206,7 +206,11 @@ version(Windows) {
         import core.stdc.wchar_ : wcslen;
         if (ptrSHGetSpecialFolderPath(null, path, csidl, FALSE)) {
             size_t len = wcslen(path);
-            return toUTF8(path[0..len]);
+            try {
+                return toUTF8(path[0..len]);
+            } catch(Exception e) {
+                
+            }
         }
         return null;
     }
@@ -304,7 +308,11 @@ version(Windows) {
     private string[] executableExtensions() nothrow
     {
         static bool filenamesEqual(string first, string second) nothrow {
-            return filenameCmp(first, second) == 0;
+            try {
+                return filenameCmp(first, second) == 0;
+            } catch(Exception e) {
+                return false;
+            }
         }
         
         string[] extensions;
