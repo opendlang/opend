@@ -63,7 +63,7 @@ enum StandardPath {
  * Returns: path to user home directory, or an empty string if could not determine home directory.
  * Note: this function does not provide caching of its results.
  */
-string homeDir() nothrow
+string homeDir() nothrow @safe
 {
     version(Windows) {
         try { //environment.get may throw on Windows
@@ -95,7 +95,7 @@ string homeDir() nothrow
  * This function does not ensure if the returned path exists and appears to be accessible directory.
  * Note: this function does not provide caching of its results.
  */
-string writablePath(StandardPath type) nothrow;
+string writablePath(StandardPath type) nothrow @safe;
 
 /**
  * Returns: array of paths where files of $(U type) belong including one returned by $(B writablePath), or an empty array if no paths are defined for $(U type).
@@ -105,7 +105,7 @@ string writablePath(StandardPath type) nothrow;
  * See_Also:
  *  writablePath
  */
-string[] standardPaths(StandardPath type) nothrow;
+string[] standardPaths(StandardPath type) nothrow @safe;
 
 version(Windows) {
     private enum pathVarSeparator = ';';
@@ -180,13 +180,17 @@ version(Windows) {
     }
     
     private  {
-        alias GetSpecialFolderPath = extern(Windows) BOOL function (HWND, wchar*, int, BOOL) nothrow;
+        alias GetSpecialFolderPath = extern(Windows) BOOL function (HWND, wchar*, int, BOOL) nothrow @system;
         
         version(LinkedShell32) {
-            extern(Windows) BOOL SHGetSpecialFolderPathW(HWND, wchar*, int, BOOL) nothrow;
+            extern(Windows) BOOL SHGetSpecialFolderPathW(HWND, wchar*, int, BOOL) nothrow @system;
             __gshared GetSpecialFolderPath ptrSHGetSpecialFolderPath = &SHGetSpecialFolderPathW;
         } else {
             __gshared GetSpecialFolderPath ptrSHGetSpecialFolderPath = null;
+        }
+        
+        bool hasSHGetSpecialFolderPath() nothrow @trusted {
+            return ptrSHGetSpecialFolderPath != null;
         }
     }
     
@@ -201,7 +205,7 @@ version(Windows) {
     }
     
     
-    private string getCSIDLFolder(wchar* path, int csidl) nothrow
+    private string getCSIDLFolder(wchar* path, int csidl) nothrow @trusted
     {
         import core.stdc.wchar_ : wcslen;
         if (ptrSHGetSpecialFolderPath(null, path, csidl, FALSE)) {
@@ -215,9 +219,9 @@ version(Windows) {
         return null;
     }
     
-    string writablePath(StandardPath type) nothrow
+    string writablePath(StandardPath type) nothrow @safe
     {
-        if (!ptrSHGetSpecialFolderPath) {
+        if (!hasSHGetSpecialFolderPath()) {
             return null;
         }
         
@@ -253,9 +257,9 @@ version(Windows) {
         }
     }
     
-    string[] standardPaths(StandardPath type) nothrow
+    string[] standardPaths(StandardPath type) nothrow @safe
     {
-        if (!ptrSHGetSpecialFolderPath) {
+        if (!hasSHGetSpecialFolderPath()) {
             return null;
         }
         
@@ -305,7 +309,7 @@ version(Windows) {
         return paths;
     }
     
-    private string[] executableExtensions() nothrow
+    private string[] executableExtensions() nothrow @safe
     {
         static bool filenamesEqual(string first, string second) nothrow {
             try {
@@ -687,7 +691,7 @@ version(Windows) {
     }
 }
 
-private bool isExecutable(string filePath) nothrow {
+private bool isExecutable(string filePath) nothrow @safe {
     try {
         version(Posix) {
             return (getAttributes(filePath) & octal!100) != 0;
@@ -709,7 +713,7 @@ private bool isExecutable(string filePath) nothrow {
     }
 }
 
-private string checkExecutable(string filePath) nothrow {
+private string checkExecutable(string filePath) nothrow @safe {
     try {
         if (filePath.isFile && filePath.isExecutable) {
             return buildNormalizedPath(filePath);
@@ -730,7 +734,7 @@ private string checkExecutable(string filePath) nothrow {
  *  paths = array of directories where executable should be searched. If not set, search in system paths, usually determined by PATH environment variable
  * Note: on Windows when fileName extension is omitted, executable extensions will be automatically appended during search.
  */
-string findExecutable(string fileName, in string[] paths = []) nothrow
+string findExecutable(string fileName, in string[] paths = []) nothrow @safe
 {
     try {
         if (fileName.isAbsolute()) {
