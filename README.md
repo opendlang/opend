@@ -4,6 +4,9 @@ D library for getting standard paths (e.g. Pictures, Music, Documents). Inspired
 
 The library is in early development. API may change in future. Join discussions in Issues if you're interested.
 
+## Compiler and platform support
+
+The library requires at least DMD v2.066 (or other compatible compiler) to compile.
 Currently works on Windows, Linux and FreeBSD.
 
 ## Examples

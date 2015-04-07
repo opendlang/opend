@@ -1,9 +1,9 @@
 {
-	"name": "printdirs",
-	"description": "A minimal D application.",
-	"copyright": "Copyright © 2015, freeslave",
-	"authors": ["freeslave"],
-	"targetPath" : "bin", 
+    "name": "printdirs",
+    "description": "A minimal D application.",
+    "copyright": "Copyright © 2015, freeslave",
+    "authors": ["freeslave"],
+    "targetPath" : "bin", 
     "targetType" : "executable", 
     "targetName" : "printdirs", 
     "dependencies" : {"standardpaths":"*"},
@@ -14,7 +14,13 @@
         },
         {
             "name" : "linkedshell32",
-            "versions-windows":["LinkedShell32"]
+            "versions-windows":["LinkedShell32"],
+            "platforms" : ["windows"]
+        },
+        {
+            "name" : "fontsconf",
+            "versions-posix" : ["fontsconf"],
+            "platforms" : ["posix"]
         }
     ]
 }

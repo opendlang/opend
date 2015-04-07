@@ -550,63 +550,94 @@ version(Windows) {
         return ["/usr/local/share", "/usr/share"];
     }
     
-    private string[] readFontsConfig(string configFile) nothrow @trusted
-    {
-        //Should be changed in future since std.xml is deprecated
-        import std.xml;
-        
-        string[] paths;
-        try {
-            string contents = cast(string)read(configFile);
-            check(contents);
-            auto parser = new DocumentParser(contents);
-            parser.onEndTag["dir"] = (in Element xml)
-            {
-                string path = xml.text;
-                
-                if (path.length && path[0] == '~') {
-                    path = maybeConcat(homeDir(), path[1..$]);
-                } else {
-                    const(string)* prefix = "prefix" in xml.tag.attr;
-                    if (prefix && *prefix == "xdg") {
-                        string dataPath = writablePath(StandardPath.Data);
-                        if (dataPath.length) {
-                            path = buildPath(dataPath, path);
+    
+    version(fontsconf) {
+        private string[] readFontsConfig(string configFile) nothrow @trusted
+        {
+            //Should be changed in future since std.xml is deprecated
+            import std.xml;
+            
+            string[] paths;
+            try {
+                string contents = cast(string)read(configFile);
+                check(contents);
+                auto parser = new DocumentParser(contents);
+                parser.onEndTag["dir"] = (in Element xml)
+                {
+                    string path = xml.text;
+                    
+                    if (path.length && path[0] == '~') {
+                        path = maybeConcat(homeDir(), path[1..$]);
+                    } else {
+                        const(string)* prefix = "prefix" in xml.tag.attr;
+                        if (prefix && *prefix == "xdg") {
+                            string dataPath = writablePath(StandardPath.Data);
+                            if (dataPath.length) {
+                                path = buildPath(dataPath, path);
+                            }
                         }
                     }
-                }
-                if (path.length) {
-                    paths ~= path;
-                }
-            };
-            parser.parse();
+                    if (path.length) {
+                        paths ~= path;
+                    }
+                };
+                parser.parse();
+            }
+            catch(Exception e) {
+                
+            }
+            return paths;
         }
-        catch(Exception e) {
+        
+        private string[] fontPaths() nothrow @trusted
+        {
+            string[] paths;
             
+            string homeConfig = homeFontsConfig();
+            if (homeConfig.length) {
+                paths ~= readFontsConfig(homeConfig);
+            }
+            
+            enum configs = ["/etc/fonts/fonts.conf", //path on linux
+                            "/usr/local/etc/fonts/fonts.conf"]; //path on freebsd
+            foreach(config; configs) {
+                paths ~= readFontsConfig(config);
+            }
+            return paths;
         }
-        return paths;
+        
+        private string homeFontsConfig() nothrow @trusted {
+            return maybeConcat(writablePath(StandardPath.Config), "/fontconfig/fonts.conf");
+        }
+        
+        private string homeFontsPath() nothrow @trusted {
+            string[] paths = readFontsConfig(homeFontsConfig());
+            if (paths.length)
+                return paths[0];
+            return null;
+        }
+        
+    } else {
+        private string homeFontsPath() nothrow @trusted {
+            return maybeConcat(homeDir(), "/.fonts");
+        }
+        
+        private string[] fontPaths() nothrow @trusted
+        {
+            enum localShare = "/usr/local/share/fonts";
+            enum share = "/usr/share/fonts";
+            
+            string homeFonts = homeFontsPath();
+            if (homeFonts.length) {
+                return [homeFonts, localShare, share];
+            } else {
+                return [localShare, share];
+            }
+        }
+        
     }
     
-    private string[] fontPaths() nothrow @trusted
-    {
-        string[] paths;
-        
-        string homeConfig = homeFontsConfig();
-        if (homeConfig.length) {
-            paths ~= readFontsConfig(homeConfig);
-        }
-        
-        enum configs = ["/etc/fonts/fonts.conf", //path on linux
-                        "/usr/local/etc/fonts/fonts.conf"]; //path on freebsd
-        foreach(config; configs) {
-            paths ~= readFontsConfig(config);
-        }
-        return paths;
-    }
     
-    private string homeFontsConfig() nothrow @trusted {
-        return maybeConcat(writablePath(StandardPath.Config), "/fontconfig/fonts.conf");
-    }
     
     /**
      * Returns user's runtime directory determined by $(B XDG_RUNTIME_DIR) environment variable. 
@@ -695,12 +726,7 @@ version(Windows) {
             case StandardPath.PublicShare:
                 return xdgUserDir("PUBLICSHARE", "/Public");
             case StandardPath.Fonts:
-            {
-                string[] paths = readFontsConfig(homeFontsConfig());
-                if (paths.length)
-                    return paths[0];
-                return null;
-            }
+                return homeFontsPath();
             case StandardPath.Applications:
                 return maybeConcat(writablePath(StandardPath.Data), "/applications");
         }
