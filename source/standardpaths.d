@@ -79,7 +79,7 @@ enum StandardPath {
     PublicShare, 
     /**
      * Location of fonts files.
-     * Note: don't relay on this on freedesktop. Better consider using $(LINK2 http://www.freedesktop.org/wiki/Software/fontconfig/, fontconfig library)
+     * Note: don't relie on this on freedesktop. Better consider using $(LINK2 http://www.freedesktop.org/wiki/Software/fontconfig/, fontconfig library)
      */
     Fonts, 
     Applications, ///User's applications.
@@ -128,7 +128,7 @@ string writablePath(StandardPath type) nothrow @safe;
  * Returns: array of paths where files of $(U type) belong including one returned by $(B writablePath), or an empty array if no paths are defined for $(U type).
  * This function does not ensure if all returned paths exist and appear to be accessible directories.
  * Note: this function does not provide caching of its results. Also returned strings are not required to be unique.
- * It may cause performance impact to call this function often since retrieving some paths can be expensive operation.
+ * It may cause performance impact to call this function often since retrieving some paths can be relatively expensive operation.
  * See_Also:
  *  writablePath
  */
@@ -464,10 +464,10 @@ version(Windows) {
     }
     
     private string xdgUserDir(in char[] key, string fallback = null) nothrow @trusted {
-        import std.algorithm : startsWith, countUntil;
+        import std.algorithm : startsWith;
+        import std.string : strip;
         
-        string configDir = writablePath(StandardPath.Config);
-        string fileName = configDir ~ "/user-dirs.dirs";
+        string fileName = maybeConcat(writablePath(StandardPath.Config), "/user-dirs.dirs");
         string home = homeDir();
         try {
             auto f = File(fileName, "r");
@@ -476,17 +476,14 @@ version(Windows) {
             
             char[] buf;
             while(f.readln(buf)) {
-                char[] line = buf[0..$-1]; //remove line terminator
-                if (line.startsWith(xdgdir)) {
-                    ptrdiff_t index = line.countUntil('=');
-                    if (index != -1) {
-                        line = line[index+1..$];
-                        if (line.length > 2 && 
-                            line[0] == '"' && 
-                            line[$-1] == '"') {
-                            line = line[1..$-1];
-                        }
-                        
+                char[] line = strip(buf);
+                auto index = xdgdir.length;
+                if (line.startsWith(xdgdir) && line.length > index && line[index] == '=') {
+                    line = line[index+1..$];
+                    if (line.length > 2 && line[0] == '"' && line[$-1] == '"') 
+                    {
+                        line = line[1..$-1];
+                    
                         if (line.startsWith("$HOME")) {
                             return maybeConcat(home, assumeUnique(line[5..$]));
                         }
@@ -502,24 +499,23 @@ version(Windows) {
         }
         
         if (home.length) {
-            if (fallback.length) {
-                return home ~ fallback;
-            }
             try {
                 auto f = File("/etc/xdg/user-dirs.defaults", "r");
                 char[] buf;
                 while(f.readln(buf)) {
-                    char[] line = buf[0..$-1];
-                    if (line.startsWith(key)) {
-                        ptrdiff_t index = line.countUntil('=');
-                        if (index != -1) {
-                            line = line[index+1..$];
-                            return home ~ "/" ~ assumeUnique(line);
-                        }
+                    char[] line = strip(buf);
+                    auto index = key.length;
+                    if (line.startsWith(key) && line.length > index && line[index] == '=') 
+                    {
+                        line = line[index+1..$];
+                        return home ~ "/" ~ assumeUnique(line);
                     }
                 }
             } catch (Exception e) {
                 
+            }
+            if (fallback.length) {
+                return home ~ fallback;
             }
         }
         return null;
