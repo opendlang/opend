@@ -23,6 +23,11 @@ int main()
     writeln("Fonts: ", writablePath(StandardPath.Fonts));
     writeln("Applications: ", writablePath(StandardPath.Applications));
     
+    version(Windows) {
+        writeln("\nSpecific functions for Windows:");
+        writeln("Roaming data: ", roamingPath());
+    }
+    
     writeln("\nSystem directories");
     writefln("Config dirs: %-(%s, %)", standardPaths(StandardPath.Config));
     writefln("Cache dirs: %-(%s, %)", standardPaths(StandardPath.Cache));
@@ -31,7 +36,13 @@ int main()
     writefln("Applications dirs: %-(%s, %)", standardPaths(StandardPath.Applications));
     
     version(Windows) {
+        writefln("Desktop dirs: %-(%s, %)", standardPaths(StandardPath.Desktop));
+        writefln("Documents dirs: %-(%s, %)", standardPaths(StandardPath.Documents));
+        writefln("Pictures dirs: %-(%s, %)", standardPaths(StandardPath.Pictures));
+        writefln("Music dirs: %-(%s, %)", standardPaths(StandardPath.Music));
+        writefln("Videos dirs: %-(%s, %)", standardPaths(StandardPath.Videos));
         
+        writefln("Templates dirs: %-(%s, %)", standardPaths(StandardPath.Templates));
     } else version(OSX) {
         
     } else version(linux) {

@@ -1,6 +1,7 @@
 /**
  * Functions for retrieving standard paths in cross-platform manner.
  * 
+ * License: $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
  */
 
 module standardpaths;
@@ -44,24 +45,50 @@ version(Windows) {
  *  writablePath, standardPaths
  */
 enum StandardPath {
-    Data,   ///Location of persisted application data
-    Config, ///Location of configuration files
-    Cache,  ///Location of cached data
+    /**
+     * Location of persisted application data.
+     */
+    Data, 
+    /**
+     * Location of configuration files.
+     * Note: on Windows it's the same as $(B Data) path.
+     */
+    Config, 
+    /**
+     * Location of cached data.
+     * Note: on Windows it's the same as $(B Data)/cache.
+     */
+    Cache,  
     Desktop, ///User's desktop directory
     Documents, ///User's documents
     Pictures, ///User's pictures
     Music, ///User's music
     Videos, ///User's videos (movies)
-    Download, ///Directory for user's downloaded files
-    Templates, ///Location of templates
-    PublicShare, ///Public share folder
-    Fonts, ///Location of fonts files
-    Applications, ///User's applications
+    
+    /**
+     * Directory for user's downloaded files.
+     * Note: currently always return null on Windows.
+     */
+    Download, 
+    Templates, ///Location of templates.
+    
+    /**
+     * Public share folder.
+     * Note: available only on systems with xdg-user-dirs (Linux, FreeBSD)
+     */
+    PublicShare, 
+    /**
+     * Location of fonts files.
+     * Note: don't relay on this on freedesktop. Better consider using $(LINK2 http://www.freedesktop.org/wiki/Software/fontconfig/, fontconfig library)
+     */
+    Fonts, 
+    Applications, ///User's applications.
 }
 
 /**
  * Returns: path to user home directory, or an empty string if could not determine home directory.
- * Note: this function does not provide caching of its results.
+ * Relies on environment variables.
+ * Note: this function does not provide caching of its result.
  */
 string homeDir() nothrow @safe
 {
@@ -205,11 +232,13 @@ version(Windows) {
     }
     
     
-    private string getCSIDLFolder(wchar* path, int csidl) nothrow @trusted
+    private string getCSIDLFolder(int csidl) nothrow @trusted
     {
         import core.stdc.wchar_ : wcslen;
-        if (ptrSHGetSpecialFolderPath(null, path, csidl, FALSE)) {
-            size_t len = wcslen(path);
+        
+        wchar[MAX_PATH] path = void;
+        if (ptrSHGetSpecialFolderPath(null, path.ptr, csidl, FALSE)) {
+            size_t len = wcslen(path.ptr);
             try {
                 return toUTF8(path[0..len]);
             } catch(Exception e) {
@@ -219,41 +248,50 @@ version(Windows) {
         return null;
     }
     
+    /// Path to $(B Roaming) data directory. This function is Windows only.
+    string roamingPath() nothrow @safe
+    {
+        return getCSIDLFolder(CSIDL_APPDATA);
+    }
+    
     string writablePath(StandardPath type) nothrow @safe
     {
         if (!hasSHGetSpecialFolderPath()) {
             return null;
         }
         
-        wchar[MAX_PATH] buf;
-        wchar* path = buf.ptr;
-        
         final switch(type) {
             case StandardPath.Config:
             case StandardPath.Data:
-                return getCSIDLFolder(path, CSIDL_LOCAL_APPDATA);
+                return getCSIDLFolder(CSIDL_LOCAL_APPDATA);
             case StandardPath.Cache:
-                return buildPath(getCSIDLFolder(path, CSIDL_LOCAL_APPDATA), "cache");
+            {
+                string path = getCSIDLFolder(CSIDL_LOCAL_APPDATA);
+                if (path.length) {
+                    return buildPath(getCSIDLFolder(CSIDL_LOCAL_APPDATA), "cache");
+                }
+                return null;
+            }
             case StandardPath.Desktop:
-                return getCSIDLFolder(path, CSIDL_DESKTOPDIRECTORY);
+                return getCSIDLFolder(CSIDL_DESKTOPDIRECTORY);
             case StandardPath.Documents:
-                return getCSIDLFolder(path, CSIDL_PERSONAL);
+                return getCSIDLFolder(CSIDL_PERSONAL);
             case StandardPath.Pictures:
-                return getCSIDLFolder(path, CSIDL_MYPICTURES);
+                return getCSIDLFolder(CSIDL_MYPICTURES);
             case StandardPath.Music:
-                return getCSIDLFolder(path, CSIDL_MYMUSIC);
+                return getCSIDLFolder(CSIDL_MYMUSIC);
             case StandardPath.Videos:
-                return getCSIDLFolder(path, CSIDL_MYVIDEO);
+                return getCSIDLFolder(CSIDL_MYVIDEO);
             case StandardPath.Download:
                 return null;
             case StandardPath.Templates:
-                return getCSIDLFolder(path, CSIDL_TEMPLATES);
+                return getCSIDLFolder(CSIDL_TEMPLATES);
             case StandardPath.PublicShare:
                 return null;
             case StandardPath.Fonts:
                 return null;
             case StandardPath.Applications:
-                return getCSIDLFolder(path, CSIDL_PROGRAMS);
+                return getCSIDLFolder(CSIDL_PROGRAMS);
         }
     }
     
@@ -264,37 +302,35 @@ version(Windows) {
         }
         
         string commonPath;
-        wchar[MAX_PATH] buf;
-        wchar* path = buf.ptr;
         
         switch(type) {
             case StandardPath.Config:
             case StandardPath.Data:
-                commonPath = getCSIDLFolder(path, CSIDL_COMMON_APPDATA);
+                commonPath = getCSIDLFolder(CSIDL_COMMON_APPDATA);
                 break;
             case StandardPath.Desktop:
-                commonPath = getCSIDLFolder(path, CSIDL_COMMON_DESKTOPDIRECTORY);
+                commonPath = getCSIDLFolder(CSIDL_COMMON_DESKTOPDIRECTORY);
                 break;
             case StandardPath.Documents:
-                commonPath = getCSIDLFolder(path, CSIDL_COMMON_DOCUMENTS);
+                commonPath = getCSIDLFolder(CSIDL_COMMON_DOCUMENTS);
                 break;
             case StandardPath.Pictures:
-                commonPath = getCSIDLFolder(path, CSIDL_COMMON_PICTURES);
+                commonPath = getCSIDLFolder(CSIDL_COMMON_PICTURES);
                 break;
             case StandardPath.Music:
-                commonPath = getCSIDLFolder(path, CSIDL_COMMON_MUSIC);
+                commonPath = getCSIDLFolder(CSIDL_COMMON_MUSIC);
                 break;
             case StandardPath.Videos:
-                commonPath = getCSIDLFolder(path, CSIDL_COMMON_VIDEO);
+                commonPath = getCSIDLFolder(CSIDL_COMMON_VIDEO);
                 break;
             case StandardPath.Templates:
-                commonPath = getCSIDLFolder(path, CSIDL_COMMON_TEMPLATES);
+                commonPath = getCSIDLFolder(CSIDL_COMMON_TEMPLATES);
                 break;
             case StandardPath.Fonts:
-                commonPath = getCSIDLFolder(path, CSIDL_FONTS);
+                commonPath = getCSIDLFolder(CSIDL_FONTS);
                 break;
             case StandardPath.Applications:
-                commonPath = getCSIDLFolder(path, CSIDL_COMMON_PROGRAMS);
+                commonPath = getCSIDLFolder(CSIDL_COMMON_PROGRAMS);
                 break;
             default:
                 break;
@@ -707,9 +743,10 @@ private bool isExecutable(string filePath) nothrow @trusted {
         } else version(Windows) {
             //Use GetEffectiveRightsFromAclW?
             
+            string extension = filePath.extension;
             const(string)[] exeExtensions = executableExtensions();
             foreach(ext; exeExtensions) {
-                if (sicmp(filePath.extension, ext) == 0)
+                if (sicmp(extension, ext) == 0)
                     return true;
             }
             return false;
