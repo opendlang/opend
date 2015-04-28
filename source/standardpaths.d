@@ -34,6 +34,7 @@ version(Windows) {
         import std.stdio : File, StdioException;
         import std.exception : assumeUnique, assumeWontThrow;
         import std.conv : octal;
+        import std.string : toStringz;
     }
 } else {
     static assert(false, "Unsupported platform");
@@ -651,7 +652,7 @@ version(Windows) {
         import core.stdc.errno;
         import core.stdc.string;
         
-        import std.string : fromStringz, toStringz;
+        import std.string : fromStringz;
         
         const uid_t uid = getuid();
         string runtime = assumeWontThrow(environment.get("XDG_RUNTIME_DIR"));
@@ -761,7 +762,8 @@ version(Windows) {
 private bool isExecutable(string filePath) nothrow @trusted {
     try {
         version(Posix) {
-            return (getAttributes(filePath) & octal!100) != 0;
+            import core.sys.posix.unistd;
+            return access(toStringz(filePath), X_OK) == 0;
         } else version(Windows) {
             //Use GetEffectiveRightsFromAclW?
             
