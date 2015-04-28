@@ -8,6 +8,6 @@ __dummy.html
 *.so
 *.dll
 *.exe
-bin
-docs
+bin/
+docs/
 dub.selections.json
