@@ -741,7 +741,12 @@ version(Windows) {
                 paths = xdgConfigDirs();
                 break;
             case StandardPath.Applications:
-                paths = ["/usr/local/share/applications", "/usr/share/applications"];
+            {
+                paths = xdgDataDirs();
+                foreach(ref path; paths) {
+                    path ~= "/applications";
+                }
+            }
                 break;
             case StandardPath.Fonts:
                 return fontPaths();
