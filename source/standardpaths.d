@@ -208,16 +208,16 @@ version(Windows) {
     }
     
     private  {
-        alias GetSpecialFolderPath = extern(Windows) BOOL function (HWND, wchar*, int, BOOL) nothrow @system;
+        alias GetSpecialFolderPath = extern(Windows) BOOL function (HWND, wchar*, int, BOOL) nothrow @nogc @system;
         
         version(LinkedShell32) {
-            extern(Windows) BOOL SHGetSpecialFolderPathW(HWND, wchar*, int, BOOL) nothrow @system;
+            extern(Windows) BOOL SHGetSpecialFolderPathW(HWND, wchar*, int, BOOL) nothrow @nogc @system;
             __gshared GetSpecialFolderPath ptrSHGetSpecialFolderPath = &SHGetSpecialFolderPathW;
         } else {
             __gshared GetSpecialFolderPath ptrSHGetSpecialFolderPath = null;
         }
         
-        bool hasSHGetSpecialFolderPath() nothrow @trusted {
+        bool hasSHGetSpecialFolderPath() nothrow @nogc @trusted {
             return ptrSHGetSpecialFolderPath != null;
         }
     }
@@ -238,7 +238,7 @@ version(Windows) {
         import core.stdc.wchar_ : wcslen;
         
         wchar[MAX_PATH] path = void;
-        if (ptrSHGetSpecialFolderPath(null, path.ptr, csidl, FALSE)) {
+        if (hasSHGetSpecialFolderPath() && ptrSHGetSpecialFolderPath(null, path.ptr, csidl, FALSE)) {
             size_t len = wcslen(path.ptr);
             try {
                 return toUTF8(path[0..len]);
@@ -257,10 +257,6 @@ version(Windows) {
     
     string writablePath(StandardPath type) nothrow @safe
     {
-        if (!hasSHGetSpecialFolderPath()) {
-            return null;
-        }
-        
         final switch(type) {
             case StandardPath.Config:
             case StandardPath.Data:
@@ -269,7 +265,7 @@ version(Windows) {
             {
                 string path = getCSIDLFolder(CSIDL_LOCAL_APPDATA);
                 if (path.length) {
-                    return buildPath(getCSIDLFolder(CSIDL_LOCAL_APPDATA), "cache");
+                    return buildPath(path, "cache");
                 }
                 return null;
             }
@@ -297,11 +293,7 @@ version(Windows) {
     }
     
     string[] standardPaths(StandardPath type) nothrow @safe
-    {
-        if (!hasSHGetSpecialFolderPath()) {
-            return null;
-        }
-        
+    {   
         string commonPath;
         
         switch(type) {
@@ -346,7 +338,7 @@ version(Windows) {
         return paths;
     }
     
-    private string[] executableExtensions() nothrow @safe
+    private string[] executableExtensions() nothrow @trusted
     {
         static bool filenamesEqual(string first, string second) nothrow {
             try {

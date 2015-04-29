@@ -98,7 +98,7 @@ void saveSettings(const Config config)
     }
     string configFile = buildPath(configPath, "config.conf");
     
-    auto f = File(configFile); 
+    auto f = File(configFile, "w"); 
     // write settings
     writeln("Settings saved!");
 }
@@ -111,16 +111,16 @@ Since one can save settings it also should be able to read them. Before the firs
 ```d
 Config readSettings()
 {
-    string[] dataPaths = standardPaths(StandardPath.Config);
+    string[] configPaths = standardPaths(StandardPath.Config);
     configPaths ~= thisExePath().dirName(); //Optionally add root application directory to search files in
 
-    string configFile = "config.conf";
-
-    foreach(path; dataPaths) {
-        string backgroundPath = buildPath(path, organizationName, applicationName, configFile);
-        if (backgroundPath.exists) {
-            //read file...
-            break;//consider using of the first found file
+    foreach(path; configPaths) {
+        string configFile = buildPath(path, organizationName, applicationName, "config.conf");
+        if (configFile.exists) {
+            auto f = File(configFile, "r");
+            Config config;
+            //read settings...
+            return config;//consider using of the first found file
         }
     }
 }
