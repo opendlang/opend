@@ -11,7 +11,8 @@ private {
     import std.array;
     import std.path;
     import std.file;
-    import std.algorithm : splitter;
+    import std.algorithm : splitter, canFind;
+    import std.exception;
     
     debug {
         import std.stdio : stderr;
@@ -22,13 +23,11 @@ version(Windows) {
     private {
         import std.c.windows.windows;
         import std.utf;
-        import std.algorithm : canFind;
         import std.uni : toLower, sicmp;
     }
 } else version(Posix) {
     private {
         import std.stdio : File, StdioException;
-        import std.exception : assumeUnique, assumeWontThrow;
         import std.conv : octal;
         import std.string : toStringz, fromStringz;
     }
@@ -102,12 +101,12 @@ string homeDir() nothrow @safe
             }
             return home;
         } else {
-            string home = assumeWontThrow(environment.get("HOME"));
+            string home = environment.get("HOME");
             return home;
         }
     }
     catch (Exception e) {
-        debug assumeWontThrow(stderr.writefln("Error when getting home directory %s", e.msg));
+        debug collectException(stderr.writefln("Error when getting home directory %s", e.msg));
         return null;
     }
 }
@@ -451,7 +450,7 @@ version(Windows) {
             ptrFSRefMakePath = cast(da_FSRefMakePath)dlsym(handle, "FSRefMakePath");
         }
         if (ptrFSFindFolder == null || ptrFSRefMakePath == null) {
-            debug stderr.writeln("Could not load carbon functions");
+            debug collectException(stderr.writeln("Could not load carbon functions"));
         }
     }
 
@@ -554,7 +553,8 @@ version(Windows) {
     }
     
     private string xdgBaseDir(in char[] envvar, string fallback) nothrow @trusted {
-        string dir = assumeWontThrow(environment.get(envvar));
+        string dir;
+        collectException(environment.get(envvar), dir);
         if (!dir.length) {
             dir = maybeConcat(homeDir(), fallback);
         }
@@ -620,8 +620,8 @@ version(Windows) {
     }
     
     private string[] xdgConfigDirs() nothrow @trusted {
-        string configDirs = assumeWontThrow(environment.get("XDG_CONFIG_DIRS"));
         try {
+            string configDirs = environment.get("XDG_CONFIG_DIRS");
             if (configDirs.length) {
                 return splitter(configDirs, pathVarSeparator).array;
             }
@@ -633,8 +633,8 @@ version(Windows) {
     }
     
     private string[] xdgDataDirs() nothrow @trusted {
-        string dataDirs = assumeWontThrow(environment.get("XDG_DATA_DIRS"));
         try {
+            string dataDirs = environment.get("XDG_DATA_DIRS");
             if (dataDirs.length) {
                 return splitter(dataDirs, pathVarSeparator).array;
             }
@@ -750,7 +750,8 @@ version(Windows) {
         import core.stdc.string;
         
         const uid_t uid = getuid();
-        string runtime = assumeWontThrow(environment.get("XDG_RUNTIME_DIR"));
+        string runtime;
+        collectException(environment.get("XDG_RUNTIME_DIR"), runtime);
         
         mode_t runtimeMode = octal!700;
         
@@ -774,18 +775,18 @@ version(Windows) {
                     return null;
                 }
             } catch(Exception e) {
-                debug assumeWontThrow(stderr.writeln("Error when creating runtime directory", e.msg));
+                debug collectException(stderr.writeln("Error when creating runtime directory", e.msg));
                 return null;
             }
         }
         stat_t statbuf;
         stat(runtime.toStringz, &statbuf);
         if (statbuf.st_uid != uid) {
-            debug assumeWontThrow(stderr.writeln("Wrong ownership of runtime directory %s, %d instead of %d", runtime, statbuf.st_uid, uid));
+            debug collectException(stderr.writeln("Wrong ownership of runtime directory %s, %d instead of %d", runtime, statbuf.st_uid, uid));
             return null;
         }
         if ((statbuf.st_mode & octal!777) != runtimeMode) {
-            debug assumeWontThrow(stderr.writefln("Wrong permissions on runtime directory %s, %o instead of %o", runtime, statbuf.st_mode, runtimeMode));
+            debug collectException(stderr.writefln("Wrong permissions on runtime directory %s, %o instead of %o", runtime, statbuf.st_mode, runtimeMode));
             return null;
         }
         
