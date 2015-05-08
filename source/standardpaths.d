@@ -89,9 +89,8 @@ enum StandardPath {
  */
 string homeDir() nothrow @safe
 {
-    version(Windows) {
-        try { //environment.get may throw on Windows
-            
+    try {
+        version(Windows) {
             //Use GetUserProfileDirectoryW from Userenv.dll?
             string home = environment.get("USERPROFILE");
             if (home.empty) {
@@ -102,16 +101,15 @@ string homeDir() nothrow @safe
                 }
             }
             return home;
+        } else {
+            string home = assumeWontThrow(environment.get("HOME"));
+            return home;
         }
-        catch(Exception e) {
-            debug stderr.writefln("Error when getting home directory %s", e.msg);
-            return null;
-        }
-    } else {
-        string home = assumeWontThrow(environment.get("HOME"));
-        return home;
     }
-    
+    catch (Exception e) {
+        debug assumeWontThrow(stderr.writefln("Error when getting home directory %s", e.msg));
+        return null;
+    }
 }
 
 /**
@@ -772,22 +770,22 @@ version(Windows) {
                         }
                     }
                 } else {
-                    debug stderr.writefln("Failed to get user name to create runtime directory");
+                    debug stderr.writeln("Failed to get user name to create runtime directory");
                     return null;
                 }
             } catch(Exception e) {
-                debug stderr.writeln("Error when creating runtime directory", e.msg);
+                debug assumeWontThrow(stderr.writeln("Error when creating runtime directory", e.msg));
                 return null;
             }
         }
         stat_t statbuf;
         stat(runtime.toStringz, &statbuf);
         if (statbuf.st_uid != uid) {
-            debug stderr.writefln("Wrong ownership of runtime directory %s, %d instead of %d", runtime, statbuf.st_uid, uid);
+            debug assumeWontThrow(stderr.writeln("Wrong ownership of runtime directory %s, %d instead of %d", runtime, statbuf.st_uid, uid));
             return null;
         }
         if ((statbuf.st_mode & octal!777) != runtimeMode) {
-            debug stderr.writefln("Wrong permissions on runtime directory %s, %o instead of %o", runtime, statbuf.st_mode, runtimeMode);
+            debug assumeWontThrow(stderr.writefln("Wrong permissions on runtime directory %s, %o instead of %o", runtime, statbuf.st_mode, runtimeMode));
             return null;
         }
         
