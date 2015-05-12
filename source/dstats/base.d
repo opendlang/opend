@@ -1376,7 +1376,7 @@ unittest {
     bool[uint[]] results;  // Keep track of how many UNIQUE items we have.
     auto comb3 = Comb!(uint)(seq(10U, 22U), 6);
     foreach(c; comb3) {
-        auto dupped = c.dup.sort;
+        auto dupped = c.dup.sort();
         // Make sure all elems are unique and within range.
         assert(dupped.length == 6);
         assert(dupped[0] > 9 && dupped[0] < 22);
@@ -1385,7 +1385,7 @@ unittest {
             assert(dupped[i] > dupped[i - 1]);
             assert(dupped[i] > 9 && dupped[i] < 22);
         }
-        results[dupped.idup] = true;
+        results[dupped.release().idup] = true;
     }
     assert(results.length == 924);  // (12 choose 6).
 }

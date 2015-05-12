@@ -392,14 +392,14 @@ unittest {
         double sFour =
              -spearmanCor(two[lowerBound..upperBound], one[lowerBound..upperBound]);
         foreach(ref o; two) o*=-1;
-        one[lowerBound..upperBound].reverse;
-        two[lowerBound..upperBound].reverse;
+        one[lowerBound..upperBound].reverse();
+        two[lowerBound..upperBound].reverse();
         double sFive =
              spearmanCor(one[lowerBound..upperBound], two[lowerBound..upperBound]);
-        assert(approxEqual(sOne, sTwo) || (isnan(sOne) && isnan(sTwo)));
-        assert(approxEqual(sTwo, sThree) || (isnan(sThree) && isnan(sTwo)));
-        assert(approxEqual(sThree, sFour) || (isnan(sThree) && isnan(sFour)));
-        assert(approxEqual(sFour, sFive) || (isnan(sFour) && isnan(sFive)));
+        assert(approxEqual(sOne, sTwo) || (isNaN(sOne) && isNaN(sTwo)));
+        assert(approxEqual(sTwo, sThree) || (isNaN(sThree) && isNaN(sTwo)));
+        assert(approxEqual(sThree, sFour) || (isNaN(sThree) && isNaN(sFour)));
+        assert(approxEqual(sFour, sFive) || (isNaN(sFour) && isNaN(sFive)));
     }
 
     // Test input ranges.
