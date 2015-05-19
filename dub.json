@@ -10,6 +10,6 @@
         "ponce"
     ],
 
-    "sourcePaths": [ "." ],
-    "importPaths": [ "." ]
+    "sourcePaths": [ "source" ],
+    "importPaths": [ "source" ]
 }
