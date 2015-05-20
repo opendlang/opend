@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/John-Colvin/dstats.svg?branch=master)](https://travis-ci.org/John-Colvin/dstats)
+[![Build Status](https://travis-ci.org/DlangScience/dstats.svg?branch=master)](https://travis-ci.org/DlangScience/dstats)
 dstats
 ======
 
