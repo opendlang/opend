@@ -2,12 +2,12 @@
 
 D library for getting standard paths (e.g. Pictures, Music, Documents). Inspired by QStandardPaths from Qt.
 
-The library is in early development. API may change in future. Join discussions in Issues if you're interested.
+API may change in future. Join discussions in Issues if you're interested.
 
 ## Compiler and platform support
 
 The library requires at least DMD v2.066 (or other compatible compiler) to compile.
-Currently works on Windows, Linux and FreeBSD.
+Currently works on Windows, Linux and FreeBSD. Mac OS X support is experimental.
 
 ## Generating documentation
 
@@ -135,3 +135,7 @@ On Posix systems library uses [XDG Base Directory Specification](http://standard
 ### Windows
 
 On Windows it utilizes [SHGetSpecialFolderPath](https://msdn.microsoft.com/en-us/library/windows/desktop/bb762204(v=vs.85).aspx).
+
+### Mac OS X
+
+Uses FSFindFolder from Carbon framework. [See here](http://cocoadev.com/ApplicationSupportFolder).

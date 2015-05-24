@@ -1,7 +1,9 @@
 /**
  * Functions for retrieving standard paths in cross-platform manner.
- * 
- * License: $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
+ * Authors: 
+ *  $(LINK2 https://github.com/MyLittleRobo, Roman Chistokhodov).
+ * License: 
+ *  $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
  */
 
 module standardpaths;
@@ -29,7 +31,16 @@ version(Windows) {
     private {
         import std.stdio : File, StdioException;
         import std.conv : octal;
-        import std.string : toStringz, fromStringz;
+        import std.string : toStringz;
+        
+        static if (is(typeof({import std.string : fromStringz;}))) {
+            import std.string : fromStringz;
+        } else { //own fromStringz implementation for compatibility reasons
+            import std.c.string : strlen;
+            @system pure inout(char)[] fromStringz(inout(char)* cString) {
+                return cString ? cString[0..strlen(cString)] : null;
+            }
+        }
     }
 } else {
     static assert(false, "Unsupported platform");
@@ -70,7 +81,7 @@ enum StandardPath {
     
     /**
      * Public share folder.
-     * Note: available only on systems with xdg-user-dirs (Linux, FreeBSD)
+     * Note: available only on systems with xdg-user-dirs (Linux, FreeBSD) and Mac OS X
      */
     PublicShare, 
     /**
@@ -106,7 +117,12 @@ string homeDir() nothrow @safe
         }
     }
     catch (Exception e) {
-        debug collectException(stderr.writefln("Error when getting home directory %s", e.msg));
+        debug {
+                @trusted void writeException(Exception e) nothrow {
+                collectException(stderr.writefln("Error when getting home directory %s", e.msg));
+            }
+            writeException(e);
+        }
         return null;
     }
 }
@@ -201,16 +217,18 @@ version(Windows) {
     }
     
     private  {
-        alias GetSpecialFolderPath = extern(Windows) BOOL function (HWND, wchar*, int, BOOL) nothrow @nogc @system;
+        private extern(Windows) @nogc @system BOOL dummy(HWND, wchar*, int, BOOL) nothrow { return 0; }
+        
+        alias typeof(dummy) GetSpecialFolderPath;
         
         version(LinkedShell32) {
-            extern(Windows) BOOL SHGetSpecialFolderPathW(HWND, wchar*, int, BOOL) nothrow @nogc @system;
+            extern(Windows) @nogc @system BOOL SHGetSpecialFolderPathW(HWND, wchar*, int, BOOL) nothrow;
             __gshared GetSpecialFolderPath ptrSHGetSpecialFolderPath = &SHGetSpecialFolderPathW;
         } else {
             __gshared GetSpecialFolderPath ptrSHGetSpecialFolderPath = null;
         }
         
-        bool hasSHGetSpecialFolderPath() nothrow @nogc @trusted {
+        @nogc @trusted bool hasSHGetSpecialFolderPath() nothrow {
             return ptrSHGetSpecialFolderPath != null;
         }
     }
@@ -358,69 +376,69 @@ version(Windows) {
 } else version(OSX) {
     
     private enum : short {
-      kOnSystemDisk                 = -32768L, /* previously was 0x8000 but that is an unsigned value whereas vRefNum is signed*/
-      kOnAppropriateDisk            = -32767, /* Generally, the same as kOnSystemDisk, but it's clearer that this isn't always the 'boot' disk.*/
-                                            /* Folder Domains - Carbon only.  The constants above can continue to be used, but the folder/volume returned will*/
-                                            /* be from one of the domains below.*/
-      kSystemDomain                 = -32766, /* Read-only system hierarchy.*/
-      kLocalDomain                  = -32765, /* All users of a single machine have access to these resources.*/
-      kNetworkDomain                = -32764, /* All users configured to use a common network server has access to these resources.*/
-      kUserDomain                   = -32763, /* Read/write. Resources that are private to the user.*/
-      kClassicDomain                = -32762, /* Domain referring to the currently configured Classic System Folder.  Not supported in Mac OS X Leopard and later.*/
-      kFolderManagerLastDomain      = -32760
+        kOnSystemDisk                 = -32768L, /* previously was 0x8000 but that is an unsigned value whereas vRefNum is signed*/
+        kOnAppropriateDisk            = -32767, /* Generally, the same as kOnSystemDisk, but it's clearer that this isn't always the 'boot' disk.*/
+                                                /* Folder Domains - Carbon only.  The constants above can continue to be used, but the folder/volume returned will*/
+                                                /* be from one of the domains below.*/
+        kSystemDomain                 = -32766, /* Read-only system hierarchy.*/
+        kLocalDomain                  = -32765, /* All users of a single machine have access to these resources.*/
+        kNetworkDomain                = -32764, /* All users configured to use a common network server has access to these resources.*/
+        kUserDomain                   = -32763, /* Read/write. Resources that are private to the user.*/
+        kClassicDomain                = -32762, /* Domain referring to the currently configured Classic System Folder.  Not supported in Mac OS X Leopard and later.*/
+        kFolderManagerLastDomain      = -32760
     }
 
-    private int k(string s) nothrow @nogc {
+    private @nogc int k(string s) nothrow {
         return s[0] << 24 | s[1] << 16 | s[2] << 8 | s[3];
     }
 
     private enum {
-  kDesktopFolderType            = k("desk"), /* the desktop folder; objects in this folder show on the desktop. */
-  kTrashFolderType              = k("trsh"), /* the trash folder; objects in this folder show up in the trash */
-  kWhereToEmptyTrashFolderType  = k("empt"), /* the "empty trash" folder; Finder starts empty from here down */
-  kFontsFolderType              = k("font"), /* Fonts go here */
-  kPreferencesFolderType        = k("pref"), /* preferences for applications go here */
-  kSystemPreferencesFolderType  = k("sprf"), /* the PreferencePanes folder, where Mac OS X Preference Panes go */
-  kTemporaryFolderType          = k("temp"), /*    On Mac OS X, each user has their own temporary items folder, and the Folder Manager attempts to set permissions of these*/
-                                        /*    folders such that other users can not access the data inside.  On Mac OS X 10.4 and later the data inside the temporary*/
-                                        /*    items folder is deleted at logout and at boot, but not otherwise.  Earlier version of Mac OS X would delete items inside*/
-                                        /*    the temporary items folder after a period of inaccess.  You can ask for a temporary item in a specific domain or on a */
-                                        /*    particular volume by FSVolumeRefNum.  If you want a location for temporary items for a short time, then use either*/
-                                        /*    ( kUserDomain, kkTemporaryFolderType ) or ( kSystemDomain, kTemporaryFolderType ).  The kUserDomain varient will always be*/
-                                        /*    on the same volume as the user's home folder, while the kSystemDomain version will be on the same volume as /var/tmp/ ( and*/
-                                        /*    will probably be on the local hard drive in case the user's home is a network volume ).  If you want a location for a temporary*/
-                                        /*    file or folder to use for saving a document, especially if you want to use FSpExchangeFile() to implement a safe-save, then*/
-                                        /*    ask for the temporary items folder on the same volume as the file you are safe saving.*/
-                                        /*    However, be prepared for a failure to find a temporary folder in any domain or on any volume.  Some volumes may not have*/
-                                        /*    a location for a temporary folder, or the permissions of the volume may be such that the Folder Manager can not return*/
-                                        /*    a temporary folder for the volume.*/
-                                        /*    If your application creates an item in a temporary items older you should delete that item as soon as it is not needed,*/
-                                        /*    and certainly before your application exits, since otherwise the item is consuming disk space until the user logs out or*/
-                                        /*    restarts.  Any items left inside a temporary items folder should be moved into a folder inside the Trash folder on the disk*/
-                                        /*    when the user logs in, inside a folder named "Recovered items", in case there is anything useful to the end user.*/
-  kChewableItemsFolderType      = k("flnt"), /* similar to kTemporaryItemsFolderType, except items in this folder are deleted at boot or when the disk is unmounted */
-  kTemporaryItemsInCacheDataFolderType = k("vtmp"), /* A folder inside the kCachedDataFolderType for the given domain which can be used for transient data*/
-  kApplicationsFolderType       = k("apps"), /*    Applications on Mac OS X are typically put in this folder ( or a subfolder ).*/
-  kVolumeRootFolderType         = k("root"), /* root folder of a volume or domain */
-  kDomainTopLevelFolderType     = k("dtop"), /* The top-level of a Folder domain, e.g. "/System"*/
-  kDomainLibraryFolderType      = k("dlib"), /* the Library subfolder of a particular domain*/
-  kUsersFolderType              = k("usrs"), /* "Users" folder, usually contains one folder for each user. */
-  kCurrentUserFolderType        = k("cusr"), /* The folder for the currently logged on user; domain passed in is ignored. */
-  kSharedUserDataFolderType     = k("sdat"), /* A Shared folder, readable & writeable by all users */
-  kCachedDataFolderType         = k("cach"), /* Contains various cache files for different clients*/
-  kDownloadsFolderType          = k("down"), /* Refers to the ~/Downloads folder*/
-  kApplicationSupportFolderType = k("asup"), /* third-party items and folders */
+        kDesktopFolderType            = k("desk"), /* the desktop folder; objects in this folder show on the desktop. */
+        kTrashFolderType              = k("trsh"), /* the trash folder; objects in this folder show up in the trash */
+        kWhereToEmptyTrashFolderType  = k("empt"), /* the "empty trash" folder; Finder starts empty from here down */
+        kFontsFolderType              = k("font"), /* Fonts go here */
+        kPreferencesFolderType        = k("pref"), /* preferences for applications go here */
+        kSystemPreferencesFolderType  = k("sprf"), /* the PreferencePanes folder, where Mac OS X Preference Panes go */
+        kTemporaryFolderType          = k("temp"), /*    On Mac OS X, each user has their own temporary items folder, and the Folder Manager attempts to set permissions of these*/
+                                                /*    folders such that other users can not access the data inside.  On Mac OS X 10.4 and later the data inside the temporary*/
+                                                /*    items folder is deleted at logout and at boot, but not otherwise.  Earlier version of Mac OS X would delete items inside*/
+                                                /*    the temporary items folder after a period of inaccess.  You can ask for a temporary item in a specific domain or on a */
+                                                /*    particular volume by FSVolumeRefNum.  If you want a location for temporary items for a short time, then use either*/
+                                                /*    ( kUserDomain, kkTemporaryFolderType ) or ( kSystemDomain, kTemporaryFolderType ).  The kUserDomain varient will always be*/
+                                                /*    on the same volume as the user's home folder, while the kSystemDomain version will be on the same volume as /var/tmp/ ( and*/
+                                                /*    will probably be on the local hard drive in case the user's home is a network volume ).  If you want a location for a temporary*/
+                                                /*    file or folder to use for saving a document, especially if you want to use FSpExchangeFile() to implement a safe-save, then*/
+                                                /*    ask for the temporary items folder on the same volume as the file you are safe saving.*/
+                                                /*    However, be prepared for a failure to find a temporary folder in any domain or on any volume.  Some volumes may not have*/
+                                                /*    a location for a temporary folder, or the permissions of the volume may be such that the Folder Manager can not return*/
+                                                /*    a temporary folder for the volume.*/
+                                                /*    If your application creates an item in a temporary items older you should delete that item as soon as it is not needed,*/
+                                                /*    and certainly before your application exits, since otherwise the item is consuming disk space until the user logs out or*/
+                                                /*    restarts.  Any items left inside a temporary items folder should be moved into a folder inside the Trash folder on the disk*/
+                                                /*    when the user logs in, inside a folder named "Recovered items", in case there is anything useful to the end user.*/
+        kChewableItemsFolderType      = k("flnt"), /* similar to kTemporaryItemsFolderType, except items in this folder are deleted at boot or when the disk is unmounted */
+        kTemporaryItemsInCacheDataFolderType = k("vtmp"), /* A folder inside the kCachedDataFolderType for the given domain which can be used for transient data*/
+        kApplicationsFolderType       = k("apps"), /*    Applications on Mac OS X are typically put in this folder ( or a subfolder ).*/
+        kVolumeRootFolderType         = k("root"), /* root folder of a volume or domain */
+        kDomainTopLevelFolderType     = k("dtop"), /* The top-level of a Folder domain, e.g. "/System"*/
+        kDomainLibraryFolderType      = k("dlib"), /* the Library subfolder of a particular domain*/
+        kUsersFolderType              = k("usrs"), /* "Users" folder, usually contains one folder for each user. */
+        kCurrentUserFolderType        = k("cusr"), /* The folder for the currently logged on user; domain passed in is ignored. */
+        kSharedUserDataFolderType     = k("sdat"), /* A Shared folder, readable & writeable by all users */
+        kCachedDataFolderType         = k("cach"), /* Contains various cache files for different clients*/
+        kDownloadsFolderType          = k("down"), /* Refers to the ~/Downloads folder*/
+        kApplicationSupportFolderType = k("asup"), /* third-party items and folders */
 
 
-  kDocumentsFolderType          = k("docs"), /*    User documents are typically put in this folder ( or a subfolder ).*/
-  kPictureDocumentsFolderType   = k("pdoc"), /* Refers to the "Pictures" folder in a users home directory*/
-  kMovieDocumentsFolderType     = k("mdoc"), /* Refers to the "Movies" folder in a users home directory*/
-  kMusicDocumentsFolderType     = 0xB5646F63/*'µdoc'*/, /* Refers to the "Music" folder in a users home directory*/
-  kInternetSitesFolderType      = k("site"), /* Refers to the "Sites" folder in a users home directory*/
-  kPublicFolderType             = k("pubb"), /* Refers to the "Public" folder in a users home directory*/
+        kDocumentsFolderType          = k("docs"), /*    User documents are typically put in this folder ( or a subfolder ).*/
+        kPictureDocumentsFolderType   = k("pdoc"), /* Refers to the "Pictures" folder in a users home directory*/
+        kMovieDocumentsFolderType     = k("mdoc"), /* Refers to the "Movies" folder in a users home directory*/
+        kMusicDocumentsFolderType     = 0xB5646F63/*'µdoc'*/, /* Refers to the "Music" folder in a users home directory*/
+        kInternetSitesFolderType      = k("site"), /* Refers to the "Sites" folder in a users home directory*/
+        kPublicFolderType             = k("pubb"), /* Refers to the "Public" folder in a users home directory*/
 
-  kDropBoxFolderType            = k("drop") /* Refers to the "Drop Box" folder inside the user's home directory*/
-};
+        kDropBoxFolderType            = k("drop") /* Refers to the "Drop Box" folder inside the user's home directory*/
+    };
 
     private {
         struct FSRef {
@@ -430,9 +448,12 @@ version(Windows) {
         alias int Boolean;
         alias int OSType;
         alias int OSerr;
+        
+        extern(C) @nogc @system int dummy(short, int, int, FSRef*) nothrow { return 0; }
+        extern(C) @nogc @system int dummy2(const(FSRef)*, char*, uint) nothrow { return 0; }
 
-        alias da_FSFindFolder = extern(C) int function(short, int, int, FSRef*) nothrow @nogc @system;
-        alias da_FSRefMakePath = extern(C) int function(const(FSRef)*, char*, uint) nothrow @nogc @system;
+        alias da_FSFindFolder = typeof(dummy);
+        alias da_FSRefMakePath = typeof(dummy2);
 
         __gshared da_FSFindFolder ptrFSFindFolder = null;
         __gshared da_FSRefMakePath ptrFSRefMakePath = null;
@@ -454,7 +475,7 @@ version(Windows) {
         }
     }
 
-    bool isCarbonLoaded() @trusted @nogc nothrow
+    @nogc @trusted bool isCarbonLoaded() nothrow
     {
         return ptrFSFindFolder != null && ptrFSRefMakePath != null;
     }
@@ -552,7 +573,7 @@ version(Windows) {
         return start.empty ? null : start ~ path;
     }
     
-    private string xdgBaseDir(in char[] envvar, string fallback) nothrow @trusted {
+    private string xdgBaseDir(string envvar, string fallback) nothrow @trusted {
         string dir;
         collectException(environment.get(envvar), dir);
         if (!dir.length) {
@@ -561,7 +582,7 @@ version(Windows) {
         return dir;
     }
     
-    private string xdgUserDir(in char[] key, string fallback = null) nothrow @trusted {
+    private string xdgUserDir(string key, string fallback = null) nothrow @trusted {
         import std.algorithm : startsWith;
         import std.string : strip;
         
@@ -749,48 +770,53 @@ version(Windows) {
         import core.stdc.errno;
         import core.stdc.string;
         
-        const uid_t uid = getuid();
-        string runtime;
-        collectException(environment.get("XDG_RUNTIME_DIR"), runtime);
-        
-        mode_t runtimeMode = octal!700;
-        
-        if (!runtime.length) {
-            setpwent();
-            passwd* pw = getpwuid(uid);
-            endpwent();
+        try { //one try to rule them all and for compatibility reasons
+            const uid_t uid = getuid();
+            string runtime;
+            collectException(environment.get("XDG_RUNTIME_DIR"), runtime);
             
-            try {
-                if (pw && pw.pw_name) {
-                    runtime = tempDir() ~ "/runtime-" ~ assumeUnique(fromStringz(pw.pw_name));
-                    
-                    if (!(runtime.exists && runtime.isDir)) {
-                        if (mkdir(runtime.toStringz, runtimeMode) != 0) {
-                            debug stderr.writefln("Failed to create runtime directory %s: %s", runtime, fromStringz(strerror(errno)));
-                            return null;
+            mode_t runtimeMode = octal!700;
+            
+            if (!runtime.length) {
+                setpwent();
+                passwd* pw = getpwuid(uid);
+                endpwent();
+                
+                try {
+                    if (pw && pw.pw_name) {
+                        runtime = tempDir() ~ "/runtime-" ~ assumeUnique(fromStringz(pw.pw_name));
+                        
+                        if (!(runtime.exists && runtime.isDir)) {
+                            if (mkdir(runtime.toStringz, runtimeMode) != 0) {
+                                debug stderr.writefln("Failed to create runtime directory %s: %s", runtime, fromStringz(strerror(errno)));
+                                return null;
+                            }
                         }
+                    } else {
+                        debug stderr.writeln("Failed to get user name to create runtime directory");
+                        return null;
                     }
-                } else {
-                    debug stderr.writeln("Failed to get user name to create runtime directory");
+                } catch(Exception e) {
+                    debug collectException(stderr.writefln("Error when creating runtime directory: %s", e.msg));
                     return null;
                 }
-            } catch(Exception e) {
-                debug collectException(stderr.writeln("Error when creating runtime directory", e.msg));
+            }
+            stat_t statbuf;
+            stat(runtime.toStringz, &statbuf);
+            if (statbuf.st_uid != uid) {
+                debug collectException(stderr.writeln("Wrong ownership of runtime directory %s, %d instead of %d", runtime, statbuf.st_uid, uid));
                 return null;
             }
-        }
-        stat_t statbuf;
-        stat(runtime.toStringz, &statbuf);
-        if (statbuf.st_uid != uid) {
-            debug collectException(stderr.writeln("Wrong ownership of runtime directory %s, %d instead of %d", runtime, statbuf.st_uid, uid));
+            if ((statbuf.st_mode & octal!777) != runtimeMode) {
+                debug collectException(stderr.writefln("Wrong permissions on runtime directory %s, %o instead of %o", runtime, statbuf.st_mode, runtimeMode));
+                return null;
+            }
+            
+            return runtime;
+        } catch (Exception e) {
+            debug collectException(stderr.writeln("Error when getting runtime directory: %s", e.msg));
             return null;
         }
-        if ((statbuf.st_mode & octal!777) != runtimeMode) {
-            debug collectException(stderr.writefln("Wrong permissions on runtime directory %s, %o instead of %o", runtime, statbuf.st_mode, runtimeMode));
-            return null;
-        }
-        
-        return runtime;
     }
     
     string writablePath(StandardPath type) nothrow @safe
@@ -907,6 +933,15 @@ private string checkExecutable(string filePath) nothrow @trusted {
  */
 string findExecutable(string fileName, in string[] paths = []) nothrow @safe
 {
+    @trusted string[] getEnvPaths() { //trusted function for compatibility with older compilers
+        string pathVar = environment.get("PATH");
+        if (pathVar.length) {
+            return splitter(pathVar, pathVarSeparator).array;
+        } else {
+            return null;
+        }
+    }
+    
     try {
         if (fileName.isAbsolute()) {
             return checkExecutable(fileName);
@@ -914,14 +949,7 @@ string findExecutable(string fileName, in string[] paths = []) nothrow @safe
         
         const(string)[] searchPaths = paths;
         if (searchPaths.empty) {
-            string pathVar = environment.get("PATH");
-            if (pathVar.length) {
-                searchPaths = splitter(pathVar, pathVarSeparator).array;
-            }
-        }
-        
-        if (searchPaths.empty) {
-            return null;
+            searchPaths = getEnvPaths();
         }
         
         string toReturn;
