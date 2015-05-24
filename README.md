@@ -2,6 +2,8 @@
 
 D library for getting standard paths (e.g. Pictures, Music, Documents). Inspired by QStandardPaths from Qt.
 
+[![Build Status](https://travis-ci.org/MyLittleRobo/standardpaths.svg?branch=master)](https://travis-ci.org/MyLittleRobo/standardpaths)
+
 API may change in future. Join discussions in Issues if you're interested.
 
 ## Compiler and platform support
