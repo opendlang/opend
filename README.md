@@ -9,7 +9,9 @@ API may change in future. Join discussions in Issues if you're interested.
 ## Compiler and platform support
 
 The library requires at least **dmd** v2.066 (or other compatible compiler) to compile. 
+
 **Upd:** the recent changes should make it possible to build the library using the older front ends down to 2.063, including ones used by **gdc** and **ldc**.
+
 Currently works on Windows, Linux and FreeBSD. Mac OS X support is experimental.
 
 ## Generating documentation
