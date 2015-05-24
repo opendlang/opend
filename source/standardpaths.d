@@ -219,7 +219,7 @@ version(Windows) {
     private  {
         private extern(Windows) @nogc @system BOOL dummy(HWND, wchar*, int, BOOL) nothrow { return 0; }
         
-        alias typeof(dummy) GetSpecialFolderPath;
+        alias typeof(&dummy) GetSpecialFolderPath;
         
         version(LinkedShell32) {
             extern(Windows) @nogc @system BOOL SHGetSpecialFolderPathW(HWND, wchar*, int, BOOL) nothrow;
@@ -452,8 +452,8 @@ version(Windows) {
         extern(C) @nogc @system int dummy(short, int, int, FSRef*) nothrow { return 0; }
         extern(C) @nogc @system int dummy2(const(FSRef)*, char*, uint) nothrow { return 0; }
 
-        alias da_FSFindFolder = typeof(dummy);
-        alias da_FSRefMakePath = typeof(dummy2);
+        alias da_FSFindFolder = typeof(&dummy);
+        alias da_FSRefMakePath = typeof(&dummy2);
 
         __gshared da_FSFindFolder ptrFSFindFolder = null;
         __gshared da_FSRefMakePath ptrFSRefMakePath = null;
