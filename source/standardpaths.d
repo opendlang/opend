@@ -228,19 +228,69 @@ version(Windows) {
             __gshared GetSpecialFolderPath ptrSHGetSpecialFolderPath = null;
         }
         
+        alias typeof(&RegOpenKeyExW) func_RegOpenKeyEx;
+        alias typeof(&RegQueryValueExW) func_RegQueryValueEx;
+        alias typeof(&RegCloseKey) func_RegCloseKey;
+
+        __gshared func_RegOpenKeyEx ptrRegOpenKeyEx;
+        __gshared func_RegQueryValueEx ptrRegQueryValueEx;
+        __gshared func_RegCloseKey ptrRegCloseKey;
+        
         @nogc @trusted bool hasSHGetSpecialFolderPath() nothrow {
             return ptrSHGetSpecialFolderPath != null;
         }
+        
+        @nogc @trusted bool isAdvApiLoaded() nothrow {
+            return ptrRegOpenKeyEx && ptrRegQueryValueEx && ptrRegCloseKey;
+        }
     }
     
-    version(LinkedShell32) {} else {
-        shared static this() 
-        {
-            HMODULE lib = LoadLibraryA("Shell32");
-            if (lib) {
-                ptrSHGetSpecialFolderPath = cast(GetSpecialFolderPath)GetProcAddress(lib, "SHGetSpecialFolderPathW");
+    shared static this() 
+    {
+        version(LinkedShell32) {} else {
+            HMODULE shellLib = LoadLibraryA("Shell32");
+            if (shellLib) {
+                ptrSHGetSpecialFolderPath = cast(GetSpecialFolderPath)GetProcAddress(shellLib, "SHGetSpecialFolderPathW");
             }
         }
+        
+        HMODULE advApi = LoadLibraryA("Advapi32.dll");
+        if (advApi) {
+            ptrRegOpenKeyEx = cast(func_RegOpenKeyEx)GetProcAddress(advApi, "RegOpenKeyExW");
+            ptrRegQueryValueEx = cast(func_RegQueryValueEx)GetProcAddress(advApi, "RegQueryValueExW");
+            ptrRegCloseKey = cast(func_RegCloseKey)GetProcAddress(advApi, "RegCloseKey");
+        }
+    }
+    
+    private string getShellFolder(const(wchar)* key) nothrow @trusted
+    {
+        HKEY hKey;
+        if (isAdvApiLoaded()) {    
+            auto result = ptrRegOpenKeyEx(HKEY_CURRENT_USER, 
+                "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Shell Folders\0"w.ptr,
+                0,
+                KEY_QUERY_VALUE,
+                &hKey
+            );
+            scope(exit) ptrRegCloseKey(hKey);
+            
+            if (result == ERROR_SUCCESS) {
+                DWORD type;
+                BYTE[MAX_PATH*wchar.sizeof] buf = void;
+                DWORD length = cast(DWORD)buf.length;
+                result = ptrRegQueryValueEx(hKey, key, null, &type, buf.ptr, &length);
+                if (result == ERROR_SUCCESS && type == REG_SZ && (length % 2 == 0)) {
+                    auto str = cast(wstring)buf[0..length];
+                    try {
+                        return toUTF8(str);
+                    } catch(Exception e) {
+                        
+                    }
+                }
+            }
+        }
+        
+        return null;
     }
     
     
@@ -291,7 +341,7 @@ version(Windows) {
             case StandardPath.Videos:
                 return getCSIDLFolder(CSIDL_MYVIDEO);
             case StandardPath.Download:
-                return null;
+                return getShellFolder("{374DE290-123F-4565-9164-39C4925E467B}\0"w.ptr);
             case StandardPath.Templates:
                 return getCSIDLFolder(CSIDL_TEMPLATES);
             case StandardPath.PublicShare:
