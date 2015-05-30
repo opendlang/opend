@@ -19,6 +19,8 @@ private {
     debug {
         import std.stdio : stderr;
     }
+    
+    static if( __VERSION__ < 2066 ) enum nogc = 1;
 }
 
 version(Windows) {
@@ -74,14 +76,13 @@ enum StandardPath {
     
     /**
      * Directory for user's downloaded files.
-     * Note: currently always return null on Windows.
      */
     Download, 
     Templates, ///Location of templates.
     
     /**
      * Public share folder.
-     * Note: available only on systems with xdg-user-dirs (Linux, FreeBSD) and Mac OS X
+     * Note: always returns null on Windows
      */
     PublicShare, 
     /**
@@ -93,6 +94,7 @@ enum StandardPath {
 }
 
 /**
+ * Current user home directory.
  * Returns: path to user home directory, or an empty string if could not determine home directory.
  * Relies on environment variables.
  * Note: this function does not provide caching of its result.
@@ -128,6 +130,7 @@ string homeDir() nothrow @safe
 }
 
 /**
+ * Getting writable paths for various locations.
  * Returns: path where files of $(U type) should be written to by current user, or an empty string if could not determine path.
  * This function does not ensure if the returned path exists and appears to be accessible directory.
  * Note: this function does not provide caching of its results.
@@ -135,6 +138,7 @@ string homeDir() nothrow @safe
 string writablePath(StandardPath type) nothrow @safe;
 
 /**
+ * Getting paths for various locations.
  * Returns: array of paths where files of $(U type) belong including one returned by $(B writablePath), or an empty array if no paths are defined for $(U type).
  * This function does not ensure if all returned paths exist and appear to be accessible directories.
  * Note: this function does not provide caching of its results. Also returned strings are not required to be unique.
@@ -983,7 +987,7 @@ private string checkExecutable(string filePath) nothrow @trusted {
  */
 string findExecutable(string fileName, in string[] paths = []) nothrow @safe
 {
-    @trusted string[] getEnvPaths() { //trusted function for compatibility with older compilers
+    @trusted static string[] getEnvPaths() { //trusted function for compatibility with older compilers
         string pathVar = environment.get("PATH");
         if (pathVar.length) {
             return splitter(pathVar, pathVarSeparator).array;
