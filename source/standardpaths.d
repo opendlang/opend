@@ -121,7 +121,7 @@ string homeDir() nothrow @safe
     }
     catch (Exception e) {
         debug {
-                @trusted void writeException(Exception e) nothrow {
+            @trusted void writeException(Exception e) nothrow {
                 collectException(stderr.writefln("Error when getting home directory %s", e.msg));
             }
             writeException(e);
@@ -422,7 +422,7 @@ version(Windows) {
         return paths;
     }
     
-    private string[] executableExtensions() nothrow @trusted
+    private const(string)[] executableExtensions() nothrow @trusted
     {
         static bool filenamesEqual(string first, string second) nothrow {
             try {
@@ -994,36 +994,43 @@ private string checkExecutable(string filePath) nothrow @trusted {
 }
 
 /**
+ * System paths where executable files can be found.
+ * Returns: Array of paths as determined by $(B PATH) environment variable.
+ */
+const(string)[] binPaths() @trusted nothrow
+{
+    static string[] paths;
+    
+    if (paths.empty) {
+        try {
+            string pathVar = environment.get("PATH");
+            if (pathVar.length) {
+                paths = splitter(pathVar, pathVarSeparator).array;
+            }
+        } catch (Exception e) {
+            
+        }
+    }
+    return paths;
+}
+
+/**
  * Finds executable by $(B fileName) in the paths specified by $(B paths).
  * Returns: Absolute path to the existing executable file or an empty string if not found.
  * Params:
  *  fileName = Name of executable to search. If it's absolute path, this function only checks if the file is executable.
- *  paths = Array of directories where executable should be searched. If not set, search in system paths, usually determined by $(B PATH) environment variable.
+ *  paths = Array of directories where executable should be searched.
  * Note: On Windows when fileName extension is omitted, executable extensions will be automatically appended during search.
  */
-string findExecutable(string fileName, in string[] paths = []) nothrow @safe
-{
-    @trusted static string[] getEnvPaths() { //trusted function for compatibility with older compilers
-        string pathVar = environment.get("PATH");
-        if (pathVar.length) {
-            return splitter(pathVar, pathVarSeparator).array;
-        } else {
-            return null;
-        }
-    }
-    
+string findExecutable(string fileName, in string[] paths) nothrow @safe
+{   
     try {
         if (fileName.isAbsolute()) {
             return checkExecutable(fileName);
         }
         
-        const(string)[] searchPaths = paths;
-        if (searchPaths.empty) {
-            searchPaths = getEnvPaths();
-        }
-        
         string toReturn;
-        foreach(string path; searchPaths) {
+        foreach(string path; paths) {
             string candidate = buildPath(absolutePath(path), fileName);
             
             version(Windows) {
@@ -1048,4 +1055,7 @@ string findExecutable(string fileName, in string[] paths = []) nothrow @safe
     return null;
 }
 
-
+///ditto, but searches in system paths, determined by $(B PATH) environment variable.
+string findExecutable(string fileName) nothrow @safe {    
+    return findExecutable(fileName, binPaths());
+}
