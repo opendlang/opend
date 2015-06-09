@@ -1,9 +1,11 @@
 /**
  * Functions for retrieving standard paths in cross-platform manner.
  * Authors: 
- *  $(LINK2 https://github.com/MyLittleRobo, Roman Chistokhodov).
+ *  $(LINK2 https://github.com/MyLittleRobo, Roman Chistokhodov)
  * License: 
  *  $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
+ * Copyright:
+ *  Roman Chistokhodov 2015
  */
 
 module standardpaths;
@@ -82,12 +84,11 @@ enum StandardPath {
     
     /**
      * Public share folder.
-     * Note: always returns null on Windows
      */
     PublicShare, 
     /**
      * Location of fonts files.
-     * Note: don't relie on this on freedesktop. Better consider using $(LINK2 http://www.freedesktop.org/wiki/Software/fontconfig/, fontconfig library)
+     * Note: don't rely on this on freedesktop. Better consider using $(LINK2 http://www.freedesktop.org/wiki/Software/fontconfig/, fontconfig library)
      */
     Fonts, 
     Applications, ///User's applications.
@@ -95,9 +96,9 @@ enum StandardPath {
 
 /**
  * Current user home directory.
- * Returns: path to user home directory, or an empty string if could not determine home directory.
+ * Returns: Path to user home directory, or an empty string if could not determine home directory.
  * Relies on environment variables.
- * Note: this function does not provide caching of its result.
+ * Note: This function does not cache its result.
  */
 string homeDir() nothrow @safe
 {
@@ -131,22 +132,41 @@ string homeDir() nothrow @safe
 
 /**
  * Getting writable paths for various locations.
- * Returns: path where files of $(U type) should be written to by current user, or an empty string if could not determine path.
+ * Returns: Path where files of $(U type) should be written to by current user, or an empty string if could not determine path.
  * This function does not ensure if the returned path exists and appears to be accessible directory.
- * Note: this function does not provide caching of its results.
+ * Note: This function does not cache its results.
  */
 string writablePath(StandardPath type) nothrow @safe;
 
 /**
  * Getting paths for various locations.
- * Returns: array of paths where files of $(U type) belong including one returned by $(B writablePath), or an empty array if no paths are defined for $(U type).
- * This function does not ensure if all returned paths exist and appear to be accessible directories.
- * Note: this function does not provide caching of its results. Also returned strings are not required to be unique.
+ * Returns: Array of paths where files of $(U type) belong including one returned by $(B writablePath), or an empty array if no paths are defined for $(U type).
+ * This function does not ensure if all returned paths exist and appear to be accessible directories. Returned strings are not required to be unique.
+ * Note: This function does cache its results. 
  * It may cause performance impact to call this function often since retrieving some paths can be relatively expensive operation.
  * See_Also:
  *  writablePath
  */
 string[] standardPaths(StandardPath type) nothrow @safe;
+
+
+version(Docs)
+{
+    /**
+     * Path to runtime user directory.
+     * Returns: User's runtime directory determined by $(B XDG_RUNTIME_DIR) environment variable. 
+     * If directory does not exist it tries to create one with appropriate permissions. On fail returns an empty string.
+     * Note: This function is defined only on $(B Posix) systems (except for OS X)
+     */
+    string runtimeDir() nothrow @trusted;
+    
+    /**
+     * Path to $(B Roaming) data directory. 
+     * Returns: User's Roaming directory. On fail returns an empty string.
+     * Note: This function is Windows only.
+     */
+    string roamingPath() nothrow @safe;
+}
 
 version(Windows) {
     private enum pathVarSeparator = ';';
@@ -314,7 +334,6 @@ version(Windows) {
         return null;
     }
     
-    /// Path to $(B Roaming) data directory. This function is Windows only.
     string roamingPath() nothrow @safe
     {
         return getCSIDLFolder(CSIDL_APPDATA);
@@ -413,18 +432,22 @@ version(Windows) {
             }
         }
         
-        string[] extensions;
-        try {
-            extensions = environment.get("PATHEXT").splitter(pathVarSeparator).array;
-            if (canFind!(filenamesEqual)(extensions, ".exe") == false) {
-                extensions = [];
-            }
-        } catch (Exception e) {
-            
-        }
+        static string[] extensions;
         if (extensions.empty) {
-            extensions = [".exe", ".com", ".bat", ".cmd"];
+            try {
+                extensions = environment.get("PATHEXT").splitter(pathVarSeparator).array;
+                if (canFind!(filenamesEqual)(extensions, ".exe") == false) {
+                    extensions = [];
+                }
+            } catch (Exception e) {
+                
+            }
+            
+            if (extensions.empty) {
+                extensions = [".exe", ".com", ".bat", ".cmd"];
+            }
         }
+        
         return extensions;
     }
 } else version(OSX) {
@@ -806,13 +829,6 @@ version(Windows) {
         
     }
     
-    
-    
-    /**
-     * Returns user's runtime directory determined by $(B XDG_RUNTIME_DIR) environment variable. 
-     * If directory does not exist it tries to create one with appropriate permissions. On fail returns an empty string.
-     * Note: this function is defined only on $(B Posix) systems (except for OS X)
-     */
     string runtimeDir() nothrow @trusted
     {
         // Do we need it on BSD systems?
@@ -979,11 +995,11 @@ private string checkExecutable(string filePath) nothrow @trusted {
 
 /**
  * Finds executable by $(B fileName) in the paths specified by $(B paths).
- * Returns: absolute path to the existing executable file or an empty string if not found.
+ * Returns: Absolute path to the existing executable file or an empty string if not found.
  * Params:
- *  fileName = name of executable to search
- *  paths = array of directories where executable should be searched. If not set, search in system paths, usually determined by PATH environment variable
- * Note: on Windows when fileName extension is omitted, executable extensions will be automatically appended during search.
+ *  fileName = Name of executable to search. If it's absolute path, this function only checks if the file is executable.
+ *  paths = Array of directories where executable should be searched. If not set, search in system paths, usually determined by $(B PATH) environment variable.
+ * Note: On Windows when fileName extension is omitted, executable extensions will be automatically appended during search.
  */
 string findExecutable(string fileName, in string[] paths = []) nothrow @safe
 {
