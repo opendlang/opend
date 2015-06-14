@@ -18,11 +18,6 @@
             "name" : "linkedshell32",
             "versions-windows":["LinkedShell32"],
             "platforms" : ["windows"]
-        },
-        {
-            "name" : "fontsconf",
-            "versions-posix" : ["fontsconf"],
-            "platforms" : ["posix"]
         }
     ],
     

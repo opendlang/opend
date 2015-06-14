@@ -17,6 +17,7 @@ private {
     import std.file;
     import std.algorithm : splitter, canFind;
     import std.exception;
+    import std.range;
     
     debug {
         import std.stdio : stderr;
@@ -59,39 +60,58 @@ enum StandardPath {
     /**
      * Location of persisted application data.
      */
-    Data, 
+    data,
+    Data = StandardPath.data, 
     /**
      * Location of configuration files.
      * Note: on Windows it's the same as $(B Data) path.
      */
-    Config, 
+    config,
+    Config = StandardPath.config, 
     /**
      * Location of cached data.
      * Note: on Windows it's the same as $(B Data)/cache.
      */
-    Cache,  
-    Desktop, ///User's desktop directory
-    Documents, ///User's documents
-    Pictures, ///User's pictures
-    Music, ///User's music
-    Videos, ///User's videos (movies)
+    cache,
+    Cache = StandardPath.cache,  
+    ///User's desktop directory
+    desktop,
+    Desktop = StandardPath.desktop,
+    ///User's documents
+    documents,
+    Documents = StandardPath.documents,
+    ///User's pictures
+    pictures,
+    Pictures = StandardPath.pictures, 
     
-    /**
-     * Directory for user's downloaded files.
-     */
-    Download, 
-    Templates, ///Location of templates.
+    ///User's music
+    music,
+    Music = StandardPath.music, 
     
-    /**
-     * Public share folder.
-     */
-    PublicShare, 
+    ///User's videos (movies)
+    videos,
+    Videos = StandardPath.videos, 
+    
+    ///Directory for user's downloaded files.
+    downloads,
+    Download = StandardPath.downloads, 
+    
+    ///Location of templates.
+    templates,
+    Templates = templates, 
+    
+    ///Public share folder.
+    publicShare,
+    PublicShare = StandardPath.publicShare, 
     /**
      * Location of fonts files.
-     * Note: don't rely on this on freedesktop. Better consider using $(LINK2 http://www.freedesktop.org/wiki/Software/fontconfig/, fontconfig library)
+     * Note: don't rely on this on freedesktop, since it uses hardcoded paths there. Better consider using $(LINK2 http://www.freedesktop.org/wiki/Software/fontconfig/, fontconfig library)
      */
-    Fonts, 
-    Applications, ///User's applications.
+    fonts,
+    Fonts = StandardPath.fonts, 
+    ///User's applications.
+    applications,
+    Applications = StandardPath.applications, 
 }
 
 /**
@@ -434,16 +454,8 @@ version(Windows) {
         
         static string[] extensions;
         if (extensions.empty) {
-            try {
-                extensions = environment.get("PATHEXT").splitter(pathVarSeparator).array;
-                if (canFind!(filenamesEqual)(extensions, ".exe") == false) {
-                    extensions = [];
-                }
-            } catch (Exception e) {
-                
-            }
-            
-            if (extensions.empty) {
+            collectException(environment.get("PATHEXT").splitter(pathVarSeparator).array, extensions);
+            if (canFind!(filenamesEqual)(extensions, ".exe") == false) {
                 extensions = [".exe", ".com", ".bat", ".cmd"];
             }
         }
@@ -742,91 +754,21 @@ version(Windows) {
         return ["/usr/local/share", "/usr/share"];
     }
     
+    private string homeFontsPath() nothrow @trusted {
+        return maybeConcat(homeDir(), "/.fonts");
+    }
     
-    version(fontsconf) {
-        private string[] readFontsConfig(string configFile) nothrow @trusted
-        {
-            //Should be changed in future since std.xml is deprecated
-            import std.xml;
-            
-            string[] paths;
-            try {
-                string contents = cast(string)read(configFile);
-                check(contents);
-                auto parser = new DocumentParser(contents);
-                parser.onEndTag["dir"] = (in Element xml)
-                {
-                    string path = xml.text;
-                    
-                    if (path.length && path[0] == '~') {
-                        path = maybeConcat(homeDir(), path[1..$]);
-                    } else {
-                        const(string)* prefix = "prefix" in xml.tag.attr;
-                        if (prefix && *prefix == "xdg") {
-                            string dataPath = writablePath(StandardPath.Data);
-                            if (dataPath.length) {
-                                path = buildPath(dataPath, path);
-                            }
-                        }
-                    }
-                    if (path.length) {
-                        paths ~= path;
-                    }
-                };
-                parser.parse();
-            }
-            catch(Exception e) {
-                
-            }
-            return paths;
-        }
+    private string[] fontPaths() nothrow @trusted
+    {
+        enum localShare = "/usr/local/share/fonts";
+        enum share = "/usr/share/fonts";
         
-        private string[] fontPaths() nothrow @trusted
-        {
-            string[] paths;
-            
-            string homeConfig = homeFontsConfig();
-            if (homeConfig.length) {
-                paths ~= readFontsConfig(homeConfig);
-            }
-            
-            enum configs = ["/etc/fonts/fonts.conf", //path on linux
-                            "/usr/local/etc/fonts/fonts.conf"]; //path on freebsd
-            foreach(config; configs) {
-                paths ~= readFontsConfig(config);
-            }
-            return paths;
+        string homeFonts = homeFontsPath();
+        if (homeFonts.length) {
+            return [homeFonts, localShare, share];
+        } else {
+            return [localShare, share];
         }
-        
-        private string homeFontsConfig() nothrow @trusted {
-            return maybeConcat(writablePath(StandardPath.Config), "/fontconfig/fonts.conf");
-        }
-        
-        private string homeFontsPath() nothrow @trusted {
-            string[] paths = readFontsConfig(homeFontsConfig());
-            if (paths.length)
-                return paths[0];
-            return null;
-        }
-        
-    } else {
-        private string homeFontsPath() nothrow @trusted {
-            return maybeConcat(homeDir(), "/.fonts");
-        }
-        
-        private string[] fontPaths() nothrow @trusted
-        {
-            enum localShare = "/usr/local/share/fonts";
-            enum share = "/usr/share/fonts";
-            
-            string homeFonts = homeFontsPath();
-            if (homeFonts.length) {
-                return [homeFonts, localShare, share];
-            } else {
-                return [localShare, share];
-            }
-        }
-        
     }
     
     string runtimeDir() nothrow @trusted
@@ -995,23 +937,14 @@ private string checkExecutable(string filePath) nothrow @trusted {
 
 /**
  * System paths where executable files can be found.
- * Returns: Array of paths as determined by $(B PATH) environment variable.
+ * Returns: Range of paths as determined by $(B PATH) environment variable.
+ * Note: this function does not cache its result
  */
-const(string)[] binPaths() @trusted nothrow
+@trusted auto binPaths() nothrow
 {
-    static string[] paths;
-    
-    if (paths.empty) {
-        try {
-            string pathVar = environment.get("PATH");
-            if (pathVar.length) {
-                paths = splitter(pathVar, pathVarSeparator).array;
-            }
-        } catch (Exception e) {
-            
-        }
-    }
-    return paths;
+    string pathVar;
+    collectException(environment.get("PATH"), pathVar);
+    return splitter(pathVar, pathVarSeparator);
 }
 
 /**
@@ -1019,10 +952,10 @@ const(string)[] binPaths() @trusted nothrow
  * Returns: Absolute path to the existing executable file or an empty string if not found.
  * Params:
  *  fileName = Name of executable to search. If it's absolute path, this function only checks if the file is executable.
- *  paths = Array of directories where executable should be searched.
+ *  paths = Range of directories where executable should be searched.
  * Note: On Windows when fileName extension is omitted, executable extensions will be automatically appended during search.
  */
-string findExecutable(string fileName, in string[] paths) nothrow @safe
+@safe nothrow string findExecutable(Range)(string fileName, Range paths) if (is(ElementType!Range : string))
 {   
     try {
         if (fileName.isAbsolute()) {
@@ -1055,7 +988,10 @@ string findExecutable(string fileName, in string[] paths) nothrow @safe
     return null;
 }
 
-///ditto, but searches in system paths, determined by $(B PATH) environment variable.
-string findExecutable(string fileName) nothrow @safe {    
+/**
+ * ditto, but searches in system paths, determined by $(B PATH) environment variable.
+ * See_Also: binPaths
+ */
+@safe string findExecutable(string fileName) nothrow {    
     return findExecutable(fileName, binPaths());
 }
