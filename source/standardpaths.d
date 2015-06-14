@@ -955,7 +955,7 @@ private string checkExecutable(string filePath) nothrow @trusted {
  *  paths = Range of directories where executable should be searched.
  * Note: On Windows when fileName extension is omitted, executable extensions will be automatically appended during search.
  */
-@safe nothrow string findExecutable(Range)(string fileName, Range paths) if (is(ElementType!Range : string))
+@trusted nothrow string findExecutable(Range)(string fileName, Range paths) if (is(ElementType!Range : string))
 {   
     try {
         if (fileName.isAbsolute()) {
