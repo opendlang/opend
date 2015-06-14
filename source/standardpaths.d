@@ -944,7 +944,12 @@ private string checkExecutable(string filePath) nothrow @trusted {
 {
     string pathVar;
     collectException(environment.get("PATH"), pathVar);
-    return splitter(pathVar, pathVarSeparator);
+    try {
+        return splitter(pathVar, pathVarSeparator);
+    }
+    catch(Exception e) {
+        return splitter("", pathVarSeparator);
+    }
 }
 
 /**
