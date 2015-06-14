@@ -176,7 +176,7 @@ version(Docs)
      * Path to runtime user directory.
      * Returns: User's runtime directory determined by $(B XDG_RUNTIME_DIR) environment variable. 
      * If directory does not exist it tries to create one with appropriate permissions. On fail returns an empty string.
-     * Note: This function is defined only on $(B Posix) systems (except for OS X)
+     * Note: This function is Freedesktop only.
      */
     string runtimeDir() nothrow @trusted;
     
@@ -186,6 +186,41 @@ version(Docs)
      * Note: This function is Windows only.
      */
     string roamingPath() nothrow @safe;
+    
+    /**
+     * The preference-ordered set of base directories to search for configuration files.
+     * Returns: config directories, without user's one.
+     * Note: This function is Freedesktop only.
+     */
+    string[] xdgConfigDirs() nothrow @trusted;
+    
+    /**
+     * The preference-ordered set of base directories to search for data files.
+     * Returns: data directories, without user's one.
+     * Note: This function is Freedesktop only.
+     */
+    string[] xdgDataDirs() nothrow @trusted;
+    
+    /**
+     * The base directory relative to which user specific data files should be stored.
+     * Returns:  the same value as standardPaths(StandardPath.data)
+     * Note: This function is Freedesktop only.
+     */
+    string xdgDataHome() nothrow @trusted;
+    
+    /**
+     * The base directory relative to which user specific configuration files should be stored.
+     * Returns: the same value as standardPaths(StandardPath.config)
+     * Note: This function is Freedesktop only.
+     */
+    string xdgConfigHome() nothrow @trusted;
+    
+    /**
+     * The base directory relative to which user specific non-essential data files should be stored.
+     * Returns: the same value as standardPaths(StandardPath.cache)
+     * Note: This function is Freedesktop only.
+     */
+    string xdgCacheHome() nothrow @trusted;
 }
 
 version(Windows) {
@@ -729,7 +764,7 @@ version(Windows) {
         return null;
     }
     
-    private string[] xdgConfigDirs() nothrow @trusted {
+    string[] xdgConfigDirs() nothrow @trusted {
         try {
             string configDirs = environment.get("XDG_CONFIG_DIRS");
             if (configDirs.length) {
@@ -742,7 +777,7 @@ version(Windows) {
         return ["/etc/xdg"];
     }
     
-    private string[] xdgDataDirs() nothrow @trusted {
+    string[] xdgDataDirs() nothrow @trusted {
         try {
             string dataDirs = environment.get("XDG_DATA_DIRS");
             if (dataDirs.length) {
@@ -752,6 +787,18 @@ version(Windows) {
             
         }
         return ["/usr/local/share", "/usr/share"];
+    }
+    
+    string xdgDataHome() nothrow @trusted {
+        return xdgBaseDir("XDG_DATA_HOME", "/.local/share");
+    }
+    
+    string xdgConfigHome() nothrow @trusted {
+        return xdgBaseDir("XDG_CONFIG_HOME", "/.config");
+    }
+    
+    string xdgCacheHome() nothrow @trusted {
+        return xdgBaseDir("XDG_CACHE_HOME", "/.cache");
     }
     
     private string homeFontsPath() nothrow @trusted {
@@ -835,11 +882,11 @@ version(Windows) {
     {
         final switch(type) {
             case StandardPath.Config:
-                return xdgBaseDir("XDG_CONFIG_HOME", "/.config");
+                return xdgConfigHome();
             case StandardPath.Cache:
-                return xdgBaseDir("XDG_CACHE_HOME", "/.cache");
+                return xdgCacheHome();
             case StandardPath.Data:
-                return xdgBaseDir("XDG_DATA_HOME", "/.local/share");
+                return xdgDataHome();
             case StandardPath.Desktop:
                 return xdgUserDir("DESKTOP", "/Desktop");
             case StandardPath.Documents:
@@ -944,12 +991,7 @@ private string checkExecutable(string filePath) nothrow @trusted {
 {
     string pathVar;
     collectException(environment.get("PATH"), pathVar);
-    try {
-        return splitter(pathVar, pathVarSeparator);
-    }
-    catch(Exception e) {
-        return splitter("", pathVarSeparator);
-    }
+    return splitter(pathVar, pathVarSeparator);
 }
 
 /**
