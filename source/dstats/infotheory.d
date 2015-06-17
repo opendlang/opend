@@ -540,7 +540,7 @@ unittest {
 
 /**
 Much faster implementations of information theory functions for the special
-but common case where all observations are integers on the range [0, nBin).
+but common case where all observations are integers on the range [0, nBin$(RPAREN).
 This is the case, for example, when the observations have been previously
 binned using, for example, dstats.base.frqBin().
 
@@ -577,7 +577,7 @@ struct DenseInfoTheory {
 
     /**
     Constructs a DenseInfoTheory object for nBin bins.  The values taken by
-    each observation must then be on the interval [0, nBin).
+    each observation must then be on the interval [0, nBin$(RPAREN).
     */
     this(uint nBin) {
         this.nBin = nBin;
@@ -586,7 +586,7 @@ struct DenseInfoTheory {
     /**
     Computes the entropy of a set of observations.  Note that, for this
     function, the joint() function can be used to compute joint entropies
-    as long as each individual range contains only integers on [0, nBin).
+    as long as each individual range contains only integers on [0, nBin$(RPAREN).
     */
     double entropy(R)(R range) if(isIterable!R) {
         return selectSize!entropyImpl(range);
@@ -672,7 +672,7 @@ struct DenseInfoTheory {
 
     /**
     Calculates the P-value for I(X; Y) assuming x and y both have supports
-    of [0, nBin).  The P-value is calculated using a Chi-Square approximation.
+    of [0, nBin$(RPAREN).  The P-value is calculated using a Chi-Square approximation.
     It is asymptotically correct, but is approximate for finite sample size.
 
     Parameters:
