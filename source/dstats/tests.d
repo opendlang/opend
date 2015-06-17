@@ -3868,7 +3868,7 @@ unittest {
 enum Dependency : bool {
     /**
     Assume that dependency among hypotheses may exist.  (More conservative,
-    Benjamini-Yekutieli procedure.
+    Benjamini-Yekutieli procedure.)
     */
     yes = true,
 
