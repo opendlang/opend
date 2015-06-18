@@ -23,6 +23,7 @@ and DMD.
 To build, simply unpack all the files into an empty directory and do a:
 
 ```sh
+
 dmd -O -inline -release -lib -ofdstats.lib *.d
 ```
 
@@ -33,6 +34,7 @@ To build with this enabled, make sure your SciD directory is in your import path
 do:
 
 ```sh
+
 dmd -O -inline -release -lib -ofdstats.lib -version=scid *.d
 ```
 
