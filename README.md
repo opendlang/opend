@@ -21,7 +21,9 @@ This library has no mandatory dependencies other than the latest versions of Pho
 and DMD.
 To build, simply unpack all the files into an empty directory and do a:
 
+```sh
 dmd -O -inline -release -lib -ofdstats.lib *.d
+```
 
 SciD is an optional dependency, as Dstats is slowly being integrated into it.
 If used, it enables a few extra features and faster implementations of some 
@@ -29,7 +31,9 @@ algorithms.
 To build with this enabled, make sure your SciD directory is in your import path and 
 do:
 
+```sh
 dmd -O -inline -release -lib -ofdstats.lib -version=scid *.d
+```
 
 You'll then need to link in your SciD library and Blas and Lapack libraries when 
 compiling
