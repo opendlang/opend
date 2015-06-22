@@ -11,12 +11,12 @@ created to bring the library up to date and enable dub support.
 Building
 --------
 
-###dub
+### dub
 Simply add dstats as a dependency in your projects dub.json
 
 The SciD version of dstats is not currently supported in dub.
 
-###manual
+### manual
 
 This library has no mandatory dependencies other than the latest versions of Phobos 
 and DMD.
