@@ -7,6 +7,7 @@ A statistics library for D, emphasising a middle ground between performance and 
 of use. This repository is a fork of David Simcha's https://github.com/dsimcha/dstats
 created to bring the library up to date and enable dub support.
 
+### [Click here for documentation](https://DlangScience.github.io/dstats/api)
 
 Building
 --------
