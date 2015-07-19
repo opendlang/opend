@@ -307,6 +307,9 @@ abstract class SharedLibLoader {
          Subclasses can use this as an alternative to bindFunc, but must bind
          the returned symbol manually.
 
+         bindFunc calls this internally, so it can be overloaded to get behavior
+         different from the default.
+
          Params:
             name =      The name of the symbol to load.doThrow =   If true, a SymbolLoadException will be thrown if the symbol
                         is missing. If false, no exception will be thrown and the
@@ -339,7 +342,7 @@ abstract class SharedLibLoader {
                         specified by funcName is missing from the shared library.
         +/
         final void bindFunc( void** ptr, string funcName, bool doThrow = true ) {
-            void* func = _lib.loadSymbol( funcName, doThrow );
+            void* func = loadSymbol( funcName, doThrow );
             *ptr = func;
         }
     }
