@@ -1,4 +1,4 @@
-## What's this?
+## What's this? [![Build Status](https://travis-ci.org/p0nce/binrange.png?branch=master)](https://travis-ci.org/p0nce/binrange)
 
 binrange is a library to parse and emit over ranges of `ubyte`.
 
