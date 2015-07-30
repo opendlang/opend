@@ -1,13 +1,11 @@
 DerelictCUDA
 ============
 
-A dynamic binding to [CUDA](http://www.nvidia.com/object/cuda_home_new.html) for the D Programming Language.
+A dynamic binding to [CUDA][1] for the D Programming Language.
 
 Only the Driver and Runtime API are provided for now.
 
-For information on how to build DerelictCUDA and link it with your programs, please see the post [Using Derelict](http://dblog.aldacron.net/derelict-help/using-derelict/) at The One With D.
-
-For information on how to load the CUDA library via DerelictCUDA, see the page [DerelictUtil for Users](https://github.com/DerelictOrg/DerelictUtil/wiki/DerelictUtil-for-Users) at the DerelictUtil Wiki. In the meantime, here's some sample code.
+Please see the pages [Building and Linking Derelict][2] and [Using Derelict][3], in the Derelict documentation, for information on how to build DerelictCUDA and load the CUDA library at run time. In the meantime, here's some sample code.
 
 ```D
 import derelict.cuda;
@@ -23,3 +21,7 @@ void main() {
     ...
 }
 ```
+
+[1] http://www.nvidia.com/object/cuda_home_new.html
+[2]: http://derelictorg.github.io/compiling.html
+[3]: http://derelictorg.github.io/using.html
