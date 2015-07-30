@@ -27,33 +27,16 @@ DEALINGS IN THE SOFTWARE.
 */
 module derelict.util.sharedlib;
 
-private {
-    import std.string;
-    import std.conv;
+import std.string;
+import std.conv;
 
-    import derelict.util.exception;
-    import derelict.util.system;
-}
+import derelict.util.exception;
+import derelict.util.system;
+
+alias void* SharedLibHandle;
 
 static if( Derelict_OS_Posix ) {
-    static if( Derelict_OS_Linux ) {
-        private import std.c.linux.linux;
-    } else {
-        extern( C ) nothrow {
-            /* From <dlfcn.h>
-            *  See http://www.opengroup.org/onlinepubs/007908799/xsh/dlsym.html
-            */
-
-            const int RTLD_NOW = 2;
-
-            void *dlopen( const( char )* file, int mode );
-            int dlclose( void* handle );
-            void *dlsym( void* handle, const( char* ) name );
-            const( char )* dlerror();
-        }
-    }
-
-    alias void* SharedLibHandle;
+    import core.sys.posix.dlfcon;
 
     private {
         SharedLibHandle LoadSharedLib( string libName )    {
@@ -77,8 +60,7 @@ static if( Derelict_OS_Posix ) {
         }
     }
 } else static if( Derelict_OS_Windows ) {
-    private import derelict.util.wintypes;
-    alias HMODULE SharedLibHandle;
+    import derelict.util.wintypes;
 
     private {
         SharedLibHandle LoadSharedLib( string libName ) {
