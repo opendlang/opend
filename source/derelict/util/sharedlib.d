@@ -36,7 +36,7 @@ import derelict.util.system;
 alias void* SharedLibHandle;
 
 static if( Derelict_OS_Posix ) {
-    import core.sys.posix.dlfcon;
+    import core.sys.posix.dlfcn;
 
     private {
         SharedLibHandle LoadSharedLib( string libName )    {
