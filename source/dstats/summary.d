@@ -419,7 +419,8 @@ if(doubleIterable!(T)) {
     }
 }
 
-///
+/**Output range to calculate the geometric mean online.
+ * Operates similarly to dstats.summary.Mean*/
 struct GeometricMean {
 private:
     Mean m;
@@ -455,7 +456,8 @@ public:
     }
 }
 
-///
+/**Calculates the geometric mean of any input range that has elements implicitly
+ * convertible to double*/
 double geometricMean(T)(T data)
 if(doubleIterable!(T)) {
     // This is relatively seldom used and the log function is the bottleneck
