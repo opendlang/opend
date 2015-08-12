@@ -571,7 +571,7 @@ Step40:
     v = v*(u-p3)*lamr;
 
 Step50:
-    k = cast(int) fabs(y - m);
+    k = cast(int) abs(y - m);
     if ((k > 20) && (k < ((nrq)/2.0 - 1))) goto Step52;
 
     s = r/q;
