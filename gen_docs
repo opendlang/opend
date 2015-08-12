@@ -1,7 +1,0 @@
-#!/usr/bin/env bash
-
-set -e
-
-dub build --build=ddox
-rm -rf site/api
-mv docs site/api
