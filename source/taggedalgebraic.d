@@ -15,10 +15,10 @@ import std.typetuple;
 
 /** Implements a generic algebraic type using an enum to identify the stored type.
 
-	This struct takes a `union` declaration as an input and builds an algebraic
-	data type from it, using an automatically generated `Type` enumeration to
-	identify which field of the union is currently used. Multiple fields with
-	the same value are supported.
+	This struct takes a `union` or `struct` declaration as an input and builds
+	an algebraic data type from its fields, using an automatically generated
+	`Type` enumeration to identify which field of the union is currently used.
+	Multiple fields with the same value are supported.
 
 	All operators and methods are transparently forwarded to the contained
 	value. The caller has to make sure that the contained value supports the
@@ -38,14 +38,13 @@ import std.typetuple;
 			as the return value.)
 	)
 */
-struct TaggedAlgebraic(U) if (is(U == union))
+struct TaggedAlgebraic(U) if (is(U == union) || is(U == struct))
 {
 	import std.algorithm : among;
-	import std.conv : emplace;
 	import std.string : format;
-	import std.traits : Fields, FieldNameTuple, hasElaborateCopyConstructor, hasElaborateDestructor;
+	import std.traits : CopyTypeQualifiers, FieldTypeTuple, FieldNameTuple, Largest, hasElaborateCopyConstructor, hasElaborateDestructor;
 
-	private alias FieldTypes = Fields!U;
+	private alias FieldTypes = FieldTypeTuple!U;
 	private alias fieldNames = FieldNameTuple!U;
 
 	static assert(FieldTypes.length > 0, "The TaggedAlgebraic's union type must have at least one field.");
@@ -53,7 +52,7 @@ struct TaggedAlgebraic(U) if (is(U == union))
 
 
 	private {
-		U m_data;
+		void[Largest!FieldTypes.sizeof] m_data;
 		Type m_type;
 	}
 
@@ -78,8 +77,8 @@ struct TaggedAlgebraic(U) if (is(U == union))
 					alias T = typeof(__traits(getMember, U, tname));
 					static if (hasElaborateCopyConstructor!T)
 					{
-						case tname:
-							typeid(T).postblit(&trustedGet!tname);
+						case __traits(getMember, Type, tname):
+							typeid(T).postblit(cast(void*)&trustedGet!tname());
 							return;
 					}
 				}
@@ -98,7 +97,7 @@ struct TaggedAlgebraic(U) if (is(U == union))
 					alias T = typeof(__traits(getMember, U, tname));
 					static if (hasElaborateDestructor!T)
 					{
-						case tname:
+						case __traits(getMember, Type, tname):
 							.destroy(trustedGet!tname);
 							return;
 					}
@@ -115,7 +114,7 @@ struct TaggedAlgebraic(U) if (is(U == union))
 		switch (m_type) {
 			default: assert(false, "Cannot cast a "~(cast(Type)m_type).to!string~" value to "~T.stringof);
 			foreach (i, FT; FieldTypes) {
-				static if (is(typeof(cast(T)FT.init))) {
+				static if (is(typeof(cast(T)trustedGet!(fieldNames[i])) == T)) {
 					case __traits(getMember, Type, fieldNames[i]):
 						return cast(T)trustedGet!(fieldNames[i]);
 				}
@@ -130,28 +129,35 @@ struct TaggedAlgebraic(U) if (is(U == union))
 	//       case.
 
 	/// Enables the invocation of methods of the stored value.
-	auto opDispatch(string name, this TA, ARGS...)(auto ref ARGS args) if (hasOp!(typeof(m_data), OpKind.method, name, ARGS)) { return implementOp!(OpKind.method, name)(this, args); }
+	auto opDispatch(string name, this TA, ARGS...)(auto ref ARGS args) if (hasOp!(TA, OpKind.method, name, ARGS)) { return implementOp!(OpKind.method, name)(this, args); }
 	/// Enables equality comparison with the stored value.
-	auto opEquals(T, this TA)(auto ref T other) if (hasOp!(typeof(m_data), OpKind.binary, "==", T)) { return implementOp!(OpKind.binary, "==")(this, other); }
+	auto opEquals(T, this TA)(auto ref T other) if (hasOp!(TA, OpKind.binary, "==", T)) { return implementOp!(OpKind.binary, "==")(this, other); }
 	/// Enables relational comparisons with the stored value.
-	auto opCmp(T, this TA)(auto ref T other) if (hasOp!(typeof(m_data), OpKind.binary, "<", T)) { assert(false, "TODO!"); }
+	auto opCmp(T, this TA)(auto ref T other) if (hasOp!(TA, OpKind.binary, "<", T)) { assert(false, "TODO!"); }
 	/// Enables the use of unary operators with the stored value.
-	auto opUnary(string op, this TA)() if (hasOp!(typeof(m_data), OpKind.unary, op)) { return implementOp!(OpKind.unary, op)(this); }
+	auto opUnary(string op, this TA)() if (hasOp!(TA, OpKind.unary, op)) { return implementOp!(OpKind.unary, op)(this); }
 	/// Enables the use of binary operators with the stored value.
-	auto opBinary(string op, T, this TA)(auto ref T other) inout if (hasOp!(typeof(m_data), OpKind.binary, op, T)) { return implementOp!(OpKind.binary, op)(this, other); }
+	auto opBinary(string op, T, this TA)(auto ref T other) inout if (hasOp!(TA, OpKind.binary, op, T)) { return implementOp!(OpKind.binary, op)(this, other); }
 	/// Enables operator assignments on the stored value.
-	auto opOpAssign(string op, T, this TA)(auto ref T other) if (hasOp!(typeof(m_data), OpKind.binary, op~"=", T)) { return implementOp!(OpKind.binary, op~"=")(this, other); }
+	auto opOpAssign(string op, T, this TA)(auto ref T other) if (hasOp!(TA, OpKind.binary, op~"=", T)) { return implementOp!(OpKind.binary, op~"=")(this, other); }
 	/// Enables indexing operations on the stored value.
-	auto opIndex(this TA, ARGS...)(auto ref ARGS args) if (hasOp!(typeof(m_data), OpKind.index, null, ARGS)) { return implementOp!(OpKind.index, null)(this, args); }
+	auto opIndex(this TA, ARGS...)(auto ref ARGS args) if (hasOp!(TA, OpKind.index, null, ARGS)) { return implementOp!(OpKind.index, null)(this, args); }
 	/// Enables index assignments on the stored value.
-	auto opIndexAssign(this TA, ARGS...)(auto ref ARGS args) if (hasOp!(typeof(m_data), OpKind.indexAssign, null, ARGS)) { return implementOp!(OpKind.indexAssign, null)(this, args); }
+	auto opIndexAssign(this TA, ARGS...)(auto ref ARGS args) if (hasOp!(TA, OpKind.indexAssign, null, ARGS)) { return implementOp!(OpKind.indexAssign, null)(this, args); }
+
+	private template hasOp(TA, OpKind kind, string name, ARGS...)
+	{
+		alias UQ = CopyTypeQualifiers!(TA, U);
+		enum hasOp = .hasOp!(UQ, kind, name, ARGS);
+	}
 
 	private static auto implementOp(OpKind kind, string name, T, ARGS...)(ref T self, auto ref ARGS args)
 	{
 		import std.array : join;
 		import std.variant : Algebraic, Variant;
+		alias UQ = CopyTypeQualifiers!(T, U);
 
-		alias info = OpInfo!(typeof(self.m_data), kind, name, ARGS);
+		alias info = OpInfo!(UQ, kind, name, ARGS);
 
 		switch (self.m_type) {
 			default: assert(false, "Operator "~name~" ("~kind.stringof~") can only be used on values of the following types: "~[info.fields].join(", "));
@@ -174,7 +180,7 @@ struct TaggedAlgebraic(U) if (is(U == union))
 		assert(false); // never reached
 	}
 
-	private @trusted @property ref trustedGet(string f)() inout { return __traits(getMember, m_data, f); }
+	private @trusted @property ref inout(typeof(__traits(getMember, U, f))) trustedGet(string f)() inout { return *cast(inout(typeof(__traits(getMember, U, f)))*)m_data.ptr; }
 }
 
 
@@ -331,6 +337,53 @@ version (unittest) {
 	}
 }
 
+unittest { // postblit/destructor test
+	static struct S {
+		static int i = 0;
+		bool initialized = false;
+		this(bool) { initialized = true; i++; }
+		this(this) { if (initialized) i++; }
+		~this() { if (initialized) i--; }
+	}
+
+	static struct U {
+		S s;
+		int t;
+	}
+	alias TA = TaggedAlgebraic!U;
+	{
+		assert(S.i == 0);
+		auto ta = TA(S(true));
+		assert(S.i == 1);
+		{
+			auto tb = ta;
+			assert(S.i == 2);
+			ta = tb;
+			assert(S.i == 2);
+			ta = 1;
+			assert(S.i == 1);
+			ta = S(true);
+			assert(S.i == 2);
+		}
+		assert(S.i == 1);
+	}
+	assert(S.i == 0);
+
+	static struct U2 {
+		S a;
+		S b;
+	}
+	alias TA2 = TaggedAlgebraic!U2;
+	{
+		auto ta2 = TA2(S(true), TA2.Type.a);
+		assert(S.i == 1);
+	}
+	assert(S.i == 0);
+}
+
+/// Convenience type that can be used for union fields that have no value (`void` is not allowed).
+struct Void {}
+
 private enum hasOp(U, OpKind kind, string name, ARGS...) = TypeTuple!(OpInfo!(U, kind, name, ARGS).fields).length > 0;
 
 unittest {
@@ -379,9 +432,9 @@ unittest {
 
 private template OpInfo(U, OpKind kind, string name, ARGS...)
 {
-	import std.traits : Fields, FieldNameTuple, ReturnType;
+	import std.traits : FieldTypeTuple, FieldNameTuple, ReturnType;
 
-	alias FieldTypes = Fields!U;
+	alias FieldTypes = FieldTypeTuple!U;
 	alias fieldNames = FieldNameTuple!U;
 
 	template fieldsImpl(size_t i)
@@ -427,12 +480,12 @@ private string generateConstructors(U)()
 	import std.algorithm : map;
 	import std.array : join;
 	import std.string : format;
-	import std.traits : Fields;
+	import std.traits : FieldTypeTuple;
 
 	string ret;
 
-	// disable default construction if first type is not a null type
-	static if (!is(Fields!U[0] == typeof(null)))
+	// disable default construction if first type is not a null/Void type
+	static if (!is(FieldTypeTuple!U[0] == typeof(null)) && !is(FieldTypeTuple!U[0] == Void))
 	{
 		ret ~= q{
 			@disable this();
@@ -444,21 +497,23 @@ private string generateConstructors(U)()
 		ret ~= q{
 			this(typeof(U.%s) value)
 			{
-				m_data.%s = value;
+				m_data.rawEmplace(value);
 				m_type = Type.%s;
 			}
 
 			void opAssign(typeof(U.%s) value)
 			{
 				if (m_type != Type.%s) {
-					//destroy(this);
-					emplace(&m_data.%s, value);
+					// NOTE: destroy(this) doesn't work for some opDispatch-related reason
+					static if (is(typeof(&this.__xdtor)))
+						this.__xdtor();
+					m_data.rawEmplace(value);
 				} else {
-					m_data.%s = value;
+					trustedGet!"%s" = value;
 				}
 				m_type = Type.%s;
 			}
-		}.format(tname, tname, tname, tname, tname, tname, tname, tname);
+		}.format(tname, tname, tname, tname, tname, tname);
 
 	// type constructors with explicit type tag
 	foreach (tname; AmbiguousTypeFields!U)
@@ -466,18 +521,18 @@ private string generateConstructors(U)()
 			this(typeof(U.%s) value, Type type)
 			{
 				assert(type.among!(%s), format("Invalid type ID for type %%s: %%s", typeof(U.%s).stringof, type));
-				m_data.%s = value;
+				m_data.rawEmplace(value);
 				m_type = type;
 			}
-		}.format(tname, [SameTypeFields!(U, tname)].map!(f => "Type."~f).join(", "), tname, tname);
+		}.format(tname, [SameTypeFields!(U, tname)].map!(f => "Type."~f).join(", "), tname);
 
 	return ret;
 }
 
 private template UniqueTypeFields(U) {
-	import std.traits : Fields, FieldNameTuple;
+	import std.traits : FieldTypeTuple, FieldNameTuple;
 
-	alias Types = Fields!U;
+	alias Types = FieldTypeTuple!U;
 
 	template impl(size_t i) {
 		static if (i < Types.length) {
@@ -492,9 +547,9 @@ private template UniqueTypeFields(U) {
 }
 
 private template AmbiguousTypeFields(U) {
-	import std.traits : Fields, FieldNameTuple;
+	import std.traits : FieldTypeTuple, FieldNameTuple;
 
-	alias Types = Fields!U;
+	alias Types = FieldTypeTuple!U;
 
 	template impl(size_t i) {
 		static if (i < Types.length) {
@@ -520,9 +575,9 @@ unittest {
 }
 
 private template SameTypeFields(U, string field) {
-	import std.traits : Fields, FieldNameTuple;
+	import std.traits : FieldTypeTuple, FieldNameTuple;
 
-	alias Types = Fields!U;
+	alias Types = FieldTypeTuple!U;
 
 	alias T = typeof(__traits(getMember, U, field));
 	template impl(size_t i) {
@@ -543,14 +598,14 @@ private template MemberType(U) {
 }
 
 private template isMatchingType(U) {
-	import std.traits : Fields;
-	enum isMatchingType(T) = staticIndexOf!(T, Fields!U) >= 0;
+	import std.traits : FieldTypeTuple;
+	enum isMatchingType(T) = staticIndexOf!(T, FieldTypeTuple!U) >= 0;
 }
 
 private template isMatchingUniqueType(U) {
-	import std.traits : Fields;
+	import std.traits : FieldTypeTuple;
 	template isMatchingUniqueType(T) {
-		alias Types = Fields!U;
+		alias Types = FieldTypeTuple!U;
 		enum idx = staticIndexOf!(T, Types);
 		static if (idx < 0) enum isMatchingUniqueType = false;
 		else static if (staticIndexOf!(T, Types[idx+1 .. $]) >= 0) enum isMatchingUniqueType = false;
@@ -561,4 +616,16 @@ private template isMatchingUniqueType(U) {
 private template isNoVariant(T) {
 	import std.variant : Variant;
 	enum isNoVariant = !is(T == Variant);
+}
+
+private void rawEmplace(T)(void[] dst, ref T src)
+{
+	T* tdst = () @trusted { return cast(T*)dst.ptr; } ();
+	static if (is(T == class)) {
+		*tdst = src;
+	} else {
+		import std.conv : emplace;
+		emplace(tdst);
+		*tdst = src;
+	}
 }
