@@ -241,6 +241,7 @@ ref inout(T) get(T, U)(ref inout(TaggedAlgebraic!U) ta)
 
 	ta += 12;
 	assert(ta == 24);
+	assert(ta - 10 == 14);
 
 	ta = ["foo" : "bar"];
 	assert(ta.typeID == TA.Type.dictionary);
@@ -269,6 +270,9 @@ ref inout(T) get(T, U)(ref inout(TaggedAlgebraic!U) ta)
 	ta = TA(12, TA.Type.count);
 	assert(ta.typeID == TA.Type.count);
 	assert(ta == 12);
+
+	ta = null;
+	assert(ta.typeID == TA.Type.null_);
 }
 
 unittest {
@@ -408,6 +412,44 @@ unittest { // postblit/destructor test
 	}
 	assert(S.i == 0);
 }
+
+unittest {
+	static struct S {
+		union U {
+			int i;
+			string s;
+			U[] a;
+		}
+		alias TA = TaggedAlgebraic!U;
+		TA p;
+		alias p this;
+	}
+	S s = S(S.TA("hello"));
+	assert(cast(string)s == "hello");
+}
+
+unittest { // multiple operator choices
+	union U {
+		int i;
+		double d;
+	}
+	alias TA = TaggedAlgebraic!U;
+	TA ta = 12;
+	static assert(is(typeof(ta + 10) == TA)); // ambiguous, could be int or double
+	assert((ta + 10).typeID == TA.Type.i);
+	assert(ta + 10 == 22);
+	static assert(is(typeof(ta + 10.5) == double));
+	assert(ta + 10.5 == 22.5);
+}
+
+/*unittest {
+	union U { int i; }
+	alias TA = TaggedAlgebraic!U;
+
+	TA a = 1, b = 2;
+	assert(a + b == 3);
+	static assert(is(typeof(a + b) == int));
+}*/
 
 /// Convenience type that can be used for union fields that have no value (`void` is not allowed).
 struct Void {}
