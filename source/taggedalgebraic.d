@@ -99,7 +99,7 @@ struct TaggedAlgebraic(U) if (is(U == union))
 					static if (hasElaborateDestructor!T)
 					{
 						case tname:
-							//.destroy(trustedGet!tname);
+							.destroy(trustedGet!tname);
 							return;
 					}
 				}
