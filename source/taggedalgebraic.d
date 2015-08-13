@@ -66,6 +66,12 @@ struct TaggedAlgebraic(U) if (is(U == union) || is(U == struct))
 	//pragma(msg, generateConstructors!U());
 	mixin(generateConstructors!U);
 
+	void opAssign(TaggedAlgebraic other)
+	{
+		import std.algorithm : swap;
+		swap(this, other);
+	}
+
 	// postblit constructor
 	static if (anySatisfy!(hasElaborateCopyConstructor, FieldTypes))
 	{
@@ -144,6 +150,8 @@ struct TaggedAlgebraic(U) if (is(U == union) || is(U == struct))
 	auto opIndex(this TA, ARGS...)(auto ref ARGS args) if (hasOp!(TA, OpKind.index, null, ARGS)) { return implementOp!(OpKind.index, null)(this, args); }
 	/// Enables index assignments on the stored value.
 	auto opIndexAssign(this TA, ARGS...)(auto ref ARGS args) if (hasOp!(TA, OpKind.indexAssign, null, ARGS)) { return implementOp!(OpKind.indexAssign, null)(this, args); }
+	/// Enables call syntax operations on the stored value.
+	auto opCall(this TA, ARGS...)(auto ref ARGS args) if (hasOp!(TA, OpKind.call, null, ARGS)) { return implementOp!(OpKind.call, null)(this, args); }
 
 	private template hasOp(TA, OpKind kind, string name, ARGS...)
 	{
@@ -439,6 +447,7 @@ private static auto performOp(U, OpKind kind, string name, T, ARGS...)(ref T val
 	else static if (kind == OpKind.method) return __traits(getMember, value, name)(args);
 	else static if (kind == OpKind.index) return value[args];
 	else static if (kind == OpKind.indexAssign) return value[args[1 .. $]] = args[0];
+	else static if (kind == OpKind.call) return value(args);
 	else static assert(false, "Unsupported kind of operator: "~kind.stringof);
 }
 
@@ -485,7 +494,8 @@ private enum OpKind {
 	unary,
 	method,
 	index,
-	indexAssign
+	indexAssign,
+	call
 }
 
 private template TypeEnum(U)
