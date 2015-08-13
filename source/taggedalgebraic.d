@@ -180,7 +180,27 @@ struct TaggedAlgebraic(U) if (is(U == union) || is(U == struct))
 		assert(false); // never reached
 	}
 
-	private @trusted @property ref inout(typeof(__traits(getMember, U, f))) trustedGet(string f)() inout { return *cast(inout(typeof(__traits(getMember, U, f)))*)m_data.ptr; }
+	private @trusted @property ref inout(typeof(__traits(getMember, U, f))) trustedGet(string f)() inout { return trustedGet!(inout(typeof(__traits(getMember, U, f)))); }
+	private @trusted @property ref inout(T) trustedGet(T)() inout { return *cast(inout(T)*)m_data.ptr; }
+}
+
+bool hasType(T, U)(in ref TaggedAlgebraic!U ta)
+{
+	switch (ta.typeID) {
+		default: return false;
+		foreach (i, FT; ta.FieldTypes)
+			static if (is(FT == T)) {
+				case __traits(getMember, ta.Type, ta.fieldNames[i]):
+					return true;
+			}
+	}
+	assert(false); // never reached
+}
+
+ref inout(T) get(T, U)(ref inout(TaggedAlgebraic!U) ta)
+{
+	assert(hasType!(T, U)(ta));
+	return ta.trustedGet!T;
 }
 
 
