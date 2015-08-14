@@ -442,14 +442,23 @@ unittest { // multiple operator choices
 	assert(ta + 10.5 == 22.5);
 }
 
-/*unittest {
+unittest { // Binary op between two TaggedAlgebraic values
 	union U { int i; }
 	alias TA = TaggedAlgebraic!U;
 
 	TA a = 1, b = 2;
-	assert(a + b == 3);
 	static assert(is(typeof(a + b) == int));
-}*/
+	assert(a + b == 3);
+}
+
+unittest { // Ambiguous binary op between two TaggedAlgebraic values
+	union U { int i; double d; }
+	alias TA = TaggedAlgebraic!U;
+
+	TA a = 1, b = 2;
+	static assert(is(typeof(a + b) == TA));
+	assert(a + b == 3);
+}
 
 /// Convenience type that can be used for union fields that have no value (`void` is not allowed).
 struct Void {}
@@ -482,7 +491,7 @@ unittest {
 }
 
 
-private static auto performOp(U, OpKind kind, string name, T, ARGS...)(ref T value, /*auto ref*/ ARGS args)
+private auto performOpRaw(U, OpKind kind, string name, T, ARGS...)(ref T value, /*auto ref*/ ARGS args)
 {
 	static if (kind == OpKind.binary) return mixin("value "~name~" args[0]");
 	else static if (kind == OpKind.unary) return mixin("name "~value);
@@ -496,8 +505,51 @@ private static auto performOp(U, OpKind kind, string name, T, ARGS...)(ref T val
 unittest {
 	union U { int i; string s; }
 
+	{ int v = 1; assert(performOpRaw!(U, OpKind.binary, "+")(v, 3) == 4); }
+	{ string v = "foo"; assert(performOpRaw!(U, OpKind.binary, "~")(v, "bar") == "foobar"); }
+}
+
+
+private auto performOp(U, OpKind kind, string name, T, ARGS...)(ref T value, /*auto ref*/ ARGS args)
+{
+	import std.traits : isInstanceOf;
+	static if (ARGS.length > 0 && isInstanceOf!(TaggedAlgebraic, ARGS[0])) {
+		static if (is(typeof(performOpRaw!(U, kind, name, T, ARGS)(value, args)))) {
+			return performOpRaw!(U, kind, name, T, ARGS)(value, args);
+		} else {
+			alias TA = ARGS[0];
+			template MTypesImpl(size_t i) {
+				static if (i < TA.FieldTypes.length) {
+					alias FT = TA.FieldTypes[i];
+					static if (is(typeof(&performOpRaw!(U, kind, name, T, FT, ARGS[1 .. $]))))
+						alias MTypesImpl = TypeTuple!(FT, MTypesImpl!(i+1));
+					else alias MTypesImpl = TypeTuple!(MTypesImpl!(i+1));
+				} else alias MTypesImpl = TypeTuple!();
+			}
+			alias MTypes = NoDuplicates!(MTypesImpl!0);
+			static assert(MTypes.length > 0, "No type of the TaggedAlgebraic parameter matches any function declaration.");
+			static if (MTypes.length == 1) {
+				if (args[0].hasType!(MTypes[0]))
+					return performOpRaw!(U, kind, name)(value, args[0].get!(MTypes[0]), args[1 .. $]);
+			} else {
+				// TODO: allow all return types (fall back to Algebraic or Variant)
+				foreach (FT; MTypes) {
+					if (args[0].hasType!FT)
+						return ARGS[0](performOpRaw!(U, kind, name)(value, args[0].get!FT, args[1 .. $]));
+				}
+			}
+			throw new /*InvalidAgument*/Exception("Algebraic parameter type mismatch");
+		}
+	} else return performOpRaw!(U, kind, name, T, ARGS)(value, args);
+}
+
+unittest {
+	union U { int i; double d; string s; }
+
 	{ int v = 1; assert(performOp!(U, OpKind.binary, "+")(v, 3) == 4); }
 	{ string v = "foo"; assert(performOp!(U, OpKind.binary, "~")(v, "bar") == "foobar"); }
+	{ string v = "foo"; assert(performOp!(U, OpKind.binary, "~")(v, TaggedAlgebraic!U("bar")) == "foobar"); }
+	{ int v = 1; assert(performOp!(U, OpKind.binary, "+")(v, TaggedAlgebraic!U(3)) == 4); }
 }
 
 
