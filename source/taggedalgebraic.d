@@ -153,6 +153,8 @@ struct TaggedAlgebraic(U) if (is(U == union) || is(U == struct))
 	auto opUnary(string op, this TA)() if (hasOp!(TA, OpKind.unary, op)) { return implementOp!(OpKind.unary, op)(this); }
 	/// Enables the use of binary operators with the stored value.
 	auto opBinary(string op, T, this TA)(auto ref T other) if (hasOp!(TA, OpKind.binary, op, T)) { return implementOp!(OpKind.binary, op)(this, other); }
+	/// Enables the use of binary operators with the stored value.
+	auto opBinaryRight(string op, T, this TA)(auto ref T other) if (hasOp!(TA, OpKind.binaryRight, op, T)) { return implementOp!(OpKind.binaryRight, op)(this, other); }
 	/// Enables operator assignments on the stored value.
 	auto opOpAssign(string op, T, this TA)(auto ref T other) if (hasOp!(TA, OpKind.binary, op~"=", T)) { return implementOp!(OpKind.binary, op~"=")(this, other); }
 	/// Enables indexing operations on the stored value.
@@ -518,6 +520,16 @@ unittest {
 	static assert(hasOp!(S.TA, OpKind.field, "length"));
 }
 
+unittest { // "in" operator
+	union U {
+		string[string] dict;
+	}
+	alias TA = TaggedAlgebraic!U;
+	auto ta = TA(["foo": "bar"]);
+	assert("foo" in ta);
+	assert(*("foo" in ta) == "bar");
+}
+
 private static auto implementOp(OpKind kind, string name, T, ARGS...)(ref T self, auto ref ARGS args)
 {
 	import std.array : join;
@@ -607,6 +619,7 @@ unittest { // opIndex on recursive TA with closed return value set using @disabl
 private auto performOpRaw(U, OpKind kind, string name, T, ARGS...)(ref T value, /*auto ref*/ ARGS args)
 {
 	static if (kind == OpKind.binary) return mixin("value "~name~" args[0]");
+	else static if (kind == OpKind.binaryRight) return mixin("args[0] "~name~" value");
 	else static if (kind == OpKind.unary) return mixin("name "~value);
 	else static if (kind == OpKind.method) return __traits(getMember, value, name)(args);
 	else static if (kind == OpKind.field) return __traits(getMember, value, name);
@@ -722,6 +735,7 @@ private template ImplicitUnqual(T) {
 
 private enum OpKind {
 	binary,
+	binaryRight,
 	unary,
 	method,
 	field,
@@ -882,13 +896,8 @@ private template FieldTypeOf(U) {
 private template staticIndexOfImplicit(T, Types...) {
 	template impl(size_t i) {
 		static if (i < Types.length) {
-			static if (is(T : Types[i])) {
-				pragma(msg, "YEPP "~T.stringof~" "~Types[i].stringof);
-				enum impl = i;
-			} else {
-				pragma(msg, "NOPE "~T.stringof~" "~Types[i].stringof);
-				enum impl = impl!(i+1);
-			}
+			static if (is(T : Types[i])) enum impl = i;
+			else enum impl = impl!(i+1);
 		} else enum impl = -1;
 	}
 	enum staticIndexOfImplicit = impl!0;
