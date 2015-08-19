@@ -13,5 +13,10 @@ d:
  - ldc-0.15.1
  - gdc
 
+matrix:
+  allow_failures:
+   - os: osx
+     d: gdc
+
 script:
   - dub test --compiler=${DC}
