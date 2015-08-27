@@ -17,7 +17,7 @@ import std.typetuple;
 
 	This struct takes a `union` or `struct` declaration as an input and builds
 	an algebraic data type from its fields, using an automatically generated
-	`Type` enumeration to identify which field of the union is currently used.
+	`Kind` enumeration to identify which field of the union is currently used.
 	Multiple fields with the same value are supported.
 
 	All operators and methods are transparently forwarded to the contained
@@ -54,14 +54,21 @@ struct TaggedAlgebraic(U) if (is(U == union) || is(U == struct))
 
 	private {
 		void[Largest!FieldTypes.sizeof] m_data = void;
-		Type m_type;
+		Kind m_kind;
 	}
 
 	/// A type enum that identifies the type of value currently stored.
-	alias Type = TypeEnum!U;
+	alias Kind = TypeEnum!U;
+
+	/// Compatibility alias
+	deprecated("Use 'Kind' instead.") alias Type = Kind;
 
 	/// The type ID of the currently stored value.
-	@property Type typeID() const { return m_type; }
+	@property Kind kind() const { return m_kind; }
+
+	// Compatibility alias
+	deprecated("Use 'kind' instead.")
+	alias typeID = kind;
 
 	// constructors
 	//pragma(msg, generateConstructors!U());
@@ -84,13 +91,13 @@ struct TaggedAlgebraic(U) if (is(U == union) || is(U == struct))
 	{
 		this(this)
 		{
-			switch (m_type) {
+			switch (m_kind) {
 				default: break;
 				foreach (i, tname; fieldNames) {
 					alias T = typeof(__traits(getMember, U, tname));
 					static if (hasElaborateCopyConstructor!T)
 					{
-						case __traits(getMember, Type, tname):
+						case __traits(getMember, Kind, tname):
 							typeid(T).postblit(cast(void*)&trustedGet!tname());
 							return;
 					}
@@ -104,13 +111,13 @@ struct TaggedAlgebraic(U) if (is(U == union) || is(U == struct))
 	{
 		~this()
 		{
-			switch (m_type) {
+			switch (m_kind) {
 				default: break;
 				foreach (i, tname; fieldNames) {
 					alias T = typeof(__traits(getMember, U, tname));
 					static if (hasElaborateDestructor!T)
 					{
-						case __traits(getMember, Type, tname):
+						case __traits(getMember, Kind, tname):
 							.destroy(trustedGet!tname);
 							return;
 					}
@@ -124,11 +131,11 @@ struct TaggedAlgebraic(U) if (is(U == union) || is(U == struct))
 	{
 		import std.conv : to;
 
-		switch (m_type) {
-			default: assert(false, "Cannot cast a "~(cast(Type)m_type).to!string~" value to "~T.stringof);
+		switch (m_kind) {
+			default: assert(false, "Cannot cast a "~(cast(Kind)m_kind).to!string~" value to "~T.stringof);
 			foreach (i, FT; FieldTypes) {
 				static if (is(typeof(cast(T)trustedGet!(fieldNames[i])) == T)) {
-					case __traits(getMember, Type, fieldNames[i]):
+					case __traits(getMember, Kind, fieldNames[i]):
 						return cast(T)trustedGet!(fieldNames[i]);
 				}
 			}
@@ -170,11 +177,11 @@ struct TaggedAlgebraic(U) if (is(U == union) || is(U == struct))
 
 bool hasType(T, U)(in ref TaggedAlgebraic!U ta)
 {
-	switch (ta.typeID) {
+	switch (ta.kind) {
 		default: return false;
 		foreach (i, FT; ta.FieldTypes)
 			static if (is(FT == T)) {
-				case __traits(getMember, ta.Type, ta.fieldNames[i]):
+				case __traits(getMember, ta.Kind, ta.fieldNames[i]):
 					return true;
 			}
 	}
@@ -207,10 +214,10 @@ ref inout(T) get(T, U)(ref inout(TaggedAlgebraic!U) ta)
 	alias TA = TaggedAlgebraic!Test;
 
 	TA ta;
-	assert(ta.typeID == TA.Type.null_);
+	assert(ta.kind == TA.Kind.null_);
 
 	ta = 12;
-	assert(ta.typeID == TA.Type.integer);
+	assert(ta.kind == TA.Kind.integer);
 	assert(ta == 12);
 	assert(cast(int)ta == 12);
 	assert(cast(short)ta == 12);
@@ -220,7 +227,7 @@ ref inout(T) get(T, U)(ref inout(TaggedAlgebraic!U) ta)
 	assert(ta - 10 == 14);
 
 	ta = ["foo" : "bar"];
-	assert(ta.typeID == TA.Type.dictionary);
+	assert(ta.kind == TA.Kind.dictionary);
 	assert(ta["foo"] == "bar");
 
 	ta["foo"] = "baz";
@@ -243,12 +250,12 @@ ref inout(T) get(T, U)(ref inout(TaggedAlgebraic!U) ta)
 	alias TA = TaggedAlgebraic!Test;
 
 	TA ta;
-	ta = TA(12, TA.Type.count);
-	assert(ta.typeID == TA.Type.count);
+	ta = TA(12, TA.Kind.count);
+	assert(ta.kind == TA.Kind.count);
 	assert(ta == 12);
 
 	ta = null;
-	assert(ta.typeID == TA.Type.null_);
+	assert(ta.kind == TA.Kind.null_);
 }
 
 unittest {
@@ -383,7 +390,7 @@ unittest { // postblit/destructor test
 	}
 	alias TA2 = TaggedAlgebraic!U2;
 	{
-		auto ta2 = TA2(S(true), TA2.Type.a);
+		auto ta2 = TA2(S(true), TA2.Kind.a);
 		assert(S.i == 1);
 	}
 	assert(S.i == 0);
@@ -412,7 +419,7 @@ unittest { // multiple operator choices
 	alias TA = TaggedAlgebraic!U;
 	TA ta = 12;
 	static assert(is(typeof(ta + 10) == TA)); // ambiguous, could be int or double
-	assert((ta + 10).typeID == TA.Type.i);
+	assert((ta + 10).kind == TA.Kind.i);
 	assert(ta + 10 == 22);
 	static assert(is(typeof(ta + 10.5) == double));
 	assert(ta + 10.5 == 22.5);
@@ -433,7 +440,7 @@ unittest { // Ambiguous binary op between two TaggedAlgebraic values
 
 	TA a = 1, b = 2;
 	static assert(is(typeof(a + b) == TA));
-	assert((a + b).typeID == TA.Type.i);
+	assert((a + b).kind == TA.Kind.i);
 	assert(a + b == 3);
 }
 
@@ -548,11 +555,11 @@ private static auto implementOp(OpKind kind, string name, T, ARGS...)(ref T self
 	//pragma(msg, typeof(T.Union.tupleof));
 	//import std.meta : staticMap; pragma(msg, staticMap!(isMatchingUniqueType!(T.Union), info.ReturnTypes));
 
-	switch (self.m_type) {
+	switch (self.m_kind) {
 		default: assert(false, "Operator "~name~" ("~kind.stringof~") can only be used on values of the following types: "~[info.fields].join(", "));
 		foreach (i, f; info.fields) {
 			alias FT = typeof(__traits(getMember, T.Union, f));
-			case __traits(getMember, T.Type, f):
+			case __traits(getMember, T.Kind, f):
 				static if (NoDuplicates!(info.ReturnTypes).length == 1)
 					return info.perform(self.trustedGet!FT, args);
 				else static if (allSatisfy!(isMatchingUniqueType!(T.Union), info.ReturnTypes))
@@ -774,12 +781,12 @@ private string generateConstructors(U)()
 			this(typeof(U.%s) value)
 			{
 				m_data.rawEmplace(value);
-				m_type = Type.%s;
+				m_kind = Kind.%s;
 			}
 
 			void opAssign(typeof(U.%s) value)
 			{
-				if (m_type != Type.%s) {
+				if (m_kind != Kind.%s) {
 					// NOTE: destroy(this) doesn't work for some opDispatch-related reason
 					static if (is(typeof(&this.__xdtor)))
 						this.__xdtor();
@@ -787,20 +794,20 @@ private string generateConstructors(U)()
 				} else {
 					trustedGet!"%s" = value;
 				}
-				m_type = Type.%s;
+				m_kind = Kind.%s;
 			}
 		}.format(tname, tname, tname, tname, tname, tname);
 
 	// type constructors with explicit type tag
 	foreach (tname; AmbiguousTypeFields!U)
 		ret ~= q{
-			this(typeof(U.%s) value, Type type)
+			this(typeof(U.%s) value, Kind type)
 			{
 				assert(type.among!(%s), format("Invalid type ID for type %%s: %%s", typeof(U.%s).stringof, type));
 				m_data.rawEmplace(value);
-				m_type = type;
+				m_kind = type;
 			}
-		}.format(tname, [SameTypeFields!(U, tname)].map!(f => "Type."~f).join(", "), tname);
+		}.format(tname, [SameTypeFields!(U, tname)].map!(f => "Kind."~f).join(", "), tname);
 
 	return ret;
 }
