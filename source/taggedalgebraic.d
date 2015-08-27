@@ -175,26 +175,6 @@ struct TaggedAlgebraic(U) if (is(U == union) || is(U == struct))
 	private @trusted @property ref inout(T) trustedGet(T)() inout { return *cast(inout(T)*)m_data.ptr; }
 }
 
-bool hasType(T, U)(in ref TaggedAlgebraic!U ta)
-{
-	switch (ta.kind) {
-		default: return false;
-		foreach (i, FT; ta.FieldTypes)
-			static if (is(FT == T)) {
-				case __traits(getMember, ta.Kind, ta.fieldNames[i]):
-					return true;
-			}
-	}
-	assert(false); // never reached
-}
-
-ref inout(T) get(T, U)(ref inout(TaggedAlgebraic!U) ta)
-{
-	assert(hasType!(T, U)(ta));
-	return ta.trustedGet!T;
-}
-
-
 /** Operators and methods of the contained type can be used transparently.
 */
 @safe unittest {
@@ -463,6 +443,60 @@ unittest {
 	assert(b["foo"] == "hello");
 	assert(c[0] == a);
 	assert(c[0] == "hello");
+}
+
+
+/** Tests if the algebraic type stores a value of a certain data type.
+*/
+bool hasType(T, U)(in ref TaggedAlgebraic!U ta)
+{
+	alias Fields = Filter!(fieldMatchesType!(U, T), ta.fieldNames);
+	static assert(Fields.length > 0, "Type "~T.stringof~" cannot be stored in a "~(TaggedAlgebraic!U).stringof~".");
+
+	switch (ta.kind) {
+		default: return false;
+		foreach (i, fname; Fields)
+			case __traits(getMember, ta.Kind, fname):
+				return true;
+	}
+	assert(false); // never reached
+}
+
+///
+unittest {
+	union Fields {
+		int number;
+		string text;
+	}
+
+	TaggedAlgebraic!Fields ta = "test";
+
+	assert(ta.hasType!string);
+	assert(!ta.hasType!int);
+
+	ta = 42;
+	assert(ta.hasType!int);
+	assert(!ta.hasType!string);
+}
+
+unittest { // issue #1
+	union U {
+		int a;
+		int b;
+	}
+	alias TA = TaggedAlgebraic!U;
+
+	TA ta = TA(0, TA.Kind.b);
+	static assert(!is(typeof(ta.hasType!double)));
+	assert(ta.hasType!int);
+}
+
+/** Gets the value stored in an algebraic type based on its data type.
+*/
+ref inout(T) get(T, U)(ref inout(TaggedAlgebraic!U) ta)
+{
+	assert(hasType!(T, U)(ta));
+	return ta.trustedGet!T;
 }
 
 /// Convenience type that can be used for union fields that have no value (`void` is not allowed).
@@ -892,6 +926,11 @@ private template isMatchingUniqueType(U) {
 		static if (is(T : TaggedAlgebraic!U)) enum isMatchingUniqueType = true;
 		else enum isMatchingUniqueType = staticIndexOfImplicit!(T, UniqueTypes) >= 0;
 	}
+}
+
+private template fieldMatchesType(U, T)
+{
+	enum fieldMatchesType(string field) = is(typeof(__traits(getMember, U, field)) == T);
 }
 
 private template FieldTypeOf(U) {
