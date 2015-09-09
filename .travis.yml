@@ -17,6 +17,3 @@ matrix:
   allow_failures:
    - os: osx
      d: gdc
-
-script:
-  - dub test --compiler=${DC}
