@@ -4,5 +4,6 @@
 	"copyright": "Copyright © 2015, edwin",
 	"authors": ["edwin"],
 	"dependencies": {
+		"dunit": "~>1.0.11"
 	}
 }

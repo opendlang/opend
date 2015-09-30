@@ -1,7 +1,7 @@
 .dub
 dub.selections.json
 docs.json
-__dummy.html
+__*
 *.o
 *.obj
 .*.swp
