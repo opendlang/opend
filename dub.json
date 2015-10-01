@@ -2,8 +2,10 @@
 	"name": "ggplotd",
 	"description": "A minimal D application.",
 	"copyright": "Copyright © 2015, edwin",
-	"authors": ["edwin"],
-	"dependencies": {
-		"dunit": "~>1.0.11"
+    "authors": ["edwin"],
+    "libs": ["cairo"],
+    "dependencies": {
+        "cairod": "~master",
+        "dunit": "~>1.0.11"
 	}
 }

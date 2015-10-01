@@ -15,6 +15,7 @@ struct Aes( RX, RY, RCol )
     {
         _aes = zip(StoppingPolicy.longest, 
                 x, y, colour);
+        // TODO probably need to sort by colour
     }
 
     @property ref auto front()
@@ -41,9 +42,6 @@ struct Aes( RX, RY, RCol )
         return this;
     }
 
-    // First test whether chunkby wouldn't work just as well 
-    // -> probably need to sort by colour first
-    // filterByColor should return a voldermort range, where popFront applies the new filter)
     private:
         Zip!(RX, RY, RCol) _aes;
 }

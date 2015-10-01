@@ -26,3 +26,8 @@ Aes is supposed to be composable. I.e. the following should work:
 xs.aes("x") + ys.aes("y"); // Combine into x and y vector
 zip(xs1,ys1).aes("x","y") + zip(xs2,ys2).aes("x","y"); // Append data sets
 ```
+
+Probably after every coordinate we need to change colour etc? But for some
+things we do group by colour, i.e. lines start new line, hist start new
+hist plot. So we do want to group by colour immediately. geom_point ->
+size can be array total length..
