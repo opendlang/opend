@@ -35,8 +35,8 @@ separately, while geom_hist first group by colour/other grouping and act
 on the whole set.
 
 .front should return a tuple, with a function that acts on a context (and
-draws the needed thing) and some associated “meta” data, such as colour.
-Bounding box up till now?
+draws the needed thing) and some associated “meta” data, such as colour,
+bounding box up till now.
 
 ## colour
 
