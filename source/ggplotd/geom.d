@@ -4,6 +4,7 @@ import cairo.cairo;
 
 version(unittest)
 {
+    import dunit.toolkit;
     import ggplotd.aes;
 }
 
@@ -42,5 +43,8 @@ auto geom_line(AES)(AES aes )
 unittest
 {
     auto aes = Aes!(double[],double[], string[])( [1.0],[2.0],["c"] );
-    auto pl = geom_line( aes );
+    auto gl = geom_line( aes );
+    assertEqual( gl.front.colour, "c" );
+    gl.popFront;
+    assert( gl.empty );
 }
