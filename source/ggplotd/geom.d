@@ -7,16 +7,25 @@ version(unittest)
     import ggplotd.aes;
 }
 
+struct Geom( FUNC, Col )
+{
+    FUNC draw;
+    Col colour;
+}
+
 auto geom_line(AES)(AES aes )
 {
     struct GeomRange(T)
     {
         this( T aes ) { _aes = aes; }
         @property auto front() {
-            return (Context context) 
+            immutable tup = _aes.front;
+            auto f = delegate(Context context) 
             {
-                return context.rectangle( 0.4, 0.4, 0.2, 0.2 );
+                return context.rectangle( tup.x, tup.y, 0.2, 0.2 );
             };
+            return Geom!(typeof(f),typeof(tup.colour))
+                ( f, tup.colour );
         }
 
         void popFront() {
