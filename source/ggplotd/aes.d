@@ -53,6 +53,8 @@ unittest
     aes.popFront;
     assertEqual( aes.front.y, 1.5 );
 
+    assert( aes.empty );
+
     // Make sure to test with empty y, colour
 }
 

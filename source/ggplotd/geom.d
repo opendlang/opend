@@ -7,12 +7,27 @@ version(unittest)
     import ggplotd.aes;
 }
 
-auto geom_line(AES)( AES aes )
+auto geom_line(AES)(AES aes )
 {
-    return ( Context context ) 
+    struct GeomRange(T)
     {
-        context.rectangle( 0.4, 0.4, 0.2, 0.2 );
-    };
+        this( T aes ) { _aes = aes; }
+        @property auto front() {
+            return (Context context) 
+            {
+                return context.rectangle( 0.4, 0.4, 0.2, 0.2 );
+            };
+        }
+
+        void popFront() {
+            _aes.popFront();
+        }
+
+        @property bool empty() { return _aes.empty; }
+        private:
+            T _aes;
+    }
+    return GeomRange!AES(aes);
 }
 
 unittest
