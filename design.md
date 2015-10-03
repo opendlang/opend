@@ -20,14 +20,40 @@ zip(xs,ys,ids)
 
 ## aes
 
-Aes is supposed to be composable. I.e. the following should work:
+Aes is the basic struct, which acts like a range and returns a tuple with
+the x, y, colour values. We will need to make this somehow compatible with
+missing y values and maybe later also with z values etc.
 
-```D
-xs.aes("x") + ys.aes("y"); // Combine into x and y vector
-zip(xs1,ys1).aes("x","y") + zip(xs2,ys2).aes("x","y"); // Append data sets
-```
+It might be good to at a coordinates function which converts the x and
+y into numeric variables, so we can gracefully handle labelled points.
 
-Probably after every coordinate we need to change colour etc? But for some
-things we do group by colour, i.e. lines start new line, hist start new
-hist plot. So we do want to group by colour immediately. geom_point ->
-size can be array total length..
+## geom
+
+Each geom_? function should return a range. The range can act on different
+amount of data. For example geom_point/geom_line will act on every point
+separately, while geom_hist first group by colour/other grouping and act
+on the whole set.
+
+.front should return a tuple, with a function that acts on a context (and
+draws the needed thing) and some associated “meta” data, such as colour.
+Bounding box up till now?
+
+## colour
+
+We need a colour space function that converts a value into a colour. It
+might be interesting to also rangify this, so that each aes value gets
+a colour. Colour spaces should work on strings -> discrete and numerical
+-> continuous. Will basically be a function that analysis the whole range
+of colours and returns a function that converts a value into a colour.
+
+## scale 
+
+Returns a function converting a coordinate to a function that sets the
+correct transformation matrix on on a context. (And probably something
+with axes drawing)
+
+## print
+
+Brings it all together. Needs a geom range and colourspace.
+
+
