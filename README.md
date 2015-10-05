@@ -1,10 +1,10 @@
 # GGPlotD
 
 GGPlotD is a plotting library for the D programming language. The design
-is heavily inspired by ggplot2 for R, which is based on a general Grammar
-of Graphics described by Leland Wilkinson. On the background cairo(D) is
-used for drawing. The library is mainly intended to make it easy to
-compose complex plots.
+is heavily inspired by ggplot2 for R, which is based on a general Grammar of
+Graphics described by Leland Wilkinson. The library depends on cairo(D) for
+the actual drawing. The library is designed to make it easy to build complex
+plots from simple building blocks.
 
 ## Install
 
@@ -14,8 +14,8 @@ on cairo so you will need to have that installed.
 
 ### PDF and SVG support
 
-By default cairoD disables pdf and svg support. To enable it you
-need to add a local couple of cairoD that dub can find:
+By default cairoD disables pdf and svg support. To enable it you need to add
+a local copy of cairoD that dub can find:
 
 ```
 git clone https://github.com/jpf91/cairoD.git
@@ -33,19 +33,21 @@ To come.
 Due to ggplotd’s design it is relatively straightforward to extend ggplotd to
 support new types of plots. This is especially true if your function depends
 on the already implemented base types geomLine and geomPoint. The main reason
-for not having added more functions yet are time restrains. If you decide to
+for not having added more functions yet is lack of time. If you decide to
 implement your own function then **please** open a pull request or at least
 copy your code into an issue. That way we can all benefit from your work :)
-Even if you think the code is not up to scratch it will be much easier for the
-maintainers to take your code and adapt it then to start from scrap.
+Even if you think the code is not up to scratch it will be much easier for
+the maintainers to take your code and adapt it than to start from scrap.
 
 
 ### geom*
 
-In general a geom* reads the data, does some transformation on it and then
-plots the transformed result. For reference see below for the geomHist
-implementation. That should get you started on designing your own geom
-function.
+In general a geom* function reads the data, does some transformation on it and
+then returns a struct containing the transformed result. For reference see
+below for the geomHist implementation. That should get you started on defining
+your own geom function. Again if you decide to define your own function then
+please let us know and send us the code. That way we can add the function to
+the library and everyone can benefit.
 
 ```D 
 //TODO: To come! 
