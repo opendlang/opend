@@ -5,6 +5,9 @@ import cpdf = cairo.pdf;
 import csvg = cairo.svg;
 import cairo = cairo;
 
+import ggplotd.aes;
+import ggplotd.geom;
+
 void ggplotdPNG(GR)( GR geomRange )
 {
     auto width = 400;
@@ -21,7 +24,7 @@ void ggplotdPNG(GR)( GR geomRange )
         context.identityMatrix();
         context.stroke();
     }
-    surface.writeToPNG(plot.name);
+    surface.writeToPNG("plotcli.png");
 }
 
 unittest
