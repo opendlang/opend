@@ -1,5 +1,37 @@
 module ggplotd.bounds;
 
+struct Point
+{
+    double x;
+    double y;
+    this(double my_x, double my_y)
+    {
+        x = my_x;
+        y = my_y;
+    }
+
+    this(string value)
+    {
+        import std.conv : to;
+        import std.range : split;
+        auto coords = value.split(",");
+        assert(coords.length == 2);
+        x = to!double(coords[0]);
+        y = to!double(coords[1]);
+    }
+
+    unittest
+    {
+        assert(Point("1.0,0.1") == Point(1.0, 0.1));
+    }
+
+    bool opEquals(const Point point)
+    {
+        return point.x == x && point.y == y;
+    }
+
+}
+
 /// Bounds struct holding the bounds (min_x, max_x, min_y, max_y)
 struct Bounds
 {
@@ -231,8 +263,23 @@ Here we take care to always return a valid set of bounds
         return adapted;
     }
 
+    bool adapt(T : AdaptiveBounds)(T bounds)
+    {
+        bool adapted = false;
+        if (bounds.valid)
+        {
+            adapted = (
+                adapt( Point( bounds.min_x, bounds.min_y )) ||
+                adapt( Point( bounds.max_x, bounds.max_y ))
+            );
+        } else {
+            adapted = adapt( bounds.pointCache );
+        }
+        return adapted;
+    }
+
     import std.range : isInputRange;
-    bool adapt(T)(T points) if (isInputRange!T)
+    bool adapt(T)(T points)
     {
         bool adapted = false;
         foreach (point; points)
@@ -277,36 +324,19 @@ unittest
     assert(!bounds.adapt(pnt));
 }
 
-struct Point
+unittest
 {
-    double x;
-    double y;
-    this(double my_x, double my_y)
-    {
-        x = my_x;
-        y = my_y;
-    }
+    AdaptiveBounds bounds;
+    assert(!bounds.valid);
+    AdaptiveBounds bounds2;
+    assert(!bounds.adapt(bounds2));
 
-    this(string value)
-    {
-        import std.conv : to;
-        import std.range : split;
-        auto coords = value.split(",");
-        assert(coords.length == 2);
-        x = to!double(coords[0]);
-        y = to!double(coords[1]);
-    }
-
-    unittest
-    {
-        assert(Point("1.0,0.1") == Point(1.0, 0.1));
-    }
-
-    bool opEquals(const Point point)
-    {
-        return point.x == x && point.y == y;
-    }
-
+    bounds2.adapt( Point(1.1, 1.2) );
+    bounds.adapt( bounds2 );
+    assert(!bounds.valid);
+    AdaptiveBounds bounds3;
+    bounds3.adapt( Point(1.2, 1.3) );
+    bounds.adapt( bounds3 );
+    assert(bounds.valid);
 }
-
-
+ 
