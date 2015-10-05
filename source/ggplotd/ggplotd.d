@@ -15,6 +15,8 @@ void ggplotdPNG(GR)( GR geomRange )
     auto surface = new cairo.ImageSurface(
             cairo.Format.CAIRO_FORMAT_ARGB32,
             width, height);
+    // TODO use reduce to get the all encompasing bounds
+
     foreach( geom; geomRange )
     {
         // TODO transparent context?
