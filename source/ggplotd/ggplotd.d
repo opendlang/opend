@@ -31,7 +31,6 @@ void ggplotdPNG(GR, SF)( GR geomRange, SF scale )
     foreach( geom; geomRange )
     {
         auto context = cairo.Context(surface);
-        import std.stdio;
         context = scale( context, bounds );
         context = geom.draw( context );
         context.identityMatrix();
