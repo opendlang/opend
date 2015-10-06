@@ -339,4 +339,3 @@ unittest
     bounds.adapt( bounds3 );
     assert(bounds.valid);
 }
- 
