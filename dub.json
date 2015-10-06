@@ -6,6 +6,7 @@
     "libs": ["cairo"],
     "dependencies": {
         "cairod": "~master",
-        "dunit": "~>1.0.11"
-	}
+        "dunit": "~>1.0.11",
+        "color": "~>0.0.2"
+    }
 }

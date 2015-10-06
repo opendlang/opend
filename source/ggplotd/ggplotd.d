@@ -19,6 +19,13 @@ void ggplotdPNG(GR, SF)( GR geomRange, SF scale )
             cairo.Format.CAIRO_FORMAT_ARGB32,
             width, height);
 
+    /+
+        // Create a sub surface. Makes sure everything is plotted within plot surface
+        auto plotSurface = cairo.Surface.createForRectangle(surface, cairo.Rectangle!double(marginBounds
+                    .min_x, 0,  // No support for margin at top yet. Would need to know the surface dimensions
+                    marginBounds.width, marginBounds.height));
+    +/
+
     // TODO use reduce to get the all encompasing bounds
     AdaptiveBounds bounds;
     //bounds = reduce!((a,b) => a.adapt( b.bounds ))
