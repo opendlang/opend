@@ -6,6 +6,7 @@ import csvg = cairo.svg;
 import cairo = cairo;
 
 import ggplotd.aes;
+import ggplotd.colour;
 import ggplotd.geom;
 import ggplotd.bounds;
 import ggplotd.scale;
@@ -28,16 +29,22 @@ void ggplotdPNG(GR, SF)( GR geomRange, SF scale )
 
     // TODO use reduce to get the all encompasing bounds
     AdaptiveBounds bounds;
+    typeof(geomRange.front.colour)[] colourIDs;
     //bounds = reduce!((a,b) => a.adapt( b.bounds ))
     //    ( bounds, geomRange );
     foreach( geom; geomRange )
     {
+        // TODO also get colours
         bounds.adapt( geom.bounds );
+        colourIDs ~= geom.colour;
     }
+
+    auto colourMap = colourGradient(colourIDs);
 
     foreach( geom; geomRange )
     {
         auto context = cairo.Context(surface);
+        context.setSourceRGB( colourMap(geom.colour) );
         context = scale( context, bounds );
         context = geom.draw( context );
         context.identityMatrix();
@@ -49,7 +56,7 @@ void ggplotdPNG(GR, SF)( GR geomRange, SF scale )
 unittest
 {
     auto aes = Aes!(double[],double[], string[])( [1.0,0.9],[2.0,1.1],
-            ["c"] );
+            ["c", "d"] );
     auto ge = geomPoint( aes );
     ggplotdPNG( ge, scale() );
 }
