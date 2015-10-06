@@ -9,8 +9,13 @@ plots from simple building blocks.
 ## Install
 
 Easiest is to use dub and add the library to your dub configuration file,
-which will automatically download the D dependencies. The library also depends
-on cairo so you will need to have that installed.
+which will automatically download the D dependencies. The library also
+depends on cairo so you will need to have that installed. On ubuntu/debian
+you can install cairo with:
+
+``` 
+sudo apt-get install libcairo2-dev 
+```
 
 ### PDF and SVG support
 
@@ -28,26 +33,28 @@ dub add-local cairoD
 
 To come.
 
-## Extending ggplotd
+## Extending GGplotD
 
-Due to ggplotd’s design it is relatively straightforward to extend ggplotd to
+Due to GGplotD’s design it is relatively straightforward to extend GGplotD to
 support new types of plots. This is especially true if your function depends
 on the already implemented base types geomLine and geomPoint. The main reason
 for not having added more functions yet is lack of time. If you decide to
 implement your own function then **please** open a pull request or at least
 copy your code into an issue. That way we can all benefit from your work :)
-Even if you think the code is not up to scratch it will be much easier for
-the maintainers to take your code and adapt it than to start from scrap.
+Even if you think the code is not up to scratch it will be easier for the
+maintainer(s) to take your code and adapt it than to start from scrap.
 
 
 ### geom*
 
-In general a geom* function reads the data, does some transformation on it and
-then returns a struct containing the transformed result. For reference see
-below for the geomHist implementation. That should get you started on defining
-your own geom function. Again if you decide to define your own function then
-please let us know and send us the code. That way we can add the function to
-the library and everyone can benefit.
+In general a geom* function reads the data, does some transformation on it
+and then returns a struct containing the transformed result. In GGPlotD
+the low level geom* function such as geomLine and geomPoint draw directly
+to a cairo.Context. Luckily most higher level geom* functions can just
+rely on calling geomLine and geomPoint. For reference see below for the
+geomHist implementation. Again if you decide to define your own function then please
+let us know and send us the code. That way we can add the function to the
+library and everyone can benefit.
 
 ```D 
 //TODO: To come! 
@@ -55,12 +62,13 @@ the library and everyone can benefit.
 
 ### stat*
 
-ggplot2 for R defines a number of function that plot statistics of the data.
-GGPlotD does not come with any such functions out of the box, but the
-implementation should be very similar to the above named geom* functions. The
-main difference will be that a stat function will have to do more data
-analysis. If you are interested in adding support for certain statistics then
-you should use the geom* functions as a starting point.
+ggplot2 for R defines a number of functions that plot statistics of the
+data. GGplotD does not come with any such functions out of the box, but
+the implementation should be very similar to the above named geom*
+functions. The main difference will be that a stat function will have to
+do more data analysis. If you are interested in adding support for certain
+statistics then you should use the [geom* example](#geom*) as a starting
+point.
 
 ## References
 
