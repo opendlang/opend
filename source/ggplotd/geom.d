@@ -1,6 +1,8 @@
 module ggplotd.geom;
 
-import cairo.cairo;
+import cairo = cairo.cairo;
+
+import ggplotd.bounds;
 
 version(unittest)
 {
@@ -12,21 +14,27 @@ struct Geom( FUNC, Col )
 {
     FUNC draw;
     Col colour;
+    AdaptiveBounds bounds;
 }
 
-auto geom_line(AES)(AES aes )
+auto geomLine(AES)(AES aes )
 {
     struct GeomRange(T)
     {
         this( T aes ) { _aes = aes; }
         @property auto front() {
             immutable tup = _aes.front;
-            auto f = delegate(Context context) 
+            auto f = delegate(cairo.Context context) 
             {
                 return context.rectangle( tup.x, tup.y, 0.2, 0.2 );
             };
+
+            AdaptiveBounds bounds;
+            bounds.adapt( Point( tup.x, tup.y ) );
+        
+
             return Geom!(typeof(f),typeof(tup.colour))
-                ( f, tup.colour );
+                ( f, tup.colour, bounds );
         }
 
         void popFront() {
@@ -43,7 +51,7 @@ auto geom_line(AES)(AES aes )
 unittest
 {
     auto aes = Aes!(double[],double[], string[])( [1.0],[2.0],["c"] );
-    auto gl = geom_line( aes );
+    auto gl = geomLine( aes );
     assertEqual( gl.front.colour, "c" );
     gl.popFront;
     assert( gl.empty );
