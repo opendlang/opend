@@ -13,15 +13,24 @@
 module std.experimental.color;
 
 public import std.experimental.color.rgb;
-import std.experimental.color.xyz: isXYZ, isxyY;
+import std.experimental.color.xyz : isXYZ, isxyY;
+import std.experimental.color.hsx : isHSx;
 
-@safe: pure: nothrow: @nogc:
+@safe pure nothrow @nogc:
 
 
 /**
 Detect whether $(D T) is a color type defined under std.color.
 */
-enum isColor(T) = isRGB!T || isXYZ!T || isxyY!T;
+enum isColor(T) = isRGB!T || isHSx!T || isXYZ!T || isxyY!T;
+
+///
+unittest
+{
+    static assert(isColor!RGB8 == true);
+    static assert(isColor!(XYZ!float) == true);
+    static assert(isColor!float == false);
+}
 
 
 // declare some common color types

@@ -11,13 +11,13 @@
 module std.experimental.color.xyz;
 
 import std.experimental.color;
-import std.experimental.color.conv: convertColor;
+import std.experimental.color.conv : convertColor;
 
-import std.traits: isFloatingPoint, isIntegral, isSigned, isSomeChar, Unqual;
-import std.typetuple: TypeTuple;
-import std.typecons: tuple;
+import std.traits : isFloatingPoint, isIntegral, isSigned, isSomeChar, Unqual;
+import std.typetuple : TypeTuple;
+import std.typecons : tuple;
 
-@safe: pure: nothrow: @nogc:
+@safe pure nothrow @nogc:
 
 
 /**
@@ -25,10 +25,25 @@ Detect whether $(D T) is an XYZ color.
 */
 enum isXYZ(T) = isInstanceOf!(XYZ, T);
 
+///
+unittest
+{
+    static assert(isXYZ!(XYZ!float) == true);
+    static assert(isXYZ!(xyY!double) == false);
+}
+
+
 /**
 Detect whether $(D T) is an xyY color.
 */
 enum isxyY(T) = isInstanceOf!(xyY, T);
+
+///
+unittest
+{
+    static assert(isxyY!(xyY!float) == true);
+    static assert(isxyY!(XYZ!double) == false);
+}
 
 
 /** White points of standard illuminants. */
@@ -86,7 +101,7 @@ A CIE 1931 XYZ color, parameterised for component type.
 */
 struct XYZ(F = float) if(isFloatingPoint!F)
 {
-@safe: pure: nothrow: @nogc:
+@safe pure nothrow @nogc:
 
     /** Type of the color components. */
     alias ComponentType = F;
@@ -104,7 +119,6 @@ struct XYZ(F = float) if(isFloatingPoint!F)
         return tuple(X, Y, Z);
     }
 
-    // CIE XYZ constructor
     /** Construct a color from XYZ values. */
     this(ComponentType X, ComponentType Y, ComponentType Z)
     {
@@ -123,14 +137,20 @@ struct XYZ(F = float) if(isFloatingPoint!F)
     mixin ColorOperators!(TypeTuple!("X","Y","Z"));
 }
 
+///
 unittest
 {
+    // CIE XYZ 1931 color with float components
     alias XYZf = XYZ!float;
-    alias xyYf = xyY!float;
 
-    // TODO: test XYZ operators and functions..
+    XYZf c = XYZf(0.8, 1, 1.2);
+
+    // tristimulus() returns a tuple of the components
+    assert(c.tristimulus == tuple(c.X, c.Y, c.Z));
+
+    // test XYZ operators and functions
+    static assert(XYZf(0, 0.5, 0) + XYZf(0.5, 0.5, 1) == XYZf(0.5, 1, 1));
     static assert(XYZf(0.5, 0.5, 1) * 100.0 == XYZf(50, 50, 100));
-    static assert(cast(XYZf)xyYf(0.5, 0.5, 1) == XYZf(1, 1, 0));
 }
 
 
@@ -139,7 +159,7 @@ A CIE 1931 xyY color, parameterised for component type.
 */
 struct xyY(F = float) if(isFloatingPoint!F)
 {
-@safe: pure: nothrow: @nogc:
+@safe pure nothrow @nogc:
 
     /** Type of the color components. */
     alias ComponentType = F;
@@ -151,7 +171,6 @@ struct xyY(F = float) if(isFloatingPoint!F)
     /** Y value (luminance). */
     F Y = 0;
 
-    // CIE xyY constructor
     /** Construct a color from xyY values. */
     this(ComponentType x, ComponentType y, ComponentType Y)
     {
@@ -173,12 +192,15 @@ private:
     alias ParentColor = XYZ!ComponentType;
 }
 
+///
 unittest
 {
-    alias XYZf = XYZ!float;
-    alias xyYf = xyY!float;
+    // CIE xyY 1931 color with double components
+    alias xyYd = xyY!double;
 
-    // TODO: test xxY operators and functions..
-    static assert(xyYf(0.5, 0.5, 1) * 100.0 == xyYf(50, 50, 100));
-    static assert(cast(xyYf)XYZf(0.5, 1, 0.5) == xyYf(0.25, 0.5, 1));
+    xyYd c = xyYd(0.4, 0.5, 1);
+
+    // test xyY operators and functions
+    static assert(xyYd(0, 0.5, 0) + xyYd(0.5, 0.5, 1) == xyYd(0.5, 1, 1));
+    static assert(xyYd(0.5, 0.5, 1) * 100.0 == xyYd(50, 50, 100));
 }
