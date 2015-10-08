@@ -20,6 +20,7 @@ void ggplotdPNG(GR, SF)( GR geomRange, SF scale )
             cairo.Format.CAIRO_FORMAT_ARGB32,
             width, height);
 
+
     /+
         // Create a sub surface. Makes sure everything is plotted within plot surface
         auto plotSurface = cairo.Surface.createForRectangle(surface, cairo.Rectangle!double(marginBounds
@@ -34,7 +35,6 @@ void ggplotdPNG(GR, SF)( GR geomRange, SF scale )
     //    ( bounds, geomRange );
     foreach( geom; geomRange )
     {
-        // TODO also get colours
         bounds.adapt( geom.bounds );
         colourIDs ~= geom.colour;
     }
@@ -53,6 +53,7 @@ void ggplotdPNG(GR, SF)( GR geomRange, SF scale )
     surface.writeToPNG("plotcli.png");
 }
 
+/+
 unittest
 {
     auto aes = Aes!(double[],double[], string[])( [1.0,0.9],[2.0,1.1],
@@ -60,3 +61,16 @@ unittest
     auto ge = geomPoint( aes );
     ggplotdPNG( ge, scale() );
 }
++/
+
+unittest
+{
+    auto aes = Aes!(double[], double[], string[] )( 
+            [1.0,2.0,1.1,3.0], 
+            [3.0,1.5,1.1,1.8], 
+            ["a","b","a","b"] );
+
+    auto gl = geomLine( aes );
+    ggplotdPNG( gl, scale() );
+}
+

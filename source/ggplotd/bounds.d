@@ -268,10 +268,11 @@ Here we take care to always return a valid set of bounds
         bool adapted = false;
         if (bounds.valid)
         {
-            adapted = (
-                adapt( Point( bounds.min_x, bounds.min_y )) ||
-                adapt( Point( bounds.max_x, bounds.max_y ))
-            );
+            bool adaptMin = adapt( 
+                    Point( bounds.min_x, bounds.min_y ));
+            bool adaptMax = adapt( 
+                    Point( bounds.max_x, bounds.max_y ));
+            adapted = ( adaptMin || adaptMax );
         } else {
             adapted = adapt( bounds.pointCache );
         }
@@ -338,4 +339,13 @@ unittest
     bounds3.adapt( Point(1.2, 1.3) );
     bounds.adapt( bounds3 );
     assert(bounds.valid);
+
+    AdaptiveBounds bounds4;
+    assert(!bounds4.valid);
+    AdaptiveBounds bounds5;
+    bounds5.adapt( Point(1.1, 1.2) );
+    bounds5.adapt( Point(1.3, 1.3) );
+    assert(bounds5.valid);
+    bounds4.adapt(bounds5);
+    assert(bounds4.valid);
 }
