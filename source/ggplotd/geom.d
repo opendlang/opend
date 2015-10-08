@@ -79,7 +79,7 @@ auto geomLine(AES)(AES aes)
                 fr.popFront;
                 foreach( tup; fr )
                 {
-                    context.lineTo( fr.front.x, fr.front.y );
+                    context.lineTo( tup.x, tup.y );
                 }
                 return context;
             };
@@ -240,9 +240,6 @@ auto geomHist(AES)(AES aes)
             colours ~= grouped.front.colour.repeat(4).array;
         }
     }
-    import std.stdio;
-    xs.writeln;
-    ys.writeln;
     return geomLine( Aes!(typeof(xs),typeof(ys),typeof(colours))( xs, ys, colours ) );
 }
 
