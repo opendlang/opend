@@ -53,7 +53,6 @@ void ggplotdPNG(GR, SF)( GR geomRange, SF scale )
     surface.writeToPNG("plotcli.png");
 }
 
-/+
 unittest
 {
     auto aes = Aes!(double[],double[], string[])( [1.0,0.9],[2.0,1.1],
@@ -61,7 +60,6 @@ unittest
     auto ge = geomPoint( aes );
     ggplotdPNG( ge, scale() );
 }
-+/
 
 unittest
 {

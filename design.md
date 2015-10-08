@@ -1,10 +1,15 @@
+This document contains some overall design ideas and some simple notes on
+implementation. I use it as a personal brainstorming document, and the
+ideas can evolve while implementing them. The document is, therefore, not
+guaranteed to be up to date (or coherent) and mainly in the git
+repository for my own convenience.
+
 # ggplotd
 
 The design goal behind ggplotd is to split plotting into separate
 composable elements. Plots actually often have a lot of interacting
 components, making it quite difficult to decide on how to separate them
-all into separate elements. The separation we use here is inspired by the
-elements used in the Grammar of Graphics and the ggplot library of R. In
+all into separate elements. The separation we use here is inspired by the elements used in the Grammar of Graphics and the ggplot library of R. In
 general a plot follows the following logic. We start with data, we convert
 that to points and lines, with points and lines having their own
 attributes (colour ids and size for example). Other components that we
@@ -88,6 +93,15 @@ also option of default value in a template. dim returns left over length
 of original array. Will need to check whether all given ranges have dim 1,
 otherwise we will cycle forever. (Aes.empty() {return xs.dim<=0 && ys.dim
 <=0 ). This makes me doubt if this is actually the best design)
+
+## Label map
+
+Map labels to coordinates and the other way around. Needed when provided
+with labelled data instead of numerical data.
+
+```D 
+labelledx.map!((xl) => mapx.toCoord(xl)
+```
 
 ## GGContext
 
