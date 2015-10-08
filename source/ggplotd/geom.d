@@ -123,3 +123,127 @@ unittest
     gl.popFront;
     assert( gl.empty );
 }
+
+private auto bin(R)( R xs, size_t noBins = 10 )
+{
+    struct Bin {
+        double[] range;
+        size_t count;
+    }
+
+    import std.typecons : Tuple;
+    import std.algorithm : group;
+    struct BinRange(Range)
+    {
+        this(Range xs, size_t noBins) 
+        {
+            import std.math : floor;
+            import std.algorithm : min, max, reduce, sort, map;
+            import std.array : array;
+            import std.range : walkLength;
+            assert( xs.walkLength > 0 );
+            auto minmax = xs.reduce!((a,b) => min(a,b),(a,b)=>max(a,b));
+            _width = (minmax[1]-minmax[0])/(noBins-1);
+            _noBins = noBins;
+            if (_width == 0)
+                _width = 0.1;
+            _min = minmax[0] - 0.5*_width;
+            counts = xs.map!( (a) => floor((a-_min)/_width) )
+                .array
+                .sort().array
+                .group();
+             
+            if (counts.front[0] == _binID)
+            {
+                _cnt = counts.front[1];
+                counts.popFront;
+            }
+        }
+
+        @property auto front() {
+            return Bin( [_min, _min+_width], _cnt );
+        }
+
+        void popFront() {
+            _min += _width;
+            _cnt = 0;
+            ++_binID;
+            if (!counts.empty && counts.front[0] == _binID)
+            {
+                _cnt = counts.front[1];
+                counts.popFront;
+            }
+        }
+
+        @property bool empty() { return _binID >=_noBins; }
+ 
+        private:
+            double _min;
+            double _width;
+            size_t _noBins;
+            size_t _binID = 0;
+            typeof(group(Range.init)) counts;
+            size_t _cnt = 0;
+    }
+    return BinRange!R(xs, noBins);
+}
+
+unittest
+{
+    import std.array : array;
+    import std.range : back, walkLength;
+    auto binR = bin!(double[])( [0.5,0.01,0.0,0.9,1.0,0.99], 11 );
+    assertEqual( binR.walkLength, 11 );
+    assertEqual( binR.front.range, [-0.05,0.05] );
+    assertEqual( binR.front.count, 2 );
+    assertLessThan( binR.array.back.range[0], 1 );
+    assertGreaterThan( binR.array.back.range[1], 1 );
+    assertEqual( binR.array.back.count, 2 );
+
+    binR = bin!(double[])( [0.01], 11 );
+    assertEqual( binR.walkLength, 11 );
+    assertEqual( binR.front.count, 1 );
+
+
+    binR = bin!(double[])( [-0.01, 0,0,0, 0.01 ], 11 );
+    assertEqual( binR.walkLength, 11 );
+    assertLessThan( binR.front.range[0], -0.01 );
+    assertGreaterThan( binR.front.range[1], -0.01 );
+    assertEqual( binR.front.count, 1 );
+    assertLessThan( binR.array.back.range[0], 0.01 );
+    assertGreaterThan( binR.array.back.range[1], 0.01 );
+    assertEqual( binR.array.back.count, 1 );
+    assertEqual( binR.array[5].count, 3 );
+    assertLessThan( binR.array[5].range[0], 0.0 );
+    assertGreaterThan( binR.array[5].range[1], 0.0 );
+}
+
+auto geomHist(AES)(AES aes)
+{
+    import std.algorithm : map;
+    import std.array : array;
+    import std.range : repeat;
+    double[] xs;
+    double[] ys;
+    typeof(aes.front.colour)[] colours;
+    foreach( grouped; group( aes ) )
+    {
+        auto bins = grouped
+            .map!( (t) => t.x )
+            .array.bin( 11 );
+        foreach( bin; bins )
+        {
+            xs ~= [ bin.range[0], bin.range[0],
+               bin.range[1], bin.range[1] ];
+            ys ~= [ 0, bin.count,
+               bin.count, 0 ];
+            colours ~= grouped.front.colour.repeat(4).array;
+        }
+    }
+    import std.stdio;
+    xs.writeln;
+    ys.writeln;
+    return geomLine( Aes!(typeof(xs),typeof(ys),typeof(colours))( xs, ys, colours ) );
+}
+
+

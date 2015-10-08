@@ -72,3 +72,14 @@ unittest
     ggplotdPNG( gl, scale() );
 }
 
+unittest
+{
+    auto aes = Aes!(double[], double[], string[] )( 
+            [1.0,1.05,1.1,0.9,1.0,0.99,1.09,1.091], 
+            [3.0,1.5,1.1,1.8], 
+            ["a","a","a","a","a","a","a","a"] );
+
+    auto gl = geomHist( aes );
+    ggplotdPNG( gl, scale() );
+}
+
