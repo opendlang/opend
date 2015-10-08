@@ -1,5 +1,27 @@
 # ggplotd
 
+The design goal behind ggplotd is to split plotting into separate
+composable elements. Plots actually often have a lot of interacting
+components, making it quite difficult to decide on how to separate them
+all into separate elements. The separation we use here is inspired by the
+elements used in the Grammar of Graphics and the ggplot library of R. In
+general a plot follows the following logic. We start with data, we convert
+that to points and lines, with points and lines having their own
+attributes (colour ids and size for example). Other components that we
+need are the scaling of the axes and the mapping of colour ids to actual
+colours. Finally all this is combined into a plot.
+
+Interesting this flow also makes it natural where to define things. For
+example colour IDs are only needed at the point and line step, so we can
+give them there, but we can also provide them earlier in the process by
+giving them as attached to the data.
+
+By following these rules strictly it becomes much easier to define new
+plots/data analysis. For example if we want to add a histogram plot, we
+won’t need to add a whole new plot that implements scaling etc. We just
+need to read the data and convert it into lines. All the other components
+will still work exactly the same way.
+
 High level usage roughly follows grammar of graphics/ggplot. High level
 usage example is as follows:
 
