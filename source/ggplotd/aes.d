@@ -58,7 +58,29 @@ unittest
     // Make sure to test with empty y, colour
 }
 
+auto group(AES)( AES aes )
+{
+    import std.algorithm : filter, map, uniq, sort;
+    import std.range : array;
+    auto colours = aes.map!( (a) => a.colour )
+        .array
+        .sort()
+        .uniq;
+    return colours.map!( (c) => aes.filter!((a) => a.colour==c));
+}
 
+unittest
+{
+    auto aes = Aes!(double[], double[], string[] )( [1.0,2.0,1.1], 
+            [3.0,1.5,1.1], ["a","b","a"] );
+
+    import std.range : walkLength;
+    auto grouped = aes.group;
+    assertEqual( grouped.walkLength, 2 );
+    assertEqual( grouped.front.walkLength, 2 );
+    grouped.popFront;
+    assertEqual( grouped.front.walkLength, 1 );
+}
 
 
 /+

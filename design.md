@@ -56,4 +56,18 @@ with axes drawing)
 
 Brings it all together. Needs a geom range and colourspace.
 
+# General data structures
 
+## Flexible range
+
+Range that can be used for all the aes stuff. If given one value it will
+just cycle over that value. If given range it will act as a range. Maybe
+also option of default value in a template. dim returns left over length
+of original array. Will need to check whether all given ranges have dim 1,
+otherwise we will cycle forever. (Aes.empty() {return xs.dim<=0 && ys.dim
+<=0 ). This makes me doubt if this is actually the best design)
+
+## GGContext
+
+Build on top of cairo context, but can take full scaling exp (x) =>
+log(x). Other than that, implement point, line and colour functions.
