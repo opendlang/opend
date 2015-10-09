@@ -52,13 +52,46 @@ and then returns a struct containing the transformed result. In GGPlotD
 the low level geom* function such as geomLine and geomPoint draw directly
 to a cairo.Context. Luckily most higher level geom* functions can just
 rely on calling geomLine and geomPoint. For reference see below for the
-geomHist implementation. Again if you decide to define your own function then please
-let us know and send us the code. That way we can add the function to the
-library and everyone can benefit.
+geomHist drawing implementation. Again if you decide to define your own
+function then please let us know and send us the code. That way we can add
+the function to the library and everyone can benefit.
 
 ```D 
-//TODO: To come! 
+/// Draw histograms based on the x coordinates of the data (aes)
+auto geomHist(AES)(AES aes)
+{
+    import std.algorithm : map;
+    import std.array : array;
+    import std.range : repeat;
+    double[] xs;
+    double[] ys;
+    typeof(aes.front.colour)[] colours;
+    foreach( grouped; group( aes ) ) // Split data by colour/id
+    {
+        auto bins = grouped
+            .map!( (t) => t.x ) // Extract the x coordinates
+            .array.bin( 11 );   // Bin the data
+        foreach( bin; bins )
+        {
+            // Convert data into line coordinates
+            xs ~= [ bin.range[0], bin.range[0],
+               bin.range[1], bin.range[1] ];
+            ys ~= [ 0, bin.count,
+               bin.count, 0 ];
+
+            // Each (new) line coordinate has the colour specified
+            // in the original data
+            colours ~= grouped.front.colour.repeat(4).array;
+        }
+    }
+    // Use the xs/ys/colours to draw lines
+    return geomLine( Aes!(typeof(xs),typeof(ys),typeof(colours))( xs, ys, colours ) );
+}
 ```
+
+Note that the above highlights the drawing part of the function.
+Converting the data into bins is done in a separate bin function, which
+can be found in the [code](./source/ggplotd/geom.d#L127).
 
 ### stat*
 
