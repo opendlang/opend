@@ -124,6 +124,7 @@ unittest
     assert( gl.empty );
 }
 
+/// Bin a range of data
 private auto bin(R)( R xs, size_t noBins = 10 )
 {
     struct Bin {
@@ -142,17 +143,24 @@ private auto bin(R)( R xs, size_t noBins = 10 )
             import std.array : array;
             import std.range : walkLength;
             assert( xs.walkLength > 0 );
+
+            // Find the min and max values
             auto minmax = xs.reduce!((a,b) => min(a,b),(a,b)=>max(a,b));
             _width = (minmax[1]-minmax[0])/(noBins-1);
             _noBins = noBins;
-            if (_width == 0)
+            // If min == max we need to set a custom width
+            if (_width == 0) 
                 _width = 0.1;
             _min = minmax[0] - 0.5*_width;
+
+            // Count the number of data points that fall in a
+            // bin. This is done by scaling them into whole numbers
             counts = xs.map!( (a) => floor((a-_min)/_width) )
                 .array
                 .sort().array
                 .group();
-             
+            
+            // Initialize our bins
             if (counts.front[0] == _binID)
             {
                 _cnt = counts.front[1];
@@ -160,6 +168,7 @@ private auto bin(R)( R xs, size_t noBins = 10 )
             }
         }
 
+        /// Return a bin describing the range and number of data points (count) that fall within that range.
         @property auto front() {
             return Bin( [_min, _min+_width], _cnt );
         }
@@ -218,6 +227,7 @@ unittest
     assertGreaterThan( binR.array[5].range[1], 0.0 );
 }
 
+/// Draw histograms based on the x coordinates of the data (aes)
 auto geomHist(AES)(AES aes)
 {
     import std.algorithm : map;
@@ -226,20 +236,25 @@ auto geomHist(AES)(AES aes)
     double[] xs;
     double[] ys;
     typeof(aes.front.colour)[] colours;
-    foreach( grouped; group( aes ) )
+    foreach( grouped; group( aes ) ) // Split data by colour/id
     {
         auto bins = grouped
-            .map!( (t) => t.x )
-            .array.bin( 11 );
+            .map!( (t) => t.x ) // Extract the x coordinates
+            .array.bin( 11 );   // Bin the data
         foreach( bin; bins )
         {
+            // Convert data into line coordinates
             xs ~= [ bin.range[0], bin.range[0],
                bin.range[1], bin.range[1] ];
             ys ~= [ 0, bin.count,
                bin.count, 0 ];
+
+            // Each (new) line coordinate has the colour specified
+            // in the original data
             colours ~= grouped.front.colour.repeat(4).array;
         }
     }
+    // Use the xs/ys/colours to draw lines
     return geomLine( Aes!(typeof(xs),typeof(ys),typeof(colours))( xs, ys, colours ) );
 }
 
