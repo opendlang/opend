@@ -14,19 +14,16 @@ import ggplotd.scale;
 void ggplotdPNG(GR, SF)( GR geomRange, SF scale )
 {
     import std.algorithm : reduce;
-    auto width = 400;
-    auto height = 400;
+    auto width = 470;
+    auto height = 470;
     auto surface = new cairo.ImageSurface(
             cairo.Format.CAIRO_FORMAT_ARGB32,
             width, height);
 
-
-    /+
-        // Create a sub surface. Makes sure everything is plotted within plot surface
-        auto plotSurface = cairo.Surface.createForRectangle(surface, cairo.Rectangle!double(marginBounds
-                    .min_x, 0,  // No support for margin at top yet. Would need to know the surface dimensions
-                    marginBounds.width, marginBounds.height));
-    +/
+    // Create a sub surface. Makes sure everything is plotted within plot surface
+    auto plotSurface = cairo.Surface.createForRectangle(surface, 
+            cairo.Rectangle!double(50, 20,  // No support for margin at top yet. Would need to know the surface dimensions
+                width-70, height-70));
 
     // TODO use reduce to get the all encompasing bounds
     AdaptiveBounds bounds;
@@ -43,7 +40,7 @@ void ggplotdPNG(GR, SF)( GR geomRange, SF scale )
 
     foreach( geom; geomRange )
     {
-        auto context = cairo.Context(surface);
+        auto context = cairo.Context(plotSurface);
         context.setSourceRGB( colourMap(geom.colour) );
         context = scale( context, bounds );
         context = geom.draw( context );
