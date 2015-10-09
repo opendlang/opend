@@ -99,9 +99,11 @@ ggplot2 for R defines a number of functions that plot statistics of the
 data. GGplotD does not come with any such functions out of the box, but
 the implementation should be very similar to the above named geom*
 functions. The main difference will be that a stat function will have to
-do more data analysis. If you are interested in adding support for certain
-statistics then you should use the [geom* example](#geom*) as a starting
-point.
+do more data analysis. In that way the line between geom and stat
+functions is quite blurry; it could be argued that geomHist is a stat
+function. If you are interested in adding support for more advanced
+statistics then you should use the [geom* example](#geom) as a starting
+point. 
 
 ## References
 
