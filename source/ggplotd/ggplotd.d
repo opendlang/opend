@@ -41,12 +41,30 @@ void ggplotdPNG(GR, SF)( GR geomRange, SF scale )
     foreach( geom; geomRange )
     {
         auto context = cairo.Context(plotSurface);
+        //auto context = cairo.Context(surface);
         context.setSourceRGB( colourMap(geom.colour) );
         context = scale( context, bounds );
         context = geom.draw( context );
         context.identityMatrix();
         context.stroke();
     }
+
+    // Axis
+    auto context = cairo.Context( surface );
+    context.translate( 50, 20 );
+    context = scale( context, bounds );
+    auto aes = Aes!(double[], double[], double[])(
+            [bounds.min_x, bounds.min_x,bounds.max_x],
+            [bounds.max_y, bounds.min_y,bounds.min_y], [0.0,0.0,0.0] );
+    auto gR = geomLine( aes );
+    foreach( g; gR )
+    {
+        context = g.draw( context );
+    }
+    context.identityMatrix();
+    context.stroke();
+
+
     surface.writeToPNG("plotcli.png");
 }
 
