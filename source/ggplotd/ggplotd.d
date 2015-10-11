@@ -19,6 +19,10 @@ void ggplotdPNG(GR, SF)( GR geomRange, SF scale )
     auto surface = new cairo.ImageSurface(
             cairo.Format.CAIRO_FORMAT_ARGB32,
             width, height);
+    auto backcontext = cairo.Context(surface);
+    backcontext.setSourceRGB( 1,1,1 );
+    backcontext.rectangle( 0, 0, width, height );
+    backcontext.fill();
 
     // Create a sub surface. Makes sure everything is plotted within plot surface
     auto plotSurface = cairo.Surface.createForRectangle(surface, 
@@ -40,7 +44,8 @@ void ggplotdPNG(GR, SF)( GR geomRange, SF scale )
 
     foreach( geom; geomRange )
     {
-        auto context = cairo.Context(plotSurface);
+        auto context = cairo.Context(surface);
+        context.translate( 50, 20 );
         //auto context = cairo.Context(surface);
         context.setSourceRGB( colourMap(geom.colour) );
         context = scale( context, bounds );
