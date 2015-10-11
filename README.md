@@ -19,8 +19,10 @@ sudo apt-get install libcairo2-dev
 
 ### PDF and SVG support
 
-By default cairoD disables pdf and svg support. To enable it you need to add
-a local copy of cairoD that dub can find:
+Plotting to PDF and SVG is not supported yet (v0.0.1) but is the next
+feature to be added. Note that by default cairoD disables pdf and svg
+support. To enable it you need to add a local copy of cairoD that dub can
+find:
 
 ```
 git clone https://github.com/jpf91/cairoD.git
@@ -33,7 +35,8 @@ dub add-local cairoD
 
 At version v0.0.1 we only have quite basic support for simple plots.
 
-```D unittest { auto aes = Aes!(double[],double[], string[])(
+```D 
+unittest { auto aes = Aes!(double[],double[], string[])(
 [1.0,0.9],[2.0,1.1], ["c", "d"] ); auto ge = geomPoint( aes ); ggplotdPNG(
 ge, scale() ); }
 
