@@ -31,7 +31,34 @@ dub add-local cairoD
 
 ## Examples
 
-To come.
+At version v0.0.1 we only have quite basic support for simple plots.
+
+```D unittest { auto aes = Aes!(double[],double[], string[])(
+[1.0,0.9],[2.0,1.1], ["c", "d"] ); auto ge = geomPoint( aes ); ggplotdPNG(
+ge, scale() ); }
+
+unittest
+{
+    auto aes = Aes!(double[], double[], string[] )( 
+            [1.0,2.0,1.1,3.0], 
+            [3.0,1.5,1.1,1.8], 
+            ["a","b","a","b"] );
+
+    auto gl = geomLine( aes );
+    ggplotdPNG( gl, scale() );
+}
+
+unittest
+{
+    auto aes = Aes!(double[], double[], string[] )( 
+            [1.0,1.05,1.1,0.9,1.0,0.99,1.09,1.091], 
+            [3.0,1.5,1.1,1.8], 
+            ["a","a","b","b","a","a","a","a"] );
+
+    auto gl = geomHist( aes );
+    ggplotdPNG( gl, scale() );
+}
+```
 
 ## Extending GGplotD
 
