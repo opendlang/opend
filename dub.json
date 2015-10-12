@@ -9,5 +9,5 @@
 
     "targetName": "DerelictUtil",
     "targetPath": "lib",
-    "libs-posix": ["dl"]
+    "libs-linux": ["dl"]
 }
