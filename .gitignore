@@ -6,3 +6,6 @@ __*
 *.obj
 .*.swp
 *.png
+*.pdf
+*.svg
+cairoD

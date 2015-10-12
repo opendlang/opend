@@ -11,14 +11,48 @@ import ggplotd.geom;
 import ggplotd.bounds;
 import ggplotd.scale;
 
-void ggplotdPNG(GR, SF)( GR geomRange, SF scale )
+void GGplotD(GR, SF)( GR geomRange, SF scale, 
+       string file = "plotcli.png" )
 {
     import std.algorithm : reduce;
     auto width = 470;
     auto height = 470;
-    auto surface = new cairo.ImageSurface(
-            cairo.Format.CAIRO_FORMAT_ARGB32,
-            width, height);
+    cairo.Surface surface;
+
+    import std.stdio;
+    bool pngWrite = false;
+
+    static if (cconfig.CAIRO_HAS_PDF_SURFACE)
+    {
+        if (file[$-3..$]=="pdf")
+        {
+            surface = new cpdf.PDFSurface(file, 
+                    width, height);
+        }
+    } else {
+        if (file[$-3..$]=="pdf")
+            assert( 0, "PDF support not enabled by cairoD" );
+    }
+    static if (cconfig.CAIRO_HAS_SVG_SURFACE)
+    {
+        if (file[$-3..$] == "svg")
+        {
+            surface = new csvg.SVGSurface(file, 
+                    width, height);
+        }
+    } else {
+        if (file[$-3..$]=="svg")
+            assert( 0, "SVG support not enabled by cairoD" );
+    }
+    if (file[$-3..$] == "png")
+    {
+        surface = new cairo.ImageSurface(
+                cairo.Format.CAIRO_FORMAT_ARGB32,
+                width, height);
+        pngWrite = true;
+    }
+
+
     auto backcontext = cairo.Context(surface);
     backcontext.setSourceRGB( 1,1,1 );
     backcontext.rectangle( 0, 0, width, height );
@@ -97,7 +131,9 @@ void ggplotdPNG(GR, SF)( GR geomRange, SF scale )
         context.stroke();
     }
 
-    surface.writeToPNG("plotcli.png");
+    
+    if (pngWrite)
+        (cast(cairo.ImageSurface)(surface)).writeToPNG(file);
 }
 
 unittest
@@ -105,7 +141,7 @@ unittest
     auto aes = Aes!(double[],double[], string[])( [1.0,0.9],[2.0,1.1],
             ["c", "d"] );
     auto ge = geomPoint( aes );
-    ggplotdPNG( ge, scale() );
+    GGplotD( ge, scale(), "test1.png" );
 }
 
 unittest
@@ -116,7 +152,7 @@ unittest
             ["a","b","a","b"] );
 
     auto gl = geomLine( aes );
-    ggplotdPNG( gl, scale() );
+    GGplotD( gl, scale(), "test2.pdf"  );
 }
 
 unittest
@@ -127,5 +163,5 @@ unittest
             ["a","a","b","b","a","a","a","a"] );
 
     auto gl = geomHist( aes );
-    ggplotdPNG( gl, scale() );
+    GGplotD( gl, scale(), "test3.svg" );
 }

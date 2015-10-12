@@ -19,10 +19,9 @@ sudo apt-get install libcairo2-dev
 
 ### PDF and SVG support
 
-Plotting to PDF and SVG is not supported yet (v0.0.1) but is the next
-feature to be added. Note that by default cairoD disables pdf and svg
-support. To enable it you need to add a local copy of cairoD that dub can
-find:
+We rely on cairo for PDF and SVG support, but by default cairoD disables
+pdf and svg support. To enable it you need to add a local copy of cairoD
+that dub can find:
 
 ```
 git clone https://github.com/jpf91/cairoD.git
