@@ -264,18 +264,40 @@ auto geomHist(AES)(AES aes)
 auto geomAxis(AES)(AES aes, double tickLength)
 {
     import std.array : array;
-    import std.range : repeat;
+    import std.range : empty, repeat;
+    import std.math : sqrt, pow;
     double[] xs;
     double[] ys;
+    auto colour = aes.front.colour;
+    double[2] orig = [aes.front.x, aes.front.y];
+    double[2] direction;
 
-    xs ~= aes.front.x;
-    ys ~= aes.front.y;
-
-    foreach( tick; aes )
+    while( !aes.empty )
     {
+        auto tick = aes.front;
         xs ~= tick.x;
         ys ~= tick.y;
+
+        aes.popFront;
+
+        // Draw ticks perpendicular to main axis;
+        if (xs.length > 1 && !aes.empty)
+        {
+            if (xs.length == 2) {
+                // Calculate tick direction and size
+                direction = [tick.x-orig[0],
+                     tick.y-orig[1]];
+                auto dirLength = sqrt(
+                        pow(direction[0],2)+pow(direction[1],2));
+                direction[0] *= tickLength/dirLength;
+                direction[1] *= tickLength/dirLength;
+            }
+            xs ~= [tick.x+direction[1], tick.x];
+            ys ~= [tick.y+direction[0], tick.y];
+        }
     }
-    auto colours = aes.front.colour.repeat(xs.length).array;
+
+    auto colours = colour.repeat(xs.length);
+
     return geomLine( Aes!(typeof(xs),typeof(ys),typeof(colours))( xs, ys, colours ) );
 }
