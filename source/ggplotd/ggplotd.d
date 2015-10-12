@@ -79,6 +79,9 @@ void ggplotdPNG(GR, SF)( GR geomRange, SF scale )
             yaxisTicks, 
             0.0.repeat().take(yaxisTicks.walkLength).array);
 
+    // TODO when we support setting colour outside of colourspace
+    // add these geomRanges to the provided ranges 
+    // and then draw them all
     auto gR = chain(geomAxis(aesX, bounds.height/25.0),
             geomAxis( aesY, bounds.width/25.0 ) );
 
