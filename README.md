@@ -37,9 +37,11 @@ At version v0.0.1 we only have quite basic support for simple plots.
 
 ```D 
 unittest { 
-auto aes = Aes!(double[],double[], string[])(
-[1.0,0.9],[2.0,1.1], ["c", "d"] ); auto ge = geomPoint( aes ); ggplotdPNG(
-ge, scale() ); }
+    auto aes = Aes!(double[],double[], string[])(
+        [1.0,0.9],[2.0,1.1], ["c", "d"] ); 
+    auto ge = geomPoint( aes ); 
+    ggplotdPNG( ge, scale() ); 
+}
 
 unittest
 {
