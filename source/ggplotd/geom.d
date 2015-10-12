@@ -258,4 +258,24 @@ auto geomHist(AES)(AES aes)
     return geomLine( Aes!(typeof(xs),typeof(ys),typeof(colours))( xs, ys, colours ) );
 }
 
+/// Draw axis, first and last location are start/finish
+/// others are ticks (perpendicular)
+/// TODO if labels are provided use those instead of numbering
+auto geomAxis(AES)(AES aes, double tickLength)
+{
+    import std.array : array;
+    import std.range : repeat;
+    double[] xs;
+    double[] ys;
 
+    xs ~= aes.front.x;
+    ys ~= aes.front.y;
+
+    foreach( tick; aes )
+    {
+        xs ~= tick.x;
+        ys ~= tick.y;
+    }
+    auto colours = aes.front.colour.repeat(xs.length).array;
+    return geomLine( Aes!(typeof(xs),typeof(ys),typeof(colours))( xs, ys, colours ) );
+}

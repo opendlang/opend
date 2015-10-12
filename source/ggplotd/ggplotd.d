@@ -55,20 +55,44 @@ void ggplotdPNG(GR, SF)( GR geomRange, SF scale )
     }
 
     // Axis
-    auto context = cairo.Context( surface );
-    context.translate( 50, 20 );
-    context = scale( context, bounds );
-    auto aes = Aes!(double[], double[], double[])(
-            [bounds.min_x, bounds.min_x,bounds.max_x],
-            [bounds.max_y, bounds.min_y,bounds.min_y], [0.0,0.0,0.0] );
-    auto gR = geomLine( aes );
+    import std.array : array;
+    import std.range : repeat, take, walkLength, chain;
+    import ggplotd.axes;
+    auto xaxisTicks = Axis(bounds.min_x, bounds.max_x)
+        .adjustTickWidth(5)
+        .axisTicks;
+
+    auto aesX = Aes!(typeof(xaxisTicks), double[], double[])(
+            xaxisTicks, 
+            bounds.min_y
+                .repeat()
+                .take(xaxisTicks.walkLength)
+                .array,
+            0.0.repeat().take(xaxisTicks.walkLength).array);
+
+    auto yaxisTicks = Axis(bounds.min_y, bounds.max_y)
+        .adjustTickWidth(5)
+        .axisTicks;
+
+    auto aesY = Aes!(double[], typeof(yaxisTicks), double[])(
+            bounds.min_x.repeat().take(yaxisTicks.walkLength).array,
+            yaxisTicks, 
+            0.0.repeat().take(yaxisTicks.walkLength).array);
+
+    auto gR = chain(geomAxis(aesX, bounds.height/25.0),
+            geomAxis( aesY, bounds.width/25.0 ) );
+
     foreach( g; gR )
     {
-        context = g.draw( context );
-    }
-    context.identityMatrix();
-    context.stroke();
+        auto context = cairo.Context( surface );
+        context.translate( 50, 20 );
+        context = scale( context, bounds );
+        context.setSourceRGB( 0,0,0 );
 
+        context = g.draw( context );
+        context.identityMatrix();
+        context.stroke();
+    }
 
     surface.writeToPNG("plotcli.png");
 }
@@ -102,4 +126,3 @@ unittest
     auto gl = geomHist( aes );
     ggplotdPNG( gl, scale() );
 }
-

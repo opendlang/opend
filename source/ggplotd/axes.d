@@ -1,5 +1,10 @@
 module ggplotd.axes;
 
+version(unittest)
+{
+    import dunit.toolkit;
+}
+
 ///
 struct Axis
 {
@@ -73,7 +78,62 @@ unittest
     assert(adjustTickWidth(Axis(1.79877e+07, 1.86788e+07), 5).tick_width == 100000);
 }
 
+/// Returns a range starting at axis.min, ending axis.max and with
+/// all the tick locations in between
+auto axisTicks( Axis axis )
+{
+    struct Ticks
+    {
+        double currentPosition;
+        Axis axis;
 
+        @property double front()
+        {
+            if (currentPosition >= axis.max)
+                return axis.max;
+            return currentPosition;
+        }
+
+        void popFront()
+        {
+            if (currentPosition < axis.min_tick)
+                currentPosition = axis.min_tick;
+            else
+                currentPosition += axis.tick_width;
+        }
+
+        @property bool empty() 
+        {
+            if (currentPosition - axis.tick_width >= axis.max)
+                return true;
+            return false;
+        }
+    }
+
+    return Ticks( axis.min, axis );
+}
+
+unittest
+{
+    import std.array : array, front, back;
+
+    auto ax1 = adjustTickWidth(Axis(0, .4), 5).axisTicks;
+    auto ax2 = adjustTickWidth(Axis(0, 4), 8).axisTicks;
+    assertEqual( ax1.array.front, 0 );
+    assertEqual( ax1.array.back, .4 );
+    assertEqual( ax2.array.front, 0 );
+    assertEqual( ax2.array.back, 4 );
+    assertGreaterThan( ax1.array.length, 3 );
+    assertLessThan( ax1.array.length, 8 );
+
+    assertGreaterThan( ax2.array.length, 5 );
+    assertLessThan( ax2.array.length, 10 );
+
+    auto ax3 = adjustTickWidth(Axis(1.1, 2), 5).axisTicks;
+    assertEqual( ax3.array.front, 1.1 );
+    assertEqual( ax3.array.back, 2 );
+}
+ 
 /// Calculate tick length
 double tickLength(in Axis axis)
 {
