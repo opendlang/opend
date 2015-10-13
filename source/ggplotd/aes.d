@@ -254,7 +254,6 @@ template Aes(Specs...)
 
         void popFront()
         {
-            import std.stdio : writeln;
             import std.range : popFront;
             foreach (i, _; Types[0..$])
             {
@@ -429,7 +428,6 @@ template Aes(Specs...)
 
 auto group(AES)( AES aes )
 {
-    import std.stdio;
     import std.algorithm : filter, map, uniq, sort;
     import std.range : array;
     auto colours = aes.map!((a) => a.colour)
@@ -442,7 +440,6 @@ auto group(AES)( AES aes )
 
 unittest
 {
-    import std.stdio;
     auto tup = Aes!(double[], "x", 
             double[], "y", string[], "colour")(
                 [0,1],[2,1],
@@ -468,7 +465,6 @@ unittest
 
 unittest
 {
-    import std.stdio;
     auto tup = Aes!(double[], "x", 
             double[], "y", string[], "colour")(
                 [0,1],[2,1],
@@ -502,7 +498,6 @@ unittest
             string[], "colour" )( 
                 [1.0,2.0,1.1], [3.0,1.5,1.1], ["a","b","a"] );
 
-    import std.stdio;
     import std.range : walkLength;
     auto grouped = aes.group;
     assertEqual( grouped.walkLength, 2 );
