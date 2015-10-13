@@ -96,22 +96,23 @@ void GGplotD(GR, SF)( GR geomRange, SF scale,
         .adjustTickWidth(5)
         .axisTicks;
 
-    auto aesX = Aes!(typeof(xaxisTicks), double[], double[])(
+    auto aesX = Aes!(
+            typeof(xaxisTicks), "x",
+            double[], "y")(
             xaxisTicks, 
             bounds.min_y
                 .repeat()
                 .take(xaxisTicks.walkLength)
-                .array,
-            0.0.repeat().take(xaxisTicks.walkLength).array);
+                .array );
 
     auto yaxisTicks = Axis(bounds.min_y, bounds.max_y)
         .adjustTickWidth(5)
         .axisTicks;
 
-    auto aesY = Aes!(double[], typeof(yaxisTicks), double[])(
+    auto aesY = Aes!(double[], "x", 
+            typeof(yaxisTicks), "y")(
             bounds.min_x.repeat().take(yaxisTicks.walkLength).array,
-            yaxisTicks, 
-            0.0.repeat().take(yaxisTicks.walkLength).array);
+            yaxisTicks );
 
     // TODO when we support setting colour outside of colourspace
     // add these geomRanges to the provided ranges 
@@ -138,7 +139,8 @@ void GGplotD(GR, SF)( GR geomRange, SF scale,
 
 unittest
 {
-    auto aes = Aes!(double[],double[], string[])( [1.0,0.9],[2.0,1.1],
+    auto aes = Aes!(double[],"x", double[], "y", string[], "colour")( 
+            [1.0,0.9],[2.0,1.1],
             ["c", "d"] );
     auto ge = geomPoint( aes );
     GGplotD( ge, scale(), "test1.png" );
@@ -146,7 +148,8 @@ unittest
 
 unittest
 {
-    auto aes = Aes!(double[], double[], string[] )( 
+    auto aes = Aes!(double[], "x", double[], "y", 
+            string[], "colour" )( 
             [1.0,2.0,1.1,3.0], 
             [3.0,1.5,1.1,1.8], 
             ["a","b","a","b"] );
@@ -157,9 +160,8 @@ unittest
 
 unittest
 {
-    auto aes = Aes!(double[], double[], string[] )( 
+    auto aes = Aes!(double[], "x", string[], "colour" )( 
             [1.0,1.05,1.1,0.9,1.0,0.99,1.09,1.091], 
-            [3.0,1.5,1.1,1.8], 
             ["a","a","b","b","a","a","a","a"] );
 
     auto gl = geomHist( aes );

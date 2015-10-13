@@ -35,34 +35,38 @@ dub add-local cairoD
 At version v0.0.1 we only have quite basic support for simple plots.
 
 ```D 
-unittest { 
-    auto aes = Aes!(double[],double[], string[])(
-        [1.0,0.9],[2.0,1.1], ["c", "d"] ); 
-    auto ge = geomPoint( aes ); 
-    ggplotdPNG( ge, scale() ); 
+
+unittest
+{
+    auto aes = Aes!(double[],"x", double[], "y", string[], "colour")( 
+            [1.0,0.9],[2.0,1.1],
+            ["c", "d"] );
+    auto ge = geomPoint( aes );
+    GGplotD( ge, scale(), "test1.png" );
 }
 
 unittest
 {
-    auto aes = Aes!(double[], double[], string[] )( 
+    auto aes = Aes!(double[], "x", double[], "y", 
+            string[], "colour" )( 
             [1.0,2.0,1.1,3.0], 
             [3.0,1.5,1.1,1.8], 
             ["a","b","a","b"] );
 
     auto gl = geomLine( aes );
-    ggplotdPNG( gl, scale() );
+    GGplotD( gl, scale(), "test2.pdf"  );
 }
 
 unittest
 {
-    auto aes = Aes!(double[], double[], string[] )( 
+    auto aes = Aes!(double[], "x", string[], "colour" )( 
             [1.0,1.05,1.1,0.9,1.0,0.99,1.09,1.091], 
-            [3.0,1.5,1.1,1.8], 
             ["a","a","b","b","a","a","a","a"] );
 
     auto gl = geomHist( aes );
-    ggplotdPNG( gl, scale() );
+    GGplotD( gl, scale(), "test3.svg" );
 }
+
 ```
 
 ## Extending GGplotD
@@ -89,15 +93,18 @@ function then please let us know and send us the code. That way we can add
 the function to the library and everyone can benefit.
 
 ```D 
+
 /// Draw histograms based on the x coordinates of the data (aes)
 auto geomHist(AES)(AES aes)
 {
     import std.algorithm : map;
     import std.array : array;
     import std.range : repeat;
-    double[] xs;
-    double[] ys;
-    typeof(aes.front.colour)[] colours;
+
+    // New aes to hold the lines for drawing histogram
+    auto aesLine = Aes!(double[], "x", double[], "y", 
+            typeof(aes.front.colour)[], "colour" )();
+
     foreach( grouped; group( aes ) ) // Split data by colour/id
     {
         auto bins = grouped
@@ -106,19 +113,20 @@ auto geomHist(AES)(AES aes)
         foreach( bin; bins )
         {
             // Convert data into line coordinates
-            xs ~= [ bin.range[0], bin.range[0],
+            aesLine.x ~= [ bin.range[0], bin.range[0],
                bin.range[1], bin.range[1] ];
-            ys ~= [ 0, bin.count,
+            aesLine.y ~= [ 0, bin.count,
                bin.count, 0 ];
 
             // Each (new) line coordinate has the colour specified
             // in the original data
-            colours ~= grouped.front.colour.repeat(4).array;
+            aesLine.colour ~= grouped.front.colour.repeat(4).array;
         }
     }
     // Use the xs/ys/colours to draw lines
-    return geomLine( Aes!(typeof(xs),typeof(ys),typeof(colours))( xs, ys, colours ) );
+    return geomLine( aesLine );
 }
+
 ```
 
 Note that the above highlights the drawing part of the function.

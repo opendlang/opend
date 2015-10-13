@@ -58,9 +58,9 @@ auto geomPoint(AES)(AES aes)
 
 unittest
 {
-    auto aes = Aes!(double[],double[], string[])( [1.0],[2.0],["c"] );
+    auto aes = Aes!(double[],"x",double[],"y")( [1.0],[2.0] );
     auto gl = geomPoint( aes );
-    assertEqual( gl.front.colour, "c" );
+    assertEqual( gl.front.colour, "black" );
     gl.popFront;
     assert( gl.empty );
 }
@@ -108,7 +108,7 @@ auto geomLine(AES)(AES aes)
 
 unittest
 {
-    auto aes = Aes!(double[], double[], string[] )( 
+    auto aes = Aes!(double[], "x", double[], "y", string[], "colour" )( 
             [1.0,2.0,1.1,3.0], 
             [3.0,1.5,1.1,1.8], 
             ["a","b","a","b"] );
@@ -233,9 +233,11 @@ auto geomHist(AES)(AES aes)
     import std.algorithm : map;
     import std.array : array;
     import std.range : repeat;
-    double[] xs;
-    double[] ys;
-    typeof(aes.front.colour)[] colours;
+
+    // New aes to hold the lines for drawing histogram
+    auto aesLine = Aes!(double[], "x", double[], "y", 
+            typeof(aes.front.colour)[], "colour" )();
+
     foreach( grouped; group( aes ) ) // Split data by colour/id
     {
         auto bins = grouped
@@ -244,18 +246,18 @@ auto geomHist(AES)(AES aes)
         foreach( bin; bins )
         {
             // Convert data into line coordinates
-            xs ~= [ bin.range[0], bin.range[0],
+            aesLine.x ~= [ bin.range[0], bin.range[0],
                bin.range[1], bin.range[1] ];
-            ys ~= [ 0, bin.count,
+            aesLine.y ~= [ 0, bin.count,
                bin.count, 0 ];
 
             // Each (new) line coordinate has the colour specified
             // in the original data
-            colours ~= grouped.front.colour.repeat(4).array;
+            aesLine.colour ~= grouped.front.colour.repeat(4).array;
         }
     }
     // Use the xs/ys/colours to draw lines
-    return geomLine( Aes!(typeof(xs),typeof(ys),typeof(colours))( xs, ys, colours ) );
+    return geomLine( aesLine );
 }
 
 /// Draw axis, first and last location are start/finish
@@ -297,7 +299,5 @@ auto geomAxis(AES)(AES aes, double tickLength)
         }
     }
 
-    auto colours = colour.repeat(xs.length);
-
-    return geomLine( Aes!(typeof(xs),typeof(ys),typeof(colours))( xs, ys, colours ) );
+    return geomLine( Aes!(typeof(xs),"x",typeof(ys),"y")( xs, ys ) );
 }
