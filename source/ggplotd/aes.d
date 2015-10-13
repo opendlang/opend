@@ -509,3 +509,76 @@ unittest
                 [1.0,2.0,1.1], [3.0,1.5,1.1] );
  
 }
+
+///
+struct NumericLabel(T)
+{
+    import std.range : ElementType;
+    import std.traits : isNumeric;
+    alias E = ElementType!T;
+
+    this( T range )
+    {
+        original = range;
+    }
+
+    @property auto front()
+    {
+        import std.typecons : Tuple;
+        import std.range : front;
+        import std.conv : to;
+        static if (isNumeric!E)
+            return Tuple!(double, string)( 
+                    original.front.to!double,
+                    original.front.to!string );
+        else
+        {
+            if (original.front !in fromLabelMap)
+            {
+                fromLabelMap[original.front] 
+                    = fromLabelMap.length.to!double;
+                //toLabelMap[fromLabelMap[original.front]] 
+                //    = original.front;
+            }
+            return Tuple!(double, string)
+                (
+                 fromLabelMap[original.front],
+                 original.front.to!string,
+                );
+        }
+    }
+
+    void popFront()
+    {
+        import std.range : popFront;
+        original.popFront;
+    }
+
+    @property bool empty()
+    {
+        import std.range : empty;
+        return original.empty;
+    }
+
+    private:
+        T original;
+        //E[double] toLabelMap;
+        double[E] fromLabelMap;
+}
+
+unittest
+{
+    import std.stdio : writeln;
+    import std.array : array;
+    import std.algorithm : map;
+    auto num = NumericLabel!(double[])( [0.0, 0.1, 1.0, 0.0] ); 
+    assertEqual( num.map!((a) => a[0]).array, 
+            [0.0, 0.1, 1.0, 0.0] );
+    assertEqual( num.map!((a) => a[1]).array, 
+            ["0", "0.1", "1", "0"] );
+    auto strs = NumericLabel!(string[])( ["a", "c", "b", "a"] ); 
+    assertEqual( strs.map!((a) => a[0]).array, 
+            [0, 1, 2.0, 0.0] );
+    assertEqual( strs.map!((a) => a[1]).array, 
+            ["a", "c", "b", "a"] );
+}
