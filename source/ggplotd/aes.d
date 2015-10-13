@@ -5,7 +5,7 @@ version(unittest)
     import dunit.toolkit;
 }
 
-template Aes2(Specs...)
+template Aes(Specs...)
 {
     import std.traits : Identity;
     import std.typetuple : staticMap, TypeTuple;
@@ -76,6 +76,11 @@ template Aes2(Specs...)
         return decl;
     }
 
+    alias fieldNames = staticMap!(extractName, fieldSpecs);
+
+    alias defaultNames = TypeTuple!("colour","size");
+    alias defaultTypes = TypeTuple!(string, double);
+    alias defaultValues = TypeTuple!(q{"black"}, 10);
     string injectFront()
     {
         import std.format : format;
@@ -85,17 +90,35 @@ template Aes2(Specs...)
         string tupleType = "Tuple!(";
         string values = "(";
 
-        foreach (i, spec; fieldSpecs)
+        foreach (i, name; fieldNames)
         {
 
             tupleType ~= format( q{typeof(%s.front),}, 
-                    spec.name );
-            tupleType ~= "q{" ~ spec.name ~ "},";
-            values ~= format( "this.%s.front,", spec.name );
+                    name );
+            tupleType ~= "q{" ~ name ~ "},";
+            values ~= format( "this.%s.front,", name );
         }
+
+        foreach( i, name; defaultNames )
+        {
+            auto defined = false;
+            foreach( j, fName; fieldNames )
+            {
+                if (name==fName)
+                    defined = true;
+            }
+            if (!defined)
+            {
+                //tupleType ~= format( q{typeof(%s),}, defaultValues[i] );
+                tupleType ~= format( q{%s,}, 
+                        defaultTypes[i].stringof );
+                tupleType ~= "q{" ~ name ~ "},";
+                values ~= format( "%s,", defaultValues[i] );          
+            }
+        }
+
         decl ~= "return " ~ tupleType[0..$-1] ~ ")" 
             ~ values[0..$-1] ~ "); }";
-
         //string decl2 = format("auto front() { import std.stdio; \"%s\".writeln; return 0.0; }", decl);
         return decl;
     }
@@ -152,7 +175,7 @@ template Aes2(Specs...)
             enum isBuildableFrom(T) = isBuildable!(T, U);
         }
 
-    struct Aes2
+    struct Aes
     {
         /**
          * The type of the tuple's components.
@@ -226,14 +249,6 @@ template Aes2(Specs...)
             {
                 field[] = another.field[];
             }
-
-        // Set default values
-        static if (!__traits(hasMember,typeof(this),"colour")) {
-            import std.range : repeat, take;
-            auto colour() { 
-                return repeat("black").take(this.length); 
-            };
-        }
 
         mixin(injectFront());
 
@@ -412,34 +427,31 @@ template Aes2(Specs...)
     }
 }
 
-auto group2(AES)( AES aes )
+auto group(AES)( AES aes )
 {
     import std.stdio;
     import std.algorithm : filter, map, uniq, sort;
     import std.range : array;
-    auto colours = aes.colour
+    auto colours = aes.map!((a) => a.colour)
         .array
         .sort()
         .uniq;
-    //return colours.map!( (c) => aes.filter!((a) => a.colour==c));
-    return 0;
+    return colours.map!( (c) => aes.filter!((a) => a.colour==c));
 }
 
 
 unittest
 {
     import std.stdio;
-    auto tup = Aes2!(double[], "x", 
+    auto tup = Aes!(double[], "x", 
             double[], "y", string[], "colour")(
                 [0,1],[2,1],
                 ["white","white2"]);
-    auto tup2 = Aes2!(double[], "x", 
+    auto tup2 = Aes!(double[], "x", 
             double[], "y")([0,1],[2,1]);
     assertEqual( tup.colour, ["white","white2"] );
     assertEqual( tup.length, 2 );
     assertEqual( tup2.length, 2 );
-    assertEqual( tup2.colour.length, 2 );
-    assertEqual( tup2.colour[0], "black" );
 
     tup2.x ~= 0.0;
     tup2.x ~= 0.0;
@@ -449,7 +461,7 @@ unittest
 
     import std.range : repeat;
     auto xs = repeat(0);
-    //auto tup3 = Aes2!(typeof(xs), "x", 
+    //auto tup3 = Aes!(typeof(xs), "x", 
     //        double[], "y")(xs,[2,1]);
     //assertEqual(tup3.length,2);
 }
@@ -457,22 +469,24 @@ unittest
 unittest
 {
     import std.stdio;
-    auto tup = Aes2!(double[], "x", 
+    auto tup = Aes!(double[], "x", 
             double[], "y", string[], "colour")(
                 [0,1],[2,1],
                 ["white","white2"]);
 
     tup.popFront;
     assertEqual( tup.front.y, 1 );
+    assertEqual( tup.front.colour, "white2" );
 
-    auto tup2 = Aes2!(double[], "x", 
+    auto tup2 = Aes!(double[], "x", 
             double[], "y")([0,1],[2,1]);
     assertEqual( tup2.front.y, 2 );
+    assertEqual( tup2.front.colour, "black" );
 
 
     import std.range : repeat;
     auto xs = repeat(0);
-    auto tup3 = Aes2!(typeof(xs), "x", 
+    auto tup3 = Aes!(typeof(xs), "x", 
             double[], "y")(xs,[2,1]);
 
     assertEqual(tup3.front.x, 0);
@@ -484,133 +498,19 @@ unittest
 
 unittest
 {
-    auto aes = Aes2!(double[], "x", double[], "y",
+    auto aes = Aes!(double[], "x", double[], "y",
             string[], "colour" )( 
                 [1.0,2.0,1.1], [3.0,1.5,1.1], ["a","b","a"] );
 
     import std.stdio;
-    aes.group2.writeln;
-    /+import std.range : walkLength;
-    auto grouped = aes.group;
-    assertEqual( grouped.length, 2 );
-    assertEqual( grouped.front.length, 2 );
-    grouped.popFront;
-    assertEqual( grouped.front.length, 1 );
-    +/
-
-    auto aes2 = Aes2!(double[], "x", double[], "y" )( 
-                [1.0,2.0,1.1], [3.0,1.5,1.1] );
-
-    import std.stdio;
-    aes2.group2.writeln;
- 
-}
-
-///
-struct Aes( RX, RY, RCol )
-{
-    import std.range : zip, Zip, StoppingPolicy, ElementType;
-    import std.typecons : Tuple;
-
-    this( RX x, RY y, RCol colour )
-    {
-        _aes = zip(StoppingPolicy.longest, 
-                x, y, colour);
-        // TODO probably need to sort by colour
-    }
-
-    @property ref auto front()
-    {
-        auto t = _aes.front();
-        return Tuple!(
-                ElementType!RX, "x", 
-                ElementType!RY, "y", 
-                ElementType!RCol, "colour"
-            )( t[0], t[1], t[2] );
-    }
-
-    void popFront()
-    {
-        _aes.popFront();
-    }
-
-    @property bool empty() 
-    {
-        return _aes.empty();
-    }
-
-    @property Aes save() {
-        return this;
-    }
-
-    private:
-        Zip!(RX, RY, RCol) _aes;
-}
-
-unittest
-{
-    auto aes = Aes!(double[], double[], string[] )( [1.0,2.0], [3.0,1.5], ["a","b"] );
-    assertEqual( aes.front.x, 1.0 );
-    aes.popFront;
-    assertEqual( aes.front.y, 1.5 );
-
-    aes.popFront;
-    assert( aes.empty );
-    // Make sure to test with empty y, colour
-}
-
-auto group(AES)( AES aes )
-{
-    import std.algorithm : filter, map, uniq, sort;
-    import std.range : array;
-    auto colours = aes.map!( (a) => a.colour )
-        .array
-        .sort()
-        .uniq;
-    return colours.map!( (c) => aes.filter!((a) => a.colour==c));
-}
-
-unittest
-{
-    auto aes = Aes!(double[], double[], string[] )( [1.0,2.0,1.1], 
-            [3.0,1.5,1.1], ["a","b","a"] );
-
     import std.range : walkLength;
     auto grouped = aes.group;
     assertEqual( grouped.walkLength, 2 );
     assertEqual( grouped.front.walkLength, 2 );
     grouped.popFront;
     assertEqual( grouped.front.walkLength, 1 );
+
+    auto aes2 = Aes!(double[], "x", double[], "y" )( 
+                [1.0,2.0,1.1], [3.0,1.5,1.1] );
+ 
 }
-
-
-/+
-http://forum.dlang.org/thread/hdxnptcikgojdkmldzrk@forum.dlang.org
-template aes(fun...)
-{
-    void aes(R)(R range)
-    {
-        import std.stdio : writeln;
-        import std.algorithm : countUntil;
-        range.writeln;
-        fun[1].countUntil("y").writeln;
-        fun.countUntil("z").writeln;
-    }
-}
-
-unittest
-{
-    import std.typecons : Tuple;
-    import std.range : zip;
-    import std.stdio : writeln;
-
-    auto t = Tuple!(int, "number",
-            string, "message")(42, "hello");
-    assert( t.number == 42 );
-
-    auto xs = [0.0,1.0];
-    auto ys = [4.0,5.0];
-
-    aes!("x", "y")(zip(xs,ys));
-}
-+/
