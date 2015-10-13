@@ -5,7 +5,6 @@ version(unittest)
     import dunit.toolkit;
 }
 
-
 template Aes2(Specs...)
 {
     import std.traits : Identity;
@@ -74,6 +73,30 @@ template Aes2(Specs...)
                 decl ~= format("alias %s = _%s;", name, i);
             }
         }
+        return decl;
+    }
+
+    string injectFront()
+    {
+        import std.format : format;
+        string decl = "auto front() { import std.range : ElementType;";
+        decl ~= "import std.typecons : Tuple; import std.range : front;";
+
+        string tupleType = "Tuple!(";
+        string values = "(";
+
+        foreach (i, spec; fieldSpecs)
+        {
+
+            tupleType ~= format( q{typeof(%s.front),}, 
+                    spec.name );
+            tupleType ~= "q{" ~ spec.name ~ "},";
+            values ~= format( "this.%s.front,", spec.name );
+        }
+        decl ~= "return " ~ tupleType[0..$-1] ~ ")" 
+            ~ values[0..$-1] ~ "); }";
+
+        //string decl2 = format("auto front() { import std.stdio; \"%s\".writeln; return 0.0; }", decl);
         return decl;
     }
 
@@ -163,27 +186,6 @@ template Aes2(Specs...)
         Types expand;
         mixin(injectNamedFields());
 
-        static if (is(Specs))
-        {
-            // This is mostly to make t[n] work.
-            alias expand this;
-        }
-        else
-        {
-            @property
-                ref inout(Aes2!Types) _Tuple_super() inout @trusted
-                {
-                    foreach (i, _; Types)   // Rely on the field layout
-                    {
-                        static assert(typeof(return).init.tupleof[i].offsetof ==
-                                expand[i].offsetof);
-                    }
-                    return *cast(typeof(return)*) &(field[0]);
-                }
-            // This is mostly to make t[n] work.
-            alias _Tuple_super this;
-        }
-
         // backwards compatibility
         alias field = expand;
 
@@ -231,6 +233,25 @@ template Aes2(Specs...)
             auto colour() { 
                 return repeat("black").take(this.length); 
             };
+        }
+
+        mixin(injectFront());
+
+        void popFront()
+        {
+            import std.stdio : writeln;
+            import std.range : popFront;
+            foreach (i, _; Types[0..$])
+            {
+                field[i].popFront();
+            }
+        }
+
+        @property bool empty()
+        {
+            if (length==0)
+                return true;
+            return false;
         }
 
         ///
@@ -389,18 +410,19 @@ template Aes2(Specs...)
             return this.to!string;
         }
     }
-
 }
 
 auto group2(AES)( AES aes )
 {
+    import std.stdio;
     import std.algorithm : filter, map, uniq, sort;
     import std.range : array;
-    auto colours = aes.map!( (a) => a.colour )
+    auto colours = aes.colour
         .array
         .sort()
         .uniq;
-    return colours.map!( (c) => aes.filter!((a) => a.colour==c));
+    //return colours.map!( (c) => aes.filter!((a) => a.colour==c));
+    return 0;
 }
 
 
@@ -427,9 +449,37 @@ unittest
 
     import std.range : repeat;
     auto xs = repeat(0);
+    //auto tup3 = Aes2!(typeof(xs), "x", 
+    //        double[], "y")(xs,[2,1]);
+    //assertEqual(tup3.length,2);
+}
+
+unittest
+{
+    import std.stdio;
+    auto tup = Aes2!(double[], "x", 
+            double[], "y", string[], "colour")(
+                [0,1],[2,1],
+                ["white","white2"]);
+
+    tup.popFront;
+    assertEqual( tup.front.y, 1 );
+
+    auto tup2 = Aes2!(double[], "x", 
+            double[], "y")([0,1],[2,1]);
+    assertEqual( tup2.front.y, 2 );
+
+
+    import std.range : repeat;
+    auto xs = repeat(0);
     auto tup3 = Aes2!(typeof(xs), "x", 
             double[], "y")(xs,[2,1]);
-    assertEqual(tup3.length,2);
+
+    assertEqual(tup3.front.x, 0);
+    tup3.popFront;
+    tup3.popFront;
+    assertEqual( tup3.empty, true );
+
 }
 
 unittest
