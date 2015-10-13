@@ -129,39 +129,6 @@ template Aes2(Specs...)
             enum isBuildableFrom(T) = isBuildable!(T, U);
         }
 
-    // Parse (type,name) pairs (FieldSpecs) out of the specified
-    // arguments. Some fields would have name, others not.
-    template arrayifySpecs(Specs...)
-    {
-        import std.range : ElementType;
-        static if (Specs.length == 0)
-        {
-            alias arrayifySpecs = TypeTuple!();
-        }
-        else static if (is(Specs[0]) && isInputRange!(Specs[0]))
-        {
-            static if (is(typeof(Specs[1]) : string))
-            {
-                alias arrayifySpecs =
-                    TypeTuple!(ElementType!(Specs[0])[], Specs[1],
-                            arrayifySpecs!(Specs[2 .. $]));
-            }
-            else
-            {
-                alias arrayifySpecs =
-                    TypeTuple!(ElementType!(Specs[0])[],
-                            arrayifySpecs!(Specs[1 .. $]));
-            }
-        }
-        else
-        {
-            static assert(0, "Attempted to instantiate Tuple with an "
-                    ~"invalid argument: "~ Specs[0].stringof);
-        }
-    }
-
-    alias arraySpecs = arrayifySpecs!Specs;
-
     struct Aes2
     {
         /**
@@ -421,41 +388,21 @@ template Aes2(Specs...)
             import std.conv : to;
             return this.to!string;
         }
-
-        auto group2()
-        {
-            import std.typetuple : TypeTuple;
-            import std.range : empty;
-            import std.stdio;
-
-            string[] groupBy;
-            foreach( name; fieldNames )
-            {
-                if (name == "colour")
-                    groupBy ~= "colour";
-            }
-            fieldNames.writeln;
-            groupBy.writeln;
-            //arraySpecs.writeln;
-            //parseSpecs!Specs;
-            auto newType = Aes2!(arraySpecs)();
-            newType.writeln;
-
-            if (groupBy.empty)
-                return [newType];
-            //foreach( i, type : aes.Types )
-            /*import std.algorithm : filter, map, uniq, sort;
-              import std.range : array;
-              auto colours = aes.map!( (a) => a.colour )
-              .array
-              .sort()
-              .uniq;
-              return colours.map!( (c) => aes.filter!((a) => a.colour==c));*/
-            return [newType];
-        }
     }
 
 }
+
+auto group2(AES)( AES aes )
+{
+    import std.algorithm : filter, map, uniq, sort;
+    import std.range : array;
+    auto colours = aes.map!( (a) => a.colour )
+        .array
+        .sort()
+        .uniq;
+    return colours.map!( (c) => aes.filter!((a) => a.colour==c));
+}
+
 
 unittest
 {
