@@ -66,12 +66,16 @@ void GGplotD(GR, SF)( GR geomRange, SF scale,
     // TODO use reduce to get the all encompasing bounds
     AdaptiveBounds bounds;
     typeof(geomRange.front.colour)[] colourIDs;
+    auto xAxisTicks = geomRange.front.xTickLabels;
+    auto yAxisTicks = geomRange.front.yTickLabels;
     //bounds = reduce!((a,b) => a.adapt( b.bounds ))
     //    ( bounds, geomRange );
     foreach( geom; geomRange )
     {
         bounds.adapt( geom.bounds );
         colourIDs ~= geom.colour;
+        xAxisTicks ~= geom.xTickLabels;
+        yAxisTicks ~= geom.xTickLabels;
     }
 
     auto colourMap = colourGradient(colourIDs);
@@ -90,29 +94,52 @@ void GGplotD(GR, SF)( GR geomRange, SF scale,
 
     // Axis
     import std.array : array;
-    import std.range : repeat, take, walkLength, chain;
+    import std.algorithm : sort, uniq, map;
+    import std.range : repeat, take, walkLength, chain, popFront;
     import ggplotd.axes;
-    auto xaxisTicks = Axis(bounds.min_x, bounds.max_x)
-        .adjustTickWidth(5)
-        .axisTicks;
+    double[] xsticks;
+    auto sortedAxisTicks = xAxisTicks.sort().uniq;
+    if (sortedAxisTicks.walkLength > 0)
+        xsticks = [bounds.min_x] ~
+            sortedAxisTicks.map!((t) => t[0]).array ~
+            [bounds.max_x];
+    else 
+        xsticks = Axis(bounds.min_x, bounds.max_x)
+            .adjustTickWidth(5)
+            .axisTicks.array;
+
+    // Make sure first two positions are not the same;
+    if (xsticks[1] == xsticks[0])
+        xsticks.popFront;
 
     auto aesX = Aes!(
-            typeof(xaxisTicks), "x",
+            double[], "x",
             double[], "y")(
-            xaxisTicks, 
+            xsticks, 
             bounds.min_y
                 .repeat()
-                .take(xaxisTicks.walkLength)
+                .take(xsticks.walkLength)
                 .array );
 
-    auto yaxisTicks = Axis(bounds.min_y, bounds.max_y)
-        .adjustTickWidth(5)
-        .axisTicks;
+    double[] ysticks;
+    sortedAxisTicks = yAxisTicks.sort().uniq;
+    if (sortedAxisTicks.walkLength > 0)
+        ysticks = [bounds.min_y] ~
+            sortedAxisTicks.map!((t) => t[0]).array ~
+            [bounds.max_y];
+    else 
+        ysticks = Axis(bounds.min_y, bounds.max_y)
+            .adjustTickWidth(5)
+            .axisTicks.array;
+
+    // Make sure first two positions are not the same;
+    if (ysticks[1] == ysticks[0])
+        ysticks.popFront;
 
     auto aesY = Aes!(double[], "x", 
-            typeof(yaxisTicks), "y")(
-            bounds.min_x.repeat().take(yaxisTicks.walkLength).array,
-            yaxisTicks );
+            double[], "y")(
+            bounds.min_x.repeat().take(ysticks.walkLength).array,
+            ysticks );
 
     // TODO when we support setting colour outside of colourspace
     // add these geomRanges to the provided ranges 
