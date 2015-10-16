@@ -2,87 +2,65 @@ module painlesstraits;
 
 import std.traits;
 
-public:
-
 template hasAnnotation(alias f, Attr)
 {
-    static bool helper()
-    {
+    enum bool hasAnnotation = (function() {
         foreach (attr; __traits(getAttributes, f))
             static if (is(attr == Attr) || is(typeof(attr) == Attr))
                 return true;
         return false;
-    }
-
-    enum bool hasAnnotation = helper;
+    })();
 }
 
 template hasAnyOfTheseAnnotations(alias f, Attr...)
 {
-    static bool helper()
-    {
+    enum bool hasAnyOfTheseAnnotations = (function() {
         foreach (annotation; Attr)
             static if (hasAnnotation!(f, annotation))
                 return true;
         return false;
-    }
-
-    enum bool hasAnyOfTheseAnnotations = helper;
+    })();
 }
 
 template hasValueAnnotation(alias f, Attr)
 {
-    static bool helper()
-    {
+    enum bool hasValueAnnotation = (function() {
         foreach (attr; __traits(getAttributes, f))
             static if (is(typeof(attr) == Attr))
                 return true;
         return false;
-    }
-
-    enum bool hasValueAnnotation = helper;
+    })();
 }
 
 template hasAnyOfTheseValueAnnotations(alias f, Attr...)
 {
-    static bool helper()
-    {
+    enum bool hasAnyOfTheseValueAnnotations = (function() {
         foreach (annotation; Attr)
             static if (hasValueAnnotation(f, annotation))
                 return true;
         return false;
-    }
-
-    enum bool hasAnyOfTheseValueAnnotations = helper;
+    })();
 }
 
 template getAnnotation(alias f, Attr)
-	if (hasValueAnnotation!(f, Attr))
 {
-    static auto helper()
-    {
-        foreach (attr; __traits(getAttributes, f))
-            static if (is(typeof(attr) == Attr))
-                return attr;
-        assert(0);
-    }
-
-    enum getAnnotation = helper;
+	static if (hasValueAnnotation!(f, Attr)) {
+		enum getAnnotation = (function() {
+			foreach (attr; __traits(getAttributes, f))
+				static if (is(typeof(attr) == Attr))
+					return attr;
+			assert(0);
+		})();
+	} else static assert(0);
 }
 
 template isFieldOrProperty(alias T)
 {
-    static bool helper()
-    {
+    enum isFieldOrProperty = (function() {
         static if (isSomeFunction!(T))
         {
             return (functionAttributes!(T) & FunctionAttribute.property) != 0;
         }
-        else
-        {
-            return true;
-        }
-    }
-
-    enum isFieldOrProperty = helper;
+        else return true;
+    })();
 }
