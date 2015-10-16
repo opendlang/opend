@@ -167,3 +167,17 @@ unittest
     auto gl = geomHist( aes );
     GGplotD( gl, scale(), "test3.svg" );
 }
+
+unittest
+{
+    auto aes = Aes!(string[], "x", string[], "y", 
+            string[], "colour" )( 
+            ["a","b","c","b"], 
+            ["a","b","b","a"], 
+            ["b","b","b","b"] );
+
+    auto gl = geomLine( aes );
+    GGplotD( gl, scale(), "test4.png"  );
+}
+
+

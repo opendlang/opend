@@ -511,7 +511,8 @@ unittest
 }
 
 ///
-struct NumericLabel(T)
+import std.range : isInputRange;
+struct NumericLabel(T) if (isInputRange!T)
 {
     import std.range : ElementType;
     import std.traits : isNumeric;
@@ -558,6 +559,14 @@ struct NumericLabel(T)
     {
         import std.range : empty;
         return original.empty;
+    }
+
+    @property bool numeric()
+    {
+        static if (isNumeric!E)
+            return true;
+        else
+            return false;
     }
 
     private:

@@ -12,9 +12,13 @@ version(unittest)
 
 struct Geom( FUNC, Col )
 {
-    FUNC draw;
-    Col colour;
-    AdaptiveBounds bounds;
+    FUNC draw; ///
+    Col colour; ///
+    AdaptiveBounds bounds; ///
+
+    import std.typecons : Tuple;
+    Tuple!(double, string)[] xTickLabels; ///
+    Tuple!(double, string)[] yTickLabels; ///
 }
 
 auto geomPoint(AES)(AES aes)
@@ -67,32 +71,45 @@ unittest
 
 auto geomLine(AES)(AES aes)
 {
+    import std.algorithm : map;
+    import std.range : array, zip;
     struct GeomRange(T)
     {
         this( T aes ) { groupedAes = aes.group; }
 
         @property auto front() {
+            auto xs = NumericLabel!(typeof(groupedAes.front.front.x)[])
+                (groupedAes.front.map!((t)=>t.x).array);
+            auto ys = NumericLabel!(typeof(groupedAes.front.front.y)[])
+                (groupedAes.front.map!((t)=>t.y).array);
+            auto coords = zip(xs,ys);
             auto f = delegate(cairo.Context context) 
             {
-                auto fr = groupedAes.front;
-                context.moveTo( fr.front.x, fr.front.y );
-                fr.popFront;
-                foreach( tup; fr )
+                auto fr = coords.front;
+                context.moveTo( fr[0][0], fr[1][0] );
+                coords.popFront;
+                foreach( tup; coords )
                 {
-                    context.lineTo( tup.x, tup.y );
+                    context.lineTo( tup[0][0], tup[1][0] );
                 }
                 return context;
             };
 
-            AdaptiveBounds bounds;
-            auto fr = groupedAes.front;
-            foreach( tup; fr )
-            {
-                bounds.adapt( Point( tup.x, tup.y ) );
-            }
+           auto geom = Geom!(typeof(f),typeof(groupedAes.front.front.colour))
+                ( f, groupedAes.front.front.colour);
+           AdaptiveBounds bounds;
+           coords = zip(xs,ys);
+           foreach( tup; coords )
+           {
+               bounds.adapt( Point( tup[0][0], tup[1][0] ) );
+               if (!xs.numeric)
+                   geom.xTickLabels ~= tup[0];
+               if (!ys.numeric)
+                   geom.yTickLabels ~= tup[0];
+           }
+           geom.bounds = bounds;
 
-            return Geom!(typeof(f),typeof(fr.front.colour))
-                ( f, fr.front.colour, bounds );
+            return geom;
         }
 
         void popFront() {
@@ -114,6 +131,11 @@ unittest
             ["a","b","a","b"] );
 
     auto gl = geomLine( aes );
+
+    import std.range : empty;
+    assert( gl.front.xTickLabels.empty );
+    assert( gl.front.yTickLabels.empty );
+
     assertEqual( gl.front.colour, "a" );
     assertEqual( gl.front.bounds.min_x, 1.0 );
     assertEqual( gl.front.bounds.max_x, 1.1 );
@@ -122,6 +144,19 @@ unittest
     assertEqual( gl.front.bounds.max_x, 3.0 );
     gl.popFront;
     assert( gl.empty );
+}
+
+unittest
+{
+    auto aes = Aes!(string[], "x", string[], "y", 
+            string[], "colour" )( 
+            ["a","b","c","b"], 
+            ["a","b","b","a"], 
+            ["b","b","b","b"] );
+
+    auto gl = geomLine( aes );
+    assertEqual( gl.front.xTickLabels.length, 4 );
+    assertEqual( gl.front.yTickLabels.length, 4 );
 }
 
 /// Bin a range of data
