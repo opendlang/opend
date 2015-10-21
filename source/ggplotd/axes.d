@@ -1,5 +1,7 @@
 module ggplotd.axes;
 
+import std.typecons : Tuple;
+
 version(unittest)
 {
     import dunit.toolkit;
@@ -144,4 +146,85 @@ unittest
 {
     auto axis = Axis(-1, 1);
     assert(tickLength(axis) == 0.08);
+}
+
+auto axisAes( string type, double minC, double maxC,
+        double lvl,
+        Tuple!(double, string)[] ticks = [] )
+{
+    import ggplotd.aes;
+
+    import std.algorithm : sort, uniq, map;
+    import std.array : array;
+    import std.range : repeat, take, popFront, walkLength;
+
+    double[] ticksLoc;
+    auto sortedAxisTicks = ticks.sort().uniq;
+
+    string[] labels;
+
+    if (sortedAxisTicks.walkLength > 0)
+    {
+        ticksLoc = [minC] ~
+            sortedAxisTicks.map!((t) => t[0]).array ~
+            [maxC];
+        labels = [""] ~ 
+            sortedAxisTicks.map!((t) => t[1]).array ~
+            [""];
+    }
+    else 
+    {
+        ticksLoc = Axis(minC, maxC)
+            .adjustTickWidth(5)
+            .axisTicks.array;
+        labels = "".repeat(ticksLoc.walkLength).array;
+    }
+
+    // Make sure first two positions are not the same;
+    while (ticksLoc[1] == ticksLoc[0])
+    {
+        ticksLoc.popFront;
+        labels.popFront;
+    }
+
+    if (type == "x")
+    {
+        return Aes!(
+                double[], "x",
+                double[], "y",
+                string[], "label" )(
+                    ticksLoc, 
+                    lvl 
+                    .repeat()
+                    .take(ticksLoc.walkLength)
+                    .array,
+                    labels );
+    } else {
+        return Aes!(
+                double[], "x",
+                double[], "y",
+                string[], "label" )(
+                    lvl 
+                    .repeat()
+                    .take(ticksLoc.walkLength)
+                    .array,
+                    ticksLoc,
+                    labels );
+    }
+}
+
+unittest
+{
+    import std.stdio : writeln;
+    auto aes = axisAes( "x", 0.0, 1.0, 2.0 );
+    assertEqual( aes.front.x, 0.0 );
+    assertEqual( aes.front.y, 2.0 );
+    assertEqual( aes.front.label, "" );
+
+    aes = axisAes( "y", 0.0, 1.0, 2.0, 
+            [Tuple!(double,string)(0.2,"lbl")] );
+    aes.popFront;
+    assertEqual( aes.front.x, 2.0 );
+    assertEqual( aes.front.y, 0.2 );
+    assertEqual( aes.front.label, "lbl" );
 }

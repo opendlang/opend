@@ -93,9 +93,9 @@ void GGplotD(GR, SF)( GR geomRange, SF scale,
     }
 
     // Axis
-    import std.array : array;
     import std.algorithm : sort, uniq, map;
-    import std.range : repeat, take, walkLength, chain, popFront;
+    import std.range : chain, walkLength, popFront;
+    import std.array : array;
     import ggplotd.axes;
     double[] xsticks;
     auto sortedAxisTicks = xAxisTicks.sort().uniq;
@@ -112,34 +112,11 @@ void GGplotD(GR, SF)( GR geomRange, SF scale,
     if (xsticks[1] == xsticks[0])
         xsticks.popFront;
 
-    auto aesX = Aes!(
-            double[], "x",
-            double[], "y")(
-            xsticks, 
-            bounds.min_y
-                .repeat()
-                .take(xsticks.walkLength)
-                .array );
+    auto aesX = axisAes( "x", bounds.min_x, bounds.max_x,
+            bounds.min_y, sortedAxisTicks.array );
 
-    double[] ysticks;
-    sortedAxisTicks = yAxisTicks.sort().uniq;
-    if (sortedAxisTicks.walkLength > 0)
-        ysticks = [bounds.min_y] ~
-            sortedAxisTicks.map!((t) => t[0]).array ~
-            [bounds.max_y];
-    else 
-        ysticks = Axis(bounds.min_y, bounds.max_y)
-            .adjustTickWidth(5)
-            .axisTicks.array;
-
-    // Make sure first two positions are not the same;
-    if (ysticks[1] == ysticks[0])
-        ysticks.popFront;
-
-    auto aesY = Aes!(double[], "x", 
-            double[], "y")(
-            bounds.min_x.repeat().take(ysticks.walkLength).array,
-            ysticks );
+    auto aesY = axisAes( "y", bounds.min_y, bounds.max_y,
+            bounds.min_x, sortedAxisTicks.array );
 
     // TODO when we support setting colour outside of colourspace
     // add these geomRanges to the provided ranges 
