@@ -23,17 +23,23 @@ struct Geom( FUNC, Col )
 
 auto geomPoint(AES)(AES aes)
 {
+    alias CoordX = typeof(NumericLabel!(typeof(AES.x))( AES.x ));
+    alias CoordY = typeof(NumericLabel!(typeof(AES.y))( AES.y ));
+    alias CoordType = typeof( merge( aes, Aes!(CoordX, "x", 
+                    CoordY, "y" )( CoordX( AES.x ), CoordY( AES.y ) ) ) );
+
     struct GeomRange(T)
     {
         size_t size=6;
-        this( T aes ) { _aes = aes; }
+        this( T aes ) { _aes = merge( aes, Aes!(CoordX, "x", 
+                    CoordY, "y" )( CoordX( aes.x ), CoordY( aes.y ) ) ); }
         @property auto front() {
             immutable tup = _aes.front;
             auto f = delegate(cairo.Context context) 
             {
                 auto devP = 
                     context.userToDevice(
-                            cairo.Point!double( tup.x, tup.y ));
+                            cairo.Point!double( tup.x[0], tup.y[0] ));
                 context.save();
                 context.identityMatrix;
                 context.rectangle( devP.x-0.5*size, devP.y-0.5*size, 
@@ -43,7 +49,7 @@ auto geomPoint(AES)(AES aes)
             };
 
             AdaptiveBounds bounds;
-            bounds.adapt( Point( tup.x, tup.y ) );
+            bounds.adapt( Point( tup.x[0], tup.y[0] ) );
 
             return Geom!(typeof(f),typeof(tup.colour))
                 ( f, tup.colour, bounds );
@@ -55,7 +61,7 @@ auto geomPoint(AES)(AES aes)
 
         @property bool empty() { return _aes.empty; }
         private:
-            T _aes;
+            CoordType _aes;
     }
     return GeomRange!AES(aes);
 }
