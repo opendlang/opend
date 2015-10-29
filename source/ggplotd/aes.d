@@ -388,7 +388,7 @@ template Aes(Specs...)
             return h;
         }
 
-        /**
+         /**
          * Converts to string.
          */
         void toString(DG)(scope DG sink)
@@ -590,4 +590,65 @@ unittest
             [0, 1, 2.0, 0.0] );
     assertEqual( strs.map!((a) => a[1]).array, 
             ["a", "c", "b", "a"] );
+}
+
+/++
+Merge two Aes structs
+
+If it has similar named types, then it uses the second one.
+
+Returns a new struct, with combined types.
++/
+template merge(T, U)
+{
+    auto generateCode()
+    {
+        string typing = "Aes!(";
+        string variables = "(";
+        foreach( i, t; U.fieldNames )
+        {
+            typing ~= U.Types[i].stringof ~ ",\"" ~ t ~ "\",";
+            variables ~= "other." ~ t ~ ",";
+        }
+
+        foreach( i, t; T.fieldNames )
+        {
+            bool contains = false;
+            foreach( _, t2; U.fieldNames )
+            {
+                if (t==t2)
+                    contains = true;
+            }
+            if (!contains)
+            {
+                typing ~= T.Types[i].stringof ~ ",\"" ~ t ~ "\",";
+                variables ~= "base." ~ t ~ ",";
+            }
+        }
+        return "return " ~ typing[0..$-1] ~ ")" ~ variables[0..$-1] ~ ");";
+    }
+
+    auto merge(T base, U other)
+    {
+        mixin(generateCode());
+    }
+}
+
+///
+unittest
+{
+    import std.range : front;
+    auto xs = ["a","b"];
+    auto ys = ["c","d"];
+    auto labels = ["e","f"];
+    auto aes = Aes!(string[], "x", string[], "y", string[], "label")( 
+            xs, ys, labels );
+
+    auto nlAes = merge( aes, Aes!(NumericLabel!(string[]), "x", 
+                NumericLabel!(string[]), "y" )( 
+                NumericLabel!(string[])( aes.x ),
+                NumericLabel!(string[])( aes.y ) ) );
+
+    assertEqual( nlAes.x.front[0], 0 );
+    assertEqual( nlAes.label.front, "e" );
 }
