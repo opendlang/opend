@@ -8,6 +8,8 @@ import cairo.cairo : RGB;
 //import std.experimental.color.rgb;
 //import std.experimental.color.hsx;
 
+import ggplotd.aes : NumericLabel;
+
 version(unittest)
 {
     import dunit.toolkit;
@@ -36,3 +38,65 @@ unittest
     assertEqual(colourGradient(["a","b"])("a"), RGB(1,0,0));
     assertEqual(colourGradient(["a","b"])("b"), RGB(1,0,0.5));
 }
+
+auto gradient( double value, double from, double till )
+{
+    return RGB( 1, 0, (value-from)/(till-from) );
+}
+
+auto createColourMap(R : NumericLabel!T, T )( R colourIDs )
+{
+    import std.algorithm : map, reduce;
+    import std.typecons : Tuple;
+
+    auto minmax = colourIDs 
+        .map!((a) => a[0])
+        .reduce!("min(a,b)","max(a,b)");
+    //RGB!("rgba", float)
+    return ( Tuple!(double, string) tup )
+    {
+        if (tup[1]=="black")
+            return RGB(0,0,0);
+        return gradient(tup[0],minmax[0],minmax[1]);
+    };
+}
+
+
+auto createColourMap(R)( R colourIDs )
+{
+    import std.algorithm : map, reduce;
+    import ggplotd.aes : NumericLabel;
+    import std.typecons : Tuple;
+
+    auto r = NumericLabel!R( colourIDs );
+
+    auto minmax = r
+        .map!((a) => a[0])
+        .reduce!("min(a,b)","max(a,b)");
+    //RGB!("rgba", float)
+    return ( Tuple!(double, string) tup )
+    {
+        if (tup[1]=="black")
+            return RGB(0,0,0);
+        return gradient(tup[0],minmax[0],minmax[1]);
+    };
+}
+
+unittest
+{
+    import std.typecons : Tuple;
+    assertEqual(createColourMap(["a","b"])(
+                Tuple!(double,string)(0,"a")), RGB(1,0,0));
+    assertEqual(createColourMap(["a","b"])(
+                Tuple!(double,string)(0.5,"b")), RGB(1,0,0.5));
+
+    assertEqual(createColourMap(["a","b"])(
+                Tuple!(double,string)(0.5,"black")), RGB(0,0,0));
+
+    // Colour is numericLabel type
+    import ggplotd.aes : NumericLabel;
+    assertEqual(createColourMap(
+                NumericLabel!(string[])(["a","b"]))(
+                Tuple!(double,string)(0.5,"b")), RGB(1,0,0.5));
+}
+
