@@ -40,6 +40,41 @@ unittest
     assertEqual(colourGradient(["a","b"])("b"), RGB(1,0,0.5));
 }
 
+/// Converts any type into a double string pair, which is used by colour maps
+struct ColourID
+{
+    import std.typecons : Tuple;
+
+    ///
+    this(T)( in T setId )
+    {
+        import std.math : isNumeric;
+        import std.conv : to;
+        static if (isNumeric!T)
+        {
+            id[0] = setId.to!double;
+        }
+        else 
+            id[1] = setId.to!string;
+    }
+
+    Tuple!(double, string) id; ///
+
+    alias id this; ///
+}
+
+unittest 
+{
+    import std.math : isNaN;
+    import std.range : empty;
+    auto cID = ColourID( "a" );
+    assert( isNaN(cID[0]) );
+    assertEqual( cID[1], "a" );
+    auto numID = ColourID( 0 );
+    assertEqual( numID[0], 0 );
+    assert( numID[1].empty );
+}
+
 auto gradient( double value, double from, double till )
 {
     return RGB( 1, 0, (value-from)/(till-from) );
