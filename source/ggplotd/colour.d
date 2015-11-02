@@ -1,6 +1,7 @@
 module ggplotd.colour;
 
 import std.range : ElementType;
+import std.typecons : Tuple;
 
 import cairo.cairo : RGB;
 
@@ -44,7 +45,8 @@ auto gradient( double value, double from, double till )
     return RGB( 1, 0, (value-from)/(till-from) );
 }
 
-auto createColourMap(R : NumericLabel!T, T )( R colourIDs )
+auto createColourMap(R)( R colourIDs )
+    if (is(ElementType!R == Tuple!(double, string)))
 {
     import std.algorithm : map, reduce;
     import std.typecons : Tuple;
@@ -63,6 +65,7 @@ auto createColourMap(R : NumericLabel!T, T )( R colourIDs )
 
 
 auto createColourMap(R)( R colourIDs )
+    if (!is(ElementType!R == Tuple!(double, string)))
 {
     import std.algorithm : map, reduce;
     import ggplotd.aes : NumericLabel;
