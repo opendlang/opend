@@ -92,13 +92,86 @@ unittest
     assert( numID[1].empty );
 }
 
+///
+import std.range : isInputRange;
+import std.range : ElementType;
+
+struct ColourIDRange(T) if (isInputRange!T 
+        && is( ElementType!T == ColourID ) )
+{
+    this( T range )
+    {
+        original = range;
+        namedColours = createNamedColours();
+    }
+
+    @property auto front()
+    {
+        import std.range : front;
+        import std.math : isNaN;
+        if ( !isNaN(original.front[0]) || 
+                original.front[1] in namedColours )
+            return original.front;
+        else if ( original.front[1] !in fromLabelMap )
+        {
+            import std.conv : to;
+            fromLabelMap[original.front[1]] 
+                = fromLabelMap.length.to!double;
+        }
+        original.front[0] = fromLabelMap[original.front[1]];
+        return original.front;
+    }
+
+    void popFront()
+    {
+        import std.range : popFront;
+        original.popFront;
+    }
+
+    @property bool empty()
+    {
+        import std.range : empty;
+        return original.empty;
+    }
+
+    private:
+        T original;
+        //E[double] toLabelMap;
+        double[string] fromLabelMap;
+        RGB[string] namedColours;
+}
+
+unittest
+{
+    import std.math : isNaN;
+    auto ids = [ColourID("black"), ColourID(-1),ColourID("a"),
+        ColourID("b"), ColourID("a")];
+    auto cids = ColourIDRange!(typeof(ids))( ids );
+
+    assertEqual( cids.front[1], "black" );
+    assert( isNaN( cids.front[0] ) );
+    cids.popFront;
+    assertEqual( cids.front[1], "" );
+    assertEqual( cids.front[0], -1 );
+    cids.popFront;
+    assertEqual( cids.front[1], "a" );
+    assertEqual( cids.front[0], 0 );
+    cids.popFront;
+    assertEqual( cids.front[1], "b" );
+    assertEqual( cids.front[0], 1 );
+    cids.popFront;
+    assertEqual( cids.front[1], "a" );
+    assertEqual( cids.front[0], 0 );
+}
+
 auto gradient( double value, double from, double till )
 {
     return RGB( 1, 0, (value-from)/(till-from) );
 }
 
 auto createColourMap(R)( R colourIDs )
-    if (is(ElementType!R == Tuple!(double, string)))
+    if (is(ElementType!R == Tuple!(double, string)) ||
+            is( ElementType!R == ColourID))
 {
     import std.algorithm : map, reduce;
     import std.typecons : Tuple;
@@ -119,7 +192,8 @@ auto createColourMap(R)( R colourIDs )
 
 
 auto createColourMap(R)( R colourIDs )
-    if (!is(ElementType!R == Tuple!(double, string)))
+    if (!is(ElementType!R == Tuple!(double, string) ) &&
+            !is( ElementType!R == ColourID))
 {
     import std.algorithm : map, reduce;
     import ggplotd.aes : NumericLabel;
@@ -155,5 +229,9 @@ unittest
     assertEqual(createColourMap(
                 NumericLabel!(string[])(["a","b"]))(
                 Tuple!(double,string)(0.5,"b")), RGB(1,0,0.5));
+
+    assertEqual(createColourMap(
+                [ColourID("black")] )(
+                ColourID("black")), RGB(0,0,0));
 }
 
