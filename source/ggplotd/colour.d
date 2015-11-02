@@ -40,6 +40,23 @@ unittest
     assertEqual(colourGradient(["a","b"])("b"), RGB(1,0,0.5));
 }
 
+/++
+    Returns an associative array with names as key and colours as values
+
+    Would have been nicer to just define a static AA, but that is currently
+    not possible.
+    +/
+auto createNamedColours()
+{
+    RGB[string] nameMap;
+    nameMap["black"] = RGB(0,0,0);
+    nameMap["white"] = RGB(1,1,1);
+    nameMap["red"] = RGB(1,0,0);
+    nameMap["green"] = RGB(0,1,0);
+    nameMap["red"] = RGB(0,0,1);
+    return nameMap;
+}
+
 /// Converts any type into a double string pair, which is used by colour maps
 struct ColourID
 {
@@ -89,11 +106,13 @@ auto createColourMap(R)( R colourIDs )
     auto minmax = colourIDs 
         .map!((a) => a[0])
         .reduce!("min(a,b)","max(a,b)");
+
+    auto namedColours = createNamedColours;
     //RGB!("rgba", float)
     return ( Tuple!(double, string) tup )
     {
-        if (tup[1]=="black")
-            return RGB(0,0,0);
+        if (tup[1] in namedColours)
+            return namedColours[tup[1]];
         return gradient(tup[0],minmax[0],minmax[1]);
     };
 }
