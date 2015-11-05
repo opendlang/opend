@@ -1,0 +1,16 @@
+sudo: false
+language: d
+d:
+  - dmd
+  - dmd-2.067.0
+  - dmd-2.066.1
+  - gdc
+  - gdc-4.9.3
+  - ldc
+  - ldc-0.15.1
+before_install:
+  - dub fetch doveralls
+script:
+  - dub test --coverage
+after_success:
+  - dub run doveralls
