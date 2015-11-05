@@ -2,14 +2,29 @@ module painlesstraits;
 
 import std.traits;
 
-template hasAnnotation(alias f, Attr)
+template hasAnnotation(alias f, alias Attr)
 {
-    enum bool hasAnnotation = (function() {
-        foreach (attr; __traits(getAttributes, f))
-            static if (is(attr == Attr) || is(typeof(attr) == Attr))
-                return true;
-        return false;
-    })();
+	import std.typetuple : anySatisfy, TypeTuple;
+
+	alias allAnnotations = TypeTuple!(__traits(getAttributes, f));
+	template hasMatch(alias attr) {
+		static if(is(Attr)) {
+			alias hasMatch = Identity!(is(typeof(attr) == Attr) || is(attr == Attr));
+		} else {
+			alias hasMatch = Identity!(is(attr == Attr));
+		}
+	}
+	enum bool hasAnnotation = anySatisfy!(hasMatch, allAnnotations);
+}
+
+unittest
+{
+	enum FooUDA;
+	enum BarUDA;
+	@FooUDA int x;
+
+	static assert(hasAnnotation!(x, FooUDA));
+	static assert(!hasAnnotation!(x, BarUDA));
 }
 
 template hasAnyOfTheseAnnotations(alias f, Attr...)
