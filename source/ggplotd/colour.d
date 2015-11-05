@@ -112,13 +112,13 @@ struct ColourIDRange(T) if (isInputRange!T
         if ( !isNaN(original.front[0]) || 
                 original.front[1] in namedColours )
             return original.front;
-        else if ( original.front[1] !in fromLabelMap )
+        else if ( original.front[1] !in labelMap )
         {
             import std.conv : to;
-            fromLabelMap[original.front[1]] 
-                = fromLabelMap.length.to!double;
+            labelMap[original.front[1]] 
+                = labelMap.length.to!double;
         }
-        original.front[0] = fromLabelMap[original.front[1]];
+        original.front[0] = labelMap[original.front[1]];
         return original.front;
     }
 
@@ -134,10 +134,15 @@ struct ColourIDRange(T) if (isInputRange!T
         return original.empty;
     }
 
+    // TODO More elegant way of doing this? Key is that we want to keep
+    // labelMap after our we've iterated over this array.
+    // One possible solution would be to have a fillLabelMap, which will
+    // run till the end of original and fill the LabelMap
+    static double[string] labelMap;
+
     private:
         T original;
         //E[double] toLabelMap;
-        double[string] fromLabelMap;
         RGB[string] namedColours;
 }
 
@@ -169,46 +174,52 @@ auto gradient( double value, double from, double till )
     return RGB( 1, 0, (value-from)/(till-from) );
 }
 
+private auto safeMax(T)( T a, T b )
+{
+    import std.math : isNaN;
+    import std.algorithm : max;
+    if (isNaN(b))
+        return a;
+    if (isNaN(a))
+        return b;
+    return max(a,b);
+}
+
+private auto safeMin(T)( T a, T b )
+{
+    import std.math : isNaN;
+    import std.algorithm : min;
+    if (isNaN(b))
+        return a;
+    if (isNaN(a))
+        return b;
+    return min(a,b);
+}
+
 auto createColourMap(R)( R colourIDs )
     if (is(ElementType!R == Tuple!(double, string)) ||
             is( ElementType!R == ColourID))
 {
-    import std.algorithm : map, reduce;
+    import std.algorithm : filter, map, reduce;
+    import std.math : isNaN;
+    import std.array : array;
     import std.typecons : Tuple;
 
-    auto minmax = colourIDs 
+    auto validatedIDs = ColourIDRange!R( colourIDs );
+
+    auto minmax = validatedIDs 
         .map!((a) => a[0])
-        .reduce!("min(a,b)","max(a,b)");
+        .reduce!((a,b)=>safeMin(a,b),(a,b)=>safeMax(a,b));
 
     auto namedColours = createNamedColours;
     //RGB!("rgba", float)
-    return ( Tuple!(double, string) tup )
+    return ( ColourID tup )
     {
         if (tup[1] in namedColours)
             return namedColours[tup[1]];
-        return gradient(tup[0],minmax[0],minmax[1]);
-    };
-}
-
-
-auto createColourMap(R)( R colourIDs )
-    if (!is(ElementType!R == Tuple!(double, string) ) &&
-            !is( ElementType!R == ColourID))
-{
-    import std.algorithm : map, reduce;
-    import ggplotd.aes : NumericLabel;
-    import std.typecons : Tuple;
-
-    auto r = NumericLabel!R( colourIDs );
-
-    auto minmax = r
-        .map!((a) => a[0])
-        .reduce!("min(a,b)","max(a,b)");
-    //RGB!("rgba", float)
-    return ( Tuple!(double, string) tup )
-    {
-        if (tup[1]=="black")
-            return RGB(0,0,0);
+        else if (isNaN(tup[0]))
+            return gradient(validatedIDs.labelMap[tup[1]]
+                    ,minmax[0],minmax[1]);
         return gradient(tup[0],minmax[0],minmax[1]);
     };
 }
@@ -216,19 +227,13 @@ auto createColourMap(R)( R colourIDs )
 unittest
 {
     import std.typecons : Tuple;
-    assertEqual(createColourMap(["a","b"])(
-                Tuple!(double,string)(0,"a")), RGB(1,0,0));
-    assertEqual(createColourMap(["a","b"])(
-                Tuple!(double,string)(0.5,"b")), RGB(1,0,0.5));
+    assertEqual(createColourMap([ColourID("a"),ColourID("b")])(
+                ColourID("a")), RGB(1,0,0));
+    assertEqual(createColourMap([ColourID("a"),ColourID("b")])(
+                ColourID("b")), RGB(1,0,1));
 
-    assertEqual(createColourMap(["a","b"])(
-                Tuple!(double,string)(0.5,"black")), RGB(0,0,0));
-
-    // Colour is numericLabel type
-    import ggplotd.aes : NumericLabel;
-    assertEqual(createColourMap(
-                NumericLabel!(string[])(["a","b"]))(
-                Tuple!(double,string)(0.5,"b")), RGB(1,0,0.5));
+    assertEqual(createColourMap([ColourID("a"),ColourID("b")])(
+                ColourID("black")), RGB(0,0,0));
 
     assertEqual(createColourMap(
                 [ColourID("black")] )(
