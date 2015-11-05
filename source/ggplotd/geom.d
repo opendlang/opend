@@ -166,6 +166,28 @@ unittest
     assertEqual( gl.front.yTickLabels.length, 4 );
 }
 
+unittest
+{
+    auto aes = Aes!(string[], "x", string[], "y", 
+            string[], "colour" )( 
+            ["a","b","c","b"], 
+            ["a","b","b","a"], 
+            ["b","b","b","b"] );
+
+    auto gl = geomLine( aes );
+    auto aes2 = Aes!(string[], "x", string[], "y", 
+            double[], "colour" )( 
+            ["a","b","c","b"], 
+            ["a","b","b","a"], 
+            [0,1,0,0.1] );
+
+    auto gl2 = geomLine( aes2 );
+
+    import std.range : chain, walkLength;
+
+    assertEqual( gl.chain(gl2).walkLength, 4 );
+}
+
 /// Bin a range of data
 private auto bin(R)( R xs, size_t noBins = 10 )
 {
