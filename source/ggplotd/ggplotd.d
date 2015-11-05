@@ -78,7 +78,7 @@ void GGplotD(GR, SF)( GR geomRange, SF scale,
         yAxisTicks ~= geom.xTickLabels;
     }
 
-    auto colourMap = colourGradient(colourIDs);
+    auto colourMap = createColourMap(colourIDs);
 
     foreach( geom; geomRange )
     {

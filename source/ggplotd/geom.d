@@ -4,16 +4,17 @@ import cairo = cairo.cairo;
 
 import ggplotd.bounds;
 import ggplotd.aes;
+import ggplotd.colour : ColourID;
 
 version(unittest)
 {
     import dunit.toolkit;
 }
 
-struct Geom( FUNC, Col )
+struct Geom( FUNC )
 {
     FUNC draw; ///
-    Col colour; ///
+    ColourID colour; ///
     AdaptiveBounds bounds; ///
 
     import std.typecons : Tuple;
@@ -51,8 +52,8 @@ auto geomPoint(AES)(AES aes)
             AdaptiveBounds bounds;
             bounds.adapt( Point( tup.x[0], tup.y[0] ) );
 
-            return Geom!(typeof(f),typeof(tup.colour))
-                ( f, tup.colour, bounds );
+            return Geom!(typeof(f))
+                ( f, ColourID(tup.colour), bounds );
         }
 
         void popFront() {
@@ -70,7 +71,7 @@ unittest
 {
     auto aes = Aes!(double[],"x",double[],"y")( [1.0],[2.0] );
     auto gl = geomPoint( aes );
-    assertEqual( gl.front.colour, "black" );
+    assertEqual( gl.front.colour[1], "black" );
     gl.popFront;
     assert( gl.empty );
 }
@@ -101,8 +102,8 @@ auto geomLine(AES)(AES aes)
                 return context;
             };
 
-           auto geom = Geom!(typeof(f),typeof(groupedAes.front.front.colour))
-                ( f, groupedAes.front.front.colour);
+           auto geom = Geom!(typeof(f))
+                ( f, ColourID(groupedAes.front.front.colour));
            AdaptiveBounds bounds;
            coords = zip(xs,ys);
            foreach( tup; coords )
@@ -142,11 +143,11 @@ unittest
     assert( gl.front.xTickLabels.empty );
     assert( gl.front.yTickLabels.empty );
 
-    assertEqual( gl.front.colour, "a" );
+    assertEqual( gl.front.colour[1], "a" );
     assertEqual( gl.front.bounds.min_x, 1.0 );
     assertEqual( gl.front.bounds.max_x, 1.1 );
     gl.popFront;
-    assertEqual( gl.front.colour, "b" );
+    assertEqual( gl.front.colour[1], "b" );
     assertEqual( gl.front.bounds.max_x, 3.0 );
     gl.popFront;
     assert( gl.empty );
