@@ -37,14 +37,26 @@ template hasAnyOfTheseAnnotations(alias f, Attr...)
     })();
 }
 
-template hasValueAnnotation(alias f, Attr)
+template hasValueAnnotation(alias f, alias Attr)
 {
-    enum bool hasValueAnnotation = (function() {
-        foreach (attr; __traits(getAttributes, f))
-            static if (is(typeof(attr) == Attr))
-                return true;
-        return false;
-    })();
+	import std.typetuple : anySatisfy, TypeTuple;
+
+	alias allAnnotations = TypeTuple!(__traits(getAttributes, f));
+	alias hasMatch(alias attr) = Identity!(is(Attr) && is(typeof(attr) == Attr));
+	enum bool hasValueAnnotation = anySatisfy!(hasMatch, allAnnotations);
+}
+
+unittest
+{
+	enum FooUDA;
+	struct BarUDA { int data; }
+	@FooUDA int x;
+	@FooUDA @(BarUDA(1)) int y;
+
+	static assert(!hasValueAnnotation!(x, BarUDA));
+	static assert(!hasValueAnnotation!(x, FooUDA));
+	static assert(hasValueAnnotation!(y, BarUDA));
+	static assert(!hasValueAnnotation!(y, FooUDA));
 }
 
 template hasAnyOfTheseValueAnnotations(alias f, Attr...)
