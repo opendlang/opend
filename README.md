@@ -2,6 +2,7 @@ painlesstraits
 ==============
 
 [![Build Status](https://travis-ci.org/msoucy/painlesstraits.svg)](https://travis-ci.org/msoucy/painlesstraits)
+[![Coverage Status](https://coveralls.io/repos/msoucy/painlesstraits/badge.svg?branch=master&service=github)](https://coveralls.io/github/msoucy/painlesstraits?branch=master)
 
 This module provides a few helper templates to make working with [dlang][]'s [User Defined Attributes][] just a bit nicer.
 
