@@ -1,6 +1,8 @@
 painlesstraits
 ==============
 
+[![Build Status](https://travis-ci.org/msoucy/painlesstraits.svg)](https://travis-ci.org/msoucy/painlesstraits)
+
 This module provides a few helper templates to make working with [dlang][]'s [User Defined Attributes][] just a bit nicer.
 
 Inspired and derived from templates found in the [painlessjson][] project.
