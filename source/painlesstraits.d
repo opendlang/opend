@@ -91,3 +91,13 @@ template isFieldOrProperty(alias T)
         else return true;
     })();
 }
+
+unittest {
+	struct Foo {
+		int success;
+		int failure(int x) {return x;}
+	}
+
+	static assert(isFieldOrProperty!(Foo.success));
+	static assert(!isFieldOrProperty!(Foo.failure));
+}
