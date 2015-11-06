@@ -365,3 +365,61 @@ auto geomAxis(AES)(AES aes, double tickLength)
 
     return geomLine( Aes!(typeof(xs),"x",typeof(ys),"y")( xs, ys ) );
 }
+
+/// Draw Label at given x and y position
+auto geomLabel(AES)(AES aes)
+{
+    alias CoordX = typeof(NumericLabel!(typeof(AES.x))( AES.x ));
+    alias CoordY = typeof(NumericLabel!(typeof(AES.y))( AES.y ));
+    alias CoordType = typeof( merge( aes, Aes!(CoordX, "x", 
+                    CoordY, "y" )( CoordX( AES.x ), CoordY( AES.y ) ) ) );
+
+    struct GeomRange(T)
+    {
+        size_t size=6;
+        this( T aes ) { _aes = merge( aes, Aes!(CoordX, "x", 
+                    CoordY, "y" )( CoordX( aes.x ), CoordY( aes.y ) ) ); }
+        @property auto front() {
+            immutable tup = _aes.front;
+            auto f = delegate(cairo.Context context) 
+            {
+                context.setFontSize(14.0);
+                context.moveTo( tup.x[0], tup.y[0] );
+                context.save();
+                context.identityMatrix;
+                context.rotate(tup.angle);
+                context.showText(tup.label);
+                context.restore();
+                return context;
+            };
+
+            AdaptiveBounds bounds;
+            bounds.adapt( Point( tup.x[0], tup.y[0] ) );
+
+            return Geom!(typeof(f))
+                ( f, ColourID(tup.colour), bounds );
+        }
+
+        void popFront() {
+            _aes.popFront();
+        }
+
+        @property bool empty() { return _aes.empty; }
+        private:
+            CoordType _aes;
+    }
+    return GeomRange!AES(aes);
+}
+
+unittest
+{
+    auto aes = Aes!(string[], "x", string[], "y", 
+            string[], "label" )( 
+            ["a","b","c","b"], 
+            ["a","b","b","a"], 
+            ["b","b","b","b"] );
+
+    auto gl = geomLabel( aes );
+    import std.range : walkLength;
+    assertEqual( gl.walkLength, 4 );
+} 

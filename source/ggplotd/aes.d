@@ -78,9 +78,9 @@ template Aes(Specs...)
 
     alias fieldNames = staticMap!(extractName, fieldSpecs);
 
-    alias defaultNames = TypeTuple!("colour","size");
-    alias defaultTypes = TypeTuple!(string, double);
-    alias defaultValues = TypeTuple!(q{"black"}, 10);
+    alias defaultNames = TypeTuple!("colour","size","angle");
+    alias defaultTypes = TypeTuple!(string, double, double);
+    alias defaultValues = TypeTuple!(q{"black"}, 10, 0);
     string injectFront()
     {
         import std.format : format;
