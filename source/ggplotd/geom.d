@@ -330,10 +330,16 @@ auto geomHist(AES)(AES aes)
 auto geomAxis(AES)(AES aes, double tickLength)
 {
     import std.array : array;
-    import std.range : empty, repeat;
+    import std.range : chain, empty, repeat;
     import std.math : sqrt, pow;
     double[] xs;
     double[] ys;
+
+    double[] lxs;
+    double[] lys;
+    double[] langles;
+    string[] lbls;
+
     auto colour = aes.front.colour;
     double[2] orig = [aes.front.x, aes.front.y];
     double[2] direction;
@@ -360,10 +366,18 @@ auto geomAxis(AES)(AES aes, double tickLength)
             }
             xs ~= [tick.x+direction[1], tick.x];
             ys ~= [tick.y+direction[0], tick.y];
+
+            lxs ~= tick.x-direction[1];
+            lys ~= tick.y-direction[0];
+            lbls ~= tick.label;
+            langles ~= tick.angle;
         }
     }
 
-    return geomLine( Aes!(typeof(xs),"x",typeof(ys),"y")( xs, ys ) );
+    return geomLine( Aes!(typeof(xs),"x",typeof(ys),"y")( xs, ys ) )
+        .chain(geomLabel( Aes!(double[], "x", double[], "y", 
+                        string[], "label", double[], "angle" )(
+                        lxs, lys, lbls, langles ) ) );
 }
 
 /// Draw Label at given x and y position
@@ -387,6 +401,7 @@ auto geomLabel(AES)(AES aes)
                 context.moveTo( tup.x[0], tup.y[0] );
                 context.save();
                 context.identityMatrix;
+                import std.stdio;
                 context.rotate(tup.angle);
                 context.showText(tup.label);
                 context.restore();

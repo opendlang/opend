@@ -156,7 +156,8 @@ auto axisAes( string type, double minC, double maxC,
 
     import std.algorithm : sort, uniq, map;
     import std.array : array;
-    import std.range : repeat, take, popFront, walkLength;
+    import std.conv : to;
+    import std.range : empty, repeat, take, popFront, walkLength;
 
     double[] ticksLoc;
     auto sortedAxisTicks = ticks.sort().uniq;
@@ -169,7 +170,13 @@ auto axisAes( string type, double minC, double maxC,
             sortedAxisTicks.map!((t) => t[0]).array ~
             [maxC];
         labels = [""] ~ 
-            sortedAxisTicks.map!((t) => t[1]).array ~
+            sortedAxisTicks
+              .map!((t) {
+                      if (t[1].empty)
+                        return t[0].to!string;
+                      else
+                        return t[1];
+                      }).array ~
             [""];
     }
     else 
@@ -177,7 +184,9 @@ auto axisAes( string type, double minC, double maxC,
         ticksLoc = Axis(minC, maxC)
             .adjustTickWidth(5)
             .axisTicks.array;
-        labels = "".repeat(ticksLoc.walkLength).array;
+        labels = ticksLoc
+            .map!( (a) => a.to!string )
+            .array;
     }
 
     // Make sure first two positions are not the same;
@@ -192,24 +201,29 @@ auto axisAes( string type, double minC, double maxC,
         return Aes!(
                 double[], "x",
                 double[], "y",
-                string[], "label" )(
+                string[], "label",
+                double[], "angle" )(
                     ticksLoc, 
                     lvl 
                     .repeat()
                     .take(ticksLoc.walkLength)
                     .array,
-                    labels );
+                    labels,
+                    (0.0).repeat(labels.walkLength).array);
     } else {
+        import std.math : PI;
         return Aes!(
                 double[], "x",
                 double[], "y",
-                string[], "label" )(
+                string[], "label",
+                double[], "angle" )(
                     lvl 
                     .repeat()
                     .take(ticksLoc.walkLength)
                     .array,
                     ticksLoc,
-                    labels );
+                    labels,
+                    ((-0.5*PI).to!double).repeat(labels.walkLength).array);
     }
 }
 
@@ -219,7 +233,7 @@ unittest
     auto aes = axisAes( "x", 0.0, 1.0, 2.0 );
     assertEqual( aes.front.x, 0.0 );
     assertEqual( aes.front.y, 2.0 );
-    assertEqual( aes.front.label, "" );
+    assertEqual( aes.front.label, "0" );
 
     aes = axisAes( "y", 0.0, 1.0, 2.0, 
             [Tuple!(double,string)(0.2,"lbl")] );
