@@ -401,8 +401,11 @@ auto geomLabel(AES)(AES aes)
                 context.moveTo( tup.x[0], tup.y[0] );
                 context.save();
                 context.identityMatrix;
-                import std.stdio;
                 context.rotate(tup.angle);
+                auto extents = context.textExtents(tup.label);
+                auto textSize = 
+                    cairo.Point!double(0.5 * extents.width, 0.5*extents.height);
+                context.relMoveTo( -textSize.x, textSize.y );
                 context.showText(tup.label);
                 context.restore();
                 return context;
