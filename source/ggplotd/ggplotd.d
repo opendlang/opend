@@ -172,4 +172,22 @@ unittest
     GGplotD( gl, scale(), "test4.png"  );
 }
 
+unittest
+{
+    import std.algorithm : map;
+    import std.conv : to;
+    import std.range : iota, repeat, chain;
+    import std.array : array;
+    auto xs = iota( 0, 1, 0.2, );
+    auto ys = 0.0.repeat(5)
+        .chain( 1.repeat(5)
+                .chain( 2.repeat(5) ) )
+        .array;
+    auto cols = iota( 0, 3, 0.2 ).array;
+    auto aes = Aes!(double[],"x", double[], "y", double[], "colour")( 
+            chain(xs,xs,xs).array, ys, cols );
+    auto ge = geomPoint( aes );
+    GGplotD( ge, scale(), "test5.png" );
+}
+
 

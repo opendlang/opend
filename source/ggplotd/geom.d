@@ -326,7 +326,6 @@ auto geomHist(AES)(AES aes)
 
 /// Draw axis, first and last location are start/finish
 /// others are ticks (perpendicular)
-/// TODO if labels are provided use those instead of numbering
 auto geomAxis(AES)(AES aes, double tickLength)
 {
     import std.array : array;
