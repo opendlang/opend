@@ -13,8 +13,7 @@ import ggplotd.scale;
 
 void GGplotD(GR, SF)(GR geomRange, SF scale, string file = "plotcli.png")
 {
-    import std.algorithm : reduce;
-
+    import std.range : front;
     auto width = 470;
     auto height = 470;
     cairo.Surface surface;
@@ -63,13 +62,11 @@ void GGplotD(GR, SF)(GR geomRange, SF scale, string file = "plotcli.png")
         cairo.Rectangle!double(50, 20, // No support for margin at top yet. Would need to know the surface dimensions
         width - 70, height - 70));
 
-    // TODO use reduce to get the all encompasing bounds
     AdaptiveBounds bounds;
     typeof(geomRange.front.colour)[] colourIDs;
     auto xAxisTicks = geomRange.front.xTickLabels;
     auto yAxisTicks = geomRange.front.yTickLabels;
-    //bounds = reduce!((a,b) => a.adapt( b.bounds ))
-    //    ( bounds, geomRange );
+
     foreach (geom; geomRange)
     {
         bounds.adapt(geom.bounds);
@@ -174,4 +171,51 @@ unittest
         xs, xs).array, ys, cols);
     auto ge = geomPoint(aes);
     GGplotD(ge, scale(), "test5.png");
+}
+
+///
+struct GGPlotD
+{
+    Geom[] geomRange;
+
+    alias ScaleType = 
+        cairo.Context delegate(cairo.Context context, Bounds bounds);
+    ScaleType scaleFunction;
+
+    void save( string fname )
+    {
+        if (!initScale)
+            scaleFunction = scale(); // This needs to be removed later
+        GGplotD( geomRange, scaleFunction, fname );
+    }
+
+    GGPlotD opBinary(string op, T)(T rhs)
+    {
+        static if (op == "+")
+        {
+            static if (is(ElementType!T==Geom))
+            {
+                import std.array : array;
+                geomRange ~= rhs.array;
+            }
+            static if (is(T==ScaleType))
+            {
+                initScale = true;
+                scaleFunction = rhs;
+            }
+        }
+        return this;
+    }
+
+    private:
+        bool initScale = false;
+}
+
+unittest
+{
+    auto aes = Aes!(string[], "x", string[], "y", string[], "colour")(["a",
+        "b", "c", "b"], ["a", "b", "b", "a"], ["b", "b", "b", "b"]);
+    auto gg = GGPlotD();
+    gg + geomLine(aes) + scale();
+    gg.save( "test6.png");
 }

@@ -11,9 +11,10 @@ version (unittest)
     import dunit.toolkit;
 }
 
-struct Geom(FUNC)
+struct Geom
 {
-    FUNC draw; ///
+    alias drawFunction = cairo.Context delegate(cairo.Context context);
+    drawFunction draw; ///
     ColourID colour; ///
     AdaptiveBounds bounds; ///
 
@@ -53,7 +54,7 @@ auto geomPoint(AES)(AES aes)
             AdaptiveBounds bounds;
             bounds.adapt(Point(tup.x[0], tup.y[0]));
 
-            return Geom!(typeof(f))(f, ColourID(tup.colour), bounds);
+            return Geom(f, ColourID(tup.colour), bounds);
         }
 
         void popFront()
@@ -113,7 +114,7 @@ auto geomLine(AES)(AES aes)
                 return context;
             };
 
-            auto geom = Geom!(typeof(f))(f, ColourID(groupedAes.front.front.colour));
+            auto geom = Geom(f, ColourID(groupedAes.front.front.colour));
             AdaptiveBounds bounds;
             coords = zip(xs, ys);
             foreach (tup; coords)
@@ -422,7 +423,7 @@ auto geomLabel(AES)(AES aes)
             AdaptiveBounds bounds;
             bounds.adapt(Point(tup.x[0], tup.y[0]));
 
-            return Geom!(typeof(f))(f, ColourID(tup.colour), bounds);
+            return Geom(f, ColourID(tup.colour), bounds);
         }
 
         void popFront()
