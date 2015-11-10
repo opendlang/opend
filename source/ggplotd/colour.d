@@ -16,6 +16,35 @@ version(unittest)
     import dunit.toolkit;
 }
 
+/+
+HCY to RGB
+
+H(ue) 0-360, C(hroma) 0-1, Y(Luma) 0-1
++/
+RGB hcyToRGB( double h, double c, double y )
+{
+    import std.math : abs;
+    auto ha = h/60;
+    auto x = c*(1-abs(ha%2-1));
+    Tuple!(double,double,double) rgb1;
+    if (ha==0)
+        rgb1 = Tuple!(double,double,double)(0,0,0);
+    else if (ha<1)
+        rgb1 = Tuple!(double,double,double)(c,x,0);
+    else if (ha<2)
+        rgb1 = Tuple!(double,double,double)(x,c,0);
+    else if (ha<3)
+        rgb1 = Tuple!(double,double,double)(0,c,x);
+    else if (ha<4)
+        rgb1 = Tuple!(double,double,double)(0,x,c);
+    else if (ha<5)
+        rgb1 = Tuple!(double,double,double)(x,0,c);
+    else if (ha<6)
+        rgb1 = Tuple!(double,double,double)(c,0,x);
+    auto m = y-(.3*rgb1[0]+.59*rgb1[1]+.11*rgb1[2]);
+    return RGB(rgb1[0]+m,rgb1[1]+m,rgb1[2]+m);
+}
+
 /++
     Returns an associative array with names as key and colours as values
 
@@ -147,7 +176,7 @@ unittest
 
 auto gradient( double value, double from, double till )
 {
-    return RGB( 1, 0, (value-from)/(till-from) );
+    return hcyToRGB( 200, 0.5+0.5*(value-from)/(till-from), (value-from)/(till-from) );
 }
 
 private auto safeMax(T)( T a, T b )
@@ -203,10 +232,10 @@ auto createColourMap(R)( R colourIDs )
 unittest
 {
     import std.typecons : Tuple;
-    assertEqual(createColourMap([ColourID("a"),ColourID("b")])(
-                ColourID("a")), RGB(1,0,0));
-    assertEqual(createColourMap([ColourID("a"),ColourID("b")])(
-                ColourID("b")), RGB(1,0,1));
+    assertFalse(createColourMap([ColourID("a"),ColourID("b")])(
+                ColourID("a")) == 
+            createColourMap([ColourID("a"),ColourID("b")])(
+                ColourID("b")));
 
     assertEqual(createColourMap([ColourID("a"),ColourID("b")])(
                 ColourID("black")), RGB(0,0,0));
