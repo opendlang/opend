@@ -164,6 +164,7 @@ template Aes(Specs...)
         enum isBuildableFrom(T) = isBuildable!(T, U);
     }
 
+    ///
     struct Aes
     {
         /**
@@ -240,6 +241,7 @@ template Aes(Specs...)
 
         mixin(injectFront());
 
+        ///
         void popFront()
         {
             import std.range : popFront;
@@ -250,6 +252,7 @@ template Aes(Specs...)
             }
         }
 
+        ///
         @property bool empty()
         {
             if (length == 0)
@@ -365,6 +368,7 @@ template Aes(Specs...)
             return *cast(typeof(return)*)&(field[from]);
         }
 
+        ///
         size_t toHash() const nothrow @trusted
         {
             size_t h = 0;
@@ -402,6 +406,7 @@ template Aes(Specs...)
             sink(footer);
         }
 
+        ///
         string toString()()
         {
             import std.conv : to;
@@ -411,6 +416,7 @@ template Aes(Specs...)
     }
 }
 
+///
 auto group(AES)(AES aes)
 {
     import std.algorithm : filter, map, uniq, sort;
@@ -488,6 +494,7 @@ unittest
 ///
 import std.range : isInputRange;
 
+///
 struct NumericLabel(T) if (isInputRange!T)
 {
     import std.range : ElementType;
@@ -495,11 +502,13 @@ struct NumericLabel(T) if (isInputRange!T)
 
     alias E = ElementType!T;
 
+    ///
     this(T range)
     {
         original = range;
     }
 
+    ///
     @property auto front()
     {
         import std.typecons : Tuple;
@@ -521,6 +530,7 @@ struct NumericLabel(T) if (isInputRange!T)
         }
     }
 
+    ///
     void popFront()
     {
         import std.range : popFront;
@@ -528,6 +538,7 @@ struct NumericLabel(T) if (isInputRange!T)
         original.popFront;
     }
 
+    ///
     @property bool empty()
     {
         import std.range : empty;
@@ -535,6 +546,7 @@ struct NumericLabel(T) if (isInputRange!T)
         return original.empty;
     }
 
+    ///
     @property bool numeric()
     {
         static if (isNumeric!E)
