@@ -2,7 +2,7 @@ module ggplotd.axes;
 
 import std.typecons : Tuple;
 
-version(unittest)
+version (unittest)
 {
     import dunit.toolkit;
 }
@@ -30,13 +30,13 @@ struct Axis
     double tick_width = 0.2;
 }
 
-
 /**
     Calculate optimal tick width given an axis and an approximate number of ticks
     */
 Axis adjustTickWidth(Axis axis, size_t approx_no_ticks)
 {
     import std.math : abs, floor, ceil, pow, log10;
+
     auto axis_width = axis.max - axis.min;
     auto scale = cast(int) floor(log10(axis_width));
     auto acceptables = [0.1, 0.2, 0.5, 1.0, 2.0, 5.0]; // Only accept ticks of these sizes
@@ -82,7 +82,7 @@ unittest
 
 /// Returns a range starting at axis.min, ending axis.max and with
 /// all the tick locations in between
-auto axisTicks( Axis axis )
+auto axisTicks(Axis axis)
 {
     struct Ticks
     {
@@ -104,7 +104,7 @@ auto axisTicks( Axis axis )
                 currentPosition += axis.tick_width;
         }
 
-        @property bool empty() 
+        @property bool empty()
         {
             if (currentPosition - axis.tick_width >= axis.max)
                 return true;
@@ -112,7 +112,7 @@ auto axisTicks( Axis axis )
         }
     }
 
-    return Ticks( axis.min, axis );
+    return Ticks(axis.min, axis);
 }
 
 unittest
@@ -121,21 +121,21 @@ unittest
 
     auto ax1 = adjustTickWidth(Axis(0, .4), 5).axisTicks;
     auto ax2 = adjustTickWidth(Axis(0, 4), 8).axisTicks;
-    assertEqual( ax1.array.front, 0 );
-    assertEqual( ax1.array.back, .4 );
-    assertEqual( ax2.array.front, 0 );
-    assertEqual( ax2.array.back, 4 );
-    assertGreaterThan( ax1.array.length, 3 );
-    assertLessThan( ax1.array.length, 8 );
+    assertEqual(ax1.array.front, 0);
+    assertEqual(ax1.array.back, .4);
+    assertEqual(ax2.array.front, 0);
+    assertEqual(ax2.array.back, 4);
+    assertGreaterThan(ax1.array.length, 3);
+    assertLessThan(ax1.array.length, 8);
 
-    assertGreaterThan( ax2.array.length, 5 );
-    assertLessThan( ax2.array.length, 10 );
+    assertGreaterThan(ax2.array.length, 5);
+    assertLessThan(ax2.array.length, 10);
 
     auto ax3 = adjustTickWidth(Axis(1.1, 2), 5).axisTicks;
-    assertEqual( ax3.array.front, 1.1 );
-    assertEqual( ax3.array.back, 2 );
+    assertEqual(ax3.array.front, 1.1);
+    assertEqual(ax3.array.back, 2);
 }
- 
+
 /// Calculate tick length
 double tickLength(in Axis axis)
 {
@@ -148,9 +148,7 @@ unittest
     assert(tickLength(axis) == 0.08);
 }
 
-auto axisAes( string type, double minC, double maxC,
-        double lvl,
-        Tuple!(double, string)[] ticks = [] )
+auto axisAes(string type, double minC, double maxC, double lvl, Tuple!(double, string)[] ticks = [])
 {
     import ggplotd.aes;
 
@@ -166,27 +164,18 @@ auto axisAes( string type, double minC, double maxC,
 
     if (sortedAxisTicks.walkLength > 0)
     {
-        ticksLoc = [minC] ~
-            sortedAxisTicks.map!((t) => t[0]).array ~
-            [maxC];
-        labels = [""] ~ 
-            sortedAxisTicks
-              .map!((t) {
-                      if (t[1].empty)
-                        return t[0].to!string;
-                      else
-                        return t[1];
-                      }).array ~
-            [""];
+        ticksLoc = [minC] ~ sortedAxisTicks.map!((t) => t[0]).array ~ [maxC];
+        labels = [""] ~ sortedAxisTicks.map!((t) {
+            if (t[1].empty)
+                return t[0].to!string;
+            else
+                return t[1];
+        }).array ~ [""];
     }
-    else 
+    else
     {
-        ticksLoc = Axis(minC, maxC)
-            .adjustTickWidth(5)
-            .axisTicks.array;
-        labels = ticksLoc
-            .map!( (a) => a.to!string )
-            .array;
+        ticksLoc = Axis(minC, maxC).adjustTickWidth(5).axisTicks.array;
+        labels = ticksLoc.map!((a) => a.to!string).array;
     }
 
     // Make sure first two positions are not the same;
@@ -198,47 +187,32 @@ auto axisAes( string type, double minC, double maxC,
 
     if (type == "x")
     {
-        return Aes!(
-                double[], "x",
-                double[], "y",
-                string[], "label",
-                double[], "angle" )(
-                    ticksLoc, 
-                    lvl 
-                    .repeat()
-                    .take(ticksLoc.walkLength)
-                    .array,
-                    labels,
-                    (0.0).repeat(labels.walkLength).array);
-    } else {
+        return Aes!(double[], "x", double[], "y", string[], "label", double[], "angle")(
+            ticksLoc, lvl.repeat().take(ticksLoc.walkLength).array, labels,
+            (0.0).repeat(labels.walkLength).array);
+    }
+    else
+    {
         import std.math : PI;
-        return Aes!(
-                double[], "x",
-                double[], "y",
-                string[], "label",
-                double[], "angle" )(
-                    lvl 
-                    .repeat()
-                    .take(ticksLoc.walkLength)
-                    .array,
-                    ticksLoc,
-                    labels,
-                    ((-0.5*PI).to!double).repeat(labels.walkLength).array);
+
+        return Aes!(double[], "x", double[], "y", string[], "label", double[], "angle")(
+            lvl.repeat().take(ticksLoc.walkLength).array, ticksLoc, labels,
+            ((-0.5 * PI).to!double).repeat(labels.walkLength).array);
     }
 }
 
 unittest
 {
     import std.stdio : writeln;
-    auto aes = axisAes( "x", 0.0, 1.0, 2.0 );
-    assertEqual( aes.front.x, 0.0 );
-    assertEqual( aes.front.y, 2.0 );
-    assertEqual( aes.front.label, "0" );
 
-    aes = axisAes( "y", 0.0, 1.0, 2.0, 
-            [Tuple!(double,string)(0.2,"lbl")] );
+    auto aes = axisAes("x", 0.0, 1.0, 2.0);
+    assertEqual(aes.front.x, 0.0);
+    assertEqual(aes.front.y, 2.0);
+    assertEqual(aes.front.label, "0");
+
+    aes = axisAes("y", 0.0, 1.0, 2.0, [Tuple!(double, string)(0.2, "lbl")]);
     aes.popFront;
-    assertEqual( aes.front.x, 2.0 );
-    assertEqual( aes.front.y, 0.2 );
-    assertEqual( aes.front.label, "lbl" );
+    assertEqual(aes.front.x, 2.0);
+    assertEqual(aes.front.y, 0.2);
+    assertEqual(aes.front.label, "lbl");
 }
