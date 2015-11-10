@@ -1,5 +1,6 @@
 module ggplotd.bounds;
 
+///
 struct Point
 {
     double x;
@@ -138,6 +139,7 @@ unittest
     assert(!validBounds([Point(0, 1), Point(1, 1)]));
 }
 
+///
 Bounds minimalBounds(Point[] points)
 {
     if (points.length == 0)
@@ -229,21 +231,25 @@ Here we take care to always return a valid set of bounds
 
     Bounds bounds = Bounds(0, 1, 0, 1);
     alias bounds this;
+    ///
     this(string str)
     {
         bounds = Bounds(str);
     }
 
+    ///
     this(double my_min_x, double my_max_x, double my_min_y, double my_max_y)
     {
         bounds = Bounds(my_min_x, my_max_x, my_min_y, my_max_y);
     }
 
+    ///
     this(Bounds bnds)
     {
         bounds = bnds;
     }
 
+    ///
     bool adapt(T : Point)(T point)
     {
         bool adapted = false;
@@ -268,6 +274,7 @@ Here we take care to always return a valid set of bounds
         return adapted;
     }
 
+    ///
     bool adapt(T : AdaptiveBounds)(T bounds)
     {
         bool adapted = false;
@@ -286,6 +293,7 @@ Here we take care to always return a valid set of bounds
 
     import std.range : isInputRange;
 
+    ///
     bool adapt(T)(T points)
     {
         bool adapted = false;
