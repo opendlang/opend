@@ -148,6 +148,7 @@ unittest
     assert(tickLength(axis) == 0.08);
 }
 
+///
 auto axisAes(string type, double minC, double maxC, double lvl, Tuple!(double, string)[] ticks = [])
 {
     import ggplotd.aes;
