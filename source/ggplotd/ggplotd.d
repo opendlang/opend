@@ -236,13 +236,24 @@ unittest
     auto f = (double x) { return x/(1+x); };
     auto width = (double x) { return sqrt(0.1/(1+x)); };
     auto xs = iota( 0, 10, 0.1 ).array;
-    auto ysnoise = xs.map!((x) => f(x) + uniform(-width(x),width(x))).array;
+
     auto ysfit = xs.map!((x) => f(x)).array;
+    auto ysnoise = xs.map!((x) => f(x) + uniform(-width(x),width(x))).array;
     // Adding colour makes it stop working
     auto aes = Aes!(typeof(xs), "x",
-        typeof(ysnoise), "y", string[], "colour" )( xs, ysnoise, ("0.1").repeat(xs.length).array );
+        typeof(ysnoise), "y", string[], "colour" )( xs, ysnoise, ("a").repeat(xs.length).array );
     auto gg = GGPlotD() + geomPoint( aes );
     gg + geomLine( Aes!(typeof(xs), "x",
         typeof(ysfit), "y" )( xs, ysfit ) );
+
+    //  
+    auto ys2fit = xs.map!((x) => 1-f(x)).array;
+    auto ys2noise = xs.map!((x) => 1-f(x) + uniform(-width(x),width(x))).array;
+
+    gg + geomLine( Aes!(typeof(xs), "x",
+        typeof(ysfit), "y" )( xs, ys2fit ) );
+    gg + geomPoint( Aes!(typeof(xs), "x",
+        typeof(ysnoise), "y", string[], "colour" )( xs, ys2noise, ("b").repeat(xs.length).array ) );
+
     gg.save( "noise.png" );
 }
