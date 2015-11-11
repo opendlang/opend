@@ -35,7 +35,6 @@ auto geomPoint(AES)(AES aes)
 
     struct GeomRange(T)
     {
-        size_t size = 6;
         this(T aes)
         {
             _aes = merge(aes, Aes!(CoordX, "x", CoordY, "y")(CoordX(aes.x), CoordY(aes.y)));
@@ -48,7 +47,8 @@ auto geomPoint(AES)(AES aes)
                 auto devP = context.userToDevice(cairo.Point!double(tup.x[0], tup.y[0]));
                 context.save();
                 context.identityMatrix;
-                context.rectangle(devP.x - 0.5 * size, devP.y - 0.5 * size, size, size);
+                context.rectangle(devP.x - 0.5 * tup.size, devP.y - 0.5 * tup.size, tup.size, tup.size);
+                context.fill();
                 context.restore();
                 return context;
             };
