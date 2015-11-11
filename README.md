@@ -30,7 +30,13 @@ sed -i 's/SVG_SURFACE = false/SVG_SURFACE = true/g' cairoD/src/cairo/c/config.d
 dub add-local cairoD
 ```
 
-## Examples
+## Documentation
+
+Documentation is automatically generated and put online under
+http://blackedder.github.io/ggplotd/ . For example for the available geom*
+functions see: http://blackedder.github.io/ggplotd/geom.d
+
+### Examples
 
 At version v0.1.0 we have basic support for simple plots.
 
@@ -157,7 +163,7 @@ auto geomHist(AES)(AES aes)
 
 Note that the above highlights the drawing part of the function.
 Converting the data into bins is done in a separate bin function, which
-can be found in the [code](./source/ggplotd/geom.d#L127).
+can be found in the [code](./source/ggplotd/geom.d#L204).
 
 ### stat*
 
