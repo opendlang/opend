@@ -9,8 +9,8 @@ if [[ $TRAVIS_BRANCH == 'master' ]] ; then
         git checkout master
         dub build -b docs --compiler=${DC}
         cd docs
-        mkdir images
-        cp ../*.{png,svg} images/
+        #mkdir images
+        #cp ../*.{png,svg} images/
         git init
         git config user.name "Travis-CI"
         git config user.email "travis@nodemeatspace.com"
