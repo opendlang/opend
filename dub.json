@@ -4,6 +4,7 @@
 	"copyright": "Copyright © 2015, edwin",
     "authors": ["edwin"],
     "libs": ["cairo"],
+    "license": "BSL-1.0",
     "dependencies": {
         "cairod": "~master",
         "dunit": "~>1.0.11",
