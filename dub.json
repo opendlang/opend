@@ -1,8 +1,8 @@
 {
 	"name": "ggplotd",
-	"description": "A minimal D application.",
-	"copyright": "Copyright © 2015, edwin",
-    "authors": ["edwin"],
+	"description": "Plotting library for the D programming library. The design is inspired by ggplot2 for R.",
+	"copyright": "Copyright © 2015, Edwin van Leeuwen",
+    "authors": ["Edwin van Leeuwen"],
     "libs": ["cairo"],
     "license": "BSL-1.0",
     "dependencies": {
