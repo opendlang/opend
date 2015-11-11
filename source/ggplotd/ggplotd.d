@@ -223,3 +223,26 @@ unittest
     gg + geomLine(aes) + scale();
     gg.save( "test6.png");
 }
+
+///
+unittest
+{
+    import std.array : array;
+    import std.math : sqrt;
+    import std.algorithm : map;
+    import std.range : repeat, iota;
+    import std.random : uniform;
+    // Generate some noisy data with reducing width
+    auto f = (double x) { return x/(1+x); };
+    auto width = (double x) { return sqrt(0.1/(1+x)); };
+    auto xs = iota( 0, 10, 0.1 ).array;
+    auto ysnoise = xs.map!((x) => f(x) + uniform(-width(x),width(x))).array;
+    auto ysfit = xs.map!((x) => f(x)).array;
+    // Adding colour makes it stop working
+    auto aes = Aes!(typeof(xs), "x",
+        typeof(ysnoise), "y", string[], "colour" )( xs, ysnoise, ("0.1").repeat(xs.length).array );
+    auto gg = GGPlotD() + geomPoint( aes );
+    gg + geomLine( Aes!(typeof(xs), "x",
+        typeof(ysfit), "y" )( xs, ysfit ) );
+    gg.save( "noise.png" );
+}

@@ -185,6 +185,8 @@ unittest
 ///
 auto gradient(double value, double from, double till)
 {
+    if (from == till)
+        return hcyToRGB(200, 0.5, 0.5);
     return hcyToRGB(200, 0.5 + 0.5 * (value - from) / (till - from), (value - from) / (till - from));
 }
 

@@ -1,4 +1,4 @@
-# GGPlotD
+# GGPlotD [![Build Status](https://travis-ci.org/BlackEdder/ggplotd.svg?branch=master)](https://travis-ci.org/BlackEdder/ggplotd)
 
 GGPlotD is a plotting library for the D programming language. The design
 is heavily inspired by ggplot2 for R, which is based on a general Grammar of
@@ -32,10 +32,9 @@ dub add-local cairoD
 
 ## Examples
 
-At version v0.0.1 we only have quite basic support for simple plots.
+At version v0.1.0 we have basic support for simple plots.
 
 ```D 
-
 unittest
 {
     auto aes = Aes!(double[],"x", double[], "y", string[], "colour")( 
@@ -66,7 +65,6 @@ unittest
     auto gl = geomHist( aes );
     GGplotD( gl, scale(), "test3.svg" );
 }
-
 ```
 
 ## Extending GGplotD
