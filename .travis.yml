@@ -1,17 +1,15 @@
 before_install:
-    - git clone https://github.com/jpf91/cairoD
-    - sed -i 's/PDF_SURFACE = false/PDF_SURFACE = true/g' cairoD/src/cairo/c/config.d
-    - sed -i 's/SVG_SURFACE = false/SVG_SURFACE = true/g' cairoD/src/cairo/c/config.d
-    - dub add-local cairoD
-
+- git clone https://github.com/jpf91/cairoD
+- sed -i 's/PDF_SURFACE = false/PDF_SURFACE = true/g' cairoD/src/cairo/c/config.d
+- sed -i 's/SVG_SURFACE = false/SVG_SURFACE = true/g' cairoD/src/cairo/c/config.d
+- dub add-local cairoD
 language: d
-script: ./travis.sh
+script: "./travis.sh"
 sudo: false
-
 matrix:
   include:
-    - d: dmd-2.066.1
-      env:
-        - secure: "HYyeqymx/RXciztZZ837ZFuuUKvXf5bgzv32TaZEtZ2hXFpNuL4ie+pYwqAAcKWblilOQ3jEr4MjFwcjlMid8jXbXVhcPnY5sY4bSHLiKj3SCnThTgaSvmsO2P1CrGA+nbaJTFLvs4s91q6GStg3Gc6zry1y14Hu9T1brUf3cx8="
-    - d: dmd
-    - d: ldc
+  - d: dmd-2.066.1
+    env:
+      - secure: oj8Eepkttro2efYQNB/l7WWjrHCZWL1A3oQqMc52d7XAW/r37rfhbXRTssIdfuUics2zC6TgDYh5FfrfzJ2Ml0qmrP/IOQhFZ3lLLSsvgl6jvoUSznirfgGt8PJqn5NU+hoiROe09/mfjSJDKKykfs4rhJyZ4Hoz0b6ahU4BoanmfbzeWjZBP6wx520Sg/WKk+Lig5fDgBkkSiNpkIhRexRmt3UC0raX+s1dDgXQVNbRUJgI6P7pwBlH/LGxhSVCqr+CGMYwia+QoRboyiCqCdns2Z3vC0e3NBarLb9P8GaeDczzugmUtCaozvTzG7rgyD+IiuL6vuLnuFozmInMMa9fHe5GODkbwVv/JIxyxsY7dO9AojCcOB4v7Vdc0h3keDE7qIGKo/1pR/E0hRQ4gWqlcY3E4HC3Gwc02xp5X0nmygzwBokFIanEOEktnAznMe/rqXMU9+rb45RCttp63hLII1P/XRvDsCWKmHs/HPDBYVMgReLZr97BsC2Mye9w16Lk22aLAkKnPjwDQtdk/LKc+FPyJs7AdSz18qIXZOUG1UQn4QzoLRq0KpQ+TxXgdrZE43xp+Nx/xWveqE6Td47f2rpwL4Hrm8Ezr1HQrRbreqV+MjHSc8ByRFeSmnYrIiMWktyDxnsamzVK/SBiB2rSl13O4Qm5hjON17f37Oc=
+  - d: dmd
+  - d: ldc
