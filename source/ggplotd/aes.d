@@ -8,6 +8,7 @@ version (unittest)
 template Aes(Specs...)
 {
     import std.traits : Identity;
+    import std.typecons : isTuple;
     import std.typetuple : staticMap, TypeTuple;
     import std.range : isInputRange;
 
