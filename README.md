@@ -34,36 +34,64 @@ dub add-local cairoD
 
 At version v0.1.0 we have basic support for simple plots.
 
+![A noisy figure](http://blackedder.github.io/ggplotd/images/noise.png)
 ```D 
-unittest
+import ggplotd.ggplotd;
+
+void main()
 {
-    auto aes = Aes!(double[],"x", double[], "y", string[], "colour")( 
-            [1.0,0.9],[2.0,1.1],
-            ["c", "d"] );
-    auto ge = geomPoint( aes );
-    GGplotD( ge, scale(), "test1.png" );
+    import std.array : array;
+    import std.math : sqrt;
+    import std.algorithm : map;
+    import std.range : repeat, iota;
+    import std.random : uniform;
+    // Generate some noisy data with reducing width
+    auto f = (double x) { return x/(1+x); };
+    auto width = (double x) { return sqrt(0.1/(1+x)); };
+    auto xs = iota( 0, 10, 0.1 ).array;
+
+    auto ysfit = xs.map!((x) => f(x)).array;
+    auto ysnoise = xs.map!((x) => f(x) + uniform(-width(x),width(x))).array;
+    // Adding colour makes it stop working
+    auto aes = Aes!(typeof(xs), "x",
+        typeof(ysnoise), "y", string[], "colour" )( xs, ysnoise, ("a").repeat(xs.length).array );
+    auto gg = GGPlotD() + geomPoint( aes );
+    gg + geomLine( Aes!(typeof(xs), "x",
+        typeof(ysfit), "y" )( xs, ysfit ) );
+
+    //  
+    auto ys2fit = xs.map!((x) => 1-f(x)).array;
+    auto ys2noise = xs.map!((x) => 1-f(x) + uniform(-width(x),width(x))).array;
+
+    gg + geomLine( Aes!(typeof(xs), "x",
+        typeof(ysfit), "y" )( xs, ys2fit ) );
+    gg + geomPoint( Aes!(typeof(xs), "x",
+        typeof(ysnoise), "y", string[], "colour" )( xs, ys2noise, ("b").repeat(xs.length).array ) );
+
+    gg.save( "noise.png" );
 }
+```
 
-unittest
+![A histogram](http://blackedder.github.io/ggplotd/images/hist.png)
+```D
+import ggplotd.ggplotd;
+
+void main()
 {
-    auto aes = Aes!(double[], "x", double[], "y", 
-            string[], "colour" )( 
-            [1.0,2.0,1.1,3.0], 
-            [3.0,1.5,1.1,1.8], 
-            ["a","b","a","b"] );
+    import std.array : array;
+    import std.algorithm : map;
+    import std.range : repeat, iota;
+    import std.random : uniform;
+    auto xs = iota(0,25,1).map!((x) => uniform(0.0,5)+uniform(0.0,5)).array;
+    auto aes = Aes!(typeof(xs), "x")( xs );
+    auto gg = GGPlotD() + geomHist( aes );
 
-    auto gl = geomLine( aes );
-    GGplotD( gl, scale(), "test2.pdf"  );
-}
+    auto ys = (0.0).repeat( xs.length ).array;
+    auto aesPs = aes.merge( Aes!(double[], "y", double[], "colour" )
+        ( ys, ys ) );
+    gg + geomPoint( aesPs );
 
-unittest
-{
-    auto aes = Aes!(double[], "x", string[], "colour" )( 
-            [1.0,1.05,1.1,0.9,1.0,0.99,1.09,1.091], 
-            ["a","a","b","b","a","a","a","a"] );
-
-    auto gl = geomHist( aes );
-    GGplotD( gl, scale(), "test3.svg" );
+    gg.save( "hist.png" );
 }
 ```
 
