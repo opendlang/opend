@@ -11,6 +11,7 @@ version (unittest)
     import dunit.toolkit;
 }
 
+///
 struct Geom
 {
     alias drawFunction = cairo.Context delegate(cairo.Context context);
@@ -24,6 +25,7 @@ struct Geom
     Tuple!(double, string)[] yTickLabels; ///
 }
 
+///
 auto geomPoint(AES)(AES aes)
 {
     alias CoordX = typeof(NumericLabel!(typeof(AES.x))(AES.x));
@@ -74,6 +76,7 @@ auto geomPoint(AES)(AES aes)
     return GeomRange!AES(aes);
 }
 
+///
 unittest
 {
     auto aes = Aes!(double[], "x", double[], "y")([1.0], [2.0]);
@@ -83,6 +86,7 @@ unittest
     assert(gl.empty);
 }
 
+///
 auto geomLine(AES)(AES aes)
 {
     import std.algorithm : map;
@@ -147,6 +151,7 @@ auto geomLine(AES)(AES aes)
     return GeomRange!AES(aes);
 }
 
+///
 unittest
 {
     auto aes = Aes!(double[], "x", double[], "y", string[], "colour")([1.0,
@@ -195,7 +200,7 @@ unittest
     assertEqual(gl.chain(gl2).walkLength, 4);
 }
 
-/// Bin a range of data
+// Bin a range of data
 private auto bin(R)(R xs, size_t noBins = 10)
 {
     struct Bin

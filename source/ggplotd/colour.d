@@ -16,7 +16,7 @@ version (unittest)
     import dunit.toolkit;
 }
 
-/+
+/++
 HCY to RGB
 
 H(ue) 0-360, C(hroma) 0-1, Y(Luma) 0-1
@@ -100,18 +100,20 @@ unittest
     assert(numID[1].empty);
 }
 
-///
 import std.range : isInputRange;
 import std.range : ElementType;
 
+///
 struct ColourIDRange(T) if (isInputRange!T && is(ElementType!T == ColourID))
 {
+    ///
     this(T range)
     {
         original = range;
         namedColours = createNamedColours();
     }
 
+    ///
     @property auto front()
     {
         import std.range : front;
@@ -129,6 +131,7 @@ struct ColourIDRange(T) if (isInputRange!T && is(ElementType!T == ColourID))
         return original.front;
     }
 
+    ///
     void popFront()
     {
         import std.range : popFront;
@@ -136,6 +139,7 @@ struct ColourIDRange(T) if (isInputRange!T && is(ElementType!T == ColourID))
         original.popFront;
     }
 
+    ///
     @property bool empty()
     {
         import std.range : empty;
@@ -178,6 +182,7 @@ unittest
     assertEqual(cids.front[0], 0);
 }
 
+///
 auto gradient(double value, double from, double till)
 {
     return hcyToRGB(200, 0.5 + 0.5 * (value - from) / (till - from), (value - from) / (till - from));
@@ -207,6 +212,7 @@ private auto safeMin(T)(T a, T b)
     return min(a, b);
 }
 
+///
 auto createColourMap(R)(R colourIDs) if (is(ElementType!R == Tuple!(double,
         string)) || is(ElementType!R == ColourID))
 {

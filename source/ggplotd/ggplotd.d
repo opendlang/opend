@@ -11,7 +11,8 @@ import ggplotd.geom;
 import ggplotd.bounds;
 import ggplotd.scale;
 
-void GGplotD(GR, SF)(GR geomRange, SF scale, string file = "plotcli.png")
+///
+void ggPlotd(GR, SF)(GR geomRange, SF scale, string file = "plotcli.png")
 {
     import std.range : front;
     auto width = 470;
@@ -127,7 +128,7 @@ unittest
     auto aes = Aes!(double[], "x", double[], "y", string[], "colour")([1.0,
         0.9], [2.0, 1.1], ["c", "d"]);
     auto ge = geomPoint(aes);
-    GGplotD(ge, scale(), "test1.png");
+    ggPlotd(ge, scale(), "test1.png");
 }
 
 unittest
@@ -136,7 +137,7 @@ unittest
         2.0, 1.1, 3.0], [3.0, 1.5, 1.1, 1.8], ["a", "b", "a", "b"]);
 
     auto gl = geomLine(aes);
-    GGplotD(gl, scale(), "test2.pdf");
+    ggPlotd(gl, scale(), "test2.pdf");
 }
 
 unittest
@@ -145,7 +146,7 @@ unittest
         1.0, 0.99, 1.09, 1.091], ["a", "a", "b", "b", "a", "a", "a", "a"]);
 
     auto gl = geomHist(aes);
-    GGplotD(gl, scale(), "test3.svg");
+    ggPlotd(gl, scale(), "test3.svg");
 }
 
 unittest
@@ -154,7 +155,7 @@ unittest
         "b", "c", "b"], ["a", "b", "b", "a"], ["b", "b", "b", "b"]);
 
     auto gl = geomLine(aes);
-    GGplotD(gl, scale(), "test4.png");
+    ggPlotd(gl, scale(), "test4.png");
 }
 
 unittest
@@ -170,7 +171,7 @@ unittest
     auto aes = Aes!(double[], "x", double[], "y", double[], "colour")(chain(xs,
         xs, xs).array, ys, cols);
     auto ge = geomPoint(aes);
-    GGplotD(ge, scale(), "test5.png");
+    ggPlotd(ge, scale(), "test5.png");
 }
 
 ///
@@ -182,13 +183,15 @@ struct GGPlotD
         cairo.Context delegate(cairo.Context context, Bounds bounds);
     ScaleType scaleFunction;
 
+    ///
     void save( string fname )
     {
         if (!initScale)
             scaleFunction = scale(); // This needs to be removed later
-        GGplotD( geomRange, scaleFunction, fname );
+        ggPlotd( geomRange, scaleFunction, fname );
     }
 
+    ///
     GGPlotD opBinary(string op, T)(T rhs)
     {
         static if (op == "+")
@@ -211,6 +214,7 @@ struct GGPlotD
         bool initScale = false;
 }
 
+///
 unittest
 {
     auto aes = Aes!(string[], "x", string[], "y", string[], "colour")(["a",

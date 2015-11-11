@@ -3,6 +3,7 @@ module ggplotd.scale;
 import cairo = cairo.cairo;
 import ggplotd.bounds : Bounds, width, height;
 
+///
 auto scale(double pixelWidth = 400, double pixelHeight = 400)
 {
     return (cairo.Context context, Bounds bounds) {
