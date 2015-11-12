@@ -42,7 +42,9 @@ At version v0.1.0 we have basic support for simple plots.
 
 ![A noisy figure](http://blackedder.github.io/ggplotd/images/noise.png)
 ```D 
-import ggplotd.ggplotd;
+import ggplotd.ggplotd; 
+import ggplotd.aes; 
+import ggplotd.geom;
 
 void main()
 {
@@ -80,7 +82,9 @@ void main()
 
 ![A histogram](http://blackedder.github.io/ggplotd/images/hist.png)
 ```D
-import ggplotd.ggplotd;
+import ggplotd.ggplotd; 
+import ggplotd.aes; 
+import ggplotd.geom;
 
 void main()
 {
