@@ -33,8 +33,8 @@ dub add-local cairoD
 ## Documentation
 
 Documentation is automatically generated and put online under
-http://blackedder.github.io/ggplotd/ . For example for the available geom*
-functions see: http://blackedder.github.io/ggplotd/geom.html
+http://blackedder.github.io/ggplotd/ggplotd.html . For example for the
+available geom* functions see: http://blackedder.github.io/ggplotd/geom.html
 
 ### Examples
 
