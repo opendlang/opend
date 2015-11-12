@@ -71,10 +71,9 @@ void main()
     auto ys2fit = xs.map!((x) => 1-f(x)).array;
     auto ys2noise = xs.map!((x) => 1-f(x) + uniform(-width(x),width(x))).array;
 
-    gg + geomLine( Aes!(typeof(xs), "x",
-        typeof(ysfit), "y" )( xs, ys2fit ) );
-    gg + geomPoint( Aes!(typeof(xs), "x",
-        typeof(ysnoise), "y", string[], "colour" )( xs, ys2noise, ("b").repeat(xs.length).array ) );
+    gg + geomLine( Aes!(typeof(xs), "x", typeof(ys2fit), "y" )( xs, ys2fit) );
+    gg + geomPoint( Aes!(typeof(xs), "x", typeof(ys2noise), "y", string[],
+        "colour" )( xs, ys2noise, ("b").repeat(xs.length).array) );
 
     gg.save( "noise.png" );
 }
