@@ -83,7 +83,9 @@ void ggPlotd(GR, SF)(GR geomRange, SF scale, string file = "plotcli.png")
         auto context = cairo.Context(surface);
         context.translate(50, 20);
         //auto context = cairo.Context(surface);
-        context.setSourceRGB(colourMap(geom.colour));
+        auto col = colourMap(geom.colour);
+        import cairo.cairo : RGBA;
+        context.setSourceRGBA(RGBA(col.red, col.green, col.blue, geom.alpha));
         context = scale(context, bounds);
         context = geom.draw(context);
         context.identityMatrix();

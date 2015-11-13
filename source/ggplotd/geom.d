@@ -18,6 +18,7 @@ struct Geom
     drawFunction draw; ///
     ColourID colour; ///
     AdaptiveBounds bounds; ///
+    double alpha; ///
 
     import std.typecons : Tuple;
 
@@ -55,8 +56,9 @@ auto geomPoint(AES)(AES aes)
 
             AdaptiveBounds bounds;
             bounds.adapt(Point(tup.x[0], tup.y[0]));
-
-            return Geom(f, ColourID(tup.colour), bounds);
+            auto geom = Geom(f, ColourID(tup.colour), bounds);
+            geom.alpha = tup.alpha;
+            return geom;
         }
 
         void popFront()
@@ -130,6 +132,7 @@ auto geomLine(AES)(AES aes)
                     geom.yTickLabels ~= tup[0];
             }
             geom.bounds = bounds;
+            geom.alpha = groupedAes.front.front.alpha;
 
             return geom;
         }
