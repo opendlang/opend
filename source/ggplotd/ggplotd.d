@@ -6,10 +6,16 @@ import csvg = cairo.svg;
 import cairo = cairo;
 
 import ggplotd.aes;
+import ggplotd.axes;
 import ggplotd.colour;
 import ggplotd.geom;
 import ggplotd.bounds;
 import ggplotd.scale;
+
+version (unittest)
+{
+    import dunit.toolkit;
+}
 
 ///
 void ggPlotd(GR, SF)(GR geomRange, SF scale, string file = "plotcli.png")
@@ -181,6 +187,9 @@ struct GGPlotD
 {
     Geom[] geomRange;
 
+    XAxis xaxis;
+    YAxis yaxis;
+
     alias ScaleType = 
         cairo.Context delegate(cairo.Context context, Bounds bounds);
     ScaleType scaleFunction;
@@ -194,7 +203,7 @@ struct GGPlotD
     }
 
     ///
-    GGPlotD opBinary(string op, T)(T rhs)
+    ref GGPlotD opBinary(string op, T)(T rhs)
     {
         static if (op == "+")
         {
@@ -208,8 +217,16 @@ struct GGPlotD
                 initScale = true;
                 scaleFunction = rhs;
             }
+            static if (is(T==XAxisFunction))
+            {
+                xaxis = rhs( xaxis );
+            }
+            static if (is(T==YAxisFunction))
+            {
+                yaxis = rhs( yaxis );
+            }
+            return this;
         }
-        return this;
     }
 
     private:
@@ -241,7 +258,7 @@ unittest
 
     auto ysfit = xs.map!((x) => f(x)).array;
     auto ysnoise = xs.map!((x) => f(x) + uniform(-width(x),width(x))).array;
-    // Adding colour makes it stop working
+
     auto aes = Aes!(typeof(xs), "x",
         typeof(ysnoise), "y", string[], "colour" )( xs, ysnoise, ("a").repeat(xs.length).array );
     auto gg = GGPlotD() + geomPoint( aes );
@@ -251,7 +268,6 @@ unittest
     //  
     auto ys2fit = xs.map!((x) => 1-f(x)).array;
     auto ys2noise = xs.map!((x) => 1-f(x) + uniform(-width(x),width(x))).array;
-
 
     gg + geomLine( Aes!(typeof(xs), "x", typeof(ys2fit), "y" )( xs,
         ys2fit) ); 
@@ -279,3 +295,32 @@ unittest
 
     gg.save( "hist.png" );
 }
+
+///
+unittest
+{
+    import std.array : array;
+    import std.math : sqrt;
+    import std.algorithm : map;
+    import std.range : repeat, iota;
+    import std.random : uniform;
+    // Generate some noisy data with reducing width
+    auto f = (double x) { return x/(1+x); };
+    auto width = (double x) { return sqrt(0.1/(1+x)); };
+    auto xs = iota( 0, 10, 0.1 ).array;
+
+    auto ysfit = xs.map!((x) => f(x)).array;
+
+    auto gg = GGPlotD() + geomLine( Aes!(typeof(xs), "x",
+        typeof(ysfit), "y" )( xs, ysfit ) );
+
+    gg + xaxisRange( 0, 8 ) + xaxisLabel( "xs" );
+    assertEqual( gg.xaxis.min, 0 );
+    gg + yaxisRange( 0, 2.0 ) + yaxisLabel( "ys" );
+    assertEqual( gg.yaxis.max, 2.0 );
+    assertEqual( gg.yaxis.label, "ys" );
+
+    gg.save( "axes.png" );
+}
+
+

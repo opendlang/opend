@@ -280,12 +280,16 @@ private string xy( string func )
     return str; 
 }
 
+alias XAxisFunction = XAxis delegate(XAxis);
+alias YAxisFunction = YAxis delegate(YAxis);
+
 // Below are the external functions to be used by library users.
 
 // Set the range of an axis
 mixin( xy( q{auto axisRange( double min, double max ) 
 { 
-  return ( Axis axis ) { axis.min = min; axis.max = max; return axis; }; 
+    AxisFunction func = ( Axis axis ) { axis.min = min; axis.max = max; return axis; }; 
+    return func;
 }} ) );
 
 ///
@@ -305,7 +309,9 @@ unittest
 // Set the label of an axis
 mixin( xy( q{auto axisLabel( string label ) 
 { 
-  return ( Axis axis ) { axis.label = label; return axis; }; 
+    // Need to declare it as an X/YAxisFunction for the GGPlotD + overload
+    AxisFunction func = ( Axis axis ) { axis.label = label; return axis; }; 
+    return func;
 }} ) );
 
 ///

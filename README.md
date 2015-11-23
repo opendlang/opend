@@ -60,7 +60,7 @@ void main()
 
     auto ysfit = xs.map!((x) => f(x)).array;
     auto ysnoise = xs.map!((x) => f(x) + uniform(-width(x),width(x))).array;
-    // Adding colour makes it stop working
+
     auto aes = Aes!(typeof(xs), "x",
         typeof(ysnoise), "y", string[], "colour" )( xs, ysnoise, ("a").repeat(xs.length).array );
     auto gg = GGPlotD() + geomPoint( aes );
