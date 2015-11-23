@@ -71,6 +71,7 @@ unittest
 Axis adjustTickWidth(Axis axis, size_t approx_no_ticks)
 {
     import std.math : abs, floor, ceil, pow, log10;
+    assert( initialized(axis), "Axis range has not been set" );
 
     auto axis_width = axis.max - axis.min;
     auto scale = cast(int) floor(log10(axis_width));
@@ -281,12 +282,13 @@ private string xy( string func )
 
 // Below are the external functions to be used by library users.
 
-// Set the range of a axis
+// Set the range of an axis
 mixin( xy( q{auto axisRange( double min, double max ) 
 { 
   return ( Axis axis ) { axis.min = min; axis.max = max; return axis; }; 
 }} ) );
 
+///
 unittest
 {
     XAxis ax;
@@ -300,12 +302,13 @@ unittest
     assertEqual( yf(yax).max, 1 );
 }
 
-// Set the range of a axis
+// Set the label of an axis
 mixin( xy( q{auto axisLabel( string label ) 
 { 
   return ( Axis axis ) { axis.label = label; return axis; }; 
 }} ) );
 
+///
 unittest
 {
     XAxis xax;
