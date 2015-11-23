@@ -64,11 +64,6 @@ void ggPlotd(GR, SF)(GR geomRange, SF scale, string file = "plotcli.png")
     backcontext.rectangle(0, 0, width, height);
     backcontext.fill();
 
-    // Create a sub surface. Makes sure everything is plotted within plot surface
-    auto plotSurface = cairo.Surface.createForRectangle(surface,
-        cairo.Rectangle!double(50, 20, // No support for margin at top yet. Would need to know the surface dimensions
-        width - 70, height - 70));
-
     AdaptiveBounds bounds;
     typeof(geomRange.front.colour)[] colourIDs;
     auto xAxisTicks = geomRange.front.xTickLabels;
@@ -182,6 +177,47 @@ unittest
     ggPlotd(ge, scale(), "test5.png");
 }
 
+private auto createEmptySurface( string fname, int width, int height )
+{
+    cairo.Surface surface;
+
+    static if (cconfig.CAIRO_HAS_PDF_SURFACE)
+        {
+        if (fname[$ - 3 .. $] == "pdf")
+            {
+            surface = new cpdf.PDFSurface(fname, width, height);
+        }
+    }
+    else
+        {
+        if (fname[$ - 3 .. $] == "pdf")
+            assert(0, "PDF support not enabled by cairoD");
+    }
+    static if (cconfig.CAIRO_HAS_SVG_SURFACE)
+        {
+        if (fname[$ - 3 .. $] == "svg")
+            {
+            surface = new csvg.SVGSurface(fname, width, height);
+        }
+    }
+    else
+    {
+        if (fname[$ - 3 .. $] == "svg")
+            assert(0, "SVG support not enabled by cairoD");
+    }
+    if (fname[$ - 3 .. $] == "png")
+    {
+        surface = new cairo.ImageSurface(cairo.Format.CAIRO_FORMAT_ARGB32, width, height);
+    }
+
+    auto backcontext = cairo.Context(surface);
+    backcontext.setSourceRGB(1, 1, 1);
+    backcontext.rectangle(0, 0, width, height);
+    backcontext.fill();
+
+    return surface;
+}
+
 ///
 struct GGPlotD
 {
@@ -197,54 +233,17 @@ struct GGPlotD
     ///
     void save( string fname, int width = 470, int height = 470 )
     {
-        if (!initScale)
-            scaleFunction = scale( width - 70, height - 70 ); // This needs to be removed later
-        import std.range : front;
-        cairo.Surface surface;
-
-        import std.stdio;
-
         bool pngWrite = false;
+        auto surface = createEmptySurface( fname, width, height );
 
-        static if (cconfig.CAIRO_HAS_PDF_SURFACE)
-            {
-            if (fname[$ - 3 .. $] == "pdf")
-                {
-                surface = new cpdf.PDFSurface(fname, width, height);
-            }
-        }
-        else
-            {
-            if (fname[$ - 3 .. $] == "pdf")
-                assert(0, "PDF support not enabled by cairoD");
-        }
-        static if (cconfig.CAIRO_HAS_SVG_SURFACE)
-            {
-            if (fname[$ - 3 .. $] == "svg")
-                {
-                surface = new csvg.SVGSurface(fname, width, height);
-            }
-        }
-        else
-            {
-            if (fname[$ - 3 .. $] == "svg")
-                assert(0, "SVG support not enabled by cairoD");
-        }
         if (fname[$ - 3 .. $] == "png")
-            {
-            surface = new cairo.ImageSurface(cairo.Format.CAIRO_FORMAT_ARGB32, width, height);
+        {
             pngWrite = true;
         }
 
-        auto backcontext = cairo.Context(surface);
-        backcontext.setSourceRGB(1, 1, 1);
-        backcontext.rectangle(0, 0, width, height);
-        backcontext.fill();
-
-        // Create a sub surface. Makes sure everything is plotted within plot surface
-        auto plotSurface = cairo.Surface.createForRectangle(surface,
-            cairo.Rectangle!double(50, 20, // No support for margin at top yet. Would need to know the surface dimensions
-            width - 70, height - 70));
+        if (!initScale)
+            scaleFunction = scale( width - 70, height - 70 ); // This needs to be removed later
+        import std.range : front;
 
         AdaptiveBounds bounds;
         typeof(geomRange.front.colour)[] colourIDs;
@@ -252,7 +251,7 @@ struct GGPlotD
         auto yAxisTicks = geomRange.front.yTickLabels;
 
         foreach (geom; geomRange)
-            {
+        {
             bounds.adapt(geom.bounds);
             colourIDs ~= geom.colour;
             xAxisTicks ~= geom.xTickLabels;
