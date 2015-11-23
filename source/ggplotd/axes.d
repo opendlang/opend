@@ -21,13 +21,48 @@ struct Axis
     ///
     string label;
     ///
-    double min = -1;
+    double min;
     ///
-    double max = 1;
+    double max;
     ///
     double min_tick = -1;
     ///
     double tick_width = 0.2;
+}
+
+///
+struct XAxis {
+    Axis axis;
+    alias axis this;
+}
+
+///
+struct YAxis {
+    Axis axis;
+    alias axis this;
+}
+
+/**
+    Is the axis properly initialized? Valid range.
+*/
+bool initialized( in Axis axis )
+{
+    import std.math : isNaN;
+    if ( isNaN(axis.min) || isNaN(axis.max) || axis.max <= axis.min )
+        return false;
+    return true;
+}
+
+unittest
+{
+    auto ax = Axis();
+    assert( !initialized( ax ) );
+    ax.min = -1;
+    assert( !initialized( ax ) );
+    ax.max = -1;
+    assert( !initialized( ax ) );
+    ax.max = 1;
+    assert( initialized( ax ) );
 }
 
 /**
@@ -216,4 +251,68 @@ unittest
     assertEqual(aes.front.x, 2.0);
     assertEqual(aes.front.y, 0.2);
     assertEqual(aes.front.label, "lbl");
+}
+
+private string ctReplaceAll( string orig, string pattern, string replacement )
+{
+
+    import std.string : split;
+    auto spl = orig.split( pattern );
+    string str = spl[0];
+    foreach( sp; spl[1..$] )
+        str ~= replacement ~ sp;
+    return str;
+}
+
+// Create a specialised x and y axis version of a given function.
+private string xy( string func )
+{
+    import std.string : split;
+    string str = "///\n" ~ // Three slashes should result in documentation?
+        func
+            .ctReplaceAll( "axis", "xaxis" )
+            .ctReplaceAll( "Axis", "XAxis" ) ~
+        "\n\n///\n" ~ 
+        func
+            .ctReplaceAll( "axis", "yaxis" )
+            .ctReplaceAll( "Axis", "YAxis" );
+    return str; 
+}
+
+// Below are the external functions to be used by library users.
+
+// Set the range of a axis
+mixin( xy( q{auto axisRange( double min, double max ) 
+{ 
+  return ( Axis axis ) { axis.min = min; axis.max = max; return axis; }; 
+}} ) );
+
+unittest
+{
+    XAxis ax;
+    auto f = xaxisRange( 0, 1 );
+    assertEqual( f(ax).min, 0 );
+    assertEqual( f(ax).max, 1 );
+
+    YAxis yax;
+    auto yf = yaxisRange( 0, 1 );
+    assertEqual( yf(yax).min, 0 );
+    assertEqual( yf(yax).max, 1 );
+}
+
+// Set the range of a axis
+mixin( xy( q{auto axisLabel( string label ) 
+{ 
+  return ( Axis axis ) { axis.label = label; return axis; }; 
+}} ) );
+
+unittest
+{
+    XAxis xax;
+    auto xf = xaxisLabel( "x" );
+    assertEqual( xf(xax).label, "x" );
+
+    YAxis yax;
+    auto yf = yaxisLabel( "y" );
+    assertEqual( yf(yax).label, "y" );
 }
