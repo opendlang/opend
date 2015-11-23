@@ -195,11 +195,117 @@ struct GGPlotD
     ScaleType scaleFunction;
 
     ///
-    void save( string fname )
+    void save( string fname, int width = 470, int height = 470 )
     {
         if (!initScale)
-            scaleFunction = scale(); // This needs to be removed later
-        ggPlotd( geomRange, scaleFunction, fname );
+            scaleFunction = scale( width - 70, height - 70 ); // This needs to be removed later
+        import std.range : front;
+        cairo.Surface surface;
+
+        import std.stdio;
+
+        bool pngWrite = false;
+
+        static if (cconfig.CAIRO_HAS_PDF_SURFACE)
+            {
+            if (fname[$ - 3 .. $] == "pdf")
+                {
+                surface = new cpdf.PDFSurface(fname, width, height);
+            }
+        }
+        else
+            {
+            if (fname[$ - 3 .. $] == "pdf")
+                assert(0, "PDF support not enabled by cairoD");
+        }
+        static if (cconfig.CAIRO_HAS_SVG_SURFACE)
+            {
+            if (fname[$ - 3 .. $] == "svg")
+                {
+                surface = new csvg.SVGSurface(fname, width, height);
+            }
+        }
+        else
+            {
+            if (fname[$ - 3 .. $] == "svg")
+                assert(0, "SVG support not enabled by cairoD");
+        }
+        if (fname[$ - 3 .. $] == "png")
+            {
+            surface = new cairo.ImageSurface(cairo.Format.CAIRO_FORMAT_ARGB32, width, height);
+            pngWrite = true;
+        }
+
+        auto backcontext = cairo.Context(surface);
+        backcontext.setSourceRGB(1, 1, 1);
+        backcontext.rectangle(0, 0, width, height);
+        backcontext.fill();
+
+        // Create a sub surface. Makes sure everything is plotted within plot surface
+        auto plotSurface = cairo.Surface.createForRectangle(surface,
+            cairo.Rectangle!double(50, 20, // No support for margin at top yet. Would need to know the surface dimensions
+            width - 70, height - 70));
+
+        AdaptiveBounds bounds;
+        typeof(geomRange.front.colour)[] colourIDs;
+        auto xAxisTicks = geomRange.front.xTickLabels;
+        auto yAxisTicks = geomRange.front.yTickLabels;
+
+        foreach (geom; geomRange)
+            {
+            bounds.adapt(geom.bounds);
+            colourIDs ~= geom.colour;
+            xAxisTicks ~= geom.xTickLabels;
+            yAxisTicks ~= geom.xTickLabels;
+        }
+
+        auto colourMap = createColourMap(colourIDs);
+
+        foreach (geom; geomRange)
+            {
+            auto context = cairo.Context(surface);
+            context.translate(50, 20);
+            //auto context = cairo.Context(surface);
+            auto col = colourMap(geom.colour);
+            import cairo.cairo : RGBA;
+            context.setSourceRGBA(RGBA(col.red, col.green, col.blue, geom.alpha));
+            context = scaleFunction(context, bounds);
+            context = geom.draw(context);
+            context.identityMatrix();
+            context.stroke();
+        }
+
+        // Axis
+        import std.algorithm : sort, uniq;
+        import std.range : chain;
+        import std.array : array;
+        import ggplotd.axes;
+
+        auto sortedAxisTicks = xAxisTicks.sort().uniq.array;
+
+        auto aesX = axisAes("x", bounds.min_x, bounds.max_x, bounds.min_y);
+
+        auto aesY = axisAes("y", bounds.min_y, bounds.max_y, bounds.min_x);
+
+        // TODO when we support setting colour outside of colourspace
+        // add these geomRanges to the provided ranges 
+        // and then draw them all
+        auto gR = chain(geomAxis(aesX, bounds.height / 25.0), geomAxis(aesY, bounds.width / 25.0));
+
+        foreach (g; gR)
+            {
+            auto context = cairo.Context(surface);
+            context.translate(50, 20);
+            context = scaleFunction(context, bounds);
+            context.setSourceRGB(0, 0, 0);
+
+            context = g.draw(context);
+            context.identityMatrix();
+            context.stroke();
+        }
+
+        if (pngWrite)
+            (cast(cairo.ImageSurface)(surface)).writeToPNG(fname);
     }
 
     ///
@@ -319,7 +425,5 @@ unittest
     assertEqual( gg.yaxis.max, 2.0 );
     assertEqual( gg.yaxis.label, "ys" );
 
-    gg.save( "axes.png" );
+    gg.save( "axes.png", 500, 300 );
 }
-
-
