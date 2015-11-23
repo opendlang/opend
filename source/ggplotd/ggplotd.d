@@ -256,7 +256,7 @@ unittest
     auto width = (double x) { return sqrt(0.1/(1+x)); };
     auto xs = iota( 0, 10, 0.1 ).array;
 
-    auto ysfit = xs.map!((x) => f(x)).array;
+    auto ysfit = xs.map!((x) => f(x));
     auto ysnoise = xs.map!((x) => f(x) + uniform(-width(x),width(x))).array;
 
     auto aes = Aes!(typeof(xs), "x",
@@ -266,7 +266,7 @@ unittest
         typeof(ysfit), "y" )( xs, ysfit ) );
 
     //  
-    auto ys2fit = xs.map!((x) => 1-f(x)).array;
+    auto ys2fit = xs.map!((x) => 1-f(x));
     auto ys2noise = xs.map!((x) => 1-f(x) + uniform(-width(x),width(x))).array;
 
     gg + geomLine( Aes!(typeof(xs), "x", typeof(ys2fit), "y" )( xs,
@@ -302,8 +302,7 @@ unittest
     import std.array : array;
     import std.math : sqrt;
     import std.algorithm : map;
-    import std.range : repeat, iota;
-    import std.random : uniform;
+    import std.range : iota;
     // Generate some noisy data with reducing width
     auto f = (double x) { return x/(1+x); };
     auto width = (double x) { return sqrt(0.1/(1+x)); };
