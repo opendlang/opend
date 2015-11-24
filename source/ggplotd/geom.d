@@ -431,7 +431,9 @@ auto geomLabel(AES)(AES aes)
             AdaptiveBounds bounds;
             bounds.adapt(Point(tup.x[0], tup.y[0]));
 
-            return Geom(f, ColourID(tup.colour), bounds);
+            auto geom = Geom(f, ColourID(tup.colour), bounds);
+            geom.alpha = tup.alpha;
+            return geom;
         }
 
         void popFront()

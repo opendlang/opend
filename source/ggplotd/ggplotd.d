@@ -260,8 +260,35 @@ struct GGPlotD
 
         auto colourMap = createColourMap(colourIDs);
 
-        foreach (geom; geomRange)
-            {
+        // Axis
+        import std.algorithm : sort, uniq;
+        import std.range : chain;
+        import std.array : array;
+        import ggplotd.axes;
+
+        if (initialized(xaxis))
+        {
+            bounds.min_x = xaxis.min;
+            bounds.max_x = xaxis.max;
+        }
+
+        if (initialized(yaxis))
+        {
+            bounds.min_y = yaxis.min;
+            bounds.max_y = yaxis.max;
+        }
+
+        auto sortedAxisTicks = xAxisTicks.sort().uniq.array;
+
+        auto aesX = axisAes("x", bounds.min_x, bounds.max_x, bounds.min_y);
+
+        auto aesY = axisAes("y", bounds.min_y, bounds.max_y, bounds.min_x);
+
+        auto gR = chain(geomAxis(aesX, bounds.height / 25.0), geomAxis(aesY, bounds.width / 25.0));
+
+        // Plot geomRange and axis
+        foreach (geom; chain(gR, geomRange))
+        {
             auto context = cairo.Context(surface);
             context.translate(50, 20);
             //auto context = cairo.Context(surface);
@@ -270,35 +297,6 @@ struct GGPlotD
             context.setSourceRGBA(RGBA(col.red, col.green, col.blue, geom.alpha));
             context = scaleFunction(context, bounds);
             context = geom.draw(context);
-            context.identityMatrix();
-            context.stroke();
-        }
-
-        // Axis
-        import std.algorithm : sort, uniq;
-        import std.range : chain;
-        import std.array : array;
-        import ggplotd.axes;
-
-        auto sortedAxisTicks = xAxisTicks.sort().uniq.array;
-
-        auto aesX = axisAes("x", bounds.min_x, bounds.max_x, bounds.min_y);
-
-        auto aesY = axisAes("y", bounds.min_y, bounds.max_y, bounds.min_x);
-
-        // TODO when we support setting colour outside of colourspace
-        // add these geomRanges to the provided ranges 
-        // and then draw them all
-        auto gR = chain(geomAxis(aesX, bounds.height / 25.0), geomAxis(aesY, bounds.width / 25.0));
-
-        foreach (g; gR)
-            {
-            auto context = cairo.Context(surface);
-            context.translate(50, 20);
-            context = scaleFunction(context, bounds);
-            context.setSourceRGB(0, 0, 0);
-
-            context = g.draw(context);
             context.identityMatrix();
             context.stroke();
         }
