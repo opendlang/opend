@@ -106,7 +106,7 @@ void main()
 
 #### Changing axis details
 
-![Manipulating axes](http://blackedder.github.io/ggplotd/images/axes.png)
+![Manipulating axes](http://blackedder.github.io/ggplotd/images/axes.svg)
 
 ```D
 
@@ -140,8 +140,8 @@ void main()
     // Change margins
     gg + Margins( 60, 60, 40, 30 );
 
-    // Saving on a 500x300 pixel surface
-    gg.save( "axes.png", 500, 300 );
+    // Saving as 500x300 pixel svg file
+    gg.save( "axes.svg", 500, 300 );
 }
 ```
 

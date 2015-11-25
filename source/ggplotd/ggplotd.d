@@ -311,5 +311,5 @@ unittest
     gg + Margins( 60, 60, 40, 30 );
 
     // Saving on a 500x300 pixel surface
-    gg.save( "axes.png", 500, 300 );
+    gg.save( "axes.svg", 500, 300 );
 }
