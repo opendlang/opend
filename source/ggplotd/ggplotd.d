@@ -59,12 +59,23 @@ private auto createEmptySurface( string fname, int width, int height )
 }
 
 ///
+struct Margins
+{
+    size_t left = 50; ///
+    size_t right = 20; ///
+    size_t bottom = 50; ///
+    size_t top = 20; ///
+}
+
+///
 struct GGPlotD
 {
     Geom[] geomRange;
 
     XAxis xaxis;
     YAxis yaxis;
+
+    Margins margins;
 
     alias ScaleType = 
         cairo.Context delegate(cairo.Context context, Bounds bounds);
@@ -82,7 +93,8 @@ struct GGPlotD
         }
 
         if (!initScale)
-            scaleFunction = scale( width - 70, height - 70 ); // This needs to be removed later
+            scaleFunction = scale( width - (margins.left+margins.right), 
+            height - (margins.bottom+margins.top) ); // This needs to be removed later
         import std.range : front;
 
         AdaptiveBounds bounds;
@@ -130,7 +142,7 @@ struct GGPlotD
         foreach (geom; chain(gR, geomRange))
         {
             auto context = cairo.Context(surface);
-            context.translate(50, 20);
+            context.translate(margins.left, margins.top);
             auto col = colourMap(geom.colour);
             import cairo.cairo : RGBA;
             context.setSourceRGBA(RGBA(col.red, col.green, col.blue, geom.alpha));
@@ -166,6 +178,10 @@ struct GGPlotD
             static if (is(T==YAxisFunction))
             {
                 yaxis = rhs( yaxis );
+            }
+            static if (is(T==Margins))
+            {
+                margins = rhs;
             }
             return this;
         }
@@ -262,6 +278,9 @@ unittest
     gg + yaxisRange( 0, 2.0 ) + yaxisLabel( "My ylabel" );
     assertEqual( gg.yaxis.max, 2.0 );
     assertEqual( gg.yaxis.label, "My ylabel" );
+
+    // Change Margins
+    gg + Margins( 60, 60, 40, 30 );
 
     // Saving on a 500x300 pixel surface
     gg.save( "axes.png", 500, 300 );
