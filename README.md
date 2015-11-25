@@ -104,7 +104,7 @@ void main()
 }
 ```
 
-#### Changing axis details
+#### Custom axes, margins and image size
 
 ![Manipulating axes](http://blackedder.github.io/ggplotd/images/axes.svg)
 
