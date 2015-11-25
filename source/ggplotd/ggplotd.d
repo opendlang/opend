@@ -124,7 +124,7 @@ struct GGPlotD
 
         auto aesY = axisAes("y", bounds.min_y, bounds.max_y, bounds.min_x);
 
-        auto gR = chain(geomAxis(aesX, bounds.height / 25.0, xaxis.label), geomAxis(aesY, bounds.width / 25.0, yaxis.label));
+        auto gR = chain(geomAxis(aesX, 10.0*bounds.height / height, xaxis.label), geomAxis(aesY, 10.0*bounds.width / width, yaxis.label));
 
         // Plot geomRange and axis
         foreach (geom; chain(gR, geomRange))
@@ -255,11 +255,11 @@ unittest
     auto gg = GGPlotD() + geomLine( Aes!(typeof(xs), "x",
         typeof(ysfit), "y" )( xs, ysfit ) );
 
-    gg + xaxisRange( 0, 8 ) + xaxisLabel( "xs" );
+    gg + xaxisRange( 0, 8 ) + xaxisLabel( "My xlabel" );
     assertEqual( gg.xaxis.min, 0 );
-    gg + yaxisRange( 0, 2.0 ) + yaxisLabel( "ys" );
+    gg + yaxisRange( 0, 2.0 ) + yaxisLabel( "My ylabel" );
     assertEqual( gg.yaxis.max, 2.0 );
-    assertEqual( gg.yaxis.label, "ys" );
+    assertEqual( gg.yaxis.label, "My ylabel" );
 
     gg.save( "axes.png", 500, 300 );
 }

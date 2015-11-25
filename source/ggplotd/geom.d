@@ -383,16 +383,16 @@ auto geomAxis(AES)(AES aes, double tickLength, string label)
             xs ~= [tick.x + direction[1], tick.x];
             ys ~= [tick.y + direction[0], tick.y];
 
-            lxs ~= tick.x - direction[1];
-            lys ~= tick.y - direction[0];
+            lxs ~= tick.x - 1.5*direction[1];
+            lys ~= tick.y - 1.5*direction[0];
             lbls ~= tick.label;
             langles ~= tick.angle;
         }
     }
 
     // Main label
-    auto xm = xs[0] + 0.5*(xs[$-1]-xs[0]) - 2.5*direction[1];
-    auto ym = ys[0] + 0.5*(ys[$-1]-ys[0]) - 2.5*direction[0];
+    auto xm = xs[0] + 0.5*(xs[$-1]-xs[0]) - 4.0*direction[1];
+    auto ym = ys[0] + 0.5*(ys[$-1]-ys[0]) - 4.0*direction[0];
     auto aesM = Aes!(double[], "x", double[], "y", string[], "label", 
         double[], "angle")( [xm], [ym], [label], langles);
 
