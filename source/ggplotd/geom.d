@@ -343,7 +343,7 @@ auto geomHist(AES)(AES aes)
 
 /// Draw axis, first and last location are start/finish
 /// others are ticks (perpendicular)
-auto geomAxis(AES)(AES aes, double tickLength)
+auto geomAxis(AES)(AES aes, double tickLength, string label)
 {
     import std.array : array;
     import std.range : chain, empty, repeat;
@@ -390,9 +390,16 @@ auto geomAxis(AES)(AES aes, double tickLength)
         }
     }
 
+    // Main label
+    auto xm = xs[0] + 0.5*(xs[$-1]-xs[0]) - 2.5*direction[1];
+    auto ym = ys[0] + 0.5*(ys[$-1]-ys[0]) - 2.5*direction[0];
+    auto aesM = Aes!(double[], "x", double[], "y", string[], "label", 
+        double[], "angle")( [xm], [ym], [label], langles);
+
     return geomLine(Aes!(typeof(xs), "x", typeof(ys), "y")(xs, ys)).chain(
         geomLabel(Aes!(double[], "x", double[], "y", string[], "label",
-        double[], "angle")(lxs, lys, lbls, langles)));
+        double[], "angle")(lxs, lys, lbls, langles)))
+            .chain( geomLabel(aesM) );
 }
 
 /// Draw Label at given x and y position
