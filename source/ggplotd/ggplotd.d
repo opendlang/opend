@@ -58,6 +58,34 @@ private auto createEmptySurface( string fname, int width, int height )
     return surface;
 }
 
+private alias ScaleType = 
+    cairo.Context delegate(cairo.Context context, Bounds bounds);
+
+auto drawGeom( Geom geom, ref cairo.Surface surface,
+    ColourMap colourMap, ScaleType scaleFunction, in Bounds bounds, 
+    in Margins margins, int width, int height, bool mask = true )
+{
+    cairo.Context context;
+    if (mask) {
+        auto plotSurface = cairo.Surface.createForRectangle(surface,
+            cairo.Rectangle!double(margins.left, margins.top,
+            width - (margins.left+margins.right), 
+            height - (margins.top+margins.bottom)));
+        context = cairo.Context(plotSurface);
+    } else {
+        context = cairo.Context(surface);
+        context.translate(margins.left, margins.top);
+    }
+    auto col = colourMap(geom.colour);
+    import cairo.cairo : RGBA;
+    context.setSourceRGBA(RGBA(col.red, col.green, col.blue, geom.alpha));
+    context = scaleFunction(context, bounds);
+    context = geom.draw(context);
+    context.identityMatrix();
+    context.stroke();
+    return surface;
+}
+
 ///
 struct Margins
 {
@@ -77,8 +105,6 @@ struct GGPlotD
 
     Margins margins;
 
-    alias ScaleType = 
-        cairo.Context delegate(cairo.Context context, Bounds bounds);
     ScaleType scaleFunction;
 
     ///
@@ -138,20 +164,22 @@ struct GGPlotD
 
         auto gR = chain(geomAxis(aesX, 10.0*bounds.height / height, xaxis.label), geomAxis(aesY, 10.0*bounds.width / width, yaxis.label));
 
-        // Plot geomRange and axis
-        foreach (geom; chain(gR, geomRange))
+        // Plot axis 
+        foreach (geom; gR)
         {
-            auto context = cairo.Context(surface);
-            context.translate(margins.left, margins.top);
-            auto col = colourMap(geom.colour);
-            import cairo.cairo : RGBA;
-            context.setSourceRGBA(RGBA(col.red, col.green, col.blue, geom.alpha));
-            context = scaleFunction(context, bounds);
-            context = geom.draw(context);
-            context.identityMatrix();
-            context.stroke();
+            surface = geom.drawGeom( surface,
+                colourMap, scaleFunction, bounds, 
+                margins, width, height, false );
         }
 
+        // Plot geomRange
+        foreach (geom; geomRange)
+        {
+            surface = geom.drawGeom( surface,
+                colourMap, scaleFunction, bounds, 
+                margins, width, height );
+        }
+ 
         if (pngWrite)
             (cast(cairo.ImageSurface)(surface)).writeToPNG(fname);
     }

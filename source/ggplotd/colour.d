@@ -214,6 +214,8 @@ private auto safeMin(T)(T a, T b)
     return min(a, b);
 }
 
+alias ColourMap = RGB delegate(ColourID tup);
+
 ///
 auto createColourMap(R)(R colourIDs) if (is(ElementType!R == Tuple!(double,
         string)) || is(ElementType!R == ColourID))
