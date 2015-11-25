@@ -104,6 +104,44 @@ void main()
 }
 ```
 
+#### Changing axis details
+
+![Manipulating axes](http://blackedder.github.io/ggplotd/images/axes.png)
+
+```D
+
+import ggplotd.ggplotd;
+import ggplotd.geom;
+import ggplotd.aes;
+import ggplotd.axes;
+
+void main()
+{
+    import std.array : array;
+    import std.math : sqrt;
+    import std.algorithm : map;
+    import std.range : iota;
+    // Generate some noisy data with reducing width
+    auto f = (double x) { return x/(1+x); };
+    auto width = (double x) { return sqrt(0.1/(1+x)); };
+    auto xs = iota( 0, 10, 0.1 ).array;
+
+    auto ysfit = xs.map!((x) => f(x)).array;
+
+    auto gg = GGPlotD() + geomLine( Aes!(typeof(xs), "x",
+        typeof(ysfit), "y" )( xs, ysfit ) );
+
+    // Setting range and label for xaxis
+    gg + xaxisRange( 0, 8 ) + xaxisLabel( "My xlabel" );
+
+    // Setting range and label for yaxis
+    gg + yaxisRange( 0, 2.0 ) + yaxisLabel( "My ylabel" );
+
+    // Saving on a 500x300 pixel surface
+    gg.save( "axes.png", 500, 300 );
+}
+```
+
 ## Extending GGplotD
 
 Due to GGplotD’s design it is relatively straightforward to extend GGplotD to

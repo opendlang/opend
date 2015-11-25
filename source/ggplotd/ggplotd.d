@@ -255,11 +255,14 @@ unittest
     auto gg = GGPlotD() + geomLine( Aes!(typeof(xs), "x",
         typeof(ysfit), "y" )( xs, ysfit ) );
 
+    // Setting range and label for xaxis
     gg + xaxisRange( 0, 8 ) + xaxisLabel( "My xlabel" );
     assertEqual( gg.xaxis.min, 0 );
+    // Setting range and label for yaxis
     gg + yaxisRange( 0, 2.0 ) + yaxisLabel( "My ylabel" );
     assertEqual( gg.yaxis.max, 2.0 );
     assertEqual( gg.yaxis.label, "My ylabel" );
 
+    // Saving on a 500x300 pixel surface
     gg.save( "axes.png", 500, 300 );
 }
