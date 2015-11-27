@@ -14,13 +14,19 @@ version (unittest)
 ///
 struct Geom
 {
+    this(T)( in T tup ) //if (is(T==Tuple))
+    {
+        alpha = tup.alpha;
+        mask = tup.mask;
+    }
+
     alias drawFunction = cairo.Context delegate(cairo.Context context);
     drawFunction draw; ///
     ColourID colour; ///
     AdaptiveBounds bounds; ///
-    double alpha; ///
 
-    bool mask = true;
+    double alpha; ///
+    bool mask = true; /// Whether to mask/prevent drawing outside plotting area
 
     import std.typecons : Tuple;
 
@@ -58,9 +64,10 @@ auto geomPoint(AES)(AES aes)
 
             AdaptiveBounds bounds;
             bounds.adapt(Point(tup.x[0], tup.y[0]));
-            auto geom = Geom(f, ColourID(tup.colour), bounds);
-            geom.alpha = tup.alpha;
-            geom.mask = tup.mask;
+            auto geom = Geom( tup );
+            geom.draw = f;
+            geom.colour = ColourID(tup.colour);
+            geom.bounds = bounds;
             return geom;
         }
 
@@ -123,7 +130,7 @@ auto geomLine(AES)(AES aes)
                 return context;
             };
 
-            auto geom = Geom(f, ColourID(groupedAes.front.front.colour));
+            auto geom = Geom( groupedAes.front.front );
             AdaptiveBounds bounds;
             coords = zip(xs, ys);
             foreach (tup; coords)
@@ -134,10 +141,9 @@ auto geomLine(AES)(AES aes)
                 if (!ys.numeric)
                     geom.yTickLabels ~= tup[0];
             }
+            geom.draw = f;
+            geom.colour = ColourID(groupedAes.front.front.colour);
             geom.bounds = bounds;
-            geom.alpha = groupedAes.front.front.alpha;
-            geom.mask = groupedAes.front.front.mask;
-
             return geom;
         }
 
@@ -444,9 +450,11 @@ auto geomLabel(AES)(AES aes)
             AdaptiveBounds bounds;
             bounds.adapt(Point(tup.x[0], tup.y[0]));
 
-            auto geom = Geom(f, ColourID(tup.colour), bounds);
-            geom.alpha = tup.alpha;
-            geom.mask = tup.mask;
+            auto geom = Geom( tup );
+            geom.draw = f;
+            geom.colour = ColourID(tup.colour);
+            geom.bounds = bounds;
+ 
             return geom;
         }
 
