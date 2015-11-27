@@ -20,6 +20,8 @@ struct Geom
     AdaptiveBounds bounds; ///
     double alpha; ///
 
+    bool mask = true;
+
     import std.typecons : Tuple;
 
     Tuple!(double, string)[] xTickLabels; ///
@@ -58,6 +60,7 @@ auto geomPoint(AES)(AES aes)
             bounds.adapt(Point(tup.x[0], tup.y[0]));
             auto geom = Geom(f, ColourID(tup.colour), bounds);
             geom.alpha = tup.alpha;
+            geom.mask = tup.mask;
             return geom;
         }
 
@@ -133,6 +136,7 @@ auto geomLine(AES)(AES aes)
             }
             geom.bounds = bounds;
             geom.alpha = groupedAes.front.front.alpha;
+            geom.mask = groupedAes.front.front.mask;
 
             return geom;
         }
@@ -394,11 +398,13 @@ auto geomAxis(AES)(AES aes, double tickLength, string label)
     auto xm = xs[0] + 0.5*(xs[$-1]-xs[0]) - 4.0*direction[1];
     auto ym = ys[0] + 0.5*(ys[$-1]-ys[0]) - 4.0*direction[0];
     auto aesM = Aes!(double[], "x", double[], "y", string[], "label", 
-        double[], "angle")( [xm], [ym], [label], langles);
+        double[], "angle", bool[], "mask")( [xm], [ym], [label], 
+            langles, [false]);
 
     return geomLine(Aes!(typeof(xs), "x", typeof(ys), "y")(xs, ys)).chain(
         geomLabel(Aes!(double[], "x", double[], "y", string[], "label",
-        double[], "angle")(lxs, lys, lbls, langles)))
+        double[], "angle", bool[], "mask")(lxs, lys, lbls, langles, 
+            false.repeat(lxs.length).array)))
             .chain( geomLabel(aesM) );
 }
 
@@ -440,6 +446,7 @@ auto geomLabel(AES)(AES aes)
 
             auto geom = Geom(f, ColourID(tup.colour), bounds);
             geom.alpha = tup.alpha;
+            geom.mask = tup.mask;
             return geom;
         }
 

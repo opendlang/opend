@@ -63,10 +63,10 @@ private alias ScaleType =
 
 auto drawGeom( Geom geom, ref cairo.Surface surface,
     ColourMap colourMap, ScaleType scaleFunction, in Bounds bounds, 
-    in Margins margins, int width, int height, bool mask = true )
+    in Margins margins, int width, int height )
 {
     cairo.Context context;
-    if (mask) {
+    if (geom.mask) {
         auto plotSurface = cairo.Surface.createForRectangle(surface,
             cairo.Rectangle!double(margins.left, margins.top,
             width - (margins.left+margins.right), 
@@ -164,16 +164,8 @@ struct GGPlotD
 
         auto gR = chain(geomAxis(aesX, 10.0*bounds.height / height, xaxis.label), geomAxis(aesY, 10.0*bounds.width / width, yaxis.label));
 
-        // Plot axis 
-        foreach (geom; gR)
-        {
-            surface = geom.drawGeom( surface,
-                colourMap, scaleFunction, bounds, 
-                margins, width, height, false );
-        }
-
-        // Plot geomRange
-        foreach (geom; geomRange)
+        // Plot axis and geomRange
+        foreach (geom; chain(gR, geomRange) )
         {
             surface = geom.drawGeom( surface,
                 colourMap, scaleFunction, bounds, 
