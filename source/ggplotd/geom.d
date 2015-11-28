@@ -322,33 +322,45 @@ unittest
     assertGreaterThan(binR.array[5].range[1], 0.0);
 }
 
+
 /// Draw histograms based on the x coordinates of the data (aes)
 auto geomHist(AES)(AES aes)
 {
     import std.algorithm : map;
-    import std.array : array;
+    import std.array : Appender, array;
     import std.range : repeat;
+    import std.typecons : Tuple;
 
-    // New aes to hold the lines for drawing histogram
-    auto aesLine = Aes!(double[], "x", double[], "y", typeof(aes.front.colour)[], "colour")();
+    // This is used to get the correct type of an Appender
+    alias tupType = typeof(group(aes).front.front.merge(Tuple!(double, "x", double, "y" )( 
+                0.0, 0.0 ))); 
+
+    // New appender to hold lines for drawing histogram
+    auto appender = Appender!(tupType[])([]);
 
     foreach (grouped; group(aes)) // Split data by colour/id
     {
         auto bins = grouped.map!((t) => t.x) // Extract the x coordinates
-        .array.bin(11); // Bin the data
+            .array.bin(11); // Bin the data
+
         foreach (bin; bins)
         {
-            // Convert data into line coordinates
-            aesLine.x ~= [bin.range[0], bin.range[0], bin.range[1], bin.range[1]];
-            aesLine.y ~= [0, bin.count, bin.count, 0];
-
-            // Each (new) line coordinate has the colour specified
-            // in the original data
-            aesLine.colour ~= grouped.front.colour.repeat(4).array;
+            // Specifying line data for the histogram. The merge is used to keep the colour etc. information
+            // contained in the original aes passed to geomHist.
+            appender.put( [
+                grouped.front.merge(Tuple!(double, "x", double, "y" )( 
+                        bin.range[0], 0.0 )),
+                grouped.front.merge(Tuple!(double, "x", double, "y" )( 
+                        bin.range[0], bin.count )),
+                grouped.front.merge(Tuple!(double, "x", double, "y" )( 
+                        bin.range[1], bin.count )),
+                grouped.front.merge(Tuple!(double, "x", double, "y" )( 
+                        bin.range[1], 0.0 ))
+                ] );
         }
     }
     // Use the xs/ys/colours to draw lines
-    return geomLine(aesLine);
+    return geomLine(appender.data);
 }
 
 /// Draw axis, first and last location are start/finish

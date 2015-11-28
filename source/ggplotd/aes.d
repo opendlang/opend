@@ -5,6 +5,8 @@ version (unittest)
     import dunit.toolkit;
 }
 
+import std.typecons : Tuple;
+
 template Aes(Specs...)
 {
     import std.traits : Identity;
@@ -590,7 +592,8 @@ template merge(T, U)
 {
     auto generateCode()
     {
-        string typing = "Aes!(";
+        import std.string : split;
+        string typing = T.stringof.split("!")[0] ~ "!(";
         string variables = "(";
         foreach (i, t; U.fieldNames)
         {
