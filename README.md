@@ -32,7 +32,8 @@ dub add-local cairoD
 
 ## Documentation
 
-Documentation is automatically generated and put online under
+This README contains a couple of examples and basic documentation on how to extend GGPlotD. 
+API documentation is automatically generated and put online under
 http://blackedder.github.io/ggplotd/ggplotd.html . For example for the
 available geom* functions see: http://blackedder.github.io/ggplotd/geom.html
 
