@@ -176,35 +176,38 @@ struct GGPlotD
             (cast(cairo.ImageSurface)(surface)).writeToPNG(fname);
     }
 
-    ///
-    ref GGPlotD opBinary(string op, T)(T rhs)
+    /// Using + to extend the plot for compatibility to ggplot2 in R
+    ref GGPlotD opBinary(string op, T)(T rhs) if (op == "+")
     {
-        static if (op == "+")
+        static if (is(ElementType!T==Geom))
         {
-            static if (is(ElementType!T==Geom))
-            {
-                import std.array : array;
-                geomRange ~= rhs.array;
-            }
-            static if (is(T==ScaleType))
-            {
-                initScale = true;
-                scaleFunction = rhs;
-            }
-            static if (is(T==XAxisFunction))
-            {
-                xaxis = rhs( xaxis );
-            }
-            static if (is(T==YAxisFunction))
-            {
-                yaxis = rhs( yaxis );
-            }
-            static if (is(T==Margins))
-            {
-                margins = rhs;
-            }
-            return this;
+            import std.array : array;
+            geomRange ~= rhs.array;
         }
+        static if (is(T==ScaleType))
+        {
+            initScale = true;
+            scaleFunction = rhs;
+        }
+        static if (is(T==XAxisFunction))
+        {
+            xaxis = rhs( xaxis );
+        }
+        static if (is(T==YAxisFunction))
+        {
+            yaxis = rhs( yaxis );
+        }
+        static if (is(T==Margins))
+        {
+            margins = rhs;
+        }
+        return this;
+    }
+
+    ///
+    GGPlotD opBinary(string op, T)(T rhs) if (op == "~")
+    {
+        return this.opBinary!("+", T)(rhs);
     }
 
     private:
