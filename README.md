@@ -39,7 +39,7 @@ available geom* functions see: http://blackedder.github.io/ggplotd/geom.html
 
 ### Examples
 
-At version v0.1.0 we have basic support for simple plots.
+At version v0.2.0 we have basic support for simple plots.
 
 ![A noisy figure](http://blackedder.github.io/ggplotd/images/noise.png)
 ```D 
