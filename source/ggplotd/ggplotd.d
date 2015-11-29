@@ -205,14 +205,30 @@ struct GGPlotD
     }
 
     ///
-    GGPlotD opBinary(string op, T)(T rhs) if (op == "~")
+    ref GGPlotD put(T)(T rhs)
     {
         return this.opBinary!("+", T)(rhs);
     }
 
-    private:
-        bool initScale = false;
+private:
+    bool initScale = false;
 }
+
+unittest
+{
+    auto gg = GGPlotD()
+        .put( yaxisLabel( "My ylabel" ) )
+        .put( yaxisRange( 0, 2.0 ) );
+    assertEqual( gg.yaxis.max, 2.0 );
+    assertEqual( gg.yaxis.label, "My ylabel" );
+
+    gg = GGPlotD(); 
+    gg.put( yaxisLabel( "My ylabel" ) )
+        .put( yaxisRange( 0, 2.0 ) );
+    assertEqual( gg.yaxis.max, 2.0 );
+    assertEqual( gg.yaxis.label, "My ylabel" );
+}
+
 
 ///
 unittest
@@ -242,18 +258,19 @@ unittest
 
     auto aes = Aes!(typeof(xs), "x",
         typeof(ysnoise), "y", string[], "colour" )( xs, ysnoise, ("a").repeat(xs.length).array );
-    auto gg = GGPlotD() + geomPoint( aes );
-    gg + geomLine( Aes!(typeof(xs), "x",
-        typeof(ysfit), "y" )( xs, ysfit ) );
+    auto gg = GGPlotD().put( geomPoint( aes ) );
+    gg.put( geomLine( Aes!(typeof(xs), "x",
+        typeof(ysfit), "y" )( xs, ysfit ) ) );
 
     //  
     auto ys2fit = xs.map!((x) => 1-f(x));
     auto ys2noise = xs.map!((x) => 1-f(x) + uniform(-width(x),width(x))).array;
 
-    gg + geomLine( Aes!(typeof(xs), "x", typeof(ys2fit), "y" )( xs,
-        ys2fit) ); 
-    gg + geomPoint( Aes!(typeof(xs), "x", typeof(ys2noise), "y", string[],
-        "colour" )( xs, ys2noise, ("b").repeat(xs.length).array) );
+    gg.put( geomLine( Aes!(typeof(xs), "x", typeof(ys2fit), "y" )( xs,
+        ys2fit) ) )
+        .put(
+            geomPoint( Aes!(typeof(xs), "x", typeof(ys2noise), "y", string[],
+        "colour" )( xs, ys2noise, ("b").repeat(xs.length).array) ) );
 
     gg.save( "noise.png" );
 }
@@ -267,12 +284,12 @@ unittest
     import std.random : uniform;
     auto xs = iota(0,25,1).map!((x) => uniform(0.0,5)+uniform(0.0,5)).array;
     auto aes = Aes!(typeof(xs), "x")( xs );
-    auto gg = GGPlotD() + geomHist( aes );
+    auto gg = GGPlotD().put( geomHist( aes ) );
 
     auto ys = (0.0).repeat( xs.length ).array;
     auto aesPs = aes.merge( Aes!(double[], "y", double[], "colour" )
         ( ys, ys ) );
-    gg + geomPoint( aesPs );
+    gg.put( geomPoint( aesPs ) );
 
     gg.save( "hist.png" );
 }
@@ -291,14 +308,14 @@ unittest
 
     auto ysfit = xs.map!((x) => f(x)).array;
 
-    auto gg = GGPlotD() + geomLine( Aes!(typeof(xs), "x",
-        typeof(ysfit), "y" )( xs, ysfit ) );
+    auto gg = GGPlotD().put( geomLine( Aes!(typeof(xs), "x",
+        typeof(ysfit), "y" )( xs, ysfit ) ) );
 
     // Setting range and label for xaxis
-    gg + xaxisRange( 0, 8 ) + xaxisLabel( "My xlabel" );
+    gg.put( xaxisRange( 0, 8 ) ).put( xaxisLabel( "My xlabel" ) );
     assertEqual( gg.xaxis.min, 0 );
     // Setting range and label for yaxis
-    gg + yaxisRange( 0, 2.0 ) + yaxisLabel( "My ylabel" );
+    gg.put( yaxisRange( 0, 2.0 ) ).put( yaxisLabel( "My ylabel" ) );
     assertEqual( gg.yaxis.max, 2.0 );
     assertEqual( gg.yaxis.label, "My ylabel" );
 

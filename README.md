@@ -63,18 +63,21 @@ void main()
     auto ysnoise = xs.map!((x) => f(x) + uniform(-width(x),width(x))).array;
 
     auto aes = Aes!(typeof(xs), "x",
-        typeof(ysnoise), "y", string[], "colour" )( xs, ysnoise, ("a").repeat(xs.length).array );
-    auto gg = GGPlotD() + geomPoint( aes );
-    gg + geomLine( Aes!(typeof(xs), "x",
-        typeof(ysfit), "y" )( xs, ysfit ) );
+        typeof(ysnoise), "y", string[], "colour" )( xs, ysnoise,
+        ("a").repeat(xs.length).array ); 
+        
+    auto gg = GGPlotD().put( geomPoint( aes)); 
+    gg.put(geomLine( Aes!(typeof(xs), "x", typeof(ysfit), "y" )( xs, ysfit)));
 
     //  
     auto ys2fit = xs.map!((x) => 1-f(x)).array;
     auto ys2noise = xs.map!((x) => 1-f(x) + uniform(-width(x),width(x))).array;
 
-    gg + geomLine( Aes!(typeof(xs), "x", typeof(ys2fit), "y" )( xs, ys2fit) );
-    gg + geomPoint( Aes!(typeof(xs), "x", typeof(ys2noise), "y", string[],
-        "colour" )( xs, ys2noise, ("b").repeat(xs.length).array) );
+    gg.put( geomLine( Aes!(typeof(xs), "x", typeof(ys2fit), "y" )( xs,
+        ys2fit)));
+
+    gg.put( geomPoint( Aes!(typeof(xs), "x", typeof(ys2noise), "y", string[],
+        "colour" )( xs, ys2noise, ("b").repeat(xs.length).array) ));
 
     gg.save( "noise.png" );
 }
@@ -94,12 +97,14 @@ void main()
     import std.random : uniform;
     auto xs = iota(0,25,1).map!((x) => uniform(0.0,5)+uniform(0.0,5)).array;
     auto aes = Aes!(typeof(xs), "x")( xs );
-    auto gg = GGPlotD() + geomHist( aes );
+
+    auto gg = GGPlotD().put( geomHist( aes ) );
 
     auto ys = (0.0).repeat( xs.length ).array;
     auto aesPs = aes.merge( Aes!(double[], "y", double[], "colour" )
         ( ys, ys ) );
-    gg + geomPoint( aesPs );
+
+    gg.put( geomPoint( aesPs ) );
 
     gg.save( "hist.png" );
 }
@@ -129,17 +134,18 @@ void main()
 
     auto ysfit = xs.map!((x) => f(x)).array;
 
-    auto gg = GGPlotD() + geomLine( Aes!(typeof(xs), "x",
-        typeof(ysfit), "y" )( xs, ysfit ) );
+    auto gg = GGPlotD().put( geomLine( Aes!(typeof(xs), "x", typeof(ysfit),
+        "y")( xs, ysfit ) ) );
 
     // Setting range and label for xaxis
-    gg + xaxisRange( 0, 8 ) + xaxisLabel( "My xlabel" );
+    gg.put( xaxisRange( 0, 8 ) )
+        .put( xaxisLabel( "My xlabel" ) );
 
     // Setting range and label for yaxis
-    gg + yaxisRange( 0, 2.0 ) + yaxisLabel( "My ylabel" );
+    gg.put( yaxisRange( 0, 2.0 ) ).put( yaxisLabel( "My ylabel" ) );
 
     // Change margins
-    gg + Margins( 60, 60, 40, 30 );
+    gg.put( Margins( 60, 60, 40, 30 ) );
 
     // Saving as 500x300 pixel svg file
     gg.save( "axes.svg", 500, 300 );
