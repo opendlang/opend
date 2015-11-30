@@ -61,7 +61,6 @@ auto geomPoint(AES)(AES aes)
                 context.save();
                 context.identityMatrix;
                 context.rectangle(devP.x - 0.5 * tup.size, devP.y - 0.5 * tup.size, tup.size, tup.size);
-                context.fill();
                 context.restore();
                 return context;
             };
@@ -72,6 +71,7 @@ auto geomPoint(AES)(AES aes)
             geom.draw = f;
             geom.colour = ColourID(tup.colour);
             geom.bounds = bounds;
+            geom.fill = geom.alpha; // Points are always filled
             return geom;
         }
 

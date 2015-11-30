@@ -78,17 +78,16 @@ auto drawGeom( Geom geom, ref cairo.Surface surface,
     }
     auto col = colourMap(geom.colour);
     import cairo.cairo : RGBA;
-    context.setSourceRGBA(RGBA(col.red, col.green, col.blue, geom.alpha));
     context = scaleFunction(context, bounds);
     context = geom.draw(context);
     context.identityMatrix();
     if (geom.fill>0)
     {
         context.setSourceRGBA(RGBA(col.red, col.green, col.blue, geom.fill));
-        context.fill();
+        context.fillPreserve();
     }
-    else
-        context.stroke();
+    context.setSourceRGBA(RGBA(col.red, col.green, col.blue, geom.alpha));
+    context.stroke();
     return surface;
 }
 
