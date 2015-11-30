@@ -170,7 +170,7 @@ struct GGPlotD
         auto gR = chain(geomAxis(aesX, 10.0*bounds.height / height, xaxis.label), geomAxis(aesY, 10.0*bounds.width / width, yaxis.label));
 
         // Plot axis and geomRange
-        foreach (geom; chain(gR, geomRange) )
+        foreach (geom; chain(geomRange, gR) )
         {
             surface = geom.drawGeom( surface,
                 colourMap, scaleFunction, bounds, 

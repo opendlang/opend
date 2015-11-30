@@ -357,8 +357,6 @@ auto geomHist(AES)(AES aes)
                             bin.range[1], bin.count )),
                     grouped.front.merge(Tuple!(double, "x", double, "y" )( 
                             bin.range[1], 0.0 )),
-                    grouped.front.merge(Tuple!(double, "x", double, "y" )( 
-                            bin.range[0], 0.0 )),
                 ] )
             );
         }
@@ -424,7 +422,8 @@ auto geomAxis(AES)(AES aes, double tickLength, string label)
         double[], "angle", bool[], "mask")( [xm], [ym], [label], 
             langles, [false]);
 
-    return geomLine(Aes!(typeof(xs), "x", typeof(ys), "y")(xs, ys)).chain(
+    return geomLine(Aes!(typeof(xs), "x", typeof(ys), "y", bool[], "mask")(
+        xs, ys, false.repeat(xs.length).array)).chain(
         geomLabel(Aes!(double[], "x", double[], "y", string[], "label",
         double[], "angle", bool[], "mask")(lxs, lys, lbls, langles, 
             false.repeat(lxs.length).array)))
