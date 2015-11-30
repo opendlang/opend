@@ -79,6 +79,7 @@ template Aes(Specs...)
 
     alias fieldNames = staticMap!(extractName, fieldSpecs);
 
+    // TODO Also update default grouping if appropiate
     alias defaultNames = TypeTuple!("colour", "size", "angle", "alpha", "mask", "fill");
     alias defaultTypes = TypeTuple!(string, double, double, double, bool, bool);
     alias defaultValues = TypeTuple!(q{"black"}, 10, 0, 1, true, false);
@@ -465,39 +466,22 @@ unittest
 
 }
 
-unittest
-{
-    auto aes = Aes!(double[], "x", double[], "y", string[], "colour")([1.0,
-        2.0, 1.1], [3.0, 1.5, 1.1], ["a", "b", "a"]);
-
-    import std.range : walkLength, front, popFront;
-
-    auto grouped = aes.group;
-    assertEqual(grouped.walkLength, 2);
-    assertEqual(grouped.front.walkLength, 2);
-    grouped.popFront;
-    assertEqual(grouped.front.walkLength, 1);
-
-    auto aes2 = Aes!(double[], "x", double[], "y")([1.0, 2.0, 1.1], [3.0, 1.5, 1.1]);
-
-}
-
 ///
 template group(Specs...)
 {
     string buildExtractKey()
     {
+        static if (Specs.length == 0)
+        {
+            import std.typecons : TypeTuple;
+            alias Specs = TypeTuple!("alpha","colour");
+        }
         string types = "";
         string values = "";
         foreach( spec; Specs )
         {
             types ~= "typeof(a." ~ spec ~"),";
             values ~= "a." ~ spec ~",";
-        }
-        if (types=="")
-        {
-            types = "typeof(a.colour),typeof(a.alpha),";
-            values = "a.colour,a.alpha,";
         }
         string str = "auto extractKey(T)(T a) 
             { return Tuple!(" ~ types[0..$-1] ~ ")(" ~ values[0..$-1] ~ "); }";
@@ -535,6 +519,20 @@ unittest
     assertEqual(group!("alpha")(aes).walkLength,2);
 
     assertEqual(group(aes).walkLength,4);
+}
+
+unittest
+{
+    auto aes = Aes!(double[], "x", double[], "y", string[], "colour")([1.0,
+        2.0, 1.1], [3.0, 1.5, 1.1], ["a", "b", "a"]);
+
+    import std.range : walkLength, front, popFront;
+
+    auto grouped = aes.group;
+    assertEqual(grouped.walkLength, 2);
+    assertEqual(grouped.front.walkLength, 2);
+    grouped.popFront;
+    assertEqual(grouped.front.walkLength, 1);
 }
 
 ///
