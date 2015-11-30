@@ -82,7 +82,10 @@ auto drawGeom( Geom geom, ref cairo.Surface surface,
     context = scaleFunction(context, bounds);
     context = geom.draw(context);
     context.identityMatrix();
-    context.stroke();
+    if (geom.fill)
+        context.fill();
+    else
+        context.stroke();
     return surface;
 }
 

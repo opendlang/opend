@@ -185,12 +185,8 @@ auto geomHist(AES)(AES aes)
     import std.range : repeat;
     import std.typecons : Tuple;
 
-    // This is used to get the correct type of an Appender
-    alias tupType = typeof(group(aes).front.front.merge(Tuple!(double, "x", double, "y" )( 
-                0.0, 0.0 ))); 
-
     // New appender to hold lines for drawing histogram
-    auto appender = Appender!(tupType[])([]);
+    auto appender = Appender!(Geom[])([]);
 
     foreach (grouped; group(aes)) // Split data by colour/id
     {
@@ -199,24 +195,28 @@ auto geomHist(AES)(AES aes)
 
         foreach (bin; bins)
         {
-            // Specifying line data for the histogram. The merge is used to keep the colour etc. information
+            // Specifying the boxes for the histogram. The merge is used to keep the colour etc. information
             // contained in the original aes passed to geomHist.
-            appender.put( [
-                grouped.front.merge(Tuple!(double, "x", double, "y" )( 
-                        bin.range[0], 0.0 )),
-                grouped.front.merge(Tuple!(double, "x", double, "y" )( 
-                        bin.range[0], bin.count )),
-                grouped.front.merge(Tuple!(double, "x", double, "y" )( 
-                        bin.range[1], bin.count )),
-                grouped.front.merge(Tuple!(double, "x", double, "y" )( 
-                        bin.range[1], 0.0 ))
-                ] );
+            appender.put(
+                geomLine( [
+                    grouped.front.merge(Tuple!(double, "x", double, "y" )( 
+                            bin.range[0], 0.0 )),
+                    grouped.front.merge(Tuple!(double, "x", double, "y" )( 
+                            bin.range[0], bin.count )),
+                    grouped.front.merge(Tuple!(double, "x", double, "y" )( 
+                            bin.range[1], bin.count )),
+                    grouped.front.merge(Tuple!(double, "x", double, "y" )( 
+                            bin.range[1], 0.0 )),
+                    grouped.front.merge(Tuple!(double, "x", double, "y" )( 
+                            bin.range[0], 0.0 )),
+                ] )
+            );
         }
     }
-    // Use the xs/ys/colours to draw lines
-    return geomLine(appender.data);
-}
 
+    // Return the different lines 
+    return appender.data;
+}
 ```
 
 Note that the above highlights the drawing part of the function.
