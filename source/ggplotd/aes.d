@@ -81,8 +81,8 @@ template Aes(Specs...)
 
     // TODO Also update default grouping if appropiate
     alias defaultNames = TypeTuple!("colour", "size", "angle", "alpha", "mask", "fill");
-    alias defaultTypes = TypeTuple!(string, double, double, double, bool, bool);
-    alias defaultValues = TypeTuple!(q{"black"}, 10, 0, 1, true, false);
+    alias defaultTypes = TypeTuple!(string, double, double, double, bool, double);
+    alias defaultValues = TypeTuple!(q{"black"}, 10, 0, 1, true, 0.0);
     string injectFront()
     {
         import std.format : format;

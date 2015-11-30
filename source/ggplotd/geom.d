@@ -30,7 +30,7 @@ struct Geom
 
     double alpha; ///
     bool mask = true; /// Whether to mask/prevent drawing outside plotting area
-    bool fill;
+    double fill;
 
     import std.typecons : Tuple;
 
