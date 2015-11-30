@@ -1,5 +1,7 @@
 module ggplotd.aes;
 
+import std.range : front, popFront, empty;
+
 version (unittest)
 {
     import dunit.toolkit;
@@ -422,16 +424,6 @@ template Aes(Specs...)
     }
 }
 
-///
-auto group(AES)(AES aes)
-{
-    import std.algorithm : filter, map, uniq, sort;
-    import std.range : array;
-
-    auto colours = aes.map!((a) => a.colour).array.sort().uniq;
-    return colours.map!((c) => aes.filter!((a) => a.colour == c));
-}
-
 unittest
 {
     auto tup = Aes!(double[], "x", double[], "y", string[], "colour")([0, 1],
@@ -478,7 +470,7 @@ unittest
     auto aes = Aes!(double[], "x", double[], "y", string[], "colour")([1.0,
         2.0, 1.1], [3.0, 1.5, 1.1], ["a", "b", "a"]);
 
-    import std.range : walkLength;
+    import std.range : walkLength, front, popFront;
 
     auto grouped = aes.group;
     assertEqual(grouped.walkLength, 2);
@@ -491,7 +483,7 @@ unittest
 }
 
 ///
-template impGroup(Specs...)
+template group(Specs...)
 {
     string buildExtractKey()
     {
@@ -504,30 +496,32 @@ template impGroup(Specs...)
         }
         if (types=="")
         {
-            types = "typeof(a.colour),typeof(a.label),typeof(a.alpha),";
-            values = "a.colour,a.label,a.alpha,";
+            types = "typeof(a.colour),typeof(a.alpha),";
+            values = "a.colour,a.alpha,";
         }
         string str = "auto extractKey(T)(T a) 
             { return Tuple!(" ~ types[0..$-1] ~ ")(" ~ values[0..$-1] ~ "); }";
         return str;
     }
     
-    auto impGroup(AES)(AES aes)
+    auto group(AES)(AES aes)
     {
-        import std.algorithm : filter, map, uniq, sort;
-        import std.range : array;
-
-        /+import std.stdio;
-        string compStr = mixin(specsToComp());
-        compStr.writeln;+/
-
         import std.stdio;
         mixin(buildExtractKey());
-        extractKey( aes.front ).writeln;
+        extractKey( aes.front );
+
+        typeof(aes.front())[][typeof(extractKey(aes.front))] grouped;
 
         // Extract keys for aa and store in aa. Return the values of the aa
-        auto colours = aes.map!((a) => a.colour).array.sort().uniq;
-        return colours.map!((c) => aes.filter!((a) => a.colour == c));
+        foreach( tup; aes )
+        {
+            auto key = extractKey(tup);
+            if (key in grouped)
+                grouped[key] ~= tup;
+            else
+                grouped[key] = [tup];
+        }
+        return grouped.values;
     }
 }
 
@@ -537,13 +531,10 @@ unittest
     auto aes = Aes!(double[], "x", string[], "colour", double[], "alpha")
         ([0,1,2,3], ["a","a","b","b"], [0,1,0,1]);
 
-    assertEqual(impGroup!("colour","alpha")(aes).walkLength,4);
-    assertEqual(impGroup!("alpha")(aes).walkLength,2);
+    assertEqual(group!("colour","alpha")(aes).walkLength,4);
+    assertEqual(group!("alpha")(aes).walkLength,2);
 
-    //assertEqual(impGroup(aes).walkLength,4);
-
-    //import std.stdio;
-    //impGroup(aes).writeln;
+    assertEqual(group(aes).walkLength,4);
 }
 
 ///

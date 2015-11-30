@@ -1,5 +1,7 @@
 module ggplotd.geom;
 
+import std.range : front, popFront, empty;
+
 import cairo = cairo.cairo;
 
 import ggplotd.bounds;
