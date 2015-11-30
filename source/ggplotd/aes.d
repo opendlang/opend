@@ -491,13 +491,41 @@ unittest
 }
 
 ///
-template impGroup(Args...)
+template impGroup(Specs...)
 {
+    string buildExtractKey()
+    {
+        string types = "";
+        string values = "";
+        foreach( spec; Specs )
+        {
+            types ~= "typeof(a." ~ spec ~"),";
+            values ~= "a." ~ spec ~",";
+        }
+        if (types=="")
+        {
+            types = "typeof(a.colour),typeof(a.label),typeof(a.alpha),";
+            values = "a.colour,a.label,a.alpha,";
+        }
+        string str = "auto extractKey(T)(T a) 
+            { return Tuple!(" ~ types[0..$-1] ~ ")(" ~ values[0..$-1] ~ "); }";
+        return str;
+    }
+    
     auto impGroup(AES)(AES aes)
     {
         import std.algorithm : filter, map, uniq, sort;
         import std.range : array;
 
+        /+import std.stdio;
+        string compStr = mixin(specsToComp());
+        compStr.writeln;+/
+
+        import std.stdio;
+        mixin(buildExtractKey());
+        extractKey( aes.front ).writeln;
+
+        // Extract keys for aa and store in aa. Return the values of the aa
         auto colours = aes.map!((a) => a.colour).array.sort().uniq;
         return colours.map!((c) => aes.filter!((a) => a.colour == c));
     }
@@ -508,13 +536,14 @@ unittest
     import std.range : walkLength;
     auto aes = Aes!(double[], "x", string[], "colour", double[], "alpha")
         ([0,1,2,3], ["a","a","b","b"], [0,1,0,1]);
+
     assertEqual(impGroup!("colour","alpha")(aes).walkLength,4);
     assertEqual(impGroup!("alpha")(aes).walkLength,2);
 
-    assertEqual(impGroup(aes).walkLength,4);
+    //assertEqual(impGroup(aes).walkLength,4);
 
-    import std.stdio;
-    impGroup(aes).writeln;
+    //import std.stdio;
+    //impGroup(aes).writeln;
 }
 
 ///
