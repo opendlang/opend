@@ -446,13 +446,6 @@ unittest
     assertEqual(tup2.length, 2);
     tup2.y ~= 0.0;
     assertEqual(tup2.length, 3);
-
-    import std.range : repeat;
-
-    auto xs = repeat(0);
-    //auto tup3 = Aes!(typeof(xs), "x", 
-    //        double[], "y")(xs,[2,1]);
-    //assertEqual(tup3.length,2);
 }
 
 unittest
