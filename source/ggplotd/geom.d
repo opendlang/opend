@@ -588,9 +588,6 @@ auto geomBox(AES)(AES aes)
         );
     }
 
-    Bounds bounds;
-    bounds.min_x = xTickLabels.front[0] - 0.5;
-    bounds.max_x = xTickLabels[$-1][0] + 0.5;
     foreach( ref g; result.data )
     {
         g.xTickLabels = xTickLabels;
