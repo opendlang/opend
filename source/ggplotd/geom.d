@@ -545,11 +545,14 @@ auto geomBox(AES)(AES aes)
     auto myAes = aes.merge( Aes!(typeof(labels), "label")( labels ) );
 
     double delta = 0.2;
+    Tuple!(double, string)[] xTickLabels;
+
     foreach( grouped; myAes.group() )
     {
         auto lims = grouped.map!("a.x")
             .array.limits( [0.1,0.25,0.5,0.75,0.9] ).array;
         auto x = grouped.front.label[0];
+        xTickLabels ~= grouped.front.label;
         result.put(
             geomLine( [
                 grouped.front.merge(Tuple!(double, "x", double, "y" )( 
@@ -583,7 +586,16 @@ auto geomBox(AES)(AES aes)
                     x, lims[1] ))
              ] )
         );
+    }
 
+    Bounds bounds;
+    bounds.min_x = xTickLabels.front[0] - 0.5;
+    bounds.max_x = xTickLabels[$-1][0] + 0.5;
+    foreach( ref g; result.data )
+    {
+        g.xTickLabels = xTickLabels;
+        g.bounds.min_x = xTickLabels.front[0] - 0.5;
+        g.bounds.max_x = xTickLabels[$-1][0] + 0.5;
     }
 
     return result.data;

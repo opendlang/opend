@@ -138,7 +138,7 @@ struct GGPlotD
             bounds.adapt(geom.bounds);
             colourIDs ~= geom.colour;
             xAxisTicks ~= geom.xTickLabels;
-            yAxisTicks ~= geom.xTickLabels;
+            yAxisTicks ~= geom.yTickLabels;
         }
 
         auto colourMap = createColourMap(colourIDs);
@@ -161,11 +161,11 @@ struct GGPlotD
             bounds.max_y = yaxis.max;
         }
 
-        auto sortedAxisTicks = xAxisTicks.sort().uniq.array;
+        auto aesX = axisAes("x", bounds.min_x, bounds.max_x, bounds.min_y,
+            xAxisTicks.sort().uniq.array);
 
-        auto aesX = axisAes("x", bounds.min_x, bounds.max_x, bounds.min_y);
-
-        auto aesY = axisAes("y", bounds.min_y, bounds.max_y, bounds.min_x);
+        auto aesY = axisAes("y", bounds.min_y, bounds.max_y, bounds.min_x,
+            yAxisTicks.sort().uniq.array);
 
         auto gR = chain(geomAxis(aesX, 10.0*bounds.height / height, xaxis.label), geomAxis(aesY, 10.0*bounds.width / width, yaxis.label));
 
