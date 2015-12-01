@@ -501,3 +501,33 @@ unittest
 
     assertEqual(gl.walkLength, 4);
 }
+
+// geomBox
+/// Return the limits indicated with different alphas
+private auto limits( RANGE )( RANGE range, double[] alphas )
+{
+    import std.algorithm : sort, map, min, max;
+    import std.math : floor;
+    import std.conv : to;
+    auto sorted = range.sort();
+    return alphas.map!( (a) { 
+        auto id = min( sorted.length-2,
+            max(0,floor( a*(sorted.length+1) ).to!int-1 ) );
+        if (a<=0.5)
+            return sorted[id];
+        else
+            return sorted[id+1];
+    });
+}
+
+unittest
+{
+    import std.range : array, front;
+    assertEqual( [1,2,3,4,5].limits( [0.01, 0.5, 0.99] ).array, 
+            [1,3,5] );
+
+    assertEqual( [1,2,3,4].limits( [0.41] ).front, 2 );
+    assertEqual( [1,2,3,4].limits( [0.39] ).front, 1 );
+    assertEqual( [1,2,3,4].limits( [0.61] ).front, 4 );
+    assertEqual( [1,2,3,4].limits( [0.59] ).front, 3 );
+}
