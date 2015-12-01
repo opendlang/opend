@@ -83,6 +83,8 @@ void main()
 }
 ```
 
+#### Histogram
+
 ![A histogram](http://blackedder.github.io/ggplotd/images/hist.png)
 ```D
 import ggplotd.ggplotd; 
@@ -110,6 +112,8 @@ void main()
 }
 ```
 
+#### Combined histograms
+
 ![Two combined data
 sources](http://blackedder.github.io/ggplotd/images/filled_hist.svg)
 ```D
@@ -133,6 +137,8 @@ void main()
 }
 
 ```
+
+#### Box plot
 
 ![Box plot](http://blackedder.github.io/ggplotd/images/boxplot.svg)
 
