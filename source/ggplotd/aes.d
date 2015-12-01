@@ -80,9 +80,9 @@ template Aes(Specs...)
     alias fieldNames = staticMap!(extractName, fieldSpecs);
 
     // TODO Also update default grouping if appropiate
-    alias defaultNames = TypeTuple!("colour", "size", "angle", "alpha", "mask", "fill");
-    alias defaultTypes = TypeTuple!(string, double, double, double, bool, double);
-    alias defaultValues = TypeTuple!(q{"black"}, 10, 0, 1, true, 0.0);
+    alias defaultNames = TypeTuple!("label","colour", "size", "angle", "alpha", "mask", "fill");
+    alias defaultTypes = TypeTuple!(string,string, double, double, double, bool, double);
+    alias defaultValues = TypeTuple!(`""`, `"black"`, 10, 0, 1, true, 0.0);
     string injectFront()
     {
         import std.format : format;
@@ -449,6 +449,7 @@ unittest
     tup.popFront;
     assertEqual(tup.front.y, 1);
     assertEqual(tup.front.colour, "white2");
+    assertEqual(tup.front.label, "");
 
     auto tup2 = Aes!(double[], "x", double[], "y")([0, 1], [2, 1]);
     assertEqual(tup2.front.y, 2);
@@ -474,7 +475,7 @@ template group(Specs...)
         static if (Specs.length == 0)
         {
             import std.typecons : TypeTuple;
-            alias Specs = TypeTuple!("alpha","colour");
+            alias Specs = TypeTuple!("alpha","colour","label");
         }
         string types = "";
         string values = "";
