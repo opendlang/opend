@@ -319,6 +319,22 @@ unittest
 unittest
 {
     import std.array : array;
+    import std.algorithm : map;
+    import std.range : repeat, iota, chain;
+    import std.random : uniform;
+    auto xs = iota(0,50,1).map!((x) => uniform(0.0,5)+uniform(0.0,5)).array;
+    auto cols = "a".repeat(25).chain("b".repeat(25)).array;
+    auto aes = Aes!(typeof(xs), "x", typeof(cols), "colour", 
+        double[], "fill", typeof(cols), "label" )( 
+            xs, cols, 0.45.repeat(xs.length).array, cols);
+    auto gg = GGPlotD().put( geomBox( aes ) );
+    gg.save( "boxplot.svg" );
+}
+
+///
+unittest
+{
+    import std.array : array;
     import std.math : sqrt;
     import std.algorithm : map;
     import std.range : iota;

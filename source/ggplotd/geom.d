@@ -531,3 +531,61 @@ unittest
     assertEqual( [1,2,3,4].limits( [0.61] ).front, 4 );
     assertEqual( [1,2,3,4].limits( [0.59] ).front, 3 );
 }
+
+/// Draw a boxplot. The "x" data is used. If labels are given then the data is grouped by the label
+auto geomBox(AES)(AES aes)
+{
+    import std.algorithm : map;
+    import std.array : array;
+    import std.range : Appender;
+
+    Appender!(Geom[]) result;
+    auto labels = NumericLabel!(string[])( 
+        aes.map!("a.label.to!string").array );
+    auto myAes = aes.merge( Aes!(typeof(labels), "label")( labels ) );
+
+    double delta = 0.2;
+    foreach( grouped; myAes.group() )
+    {
+        auto lims = grouped.map!("a.x")
+            .array.limits( [0.1,0.25,0.5,0.75,0.9] ).array;
+        auto x = grouped.front.label[0];
+        result.put(
+            geomLine( [
+                grouped.front.merge(Tuple!(double, "x", double, "y" )( 
+                    x, lims[0] )),
+                grouped.front.merge(Tuple!(double, "x", double, "y" )( 
+                    x, lims[1] )),
+                grouped.front.merge(Tuple!(double, "x", double, "y" )( 
+                    x+delta, lims[1] )),
+                grouped.front.merge(Tuple!(double, "x", double, "y" )( 
+                    x+delta, lims[2] )),
+                grouped.front.merge(Tuple!(double, "x", double, "y" )( 
+                    x-delta, lims[2] )),
+                grouped.front.merge(Tuple!(double, "x", double, "y" )( 
+                    x-delta, lims[3] )),
+                grouped.front.merge(Tuple!(double, "x", double, "y" )( 
+                    x, lims[3] )),
+                grouped.front.merge(Tuple!(double, "x", double, "y" )( 
+                    x, lims[4] )),
+
+                grouped.front.merge(Tuple!(double, "x", double, "y" )( 
+                    x, lims[3] )),
+                grouped.front.merge(Tuple!(double, "x", double, "y" )( 
+                    x+delta, lims[3] )),
+                grouped.front.merge(Tuple!(double, "x", double, "y" )( 
+                    x+delta, lims[2] )),
+                grouped.front.merge(Tuple!(double, "x", double, "y" )( 
+                    x-delta, lims[2] )),
+                grouped.front.merge(Tuple!(double, "x", double, "y" )( 
+                    x-delta, lims[1] )),
+                grouped.front.merge(Tuple!(double, "x", double, "y" )( 
+                    x, lims[1] ))
+             ] )
+        );
+
+    }
+
+    return result.data;
+}
+
