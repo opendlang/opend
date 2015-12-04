@@ -6,7 +6,7 @@ import cairo = cairo.cairo;
 
 import ggplotd.bounds;
 import ggplotd.aes;
-import ggplotd.colour : ColourID;
+import ggplotd.colour : ColourID, ColourMap;
 
 version (unittest)
 {
@@ -18,19 +18,16 @@ struct Geom
 {
     this(T)( in T tup ) //if (is(T==Tuple))
     {
-        alpha = tup.alpha;
         mask = tup.mask;
-        fill = tup.fill;
     }
 
-    alias drawFunction = cairo.Context delegate(cairo.Context context);
+    alias drawFunction = cairo.Context delegate(cairo.Context context, 
+        ColourMap colourMap);
     drawFunction draw; ///
-    ColourID colour; ///
+    ColourID[] colours; ///
     AdaptiveBounds bounds; ///
 
-    double alpha; ///
     bool mask = true; /// Whether to mask/prevent drawing outside plotting area
-    double fill;
 
     import std.typecons : Tuple;
 
@@ -56,12 +53,22 @@ auto geomPoint(AES)(AES aes)
         @property auto front()
         {
             immutable tup = _aes.front;
-            auto f = delegate(cairo.Context context) {
+            auto f = delegate(cairo.Context context, ColourMap colourMap ) 
+            {
                 auto devP = context.userToDevice(cairo.Point!double(tup.x[0], tup.y[0]));
                 context.save();
                 context.identityMatrix;
                 context.rectangle(devP.x - 0.5 * tup.size, devP.y - 0.5 * tup.size, tup.size, tup.size);
                 context.restore();
+
+                auto col = colourMap(ColourID(tup.colour));
+                import cairo.cairo : RGBA;
+
+                context.identityMatrix();
+
+                context.setSourceRGBA(RGBA(col.red, col.green, col.blue, tup.alpha));
+                context.fill();
+
                 return context;
             };
 
@@ -69,9 +76,8 @@ auto geomPoint(AES)(AES aes)
             bounds.adapt(Point(tup.x[0], tup.y[0]));
             auto geom = Geom( tup );
             geom.draw = f;
-            geom.colour = ColourID(tup.colour);
+            geom.colours ~= ColourID(tup.colour);
             geom.bounds = bounds;
-            geom.fill = geom.alpha; // Points are always filled
             return geom;
         }
 
@@ -97,7 +103,7 @@ unittest
 {
     auto aes = Aes!(double[], "x", double[], "y")([1.0], [2.0]);
     auto gl = geomPoint(aes);
-    assertEqual(gl.front.colour[1], "black");
+    assertEqual(gl.front.colours[0][1], "black");
     gl.popFront;
     assert(gl.empty);
 }
@@ -122,21 +128,35 @@ auto geomLine(AES)(AES aes)
             auto ys = NumericLabel!(typeof(groupedAes.front.front.y)[])(
                 groupedAes.front.map!((t) => t.y).array);
             auto coords = zip(xs, ys);
-            auto f = delegate(cairo.Context context) {
+
+            immutable flags = groupedAes.front.front;
+            auto f = delegate(cairo.Context context, ColourMap colourMap ) {
                 auto fr = coords.front;
                 context.moveTo(fr[0][0], fr[1][0]);
                 coords.popFront;
-                foreach (tup;
-                coords)
+                foreach (tup; coords)
                 {
                     context.lineTo(tup[0][0], tup[1][0]);
                 }
+
+                auto col = colourMap(ColourID(flags.colour));
+                import cairo.cairo : RGBA;
+
+                context.identityMatrix();
+                if (flags.fill>0)
+                {
+                    context.setSourceRGBA(RGBA(col.red, col.green, col.blue, flags.fill));
+                    context.fillPreserve();
+                }
+                context.setSourceRGBA(RGBA(col.red, col.green, col.blue, flags.alpha));
+                context.stroke();
+
                 return context;
             };
 
-            auto geom = Geom( groupedAes.front.front );
             AdaptiveBounds bounds;
             coords = zip(xs, ys);
+            auto geom = Geom(groupedAes.front.front);
             foreach (tup; coords)
             {
                 bounds.adapt(Point(tup[0][0], tup[1][0]));
@@ -146,7 +166,7 @@ auto geomLine(AES)(AES aes)
                     geom.yTickLabels ~= tup[0];
             }
             geom.draw = f;
-            geom.colour = ColourID(groupedAes.front.front.colour);
+            geom.colours ~= ColourID(groupedAes.front.front.colour);
             geom.bounds = bounds;
             return geom;
         }
@@ -181,11 +201,11 @@ unittest
     assert(gl.front.xTickLabels.empty);
     assert(gl.front.yTickLabels.empty);
 
-    assertEqual(gl.front.colour[1], "a");
+    assertEqual(gl.front.colours[0][1], "a");
     assertEqual(gl.front.bounds.min_x, 1.0);
     assertEqual(gl.front.bounds.max_x, 1.1);
     gl.popFront;
-    assertEqual(gl.front.colour[1], "b");
+    assertEqual(gl.front.colours[0][1], "b");
     assertEqual(gl.front.bounds.max_x, 3.0);
     gl.popFront;
     assert(gl.empty);
@@ -449,7 +469,7 @@ auto geomLabel(AES)(AES aes)
         @property auto front()
         {
             immutable tup = _aes.front;
-            auto f = delegate(cairo.Context context) {
+            auto f = delegate(cairo.Context context, ColourMap colourMap) {
                 context.setFontSize(14.0);
                 context.moveTo(tup.x[0], tup.y[0]);
                 context.save();
@@ -458,6 +478,12 @@ auto geomLabel(AES)(AES aes)
                 auto extents = context.textExtents(tup.label);
                 auto textSize = cairo.Point!double(0.5 * extents.width, 0.5 * extents.height);
                 context.relMoveTo(-textSize.x, textSize.y);
+
+                auto col = colourMap(ColourID(tup.colour));
+                import cairo.cairo : RGBA;
+
+                context.setSourceRGBA(RGBA(col.red, col.green, col.blue, tup.alpha));
+ 
                 context.showText(tup.label);
                 context.restore();
                 return context;
@@ -468,7 +494,7 @@ auto geomLabel(AES)(AES aes)
 
             auto geom = Geom( tup );
             geom.draw = f;
-            geom.colour = ColourID(tup.colour);
+            geom.colours ~= ColourID(tup.colour);
             geom.bounds = bounds;
  
             return geom;

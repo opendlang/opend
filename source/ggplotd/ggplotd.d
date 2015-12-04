@@ -76,18 +76,8 @@ auto drawGeom( Geom geom, ref cairo.Surface surface,
         context = cairo.Context(surface);
         context.translate(margins.left, margins.top);
     }
-    auto col = colourMap(geom.colour);
-    import cairo.cairo : RGBA;
     context = scaleFunction(context, bounds);
-    context = geom.draw(context);
-    context.identityMatrix();
-    if (geom.fill>0)
-    {
-        context.setSourceRGBA(RGBA(col.red, col.green, col.blue, geom.fill));
-        context.fillPreserve();
-    }
-    context.setSourceRGBA(RGBA(col.red, col.green, col.blue, geom.alpha));
-    context.stroke();
+    context = geom.draw(context, colourMap);
     return surface;
 }
 
@@ -129,14 +119,14 @@ struct GGPlotD
         import std.range : front;
 
         AdaptiveBounds bounds;
-        typeof(geomRange.front.colour)[] colourIDs;
+        typeof(geomRange.front.colours) colourIDs;
         auto xAxisTicks = geomRange.front.xTickLabels;
         auto yAxisTicks = geomRange.front.yTickLabels;
 
         foreach (geom; geomRange)
         {
             bounds.adapt(geom.bounds);
-            colourIDs ~= geom.colour;
+            colourIDs ~= geom.colours;
             xAxisTicks ~= geom.xTickLabels;
             yAxisTicks ~= geom.yTickLabels;
         }
