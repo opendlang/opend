@@ -293,10 +293,10 @@ Currently no heightmap/surface geom* functions are implemented, but the
 building block: geomPolygon is provided. The geomPolygon function allows
 one to draw gradients dependent on height/colour. This function 
 plots any straight/flat polygon, with the colour representing the height of the
-surface. Note that the function does not check whether the provided surface is
-flat. Because triangles are by definition flat it might be good to limit your
-usage to triangles, unless you are completely sure your polygon is complete
-flat.
+surface. Note that the function does not check whether the provided
+surface is flat. Because triangles are by definition straight it might be
+good to limit your usage to triangles, unless you are completely sure your
+polygon has no curves.
 
 ![Polygon](http://blackedder.github.io/ggplotd/images/polygon.png)
 

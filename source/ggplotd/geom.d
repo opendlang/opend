@@ -628,7 +628,7 @@ auto geomBox(AES)(AES aes)
 auto geomPolygon(AES)(AES aes)
 {
     import std.array : array;
-    import std.algorithm : map, reduce, swap;
+    import std.algorithm : map, swap;
     import ggplotd.geometry;
     // Turn into vertices.
     auto vertices = aes.map!( (t) => Vertex3D( t.x, t.y, t.colour ) );
