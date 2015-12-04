@@ -208,14 +208,13 @@ void main()
 ## Extending GGplotD
 
 Due to GGplotD’s design it is relatively straightforward to extend GGplotD to
-support new types of plots. This is especially true if your function depends
-on the already implemented base types geomLine and geomPoint. The main reason
-for not having added more functions yet is lack of time. If you decide to
-implement your own function then **please** open a pull request or at least
-copy your code into an issue. That way we can all benefit from your work :)
-Even if you think the code is not up to scratch it will be easier for the
+support new types of plots. This is especially true if your function depends on
+the already implemented base types geomLine, geomPoint and geomPolygon. The
+main reason for not having added more functions yet is lack of time. If you
+decide to implement your own function then **please** open a pull request or at
+least copy your code into an issue. That way we can all benefit from your work
+:) Even if you think the code is not up to scratch it will be easier for the
 maintainer(s) to take your code and adapt it than to start from scrap.
-
 
 ### geom*
 
@@ -287,6 +286,38 @@ functions is quite blurry; it could be argued that geomHist is a stat
 function. If you are interested in adding support for more advanced
 statistics then you should use the [geom* example](#geom) as a starting
 point. 
+
+### 3D/heightmap/surface plots
+
+Currently no heightmap/surface geom* functions are implemented, but the
+building block: geomPolygon is provided. The geomPolygon function allows
+one to draw gradients dependent on height/colour. This function 
+plots any straight/flat polygon, with the colour representing the height of the
+surface. Note that the function does not check whether the provided surface is
+flat. Because triangles are by definition flat it might be good to limit your
+usage to triangles, unless you are completely sure your polygon is complete
+flat.
+
+![Polygon](http://blackedder.github.io/ggplotd/images/polygon.png)
+
+```D 
+
+import ggplotd.ggplotd;
+import ggplotd.geom;
+import ggplotd.aes;
+
+void main()
+{
+    auto gg = GGPlotD().put( geomPolygon( 
+        Aes!(
+            double[], "x",
+            double[], "y",
+            double[], "colour" )(
+            [1,0,0], [ 1, 1, 0 ], [1,0.1,0] ) ) );
+    gg.save( "polygon.png" );
+}
+
+```
 
 ## References
 

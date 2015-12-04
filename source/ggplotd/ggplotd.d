@@ -362,5 +362,5 @@ unittest
             double[], "y",
             double[], "colour" )(
             [1,0,0], [ 1, 1, 0 ], [1,0.1,0] ) ) );
-    gg.save( "polygon.png", 100, 100 );
+    gg.save( "polygon.png" );
 }
