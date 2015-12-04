@@ -624,3 +624,63 @@ auto geomBox(AES)(AES aes)
     return result.data;
 }
 
+///
+auto geomPolygon(AES)(AES aes)
+{
+    import std.array : array;
+    import std.algorithm : map, reduce, swap;
+    import ggplotd.geometry;
+    // Turn into vertices.
+    auto vertices = aes.map!( (t) => Vertex3D( t.x, t.y, t.colour ) );
+
+    // Find lowest, highest
+    auto triangle = vertices.array;
+    if (triangle[1].z < triangle[0].z)
+        swap( triangle[1], triangle[0] );
+    if (triangle[2].z < triangle[0].z)
+        swap( triangle[2], triangle[0] );
+    if (triangle[1].z > triangle[2].z)
+        swap( triangle[1], triangle[2] );
+
+    if (triangle.length > 3)
+        foreach( v; triangle[3..$] )
+        {
+            if (v.z < triangle[0].z)
+                swap( triangle[0], v );
+            else if ( v.z > triangle[2].z )
+                swap( triangle[2], v );
+        }
+    auto gV = gradientVector( triangle[0..3] );
+
+    immutable flags = aes.front;
+
+    auto geom = Geom( flags );
+
+    // Define drawFunction
+    auto f = delegate(cairo.Context context, ColourMap colourMap ) 
+    {
+        auto gradient = new cairo.LinearGradient( gV[0].x, gV[0].y, 
+            gV[1].x, gV[1].y );
+
+        auto col0 = colourMap(ColourID(gV[0].z));
+        auto col1 = colourMap(ColourID(gV[1].z));
+        import cairo.cairo : RGBA;
+        gradient.addColorStopRGBA( 0,
+            RGBA(col0.red, col0.green, col0.blue, flags.alpha));
+        gradient.addColorStopRGBA( 1,
+            RGBA(col1.red, col1.green, col1.blue, flags.alpha));
+        context.moveTo( vertices.front.x, vertices.front.y );
+        vertices.popFront;
+        foreach( v; vertices )
+            context.lineTo( v.x, v.y );
+        context.setSource( gradient );
+        context.fill;
+        return context;
+    };
+
+    geom.draw = f;
+
+    geom.colours = aes.map!((t) => ColourID(t.colour)).array;
+
+    return [geom];
+}

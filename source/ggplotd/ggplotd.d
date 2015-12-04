@@ -352,3 +352,15 @@ unittest
     // Saving on a 500x300 pixel surface
     gg.save( "axes.svg", 500, 300 );
 }
+
+///
+unittest
+{
+    auto gg = GGPlotD().put( geomPolygon( 
+        Aes!(
+            double[], "x",
+            double[], "y",
+            double[], "colour" )(
+            [1,0,0], [ 1, 1, 0 ], [1,0.1,0] ) ) );
+    gg.save( "polygon.png", 100, 100 );
+}
