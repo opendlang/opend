@@ -17,6 +17,21 @@ version (unittest)
     import dunit.toolkit;
 }
 
+alias TitleFunction = Title delegate(Title);
+
+// Currently only holds the title. In the future could also be used to store details on location etc.
+struct Title
+{
+    /// The actual title
+    string title;
+}
+
+///
+TitleFunction title( string title )
+{
+    return delegate(Title t) { t.title = title; return t; };
+}
+
 private auto createEmptySurface( string fname, int width, int height )
 {
     cairo.Surface surface;
@@ -55,6 +70,21 @@ private auto createEmptySurface( string fname, int width, int height )
     backcontext.rectangle(0, 0, width, height);
     backcontext.fill();
 
+    return surface;
+}
+
+auto drawTitle( in Title title, ref cairo.Surface surface,
+    in Margins margins, int width, int height )
+{
+    auto context = cairo.Context(surface);
+    context.setFontSize(16.0);
+    context.moveTo( width/2, margins.top/2 );
+    auto extents = context.textExtents(title.title);
+
+    auto textSize = cairo.Point!double(0.5 * extents.width, 0.5 * extents.height);
+    context.relMoveTo(-textSize.x, textSize.y);
+
+    context.showText(title.title);
     return surface;
 }
 
@@ -99,6 +129,8 @@ struct GGPlotD
     YAxis yaxis;
 
     Margins margins;
+
+    Title title;
 
     ScaleType scaleFunction;
 
@@ -166,6 +198,9 @@ struct GGPlotD
                 colourMap, scaleFunction, bounds, 
                 margins, width, height );
         }
+
+        // Plot title
+        surface = title.drawTitle( surface, margins, width, height );
  
         if (pngWrite)
             (cast(cairo.ImageSurface)(surface)).writeToPNG(fname);
@@ -191,6 +226,10 @@ struct GGPlotD
         static if (is(T==YAxisFunction))
         {
             yaxis = rhs( yaxis );
+        }
+        static if (is(T==TitleFunction))
+        {
+            title = rhs( title );
         }
         static if (is(T==Margins))
         {
@@ -348,6 +387,10 @@ unittest
 
     // Change Margins
     gg.put( Margins( 60, 60, 40, 30 ) );
+
+    // Set a title
+    gg.put( title( "And now for something completely different" ) );
+    assertEqual( gg.title.title, "And now for something completely different" );
 
     // Saving on a 500x300 pixel surface
     gg.save( "axes.svg", 500, 300 );

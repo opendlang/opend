@@ -163,7 +163,7 @@ void main() {
 
 ```
 
-#### Custom axes, margins and image size
+#### Custom axes, margins, image size and title
 
 ![Manipulating axes](http://blackedder.github.io/ggplotd/images/axes.svg)
 
@@ -199,6 +199,10 @@ void main()
 
     // Change margins
     gg.put( Margins( 60, 60, 40, 30 ) );
+
+
+    // Set a title 
+    gg.put( title( "And now for something completely different" ) );
 
     // Saving as 500x300 pixel svg file
     gg.save( "axes.svg", 500, 300 );
