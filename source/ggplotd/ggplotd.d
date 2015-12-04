@@ -117,7 +117,7 @@ struct Margins
     size_t left = 50; ///
     size_t right = 20; ///
     size_t bottom = 50; ///
-    size_t top = 20; ///
+    size_t top = 40; ///
 }
 
 ///
