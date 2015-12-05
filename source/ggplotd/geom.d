@@ -163,7 +163,7 @@ auto geomLine(AES)(AES aes)
                 if (!xs.numeric)
                     geom.xTickLabels ~= tup[0];
                 if (!ys.numeric)
-                    geom.yTickLabels ~= tup[0];
+                    geom.yTickLabels ~= tup[1];
             }
             geom.draw = f;
             geom.colours ~= ColourID(groupedAes.front.front.colour);
@@ -390,6 +390,7 @@ auto geomHist(AES)(AES aes)
 /// others are ticks (perpendicular)
 auto geomAxis(AES)(AES aes, double tickLength, string label)
 {
+    import std.algorithm : find;
     import std.array : array;
     import std.range : chain, empty, repeat;
     import std.math : sqrt, pow;
@@ -404,8 +405,13 @@ auto geomAxis(AES)(AES aes, double tickLength, string label)
 
     auto colour = aes.front.colour;
     double[2] orig = [aes.front.x, aes.front.y];
+    auto toDir = aes.find!("a.x != b.x || a.y != b.y")(aes.front).front; 
     double[2] direction;
-
+    direction = [toDir.x - orig[0], toDir.y - orig[1]];
+    auto dirLength = sqrt(pow(direction[0], 2) + pow(direction[1], 2));
+    direction[0] *= tickLength / dirLength;
+    direction[1] *= tickLength / dirLength;
+ 
     while (!aes.empty)
     {
         auto tick = aes.front;
@@ -417,14 +423,6 @@ auto geomAxis(AES)(AES aes, double tickLength, string label)
         // Draw ticks perpendicular to main axis;
         if (xs.length > 1 && !aes.empty)
         {
-            if (xs.length == 2)
-            {
-                // Calculate tick direction and size
-                direction = [tick.x - orig[0], tick.y - orig[1]];
-                auto dirLength = sqrt(pow(direction[0], 2) + pow(direction[1], 2));
-                direction[0] *= tickLength / dirLength;
-                direction[1] *= tickLength / dirLength;
-            }
             xs ~= [tick.x + direction[1], tick.x];
             ys ~= [tick.y + direction[0], tick.y];
 
