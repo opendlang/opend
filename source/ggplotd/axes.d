@@ -215,13 +215,6 @@ auto axisAes(string type, double minC, double maxC, double lvl, Tuple!(double, s
         labels = ticksLoc.map!((a) => a.to!string).array;
     }
 
-    // Make sure first two positions are not the same;
-    while (ticksLoc[1] == ticksLoc[0])
-    {
-        ticksLoc.popFront;
-        labels.popFront;
-    }
-
     if (type == "x")
     {
         return Aes!(double[], "x", double[], "y", string[], "label", double[], "angle")(

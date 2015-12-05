@@ -166,28 +166,44 @@ struct GGPlotD
         auto colourMap = createColourMap(colourIDs);
 
         // Axis
-        import std.algorithm : sort, uniq;
+        import std.algorithm : sort, uniq, min, max;
         import std.range : chain;
         import std.array : array;
         import ggplotd.axes;
 
+        // If ticks are provided then we make sure the bounds include them
+        auto sortedTicks = xAxisTicks.sort().uniq.array;
+        if (!sortedTicks.empty)
+        {
+            bounds.min_x = min( bounds.min_x, sortedTicks[0][0] );
+            bounds.max_x = max( bounds.max_x, sortedTicks[$-1][0] );
+        }
         if (initialized(xaxis))
         {
             bounds.min_x = xaxis.min;
             bounds.max_x = xaxis.max;
         }
 
+        auto aesX = axisAes("x", bounds.min_x, bounds.max_x, bounds.min_y,
+            sortedTicks );
+
+        sortedTicks = yAxisTicks.sort().uniq.array;
+        if (!sortedTicks.empty)
+        {
+            bounds.min_y = min( bounds.min_y, sortedTicks[0][0] );
+            bounds.max_y = max( bounds.max_y, sortedTicks[$-1][0] );
+        }
         if (initialized(yaxis))
         {
             bounds.min_y = yaxis.min;
             bounds.max_y = yaxis.max;
         }
 
-        auto aesX = axisAes("x", bounds.min_x, bounds.max_x, bounds.min_y,
-            xAxisTicks.sort().uniq.array);
-
         auto aesY = axisAes("y", bounds.min_y, bounds.max_y, bounds.min_x,
-            yAxisTicks.sort().uniq.array);
+            sortedTicks );
+
+        import std.stdio;
+        aesY.writeln;
 
         auto gR = chain(geomAxis(aesX, 10.0*bounds.height / height, xaxis.label), geomAxis(aesY, 10.0*bounds.width / width, yaxis.label));
 
@@ -268,10 +284,11 @@ unittest
 unittest
 {
     auto aes = Aes!(string[], "x", string[], "y", string[], "colour")(["a",
-        "b", "c", "b"], ["a", "b", "b", "a"], ["b", "b", "b", "b"]);
+        "b", "c", "b"], ["x", "y", "y", "x"], ["b", "b", "b", "b"]);
     auto gg = GGPlotD();
     gg + geomLine(aes) + scale();
     gg.save( "test6.png");
+    ///assertEqual( true, false );
 }
 
 ///
