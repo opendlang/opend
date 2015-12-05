@@ -3,10 +3,15 @@ module ggplotd.scale;
 import cairo = cairo.cairo;
 import ggplotd.bounds : Bounds, width, height;
 
+alias ScaleType = 
+    cairo.Context delegate(cairo.Context context, Bounds bounds,
+    double width, double height);
+
 ///
-auto scale(double pixelWidth = 400, double pixelHeight = 400)
+ScaleType scale()
 {
-    return (cairo.Context context, Bounds bounds) {
+    return (cairo.Context context, Bounds bounds, 
+        double pixelWidth, double pixelHeight) {
         context.translate(0, pixelHeight);
         context.scale(pixelWidth / bounds.width, -pixelHeight / bounds.height);
         context.translate(-bounds.min_x, -bounds.min_y);

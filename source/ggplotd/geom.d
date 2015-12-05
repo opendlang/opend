@@ -405,8 +405,7 @@ auto geomAxis(AES)(AES aes, double tickLength, string label)
 
     auto colour = aes.front.colour;
     auto toDir = aes.find!("a.x != b.x || a.y != b.y")(aes.front).front; 
-    double[2] direction;
-    direction = [toDir.x - aes.front.x, toDir.y - aes.front.y];
+    auto direction = [toDir.x - aes.front.x, toDir.y - aes.front.y];
     auto dirLength = sqrt(pow(direction[0], 2) + pow(direction[1], 2));
     direction[0] *= tickLength / dirLength;
     direction[1] *= tickLength / dirLength;

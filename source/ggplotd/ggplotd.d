@@ -88,9 +88,6 @@ auto drawTitle( in Title title, ref cairo.Surface surface,
     return surface;
 }
 
-private alias ScaleType = 
-    cairo.Context delegate(cairo.Context context, Bounds bounds);
-
 auto drawGeom( Geom geom, ref cairo.Surface surface,
     ColourMap colourMap, ScaleType scaleFunction, in Bounds bounds, 
     in Margins margins, int width, int height )
@@ -106,7 +103,10 @@ auto drawGeom( Geom geom, ref cairo.Surface surface,
         context = cairo.Context(surface);
         context.translate(margins.left, margins.top);
     }
-    context = scaleFunction(context, bounds);
+    import std.conv : to;
+    context = scaleFunction(context, bounds,
+        width.to!double - (margins.left+margins.right),
+        height.to!double - (margins.top+margins.bottom));
     context = geom.draw(context, colourMap);
     return surface;
 }
@@ -146,8 +146,7 @@ struct GGPlotD
         }
 
         if (!initScale)
-            scaleFunction = scale( width - (margins.left+margins.right), 
-            height - (margins.bottom+margins.top) ); // This needs to be removed later
+            scaleFunction = scale(); // This needs to be removed later
         import std.range : front;
 
         AdaptiveBounds bounds;
@@ -201,9 +200,6 @@ struct GGPlotD
 
         auto aesY = axisAes("y", bounds.min_y, bounds.max_y, bounds.min_x,
             sortedTicks );
-
-        import std.stdio;
-        aesY.writeln;
 
         auto gR = chain(geomAxis(aesX, 10.0*bounds.height / height, xaxis.label), geomAxis(aesY, 10.0*bounds.width / width, yaxis.label));
 
@@ -288,7 +284,7 @@ unittest
     auto gg = GGPlotD();
     gg + geomLine(aes) + scale();
     gg.save( "test6.png");
-    ///assertEqual( true, false );
+    //assertEqual( true, false );
 }
 
 ///
