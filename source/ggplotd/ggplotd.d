@@ -284,7 +284,6 @@ unittest
     auto gg = GGPlotD();
     gg + geomLine(aes) + scale();
     gg.save( "test6.png");
-    //assertEqual( true, false );
 }
 
 ///
