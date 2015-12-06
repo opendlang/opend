@@ -183,7 +183,11 @@ struct GGPlotD
             bounds.max_x = xaxis.max;
         }
 
-        auto aesX = axisAes("x", bounds.min_x, bounds.max_x, bounds.min_y,
+        import std.math : isNaN;
+        auto offset = bounds.min_y;
+        if (!isNaN(xaxis.offset))
+            offset = xaxis.offset;
+        auto aesX = axisAes("x", bounds.min_x, bounds.max_x, offset,
             sortedTicks );
 
         sortedTicks = yAxisTicks.sort().uniq.array;
@@ -198,7 +202,10 @@ struct GGPlotD
             bounds.max_y = yaxis.max;
         }
 
-        auto aesY = axisAes("y", bounds.min_y, bounds.max_y, bounds.min_x,
+        offset = bounds.min_y;
+        if (!isNaN(yaxis.offset))
+            offset = yaxis.offset;
+        auto aesY = axisAes("y", bounds.min_y, bounds.max_y, offset,
             sortedTicks );
 
         auto gR = chain(geomAxis(aesX, 10.0*bounds.height / height, xaxis.label), geomAxis(aesY, 10.0*bounds.width / width, yaxis.label));
@@ -396,6 +403,9 @@ unittest
     gg.put( yaxisRange( 0, 2.0 ) ).put( yaxisLabel( "My ylabel" ) );
     assertEqual( gg.yaxis.max, 2.0 );
     assertEqual( gg.yaxis.label, "My ylabel" );
+
+    // change offset
+    gg.put( xaxisOffset( 0.25 ) ).put( yaxisOffset( 0.5 ) );
 
     // Change Margins
     gg.put( Margins( 60, 60, 40, 30 ) );

@@ -28,6 +28,9 @@ struct Axis
     double min_tick = -1;
     ///
     double tick_width = 0.2;
+
+    ///
+    double offset;
 }
 
 ///
@@ -318,3 +321,24 @@ unittest
     auto yf = yaxisLabel( "y" );
     assertEqual( yf(yax).label, "y" );
 }
+
+// Set the range of an axis
+mixin( xy( q{auto axisOffset( double offset ) 
+{ 
+    AxisFunction func = ( Axis axis ) { axis.offset = offset; return axis; }; 
+    return func;
+}} ) );
+
+///
+unittest
+{
+    XAxis xax;
+    auto xf = xaxisOffset( 1 );
+    assertEqual( xf(xax).offset, 1 );
+
+    YAxis yax;
+    auto yf = yaxisOffset( 2 );
+    assertEqual( yf(yax).offset, 2 );
+}
+
+

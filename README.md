@@ -197,9 +197,11 @@ void main()
     // Setting range and label for yaxis
     gg.put( yaxisRange( 0, 2.0 ) ).put( yaxisLabel( "My ylabel" ) );
 
+    // change offset
+    gg.put( xaxisOffset( 0.25 ) ).put( yaxisOffset( 0.5 ) );
+
     // Change margins
     gg.put( Margins( 60, 60, 40, 30 ) );
-
 
     // Set a title 
     gg.put( title( "And now for something completely different" ) );
