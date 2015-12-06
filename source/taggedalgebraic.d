@@ -111,16 +111,14 @@ struct TaggedAlgebraic(U) if (is(U == union) || is(U == struct))
 	{
 		~this()
 		{
-			switch (m_kind) {
-				default: break;
+			final switch (m_kind) {
 				foreach (i, tname; fieldNames) {
 					alias T = typeof(__traits(getMember, U, tname));
-					static if (hasElaborateDestructor!T)
-					{
-						case __traits(getMember, Kind, tname):
+					case __traits(getMember, Kind, tname):
+						static if (hasElaborateDestructor!T) {
 							.destroy(trustedGet!tname);
-							return;
-					}
+						}
+						return;
 				}
 			}
 		}
@@ -131,13 +129,14 @@ struct TaggedAlgebraic(U) if (is(U == union) || is(U == struct))
 	{
 		import std.conv : to;
 
-		switch (m_kind) {
-			default: assert(false, "Cannot cast a "~(cast(Kind)m_kind).to!string~" value to "~T.stringof);
+		final switch (m_kind) {
 			foreach (i, FT; FieldTypes) {
-				static if (is(typeof(cast(T)trustedGet!(fieldNames[i])) == T)) {
-					case __traits(getMember, Kind, fieldNames[i]):
-						return cast(T)trustedGet!(fieldNames[i]);
-				}
+				case __traits(getMember, Kind, fieldNames[i]):
+					static if (is(typeof(trustedGet!(fieldNames[i])) : T)) {
+						return trustedGet!(fieldNames[i]);
+					} else {
+						assert(false, "Cannot cast a "~(cast(Kind)m_kind).to!string~" value to "~T.stringof);
+					}
 			}
 		}
 		assert(false); // never reached
