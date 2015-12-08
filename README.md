@@ -39,7 +39,7 @@ available geom* functions see: http://blackedder.github.io/ggplotd/geom.html
 
 ### Examples
 
-At version v0.2.0 we have basic support for simple plots.
+At version v0.3.3 we have basic support for simple plots.
 
 ![A noisy figure](http://blackedder.github.io/ggplotd/images/noise.png)
 ```D 
@@ -280,7 +280,7 @@ auto geomHist(AES)(AES aes)
 
 Note that the above highlights the drawing part of the function.
 Converting the data into bins is done in a separate bin function, which
-can be found in the [code](./source/ggplotd/geom.d#L217).
+can be found in the [code](./source/ggplotd/geom.d#L241).
 
 ### stat*
 
