@@ -134,17 +134,8 @@ struct GGPlotD
 
     ScaleType scaleFunction;
 
-    ///
-    void save( string fname, int width = 470, int height = 470 )
+    auto drawToSurface( ref cairo.Surface surface, int width, int height )
     {
-        bool pngWrite = false;
-        auto surface = createEmptySurface( fname, width, height );
-
-        if (fname[$ - 3 .. $] == "png")
-        {
-            pngWrite = true;
-        }
-
         if (!initScale)
             scaleFunction = scale(); // This needs to be removed later
         import std.range : front;
@@ -202,7 +193,7 @@ struct GGPlotD
             bounds.max_y = yaxis.max;
         }
 
-        offset = bounds.min_y;
+        offset = bounds.min_x;
         if (!isNaN(yaxis.offset))
             offset = yaxis.offset;
         auto aesY = axisAes("y", bounds.min_y, bounds.max_y, offset,
@@ -220,7 +211,23 @@ struct GGPlotD
 
         // Plot title
         surface = title.drawTitle( surface, margins, width, height );
+        return surface;
+    }
  
+
+    ///
+    void save( string fname, int width = 470, int height = 470 )
+    {
+        bool pngWrite = false;
+        auto surface = createEmptySurface( fname, width, height );
+
+        surface = drawToSurface( surface, width, height );
+
+        if (fname[$ - 3 .. $] == "png")
+        {
+            pngWrite = true;
+        }
+
         if (pngWrite)
             (cast(cairo.ImageSurface)(surface)).writeToPNG(fname);
     }
