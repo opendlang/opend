@@ -73,6 +73,7 @@ private auto createEmptySurface( string fname, int width, int height )
     return surface;
 }
 
+///
 auto drawTitle( in Title title, ref cairo.Surface surface,
     in Margins margins, int width, int height )
 {
@@ -134,6 +135,7 @@ struct GGPlotD
 
     ScaleType scaleFunction;
 
+    ///
     auto drawToSurface( ref cairo.Surface surface, int width, int height )
     {
         if (!initScale)
