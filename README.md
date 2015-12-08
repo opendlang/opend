@@ -226,12 +226,13 @@ maintainer(s) to take your code and adapt it than to start from scrap.
 
 In general a geom* function reads the data, does some transformation on it
 and then returns a struct containing the transformed result. In GGPlotD
-the low level geom* function such as geomLine and geomPoint draw directly
-to a cairo.Context. Luckily most higher level geom* functions can just
-rely on calling geomLine and geomPoint. For reference see below for the
-geomHist drawing implementation. Again if you decide to define your own
-function then please let us know and send us the code. That way we can add
-the function to the library and everyone can benefit.
+the low level geom* function such as geomLine, geomPoint and geomPolygon
+draw directly to a cairo.Context. Luckily most higher level geom*
+functions can just rely on calling geomLine, geomPoint and geomPolygon.
+For reference see below for the geomHist drawing implementation. Again if
+you decide to define your own function then please let us know and send us
+the code. That way we can add the function to the library and everyone can
+benefit.
 
 ```D 
 
