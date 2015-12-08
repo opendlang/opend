@@ -211,33 +211,6 @@ void main()
 }
 ```
 
-## Using from other programs
-
-If you want to use ggplotd to draw the plots, but keep the plot in memory,
-you can create an image surface and use drawToSurface to draw to it,
-without saving it to file.
-
-```D
-
-auto width = 470;
-auto height = 350;
-
-auto gg = GGPlotD();
-
-// Do what you want, i.e. add lines, add points etc. 
-// ...
-
-// Create and draw to the surface. The cairo.Format you want probably 
-// depends on what you need to do with it afterwards.
-
-auto surface = new cairo.ImageSurface(cairo.Format.CAIRO_FORMAT_ARGB32,
-    width, height); 
-surface = gg.drawToSurface( surface, width, height );
-
-// Use the resulting surface in your program
-
-```
-
 ## Extending GGplotD
 
 Due to GGplotD’s design it is relatively straightforward to extend GGplotD to
@@ -351,6 +324,33 @@ void main()
 }
 
 ```
+
+## Usage as a library
+
+If you want to use ggplotd to draw the plots, but keep the plot in memory,
+you can create an image surface and use drawToSurface to draw to it,
+without saving it to file.
+
+```D
+
+auto width = 470;
+auto height = 350;
+
+auto gg = GGPlotD();
+
+// Do what you want, i.e. add lines, add points etc. 
+// ...
+
+// Create and draw to the surface. The cairo.Format you want probably 
+// depends on what you need to do with it afterwards.
+auto surface = new cairo.ImageSurface(cairo.Format.CAIRO_FORMAT_ARGB32,
+    width, height); 
+surface = gg.drawToSurface( surface, width, height );
+
+// Use the resulting surface in your program
+
+```
+
 
 ## References
 
