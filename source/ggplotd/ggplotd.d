@@ -314,6 +314,7 @@ unittest
 ///
 unittest
 {
+    /// http://blackedder.github.io/ggplotd/images/noise.png
     import std.array : array;
     import std.math : sqrt;
     import std.algorithm : map;
@@ -349,6 +350,7 @@ unittest
 ///
 unittest
 {
+    /// http://blackedder.github.io/ggplotd/images/hist.png
     import std.array : array;
     import std.algorithm : map;
     import std.range : repeat, iota;
@@ -368,6 +370,7 @@ unittest
 ///
 unittest
 {
+    /// http://blackedder.github.io/ggplotd/images/filled_hist.svg
     import std.array : array;
     import std.algorithm : map;
     import std.range : repeat, iota, chain;
@@ -381,9 +384,10 @@ unittest
     gg.save( "filled_hist.svg" );
 }
 
-///
+/// Boxplot example
 unittest
 {
+    /// http://blackedder.github.io/ggplotd/images/boxplot.svg
     import std.array : array;
     import std.algorithm : map;
     import std.range : repeat, iota, chain;
@@ -437,9 +441,10 @@ unittest
     gg.save( "axes.svg", 500, 300 );
 }
 
-///
+/// Polygon
 unittest
 {
+    /// http://blackedder.github.io/ggplotd/images/polygon.png
     auto gg = GGPlotD().put( geomPolygon( 
         Aes!(
             double[], "x",
