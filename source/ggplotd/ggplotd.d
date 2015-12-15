@@ -397,11 +397,10 @@ unittest
     gg.save( "boxplot.svg" );
 }
 
-/// Example changing axes details
-///
-/// http://blackedder.github.io/ggplotd/images/axes.svg
+/// Changing axes details
 unittest
 {
+    /// http://blackedder.github.io/ggplotd/images/axes.svg
     import std.array : array;
     import std.math : sqrt;
     import std.algorithm : map;
@@ -451,11 +450,9 @@ unittest
 }
 
 /// Setting background colour
-///
-/// See_Also:
-///     http://blackedder.github.io/ggplotd/images/background.svg
 unittest
 {
+    /// http://blackedder.github.io/ggplotd/images/background.svg
     import ggplotd.theme;
     auto gg = GGPlotD().put( background( RGBA(0.7,0.7,0.7,1) ) );
     gg.put( geomPoint( 
