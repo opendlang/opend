@@ -450,9 +450,10 @@ unittest
     gg.save( "polygon.png" );
 }
 
-/// Example setting background colour
+/// Setting background colour
 ///
-/// http://blackedder.github.io/ggplotd/images/background.svg
+/// See_Also:
+///     http://blackedder.github.io/ggplotd/images/background.svg
 unittest
 {
     import ggplotd.theme;
