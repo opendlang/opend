@@ -3,7 +3,7 @@ module ggplotd.colour;
 import std.range : ElementType;
 import std.typecons : Tuple;
 
-import cairo.cairo : RGB;
+import cairo.cairo : RGBA;
 
 //import std.experimental.color.conv;
 //import std.experimental.color.rgb;
@@ -21,7 +21,7 @@ HCY to RGB
 
 H(ue) 0-360, C(hroma) 0-1, Y(Luma) 0-1
 +/
-RGB hcyToRGB(double h, double c, double y)
+RGBA hcyToRGB(double h, double c, double y)
 {
     import std.math : abs;
 
@@ -43,7 +43,7 @@ RGB hcyToRGB(double h, double c, double y)
     else if (ha < 6)
         rgb1 = Tuple!(double, double, double)(c, 0, x);
     auto m = y - (.3 * rgb1[0] + .59 * rgb1[1] + .11 * rgb1[2]);
-    return RGB(rgb1[0] + m, rgb1[1] + m, rgb1[2] + m);
+    return RGBA(rgb1[0] + m, rgb1[1] + m, rgb1[2] + m, 1);
 }
 
 /++
@@ -54,12 +54,13 @@ RGB hcyToRGB(double h, double c, double y)
     +/
 auto createNamedColours()
 {
-    RGB[string] nameMap;
-    nameMap["black"] = RGB(0, 0, 0);
-    nameMap["white"] = RGB(1, 1, 1);
-    nameMap["red"] = RGB(1, 0, 0);
-    nameMap["green"] = RGB(0, 1, 0);
-    nameMap["red"] = RGB(0, 0, 1);
+    RGBA[string] nameMap;
+    nameMap["black"] = RGBA(0, 0, 0, 1);
+    nameMap["white"] = RGBA(1, 1, 1, 1);
+    nameMap["red"] = RGBA(1, 0, 0, 1);
+    nameMap["green"] = RGBA(0, 1, 0, 1);
+    nameMap["red"] = RGBA(0, 0, 1, 1);
+    nameMap["none"] = RGBA(0, 0, 0, 0);
     return nameMap;
 }
 
@@ -74,15 +75,31 @@ struct ColourID
         import std.math : isNumeric;
         import std.conv : to;
 
+        id[2] = RGBA(-1,-1,-1,-1);
+
         static if (isNumeric!T)
         {
             id[0] = setId.to!double;
-        }
-        else
-            id[1] = setId.to!string;
+        } else
+          static if (is(T==RGBA))
+            id[2] = setId;
+          else
+          {
+              import cairo.cairo : RGB;
+              static if (is(T==RGB))
+                id[2] = RGBA(setId.red, setId.green, setId.blue, 1);
+              else
+                id[1] = setId.to!string;
+          }
     }
 
-    Tuple!(double, string) id; ///
+    /// Initialize using rgba colour
+    this( double r, double g, double b, double a = 1 )
+    {
+        id[2] = RGBA( r, g, b, a );
+    }
+
+    Tuple!(double, string, RGBA) id; ///
 
     alias id this; ///
 }
@@ -91,6 +108,7 @@ unittest
 {
     import std.math : isNaN;
     import std.range : empty;
+    import cairo.cairo : RGB;
 
     auto cID = ColourID("a");
     assert(isNaN(cID[0]));
@@ -98,6 +116,13 @@ unittest
     auto numID = ColourID(0);
     assertEqual(numID[0], 0);
     assert(numID[1].empty);
+    assertEqual( numID[2].red, -1 );
+
+    cID = ColourID(RGBA(0,0,0,0));
+    assertEqual( cID[2].red, 0 );
+
+    cID = ColourID(RGB(1,1,1));
+    assertEqual( cID[2].red, 1 );
 }
 
 import std.range : isInputRange;
@@ -156,7 +181,7 @@ struct ColourIDRange(T) if (isInputRange!T && is(ElementType!T == ColourID))
 private:
     T original;
     //E[double] toLabelMap;
-    RGB[string] namedColours;
+    RGBA[string] namedColours;
 }
 
 unittest
@@ -214,7 +239,7 @@ private auto safeMin(T)(T a, T b)
     return min(a, b);
 }
 
-alias ColourMap = RGB delegate(ColourID tup);
+alias ColourMap = RGBA delegate(ColourID tup);
 
 ///
 auto createColourMap(R)(R colourIDs) if (is(ElementType!R == Tuple!(double,
@@ -233,7 +258,9 @@ auto createColourMap(R)(R colourIDs) if (is(ElementType!R == Tuple!(double,
     auto namedColours = createNamedColours;
     //RGB!("rgba", float)
     return (ColourID tup) {
-        if (tup[1] in namedColours)
+        if (tup[2].red >= 0)
+            return tup[2];
+        else if (tup[1] in namedColours)
             return namedColours[tup[1]];
         else if (isNaN(tup[0]))
             return gradient(validatedIDs.labelMap[tup[1]], minmax[0], minmax[1]);
@@ -250,8 +277,8 @@ unittest
         ColourID("b")));
 
     assertEqual(createColourMap([ColourID("a"), ColourID("b")])(ColourID("black")),
-        RGB(0, 0, 0));
+        RGBA(0, 0, 0, 1));
 
-    assertEqual(createColourMap([ColourID("black")])(ColourID("black")), RGB(0, 0,
-        0));
+    assertEqual(createColourMap([ColourID("black")])(ColourID("black")), RGBA(0, 0,
+        0, 1));
 }
