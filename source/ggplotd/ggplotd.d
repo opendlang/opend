@@ -11,6 +11,7 @@ import ggplotd.colour;
 import ggplotd.geom;
 import ggplotd.bounds;
 import ggplotd.scale;
+import ggplotd.theme;
 
 version (unittest)
 {
@@ -32,7 +33,8 @@ TitleFunction title( string title )
     return delegate(Title t) { t.title = title; return t; };
 }
 
-private auto createEmptySurface( string fname, int width, int height )
+private auto createEmptySurface( string fname, int width, int height,
+    RGBA colour )
 {
     cairo.Surface surface;
 
@@ -66,9 +68,10 @@ private auto createEmptySurface( string fname, int width, int height )
     }
 
     auto backcontext = cairo.Context(surface);
-    backcontext.setSourceRGB(1, 1, 1);
+    backcontext.setSourceRGBA(colour);
     backcontext.rectangle(0, 0, width, height);
-    backcontext.fill();
+    backcontext.fillPreserve();
+    backcontext.stroke();
 
     return surface;
 }
@@ -132,6 +135,7 @@ struct GGPlotD
     Margins margins;
 
     Title title;
+    Theme theme;
 
     ScaleType scaleFunction;
 
@@ -221,7 +225,8 @@ struct GGPlotD
     void save( string fname, int width = 470, int height = 470 )
     {
         bool pngWrite = false;
-        auto surface = createEmptySurface( fname, width, height );
+        auto surface = createEmptySurface( fname, width, height,
+            theme.backgroundColour );
 
         surface = drawToSurface( surface, width, height );
 
@@ -258,6 +263,10 @@ struct GGPlotD
         static if (is(T==TitleFunction))
         {
             title = rhs( title );
+        }
+        static if (is(T==ThemeFunction))
+        {
+            theme = rhs( theme );
         }
         static if (is(T==Margins))
         {
@@ -388,7 +397,9 @@ unittest
     gg.save( "boxplot.svg" );
 }
 
+/// Example changing axes details
 ///
+/// http://blackedder.github.io/ggplotd/images/axes.svg
 unittest
 {
     import std.array : array;
@@ -437,4 +448,20 @@ unittest
             double[], "colour" )(
             [1,0,0], [ 1, 1, 0 ], [1,0.1,0] ) ) );
     gg.save( "polygon.png" );
+}
+
+/// Example setting background colour
+///
+/// http://blackedder.github.io/ggplotd/images/background.svg
+unittest
+{
+    import ggplotd.theme;
+    auto gg = GGPlotD().put( background( RGBA(0.7,0.7,0.7,1) ) );
+    gg.put( geomPoint( 
+        Aes!(
+            double[], "x",
+            double[], "y",
+            double[], "colour" )(
+            [1,0,0], [ 1, 1, 0 ], [1,0.1,0] ) ) );
+    gg.save( "background.svg" );
 }
