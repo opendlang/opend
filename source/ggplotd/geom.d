@@ -238,7 +238,7 @@ unittest
 }
 
 // Bin a range of data
-private auto bin(R)(R xs, size_t noBins = 10)
+private auto bin(R)(R xs, double min, double max, size_t noBins = 10)
 {
     struct Bin
     {
@@ -254,20 +254,18 @@ private auto bin(R)(R xs, size_t noBins = 10)
         this(Range xs, size_t noBins)
         {
             import std.math : floor;
-            import std.algorithm : min, max, reduce, sort, map;
+            import std.algorithm : sort, map;
             import std.array : array;
             import std.range : walkLength;
 
             assert(xs.walkLength > 0);
 
-            // Find the min and max values
-            auto minmax = xs.reduce!((a, b) => min(a, b), (a, b) => max(a, b));
-            _width = (minmax[1] - minmax[0]) / (noBins - 1);
+            _width = (max - min) / (noBins - 1);
             _noBins = noBins;
             // If min == max we need to set a custom width
             if (_width == 0)
                 _width = 0.1;
-            _min = minmax[0] - 0.5 * _width;
+            _min = min - 0.5 * _width;
 
             // Count the number of data points that fall in a
             // bin. This is done by scaling them into whole numbers
@@ -315,6 +313,14 @@ private auto bin(R)(R xs, size_t noBins = 10)
 
     return BinRange!R(xs, noBins);
 }
+
+private auto bin(R)(R xs, size_t noBins = 10)
+{
+    import std.algorithm : min, max, reduce;
+    auto minmax = xs.reduce!((a, b) => min(a, b), (a, b) => max(a, b));
+    return bin( xs, minmax[0], minmax[1], noBins );
+}
+ 
 
 unittest
 {
@@ -386,6 +392,21 @@ auto geomHist(AES)(AES aes)
     return appender.data;
 }
 
+/// Draw histograms based on the x coordinates of the data (aes)
+auto geomHist3D(AES)(AES aes)
+{
+    import std.array : Appender;
+    // New appender to hold lines for drawing histogram
+    auto appender = Appender!(Geom[])([]);
+
+    // Work out min/max of the x and y data
+
+    // Track maximum z value for colour scaling
+    double max_z = -1;
+
+    // scale colours by max_z
+    return appender.data;
+}
 /// Draw axis, first and last location are start/finish
 /// others are ticks (perpendicular)
 auto geomAxis(AES)(AES aes, double tickLength, string label)

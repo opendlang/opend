@@ -252,8 +252,10 @@ auto createColourMap(R)(R colourIDs) if (is(ElementType!R == Tuple!(double,
 
     auto validatedIDs = ColourIDRange!R(colourIDs);
 
-    auto minmax = validatedIDs.map!((a) => a[0]).reduce!((a, b) => safeMin(a,
-        b), (a, b) => safeMax(a, b));
+    auto minmax = Tuple!(double, double)(0, 0);
+    if (!validatedIDs.empty)
+        minmax = validatedIDs.map!((a) => a[0]).reduce!((a, b) => safeMin(a,
+            b), (a, b) => safeMax(a, b));
 
     auto namedColours = createNamedColours;
     //RGB!("rgba", float)
