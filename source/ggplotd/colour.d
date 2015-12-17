@@ -46,9 +46,9 @@ RGBA hcyToRGB(double h, double c, double y)
     auto m = y - (.3 * rgb1[0] + .59 * rgb1[1] + .11 * rgb1[2]);
     // TODO is this really correct?
     return RGBA(
-        min(1,max(0,rgb1[0] + m)), 
-        min(1,max(0,rgb1[1] + m)), 
-        min(1,max(0,rgb1[2] + m)), 1);
+        rgb1[0] + m, 
+        rgb1[1] + m, 
+        rgb1[2] + m, 1);
 }
 
 /++
@@ -189,14 +189,6 @@ private:
     RGBA[string] namedColours;
 }
 
-bool valid( RGBA colour )
-{
-    return (colour.red >= 0 && colour.red <= 1 &&
-        colour.green >=0 && colour.green <= 1 &&
-        colour.blue >=0 && colour.blue <= 1 &&
-        colour.alpha >=0 && colour.alpha <= 1 );
-}
-
 unittest
 {
     import std.math : isNaN;
@@ -226,11 +218,6 @@ auto gradient(double value, double from, double till)
     if (from == till)
         return hcyToRGB(200, 0.5, 0.5);
     return hcyToRGB(200, 0.5 + 0.5 * (value - from) / (till - from), (value - from) / (till - from));
-}
-
-unittest
-{
-    assert( valid(gradient( 0, 0, 8 )) );
 }
 
 private auto safeMax(T)(T a, T b)

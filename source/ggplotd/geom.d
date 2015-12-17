@@ -710,6 +710,9 @@ auto geomPolygon(AES)(AES aes)
 
     auto geom = Geom( flags );
 
+    foreach( v; vertices )
+        geom.bounds.adapt(Point(v.x, v.y));
+
     // Define drawFunction
     auto f = delegate(cairo.Context context, ColourMap colourMap ) 
     {
@@ -728,7 +731,8 @@ auto geomPolygon(AES)(AES aes)
         foreach( v; vertices )
             context.lineTo( v.x, v.y );
         context.setSource( gradient );
-        context.fill;
+        context.fillPreserve;
+        context.stroke;
         return context;
     };
 
