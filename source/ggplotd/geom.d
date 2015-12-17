@@ -414,7 +414,6 @@ auto geomHist3D(AES)(AES aes)
     foreach( binX; aes.map!((t) => t.x) // Extract the x coordinates
             .array.bin( minmaxX[0], minmaxX[1], 11 ) )
     {
-        import std.stdio;
         // TODO this is not the most efficient way to create 2d bins
         foreach( binY; aes.filter!( 
                 (a) => a.x >= binX.range[0] && a.x < binX.range[1] )
@@ -719,11 +718,6 @@ auto geomPolygon(AES)(AES aes)
 
         auto col0 = colourMap(ColourID(gV[0].z));
         auto col1 = colourMap(ColourID(gV[1].z));
-        import std.stdio;
-        gV[0].z.writeln;
-        col0.writeln;
-        gV[1].z.writeln;
-        col1.writeln;
         import cairo.cairo : RGBA;
         gradient.addColorStopRGBA( 0,
             RGBA(col0.red, col0.green, col0.blue, flags.alpha));

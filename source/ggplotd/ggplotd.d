@@ -405,6 +405,10 @@ unittest
 unittest
 {
     /// http://blackedder.github.io/ggplotd/images/hist3D.png
+    import std.stdio;
+    "Begin hist3d".writeln;
+
+
     import std.array : array;
     import std.algorithm : map;
     import std.range : repeat, iota;
@@ -415,6 +419,7 @@ unittest
     auto gg = GGPlotD().put( geomHist3D( aes ) );
 
     gg.save( "hist3D.svg" );
+    "End hist3d".writeln;
 }
 
 

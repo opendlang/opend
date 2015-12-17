@@ -23,6 +23,7 @@ H(ue) 0-360, C(hroma) 0-1, Y(Luma) 0-1
 +/
 RGBA hcyToRGB(double h, double c, double y)
 {
+    import std.algorithm : min, max;
     import std.math : abs;
 
     auto ha = h / 60;
@@ -43,7 +44,11 @@ RGBA hcyToRGB(double h, double c, double y)
     else if (ha < 6)
         rgb1 = Tuple!(double, double, double)(c, 0, x);
     auto m = y - (.3 * rgb1[0] + .59 * rgb1[1] + .11 * rgb1[2]);
-    return RGBA(rgb1[0] + m, rgb1[1] + m, rgb1[2] + m, 1);
+    // TODO is this really correct?
+    return RGBA(
+        min(1,max(0,rgb1[0] + m)), 
+        min(1,max(0,rgb1[1] + m)), 
+        min(1,max(0,rgb1[2] + m)), 1);
 }
 
 /++
@@ -184,6 +189,14 @@ private:
     RGBA[string] namedColours;
 }
 
+bool valid( RGBA colour )
+{
+    return (colour.red >= 0 && colour.red <= 1 &&
+        colour.green >=0 && colour.green <= 1 &&
+        colour.blue >=0 && colour.blue <= 1 &&
+        colour.alpha >=0 && colour.alpha <= 1 );
+}
+
 unittest
 {
     import std.math : isNaN;
@@ -213,6 +226,11 @@ auto gradient(double value, double from, double till)
     if (from == till)
         return hcyToRGB(200, 0.5, 0.5);
     return hcyToRGB(200, 0.5 + 0.5 * (value - from) / (till - from), (value - from) / (till - from));
+}
+
+unittest
+{
+    assert( valid(gradient( 0, 0, 8 )) );
 }
 
 private auto safeMax(T)(T a, T b)
@@ -258,7 +276,7 @@ auto createColourMap(R)(R colourIDs) if (is(ElementType!R == Tuple!(double,
             b), (a, b) => safeMax(a, b));
 
     auto namedColours = createNamedColours;
-    //RGB!("rgba", float)
+
     return (ColourID tup) {
         if (tup[2].red >= 0)
             return tup[2];
@@ -273,6 +291,9 @@ auto createColourMap(R)(R colourIDs) if (is(ElementType!R == Tuple!(double,
 unittest
 {
     import std.typecons : Tuple;
+    import std.array : array;
+    import std.range : iota;
+    import std.algorithm : map;
 
     assertFalse(createColourMap([ColourID("a"),
         ColourID("b")])(ColourID("a")) == createColourMap([ColourID("a"), ColourID("b")])(
@@ -283,4 +304,9 @@ unittest
 
     assertEqual(createColourMap([ColourID("black")])(ColourID("black")), RGBA(0, 0,
         0, 1));
+
+    auto cM = iota(0.0,8.0,1.0).map!((a) => ColourID(a)).
+            createColourMap();
+    assert( cM( ColourID(0) ) != cM( ColourID(1) ) );
+    assertEqual( cM( ColourID(0) ), cM( ColourID(0) ) );
 }
