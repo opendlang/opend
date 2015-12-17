@@ -434,10 +434,7 @@ auto geomHist3D(AES)(AES aes)
                     ( binX.range[1], binY.range[1], binY.count ) ),
              aes.front.merge( 
                 Tuple!( double, "x", double, "y", double, "colour" )
-                    ( binX.range[1], binY.range[0], binY.count ) ),
-             aes.front.merge( 
-                Tuple!( double, "x", double, "y", double, "colour" )
-                    ( binX.range[0], binY.range[0], binY.count ) )] )
+                        ( binX.range[1], binY.range[0], binY.count ) )] )
             );
         }
     }
@@ -731,8 +728,7 @@ auto geomPolygon(AES)(AES aes)
         foreach( v; vertices )
             context.lineTo( v.x, v.y );
         context.setSource( gradient );
-        context.fillPreserve;
-        context.stroke;
+        context.fill;
         return context;
     };
 
