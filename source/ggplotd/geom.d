@@ -258,8 +258,6 @@ private auto bin(R)(R xs, double min, double max, size_t noBins = 10)
             import std.array : array;
             import std.range : walkLength;
 
-            assert(xs.walkLength > 0);
-
             _width = (max - min) / (noBins - 1);
             _noBins = noBins;
             // If min == max we need to set a custom width
@@ -269,13 +267,16 @@ private auto bin(R)(R xs, double min, double max, size_t noBins = 10)
 
             // Count the number of data points that fall in a
             // bin. This is done by scaling them into whole numbers
-            counts = xs.map!((a) => floor((a - _min) / _width)).array.sort().array.group();
-
-            // Initialize our bins
-            if (counts.front[0] == _binID)
+            if (xs.walkLength > 0)
             {
-                _cnt = counts.front[1];
-                counts.popFront;
+                counts = xs.map!((a) => floor((a - _min) / _width)).array.sort().array.group();
+
+                // Initialize our bins
+                if (counts.front[0] == _binID)
+                    {
+                    _cnt = counts.front[1];
+                    counts.popFront;
+                }
             }
         }
 
@@ -317,6 +318,9 @@ private auto bin(R)(R xs, double min, double max, size_t noBins = 10)
 private auto bin(R)(R xs, size_t noBins = 10)
 {
     import std.algorithm : min, max, reduce;
+    import std.range : walkLength;
+    assert(xs.walkLength > 0);
+
     auto minmax = xs.reduce!((a, b) => min(a, b), (a, b) => max(a, b));
     return bin( xs, minmax[0], minmax[1], noBins );
 }
@@ -395,15 +399,49 @@ auto geomHist(AES)(AES aes)
 /// Draw histograms based on the x coordinates of the data (aes)
 auto geomHist3D(AES)(AES aes)
 {
-    import std.array : Appender;
+    import std.algorithm : filter, map, reduce, max;
+    import std.array : array, Appender;
     // New appender to hold lines for drawing histogram
     auto appender = Appender!(Geom[])([]);
 
     // Work out min/max of the x and y data
+    auto minmaxX = reduce!("min(a,b.x)","max(a,b.x)")( Tuple!(double,double)(aes.front.x, aes.front.x), aes );
+    auto minmaxY = reduce!("min(a,b.y)","max(a,b.y)")( Tuple!(double,double)(aes.front.y, aes.front.y), aes );
 
     // Track maximum z value for colour scaling
-    double max_z = -1;
+    double maxZ = -1;
 
+    foreach( binX; aes.map!((t) => t.x) // Extract the x coordinates
+            .array.bin( minmaxX[0], minmaxX[1], 11 ) )
+    {
+        import std.stdio;
+        // TODO this is not the most efficient way to create 2d bins
+        foreach( binY; aes.filter!( 
+                (a) => a.x >= binX.range[0] && a.x < binX.range[1] )
+            .map!( (a) => a.x ).array
+            .bin( minmaxY[0], minmaxY[1], 11 ) )
+        {
+            maxZ = max( maxZ, binY.count );
+            appender.put(
+                geomPolygon(
+            [aes.front.merge( 
+                Tuple!( double, "x", double, "y", double, "colour" )
+                    ( binX.range[0], binY.range[0], binY.count ) ),
+             aes.front.merge( 
+                Tuple!( double, "x", double, "y", double, "colour" )
+                    ( binX.range[0], binY.range[1], binY.count ) ),
+             aes.front.merge( 
+                Tuple!( double, "x", double, "y", double, "colour" )
+                    ( binX.range[1], binY.range[1], binY.count ) ),
+             aes.front.merge( 
+                Tuple!( double, "x", double, "y", double, "colour" )
+                    ( binX.range[1], binY.range[0], binY.count ) ),
+             aes.front.merge( 
+                Tuple!( double, "x", double, "y", double, "colour" )
+                    ( binX.range[0], binY.range[0], binY.count ) )] )
+            );
+        }
+    }
     // scale colours by max_z
     return appender.data;
 }
@@ -681,6 +719,11 @@ auto geomPolygon(AES)(AES aes)
 
         auto col0 = colourMap(ColourID(gV[0].z));
         auto col1 = colourMap(ColourID(gV[1].z));
+        import std.stdio;
+        gV[0].z.writeln;
+        col0.writeln;
+        gV[1].z.writeln;
+        col1.writeln;
         import cairo.cairo : RGBA;
         gradient.addColorStopRGBA( 0,
             RGBA(col0.red, col0.green, col0.blue, flags.alpha));
