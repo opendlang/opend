@@ -142,12 +142,12 @@ struct GGPlotD
     {
         if (!initScale)
             scaleFunction = scale(); // This needs to be removed later
-        import std.range : front;
+        import std.range : empty, front;
 
         AdaptiveBounds bounds;
-        typeof(geomRange.front.colours) colourIDs;
-        auto xAxisTicks = geomRange.front.xTickLabels;
-        auto yAxisTicks = geomRange.front.yTickLabels;
+        ColourID[] colourIDs;
+        Tuple!(double, string)[] xAxisTicks;
+        Tuple!(double, string)[] yAxisTicks;
 
         foreach (geom; geomRange)
         {
@@ -398,6 +398,25 @@ unittest
     auto gg = GGPlotD().put( geomBox( aes ) );
     gg.save( "boxplot.svg" );
 }
+
+///
+unittest
+{
+    /// http://blackedder.github.io/ggplotd/images/hist3D.png
+    import std.array : array;
+    import std.algorithm : map;
+    import std.range : repeat, iota;
+    import std.random : uniform;
+
+    auto xs = iota(0,25,1).map!((x) => uniform(0.0,5)+uniform(0.0,5)).array;
+    auto ys = iota(0,25,1).map!((x) => uniform(0.0,5)+uniform(0.0,5)).array;
+    auto aes = Aes!(typeof(xs), "x", typeof(ys), "y")( xs, ys);
+    auto gg = GGPlotD().put( geomHist3D( aes ) );
+
+    gg.save( "hist3D.png" );
+}
+
+
 
 /// Changing axes details
 unittest

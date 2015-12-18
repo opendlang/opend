@@ -238,7 +238,7 @@ unittest
 }
 
 // Bin a range of data
-private auto bin(R)(R xs, size_t noBins = 10)
+private auto bin(R)(R xs, double min, double max, size_t noBins = 10)
 {
     struct Bin
     {
@@ -254,30 +254,29 @@ private auto bin(R)(R xs, size_t noBins = 10)
         this(Range xs, size_t noBins)
         {
             import std.math : floor;
-            import std.algorithm : min, max, reduce, sort, map;
+            import std.algorithm : sort, map;
             import std.array : array;
             import std.range : walkLength;
 
-            assert(xs.walkLength > 0);
-
-            // Find the min and max values
-            auto minmax = xs.reduce!((a, b) => min(a, b), (a, b) => max(a, b));
-            _width = (minmax[1] - minmax[0]) / (noBins - 1);
+            _width = (max - min) / (noBins - 1);
             _noBins = noBins;
             // If min == max we need to set a custom width
             if (_width == 0)
                 _width = 0.1;
-            _min = minmax[0] - 0.5 * _width;
+            _min = min - 0.5 * _width;
 
             // Count the number of data points that fall in a
             // bin. This is done by scaling them into whole numbers
-            counts = xs.map!((a) => floor((a - _min) / _width)).array.sort().array.group();
-
-            // Initialize our bins
-            if (counts.front[0] == _binID)
+            if (xs.walkLength > 0)
             {
-                _cnt = counts.front[1];
-                counts.popFront;
+                counts = xs.map!((a) => floor((a - _min) / _width)).array.sort().array.group();
+
+                // Initialize our bins
+                if (counts.front[0] == _binID)
+                    {
+                    _cnt = counts.front[1];
+                    counts.popFront;
+                }
             }
         }
 
@@ -315,6 +314,17 @@ private auto bin(R)(R xs, size_t noBins = 10)
 
     return BinRange!R(xs, noBins);
 }
+
+private auto bin(R)(R xs, size_t noBins = 10)
+{
+    import std.algorithm : min, max, reduce;
+    import std.range : walkLength;
+    assert(xs.walkLength > 0);
+
+    auto minmax = xs.reduce!((a, b) => min(a, b), (a, b) => max(a, b));
+    return bin( xs, minmax[0], minmax[1], noBins );
+}
+ 
 
 unittest
 {
@@ -386,6 +396,51 @@ auto geomHist(AES)(AES aes)
     return appender.data;
 }
 
+/// Draw histograms based on the x coordinates of the data (aes)
+auto geomHist3D(AES)(AES aes)
+{
+    import std.algorithm : filter, map, reduce, max;
+    import std.array : array, Appender;
+    // New appender to hold lines for drawing histogram
+    auto appender = Appender!(Geom[])([]);
+
+    // Work out min/max of the x and y data
+    auto minmaxX = reduce!("min(a,b.x)","max(a,b.x)")( Tuple!(double,double)(aes.front.x, aes.front.x), aes );
+    auto minmaxY = reduce!("min(a,b.y)","max(a,b.y)")( Tuple!(double,double)(aes.front.y, aes.front.y), aes );
+
+    // Track maximum z value for colour scaling
+    double maxZ = -1;
+
+    foreach( binX; aes.map!((t) => t.x) // Extract the x coordinates
+            .array.bin( minmaxX[0], minmaxX[1], 11 ) )
+    {
+        // TODO this is not the most efficient way to create 2d bins
+        foreach( binY; aes.filter!( 
+                (a) => a.x >= binX.range[0] && a.x < binX.range[1] )
+            .map!( (a) => a.x ).array
+            .bin( minmaxY[0], minmaxY[1], 11 ) )
+        {
+            maxZ = max( maxZ, binY.count );
+            appender.put(
+                geomPolygon(
+            [aes.front.merge( 
+                Tuple!( double, "x", double, "y", double, "colour" )
+                    ( binX.range[0], binY.range[0], binY.count ) ),
+             aes.front.merge( 
+                Tuple!( double, "x", double, "y", double, "colour" )
+                    ( binX.range[0], binY.range[1], binY.count ) ),
+             aes.front.merge( 
+                Tuple!( double, "x", double, "y", double, "colour" )
+                    ( binX.range[1], binY.range[1], binY.count ) ),
+             aes.front.merge( 
+                Tuple!( double, "x", double, "y", double, "colour" )
+                        ( binX.range[1], binY.range[0], binY.count ) )] )
+            );
+        }
+    }
+    // scale colours by max_z
+    return appender.data;
+}
 /// Draw axis, first and last location are start/finish
 /// others are ticks (perpendicular)
 auto geomAxis(AES)(AES aes, double tickLength, string label)
@@ -652,6 +707,9 @@ auto geomPolygon(AES)(AES aes)
 
     auto geom = Geom( flags );
 
+    foreach( v; vertices )
+        geom.bounds.adapt(Point(v.x, v.y));
+
     // Define drawFunction
     auto f = delegate(cairo.Context context, ColourMap colourMap ) 
     {
@@ -669,6 +727,7 @@ auto geomPolygon(AES)(AES aes)
         vertices.popFront;
         foreach( v; vertices )
             context.lineTo( v.x, v.y );
+        context.closePath;
         context.setSource( gradient );
         context.fill;
         return context;

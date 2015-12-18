@@ -23,6 +23,7 @@ H(ue) 0-360, C(hroma) 0-1, Y(Luma) 0-1
 +/
 RGBA hcyToRGB(double h, double c, double y)
 {
+    import std.algorithm : min, max;
     import std.math : abs;
 
     auto ha = h / 60;
@@ -43,7 +44,11 @@ RGBA hcyToRGB(double h, double c, double y)
     else if (ha < 6)
         rgb1 = Tuple!(double, double, double)(c, 0, x);
     auto m = y - (.3 * rgb1[0] + .59 * rgb1[1] + .11 * rgb1[2]);
-    return RGBA(rgb1[0] + m, rgb1[1] + m, rgb1[2] + m, 1);
+    // TODO is this really correct?
+    return RGBA(
+        rgb1[0] + m, 
+        rgb1[1] + m, 
+        rgb1[2] + m, 1);
 }
 
 /++
@@ -252,11 +257,13 @@ auto createColourMap(R)(R colourIDs) if (is(ElementType!R == Tuple!(double,
 
     auto validatedIDs = ColourIDRange!R(colourIDs);
 
-    auto minmax = validatedIDs.map!((a) => a[0]).reduce!((a, b) => safeMin(a,
-        b), (a, b) => safeMax(a, b));
+    auto minmax = Tuple!(double, double)(0, 0);
+    if (!validatedIDs.empty)
+        minmax = validatedIDs.map!((a) => a[0]).reduce!((a, b) => safeMin(a,
+            b), (a, b) => safeMax(a, b));
 
     auto namedColours = createNamedColours;
-    //RGB!("rgba", float)
+
     return (ColourID tup) {
         if (tup[2].red >= 0)
             return tup[2];
@@ -271,6 +278,9 @@ auto createColourMap(R)(R colourIDs) if (is(ElementType!R == Tuple!(double,
 unittest
 {
     import std.typecons : Tuple;
+    import std.array : array;
+    import std.range : iota;
+    import std.algorithm : map;
 
     assertFalse(createColourMap([ColourID("a"),
         ColourID("b")])(ColourID("a")) == createColourMap([ColourID("a"), ColourID("b")])(
@@ -281,4 +291,9 @@ unittest
 
     assertEqual(createColourMap([ColourID("black")])(ColourID("black")), RGBA(0, 0,
         0, 1));
+
+    auto cM = iota(0.0,8.0,1.0).map!((a) => ColourID(a)).
+            createColourMap();
+    assert( cM( ColourID(0) ) != cM( ColourID(1) ) );
+    assertEqual( cM( ColourID(0) ), cM( ColourID(0) ) );
 }
