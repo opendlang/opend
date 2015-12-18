@@ -405,21 +405,17 @@ unittest
 unittest
 {
     /// http://blackedder.github.io/ggplotd/images/hist3D.png
-    import std.stdio;
-    "Begin hist3d".writeln;
-
-
     import std.array : array;
     import std.algorithm : map;
     import std.range : repeat, iota;
     import std.random : uniform;
+
     auto xs = iota(0,25,1).map!((x) => uniform(0.0,5)+uniform(0.0,5)).array;
     auto ys = iota(0,25,1).map!((x) => uniform(0.0,5)+uniform(0.0,5)).array;
     auto aes = Aes!(typeof(xs), "x", typeof(ys), "y")( xs, ys);
     auto gg = GGPlotD().put( geomHist3D( aes ) );
 
-    gg.save( "hist3D.svg" );
-    "End hist3d".writeln;
+    gg.save( "hist3D.png" );
 }
 
 

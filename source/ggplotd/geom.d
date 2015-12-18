@@ -727,6 +727,7 @@ auto geomPolygon(AES)(AES aes)
         vertices.popFront;
         foreach( v; vertices )
             context.lineTo( v.x, v.y );
+        context.closePath;
         context.setSource( gradient );
         context.fill;
         return context;
