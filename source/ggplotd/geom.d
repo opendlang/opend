@@ -729,7 +729,9 @@ auto geomPolygon(AES)(AES aes)
             context.lineTo( v.x, v.y );
         context.closePath;
         context.setSource( gradient );
-        context.fill;
+        context.fillPreserve;
+        context.identityMatrix();
+        context.stroke;
         return context;
     };
 

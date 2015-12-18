@@ -402,7 +402,7 @@ unittest
 ///
 unittest
 {
-    /// http://blackedder.github.io/ggplotd/images/hist3D.png
+    /// http://blackedder.github.io/ggplotd/images/hist3D.svg
     import std.array : array;
     import std.algorithm : map;
     import std.range : repeat, iota;
@@ -413,7 +413,7 @@ unittest
     auto aes = Aes!(typeof(xs), "x", typeof(ys), "y")( xs, ys);
     auto gg = GGPlotD().put( geomHist3D( aes ) );
 
-    gg.save( "hist3D.png" );
+    gg.save( "hist3D.svg" );
 }
 
 
