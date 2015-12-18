@@ -9,6 +9,12 @@ version (unittest)
 
 import std.typecons : Tuple;
 
+// TODO Also update default grouping if appropiate
+private auto DefaultValues = Tuple!( 
+    string, "label", string, "colour", double, "size",
+    double, "angle", double, "alpha", bool, "mask", double, "fill" )
+    ("", "black", 10, 0, 1, true, 0.0);
+
 template Aes(Specs...)
 {
     import std.traits : Identity;
@@ -79,10 +85,6 @@ template Aes(Specs...)
 
     alias fieldNames = staticMap!(extractName, fieldSpecs);
 
-    // TODO Also update default grouping if appropiate
-    alias defaultNames = TypeTuple!("label","colour", "size", "angle", "alpha", "mask", "fill");
-    alias defaultTypes = TypeTuple!(string,string, double, double, double, bool, double);
-    alias defaultValues = TypeTuple!(`""`, `"black"`, 10, 0, 1, true, 0.0);
     string injectFront()
     {
         import std.format : format;
@@ -90,7 +92,7 @@ template Aes(Specs...)
         string decl = "auto front() { import std.range : ElementType;";
         decl ~= "import std.typecons : Tuple; import std.range : front;";
 
-        string tupleType = "Tuple!(";
+        string tupleType = "DefaultValues.merge!()( Tuple!(";
         string values = "(";
 
         foreach (i, name; fieldNames)
@@ -101,27 +103,7 @@ template Aes(Specs...)
             values ~= format("this.%s.front,", name);
         }
 
-        foreach (i, name; defaultNames)
-        {
-            auto defined = false;
-            foreach (j, fName; fieldNames)
-            {
-                if (name == fName)
-                    defined = true;
-            }
-            if (!defined)
-            {
-                //tupleType ~= format( q{typeof(%s),}, defaultValues[i] );
-                tupleType ~= format(q{%s,}, defaultTypes[i].stringof);
-                tupleType ~= "q{" ~ name ~ "},";
-                if (is(defaultTypes[i]==string))
-                    values ~= format("%s,", defaultValues[i]);
-                else
-                    values ~= format("%s,", defaultValues[i].stringof);
-            }
-        }
-
-        decl ~= "return " ~ tupleType[0 .. $ - 1] ~ ")" ~ values[0 .. $ - 1] ~ "); }";
+        decl ~= "return " ~ tupleType[0 .. $ - 1] ~ ")" ~ values[0 .. $ - 1] ~ ")); }";
         //string decl2 = format("auto front() { import std.stdio; \"%s\".writeln; return 0.0; }", decl);
         return decl;
     }
@@ -449,7 +431,7 @@ unittest
     tup.popFront;
     assertEqual(tup.front.y, 1);
     assertEqual(tup.front.colour, "white2");
-    assertEqual(tup.front.label, "");
+    assertEqual("", tup.front.label);
 
     auto tup2 = Aes!(double[], "x", double[], "y")([0, 1], [2, 1]);
     assertEqual(tup2.front.y, 2);
