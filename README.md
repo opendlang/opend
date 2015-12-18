@@ -117,7 +117,7 @@ void main()
 A 3D version of the histogram is also implemented in geomHist3D. See the
 example in the
 [documentation](http://blackedder.github.io/ggplotd/ggplotd.html) for the
-code.
+code used to create this figure. 
 ![Histogram 3D](http://blackedder.github.io/ggplotd/images/hist.svg)
 
 
