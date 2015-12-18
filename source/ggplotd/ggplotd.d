@@ -69,9 +69,7 @@ private auto createEmptySurface( string fname, int width, int height,
 
     auto backcontext = cairo.Context(surface);
     backcontext.setSourceRGBA(colour);
-    backcontext.rectangle(0, 0, width, height);
-    backcontext.fillPreserve();
-    backcontext.stroke();
+    backcontext.paint;
 
     return surface;
 }
