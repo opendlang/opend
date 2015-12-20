@@ -5,7 +5,6 @@
 		"Johannes Pfau",
 		"Andrej Mitrovic"
 	],
-	"version": "~master",
 	"homepage": "https://github.com/cairoD/cairoD",
 	"name": "cairod",
 	"copyright": "Copyright © 2011-2015, Johannes Pfau",
