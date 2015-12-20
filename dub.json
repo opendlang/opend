@@ -6,9 +6,9 @@
 		"Andrej Mitrovic"
 	],
 	"version": "~master",
-	"homepage": "https://github.com/jpf91/cairoD",
+	"homepage": "https://github.com/cairoD/cairoD",
 	"name": "cairod",
-	"copyright": "Copyright © 2011-2013, Johannes Pfau",
+	"copyright": "Copyright © 2011-2015, Johannes Pfau",
 	"license": "BSL-1.0",
 	"-ddoxFilterArgs": ["--unittest-examples"],
 	"configurations": [
