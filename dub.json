@@ -12,14 +12,26 @@
 	"-ddoxFilterArgs": ["--unittest-examples"],
 	"configurations": [
 		{
-			"name": "static-lib",
+			"name": "stlib",
 			"targetType": "staticLibrary",
+			"preBuildCommands": ["rdmd $PACKAGE_DIR/configure.d $PACKAGE_DIR"]
+		},
+		{
+			"name": "stlib-minimal",
+			"targetType": "staticLibrary"
 		},
 		{
 			"name": "unittest",
 			"targetType": "executable",
 			"sourceFiles": ["unittest.d"],
+			"libs": ["cairo"],
+			"preBuildCommands": ["rdmd $PACKAGE_DIR/configure.d $PACKAGE_DIR"]
+		},
+		{
+			"name": "unittest-minimal",
+			"targetType": "executable",
+			"sourceFiles": ["unittest.d"],
 			"libs": ["cairo"]
-		}
+		},
 	]
 }
