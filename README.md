@@ -4,7 +4,7 @@ This is a D2 binding and wrapper for the [cairo](http://cairographics.org) graph
 
 Currently cairoD targets cairo version **1.10.2**.
 
-Homepage: https://github.com/jpf91/cairoD
+Homepage: https://github.com/cairoD/cairoD
 
 ## Building
 
@@ -12,7 +12,7 @@ Homepage: https://github.com/jpf91/cairoD
 
 You can use [dub] to make this library a dependency for your project.
 
-[dub]: http://code.dlang.org/about
+[dub]: http://code.dlang.org/packages/cairod
 
 ## Links
 
