@@ -153,7 +153,7 @@ public alias cairo_font_type_t FontType; ///ditto
 public alias cairo_region_overlap_t RegionOverlap; ///ditto
 
 /**
- * A simple struct to store the coordinates of a point as 
+ * A simple struct to store the coordinates of a point as
  * doubles or integers.
  */
 public struct Point(T) if(isOneOf!(T, int, double))
@@ -164,7 +164,7 @@ public struct Point(T) if(isOneOf!(T, int, double))
         this.x = x;
         this.y = y;
     }
-    
+
     ///
     T x;
     ///
@@ -535,9 +535,9 @@ public struct Path
             ctx.lineTo(10.0, 10.0);
             ctx.curveTo(5, 5, 7, 6, 0, 0);
             ctx.lineTo(10.0, 0.0);
-            
+
             auto path = ctx.copyPath();
-            auto pathArray = ctx.copyPath()[].array;            
+            auto pathArray = ctx.copyPath()[].array;
             assert(pathArray[0].type == PathElementType.CAIRO_PATH_MOVE_TO);
             assert(pathArray[0][0] == Point!double(0, 0));
             assert(pathArray[1].type == PathElementType.CAIRO_PATH_LINE_TO);
@@ -621,16 +621,16 @@ unittest
     ctx.lineTo(10.0, 10.0);
     ctx.curveTo(5, 5, 7, 6, 0, 0);
     ctx.lineTo(10.0, 0.0);
-    
+
     auto path = ctx.copyPath();
     auto pathRange = path[];
     auto pathRange2 = pathRange.save;
     pathRange.popFront();
     auto pathRange3 = pathRange.save;
-    
+
     auto pathArray1 = pathRange.array;
     auto pathArray2 = pathRange2.array;
-    auto pathArray3 = pathRange3.array;          
+    auto pathArray3 = pathRange3.array;
     assert(pathArray2[0].type == PathElementType.CAIRO_PATH_MOVE_TO);
     assert(pathArray2[0][0] == Point!double(0, 0));
     assert(pathArray2[1].type == PathElementType.CAIRO_PATH_LINE_TO);
@@ -641,7 +641,7 @@ unittest
     assert(pathArray2[2][2] == Point!double(0, 0));
     assert(pathArray2[3].type == PathElementType.CAIRO_PATH_LINE_TO);
     assert(pathArray2[3][0] == Point!double(10, 0));
-    
+
     assert(pathArray1 == pathArray3);
     assert(pathArray2.drop(1) == pathArray1);
 }
@@ -5215,6 +5215,7 @@ public class ScaledFont
             {
                 static if(CAIRO_HAS_WIN32_FONT)
                 {
+                    import cairo.win32;
                     case cairo_font_type_t.CAIRO_FONT_TYPE_WIN32:
                         return new Win32ScaledFont(ptr);
                 }
@@ -5580,6 +5581,7 @@ public class FontFace
                     return new ToyFontFace(ptr);
                 static if(CAIRO_HAS_WIN32_FONT)
                 {
+                    import cairo.win32;
                     case cairo_font_type_t.CAIRO_FONT_TYPE_WIN32:
                         return new Win32FontFace(ptr);
                 }
@@ -6022,7 +6024,7 @@ public struct Region
         {
             return Region(cairo_region_create());
         }
-        
+
         /**
          *
          */
@@ -6030,7 +6032,7 @@ public struct Region
         {
             return Region(cairo_region_copy(this.nativePointer));
         }
-        
+
         /**
          *
          */
@@ -6140,7 +6142,7 @@ public struct Region
         {
             throwError(cairo_region_intersect_rectangle(this.nativePointer, cast(cairo_rectangle_int_t*)&other));
         }
-    
+
         /**
          *
          */
@@ -6148,7 +6150,7 @@ public struct Region
         {
             throwError(cairo_region_subtract_rectangle(this.nativePointer, cast(cairo_rectangle_int_t*)&other));
         }
-    
+
         /**
          *
          */
@@ -6156,7 +6158,7 @@ public struct Region
         {
             throwError(cairo_region_subtract_rectangle(this.nativePointer, cast(cairo_rectangle_int_t*)&other));
         }
-        
+
         /**
          *
          */
@@ -6164,7 +6166,7 @@ public struct Region
         {
             throwError(cairo_region_union(this.nativePointer, other.nativePointer));
         }
-        
+
         /**
          *
          */
@@ -6172,7 +6174,7 @@ public struct Region
         {
             throwError(cairo_region_union_rectangle(this.nativePointer, cast(cairo_rectangle_int_t*)&other));
         }
-        
+
         /**
          *
          */
