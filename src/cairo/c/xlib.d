@@ -24,7 +24,7 @@ import cairo.c.cairo;
 
 static if(CAIRO_HAS_XLIB_SURFACE)
 {
-    import std.c.linux.X11.Xlib;
+    import x11.X, x11.Xlib;
 
     extern(C):
     ///
