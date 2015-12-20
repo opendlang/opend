@@ -11,7 +11,7 @@ FTFontFace cairoFont;
 
 /**
  * Execute like this:
- * ./main /usr/share/fonts/truetype/linux-libertine/LinLibertine_Re.ttf
+ * ./example /usr/share/fonts/truetype/linux-libertine/LinLibertine_Re.ttf
  */
 void main(string[] args)
 {

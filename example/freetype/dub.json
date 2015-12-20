@@ -7,14 +7,13 @@
 	"version": "~master",
 	"homepage": "https://github.com/jpf91/cairoD",
 	"name": "cairod-example",
-	"copyright": "Copyright © 2011-2013, Johannes Pfau",
+	"copyright": "Copyright © 2011-2015, Johannes Pfau",
 	"license": "BSL-1.0",
 	"libs": ["cairo"],
-	"targetType": "executable",
-	"sourcePaths": [".", "../common", "../../src"],
-	"importPaths": ["../common", "../../src"],
+	"sourcePaths": [".", "../common"],
+	"importPaths": ["../common"],
 	"dependencies": {
-		"derelict": "~master"
+		"cairod": {"version": ">=0.0.1", "path": "../../"}
 	},
 	"configurations": [
 		{

@@ -2,10 +2,11 @@ import std.string;
 import std.stdio;
 
 import cairo.cairo;
+import cairo.c.config;
 import cairo.xlib;
 
-import std.c.linux.X11.Xlib;
-import std.c.linux.X11.X;
+import x11.Xlib;
+import x11.X;
 
 /*
  * Warning:
@@ -51,7 +52,7 @@ bool showXLIB()
     //Hack, xlib bindings should be fixed
     char* winName = cast(char*)(toStringz("CairoD XLIB example".dup));
     XStoreName(dpy, win, winName);
-    XSelectInput(dpy, win, EventMask.ExposureMask | EventMask.ButtonPressMask);
+    XSelectInput(dpy, win, ExposureMask | ButtonPressMask);
     XMapWindow(dpy, win);
 
     auto surface = new XlibSurface(dpy, win, XDefaultVisual(dpy, 0), 400, 200);
@@ -61,11 +62,11 @@ bool showXLIB()
     while(true)
     {
         XNextEvent(dpy, &e);
-        if(e.type == EventType.Expose && e.xexpose.count < 1)
+        if(e.type == Expose && e.xexpose.count < 1)
         {
             paint(ctx);
         }
-        else if(e.type == EventType.ButtonPress)
+        else if(e.type == ButtonPress)
             break;
     }
 
