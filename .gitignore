@@ -31,3 +31,4 @@ __dummy.html
 
 #Ignore dub files
 .dub
+dub.selections.json
