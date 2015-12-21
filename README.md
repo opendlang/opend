@@ -17,19 +17,6 @@ you can install cairo with:
 sudo apt-get install libcairo2-dev 
 ```
 
-### PDF and SVG support
-
-We rely on cairo for PDF and SVG support, but by default cairoD disables
-pdf and svg support. To enable it you need to add a local copy of cairoD
-that dub can find:
-
-```
-git clone https://github.com/jpf91/cairoD.git
-sed -i 's/PDF_SURFACE = false/PDF_SURFACE = true/g' cairoD/src/cairo/c/config.d
-sed -i 's/SVG_SURFACE = false/SVG_SURFACE = true/g' cairoD/src/cairo/c/config.d
-dub add-local cairoD
-```
-
 ## Documentation
 
 This README contains a couple of examples and basic documentation on how
