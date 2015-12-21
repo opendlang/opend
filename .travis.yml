@@ -1,8 +1,3 @@
-before_install:
-- git clone https://github.com/jpf91/cairoD
-- sed -i 's/PDF_SURFACE = false/PDF_SURFACE = true/g' cairoD/src/cairo/c/config.d
-- sed -i 's/SVG_SURFACE = false/SVG_SURFACE = true/g' cairoD/src/cairo/c/config.d
-- dub add-local cairoD
 language: d
 script: "./travis.sh"
 sudo: false
