@@ -10,11 +10,32 @@ version (unittest)
 import std.typecons : Tuple;
 
 // TODO Also update default grouping if appropiate
-private auto DefaultValues = Tuple!( 
+
+///
+auto DefaultValues = Tuple!( 
     string, "label", string, "colour", double, "size",
     double, "angle", double, "alpha", bool, "mask", double, "fill" )
     ("", "black", 10, 0, 1, true, 0.0);
 
+/++
+    Aes is used to store and access data for plotting
+
+    Aes is an InputRange, with named Tuples as elements. The names
+    refer to certain fields, such as x, y, colour etc. If certain fields
+    are not provided then it provides a default value (see DefaultValues).
+
+    The fields commonly used are data fields, such as "x" and "y". Which data
+    fields are required depends on the geom* function. By default the named 
+    Tuple holds the fields:
+    $(UL
+        $(LI "label": Text labels (string))
+        $(LI "colour": Identifier for the colour. In general data points with different colour ids get different colours. This can be almost any type. You can also specify the colour by name or cairo.Color type if you want to specify an exact colour (any type that isNumeric, cairo.Color.RGB(A), or can be converted to string))
+        $(LI "size": Gives the size of points in pixels (size_t))
+        $(LI "angle": Angle of printed labels in radians (double))
+        $(LI "alpha": Alpha value of the drawn object (double))
+        $(LI "mask": Mask the area outside the axes. Prevents you from drawing outside of the area (bool))
+        $(LI "fill": Whether to fill the object/holds the alpha value to fill with (double).))
+    +/
 template Aes(Specs...)
 {
     import std.traits : Identity;
@@ -154,8 +175,6 @@ template Aes(Specs...)
     {
         enum isBuildableFrom(T) = isBuildable!(T, U);
     }
-
-    ///
     struct Aes
     {
         /**
@@ -423,29 +442,30 @@ unittest
     assertEqual(tup2.length, 3);
 }
 
+/// Basic Aes usage
 unittest
 {
-    auto tup = Aes!(double[], "x", double[], "y", string[], "colour")([0, 1],
+    auto aes = Aes!(double[], "x", double[], "y", string[], "colour")([0, 1],
         [2, 1], ["white", "white2"]);
 
-    tup.popFront;
-    assertEqual(tup.front.y, 1);
-    assertEqual(tup.front.colour, "white2");
-    assertEqual("", tup.front.label);
+    aes.popFront;
+    assertEqual(aes.front.y, 1);
+    assertEqual(aes.front.colour, "white2");
+    assertEqual("", aes.front.label);
 
-    auto tup2 = Aes!(double[], "x", double[], "y")([0, 1], [2, 1]);
-    assertEqual(tup2.front.y, 2);
-    assertEqual(tup2.front.colour, "black");
+    auto aes2 = Aes!(double[], "x", double[], "y")([0, 1], [2, 1]);
+    assertEqual(aes2.front.y, 2);
+    assertEqual(aes2.front.colour, "black");
 
     import std.range : repeat;
 
     auto xs = repeat(0);
-    auto tup3 = Aes!(typeof(xs), "x", double[], "y")(xs, [2, 1]);
+    auto aes3 = Aes!(typeof(xs), "x", double[], "y")(xs, [2, 1]);
 
-    assertEqual(tup3.front.x, 0);
-    tup3.popFront;
-    tup3.popFront;
-    assertEqual(tup3.empty, true);
+    assertEqual(aes3.front.x, 0);
+    aes3.popFront;
+    aes3.popFront;
+    assertEqual(aes3.empty, true);
 
 }
 
