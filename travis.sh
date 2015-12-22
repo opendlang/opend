@@ -27,12 +27,17 @@ for i in *; do
         echo "=> $i"
         cd $i
         # Insert a subConfigurations section before the configurations section
-        if [[ "$MINIMAL" -ne 1 ]]; then
+        if [[ "$MINIMAL" -eq 1 ]]; then
             sed -i 's/.*"configurations": \[.*/\t"subConfigurations": {\n\t\t"cairod": "stlib-minimal"\n\t},\n&/' dub.json
         fi
         # Do not run xlib tests, no GUI available
         if [[ "$i" == "xlib" ]]; then
-            dub build
+            # Skip xlib test in minimal configuration
+            if [[ "$MINIMAL" -eq 1 ]]; then
+                echo "xlib not available in minimal configuration"
+            else
+                dub build
+            fi
         else
             dub run
         fi
