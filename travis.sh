@@ -21,7 +21,8 @@ echo ""
 cd example
 for i in *; do
     # Can't run win32 tests, common directory does not contain tests
-    if [[ "$i" != "common" && "$i" != "win32" ]]; then
+    # freetype version on travis-ci seems to be incompatible with derelict
+    if [[ "$i" != "common" && "$i" != "win32" && "$i" != "freetype" ]]; then
         echo ""
         echo "=> $i"
         cd $i
@@ -29,13 +30,8 @@ for i in *; do
         if [[ "$MINIMAL" -ne 1 ]]; then
             sed -i 's/.*"configurations": \[.*/\t"subConfigurations": {\n\t\t"cairod": "stlib-minimal"\n\t},\n&/' dub.json
         fi
-        # Freetype example needs an extra argument
-        if [[ "$i" == "freetype" ]]; then
-            # Skip: freetype version on travis-ci seems to be incompatible with derelict
-            #dub build
-            #./example /usr/share/fonts/truetype/dejavu/DejaVuSans.ttf
         # Do not run xlib tests, no GUI available
-        elif [[ "$i" == "xlib" ]]; then
+        if [[ "$i" == "xlib" ]]; then
             dub build
         else
             dub run
