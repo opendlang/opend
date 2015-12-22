@@ -1,4 +1,4 @@
-# cairoD
+# cairoD [![Build Status](https://travis-ci.org/cairoD/cairoD.svg)](https://travis-ci.org/cairoD/cairoD)
 
 This is a D2 binding and wrapper for the [cairo](http://cairographics.org) graphics library.
 
