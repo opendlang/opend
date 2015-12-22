@@ -40,14 +40,19 @@ auto geomPoint(AES)(AES aes)
 {
     alias CoordX = typeof(NumericLabel!(typeof(AES.x))(AES.x));
     alias CoordY = typeof(NumericLabel!(typeof(AES.y))(AES.y));
-    alias CoordType = typeof(merge(aes, Aes!(CoordX, "x", CoordY,
-        "y")(CoordX(AES.x), CoordY(AES.y))));
+    alias CoordType = typeof(DefaultValues
+        .mergeRange(aes)
+        .mergeRange( Aes!(CoordX, "x", CoordY, "y")
+            (CoordX(AES.x), CoordY(AES.y))));
 
     struct GeomRange(T)
     {
         this(T aes)
         {
-            _aes = merge(aes, Aes!(CoordX, "x", CoordY, "y")(CoordX(aes.x), CoordY(aes.y)));
+            _aes = DefaultValues
+                .mergeRange(aes)
+                .mergeRange( Aes!(CoordX, "x", CoordY, "y")(
+                    CoordX(aes.x), CoordY(aes.y)));
         }
 
         @property auto front()
@@ -368,7 +373,9 @@ auto geomHist(AES)(AES aes)
     // New appender to hold lines for drawing histogram
     auto appender = Appender!(Geom[])([]);
 
-    foreach (grouped; group(aes)) // Split data by colour/id
+    auto merged = DefaultValues.mergeRange(aes);
+
+    foreach (grouped; group(merged)) // Split data by colour/id
     {
         auto bins = grouped.map!((t) => t.x) // Extract the x coordinates
             .array.bin(11); // Bin the data
@@ -376,7 +383,7 @@ auto geomHist(AES)(AES aes)
         foreach (bin; bins)
         {
             // Specifying the boxes for the histogram. The merge is used to keep the colour etc. information
-            // contained in the original aes passed to geomHist.
+            // contained in the original merged passed to geomHist.
             appender.put(
                 geomLine( [
                     grouped.front.merge(Tuple!(double, "x", double, "y" )( 
@@ -458,23 +465,25 @@ auto geomAxis(AES)(AES aes, double tickLength, string label)
     double[] langles;
     string[] lbls;
 
-    auto colour = aes.front.colour;
-    auto toDir = aes.find!("a.x != b.x || a.y != b.y")(aes.front).front; 
-    auto direction = [toDir.x - aes.front.x, toDir.y - aes.front.y];
+    auto merged = DefaultValues.mergeRange(aes);
+
+    auto colour = merged.front.colour;
+    auto toDir = merged.find!("a.x != b.x || a.y != b.y")(merged.front).front; 
+    auto direction = [toDir.x - merged.front.x, toDir.y - merged.front.y];
     auto dirLength = sqrt(pow(direction[0], 2) + pow(direction[1], 2));
     direction[0] *= tickLength / dirLength;
     direction[1] *= tickLength / dirLength;
  
-    while (!aes.empty)
+    while (!merged.empty)
     {
-        auto tick = aes.front;
+        auto tick = merged.front;
         xs ~= tick.x;
         ys ~= tick.y;
 
-        aes.popFront;
+        merged.popFront;
 
         // Draw ticks perpendicular to main axis;
-        if (xs.length > 1 && !aes.empty)
+        if (xs.length > 1 && !merged.empty)
         {
             xs ~= [tick.x + direction[1], tick.x];
             ys ~= [tick.y + direction[0], tick.y];
@@ -506,15 +515,21 @@ auto geomLabel(AES)(AES aes)
 {
     alias CoordX = typeof(NumericLabel!(typeof(AES.x))(AES.x));
     alias CoordY = typeof(NumericLabel!(typeof(AES.y))(AES.y));
-    alias CoordType = typeof(merge(aes, Aes!(CoordX, "x", CoordY,
-        "y")(CoordX(AES.x), CoordY(AES.y))));
+    alias CoordType = typeof(DefaultValues
+        .mergeRange(aes)
+        .mergeRange( Aes!(CoordX, "x", CoordY, "y")
+            (CoordX(AES.x), CoordY(AES.y))));
+
 
     struct GeomRange(T)
     {
         size_t size = 6;
         this(T aes)
         {
-            _aes = merge(aes, Aes!(CoordX, "x", CoordY, "y")(CoordX(aes.x), CoordY(aes.y)));
+            _aes = DefaultValues
+                .mergeRange(aes)
+                .mergeRange( Aes!(CoordX, "x", CoordY, "y")
+                    (CoordX(aes.x), CoordY(aes.y)));
         }
 
         @property auto front()
@@ -681,8 +696,10 @@ auto geomPolygon(AES)(AES aes)
     import std.array : array;
     import std.algorithm : map, swap;
     import ggplotd.geometry;
+
+    auto merged = DefaultValues.mergeRange(aes);
     // Turn into vertices.
-    auto vertices = aes.map!( (t) => Vertex3D( t.x, t.y, t.colour ) );
+    auto vertices = merged.map!( (t) => Vertex3D( t.x, t.y, t.colour ) );
 
     // Find lowest, highest
     auto triangle = vertices.array;
@@ -703,7 +720,7 @@ auto geomPolygon(AES)(AES aes)
         }
     auto gV = gradientVector( triangle[0..3] );
 
-    immutable flags = aes.front;
+    immutable flags = merged.front;
 
     auto geom = Geom( flags );
 
@@ -737,7 +754,7 @@ auto geomPolygon(AES)(AES aes)
 
     geom.draw = f;
 
-    geom.colours = aes.map!((t) => ColourID(t.colour)).array;
+    geom.colours = merged.map!((t) => ColourID(t.colour)).array;
 
     return [geom];
 }

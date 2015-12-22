@@ -113,7 +113,7 @@ template Aes(Specs...)
         string decl = "auto front() { import std.range : ElementType;";
         decl ~= "import std.typecons : Tuple; import std.range : front;";
 
-        string tupleType = "DefaultValues.merge!()( Tuple!(";
+        string tupleType = "Tuple!(";
         string values = "(";
 
         foreach (i, name; fieldNames)
@@ -124,7 +124,7 @@ template Aes(Specs...)
             values ~= format("this.%s.front,", name);
         }
 
-        decl ~= "return " ~ tupleType[0 .. $ - 1] ~ ")" ~ values[0 .. $ - 1] ~ ")); }";
+        decl ~= "return " ~ tupleType[0 .. $ - 1] ~ ")" ~ values[0 .. $ - 1] ~ "); }";
         //string decl2 = format("auto front() { import std.stdio; \"%s\".writeln; return 0.0; }", decl);
         return decl;
     }
@@ -451,11 +451,9 @@ unittest
     aes.popFront;
     assertEqual(aes.front.y, 1);
     assertEqual(aes.front.colour, "white2");
-    assertEqual("", aes.front.label);
 
     auto aes2 = Aes!(double[], "x", double[], "y")([0, 1], [2, 1]);
     assertEqual(aes2.front.y, 2);
-    assertEqual(aes2.front.colour, "black");
 
     import std.range : repeat;
 
@@ -495,12 +493,15 @@ template group(Specs...)
     {
         import std.stdio;
         mixin(buildExtractKey());
-        extractKey( aes.front );
 
-        typeof(aes.front())[][typeof(extractKey(aes.front))] grouped;
+        // Attach all default fields
+        auto merged = DefaultValues.mergeRange( aes );
+        extractKey( merged.front );
+
+        typeof(merged.front())[][typeof(extractKey(merged.front))] grouped;
 
         // Extract keys for aa and store in aa. Return the values of the aa
-        foreach( tup; aes )
+        foreach( tup; merged )
         {
             auto key = extractKey(tup);
             if (key in grouped)
@@ -640,6 +641,7 @@ returns a named Tuple (or Aes) with all the members and their values.
 +/
 template merge2(T, U)
 {
+    import std.traits;
     import painlesstraits;
     auto generateCode()
     {
@@ -713,9 +715,16 @@ unittest
 
     assertEqual(nlAes.x.front[0], 0);
     assertEqual(nlAes.label.front, "e");
+}
 
-    // Need to check whether nlAes still has its default values
-    assertEqual(nlAes.front.colour, "black");
+unittest
+{
+    auto pnt = Tuple!(double, "x", double, "y", string, "label" )( 1.0, 2.0, "Point" );
+    auto merged = DefaultValues.merge2( pnt );
+    assertEqual( merged.x, 1.0 );
+    assertEqual( merged.y, 2.0 );
+    assertEqual( merged.colour, "black" );
+    assertEqual( merged.label, "Point" );
 }
 
 /// 
@@ -729,6 +738,52 @@ unittest
     assertEqual( merged.y, 2.0 );
     assertEqual( merged.colour, "black" );
     assertEqual( merged.label, "Point" );
+}
+
+///
+auto mergeRange( R1, R2 )( R1 r1, R2 r2 )
+{
+    import std.array : array;
+    import std.range : zip, StoppingPolicy;
+    import std.algorithm : map;
+    static if (isInputRange!R1 && isInputRange!R2)
+        return r1.zip(r2).array.map!((a) => a[0].merge2( a[1] ) );
+    else
+        return zip(StoppingPolicy.longest,
+            [r1],r2).array.map!((a) => a[0].merge2( a[1] ) );
+}
+
+///
+unittest
+{
+    import std.range : front;
+
+    auto xs = ["a", "b"];
+    auto ys = ["c", "d"];
+    auto labels = ["e", "f"];
+    auto aes = Aes!(string[], "x", string[], "y", string[], "label")(xs, ys, labels);
+    auto nlAes = mergeRange(DefaultValues, aes );
+    assertEqual(nlAes.front.x, "a");
+    assertEqual(nlAes.front.label, "e");
+    assertEqual(nlAes.front.colour, "black");
+}
+
+///
+unittest
+{
+    import std.range : front;
+
+    auto xs = ["a", "b"];
+    auto ys = ["c", "d"];
+    auto labels = ["e", "f"];
+    auto aes = Aes!(string[], "x", string[], "y", string[], "label")(xs, ys, labels);
+
+    auto nlAes = mergeRange(aes, Aes!(NumericLabel!(string[]), "x",
+        NumericLabel!(string[]), "y")(NumericLabel!(string[])(aes.x),
+        NumericLabel!(string[])(aes.y)));
+
+    assertEqual(nlAes.front.x[0], 0);
+    assertEqual(nlAes.front.label, "e");
 }
 
 /++
