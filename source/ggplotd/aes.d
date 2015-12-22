@@ -622,6 +622,115 @@ unittest
     assertEqual(strs.map!((a) => a[1]).array, ["a", "c", "b", "a"]);
 }
 
+unittest
+{
+    import painlesstraits;
+
+    auto t = Tuple!(double,"x")(1.0);
+
+    static assert(isFieldOrProperty!(t.x));
+}
+
+/++
+Merge two types by their members. 
+
+If it has similar named members, then it uses the second one.
+
+returns a named Tuple (or Aes) with all the members and their values. 
++/
+template merge2(T, U)
+{
+    import painlesstraits;
+    auto generateCode()
+    {
+        import std.string : split;
+        string typing = T.stringof.split("!")[0] ~ "!(";
+        string typingU = U.stringof.split("!")[0] ~ "!(";
+        if (typing == "Aes!(" || typingU == "Aes!(")
+            typing = "Aes!(";
+        else
+            typing = "Tuple!(";
+        string variables = "(";
+        foreach (name; __traits(allMembers, U))
+        {
+            static if (__traits(compiles, isFieldOrProperty!(
+                            __traits(getMember, U, name)))
+                    && __traits(compiles, ( in U u ) {
+                        auto a = __traits(getMember, u, name); } )
+                    && isFieldOrProperty!(__traits(getMember,U,name))
+                    && name[0] != "_"[0] )
+            {
+                typing ~= "typeof(other." ~ name ~ "),\"" ~ name ~ "\",";
+                variables ~= "other." ~ name ~ ",";
+            }
+        }
+
+        foreach (name; __traits(allMembers, T))
+        {
+            static if (__traits(compiles, isFieldOrProperty!(
+                __traits(getMember, T, name)))
+                     && __traits(compiles, ( in T u ) {
+                auto a = __traits(getMember, u, name); } )
+                 && isFieldOrProperty!(__traits(getMember,T,name))
+                     && name[0] != "_"[0] )
+                {
+                bool contains = false;
+                foreach (name2; __traits(allMembers, U))
+                {
+                    if (name == name2)
+                        contains = true;
+                }
+                if (!contains)
+                {
+                    typing ~= "typeof(base." ~ name ~ "),\"" ~ name ~ "\",";
+                    variables ~= "base." ~ name ~ ",";
+                }
+            }
+        }
+        return "return " ~ typing[0 .. $ - 1] ~ ")" ~ variables[0 .. $ - 1] ~ ");";
+    }
+
+    auto merge2(T base, U other)
+    {
+        //pragma(msg, generateCode());
+        mixin(generateCode());
+    }
+}
+
+///
+unittest
+{
+    import std.range : front;
+
+    auto xs = ["a", "b"];
+    auto ys = ["c", "d"];
+    auto labels = ["e", "f"];
+    auto aes = Aes!(string[], "x", string[], "y", string[], "label")(xs, ys, labels);
+
+    auto nlAes = merge2(aes, Aes!(NumericLabel!(string[]), "x",
+        NumericLabel!(string[]), "y")(NumericLabel!(string[])(aes.x),
+        NumericLabel!(string[])(aes.y)));
+
+    assertEqual(nlAes.x.front[0], 0);
+    assertEqual(nlAes.label.front, "e");
+
+    // Need to check whether nlAes still has its default values
+    assertEqual(nlAes.front.colour, "black");
+}
+
+/// 
+unittest
+{
+    struct Point { double x; double y; string label = "Point"; }
+    auto pnt = Point( 1.0, 2.0 );
+
+    auto merged = DefaultValues.merge2( pnt );
+    assertEqual( merged.x, 1.0 );
+    assertEqual( merged.y, 2.0 );
+    assertEqual( merged.colour, "black" );
+    assertEqual( merged.label, "Point" );
+}
+
 /++
 Merge two Aes structs
 
