@@ -208,6 +208,48 @@ void main()
 }
 ```
 
+### Data
+
+The examples above all use the Aes struct to hold all the data and pass it to
+geom* functions. Instead it is also straightforward to use your own data range
+as long as each element provides access to the needed data at compile time,
+i.e. for geomPoint the element needs to have a x and y field. See below for
+a simple example:
+
+```D
+
+import ggplotd.ggplotd; 
+import ggplotd.aes; 
+import ggplotd.geom;
+
+struct Point { 
+    double x; 
+    double y; 
+}
+
+void main()
+{
+    /// http://blackedder.github.io/ggplotd/images/data.png
+    import std.array : array;
+    import std.math : sqrt;
+    import std.algorithm : map;
+    import std.range : iota;
+    import std.random : uniform;
+    // Generate some noisy data with reducing width
+    auto f = (double x) { return x/(1+x); };
+    auto width = (double x) { return sqrt(0.1/(1+x)); };
+    auto xs = iota( 0, 10, 0.1 ).array;
+
+    auto points = xs.map!((x) => Point(x,
+        f(x) + uniform(-width(x),width(x))));
+
+    auto gg = GGPlotD().put( geomPoint( points ) );
+
+    gg.save( "data.png" );
+}
+
+```
+
 ## Extending GGplotD
 
 Due to GGplotD’s design it is relatively straightforward to extend GGplotD to
