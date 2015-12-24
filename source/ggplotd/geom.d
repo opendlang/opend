@@ -373,9 +373,7 @@ auto geomHist(AES)(AES aes)
     // New appender to hold lines for drawing histogram
     auto appender = Appender!(Geom[])([]);
 
-    auto merged = DefaultValues.mergeRange(aes);
-
-    foreach (grouped; group(merged)) // Split data by colour/id
+    foreach (grouped; group(aes)) // Split data by colour/id
     {
         auto bins = grouped.map!((t) => t.x) // Extract the x coordinates
             .array.bin(11); // Bin the data

@@ -746,7 +746,9 @@ unittest
     assertEqual( merged.label, "Point" );
 }
 
-///
+/++
+  Merge the elements of two ranges. If first is not a range then merge that with each element of the second range.
++/
 auto mergeRange( R1, R2 )( R1 r1, R2 r2 )
 {
     import std.array : array;
