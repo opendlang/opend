@@ -358,7 +358,7 @@ unittest
     auto gg = GGPlotD().put( geomHist( aes ) );
 
     auto ys = (0.0).repeat( xs.length ).array;
-    auto aesPs = aes.merge( Aes!(double[], "y", double[], "colour" )
+    auto aesPs = aes.mergeRange( Aes!(double[], "y", double[], "colour" )
         ( ys, ys ) );
     gg.put( geomPoint( aesPs ) );
 

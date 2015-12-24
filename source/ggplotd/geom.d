@@ -38,12 +38,15 @@ struct Geom
 ///
 auto geomPoint(AES)(AES aes)
 {
-    alias CoordX = typeof(NumericLabel!(typeof(AES.x))(AES.x));
-    alias CoordY = typeof(NumericLabel!(typeof(AES.y))(AES.y));
+    import std.algorithm : map;
+    auto xsMap = aes.map!("a.x");
+    auto ysMap = aes.map!("a.y");
+    alias CoordX = typeof(NumericLabel!(typeof(xsMap))(xsMap));
+    alias CoordY = typeof(NumericLabel!(typeof(ysMap))(ysMap));
     alias CoordType = typeof(DefaultValues
         .mergeRange(aes)
         .mergeRange( Aes!(CoordX, "x", CoordY, "y")
-            (CoordX(AES.x), CoordY(AES.y))));
+            (CoordX(xsMap), CoordY(ysMap))));
 
     struct GeomRange(T)
     {
@@ -52,7 +55,7 @@ auto geomPoint(AES)(AES aes)
             _aes = DefaultValues
                 .mergeRange(aes)
                 .mergeRange( Aes!(CoordX, "x", CoordY, "y")(
-                    CoordX(aes.x), CoordY(aes.y)));
+                    CoordX(xsMap), CoordY(ysMap)));
         }
 
         @property auto front()
@@ -632,7 +635,7 @@ auto geomBox(AES)(AES aes)
     Appender!(Geom[]) result;
     auto labels = NumericLabel!(string[])( 
         aes.map!("a.label.to!string").array );
-    auto myAes = aes.merge( Aes!(typeof(labels), "label")( labels ) );
+    auto myAes = aes.mergeRange( Aes!(typeof(labels), "label")( labels ) );
 
     double delta = 0.2;
     Tuple!(double, string)[] xTickLabels;

@@ -639,7 +639,7 @@ If it has similar named members, then it uses the second one.
 
 returns a named Tuple (or Aes) with all the members and their values. 
 +/
-template merge2(T, U)
+template merge(T, U)
 {
     import std.traits;
     import painlesstraits;
@@ -691,9 +691,8 @@ template merge2(T, U)
         return "return " ~ typing[0 .. $ - 1] ~ ")" ~ variables[0 .. $ - 1] ~ ");";
     }
 
-    auto merge2(T base, U other)
+    auto merge(T base, U other)
     {
-        //pragma(msg, generateCode());
         mixin(generateCode());
     }
 }
@@ -708,7 +707,7 @@ unittest
     auto labels = ["e", "f"];
     auto aes = Aes!(string[], "x", string[], "y", string[], "label")(xs, ys, labels);
 
-    auto nlAes = merge2(aes, Aes!(NumericLabel!(string[]), "x",
+    auto nlAes = merge(aes, Aes!(NumericLabel!(string[]), "x",
         NumericLabel!(string[]), "y")(NumericLabel!(string[])(aes.x),
         NumericLabel!(string[])(aes.y)));
 
@@ -719,7 +718,7 @@ unittest
 unittest
 {
     auto pnt = Tuple!(double, "x", double, "y", string, "label" )( 1.0, 2.0, "Point" );
-    auto merged = DefaultValues.merge2( pnt );
+    auto merged = DefaultValues.merge( pnt );
     assertEqual( merged.x, 1.0 );
     assertEqual( merged.y, 2.0 );
     assertEqual( merged.colour, "black" );
@@ -739,7 +738,7 @@ unittest
     struct Point { double x; double y; string label = "Point"; }
     auto pnt = Point( 1.0, 2.0 );
 
-    auto merged = DefaultValues.merge2( pnt );
+    auto merged = DefaultValues.merge( pnt );
     assertEqual( merged.x, 1.0 );
     assertEqual( merged.y, 2.0 );
     assertEqual( merged.colour, "black" );
@@ -755,10 +754,10 @@ auto mergeRange( R1, R2 )( R1 r1, R2 r2 )
     import std.range : zip, walkLength, repeat;
     import std.algorithm : map;
     static if (isInputRange!R1 && isInputRange!R2)
-        return r1.zip(r2).array.map!((a) => a[0].merge2( a[1] ) );
+        return r1.zip(r2).array.map!((a) => a[0].merge( a[1] ) );
     else
         return zip( r1.repeat(r2.walkLength),
-            r2).array.map!((a) => a[0].merge2( a[1] ) );
+            r2).array.map!((a) => a[0].merge( a[1] ) );
 }
 
 ///
@@ -792,65 +791,4 @@ unittest
 
     assertEqual(nlAes.front.x[0], 0);
     assertEqual(nlAes.front.label, "e");
-}
-
-/++
-Merge two Aes structs
-
-If it has similar named types, then it uses the second one.
-
-Returns a new struct, with combined types.
-+/
-template merge(T, U)
-{
-    auto generateCode()
-    {
-        import std.string : split;
-        string typing = T.stringof.split("!")[0] ~ "!(";
-        string variables = "(";
-        foreach (i, t; U.fieldNames)
-        {
-            typing ~= U.Types[i].stringof ~ ",\"" ~ t ~ "\",";
-            variables ~= "other." ~ t ~ ",";
-        }
-
-        foreach (i, t; T.fieldNames)
-        {
-            bool contains = false;
-            foreach (_, t2; U.fieldNames)
-            {
-                if (t == t2)
-                    contains = true;
-            }
-            if (!contains)
-            {
-                typing ~= T.Types[i].stringof ~ ",\"" ~ t ~ "\",";
-                variables ~= "base." ~ t ~ ",";
-            }
-        }
-        return "return " ~ typing[0 .. $ - 1] ~ ")" ~ variables[0 .. $ - 1] ~ ");";
-    }
-
-    auto merge(T base, U other)
-    {
-        mixin(generateCode());
-    }
-}
-
-///
-unittest
-{
-    import std.range : front;
-
-    auto xs = ["a", "b"];
-    auto ys = ["c", "d"];
-    auto labels = ["e", "f"];
-    auto aes = Aes!(string[], "x", string[], "y", string[], "label")(xs, ys, labels);
-
-    auto nlAes = merge(aes, Aes!(NumericLabel!(string[]), "x",
-        NumericLabel!(string[]), "y")(NumericLabel!(string[])(aes.x),
-        NumericLabel!(string[])(aes.y)));
-
-    assertEqual(nlAes.x.front[0], 0);
-    assertEqual(nlAes.label.front, "e");
 }
