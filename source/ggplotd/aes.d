@@ -232,14 +232,14 @@ template Aes(Specs...)
          * Tuple!(int, int) t = ints;
          * ----
          */
-        this(U, size_t n)(U[n] values) if (n == Types.length
+        /+this(U, size_t n)(U[n] values) if (n == Types.length
                 && allSatisfy!(isBuildableFrom!U, Types))
         {
             foreach (i, _; Types)
             {
                 field[i] = values[i];
             }
-        }
+        }+/
 
         /**
          * Constructor taking a compatible tuple.
@@ -646,19 +646,17 @@ template merge2(T, U)
     auto generateCode()
     {
         import std.string : split;
-        string typing = T.stringof.split("!")[0] ~ "!(";
-        string typingU = U.stringof.split("!")[0] ~ "!(";
-        if (typing == "Aes!(" || typingU == "Aes!(")
-            typing = "Aes!(";
-        else
-            typing = "Tuple!(";
+        string typing = "Tuple!(";
+        //string typing = T.stringof.split("!")[0] ~ "!(";
+        //string typingU = U.stringof.split("!")[0] ~ "!(";
         string variables = "(";
         foreach (name; __traits(allMembers, U))
         {
             static if (__traits(compiles, isFieldOrProperty!(
                             __traits(getMember, U, name)))
                     && __traits(compiles, ( in U u ) {
-                        auto a = __traits(getMember, u, name); } )
+                        auto a = __traits(getMember, u, name);
+                        Tuple!(typeof(a),name)(a); } )
                     && isFieldOrProperty!(__traits(getMember,U,name))
                     && name[0] != "_"[0] )
             {
@@ -672,8 +670,9 @@ template merge2(T, U)
             static if (__traits(compiles, isFieldOrProperty!(
                 __traits(getMember, T, name)))
                      && __traits(compiles, ( in T u ) {
-                auto a = __traits(getMember, u, name); } )
-                 && isFieldOrProperty!(__traits(getMember,T,name))
+                auto a = __traits(getMember, u, name); 
+                Tuple!(typeof(a),name)(a); } )
+                && isFieldOrProperty!(__traits(getMember,T,name))
                      && name[0] != "_"[0] )
                 {
                 bool contains = false;
@@ -727,6 +726,13 @@ unittest
     assertEqual( merged.label, "Point" );
 }
 
+unittest
+{
+    import std.range : walkLength;
+    auto m = [DefaultValues].mergeRange( Aes!(double[], "x")([1.0]));
+    assertEqual( m.walkLength, 1);
+}
+
 /// 
 unittest
 {
@@ -744,13 +750,13 @@ unittest
 auto mergeRange( R1, R2 )( R1 r1, R2 r2 )
 {
     import std.array : array;
-    import std.range : zip, StoppingPolicy;
+    import std.range : zip, walkLength, repeat;
     import std.algorithm : map;
     static if (isInputRange!R1 && isInputRange!R2)
         return r1.zip(r2).array.map!((a) => a[0].merge2( a[1] ) );
     else
-        return zip(StoppingPolicy.longest,
-            [r1],r2).array.map!((a) => a[0].merge2( a[1] ) );
+        return zip( r1.repeat(r2.walkLength),
+            r2).array.map!((a) => a[0].merge2( a[1] ) );
 }
 
 ///
