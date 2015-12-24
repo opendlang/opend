@@ -485,3 +485,28 @@ unittest
             [1,0,0], [ 1, 1, 0 ], [1,0.1,0] ) ) );
     gg.save( "background.svg" );
 }
+
+/// Other data type
+unittest
+{
+    /// http://blackedder.github.io/ggplotd/images/data.png
+    import std.array : array;
+    import std.math : sqrt;
+    import std.algorithm : map;
+    import std.range : repeat, iota;
+    import std.random : uniform;
+    struct Point { double x; double y; }
+    // Generate some noisy data with reducing width
+    auto f = (double x) { return x/(1+x); };
+    auto width = (double x) { return sqrt(0.1/(1+x)); };
+    auto xs = iota( 0, 10, 0.1 ).array;
+
+    auto points = xs.map!((x) => Point(x,
+        f(x) + uniform(-width(x),width(x))));
+
+    auto gg = GGPlotD().put( geomPoint( points ) );
+
+    gg.save( "data.png" );
+}
+
+
