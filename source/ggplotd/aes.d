@@ -467,7 +467,11 @@ unittest
 
 }
 
-///
+/++
+    Groups data by colour label etc.
+
+    Will also add DefaultValues for label etc to the data. It is also possible to specify exactly what to group by on as a template parameter. See example.
++/
 template group(Specs...)
 {
     string buildExtractKey()
@@ -513,6 +517,7 @@ template group(Specs...)
     }
 }
 
+///
 unittest
 {
     import std.range : walkLength;
@@ -525,6 +530,7 @@ unittest
     assertEqual(group(aes).walkLength,4);
 }
 
+///
 unittest
 {
     auto aes = Aes!(double[], "x", double[], "y", string[], "colour")([1.0,
