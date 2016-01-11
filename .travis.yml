@@ -1,5 +1,6 @@
 language: d
 d:
+  - dmd-2.070.0-b1
   - dmd
   - dmd-2.068.2
   - dmd-2.067.1
