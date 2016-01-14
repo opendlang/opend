@@ -103,18 +103,18 @@ struct SharedLib {
 
     public {
         /++
-         Finds and loads a shared library, using libNames to find the library
+         Finds and loads a shared library, using names to find the library
          on the file system.
 
-         If multiple library names are specified in libNames, a SharedLibLoadException
+         If multiple library names are specified in names, a SharedLibLoadException
          will only be thrown if all of the libraries fail to load. It will be the head
          of an exceptin chain containing one instance of the exception for each library
          that failed.
 
 
          Params:
-            libNames =      An array containing one or more shared library names,
-                            with one name per index.
+            names = An array containing one or more shared library names,
+                    with one name per index.
          Throws:    SharedLibLoadException if the shared library or one of its
                     dependencies cannot be found on the file system.
                     SymbolLoadException if an expected symbol is missing from the
