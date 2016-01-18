@@ -4,27 +4,27 @@ import std.traits;
 
 template hasAnnotation(alias f, alias Attr)
 {
-	import std.typetuple : anySatisfy, TypeTuple;
+    import std.typetuple : anySatisfy, TypeTuple;
 
-	alias allAnnotations = TypeTuple!(__traits(getAttributes, f));
-	template hasMatch(alias attr) {
-		static if(is(Attr)) {
-			alias hasMatch = Identity!(is(typeof(attr) == Attr) || is(attr == Attr));
-		} else {
-			alias hasMatch = Identity!(is(attr == Attr));
-		}
-	}
-	enum bool hasAnnotation = anySatisfy!(hasMatch, allAnnotations);
+    alias allAnnotations = TypeTuple!(__traits(getAttributes, f));
+    template hasMatch(alias attr) {
+        static if(is(Attr)) {
+            alias hasMatch = Identity!(is(typeof(attr) == Attr) || is(attr == Attr));
+        } else {
+            alias hasMatch = Identity!(is(attr == Attr));
+        }
+    }
+    enum bool hasAnnotation = anySatisfy!(hasMatch, allAnnotations);
 }
 
 unittest
 {
-	enum FooUDA;
-	enum BarUDA;
-	@FooUDA int x;
+    enum FooUDA;
+    enum BarUDA;
+    @FooUDA int x;
 
-	static assert(hasAnnotation!(x, FooUDA));
-	static assert(!hasAnnotation!(x, BarUDA));
+    static assert(hasAnnotation!(x, FooUDA));
+    static assert(!hasAnnotation!(x, BarUDA));
 }
 
 template hasAnyOfTheseAnnotations(alias f, Attr...)
@@ -41,24 +41,24 @@ template hasAnyOfTheseAnnotations(alias f, Attr...)
 
 template hasValueAnnotation(alias f, alias Attr)
 {
-	import std.typetuple : anySatisfy, TypeTuple;
+    import std.typetuple : anySatisfy, TypeTuple;
 
-	alias allAnnotations = TypeTuple!(__traits(getAttributes, f));
-	alias hasMatch(alias attr) = Identity!(is(Attr) && is(typeof(attr) == Attr));
-	enum bool hasValueAnnotation = anySatisfy!(hasMatch, allAnnotations);
+    alias allAnnotations = TypeTuple!(__traits(getAttributes, f));
+    alias hasMatch(alias attr) = Identity!(is(Attr) && is(typeof(attr) == Attr));
+    enum bool hasValueAnnotation = anySatisfy!(hasMatch, allAnnotations);
 }
 
 unittest
 {
-	enum FooUDA;
-	struct BarUDA { int data; }
-	@FooUDA int x;
-	@FooUDA @(BarUDA(1)) int y;
+    enum FooUDA;
+    struct BarUDA { int data; }
+    @FooUDA int x;
+    @FooUDA @(BarUDA(1)) int y;
 
-	static assert(!hasValueAnnotation!(x, BarUDA));
-	static assert(!hasValueAnnotation!(x, FooUDA));
-	static assert(hasValueAnnotation!(y, BarUDA));
-	static assert(!hasValueAnnotation!(y, FooUDA));
+    static assert(!hasValueAnnotation!(x, BarUDA));
+    static assert(!hasValueAnnotation!(x, FooUDA));
+    static assert(hasValueAnnotation!(y, BarUDA));
+    static assert(!hasValueAnnotation!(y, FooUDA));
 }
 
 template hasAnyOfTheseValueAnnotations(alias f, Attr...)
@@ -75,14 +75,14 @@ template hasAnyOfTheseValueAnnotations(alias f, Attr...)
 
 template getAnnotation(alias f, Attr)
 {
-	static if (hasValueAnnotation!(f, Attr)) {
-		enum getAnnotation = (function() {
-			foreach (attr; __traits(getAttributes, f))
-				static if (is(typeof(attr) == Attr))
-					return attr;
-			assert(0);
-		})();
-	} else static assert(0);
+    static if (hasValueAnnotation!(f, Attr)) {
+        enum getAnnotation = (function() {
+            foreach (attr; __traits(getAttributes, f))
+                static if (is(typeof(attr) == Attr))
+                    return attr;
+            assert(0);
+        })();
+    } else static assert(0);
 }
 
 template isFieldOrProperty(alias T)
@@ -97,11 +97,11 @@ template isFieldOrProperty(alias T)
 }
 
 unittest {
-	struct Foo {
-		int success;
-		int failure(int x) {return x;}
-	}
+    struct Foo {
+        int success;
+        int failure(int x) {return x;}
+    }
 
-	static assert(isFieldOrProperty!(Foo.success));
-	static assert(!isFieldOrProperty!(Foo.failure));
+    static assert(isFieldOrProperty!(Foo.success));
+    static assert(!isFieldOrProperty!(Foo.failure));
 }
