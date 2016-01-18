@@ -30,10 +30,12 @@ unittest
 template hasAnyOfTheseAnnotations(alias f, Attr...)
 {
     enum bool hasAnyOfTheseAnnotations = (function() {
+        bool any = false;
         foreach (annotation; Attr)
-            static if (hasAnnotation!(f, annotation))
-                return true;
-        return false;
+        {
+            any |= hasAnnotation!(f, annotation);
+        }
+        return any;
     })();
 }
 
@@ -62,10 +64,12 @@ unittest
 template hasAnyOfTheseValueAnnotations(alias f, Attr...)
 {
     enum bool hasAnyOfTheseValueAnnotations = (function() {
+        bool any = false;
         foreach (annotation; Attr)
-            static if (hasValueAnnotation(f, annotation))
-                return true;
-        return false;
+        {
+            any |= (hasValueAnnotation(f, annotation));
+        }
+        return any;
     })();
 }
 
