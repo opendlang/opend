@@ -18,12 +18,7 @@
 	},
 	"configurations": [
 		{
-			"name": "stlib",
-			"targetType": "staticLibrary",
-			"preBuildCommands": ["rdmd $PACKAGE_DIR/configure.d $PACKAGE_DIR"]
-		},
-		{
-			"name": "stlib-minimal",
+			"name": "static-custom",
 			"targetType": "staticLibrary"
 		},
 		{
@@ -31,13 +26,7 @@
 			"targetType": "executable",
 			"sourceFiles": ["unittest.d"],
 			"libs": ["cairo"],
-			"preBuildCommands": ["rdmd $PACKAGE_DIR/configure.d $PACKAGE_DIR"]
-		},
-		{
-			"name": "unittest-minimal",
-			"targetType": "executable",
-			"sourceFiles": ["unittest.d"],
-			"libs": ["cairo"]
-		},
+			"versions": ["CairoPNG"]
+		}
 	]
 }
