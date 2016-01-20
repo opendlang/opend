@@ -83,7 +83,7 @@ template hasAnyOfTheseValueAnnotations(alias f, Attr...)
         bool any = false;
         foreach (annotation; Attr)
         {
-            any |= (hasValueAnnotation(f, annotation));
+            any |= hasValueAnnotation!(f, annotation);
         }
         return any;
     })();
