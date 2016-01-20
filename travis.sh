@@ -2,15 +2,8 @@
 
 set -eo pipefail
 
-# Test minimal configuration
-if [[ $MINIMAL -eq 1 ]]; then
-    dub build --config=stlib-minimal
-    dub test --config=unittest-minimal
-# Test with configure script
-else
-    dub build
-    dub test
-fi
+dub build
+dub test
 
 echo ""
 echo "================================================================================"
@@ -18,7 +11,7 @@ echo "Running examples"
 echo ""
 
 # Test examples
-cd example
+cd examples
 for i in *; do
     # Can't run win32 tests, common directory does not contain tests
     # freetype version on travis-ci seems to be incompatible with derelict
@@ -26,18 +19,10 @@ for i in *; do
         echo ""
         echo "=> $i"
         cd $i
-        # Insert a subConfigurations section before the configurations section
-        if [[ "$MINIMAL" -eq 1 ]]; then
-            sed -i 's/.*"configurations": \[.*/\t"subConfigurations": {\n\t\t"cairod": "stlib-minimal"\n\t},\n&/' dub.json
-        fi
+
         # Do not run xlib tests, no GUI available
         if [[ "$i" == "xlib" ]]; then
-            # Skip xlib test in minimal configuration
-            if [[ "$MINIMAL" -eq 1 ]]; then
-                echo "xlib not available in minimal configuration"
-            else
-                dub build
-            fi
+            dub build
         else
             dub run
         fi

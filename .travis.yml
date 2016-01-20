@@ -8,11 +8,6 @@ d:
   - gdc
   - ldc
 
-install:
-  - curl -fsSLO https://raw.githubusercontent.com/D-Programming-Language/tools/v2.068.2/rdmd.d
-  - ${DMD} rdmd.d
-  - mv rdmd $(dirname $(which ${DMD}))
-
 script: ./travis.sh
 
 sudo: false
@@ -21,8 +16,3 @@ addons:
     packages:
     - libcairo2
     - libcairo2-dev
-    - fonts-dejavu-core
-
-env:
-  - MINIMAL=0
-  - MINIMAL=1
