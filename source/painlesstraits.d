@@ -39,20 +39,26 @@ template hasAnyOfTheseAnnotations(alias f, Attr...)
     })();
 }
 
+version (unittest)
+{
+    // Some types are outside unittest block since old compilers couldn't find them otherwise
+    // This might indicate brittleness of these functions but I'm not sure how to fix that
+    enum AnyFooUDA;
+    enum AnyBazUDA;
+    enum AnyQuxUDA;
+    struct AnyBarUDA { int data; }
+    @AnyFooUDA @(AnyBarUDA(1)) int anyx;
+    @(AnyBarUDA(1)) int anyy;
+    @AnyFooUDA int anyz;
+}
+
 unittest
 {
-    enum FooUDA;
-    enum BazUDA;
-    enum QuxUDA;
-    struct BarUDA { int data; }
-    @FooUDA @(BarUDA(1)) int x;
-    @(BarUDA(1)) int y;
-
-    static assert(!hasAnyOfTheseAnnotations!(y, BazUDA, QuxUDA));
-    static assert(!hasAnyOfTheseAnnotations!(x, BazUDA));
-    static assert(!hasAnyOfTheseAnnotations!(x, QuxUDA));
-    static assert(hasAnyOfTheseAnnotations!(x, FooUDA, BarUDA));
-    static assert(hasAnyOfTheseAnnotations!(x, BarUDA, QuxUDA));
+    static assert(!hasAnyOfTheseAnnotations!(anyy, AnyBazUDA, AnyQuxUDA));
+    static assert(!hasAnyOfTheseAnnotations!(anyx, AnyBazUDA));
+    static assert(!hasAnyOfTheseAnnotations!(anyx, AnyQuxUDA));
+    static assert(hasAnyOfTheseAnnotations!(anyz, AnyFooUDA, AnyBarUDA));
+    static assert(hasAnyOfTheseAnnotations!(anyx, AnyBarUDA, AnyQuxUDA));
 }
 
 template hasValueAnnotation(alias f, alias Attr)
@@ -91,17 +97,12 @@ template hasAnyOfTheseValueAnnotations(alias f, Attr...)
 
 unittest
 {
-    enum FooUDA;
-    struct BarUDA { int data; }
-    @FooUDA int x;
-    @FooUDA @(BarUDA(1)) int y;
-
-    static assert(!hasAnyOfTheseValueAnnotations!(x, BarUDA));
-    static assert(!hasAnyOfTheseValueAnnotations!(x, BarUDA, FooUDA));
-    static assert(hasAnyOfTheseValueAnnotations!(y, BarUDA));
-    static assert(!hasAnyOfTheseValueAnnotations!(y, FooUDA));
-    static assert(hasAnyOfTheseValueAnnotations!(y, FooUDA, BarUDA));
-    static assert(hasAnyOfTheseValueAnnotations!(y, BarUDA, FooUDA));
+    static assert(!hasAnyOfTheseValueAnnotations!(anyz, AnyBarUDA));
+    static assert(!hasAnyOfTheseValueAnnotations!(anyz, AnyBarUDA, AnyFooUDA));
+    static assert(hasAnyOfTheseValueAnnotations!(anyx, AnyBarUDA));
+    static assert(!hasAnyOfTheseValueAnnotations!(anyx, AnyFooUDA));
+    static assert(hasAnyOfTheseValueAnnotations!(anyx, AnyFooUDA, AnyBarUDA));
+    static assert(hasAnyOfTheseValueAnnotations!(anyy, AnyBarUDA, AnyFooUDA));
 }
 
 template getAnnotation(alias f, Attr)
