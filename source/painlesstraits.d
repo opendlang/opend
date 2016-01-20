@@ -39,6 +39,22 @@ template hasAnyOfTheseAnnotations(alias f, Attr...)
     })();
 }
 
+unittest
+{
+    enum FooUDA;
+    enum BazUDA;
+    enum QuxUDA;
+    struct BarUDA { int data; }
+    @FooUDA @(BarUDA(1)) int x;
+    @(BarUDA(1)) int y;
+
+    static assert(!hasAnyOfTheseAnnotations!(y, BazUDA, QuxUDA));
+    static assert(!hasAnyOfTheseAnnotations!(x, BazUDA));
+    static assert(!hasAnyOfTheseAnnotations!(x, QuxUDA));
+    static assert(hasAnyOfTheseAnnotations!(x, FooUDA, BarUDA));
+    static assert(hasAnyOfTheseAnnotations!(x, BarUDA, QuxUDA));
+}
+
 template hasValueAnnotation(alias f, alias Attr)
 {
     import std.typetuple : anySatisfy, TypeTuple;
@@ -71,6 +87,21 @@ template hasAnyOfTheseValueAnnotations(alias f, Attr...)
         }
         return any;
     })();
+}
+
+unittest
+{
+    enum FooUDA;
+    struct BarUDA { int data; }
+    @FooUDA int x;
+    @FooUDA @(BarUDA(1)) int y;
+
+    static assert(!hasAnyOfTheseValueAnnotations!(x, BarUDA));
+    static assert(!hasAnyOfTheseValueAnnotations!(x, BarUDA, FooUDA));
+    static assert(hasAnyOfTheseValueAnnotations!(y, BarUDA));
+    static assert(!hasAnyOfTheseValueAnnotations!(y, FooUDA));
+    static assert(hasAnyOfTheseValueAnnotations!(y, FooUDA, BarUDA));
+    static assert(hasAnyOfTheseValueAnnotations!(y, BarUDA, FooUDA));
 }
 
 template getAnnotation(alias f, Attr)
