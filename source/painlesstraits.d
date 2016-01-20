@@ -4,81 +4,122 @@ import std.traits;
 
 template hasAnnotation(alias f, alias Attr)
 {
-	import std.typetuple : anySatisfy, TypeTuple;
+    import std.typetuple : anySatisfy, TypeTuple;
 
-	alias allAnnotations = TypeTuple!(__traits(getAttributes, f));
-	template hasMatch(alias attr) {
-		static if(is(Attr)) {
-			alias hasMatch = Identity!(is(typeof(attr) == Attr) || is(attr == Attr));
-		} else {
-			alias hasMatch = Identity!(is(attr == Attr));
-		}
-	}
-	enum bool hasAnnotation = anySatisfy!(hasMatch, allAnnotations);
+    alias allAnnotations = TypeTuple!(__traits(getAttributes, f));
+    template hasMatch(alias attr) {
+        static if(is(Attr)) {
+            alias hasMatch = Identity!(is(typeof(attr) == Attr) || is(attr == Attr));
+        } else {
+            alias hasMatch = Identity!(is(attr == Attr));
+        }
+    }
+    enum bool hasAnnotation = anySatisfy!(hasMatch, allAnnotations);
 }
 
 unittest
 {
-	enum FooUDA;
-	enum BarUDA;
-	@FooUDA int x;
+    enum FooUDA;
+    enum BarUDA;
+    @FooUDA int x;
 
-	static assert(hasAnnotation!(x, FooUDA));
-	static assert(!hasAnnotation!(x, BarUDA));
+    static assert(hasAnnotation!(x, FooUDA));
+    static assert(!hasAnnotation!(x, BarUDA));
 }
 
 template hasAnyOfTheseAnnotations(alias f, Attr...)
 {
     enum bool hasAnyOfTheseAnnotations = (function() {
+        bool any = false;
         foreach (annotation; Attr)
-            static if (hasAnnotation!(f, annotation))
-                return true;
-        return false;
+        {
+            any |= hasAnnotation!(f, annotation);
+        }
+        return any;
     })();
 }
 
-template hasValueAnnotation(alias f, alias Attr)
+version (unittest)
 {
-	import std.typetuple : anySatisfy, TypeTuple;
-
-	alias allAnnotations = TypeTuple!(__traits(getAttributes, f));
-	alias hasMatch(alias attr) = Identity!(is(Attr) && is(typeof(attr) == Attr));
-	enum bool hasValueAnnotation = anySatisfy!(hasMatch, allAnnotations);
+    // Some types are outside unittest block since old compilers couldn't find them otherwise
+    // This might indicate brittleness of these functions but I'm not sure how to fix that
+    enum AnyFooUDA;
+    enum AnyBazUDA;
+    enum AnyQuxUDA;
+    struct AnyBarUDA { int data; }
+    @AnyFooUDA @(AnyBarUDA(1)) int anyx;
+    @(AnyBarUDA(1)) int anyy;
+    @AnyFooUDA int anyz;
 }
 
 unittest
 {
-	enum FooUDA;
-	struct BarUDA { int data; }
-	@FooUDA int x;
-	@FooUDA @(BarUDA(1)) int y;
+    static assert(!hasAnyOfTheseAnnotations!(anyy, AnyBazUDA, AnyQuxUDA));
+    static assert(!hasAnyOfTheseAnnotations!(anyx, AnyBazUDA));
+    static assert(!hasAnyOfTheseAnnotations!(anyx, AnyQuxUDA));
+    static assert(hasAnyOfTheseAnnotations!(anyz, AnyFooUDA, AnyBarUDA));
+    static assert(hasAnyOfTheseAnnotations!(anyx, AnyBarUDA, AnyQuxUDA));
+}
 
-	static assert(!hasValueAnnotation!(x, BarUDA));
-	static assert(!hasValueAnnotation!(x, FooUDA));
-	static assert(hasValueAnnotation!(y, BarUDA));
-	static assert(!hasValueAnnotation!(y, FooUDA));
+template hasValueAnnotation(alias f, alias Attr)
+{
+    import std.typetuple : anySatisfy, TypeTuple;
+
+    alias allAnnotations = TypeTuple!(__traits(getAttributes, f));
+    alias hasMatch(alias attr) = Identity!(is(Attr) && is(typeof(attr) == Attr));
+    enum bool hasValueAnnotation = anySatisfy!(hasMatch, allAnnotations);
+}
+
+unittest
+{
+    enum FooUDA;
+    struct BarUDA { int data; }
+    @FooUDA int x;
+    @FooUDA @(BarUDA(1)) int y;
+
+    static assert(!hasValueAnnotation!(x, BarUDA));
+    static assert(!hasValueAnnotation!(x, FooUDA));
+    static assert(hasValueAnnotation!(y, BarUDA));
+    static assert(!hasValueAnnotation!(y, FooUDA));
 }
 
 template hasAnyOfTheseValueAnnotations(alias f, Attr...)
 {
     enum bool hasAnyOfTheseValueAnnotations = (function() {
+        bool any = false;
         foreach (annotation; Attr)
-            static if (hasValueAnnotation(f, annotation))
-                return true;
-        return false;
+        {
+            any |= hasValueAnnotation!(f, annotation);
+        }
+        return any;
     })();
+}
+
+unittest
+{
+    static assert(!hasAnyOfTheseValueAnnotations!(anyz, AnyBarUDA));
+    static assert(!hasAnyOfTheseValueAnnotations!(anyz, AnyBarUDA, AnyFooUDA));
+    static assert(hasAnyOfTheseValueAnnotations!(anyx, AnyBarUDA));
+    static assert(!hasAnyOfTheseValueAnnotations!(anyx, AnyFooUDA));
+    static assert(hasAnyOfTheseValueAnnotations!(anyx, AnyFooUDA, AnyBarUDA));
+    static assert(hasAnyOfTheseValueAnnotations!(anyy, AnyBarUDA, AnyFooUDA));
 }
 
 template getAnnotation(alias f, Attr)
 {
-	static if (hasValueAnnotation!(f, Attr)) {
-		enum getAnnotation = (function() {
-			foreach (attr; __traits(getAttributes, f))
-				static if (is(typeof(attr) == Attr))
-					return attr;
-			assert(0);
-		})();
-	} else static assert(0);
+    static if (hasValueAnnotation!(f, Attr)) {
+        enum getAnnotation = (function() {
+            foreach (attr; __traits(getAttributes, f))
+                static if (is(typeof(attr) == Attr))
+                    return attr;
+            assert(0);
+        })();
+    } else static assert(0);
+}
+
+unittest
+{
+    static assert(getAnnotation!(anyy, AnyBarUDA).data == 1);
 }
 
 template isFieldOrProperty(alias T)
@@ -93,11 +134,11 @@ template isFieldOrProperty(alias T)
 }
 
 unittest {
-	struct Foo {
-		int success;
-		int failure(int x) {return x;}
-	}
+    struct Foo {
+        int success;
+        int failure(int x) {return x;}
+    }
 
-	static assert(isFieldOrProperty!(Foo.success));
-	static assert(!isFieldOrProperty!(Foo.failure));
+    static assert(isFieldOrProperty!(Foo.success));
+    static assert(!isFieldOrProperty!(Foo.failure));
 }
