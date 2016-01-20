@@ -18,19 +18,20 @@
 	"configurations": [
 		{
 			"name": "minimal",
-			"targetType": "executable"
+			"targetType": "executable",
+			"versions": ["CairoPNG"]
 		},
 		{
 			"name": "gtk3",
 			"targetType": "executable",
 			"libs": ["cairo", "gobject-2.0", "gdk-3", "gtk-3"],
-			"versions": ["GTK", "GTK3"]
+			"versions": ["GTK", "GTK3", "CairoPNG"]
 		},
 		{
 			"name": "gtk2",
 			"targetType": "executable",
 			"libs": ["cairo", "gobject-2.0", "gdk-x11-2.0", "gtk-x11-2.0"],
-			"versions": ["GTK"]
+			"versions": ["GTK", "CairoPNG"]
 		}
 	]
 }
