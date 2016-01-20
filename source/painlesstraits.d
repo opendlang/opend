@@ -117,6 +117,15 @@ template getAnnotation(alias f, Attr)
     } else static assert(0);
 }
 
+unittest
+{
+    enum FooUDA;
+    struct BarUDA { int data; }
+    @FooUDA int x;
+    @FooUDA @(BarUDA(1)) int y;
+    static assert(getAnnotation!(y, BarUDA).data == 1);
+}
+
 template isFieldOrProperty(alias T)
 {
     enum isFieldOrProperty = (function() {
