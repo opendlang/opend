@@ -4,7 +4,7 @@
  */
 module cairo.c.config;
 
-version(D_Ddoc)
+version (D_Ddoc)
 {
     ///PNG functions are available
     enum bool CAIRO_HAS_PNG_FUNCTIONS = true;
@@ -32,23 +32,62 @@ version(D_Ddoc)
 }
 else
 {
-    static if(__traits(compiles, CAIROD_IS_CONFIGURED) && CAIROD_IS_CONFIGURED)
+    static if (__traits(compiles, CAIROD_IS_CONFIGURED) && CAIROD_IS_CONFIGURED)
     {
         // Use variables from configure.d
     }
     else
     {
-        enum bool CAIRO_HAS_PNG_FUNCTIONS = true;
-        enum bool CAIRO_HAS_PS_SURFACE = true;
-        enum bool CAIRO_HAS_PDF_SURFACE = true;
-        enum bool CAIRO_HAS_SVG_SURFACE = true;
+        // Configured using -version compiler arguments
+        version (CairoPNG)
+            enum bool CAIRO_HAS_PNG_FUNCTIONS = true;
+        else
+            enum bool CAIRO_HAS_PNG_FUNCTIONS = false;
 
-        enum bool CAIRO_HAS_WIN32_SURFACE = false;
-        enum bool CAIRO_HAS_WIN32_FONT = false;
-        enum bool CAIRO_HAS_FT_FONT = false;
-        enum bool CAIRO_HAS_XCB_SURFACE = false;
-        enum bool CAIRO_HAS_DIRECTFB_SURFACE = false;
-        enum bool CAIRO_HAS_XLIB_SURFACE = false;
+        version (CairoPSSurface)
+            enum bool CAIRO_HAS_PS_SURFACE = true;
+        else
+            enum bool CAIRO_HAS_PS_SURFACE = false;
+
+        version (CairoPDFSurface)
+            enum bool CAIRO_HAS_PDF_SURFACE = true;
+        else
+            enum bool CAIRO_HAS_PDF_SURFACE = false;
+
+        version (CairoSVGSurface)
+            enum bool CAIRO_HAS_SVG_SURFACE = true;
+        else
+            enum bool CAIRO_HAS_SVG_SURFACE = false;
+
+        version (CairoWin32Surface)
+            enum bool CAIRO_HAS_WIN32_SURFACE = true;
+        else
+            enum bool CAIRO_HAS_WIN32_SURFACE = false;
+
+        version (CairoWin32Font)
+            enum bool CAIRO_HAS_WIN32_FONT = true;
+        else
+            enum bool CAIRO_HAS_WIN32_FONT = false;
+
+        version (CairoFTFont)
+            enum bool CAIRO_HAS_FT_FONT = true;
+        else
+            enum bool CAIRO_HAS_FT_FONT = false;
+
+        version (CairoXCBSurface)
+            enum bool CAIRO_HAS_XCB_SURFACE = true;
+        else
+            enum bool CAIRO_HAS_XCB_SURFACE = false;
+
+        version (CairoDirectFBSurface)
+            enum bool CAIRO_HAS_DIRECTFB_SURFACE = true;
+        else
+            enum bool CAIRO_HAS_DIRECTFB_SURFACE = false;
+
+        version (CairoXlibSurface)
+            enum bool CAIRO_HAS_XLIB_SURFACE = true;
+        else
+            enum bool CAIRO_HAS_XLIB_SURFACE = false;
     }
 }
 
