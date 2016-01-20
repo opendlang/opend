@@ -9,15 +9,15 @@ libcairoD.lib
 core
 
 #Ignore example binaries
-example/*/example
+examples/*/example
 
 #Ignore unittest binary
 cairoD
 test2.png
 
 #Ignore example output
-example/*/*.svg
-example/*/*.png
+examples/*/*.svg
+examples/*/*.png
 
 #Ignore MonoD files
 *.dproj
