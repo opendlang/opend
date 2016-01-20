@@ -119,11 +119,7 @@ template getAnnotation(alias f, Attr)
 
 unittest
 {
-    enum FooUDA;
-    struct BarUDA { int data; }
-    @FooUDA int x;
-    @FooUDA @(BarUDA(1)) int y;
-    static assert(getAnnotation!(y, BarUDA).data == 1);
+    static assert(getAnnotation!(anyy, AnyBarUDA).data == 1);
 }
 
 template isFieldOrProperty(alias T)
