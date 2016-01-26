@@ -16,6 +16,9 @@
 	"dependencies-posix": {
 		"x11": "~>1.0.9"
 	},
+	"dependencies-windows": {
+		"windows-headers": "~>1.0.1",
+	},	
 	"configurations": [
 		{
 			"name": "static-custom",
