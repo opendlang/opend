@@ -199,7 +199,7 @@ struct TaggedAlgebraic(U) if (is(U == union) || is(U == struct))
 	assert(ta.kind == TA.Kind.integer);
 	assert(ta == 12);
 	assert(cast(int)ta == 12);
-	assert(cast(short)ta == 12);
+	assert(cast(long)ta == 12);
 
 	ta += 12;
 	assert(ta == 24);
