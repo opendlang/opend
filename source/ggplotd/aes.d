@@ -478,7 +478,7 @@ template group(Specs...)
     {
         static if (Specs.length == 0)
         {
-            import std.typecons : TypeTuple;
+            import std.typetuple : TypeTuple;
             alias Specs = TypeTuple!("alpha","colour","label");
         }
         string types = "";
