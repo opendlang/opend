@@ -12,7 +12,7 @@ import std.typecons : Tuple;
 // TODO Also update default grouping if appropiate
 
 ///
-auto DefaultValues = Tuple!( 
+static immutable auto DefaultValues = Tuple!( 
     string, "label", string, "colour", double, "size",
     double, "angle", double, "alpha", bool, "mask", double, "fill" )
     ("", "black", 10, 0, 1, true, 0.0);
