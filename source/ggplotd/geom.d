@@ -681,6 +681,9 @@ auto geomBox(AES)(AES aes)
         );
     }
 
+    import std.algorithm : sort;
+    xTickLabels = xTickLabels.sort!((a,b) => a[0] < b[0]).array;
+
     foreach( ref g; result.data )
     {
         g.xTickLabels = xTickLabels;
