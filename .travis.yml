@@ -1,10 +1,11 @@
 language: d
 
-d:
-  - dmd-2.070.0
-  - dmd-2.069.2
-    env: [COVERAGE=true]
-  - dmd-2.068.2
+matrix:
+  include:
+    - d: dmd-2.070.0
+    - d: dmd-2.069.2
+      env: [COVERAGE=true]
+    - d: dmd-2.068.2
 
 sudo: false
 
