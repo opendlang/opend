@@ -6,3 +6,5 @@ d:
   - dmd-2.068.2
 
 sudo: false
+
+script: ./travis.sh
