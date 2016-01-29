@@ -29,9 +29,9 @@ import cairo.c.cairo;
 static if(CAIRO_HAS_WIN32_SURFACE)
 {
     import cairo.c.win32;
-    //Requires WindowsAPI: http://www.dsource.org/projects/bindings/wiki/WindowsApi
-    import win32.windef;
-    import win32.wingdi;
+
+    import windows.windef;
+    import windows.wingdi;
 
     /**
      * Microsoft Windows surface support
@@ -68,7 +68,7 @@ static if(CAIRO_HAS_WIN32_SURFACE)
 
             /**
              * If printing is false:
-             * 
+             *
              * Creates a cairo surface that targets the given DC.
              * The DC will be queried for its initial clip extents,
              * and this will be used as the size of the cairo surface.
@@ -257,7 +257,7 @@ static if(CAIRO_HAS_WIN32_SURFACE)
                 }
 
                 /**
-                 * 
+                 *
                  */
                 this(Win32FontFace font_face, Matrix font_matrix, Matrix ctm,
                     FontOptions options)

@@ -25,9 +25,8 @@ import cairo.c.cairo;
 
 static if(CAIRO_HAS_WIN32_SURFACE)
 {
-    //Requires WindowsAPI: http://www.dsource.org/projects/bindings/wiki/WindowsApi
-    import win32.windef;
-    import win32.wingdi;
+    import windows.windef;
+    import windows.wingdi;
 
     extern(C):
     ///
