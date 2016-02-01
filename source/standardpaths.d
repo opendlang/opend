@@ -58,37 +58,38 @@ version(Windows) {
  */
 enum StandardPath {
     /**
-     * Location of persisted application data.
+     * General location of persisted application data. Every application should have its own subdirectory here.
+     * Note: on Windows it's the same as $(B config) path.
      */
     data,
     Data = StandardPath.data, 
     /**
-     * Location of configuration files.
-     * Note: on Windows it's the same as $(B Data) path.
+     * General location of configuration files. Every application should have its own subdirectory here.
+     * Note: on Windows it's the same as $(B data) path. To distinguish config directory one may use roamingPath.
      */
     config,
     Config = StandardPath.config, 
     /**
      * Location of cached data.
-     * Note: on Windows it's the same as $(B Data)/cache.
+     * Note: Windows does not provide specical directory for cache data. On Windows $(B data)/cache is used as cache folder.
      */
     cache,
     Cache = StandardPath.cache,  
-    ///User's desktop directory
+    ///User's desktop directory.
     desktop,
     Desktop = StandardPath.desktop,
-    ///User's documents
+    ///User's documents.
     documents,
     Documents = StandardPath.documents,
-    ///User's pictures
+    ///User's pictures.
     pictures,
     Pictures = StandardPath.pictures, 
     
-    ///User's music
+    ///User's music.
     music,
     Music = StandardPath.music, 
     
-    ///User's videos (movies)
+    ///User's videos (movies).
     videos,
     Videos = StandardPath.videos, 
     
@@ -96,11 +97,17 @@ enum StandardPath {
     downloads,
     Download = StandardPath.downloads, 
     
-    ///Location of templates.
+    /**
+     * Location of file templates (e.g. office suite document templates).
+     * Note: Not available on OS X.
+     */
     templates,
     Templates = templates, 
     
-    ///Public share folder.
+    /** 
+     * Public share folder.
+     * Note: Not available on Windows.
+     */
     publicShare,
     PublicShare = StandardPath.publicShare, 
     /**
@@ -360,6 +367,9 @@ version(Windows) {
                 result = ptrRegQueryValueEx(hKey, key, null, &type, buf.ptr, &length);
                 if (result == ERROR_SUCCESS && type == REG_SZ && (length % 2 == 0)) {
                     auto str = cast(wstring)buf[0..length];
+                    if (str.length && str[$-1] == '\0') {
+                        str = str[0..$-1];
+                    }
                     try {
                         return toUTF8(str);
                     } catch(Exception e) {

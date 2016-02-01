@@ -25,7 +25,7 @@ Ddox:
 In case you use dub to manage your project, just add standardpaths library to your dub.json like this:
 
     "dependencies" : {
-        "standardpaths":"*"
+        "standardpaths":"~specific_version"
     }
 
 Use the module in your code:
