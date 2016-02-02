@@ -425,7 +425,7 @@ auto geomHist3D(AES)(AES aes)
         // TODO this is not the most efficient way to create 2d bins
         foreach( binY; aes.filter!( 
                 (a) => a.x >= binX.range[0] && a.x < binX.range[1] )
-            .map!( (a) => a.x ).array
+            .map!( (a) => a.y ).array
             .bin( minmaxY[0], minmaxY[1], 11 ) )
         {
             maxZ = max( maxZ, binY.count );
