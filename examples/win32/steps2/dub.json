@@ -15,10 +15,10 @@
         "windows-headers": "~>1.0.1"
     },
     "versions": ["CairoWin32Surface", "Unicode"],
-    "libs-windows-x86-dmd": ["../../lib/32/mars/cairo"],
-    "libs-windows-x86-gdc": ["../../lib/32/msvc_mingw/cairo"],
-    "libs-windows-x86-ldc": ["../../lib/32/msvc_mingw/cairo"],            
-    "libs-windows-x86_64": ["../../lib/64/cairo"],
+    "libs-windows-x86-dmd": ["../../../lib/32/mars/cairo"],
+    "libs-windows-x86-gdc": ["../../../lib/32/msvc_mingw/cairo"],
+    "libs-windows-x86-ldc": ["../../../lib/32/msvc_mingw/cairo"],            
+    "libs-windows-x86_64": ["../../../lib/64/cairo"],
     "targetType": "executable",
     "sourcePaths": ["."]
 }
