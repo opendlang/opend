@@ -30,7 +30,7 @@
         {
             "name": "unittest",
             "targetType": "executable",
-            "sourceFiles": ["unittest.d"],
+            "mainSourceFile": "unittest.d",
             "versions": ["CairoPNG"],
             "targetPath": "bin",
             "libs-posix": ["cairo"],
