@@ -1,0 +1,308 @@
+Name            : mingw-w64-x86_64-gettext
+Version         : 0.19.6-2
+Description     : GNU internationalization library (mingw-w64)
+Architecture    : any
+URL             : http://www.gnu.org/software/gettext/
+Licenses        : GPL3  partial:LGPL2.1
+Groups          : None
+Provides        : None
+Depends On      : mingw-w64-x86_64-expat  mingw-w64-x86_64-gcc-libs  mingw-w64-x86_64-libiconv
+Optional Deps   : None
+Required By     : mingw-w64-x86_64-glib2  mingw-w64-x86_64-libidn  mingw-w64-x86_64-libtre-git  mingw-w64-x86_64-libxml2  mingw-w64-x86_64-p11-kit  mingw-w64-x86_64-xz
+Optional For    : None
+Conflicts With  : None
+Replaces        : None
+Installed Size  :  17.54 MiB
+Packager        : Alexey Pavlov <alexpux@gmail.com>
+Build Date      : Mon Nov 30 11:14:41 2015
+Install Date    : Fri Jan 29 16:20:05 2016
+Install Reason  : Installed as a dependency for another package
+Install Script  : No
+Validated By    : Signature
+
+Name            : mingw-w64-x86_64-freetype
+Version         : 2.6.2-1
+Description     : TrueType font rendering library (mingw-w64)
+Architecture    : any
+URL             : http://www.freetype.org/
+Licenses        : GPL2+  custom:FreeType
+Groups          : None
+Provides        : None
+Depends On      : mingw-w64-x86_64-gcc-libs  mingw-w64-x86_64-bzip2  mingw-w64-x86_64-harfbuzz  mingw-w64-x86_64-libpng  mingw-w64-x86_64-zlib
+Optional Deps   : None
+Required By     : mingw-w64-x86_64-cairo  mingw-w64-x86_64-fontconfig  mingw-w64-x86_64-ghostscript  mingw-w64-x86_64-harfbuzz  mingw-w64-x86_64-pango  mingw-w64-x86_64-poppler
+Optional For    : None
+Conflicts With  : None
+Replaces        : None
+Installed Size  :   2.78 MiB
+Packager        : Alexey Pavlov <alexpux@gmail.com>
+Build Date      : Tue Dec  1 11:19:09 2015
+Install Date    : Fri Jan 29 16:20:07 2016
+Install Reason  : Installed as a dependency for another package
+Install Script  : No
+Validated By    : Signature
+
+Name            : mingw-w64-x86_64-libwinpthread-git
+Version         : 5.0.0.4573.628fdbf-1
+Description     : MinGW-w64 winpthreads library
+Architecture    : any
+URL             : http://mingw-w64.sourceforge.net
+Licenses        : MIT  BSD
+Groups          : mingw-w64-x86_64-toolchain
+Provides        : mingw-w64-x86_64-libwinpthread
+Depends On      : None
+Optional Deps   : None
+Required By     : mingw-w64-x86_64-gcc-libs  mingw-w64-x86_64-pkg-config  mingw-w64-x86_64-winpthreads-git
+Optional For    : None
+Conflicts With  : mingw-w64-x86_64-libwinpthread
+Replaces        : mingw-w64-x86_64-libwinpthread-svn
+Installed Size  :  61.00 KiB
+Packager        : Alexey Pavlov <alexpux@gmail.com>
+Build Date      : Fri Sep 11 11:38:32 2015
+Install Date    : Fri Jan 29 16:20:02 2016
+Install Reason  : Installed as a dependency for another package
+Install Script  : No
+Validated By    : Signature
+
+Name            : mingw-w64-x86_64-bzip2
+Version         : 1.0.6-4
+Description     : A high-quality data compression program (mingw-w64)
+Architecture    : any
+URL             : http://sources.redhat.com/bzip2
+Licenses        : custom
+Groups          : None
+Provides        : None
+Depends On      : None
+Optional Deps   : None
+Required By     : mingw-w64-x86_64-fontconfig  mingw-w64-x86_64-freetype  mingw-w64-x86_64-zlib
+Optional For    : None
+Conflicts With  : None
+Replaces        : None
+Installed Size  : 365.00 KiB
+Packager        : Alexey Pavlov <alexpux@gmail.com>
+Build Date      : Mon Jun 29 12:37:05 2015
+Install Date    : Fri Jan 29 16:20:02 2016
+Install Reason  : Installed as a dependency for another package
+Install Script  : No
+Validated By    : Signature
+
+Name            : mingw-w64-x86_64-libpng
+Version         : 1.6.20-1
+Description     : A collection of routines used to create PNG format graphics (mingw-w64)
+Architecture    : any
+URL             : http://www.libpng.org/pub/png/libpng.html
+Licenses        : custom
+Groups          : None
+Provides        : None
+Depends On      : mingw-w64-x86_64-gcc-libs  mingw-w64-x86_64-zlib
+Optional Deps   : None
+Required By     : mingw-w64-x86_64-freetype  mingw-w64-x86_64-gdk-pixbuf2  mingw-w64-x86_64-ghostscript  mingw-w64-x86_64-openjpeg  mingw-w64-x86_64-poppler
+Optional For    : None
+Conflicts With  : None
+Replaces        : None
+Installed Size  : 1596.00 KiB
+Packager        : Alexey Pavlov <alexpux@gmail.com>
+Build Date      : Wed Dec 30 05:56:48 2015
+Install Date    : Fri Jan 29 16:20:07 2016
+Install Reason  : Installed as a dependency for another package
+Install Script  : No
+Validated By    : Signature
+
+Name            : mingw-w64-x86_64-fontconfig
+Version         : 2.11.94-5
+Description     : A library for configuring and customizing font access (mingw-w64)
+Architecture    : any
+URL             : http://www.fontconfig.org/release
+Licenses        : custom
+Groups          : None
+Provides        : None
+Depends On      : mingw-w64-x86_64-gcc-libs  mingw-w64-x86_64-expat>=2.1.0  mingw-w64-x86_64-freetype>=2.3.11  mingw-w64-x86_64-bzip2>=1.0.6  mingw-w64-x86_64-libiconv
+Optional Deps   : None
+Required By     : mingw-w64-x86_64-cairo  mingw-w64-x86_64-ghostscript  mingw-w64-x86_64-pango
+Optional For    : None
+Conflicts With  : None
+Replaces        : None
+Installed Size  : 1340.00 KiB
+Packager        : Alexey Pavlov <alexpux@gmail.com>
+Build Date      : Fri Sep  4 12:44:26 2015
+Install Date    : Fri Jan 29 16:20:08 2016
+Install Reason  : Installed as a dependency for another package
+Install Script  : Yes
+Validated By    : Signature
+
+Name            : mingw-w64-x86_64-pixman
+Version         : 0.33.2-1
+Description     : The pixel-manipulation library for X and cairo (mingw-w64)
+Architecture    : any
+URL             : http://xorg.freedesktop.org
+Licenses        : MIT
+Groups          : None
+Provides        : None
+Depends On      : mingw-w64-x86_64-gcc-libs
+Optional Deps   : None
+Required By     : mingw-w64-x86_64-cairo
+Optional For    : None
+Conflicts With  : None
+Replaces        : None
+Installed Size  : 1636.00 KiB
+Packager        : Alexey Pavlov <alexpux@gmail.com>
+Build Date      : Mon Oct  5 09:07:14 2015
+Install Date    : Fri Jan 29 16:21:50 2016
+Install Reason  : Installed as a dependency for another package
+Install Script  : No
+Validated By    : Signature
+
+Name            : mingw-w64-x86_64-libiconv
+Version         : 1.14-5
+Description     : Character encoding conversion library (mingw-w64)
+Architecture    : any
+URL             : http://www.gnu.org/software/libiconv/
+Licenses        : LGPL2  documentation:GPL3
+Groups          : mingw-w64-x86_64
+Provides        : None
+Depends On      : None
+Optional Deps   : None
+Required By     : mingw-w64-x86_64-binutils  mingw-w64-x86_64-fontconfig  mingw-w64-x86_64-gcc  mingw-w64-x86_64-gettext
+Optional For    : None
+Conflicts With  : None
+Replaces        : None
+Installed Size  :   2.22 MiB
+Packager        : Alexey Pavlov <alexpux@gmail.com>
+Build Date      : Mon Jun 29 13:25:22 2015
+Install Date    : Fri Jan 29 16:20:02 2016
+Install Reason  : Installed as a dependency for another package
+Install Script  : No
+Validated By    : Signature
+
+Name            : mingw-w64-x86_64-gcc-libs
+Version         : 5.3.0-1
+Description     : GNU Compiler Collection (libraries) for MinGW-w64
+Architecture    : any
+URL             : http://gcc.gnu.org
+Licenses        : GPL3+  partial:GCCRLE  partial:LGPL2+
+Groups          : mingw-w64-x86_64-toolchain
+Provides        : None
+Depends On      : mingw-w64-x86_64-gmp  mingw-w64-x86_64-libwinpthread
+Optional Deps   : None
+Required By     : mingw-w64-x86_64-atk  mingw-w64-x86_64-cairo  mingw-w64-x86_64-curl  mingw-w64-x86_64-fontconfig  mingw-w64-x86_64-freetype  mingw-w64-x86_64-gcc  mingw-w64-x86_64-gdk-pixbuf2  mingw-w64-x86_64-gettext  mingw-w64-x86_64-glib2  mingw-w64-x86_64-gnutls  mingw-w64-x86_64-gtk2  mingw-w64-x86_64-harfbuzz  mingw-w64-x86_64-icu  mingw-w64-x86_64-lcms2  mingw-w64-x86_64-libjpeg-turbo  mingw-w64-x86_64-libpng  mingw-w64-x86_64-libtasn1  mingw-w64-x86_64-libtiff  mingw-w64-x86_64-libtre-git  mingw-w64-x86_64-libxml2  mingw-w64-x86_64-nettle  mingw-w64-x86_64-openssl  mingw-w64-x86_64-pango  mingw-w64-x86_64-pixman  mingw-w64-x86_64-rtmpdump-git  mingw-w64-x86_64-xz
+Optional For    : None
+Conflicts With  : None
+Replaces        : None
+Installed Size  :   2.04 MiB
+Packager        : Alexey Pavlov <alexpux@gmail.com>
+Build Date      : Sun Dec 27 16:59:42 2015
+Install Date    : Fri Jan 29 16:20:02 2016
+Install Reason  : Installed as a dependency for another package
+Install Script  : No
+Validated By    : Signature
+
+Name            : mingw-w64-x86_64-harfbuzz
+Version         : 1.1.3-1
+Description     : OpenType text shaping engine (mingw-w64)
+Architecture    : any
+URL             : http://www.freedesktop.org/wiki/Software/HarfBuzz
+Licenses        : MIT
+Groups          : None
+Provides        : None
+Depends On      : mingw-w64-x86_64-cairo  mingw-w64-x86_64-freetype  mingw-w64-x86_64-gcc-libs  mingw-w64-x86_64-glib2
+Optional Deps   : mingw-w64-x86_64-icu: harfbuzz-icu support [installed]
+Required By     : mingw-w64-x86_64-freetype  mingw-w64-x86_64-pango
+Optional For    : None
+Conflicts With  : None
+Replaces        : None
+Installed Size  :   2.02 MiB
+Packager        : Alexey Pavlov <alexpux@gmail.com>
+Build Date      : Mon Jan 18 09:17:46 2016
+Install Date    : Fri Jan 29 16:20:07 2016
+Install Reason  : Installed as a dependency for another package
+Install Script  : No
+Validated By    : Signature
+
+Name            : mingw-w64-x86_64-expat
+Version         : 2.1.0-6
+Description     : An XML parser library (mingw-w64)
+Architecture    : any
+URL             : http://expat.sourceforge.net
+Licenses        : MIT
+Groups          : None
+Provides        : None
+Depends On      : None
+Optional Deps   : None
+Required By     : mingw-w64-x86_64-dbus  mingw-w64-x86_64-fontconfig  mingw-w64-x86_64-gettext
+Optional For    : None
+Conflicts With  : None
+Replaces        : None
+Installed Size  : 538.00 KiB
+Packager        : Alexey Pavlov <alexpux@gmail.com>
+Build Date      : Mon Jun 29 14:24:45 2015
+Install Date    : Fri Jan 29 16:20:02 2016
+Install Reason  : Installed as a dependency for another package
+Install Script  : No
+Validated By    : Signature
+
+Name            : mingw-w64-x86_64-zlib
+Version         : 1.2.8-9
+Description     : Compression library implementing the deflate compression method found in gzip and PKZIP (mingw-w64)
+Architecture    : any
+URL             : http://www.zlib.net/
+Licenses        : ZLIB
+Groups          : None
+Provides        : None
+Depends On      : mingw-w64-x86_64-bzip2
+Optional Deps   : None
+Required By     : mingw-w64-x86_64-binutils  mingw-w64-x86_64-cairo  mingw-w64-x86_64-curl  mingw-w64-x86_64-freetype  mingw-w64-x86_64-gcc  mingw-w64-x86_64-ghostscript  mingw-w64-x86_64-glib2  mingw-w64-x86_64-gnutls  mingw-w64-x86_64-libpng  mingw-w64-x86_64-libssh2  mingw-w64-x86_64-libtiff  mingw-w64-x86_64-libxml2  mingw-w64-x86_64-openjpeg  mingw-w64-x86_64-openssl  mingw-w64-x86_64-poppler  mingw-w64-x86_64-rtmpdump-git
+Optional For    : None
+Conflicts With  : None
+Replaces        : None
+Installed Size  : 734.00 KiB
+Packager        : Alexpux <alexpux@jmail.com>
+Build Date      : Mon Aug 17 18:19:48 2015
+Install Date    : Fri Jan 29 16:20:05 2016
+Install Reason  : Installed as a dependency for another package
+Install Script  : No
+Validated By    : Signature
+
+Name            : mingw-w64-x86_64-glib2
+Version         : 2.46.2-3
+Description     : Common C routines used by GTK+ 2.4 and other libs (mingw-w64)
+Architecture    : any
+URL             : http://www.gtk.org/
+Licenses        : LGPL2
+Groups          : None
+Provides        : None
+Depends On      : mingw-w64-x86_64-gcc-libs  mingw-w64-x86_64-gettext  mingw-w64-x86_64-libffi  mingw-w64-x86_64-zlib
+Optional Deps   : None
+Required By     : mingw-w64-x86_64-atk  mingw-w64-x86_64-dbus  mingw-w64-x86_64-gdk-pixbuf2  mingw-w64-x86_64-gtk2  mingw-w64-x86_64-harfbuzz  mingw-w64-x86_64-libcroco  mingw-w64-x86_64-pango  mingw-w64-x86_64-shared-mime-info
+Optional For    : mingw-w64-x86_64-cairo  mingw-w64-x86_64-poppler
+Conflicts With  : None
+Replaces        : None
+Installed Size  :  19.73 MiB
+Packager        : Alexey Pavlov <alexpux@gmail.com>
+Build Date      : Tue Dec 22 11:06:21 2015
+Install Date    : Fri Jan 29 16:20:06 2016
+Install Reason  : Installed as a dependency for another package
+Install Script  : Yes
+Validated By    : Signature
+
+Name            : mingw-w64-x86_64-cairo
+Version         : 1.14.4-1
+Description     : Cairo vector graphics library (mingw-w64)
+Architecture    : any
+URL             : http://cairographics.org
+Licenses        : LGPL2.1  MPL1.1
+Groups          : None
+Provides        : None
+Depends On      : mingw-w64-x86_64-gcc-libs  mingw-w64-x86_64-freetype  mingw-w64-x86_64-fontconfig  mingw-w64-x86_64-lzo2  mingw-w64-x86_64-pixman  mingw-w64-x86_64-zlib
+Optional Deps   : mingw-w64-x86_64-glib2: libcairo-gobject [installed]
+Required By     : mingw-w64-x86_64-gtk2  mingw-w64-x86_64-harfbuzz  mingw-w64-x86_64-libspectre  mingw-w64-x86_64-pango  mingw-w64-x86_64-poppler
+Optional For    : None
+Conflicts With  : None
+Replaces        : None
+Installed Size  :   4.88 MiB
+Packager        : Alexey Pavlov <alexpux@gmail.com>
+Build Date      : Fri Oct 30 07:34:03 2015
+Install Date    : Fri Jan 29 16:21:50 2016
+Install Reason  : Explicitly installed
+Install Script  : No
+Validated By    : Signature
+
