@@ -25,8 +25,16 @@ import cairo.c.cairo;
 
 static if(CAIRO_HAS_WIN32_SURFACE)
 {
-    import windows.windef;
-    import windows.wingdi;
+    version (CairoWindowsDruntime)
+    {
+        import core.sys.windows.windef;
+        import core.sys.windows.wingdi;
+    }
+    else
+    {
+        import windows.windef;
+        import windows.wingdi;
+    }
 
     extern(C):
     ///
