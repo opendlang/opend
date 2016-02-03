@@ -11,8 +11,8 @@
     "license": "BSL-1.0",
     "targetPath": "bin",
     "dependencies": {
-        "cairod": {"version": ">=0.0.1", "path": "../../"},
-        "dependencies": {"windows-headers": "~>1.0.1"}
+        "cairod": {"version": ">=0.0.1", "path": "../../../"},
+        "windows-headers": "~>1.0.1"
     },
     "versions": ["CairoWin32Surface", "Unicode"],
     "libs-windows-x86-dmd": ["../../lib/32/mars/cairo"],
