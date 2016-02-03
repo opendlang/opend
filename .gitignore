@@ -1,28 +1,21 @@
 #Ignore built library
 libcairoD.a
 libcairoD.lib
+cairoD.lib
 
 #Ignore object files
 *.o
+*.obj
 
 #Ignore core files
 core
 
-#Ignore example binaries
-examples/*/example
-
 #Ignore unittest binary
-cairoD
-test2.png
+bin/
 
 #Ignore example output
 examples/*/*.svg
 examples/*/*.png
-
-#Ignore MonoD files
-*.dproj
-*.sln
-*.userprefs
 
 #Ignore ddox files
 docs.json
@@ -31,4 +24,3 @@ __dummy.html
 
 #Ignore dub files
 .dub
-dub.selections.json
