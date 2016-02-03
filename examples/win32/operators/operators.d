@@ -61,9 +61,9 @@ import std.process;
 import std.stdio;
 
 pragma(lib, "gdi32.lib");
-import win32.windef;
-import win32.winuser;
-import win32.wingdi;
+import windows.windef;
+import windows.winuser;
+import windows.wingdi;
 
 string appName     = "CairoWindow";
 string description = "A simple win32 window with Cairo drawing";

@@ -1,34 +1,24 @@
 {
-	"description": "cairoD example",
-	"targetName": "example",
-	"authors": [
-		"Andrej Mitrovic"
-	],
-	"version": "~master",
-	"homepage": "https://github.com/jpf91/cairoD",
-	"name": "cairod-example",
-	"copyright": "Copyright © 2011-2013, Johannes Pfau",
-	"license": "BSL-1.0",
-	"libs": ["cairo"],
-	"targetType": "executable",
-	"sourcePaths": [".", "../common", "../../src"],
-	"importPaths": ["../common", "../../src"],
-	"configurations": [
-		{
-			"name": "minimal",
-			"targetType": "executable"
-		},
-		{
-			"name": "gtk3",
-			"targetType": "executable",
-			"libs": ["cairo", "gobject-2.0", "gdk-3", "gtk-3"],
-			"versions": ["GTK", "GTK3"]
-		},
-		{
-			"name": "gtk2",
-			"targetType": "executable",
-			"libs": ["cairo", "gobject-2.0", "gdk-x11-2.0", "gtk-x11-2.0"],
-			"versions": ["GTK"]
-		}
-	]
+    "description": "cairoD example",
+    "targetName": "example",
+    "authors": [
+        "Andrej Mitrovic"
+    ],
+    "version": "~master",
+    "homepage": "https://github.com/cairoD/cairoD",
+    "name": "cairod-example",
+    "copyright": "Copyright © 2011-2013, Johannes Pfau",
+    "license": "BSL-1.0",
+    "targetPath": "bin",
+    "dependencies": {
+        "cairod": {"version": ">=0.0.1", "path": "../../"},
+        "dependencies": {"windows-headers": "~>1.0.1"}
+    },
+    "versions": ["CairoWin32Surface", "Unicode"],
+    "libs-windows-x86-dmd": ["../../lib/32/mars/cairo"],
+    "libs-windows-x86-gdc": ["../../lib/32/msvc_mingw/cairo"],
+    "libs-windows-x86-ldc": ["../../lib/32/msvc_mingw/cairo"],            
+    "libs-windows-x86_64": ["../../lib/64/cairo"],
+    "targetType": "executable",
+    "sourcePaths": ["."]
 }

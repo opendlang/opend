@@ -10,9 +10,9 @@ import std.utf;
 import std.traits;
 
 pragma(lib, "gdi32.lib");
-import win32.windef;
-import win32.winuser;
-import win32.wingdi;
+import windows.windef;
+import windows.winuser;
+import windows.wingdi;
 
 string appName     = "CairoWindow";
 string description = "Rounded Rectangles";

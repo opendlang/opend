@@ -25,10 +25,10 @@ import std.string;
 import std.utf;
 
 pragma(lib, "gdi32.lib");
-import win32.winbase;
-import win32.windef;
-import win32.winuser;
-import win32.wingdi;
+import windows.winbase;
+import windows.windef;
+import windows.winuser;
+import windows.wingdi;
 
 string appName     = "CairoWindow";
 string description = "A simple win32 window with Cairo drawing";
