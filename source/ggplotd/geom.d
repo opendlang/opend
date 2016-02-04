@@ -655,11 +655,6 @@ auto geomBox(AES)(AES aes)
             auto myAes = aes.mergeRange( Aes!(typeof(labels), "label")( labels ) );
         }
     }
-
-    /+
-    // else use empty ""
-    +/
-
     
     double delta = 0.2;
     Tuple!(double, string)[] xTickLabels;
