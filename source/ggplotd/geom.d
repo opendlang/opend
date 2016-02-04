@@ -633,10 +633,34 @@ auto geomBox(AES)(AES aes)
     import std.range : Appender;
 
     Appender!(Geom[]) result;
-    auto labels = NumericLabel!(string[])( 
-        aes.map!("a.label.to!string").array );
-    auto myAes = aes.mergeRange( Aes!(typeof(labels), "label")( labels ) );
 
+    // If has y, use that
+    auto fr = aes.front;
+    static if (__traits(hasMember, fr, "y"))
+    {
+        auto labels = NumericLabel!(typeof(fr.y)[])( 
+            aes.map!("a.y").array ); // Should use y type
+        auto myAes = aes.mergeRange( Aes!(typeof(labels), "label")( labels ) );
+    } else {
+        static if (__traits(hasMember, fr, "label"))
+        {
+        // esle If has label, use that
+        auto labels = NumericLabel!(string[])( 
+            aes.map!("a.label.to!string").array );
+        auto myAes = aes.mergeRange( Aes!(typeof(labels), "label")( labels ) );
+        } else {
+            import std.range : repeat;
+            auto labels = NumericLabel!(string[])( 
+                repeat("a", aes.length).array );
+            auto myAes = aes.mergeRange( Aes!(typeof(labels), "label")( labels ) );
+        }
+    }
+
+    /+
+    // else use empty ""
+    +/
+
+    
     double delta = 0.2;
     Tuple!(double, string)[] xTickLabels;
 
@@ -646,6 +670,7 @@ auto geomBox(AES)(AES aes)
             .array.limits( [0.1,0.25,0.5,0.75,0.9] ).array;
         auto x = grouped.front.label[0];
         xTickLabels ~= grouped.front.label;
+        // TODO this should be some kind of loop
         result.put(
             geomLine( [
                 grouped.front.merge(Tuple!(double, "x", double, "y" )( 
@@ -692,6 +717,53 @@ auto geomBox(AES)(AES aes)
     }
 
     return result.data;
+}
+
+///
+unittest 
+{
+    import std.array : array;
+    import std.algorithm : map;
+    import std.range : repeat, iota, chain;
+    import std.random : uniform;
+    auto xs = iota(0,50,1).map!((x) => uniform(0.0,5)+uniform(0.0,5)).array;
+    auto cols = "a".repeat(25).chain("b".repeat(25)).array;
+    auto aes = Aes!(typeof(xs), "x", typeof(cols), "colour", 
+        double[], "fill", typeof(cols), "label" )( 
+            xs, cols, 0.45.repeat(xs.length).array, cols);
+    auto gb = geomBox( aes );
+    assertEqual( gb.front.bounds.min_x, -0.5 );
+}
+
+unittest 
+{
+    import std.array : array;
+    import std.algorithm : map;
+    import std.range : repeat, iota, chain;
+    import std.random : uniform;
+    auto xs = iota(0,50,1).map!((x) => uniform(0.0,5)+uniform(0.0,5)).array;
+    auto cols = "a".repeat(25).chain("b".repeat(25)).array;
+    auto ys = 2.repeat(25).chain(3.repeat(25)).array;
+    auto aes = Aes!(typeof(xs), "x", typeof(cols), "colour", 
+        double[], "fill", typeof(ys), "y" )( 
+            xs, cols, 0.45.repeat(xs.length).array, ys);
+    auto gb = geomBox( aes );
+    assertEqual( gb.front.bounds.min_x, 1.5 );
+}
+
+unittest 
+{
+    import std.array : array;
+    import std.algorithm : map;
+    import std.range : repeat, iota, chain;
+    import std.random : uniform;
+    auto xs = iota(0,50,1).map!((x) => uniform(0.0,5)+uniform(0.0,5)).array;
+    auto cols = "a".repeat(25).chain("b".repeat(25)).array;
+    auto aes = Aes!(typeof(xs), "x", typeof(cols), "colour", 
+        double[], "fill")( 
+            xs, cols, 0.45.repeat(xs.length).array);
+    auto gb = geomBox( aes );
+    assertEqual( gb.front.bounds.min_x, -0.5 );
 }
 
 ///
