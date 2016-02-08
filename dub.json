@@ -20,7 +20,7 @@
             "dependencies": {
                 "gtk-d:gtkd": "~>3.2.2"
             },
-            "versions": ["GTK"]
+            "versions": ["ggplotdGTK"]
         }
     ]
 }

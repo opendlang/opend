@@ -17,6 +17,27 @@ you can install cairo with:
 sudo apt-get install libcairo2-dev 
 ```
 
+### GTK Support
+
+The library also includes support for plotting to a GTK window. You can
+build this in using dub with:
+
+```
+dub -c ggplotd-gtk
+```
+
+If you want to add this to link to this version from your own D program
+the easiest way is with subConfigurations:
+
+```
+    "dependencies": {
+        "ggplotd": ">=0.4.5"
+	},
+    "subConfigurations": {
+		"ggplotd": "ggplotd-gtk"
+	}
+```
+
 ## Documentation
 
 This README contains a couple of examples and basic documentation on how
@@ -389,6 +410,49 @@ surface = gg.drawToSurface( surface, width, height );
 
 // Use the resulting surface in your program
 
+```
+
+### GTK window
+
+If you build the library with GTK support you can show the plot in
+a window as follows:
+
+```D
+void main()
+{
+    import core.thread;
+    import std.array : array;
+    import std.algorithm : map;
+    import std.range : iota;
+    import std.random : uniform;
+
+    import ggplotd.ggplotd;
+    import ggplotd.geom;
+    import ggplotd.aes;
+    import ggplotd.gtk;
+
+    auto xs = iota(0,100,1).map!((x) => uniform(0.0,5)+uniform(0.0,5)).array;
+    auto ys = iota(0,100,1).map!((y) => uniform(0.0,5)+uniform(0.0,5)).array;
+    auto aes = Aes!(typeof(xs), "x", typeof(ys), "y")( xs, ys);
+
+    // Start gtk window.
+    auto gtkwin = new GTKWindow();
+
+    // gtkwin.run runs the GTK mainloop, so normally blocks, but we can
+    // run it in its own thread to get around this
+    
+    auto tid = new Thread(() { gtkwin.run("plotcli"); }).start(); 
+    auto gg = GGPlotD().put( geomHist3D( aes ) ); 
+    gtkwin.drawGG( gg, 470, 470 ); 
+    Thread.sleep( dur!("seconds")( 2 ) ); // sleep for 2 seconds
+
+    gg = GGPlotD().put( geomPoint( aes ) );
+    gtkwin.clearWindow();
+    gtkwin.drawGG( gg, 470, 470 );
+
+    // Wait for gtk thread to finish (Window closed)
+    tid.join();
+}
 ```
 
 

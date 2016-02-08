@@ -1,6 +1,6 @@
 module ggplotd.gtk;
 
-version(GTK):
+version(ggplotdGTK):
 
 import cairod = cairo.cairo;
 import gtk.DrawingArea : DrawingArea;
