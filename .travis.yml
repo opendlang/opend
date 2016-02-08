@@ -1,6 +1,7 @@
 language: d
 script: "./travis.sh"
-sudo: false
+sudo: required 
+dist: trusty
 
 matrix:
   include:
