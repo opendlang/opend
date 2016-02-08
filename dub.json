@@ -18,10 +18,7 @@
         {
             "name": "ggplotd-gtk",
             "dependencies": {
-                "cairod": "~>0.0.1-alpha.2+1.10.2",
-                "dunit": "~>1.0.11",
-                "gtk-d:gtkd": "~>3.2.2",
-                "painlesstraits": "~>0.0.3"
+                "gtk-d:gtkd": "~>3.2.2"
             },
             "versions": ["GTK"]
         }
