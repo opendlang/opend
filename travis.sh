@@ -3,6 +3,7 @@
 set -e -o pipefail
 
 dub test --compiler=${DC}
+dub test -c ggplotd-gtk --compiler=${DC}
 
 if [[ $TRAVIS_BRANCH == 'master' ]] ; then
     if [ ! -z "$GH_TOKEN" ]; then

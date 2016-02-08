@@ -10,5 +10,17 @@
         "dunit": "~>1.0.11",
         "painlesstraits": "~>0.0.3"
     },
-    "versions": ["CairoPNG","CairoPDFSurface","CairoSVGSurface"]
+    "versions": ["CairoPNG","CairoPDFSurface","CairoSVGSurface"],
+    "configurations": [
+        {
+			"name": "default"
+		},
+        {
+            "name": "ggplotd-gtk",
+            "dependencies": {
+                "gtk-d:gtkd": "~>3.2.2"
+            },
+            "versions": ["ggplotdGTK"]
+        }
+    ]
 }
