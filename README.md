@@ -22,13 +22,13 @@ Ddox:
 
 ## Running examples
 
-### [Print directories](examples/printdirs/source)
+### [Print directories](examples/printdirs/source/app.d)
 
 Prints some standard paths to stdout.
 
     dub run standardpaths:printdirs --build=release
 
-### [Find executable](examples/findexecutable/source)
+### [Find executable](examples/findexecutable/source/appd.)
 
 Takes the name of executable as command line argument and searches PATH environment variable for retrieving absolute path to file. On Windows it also tries all known executable extensions.
 
@@ -104,8 +104,7 @@ void saveSettings(const Config config)
 ### Reading configuration files
 
 Since one can save settings it also should be able to read them. Before the first start application does not have any user-specific settings, though it may provide some global default settings upon installing.
-It's up to developer to decide how to read configs, e.g. whether to read the first found file only or to merge settings from all found configs     
-consequentially.
+It's up to developer to decide how to read configs, e.g. whether to read the first found file only or to merge settings from all found config consequentially.
 
 ```d
 Config readSettings()
