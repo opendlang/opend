@@ -19,28 +19,16 @@ Ddoc:
 Ddox:
 
     dub build --build=ddox
-    
-## Import the library to your project
-
-In case you use dub to manage your project, just add standardpaths library to your dub.json like this:
-
-    "dependencies" : {
-        "standardpaths":"~specific_version"
-    }
-
-Use the module in your code:
-    
-    import standardpaths;
 
 ## Running examples
 
-### Print directories
+### [Print directories](examples/printdirs/source)
 
 Prints some standard paths to stdout.
 
     dub run standardpaths:printdirs --build=release
 
-### Find executable
+### [Find executable](examples/findexecutable/source)
 
 Takes the name of executable as command line argument and searches PATH environment variable for retrieving absolute path to file. On Windows it also tries all known executable extensions.
 
@@ -101,11 +89,11 @@ import std.path;
 
 void saveSettings(const Config config)
 {
-    string configPath = buildPath(writablePath(StandardPath.config), organizationName, applicationName);
-    if (!configPath.exists) {
-        mkdir(configPath);
+    string configDir = buildPath(writablePath(StandardPath.config), organizationName, applicationName);
+    if (!configDir.exists) {
+        mkdirRecurse(configDir);
     }
-    string configFile = buildPath(configPath, "config.conf");
+    string configFile = buildPath(configDir, "config.conf");
     
     auto f = File(configFile, "w"); 
     // write settings
@@ -115,15 +103,17 @@ void saveSettings(const Config config)
 
 ### Reading configuration files
 
-Since one can save settings it also should be able to read them. Before the first start application does not have any user-specific settings, though it may provide some global default settings.
+Since one can save settings it also should be able to read them. Before the first start application does not have any user-specific settings, though it may provide some global default settings upon installing.
+It's up to developer to decide how to read configs, e.g. whether to read the first found file only or to merge settings from all found configs     
+consequentially.
 
 ```d
 Config readSettings()
 {
-    string[] configPaths = standardPaths(StandardPath.config).map!(s => buildPath(s, organizationName, applicationName, "config.conf")).array;
-    configPaths ~= thisExePath().dirName(); //Optionally add root application directory to search files in
+    string[] configDirs = standardPaths(StandardPath.config).map!(s => buildPath(s, organizationName, applicationName).array;
 
-    foreach(configFath; configPaths) {
+    foreach(configDir; configDirs) {
+        string configFile = buildPath(configDir, "config.conf");
         if (configFile.exists) {
             auto f = File(configFile, "r");
             Config config;
@@ -146,4 +136,4 @@ On Windows it utilizes [SHGetSpecialFolderPath](https://msdn.microsoft.com/en-us
 
 ### Mac OS X
 
-Uses FSFindFolder from Carbon framework. [See here](http://cocoadev.com/ApplicationSupportFolder).
+Uses FSFindFolder from Carbon framework. It's deprecated now and should be replaced with Cocoa where possible. [See here](http://cocoadev.com/ApplicationSupportFolder).
