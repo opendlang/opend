@@ -28,7 +28,7 @@ Prints some standard paths to stdout.
 
     dub run standardpaths:printdirs --build=release
 
-### [Find executable](examples/findexecutable/source/appd.)
+### [Find executable](examples/findexecutable/source/app.d)
 
 Takes the name of executable as command line argument and searches PATH environment variable for retrieving absolute path to file. On Windows it also tries all known executable extensions.
 
