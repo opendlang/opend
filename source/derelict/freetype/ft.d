@@ -108,7 +108,7 @@ class DerelictFTLoader : SharedLibLoader {
             bindFunc( cast( void** )&FT_Get_BDF_Property, "FT_Get_BDF_Property" );
         }
 
-        bindFunc( cast( void** )&FT_Bitmap_New, "FT_Bitmap_New" );
+        bindFunc( cast( void** )&FT_Bitmap_Init, "FT_Bitmap_Init" );
         bindFunc( cast( void** )&FT_Bitmap_Copy, "FT_Bitmap_Copy" );
         bindFunc( cast( void** )&FT_Bitmap_Embolden, "FT_Bitmap_Embolden" );
         bindFunc( cast( void** )&FT_Bitmap_Convert, "FT_Bitmap_Convert" );

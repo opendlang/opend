@@ -94,7 +94,7 @@ extern( C ) @nogc nothrow {
     }
 
     // ftbitmap.h
-    alias da_FT_Bitmap_New = void function( FT_Bitmap* );
+    alias da_FT_Bitmap_Init = void function( FT_Bitmap* );
     alias da_FT_Bitmap_Copy = FT_Error function( FT_Library,const( FT_Bitmap )*,FT_Bitmap* );
     alias da_FT_Bitmap_Embolden = FT_Error function( FT_Library,FT_Bitmap*,FT_Pos,FT_Pos );
     alias da_FT_Bitmap_Convert = FT_Error function( FT_Library,const( FT_Bitmap )*,FT_Bitmap*,FT_Int );
@@ -338,7 +338,7 @@ __gshared {
         da_FT_Get_BDF_Property FT_Get_BDF_Property;
     }
 
-    da_FT_Bitmap_New FT_Bitmap_New;
+    da_FT_Bitmap_Init FT_Bitmap_Init;
     da_FT_Bitmap_Copy FT_Bitmap_Copy;
     da_FT_Bitmap_Embolden FT_Bitmap_Embolden;
     da_FT_Bitmap_Convert FT_Bitmap_Convert;

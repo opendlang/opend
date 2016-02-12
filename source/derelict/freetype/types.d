@@ -139,6 +139,8 @@ alias FT_Size = FT_SizeRec*;
 alias FT_GlyphSlot = FT_GlyphSlotRec*;
 alias FT_CharMap = FT_CharMapRec*;
 
+alias FT_ENC_TAG = FT_MAKE_TAG;
+
 alias FT_Encoding = FT_Tag;
 enum :FT_Tag {
     FT_ENCODING_NONE = 0,
@@ -397,6 +399,7 @@ enum : uint {
     FT_LOAD_LINEAR_DESIGN = 1 << 13,
     FT_LOAD_NO_AUTOHINT = 1 << 15,
     FT_LOAD_COLOR = 1 << 20,
+    FT_LOAD_COMPUTE_METRICS = 1 << 21,
 }
 
 enum {
@@ -450,12 +453,12 @@ enum {
 enum
 {
     FREETYPE_MAJOR  = 2,
-    FREETYPE_MINOR  = 5,
+    FREETYPE_MINOR  = 6,
     FREETYPE_PATCH  = 3,
 }
 
 // ftadvanc.h
-enum uint FT_ADVANCE_FLAG_FAST_ONLY = 0x20000000;
+enum FT_ADVANCE_FLAG_FAST_ONLY = 0x20000000;
 
 // ftautoh.h
 enum {
@@ -467,7 +470,7 @@ enum {
 
 struct FT_Prop_GlyphToScriptMap {
     FT_Face face;
-    FT_Byte* map;
+    FT_UShort* map;
 }
 
 struct FT_Prop_IncreaseXHeight {
@@ -523,8 +526,8 @@ alias FTC_CMapCache = FTC_CMapCacheRec*;
 
 struct FTC_ImageTypeRec {
     FTC_FaceID face_id;
-    FT_Int width;
-    FT_Int height;
+    FT_UInt width;
+    FT_UInt height;
     FT_Int32 flags;
 }
 
@@ -778,13 +781,13 @@ enum {
 }
 
 struct FT_Bitmap {
-    int rows;
-    int width;
+    uint rows;
+    uint width;
     int pitch;
     ubyte* buffer;
-    short num_grays;
-    byte pixel_mode;
-    byte palette_mode;
+    ushort num_grays;
+    ubyte pixel_mode;
+    ubyte palette_mode;
     void* palette;
 }
 
@@ -853,11 +856,7 @@ struct FT_Span {
     ubyte coverage;
 }
 
-extern( C ) nothrow {
-    alias FT_SpanFunc = void function( int, int, FT_Span*, void* );
-    alias FT_Raster_BitTest_Func = int  function( int, int, void* );
-    alias FT_Raster_BitSet_Func = void function( int, int, void* );
-}
+extern( C ) nothrow alias FT_SpanFunc = void function( int, int, FT_Span*, void* );
 
 enum {
     FT_RASTER_FLAG_DEFAULT  = 0x0,
@@ -871,9 +870,9 @@ struct FT_Raster_Params {
     const( void )* source;
     int flags;
     FT_SpanFunc gray_spans;
-    FT_SpanFunc black_spans;
-    FT_Raster_BitTest_Func bit_test;
-    FT_Raster_BitSet_Func bit_set;
+    void* black_spans;
+    void* bit_test;
+    void* bit_set;
     void* user;
     FT_BBox clip_box;
 }
@@ -935,6 +934,7 @@ enum {
     FT_LCD_FILTER_NONE    = 0,
     FT_LCD_FILTER_DEFAULT = 1,
     FT_LCD_FILTER_LIGHT   = 2,
+    FT_LCD_FILTER_LEGACY1 = 3,
     FT_LCD_FILTER_LEGACY  = 16,
     FT_LCD_FILTER_MAX
 }
@@ -989,7 +989,8 @@ enum
     FT_MODULE_STYLER            = 8,
     FT_MODULE_DRIVER_SCALABLE   = 0x100,
     FT_MODULE_DRIVER_NO_OUTLINES= 0x200,
-    FT_MODULE_DRIVER_HAS_HINTER = 0x400
+    FT_MODULE_DRIVER_HAS_HINTER = 0x400,
+    FT_MODULE_DRIVER_HINTS_LIGHTLY = 0x800,
 }
 
 alias FT_Module_Interface = FT_Pointer;
@@ -2132,7 +2133,7 @@ struct TT_OS2 {
     FT_Short xAvgCharWidth;
     FT_UShort usWeightClass;
     FT_UShort usWidthClass;
-    FT_Short fsType;
+    FT_UShort fsType;
     FT_Short ySubscriptXSize;
     FT_Short ySubscriptYSize;
     FT_Short ySubscriptXOffset;
@@ -2219,12 +2220,12 @@ struct TT_MaxProfile {
 
 alias FT_Sfnt_Tag = int;
 enum {
-    ft_sfnt_head = 0,
-    ft_sfnt_maxp = 1,
-    ft_sfnt_os2  = 2,
-    ft_sfnt_hhea = 3,
-    ft_sfnt_vhea = 4,
-    ft_sfnt_post = 5,
-    ft_sfnt_pclt = 6,
-    sfnt_max
+    FT_SFNT_HEAD,
+    FT_SFNT_MAXP,
+    FT_SFNT_OS2,
+    FT_SFNT_HHEA,
+    FT_SFNT_VHEA,
+    FT_SFNT_POST,
+    FT_SFNT_PCLT,
+    FT_SFNT_MAX
 }
