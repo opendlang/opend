@@ -366,9 +366,9 @@ unittest
 
 
 /// Draw histograms based on the x coordinates of the data (aes)
-auto geomHist(AES)(AES aes)
+auto geomHist(AES)(AES aes, size_t noBins = 0)
 {
-    import std.algorithm : map;
+    import std.algorithm : map, max;
     import std.array : Appender, array;
     import std.range : repeat;
     import std.typecons : Tuple;
@@ -378,8 +378,12 @@ auto geomHist(AES)(AES aes)
 
     foreach (grouped; group(aes)) // Split data by colour/id
     {
-        auto bins = grouped.map!((t) => t.x) // Extract the x coordinates
-            .array.bin(11); // Bin the data
+
+        // Extract the x coordinates
+        auto xs = grouped.map!((t) => t.x).array; 
+        if (noBins < 1)
+            noBins = max(11, xs.length/5);
+        auto bins = xs.bin(noBins); // Bin the data
 
         foreach (bin; bins)
         {
@@ -405,7 +409,7 @@ auto geomHist(AES)(AES aes)
 }
 
 /// Draw histograms based on the x coordinates of the data (aes)
-auto geomHist3D(AES)(AES aes)
+auto geomHist3D(AES)(AES aes, size_t noBinsX = 0, size_t noBinsY = 0)
 {
     import std.algorithm : filter, map, reduce, max;
     import std.array : array, Appender;
@@ -419,14 +423,22 @@ auto geomHist3D(AES)(AES aes)
     // Track maximum z value for colour scaling
     double maxZ = -1;
 
-    foreach( binX; aes.map!((t) => t.x) // Extract the x coordinates
-            .array.bin( minmaxX[0], minmaxX[1], 11 ) )
+    auto xs = aes.map!((t) => t.x) // Extract the x coordinates
+            .array;
+
+    if (noBinsX < 1)
+        noBinsX = max(11, xs.length/10);
+    if (noBinsY < 1)
+        noBinsY = noBinsX;
+
+
+    foreach( binX; xs.bin( minmaxX[0], minmaxX[1], noBinsX ) )
     {
         // TODO this is not the most efficient way to create 2d bins
         foreach( binY; aes.filter!( 
                 (a) => a.x >= binX.range[0] && a.x < binX.range[1] )
             .map!( (a) => a.y ).array
-            .bin( minmaxY[0], minmaxY[1], 11 ) )
+            .bin( minmaxY[0], minmaxY[1], noBinsY ) )
         {
             maxZ = max( maxZ, binY.count );
             appender.put(
