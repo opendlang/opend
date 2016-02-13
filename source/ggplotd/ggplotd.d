@@ -510,3 +510,44 @@ unittest
 }
 
 
+///
+struct Facets
+{
+    ///
+    void put(GGPlotD facet)
+    {
+        ggs.put( facet );
+    }
+
+    ///
+    auto drawToSurface( ref cairo.Surface surface, int width, int height )
+    {
+        foreach( gg; ggs.data )
+            surface = gg.drawToSurface( surface, width, height );
+        return surface;
+    }
+ 
+    ///
+    void save( string fname, int width = 470, int height = 470 )
+    {
+        import cairo.cairo : RGBA;
+
+        bool pngWrite = false;
+        auto surface = createEmptySurface( fname, width, height,
+            RGBA(1,1,1,1) );
+
+        surface = drawToSurface( surface, width, height );
+
+        if (fname[$ - 3 .. $] == "png")
+        {
+            pngWrite = true;
+        }
+
+        if (pngWrite)
+            (cast(cairo.ImageSurface)(surface)).writeToPNG(fname);
+    }
+
+    import std.range : Appender;
+
+    Appender!(GGPlotD[]) ggs;
+ }
