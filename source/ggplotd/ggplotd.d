@@ -520,7 +520,8 @@ struct Facets
     }
 
     ///
-    auto drawToSurface( ref cairo.Surface surface, int width, int height )
+    auto drawToSurface( ref cairo.Surface surface, int dimX, int dimY, 
+            int width, int height )
     {
         foreach( gg; ggs.data )
             surface = gg.drawToSurface( surface, width, height );
@@ -528,7 +529,7 @@ struct Facets
     }
  
     ///
-    void save( string fname, int width = 470, int height = 470 )
+    void save( string fname, int dimX, int dimY, int width = 470, int height = 470 )
     {
         import cairo.cairo : RGBA;
 
@@ -536,7 +537,7 @@ struct Facets
         auto surface = createEmptySurface( fname, width, height,
             RGBA(1,1,1,1) );
 
-        surface = drawToSurface( surface, width, height );
+        surface = drawToSurface( surface, dimX, dimY, width, height );
 
         if (fname[$ - 3 .. $] == "png")
         {
