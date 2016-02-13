@@ -525,27 +525,25 @@ struct Facets
     {
         import std.conv : to;
         import std.math : floor;
-        auto context = cairo.Context(surface);
+        import std.range : save;
+        import cairo.cairo : Rectangle;
         int w = floor( width.to!double/dimX ).to!int;
         int h = floor( height.to!double/dimY ).to!int;
 
-        auto gs = ggs.data;
+        auto gs = ggs.data.save;
         foreach( i; 0..dimX )
         {
             foreach( j; 0..dimY )
             {
                 if (!gs.empty) 
                 {
-                    auto g = gs.front;
-                    context.setSourceSurface( 
-                        g.drawToSurface( surface, w, h ),
-                        w*i, height - (j+1)*h
-                    );
+                    auto rect = Rectangle!double( w*i, h*j, w, h );
+                    auto subS = cairo.Surface.createForRectangle( surface, rect );
+                    gs.front.drawToSurface( subS, w, h ),
                     gs.popFront;
                 }
             }
         }
-        context.paint();
 
         return surface;
     }
@@ -597,5 +595,5 @@ struct Facets
 
 auto gridLayout( double ratio )
 {
-    return Tuple!(int, int)( 1, 2 );
+    return Tuple!(int, int)( 2, 2 );
 }
