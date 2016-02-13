@@ -117,6 +117,13 @@ class GTKWindow
     }
 
     ///
+    void draw(T)( T gg, int width, int height )
+    {
+        // Writing to cairo surfaces should be safe. Displayer only reads from it.
+        gg.drawToSurface( sa.surface, width, height );
+    }
+ 
+    ///
     void clearWindow()
     {
         cairod.RGBA colour = cairod.RGBA(1,1,1,1);
