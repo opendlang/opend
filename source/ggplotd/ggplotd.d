@@ -523,11 +523,34 @@ struct Facets
     auto drawToSurface( ref cairo.Surface surface, int dimX, int dimY, 
             int width, int height )
     {
-        foreach( gg; ggs.data )
-            surface = gg.drawToSurface( surface, width, height );
+        import std.conv : to;
+        import std.math : floor;
+        auto context = cairo.Context(surface);
+        int w = floor( width.to!double/dimX ).to!int;
+        int h = floor( height.to!double/dimY ).to!int;
+
+        auto gs = ggs.data;
+        foreach( i; 0..dimX )
+        {
+            foreach( j; 0..dimY )
+            {
+                if (!gs.empty) 
+                {
+                    auto g = gs.front;
+                    context.setSourceSurface( 
+                        g.drawToSurface( surface, w, h ),
+                        w*i, height - (j+1)*h
+                    );
+                    gs.popFront;
+                }
+            }
+        }
+        context.paint();
+
         return surface;
     }
 
+    ///
     auto drawToSurface( ref cairo.Surface surface,
             int width, int height )
     {
@@ -558,7 +581,7 @@ struct Facets
             (cast(cairo.ImageSurface)(surface)).writeToPNG(fname);
     }
 
-
+    ///
     void save( string fname, int width = 470, int height = 470 )
     {
         import std.conv : to;
