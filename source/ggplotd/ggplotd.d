@@ -527,6 +527,16 @@ struct Facets
             surface = gg.drawToSurface( surface, width, height );
         return surface;
     }
+
+    auto drawToSurface( ref cairo.Surface surface,
+            int width, int height )
+    {
+        import std.conv : to;
+        // Calculate dimX/dimY from width/height
+        auto grid = gridLayout( width.to!double/height );
+        return drawToSurface( surface, grid[0], grid[1], width, height );
+    }
+ 
  
     ///
     void save( string fname, int dimX, int dimY, int width = 470, int height = 470 )
@@ -548,7 +558,21 @@ struct Facets
             (cast(cairo.ImageSurface)(surface)).writeToPNG(fname);
     }
 
+
+    void save( string fname, int width = 470, int height = 470 )
+    {
+        import std.conv : to;
+        // Calculate dimX/dimY from width/height
+        auto grid = gridLayout( width.to!double/height );
+        save( fname, grid[0], grid[1], width, height );
+    }
+
     import std.range : Appender;
 
     Appender!(GGPlotD[]) ggs;
  }
+
+auto gridLayout( double ratio )
+{
+    return Tuple!(int, int)( 1, 2 );
+}
