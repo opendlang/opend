@@ -15,7 +15,7 @@ import std.typecons : Tuple;
 static auto DefaultValues = Tuple!( 
     string, "label", string, "colour", double, "size",
     double, "angle", double, "alpha", bool, "mask", double, "fill" )
-    ("", "black", 10, 0, 1, true, 0.0);
+    ("", "black", 1.0, 0, 1, true, 0.0);
 
 /++
     Aes is used to store and access data for plotting
@@ -30,7 +30,7 @@ static auto DefaultValues = Tuple!(
     $(UL
         $(LI "label": Text labels (string))
         $(LI "colour": Identifier for the colour. In general data points with different colour ids get different colours. This can be almost any type. You can also specify the colour by name or cairo.Color type if you want to specify an exact colour (any type that isNumeric, cairo.Color.RGB(A), or can be converted to string))
-        $(LI "size": Gives the size of points in pixels (size_t))
+        $(LI "size": Gives the relative size of points/lineWidth etc.
         $(LI "angle": Angle of printed labels in radians (double))
         $(LI "alpha": Alpha value of the drawn object (double))
         $(LI "mask": Mask the area outside the axes. Prevents you from drawing outside of the area (bool))

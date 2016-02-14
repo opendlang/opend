@@ -66,7 +66,8 @@ auto geomPoint(AES)(AES aes)
                 auto devP = context.userToDevice(cairo.Point!double(tup.x[0], tup.y[0]));
                 context.save();
                 context.identityMatrix;
-                context.rectangle(devP.x - 0.5 * tup.size, devP.y - 0.5 * tup.size, tup.size, tup.size);
+                context.rectangle(devP.x - 4 * tup.size, 
+                        devP.y - 4 * tup.size, 8*tup.size, 8*tup.size);
                 context.restore();
 
                 auto col = colourMap(ColourID(tup.colour));
@@ -145,6 +146,7 @@ auto geomLine(AES)(AES aes)
                 foreach (tup; coords)
                 {
                     context.lineTo(tup[0][0], tup[1][0]);
+                    context.lineWidth = 2.0*flags.size;
                 }
 
                 auto col = colourMap(ColourID(flags.colour));
