@@ -90,7 +90,7 @@ import core.thread;
 * 
 * gg = GGPlotD().put( geomPoint( aes ) );
 * gd.clearWindow();
-* gd.drawGG( gg, 470, 470 );
+* gd.draw( gg, 470, 470 );
 * 
 * // Wait for gtk thread to finish (Window closed)
 * tid.join();
@@ -107,13 +107,6 @@ class GTKWindow
         Main.init(args);
         sa = new SurfaceArea();
         sa.surface = new cairod.ImageSurface(cairod.Format.CAIRO_FORMAT_ARGB32, 470, 470);
-    }
-
-    ///
-    void drawGG( GGPlotD gg, int width, int height )
-    {
-        // Writing to cairo surfaces should be safe. Displayer only reads from it.
-        gg.drawToSurface( sa.surface, width, height );
     }
 
     ///
