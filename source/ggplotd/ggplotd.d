@@ -525,27 +525,25 @@ struct Facets
     {
         import std.conv : to;
         import std.math : floor;
-        auto context = cairo.Context(surface);
+        import std.range : save;
+        import cairo.cairo : Rectangle;
         int w = floor( width.to!double/dimX ).to!int;
         int h = floor( height.to!double/dimY ).to!int;
 
-        auto gs = ggs.data;
+        auto gs = ggs.data.save;
         foreach( i; 0..dimX )
         {
             foreach( j; 0..dimY )
             {
                 if (!gs.empty) 
                 {
-                    auto g = gs.front;
-                    context.setSourceSurface( 
-                        g.drawToSurface( surface, w, h ),
-                        w*i, height - (j+1)*h
-                    );
+                    auto rect = Rectangle!double( w*i, h*j, w, h );
+                    auto subS = cairo.Surface.createForRectangle( surface, rect );
+                    gs.front.drawToSurface( subS, w, h ),
                     gs.popFront;
                 }
             }
         }
-        context.paint();
 
         return surface;
     }
@@ -556,7 +554,7 @@ struct Facets
     {
         import std.conv : to;
         // Calculate dimX/dimY from width/height
-        auto grid = gridLayout( width.to!double/height );
+        auto grid = gridLayout( ggs.data.length, width.to!double/height );
         return drawToSurface( surface, grid[0], grid[1], width, height );
     }
  
@@ -586,7 +584,7 @@ struct Facets
     {
         import std.conv : to;
         // Calculate dimX/dimY from width/height
-        auto grid = gridLayout( width.to!double/height );
+        auto grid = gridLayout( ggs.data.length, width.to!double/height );
         save( fname, grid[0], grid[1], width, height );
     }
 
@@ -595,7 +593,19 @@ struct Facets
     Appender!(GGPlotD[]) ggs;
  }
 
-auto gridLayout( double ratio )
+auto gridLayout( size_t length, double ratio )
 {
-    return Tuple!(int, int)( 1, 2 );
+    import std.conv : to;
+    import std.math : ceil, sqrt;
+    auto h = ceil( sqrt(length/ratio) );
+    auto w = ceil(length/h);
+    return Tuple!(int, int)( w.to!int, h.to!int );
+}
+
+unittest
+{
+    assertEqual(gridLayout(4, 1), Tuple!(int, int)(2, 2));
+    assertEqual(gridLayout(2, 1), Tuple!(int, int)(1, 2));
+    assertEqual(gridLayout(3, 1), Tuple!(int, int)(2, 2));
+    assertEqual(gridLayout(2, 2), Tuple!(int, int)(2, 1));
 }
