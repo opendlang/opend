@@ -14,7 +14,7 @@ class SurfaceArea : DrawingArea
     public:
     this()
 	{
-        surface = new cairod.ImageSurface(cairod.Format.CAIRO_FORMAT_ARGB32, 250, 250);
+        surface = new cairod.ImageSurface(cairod.Format.CAIRO_FORMAT_ARGB32, width, height);
 		//Attach our expose callback, which will draw the window.
 		addOnDraw(&drawCallback);
 	}
@@ -42,7 +42,8 @@ protected:
            */
         cairod.SurfacePattern pattern = new cairod.SurfacePattern( surface );
         cairod.Matrix matrix;
-        matrix.initScale( 470.0/size.width, 470.0/size.height );
+        import std.conv : to;
+        matrix.initScale( width.to!double/size.width, height.to!double/size.height );
         pattern.setMatrix( matrix );
 
         /*
@@ -70,6 +71,9 @@ protected:
 	Timeout m_timeout;
 
     cairod.Surface surface;
+
+    int width = 470;
+    int height = 470;
 }
 
 import core.thread;
@@ -112,7 +116,11 @@ class GTKWindow
     ///
     void draw(T)( T gg, int width, int height )
     {
+        // Testing seems to indicate this doesn't need a mutex?
+        sa.width = width;
+        sa.height = height;
         // Writing to cairo surfaces should be safe. Displayer only reads from it.
+        sa.surface = new cairod.ImageSurface(cairod.Format.CAIRO_FORMAT_ARGB32, width, height);
         gg.drawToSurface( sa.surface, width, height );
     }
  
