@@ -370,7 +370,7 @@ unittest
 /// Draw histograms based on the x coordinates of the data (aes)
 auto geomHist(AES)(AES aes, size_t noBins = 0)
 {
-    import std.algorithm : map, max;
+    import std.algorithm : map, max, min;
     import std.array : Appender, array;
     import std.range : repeat;
     import std.typecons : Tuple;
@@ -384,7 +384,7 @@ auto geomHist(AES)(AES aes, size_t noBins = 0)
         // Extract the x coordinates
         auto xs = grouped.map!((t) => t.x).array; 
         if (noBins < 1)
-            noBins = max(11, xs.length/5);
+            noBins = min(30,max(11, xs.length/10));
         auto bins = xs.bin(noBins); // Bin the data
 
         foreach (bin; bins)
@@ -413,7 +413,7 @@ auto geomHist(AES)(AES aes, size_t noBins = 0)
 /// Draw histograms based on the x coordinates of the data (aes)
 auto geomHist3D(AES)(AES aes, size_t noBinsX = 0, size_t noBinsY = 0)
 {
-    import std.algorithm : filter, map, reduce, max;
+    import std.algorithm : filter, map, reduce, max, min;
     import std.array : array, Appender;
     // New appender to hold lines for drawing histogram
     auto appender = Appender!(Geom[])([]);
@@ -429,7 +429,7 @@ auto geomHist3D(AES)(AES aes, size_t noBinsX = 0, size_t noBinsY = 0)
             .array;
 
     if (noBinsX < 1)
-        noBinsX = max(11, xs.length/10);
+        noBinsX = min(30,max(11, xs.length/25));
     if (noBinsY < 1)
         noBinsY = noBinsX;
 
