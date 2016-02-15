@@ -130,8 +130,15 @@ auto axisTicks(Axis axis)
 
         @property double front()
         {
+            import std.math : abs;
             if (currentPosition >= axis.max)
                 return axis.max;
+            // Special case for zero, because a small numerical error results in
+            // wrong label, i.e. 0 + small numerical error (of 5.5e-17) is 
+            // displayed as 5.5e-17, while any other numerical error falls 
+            // away in rounding
+            if (abs(currentPosition - 0) < axis.tick_width/1.0e5)
+                return 0.0;
             return currentPosition;
         }
 
@@ -187,6 +194,21 @@ unittest
     assert(tickLength(axis) == 0.08);
 }
 
+string toAxisLabel( double value )
+{
+    import std.format : format;
+    //return format( "%.2g", value );
+    return format( "%.3g", value );
+}
+
+unittest
+{
+    assertEqual( 5.toAxisLabel, "5" );
+    assertEqual( (0.5).toAxisLabel, "0.5" );
+    assertEqual( (0.001234567).toAxisLabel, "0.00123" );
+    assertEqual( (0.00000001234567).toAxisLabel, "1.23e-08" );
+}
+
 ///
 auto axisAes(string type, double minC, double maxC, double lvl, Tuple!(double, string)[] ticks = [])
 {
@@ -207,7 +229,7 @@ auto axisAes(string type, double minC, double maxC, double lvl, Tuple!(double, s
         ticksLoc = [minC] ~ sortedAxisTicks.map!((t) => t[0]).array ~ [maxC];
         labels = [""] ~ sortedAxisTicks.map!((t) {
             if (t[1].empty)
-                return t[0].to!string;
+                return t[0].to!double.toAxisLabel;
             else
                 return t[1];
         }).array ~ [""];
@@ -215,7 +237,7 @@ auto axisAes(string type, double minC, double maxC, double lvl, Tuple!(double, s
     else
     {
         ticksLoc = Axis(minC, maxC).adjustTickWidth(5).axisTicks.array;
-        labels = ticksLoc.map!((a) => a.to!string).array;
+        labels = ticksLoc.map!((a) => a.to!double.toAxisLabel).array;
     }
 
     if (type == "x")
