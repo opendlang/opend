@@ -783,14 +783,17 @@ auto geomPolygon(AES)(AES aes)
 {
     import std.array : array;
     import std.algorithm : map, swap;
+    import std.conv : to;
     import ggplotd.geometry;
 
     auto merged = DefaultValues.mergeRange(aes);
     // Turn into vertices.
     static if (is(typeof(merged.front.colour)==ColourID))
-        auto vertices = merged.map!( (t) => Vertex3D( t.x, t.y, t.colour[0] ) );
+        auto vertices = merged.map!( (t) => Vertex3D( t.x.to!double, t.y.to!double, 
+                    t.colour[0] ) );
     else
-        auto vertices = merged.map!( (t) => Vertex3D( t.x, t.y, t.colour ) );
+        auto vertices = merged.map!( (t) => Vertex3D( t.x.to!double, t.y.to!double, 
+                    t.colour.to!double ) );
 
     // Find lowest, highest
     auto triangle = vertices.array;
