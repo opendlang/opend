@@ -212,12 +212,23 @@ unittest
     assertEqual(cids.front[0], 0);
 }
 
+auto gradient(C)( double value, C from, C till )
+{
+    return hcyToRGB(
+        from[0] + value * (till[0]-from[0]),
+        from[1] + value * (till[1]-from[1]),
+        from[2] + value * (till[2]-from[2])
+        );
+}
+
 ///
 auto gradient(double value, double from, double till)
 {
     if (from == till)
         return hcyToRGB(200, 0.5, 0.5);
-    return hcyToRGB(200, 0.5 + 0.5 * (value - from) / (till - from), (value - from) / (till - from));
+    return gradient( (value-from)/(till-from),
+            Tuple!(double,double,double)(200, 0.5, 0),
+            Tuple!(double,double,double)(200, 1, 1) );
 }
 
 private auto safeMax(T)(T a, T b)
