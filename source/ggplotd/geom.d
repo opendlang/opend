@@ -528,12 +528,15 @@ auto geomAxis(AES)(AES aes, double tickLength, string label)
 /// Draw Label at given x and y position
 auto geomLabel(AES)(AES aes)
 {
-    alias CoordX = typeof(NumericLabel!(typeof(AES.x))(AES.x));
-    alias CoordY = typeof(NumericLabel!(typeof(AES.y))(AES.y));
+    import std.algorithm : map;
+    auto xsMap = aes.map!("a.x");
+    auto ysMap = aes.map!("a.y");
+    alias CoordX = typeof(NumericLabel!(typeof(xsMap))(xsMap));
+    alias CoordY = typeof(NumericLabel!(typeof(ysMap))(ysMap));
     alias CoordType = typeof(DefaultValues
         .mergeRange(aes)
         .mergeRange( Aes!(CoordX, "x", CoordY, "y")
-            (CoordX(AES.x), CoordY(AES.y))));
+            (CoordX(xsMap), CoordY(ysMap))));
 
 
     struct GeomRange(T)
@@ -543,8 +546,8 @@ auto geomLabel(AES)(AES aes)
         {
             _aes = DefaultValues
                 .mergeRange(aes)
-                .mergeRange( Aes!(CoordX, "x", CoordY, "y")
-                    (CoordX(aes.x), CoordY(aes.y)));
+                .mergeRange( Aes!(CoordX, "x", CoordY, "y")(
+                    CoordX(xsMap), CoordY(ysMap)));
         }
 
         @property auto front()
@@ -784,7 +787,10 @@ auto geomPolygon(AES)(AES aes)
 
     auto merged = DefaultValues.mergeRange(aes);
     // Turn into vertices.
-    auto vertices = merged.map!( (t) => Vertex3D( t.x, t.y, t.colour ) );
+    static if (is(typeof(merged.front.colour)==ColourID))
+        auto vertices = merged.map!( (t) => Vertex3D( t.x, t.y, t.colour[0] ) );
+    else
+        auto vertices = merged.map!( (t) => Vertex3D( t.x, t.y, t.colour ) );
 
     // Find lowest, highest
     auto triangle = vertices.array;
