@@ -90,8 +90,8 @@ auto drawTitle( in Title title, ref cairo.Surface surface,
     return surface;
 }
 
-auto drawGeom( Geom geom, ref cairo.Surface surface,
-    ColourMap colourMap, ScaleType scaleFunction, in Bounds bounds, 
+auto drawGeom( in Geom geom, ref cairo.Surface surface,
+    in ColourMap colourMap, in ScaleType scaleFunction, in Bounds bounds, 
     in Margins margins, int width, int height )
 {
     cairo.Context context;
@@ -138,10 +138,8 @@ struct GGPlotD
     ScaleType scaleFunction;
 
     ///
-    auto drawToSurface( ref cairo.Surface surface, int width, int height )
+    auto drawToSurface( ref cairo.Surface surface, int width, int height ) const
     {
-        if (!initScale)
-            scaleFunction = scale(); // This needs to be removed later
         import std.range : empty, front;
 
         AdaptiveBounds bounds;
@@ -208,10 +206,15 @@ struct GGPlotD
         // Plot axis and geomRange
         foreach (geom; chain(geomRange, gR) )
         {
-            surface = geom.drawGeom( surface,
-                colourMap, scaleFunction, bounds, 
-                margins, width, height );
-        }
+            if (initScale)
+                surface = geom.drawGeom( surface,
+                    colourMap, scaleFunction, bounds, 
+                    margins, width, height );
+            else 
+                surface = geom.drawGeom( surface,
+                    colourMap, scale(), bounds, 
+                    margins, width, height );
+         }
 
         // Plot title
         surface = title.drawTitle( surface, margins, width, height );
@@ -220,7 +223,7 @@ struct GGPlotD
  
 
     ///
-    void save( string fname, int width = 470, int height = 470 )
+    void save( string fname, int width = 470, int height = 470 ) const
     {
         bool pngWrite = false;
         auto surface = createEmptySurface( fname, width, height,
@@ -521,7 +524,7 @@ struct Facets
 
     ///
     auto drawToSurface( ref cairo.Surface surface, int dimX, int dimY, 
-            int width, int height )
+            int width, int height ) const
     {
         import std.conv : to;
         import std.math : floor;
@@ -550,7 +553,7 @@ struct Facets
 
     ///
     auto drawToSurface( ref cairo.Surface surface,
-            int width, int height )
+            int width, int height ) const
     {
         import std.conv : to;
         // Calculate dimX/dimY from width/height
@@ -560,7 +563,7 @@ struct Facets
  
  
     ///
-    void save( string fname, int dimX, int dimY, int width = 470, int height = 470 )
+    void save( string fname, int dimX, int dimY, int width = 470, int height = 470 ) const
     {
         import cairo.cairo : RGBA;
 
@@ -580,7 +583,7 @@ struct Facets
     }
 
     ///
-    void save( string fname, int width = 470, int height = 470 )
+    void save( string fname, int width = 470, int height = 470 ) const
     {
         import std.conv : to;
         // Calculate dimX/dimY from width/height

@@ -250,7 +250,7 @@ Here we take care to always return a valid set of bounds
     }
 
     ///
-    bool adapt(T : Point)(T point)
+    bool adapt(T : Point)(in T point)
     {
         bool adapted = false;
         if (!valid)
@@ -275,7 +275,7 @@ Here we take care to always return a valid set of bounds
     }
 
     ///
-    bool adapt(T : AdaptiveBounds)(T bounds)
+    bool adapt(T : AdaptiveBounds)(in T bounds)
     {
         bool adapted = false;
         if (bounds.valid)
@@ -294,10 +294,11 @@ Here we take care to always return a valid set of bounds
     import std.range : isInputRange;
 
     ///
-    bool adapt(T)(T points)
+    bool adapt(T)(in T points)
     {
+        import std.range : save;
         bool adapted = false;
-        foreach (point; points)
+        foreach (point; points.save)
         {
             auto a = adapt(point);
             if (a)

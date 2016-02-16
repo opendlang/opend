@@ -263,6 +263,12 @@ template Aes(Specs...)
         }
 
         ///
+        auto save() const
+        {
+            return this;
+        }
+
+        ///
         @property bool empty()
         {
             if (length == 0)
