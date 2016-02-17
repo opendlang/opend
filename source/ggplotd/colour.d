@@ -177,13 +177,13 @@ struct ColourIDRange(T) if (isInputRange!T && is(ElementType!T == ColourID))
         return original.empty;
     }
 
-    // TODO More elegant way of doing this? Key is that we want to keep
-    // labelMap after our we've iterated over this array.
-    // One possible solution would be to have a fillLabelMap, which will
-    // run till the end of original and fill the LabelMap
-    static double[string] labelMap;
+    @property auto save()
+    {
+        return this;
+    }
 
 private:
+    double[string] labelMap;
     T original;
     //E[double] toLabelMap;
     RGBA[string] namedColours;
@@ -270,18 +270,23 @@ auto createColourMap(R)(R colourIDs) if (is(ElementType!R == Tuple!(double,
 
     auto minmax = Tuple!(double, double)(0, 0);
     if (!validatedIDs.empty)
-        minmax = validatedIDs.map!((a) => a[0]).reduce!((a, b) => safeMin(a,
+        minmax = validatedIDs.save
+            .map!((a) => a[0]).reduce!((a, b) => safeMin(a,
             b), (a, b) => safeMax(a, b));
 
     auto namedColours = createNamedColours;
+    import std.algorithm : find;
 
     return (ColourID tup) {
         if (tup[2].red >= 0)
             return tup[2];
         else if (tup[1] in namedColours)
             return namedColours[tup[1]];
-        else if (isNaN(tup[0]))
-            return gradient(validatedIDs.labelMap[tup[1]], minmax[0], minmax[1]);
+        else if (isNaN(tup[0])) 
+        {
+            return gradient((validatedIDs.find!("a[1] == b")(tup[1]).front)[0], 
+                minmax[0], minmax[1]);
+        }
         return gradient(tup[0], minmax[0], minmax[1]);
     };
 }
