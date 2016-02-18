@@ -313,3 +313,28 @@ unittest
     assert( cM( ColourID(0) ) != cM( ColourID(1) ) );
     assertEqual( cM( ColourID(0) ), cM( ColourID(0) ) );
 }
+
+struct ColourGradient(C)
+{
+    void put(double value, C colour)
+    {
+        import std.range : back;
+        assert( value > stops.back[0], 
+            "Stops must be added in increasing value" );
+        stops ~= Tuple!(double, C)( value, colour );
+    }
+
+    // To find the interval within which a value falls ->
+    // Split stops around it. If one empty take two from other and warn value
+    // outside of coverage (debug), else take back and front from splitted
+
+    // When returning colour by value, try zip(c1, c2).map!( (a,b) => a+v*(b-a)) or something
+
+private:
+    Tuple!(double,C)[] stops;
+}
+
+unittest
+{
+    ColourGradient!(double[]) cg;
+}
