@@ -32,21 +32,6 @@ RGBA hcyToRGB(double h, double c, double y)
         rgb.b, 1);
 }
 
-unittest
-{
-    import color = ggplotd.color;
-    import cconv = ggplotd.color.conv;
-    import chsx = ggplotd.color.hsx;
-    import crgb = ggplotd.color.rgb;
-    alias HCY = chsx.HCY!double;
-    alias RGB = crgb.RGB!("rgb",double);
-
-    auto hcy = HCY(200.0, 0.5, 0.5);
-
-    import std.stdio : writeln;
-    cconv.convertColor!(RGB, HCY)( hcy ).writeln;
-}
-
 /++
     Returns an associative array with names as key and colours as values
 
