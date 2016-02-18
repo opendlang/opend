@@ -305,6 +305,17 @@ struct ColourGradient(C)
         stops ~= Tuple!(double, C)( value, colour );
     }
 
+    void put( double value, string name )
+    {
+        auto rgb = createNamedColours[name];
+        import cconv = ggplotd.color.conv;
+        import crgb = ggplotd.color.rgb;
+        alias cRGB = crgb.RGB!("rgb",double);
+        auto crgb = cRGB( rgb.red, rgb.green, rgb.blue );
+        C colour = cconv.convertColor!( crgb );
+        this.put( value, colour );
+    }
+
     // To find the interval within which a value falls ->
     // Split stops around it. If one empty take two from other and warn value
     // outside of coverage (debug), else take back and front from splitted
@@ -317,5 +328,5 @@ private:
 
 unittest
 {
-    ColourGradient!(double[]) cg;
+    //ColourGradient!(double[]) cg;
 }
