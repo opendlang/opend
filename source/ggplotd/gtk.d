@@ -27,9 +27,9 @@ protected:
 
 		if ( m_timeout is null )
 		{
-			// Create a new timeout that will ask the window to be drawn 10 times 
+			// Create a new timeout that will ask the window to be drawn 2 times 
             // every second.
-			m_timeout = new Timeout( 100, &onElapsed, false );
+			m_timeout = new Timeout( 500, &onElapsed, false );
 		}
 
 		// This is where we draw on the window
