@@ -34,3 +34,15 @@ C fromCairoRGBA(C)( cairo.RGBA crgb )
     return toColourSpace!C( rgba );
 }
 
+auto toTuple(T : HCY)( T colour )
+{
+    import std.typecons : Tuple;
+    return Tuple!(double, double, double)( colour.h, colour.c, colour.y );
+}
+
+auto toTuple(T)( T colour )
+{
+    import std.typecons : Tuple;
+    return Tuple!(double, double, double)( colour.r, colour.g, colour.b );
+}
+

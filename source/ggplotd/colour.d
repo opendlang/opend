@@ -284,12 +284,14 @@ unittest
 
 struct ColourGradient(C)
 {
+    import ggplotd.colourspace : toColourSpace;
     void put(double value, C colour)
     {
-        import std.range : back;
-        assert( value > stops.back[0], 
-            "Stops must be added in increasing value" );
-        stops ~= Tuple!(double, C)( value, colour );
+        import std.range : back, empty;
+        if (!stops.data.empty)
+            assert( value > stops.data.back[0], 
+                "Stops must be added in increasing value" );
+        stops.put( Tuple!(double, C)( value, colour ) );
     }
 
     void put( double value, string name )
@@ -299,17 +301,74 @@ struct ColourGradient(C)
         this.put( value, colour );
     }
 
-    // To find the interval within which a value falls ->
-    // Split stops around it. If one empty take two from other and warn value
-    // outside of coverage (debug), else take back and front from splitted
+    /**
+        To find the interval within which a value falls
+    
+        If value to high or low return respectively the highest two or lowest two
+    */
+    Tuple!(double, C)[] interval( double value )
+    {
+        import std.algorithm : findSplitBefore;
+        import std.range : empty, front, back;
+        assert(stops.data.length > 1, "Need at least two stops");
+        // Split stops around it. If one empty take two from other and warn value
+        // outside of coverage (debug), else take back and front from splitted
+        auto splitted = stops.data.findSplitBefore!"a[0]>b"([value]);
 
-    // When returning colour by value, try zip(c1, c2).map!( (a,b) => a+v*(b-a)) or something
+        if (splitted[0].empty)
+            return stops.data[0..2];
+        else if (splitted[1].empty)
+            return stops.data[($-2)..$];
+        return [splitted[0].back, splitted[1].front];
+    }
+
+    auto colour( double value )
+    {
+        import ggplotd.colourspace : toTuple;
+        // When returning colour by value, try zip(c1, c2).map!( (a,b) => a+v*(b-a)) or something
+        auto inval = interval( value );
+        auto sc = (value-inval[0][0])/(inval[1][0]-inval[0][0]);
+        auto minC = inval[0][1].toTuple;
+        auto maxC = inval[1][1].toTuple;
+        return ( C( 
+            minC[0] + sc*(maxC[0]-minC[0]),
+            minC[1] + sc*(maxC[1]-minC[1]),
+            minC[2] + sc*(maxC[2]-minC[2]) ) );
+        //return inval[0][1] + sc*(inval[1][1]-inval[0][1]);
+    }
 
 private:
-    Tuple!(double,C)[] stops;
+    import std.range : Appender;
+    Appender!(Tuple!(double,C)[]) stops;
 }
 
 unittest
 {
-    //ColourGradient!(double[]) cg;
+    import ggplotd.colourspace;
+    import std.range : back, front;
+
+    ColourGradient!RGB cg;
+
+    cg.put( 0, RGB(0,0,0) );
+    cg.put( 1, "white" );
+
+    auto ans = cg.interval( 0.1 );
+    assertEqual( ans.front[0], 0 );
+    assertEqual( ans.back[0], 1 );
+
+    cg = ColourGradient!RGB();
+
+    cg.put( 0, RGB(0,0,0) );
+    cg.put( 0.2, RGB(0.5,0.6,0.8) );
+    cg.put( 1, "white" );
+    ans = cg.interval( 0.1 );
+    assertEqual( ans.front[0], 0 );
+    assertEqual( ans.back[0], 0.2 );
+
+    ans = cg.interval( 1.1 );
+    assertEqual( ans.front[0], 0.2 );
+    assertEqual( ans.back[0], 1.0 );
+
+    auto col = cg.colour( 0.1 );
+    assertEqual( col, RGB(0.25,0.3,0.4) );
 }
