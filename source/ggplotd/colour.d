@@ -5,10 +5,6 @@ import std.typecons : Tuple;
 
 import cairo.cairo : RGBA;
 
-//import std.experimental.color.conv;
-//import std.experimental.color.rgb;
-//import std.experimental.color.hsx;
-
 import ggplotd.aes : NumericLabel;
 
 version (unittest)
@@ -23,32 +19,32 @@ H(ue) 0-360, C(hroma) 0-1, Y(Luma) 0-1
 +/
 RGBA hcyToRGB(double h, double c, double y)
 {
-    import std.algorithm : min, max;
-    import std.math : abs;
-
-    auto ha = h / 60;
-    auto x = c * (1 - abs(ha % 2 - 1));
-    Tuple!(double, double, double) rgb1;
-    if (ha == 0)
-        rgb1 = Tuple!(double, double, double)(0, 0, 0);
-    else if (ha < 1)
-        rgb1 = Tuple!(double, double, double)(c, x, 0);
-    else if (ha < 2)
-        rgb1 = Tuple!(double, double, double)(x, c, 0);
-    else if (ha < 3)
-        rgb1 = Tuple!(double, double, double)(0, c, x);
-    else if (ha < 4)
-        rgb1 = Tuple!(double, double, double)(0, x, c);
-    else if (ha < 5)
-        rgb1 = Tuple!(double, double, double)(x, 0, c);
-    else if (ha < 6)
-        rgb1 = Tuple!(double, double, double)(c, 0, x);
-    auto m = y - (.3 * rgb1[0] + .59 * rgb1[1] + .11 * rgb1[2]);
-    // TODO is this really correct?
+    import cconv = ggplotd.color.conv;
+    import chsx = ggplotd.color.hsx;
+    import crgb = ggplotd.color.rgb;
+    alias HCY = chsx.HCY!double;
+    alias cRGB = crgb.RGB!("rgb",double);
+    auto hcy = HCY(h, c, y);
+    auto rgb = cconv.convertColor!(cRGB, HCY)( hcy );
     return RGBA(
-        rgb1[0] + m, 
-        rgb1[1] + m, 
-        rgb1[2] + m, 1);
+        rgb.r, 
+        rgb.g, 
+        rgb.b, 1);
+}
+
+unittest
+{
+    import color = ggplotd.color;
+    import cconv = ggplotd.color.conv;
+    import chsx = ggplotd.color.hsx;
+    import crgb = ggplotd.color.rgb;
+    alias HCY = chsx.HCY!double;
+    alias RGB = crgb.RGB!("rgb",double);
+
+    auto hcy = HCY(200.0, 0.5, 0.5);
+
+    import std.stdio : writeln;
+    cconv.convertColor!(RGB, HCY)( hcy ).writeln;
 }
 
 /++
