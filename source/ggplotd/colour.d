@@ -3,9 +3,9 @@ module ggplotd.colour;
 import std.range : ElementType;
 import std.typecons : Tuple;
 
-import cairo.cairo : RGBA;
-
 import ggplotd.aes : NumericLabel;
+import ggplotd.colourspace : RGBA;
+
 
 version (unittest)
 {
@@ -19,17 +19,8 @@ H(ue) 0-360, C(hroma) 0-1, Y(Luma) 0-1
 +/
 RGBA hcyToRGB(double h, double c, double y)
 {
-    import cconv = ggplotd.color.conv;
-    import chsx = ggplotd.color.hsx;
-    import crgb = ggplotd.color.rgb;
-    alias HCY = chsx.HCY!double;
-    alias cRGB = crgb.RGB!("rgb",double);
-    auto hcy = HCY(h, c, y);
-    auto rgb = cconv.convertColor!(cRGB, HCY)( hcy );
-    return RGBA(
-        rgb.r, 
-        rgb.g, 
-        rgb.b, 1);
+    import ggplotd.colourspace;
+    return toColourSpace!RGBA( HCY( h,c,y ) );
 }
 
 /++
@@ -61,22 +52,18 @@ struct ColourID
         import std.math : isNumeric;
         import std.conv : to;
 
+        import ggplotd.colourspace : isColour, toColourSpace;
+
         id[2] = RGBA(-1,-1,-1,-1);
 
         static if (isNumeric!T)
         {
             id[0] = setId.to!double;
         } else
-          static if (is(T==RGBA))
-            id[2] = setId;
+          static if (isColour!T)
+            id[2] = setId.toColourSpace!(RGBA,T);
           else
-          {
-              import cairo.cairo : RGB;
-              static if (is(T==RGB))
-                id[2] = RGBA(setId.red, setId.green, setId.blue, 1);
-              else
-                id[1] = setId.to!string;
-          }
+            id[1] = setId.to!string;
     }
 
     /// Initialize using rgba colour
@@ -94,7 +81,7 @@ unittest
 {
     import std.math : isNaN;
     import std.range : empty;
-    import cairo.cairo : RGB;
+    import ggplotd.colourspace : RGB;
 
     auto cID = ColourID("a");
     assert(isNaN(cID[0]));
@@ -102,13 +89,13 @@ unittest
     auto numID = ColourID(0);
     assertEqual(numID[0], 0);
     assert(numID[1].empty);
-    assertEqual( numID[2].red, -1 );
+    assertEqual( numID[2].r, -1 );
 
     cID = ColourID(RGBA(0,0,0,0));
-    assertEqual( cID[2].red, 0 );
+    assertEqual( cID[2].r, 0 );
 
     cID = ColourID(RGB(1,1,1));
-    assertEqual( cID[2].red, 1 );
+    assertEqual( cID[2].r, 1 );
 }
 
 import std.range : isInputRange;
@@ -259,7 +246,7 @@ auto createColourMap(R)(R colourIDs) if (is(ElementType!R == Tuple!(double,
     import std.algorithm : find;
 
     return (ColourID tup) {
-        if (tup[2].red >= 0)
+        if (tup[2].r >= 0)
             return tup[2];
         else if (tup[1] in namedColours)
             return namedColours[tup[1]];
@@ -308,11 +295,7 @@ struct ColourGradient(C)
     void put( double value, string name )
     {
         auto rgb = createNamedColours[name];
-        import cconv = ggplotd.color.conv;
-        import crgb = ggplotd.color.rgb;
-        alias cRGB = crgb.RGB!("rgb",double);
-        auto crgb = cRGB( rgb.red, rgb.green, rgb.blue );
-        C colour = cconv.convertColor!( crgb );
+        auto colour = toColourSpace!C( rgb );
         this.put( value, colour );
     }
 

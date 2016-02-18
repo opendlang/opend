@@ -12,6 +12,7 @@ import ggplotd.geom;
 import ggplotd.bounds;
 import ggplotd.scale;
 import ggplotd.theme;
+import ggplotd.colourspace : RGBA, toCairoRGBA;
 
 version (unittest)
 {
@@ -68,7 +69,7 @@ private auto createEmptySurface( string fname, int width, int height,
     }
 
     auto backcontext = cairo.Context(surface);
-    backcontext.setSourceRGBA(colour);
+    backcontext.setSourceRGBA(colour.toCairoRGBA);
     backcontext.paint;
 
     return surface;
@@ -565,8 +566,6 @@ struct Facets
     ///
     void save( string fname, int dimX, int dimY, int width = 470, int height = 470 ) const
     {
-        import cairo.cairo : RGBA;
-
         bool pngWrite = false;
         auto surface = createEmptySurface( fname, width, height,
             RGBA(1,1,1,1) );
