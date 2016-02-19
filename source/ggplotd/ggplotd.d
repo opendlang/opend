@@ -427,15 +427,20 @@ unittest
     import std.range : repeat, iota;
     import std.random : uniform;
 
-    auto xs = iota(0,100,1).map!((x) => uniform(0.0,5)+uniform(0.0,5)).array;
-    auto ys = iota(0,100,1).map!((y) => uniform(0.0,5)+uniform(0.0,5)).array;
+    import ggplotd.aes : Aes;
+    import ggplotd.colour : colourGradient;
+    import ggplotd.colourspace : XYZ;
+    import ggplotd.geom : geomHist3D;
+
+    auto xs = iota(0,500,1).map!((x) => uniform(0.0,5)+uniform(0.0,5)).array;
+    auto ys = iota(0,500,1).map!((y) => uniform(0.0,5)+uniform(0.0,5)).array;
     auto aes = Aes!(typeof(xs), "x", typeof(ys), "y")( xs, ys);
     auto gg = GGPlotD().put( geomHist3D( aes ) );
+    // Use a different colour scheme
+    gg.put( colourGradient!XYZ( "white-blue-red" ) );
 
     gg.save( "hist3D.svg" );
 }
-
-
 
 /// Changing axes details
 unittest

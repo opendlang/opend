@@ -125,7 +125,8 @@ void main()
 A 3D version of the histogram is also implemented in geomHist3D. See the
 example in the
 [documentation](http://blackedder.github.io/ggplotd/ggplotd.html) for the
-code used to create this figure. 
+code used to create this figure. Note that we use another colour gradient
+here than the default.
 
 ![Histogram 3D](http://blackedder.github.io/ggplotd/images/hist3D.svg)
 
