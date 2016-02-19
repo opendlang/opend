@@ -1,6 +1,6 @@
 module ggplotd.theme;
 
-import cairo.cairo : RGBA;
+import ggplotd.colourspace : RGBA;
 
 alias ThemeFunction = Theme delegate(Theme);
 

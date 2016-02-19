@@ -12,6 +12,7 @@ import ggplotd.geom;
 import ggplotd.bounds;
 import ggplotd.scale;
 import ggplotd.theme;
+import ggplotd.colourspace : RGBA, toCairoRGBA;
 
 version (unittest)
 {
@@ -68,7 +69,7 @@ private auto createEmptySurface( string fname, int width, int height,
     }
 
     auto backcontext = cairo.Context(surface);
-    backcontext.setSourceRGBA(colour);
+    backcontext.setSourceRGBA(colour.toCairoRGBA);
     backcontext.paint;
 
     return surface;
@@ -137,6 +138,8 @@ struct GGPlotD
 
     ScaleType scaleFunction;
 
+    ColourGradientFunction colourGradientFunction;
+
     ///
     auto drawToSurface( ref cairo.Surface surface, int width, int height ) const
     {
@@ -155,7 +158,15 @@ struct GGPlotD
             yAxisTicks ~= geom.yTickLabels;
         }
 
-        auto colourMap = createColourMap(colourIDs);
+        import ggplotd.colourspace : HCY;
+
+        ColourMap colourMap;
+        if (initCG)
+            colourMap = createColourMap( colourIDs, 
+                colourGradientFunction );
+        else
+            colourMap = createColourMap( colourIDs, 
+                colourGradient!HCY("") );
 
         // Axis
         import std.algorithm : sort, uniq, min, max;
@@ -273,6 +284,10 @@ struct GGPlotD
         {
             margins = rhs;
         }
+        static if (is(T==ColourGradientFunction)) {
+            initCG = true;
+            colourGradientFunction = rhs;
+        }
         return this;
     }
 
@@ -284,6 +299,7 @@ struct GGPlotD
 
 private:
     bool initScale = false;
+    bool initCG = false;
 }
 
 unittest
@@ -411,15 +427,20 @@ unittest
     import std.range : repeat, iota;
     import std.random : uniform;
 
-    auto xs = iota(0,100,1).map!((x) => uniform(0.0,5)+uniform(0.0,5)).array;
-    auto ys = iota(0,100,1).map!((y) => uniform(0.0,5)+uniform(0.0,5)).array;
+    import ggplotd.aes : Aes;
+    import ggplotd.colour : colourGradient;
+    import ggplotd.colourspace : XYZ;
+    import ggplotd.geom : geomHist3D;
+
+    auto xs = iota(0,500,1).map!((x) => uniform(0.0,5)+uniform(0.0,5)).array;
+    auto ys = iota(0,500,1).map!((y) => uniform(0.0,5)+uniform(0.0,5)).array;
     auto aes = Aes!(typeof(xs), "x", typeof(ys), "y")( xs, ys);
     auto gg = GGPlotD().put( geomHist3D( aes ) );
+    // Use a different colour scheme
+    gg.put( colourGradient!XYZ( "white-cornflowerBlue-crimson" ) );
 
     gg.save( "hist3D.svg" );
 }
-
-
 
 /// Changing axes details
 unittest
@@ -565,8 +586,6 @@ struct Facets
     ///
     void save( string fname, int dimX, int dimY, int width = 470, int height = 470 ) const
     {
-        import cairo.cairo : RGBA;
-
         bool pngWrite = false;
         auto surface = createEmptySurface( fname, width, height,
             RGBA(1,1,1,1) );

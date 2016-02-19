@@ -71,11 +71,12 @@ auto geomPoint(AES)(AES aes)
                 context.restore();
 
                 auto col = colourMap(ColourID(tup.colour));
-                import cairo.cairo : RGBA;
+                import ggplotd.colourspace : RGBA, toCairoRGBA;
 
                 context.identityMatrix();
 
-                context.setSourceRGBA(RGBA(col.red, col.green, col.blue, tup.alpha));
+                context.setSourceRGBA(
+                    RGBA(col.r, col.g, col.b, tup.alpha).toCairoRGBA);
                 context.fill();
 
                 return context;
@@ -150,15 +151,21 @@ auto geomLine(AES)(AES aes)
                 }
 
                 auto col = colourMap(ColourID(flags.colour));
-                import cairo.cairo : RGBA;
+                import ggplotd.colourspace : RGBA, toCairoRGBA;
 
                 context.identityMatrix();
                 if (flags.fill>0)
                 {
-                    context.setSourceRGBA(RGBA(col.red, col.green, col.blue, flags.fill));
+                    context.setSourceRGBA(
+                        RGBA(col.r, col.g, col.b, flags.fill)
+                            .toCairoRGBA
+                    );
                     context.fillPreserve();
                 }
-                context.setSourceRGBA(RGBA(col.red, col.green, col.blue, flags.alpha));
+                context.setSourceRGBA(
+                    RGBA(col.r, col.g, col.b, flags.alpha)
+                        .toCairoRGBA
+                );
                 context.stroke();
 
                 return context;
@@ -564,9 +571,12 @@ auto geomLabel(AES)(AES aes)
                 context.relMoveTo(-textSize.x, textSize.y);
 
                 auto col = colourMap(ColourID(tup.colour));
-                import cairo.cairo : RGBA;
+                import ggplotd.colourspace : RGBA, toCairoRGBA;
 
-                context.setSourceRGBA(RGBA(col.red, col.green, col.blue, tup.alpha));
+                context.setSourceRGBA(
+                    RGBA(col.r, col.g, col.b, tup.alpha)
+                        .toCairoRGBA
+                );
  
                 context.showText(tup.label);
                 context.restore();
@@ -829,11 +839,15 @@ auto geomPolygon(AES)(AES aes)
 
         auto col0 = colourMap(ColourID(gV[0].z));
         auto col1 = colourMap(ColourID(gV[1].z));
-        import cairo.cairo : RGBA;
+        import ggplotd.colourspace : RGBA, toCairoRGBA;
         gradient.addColorStopRGBA( 0,
-            RGBA(col0.red, col0.green, col0.blue, flags.alpha));
+            RGBA(col0.r, col0.g, col0.b, flags.alpha)
+                .toCairoRGBA
+        );
         gradient.addColorStopRGBA( 1,
-            RGBA(col1.red, col1.green, col1.blue, flags.alpha));
+            RGBA(col1.r, col1.g, col1.b, flags.alpha)
+                .toCairoRGBA
+        );
         context.moveTo( vertices.front.x, vertices.front.y );
         vertices.popFront;
         foreach( v; vertices )

@@ -554,6 +554,8 @@ unittest
 ///
 import std.range : isInputRange;
 
+alias DataID = Tuple!(double, string);
+
 ///
 struct NumericLabel(T) if (isInputRange!T)
 {
@@ -576,7 +578,7 @@ struct NumericLabel(T) if (isInputRange!T)
         import std.conv : to;
 
         static if (isNumeric!E)
-            return Tuple!(double, string)(original.front.to!double, original.front.to!string);
+            return DataID(original.front.to!double, original.front.to!string);
         else
         {
             if (original.front !in fromLabelMap)
@@ -585,7 +587,7 @@ struct NumericLabel(T) if (isInputRange!T)
                 //toLabelMap[fromLabelMap[original.front]] 
                 //    = original.front;
             }
-            return Tuple!(double, string)(fromLabelMap[original.front], original.front.to!string,
+            return DataID(fromLabelMap[original.front], original.front.to!string,
                 );
         }
     }
