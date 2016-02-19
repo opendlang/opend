@@ -372,3 +372,59 @@ unittest
     auto col = cg.colour( 0.1 );
     assertEqual( col, RGB(0.25,0.3,0.4) );
 }
+
+import cairo = cairo.cairo;
+alias ColourGradientFunction = cairo.RGBA delegate( double value, double from, double till );
+
+/**
+Function returning a colourgradient function based on a specified ColourGradient
+
+Params:
+    cg =        A ColourGradient
+    absolute =  Whether the cg is an absolute scale or relative (between 0 and 1)
+
+Examples:
+-----------------
+auto cg = ColourGradient!HCY();
+cg.put( 0, HCY(200, 0.5, 0) ); 
+cg.put( 100, HCY(200, 0.5, 0) ); 
+GGPlotD().put( colourGradient( cg );
+-----------------
+*/
+ColourGradientFunction colourGradient(T)( ColourGradient!T cg, 
+    bool absolute=true )
+{
+    if (absolute) {
+        return ( double value, double from, double till ) 
+        { 
+            import ggplotd.colourspace : toCairoRGBA;
+            return cg.colour( value ).toCairoRGBA;
+        };
+    }
+    return ( double value, double from, double till ) 
+    { 
+        import ggplotd.colourspace : toCairoRGBA;
+        return cg.colour( (value-from)/(till-from) ).toCairoRGBA;
+    };
+}
+
+/**
+Function returning a named colourgradient.
+
+Colours can be specified with colour names separated by dashes:
+"white-red" will result in a colourgradient from white to red. You can specify more than two colours "blue-white-red". "default" will result in the default (blueish) colourgradient.
+
+Examples:
+-----------------
+GGPlotD().put( colourGradient( "blue-red" );
+-----------------
+*/
+ColourGradientFunction colourGradient( string name )
+{
+    // TODO handle multiple colours
+    import ggplotd.colourspace : HCY;
+    auto cg = ColourGradient!HCY();
+    cg.put( 0, HCY(200, 0.5, 0) ); 
+    cg.put( 1, HCY(200, 0.5, 0) ); 
+    return colourGradient(cg, false);
+}
