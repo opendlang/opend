@@ -13,17 +13,6 @@ version (unittest)
 }
 
 /++
-HCY to RGB
-
-H(ue) 0-360, C(hroma) 0-1, Y(Luma) 0-1
-+/
-RGBA hcyToRGB(double h, double c, double y)
-{
-    import ggplotd.colourspace;
-    return toColourSpace!RGBA( HCY( h,c,y ) );
-}
-
-/++
     Returns an associative array with names as key and colours as values
 
     Set of colors defined by X11, adopted by the W3C, SVG, and other popular libraries.
