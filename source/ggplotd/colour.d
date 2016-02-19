@@ -36,7 +36,7 @@ auto createNamedColours()
     nameMap["white"] = RGBA(1, 1, 1, 1);
     nameMap["red"] = RGBA(1, 0, 0, 1);
     nameMap["green"] = RGBA(0, 1, 0, 1);
-    nameMap["red"] = RGBA(0, 0, 1, 1);
+    nameMap["blue"] = RGBA(0, 0, 1, 1);
     nameMap["none"] = RGBA(0, 0, 0, 0);
     return nameMap;
 }
@@ -306,7 +306,7 @@ struct ColourGradient(C)
     
         If value to high or low return respectively the highest two or lowest two
     */
-    Tuple!(double, C)[] interval( double value )
+    auto interval( double value ) const
     {
         import std.algorithm : findSplitBefore;
         import std.range : empty, front, back;
@@ -322,7 +322,10 @@ struct ColourGradient(C)
         return [splitted[0].back, splitted[1].front];
     }
 
-    auto colour( double value )
+    /**
+    Get the colour associated with passed value
+    */
+    auto colour( double value ) const
     {
         import ggplotd.colourspace : toTuple;
         // When returning colour by value, try zip(c1, c2).map!( (a,b) => a+v*(b-a)) or something
@@ -334,7 +337,6 @@ struct ColourGradient(C)
             minC[0] + sc*(maxC[0]-minC[0]),
             minC[1] + sc*(maxC[1]-minC[1]),
             minC[2] + sc*(maxC[2]-minC[2]) ) );
-        //return inval[0][1] + sc*(inval[1][1]-inval[0][1]);
     }
 
 private:
@@ -391,7 +393,7 @@ cg.put( 100, HCY(200, 0.5, 0) );
 GGPlotD().put( colourGradient( cg );
 -----------------
 */
-ColourGradientFunction colourGradient(T)( ColourGradient!T cg, 
+ColourGradientFunction colourGradient(T)( in ColourGradient!T cg, 
     bool absolute=true )
 {
     if (absolute) {
@@ -421,10 +423,47 @@ GGPlotD().put( colourGradient( "blue-red" );
 */
 ColourGradientFunction colourGradient( string name )
 {
-    // TODO handle multiple colours
+    import std.algorithm : splitter;
+    import std.range : empty, walkLength;
     import ggplotd.colourspace : HCY;
+    if ( !name.empty && name != "default" )
+    {
+        import ggplotd.colourspace : toColourSpace;
+        auto namedColours = createNamedColours();
+        auto cg = ColourGradient!HCY();
+        auto splitted = name.splitter("-");
+        auto dim = splitted.walkLength;
+        if (dim == 1)
+        {
+            auto c = namedColours[splitted.front].toColourSpace!HCY; 
+            cg.put(0, c );
+            cg.put(1, c );
+        }
+        if (dim > 2)
+        {
+            auto value = 0.0;
+            auto width = 1.0/(dim-1);
+            foreach( sp ; splitted )
+            {
+                cg.put( value, namedColours[sp].toColourSpace!HCY );
+                value += width;
+            }
+        }
+        return colourGradient(cg, false);
+    }
     auto cg = ColourGradient!HCY();
     cg.put( 0, HCY(200, 0.5, 0) ); 
     cg.put( 1, HCY(200, 0.5, 0) ); 
     return colourGradient(cg, false);
+}
+
+unittest
+{
+    auto cf = colourGradient( "red-white-blue" );
+    assertEqual( cf( -1, -1, 2 ).red, 1 );
+    assertEqual( cf( -1, -1, 2 ).green, 0 );
+    assertEqual( cf( 2, -1, 2 ).blue, 1 );
+    assertLessThan( cf( 2, -1, 2 ).green, 1e-5 );
+    assertEqual( cf( 0.5, -1, 2 ).blue, 1 );
+    assertEqual( cf( 0.5, -1, 2 ).green, 1 );
 }
