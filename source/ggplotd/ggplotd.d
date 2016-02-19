@@ -138,6 +138,8 @@ struct GGPlotD
 
     ScaleType scaleFunction;
 
+    ColourGradientFunction colourGradientFunction;
+
     ///
     auto drawToSurface( ref cairo.Surface surface, int width, int height ) const
     {
@@ -156,7 +158,15 @@ struct GGPlotD
             yAxisTicks ~= geom.yTickLabels;
         }
 
-        auto colourMap = createColourMap(colourIDs);
+        import ggplotd.colourspace : HCY;
+
+        ColourMap colourMap;
+        if (initCG)
+            colourMap = createColourMap( colourIDs, 
+                colourGradientFunction );
+        else
+            colourMap = createColourMap( colourIDs, 
+                colourGradient!HCY("") );
 
         // Axis
         import std.algorithm : sort, uniq, min, max;
@@ -274,6 +284,10 @@ struct GGPlotD
         {
             margins = rhs;
         }
+        static if (is(T==ColourGradientFunction)) {
+            initCG = true;
+            colourGradientFunction = rhs;
+        }
         return this;
     }
 
@@ -285,6 +299,7 @@ struct GGPlotD
 
 private:
     bool initScale = false;
+    bool initCG = false;
 }
 
 unittest

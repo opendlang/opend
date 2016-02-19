@@ -180,25 +180,6 @@ unittest
     assertEqual(cids.front[0], 0);
 }
 
-auto gradient(C)( double value, C from, C till )
-{
-    return hcyToRGB(
-        from[0] + value * (till[0]-from[0]),
-        from[1] + value * (till[1]-from[1]),
-        from[2] + value * (till[2]-from[2])
-        );
-}
-
-///
-auto gradient(double value, double from, double till)
-{
-    if (from == till)
-        return hcyToRGB(200, 0.5, 0.5);
-    return gradient( (value-from)/(till-from),
-            Tuple!(double,double,double)(200, 0.5, 0),
-            Tuple!(double,double,double)(200, 1, 1) );
-}
-
 private auto safeMax(T)(T a, T b)
 {
     import std.math : isNaN;
@@ -226,13 +207,15 @@ private auto safeMin(T)(T a, T b)
 alias ColourMap = RGBA delegate(ColourID tup);
 
 ///
-auto createColourMap(R)(R colourIDs) if (is(ElementType!R == Tuple!(double,
+auto createColourMap(R)(R colourIDs, ColourGradientFunction gradient) if (is(ElementType!R == Tuple!(double,
         string)) || is(ElementType!R == ColourID))
 {
     import std.algorithm : filter, map, reduce;
     import std.math : isNaN;
     import std.array : array;
     import std.typecons : Tuple;
+
+    import ggplotd.colourspace : toCairoRGBA;
 
     auto validatedIDs = ColourIDRange!R(colourIDs);
 
@@ -266,18 +249,25 @@ unittest
     import std.range : iota;
     import std.algorithm : map;
 
-    assertFalse(createColourMap([ColourID("a"),
-        ColourID("b")])(ColourID("a")) == createColourMap([ColourID("a"), ColourID("b")])(
-        ColourID("b")));
+    import ggplotd.colourspace : HCY, toCairoRGBA;
 
-    assertEqual(createColourMap([ColourID("a"), ColourID("b")])(ColourID("black")),
+    auto dc = colourGradient!HCY("");
+
+    assertFalse(
+        createColourMap([ColourID("a"), ColourID("b")], dc )(ColourID("a")) 
+         == createColourMap([ColourID("a"), ColourID("b")], dc )(
+            ColourID("b"))
+    );
+
+    assertEqual(createColourMap([ColourID("a"), ColourID("b")], 
+        dc )(ColourID("black")),
+            RGBA(0, 0, 0, 1));
+
+    assertEqual(createColourMap([ColourID("black")], dc)(ColourID("black")), 
         RGBA(0, 0, 0, 1));
 
-    assertEqual(createColourMap([ColourID("black")])(ColourID("black")), RGBA(0, 0,
-        0, 1));
-
     auto cM = iota(0.0,8.0,1.0).map!((a) => ColourID(a)).
-            createColourMap();
+            createColourMap(dc);
     assert( cM( ColourID(0) ) != cM( ColourID(1) ) );
     assertEqual( cM( ColourID(0) ), cM( ColourID(0) ) );
 }
@@ -375,8 +365,7 @@ unittest
     assertEqual( col, RGB(0.25,0.3,0.4) );
 }
 
-import cairo = cairo.cairo;
-alias ColourGradientFunction = cairo.RGBA delegate( double value, double from, double till );
+alias ColourGradientFunction = RGBA delegate( double value, double from, double till );
 
 /**
 Function returning a colourgradient function based on a specified ColourGradient
@@ -398,15 +387,15 @@ ColourGradientFunction colourGradient(T)( in ColourGradient!T cg,
 {
     if (absolute) {
         return ( double value, double from, double till ) 
-        { 
-            import ggplotd.colourspace : toCairoRGBA;
-            return cg.colour( value ).toCairoRGBA;
+        {
+            import ggplotd.colourspace : RGBA, toColourSpace;
+            return cg.colour( value ).toColourSpace!RGBA;
         };
     }
     return ( double value, double from, double till ) 
     { 
-        import ggplotd.colourspace : toCairoRGBA;
-        return cg.colour( (value-from)/(till-from) ).toCairoRGBA;
+        import ggplotd.colourspace : RGBA, toColourSpace;
+        return cg.colour( (value-from)/(till-from) ).toColourSpace!RGBA;
     };
 }
 
@@ -421,21 +410,20 @@ Examples:
 GGPlotD().put( colourGradient( "blue-red" );
 -----------------
 */
-ColourGradientFunction colourGradient( string name )
+ColourGradientFunction colourGradient(T)( string name )
 {
     import std.algorithm : splitter;
     import std.range : empty, walkLength;
-    import ggplotd.colourspace : HCY;
     if ( !name.empty && name != "default" )
     {
         import ggplotd.colourspace : toColourSpace;
         auto namedColours = createNamedColours();
-        auto cg = ColourGradient!HCY();
+        auto cg = ColourGradient!T();
         auto splitted = name.splitter("-");
         auto dim = splitted.walkLength;
         if (dim == 1)
         {
-            auto c = namedColours[splitted.front].toColourSpace!HCY; 
+            auto c = namedColours[splitted.front].toColourSpace!T; 
             cg.put(0, c );
             cg.put(1, c );
         }
@@ -445,25 +433,27 @@ ColourGradientFunction colourGradient( string name )
             auto width = 1.0/(dim-1);
             foreach( sp ; splitted )
             {
-                cg.put( value, namedColours[sp].toColourSpace!HCY );
+                cg.put( value, namedColours[sp].toColourSpace!T );
                 value += width;
             }
         }
         return colourGradient(cg, false);
     }
+    import ggplotd.colourspace : HCY;
     auto cg = ColourGradient!HCY();
     cg.put( 0, HCY(200, 0.5, 0) ); 
-    cg.put( 1, HCY(200, 0.5, 0) ); 
+    cg.put( 1, HCY(200, 0.5, 0.7) ); 
     return colourGradient(cg, false);
 }
 
 unittest
 {
-    auto cf = colourGradient( "red-white-blue" );
-    assertEqual( cf( -1, -1, 2 ).red, 1 );
-    assertEqual( cf( -1, -1, 2 ).green, 0 );
-    assertEqual( cf( 2, -1, 2 ).blue, 1 );
-    assertLessThan( cf( 2, -1, 2 ).green, 1e-5 );
-    assertEqual( cf( 0.5, -1, 2 ).blue, 1 );
-    assertEqual( cf( 0.5, -1, 2 ).green, 1 );
+    import ggplotd.colourspace : HCY;
+    auto cf = colourGradient!HCY( "red-white-blue" );
+    assertEqual( cf( -1, -1, 2 ).r, 1 );
+    assertEqual( cf( -1, -1, 2 ).g, 0 );
+    assertEqual( cf( 2, -1, 2 ).b, 1 );
+    assertLessThan( cf( 2, -1, 2 ).g, 1e-5 );
+    assertEqual( cf( 0.5, -1, 2 ).b, 1 );
+    assertEqual( cf( 0.5, -1, 2 ).g, 1 );
 }
