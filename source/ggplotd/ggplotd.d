@@ -437,7 +437,7 @@ unittest
     auto aes = Aes!(typeof(xs), "x", typeof(ys), "y")( xs, ys);
     auto gg = GGPlotD().put( geomHist3D( aes ) );
     // Use a different colour scheme
-    gg.put( colourGradient!XYZ( "white-blue-red" ) );
+    gg.put( colourGradient!XYZ( "white-cornflowerBlue-crimson" ) );
 
     gg.save( "hist3D.svg" );
 }
