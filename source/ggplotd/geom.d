@@ -36,6 +36,16 @@ struct Geom
 }
 
 ///
+auto geomRectangle(AES)(AES aes)
+{
+}
+
+///
+auto geomEllipse(AES)(AES aes)
+{
+}
+
+///
 auto geomPoint(AES)(AES aes)
 {
     import std.algorithm : map;

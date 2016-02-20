@@ -7,7 +7,9 @@ version (unittest)
     import dunit.toolkit;
 }
 
-import std.typecons : Tuple;
+import std.typecons : Tuple, Typedef;
+
+alias pixel = Typedef!int;
 
 // TODO Also update default grouping if appropiate
 
