@@ -2,7 +2,7 @@
     "name": "dstats",
     "description": "a statistics package for D",
     "authors": ["David Simcha", "Don Clugston"],
-    "homepage": "https://github.com/John-Colvin/dstats",
+    "homepage": "https://github.com/DlangScience/dstats",
     "license": "various",
     
     "buildTypes": {
