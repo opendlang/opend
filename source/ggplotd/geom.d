@@ -35,12 +35,86 @@ struct Geom
     Tuple!(double, string)[] yTickLabels; ///
 }
 
-///
+/**
+Draw rectangle centered at given x,y location
+
+If width and height are provided in the aes then they are used, otherwise size is used for both. If the type of these values are of type pixel (see aes.d) then dimensions are assumed to be in pixel (not user coordinates).
+*/
 auto geomRectangle(AES)(AES aes)
 {
+    import std.algorithm : map;
+    auto xsMap = aes.map!("a.x");
+    auto ysMap = aes.map!("a.y");
+    alias CoordX = typeof(NumericLabel!(typeof(xsMap))(xsMap));
+    alias CoordY = typeof(NumericLabel!(typeof(ysMap))(ysMap));
+    alias CoordType = typeof(DefaultValues
+        .mergeRange(aes)
+        .mergeRange( Aes!(CoordX, "x", CoordY, "y")
+            (CoordX(xsMap), CoordY(ysMap))));
+
+    struct GeomRange(T)
+    {
+        this(T aes)
+        {
+            _aes = DefaultValues
+                .mergeRange(aes)
+                .mergeRange( Aes!(CoordX, "x", CoordY, "y")(
+                    CoordX(xsMap), CoordY(ysMap)));
+        }
+
+        @property auto front()
+        {
+            immutable tup = _aes.front;
+            auto f = delegate(cairo.Context context, ColourMap colourMap ) 
+            {
+                auto devP = context.userToDevice(cairo.Point!double(tup.x[0], tup.y[0]));
+                context.save();
+                context.identityMatrix;
+                context.rectangle(devP.x - 4 * tup.size, 
+                        devP.y - 4 * tup.size, 8*tup.size, 8*tup.size);
+                context.restore();
+
+                auto col = colourMap(ColourID(tup.colour));
+                import ggplotd.colourspace : RGBA, toCairoRGBA;
+
+                context.setSourceRGBA(
+                    RGBA(col.r, col.g, col.b, tup.alpha).toCairoRGBA);
+                context.fill();
+
+                return context;
+            };
+
+            AdaptiveBounds bounds;
+            bounds.adapt(Point(tup.x[0], tup.y[0]));
+            auto geom = Geom( tup );
+            geom.draw = f;
+            geom.colours ~= ColourID(tup.colour);
+            geom.bounds = bounds;
+            return geom;
+        }
+
+        void popFront()
+        {
+            _aes.popFront();
+        }
+
+        @property bool empty()
+        {
+            return _aes.empty;
+        }
+
+    private:
+        CoordType _aes;
+    }
+
+    return GeomRange!AES(aes);
 }
 
-///
+/**
+Draw ellipse centered at given x,y location
+
+If width and height are provided in the aes then they are used, otherwise size is used for both. If the type of these values are of type pixel (see aes.d) then dimensions are assumed to be in pixel (not user coordinates).
+*/
 auto geomEllipse(AES)(AES aes)
 {
 }
@@ -82,8 +156,6 @@ auto geomPoint(AES)(AES aes)
 
                 auto col = colourMap(ColourID(tup.colour));
                 import ggplotd.colourspace : RGBA, toCairoRGBA;
-
-                context.identityMatrix();
 
                 context.setSourceRGBA(
                     RGBA(col.r, col.g, col.b, tup.alpha).toCairoRGBA);
