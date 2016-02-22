@@ -471,8 +471,7 @@ unittest
     // change offset
     gg.put( xaxisOffset( 0.25 ) ).put( yaxisOffset( 0.5 ) );
 
-    // Change Margins
-    gg.put( Margins( 60, 60, 40, 30 ) );
+    // Change Margins gg.put( Margins( 60, 60, 40, 30 ) );
 
     // Set a title
     gg.put( title( "And now for something completely different" ) );
@@ -630,4 +629,17 @@ unittest
     assertEqual(gridLayout(2, 1), Tuple!(int, int)(1, 2));
     assertEqual(gridLayout(3, 1), Tuple!(int, int)(2, 2));
     assertEqual(gridLayout(2, 2), Tuple!(int, int)(2, 1));
+}
+
+///
+unittest
+{
+    auto gg = GGPlotD();
+
+    auto aes1 = Aes!(double[], "x", double[], "y", double[], "width",
+        double[], "height")( [1.0], [-1.0], [0.5], [1.0] );
+    gg.put( geomRectangle( aes1 ) );
+    gg.put( xaxisRange( -5, 11.0 ) );
+    gg.put( yaxisRange( -9, 9.0 ) );
+    gg.save( "rectangle.png", 300, 300 );
 }
