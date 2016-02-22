@@ -35,6 +35,29 @@ struct Geom
     Tuple!(double, string)[] yTickLabels; ///
 }
 
+import ggplotd.colourspace : RGBA;
+private auto fillAndStroke( cairo.Context context, in RGBA colour, 
+    in double fill, in double alpha )
+{
+    import ggplotd.colourspace : toCairoRGBA;
+    context.save;
+
+    context.identityMatrix();
+    if (fill>0)
+        {
+        context.setSourceRGBA(
+        RGBA(colour.r, colour.g, colour.b, fill).toCairoRGBA
+        );
+        context.fillPreserve();
+    }
+    context.setSourceRGBA(
+        RGBA(colour.r, colour.g, colour.b, alpha).toCairoRGBA
+    );
+    context.stroke();
+    context.restore;
+    return context;
+}
+
 /**
 Draw rectangle centered at given x,y location
 
@@ -84,29 +107,21 @@ auto geomRectangle(AES)(AES aes)
                     context.restore();
 
                 auto col = colourMap(ColourID(tup.colour));
-                import ggplotd.colourspace : RGBA, toCairoRGBA;
-
-                context.identityMatrix();
-                if (tup.fill>0)
-                {
-                    context.setSourceRGBA(
-                        RGBA(col.r, col.g, col.b, tup.fill)
-                            .toCairoRGBA
-                    );
-                    context.fillPreserve();
-                }
-                context.setSourceRGBA(
-                    RGBA(col.r, col.g, col.b, tup.alpha)
-                        .toCairoRGBA
-                );
-                context.stroke();
-
+                context.fillAndStroke( col, tup.fill, tup.alpha );
                 return context;
             };
 
             AdaptiveBounds bounds;
             bounds.adapt(Point(tup.x[0], tup.y[0]));
+
             auto geom = Geom( tup );
+            /+ TODO somehow add labels. Not sure at moment how to decide wheher 
+            xs is numeric
+            if (!xs.numeric)
+                geom.xTickLabels ~= tup[0];
+            if (!ys.numeric)
+                geom.yTickLabels ~= tup[1];
+            +/
             geom.draw = f;
             geom.colours ~= ColourID(tup.colour);
             geom.bounds = bounds;
@@ -254,22 +269,7 @@ auto geomLine(AES)(AES aes)
 
                 auto col = colourMap(ColourID(flags.colour));
                 import ggplotd.colourspace : RGBA, toCairoRGBA;
-
-                context.identityMatrix();
-                if (flags.fill>0)
-                {
-                    context.setSourceRGBA(
-                        RGBA(col.r, col.g, col.b, flags.fill)
-                            .toCairoRGBA
-                    );
-                    context.fillPreserve();
-                }
-                context.setSourceRGBA(
-                    RGBA(col.r, col.g, col.b, flags.alpha)
-                        .toCairoRGBA
-                );
-                context.stroke();
-
+                context.fillAndStroke( col, flags.fill, flags.alpha );
                 return context;
             };
 
