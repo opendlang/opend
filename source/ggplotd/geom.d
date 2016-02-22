@@ -38,7 +38,8 @@ struct Geom
 /**
 Draw rectangle centered at given x,y location
 
-If width and height are provided in the aes then they are used, otherwise size is used for both. If the type of these values are of type pixel (see aes.d) then dimensions are assumed to be in pixel (not user coordinates).
+Aside from x and y also width and height are required.
+If the type of width is of type Pixel (see aes.d) then dimensions are assumed to be in Pixel (not user coordinates).
 */
 auto geomRectangle(AES)(AES aes)
 {
@@ -67,19 +68,38 @@ auto geomRectangle(AES)(AES aes)
             immutable tup = _aes.front;
             auto f = delegate(cairo.Context context, ColourMap colourMap ) 
             {
-                auto devP = context.userToDevice(cairo.Point!double(tup.x[0], tup.y[0]));
-                context.save();
-                context.identityMatrix;
-                context.rectangle(devP.x - 4 * tup.size, 
-                        devP.y - 4 * tup.size, 8*tup.size, 8*tup.size);
-                context.restore();
+                static if (is(typeof(tup.width)==immutable(Pixel)))
+                    auto devP = context.userToDevice(cairo.Point!double(tup.x[0], tup.y[0]));
+                else
+                    auto devP = cairo.Point!double(tup.x[0], tup.y[0]);
+
+                static if (is(typeof(tup.width)==immutable(Pixel)))
+                {
+                    context.save();
+                    context.identityMatrix;
+                }
+                context.rectangle(devP.x - 0.5 * tup.width, 
+                    devP.y - 0.5 * tup.height, tup.width, tup.height);
+                static if (is(typeof(tup.width)==immutable(Pixel)))
+                    context.restore();
 
                 auto col = colourMap(ColourID(tup.colour));
                 import ggplotd.colourspace : RGBA, toCairoRGBA;
 
+                context.identityMatrix();
+                if (tup.fill>0)
+                {
+                    context.setSourceRGBA(
+                        RGBA(col.r, col.g, col.b, tup.fill)
+                            .toCairoRGBA
+                    );
+                    context.fillPreserve();
+                }
                 context.setSourceRGBA(
-                    RGBA(col.r, col.g, col.b, tup.alpha).toCairoRGBA);
-                context.fill();
+                    RGBA(col.r, col.g, col.b, tup.alpha)
+                        .toCairoRGBA
+                );
+                context.stroke();
 
                 return context;
             };
@@ -113,7 +133,7 @@ auto geomRectangle(AES)(AES aes)
 /**
 Draw ellipse centered at given x,y location
 
-If width and height are provided in the aes then they are used, otherwise size is used for both. If the type of these values are of type pixel (see aes.d) then dimensions are assumed to be in pixel (not user coordinates).
+If width and height are provided in the aes then they are used, otherwise size is used for both. If the type of these values are of type Pixel (see aes.d) then dimensions are assumed to be in Pixel (not user coordinates).
 */
 auto geomEllipse(AES)(AES aes)
 {
