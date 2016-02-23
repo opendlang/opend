@@ -187,13 +187,6 @@ struct GGPlotD
             bounds.max_x = xaxis.max;
         }
 
-        import std.math : isNaN;
-        auto offset = bounds.min_y;
-        if (!isNaN(xaxis.offset))
-            offset = xaxis.offset;
-        auto aesX = axisAes("x", bounds.min_x, bounds.max_x, offset,
-            sortedTicks );
-
         sortedTicks = yAxisTicks.sort().uniq.array;
         if (!sortedTicks.empty)
         {
@@ -205,6 +198,13 @@ struct GGPlotD
             bounds.min_y = yaxis.min;
             bounds.max_y = yaxis.max;
         }
+
+        import std.math : isNaN;
+        auto offset = bounds.min_y;
+        if (!isNaN(xaxis.offset))
+            offset = xaxis.offset;
+        auto aesX = axisAes("x", bounds.min_x, bounds.max_x, offset,
+            sortedTicks );
 
         offset = bounds.min_x;
         if (!isNaN(yaxis.offset))
