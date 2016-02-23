@@ -174,6 +174,7 @@ struct GGPlotD
         import std.array : array;
         import ggplotd.axes;
 
+        // TODO move this out of here and add some tests
         // If ticks are provided then we make sure the bounds include them
         auto sortedTicks = xAxisTicks.sort().uniq.array;
         if (!sortedTicks.empty)
@@ -187,13 +188,7 @@ struct GGPlotD
             bounds.max_x = xaxis.max;
         }
 
-        import std.math : isNaN;
-        auto offset = bounds.min_y;
-        if (!isNaN(xaxis.offset))
-            offset = xaxis.offset;
-        auto aesX = axisAes("x", bounds.min_x, bounds.max_x, offset,
-            sortedTicks );
-
+        // This needs to happen before the offset of x axis is set
         sortedTicks = yAxisTicks.sort().uniq.array;
         if (!sortedTicks.empty)
         {
@@ -205,6 +200,13 @@ struct GGPlotD
             bounds.min_y = yaxis.min;
             bounds.max_y = yaxis.max;
         }
+
+        import std.math : isNaN;
+        auto offset = bounds.min_y;
+        if (!isNaN(xaxis.offset))
+            offset = xaxis.offset;
+        auto aesX = axisAes("x", bounds.min_x, bounds.max_x, offset,
+            sortedTicks );
 
         offset = bounds.min_x;
         if (!isNaN(yaxis.offset))
