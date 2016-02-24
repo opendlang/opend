@@ -71,6 +71,8 @@ auto geomRectangle(AES)(AES aes)
     auto ysMap = aes.map!("a.y");
     alias CoordX = typeof(NumericLabel!(typeof(xsMap))(xsMap));
     alias CoordY = typeof(NumericLabel!(typeof(ysMap))(ysMap));
+    auto xsCoords = CoordX(xsMap);
+    auto ysCoords = CoordY(ysMap);
     alias CoordType = typeof(DefaultValues
         .mergeRange(aes)
         .mergeRange( Aes!(CoordX, "x", CoordY, "y")
@@ -83,7 +85,7 @@ auto geomRectangle(AES)(AES aes)
             _aes = DefaultValues
                 .mergeRange(aes)
                 .mergeRange( Aes!(CoordX, "x", CoordY, "y")(
-                    CoordX(xsMap), CoordY(ysMap)));
+                    xsCoords, ysCoords));
         }
 
         @property auto front()
@@ -115,13 +117,10 @@ auto geomRectangle(AES)(AES aes)
             bounds.adapt(Point(tup.x[0], tup.y[0]));
 
             auto geom = Geom( tup );
-            /+ TODO somehow add labels. Not sure at moment how to decide wheher 
-            xs is numeric
-            if (!xs.numeric)
+            if (!xsCoords.numeric)
                 geom.xTickLabels ~= tup[0];
-            if (!ys.numeric)
+            if (!ysCoords.numeric)
                 geom.yTickLabels ~= tup[1];
-            +/
             geom.draw = f;
             geom.colours ~= ColourID(tup.colour);
             geom.bounds = bounds;
