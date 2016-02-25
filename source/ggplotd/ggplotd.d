@@ -636,6 +636,7 @@ unittest
 ///
 unittest
 {
+    // Drawing different shapes
     import ggplotd.aes : Pixel;
 
     auto gg = GGPlotD();
@@ -643,6 +644,7 @@ unittest
     auto aes1 = Aes!(double[], "x", double[], "y", double[], "width",
         double[], "height")( [1.0], [-1.0], [3], [5] );
     gg.put( geomRectangle( aes1 ) );
+    gg.put( geomEllipse( aes1 ) );
     gg.put( xaxisRange( -5, 11.0 ) );
     gg.put( yaxisRange( -9, 9.0 ) );
 
@@ -650,5 +652,12 @@ unittest
     auto aes2 = Aes!(double[], "x", double[], "y", Pixel[], "width",
         Pixel[], "height")( [8.0], [5.0], [Pixel(10)], [Pixel(20)] );
     gg.put( geomRectangle( aes2 ) );
+    gg.put( geomEllipse( aes2 ) );
+
+    auto aes3 = Aes!(double[], "x", double[], "y", Pixel[], "width",
+        Pixel[], "height")( [6.0], [-5.0], [Pixel(25)], [Pixel(25)] );
+    gg.put( geomRectangle( aes3 ) );
+    gg.put( geomEllipse( aes3 ) );
+ 
     gg.save( "rectangle.png", 300, 300 );
 }

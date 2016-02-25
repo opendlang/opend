@@ -151,6 +151,84 @@ If width and height are provided in the aes then they are used, otherwise size i
 */
 auto geomEllipse(AES)(AES aes)
 {
+    import std.algorithm : map;
+    auto xsMap = aes.map!("a.x");
+    auto ysMap = aes.map!("a.y");
+    alias CoordX = typeof(NumericLabel!(typeof(xsMap))(xsMap));
+    alias CoordY = typeof(NumericLabel!(typeof(ysMap))(ysMap));
+    auto xsCoords = CoordX(xsMap);
+    auto ysCoords = CoordY(ysMap);
+    alias CoordType = typeof(DefaultValues
+        .mergeRange(aes)
+        .mergeRange( Aes!(CoordX, "x", CoordY, "y")
+            (CoordX(xsMap), CoordY(ysMap))));
+
+    struct GeomRange(T)
+    {
+        this(T aes)
+        {
+            _aes = DefaultValues
+                .mergeRange(aes)
+                .mergeRange( Aes!(CoordX, "x", CoordY, "y")(
+                    xsCoords, ysCoords));
+        }
+
+        @property auto front()
+        {
+            immutable tup = _aes.front;
+            auto f = delegate(cairo.Context context, ColourMap colourMap ) 
+            {
+                import std.math : PI;
+                static if (is(typeof(tup.width)==immutable(Pixel)))
+                    auto devP = context.userToDevice(cairo.Point!double(tup.x[0], tup.y[0]));
+                else
+                    auto devP = cairo.Point!double(tup.x[0], tup.y[0]);
+
+                static if (is(typeof(tup.width)==immutable(Pixel)))
+                {
+                    context.save();
+                    context.identityMatrix;
+                }
+                context.translate( devP.x, devP.y );
+                context.scale( tup.width/2.0, tup.height/2.0 );
+                context.arc(0,0, 1.0, 0,2*PI);
+                static if (is(typeof(tup.width)==immutable(Pixel)))
+                    context.restore();
+
+                auto col = colourMap(ColourID(tup.colour));
+                context.fillAndStroke( col, tup.fill, tup.alpha );
+                return context;
+            };
+
+            AdaptiveBounds bounds;
+            bounds.adapt(Point(tup.x[0], tup.y[0]));
+
+            auto geom = Geom( tup );
+            if (!xsCoords.numeric)
+                geom.xTickLabels ~= tup[0];
+            if (!ysCoords.numeric)
+                geom.yTickLabels ~= tup[1];
+            geom.draw = f;
+            geom.colours ~= ColourID(tup.colour);
+            geom.bounds = bounds;
+            return geom;
+        }
+
+        void popFront()
+        {
+            _aes.popFront();
+        }
+
+        @property bool empty()
+        {
+            return _aes.empty;
+        }
+
+    private:
+        CoordType _aes;
+    }
+
+    return GeomRange!AES(aes);
 }
 
 ///
