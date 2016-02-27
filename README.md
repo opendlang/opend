@@ -276,24 +276,24 @@ void main()
 
 Due to GGplotD’s design it is relatively straightforward to extend GGplotD to
 support new types of plots. This is especially true if your function depends on
-the already implemented base types geomLine, geomPoint and geomPolygon. The
-main reason for not having added more functions yet is lack of time. If you
-decide to implement your own function then **please** open a pull request or at
-least copy your code into an issue. That way we can all benefit from your work
-:) Even if you think the code is not up to scratch it will be easier for the
-maintainer(s) to take your code and adapt it than to start from scrap.
+the already implemented base types geomLine, geomEllipse, geomRectangle and
+geomPolygon. The main reason for not having added more functions yet is lack of
+time. If you decide to implement your own function then **please** open a pull
+request or at least copy your code into an issue. That way we can all benefit
+from your work :) Even if you think the code is not up to scratch it will be
+easier for the maintainer(s) to take your code and adapt it than to start from
+scrap.
 
 ### geom*
 
 In general a geom* function reads the data, does some transformation on it
 and then returns a struct containing the transformed result. In GGPlotD
-the low level geom* function such as geomLine, geomPoint and geomPolygon
-draw directly to a cairo.Context. Luckily most higher level geom*
-functions can just rely on calling geomLine, geomPoint and geomPolygon.
-For reference see below for the geomHist drawing implementation. Again if
-you decide to define your own function then please let us know and send us
-the code. That way we can add the function to the library and everyone can
-benefit.
+the low level geom* function such as geomLine, geomEllipse, geomRectangle and
+geomPolygon draw directly to a cairo.Context. Luckily most higher level geom*
+functions can just rely on calling those functions. For reference see below for
+the geomHist drawing implementation. Again if you decide to define your own
+function then please let us know and send us the code. That way we can add the
+function to the library and everyone can benefit.
 
 ```D 
 
@@ -340,8 +340,8 @@ auto geomHist(AES)(AES aes)
 ```
 
 Note that the above highlights the drawing part of the function.
-Converting the data into bins is done in a separate bin function, which
-can be found in the [code](./source/ggplotd/geom.d#L241).
+Converting the data into bins is done in a separate bin function, which can be
+found in the [code](./source/ggplotd/geom.d#L571).
 
 ### stat*
 

@@ -473,8 +473,7 @@ unittest
     // change offset
     gg.put( xaxisOffset( 0.25 ) ).put( yaxisOffset( 0.5 ) );
 
-    // Change Margins
-    gg.put( Margins( 60, 60, 40, 30 ) );
+    // Change Margins gg.put( Margins( 60, 60, 40, 30 ) );
 
     // Set a title
     gg.put( title( "And now for something completely different" ) );
@@ -632,4 +631,33 @@ unittest
     assertEqual(gridLayout(2, 1), Tuple!(int, int)(1, 2));
     assertEqual(gridLayout(3, 1), Tuple!(int, int)(2, 2));
     assertEqual(gridLayout(2, 2), Tuple!(int, int)(2, 1));
+}
+
+///
+unittest
+{
+    // Drawing different shapes
+    import ggplotd.aes : Pixel;
+
+    auto gg = GGPlotD();
+
+    auto aes1 = Aes!(double[], "x", double[], "y", double[], "width",
+        double[], "height")( [1.0], [-1.0], [3], [5] );
+    gg.put( geomDiamond( aes1 ) );
+    gg.put( geomRectangle( aes1 ) );
+    gg.put( xaxisRange( -5, 11.0 ) );
+    gg.put( yaxisRange( -9, 9.0 ) );
+
+
+    auto aes2 = Aes!(double[], "x", double[], "y", Pixel[], "width",
+        Pixel[], "height")( [8.0], [5.0], [Pixel(10)], [Pixel(20)] );
+    gg.put( geomDiamond( aes2 ) );
+    gg.put( geomRectangle( aes2 ) );
+
+    auto aes3 = Aes!(double[], "x", double[], "y", Pixel[], "width",
+        Pixel[], "height")( [6.0], [-5.0], [Pixel(25)], [Pixel(25)] );
+    gg.put( geomDiamond( aes3 ) );
+    gg.put( geomRectangle( aes3 ) );
+ 
+    gg.save( "rectangle.png", 300, 300 );
 }

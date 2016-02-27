@@ -35,14 +35,48 @@ struct Geom
     Tuple!(double, string)[] yTickLabels; ///
 }
 
-///
-auto geomPoint(AES)(AES aes)
+import ggplotd.colourspace : RGBA;
+private auto fillAndStroke( cairo.Context context, in RGBA colour, 
+    in double fill, in double alpha )
+{
+    import ggplotd.colourspace : toCairoRGBA;
+    context.save;
+
+    context.identityMatrix();
+    if (fill>0)
+        {
+        context.setSourceRGBA(
+        RGBA(colour.r, colour.g, colour.b, fill).toCairoRGBA
+        );
+        context.fillPreserve();
+    }
+    context.setSourceRGBA(
+        RGBA(colour.r, colour.g, colour.b, alpha).toCairoRGBA
+    );
+    context.stroke();
+    context.restore;
+    return context;
+}
+
+/+
+TODO: All basic shapes, such as rectangle, ellipse, triangle and diamond share a lot of code. It should be possible to factor out the unique bit (drawing the shape), but till now that always leads to segmentation faults (either problem in the cairo bindings, or bug in compiler). Would be worth retrying this at some point with newer compiler (>2.70.0). Currently have a shapes_split branch. Could try that with new compiler. If no segfault, then problem is fixed and we can do those changes for all the shapes.
++/
+
+/**
+Draw rectangle centered at given x,y location
+
+Aside from x and y also width and height are required.
+If the type of width is of type Pixel (see aes.d) then dimensions are assumed to be in Pixel (not user coordinates).
+*/
+auto geomRectangle(AES)(AES aes)
 {
     import std.algorithm : map;
     auto xsMap = aes.map!("a.x");
     auto ysMap = aes.map!("a.y");
     alias CoordX = typeof(NumericLabel!(typeof(xsMap))(xsMap));
     alias CoordY = typeof(NumericLabel!(typeof(ysMap))(ysMap));
+    auto xsCoords = CoordX(xsMap);
+    auto ysCoords = CoordY(ysMap);
     alias CoordType = typeof(DefaultValues
         .mergeRange(aes)
         .mergeRange( Aes!(CoordX, "x", CoordY, "y")
@@ -55,7 +89,7 @@ auto geomPoint(AES)(AES aes)
             _aes = DefaultValues
                 .mergeRange(aes)
                 .mergeRange( Aes!(CoordX, "x", CoordY, "y")(
-                    CoordX(xsMap), CoordY(ysMap)));
+                    xsCoords, ysCoords));
         }
 
         @property auto front()
@@ -63,28 +97,34 @@ auto geomPoint(AES)(AES aes)
             immutable tup = _aes.front;
             auto f = delegate(cairo.Context context, ColourMap colourMap ) 
             {
-                auto devP = context.userToDevice(cairo.Point!double(tup.x[0], tup.y[0]));
-                context.save();
-                context.identityMatrix;
-                context.rectangle(devP.x - 4 * tup.size, 
-                        devP.y - 4 * tup.size, 8*tup.size, 8*tup.size);
-                context.restore();
+                static if (is(typeof(tup.width)==immutable(Pixel)))
+                    auto devP = context.userToDevice(cairo.Point!double(tup.x[0], tup.y[0]));
+                else
+                    auto devP = cairo.Point!double(tup.x[0], tup.y[0]);
+
+                static if (is(typeof(tup.width)==immutable(Pixel)))
+                {
+                    context.save();
+                    context.identityMatrix;
+                }
+                context.rectangle(devP.x - 0.5 * tup.width, 
+                    devP.y - 0.5 * tup.height, tup.width, tup.height);
+                static if (is(typeof(tup.width)==immutable(Pixel)))
+                    context.restore();
 
                 auto col = colourMap(ColourID(tup.colour));
-                import ggplotd.colourspace : RGBA, toCairoRGBA;
-
-                context.identityMatrix();
-
-                context.setSourceRGBA(
-                    RGBA(col.r, col.g, col.b, tup.alpha).toCairoRGBA);
-                context.fill();
-
+                context.fillAndStroke( col, tup.fill, tup.alpha );
                 return context;
             };
 
             AdaptiveBounds bounds;
             bounds.adapt(Point(tup.x[0], tup.y[0]));
+
             auto geom = Geom( tup );
+            if (!xsCoords.numeric)
+                geom.xTickLabels ~= tup[0];
+            if (!ysCoords.numeric)
+                geom.yTickLabels ~= tup[1];
             geom.draw = f;
             geom.colours ~= ColourID(tup.colour);
             geom.bounds = bounds;
@@ -106,6 +146,294 @@ auto geomPoint(AES)(AES aes)
     }
 
     return GeomRange!AES(aes);
+}
+
+/**
+Draw ellipse centered at given x,y location
+
+Aside from x and y also width and height are required.
+If the type of width is of type Pixel (see aes.d) then dimensions are assumed to be in Pixel (not user coordinates).
+*/
+auto geomEllipse(AES)(AES aes)
+{
+    import std.algorithm : map;
+    auto xsMap = aes.map!("a.x");
+    auto ysMap = aes.map!("a.y");
+    alias CoordX = typeof(NumericLabel!(typeof(xsMap))(xsMap));
+    alias CoordY = typeof(NumericLabel!(typeof(ysMap))(ysMap));
+    auto xsCoords = CoordX(xsMap);
+    auto ysCoords = CoordY(ysMap);
+    alias CoordType = typeof(DefaultValues
+        .mergeRange(aes)
+        .mergeRange( Aes!(CoordX, "x", CoordY, "y")
+            (CoordX(xsMap), CoordY(ysMap))));
+
+    struct GeomRange(T)
+    {
+        this(T aes)
+        {
+            _aes = DefaultValues
+                .mergeRange(aes)
+                .mergeRange( Aes!(CoordX, "x", CoordY, "y")(
+                    xsCoords, ysCoords));
+        }
+
+        @property auto front()
+        {
+            immutable tup = _aes.front;
+            auto f = delegate(cairo.Context context, ColourMap colourMap ) 
+            {
+                import std.math : PI;
+                static if (is(typeof(tup.width)==immutable(Pixel)))
+                    auto devP = context.userToDevice(cairo.Point!double(tup.x[0], tup.y[0]));
+                else
+                    auto devP = cairo.Point!double(tup.x[0], tup.y[0]);
+
+                static if (is(typeof(tup.width)==immutable(Pixel)))
+                {
+                    context.save();
+                    context.identityMatrix;
+                }
+                context.translate( devP.x, devP.y );
+                context.scale( tup.width/2.0, tup.height/2.0 );
+                context.arc(0,0, 1.0, 0,2*PI);
+                static if (is(typeof(tup.width)==immutable(Pixel)))
+                    context.restore();
+
+                auto col = colourMap(ColourID(tup.colour));
+                context.fillAndStroke( col, tup.fill, tup.alpha );
+                return context;
+            };
+
+            AdaptiveBounds bounds;
+            bounds.adapt(Point(tup.x[0], tup.y[0]));
+
+            auto geom = Geom( tup );
+            if (!xsCoords.numeric)
+                geom.xTickLabels ~= tup[0];
+            if (!ysCoords.numeric)
+                geom.yTickLabels ~= tup[1];
+            geom.draw = f;
+            geom.colours ~= ColourID(tup.colour);
+            geom.bounds = bounds;
+            return geom;
+        }
+
+        void popFront()
+        {
+            _aes.popFront();
+        }
+
+        @property bool empty()
+        {
+            return _aes.empty;
+        }
+
+    private:
+        CoordType _aes;
+    }
+
+    return GeomRange!AES(aes);
+}
+
+/**
+Draw triangle centered at given x,y location
+
+Aside from x and y also width and height are required.
+If the type of width is of type Pixel (see aes.d) then dimensions are assumed to be in Pixel (not user coordinates).
+*/
+auto geomTriangle(AES)(AES aes)
+{
+    import std.algorithm : map;
+    auto xsMap = aes.map!("a.x");
+    auto ysMap = aes.map!("a.y");
+    alias CoordX = typeof(NumericLabel!(typeof(xsMap))(xsMap));
+    alias CoordY = typeof(NumericLabel!(typeof(ysMap))(ysMap));
+    auto xsCoords = CoordX(xsMap);
+    auto ysCoords = CoordY(ysMap);
+    alias CoordType = typeof(DefaultValues
+        .mergeRange(aes)
+        .mergeRange( Aes!(CoordX, "x", CoordY, "y")
+            (CoordX(xsMap), CoordY(ysMap))));
+
+    struct GeomRange(T)
+    {
+        this(T aes)
+        {
+            _aes = DefaultValues
+                .mergeRange(aes)
+                .mergeRange( Aes!(CoordX, "x", CoordY, "y")(
+                    xsCoords, ysCoords));
+        }
+
+        @property auto front()
+        {
+            immutable tup = _aes.front;
+            auto f = delegate(cairo.Context context, ColourMap colourMap ) 
+            {
+                import std.math : PI;
+                static if (is(typeof(tup.width)==immutable(Pixel)))
+                    auto devP = context.userToDevice(cairo.Point!double(tup.x[0], tup.y[0]));
+                else
+                    auto devP = cairo.Point!double(tup.x[0], tup.y[0]);
+
+                static if (is(typeof(tup.width)==immutable(Pixel)))
+                {
+                    context.save();
+                    context.identityMatrix;
+                }
+                context.translate( devP.x, devP.y );
+                static if (is(typeof(tup.width)==immutable(Pixel)))
+                    context.scale(1,-1); // Turn height upside down, needed so
+                        // drawing is consistent when in pixel and non pixel mode
+                context.moveTo( -0.5*tup.width, -0.5*tup.height );
+                context.lineTo( 0.5*tup.width, -0.5*tup.height );
+                context.lineTo( 0, 0.5*tup.height );
+                context.closePath;
+                static if (is(typeof(tup.width)==immutable(Pixel)))
+                    context.restore();
+
+                auto col = colourMap(ColourID(tup.colour));
+                context.fillAndStroke( col, tup.fill, tup.alpha );
+                return context;
+            };
+
+            AdaptiveBounds bounds;
+            bounds.adapt(Point(tup.x[0], tup.y[0]));
+
+            auto geom = Geom( tup );
+            if (!xsCoords.numeric)
+                geom.xTickLabels ~= tup[0];
+            if (!ysCoords.numeric)
+                geom.yTickLabels ~= tup[1];
+            geom.draw = f;
+            geom.colours ~= ColourID(tup.colour);
+            geom.bounds = bounds;
+            return geom;
+        }
+
+        void popFront()
+        {
+            _aes.popFront();
+        }
+
+        @property bool empty()
+        {
+            return _aes.empty;
+        }
+
+    private:
+        CoordType _aes;
+    }
+
+    return GeomRange!AES(aes);
+}
+
+/**
+Draw diamond centered at given x,y location
+
+Aside from x and y also width and height are required.
+If the type of width is of type Pixel (see aes.d) then dimensions are assumed to be in Pixel (not user coordinates).
+*/
+auto geomDiamond(AES)(AES aes)
+{
+    import std.algorithm : map;
+    auto xsMap = aes.map!("a.x");
+    auto ysMap = aes.map!("a.y");
+    alias CoordX = typeof(NumericLabel!(typeof(xsMap))(xsMap));
+    alias CoordY = typeof(NumericLabel!(typeof(ysMap))(ysMap));
+    auto xsCoords = CoordX(xsMap);
+    auto ysCoords = CoordY(ysMap);
+    alias CoordType = typeof(DefaultValues
+        .mergeRange(aes)
+        .mergeRange( Aes!(CoordX, "x", CoordY, "y")
+            (CoordX(xsMap), CoordY(ysMap))));
+
+    struct GeomRange(T)
+    {
+        this(T aes)
+        {
+            _aes = DefaultValues
+                .mergeRange(aes)
+                .mergeRange( Aes!(CoordX, "x", CoordY, "y")(
+                    xsCoords, ysCoords));
+        }
+
+        @property auto front()
+        {
+            immutable tup = _aes.front;
+            auto f = delegate(cairo.Context context, ColourMap colourMap ) 
+            {
+                import std.math : PI;
+                static if (is(typeof(tup.width)==immutable(Pixel)))
+                    auto devP = context.userToDevice(cairo.Point!double(tup.x[0], tup.y[0]));
+                else
+                    auto devP = cairo.Point!double(tup.x[0], tup.y[0]);
+
+                static if (is(typeof(tup.width)==immutable(Pixel)))
+                {
+                    context.save();
+                    context.identityMatrix;
+                }
+                context.translate( devP.x, devP.y );
+                context.moveTo( 0, -0.5*tup.height );
+                context.lineTo( 0.5*tup.width, 0 );
+                context.lineTo( 0, 0.5*tup.height );
+                context.lineTo( -0.5*tup.width, 0 );
+                context.closePath;
+                static if (is(typeof(tup.width)==immutable(Pixel)))
+                    context.restore();
+
+                auto col = colourMap(ColourID(tup.colour));
+                context.fillAndStroke( col, tup.fill, tup.alpha );
+                return context;
+            };
+
+            AdaptiveBounds bounds;
+            bounds.adapt(Point(tup.x[0], tup.y[0]));
+
+            auto geom = Geom( tup );
+            if (!xsCoords.numeric)
+                geom.xTickLabels ~= tup[0];
+            if (!ysCoords.numeric)
+                geom.yTickLabels ~= tup[1];
+            geom.draw = f;
+            geom.colours ~= ColourID(tup.colour);
+            geom.bounds = bounds;
+            return geom;
+        }
+
+        void popFront()
+        {
+            _aes.popFront();
+        }
+
+        @property bool empty()
+        {
+            return _aes.empty;
+        }
+
+    private:
+        CoordType _aes;
+    }
+
+    return GeomRange!AES(aes);
+}
+
+
+///
+auto geomPoint(AES)(AES aes)
+{
+    import std.algorithm : map;
+    import std.conv : to;
+    import ggplotd.aes : Aes, mergeRange, Pixel;
+    auto _aes = DefaultValues.mergeRange(aes);
+    auto wh = _aes.map!((a) => Pixel((8*a.size).to!int));
+    auto filled = _aes.map!((a) => a.alpha);
+    auto merged = Aes!(typeof(wh), "width", typeof(wh), "height",
+        typeof(filled),"fill")( wh, wh, filled )
+        .mergeRange( aes );
+    return geomEllipse!(typeof(merged))(merged);
 }
 
 ///
@@ -152,22 +480,7 @@ auto geomLine(AES)(AES aes)
 
                 auto col = colourMap(ColourID(flags.colour));
                 import ggplotd.colourspace : RGBA, toCairoRGBA;
-
-                context.identityMatrix();
-                if (flags.fill>0)
-                {
-                    context.setSourceRGBA(
-                        RGBA(col.r, col.g, col.b, flags.fill)
-                            .toCairoRGBA
-                    );
-                    context.fillPreserve();
-                }
-                context.setSourceRGBA(
-                    RGBA(col.r, col.g, col.b, flags.alpha)
-                        .toCairoRGBA
-                );
-                context.stroke();
-
+                context.fillAndStroke( col, flags.fill, flags.alpha );
                 return context;
             };
 

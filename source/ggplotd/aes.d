@@ -7,7 +7,26 @@ version (unittest)
     import dunit.toolkit;
 }
 
-import std.typecons : Tuple;
+import std.typecons : Tuple, Typedef;
+
+struct Pixel
+{
+    this( int val ) { value = val; };
+    this( Pixel val ) { value = val; };
+
+
+    alias value this;
+
+    int value;
+}
+
+unittest
+{
+    auto pixel = Pixel(10);
+    static if (is(typeof(pixel)==Pixel))
+        {} else 
+        assert(false);
+}
 
 // TODO Also update default grouping if appropiate
 
