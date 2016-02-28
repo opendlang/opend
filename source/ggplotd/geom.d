@@ -874,7 +874,7 @@ auto geomLabel(AES)(AES aes)
         {
             immutable tup = _aes.front;
             auto f = delegate(cairo.Context context, ColourMap colourMap) {
-                context.setFontSize(14.0);
+                context.setFontSize(14.0*tup.size);
                 context.moveTo(tup.x[0], tup.y[0]);
                 context.save();
                 context.identityMatrix;
