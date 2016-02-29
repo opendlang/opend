@@ -735,31 +735,40 @@ auto geomHist3D(AES)(AES aes, size_t noBinsX = 0, size_t noBinsY = 0)
 {
     import std.algorithm : filter, map, reduce, max, min;
     import std.array : array, Appender;
+    import std.range : zip;
     // New appender to hold lines for drawing histogram
     auto appender = Appender!(Geom[])([]);
 
+    auto xsMap = aes.map!("a.x");
+    auto xsNL = NumericLabel!(typeof(xsMap))(xsMap);
+    auto xs = xsNL.map!((t) => t[0]) // Extract the x coordinates
+            .array;
+    auto ysMap = aes.map!("a.y");
+    auto ysNL = NumericLabel!(typeof(ysMap))(ysMap);
+    auto ys = ysNL.map!((t) => t[0]) // Extract the y coordinates
+            .array;
+
     // Work out min/max of the x and y data
-    auto minmaxX = reduce!("min(a,b.x)","max(a,b.x)")( Tuple!(double,double)(aes.front.x, aes.front.x), aes );
-    auto minmaxY = reduce!("min(a,b.y)","max(a,b.y)")( Tuple!(double,double)(aes.front.y, aes.front.y), aes );
+    auto minmaxX = reduce!("min(a,b)","max(a,b)")( Tuple!(double,double)(xs.front, xs.front), xs );
+    auto minmaxY = reduce!("min(a,b)","max(a,b)")( Tuple!(double,double)(ys.front, ys.front), ys );
 
     // Track maximum z value for colour scaling
     double maxZ = -1;
-
-    auto xs = aes.map!((t) => t.x) // Extract the x coordinates
-            .array;
 
     if (noBinsX < 1)
         noBinsX = min(30,max(11, xs.length/25));
     if (noBinsY < 1)
         noBinsY = noBinsX;
 
+    auto coords = zip(xs, ys);
+
 
     foreach( binX; xs.bin( minmaxX[0], minmaxX[1], noBinsX ) )
     {
         // TODO this is not the most efficient way to create 2d bins
-        foreach( binY; aes.filter!( 
-                (a) => a.x >= binX.range[0] && a.x < binX.range[1] )
-            .map!( (a) => a.y ).array
+        foreach( binY; coords.filter!( 
+                (a) => a[0] >= binX.range[0] && a[0] < binX.range[1] )
+            .map!( (a) => a[1] ).array
             .bin( minmaxY[0], minmaxY[1], noBinsY ) )
         {
             maxZ = max( maxZ, binY.count );
