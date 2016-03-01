@@ -86,15 +86,17 @@ import core.thread;
 * // ...
 *
 * // Start gtk window.
+* const width = 470;
+* const height = 470;
 * auto gd = new GTKWindow();
-* auto tid = new Thread(() { gd.run("plotcli"); }).start();
+* auto tid = new Thread(() { gd.run("plotcli", width, height); }).start();
 * auto gg = GGPlotD().put( geomHist3D( aes ) );
-* gd.drawGG( gg, 470, 470 );
+* gd.drawGG( gg, width, height );
 * Thread.sleep( dur!("seconds")( 2 ) ); // sleep for 5 seconds
 * 
 * gg = GGPlotD().put( geomPoint( aes ) );
 * gd.clearWindow();
-* gd.draw( gg, 470, 470 );
+* gd.draw( gg, width, height );
 * 
 * // Wait for gtk thread to finish (Window closed)
 * tid.join();
@@ -138,13 +140,12 @@ class GTKWindow
     *
     * It should be safe to run threaded though
     */
-    void run(string title)
+    void run(string title, int width = 470, int height = 470)
     {
         MainWindow win = new MainWindow(title);
 
-        win.setDefaultSize( 250, 250 );
+        win.setDefaultSize( width, height );
 
-        //c.surface = surface;
         win.add(sa);
         sa.show();
         win.showAll();
