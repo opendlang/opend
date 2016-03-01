@@ -636,6 +636,7 @@ struct NumericLabel(T) if (isInputRange!T)
             return false;
     }
 
+
 private:
     T original;
     //E[double] toLabelMap;

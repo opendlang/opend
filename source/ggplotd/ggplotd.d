@@ -426,6 +426,7 @@ unittest
     /// http://blackedder.github.io/ggplotd/images/hist3D.svg
     import std.array : array;
     import std.algorithm : map;
+    import std.conv : to;
     import std.range : repeat, iota;
     import std.random : uniform;
 
@@ -434,8 +435,10 @@ unittest
     import ggplotd.colourspace : XYZ;
     import ggplotd.geom : geomHist3D;
 
-    auto xs = iota(0,500,1).map!((x) => uniform(0.0,5)+uniform(0.0,5)).array;
-    auto ys = iota(0,500,1).map!((y) => uniform(0.0,5)+uniform(0.0,5)).array;
+    auto xs = iota(0,500,1).map!((x) => uniform(0.0,5)+uniform(0.0,5))
+        .map!((a) => a.to!int).array;
+    auto ys = iota(0,500,1).map!((y) => uniform(0.0,5)+uniform(0.0,5))
+        .map!((a) => a.to!int).array;
     auto aes = Aes!(typeof(xs), "x", typeof(ys), "y")( xs, ys);
     auto gg = GGPlotD().put( geomHist3D( aes ) );
     // Use a different colour scheme

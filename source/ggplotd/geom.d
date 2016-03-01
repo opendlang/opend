@@ -733,9 +733,9 @@ auto geomHist(AES)(AES aes, size_t noBins = 0)
 /// Draw histograms based on the x coordinates of the data (aes)
 auto geomHist3D(AES)(AES aes, size_t noBinsX = 0, size_t noBinsY = 0)
 {
-    import std.algorithm : filter, map, reduce, max, min;
+    import std.algorithm : filter, group, map, reduce, max, min;
     import std.array : array, Appender;
-    import std.range : zip;
+    import std.range : walkLength, zip;
     // New appender to hold lines for drawing histogram
     auto appender = Appender!(Geom[])([]);
 
@@ -756,9 +756,9 @@ auto geomHist3D(AES)(AES aes, size_t noBinsX = 0, size_t noBinsY = 0)
     double maxZ = -1;
 
     if (noBinsX < 1)
-        noBinsX = min(30,max(11, xs.length/25));
+        noBinsX = min(xsNL.uniq.walkLength,min(30,max(11, xs.length/25)));
     if (noBinsY < 1)
-        noBinsY = noBinsX;
+        noBinsY = min(ysNL.uniq.walkLength,min(30,max(11, ys.length/25)));
 
     auto coords = zip(xs, ys);
 
