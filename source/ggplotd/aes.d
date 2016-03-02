@@ -656,6 +656,27 @@ unittest
     assertEqual(strs.map!((a) => a[1]).array, ["a", "c", "b", "a"]);
 }
 
+///
+auto numericLabel(Range)( Range r ) if (isInputRange!Range)
+{
+    return NumericLabel!(Range)(r);
+}
+
+unittest
+{
+    import std.stdio : writeln;
+    import std.array : array;
+    import std.algorithm : map;
+
+    auto num = numericLabel([0.0, 0.1, 1.0, 0.0]);
+    assertEqual(num.map!((a) => a[0]).array, [0.0, 0.1, 1.0, 0.0]);
+    assertEqual(num.map!((a) => a[1]).array, ["0", "0.1", "1", "0"]);
+    auto strs = numericLabel(["a", "c", "b", "a"]);
+    assertEqual(strs.map!((a) => a[0]).array, [0, 1, 2.0, 0.0]);
+    assertEqual(strs.map!((a) => a[1]).array, ["a", "c", "b", "a"]);
+}
+
+
 unittest
 {
     import painlesstraits;
