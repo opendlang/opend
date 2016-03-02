@@ -628,12 +628,36 @@ struct NumericLabel(T) if (isInputRange!T)
     }
 
     ///
+    @property auto save()
+    {
+        return this;
+    }
+
+    ///
     @property bool numeric()
     {
         static if (isNumeric!E)
             return true;
         else
             return false;
+    }
+
+    ///
+    auto uniqCount()
+    {
+        import std.range : ElementType;
+        auto saved = this.save;
+        auto dim = 0;
+        double[saved.E] uniques;
+        foreach( e; saved.original )
+        {
+            if (e !in uniques)
+            {
+                uniques[e] = 0;
+                ++dim;
+            }
+        }
+        return dim;
     }
 
 
@@ -648,6 +672,7 @@ unittest
     import std.stdio : writeln;
     import std.array : array;
     import std.algorithm : map;
+    import std.typecons : tuple;
 
     auto num = NumericLabel!(double[])([0.0, 0.1, 1.0, 0.0]);
     assertEqual(num.map!((a) => a[0]).array, [0.0, 0.1, 1.0, 0.0]);
@@ -655,6 +680,9 @@ unittest
     auto strs = NumericLabel!(string[])(["a", "c", "b", "a"]);
     assertEqual(strs.map!((a) => a[0]).array, [0, 1, 2.0, 0.0]);
     assertEqual(strs.map!((a) => a[1]).array, ["a", "c", "b", "a"]);
+
+    assertEqual(num.uniqCount, 3);
+    assertEqual(strs.uniqCount, 3);
 }
 
 unittest

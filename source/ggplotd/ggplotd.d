@@ -436,9 +436,9 @@ unittest
     import ggplotd.geom : geomHist3D;
 
     auto xs = iota(0,500,1).map!((x) => uniform(0.0,5)+uniform(0.0,5))
-        .map!((a) => a.to!int).array;
+        .array;
     auto ys = iota(0,500,1).map!((y) => uniform(0.0,5)+uniform(0.0,5))
-        .map!((a) => a.to!int).array;
+        .array;
     auto aes = Aes!(typeof(xs), "x", typeof(ys), "y")( xs, ys);
     auto gg = GGPlotD().put( geomHist3D( aes ) );
     // Use a different colour scheme

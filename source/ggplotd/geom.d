@@ -756,9 +756,9 @@ auto geomHist3D(AES)(AES aes, size_t noBinsX = 0, size_t noBinsY = 0)
     double maxZ = -1;
 
     if (noBinsX < 1)
-        noBinsX = min(xsNL.uniq.walkLength,min(30,max(11, xs.length/25)));
+        noBinsX = min(xsNL.uniqCount,min(30,max(11, xs.length/25)));
     if (noBinsY < 1)
-        noBinsY = min(ysNL.uniq.walkLength,min(30,max(11, ys.length/25)));
+        noBinsY = min(ysNL.uniqCount,min(30,max(11, ys.length/25)));
 
     auto coords = zip(xs, ys);
 
