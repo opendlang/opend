@@ -432,6 +432,9 @@ void main()
     import ggplotd.aes;
     import ggplotd.gtk;
 
+    const width = 470;
+    const height = 470;
+
     auto xs = iota(0,100,1).map!((x) => uniform(0.0,5)+uniform(0.0,5)).array;
     auto ys = iota(0,100,1).map!((y) => uniform(0.0,5)+uniform(0.0,5)).array;
     auto aes = Aes!(typeof(xs), "x", typeof(ys), "y")( xs, ys);
@@ -442,14 +445,14 @@ void main()
     // gtkwin.run runs the GTK mainloop, so normally blocks, but we can
     // run it in its own thread to get around this
     
-    auto tid = new Thread(() { gtkwin.run("plotcli"); }).start(); 
+    auto tid = new Thread(() { gtkwin.run("plotcli", width, height); }).start(); 
     auto gg = GGPlotD().put( geomHist3D( aes ) ); 
-    gtkwin.drawGG( gg, 470, 470 ); 
+    gtkwin.draw( gg, width, height ); 
     Thread.sleep( dur!("seconds")( 2 ) ); // sleep for 2 seconds
 
     gg = GGPlotD().put( geomPoint( aes ) );
     gtkwin.clearWindow();
-    gtkwin.drawGG( gg, 470, 470 );
+    gtkwin.draw( gg, width, height );
 
     // Wait for gtk thread to finish (Window closed)
     tid.join();
