@@ -700,11 +700,12 @@ auto geomHist(AES)(AES aes, size_t noBins = 0)
 
     foreach (grouped; group(aes)) // Split data by colour/id
     {
-
         // Extract the x coordinates
-        auto xs = grouped.map!((t) => t.x).array; 
+        auto xsNL = numericLabel(grouped.map!((t) => t.x));
+        auto xs = xsNL.map!((t) => t[0]) // Extract the x coordinates
+            .array;
         if (noBins < 1)
-            noBins = min(30,max(11, xs.length/10));
+            noBins = min(xsNL.uniqCount,min(30,max(11, xs.length/10)));
         auto bins = xs.bin(noBins); // Bin the data
 
         foreach (bin; bins)
@@ -740,7 +741,7 @@ auto geomHist3D(AES)(AES aes, size_t noBinsX = 0, size_t noBinsY = 0)
     auto appender = Appender!(Geom[])([]);
 
     auto xsMap = aes.map!("a.x");
-    auto xsNL = NumericLabel!(typeof(xsMap))(xsMap);
+    auto xsNL = numericLabel(xsMap);
     auto xs = xsNL.map!((t) => t[0]) // Extract the x coordinates
             .array;
     auto ysMap = aes.map!("a.y");

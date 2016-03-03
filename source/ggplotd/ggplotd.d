@@ -374,7 +374,8 @@ unittest
     import std.algorithm : map;
     import std.range : repeat, iota;
     import std.random : uniform;
-    auto xs = iota(0,25,1).map!((x) => uniform(0.0,5)+uniform(0.0,5)).array;
+    auto xs = iota(0,25,1).map!((x) => uniform(0.0,5)+uniform(0.0,5))
+        .array;
     auto aes = Aes!(typeof(xs), "x")( xs );
     auto gg = GGPlotD().put( geomHist( aes ) );
 
