@@ -740,12 +740,10 @@ auto geomHist3D(AES)(AES aes, size_t noBinsX = 0, size_t noBinsY = 0)
     // New appender to hold lines for drawing histogram
     auto appender = Appender!(Geom[])([]);
 
-    auto xsMap = aes.map!("a.x");
-    auto xsNL = numericLabel(xsMap);
+    auto xsNL = numericLabel(aes.map!("a.x"));
     auto xs = xsNL.map!((t) => t[0]) // Extract the x coordinates
             .array;
-    auto ysMap = aes.map!("a.y");
-    auto ysNL = NumericLabel!(typeof(ysMap))(ysMap);
+    auto ysNL = numericLabel(aes.map!("a.y"));
     auto ys = ysNL.map!((t) => t[0]) // Extract the y coordinates
             .array;
 
@@ -871,7 +869,6 @@ auto geomLabel(AES)(AES aes)
 
     struct GeomRange(T)
     {
-        size_t size = 6;
         this(T aes)
         {
             _aes = DefaultValues
