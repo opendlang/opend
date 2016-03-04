@@ -97,22 +97,26 @@ auto geomRectangle(AES)(AES aes)
             immutable tup = _aes.front;
             auto f = delegate(cairo.Context context, ColourMap colourMap ) 
             {
+                context.save();
+                context.translate( tup.x[0], tup.y[0] );
                 static if (is(typeof(tup.width)==immutable(Pixel)))
-                    auto devP = context.userToDevice(cairo.Point!double(tup.x[0], tup.y[0]));
-                else
-                    auto devP = cairo.Point!double(tup.x[0], tup.y[0]);
-
+                    auto devP = context.deviceToUserDistance(cairo.Point!double( tup.width, tup.height )); //tup.width.to!double, tup.width.to!double ));
+                context.rotate(tup.angle);
                 static if (is(typeof(tup.width)==immutable(Pixel)))
                 {
-                    context.save();
-                    context.identityMatrix;
+                    context.scale( devP.x, devP.y );
+                } else {
+                    context.scale( tup.width, tup.height );
                 }
-                context.rectangle(devP.x - 0.5 * tup.width, 
-                    devP.y - 0.5 * tup.height, tup.width, tup.height);
-                static if (is(typeof(tup.width)==immutable(Pixel)))
-                    context.restore();
+                context.moveTo( -0.5, -0.5 );
+                context.lineTo( -0.5,  0.5 );
+                context.lineTo(  0.5,  0.5 );
+                context.lineTo(  0.5, -0.5 );
+                context.closePath;
+
 
                 auto col = colourMap(ColourID(tup.colour));
+                context.restore();
                 context.fillAndStroke( col, tup.fill, tup.alpha );
                 return context;
             };
@@ -184,23 +188,21 @@ auto geomEllipse(AES)(AES aes)
             auto f = delegate(cairo.Context context, ColourMap colourMap ) 
             {
                 import std.math : PI;
+                context.save();
+                context.translate( tup.x[0], tup.y[0] );
                 static if (is(typeof(tup.width)==immutable(Pixel)))
-                    auto devP = context.userToDevice(cairo.Point!double(tup.x[0], tup.y[0]));
-                else
-                    auto devP = cairo.Point!double(tup.x[0], tup.y[0]);
-
+                    auto devP = context.deviceToUserDistance(cairo.Point!double( tup.width, tup.height )); //tup.width.to!double, tup.width.to!double ));
+                context.rotate(tup.angle);
                 static if (is(typeof(tup.width)==immutable(Pixel)))
                 {
-                    context.save();
-                    context.identityMatrix;
+                    context.scale( devP.x/2.0, devP.y/2.0 );
+                } else {
+                    context.scale( tup.width/2.0, tup.height/2.0 );
                 }
-                context.translate( devP.x, devP.y );
-                context.scale( tup.width/2.0, tup.height/2.0 );
                 context.arc(0,0, 1.0, 0,2*PI);
-                static if (is(typeof(tup.width)==immutable(Pixel)))
-                    context.restore();
 
                 auto col = colourMap(ColourID(tup.colour));
+                context.restore();
                 context.fillAndStroke( col, tup.fill, tup.alpha );
                 return context;
             };
@@ -271,29 +273,24 @@ auto geomTriangle(AES)(AES aes)
             immutable tup = _aes.front;
             auto f = delegate(cairo.Context context, ColourMap colourMap ) 
             {
-                import std.math : PI;
+                context.save();
+                context.translate( tup.x[0], tup.y[0] );
                 static if (is(typeof(tup.width)==immutable(Pixel)))
-                    auto devP = context.userToDevice(cairo.Point!double(tup.x[0], tup.y[0]));
-                else
-                    auto devP = cairo.Point!double(tup.x[0], tup.y[0]);
-
+                    auto devP = context.deviceToUserDistance(cairo.Point!double( tup.width, -tup.height )); //tup.width.to!double, tup.width.to!double ));
+                context.rotate(tup.angle);
                 static if (is(typeof(tup.width)==immutable(Pixel)))
                 {
-                    context.save();
-                    context.identityMatrix;
+                    context.scale( devP.x, devP.y );
+                } else {
+                    context.scale( tup.width, tup.height );
                 }
-                context.translate( devP.x, devP.y );
-                static if (is(typeof(tup.width)==immutable(Pixel)))
-                    context.scale(1,-1); // Turn height upside down, needed so
-                        // drawing is consistent when in pixel and non pixel mode
-                context.moveTo( -0.5*tup.width, -0.5*tup.height );
-                context.lineTo( 0.5*tup.width, -0.5*tup.height );
-                context.lineTo( 0, 0.5*tup.height );
+                context.moveTo( -0.5, -0.5 );
+                context.lineTo( 0.5, -0.5 );
+                context.lineTo( 0, 0.5 );
                 context.closePath;
-                static if (is(typeof(tup.width)==immutable(Pixel)))
-                    context.restore();
 
                 auto col = colourMap(ColourID(tup.colour));
+                context.restore();
                 context.fillAndStroke( col, tup.fill, tup.alpha );
                 return context;
             };
@@ -364,27 +361,25 @@ auto geomDiamond(AES)(AES aes)
             immutable tup = _aes.front;
             auto f = delegate(cairo.Context context, ColourMap colourMap ) 
             {
-                import std.math : PI;
+                context.save();
+                context.translate( tup.x[0], tup.y[0] );
                 static if (is(typeof(tup.width)==immutable(Pixel)))
-                    auto devP = context.userToDevice(cairo.Point!double(tup.x[0], tup.y[0]));
-                else
-                    auto devP = cairo.Point!double(tup.x[0], tup.y[0]);
-
+                    auto devP = context.deviceToUserDistance(cairo.Point!double( tup.width, tup.height )); //tup.width.to!double, tup.width.to!double ));
+                context.rotate(tup.angle);
                 static if (is(typeof(tup.width)==immutable(Pixel)))
                 {
-                    context.save();
-                    context.identityMatrix;
+                    context.scale( devP.x, devP.y );
+                } else {
+                    context.scale( tup.width, tup.height );
                 }
-                context.translate( devP.x, devP.y );
-                context.moveTo( 0, -0.5*tup.height );
-                context.lineTo( 0.5*tup.width, 0 );
-                context.lineTo( 0, 0.5*tup.height );
-                context.lineTo( -0.5*tup.width, 0 );
+                context.moveTo( 0, -0.5 );
+                context.lineTo( 0.5, 0 );
+                context.lineTo( 0, 0.5 );
+                context.lineTo( -0.5, 0 );
                 context.closePath;
-                static if (is(typeof(tup.width)==immutable(Pixel)))
-                    context.restore();
 
                 auto col = colourMap(ColourID(tup.colour));
+                context.restore();
                 context.fillAndStroke( col, tup.fill, tup.alpha );
                 return context;
             };
