@@ -687,8 +687,10 @@ auto geomHist(AES)(AES aes, size_t noBins = 0)
 {
     import std.algorithm : map, max, min;
     import std.array : Appender, array;
-    import std.range : repeat;
+    import std.range : repeat, take, walkLength;
     import std.typecons : Tuple;
+
+    import ggplotd.range : uniquer;
 
     // New appender to hold lines for drawing histogram
     auto appender = Appender!(Geom[])([]);
@@ -700,7 +702,8 @@ auto geomHist(AES)(AES aes, size_t noBins = 0)
         auto xs = xsNL.map!((t) => t[0]) // Extract the x coordinates
             .array;
         if (noBins < 1)
-            noBins = min(xsNL.uniqCount,min(30,max(11, xs.length/10)));
+            noBins = min(xsNL.uniquer.take(30).walkLength,
+                    min(30,max(11, xs.length/10)));
         auto bins = xs.bin(noBins); // Bin the data
 
         foreach (bin; bins)
@@ -731,7 +734,8 @@ auto geomHist3D(AES)(AES aes, size_t noBinsX = 0, size_t noBinsY = 0)
 {
     import std.algorithm : filter, group, map, reduce, max, min;
     import std.array : array, Appender;
-    import std.range : walkLength, zip;
+    import std.range : take, walkLength, zip;
+    import ggplotd.range : uniquer;
     // New appender to hold lines for drawing histogram
     auto appender = Appender!(Geom[])([]);
 
@@ -750,9 +754,11 @@ auto geomHist3D(AES)(AES aes, size_t noBinsX = 0, size_t noBinsY = 0)
     double maxZ = -1;
 
     if (noBinsX < 1)
-        noBinsX = min(xsNL.uniqCount,min(30,max(11, xs.length/25)));
+        noBinsX = min(xsNL.uniquer.take(30).walkLength,
+                min(30,max(11, xs.length/25)));
     if (noBinsY < 1)
-        noBinsY = min(ysNL.uniqCount,min(30,max(11, ys.length/25)));
+        noBinsY = min(ysNL.uniquer.take(30).walkLength,
+                min(30,max(11, ys.length/25)));
 
     auto coords = zip(xs, ys);
 
