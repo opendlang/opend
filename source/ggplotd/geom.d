@@ -456,10 +456,8 @@ auto geomLine(AES)(AES aes)
 
         @property auto front()
         {
-            auto xs = NumericLabel!(typeof(groupedAes.front.front.x)[])(
-                groupedAes.front.map!((t) => t.x).array);
-            auto ys = NumericLabel!(typeof(groupedAes.front.front.y)[])(
-                groupedAes.front.map!((t) => t.y).array);
+            auto xs = numericLabel(groupedAes.front.map!((t) => t.x));
+            auto ys = numericLabel(groupedAes.front.map!((t) => t.y));
             auto coords = zip(xs, ys);
 
             immutable flags = groupedAes.front.front;
@@ -986,20 +984,17 @@ auto geomBox(AES)(AES aes)
     auto fr = aes.front;
     static if (__traits(hasMember, fr, "y"))
     {
-        auto labels = NumericLabel!(typeof(fr.y)[])( 
-            aes.map!("a.y").array ); // Should use y type
+        auto labels = numericLabel( aes.map!("a.y") );
         auto myAes = aes.mergeRange( Aes!(typeof(labels), "label")( labels ) );
     } else {
         static if (__traits(hasMember, fr, "label"))
         {
         // esle If has label, use that
-        auto labels = NumericLabel!(string[])( 
-            aes.map!("a.label.to!string").array );
+        auto labels = numericLabel( aes.map!("a.label.to!string") );
         auto myAes = aes.mergeRange( Aes!(typeof(labels), "label")( labels ) );
         } else {
             import std.range : repeat;
-            auto labels = NumericLabel!(string[])( 
-                repeat("a", aes.length).array );
+            auto labels = numericLabel( repeat("a", aes.length) );
             auto myAes = aes.mergeRange( Aes!(typeof(labels), "label")( labels ) );
         }
     }

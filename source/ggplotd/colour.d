@@ -3,9 +3,7 @@ module ggplotd.colour;
 import std.range : ElementType;
 import std.typecons : Tuple;
 
-import ggplotd.aes : NumericLabel;
 import ggplotd.colourspace : RGBA;
-
 
 version (unittest)
 {
@@ -228,8 +226,7 @@ unittest
     assertEqual( cID[2].r, 1 );
 }
 
-import std.range : isInputRange;
-import std.range : ElementType;
+import std.range : ElementType, isInputRange;
 
 ///
 struct ColourIDRange(T) if (isInputRange!T && is(ElementType!T == ColourID))
@@ -275,6 +272,7 @@ struct ColourIDRange(T) if (isInputRange!T && is(ElementType!T == ColourID))
         return original.empty;
     }
 
+    ///
     @property auto save()
     {
         return this;
@@ -283,7 +281,6 @@ struct ColourIDRange(T) if (isInputRange!T && is(ElementType!T == ColourID))
 private:
     double[string] labelMap;
     T original;
-    //E[double] toLabelMap;
     RGBA[string] namedColours;
 }
 
