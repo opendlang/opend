@@ -196,8 +196,19 @@ unittest
 
 string toAxisLabel( double value )
 {
+    import std.math : abs, round;
     import std.format : format;
-    //return format( "%.2g", value );
+    if (abs(value) > 1 && abs(value) < 100000)
+    {
+        auto rv = round(value);
+        auto dec = abs(round((value - rv)*100));
+        if (dec == 0)
+            return format( "%s", rv );
+        else if (dec%10 == 0)
+            return format( "%s.%s", rv, dec/10);
+        else
+            return format( "%s.%s", rv, dec);
+    }
     return format( "%.3g", value );
 }
 
@@ -207,6 +218,11 @@ unittest
     assertEqual( (0.5).toAxisLabel, "0.5" );
     assertEqual( (0.001234567).toAxisLabel, "0.00123" );
     assertEqual( (0.00000001234567).toAxisLabel, "1.23e-08" );
+    assertEqual( (2001).toAxisLabel, "2001" );
+    assertEqual( (2001.125).toAxisLabel, "2001.13" );
+    assertEqual( (-2001).toAxisLabel, "-2001" );
+    assertEqual( (-2001.125).toAxisLabel, "-2001.13" );
+    assertEqual( (-2.301).toAxisLabel, "-2.3" );
 }
 
 ///
