@@ -10,3 +10,4 @@ __dummy.html
 *.exe
 bin/
 docs/
+lib/

@@ -11,7 +11,7 @@
     "subPackages" : ["./examples/printdirs", "./examples/findexecutable"],
     
     "dependencies" : {
-        "xdgpaths" : "~>0.1.0"
+        "xdgpaths" : "~>0.1.1"
     },
     
     "configurations" : [
