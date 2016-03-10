@@ -10,4 +10,3 @@ __dummy.html
 *.exe
 bin/
 docs/
-dub.selections.json

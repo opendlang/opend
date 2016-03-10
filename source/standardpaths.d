@@ -19,6 +19,8 @@ private {
     import std.exception;
     import std.range;
     
+    import isfreedesktop;
+    
     debug {
         import std.stdio : stderr;
     }
@@ -180,12 +182,9 @@ string[] standardPaths(StandardPath type) nothrow @safe;
 version(Docs)
 {
     /**
-     * Path to runtime user directory.
-     * Returns: User's runtime directory determined by $(B XDG_RUNTIME_DIR) environment variable. 
-     * If directory does not exist it tries to create one with appropriate permissions. On fail returns an empty string.
-     * Note: This function is Freedesktop only.
+     * Deprecated, use xdgRuntimeDir instead.
      */
-    string runtimeDir() nothrow @trusted;
+    deprecated string runtimeDir() nothrow @trusted;
     
     /**
      * Path to $(B Roaming) data directory. 
@@ -193,41 +192,6 @@ version(Docs)
      * Note: This function is Windows only.
      */
     string roamingPath() nothrow @safe;
-    
-    /**
-     * The preference-ordered set of base directories to search for configuration files.
-     * Returns: config directories, without user's one.
-     * Note: This function is Freedesktop only.
-     */
-    string[] xdgConfigDirs() nothrow @trusted;
-    
-    /**
-     * The preference-ordered set of base directories to search for data files.
-     * Returns: data directories, without user's one.
-     * Note: This function is Freedesktop only.
-     */
-    string[] xdgDataDirs() nothrow @trusted;
-    
-    /**
-     * The base directory relative to which user specific data files should be stored.
-     * Returns:  the same value as standardPaths(StandardPath.data)
-     * Note: This function is Freedesktop only.
-     */
-    string xdgDataHome() nothrow @trusted;
-    
-    /**
-     * The base directory relative to which user specific configuration files should be stored.
-     * Returns: the same value as standardPaths(StandardPath.config)
-     * Note: This function is Freedesktop only.
-     */
-    string xdgConfigHome() nothrow @trusted;
-    
-    /**
-     * The base directory relative to which user specific non-essential data files should be stored.
-     * Returns: the same value as standardPaths(StandardPath.cache)
-     * Note: This function is Freedesktop only.
-     */
-    string xdgCacheHome() nothrow @trusted;
 }
 
 version(Windows) {
@@ -699,8 +663,14 @@ version(Windows) {
         return paths;
     }
     
-} else version(Posix) {
+} else {
     
+    static if (!isFreedesktop) {
+        static assert(false, "Unsupported platform");
+    } else {
+    
+    public import xdgpaths;
+        
     //Concat two strings, but if the first one is empty, then null string is returned.
     private string maybeConcat(string start, string path) nothrow @safe
     {
@@ -774,43 +744,6 @@ version(Windows) {
         return null;
     }
     
-    string[] xdgConfigDirs() nothrow @trusted {
-        try {
-            string configDirs = environment.get("XDG_CONFIG_DIRS");
-            if (configDirs.length) {
-                return splitter(configDirs, pathVarSeparator).array;
-            }
-        }
-        catch(Exception e) {
-            
-        }
-        return ["/etc/xdg"];
-    }
-    
-    string[] xdgDataDirs() nothrow @trusted {
-        try {
-            string dataDirs = environment.get("XDG_DATA_DIRS");
-            if (dataDirs.length) {
-                return splitter(dataDirs, pathVarSeparator).array;
-            }
-        } catch(Exception e) {
-            
-        }
-        return ["/usr/local/share", "/usr/share"];
-    }
-    
-    string xdgDataHome() nothrow @trusted {
-        return xdgBaseDir("XDG_DATA_HOME", "/.local/share");
-    }
-    
-    string xdgConfigHome() nothrow @trusted {
-        return xdgBaseDir("XDG_CONFIG_HOME", "/.config");
-    }
-    
-    string xdgCacheHome() nothrow @trusted {
-        return xdgBaseDir("XDG_CACHE_HOME", "/.cache");
-    }
-    
     private string homeFontsPath() nothrow @trusted {
         return maybeConcat(homeDir(), "/.fonts");
     }
@@ -828,64 +761,9 @@ version(Windows) {
         }
     }
     
-    string runtimeDir() nothrow @trusted
+    deprecated string runtimeDir() nothrow @trusted
     {
-        // Do we need it on BSD systems?
-        
-        import core.sys.posix.pwd;
-        import core.sys.posix.unistd;
-        import core.sys.posix.sys.stat;
-        import core.sys.posix.sys.types;
-        import core.stdc.errno;
-        import core.stdc.string;
-        
-        try { //one try to rule them all and for compatibility reasons
-            const uid_t uid = getuid();
-            string runtime;
-            collectException(environment.get("XDG_RUNTIME_DIR"), runtime);
-            
-            mode_t runtimeMode = octal!700;
-            
-            if (!runtime.length) {
-                setpwent();
-                passwd* pw = getpwuid(uid);
-                endpwent();
-                
-                try {
-                    if (pw && pw.pw_name) {
-                        runtime = tempDir() ~ "/runtime-" ~ assumeUnique(fromStringz(pw.pw_name));
-                        
-                        if (!(runtime.exists && runtime.isDir)) {
-                            if (mkdir(runtime.toStringz, runtimeMode) != 0) {
-                                debug stderr.writefln("Failed to create runtime directory %s: %s", runtime, fromStringz(strerror(errno)));
-                                return null;
-                            }
-                        }
-                    } else {
-                        debug stderr.writeln("Failed to get user name to create runtime directory");
-                        return null;
-                    }
-                } catch(Exception e) {
-                    debug collectException(stderr.writefln("Error when creating runtime directory: %s", e.msg));
-                    return null;
-                }
-            }
-            stat_t statbuf;
-            stat(runtime.toStringz, &statbuf);
-            if (statbuf.st_uid != uid) {
-                debug collectException(stderr.writeln("Wrong ownership of runtime directory %s, %d instead of %d", runtime, statbuf.st_uid, uid));
-                return null;
-            }
-            if ((statbuf.st_mode & octal!777) != runtimeMode) {
-                debug collectException(stderr.writefln("Wrong permissions on runtime directory %s, %o instead of %o", runtime, statbuf.st_mode, runtimeMode));
-                return null;
-            }
-            
-            return runtime;
-        } catch (Exception e) {
-            debug collectException(stderr.writeln("Error when getting runtime directory: %s", e.msg));
-            return null;
-        }
+        return xdgRuntimeDir();
     }
     
     string writablePath(StandardPath type) nothrow @safe
@@ -916,7 +794,7 @@ version(Windows) {
             case StandardPath.Fonts:
                 return homeFontsPath();
             case StandardPath.Applications:
-                return maybeConcat(writablePath(StandardPath.Data), "/applications");
+                return xdgDataHome("applications");
         }
     }
     
@@ -926,19 +804,11 @@ version(Windows) {
         
         switch(type) {
             case StandardPath.Data:
-                paths = xdgDataDirs();
-                break;
+                return xdgAllDataDirs();
             case StandardPath.Config:
-                paths = xdgConfigDirs();
-                break;
+                return xdgAllConfigDirs();
             case StandardPath.Applications:
-            {
-                paths = xdgDataDirs();
-                foreach(ref path; paths) {
-                    path ~= "/applications";
-                }
-            }
-                break;
+                return xdgAllDataDirs("applications");
             case StandardPath.Fonts:
                 return fontPaths();
             default:
@@ -947,12 +817,11 @@ version(Windows) {
         
         string userPath = writablePath(type);
         if (userPath.length) {
-            paths = userPath ~ paths;
+            return [userPath];
         }
-        return paths;
+        return null;
     }
-} else {
-    static assert(false, "Unsupported platform");
+}
 }
 
 private bool isExecutable(string filePath) nothrow @trusted {

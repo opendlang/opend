@@ -47,7 +47,7 @@ int main()
         
     } else version(linux) {
         writeln("\nSpecific functions for Linux:");
-        writeln("Runtime: ", runtimeDir());
+        writeln("Runtime: ", xdgRuntimeDir());
     }
     
     return 0;
