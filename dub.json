@@ -1,0 +1,10 @@
+{
+    "name": "isfreedesktop",
+    "description": "Compile-time constant for Freedesktop.",
+    "copyright": "Copyright © 2016, Roman Chistokhodov",
+    "authors": ["Roman Chistokhodov"],
+    "targetPath" : "lib", 
+    "targetType" : "library",
+    "dependencies": {
+    }
+}
