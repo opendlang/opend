@@ -11,7 +11,6 @@ import ggplotd.colour;
 import ggplotd.geom;
 import ggplotd.bounds;
 import ggplotd.scale;
-import ggplotd.theme;
 import ggplotd.colourspace : RGBA, toCairoRGBA;
 
 version (unittest)
@@ -21,14 +20,21 @@ version (unittest)
 
 alias TitleFunction = Title delegate(Title);
 
-// Currently only holds the title. In the future could also be used to store details on location etc.
+/// Currently only holds the title. In the future could also be used to store details on location etc.
 struct Title
 {
     /// The actual title
     string title;
 }
 
-///
+/++ 
+Draw the title
+
+Examples:
+--------------------
+GGPlotD().put( title( "My title" ) );
+--------------------
++/
 TitleFunction title( string title )
 {
     return delegate(Title t) { t.title = title; return t; };
@@ -76,8 +82,8 @@ private auto createEmptySurface( string fname, int width, int height,
 }
 
 ///
-auto drawTitle( in Title title, ref cairo.Surface surface,
-    in Margins margins, int width, int height )
+private auto drawTitle( in Title title, ref cairo.Surface surface,
+    in Margins margins, int width )
 {
     auto context = cairo.Context(surface);
     context.setFontSize(16.0);
@@ -91,7 +97,7 @@ auto drawTitle( in Title title, ref cairo.Surface surface,
     return surface;
 }
 
-auto drawGeom( in Geom geom, ref cairo.Surface surface,
+private auto drawGeom( in Geom geom, ref cairo.Surface surface,
     in ColourMap colourMap, in ScaleType scaleFunction, in Bounds bounds, 
     in Margins margins, int width, int height )
 {
@@ -114,33 +120,23 @@ auto drawGeom( in Geom geom, ref cairo.Surface surface,
     return surface;
 }
 
-///
+/// Specify margins (in pixels)
 struct Margins
 {
-    size_t left = 50; ///
-    size_t right = 20; ///
-    size_t bottom = 50; ///
-    size_t top = 40; ///
+    /// left margin
+    size_t left = 50;
+    /// right margin
+    size_t right = 20; 
+    /// bottom margin
+    size_t bottom = 50; 
+    /// top margin
+    size_t top = 40; 
 }
 
-///
+/// GGPlotD contains the needed information to create a plot
 struct GGPlotD
 {
-    Geom[] geomRange;
-
-    XAxis xaxis;
-    YAxis yaxis;
-
-    Margins margins;
-
-    Title title;
-    Theme theme;
-
-    ScaleType scaleFunction;
-
-    ColourGradientFunction colourGradientFunction;
-
-    ///
+    /// Draw the plot to a cairo surface
     auto drawToSurface( ref cairo.Surface surface, int width, int height ) const
     {
         import std.range : empty, front;
@@ -172,7 +168,6 @@ struct GGPlotD
         import std.algorithm : sort, uniq, min, max;
         import std.range : chain;
         import std.array : array;
-        import ggplotd.axes;
 
         // TODO move this out of here and add some tests
         // If ticks are provided then we make sure the bounds include them
@@ -214,7 +209,10 @@ struct GGPlotD
         auto aesY = axisAes("y", bounds.min_y, bounds.max_y, offset,
             sortedTicks );
 
-        auto gR = chain(geomAxis(aesX, 10.0*bounds.height / height, xaxis.label), geomAxis(aesY, 10.0*bounds.width / width, yaxis.label));
+        auto gR = chain(
+                geomAxis(aesX, 10.0*bounds.height / height, xaxis.label), 
+                geomAxis(aesY, 10.0*bounds.width / width, yaxis.label)
+            );
 
         // Plot axis and geomRange
         foreach (geom; chain(geomRange, gR) )
@@ -230,12 +228,12 @@ struct GGPlotD
          }
 
         // Plot title
-        surface = title.drawTitle( surface, margins, width, height );
+        surface = title.drawTitle( surface, margins, width );
         return surface;
     }
  
 
-    ///
+    /// save the plot to a file
     void save( string fname, int width = 470, int height = 470 ) const
     {
         bool pngWrite = false;
@@ -293,15 +291,29 @@ struct GGPlotD
         return this;
     }
 
-    ///
+    /// put/add to the plot
     ref GGPlotD put(T)(T rhs)
     {
         return this.opBinary!("+", T)(rhs);
     }
 
 private:
+    import ggplotd.theme : Theme, ThemeFunction;
+    Geom[] geomRange;
+
+    XAxis xaxis;
+    YAxis yaxis;
+
+    Margins margins;
+
+    Title title;
+    Theme theme;
+
     bool initScale = false;
+    ScaleType scaleFunction;
+
     bool initCG = false;
+    ColourGradientFunction colourGradientFunction;
 }
 
 unittest
@@ -458,7 +470,6 @@ unittest
     import std.range : iota;
     // Generate some noisy data with reducing width
     auto f = (double x) { return x/(1+x); };
-    auto width = (double x) { return sqrt(0.1/(1+x)); };
     auto xs = iota( 0, 10, 0.1 ).array;
 
     auto ysfit = xs.map!((x) => f(x)).array;
@@ -504,7 +515,7 @@ unittest
 unittest
 {
     /// http://blackedder.github.io/ggplotd/images/background.svg
-    import ggplotd.theme;
+    import ggplotd.theme : background;
     auto gg = GGPlotD().put( background( RGBA(0.7,0.7,0.7,1) ) );
     gg.put( geomPoint( 
         Aes!(
@@ -528,7 +539,7 @@ unittest
     // Generate some noisy data with reducing width
     auto f = (double x) { return x/(1+x); };
     auto width = (double x) { return sqrt(0.1/(1+x)); };
-    auto xs = iota( 0, 10, 0.1 ).array;
+    immutable xs = iota( 0, 10, 0.1 ).array;
 
     auto points = xs.map!((x) => Point(x,
         f(x) + uniform(-width(x),width(x))));

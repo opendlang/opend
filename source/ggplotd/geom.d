@@ -13,9 +13,10 @@ version (unittest)
     import dunit.toolkit;
 }
 
-///
+/// Hold the data needed to draw to a plot context
 struct Geom
 {
+    /// Construct from a tuple
     this(T)( in T tup ) //if (is(T==Tuple))
     {
         mask = tup.mask;
@@ -23,16 +24,25 @@ struct Geom
 
     alias drawFunction = cairo.Context delegate(cairo.Context context, 
         ColourMap colourMap);
-    drawFunction draw; ///
-    ColourID[] colours; ///
-    AdaptiveBounds bounds; ///
 
-    bool mask = true; /// Whether to mask/prevent drawing outside plotting area
+    /// Function to draw to a cairo context
+    drawFunction draw; 
+
+    /// Colours
+    ColourID[] colours; 
+
+    /// Plot Bounds
+    AdaptiveBounds bounds;
+
+    /// Whether to mask/prevent drawing outside plotting area
+    bool mask = true; 
 
     import std.typecons : Tuple;
 
-    Tuple!(double, string)[] xTickLabels; ///
-    Tuple!(double, string)[] yTickLabels; ///
+    /// Labels for xaxis ticks
+    Tuple!(double, string)[] xTickLabels; 
+    /// Labels for yaxis ticks
+    Tuple!(double, string)[] yTickLabels;
 }
 
 import ggplotd.colourspace : RGBA;
@@ -95,7 +105,7 @@ auto geomRectangle(AES)(AES aes)
         @property auto front()
         {
             immutable tup = _aes.front;
-            auto f = delegate(cairo.Context context, ColourMap colourMap ) 
+            immutable f = delegate(cairo.Context context, ColourMap colourMap ) 
             {
                 context.save();
                 context.translate( tup.x[0], tup.y[0] );
@@ -185,7 +195,7 @@ auto geomEllipse(AES)(AES aes)
         @property auto front()
         {
             immutable tup = _aes.front;
-            auto f = delegate(cairo.Context context, ColourMap colourMap ) 
+            immutable f = delegate(cairo.Context context, ColourMap colourMap ) 
             {
                 import std.math : PI;
                 context.save();
@@ -271,7 +281,7 @@ auto geomTriangle(AES)(AES aes)
         @property auto front()
         {
             immutable tup = _aes.front;
-            auto f = delegate(cairo.Context context, ColourMap colourMap ) 
+            immutable f = delegate(cairo.Context context, ColourMap colourMap ) 
             {
                 context.save();
                 context.translate( tup.x[0], tup.y[0] );
@@ -359,7 +369,7 @@ auto geomDiamond(AES)(AES aes)
         @property auto front()
         {
             immutable tup = _aes.front;
-            auto f = delegate(cairo.Context context, ColourMap colourMap ) 
+            immutable f = delegate(cairo.Context context, ColourMap colourMap ) 
             {
                 context.save();
                 context.translate( tup.x[0], tup.y[0] );
@@ -416,7 +426,7 @@ auto geomDiamond(AES)(AES aes)
 }
 
 
-///
+/// Create points from the data
 auto geomPoint(AES)(AES aes)
 {
     import std.algorithm : map;
@@ -441,7 +451,7 @@ unittest
     assert(gl.empty);
 }
 
-///
+/// Create lines from data 
 auto geomLine(AES)(AES aes)
 {
     import std.algorithm : map;
@@ -461,7 +471,7 @@ auto geomLine(AES)(AES aes)
             auto coords = zip(xs, ys);
 
             immutable flags = groupedAes.front.front;
-            auto f = delegate(cairo.Context context, ColourMap colourMap ) {
+            immutable f = delegate(cairo.Context context, ColourMap colourMap ) {
                 auto fr = coords.front;
                 context.moveTo(fr[0][0], fr[1][0]);
                 coords.popFront;
@@ -809,10 +819,10 @@ auto geomAxis(AES)(AES aes, double tickLength, string label)
 
     auto merged = DefaultValues.mergeRange(aes);
 
-    auto colour = merged.front.colour;
-    auto toDir = merged.find!("a.x != b.x || a.y != b.y")(merged.front).front; 
+    immutable toDir = 
+        merged.find!("a.x != b.x || a.y != b.y")(merged.front).front; 
     auto direction = [toDir.x - merged.front.x, toDir.y - merged.front.y];
-    auto dirLength = sqrt(pow(direction[0], 2) + pow(direction[1], 2));
+    immutable dirLength = sqrt(pow(direction[0], 2) + pow(direction[1], 2));
     direction[0] *= tickLength / dirLength;
     direction[1] *= tickLength / dirLength;
  
@@ -879,7 +889,7 @@ auto geomLabel(AES)(AES aes)
         @property auto front()
         {
             immutable tup = _aes.front;
-            auto f = delegate(cairo.Context context, ColourMap colourMap) {
+            immutable f = delegate(cairo.Context context, ColourMap colourMap) {
                 context.setFontSize(14.0*tup.size);
                 context.moveTo(tup.x[0], tup.y[0]);
                 context.save();
@@ -950,8 +960,9 @@ private auto limits( RANGE )( RANGE range, double[] alphas )
     import std.conv : to;
     auto sorted = range.sort();
     return alphas.map!( (a) { 
-        auto id = min( sorted.length-2,
+        auto id = min( sorted.length.to!int-2,
             max(0,floor( a*(sorted.length+1) ).to!int-1 ) );
+        assert( id >= 0 );
         if (a<=0.5)
             return sorted[id];
         else
@@ -981,7 +992,7 @@ auto geomBox(AES)(AES aes)
     Appender!(Geom[]) result;
 
     // If has y, use that
-    auto fr = aes.front;
+    immutable fr = aes.front;
     static if (__traits(hasMember, fr, "y"))
     {
         auto labels = numericLabel( aes.map!("a.y") );
@@ -989,9 +1000,9 @@ auto geomBox(AES)(AES aes)
     } else {
         static if (__traits(hasMember, fr, "label"))
         {
-        // esle If has label, use that
-        auto labels = numericLabel( aes.map!("a.label.to!string") );
-        auto myAes = aes.mergeRange( Aes!(typeof(labels), "label")( labels ) );
+            // esle If has label, use that
+            auto labels = numericLabel( aes.map!("a.label.to!string") );
+            auto myAes = aes.mergeRange( Aes!(typeof(labels), "label")( labels ) );
         } else {
             import std.range : repeat;
             auto labels = numericLabel( repeat("a", aes.length) );
@@ -1104,13 +1115,13 @@ unittest
     assertEqual( gb.front.bounds.min_x, -0.5 );
 }
 
-///
+/// Draw a polygon 
 auto geomPolygon(AES)(AES aes)
 {
     import std.array : array;
     import std.algorithm : map, swap;
     import std.conv : to;
-    import ggplotd.geometry;
+    import ggplotd.geometry : gradientVector, Vertex3D;
 
     auto merged = DefaultValues.mergeRange(aes);
     // Turn into vertices.
@@ -1148,7 +1159,7 @@ auto geomPolygon(AES)(AES aes)
         geom.bounds.adapt(Point(v.x, v.y));
 
     // Define drawFunction
-    auto f = delegate(cairo.Context context, ColourMap colourMap ) 
+    immutable f = delegate(cairo.Context context, ColourMap colourMap ) 
     {
         auto gradient = new cairo.LinearGradient( gV[0].x, gV[0].y, 
             gV[1].x, gV[1].y );

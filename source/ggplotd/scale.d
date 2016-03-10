@@ -4,13 +4,13 @@ import cairo = cairo.cairo;
 import ggplotd.bounds : Bounds, width, height;
 
 alias ScaleType = 
-    cairo.Context delegate(cairo.Context context, Bounds bounds,
+    cairo.Context delegate(cairo.Context context, in Bounds bounds,
     double width, double height);
 
-///
+/// Scale context by plot boundaries
 ScaleType scale()
 {
-    return (cairo.Context context, Bounds bounds, 
+    return (cairo.Context context, in Bounds bounds, 
         double pixelWidth, double pixelHeight) {
         context.translate(0, pixelHeight);
         context.scale(pixelWidth / bounds.width, -pixelHeight / bounds.height);

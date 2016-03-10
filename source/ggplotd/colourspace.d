@@ -20,7 +20,9 @@ alias toColourSpace = cconv.convertColor;
 alias isColour = cColor.isColor;
 
 import cairo = cairo.cairo;
-cairo.RGBA toCairoRGBA(C)( C from )
+
+/// Convert to Cairo colour
+cairo.RGBA toCairoRGBA(C)( in C from )
 {
     auto rgb = toColourSpace!(RGBA,C)( from );
     return cairo.RGBA(
@@ -31,24 +33,28 @@ cairo.RGBA toCairoRGBA(C)( C from )
     );
 }
 
-C fromCairoRGBA(C)( cairo.RGBA crgb ) 
+/// Convert from Cairo colour to specified type (template)
+C fromCairoRGBA(C)( in cairo.RGBA crgb ) 
 {
     auto rgba = RGBA( crgb.red, crgb.green, crgb.blue, crgb.alpha );
     return toColourSpace!C( rgba );
 }
 
+/// Convert colour to a tuple holding the values
 auto toTuple(T : HCY)( T colour )
 {
     import std.typecons : Tuple;
     return Tuple!(double, double, double)( colour.h, colour.c, colour.y );
 }
 
+/// Convert colour to a tuple holding the values
 auto toTuple(T : XYZ)( T colour )
 {
     import std.typecons : Tuple;
     return Tuple!(double, double, double)( colour.X, colour.Y, colour.Z );
 }
 
+/// Convert colour to a tuple holding the values
 auto toTuple(T)( T colour )
 {
     import std.typecons : Tuple;

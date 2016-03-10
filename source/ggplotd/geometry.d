@@ -6,22 +6,29 @@ version( unittest )
     import dunit.toolkit;
 }
 
+/// Vertex in 3D space
 struct Vertex3D
 {
+    /// x value
     double x;
+    /// y value
     double y;
+    /// z value
     double z;
 
+    /// Copy constructor
     this( in Vertex3D v )
     {
         x = v.x; y = v.y; z = v.z;
     }
 
+    /// Constructor taking x, y and z value
     this( in double _x, in double _y, in double _z )
     {
         x = _x; y = _y; z = _z;
     }
 
+    /// Vertex substraction or addition
     Vertex3D opBinary(string s)( in Vertex3D v2 ) const if (s == "-" || s == "+" )
     {
         mixin( "return Vertex3D( x " ~ s ~ " v2.x, y " ~ s ~ 
@@ -30,15 +37,15 @@ struct Vertex3D
 }
 unittest
 {
-    auto v1 = Vertex3D(1,2,3);
-    auto v2 = Vertex3D(3,2,1);
+    immutable v1 = Vertex3D(1,2,3);
+    immutable v2 = Vertex3D(3,2,1);
     auto v =  v1-v2;
     assertEqual( v, Vertex3D(-2,0,2) );
     v =  v1+v2;
     assertEqual( v, Vertex3D(4,4,4) );
 }
 
-Vertex3D crossProduct( in Vertex3D v1, in Vertex3D v2 )
+private Vertex3D crossProduct( in Vertex3D v1, in Vertex3D v2 )
 {
     return Vertex3D( v1.y*v2.z-v1.z*v2.y, 
         v1.z*v2.x-v1.x*v2.z, 
@@ -80,7 +87,7 @@ auto gradientVector( T )( in T triangle )
             );
     }
 
-    auto scalar = (gVector[1].z-gVector[0].z)/v.z;
+    immutable scalar = (gVector[1].z-gVector[0].z)/v.z;
 
     gVector[1].x = gVector[0].x + scalar*v.x;
     gVector[1].y = gVector[0].y + scalar*v.y;
@@ -91,7 +98,6 @@ auto gradientVector( T )( in T triangle )
 
 unittest
 {
-    import std.stdio;
     auto v = gradientVector( [ Vertex3D( 0, 0, 1 ),
         Vertex3D( 0, 1, 1 ),
         Vertex3D( 1, 1, 1 )] );
