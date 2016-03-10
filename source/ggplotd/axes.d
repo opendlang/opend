@@ -7,10 +7,12 @@ version (unittest)
     import dunit.toolkit;
 }
 
-///
+/++
+Struct holding details on axis
++/
 struct Axis
 {
-    ///
+    /// Creating axis giving a minimum and maximum value
     this(double newmin, double newmax)
     {
         min = newmin;
@@ -18,29 +20,32 @@ struct Axis
         min_tick = min;
     }
 
-    ///
+    /// Label of the axis
     string label;
-    ///
+
+    /// Minimum value of the axis
     double min;
-    ///
+    /// Maximum value of the axis
     double max;
-    ///
+    /// Location of the lowest tick
     double min_tick = -1;
-    ///
+    /// Distance between ticks
     double tick_width = 0.2;
 
-    ///
+    /// Offset of the axis
     double offset;
 }
 
-///
+/// XAxis
 struct XAxis {
+    /// The general Axis struct
     Axis axis;
     alias axis this;
 }
 
-///
+/// YAxis
 struct YAxis {
+    /// The general Axis struct
     Axis axis;
     alias axis this;
 }
@@ -116,7 +121,7 @@ unittest
     assert(adjustTickWidth(Axis(3, 4), 5).min_tick == 3);
     assert(adjustTickWidth(Axis(3, 4), 5).tick_width == 0.2);
     assert(adjustTickWidth(Axis(1.79877e+07, 1.86788e+07), 5).min_tick == 1.8e+07);
-    assert(adjustTickWidth(Axis(1.79877e+07, 1.86788e+07), 5).tick_width == 100000);
+    assert(adjustTickWidth(Axis(1.79877e+07, 1.86788e+07), 5).tick_width == 100_000);
 }
 
 /// Returns a range starting at axis.min, ending axis.max and with
@@ -194,11 +199,12 @@ unittest
     assert(tickLength(axis) == 0.08);
 }
 
+/// Convert a value to an axis label
 string toAxisLabel( double value )
 {
     import std.math : abs, round;
     import std.format : format;
-    if (abs(value) > 1 && abs(value) < 100000)
+    if (abs(value) > 1 && abs(value) < 100_000)
     {
         auto rv = round(value);
         auto dec = abs(round((value - rv)*100));
@@ -225,22 +231,22 @@ unittest
     assertEqual( (-2.301).toAxisLabel, "-2.3" );
 }
 
-///
+/// Aes describing the axis and its tick locations
 auto axisAes(string type, double minC, double maxC, double lvl, Tuple!(double, string)[] ticks = [])
 {
-    import ggplotd.aes;
-
     import std.algorithm : sort, uniq, map;
     import std.array : array;
     import std.conv : to;
     import std.range : empty, repeat, take, popFront, walkLength;
+
+    import ggplotd.aes : Aes;
 
     double[] ticksLoc;
     auto sortedAxisTicks = ticks.sort().uniq;
 
     string[] labels;
 
-    if (sortedAxisTicks.walkLength > 0)
+    if (!sortedAxisTicks.empty)
     {
         ticksLoc = [minC] ~ sortedAxisTicks.map!((t) => t[0]).array ~ [maxC];
         labels = [""] ~ sortedAxisTicks.map!((t) {
