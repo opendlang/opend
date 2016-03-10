@@ -9,28 +9,36 @@ version (unittest)
 
 import std.typecons : Tuple, Typedef;
 
+/**
+  Number of pixels
+
+  Mainly used to differentiate between drawing in plot coordinates or in pixel based coordinates.
+  */
 struct Pixel
 {
-    this( int val ) { value = val; };
-    this( Pixel val ) { value = val; };
+    /// Number of pixels in int
+    this( int val ) { value = val; }
+
+    /// Copy constructor
+    this( Pixel val ) { value = val; }
 
 
     alias value this;
 
+    /// Number of pixels
     int value;
 }
 
 unittest
 {
-    auto pixel = Pixel(10);
-    static if (is(typeof(pixel)==Pixel))
+    static if (is(typeof(Pixel(10))==Pixel))
         {} else 
         assert(false);
 }
 
 // TODO Also update default grouping if appropiate
 
-///
+/// Default values for most settings
 static auto DefaultValues = Tuple!( 
     string, "label", string, "colour", double, "size",
     double, "angle", double, "alpha", bool, "mask", double, "fill" )
@@ -316,7 +324,7 @@ template Aes(Specs...)
         /**
          * Comparison for equality.
          */
-        bool opEquals(R)(R rhs) if (areCompatibleTuples!(typeof(this), R, "=="))
+        bool opEquals(R)(in R rhs) const if (areCompatibleTuples!(typeof(this), R, "=="))
         {
             return field[] == rhs.field[];
         }
@@ -330,7 +338,7 @@ template Aes(Specs...)
         /**
          * Comparison for ordering.
          */
-        int opCmp(R)(R rhs) if (areCompatibleTuples!(typeof(this), R, "<"))
+        int opCmp(R)(in R rhs) const if (areCompatibleTuples!(typeof(this), R, "<")) 
         {
             foreach (i, Unused; Types)
             {
@@ -415,7 +423,7 @@ template Aes(Specs...)
         /**
          * Converts to string.
          */
-        void toString(DG)(scope DG sink)
+        void toString(DG)(scope DG sink) const
         {
             enum header = typeof(this).stringof ~ "(", footer = ")", separator = ", ";
             sink(header);
@@ -441,8 +449,10 @@ template Aes(Specs...)
             sink(footer);
         }
 
-        ///
-        string toString()()
+        /**
+         * Converts to string.
+         */
+        string toString()() const
         {
             import std.conv : to;
 
@@ -520,7 +530,6 @@ template group(Specs...)
     
     auto group(AES)(AES aes)
     {
-        import std.stdio;
         mixin(buildExtractKey());
 
         // Attach all default fields
@@ -570,12 +579,18 @@ unittest
     assertEqual(grouped.front.walkLength, 1);
 }
 
-///
 import std.range : isInputRange;
 
+/**
+  DataID is used to refer represent any type as a usable type
+  */
 alias DataID = Tuple!(double, string);
 
-///
+/**
+  Wrap a range of any type into a range containing DataIDs
+
+  Used throughout the code to convert user given values into usable x/y coordinates.
+  */
 struct NumericLabel(T) if (isInputRange!T)
 {
     import std.range : ElementType;
@@ -583,13 +598,13 @@ struct NumericLabel(T) if (isInputRange!T)
 
     alias E = ElementType!T;
 
-    ///
+    /// Wrap the given range into a NumericLabel range
     this(T range)
     {
         original = range;
     }
 
-    ///
+    /// Get the front from the range
     @property auto front()
     {
         import std.typecons : Tuple;
@@ -611,7 +626,7 @@ struct NumericLabel(T) if (isInputRange!T)
         }
     }
 
-    ///
+    /// pop the front from the range
     void popFront()
     {
         import std.range : popFront;
@@ -619,7 +634,7 @@ struct NumericLabel(T) if (isInputRange!T)
         original.popFront;
     }
 
-    ///
+    /// is the range empty
     @property bool empty()
     {
         import std.range : empty;
@@ -627,13 +642,13 @@ struct NumericLabel(T) if (isInputRange!T)
         return original.empty;
     }
 
-    ///
+    /// save the range
     @property auto save()
     {
         return this;
     }
 
-    ///
+    /// Is the ElementType numeric?
     @property bool numeric()
     {
         static if (isNumeric!E)
@@ -686,7 +701,7 @@ unittest
 
 unittest
 {
-    import painlesstraits;
+    import painlesstraits : isFieldOrProperty;
 
     auto t = Tuple!(double,"x")(1.0);
 
