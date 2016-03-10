@@ -1,16 +1,21 @@
 module ggplotd.bounds;
 
-///
+/// Point with x and y value
 struct Point
 {
+    /// x value
     double x;
+    /// y value
     double y;
+
+    /// Constructor taking x and y value
     this(double my_x, double my_y)
     {
         x = my_x;
         y = my_y;
     }
 
+    /// Constructor taking a string holding the x and y value separated by a comma
     this(string value)
     {
         import std.conv : to;
@@ -27,7 +32,8 @@ struct Point
         assert(Point("1.0,0.1") == Point(1.0, 0.1));
     }
 
-    bool opEquals(const Point point)
+    /// Test whether two points are equal to each other
+    bool opEquals(in Point point) const
     {
         return point.x == x && point.y == y;
     }
@@ -37,10 +43,16 @@ struct Point
 /// Bounds struct holding the bounds (min_x, max_x, min_y, max_y)
 struct Bounds
 {
+    /// Lower x limit
     double min_x;
+    /// Upper x limit
     double max_x;
+    /// Lower y limit
     double min_y;
+    /// Upper y limit
     double max_y;
+
+    /// Constructor taking the x and y limits
     this(double my_min_x, double my_max_x, double my_min_y, double my_max_y)
     {
         min_x = my_min_x;
@@ -49,6 +61,7 @@ struct Bounds
         max_y = my_max_y;
     }
 
+    /// Constructor taking the x and y limits separated by a comma
     this(string value)
     {
         import std.conv : to;
@@ -117,8 +130,8 @@ bool validBounds(Point[] points)
         return false;
     bool validx = false;
     bool validy = false;
-    double x = points[0].x;
-    double y = points[0].y;
+    immutable x = points[0].x;
+    immutable y = points[0].y;
     foreach (point; points[1 .. $])
     {
         if (point.x != x)
@@ -139,7 +152,7 @@ unittest
     assert(!validBounds([Point(0, 1), Point(1, 1)]));
 }
 
-///
+/// Return minimal bounds size containing those points
 Bounds minimalBounds(Point[] points)
 {
     if (points.length == 0)
@@ -217,7 +230,7 @@ unittest
         -0.1, 1));
 }
 
-///
+/// Bounds that can adapt to new points being passed
 struct AdaptiveBounds
 {
     /*
@@ -229,27 +242,29 @@ for the width of the plot
 Here we take care to always return a valid set of bounds
 	 */
 
+    /// Actual bounds being used
     Bounds bounds = Bounds(0, 1, 0, 1);
     alias bounds this;
-    ///
+
+    /// Constructor taking comma separated x and y limits
     this(string str)
     {
         bounds = Bounds(str);
     }
 
-    ///
+    /// Constructor taking x and y limits
     this(double my_min_x, double my_max_x, double my_min_y, double my_max_y)
     {
         bounds = Bounds(my_min_x, my_max_x, my_min_y, my_max_y);
     }
 
-    ///
+    /// Contructor taking an existing Bounds struct
     this(Bounds bnds)
     {
         bounds = bnds;
     }
 
-    ///
+    /// Adapt bounds to include the new point
     bool adapt(T : Point)(in T point)
     {
         bool adapted = false;
@@ -260,7 +275,7 @@ Here we take care to always return a valid set of bounds
             valid = validBounds(pointCache);
             bounds = minimalBounds(pointCache);
             if (valid)
-                pointCache = [];
+                pointCache.length = 0;
         }
         else
         {
@@ -270,18 +285,17 @@ Here we take care to always return a valid set of bounds
                 adapted = true;
             }
         }
-        assert((valid && pointCache.length == 0) || !valid);
         return adapted;
     }
 
-    ///
+    /// Adapt bounds to include the given bounds 
     bool adapt(T : AdaptiveBounds)(in T bounds)
     {
         bool adapted = false;
         if (bounds.valid)
         {
-            bool adaptMin = adapt(Point(bounds.min_x, bounds.min_y));
-            bool adaptMax = adapt(Point(bounds.max_x, bounds.max_y));
+            immutable bool adaptMin = adapt(Point(bounds.min_x, bounds.min_y));
+            immutable bool adaptMax = adapt(Point(bounds.max_x, bounds.max_y));
             adapted = (adaptMin || adaptMax);
         }
         else
@@ -293,14 +307,14 @@ Here we take care to always return a valid set of bounds
 
     import std.range : isInputRange;
 
-    ///
+    /// Adapt bounds to include the new points
     bool adapt(T)(in T points)
     {
         import std.range : save;
         bool adapted = false;
         foreach (point; points.save)
         {
-            auto a = adapt(point);
+            immutable a = adapt(point);
             if (a)
                 adapted = true;
         }
@@ -308,7 +322,7 @@ Here we take care to always return a valid set of bounds
     }
 
 private:
-Point[] pointCache;
+    Point[] pointCache;
     bool valid = false;
 }
 
