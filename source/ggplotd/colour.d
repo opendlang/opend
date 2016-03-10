@@ -174,7 +174,7 @@ struct ColourID
 {
     import std.typecons : Tuple;
 
-    ///
+    /// Construct ColourID from different value
     this(T)(in T setId)
     {
         import std.math : isNumeric;
@@ -200,7 +200,8 @@ struct ColourID
         id[2] = RGBA( r, g, b, a );
     }
 
-    Tuple!(double, string, RGBA) id; ///
+    /// Internal representation of ColourID
+    Tuple!(double, string, RGBA) id; 
 
     alias id this; ///
 }
@@ -228,17 +229,17 @@ unittest
 
 import std.range : ElementType, isInputRange;
 
-///
+/// Convert any range to a range return ColourIDs
 struct ColourIDRange(T) if (isInputRange!T && is(ElementType!T == ColourID))
 {
-    ///
+    /// Wrap the given range into colourIDRange
     this(T range)
     {
         original = range;
         namedColours = createNamedColours();
     }
 
-    ///
+    /// The front of the range
     @property auto front()
     {
         import std.range : front;
@@ -256,7 +257,7 @@ struct ColourIDRange(T) if (isInputRange!T && is(ElementType!T == ColourID))
         return original.front;
     }
 
-    ///
+    /// pop the front of the range
     void popFront()
     {
         import std.range : popFront;
@@ -264,7 +265,7 @@ struct ColourIDRange(T) if (isInputRange!T && is(ElementType!T == ColourID))
         original.popFront;
     }
 
-    ///
+    /// Is the range empty?
     @property bool empty()
     {
         import std.range : empty;
@@ -272,7 +273,7 @@ struct ColourIDRange(T) if (isInputRange!T && is(ElementType!T == ColourID))
         return original.empty;
     }
 
-    ///
+    /// Save the range
     @property auto save()
     {
         return this;
@@ -402,7 +403,7 @@ unittest
 struct ColourGradient(C)
 {
     import ggplotd.colourspace : toColourSpace;
-    void put(double value, C colour)
+    void put( in double value, in C colour)
     {
         import std.range : back, empty;
         if (!stops.data.empty)
@@ -411,7 +412,7 @@ struct ColourGradient(C)
         stops.put( Tuple!(double, C)( value, colour ) );
     }
 
-    void put( double value, string name )
+    void put( in double value, string name )
     {
         auto rgb = createNamedColours[name];
         auto colour = toColourSpace!C( rgb );
@@ -423,7 +424,7 @@ struct ColourGradient(C)
     
         If value to high or low return respectively the highest two or lowest two
     */
-    auto interval( double value ) const
+    auto interval( in double value ) const
     {
         import std.algorithm : findSplitBefore;
         import std.range : empty, front, back;
@@ -442,7 +443,7 @@ struct ColourGradient(C)
     /**
     Get the colour associated with passed value
     */
-    auto colour( double value ) const
+    auto colour( in double value ) const
     {
         import ggplotd.colourspace : toTuple;
         // When returning colour by value, try zip(c1, c2).map!( (a,b) => a+v*(b-a)) or something
@@ -463,7 +464,7 @@ private:
 
 unittest
 {
-    import ggplotd.colourspace;
+    import ggplotd.colourspace : RGB;
     import std.range : back, front;
 
     ColourGradient!RGB cg;
@@ -547,7 +548,7 @@ ColourGradientFunction colourGradient(T)( string name )
         auto namedColours = createNamedColours();
         auto cg = ColourGradient!T();
         auto splitted = name.splitter("-");
-        auto dim = splitted.walkLength;
+        immutable dim = splitted.walkLength;
         if (dim == 1)
         {
             auto c = namedColours[splitted.front].toColourSpace!T; 
@@ -557,7 +558,7 @@ ColourGradientFunction colourGradient(T)( string name )
         if (dim > 2)
         {
             auto value = 0.0;
-            auto width = 1.0/(dim-1);
+            immutable width = 1.0/(dim-1);
             foreach( sp ; splitted )
             {
                 cg.put( value, namedColours[sp].toColourSpace!T );
