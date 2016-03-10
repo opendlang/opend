@@ -309,6 +309,7 @@ static if (isFreedesktop)
         import std.string : toStringz;
         import std.exception : assumeUnique;
         import std.file : isDir, exists, tempDir;
+        import std.stdio;
         
         static if (is(typeof({import std.string : fromStringz;}))) {
             import std.string : fromStringz;

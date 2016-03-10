@@ -7,7 +7,7 @@
     "targetPath" : "lib", 
     "targetType" : "library",
     "dependencies": {
-        "isfreedesktop" : "0.1.0"
+        "isfreedesktop" : "~>0.1.0"
     },
     "buildTypes" : {
         "docs" : {
