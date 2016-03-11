@@ -459,6 +459,9 @@ void main()
 }
 ```
 
+## Development
+
+Actual development happens on [github](https://github.com/BlackEdder/ggplotd), while planning for new features is tracked on [trello](https://trello.com/b/FvLv2rQH/ggplotd). Feel free to join the discussion there.
 
 ## References
 
