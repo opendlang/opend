@@ -195,21 +195,16 @@ shared static this() {
 	
 	def beginFeature(self, interface, emit):
 		super().beginFeature(interface, emit)
-		#print("// begin feature", repr(interface), repr(emit), file=self.outFile)
 	def endFeature(self):
 		super().endFeature()
-		#print("// end feature", file=self.outFile)
 	
 	def genType(self, typeinfo, name):
 		super().genType(typeinfo, name)
-		#print("// type", name, repr(typeinfo), file=self.outFile)
 		if "requires" in typeinfo.elem.attrib:
 			required = typeinfo.elem.attrib["requires"]
 			if required.endswith(".h"):
-				#print("//^ platform-specific", file=self.outFile)
 				return
 			elif required == "vk_platform":
-				#print("//^ platform", file=self.outFile)
 				return
 		typ = typeinfo.elem.attrib["category"]
 		if typ == "handle":
@@ -226,10 +221,7 @@ shared static this() {
 			print("alias %s = %s function(%s" % (name, returnType, params), file=self.typesFile)
 		elif typ == "struct" or typ == "union":
 			self.genStruct(typeinfo, name)
-		elif typ == "define":
-			pass
 		else:
-			#print("//? %s" % typ, file=self.outFile)
 			pass
 		
 	def genStruct(self, typeinfo, name):
@@ -249,7 +241,6 @@ shared static this() {
 	
 	def genGroup(self, groupinfo, name):
 		super().genGroup(groupinfo, name)
-		#print('// group', name, repr(groupinfo), file=self.outFile)
 		print("enum %s {" % name, file=self.typesFile)
 		
 		expand = "expand" in groupinfo.elem.attrib
@@ -281,13 +272,11 @@ shared static this() {
 	
 	def genEnum(self, enuminfo, name):
 		super().genEnum(enuminfo, name)
-		#print('// enum', name, repr(enuminfo), file=self.outFile)
 		(numVal,strVal) = self.enumToValue(enuminfo.elem, False)
 		print("enum %s = %s;" % (name, strVal.replace("ULL", "UL")), file=self.typesFile)
 		
 	def genCmd(self, cmd, name):
 		super().genCmd(cmd, name)
-		#print('// command', name, repr(cmd), file=self.outFile)
 		
 		proto = cmd.elem.find("proto")
 		returnType = convertTypeConst(getFullType(proto).strip())
