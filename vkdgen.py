@@ -107,10 +107,15 @@ extern(C) @nogc nothrow {
 
 def getFullType(elem):
 	typ = elem.find("type")
+	typstr = (elem.text or "").lstrip() + \
+		typ.text.strip() + (typ.tail or "").rstrip()
+	
 	arrlen = elem.find("enum")
-	return (elem.text or "").lstrip() + \
-		typ.text.strip() + (typ.tail or "").rstrip() + \
-		("" if arrlen is None else "[%s]" % arrlen.text)
+	if arrlen is not None:
+		return "%s[%s]" % (typstr, arrlen.text)
+	else:
+		name = elem.find("name")
+		return typstr + (name.tail or "")
 
 def convertTypeConst(typ):
 	"""

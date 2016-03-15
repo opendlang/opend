@@ -614,9 +614,9 @@ struct VkPhysicalDeviceLimits {
 	uint32_t maxFragmentDualSrcAttachments;
 	uint32_t maxFragmentCombinedOutputResources;
 	uint32_t maxComputeSharedMemorySize;
-	uint32_t maxComputeWorkGroupCount;
+	uint32_t[3] maxComputeWorkGroupCount;
 	uint32_t maxComputeWorkGroupInvocations;
-	uint32_t maxComputeWorkGroupSize;
+	uint32_t[3] maxComputeWorkGroupSize;
 	uint32_t subPixelPrecisionBits;
 	uint32_t subTexelPrecisionBits;
 	uint32_t mipmapPrecisionBits;
@@ -625,8 +625,8 @@ struct VkPhysicalDeviceLimits {
 	float maxSamplerLodBias;
 	float maxSamplerAnisotropy;
 	uint32_t maxViewports;
-	uint32_t maxViewportDimensions;
-	float viewportBoundsRange;
+	uint32_t[2] maxViewportDimensions;
+	float[2] viewportBoundsRange;
 	uint32_t viewportSubPixelBits;
 	size_t minMemoryMapAlignment;
 	VkDeviceSize minTexelBufferOffsetAlignment;
@@ -659,8 +659,8 @@ struct VkPhysicalDeviceLimits {
 	uint32_t maxCullDistances;
 	uint32_t maxCombinedClipAndCullDistances;
 	uint32_t discreteQueuePriorities;
-	float pointSizeRange;
-	float lineWidthRange;
+	float[2] pointSizeRange;
+	float[2] lineWidthRange;
 	float pointSizeGranularity;
 	float lineWidthGranularity;
 	VkBool32 strictLines;
@@ -1441,7 +1441,7 @@ struct VkPipelineColorBlendStateCreateInfo {
 	VkLogicOp logicOp;
 	uint32_t attachmentCount;
 	const(VkPipelineColorBlendAttachmentState)* pAttachments;
-	float blendConstants;
+	float[4] blendConstants;
 }
 alias VkPipelineDynamicStateCreateFlags = VkFlags;
 enum VkDynamicState {
@@ -1892,9 +1892,9 @@ struct VkBufferImageCopy {
 	VkExtent3D imageExtent;
 }
 union VkClearColorValue {
-	float float32;
-	int32_t int32;
-	uint32_t uint32;
+	float[4] float32;
+	int32_t[4] int32;
+	uint32_t[4] uint32;
 }
 struct VkClearDepthStencilValue {
 	float depth;

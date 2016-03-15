@@ -105,7 +105,7 @@ extern(System) @nogc nothrow {
 	void vkCmdSetScissor(VkCommandBuffer commandBuffer,uint32_t firstScissor,uint32_t scissorCount,const(VkRect2D)* pScissors);
 	void vkCmdSetLineWidth(VkCommandBuffer commandBuffer,float lineWidth);
 	void vkCmdSetDepthBias(VkCommandBuffer commandBuffer,float depthBiasConstantFactor,float depthBiasClamp,float depthBiasSlopeFactor);
-	void vkCmdSetBlendConstants(VkCommandBuffer commandBuffer,const float blendConstants);
+	void vkCmdSetBlendConstants(VkCommandBuffer commandBuffer,const float[4] blendConstants);
 	void vkCmdSetDepthBounds(VkCommandBuffer commandBuffer,float minDepthBounds,float maxDepthBounds);
 	void vkCmdSetStencilCompareMask(VkCommandBuffer commandBuffer,VkStencilFaceFlags faceMask,uint32_t compareMask);
 	void vkCmdSetStencilWriteMask(VkCommandBuffer commandBuffer,VkStencilFaceFlags faceMask,uint32_t writeMask);
