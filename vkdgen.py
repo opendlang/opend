@@ -83,7 +83,7 @@ extern(System) @nogc nothrow {
 DYNAMIC_HEADER = """
 module PKGPREFIX.dynload;
 
-version(NAMEPREFIXVulkanStatic) {}
+version(NAMEPREFIXStatic) {}
 else { version = NAMEPREFIXDynamic; }
 
 version(NAMEPREFIXDynamic):

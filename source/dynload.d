@@ -1,7 +1,7 @@
 
 module dvulkan.dynload;
 
-version(DVulkanVulkanStatic) {}
+version(DVulkanStatic) {}
 else { version = DVulkanDynamic; }
 
 version(DVulkanDynamic):
