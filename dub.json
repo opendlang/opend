@@ -1,0 +1,22 @@
+{
+	"name": "d-vulkan",
+	"description": "Auto-generated D bindings for Vulkan",
+	"copyright": "Copyright © 2016, Alex Parrill",
+	"authors": ["Alex Parrill"],
+	"targetType": "library",
+	"license": "public domain",
+	"dependencies": {
+		"derelict-util": "~>2.0.4"
+	},
+	"subPackages": [
+		{
+			"name": "devices",
+			"description": "Simple Vulkan example",
+			"targetType": "executable",
+			"sourceFiles": ["examples/devices.d"],
+			"dependencies": {
+				"d-vulkan": { "path": "." }
+			}
+		}
+	]
+}
