@@ -684,8 +684,8 @@ struct VkPhysicalDeviceProperties {
 	uint32_t vendorID;
 	uint32_t deviceID;
 	VkPhysicalDeviceType deviceType;
-	char deviceName;
-	uint8_t pipelineCacheUUID;
+	char[VK_MAX_PHYSICAL_DEVICE_NAME_SIZE] deviceName;
+	uint8_t[VK_UUID_SIZE] pipelineCacheUUID;
 	VkPhysicalDeviceLimits limits;
 	VkPhysicalDeviceSparseProperties sparseProperties;
 }
@@ -726,9 +726,9 @@ enum VK_MAX_MEMORY_TYPES = 32;
 enum VK_MAX_MEMORY_HEAPS = 16;
 struct VkPhysicalDeviceMemoryProperties {
 	uint32_t memoryTypeCount;
-	VkMemoryType memoryTypes;
+	VkMemoryType[VK_MAX_MEMORY_TYPES] memoryTypes;
 	uint32_t memoryHeapCount;
-	VkMemoryHeap memoryHeaps;
+	VkMemoryHeap[VK_MAX_MEMORY_HEAPS] memoryHeaps;
 }
 alias PFN_vkVoidFunction = void function();
 mixin(VK_DEFINE_HANDLE!q{VkDevice});
@@ -756,15 +756,15 @@ struct VkDeviceCreateInfo {
 }
 enum VK_MAX_EXTENSION_NAME_SIZE = 256;
 struct VkExtensionProperties {
-	char extensionName;
+	char[VK_MAX_EXTENSION_NAME_SIZE] extensionName;
 	uint32_t specVersion;
 }
 enum VK_MAX_DESCRIPTION_SIZE = 256;
 struct VkLayerProperties {
-	char layerName;
+	char[VK_MAX_EXTENSION_NAME_SIZE] layerName;
 	uint32_t specVersion;
 	uint32_t implementationVersion;
-	char description;
+	char[VK_MAX_DESCRIPTION_SIZE] description;
 }
 mixin(VK_DEFINE_HANDLE!q{VkQueue});
 mixin(VK_DEFINE_NON_DISPATCHABLE_HANDLE!q{VkSemaphore});

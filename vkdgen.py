@@ -105,6 +105,13 @@ private {
 extern(C) @nogc nothrow {
 """
 
+def getFullType(elem):
+	typ = elem.find("type")
+	arrlen = elem.find("enum")
+	return (elem.text or "").lstrip() + \
+		typ.text.strip() + (typ.tail or "").rstrip() + \
+		("" if arrlen is None else "[%s]" % arrlen.text)
+
 def convertTypeConst(typ):
 	"""
 	Converts C const syntax to D const syntax
@@ -124,10 +131,6 @@ def convertTypeArray(typ, name):
 		return "%s[%s]" % (typ, arrMatch.group(2)), arrMatch.group(1)
 	else:
 		return typ, name
-
-def getFullType(elem):
-	typ = elem.find("type")
-	return (elem.text or "") + typ.text + (typ.tail or "")
 
 class DGenerator(OutputGenerator):
 	def __init__(self, errFile=sys.stderr, warnFile=sys.stderr, diagFile=sys.stderr):
