@@ -102,7 +102,7 @@ private {
 		static assert(0,"Need to implement Vulkan libNames for this operating system.");
 }
 
-extern(C) @nogc nothrow {
+extern(System) @nogc nothrow {
 """
 
 def getFullType(elem):

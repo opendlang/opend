@@ -21,7 +21,7 @@ private {
 		static assert(0,"Need to implement Vulkan libNames for this operating system.");
 }
 
-extern(C) @nogc nothrow {
+extern(System) @nogc nothrow {
 
 	alias PFN_vkCreateInstance = VkResult function(const(VkInstanceCreateInfo)* pCreateInfo,const(VkAllocationCallbacks)* pAllocator,VkInstance* pInstance);
 	alias PFN_vkDestroyInstance = void function(VkInstance instance,const(VkAllocationCallbacks)* pAllocator);
