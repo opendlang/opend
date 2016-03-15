@@ -15,6 +15,7 @@ re_funcptr = re.compile(r"^typedef (.+) \(VKAPI_PTR \*$")
 re_single_const = re.compile(r"^const\s+(.+)\*\s*$")
 re_double_const = re.compile(r"^const\s+(.+)\*\s+const\*\s*$")
 re_array = re.compile(r"^([^\[]+)\[(\d+)\]$")
+re_camel_case = re.compile(r"([a-z])([A-Z])")
 
 try:
 	from reg import *
@@ -236,7 +237,11 @@ shared static this() {
 				memberName = "_module"
 			
 			memberType, memberName = convertTypeArray(memberType, memberName)
-			print("\t%s %s;" % (memberType, memberName), file=self.typesFile)
+			if memberName == "sType" and memberType == "VkStructureType":
+				enumname = re.sub(re_camel_case, "\g<1>_\g<2>", name[2:]).upper()
+				print("\tVkStructureType sType = VkStructureType.VK_STRUCTURE_TYPE_"+enumname+";", file=self.typesFile)
+			else:
+				print("\t%s %s;" % (memberType, memberName), file=self.typesFile)
 		print("}", file=self.typesFile)
 	
 	def genGroup(self, groupinfo, name):
