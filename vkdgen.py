@@ -16,6 +16,7 @@ re_single_const = re.compile(r"^const\s+(.+)\*\s*$")
 re_double_const = re.compile(r"^const\s+(.+)\*\s+const\*\s*$")
 re_array = re.compile(r"^([^\[]+)\[(\d+)\]$")
 re_camel_case = re.compile(r"([a-z])([A-Z])")
+re_long_int = re.compile(r"([0-9]+)ULL")
 
 try:
 	from reg import *
@@ -77,10 +78,6 @@ import derelict.util.system;
 private {
 	version(Windows)
 		enum libNames = "vulkan-1.dll";
-	else version(Mac)
-		enum libNames = "";
-	else version(Posix)
-		enum libNames = "";
 	else
 		static assert(0,"Need to implement Vulkan libNames for this operating system.");
 }
@@ -276,8 +273,11 @@ shared static this() {
 	
 	def genEnum(self, enuminfo, name):
 		super().genEnum(enuminfo, name)
-		(numVal,strVal) = self.enumToValue(enuminfo.elem, False)
-		print("enum %s = %s;" % (name, strVal.replace("ULL", "UL")), file=self.typesFile)
+		_,strVal = self.enumToValue(enuminfo.elem, False)
+		if strVal == "VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT":
+			strVal = "VkStructureType."+strVal
+		strVal = re.sub(re_long_int, "\g<1>UL", strVal)
+		print("enum %s = %s;" % (name, strVal), file=self.typesFile)
 		
 	def genCmd(self, cmd, name):
 		super().genCmd(cmd, name)
@@ -315,5 +315,8 @@ if __name__ == "__main__":
 		emitversions=".*",
 		pkgprefix=args.pkgprefix,
 		nameprefix=args.nameprefix,
+		#defaultExtensions="defaultExtensions",
+		addExtensions=r".*",
+		removeExtensions = r".*_surface$",
 	))
 	

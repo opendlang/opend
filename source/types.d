@@ -1985,3 +1985,219 @@ struct VkDrawIndirectCommand {
 	uint32_t firstVertex;
 	uint32_t firstInstance;
 }
+enum VK_KHR_SWAPCHAIN_SPEC_VERSION = 67;
+enum VK_KHR_SWAPCHAIN_EXTENSION_NAME = "VK_KHR_swapchain";
+alias VkSwapchainCreateFlagsKHR = VkFlags;
+mixin(VK_DEFINE_NON_DISPATCHABLE_HANDLE!q{VkSurfaceKHR});
+enum VkColorSpaceKHR {
+	VK_COLORSPACE_SRGB_NONLINEAR_KHR = 0,
+	VK_COLORSPACE_BEGIN_RANGE = VK_COLORSPACE_SRGB_NONLINEAR_KHR,
+	VK_COLORSPACE_END_RANGE = VK_COLORSPACE_SRGB_NONLINEAR_KHR,
+	VK_COLORSPACE_RANGE_SIZE = (VK_COLORSPACE_SRGB_NONLINEAR_KHR - VK_COLORSPACE_SRGB_NONLINEAR_KHR + 1),
+	VK_COLORSPACE_MAX_ENUM = 0x7FFFFFFF,
+}
+enum VkSurfaceTransformFlagBitsKHR {
+	VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR = 0x00000001,
+	VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR = 0x00000002,
+	VK_SURFACE_TRANSFORM_ROTATE_180_BIT_KHR = 0x00000004,
+	VK_SURFACE_TRANSFORM_ROTATE_270_BIT_KHR = 0x00000008,
+	VK_SURFACE_TRANSFORM_HORIZONTAL_MIRROR_BIT_KHR = 0x00000010,
+	VK_SURFACE_TRANSFORM_HORIZONTAL_MIRROR_ROTATE_90_BIT_KHR = 0x00000020,
+	VK_SURFACE_TRANSFORM_HORIZONTAL_MIRROR_ROTATE_180_BIT_KHR = 0x00000040,
+	VK_SURFACE_TRANSFORM_HORIZONTAL_MIRROR_ROTATE_270_BIT_KHR = 0x00000080,
+	VK_SURFACE_TRANSFORM_INHERIT_BIT_KHR = 0x00000100,
+}
+enum VkCompositeAlphaFlagBitsKHR {
+	VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR = 0x00000001,
+	VK_COMPOSITE_ALPHA_PRE_MULTIPLIED_BIT_KHR = 0x00000002,
+	VK_COMPOSITE_ALPHA_POST_MULTIPLIED_BIT_KHR = 0x00000004,
+	VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR = 0x00000008,
+}
+enum VkPresentModeKHR {
+	VK_PRESENT_MODE_IMMEDIATE_KHR = 0,
+	VK_PRESENT_MODE_MAILBOX_KHR = 1,
+	VK_PRESENT_MODE_FIFO_KHR = 2,
+	VK_PRESENT_MODE_FIFO_RELAXED_KHR = 3,
+	VK_PRESENT_MODE_BEGIN_RANGE = VK_PRESENT_MODE_IMMEDIATE_KHR,
+	VK_PRESENT_MODE_END_RANGE = VK_PRESENT_MODE_FIFO_RELAXED_KHR,
+	VK_PRESENT_MODE_RANGE_SIZE = (VK_PRESENT_MODE_FIFO_RELAXED_KHR - VK_PRESENT_MODE_IMMEDIATE_KHR + 1),
+	VK_PRESENT_MODE_MAX_ENUM = 0x7FFFFFFF,
+}
+mixin(VK_DEFINE_NON_DISPATCHABLE_HANDLE!q{VkSwapchainKHR});
+struct VkSwapchainCreateInfoKHR {
+	VkStructureType sType = VkStructureType.VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+	const(void)* pNext;
+	VkSwapchainCreateFlagsKHR flags;
+	VkSurfaceKHR surface;
+	uint32_t minImageCount;
+	VkFormat imageFormat;
+	VkColorSpaceKHR imageColorSpace;
+	VkExtent2D imageExtent;
+	uint32_t imageArrayLayers;
+	VkImageUsageFlags imageUsage;
+	VkSharingMode imageSharingMode;
+	uint32_t queueFamilyIndexCount;
+	const(uint32_t)* pQueueFamilyIndices;
+	VkSurfaceTransformFlagBitsKHR preTransform;
+	VkCompositeAlphaFlagBitsKHR compositeAlpha;
+	VkPresentModeKHR presentMode;
+	VkBool32 clipped;
+	VkSwapchainKHR oldSwapchain;
+}
+struct VkPresentInfoKHR {
+	VkStructureType sType = VkStructureType.VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+	const(void)* pNext;
+	uint32_t waitSemaphoreCount;
+	const(VkSemaphore)* pWaitSemaphores;
+	uint32_t swapchainCount;
+	const(VkSwapchainKHR)* pSwapchains;
+	const(uint32_t)* pImageIndices;
+	VkResult* pResults;
+}
+enum VkDisplayPlaneAlphaFlagBitsKHR {
+	VK_DISPLAY_PLANE_ALPHA_OPAQUE_BIT_KHR = 0x00000001,
+	VK_DISPLAY_PLANE_ALPHA_GLOBAL_BIT_KHR = 0x00000002,
+	VK_DISPLAY_PLANE_ALPHA_PER_PIXEL_BIT_KHR = 0x00000004,
+	VK_DISPLAY_PLANE_ALPHA_PER_PIXEL_PREMULTIPLIED_BIT_KHR = 0x00000008,
+}
+alias VkDisplayPlaneAlphaFlagsKHR = VkFlags;
+mixin(VK_DEFINE_NON_DISPATCHABLE_HANDLE!q{VkDisplayKHR});
+alias VkSurfaceTransformFlagsKHR = VkFlags;
+struct VkDisplayPropertiesKHR {
+	VkDisplayKHR display;
+	const(char)* displayName;
+	VkExtent2D physicalDimensions;
+	VkExtent2D physicalResolution;
+	VkSurfaceTransformFlagsKHR supportedTransforms;
+	VkBool32 planeReorderPossible;
+	VkBool32 persistentContent;
+}
+struct VkDisplayModeParametersKHR {
+	VkExtent2D visibleRegion;
+	uint32_t refreshRate;
+}
+mixin(VK_DEFINE_NON_DISPATCHABLE_HANDLE!q{VkDisplayModeKHR});
+struct VkDisplayModePropertiesKHR {
+	VkDisplayModeKHR displayMode;
+	VkDisplayModeParametersKHR parameters;
+}
+alias VkDisplayModeCreateFlagsKHR = VkFlags;
+struct VkDisplayModeCreateInfoKHR {
+	VkStructureType sType = VkStructureType.VK_STRUCTURE_TYPE_DISPLAY_MODE_CREATE_INFO_KHR;
+	const(void)* pNext;
+	VkDisplayModeCreateFlagsKHR flags;
+	VkDisplayModeParametersKHR parameters;
+}
+struct VkDisplayPlaneCapabilitiesKHR {
+	VkDisplayPlaneAlphaFlagsKHR supportedAlpha;
+	VkOffset2D minSrcPosition;
+	VkOffset2D maxSrcPosition;
+	VkExtent2D minSrcExtent;
+	VkExtent2D maxSrcExtent;
+	VkOffset2D minDstPosition;
+	VkOffset2D maxDstPosition;
+	VkExtent2D minDstExtent;
+	VkExtent2D maxDstExtent;
+}
+struct VkDisplayPlanePropertiesKHR {
+	VkDisplayKHR currentDisplay;
+	uint32_t currentStackIndex;
+}
+alias VkDisplaySurfaceCreateFlagsKHR = VkFlags;
+struct VkDisplaySurfaceCreateInfoKHR {
+	VkStructureType sType = VkStructureType.VK_STRUCTURE_TYPE_DISPLAY_SURFACE_CREATE_INFO_KHR;
+	const(void)* pNext;
+	VkDisplaySurfaceCreateFlagsKHR flags;
+	VkDisplayModeKHR displayMode;
+	uint32_t planeIndex;
+	uint32_t planeStackIndex;
+	VkSurfaceTransformFlagBitsKHR transform;
+	float globalAlpha;
+	VkDisplayPlaneAlphaFlagBitsKHR alphaMode;
+	VkExtent2D imageExtent;
+}
+enum VK_KHR_DISPLAY_SPEC_VERSION = 21;
+enum VK_KHR_DISPLAY_EXTENSION_NAME = "VK_KHR_display";
+struct VkDisplayPresentInfoKHR {
+	VkStructureType sType = VkStructureType.VK_STRUCTURE_TYPE_DISPLAY_PRESENT_INFO_KHR;
+	const(void)* pNext;
+	VkRect2D srcRect;
+	VkRect2D dstRect;
+	VkBool32 persistent;
+}
+enum VK_KHR_DISPLAY_SWAPCHAIN_SPEC_VERSION = 9;
+enum VK_KHR_DISPLAY_SWAPCHAIN_EXTENSION_NAME = "VK_KHR_display_swapchain";
+enum VK_KHR_SAMPLER_MIRROR_CLAMP_TO_EDGE_SPEC_VERSION = 1;
+enum VK_KHR_SAMPLER_MIRROR_CLAMP_TO_EDGE_EXTENSION_NAME = "VK_KHR_sampler_mirror_clamp_to_edge";
+enum VK_ANDROID_NATIVE_BUFFER_SPEC_VERSION = 4;
+enum VK_ANDROID_NATIVE_BUFFER_NUMBER = 11;
+enum VK_ANDROID_NATIVE_BUFFER_NAME = "VK_ANDROID_native_buffer";
+enum VkDebugReportObjectTypeEXT {
+	VK_DEBUG_REPORT_OBJECT_TYPE_UNKNOWN_EXT = 0,
+	VK_DEBUG_REPORT_OBJECT_TYPE_INSTANCE_EXT = 1,
+	VK_DEBUG_REPORT_OBJECT_TYPE_PHYSICAL_DEVICE_EXT = 2,
+	VK_DEBUG_REPORT_OBJECT_TYPE_DEVICE_EXT = 3,
+	VK_DEBUG_REPORT_OBJECT_TYPE_QUEUE_EXT = 4,
+	VK_DEBUG_REPORT_OBJECT_TYPE_SEMAPHORE_EXT = 5,
+	VK_DEBUG_REPORT_OBJECT_TYPE_COMMAND_BUFFER_EXT = 6,
+	VK_DEBUG_REPORT_OBJECT_TYPE_FENCE_EXT = 7,
+	VK_DEBUG_REPORT_OBJECT_TYPE_DEVICE_MEMORY_EXT = 8,
+	VK_DEBUG_REPORT_OBJECT_TYPE_BUFFER_EXT = 9,
+	VK_DEBUG_REPORT_OBJECT_TYPE_IMAGE_EXT = 10,
+	VK_DEBUG_REPORT_OBJECT_TYPE_EVENT_EXT = 11,
+	VK_DEBUG_REPORT_OBJECT_TYPE_QUERY_POOL_EXT = 12,
+	VK_DEBUG_REPORT_OBJECT_TYPE_BUFFER_VIEW_EXT = 13,
+	VK_DEBUG_REPORT_OBJECT_TYPE_IMAGE_VIEW_EXT = 14,
+	VK_DEBUG_REPORT_OBJECT_TYPE_SHADER_MODULE_EXT = 15,
+	VK_DEBUG_REPORT_OBJECT_TYPE_PIPELINE_CACHE_EXT = 16,
+	VK_DEBUG_REPORT_OBJECT_TYPE_PIPELINE_LAYOUT_EXT = 17,
+	VK_DEBUG_REPORT_OBJECT_TYPE_RENDER_PASS_EXT = 18,
+	VK_DEBUG_REPORT_OBJECT_TYPE_PIPELINE_EXT = 19,
+	VK_DEBUG_REPORT_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT_EXT = 20,
+	VK_DEBUG_REPORT_OBJECT_TYPE_SAMPLER_EXT = 21,
+	VK_DEBUG_REPORT_OBJECT_TYPE_DESCRIPTOR_POOL_EXT = 22,
+	VK_DEBUG_REPORT_OBJECT_TYPE_DESCRIPTOR_SET_EXT = 23,
+	VK_DEBUG_REPORT_OBJECT_TYPE_FRAMEBUFFER_EXT = 24,
+	VK_DEBUG_REPORT_OBJECT_TYPE_COMMAND_POOL_EXT = 25,
+	VK_DEBUG_REPORT_OBJECT_TYPE_SURFACE_KHR_EXT = 26,
+	VK_DEBUG_REPORT_OBJECT_TYPE_SWAPCHAIN_KHR_EXT = 27,
+	VK_DEBUG_REPORT_OBJECT_TYPE_DEBUG_REPORT_EXT = 28,
+}
+enum VkDebugReportErrorEXT {
+	VK_DEBUG_REPORT_ERROR_NONE_EXT = 0,
+	VK_DEBUG_REPORT_ERROR_CALLBACK_REF_EXT = 1,
+}
+enum VK_EXT_DEBUG_REPORT_SPEC_VERSION = 2;
+enum VK_EXT_DEBUG_REPORT_EXTENSION_NAME = "VK_EXT_debug_report";
+enum VK_STRUCTURE_TYPE_DEBUG_REPORT_CREATE_INFO_EXT = VkStructureType.VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT;
+enum VkDebugReportFlagBitsEXT {
+	VK_DEBUG_REPORT_INFORMATION_BIT_EXT = 0x00000001,
+	VK_DEBUG_REPORT_WARNING_BIT_EXT = 0x00000002,
+	VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT = 0x00000004,
+	VK_DEBUG_REPORT_ERROR_BIT_EXT = 0x00000008,
+	VK_DEBUG_REPORT_DEBUG_BIT_EXT = 0x00000010,
+}
+alias VkDebugReportFlagsEXT = VkFlags;
+alias PFN_vkDebugReportCallbackEXT = VkBool32 function(
+    VkDebugReportFlagsEXT                       flags,
+    VkDebugReportObjectTypeEXT                  objectType,
+    uint64_t                                    object,
+    size_t                                      location,
+    int32_t                                     messageCode,
+    const char*                                 pLayerPrefix,
+    const char*                                 pMessage,
+    void*                                       pUserData);
+struct VkDebugReportCallbackCreateInfoEXT {
+	VkStructureType sType = VkStructureType.VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT;
+	const(void)* pNext;
+	VkDebugReportFlagsEXT flags;
+	PFN_vkDebugReportCallbackEXT pfnCallback;
+	void* pUserData;
+}
+mixin(VK_DEFINE_NON_DISPATCHABLE_HANDLE!q{VkDebugReportCallbackEXT});
+enum VK_NV_GLSL_SHADER_SPEC_VERSION = 1;
+enum VK_NV_GLSL_SHADER_EXTENSION_NAME = "VK_NV_glsl_shader";
+enum VK_NV_EXTENSION_1_SPEC_VERSION = 0;
+enum VK_NV_EXTENSION_1_EXTENSION_NAME = "VK_NV_extension_1";
+enum VK_IMG_FILTER_CUBIC_SPEC_VERSION = 1;
+enum VK_IMG_FILTER_CUBIC_EXTENSION_NAME = "VK_IMG_filter_cubic";
