@@ -17,6 +17,15 @@
 			"dependencies": {
 				"d-vulkan": { "path": "." }
 			}
+		},
+		{
+			"name": "layers",
+			"description": "Simple Vulkan example",
+			"targetType": "executable",
+			"sourceFiles": ["examples/layers.d"],
+			"dependencies": {
+				"d-vulkan": { "path": "." }
+			}
 		}
 	]
 }
