@@ -28,10 +28,7 @@ except ImportError as e:
 PKG_HEADER = """
 module PKGPREFIX;
 public import PKGPREFIX.types;
-version(NAMEPREFIXStatic)
-	public import PKGPREFIX.statfun;
-else
-	public import PKGPREFIX.dynload;
+public import PKGPREFIX.functions;
 """
 
 TYPES_HEADER = """
@@ -70,23 +67,8 @@ version(X86_64) {
 }
 """
 
-STATIC_HEADER = """
-module PKGPREFIX.statfun;
-public import PKGPREFIX.types;
-
-version(NAMEPREFIXStatic):
-public import PKGPREFIX.types;
-
-extern(System) @nogc nothrow {
-"""
-
 DYNAMIC_HEADER = """
-module PKGPREFIX.dynload;
-
-version(NAMEPREFIXStatic) {}
-else { version = NAMEPREFIXDynamic; }
-
-version(NAMEPREFIXDynamic):
+module PKGPREFIX.functions;
 
 public import PKGPREFIX.types;
 import derelict.util.loader;
@@ -150,23 +132,20 @@ class DGenerator(OutputGenerator):
 			pass
 		
 		self.typesFile = open(path.join(genOpts.filename, "types.d"), "w", encoding="utf-8")
-		self.dynamicFile = open(path.join(genOpts.filename, "dynload.d"), "w", encoding="utf-8")
-		self.staticFile = open(path.join(genOpts.filename, "statfun.d"), "w", encoding="utf-8")
+		self.dynamicFile = open(path.join(genOpts.filename, "functions.d"), "w", encoding="utf-8")
 		
 		with open(path.join(genOpts.filename, "package.d"), "w", encoding="utf-8") as pkgfile:
 			print(PKG_HEADER.replace("PKGPREFIX", genOpts.pkgprefix).replace("NAMEPREFIX", genOpts.nameprefix), file=pkgfile)
 		
 		print(TYPES_HEADER.replace("PKGPREFIX", genOpts.pkgprefix).replace("NAMEPREFIX", genOpts.nameprefix), file=self.typesFile)
-		print(STATIC_HEADER.replace("PKGPREFIX", genOpts.pkgprefix).replace("NAMEPREFIX", genOpts.nameprefix), file=self.staticFile)
 		print(DYNAMIC_HEADER.replace("PKGPREFIX", genOpts.pkgprefix).replace("NAMEPREFIX", genOpts.nameprefix), file=self.dynamicFile)
-		self.funcNames = []
+		self.funcNames = set()
 	
 	def endFile(self):
-		print("}", file=self.staticFile)
 		print("}", file=self.dynamicFile)
 		
 		print("__gshared {", file=self.dynamicFile)
-		for name in self.funcNames:
+		for name in sorted(self.funcNames):
 			print("\tPFN_%s %s;" % (name, name), file=self.dynamicFile)
 		print("""}
 
@@ -176,9 +155,30 @@ class NAMEPREFIXLoader : SharedLibLoader {
 	}
 	
 	protected override void loadSymbols() {
+		bindFunc(cast(void**)&vkGetInstanceProcAddr, "vkGetInstanceProcAddr");
+		vkEnumerateInstanceExtensionProperties = cast(typeof(vkEnumerateInstanceExtensionProperties)) vkGetInstanceProcAddr(null, "vkEnumerateInstanceExtensionProperties");
+		vkEnumerateInstanceLayerProperties = cast(typeof(vkEnumerateInstanceLayerProperties)) vkGetInstanceProcAddr(null, "vkEnumerateInstanceLayerProperties");
+		vkCreateInstance = cast(typeof(vkCreateInstance)) vkGetInstanceProcAddr(null, "vkCreateInstance");
+	}
+	
+	void reload(VkInstance instance) {
+		assert(vkGetInstanceProcAddr !is null);
 """.replace("NAMEPREFIX", self.genOpts.nameprefix), file=self.dynamicFile)
-		for name in self.funcNames:
-			print("\t\tbindFunc(cast(void**)&%s,\"%s\");" % (name, name), file=self.dynamicFile)
+		
+		self.funcNames.difference_update({"vkGetDeviceProcAddr", "vkEnumerateInstanceExtensionProperties", "vkEnumerateInstanceLayerProperties", "vkCreateInstance"})
+		for name in sorted(self.funcNames):
+			print("\t\t{0} = cast(typeof({0})) vkGetInstanceProcAddr(instance, \"{0}\");".format(name), file=self.dynamicFile)
+		
+		print("""	}
+	
+	void reload(VkDevice device) {
+		assert(vkGetDeviceProcAddr !is null, "reload(VkDevice) must be called after reload(VkInstance)");
+""", file=self.dynamicFile)
+		
+		for name in sorted(self.funcNames):
+			print("\t\t{0} = cast(typeof({0})) vkGetDeviceProcAddr(device, \"{0}\");".format(name), file=self.dynamicFile)
+		
+		
 		print("""	}
 }
 
@@ -192,7 +192,6 @@ shared static this() {
 		
 		self.typesFile.close()
 		self.dynamicFile.close()
-		self.staticFile.close()
 	
 	def beginFeature(self, interface, emit):
 		super().beginFeature(interface, emit)
@@ -286,9 +285,8 @@ shared static this() {
 		proto = cmd.elem.find("proto")
 		returnType = convertTypeConst(getFullType(proto).strip())
 		params = ",".join(convertTypeConst(getFullType(param).strip())+" "+param.find("name").text for param in cmd.elem.findall("param"))
-		print("\t%s %s(%s);" % (returnType, name, params), file=self.staticFile)
 		print("\talias PFN_%s = %s function(%s);" % (name, returnType, params), file=self.dynamicFile)
-		self.funcNames.append(name)
+		self.funcNames.add(name)
 
 class DGeneratorOptions(GeneratorOptions):
 	def __init__(self, *args, **kwargs):

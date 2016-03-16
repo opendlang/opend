@@ -33,6 +33,7 @@ int main() {
 	
 	VkInstance inst;
 	enforceVK(vkCreateInstance(&instInfo, null, &inst));
+	DVulkan.reload(inst);
 	scope(exit) vkDestroyInstance(inst, null);
 	
 	uint numDevices;
