@@ -15,7 +15,7 @@ module xdgpaths;
 
 import isfreedesktop;
 
-version(Docs)
+version(XdgPathsDocs)
 {
     /**
      * Path to runtime user directory.
@@ -171,7 +171,6 @@ static if (isFreedesktop)
         }
     }
     
-    ///
     unittest
     {
         auto dataDirsGuard = EnvGuard("XDG_DATA_DIRS");
@@ -198,7 +197,6 @@ static if (isFreedesktop)
         }
     }
     
-    ///
     unittest
     {
         auto homeGuard = EnvGuard("HOME");
@@ -228,7 +226,6 @@ static if (isFreedesktop)
         }
     }
     
-    ///
     unittest
     {
         auto dataConfigGuard = EnvGuard("XDG_CONFIG_DIRS");
@@ -255,7 +252,6 @@ static if (isFreedesktop)
         }
     }
     
-    ///
     unittest
     {
         auto homeGuard = EnvGuard("HOME");
