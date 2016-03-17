@@ -26,6 +26,10 @@ int main()
     version(Windows) {
         writeln("\nSpecific functions for Windows:");
         writeln("Roaming data: ", roamingPath());
+        writeln("Saved games: ", savedGames());
+    } else {
+        writeln("\nSpecific functions for Linux:");
+        writeln("Runtime: ", xdgRuntimeDir());
     }
     
     writeln("\nSystem directories");
@@ -43,11 +47,6 @@ int main()
         writefln("Videos dirs: %-(%s, %)", standardPaths(StandardPath.videos));
         
         writefln("Templates dirs: %-(%s, %)", standardPaths(StandardPath.templates));
-    } else version(OSX) {
-        
-    } else version(linux) {
-        writeln("\nSpecific functions for Linux:");
-        writeln("Runtime: ", xdgRuntimeDir());
     }
     
     return 0;

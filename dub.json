@@ -16,11 +16,12 @@
     
     "configurations" : [
         {
-            "name" : "default"
+            "name" : "default",
+            "versions-windows":["LinkedShell32", "LinkedAdvApi"]
         },
         {
             "name" : "linkedshell32",
-            "versions-windows":["LinkedShell32"],
+            "versions-windows":["LinkedShell32", "LinkedAdvApi"],
             "platforms" : ["windows"]
         }
     ],

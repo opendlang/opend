@@ -30,7 +30,12 @@ private {
 
 version(Windows) {
     private {
-        import std.c.windows.windows;
+        static if (__VERSION__ < 2070) {
+            import std.c.windows.windows;
+        } else {
+            import core.sys.windows.windows;
+        }
+        
         import std.utf;
         import std.uni : toLower, sicmp;
     }
@@ -64,63 +69,50 @@ enum StandardPath {
      * Note: on Windows it's the same as $(B config) path.
      */
     data,
-    Data = StandardPath.data, 
     /**
      * General location of configuration files. Every application should have its own subdirectory here.
      * Note: on Windows it's the same as $(B data) path. To distinguish config directory one may use roamingPath.
      */
     config,
-    Config = StandardPath.config, 
     /**
      * Location of cached data.
      * Note: Windows does not provide specical directory for cache data. On Windows $(B data)/cache is used as cache folder.
      */
     cache,
-    Cache = StandardPath.cache,  
     ///User's desktop directory.
     desktop,
-    Desktop = StandardPath.desktop,
     ///User's documents.
     documents,
-    Documents = StandardPath.documents,
     ///User's pictures.
     pictures,
-    Pictures = StandardPath.pictures, 
     
     ///User's music.
     music,
-    Music = StandardPath.music, 
     
     ///User's videos (movies).
     videos,
-    Videos = StandardPath.videos, 
     
     ///Directory for user's downloaded files.
     downloads,
-    Download = StandardPath.downloads, 
     
     /**
      * Location of file templates (e.g. office suite document templates).
      * Note: Not available on OS X.
      */
     templates,
-    Templates = templates, 
     
     /** 
      * Public share folder.
      * Note: Not available on Windows.
      */
     publicShare,
-    PublicShare = StandardPath.publicShare, 
     /**
      * Location of fonts files.
      * Note: don't rely on this on freedesktop, since it uses hardcoded paths there. Better consider using $(LINK2 http://www.freedesktop.org/wiki/Software/fontconfig/, fontconfig library)
      */
     fonts,
-    Fonts = StandardPath.fonts, 
     ///User's applications.
     applications,
-    Applications = StandardPath.applications, 
 }
 
 /**
@@ -182,7 +174,10 @@ string[] standardPaths(StandardPath type) nothrow @safe;
 version(Docs)
 {
     /**
-     * Deprecated, use xdgRuntimeDir instead.
+     * Path to runtime user directory on freedesktop platforms.
+     * Returns: User's runtime directory determined by $(B XDG_RUNTIME_DIR) environment variable. 
+     * If directory does not exist it tries to create one with appropriate permissions. On fail returns an empty string.
+     * Note: Deprecated, use xdgRuntimeDir instead.
      */
     deprecated string runtimeDir() nothrow @trusted;
     
@@ -192,6 +187,14 @@ version(Docs)
      * Note: This function is Windows only.
      */
     string roamingPath() nothrow @safe;
+    
+    /**
+     * Location where games may store their saves. 
+     * This is common path for games. One should use subfolder for their game saves.
+     * Returns: User's Saved Games directory. On fail returns an empty string.
+     * Note: This function is Windows only.
+     */
+    string savedGames() nothrow @safe;
 }
 
 version(Windows) {
@@ -268,7 +271,6 @@ version(Windows) {
     
     private  {
         private extern(Windows) @nogc @system BOOL dummy(HWND, wchar*, int, BOOL) nothrow { return 0; }
-        
         alias typeof(&dummy) GetSpecialFolderPath;
         
         version(LinkedShell32) {
@@ -278,20 +280,30 @@ version(Windows) {
             __gshared GetSpecialFolderPath ptrSHGetSpecialFolderPath = null;
         }
         
+        static if (__VERSION__ >= 2070) {
+            import core.sys.windows.winreg;
+        }
+        
         alias typeof(&RegOpenKeyExW) func_RegOpenKeyEx;
         alias typeof(&RegQueryValueExW) func_RegQueryValueEx;
         alias typeof(&RegCloseKey) func_RegCloseKey;
-
-        __gshared func_RegOpenKeyEx ptrRegOpenKeyEx;
-        __gshared func_RegQueryValueEx ptrRegQueryValueEx;
-        __gshared func_RegCloseKey ptrRegCloseKey;
+        
+        version(LinkedAdvApi) {
+            __gshared func_RegOpenKeyEx ptrRegOpenKeyEx = &RegOpenKeyExW;
+            __gshared func_RegQueryValueEx ptrRegQueryValueEx = &RegQueryValueExW;
+            __gshared func_RegCloseKey ptrRegCloseKey = &RegCloseKey;
+        } else {
+            __gshared func_RegOpenKeyEx ptrRegOpenKeyEx = null;
+            __gshared func_RegQueryValueEx ptrRegQueryValueEx = null;
+            __gshared func_RegCloseKey ptrRegCloseKey = null;
+        }
         
         @nogc @trusted bool hasSHGetSpecialFolderPath() nothrow {
             return ptrSHGetSpecialFolderPath != null;
         }
         
         @nogc @trusted bool isAdvApiLoaded() nothrow {
-            return ptrRegOpenKeyEx && ptrRegQueryValueEx && ptrRegCloseKey;
+            return ptrRegOpenKeyEx != null && ptrRegQueryValueEx != null && ptrRegCloseKey != null;
         }
     }
     
@@ -304,11 +316,13 @@ version(Windows) {
             }
         }
         
-        HMODULE advApi = LoadLibraryA("Advapi32.dll");
-        if (advApi) {
-            ptrRegOpenKeyEx = cast(func_RegOpenKeyEx)GetProcAddress(advApi, "RegOpenKeyExW");
-            ptrRegQueryValueEx = cast(func_RegQueryValueEx)GetProcAddress(advApi, "RegQueryValueExW");
-            ptrRegCloseKey = cast(func_RegCloseKey)GetProcAddress(advApi, "RegCloseKey");
+        version(LinkedAdvApi) {} else {
+            HMODULE advApi = LoadLibraryA("Advapi32.dll");
+            if (advApi) {
+                ptrRegOpenKeyEx = cast(func_RegOpenKeyEx)GetProcAddress(advApi, "RegOpenKeyExW");
+                ptrRegQueryValueEx = cast(func_RegQueryValueEx)GetProcAddress(advApi, "RegQueryValueExW");
+                ptrRegCloseKey = cast(func_RegCloseKey)GetProcAddress(advApi, "RegCloseKey");
+            }
         }
     }
     
@@ -368,13 +382,18 @@ version(Windows) {
         return getCSIDLFolder(CSIDL_APPDATA);
     }
     
+    string savedGames() nothrow @safe
+    {
+        return getShellFolder("{4C5C32FF-BB9D-43b0-B5B4-2D72E54EAAA4}\0"w.ptr);
+    }
+    
     string writablePath(StandardPath type) nothrow @safe
     {
         final switch(type) {
-            case StandardPath.Config:
-            case StandardPath.Data:
+            case StandardPath.config:
+            case StandardPath.data:
                 return getCSIDLFolder(CSIDL_LOCAL_APPDATA);
-            case StandardPath.Cache:
+            case StandardPath.cache:
             {
                 string path = getCSIDLFolder(CSIDL_LOCAL_APPDATA);
                 if (path.length) {
@@ -382,25 +401,25 @@ version(Windows) {
                 }
                 return null;
             }
-            case StandardPath.Desktop:
+            case StandardPath.desktop:
                 return getCSIDLFolder(CSIDL_DESKTOPDIRECTORY);
-            case StandardPath.Documents:
+            case StandardPath.documents:
                 return getCSIDLFolder(CSIDL_PERSONAL);
-            case StandardPath.Pictures:
+            case StandardPath.pictures:
                 return getCSIDLFolder(CSIDL_MYPICTURES);
-            case StandardPath.Music:
+            case StandardPath.music:
                 return getCSIDLFolder(CSIDL_MYMUSIC);
-            case StandardPath.Videos:
+            case StandardPath.videos:
                 return getCSIDLFolder(CSIDL_MYVIDEO);
-            case StandardPath.Download:
+            case StandardPath.downloads:
                 return getShellFolder("{374DE290-123F-4565-9164-39C4925E467B}\0"w.ptr);
-            case StandardPath.Templates:
+            case StandardPath.templates:
                 return getCSIDLFolder(CSIDL_TEMPLATES);
-            case StandardPath.PublicShare:
+            case StandardPath.publicShare:
                 return null;
-            case StandardPath.Fonts:
+            case StandardPath.fonts:
                 return null;
-            case StandardPath.Applications:
+            case StandardPath.applications:
                 return getCSIDLFolder(CSIDL_PROGRAMS);
         }
     }
@@ -410,32 +429,32 @@ version(Windows) {
         string commonPath;
         
         switch(type) {
-            case StandardPath.Config:
-            case StandardPath.Data:
+            case StandardPath.config:
+            case StandardPath.data:
                 commonPath = getCSIDLFolder(CSIDL_COMMON_APPDATA);
                 break;
-            case StandardPath.Desktop:
+            case StandardPath.desktop:
                 commonPath = getCSIDLFolder(CSIDL_COMMON_DESKTOPDIRECTORY);
                 break;
-            case StandardPath.Documents:
+            case StandardPath.documents:
                 commonPath = getCSIDLFolder(CSIDL_COMMON_DOCUMENTS);
                 break;
-            case StandardPath.Pictures:
+            case StandardPath.pictures:
                 commonPath = getCSIDLFolder(CSIDL_COMMON_PICTURES);
                 break;
-            case StandardPath.Music:
+            case StandardPath.music:
                 commonPath = getCSIDLFolder(CSIDL_COMMON_MUSIC);
                 break;
-            case StandardPath.Videos:
+            case StandardPath.videos:
                 commonPath = getCSIDLFolder(CSIDL_COMMON_VIDEO);
                 break;
-            case StandardPath.Templates:
+            case StandardPath.templates:
                 commonPath = getCSIDLFolder(CSIDL_COMMON_TEMPLATES);
                 break;
-            case StandardPath.Fonts:
+            case StandardPath.fonts:
                 commonPath = getCSIDLFolder(CSIDL_FONTS);
                 break;
-            case StandardPath.Applications:
+            case StandardPath.applications:
                 commonPath = getCSIDLFolder(CSIDL_COMMON_PROGRAMS);
                 break;
             default:
@@ -604,31 +623,31 @@ version(Windows) {
     string writablePath(StandardPath type) nothrow @safe
     {
         final switch(type) {
-            case StandardPath.Config:
+            case StandardPath.config:
                 return fsPath(kUserDomain, kPreferencesFolderType);
-            case StandardPath.Cache:
+            case StandardPath.cache:
                 return fsPath(kUserDomain, kCachedDataFolderType);
-            case StandardPath.Data:
+            case StandardPath.data:
                 return fsPath(kUserDomain, kApplicationSupportFolderType);
-            case StandardPath.Desktop:
+            case StandardPath.desktop:
                 return fsPath(kUserDomain, kDesktopFolderType);
-            case StandardPath.Documents:
+            case StandardPath.documents:
                 return fsPath(kUserDomain, kDocumentsFolderType);
-            case StandardPath.Pictures:
+            case StandardPath.pictures:
                 return fsPath(kUserDomain, kPictureDocumentsFolderType);
-            case StandardPath.Music:
+            case StandardPath.music:
                 return fsPath(kUserDomain, kMusicDocumentsFolderType);
-            case StandardPath.Videos:
+            case StandardPath.videos:
                 return fsPath(kUserDomain, kMovieDocumentsFolderType);
-            case StandardPath.Download:
+            case StandardPath.downloads:
                 return fsPath(kUserDomain, kDownloadsFolderType);
-            case StandardPath.Templates:
+            case StandardPath.templates:
                 return null;
-            case StandardPath.PublicShare:
+            case StandardPath.publicShare:
                 return fsPath(kUserDomain, kPublicFolderType );
-            case StandardPath.Fonts:
+            case StandardPath.fonts:
                 return fsPath(kUserDomain, kFontsFolderType);
-            case StandardPath.Applications:
+            case StandardPath.applications:
                 return fsPath(kUserDomain, kApplicationsFolderType);
         }
     }
@@ -638,16 +657,16 @@ version(Windows) {
         string commonPath;
         
         switch(type) {
-            case StandardPath.Fonts:
+            case StandardPath.fonts:
                 commonPath = fsPath(kOnAppropriateDisk, kFontsFolderType);
                 break;
-            case StandardPath.Applications:
+            case StandardPath.applications:
                 commonPath = fsPath(kOnAppropriateDisk, kApplicationsFolderType);
                 break;
-            case StandardPath.Data:
+            case StandardPath.data:
                 commonPath = fsPath(kOnAppropriateDisk, kApplicationSupportFolderType);
                 break;
-            case StandardPath.Cache:
+            case StandardPath.cache:
                 commonPath = fsPath(kOnAppropriateDisk, kCachedDataFolderType);
                 break;
             default:
@@ -761,7 +780,7 @@ version(Windows) {
         }
     }
     
-    deprecated string runtimeDir() nothrow @trusted
+    deprecated("Use xdgRuntimeDir instead") string runtimeDir() nothrow @trusted
     {
         return xdgRuntimeDir();
     }
@@ -769,31 +788,31 @@ version(Windows) {
     string writablePath(StandardPath type) nothrow @safe
     {
         final switch(type) {
-            case StandardPath.Config:
+            case StandardPath.config:
                 return xdgConfigHome();
-            case StandardPath.Cache:
+            case StandardPath.cache:
                 return xdgCacheHome();
-            case StandardPath.Data:
+            case StandardPath.data:
                 return xdgDataHome();
-            case StandardPath.Desktop:
+            case StandardPath.desktop:
                 return xdgUserDir("DESKTOP", "/Desktop");
-            case StandardPath.Documents:
+            case StandardPath.documents:
                 return xdgUserDir("DOCUMENTS");
-            case StandardPath.Pictures:
+            case StandardPath.pictures:
                 return xdgUserDir("PICTURES");
-            case StandardPath.Music:
+            case StandardPath.music:
                 return xdgUserDir("MUSIC");
-            case StandardPath.Videos:
+            case StandardPath.videos:
                 return xdgUserDir("VIDEOS");
-            case StandardPath.Download:
+            case StandardPath.downloads:
                 return xdgUserDir("DOWNLOAD");
-            case StandardPath.Templates:
+            case StandardPath.templates:
                 return xdgUserDir("TEMPLATES", "/Templates");
-            case StandardPath.PublicShare:
+            case StandardPath.publicShare:
                 return xdgUserDir("PUBLICSHARE", "/Public");
-            case StandardPath.Fonts:
+            case StandardPath.fonts:
                 return homeFontsPath();
-            case StandardPath.Applications:
+            case StandardPath.applications:
                 return xdgDataHome("applications");
         }
     }
@@ -803,13 +822,13 @@ version(Windows) {
         string[] paths;
         
         switch(type) {
-            case StandardPath.Data:
+            case StandardPath.data:
                 return xdgAllDataDirs();
-            case StandardPath.Config:
+            case StandardPath.config:
                 return xdgAllConfigDirs();
-            case StandardPath.Applications:
+            case StandardPath.applications:
                 return xdgAllDataDirs("applications");
-            case StandardPath.Fonts:
+            case StandardPath.fonts:
                 return fontPaths();
             default:
                 break;
@@ -881,31 +900,31 @@ private string checkExecutable(string filePath) nothrow @trusted {
  *  paths = Range of directories where executable should be searched.
  * Note: On Windows when fileName extension is omitted, executable extensions will be automatically appended during search.
  */
-@trusted nothrow string findExecutable(Range)(string fileName, Range paths) if (is(ElementType!Range : string))
+@trusted nothrow string findExecutable(Range)(string fileName, Range paths) if (isInputRange!Range && is(ElementType!Range : string))
 {   
     try {
         if (fileName.isAbsolute()) {
             return checkExecutable(fileName);
-        }
-        
-        string toReturn;
-        foreach(string path; paths) {
-            string candidate = buildPath(absolutePath(path), fileName);
-            
-            version(Windows) {
-                if (candidate.extension.empty) {
-                    foreach(exeExtension; executableExtensions()) {
-                        toReturn = checkExecutable(setExtension(candidate, exeExtension.toLower()));
-                        if (toReturn.length) {
-                            return toReturn;
+        } else if (fileName == fileName.baseName) {
+            string toReturn;
+            foreach(string path; paths) {
+                string candidate = buildPath(absolutePath(path), fileName);
+                
+                version(Windows) {
+                    if (candidate.extension.empty) {
+                        foreach(exeExtension; executableExtensions()) {
+                            toReturn = checkExecutable(setExtension(candidate, exeExtension.toLower()));
+                            if (toReturn.length) {
+                                return toReturn;
+                            }
                         }
                     }
                 }
-            }
-            
-            toReturn = checkExecutable(candidate);
-            if (toReturn.length) {
-                return toReturn;
+                
+                toReturn = checkExecutable(candidate);
+                if (toReturn.length) {
+                    return toReturn;
+                }
             }
         }
     } catch (Exception e) {
