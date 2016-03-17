@@ -1985,17 +1985,9 @@ struct VkDrawIndirectCommand {
 	uint32_t firstVertex;
 	uint32_t firstInstance;
 }
-enum VK_KHR_SWAPCHAIN_SPEC_VERSION = 67;
-enum VK_KHR_SWAPCHAIN_EXTENSION_NAME = "VK_KHR_swapchain";
-alias VkSwapchainCreateFlagsKHR = VkFlags;
+enum VK_KHR_SURFACE_SPEC_VERSION = 25;
+enum VK_KHR_SURFACE_EXTENSION_NAME = "VK_KHR_surface";
 mixin(VK_DEFINE_NON_DISPATCHABLE_HANDLE!q{VkSurfaceKHR});
-enum VkColorSpaceKHR {
-	VK_COLORSPACE_SRGB_NONLINEAR_KHR = 0,
-	VK_COLORSPACE_BEGIN_RANGE = VK_COLORSPACE_SRGB_NONLINEAR_KHR,
-	VK_COLORSPACE_END_RANGE = VK_COLORSPACE_SRGB_NONLINEAR_KHR,
-	VK_COLORSPACE_RANGE_SIZE = (VK_COLORSPACE_SRGB_NONLINEAR_KHR - VK_COLORSPACE_SRGB_NONLINEAR_KHR + 1),
-	VK_COLORSPACE_MAX_ENUM = 0x7FFFFFFF,
-}
 enum VkSurfaceTransformFlagBitsKHR {
 	VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR = 0x00000001,
 	VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR = 0x00000002,
@@ -2007,11 +1999,36 @@ enum VkSurfaceTransformFlagBitsKHR {
 	VK_SURFACE_TRANSFORM_HORIZONTAL_MIRROR_ROTATE_270_BIT_KHR = 0x00000080,
 	VK_SURFACE_TRANSFORM_INHERIT_BIT_KHR = 0x00000100,
 }
+alias VkSurfaceTransformFlagsKHR = VkFlags;
 enum VkCompositeAlphaFlagBitsKHR {
 	VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR = 0x00000001,
 	VK_COMPOSITE_ALPHA_PRE_MULTIPLIED_BIT_KHR = 0x00000002,
 	VK_COMPOSITE_ALPHA_POST_MULTIPLIED_BIT_KHR = 0x00000004,
 	VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR = 0x00000008,
+}
+alias VkCompositeAlphaFlagsKHR = VkFlags;
+struct VkSurfaceCapabilitiesKHR {
+	uint32_t minImageCount;
+	uint32_t maxImageCount;
+	VkExtent2D currentExtent;
+	VkExtent2D minImageExtent;
+	VkExtent2D maxImageExtent;
+	uint32_t maxImageArrayLayers;
+	VkSurfaceTransformFlagsKHR supportedTransforms;
+	VkSurfaceTransformFlagBitsKHR currentTransform;
+	VkCompositeAlphaFlagsKHR supportedCompositeAlpha;
+	VkImageUsageFlags supportedUsageFlags;
+}
+enum VkColorSpaceKHR {
+	VK_COLORSPACE_SRGB_NONLINEAR_KHR = 0,
+	VK_COLORSPACE_BEGIN_RANGE = VK_COLORSPACE_SRGB_NONLINEAR_KHR,
+	VK_COLORSPACE_END_RANGE = VK_COLORSPACE_SRGB_NONLINEAR_KHR,
+	VK_COLORSPACE_RANGE_SIZE = (VK_COLORSPACE_SRGB_NONLINEAR_KHR - VK_COLORSPACE_SRGB_NONLINEAR_KHR + 1),
+	VK_COLORSPACE_MAX_ENUM = 0x7FFFFFFF,
+}
+struct VkSurfaceFormatKHR {
+	VkFormat format;
+	VkColorSpaceKHR colorSpace;
 }
 enum VkPresentModeKHR {
 	VK_PRESENT_MODE_IMMEDIATE_KHR = 0,
@@ -2023,6 +2040,9 @@ enum VkPresentModeKHR {
 	VK_PRESENT_MODE_RANGE_SIZE = (VK_PRESENT_MODE_FIFO_RELAXED_KHR - VK_PRESENT_MODE_IMMEDIATE_KHR + 1),
 	VK_PRESENT_MODE_MAX_ENUM = 0x7FFFFFFF,
 }
+enum VK_KHR_SWAPCHAIN_SPEC_VERSION = 67;
+enum VK_KHR_SWAPCHAIN_EXTENSION_NAME = "VK_KHR_swapchain";
+alias VkSwapchainCreateFlagsKHR = VkFlags;
 mixin(VK_DEFINE_NON_DISPATCHABLE_HANDLE!q{VkSwapchainKHR});
 struct VkSwapchainCreateInfoKHR {
 	VkStructureType sType = VkStructureType.VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
@@ -2062,7 +2082,6 @@ enum VkDisplayPlaneAlphaFlagBitsKHR {
 }
 alias VkDisplayPlaneAlphaFlagsKHR = VkFlags;
 mixin(VK_DEFINE_NON_DISPATCHABLE_HANDLE!q{VkDisplayKHR});
-alias VkSurfaceTransformFlagsKHR = VkFlags;
 struct VkDisplayPropertiesKHR {
 	VkDisplayKHR display;
 	const(char)* displayName;

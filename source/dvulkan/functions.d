@@ -151,6 +151,11 @@ extern(System) @nogc nothrow {
 	alias PFN_vkCmdNextSubpass = void function(VkCommandBuffer commandBuffer,VkSubpassContents contents);
 	alias PFN_vkCmdEndRenderPass = void function(VkCommandBuffer commandBuffer);
 	alias PFN_vkCmdExecuteCommands = void function(VkCommandBuffer commandBuffer,uint32_t commandBufferCount,const(VkCommandBuffer)* pCommandBuffers);
+	alias PFN_vkDestroySurfaceKHR = void function(VkInstance instance,VkSurfaceKHR surface,const(VkAllocationCallbacks)* pAllocator);
+	alias PFN_vkGetPhysicalDeviceSurfaceSupportKHR = VkResult function(VkPhysicalDevice physicalDevice,uint32_t queueFamilyIndex,VkSurfaceKHR surface,VkBool32* pSupported);
+	alias PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR = VkResult function(VkPhysicalDevice physicalDevice,VkSurfaceKHR surface,VkSurfaceCapabilitiesKHR* pSurfaceCapabilities);
+	alias PFN_vkGetPhysicalDeviceSurfaceFormatsKHR = VkResult function(VkPhysicalDevice physicalDevice,VkSurfaceKHR surface,uint32_t* pSurfaceFormatCount,VkSurfaceFormatKHR* pSurfaceFormats);
+	alias PFN_vkGetPhysicalDeviceSurfacePresentModesKHR = VkResult function(VkPhysicalDevice physicalDevice,VkSurfaceKHR surface,uint32_t* pPresentModeCount,VkPresentModeKHR* pPresentModes);
 	alias PFN_vkCreateSwapchainKHR = VkResult function(VkDevice device,const(VkSwapchainCreateInfoKHR)* pCreateInfo,const(VkAllocationCallbacks)* pAllocator,VkSwapchainKHR* pSwapchain);
 	alias PFN_vkDestroySwapchainKHR = void function(VkDevice device,VkSwapchainKHR swapchain,const(VkAllocationCallbacks)* pAllocator);
 	alias PFN_vkGetSwapchainImagesKHR = VkResult function(VkDevice device,VkSwapchainKHR swapchain,uint32_t* pSwapchainImageCount,VkImage* pSwapchainImages);
@@ -268,6 +273,7 @@ __gshared {
 	PFN_vkDestroySampler vkDestroySampler;
 	PFN_vkDestroySemaphore vkDestroySemaphore;
 	PFN_vkDestroyShaderModule vkDestroyShaderModule;
+	PFN_vkDestroySurfaceKHR vkDestroySurfaceKHR;
 	PFN_vkDestroySwapchainKHR vkDestroySwapchainKHR;
 	PFN_vkDeviceWaitIdle vkDeviceWaitIdle;
 	PFN_vkEndCommandBuffer vkEndCommandBuffer;
@@ -302,6 +308,10 @@ __gshared {
 	PFN_vkGetPhysicalDeviceProperties vkGetPhysicalDeviceProperties;
 	PFN_vkGetPhysicalDeviceQueueFamilyProperties vkGetPhysicalDeviceQueueFamilyProperties;
 	PFN_vkGetPhysicalDeviceSparseImageFormatProperties vkGetPhysicalDeviceSparseImageFormatProperties;
+	PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR vkGetPhysicalDeviceSurfaceCapabilitiesKHR;
+	PFN_vkGetPhysicalDeviceSurfaceFormatsKHR vkGetPhysicalDeviceSurfaceFormatsKHR;
+	PFN_vkGetPhysicalDeviceSurfacePresentModesKHR vkGetPhysicalDeviceSurfacePresentModesKHR;
+	PFN_vkGetPhysicalDeviceSurfaceSupportKHR vkGetPhysicalDeviceSurfaceSupportKHR;
 	PFN_vkGetPipelineCacheData vkGetPipelineCacheData;
 	PFN_vkGetQueryPoolResults vkGetQueryPoolResults;
 	PFN_vkGetRenderAreaGranularity vkGetRenderAreaGranularity;
@@ -437,6 +447,7 @@ class DVulkanLoader : SharedLibLoader {
 		vkDestroySampler = cast(typeof(vkDestroySampler)) vkGetInstanceProcAddr(instance, "vkDestroySampler");
 		vkDestroySemaphore = cast(typeof(vkDestroySemaphore)) vkGetInstanceProcAddr(instance, "vkDestroySemaphore");
 		vkDestroyShaderModule = cast(typeof(vkDestroyShaderModule)) vkGetInstanceProcAddr(instance, "vkDestroyShaderModule");
+		vkDestroySurfaceKHR = cast(typeof(vkDestroySurfaceKHR)) vkGetInstanceProcAddr(instance, "vkDestroySurfaceKHR");
 		vkDestroySwapchainKHR = cast(typeof(vkDestroySwapchainKHR)) vkGetInstanceProcAddr(instance, "vkDestroySwapchainKHR");
 		vkDeviceWaitIdle = cast(typeof(vkDeviceWaitIdle)) vkGetInstanceProcAddr(instance, "vkDeviceWaitIdle");
 		vkEndCommandBuffer = cast(typeof(vkEndCommandBuffer)) vkGetInstanceProcAddr(instance, "vkEndCommandBuffer");
@@ -468,6 +479,10 @@ class DVulkanLoader : SharedLibLoader {
 		vkGetPhysicalDeviceProperties = cast(typeof(vkGetPhysicalDeviceProperties)) vkGetInstanceProcAddr(instance, "vkGetPhysicalDeviceProperties");
 		vkGetPhysicalDeviceQueueFamilyProperties = cast(typeof(vkGetPhysicalDeviceQueueFamilyProperties)) vkGetInstanceProcAddr(instance, "vkGetPhysicalDeviceQueueFamilyProperties");
 		vkGetPhysicalDeviceSparseImageFormatProperties = cast(typeof(vkGetPhysicalDeviceSparseImageFormatProperties)) vkGetInstanceProcAddr(instance, "vkGetPhysicalDeviceSparseImageFormatProperties");
+		vkGetPhysicalDeviceSurfaceCapabilitiesKHR = cast(typeof(vkGetPhysicalDeviceSurfaceCapabilitiesKHR)) vkGetInstanceProcAddr(instance, "vkGetPhysicalDeviceSurfaceCapabilitiesKHR");
+		vkGetPhysicalDeviceSurfaceFormatsKHR = cast(typeof(vkGetPhysicalDeviceSurfaceFormatsKHR)) vkGetInstanceProcAddr(instance, "vkGetPhysicalDeviceSurfaceFormatsKHR");
+		vkGetPhysicalDeviceSurfacePresentModesKHR = cast(typeof(vkGetPhysicalDeviceSurfacePresentModesKHR)) vkGetInstanceProcAddr(instance, "vkGetPhysicalDeviceSurfacePresentModesKHR");
+		vkGetPhysicalDeviceSurfaceSupportKHR = cast(typeof(vkGetPhysicalDeviceSurfaceSupportKHR)) vkGetInstanceProcAddr(instance, "vkGetPhysicalDeviceSurfaceSupportKHR");
 		vkGetPipelineCacheData = cast(typeof(vkGetPipelineCacheData)) vkGetInstanceProcAddr(instance, "vkGetPipelineCacheData");
 		vkGetQueryPoolResults = cast(typeof(vkGetQueryPoolResults)) vkGetInstanceProcAddr(instance, "vkGetQueryPoolResults");
 		vkGetRenderAreaGranularity = cast(typeof(vkGetRenderAreaGranularity)) vkGetInstanceProcAddr(instance, "vkGetRenderAreaGranularity");
@@ -591,6 +606,7 @@ class DVulkanLoader : SharedLibLoader {
 		vkDestroySampler = cast(typeof(vkDestroySampler)) vkGetDeviceProcAddr(device, "vkDestroySampler");
 		vkDestroySemaphore = cast(typeof(vkDestroySemaphore)) vkGetDeviceProcAddr(device, "vkDestroySemaphore");
 		vkDestroyShaderModule = cast(typeof(vkDestroyShaderModule)) vkGetDeviceProcAddr(device, "vkDestroyShaderModule");
+		vkDestroySurfaceKHR = cast(typeof(vkDestroySurfaceKHR)) vkGetDeviceProcAddr(device, "vkDestroySurfaceKHR");
 		vkDestroySwapchainKHR = cast(typeof(vkDestroySwapchainKHR)) vkGetDeviceProcAddr(device, "vkDestroySwapchainKHR");
 		vkDeviceWaitIdle = cast(typeof(vkDeviceWaitIdle)) vkGetDeviceProcAddr(device, "vkDeviceWaitIdle");
 		vkEndCommandBuffer = cast(typeof(vkEndCommandBuffer)) vkGetDeviceProcAddr(device, "vkEndCommandBuffer");
@@ -622,6 +638,10 @@ class DVulkanLoader : SharedLibLoader {
 		vkGetPhysicalDeviceProperties = cast(typeof(vkGetPhysicalDeviceProperties)) vkGetDeviceProcAddr(device, "vkGetPhysicalDeviceProperties");
 		vkGetPhysicalDeviceQueueFamilyProperties = cast(typeof(vkGetPhysicalDeviceQueueFamilyProperties)) vkGetDeviceProcAddr(device, "vkGetPhysicalDeviceQueueFamilyProperties");
 		vkGetPhysicalDeviceSparseImageFormatProperties = cast(typeof(vkGetPhysicalDeviceSparseImageFormatProperties)) vkGetDeviceProcAddr(device, "vkGetPhysicalDeviceSparseImageFormatProperties");
+		vkGetPhysicalDeviceSurfaceCapabilitiesKHR = cast(typeof(vkGetPhysicalDeviceSurfaceCapabilitiesKHR)) vkGetDeviceProcAddr(device, "vkGetPhysicalDeviceSurfaceCapabilitiesKHR");
+		vkGetPhysicalDeviceSurfaceFormatsKHR = cast(typeof(vkGetPhysicalDeviceSurfaceFormatsKHR)) vkGetDeviceProcAddr(device, "vkGetPhysicalDeviceSurfaceFormatsKHR");
+		vkGetPhysicalDeviceSurfacePresentModesKHR = cast(typeof(vkGetPhysicalDeviceSurfacePresentModesKHR)) vkGetDeviceProcAddr(device, "vkGetPhysicalDeviceSurfacePresentModesKHR");
+		vkGetPhysicalDeviceSurfaceSupportKHR = cast(typeof(vkGetPhysicalDeviceSurfaceSupportKHR)) vkGetDeviceProcAddr(device, "vkGetPhysicalDeviceSurfaceSupportKHR");
 		vkGetPipelineCacheData = cast(typeof(vkGetPipelineCacheData)) vkGetDeviceProcAddr(device, "vkGetPipelineCacheData");
 		vkGetQueryPoolResults = cast(typeof(vkGetQueryPoolResults)) vkGetDeviceProcAddr(device, "vkGetQueryPoolResults");
 		vkGetRenderAreaGranularity = cast(typeof(vkGetRenderAreaGranularity)) vkGetDeviceProcAddr(device, "vkGetRenderAreaGranularity");

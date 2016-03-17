@@ -317,6 +317,6 @@ if __name__ == "__main__":
 		nameprefix=args.nameprefix,
 		#defaultExtensions="defaultExtensions",
 		addExtensions=r".*",
-		removeExtensions = r".*_surface$",
+		removeExtensions = r"VK_KHR_.*_surface$",
 	))
 	
