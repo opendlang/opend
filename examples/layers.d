@@ -13,10 +13,6 @@ private void enforceVK(VkResult res) {
 	enforce(res == VkResult.VK_SUCCESS, res.to!string);
 }
 
-void destroyinst(VkInstance inst) {
-	vkDestroyInstance(inst, null);
-}
-
 int main() {
 	DVulkan.load();
 	
