@@ -15,7 +15,7 @@ private {
     import std.array;
     import std.path;
     import std.file;
-    import std.algorithm : splitter, canFind;
+    import std.algorithm : splitter, canFind, filter;
     import std.exception;
     import std.range;
     
@@ -898,6 +898,10 @@ private string checkExecutable(string filePath) nothrow @trusted {
         } else if (fileName == fileName.baseName) {
             string toReturn;
             foreach(string path; paths) {
+                if (path.empty) {
+                    continue;
+                }
+                
                 string candidate = buildPath(absolutePath(path), fileName);
                 
                 version(Windows) {
