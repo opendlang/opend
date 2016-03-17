@@ -171,7 +171,7 @@ string writablePath(StandardPath type) nothrow @safe;
 string[] standardPaths(StandardPath type) nothrow @safe;
 
 
-version(Docs)
+version(StandardPathsDocs)
 {
     /**
      * Path to runtime user directory on freedesktop platforms.
