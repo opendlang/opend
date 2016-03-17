@@ -687,160 +687,150 @@ version(Windows) {
     static if (!isFreedesktop) {
         static assert(false, "Unsupported platform");
     } else {
-    
-    public import xdgpaths;
-        
-    //Concat two strings, but if the first one is empty, then null string is returned.
-    private string maybeConcat(string start, string path) nothrow @safe
-    {
-        return start.empty ? null : start ~ path;
-    }
-    
-    private string xdgBaseDir(string envvar, string fallback) nothrow @trusted {
-        string dir;
-        collectException(environment.get(envvar), dir);
-        if (!dir.length) {
-            dir = maybeConcat(homeDir(), fallback);
-        }
-        return dir;
-    }
-    
-    private string xdgUserDir(string key, string fallback = null) nothrow @trusted {
-        import std.algorithm : startsWith;
-        import std.string : strip;
-        
-        string fileName = maybeConcat(writablePath(StandardPath.Config), "/user-dirs.dirs");
-        string home = homeDir();
-        try {
-            auto f = File(fileName, "r");
+        public import xdgpaths;
             
-            auto xdgdir = "XDG_" ~ key ~ "_DIR";
-            
-            char[] buf;
-            while(f.readln(buf)) {
-                char[] line = strip(buf);
-                auto index = xdgdir.length;
-                if (line.startsWith(xdgdir) && line.length > index && line[index] == '=') {
-                    line = line[index+1..$];
-                    if (line.length > 2 && line[0] == '"' && line[$-1] == '"') 
-                    {
-                        line = line[1..$-1];
-                    
-                        if (line.startsWith("$HOME")) {
-                            return maybeConcat(home, assumeUnique(line[5..$]));
-                        }
-                        if (line.length == 0 || line[0] != '/') {
-                            continue;
-                        }
-                        return assumeUnique(line);
-                    }
-                }
-            }
-        } catch(Exception e) {
-            
+        //Concat two strings, but if the first one is empty, then null string is returned.
+        private string maybeConcat(string start, string path) nothrow @safe
+        {
+            return start.empty ? null : start ~ path;
         }
         
-        if (home.length) {
+        private string xdgUserDir(string key, string fallback = null) nothrow @trusted {
+            import std.algorithm : startsWith;
+            import std.string : strip;
+            
+            string fileName = maybeConcat(writablePath(StandardPath.config), "/user-dirs.dirs");
+            string home = homeDir();
             try {
-                auto f = File("/etc/xdg/user-dirs.defaults", "r");
+                auto f = File(fileName, "r");
+                
+                auto xdgdir = "XDG_" ~ key ~ "_DIR";
+                
                 char[] buf;
                 while(f.readln(buf)) {
                     char[] line = strip(buf);
-                    auto index = key.length;
-                    if (line.startsWith(key) && line.length > index && line[index] == '=') 
-                    {
+                    auto index = xdgdir.length;
+                    if (line.startsWith(xdgdir) && line.length > index && line[index] == '=') {
                         line = line[index+1..$];
-                        return home ~ "/" ~ assumeUnique(line);
+                        if (line.length > 2 && line[0] == '"' && line[$-1] == '"') 
+                        {
+                            line = line[1..$-1];
+                        
+                            if (line.startsWith("$HOME")) {
+                                return maybeConcat(home, assumeUnique(line[5..$]));
+                            }
+                            if (line.length == 0 || line[0] != '/') {
+                                continue;
+                            }
+                            return assumeUnique(line);
+                        }
                     }
                 }
-            } catch (Exception e) {
+            } catch(Exception e) {
                 
             }
-            if (fallback.length) {
-                return home ~ fallback;
+            
+            if (home.length) {
+                try {
+                    auto f = File("/etc/xdg/user-dirs.defaults", "r");
+                    char[] buf;
+                    while(f.readln(buf)) {
+                        char[] line = strip(buf);
+                        auto index = key.length;
+                        if (line.startsWith(key) && line.length > index && line[index] == '=') 
+                        {
+                            line = line[index+1..$];
+                            return home ~ "/" ~ assumeUnique(line);
+                        }
+                    }
+                } catch (Exception e) {
+                    
+                }
+                if (fallback.length) {
+                    return home ~ fallback;
+                }
+            }
+            return null;
+        }
+        
+        private string homeFontsPath() nothrow @trusted {
+            return maybeConcat(homeDir(), "/.fonts");
+        }
+        
+        private string[] fontPaths() nothrow @trusted
+        {
+            enum localShare = "/usr/local/share/fonts";
+            enum share = "/usr/share/fonts";
+            
+            string homeFonts = homeFontsPath();
+            if (homeFonts.length) {
+                return [homeFonts, localShare, share];
+            } else {
+                return [localShare, share];
             }
         }
-        return null;
-    }
-    
-    private string homeFontsPath() nothrow @trusted {
-        return maybeConcat(homeDir(), "/.fonts");
-    }
-    
-    private string[] fontPaths() nothrow @trusted
-    {
-        enum localShare = "/usr/local/share/fonts";
-        enum share = "/usr/share/fonts";
         
-        string homeFonts = homeFontsPath();
-        if (homeFonts.length) {
-            return [homeFonts, localShare, share];
-        } else {
-            return [localShare, share];
-        }
-    }
-    
-    deprecated("Use xdgRuntimeDir instead") string runtimeDir() nothrow @trusted
-    {
-        return xdgRuntimeDir();
-    }
-    
-    string writablePath(StandardPath type) nothrow @safe
-    {
-        final switch(type) {
-            case StandardPath.config:
-                return xdgConfigHome();
-            case StandardPath.cache:
-                return xdgCacheHome();
-            case StandardPath.data:
-                return xdgDataHome();
-            case StandardPath.desktop:
-                return xdgUserDir("DESKTOP", "/Desktop");
-            case StandardPath.documents:
-                return xdgUserDir("DOCUMENTS");
-            case StandardPath.pictures:
-                return xdgUserDir("PICTURES");
-            case StandardPath.music:
-                return xdgUserDir("MUSIC");
-            case StandardPath.videos:
-                return xdgUserDir("VIDEOS");
-            case StandardPath.downloads:
-                return xdgUserDir("DOWNLOAD");
-            case StandardPath.templates:
-                return xdgUserDir("TEMPLATES", "/Templates");
-            case StandardPath.publicShare:
-                return xdgUserDir("PUBLICSHARE", "/Public");
-            case StandardPath.fonts:
-                return homeFontsPath();
-            case StandardPath.applications:
-                return xdgDataHome("applications");
-        }
-    }
-    
-    string[] standardPaths(StandardPath type) nothrow @safe
-    {
-        string[] paths;
-        
-        switch(type) {
-            case StandardPath.data:
-                return xdgAllDataDirs();
-            case StandardPath.config:
-                return xdgAllConfigDirs();
-            case StandardPath.applications:
-                return xdgAllDataDirs("applications");
-            case StandardPath.fonts:
-                return fontPaths();
-            default:
-                break;
+        deprecated("Use xdgRuntimeDir instead") string runtimeDir() nothrow @trusted
+        {
+            return xdgRuntimeDir();
         }
         
-        string userPath = writablePath(type);
-        if (userPath.length) {
-            return [userPath];
+        string writablePath(StandardPath type) nothrow @safe
+        {
+            final switch(type) {
+                case StandardPath.config:
+                    return xdgConfigHome();
+                case StandardPath.cache:
+                    return xdgCacheHome();
+                case StandardPath.data:
+                    return xdgDataHome();
+                case StandardPath.desktop:
+                    return xdgUserDir("DESKTOP", "/Desktop");
+                case StandardPath.documents:
+                    return xdgUserDir("DOCUMENTS");
+                case StandardPath.pictures:
+                    return xdgUserDir("PICTURES");
+                case StandardPath.music:
+                    return xdgUserDir("MUSIC");
+                case StandardPath.videos:
+                    return xdgUserDir("VIDEOS");
+                case StandardPath.downloads:
+                    return xdgUserDir("DOWNLOAD");
+                case StandardPath.templates:
+                    return xdgUserDir("TEMPLATES", "/Templates");
+                case StandardPath.publicShare:
+                    return xdgUserDir("PUBLICSHARE", "/Public");
+                case StandardPath.fonts:
+                    return homeFontsPath();
+                case StandardPath.applications:
+                    return xdgDataHome("applications");
+            }
         }
-        return null;
+        
+        string[] standardPaths(StandardPath type) nothrow @safe
+        {
+            string[] paths;
+            
+            switch(type) {
+                case StandardPath.data:
+                    return xdgAllDataDirs();
+                case StandardPath.config:
+                    return xdgAllConfigDirs();
+                case StandardPath.applications:
+                    return xdgAllDataDirs("applications");
+                case StandardPath.fonts:
+                    return fontPaths();
+                default:
+                    break;
+            }
+            
+            string userPath = writablePath(type);
+            if (userPath.length) {
+                return [userPath];
+            }
+            return null;
+        }
     }
-}
 }
 
 private bool isExecutable(string filePath) nothrow @trusted {
