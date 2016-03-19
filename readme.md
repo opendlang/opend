@@ -1,20 +1,27 @@
 D-Vulkan
 ========
 
-Derelict-style, automatically-generated D bindings for Vulkan.
+Automatically-generated D bindings for Vulkan.
 
 Usage
 -----
 
-* Import via `import dvulkan;`.
-* Call `DVulkan.load()` to load the following functions:
-	* `vkGetInstanceProcAddr`
+The bindings have two configurations: the `default` configuration, where the bindings load all functions from the `vkGetInstanceProcAddr`, which you supply when loading; and the `with-derelict-loader` configuration, which uses the Derelict library to load `vkGetInstanceProcAddr` for you.
+
+To use in the `default` configuration:
+
+1. Import via `import dvulkan;`.
+2. Get a pointer to the `vkGetInstanceProcAddr`, through platform-specific means (ex. loading the Vulkan shared library, or `glfwGetInstanceProcAddress` if using GLFW).
+3. Call `DVulkanLoader.loadInstanceFunctions(getProcAddr)`, where `getProcAddr` is the address of the loaded `vkGetInstanceProcAddr` function, to load the following functions:
+	* `vkGetInstanceProcAddr` (sets the global variable from the passed value)
 	* `vkCreateInstance`
 	* `vkEnumerateInstanceExtensionProperties`
 	* `vkEnumerateInstanceLayerProperties`
-* Create a `VkInstance` using the above functions.
-* Call `DVulkan.reload(instance)` to load the rest of the functions.
-* (Optional) Call `DVulkan.reload(device)` once you have a `VkDevice` to load specific functions for a device.
+4. Create a `VkInstance` using the above functions.
+5. Call `DVulkanLoader.loadAllFunctions(instance)` to load the rest of the functions.
+6. (Optional) Call `DVulkanLoader.loadAllFunctions(device)` once you have a `VkDevice` to load specific functions for a device.
+
+To use in the `with-derelict-loader` configuration, follow the above steps, but call `DVulkanDerelict.load()` instead of performing steps two and three.
 
 The API is similar to the C Vulkan API, but with some differences:
 * Since enums in D are not global, you need to specify the enum type. Ex: `VkResult.VK_SUCCESS` instead of just `VK_SUCCESS`.
