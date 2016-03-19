@@ -72,15 +72,6 @@ DYNAMIC_HEADER = """
 module PKGPREFIX.functions;
 
 public import PKGPREFIX.types;
-import derelict.util.loader;
-import derelict.util.system;
-
-private {
-	version(Windows)
-		enum libNames = "vulkan-1.dll";
-	else
-		static assert(0,"Need to implement Vulkan libNames for this operating system.");
-}
 
 extern(System) @nogc nothrow {
 """
@@ -146,20 +137,19 @@ class DGenerator(OutputGenerator):
 			print("\tPFN_%s %s;" % (name, name), file=self.dynamicFile)
 		print("""}
 
-class NAMEPREFIXLoader : SharedLibLoader {
-	public this() {
-		super(libNames);
-	}
+struct NAMEPREFIXLoader {
+	@disable this();
+	@disable this(this);
 	
-	protected override void loadSymbols() {
-		bindFunc(cast(void**)&vkGetInstanceProcAddr, "vkGetInstanceProcAddr");
+	static void loadInstanceFunctions(typeof(vkGetInstanceProcAddr) getProcAddr) {
+		vkGetInstanceProcAddr = getProcAddr;
 		vkEnumerateInstanceExtensionProperties = cast(typeof(vkEnumerateInstanceExtensionProperties)) vkGetInstanceProcAddr(null, "vkEnumerateInstanceExtensionProperties");
 		vkEnumerateInstanceLayerProperties = cast(typeof(vkEnumerateInstanceLayerProperties)) vkGetInstanceProcAddr(null, "vkEnumerateInstanceLayerProperties");
 		vkCreateInstance = cast(typeof(vkCreateInstance)) vkGetInstanceProcAddr(null, "vkCreateInstance");
 	}
 	
-	void reload(VkInstance instance) {
-		assert(vkGetInstanceProcAddr !is null);
+	static void loadAllFunctions(VkInstance instance) {
+		assert(vkGetInstanceProcAddr !is null, "Must call NAMEPREFIXLoader.loadInstanceFunctions before NAMEPREFIXLOADER.loadAllFunctions");
 """.replace("NAMEPREFIX", self.genOpts.nameprefix), file=self.dynamicFile)
 		
 		self.funcNames.difference_update({"vkGetDeviceProcAddr", "vkEnumerateInstanceExtensionProperties", "vkEnumerateInstanceLayerProperties", "vkCreateInstance"})
@@ -168,7 +158,7 @@ class NAMEPREFIXLoader : SharedLibLoader {
 		
 		print("""	}
 	
-	void reload(VkDevice device) {
+	void loadAllFunctions(VkDevice device) {
 		assert(vkGetDeviceProcAddr !is null, "reload(VkDevice) must be called after reload(VkInstance)");
 """, file=self.dynamicFile)
 		
@@ -179,11 +169,36 @@ class NAMEPREFIXLoader : SharedLibLoader {
 		print("""	}
 }
 
-__gshared NAMEPREFIXLoader NAMEPREFIX;
+version(NAMEPREFIXLoadFromDerelict) {
+	import derelict.util.loader;
+	import derelict.util.system;
+	
+	private {
+		version(Windows)
+			enum libNames = "vulkan-1.dll";
+		else
+			static assert(0,"Need to implement Vulkan libNames for this operating system.");
+	}
+	
+	class NAMEPREFIXDerelictLoader : SharedLibLoader {
+		this() {
+			super(libNames);
+		}
+		
+		protected override void loadSymbols() {
+			typeof(vkGetInstanceProcAddr) getProcAddr;
+			bindFunc(cast(void**)&getProcAddr, "vkGetInstanceProcAddr");
+			NAMEPREFIXLoader.loadInstanceFunctions(getProcAddr);
+		}
+	}
+	
+	__gshared NAMEPREFIXDerelictLoader NAMEPREFIXDerelict;
 
-shared static this() {
-	NAMEPREFIX = new NAMEPREFIXLoader();
+	shared static this() {
+		NAMEPREFIXDerelict = new NAMEPREFIXDerelictLoader();
+	}
 }
+
 """.replace("NAMEPREFIX", self.genOpts.nameprefix), file=self.dynamicFile)
 		
 		

@@ -14,7 +14,7 @@ private void enforceVK(VkResult res) {
 }
 
 int main() {
-	DVulkan.load();
+	DVulkanDerelict.load();
 	
 	VkApplicationInfo appInfo; with(appInfo) {
 		sType = VkStructureType.VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -29,7 +29,7 @@ int main() {
 	
 	VkInstance inst;
 	enforceVK(vkCreateInstance(&instInfo, null, &inst));
-	DVulkan.reload(inst);
+	DVulkanLoader.loadAllFunctions(inst);
 	scope(exit) vkDestroyInstance(inst, null);
 	
 	uint numDevices;

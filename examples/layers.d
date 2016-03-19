@@ -14,7 +14,7 @@ private void enforceVK(VkResult res) {
 }
 
 int main() {
-	DVulkan.load();
+	DVulkanDerelict.load();
 	
 	uint numLayerProps;
 	enforceVK(vkEnumerateInstanceLayerProperties(&numLayerProps, null));
@@ -45,7 +45,7 @@ int main() {
 	
 	VkInstance inst;
 	enforceVK(vkCreateInstance(&instInfo, null, &inst));
-	DVulkan.reload(inst);
+	DVulkanLoader.loadAllFunctions(inst);
 	scope(exit) vkDestroyInstance(inst, null);
 	
 	uint numDevices;

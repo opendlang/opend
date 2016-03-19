@@ -5,9 +5,18 @@
 	"authors": ["Alex Parrill"],
 	"targetType": "library",
 	"license": "BSD 2-clause",
-	"dependencies": {
-		"derelict-util": "~>2.0.4"
-	},
+	"configurations": [
+		{
+			"name": "default",
+		},
+		{
+			"name": "with-derelict-loader",
+			"versions": ["DVulkanLoadFromDerelict"],
+			"dependencies": {
+				"derelict-util": "~>2.0.4"
+			},
+		}
+	],
 	"subPackages": [
 		{
 			"name": "devices",
@@ -16,6 +25,9 @@
 			"sourceFiles": ["examples/devices.d"],
 			"dependencies": {
 				"d-vulkan": { "path": "." }
+			},
+			"subConfigurations": {
+				"d-vulkan": "with-derelict-loader"
 			}
 		},
 		{
@@ -25,6 +37,9 @@
 			"sourceFiles": ["examples/layers.d"],
 			"dependencies": {
 				"d-vulkan": { "path": "." }
+			},
+			"subConfigurations": {
+				"d-vulkan": "with-derelict-loader"
 			}
 		}
 	]

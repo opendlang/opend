@@ -2,15 +2,6 @@
 module dvulkan.functions;
 
 public import dvulkan.types;
-import derelict.util.loader;
-import derelict.util.system;
-
-private {
-	version(Windows)
-		enum libNames = "vulkan-1.dll";
-	else
-		static assert(0,"Need to implement Vulkan libNames for this operating system.");
-}
 
 extern(System) @nogc nothrow {
 
@@ -334,20 +325,19 @@ __gshared {
 	PFN_vkWaitForFences vkWaitForFences;
 }
 
-class DVulkanLoader : SharedLibLoader {
-	public this() {
-		super(libNames);
-	}
+struct DVulkanLoader {
+	@disable this();
+	@disable this(this);
 	
-	protected override void loadSymbols() {
-		bindFunc(cast(void**)&vkGetInstanceProcAddr, "vkGetInstanceProcAddr");
+	static void loadInstanceFunctions(typeof(vkGetInstanceProcAddr) getProcAddr) {
+		vkGetInstanceProcAddr = getProcAddr;
 		vkEnumerateInstanceExtensionProperties = cast(typeof(vkEnumerateInstanceExtensionProperties)) vkGetInstanceProcAddr(null, "vkEnumerateInstanceExtensionProperties");
 		vkEnumerateInstanceLayerProperties = cast(typeof(vkEnumerateInstanceLayerProperties)) vkGetInstanceProcAddr(null, "vkEnumerateInstanceLayerProperties");
 		vkCreateInstance = cast(typeof(vkCreateInstance)) vkGetInstanceProcAddr(null, "vkCreateInstance");
 	}
 	
-	void reload(VkInstance instance) {
-		assert(vkGetInstanceProcAddr !is null);
+	static void loadAllFunctions(VkInstance instance) {
+		assert(vkGetInstanceProcAddr !is null, "Must call DVulkanLoader.loadInstanceFunctions before DVulkanLOADER.loadAllFunctions");
 
 		vkAcquireNextImageKHR = cast(typeof(vkAcquireNextImageKHR)) vkGetInstanceProcAddr(instance, "vkAcquireNextImageKHR");
 		vkAllocateCommandBuffers = cast(typeof(vkAllocateCommandBuffers)) vkGetInstanceProcAddr(instance, "vkAllocateCommandBuffers");
@@ -505,7 +495,7 @@ class DVulkanLoader : SharedLibLoader {
 		vkWaitForFences = cast(typeof(vkWaitForFences)) vkGetInstanceProcAddr(instance, "vkWaitForFences");
 	}
 	
-	void reload(VkDevice device) {
+	void loadAllFunctions(VkDevice device) {
 		assert(vkGetDeviceProcAddr !is null, "reload(VkDevice) must be called after reload(VkInstance)");
 
 		vkAcquireNextImageKHR = cast(typeof(vkAcquireNextImageKHR)) vkGetDeviceProcAddr(device, "vkAcquireNextImageKHR");
@@ -665,9 +655,34 @@ class DVulkanLoader : SharedLibLoader {
 	}
 }
 
-__gshared DVulkanLoader DVulkan;
+version(DVulkanLoadFromDerelict) {
+	import derelict.util.loader;
+	import derelict.util.system;
+	
+	private {
+		version(Windows)
+			enum libNames = "vulkan-1.dll";
+		else
+			static assert(0,"Need to implement Vulkan libNames for this operating system.");
+	}
+	
+	class DVulkanDerelictLoader : SharedLibLoader {
+		this() {
+			super(libNames);
+		}
+		
+		protected override void loadSymbols() {
+			typeof(vkGetInstanceProcAddr) getProcAddr;
+			bindFunc(cast(void**)&getProcAddr, "vkGetInstanceProcAddr");
+			DVulkanLoader.loadInstanceFunctions(getProcAddr);
+		}
+	}
+	
+	__gshared DVulkanDerelictLoader DVulkanDerelict;
 
-shared static this() {
-	DVulkan = new DVulkanLoader();
+	shared static this() {
+		DVulkanDerelict = new DVulkanDerelictLoader();
+	}
 }
+
 
