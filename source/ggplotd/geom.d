@@ -13,6 +13,11 @@ version (unittest)
     import dunit.toolkit;
 }
 
+version (assert)
+{
+    import std.stdio : writeln;
+}
+
 /// Hold the data needed to draw to a plot context
 struct Geom
 {
@@ -593,8 +598,8 @@ private auto bin(R)(R xs, double min, double max, size_t noBins = 10)
 
             _width = (max - min) / (noBins - 1);
             _noBins = noBins;
-            // If min == max we need to set a custom width
-            if (_width == 0)
+            // If min == max or noBins == 1 we need to set a custom width
+            if (noBins == 1 || _width == 0)
                 _width = 0.1;
             _min = min - 0.5 * _width;
 
@@ -687,6 +692,11 @@ unittest
     assertEqual(binR.array[5].count, 3);
     assertLessThan(binR.array[5].range[0], 0.0);
     assertGreaterThan(binR.array[5].range[1], 0.0);
+
+    import std.math : isNaN;
+    auto b = [0.5].bin(1);
+    assert( !isNaN(b.front.range[0]) );
+    assertGreaterThan( b.front.range[1], b.front.range[0] );
 }
 
 
