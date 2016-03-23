@@ -91,7 +91,7 @@ import core.thread;
 * auto gd = new GTKWindow();
 * auto tid = new Thread(() { gd.run("plotcli", width, height); }).start();
 * auto gg = GGPlotD().put( geomHist3D( aes ) );
-* gd.drawGG( gg, width, height );
+* gd.draw( gg, width, height );
 * Thread.sleep( dur!("seconds")( 2 ) ); // sleep for 5 seconds
 * 
 * gg = GGPlotD().put( geomPoint( aes ) );
