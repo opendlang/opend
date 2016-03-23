@@ -49,6 +49,7 @@ auto uniquer(R)(R range)
             import std.range : front, popFront, empty;
             while( !range.empty )
             {
+                // TODO: Currently this causes an unnecessary "initial" check, because we now that previous value was already added. I think the only way to solve this would be to keep currentValue and possible future value around.
                 if (set.put(range.front))
                 {
                     currentFront = range.front;

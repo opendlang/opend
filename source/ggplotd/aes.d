@@ -676,6 +676,15 @@ unittest
     auto strs = NumericLabel!(string[])(["a", "c", "b", "a"]);
     assertEqual(strs.map!((a) => a[0]).array, [0, 1, 2.0, 0.0]);
     assertEqual(strs.map!((a) => a[1]).array, ["a", "c", "b", "a"]);
+
+
+    // Ignore NaN values
+    num = NumericLabel!(double[])([0.0, double.init, 1.0, 0.0]);
+    assertEqual(num.map!((a) => a[0]).array, [0.0, 1.0, 0.0]);
+    assertEqual(num.map!((a) => a[1]).array, ["0", "1", "0"]);
+    num = NumericLabel!(double[])([0.0, 0.1, 1.0, double.init]);
+    assertEqual(num.map!((a) => a[0]).array, [0.0, 1.0, 0.0]);
+    assertEqual(num.map!((a) => a[1]).array, ["0", "0.1", "1"]);
 }
 
 ///
