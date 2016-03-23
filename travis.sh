@@ -8,7 +8,7 @@ dub test -c ggplotd-gtk --compiler=${DC}
 if [[ $TRAVIS_BRANCH == 'master' ]] ; then
     if [ ! -z "$GH_TOKEN" ]; then
         git checkout master
-        dub build -b docs --compiler=${DC}
+        dub build -b docs --compiler=${DC} -c ggplotd-gtk
         cd docs
         mkdir images
         cp ../*.{png,svg} images/
