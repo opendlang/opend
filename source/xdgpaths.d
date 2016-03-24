@@ -28,7 +28,7 @@ version(XdgPathsDocs)
      * The ordered set of non-empty base paths to search for data files, in descending order of preference.
      * Params:
      *  subfolder = Subfolder which is appended to every path if not null.
-     * Returns: data directories, without user's one.
+     * Returns: Data directories, without user's one and with no duplicates.
      * Note: This function does not check if paths actually exist and appear to be directories.
      */
     @trusted string[] xdgDataDirs(string subfolder = null) nothrow;
@@ -46,7 +46,7 @@ version(XdgPathsDocs)
      * The ordered set of non-empty base paths to search for configuration files, in descending order of preference.
      * Params:
      *  subfolder = Subfolder which is appended to every path if not null.
-     * Returns: config directories, without user's one.
+     * Returns: Config directories, without user's one and with no duplicates.
      * Note: This function does not check if paths actually exist and appear to be directories.
      */
     @trusted string[] xdgConfigDirs(string subfolder = null) nothrow;
@@ -89,7 +89,7 @@ version(XdgPathsDocs)
 static if (isFreedesktop) 
 {
     private {
-        import std.algorithm : splitter, map, filter;
+        import std.algorithm : splitter, map, filter, canFind;
         import std.array;
         import std.path : buildPath;
         import std.process : environment;
@@ -120,10 +120,35 @@ static if (isFreedesktop)
         }
     }
     
-    private string[] pathsFromEnv(string envVar, string subfolder) nothrow {
-        string[] result;
-        collectException(splitter(environment.get(envVar), ':').filter!(p => !p.empty).map!(p => buildPath(p, subfolder)).array, result);
-        return result;
+    private string[] pathsFromEnvValue(string envValue, string subfolder = null) nothrow {
+        try {
+            string[] result;
+            foreach(path; splitter(envValue, ':').filter!(p => !p.empty).map!(p => buildPath(p, subfolder))) {
+                if (!result.canFind(path)) {
+                    result ~= path;
+                }
+            }
+            return result;
+        } catch(Exception e) {
+            return null;
+        }
+    }
+    
+    unittest
+    {
+        assert(pathsFromEnvValue("") == (string[]).init);
+        assert(pathsFromEnvValue(":") == (string[]).init);
+        assert(pathsFromEnvValue("::") == (string[]).init);
+        
+        assert(pathsFromEnvValue("path1:path2") == ["path1", "path2"]);
+        assert(pathsFromEnvValue("path1:") == ["path1"]);
+        assert(pathsFromEnvValue("path2:path1:path2") == ["path2", "path1"]);
+    }
+    
+    private string[] pathsFromEnv(string envVar, string subfolder = null) nothrow {   
+        string envValue;
+        collectException(environment.get(envVar), envValue);
+        return pathsFromEnvValue(envValue, subfolder);
     }
 
     private string xdgBaseDir(string envvar, string fallback, string subfolder = null) nothrow {
@@ -299,7 +324,7 @@ static if (isFreedesktop)
     }
     
     
-    string xdgRuntimeDir() nothrow @trusted // Do we need it on BSD systems?
+    @trusted string xdgRuntimeDir() nothrow // Do we need it on BSD systems?
     {
         import std.conv : octal;
         import std.string : toStringz;
