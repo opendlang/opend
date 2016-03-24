@@ -121,17 +121,17 @@ static if (isFreedesktop)
     }
     
     private string[] pathsFromEnvValue(string envValue, string subfolder = null) nothrow {
+        string[] result;
         try {
-            string[] result;
             foreach(path; splitter(envValue, ':').filter!(p => !p.empty).map!(p => buildPath(p, subfolder))) {
                 if (!result.canFind(path)) {
                     result ~= path;
                 }
             }
-            return result;
         } catch(Exception e) {
-            return null;
+            
         }
+        return result;
     }
     
     unittest
@@ -323,32 +323,32 @@ static if (isFreedesktop)
         testXdgBaseDir("XDG_CACHE_HOME", ".cache");
     }
     
-    import std.conv : octal;
-    import core.sys.posix.unistd;
-    import core.sys.posix.sys.stat;
-    import core.sys.posix.sys.types;
-    import core.stdc.string;
-    import core.stdc.errno;
-    
-    static if (is(typeof({import std.string : fromStringz;}))) {
-        import std.string : fromStringz;
-    } else { //own fromStringz implementation for compatibility reasons
-        import std.c.string : strlen;
-        @system static pure inout(char)[] fromStringz(inout(char)* cString) {
-            return cString ? cString[0..strlen(cString)] : null;
+    private {
+        import std.conv : octal;
+        import std.string : toStringz;
+        import std.file : isDir, exists, tempDir;
+        import std.stdio;
+        
+        import core.sys.posix.unistd;
+        import core.sys.posix.sys.stat;
+        import core.sys.posix.sys.types;
+        import core.stdc.string;
+        import core.stdc.errno;
+        
+        static if (is(typeof({import std.string : fromStringz;}))) {
+            import std.string : fromStringz;
+        } else { //own fromStringz implementation for compatibility reasons
+            @system static pure inout(char)[] fromStringz(inout(char)* cString) {
+                return cString ? cString[0..strlen(cString)] : null;
+            }
         }
     }
     
     private enum mode_t runtimeMode = octal!700;
     
     @trusted string xdgRuntimeDir() nothrow // Do we need it on BSD systems?
-    {
-        import std.conv : octal;
-        import std.string : toStringz;
+    {   
         import std.exception : assumeUnique;
-        import std.file : isDir, exists, tempDir;
-        import std.stdio;
-        
         import core.sys.posix.pwd;
         
         try { //one try to rule them all and for compatibility reasons
@@ -367,47 +367,43 @@ static if (isFreedesktop)
                         
                         if (!(runtime.exists && runtime.isDir)) {
                             if (mkdir(runtime.toStringz, runtimeMode) != 0) {
-                                version(XdgRuntimeDebug) stderr.writefln("Failed to create runtime directory %s: %s", runtime, fromStringz(strerror(errno)));
+                                version(XdgPathsRuntimeDebug) stderr.writefln("Failed to create runtime directory %s: %s", runtime, fromStringz(strerror(errno)));
                                 return null;
                             }
                         }
                     } else {
-                        version(XdgRuntimeDebug) stderr.writeln("Failed to get user name to create runtime directory");
+                        version(XdgPathsRuntimeDebug) stderr.writeln("Failed to get user name to create runtime directory");
                         return null;
                     }
                 } catch(Exception e) {
-                    version(XdgRuntimeDebug) collectException(stderr.writefln("Error when creating runtime directory: %s", e.msg));
+                    version(XdgPathsRuntimeDebug) collectException(stderr.writefln("Error when creating runtime directory: %s", e.msg));
                     return null;
                 }
             }
             stat_t statbuf;
             stat(runtime.toStringz, &statbuf);
             if (statbuf.st_uid != uid) {
-                version(XdgRuntimeDebug) collectException(stderr.writeln("Wrong ownership of runtime directory %s, %d instead of %d", runtime, statbuf.st_uid, uid));
+                version(XdgPathsRuntimeDebug) collectException(stderr.writeln("Wrong ownership of runtime directory %s, %d instead of %d", runtime, statbuf.st_uid, uid));
                 return null;
             }
             if ((statbuf.st_mode & octal!777) != runtimeMode) {
-                version(XdgRuntimeDebug) collectException(stderr.writefln("Wrong permissions on runtime directory %s, %o instead of %o", runtime, statbuf.st_mode, runtimeMode));
+                version(XdgPathsRuntimeDebug) collectException(stderr.writefln("Wrong permissions on runtime directory %s, %o instead of %o", runtime, statbuf.st_mode, runtimeMode));
                 return null;
             }
             
             return runtime;
         } catch (Exception e) {
-            version(XdgRuntimeDebug) collectException(stderr.writeln("Error when getting runtime directory: %s", e.msg));
+            version(XdgPathsRuntimeDebug) collectException(stderr.writeln("Error when getting runtime directory: %s", e.msg));
             return null;
         }
     }
     
     unittest
     {
-        import std.string : toStringz;
-        import std.file : isDir, exists, tempDir;
-        
         string runtimePath = buildPath(tempDir(), "xdgpaths-runtime-test");
         try {
             collectException(std.file.rmdir(runtimePath));
             
-            import std.stdio;
             if (mkdir(runtimePath.toStringz, runtimeMode) == 0) {
                 auto runtimeGuard = EnvGuard("XDG_RUNTIME_DIR");
                 environment["XDG_RUNTIME_DIR"] = runtimePath;
@@ -419,11 +415,10 @@ static if (isFreedesktop)
                 
                 std.file.rmdir(runtimePath);
             } else {
-                stderr.writeln(fromStringz(strerror(errno)));
+                version(XdgPathsRuntimeDebug) stderr.writeln(fromStringz(strerror(errno)));
             }
         } catch(Exception e) {
-            stderr.writeln(e.msg);
+            version(XdgPathsRuntimeDebug) stderr.writeln(e.msg);
         }
-        
     }
 }
