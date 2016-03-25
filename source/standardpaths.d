@@ -42,7 +42,6 @@ version(Windows) {
 } else version(Posix) {
     private {
         import std.stdio : File, StdioException;
-        import std.conv : octal;
         import std.string : toStringz;
         
         static if (is(typeof({import std.string : fromStringz;}))) {
@@ -688,6 +687,10 @@ version(Windows) {
         static assert(false, "Unsupported platform");
     } else {
         public import xdgpaths;
+        
+        private import std.algorithm : startsWith;
+        private import std.string;
+        private import std.traits;
             
         //Concat two strings, but if the first one is empty, then null string is returned.
         private string maybeConcat(string start, string path) nothrow @safe
@@ -695,36 +698,91 @@ version(Windows) {
             return start.empty ? null : start ~ path;
         }
         
-        private string xdgUserDir(string key, string fallback = null) nothrow @trusted {
-            import std.algorithm : startsWith;
-            import std.string : strip;
+        unittest
+        {
+            assert(maybeConcat(null, "path") == string.init);
+            assert(maybeConcat("path", "/file") == "path/file");
+        }
+        
+        private @trusted string getFromUserDirs(Range)(string xdgdir, string home, Range range) if (isInputRange!Range && isSomeString!(ElementType!Range))
+        {
+            foreach(line; range) {
+                line = strip(line);
+                auto index = xdgdir.length;
+                if (line.startsWith(xdgdir) && line.length > index && line[index] == '=') {
+                    line = line[index+1..$];
+                    if (line.length > 2 && line[0] == '"' && line[$-1] == '"') 
+                    {
+                        line = line[1..$-1];
+                    
+                        if (line.startsWith("$HOME")) {
+                            return maybeConcat(home, assumeUnique(line[5..$]));
+                        }
+                        if (line.length == 0 || line[0] != '/') {
+                            continue;
+                        }
+                        return assumeUnique(line);
+                    }
+                }
+            }
+            return null;
+        }
+        
+        
+        unittest
+        {
+            string content = 
+`# Comment
+
+XDG_DOCUMENTS_DIR="$HOME/My Documents" 
+XDG_MUSIC_DIR="/data/Music"
+XDG_VIDEOS_DIR="data/Video"
+`;
+            string home = "/home/user";
             
+            assert(getFromUserDirs("XDG_DOCUMENTS_DIR", home, content.splitLines) == "/home/user/My Documents");
+            assert(getFromUserDirs("XDG_MUSIC_DIR", home, content.splitLines) == "/data/Music");
+            assert(getFromUserDirs("XDG_DOWNLOAD_DIR", home, content.splitLines).empty);
+            assert(getFromUserDirs("XDG_VIDEOS_DIR", home, content.splitLines).empty);
+        }
+        
+        private @trusted string getFromDefaultDirs(Range)(string key, string home, Range range) if (isInputRange!Range && isSomeString!(ElementType!Range))
+        {
+            foreach(line; range) {
+                line = strip(line);
+                auto index = key.length;
+                if (line.startsWith(key) && line.length > index && line[index] == '=') 
+                {
+                    line = line[index+1..$];
+                    return home ~ "/" ~ assumeUnique(line);
+                }
+            }
+            return null;
+        }
+        
+        unittest
+        {
+            string content = 
+`# Comment
+
+DOCUMENTS=MyDocuments
+PICTURES=Images
+`;
+            string home = "/home/user";
+            assert(getFromDefaultDirs("DOCUMENTS", home, content.splitLines) == "/home/user/MyDocuments");
+            assert(getFromDefaultDirs("PICTURES", home, content.splitLines) == "/home/user/Images");
+            assert(getFromDefaultDirs("VIDEOS", home, content.splitLines).empty);
+        }
+        
+        private string xdgUserDir(string key, string fallback = null) nothrow @trusted {
             string fileName = maybeConcat(writablePath(StandardPath.config), "/user-dirs.dirs");
             string home = homeDir();
             try {
                 auto f = File(fileName, "r");
-                
                 auto xdgdir = "XDG_" ~ key ~ "_DIR";
-                
-                char[] buf;
-                while(f.readln(buf)) {
-                    char[] line = strip(buf);
-                    auto index = xdgdir.length;
-                    if (line.startsWith(xdgdir) && line.length > index && line[index] == '=') {
-                        line = line[index+1..$];
-                        if (line.length > 2 && line[0] == '"' && line[$-1] == '"') 
-                        {
-                            line = line[1..$-1];
-                        
-                            if (line.startsWith("$HOME")) {
-                                return maybeConcat(home, assumeUnique(line[5..$]));
-                            }
-                            if (line.length == 0 || line[0] != '/') {
-                                continue;
-                            }
-                            return assumeUnique(line);
-                        }
-                    }
+                auto path = getFromUserDirs(xdgdir, home, f.byLine());
+                if (path.length) {
+                    return path;
                 }
             } catch(Exception e) {
                 
@@ -733,15 +791,9 @@ version(Windows) {
             if (home.length) {
                 try {
                     auto f = File("/etc/xdg/user-dirs.defaults", "r");
-                    char[] buf;
-                    while(f.readln(buf)) {
-                        char[] line = strip(buf);
-                        auto index = key.length;
-                        if (line.startsWith(key) && line.length > index && line[index] == '=') 
-                        {
-                            line = line[index+1..$];
-                            return home ~ "/" ~ assumeUnique(line);
-                        }
+                    auto path = getFromDefaultDirs(key, home, f.byLine());
+                    if (path.length) {
+                        return path;
                     }
                 } catch (Exception e) {
                     
@@ -875,11 +927,25 @@ private string checkExecutable(string filePath) nothrow @trusted {
  * Returns: Range of paths as determined by $(B PATH) environment variable.
  * Note: this function does not cache its result
  */
-@trusted auto binPaths() nothrow
+@trusted auto binPaths()
 {
     string pathVar;
     collectException(environment.get("PATH"), pathVar);
-    return splitter(pathVar, pathVarSeparator);
+    return splitter(pathVar, pathVarSeparator).filter!(p => p.length != 0);
+}
+
+///
+unittest
+{
+    static if (isFreedesktop) {
+        import xdgpaths;
+        import std.algorithm : equal;
+        
+        auto pathGuard = EnvGuard("PATH");
+        
+        environment["PATH"] = ".:/usr/apps:/usr/local/apps:";
+        assert(equal(binPaths(), [".", "/usr/apps", "/usr/local/apps"]));
+    }
 }
 
 /**
@@ -931,6 +997,10 @@ private string checkExecutable(string filePath) nothrow @trusted {
  * ditto, but searches in system paths, determined by $(B PATH) environment variable.
  * See_Also: binPaths
  */
-@safe string findExecutable(string fileName) nothrow {    
-    return findExecutable(fileName, binPaths());
+@safe string findExecutable(string fileName) nothrow {
+    try {
+        return findExecutable(fileName, binPaths());
+    } catch(Exception e) {
+        return null;
+    }
 }

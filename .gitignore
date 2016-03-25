@@ -11,3 +11,4 @@ __dummy.html
 bin/
 docs/
 lib/
+*.lst
