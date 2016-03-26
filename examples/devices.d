@@ -16,16 +16,14 @@ private void enforceVK(VkResult res) {
 int main() {
 	DVulkanDerelict.load();
 	
-	VkApplicationInfo appInfo; with(appInfo) {
-		sType = VkStructureType.VK_STRUCTURE_TYPE_APPLICATION_INFO;
-		pApplicationName = "Vulkan Test";
-		apiVersion = VK_MAKE_VERSION(1, 0, 2);
-	}
+	VkApplicationInfo appInfo = {
+		pApplicationName: "Vulkan Test",
+		apiVersion: VK_MAKE_VERSION(1, 0, 2),
+	};
 	
-	VkInstanceCreateInfo instInfo; with(instInfo) {
-		sType = VkStructureType.VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-		pApplicationInfo = &appInfo;
-	}
+	VkInstanceCreateInfo instInfo = {
+		pApplicationInfo: &appInfo,
+	};
 	
 	VkInstance inst;
 	enforceVK(vkCreateInstance(&instInfo, null, &inst));

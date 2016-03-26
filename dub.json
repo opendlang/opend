@@ -42,6 +42,7 @@
 			"dependencies": {
 				"d-vulkan": { "path": "." }
 			},
+			"versions": ["DVulkanGlobalEnums"],
 			"subConfigurations": {
 				"d-vulkan": "with-derelict-loader"
 			}

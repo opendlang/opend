@@ -10,7 +10,7 @@ import std.string;
 import dvulkan;
 
 private void enforceVK(VkResult res) {
-	enforce(res == VkResult.VK_SUCCESS, res.to!string);
+	enforce(res == VK_SUCCESS, res.to!string);
 }
 
 int main() {
@@ -32,16 +32,14 @@ int main() {
 		writeln("\t", layer.description.ptr.fromStringz);
 	}
 	
-	VkApplicationInfo appInfo; with(appInfo) {
-		sType = VkStructureType.VK_STRUCTURE_TYPE_APPLICATION_INFO;
-		pApplicationName = "Vulkan Test";
-		apiVersion = VK_MAKE_VERSION(1, 0, 2);
-	}
+	VkApplicationInfo appInfo = {
+		pApplicationName: "Vulkan Test",
+		apiVersion: VK_MAKE_VERSION(1, 0, 2),
+	};
 	
-	VkInstanceCreateInfo instInfo; with(instInfo) {
-		sType = VkStructureType.VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-		pApplicationInfo = &appInfo;
-	}
+	VkInstanceCreateInfo instInfo = {
+		pApplicationInfo: &appInfo,
+	};
 	
 	VkInstance inst;
 	enforceVK(vkCreateInstance(&instInfo, null, &inst));
