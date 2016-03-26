@@ -128,6 +128,7 @@ class DGenerator(OutputGenerator):
 		print(TYPES_HEADER.replace("PKGPREFIX", genOpts.pkgprefix).replace("NAMEPREFIX", genOpts.nameprefix), file=self.typesFile)
 		print(DYNAMIC_HEADER.replace("PKGPREFIX", genOpts.pkgprefix).replace("NAMEPREFIX", genOpts.nameprefix), file=self.dynamicFile)
 		self.funcNames = set()
+		self.enumConstants = set()
 	
 	def endFile(self):
 		print("}", file=self.dynamicFile)
@@ -201,6 +202,10 @@ version(NAMEPREFIXLoadFromDerelict) {
 
 """.replace("NAMEPREFIX", self.genOpts.nameprefix), file=self.dynamicFile)
 		
+		print("version(NAMEPREFIXGlobalEnums) {".replace("NAMEPREFIX", self.genOpts.nameprefix), file=self.typesFile)
+		for enumName, enumField in sorted(self.enumConstants):
+			print("\tenum %s = %s.%s;" % (enumField, enumName, enumField), file=self.typesFile)
+		print("}", file=self.typesFile)
 		
 		self.typesFile.close()
 		self.dynamicFile.close()
@@ -267,15 +272,16 @@ version(NAMEPREFIXLoadFromDerelict) {
 		maxValue = float("-inf")
 		for elem in groupinfo.elem.findall("enum"):
 			(numval, strval) = self.enumToValue(elem, True)
-			name = elem.get("name")
-			print("\t%s = %s," % (name, strval), file=self.typesFile)
+			fieldName = elem.get("name")
+			print("\t%s = %s," % (fieldName, strval), file=self.typesFile)
+			self.enumConstants.add((name, fieldName))
 			
 			if expand:
 				if numval < minValue:
-					minName = name
+					minName = fieldName
 					minValue = numval
 				if numval > maxValue:
-					maxName = name
+					maxName = fieldName
 					maxValue = numval
 		
 		if expand:
@@ -284,6 +290,10 @@ version(NAMEPREFIXLoadFromDerelict) {
 			print("\t%s_END_RANGE = %s," % (prefix, maxName), file=self.typesFile)
 			print("\t%s_RANGE_SIZE = (%s - %s + 1)," % (prefix, maxName, minName), file=self.typesFile)
 			print("\t%s_MAX_ENUM = 0x7FFFFFFF," % prefix, file=self.typesFile)
+			self.enumConstants.add((name, prefix+"_BEGIN_RANGE"))
+			self.enumConstants.add((name, prefix+"_END_RANGE"))
+			self.enumConstants.add((name, prefix+"_RANGE_SIZE"))
+			self.enumConstants.add((name, prefix+"_MAX_ENUM"))
 		print("}", file=self.typesFile)
 	
 	def genEnum(self, enuminfo, name):

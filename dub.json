@@ -15,6 +15,10 @@
 			"dependencies": {
 				"derelict-util": "~>2.0.4"
 			},
+		},
+		{
+			"name": "with-global-enums",
+			"versions": ["DVulkanGlobalEnums"]
 		}
 	],
 	"subPackages": [
