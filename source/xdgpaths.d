@@ -37,7 +37,7 @@ version(XdgPathsDocs)
      * The ordered set of non-empty base paths to search for data files, in descending order of preference.
      * Params:
      *  subfolder = Subfolder which is appended to every path if not null.
-     * Returns: data directories, including user's one if could be evaluated.
+     * Returns: Data directories, including user's one if could be evaluated.
      * Note: This function does not check if paths actually exist and appear to be directories.
      */
     @trusted string[] xdgAllDataDirs(string subfolder = null) nothrow;
@@ -55,33 +55,37 @@ version(XdgPathsDocs)
      * The ordered set of non-empty base paths to search for configuration files, in descending order of preference.
      * Params:
      *  subfolder = Subfolder which is appended to every path if not null.
-     * Returns: config directories, including user's one if could be evaluated.
+     * Returns: Config directories, including user's one if could be evaluated.
      * Note: This function does not check if paths actually exist and appear to be directories.
      */
     @trusted string[] xdgAllConfigDirs(string subfolder = null) nothrow;
     
     /**
      * The base directory relative to which user-specific data files should be stored.
-     * Returns: Path to user-specific data directory or empty string if could not be evaluated.
-     * Note: This function does not check if returned path actually exists and appears to be directory.
-     * If such directory does not exist, it's recommended to create it using 0700 permissions restricting any access to user data for anyone else.
+     * Returns: Path to user-specific data directory or empty string on error.
+     * Params:
+     *  subfolder = Subfolder to append to determined path.
+     *  shouldCreate = If path does not exist, create directory using 700 permissions (i.e. allow access only for current user).
      */
-    @trusted string xdgDataHome(string subfolder = null) nothrow;
+    @trusted string xdgDataHome(string subfolder = null, bool shouldCreate = false) nothrow;
     
     /**
      * The base directory relative to which user-specific configuration files should be stored.
-     * Returns: Path to user-specific configuration directory or empty string if could not be evaluated.
-     * Note: This function does not check if returned path actually exists and appears to be directory.
-     * If such directory does not exist, it's recommended to create it using 0700 permissions restricting any access to user preferences for anyone else.
+     * Returns: Path to user-specific configuration directory or empty string on error.
+     * Params:
+     *  subfolder = Subfolder to append to determined path.
+     *  shouldCreate = If path does not exist, create directory using 700 permissions (i.e. allow access only for current user).
      */
-    @trusted string xdgConfigHome(string subfolder = null) nothrow;
+    @trusted string xdgConfigHome(string subfolder = null, bool shouldCreate = false) nothrow;
     
     /**
      * The base directory relative to which user-specific non-essential files should be stored.
      * Returns: Path to user-specific cache directory or empty string if could not be evaluated.
-     * Note: This function does not check if returned path actually exists and appears to be directory.
+     * Params:
+     *  subfolder = Subfolder to append to determined path.
+     *  shouldCreate = If path does not exist, create directory using 700 permissions (i.e. allow access only for current user).
      */
-    @trusted string xdgCacheHome(string subfolder = null) nothrow {
+    @trusted string xdgCacheHome(string subfolder = null, bool shouldCreate = false) nothrow {
         return xdgBaseDir("XDG_CACHE_HOME", ".cache", subfolder);
     }
 }
@@ -91,14 +95,32 @@ static if (isFreedesktop)
     private {
         import std.algorithm : splitter, map, filter, canFind;
         import std.array;
-        import std.path : buildPath;
-        import std.process : environment;
+        import std.conv : octal;
         import std.exception : collectException;
+        import std.file;
+        import std.path : buildPath, dirName;
+        import std.process : environment;
+        import std.string : toStringz;
+        
+        import core.sys.posix.unistd;
+        import core.sys.posix.sys.stat;
+        import core.sys.posix.sys.types;
+        import core.stdc.string;
+        import core.stdc.errno;
+        
+        static if (is(typeof({import std.string : fromStringz;}))) {
+            import std.string : fromStringz;
+        } else { //own fromStringz implementation for compatibility reasons
+            @system static pure inout(char)[] fromStringz(inout(char)* cString) {
+                return cString ? cString[0..strlen(cString)] : null;
+            }
+        }
+        
+        enum mode_t privateMode = octal!700;
     }
     
     version(unittest) {
-        import std.stdio;
-        import std.algorithm : joiner, equal;
+        import std.algorithm : equal;
         
         struct EnvGuard
         {
@@ -151,16 +173,37 @@ static if (isFreedesktop)
         return pathsFromEnvValue(envValue, subfolder);
     }
 
-    private string xdgBaseDir(string envvar, string fallback, string subfolder = null) nothrow {
+    private bool ensureExists(string dir) nothrow
+    {
+        return dir.exists || (collectException(mkdirRecurse(dir.dirName)) is null && mkdir(dir.toStringz, privateMode) == 0);
+    }
+    
+    private string xdgBaseDir(string envvar, string fallback, string subfolder = null, bool shouldCreate = false) nothrow {
         string dir;
         collectException(environment.get(envvar), dir);
-        if (dir.length) {
-            return buildPath(dir, subfolder);
-        } else {
+        if (dir.length == 0) {
             string home;
             collectException(environment.get("HOME"), home);
-            return home.length ? buildPath(home, fallback, subfolder) : null;
+            dir = home.length ? buildPath(home, fallback) : null;
         }
+        
+        if (dir.length) {
+            if (shouldCreate) {
+                if (ensureExists(dir)) {
+                    if (subfolder.length) {
+                        string path = buildPath(dir, subfolder);
+                        if (path.exists || collectException(mkdirRecurse(path)) is null) {
+                            return path;
+                        }
+                    } else {
+                        return dir;
+                    }
+                }
+            } else {
+                return buildPath(dir, subfolder);
+            }
+        }
+        return null;
     }
     
     version(unittest) {
@@ -296,8 +339,8 @@ static if (isFreedesktop)
         assert(xdgAllConfigDirs() == newConfigDirs);
     }
     
-    @trusted string xdgDataHome(string subfolder = null) nothrow {
-        return xdgBaseDir("XDG_DATA_HOME", ".local/share", subfolder);
+    @trusted string xdgDataHome(string subfolder = null, bool shouldCreate = false) nothrow {
+        return xdgBaseDir("XDG_DATA_HOME", ".local/share", subfolder, shouldCreate);
     }
     
     unittest
@@ -305,8 +348,8 @@ static if (isFreedesktop)
         testXdgBaseDir("XDG_DATA_HOME", ".local/share");
     }
     
-    @trusted string xdgConfigHome(string subfolder = null) nothrow {
-        return xdgBaseDir("XDG_CONFIG_HOME", ".config", subfolder);
+    @trusted string xdgConfigHome(string subfolder = null, bool shouldCreate = false) nothrow {
+        return xdgBaseDir("XDG_CONFIG_HOME", ".config", subfolder, shouldCreate);
     }
     
     unittest
@@ -314,8 +357,8 @@ static if (isFreedesktop)
         testXdgBaseDir("XDG_CONFIG_HOME", ".config");
     }
     
-    @trusted string xdgCacheHome(string subfolder = null) nothrow {
-        return xdgBaseDir("XDG_CACHE_HOME", ".cache", subfolder);
+    @trusted string xdgCacheHome(string subfolder = null, bool shouldCreate = false) nothrow {
+        return xdgBaseDir("XDG_CACHE_HOME", ".cache", subfolder, shouldCreate);
     }
     
     unittest
@@ -323,28 +366,9 @@ static if (isFreedesktop)
         testXdgBaseDir("XDG_CACHE_HOME", ".cache");
     }
     
-    private {
-        import std.conv : octal;
-        import std.string : toStringz;
-        import std.file : isDir, exists, tempDir;
-        import std.stdio;
-        
-        import core.sys.posix.unistd;
-        import core.sys.posix.sys.stat;
-        import core.sys.posix.sys.types;
-        import core.stdc.string;
-        import core.stdc.errno;
-        
-        static if (is(typeof({import std.string : fromStringz;}))) {
-            import std.string : fromStringz;
-        } else { //own fromStringz implementation for compatibility reasons
-            @system static pure inout(char)[] fromStringz(inout(char)* cString) {
-                return cString ? cString[0..strlen(cString)] : null;
-            }
-        }
+    version(XdgPathsRuntimeDebug) {
+        private import std.stdio;
     }
-    
-    private enum mode_t runtimeMode = octal!700;
     
     @trusted string xdgRuntimeDir() nothrow // Do we need it on BSD systems?
     {   
@@ -366,7 +390,7 @@ static if (isFreedesktop)
                         runtime = tempDir() ~ "/runtime-" ~ assumeUnique(fromStringz(pw.pw_name));
                         
                         if (!(runtime.exists && runtime.isDir)) {
-                            if (mkdir(runtime.toStringz, runtimeMode) != 0) {
+                            if (mkdir(runtime.toStringz, privateMode) != 0) {
                                 version(XdgPathsRuntimeDebug) stderr.writefln("Failed to create runtime directory %s: %s", runtime, fromStringz(strerror(errno)));
                                 return null;
                             }
@@ -386,8 +410,8 @@ static if (isFreedesktop)
                 version(XdgPathsRuntimeDebug) collectException(stderr.writeln("Wrong ownership of runtime directory %s, %d instead of %d", runtime, statbuf.st_uid, uid));
                 return null;
             }
-            if ((statbuf.st_mode & octal!777) != runtimeMode) {
-                version(XdgPathsRuntimeDebug) collectException(stderr.writefln("Wrong permissions on runtime directory %s, %o instead of %o", runtime, statbuf.st_mode, runtimeMode));
+            if ((statbuf.st_mode & octal!777) != privateMode) {
+                version(XdgPathsRuntimeDebug) collectException(stderr.writefln("Wrong permissions on runtime directory %s, %o instead of %o", runtime, statbuf.st_mode, privateMode));
                 return null;
             }
             
@@ -404,7 +428,7 @@ static if (isFreedesktop)
         try {
             collectException(std.file.rmdir(runtimePath));
             
-            if (mkdir(runtimePath.toStringz, runtimeMode) == 0) {
+            if (mkdir(runtimePath.toStringz, privateMode) == 0) {
                 auto runtimeGuard = EnvGuard("XDG_RUNTIME_DIR");
                 environment["XDG_RUNTIME_DIR"] = runtimePath;
                 assert(xdgRuntimeDir() == runtimePath);

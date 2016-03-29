@@ -20,5 +20,6 @@
             "dflags": ["-c", "-Df__dummy.html", "-Xfdocs.json"],
             "versions" : ["XdgPathsDocs"]
         }
-    }
+    },
+    "subPackages" : ["./examples/xdgpathstest"]
 }

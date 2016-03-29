@@ -3,7 +3,3 @@ docs.json
 __dummy.html
 *.o
 *.obj
-lib/
-docs/
-*.lst
-bin/
