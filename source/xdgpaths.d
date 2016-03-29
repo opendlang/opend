@@ -1,6 +1,6 @@
 /**
  * Getting XDG base directories.
- * Note: these functions are defined only on freedesktop systems.
+ * Note: These functions are defined only on freedesktop systems.
  * Authors: 
  *  $(LINK2 https://github.com/MyLittleRobo, Roman Chistokhodov)
  * Copyright:
@@ -80,7 +80,7 @@ version(XdgPathsDocs)
     
     /**
      * The base directory relative to which user-specific non-essential files should be stored.
-     * Returns: Path to user-specific cache directory or empty string if could not be evaluated.
+     * Returns: Path to user-specific cache directory or empty string on error.
      * Params:
      *  subfolder = Subfolder to append to determined path.
      *  shouldCreate = If path does not exist, create directory using 700 permissions (i.e. allow access only for current user).
