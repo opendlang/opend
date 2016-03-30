@@ -27,7 +27,7 @@ int main()
         writeln("\nSpecific functions for Windows:");
         writeln("Roaming data: ", roamingPath());
         writeln("Saved games: ", savedGames());
-    } else {
+    } else version(linux) {
         writeln("\nSpecific functions for Linux:");
         writeln("Runtime: ", xdgRuntimeDir());
     }

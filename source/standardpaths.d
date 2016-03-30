@@ -75,7 +75,7 @@ enum StandardPath {
     config,
     /**
      * Location of cached data.
-     * Note: Windows does not provide specical directory for cache data. On Windows $(B data)/cache is used as cache folder.
+     * Note: Windows does not provide specical directory for cache data.
      */
     cache,
     ///User's desktop directory.
@@ -110,7 +110,12 @@ enum StandardPath {
      * Note: don't rely on this on freedesktop, since it uses hardcoded paths there. Better consider using $(LINK2 http://www.freedesktop.org/wiki/Software/fontconfig/, fontconfig library)
      */
     fonts,
-    ///User's applications.
+    /**
+     * User's applications. This has different meaning across platforms.
+     * On Windows it's directory where links to programs for Start menu are stored.
+     * On OS X it's folder where applications are typically put.
+     * On Freedesktop it's directory where .desktop files are put.
+     */
     applications,
 }
 
@@ -156,7 +161,7 @@ string homeDir() nothrow @safe
  * This function does not ensure if the returned path exists and appears to be accessible directory.
  * Note: This function does not cache its results.
  */
-string writablePath(StandardPath type) nothrow @safe;
+string writablePath(StandardPath type, bool shouldCreate) nothrow @safe;
 
 /**
  * Getting paths for various locations.
@@ -185,7 +190,7 @@ version(StandardPathsDocs)
      * Returns: User's Roaming directory. On fail returns an empty string.
      * Note: This function is Windows only.
      */
-    string roamingPath() nothrow @safe;
+    string roamingPath(bool shouldCreate = false) nothrow @safe;
     
     /**
      * Location where games may store their saves. 
@@ -193,7 +198,7 @@ version(StandardPathsDocs)
      * Returns: User's Saved Games directory. On fail returns an empty string.
      * Note: This function is Windows only.
      */
-    string savedGames() nothrow @safe;
+    string savedGames(bool shouldCreate = false) nothrow @safe;
 }
 
 version(Windows) {
@@ -325,7 +330,7 @@ version(Windows) {
         }
     }
     
-    private string getShellFolder(const(wchar)* key) nothrow @trusted
+    private string getShellFolder(const(wchar)* key, bool shouldCreate = false) nothrow @trusted
     {
         HKEY hKey;
         if (isAdvApiLoaded()) {    
@@ -348,7 +353,15 @@ version(Windows) {
                         str = str[0..$-1];
                     }
                     try {
-                        return toUTF8(str);
+                        auto path = toUTF8(str);
+                        if (shouldCreate) {
+                            bool ok;
+                            collectException(path.isDir, ok);
+                            if (!ok) {
+                                mkdirRecurse(path);
+                            }
+                        }
+                        return path;
                     } catch(Exception e) {
                         
                     }
@@ -360,10 +373,11 @@ version(Windows) {
     }
     
     
-    private string getCSIDLFolder(int csidl) nothrow @trusted
+    private string getCSIDLFolder(int csidl, bool shouldCreate = false) nothrow @trusted
     {
         import core.stdc.wchar_ : wcslen;
         
+        csidl = shouldCreate ? (csidl | CSIDL_FLAG_CREATE) : csidl;
         wchar[MAX_PATH] path = void;
         if (hasSHGetSpecialFolderPath() && ptrSHGetSpecialFolderPath(null, path.ptr, csidl, FALSE)) {
             size_t len = wcslen(path.ptr);
@@ -376,50 +390,44 @@ version(Windows) {
         return null;
     }
     
-    string roamingPath() nothrow @safe
+    string roamingPath(bool shouldCreate = false) nothrow @safe
     {
-        return getCSIDLFolder(CSIDL_APPDATA);
+        return getCSIDLFolder(CSIDL_APPDATA, shouldCreate);
     }
     
-    string savedGames() nothrow @safe
+    string savedGames(bool shouldCreate = false) nothrow @safe
     {
-        return getShellFolder("{4C5C32FF-BB9D-43b0-B5B4-2D72E54EAAA4}\0"w.ptr);
+        return getShellFolder("{4C5C32FF-BB9D-43b0-B5B4-2D72E54EAAA4}\0"w.ptr, shouldCreate);
     }
     
-    string writablePath(StandardPath type) nothrow @safe
+    string writablePath(StandardPath type, bool shouldCreate = false) nothrow @safe
     {
         final switch(type) {
             case StandardPath.config:
             case StandardPath.data:
-                return getCSIDLFolder(CSIDL_LOCAL_APPDATA);
+                return getCSIDLFolder(CSIDL_LOCAL_APPDATA, shouldCreate);
             case StandardPath.cache:
-            {
-                string path = getCSIDLFolder(CSIDL_LOCAL_APPDATA);
-                if (path.length) {
-                    return buildPath(path, "cache");
-                }
                 return null;
-            }
             case StandardPath.desktop:
-                return getCSIDLFolder(CSIDL_DESKTOPDIRECTORY);
+                return getCSIDLFolder(CSIDL_DESKTOPDIRECTORY, shouldCreate);
             case StandardPath.documents:
-                return getCSIDLFolder(CSIDL_PERSONAL);
+                return getCSIDLFolder(CSIDL_PERSONAL, shouldCreate);
             case StandardPath.pictures:
-                return getCSIDLFolder(CSIDL_MYPICTURES);
+                return getCSIDLFolder(CSIDL_MYPICTURES, shouldCreate);
             case StandardPath.music:
-                return getCSIDLFolder(CSIDL_MYMUSIC);
+                return getCSIDLFolder(CSIDL_MYMUSIC, shouldCreate);
             case StandardPath.videos:
-                return getCSIDLFolder(CSIDL_MYVIDEO);
+                return getCSIDLFolder(CSIDL_MYVIDEO, shouldCreate);
             case StandardPath.downloads:
-                return getShellFolder("{374DE290-123F-4565-9164-39C4925E467B}\0"w.ptr);
+                return getShellFolder("{374DE290-123F-4565-9164-39C4925E467B}\0"w.ptr, shouldCreate);
             case StandardPath.templates:
-                return getCSIDLFolder(CSIDL_TEMPLATES);
+                return getCSIDLFolder(CSIDL_TEMPLATES, shouldCreate);
             case StandardPath.publicShare:
                 return null;
             case StandardPath.fonts:
                 return null;
             case StandardPath.applications:
-                return getCSIDLFolder(CSIDL_PROGRAMS);
+                return getCSIDLFolder(CSIDL_PROGRAMS, shouldCreate);
         }
     }
     
@@ -591,24 +599,23 @@ version(Windows) {
         }
     }
 
-    @nogc @trusted bool isCarbonLoaded() nothrow
+    private @nogc @trusted bool isCarbonLoaded() nothrow
     {
         return ptrFSFindFolder != null && ptrFSRefMakePath != null;
     }
 
-    enum noErr = 0;
+    private enum noErr = 0;
 
-    string fsPath(short domain, OSType type) nothrow @trusted
+    private string fsPath(short domain, OSType type, bool shouldCreate = false) nothrow @trusted
     {
         import std.stdio;   
         FSRef fsref;
-        if (isCarbonLoaded() && ptrFSFindFolder(domain, type, false, &fsref) == noErr) {
+        if (isCarbonLoaded() && ptrFSFindFolder(domain, type, shouldCreate, &fsref) == noErr) {
 
             char[2048] buf;
             char* path = buf.ptr;
             if (ptrFSRefMakePath(&fsref, path, buf.sizeof) == noErr) {
                 try {
-
                     return fromStringz(path).idup;
                 }
                 catch(Exception e) {
@@ -619,7 +626,7 @@ version(Windows) {
         return null;
     }
     
-    string writablePath(StandardPath type) nothrow @safe
+    string writablePath(StandardPath type, bool shouldCreate = false) nothrow @safe
     {
         final switch(type) {
             case StandardPath.config:
@@ -827,7 +834,7 @@ PICTURES=Images
             return xdgRuntimeDir();
         }
         
-        string writablePath(StandardPath type) nothrow @safe
+        string writablePath(StandardPath type, bool shouldCreate = false) nothrow @safe
         {
             final switch(type) {
                 case StandardPath.config:
