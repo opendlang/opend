@@ -112,8 +112,8 @@ auto geomRectangle(AES)(AES aes)
             immutable tup = _aes.front;
             immutable f = delegate(cairo.Context context, ColourMap colourMap ) 
             {
-                import std.math : isNaN;
-                if (isNaN(tup.x[0]) || isNaN(tup.y[0]))
+                import std.math : isFinite;
+                if (!isFinite(tup.x[0]) || !isFinite(tup.y[0]))
                     return context;
                 context.save();
                 context.translate( tup.x[0], tup.y[0] );
@@ -205,8 +205,8 @@ auto geomEllipse(AES)(AES aes)
             immutable tup = _aes.front;
             immutable f = delegate(cairo.Context context, ColourMap colourMap ) 
             {
-                import std.math : isNaN;
-                if (isNaN(tup.x[0]) || isNaN(tup.y[0]))
+                import std.math : isFinite;
+                if (!isFinite(tup.x[0]) || !isFinite(tup.y[0]))
                     return context;
                 import std.math : PI;
                 context.save();
@@ -294,8 +294,8 @@ auto geomTriangle(AES)(AES aes)
             immutable tup = _aes.front;
             immutable f = delegate(cairo.Context context, ColourMap colourMap ) 
             {
-                import std.math : isNaN;
-                if (isNaN(tup.x[0]) || isNaN(tup.y[0]))
+                import std.math : isFinite;
+                if (!isFinite(tup.x[0]) || !isFinite(tup.y[0]))
                     return context;
                 context.save();
                 context.translate( tup.x[0], tup.y[0] );
@@ -385,8 +385,8 @@ auto geomDiamond(AES)(AES aes)
             immutable tup = _aes.front;
             immutable f = delegate(cairo.Context context, ColourMap colourMap ) 
             {
-                import std.math : isNaN;
-                if (isNaN(tup.x[0]) || isNaN(tup.y[0]))
+                import std.math : isFinite;
+                if (!isFinite(tup.x[0]) || !isFinite(tup.y[0]))
                     return context;
                 context.save();
                 context.translate( tup.x[0], tup.y[0] );
@@ -490,17 +490,19 @@ auto geomLine(AES)(AES aes)
             immutable flags = groupedAes.front.front;
             immutable f = delegate(cairo.Context context, ColourMap colourMap ) {
 
-                import std.math : isNaN;
+                import std.math : isFinite;
                 auto fr = coords.front;
                 context.moveTo(fr[0][0], fr[1][0]);
                 coords.popFront;
                 foreach (tup; coords)
                 {
                     // TODO should we actually move to next coordinate here?
-                    if (!isNaN(tup[0][0]) && !isNaN(tup[1][0]))
+                    if (isFinite(tup[0][0]) && isFinite(tup[1][0]))
                     {
                         context.lineTo(tup[0][0], tup[1][0]);
                         context.lineWidth = 2.0*flags.size;
+                    } else {
+                        context.newSubPath();
                     }
                 }
 
@@ -918,8 +920,8 @@ auto geomLabel(AES)(AES aes)
         {
             immutable tup = _aes.front;
             immutable f = delegate(cairo.Context context, ColourMap colourMap) {
-                import std.math : isNaN;
-                if (isNaN(tup.x[0]) || isNaN(tup.y[0]))
+                import std.math : isFinite;
+                if (!isFinite(tup.x[0]) || !isFinite(tup.y[0]))
                     return context;
                 context.setFontSize(14.0*tup.size);
                 context.moveTo(tup.x[0], tup.y[0]);
