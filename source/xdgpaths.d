@@ -146,6 +146,9 @@ static if (isFreedesktop)
         string[] result;
         try {
             foreach(path; splitter(envValue, ':').filter!(p => !p.empty).map!(p => buildPath(p, subfolder))) {
+                if (path[$-1] == '/') {
+                    path = path[0..$-1];
+                }
                 if (!result.canFind(path)) {
                     result ~= path;
                 }
@@ -164,6 +167,8 @@ static if (isFreedesktop)
         
         assert(pathsFromEnvValue("path1:path2") == ["path1", "path2"]);
         assert(pathsFromEnvValue("path1:") == ["path1"]);
+        assert(pathsFromEnvValue("path1/") == ["path1"]);
+        assert(pathsFromEnvValue("path1/:path1") == ["path1"]);
         assert(pathsFromEnvValue("path2:path1:path2") == ["path2", "path1"]);
     }
     
@@ -260,7 +265,7 @@ static if (isFreedesktop)
         
         auto newDataDirs = ["/usr/local/data", "/usr/data"];
         
-        environment["XDG_DATA_DIRS"] = "/usr/local/data:/usr/data";
+        environment["XDG_DATA_DIRS"] = "/usr/local/data:/usr/data:/usr/local/data/:/usr/data/";
         assert(xdgDataDirs() == newDataDirs);
         assert(equal(xdgDataDirs("applications"), newDataDirs.map!(p => buildPath(p, "applications"))));
         
