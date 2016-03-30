@@ -175,7 +175,17 @@ static if (isFreedesktop)
 
     private bool ensureExists(string dir) nothrow
     {
-        return dir.exists || (collectException(mkdirRecurse(dir.dirName)) is null && mkdir(dir.toStringz, privateMode) == 0);
+        bool ok;
+        try {
+            ok = dir.exists;
+            if (!ok) {
+                mkdirRecurse(dir.dirName);
+                ok = mkdir(dir.toStringz, privateMode) == 0;
+            }
+        } catch(Exception e) {
+            
+        }
+        return ok;
     }
     
     private string xdgBaseDir(string envvar, string fallback, string subfolder = null, bool shouldCreate = false) nothrow {
@@ -192,8 +202,13 @@ static if (isFreedesktop)
                 if (ensureExists(dir)) {
                     if (subfolder.length) {
                         string path = buildPath(dir, subfolder);
-                        if (path.exists || collectException(mkdirRecurse(path)) is null) {
+                        try {
+                            if (!path.exists) {
+                                mkdirRecurse(path);
+                            }
                             return path;
+                        } catch(Exception e) {
+                            
                         }
                     } else {
                         return dir;
