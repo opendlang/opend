@@ -267,7 +267,11 @@ Here we take care to always return a valid set of bounds
     /// Adapt bounds to include the new point
     bool adapt(T : Point)(in T point)
     {
+        import std.math : isFinite;
         bool adapted = false;
+        if (!isFinite(point.x) || !isFinite(point.y))
+            return adapted;
+
         if (!valid)
         {
             adapted = true;
@@ -353,6 +357,16 @@ unittest
     assert(bounds.valid);
     pnt = Point(4, 4);
     assert(!bounds.adapt(pnt));
+
+
+    assert(!bounds.adapt(Point(double.init, 1.0)));
+    assert(!bounds.adapt(Point(-1.0,double.init)));
+    assert(!bounds.adapt(Point(double.init, double.init)));
+
+    import std.math;
+    assert(!bounds.adapt(Point(log(0.0), 1.0)));
+    assert(!bounds.adapt(Point(-1.0,log(0.0))));
+    assert(!bounds.adapt(Point(log(0.0), log(0.0))));
 }
 
 unittest
