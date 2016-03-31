@@ -158,10 +158,12 @@ string homeDir() nothrow @safe
 /**
  * Getting writable paths for various locations.
  * Returns: Path where files of $(U type) should be written to by current user, or an empty string if could not determine path.
- * This function does not ensure if the returned path exists and appears to be accessible directory.
+ * Params:
+ *  type = Directory to lookup.
+ *  shouldCreate = Create folder if one does not exist.
  * Note: This function does not cache its results.
  */
-string writablePath(StandardPath type, bool shouldCreate) nothrow @safe;
+string writablePath(StandardPath type, bool shouldCreate = false) nothrow @safe;
 
 /**
  * Getting paths for various locations.
@@ -835,35 +837,50 @@ PICTURES=Images
             return xdgRuntimeDir();
         }
         
+        private string createIfNeeded(string path, bool shouldCreate) nothrow @trusted
+        {
+            if (path.length && shouldCreate) {
+                bool pathExist;
+                collectException(path.exists, pathExist);
+                if (!pathExist && collectException(mkdirRecurse(path)) is null) {
+                    return path;
+                } else {
+                    return null;
+                }
+            } else {
+                return path;
+            }
+        }
+        
         string writablePath(StandardPath type, bool shouldCreate = false) nothrow @safe
         {
             final switch(type) {
                 case StandardPath.config:
-                    return xdgConfigHome();
+                    return xdgConfigHome(null, shouldCreate);
                 case StandardPath.cache:
-                    return xdgCacheHome();
+                    return xdgCacheHome(null, shouldCreate);
                 case StandardPath.data:
-                    return xdgDataHome();
+                    return xdgDataHome(null, shouldCreate);
                 case StandardPath.desktop:
-                    return xdgUserDir("DESKTOP", "/Desktop");
+                    return xdgUserDir("DESKTOP", "/Desktop").createIfNeeded(shouldCreate);
                 case StandardPath.documents:
-                    return xdgUserDir("DOCUMENTS");
+                    return xdgUserDir("DOCUMENTS").createIfNeeded(shouldCreate);
                 case StandardPath.pictures:
-                    return xdgUserDir("PICTURES");
+                    return xdgUserDir("PICTURES").createIfNeeded(shouldCreate);
                 case StandardPath.music:
-                    return xdgUserDir("MUSIC");
+                    return xdgUserDir("MUSIC").createIfNeeded(shouldCreate);
                 case StandardPath.videos:
-                    return xdgUserDir("VIDEOS");
+                    return xdgUserDir("VIDEOS").createIfNeeded(shouldCreate);
                 case StandardPath.downloads:
-                    return xdgUserDir("DOWNLOAD");
+                    return xdgUserDir("DOWNLOAD").createIfNeeded(shouldCreate);
                 case StandardPath.templates:
-                    return xdgUserDir("TEMPLATES", "/Templates");
+                    return xdgUserDir("TEMPLATES", "/Templates").createIfNeeded(shouldCreate);
                 case StandardPath.publicShare:
-                    return xdgUserDir("PUBLICSHARE", "/Public");
+                    return xdgUserDir("PUBLICSHARE", "/Public").createIfNeeded(shouldCreate);
                 case StandardPath.fonts:
-                    return homeFontsPath();
+                    return homeFontsPath().createIfNeeded(shouldCreate);
                 case StandardPath.applications:
-                    return xdgDataHome("applications");
+                    return xdgDataHome("applications", shouldCreate);
             }
         }
         
