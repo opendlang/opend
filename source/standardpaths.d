@@ -571,10 +571,10 @@ version(Windows) {
 
         alias int Boolean;
         alias int OSType;
-        alias int OSerr;
+        alias short OSErr;
         
-        extern(C) @nogc @system int dummy(short, int, int, FSRef*) nothrow { return 0; }
-        extern(C) @nogc @system int dummy2(const(FSRef)*, char*, uint) nothrow { return 0; }
+        extern(C) @nogc @system OSErr dummy(short, OSType, Boolean, FSRef*) nothrow { return 0; }
+        extern(C) @nogc @system OSErr dummy2(const(FSRef)*, char*, uint) nothrow { return 0; }
 
         alias da_FSFindFolder = typeof(&dummy);
         alias da_FSRefMakePath = typeof(&dummy2);
@@ -604,7 +604,7 @@ version(Windows) {
         return ptrFSFindFolder != null && ptrFSRefMakePath != null;
     }
 
-    private enum noErr = 0;
+    private enum OSErr noErr = 0;
 
     private string fsPath(short domain, OSType type, bool shouldCreate = false) nothrow @trusted
     {
