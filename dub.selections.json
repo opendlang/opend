@@ -1,6 +1,6 @@
 {
 	"fileVersion": 1,
 	"versions": {
-		"isfreedesktop": "~master"
+		"isfreedesktop": "0.1.0"
 	}
 }
