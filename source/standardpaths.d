@@ -572,9 +572,10 @@ version(Windows) {
         alias int Boolean;
         alias int OSType;
         alias short OSErr;
+        alias int OSStatus;
         
         extern(C) @nogc @system OSErr dummy(short, OSType, Boolean, FSRef*) nothrow { return 0; }
-        extern(C) @nogc @system OSErr dummy2(const(FSRef)*, char*, uint) nothrow { return 0; }
+        extern(C) @nogc @system OSStatus dummy2(const(FSRef)*, char*, uint) nothrow { return 0; }
 
         alias da_FSFindFolder = typeof(&dummy);
         alias da_FSRefMakePath = typeof(&dummy2);
