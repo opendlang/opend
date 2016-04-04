@@ -146,7 +146,7 @@ struct GGPlotD
         Tuple!(double, string)[] xAxisTicks;
         Tuple!(double, string)[] yAxisTicks;
 
-        foreach (geom; geomRange)
+        foreach (geom; geomRange.data)
         {
             bounds.adapt(geom.bounds);
             colourIDs ~= geom.colours;
@@ -215,7 +215,7 @@ struct GGPlotD
             );
 
         // Plot axis and geomRange
-        foreach (geom; chain(geomRange, gR) )
+        foreach (geom; chain(geomRange.data, gR) )
         {
             if (initScale)
                 surface = geom.drawGeom( surface,
@@ -256,8 +256,7 @@ struct GGPlotD
     {
         static if (is(ElementType!T==Geom))
         {
-            import std.array : array;
-            geomRange ~= rhs.array;
+            geomRange.put( rhs );
         }
         static if (is(T==ScaleType))
         {
@@ -298,8 +297,9 @@ struct GGPlotD
     }
 
 private:
+    import std.range : Appender;
     import ggplotd.theme : Theme, ThemeFunction;
-    Geom[] geomRange;
+    Appender!(Geom[]) geomRange;
 
     XAxis xaxis;
     YAxis yaxis;
@@ -314,6 +314,38 @@ private:
 
     bool initCG = false;
     ColourGradientFunction colourGradientFunction;
+}
+
+unittest
+{
+    import ggplotd.geom;
+    import ggplotd.aes;
+
+    const win_width = 1024;
+    const win_height = 1024;
+
+    const radius = 400.;
+
+    auto line_aes11 = Aes!(double[], "x", double[], "y")( [ 0, radius*0.45 ], [ 0, radius*0.45]);
+    auto line_aes22 = Aes!(double[], "x", double[], "y")( [ 300, radius*0.45 ], [ 210, radius*0.45]);
+
+    auto gg = GGPlotD();
+    gg.put( geomLine(line_aes11) );
+    gg.put( geomLine(line_aes22) );
+
+    import ggplotd.theme : Theme, ThemeFunction;
+    Theme theme;
+
+    auto surface = createEmptySurface( "test.png", win_width, win_height,
+        theme.backgroundColour );
+
+    auto dim = gg.geomRange.data.length;
+    surface = gg.drawToSurface( surface, win_width, win_height );
+    assertEqual( dim, gg.geomRange.data.length );
+    surface = gg.drawToSurface( surface, win_width, win_height );
+    assertEqual( dim, gg.geomRange.data.length );
+    surface = gg.drawToSurface( surface, win_width, win_height );
+    assertEqual( dim, gg.geomRange.data.length );
 }
 
 unittest

@@ -485,12 +485,14 @@ auto geomLine(AES)(AES aes)
         {
             auto xs = numericLabel(groupedAes.front.map!((t) => t.x));
             auto ys = numericLabel(groupedAes.front.map!((t) => t.y));
-            auto coords = zip(xs, ys);
+            auto coordsZip = zip(xs, ys);
 
             immutable flags = groupedAes.front.front;
-            immutable f = delegate(cairo.Context context, ColourMap colourMap ) {
+            immutable f = delegate(cairo.Context context, 
+                ColourMap colourMap ) {
 
                 import std.math : isFinite;
+                auto coords = coordsZip.save;
                 auto fr = coords.front;
                 context.moveTo(fr[0][0], fr[1][0]);
                 coords.popFront;
@@ -513,9 +515,8 @@ auto geomLine(AES)(AES aes)
             };
 
             AdaptiveBounds bounds;
-            coords = zip(xs, ys);
             auto geom = Geom(groupedAes.front.front);
-            foreach (tup; coords)
+            foreach (tup; coordsZip)
             {
                 bounds.adapt(Point(tup[0][0], tup[1][0]));
                 if (!xs.numeric)
