@@ -125,22 +125,43 @@ struct TaggedAlgebraic(U) if (is(U == union) || is(U == struct))
 	}
 
 	/// Enables conversion or extraction of the stored value.
-	T opCast(T)() inout
+	T opCast(T)()
 	{
 		import std.conv : to;
 
 		final switch (m_kind) {
 			foreach (i, FT; FieldTypes) {
 				case __traits(getMember, Kind, fieldNames[i]):
-					static if (is(typeof(trustedGet!(fieldNames[i])) : T)) {
-						return trustedGet!(fieldNames[i]);
+					static if (is(typeof(to!T(trustedGet!(fieldNames[i]))))) {
+						return to!T(trustedGet!(fieldNames[i]));
 					} else {
-						assert(false, "Cannot cast a "~(cast(Kind)m_kind).to!string~" value to "~T.stringof);
+						assert(false, "Cannot cast a "~(cast(Kind)m_kind).to!string~" value ("~FT.stringof~") to "~T.stringof);
 					}
 			}
 		}
 		assert(false); // never reached
 	}
+	/// ditto
+	T opCast(T)() const
+	{
+		// this method needs to be duplicated because inout doesn't work with to!()
+		import std.conv : to;
+
+		final switch (m_kind) {
+			foreach (i, FT; FieldTypes) {
+				case __traits(getMember, Kind, fieldNames[i]):
+					static if (is(typeof(to!T(trustedGet!(fieldNames[i]))))) {
+						return to!T(trustedGet!(fieldNames[i]));
+					} else {
+						assert(false, "Cannot cast a "~(cast(Kind)m_kind).to!string~" value ("~FT.stringof~") to "~T.stringof);
+					}
+			}
+		}
+		assert(false); // never reached
+	}
+
+	/// Uses `cast(string)`/`to!string` to return a string representation of the enclosed value.
+	string toString() const { return cast(string)this; }
 
 	// NOTE: "this TA" is used here as the functional equivalent of inout,
 	//       just that it generates one template instantiation per modifier
@@ -200,6 +221,7 @@ struct TaggedAlgebraic(U) if (is(U == union) || is(U == struct))
 	assert(ta == 12);
 	assert(cast(int)ta == 12);
 	assert(cast(long)ta == 12);
+	assert(cast(short)ta == 12);
 
 	ta += 12;
 	assert(ta == 24);
@@ -214,6 +236,30 @@ struct TaggedAlgebraic(U) if (is(U == union) || is(U == struct))
 
 	ta = S(8);
 	assert(ta.test() == 4);
+}
+
+unittest { // std.conv integration
+	import std.conv : to;
+
+	static struct S {
+		int v;
+		int test() { return v / 2; }
+	}
+
+	static union Test {
+		typeof(null) null_;
+		int number;
+		string text;
+	}
+
+	alias TA = TaggedAlgebraic!Test;
+
+	TA ta;
+	assert(ta.kind == TA.Kind.null_);
+	ta = "34";
+	assert(ta == "34");
+	assert(to!int(ta) == 34, to!string(to!int(ta)));
+	assert(to!string(ta) == "34", to!string(ta));
 }
 
 /** Multiple fields are allowed to have the same type, in which case the type
