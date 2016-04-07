@@ -10,7 +10,8 @@
 */
 module ggplotd.color.xyz;
 
-import ggplotd.color;
+import ggplotd.color : ColorOperators, isColor;
+import ggplotd.color.rgb : isInstanceOf, RGBColorSpace, RGB;
 import ggplotd.color.conv : convertColor;
 
 import std.traits : isFloatingPoint, isIntegral, isSigned, isSomeChar, Unqual;

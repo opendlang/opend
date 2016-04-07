@@ -140,6 +140,7 @@ struct GGPlotD
     auto drawToSurface( ref cairo.Surface surface, int width, int height ) const
     {
         import std.range : empty, front;
+        import std.typecons : Tuple;
 
         AdaptiveBounds bounds;
         ColourID[] colourIDs;
@@ -597,7 +598,7 @@ struct Facets
     {
         import std.conv : to;
         import std.math : floor;
-        import std.range : save;
+        import std.range : save, empty, front, popFront;
         import cairo.cairo : Rectangle;
         int w = floor( width.to!double/dimX ).to!int;
         int h = floor( height.to!double/dimY ).to!int;
@@ -667,6 +668,7 @@ auto gridLayout( size_t length, double ratio )
 {
     import std.conv : to;
     import std.math : ceil, sqrt;
+    import std.typecons : Tuple;
     auto h = ceil( sqrt(length/ratio) );
     auto w = ceil(length/h);
     return Tuple!(int, int)( w.to!int, h.to!int );
@@ -674,6 +676,7 @@ auto gridLayout( size_t length, double ratio )
 
 unittest
 {
+    import std.typecons : Tuple;
     assertEqual(gridLayout(4, 1), Tuple!(int, int)(2, 2));
     assertEqual(gridLayout(2, 1), Tuple!(int, int)(1, 2));
     assertEqual(gridLayout(3, 1), Tuple!(int, int)(2, 2));
