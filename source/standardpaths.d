@@ -52,6 +52,21 @@ version(Windows) {
                 return cString ? cString[0..strlen(cString)] : null;
             }
         }
+        
+        string verifyIfNeeded(string path, bool shouldVerify) nothrow @trusted
+        {
+            if (path.length && shouldVerify) {
+                bool dirExists;
+                collectException(dirExists.isDir, dirExists);
+                if (dirExists) {
+                    return path;
+                } else {
+                    return null;
+                }
+            } else {
+                return path;
+            }
+        }
     }
 } else {
     static assert(false, "Unsupported platform");
@@ -70,12 +85,12 @@ enum StandardPath {
     data,
     /**
      * General location of configuration files. Every application should have its own subdirectory here.
-     * Note: on Windows it's the same as $(B data) path. To distinguish config directory one may use roamingPath.
+     * Note: on Windows it's the same as $(B data) path.
      */
     config,
     /**
      * Location of cached data.
-     * Note: Windows does not provide specical directory for cache data.
+     * Note: Not available on Windows.
      */
     cache,
     ///User's desktop directory.
@@ -120,6 +135,17 @@ enum StandardPath {
 }
 
 /**
+ * Control behavior of functions.
+ * See_Also: writablePath
+ */
+enum FolderFlag
+{
+    none = 0,   /// Don't verify that folder exist.
+    create = 1, /// Create if folder does not exist.
+    verify = 2  /// Verify that folder exists.
+}
+
+/**
  * Current user home directory.
  * Returns: Path to user home directory, or an empty string if could not determine home directory.
  * Relies on environment variables.
@@ -160,10 +186,11 @@ string homeDir() nothrow @safe
  * Returns: Path where files of $(U type) should be written to by current user, or an empty string if could not determine path.
  * Params:
  *  type = Directory to lookup.
- *  shouldCreate = Create folder if one does not exist.
+ *  params = Union of $(B FolderFlag)s.
  * Note: This function does not cache its results.
+ * See_Also: FolderFlag
  */
-string writablePath(StandardPath type, bool shouldCreate = false) nothrow @safe;
+string writablePath(StandardPath type, FolderFlag params = FolderFlag.none) nothrow @safe;
 
 /**
  * Getting paths for various locations.
@@ -273,113 +300,100 @@ version(Windows) {
             CSIDL_FLAG_CREATE      = 0x8000,
             CSIDL_FLAG_MASK        = 0xFF00
         }
+        
+        enum {
+            KF_FLAG_SIMPLE_IDLIST                = 0x00000100,
+            KF_FLAG_NOT_PARENT_RELATIVE          = 0x00000200,
+            KF_FLAG_DEFAULT_PATH                 = 0x00000400,
+            KF_FLAG_INIT                         = 0x00000800,
+            KF_FLAG_NO_ALIAS                     = 0x00001000,
+            KF_FLAG_DONT_UNEXPAND                = 0x00002000,
+            KF_FLAG_DONT_VERIFY                  = 0x00004000,
+            KF_FLAG_CREATE                       = 0x00008000,
+            KF_FLAG_NO_APPCONTAINER_REDIRECTION  = 0x00010000,
+            KF_FLAG_ALIAS_ONLY                   = 0x80000000
+        };
+        
+        alias GUID KNOWNFOLDERID;
+        
+        enum KNOWNFOLDERID FOLDERID_LocalAppData = {0xf1b32785, 0x6fba, 0x4fcf, [0x9d,0x55,0x7b,0x8e,0x7f,0x15,0x70,0x91]};
+        enum KNOWNFOLDERID FOLDERID_RoamingAppData = {0x3eb685db, 0x65f9, 0x4cf6, [0xa0,0x3a,0xe3,0xef,0x65,0x72,0x9f,0x3d]};
+
+        enum KNOWNFOLDERID FOLDERID_Desktop = {0xb4bfcc3a, 0xdb2c, 0x424c, [0xb0,0x29,0x7f,0xe9,0x9a,0x87,0xc6,0x41]};
+        enum KNOWNFOLDERID FOLDERID_Documents = {0xfdd39ad0, 0x238f, 0x46af, [0xad,0xb4,0x6c,0x85,0x48,0x3,0x69,0xc7]};
+        enum KNOWNFOLDERID FOLDERID_Downloads = {0x374de290, 0x123f, 0x4565, [0x91,0x64,0x39,0xc4,0x92,0x5e,0x46,0x7b]};
+        enum KNOWNFOLDERID FOLDERID_Favorites = {0x1777f761, 0x68ad, 0x4d8a, [0x87,0xbd,0x30,0xb7,0x59,0xfa,0x33,0xdd]};
+        enum KNOWNFOLDERID FOLDERID_Links = {0xbfb9d5e0, 0xc6a9, 0x404c, [0xb2,0xb2,0xae,0x6d,0xb6,0xaf,0x49,0x68]};
+        enum KNOWNFOLDERID FOLDERID_Music = {0x4bd8d571, 0x6d19, 0x48d3, [0xbe,0x97,0x42,0x22,0x20,0x8,0xe,0x43]};
+        enum KNOWNFOLDERID FOLDERID_Pictures = {0x33e28130, 0x4e1e, 0x4676, [0x83,0x5a,0x98,0x39,0x5c,0x3b,0xc3,0xbb]};
+        enum KNOWNFOLDERID FOLDERID_Programs = {0xa77f5d77, 0x2e2b, 0x44c3, [0xa6,0xa2,0xab,0xa6,0x1,0x5,0x4a,0x51]};
+        enum KNOWNFOLDERID FOLDERID_SavedGames = {0x4c5c32ff, 0xbb9d, 0x43b0, [0xb5,0xb4,0x2d,0x72,0xe5,0x4e,0xaa,0xa4]};
+        enum KNOWNFOLDERID FOLDERID_Startup = {0xb97d20bb, 0xf46a, 0x4c97, [0xba,0x10,0x5e,0x36,0x8,0x43,0x8,0x54]};
+        enum KNOWNFOLDERID FOLDERID_Templates = {0xa63293e8, 0x664e, 0x48db, [0xa0,0x79,0xdf,0x75,0x9e,0x5,0x9,0xf7]};
+        enum KNOWNFOLDERID FOLDERID_Videos = {0x18989b1d, 0x99b5, 0x455b, [0x84,0x1c,0xab,0x7c,0x74,0xe4,0xdd,0xfc]};
+
+        enum KNOWNFOLDERID FOLDERID_Fonts = {0xfd228cb7, 0xae11, 0x4ae3, [0x86,0x4c,0x16,0xf3,0x91,0xa,0xb8,0xfe]};
+        enum KNOWNFOLDERID FOLDERID_ProgramData = {0x62ab5d82, 0xfdc1, 0x4dc3, [0xa9,0xdd,0x7,0xd,0x1d,0x49,0x5d,0x97]};
+        enum KNOWNFOLDERID FOLDERID_CommonPrograms = {0x139d44e, 0x6afe, 0x49f2, [0x86,0x90,0x3d,0xaf,0xca,0xe6,0xff,0xb8]};
+        enum KNOWNFOLDERID FOLDERID_CommonStartup = {0x82a5ea35, 0xd9cd, 0x47c5, [0x96,0x29,0xe1,0x5d,0x2f,0x71,0x4e,0x6e]};
+        enum KNOWNFOLDERID FOLDERID_CommonTemplates = {0xb94237e7, 0x57ac, 0x4347, [0x91,0x51,0xb0,0x8c,0x6c,0x32,0xd1,0xf7]};
+
+        enum KNOWNFOLDERID FOLDERID_PublicDesktop = {0xc4aa340d, 0xf20f, 0x4863, [0xaf,0xef,0xf8,0x7e,0xf2,0xe6,0xba,0x25]};
+        enum KNOWNFOLDERID FOLDERID_PublicDocuments = {0xed4824af, 0xdce4, 0x45a8, [0x81,0xe2,0xfc,0x79,0x65,0x8,0x36,0x34]};
+        enum KNOWNFOLDERID FOLDERID_PublicDownloads = {0x3d644c9b, 0x1fb8, 0x4f30, [0x9b,0x45,0xf6,0x70,0x23,0x5f,0x79,0xc0]};
+        enum KNOWNFOLDERID FOLDERID_PublicMusic = {0x3214fab5, 0x9757, 0x4298, [0xbb,0x61,0x92,0xa9,0xde,0xaa,0x44,0xff]};
+        enum KNOWNFOLDERID FOLDERID_PublicPictures = {0xb6ebfb86, 0x6907, 0x413c, [0x9a,0xf7,0x4f,0xc2,0xab,0xf0,0x7c,0xc5]};
+        enum KNOWNFOLDERID FOLDERID_PublicVideos = {0x2400183a, 0x6185, 0x49fb, [0xa2,0xd8,0x4a,0x39,0x2a,0x60,0x2b,0xa3]};
     }
     
     private  {
-        private extern(Windows) @nogc @system BOOL dummy(HWND, wchar*, int, BOOL) nothrow { return 0; }
-        alias typeof(&dummy) GetSpecialFolderPath;
+        extern(Windows) @nogc @system BOOL _dummy_SHGetSpecialFolderPath(HWND, wchar*, int, BOOL) nothrow { return 0; }
+        extern(Windows) @nogc @system HRESULT _dummy_SHGetKnownFolderPath(const(KNOWNFOLDERID)* rfid, DWORD dwFlags, HANDLE hToken, wchar** ppszPath) nothrow { return 0; }
+        extern(Windows) @nogc @system void _dummy_CoTaskMemFree(void* pv) nothrow {return;}
         
-        version(LinkedShell32) {
-            extern(Windows) @nogc @system BOOL SHGetSpecialFolderPathW(HWND, wchar*, int, BOOL) nothrow;
-            __gshared GetSpecialFolderPath ptrSHGetSpecialFolderPath = &SHGetSpecialFolderPathW;
-        } else {
-            __gshared GetSpecialFolderPath ptrSHGetSpecialFolderPath = null;
-        }
-        
-        static if (__VERSION__ >= 2070) {
-            import core.sys.windows.winreg;
-        }
-        
-        alias typeof(&RegOpenKeyExW) func_RegOpenKeyEx;
-        alias typeof(&RegQueryValueExW) func_RegQueryValueEx;
-        alias typeof(&RegCloseKey) func_RegCloseKey;
-        
-        version(LinkedAdvApi) {
-            __gshared func_RegOpenKeyEx ptrRegOpenKeyEx = &RegOpenKeyExW;
-            __gshared func_RegQueryValueEx ptrRegQueryValueEx = &RegQueryValueExW;
-            __gshared func_RegCloseKey ptrRegCloseKey = &RegCloseKey;
-        } else {
-            __gshared func_RegOpenKeyEx ptrRegOpenKeyEx = null;
-            __gshared func_RegQueryValueEx ptrRegQueryValueEx = null;
-            __gshared func_RegCloseKey ptrRegCloseKey = null;
-        }
+        __gshared typeof(&_dummy_SHGetSpecialFolderPath) ptrSHGetSpecialFolderPath = null;
+        __gshared typeof(&_dummy_SHGetKnownFolderPath) ptrSHGetKnownFolderPath = null;
+        __gshared typeof(&_dummy_CoTaskMemFree) ptrCoTaskMemFree = null;
         
         @nogc @trusted bool hasSHGetSpecialFolderPath() nothrow {
-            return ptrSHGetSpecialFolderPath != null;
+            return ptrSHGetSpecialFolderPath !is null;
         }
         
-        @nogc @trusted bool isAdvApiLoaded() nothrow {
-            return ptrRegOpenKeyEx != null && ptrRegQueryValueEx != null && ptrRegCloseKey != null;
+        @nogc @trusted bool hasSHGetKnownFolderPath() nothrow {
+            return ptrSHGetKnownFolderPath !is null && ptrCoTaskMemFree !is null;
         }
     }
     
     shared static this() 
     {
-        version(LinkedShell32) {} else {
-            HMODULE shellLib = LoadLibraryA("Shell32");
-            if (shellLib) {
-                ptrSHGetSpecialFolderPath = cast(GetSpecialFolderPath)GetProcAddress(shellLib, "SHGetSpecialFolderPathW");
-            }
-        }
-        
-        version(LinkedAdvApi) {} else {
-            HMODULE advApi = LoadLibraryA("Advapi32.dll");
-            if (advApi) {
-                ptrRegOpenKeyEx = cast(func_RegOpenKeyEx)GetProcAddress(advApi, "RegOpenKeyExW");
-                ptrRegQueryValueEx = cast(func_RegQueryValueEx)GetProcAddress(advApi, "RegQueryValueExW");
-                ptrRegCloseKey = cast(func_RegCloseKey)GetProcAddress(advApi, "RegCloseKey");
-            }
-        }
-    }
-    
-    private string getShellFolder(const(wchar)* key, bool shouldCreate = false) nothrow @trusted
-    {
-        HKEY hKey;
-        if (isAdvApiLoaded()) {    
-            auto result = ptrRegOpenKeyEx(HKEY_CURRENT_USER, 
-                "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Shell Folders\0"w.ptr,
-                0,
-                KEY_QUERY_VALUE,
-                &hKey
-            );
-            scope(exit) ptrRegCloseKey(hKey);
-            
-            if (result == ERROR_SUCCESS) {
-                DWORD type;
-                BYTE[MAX_PATH*wchar.sizeof] buf = void;
-                DWORD length = cast(DWORD)buf.length;
-                result = ptrRegQueryValueEx(hKey, key, null, &type, buf.ptr, &length);
-                if (result == ERROR_SUCCESS && type == REG_SZ && (length % 2 == 0)) {
-                    auto str = cast(wstring)buf[0..length];
-                    if (str.length && str[$-1] == '\0') {
-                        str = str[0..$-1];
-                    }
-                    try {
-                        auto path = toUTF8(str);
-                        if (shouldCreate) {
-                            bool ok;
-                            collectException(path.isDir, ok);
-                            if (!ok) {
-                                mkdirRecurse(path);
-                            }
-                        }
-                        return path;
-                    } catch(Exception e) {
-                        
+        HMODULE shellLib = LoadLibraryA("Shell32");
+        if (shellLib !is null) {
+            ptrSHGetKnownFolderPath = cast(typeof(ptrSHGetKnownFolderPath))enforce(GetProcAddress(shellLib, "SHGetKnownFolderPath"));
+            if (ptrSHGetKnownFolderPath) {
+                HMODULE ole = LoadLibraryA("Ole32");
+                if (ole !is null) {
+                    ptrCoTaskMemFree = cast(typeof(ptrCoTaskMemFree))enforce(GetProcAddress(ole, "CoTaskMemFree"));
+                    if (!ptrCoTaskMemFree) {
+                        FreeLibrary(ole);
                     }
                 }
             }
+            
+            if (!hasSHGetKnownFolderPath()) {
+                ptrSHGetSpecialFolderPath = cast(typeof(ptrSHGetSpecialFolderPath))GetProcAddress(shellLib, "SHGetSpecialFolderPathW");
+            }
         }
-        
-        return null;
     }
     
-    
-    private string getCSIDLFolder(int csidl, bool shouldCreate = false) nothrow @trusted
-    {
+    private string getCSIDLFolder(int csidl, FolderFlag params = FolderFlag.none) nothrow @trusted {
         import core.stdc.wchar_ : wcslen;
         
-        csidl = shouldCreate ? (csidl | CSIDL_FLAG_CREATE) : csidl;
+        if (params & FolderFlag.create) {
+            csidl |= CSIDL_FLAG_CREATE;
+        }
+        if (!(params & FolderFlag.verify)) {
+            csidl |= CSIDL_FLAG_DONT_VERIFY;
+        }
         wchar[MAX_PATH] path = void;
         if (hasSHGetSpecialFolderPath() && ptrSHGetSpecialFolderPath(null, path.ptr, csidl, FALSE)) {
             size_t len = wcslen(path.ptr);
@@ -392,44 +406,110 @@ version(Windows) {
         return null;
     }
     
-    string roamingPath(bool shouldCreate = false) nothrow @safe
-    {
-        return getCSIDLFolder(CSIDL_APPDATA, shouldCreate);
+    private string getKnownFolder(const(KNOWNFOLDERID) folder, FolderFlag params = FolderFlag.none) nothrow @trusted {
+        import core.stdc.wchar_ : wcslen;
+        
+        wchar* str;
+        
+        DWORD flags = 0;
+        if (params & FolderFlag.create) {
+            flags |= KF_FLAG_CREATE;
+        }
+        if (!(params & FolderFlag.verify)) {
+            flags |= KF_FLAG_DONT_VERIFY;
+        }
+        
+        if (hasSHGetKnownFolderPath() && ptrSHGetKnownFolderPath(&folder, flags, null, &str) == S_OK) {
+            scope(exit) ptrCoTaskMemFree(str);
+            try {
+                return str[0..wcslen(str)].toUTF8;
+            } catch(Exception e) {
+                
+            }
+        }
+        return null;
     }
     
-    string savedGames(bool shouldCreate = false) nothrow @safe
+    string roamingPath(FolderFlag params = FolderFlag.none) nothrow @safe
     {
-        return getShellFolder("{4C5C32FF-BB9D-43b0-B5B4-2D72E54EAAA4}\0"w.ptr, shouldCreate);
+        if (hasSHGetKnownFolderPath()) {
+            return getKnownFolder(FOLDERID_RoamingAppData, params);
+        } else if (hasSHGetSpecialFolderPath()) {
+            return getCSIDLFolder(CSIDL_APPDATA, params);
+        } else {
+            return null;
+        }
     }
     
-    string writablePath(StandardPath type, bool shouldCreate = false) nothrow @safe
+    string savedGames(FolderFlag params = FolderFlag.none) nothrow @safe
     {
-        final switch(type) {
-            case StandardPath.config:
-            case StandardPath.data:
-                return getCSIDLFolder(CSIDL_LOCAL_APPDATA, shouldCreate);
-            case StandardPath.cache:
-                return null;
-            case StandardPath.desktop:
-                return getCSIDLFolder(CSIDL_DESKTOPDIRECTORY, shouldCreate);
-            case StandardPath.documents:
-                return getCSIDLFolder(CSIDL_PERSONAL, shouldCreate);
-            case StandardPath.pictures:
-                return getCSIDLFolder(CSIDL_MYPICTURES, shouldCreate);
-            case StandardPath.music:
-                return getCSIDLFolder(CSIDL_MYMUSIC, shouldCreate);
-            case StandardPath.videos:
-                return getCSIDLFolder(CSIDL_MYVIDEO, shouldCreate);
-            case StandardPath.downloads:
-                return getShellFolder("{374DE290-123F-4565-9164-39C4925E467B}\0"w.ptr, shouldCreate);
-            case StandardPath.templates:
-                return getCSIDLFolder(CSIDL_TEMPLATES, shouldCreate);
-            case StandardPath.publicShare:
-                return null;
-            case StandardPath.fonts:
-                return null;
-            case StandardPath.applications:
-                return getCSIDLFolder(CSIDL_PROGRAMS, shouldCreate);
+        if (hasSHGetKnownFolderPath()) {
+            return getKnownFolder(FOLDERID_SavedGames, params);
+        } else {
+            return null;
+        }
+    }
+    
+    string writablePath(StandardPath type, FolderFlag params = FolderFlag.none) nothrow @safe
+    {
+        if (hasSHGetKnownFolderPath()) {
+            final switch(type) {
+                case StandardPath.config:
+                case StandardPath.data:
+                    return getKnownFolder(FOLDERID_LocalAppData, params);
+                case StandardPath.cache:
+                    return null;
+                case StandardPath.desktop:
+                    return getKnownFolder(FOLDERID_Desktop, params);
+                case StandardPath.documents:
+                    return getKnownFolder(FOLDERID_Documents, params);
+                case StandardPath.pictures:
+                    return getKnownFolder(FOLDERID_Pictures, params);
+                case StandardPath.music:
+                    return getKnownFolder(FOLDERID_Music, params);
+                case StandardPath.videos:
+                    return getKnownFolder(FOLDERID_Videos, params);
+                case StandardPath.downloads:
+                    return getKnownFolder(FOLDERID_Downloads, params);
+                case StandardPath.templates:
+                    return getKnownFolder(FOLDERID_Templates, params);
+                case StandardPath.publicShare:
+                    return null;
+                case StandardPath.fonts:
+                    return null;
+                case StandardPath.applications:
+                    return getKnownFolder(FOLDERID_Programs, params);
+            }
+        } else if (hasSHGetSpecialFolderPath()) {
+            final switch(type) {
+                case StandardPath.config:
+                case StandardPath.data:
+                    return getCSIDLFolder(CSIDL_LOCAL_APPDATA, params);
+                case StandardPath.cache:
+                    return null;
+                case StandardPath.desktop:
+                    return getCSIDLFolder(CSIDL_DESKTOPDIRECTORY, params);
+                case StandardPath.documents:
+                    return getCSIDLFolder(CSIDL_PERSONAL, params);
+                case StandardPath.pictures:
+                    return getCSIDLFolder(CSIDL_MYPICTURES, params);
+                case StandardPath.music:
+                    return getCSIDLFolder(CSIDL_MYMUSIC, params);
+                case StandardPath.videos:
+                    return getCSIDLFolder(CSIDL_MYVIDEO, params);
+                case StandardPath.downloads:
+                    return null;
+                case StandardPath.templates:
+                    return getCSIDLFolder(CSIDL_TEMPLATES, params);
+                case StandardPath.publicShare:
+                    return null;
+                case StandardPath.fonts:
+                    return null;
+                case StandardPath.applications:
+                    return getCSIDLFolder(CSIDL_PROGRAMS, params);
+            }
+        } else {
+            return null;
         }
     }
     
@@ -437,37 +517,75 @@ version(Windows) {
     {   
         string commonPath;
         
-        switch(type) {
-            case StandardPath.config:
-            case StandardPath.data:
-                commonPath = getCSIDLFolder(CSIDL_COMMON_APPDATA);
-                break;
-            case StandardPath.desktop:
-                commonPath = getCSIDLFolder(CSIDL_COMMON_DESKTOPDIRECTORY);
-                break;
-            case StandardPath.documents:
-                commonPath = getCSIDLFolder(CSIDL_COMMON_DOCUMENTS);
-                break;
-            case StandardPath.pictures:
-                commonPath = getCSIDLFolder(CSIDL_COMMON_PICTURES);
-                break;
-            case StandardPath.music:
-                commonPath = getCSIDLFolder(CSIDL_COMMON_MUSIC);
-                break;
-            case StandardPath.videos:
-                commonPath = getCSIDLFolder(CSIDL_COMMON_VIDEO);
-                break;
-            case StandardPath.templates:
-                commonPath = getCSIDLFolder(CSIDL_COMMON_TEMPLATES);
-                break;
-            case StandardPath.fonts:
-                commonPath = getCSIDLFolder(CSIDL_FONTS);
-                break;
-            case StandardPath.applications:
-                commonPath = getCSIDLFolder(CSIDL_COMMON_PROGRAMS);
-                break;
-            default:
-                break;
+        if (hasSHGetKnownFolderPath()) {
+            switch(type) {
+                case StandardPath.config:
+                case StandardPath.data:
+                    commonPath = getKnownFolder(FOLDERID_ProgramData);
+                    break;
+                case StandardPath.desktop:
+                    commonPath = getKnownFolder(FOLDERID_PublicDesktop);
+                    break;
+                case StandardPath.documents:
+                    commonPath = getKnownFolder(FOLDERID_PublicDocuments);
+                    break;
+                case StandardPath.pictures:
+                    commonPath = getKnownFolder(FOLDERID_PublicPictures);
+                    break;
+                case StandardPath.music:
+                    commonPath = getKnownFolder(FOLDERID_PublicMusic);
+                    break;
+                case StandardPath.videos:
+                    commonPath = getKnownFolder(FOLDERID_PublicVideos);
+                    break;
+                case StandardPath.downloads:
+                    commonPath = getKnownFolder(FOLDERID_PublicDesktop);
+                    break;
+                case StandardPath.templates:
+                    commonPath = getKnownFolder(FOLDERID_CommonTemplates);
+                    break;
+                case StandardPath.fonts:
+                    commonPath = getKnownFolder(FOLDERID_Fonts);
+                    break;
+                case StandardPath.applications:
+                    commonPath = getKnownFolder(FOLDERID_CommonPrograms);
+                    break;
+                default:
+                    break;
+            }
+        } else if (hasSHGetSpecialFolderPath()) {
+            switch(type) {
+                case StandardPath.config:
+                case StandardPath.data:
+                    commonPath = getCSIDLFolder(CSIDL_COMMON_APPDATA);
+                    break;
+                case StandardPath.desktop:
+                    commonPath = getCSIDLFolder(CSIDL_COMMON_DESKTOPDIRECTORY);
+                    break;
+                case StandardPath.documents:
+                    commonPath = getCSIDLFolder(CSIDL_COMMON_DOCUMENTS);
+                    break;
+                case StandardPath.pictures:
+                    commonPath = getCSIDLFolder(CSIDL_COMMON_PICTURES);
+                    break;
+                case StandardPath.music:
+                    commonPath = getCSIDLFolder(CSIDL_COMMON_MUSIC);
+                    break;
+                case StandardPath.videos:
+                    commonPath = getCSIDLFolder(CSIDL_COMMON_VIDEO);
+                    break;
+                case StandardPath.templates:
+                    commonPath = getCSIDLFolder(CSIDL_COMMON_TEMPLATES);
+                    break;
+                case StandardPath.fonts:
+                    commonPath = getCSIDLFolder(CSIDL_FONTS);
+                    break;
+                case StandardPath.applications:
+                    commonPath = getCSIDLFolder(CSIDL_COMMON_PROGRAMS);
+                    break;
+                default:
+                    break;
+            }
         }
         
         string[] paths;
@@ -576,14 +694,11 @@ version(Windows) {
         alias short OSErr;
         alias int OSStatus;
         
-        extern(C) @nogc @system OSErr dummy(short, OSType, Boolean, FSRef*) nothrow { return 0; }
-        extern(C) @nogc @system OSStatus dummy2(const(FSRef)*, char*, uint) nothrow { return 0; }
+        extern(C) @nogc @system OSErr _dummy_FSFindFolder(short, OSType, Boolean, FSRef*) nothrow { return 0; }
+        extern(C) @nogc @system OSStatus _dummy_FSRefMakePath(const(FSRef)*, char*, uint) nothrow { return 0; }
 
-        alias da_FSFindFolder = typeof(&dummy);
-        alias da_FSRefMakePath = typeof(&dummy2);
-
-        __gshared da_FSFindFolder ptrFSFindFolder = null;
-        __gshared da_FSRefMakePath ptrFSRefMakePath = null;
+        __gshared typeof(&_dummy_FSFindFolder) ptrFSFindFolder = null;
+        __gshared typeof(&_dummy_FSRefMakePath) ptrFSRefMakePath = null;
     }
 
     shared static this()
@@ -594,8 +709,8 @@ version(Windows) {
 
         void* handle = dlopen(toStringz(carbonPath), RTLD_NOW | RTLD_LOCAL);
         if (handle) {
-            ptrFSFindFolder = cast(da_FSFindFolder)dlsym(handle, "FSFindFolder");
-            ptrFSRefMakePath = cast(da_FSRefMakePath)dlsym(handle, "FSRefMakePath");
+            ptrFSFindFolder = cast(typeof(ptrFSFindFolder))dlsym(handle, "FSFindFolder");
+            ptrFSRefMakePath = cast(typeof(ptrFSRefMakePath))dlsym(handle, "FSRefMakePath");
         }
         if (ptrFSFindFolder == null || ptrFSRefMakePath == null) {
             debug collectException(stderr.writeln("Could not load carbon functions"));
@@ -629,7 +744,7 @@ version(Windows) {
         return null;
     }
     
-    string writablePath(StandardPath type, bool shouldCreate = false) nothrow @safe
+    private string writablePathImpl(StandardPath type, bool shouldCreate = false) nothrow @safe
     {
         final switch(type) {
             case StandardPath.config:
@@ -659,6 +774,13 @@ version(Windows) {
             case StandardPath.applications:
                 return fsPath(kUserDomain, kApplicationsFolderType);
         }
+    }
+    
+    private string writablePathImpl(StandardPath type, FolderFlag params = FolderFlag.none) nothrow @safe
+    {
+        const bool shouldCreate = params & FolderFlag.create;
+        const bool shouldVerify = params & FolderFlag.verify;
+        return writablePathImpl(type, shouldCreate).verifyIfNeeded(shouldVerify);
     }
     
     string[] standardPaths(StandardPath type) nothrow @safe
@@ -832,16 +954,11 @@ PICTURES=Images
             }
         }
         
-        deprecated("Use xdgRuntimeDir instead") string runtimeDir() nothrow @trusted
-        {
-            return xdgRuntimeDir();
-        }
-        
         private string createIfNeeded(string path, bool shouldCreate) nothrow @trusted
         {
             if (path.length && shouldCreate) {
                 bool pathExist;
-                collectException(path.exists, pathExist);
+                collectException(path.isDir, pathExist);
                 if (!pathExist && collectException(mkdirRecurse(path)) is null) {
                     return path;
                 } else {
@@ -852,7 +969,7 @@ PICTURES=Images
             }
         }
         
-        string writablePath(StandardPath type, bool shouldCreate = false) nothrow @safe
+        private string writablePathImpl(StandardPath type, bool shouldCreate) nothrow @safe
         {
             final switch(type) {
                 case StandardPath.config:
@@ -882,6 +999,13 @@ PICTURES=Images
                 case StandardPath.applications:
                     return xdgDataHome("applications", shouldCreate);
             }
+        }
+        
+        string writablePath(StandardPath type, FolderFlag params = FolderFlag.none) nothrow @safe
+        {
+            const bool shouldCreate = params & FolderFlag.create;
+            const bool shouldVerify = params & FolderFlag.verify;
+            return writablePathImpl(type, shouldCreate).verifyIfNeeded(shouldVerify);
         }
         
         string[] standardPaths(StandardPath type) nothrow @safe
