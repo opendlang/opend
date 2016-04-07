@@ -11,20 +11,8 @@
     "subPackages" : ["./examples/printdirs", "./examples/findexecutable"],
     
     "dependencies" : {
-        "xdgpaths" : "~>0.2.0"
+        "xdgpaths" : "~>0.2.1"
     },
-    
-    "configurations" : [
-        {
-            "name" : "default",
-            "versions-windows":["LinkedShell32", "LinkedAdvApi"]
-        },
-        {
-            "name" : "linkedshell32",
-            "versions-windows":["LinkedShell32", "LinkedAdvApi"],
-            "platforms" : ["windows"]
-        }
-    ],
     
     "buildTypes" : {
         "docs" : {

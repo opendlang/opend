@@ -1,7 +1,7 @@
 {
 	"fileVersion": 1,
-	"versions": {,
+	"versions": {
 		"isfreedesktop": "0.1.0",
-		"xdgpaths": "0.2.0"
+		"xdgpaths": "0.2.1"
 	}
 }

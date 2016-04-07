@@ -42,6 +42,7 @@ int main()
     version(Windows) {
         writefln("Desktop dirs: %-(%s, %)", standardPaths(StandardPath.desktop));
         writefln("Documents dirs: %-(%s, %)", standardPaths(StandardPath.documents));
+        writefln("Downloads dirs: %-(%s, %)", standardPaths(StandardPath.downloads));
         writefln("Pictures dirs: %-(%s, %)", standardPaths(StandardPath.pictures));
         writefln("Music dirs: %-(%s, %)", standardPaths(StandardPath.music));
         writefln("Videos dirs: %-(%s, %)", standardPaths(StandardPath.videos));

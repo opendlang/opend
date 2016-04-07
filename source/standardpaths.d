@@ -539,7 +539,7 @@ version(Windows) {
                     commonPath = getKnownFolder(FOLDERID_PublicVideos);
                     break;
                 case StandardPath.downloads:
-                    commonPath = getKnownFolder(FOLDERID_PublicDesktop);
+                    commonPath = getKnownFolder(FOLDERID_PublicDownloads);
                     break;
                 case StandardPath.templates:
                     commonPath = getKnownFolder(FOLDERID_CommonTemplates);
@@ -748,31 +748,31 @@ version(Windows) {
     {
         final switch(type) {
             case StandardPath.config:
-                return fsPath(kUserDomain, kPreferencesFolderType);
+                return fsPath(kUserDomain, kPreferencesFolderType, shouldCreate);
             case StandardPath.cache:
-                return fsPath(kUserDomain, kCachedDataFolderType);
+                return fsPath(kUserDomain, kCachedDataFolderType, shouldCreate);
             case StandardPath.data:
-                return fsPath(kUserDomain, kApplicationSupportFolderType);
+                return fsPath(kUserDomain, kApplicationSupportFolderType, shouldCreate);
             case StandardPath.desktop:
-                return fsPath(kUserDomain, kDesktopFolderType);
+                return fsPath(kUserDomain, kDesktopFolderType, shouldCreate);
             case StandardPath.documents:
-                return fsPath(kUserDomain, kDocumentsFolderType);
+                return fsPath(kUserDomain, kDocumentsFolderType, shouldCreate);
             case StandardPath.pictures:
-                return fsPath(kUserDomain, kPictureDocumentsFolderType);
+                return fsPath(kUserDomain, kPictureDocumentsFolderType, shouldCreate);
             case StandardPath.music:
-                return fsPath(kUserDomain, kMusicDocumentsFolderType);
+                return fsPath(kUserDomain, kMusicDocumentsFolderType, shouldCreate);
             case StandardPath.videos:
-                return fsPath(kUserDomain, kMovieDocumentsFolderType);
+                return fsPath(kUserDomain, kMovieDocumentsFolderType, shouldCreate);
             case StandardPath.downloads:
-                return fsPath(kUserDomain, kDownloadsFolderType);
+                return fsPath(kUserDomain, kDownloadsFolderType, shouldCreate);
             case StandardPath.templates:
                 return null;
             case StandardPath.publicShare:
-                return fsPath(kUserDomain, kPublicFolderType );
+                return fsPath(kUserDomain, kPublicFolderType, shouldCreate);
             case StandardPath.fonts:
-                return fsPath(kUserDomain, kFontsFolderType);
+                return fsPath(kUserDomain, kFontsFolderType, shouldCreate);
             case StandardPath.applications:
-                return fsPath(kUserDomain, kApplicationsFolderType);
+                return fsPath(kUserDomain, kApplicationsFolderType, shouldCreate);
         }
     }
     
