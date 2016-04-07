@@ -1,7 +1,7 @@
 {
-	"name": "ggplotd",
-	"description": "Plotting library for the D programming library. The design is inspired by ggplot2 for R.",
-	"copyright": "Copyright © 2015, Edwin van Leeuwen",
+    "name": "ggplotd",
+    "description": "Plotting library for the D programming library. The design is inspired by ggplot2 for R.",
+    "copyright": "Copyright © 2015, Edwin van Leeuwen",
     "authors": ["Edwin van Leeuwen"],
     "libs": ["cairo"],
     "license": "BSL-1.0",
@@ -13,8 +13,8 @@
     "versions": ["CairoPNG","CairoPDFSurface","CairoSVGSurface"],
     "configurations": [
         {
-			"name": "default"
-		},
+            "name": "default"
+        },
         {
             "name": "ggplotd-gtk",
             "dependencies": {

@@ -774,6 +774,8 @@ auto geomHist3D(AES)(AES aes, size_t noBinsX = 0, size_t noBinsY = 0)
     import std.algorithm : filter, group, map, reduce, max, min;
     import std.array : array, Appender;
     import std.range : take, walkLength, zip;
+    import std.typecons : Tuple;
+
     import ggplotd.range : uniquer;
     // New appender to hold lines for drawing histogram
     auto appender = Appender!(Geom[])([]);
@@ -1022,6 +1024,7 @@ auto geomBox(AES)(AES aes)
     import std.algorithm : map;
     import std.array : array;
     import std.range : Appender;
+    import std.typecons : Tuple;
 
     Appender!(Geom[]) result;
 

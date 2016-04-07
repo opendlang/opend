@@ -248,57 +248,57 @@ C blend(C, F)(C src, C dest, F srcFactor, F destFactor, F srcAlphaFactor, F dest
 
 
 package:
-
-// build mixin code to perform expresions per-element
-template ComponentExpression(string expression, string component, string op)
-{
-    template BuildExpression(string e, string c, string op)
-    {
-        static if(e.length == 0)
-            enum BuildExpression = "";
-        else static if(e[0] == '_')
-            enum BuildExpression = c ~ BuildExpression!(e[1..$], c, op);
-        else static if(e[0] == '#')
-            enum BuildExpression = op ~ BuildExpression!(e[1..$], c, op);
-        else
-            enum BuildExpression = e[0] ~ BuildExpression!(e[1..$], c, op);
-    }
-    enum ComponentExpression =
-        "static if(is(typeof(this." ~ component ~ ")))" ~ "\n\t" ~
-            BuildExpression!(expression, component, op);
-}
-
 mixin template ColorOperators(Components...)
 {
-    typeof(this) opUnary(string op)() const if(op == "+" || op == "-" || (op == "~" && isIntegral!ComponentType))
+    import std.traits : isNumeric;
+    // build mixin code to perform expresions per-element
+    template ComponentExpression(string expression, string component, string op)
     {
+        template BuildExpression(string e, string c, string op)
+        {
+            static if(e.length == 0)
+                enum BuildExpression = "";
+            else static if(e[0] == '_')
+                enum BuildExpression = c ~ BuildExpression!(e[1..$], c, op);
+            else static if(e[0] == '#')
+                enum BuildExpression = op ~ BuildExpression!(e[1..$], c, op);
+            else
+                enum BuildExpression = e[0] ~ BuildExpression!(e[1..$], c, op);
+        }
+        enum ComponentExpression =
+                "static if(is(typeof(this." ~ component ~ ")))" ~ "\n\t" ~
+                BuildExpression!(expression, component, op);
+    }
+
+    typeof(this) opUnary(string op)() const if(op == "+" || op == "-" || (op == "~" && isIntegral!ComponentType))
+        {
         Unqual!(typeof(this)) res = this;
         foreach(c; Components)
             mixin(ComponentExpression!("res._ = #_;", c, op));
         return res;
     }
     typeof(this) opBinary(string op)(typeof(this) rh) const if(op == "+" || op == "-" || op == "*" || op == "/")
-    {
+        {
         Unqual!(typeof(this)) res = this;
         foreach(c; Components)
             mixin(ComponentExpression!("res._ #= rh._;", c, op));
         return res;
     }
     typeof(this) opBinary(string op, S)(S rh) const if(isNumeric!S && (op == "*" || op == "/" || op == "^^"))
-    {
+        {
         Unqual!(typeof(this)) res = this;
         foreach(c; Components)
             mixin(ComponentExpression!("res._ #= rh;", c, op));
         return res;
     }
     ref typeof(this) opOpAssign(string op)(typeof(this) rh) if(op == "+" || op == "-" || op == "*" || op == "/")
-    {
+        {
         foreach(c; Components)
             mixin(ComponentExpression!("_ #= rh._;", c, op));
         return this;
     }
     ref typeof(this) opOpAssign(string op, S)(S rh) if(isNumeric!S && (op == "*" || op == "/" || op == "^^"))
-    {
+        {
         foreach(c; Components)
             mixin(ComponentExpression!("_ #= rh;", c, op));
         return this;

@@ -676,6 +676,7 @@ auto gridLayout( size_t length, double ratio )
 
 unittest
 {
+    import std.typecons : Tuple;
     assertEqual(gridLayout(4, 1), Tuple!(int, int)(2, 2));
     assertEqual(gridLayout(2, 1), Tuple!(int, int)(1, 2));
     assertEqual(gridLayout(3, 1), Tuple!(int, int)(2, 2));
