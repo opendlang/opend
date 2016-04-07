@@ -1,6 +1,6 @@
 module ggplotd.color.hsx;
 
-import ggplotd.color;
+import ggplotd.color.rgb : isInstanceOf, RGBColorSpace, ColorOperators, RGB;
 
 import std.traits : isFloatingPoint, isIntegral, isSigned, isUnsigned, isSomeChar, Unqual;
 import std.typetuple : TypeTuple;
