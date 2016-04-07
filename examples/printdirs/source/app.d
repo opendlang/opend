@@ -22,6 +22,7 @@ int main()
     
     writeln("Fonts: ", writablePath(StandardPath.fonts));
     writeln("Applications: ", writablePath(StandardPath.applications));
+    writeln("Startup: ", writablePath(StandardPath.startup));
     
     version(Windows) {
         writeln("\nSpecific functions for Windows:");
@@ -38,6 +39,7 @@ int main()
     writefln("Data dirs: %-(%s, %)", standardPaths(StandardPath.data));
     writefln("Font dirs: %-(%s, %)", standardPaths(StandardPath.fonts));
     writefln("Applications dirs: %-(%s, %)", standardPaths(StandardPath.applications));
+    writefln("Startup dirs: %-(%s, %)", standardPaths(StandardPath.startup));
     
     version(Windows) {
         writefln("Desktop dirs: %-(%s, %)", standardPaths(StandardPath.desktop));

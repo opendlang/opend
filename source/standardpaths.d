@@ -132,6 +132,11 @@ enum StandardPath {
      * On Freedesktop it's directory where .desktop files are put.
      */
     applications,
+    
+    /**
+     * Automatically started applications.
+     */
+    startup
 }
 
 /**
@@ -479,6 +484,8 @@ version(Windows) {
                     return null;
                 case StandardPath.applications:
                     return getKnownFolder(FOLDERID_Programs, params);
+                case StandardPath.startup:
+                    return getKnownFolder(FOLDERID_Startup, params);
             }
         } else if (hasSHGetSpecialFolderPath()) {
             final switch(type) {
@@ -507,6 +514,8 @@ version(Windows) {
                     return null;
                 case StandardPath.applications:
                     return getCSIDLFolder(CSIDL_PROGRAMS, params);
+                case StandardPath.startup:
+                    return getCSIDLFolder(CSIDL_STARTUP, params);
             }
         } else {
             return null;
@@ -550,6 +559,9 @@ version(Windows) {
                 case StandardPath.applications:
                     commonPath = getKnownFolder(FOLDERID_CommonPrograms);
                     break;
+                case StandardPath.startup:
+                    commonPath = getKnownFolder(FOLDERID_CommonStartup);
+                    break;
                 default:
                     break;
             }
@@ -582,6 +594,9 @@ version(Windows) {
                     break;
                 case StandardPath.applications:
                     commonPath = getCSIDLFolder(CSIDL_COMMON_PROGRAMS);
+                    break;
+                case StandardPath.startup:
+                    commonPath = getCSIDLFolder(CSIDL_COMMON_STARTUP);
                     break;
                 default:
                     break;
@@ -773,6 +788,8 @@ version(Windows) {
                 return fsPath(kUserDomain, kFontsFolderType, shouldCreate);
             case StandardPath.applications:
                 return fsPath(kUserDomain, kApplicationsFolderType, shouldCreate);
+            case StandardPath.startup:
+                return null;
         }
     }
     
@@ -998,6 +1015,8 @@ PICTURES=Images
                     return homeFontsPath().createIfNeeded(shouldCreate);
                 case StandardPath.applications:
                     return xdgDataHome("applications", shouldCreate);
+                case StandardPath.startup:
+                    return xdgConfigHome("autostart", shouldCreate);
             }
         }
         
@@ -1019,6 +1038,8 @@ PICTURES=Images
                     return xdgAllConfigDirs();
                 case StandardPath.applications:
                     return xdgAllDataDirs("applications");
+                case StandardPath.startup:
+                    return xdgAllConfigDirs("autostart");
                 case StandardPath.fonts:
                     return fontPaths();
                 default:
