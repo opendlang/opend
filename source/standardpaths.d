@@ -57,7 +57,7 @@ version(Windows) {
         {
             if (path.length && shouldVerify) {
                 bool dirExists;
-                collectException(dirExists.isDir, dirExists);
+                collectException(path.isDir, dirExists);
                 if (dirExists) {
                     return path;
                 } else {
@@ -778,8 +778,8 @@ version(Windows) {
     
     private string writablePathImpl(StandardPath type, FolderFlag params = FolderFlag.none) nothrow @safe
     {
-        const bool shouldCreate = params & FolderFlag.create;
-        const bool shouldVerify = params & FolderFlag.verify;
+        const bool shouldCreate = (params & FolderFlag.create) != 0;
+        const bool shouldVerify = (params & FolderFlag.verify) != 0;
         return writablePathImpl(type, shouldCreate).verifyIfNeeded(shouldVerify);
     }
     
@@ -1003,8 +1003,8 @@ PICTURES=Images
         
         string writablePath(StandardPath type, FolderFlag params = FolderFlag.none) nothrow @safe
         {
-            const bool shouldCreate = params & FolderFlag.create;
-            const bool shouldVerify = params & FolderFlag.verify;
+            const bool shouldCreate = (params & FolderFlag.create) != 0;
+            const bool shouldVerify = (params & FolderFlag.verify) != 0;
             return writablePathImpl(type, shouldCreate).verifyIfNeeded(shouldVerify);
         }
         
