@@ -725,6 +725,7 @@ version(Windows) {
         }
         if (ptrFSFindFolder == null || ptrFSRefMakePath == null) {
             debug collectException(stderr.writeln("Could not load carbon functions"));
+            if (handle) dlclose(handle);
         }
     }
 
