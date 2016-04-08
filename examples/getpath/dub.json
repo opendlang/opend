@@ -1,0 +1,10 @@
+{
+    "name": "getpath",
+    "description": "A minimal D application.",
+    "copyright": "Copyright © 2016, freeslave",
+    "authors": ["freeslave"],
+    "targetPath" : "bin", 
+    "targetType" : "executable", 
+    "targetName" : "getpath", 
+    "dependencies" : {"standardpaths":"*"}
+}

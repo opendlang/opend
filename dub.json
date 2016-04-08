@@ -8,7 +8,7 @@
     "targetPath" : "lib", 
     "targetType" : "library",
 
-    "subPackages" : ["./examples/printdirs", "./examples/findexecutable"],
+    "subPackages" : ["./examples/printdirs", "./examples/findexecutable", "./examples/getpath"],
     
     "dependencies" : {
         "xdgpaths" : "~>0.2.1"

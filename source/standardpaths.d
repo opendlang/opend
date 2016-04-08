@@ -58,11 +58,7 @@ version(Windows) {
             if (path.length && shouldVerify) {
                 bool dirExists;
                 collectException(path.isDir, dirExists);
-                if (dirExists) {
-                    return path;
-                } else {
-                    return null;
-                }
+                return dirExists ? path : null;
             } else {
                 return path;
             }
@@ -976,7 +972,7 @@ PICTURES=Images
             if (path.length && shouldCreate) {
                 bool pathExist;
                 collectException(path.isDir, pathExist);
-                if (!pathExist && collectException(mkdirRecurse(path)) is null) {
+                if (pathExist || collectException(mkdirRecurse(path)) is null) {
                     return path;
                 } else {
                     return null;

@@ -34,6 +34,12 @@ Takes the name of executable as command line argument and searches PATH environm
 
     dub run standardpaths:findexecutable --build=release -- whoami
     
+### [Get path](examples/getpath/source/app.d)
+
+Get path of given type, verify it exists or create if it does not.
+
+    dub run standardpaths:getpath -- --verify --create templates
+    
 ## Use cases
 
 Some code snippets showing how standardpaths library is supposed to be used.
