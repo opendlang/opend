@@ -122,14 +122,25 @@ unittest
     static assert(getAnnotation!(anyy, AnyBarUDA).data == 1);
 }
 
+template isField(alias T)
+{
+    enum isField = (function() {
+        return (!isSomeFunction!(T) && !__traits(isTemplate, T));
+    })();
+}
+
 template isFieldOrProperty(alias T)
 {
     enum isFieldOrProperty = (function() {
-        static if (isSomeFunction!(T))
+        static if (isField!(T))
+        {
+            return true;
+        } 
+        else static if (isSomeFunction!(T))
         {
             return (functionAttributes!(T) & FunctionAttribute.property);
-        }
-        else return (!__traits(isTemplate, T));
+        } else 
+            return false;
     })();
 }
 
