@@ -410,7 +410,7 @@ enum {
     FT_LOAD_TARGET_LCD_V = ( FT_RENDER_MODE_LCD_V & 15 ) << 16,
 }
 
-FT_Render_Mode FT_LOAD_TARGET_MODE( uint x ) @nogc nothrow {
+@nogc FT_Render_Mode FT_LOAD_TARGET_MODE( uint x ) nothrow {
     return cast( FT_Render_Mode )(( x >> 16 ) & 15 );
 }
 
