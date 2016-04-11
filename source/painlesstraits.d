@@ -129,7 +129,7 @@ template isFieldOrProperty(alias T)
         {
             return (functionAttributes!(T) & FunctionAttribute.property);
         }
-        else return true;
+        else return (!__traits(isTemplate, T));
     })();
 }
 
