@@ -135,24 +135,30 @@ template isField(alias T)
 
 unittest
 {
-    struct S {
+    struct Foo {
         @property auto property() { return 1.0; }
         auto func() { return 1.0; }
         auto tmplt()() {return 1.0; }
         auto field = 0;
     }
 
-    S s;
-    static assert( !isField!(s.property) );
-    static assert( !isField!(s.func) );
+    static assert( !isField!(Foo.property) );
+    static assert( !isField!(Foo.func) );
 
-    static if (__traits(compiles, __traits(isTemplate, T)))
+    static if (__traits(compiles, __traits(isTemplate, Foo.tmplt)))
     {
-        static assert( !isField!(s.tmplt) );
-        static assert( !isSomeFunction!(s.tmplt) );
+        static assert( !isField!(Foo.tmplt) );
+        static assert( !isSomeFunction!(Foo.tmplt) );
     }
 
-    static assert( isField!(s.field) );
+    static assert( isField!(Foo.field) );
+
+    // Make sure the struct behaves as expected
+    Foo foo;
+    assert( foo.property == 1.0 );
+    assert( foo.func() == 1.0 );
+    assert( foo.tmplt() == 1.0 );
+    assert( foo.field == 0.0 );
 }
 
 template isFieldOrProperty(alias T)
@@ -178,6 +184,10 @@ unittest {
 
     static assert(isFieldOrProperty!(Foo.success));
     static assert(!isFieldOrProperty!(Foo.failure));
+
+    // Make sure the struct behaves as expected
+    Foo foo;
+    assert( foo.failure(1) == 1 );
 }
 
 unittest {
