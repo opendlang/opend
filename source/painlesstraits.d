@@ -125,7 +125,11 @@ unittest
 template isField(alias T)
 {
     enum isField = (function() {
-        return (!isSomeFunction!(T) && !__traits(isTemplate, T));
+        // isTemplate is relatively new only use it if it exists
+        static if (__traits(compiles, __traits(isTemplate, T)))
+            return (!isSomeFunction!(T) && !__traits(isTemplate, T));
+        else
+            return (!isSomeFunction!(T));
     })();
 }
 
@@ -141,9 +145,12 @@ unittest
     S s;
     static assert( !isField!(s.property) );
     static assert( !isField!(s.func) );
-    static assert( !isField!(s.tmplt) );
-    static assert( !isSomeFunction!(s.tmplt) );
-    static assert( __traits(isTemplate,s.tmplt) );
+
+    static if (__traits(compiles, __traits(isTemplate, T)))
+    {
+        static assert( !isField!(s.tmplt) );
+        static assert( !isSomeFunction!(s.tmplt) );
+    }
 
     static assert( isField!(s.field) );
 }
