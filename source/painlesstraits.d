@@ -129,6 +129,25 @@ template isField(alias T)
     })();
 }
 
+unittest
+{
+    struct S {
+        @property auto property() { return 1.0; }
+        auto func() { return 1.0; }
+        auto tmplt()() {return 1.0; }
+        auto field = 0;
+    }
+
+    S s;
+    static assert( !isField!(s.property) );
+    static assert( !isField!(s.func) );
+    static assert( !isField!(s.tmplt) );
+    static assert( !isSomeFunction!(s.tmplt) );
+    static assert( __traits(isTemplate,s.tmplt) );
+
+    static assert( isField!(s.field) );
+}
+
 template isFieldOrProperty(alias T)
 {
     enum isFieldOrProperty = (function() {
