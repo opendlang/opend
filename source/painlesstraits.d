@@ -127,7 +127,7 @@ template isFieldOrProperty(alias T)
     enum isFieldOrProperty = (function() {
         static if (isSomeFunction!(T))
         {
-            return (functionAttributes!(T) & FunctionAttribute.property) != 0;
+            return (functionAttributes!(T) & FunctionAttribute.property);
         }
         else return true;
     })();
@@ -141,4 +141,10 @@ unittest {
 
     static assert(isFieldOrProperty!(Foo.success));
     static assert(!isFieldOrProperty!(Foo.failure));
+}
+
+unittest {
+    import std.typecons : Tuple;
+    // toString is template, should be ignored
+    static assert(!isFieldOrProperty!(Tuple!(int)(0).toString));
 }
