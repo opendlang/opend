@@ -38,9 +38,22 @@ alias void* SharedLibHandle;
 static if( Derelict_OS_Posix ) {
     import core.sys.posix.dlfcn;
 
+    enum LDFlags {
+        rtldLocal = RTLD_LOCAL,
+        rtldLazy = RTLD_LAZY,
+        rtldNow = RTLD_NOW,
+        rtldGlobal = RTLD_GLOBAL,
+    }
+
+    void derelictLDFlags(LDFlags flags) {
+        ldFlags = flags;
+    }
+
     private {
+        LDFlags ldFlags = LDFlags.rtldNow;
+
         SharedLibHandle LoadSharedLib( string libName )    {
-            return dlopen( libName.toStringz(), RTLD_NOW );
+            return dlopen( libName.toStringz(), ldFlags );
         }
 
         void UnloadSharedLib( SharedLibHandle hlib ) {
