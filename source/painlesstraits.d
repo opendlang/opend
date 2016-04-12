@@ -122,14 +122,57 @@ unittest
     static assert(getAnnotation!(anyy, AnyBarUDA).data == 1);
 }
 
+template isField(alias T)
+{
+    enum isField = (function() {
+        // isTemplate is relatively new only use it if it exists
+        static if (__traits(compiles, __traits(isTemplate, T)))
+            return (!isSomeFunction!(T) && !__traits(isTemplate, T));
+        else
+            return (!isSomeFunction!(T));
+    })();
+}
+
+unittest
+{
+    struct Foo {
+        @property auto property() { return 1.0; }
+        auto func() { return 1.0; }
+        auto tmplt()() {return 1.0; }
+        auto field = 0;
+    }
+
+    static assert( !isField!(Foo.property) );
+    static assert( !isField!(Foo.func) );
+
+    static if (__traits(compiles, __traits(isTemplate, Foo.tmplt)))
+    {
+        static assert( !isField!(Foo.tmplt) );
+        static assert( !isSomeFunction!(Foo.tmplt) );
+    }
+
+    static assert( isField!(Foo.field) );
+
+    // Make sure the struct behaves as expected
+    Foo foo;
+    assert( foo.property == 1.0 );
+    assert( foo.func() == 1.0 );
+    assert( foo.tmplt() == 1.0 );
+    assert( foo.field == 0.0 );
+}
+
 template isFieldOrProperty(alias T)
 {
     enum isFieldOrProperty = (function() {
-        static if (isSomeFunction!(T))
+        static if (isField!(T))
         {
-            return (functionAttributes!(T) & FunctionAttribute.property) != 0;
-        }
-        else return true;
+            return true;
+        } 
+        else static if (isSomeFunction!(T))
+        {
+            return (functionAttributes!(T) & FunctionAttribute.property);
+        } else 
+            return false;
     })();
 }
 
@@ -141,4 +184,14 @@ unittest {
 
     static assert(isFieldOrProperty!(Foo.success));
     static assert(!isFieldOrProperty!(Foo.failure));
+
+    // Make sure the struct behaves as expected
+    Foo foo;
+    assert( foo.failure(1) == 1 );
+}
+
+unittest {
+    import std.typecons : Tuple;
+    // toString is template, should be ignored
+    static assert(!isFieldOrProperty!(Tuple!(int)(0).toString));
 }
