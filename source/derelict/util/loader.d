@@ -133,7 +133,8 @@ abstract class SharedLibLoader {
                     library.
         +/
         void load(string libNames) {
-            assert(libNames !is null);
+            if(libNames == null)
+                libNames = _libNames;
 
             auto lnames = libNames.split(",");
             foreach(ref string l; lnames)
