@@ -4,7 +4,7 @@ Boost Software License - Version 1.0 - August 17th, 2003
 
 Permission is hereby granted, free of charge, to any person or organization
 obtaining a copy of the software and accompanying documentation covered by
-this license ( the "Software" ) to use, reproduce, display, distribute,
+this license (the "Software") to use, reproduce, display, distribute,
 execute, and transmit the Software, and to prepare derivative works of the
 Software, and to permit third-parties to whom the Software is furnished to
 do so, all subject to the following:
@@ -55,7 +55,7 @@ abstract class SharedLibLoader {
         libNames =      A string containing one or more comma-separated shared
                         library names.
     +/
-    public this( string libNames ) {
+    public this(string libNames) {
         _libNames = libNames;
     }
 
@@ -79,7 +79,7 @@ abstract class SharedLibLoader {
                     library.
         +/
         void load() {
-            load( _libNames );
+            load(_libNames);
         }
 
         /++
@@ -106,8 +106,8 @@ abstract class SharedLibLoader {
                     SymbolLoadException if an expected symbol is missing from the
                     library.
         +/
-        void load( SharedLibVersion minRequiredVersion ) {
-            configureMinimumVersion( minRequiredVersion );
+        void load(SharedLibVersion minRequiredVersion) {
+            configureMinimumVersion(minRequiredVersion);
             load();
         }
 
@@ -132,14 +132,14 @@ abstract class SharedLibLoader {
                     SymbolLoadException if an expected symbol is missing from the
                     library.
         +/
-        void load( string libNames ) {
-            assert( libNames !is null );
+        void load(string libNames) {
+            assert(libNames !is null);
 
-            auto lnames = libNames.split( "," );
-            foreach( ref string l; lnames )
+            auto lnames = libNames.split(",");
+            foreach(ref string l; lnames)
                 l = l.strip();
 
-            load( lnames );
+            load(lnames);
         }
 
         /++
@@ -168,9 +168,9 @@ abstract class SharedLibLoader {
                     SymbolLoadException if an expected symbol is missing from the
                     library.
         +/
-        void load( string libNames, SharedLibVersion minRequiredVersion ) {
-            configureMinimumVersion( minRequiredVersion );
-            load( libNames );
+        void load(string libNames, SharedLibVersion minRequiredVersion) {
+            configureMinimumVersion(minRequiredVersion);
+            load(libNames);
         }
 
         /++
@@ -192,8 +192,8 @@ abstract class SharedLibLoader {
                     SymbolLoadException if an expected symbol is missing from the
                     library.
         +/
-        void load( string[] libNames ) {
-            _lib.load( libNames );
+        void load(string[] libNames) {
+            _lib.load(libNames);
             loadSymbols();
         }
 
@@ -224,9 +224,9 @@ abstract class SharedLibLoader {
                     SymbolLoadException if an expected symbol is missing from the
                     library.
         +/
-        void load( string[] libNames, SharedLibVersion minRequiredVersion ) {
-            configureMinimumVersion( minRequiredVersion );
-            load( libNames );
+        void load(string[] libNames, SharedLibVersion minRequiredVersion) {
+            configureMinimumVersion(minRequiredVersion);
+            load(libNames);
         }
 
         /++
@@ -252,7 +252,7 @@ abstract class SharedLibLoader {
                                 derelict.util.exception.ShouldThrow and accepts
                                 a string as the sole parameter.
             +/
-            void missingSymbolCallback( MissingSymbolCallbackDg callback ) {
+            void missingSymbolCallback(MissingSymbolCallbackDg callback) {
                 _lib.missingSymbolCallback = callback;
             }
 
@@ -265,7 +265,7 @@ abstract class SharedLibLoader {
                                 derelict.util.exception.ShouldThrow and accepts
                                 a string as the sole parameter.
             +/
-            void missingSymbolCallback( MissingSymbolCallbackFunc callback ) {
+            void missingSymbolCallback(MissingSymbolCallbackFunc callback) {
                 _lib.missingSymbolCallback = callback;
             }
 
@@ -299,8 +299,8 @@ abstract class SharedLibLoader {
          any of the overloads of the load method that take a SharedLibVersion will
          cause a compile time assert to fire.
         +/
-        void configureMinimumVersion( SharedLibVersion minVersion ) {
-            assert( 0, "SharedLibVersion is not supported by this loader." );
+        void configureMinimumVersion(SharedLibVersion minVersion) {
+            assert(0, "SharedLibVersion is not supported by this loader.");
         }
 
         /++
@@ -318,8 +318,8 @@ abstract class SharedLibLoader {
                         specified by funcName is missing from the shared library.
          Returns:       The symbol matching the name parameter.
         +/
-        void* loadSymbol( string name, bool doThrow = true ) {
-            return _lib.loadSymbol( name, doThrow );
+        void* loadSymbol(string name, bool doThrow = true) {
+            return _lib.loadSymbol(name, doThrow);
         }
 
         /// Returns a reference to the shared library wrapped by this loader.
@@ -341,8 +341,8 @@ abstract class SharedLibLoader {
          Throws:        SymbolLoadException if doThrow is true and a the symbol
                         specified by funcName is missing from the shared library.
         +/
-        final void bindFunc( void** ptr, string funcName, bool doThrow = true ) {
-            void* func = loadSymbol( funcName, doThrow );
+        final void bindFunc(void** ptr, string funcName, bool doThrow = true) {
+            void* func = loadSymbol(funcName, doThrow);
             *ptr = func;
         }
     }
