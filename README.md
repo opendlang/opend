@@ -4,21 +4,11 @@ D library for getting standard paths (e.g. Pictures, Music, Documents). Inspired
 
 [![Build Status](https://travis-ci.org/MyLittleRobo/standardpaths.svg?branch=master)](https://travis-ci.org/MyLittleRobo/standardpaths)
 
-API may change in future. Join discussions in Issues if you're interested.
+[Online documentation](http://mylittlerobo.github.io/standardpaths/standardpaths.html).
 
 ## Platform support
 
 Currently works on Windows, Linux and FreeBSD. Mac OS X support is experimental.
-
-## Generating documentation
-
-Ddoc:
-
-    dub build --build=docs
-    
-Ddox:
-
-    dub build --build=ddox
 
 ## Running examples
 
