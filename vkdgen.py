@@ -44,17 +44,19 @@ alias int16_t = short;
 alias int32_t = int;
 alias int64_t = long;
 
-uint VK_MAKE_VERSION(uint major, uint minor, uint patch) {
-	return (major << 22) | (minor << 12) | (patch);
-}
-uint VK_VERSION_MAJOR(uint ver) {
-	return ver >> 22;
-}
-uint VK_VERSION_MINOR(uint ver) {
-	return (ver >> 12) & 0x3ff;
-}
-uint VK_VERSION_PATCH(uint ver) {
-	return ver & 0xfff;
+@nogc pure nothrow {
+	uint VK_MAKE_VERSION(uint major, uint minor, uint patch) {
+		return (major << 22) | (minor << 12) | (patch);
+	}
+	uint VK_VERSION_MAJOR(uint ver) {
+		return ver >> 22;
+	}
+	uint VK_VERSION_MINOR(uint ver) {
+		return (ver >> 12) & 0x3ff;
+	}
+	uint VK_VERSION_PATCH(uint ver) {
+		return ver & 0xfff;
+	}
 }
 
 enum VK_NULL_HANDLE = 0;
