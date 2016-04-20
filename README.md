@@ -4,7 +4,7 @@ D library for getting standard paths (e.g. Pictures, Music, Documents). Inspired
 
 [![Build Status](https://travis-ci.org/MyLittleRobo/standardpaths.svg?branch=master)](https://travis-ci.org/MyLittleRobo/standardpaths)
 
-[Online documentation](http://mylittlerobo.github.io/standardpaths/standardpaths.html).
+[Online documentation](http://mylittlerobo.github.io/standardpaths/standardpaths.html)
 
 ## Platform support
 
@@ -16,19 +16,13 @@ Currently works on Windows, Linux and FreeBSD. Mac OS X support is experimental.
 
 Prints some standard paths to stdout.
 
-    dub run standardpaths:printdirs --build=release
-
-### [Find executable](examples/findexecutable/source/app.d)
-
-Takes the name of executable as command line argument and searches PATH environment variable for retrieving absolute path to file. On Windows it also tries all known executable extensions.
-
-    dub run standardpaths:findexecutable --build=release -- whoami
+    dub run :printdirs --build=release
     
 ### [Get path](examples/getpath/source/app.d)
 
 Get path of given type, verify it exists or create if it does not.
 
-    dub run standardpaths:getpath -- --verify --create templates
+    dub run :getpath -- --verify --create templates
     
 ## Use cases
 
@@ -47,16 +41,18 @@ import std.stdio;
 void showFileDialog()
 {
     auto fileDialog = new FileDialog;
+    auto folderFlag = FolderFlag.verify;
+    
     string[] paths = [
         homeDir(),
-        writablePath(StandardPath.desktop),
-        writablePath(StandardPath.downloads),
-        writablePath(StandardPath.documents),
-        writablePath(StandardPath.pictures),
-        writablePath(StandardPath.music),
-        writablePath(StandardPath.videos),
-        writablePath(StandardPath.templates),
-        writablePath(StandardPath.publicShare)
+        writablePath(StandardPath.desktop, folderFlag),
+        writablePath(StandardPath.downloads, folderFlag),
+        writablePath(StandardPath.documents, folderFlag),
+        writablePath(StandardPath.pictures, folderFlag),
+        writablePath(StandardPath.music, folderFlag),
+        writablePath(StandardPath.videos, folderFlag),
+        writablePath(StandardPath.templates, folderFlag),
+        writablePath(StandardPath.publicShare, folderFlag)
     ];
     foreach(path; paths) {
         if (path.exists) {
@@ -119,7 +115,7 @@ Config readSettings()
 }
 ```
 
-## Implementation details   
+## Implementation details
 
 ### Freedesktop
 

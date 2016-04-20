@@ -1,14 +1,14 @@
 {
     "name" : "standardpaths", 
-    "description" : "Library for getting standard paths", 
+    "description" : "Getting standard system locations", 
+    "copyright": "Copyright © 2015-2016, Roman Chistokhodov",
     "license" : "BSL-1.0", 
     "authors" : ["Roman Chistokhodov"], 
-
     "targetName" : "standardpaths", 
     "targetPath" : "lib", 
     "targetType" : "library",
 
-    "subPackages" : ["./examples/printdirs", "./examples/findexecutable", "./examples/getpath"],
+    "subPackages" : ["./examples/printdirs", "./examples/getpath"],
     
     "dependencies" : {
         "xdgpaths" : "~>0.2.1"

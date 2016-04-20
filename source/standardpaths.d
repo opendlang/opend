@@ -5,7 +5,7 @@
  * License: 
  *  $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
  * Copyright:
- *  Roman Chistokhodov 2015
+ *  Roman Chistokhodov 2015-2016
  */
 
 module standardpaths;
@@ -15,7 +15,6 @@ private {
     import std.array;
     import std.path;
     import std.file;
-    import std.algorithm : splitter, canFind, filter;
     import std.exception;
     import std.range;
     
@@ -69,7 +68,12 @@ version(Windows) {
 }
 
 /** 
- * Locations that can be passed to writablePath and standardPaths functions.
+ * Location types that can be passed to writablePath and standardPaths functions.
+ * 
+ * Not all these paths are suggested for showing in file managers or file dialogs. 
+ * Some of them are meant for internal application usage or should be treated in special way.
+ * On usual circumstances user wants to see Desktop, Documents, Downloads, Pictures, Music and Videos directories.
+ * 
  * See_Also:
  *  writablePath, standardPaths
  */
@@ -123,7 +127,7 @@ enum StandardPath {
     fonts,
     /**
      * User's applications. This has different meaning across platforms.
-     * On Windows it's directory where links to programs for Start menu are stored.
+     * On Windows it's directory where links (.lnk) to programs for Start menu are stored.
      * On OS X it's folder where applications are typically put.
      * On Freedesktop it's directory where .desktop files are put.
      */
@@ -131,6 +135,9 @@ enum StandardPath {
     
     /**
      * Automatically started applications.
+     * On Windows it's directory where links (.lnk) to autostarted programs are stored.
+     * On OSX it's not available.
+     * On Freedesktop it's directory where autostarted .desktop files are stored.
      */
     startup
 }
@@ -142,7 +149,11 @@ enum StandardPath {
 enum FolderFlag
 {
     none = 0,   /// Don't verify that folder exist.
-    create = 1, /// Create if folder does not exist.
+    /** 
+     * Create if folder does not exist. 
+     * On Windows created directory will have appropriate icon and other settings specific for this kind of folder.
+     */
+    create = 1, 
     verify = 2  /// Verify that folder exists.
 }
 
@@ -229,12 +240,6 @@ version(StandardPathsDocs)
      * Note: This function is Windows only.
      */
     string savedGames(bool shouldCreate = false) nothrow @safe;
-}
-
-version(Windows) {
-    private enum pathVarSeparator = ';';
-} else version(Posix) {
-    private enum pathVarSeparator = ':';
 }
 
 version(Windows) {
@@ -606,27 +611,6 @@ version(Windows) {
         if (commonPath.length)
             paths ~= commonPath;
         return paths;
-    }
-    
-    private const(string)[] executableExtensions() nothrow @trusted
-    {
-        static bool filenamesEqual(string first, string second) nothrow {
-            try {
-                return filenameCmp(first, second) == 0;
-            } catch(Exception e) {
-                return false;
-            }
-        }
-        
-        static string[] extensions;
-        if (extensions.empty) {
-            collectException(environment.get("PATHEXT").splitter(pathVarSeparator).array, extensions);
-            if (canFind!(filenamesEqual)(extensions, ".exe") == false) {
-                extensions = [".exe", ".com", ".bat", ".cmd"];
-            }
-        }
-        
-        return extensions;
     }
 } else version(OSX) {
     
@@ -1049,125 +1033,5 @@ PICTURES=Images
             }
             return null;
         }
-    }
-}
-
-private bool isExecutable(string filePath) nothrow @trusted {
-    try {
-        version(Posix) {
-            import core.sys.posix.unistd;
-            return access(toStringz(filePath), X_OK) == 0;
-        } else version(Windows) {
-            //Use GetEffectiveRightsFromAclW?
-            
-            string extension = filePath.extension;
-            const(string)[] exeExtensions = executableExtensions();
-            foreach(ext; exeExtensions) {
-                if (sicmp(extension, ext) == 0)
-                    return true;
-            }
-            return false;
-            
-        } else {
-            static assert(false, "Unsupported platform");
-        }
-    } catch(Exception e) {
-        return false;
-    }
-}
-
-private string checkExecutable(string filePath) nothrow @trusted {
-    try {
-        if (filePath.isFile && filePath.isExecutable) {
-            return buildNormalizedPath(filePath);
-        } else {
-            return null;
-        }
-    }
-    catch(Exception e) {
-        return null;
-    }
-}
-
-/**
- * System paths where executable files can be found.
- * Returns: Range of paths as determined by $(B PATH) environment variable.
- * Note: this function does not cache its result
- */
-@trusted auto binPaths()
-{
-    string pathVar;
-    collectException(environment.get("PATH"), pathVar);
-    return splitter(pathVar, pathVarSeparator).filter!(p => p.length != 0);
-}
-
-///
-unittest
-{
-    static if (isFreedesktop) {
-        import xdgpaths;
-        import std.algorithm : equal;
-        
-        auto pathGuard = EnvGuard("PATH");
-        
-        environment["PATH"] = ".:/usr/apps:/usr/local/apps:";
-        assert(equal(binPaths(), [".", "/usr/apps", "/usr/local/apps"]));
-    }
-}
-
-/**
- * Finds executable by $(B fileName) in the paths specified by $(B paths).
- * Returns: Absolute path to the existing executable file or an empty string if not found.
- * Params:
- *  fileName = Name of executable to search. If it's absolute path, this function only checks if the file is executable.
- *  paths = Range of directories where executable should be searched.
- * Note: On Windows when fileName extension is omitted, executable extensions will be automatically appended during search.
- */
-@trusted nothrow string findExecutable(Range)(string fileName, Range paths) if (isInputRange!Range && is(ElementType!Range : string))
-{   
-    try {
-        if (fileName.isAbsolute()) {
-            return checkExecutable(fileName);
-        } else if (fileName == fileName.baseName) {
-            string toReturn;
-            foreach(string path; paths) {
-                if (path.empty) {
-                    continue;
-                }
-                
-                string candidate = buildPath(absolutePath(path), fileName);
-                
-                version(Windows) {
-                    if (candidate.extension.empty) {
-                        foreach(exeExtension; executableExtensions()) {
-                            toReturn = checkExecutable(setExtension(candidate, exeExtension.toLower()));
-                            if (toReturn.length) {
-                                return toReturn;
-                            }
-                        }
-                    }
-                }
-                
-                toReturn = checkExecutable(candidate);
-                if (toReturn.length) {
-                    return toReturn;
-                }
-            }
-        }
-    } catch (Exception e) {
-        
-    }
-    return null;
-}
-
-/**
- * ditto, but searches in system paths, determined by $(B PATH) environment variable.
- * See_Also: binPaths
- */
-@safe string findExecutable(string fileName) nothrow {
-    try {
-        return findExecutable(fileName, binPaths());
-    } catch(Exception e) {
-        return null;
     }
 }
