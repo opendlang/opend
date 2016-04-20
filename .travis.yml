@@ -15,4 +15,3 @@ matrix:
 script:
     - dub build standardpaths --compiler=${DC}
     - dub run standardpaths:printdirs --compiler=${DC}
-    - dub run standardpaths:findexecutable --compiler=${DC} -- whoami
