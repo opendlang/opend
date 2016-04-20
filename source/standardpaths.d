@@ -12,7 +12,6 @@ module standardpaths;
 
 private {
     import std.process : environment;
-    import std.array;
     import std.path;
     import std.file;
     import std.exception;
@@ -36,7 +35,6 @@ version(Windows) {
         }
         
         import std.utf;
-        import std.uni : toLower, sicmp;
     }
 } else version(Posix) {
     private {
