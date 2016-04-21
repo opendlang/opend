@@ -228,7 +228,7 @@ version(StandardPathsDocs)
      * Returns: User's Roaming directory. On fail returns an empty string.
      * Note: This function is Windows only.
      */
-    string roamingPath(bool shouldCreate = false) nothrow @safe;
+    string roamingPath(FolderFlag params = FolderFlag.none) nothrow @safe;
     
     /**
      * Location where games may store their saves. 
@@ -236,7 +236,7 @@ version(StandardPathsDocs)
      * Returns: User's Saved Games directory. On fail returns an empty string.
      * Note: This function is Windows only.
      */
-    string savedGames(bool shouldCreate = false) nothrow @safe;
+    string savedGames(FolderFlag params = FolderFlag.none) nothrow @safe;
 }
 
 version(Windows) {
