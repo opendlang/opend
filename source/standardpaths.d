@@ -38,7 +38,6 @@ version(Windows) {
     }
 } else version(Posix) {
     private {
-        import std.stdio : File, StdioException;
         import std.string : toStringz;
         
         static if (is(typeof({import std.string : fromStringz;}))) {
@@ -816,10 +815,13 @@ version(Windows) {
     } else {
         public import xdgpaths;
         
-        private import std.algorithm : startsWith;
-        private import std.string;
-        private import std.traits;
-            
+        private {
+            import std.stdio : File;
+            import std.algorithm : startsWith;
+            import std.string;
+            import std.traits;
+        }
+        
         //Concat two strings, but if the first one is empty, then null string is returned.
         private string maybeConcat(string start, string path) nothrow @safe
         {

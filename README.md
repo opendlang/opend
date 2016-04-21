@@ -6,6 +6,9 @@ D library for getting standard paths (e.g. Pictures, Music, Documents). Inspired
 
 [Online documentation](http://mylittlerobo.github.io/standardpaths/standardpaths.html)
 
+Note: recently this library had functions for finding executables in directories defined by PATH environment variable. 
+This functionality was moved to the separate library. See [findexecutable](http://code.dlang.org/packages/findexecutable).
+
 ## Platform support
 
 Currently works on Windows, Linux and FreeBSD. Mac OS X support is experimental.
