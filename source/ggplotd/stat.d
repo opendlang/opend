@@ -7,7 +7,15 @@ version( unittest )
 
 import std.traits : isCallable;
 
-///
+/**
+ Create Aes based on a function
+
+ Params:
+    func = Function
+    min  = x coordinate to start from
+    max  = x coordinate to end at
+    precision = Number of points to calculate
+*/
 auto statFunction( FUNC, T )( FUNC func, T min, 
     T max, size_t precision = 50 ) if (isCallable!FUNC)
 {
