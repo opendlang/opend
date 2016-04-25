@@ -27,10 +27,10 @@ unittest
     auto aes = statFunction(f, 0.0, 10);
     auto gg = GGPlotD().put(geomLine(aes));
 
-    auto f2 = (double x) { return x / (1 + x) * uniform(0.9, 1.1); };
+    auto f2 = (double x) { return x / (1 + x) * uniform(0.75, 1.25); };
     auto aes2 = f2.statFunction(0.0, 10, 25);
     // Show points in different colour
-    auto withColour = Tuple!(double, "colour")(0).mergeRange(aes2);
+    auto withColour = Tuple!(string, "colour")("aquamarine").mergeRange(aes2);
     gg = gg.put(withColour.geomPoint);
 
     gg.save("function.png");

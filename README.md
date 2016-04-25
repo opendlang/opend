@@ -345,15 +345,17 @@ found in the [code](./source/ggplotd/geom.d#L571).
 
 ### stat*
 
-ggplot2 for R defines a number of functions that plot statistics of the
-data. GGplotD does not come with any such functions out of the box, but
-the implementation should be very similar to the above named geom*
-functions. The main difference will be that a stat function will have to
-do more data analysis. In that way the line between geom and stat
-functions is quite blurry; it could be argued that geomHist is a stat
-function. If you are interested in adding support for more advanced
-statistics then you should use the [geom* example](#geom) as a starting
-point. 
+The [stat* functions](http://blackedder.github.io/ggplotd/stat.html) can
+calculate different statistics and return the results in an Aes that can
+then be passed to the different geom* functions and plotted. Currently the
+available stat* functions are very limited, but the plan is to provide
+more. Of course if you have written your own then you are welcome to open
+a issue/pull request on github to submit them for inclusion, so that
+others can profit from your hard work. See below for an example of a plot
+created with the statFunction, which makes it straightforward to draw
+different functions.
+
+![Function](http://blackedder.github.io/ggplotd/images/function.png)
 
 ### 3D/heightmap/surface plots
 

@@ -15,6 +15,32 @@ import std.traits : isCallable;
     min  = x coordinate to start from
     max  = x coordinate to end at
     precision = Number of points to calculate
+
+  Examples:
+  --------------
+    /// http://blackedder.github.io/ggplotd/images/function.png
+    import std.random : uniform;
+    import std.typecons : Tuple;
+    import ggplotd.stat : statFunction;
+    import ggplotd.ggplotd : GGPlotD;
+    import ggplotd.geom : geomLine, geomPoint;
+    import ggplotd.aes : mergeRange;
+
+    // Generate some noisy data with reducing width
+    auto f = (double x) { return x / (1 + x); };
+
+    auto aes = statFunction(f, 0.0, 10);
+    auto gg = GGPlotD().put(geomLine(aes));
+
+    auto f2 = (double x) { return x / (1 + x) * uniform(0.75, 1.25); };
+    auto aes2 = f2.statFunction(0.0, 10, 25);
+    // Show points in different colour
+    auto withColour = Tuple!(string, "colour")("aquamarine").mergeRange(aes2);
+    gg = gg.put(withColour.geomPoint);
+
+    gg.save("function.png");
+  --------------
+
 */
 auto statFunction( FUNC, T )( FUNC func, T min, 
     T max, size_t precision = 50 ) if (isCallable!FUNC)
