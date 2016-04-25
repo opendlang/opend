@@ -21,14 +21,15 @@ unittest
     import ggplotd.geom : geomLine, geomPoint;
     import ggplotd.aes : mergeRange;
 
-    // Generate some noisy data with reducing width
     auto f = (double x) { return x / (1 + x); };
 
     auto aes = statFunction(f, 0.0, 10);
     auto gg = GGPlotD().put(geomLine(aes));
 
+    // Generate some noisy points 
     auto f2 = (double x) { return x / (1 + x) * uniform(0.75, 1.25); };
     auto aes2 = f2.statFunction(0.0, 10, 25);
+
     // Show points in different colour
     auto withColour = Tuple!(string, "colour")("aquamarine").mergeRange(aes2);
     gg = gg.put(withColour.geomPoint);

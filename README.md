@@ -345,13 +345,13 @@ found in the [code](./source/ggplotd/geom.d#L571).
 
 ### stat*
 
-The [stat* functions](http://blackedder.github.io/ggplotd/stat.html) can
-calculate different statistics and return the results in an Aes that can
-then be passed to the different geom* functions and plotted. Currently the
+The [stat* functions](http://blackedder.github.io/ggplotd/stat.html) are
+meant to calculate different statistics from data. The results is an Aes
+that can be passed to a geom* function and plotted. Currently the
 available stat* functions are very limited, but the plan is to provide
 more. Of course if you have written your own then you are welcome to open
 a issue/pull request on github to submit them for inclusion, so that
-others can profit from your hard work. See below for an example of a plot
+others can benefit from your good work. See below for an example of a plot
 created with the statFunction, which makes it straightforward to draw
 different functions.
 
