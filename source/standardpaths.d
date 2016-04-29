@@ -771,7 +771,7 @@ version(Windows) {
         }
     }
     
-    private string writablePathImpl(StandardPath type, FolderFlag params = FolderFlag.none) nothrow @safe
+    string writablePath(StandardPath type, FolderFlag params = FolderFlag.none) nothrow @safe
     {
         const bool shouldCreate = (params & FolderFlag.create) != 0;
         const bool shouldVerify = (params & FolderFlag.verify) != 0;
