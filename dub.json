@@ -25,5 +25,14 @@
             "dflags": ["-c", "-Df__dummy.html", "-Xfdocs.json"],
             "versions" : ["StandardPathsDocs"]
         }
-    }
+    },
+    "configurations" : [
+        {
+            "name" : "default"
+        },
+        {
+            "name" : "cocoa",
+            "versions-osx" : ["StandardPathsCocoa"]
+        }
+    ]
 }

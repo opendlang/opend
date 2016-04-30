@@ -48,6 +48,12 @@ version(Windows) {
                 return cString ? cString[0..strlen(cString)] : null;
             }
         }
+
+        //Concat two strings, but if the first one is empty, then null string is returned.
+        string maybeConcat(string start, string path) nothrow @safe
+        {
+            return start.empty ? null : start ~ path;
+        }
         
         string verifyIfNeeded(string path, bool shouldVerify) nothrow @trusted
         {
@@ -55,6 +61,21 @@ version(Windows) {
                 bool dirExists;
                 collectException(path.isDir, dirExists);
                 return dirExists ? path : null;
+            } else {
+                return path;
+            }
+        }
+
+        string createIfNeeded(string path, bool shouldCreate) nothrow @trusted
+        {
+            if (path.length && shouldCreate) {
+                bool pathExist;
+                collectException(path.isDir, pathExist);
+                if (pathExist || collectException(mkdirRecurse(path)) is null) {
+                    return path;
+                } else {
+                    return null;
+                }
             } else {
                 return path;
             }
@@ -677,97 +698,253 @@ version(Windows) {
     };
 
     private {
-        struct FSRef {
-          char[80] hidden;    /* private to File Manager*/
-        };
+        version(StandardPathsCocoa) {
+            alias size_t NSUInteger;
 
-        alias int Boolean;
-        alias int OSType;
-        alias short OSErr;
-        alias int OSStatus;
-        
-        extern(C) @nogc @system OSErr _dummy_FSFindFolder(short, OSType, Boolean, FSRef*) nothrow { return 0; }
-        extern(C) @nogc @system OSStatus _dummy_FSRefMakePath(const(FSRef)*, char*, uint) nothrow { return 0; }
+            extern (Objective-C)
+            interface NSString
+            {
+                NSString initWithUTF8String(in char* str) @selector("initWithUTF8String:");
+                const(char)* UTF8String() @selector("UTF8String");
+                void release() @selector("release");
+            }
 
-        __gshared typeof(&_dummy_FSFindFolder) ptrFSFindFolder = null;
-        __gshared typeof(&_dummy_FSRefMakePath) ptrFSRefMakePath = null;
-    }
+            extern(Objective-C)
+            interface NSArray
+            {
+                NSString objectAtIndex(size_t) @selector("objectAtIndex:");
+                NSString firstObject() @selector("firstObject");
+                NSUInteger count() @selector("count");
+                void release() @selector("release");
+            }
 
-    shared static this()
-    {
-        enum carbonPath = "/System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/CarbonCore.framework/Versions/A/CarbonCore";
+            extern(Objective-C)
+            interface NSURL
+            {
+                NSString absoluteString() @selector("absoluteString");
+                void release() @selector("release");
+            }
 
-        import core.sys.posix.dlfcn;
+            extern(Objective-C)
+            interface NSError
+            {
 
-        void* handle = dlopen(toStringz(carbonPath), RTLD_NOW | RTLD_LOCAL);
-        if (handle) {
-            ptrFSFindFolder = cast(typeof(ptrFSFindFolder))dlsym(handle, "FSFindFolder");
-            ptrFSRefMakePath = cast(typeof(ptrFSRefMakePath))dlsym(handle, "FSRefMakePath");
-        }
-        if (ptrFSFindFolder == null || ptrFSRefMakePath == null) {
-            debug collectException(stderr.writeln("Could not load carbon functions"));
-            if (handle) dlclose(handle);
-        }
-    }
+            }
 
-    private @nogc @trusted bool isCarbonLoaded() nothrow
-    {
-        return ptrFSFindFolder != null && ptrFSRefMakePath != null;
-    }
+            extern (C) NSFileManager objc_lookUpClass(in char* name);
 
-    private enum OSErr noErr = 0;
+            extern(Objective-C)
+            interface NSFileManager
+            {
+                NSFileManager defaultManager() @selector("defaultManager");
+                NSURL URLForDirectory(NSSearchPathDirectory, NSSearchPathDomainMask domain, NSURL url, int shouldCreate, NSError* error) @selector("URLForDirectory:inDomain:appropriateForURL:create:error:");
+            }
 
-    private string fsPath(short domain, OSType type, bool shouldCreate = false) nothrow @trusted
-    {
-        import std.stdio;   
-        FSRef fsref;
-        if (isCarbonLoaded() && ptrFSFindFolder(domain, type, shouldCreate, &fsref) == noErr) {
+            enum : NSUInteger {
+               NSApplicationDirectory = 1,
+               NSDemoApplicationDirectory,
+               NSDeveloperApplicationDirectory,
+               NSAdminApplicationDirectory,
+               NSLibraryDirectory,
+               NSDeveloperDirectory,
+               NSUserDirectory,
+               NSDocumentationDirectory,
+               NSDocumentDirectory,
+               NSCoreServiceDirectory,
+               NSAutosavedInformationDirectory = 11,
+               NSDesktopDirectory = 12,
+               NSCachesDirectory = 13,
+               NSApplicationSupportDirectory = 14,
+               NSDownloadsDirectory = 15,
+               NSInputMethodsDirectory = 16,
+               NSMoviesDirectory = 17,
+               NSMusicDirectory = 18,
+               NSPicturesDirectory = 19,
+               NSPrinterDescriptionDirectory = 20,
+               NSSharedPublicDirectory = 21,
+               NSPreferencePanesDirectory = 22,
+               NSItemReplacementDirectory = 99,
+               NSAllApplicationsDirectory = 100,
+               NSAllLibrariesDirectory = 101,
+            };
 
-            char[2048] buf;
-            char* path = buf.ptr;
-            if (ptrFSRefMakePath(&fsref, path, buf.sizeof) == noErr) {
+            alias NSUInteger NSSearchPathDirectory;
+
+            enum : NSUInteger {
+               NSUserDomainMask = 1,
+               NSLocalDomainMask = 2,
+               NSNetworkDomainMask = 4,
+               NSSystemDomainMask = 8,
+               NSAllDomainsMask = 0x0ffff,
+            };
+
+            alias NSUInteger NSSearchPathDomainMask;
+
+            string domainDir(NSSearchPathDirectory dir, NSSearchPathDomainMask domain, bool shouldCreate = false) nothrow @trusted
+            {
+                import std.uri;
+                import std.algorithm : startsWith;
+
                 try {
-                    return fromStringz(path).idup;
-                }
-                catch(Exception e) {
+                    auto managerInterface = objc_lookUpClass("NSFileManager");
+                    if (!managerInterface) {
+                        return null;
+                    }
+
+                    auto manager = managerInterface.defaultManager();
+                    if (!manager) {
+                        return null;
+                    }
+
+                    NSURL url = manager.URLForDirectory(dir, domain, null, shouldCreate, null);
+                    if (!url) {
+                        return null;
+                    }
+                    scope(exit) url.release();  
+                    NSString nsstr = url.absoluteString();
+                    scope(exit) nsstr.release();
+
+                    string str = fromStringz(nsstr.UTF8String()).idup;
+
+                    enum fileProtocol = "file://";
+                    if (str.startsWith(fileProtocol)) {
+                        return str.decode()[fileProtocol.length..$];
+                    }
+                } catch(Exception e) {
 
                 }
+                return null;
+            }
+        } else {
+            struct FSRef {
+              char[80] hidden;    /* private to File Manager*/
+            };
+
+            alias int Boolean;
+            alias int OSType;
+            alias short OSErr;
+            alias int OSStatus;
+            
+            extern(C) @nogc @system OSErr _dummy_FSFindFolder(short, OSType, Boolean, FSRef*) nothrow { return 0; }
+            extern(C) @nogc @system OSStatus _dummy_FSRefMakePath(const(FSRef)*, char*, uint) nothrow { return 0; }
+
+            __gshared typeof(&_dummy_FSFindFolder) ptrFSFindFolder = null;
+            __gshared typeof(&_dummy_FSRefMakePath) ptrFSRefMakePath = null;
+        }
+    }
+
+    version(StandardPathsCocoa) {
+
+    } else {
+        shared static this()
+        {
+            enum carbonPath = "/System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/CarbonCore.framework/Versions/A/CarbonCore";
+
+            import core.sys.posix.dlfcn;
+
+            void* handle = dlopen(toStringz(carbonPath), RTLD_NOW | RTLD_LOCAL);
+            if (handle) {
+                ptrFSFindFolder = cast(typeof(ptrFSFindFolder))dlsym(handle, "FSFindFolder");
+                ptrFSRefMakePath = cast(typeof(ptrFSRefMakePath))dlsym(handle, "FSRefMakePath");
+            }
+            if (ptrFSFindFolder == null || ptrFSRefMakePath == null) {
+                debug collectException(stderr.writeln("Could not load carbon functions"));
+                if (handle) dlclose(handle);
             }
         }
-        return null;
+
+        private @nogc @trusted bool isCarbonLoaded() nothrow
+        {
+            return ptrFSFindFolder != null && ptrFSRefMakePath != null;
+        }
+
+        private enum OSErr noErr = 0;
+
+        private string fsPath(short domain, OSType type, bool shouldCreate = false) nothrow @trusted
+        {
+            import std.stdio;   
+            FSRef fsref;
+            if (isCarbonLoaded() && ptrFSFindFolder(domain, type, shouldCreate, &fsref) == noErr) {
+
+                char[2048] buf;
+                char* path = buf.ptr;
+                if (ptrFSRefMakePath(&fsref, path, buf.sizeof) == noErr) {
+                    try {
+                        return fromStringz(path).idup;
+                    }
+                    catch(Exception e) {
+
+                    }
+                }
+            }
+            return null;
+        }
     }
     
     private string writablePathImpl(StandardPath type, bool shouldCreate = false) nothrow @safe
     {
-        final switch(type) {
-            case StandardPath.config:
-                return fsPath(kUserDomain, kPreferencesFolderType, shouldCreate);
-            case StandardPath.cache:
-                return fsPath(kUserDomain, kCachedDataFolderType, shouldCreate);
-            case StandardPath.data:
-                return fsPath(kUserDomain, kApplicationSupportFolderType, shouldCreate);
-            case StandardPath.desktop:
-                return fsPath(kUserDomain, kDesktopFolderType, shouldCreate);
-            case StandardPath.documents:
-                return fsPath(kUserDomain, kDocumentsFolderType, shouldCreate);
-            case StandardPath.pictures:
-                return fsPath(kUserDomain, kPictureDocumentsFolderType, shouldCreate);
-            case StandardPath.music:
-                return fsPath(kUserDomain, kMusicDocumentsFolderType, shouldCreate);
-            case StandardPath.videos:
-                return fsPath(kUserDomain, kMovieDocumentsFolderType, shouldCreate);
-            case StandardPath.downloads:
-                return fsPath(kUserDomain, kDownloadsFolderType, shouldCreate);
-            case StandardPath.templates:
-                return null;
-            case StandardPath.publicShare:
-                return fsPath(kUserDomain, kPublicFolderType, shouldCreate);
-            case StandardPath.fonts:
-                return fsPath(kUserDomain, kFontsFolderType, shouldCreate);
-            case StandardPath.applications:
-                return fsPath(kUserDomain, kApplicationsFolderType, shouldCreate);
-            case StandardPath.startup:
-                return null;
+        version(StandardPathsCocoa) {
+            final switch(type) {
+                case StandardPath.config:
+                    return domainDir(NSLibraryDirectory, NSUserDomainMask, shouldCreate).maybeConcat("/Preferences").createIfNeeded(shouldCreate);
+                case StandardPath.cache:
+                    return domainDir(NSCachesDirectory, NSUserDomainMask, shouldCreate);
+                case StandardPath.data:
+                    return domainDir(NSApplicationSupportDirectory, NSUserDomainMask, shouldCreate);
+                case StandardPath.desktop:
+                    return domainDir(NSDesktopDirectory, NSUserDomainMask, shouldCreate);
+                case StandardPath.documents:
+                    return domainDir(NSDocumentDirectory, NSUserDomainMask, shouldCreate);
+                case StandardPath.pictures:
+                    return domainDir(NSPicturesDirectory, NSUserDomainMask, shouldCreate);
+                case StandardPath.music:
+                    return domainDir(NSMusicDirectory, NSUserDomainMask, shouldCreate);
+                case StandardPath.videos:
+                    return domainDir(NSMoviesDirectory, NSUserDomainMask, shouldCreate);
+                case StandardPath.downloads:
+                    return domainDir(NSDownloadsDirectory, NSUserDomainMask, shouldCreate);
+                case StandardPath.templates:
+                    return null;
+                case StandardPath.publicShare:
+                    return domainDir(NSSharedPublicDirectory, NSUserDomainMask, shouldCreate);
+                case StandardPath.fonts:
+                    return domainDir(NSLibraryDirectory, NSUserDomainMask, shouldCreate).maybeConcat("/Fonts").createIfNeeded(shouldCreate);
+                case StandardPath.applications:
+                    return domainDir(NSApplicationDirectory, NSUserDomainMask, shouldCreate);
+                case StandardPath.startup:
+                    return null;
+            }
+        } else {
+            final switch(type) {
+                case StandardPath.config:
+                    return fsPath(kUserDomain, kPreferencesFolderType, shouldCreate);
+                case StandardPath.cache:
+                    return fsPath(kUserDomain, kCachedDataFolderType, shouldCreate);
+                case StandardPath.data:
+                    return fsPath(kUserDomain, kApplicationSupportFolderType, shouldCreate);
+                case StandardPath.desktop:
+                    return fsPath(kUserDomain, kDesktopFolderType, shouldCreate);
+                case StandardPath.documents:
+                    return fsPath(kUserDomain, kDocumentsFolderType, shouldCreate);
+                case StandardPath.pictures:
+                    return fsPath(kUserDomain, kPictureDocumentsFolderType, shouldCreate);
+                case StandardPath.music:
+                    return fsPath(kUserDomain, kMusicDocumentsFolderType, shouldCreate);
+                case StandardPath.videos:
+                    return fsPath(kUserDomain, kMovieDocumentsFolderType, shouldCreate);
+                case StandardPath.downloads:
+                    return fsPath(kUserDomain, kDownloadsFolderType, shouldCreate);
+                case StandardPath.templates:
+                    return null;
+                case StandardPath.publicShare:
+                    return fsPath(kUserDomain, kPublicFolderType, shouldCreate);
+                case StandardPath.fonts:
+                    return fsPath(kUserDomain, kFontsFolderType, shouldCreate);
+                case StandardPath.applications:
+                    return fsPath(kUserDomain, kApplicationsFolderType, shouldCreate);
+                case StandardPath.startup:
+                    return null;
+            }
         }
     }
     
@@ -782,21 +959,40 @@ version(Windows) {
     {
         string commonPath;
         
-        switch(type) {
-            case StandardPath.fonts:
-                commonPath = fsPath(kOnAppropriateDisk, kFontsFolderType);
-                break;
-            case StandardPath.applications:
-                commonPath = fsPath(kOnAppropriateDisk, kApplicationsFolderType);
-                break;
-            case StandardPath.data:
-                commonPath = fsPath(kOnAppropriateDisk, kApplicationSupportFolderType);
-                break;
-            case StandardPath.cache:
-                commonPath = fsPath(kOnAppropriateDisk, kCachedDataFolderType);
-                break;
-            default:
-                break;
+        version(StandardPathsCocoa) {
+            switch(type) {
+                case StandardPath.fonts:
+                    commonPath = domainDir(NSLibraryDirectory, NSSystemDomainMask).maybeConcat("/Fonts");
+                    break;
+                case StandardPath.applications:
+                    commonPath = domainDir(NSApplicationDirectory, NSSystemDomainMask);
+                    break;
+                case StandardPath.data:
+                    commonPath = domainDir(NSApplicationSupportDirectory, NSSystemDomainMask);
+                    break;
+                case StandardPath.cache:
+                    commonPath = domainDir(NSCachesDirectory, NSSystemDomainMask);
+                    break;
+                default:
+                    break;
+            }
+        } else {
+            switch(type) {
+                case StandardPath.fonts:
+                    commonPath = fsPath(kOnAppropriateDisk, kFontsFolderType);
+                    break;
+                case StandardPath.applications:
+                    commonPath = fsPath(kOnAppropriateDisk, kApplicationsFolderType);
+                    break;
+                case StandardPath.data:
+                    commonPath = fsPath(kOnAppropriateDisk, kApplicationSupportFolderType);
+                    break;
+                case StandardPath.cache:
+                    commonPath = fsPath(kOnAppropriateDisk, kCachedDataFolderType);
+                    break;
+                default:
+                    break;
+            }
         }
         
         string[] paths;
@@ -820,12 +1016,6 @@ version(Windows) {
             import std.algorithm : startsWith;
             import std.string;
             import std.traits;
-        }
-        
-        //Concat two strings, but if the first one is empty, then null string is returned.
-        private string maybeConcat(string start, string path) nothrow @safe
-        {
-            return start.empty ? null : start ~ path;
         }
         
         unittest
@@ -949,21 +1139,6 @@ PICTURES=Images
                 return [homeFonts, localShare, share];
             } else {
                 return [localShare, share];
-            }
-        }
-        
-        private string createIfNeeded(string path, bool shouldCreate) nothrow @trusted
-        {
-            if (path.length && shouldCreate) {
-                bool pathExist;
-                collectException(path.isDir, pathExist);
-                if (pathExist || collectException(mkdirRecurse(path)) is null) {
-                    return path;
-                } else {
-                    return null;
-                }
-            } else {
-                return path;
             }
         }
         

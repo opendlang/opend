@@ -11,6 +11,13 @@
     "configurations" : [
         {
             "name" : "default"
+        },
+        {
+            "name" : "cocoa",
+            "lflags-osx" : ["-framework", "Foundation"],
+            "subConfigurations" : {
+                "standardpaths" : "cocoa"
+            }
         }
     ]
 }
