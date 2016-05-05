@@ -113,7 +113,9 @@ def convertTypeArray(typ, name):
 class DGenerator(OutputGenerator):
 	def __init__(self, errFile=sys.stderr, warnFile=sys.stderr, diagFile=sys.stderr):
 		super().__init__(errFile, warnFile, diagFile)
-	
+		self.enumConstants = []
+		self.funcNames = []
+
 	def beginFile(self, genOpts):
 		self.genOpts = genOpts
 		try:
@@ -129,14 +131,12 @@ class DGenerator(OutputGenerator):
 		
 		print(TYPES_HEADER.replace("PKGPREFIX", genOpts.pkgprefix).replace("NAMEPREFIX", genOpts.nameprefix), file=self.typesFile)
 		print(DYNAMIC_HEADER.replace("PKGPREFIX", genOpts.pkgprefix).replace("NAMEPREFIX", genOpts.nameprefix), file=self.dynamicFile)
-		self.funcNames = set()
-		self.enumConstants = set()
 	
 	def endFile(self):
 		print("}", file=self.dynamicFile)
 		
 		print("__gshared {", file=self.dynamicFile)
-		for name in sorted(self.funcNames):
+		for name in self.funcNames:
 			print("\tPFN_%s %s;" % (name, name), file=self.dynamicFile)
 		print("""}
 
@@ -155,8 +155,10 @@ struct NAMEPREFIXLoader {
 		assert(vkGetInstanceProcAddr !is null, "Must call NAMEPREFIXLoader.loadInstanceFunctions before NAMEPREFIXLOADER.loadAllFunctions");
 """.replace("NAMEPREFIX", self.genOpts.nameprefix), file=self.dynamicFile)
 		
-		self.funcNames.difference_update({"vkGetDeviceProcAddr", "vkEnumerateInstanceExtensionProperties", "vkEnumerateInstanceLayerProperties", "vkCreateInstance"})
-		for name in sorted(self.funcNames):
+		for name in {"vkGetDeviceProcAddr", "vkEnumerateInstanceExtensionProperties", "vkEnumerateInstanceLayerProperties", "vkCreateInstance"}:
+			self.funcNames.remove(name)
+
+		for name in self.funcNames:
 			print("\t\t{0} = cast(typeof({0})) vkGetInstanceProcAddr(instance, \"{0}\");".format(name), file=self.dynamicFile)
 		
 		print("""	}
@@ -165,7 +167,7 @@ struct NAMEPREFIXLoader {
 		assert(vkGetDeviceProcAddr !is null, "reload(VkDevice) must be called after reload(VkInstance)");
 """, file=self.dynamicFile)
 		
-		for name in sorted(self.funcNames):
+		for name in self.funcNames:
 			print("\t\t{0} = cast(typeof({0})) vkGetDeviceProcAddr(device, \"{0}\");".format(name), file=self.dynamicFile)
 		
 		
@@ -205,7 +207,7 @@ version(NAMEPREFIXLoadFromDerelict) {
 """.replace("NAMEPREFIX", self.genOpts.nameprefix), file=self.dynamicFile)
 		
 		print("version(NAMEPREFIXGlobalEnums) {".replace("NAMEPREFIX", self.genOpts.nameprefix), file=self.typesFile)
-		for enumName, enumField in sorted(self.enumConstants):
+		for enumName, enumField in self.enumConstants:
 			print("\tenum %s = %s.%s;" % (enumField, enumName, enumField), file=self.typesFile)
 		print("}", file=self.typesFile)
 		
@@ -276,7 +278,7 @@ version(NAMEPREFIXLoadFromDerelict) {
 			(numval, strval) = self.enumToValue(elem, True)
 			fieldName = elem.get("name")
 			print("\t%s = %s," % (fieldName, strval), file=self.typesFile)
-			self.enumConstants.add((name, fieldName))
+			self.enumConstants.append((name, fieldName))
 			
 			if expand:
 				if numval < minValue:
@@ -292,10 +294,10 @@ version(NAMEPREFIXLoadFromDerelict) {
 			print("\t%s_END_RANGE = %s," % (prefix, maxName), file=self.typesFile)
 			print("\t%s_RANGE_SIZE = (%s - %s + 1)," % (prefix, maxName, minName), file=self.typesFile)
 			print("\t%s_MAX_ENUM = 0x7FFFFFFF," % prefix, file=self.typesFile)
-			self.enumConstants.add((name, prefix+"_BEGIN_RANGE"))
-			self.enumConstants.add((name, prefix+"_END_RANGE"))
-			self.enumConstants.add((name, prefix+"_RANGE_SIZE"))
-			self.enumConstants.add((name, prefix+"_MAX_ENUM"))
+			self.enumConstants.append((name, prefix+"_BEGIN_RANGE"))
+			self.enumConstants.append((name, prefix+"_END_RANGE"))
+			self.enumConstants.append((name, prefix+"_RANGE_SIZE"))
+			self.enumConstants.append((name, prefix+"_MAX_ENUM"))
 		print("}", file=self.typesFile)
 	
 	def genEnum(self, enuminfo, name):
@@ -313,7 +315,7 @@ version(NAMEPREFIXLoadFromDerelict) {
 		returnType = convertTypeConst(getFullType(proto).strip())
 		params = ",".join(convertTypeConst(getFullType(param).strip())+" "+param.find("name").text for param in cmd.elem.findall("param"))
 		print("\talias PFN_%s = %s function(%s);" % (name, returnType, params), file=self.dynamicFile)
-		self.funcNames.add(name)
+		self.funcNames.append(name)
 
 class DGeneratorOptions(GeneratorOptions):
 	def __init__(self, *args, **kwargs):
