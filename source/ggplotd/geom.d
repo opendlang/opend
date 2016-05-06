@@ -724,48 +724,8 @@ unittest
 /// Draw histograms based on the x coordinates of the data (aes)
 auto geomHist(AES)(AES aes, size_t noBins = 0)
 {
-    import std.algorithm : map, max, min;
-    import std.array : Appender, array;
-    import std.range : repeat, take, walkLength;
-    import std.typecons : Tuple;
-
-    import ggplotd.range : uniquer;
-
-    // New appender to hold lines for drawing histogram
-    auto appender = Appender!(Geom[])([]);
-
-    foreach (grouped; group(aes)) // Split data by colour/id
-    {
-        // Extract the x coordinates
-        auto xsNL = numericLabel(grouped.map!((t) => t.x));
-        auto xs = xsNL.map!((t) => t[0]) // Extract the x coordinates
-            .array;
-        if (noBins < 1)
-            noBins = min(xsNL.uniquer.take(30).walkLength,
-                    min(30,max(11, xs.length/10)));
-        auto bins = xs.bin(noBins); // Bin the data
-
-        foreach (bin; bins)
-        {
-            // Specifying the boxes for the histogram. The merge is used to keep the colour etc. information
-            // contained in the original merged passed to geomHist.
-            appender.put(
-                geomLine( [
-                    grouped.front.merge(Tuple!(double, "x", double, "y" )( 
-                            bin.range[0], 0.0 )),
-                    grouped.front.merge(Tuple!(double, "x", double, "y" )( 
-                            bin.range[0], bin.count )),
-                    grouped.front.merge(Tuple!(double, "x", double, "y" )( 
-                            bin.range[1], bin.count )),
-                    grouped.front.merge(Tuple!(double, "x", double, "y" )( 
-                            bin.range[1], 0.0 )),
-                ] )
-            );
-        }
-    }
-
-    // Return the different lines 
-    return appender.data;
+    import ggplotd.stat : statHist;
+    return geomRectangle( statHist( aes, noBins ) );
 }
 
 /// Draw histograms based on the x coordinates of the data (aes)

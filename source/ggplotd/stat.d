@@ -116,6 +116,8 @@ private auto bin(DATA)(DATA data, double[] mins, double[] maxs,
         size_t count;
     }
 
+    assert( noBins > 0, "noBins must be larger than 0" );
+
     auto widths = zip(mins, maxs).map!((t) => (t[1]-t[0])/noBins);
 
     auto binIDs = data.map!((sample) 
@@ -157,19 +159,100 @@ unittest {
     import std.algorithm : reduce;
     auto bins = bin( [0.0,0.1,0.2,0.2,0.01,0.3], 0.0, 0.3 );
     assertEqual( 6, reduce!((a,b) => a += b.count )( 0, bins ) );
-} 
-/+
-
-// Should return aes that can be passed to geomRectangle, which plots each bin
-// Only works for 1 or 2D case
-private auto statBin(AES)(AES aes)
-{
-    import std.algorithm : min, max, reduce;
-    import std.range : walkLength;
-    assert(xs.walkLength > 0);
-
-    auto minmax = xs.reduce!((a, b) => min(a, b), (a, b) => max(a, b));
-    return bin( xs, minmax[0], minmax[1], noBins );
 }
-+/
 
+/**
+ Create Aes that specifies the bins to draw an histogram 
+
+ Params:
+    aes = Data that the histogram will be based on 
+    noBins  = Optional number of bins. On a value of 0 the number of bins will be chosen automatically.
+
+ Returns: Range that holds rectangles representing different bins
+*/
+auto statHist(AES)(AES aesRaw, size_t noBins = 0)
+{
+    import std.stdio : writeln;
+    struct VolderMort(AESV)
+    {
+        private import std.range : ElementType;
+        private import std.typecons : Tuple;
+        private import ggplotd.aes : group;
+
+        typeof(group(AESV.init)) grouped;
+        ElementType!(ElementType!(typeof(grouped))) defaults;
+        typeof(bin!(double[])((double[]).init, double.init, double.init, size_t.init))
+            binned;
+
+        size_t _noBins;
+        Tuple!(double, double) minmax;
+        this( AESV )( AESV aes, size_t noBins )
+        {
+            import std.algorithm : min, max, reduce;
+            import std.array : array;
+            import std.range : empty, popFront, front, take, walkLength;
+
+            import ggplotd.range : uniquer;
+            auto xs = aes.map!((t) => t.x[0]) // Extract the x coordinates
+                .array;
+            _noBins = noBins;
+            if (_noBins < 1)
+                _noBins = min(xs.uniquer.take(30).walkLength,
+                        min(30,max(11, xs.length/10)));
+            minmax = xs.reduce!("min(a,b)","max(a,b)");
+
+            grouped = group(aes);
+
+            defaults = grouped.front.front;
+            xs = grouped.front.map!((t) => t.x[0]) // Extract the x coordinates
+                .array;
+            binned = bin(xs, minmax[0], minmax[1], _noBins);
+            assert( !grouped.empty, "Groups should not be empty" );
+            grouped.popFront;
+        }
+
+        @property bool empty() { 
+            import std.range : empty;
+            return (grouped.empty && binned.empty); }
+
+        @property auto front()
+        {
+            import ggplotd.aes : merge;
+            auto w = binned.front.range[0][1]-binned.front.range[0][0];
+            return defaults.merge(
+                    Tuple!(double, "x", double, "y", double, "width", double, "height")(
+                        binned.front.range[0][0] + 0.5*w, 0.5*binned.front.count, 
+                        w, binned.front.count) );
+
+        }
+
+        void popFront()
+        {
+            import std.array : array;
+            import std.range : empty, front, popFront;
+            if (!binned.empty)
+                binned.popFront;
+            if (binned.empty && !grouped.empty)
+            {
+                defaults = grouped.front.front;
+                auto xs = grouped.front.map!((t) => t.x[0]) // Extract the x coordinates
+                    .array;
+                binned = bin(xs, minmax[0], minmax[1], _noBins);
+                grouped.popFront;
+            }
+        }
+
+
+    }
+
+    import std.algorithm : map;
+    import ggplotd.aes : Aes, numericLabel, mergeRange;
+
+    // Turn x into numericLabel
+    auto xNumeric = numericLabel(aesRaw.map!((t) => t.x));
+    auto aes = aesRaw.mergeRange( 
+        Aes!(typeof(xNumeric), "x")( xNumeric ) );
+
+    // Get maxs, mins and noBins
+    return VolderMort!(typeof(aes))( aes, noBins );
+}
