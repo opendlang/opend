@@ -140,7 +140,15 @@ auto geomRectangle(AES)(AES aes)
             };
 
             AdaptiveBounds bounds;
-            bounds.adapt(Point(tup.x[0], tup.y[0]));
+            static if (is(typeof(tup.width)==immutable(Pixel)))
+                bounds.adapt(Point(tup.x[0], tup.y[0]));
+            else
+            {
+                bounds.adapt(Point(tup.x[0]-0.5*tup.width, 
+                            tup.y[0]-0.5*tup.height));
+                bounds.adapt(Point(tup.x[0]+0.5*tup.width,
+                            tup.y[0]+0.5*tup.height));
+            }
 
             auto geom = Geom( tup );
             if (!xsCoords.numeric)
@@ -229,7 +237,15 @@ auto geomEllipse(AES)(AES aes)
             };
 
             AdaptiveBounds bounds;
-            bounds.adapt(Point(tup.x[0], tup.y[0]));
+            static if (is(typeof(tup.width)==immutable(Pixel)))
+                bounds.adapt(Point(tup.x[0], tup.y[0]));
+            else
+            {
+                bounds.adapt(Point(tup.x[0]-0.5*tup.width, 
+                            tup.y[0]-0.5*tup.height));
+                bounds.adapt(Point(tup.x[0]+0.5*tup.width,
+                            tup.y[0]+0.5*tup.height));
+            }
 
             auto geom = Geom( tup );
             if (!xsCoords.numeric)
@@ -320,7 +336,15 @@ auto geomTriangle(AES)(AES aes)
             };
 
             AdaptiveBounds bounds;
-            bounds.adapt(Point(tup.x[0], tup.y[0]));
+            static if (is(typeof(tup.width)==immutable(Pixel)))
+                bounds.adapt(Point(tup.x[0], tup.y[0]));
+            else
+            {
+                bounds.adapt(Point(tup.x[0]-0.5*tup.width, 
+                            tup.y[0]-0.5*tup.height));
+                bounds.adapt(Point(tup.x[0]+0.5*tup.width,
+                            tup.y[0]+0.5*tup.height));
+            }
 
             auto geom = Geom( tup );
             if (!xsCoords.numeric)
@@ -412,7 +436,16 @@ auto geomDiamond(AES)(AES aes)
             };
 
             AdaptiveBounds bounds;
-            bounds.adapt(Point(tup.x[0], tup.y[0]));
+            static if (is(typeof(tup.width)==immutable(Pixel)))
+                bounds.adapt(Point(tup.x[0], tup.y[0]));
+            else
+            {
+                bounds.adapt(Point(tup.x[0]-0.5*tup.width, 
+                            tup.y[0]-0.5*tup.height));
+                bounds.adapt(Point(tup.x[0]+0.5*tup.width,
+                            tup.y[0]+0.5*tup.height));
+            }
+
 
             auto geom = Geom( tup );
             if (!xsCoords.numeric)
