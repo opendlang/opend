@@ -159,6 +159,13 @@ unittest {
     import std.algorithm : reduce;
     auto bins = bin( [0.0,0.1,0.2,0.2,0.01,0.3], 0.0, 0.3 );
     assertEqual( 6, reduce!((a,b) => a += b.count )( 0, bins ) );
+
+    import std.algorithm : map;
+    import std.random : uniform;
+    import std.range : iota, walkLength;
+    auto xs = iota(0,100,1).map!((i)=>uniform(0,0.75)+uniform(0.25,1));
+    auto binsR = bin( xs, 0.0, 1.0 );
+    assertEqual( xs.walkLength, reduce!((a,b) => a += b.count )( 0, binsR ) );
 }
 
 /**
