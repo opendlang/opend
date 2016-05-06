@@ -18,11 +18,14 @@ re_array = re.compile(r"^([^\[]+)\[(\d+)\]$")
 re_camel_case = re.compile(r"([a-z])([A-Z])")
 re_long_int = re.compile(r"([0-9]+)ULL")
 
+if len(sys.argv) > 2 and not sys.argv[2].startswith( "--" ):
+	sys.path.append(sys.argv[1] + "/src/spec/")
+
 try:
 	from reg import *
 	from generator import OutputGenerator, GeneratorOptions, write
 except ImportError as e:
-	print("Could not import Vulkan generator; ensure that this file is in Vulkan-Docs/src/spec", file=sys.stderr)
+	print("Could not import Vulkan generator; please ensure that the first argument points to Vulkan-Docs directory", file=sys.stderr)
 	print("-----", file=sys.stderr)
 	raise
 
@@ -325,8 +328,13 @@ class DGeneratorOptions(GeneratorOptions):
 
 if __name__ == "__main__":
 	import argparse
-	
+
+	vkxml = "vk.xml"
 	parser = argparse.ArgumentParser()
+	if len(sys.argv) > 2 and not sys.argv[2].startswith("--"):
+		parser.add_argument("vulkandocs")
+		vkxml = sys.argv[1] + "/src/spec/vk.xml"
+
 	parser.add_argument("outfolder")
 	parser.add_argument("--pkgprefix", default="dvulkan")
 	parser.add_argument("--nameprefix", default="DVulkan")
@@ -335,9 +343,10 @@ if __name__ == "__main__":
 	
 	gen = DGenerator()
 	reg = Registry()
-	reg.loadElementTree(etree.parse("vk.xml"))
+	reg.loadElementTree(etree.parse(vkxml))
 	reg.setGenerator(gen)
-	reg.apiGen(DGeneratorOptions(
+	reg.apiGen(
+		DGeneratorOptions(
 		filename=args.outfolder,
 		apiname="vulkan",
 		versions=".*",
