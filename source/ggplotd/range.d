@@ -86,3 +86,35 @@ unittest
     assertEqual( [tuple(1,"a"),tuple(1,"b"),tuple(2,"b"),tuple(1,"b")]
             .uniquer.array, [tuple(1,"a"),tuple(1,"b"),tuple(2,"b")] );
 }
+
+/++
+    Group an (unsorted) range by the result of the function applied to each element
++/
+private import std.range : isInputRange;
+
+auto groupBy(alias func = function(a) { return a; }, R)(R values)
+    if (isInputRange!R)
+{
+    import std.range : front, ElementType;
+    alias K = typeof(func(values.front));
+    alias V = ElementType!R[];
+    V[K] grouped;
+    foreach(value; values) 
+        grouped[func(value)] ~= value;
+    return grouped;
+}
+
+///
+unittest {
+    import std.stdio : writeln;
+    import std.algorithm : sort;
+    import std.typecons : tuple;
+    auto xs = [
+        tuple("a", 1.0),
+        tuple("b", 3.0),
+        tuple("a", 2.0),
+        tuple("b", 4.0)];
+    auto grouped = xs.groupBy!((a) => a[0]);
+    assertEqual( grouped.keys.length, 2 );
+    assertEqual( grouped.keys.sort(), ["a","b"].sort() );
+}
