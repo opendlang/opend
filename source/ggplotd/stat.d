@@ -112,10 +112,10 @@ private auto idToRange(T)( size_t value, T min, T width )
 // Multidimensional bin. Data either is range of range, with each subrange
 // a set of data. TODO: should we treat one dimensional data differently?
 private auto bin(DATA)(DATA data, double[] mins, double[] maxs, 
-    size_t noBins)
+    size_t[] noBins)
 {
     import std.range : zip;
-    import std.algorithm : filter, all, any, group, map;
+    import std.algorithm : filter, all, group, map;
     import ggplotd.range : groupBy;
     struct Bin
     {
@@ -123,9 +123,9 @@ private auto bin(DATA)(DATA data, double[] mins, double[] maxs,
         size_t count;
     }
 
-    assert( noBins > 0, "noBins must be larger than 0" );
+    assert( noBins.all!((a) => a > 0), "noBins must be larger than 0" );
 
-    auto widths = zip(mins, maxs).map!((t) => (t[1]-t[0])/noBins);
+    auto widths = zip(mins, maxs, noBins).map!((t) => (t[1]-t[0])/t[2]);
 
     auto binIDs = data
         .filter!((sample)
@@ -156,9 +156,9 @@ private auto bin(DATA)(DATA data, double[] mins, double[] maxs,
 
 unittest {
     import std.algorithm : reduce;
-    auto bins = bin( [[0.0],[0.1],[0.2],[0.2],[0.01],[0.3]], [0.0], [0.3], 10 );
+    auto bins = bin( [[0.0],[0.1],[0.2],[0.2],[0.01],[0.3]], [0.0], [0.3], [10] );
     assertEqual( 6, reduce!((a,b) => a += b.count )( 0, bins ) );
-    auto bins2 = bin( [[0.0,100],[0.1,101],[0.2,109],[0.01,110],[0.3,103.1]], [0.0,100], [0.3,110], 10 );
+    auto bins2 = bin( [[0.0,100],[0.1,101],[0.2,109],[0.01,110],[0.3,103.1]], [0.0,100], [0.3,110], [10,10] );
     assertEqual( 5, reduce!((a,b) => a += b.count )( 0, bins2 ) );
 }
 
@@ -166,7 +166,7 @@ private auto bin(DATA)(DATA data, double min, double max,
     size_t noBins)
 {
     import std.algorithm : map;
-    return bin( data.map!((d) => [d]), [min], [max], noBins );
+    return bin( data.map!((d) => [d]), [min], [max], [noBins] );
 }
 
 unittest {
