@@ -584,7 +584,35 @@ import std.range : isInputRange;
 /**
   DataID is used to refer represent any type as a usable type
   */
-alias DataID = Tuple!(double, string);
+struct DataID
+{
+    this( double value, string label )
+    {
+        import std.typecons : tuple;
+        state = tuple( value, label );
+    }
+
+    T to(T)() const
+    {
+        import std.conv : to;
+        static if (is(T==double))
+            return state[0];
+        else 
+            return state[1].to!T;
+    }
+
+    Tuple!(double, string) state; 
+    alias state this;
+}
+
+unittest
+{
+    import std.conv : to;
+    auto did = DataID( 0.1, "a" );
+    assertEqual( did[0], 0.1 );
+    assertEqual( did.to!double, 0.1 );
+    assertEqual( did.to!string, "a" );
+}
 
 /**
   Wrap a range of any type into a range containing DataIDs
