@@ -80,6 +80,12 @@ private auto binID(T)( T value, T min, T max, T width )
     import std.math : floor;
     assert( min != max, "Minimum value of bin should differ from maximum" );
     assert( width != 0, "Bin width can't be 0" );
+
+    import std.stdio : writeln;
+    if ( !(value <= max && value >= min) )
+        writeln( value, " ", min, " ", max );
+
+    assert( value <= max && value >= min, "Value must be within given range" );
     if (value==max) // Corner case for highest value
         value -= 0.1*width; // Might not work correctly for integers
     auto id = floor((value - min) / width);
@@ -97,7 +103,7 @@ unittest
     // TODO: add tests for integers etc.
 }
 
-private auto idToRange(T)( T value, T min, T width )
+private auto idToRange(T)( size_t value, T min, T width )
 {
     auto base = min + value*width;
     return [ base, base + width ];
@@ -106,10 +112,11 @@ private auto idToRange(T)( T value, T min, T width )
 // Multidimensional bin. Data either is range of range, with each subrange
 // a set of data. TODO: should we treat one dimensional data differently?
 private auto bin(DATA)(DATA data, double[] mins, double[] maxs, 
-    size_t noBins = 10)
+    size_t noBins)
 {
     import std.range : zip;
-    import std.algorithm : group, map;
+    import std.algorithm : filter, all, any, group, map;
+    import ggplotd.range : groupBy;
     struct Bin
     {
         double[][] range;
@@ -120,36 +127,43 @@ private auto bin(DATA)(DATA data, double[] mins, double[] maxs,
 
     auto widths = zip(mins, maxs).map!((t) => (t[1]-t[0])/noBins);
 
-    auto binIDs = data.map!((sample) 
-            {
-                import std.array : array;
-                return zip(sample, mins, maxs, widths)
-                    .map!( (args) => binID( args[0], args[1], args[2], args[3] ) )
-                    .array; // Needed for group to work
-            } );
+    auto binIDs = data
+        .filter!((sample)
+        { 
+            return zip(sample, mins, maxs).
+                all!( (args) => (args[0] >= args[1] && args[0] <= args[2]));
+        })
+        .map!((sample) 
+        {
+            import std.array : array; // Needed for groupBy to work correctly
+            return zip(sample, mins, maxs, widths)
+                .map!( (args) => binID( args[0], args[1], args[2], args[3] ) ).array;
+        } );
 
-    return binIDs.group.map!((g) 
+    import std.typecons : tuple;
+
+    return binIDs.groupBy!((a) => tuple(a)).values.map!((g) 
             {
                 import std.array : array;
                 Bin bin;
+                bin.count = g.length;
                 bin.range = zip( g[0], mins, widths )
                     .map!((args) => idToRange( args[0], args[1], args[2] ) )
                     .array;
-                bin.count = g[1];
                 return bin;
             });
 }
 
 unittest {
     import std.algorithm : reduce;
-    auto bins = bin( [[0.0],[0.1],[0.2],[0.2],[0.01],[0.3]], [0.0], [0.3] );
+    auto bins = bin( [[0.0],[0.1],[0.2],[0.2],[0.01],[0.3]], [0.0], [0.3], 10 );
     assertEqual( 6, reduce!((a,b) => a += b.count )( 0, bins ) );
-    auto bins2 = bin( [[0.0,100],[0.1,101],[0.2,109],[0.01,110],[0.3,103.1]], [0.0,100], [0.3,110] );
+    auto bins2 = bin( [[0.0,100],[0.1,101],[0.2,109],[0.01,110],[0.3,103.1]], [0.0,100], [0.3,110], 10 );
     assertEqual( 5, reduce!((a,b) => a += b.count )( 0, bins2 ) );
 }
 
 private auto bin(DATA)(DATA data, double min, double max, 
-    size_t noBins = 10)
+    size_t noBins)
 {
     import std.algorithm : map;
     return bin( data.map!((d) => [d]), [min], [max], noBins );
@@ -157,15 +171,19 @@ private auto bin(DATA)(DATA data, double min, double max,
 
 unittest {
     import std.algorithm : reduce;
-    auto bins = bin( [0.0,0.1,0.2,0.2,0.01,0.3], 0.0, 0.3 );
+    auto bins = bin( [0.0,0.1,0.2,0.2,0.01,0.3], 0.0, 0.3, 10 );
     assertEqual( 6, reduce!((a,b) => a += b.count )( 0, bins ) );
 
     import std.algorithm : map;
+    import std.array : array;
     import std.random : uniform;
     import std.range : iota, walkLength;
-    auto xs = iota(0,100,1).map!((i)=>uniform(0,0.75)+uniform(0.25,1));
-    auto binsR = bin( xs, 0.0, 1.0 );
+    auto xs = iota(0,10,1).map!((i)=>uniform(0,0.75)+uniform(0.25,1)).array;
+    auto binsR = bin( xs, 0.0, 2.0, 5 );
     assertEqual( xs.walkLength, reduce!((a,b) => a += b.count )( 0, binsR ) );
+
+    binsR = bin( xs, 0.0, 1.0, 5 );
+    assertLessThanOrEqual( binsR.walkLength, 5 );
 }
 
 /**
