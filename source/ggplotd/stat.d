@@ -125,7 +125,7 @@ private auto bin(DATA)(DATA data, double[] mins, double[] maxs,
 
     assert( noBins.all!((a) => a > 0), "noBins must be larger than 0" );
 
-    auto widths = zip(mins, maxs, noBins).map!((t) => (t[1]-t[0])/t[2]);
+    auto widths = zip(mins, maxs, noBins).map!((t) => (t[1]-t[0])/(t[2]));
 
     auto binIDs = data
         .filter!((sample)
@@ -282,4 +282,21 @@ auto statHist(AES)(AES aesRaw, size_t noBins = 0)
 
     // Get maxs, mins and noBins
     return VolderMort!(typeof(aes))( aes, noBins );
+}
+
+unittest
+{
+    import std.stdio : writeln;
+
+    import std.algorithm : each, map, sort;
+    import std.array : array;
+    import std.random : uniform;
+    import std.range : iota, walkLength;
+
+    import ggplotd.aes : Aes;
+
+    auto xs = iota(0,100,1).map!((a) => uniform(0,6) ).array;
+    auto sh = statHist( Aes!(int[], "x")(xs) );
+    auto binXs = sh.map!((b) => b.x).array.sort().array;
+    assertEqual( binXs.length, 6 );
 }
