@@ -197,7 +197,6 @@ unittest {
 */
 auto statHist(AES)(AES aesRaw, size_t noBins = 0)
 {
-    import std.stdio : writeln;
     struct VolderMort(AESV)
     {
         private import std.range : ElementType;
@@ -217,14 +216,17 @@ auto statHist(AES)(AES aesRaw, size_t noBins = 0)
             import std.array : array;
             import std.range : empty, popFront, front, take, walkLength;
 
+            import ggplotd.math : safeMin, safeMax;
             import ggplotd.range : uniquer;
+
             auto xs = aes.map!((t) => t.x[0]) // Extract the x coordinates
                 .array;
             _noBins = noBins;
             if (_noBins < 1)
                 _noBins = min(xs.uniquer.take(30).walkLength,
                         min(30,max(11, xs.length/10)));
-            minmax = xs.reduce!("min(a,b)","max(a,b)");
+
+            minmax = xs.reduce!((a,b) => safeMin(a,b),(a,b) => safeMax(a,b));
 
             grouped = group(aes);
 

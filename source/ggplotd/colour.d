@@ -308,30 +308,6 @@ unittest
     assertEqual(cids.front[0], 0);
 }
 
-private auto safeMax(T)(T a, T b)
-{
-    import std.math : isNaN;
-    import std.algorithm : max;
-
-    if (isNaN(b))
-        return a;
-    if (isNaN(a))
-        return b;
-    return max(a, b);
-}
-
-private auto safeMin(T)(T a, T b)
-{
-    import std.math : isNaN;
-    import std.algorithm : min;
-
-    if (isNaN(b))
-        return a;
-    if (isNaN(a))
-        return b;
-    return min(a, b);
-}
-
 alias ColourMap = RGBA delegate(ColourID tup);
 
 ///
@@ -348,10 +324,12 @@ auto createColourMap(R)(R colourIDs, ColourGradientFunction gradient) if (is(Ele
     auto validatedIDs = ColourIDRange!R(colourIDs);
 
     auto minmax = Tuple!(double, double)(0, 0);
-    if (!validatedIDs.empty)
+    if (!validatedIDs.empty) {
+        import ggplotd.math : safeMax, safeMin;
         minmax = validatedIDs.save
             .map!((a) => a[0]).reduce!((a, b) => safeMin(a,
             b), (a, b) => safeMax(a, b));
+    }
 
     auto namedColours = createNamedColours;
     import std.algorithm : find;
