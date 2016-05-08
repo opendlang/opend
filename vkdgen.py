@@ -83,8 +83,7 @@ extern(System) @nogc nothrow {
 
 def getFullType(elem):
 	typ = elem.find("type")
-	typstr = (elem.text or "").lstrip() + \
-		typ.text.strip() + (typ.tail or "").rstrip()
+	typstr = (elem.text or "").lstrip() + typ.text.strip() + (typ.tail or "").rstrip()
 	
 	arrlen = elem.find("enum")
 	if arrlen is not None:
@@ -117,7 +116,8 @@ class DGenerator(OutputGenerator):
 	def __init__(self, errFile=sys.stderr, warnFile=sys.stderr, diagFile=sys.stderr):
 		super().__init__(errFile, warnFile, diagFile)
 		self.enumConstants = []
-		self.funcNames = []
+		self.deviceLevelFuncNames = []
+		self.instanceLevelFuncNames = []
 
 	def beginFile(self, genOpts):
 		self.genOpts = genOpts
@@ -139,42 +139,64 @@ class DGenerator(OutputGenerator):
 		print("}", file=self.dynamicFile)
 		
 		print("__gshared {", file=self.dynamicFile)
-		for name in self.funcNames:
+		for name in self.instanceLevelFuncNames:
+			print("\tPFN_%s %s;" % (name, name), file=self.dynamicFile)
+
+		for name in self.deviceLevelFuncNames:
 			print("\tPFN_%s %s;" % (name, name), file=self.dynamicFile)
 		print("""}
 
 struct NAMEPREFIXLoader {
 	@disable this();
 	@disable this(this);
-	
-	static void loadInstanceFunctions(typeof(vkGetInstanceProcAddr) getProcAddr) {
+
+	/// if not using version "with-derelict-loader" this function must be called first
+	/// otherwise call DVulkanDerelict.load()
+	/// both methods yield basic functions to retrieve information about the implementation and
+	/// function vkCreateInstance
+	static void loadGlobalLevelFunctions(typeof(vkGetInstanceProcAddr) getProcAddr) {
 		vkGetInstanceProcAddr = getProcAddr;
 		vkEnumerateInstanceExtensionProperties = cast(typeof(vkEnumerateInstanceExtensionProperties)) vkGetInstanceProcAddr(null, "vkEnumerateInstanceExtensionProperties");
 		vkEnumerateInstanceLayerProperties = cast(typeof(vkEnumerateInstanceLayerProperties)) vkGetInstanceProcAddr(null, "vkEnumerateInstanceLayerProperties");
 		vkCreateInstance = cast(typeof(vkCreateInstance)) vkGetInstanceProcAddr(null, "vkCreateInstance");
 	}
-	
-	static void loadAllFunctions(VkInstance instance) {
-		assert(vkGetInstanceProcAddr !is null, "Must call NAMEPREFIXLoader.loadInstanceFunctions before NAMEPREFIXLOADER.loadAllFunctions");
+
+	/// with a valid VkInstancecall this function to retrieve additional VkInstance, VkPhysicalDevice, ... related functions
+	static void loadInstanceLevelFunctions(VkInstance instance) {
+		assert(vkGetInstanceProcAddr !is null, "Must call NAMEPREFIXLoader.loadGlobalLevelFunctions before NAMEPREFIXLoader.loadInstanceLevelFunctions");
+""".replace("NAMEPREFIX", self.genOpts.nameprefix), file=self.dynamicFile)
+
+		for name in {"vkGetInstanceProcAddr", "vkEnumerateInstanceExtensionProperties", "vkEnumerateInstanceLayerProperties", "vkCreateInstance"}:
+			self.instanceLevelFuncNames.remove(name)
+
+		for name in self.instanceLevelFuncNames:
+			print("\t\t{0} = cast(typeof({0})) vkGetInstanceProcAddr(instance, \"{0}\");".format(name),
+				  file=self.dynamicFile)
+
+		print("""   }
+
+	/// with a valid VkInstance call this function to retrieve VkDevice, VkQueue and VkCommandBuffer related functions
+	/// the functions call indirectly through the VkInstance and will be internally dispatched by the implementation
+	static void loadDeviceLevelFunctions(VkInstance instance) {
+		assert(vkGetInstanceProcAddr !is null, "Must call NAMEPREFIXLoader.loadInstanceLevelFunctions before NAMEPREFIXLoader.loadDeviceLevelFunctions");
 """.replace("NAMEPREFIX", self.genOpts.nameprefix), file=self.dynamicFile)
 		
-		for name in {"vkGetDeviceProcAddr", "vkEnumerateInstanceExtensionProperties", "vkEnumerateInstanceLayerProperties", "vkCreateInstance"}:
-			self.funcNames.remove(name)
-
-		for name in self.funcNames:
+		for name in self.deviceLevelFuncNames:
 			print("\t\t{0} = cast(typeof({0})) vkGetInstanceProcAddr(instance, \"{0}\");".format(name), file=self.dynamicFile)
 		
-		print("""	}
-	
-	void loadAllFunctions(VkDevice device) {
-		assert(vkGetDeviceProcAddr !is null, "reload(VkDevice) must be called after reload(VkInstance)");
+		print("""   }
+
+	/// with a valid VkDevice call this function to retrieve VkDevice, VkQueue and VkCommandBuffer related functions
+	/// the functions call directly VkDevice and related resources and must be retrieved once per logical VkDevice
+	static void loadDeviceLevelFunctions(VkDevice device) {
+		assert(vkGetDeviceProcAddr !is null, "Must call NAMEPREFIXLoader.loadInstanceLevelFunctions before NAMEPREFIXLoader.loadDeviceLevelFunctions");
 """, file=self.dynamicFile)
 		
-		for name in self.funcNames:
+		for name in self.deviceLevelFuncNames:
 			print("\t\t{0} = cast(typeof({0})) vkGetDeviceProcAddr(device, \"{0}\");".format(name), file=self.dynamicFile)
 		
 		
-		print("""	}
+		print("""   }
 }
 
 version(NAMEPREFIXLoadFromDerelict) {
@@ -196,7 +218,7 @@ version(NAMEPREFIXLoadFromDerelict) {
 		protected override void loadSymbols() {
 			typeof(vkGetInstanceProcAddr) getProcAddr;
 			bindFunc(cast(void**)&getProcAddr, "vkGetInstanceProcAddr");
-			NAMEPREFIXLoader.loadInstanceFunctions(getProcAddr);
+			NAMEPREFIXLoader.loadGlobalLevelFunctions(getProcAddr);
 		}
 	}
 	
@@ -318,7 +340,24 @@ version(NAMEPREFIXLoadFromDerelict) {
 		returnType = convertTypeConst(getFullType(proto).strip())
 		params = ",".join(convertTypeConst(getFullType(param).strip())+" "+param.find("name").text for param in cmd.elem.findall("param"))
 		print("\talias PFN_%s = %s function(%s);" % (name, returnType, params), file=self.dynamicFile)
-		self.funcNames.append(name)
+
+		"""
+		print("\talias PFN_%s = %s function(%s);" % (name, returnType, params))
+		params = cmd.elem.findall("param")
+		print(name)
+		for param in params:
+			print("  " + getFullType(param))
+		"""
+
+		params = cmd.elem.findall("param")
+		if name != "vkGetDeviceProcAddr" and getFullType(params[0]) in {"VkDevice", "VkQueue", "VkCommandBuffer"}:
+			self.deviceLevelFuncNames.append(name)
+
+		else:
+			self.instanceLevelFuncNames.append(name)
+
+
+
 
 class DGeneratorOptions(GeneratorOptions):
 	def __init__(self, *args, **kwargs):

@@ -19,7 +19,14 @@
 		{
 			"name": "with-global-enums",
 			"versions": ["DVulkanGlobalEnums"]
-		}
+		},
+		{
+			"name": "with-derelict-loader-and-global-enums",
+			"versions": ["DVulkanLoadFromDerelict", "DVulkanGlobalEnums"],
+			"dependencies": {
+				"derelict-util": "~>2.0.4"
+			},
+		},
 	],
 	"subPackages": [
 		{
@@ -31,7 +38,7 @@
 				"d-vulkan": { "path": "." }
 			},
 			"subConfigurations": {
-				"d-vulkan": "with-derelict-loader"
+				"d-vulkan": "with-derelict-loader-and-global-enums"
 			}
 		},
 		{
@@ -42,9 +49,8 @@
 			"dependencies": {
 				"d-vulkan": { "path": "." }
 			},
-			"versions": ["DVulkanGlobalEnums"],
 			"subConfigurations": {
-				"d-vulkan": "with-derelict-loader"
+				"d-vulkan": "with-derelict-loader-and-global-enums"
 			}
 		}
 	]
