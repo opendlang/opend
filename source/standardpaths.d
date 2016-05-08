@@ -234,16 +234,8 @@ string writablePath(StandardPath type, FolderFlag params = FolderFlag.none) noth
 string[] standardPaths(StandardPath type) nothrow @safe;
 
 
-version(StandardPathsDocs)
-{
-    /**
-     * Path to runtime user directory on freedesktop platforms.
-     * Returns: User's runtime directory determined by $(B XDG_RUNTIME_DIR) environment variable. 
-     * If directory does not exist it tries to create one with appropriate permissions. On fail returns an empty string.
-     * Note: Deprecated, use xdgRuntimeDir instead.
-     */
-    deprecated string runtimeDir() nothrow @trusted;
-    
+version(D_Ddoc)
+{   
     /**
      * Path to $(B Roaming) data directory. 
      * Returns: User's Roaming directory. On fail returns an empty string.
