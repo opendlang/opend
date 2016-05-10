@@ -509,7 +509,7 @@ unittest
 +/
 template group(Specs...)
 {
-    string buildExtractKey()
+    string buildExtractKey(A)()
     {
         static if (Specs.length == 0)
         {
@@ -520,9 +520,16 @@ template group(Specs...)
         string values = "";
         foreach( spec; Specs )
         {
-            types ~= "typeof(a." ~ spec ~"),";
-            values ~= "a." ~ spec ~",";
+            import std.range : ElementType;
+            import std.traits : hasMember;
+            static if(hasMember!((ElementType!A),spec))
+            {
+                types ~= "typeof(a." ~ spec ~"),";
+                values ~= "a." ~ spec ~",";
+            }
         }
+
+        // The approach.. do each tuple separately (if it compiles) and merge them using my merge 
         string str = "auto extractKey(T)(T a) 
             { return Tuple!(" ~ types[0..$-1] ~ ")(" ~ values[0..$-1] ~ "); }";
         return str;
@@ -530,10 +537,11 @@ template group(Specs...)
     
     auto group(AES)(AES aes)
     {
-        mixin(buildExtractKey());
+        auto merged = DefaultValues.mergeRange( aes );
+
+        mixin(buildExtractKey!(typeof(merged))());
 
         // Attach all default fields
-        auto merged = DefaultValues.mergeRange( aes );
         extractKey( merged.front );
 
         typeof(merged.front())[][typeof(extractKey(merged.front))] grouped;
@@ -560,6 +568,9 @@ unittest
 
     assertEqual(group!("colour","alpha")(aes).walkLength,4);
     assertEqual(group!("alpha")(aes).walkLength,2);
+
+    // Ignores field that does not exist
+    assertEqual(group!("alpha","abcdef")(aes).walkLength,2);
 
     assertEqual(group(aes).walkLength,4);
 }
