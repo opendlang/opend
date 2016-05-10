@@ -76,14 +76,7 @@ private auto fillAndStroke( cairo.Context context, in RGBA colour,
 /+
 TODO: All basic shapes, such as rectangle, ellipse, triangle and diamond share a lot of code. It should be possible to factor out the unique bit (drawing the shape), but till now that always leads to segmentation faults (either problem in the cairo bindings, or bug in compiler). Would be worth retrying this at some point with newer compiler (>2.70.0). Currently have a shapes_split branch. Could try that with new compiler. If no segfault, then problem is fixed and we can do those changes for all the shapes.
 +/
-
-/**
-Draw rectangle centered at given x,y location
-
-Aside from x and y also width and height are required.
-If the type of width is of type Pixel (see aes.d) then dimensions are assumed to be in Pixel (not user coordinates).
-*/
-auto geomRectangle(AES)(AES aes)
+private auto geomShape(string shape, AES)(AES aes)
 {
     import std.algorithm : map;
     auto xsMap = aes.map!("a.x");
@@ -120,18 +113,41 @@ auto geomRectangle(AES)(AES aes)
                 static if (is(typeof(tup.width)==immutable(Pixel)))
                     auto devP = context.deviceToUserDistance(cairo.Point!double( tup.width, tup.height )); //tup.width.to!double, tup.width.to!double ));
                 context.rotate(tup.angle);
-                static if (is(typeof(tup.width)==immutable(Pixel)))
+                static if (shape=="ellipse")
                 {
-                    context.scale( devP.x, devP.y );
+                    import std.math : PI;
+                    static if (is(typeof(tup.width)==immutable(Pixel)))
+                    {
+                        context.scale( devP.x/2.0, devP.y/2.0 );
+                    } else {
+                        context.scale( tup.width/2.0, tup.height/2.0 );
+                    }
+                    context.arc(0,0, 1.0, 0,2*PI);
                 } else {
-                    context.scale( tup.width, tup.height );
+                    static if (is(typeof(tup.width)==immutable(Pixel)))
+                    {
+                        context.scale( devP.x, devP.y );
+                    } else {
+                        context.scale( tup.width, tup.height );
+                    }
+                    static if (shape=="triangle")
+                    {
+                        context.moveTo( -0.5, -0.5 );
+                        context.lineTo( 0.5, -0.5 );
+                        context.lineTo( 0, 0.5 );
+                    } else static if (shape=="diamond") {
+                        context.moveTo( 0, -0.5 );
+                        context.lineTo( 0.5, 0 );
+                        context.lineTo( 0, 0.5 );
+                        context.lineTo( -0.5, 0 );
+                    } else {
+                        context.moveTo( -0.5, -0.5 );
+                        context.lineTo( -0.5,  0.5 );
+                        context.lineTo(  0.5,  0.5 );
+                        context.lineTo(  0.5, -0.5 );
+                    }
+                    context.closePath;
                 }
-                context.moveTo( -0.5, -0.5 );
-                context.lineTo( -0.5,  0.5 );
-                context.lineTo(  0.5,  0.5 );
-                context.lineTo(  0.5, -0.5 );
-                context.closePath;
-
 
                 auto col = colourMap(ColourID(tup.colour));
                 context.restore();
@@ -176,6 +192,20 @@ auto geomRectangle(AES)(AES aes)
     }
 
     return GeomRange!AES(aes);
+}
+
+
+
+
+/**
+Draw rectangle centered at given x,y location
+
+Aside from x and y also width and height are required.
+If the type of width is of type Pixel (see aes.d) then dimensions are assumed to be in Pixel (not user coordinates).
+*/
+auto geomRectangle(AES)(AES aes)
+{
+    return geomShape!("rectangle", AES)(aes);
 }
 
 /**
@@ -186,93 +216,7 @@ If the type of width is of type Pixel (see aes.d) then dimensions are assumed to
 */
 auto geomEllipse(AES)(AES aes)
 {
-    import std.algorithm : map;
-    auto xsMap = aes.map!("a.x");
-    auto ysMap = aes.map!("a.y");
-    alias CoordX = typeof(NumericLabel!(typeof(xsMap))(xsMap));
-    alias CoordY = typeof(NumericLabel!(typeof(ysMap))(ysMap));
-    auto xsCoords = CoordX(xsMap);
-    auto ysCoords = CoordY(ysMap);
-    alias CoordType = typeof(DefaultValues
-        .mergeRange(aes)
-        .mergeRange( Aes!(CoordX, "x", CoordY, "y")
-            (CoordX(xsMap), CoordY(ysMap))));
-
-    struct GeomRange(T)
-    {
-        this(T aes)
-        {
-            _aes = DefaultValues
-                .mergeRange(aes)
-                .mergeRange( Aes!(CoordX, "x", CoordY, "y")(
-                    xsCoords, ysCoords));
-        }
-
-        @property auto front()
-        {
-            immutable tup = _aes.front;
-            immutable f = delegate(cairo.Context context, ColourMap colourMap ) 
-            {
-                import std.math : isFinite;
-                if (!isFinite(tup.x[0]) || !isFinite(tup.y[0]))
-                    return context;
-                import std.math : PI;
-                context.save();
-                context.translate( tup.x[0], tup.y[0] );
-                static if (is(typeof(tup.width)==immutable(Pixel)))
-                    auto devP = context.deviceToUserDistance(cairo.Point!double( tup.width, tup.height )); //tup.width.to!double, tup.width.to!double ));
-                context.rotate(tup.angle);
-                static if (is(typeof(tup.width)==immutable(Pixel)))
-                {
-                    context.scale( devP.x/2.0, devP.y/2.0 );
-                } else {
-                    context.scale( tup.width/2.0, tup.height/2.0 );
-                }
-                context.arc(0,0, 1.0, 0,2*PI);
-
-                auto col = colourMap(ColourID(tup.colour));
-                context.restore();
-                context.fillAndStroke( col, tup.fill, tup.alpha );
-                return context;
-            };
-
-            AdaptiveBounds bounds;
-            static if (is(typeof(tup.width)==immutable(Pixel)))
-                bounds.adapt(Point(tup.x[0], tup.y[0]));
-            else
-            {
-                bounds.adapt(Point(tup.x[0]-0.5*tup.width, 
-                            tup.y[0]-0.5*tup.height));
-                bounds.adapt(Point(tup.x[0]+0.5*tup.width,
-                            tup.y[0]+0.5*tup.height));
-            }
-
-            auto geom = Geom( tup );
-            if (!xsCoords.numeric)
-                geom.xTickLabels ~= tup[0];
-            if (!ysCoords.numeric)
-                geom.yTickLabels ~= tup[1];
-            geom.draw = f;
-            geom.colours ~= ColourID(tup.colour);
-            geom.bounds = bounds;
-            return geom;
-        }
-
-        void popFront()
-        {
-            _aes.popFront();
-        }
-
-        @property bool empty()
-        {
-            return _aes.empty;
-        }
-
-    private:
-        CoordType _aes;
-    }
-
-    return GeomRange!AES(aes);
+    return geomShape!("ellipse", AES)(aes);
 }
 
 /**
@@ -283,95 +227,7 @@ If the type of width is of type Pixel (see aes.d) then dimensions are assumed to
 */
 auto geomTriangle(AES)(AES aes)
 {
-    import std.algorithm : map;
-    auto xsMap = aes.map!("a.x");
-    auto ysMap = aes.map!("a.y");
-    alias CoordX = typeof(NumericLabel!(typeof(xsMap))(xsMap));
-    alias CoordY = typeof(NumericLabel!(typeof(ysMap))(ysMap));
-    auto xsCoords = CoordX(xsMap);
-    auto ysCoords = CoordY(ysMap);
-    alias CoordType = typeof(DefaultValues
-        .mergeRange(aes)
-        .mergeRange( Aes!(CoordX, "x", CoordY, "y")
-            (CoordX(xsMap), CoordY(ysMap))));
-
-    struct GeomRange(T)
-    {
-        this(T aes)
-        {
-            _aes = DefaultValues
-                .mergeRange(aes)
-                .mergeRange( Aes!(CoordX, "x", CoordY, "y")(
-                    xsCoords, ysCoords));
-        }
-
-        @property auto front()
-        {
-            immutable tup = _aes.front;
-            immutable f = delegate(cairo.Context context, ColourMap colourMap ) 
-            {
-                import std.math : isFinite;
-                if (!isFinite(tup.x[0]) || !isFinite(tup.y[0]))
-                    return context;
-                context.save();
-                context.translate( tup.x[0], tup.y[0] );
-                static if (is(typeof(tup.width)==immutable(Pixel)))
-                    auto devP = context.deviceToUserDistance(cairo.Point!double( tup.width, -tup.height )); //tup.width.to!double, tup.width.to!double ));
-                context.rotate(tup.angle);
-                static if (is(typeof(tup.width)==immutable(Pixel)))
-                {
-                    context.scale( devP.x, devP.y );
-                } else {
-                    context.scale( tup.width, tup.height );
-                }
-                context.moveTo( -0.5, -0.5 );
-                context.lineTo( 0.5, -0.5 );
-                context.lineTo( 0, 0.5 );
-                context.closePath;
-
-                auto col = colourMap(ColourID(tup.colour));
-                context.restore();
-                context.fillAndStroke( col, tup.fill, tup.alpha );
-                return context;
-            };
-
-            AdaptiveBounds bounds;
-            static if (is(typeof(tup.width)==immutable(Pixel)))
-                bounds.adapt(Point(tup.x[0], tup.y[0]));
-            else
-            {
-                bounds.adapt(Point(tup.x[0]-0.5*tup.width, 
-                            tup.y[0]-0.5*tup.height));
-                bounds.adapt(Point(tup.x[0]+0.5*tup.width,
-                            tup.y[0]+0.5*tup.height));
-            }
-
-            auto geom = Geom( tup );
-            if (!xsCoords.numeric)
-                geom.xTickLabels ~= tup[0];
-            if (!ysCoords.numeric)
-                geom.yTickLabels ~= tup[1];
-            geom.draw = f;
-            geom.colours ~= ColourID(tup.colour);
-            geom.bounds = bounds;
-            return geom;
-        }
-
-        void popFront()
-        {
-            _aes.popFront();
-        }
-
-        @property bool empty()
-        {
-            return _aes.empty;
-        }
-
-    private:
-        CoordType _aes;
-    }
-
-    return GeomRange!AES(aes);
+    return geomShape!("triangle", AES)(aes);
 }
 
 /**
@@ -382,99 +238,8 @@ If the type of width is of type Pixel (see aes.d) then dimensions are assumed to
 */
 auto geomDiamond(AES)(AES aes)
 {
-    import std.algorithm : map;
-    auto xsMap = aes.map!("a.x");
-    auto ysMap = aes.map!("a.y");
-    alias CoordX = typeof(NumericLabel!(typeof(xsMap))(xsMap));
-    alias CoordY = typeof(NumericLabel!(typeof(ysMap))(ysMap));
-    auto xsCoords = CoordX(xsMap);
-    auto ysCoords = CoordY(ysMap);
-    alias CoordType = typeof(DefaultValues
-        .mergeRange(aes)
-        .mergeRange( Aes!(CoordX, "x", CoordY, "y")
-            (CoordX(xsMap), CoordY(ysMap))));
-
-    struct GeomRange(T)
-    {
-        this(T aes)
-        {
-            _aes = DefaultValues
-                .mergeRange(aes)
-                .mergeRange( Aes!(CoordX, "x", CoordY, "y")(
-                    xsCoords, ysCoords));
-        }
-
-        @property auto front()
-        {
-            immutable tup = _aes.front;
-            immutable f = delegate(cairo.Context context, ColourMap colourMap ) 
-            {
-                import std.math : isFinite;
-                if (!isFinite(tup.x[0]) || !isFinite(tup.y[0]))
-                    return context;
-                context.save();
-                context.translate( tup.x[0], tup.y[0] );
-                static if (is(typeof(tup.width)==immutable(Pixel)))
-                    auto devP = context.deviceToUserDistance(cairo.Point!double( tup.width, tup.height )); //tup.width.to!double, tup.width.to!double ));
-                context.rotate(tup.angle);
-                static if (is(typeof(tup.width)==immutable(Pixel)))
-                {
-                    context.scale( devP.x, devP.y );
-                } else {
-                    context.scale( tup.width, tup.height );
-                }
-                context.moveTo( 0, -0.5 );
-                context.lineTo( 0.5, 0 );
-                context.lineTo( 0, 0.5 );
-                context.lineTo( -0.5, 0 );
-                context.closePath;
-
-                auto col = colourMap(ColourID(tup.colour));
-                context.restore();
-                context.fillAndStroke( col, tup.fill, tup.alpha );
-                return context;
-            };
-
-            AdaptiveBounds bounds;
-            static if (is(typeof(tup.width)==immutable(Pixel)))
-                bounds.adapt(Point(tup.x[0], tup.y[0]));
-            else
-            {
-                bounds.adapt(Point(tup.x[0]-0.5*tup.width, 
-                            tup.y[0]-0.5*tup.height));
-                bounds.adapt(Point(tup.x[0]+0.5*tup.width,
-                            tup.y[0]+0.5*tup.height));
-            }
-
-
-            auto geom = Geom( tup );
-            if (!xsCoords.numeric)
-                geom.xTickLabels ~= tup[0];
-            if (!ysCoords.numeric)
-                geom.yTickLabels ~= tup[1];
-            geom.draw = f;
-            geom.colours ~= ColourID(tup.colour);
-            geom.bounds = bounds;
-            return geom;
-        }
-
-        void popFront()
-        {
-            _aes.popFront();
-        }
-
-        @property bool empty()
-        {
-            return _aes.empty;
-        }
-
-    private:
-        CoordType _aes;
-    }
-
-    return GeomRange!AES(aes);
+    return geomShape!("diamond", AES)(aes);
 }
-
 
 /// Create points from the data
 auto geomPoint(AES)(AES aes)
