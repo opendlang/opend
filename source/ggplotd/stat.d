@@ -186,16 +186,7 @@ unittest {
     assertLessThanOrEqual( binsR.walkLength, 5 );
 }
 
-/**
- Create Aes that specifies the bins to draw an histogram 
-
- Params:
-    aes = Data that the histogram will be based on 
-    noBins  = Optional number of bins. On a value of 0 the number of bins will be chosen automatically.
-
- Returns: Range that holds rectangles representing different bins
-*/
-auto statHist(AES)(AES aesRaw, size_t noBins = 0)
+private auto statHistND(int dim, AES)(AES aesRaw, size_t[] noBins)
 {
     struct VolderMort(AESV)
     {
@@ -205,35 +196,70 @@ auto statHist(AES)(AES aesRaw, size_t noBins = 0)
 
         typeof(group(AESV.init)) grouped;
         ElementType!(ElementType!(typeof(grouped))) defaults;
-        typeof(bin!(double[])((double[]).init, double.init, double.init, size_t.init))
+        typeof(bin!(double[][])((double[][]).init, (double[]).init, 
+                    (double[]).init, (size_t[]).init))
             binned;
 
-        size_t _noBins;
-        Tuple!(double, double) minmax;
-        this( AESV )( AESV aes, size_t noBins )
+        size_t[] _noBins;
+        double[] mins;
+        double[] maxs;
+
+        this( AESV )( AESV aes, size_t[] noBins )
         {
             import std.algorithm : min, max, reduce;
             import std.array : array;
+            import std.conv : to;
             import std.range : empty, popFront, front, take, walkLength;
+            import std.typecons : tuple;
 
             import ggplotd.math : safeMin, safeMax;
             import ggplotd.range : uniquer;
 
-            auto xs = aes.map!((t) => t.x[0]) // Extract the x coordinates
-                .array;
-            _noBins = noBins;
-            if (_noBins < 1)
-                _noBins = min(xs.uniquer.take(30).walkLength,
-                        min(30,max(11, xs.length/10)));
+            static assert( dim == 1 || dim == 2, "Only dimension of 1 or 2 i supported" );
 
-            minmax = xs.reduce!((a,b) => safeMin(a,b),(a,b) => safeMax(a,b));
+            _noBins = noBins;
+            if (_noBins[0] < 1)
+                _noBins[0] = min(aes.map!((a) => a.x.to!double)
+                        .uniquer.take(30).walkLength,
+                        min(30,max(11, aes.length/10)));
+            static if (dim == 2)
+                _noBins[1] = min(aes.map!((a) => a.y.to!double)
+                        .uniquer.take(30).walkLength,
+                        min(30,max(11, aes.length/10)));
+            static if (dim == 1) {
+                auto seed = tuple(
+                        aes.front.x.to!double, aes.front.x.to!double );
+                auto minmax = reduce!((a,b) => safeMin(a,b.x.to!double),
+                        (a,b) => safeMax(a,b.x.to!double))(seed,aes);
+                mins = [minmax[0]];
+                maxs = [minmax[1]];
+            }
+            else
+            {
+                auto seed = tuple(
+                        aes.front.x.to!double, aes.front.x.to!double,
+                        aes.front.y.to!double, aes.front.y.to!double );
+                auto minmax = reduce!(
+                            (a,b) => safeMin(a,b.x.to!double),
+                            (a,b) => safeMax(a,b.x.to!double),
+                            (a,b) => safeMin(a,b.y.to!double),
+                            (a,b) => safeMax(a,b.y.to!double)
+                        )(seed,aes);
+                mins = [minmax[0],minmax[2]];
+                maxs = [minmax[1],minmax[3]];
+             }
 
             grouped = group(aes);
 
             defaults = grouped.front.front;
-            xs = grouped.front.map!((t) => t.x[0]) // Extract the x coordinates
-                .array;
-            binned = bin(xs, minmax[0], minmax[1], _noBins);
+            static if (dim == 1)
+              auto data = grouped.front.map!((t) => [t.x.to!double]); // Extract the x coordinates
+            else 
+              auto data = grouped.front.map!((t) => [t.x.to!double,t.y.to!double]); // Extract the x coordinates
+            binned = bin(
+                    data.array, 
+                    mins, maxs, 
+                    _noBins);
             assert( !grouped.empty, "Groups should not be empty" );
             grouped.popFront;
         }
@@ -245,26 +271,42 @@ auto statHist(AES)(AES aesRaw, size_t noBins = 0)
         @property auto front()
         {
             import ggplotd.aes : merge;
-            auto w = binned.front.range[0][1]-binned.front.range[0][0];
-            return defaults.merge(
-                    Tuple!(double, "x", double, "y", double, "width", double, "height")(
-                        binned.front.range[0][0] + 0.5*w, 0.5*binned.front.count, 
-                        w, binned.front.count) );
-
+            import std.conv : to;
+            static if (dim == 1)
+            {
+                auto w = binned.front.range[0][1]-binned.front.range[0][0];
+                return defaults.merge(
+                        Tuple!(double, "x", double, "y", double, "width", double, "height")(
+                            binned.front.range[0][0] + 0.5*w, 0.5*binned.front.count, 
+                            w, binned.front.count) );
+            }
+            else
+            {
+                auto w = binned.front.range[0][1]-binned.front.range[0][0];
+                auto h = binned.front.range[1][1]-binned.front.range[1][0];
+                return defaults.merge(
+                        Tuple!(double, "x", double, "y", 
+                            double, "width", double, "height", double, "colour",bool, "fill")(
+                            binned.front.range[0][0] + 0.5*w, binned.front.range[1][0] + 0.5*h, 
+                            w, h, binned.front.count.to!double, true) );
+            }
         }
 
         void popFront()
         {
             import std.array : array;
+            import std.conv : to;
             import std.range : empty, front, popFront;
             if (!binned.empty)
                 binned.popFront;
             if (binned.empty && !grouped.empty)
             {
                 defaults = grouped.front.front;
-                auto xs = grouped.front.map!((t) => t.x[0]) // Extract the x coordinates
-                    .array;
-                binned = bin(xs, minmax[0], minmax[1], _noBins);
+                static if (dim == 1) // Extract the coordinates
+                    auto data = grouped.front.map!((t) => [t.x.to!double]); 
+                else 
+                    auto data = grouped.front.map!((t) => [t.x.to!double,t.y.to!double]);
+                binned = bin(data.array, mins, maxs, _noBins);
                 grouped.popFront;
             }
         }
@@ -277,11 +319,32 @@ auto statHist(AES)(AES aesRaw, size_t noBins = 0)
 
     // Turn x into numericLabel
     auto xNumeric = numericLabel(aesRaw.map!((t) => t.x));
-    auto aes = aesRaw.mergeRange( 
-        Aes!(typeof(xNumeric), "x")( xNumeric ) );
+    static if (dim == 1)
+        auto aes = aesRaw.mergeRange( 
+                Aes!(typeof(xNumeric), "x")( xNumeric ) );
+    else 
+    {
+        auto yNumeric = numericLabel(aesRaw.map!((t) => t.y));
+        auto aes = aesRaw.mergeRange( 
+                Aes!(typeof(xNumeric), "x", typeof(yNumeric), "y")( xNumeric, yNumeric ) );
+    }
 
     // Get maxs, mins and noBins
     return VolderMort!(typeof(aes))( aes, noBins );
+}
+
+/**
+ Create Aes that specifies the bins to draw an histogram 
+
+ Params:
+    aes = Data that the histogram will be based on 
+    noBins  = Optional number of bins. On a value of 0 the number of bins will be chosen automatically.
+
+ Returns: Range that holds rectangles representing different bins
+*/
+auto statHist(AES)(AES aesRaw, size_t noBins = 0)
+{
+    return statHistND!(1,AES)( aesRaw, [noBins] );
 }
 
 unittest
@@ -300,3 +363,20 @@ unittest
     auto binXs = sh.map!((b) => b.x).array.sort().array;
     assertEqual( binXs.length, 6 );
 }
+
+/**
+ Create Aes that specifies the bins to draw an histogram 
+
+ Params:
+    aes = Data that the histogram will be based on 
+    noBinsX  = Optional number of bins for x axis. On a value of 0 the number of bins will be chosen automatically.
+    noBinsY  = Optional number of bins for y axis. On a value of 0 the number of bins will be chosen automatically.
+
+ Returns: Range that holds rectangles representing different bins
+*/
+auto statHist2D(AES)(AES aesRaw, size_t noBinsX = 0, size_t noBinsY = 0)
+{
+    return statHistND!(2,AES)( aesRaw, [noBinsX, noBinsY]);
+}
+
+

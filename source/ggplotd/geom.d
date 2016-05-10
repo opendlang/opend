@@ -762,70 +762,14 @@ auto geomHist(AES)(AES aes, size_t noBins = 0)
 }
 
 /// Draw histograms based on the x coordinates of the data (aes)
-auto geomHist3D(AES)(AES aes, size_t noBinsX = 0, size_t noBinsY = 0)
+auto geomHist2D(AES)(AES aes, size_t noBinsX = 0, size_t noBinsY = 0)
 {
-    import std.algorithm : filter, group, map, reduce, max, min;
-    import std.array : array, Appender;
-    import std.range : take, walkLength, zip;
-    import std.typecons : Tuple;
-
-    import ggplotd.range : uniquer;
-    // New appender to hold lines for drawing histogram
-    auto appender = Appender!(Geom[])([]);
-
-    auto xsNL = numericLabel(aes.map!("a.x"));
-    auto xs = xsNL.map!((t) => t[0]) // Extract the x coordinates
-            .array;
-    auto ysNL = numericLabel(aes.map!("a.y"));
-    auto ys = ysNL.map!((t) => t[0]) // Extract the y coordinates
-            .array;
-
-    // Work out min/max of the x and y data
-    auto minmaxX = reduce!("min(a,b)","max(a,b)")( Tuple!(double,double)(xs.front, xs.front), xs );
-    auto minmaxY = reduce!("min(a,b)","max(a,b)")( Tuple!(double,double)(ys.front, ys.front), ys );
-
-    // Track maximum z value for colour scaling
-    double maxZ = -1;
-
-    if (noBinsX < 1)
-        noBinsX = min(xsNL.uniquer.take(30).walkLength,
-                min(30,max(11, xs.length/25)));
-    if (noBinsY < 1)
-        noBinsY = min(ysNL.uniquer.take(30).walkLength,
-                min(30,max(11, ys.length/25)));
-
-    auto coords = zip(xs, ys);
-
-
-    foreach( binX; xs.bin( minmaxX[0], minmaxX[1], noBinsX ) )
-    {
-        // TODO this is not the most efficient way to create 2d bins
-        foreach( binY; coords.filter!( 
-                (a) => a[0] >= binX.range[0] && a[0] < binX.range[1] )
-            .map!( (a) => a[1] ).array
-            .bin( minmaxY[0], minmaxY[1], noBinsY ) )
-        {
-            maxZ = max( maxZ, binY.count );
-            appender.put(
-                geomPolygon(
-            [aes.front.merge( 
-                Tuple!( double, "x", double, "y", double, "colour" )
-                    ( binX.range[0], binY.range[0], binY.count ) ),
-             aes.front.merge( 
-                Tuple!( double, "x", double, "y", double, "colour" )
-                    ( binX.range[0], binY.range[1], binY.count ) ),
-             aes.front.merge( 
-                Tuple!( double, "x", double, "y", double, "colour" )
-                    ( binX.range[1], binY.range[1], binY.count ) ),
-             aes.front.merge( 
-                Tuple!( double, "x", double, "y", double, "colour" )
-                        ( binX.range[1], binY.range[0], binY.count ) )] )
-            );
-        }
-    }
-    // scale colours by max_z
-    return appender.data;
+    import ggplotd.stat : statHist2D;
+    return geomRectangle( statHist2D( aes, noBinsX, noBinsY ) );
 }
+
+alias geomHist3D = geomHist2D;
+
 /// Draw axis, first and last location are start/finish
 /// others are ticks (perpendicular)
 auto geomAxis(AES)(AES aes, double tickLength, string label)
