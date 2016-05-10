@@ -363,7 +363,7 @@ unittest
     assert(!bounds.adapt(Point(-1.0,double.init)));
     assert(!bounds.adapt(Point(double.init, double.init)));
 
-    import std.math;
+    import std.math : log;
     assert(!bounds.adapt(Point(log(0.0), 1.0)));
     assert(!bounds.adapt(Point(-1.0,log(0.0))));
     assert(!bounds.adapt(Point(log(0.0), log(0.0))));

@@ -586,12 +586,14 @@ import std.range : isInputRange;
   */
 struct DataID
 {
-    this( double value, string label )
+    /// Create DataID with given value and id
+    this( double value, string id )
     {
         import std.typecons : tuple;
-        state = tuple( value, label );
+        state = tuple( value, id );
     }
 
+    /// Overloading to for the DataID
     T to(T)() const
     {
         import std.conv : to;
@@ -601,7 +603,9 @@ struct DataID
             return state[1].to!T;
     }
 
+    /// Tuple holding the value and id
     Tuple!(double, string) state; 
+
     alias state this;
 }
 
@@ -853,15 +857,23 @@ unittest
   Merge the elements of two ranges. If first is not a range then merge that with each element of the second range.
 +/
 auto mergeRange( R1, R2 )( R1 r1, R2 r2 )
+    if (isInputRange!R1 || isInputRange!R2)
 {
-    import std.array : array;
-    import std.range : zip, walkLength, repeat;
+    import std.range : zip, StoppingPolicy, walkLength, repeat;
     import std.algorithm : map;
     static if (isInputRange!R1 && isInputRange!R2)
-        return r1.zip(r2).array.map!((a) => a[0].merge( a[1] ) );
+        return zip(StoppingPolicy.longest, r1,r2).map!((a) => a[0].merge( a[1] ) );
     else
-        return zip( r1.repeat(r2.walkLength),
-            r2).array.map!((a) => a[0].merge( a[1] ) );
+    {
+        // TODO: should not have to repeat r2 for more than once with stoppingpolicy.longest,
+        // but currently doing that crashes. Probably compiler bug, might try changing it later
+        static if (isInputRange!R1)
+            return zip(StoppingPolicy.longest, r1, r2.repeat(r1.walkLength))
+                .map!((a) => a[0].merge( a[1] ) );
+        else
+            return zip(StoppingPolicy.longest, r1.repeat(r2.walkLength), r2 )
+                .map!((a) => a[0].merge( a[1] ) );
+    }
 }
 
 ///
@@ -877,6 +889,10 @@ unittest
     assertEqual(nlAes.front.x, "a");
     assertEqual(nlAes.front.label, "e");
     assertEqual(nlAes.front.colour, "black");
+    auto nlAes2 = aes.mergeRange(DefaultValues);
+    assertEqual(nlAes2.front.x, "a");
+    assertEqual(nlAes2.front.label, "");
+    assertEqual(nlAes2.front.colour, "black");
 }
 
 ///
