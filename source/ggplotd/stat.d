@@ -218,15 +218,11 @@ private auto statHistND(int dim, AES)(AES aesRaw, size_t[] noBins)
             static assert( dim == 1 || dim == 2, "Only dimension of 1 or 2 i supported" );
 
             _noBins = noBins;
-            if (_noBins[0] < 1)
-                _noBins[0] = min(aes.map!((a) => a.x.to!double)
-                        .uniquer.take(30).walkLength,
-                        min(30,max(11, aes.length/10)));
-            static if (dim == 2)
-                _noBins[1] = min(aes.map!((a) => a.y.to!double)
-                        .uniquer.take(30).walkLength,
-                        min(30,max(11, aes.length/10)));
             static if (dim == 1) {
+                if (_noBins[0] < 1)
+                    _noBins[0] = min(aes.map!((a) => a.x.to!double)
+                            .uniquer.take(30).walkLength,
+                            min(30,max(11, aes.length/10)));
                 auto seed = tuple(
                         aes.front.x.to!double, aes.front.x.to!double );
                 auto minmax = reduce!((a,b) => safeMin(a,b.x.to!double),
@@ -236,6 +232,14 @@ private auto statHistND(int dim, AES)(AES aesRaw, size_t[] noBins)
             }
             else
             {
+                if (_noBins[0] < 1)
+                    _noBins[0] = min(aes.map!((a) => a.x.to!double)
+                            .uniquer.take(30).walkLength,
+                            min(30,max(11, aes.length/25)));
+                if (_noBins[1] < 1)
+                    _noBins[1] = min(aes.map!((a) => a.y.to!double)
+                            .uniquer.take(30).walkLength,
+                            min(30,max(11, aes.length/25)));
                 auto seed = tuple(
                         aes.front.x.to!double, aes.front.x.to!double,
                         aes.front.y.to!double, aes.front.y.to!double );
@@ -282,13 +286,31 @@ private auto statHistND(int dim, AES)(AES aesRaw, size_t[] noBins)
             }
             else
             {
-                auto w = binned.front.range[0][1]-binned.front.range[0][0];
-                auto h = binned.front.range[1][1]-binned.front.range[1][0];
-                return defaults.merge(
-                        Tuple!(double, "x", double, "y", 
-                            double, "width", double, "height", double, "colour",bool, "fill")(
-                            binned.front.range[0][0] + 0.5*w, binned.front.range[1][0] + 0.5*h, 
-                            w, h, binned.front.count.to!double, true) );
+                // Returning polygons. In theory could also return rectangle, but their lines
+                // will overlap which will make it look wrong. Ideally would be able to set 
+                // linewidth to 0 for the rectangles and that would solve it.
+                return [
+                    defaults.merge(
+                        Tuple!(double, "x", double, "y", double, "colour")(
+                            binned.front.range[0][0], binned.front.range[1][0],
+                            binned.front.count.to!double)),
+
+                    defaults.merge(
+                        Tuple!(double, "x", double, "y", double, "colour")(
+                            binned.front.range[0][1], binned.front.range[1][0],
+                            binned.front.count.to!double)),
+
+                    defaults.merge(
+                        Tuple!(double, "x", double, "y", double, "colour")(
+                            binned.front.range[0][1], binned.front.range[1][1],
+                            binned.front.count.to!double)),
+
+                    defaults.merge(
+                        Tuple!(double, "x", double, "y", double, "colour")(
+                            binned.front.range[0][0], binned.front.range[1][1],
+                            binned.front.count.to!double)),
+
+                    ];
             }
         }
 

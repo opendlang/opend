@@ -764,8 +764,17 @@ auto geomHist(AES)(AES aes, size_t noBins = 0)
 /// Draw histograms based on the x coordinates of the data (aes)
 auto geomHist2D(AES)(AES aes, size_t noBinsX = 0, size_t noBinsY = 0)
 {
+    import std.range : Appender;
     import ggplotd.stat : statHist2D;
-    return geomRectangle( statHist2D( aes, noBinsX, noBinsY ) );
+
+    // TODO: Why doesn't the below work? Any range with elementtype geom should work.
+    //    return statHist2D( aes, noBinsX, noBinsY ).tee!((a) => a.writeln )
+    //        .map!( (poly) => geomPolygon( poly ) ).array;
+
+    Appender!(Geom[]) appender;
+    foreach( poly; statHist2D( aes, noBinsX, noBinsY ) )
+        appender.put( geomPolygon( poly ) );
+    return appender.data;
 }
 
 alias geomHist3D = geomHist2D;
@@ -1138,6 +1147,7 @@ auto geomPolygon(AES)(AES aes)
         auto gradient = new cairo.LinearGradient( gV[0].x, gV[0].y, 
             gV[1].x, gV[1].y );
 
+        context.lineWidth = 0;
         auto col0 = colourMap(ColourID(gV[0].z));
         auto col1 = colourMap(ColourID(gV[1].z));
         import ggplotd.colourspace : RGBA, toCairoRGBA;
