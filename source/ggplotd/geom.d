@@ -73,8 +73,8 @@ private auto fillAndStroke( cairo.Context context, in RGBA colour,
     return context;
 }
 
-/+
-TODO: All basic shapes, such as rectangle, ellipse, triangle and diamond share a lot of code. It should be possible to factor out the unique bit (drawing the shape), but till now that always leads to segmentation faults (either problem in the cairo bindings, or bug in compiler). Would be worth retrying this at some point with newer compiler (>2.70.0). Currently have a shapes_split branch. Could try that with new compiler. If no segfault, then problem is fixed and we can do those changes for all the shapes.
+/++
+General function for 
 +/
 private auto geomShape(string shape, AES)(AES aes)
 {
@@ -106,10 +106,10 @@ private auto geomShape(string shape, AES)(AES aes)
             immutable f = delegate(cairo.Context context, ColourMap colourMap ) 
             {
                 import std.math : isFinite;
-                if (!isFinite(tup.x[0]) || !isFinite(tup.y[0]))
+                if (!isFinite(tup.x.to!double) || !isFinite(tup.y.to!double))
                     return context;
                 context.save();
-                context.translate( tup.x[0], tup.y[0] );
+                context.translate( tup.x.to!double, tup.y.to!double );
                 static if (is(typeof(tup.width)==immutable(Pixel)))
                     auto devP = context.deviceToUserDistance(cairo.Point!double( tup.width, tup.height )); //tup.width.to!double, tup.width.to!double ));
                 context.rotate(tup.angle);
@@ -194,8 +194,17 @@ private auto geomShape(string shape, AES)(AES aes)
     return GeomRange!AES(aes);
 }
 
+unittest
+{
+    auto xs = numericLabel!(double[])([ 1.0, 2.0 ]);
 
+    auto aes = Aes!( typeof(xs), "x", double[], "y", double[], "width", double[], "height" )
+        ( xs, [3.0, 4.0], [1,1], [2,2] );
+    auto geoms = geomShape!("rectangle", typeof(aes))( aes );
 
+    import std.range : walkLength;
+    assertEqual( geoms.walkLength, 2 );
+}
 
 /**
 Draw rectangle centered at given x,y location
