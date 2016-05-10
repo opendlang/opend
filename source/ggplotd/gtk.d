@@ -90,7 +90,7 @@ import core.thread;
 * const height = 470;
 * auto gd = new GTKWindow();
 * auto tid = new Thread(() { gd.run("plotcli", width, height); }).start();
-* auto gg = GGPlotD().put( geomHist3D( aes ) );
+* auto gg = GGPlotD().put( geomHist2D( aes ) );
 * gd.draw( gg, width, height );
 * Thread.sleep( dur!("seconds")( 2 ) ); // sleep for 5 seconds
 * 

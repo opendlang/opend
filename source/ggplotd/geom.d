@@ -761,7 +761,7 @@ auto geomHist(AES)(AES aes, size_t noBins = 0)
     return geomRectangle( statHist( aes, noBins ) );
 }
 
-/// Draw histograms based on the x coordinates of the data (aes)
+/// Draw histograms based on the x and y coordinates of the data (aes)
 auto geomHist2D(AES)(AES aes, size_t noBinsX = 0, size_t noBinsY = 0)
 {
     import std.range : Appender;
@@ -777,7 +777,11 @@ auto geomHist2D(AES)(AES aes, size_t noBinsX = 0, size_t noBinsY = 0)
     return appender.data;
 }
 
-alias geomHist3D = geomHist2D;
+
+/**
+    Deprecated: superseded by geomHist2D
+*/
+deprecated alias geomHist3D = geomHist2D;
 
 /// Draw axis, first and last location are start/finish
 /// others are ticks (perpendicular)

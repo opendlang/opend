@@ -122,13 +122,13 @@ void main()
 }
 ```
 
-A 3D version of the histogram is also implemented in geomHist3D. See the
+A 2D version of the histogram is also implemented in geomHist2D. See the
 example in the
 [documentation](http://blackedder.github.io/ggplotd/ggplotd.html) for the
 code used to create this figure. Note that we use another colour gradient
 here than the default.
 
-![Histogram 3D](http://blackedder.github.io/ggplotd/images/hist3D.svg)
+![Histogram 2D](http://blackedder.github.io/ggplotd/images/hist2D.svg)
 
 
 #### Combined histograms
@@ -357,7 +357,7 @@ different functions.
 
 ![Function](http://blackedder.github.io/ggplotd/images/function.png)
 
-### 3D/heightmap/surface plots
+### Heightmap/surface plots
 
 Currently very few heightmap/surface geom* functions are implemented, but
 the building block: geomPolygon is provided. The geomPolygon function
