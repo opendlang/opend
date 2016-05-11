@@ -144,6 +144,15 @@ auto mergeRange( R1, R2 )( R1 r1, R2 r2 )
     }
 }
 
+unittest
+{
+    import std.range : walkLength;
+    import ggplotd.aes : Aes, DefaultValues;
+    auto m = [DefaultValues].mergeRange( Aes!(double[], "x")([1.0]));
+    assertEqual( m.walkLength, 1);
+}
+
+
 ///
 unittest
 {

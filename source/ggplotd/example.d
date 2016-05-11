@@ -19,7 +19,7 @@ unittest
     import ggplotd.stat : statFunction;
     import ggplotd.ggplotd : GGPlotD;
     import ggplotd.geom : geomLine, geomPoint;
-    import ggplotd.aes : mergeRange;
+    import ggplotd.range : mergeRange;
 
     auto f = (double x) { return x / (1 + x); };
 

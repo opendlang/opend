@@ -79,6 +79,7 @@ General function for drawing geomShapes
 private auto geomShape(string shape, AES)(AES aes)
 {
     import std.algorithm : map;
+    import ggplotd.range : mergeRange;
     auto xsMap = aes.map!("a.x");
     auto ysMap = aes.map!("a.y");
     alias CoordX = typeof(NumericLabel!(typeof(xsMap))(xsMap));
@@ -308,7 +309,8 @@ auto geomPoint(AES)(AES aes)
 {
     import std.algorithm : map;
     import std.conv : to;
-    import ggplotd.aes : Aes, mergeRange, Pixel;
+    import ggplotd.aes : Aes, Pixel;
+    import ggplotd.range : mergeRange;
     auto _aes = DefaultValues.mergeRange(aes);
     auto wh = _aes.map!((a) => Pixel((8*a.size).to!int));
     auto filled = _aes.map!((a) => a.alpha);
@@ -334,6 +336,8 @@ auto geomLine(AES)(AES aes)
     import std.algorithm : map;
     import std.range : array, zip;
 
+    import ggplotd.range : mergeRange;
+ 
     struct GeomRange(T)
     {
         this(T aes)
@@ -619,6 +623,8 @@ auto geomAxis(AES)(AES aes, double tickLength, string label)
     import std.range : chain, empty, repeat;
     import std.math : sqrt, pow;
 
+    import ggplotd.range : mergeRange;
+
     double[] xs;
     double[] ys;
 
@@ -676,6 +682,7 @@ auto geomAxis(AES)(AES aes, double tickLength, string label)
 auto geomLabel(AES)(AES aes)
 {
     import std.algorithm : map;
+    import ggplotd.range : mergeRange;
     auto xsMap = aes.map!("a.x");
     auto ysMap = aes.map!("a.y");
     alias CoordX = typeof(NumericLabel!(typeof(xsMap))(xsMap));
@@ -802,6 +809,7 @@ auto geomBox(AES)(AES aes)
     import std.array : array;
     import std.range : Appender;
     import std.typecons : Tuple;
+    import ggplotd.range : mergeRange;
 
     Appender!(Geom[]) result;
 
@@ -936,6 +944,7 @@ auto geomPolygon(AES)(AES aes)
     import std.algorithm : map, swap;
     import std.conv : to;
     import ggplotd.geometry : gradientVector, Vertex3D;
+    import ggplotd.range : mergeRange;
 
     auto merged = DefaultValues.mergeRange(aes);
     // Turn into vertices.

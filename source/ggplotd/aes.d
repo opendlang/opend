@@ -849,13 +849,6 @@ unittest
     assertEqual( merged.label, "Point" );
 }
 
-unittest
-{
-    import std.range : walkLength;
-    auto m = [DefaultValues].mergeRange( Aes!(double[], "x")([1.0]));
-    assertEqual( m.walkLength, 1);
-}
-
 /// 
 unittest
 {

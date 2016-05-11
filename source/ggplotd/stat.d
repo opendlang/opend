@@ -24,7 +24,7 @@ import std.traits : isCallable;
     import ggplotd.stat : statFunction;
     import ggplotd.ggplotd : GGPlotD;
     import ggplotd.geom : geomLine, geomPoint;
-    import ggplotd.aes : mergeRange;
+    import ggplotd.range : mergeRange;
 
     auto f = (double x) { return x / (1 + x); };
 
@@ -337,7 +337,8 @@ private auto statHistND(int dim, AES)(AES aesRaw, size_t[] noBins)
     }
 
     import std.algorithm : map;
-    import ggplotd.aes : Aes, numericLabel, mergeRange;
+    import ggplotd.aes : Aes, numericLabel;
+    import ggplotd.range : mergeRange;
 
     // Turn x into numericLabel
     auto xNumeric = numericLabel(aesRaw.map!((t) => t.x));
