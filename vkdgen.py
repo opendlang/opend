@@ -133,12 +133,12 @@ class DGenerator(OutputGenerator):
 		self.functionVars = ""
 		self.opaqueStruct = set()
 		self.surfaceExtensions = {
-			"// VK_KHR_android_surface" : "VK_USE_PLATFORM_ANDROID_KHR",
-			"// VK_KHR_mir_surface"     : "VK_USE_PLATFORM_MIR_KHR",
-			"// VK_KHR_wayland_surface" : "VK_USE_PLATFORM_WAYLAND_KHR",
-			"// VK_KHR_win32_surface"   : "VK_USE_PLATFORM_WIN32_KHR",
-			"// VK_KHR_xlib_surface"    : "VK_USE_PLATFORM_XLIB_KHR",
-			"// VK_KHR_xcb_surface"	    : "VK_USE_PLATFORM_XCB_KHR",
+			"// VK_KHR_android_surface" : ["VK_USE_PLATFORM_ANDROID_KHR",	"public import android.native_window;\n"],
+			"// VK_KHR_mir_surface"     : ["VK_USE_PLATFORM_MIR_KHR",		"public import mir_toolkit.client_types;\n"],
+			"// VK_KHR_wayland_surface" : ["VK_USE_PLATFORM_WAYLAND_KHR",	"public import wayland_client;\n"],
+			"// VK_KHR_win32_surface"   : ["VK_USE_PLATFORM_WIN32_KHR",		"public import core.sys.windows.windows;\n"],
+			"// VK_KHR_xlib_surface"    : ["VK_USE_PLATFORM_XLIB_KHR",		"public import X11.Xlib;\n"],
+			"// VK_KHR_xcb_surface"	    : ["VK_USE_PLATFORM_XCB_KHR",		"public import xcb.xcb;\n"],
 		}
 
 	def beginFile(self, genOpts):
@@ -255,8 +255,8 @@ version({NAME_PREFIX}LoadFromDerelict) {{
 			write("\n" + self.currentFeature, file=self.typesFile)
 			surfaceVersion = ""
 			if self.isSurfaceExtension:
-				surfaceVersion = "version( {0} ) {{".format(self.surfaceExtensions[self.currentFeature])
-				write(surfaceVersion, file=self.typesFile)
+				surfaceVersion = "version( {0} ) {{".format(self.surfaceExtensions[self.currentFeature][0])
+				write("{0}\n\t{1}".format(surfaceVersion, self.surfaceExtensions[self.currentFeature][1]), file=self.typesFile)
 
 			for section in self.TYPE_SECTIONS:
 				# write contents of type section
@@ -415,12 +415,19 @@ version({NAME_PREFIX}LoadFromDerelict) {{
 			targetLen = max(targetLen, len(memberType))
 
 		# loop second time and use maximum type string length to offset member names
+		isVkWin32SurfaceCreateInfoKHR = name == "VkWin32SurfaceCreateInfoKHR" # get this query out of the loop bellow
 		for type_name in memberTypeName:
 			memberType = type_name[0]
 			memberName = type_name[1]
 			if memberName == "sType" and memberType == "VkStructureType":
-				enumname = re.sub(re_camel_case, "\g<1>_\g<2>", name[2:]).upper()
-				self.appendSection("struct", "\t{0}  sType = VkStructureType.VK_STRUCTURE_TYPE_{1};".format("VkStructureType".ljust(targetLen), enumname))
+				if isVkWin32SurfaceCreateInfoKHR:	# the name transformation bellow does not work for this struct
+					structType = "\t{0} sType = VkStructureType.VK_STRUCTURE_TYPE_{1};".format("VkStructureType".ljust(targetLen+1), "WIN32_SURFACE_CREATE_INFO_KHR")
+					self.appendSection("struct", structType)
+				else:
+					enumName = re.sub(re_camel_case, "\g<1>_\g<2>", name[2:]).upper()
+					structType = "\t{0}  sType = VkStructureType.VK_STRUCTURE_TYPE_{1};".format("VkStructureType".ljust(targetLen), enumName)
+					self.appendSection("struct", structType)
+				#write(name + " : " + enumName, file=self.testsFile)
 			else:
 				self.appendSection("struct", "\t{0}  {1};".format(memberType.ljust(targetLen), memberName))
 
