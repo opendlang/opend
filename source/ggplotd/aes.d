@@ -869,62 +869,9 @@ unittest
     assertEqual( merged.label, "Point" );
 }
 
-/++
-  Merge the elements of two ranges. If first is not a range then merge that with each element of the second range.
-+/
-auto mergeRange( R1, R2 )( R1 r1, R2 r2 )
-    if (isInputRange!R1 || isInputRange!R2)
-{
-    import std.range : zip, StoppingPolicy, walkLength, repeat;
-    import std.algorithm : map;
-    static if (isInputRange!R1 && isInputRange!R2)
-        return zip(StoppingPolicy.longest, r1,r2).map!((a) => a[0].merge( a[1] ) );
-    else
-    {
-        // TODO: should not have to repeat r2 for more than once with stoppingpolicy.longest,
-        // but currently doing that crashes. Probably compiler bug, might try changing it later
-        static if (isInputRange!R1)
-            return zip(StoppingPolicy.longest, r1, r2.repeat(r1.walkLength))
-                .map!((a) => a[0].merge( a[1] ) );
-        else
-            return zip(StoppingPolicy.longest, r1.repeat(r2.walkLength), r2 )
-                .map!((a) => a[0].merge( a[1] ) );
-    }
-}
 
-///
-unittest
-{
-    import std.range : front;
-
-    auto xs = ["a", "b"];
-    auto ys = ["c", "d"];
-    auto labels = ["e", "f"];
-    auto aes = Aes!(string[], "x", string[], "y", string[], "label")(xs, ys, labels);
-    auto nlAes = mergeRange(DefaultValues, aes );
-    assertEqual(nlAes.front.x, "a");
-    assertEqual(nlAes.front.label, "e");
-    assertEqual(nlAes.front.colour, "black");
-    auto nlAes2 = aes.mergeRange(DefaultValues);
-    assertEqual(nlAes2.front.x, "a");
-    assertEqual(nlAes2.front.label, "");
-    assertEqual(nlAes2.front.colour, "black");
-}
-
-///
-unittest
-{
-    import std.range : front;
-
-    auto xs = ["a", "b"];
-    auto ys = ["c", "d"];
-    auto labels = ["e", "f"];
-    auto aes = Aes!(string[], "x", string[], "y", string[], "label")(xs, ys, labels);
-
-    auto nlAes = mergeRange(aes, Aes!(NumericLabel!(string[]), "x",
-        NumericLabel!(string[]), "y")(NumericLabel!(string[])(aes.x),
-        NumericLabel!(string[])(aes.y)));
-
-    assertEqual(nlAes.front.x[0], 0);
-    assertEqual(nlAes.front.label, "e");
-}
+static import ggplotd.range;
+/**
+Deprecated: Moved to ggplotd.range;
+*/
+deprecated alias mergeRange = ggplotd.range.mergeRange;
