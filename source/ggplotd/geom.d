@@ -74,7 +74,7 @@ private auto fillAndStroke( cairo.Context context, in RGBA colour,
 }
 
 /++
-General function for 
+General function for drawing geomShapes
 +/
 private auto geomShape(string shape, AES)(AES aes)
 {
@@ -204,6 +204,59 @@ unittest
 
     import std.range : walkLength;
     assertEqual( geoms.walkLength, 2 );
+}
+
+/**
+Draw any type of geom*
+
+The type field is required, which should be a string. Any of the geom* functions in ggplotd.geom 
+can be passed using a lower case string minus the geom prefix, i.e. hist3d calls geomHist3D etc.
+*/
+template geomType(AES)
+{
+    string generateToGeom()
+    {
+        import std.traits;
+        import std.string : toLower;
+        string str = "auto toGeom(A)( A aes, string type ) {\nimport std.traits; import std.array : array;\n";
+        foreach( name; __traits(allMembers, ggplotd.geom) )
+        {
+            static if (name.length > 6 && name[0..4] == "geom" 
+                    && name != "geomType"
+                    )
+            {
+                str ~= "static if(__traits(compiles,(A a) => "
+                    ~ name ~"(a))) {\n";
+                str ~= "if (type == q{" ~ name[4..$].toLower ~ "})\n";
+                str ~= "\treturn " ~ name ~ "!A(aes).array;\n}\n";
+            }
+        }
+
+        str ~= "assert(0, q{Unknown type passed to geomType});\n}\n";
+        return str;
+    }
+
+    auto geomType( AES aes )
+    {
+        import std.algorithm : map, joiner;
+
+        import ggplotd.aes : group;
+        mixin(generateToGeom());
+
+        return aes
+            .group!"type"
+            .map!((g) => toGeom(g, g[0].type)).joiner;
+    }
+}
+
+///
+unittest
+{
+    import std.range : walkLength;
+    assertEqual(
+            geomType(Aes!(double[], "x", double[], "y", string[], "type")
+                ( [0,1,2], [5,6,7], ["line", "point", "line"] )).walkLength, 2
+            );
 }
 
 /**
