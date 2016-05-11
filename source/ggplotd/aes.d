@@ -521,8 +521,12 @@ template group(Specs...)
         foreach( spec; Specs )
         {
             import std.range : ElementType;
-            import std.traits : hasMember;
-            static if(hasMember!((ElementType!A),spec))
+            import std.traits;
+            import painlesstraits : isFieldOrProperty;
+            static if(hasMember!((ElementType!A),spec)
+                && isFieldOrProperty!(
+                    __traits(getMember,ElementType!A,spec))
+            )
             {
                 types ~= "typeof(a." ~ spec ~"),";
                 values ~= "a." ~ spec ~",";
