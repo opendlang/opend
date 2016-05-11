@@ -502,6 +502,11 @@ unittest
 
 }
 
+
+import std.typetuple : TypeTuple;
+// Default fields to group by
+alias DefaultGroupFields = TypeTuple!("alpha","colour","label");
+
 /++
     Groups data by colour label etc.
 
@@ -514,7 +519,7 @@ template group(Specs...)
         static if (Specs.length == 0)
         {
             import std.typetuple : TypeTuple;
-            alias Specs = TypeTuple!("alpha","colour","label");
+            alias Specs = DefaultGroupFields;
         }
         string types = "";
         string values = "";
@@ -533,33 +538,24 @@ template group(Specs...)
             }
         }
 
-        // The approach.. do each tuple separately (if it compiles) and merge them using my merge 
+        // Default case if no matching fields
         string str = "auto extractKey(T)(T a) 
-            { return Tuple!(" ~ types[0..$-1] ~ ")(" ~ values[0..$-1] ~ "); }";
+                { return 1; }";
+        if (!types.empty)
+            str = "auto extractKey(T)(T a) 
+                { return Tuple!(" ~ types[0..$-1] ~ ")(" ~ 
+                values[0..$-1] ~ "); }";
+
         return str;
     }
     
     auto group(AES)(AES aes)
     {
-        auto merged = DefaultValues.mergeRange( aes );
+        mixin(buildExtractKey!(typeof(aes))());
 
-        mixin(buildExtractKey!(typeof(merged))());
+        import ggplotd.range : groupBy;
 
-        // Attach all default fields
-        extractKey( merged.front );
-
-        typeof(merged.front())[][typeof(extractKey(merged.front))] grouped;
-
-        // Extract keys for aa and store in aa. Return the values of the aa
-        foreach( tup; merged )
-        {
-            auto key = extractKey(tup);
-            if (key in grouped)
-                grouped[key] ~= tup;
-            else
-                grouped[key] = [tup];
-        }
-        return grouped.values;
+        return aes.groupBy!((a) => extractKey(a)).values;
     }
 }
 
@@ -576,6 +572,9 @@ unittest
     // Ignores field that does not exist
     assertEqual(group!("alpha","abcdef")(aes).walkLength,2);
 
+    // Should return one group holding them all
+    assertEqual(group!("abcdef")(aes)[0].walkLength,4);
+
     assertEqual(group(aes).walkLength,4);
 }
 
@@ -589,9 +588,11 @@ unittest
 
     auto grouped = aes.group;
     assertEqual(grouped.walkLength, 2);
-    assertEqual(grouped.front.walkLength, 2);
+    size_t totalLength = grouped.front.walkLength;
+    assertGreaterThan(totalLength, 0);
+    assertLessThan(totalLength, 3);
     grouped.popFront;
-    assertEqual(grouped.front.walkLength, 1);
+    assertEqual(totalLength + grouped.front.walkLength, 3);
 }
 
 import std.range : isInputRange;
