@@ -206,6 +206,12 @@ unittest
     assertEqual( geoms.walkLength, 2 );
 }
 
+/**
+Draw any type of geom*
+
+The type field is required, which should be a string. Any of the geom* functions in ggplotd.geom 
+can be passed using a lower case string minus the geom prefix, i.e. hist3d calls geomHist3D etc.
+*/
 template geomType(AES)
 {
     string generateToGeom()
@@ -243,6 +249,7 @@ template geomType(AES)
     }
 }
 
+///
 unittest
 {
     import std.range : walkLength;
