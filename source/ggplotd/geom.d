@@ -285,7 +285,7 @@ auto geomLine(AES)(AES aes)
     {
         this(T aes)
         {
-            groupedAes = aes.group;
+            groupedAes = DefaultValues.mergeRange(aes).group;
         }
 
         @property auto front()
@@ -348,7 +348,7 @@ auto geomLine(AES)(AES aes)
         }
 
     private:
-        typeof(group(T.init)) groupedAes;
+        typeof(group(DefaultValues.mergeRange(T.init))) groupedAes;
     }
 
     return GeomRange!AES(aes);
