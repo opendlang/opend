@@ -3428,8 +3428,8 @@ version( VK_USE_PLATFORM_WAYLAND_KHR ) {
 	enum VK_KHR_WAYLAND_SURFACE_SPEC_VERSION = 5;
 	enum VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME = "VK_KHR_wayland_surface";
 	alias VkWaylandSurfaceCreateFlagsKHR = VkFlags;
-	struct wl_display;
 	struct wl_surface;
+	struct wl_display;
 
 	
 	struct VkWaylandSurfaceCreateInfoKHR {
