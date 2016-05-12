@@ -595,17 +595,11 @@ auto geomHist(AES)(AES aes, size_t noBins = 0)
 /// Draw histograms based on the x and y coordinates of the data (aes)
 auto geomHist2D(AES)(AES aes, size_t noBinsX = 0, size_t noBinsY = 0)
 {
-    import std.range : Appender;
+    import std.algorithm : map, joiner;
     import ggplotd.stat : statHist2D;
 
-    // TODO: Why doesn't the below work? Any range with elementtype geom should work.
-    //    return statHist2D( aes, noBinsX, noBinsY ).tee!((a) => a.writeln )
-    //        .map!( (poly) => geomPolygon( poly ) ).array;
-
-    Appender!(Geom[]) appender;
-    foreach( poly; statHist2D( aes, noBinsX, noBinsY ) )
-        appender.put( geomPolygon( poly ) );
-    return appender.data;
+    return statHist2D( aes, noBinsX, noBinsY )
+            .map!( (poly) => geomPolygon( poly ) ).joiner;
 }
 
 
