@@ -402,4 +402,67 @@ auto statHist2D(AES)(AES aesRaw, size_t noBinsX = 0, size_t noBinsY = 0)
     return statHistND!(2,AES)( aesRaw, [noBinsX, noBinsY]);
 }
 
+/**
+Calculate kernel density for given data
 
+Params:
+   aes = Data that the histogram will be based on 
+
+Returns: InputRange that holds x and y coordinates for the kernel
+*/
+auto statDensity(AES)( AES aesRaw )
+{
+    import std.algorithm : joiner, map, reduce;
+    import std.range : front;
+    import std.typecons : Tuple;
+    import ggplotd.aes : numericLabel, group;
+    import ggplotd.range : mergeRange;
+
+    return aesRaw.group.map!((aes) {
+        auto xs = aes.map!((t) => t.x)
+            .numericLabel
+            .map!((x) => x.to!double);
+
+        // Calculate the kernel width (using scott thing in dstats)
+        // Initialize kernel with normal distribution.
+        import dstats.kerneldensity : scottBandwidth, KernelDensity;
+        import dstats.random : normalPDF;
+        auto sigma = scottBandwidth(xs);
+        auto kernel = (double x) { return normalPDF(x, 0.0, sigma); };
+        auto density = KernelDensity.fromCallable(kernel, xs);
+
+        // Calculate min/max to use with statFunction
+        auto minmax = xs.reduce!("min(a,b)","max(a,b)");
+
+        // Use statFunction with the kernel to produce a line (merge it with
+        return aes.front.mergeRange(
+            statFunction( density, minmax[0]-sigma, minmax[1]+sigma ));
+    }).joiner;
+}
+
+unittest
+{
+    import std.stdio : writeln;
+    import std.algorithm : map;
+    import std.array : array;
+    import std.random : uniform;
+    import std.range : chain, iota, repeat, walkLength;
+
+    import ggplotd.aes : Aes;
+    auto xs = iota(0,100,1)
+        .map!((i)=>uniform(0,0.75)+uniform(0.25,1))
+        .array;
+
+    auto dens = statDensity( Aes!( typeof(xs), "x")( xs ) );
+    auto dim = dens.walkLength;
+    assertGreaterThan( dim, 1 );
+
+    // Test that grouping leads to longer (twice as long) result
+    auto cols = chain("a".repeat(50),"b".repeat(50) );
+    auto dens2 = statDensity( Aes!(typeof(cols), "colour", typeof(xs), "x")( cols, xs ) );
+    assertGreaterThan( dens2.walkLength, 1.9*dim );
+    assertLessThan( dens2.walkLength, 2.1*dim );
+
+    // Test that colour is passed through (merged)
+    assertEqual( dens2.front.colour.length, 1 );
+}
