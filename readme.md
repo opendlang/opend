@@ -38,12 +38,18 @@ Optionally you can use the configuration `with-global-enums` so that all enum de
 
 Examples can be found in the `examples` directory, and ran with `dub run d-vulkan:examplename`.
 
-Bindings for all extensions are available, except for the `VK_KHR_*_surface` extensions, which require types from external libraries (X11, XCB, ...). They can be manually loaded with `vkGetInstanceProcAddr` if needed.
+
+Platform surface extensions
+---------------------------
+
+If you wish to create vulkan surface(s) yourself (instead of using e.g. glfw) you need to specify the required platform as compiler version flag. The available platform specifiers are the same as those found in `vk_platform.h`. In such a case a platform specific d module will be publicly imported into types.d so that required platform specific types and functions become available.
+A twist is that the only API included in phobos is the windows API hence the module `core.sys.windows.windows` is publicly imported in the case of `VK_USE_PLATFORM_WIN32_KHR`. In all other cases the imported module names are the same as the corresponding includes in the `vk_platform.h`, only exception is `wayland_client` in case of `wayland-client.h`. You need to instruct dmd/dub with the proper path to such a module and/or edit the respective line in versions.d
+
 
 Generating Bindings
 -------------------
 
 To generate bindings (Requires Python 3 and lxml.etree) download the [Vulkan-Docs](https://github.com/KhronosGroup/Vulkan-Docs) repo and do one of two things:
 * run `vkdgen.py` passing `path/to/vulkan-docs` as first argument and an output folder for the D files as second argument
-* copy/move/symlink `vkdgen.py` into `src/spec/`, `cd` there, and execute it, passing in an output folder to place the D files
+* copy/move/symlink `vkdgen.py` into `src/spec/`, `cd` there, and execute it, passing in an output folder to place the D files as the only argument.
 
