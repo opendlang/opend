@@ -412,16 +412,20 @@ Returns: InputRange that holds x and y coordinates for the kernel
 */
 auto statDensity(AES)( AES aesRaw )
 {
-    import std.algorithm : joiner, map, reduce;
-    import std.range : front;
-    import std.typecons : Tuple;
-    import ggplotd.aes : numericLabel, group;
+    import std.algorithm : joiner, map, min, max, reduce;
+    import std.range : chain, front;
+    import std.typecons : tuple, Tuple;
+    import ggplotd.aes : Aes, numericLabel, group;
     import ggplotd.range : mergeRange;
 
-    return aesRaw.group.map!((aes) {
-        auto xs = aes.map!((t) => t.x)
-            .numericLabel
-            .map!((x) => x.to!double);
+    auto xNumeric = aesRaw.map!((t) => t.x).numericLabel;
+    auto aes = aesRaw.mergeRange( Aes!(typeof(xNumeric),"x")(xNumeric) );
+    auto minmax = reduce!(
+            (a,b) => min(a,b.x.to!double),
+            (a,b) => max(a,b.x.to!double))(tuple(0.0,0.0), aes);
+
+    return aes.group.map!((g) {
+        auto xs = g.map!((t) => t.x.to!double);
 
         // Calculate the kernel width (using scott thing in dstats)
         // Initialize kernel with normal distribution.
@@ -431,12 +435,18 @@ auto statDensity(AES)( AES aesRaw )
         auto kernel = (double x) { return normalPDF(x, 0.0, sigma); };
         auto density = KernelDensity.fromCallable(kernel, xs);
 
-        // Calculate min/max to use with statFunction
-        auto minmax = xs.reduce!("min(a,b)","max(a,b)");
+        auto margin = (minmax[1] - minmax[0])/10.0;
 
-        // Use statFunction with the kernel to produce a line (merge it with
-        return aes.front.mergeRange(
-            statFunction( density, minmax[0]-sigma, minmax[1]+sigma ));
+
+        // Use statFunction with the kernel to produce a line
+        // Also add points to close the path down to zero
+        auto coords = chain(
+                [Tuple!(double, "x", double, "y")( minmax[0]-margin, 0.0 )],
+                statFunction( density, minmax[0]-margin, minmax[1]+margin ),
+                [Tuple!(double, "x", double, "y")( minmax[1]+margin, 0.0 )]);
+
+
+        return g.front.mergeRange( coords );
     }).joiner;
 }
 

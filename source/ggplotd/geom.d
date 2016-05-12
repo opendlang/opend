@@ -1017,3 +1017,12 @@ auto geomPolygon(AES)(AES aes)
 
     return [geom];
 }
+
+
+/// Draw kernel density based on the x coordinates of the data (aes)
+auto geomDensity(AES)(AES aes)
+{
+    import ggplotd.stat : statDensity;
+    import std.stdio : writeln;
+    return geomLine( statDensity( aes ) );
+}
