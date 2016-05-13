@@ -1,7 +1,7 @@
 ErupteD
 =======
 
-Automatically-generated D bindings for Vulkan. Acquiring Vulkan functions is based on Intel [API without Secrets](https://software.intel.com/en-us/api-without-secrets-introduction-to-vulkan-part-1)
+Automatically-generated D bindings for Vulkan based on [D-Vulkan](https://github.com/ColonelThirtyTwo/dvulkan). Acquiring Vulkan functions is based on Intel [API without Secrets](https://software.intel.com/en-us/api-without-secrets-introduction-to-vulkan-part-1)
 
 Usage
 -----
@@ -11,7 +11,7 @@ The bindings have two configurations: the `default` configuration, where the bin
 To use in the `default` configuration:
 
 1. Import via `import erupted;`.
-2. Get a pointer to the `vkGetInstanceProcAddr`, through platform-specific means (e.g. loading the Vulkan shared library, or `glfwGetInstanceProcAddress` if using GLFW).
+2. Get a pointer to the `vkGetInstanceProcAddr`, through platform-specific means (e.g. loading the Vulkan shared library, or `glfwGetInstanceProcAddress` [if using GLFW](https://github.com/ColonelThirtyTwo/dvulkan/wiki/Using-d-vulkan-with-Derelict-GLFW)).
 3. Call `EruptedLoader.loadGlobalLevelFunctions(getProcAddr)`, where `getProcAddr` is the address of the loaded `vkGetInstanceProcAddr` function, to load the following functions:
 	* `vkGetInstanceProcAddr` (sets the global variable from the passed value)
 	* `vkCreateInstance`
@@ -21,7 +21,7 @@ To use in the `default` configuration:
 5. Call `EruptedLoader.loadInstanceLevelFunctions(VkInstance)` to load additional `VkInstance` related functions. Get information about available physical devices (e.g. GPU(s), APU(s), etc.) and physical device related resources (e.g. Queue Families, Queues per Family, etc. )
 6. Now three options are available to acquire a logical device and device resource related functions (functions with first param of `VkDevice`, `VkQueue` or `VkCommandBuffer`):
 	* Call `EruptedLoader.loadDeviceLevelFunctions(VkInstance)`, the acquired functions call indirectly through the `VkInstance` and will be internally dispatched by the implementation
-	* Call `EruptedLoader.loadDeviceLevelFunctions(VkDevice)`, the acquired functions call directly the logical `VkDevice` and related resources. This path is faster, skips one indirecteion, but (in theory, not tested yet!) is useful only in a single physical deveice environment. Calling the same function with another `VkDevice` should overwrite (this is the not tested theory) all the previously fetched __gshared function
+	* Call `EruptedLoader.loadDeviceLevelFunctions(VkDevice)`, the acquired functions call directly the `VkDevice` and related resources. This path is faster, skips one indirection, but (in theory, not tested yet!) is useful only in a single physical deveice environment. Calling the same function with another `VkDevice` should overwrite (this is the not tested theory) all the previously fetched __gshared function
 	* Call `createDispatchDeviceLevelFunctions(VkDevice)` and capture the result, which is a struct with all the device level fuction pointers kind of namespaced in that struct. This should avoid collisions.
 
 To use in the `with-derelict-loader` configuration, follow the above steps, but call `EruptedDerelict.load()` instead of performing steps two and three.
@@ -47,5 +47,13 @@ Generating Bindings
 
 To erupt the vulkan-docs yourself (Requires Python 3 and lxml.etree) download the [Vulkan-Docs](https://github.com/KhronosGroup/Vulkan-Docs) repo and
 call `erupt.py` passing `path/to/vulkan-docs` as first argument and an output folder for the D files as second argument.
+
+
+Additions to D-Vulkan
+---------------------
+
+* Platform surface extensions
+* DerelictLoader for Posix Systems
+* With respect to [API without Secrets](https://software.intel.com/en-us/api-without-secrets-introduction-to-vulkan-part-1) D-Vulkans function loading system is partially broken
 
 
