@@ -152,7 +152,7 @@ class DGenerator(OutputGenerator):
 		self.typesFile = open(path.join(genOpts.filename, "types.d"), "w", encoding="utf-8")
 		self.funcsFile = open(path.join(genOpts.filename, "functions.d"), "w", encoding="utf-8")
 
-		self.testsFile = open(path.join(genOpts.filename, "test.txt"), "w", encoding="utf-8")
+		#self.testsFile = open(path.join(genOpts.filename, "test.txt"), "w", encoding="utf-8")
 		
 		with open(path.join(genOpts.filename, "package.d"), "w", encoding="utf-8") as packageFile:
 			write(PACKAGE_HEADER.format(PACKAGE_PREFIX = genOpts.packagePrefix), file=packageFile)
