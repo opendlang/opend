@@ -1,3 +1,3 @@
-module dvulkan;
-public import dvulkan.types;
-public import dvulkan.functions;
+module erupted;
+public import erupted.types;
+public import erupted.functions;

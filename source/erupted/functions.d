@@ -1,6 +1,6 @@
-module dvulkan.functions;
+module erupted.functions;
 
-public import dvulkan.types;
+public import erupted.types;
 
 extern(System) @nogc nothrow {
 
@@ -432,7 +432,7 @@ __gshared {
 	PFN_vkCmdDebugMarkerInsertEXT vkCmdDebugMarkerInsertEXT;
 }
 
-struct DVulkanLoader {
+struct EruptedLoader {
 	@disable this();
 	@disable this(this);
 
@@ -447,7 +447,7 @@ struct DVulkanLoader {
 
 	/// with a valid VkInstance call this function to retrieve additional VkInstance, VkPhysicalDevice, ... related functions
 	static void loadInstanceLevelFunctions(VkInstance instance) {
-		assert(vkGetInstanceProcAddr !is null, "Must call DVulkanLoader.loadGlobalLevelFunctions before DVulkanLoader.loadInstanceLevelFunctions");
+		assert(vkGetInstanceProcAddr !is null, "Must call EruptedLoader.loadGlobalLevelFunctions before EruptedLoader.loadInstanceLevelFunctions");
 
 		// VK_VERSION_1_0
 		vkDestroyInstance = cast(typeof(vkDestroyInstance)) vkGetInstanceProcAddr(instance, "vkDestroyInstance");
@@ -524,7 +524,7 @@ struct DVulkanLoader {
 	/// with a valid VkInstance call this function to retrieve VkDevice, VkQueue and VkCommandBuffer related functions
 	/// the functions call indirectly through the VkInstance and will be internally dispatched by the implementation
 	static void loadDeviceLevelFunctions(VkInstance instance) {
-		assert(vkGetInstanceProcAddr !is null, "Must call DVulkanLoader.loadInstanceLevelFunctions before DVulkanLoader.loadDeviceLevelFunctions");
+		assert(vkGetInstanceProcAddr !is null, "Must call EruptedLoader.loadInstanceLevelFunctions before EruptedLoader.loadDeviceLevelFunctions");
 
 		// VK_VERSION_1_0
 		vkDestroyDevice = cast(typeof(vkDestroyDevice)) vkGetInstanceProcAddr(instance, "vkDestroyDevice");
@@ -669,7 +669,7 @@ struct DVulkanLoader {
 	/// with a valid VkDevice call this function to retrieve VkDevice, VkQueue and VkCommandBuffer related functions
 	/// the functions call directly VkDevice and related resources and must be retrieved once per logical VkDevice
 	static void loadDeviceLevelFunctions(VkDevice device) {
-		assert(vkGetDeviceProcAddr !is null, "Must call DVulkanLoader.loadInstanceLevelFunctions before DVulkanLoader.loadDeviceLevelFunctions");
+		assert(vkGetDeviceProcAddr !is null, "Must call EruptedLoader.loadInstanceLevelFunctions before EruptedLoader.loadDeviceLevelFunctions");
 
 		// VK_VERSION_1_0
 		vkDestroyDevice = cast(typeof(vkDestroyDevice)) vkGetDeviceProcAddr(device, "vkDestroyDevice");
@@ -812,7 +812,7 @@ struct DVulkanLoader {
 	}
 }
 
-version(DVulkanLoadFromDerelict) {
+version(EruptedLoadFromDerelict) {
 	import derelict.util.loader;
 	import derelict.util.system;
 	
@@ -823,7 +823,7 @@ version(DVulkanLoadFromDerelict) {
 			static assert(0,"Need to implement Vulkan libNames for this operating system.");
 	}
 	
-	class DVulkanDerelictLoader : SharedLibLoader {
+	class EruptedDerelictLoader : SharedLibLoader {
 		this() {
 			super(libNames);
 		}
@@ -831,14 +831,14 @@ version(DVulkanLoadFromDerelict) {
 		protected override void loadSymbols() {
 			typeof(vkGetInstanceProcAddr) getProcAddr;
 			bindFunc(cast(void**)&getProcAddr, "vkGetInstanceProcAddr");
-			DVulkanLoader.loadGlobalLevelFunctions(getProcAddr);
+			EruptedLoader.loadGlobalLevelFunctions(getProcAddr);
 		}
 	}
 	
-	__gshared DVulkanDerelictLoader DVulkanDerelict;
+	__gshared EruptedDerelictLoader EruptedDerelict;
 
 	shared static this() {
-		DVulkanDerelict = new DVulkanDerelictLoader();
+		EruptedDerelict = new EruptedDerelictLoader();
 	}
 }
 

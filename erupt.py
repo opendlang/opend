@@ -550,8 +550,8 @@ if __name__ == "__main__":
 		vkxml = sys.argv[1] + "/src/spec/vk.xml"
 
 	parser.add_argument("outfolder")
-	parser.add_argument("--packagePrefix", default="dvulkan")
-	parser.add_argument("--namePrefix", default="DVulkan")
+	parser.add_argument("--packagePrefix", default="erupted")
+	parser.add_argument("--namePrefix", default="Erupted")
 	
 	args = parser.parse_args()
 	
