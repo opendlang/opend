@@ -210,7 +210,7 @@ struct {NAME_PREFIX}Loader {{
 		assert(vkGetDeviceProcAddr !is null, "Must call {NAME_PREFIX}Loader.loadInstanceLevelFunctions before {NAME_PREFIX}Loader.loadDeviceLevelFunctions");
 		
 		DispatchDevice dispatchDevice;
-		with( dispatchDevice ) {{\
+		with(dispatchDevice) {{\
 """.format(NAME_PREFIX = self.genOpts.namePrefix) +
 		self.deviceLevelFunctions.format(INSTANCE_OR_DEVICE = "Device", instance_or_device = "device").replace('\t\t', '\t\t\t'), file=self.funcsFile)
 		write("""\
@@ -225,7 +225,7 @@ private struct DispatchDevice {{{DISPATCH_FUNCTION_DEFINITIONS}
 }}
 
 // Derelict loader to acquire entry point vkGetInstanceProcAddr
-version({NAME_PREFIX}LoadFromDerelict) {{
+version({NAME_PREFIX}FromDerelict) {{
 	import derelict.util.loader;
 	import derelict.util.system;
 	
@@ -277,7 +277,7 @@ version({NAME_PREFIX}LoadFromDerelict) {{
 			write("\n" + self.currentFeature, file=self.typesFile)
 			surfaceVersion = ""
 			if self.isSurfaceExtension:
-				surfaceVersion = "version( {0} ) {{".format(self.surfaceExtensions[self.currentFeature][0])
+				surfaceVersion = "version({0}) {{".format(self.surfaceExtensions[self.currentFeature][0])
 				write("{0}\n\t{1}".format(surfaceVersion, self.surfaceExtensions[self.currentFeature][1]), file=self.typesFile)
 
 			

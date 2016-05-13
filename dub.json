@@ -1,46 +1,46 @@
 {
-	"name": "erupted",
-	"description": "Auto-generated D bindings for Vulkan",
-	"copyright": "Copyright 2015-2016 The Khronos Group Inc.; Copyright 2016, Alex Parrill, Peter Particle",
-	"authors": ["Alex Parrill", "Peter Particle"],
-	"targetType": "library",
-	"license": "BSD 2-clause",
-	"configurations": [
-		{
-			"name": "default",
-		},
-		{
-			"name": "with-derelict-loader",
-			"versions": ["EruptedLoadFromDerelict"],
-			"dependencies": {
-				"derelict-util": "~>2.0.4"
-			},
-		},
-	],
-	"subPackages": [
-		{
-			"name": "devices",
-			"description": "Simple Vulkan example",
-			"targetType": "executable",
-			"sourceFiles": ["examples/devices.d"],
-			"dependencies": {
-				"erupted": { "path": "." }
-			},
-			"subConfigurations": {
-				"erupted": "with-derelict-loader"
-			}
-		},
-		{
-			"name": "layers",
-			"description": "Simple Vulkan example",
-			"targetType": "executable",
-			"sourceFiles": ["examples/layers.d"],
-			"dependencies": {
-				"erupted": { "path": "." }
-			},
-			"subConfigurations": {
-				"erupted": "with-derelict-loader"
-			}
-		}
-	]
+    "name"              :   "erupted",
+    "description"       :   "Auto-generated D bindings for Vulkan",
+    "copyright"         :   "Copyright 2015-2016 The Khronos Group Inc.; Copyright 2016, Alex Parrill, Peter Particle",
+    "authors"           :   [ "Alex Parrill", "Peter Particle" ],
+    "targetType"        :   "library",
+    "license"           :   "BSD 2-clause",
+    "configurations"    :   [
+        {
+            "name"          :   "default",
+        },
+        {
+            "name"          :   "with-derelict-loader",
+            "versions"      :   [ "EruptedFromDerelict" ],
+            "dependencies"  :   {
+                "derelict-util" : "~>2.0.4"
+            },
+        },
+    ],
+    "subPackages"   : [
+        {
+            "name"              :   "devices",
+            "description"       :   "Simple Vulkan example",
+            "targetType"        :   "executable",
+            "sourceFiles"       :   [ "examples/devices.d" ],
+            "dependencies"      :   {
+                "erupted"           :   { "path": "." }
+            },
+            "subConfigurations" :   {
+                "erupted"           : "with-derelict-loader"
+            }
+        },
+        {
+            "name"              :   "layers",
+            "description"       :   "Simple Vulkan example",
+            "targetType"        :   "executable",
+            "sourceFiles"       :   [ "examples/layers.d" ],
+            "dependencies"      :   {
+                "erupted"           :   { "path": "." }
+            },
+            "subConfigurations" :   {
+                "erupted": "with-derelict-loader"
+            }
+        }
+    ]
 }

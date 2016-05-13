@@ -170,36 +170,36 @@ extern(System) @nogc nothrow {
 	alias PFN_vkCreateSharedSwapchainsKHR = VkResult function(VkDevice device, uint32_t swapchainCount, const(VkSwapchainCreateInfoKHR)* pCreateInfos, const(VkAllocationCallbacks)* pAllocator, VkSwapchainKHR* pSwapchains);
 
 	// VK_KHR_xlib_surface
-	version( VK_USE_PLATFORM_XLIB_KHR ) {
+	version(VK_USE_PLATFORM_XLIB_KHR) {
 		alias PFN_vkCreateXlibSurfaceKHR = VkResult function(VkInstance instance, const(VkXlibSurfaceCreateInfoKHR)* pCreateInfo, const(VkAllocationCallbacks)* pAllocator, VkSurfaceKHR* pSurface);
 		alias PFN_vkGetPhysicalDeviceXlibPresentationSupportKHR = VkBool32 function(VkPhysicalDevice physicalDevice, uint32_t queueFamilyIndex, Display* dpy, VisualID visualID);
 	}
 
 	// VK_KHR_xcb_surface
-	version( VK_USE_PLATFORM_XCB_KHR ) {
+	version(VK_USE_PLATFORM_XCB_KHR) {
 		alias PFN_vkCreateXcbSurfaceKHR = VkResult function(VkInstance instance, const(VkXcbSurfaceCreateInfoKHR)* pCreateInfo, const(VkAllocationCallbacks)* pAllocator, VkSurfaceKHR* pSurface);
 		alias PFN_vkGetPhysicalDeviceXcbPresentationSupportKHR = VkBool32 function(VkPhysicalDevice physicalDevice, uint32_t queueFamilyIndex, xcb_connection_t* connection, xcb_visualid_t visual_id);
 	}
 
 	// VK_KHR_wayland_surface
-	version( VK_USE_PLATFORM_WAYLAND_KHR ) {
+	version(VK_USE_PLATFORM_WAYLAND_KHR) {
 		alias PFN_vkCreateWaylandSurfaceKHR = VkResult function(VkInstance instance, const(VkWaylandSurfaceCreateInfoKHR)* pCreateInfo, const(VkAllocationCallbacks)* pAllocator, VkSurfaceKHR* pSurface);
 		alias PFN_vkGetPhysicalDeviceWaylandPresentationSupportKHR = VkBool32 function(VkPhysicalDevice physicalDevice, uint32_t queueFamilyIndex, wl_display* display);
 	}
 
 	// VK_KHR_mir_surface
-	version( VK_USE_PLATFORM_MIR_KHR ) {
+	version(VK_USE_PLATFORM_MIR_KHR) {
 		alias PFN_vkCreateMirSurfaceKHR = VkResult function(VkInstance instance, const(VkMirSurfaceCreateInfoKHR)* pCreateInfo, const(VkAllocationCallbacks)* pAllocator, VkSurfaceKHR* pSurface);
 		alias PFN_vkGetPhysicalDeviceMirPresentationSupportKHR = VkBool32 function(VkPhysicalDevice physicalDevice, uint32_t queueFamilyIndex, MirConnection* connection);
 	}
 
 	// VK_KHR_android_surface
-	version( VK_USE_PLATFORM_ANDROID_KHR ) {
+	version(VK_USE_PLATFORM_ANDROID_KHR) {
 		alias PFN_vkCreateAndroidSurfaceKHR = VkResult function(VkInstance instance, const(VkAndroidSurfaceCreateInfoKHR)* pCreateInfo, const(VkAllocationCallbacks)* pAllocator, VkSurfaceKHR* pSurface);
 	}
 
 	// VK_KHR_win32_surface
-	version( VK_USE_PLATFORM_WIN32_KHR ) {
+	version(VK_USE_PLATFORM_WIN32_KHR) {
 		alias PFN_vkCreateWin32SurfaceKHR = VkResult function(VkInstance instance, const(VkWin32SurfaceCreateInfoKHR)* pCreateInfo, const(VkAllocationCallbacks)* pAllocator, VkSurfaceKHR* pSurface);
 		alias PFN_vkGetPhysicalDeviceWin32PresentationSupportKHR = VkBool32 function(VkPhysicalDevice physicalDevice, uint32_t queueFamilyIndex);
 	}
@@ -385,36 +385,36 @@ __gshared {
 	PFN_vkCreateSharedSwapchainsKHR vkCreateSharedSwapchainsKHR;
 
 	// VK_KHR_xlib_surface
-	version( VK_USE_PLATFORM_XLIB_KHR ) {
+	version(VK_USE_PLATFORM_XLIB_KHR) {
 		PFN_vkCreateXlibSurfaceKHR vkCreateXlibSurfaceKHR;
 		PFN_vkGetPhysicalDeviceXlibPresentationSupportKHR vkGetPhysicalDeviceXlibPresentationSupportKHR;
 	}
 
 	// VK_KHR_xcb_surface
-	version( VK_USE_PLATFORM_XCB_KHR ) {
+	version(VK_USE_PLATFORM_XCB_KHR) {
 		PFN_vkCreateXcbSurfaceKHR vkCreateXcbSurfaceKHR;
 		PFN_vkGetPhysicalDeviceXcbPresentationSupportKHR vkGetPhysicalDeviceXcbPresentationSupportKHR;
 	}
 
 	// VK_KHR_wayland_surface
-	version( VK_USE_PLATFORM_WAYLAND_KHR ) {
+	version(VK_USE_PLATFORM_WAYLAND_KHR) {
 		PFN_vkCreateWaylandSurfaceKHR vkCreateWaylandSurfaceKHR;
 		PFN_vkGetPhysicalDeviceWaylandPresentationSupportKHR vkGetPhysicalDeviceWaylandPresentationSupportKHR;
 	}
 
 	// VK_KHR_mir_surface
-	version( VK_USE_PLATFORM_MIR_KHR ) {
+	version(VK_USE_PLATFORM_MIR_KHR) {
 		PFN_vkCreateMirSurfaceKHR vkCreateMirSurfaceKHR;
 		PFN_vkGetPhysicalDeviceMirPresentationSupportKHR vkGetPhysicalDeviceMirPresentationSupportKHR;
 	}
 
 	// VK_KHR_android_surface
-	version( VK_USE_PLATFORM_ANDROID_KHR ) {
+	version(VK_USE_PLATFORM_ANDROID_KHR) {
 		PFN_vkCreateAndroidSurfaceKHR vkCreateAndroidSurfaceKHR;
 	}
 
 	// VK_KHR_win32_surface
-	version( VK_USE_PLATFORM_WIN32_KHR ) {
+	version(VK_USE_PLATFORM_WIN32_KHR) {
 		PFN_vkCreateWin32SurfaceKHR vkCreateWin32SurfaceKHR;
 		PFN_vkGetPhysicalDeviceWin32PresentationSupportKHR vkGetPhysicalDeviceWin32PresentationSupportKHR;
 	}
@@ -481,36 +481,36 @@ struct EruptedLoader {
 		vkCreateDisplayPlaneSurfaceKHR = cast(typeof(vkCreateDisplayPlaneSurfaceKHR)) vkGetInstanceProcAddr(instance, "vkCreateDisplayPlaneSurfaceKHR");
 
 		// VK_KHR_xlib_surface
-		version( VK_USE_PLATFORM_XLIB_KHR ) {
+		version(VK_USE_PLATFORM_XLIB_KHR) {
 			vkCreateXlibSurfaceKHR = cast(typeof(vkCreateXlibSurfaceKHR)) vkGetInstanceProcAddr(instance, "vkCreateXlibSurfaceKHR");
 			vkGetPhysicalDeviceXlibPresentationSupportKHR = cast(typeof(vkGetPhysicalDeviceXlibPresentationSupportKHR)) vkGetInstanceProcAddr(instance, "vkGetPhysicalDeviceXlibPresentationSupportKHR");
 		}
 
 		// VK_KHR_xcb_surface
-		version( VK_USE_PLATFORM_XCB_KHR ) {
+		version(VK_USE_PLATFORM_XCB_KHR) {
 			vkCreateXcbSurfaceKHR = cast(typeof(vkCreateXcbSurfaceKHR)) vkGetInstanceProcAddr(instance, "vkCreateXcbSurfaceKHR");
 			vkGetPhysicalDeviceXcbPresentationSupportKHR = cast(typeof(vkGetPhysicalDeviceXcbPresentationSupportKHR)) vkGetInstanceProcAddr(instance, "vkGetPhysicalDeviceXcbPresentationSupportKHR");
 		}
 
 		// VK_KHR_wayland_surface
-		version( VK_USE_PLATFORM_WAYLAND_KHR ) {
+		version(VK_USE_PLATFORM_WAYLAND_KHR) {
 			vkCreateWaylandSurfaceKHR = cast(typeof(vkCreateWaylandSurfaceKHR)) vkGetInstanceProcAddr(instance, "vkCreateWaylandSurfaceKHR");
 			vkGetPhysicalDeviceWaylandPresentationSupportKHR = cast(typeof(vkGetPhysicalDeviceWaylandPresentationSupportKHR)) vkGetInstanceProcAddr(instance, "vkGetPhysicalDeviceWaylandPresentationSupportKHR");
 		}
 
 		// VK_KHR_mir_surface
-		version( VK_USE_PLATFORM_MIR_KHR ) {
+		version(VK_USE_PLATFORM_MIR_KHR) {
 			vkCreateMirSurfaceKHR = cast(typeof(vkCreateMirSurfaceKHR)) vkGetInstanceProcAddr(instance, "vkCreateMirSurfaceKHR");
 			vkGetPhysicalDeviceMirPresentationSupportKHR = cast(typeof(vkGetPhysicalDeviceMirPresentationSupportKHR)) vkGetInstanceProcAddr(instance, "vkGetPhysicalDeviceMirPresentationSupportKHR");
 		}
 
 		// VK_KHR_android_surface
-		version( VK_USE_PLATFORM_ANDROID_KHR ) {
+		version(VK_USE_PLATFORM_ANDROID_KHR) {
 			vkCreateAndroidSurfaceKHR = cast(typeof(vkCreateAndroidSurfaceKHR)) vkGetInstanceProcAddr(instance, "vkCreateAndroidSurfaceKHR");
 		}
 
 		// VK_KHR_win32_surface
-		version( VK_USE_PLATFORM_WIN32_KHR ) {
+		version(VK_USE_PLATFORM_WIN32_KHR) {
 			vkCreateWin32SurfaceKHR = cast(typeof(vkCreateWin32SurfaceKHR)) vkGetInstanceProcAddr(instance, "vkCreateWin32SurfaceKHR");
 			vkGetPhysicalDeviceWin32PresentationSupportKHR = cast(typeof(vkGetPhysicalDeviceWin32PresentationSupportKHR)) vkGetInstanceProcAddr(instance, "vkGetPhysicalDeviceWin32PresentationSupportKHR");
 		}
@@ -819,7 +819,7 @@ struct EruptedLoader {
 		assert(vkGetDeviceProcAddr !is null, "Must call EruptedLoader.loadInstanceLevelFunctions before EruptedLoader.loadDeviceLevelFunctions");
 		
 		DispatchDevice dispatchDevice;
-		with( dispatchDevice ) {
+		with(dispatchDevice) {
 
 			// VK_VERSION_1_0
 			vkDestroyDevice = cast(typeof(vkDestroyDevice)) vkGetDeviceProcAddr(device, "vkDestroyDevice");
@@ -1101,7 +1101,7 @@ private struct DispatchDevice {
 }
 
 // Derelict loader to acquire entry point vkGetInstanceProcAddr
-version(EruptedLoadFromDerelict) {
+version(EruptedFromDerelict) {
 	import derelict.util.loader;
 	import derelict.util.system;
 	

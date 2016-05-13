@@ -3311,7 +3311,7 @@ struct VkDisplayPresentInfoKHR {
 }
 
 // VK_KHR_xlib_surface
-version( VK_USE_PLATFORM_XLIB_KHR ) {
+version(VK_USE_PLATFORM_XLIB_KHR) {
 	public import X11.Xlib;
 
 	enum VK_KHR_XLIB_SURFACE_SPEC_VERSION = 6;
@@ -3329,7 +3329,7 @@ version( VK_USE_PLATFORM_XLIB_KHR ) {
 }
 
 // VK_KHR_xcb_surface
-version( VK_USE_PLATFORM_XCB_KHR ) {
+version(VK_USE_PLATFORM_XCB_KHR) {
 	public import xcb.xcb;
 
 	enum VK_KHR_XCB_SURFACE_SPEC_VERSION = 6;
@@ -3347,15 +3347,15 @@ version( VK_USE_PLATFORM_XCB_KHR ) {
 }
 
 // VK_KHR_wayland_surface
-version( VK_USE_PLATFORM_WAYLAND_KHR ) {
+version(VK_USE_PLATFORM_WAYLAND_KHR) {
 	public import wayland_client;
 
 	enum VK_KHR_WAYLAND_SURFACE_SPEC_VERSION = 5;
 	enum VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME = "VK_KHR_wayland_surface";
 
 	alias VkWaylandSurfaceCreateFlagsKHR = VkFlags;
-	struct wl_surface;
 	struct wl_display;
+	struct wl_surface;
 
 	
 	struct VkWaylandSurfaceCreateInfoKHR {
@@ -3368,7 +3368,7 @@ version( VK_USE_PLATFORM_WAYLAND_KHR ) {
 }
 
 // VK_KHR_mir_surface
-version( VK_USE_PLATFORM_MIR_KHR ) {
+version(VK_USE_PLATFORM_MIR_KHR) {
 	public import mir_toolkit.client_types;
 
 	enum VK_KHR_MIR_SURFACE_SPEC_VERSION = 4;
@@ -3386,7 +3386,7 @@ version( VK_USE_PLATFORM_MIR_KHR ) {
 }
 
 // VK_KHR_android_surface
-version( VK_USE_PLATFORM_ANDROID_KHR ) {
+version(VK_USE_PLATFORM_ANDROID_KHR) {
 	public import android.native_window;
 
 	enum VK_KHR_ANDROID_SURFACE_SPEC_VERSION = 6;
@@ -3403,7 +3403,7 @@ version( VK_USE_PLATFORM_ANDROID_KHR ) {
 }
 
 // VK_KHR_win32_surface
-version( VK_USE_PLATFORM_WIN32_KHR ) {
+version(VK_USE_PLATFORM_WIN32_KHR) {
 	public import core.sys.windows.windows;
 
 	enum VK_KHR_WIN32_SURFACE_SPEC_VERSION = 5;

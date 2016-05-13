@@ -117,6 +117,8 @@ int main() {
 		writeln("VK_QUEUE_GRAPHICS_BIT found at queue family index ", graphicsQueueFamilyIndex);
 	}
 
+	writeln;
+
 	// prepare VkDeviceQueueCreateInfo for logical device creation
 	float[1] queuePriorities = [ 0.0f ];
 	VkDeviceQueueCreateInfo queueCreateInfo = {
