@@ -1,5 +1,5 @@
-D-Vulkan
-========
+ErupteD
+=======
 
 Automatically-generated D bindings for Vulkan. Acquiring Vulkan functions is based on Intel [API without Secrets](https://software.intel.com/en-us/api-without-secrets-introduction-to-vulkan-part-1)
 
@@ -10,20 +10,20 @@ The bindings have two configurations: the `default` configuration, where the bin
 
 To use in the `default` configuration:
 
-1. Import via `import dvulkan;`.
+1. Import via `import erupted;`.
 2. Get a pointer to the `vkGetInstanceProcAddr`, through platform-specific means (ex. loading the Vulkan shared library, or `glfwGetInstanceProcAddress` if using GLFW).
-3. Call `DVulkanLoader.loadGlobalLevelFunctions(getProcAddr)`, where `getProcAddr` is the address of the loaded `vkGetInstanceProcAddr` function, to load the following functions:
+3. Call `EruptedLoader.loadGlobalLevelFunctions(getProcAddr)`, where `getProcAddr` is the address of the loaded `vkGetInstanceProcAddr` function, to load the following functions:
 	* `vkGetInstanceProcAddr` (sets the global variable from the passed value)
 	* `vkCreateInstance`
 	* `vkEnumerateInstanceExtensionProperties`
 	* `vkEnumerateInstanceLayerProperties`
 4. Create a `VkInstance` using the above functions.
-5. Call `DVulkanLoader.loadInstanceLevelFunctions(instance)` to load additional `VkInstance` related functions. Get information about available physical devices (e.g. GPU(s), APU(s), etc.) and physical device related resources (e.g. Queue Families, Queues per Family, etc. )
+5. Call `EruptedLoader.loadInstanceLevelFunctions(instance)` to load additional `VkInstance` related functions. Get information about available physical devices (e.g. GPU(s), APU(s), etc.) and physical device related resources (e.g. Queue Families, Queues per Family, etc. )
 6. Now two options are available to acquire device and device resource related functions (functions with first param of `VkDevice`, `VkQueue` or `VkCommandBuffer`):
-	* Call `DVulkanLoader.loadDeviceLevelFunctions(instance)`, the acquired functions call indirectly through the `VkInstance` and will be internally dispatched by the implementation
-	* Call `DVulkanLoader.loadDeviceLevelFunctions(device)`, the acquired functions call directly the logical `VkDevice` and related resources. In a multi physical device environment this function must be called once per required physical device. 
+	* Call `EruptedLoader.loadDeviceLevelFunctions(instance)`, the acquired functions call indirectly through the `VkInstance` and will be internally dispatched by the implementation
+	* Call `EruptedLoader.loadDeviceLevelFunctions(device)`, the acquired functions call directly the logical `VkDevice` and related resources. In a multi physical device environment this function must be called once per required physical device. 
 
-To use in the `with-derelict-loader` configuration, follow the above steps, but call `DVulkanDerelict.load()` instead of performing steps two and three.
+To use in the `with-derelict-loader` configuration, follow the above steps, but call `EruptedDerelict.load()` instead of performing steps two and three.
 
 Available configurations:
 * `with-derelict-loader` fetches derelictUtil, gets a pointer to  `vkGetInstanceProcAddr` and loads few additional global functions

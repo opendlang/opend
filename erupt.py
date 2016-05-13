@@ -130,7 +130,8 @@ class DGenerator(OutputGenerator):
 		self.deviceLevelFunctions = ""
 		self.sections = dict([(section, []) for section in self.ALL_SECTIONS])
 		self.functionTypeName = dict()
-		self.functionVars = ""
+		self.functionTypeDefinition = ""
+		self.dispatchTypeDefinition = ""
 		self.opaqueStruct = set()
 		self.surfaceExtensions = {
 			"// VK_KHR_android_surface" : ["VK_USE_PLATFORM_ANDROID_KHR",	"public import android.native_window;\n"],
@@ -160,7 +161,7 @@ class DGenerator(OutputGenerator):
 		write(FUNCTIONS_HEADER.format(PACKAGE_PREFIX = genOpts.packagePrefix), file=self.funcsFile)
 	
 	def endFile(self):
-		write("}}\n\n__gshared {{{0}\n}}\n".format(self.functionVars), file=self.funcsFile)
+		write("}}\n\n__gshared {{{GLOBAL_FUNCTION_DEFINITIONS}\n}}\n".format(GLOBAL_FUNCTION_DEFINITIONS = self.functionTypeDefinition), file=self.funcsFile)
 		write("""\
 struct {NAME_PREFIX}Loader {{
 	@disable this();
@@ -193,15 +194,37 @@ struct {NAME_PREFIX}Loader {{
 	}}
 
 	/// with a valid VkDevice call this function to retrieve VkDevice, VkQueue and VkCommandBuffer related functions
-	/// the functions call directly VkDevice and related resources and must be retrieved once per logical VkDevice
+	/// the functions call directly VkDevice and related resources and can be retrieved for one and only one VkDevice
+	/// otherwise a call to with to VkDevices would overwrite the __gshared functions of another previously called VkDevice
+	/// use createGroupedDeviceLevelFunctions bellow if usage of multiple VkDevices is required
 	static void loadDeviceLevelFunctions(VkDevice device) {{
 		assert(vkGetDeviceProcAddr !is null, "Must call {NAME_PREFIX}Loader.loadInstanceLevelFunctions before {NAME_PREFIX}Loader.loadDeviceLevelFunctions");\
 """.format(NAME_PREFIX = self.genOpts.namePrefix) +
 		self.deviceLevelFunctions.format(INSTANCE_OR_DEVICE = "Device", instance_or_device = "device"), file=self.funcsFile)
 		write("""\
 	}}
+
+	/// with a valid VkDevice call this function to retrieve VkDevice, VkQueue and VkCommandBuffer related functions grouped in a DispatchDevice struct
+	/// the functions call directly VkDevice and related resources and can be retrieved for any VkDevice
+	static DispatchDevice createDispatchDeviceLevelFunctions(VkDevice device) {{
+		assert(vkGetDeviceProcAddr !is null, "Must call {NAME_PREFIX}Loader.loadInstanceLevelFunctions before {NAME_PREFIX}Loader.loadDeviceLevelFunctions");
+		
+		DispatchDevice dispatchDevice;
+		with( dispatchDevice ) {{\
+""".format(NAME_PREFIX = self.genOpts.namePrefix) +
+		self.deviceLevelFunctions.format(INSTANCE_OR_DEVICE = "Device", instance_or_device = "device").replace('\t\t', '\t\t\t'), file=self.funcsFile)
+		write("""\
+		}}
+
+		return dispatchDevice;
+	}}
 }}
 
+// struct to group per device deviceLevelFunctions into a custom namespace
+private struct DispatchDevice {{{DISPATCH_FUNCTION_DEFINITIONS}
+}}
+
+// Derelict loader to acquire entry point vkGetInstanceProcAddr
 version({NAME_PREFIX}LoadFromDerelict) {{
 	import derelict.util.loader;
 	import derelict.util.system;
@@ -213,7 +236,7 @@ version({NAME_PREFIX}LoadFromDerelict) {{
 			static assert(0,"Need to implement Vulkan libNames for this operating system.");
 	}}
 	
-	class {NAME_PREFIX}DerelictLoader : SharedLibLoader {{
+	class Derelict{NAME_PREFIX}Loader : SharedLibLoader {{
 		this() {{
 			super(libNames);
 		}}
@@ -225,14 +248,14 @@ version({NAME_PREFIX}LoadFromDerelict) {{
 		}}
 	}}
 	
-	__gshared {NAME_PREFIX}DerelictLoader {NAME_PREFIX}Derelict;
+	__gshared Derelict{NAME_PREFIX}Loader Derelict{NAME_PREFIX};
 
 	shared static this() {{
-		{NAME_PREFIX}Derelict = new {NAME_PREFIX}DerelictLoader();
+		Derelict{NAME_PREFIX} = new Derelict{NAME_PREFIX}Loader();
 	}}
 }}
 
-""".format(NAME_PREFIX = self.genOpts.namePrefix), file=self.funcsFile)
+""".format(NAME_PREFIX = self.genOpts.namePrefix, DISPATCH_FUNCTION_DEFINITIONS = self.dispatchTypeDefinition), file=self.funcsFile)
 
 		self.typesFile.close()
 		self.funcsFile.close()
@@ -293,29 +316,31 @@ version({NAME_PREFIX}LoadFromDerelict) {{
 
 			# write function aliases into functions.d and build strings for later injection
 			if self.sections['command']:
-				# write the aliases to function types
-				write("\n{0} function types".format(self.currentFeature), file=self.typesFile)
-				if self.isSurfaceExtension: write("\t" + surfaceVersion, file=self.typesFile)
-				write(extIndent + ('\n' + extIndent).join(self.sections['command']), file=self.typesFile)
-				if self.isSurfaceExtension: write("\t}", file=self.typesFile)
-
 				# update indention of currentFeature for functions.d content
 				self.currentFeature = "\t" + self.currentFeature;
+
+				# write the aliases to function types
+				write("\n{0}".format(self.currentFeature), file=self.funcsFile)
+				if self.isSurfaceExtension: write("\t" + surfaceVersion, file=self.funcsFile)
+				write(extIndent + ('\n' + extIndent).join(self.sections['command']), file=self.funcsFile)
+				if self.isSurfaceExtension: write("\t}", file=self.funcsFile)
+
+
 
 				# capture if function is a instance or device level function
 				inInstanceLevelFuncNames = False
 				inDeviceLevelFuncNames = False
 
 				# comment the current feature
-				self.functionVars += "\n\n{0}".format(self.currentFeature)
+				self.functionTypeDefinition += "\n\n{0}".format(self.currentFeature)
 
 				# surface extension version directive
-				if self.isSurfaceExtension: self.functionVars += "\n\t" + surfaceVersion
+				if self.isSurfaceExtension: self.functionTypeDefinition += "\n\t" + surfaceVersion
 
 				# create string of functionTypes functionVars
 				for command in self.sections['command']:
 					name = self.functionTypeName[command]
-					self.functionVars += "\n\t{1}PFN_{0} {0};".format(name, extIndent)
+					self.functionTypeDefinition += "\n\t{1}PFN_{0} {0};".format(name, extIndent)
 
 					# query if the current function is in instance or deviceLevelFuncNames for the next step
 					if not inInstanceLevelFuncNames and name in self.instanceLevelFuncNames:
@@ -325,7 +350,7 @@ version({NAME_PREFIX}LoadFromDerelict) {{
 						inDeviceLevelFuncNames = True
 
 				# surface extension version closing curly brace
-				if self.isSurfaceExtension: self.functionVars += "\n\t}"
+				if self.isSurfaceExtension: self.functionTypeDefinition += "\n\t}"
 
 				# create a strings to load instance level functions
 				if inInstanceLevelFuncNames:
@@ -360,6 +385,9 @@ version({NAME_PREFIX}LoadFromDerelict) {{
 						name = self.functionTypeName[command]
 						if name in self.deviceLevelFuncNames:
 							self.deviceLevelFunctions += "\n\t\t{1}{0} = cast(typeof({0})) vkGet{{INSTANCE_OR_DEVICE}}ProcAddr({{instance_or_device}}, \"{0}\");".format(name, extIndent)
+
+							# this function type definitions end up in the DispatchDevice struct
+							self.dispatchTypeDefinition += "\n\t{1}PFN_{0} {0};".format(name, extIndent)
 					
 					# surface extension version closing curly brace
 					if self.isSurfaceExtension: self.deviceLevelFunctions += "\n\t\t}"	
@@ -530,7 +558,7 @@ version({NAME_PREFIX}LoadFromDerelict) {{
 		proto = cmdinfo.elem.find("proto")
 		returnType = convertTypeConst(getFullType(proto).strip())
 		params = ", ".join(convertTypeConst(getFullType(param, self.opaqueStruct).strip()) + " " + param.find("name").text for param in cmdinfo.elem.findall("param"))
-		funTypeName = "alias PFN_{0} = {1} function({2});".format(name, returnType, params)
+		funTypeName = "\talias PFN_{0} = {1} function({2});".format(name, returnType, params)
 		self.appendSection('command', funTypeName)
 		self.functionTypeName[funTypeName] = name
 

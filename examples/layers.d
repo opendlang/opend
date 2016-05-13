@@ -7,14 +7,14 @@ import std.exception;
 import std.conv;
 import std.string;
 
-import dvulkan;
+import erupted;
 
 private void enforceVK(VkResult res) {
 	enforce(res == VK_SUCCESS, res.to!string);
 }
 
 int main() {
-	DVulkanDerelict.load();
+	DerelictErupted.load();
 	
 	uint numLayerProps;
 	enforceVK(vkEnumerateInstanceLayerProperties(&numLayerProps, null));
@@ -46,7 +46,7 @@ int main() {
 	
 	VkInstance instance;
 	enforceVK(vkCreateInstance(&instInfo, null, &instance));
-	DVulkanLoader.loadInstanceLevelFunctions(instance);
+	EruptedLoader;.loadInstanceLevelFunctions(instance);
 	scope(exit) vkDestroyInstance(instance, null);
 	
 	uint numDevices;

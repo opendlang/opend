@@ -1,8 +1,8 @@
 {
-	"name": "d-vulkan",
+	"name": "erupted",
 	"description": "Auto-generated D bindings for Vulkan",
-	"copyright": "Copyright 2015-2016 The Khronos Group Inc.; Copyright 2016, Alex Parrill",
-	"authors": ["Alex Parrill"],
+	"copyright": "Copyright 2015-2016 The Khronos Group Inc.; Copyright 2016, Alex Parrill, Peter Particle",
+	"authors": ["Alex Parrill", "Peter Particle"],
 	"targetType": "library",
 	"license": "BSD 2-clause",
 	"configurations": [
@@ -11,18 +11,7 @@
 		},
 		{
 			"name": "with-derelict-loader",
-			"versions": ["DVulkanLoadFromDerelict"],
-			"dependencies": {
-				"derelict-util": "~>2.0.4"
-			},
-		},
-		{
-			"name": "with-global-enums",
-			"versions": ["DVulkanGlobalEnums"]
-		},
-		{
-			"name": "with-derelict-loader-and-global-enums",
-			"versions": ["DVulkanLoadFromDerelict", "DVulkanGlobalEnums"],
+			"versions": ["EruptedLoadFromDerelict"],
 			"dependencies": {
 				"derelict-util": "~>2.0.4"
 			},
@@ -35,10 +24,10 @@
 			"targetType": "executable",
 			"sourceFiles": ["examples/devices.d"],
 			"dependencies": {
-				"d-vulkan": { "path": "." }
+				"erupted": { "path": "." }
 			},
 			"subConfigurations": {
-				"d-vulkan": "with-derelict-loader-and-global-enums"
+				"erupted": "with-derelict-loader"
 			}
 		},
 		{
@@ -47,10 +36,10 @@
 			"targetType": "executable",
 			"sourceFiles": ["examples/layers.d"],
 			"dependencies": {
-				"d-vulkan": { "path": "." }
+				"erupted": { "path": "." }
 			},
 			"subConfigurations": {
-				"d-vulkan": "with-derelict-loader-and-global-enums"
+				"erupted": "with-derelict-loader"
 			}
 		}
 	]

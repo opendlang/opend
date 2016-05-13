@@ -7,7 +7,7 @@ import std.exception;
 import std.conv;
 import std.string;
 
-import dvulkan;
+import erupted;
 
 private void enforceVK(VkResult res) {
 	enforce(res == VkResult.VK_SUCCESS, res.to!string);
@@ -16,7 +16,7 @@ private void enforceVK(VkResult res) {
 int main() {
 
 	// load global level functions 
-	DVulkanDerelict.load();
+	DerelictErupted.load();
 	
 	// prepare VkInstance creation
 	VkApplicationInfo appInfo = {
@@ -33,7 +33,7 @@ int main() {
 	enforceVK(vkCreateInstance(&instInfo, null, &instance));
 
 	// load instance level functions
-	DVulkanLoader.loadInstanceLevelFunctions(instance);
+	EruptedLoader.loadInstanceLevelFunctions(instance);
 
 	// destroy the instance at scope exist
 	scope(exit) {
@@ -45,11 +45,13 @@ int main() {
 	
 	// enumerate physical devices
 	uint numPhysDevices;
+	writeln("Before vkEnumeratePhysicalDevices");
 	enforceVK(vkEnumeratePhysicalDevices(instance, &numPhysDevices, null));
 	if (numPhysDevices == 0) {
 		stderr.writeln("No physical devices available.");
 		return 1;
 	}
+	writeln("After vkEnumeratePhysicalDevices");
 	
 	writeln;
 	writeln("Found ", numPhysDevices, " physical device(s)\n==========================");
@@ -144,10 +146,10 @@ int main() {
 	}
 
 	// load all Vulkan functions for the device
-	DVulkanLoader.loadDeviceLevelFunctions(device);
+	EruptedLoader.loadDeviceLevelFunctions(device);
 
 	// alternatively load all Vulkan functions for all devices
-	//DVulkanLoader.loadDeviceLevelFunctions(device);
+	//EruptedLoader;.loadDeviceLevelFunctions(device);
 
 	// get the graphics queue to submit command buffers
 	VkQueue queue;
