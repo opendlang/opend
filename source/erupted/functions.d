@@ -1108,6 +1108,10 @@ version(EruptedFromDerelict) {
 	private {
 		version(Windows)
 			enum libNames = "vulkan-1.dll";
+
+		else version(Posix)
+			enum libNames = "libvulkan.so";
+
 		else
 			static assert(0,"Need to implement Vulkan libNames for this operating system.");
 	}
