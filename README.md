@@ -43,9 +43,9 @@ the easiest way is with subConfigurations:
 This README contains a couple of examples and basic documentation on how
 to extend GGPlotD. API documentation is automatically generated and put
 online (including examples) under
-http://blackedder.github.io/ggplotd/ggplotd.html . For example for the
+http://blackedder.github.io/ggplotd/index.html . For example for the
 available geom* functions see:
-http://blackedder.github.io/ggplotd/geom.html
+http://blackedder.github.io/ggplotd/ggplotd/geom.html
 
 ### Examples
 
@@ -123,10 +123,9 @@ void main()
 ```
 
 A 2D version of the histogram is also implemented in geomHist2D. See the
-example in the
-[documentation](http://blackedder.github.io/ggplotd/ggplotd.html) for the
-code used to create this figure. Note that we use another colour gradient
-here than the default.
+[documentation](http://blackedder.github.io/ggplotd/ggplotd/geom.html#geomHist2D)
+for the code used to create this figure. Note that we use another colour
+gradient here than the default.
 
 ![Histogram 2D](http://blackedder.github.io/ggplotd/images/hist2D.svg)
 
@@ -345,7 +344,7 @@ found in the [code](./source/ggplotd/geom.d#L571).
 
 ### stat*
 
-The [stat* functions](http://blackedder.github.io/ggplotd/stat.html) are
+The [stat* functions](http://blackedder.github.io/ggplotd/ggplotd/stat.html) are
 meant to calculate different statistics from data. The results is an Aes
 that can be passed to a geom* function and plotted. Currently the
 available stat* functions are very limited, but the plan is to provide
