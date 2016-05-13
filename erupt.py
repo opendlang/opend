@@ -47,20 +47,20 @@ alias int16_t = short;
 alias int32_t = int;
 alias int64_t = long;
 
-@nogc pure nothrow {{
-	uint VK_MAKE_VERSION(uint major, uint minor, uint patch) {{
-		return (major << 22) | (minor << 12) | (patch);
-	}}
-	uint VK_VERSION_MAJOR(uint ver) {{
-		return ver >> 22;
-	}}
-	uint VK_VERSION_MINOR(uint ver) {{
-		return (ver >> 12) & 0x3ff;
-	}}
-	uint VK_VERSION_PATCH(uint ver) {{
-		return ver & 0xfff;
-	}}
+@nogc pure nothrow:
+uint VK_MAKE_VERSION(uint major, uint minor, uint patch) {{
+	return (major << 22) | (minor << 12) | (patch);
 }}
+uint VK_VERSION_MAJOR(uint ver) {{
+	return ver >> 22;
+}}
+uint VK_VERSION_MINOR(uint ver) {{
+	return (ver >> 12) & 0x3ff;
+}}
+uint VK_VERSION_PATCH(uint ver) {{
+	return ver & 0xfff;
+}}
+
 
 enum VK_NULL_HANDLE = null;
 
@@ -251,22 +251,30 @@ version({NAME_PREFIX}LoadFromDerelict) {{
 		if self.emit:
 			# write all types into types.d
 			extIndent = self.surfaceExtensionVersionIndent
-			#write(self.currentFeature, file=self.testsFile)
 			write("\n" + self.currentFeature, file=self.typesFile)
 			surfaceVersion = ""
 			if self.isSurfaceExtension:
 				surfaceVersion = "version( {0} ) {{".format(self.surfaceExtensions[self.currentFeature][0])
 				write("{0}\n\t{1}".format(surfaceVersion, self.surfaceExtensions[self.currentFeature][1]), file=self.typesFile)
 
+			
+			isFirstSectionInFeature = True		# for output file formating
 			for section in self.TYPE_SECTIONS:
 				# write contents of type section
 				contents = self.sections[section]
 				if contents:
 					# check if opaque structs were registered and write tem into types file	
-					if section == 'struct' and self.opaqueStruct:
-						for opaque in self.opaqueStruct:
-							write("{1}struct {0};".format(opaque, extIndent), file=self.typesFile)
+					if section == 'struct':
+						if self.opaqueStruct:
+							for opaque in self.opaqueStruct:
+								write("{1}struct {0};".format(opaque, extIndent), file=self.typesFile)
+							write('', file=self.typesFile)
+
+					elif not isFirstSectionInFeature:
 						write('', file=self.typesFile)
+
+					# for output file formating
+					isFirstSectionInFeature = False
 
 					# write the rest of the contents, eg. enums, structs, etc. into types file
 					for content in self.sections[section]:
@@ -283,16 +291,16 @@ version({NAME_PREFIX}LoadFromDerelict) {{
 				if self.isSurfaceExtension: write("}", file=self.funcsFile)
 				write('', file=self.funcsFile)
 
-			# update indention of currentFeature
-			self.currentFeature = "\t" + self.currentFeature;
-
 			# write function aliases into functions.d and build strings for later injection
 			if self.sections['command']:
 				# write the aliases to function types
-				write("\n{0}".format(self.currentFeature), file=self.funcsFile)
-				if self.isSurfaceExtension: write("\t" + surfaceVersion, file=self.funcsFile)
-				write(extIndent + ('\n' + extIndent).join(self.sections['command']), file=self.funcsFile)
-				if self.isSurfaceExtension: write("\t}", file=self.funcsFile)
+				write("\n{0} function types".format(self.currentFeature), file=self.typesFile)
+				if self.isSurfaceExtension: write("\t" + surfaceVersion, file=self.typesFile)
+				write(extIndent + ('\n' + extIndent).join(self.sections['command']), file=self.typesFile)
+				if self.isSurfaceExtension: write("\t}", file=self.typesFile)
+
+				# update indention of currentFeature for functions.d content
+				self.currentFeature = "\t" + self.currentFeature;
 
 				# capture if function is a instance or device level function
 				inInstanceLevelFuncNames = False
@@ -387,6 +395,7 @@ version({NAME_PREFIX}LoadFromDerelict) {{
 			returnType = re.match(re_funcptr, typeinfo.elem.text).group(1)
 			params = "".join(islice(typeinfo.elem.itertext(), 2, None))[2:]
 			if params == "void);" : params = ");"
+			else: params = ' '.join(' '.join(line.strip() for line in params.splitlines()).split())
 			self.appendSection("funcpointer", "alias {0} = {1} function({2}".format(name, returnType, params))
 			
 		elif category == "struct" or category == "union":
@@ -521,7 +530,7 @@ version({NAME_PREFIX}LoadFromDerelict) {{
 		proto = cmdinfo.elem.find("proto")
 		returnType = convertTypeConst(getFullType(proto).strip())
 		params = ", ".join(convertTypeConst(getFullType(param, self.opaqueStruct).strip()) + " " + param.find("name").text for param in cmdinfo.elem.findall("param"))
-		funTypeName = "\talias PFN_{0} = {1} function({2});".format(name, returnType, params)
+		funTypeName = "alias PFN_{0} = {1} function({2});".format(name, returnType, params)
 		self.appendSection('command', funTypeName)
 		self.functionTypeName[funTypeName] = name
 

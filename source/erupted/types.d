@@ -9,20 +9,20 @@ alias int16_t = short;
 alias int32_t = int;
 alias int64_t = long;
 
-@nogc pure nothrow {
-	uint VK_MAKE_VERSION(uint major, uint minor, uint patch) {
-		return (major << 22) | (minor << 12) | (patch);
-	}
-	uint VK_VERSION_MAJOR(uint ver) {
-		return ver >> 22;
-	}
-	uint VK_VERSION_MINOR(uint ver) {
-		return (ver >> 12) & 0x3ff;
-	}
-	uint VK_VERSION_PATCH(uint ver) {
-		return ver & 0xfff;
-	}
+@nogc pure nothrow:
+uint VK_MAKE_VERSION(uint major, uint minor, uint patch) {
+	return (major << 22) | (minor << 12) | (patch);
 }
+uint VK_VERSION_MAJOR(uint ver) {
+	return ver >> 22;
+}
+uint VK_VERSION_MINOR(uint ver) {
+	return (ver >> 12) & 0x3ff;
+}
+uint VK_VERSION_PATCH(uint ver) {
+	return ver & 0xfff;
+}
+
 
 enum VK_NULL_HANDLE = null;
 
@@ -39,6 +39,7 @@ alias VkFlags = uint32_t;
 alias VkBool32 = uint32_t;
 alias VkDeviceSize = uint64_t;
 alias VkSampleMask = uint32_t;
+
 mixin(VK_DEFINE_HANDLE!q{VkInstance});
 mixin(VK_DEFINE_HANDLE!q{VkPhysicalDevice});
 mixin(VK_DEFINE_HANDLE!q{VkDevice});
@@ -64,6 +65,7 @@ mixin(VK_DEFINE_NON_DISPATCHABLE_HANDLE!q{VkDescriptorPool});
 mixin(VK_DEFINE_NON_DISPATCHABLE_HANDLE!q{VkDescriptorSet});
 mixin(VK_DEFINE_NON_DISPATCHABLE_HANDLE!q{VkFramebuffer});
 mixin(VK_DEFINE_NON_DISPATCHABLE_HANDLE!q{VkCommandPool});
+
 enum VK_LOD_CLAMP_NONE = 1000.0f;
 enum VK_REMAINING_MIP_LEVELS = (~0U);
 enum VK_REMAINING_ARRAY_LAYERS = (~0U);
@@ -80,6 +82,7 @@ enum VK_MAX_MEMORY_HEAPS = 16;
 enum VK_MAX_EXTENSION_NAME_SIZE = 256;
 enum VK_MAX_DESCRIPTION_SIZE = 256;
 
+
 enum VkPipelineCacheHeaderVersion {
 	VK_PIPELINE_CACHE_HEADER_VERSION_ONE = 1,
 	VK_PIPELINE_CACHE_HEADER_VERSION_BEGIN_RANGE = VK_PIPELINE_CACHE_HEADER_VERSION_ONE,
@@ -88,7 +91,7 @@ enum VkPipelineCacheHeaderVersion {
 	VK_PIPELINE_CACHE_HEADER_VERSION_MAX_ENUM = 0x7FFFFFFF
 }
 
-// VkPipelineCacheHeaderVersion gloabl enums
+// VkPipelineCacheHeaderVersion global enums
 enum VK_PIPELINE_CACHE_HEADER_VERSION_ONE = VkPipelineCacheHeaderVersion.VK_PIPELINE_CACHE_HEADER_VERSION_ONE;
 enum VK_PIPELINE_CACHE_HEADER_VERSION_BEGIN_RANGE = VkPipelineCacheHeaderVersion.VK_PIPELINE_CACHE_HEADER_VERSION_BEGIN_RANGE;
 enum VK_PIPELINE_CACHE_HEADER_VERSION_END_RANGE = VkPipelineCacheHeaderVersion.VK_PIPELINE_CACHE_HEADER_VERSION_END_RANGE;
@@ -127,7 +130,7 @@ enum VkResult {
 	VK_RESULT_MAX_ENUM = 0x7FFFFFFF
 }
 
-// VkResult gloabl enums
+// VkResult global enums
 enum VK_SUCCESS = VkResult.VK_SUCCESS;
 enum VK_NOT_READY = VkResult.VK_NOT_READY;
 enum VK_TIMEOUT = VkResult.VK_TIMEOUT;
@@ -230,7 +233,7 @@ enum VkStructureType {
 	VK_STRUCTURE_TYPE_MAX_ENUM = 0x7FFFFFFF
 }
 
-// VkStructureType gloabl enums
+// VkStructureType global enums
 enum VK_STRUCTURE_TYPE_APPLICATION_INFO = VkStructureType.VK_STRUCTURE_TYPE_APPLICATION_INFO;
 enum VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO = VkStructureType.VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
 enum VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO = VkStructureType.VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
@@ -313,7 +316,7 @@ enum VkSystemAllocationScope {
 	VK_SYSTEM_ALLOCATION_SCOPE_MAX_ENUM = 0x7FFFFFFF
 }
 
-// VkSystemAllocationScope gloabl enums
+// VkSystemAllocationScope global enums
 enum VK_SYSTEM_ALLOCATION_SCOPE_COMMAND = VkSystemAllocationScope.VK_SYSTEM_ALLOCATION_SCOPE_COMMAND;
 enum VK_SYSTEM_ALLOCATION_SCOPE_OBJECT = VkSystemAllocationScope.VK_SYSTEM_ALLOCATION_SCOPE_OBJECT;
 enum VK_SYSTEM_ALLOCATION_SCOPE_CACHE = VkSystemAllocationScope.VK_SYSTEM_ALLOCATION_SCOPE_CACHE;
@@ -332,7 +335,7 @@ enum VkInternalAllocationType {
 	VK_INTERNAL_ALLOCATION_TYPE_MAX_ENUM = 0x7FFFFFFF
 }
 
-// VkInternalAllocationType gloabl enums
+// VkInternalAllocationType global enums
 enum VK_INTERNAL_ALLOCATION_TYPE_EXECUTABLE = VkInternalAllocationType.VK_INTERNAL_ALLOCATION_TYPE_EXECUTABLE;
 enum VK_INTERNAL_ALLOCATION_TYPE_BEGIN_RANGE = VkInternalAllocationType.VK_INTERNAL_ALLOCATION_TYPE_BEGIN_RANGE;
 enum VK_INTERNAL_ALLOCATION_TYPE_END_RANGE = VkInternalAllocationType.VK_INTERNAL_ALLOCATION_TYPE_END_RANGE;
@@ -531,7 +534,7 @@ enum VkFormat {
 	VK_FORMAT_MAX_ENUM = 0x7FFFFFFF
 }
 
-// VkFormat gloabl enums
+// VkFormat global enums
 enum VK_FORMAT_UNDEFINED = VkFormat.VK_FORMAT_UNDEFINED;
 enum VK_FORMAT_R4G4_UNORM_PACK8 = VkFormat.VK_FORMAT_R4G4_UNORM_PACK8;
 enum VK_FORMAT_R4G4B4A4_UNORM_PACK16 = VkFormat.VK_FORMAT_R4G4B4A4_UNORM_PACK16;
@@ -732,7 +735,7 @@ enum VkImageType {
 	VK_IMAGE_TYPE_MAX_ENUM = 0x7FFFFFFF
 }
 
-// VkImageType gloabl enums
+// VkImageType global enums
 enum VK_IMAGE_TYPE_1D = VkImageType.VK_IMAGE_TYPE_1D;
 enum VK_IMAGE_TYPE_2D = VkImageType.VK_IMAGE_TYPE_2D;
 enum VK_IMAGE_TYPE_3D = VkImageType.VK_IMAGE_TYPE_3D;
@@ -750,7 +753,7 @@ enum VkImageTiling {
 	VK_IMAGE_TILING_MAX_ENUM = 0x7FFFFFFF
 }
 
-// VkImageTiling gloabl enums
+// VkImageTiling global enums
 enum VK_IMAGE_TILING_OPTIMAL = VkImageTiling.VK_IMAGE_TILING_OPTIMAL;
 enum VK_IMAGE_TILING_LINEAR = VkImageTiling.VK_IMAGE_TILING_LINEAR;
 enum VK_IMAGE_TILING_BEGIN_RANGE = VkImageTiling.VK_IMAGE_TILING_BEGIN_RANGE;
@@ -770,7 +773,7 @@ enum VkPhysicalDeviceType {
 	VK_PHYSICAL_DEVICE_TYPE_MAX_ENUM = 0x7FFFFFFF
 }
 
-// VkPhysicalDeviceType gloabl enums
+// VkPhysicalDeviceType global enums
 enum VK_PHYSICAL_DEVICE_TYPE_OTHER = VkPhysicalDeviceType.VK_PHYSICAL_DEVICE_TYPE_OTHER;
 enum VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU = VkPhysicalDeviceType.VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU;
 enum VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU = VkPhysicalDeviceType.VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU;
@@ -791,7 +794,7 @@ enum VkQueryType {
 	VK_QUERY_TYPE_MAX_ENUM = 0x7FFFFFFF
 }
 
-// VkQueryType gloabl enums
+// VkQueryType global enums
 enum VK_QUERY_TYPE_OCCLUSION = VkQueryType.VK_QUERY_TYPE_OCCLUSION;
 enum VK_QUERY_TYPE_PIPELINE_STATISTICS = VkQueryType.VK_QUERY_TYPE_PIPELINE_STATISTICS;
 enum VK_QUERY_TYPE_TIMESTAMP = VkQueryType.VK_QUERY_TYPE_TIMESTAMP;
@@ -809,7 +812,7 @@ enum VkSharingMode {
 	VK_SHARING_MODE_MAX_ENUM = 0x7FFFFFFF
 }
 
-// VkSharingMode gloabl enums
+// VkSharingMode global enums
 enum VK_SHARING_MODE_EXCLUSIVE = VkSharingMode.VK_SHARING_MODE_EXCLUSIVE;
 enum VK_SHARING_MODE_CONCURRENT = VkSharingMode.VK_SHARING_MODE_CONCURRENT;
 enum VK_SHARING_MODE_BEGIN_RANGE = VkSharingMode.VK_SHARING_MODE_BEGIN_RANGE;
@@ -834,7 +837,7 @@ enum VkImageLayout {
 	VK_IMAGE_LAYOUT_MAX_ENUM = 0x7FFFFFFF
 }
 
-// VkImageLayout gloabl enums
+// VkImageLayout global enums
 enum VK_IMAGE_LAYOUT_UNDEFINED = VkImageLayout.VK_IMAGE_LAYOUT_UNDEFINED;
 enum VK_IMAGE_LAYOUT_GENERAL = VkImageLayout.VK_IMAGE_LAYOUT_GENERAL;
 enum VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL = VkImageLayout.VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
@@ -864,7 +867,7 @@ enum VkImageViewType {
 	VK_IMAGE_VIEW_TYPE_MAX_ENUM = 0x7FFFFFFF
 }
 
-// VkImageViewType gloabl enums
+// VkImageViewType global enums
 enum VK_IMAGE_VIEW_TYPE_1D = VkImageViewType.VK_IMAGE_VIEW_TYPE_1D;
 enum VK_IMAGE_VIEW_TYPE_2D = VkImageViewType.VK_IMAGE_VIEW_TYPE_2D;
 enum VK_IMAGE_VIEW_TYPE_3D = VkImageViewType.VK_IMAGE_VIEW_TYPE_3D;
@@ -891,7 +894,7 @@ enum VkComponentSwizzle {
 	VK_COMPONENT_SWIZZLE_MAX_ENUM = 0x7FFFFFFF
 }
 
-// VkComponentSwizzle gloabl enums
+// VkComponentSwizzle global enums
 enum VK_COMPONENT_SWIZZLE_IDENTITY = VkComponentSwizzle.VK_COMPONENT_SWIZZLE_IDENTITY;
 enum VK_COMPONENT_SWIZZLE_ZERO = VkComponentSwizzle.VK_COMPONENT_SWIZZLE_ZERO;
 enum VK_COMPONENT_SWIZZLE_ONE = VkComponentSwizzle.VK_COMPONENT_SWIZZLE_ONE;
@@ -913,7 +916,7 @@ enum VkVertexInputRate {
 	VK_VERTEX_INPUT_RATE_MAX_ENUM = 0x7FFFFFFF
 }
 
-// VkVertexInputRate gloabl enums
+// VkVertexInputRate global enums
 enum VK_VERTEX_INPUT_RATE_VERTEX = VkVertexInputRate.VK_VERTEX_INPUT_RATE_VERTEX;
 enum VK_VERTEX_INPUT_RATE_INSTANCE = VkVertexInputRate.VK_VERTEX_INPUT_RATE_INSTANCE;
 enum VK_VERTEX_INPUT_RATE_BEGIN_RANGE = VkVertexInputRate.VK_VERTEX_INPUT_RATE_BEGIN_RANGE;
@@ -939,7 +942,7 @@ enum VkPrimitiveTopology {
 	VK_PRIMITIVE_TOPOLOGY_MAX_ENUM = 0x7FFFFFFF
 }
 
-// VkPrimitiveTopology gloabl enums
+// VkPrimitiveTopology global enums
 enum VK_PRIMITIVE_TOPOLOGY_POINT_LIST = VkPrimitiveTopology.VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
 enum VK_PRIMITIVE_TOPOLOGY_LINE_LIST = VkPrimitiveTopology.VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
 enum VK_PRIMITIVE_TOPOLOGY_LINE_STRIP = VkPrimitiveTopology.VK_PRIMITIVE_TOPOLOGY_LINE_STRIP;
@@ -966,7 +969,7 @@ enum VkPolygonMode {
 	VK_POLYGON_MODE_MAX_ENUM = 0x7FFFFFFF
 }
 
-// VkPolygonMode gloabl enums
+// VkPolygonMode global enums
 enum VK_POLYGON_MODE_FILL = VkPolygonMode.VK_POLYGON_MODE_FILL;
 enum VK_POLYGON_MODE_LINE = VkPolygonMode.VK_POLYGON_MODE_LINE;
 enum VK_POLYGON_MODE_POINT = VkPolygonMode.VK_POLYGON_MODE_POINT;
@@ -984,7 +987,7 @@ enum VkFrontFace {
 	VK_FRONT_FACE_MAX_ENUM = 0x7FFFFFFF
 }
 
-// VkFrontFace gloabl enums
+// VkFrontFace global enums
 enum VK_FRONT_FACE_COUNTER_CLOCKWISE = VkFrontFace.VK_FRONT_FACE_COUNTER_CLOCKWISE;
 enum VK_FRONT_FACE_CLOCKWISE = VkFrontFace.VK_FRONT_FACE_CLOCKWISE;
 enum VK_FRONT_FACE_BEGIN_RANGE = VkFrontFace.VK_FRONT_FACE_BEGIN_RANGE;
@@ -1007,7 +1010,7 @@ enum VkCompareOp {
 	VK_COMPARE_OP_MAX_ENUM = 0x7FFFFFFF
 }
 
-// VkCompareOp gloabl enums
+// VkCompareOp global enums
 enum VK_COMPARE_OP_NEVER = VkCompareOp.VK_COMPARE_OP_NEVER;
 enum VK_COMPARE_OP_LESS = VkCompareOp.VK_COMPARE_OP_LESS;
 enum VK_COMPARE_OP_EQUAL = VkCompareOp.VK_COMPARE_OP_EQUAL;
@@ -1036,7 +1039,7 @@ enum VkStencilOp {
 	VK_STENCIL_OP_MAX_ENUM = 0x7FFFFFFF
 }
 
-// VkStencilOp gloabl enums
+// VkStencilOp global enums
 enum VK_STENCIL_OP_KEEP = VkStencilOp.VK_STENCIL_OP_KEEP;
 enum VK_STENCIL_OP_ZERO = VkStencilOp.VK_STENCIL_OP_ZERO;
 enum VK_STENCIL_OP_REPLACE = VkStencilOp.VK_STENCIL_OP_REPLACE;
@@ -1073,7 +1076,7 @@ enum VkLogicOp {
 	VK_LOGIC_OP_MAX_ENUM = 0x7FFFFFFF
 }
 
-// VkLogicOp gloabl enums
+// VkLogicOp global enums
 enum VK_LOGIC_OP_CLEAR = VkLogicOp.VK_LOGIC_OP_CLEAR;
 enum VK_LOGIC_OP_AND = VkLogicOp.VK_LOGIC_OP_AND;
 enum VK_LOGIC_OP_AND_REVERSE = VkLogicOp.VK_LOGIC_OP_AND_REVERSE;
@@ -1121,7 +1124,7 @@ enum VkBlendFactor {
 	VK_BLEND_FACTOR_MAX_ENUM = 0x7FFFFFFF
 }
 
-// VkBlendFactor gloabl enums
+// VkBlendFactor global enums
 enum VK_BLEND_FACTOR_ZERO = VkBlendFactor.VK_BLEND_FACTOR_ZERO;
 enum VK_BLEND_FACTOR_ONE = VkBlendFactor.VK_BLEND_FACTOR_ONE;
 enum VK_BLEND_FACTOR_SRC_COLOR = VkBlendFactor.VK_BLEND_FACTOR_SRC_COLOR;
@@ -1158,7 +1161,7 @@ enum VkBlendOp {
 	VK_BLEND_OP_MAX_ENUM = 0x7FFFFFFF
 }
 
-// VkBlendOp gloabl enums
+// VkBlendOp global enums
 enum VK_BLEND_OP_ADD = VkBlendOp.VK_BLEND_OP_ADD;
 enum VK_BLEND_OP_SUBTRACT = VkBlendOp.VK_BLEND_OP_SUBTRACT;
 enum VK_BLEND_OP_REVERSE_SUBTRACT = VkBlendOp.VK_BLEND_OP_REVERSE_SUBTRACT;
@@ -1185,7 +1188,7 @@ enum VkDynamicState {
 	VK_DYNAMIC_STATE_MAX_ENUM = 0x7FFFFFFF
 }
 
-// VkDynamicState gloabl enums
+// VkDynamicState global enums
 enum VK_DYNAMIC_STATE_VIEWPORT = VkDynamicState.VK_DYNAMIC_STATE_VIEWPORT;
 enum VK_DYNAMIC_STATE_SCISSOR = VkDynamicState.VK_DYNAMIC_STATE_SCISSOR;
 enum VK_DYNAMIC_STATE_LINE_WIDTH = VkDynamicState.VK_DYNAMIC_STATE_LINE_WIDTH;
@@ -1210,7 +1213,7 @@ enum VkFilter {
 	VK_FILTER_MAX_ENUM = 0x7FFFFFFF
 }
 
-// VkFilter gloabl enums
+// VkFilter global enums
 enum VK_FILTER_NEAREST = VkFilter.VK_FILTER_NEAREST;
 enum VK_FILTER_LINEAR = VkFilter.VK_FILTER_LINEAR;
 enum VK_FILTER_CUBIC_IMG = VkFilter.VK_FILTER_CUBIC_IMG;
@@ -1228,7 +1231,7 @@ enum VkSamplerMipmapMode {
 	VK_SAMPLER_MIPMAP_MODE_MAX_ENUM = 0x7FFFFFFF
 }
 
-// VkSamplerMipmapMode gloabl enums
+// VkSamplerMipmapMode global enums
 enum VK_SAMPLER_MIPMAP_MODE_NEAREST = VkSamplerMipmapMode.VK_SAMPLER_MIPMAP_MODE_NEAREST;
 enum VK_SAMPLER_MIPMAP_MODE_LINEAR = VkSamplerMipmapMode.VK_SAMPLER_MIPMAP_MODE_LINEAR;
 enum VK_SAMPLER_MIPMAP_MODE_BEGIN_RANGE = VkSamplerMipmapMode.VK_SAMPLER_MIPMAP_MODE_BEGIN_RANGE;
@@ -1248,7 +1251,7 @@ enum VkSamplerAddressMode {
 	VK_SAMPLER_ADDRESS_MODE_MAX_ENUM = 0x7FFFFFFF
 }
 
-// VkSamplerAddressMode gloabl enums
+// VkSamplerAddressMode global enums
 enum VK_SAMPLER_ADDRESS_MODE_REPEAT = VkSamplerAddressMode.VK_SAMPLER_ADDRESS_MODE_REPEAT;
 enum VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT = VkSamplerAddressMode.VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT;
 enum VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE = VkSamplerAddressMode.VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
@@ -1272,7 +1275,7 @@ enum VkBorderColor {
 	VK_BORDER_COLOR_MAX_ENUM = 0x7FFFFFFF
 }
 
-// VkBorderColor gloabl enums
+// VkBorderColor global enums
 enum VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK = VkBorderColor.VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK;
 enum VK_BORDER_COLOR_INT_TRANSPARENT_BLACK = VkBorderColor.VK_BORDER_COLOR_INT_TRANSPARENT_BLACK;
 enum VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK = VkBorderColor.VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK;
@@ -1302,7 +1305,7 @@ enum VkDescriptorType {
 	VK_DESCRIPTOR_TYPE_MAX_ENUM = 0x7FFFFFFF
 }
 
-// VkDescriptorType gloabl enums
+// VkDescriptorType global enums
 enum VK_DESCRIPTOR_TYPE_SAMPLER = VkDescriptorType.VK_DESCRIPTOR_TYPE_SAMPLER;
 enum VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER = VkDescriptorType.VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 enum VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE = VkDescriptorType.VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
@@ -1329,7 +1332,7 @@ enum VkAttachmentLoadOp {
 	VK_ATTACHMENT_LOAD_OP_MAX_ENUM = 0x7FFFFFFF
 }
 
-// VkAttachmentLoadOp gloabl enums
+// VkAttachmentLoadOp global enums
 enum VK_ATTACHMENT_LOAD_OP_LOAD = VkAttachmentLoadOp.VK_ATTACHMENT_LOAD_OP_LOAD;
 enum VK_ATTACHMENT_LOAD_OP_CLEAR = VkAttachmentLoadOp.VK_ATTACHMENT_LOAD_OP_CLEAR;
 enum VK_ATTACHMENT_LOAD_OP_DONT_CARE = VkAttachmentLoadOp.VK_ATTACHMENT_LOAD_OP_DONT_CARE;
@@ -1347,7 +1350,7 @@ enum VkAttachmentStoreOp {
 	VK_ATTACHMENT_STORE_OP_MAX_ENUM = 0x7FFFFFFF
 }
 
-// VkAttachmentStoreOp gloabl enums
+// VkAttachmentStoreOp global enums
 enum VK_ATTACHMENT_STORE_OP_STORE = VkAttachmentStoreOp.VK_ATTACHMENT_STORE_OP_STORE;
 enum VK_ATTACHMENT_STORE_OP_DONT_CARE = VkAttachmentStoreOp.VK_ATTACHMENT_STORE_OP_DONT_CARE;
 enum VK_ATTACHMENT_STORE_OP_BEGIN_RANGE = VkAttachmentStoreOp.VK_ATTACHMENT_STORE_OP_BEGIN_RANGE;
@@ -1364,7 +1367,7 @@ enum VkPipelineBindPoint {
 	VK_PIPELINE_BIND_POINT_MAX_ENUM = 0x7FFFFFFF
 }
 
-// VkPipelineBindPoint gloabl enums
+// VkPipelineBindPoint global enums
 enum VK_PIPELINE_BIND_POINT_GRAPHICS = VkPipelineBindPoint.VK_PIPELINE_BIND_POINT_GRAPHICS;
 enum VK_PIPELINE_BIND_POINT_COMPUTE = VkPipelineBindPoint.VK_PIPELINE_BIND_POINT_COMPUTE;
 enum VK_PIPELINE_BIND_POINT_BEGIN_RANGE = VkPipelineBindPoint.VK_PIPELINE_BIND_POINT_BEGIN_RANGE;
@@ -1381,7 +1384,7 @@ enum VkCommandBufferLevel {
 	VK_COMMAND_BUFFER_LEVEL_MAX_ENUM = 0x7FFFFFFF
 }
 
-// VkCommandBufferLevel gloabl enums
+// VkCommandBufferLevel global enums
 enum VK_COMMAND_BUFFER_LEVEL_PRIMARY = VkCommandBufferLevel.VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 enum VK_COMMAND_BUFFER_LEVEL_SECONDARY = VkCommandBufferLevel.VK_COMMAND_BUFFER_LEVEL_SECONDARY;
 enum VK_COMMAND_BUFFER_LEVEL_BEGIN_RANGE = VkCommandBufferLevel.VK_COMMAND_BUFFER_LEVEL_BEGIN_RANGE;
@@ -1398,7 +1401,7 @@ enum VkIndexType {
 	VK_INDEX_TYPE_MAX_ENUM = 0x7FFFFFFF
 }
 
-// VkIndexType gloabl enums
+// VkIndexType global enums
 enum VK_INDEX_TYPE_UINT16 = VkIndexType.VK_INDEX_TYPE_UINT16;
 enum VK_INDEX_TYPE_UINT32 = VkIndexType.VK_INDEX_TYPE_UINT32;
 enum VK_INDEX_TYPE_BEGIN_RANGE = VkIndexType.VK_INDEX_TYPE_BEGIN_RANGE;
@@ -1415,13 +1418,14 @@ enum VkSubpassContents {
 	VK_SUBPASS_CONTENTS_MAX_ENUM = 0x7FFFFFFF
 }
 
-// VkSubpassContents gloabl enums
+// VkSubpassContents global enums
 enum VK_SUBPASS_CONTENTS_INLINE = VkSubpassContents.VK_SUBPASS_CONTENTS_INLINE;
 enum VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS = VkSubpassContents.VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS;
 enum VK_SUBPASS_CONTENTS_BEGIN_RANGE = VkSubpassContents.VK_SUBPASS_CONTENTS_BEGIN_RANGE;
 enum VK_SUBPASS_CONTENTS_END_RANGE = VkSubpassContents.VK_SUBPASS_CONTENTS_END_RANGE;
 enum VK_SUBPASS_CONTENTS_RANGE_SIZE = VkSubpassContents.VK_SUBPASS_CONTENTS_RANGE_SIZE;
 enum VK_SUBPASS_CONTENTS_MAX_ENUM = VkSubpassContents.VK_SUBPASS_CONTENTS_MAX_ENUM;
+
 alias VkInstanceCreateFlags = VkFlags;
 
 enum VkFormatFeatureFlagBits {
@@ -1442,7 +1446,7 @@ enum VkFormatFeatureFlagBits {
 	VK_FORMAT_FEATURE_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 }
 
-// VkFormatFeatureFlagBits gloabl enums
+// VkFormatFeatureFlagBits global enums
 enum VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT = VkFormatFeatureFlagBits.VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT;
 enum VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT = VkFormatFeatureFlagBits.VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT;
 enum VK_FORMAT_FEATURE_STORAGE_IMAGE_ATOMIC_BIT = VkFormatFeatureFlagBits.VK_FORMAT_FEATURE_STORAGE_IMAGE_ATOMIC_BIT;
@@ -1472,7 +1476,7 @@ enum VkImageUsageFlagBits {
 	VK_IMAGE_USAGE_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 }
 
-// VkImageUsageFlagBits gloabl enums
+// VkImageUsageFlagBits global enums
 enum VK_IMAGE_USAGE_TRANSFER_SRC_BIT = VkImageUsageFlagBits.VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
 enum VK_IMAGE_USAGE_TRANSFER_DST_BIT = VkImageUsageFlagBits.VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 enum VK_IMAGE_USAGE_SAMPLED_BIT = VkImageUsageFlagBits.VK_IMAGE_USAGE_SAMPLED_BIT;
@@ -1493,7 +1497,7 @@ enum VkImageCreateFlagBits {
 	VK_IMAGE_CREATE_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 }
 
-// VkImageCreateFlagBits gloabl enums
+// VkImageCreateFlagBits global enums
 enum VK_IMAGE_CREATE_SPARSE_BINDING_BIT = VkImageCreateFlagBits.VK_IMAGE_CREATE_SPARSE_BINDING_BIT;
 enum VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT = VkImageCreateFlagBits.VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT;
 enum VK_IMAGE_CREATE_SPARSE_ALIASED_BIT = VkImageCreateFlagBits.VK_IMAGE_CREATE_SPARSE_ALIASED_BIT;
@@ -1513,7 +1517,7 @@ enum VkSampleCountFlagBits {
 	VK_SAMPLE_COUNT_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 }
 
-// VkSampleCountFlagBits gloabl enums
+// VkSampleCountFlagBits global enums
 enum VK_SAMPLE_COUNT_1_BIT = VkSampleCountFlagBits.VK_SAMPLE_COUNT_1_BIT;
 enum VK_SAMPLE_COUNT_2_BIT = VkSampleCountFlagBits.VK_SAMPLE_COUNT_2_BIT;
 enum VK_SAMPLE_COUNT_4_BIT = VkSampleCountFlagBits.VK_SAMPLE_COUNT_4_BIT;
@@ -1532,7 +1536,7 @@ enum VkQueueFlagBits {
 	VK_QUEUE_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 }
 
-// VkQueueFlagBits gloabl enums
+// VkQueueFlagBits global enums
 enum VK_QUEUE_GRAPHICS_BIT = VkQueueFlagBits.VK_QUEUE_GRAPHICS_BIT;
 enum VK_QUEUE_COMPUTE_BIT = VkQueueFlagBits.VK_QUEUE_COMPUTE_BIT;
 enum VK_QUEUE_TRANSFER_BIT = VkQueueFlagBits.VK_QUEUE_TRANSFER_BIT;
@@ -1549,7 +1553,7 @@ enum VkMemoryPropertyFlagBits {
 	VK_MEMORY_PROPERTY_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 }
 
-// VkMemoryPropertyFlagBits gloabl enums
+// VkMemoryPropertyFlagBits global enums
 enum VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT = VkMemoryPropertyFlagBits.VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 enum VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT = VkMemoryPropertyFlagBits.VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
 enum VK_MEMORY_PROPERTY_HOST_COHERENT_BIT = VkMemoryPropertyFlagBits.VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
@@ -1563,7 +1567,7 @@ enum VkMemoryHeapFlagBits {
 	VK_MEMORY_HEAP_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 }
 
-// VkMemoryHeapFlagBits gloabl enums
+// VkMemoryHeapFlagBits global enums
 enum VK_MEMORY_HEAP_DEVICE_LOCAL_BIT = VkMemoryHeapFlagBits.VK_MEMORY_HEAP_DEVICE_LOCAL_BIT;
 enum VK_MEMORY_HEAP_FLAG_BITS_MAX_ENUM = VkMemoryHeapFlagBits.VK_MEMORY_HEAP_FLAG_BITS_MAX_ENUM;
 alias VkMemoryHeapFlags = VkFlags;
@@ -1591,7 +1595,7 @@ enum VkPipelineStageFlagBits {
 	VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 }
 
-// VkPipelineStageFlagBits gloabl enums
+// VkPipelineStageFlagBits global enums
 enum VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT = VkPipelineStageFlagBits.VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 enum VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT = VkPipelineStageFlagBits.VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT;
 enum VK_PIPELINE_STAGE_VERTEX_INPUT_BIT = VkPipelineStageFlagBits.VK_PIPELINE_STAGE_VERTEX_INPUT_BIT;
@@ -1621,7 +1625,7 @@ enum VkImageAspectFlagBits {
 	VK_IMAGE_ASPECT_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 }
 
-// VkImageAspectFlagBits gloabl enums
+// VkImageAspectFlagBits global enums
 enum VK_IMAGE_ASPECT_COLOR_BIT = VkImageAspectFlagBits.VK_IMAGE_ASPECT_COLOR_BIT;
 enum VK_IMAGE_ASPECT_DEPTH_BIT = VkImageAspectFlagBits.VK_IMAGE_ASPECT_DEPTH_BIT;
 enum VK_IMAGE_ASPECT_STENCIL_BIT = VkImageAspectFlagBits.VK_IMAGE_ASPECT_STENCIL_BIT;
@@ -1636,7 +1640,7 @@ enum VkSparseImageFormatFlagBits {
 	VK_SPARSE_IMAGE_FORMAT_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 }
 
-// VkSparseImageFormatFlagBits gloabl enums
+// VkSparseImageFormatFlagBits global enums
 enum VK_SPARSE_IMAGE_FORMAT_SINGLE_MIPTAIL_BIT = VkSparseImageFormatFlagBits.VK_SPARSE_IMAGE_FORMAT_SINGLE_MIPTAIL_BIT;
 enum VK_SPARSE_IMAGE_FORMAT_ALIGNED_MIP_SIZE_BIT = VkSparseImageFormatFlagBits.VK_SPARSE_IMAGE_FORMAT_ALIGNED_MIP_SIZE_BIT;
 enum VK_SPARSE_IMAGE_FORMAT_NONSTANDARD_BLOCK_SIZE_BIT = VkSparseImageFormatFlagBits.VK_SPARSE_IMAGE_FORMAT_NONSTANDARD_BLOCK_SIZE_BIT;
@@ -1648,7 +1652,7 @@ enum VkSparseMemoryBindFlagBits {
 	VK_SPARSE_MEMORY_BIND_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 }
 
-// VkSparseMemoryBindFlagBits gloabl enums
+// VkSparseMemoryBindFlagBits global enums
 enum VK_SPARSE_MEMORY_BIND_METADATA_BIT = VkSparseMemoryBindFlagBits.VK_SPARSE_MEMORY_BIND_METADATA_BIT;
 enum VK_SPARSE_MEMORY_BIND_FLAG_BITS_MAX_ENUM = VkSparseMemoryBindFlagBits.VK_SPARSE_MEMORY_BIND_FLAG_BITS_MAX_ENUM;
 alias VkSparseMemoryBindFlags = VkFlags;
@@ -1658,7 +1662,7 @@ enum VkFenceCreateFlagBits {
 	VK_FENCE_CREATE_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 }
 
-// VkFenceCreateFlagBits gloabl enums
+// VkFenceCreateFlagBits global enums
 enum VK_FENCE_CREATE_SIGNALED_BIT = VkFenceCreateFlagBits.VK_FENCE_CREATE_SIGNALED_BIT;
 enum VK_FENCE_CREATE_FLAG_BITS_MAX_ENUM = VkFenceCreateFlagBits.VK_FENCE_CREATE_FLAG_BITS_MAX_ENUM;
 alias VkFenceCreateFlags = VkFlags;
@@ -1681,7 +1685,7 @@ enum VkQueryPipelineStatisticFlagBits {
 	VK_QUERY_PIPELINE_STATISTIC_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 }
 
-// VkQueryPipelineStatisticFlagBits gloabl enums
+// VkQueryPipelineStatisticFlagBits global enums
 enum VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_VERTICES_BIT = VkQueryPipelineStatisticFlagBits.VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_VERTICES_BIT;
 enum VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_PRIMITIVES_BIT = VkQueryPipelineStatisticFlagBits.VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_PRIMITIVES_BIT;
 enum VK_QUERY_PIPELINE_STATISTIC_VERTEX_SHADER_INVOCATIONS_BIT = VkQueryPipelineStatisticFlagBits.VK_QUERY_PIPELINE_STATISTIC_VERTEX_SHADER_INVOCATIONS_BIT;
@@ -1704,7 +1708,7 @@ enum VkQueryResultFlagBits {
 	VK_QUERY_RESULT_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 }
 
-// VkQueryResultFlagBits gloabl enums
+// VkQueryResultFlagBits global enums
 enum VK_QUERY_RESULT_64_BIT = VkQueryResultFlagBits.VK_QUERY_RESULT_64_BIT;
 enum VK_QUERY_RESULT_WAIT_BIT = VkQueryResultFlagBits.VK_QUERY_RESULT_WAIT_BIT;
 enum VK_QUERY_RESULT_WITH_AVAILABILITY_BIT = VkQueryResultFlagBits.VK_QUERY_RESULT_WITH_AVAILABILITY_BIT;
@@ -1719,7 +1723,7 @@ enum VkBufferCreateFlagBits {
 	VK_BUFFER_CREATE_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 }
 
-// VkBufferCreateFlagBits gloabl enums
+// VkBufferCreateFlagBits global enums
 enum VK_BUFFER_CREATE_SPARSE_BINDING_BIT = VkBufferCreateFlagBits.VK_BUFFER_CREATE_SPARSE_BINDING_BIT;
 enum VK_BUFFER_CREATE_SPARSE_RESIDENCY_BIT = VkBufferCreateFlagBits.VK_BUFFER_CREATE_SPARSE_RESIDENCY_BIT;
 enum VK_BUFFER_CREATE_SPARSE_ALIASED_BIT = VkBufferCreateFlagBits.VK_BUFFER_CREATE_SPARSE_ALIASED_BIT;
@@ -1739,7 +1743,7 @@ enum VkBufferUsageFlagBits {
 	VK_BUFFER_USAGE_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 }
 
-// VkBufferUsageFlagBits gloabl enums
+// VkBufferUsageFlagBits global enums
 enum VK_BUFFER_USAGE_TRANSFER_SRC_BIT = VkBufferUsageFlagBits.VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
 enum VK_BUFFER_USAGE_TRANSFER_DST_BIT = VkBufferUsageFlagBits.VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 enum VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT = VkBufferUsageFlagBits.VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT;
@@ -1763,7 +1767,7 @@ enum VkPipelineCreateFlagBits {
 	VK_PIPELINE_CREATE_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 }
 
-// VkPipelineCreateFlagBits gloabl enums
+// VkPipelineCreateFlagBits global enums
 enum VK_PIPELINE_CREATE_DISABLE_OPTIMIZATION_BIT = VkPipelineCreateFlagBits.VK_PIPELINE_CREATE_DISABLE_OPTIMIZATION_BIT;
 enum VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT = VkPipelineCreateFlagBits.VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT;
 enum VK_PIPELINE_CREATE_DERIVATIVE_BIT = VkPipelineCreateFlagBits.VK_PIPELINE_CREATE_DERIVATIVE_BIT;
@@ -1783,7 +1787,7 @@ enum VkShaderStageFlagBits {
 	VK_SHADER_STAGE_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 }
 
-// VkShaderStageFlagBits gloabl enums
+// VkShaderStageFlagBits global enums
 enum VK_SHADER_STAGE_VERTEX_BIT = VkShaderStageFlagBits.VK_SHADER_STAGE_VERTEX_BIT;
 enum VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT = VkShaderStageFlagBits.VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
 enum VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT = VkShaderStageFlagBits.VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
@@ -1807,7 +1811,7 @@ enum VkCullModeFlagBits {
 	VK_CULL_MODE_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 }
 
-// VkCullModeFlagBits gloabl enums
+// VkCullModeFlagBits global enums
 enum VK_CULL_MODE_NONE = VkCullModeFlagBits.VK_CULL_MODE_NONE;
 enum VK_CULL_MODE_FRONT_BIT = VkCullModeFlagBits.VK_CULL_MODE_FRONT_BIT;
 enum VK_CULL_MODE_BACK_BIT = VkCullModeFlagBits.VK_CULL_MODE_BACK_BIT;
@@ -1826,7 +1830,7 @@ enum VkColorComponentFlagBits {
 	VK_COLOR_COMPONENT_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 }
 
-// VkColorComponentFlagBits gloabl enums
+// VkColorComponentFlagBits global enums
 enum VK_COLOR_COMPONENT_R_BIT = VkColorComponentFlagBits.VK_COLOR_COMPONENT_R_BIT;
 enum VK_COLOR_COMPONENT_G_BIT = VkColorComponentFlagBits.VK_COLOR_COMPONENT_G_BIT;
 enum VK_COLOR_COMPONENT_B_BIT = VkColorComponentFlagBits.VK_COLOR_COMPONENT_B_BIT;
@@ -1844,7 +1848,7 @@ enum VkDescriptorPoolCreateFlagBits {
 	VK_DESCRIPTOR_POOL_CREATE_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 }
 
-// VkDescriptorPoolCreateFlagBits gloabl enums
+// VkDescriptorPoolCreateFlagBits global enums
 enum VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT = VkDescriptorPoolCreateFlagBits.VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
 enum VK_DESCRIPTOR_POOL_CREATE_FLAG_BITS_MAX_ENUM = VkDescriptorPoolCreateFlagBits.VK_DESCRIPTOR_POOL_CREATE_FLAG_BITS_MAX_ENUM;
 alias VkDescriptorPoolCreateFlags = VkFlags;
@@ -1857,7 +1861,7 @@ enum VkAttachmentDescriptionFlagBits {
 	VK_ATTACHMENT_DESCRIPTION_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 }
 
-// VkAttachmentDescriptionFlagBits gloabl enums
+// VkAttachmentDescriptionFlagBits global enums
 enum VK_ATTACHMENT_DESCRIPTION_MAY_ALIAS_BIT = VkAttachmentDescriptionFlagBits.VK_ATTACHMENT_DESCRIPTION_MAY_ALIAS_BIT;
 enum VK_ATTACHMENT_DESCRIPTION_FLAG_BITS_MAX_ENUM = VkAttachmentDescriptionFlagBits.VK_ATTACHMENT_DESCRIPTION_FLAG_BITS_MAX_ENUM;
 alias VkAttachmentDescriptionFlags = VkFlags;
@@ -1884,7 +1888,7 @@ enum VkAccessFlagBits {
 	VK_ACCESS_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 }
 
-// VkAccessFlagBits gloabl enums
+// VkAccessFlagBits global enums
 enum VK_ACCESS_INDIRECT_COMMAND_READ_BIT = VkAccessFlagBits.VK_ACCESS_INDIRECT_COMMAND_READ_BIT;
 enum VK_ACCESS_INDEX_READ_BIT = VkAccessFlagBits.VK_ACCESS_INDEX_READ_BIT;
 enum VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT = VkAccessFlagBits.VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT;
@@ -1910,7 +1914,7 @@ enum VkDependencyFlagBits {
 	VK_DEPENDENCY_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 }
 
-// VkDependencyFlagBits gloabl enums
+// VkDependencyFlagBits global enums
 enum VK_DEPENDENCY_BY_REGION_BIT = VkDependencyFlagBits.VK_DEPENDENCY_BY_REGION_BIT;
 enum VK_DEPENDENCY_FLAG_BITS_MAX_ENUM = VkDependencyFlagBits.VK_DEPENDENCY_FLAG_BITS_MAX_ENUM;
 alias VkDependencyFlags = VkFlags;
@@ -1921,7 +1925,7 @@ enum VkCommandPoolCreateFlagBits {
 	VK_COMMAND_POOL_CREATE_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 }
 
-// VkCommandPoolCreateFlagBits gloabl enums
+// VkCommandPoolCreateFlagBits global enums
 enum VK_COMMAND_POOL_CREATE_TRANSIENT_BIT = VkCommandPoolCreateFlagBits.VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
 enum VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT = VkCommandPoolCreateFlagBits.VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 enum VK_COMMAND_POOL_CREATE_FLAG_BITS_MAX_ENUM = VkCommandPoolCreateFlagBits.VK_COMMAND_POOL_CREATE_FLAG_BITS_MAX_ENUM;
@@ -1932,7 +1936,7 @@ enum VkCommandPoolResetFlagBits {
 	VK_COMMAND_POOL_RESET_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 }
 
-// VkCommandPoolResetFlagBits gloabl enums
+// VkCommandPoolResetFlagBits global enums
 enum VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT = VkCommandPoolResetFlagBits.VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT;
 enum VK_COMMAND_POOL_RESET_FLAG_BITS_MAX_ENUM = VkCommandPoolResetFlagBits.VK_COMMAND_POOL_RESET_FLAG_BITS_MAX_ENUM;
 alias VkCommandPoolResetFlags = VkFlags;
@@ -1944,7 +1948,7 @@ enum VkCommandBufferUsageFlagBits {
 	VK_COMMAND_BUFFER_USAGE_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 }
 
-// VkCommandBufferUsageFlagBits gloabl enums
+// VkCommandBufferUsageFlagBits global enums
 enum VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT = VkCommandBufferUsageFlagBits.VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 enum VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT = VkCommandBufferUsageFlagBits.VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
 enum VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT = VkCommandBufferUsageFlagBits.VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
@@ -1956,7 +1960,7 @@ enum VkQueryControlFlagBits {
 	VK_QUERY_CONTROL_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 }
 
-// VkQueryControlFlagBits gloabl enums
+// VkQueryControlFlagBits global enums
 enum VK_QUERY_CONTROL_PRECISE_BIT = VkQueryControlFlagBits.VK_QUERY_CONTROL_PRECISE_BIT;
 enum VK_QUERY_CONTROL_FLAG_BITS_MAX_ENUM = VkQueryControlFlagBits.VK_QUERY_CONTROL_FLAG_BITS_MAX_ENUM;
 alias VkQueryControlFlags = VkFlags;
@@ -1966,7 +1970,7 @@ enum VkCommandBufferResetFlagBits {
 	VK_COMMAND_BUFFER_RESET_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 }
 
-// VkCommandBufferResetFlagBits gloabl enums
+// VkCommandBufferResetFlagBits global enums
 enum VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT = VkCommandBufferResetFlagBits.VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT;
 enum VK_COMMAND_BUFFER_RESET_FLAG_BITS_MAX_ENUM = VkCommandBufferResetFlagBits.VK_COMMAND_BUFFER_RESET_FLAG_BITS_MAX_ENUM;
 alias VkCommandBufferResetFlags = VkFlags;
@@ -1978,36 +1982,18 @@ enum VkStencilFaceFlagBits {
 	VK_STENCIL_FACE_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 }
 
-// VkStencilFaceFlagBits gloabl enums
+// VkStencilFaceFlagBits global enums
 enum VK_STENCIL_FACE_FRONT_BIT = VkStencilFaceFlagBits.VK_STENCIL_FACE_FRONT_BIT;
 enum VK_STENCIL_FACE_BACK_BIT = VkStencilFaceFlagBits.VK_STENCIL_FACE_BACK_BIT;
 enum VK_STENCIL_FRONT_AND_BACK = VkStencilFaceFlagBits.VK_STENCIL_FRONT_AND_BACK;
 enum VK_STENCIL_FACE_FLAG_BITS_MAX_ENUM = VkStencilFaceFlagBits.VK_STENCIL_FACE_FLAG_BITS_MAX_ENUM;
 alias VkStencilFaceFlags = VkFlags;
-alias PFN_vkAllocationFunction = void* function(
-    void*                                       pUserData,
-    size_t                                      size,
-    size_t                                      alignment,
-    VkSystemAllocationScope                     allocationScope);
-alias PFN_vkReallocationFunction = void* function(
-    void*                                       pUserData,
-    void*                                       pOriginal,
-    size_t                                      size,
-    size_t                                      alignment,
-    VkSystemAllocationScope                     allocationScope);
-alias PFN_vkFreeFunction = void function(
-    void*                                       pUserData,
-    void*                                       pMemory);
-alias PFN_vkInternalAllocationNotification = void function(
-    void*                                       pUserData,
-    size_t                                      size,
-    VkInternalAllocationType                    allocationType,
-    VkSystemAllocationScope                     allocationScope);
-alias PFN_vkInternalFreeNotification = void function(
-    void*                                       pUserData,
-    size_t                                      size,
-    VkInternalAllocationType                    allocationType,
-    VkSystemAllocationScope                     allocationScope);
+
+alias PFN_vkAllocationFunction = void* function(void* pUserData, size_t size, size_t alignment, VkSystemAllocationScope allocationScope);
+alias PFN_vkReallocationFunction = void* function(void* pUserData, void* pOriginal, size_t size, size_t alignment, VkSystemAllocationScope allocationScope);
+alias PFN_vkFreeFunction = void function(void* pUserData, void* pMemory);
+alias PFN_vkInternalAllocationNotification = void function(void* pUserData, size_t size, VkInternalAllocationType allocationType, VkSystemAllocationScope allocationScope);
+alias PFN_vkInternalFreeNotification = void function(void* pUserData, size_t size, VkInternalAllocationType allocationType, VkSystemAllocationScope allocationScope);
 alias PFN_vkVoidFunction = void function();
 
 struct VkApplicationInfo {
@@ -3085,10 +3071,151 @@ struct VkDrawIndirectCommand {
 	uint32_t  firstInstance;
 }
 
+// VK_VERSION_1_0 function types
+alias PFN_vkCreateInstance = VkResult function(const(VkInstanceCreateInfo)* pCreateInfo, const(VkAllocationCallbacks)* pAllocator, VkInstance* pInstance);
+alias PFN_vkDestroyInstance = void function(VkInstance instance, const(VkAllocationCallbacks)* pAllocator);
+alias PFN_vkEnumeratePhysicalDevices = VkResult function(VkInstance instance, uint32_t* pPhysicalDeviceCount, VkPhysicalDevice* pPhysicalDevices);
+alias PFN_vkGetPhysicalDeviceFeatures = void function(VkPhysicalDevice physicalDevice, VkPhysicalDeviceFeatures* pFeatures);
+alias PFN_vkGetPhysicalDeviceFormatProperties = void function(VkPhysicalDevice physicalDevice, VkFormat format, VkFormatProperties* pFormatProperties);
+alias PFN_vkGetPhysicalDeviceImageFormatProperties = VkResult function(VkPhysicalDevice physicalDevice, VkFormat format, VkImageType type, VkImageTiling tiling, VkImageUsageFlags usage, VkImageCreateFlags flags, VkImageFormatProperties* pImageFormatProperties);
+alias PFN_vkGetPhysicalDeviceProperties = void function(VkPhysicalDevice physicalDevice, VkPhysicalDeviceProperties* pProperties);
+alias PFN_vkGetPhysicalDeviceQueueFamilyProperties = void function(VkPhysicalDevice physicalDevice, uint32_t* pQueueFamilyPropertyCount, VkQueueFamilyProperties* pQueueFamilyProperties);
+alias PFN_vkGetPhysicalDeviceMemoryProperties = void function(VkPhysicalDevice physicalDevice, VkPhysicalDeviceMemoryProperties* pMemoryProperties);
+alias PFN_vkGetInstanceProcAddr = PFN_vkVoidFunction function(VkInstance instance, const(char)* pName);
+alias PFN_vkGetDeviceProcAddr = PFN_vkVoidFunction function(VkDevice device, const(char)* pName);
+alias PFN_vkCreateDevice = VkResult function(VkPhysicalDevice physicalDevice, const(VkDeviceCreateInfo)* pCreateInfo, const(VkAllocationCallbacks)* pAllocator, VkDevice* pDevice);
+alias PFN_vkDestroyDevice = void function(VkDevice device, const(VkAllocationCallbacks)* pAllocator);
+alias PFN_vkEnumerateInstanceExtensionProperties = VkResult function(const(char)* pLayerName, uint32_t* pPropertyCount, VkExtensionProperties* pProperties);
+alias PFN_vkEnumerateDeviceExtensionProperties = VkResult function(VkPhysicalDevice physicalDevice, const(char)* pLayerName, uint32_t* pPropertyCount, VkExtensionProperties* pProperties);
+alias PFN_vkEnumerateInstanceLayerProperties = VkResult function(uint32_t* pPropertyCount, VkLayerProperties* pProperties);
+alias PFN_vkEnumerateDeviceLayerProperties = VkResult function(VkPhysicalDevice physicalDevice, uint32_t* pPropertyCount, VkLayerProperties* pProperties);
+alias PFN_vkGetDeviceQueue = void function(VkDevice device, uint32_t queueFamilyIndex, uint32_t queueIndex, VkQueue* pQueue);
+alias PFN_vkQueueSubmit = VkResult function(VkQueue queue, uint32_t submitCount, const(VkSubmitInfo)* pSubmits, VkFence fence);
+alias PFN_vkQueueWaitIdle = VkResult function(VkQueue queue);
+alias PFN_vkDeviceWaitIdle = VkResult function(VkDevice device);
+alias PFN_vkAllocateMemory = VkResult function(VkDevice device, const(VkMemoryAllocateInfo)* pAllocateInfo, const(VkAllocationCallbacks)* pAllocator, VkDeviceMemory* pMemory);
+alias PFN_vkFreeMemory = void function(VkDevice device, VkDeviceMemory memory, const(VkAllocationCallbacks)* pAllocator);
+alias PFN_vkMapMemory = VkResult function(VkDevice device, VkDeviceMemory memory, VkDeviceSize offset, VkDeviceSize size, VkMemoryMapFlags flags, void** ppData);
+alias PFN_vkUnmapMemory = void function(VkDevice device, VkDeviceMemory memory);
+alias PFN_vkFlushMappedMemoryRanges = VkResult function(VkDevice device, uint32_t memoryRangeCount, const(VkMappedMemoryRange)* pMemoryRanges);
+alias PFN_vkInvalidateMappedMemoryRanges = VkResult function(VkDevice device, uint32_t memoryRangeCount, const(VkMappedMemoryRange)* pMemoryRanges);
+alias PFN_vkGetDeviceMemoryCommitment = void function(VkDevice device, VkDeviceMemory memory, VkDeviceSize* pCommittedMemoryInBytes);
+alias PFN_vkBindBufferMemory = VkResult function(VkDevice device, VkBuffer buffer, VkDeviceMemory memory, VkDeviceSize memoryOffset);
+alias PFN_vkBindImageMemory = VkResult function(VkDevice device, VkImage image, VkDeviceMemory memory, VkDeviceSize memoryOffset);
+alias PFN_vkGetBufferMemoryRequirements = void function(VkDevice device, VkBuffer buffer, VkMemoryRequirements* pMemoryRequirements);
+alias PFN_vkGetImageMemoryRequirements = void function(VkDevice device, VkImage image, VkMemoryRequirements* pMemoryRequirements);
+alias PFN_vkGetImageSparseMemoryRequirements = void function(VkDevice device, VkImage image, uint32_t* pSparseMemoryRequirementCount, VkSparseImageMemoryRequirements* pSparseMemoryRequirements);
+alias PFN_vkGetPhysicalDeviceSparseImageFormatProperties = void function(VkPhysicalDevice physicalDevice, VkFormat format, VkImageType type, VkSampleCountFlagBits samples, VkImageUsageFlags usage, VkImageTiling tiling, uint32_t* pPropertyCount, VkSparseImageFormatProperties* pProperties);
+alias PFN_vkQueueBindSparse = VkResult function(VkQueue queue, uint32_t bindInfoCount, const(VkBindSparseInfo)* pBindInfo, VkFence fence);
+alias PFN_vkCreateFence = VkResult function(VkDevice device, const(VkFenceCreateInfo)* pCreateInfo, const(VkAllocationCallbacks)* pAllocator, VkFence* pFence);
+alias PFN_vkDestroyFence = void function(VkDevice device, VkFence fence, const(VkAllocationCallbacks)* pAllocator);
+alias PFN_vkResetFences = VkResult function(VkDevice device, uint32_t fenceCount, const(VkFence)* pFences);
+alias PFN_vkGetFenceStatus = VkResult function(VkDevice device, VkFence fence);
+alias PFN_vkWaitForFences = VkResult function(VkDevice device, uint32_t fenceCount, const(VkFence)* pFences, VkBool32 waitAll, uint64_t timeout);
+alias PFN_vkCreateSemaphore = VkResult function(VkDevice device, const(VkSemaphoreCreateInfo)* pCreateInfo, const(VkAllocationCallbacks)* pAllocator, VkSemaphore* pSemaphore);
+alias PFN_vkDestroySemaphore = void function(VkDevice device, VkSemaphore semaphore, const(VkAllocationCallbacks)* pAllocator);
+alias PFN_vkCreateEvent = VkResult function(VkDevice device, const(VkEventCreateInfo)* pCreateInfo, const(VkAllocationCallbacks)* pAllocator, VkEvent* pEvent);
+alias PFN_vkDestroyEvent = void function(VkDevice device, VkEvent event, const(VkAllocationCallbacks)* pAllocator);
+alias PFN_vkGetEventStatus = VkResult function(VkDevice device, VkEvent event);
+alias PFN_vkSetEvent = VkResult function(VkDevice device, VkEvent event);
+alias PFN_vkResetEvent = VkResult function(VkDevice device, VkEvent event);
+alias PFN_vkCreateQueryPool = VkResult function(VkDevice device, const(VkQueryPoolCreateInfo)* pCreateInfo, const(VkAllocationCallbacks)* pAllocator, VkQueryPool* pQueryPool);
+alias PFN_vkDestroyQueryPool = void function(VkDevice device, VkQueryPool queryPool, const(VkAllocationCallbacks)* pAllocator);
+alias PFN_vkGetQueryPoolResults = VkResult function(VkDevice device, VkQueryPool queryPool, uint32_t firstQuery, uint32_t queryCount, size_t dataSize, void* pData, VkDeviceSize stride, VkQueryResultFlags flags);
+alias PFN_vkCreateBuffer = VkResult function(VkDevice device, const(VkBufferCreateInfo)* pCreateInfo, const(VkAllocationCallbacks)* pAllocator, VkBuffer* pBuffer);
+alias PFN_vkDestroyBuffer = void function(VkDevice device, VkBuffer buffer, const(VkAllocationCallbacks)* pAllocator);
+alias PFN_vkCreateBufferView = VkResult function(VkDevice device, const(VkBufferViewCreateInfo)* pCreateInfo, const(VkAllocationCallbacks)* pAllocator, VkBufferView* pView);
+alias PFN_vkDestroyBufferView = void function(VkDevice device, VkBufferView bufferView, const(VkAllocationCallbacks)* pAllocator);
+alias PFN_vkCreateImage = VkResult function(VkDevice device, const(VkImageCreateInfo)* pCreateInfo, const(VkAllocationCallbacks)* pAllocator, VkImage* pImage);
+alias PFN_vkDestroyImage = void function(VkDevice device, VkImage image, const(VkAllocationCallbacks)* pAllocator);
+alias PFN_vkGetImageSubresourceLayout = void function(VkDevice device, VkImage image, const(VkImageSubresource)* pSubresource, VkSubresourceLayout* pLayout);
+alias PFN_vkCreateImageView = VkResult function(VkDevice device, const(VkImageViewCreateInfo)* pCreateInfo, const(VkAllocationCallbacks)* pAllocator, VkImageView* pView);
+alias PFN_vkDestroyImageView = void function(VkDevice device, VkImageView imageView, const(VkAllocationCallbacks)* pAllocator);
+alias PFN_vkCreateShaderModule = VkResult function(VkDevice device, const(VkShaderModuleCreateInfo)* pCreateInfo, const(VkAllocationCallbacks)* pAllocator, VkShaderModule* pShaderModule);
+alias PFN_vkDestroyShaderModule = void function(VkDevice device, VkShaderModule shaderModule, const(VkAllocationCallbacks)* pAllocator);
+alias PFN_vkCreatePipelineCache = VkResult function(VkDevice device, const(VkPipelineCacheCreateInfo)* pCreateInfo, const(VkAllocationCallbacks)* pAllocator, VkPipelineCache* pPipelineCache);
+alias PFN_vkDestroyPipelineCache = void function(VkDevice device, VkPipelineCache pipelineCache, const(VkAllocationCallbacks)* pAllocator);
+alias PFN_vkGetPipelineCacheData = VkResult function(VkDevice device, VkPipelineCache pipelineCache, size_t* pDataSize, void* pData);
+alias PFN_vkMergePipelineCaches = VkResult function(VkDevice device, VkPipelineCache dstCache, uint32_t srcCacheCount, const(VkPipelineCache)* pSrcCaches);
+alias PFN_vkCreateGraphicsPipelines = VkResult function(VkDevice device, VkPipelineCache pipelineCache, uint32_t createInfoCount, const(VkGraphicsPipelineCreateInfo)* pCreateInfos, const(VkAllocationCallbacks)* pAllocator, VkPipeline* pPipelines);
+alias PFN_vkCreateComputePipelines = VkResult function(VkDevice device, VkPipelineCache pipelineCache, uint32_t createInfoCount, const(VkComputePipelineCreateInfo)* pCreateInfos, const(VkAllocationCallbacks)* pAllocator, VkPipeline* pPipelines);
+alias PFN_vkDestroyPipeline = void function(VkDevice device, VkPipeline pipeline, const(VkAllocationCallbacks)* pAllocator);
+alias PFN_vkCreatePipelineLayout = VkResult function(VkDevice device, const(VkPipelineLayoutCreateInfo)* pCreateInfo, const(VkAllocationCallbacks)* pAllocator, VkPipelineLayout* pPipelineLayout);
+alias PFN_vkDestroyPipelineLayout = void function(VkDevice device, VkPipelineLayout pipelineLayout, const(VkAllocationCallbacks)* pAllocator);
+alias PFN_vkCreateSampler = VkResult function(VkDevice device, const(VkSamplerCreateInfo)* pCreateInfo, const(VkAllocationCallbacks)* pAllocator, VkSampler* pSampler);
+alias PFN_vkDestroySampler = void function(VkDevice device, VkSampler sampler, const(VkAllocationCallbacks)* pAllocator);
+alias PFN_vkCreateDescriptorSetLayout = VkResult function(VkDevice device, const(VkDescriptorSetLayoutCreateInfo)* pCreateInfo, const(VkAllocationCallbacks)* pAllocator, VkDescriptorSetLayout* pSetLayout);
+alias PFN_vkDestroyDescriptorSetLayout = void function(VkDevice device, VkDescriptorSetLayout descriptorSetLayout, const(VkAllocationCallbacks)* pAllocator);
+alias PFN_vkCreateDescriptorPool = VkResult function(VkDevice device, const(VkDescriptorPoolCreateInfo)* pCreateInfo, const(VkAllocationCallbacks)* pAllocator, VkDescriptorPool* pDescriptorPool);
+alias PFN_vkDestroyDescriptorPool = void function(VkDevice device, VkDescriptorPool descriptorPool, const(VkAllocationCallbacks)* pAllocator);
+alias PFN_vkResetDescriptorPool = VkResult function(VkDevice device, VkDescriptorPool descriptorPool, VkDescriptorPoolResetFlags flags);
+alias PFN_vkAllocateDescriptorSets = VkResult function(VkDevice device, const(VkDescriptorSetAllocateInfo)* pAllocateInfo, VkDescriptorSet* pDescriptorSets);
+alias PFN_vkFreeDescriptorSets = VkResult function(VkDevice device, VkDescriptorPool descriptorPool, uint32_t descriptorSetCount, const(VkDescriptorSet)* pDescriptorSets);
+alias PFN_vkUpdateDescriptorSets = void function(VkDevice device, uint32_t descriptorWriteCount, const(VkWriteDescriptorSet)* pDescriptorWrites, uint32_t descriptorCopyCount, const(VkCopyDescriptorSet)* pDescriptorCopies);
+alias PFN_vkCreateFramebuffer = VkResult function(VkDevice device, const(VkFramebufferCreateInfo)* pCreateInfo, const(VkAllocationCallbacks)* pAllocator, VkFramebuffer* pFramebuffer);
+alias PFN_vkDestroyFramebuffer = void function(VkDevice device, VkFramebuffer framebuffer, const(VkAllocationCallbacks)* pAllocator);
+alias PFN_vkCreateRenderPass = VkResult function(VkDevice device, const(VkRenderPassCreateInfo)* pCreateInfo, const(VkAllocationCallbacks)* pAllocator, VkRenderPass* pRenderPass);
+alias PFN_vkDestroyRenderPass = void function(VkDevice device, VkRenderPass renderPass, const(VkAllocationCallbacks)* pAllocator);
+alias PFN_vkGetRenderAreaGranularity = void function(VkDevice device, VkRenderPass renderPass, VkExtent2D* pGranularity);
+alias PFN_vkCreateCommandPool = VkResult function(VkDevice device, const(VkCommandPoolCreateInfo)* pCreateInfo, const(VkAllocationCallbacks)* pAllocator, VkCommandPool* pCommandPool);
+alias PFN_vkDestroyCommandPool = void function(VkDevice device, VkCommandPool commandPool, const(VkAllocationCallbacks)* pAllocator);
+alias PFN_vkResetCommandPool = VkResult function(VkDevice device, VkCommandPool commandPool, VkCommandPoolResetFlags flags);
+alias PFN_vkAllocateCommandBuffers = VkResult function(VkDevice device, const(VkCommandBufferAllocateInfo)* pAllocateInfo, VkCommandBuffer* pCommandBuffers);
+alias PFN_vkFreeCommandBuffers = void function(VkDevice device, VkCommandPool commandPool, uint32_t commandBufferCount, const(VkCommandBuffer)* pCommandBuffers);
+alias PFN_vkBeginCommandBuffer = VkResult function(VkCommandBuffer commandBuffer, const(VkCommandBufferBeginInfo)* pBeginInfo);
+alias PFN_vkEndCommandBuffer = VkResult function(VkCommandBuffer commandBuffer);
+alias PFN_vkResetCommandBuffer = VkResult function(VkCommandBuffer commandBuffer, VkCommandBufferResetFlags flags);
+alias PFN_vkCmdBindPipeline = void function(VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipeline pipeline);
+alias PFN_vkCmdSetViewport = void function(VkCommandBuffer commandBuffer, uint32_t firstViewport, uint32_t viewportCount, const(VkViewport)* pViewports);
+alias PFN_vkCmdSetScissor = void function(VkCommandBuffer commandBuffer, uint32_t firstScissor, uint32_t scissorCount, const(VkRect2D)* pScissors);
+alias PFN_vkCmdSetLineWidth = void function(VkCommandBuffer commandBuffer, float lineWidth);
+alias PFN_vkCmdSetDepthBias = void function(VkCommandBuffer commandBuffer, float depthBiasConstantFactor, float depthBiasClamp, float depthBiasSlopeFactor);
+alias PFN_vkCmdSetBlendConstants = void function(VkCommandBuffer commandBuffer, const float[4] blendConstants);
+alias PFN_vkCmdSetDepthBounds = void function(VkCommandBuffer commandBuffer, float minDepthBounds, float maxDepthBounds);
+alias PFN_vkCmdSetStencilCompareMask = void function(VkCommandBuffer commandBuffer, VkStencilFaceFlags faceMask, uint32_t compareMask);
+alias PFN_vkCmdSetStencilWriteMask = void function(VkCommandBuffer commandBuffer, VkStencilFaceFlags faceMask, uint32_t writeMask);
+alias PFN_vkCmdSetStencilReference = void function(VkCommandBuffer commandBuffer, VkStencilFaceFlags faceMask, uint32_t reference);
+alias PFN_vkCmdBindDescriptorSets = void function(VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipelineLayout layout, uint32_t firstSet, uint32_t descriptorSetCount, const(VkDescriptorSet)* pDescriptorSets, uint32_t dynamicOffsetCount, const(uint32_t)* pDynamicOffsets);
+alias PFN_vkCmdBindIndexBuffer = void function(VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkIndexType indexType);
+alias PFN_vkCmdBindVertexBuffers = void function(VkCommandBuffer commandBuffer, uint32_t firstBinding, uint32_t bindingCount, const(VkBuffer)* pBuffers, const(VkDeviceSize)* pOffsets);
+alias PFN_vkCmdDraw = void function(VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance);
+alias PFN_vkCmdDrawIndexed = void function(VkCommandBuffer commandBuffer, uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t vertexOffset, uint32_t firstInstance);
+alias PFN_vkCmdDrawIndirect = void function(VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, uint32_t drawCount, uint32_t stride);
+alias PFN_vkCmdDrawIndexedIndirect = void function(VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, uint32_t drawCount, uint32_t stride);
+alias PFN_vkCmdDispatch = void function(VkCommandBuffer commandBuffer, uint32_t x, uint32_t y, uint32_t z);
+alias PFN_vkCmdDispatchIndirect = void function(VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset);
+alias PFN_vkCmdCopyBuffer = void function(VkCommandBuffer commandBuffer, VkBuffer srcBuffer, VkBuffer dstBuffer, uint32_t regionCount, const(VkBufferCopy)* pRegions);
+alias PFN_vkCmdCopyImage = void function(VkCommandBuffer commandBuffer, VkImage srcImage, VkImageLayout srcImageLayout, VkImage dstImage, VkImageLayout dstImageLayout, uint32_t regionCount, const(VkImageCopy)* pRegions);
+alias PFN_vkCmdBlitImage = void function(VkCommandBuffer commandBuffer, VkImage srcImage, VkImageLayout srcImageLayout, VkImage dstImage, VkImageLayout dstImageLayout, uint32_t regionCount, const(VkImageBlit)* pRegions, VkFilter filter);
+alias PFN_vkCmdCopyBufferToImage = void function(VkCommandBuffer commandBuffer, VkBuffer srcBuffer, VkImage dstImage, VkImageLayout dstImageLayout, uint32_t regionCount, const(VkBufferImageCopy)* pRegions);
+alias PFN_vkCmdCopyImageToBuffer = void function(VkCommandBuffer commandBuffer, VkImage srcImage, VkImageLayout srcImageLayout, VkBuffer dstBuffer, uint32_t regionCount, const(VkBufferImageCopy)* pRegions);
+alias PFN_vkCmdUpdateBuffer = void function(VkCommandBuffer commandBuffer, VkBuffer dstBuffer, VkDeviceSize dstOffset, VkDeviceSize dataSize, const(uint32_t)* pData);
+alias PFN_vkCmdFillBuffer = void function(VkCommandBuffer commandBuffer, VkBuffer dstBuffer, VkDeviceSize dstOffset, VkDeviceSize size, uint32_t data);
+alias PFN_vkCmdClearColorImage = void function(VkCommandBuffer commandBuffer, VkImage image, VkImageLayout imageLayout, const(VkClearColorValue)* pColor, uint32_t rangeCount, const(VkImageSubresourceRange)* pRanges);
+alias PFN_vkCmdClearDepthStencilImage = void function(VkCommandBuffer commandBuffer, VkImage image, VkImageLayout imageLayout, const(VkClearDepthStencilValue)* pDepthStencil, uint32_t rangeCount, const(VkImageSubresourceRange)* pRanges);
+alias PFN_vkCmdClearAttachments = void function(VkCommandBuffer commandBuffer, uint32_t attachmentCount, const(VkClearAttachment)* pAttachments, uint32_t rectCount, const(VkClearRect)* pRects);
+alias PFN_vkCmdResolveImage = void function(VkCommandBuffer commandBuffer, VkImage srcImage, VkImageLayout srcImageLayout, VkImage dstImage, VkImageLayout dstImageLayout, uint32_t regionCount, const(VkImageResolve)* pRegions);
+alias PFN_vkCmdSetEvent = void function(VkCommandBuffer commandBuffer, VkEvent event, VkPipelineStageFlags stageMask);
+alias PFN_vkCmdResetEvent = void function(VkCommandBuffer commandBuffer, VkEvent event, VkPipelineStageFlags stageMask);
+alias PFN_vkCmdWaitEvents = void function(VkCommandBuffer commandBuffer, uint32_t eventCount, const(VkEvent)* pEvents, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, uint32_t memoryBarrierCount, const(VkMemoryBarrier)* pMemoryBarriers, uint32_t bufferMemoryBarrierCount, const(VkBufferMemoryBarrier)* pBufferMemoryBarriers, uint32_t imageMemoryBarrierCount, const(VkImageMemoryBarrier)* pImageMemoryBarriers);
+alias PFN_vkCmdPipelineBarrier = void function(VkCommandBuffer commandBuffer, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkDependencyFlags dependencyFlags, uint32_t memoryBarrierCount, const(VkMemoryBarrier)* pMemoryBarriers, uint32_t bufferMemoryBarrierCount, const(VkBufferMemoryBarrier)* pBufferMemoryBarriers, uint32_t imageMemoryBarrierCount, const(VkImageMemoryBarrier)* pImageMemoryBarriers);
+alias PFN_vkCmdBeginQuery = void function(VkCommandBuffer commandBuffer, VkQueryPool queryPool, uint32_t query, VkQueryControlFlags flags);
+alias PFN_vkCmdEndQuery = void function(VkCommandBuffer commandBuffer, VkQueryPool queryPool, uint32_t query);
+alias PFN_vkCmdResetQueryPool = void function(VkCommandBuffer commandBuffer, VkQueryPool queryPool, uint32_t firstQuery, uint32_t queryCount);
+alias PFN_vkCmdWriteTimestamp = void function(VkCommandBuffer commandBuffer, VkPipelineStageFlagBits pipelineStage, VkQueryPool queryPool, uint32_t query);
+alias PFN_vkCmdCopyQueryPoolResults = void function(VkCommandBuffer commandBuffer, VkQueryPool queryPool, uint32_t firstQuery, uint32_t queryCount, VkBuffer dstBuffer, VkDeviceSize dstOffset, VkDeviceSize stride, VkQueryResultFlags flags);
+alias PFN_vkCmdPushConstants = void function(VkCommandBuffer commandBuffer, VkPipelineLayout layout, VkShaderStageFlags stageFlags, uint32_t offset, uint32_t size, const(void)* pValues);
+alias PFN_vkCmdBeginRenderPass = void function(VkCommandBuffer commandBuffer, const(VkRenderPassBeginInfo)* pRenderPassBegin, VkSubpassContents contents);
+alias PFN_vkCmdNextSubpass = void function(VkCommandBuffer commandBuffer, VkSubpassContents contents);
+alias PFN_vkCmdEndRenderPass = void function(VkCommandBuffer commandBuffer);
+alias PFN_vkCmdExecuteCommands = void function(VkCommandBuffer commandBuffer, uint32_t commandBufferCount, const(VkCommandBuffer)* pCommandBuffers);
+
 // VK_KHR_surface
 mixin(VK_DEFINE_NON_DISPATCHABLE_HANDLE!q{VkSurfaceKHR});
+
 enum VK_KHR_SURFACE_SPEC_VERSION = 25;
 enum VK_KHR_SURFACE_EXTENSION_NAME = "VK_KHR_surface";
+
 
 enum VkColorSpaceKHR {
 	VK_COLORSPACE_SRGB_NONLINEAR_KHR = 0,
@@ -3098,7 +3225,7 @@ enum VkColorSpaceKHR {
 	VK_COLOR_SPACE_MAX_ENUM_KHR = 0x7FFFFFFF
 }
 
-// VkColorSpaceKHR gloabl enums
+// VkColorSpaceKHR global enums
 enum VK_COLORSPACE_SRGB_NONLINEAR_KHR = VkColorSpaceKHR.VK_COLORSPACE_SRGB_NONLINEAR_KHR;
 enum VK_COLOR_SPACE_BEGIN_RANGE_KHR = VkColorSpaceKHR.VK_COLOR_SPACE_BEGIN_RANGE_KHR;
 enum VK_COLOR_SPACE_END_RANGE_KHR = VkColorSpaceKHR.VK_COLOR_SPACE_END_RANGE_KHR;
@@ -3116,7 +3243,7 @@ enum VkPresentModeKHR {
 	VK_PRESENT_MODE_MAX_ENUM_KHR = 0x7FFFFFFF
 }
 
-// VkPresentModeKHR gloabl enums
+// VkPresentModeKHR global enums
 enum VK_PRESENT_MODE_IMMEDIATE_KHR = VkPresentModeKHR.VK_PRESENT_MODE_IMMEDIATE_KHR;
 enum VK_PRESENT_MODE_MAILBOX_KHR = VkPresentModeKHR.VK_PRESENT_MODE_MAILBOX_KHR;
 enum VK_PRESENT_MODE_FIFO_KHR = VkPresentModeKHR.VK_PRESENT_MODE_FIFO_KHR;
@@ -3125,6 +3252,7 @@ enum VK_PRESENT_MODE_BEGIN_RANGE_KHR = VkPresentModeKHR.VK_PRESENT_MODE_BEGIN_RA
 enum VK_PRESENT_MODE_END_RANGE_KHR = VkPresentModeKHR.VK_PRESENT_MODE_END_RANGE_KHR;
 enum VK_PRESENT_MODE_RANGE_SIZE_KHR = VkPresentModeKHR.VK_PRESENT_MODE_RANGE_SIZE_KHR;
 enum VK_PRESENT_MODE_MAX_ENUM_KHR = VkPresentModeKHR.VK_PRESENT_MODE_MAX_ENUM_KHR;
+
 
 enum VkSurfaceTransformFlagBitsKHR {
 	VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR = 0x00000001,
@@ -3139,7 +3267,7 @@ enum VkSurfaceTransformFlagBitsKHR {
 	VK_SURFACE_TRANSFORM_FLAG_BITS_MAX_ENUM_KHR = 0x7FFFFFFF
 }
 
-// VkSurfaceTransformFlagBitsKHR gloabl enums
+// VkSurfaceTransformFlagBitsKHR global enums
 enum VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR = VkSurfaceTransformFlagBitsKHR.VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
 enum VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR = VkSurfaceTransformFlagBitsKHR.VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR;
 enum VK_SURFACE_TRANSFORM_ROTATE_180_BIT_KHR = VkSurfaceTransformFlagBitsKHR.VK_SURFACE_TRANSFORM_ROTATE_180_BIT_KHR;
@@ -3160,7 +3288,7 @@ enum VkCompositeAlphaFlagBitsKHR {
 	VK_COMPOSITE_ALPHA_FLAG_BITS_MAX_ENUM_KHR = 0x7FFFFFFF
 }
 
-// VkCompositeAlphaFlagBitsKHR gloabl enums
+// VkCompositeAlphaFlagBitsKHR global enums
 enum VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR = VkCompositeAlphaFlagBitsKHR.VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
 enum VK_COMPOSITE_ALPHA_PRE_MULTIPLIED_BIT_KHR = VkCompositeAlphaFlagBitsKHR.VK_COMPOSITE_ALPHA_PRE_MULTIPLIED_BIT_KHR;
 enum VK_COMPOSITE_ALPHA_POST_MULTIPLIED_BIT_KHR = VkCompositeAlphaFlagBitsKHR.VK_COMPOSITE_ALPHA_POST_MULTIPLIED_BIT_KHR;
@@ -3186,10 +3314,19 @@ struct VkSurfaceFormatKHR {
 	VkColorSpaceKHR  colorSpace;
 }
 
+// VK_KHR_surface function types
+alias PFN_vkDestroySurfaceKHR = void function(VkInstance instance, VkSurfaceKHR surface, const(VkAllocationCallbacks)* pAllocator);
+alias PFN_vkGetPhysicalDeviceSurfaceSupportKHR = VkResult function(VkPhysicalDevice physicalDevice, uint32_t queueFamilyIndex, VkSurfaceKHR surface, VkBool32* pSupported);
+alias PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR = VkResult function(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, VkSurfaceCapabilitiesKHR* pSurfaceCapabilities);
+alias PFN_vkGetPhysicalDeviceSurfaceFormatsKHR = VkResult function(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, uint32_t* pSurfaceFormatCount, VkSurfaceFormatKHR* pSurfaceFormats);
+alias PFN_vkGetPhysicalDeviceSurfacePresentModesKHR = VkResult function(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, uint32_t* pPresentModeCount, VkPresentModeKHR* pPresentModes);
+
 // VK_KHR_swapchain
 mixin(VK_DEFINE_NON_DISPATCHABLE_HANDLE!q{VkSwapchainKHR});
+
 enum VK_KHR_SWAPCHAIN_SPEC_VERSION = 68;
 enum VK_KHR_SWAPCHAIN_EXTENSION_NAME = "VK_KHR_swapchain";
+
 alias VkSwapchainCreateFlagsKHR = VkFlags;
 
 struct VkSwapchainCreateInfoKHR {
@@ -3224,11 +3361,20 @@ struct VkPresentInfoKHR {
 	VkResult*               pResults;
 }
 
+// VK_KHR_swapchain function types
+alias PFN_vkCreateSwapchainKHR = VkResult function(VkDevice device, const(VkSwapchainCreateInfoKHR)* pCreateInfo, const(VkAllocationCallbacks)* pAllocator, VkSwapchainKHR* pSwapchain);
+alias PFN_vkDestroySwapchainKHR = void function(VkDevice device, VkSwapchainKHR swapchain, const(VkAllocationCallbacks)* pAllocator);
+alias PFN_vkGetSwapchainImagesKHR = VkResult function(VkDevice device, VkSwapchainKHR swapchain, uint32_t* pSwapchainImageCount, VkImage* pSwapchainImages);
+alias PFN_vkAcquireNextImageKHR = VkResult function(VkDevice device, VkSwapchainKHR swapchain, uint64_t timeout, VkSemaphore semaphore, VkFence fence, uint32_t* pImageIndex);
+alias PFN_vkQueuePresentKHR = VkResult function(VkQueue queue, const(VkPresentInfoKHR)* pPresentInfo);
+
 // VK_KHR_display
 mixin(VK_DEFINE_NON_DISPATCHABLE_HANDLE!q{VkDisplayKHR});
 mixin(VK_DEFINE_NON_DISPATCHABLE_HANDLE!q{VkDisplayModeKHR});
+
 enum VK_KHR_DISPLAY_SPEC_VERSION = 21;
 enum VK_KHR_DISPLAY_EXTENSION_NAME = "VK_KHR_display";
+
 
 enum VkDisplayPlaneAlphaFlagBitsKHR {
 	VK_DISPLAY_PLANE_ALPHA_OPAQUE_BIT_KHR = 0x00000001,
@@ -3238,7 +3384,7 @@ enum VkDisplayPlaneAlphaFlagBitsKHR {
 	VK_DISPLAY_PLANE_ALPHA_FLAG_BITS_MAX_ENUM_KHR = 0x7FFFFFFF
 }
 
-// VkDisplayPlaneAlphaFlagBitsKHR gloabl enums
+// VkDisplayPlaneAlphaFlagBitsKHR global enums
 enum VK_DISPLAY_PLANE_ALPHA_OPAQUE_BIT_KHR = VkDisplayPlaneAlphaFlagBitsKHR.VK_DISPLAY_PLANE_ALPHA_OPAQUE_BIT_KHR;
 enum VK_DISPLAY_PLANE_ALPHA_GLOBAL_BIT_KHR = VkDisplayPlaneAlphaFlagBitsKHR.VK_DISPLAY_PLANE_ALPHA_GLOBAL_BIT_KHR;
 enum VK_DISPLAY_PLANE_ALPHA_PER_PIXEL_BIT_KHR = VkDisplayPlaneAlphaFlagBitsKHR.VK_DISPLAY_PLANE_ALPHA_PER_PIXEL_BIT_KHR;
@@ -3305,6 +3451,15 @@ struct VkDisplaySurfaceCreateInfoKHR {
 	VkExtent2D                      imageExtent;
 }
 
+// VK_KHR_display function types
+alias PFN_vkGetPhysicalDeviceDisplayPropertiesKHR = VkResult function(VkPhysicalDevice physicalDevice, uint32_t* pPropertyCount, VkDisplayPropertiesKHR* pProperties);
+alias PFN_vkGetPhysicalDeviceDisplayPlanePropertiesKHR = VkResult function(VkPhysicalDevice physicalDevice, uint32_t* pPropertyCount, VkDisplayPlanePropertiesKHR* pProperties);
+alias PFN_vkGetDisplayPlaneSupportedDisplaysKHR = VkResult function(VkPhysicalDevice physicalDevice, uint32_t planeIndex, uint32_t* pDisplayCount, VkDisplayKHR* pDisplays);
+alias PFN_vkGetDisplayModePropertiesKHR = VkResult function(VkPhysicalDevice physicalDevice, VkDisplayKHR display, uint32_t* pPropertyCount, VkDisplayModePropertiesKHR* pProperties);
+alias PFN_vkCreateDisplayModeKHR = VkResult function(VkPhysicalDevice physicalDevice, VkDisplayKHR display, const(VkDisplayModeCreateInfoKHR)* pCreateInfo, const(VkAllocationCallbacks)* pAllocator, VkDisplayModeKHR* pMode);
+alias PFN_vkGetDisplayPlaneCapabilitiesKHR = VkResult function(VkPhysicalDevice physicalDevice, VkDisplayModeKHR mode, uint32_t planeIndex, VkDisplayPlaneCapabilitiesKHR* pCapabilities);
+alias PFN_vkCreateDisplayPlaneSurfaceKHR = VkResult function(VkInstance instance, const(VkDisplaySurfaceCreateInfoKHR)* pCreateInfo, const(VkAllocationCallbacks)* pAllocator, VkSurfaceKHR* pSurface);
+
 // VK_KHR_display_swapchain
 enum VK_KHR_DISPLAY_SWAPCHAIN_SPEC_VERSION = 9;
 enum VK_KHR_DISPLAY_SWAPCHAIN_EXTENSION_NAME = "VK_KHR_display_swapchain";
@@ -3317,12 +3472,16 @@ struct VkDisplayPresentInfoKHR {
 	VkBool32         persistent;
 }
 
+// VK_KHR_display_swapchain function types
+alias PFN_vkCreateSharedSwapchainsKHR = VkResult function(VkDevice device, uint32_t swapchainCount, const(VkSwapchainCreateInfoKHR)* pCreateInfos, const(VkAllocationCallbacks)* pAllocator, VkSwapchainKHR* pSwapchains);
+
 // VK_KHR_xlib_surface
 version( VK_USE_PLATFORM_XLIB_KHR ) {
 	public import X11.Xlib;
 
 	enum VK_KHR_XLIB_SURFACE_SPEC_VERSION = 6;
 	enum VK_KHR_XLIB_SURFACE_EXTENSION_NAME = "VK_KHR_xlib_surface";
+
 	alias VkXlibSurfaceCreateFlagsKHR = VkFlags;
 	
 	struct VkXlibSurfaceCreateInfoKHR {
@@ -3334,12 +3493,19 @@ version( VK_USE_PLATFORM_XLIB_KHR ) {
 	}
 }
 
+// VK_KHR_xlib_surface function types
+	version( VK_USE_PLATFORM_XLIB_KHR ) {
+	alias PFN_vkCreateXlibSurfaceKHR = VkResult function(VkInstance instance, const(VkXlibSurfaceCreateInfoKHR)* pCreateInfo, const(VkAllocationCallbacks)* pAllocator, VkSurfaceKHR* pSurface);
+	alias PFN_vkGetPhysicalDeviceXlibPresentationSupportKHR = VkBool32 function(VkPhysicalDevice physicalDevice, uint32_t queueFamilyIndex, Display* dpy, VisualID visualID);
+	}
+
 // VK_KHR_xcb_surface
 version( VK_USE_PLATFORM_XCB_KHR ) {
 	public import xcb.xcb;
 
 	enum VK_KHR_XCB_SURFACE_SPEC_VERSION = 6;
 	enum VK_KHR_XCB_SURFACE_EXTENSION_NAME = "VK_KHR_xcb_surface";
+
 	alias VkXcbSurfaceCreateFlagsKHR = VkFlags;
 	
 	struct VkXcbSurfaceCreateInfoKHR {
@@ -3351,12 +3517,19 @@ version( VK_USE_PLATFORM_XCB_KHR ) {
 	}
 }
 
+// VK_KHR_xcb_surface function types
+	version( VK_USE_PLATFORM_XCB_KHR ) {
+	alias PFN_vkCreateXcbSurfaceKHR = VkResult function(VkInstance instance, const(VkXcbSurfaceCreateInfoKHR)* pCreateInfo, const(VkAllocationCallbacks)* pAllocator, VkSurfaceKHR* pSurface);
+	alias PFN_vkGetPhysicalDeviceXcbPresentationSupportKHR = VkBool32 function(VkPhysicalDevice physicalDevice, uint32_t queueFamilyIndex, xcb_connection_t* connection, xcb_visualid_t visual_id);
+	}
+
 // VK_KHR_wayland_surface
 version( VK_USE_PLATFORM_WAYLAND_KHR ) {
 	public import wayland_client;
 
 	enum VK_KHR_WAYLAND_SURFACE_SPEC_VERSION = 5;
 	enum VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME = "VK_KHR_wayland_surface";
+
 	alias VkWaylandSurfaceCreateFlagsKHR = VkFlags;
 	struct wl_display;
 	struct wl_surface;
@@ -3371,12 +3544,19 @@ version( VK_USE_PLATFORM_WAYLAND_KHR ) {
 	}
 }
 
+// VK_KHR_wayland_surface function types
+	version( VK_USE_PLATFORM_WAYLAND_KHR ) {
+	alias PFN_vkCreateWaylandSurfaceKHR = VkResult function(VkInstance instance, const(VkWaylandSurfaceCreateInfoKHR)* pCreateInfo, const(VkAllocationCallbacks)* pAllocator, VkSurfaceKHR* pSurface);
+	alias PFN_vkGetPhysicalDeviceWaylandPresentationSupportKHR = VkBool32 function(VkPhysicalDevice physicalDevice, uint32_t queueFamilyIndex, wl_display* display);
+	}
+
 // VK_KHR_mir_surface
 version( VK_USE_PLATFORM_MIR_KHR ) {
 	public import mir_toolkit.client_types;
 
 	enum VK_KHR_MIR_SURFACE_SPEC_VERSION = 4;
 	enum VK_KHR_MIR_SURFACE_EXTENSION_NAME = "VK_KHR_mir_surface";
+
 	alias VkMirSurfaceCreateFlagsKHR = VkFlags;
 	
 	struct VkMirSurfaceCreateInfoKHR {
@@ -3388,12 +3568,19 @@ version( VK_USE_PLATFORM_MIR_KHR ) {
 	}
 }
 
+// VK_KHR_mir_surface function types
+	version( VK_USE_PLATFORM_MIR_KHR ) {
+	alias PFN_vkCreateMirSurfaceKHR = VkResult function(VkInstance instance, const(VkMirSurfaceCreateInfoKHR)* pCreateInfo, const(VkAllocationCallbacks)* pAllocator, VkSurfaceKHR* pSurface);
+	alias PFN_vkGetPhysicalDeviceMirPresentationSupportKHR = VkBool32 function(VkPhysicalDevice physicalDevice, uint32_t queueFamilyIndex, MirConnection* connection);
+	}
+
 // VK_KHR_android_surface
 version( VK_USE_PLATFORM_ANDROID_KHR ) {
 	public import android.native_window;
 
 	enum VK_KHR_ANDROID_SURFACE_SPEC_VERSION = 6;
 	enum VK_KHR_ANDROID_SURFACE_EXTENSION_NAME = "VK_KHR_android_surface";
+
 	alias VkAndroidSurfaceCreateFlagsKHR = VkFlags;
 	
 	struct VkAndroidSurfaceCreateInfoKHR {
@@ -3404,12 +3591,18 @@ version( VK_USE_PLATFORM_ANDROID_KHR ) {
 	}
 }
 
+// VK_KHR_android_surface function types
+	version( VK_USE_PLATFORM_ANDROID_KHR ) {
+	alias PFN_vkCreateAndroidSurfaceKHR = VkResult function(VkInstance instance, const(VkAndroidSurfaceCreateInfoKHR)* pCreateInfo, const(VkAllocationCallbacks)* pAllocator, VkSurfaceKHR* pSurface);
+	}
+
 // VK_KHR_win32_surface
 version( VK_USE_PLATFORM_WIN32_KHR ) {
 	public import core.sys.windows.windows;
 
 	enum VK_KHR_WIN32_SURFACE_SPEC_VERSION = 5;
 	enum VK_KHR_WIN32_SURFACE_EXTENSION_NAME = "VK_KHR_win32_surface";
+
 	alias VkWin32SurfaceCreateFlagsKHR = VkFlags;
 	
 	struct VkWin32SurfaceCreateInfoKHR {
@@ -3420,6 +3613,12 @@ version( VK_USE_PLATFORM_WIN32_KHR ) {
 		HWND                          hwnd;
 	}
 }
+
+// VK_KHR_win32_surface function types
+	version( VK_USE_PLATFORM_WIN32_KHR ) {
+	alias PFN_vkCreateWin32SurfaceKHR = VkResult function(VkInstance instance, const(VkWin32SurfaceCreateInfoKHR)* pCreateInfo, const(VkAllocationCallbacks)* pAllocator, VkSurfaceKHR* pSurface);
+	alias PFN_vkGetPhysicalDeviceWin32PresentationSupportKHR = VkBool32 function(VkPhysicalDevice physicalDevice, uint32_t queueFamilyIndex);
+	}
 
 // VK_KHR_sampler_mirror_clamp_to_edge
 enum VK_KHR_SAMPLER_MIRROR_CLAMP_TO_EDGE_SPEC_VERSION = 1;
@@ -3432,9 +3631,11 @@ enum VK_ANDROID_NATIVE_BUFFER_NAME = "VK_ANDROID_native_buffer";
 
 // VK_EXT_debug_report
 mixin(VK_DEFINE_NON_DISPATCHABLE_HANDLE!q{VkDebugReportCallbackEXT});
+
 enum VK_EXT_DEBUG_REPORT_SPEC_VERSION = 2;
 enum VK_EXT_DEBUG_REPORT_EXTENSION_NAME = "VK_EXT_debug_report";
 enum VK_STRUCTURE_TYPE_DEBUG_REPORT_CREATE_INFO_EXT = VkStructureType.VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT;
+
 
 enum VkDebugReportObjectTypeEXT {
 	VK_DEBUG_REPORT_OBJECT_TYPE_UNKNOWN_EXT = 0,
@@ -3472,7 +3673,7 @@ enum VkDebugReportObjectTypeEXT {
 	VK_DEBUG_REPORT_OBJECT_TYPE_MAX_ENUM_EXT = 0x7FFFFFFF
 }
 
-// VkDebugReportObjectTypeEXT gloabl enums
+// VkDebugReportObjectTypeEXT global enums
 enum VK_DEBUG_REPORT_OBJECT_TYPE_UNKNOWN_EXT = VkDebugReportObjectTypeEXT.VK_DEBUG_REPORT_OBJECT_TYPE_UNKNOWN_EXT;
 enum VK_DEBUG_REPORT_OBJECT_TYPE_INSTANCE_EXT = VkDebugReportObjectTypeEXT.VK_DEBUG_REPORT_OBJECT_TYPE_INSTANCE_EXT;
 enum VK_DEBUG_REPORT_OBJECT_TYPE_PHYSICAL_DEVICE_EXT = VkDebugReportObjectTypeEXT.VK_DEBUG_REPORT_OBJECT_TYPE_PHYSICAL_DEVICE_EXT;
@@ -3516,13 +3717,14 @@ enum VkDebugReportErrorEXT {
 	VK_DEBUG_REPORT_ERROR_MAX_ENUM_EXT = 0x7FFFFFFF
 }
 
-// VkDebugReportErrorEXT gloabl enums
+// VkDebugReportErrorEXT global enums
 enum VK_DEBUG_REPORT_ERROR_NONE_EXT = VkDebugReportErrorEXT.VK_DEBUG_REPORT_ERROR_NONE_EXT;
 enum VK_DEBUG_REPORT_ERROR_CALLBACK_REF_EXT = VkDebugReportErrorEXT.VK_DEBUG_REPORT_ERROR_CALLBACK_REF_EXT;
 enum VK_DEBUG_REPORT_ERROR_BEGIN_RANGE_EXT = VkDebugReportErrorEXT.VK_DEBUG_REPORT_ERROR_BEGIN_RANGE_EXT;
 enum VK_DEBUG_REPORT_ERROR_END_RANGE_EXT = VkDebugReportErrorEXT.VK_DEBUG_REPORT_ERROR_END_RANGE_EXT;
 enum VK_DEBUG_REPORT_ERROR_RANGE_SIZE_EXT = VkDebugReportErrorEXT.VK_DEBUG_REPORT_ERROR_RANGE_SIZE_EXT;
 enum VK_DEBUG_REPORT_ERROR_MAX_ENUM_EXT = VkDebugReportErrorEXT.VK_DEBUG_REPORT_ERROR_MAX_ENUM_EXT;
+
 
 enum VkDebugReportFlagBitsEXT {
 	VK_DEBUG_REPORT_INFORMATION_BIT_EXT = 0x00000001,
@@ -3533,7 +3735,7 @@ enum VkDebugReportFlagBitsEXT {
 	VK_DEBUG_REPORT_FLAG_BITS_MAX_ENUM_EXT = 0x7FFFFFFF
 }
 
-// VkDebugReportFlagBitsEXT gloabl enums
+// VkDebugReportFlagBitsEXT global enums
 enum VK_DEBUG_REPORT_INFORMATION_BIT_EXT = VkDebugReportFlagBitsEXT.VK_DEBUG_REPORT_INFORMATION_BIT_EXT;
 enum VK_DEBUG_REPORT_WARNING_BIT_EXT = VkDebugReportFlagBitsEXT.VK_DEBUG_REPORT_WARNING_BIT_EXT;
 enum VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT = VkDebugReportFlagBitsEXT.VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT;
@@ -3541,15 +3743,8 @@ enum VK_DEBUG_REPORT_ERROR_BIT_EXT = VkDebugReportFlagBitsEXT.VK_DEBUG_REPORT_ER
 enum VK_DEBUG_REPORT_DEBUG_BIT_EXT = VkDebugReportFlagBitsEXT.VK_DEBUG_REPORT_DEBUG_BIT_EXT;
 enum VK_DEBUG_REPORT_FLAG_BITS_MAX_ENUM_EXT = VkDebugReportFlagBitsEXT.VK_DEBUG_REPORT_FLAG_BITS_MAX_ENUM_EXT;
 alias VkDebugReportFlagsEXT = VkFlags;
-alias PFN_vkDebugReportCallbackEXT = VkBool32 function(
-    VkDebugReportFlagsEXT                       flags,
-    VkDebugReportObjectTypeEXT                  objectType,
-    uint64_t                                    object,
-    size_t                                      location,
-    int32_t                                     messageCode,
-    const char*                                 pLayerPrefix,
-    const char*                                 pMessage,
-    void*                                       pUserData);
+
+alias PFN_vkDebugReportCallbackEXT = VkBool32 function(VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objectType, uint64_t object, size_t location, int32_t messageCode, const char* pLayerPrefix, const char* pMessage, void* pUserData);
 
 struct VkDebugReportCallbackCreateInfoEXT {
 	VkStructureType               sType = VkStructureType.VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT;
@@ -3558,6 +3753,11 @@ struct VkDebugReportCallbackCreateInfoEXT {
 	PFN_vkDebugReportCallbackEXT  pfnCallback;
 	void*                         pUserData;
 }
+
+// VK_EXT_debug_report function types
+alias PFN_vkCreateDebugReportCallbackEXT = VkResult function(VkInstance instance, const(VkDebugReportCallbackCreateInfoEXT)* pCreateInfo, const(VkAllocationCallbacks)* pAllocator, VkDebugReportCallbackEXT* pCallback);
+alias PFN_vkDestroyDebugReportCallbackEXT = void function(VkInstance instance, VkDebugReportCallbackEXT callback, const(VkAllocationCallbacks)* pAllocator);
+alias PFN_vkDebugReportMessageEXT = void function(VkInstance instance, VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objectType, uint64_t object, size_t location, int32_t messageCode, const(char)* pLayerPrefix, const(char)* pMessage);
 
 // VK_NV_glsl_shader
 enum VK_NV_GLSL_SHADER_SPEC_VERSION = 1;
@@ -3583,6 +3783,7 @@ enum VK_AMD_EXTENSION_2_EXTENSION_NAME = "VK_AMD_extension_2";
 enum VK_AMD_RASTERIZATION_ORDER_SPEC_VERSION = 1;
 enum VK_AMD_RASTERIZATION_ORDER_EXTENSION_NAME = "VK_AMD_rasterization_order";
 
+
 enum VkRasterizationOrderAMD {
 	VK_RASTERIZATION_ORDER_STRICT_AMD = 0,
 	VK_RASTERIZATION_ORDER_RELAXED_AMD = 1,
@@ -3592,7 +3793,7 @@ enum VkRasterizationOrderAMD {
 	VK_RASTERIZATION_ORDER_MAX_ENUM_AMD = 0x7FFFFFFF
 }
 
-// VkRasterizationOrderAMD gloabl enums
+// VkRasterizationOrderAMD global enums
 enum VK_RASTERIZATION_ORDER_STRICT_AMD = VkRasterizationOrderAMD.VK_RASTERIZATION_ORDER_STRICT_AMD;
 enum VK_RASTERIZATION_ORDER_RELAXED_AMD = VkRasterizationOrderAMD.VK_RASTERIZATION_ORDER_RELAXED_AMD;
 enum VK_RASTERIZATION_ORDER_BEGIN_RANGE_AMD = VkRasterizationOrderAMD.VK_RASTERIZATION_ORDER_BEGIN_RANGE_AMD;
@@ -3646,3 +3847,10 @@ struct VkDebugMarkerMarkerInfoEXT {
 	const(char)*     pMarkerName;
 	float[4]         color;
 }
+
+// VK_EXT_debug_marker function types
+alias PFN_vkDebugMarkerSetObjectTagEXT = VkResult function(VkDevice device, VkDebugMarkerObjectTagInfoEXT* pTagInfo);
+alias PFN_vkDebugMarkerSetObjectNameEXT = VkResult function(VkDevice device, VkDebugMarkerObjectNameInfoEXT* pNameInfo);
+alias PFN_vkCmdDebugMarkerBeginEXT = void function(VkCommandBuffer commandBuffer, VkDebugMarkerMarkerInfoEXT* pMarkerInfo);
+alias PFN_vkCmdDebugMarkerEndEXT = void function(VkCommandBuffer commandBuffer);
+alias PFN_vkCmdDebugMarkerInsertEXT = void function(VkCommandBuffer commandBuffer, VkDebugMarkerMarkerInfoEXT* pMarkerInfo);
