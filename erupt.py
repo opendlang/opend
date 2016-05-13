@@ -450,11 +450,11 @@ version({NAME_PREFIX}LoadFromDerelict) {{
 			# Strip off the suffix from the prefix
 			expandPrefix = expandName.rsplit(expandSuffix, 1)[0]
 
-		# Prefix
+		# group enums by their name
 		body = "\nenum " + groupName + " {\n"
 
-		# version with global enums
-		globalEnums = "\n\nversion( {NAME_PREFIX}GlobalEnums ) {{\n".format(NAME_PREFIX = self.genOpts.namePrefix)
+		# add grouped enums to global scope
+		globalEnums = "\n\n// " + groupName + " global enums\n"
 
 		isEnum = ('FLAG_BITS' not in expandPrefix)
 
@@ -476,7 +476,7 @@ version({NAME_PREFIX}LoadFromDerelict) {{
 				re.match(self.genOpts.addExtensions, elem.get('extname')) is not None or
 				self.genOpts.defaultExtensions == elem.get('supported')):
 				body += "\t" + name + " = " + strVal + ",\n"
-				globalEnums += "\tenum {0} = {1}.{0};\n".format(name, groupName)
+				globalEnums += "enum {0} = {1}.{0};\n".format(name, groupName)
 
 			if isEnum and elem.get('extends') is None:
 				if minName is None:
@@ -495,12 +495,12 @@ version({NAME_PREFIX}LoadFromDerelict) {{
 			body += "\t" + expandPrefix + "_END_RANGE"   + expandSuffix + " = " + maxName + ",\n"
 			body += "\t" + expandPrefix + "_RANGE_SIZE"  + expandSuffix + " = (" + maxName + " - " + minName + " + 1),\n"
 
-			globalEnums += "\tenum {0}{1}{2} = {3}.{0}{1}{2};\n".format(expandPrefix, "_BEGIN_RANGE", expandSuffix, groupName)
-			globalEnums += "\tenum {0}{1}{2} = {3}.{0}{1}{2};\n".format(expandPrefix, "_END_RANGE"  , expandSuffix, groupName)
-			globalEnums += "\tenum {0}{1}{2} = {3}.{0}{1}{2};\n".format(expandPrefix, "_RANGE_SIZE" , expandSuffix, groupName)
+			globalEnums += "enum {0}{1}{2} = {3}.{0}{1}{2};\n".format(expandPrefix, "_BEGIN_RANGE", expandSuffix, groupName)
+			globalEnums += "enum {0}{1}{2} = {3}.{0}{1}{2};\n".format(expandPrefix, "_END_RANGE"  , expandSuffix, groupName)
+			globalEnums += "enum {0}{1}{2} = {3}.{0}{1}{2};\n".format(expandPrefix, "_RANGE_SIZE" , expandSuffix, groupName)
 
 		body += "\t" + expandPrefix + "_MAX_ENUM" + expandSuffix + " = 0x7FFFFFFF\n}"
-		globalEnums += "\tenum {0}{1}{2} = {3}.{0}{1}{2};\n}}".format(expandPrefix, "_MAX_ENUM" , expandSuffix, groupName)
+		globalEnums += "enum {0}{1}{2} = {3}.{0}{1}{2};".format(expandPrefix, "_MAX_ENUM" , expandSuffix, groupName)
 
 		if groupElem.get('type') == 'bitmask':
 			self.appendSection('bitmask', body + globalEnums)
