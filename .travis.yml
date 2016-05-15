@@ -9,5 +9,5 @@ d:
   
 script:
     - dub run :printdirs --compiler=${DC}
-    - if [ `uname` = "Darwin" ]; then dub run :printdirs --config=cocoa -L-framework -LFoundation ; fi
+    - if [ `uname` = "Darwin" ]; then dub run :printdirs --config=cocoa ; fi
 
