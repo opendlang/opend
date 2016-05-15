@@ -12,6 +12,8 @@ matrix:
   exclude:
     - os: osx
       d: dmd-2.069.2
+  allow_failures:
+    - os: osx
   
 script:
     - dub run :printdirs --compiler=${DC}
