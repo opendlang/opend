@@ -1,4 +1,9 @@
 language: d
+
+os:
+  - linux
+  - osx
+
 matrix:
     include:
         - d: dmd-2.069.2
