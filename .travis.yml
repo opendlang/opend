@@ -15,5 +15,5 @@ matrix:
   
 script:
     - dub run :printdirs --compiler=${DC}
-    - if [ `uname` = "Darwin" ]; then dub run :printdirs --config=cocoa --compiler=${DC} ; fi
+    - if [ `uname` = "Darwin" ]; then dub run :printdirs --combined --config=cocoa --compiler=${DC} ; fi
 
