@@ -6,8 +6,14 @@ os:
 
 d:
   - dmd-2.069.2
+  - dmd-2.071.0
+  
+matrix:
+  exclude:
+    - os: osx
+      d: dmd-2.069.2
   
 script:
     - dub run :printdirs --compiler=${DC}
-    - if [ `uname` = "Darwin" ]; then dub run :printdirs --config=cocoa ; fi
+    - if [ `uname` = "Darwin" ]; then dub run :printdirs --config=cocoa --compiler=${DC} ; fi
 
