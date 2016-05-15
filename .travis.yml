@@ -4,10 +4,10 @@ os:
   - linux
   - osx
 
-matrix:
-    include:
-        - d: dmd-2.069.2
-        
+d:
+  - dmd-2.069.2
+  
 script:
-    - dub build standardpaths --compiler=${DC}
     - dub run :printdirs --compiler=${DC}
+    - if [ `uname` = "Darwin" ]; then dub run :printdirs --config=cocoa -L-framework -LFoundation ; fi
+
