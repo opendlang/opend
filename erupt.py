@@ -61,6 +61,9 @@ uint VK_VERSION_PATCH(uint ver) {{
 	return ver & 0xfff;
 }}
 
+// Version of corresponding c header file
+{HEADER_VERSION}
+
 
 enum VK_NULL_HANDLE = null;
 
@@ -141,6 +144,7 @@ class DGenerator(OutputGenerator):
 			"// VK_KHR_xlib_surface"    : ["VK_USE_PLATFORM_XLIB_KHR",		"public import X11.Xlib;\n"],
 			"// VK_KHR_xcb_surface"	    : ["VK_USE_PLATFORM_XCB_KHR",		"public import xcb.xcb;\n"],
 		}
+		self.headerVersion = ""
 
 	def beginFile(self, genOpts):
 		self.genOpts = genOpts
@@ -157,7 +161,7 @@ class DGenerator(OutputGenerator):
 		with open(path.join(genOpts.filename, "package.d"), "w", encoding="utf-8") as packageFile:
 			write(PACKAGE_HEADER.format(PACKAGE_PREFIX = genOpts.packagePrefix), file=packageFile)
 		
-		write(TYPES_HEADER.format(PACKAGE_PREFIX = genOpts.packagePrefix), file=self.typesFile)
+		write(TYPES_HEADER.format(PACKAGE_PREFIX = genOpts.packagePrefix, HEADER_VERSION = self.headerVersion), file=self.typesFile)
 		write(FUNCTIONS_HEADER.format(PACKAGE_PREFIX = genOpts.packagePrefix), file=self.funcsFile)
 	
 	def endFile(self):
@@ -276,7 +280,9 @@ version({NAME_PREFIX}FromDerelict) {{
 
 	def endFeature(self):
 		if self.emit:
-			# write all types into types.d
+			# first write all types into types.d
+
+			# special treat for platform surface extension which get wraped into a version block
 			extIndent = self.surfaceExtensionVersionIndent
 			write("\n" + self.currentFeature, file=self.typesFile)
 			surfaceVersion = ""
@@ -328,8 +334,6 @@ version({NAME_PREFIX}FromDerelict) {{
 				if self.isSurfaceExtension: write("\t" + surfaceVersion, file=self.funcsFile)
 				write(extIndent + ('\n' + extIndent).join(self.sections['command']), file=self.funcsFile)
 				if self.isSurfaceExtension: write("\t}", file=self.funcsFile)
-
-
 
 				# capture if function is a instance or device level function
 				inInstanceLevelFuncNames = False
@@ -402,7 +406,7 @@ version({NAME_PREFIX}FromDerelict) {{
 	# Append a definition to the specified section
 	def appendSection(self, section, text):
 		self.sections[section].append(text)
-	
+
 	def genType(self, typeinfo, name):
 		super().genType(typeinfo, name)
 		if "requires" in typeinfo.elem.attrib:
@@ -432,6 +436,10 @@ version({NAME_PREFIX}FromDerelict) {{
 			
 		elif category == "struct" or category == "union":
 			self.genStruct(typeinfo, name)
+
+		elif category == 'define' and name == 'VK_HEADER_VERSION':
+			for headerVersion in islice(typeinfo.elem.itertext(), 2, 3):	# get the version string from the one element list
+				self.headerVersion = "enum VK_HEADER_VERSION ={0};".format(headerVersion)
 
 		else:
 			pass
