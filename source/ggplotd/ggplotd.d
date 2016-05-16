@@ -468,33 +468,6 @@ unittest
     gg.save( "boxplot.svg" );
 }
 
-///
-unittest
-{
-    /// http://blackedder.github.io/ggplotd/images/hist2D.svg
-    import std.array : array;
-    import std.algorithm : map;
-    import std.conv : to;
-    import std.range : repeat, iota;
-    import std.random : uniform;
-
-    import ggplotd.aes : Aes;
-    import ggplotd.colour : colourGradient;
-    import ggplotd.colourspace : XYZ;
-    import ggplotd.geom : geomHist2D;
-
-    auto xs = iota(0,500,1).map!((x) => uniform(0.0,5)+uniform(0.0,5))
-        .array;
-    auto ys = iota(0,500,1).map!((y) => uniform(0.0,5)+uniform(0.0,5))
-        .array;
-    auto aes = Aes!(typeof(xs), "x", typeof(ys), "y")( xs, ys);
-    auto gg = GGPlotD().put( geomHist2D( aes ) );
-    // Use a different colour scheme
-    gg.put( colourGradient!XYZ( "white-cornflowerBlue-crimson" ) );
-
-    gg.save( "hist2D.svg" );
-}
-
 /// Changing axes details
 unittest
 {

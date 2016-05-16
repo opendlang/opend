@@ -595,17 +595,11 @@ auto geomHist(AES)(AES aes, size_t noBins = 0)
 /// Draw histograms based on the x and y coordinates of the data (aes)
 auto geomHist2D(AES)(AES aes, size_t noBinsX = 0, size_t noBinsY = 0)
 {
-    import std.range : Appender;
+    import std.algorithm : map, joiner;
     import ggplotd.stat : statHist2D;
 
-    // TODO: Why doesn't the below work? Any range with elementtype geom should work.
-    //    return statHist2D( aes, noBinsX, noBinsY ).tee!((a) => a.writeln )
-    //        .map!( (poly) => geomPolygon( poly ) ).array;
-
-    Appender!(Geom[]) appender;
-    foreach( poly; statHist2D( aes, noBinsX, noBinsY ) )
-        appender.put( geomPolygon( poly ) );
-    return appender.data;
+    return statHist2D( aes, noBinsX, noBinsY )
+            .map!( (poly) => geomPolygon( poly ) ).joiner;
 }
 
 
@@ -987,7 +981,7 @@ auto geomPolygon(AES)(AES aes)
         auto gradient = new cairo.LinearGradient( gV[0].x, gV[0].y, 
             gV[1].x, gV[1].y );
 
-        context.lineWidth = 0;
+        context.lineWidth = 0.0;
         auto col0 = colourMap(ColourID(gV[0].z));
         auto col1 = colourMap(ColourID(gV[1].z));
         import ggplotd.colourspace : RGBA, toCairoRGBA;
@@ -1016,4 +1010,73 @@ auto geomPolygon(AES)(AES aes)
     geom.colours = merged.map!((t) => ColourID(t.colour)).array;
 
     return [geom];
+}
+
+
+/**
+  Draw kernel density based on the x coordinates of the data
+
+  Examples:
+  --------------
+    /// http://blackedder.github.io/ggplotd/images/filled_density.svg
+    import std.array : array;
+    import std.algorithm : map;
+    import std.range : repeat, iota, chain;
+    import std.random : uniform;
+
+    import ggplotd.aes : Aes;
+    import ggplotd.geom : geomDensity;
+    import ggplotd.ggplotd : GGPlotD;
+    auto xs = iota(0,50,1).map!((x) => uniform(0.0,5)+uniform(0.0,5)).array;
+    auto cols = "a".repeat(25).chain("b".repeat(25));
+    auto aes = Aes!(typeof(xs), "x", typeof(cols), "colour", 
+        double[], "fill" )( 
+            xs, cols, 0.45.repeat(xs.length).array);
+    auto gg = GGPlotD().put( geomDensity( aes ) );
+    gg.save( "filled_density.svg" );
+  --------------
+*/
+auto geomDensity(AES)(AES aes)
+{
+    import ggplotd.stat : statDensity;
+    return geomLine( statDensity( aes ) );
+}
+
+/**
+  Draw kernel density based on the x and y coordinates of the data
+
+  Examples:
+  --------------
+    /// http://blackedder.github.io/ggplotd/images/density2D.png
+    import std.array : array;
+    import std.algorithm : map;
+    import std.conv : to;
+    import std.range : repeat, iota;
+    import std.random : uniform;
+
+    import ggplotd.aes : Aes;
+    import ggplotd.colour : colourGradient;
+    import ggplotd.colourspace : XYZ;
+    import ggplotd.geom : geomDensity2D;
+    import ggplotd.ggplotd : GGPlotD;
+
+    auto xs = iota(0,500,1).map!((x) => uniform(0.0,5)+uniform(0.0,5))
+        .array;
+    auto ys = iota(0,500,1).map!((y) => uniform(0.5,1.5)+uniform(0.5,1.5))
+        .array;
+    auto aes = Aes!(typeof(xs), "x", typeof(ys), "y")( xs, ys);
+    auto gg = GGPlotD().put( geomDensity2D( aes ) );
+    // Use a different colour scheme
+    gg.put( colourGradient!XYZ( "white-cornflowerBlue-crimson" ) );
+
+    gg.save( "density2D.png" );
+  --------------
+*/
+auto geomDensity2D(AES)(AES aes) 
+{
+    import std.algorithm : map, joiner;
+    import ggplotd.stat : statDensity2D;
+
+    return statDensity2D( aes )
+            .map!( (poly) => geomPolygon( poly ) ).joiner;
 }

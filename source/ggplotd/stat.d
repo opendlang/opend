@@ -20,10 +20,7 @@ import std.traits : isCallable;
   --------------
     /// http://blackedder.github.io/ggplotd/images/function.png
     import std.random : uniform;
-    import std.typecons : Tuple;
-    import ggplotd.stat : statFunction;
-    import ggplotd.ggplotd : GGPlotD;
-    import ggplotd.geom : geomLine, geomPoint;
+    import std.typecons : Tuple; import ggplotd.stat : statFunction; import ggplotd.ggplotd : GGPlotD; import ggplotd.geom : geomLine, geomPoint;
     import ggplotd.range : mergeRange;
 
     auto f = (double x) { return x / (1 + x); };
@@ -402,4 +399,173 @@ auto statHist2D(AES)(AES aesRaw, size_t noBinsX = 0, size_t noBinsY = 0)
     return statHistND!(2,AES)( aesRaw, [noBinsX, noBinsY]);
 }
 
+/**
+Calculate kernel density for given data
 
+Params:
+   aes = Data that the histogram will be based on 
+
+Returns: InputRange that holds x and y coordinates for the kernel
+*/
+auto statDensity(AES)( AES aesRaw )
+{
+    import std.algorithm : joiner, map, min, max, reduce;
+    import std.range : chain, front;
+    import std.typecons : tuple, Tuple;
+    import ggplotd.aes : Aes, numericLabel, group;
+    import ggplotd.range : mergeRange;
+    import ggplotd.math : safeMin, safeMax;
+
+    auto xNumeric = aesRaw.map!((t) => t.x).numericLabel;
+    auto aes = aesRaw.mergeRange( Aes!(typeof(xNumeric),"x")(xNumeric) );
+    auto minmax = reduce!(
+            (a,b) => safeMin(a,b.x.to!double),
+            (a,b) => safeMax(a,b.x.to!double))(tuple(double.init,double.init), aes);
+
+    return aes.group.map!((g) {
+        auto xs = g.map!((t) => t.x.to!double);
+
+        // Calculate the kernel width (using scott thing in dstats)
+        // Initialize kernel with normal distribution.
+        import dstats.kerneldensity : scottBandwidth, KernelDensity;
+        import dstats.random : normalPDF;
+        auto sigma = scottBandwidth(xs);
+        auto kernel = (double x) { return normalPDF(x, 0.0, sigma); };
+        auto density = KernelDensity.fromCallable(kernel, xs);
+
+        auto margin = (minmax[1] - minmax[0])/10.0;
+
+
+        // Use statFunction with the kernel to produce a line
+        // Also add points to close the path down to zero
+        auto coords = chain(
+                [Tuple!(double, "x", double, "y")( minmax[0]-margin, 0.0 )],
+                statFunction( density, minmax[0]-margin, minmax[1]+margin ),
+                [Tuple!(double, "x", double, "y")( minmax[1]+margin, 0.0 )]);
+
+
+        return g.front.mergeRange( coords );
+    }).joiner;
+}
+
+///
+unittest
+{
+    import std.stdio : writeln;
+    import std.algorithm : map;
+    import std.array : array;
+    import std.random : uniform;
+    import std.range : chain, iota, repeat, walkLength;
+
+    import ggplotd.aes : Aes;
+
+    auto xs = iota(0,100,1)
+        .map!((i)=>uniform(0,0.75)+uniform(0.25,1))
+        .array;
+
+    auto dens = statDensity( Aes!( typeof(xs), "x")( xs ) );
+    auto dim = dens.walkLength;
+    assertGreaterThan( dim, 1 );
+
+    // Test that grouping leads to longer (twice as long) result
+    auto cols = chain("a".repeat(50),"b".repeat(50) );
+    auto dens2 = statDensity( Aes!(typeof(cols), "colour", typeof(xs), "x")( cols, xs ) );
+    assertGreaterThan( dens2.walkLength, 1.9*dim );
+    assertLessThan( dens2.walkLength, 2.1*dim );
+
+    // Test that colour is passed through (merged)
+    assertEqual( dens2.front.colour.length, 1 );
+}
+
+/**
+Calculate kernel density for given x and y data
+
+Params:
+   aes = Data that the histogram will be based on 
+
+Returns: Range of ranges that holds polygons for the kernel
+*/
+auto statDensity2D(AES)( AES aesRaw )
+{
+    import std.algorithm : joiner, map, min, max, reduce;
+    import std.array : array;
+    import std.range : chain, front, iota, zip;
+    import std.typecons : Erase, tuple, Tuple;
+    import ggplotd.aes : Aes, numericLabel, group, DefaultGroupFields;
+    import ggplotd.math : safeMin, safeMax;
+    import ggplotd.range : mergeRange;
+
+    auto xNumeric = aesRaw.map!((t) => t.x).numericLabel;
+    auto yNumeric = aesRaw.map!((t) => t.y).numericLabel;
+    auto aes = aesRaw.mergeRange( Aes!(typeof(xNumeric),"x",
+                typeof(yNumeric),"y")(xNumeric, yNumeric) );
+    auto minmax = reduce!(
+            (a,b) => safeMin(a,b.x.to!double),
+            (a,b) => safeMax(a,b.x.to!double),
+            (a,b) => safeMin(a,b.y.to!double),
+            (a,b) => safeMax(a,b.y.to!double),
+            )(tuple(double.init,double.init,double.init,double.init), aes);
+
+    return aes.group!(Erase!("colour",DefaultGroupFields)).map!((g) {
+        auto xs = g.map!((t) => t.x.to!double);
+        auto ys = g.map!((t) => t.y.to!double);
+
+        // Calculate the kernel width (using scott thing in dstats)
+        // Initialize kernel with normal distribution.
+        import dstats.kerneldensity : scottBandwidth, KernelDensity;
+        import dstats.random : normalPDF;
+        auto sigmaX = scottBandwidth(xs);
+        auto sigmaY = scottBandwidth(ys);
+        auto kernel = (double x, double y) { return normalPDF(x, 0.0, sigmaX)*
+            normalPDF(y, 0.0, sigmaY); };
+        auto density = KernelDensity.fromCallable(kernel, xs, ys);
+
+        auto marginX = (minmax[1] - minmax[0])/10.0;
+        auto marginY = (minmax[3] - minmax[2])/10.0;
+
+
+        // Use statFunction with the kernel to produce a line
+        // Also add points to close the path down to zero
+        auto xCoords = iota( minmax[0] - marginX, minmax[1] + 2*marginX, marginX/2.5 ).array;
+        auto yCoords = iota( minmax[2] - marginY, minmax[3] + 2*marginY, marginY/2.5 ).array;
+        auto coords = zip(xCoords, xCoords[1..$]).map!( (xr) {
+                return zip(yCoords, yCoords[1..$]).map!( (yr) {
+                        // Two polygons
+                        return [
+                        g.front.mergeRange(Aes!( double[], "x", double[], "y", double[], "colour" )
+                        ([xr[0], xr[0], xr[1]],
+                         [yr[0], yr[1], yr[1]],
+                         [density(xr[0],yr[0]),density(xr[0],yr[1]),density(xr[1],yr[1])])),
+                        g.front.mergeRange(
+                                Aes!( double[], "x", double[], "y", double[], "colour" )
+                        ([xr[0], xr[1], xr[1]],
+                         [yr[0], yr[0], yr[1]],
+                         [density(xr[0],yr[0]),density(xr[1],yr[0]),density(xr[1],yr[1])]))
+                         ];
+                }).joiner;
+        }).joiner;
+        return coords;
+        //return g;
+    }).joiner;
+}
+
+///
+unittest
+{
+    import std.algorithm : map;
+    import std.array : array;
+    import std.random : uniform;
+    import std.range : iota, walkLength;
+
+    import ggplotd.aes : Aes;
+    auto xs = iota(0,500,1).map!((x) => uniform(0.0,5)+uniform(0.0,5))
+        .array;
+    auto ys = iota(0,500,1).map!((y) => uniform(1.0,1.5)+uniform(1.0,1.5))
+        .array;
+    auto aes = Aes!(typeof(xs), "x", typeof(ys), "y")( xs, ys);
+
+    auto sD = statDensity2D( aes );
+    assertGreaterThan( sD.walkLength, 1250 );
+    assertLessThan( sD.walkLength, 2458 );
+    assertEqual( sD.front.walkLength, 3 );
+}
