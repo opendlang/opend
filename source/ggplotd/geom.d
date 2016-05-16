@@ -1014,7 +1014,7 @@ auto geomPolygon(AES)(AES aes)
 
 
 /**
-  Draw kernel density based on the x coordinates of the data (aes)
+  Draw kernel density based on the x coordinates of the data
 
   Examples:
   --------------
@@ -1039,6 +1039,21 @@ auto geomPolygon(AES)(AES aes)
 auto geomDensity(AES)(AES aes)
 {
     import ggplotd.stat : statDensity;
-    import std.stdio : writeln;
     return geomLine( statDensity( aes ) );
+}
+
+/**
+  Draw kernel density based on the x and y coordinates of the data
+
+  Examples:
+  --------------
+  --------------
+*/
+auto geomDensity2D(AES)(AES aes) 
+{
+    import std.algorithm : map, joiner;
+    import ggplotd.stat : statDensity2D;
+
+    return statDensity2D( aes )
+            .map!( (poly) => geomPolygon( poly ) ).joiner;
 }
