@@ -64,7 +64,6 @@ uint VK_VERSION_PATCH(uint ver) {{
 // Version of corresponding c header file
 {HEADER_VERSION}
 
-
 enum VK_NULL_HANDLE = null;
 
 enum VK_DEFINE_HANDLE(string name) = "struct "~name~"_handle; alias "~name~" = "~name~"_handle*;";
@@ -127,6 +126,8 @@ class DGenerator(OutputGenerator):
 	ALL_SECTIONS = TYPE_SECTIONS + ['commandPointer', 'command']
 	def __init__(self, errFile=sys.stderr, warnFile=sys.stderr, diagFile=sys.stderr):
 		super().__init__(errFile, warnFile, diagFile)
+		self.headerVersion = ""
+		self.typesFileContent = ""
 		self.instanceLevelFuncNames = set()
 		self.instanceLevelFunctions = ""
 		self.deviceLevelFuncNames = set()
@@ -144,7 +145,6 @@ class DGenerator(OutputGenerator):
 			"// VK_KHR_xlib_surface"    : ["VK_USE_PLATFORM_XLIB_KHR",		"public import X11.Xlib;\n"],
 			"// VK_KHR_xcb_surface"	    : ["VK_USE_PLATFORM_XCB_KHR",		"public import xcb.xcb;\n"],
 		}
-		self.headerVersion = ""
 
 	def beginFile(self, genOpts):
 		self.genOpts = genOpts
@@ -161,10 +161,13 @@ class DGenerator(OutputGenerator):
 		with open(path.join(genOpts.filename, "package.d"), "w", encoding="utf-8") as packageFile:
 			write(PACKAGE_HEADER.format(PACKAGE_PREFIX = genOpts.packagePrefix), file=packageFile)
 		
-		write(TYPES_HEADER.format(PACKAGE_PREFIX = genOpts.packagePrefix, HEADER_VERSION = self.headerVersion), file=self.typesFile)
 		write(FUNCTIONS_HEADER.format(PACKAGE_PREFIX = genOpts.packagePrefix), file=self.funcsFile)
 	
 	def endFile(self):
+		# write types.d file
+		write(TYPES_HEADER.format(PACKAGE_PREFIX = self.genOpts.packagePrefix, HEADER_VERSION = self.headerVersion) + self.typesFileContent, file=self.typesFile)
+
+		# write functions.d file
 		write("}}\n\n__gshared {{{GLOBAL_FUNCTION_DEFINITIONS}\n}}\n".format(GLOBAL_FUNCTION_DEFINITIONS = self.functionTypeDefinition), file=self.funcsFile)
 		write("""\
 struct {NAME_PREFIX}Loader {{
@@ -284,12 +287,11 @@ version({NAME_PREFIX}FromDerelict) {{
 
 			# special treat for platform surface extension which get wraped into a version block
 			extIndent = self.surfaceExtensionVersionIndent
-			write("\n" + self.currentFeature, file=self.typesFile)
+			self.typesFileContent += "\n{0}\n".format(self.currentFeature)
 			surfaceVersion = ""
 			if self.isSurfaceExtension:
 				surfaceVersion = "version({0}) {{".format(self.surfaceExtensions[self.currentFeature][0])
-				write("{0}\n\t{1}".format(surfaceVersion, self.surfaceExtensions[self.currentFeature][1]), file=self.typesFile)
-
+				self.typesFileContent += "{0}\n\t{1}\n".format(surfaceVersion, self.surfaceExtensions[self.currentFeature][1])
 			
 			isFirstSectionInFeature = True		# for output file formating
 			for section in self.TYPE_SECTIONS:
@@ -300,22 +302,21 @@ version({NAME_PREFIX}FromDerelict) {{
 					if section == 'struct':
 						if self.opaqueStruct:
 							for opaque in self.opaqueStruct:
-								write("{1}struct {0};".format(opaque, extIndent), file=self.typesFile)
-							write('', file=self.typesFile)
+								self.typesFileContent += "{1}struct {0};\n".format(opaque, extIndent)
+							self.typesFileContent += '\n'
 
 					elif not isFirstSectionInFeature:
-						write('', file=self.typesFile)
+						self.typesFileContent += '\n'
 
 					# for output file formating
 					isFirstSectionInFeature = False
 
 					# write the rest of the contents, eg. enums, structs, etc. into types file
 					for content in self.sections[section]:
-						write("{1}{0}".format(content, extIndent), file=self.typesFile)
-					#write('', file=self.typesFile)
+						self.typesFileContent += "{1}{0}\n".format(content, extIndent)
 
 			if self.isSurfaceExtension:
-				write("}", file=self.typesFile)
+				self.typesFileContent += "}\n"
 
 			# currently the commandPointer token is not used
 			if self.genOpts.genFuncPointers and self.sections['commandPointer']:
@@ -485,7 +486,6 @@ version({NAME_PREFIX}FromDerelict) {{
 	
 	def genGroup(self, groupinfo, groupName):
 		super().genGroup(groupinfo, groupName)
-		#print("enum %s {" % groupName, file=self.typesFile)
 
 		groupElem = groupinfo.elem
 
