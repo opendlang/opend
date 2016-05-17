@@ -574,7 +574,7 @@ unittest
     auto aes = Aes!(typeof(xs), "x", typeof(ys), "y")( xs, ys);
 
     auto sD = statDensity2D( aes );
-    assertGreaterThan( sD.walkLength, 1200 );
-    assertLessThan( sD.walkLength, 1300 );
+    assertGreaterThan( sD.walkLength, 1150 );
+    assertLessThan( sD.walkLength, 1350 );
     assertEqual( sD.front.walkLength, 3 );
 }
