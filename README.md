@@ -43,13 +43,11 @@ the easiest way is with subConfigurations:
 This README contains a couple of examples and basic documentation on how
 to extend GGPlotD. API documentation is automatically generated and put
 online (including examples) under
-http://blackedder.github.io/ggplotd/index.html . For example for the
+http://blackedder.github.io/ggplotd/index.html. For example for the
 available geom* functions see:
 http://blackedder.github.io/ggplotd/ggplotd/geom.html
 
 ### Examples
-
-At version v0.3.3 we have basic support for simple plots.
 
 ![A noisy figure](http://blackedder.github.io/ggplotd/images/noise.png)
 ```D 
@@ -231,11 +229,11 @@ void main()
 
 ### Data
 
-The examples above all use the Aes struct to hold all the data and pass it to
-geom* functions. Instead it is also straightforward to use your own data range
-as long as each element provides access to the needed data at compile time,
-i.e. for geomPoint the element needs to have a x and y field. See below for
-a simple example:
+The examples above all use the Aes struct to hold all the data and pass it
+to geom* functions. It is also straightforward to use your own data range
+as long as each element provides access to the needed data at compile
+time, i.e. for geomPoint the element needs to have a x and y field. See
+below for a simple example:
 
 ```D
 
@@ -275,66 +273,63 @@ void main()
 
 Due to GGplotD’s design it is relatively straightforward to extend GGplotD to
 support new types of plots. This is especially true if your function depends on
-the already implemented base types geomLine, geomEllipse, geomRectangle and
-geomPolygon. The main reason for not having added more functions yet is lack of
-time. If you decide to implement your own function then **please** open a pull
-request or at least copy your code into an issue. That way we can all benefit
-from your work :) Even if you think the code is not up to scratch it will be
-easier for the maintainer(s) to take your code and adapt it than to start from
-scrap.
+the already implemented base types geomType, geomLine, geomEllipse,
+geomRectangle and geomPolygon. The main reason for not having added more
+functions yet is lack of time. If you decide to implement your own function
+then **please** open a pull request or at least copy your code into an issue.
+That way we can all benefit from your work :) Even if you think the code is not
+up to scratch it will be easier for the maintainer(s) to take your code and
+adapt it than to start from scrap.
+
+### stat*
+
+The [stat* functions](http://blackedder.github.io/ggplotd/ggplotd/stat.html)
+are meant to calculate different statistics from data. The results should
+be an Aes that can be passed to a geom* function and plotted. There are
+a variety of existing functions (statHist, statDensity, statFunction
+[etc.](http://blackedder.github.io/ggplotd/ggplotd/stat.html)). Of course
+if you have written your own then you are encouraged to open a issue/pull
+request on github to submit them for inclusion, so that others can benefit
+from your good work. See below for an example of a plot created with the
+statFunction, which makes it straightforward to draw different functions.
+
+![Function](http://blackedder.github.io/ggplotd/images/function.png)
+
+The goal of each stat* funtion should be to return an Aes that can be
+drawn with a variety of different geom* functions. Still in many cases the
+results can only really be drawn in one way. In that case it might make
+sense to design your function in a way that is drawable by
+[geomType](http://blackedder.github.io/ggplotd/ggplotd/geom.html#geomType).
+GeomType makes it easy to define the type of plot you want, i.e. a line,
+point, rectangle etc.
 
 ### geom*
 
-In general a geom* function reads the data, does some transformation on it
-and then returns a struct containing the transformed result. In GGPlotD
-the low level geom* function such as geomLine, geomEllipse, geomRectangle and
-geomPolygon draw directly to a cairo.Context. Luckily most higher level geom*
-functions can just rely on calling those functions. For reference see below for
-the geomHist drawing implementation. Again if you decide to define your own
-function then please let us know and send us the code. That way we can add the
-function to the library and everyone can benefit.
+A geom* function reads the data, optionally passes the data to a stat*
+function for transformation and returns a range of
+[Geom](http://blackedder.github.io/ggplotd/ggplotd/geom.html#Geom)
+structs, which can be drawn by GGPlotD(). In GGPlotD the low level geom*
+function such as
+[geomType](http://blackedder.github.io/ggplotd/ggplotd/geom.html#geomType),
+[geomPoint](http://blackedder.github.io/ggplotd/ggplotd/geom.html#geomPoint),
+[geomLine](http://blackedder.github.io/ggplotd/ggplotd/geom.html#geomLine),
+[geomEllipse](http://blackedder.github.io/ggplotd/ggplotd/geom.html#geomEllipse),
+[geomRectangle](http://blackedder.github.io/ggplotd/ggplotd/geom.html#geomRectangle)
+and
+[geomPolygon](http://blackedder.github.io/ggplotd/ggplotd/geom.html#geomPolygon)
+draw directly to a cairo.Context. Luckily most higher level geom*
+functions can just rely on calling those functions. For reference see
+below for the geomHist drawing implementation. Again if you decide to
+define your own function then please let us know and send us the code.
+That way we can add the function to the library and everyone can
+benefit.
 
 ```D 
-
-/// Draw histograms based on the x coordinates of the data (aes)
-auto geomHist(AES)(AES aes)
+/// Draw histograms based on the x coordinates of the data
+auto geomHist(AES)(AES aes, size_t noBins = 0)
 {
-    import std.algorithm : map;
-    import std.array : Appender, array;
-    import std.range : repeat;
-    import std.typecons : Tuple;
-
-    // New appender to hold lines for drawing histogram
-    auto appender = Appender!(Geom[])([]);
-
-    foreach (grouped; group(aes)) // Split data by colour/id
-    {
-        auto bins = grouped.map!((t) => t.x) // Extract the x coordinates
-            .array.bin(11); // Bin the data
-
-        foreach (bin; bins)
-        {
-            // Specifying the boxes for the histogram. The merge is used to keep the colour etc. information
-            // contained in the original aes passed to geomHist.
-            appender.put(
-                geomLine( [
-                    grouped.front.merge(Tuple!(double, "x", double, "y" )( 
-                            bin.range[0], 0.0 )),
-                    grouped.front.merge(Tuple!(double, "x", double, "y" )( 
-                            bin.range[0], bin.count )),
-                    grouped.front.merge(Tuple!(double, "x", double, "y" )( 
-                            bin.range[1], bin.count )),
-                    grouped.front.merge(Tuple!(double, "x", double, "y" )( 
-                            bin.range[1], 0.0 )),
-                    grouped.front.merge(Tuple!(double, "x", double, "y" )( 
-                            bin.range[0], 0.0 )),
-                ] )
-            );
-        }
-    }
-
-    // Return the different lines 
-    return appender.data;
+    import ggplotd.stat : statHist;
+    return geomRectangle( statHist( aes, noBins ) );
 }
 ```
 
@@ -342,27 +337,14 @@ Note that the above highlights the drawing part of the function.
 Converting the data into bins is done in a separate bin function, which can be
 found in the [code](./source/ggplotd/geom.d#L571).
 
-### stat*
-
-The [stat* functions](http://blackedder.github.io/ggplotd/ggplotd/stat.html) are
-meant to calculate different statistics from data. The results is an Aes
-that can be passed to a geom* function and plotted. Currently the
-available stat* functions are very limited, but the plan is to provide
-more. Of course if you have written your own then you are welcome to open
-a issue/pull request on github to submit them for inclusion, so that
-others can benefit from your good work. See below for an example of a plot
-created with the statFunction, which makes it straightforward to draw
-different functions.
-
-![Function](http://blackedder.github.io/ggplotd/images/function.png)
-
 ### Heightmap/surface plots
 
-Currently very few heightmap/surface geom* functions are implemented, but
-the building block: geomPolygon is provided. The geomPolygon function
-allows one to draw gradients dependent on height/colour. This function
-plots any straight/flat polygon, with the colour representing the height
-of the surface. Note that the function does not check whether the provided
+Currently a couple of heightmap/surface geom* functions are implemented
+(geomHist2D and geomDensity2D). Both rely on the geomPolygon function to
+do the actual drawing. The geomPolygon function allows one to draw
+gradients dependent on height/colour. This function plots any
+straight/flat polygon, with the colour representing the height of the
+surface. Note that the function does not check whether the provided
 surface is flat. Because triangles are by definition straight it might be
 good to limit your usage to triangles, unless you are completely sure your
 polygon has no curves.

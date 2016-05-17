@@ -585,14 +585,14 @@ unittest
 }
 
 
-/// Draw histograms based on the x coordinates of the data (aes)
+/// Draw histograms based on the x coordinates of the data
 auto geomHist(AES)(AES aes, size_t noBins = 0)
 {
     import ggplotd.stat : statHist;
     return geomRectangle( statHist( aes, noBins ) );
 }
 
-/// Draw histograms based on the x and y coordinates of the data (aes)
+/// Draw histograms based on the x and y coordinates of the data
 auto geomHist2D(AES)(AES aes, size_t noBinsX = 0, size_t noBinsY = 0)
 {
     import std.algorithm : map, joiner;
