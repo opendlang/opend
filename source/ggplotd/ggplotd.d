@@ -27,14 +27,14 @@ struct Title
     string title;
 }
 
-/++ 
+/** 
 Draw the title
 
 Examples:
 --------------------
 GGPlotD().put( title( "My title" ) );
 --------------------
-+/
+*/
 TitleFunction title( string title )
 {
     return delegate(Title t) { t.title = title; return t; };
@@ -120,7 +120,7 @@ private auto drawGeom( in Geom geom, ref cairo.Surface surface,
     return surface;
 }
 
-/// Specify margins (in pixels)
+/// Specify margins in number of pixels
 struct Margins
 {
     /// left margin
@@ -378,7 +378,7 @@ unittest
 ///
 unittest
 {
-    /// http://blackedder.github.io/ggplotd/images/noise.png
+    // http://blackedder.github.io/ggplotd/images/noise.png
     import std.array : array;
     import std.math : sqrt;
     import std.algorithm : map;
@@ -414,7 +414,7 @@ unittest
 ///
 unittest
 {
-    /// http://blackedder.github.io/ggplotd/images/hist.png
+    // http://blackedder.github.io/ggplotd/images/hist.png
     import std.array : array;
     import std.algorithm : map;
     import std.range : repeat, iota;
@@ -437,7 +437,7 @@ unittest
 ///
 unittest
 {
-    /// http://blackedder.github.io/ggplotd/images/filled_hist.svg
+    // http://blackedder.github.io/ggplotd/images/filled_hist.svg
     import std.array : array;
     import std.algorithm : map;
     import std.range : repeat, iota, chain;
@@ -454,7 +454,7 @@ unittest
 /// Boxplot example
 unittest
 {
-    /// http://blackedder.github.io/ggplotd/images/boxplot.svg
+    // http://blackedder.github.io/ggplotd/images/boxplot.svg
     import std.array : array;
     import std.algorithm : map;
     import std.range : repeat, iota, chain;
@@ -471,7 +471,7 @@ unittest
 /// Changing axes details
 unittest
 {
-    /// http://blackedder.github.io/ggplotd/images/axes.svg
+    // http://blackedder.github.io/ggplotd/images/axes.svg
     import std.array : array;
     import std.math : sqrt;
     import std.algorithm : map;
@@ -509,7 +509,7 @@ unittest
 /// Polygon
 unittest
 {
-    /// http://blackedder.github.io/ggplotd/images/polygon.png
+    // http://blackedder.github.io/ggplotd/images/polygon.png
     auto gg = GGPlotD().put( geomPolygon( 
         Aes!(
             double[], "x",

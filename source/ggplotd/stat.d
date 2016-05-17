@@ -357,7 +357,7 @@ private auto statHistND(int dim, AES)(AES aesRaw, size_t[] noBins)
  Create Aes that specifies the bins to draw an histogram 
 
  Params:
-    aes = Data that the histogram will be based on 
+    aesRaw = Data that the histogram will be based on 
     noBins  = Optional number of bins. On a value of 0 the number of bins will be chosen automatically.
 
  Returns: Range that holds rectangles representing different bins
@@ -388,7 +388,7 @@ unittest
  Create Aes that specifies the bins to draw an histogram 
 
  Params:
-    aes = Data that the histogram will be based on 
+    aesRaw = Data that the histogram will be based on 
     noBinsX  = Optional number of bins for x axis. On a value of 0 the number of bins will be chosen automatically.
     noBinsY  = Optional number of bins for y axis. On a value of 0 the number of bins will be chosen automatically.
 
@@ -403,7 +403,7 @@ auto statHist2D(AES)(AES aesRaw, size_t noBinsX = 0, size_t noBinsY = 0)
 Calculate kernel density for given data
 
 Params:
-   aes = Data that the histogram will be based on 
+   aesRaw = Data that the histogram will be based on 
 
 Returns: InputRange that holds x and y coordinates for the kernel
 */
@@ -481,7 +481,7 @@ unittest
 Calculate kernel density for given x and y data
 
 Params:
-   aes = Data that the histogram will be based on 
+   aesRaw = Data that the histogram will be based on 
 
 Returns: Range of ranges that holds polygons for the kernel
 */

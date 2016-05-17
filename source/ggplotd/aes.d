@@ -47,17 +47,15 @@ static auto DefaultValues = Tuple!(
 /++
     Aes is used to store and access data for plotting
 
-    Aes is an InputRange, with named Tuples as elements. The names
-    refer to certain fields, such as x, y, colour etc. If certain fields
-    are not provided then it provides a default value (see DefaultValues).
+    Aes is an InputRange, with named Tuples as the ElementType. The names
+    refer to certain fields, such as x, y, colour etc.
 
     The fields commonly used are data fields, such as "x" and "y". Which data
-    fields are required depends on the geom* function. By default the named 
-    Tuple holds the fields:
+    fields are required depends on the geom* function. Other common fields: 
     $(UL
         $(LI "label": Text labels (string))
         $(LI "colour": Identifier for the colour. In general data points with different colour ids get different colours. This can be almost any type. You can also specify the colour by name or cairo.Color type if you want to specify an exact colour (any type that isNumeric, cairo.Color.RGB(A), or can be converted to string))
-        $(LI "size": Gives the relative size of points/lineWidth etc.
+        $(LI "size": Gives the relative size of points/lineWidth etc.)
         $(LI "angle": Angle of printed labels in radians (double))
         $(LI "alpha": Alpha value of the drawn object (double))
         $(LI "mask": Mask the area outside the axes. Prevents you from drawing outside of the area (bool))
@@ -202,6 +200,7 @@ template Aes(Specs...)
     {
         enum isBuildableFrom(T) = isBuildable!(T, U);
     }
+
     struct Aes
     {
         /**
