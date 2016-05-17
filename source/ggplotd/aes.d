@@ -51,7 +51,9 @@ static auto DefaultValues = Tuple!(
     refer to certain fields, such as x, y, colour etc.
 
     The fields commonly used are data fields, such as "x" and "y". Which data
-    fields are required depends on the geom* function. Other common fields: 
+    fields are required depends on the geom function being called. 
+    
+    Other common fields: 
     $(UL
         $(LI "label": Text labels (string))
         $(LI "colour": Identifier for the colour. In general data points with different colour ids get different colours. This can be almost any type. You can also specify the colour by name or cairo.Color type if you want to specify an exact colour (any type that isNumeric, cairo.Color.RGB(A), or can be converted to string))
