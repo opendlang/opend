@@ -421,6 +421,11 @@ auto statDensity(AES)( AES aesRaw )
     auto minmax = reduce!(
             (a,b) => safeMin(a,b.x.to!double),
             (a,b) => safeMax(a,b.x.to!double))(tuple(double.init,double.init), aes);
+    auto margin = (minmax[1] - minmax[0])/10.0;
+    minmax[0] -= margin;
+    minmax[1] += margin;
+
+
 
     return aes.group.map!((g) {
         auto xs = g.map!((t) => t.x.to!double);
@@ -433,15 +438,12 @@ auto statDensity(AES)( AES aesRaw )
         auto kernel = (double x) { return normalPDF(x, 0.0, sigma); };
         auto density = KernelDensity.fromCallable(kernel, xs);
 
-        auto margin = (minmax[1] - minmax[0])/10.0;
-
-
         // Use statFunction with the kernel to produce a line
         // Also add points to close the path down to zero
         auto coords = chain(
-                [Tuple!(double, "x", double, "y")( minmax[0]-margin, 0.0 )],
-                statFunction( density, minmax[0]-margin, minmax[1]+margin ),
-                [Tuple!(double, "x", double, "y")( minmax[1]+margin, 0.0 )]);
+                [Tuple!(double, "x", double, "y")( minmax[0], 0.0 )],
+                statFunction( density, minmax[0], minmax[1] ),
+                [Tuple!(double, "x", double, "y")( minmax[1], 0.0 )]);
 
 
         return g.front.mergeRange( coords );
@@ -523,11 +525,18 @@ auto statDensity2D(AES)( AES aesRaw )
         auto marginX = (minmax[1] - minmax[0])/10.0;
         auto marginY = (minmax[3] - minmax[2])/10.0;
 
+        minmax[0] -= marginX;
+        minmax[1] += marginX;
+        minmax[2] -= marginY;
+        minmax[3] += marginY;
+
 
         // Use statFunction with the kernel to produce a line
         // Also add points to close the path down to zero
-        auto xCoords = iota( minmax[0] - marginX, minmax[1] + 2*marginX, marginX/2.5 ).array;
-        auto yCoords = iota( minmax[2] - marginY, minmax[3] + 2*marginY, marginY/2.5 ).array;
+        auto stepX = (minmax[1] - minmax[0])/25.0;
+        auto stepY = (minmax[3] - minmax[2])/25.0;
+        auto xCoords = iota( minmax[0], minmax[1] + stepX, stepX ).array;
+        auto yCoords = iota( minmax[2], minmax[3] + stepY, stepY ).array;
         auto coords = zip(xCoords, xCoords[1..$]).map!( (xr) {
                 return zip(yCoords, yCoords[1..$]).map!( (yr) {
                         // Two polygons
@@ -565,7 +574,7 @@ unittest
     auto aes = Aes!(typeof(xs), "x", typeof(ys), "y")( xs, ys);
 
     auto sD = statDensity2D( aes );
-    assertGreaterThan( sD.walkLength, 1250 );
-    assertLessThan( sD.walkLength, 2458 );
+    assertGreaterThan( sD.walkLength, 1200 );
+    assertLessThan( sD.walkLength, 1300 );
     assertEqual( sD.front.walkLength, 3 );
 }
