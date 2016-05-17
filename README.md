@@ -229,11 +229,12 @@ void main()
 
 ### Data
 
-The examples above all use the Aes struct to hold all the data and pass it
-to geom* functions. It is also straightforward to use your own data range
-as long as each element provides access to the needed data at compile
-time, i.e. for geomPoint the element needs to have a x and y field. See
-below for a simple example:
+The examples above all use the
+[Aes](http://blackedder.github.io/ggplotd/ggplotd/aes/Aes.html) struct to hold
+all the data and pass it to geom* functions. It is also straightforward to use
+your own data range as long as each element provides access to the needed data
+at compile time, i.e. for geomPoint the element needs to have a x and y field.
+See below for a simple example:
 
 ```D
 
@@ -299,7 +300,7 @@ The goal of each stat* funtion should be to return an Aes that can be
 drawn with a variety of different geom* functions. Still in many cases the
 results can only really be drawn in one way. In that case it might make
 sense to design your function in a way that is drawable by
-[geomType](http://blackedder.github.io/ggplotd/ggplotd/geom.html#geomType).
+[geomType](http://blackedder.github.io/ggplotd/ggplotd/geom/geomType.html).
 GeomType makes it easy to define the type of plot you want, i.e. a line,
 point, rectangle etc.
 
@@ -310,7 +311,7 @@ function for transformation and returns a range of
 [Geom](http://blackedder.github.io/ggplotd/ggplotd/geom.html#Geom)
 structs, which can be drawn by GGPlotD(). In GGPlotD the low level geom*
 function such as
-[geomType](http://blackedder.github.io/ggplotd/ggplotd/geom.html#geomType),
+[geomType](http://blackedder.github.io/ggplotd/ggplotd/geom/geomType.html),
 [geomPoint](http://blackedder.github.io/ggplotd/ggplotd/geom.html#geomPoint),
 [geomLine](http://blackedder.github.io/ggplotd/ggplotd/geom.html#geomLine),
 [geomEllipse](http://blackedder.github.io/ggplotd/ggplotd/geom.html#geomEllipse),
@@ -321,8 +322,7 @@ draw directly to a cairo.Context. Luckily most higher level geom*
 functions can just rely on calling those functions. For reference see
 below for the geomHist drawing implementation. Again if you decide to
 define your own function then please let us know and send us the code.
-That way we can add the function to the library and everyone can
-benefit.
+That way we can add the function to the library and everyone can benefit.
 
 ```D 
 /// Draw histograms based on the x coordinates of the data

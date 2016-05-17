@@ -1,3 +1,6 @@
+/**
+Deal with colour related struct/functions, such as ColourSpaces etc.
+*/
 module ggplotd.colour;
 
 import std.range : ElementType;
