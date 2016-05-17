@@ -575,6 +575,6 @@ unittest
 
     auto sD = statDensity2D( aes );
     assertGreaterThan( sD.walkLength, 1150 );
-    assertLessThan( sD.walkLength, 1350 );
+    assertLessThan( sD.walkLength, 1450 );
     assertEqual( sD.front.walkLength, 3 );
 }
