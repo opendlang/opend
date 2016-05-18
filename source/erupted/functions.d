@@ -434,15 +434,15 @@ __gshared {
 
 /// if not using version "with-derelict-loader" this function must be called first
 /// sets vkCreateInstance function pointer and acquires basic functions to retrieve information about the implementation
-void loadGlobalLevelFunctions(typeof(vkGetInstanceProcAddr) getProcAddr) {{
+void loadGlobalLevelFunctions(typeof(vkGetInstanceProcAddr) getProcAddr) {
 	vkGetInstanceProcAddr = getProcAddr;
 	vkEnumerateInstanceExtensionProperties = cast(typeof(vkEnumerateInstanceExtensionProperties)) vkGetInstanceProcAddr(null, "vkEnumerateInstanceExtensionProperties");
 	vkEnumerateInstanceLayerProperties = cast(typeof(vkEnumerateInstanceLayerProperties)) vkGetInstanceProcAddr(null, "vkEnumerateInstanceLayerProperties");
 	vkCreateInstance = cast(typeof(vkCreateInstance)) vkGetInstanceProcAddr(null, "vkCreateInstance");
-}}
+}
 
 /// with a valid VkInstance call this function to retrieve additional VkInstance, VkPhysicalDevice, ... related functions
-void loadInstanceLevelFunctions(VkInstance instance) {{
+void loadInstanceLevelFunctions(VkInstance instance) {
 	assert(vkGetInstanceProcAddr !is null, "Must call loadGlobalLevelFunctions before loadInstanceLevelFunctions");
 
 	// VK_VERSION_1_0
@@ -514,11 +514,11 @@ void loadInstanceLevelFunctions(VkInstance instance) {{
 	// VK_EXT_debug_report
 	vkCreateDebugReportCallbackEXT = cast(typeof(vkCreateDebugReportCallbackEXT)) vkGetInstanceProcAddr(instance, "vkCreateDebugReportCallbackEXT");
 	vkDestroyDebugReportCallbackEXT = cast(typeof(vkDestroyDebugReportCallbackEXT)) vkGetInstanceProcAddr(instance, "vkDestroyDebugReportCallbackEXT");
-	vkDebugReportMessageEXT = cast(typeof(vkDebugReportMessageEXT)) vkGetInstanceProcAddr(instance, "vkDebugReportMessageEXT");}}
+	vkDebugReportMessageEXT = cast(typeof(vkDebugReportMessageEXT)) vkGetInstanceProcAddr(instance, "vkDebugReportMessageEXT");}
 
 /// with a valid VkInstance call this function to retrieve VkDevice, VkQueue and VkCommandBuffer related functions
 /// the functions call indirectly through the VkInstance and will be internally dispatched by the implementation
-void loadDeviceLevelFunctions(VkInstance instance) {{
+void loadDeviceLevelFunctions(VkInstance instance) {
 	assert(vkGetInstanceProcAddr !is null, "Must call loadInstanceLevelFunctions before loadDeviceLevelFunctions");
 
 	// VK_VERSION_1_0
@@ -658,13 +658,13 @@ void loadDeviceLevelFunctions(VkInstance instance) {{
 	vkDebugMarkerSetObjectNameEXT = cast(typeof(vkDebugMarkerSetObjectNameEXT)) vkGetInstanceProcAddr(instance, "vkDebugMarkerSetObjectNameEXT");
 	vkCmdDebugMarkerBeginEXT = cast(typeof(vkCmdDebugMarkerBeginEXT)) vkGetInstanceProcAddr(instance, "vkCmdDebugMarkerBeginEXT");
 	vkCmdDebugMarkerEndEXT = cast(typeof(vkCmdDebugMarkerEndEXT)) vkGetInstanceProcAddr(instance, "vkCmdDebugMarkerEndEXT");
-	vkCmdDebugMarkerInsertEXT = cast(typeof(vkCmdDebugMarkerInsertEXT)) vkGetInstanceProcAddr(instance, "vkCmdDebugMarkerInsertEXT");}}
+	vkCmdDebugMarkerInsertEXT = cast(typeof(vkCmdDebugMarkerInsertEXT)) vkGetInstanceProcAddr(instance, "vkCmdDebugMarkerInsertEXT");}
 
 /// with a valid VkDevice call this function to retrieve VkDevice, VkQueue and VkCommandBuffer related functions
 /// the functions call directly VkDevice and related resources and can be retrieved for one and only one VkDevice
 /// otherwise a call to with to VkDevices would overwrite the __gshared functions of another previously called VkDevice
 /// use createGroupedDeviceLevelFunctions bellow if usage of multiple VkDevices is required
-void loadDeviceLevelFunctions(VkDevice device) {{
+void loadDeviceLevelFunctions(VkDevice device) {
 	assert(vkGetDeviceProcAddr !is null, "Must call loadInstanceLevelFunctions before loadDeviceLevelFunctions");
 
 	// VK_VERSION_1_0
@@ -804,15 +804,15 @@ void loadDeviceLevelFunctions(VkDevice device) {{
 	vkDebugMarkerSetObjectNameEXT = cast(typeof(vkDebugMarkerSetObjectNameEXT)) vkGetDeviceProcAddr(device, "vkDebugMarkerSetObjectNameEXT");
 	vkCmdDebugMarkerBeginEXT = cast(typeof(vkCmdDebugMarkerBeginEXT)) vkGetDeviceProcAddr(device, "vkCmdDebugMarkerBeginEXT");
 	vkCmdDebugMarkerEndEXT = cast(typeof(vkCmdDebugMarkerEndEXT)) vkGetDeviceProcAddr(device, "vkCmdDebugMarkerEndEXT");
-	vkCmdDebugMarkerInsertEXT = cast(typeof(vkCmdDebugMarkerInsertEXT)) vkGetDeviceProcAddr(device, "vkCmdDebugMarkerInsertEXT");}}
+	vkCmdDebugMarkerInsertEXT = cast(typeof(vkCmdDebugMarkerInsertEXT)) vkGetDeviceProcAddr(device, "vkCmdDebugMarkerInsertEXT");}
 
 /// with a valid VkDevice call this function to retrieve VkDevice, VkQueue and VkCommandBuffer related functions grouped in a DispatchDevice struct
 /// the functions call directly VkDevice and related resources and can be retrieved for any VkDevice
-DispatchDevice createDispatchDeviceLevelFunctions(VkDevice device) {{
+DispatchDevice createDispatchDeviceLevelFunctions(VkDevice device) {
 	assert(vkGetDeviceProcAddr !is null, "Must call loadInstanceLevelFunctions before loadDeviceLevelFunctions");
 	
 	DispatchDevice dispatchDevice;
-	with(dispatchDevice) {{
+	with(dispatchDevice) {
 
 	// VK_VERSION_1_0
 	vkDestroyDevice = cast(typeof(vkDestroyDevice)) vkGetDeviceProcAddr(device, "vkDestroyDevice");
@@ -1116,7 +1116,7 @@ version(EruptedFromDerelict) {
 		protected override void loadSymbols() {
 			typeof(vkGetInstanceProcAddr) getProcAddr;
 			bindFunc(cast(void**)&getProcAddr, "vkGetInstanceProcAddr");
-			EruptedLoader.loadGlobalLevelFunctions(getProcAddr);
+			loadGlobalLevelFunctions(getProcAddr);
 		}
 	}
 	

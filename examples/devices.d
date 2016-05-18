@@ -33,7 +33,7 @@ int main() {
 	enforceVK(vkCreateInstance(&instInfo, null, &instance));
 
 	// load instance level functions
-	EruptedLoader.loadInstanceLevelFunctions(instance);
+	loadInstanceLevelFunctions(instance);
 
 	// destroy the instance at scope exist
 	scope(exit) {
@@ -148,7 +148,7 @@ int main() {
 	}
 
 	// load all Vulkan functions for the device
-	EruptedLoader.loadDeviceLevelFunctions(device);
+	loadDeviceLevelFunctions(device);
 
 	// alternatively load all Vulkan functions for all devices
 	//EruptedLoader;.loadDeviceLevelFunctions(device);

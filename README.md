@@ -34,6 +34,7 @@ The API is similar to the C Vulkan API, but with some differences:
 * All structures have their `sType` field set to the appropriate value upon initialization; explicit initialization is not needed.
 * `VkPipelineShaderStageCreateInfo.module` has been renamed to `VkPipelineShaderStageCreateInfo._module`, since `module` is a D keyword.
 
+Examples can be found in the `examples` directory, and ran with `dub run erupted:examplename`
 
 Platform surface extensions
 ---------------------------

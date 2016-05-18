@@ -46,7 +46,7 @@ int main() {
 	
 	VkInstance instance;
 	enforceVK(vkCreateInstance(&instInfo, null, &instance));
-	EruptedLoader;.loadInstanceLevelFunctions(instance);
+	loadInstanceLevelFunctions(instance);
 	scope(exit) vkDestroyInstance(instance, null);
 	
 	uint numDevices;

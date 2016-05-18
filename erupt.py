@@ -172,48 +172,48 @@ class DGenerator(OutputGenerator):
 		write("""\
 /// if not using version "with-derelict-loader" this function must be called first
 /// sets vkCreateInstance function pointer and acquires basic functions to retrieve information about the implementation
-void loadGlobalLevelFunctions(typeof(vkGetInstanceProcAddr) getProcAddr) {{
+void loadGlobalLevelFunctions(typeof(vkGetInstanceProcAddr) getProcAddr) {
 	vkGetInstanceProcAddr = getProcAddr;
 	vkEnumerateInstanceExtensionProperties = cast(typeof(vkEnumerateInstanceExtensionProperties)) vkGetInstanceProcAddr(null, "vkEnumerateInstanceExtensionProperties");
 	vkEnumerateInstanceLayerProperties = cast(typeof(vkEnumerateInstanceLayerProperties)) vkGetInstanceProcAddr(null, "vkEnumerateInstanceLayerProperties");
 	vkCreateInstance = cast(typeof(vkCreateInstance)) vkGetInstanceProcAddr(null, "vkCreateInstance");
-}}
+}
 
 /// with a valid VkInstance call this function to retrieve additional VkInstance, VkPhysicalDevice, ... related functions
-void loadInstanceLevelFunctions(VkInstance instance) {{
+void loadInstanceLevelFunctions(VkInstance instance) {
 	assert(vkGetInstanceProcAddr !is null, "Must call loadGlobalLevelFunctions before loadInstanceLevelFunctions");\
 """
 		+ self.instanceLevelFunctions
 		+ """\
-}}
+}
 
 /// with a valid VkInstance call this function to retrieve VkDevice, VkQueue and VkCommandBuffer related functions
 /// the functions call indirectly through the VkInstance and will be internally dispatched by the implementation
-void loadDeviceLevelFunctions(VkInstance instance) {{
+void loadDeviceLevelFunctions(VkInstance instance) {
 	assert(vkGetInstanceProcAddr !is null, "Must call loadInstanceLevelFunctions before loadDeviceLevelFunctions");\
 """
 		+ self.deviceLevelFunctions.format(INSTANCE_OR_DEVICE = "Instance", instance_or_device = "instance")
 		+ """\
-}}
+}
 
 /// with a valid VkDevice call this function to retrieve VkDevice, VkQueue and VkCommandBuffer related functions
 /// the functions call directly VkDevice and related resources and can be retrieved for one and only one VkDevice
 /// otherwise a call to with to VkDevices would overwrite the __gshared functions of another previously called VkDevice
 /// use createGroupedDeviceLevelFunctions bellow if usage of multiple VkDevices is required
-void loadDeviceLevelFunctions(VkDevice device) {{
+void loadDeviceLevelFunctions(VkDevice device) {
 	assert(vkGetDeviceProcAddr !is null, "Must call loadInstanceLevelFunctions before loadDeviceLevelFunctions");\
 """
 		+ self.deviceLevelFunctions.format(INSTANCE_OR_DEVICE = "Device", instance_or_device = "device")
 		+ """\
-}}
+}
 
 /// with a valid VkDevice call this function to retrieve VkDevice, VkQueue and VkCommandBuffer related functions grouped in a DispatchDevice struct
 /// the functions call directly VkDevice and related resources and can be retrieved for any VkDevice
-DispatchDevice createDispatchDeviceLevelFunctions(VkDevice device) {{
+DispatchDevice createDispatchDeviceLevelFunctions(VkDevice device) {
 	assert(vkGetDeviceProcAddr !is null, "Must call loadInstanceLevelFunctions before loadDeviceLevelFunctions");
 	
 	DispatchDevice dispatchDevice;
-	with(dispatchDevice) {{\
+	with(dispatchDevice) {\
 """
 		+ self.deviceLevelFunctions.format(INSTANCE_OR_DEVICE = "Device", instance_or_device = "device").replace('\t\t', '\t\t\t')
 		+ """\
@@ -251,7 +251,7 @@ version({NAME_PREFIX}FromDerelict) {{
 		protected override void loadSymbols() {{
 			typeof(vkGetInstanceProcAddr) getProcAddr;
 			bindFunc(cast(void**)&getProcAddr, "vkGetInstanceProcAddr");
-			{NAME_PREFIX}Loader.loadGlobalLevelFunctions(getProcAddr);
+			loadGlobalLevelFunctions(getProcAddr);
 		}}
 	}}
 	
