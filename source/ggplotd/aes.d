@@ -764,8 +764,9 @@ template merge(T, U)
 {
     import std.traits;
     import painlesstraits;
-    auto generateCode()
+    auto injectCode()
     {
+        import std.format : format;
         import std.string : split;
         string typing = "Tuple!(";
         //string typing = T.stringof.split("!")[0] ~ "!(";
@@ -781,8 +782,8 @@ template merge(T, U)
                     && isFieldOrProperty!(__traits(getMember,U,name))
                     && name[0] != "_"[0] )
             {
-                typing ~= "typeof(other." ~ name ~ "),\"" ~ name ~ "\",";
-                variables ~= "other." ~ name ~ ",";
+                typing ~= format("typeof(other.%s),\"%s\",",name,name);
+                variables ~= format("other.%s,", name);
             }
         }
 
@@ -804,17 +805,17 @@ template merge(T, U)
                 }
                 if (!contains)
                 {
-                    typing ~= "typeof(base." ~ name ~ "),\"" ~ name ~ "\",";
-                    variables ~= "base." ~ name ~ ",";
+                    typing ~= format("typeof(base.%s),\"%s\",",name,name);
+                    variables ~= format("base.%s,",name);
                 }
             }
         }
-        return "return " ~ typing[0 .. $ - 1] ~ ")" ~ variables[0 .. $ - 1] ~ ");";
+        return format("return %s)%s);", typing[0 .. $ - 1], variables[0 .. $ - 1] );
     }
 
     auto merge(T base, U other)
     {
-        mixin(generateCode());
+        mixin(injectCode());
     }
 }
 
