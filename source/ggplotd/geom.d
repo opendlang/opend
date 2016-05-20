@@ -215,8 +215,9 @@ can be passed using a lower case string minus the geom prefix, i.e. hist3d calls
 */
 template geomType(AES)
 {
-    string generateToGeom()
+    string injectToGeom()
     {
+        import std.format : format;
         import std.traits;
         import std.string : toLower;
         string str = "auto toGeom(A)( A aes, string type ) {\nimport std.traits; import std.array : array;\n";
@@ -226,10 +227,7 @@ template geomType(AES)
                     && name != "geomType"
                     )
             {
-                str ~= "static if(__traits(compiles,(A a) => "
-                    ~ name ~"(a))) {\n";
-                str ~= "if (type == q{" ~ name[4..$].toLower ~ "})\n";
-                str ~= "\treturn " ~ name ~ "!A(aes).array;\n}\n";
+                str ~= format( "static if(__traits(compiles,(A a) => %s(a))) {\nif (type == q{%s})\n\treturn %s!A(aes).array;\n}\n", name, name[4..$].toLower, name );
             }
         }
 
@@ -248,7 +246,7 @@ can be passed using a lower case string minus the geom prefix, i.e. hist3d calls
         import std.algorithm : map, joiner;
 
         import ggplotd.aes : group;
-        mixin(generateToGeom());
+        mixin(injectToGeom());
 
         return aes
             .group!"type"
