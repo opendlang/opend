@@ -512,8 +512,9 @@ alias DefaultGroupFields = TypeTuple!("alpha","colour","label");
 +/
 template group(Specs...)
 {
-    string buildExtractKey(A)()
+    string injectExtractKey(A)()
     {
+        import std.format : format;
         static if (Specs.length == 0)
         {
             import std.typetuple : TypeTuple;
@@ -531,26 +532,24 @@ template group(Specs...)
                     __traits(getMember,ElementType!A,spec))
             )
             {
-                types ~= "typeof(a." ~ spec ~"),";
-                values ~= "a." ~ spec ~",";
+                types ~= format("typeof(a.%s),",spec);
+                values ~= format("a.%s,", spec);
             }
         }
 
         // Default case if no matching fields
-        string str = "auto extractKey(T)(T a) 
-                { return 1; }";
         if (!types.empty)
-            str = "auto extractKey(T)(T a) 
-                { return Tuple!(" ~ types[0..$-1] ~ ")(" ~ 
-                values[0..$-1] ~ "); }";
-
-        return str;
+            return format("auto extractKey(T)(T a) 
+                { return Tuple!(%s)(%s); }", types[0..$-1],   
+                values[0..$-1] );
+        else
+            return "auto extractKey(T)(T a) 
+                { return 1; }";
     }
-    
+        
     auto group(AES)(AES aes)
     {
-        mixin(buildExtractKey!(typeof(aes))());
-
+        mixin(injectExtractKey!(typeof(aes))());
         import ggplotd.range : groupBy;
 
         return aes.groupBy!((a) => extractKey(a)).values;
