@@ -55,6 +55,11 @@ version(Windows) {
             return start.empty ? null : start ~ path;
         }
         
+        string maybeBuild(string start, string path) nothrow @safe
+        {
+            return start.empty ? null : buildPath(start, path);
+        }
+        
         string verifyIfNeeded(string path, bool shouldVerify) nothrow @trusted
         {
             if (path.length && shouldVerify) {
@@ -739,7 +744,12 @@ version(Windows) {
 
                     enum fileProtocol = "file://";
                     if (str.startsWith(fileProtocol)) {
-                        return str.decode()[fileProtocol.length..$];
+						str = str.decode()[fileProtocol.length..$];
+						if (str.length > 1 && str[$-1] == '/') {
+							return str[0..$-1];
+						} else {
+							return str;
+						}
                     }
                 } catch(Exception e) {
 
@@ -882,7 +892,7 @@ version(Windows) {
         version(StandardPathsCocoa) {
             final switch(type) {
                 case StandardPath.config:
-                    return domainDir(NSLibraryDirectory, NSUserDomainMask, shouldCreate).maybeConcat("/Preferences").createIfNeeded(shouldCreate);
+                    return domainDir(NSLibraryDirectory, NSUserDomainMask, shouldCreate).maybeBuild("Preferences").createIfNeeded(shouldCreate);
                 case StandardPath.cache:
                     return domainDir(NSCachesDirectory, NSUserDomainMask, shouldCreate);
                 case StandardPath.data:
@@ -904,7 +914,7 @@ version(Windows) {
                 case StandardPath.publicShare:
                     return domainDir(NSSharedPublicDirectory, NSUserDomainMask, shouldCreate);
                 case StandardPath.fonts:
-                    return domainDir(NSLibraryDirectory, NSUserDomainMask, shouldCreate).maybeConcat("/Fonts").createIfNeeded(shouldCreate);
+                    return domainDir(NSLibraryDirectory, NSUserDomainMask, shouldCreate).maybeBuild("Fonts").createIfNeeded(shouldCreate);
                 case StandardPath.applications:
                     return domainDir(NSApplicationDirectory, NSUserDomainMask, shouldCreate);
                 case StandardPath.startup:
@@ -958,7 +968,7 @@ version(Windows) {
         version(StandardPathsCocoa) {
             switch(type) {
                 case StandardPath.fonts:
-                    commonPath = domainDir(NSLibraryDirectory, NSSystemDomainMask).maybeConcat("/Fonts");
+                    commonPath = domainDir(NSLibraryDirectory, NSSystemDomainMask).maybeBuild("Fonts");
                     break;
                 case StandardPath.applications:
                     commonPath = domainDir(NSApplicationDirectory, NSSystemDomainMask);

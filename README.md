@@ -11,7 +11,7 @@ This functionality was moved to the separate library. See [findexecutable](http:
 
 ## Platform support
 
-Currently works on Windows, Linux and FreeBSD. Mac OS X support is experimental.
+Works on Windows, Linux, FreeBSD and Mac OS X.
 
 ## Running examples
 
@@ -21,6 +21,10 @@ Prints some standard paths to stdout.
 
     dub run :printdirs --build=release
     
+On OSX it also can be built to use Cocoa instead of Carbon (tested with ldc 1.0.0):
+
+	dub run :printdirs --config=cocoa --compiler=ldc2
+
 ### [Get path](examples/getpath/source/app.d)
 
 Get path of given type, verify it exists or create if it does not.
@@ -130,4 +134,5 @@ On Windows it utilizes [SHGetSpecialFolderPath](https://msdn.microsoft.com/en-us
 
 ### Mac OS X
 
-Uses FSFindFolder from Carbon framework. It's deprecated now and should be replaced with Cocoa where possible. [See here](http://cocoadev.com/ApplicationSupportFolder).
+Depending on configuration the library uses FSFindFolder from Carbon framework or URLForDirectory from Cocoa. 
+[See here](http://cocoadev.com/ApplicationSupportFolder).
