@@ -137,23 +137,17 @@ template Aes(Specs...)
     {
         import std.format : format;
 
-        string decl = "auto front() { import std.range : ElementType;";
-        decl ~= "import std.typecons : Tuple; import std.range : front;";
-
         string tupleType = "Tuple!(";
         string values = "(";
 
         foreach (i, name; fieldNames)
         {
 
-            tupleType ~= format(q{typeof(%s.front),}, name);
-            tupleType ~= "q{" ~ name ~ "},";
+            tupleType ~= format(q{typeof(%s.front),q{%s},}, name, name);
             values ~= format("this.%s.front,", name);
         }
 
-        decl ~= "return " ~ tupleType[0 .. $ - 1] ~ ")" ~ values[0 .. $ - 1] ~ "); }";
-        //string decl2 = format("auto front() { import std.stdio; \"%s\".writeln; return 0.0; }", decl);
-        return decl;
+        return format( "auto front() { import std.range : ElementType; import std.typecons : Tuple; import std.range : front; return %s ) %s );}", tupleType[0 .. $ - 1], values[0 .. $ - 1]);
     }
 
     // Returns Specs for a subtuple this[from .. to] preserving field
@@ -184,7 +178,10 @@ template Aes(Specs...)
             static if (op == "=")
                 lhs = rhs;
             else
-                auto result = mixin("lhs " ~ op ~ " rhs");
+            { 
+                import std.format : format;
+                auto result = mixin(format("lhs %s rhs", op));
+            }
         }
     }));
 
