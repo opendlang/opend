@@ -6,7 +6,7 @@ Automatically-generated D bindings for Vulkan based on [D-Vulkan](https://github
 Usage
 -----
 
-The bindings have several configurations. The easiest to use is the `"with-derelict-loader"` configuration. The `DerelictUtil` mechanism will be used to dynamically load `vkGetInstanceProcAddr` from `vulkan-1.dll` or `libVulkan.so`. Otherwise you need to load `vkGetInstanceProcAddr` with either platform specific means or through some mechanism like [glfw3](http://www.glfw.org/docs/3.2/vulkan.html). Additional configurations enable the usage of platform specific vulkan functionality (see bellow).
+The bindings have several configurations. The easiest to use is the `"with-derelict-loader"` configuration. The `DerelictUtil` mechanism will be used to dynamically load `vkGetInstanceProcAddr` from `vulkan-1.dll` or `libvulkan.so.1`. Otherwise you need to load `vkGetInstanceProcAddr` with either platform specific means or through some mechanism like [glfw3](http://www.glfw.org/docs/3.2/vulkan.html). Additional configurations enable the usage of platform specific vulkan functionality (see bellow).
 
 To use without configuration:
 
