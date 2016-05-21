@@ -6,7 +6,7 @@ Automatically-generated D bindings for Vulkan based on [D-Vulkan](https://github
 Usage
 -----
 
-The bindings have several configurations. The easiest to use is the `"with-derelict-loader"` configuration. The `DerelictUtil` mechanism will be used to dynamically load `vkGetInstanceProcAddr` from `vulkan-1.dll` or `libvulkan.so.1`. Otherwise you need to load `vkGetInstanceProcAddr` with either platform specific means or through some mechanism like [glfw3](http://www.glfw.org/docs/3.2/vulkan.html). Additional configurations enable the usage of platform specific vulkan functionality (see bellow).
+The bindings have several configurations. The easiest to use is the `"with-derelict-loader"` configuration. The `DerelictUtil` mechanism will be used to dynamically load `vkGetInstanceProcAddr` from `vulkan-1.dll` or `libvulkan.so.1`. Otherwise you need to load `vkGetInstanceProcAddr` with either platform specific means or through some mechanism like [glfw3](http://www.glfw.org/docs/3.2/vulkan.html). Additional configurations enable the usage of platform specific vulkan functionality (see [Platform surface extensions](https://github.com/ParticlePeter/ErupteD#platform-surface-extensions)).
 
 To use without configuration:
 
@@ -28,6 +28,8 @@ To use with the `with-derelict-loader` configuration, follow the above steps, bu
 
 Available configurations:
 * `with-derelict-loader` fetches derelictUtil, gets a pointer to `vkGetInstanceProcAddr` and loads few additional global functions (see above)
+* `dub-platform-xcb`, `dub-platform-xlib`, `dub-platform-wayland` fetches corresponding dub packages `xcb-d`, `xlib-d`, `wayland-client-d`, see [Platform surface extensions](https://github.com/ParticlePeter/ErupteD#platform-surface-extensions)
+* `dub-platform-???-derelict-loader` combines the platforms above with the derelict loader 
 
 The API is similar to the C Vulkan API, but with some differences:
 * Named enums in D are not global but they are forwarded into global scope. Hence e.g. `VkResult.VK_SUCCESS` and `VK_SUCCESS` can both be used.
