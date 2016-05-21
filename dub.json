@@ -9,14 +9,18 @@
         {
             "name"          :   "default",
         },
+
         {
             "name"          :   "with-derelict-loader",
-            "versions"      :   [ "EruptedFromDerelict" ],
+            "versions"      :   [ "ERUPTED_FROM_DERELICT" ],
             "dependencies"  :   {
                 "derelict-util" : "~>2.0.4"
             },
         },
+
+
     ],
+
     "subPackages"   : [
         {
             "name"              :   "devices",

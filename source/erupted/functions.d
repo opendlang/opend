@@ -1093,7 +1093,7 @@ private struct DispatchDevice {
 }
 
 // Derelict loader to acquire entry point vkGetInstanceProcAddr
-version(EruptedFromDerelict) {
+version(ERUPTED_FROM_DERELICT) {
 	import derelict.util.loader;
 	import derelict.util.system;
 	

@@ -228,7 +228,7 @@ private struct DispatchDevice {{{DISPATCH_FUNCTION_DEFINITIONS}
 }}
 
 // Derelict loader to acquire entry point vkGetInstanceProcAddr
-version({NAME_PREFIX}FromDerelict) {{
+version({NAME_PREFIX_UCASE}_FROM_DERELICT) {{
 	import derelict.util.loader;
 	import derelict.util.system;
 	
@@ -262,7 +262,11 @@ version({NAME_PREFIX}FromDerelict) {{
 	}}
 }}
 
-""".format(NAME_PREFIX = self.genOpts.namePrefix, DISPATCH_FUNCTION_DEFINITIONS = self.dispatchTypeDefinition), file=self.funcsFile)
+""".format(
+	NAME_PREFIX = self.genOpts.namePrefix, 
+	NAME_PREFIX_UCASE = self.genOpts.namePrefix.upper(),
+	DISPATCH_FUNCTION_DEFINITIONS = self.dispatchTypeDefinition),
+	file=self.funcsFile)
 
 		self.typesFile.close()
 		self.funcsFile.close()
