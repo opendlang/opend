@@ -6,9 +6,9 @@ Automatically-generated D bindings for Vulkan based on [D-Vulkan](https://github
 Usage
 -----
 
-The bindings have two configurations: the `default` configuration, where the bindings load few functions (see bellow) from the `vkGetInstanceProcAddr`, which you supply when loading and the `with-derelict-loader` configuration, which uses the Derelict library to load `vkGetInstanceProcAddr` for you.
+The bindings have several configurations. The easiest to use is the `"with-derelict-loader"` configuration. The `DerelictUtil` mechanism will be used to dynamically load `vkGetInstanceProcAddr` from `vulkan-1.dll` or `libVulkan.so`. Otherwise you need to load `vkGetInstanceProcAddr` with either platform specific means or through some mechanism like [glfw3](http://www.glfw.org/docs/3.2/vulkan.html). Additional configurations enable the usage of platform specific vulkan functionality (see bellow).
 
-To use in the `default` configuration:
+To use without configuration:
 
 1. Import via `import erupted;`.
 2. Get a pointer to the `vkGetInstanceProcAddr`, through platform-specific means (e.g. loading the Vulkan shared library, or `glfwGetInstanceProcAddress` [if using GLFW](https://github.com/ColonelThirtyTwo/dvulkan/wiki/Using-d-vulkan-with-Derelict-GLFW)).
@@ -24,7 +24,7 @@ To use in the `default` configuration:
 	* Call `loadDeviceLevelFunctions(VkDevice)`, the acquired functions call directly the `VkDevice` and related resources. This path is faster, skips one indirection, but (in theory, not tested yet!) is useful only in a single physical deveice environment. Calling the same function with another `VkDevice` should overwrite (this is the not tested theory) all the previously fetched __gshared function
 	* Call `createDispatchDeviceLevelFunctions(VkDevice)` and capture the result, which is a struct with all the device level fuction pointers kind of namespaced in that struct. This should avoid collisions.
 
-To use in the `with-derelict-loader` configuration, follow the above steps, but call `EruptedDerelict.load()` instead of performing steps two and three.
+To use with the `with-derelict-loader` configuration, follow the above steps, but call `EruptedDerelict.load()` instead of performing steps two and three.
 
 Available configurations:
 * `with-derelict-loader` fetches derelictUtil, gets a pointer to `vkGetInstanceProcAddr` and loads few additional global functions (see above)
@@ -74,5 +74,3 @@ Additions to D-Vulkan
 * Platform surface extensions
 * ~~DerelictLoader for Posix Systems~~
 * With respect to [API without Secrets](https://software.intel.com/en-us/api-without-secrets-introduction-to-vulkan-part-1) D-Vulkans function loading system is partially broken
-
-
