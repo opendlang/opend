@@ -18,7 +18,56 @@
             },
         },
 
+        {
+            "name"          :   "dub-platform-xlib",
+            "versions"      :   [ "VK_USE_PLATFORM_XLIB_KHR" ],
+            "dependencies"  :   {
+                "xlib-d"        : "~>0.1.0"
+            }
+        },
 
+        {
+            "name"          :   "dub-platform-xcb",
+            "versions"      :   [ "VK_USE_PLATFORM_XCB_KHR" ],
+            "dependencies"  :   {
+                "xcb-d"         : "~>2.1.0+1.11.1"
+            },
+        },
+
+        {
+            "name"          :   "dub-platform-wayland",
+            "versions"      :   [ "VK_USE_PLATFORM_WAYLAND_KHR" ],
+            "dependencies"  :   {
+                "wayland-client-d"  : "~>1.8.90"
+            }
+        },
+
+        {
+            "name"          :   "dub-platform-xlib-derelict-loader",
+            "versions"      :   [ "VK_USE_PLATFORM_XLIB_KHR", "ERUPTED_FROM_DERELICT" ],
+            "dependencies"  :   {
+                "xlib-d"        : "~>0.1.0",
+                "derelict-util" : "~>2.0.4"
+            }
+        },
+
+        {
+            "name"          :   "dub-platform-xcb-derelict-loader",
+            "versions"      :   [ "VK_USE_PLATFORM_XCB_KHR", "ERUPTED_FROM_DERELICT" ],
+            "dependencies"  :   {
+                "xcb-d"         : "~>2.1.0+1.11.1",
+                "derelict-util" : "~>2.0.4"
+            },
+        },
+
+        {
+            "name"          :   "dub-platform-wayland-derelict-loader",
+            "versions"      :   [ "VK_USE_PLATFORM_WAYLAND_KHR", "ERUPTED_FROM_DERELICT" ],
+            "dependencies"  :   {
+                "wayland-client-d"  : "~>1.8.90",
+                "derelict-util"     : "~>2.0.4"
+            }
+        },
     ],
 
     "subPackages"   : [

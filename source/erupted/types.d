@@ -3350,7 +3350,7 @@ version(VK_USE_PLATFORM_XCB_KHR) {
 
 // VK_KHR_wayland_surface
 version(VK_USE_PLATFORM_WAYLAND_KHR) {
-	public import wayland_client;
+	public import wayland.client;
 
 	enum VK_KHR_WAYLAND_SURFACE_SPEC_VERSION = 5;
 	enum VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME = "VK_KHR_wayland_surface";

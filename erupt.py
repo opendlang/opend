@@ -140,7 +140,7 @@ class DGenerator(OutputGenerator):
 		self.surfaceExtensions = {
 			"// VK_KHR_android_surface" : ["VK_USE_PLATFORM_ANDROID_KHR",	"public import android.native_window;\n"],
 			"// VK_KHR_mir_surface"     : ["VK_USE_PLATFORM_MIR_KHR",		"public import mir_toolkit.client_types;\n"],
-			"// VK_KHR_wayland_surface" : ["VK_USE_PLATFORM_WAYLAND_KHR",	"public import wayland_client;\n"],
+			"// VK_KHR_wayland_surface" : ["VK_USE_PLATFORM_WAYLAND_KHR",	"public import wayland.client;\n"],
 			"// VK_KHR_win32_surface"   : ["VK_USE_PLATFORM_WIN32_KHR",		"public import core.sys.windows.windows;\n"],
 			"// VK_KHR_xlib_surface"    : ["VK_USE_PLATFORM_XLIB_KHR",		"public import X11.Xlib;\n"],
 			"// VK_KHR_xcb_surface"	    : ["VK_USE_PLATFORM_XCB_KHR",		"public import xcb.xcb;\n"],

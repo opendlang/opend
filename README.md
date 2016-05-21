@@ -39,8 +39,26 @@ Examples can be found in the `examples` directory, and ran with `dub run erupted
 Platform surface extensions
 ---------------------------
 
-If you wish to create vulkan surface(s) yourself (instead of using e.g. glfw) you need to specify the required platform as compiler version flag. The available platform specifiers are the same as those found in `vk_platform.h`. In such a case a platform specific d module will be publicly imported into types.d so that required platform specific types and functions become available.
-A twist is that the only API included in phobos is the Windows API hence the module `core.sys.windows.windows` is publicly imported in case of `VK_USE_PLATFORM_WIN32_KHR`. In all other cases the imported module names are the same as the corresponding includes in the `vk_platform.h`, only exception is `wayland_client` instead of `wayland-client.h`. You need to instruct dmd/dub with the proper path to such a module and/or edit the respective line in types.d file.
+The usage of a third party library like glfw3 is highly recommended instead of vulkan platforms. Dlang has only one official platform binding in phobos which is for windows found in module `core.sys.windows.windows`. Other bindings to XCB, XLIB and Wayland can be found in the dub registry and are supported experimentally. 
+However, if you wish to create vulkan surface(s) yourself you have three choices:
+1. The dub way, this is experimental. Currently only three bindings are listed in the registry, dub fetches them and adds them to the erupted build dependency when you specify these sub configurations in your projects dub.json. Add `-derelict-loader` to the config name if you want to be able to laod `vkGetInstanceProcAddr` from derelict:
+	* `XCB` specify `"subConfigurations" : { "erupted" : "dub-platform-xcb" }`
+	* `XLIB` specify `"subConfigurations" : { "erupted" : "dub-platform-xlib" }`
+	* `Wayland` specify `"subConfigurations" : { "erupted" : "dub-platform-wayland" }`
+
+2. The symlink (or copy/move) way. If you like to play with bindings yourself this might be the way for you. Drawback is that you need to add the symlink into any erupted version you use and that your binding is not automatically tracked by dub.
+    * Create a directory/module-path setup similar to those in `erupted/types.d` (I myself have these paths from the c header `vk_platform.h`) and symlink this the root under `ErupeD/sources` as sibling to `ErupeD/sources/erupted`.
+    * You also need to specify the corresponding vulkan version in your projects dub.json versions block. E.g. to use `XCB` you need to specify `"versions" : [ "VK_USE_PLATFORM_XCB_KHR" ]`.
+3. The source- and importPaths way. This is if you don't want to add stuff to the ErupteD project structure. Drawback here is that neither erupted nor the binding are automatically tracked by dub, you need to check yourself for any updates. In your project remove the erupted dependency and add:
+	* `"sourcePaths" : [ "path/to/ErupteD/source", "path/to/binding/source" ]`
+	* `"importPaths" : [ "path/to/ErupteD/source", "path/to/binding/source" ]`
+
+
+Additional info:
+* for windows platform, in your project specify:
+`"versions" : [ "VK_USE_PLATFORM_WIN32_KHR" ]`.
+The phobos windows modules will be used in that case.
+* wayland-client.h cannot exist as module name. The maintainer of `wayland-client-d` choose `wayland.client` as module name and the name is used in `erupted/types` as well. 
 
 
 Generating Bindings
@@ -54,7 +72,7 @@ Additions to D-Vulkan
 ---------------------
 
 * Platform surface extensions
-* DerelictLoader for Posix Systems
+* ~~DerelictLoader for Posix Systems~~
 * With respect to [API without Secrets](https://software.intel.com/en-us/api-without-secrets-introduction-to-vulkan-part-1) D-Vulkans function loading system is partially broken
 
 
