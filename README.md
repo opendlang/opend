@@ -21,8 +21,8 @@ To use without configuration:
 5. Call `loadInstanceLevelFunctions(VkInstance)` to load additional `VkInstance` related functions. Get information about available physical devices (e.g. GPU(s), APU(s), etc.) and physical device related resources (e.g. Queue Families, Queues per Family, etc. )
 6. Now three options are available to acquire a logical device and device resource related functions (functions with first param of `VkDevice`, `VkQueue` or `VkCommandBuffer`):
 	* Call `loadDeviceLevelFunctions(VkInstance)`, the acquired functions call indirectly through the `VkInstance` and will be internally dispatched by the implementation
-	* Call `loadDeviceLevelFunctions(VkDevice)`, the acquired functions call directly the `VkDevice` and related resources. This path is faster, skips one indirection, but (in theory, not tested yet!) is useful only in a single physical deveice environment. Calling the same function with another `VkDevice` should overwrite (this is the not tested theory) all the previously fetched __gshared function
-	* Call `createDispatchDeviceLevelFunctions(VkDevice)` and capture the result, which is a struct with all the device level fuction pointers kind of namespaced in that struct. This should avoid collisions.
+	* Call `loadDeviceLevelFunctions(VkDevice)`, the acquired functions call directly the `VkDevice` and related resources. This path is faster, skips one indirection, but (in theory, not tested yet!) is useful only in a single physical device environment. Calling the same function with another `VkDevice` should overwrite (this is the not tested theory) all the previously fetched __gshared function
+	* Call `createDispatchDeviceLevelFunctions(VkDevice)` and capture the result, which is a struct with all the device level function pointers kind of namespaced in that struct. This should avoid collisions.
 
 To use with the `with-derelict-loader` configuration, follow the above steps, but call `EruptedDerelict.load()` instead of performing steps two and three.
 
@@ -43,7 +43,7 @@ Platform surface extensions
 
 The usage of a third party library like glfw3 is highly recommended instead of vulkan platforms. Dlang has only one official platform binding in phobos which is for windows found in module `core.sys.windows.windows`. Other bindings to XCB, XLIB and Wayland can be found in the dub registry and are supported experimentally. 
 However, if you wish to create vulkan surface(s) yourself you have three choices:
-1. The dub way, this is experimental. Currently only three bindings are listed in the registry, dub fetches them and adds them to the erupted build dependency when you specify these sub configurations in your projects dub.json. Add `-derelict-loader` to the config name if you want to be able to laod `vkGetInstanceProcAddr` from derelict:
+1. The dub way, this is experimental, currently only three bindings are listed in the registry. Dub fetches them and adds them to erupted build dependency when you specify any of these sub configurations in your projects dub.json (add `-derelict-loader` to the config name if you want to be able to laod `vkGetInstanceProcAddr` from derelict):
 	* `XCB` specify `"subConfigurations" : { "erupted" : "dub-platform-xcb" }`
 	* `XLIB` specify `"subConfigurations" : { "erupted" : "dub-platform-xlib" }`
 	* `Wayland` specify `"subConfigurations" : { "erupted" : "dub-platform-wayland" }`
@@ -51,7 +51,8 @@ However, if you wish to create vulkan surface(s) yourself you have three choices
 2. The symlink (or copy/move) way. If you like to play with bindings yourself this might be the way for you. Drawback is that you need to add the symlink into any erupted version you use and that your binding is not automatically tracked by dub.
     * Create a directory/module-path setup similar to those in `erupted/types.d` (I myself have these paths from the c header `vk_platform.h`) and symlink this the root under `ErupeD/sources` as sibling to `ErupeD/sources/erupted`.
     * You also need to specify the corresponding vulkan version in your projects dub.json versions block. E.g. to use `XCB` you need to specify `"versions" : [ "VK_USE_PLATFORM_XCB_KHR" ]`.
-3. The source- and importPaths way. This is if you don't want to add stuff to the ErupteD project structure. Drawback here is that neither erupted nor the binding are automatically tracked by dub, you need to check yourself for any updates. In your project remove the erupted dependency and add:
+
+3. The source- and importPaths way. This is if you don't want to add stuff to the ErupteD project structure. Drawback here is that neither erupted nor the binding are automatically tracked by dub, you need to check yourself for any updates. In your project REMOVE the erupted dependency and add:
 	* `"sourcePaths" : [ "path/to/ErupteD/source", "path/to/binding/source" ]`
 	* `"importPaths" : [ "path/to/ErupteD/source", "path/to/binding/source" ]`
 
@@ -60,7 +61,8 @@ Additional info:
 * for windows platform, in your project specify:
 `"versions" : [ "VK_USE_PLATFORM_WIN32_KHR" ]`.
 The phobos windows modules will be used in that case.
-* wayland-client.h cannot exist as module name. The maintainer of `wayland-client-d` choose `wayland.client` as module name and the name is used in `erupted/types` as well. 
+* wayland-client.h cannot exist as module name. The maintainer of `wayland-client-d` choose `wayland.client` as module name and the name is used in `erupted/types` as well.
+* for android platform, I have not a single clue how this is supposed to work. If you are interested feel free to open up an issue. 
 
 
 Generating Bindings
