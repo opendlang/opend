@@ -36,7 +36,7 @@ module dstats.regress;
 import std.math, std.traits, std.array, std.traits, std.string,
     std.exception, std.typetuple, std.typecons, std.numeric, std.parallelism;
    
-import std.algorithm : map, copy;
+import std.algorithm : map, copy, max, min, filter, reduce;
 
 alias std.range.repeat repeat;
 
