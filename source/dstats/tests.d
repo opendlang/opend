@@ -33,7 +33,7 @@ module dstats.tests;
 import std.functional, std.range, std.conv, std.math, std.traits,
        std.exception, std.typetuple;
 
-import std.algorithm : reverse, copy;
+import std.algorithm : reverse, copy, max, min, swap, map, reduce;
 
 import dstats.base, dstats.distrib, dstats.alloc, dstats.summary, dstats.sort;
     
@@ -2692,8 +2692,9 @@ package double toContingencyScore(T, U, Uint)
 (T x, U y, double function(double, double) elemFun,
  out uint xFreedom, out uint yFreedom, out uint nPtr) {
 
-    enum needsHeap = dstats.infotheory.NeedsHeap!T ||
-        dstats.infotheory.NeedsHeap!U;
+    import dstats.infotheory : NeedsHeap;
+    enum needsHeap = NeedsHeap!T ||
+        NeedsHeap!U;
     alias dstats.infotheory.ObsEnt!(ElementType!T, ElementType!U) ObsType;
 
     static if(needsHeap) {
@@ -2853,6 +2854,7 @@ if(isIntegral!(T)) {
             guess++;
         }
 
+        static import std.algorithm;
         double p = std.algorithm.min(pLower +
                hypergeometricCDFR(guess, n1, n2, n), 1.0);
         return TestRes(oddsRatio, p);
@@ -2892,6 +2894,7 @@ if(isIntegral!(T)) {
             guess--;
         }
 
+        static import std.algorithm;
         double p = std.algorithm.min(pUpper +
                hypergeometricCDF(guess, n1, n2, n), 1.0);
         return TestRes(oddsRatio, p);
