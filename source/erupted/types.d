@@ -9,22 +9,24 @@ alias int16_t = short;
 alias int32_t = int;
 alias int64_t = long;
 
-@nogc pure nothrow:
-uint VK_MAKE_VERSION(uint major, uint minor, uint patch) {
-	return (major << 22) | (minor << 12) | (patch);
-}
-uint VK_VERSION_MAJOR(uint ver) {
-	return ver >> 22;
-}
-uint VK_VERSION_MINOR(uint ver) {
-	return (ver >> 12) & 0x3ff;
-}
-uint VK_VERSION_PATCH(uint ver) {
-	return ver & 0xfff;
+@nogc nothrow:
+pure {
+	uint VK_MAKE_VERSION(uint major, uint minor, uint patch) {
+		return (major << 22) | (minor << 12) | (patch);
+	}
+	uint VK_VERSION_MAJOR(uint ver) {
+		return ver >> 22;
+	}
+	uint VK_VERSION_MINOR(uint ver) {
+		return (ver >> 12) & 0x3ff;
+	}
+	uint VK_VERSION_PATCH(uint ver) {
+		return ver & 0xfff;
+	}
 }
 
 // Version of corresponding c header file
-enum VK_HEADER_VERSION = 13;
+enum VK_HEADER_VERSION = 14;
 
 enum VK_NULL_HANDLE = null;
 
@@ -3356,8 +3358,8 @@ version(VK_USE_PLATFORM_WAYLAND_KHR) {
 	enum VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME = "VK_KHR_wayland_surface";
 
 	alias VkWaylandSurfaceCreateFlagsKHR = VkFlags;
-	struct wl_surface;
 	struct wl_display;
+	struct wl_surface;
 
 	
 	struct VkWaylandSurfaceCreateInfoKHR {
