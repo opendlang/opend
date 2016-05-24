@@ -853,35 +853,20 @@ returns a named Tuple (or Aes) with all the members and their values.
 +/
 template merge(T, U)
 {
-    import std.traits;
-    import painlesstraits;
-    auto injectCode()
-    {
-        import std.format : format;
-        import std.string : split;
-        import std.meta : Filter, templateNot, ApplyLeft;
-        string typing = "Tuple!(";
-        //string typing = T.stringof.split("!")[0] ~ "!(";
-        //string typingU = U.stringof.split("!")[0] ~ "!(";
-        string variables = "(";
-        foreach (name; aesFields!U)
-        {
-            typing ~= format("typeof(other.%s),\"%s\",",name,name);
-            variables ~= format("other.%s,", name);
-        }
-
-        alias notHasAesFieldU = ApplyLeft!(templateNot!(hasAesField),U);
-        foreach (name; Filter!(notHasAesFieldU, aesFields!T))
-        {
-            typing ~= format("typeof(base.%s),\"%s\",",name,name);
-            variables ~= format("base.%s,",name);
-        }
-        return format("return %s)%s);", typing[0 .. $ - 1], variables[0 .. $ - 1] );
-    }
-
     auto merge(T base, U other)
     {
-        mixin(injectCode);
+        import std.meta : ApplyLeft, Filter, AliasSeq, templateNot;
+        alias fieldsU = aesFields!U;
+        alias notHasAesFieldU = ApplyLeft!(templateNot!(hasAesField),U);
+        alias fieldsT = Filter!(notHasAesFieldU, aesFields!T);
+
+        auto vT = fieldValues!(T, fieldsT)(base);
+        auto vU = fieldValues!(U, fieldsU)(other);
+
+        return Tuple!(AliasSeq!(
+            typeAndFields!(T,fieldsT),
+            typeAndFields!(U,fieldsU)
+            ))(vT.expand, vU.expand);
     }
 }
 

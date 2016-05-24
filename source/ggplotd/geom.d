@@ -169,9 +169,9 @@ private auto geomShape(string shape, AES)(AES aes)
 
             auto geom = Geom( tup );
             if (!xsCoords.numeric)
-                geom.xTickLabels ~= tup[0];
+                geom.xTickLabels ~= tup.x;
             if (!ysCoords.numeric)
-                geom.yTickLabels ~= tup[1];
+                geom.yTickLabels ~= tup.y;
             geom.draw = f;
             geom.colours ~= ColourID(tup.colour);
             geom.bounds = bounds;
