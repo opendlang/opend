@@ -520,27 +520,20 @@ template group(Specs...)
             import std.typetuple : TypeTuple;
             alias Specs = DefaultGroupFields;
         }
-        string types = "";
         string values = "";
         foreach( spec; Specs )
         {
             import std.range : ElementType;
-            import std.traits;
-            import painlesstraits : isFieldOrProperty;
-            static if(hasMember!((ElementType!A),spec)
-                && isFieldOrProperty!(
-                    __traits(getMember,ElementType!A,spec))
-            )
+            static if(hasAesField!((ElementType!A),spec))
             {
-                types ~= format("typeof(a.%s),",spec);
                 values ~= format("a.%s,", spec);
             }
         }
 
         // Default case if no matching fields
-        if (!types.empty)
-            return format("auto extractKey(T)(T a) 
-                { return Tuple!(%s)(%s); }", types[0..$-1],   
+        if (!values.empty)
+            return format( "auto extractKey(T)(T a) 
+                { import std.typecons : tuple; return tuple(%s); }", 
                 values[0..$-1] );
         else
             return "auto extractKey(T)(T a) 
@@ -731,7 +724,6 @@ auto numericLabel(Range)( Range r ) if (isInputRange!Range)
 
 unittest
 {
-    import std.stdio : writeln;
     import std.array : array;
     import std.algorithm : map;
 
@@ -753,6 +745,69 @@ unittest
     static assert(isFieldOrProperty!(t.x));
 }
 
+
+private template aesFields(T)
+{
+    import std.traits;
+    template isAesField(alias name)
+    {
+        import painlesstraits : isFieldOrProperty;
+        import std.typecons : Tuple;
+        // To be honest, I am not sure why isFieldOrProperty!name does not
+        // suffice (instead of the first two), but that 
+        // results in toHash for Tuple
+        static if ( __traits(compiles, isFieldOrProperty!(
+            __traits(getMember, T, name) ) )
+             && isFieldOrProperty!(__traits(getMember,T,name))
+             && name[0] != "_"[0]
+             && __traits(compiles, ( in T u ) {
+            auto a = __traits(getMember, u, name); 
+            Tuple!(typeof(a),name)(a); } )
+            )
+            enum isAesField = true;
+        else
+            enum isAesField = false;
+    }
+
+    import std.meta : Filter;
+    enum aesFields = Filter!(isAesField, __traits(allMembers, T));
+}
+
+unittest
+{
+    struct Point { double x; double y; string label = "Point"; }
+    assertEqual( "x", aesFields!Point[0] );
+    assertEqual( "y", aesFields!Point[1] );
+    assertEqual( "label", aesFields!Point[2] );
+    assertEqual( 3, aesFields!(Point).length );
+
+    auto pnt2 = Tuple!(double, "x", double, "y", string, "label" )( 1.0, 2.0, "Point" );
+    assertEqual( "x", aesFields!(typeof(pnt2))[0] );
+    assertEqual( "y", aesFields!(typeof(pnt2))[1] );
+    assertEqual( "label", aesFields!(typeof(pnt2))[2] );
+    assertEqual( 3, aesFields!(typeof(pnt2)).length );
+}
+
+private template hasAesField(T, alias name)
+{
+    enum bool hasAesField = (function() {
+        bool has = false;
+        foreach (name2; aesFields!T)
+        { 
+            if (name == name2)
+                has = true;
+        }
+        return has;
+    })();
+}
+
+unittest
+{
+    struct Point { double x; double y; string label = "Point"; }
+    static assert( hasAesField!(Point, "x") );
+    static assert( !hasAesField!(Point, "z") );
+}
+
 /++
 Merge two types by their members. 
 
@@ -768,54 +823,29 @@ template merge(T, U)
     {
         import std.format : format;
         import std.string : split;
+        import std.meta : Filter, templateNot, ApplyLeft;
         string typing = "Tuple!(";
         //string typing = T.stringof.split("!")[0] ~ "!(";
         //string typingU = U.stringof.split("!")[0] ~ "!(";
         string variables = "(";
-        foreach (name; __traits(allMembers, U))
+        foreach (name; aesFields!U)
         {
-            static if (__traits(compiles, isFieldOrProperty!(
-                            __traits(getMember, U, name)))
-                    && __traits(compiles, ( in U u ) {
-                        auto a = __traits(getMember, u, name);
-                        Tuple!(typeof(a),name)(a); } )
-                    && isFieldOrProperty!(__traits(getMember,U,name))
-                    && name[0] != "_"[0] )
-            {
-                typing ~= format("typeof(other.%s),\"%s\",",name,name);
-                variables ~= format("other.%s,", name);
-            }
+            typing ~= format("typeof(other.%s),\"%s\",",name,name);
+            variables ~= format("other.%s,", name);
         }
 
-        foreach (name; __traits(allMembers, T))
+        alias notHasAesFieldU = ApplyLeft!(templateNot!(hasAesField),U);
+        foreach (name; Filter!(notHasAesFieldU, aesFields!T))
         {
-            static if (__traits(compiles, isFieldOrProperty!(
-                __traits(getMember, T, name)))
-                     && __traits(compiles, ( in T u ) {
-                auto a = __traits(getMember, u, name); 
-                Tuple!(typeof(a),name)(a); } )
-                && isFieldOrProperty!(__traits(getMember,T,name))
-                     && name[0] != "_"[0] )
-                {
-                bool contains = false;
-                foreach (name2; __traits(allMembers, U))
-                {
-                    if (name == name2)
-                        contains = true;
-                }
-                if (!contains)
-                {
-                    typing ~= format("typeof(base.%s),\"%s\",",name,name);
-                    variables ~= format("base.%s,",name);
-                }
-            }
+            typing ~= format("typeof(base.%s),\"%s\",",name,name);
+            variables ~= format("base.%s,",name);
         }
         return format("return %s)%s);", typing[0 .. $ - 1], variables[0 .. $ - 1] );
     }
 
     auto merge(T base, U other)
     {
-        mixin(injectCode());
+        mixin(injectCode);
     }
 }
 
