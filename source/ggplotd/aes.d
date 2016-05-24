@@ -528,6 +528,30 @@ unittest
     assertEqual(fv2[1], "Point");
 }
 
+private template typeAndFields( T, Specs... )
+{
+    import std.meta : AliasSeq;
+    static if (Specs.length == 0)
+        alias typeAndFields = AliasSeq!();
+    else
+        alias typeAndFields = AliasSeq!( 
+            typeof(__traits(getMember, T, Specs[0])), 
+            Specs[0], typeAndFields!(T, Specs[1..$]) );
+}
+
+unittest 
+{
+    struct Point { double x; double y; string label = "Point"; }
+    alias fts = typeAndFields!(Point, "x","y","label");
+
+    auto pnt = Point( 1.0, 2.0 );
+    auto fv = fieldValues!(Point, "x","y","label")(pnt);
+    auto tp = Tuple!( fts )( fv.expand );
+    assertEqual(tp.x, 1.0);
+    assertEqual(tp.y, 2.0);
+    assertEqual(tp.label, "Point");
+ }
+
 // Default fields to group by
 alias DefaultGroupFields = TypeTuple!("alpha","colour","label");
 
@@ -578,11 +602,6 @@ unittest
     assertEqual(group!("abcdef")(aes)[0].walkLength,4);
 
     assertEqual(group(aes).walkLength,4);
-
-    // This is the key!
-    import std.stdio:writeln;
-    import std.typecons : tuple;
-    tuple( tuple(1.0).expand, tuple(2.0).expand ).writeln;
 }
 
 ///
