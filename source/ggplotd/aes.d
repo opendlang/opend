@@ -569,7 +569,8 @@ template group(Specs...)
 
     auto extractKey(T)(T a)
     {
-        import ggplotd.meta : ApplyLeft, Filter;
+        import ggplotd.meta : ApplyLeft;
+        import std.meta : Filter;
         alias hasFieldT = ApplyLeft!(hasAesField, T);
         alias fields = Filter!(hasFieldT, Specs);
         static if (fields.length == 0)
@@ -855,7 +856,8 @@ template merge(T, U)
 {
     auto merge(T base, U other)
     {
-        import ggplotd.meta : ApplyLeft, Filter, AliasSeq, templateNot;
+        import ggplotd.meta : ApplyLeft;
+        import std.meta : Filter, AliasSeq, templateNot;
         alias fieldsU = aesFields!U;
         alias notHasAesFieldU = ApplyLeft!(templateNot!(hasAesField),U);
         alias fieldsT = Filter!(notHasAesFieldU, aesFields!T);
