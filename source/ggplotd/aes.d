@@ -512,14 +512,16 @@ alias DefaultGroupFields = TypeTuple!("alpha","colour","label");
 +/
 template group(Specs...)
 {
+    static if (Specs.length == 0)
+    {
+        import std.typetuple : TypeTuple;
+        alias Specs = DefaultGroupFields;
+    }
+
     string injectExtractKey(A)()
     {
         import std.format : format;
-        static if (Specs.length == 0)
-        {
-            import std.typetuple : TypeTuple;
-            alias Specs = DefaultGroupFields;
-        }
+ 
         string values = "";
         foreach( spec; Specs )
         {
