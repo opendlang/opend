@@ -502,6 +502,32 @@ unittest
 
 
 import std.typetuple : TypeTuple;
+private template fieldValues( T, Specs... )
+{
+    import std.typecons : Tuple, tuple;
+    auto fieldValues( T t )
+    {
+        static if (Specs.length == 0)
+            return tuple();
+        else
+            return tuple( __traits(getMember, t, Specs[0]),
+                (fieldValues!(typeof(t), Specs[1..$])(t)).expand );
+    }
+}
+
+unittest 
+{
+    struct Point { double x; double y; string label = "Point"; }
+    auto pnt = Point( 1.0, 2.0 );
+    auto fv = fieldValues!(Point, "x","y","label")(pnt);
+    assertEqual(fv[0], 1.0);
+    assertEqual(fv[1], 2.0);
+    assertEqual(fv[2], "Point");
+    auto fv2 = fieldValues!(Point, "x","label")(pnt);
+    assertEqual(fv2[0], 1.0);
+    assertEqual(fv2[1], "Point");
+}
+
 // Default fields to group by
 alias DefaultGroupFields = TypeTuple!("alpha","colour","label");
 
@@ -514,39 +540,23 @@ template group(Specs...)
 {
     static if (Specs.length == 0)
     {
-        import std.typetuple : TypeTuple;
         alias Specs = DefaultGroupFields;
     }
 
-    string injectExtractKey(A)()
+    auto extractKey(T)(T a)
     {
-        import std.format : format;
- 
-        string values = "";
-        foreach( spec; Specs )
-        {
-            import std.range : ElementType;
-            static if(hasAesField!((ElementType!A),spec))
-            {
-                values ~= format("a.%s,", spec);
-            }
-        }
-
-        // Default case if no matching fields
-        if (!values.empty)
-            return format( "auto extractKey(T)(T a) 
-                { import std.typecons : tuple; return tuple(%s); }", 
-                values[0..$-1] );
+        import std.meta : ApplyLeft, Filter;
+        alias hasFieldT = ApplyLeft!(hasAesField, T);
+        alias fields = Filter!(hasFieldT, Specs);
+        static if (fields.length == 0)
+            return 1;
         else
-            return "auto extractKey(T)(T a) 
-                { return 1; }";
-    }
-        
+            return fieldValues!(T, fields)(a);
+    } 
+
     auto group(AES)(AES aes)
     {
-        mixin(injectExtractKey!(typeof(aes))());
         import ggplotd.range : groupBy;
-
         return aes.groupBy!((a) => extractKey(a)).values;
     }
 }
@@ -568,6 +578,11 @@ unittest
     assertEqual(group!("abcdef")(aes)[0].walkLength,4);
 
     assertEqual(group(aes).walkLength,4);
+
+    // This is the key!
+    import std.stdio:writeln;
+    import std.typecons : tuple;
+    tuple( tuple(1.0).expand, tuple(2.0).expand ).writeln;
 }
 
 ///
