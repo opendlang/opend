@@ -711,28 +711,28 @@ auto geomAxis(AES)(AES aes, double tickLength, string label)
 }
 
 /// Draw Label at given x and y position
-auto geomLabel(AES)(AES aes)
+template geomLabel(AES)
 {
     import std.algorithm : map;
+    import ggplotd.aes : numericLabel;
     import ggplotd.range : mergeRange;
-    auto xsMap = aes.map!("a.x");
-    auto ysMap = aes.map!("a.y");
-    alias CoordX = typeof(NumericLabel!(typeof(xsMap))(xsMap));
-    alias CoordY = typeof(NumericLabel!(typeof(ysMap))(ysMap));
+    alias CoordX = typeof(numericLabel(AES.init.map!("a.x")));
+    alias CoordY = typeof(numericLabel(AES.init.map!("a.y")));
     alias CoordType = typeof(DefaultValues
-        .mergeRange(aes)
-        .mergeRange( Aes!(CoordX, "x", CoordY, "y")
-            (CoordX(xsMap), CoordY(ysMap))));
+        .mergeRange(AES.init)
+        .mergeRange(Aes!(CoordX, "x", CoordY, "y").init));
 
-
-    struct GeomRange(T)
+    struct VolderMort
     {
-        this(T aes)
+        this(AES aes)
         {
+            import std.algorithm : map;
+            import ggplotd.range : mergeRange;
             _aes = DefaultValues
                 .mergeRange(aes)
                 .mergeRange( Aes!(CoordX, "x", CoordY, "y")(
-                    CoordX(xsMap), CoordY(ysMap)));
+                    CoordX(aes.map!("a.x")), 
+                    CoordY(aes.map!("a.y"))));
         }
 
         @property auto front()
@@ -789,7 +789,10 @@ auto geomLabel(AES)(AES aes)
         CoordType _aes;
     }
 
-    return GeomRange!AES(aes);
+    auto geomLabel(AES aes)
+    {
+        return VolderMort(aes);
+    }
 }
 
 unittest
