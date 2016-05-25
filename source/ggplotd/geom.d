@@ -337,16 +337,16 @@ unittest
 }
 
 /// Create lines from data 
-auto geomLine(AES)(AES aes)
+template geomLine(AES)
 {
     import std.algorithm : map;
     import std.range : array, zip;
 
     import ggplotd.range : mergeRange;
  
-    struct GeomRange(T)
+    struct VolderMort 
     {
-        this(T aes)
+        this(AES aes)
         {
             groupedAes = DefaultValues.mergeRange(aes).group;
         }
@@ -411,10 +411,13 @@ auto geomLine(AES)(AES aes)
         }
 
     private:
-        typeof(group(DefaultValues.mergeRange(T.init))) groupedAes;
+        typeof(group(DefaultValues.mergeRange(AES.init))) groupedAes;
     }
 
-    return GeomRange!AES(aes);
+    auto geomLine(AES aes)
+    {
+        return VolderMort(aes);
+    }
 }
 
 ///
