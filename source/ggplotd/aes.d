@@ -90,17 +90,41 @@ template Aes(Specs...)
         }
     }
 
+    template parseTypes(Specs...)
+    {
+        import std.range : isInputRange;
+        static if (Specs.length < 2)
+        {
+            alias parseTypes = AliasSeq!();
+        }
+        else static if (
+             isInputRange!(Specs[0])
+             && is(typeof(Specs[1]) : string)
+        )
+        {
+            alias parseTypes = AliasSeq!(
+                Specs[0], 
+                parseTypes!(Specs[2 .. $]));
+        }
+        else
+        {
+            pragma(msg, Specs);
+            static assert(0,
+                "Attempted to instantiate Tuple with an " ~ "invalid argument: " ~ Specs[0].stringof);
+        }
+    }
     alias elementsType = parseSpecs!Specs;
+    alias types = parseTypes!Specs;
 
     struct Aes
     {
-        import std.typecons : Tuple;
-        import std.range : zip;
-        private typeof(zip(Tuple!(Specs).init.expand)) aes;
+        import std.range : Zip;
+        private Zip!(types) aes;
 
         this(Args...)(Args args)
         {
-            aes = zip(Tuple!(Specs)(args).expand);
+            import std.range : zip;
+            aes = zip(args);
         }
 
         void popFront()
