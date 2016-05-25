@@ -200,7 +200,7 @@ unittest
     auto xs = numericLabel!(double[])([ 1.0, 2.0 ]);
 
     auto aes = Aes!( typeof(xs), "x", double[], "y", double[], "width", double[], "height" )
-        ( xs, [3.0, 4.0], [1,1], [2,2] );
+        ( xs, [3.0, 4.0], [1.0,1], [2.0,2] );
     auto geoms = geomShape!("rectangle", typeof(aes))( aes );
 
     import std.range : walkLength;
@@ -260,7 +260,7 @@ unittest
     import std.range : walkLength;
     assertEqual(
             geomType(Aes!(double[], "x", double[], "y", string[], "type")
-                ( [0,1,2], [5,6,7], ["line", "point", "line"] )).walkLength, 2
+                ( [0.0,1,2], [5.0,6,7], ["line", "point", "line"] )).walkLength, 2
             );
 }
 
@@ -853,8 +853,8 @@ auto geomBox(AES)(AES aes)
             auto labels = numericLabel( aes.map!("a.label.to!string") );
             auto myAes = aes.mergeRange( Aes!(typeof(labels), "label")( labels ) );
         } else {
-            import std.range : repeat;
-            auto labels = numericLabel( repeat("a", aes.length) );
+            import std.range : repeat, walkLength;
+            auto labels = numericLabel( repeat("a", aes.walkLength) );
             auto myAes = aes.mergeRange( Aes!(typeof(labels), "label")( labels ) );
         }
     }
