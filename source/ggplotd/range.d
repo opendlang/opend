@@ -176,7 +176,9 @@ unittest
 ///
 unittest
 {
+    import std.array : array;
     import std.range : front;
+    import std.algorithm : map;
     import ggplotd.aes : Aes, DefaultValues, NumericLabel;
 
     auto xs = ["a", "b"];
@@ -185,8 +187,8 @@ unittest
     auto aes = Aes!(string[], "x", string[], "y", string[], "label")(xs, ys, labels);
 
     auto nlAes = mergeRange(aes, Aes!(NumericLabel!(string[]), "x",
-        NumericLabel!(string[]), "y")(NumericLabel!(string[])(aes.x),
-        NumericLabel!(string[])(aes.y)));
+        NumericLabel!(string[]), "y")(NumericLabel!(string[])(aes.map!("a.x").array),
+        NumericLabel!(string[])(aes.map!("a.y").array)));
 
     assertEqual(nlAes.front.x[0], 0);
     assertEqual(nlAes.front.label, "e");

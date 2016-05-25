@@ -169,9 +169,9 @@ private auto geomShape(string shape, AES)(AES aes)
 
             auto geom = Geom( tup );
             if (!xsCoords.numeric)
-                geom.xTickLabels ~= tup[0];
+                geom.xTickLabels ~= tup.x;
             if (!ysCoords.numeric)
-                geom.yTickLabels ~= tup[1];
+                geom.yTickLabels ~= tup.y;
             geom.draw = f;
             geom.colours ~= ColourID(tup.colour);
             geom.bounds = bounds;
@@ -200,7 +200,7 @@ unittest
     auto xs = numericLabel!(double[])([ 1.0, 2.0 ]);
 
     auto aes = Aes!( typeof(xs), "x", double[], "y", double[], "width", double[], "height" )
-        ( xs, [3.0, 4.0], [1,1], [2,2] );
+        ( xs, [3.0, 4.0], [1.0,1], [2.0,2] );
     auto geoms = geomShape!("rectangle", typeof(aes))( aes );
 
     import std.range : walkLength;
@@ -215,8 +215,9 @@ can be passed using a lower case string minus the geom prefix, i.e. hist3d calls
 */
 template geomType(AES)
 {
-    string generateToGeom()
+    string injectToGeom()
     {
+        import std.format : format;
         import std.traits;
         import std.string : toLower;
         string str = "auto toGeom(A)( A aes, string type ) {\nimport std.traits; import std.array : array;\n";
@@ -226,10 +227,7 @@ template geomType(AES)
                     && name != "geomType"
                     )
             {
-                str ~= "static if(__traits(compiles,(A a) => "
-                    ~ name ~"(a))) {\n";
-                str ~= "if (type == q{" ~ name[4..$].toLower ~ "})\n";
-                str ~= "\treturn " ~ name ~ "!A(aes).array;\n}\n";
+                str ~= format( "static if(__traits(compiles,(A a) => %s(a))) {\nif (type == q{%s})\n\treturn %s!A(aes).array;\n}\n", name, name[4..$].toLower, name );
             }
         }
 
@@ -248,7 +246,7 @@ can be passed using a lower case string minus the geom prefix, i.e. hist3d calls
         import std.algorithm : map, joiner;
 
         import ggplotd.aes : group;
-        mixin(generateToGeom());
+        mixin(injectToGeom());
 
         return aes
             .group!"type"
@@ -262,7 +260,7 @@ unittest
     import std.range : walkLength;
     assertEqual(
             geomType(Aes!(double[], "x", double[], "y", string[], "type")
-                ( [0,1,2], [5,6,7], ["line", "point", "line"] )).walkLength, 2
+                ( [0.0,1,2], [5.0,6,7], ["line", "point", "line"] )).walkLength, 2
             );
 }
 
@@ -855,8 +853,8 @@ auto geomBox(AES)(AES aes)
             auto labels = numericLabel( aes.map!("a.label.to!string") );
             auto myAes = aes.mergeRange( Aes!(typeof(labels), "label")( labels ) );
         } else {
-            import std.range : repeat;
-            auto labels = numericLabel( repeat("a", aes.length) );
+            import std.range : repeat, walkLength;
+            auto labels = numericLabel( repeat("a", aes.walkLength) );
             auto myAes = aes.mergeRange( Aes!(typeof(labels), "label")( labels ) );
         }
     }

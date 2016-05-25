@@ -308,16 +308,14 @@ private string ctReplaceAll( string orig, string pattern, string replacement )
 // Create a specialised x and y axis version of a given function.
 private string xy( string func )
 {
-    import std.string : split;
-    string str = "///\n" ~ // Three slashes should result in documentation?
+    import std.format : format;
+    return format( "///\n%s\n\n///\n%s",
         func
             .ctReplaceAll( "axis", "xaxis" )
-            .ctReplaceAll( "Axis", "XAxis" ) ~
-        "\n\n///\n" ~ 
+            .ctReplaceAll( "Axis", "XAxis" ),
         func
             .ctReplaceAll( "axis", "yaxis" )
-            .ctReplaceAll( "Axis", "YAxis" );
-    return str; 
+            .ctReplaceAll( "Axis", "YAxis" ) );
 }
 
 alias XAxisFunction = XAxis delegate(XAxis);

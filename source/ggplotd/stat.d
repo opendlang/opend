@@ -57,14 +57,15 @@ auto statFunction( FUNC, T )( FUNC func, T min,
 unittest
 {
     import std.array : array;
+    import std.algorithm : map;
 
     auto aes = statFunction( (double x) { return 2*x; }, 0.0, 1, 2 );
-    assertEqual( aes.x.array, [0.0, 1.0] );
-    assertEqual( aes.y.array, [0.0, 2.0] );
+    assertEqual( aes.map!("a.x").array, [0.0, 1.0] );
+    assertEqual( aes.map!("a.y").array, [0.0, 2.0] );
 
     aes = statFunction( (double x) { return 3*x; }, -1.0, 1, 3 );
-    assertEqual( aes.x.array, [-1.0, 0.0, 1.0] );
-    assertEqual( aes.y.array, [-3.0, 0.0, 3.0] );
+    assertEqual( aes.map!("a.x").array, [-1.0, 0.0, 1.0] );
+    assertEqual( aes.map!("a.y").array, [-3.0, 0.0, 3.0] );
 }
 
 /+++++++++++
@@ -219,7 +220,7 @@ private auto statHistND(int dim, AES)(AES aesRaw, size_t[] noBins)
                 if (_noBins[0] < 1)
                     _noBins[0] = min(aes.map!((a) => a.x.to!double)
                             .uniquer.take(30).walkLength,
-                            min(30,max(11, aes.length/10)));
+                            min(30,max(11, aes.walkLength/10)));
                 auto seed = tuple(
                         aes.front.x.to!double, aes.front.x.to!double );
                 auto minmax = reduce!((a,b) => safeMin(a,b.x.to!double),
@@ -232,11 +233,11 @@ private auto statHistND(int dim, AES)(AES aesRaw, size_t[] noBins)
                 if (_noBins[0] < 1)
                     _noBins[0] = min(aes.map!((a) => a.x.to!double)
                             .uniquer.take(30).walkLength,
-                            min(30,max(11, aes.length/25)));
+                            min(30,max(11, aes.walkLength/25)));
                 if (_noBins[1] < 1)
                     _noBins[1] = min(aes.map!((a) => a.y.to!double)
                             .uniquer.take(30).walkLength,
-                            min(30,max(11, aes.length/25)));
+                            min(30,max(11, aes.walkLength/25)));
                 auto seed = tuple(
                         aes.front.x.to!double, aes.front.x.to!double,
                         aes.front.y.to!double, aes.front.y.to!double );
