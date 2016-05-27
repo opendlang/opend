@@ -58,6 +58,7 @@ However, if you wish to create vulkan surface(s) yourself you have three choices
 
 
 Additional info:
+* there is no need for platform extensions if glfw3 (or similar technique) is used, as shown [here](https://github.com/ParticlePeter/ErupteD-GLFW).
 * for windows platform, in your project specify:
 `"versions" : [ "VK_USE_PLATFORM_WIN32_KHR" ]`.
 The phobos windows modules will be used in that case.
