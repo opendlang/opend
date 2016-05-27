@@ -151,7 +151,7 @@ int main() {
 	loadDeviceLevelFunctions(device);
 
 	// alternatively load all Vulkan functions for all devices
-	//EruptedLoader;.loadDeviceLevelFunctions(device);
+	//EruptedLoader.loadDeviceLevelFunctions(instance);
 
 	// get the graphics queue to submit command buffers
 	VkQueue queue;

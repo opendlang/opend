@@ -191,6 +191,7 @@ void loadInstanceLevelFunctions(VkInstance instance) {
 
 /// with a valid VkInstance call this function to retrieve VkDevice, VkQueue and VkCommandBuffer related functions
 /// the functions call indirectly through the VkInstance and will be internally dispatched by the implementation
+/// use loadDeviceLevelFunctions(VkDevice device) bellow to avoid this indirection and get the pointers directly form a VkDevice
 void loadDeviceLevelFunctions(VkInstance instance) {
 	assert(vkGetInstanceProcAddr !is null, "Must call loadInstanceLevelFunctions before loadDeviceLevelFunctions");\
 """
@@ -200,7 +201,7 @@ void loadDeviceLevelFunctions(VkInstance instance) {
 
 /// with a valid VkDevice call this function to retrieve VkDevice, VkQueue and VkCommandBuffer related functions
 /// the functions call directly VkDevice and related resources and can be retrieved for one and only one VkDevice
-/// otherwise a call to with to VkDevices would overwrite the __gshared functions of another previously called VkDevice
+/// calling this function again with another VkDevices will overwrite the __gshared functions retrieved previously
 /// use createGroupedDeviceLevelFunctions bellow if usage of multiple VkDevices is required
 void loadDeviceLevelFunctions(VkDevice device) {
 	assert(vkGetDeviceProcAddr !is null, "Must call loadInstanceLevelFunctions before loadDeviceLevelFunctions");\

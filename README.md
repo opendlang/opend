@@ -49,7 +49,7 @@ However, if you wish to create vulkan surface(s) yourself you have three choices
 	* `Wayland` specify `"subConfigurations" : { "erupted" : "dub-platform-wayland" }`
 
 2. The symlink (or copy/move) way. If you like to play with bindings yourself this might be the way for you. Drawback is that you need to add the symlink into any erupted version you use and that your binding is not automatically tracked by dub.
-    * Create a directory/module-path setup similar to those in `erupted/types.d` (I myself have these paths from the c header `vk_platform.h`) and symlink this the root under `ErupeD/sources` as sibling to `ErupeD/sources/erupted`.
+    * Create a directory/module-path similar to those in `erupted/types.d` (I myself have these paths from the C header `vk_platform.h`) and symlink it under `ErupeD/sources` as sibling to `ErupeD/sources/erupted`.
     * You also need to specify the corresponding vulkan version in your projects dub.json versions block. E.g. to use `XCB` you need to specify `"versions" : [ "VK_USE_PLATFORM_XCB_KHR" ]`.
 
 3. The source- and importPaths way. This is if you don't want to add stuff to the ErupteD project structure. Drawback here is that neither erupted nor the binding are automatically tracked by dub, you need to check yourself for any updates. In your project REMOVE the erupted dependency and add:
@@ -62,7 +62,7 @@ Additional info:
 `"versions" : [ "VK_USE_PLATFORM_WIN32_KHR" ]`.
 The phobos windows modules will be used in that case.
 * wayland-client.h cannot exist as module name. The maintainer of `wayland-client-d` choose `wayland.client` as module name and the name is used in `erupted/types` as well.
-* for android platform, I have not a single clue how this is supposed to work. If you are interested feel free to open up an issue. 
+* for android platform, I have not a single clue how this is supposed to work. If you are interested in android an have an idea how it should work feel free to open up an issue. 
 
 
 Generating Bindings
