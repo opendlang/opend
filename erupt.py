@@ -63,6 +63,9 @@ pure {{
 	}}
 }}
 
+// Linkage of debug and allocation callbacks
+extern(System):
+
 // Version of corresponding c header file
 {HEADER_VERSION}
 

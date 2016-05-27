@@ -25,6 +25,9 @@ pure {
 	}
 }
 
+// Linkage of debug and allocation callbacks
+extern(System):
+
 // Version of corresponding c header file
 enum VK_HEADER_VERSION = 14;
 
@@ -3358,8 +3361,8 @@ version(VK_USE_PLATFORM_WAYLAND_KHR) {
 	enum VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME = "VK_KHR_wayland_surface";
 
 	alias VkWaylandSurfaceCreateFlagsKHR = VkFlags;
-	struct wl_surface;
 	struct wl_display;
+	struct wl_surface;
 
 	
 	struct VkWaylandSurfaceCreateInfoKHR {
