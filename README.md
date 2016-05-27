@@ -43,6 +43,7 @@ Platform surface extensions
 
 The usage of a third party library like glfw3 is highly recommended instead of vulkan platforms. Dlang has only one official platform binding in phobos which is for windows found in module `core.sys.windows.windows`. Other bindings to XCB, XLIB and Wayland can be found in the dub registry and are supported experimentally. 
 However, if you wish to create vulkan surface(s) yourself you have three choices:
+
 1. The dub way, this is experimental, currently only three bindings are listed in the registry. Dub fetches them and adds them to erupted build dependency when you specify any of these sub configurations in your projects dub.json (add `-derelict-loader` to the config name if you want to be able to laod `vkGetInstanceProcAddr` from derelict):
 	* `XCB` specify `"subConfigurations" : { "erupted" : "dub-platform-xcb" }`
 	* `XLIB` specify `"subConfigurations" : { "erupted" : "dub-platform-xlib" }`
