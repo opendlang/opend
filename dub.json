@@ -7,6 +7,10 @@
     "license"           :   "BSD 2-clause",
     "configurations"    :   [
         {
+            "name"          : "default",
+        },
+
+        {
             "name"          :   "with-derelict-loader",
             "versions"      :   [ "ERUPTED_FROM_DERELICT" ],
             "dependencies"  :   {
