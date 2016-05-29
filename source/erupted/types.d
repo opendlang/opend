@@ -29,7 +29,7 @@ pure {
 extern(System):
 
 // Version of corresponding c header file
-enum VK_HEADER_VERSION = 14;
+enum VK_HEADER_VERSION = 15;
 
 enum VK_NULL_HANDLE = null;
 
@@ -3649,4 +3649,16 @@ struct VkDebugMarkerMarkerInfoEXT {
 	const(char)*     pMarkerName;
 	float[4]         color;
 }
+
+// VK_AMD_extension_7
+enum VK_AMD_EXTENSION_7_SPEC_VERSION = 0;
+enum VK_AMD_EXTENSION_7_EXTENSION_NAME = "VK_AMD_extension_7";
+
+// VK_AMD_extension_8
+enum VK_AMD_EXTENSION_8_SPEC_VERSION = 0;
+enum VK_AMD_EXTENSION_8_EXTENSION_NAME = "VK_AMD_extension_8";
+
+// VK_AMD_extension_9
+enum VK_AMD_EXTENSION_9_SPEC_VERSION = 0;
+enum VK_AMD_EXTENSION_9_EXTENSION_NAME = "VK_AMD_extension_9";
 
