@@ -219,7 +219,8 @@ can be passed using a lower case string minus the geom prefix, i.e. hist2d calls
   --------------
     import ggplotd.geom : geomType;
     geomType(Aes!(double[], "x", double[], "y", string[], "type")
-        ( [0.0,1,2], [5.0,6,7], ["line", "point", "line"] ))
+        ( [0.0,1,2], [5.0,6,7], ["line", "point", "line"] ));
+  --------------
 
 */
 template geomType(AES)
