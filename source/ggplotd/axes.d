@@ -124,11 +124,7 @@ unittest
     assert(adjustTickWidth(Axis(1.79877e+07, 1.86788e+07), 5).tick_width == 100_000);
 }
 
-/// Returns a range starting at axis.min, ending axis.max and with
-/// all the tick locations in between
-auto axisTicks(Axis axis)
-{
-    struct Ticks
+private struct Ticks
     {
         double currentPosition;
         Axis axis;
@@ -163,6 +159,10 @@ auto axisTicks(Axis axis)
         }
     }
 
+/// Returns a range starting at axis.min, ending axis.max and with
+/// all the tick locations in between
+auto axisTicks(Axis axis)
+{
     return Ticks(axis.min, axis);
 }
 

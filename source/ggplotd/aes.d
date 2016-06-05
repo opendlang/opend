@@ -392,13 +392,10 @@ struct NumericLabel(T) if (isInputRange!T)
     }
 
     /// Is the ElementType numeric?
-    @property bool numeric()
-    {
-        static if (isNumeric!E)
-            return true;
-        else
-            return false;
-    }
+    static if (isNumeric!E)
+        enum numeric = true;
+    else
+        enum numeric = false;
 
 private:
     T original;
@@ -416,10 +413,14 @@ unittest
     auto num = NumericLabel!(double[])([0.0, 0.1, 1.0, 0.0]);
     assertEqual(num.map!((a) => a[0]).array, [0.0, 0.1, 1.0, 0.0]);
     assertEqual(num.map!((a) => a[1]).array, ["0", "0.1", "1", "0"]);
+    static assert(num.numeric);
+    assert(num.numeric);
     auto strs = NumericLabel!(string[])(["a", "c", "b", "a"]);
     assertEqual(strs.map!((a) => a[0]).array, [0, 1, 2.0, 0.0]);
     assertEqual(strs.map!((a) => a[1]).array, ["a", "c", "b", "a"]);
-}
+    static assert(!strs.numeric);
+    assert(!strs.numeric);
+ }
 
 ///
 auto numericLabel(Range)( Range r ) if (isInputRange!Range)

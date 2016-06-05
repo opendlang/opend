@@ -109,47 +109,50 @@ private auto idToRange(T)( size_t value, T min, T width )
 
 // Multidimensional bin. Data either is range of range, with each subrange
 // a set of data. TODO: should we treat one dimensional data differently?
-private auto bin(DATA)(DATA data, double[] mins, double[] maxs, 
-    size_t[] noBins)
+private template bin(DATA)
 {
-    import std.range : zip;
-    import std.algorithm : filter, all, group, map;
-    import ggplotd.range : groupBy;
     struct Bin
     {
         double[][] range;
         size_t count;
     }
 
-    assert( noBins.all!((a) => a > 0), "noBins must be larger than 0" );
+    auto bin(DATA data, double[] mins, double[] maxs, 
+        size_t[] noBins)
+    {
+        import std.range : zip;
+        import std.algorithm : filter, all, group, map;
+        import ggplotd.range : groupBy;
+        assert( noBins.all!((a) => a > 0), "noBins must be larger than 0" );
 
-    auto widths = zip(mins, maxs, noBins).map!((t) => (t[1]-t[0])/(t[2]));
+        auto widths = zip(mins, maxs, noBins).map!((t) => (t[1]-t[0])/(t[2]));
 
-    auto binIDs = data
-        .filter!((sample)
-        { 
-            return zip(sample, mins, maxs).
-                all!( (args) => (args[0] >= args[1] && args[0] <= args[2]));
-        })
-        .map!((sample) 
-        {
-            import std.array : array; // Needed for groupBy to work correctly
-            return zip(sample, mins, maxs, widths)
-                .map!( (args) => binID( args[0], args[1], args[2], args[3] ) ).array;
-        } );
-
-    import std.typecons : tuple;
-
-    return binIDs.groupBy!((a) => tuple(a)).values.map!((g) 
+        auto binIDs = data
+            .filter!((sample)
+            { 
+                return zip(sample, mins, maxs).
+                    all!( (args) => (args[0] >= args[1] && args[0] <= args[2]));
+            })
+            .map!((sample) 
             {
-                import std.array : array;
-                Bin bin;
-                bin.count = g.length;
-                bin.range = zip( g[0], mins, widths )
-                    .map!((args) => idToRange( args[0], args[1], args[2] ) )
-                    .array;
-                return bin;
-            });
+                import std.array : array; // Needed for groupBy to work correctly
+                return zip(sample, mins, maxs, widths)
+                    .map!( (args) => binID( args[0], args[1], args[2], args[3] ) ).array;
+            } );
+
+        import std.typecons : tuple;
+
+        return binIDs.groupBy!((a) => tuple(a)).values.map!((g) 
+                {
+                    import std.array : array;
+                    Bin bin;
+                    bin.count = g.length;
+                    bin.range = zip( g[0], mins, widths )
+                        .map!((args) => idToRange( args[0], args[1], args[2] ) )
+                        .array;
+                    return bin;
+                });
+    }
 }
 
 unittest {
@@ -184,8 +187,12 @@ unittest {
     assertLessThanOrEqual( binsR.walkLength, 5 );
 }
 
-private auto statHistND(int dim, AES)(AES aesRaw, size_t[] noBins)
+private template statHistND(int dim, AES)
 {
+    import std.algorithm : map;
+    import ggplotd.aes : Aes, numericLabel;
+    import ggplotd.range : mergeRange;
+
     struct VolderMort(AESV)
     {
         private import std.range : ElementType;
@@ -202,7 +209,7 @@ private auto statHistND(int dim, AES)(AES aesRaw, size_t[] noBins)
         double[] mins;
         double[] maxs;
 
-        this( AESV )( AESV aes, size_t[] noBins )
+        this( AESV aes, size_t[] noBins )
         {
             import std.algorithm : min, max, reduce;
             import std.array : array;
@@ -330,28 +337,25 @@ private auto statHistND(int dim, AES)(AES aesRaw, size_t[] noBins)
                 grouped.popFront;
             }
         }
-
-
     }
 
-    import std.algorithm : map;
-    import ggplotd.aes : Aes, numericLabel;
-    import ggplotd.range : mergeRange;
-
-    // Turn x into numericLabel
-    auto xNumeric = numericLabel(aesRaw.map!((t) => t.x));
-    static if (dim == 1)
-        auto aes = aesRaw.mergeRange( 
-                Aes!(typeof(xNumeric), "x")( xNumeric ) );
-    else 
+    auto statHistND(AES aesRaw, size_t[] noBins)
     {
-        auto yNumeric = numericLabel(aesRaw.map!((t) => t.y));
-        auto aes = aesRaw.mergeRange( 
-                Aes!(typeof(xNumeric), "x", typeof(yNumeric), "y")( xNumeric, yNumeric ) );
-    }
+         // Turn x into numericLabel
+        auto xNumeric = numericLabel(aesRaw.map!((t) => t.x));
+        static if (dim == 1)
+            auto aes = aesRaw.mergeRange( 
+                    Aes!(typeof(xNumeric), "x")( xNumeric ) );
+        else 
+        {
+            auto yNumeric = numericLabel(aesRaw.map!((t) => t.y));
+            auto aes = aesRaw.mergeRange( 
+                    Aes!(typeof(xNumeric), "x", typeof(yNumeric), "y")( xNumeric, yNumeric ) );
+        }
 
-    // Get maxs, mins and noBins
-    return VolderMort!(typeof(aes))( aes, noBins );
+        // Get maxs, mins and noBins
+        return VolderMort!(typeof(aes))( aes, noBins );
+    }
 }
 
 /**
