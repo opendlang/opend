@@ -32,6 +32,9 @@ Available configurations:
 * `dub-platform-???-derelict-loader` combines the platforms above with the derelict loader 
 
 The API is similar to the C Vulkan API, but with some differences:
+* `VK_NULL_HANDLE` is defined as `0` in C world and can be used as `uint64_t` type and `pointer` type argument. D's `null` can be used only as a pointer argument. This is an issue when compiling for 32 bit, as dispatchable handles (`VkInstance`, `VkPhysicalDevice`, `VkDevice`, `VkQueue`) are pointer types while non dispatchable handles (e.g. `VkSemaphore`) are `uint64_t` types. Hence erupted `VK_NULL_HANDLE` can only be used as dispatchable null handle (on 32 Bit!), for non dispatchable handles another enum exist `VK_NULL_ND_HANDLE`. On 64 bit all handles are pointer types and `VK_NULL_HANDLE` can be used at any place. However `VK_NULL_ND_HANDLE` is still defined for sake of completeness and ease of use.
+	* If exclusively building a 32 Bit app or switching forth and back between 32 and 64 Bit use `VK_NULL_ND_HANDLE` for non dispatchable handles
+	* If exclusively building a 64 Bit app `VK_NULL_HANDLE` can be used anywhere
 * Named enums in D are not global but they are forwarded into global scope. Hence e.g. `VkResult.VK_SUCCESS` and `VK_SUCCESS` can both be used.
 * All structures have their `sType` field set to the appropriate value upon initialization; explicit initialization is not needed.
 * `VkPipelineShaderStageCreateInfo.module` has been renamed to `VkPipelineShaderStageCreateInfo._module`, since `module` is a D keyword.
@@ -74,9 +77,8 @@ To erupt the vulkan-docs yourself (Requires Python 3 and lxml.etree) download th
 call `erupt.py` passing `path/to/vulkan-docs` as first argument and an output folder for the D files as second argument.
 
 
-Additions to D-Vulkan
----------------------
+Diferences to D-Vulkan
+----------------------
 
 * Platform surface extensions
-* ~~DerelictLoader for Posix Systems~~
-* With respect to [API without Secrets](https://software.intel.com/en-us/api-without-secrets-introduction-to-vulkan-part-1) D-Vulkans function loading system is partially broken
+* ErupteD follows [API without Secrets](https://software.intel.com/en-us/api-without-secrets-introduction-to-vulkan-part-1) in terms of function loading naming and stages (three stages contrary to d-vulkan two stages)

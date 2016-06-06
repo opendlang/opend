@@ -37,8 +37,10 @@ enum VK_DEFINE_HANDLE(string name) = "struct "~name~"_handle; alias "~name~" = "
 
 version(X86_64) {
 	alias VK_DEFINE_NON_DISPATCHABLE_HANDLE(string name) = VK_DEFINE_HANDLE!name;
+	enum VK_NULL_ND_HANDLE = null;
 } else {
 	enum VK_DEFINE_NON_DISPATCHABLE_HANDLE(string name) = "alias "~name~" = ulong;";
+	enum VK_NULL_ND_HANDLE = 0uL;
 }
 // VK_VERSION_1_0
 alias VkFlags = uint32_t;
@@ -3613,13 +3615,13 @@ struct VkPipelineRasterizationStateRasterizationOrderAMD {
 enum VK_AMD_EXTENSION_4_SPEC_VERSION = 0;
 enum VK_AMD_EXTENSION_4_EXTENSION_NAME = "VK_AMD_extension_4";
 
-// VK_AMD_extension_5
-enum VK_AMD_EXTENSION_5_SPEC_VERSION = 0;
-enum VK_AMD_EXTENSION_5_EXTENSION_NAME = "VK_AMD_extension_5";
+// VK_AMD_shader_trinary_minmax
+enum VK_AMD_SHADER_TRINARY_MINMAX_SPEC_VERSION = 1;
+enum VK_AMD_SHADER_TRINARY_MINMAX_EXTENSION_NAME = "VK_AMD_shader_trinary_minmax";
 
-// VK_AMD_extension_6
-enum VK_AMD_EXTENSION_6_SPEC_VERSION = 0;
-enum VK_AMD_EXTENSION_6_EXTENSION_NAME = "VK_AMD_extension_6";
+// VK_AMD_shader_explicit_vertex_parameter
+enum VK_AMD_SHADER_EXPLICIT_VERTEX_PARAMETER_SPEC_VERSION = 1;
+enum VK_AMD_SHADER_EXPLICIT_VERTEX_PARAMETER_EXTENSION_NAME = "VK_AMD_shader_explicit_vertex_parameter";
 
 // VK_EXT_debug_marker
 enum VK_EXT_DEBUG_MARKER_SPEC_VERSION = 3;
@@ -3658,7 +3660,11 @@ enum VK_AMD_EXTENSION_7_EXTENSION_NAME = "VK_AMD_extension_7";
 enum VK_AMD_EXTENSION_8_SPEC_VERSION = 0;
 enum VK_AMD_EXTENSION_8_EXTENSION_NAME = "VK_AMD_extension_8";
 
-// VK_AMD_extension_9
-enum VK_AMD_EXTENSION_9_SPEC_VERSION = 0;
-enum VK_AMD_EXTENSION_9_EXTENSION_NAME = "VK_AMD_extension_9";
+// VK_AMD_gcn_shader
+enum VK_AMD_GCN_SHADER_SPEC_VERSION = 1;
+enum VK_AMD_GCN_SHADER_EXTENSION_NAME = "VK_AMD_gcn_shader";
+
+// VK_NV_extension_27
+enum VK_NV_EXTENSION_27_SPEC_VERSION = 0;
+enum VK_NV_EXTENSION_27_EXTENSION_NAME = "VK_NV_extension_27";
 

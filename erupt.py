@@ -75,8 +75,10 @@ enum VK_DEFINE_HANDLE(string name) = "struct "~name~"_handle; alias "~name~" = "
 
 version(X86_64) {{
 	alias VK_DEFINE_NON_DISPATCHABLE_HANDLE(string name) = VK_DEFINE_HANDLE!name;
+	enum VK_NULL_ND_HANDLE = null;
 }} else {{
 	enum VK_DEFINE_NON_DISPATCHABLE_HANDLE(string name) = "alias "~name~" = ulong;";
+	enum VK_NULL_ND_HANDLE = 0uL;
 }}\
 """
 
