@@ -13,10 +13,14 @@ d:
 matrix:
   exclude:
     - d: gdc-4.9.2
+      os: osx
     - d: ldc-0.15.1
+      os: osx
     - d: dmd-2.069.2
+      os: osx
   allow_failures:
     - os: osx
   
 script:
+    - dub build --compiler=${DC}
     - dub run :printdirs --compiler=${DC}
