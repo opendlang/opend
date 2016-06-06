@@ -31,6 +31,10 @@ Get path of given type, verify it exists or create if it does not.
 
     dub run :getpath -- --verify --create templates
     
+Use Cocoa instead of Carbon on OSX:
+
+	dub run :getpath --config=cocoa --compiler=ldc2 -- --create music
+    
 ## Use cases
 
 Some code snippets showing how standardpaths library is supposed to be used.

@@ -12,3 +12,4 @@ bin/
 docs/
 lib/
 *.lst
+.DS_store

@@ -6,5 +6,18 @@
     "targetPath" : "bin", 
     "targetType" : "executable", 
     "targetName" : "getpath", 
-    "dependencies" : {"standardpaths":"*"}
+    "dependencies" : {"standardpaths":"*"},
+    
+    "configurations" : [
+        {
+            "name" : "default"
+        },
+        {
+            "name" : "cocoa",
+            "lflags-osx" : ["-framework", "Foundation"],
+            "subConfigurations" : {
+                "standardpaths" : "cocoa"
+            }
+        }
+    ]
 }

@@ -18,8 +18,6 @@ matrix:
       os: osx
     - d: dmd-2.069.2
       os: osx
-  allow_failures:
-    - os: osx
   
 script:
     - dub build --compiler=${DC}
