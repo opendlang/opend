@@ -5,17 +5,18 @@ os:
   - osx
 
 d:
-  - dmd-2.069.2
   - dmd-2.071.0
+  - dmd-2.069.2
+  - gdc-4.9.2
+  - ldc-0.15.1
   
 matrix:
   exclude:
-    - os: osx
-      d: dmd-2.069.2
+    - d: gdc-4.9.2
+    - d: ldc-0.15.1
+    - d: dmd-2.069.2
   allow_failures:
     - os: osx
   
 script:
     - dub run :printdirs --compiler=${DC}
-    - if [ `uname` = "Darwin" ]; then dub run :printdirs --combined --config=cocoa --compiler=${DC} ; fi
-

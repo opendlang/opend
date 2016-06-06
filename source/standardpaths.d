@@ -623,114 +623,53 @@ version(Windows) {
         return paths;
     }
 } else version(OSX) {
-    
-    private enum : short {
-        kOnSystemDisk                 = -32768L, /* previously was 0x8000 but that is an unsigned value whereas vRefNum is signed*/
-        kOnAppropriateDisk            = -32767, /* Generally, the same as kOnSystemDisk, but it's clearer that this isn't always the 'boot' disk.*/
-                                                /* Folder Domains - Carbon only.  The constants above can continue to be used, but the folder/volume returned will*/
-                                                /* be from one of the domains below.*/
-        kSystemDomain                 = -32766, /* Read-only system hierarchy.*/
-        kLocalDomain                  = -32765, /* All users of a single machine have access to these resources.*/
-        kNetworkDomain                = -32764, /* All users configured to use a common network server has access to these resources.*/
-        kUserDomain                   = -32763, /* Read/write. Resources that are private to the user.*/
-        kClassicDomain                = -32762, /* Domain referring to the currently configured Classic System Folder.  Not supported in Mac OS X Leopard and later.*/
-        kFolderManagerLastDomain      = -32760
-    }
-
-    private @nogc int k(string s) nothrow {
-        return s[0] << 24 | s[1] << 16 | s[2] << 8 | s[3];
-    }
-
-    private enum {
-        kDesktopFolderType            = k("desk"), /* the desktop folder; objects in this folder show on the desktop. */
-        kTrashFolderType              = k("trsh"), /* the trash folder; objects in this folder show up in the trash */
-        kWhereToEmptyTrashFolderType  = k("empt"), /* the "empty trash" folder; Finder starts empty from here down */
-        kFontsFolderType              = k("font"), /* Fonts go here */
-        kPreferencesFolderType        = k("pref"), /* preferences for applications go here */
-        kSystemPreferencesFolderType  = k("sprf"), /* the PreferencePanes folder, where Mac OS X Preference Panes go */
-        kTemporaryFolderType          = k("temp"), /*    On Mac OS X, each user has their own temporary items folder, and the Folder Manager attempts to set permissions of these*/
-                                                /*    folders such that other users can not access the data inside.  On Mac OS X 10.4 and later the data inside the temporary*/
-                                                /*    items folder is deleted at logout and at boot, but not otherwise.  Earlier version of Mac OS X would delete items inside*/
-                                                /*    the temporary items folder after a period of inaccess.  You can ask for a temporary item in a specific domain or on a */
-                                                /*    particular volume by FSVolumeRefNum.  If you want a location for temporary items for a short time, then use either*/
-                                                /*    ( kUserDomain, kkTemporaryFolderType ) or ( kSystemDomain, kTemporaryFolderType ).  The kUserDomain varient will always be*/
-                                                /*    on the same volume as the user's home folder, while the kSystemDomain version will be on the same volume as /var/tmp/ ( and*/
-                                                /*    will probably be on the local hard drive in case the user's home is a network volume ).  If you want a location for a temporary*/
-                                                /*    file or folder to use for saving a document, especially if you want to use FSpExchangeFile() to implement a safe-save, then*/
-                                                /*    ask for the temporary items folder on the same volume as the file you are safe saving.*/
-                                                /*    However, be prepared for a failure to find a temporary folder in any domain or on any volume.  Some volumes may not have*/
-                                                /*    a location for a temporary folder, or the permissions of the volume may be such that the Folder Manager can not return*/
-                                                /*    a temporary folder for the volume.*/
-                                                /*    If your application creates an item in a temporary items older you should delete that item as soon as it is not needed,*/
-                                                /*    and certainly before your application exits, since otherwise the item is consuming disk space until the user logs out or*/
-                                                /*    restarts.  Any items left inside a temporary items folder should be moved into a folder inside the Trash folder on the disk*/
-                                                /*    when the user logs in, inside a folder named "Recovered items", in case there is anything useful to the end user.*/
-        kChewableItemsFolderType      = k("flnt"), /* similar to kTemporaryItemsFolderType, except items in this folder are deleted at boot or when the disk is unmounted */
-        kTemporaryItemsInCacheDataFolderType = k("vtmp"), /* A folder inside the kCachedDataFolderType for the given domain which can be used for transient data*/
-        kApplicationsFolderType       = k("apps"), /*    Applications on Mac OS X are typically put in this folder ( or a subfolder ).*/
-        kVolumeRootFolderType         = k("root"), /* root folder of a volume or domain */
-        kDomainTopLevelFolderType     = k("dtop"), /* The top-level of a Folder domain, e.g. "/System"*/
-        kDomainLibraryFolderType      = k("dlib"), /* the Library subfolder of a particular domain*/
-        kUsersFolderType              = k("usrs"), /* "Users" folder, usually contains one folder for each user. */
-        kCurrentUserFolderType        = k("cusr"), /* The folder for the currently logged on user; domain passed in is ignored. */
-        kSharedUserDataFolderType     = k("sdat"), /* A Shared folder, readable & writeable by all users */
-        kCachedDataFolderType         = k("cach"), /* Contains various cache files for different clients*/
-        kDownloadsFolderType          = k("down"), /* Refers to the ~/Downloads folder*/
-        kApplicationSupportFolderType = k("asup"), /* third-party items and folders */
-
-
-        kDocumentsFolderType          = k("docs"), /*    User documents are typically put in this folder ( or a subfolder ).*/
-        kPictureDocumentsFolderType   = k("pdoc"), /* Refers to the "Pictures" folder in a users home directory*/
-        kMovieDocumentsFolderType     = k("mdoc"), /* Refers to the "Movies" folder in a users home directory*/
-        kMusicDocumentsFolderType     = 0xB5646F63/*'µdoc'*/, /* Refers to the "Music" folder in a users home directory*/
-        kInternetSitesFolderType      = k("site"), /* Refers to the "Sites" folder in a users home directory*/
-        kPublicFolderType             = k("pubb"), /* Refers to the "Public" folder in a users home directory*/
-
-        kDropBoxFolderType            = k("drop") /* Refers to the "Drop Box" folder inside the user's home directory*/
-    };
-
     private {
         version(StandardPathsCocoa) {
             alias size_t NSUInteger;
+            
+            
+            enum objectiveC_declarations = q{
+                extern (Objective-C)
+                interface NSString
+                {
+                    NSString initWithUTF8String(in char* str) @selector("initWithUTF8String:");
+                    const(char)* UTF8String() @selector("UTF8String");
+                    void release() @selector("release");
+                }
 
-            extern (Objective-C)
-            interface NSString
-            {
-                NSString initWithUTF8String(in char* str) @selector("initWithUTF8String:");
-                const(char)* UTF8String() @selector("UTF8String");
-                void release() @selector("release");
-            }
+                extern(Objective-C)
+                interface NSArray
+                {
+                    NSString objectAtIndex(size_t) @selector("objectAtIndex:");
+                    NSString firstObject() @selector("firstObject");
+                    NSUInteger count() @selector("count");
+                    void release() @selector("release");
+                }
 
-            extern(Objective-C)
-            interface NSArray
-            {
-                NSString objectAtIndex(size_t) @selector("objectAtIndex:");
-                NSString firstObject() @selector("firstObject");
-                NSUInteger count() @selector("count");
-                void release() @selector("release");
-            }
+                extern(Objective-C)
+                interface NSURL
+                {
+                    NSString absoluteString() @selector("absoluteString");
+                    void release() @selector("release");
+                }
 
-            extern(Objective-C)
-            interface NSURL
-            {
-                NSString absoluteString() @selector("absoluteString");
-                void release() @selector("release");
-            }
+                extern(Objective-C)
+                interface NSError
+                {
 
-            extern(Objective-C)
-            interface NSError
-            {
+                }
 
-            }
+                extern (C) NSFileManager objc_lookUpClass(in char* name);
 
-            extern (C) NSFileManager objc_lookUpClass(in char* name);
-
-            extern(Objective-C)
-            interface NSFileManager
-            {
-                NSFileManager defaultManager() @selector("defaultManager");
-                NSURL URLForDirectory(NSSearchPathDirectory, NSSearchPathDomainMask domain, NSURL url, int shouldCreate, NSError* error) @selector("URLForDirectory:inDomain:appropriateForURL:create:error:");
-            }
+                extern(Objective-C)
+                interface NSFileManager
+                {
+                    NSFileManager defaultManager() @selector("defaultManager");
+                    NSURL URLForDirectory(NSSearchPathDirectory, NSSearchPathDomainMask domain, NSURL url, int shouldCreate, NSError* error) @selector("URLForDirectory:inDomain:appropriateForURL:create:error:");
+                }
+            };
+            
+            mixin(objectiveC_declarations);
 
             enum : NSUInteger {
                NSApplicationDirectory = 1,
@@ -808,6 +747,71 @@ version(Windows) {
                 return null;
             }
         } else {
+            private enum : short {
+                kOnSystemDisk                 = -32768L, /* previously was 0x8000 but that is an unsigned value whereas vRefNum is signed*/
+                kOnAppropriateDisk            = -32767, /* Generally, the same as kOnSystemDisk, but it's clearer that this isn't always the 'boot' disk.*/
+                                                        /* Folder Domains - Carbon only.  The constants above can continue to be used, but the folder/volume returned will*/
+                                                        /* be from one of the domains below.*/
+                kSystemDomain                 = -32766, /* Read-only system hierarchy.*/
+                kLocalDomain                  = -32765, /* All users of a single machine have access to these resources.*/
+                kNetworkDomain                = -32764, /* All users configured to use a common network server has access to these resources.*/
+                kUserDomain                   = -32763, /* Read/write. Resources that are private to the user.*/
+                kClassicDomain                = -32762, /* Domain referring to the currently configured Classic System Folder.  Not supported in Mac OS X Leopard and later.*/
+                kFolderManagerLastDomain      = -32760
+            }
+
+            private @nogc int k(string s) nothrow {
+                return s[0] << 24 | s[1] << 16 | s[2] << 8 | s[3];
+            }
+
+            private enum {
+                kDesktopFolderType            = k("desk"), /* the desktop folder; objects in this folder show on the desktop. */
+                kTrashFolderType              = k("trsh"), /* the trash folder; objects in this folder show up in the trash */
+                kWhereToEmptyTrashFolderType  = k("empt"), /* the "empty trash" folder; Finder starts empty from here down */
+                kFontsFolderType              = k("font"), /* Fonts go here */
+                kPreferencesFolderType        = k("pref"), /* preferences for applications go here */
+                kSystemPreferencesFolderType  = k("sprf"), /* the PreferencePanes folder, where Mac OS X Preference Panes go */
+                kTemporaryFolderType          = k("temp"), /*    On Mac OS X, each user has their own temporary items folder, and the Folder Manager attempts to set permissions of these*/
+                                                        /*    folders such that other users can not access the data inside.  On Mac OS X 10.4 and later the data inside the temporary*/
+                                                        /*    items folder is deleted at logout and at boot, but not otherwise.  Earlier version of Mac OS X would delete items inside*/
+                                                        /*    the temporary items folder after a period of inaccess.  You can ask for a temporary item in a specific domain or on a */
+                                                        /*    particular volume by FSVolumeRefNum.  If you want a location for temporary items for a short time, then use either*/
+                                                        /*    ( kUserDomain, kkTemporaryFolderType ) or ( kSystemDomain, kTemporaryFolderType ).  The kUserDomain varient will always be*/
+                                                        /*    on the same volume as the user's home folder, while the kSystemDomain version will be on the same volume as /var/tmp/ ( and*/
+                                                        /*    will probably be on the local hard drive in case the user's home is a network volume ).  If you want a location for a temporary*/
+                                                        /*    file or folder to use for saving a document, especially if you want to use FSpExchangeFile() to implement a safe-save, then*/
+                                                        /*    ask for the temporary items folder on the same volume as the file you are safe saving.*/
+                                                        /*    However, be prepared for a failure to find a temporary folder in any domain or on any volume.  Some volumes may not have*/
+                                                        /*    a location for a temporary folder, or the permissions of the volume may be such that the Folder Manager can not return*/
+                                                        /*    a temporary folder for the volume.*/
+                                                        /*    If your application creates an item in a temporary items older you should delete that item as soon as it is not needed,*/
+                                                        /*    and certainly before your application exits, since otherwise the item is consuming disk space until the user logs out or*/
+                                                        /*    restarts.  Any items left inside a temporary items folder should be moved into a folder inside the Trash folder on the disk*/
+                                                        /*    when the user logs in, inside a folder named "Recovered items", in case there is anything useful to the end user.*/
+                kChewableItemsFolderType      = k("flnt"), /* similar to kTemporaryItemsFolderType, except items in this folder are deleted at boot or when the disk is unmounted */
+                kTemporaryItemsInCacheDataFolderType = k("vtmp"), /* A folder inside the kCachedDataFolderType for the given domain which can be used for transient data*/
+                kApplicationsFolderType       = k("apps"), /*    Applications on Mac OS X are typically put in this folder ( or a subfolder ).*/
+                kVolumeRootFolderType         = k("root"), /* root folder of a volume or domain */
+                kDomainTopLevelFolderType     = k("dtop"), /* The top-level of a Folder domain, e.g. "/System"*/
+                kDomainLibraryFolderType      = k("dlib"), /* the Library subfolder of a particular domain*/
+                kUsersFolderType              = k("usrs"), /* "Users" folder, usually contains one folder for each user. */
+                kCurrentUserFolderType        = k("cusr"), /* The folder for the currently logged on user; domain passed in is ignored. */
+                kSharedUserDataFolderType     = k("sdat"), /* A Shared folder, readable & writeable by all users */
+                kCachedDataFolderType         = k("cach"), /* Contains various cache files for different clients*/
+                kDownloadsFolderType          = k("down"), /* Refers to the ~/Downloads folder*/
+                kApplicationSupportFolderType = k("asup"), /* third-party items and folders */
+
+
+                kDocumentsFolderType          = k("docs"), /*    User documents are typically put in this folder ( or a subfolder ).*/
+                kPictureDocumentsFolderType   = k("pdoc"), /* Refers to the "Pictures" folder in a users home directory*/
+                kMovieDocumentsFolderType     = k("mdoc"), /* Refers to the "Movies" folder in a users home directory*/
+                kMusicDocumentsFolderType     = 0xB5646F63/*'µdoc'*/, /* Refers to the "Music" folder in a users home directory*/
+                kInternetSitesFolderType      = k("site"), /* Refers to the "Sites" folder in a users home directory*/
+                kPublicFolderType             = k("pubb"), /* Refers to the "Public" folder in a users home directory*/
+
+                kDropBoxFolderType            = k("drop") /* Refers to the "Drop Box" folder inside the user's home directory*/
+            };
+            
             struct FSRef {
               char[80] hidden;    /* private to File Manager*/
             };
