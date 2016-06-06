@@ -11,7 +11,7 @@ The bindings have several configurations. The easiest to use is the `"with-derel
 To use without configuration:
 
 1. Import via `import erupted;`.
-2. Get a pointer to the `vkGetInstanceProcAddr`, through platform-specific means (e.g. loading the Vulkan shared library, or `glfwGetInstanceProcAddress` [if using GLFW](https://github.com/ColonelThirtyTwo/dvulkan/wiki/Using-d-vulkan-with-Derelict-GLFW)).
+2. Get a pointer to the `vkGetInstanceProcAddr`, through platform-specific means (e.g. loading the Vulkan shared library, or `glfwGetInstanceProcAddress` if using GLFW3 >= v3.2 with DerelictGLFW3 >= v3.1.0).
 3. Call `loadGlobalLevelFunctions(getProcAddr)`, where `getProcAddr` is the address of the loaded `vkGetInstanceProcAddr` function, to load the following functions:
 	* `vkGetInstanceProcAddr` (sets the global variable from the passed value)
 	* `vkCreateInstance`
