@@ -32,9 +32,9 @@ Available configurations:
 * `dub-platform-???-derelict-loader` combines the platforms above with the derelict loader 
 
 The API is similar to the C Vulkan API, but with some differences:
-* `VK_NULL_HANDLE` is defined as `0` in C world and can be used as `uint64_t` type and `pointer` type argument. D's `null` can be used only as a pointer argument. This is an issue when compiling for 32 bit, as dispatchable handles (`VkInstance`, `VkPhysicalDevice`, `VkDevice`, `VkQueue`) are pointer types while non dispatchable handles (e.g. `VkSemaphore`) are `uint64_t` types. Hence erupted `VK_NULL_HANDLE` can only be used as dispatchable null handle (on 32 Bit!), for non dispatchable handles another enum exist `VK_NULL_ND_HANDLE`. On 64 bit all handles are pointer types and `VK_NULL_HANDLE` can be used at any place. However `VK_NULL_ND_HANDLE` is still defined for sake of completeness and ease of use.
+* `VK_NULL_HANDLE` is defined as `0` and can be used as `uint64_t` type and `pointer` type argument in C world. D's `null` can be used only as a pointer argument. This is an issue when compiling for 32 bit, as dispatchable handles (`VkInstance`, `VkPhysicalDevice`, `VkDevice`, `VkQueue`) are pointer types while non dispatchable handles (e.g. `VkSemaphore`) are `uint64_t` types. Hence erupted `VK_NULL_HANDLE` can only be used as dispatchable null handle (on 32 Bit!). For non dispatchable handles another ErupteD symbol exist `VK_NULL_ND_HANDLE`. On 64 bit all handles are pointer types and `VK_NULL_HANDLE` can be used at any place. However `VK_NULL_ND_HANDLE` is still defined for sake of completeness and ease of use. The issue might be solved when `multiple alias this` is released, hence I recomend building 64 Bit apps and ignore `VK_NULL_ND_HANDLE`.
 	* If exclusively building a 32 Bit app or switching forth and back between 32 and 64 Bit use `VK_NULL_ND_HANDLE` for non dispatchable handles
-	* If exclusively building a 64 Bit app `VK_NULL_HANDLE` can be used anywhere
+	* If exclusively building a 64 Bit app `VK_NULL_HANDLE` can be used as any of the two vk handle types
 * Named enums in D are not global but they are forwarded into global scope. Hence e.g. `VkResult.VK_SUCCESS` and `VK_SUCCESS` can both be used.
 * All structures have their `sType` field set to the appropriate value upon initialization; explicit initialization is not needed.
 * `VkPipelineShaderStageCreateInfo.module` has been renamed to `VkPipelineShaderStageCreateInfo._module`, since `module` is a D keyword.
@@ -82,3 +82,12 @@ Diferences to D-Vulkan
 
 * Platform surface extensions
 * ErupteD follows [API without Secrets](https://software.intel.com/en-us/api-without-secrets-introduction-to-vulkan-part-1) in terms of function loading naming and stages (three stages contrary to d-vulkan two stages)
+
+
+Known Issues
+------------
+Dub error: `Could not find a valid dependency tree configuration:`
+
+Solution: Confirm that in YOUR projects `dub.selections` the `xcb-d` version is at least `2.1.0+1.11.1` or `2.1.0`
+
+Explanation: This is a dub issue fetching dependencies, in particular with `xcb-d` and `xlib-d`. It happens on windows systems as well, even though these dependencies will never be used. Problem is that `xlib-d` depends on `xcb-d ~>1.11.1` while erupted depends on the newer `xcb-d ~>2.1.0+1.11.1`. This should be O.K. as both `xcb-d` dependencies can coexist BUT `dub.selections` of YOUR project has only one entry for the `xcb-d` dependency. If these dependencies are fetched for the first time dub.selections is created in YOUR project and `xcb-d` version might have been set to `v1.11.1`.
