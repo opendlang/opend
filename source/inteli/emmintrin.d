@@ -8,7 +8,12 @@ module inteli.emmintrin;
 version(LDC):
 
 public import inteli.types;
+import core.simd;
 import ldc.gccbuiltins_x86;
+
+public import inteli.xmmintrin;
+
+nothrow @nogc:
 
 
 // SSE2
@@ -77,6 +82,9 @@ alias _mm_sll_epi16 = __builtin_ia32_psllw128;
 alias _mm_slli_epi32 = __builtin_ia32_pslldi128;
 alias _mm_slli_epi64 = __builtin_ia32_psllqi128;
 alias _mm_slli_epi16 = __builtin_ia32_psllwi128;
+//pragma(LDC_intrinsic, "llvm.x86.sse2.psll.dq")
+//    __m128i _mm_slli_si128(__m128i op, ubyte imm8);
+
 alias _mm_sra_epi32 = __builtin_ia32_psrad128;
 alias _mm_sra_epi16 = __builtin_ia32_psraw128;
 alias _mm_srai_epi32 = __builtin_ia32_psradi128;
@@ -85,8 +93,14 @@ alias _mm_srl_epi32 = __builtin_ia32_psrld128;
 alias _mm_srl_epi64 = __builtin_ia32_psrlq128;
 alias _mm_srl_epi16 = __builtin_ia32_psrlw128;
 alias _mm_srli_epi32 = __builtin_ia32_psrldi128;
+
+pragma(LDC_intrinsic, "llvm.x86.sse2.psrli.dq.bs" /*"llvm.x86.sse2.psrl.dq"*/)
+    __m128i _mm_srli_si128(__m128i op, ubyte imm8);
+    
+
 alias _mm_srlq_epi32 = __builtin_ia32_psrlqi128;
 alias _mm_srlw_epi32 = __builtin_ia32_psrlwi128;
+
 alias _mm_subs_epi8 = __builtin_ia32_psubsb128;
 alias _mm_subs_epi16 = __builtin_ia32_psubsw128;
 alias _mm_subs_epu8 = __builtin_ia32_psubusb128;
@@ -104,3 +118,18 @@ alias _mm_ucomile_sd = __builtin_ia32_ucomisdle;
 alias _mm_ucomilt_sd = __builtin_ia32_ucomisdlt;
 alias _mm_ucomineq_sd = __builtin_ia32_ucomisdneq;
 
+unittest 
+{
+    // distance between two points in 4D
+    float distance(float[4] a, float[4] b) nothrow @nogc
+    {
+        __m128 va = _mm_loadu_ps(a.ptr);
+        __m128 vb = _mm_loadu_ps(b.ptr);
+        __m128 diffSquared = _mm_sub_ps(va, vb);
+        diffSquared = _mm_mul_ps(diffSquared, diffSquared);
+        __m128 sum = _mm_add_ps(diffSquared, _mm_srli_si128(diffSquared, 8));
+        sum = _mm_add_ps(sum, _mm_srli_si128(sum, 4));
+        return _mm_cvtss_f32(sum);
+    }
+    assert(distance([0, 2, 0, 0], [0, 0, 0, 0]) == 2);
+}
