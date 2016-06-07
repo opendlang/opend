@@ -1,0 +1,8 @@
+{
+    "name": "intel-intrinsics",
+    "description": "Reuse your C++ SIMD code using Intel intrinsics syntax. Works with LDC.",
+    "copyright": "Guillaume Piolat 2016",
+    "license": "BSL-1.0",
+    "importPaths": ["source"],
+    "sourcePaths": ["source"]
+}
