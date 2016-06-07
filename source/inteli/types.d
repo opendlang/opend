@@ -5,6 +5,8 @@
 */
 module inteli.types;
 
+version(LDC):
+
 public import core.simd;
 
 alias __m64 = long;
