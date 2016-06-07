@@ -167,9 +167,9 @@ private template geomShape( string shape, AES )
             }
 
             auto geom = Geom( tup );
-            static if (CoordX.numeric)
+            static if (!CoordX.numeric)
                 geom.xTickLabels ~= tup.x;
-            static if (CoordY.numeric)
+            static if (!CoordY.numeric)
                 geom.yTickLabels ~= tup.y;
             geom.draw = f;
             geom.colours ~= ColourID(tup.colour);
