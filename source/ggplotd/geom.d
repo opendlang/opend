@@ -207,6 +207,17 @@ unittest
 
     import std.range : walkLength;
     assertEqual( geoms.walkLength, 2 );
+
+    import std.stdio : writeln;
+    // TODO: ideally this would be empty, but currently when 
+    // numericLabel!(NumericLabel.map!((a) => a.x)) loses the information whether original
+    // range was numerical or not. To keep that information DataID needs third field to carry
+    // that information
+    assertEqual( geoms.front.xTickLabels.length, 1 ); 
+    assertEqual( geoms.front.yTickLabels.length, 0 );
+    geoms.popFront;
+    assertEqual( geoms.front.xTickLabels.length, 1 );
+    assertEqual( geoms.front.yTickLabels.length, 0 );
 }
 
 /**
