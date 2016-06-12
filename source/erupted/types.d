@@ -29,7 +29,7 @@ pure {
 extern(System):
 
 // Version of corresponding c header file
-enum VK_HEADER_VERSION = 15;
+enum VK_HEADER_VERSION = 16;
 
 enum VK_NULL_HANDLE = null;
 
@@ -3667,4 +3667,20 @@ enum VK_AMD_GCN_SHADER_EXTENSION_NAME = "VK_AMD_gcn_shader";
 // VK_NV_extension_27
 enum VK_NV_EXTENSION_27_SPEC_VERSION = 0;
 enum VK_NV_EXTENSION_27_EXTENSION_NAME = "VK_NV_extension_27";
+
+// VK_EXT_extension_28
+enum VK_EXT_EXTENSION_28_SPEC_VERSION = 0;
+enum VK_EXT_EXTENSION_28_EXTENSION_NAME = "VK_NV_extension_28";
+
+// VK_NVX_extension_29
+enum VK_NVX_EXTENSION_29_SPEC_VERSION = 0;
+enum VK_NVX_EXTENSION_29_EXTENSION_NAME = "VK_NVX_extension_29";
+
+// VK_NVX_extension_30
+enum VK_NVX_EXTENSION_30_SPEC_VERSION = 0;
+enum VK_NVX_EXTENSION_30_EXTENSION_NAME = "VK_NVX_extension_30";
+
+// VK_NVX_extension_31
+enum VK_NVX_EXTENSION_31_SPEC_VERSION = 0;
+enum VK_NVX_EXTENSION_31_EXTENSION_NAME = "VK_NVX_extension_31";
 
