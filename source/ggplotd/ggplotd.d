@@ -515,7 +515,7 @@ unittest
             double[], "x",
             double[], "y",
             double[], "colour" )(
-            [1,0,0], [ 1, 1, 0 ], [1,0.1,0] ) ) );
+            [1,0,0.0], [ 1, 1, 0.0 ], [1,0.1,0] ) ) );
     gg.save( "polygon.png" );
 }
 
@@ -530,7 +530,7 @@ unittest
             double[], "x",
             double[], "y",
             double[], "colour" )(
-            [1,0,0], [ 1, 1, 0 ], [1,0.1,0] ) ) );
+            [1.0,0,0], [ 1.0, 1, 0 ], [1,0.1,0] ) ) );
     gg.save( "background.svg" );
 }
 
@@ -667,7 +667,7 @@ unittest
     auto gg = GGPlotD();
 
     auto aes1 = Aes!(double[], "x", double[], "y", double[], "width",
-        double[], "height")( [1.0], [-1.0], [3], [5] );
+        double[], "height")( [1.0], [-1.0], [3.0], [5.0] );
     gg.put( geomDiamond( aes1 ) );
     gg.put( geomRectangle( aes1 ) );
     gg.put( xaxisRange( -5, 11.0 ) );
@@ -696,7 +696,7 @@ unittest
     auto gg = GGPlotD();
 
     auto aes1 = Aes!(double[], "x", double[], "y", double[], "width",
-        double[], "height")( [1.0], [-1.0], [3], [5] );
+        double[], "height")( [1.0], [-1.0], [3.0], [5.0] );
     gg.put( geomEllipse( aes1 ) );
     gg.put( geomTriangle( aes1 ) );
     gg.put( xaxisRange( -5, 11.0 ) );

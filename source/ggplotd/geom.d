@@ -76,29 +76,28 @@ private auto fillAndStroke( cairo.Context context, in RGBA colour,
 /++
 General function for drawing geomShapes
 +/
-private auto geomShape(string shape, AES)(AES aes)
+private template geomShape( string shape, AES )
 {
     import std.algorithm : map;
+    import ggplotd.aes : numericLabel;
     import ggplotd.range : mergeRange;
-    auto xsMap = aes.map!("a.x");
-    auto ysMap = aes.map!("a.y");
-    alias CoordX = typeof(NumericLabel!(typeof(xsMap))(xsMap));
-    alias CoordY = typeof(NumericLabel!(typeof(ysMap))(ysMap));
-    auto xsCoords = CoordX(xsMap);
-    auto ysCoords = CoordY(ysMap);
+    alias CoordX = typeof(numericLabel(AES.init.map!("a.x")));
+    alias CoordY = typeof(numericLabel(AES.init.map!("a.y")));
     alias CoordType = typeof(DefaultValues
-        .mergeRange(aes)
-        .mergeRange( Aes!(CoordX, "x", CoordY, "y")
-            (CoordX(xsMap), CoordY(ysMap))));
+        .mergeRange(AES.init)
+        .mergeRange(Aes!(CoordX, "x", CoordY, "y").init));
 
-    struct GeomRange(T)
+    struct VolderMort 
     {
-        this(T aes)
+        this(AES aes)
         {
+            import std.algorithm : map;
+            import ggplotd.range : mergeRange;
             _aes = DefaultValues
                 .mergeRange(aes)
                 .mergeRange( Aes!(CoordX, "x", CoordY, "y")(
-                    xsCoords, ysCoords));
+                    CoordX(aes.map!("a.x")), 
+                    CoordY(aes.map!("a.y"))));
         }
 
         @property auto front()
@@ -168,10 +167,10 @@ private auto geomShape(string shape, AES)(AES aes)
             }
 
             auto geom = Geom( tup );
-            if (!xsCoords.numeric)
-                geom.xTickLabels ~= tup[0];
-            if (!ysCoords.numeric)
-                geom.yTickLabels ~= tup[1];
+            static if (!CoordX.numeric)
+                geom.xTickLabels ~= tup.x;
+            static if (!CoordY.numeric)
+                geom.yTickLabels ~= tup.y;
             geom.draw = f;
             geom.colours ~= ColourID(tup.colour);
             geom.bounds = bounds;
@@ -192,7 +191,10 @@ private auto geomShape(string shape, AES)(AES aes)
         CoordType _aes;
     }
 
-    return GeomRange!AES(aes);
+    auto geomShape(AES aes)
+    {
+        return VolderMort(aes);
+    }
 }
 
 unittest
@@ -200,23 +202,43 @@ unittest
     auto xs = numericLabel!(double[])([ 1.0, 2.0 ]);
 
     auto aes = Aes!( typeof(xs), "x", double[], "y", double[], "width", double[], "height" )
-        ( xs, [3.0, 4.0], [1,1], [2,2] );
+        ( xs, [3.0, 4.0], [1.0,1], [2.0,2] );
     auto geoms = geomShape!("rectangle", typeof(aes))( aes );
 
     import std.range : walkLength;
     assertEqual( geoms.walkLength, 2 );
+
+    import std.stdio : writeln;
+    // TODO: ideally this would be empty, but currently when 
+    // numericLabel!(NumericLabel.map!((a) => a.x)) loses the information whether original
+    // range was numerical or not. To keep that information DataID needs third field to carry
+    // that information
+    assertEqual( geoms.front.xTickLabels.length, 1 ); 
+    assertEqual( geoms.front.yTickLabels.length, 0 );
+    geoms.popFront;
+    assertEqual( geoms.front.xTickLabels.length, 1 );
+    assertEqual( geoms.front.yTickLabels.length, 0 );
 }
 
 /**
 Draw any type of geom
 
 The type field is required, which should be a string. Any of the geom* functions in ggplotd.geom 
-can be passed using a lower case string minus the geom prefix, i.e. hist3d calls geomHist3D etc.
+can be passed using a lower case string minus the geom prefix, i.e. hist2d calls geomHist2D etc.
+
+  Examples:
+  --------------
+    import ggplotd.geom : geomType;
+    geomType(Aes!(double[], "x", double[], "y", string[], "type")
+        ( [0.0,1,2], [5.0,6,7], ["line", "point", "line"] ));
+  --------------
+
 */
 template geomType(AES)
 {
-    string generateToGeom()
+    string injectToGeom()
     {
+        import std.format : format;
         import std.traits;
         import std.string : toLower;
         string str = "auto toGeom(A)( A aes, string type ) {\nimport std.traits; import std.array : array;\n";
@@ -226,10 +248,7 @@ template geomType(AES)
                     && name != "geomType"
                     )
             {
-                str ~= "static if(__traits(compiles,(A a) => "
-                    ~ name ~"(a))) {\n";
-                str ~= "if (type == q{" ~ name[4..$].toLower ~ "})\n";
-                str ~= "\treturn " ~ name ~ "!A(aes).array;\n}\n";
+                str ~= format( "static if(__traits(compiles,(A a) => %s(a))) {\nif (type == q{%s})\n\treturn %s!A(aes).array;\n}\n", name, name[4..$].toLower, name );
             }
         }
 
@@ -241,14 +260,14 @@ template geomType(AES)
 Draw any type of geom
 
 The type field is required, which should be a string. Any of the geom* functions in ggplotd.geom 
-can be passed using a lower case string minus the geom prefix, i.e. hist3d calls geomHist3D etc.
+can be passed using a lower case string minus the geom prefix, i.e. hist2d calls geomHist2D etc.
 */
     auto geomType( AES aes )
     {
         import std.algorithm : map, joiner;
 
         import ggplotd.aes : group;
-        mixin(generateToGeom());
+        mixin(injectToGeom());
 
         return aes
             .group!"type"
@@ -262,7 +281,7 @@ unittest
     import std.range : walkLength;
     assertEqual(
             geomType(Aes!(double[], "x", double[], "y", string[], "type")
-                ( [0,1,2], [5,6,7], ["line", "point", "line"] )).walkLength, 2
+                ( [0.0,1,2], [5.0,6,7], ["line", "point", "line"] )).walkLength, 2
             );
 }
 
@@ -337,16 +356,16 @@ unittest
 }
 
 /// Create lines from data 
-auto geomLine(AES)(AES aes)
+template geomLine(AES)
 {
     import std.algorithm : map;
     import std.range : array, zip;
 
     import ggplotd.range : mergeRange;
  
-    struct GeomRange(T)
+    struct VolderMort 
     {
-        this(T aes)
+        this(AES aes)
         {
             groupedAes = DefaultValues.mergeRange(aes).group;
         }
@@ -411,10 +430,13 @@ auto geomLine(AES)(AES aes)
         }
 
     private:
-        typeof(group(DefaultValues.mergeRange(T.init))) groupedAes;
+        typeof(group(DefaultValues.mergeRange(AES.init))) groupedAes;
     }
 
-    return GeomRange!AES(aes);
+    auto geomLine(AES aes)
+    {
+        return VolderMort(aes);
+    }
 }
 
 ///
@@ -465,131 +487,6 @@ unittest
 
     assertEqual(gl.chain(gl2).walkLength, 4);
 }
-
-// Bin a range of data
-private auto bin(R)(R xs, double min, double max, size_t noBins = 10)
-{
-    struct Bin
-    {
-        double[] range;
-        size_t count;
-    }
-
-    import std.typecons : Tuple;
-    import std.algorithm : group;
-
-    struct BinRange(Range)
-    {
-        this(Range xs, size_t noBins)
-        {
-            import std.math : floor;
-            import std.algorithm : sort, map;
-            import std.array : array;
-            import std.range : walkLength;
-
-            _width = (max - min) / (noBins - 1);
-            _noBins = noBins;
-            // If min == max or noBins == 1 we need to set a custom width
-            if (noBins == 1 || _width == 0)
-                _width = 0.1;
-            _min = min - 0.5 * _width;
-
-            // Count the number of data points that fall in a
-            // bin. This is done by scaling them into whole numbers
-            if (xs.walkLength > 0)
-            {
-                counts = xs.map!((a) => floor((a - _min) / _width)).array.sort().array.group();
-
-                // Initialize our bins
-                if (counts.front[0] == _binID)
-                    {
-                    _cnt = counts.front[1];
-                    counts.popFront;
-                }
-            }
-        }
-
-        /// Return a bin describing the range and number of data points (count) that fall within that range.
-        @property auto front()
-        {
-            return Bin([_min, _min + _width], _cnt);
-        }
-
-        void popFront()
-        {
-            _min += _width;
-            _cnt = 0;
-            ++_binID;
-            if (!counts.empty && counts.front[0] == _binID)
-            {
-                _cnt = counts.front[1];
-                counts.popFront;
-            }
-        }
-
-        @property bool empty()
-        {
-            return _binID >= _noBins;
-        }
-
-    private:
-        double _min;
-        double _width;
-        size_t _noBins;
-        size_t _binID = 0;
-        typeof(group(Range.init)) counts;
-        size_t _cnt = 0;
-    }
-
-    return BinRange!R(xs, noBins);
-}
-
-private auto bin(R)(R xs, size_t noBins = 10)
-{
-    import std.algorithm : min, max, reduce;
-    import std.range : walkLength;
-    assert(xs.walkLength > 0);
-
-    auto minmax = xs.reduce!((a, b) => min(a, b), (a, b) => max(a, b));
-    return bin( xs, minmax[0], minmax[1], noBins );
-}
- 
-
-unittest
-{
-    import std.array : array;
-    import std.range : back, walkLength;
-
-    auto binR = bin!(double[])([0.5, 0.01, 0.0, 0.9, 1.0, 0.99], 11);
-    assertEqual(binR.walkLength, 11);
-    assertEqual(binR.front.range, [-0.05, 0.05]);
-    assertEqual(binR.front.count, 2);
-    assertLessThan(binR.array.back.range[0], 1);
-    assertGreaterThan(binR.array.back.range[1], 1);
-    assertEqual(binR.array.back.count, 2);
-
-    binR = bin!(double[])([0.01], 11);
-    assertEqual(binR.walkLength, 11);
-    assertEqual(binR.front.count, 1);
-
-    binR = bin!(double[])([-0.01, 0, 0, 0, 0.01], 11);
-    assertEqual(binR.walkLength, 11);
-    assertLessThan(binR.front.range[0], -0.01);
-    assertGreaterThan(binR.front.range[1], -0.01);
-    assertEqual(binR.front.count, 1);
-    assertLessThan(binR.array.back.range[0], 0.01);
-    assertGreaterThan(binR.array.back.range[1], 0.01);
-    assertEqual(binR.array.back.count, 1);
-    assertEqual(binR.array[5].count, 3);
-    assertLessThan(binR.array[5].range[0], 0.0);
-    assertGreaterThan(binR.array[5].range[1], 0.0);
-
-    import std.math : isNaN;
-    auto b = [0.5].bin(1);
-    assert( !isNaN(b.front.range[0]) );
-    assertGreaterThan( b.front.range[1], b.front.range[0] );
-}
-
 
 /// Draw histograms based on the x coordinates of the data
 auto geomHist(AES)(AES aes, size_t noBins = 0)
@@ -708,28 +605,28 @@ auto geomAxis(AES)(AES aes, double tickLength, string label)
 }
 
 /// Draw Label at given x and y position
-auto geomLabel(AES)(AES aes)
+template geomLabel(AES)
 {
     import std.algorithm : map;
+    import ggplotd.aes : numericLabel;
     import ggplotd.range : mergeRange;
-    auto xsMap = aes.map!("a.x");
-    auto ysMap = aes.map!("a.y");
-    alias CoordX = typeof(NumericLabel!(typeof(xsMap))(xsMap));
-    alias CoordY = typeof(NumericLabel!(typeof(ysMap))(ysMap));
+    alias CoordX = typeof(numericLabel(AES.init.map!("a.x")));
+    alias CoordY = typeof(numericLabel(AES.init.map!("a.y")));
     alias CoordType = typeof(DefaultValues
-        .mergeRange(aes)
-        .mergeRange( Aes!(CoordX, "x", CoordY, "y")
-            (CoordX(xsMap), CoordY(ysMap))));
+        .mergeRange(AES.init)
+        .mergeRange(Aes!(CoordX, "x", CoordY, "y").init));
 
-
-    struct GeomRange(T)
+    struct VolderMort
     {
-        this(T aes)
+        this(AES aes)
         {
+            import std.algorithm : map;
+            import ggplotd.range : mergeRange;
             _aes = DefaultValues
                 .mergeRange(aes)
                 .mergeRange( Aes!(CoordX, "x", CoordY, "y")(
-                    CoordX(xsMap), CoordY(ysMap)));
+                    CoordX(aes.map!("a.x")), 
+                    CoordY(aes.map!("a.y"))));
         }
 
         @property auto front()
@@ -786,7 +683,10 @@ auto geomLabel(AES)(AES aes)
         CoordType _aes;
     }
 
-    return GeomRange!AES(aes);
+    auto geomLabel(AES aes)
+    {
+        return VolderMort(aes);
+    }
 }
 
 unittest
@@ -855,8 +755,8 @@ auto geomBox(AES)(AES aes)
             auto labels = numericLabel( aes.map!("a.label.to!string") );
             auto myAes = aes.mergeRange( Aes!(typeof(labels), "label")( labels ) );
         } else {
-            import std.range : repeat;
-            auto labels = numericLabel( repeat("a", aes.length) );
+            import std.range : repeat, walkLength;
+            auto labels = numericLabel( repeat("a", aes.walkLength) );
             auto myAes = aes.mergeRange( Aes!(typeof(labels), "label")( labels ) );
         }
     }

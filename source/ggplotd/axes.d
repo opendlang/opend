@@ -124,45 +124,45 @@ unittest
     assert(adjustTickWidth(Axis(1.79877e+07, 1.86788e+07), 5).tick_width == 100_000);
 }
 
+private struct Ticks
+{
+    double currentPosition;
+    Axis axis;
+
+    @property double front()
+    {
+        import std.math : abs;
+        if (currentPosition >= axis.max)
+            return axis.max;
+        // Special case for zero, because a small numerical error results in
+        // wrong label, i.e. 0 + small numerical error (of 5.5e-17) is 
+        // displayed as 5.5e-17, while any other numerical error falls 
+        // away in rounding
+        if (abs(currentPosition - 0) < axis.tick_width/1.0e5)
+            return 0.0;
+        return currentPosition;
+    }
+
+    void popFront()
+    {
+        if (currentPosition < axis.min_tick)
+            currentPosition = axis.min_tick;
+        else
+            currentPosition += axis.tick_width;
+    }
+
+    @property bool empty()
+    {
+        if (currentPosition - axis.tick_width >= axis.max)
+            return true;
+        return false;
+    }
+}
+
 /// Returns a range starting at axis.min, ending axis.max and with
 /// all the tick locations in between
 auto axisTicks(Axis axis)
 {
-    struct Ticks
-    {
-        double currentPosition;
-        Axis axis;
-
-        @property double front()
-        {
-            import std.math : abs;
-            if (currentPosition >= axis.max)
-                return axis.max;
-            // Special case for zero, because a small numerical error results in
-            // wrong label, i.e. 0 + small numerical error (of 5.5e-17) is 
-            // displayed as 5.5e-17, while any other numerical error falls 
-            // away in rounding
-            if (abs(currentPosition - 0) < axis.tick_width/1.0e5)
-                return 0.0;
-            return currentPosition;
-        }
-
-        void popFront()
-        {
-            if (currentPosition < axis.min_tick)
-                currentPosition = axis.min_tick;
-            else
-                currentPosition += axis.tick_width;
-        }
-
-        @property bool empty()
-        {
-            if (currentPosition - axis.tick_width >= axis.max)
-                return true;
-            return false;
-        }
-    }
-
     return Ticks(axis.min, axis);
 }
 
@@ -308,16 +308,14 @@ private string ctReplaceAll( string orig, string pattern, string replacement )
 // Create a specialised x and y axis version of a given function.
 private string xy( string func )
 {
-    import std.string : split;
-    string str = "///\n" ~ // Three slashes should result in documentation?
+    import std.format : format;
+    return format( "///\n%s\n\n///\n%s",
         func
             .ctReplaceAll( "axis", "xaxis" )
-            .ctReplaceAll( "Axis", "XAxis" ) ~
-        "\n\n///\n" ~ 
+            .ctReplaceAll( "Axis", "XAxis" ),
         func
             .ctReplaceAll( "axis", "yaxis" )
-            .ctReplaceAll( "Axis", "YAxis" );
-    return str; 
+            .ctReplaceAll( "Axis", "YAxis" ) );
 }
 
 alias XAxisFunction = XAxis delegate(XAxis);

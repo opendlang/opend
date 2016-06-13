@@ -65,446 +65,161 @@ static auto DefaultValues = Tuple!(
     +/
 template Aes(Specs...)
 {
-    import std.traits : Identity;
-    import std.typecons : isTuple;
-    import std.typetuple : staticMap, TypeTuple;
-    import std.range : isInputRange;
-
-    // Parse (type,name) pairs (FieldSpecs) out of the specified
-    // arguments. Some fields would have name, others not.
+    import std.meta : AliasSeq;
     template parseSpecs(Specs...)
     {
-        static if (Specs.length == 0)
+        import std.range : isInputRange, ElementType;
+        static if (Specs.length < 2)
         {
-            alias parseSpecs = TypeTuple!();
+            alias parseSpecs = AliasSeq!();
         }
-        else static if (is(Specs[0]) && isInputRange!(Specs[0]))
+        else static if (
+             isInputRange!(Specs[0])
+             && is(typeof(Specs[1]) : string)
+        )
         {
-            static if (is(typeof(Specs[1]) : string))
-            {
-                alias parseSpecs = TypeTuple!(FieldSpec!(Specs[0 .. 2]), parseSpecs!(Specs[2 .. $]));
-            }
-            else
-            {
-                alias parseSpecs = TypeTuple!(FieldSpec!(Specs[0]), parseSpecs!(Specs[1 .. $]));
-            }
+            alias parseSpecs = AliasSeq!(
+            ElementType!(Specs[0]), Specs[1],
+                parseSpecs!(Specs[2 .. $]));
         }
         else
         {
+            pragma(msg, Specs);
             static assert(0,
                 "Attempted to instantiate Tuple with an " ~ "invalid argument: " ~ Specs[0].stringof);
         }
     }
 
-    template FieldSpec(T, string s = "")
+    template parseTypes(Specs...)
     {
-        alias Type = T;
-        alias name = s;
-    }
-
-    alias fieldSpecs = parseSpecs!Specs;
-
-    // Used with staticMap.
-    alias extractType(alias spec) = spec.Type;
-    alias extractName(alias spec) = spec.name;
-
-    // Generates named fields as follows:
-    //    alias name_0 = Identity!(field[0]);
-    //    alias name_1 = Identity!(field[1]);
-    //      :
-    // NOTE: field[k] is an expression (which yields a symbol of a
-    //       variable) and can't be aliased directly.
-    string injectNamedFields()
-    {
-        string decl = "";
-
-        foreach (i, name; staticMap!(extractName, fieldSpecs))
+        import std.range : isInputRange;
+        static if (Specs.length < 2)
         {
-            import std.format : format;
-
-            decl ~= format("alias _%s = Identity!(field[%s]);", i, i);
-            if (name.length != 0)
-            {
-                decl ~= format("alias %s = _%s;", name, i);
-            }
+            alias parseTypes = AliasSeq!();
         }
-        return decl;
-    }
-
-    alias fieldNames = staticMap!(extractName, fieldSpecs);
-
-    string injectFront()
-    {
-        import std.format : format;
-
-        string decl = "auto front() { import std.range : ElementType;";
-        decl ~= "import std.typecons : Tuple; import std.range : front;";
-
-        string tupleType = "Tuple!(";
-        string values = "(";
-
-        foreach (i, name; fieldNames)
+        else static if (
+             isInputRange!(Specs[0])
+             && is(typeof(Specs[1]) : string)
+        )
         {
-
-            tupleType ~= format(q{typeof(%s.front),}, name);
-            tupleType ~= "q{" ~ name ~ "},";
-            values ~= format("this.%s.front,", name);
-        }
-
-        decl ~= "return " ~ tupleType[0 .. $ - 1] ~ ")" ~ values[0 .. $ - 1] ~ "); }";
-        //string decl2 = format("auto front() { import std.stdio; \"%s\".writeln; return 0.0; }", decl);
-        return decl;
-    }
-
-    // Returns Specs for a subtuple this[from .. to] preserving field
-    // names if any.
-    alias sliceSpecs(size_t from, size_t to) = staticMap!(expandSpec, fieldSpecs[from .. to]);
-
-    template expandSpec(alias spec)
-    {
-        static if (spec.name.length == 0)
-        {
-            alias expandSpec = TypeTuple!(spec.Type);
+            alias parseTypes = AliasSeq!(
+                Specs[0], 
+                parseTypes!(Specs[2 .. $]));
         }
         else
         {
-            alias expandSpec = TypeTuple!(spec.Type, spec.name);
+            pragma(msg, Specs);
+            static assert(0,
+                "Attempted to instantiate Tuple with an " ~ "invalid argument: " ~ Specs[0].stringof);
         }
     }
-
-    enum areCompatibleTuples(Tup1, Tup2, string op) = isTuple!Tup2 && is(typeof({
-        Tup1 tup1 = void;
-        Tup2 tup2 = void;
-        static assert(tup1.field.length == tup2.field.length);
-        foreach (i, _;
-        Tup1.Types)
-        {
-            auto lhs = typeof(tup1.field[i]).init;
-            auto rhs = typeof(tup2.field[i]).init;
-            static if (op == "=")
-                lhs = rhs;
-            else
-                auto result = mixin("lhs " ~ op ~ " rhs");
-        }
-    }));
-
-    enum areBuildCompatibleTuples(Tup1, Tup2) = isTuple!Tup2 && is(typeof({
-        static assert(Tup1.Types.length == Tup2.Types.length);
-        foreach (i, _;
-        Tup1.Types)
-        static assert(isBuildable!(Tup1.Types[i], Tup2.Types[i]));
-    }));
-
-    /+ Returns $(D true) iff a $(D T) can be initialized from a $(D U). +/
-    enum isBuildable(T, U) = is(typeof({ U u = U.init; T t = u; }));
-    /+ Helper for partial instanciation +/
-    template isBuildableFrom(U)
-    {
-        enum isBuildableFrom(T) = isBuildable!(T, U);
-    }
+    alias elementsType = parseSpecs!Specs;
+    alias types = parseTypes!Specs;
 
     struct Aes
     {
-        /**
-         * The type of the tuple's components.
-         */
-        alias Types = staticMap!(extractType, fieldSpecs);
+        import std.range : Zip;
+        private Zip!(types) aes;
 
-        /**
-         * The names of the tuple's components. Unnamed fields have empty names.
-         *
-         * Examples:
-         * ----
-         * alias Fields = Tuple!(int, "id", string, float);
-         * static assert(Fields.fieldNames == TypeTuple!("id", "", ""));
-         * ----
-         */
-        alias fieldNames = staticMap!(extractName, fieldSpecs);
-
-        /**
-         * Use $(D t.expand) for a tuple $(D t) to expand it into its
-         * components. The result of $(D expand) acts as if the tuple components
-         * were listed as a list of values. (Ordinarily, a $(D Tuple) acts as a
-         * single value.)
-         *
-         * Examples:
-         * ----
-         * auto t = tuple(1, " hello ", 2.3);
-         * writeln(t);        // Tuple!(int, string, double)(1, " hello ", 2.3)
-         * writeln(t.expand); // 1 hello 2.3
-         * ----
-         */
-        Types expand;
-        mixin(injectNamedFields());
-
-        // backwards compatibility
-        alias field = expand;
-
-        /**
-         * Constructor taking one value for each field.
-         */
-        static if (Types.length > 0)
+        this(Args...)(Args args)
         {
-            this(Types values)
-            {
-                field[] = values[];
-            }
+            import std.range : zip;
+            aes = zip(args);
         }
 
-        /**
-         * Constructor taking a compatible array.
-         *
-         * Examples:
-         * ----
-         * int[2] ints;
-         * Tuple!(int, int) t = ints;
-         * ----
-         */
-        /+this(U, size_t n)(U[n] values) if (n == Types.length
-                && allSatisfy!(isBuildableFrom!U, Types))
-        {
-            foreach (i, _; Types)
-            {
-                field[i] = values[i];
-            }
-        }+/
-
-        /**
-         * Constructor taking a compatible tuple.
-         */
-        this(U)(U another) if (areBuildCompatibleTuples!(typeof(this), U))
-        {
-            field[] = another.field[];
-        }
-
-        mixin(injectFront());
-
-        ///
         void popFront()
         {
-            import std.range : popFront;
-
-            foreach (i, _; Types[0 .. $])
-            {
-                field[i].popFront();
-            }
+            aes.popFront;
         }
 
-        ///
-        auto save() const
+        auto @property empty() 
         {
-            return this;
+            return aes.empty;
         }
 
-        ///
-        @property bool empty()
+        auto @property front()
         {
-            if (length == 0)
-                return true;
-            return false;
-        }
-
-        ///
-        size_t length()
-        {
-            import std.algorithm : min;
-            import std.range : walkLength, isInfinite;
-
-            size_t l = size_t.max;
-            foreach (i, type; Types[0 .. $])
-            {
-                static if (!isInfinite!type)
-                {
-                    if (field[i].walkLength < l)
-                        l = field[i].walkLength;
-                }
-            }
-            return l;
-        }
-
-        /**
-         * Comparison for equality.
-         */
-        bool opEquals(R)(in R rhs) const if (areCompatibleTuples!(typeof(this), R, "=="))
-        {
-            return field[] == rhs.field[];
-        }
-
-        /// ditto
-        bool opEquals(R)(R rhs) const if (areCompatibleTuples!(typeof(this), R, "=="))
-        {
-            return field[] == rhs.field[];
-        }
-
-        /**
-         * Comparison for ordering.
-         */
-        int opCmp(R)(in R rhs) const if (areCompatibleTuples!(typeof(this), R, "<")) 
-        {
-            foreach (i, Unused; Types)
-            {
-                if (field[i] != rhs.field[i])
-                {
-                    return field[i] < rhs.field[i] ? -1 : 1;
-                }
-            }
-            return 0;
-        }
-
-        /// ditto
-        int opCmp(R)(R rhs) const if (areCompatibleTuples!(typeof(this), R, "<"))
-        {
-            foreach (i, Unused; Types)
-            {
-                if (field[i] != rhs.field[i])
-                {
-                    return field[i] < rhs.field[i] ? -1 : 1;
-                }
-            }
-            return 0;
-        }
-
-        /**
-         * Assignment from another tuple. Each element of the source must be
-         * implicitly assignable to the respective element of the target.
-         */
-        void opAssign(R)(auto ref R rhs) if (areCompatibleTuples!(typeof(this), R,
-                "="))
-        {
-            import std.algorithm : swap;
-
-            static if (is(R : Tuple!Types) && !__traits(isRef, rhs))
-            {
-                if (__ctfe)
-                {
-                    // Cannot use swap at compile time
-                    field[] = rhs.field[];
-                }
-                else
-                {
-                    // Use swap-and-destroy to optimize rvalue assignment
-                    swap!(Tuple!Types)(this, rhs);
-                }
-            }
-            else
-            {
-                // Do not swap; opAssign should be called on the fields.
-                field[] = rhs.field[];
-            }
-        }
-
-        /**
-         * Takes a slice of the tuple.
-         *
-         * Examples:
-         * ----
-         * Tuple!(int, string, float, double) a;
-         * a[1] = "abc";
-         * a[2] = 4.5;
-         * auto s = a.slice!(1, 3);
-         * static assert(is(typeof(s) == Tuple!(string, float)));
-         * assert(s[0] == "abc" && s[1] == 4.5);
-         * ----
-         */
-        @property ref Tuple!(sliceSpecs!(from, to)) slice(size_t from, size_t to)() @trusted if (
-                from <= to && to <= Types.length)
-        {
-            return *cast(typeof(return)*)&(field[from]);
-        }
-
-        ///
-        size_t toHash() const nothrow @trusted
-        {
-            size_t h = 0;
-            foreach (i, T; Types)
-                h += typeid(T).getHash(cast(const void*)&field[i]);
-            return h;
-        }
-
-        /**
-         * Converts to string.
-         */
-        void toString(DG)(scope DG sink) const
-        {
-            enum header = typeof(this).stringof ~ "(", footer = ")", separator = ", ";
-            sink(header);
-            foreach (i, Type; Types)
-            {
-                static if (i > 0)
-                {
-                    sink(separator);
-                }
-                // TODO: Change this once toString() works for shared objects.
-                static if (is(Type == class) && is(typeof(Type.init) == shared))
-                {
-                    sink(Type.stringof);
-                }
-                else
-                {
-                    import std.format : FormatSpec, formatElement;
-
-                    FormatSpec!char f;
-                    formatElement(sink, field[i], f);
-                }
-            }
-            sink(footer);
-        }
-
-        /**
-         * Converts to string.
-         */
-        string toString()() const
-        {
-            import std.conv : to;
-
-            return this.to!string;
+            return Tuple!(elementsType)( aes.front.expand );
         }
     }
-}
-
-unittest
-{
-    auto tup = Aes!(double[], "x", double[], "y", string[], "colour")([0, 1],
-        [2, 1], ["white", "white2"]);
-    auto tup2 = Aes!(double[], "x", double[], "y")([0, 1], [2, 1]);
-    assertEqual(tup.colour, ["white", "white2"]);
-    assertEqual(tup.length, 2);
-    assertEqual(tup2.length, 2);
-
-    tup2.x ~= 0.0;
-    tup2.x ~= 0.0;
-    assertEqual(tup2.length, 2);
-    tup2.y ~= 0.0;
-    assertEqual(tup2.length, 3);
 }
 
 /// Basic Aes usage
 unittest
 {
-    auto aes = Aes!(double[], "x", double[], "y", string[], "colour")([0, 1],
-        [2, 1], ["white", "white2"]);
+    auto aes = Aes!(double[], "x", double[], "y", string[], "colour")([0.0, 1],
+        [2, 1.0], ["white", "white2"]);
 
     aes.popFront;
     assertEqual(aes.front.y, 1);
     assertEqual(aes.front.colour, "white2");
 
-    auto aes2 = Aes!(double[], "x", double[], "y")([0, 1], [2, 1]);
+    auto aes2 = Aes!(double[], "x", double[], "y")([0.0, 1], [2.0, 1]);
     assertEqual(aes2.front.y, 2);
 
     import std.range : repeat;
 
     auto xs = repeat(0);
-    auto aes3 = Aes!(typeof(xs), "x", double[], "y")(xs, [2, 1]);
+    auto aes3 = Aes!(typeof(xs), "x", double[], "y")(xs, [2.0, 1]);
 
     assertEqual(aes3.front.x, 0);
     aes3.popFront;
     aes3.popFront;
     assertEqual(aes3.empty, true);
-
 }
 
 
 import std.typetuple : TypeTuple;
+private template fieldValues( T, Specs... )
+{
+    import std.typecons : Tuple, tuple;
+    auto fieldValues( T t )
+    {
+        static if (Specs.length == 0)
+            return tuple();
+        else
+            return tuple( __traits(getMember, t, Specs[0]),
+                (fieldValues!(typeof(t), Specs[1..$])(t)).expand );
+    }
+}
+
+unittest 
+{
+    struct Point { double x; double y; string label = "Point"; }
+    auto pnt = Point( 1.0, 2.0 );
+    auto fv = fieldValues!(Point, "x","y","label")(pnt);
+    assertEqual(fv[0], 1.0);
+    assertEqual(fv[1], 2.0);
+    assertEqual(fv[2], "Point");
+    auto fv2 = fieldValues!(Point, "x","label")(pnt);
+    assertEqual(fv2[0], 1.0);
+    assertEqual(fv2[1], "Point");
+}
+
+private template typeAndFields( T, Specs... )
+{
+    import std.meta : AliasSeq;
+    static if (Specs.length == 0)
+        alias typeAndFields = AliasSeq!();
+    else
+        alias typeAndFields = AliasSeq!( 
+            typeof(__traits(getMember, T, Specs[0])), 
+            Specs[0], typeAndFields!(T, Specs[1..$]) );
+}
+
+unittest 
+{
+    struct Point { double x; double y; string label = "Point"; }
+    alias fts = typeAndFields!(Point, "x","y","label");
+
+    auto pnt = Point( 1.0, 2.0 );
+    auto fv = fieldValues!(Point, "x","y","label")(pnt);
+    auto tp = Tuple!( fts )( fv.expand );
+    assertEqual(tp.x, 1.0);
+    assertEqual(tp.y, 2.0);
+    assertEqual(tp.label, "Point");
+ }
+
 // Default fields to group by
 alias DefaultGroupFields = TypeTuple!("alpha","colour","label");
 
@@ -515,47 +230,26 @@ alias DefaultGroupFields = TypeTuple!("alpha","colour","label");
 +/
 template group(Specs...)
 {
-    string buildExtractKey(A)()
+    static if (Specs.length == 0)
     {
-        static if (Specs.length == 0)
-        {
-            import std.typetuple : TypeTuple;
-            alias Specs = DefaultGroupFields;
-        }
-        string types = "";
-        string values = "";
-        foreach( spec; Specs )
-        {
-            import std.range : ElementType;
-            import std.traits;
-            import painlesstraits : isFieldOrProperty;
-            static if(hasMember!((ElementType!A),spec)
-                && isFieldOrProperty!(
-                    __traits(getMember,ElementType!A,spec))
-            )
-            {
-                types ~= "typeof(a." ~ spec ~"),";
-                values ~= "a." ~ spec ~",";
-            }
-        }
-
-        // Default case if no matching fields
-        string str = "auto extractKey(T)(T a) 
-                { return 1; }";
-        if (!types.empty)
-            str = "auto extractKey(T)(T a) 
-                { return Tuple!(" ~ types[0..$-1] ~ ")(" ~ 
-                values[0..$-1] ~ "); }";
-
-        return str;
+        alias Specs = DefaultGroupFields;
     }
-    
+
+    auto extractKey(T)(T a)
+    {
+        import ggplotd.meta : ApplyLeft;
+        import std.meta : Filter;
+        alias hasFieldT = ApplyLeft!(hasAesField, T);
+        alias fields = Filter!(hasFieldT, Specs);
+        static if (fields.length == 0)
+            return 1;
+        else
+            return fieldValues!(T, fields)(a);
+    } 
+
     auto group(AES)(AES aes)
     {
-        mixin(buildExtractKey!(typeof(aes))());
-
         import ggplotd.range : groupBy;
-
         return aes.groupBy!((a) => extractKey(a)).values;
     }
 }
@@ -565,7 +259,7 @@ unittest
 {
     import std.range : walkLength;
     auto aes = Aes!(double[], "x", string[], "colour", double[], "alpha")
-        ([0,1,2,3], ["a","a","b","b"], [0,1,0,1]);
+        ([0.0,1,2,3], ["a","a","b","b"], [0.0,1,0,1]);
 
     assertEqual(group!("colour","alpha")(aes).walkLength,4);
     assertEqual(group!("alpha")(aes).walkLength,2);
@@ -698,13 +392,10 @@ struct NumericLabel(T) if (isInputRange!T)
     }
 
     /// Is the ElementType numeric?
-    @property bool numeric()
-    {
-        static if (isNumeric!E)
-            return true;
-        else
-            return false;
-    }
+    static if (isNumeric!E)
+        enum numeric = true;
+    else
+        enum numeric = false;
 
 private:
     T original;
@@ -722,10 +413,14 @@ unittest
     auto num = NumericLabel!(double[])([0.0, 0.1, 1.0, 0.0]);
     assertEqual(num.map!((a) => a[0]).array, [0.0, 0.1, 1.0, 0.0]);
     assertEqual(num.map!((a) => a[1]).array, ["0", "0.1", "1", "0"]);
+    static assert(num.numeric);
+    assert(num.numeric);
     auto strs = NumericLabel!(string[])(["a", "c", "b", "a"]);
     assertEqual(strs.map!((a) => a[0]).array, [0, 1, 2.0, 0.0]);
     assertEqual(strs.map!((a) => a[1]).array, ["a", "c", "b", "a"]);
-}
+    static assert(!strs.numeric);
+    assert(!strs.numeric);
+ }
 
 ///
 auto numericLabel(Range)( Range r ) if (isInputRange!Range)
@@ -735,7 +430,6 @@ auto numericLabel(Range)( Range r ) if (isInputRange!Range)
 
 unittest
 {
-    import std.stdio : writeln;
     import std.array : array;
     import std.algorithm : map;
 
@@ -757,6 +451,69 @@ unittest
     static assert(isFieldOrProperty!(t.x));
 }
 
+
+private template aesFields(T)
+{
+    import std.traits;
+    template isAesField(alias name)
+    {
+        import painlesstraits : isFieldOrProperty;
+        import std.typecons : Tuple;
+        // To be honest, I am not sure why isFieldOrProperty!name does not
+        // suffice (instead of the first two), but that 
+        // results in toHash for Tuple
+        static if ( __traits(compiles, isFieldOrProperty!(
+            __traits(getMember, T, name) ) )
+             && isFieldOrProperty!(__traits(getMember,T,name))
+             && name[0] != "_"[0]
+             && __traits(compiles, ( in T u ) {
+            auto a = __traits(getMember, u, name); 
+            Tuple!(typeof(a),name)(a); } )
+            )
+            enum isAesField = true;
+        else
+            enum isAesField = false;
+    }
+
+    import std.meta : Filter;
+    enum aesFields = Filter!(isAesField, __traits(allMembers, T));
+}
+
+unittest
+{
+    struct Point { double x; double y; string label = "Point"; }
+    assertEqual( "x", aesFields!Point[0] );
+    assertEqual( "y", aesFields!Point[1] );
+    assertEqual( "label", aesFields!Point[2] );
+    assertEqual( 3, aesFields!(Point).length );
+
+    auto pnt2 = Tuple!(double, "x", double, "y", string, "label" )( 1.0, 2.0, "Point" );
+    assertEqual( "x", aesFields!(typeof(pnt2))[0] );
+    assertEqual( "y", aesFields!(typeof(pnt2))[1] );
+    assertEqual( "label", aesFields!(typeof(pnt2))[2] );
+    assertEqual( 3, aesFields!(typeof(pnt2)).length );
+}
+
+private template hasAesField(T, alias name)
+{
+    enum bool hasAesField = (function() {
+        bool has = false;
+        foreach (name2; aesFields!T)
+        { 
+            if (name == name2)
+                has = true;
+        }
+        return has;
+    })();
+}
+
+unittest
+{
+    struct Point { double x; double y; string label = "Point"; }
+    static assert( hasAesField!(Point, "x") );
+    static assert( !hasAesField!(Point, "z") );
+}
+
 /++
 Merge two types by their members. 
 
@@ -766,78 +523,22 @@ returns a named Tuple (or Aes) with all the members and their values.
 +/
 template merge(T, U)
 {
-    import std.traits;
-    import painlesstraits;
-    auto generateCode()
-    {
-        import std.string : split;
-        string typing = "Tuple!(";
-        //string typing = T.stringof.split("!")[0] ~ "!(";
-        //string typingU = U.stringof.split("!")[0] ~ "!(";
-        string variables = "(";
-        foreach (name; __traits(allMembers, U))
-        {
-            static if (__traits(compiles, isFieldOrProperty!(
-                            __traits(getMember, U, name)))
-                    && __traits(compiles, ( in U u ) {
-                        auto a = __traits(getMember, u, name);
-                        Tuple!(typeof(a),name)(a); } )
-                    && isFieldOrProperty!(__traits(getMember,U,name))
-                    && name[0] != "_"[0] )
-            {
-                typing ~= "typeof(other." ~ name ~ "),\"" ~ name ~ "\",";
-                variables ~= "other." ~ name ~ ",";
-            }
-        }
-
-        foreach (name; __traits(allMembers, T))
-        {
-            static if (__traits(compiles, isFieldOrProperty!(
-                __traits(getMember, T, name)))
-                     && __traits(compiles, ( in T u ) {
-                auto a = __traits(getMember, u, name); 
-                Tuple!(typeof(a),name)(a); } )
-                && isFieldOrProperty!(__traits(getMember,T,name))
-                     && name[0] != "_"[0] )
-                {
-                bool contains = false;
-                foreach (name2; __traits(allMembers, U))
-                {
-                    if (name == name2)
-                        contains = true;
-                }
-                if (!contains)
-                {
-                    typing ~= "typeof(base." ~ name ~ "),\"" ~ name ~ "\",";
-                    variables ~= "base." ~ name ~ ",";
-                }
-            }
-        }
-        return "return " ~ typing[0 .. $ - 1] ~ ")" ~ variables[0 .. $ - 1] ~ ");";
-    }
-
     auto merge(T base, U other)
     {
-        mixin(generateCode());
+        import ggplotd.meta : ApplyLeft;
+        import std.meta : Filter, AliasSeq, templateNot;
+        alias fieldsU = aesFields!U;
+        alias notHasAesFieldU = ApplyLeft!(templateNot!(hasAesField),U);
+        alias fieldsT = Filter!(notHasAesFieldU, aesFields!T);
+
+        auto vT = fieldValues!(T, fieldsT)(base);
+        auto vU = fieldValues!(U, fieldsU)(other);
+
+        return Tuple!(AliasSeq!(
+            typeAndFields!(T,fieldsT),
+            typeAndFields!(U,fieldsU)
+            ))(vT.expand, vU.expand);
     }
-}
-
-///
-unittest
-{
-    import std.range : front;
-
-    auto xs = ["a", "b"];
-    auto ys = ["c", "d"];
-    auto labels = ["e", "f"];
-    auto aes = Aes!(string[], "x", string[], "y", string[], "label")(xs, ys, labels);
-
-    auto nlAes = merge(aes, Aes!(NumericLabel!(string[]), "x",
-        NumericLabel!(string[]), "y")(NumericLabel!(string[])(aes.x),
-        NumericLabel!(string[])(aes.y)));
-
-    assertEqual(nlAes.x.front[0], 0);
-    assertEqual(nlAes.label.front, "e");
 }
 
 unittest
@@ -848,6 +549,11 @@ unittest
     assertEqual( merged.y, 2.0 );
     assertEqual( merged.colour, "black" );
     assertEqual( merged.label, "Point" );
+
+    // Test whether type/ordering is consistent
+    // Given enough benefit we can break this, but we'll have to adapt plotcli to match,
+    // which to be fair is relatively straightforward
+    static assert( is(Tuple!(string, "colour", double, "size", double, "angle", double, "alpha", bool, "mask", double, "fill", double, "x", double, "y", string, "label") == typeof(merged) ) );
 }
 
 /// 

@@ -31,8 +31,8 @@ struct Vertex3D
     /// Vertex substraction or addition
     Vertex3D opBinary(string s)( in Vertex3D v2 ) const if (s == "-" || s == "+" )
     {
-        mixin( "return Vertex3D( x " ~ s ~ " v2.x, y " ~ s ~ 
-            " v2.y, z " ~ s ~ " v2.z );");
+        import std.format : format;
+        mixin( format("return Vertex3D( x %s v2.x, y %s v2.y, z %s v2.z );",s,s,s) );
     }
 }
 unittest
