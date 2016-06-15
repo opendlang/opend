@@ -23,7 +23,7 @@ Prints some standard paths to stdout.
     
 On OSX it also can be built to use Cocoa instead of Carbon (tested with ldc 1.0.0):
 
-	dub run :printdirs --config=cocoa --compiler=ldc2
+    dub run :printdirs --config=cocoa --compiler=ldc2
 
 ### [Get path](examples/getpath/source/app.d)
 
@@ -33,7 +33,7 @@ Get path of given type, verify it exists or create if it does not.
     
 Use Cocoa instead of Carbon on OSX:
 
-	dub run :getpath --config=cocoa --compiler=ldc2 -- --create music
+    dub run :getpath --config=cocoa --compiler=ldc2 -- --create music
     
 ## Use cases
 

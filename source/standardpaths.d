@@ -98,7 +98,7 @@ version(Windows) {
  * On usual circumstances user wants to see Desktop, Documents, Downloads, Pictures, Music and Videos directories.
  * 
  * See_Also:
- *  writablePath, standardPaths
+ *  $(D writablePath), $(D standardPaths)
  */
 enum StandardPath {
     /**
@@ -167,7 +167,7 @@ enum StandardPath {
 
 /**
  * Control behavior of functions.
- * See_Also: writablePath
+ * See_Also: $(D writablePath)
  */
 enum FolderFlag
 {
@@ -221,20 +221,20 @@ string homeDir() nothrow @safe
  * Returns: Path where files of $(U type) should be written to by current user, or an empty string if could not determine path.
  * Params:
  *  type = Directory to lookup.
- *  params = Union of $(B FolderFlag)s.
+ *  params = Union of $(D FolderFlag)s.
  * Note: This function does not cache its results.
- * See_Also: FolderFlag
+ * See_Also: $(D FolderFlag)
  */
 string writablePath(StandardPath type, FolderFlag params = FolderFlag.none) nothrow @safe;
 
 /**
  * Getting paths for various locations.
- * Returns: Array of paths where files of $(U type) belong including one returned by $(B writablePath), or an empty array if no paths are defined for $(U type).
+ * Returns: Array of paths where files of $(U type) belong including one returned by $(D writablePath), or an empty array if no paths are defined for $(U type).
  * This function does not ensure if all returned paths exist and appear to be accessible directories. Returned strings are not required to be unique.
  * Note: This function does cache its results. 
  * It may cause performance impact to call this function often since retrieving some paths can be relatively expensive operation.
  * See_Also:
- *  writablePath
+ *  $(D writablePath)
  */
 string[] standardPaths(StandardPath type) nothrow @safe;
 
