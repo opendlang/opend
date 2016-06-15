@@ -5,7 +5,7 @@ import cairo = cairo;
 import ggplotd.colour : ColourIDRange, ColourGradient;
 
 /// Draw a legend for a continuous value to the given surface
-auto drawContinuousLegend(S, CR, CG)
+auto drawContinuousLegend(CR, CG)
     (ref cairo.Surface surface, int width, int height,
         CR colourRange, CG colourGradient )
 {
