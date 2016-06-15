@@ -9,6 +9,7 @@ version(LDC):
 
 public import inteli.types;
 import core.simd;
+import ldc.simd;
 import ldc.gccbuiltins_x86;
 
 public import inteli.xmmintrin;
@@ -82,8 +83,17 @@ alias _mm_sll_epi16 = __builtin_ia32_psllw128;
 alias _mm_slli_epi32 = __builtin_ia32_pslldi128;
 alias _mm_slli_epi64 = __builtin_ia32_psllqi128;
 alias _mm_slli_epi16 = __builtin_ia32_psllwi128;
-//pragma(LDC_intrinsic, "llvm.x86.sse2.psll.dq")
-//    __m128i _mm_slli_si128(__m128i op, ubyte imm8);
+
+__m128i _mm_slli_si128(ubyte imm8)(__m128i op)
+{
+    static if (imm8 & 0xF0) 
+        return _mm_setzero_si128();
+    else
+        return shufflevector!(byte16, 
+        16 - imm8, 17 - imm8, 18 - imm8, 19 - imm8, 20 - imm8, 21 - imm8, 22 - imm8, 23 - imm8,
+        24 - imm8, 25 - imm8, 26 - imm8, 27 - imm8, 28 - imm8, 29 - imm8, 30 - imm8, 31 - imm8)
+        (_mm_setzero_si128(), op);
+}
 
 alias _mm_sra_epi32 = __builtin_ia32_psrad128;
 alias _mm_sra_epi16 = __builtin_ia32_psraw128;
@@ -94,9 +104,17 @@ alias _mm_srl_epi64 = __builtin_ia32_psrlq128;
 alias _mm_srl_epi16 = __builtin_ia32_psrlw128;
 alias _mm_srli_epi32 = __builtin_ia32_psrldi128;
 
-pragma(LDC_intrinsic, "llvm.x86.sse2.psrli.dq.bs" /*"llvm.x86.sse2.psrl.dq"*/)
-    __m128i _mm_srli_si128(__m128i op, ubyte imm8);
-    
+__m128i _mm_srli_si128(ubyte imm8)(__m128i op)
+{
+    static if (imm8 & 0xF0) 
+        return _mm_setzero_si128();
+    else
+        return shufflevector!(byte16, 
+        imm8+0, imm8+1, imm8+2, imm8+3, imm8+4, imm8+5, imm8+6, imm8+7,
+        imm8+8, imm8+9, imm8+10, imm8+11, imm8+12, imm8+13, imm8+14, imm8+15)(op, _mm_setzero_si128());
+}
+
+alias _mm_bsrli_si128 = _mm_srli_si128;
 
 alias _mm_srlq_epi32 = __builtin_ia32_psrlqi128;
 alias _mm_srlw_epi32 = __builtin_ia32_psrlwi128;
@@ -127,9 +145,9 @@ unittest
         __m128 vb = _mm_loadu_ps(b.ptr);
         __m128 diffSquared = _mm_sub_ps(va, vb);
         diffSquared = _mm_mul_ps(diffSquared, diffSquared);
-        __m128 sum = _mm_add_ps(diffSquared, _mm_srli_si128(diffSquared, 8));
-        sum = _mm_add_ps(sum, _mm_srli_si128(sum, 4));
-        return _mm_cvtss_f32(sum);
+        __m128 sum = _mm_add_ps(diffSquared, _mm_srli_si128!8(diffSquared));
+        sum = _mm_add_ps(sum, _mm_srli_si128!4(sum));
+        return _mm_cvtss_f32(_mm_sqrt_ss(sum));
     }
     assert(distance([0, 2, 0, 0], [0, 0, 0, 0]) == 2);
 }

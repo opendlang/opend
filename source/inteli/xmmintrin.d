@@ -14,8 +14,10 @@ import ldc.gccbuiltins_x86;
 
 nothrow @nogc:
 
-pragma(LDC_intrinsic, "llvm.x86.sse.add.ps")
-    float4 _mm_add_ps(float4, float4) pure @safe;
+float4 _mm_add_ps(float4 a, float4 b) pure @safe
+{
+    return a + b;
+}
 alias _mm_add_ss = __builtin_ia32_addss;
 
 alias _mm_cmpeq_ss = __builtin_ia32_cmpps;
@@ -70,6 +72,12 @@ alias _mm_rcp_ps = __builtin_ia32_rcpps;
 alias _mm_rcp_ss = __builtin_ia32_rcpss;
 alias _mm_rsqrt_ps = __builtin_ia32_rsqrtps;
 alias _mm_rsqrt_ss = __builtin_ia32_rsqrtss;
+
+__m128i _mm_setzero_si128()
+{
+    return __m128i([0, 0, 0, 0]);
+}
+
 alias _mm_sfence = __builtin_ia32_sfence;
 alias _mm_sqrt_ps = __builtin_ia32_sqrtps;
 alias _mm_sqrt_ss = __builtin_ia32_sqrtss;
