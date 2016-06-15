@@ -217,7 +217,7 @@ private template statHistND(int dim, AES)
             import std.range : empty, popFront, front, take, walkLength;
             import std.typecons : tuple;
 
-            import ggplotd.math : safeMin, safeMax;
+            import ggplotd.algorithm : safeMin, safeMax;
             import ggplotd.range : uniquer;
 
             static assert( dim == 1 || dim == 2, "Only dimension of 1 or 2 i supported" );
@@ -419,7 +419,7 @@ auto statDensity(AES)( AES aesRaw )
     import std.typecons : tuple, Tuple;
     import ggplotd.aes : Aes, numericLabel, group;
     import ggplotd.range : mergeRange;
-    import ggplotd.math : safeMin, safeMax;
+    import ggplotd.algorithm : safeMin, safeMax;
 
     auto xNumeric = aesRaw.map!((t) => t.x).numericLabel;
     auto aes = aesRaw.mergeRange( Aes!(typeof(xNumeric),"x")(xNumeric) );
@@ -499,7 +499,7 @@ auto statDensity2D(AES)( AES aesRaw )
     import std.range : chain, front, iota, zip;
     import std.typecons : Erase, tuple, Tuple;
     import ggplotd.aes : Aes, numericLabel, group, DefaultGroupFields;
-    import ggplotd.math : safeMin, safeMax;
+    import ggplotd.algorithm : safeMin, safeMax;
     import ggplotd.range : mergeRange;
 
     auto xNumeric = aesRaw.map!((t) => t.x).numericLabel;

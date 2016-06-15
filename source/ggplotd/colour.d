@@ -185,28 +185,41 @@ struct ColourID
 
         import ggplotd.colourspace : isColour, toColourSpace;
 
-        id[2] = RGBA(-1,-1,-1,-1);
+        state[2] = RGBA(-1,-1,-1,-1);
 
         static if (isNumeric!T)
         {
-            id[0] = setId.to!double;
+            state[0] = setId.to!double;
         } else
           static if (isColour!T)
-            id[2] = setId.toColourSpace!(RGBA,T);
+            state[2] = setId.toColourSpace!(RGBA,T);
           else
-            id[1] = setId.to!string;
+            state[1] = setId.to!string;
     }
 
     /// Initialize using rgba colour
     this( double r, double g, double b, double a = 1 )
     {
-        id[2] = RGBA( r, g, b, a );
+        state[2] = RGBA( r, g, b, a );
     }
 
     /// Internal representation of ColourID
-    Tuple!(double, string, RGBA) id; 
+    Tuple!(double, string, RGBA) state; 
 
-    alias id this; ///
+    T to(T)() const
+    {
+        import std.conv : to;
+        static if (is(T==double))
+            return state[0];
+        else {
+            static if (is(T==RGBA))
+                return state[2];
+            else
+                return state[1].to!T;
+        }
+    }
+
+    alias state this; ///
 }
 
 unittest
@@ -328,7 +341,7 @@ auto createColourMap(R)(R colourIDs, ColourGradientFunction gradient) if (is(Ele
 
     auto minmax = Tuple!(double, double)(0, 0);
     if (!validatedIDs.empty) {
-        import ggplotd.math : safeMax, safeMin;
+        import ggplotd.algorithm : safeMax, safeMin;
         minmax = validatedIDs.save
             .map!((a) => a[0]).reduce!((a, b) => safeMin(a,
             b), (a, b) => safeMax(a, b));
@@ -488,7 +501,7 @@ Examples:
 auto cg = ColourGradient!HCY();
 cg.put( 0, HCY(200, 0.5, 0) ); 
 cg.put( 100, HCY(200, 0.5, 0) ); 
-GGPlotD().put( colourGradient( cg );
+GGPlotD().put( colourGradient( cg ) );
 -----------------
 */
 ColourGradientFunction colourGradient(T)( in ColourGradient!T cg, 
