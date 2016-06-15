@@ -230,6 +230,15 @@ struct GGPlotD
 
         // Plot title
         surface = title.drawTitle( surface, margins, width );
+
+        import ggplotd.legend : drawContinuousLegend; 
+        if (initCG)
+            surface = drawContinuousLegend( surface, width, height, colourIDs,
+                colourGradientFunction );
+        else
+            surface = drawContinuousLegend( surface, width, height, colourIDs,
+                colourGradient!HCY("") );
+
         return surface;
     }
  
