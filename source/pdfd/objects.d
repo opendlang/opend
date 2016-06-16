@@ -89,8 +89,45 @@ public:
         {
             if (ch > 127)
                 throw new Exception("Not supposed to be such a character in a String object");
-            result ~= "0123456789ABCDEF"[ch >> 4];
-            result ~= "0123456789ABCDEF"[ch & 15];
+            result ~= byteToHex(ch);
+        }
+        result ~= ">";
+        return result;
+    }
+
+private:
+    string _value;
+}
+
+class NameObject : PDFObject
+{
+public:
+    this(string value)
+    {
+        // check validity of this name
+        foreach(dchar ch; value) // auto-decoding here
+            // Starting with PDF 1.2, the only character forbidden in a name is the null character
+            assert(ch != 0);
+        _value = value;
+    }
+
+    // Converts into bytes
+    override void toBytes(ref string output)
+    {   
+        string result = "/";
+        foreach(char ch; _value)
+        {
+            if (33 <= ch && ch <= 126)
+                result ~= ch;
+            else
+            {
+                result ~= '#';
+
+                // it is recommended that the sequence of bytes (after expansion
+                // of #sequences, if any) be interpreted according to UTF-8)
+                result ~= byteToHex(ch);                 
+            }
+
         }
         result ~= ">";
         return result;
@@ -103,6 +140,12 @@ private:
 
 private
 {
+    string byteToHex(ubyte b)
+    {
+        static immutable hexChars = "0123456789ABCDEF";
+        return "" ~ hexChars[b >> 4] ~ hexChars[b & 0x0f];
+    }
+
     // PDF character sets
 
     bool isWhitespaceChar(dchar ch) pure nothrow @nogc
