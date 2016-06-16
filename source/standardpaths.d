@@ -91,7 +91,7 @@ version(Windows) {
 }
 
 /** 
- * Location types that can be passed to writablePath and standardPaths functions.
+ * Location types that can be passed to $(D writablePath) and $(D standardPaths) functions.
  * 
  * Not all these paths are suggested for showing in file managers or file dialogs. 
  * Some of them are meant for internal application usage or should be treated in special way.
@@ -223,7 +223,7 @@ string homeDir() nothrow @safe
  *  type = Directory to lookup.
  *  params = Union of $(D FolderFlag)s.
  * Note: This function does not cache its results.
- * See_Also: $(D FolderFlag)
+ * See_Also: $(D StandardPath), $(D FolderFlag)
  */
 string writablePath(StandardPath type, FolderFlag params = FolderFlag.none) nothrow @safe;
 
@@ -233,8 +233,7 @@ string writablePath(StandardPath type, FolderFlag params = FolderFlag.none) noth
  * This function does not ensure if all returned paths exist and appear to be accessible directories. Returned strings are not required to be unique.
  * Note: This function does cache its results. 
  * It may cause performance impact to call this function often since retrieving some paths can be relatively expensive operation.
- * See_Also:
- *  $(D writablePath)
+ * See_Also: $(D StandardPath), $(D writablePath)
  */
 string[] standardPaths(StandardPath type) nothrow @safe;
 
@@ -242,17 +241,17 @@ string[] standardPaths(StandardPath type) nothrow @safe;
 version(D_Ddoc)
 {   
     /**
-     * Path to $(B Roaming) data directory. 
+     * Path to $(B Roaming) data directory. Windows only.
      * Returns: User's Roaming directory. On fail returns an empty string.
-     * Note: This function is Windows only.
+     * See_Also: $(D writablePath), $(D FolderFlag)
      */
     string roamingPath(FolderFlag params = FolderFlag.none) nothrow @safe;
     
     /**
-     * Location where games may store their saves. 
-     * This is common path for games. One should use subfolder for their game saves.
+     * Location where games may store their saves. Windows only.
+     * Note: This is common path for games. One should use subfolder for their game saves.
      * Returns: User's Saved Games directory. On fail returns an empty string.
-     * Note: This function is Windows only.
+     * See_Also: $(D writablePath), $(D FolderFlag)
      */
     string savedGames(FolderFlag params = FolderFlag.none) nothrow @safe;
 }
