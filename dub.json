@@ -1,0 +1,6 @@
+{
+    "name": "pdf-d",
+    "license": "BSL-1.0",
+    "importPaths": [ "source" ],
+    "sourcePaths": [ "source" ]
+}
