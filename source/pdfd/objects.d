@@ -6,19 +6,6 @@ import std.conv;
 class PDFObject
 {
 public:
-/*
-    /// Create a PDF object with a given name.
-    this(int name)
-    {
-        _name = name;
-    }*/
-
-    /// Returns the object generation, not much used.
-    int generation()
-    {
-        return 0;
-    }
-
     // Converts into bytes
     abstract void toBytes(ref string output);
 
@@ -28,24 +15,43 @@ private:
     int _name;
 }
 
-
-class BooleanObject : PDFObject
+// TODO: maybe this is inefficient representation, eventually merge with PDFObject
+class IndirectObject : PDFObject
 {
-public:
-    this(bool value)
+    this(PDFObject wrapped, int identifier)
     {
-        _value = value;
+        _obj = wrapped;        
+        _identifier = identifier;
     }
 
-    // Converts into bytes
-    override void toBytes(ref string output)
+    /// Returns the object generation, not much used.
+    int generation()
     {
-        output ~= _value ? "true" : "false";
+        return 0;
+    }
+
+    int identifier()
+    {
+        return _identifier;
     }
 
 private:
-    bool _value;
+    PDFObject _obj;
+    int _identifier;
 }
+
+class NullObject : PDFObject
+{
+public:
+    override void toBytes(ref string output)
+    {
+        output ~= "null";
+    }
+
+private:
+    double _value;
+}
+
 
 class NumericObject : PDFObject
 {
@@ -130,13 +136,95 @@ public:
 
         }
         result ~= ">";
-        return result;
+        output ~= result;
     }
 
 private:
     string _value;
 }
 
+class ArrayObject : PDFObject
+{
+public:
+
+    PDFObject[] items;
+
+    this(PDFObject[] items = null)
+    {
+        this.items = items;
+    }
+
+    // Converts into bytes
+    override void toBytes(ref string output)
+    {   
+        string result = "[";
+        foreach(int i, item; items)
+        {
+            if (i > 0)
+                result ~= " "; // separator
+            item.toBytes(result);
+        }
+        result ~= "]";        
+        output ~= result;        
+    }
+}
+
+class DictionaryObject : PDFObject
+{
+public:
+
+    struct Entry
+    {
+        NameObject key;
+        PDFObject value;
+    }
+
+    Entry[] entries; // Note: just a slice instead of an associative array
+
+    this(Entry[] entries = null)
+    {
+        this.entries = entries;
+    }
+
+    // Converts into bytes
+    override void toBytes(ref string output)
+    {   
+        string result = "<< ";
+        foreach(int i, entry; entries)
+        {   
+            entry.key.toBytes(result);
+            result ~= " ";
+            entry.value.toBytes(result);
+            result ~= " ";
+        }
+        result ~= ">>";        
+        output ~= result;        
+    }
+}
+
+class StreamObject : PDFObject
+{
+public:
+
+    this(DictionaryObject dictionary, ubyte[] data)
+    {
+        this._data = data;
+        this._dictionary = dictionary;
+    }
+
+    // Converts into bytes
+    override void toBytes(ref string output)
+    {   
+        _dictionary.toBytes(output);
+        string result = "stream\n";
+        output ~= cast(string)_data;
+        result ~= "endstream\n";        
+        output ~= result;        
+    }
+private:
+    ubyte[] _data;
+    DictionaryObject _dictionary;
+}
 
 private
 {
