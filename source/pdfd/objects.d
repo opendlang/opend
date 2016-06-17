@@ -25,14 +25,27 @@ class IndirectObject : PDFObject
     }
 
     /// Returns the object generation, not much used.
-    int generation()
+    int generation() pure const nothrow @nogc
     {
         return 0;
     }
 
-    int identifier()
+    int identifier() pure const nothrow @nogc
     {
         return _identifier;
+    }
+
+    string toIndirectReference() pure const
+    {
+        return to!string(identifier) ~ " 0 R";
+    }
+
+    // Converts into bytes
+    override void toBytes(ref string output)
+    {
+        output ~= to!string(identifier) ~ " 0 obj\n";
+        _obj.toBytes(output);
+        output ~= "endobj\n";
     }
 
 private:
