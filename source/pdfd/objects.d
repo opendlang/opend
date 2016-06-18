@@ -2,12 +2,38 @@ module pdfd.objects;
 
 import std.conv;
 
+/// Serialization context passed to objects
+class PDFSerializer
+{
+    ubyte[] buffer;
+
+    void put(char ch)
+    {
+        buffer ~= cast(ubyte)ch;
+    }
+
+    void put(string str)
+    {
+        buffer ~= cast(ubyte[])str;
+    }
+
+    void put(ubyte[] bytes)
+    {
+        buffer ~= bytes;
+    }
+
+    size_t currentOffset()
+    {
+        return buffer.length;
+    }
+}
+
 /// Root class of PDF objects
 class PDFObject
 {
 public:
     // Converts into bytes
-    abstract void toBytes(ref string output);
+    abstract void toBytes(PDFSerializer output);
 
 private:
 
@@ -35,17 +61,19 @@ class IndirectObject : PDFObject
         return _identifier;
     }
 
-    string toIndirectReference() pure const
+    // Converts into bytes, writes the full object
+    void toBytesDirect(PDFSerializer output)
     {
-        return to!string(identifier) ~ " 0 R";
+        output.put( to!string(identifier) ~ " 0 obj\n" );
+        _obj.toBytes(output);
+        output.put("endobj\n");
     }
 
-    // Converts into bytes
-    override void toBytes(ref string output)
+    // Converts into bytes, write only the reference
+    override void toBytes(PDFSerializer output)
     {
-        output ~= to!string(identifier) ~ " 0 obj\n";
-        _obj.toBytes(output);
-        output ~= "endobj\n";
+        assert(generation == 0);
+        output.put(to!string(identifier) ~ " 0 R");
     }
 
 private:
@@ -56,9 +84,9 @@ private:
 class NullObject : PDFObject
 {
 public:
-    override void toBytes(ref string output)
+    override void toBytes(PDFSerializer output)
     {
-        output ~= "null";
+        output.put("null");
     }
 
 private:
@@ -75,10 +103,10 @@ public:
     }
 
     // Converts into bytes
-    override void toBytes(ref string output)
+    override void toBytes(PDFSerializer output)
     {
         // TODO: round to decimal form
-        output ~= to!string(_value);
+        output.put(to!string(_value));
     }
 
 private:
@@ -94,10 +122,10 @@ public:
     }
 
     // Converts into bytes
-    override void toBytes(ref string output)
+    override void toBytes(PDFSerializer output)
     {
         // TODO: round to decimal form
-        output ~= escapeString(_value);
+        output.put( escapeString(_value) );
     }
 
     // TODO: there are limits to string length within a PDF
@@ -131,25 +159,23 @@ public:
     }
 
     // Converts into bytes
-    override void toBytes(ref string output)
+    override void toBytes(PDFSerializer output)
     {   
-        string result = "/";
+        output.put("/");
         foreach(char ch; _value)
         {
             if (33 <= ch && ch <= 126)
-                result ~= ch;
+                output.put(ch);
             else
             {
-                result ~= '#';
+                output.put("#");
 
                 // it is recommended that the sequence of bytes (after expansion
                 // of #sequences, if any) be interpreted according to UTF-8)
-                result ~= byteToHex(ch);                 
+                output.put(byteToHex(ch));
             }
-
         }
-        result ~= ">";
-        output ~= result;
+        output.put(">");
     }
 
 private:
@@ -168,17 +194,16 @@ public:
     }
 
     // Converts into bytes
-    override void toBytes(ref string output)
-    {   
-        string result = "[";
+    override void toBytes(PDFSerializer output)
+    {
+        output.put("[");
         foreach(int i, item; items)
         {
             if (i > 0)
-                result ~= " "; // separator
-            item.toBytes(result);
+                output.put(" ");
+            item.toBytes(output);
         }
-        result ~= "]";        
-        output ~= result;        
+        output.put("]");
     }
 }
 
@@ -200,18 +225,17 @@ public:
     }
 
     // Converts into bytes
-    override void toBytes(ref string output)
+    override void toBytes(PDFSerializer output)
     {   
-        string result = "<< ";
+        output.put("<< ");
         foreach(int i, entry; entries)
         {   
-            entry.key.toBytes(result);
-            result ~= " ";
-            entry.value.toBytes(result);
-            result ~= " ";
+            entry.key.toBytes(output);
+            output.put(" ");
+            entry.value.toBytes(output);
+            output.put(" ");
         }
-        result ~= ">>";        
-        output ~= result;        
+        output.put(">>");
     }
 }
 
@@ -226,13 +250,12 @@ public:
     }
 
     // Converts into bytes
-    override void toBytes(ref string output)
+    override void toBytes(PDFSerializer output)
     {   
         _dictionary.toBytes(output);
-        string result = "stream\n";
-        output ~= cast(string)_data;
-        result ~= "endstream\n";        
-        output ~= result;        
+        output.put("stream\n");
+        output.put(_data);
+        output.put("endstream\n");
     }
 private:
     ubyte[] _data;
