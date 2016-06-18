@@ -1,6 +1,7 @@
 module pdfd.pdf;
 
 import std.string;
+import std.typecons;
 
 import pdfd.objects;
 
@@ -9,9 +10,14 @@ class PDF
 {
 public:
 
+    this()
+    {
+        _nullObject = new NullObject();
+    }
+
     ubyte[] toBytes()
     {
-        auto output = new PDFSerializer();
+        auto output = scoped!PDFSerializer();
 
         // header
         output.put("%PDF-1.1\n");
@@ -52,14 +58,16 @@ public:
         }
 
         output.put("trailer\n");
-        auto trailer = new DictionaryObject();
-        trailer.add(nameObject("Root"), null);
-        trailer.add(nameObject("Size"), new NumericObject(labelledObjects.length+1));
-        trailer.toBytes(output);
-        output.put("\n");
+        {
+            auto trailer = scoped!DictionaryObject();
+            trailer.add(nameObject("Root"), _nullObject);
+            trailer.add(nameObject("Size"), new NumericObject(labelledObjects.length+1));
+            trailer.toBytes(output);
+            output.put("\n");
+        }
 
         output.put("startxref\n");
-        output.put(format("%zu\n", offsetOfLastXref));
+        output.put(format("%s\n", offsetOfLastXref));
         output.put("%%EOF\n");
         return output.buffer;
     }
@@ -96,4 +104,6 @@ private:
             return nameObj;
         }
     }
+
+    NullObject _nullObject;
 }
