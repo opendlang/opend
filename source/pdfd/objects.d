@@ -224,6 +224,11 @@ public:
         this.entries = entries;
     }
 
+    void add(NameObject key, PDFObject value)
+    {
+        this.entries ~= Entry(key, value);
+    }
+
     // Converts into bytes
     override void toBytes(PDFSerializer output)
     {   
