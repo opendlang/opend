@@ -81,6 +81,7 @@ private:
     int _identifier;
 }
 
+
 class NullObject : PDFObject
 {
 public:
@@ -92,7 +93,6 @@ public:
 private:
     double _value;
 }
-
 
 class NumericObject : PDFObject
 {

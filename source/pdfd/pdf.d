@@ -13,6 +13,56 @@ public:
     this()
     {
         _nullObject = new NullObject();
+
+
+        _pageArray = new ArrayObject();
+
+        auto _page = (new DictionaryObject).labelled();
+        _page.add(name("Type"), name("Page"));
+        _page.add(name("Parent"), name("Page"));
+
+        auto _pages = (new DictionaryObject).labelled();
+        _catalog.add(name("Type"), name("Pages"));
+        _catalog.add(name("Kids"), _pageArray);
+
+        _catalog.add(name("Count"), number(1));
+        _catalog.add(name("MediaBox"), new ArrayObject([number(0), number(0), number(210), number(297)]));
+
+
+        auto _catalog = (new DictionaryObject).labelled();
+        _catalog.add(name("Type"), name("Catalog"));
+        _catalog.add(name("Pages"), _pages);
+/+
+
+        1 0 obj
+            << /Type /Catalog
+            /Pages 2 0 R
+            >>
+            endobj
+
+            2 0 obj
+            << /Type /Pages
+            /Kids [3 0 R]
+            /Count 1
+            /MediaBox [0 0 300 144]
+            >>
+            endobj
+
+            3 0 obj
+            <<  /Type /Page
+            /Parent 2 0 R
+            /Resources
+            << /Font
+            << /F1
+            << /Type /Font
+            /Subtype /Type1
+            /BaseFont /Times-Roman
+            >>
+            >>
+            >>
+            /Contents 4 0 R
+            >>
+            endobj+/
     }
 
     ubyte[] toBytes()
@@ -61,7 +111,7 @@ public:
         {
             auto trailer = scoped!DictionaryObject();
             trailer.add(nameObject("Root"), _nullObject);
-            trailer.add(nameObject("Size"), new NumericObject(labelledObjects.length+1));
+            trailer.add(nameObject("Size"), number(labelledObjects.length+1));
             trailer.toBytes(output);
             output.put("\n");
         }
@@ -92,7 +142,7 @@ private:
     NameObject[string] nameObjectsCache;
 
     // Return an existing name object or a cached one
-    NameObject nameObject(string name)
+    NameObject name(string name)
     {
         NameObject* obj = name in nameObjectsCache;
         if (obj)
@@ -103,6 +153,18 @@ private:
             nameObjectsCache[name] = nameObj;
             return nameObj;
         }
+    }
+
+    IndirectObject labelled(PDFObject obj)
+    {
+        IndirectObject result = new IndirectObject(obj, generateNewObjectIdentifier());
+        labelledObjects ~= label;
+    }
+
+
+    NumericObject number(double value)
+    {
+        return new NumericObject(value);
     }
 
     NullObject _nullObject;
