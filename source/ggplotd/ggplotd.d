@@ -233,6 +233,30 @@ struct GGPlotD
         return surface;
     }
  
+    version(ggplotdGTK) 
+    {
+        import gtkdSurface = cairo.Surface; // cairo surface module in GtkD package.
+
+        /**
+        Draw the plot to a cairo surface.
+
+        Convenience method when interfacing with GtkD. Type of surface parameter is from the GtkD package, which allows
+        straightforward integration with GtkD applications.
+        */
+        auto drawToSurface( ref gtkdSurface.Surface surface, int width, int height ) const
+        {
+            import gtkc = gtkc.cairotypes;
+            import cairod = cairo.c.cairo;
+
+            alias gtkd_surface_t = gtkc.cairo_surface_t;
+            alias cairod_surface_t = cairod.cairo_surface_t;
+
+            cairo.Surface cairodSurface = new cairo.Surface(cast(cairod_surface_t*)surface.getSurfaceStruct());
+            drawToSurface(cairodSurface, width, height);
+
+            return new gtkdSurface.Surface(cast(gtkd_surface_t*)cairodSurface);
+        }
+    }
 
     /// save the plot to a file
     void save( string fname, int width = 470, int height = 470 ) const
@@ -347,6 +371,47 @@ unittest
     assertEqual( dim, gg.geomRange.data.length );
     surface = gg.drawToSurface( surface, win_width, win_height );
     assertEqual( dim, gg.geomRange.data.length );
+}
+
+version(ggplotdGTK) 
+{
+    unittest 
+    {
+        // Draw same plot on cairod.ImageSurface, and on gtkd.cairo.ImageSurface,
+        // and prove resulting images are the same.
+
+        import ggplotd.geom;
+        import ggplotd.aes;
+
+        import gtkSurface = cairo.Surface;
+        import gtkImageSurface = cairo.ImageSurface;
+        import gtkCairoTypes = gtkc.cairotypes;
+
+        const win_width = 1024;
+        const win_height = 1024;
+
+        const radius = 400.;
+
+        auto line_aes11 = Aes!(double[], "x", double[], "y")( [ 0, radius*0.45 ], [ 0, radius*0.45]);
+        auto line_aes22 = Aes!(double[], "x", double[], "y")( [ 300, radius*0.45 ], [ 210, radius*0.45]);
+
+        auto gg = GGPlotD();
+        gg.put( geomLine(line_aes11) );
+        gg.put( geomLine(line_aes22) );
+
+        cairo.Surface cairodSurface = new cairo.ImageSurface(cairo.Format.CAIRO_FORMAT_RGB24, win_width, win_height);
+        gtkSurface.Surface gtkdSurface = gtkImageSurface.ImageSurface.create(gtkCairoTypes.cairo_format_t.RGB24, win_width, win_height);
+
+        auto cairodImageSurface = cast(cairo.ImageSurface)cairodSurface;
+        auto gtkdImageSurface = cast(gtkImageSurface.ImageSurface)gtkdSurface;
+
+        gg.drawToSurface(cairodSurface, win_width, win_height);
+        gg.drawToSurface(gtkdSurface, win_width, win_height);
+
+        auto byteSize = win_width*win_height*4;
+
+        assertEqual(cairodImageSurface.getData()[0..byteSize], gtkdImageSurface.getData()[0..byteSize]);
+    }
 }
 
 unittest
