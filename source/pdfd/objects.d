@@ -193,6 +193,11 @@ public:
         this.items = items;
     }
 
+    void add(PDFObject obj)
+    {
+        items ~= obj;
+    }
+
     // Converts into bytes
     override void toBytes(PDFSerializer output)
     {

@@ -4,34 +4,35 @@ import std.string;
 import std.typecons;
 
 import pdfd.objects;
+import pdfd.objectpool;
 
 ///
 class PDF
 {
 public:
 
-    this()
+
+
+    this(int pageWidthMm, int pageHeightMm)
     {
-        _nullObject = new NullObject();
+        _pool = new PDFObjectPool();
 
+        _pagesArray = new ArrayObject(); // empty at first
 
-        _pageArray = new ArrayObject();
+        _pages = new DictionaryObject;
+        _pages.add(name("Type"), name("Pages"));
+        _pages.add(name("Kids"), _pagesArray);
 
-        auto _page = (new DictionaryObject).labelled();
-        _page.add(name("Type"), name("Page"));
-        _page.add(name("Parent"), name("Page"));
-
-        auto _pages = (new DictionaryObject).labelled();
-        _catalog.add(name("Type"), name("Pages"));
-        _catalog.add(name("Kids"), _pageArray);
-
-        _catalog.add(name("Count"), number(1));
-        _catalog.add(name("MediaBox"), new ArrayObject([number(0), number(0), number(210), number(297)]));
-
-
-        auto _catalog = (new DictionaryObject).labelled();
+        _catalog = new DictionaryObject;
         _catalog.add(name("Type"), name("Catalog"));
-        _catalog.add(name("Pages"), _pages);
+        _catalog.add(name("Pages"), toRef(_pages));        
+
+        
+        _catalog.add(name("Count"), number(1));
+        _catalog.add(name("MediaBox"), new ArrayObject([number(0), number(0), number(pageWidthMm), number(pageHeightMm)]));
+
+        // register
+        toRef(_catalog);
 /+
 
         1 0 obj
@@ -65,6 +66,16 @@ public:
             endobj+/
     }
 
+
+    void newPage()
+    {        
+        _lastPage = new DictionaryObject;
+        _lastPage.add(name("Type"), name("Page"));
+        _lastPage.add(name("Parent"), toRef(_pages));
+
+        _pagesArray.add(toRef(_lastPage));
+    }
+
     ubyte[] toBytes()
     {
         auto output = scoped!PDFSerializer();
@@ -78,6 +89,8 @@ public:
         // This ensures proper behaviour of file transfer applications that inspect data near 
         // the beginning of a file to determine whether to treat the file’s contents as text or as binary."
         output.put("%¥±ë\n");
+
+        auto labelledObjects = _pool.allIndirectObjects();
 
         size_t[] offsetsOfIndirectObjects = new size_t[labelledObjects.length];
 
@@ -102,7 +115,7 @@ public:
             {
                 assert(obj.generation == 0);
                 // Writing offset to object (i+1), not (i)
-                output.put(format("%010zu 00000d n \n",  offsetsOfIndirectObjects[i]));
+                output.put(format("%010s 00000d n \n",  offsetsOfIndirectObjects[i]));
                 obj.toBytesDirect(output);
             }
         }
@@ -110,8 +123,8 @@ public:
         output.put("trailer\n");
         {
             auto trailer = scoped!DictionaryObject();
-            trailer.add(nameObject("Root"), _nullObject);
-            trailer.add(nameObject("Size"), number(labelledObjects.length+1));
+            trailer.add(name("Root"), _pool.nullObject);
+            trailer.add(name("Size"), number(labelledObjects.length+1));
             trailer.toBytes(output);
             output.put("\n");
         }
@@ -125,21 +138,20 @@ public:
 
 private:
 
-    /// The array of all labelled objects in the PDF
-    IndirectObject[] labelledObjects;
+    PDFObjectPool _pool;
 
+    ArrayObject _pagesArray;
 
-    int generateNewObjectIdentifier()
+    DictionaryObject _catalog;
+
+    DictionaryObject _lastPage = null;
+
+    DictionaryObject _pages;
+
+    IndirectObject toRef(PDFObject obj)
     {
-        int result = _nextObjectIdentifier;
-        _nextObjectIdentifier += 1;
-        return result;
+        return _pool.toReference(obj);
     }
-
-    int _nextObjectIdentifier = 1;
-
-
-    NameObject[string] nameObjectsCache;
 
     // Return an existing name object or a cached one
     NameObject name(string name)
@@ -155,17 +167,10 @@ private:
         }
     }
 
-    IndirectObject labelled(PDFObject obj)
-    {
-        IndirectObject result = new IndirectObject(obj, generateNewObjectIdentifier());
-        labelledObjects ~= label;
-    }
-
-
     NumericObject number(double value)
     {
         return new NumericObject(value);
     }
 
-    NullObject _nullObject;
+    NameObject[string] nameObjectsCache;
 }
