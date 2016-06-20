@@ -30,7 +30,7 @@
             "name"          :   "dub-platform-xcb",
             "versions"      :   [ "VK_USE_PLATFORM_XCB_KHR" ],
             "dependencies"  :   {
-                "xcb-d"         : "~>2.1.0+1.11.1"
+                "xcb-d"         : "~>1.11.1"
             },
         },
 
