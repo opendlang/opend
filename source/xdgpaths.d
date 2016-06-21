@@ -100,7 +100,7 @@ static if (isFreedesktop)
         import std.algorithm : splitter, map, filter, canFind;
         import std.array;
         import std.conv : octal;
-        import std.exception : collectException;
+        import std.exception : collectException, enforce;
         import std.file;
         import std.path : buildPath, dirName;
         import std.process : environment;
@@ -213,7 +213,7 @@ static if (isFreedesktop)
                 mkdir(testDir);
                 File(testFile, "w");
                 assert(!ensureExists(testFile));
-                assert(ensureExists(testSubDir));
+                enforce(ensureExists(testSubDir));
             } catch(Exception e) {
                 
             } finally {
