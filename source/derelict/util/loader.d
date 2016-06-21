@@ -31,7 +31,8 @@ import std.array,
        std.string;
 
 import derelict.util.exception,
-       derelict.util.sharedlib;
+       derelict.util.sharedlib,
+       derelict.util.system;
 
 struct SharedLibVersion
 {
@@ -88,7 +89,7 @@ abstract class SharedLibLoader
     +/
     void bindFunc_stdcall(Func)(ref Func f, string unmangledName)
     {
-        static if(Derelict_OS_Windows && !isWin64) {
+        static if(Derelict_OS_Windows && !Derelict_Arch_64) {
             import std.format : format;
             import std.traits : ParameterTypeTuple;
 
