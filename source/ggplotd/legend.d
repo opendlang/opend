@@ -4,6 +4,24 @@ import cairo = cairo;
 
 import ggplotd.colour : ColourIDRange, ColourGradient;
 
+private struct Legend
+{
+    string type = "continuous";
+}
+
+/++
+Sets the type of legend to show 
+
+Params:
+    type = string representing the type of legend. Valid values: continuous and discrete. Any other value results in no legend being shown.
++/
+auto legendType( string type )
+{
+    Legend legend;
+    legend.type = type;
+    return legend;
+}
+
 /// Draw a legend for a continuous value to the given surface
 auto drawContinuousLegend(CR, CG)
     (ref cairo.Surface surface, int width, int height,
@@ -29,14 +47,8 @@ auto drawContinuousLegend(CR, CG)
             [minmax[0], minmax[1], minmax[1], minmax[0]], 
             [minmax[0], minmax[1], minmax[1], minmax[0]] );
     gg.put( geomPolygon(aes) );
+    gg.put( legendType( "none" ) );
+    
     gg.drawToSurface( surface, width, height );
     return surface;
 }
-
-/+
-Continuous in many way is a small GGPlotD object, that can be drawn to the main surface. So just define an aes for the polygon, with the apropiate y values. Set x ticks to empty.
-
-Discrete is just number of lines (unmasked) with labels next to them. We can recreate this, as a GGPlotD() struct, by moving axis outside of plane (offset).
-
-Note that not only colour, but also size is often used as an indicator.
-+/

@@ -137,7 +137,7 @@ struct Margins
 struct GGPlotD
 {
     /// Draw the plot to a cairo surface
-    auto drawToSurface( ref cairo.Surface surface, int width, int height ) const
+    cairo.Surface drawToSurface( ref cairo.Surface surface, int width, int height ) const
     {
         import std.range : empty, front;
         import std.typecons : Tuple;
@@ -231,13 +231,15 @@ struct GGPlotD
         // Plot title
         surface = title.drawTitle( surface, margins, width );
 
-        import ggplotd.legend : drawContinuousLegend; 
-        if (initCG)
-            surface = drawContinuousLegend( surface, width, height, colourIDs,
-                colourGradientFunction );
-        else
-            surface = drawContinuousLegend( surface, width, height, colourIDs,
-                colourGradient!HCY("") );
+        if (legend.type == "continuous") {
+            import ggplotd.legend : drawContinuousLegend; 
+            if (initCG)
+                surface = drawContinuousLegend( surface, width, height, colourIDs,
+                    colourGradientFunction );
+            else
+                surface = drawContinuousLegend( surface, width, height, colourIDs,
+                    colourGradient!HCY("") );
+        }
 
         return surface;
     }
@@ -297,6 +299,9 @@ struct GGPlotD
             initCG = true;
             colourGradientFunction = rhs;
         }
+        static if (is(T==Legend)) {
+            legend = rhs;
+        }
         return this;
     }
 
@@ -309,6 +314,7 @@ struct GGPlotD
 private:
     import std.range : Appender;
     import ggplotd.theme : Theme, ThemeFunction;
+    import ggplotd.legend : Legend;
     Appender!(Geom[]) geomRange;
 
     XAxis xaxis;
@@ -324,6 +330,8 @@ private:
 
     bool initCG = false;
     ColourGradientFunction colourGradientFunction;
+
+    Legend legend;
 }
 
 unittest
