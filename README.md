@@ -7,11 +7,11 @@ D library for retrieving XDG base directories as described by [XDG Base Director
 ## Run [example](examples/xdgpathstest/source/app.d)
 
     export XDG_CONFIG_HOME=$HOME/config-test
-    dub run xdgpaths:xdgpathstest -- --path=config --shouldCreate --subfolder=Company/Product
+    dub run :test -- --path=config --shouldCreate --subfolder=Company/Product
     
     export XDG_DATA_HOME=$HOME/data-test
-    dub run xdgpaths:xdgpathstest -- --path=data --shouldCreate --subfolder=Company/Product
+    dub run :test -- --path=data --shouldCreate --subfolder=Company/Product
     
     export XDG_CACHE_HOME=$HOME/cache-test
-    dub run xdgpaths:xdgpathstest -- --path=cache --shouldCreate --subfolder=Company/Product
+    dub run :test-- --path=cache --shouldCreate --subfolder=Company/Product
 

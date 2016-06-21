@@ -15,7 +15,7 @@ module xdgpaths;
 
 import isfreedesktop;
 
-version(XdgPathsDocs)
+version(D_Ddoc)
 {
     /**
      * Path to runtime user directory.
@@ -30,6 +30,7 @@ version(XdgPathsDocs)
      *  subfolder = Subfolder which is appended to every path if not null.
      * Returns: Data directories, without user's one and with no duplicates.
      * Note: This function does not check if paths actually exist and appear to be directories.
+     * See_Also: $(D xdgAllDataDirs), $(D xdgDataHome)
      */
     @trusted string[] xdgDataDirs(string subfolder = null) nothrow;
     
@@ -39,6 +40,7 @@ version(XdgPathsDocs)
      *  subfolder = Subfolder which is appended to every path if not null.
      * Returns: Data directories, including user's one if could be evaluated.
      * Note: This function does not check if paths actually exist and appear to be directories.
+     * See_Also: $(D xdgDataDirs), $(D xdgDataHome)
      */
     @trusted string[] xdgAllDataDirs(string subfolder = null) nothrow;
     
@@ -48,6 +50,7 @@ version(XdgPathsDocs)
      *  subfolder = Subfolder which is appended to every path if not null.
      * Returns: Config directories, without user's one and with no duplicates.
      * Note: This function does not check if paths actually exist and appear to be directories.
+     * See_Also: $(D xdgAllConfigDirs), $(D xdgConfigHome)
      */
     @trusted string[] xdgConfigDirs(string subfolder = null) nothrow;
     
@@ -57,6 +60,7 @@ version(XdgPathsDocs)
      *  subfolder = Subfolder which is appended to every path if not null.
      * Returns: Config directories, including user's one if could be evaluated.
      * Note: This function does not check if paths actually exist and appear to be directories.
+     * See_Also: $(D xdgConfigDirs), $(D xdgConfigHome)
      */
     @trusted string[] xdgAllConfigDirs(string subfolder = null) nothrow;
     
@@ -66,6 +70,7 @@ version(XdgPathsDocs)
      * Params:
      *  subfolder = Subfolder to append to determined path.
      *  shouldCreate = If path does not exist, create directory using 700 permissions (i.e. allow access only for current user).
+     * See_Also: $(D xdgAllDataDirs), $(D xdgDataDirs)
      */
     @trusted string xdgDataHome(string subfolder = null, bool shouldCreate = false) nothrow;
     
@@ -75,6 +80,7 @@ version(XdgPathsDocs)
      * Params:
      *  subfolder = Subfolder to append to determined path.
      *  shouldCreate = If path does not exist, create directory using 700 permissions (i.e. allow access only for current user).
+     * See_Also: $(D xdgAllConfigDirs), $(D xdgConfigDirs)
      */
     @trusted string xdgConfigHome(string subfolder = null, bool shouldCreate = false) nothrow;
     
@@ -85,9 +91,7 @@ version(XdgPathsDocs)
      *  subfolder = Subfolder to append to determined path.
      *  shouldCreate = If path does not exist, create directory using 700 permissions (i.e. allow access only for current user).
      */
-    @trusted string xdgCacheHome(string subfolder = null, bool shouldCreate = false) nothrow {
-        return xdgBaseDir("XDG_CACHE_HOME", ".cache", subfolder);
-    }
+    @trusted string xdgCacheHome(string subfolder = null, bool shouldCreate = false) nothrow;
 }
 
 static if (isFreedesktop) 
@@ -122,7 +126,7 @@ static if (isFreedesktop)
     version(unittest) {
         import std.algorithm : equal;
         
-        struct EnvGuard
+        private struct EnvGuard
         {
             this(string env) {
                 envVar = env;
@@ -186,11 +190,38 @@ static if (isFreedesktop)
             if (!ok) {
                 mkdirRecurse(dir.dirName);
                 ok = mkdir(dir.toStringz, privateMode) == 0;
+            } else {
+                ok = dir.isDir;
             }
         } catch(Exception e) {
-            
+            ok = false;
         }
         return ok;
+    }
+    
+    unittest
+    {
+        import std.file;
+        import std.stdio;
+        
+        string temp = tempDir();
+        if (temp.length) {
+            string testDir = buildPath(temp, "xdgpaths-unittest-tempdir");
+            string testFile = buildPath(testDir, "touched");
+            string testSubDir = buildPath(testDir, "subdir");
+            try {
+                mkdir(testDir);
+                File(testFile, "w");
+                assert(!ensureExists(testFile));
+                assert(ensureExists(testSubDir));
+            } catch(Exception e) {
+                
+            } finally {
+                collectException(rmdir(testSubDir));
+                collectException(remove(testFile));
+                collectException(rmdir(testDir));
+            }
+        }
     }
     
     private string xdgBaseDir(string envvar, string fallback, string subfolder = null, bool shouldCreate = false) nothrow {
@@ -202,26 +233,28 @@ static if (isFreedesktop)
             dir = home.length ? buildPath(home, fallback) : null;
         }
         
-        if (dir.length) {
-            if (shouldCreate) {
-                if (ensureExists(dir)) {
-                    if (subfolder.length) {
-                        string path = buildPath(dir, subfolder);
-                        try {
-                            if (!path.exists) {
-                                mkdirRecurse(path);
-                            }
-                            return path;
-                        } catch(Exception e) {
-                            
+        if (dir.length == 0) {
+            return null;
+        }
+        
+        if (shouldCreate) {
+            if (ensureExists(dir)) {
+                if (subfolder.length) {
+                    string path = buildPath(dir, subfolder);
+                    try {
+                        if (!path.exists) {
+                            mkdirRecurse(path);
                         }
-                    } else {
-                        return dir;
+                        return path;
+                    } catch(Exception e) {
+                        
                     }
+                } else {
+                    return dir;
                 }
-            } else {
-                return buildPath(dir, subfolder);
             }
+        } else {
+            return buildPath(dir, subfolder);
         }
         return null;
     }
@@ -259,6 +292,7 @@ static if (isFreedesktop)
         }
     }
     
+    ///
     unittest
     {
         auto dataDirsGuard = EnvGuard("XDG_DATA_DIRS");
@@ -285,6 +319,7 @@ static if (isFreedesktop)
         }
     }
     
+    ///
     unittest
     {
         auto homeGuard = EnvGuard("HOME");
@@ -314,6 +349,7 @@ static if (isFreedesktop)
         }
     }
     
+    ///
     unittest
     {
         auto dataConfigGuard = EnvGuard("XDG_CONFIG_DIRS");
@@ -340,6 +376,7 @@ static if (isFreedesktop)
         }
     }
     
+    ///
     unittest
     {
         auto homeGuard = EnvGuard("HOME");
@@ -442,6 +479,7 @@ static if (isFreedesktop)
         }
     }
     
+    ///
     unittest
     {
         string runtimePath = buildPath(tempDir(), "xdgpaths-runtime-test");

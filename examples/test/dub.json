@@ -1,5 +1,5 @@
 {
-    "name": "xdgpathstest",
+    "name": "test",
     "description": "A minimal D application.",
     "copyright": "Copyright © 2016, freeslave",
     "authors": ["freeslave"],
@@ -7,6 +7,5 @@
         "xdgpaths" : "*"
     },
     "targetPath" : "bin", 
-    "targetType" : "executable",
-    "targetName" : "xdgpathstest"
+    "targetType" : "executable"
 }
