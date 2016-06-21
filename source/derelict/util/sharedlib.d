@@ -4,7 +4,7 @@ Boost Software License - Version 1.0 - August 17th, 2003
 
 Permission is hereby granted, free of charge, to any person or organization
 obtaining a copy of the software and accompanying documentation covered by
-this license ( the "Software" ) to use, reproduce, display, distribute,
+this license (the "Software") to use, reproduce, display, distribute,
 execute, and transmit the Software, and to prepare derivative works of the
 Software, and to permit third-parties to whom the Software is furnished to
 do so, all subject to the following:
@@ -28,14 +28,13 @@ DEALINGS IN THE SOFTWARE.
 module derelict.util.sharedlib;
 
 import std.string;
-import std.conv;
 
-import derelict.util.exception;
-import derelict.util.system;
+import derelict.util.exception,
+       derelict.util.system;
 
 alias void* SharedLibHandle;
 
-static if( Derelict_OS_Posix ) {
+static if(Derelict_OS_Posix) {
     import core.sys.posix.dlfcn;
 
     enum LDFlags
@@ -51,53 +50,59 @@ static if( Derelict_OS_Posix ) {
     private {
         LDFlags ldFlags = LDFlags.rtldNow;
 
-        SharedLibHandle LoadSharedLib( string libName )    {
-            return dlopen( libName.toStringz(), ldFlags );
+        SharedLibHandle LoadSharedLib(string libName)
+        {
+            return dlopen(libName.toStringz(), ldFlags);
         }
 
-        void UnloadSharedLib( SharedLibHandle hlib ) {
-            dlclose( hlib );
+        void UnloadSharedLib(SharedLibHandle hlib)
+        {
+            dlclose(hlib);
         }
 
-        void* GetSymbol( SharedLibHandle hlib, string symbolName ) {
-            return dlsym( hlib, symbolName.toStringz() );
+        void* GetSymbol(SharedLibHandle hlib, string symbolName)
+        {
+            return dlsym(hlib, symbolName.toStringz());
         }
 
-        string GetErrorStr() {
+        string GetErrorStr()
+        {
+            import std.conv : to;
+
             auto err = dlerror();
-            if( err is null )
+            if(err is null)
                 return "Uknown Error";
 
-            return to!string( err );
+            return to!string(err);
         }
     }
-} else static if( Derelict_OS_Windows ) {
-    import derelict.util.wintypes;
+} else static if(Derelict_OS_Windows) {
+    import core.sys.windows.windows;
 
     private {
-        SharedLibHandle LoadSharedLib( string libName )
+        SharedLibHandle LoadSharedLib(string libName)
         {
-            return LoadLibraryA( libName.toStringz() );
+            return LoadLibraryA(libName.toStringz());
         }
 
-        void UnloadSharedLib( SharedLibHandle hlib )
+        void UnloadSharedLib(SharedLibHandle hlib)
         {
-            FreeLibrary( hlib );
+            FreeLibrary(hlib);
         }
 
-        void* GetSymbol( SharedLibHandle hlib, string symbolName )
+        void* GetSymbol(SharedLibHandle hlib, string symbolName)
         {
-            return GetProcAddress( hlib, symbolName.toStringz() );
+            return GetProcAddress(hlib, symbolName.toStringz());
         }
 
         string GetErrorStr()
         {
             import std.windows.syserror;
-            return sysErrorString( GetLastError() );
+            return sysErrorString(GetLastError());
         }
     }
 } else {
-    static assert( 0, "Derelict does not support this platform." );
+    static assert(0, "Derelict does not support this platform.");
 }
 
 /++
@@ -130,17 +135,17 @@ struct SharedLib
                 SymbolLoadException if an expected symbol is missing from the
                 library.
     +/
-    void load( string[] names )
+    void load(string[] names)
     {
-        if( isLoaded )
+        if(isLoaded)
             return;
 
         string[] failedLibs;
         string[] reasons;
 
-        foreach( n; names ) {
-            _hlib = LoadSharedLib( n );
-            if( _hlib !is null ) {
+        foreach(n; names) {
+            _hlib = LoadSharedLib(n);
+            if(_hlib !is null) {
                 _name = n;
                 break;
             }
@@ -149,8 +154,8 @@ struct SharedLib
             reasons ~= GetErrorStr();
         }
 
-        if( !isLoaded ) {
-            SharedLibLoadException.throwNew( failedLibs, reasons );
+        if(!isLoaded) {
+            SharedLibLoadException.throwNew(failedLibs, reasons);
         }
     }
 
@@ -165,15 +170,15 @@ struct SharedLib
      Throws:        SymbolLoadException if doThrow is true and a the symbol
                     specified by funcName is missing from the shared library.
     +/
-    void* loadSymbol( string symbolName, bool doThrow = true )
+    void* loadSymbol(string symbolName, bool doThrow = true)
     {
-        void* sym = GetSymbol( _hlib, symbolName );
-        if( doThrow && !sym ) {
+        void* sym = GetSymbol(_hlib, symbolName);
+        if(doThrow && !sym) {
             auto result = ShouldThrow.Yes;
-            if( _onMissingSym !is null )
-                result = _onMissingSym( symbolName );
-            if( result == ShouldThrow.Yes )
-                throw new SymbolLoadException( _name, symbolName );
+            if(_onMissingSym !is null)
+                result = _onMissingSym(symbolName);
+            if(result == ShouldThrow.Yes)
+                throw new SymbolLoadException(_name, symbolName);
         }
 
         return sym;
@@ -185,8 +190,8 @@ struct SharedLib
     +/
     void unload()
     {
-        if( isLoaded ) {
-            UnloadSharedLib( _hlib );
+        if(isLoaded) {
+            UnloadSharedLib(_hlib);
             _hlib = null;
         }
     }
@@ -198,7 +203,7 @@ struct SharedLib
 
     /// Returns true if the shared library is currently loaded, false otherwise.
     @property @nogc nothrow
-    bool isLoaded() { return ( _hlib !is null ); }
+    bool isLoaded() { return (_hlib !is null); }
 
     /++
      Sets the callback that will be called when an expected symbol is
@@ -210,7 +215,7 @@ struct SharedLib
                         a string as the sole parameter.
     +/
     @property @nogc nothrow
-    void missingSymbolCallback( MissingSymbolCallbackDg callback )
+    void missingSymbolCallback(MissingSymbolCallbackDg callback)
     {
         _onMissingSym = callback;
     }
@@ -225,10 +230,10 @@ struct SharedLib
                         a string as the sole parameter.
     +/
     @property @nogc nothrow
-    void missingSymbolCallback( MissingSymbolCallbackFunc callback )
+    void missingSymbolCallback(MissingSymbolCallbackFunc callback)
     {
         import std.functional : toDelegate;
-        _onMissingSym = toDelegate( callback );
+        _onMissingSym = toDelegate(callback);
     }
 
     /++
