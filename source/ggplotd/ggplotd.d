@@ -136,7 +136,7 @@ struct Margins
 /// GGPlotD contains the needed information to create a plot
 struct GGPlotD
 {
-    /// Draw the plot to a cairo surface
+    /// Draw the plot to a cairoD cairo surface.
     auto drawToSurface( ref cairo.Surface surface, int width, int height ) const
     {
         import std.range : empty, front;
@@ -238,7 +238,7 @@ struct GGPlotD
         import gtkdSurface = cairo.Surface; // cairo surface module in GtkD package.
 
         /**
-        Draw the plot to a cairo surface.
+        Draw the plot to a GtkD cairo surface.
 
         Convenience method when interfacing with GtkD. Type of surface parameter is from the GtkD package, which allows
         straightforward integration with GtkD applications.
@@ -254,7 +254,7 @@ struct GGPlotD
             cairo.Surface cairodSurface = new cairo.Surface(cast(cairod_surface_t*)surface.getSurfaceStruct());
             drawToSurface(cairodSurface, width, height);
 
-            return new gtkdSurface.Surface(cast(gtkd_surface_t*)cairodSurface);
+            return surface;
         }
     }
 
