@@ -825,7 +825,7 @@ version(Windows) {
               char[80] hidden;    /* private to File Manager*/
             };
 
-            alias int Boolean;
+            alias ubyte Boolean;
             alias int OSType;
             alias short OSErr;
             alias int OSStatus;

@@ -3,22 +3,25 @@ language: d
 os:
   - linux
   - osx
-
-d:
-  - dmd-2.071.0
-  - dmd-2.069.2
-  - gdc-4.9.2
-  - ldc-0.15.1
   
 matrix:
-  exclude:
+  include:
+    - d: dmd-2.071.0
+      os: linux
+      env: CONFIG=default
+    - d: dmd-2.071.0
+      os: osx
+      env: CONFIG=default
     - d: gdc-4.9.2
+      os: linux
+      env: CONFIG=default
+    - d: ldc-1.0.0
+      os: linux
+      env: CONFIG=default
+    - d: ldc-1.0.0
       os: osx
-    - d: ldc-0.15.1
-      os: osx
-    - d: dmd-2.069.2
-      os: osx
+      env: CONFIG=cocoa
   
 script:
-    - dub build --compiler=${DC}
-    - dub run :printdirs --compiler=${DC}
+    - dub build --compiler=${DC} --config=${CONFIG}
+    - dub run :printdirs --compiler=${DC} --config=${CONFIG}
