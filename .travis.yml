@@ -2,14 +2,13 @@ language: d
 
 env:
   - CONFIG=default
-
-os:
-  - linux
-  - osx
   
 matrix:
   include:
-    - d: dmd-2.071.0
+    - d: dmd-2.069.2
+      os: linux
+    - d: dmd-2.069.2
+      os: osx
     - d: gdc-4.9.2
       os: linux
     - d: ldc-1.0.0

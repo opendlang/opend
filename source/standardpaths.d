@@ -843,7 +843,7 @@ version(Windows) {
     } else {
         shared static this()
         {
-            enum carbonPath = "/System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/CarbonCore.framework/Versions/A/CarbonCore";
+            enum carbonPath = "CoreServices.framework/Versions/A/CoreServices";
 
             import core.sys.posix.dlfcn;
 

@@ -11,7 +11,7 @@
     "subPackages" : ["./examples/printdirs", "./examples/getpath"],
     
     "dependencies" : {
-        "xdgpaths" : "~>0.2.1"
+        "xdgpaths" : "~>0.2.2"
     },
     
     "configurations" : [
