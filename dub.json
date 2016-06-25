@@ -22,7 +22,7 @@
             "name"          :   "dub-platform-xlib",
             "versions"      :   [ "VK_USE_PLATFORM_XLIB_KHR" ],
             "dependencies"  :   {
-                "xlib-d"        : "~>0.1.0"
+                "xlib-d"        : "~>0.1.1"
             }
         },
 
@@ -30,7 +30,7 @@
             "name"          :   "dub-platform-xcb",
             "versions"      :   [ "VK_USE_PLATFORM_XCB_KHR" ],
             "dependencies"  :   {
-                "xcb-d"         : "~>1.11.1"
+                "xcb-d"         : "~>2.1.0"
             },
         },
 
@@ -46,7 +46,7 @@
             "name"          :   "dub-platform-xlib-derelict-loader",
             "versions"      :   [ "VK_USE_PLATFORM_XLIB_KHR", "ERUPTED_FROM_DERELICT" ],
             "dependencies"  :   {
-                "xlib-d"        : "~>0.1.0",
+                "xlib-d"        : "~>0.1.1",
                 "derelict-util" : "~>2.0.4"
             }
         },
@@ -55,7 +55,7 @@
             "name"          :   "dub-platform-xcb-derelict-loader",
             "versions"      :   [ "VK_USE_PLATFORM_XCB_KHR", "ERUPTED_FROM_DERELICT" ],
             "dependencies"  :   {
-                "xcb-d"         : "~>2.1.0+1.11.1",
+                "xcb-d"         : "~>2.1.0",
                 "derelict-util" : "~>2.0.4"
             },
         },
