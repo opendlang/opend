@@ -6,12 +6,12 @@ Automatically-generated D bindings for Vulkan based on [D-Vulkan](https://github
 Usage
 -----
 
-The bindings have several configurations. The easiest to use is the `"with-derelict-loader"` configuration. The `DerelictUtil` mechanism will be used to dynamically load `vkGetInstanceProcAddr` from `vulkan-1.dll` or `libvulkan.so.1`. Otherwise you need to load `vkGetInstanceProcAddr` with either platform specific means or through some mechanism like [glfw3](http://www.glfw.org/docs/3.2/vulkan.html). Additional configurations enable the usage of platform specific vulkan functionality (see [Platform surface extensions](https://github.com/ParticlePeter/ErupteD#platform-surface-extensions)).
+The bindings have several configurations. The easiest to use is the `"with-derelict-loader"` configuration. The `DerelictUtil` mechanism will be used to dynamically load `vkGetInstanceProcAddr` from `vulkan-1.dll` or `libvulkan.so.1`. Otherwise you need to load `vkGetInstanceProcAddr` with either platform specific means or through some mechanism like [glfw3](http://www.glfw.org/docs/3.2/vulkan.html) as shown [here](https://github.com/ParticlePeter/ErupteD-GLFW). Additional configurations enable the usage of platform specific vulkan functionality (see [Platform surface extensions](https://github.com/ParticlePeter/ErupteD#platform-surface-extensions)).
 
 To use without configuration:
 
 1. Import via `import erupted;`.
-2. Get a pointer to the `vkGetInstanceProcAddr`, through platform-specific means (e.g. loading the Vulkan shared library, or `glfwGetInstanceProcAddress` if using GLFW3 >= v3.2 with DerelictGLFW3 >= v3.1.0).
+2. Get a pointer to the `vkGetInstanceProcAddr`, through platform-specific means (e.g. loading the Vulkan shared library manually, or `glfwGetInstanceProcAddress` [if using GLFW3 >= v3.2 with DerelictGLFW3 >= v3.1.0](https://github.com/ParticlePeter/ErupteD-GLFW)).
 3. Call `loadGlobalLevelFunctions(getProcAddr)`, where `getProcAddr` is the address of the loaded `vkGetInstanceProcAddr` function, to load the following functions:
 	* `vkGetInstanceProcAddr` (sets the global variable from the passed value)
 	* `vkCreateInstance`
@@ -39,7 +39,7 @@ The API is similar to the C Vulkan API, but with some differences:
 * All structures have their `sType` field set to the appropriate value upon initialization; explicit initialization is not needed.
 * `VkPipelineShaderStageCreateInfo.module` has been renamed to `VkPipelineShaderStageCreateInfo._module`, since `module` is a D keyword.
 
-Examples can be found in the `examples` directory, and ran with `dub run erupted:examplename`
+Examples can be found in the `examples` directory, and run with `dub run erupted:examplename`
 
 Platform surface extensions
 ---------------------------
