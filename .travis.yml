@@ -1,17 +1,18 @@
-
-env:
-  - CONFIG=default
-  
+language: d
 matrix:
   include:
     - d: dmd-2.069.2
       os: linux
+      env: CONFIG=default
     - d: dmd-2.069.2
       os: osx
+      env: CONFIG=default
     - d: gdc-4.9.2
       os: linux
+      env: CONFIG=default
     - d: ldc-1.0.0
       os: linux
+      env: CONFIG=default
     - d: ldc-1.0.0
       os: osx
       env: CONFIG=cocoa
