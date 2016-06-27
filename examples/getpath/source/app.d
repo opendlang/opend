@@ -54,9 +54,11 @@ void main(string[] args)
 {
     bool verify;
     bool create;
+    string subfolder;
     getopt(args, 
            "verify", "Verify if path exists", &verify,
-           "create", "Create if does not exist", &create
+           "create", "Create if does not exist", &create,
+           "subfolder", "Subfolder path", &subfolder
           );
     
     if (args.length < 2) {
@@ -74,7 +76,13 @@ void main(string[] args)
             if (create) {
                 flags |= FolderFlag.create;
             }
-            auto path = writablePath(type, flags);
+            string path;
+            if (subfolder.length) {
+                path = writablePath(type, subfolder, flags);
+            } else {
+                path = writablePath(type, flags);
+            }
+            
             if (path.length) {
                 writefln("%s: %s", pathType, path);
             } else {

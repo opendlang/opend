@@ -35,6 +35,10 @@ Use Cocoa instead of Carbon on OSX:
 
     dub run :getpath --config=cocoa --compiler=ldc2 -- --create music
     
+With subfolder:
+    
+    dub run :getpath -- --subfolder=MyLittleCompany/MyLittleApplication data
+    
 ## Use cases
 
 Some code snippets showing how standardpaths library is supposed to be used.
@@ -66,7 +70,7 @@ void showFileDialog()
         writablePath(StandardPath.publicShare, folderFlag)
     ];
     foreach(path; paths) {
-        if (path.exists) {
+        if (path.length) {
             string label = path.baseName();
             fileDialog.addPath(label, path);
         }
@@ -77,7 +81,7 @@ void showFileDialog()
 
 ### Writing configuration files
 
-Usually your application will have some configuration file (or files) to store user's preferences and settings. That's where you could use StandardPath.Config path.
+Usually your application will have some configuration file (or files) to store user's preferences and settings. That's where you could use StandardPath.config path.
 While the library returns generic paths for configuration, data and cache, you want to have separate folders specially for your application, so you will not accidentally read or modify files used by other programs.
 Usually these paths are built by concatenating of generic path, organization name and application name.
 
@@ -92,9 +96,9 @@ import std.path;
 
 void saveSettings(const Config config)
 {
-    string configDir = buildPath(writablePath(StandardPath.config), organizationName, applicationName);
-    if (!configDir.exists) {
-        mkdirRecurse(configDir);
+    string configDir = writablePath(StandardPath.config, buildPath(organizationName, applicationName), FolderFlag.create);
+    if (!configDir.length) {
+        throw new Exception("Could not create config directory");
     }
     string configFile = buildPath(configDir, "config.conf");
     
@@ -112,8 +116,8 @@ It's up to developer to decide how to read configs, e.g. whether to read the fir
 ```d
 Config readSettings()
 {
-    string[] configDirs = standardPaths(StandardPath.config).map!(s => buildPath(s, organizationName, applicationName).array;
-
+    string[] configDirs = standardPaths(StandardPath.config, buildPath(organizationName, applicationName));
+    
     foreach(configDir; configDirs) {
         string configFile = buildPath(configDir, "config.conf");
         if (configFile.exists) {

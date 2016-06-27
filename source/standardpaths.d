@@ -24,6 +24,32 @@ private {
     }
     
     static if( __VERSION__ < 2066 ) enum nogc = 1;
+    
+    string verifyIfNeeded(string path, bool shouldVerify) nothrow @trusted
+    {
+        if (path.length && shouldVerify) {
+            bool dirExists;
+            collectException(path.isDir, dirExists);
+            return dirExists ? path : null;
+        } else {
+            return path;
+        }
+    }
+
+    string createIfNeeded(string path, bool shouldCreate) nothrow @trusted
+    {
+        if (path.length && shouldCreate) {
+            bool pathExist;
+            collectException(path.isDir, pathExist);
+            if (pathExist || collectException(mkdirRecurse(path)) is null) {
+                return path;
+            } else {
+                return null;
+            }
+        } else {
+            return path;
+        }
+    }
 }
 
 version(Windows) {
@@ -58,32 +84,6 @@ version(Windows) {
         string maybeBuild(string start, string path) nothrow @safe
         {
             return start.empty ? null : buildPath(start, path);
-        }
-        
-        string verifyIfNeeded(string path, bool shouldVerify) nothrow @trusted
-        {
-            if (path.length && shouldVerify) {
-                bool dirExists;
-                collectException(path.isDir, dirExists);
-                return dirExists ? path : null;
-            } else {
-                return path;
-            }
-        }
-
-        string createIfNeeded(string path, bool shouldCreate) nothrow @trusted
-        {
-            if (path.length && shouldCreate) {
-                bool pathExist;
-                collectException(path.isDir, pathExist);
-                if (pathExist || collectException(mkdirRecurse(path)) is null) {
-                    return path;
-                } else {
-                    return null;
-                }
-            } else {
-                return path;
-            }
         }
     }
 } else {
@@ -217,13 +217,23 @@ string homeDir() nothrow @safe
 }
 
 /**
- * Getting writable paths for various locations.
+ * Getting writable path for specific locations.
  * Returns: Path where files of $(U type) should be written to by current user, or an empty string if could not determine path.
  * Params:
- *  type = Directory to lookup.
+ *  type = Location to lookup.
  *  params = Union of $(D FolderFlag)s.
  * Note: This function does not cache its results.
- * See_Also: $(D StandardPath), $(D FolderFlag)
+ * Example:
+--------------------
+string downloadsDir = writablePath(StandardPath.downloads, FolderFlag.verify);
+if (downloadsDir.length) {
+    //Open file dialog with this directory.
+} else {
+    //Could not detect default downloads directory.
+    //Ask user to choose default downloads directory for this application.
+}
+--------------------
+ * See_Also: $(D StandardPath), $(D FolderFlag), $(D standardPaths)
  */
 string writablePath(StandardPath type, FolderFlag params = FolderFlag.none) nothrow @safe;
 
@@ -233,10 +243,69 @@ string writablePath(StandardPath type, FolderFlag params = FolderFlag.none) noth
  * This function does not ensure if all returned paths exist and appear to be accessible directories. Returned strings are not required to be unique.
  * Note: This function does cache its results. 
  * It may cause performance impact to call this function often since retrieving some paths can be relatively expensive operation.
+ * Example:
+--------------------
+string[] templateDirs = standardPaths(StandardPath.templates);
+//List all available file templates including system defined and user specific ones.
+--------------------
  * See_Also: $(D StandardPath), $(D writablePath)
  */
 string[] standardPaths(StandardPath type) nothrow @safe;
 
+/**
+ * Getting writable path for specific locations appending subfolder of interest.
+ * This can be useful with $(D StandardPath.config) and $(D StandardPath.data) to retrieve folder specific for application instead of generic path.
+ * Params:
+ *  type = Location to lookup.
+ *  subfolder = Subfolder that will be appended to base writable path. 
+ *  params = Union of $(D FolderFlag)s. This affects both base path and sub path.
+ * Note: This function does not cache its results.
+ * Example:
+--------------------
+enum organizationName = "MyLittleCompany";
+enum applicationName = "MyLittleApplication";
+
+string configDir = writablePath(StandardPath.config, buildPath(organizationName, applicationName), FolderFlag.create);
+if (configDir.length) {
+    string configFile = buildPath(configDir, "config.conf");
+    //read or write configuration file.
+} else {
+    throw new Exception("Could not create application config directory");
+}
+--------------------
+ */
+string writablePath(StandardPath type, string subfolder, FolderFlag params = FolderFlag.none) nothrow @safe
+{
+    string baseWritablePath = writablePath(type, params);
+    if (baseWritablePath.length) {
+        string toReturn = buildPath(baseWritablePath, subfolder);
+        const bool shouldCreate = (params & FolderFlag.create) != 0;
+        const bool shouldVerify = (params & FolderFlag.verify) != 0;
+        return toReturn.createIfNeeded(shouldCreate).verifyIfNeeded(shouldVerify);
+    } else {
+        return null;
+    }
+}
+
+/**
+ * Getting paths for various locations appending subfolder of interest.
+ * Example:
+--------------------
+enum organizationName = "MyLittleCompany";
+enum applicationName = "MyLittleApplication";
+
+string[] dataDirs = standardPaths(StandardPath.data, buildPath(organizationName, applicationName));
+//Gather data files from each found directory.
+--------------------
+ */
+string[] standardPaths(StandardPath type, string subfolder) nothrow @safe
+{
+    auto toReturn = standardPaths(type);
+    foreach(ref s; toReturn) {
+        s = buildPath(s, subfolder);
+    }
+    return toReturn;
+}
 
 version(D_Ddoc)
 {   
