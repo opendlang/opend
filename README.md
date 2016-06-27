@@ -1,17 +1,15 @@
 # Standard paths
 
-D library for getting standard paths (e.g. Pictures, Music, Documents). Inspired by QStandardPaths from Qt.
+D library for getting standard paths (e.g. Pictures, Music, Documents and also generic configuration and data paths). 
+Inspired by QStandardPaths from Qt.
 
 [![Build Status](https://travis-ci.org/MyLittleRobo/standardpaths.svg?branch=master)](https://travis-ci.org/MyLittleRobo/standardpaths)
 
 [Online documentation](http://mylittlerobo.github.io/standardpaths/standardpaths.html)
 
-Note: recently this library had functions for finding executables in directories defined by PATH environment variable. 
-This functionality was moved to the separate library. See [findexecutable](http://code.dlang.org/packages/findexecutable).
-
 ## Platform support
 
-Works on Windows, Linux, FreeBSD and Mac OS X.
+Works on Freedesktop (GNU/Linux, FreeBSD, etc.), Windows and OS X.
 
 ## Running examples
 
@@ -21,7 +19,7 @@ Prints some standard paths to stdout.
 
     dub run :printdirs --build=release
     
-On OSX it also can be built to use Cocoa instead of Carbon (tested with ldc 1.0.0):
+On OSX it also can be built to use Cocoa instead of Carbon (compiler must have proper Objective-C support. Tested with ldc 1.0.0):
 
     dub run :printdirs --config=cocoa --compiler=ldc2
 
@@ -134,11 +132,11 @@ Config readSettings()
 
 ### Freedesktop
 
-On freedesktop systems (GNU/Linux, FreeBSD, etc.) library uses [XDG Base Directory Specification](http://standards.freedesktop.org/basedir-spec/latest/index.html#introduction) and also provides behavior similiar to [xdg-user-dirs](http://www.freedesktop.org/wiki/Software/xdg-user-dirs/).
+On freedesktop systems (GNU/Linux, FreeBSD, etc.) library follows [XDG Base Directory Specification](http://standards.freedesktop.org/basedir-spec/latest/index.html#introduction) and also provides behavior similiar to [xdg-user-dirs](http://www.freedesktop.org/wiki/Software/xdg-user-dirs/).
 
 ### Windows
 
-On Windows it utilizes [SHGetSpecialFolderPath](https://msdn.microsoft.com/en-us/library/windows/desktop/bb762204(v=vs.85).aspx).
+On Windows it utilizes [SHGetKnownFolderPath](https://msdn.microsoft.com/en-us/library/windows/desktop/bb762188(v=vs.85).aspx) or  [SHGetSpecialFolderPath](https://msdn.microsoft.com/en-us/library/windows/desktop/bb762204(v=vs.85).aspx) as fallback.
 
 ### Mac OS X
 

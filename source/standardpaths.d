@@ -103,12 +103,12 @@ version(Windows) {
 enum StandardPath {
     /**
      * General location of persisted application data. Every application should have its own subdirectory here.
-     * Note: on Windows it's the same as $(B config) path.
+     * Note: on Windows it's the same as $(D config) path.
      */
     data,
     /**
      * General location of configuration files. Every application should have its own subdirectory here.
-     * Note: on Windows it's the same as $(B data) path.
+     * Note: on Windows it's the same as $(D data) path.
      */
     config,
     /**
@@ -174,10 +174,14 @@ enum FolderFlag
     none = 0,   /// Don't verify that folder exist.
     /** 
      * Create if folder does not exist. 
-     * On Windows created directory will have appropriate icon and other settings specific for this kind of folder.
+     * On Windows and OS X directory will be created using platform specific API, so it will have appropriate icon and other settings special for this kind of folder.
      */
-    create = 1, 
-    verify = 2  /// Verify that folder exists.
+    create = 1,
+    /**
+     * Verify that folder exists.
+     * On Windows directory is verified using platform specific API.
+     */
+    verify = 2
 }
 
 /**
@@ -217,7 +221,7 @@ string homeDir() nothrow @safe
 }
 
 /**
- * Getting writable path for specific locations.
+ * Get writable path for specific location.
  * Returns: Path where files of $(U type) should be written to by current user, or an empty string if could not determine path.
  * Params:
  *  type = Location to lookup.
@@ -238,7 +242,7 @@ if (downloadsDir.length) {
 string writablePath(StandardPath type, FolderFlag params = FolderFlag.none) nothrow @safe;
 
 /**
- * Getting paths for various locations.
+ * Get paths for various locations.
  * Returns: Array of paths where files of $(U type) belong including one returned by $(D writablePath), or an empty array if no paths are defined for $(U type).
  * This function does not ensure if all returned paths exist and appear to be accessible directories. Returned strings are not required to be unique.
  * Note: This function does cache its results. 
@@ -246,15 +250,17 @@ string writablePath(StandardPath type, FolderFlag params = FolderFlag.none) noth
  * Example:
 --------------------
 string[] templateDirs = standardPaths(StandardPath.templates);
-//List all available file templates including system defined and user specific ones.
+//List all available file templates including system defined and user created ones.
 --------------------
  * See_Also: $(D StandardPath), $(D writablePath)
  */
 string[] standardPaths(StandardPath type) nothrow @safe;
 
 /**
- * Getting writable path for specific locations appending subfolder of interest.
- * This can be useful with $(D StandardPath.config) and $(D StandardPath.data) to retrieve folder specific for application instead of generic path.
+ * Evaluate writable path for specific location and append subfolder.
+ * This can be used with $(D StandardPath.config) and $(D StandardPath.data) to retrieve folder specific for this application instead of generic path.
+ * Returns: Path where files of $(U type) should be written to by current user concatenated with subfolder, 
+ *  or an empty string if could not determine path.
  * Params:
  *  type = Location to lookup.
  *  subfolder = Subfolder that will be appended to base writable path. 
@@ -288,14 +294,14 @@ string writablePath(StandardPath type, string subfolder, FolderFlag params = Fol
 }
 
 /**
- * Getting paths for various locations appending subfolder of interest.
+ * Evaluate paths for various locations and append subfolder.
  * Example:
 --------------------
 enum organizationName = "MyLittleCompany";
 enum applicationName = "MyLittleApplication";
 
-string[] dataDirs = standardPaths(StandardPath.data, buildPath(organizationName, applicationName));
-//Gather data files from each found directory.
+string[] appDataDirs = standardPaths(StandardPath.data, buildPath(organizationName, applicationName));
+//Gather data files for this application from each found directory.
 --------------------
  */
 string[] standardPaths(StandardPath type, string subfolder) nothrow @safe
