@@ -4,6 +4,8 @@ D library for retrieving XDG base directories as described by [XDG Base Director
 
 [![Build Status](https://travis-ci.org/MyLittleRobo/xdgpaths.svg?branch=master)](https://travis-ci.org/MyLittleRobo/xdgpaths) [![Coverage Status](https://coveralls.io/repos/github/MyLittleRobo/xdgpaths/badge.svg?branch=master)](https://coveralls.io/github/MyLittleRobo/xdgpaths?branch=master)
 
+[Online documentation](https://mylittlerobo.github.io/d-freedesktop/docs/xdgpaths.html)
+
 ## Run [example](examples/xdgpathstest/source/app.d)
 
     export XDG_CONFIG_HOME=$HOME/config-test
