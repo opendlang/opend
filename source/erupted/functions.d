@@ -122,7 +122,7 @@ extern(System) @nogc nothrow {
 	alias PFN_vkCmdBlitImage = void function(VkCommandBuffer commandBuffer, VkImage srcImage, VkImageLayout srcImageLayout, VkImage dstImage, VkImageLayout dstImageLayout, uint32_t regionCount, const(VkImageBlit)* pRegions, VkFilter filter);
 	alias PFN_vkCmdCopyBufferToImage = void function(VkCommandBuffer commandBuffer, VkBuffer srcBuffer, VkImage dstImage, VkImageLayout dstImageLayout, uint32_t regionCount, const(VkBufferImageCopy)* pRegions);
 	alias PFN_vkCmdCopyImageToBuffer = void function(VkCommandBuffer commandBuffer, VkImage srcImage, VkImageLayout srcImageLayout, VkBuffer dstBuffer, uint32_t regionCount, const(VkBufferImageCopy)* pRegions);
-	alias PFN_vkCmdUpdateBuffer = void function(VkCommandBuffer commandBuffer, VkBuffer dstBuffer, VkDeviceSize dstOffset, VkDeviceSize dataSize, const(uint32_t)* pData);
+	alias PFN_vkCmdUpdateBuffer = void function(VkCommandBuffer commandBuffer, VkBuffer dstBuffer, VkDeviceSize dstOffset, VkDeviceSize dataSize, const(void)* pData);
 	alias PFN_vkCmdFillBuffer = void function(VkCommandBuffer commandBuffer, VkBuffer dstBuffer, VkDeviceSize dstOffset, VkDeviceSize size, uint32_t data);
 	alias PFN_vkCmdClearColorImage = void function(VkCommandBuffer commandBuffer, VkImage image, VkImageLayout imageLayout, const(VkClearColorValue)* pColor, uint32_t rangeCount, const(VkImageSubresourceRange)* pRanges);
 	alias PFN_vkCmdClearDepthStencilImage = void function(VkCommandBuffer commandBuffer, VkImage image, VkImageLayout imageLayout, const(VkClearDepthStencilValue)* pDepthStencil, uint32_t rangeCount, const(VkImageSubresourceRange)* pRanges);

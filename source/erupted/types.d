@@ -29,7 +29,7 @@ pure {
 extern(System):
 
 // Version of corresponding c header file
-enum VK_HEADER_VERSION = 18;
+enum VK_HEADER_VERSION = 19;
 
 enum VK_NULL_HANDLE = null;
 
@@ -3751,4 +3751,12 @@ enum VK_AMD_EXTENSION_47_EXTENSION_NAME = "VK_AMD_extension_47";
 // VK_NVX_extension_48
 enum VK_NVX_EXTENSION_48_SPEC_VERSION = 0;
 enum VK_NVX_EXTENSION_48_EXTENSION_NAME = "VK_NVX_extension_48";
+
+// VK_GOOGLE_extension_49
+enum VK_GOOGLE_EXTENSION_49_SPEC_VERSION = 0;
+enum VK_GOOGLE_EXTENSION_49_EXTENSION_NAME = "VK_GOOGLE_extension_49";
+
+// VK_GOOGLE_extension_50
+enum VK_GOOGLE_EXTENSION_50_SPEC_VERSION = 0;
+enum VK_GOOGLE_EXTENSION_50_EXTENSION_NAME = "VK_GOOGLE_extension_50";
 
