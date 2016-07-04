@@ -1,0 +1,5 @@
+name "taggedalgebraic"
+description `A "tagged union" implementation with transparent operator forwarding.`
+authors "Sönke Ludwig"
+copyright "Copyright © 2015, Sönke Ludiwg"
+license "BSL-1.0"
