@@ -234,7 +234,7 @@ abstract class SharedLibLoader
 
      If multiple library names are specified in libNames, a SharedLibLoadException
      will only be thrown if all of the libraries fail to load. It will be the head
-     of an exceptin chain containing one instance of the exception for each library
+     of an exception chain containing one instance of the exception for each library
      that failed.
 
 
@@ -260,7 +260,7 @@ abstract class SharedLibLoader
 
      If multiple library names are specified in libNames, a SharedLibLoadException
      will only be thrown if all of the libraries fail to load. It will be the head
-     of an exceptin chain containing one instance of the exception for each library
+     of an exception chain containing one instance of the exception for each library
      that failed.
 
      Examples:  If this loader supports versions 2.0 and 2.1 of a shared library,
