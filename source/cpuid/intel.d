@@ -10,10 +10,10 @@ Authors:
 module cpuid.intel;
 
 version(X86)
-	version = X86_Any;
+    version = X86_Any;
 else
 version(X86_64)
-	version = X86_Any;
+    version = X86_Any;
 
 version(X86_Any):
 
@@ -747,34 +747,35 @@ union Leaf4Information
 
         version(D_Ddoc)
         {
+            @property pure nothrow @nogc:
             /// Cache Type Field.
-            Type type() @property;
+            Type type();
             /// Cache Level (starts at 1).
-            uint level() @property;
+            uint level();
             /// Self Initializing cache level (does not need SW initialization).
-            bool selfInitializing() @property;
+            bool selfInitializing();
             /// Fully Associative cache.
-            bool fullyAssociative() @property;
+            bool fullyAssociative();
             /// Maximum number of addressable IDs for logical processors sharing this cache. **
-            uint logicalIDs() @property;
+            uint logicalIDs();
             /// Maximum number of addressable IDs for processor cores in the physical package **
-            uint physicalIDs() @property;
+            uint physicalIDs();
             /// System Coherency Line Size **.
-            uint l() @property;
+            uint l();
             /// Physical Line partitions **.
-            uint p() @property;
+            uint p();
             /// Ways of associativity **.
-            uint w() @property;
+            uint w();
             /// Number of Sets **.
             uint s;
             ///  Write-Back Invalidate/Invalidate.
             /// `false` if WBINVD/INVD from threads sharing this cache acts upon lower level caches for threads sharing this cache.
             /// `true` if WBINVD/INVD is not guaranteed to act upon lower level caches of non-originating threads sharing this cache.
-            bool invalidate() @property;
+            bool invalidate();
             /// `true` - Cache is not inclusive of lower cache levels. `false` - Cache is inclusive of lower cache levels.
-            bool inclusiveness() @property;
+            bool inclusiveness();
             /// `false` - Direct mapped cache. `true` A complex function is used to index the cache, potentially using all address bits.
-            bool complex() @property;
+            bool complex();
         }
         else
         {
