@@ -76,24 +76,6 @@ The EDX register contains the processor’s third level cache characteristics th
 Note:
     Use $(MREF decodeL2orL3Assoc) to get final result for any `*Assoc` field.
 
-Params:
-    L2ITlb4KSize = L2 instruction TLB number of entries for 4 KB pages. L2 instruction TLB num- ber of entries for 4-KB pages.
-    L2ITlb4KAssoc = L2 instruction TLB associativity for 4 KB pages. L2 instruction TLB associativ- ity for 4-KB pages.
-    L2DTlb4KSize = L2 data TLB number of entries for 4 KB pages. L2 data TLB number of entries for 4-KB pages.
-    L2DTlb4KAssoc = L2 data TLB associativity for 4 KB pages. L2 data TLB associativity for 4-KB pages.
-    L2ITlb2and4MSize = L2 instruction TLB number of entries for 2 MB and 4 MB pages. L2 instruction TLB number of entries for 2-MB and 4-MB pages. The value returned is for the number of entries available for the 2 MB page size; 4 MB pages require two 2 MB entries, so the number of entries available for the 4 MB page size is one-half the returned value.
-    L2ITlb2and4MAssoc = L2 instruction TLB associativity for 2 MB and 4 MB pages. L2 instruction TLB associativity for 2-MB and 4-MB pages.
-    L2DTlb2and4MSize = L2 data TLB number of entries for 2 MB and 4 MB pages. L2 data TLB number of entries for 2-MB and 4-MB pages. The value returned is for the number of entries available for the 2 MB page size; 4 MB pages require two 2 MB entries, so the number of entries available for the 4 MB page size is one-half the returned value.
-    L2DTlb2and4MAssoc = L2 data TLB associativity for 2 MB and 4 MB pages. L2 data TLB asso- ciativity for 2-MB and 4-MB pages.
-    L2LineSize = L2 cache line size in bytes.
-    L2LinesPerTag = L2 cache lines per tag.
-    L2Assoc = L2 cache associativity.
-    L2Size = L2 cache size in KB.
-    L3LineSize = L3 cache line size in bytes. 
-    L3LinesPerTag = L3 cache lines per tag.
-    L3Assoc = L3 cache associativity. L3 cache associativity.
-    L3Size = L3 cache size. Specifies the L3 cache size is within the following range: `(L3Size * 512KB) <= L3 cache size < ((L3Size+1) * 512KB)`.
-
 Specification: AMD
 +/
 
@@ -107,38 +89,77 @@ union LeafExt6Information
     {
         import std.bitmanip: bitfields;
 
-        /// EAX
-        mixin(bitfields!(
-            uint, "L2ITlb4KSize", 11 - 0  + 1,
-            uint, "L2ITlb4KAssoc", 15 - 12 + 1,
-            uint, "L2DTlb4KSize", 27 - 16 + 1,
-            uint, "L2DTlb4KAssoc", 31 - 28 + 1,
-        ));
+        version(D_Ddoc)
+        {
+            @property pure nothrow @nogc:
+            /// L2 instruction TLB number of entries for 4 KB pages. L2 instruction TLB num- ber of entries for 4-KB pages.
+            uint L2ITlb4KSize();
+            /// L2 instruction TLB associativity for 4 KB pages. L2 instruction TLB associativ- ity for 4-KB pages.
+            uint L2ITlb4KAssoc();
+            /// L2 data TLB number of entries for 4 KB pages. L2 data TLB number of entries for 4-KB pages.
+            uint L2DTlb4KSize();
+            /// L2 data TLB associativity for 4 KB pages. L2 data TLB associativity for 4-KB pages.
+            uint L2DTlb4KAssoc();
+            /// L2 instruction TLB number of entries for 2 MB and 4 MB pages. L2 instruction TLB number of entries for 2-MB and 4-MB pages. The value returned is for the number of entries available for the 2 MB page size; 4 MB pages require two 2 MB entries, so the number of entries available for the 4 MB page size is one-half the returned value.
+            uint L2ITlb2and4MSize();
+            /// L2 instruction TLB associativity for 2 MB and 4 MB pages. L2 instruction TLB associativity for 2-MB and 4-MB pages.
+            uint L2ITlb2and4MAssoc();
+            /// L2 data TLB number of entries for 2 MB and 4 MB pages. L2 data TLB number of entries for 2-MB and 4-MB pages. The value returned is for the number of entries available for the 2 MB page size; 4 MB pages require two 2 MB entries, so the number of entries available for the 4 MB page size is one-half the returned value.
+            uint L2DTlb2and4MSize();
+            /// L2 data TLB associativity for 2 MB and 4 MB pages. L2 data TLB asso- ciativity for 2-MB and 4-MB pages.
+            uint L2DTlb2and4MAssoc();
+            /// L2 cache line size in bytes.
+            uint L2LineSize();
+            /// L2 cache lines per tag.
+            uint L2LinesPerTag();
+            /// L2 cache associativity.
+            uint L2Assoc();
+            /// L2 cache size in KB.
+            uint L2Size();
+            /// L3 cache line size in bytes. 
+            uint L3LineSize();
+            /// L3 cache lines per tag.
+            uint L3LinesPerTag();
+            /// L3 cache associativity. L3 cache associativity.
+            uint L3Assoc();
+            /// L3 cache size. Specifies the L3 cache size is within the following range: `(L3Size * 512KB) <= L3 cache size < ((L3Size+1) * 512KB)`.
+            uint L3Size();
+        }
+        else
+        {
+            /// EAX
+            mixin(bitfields!(
+                uint, "L2ITlb4KSize", 11 - 0  + 1,
+                uint, "L2ITlb4KAssoc", 15 - 12 + 1,
+                uint, "L2DTlb4KSize", 27 - 16 + 1,
+                uint, "L2DTlb4KAssoc", 31 - 28 + 1,
+            ));
 
-        /// EBX
-        mixin(bitfields!(
-            uint, "L2ITlb2and4MSize", 11 - 0  + 1,
-            uint, "L2ITlb2and4MAssoc", 15 - 12 + 1,
-            uint, "L2DTlb2and4MSize", 27 - 16 + 1,
-            uint, "L2DTlb2and4MAssoc", 31 - 28 + 1,
-        ));
+            /// EBX
+            mixin(bitfields!(
+                uint, "L2ITlb2and4MSize", 11 - 0  + 1,
+                uint, "L2ITlb2and4MAssoc", 15 - 12 + 1,
+                uint, "L2DTlb2and4MSize", 27 - 16 + 1,
+                uint, "L2DTlb2and4MAssoc", 31 - 28 + 1,
+            ));
 
-        /// ECD
-        mixin(bitfields!(
-            uint , "L2LineSize", 7 - 0 + 1,
-            uint , "L2LinesPerTag", 11 - 8 + 1,
-            uint , "L2Assoc", 15 - 12 + 1,
-            uint , "L2Size", 31 - 16 + 1,
-        ));
+            /// ECD
+            mixin(bitfields!(
+                uint, "L2LineSize", 7 - 0 + 1,
+                uint, "L2LinesPerTag", 11 - 8 + 1,
+                uint, "L2Assoc", 15 - 12 + 1,
+                uint, "L2Size", 31 - 16 + 1,
+            ));
 
-        /// EDX
-        mixin(bitfields!(
-            uint, "L3LineSize", 7 - 0 + 1,
-            uint, "L3LinesPerTag", 11 - 8 + 1,
-            uint, "L3Assoc", 15 - 12 + 1,
-            uint, "", 17 - 16 + 1,
-            uint, "L3Size", 31 - 18 + 1,
-        ));
+            /// EDX
+            mixin(bitfields!(
+                uint, "L3LineSize", 7 - 0 + 1,
+                uint, "L3LinesPerTag", 11 - 8 + 1,
+                uint, "L3Assoc", 15 - 12 + 1,
+                uint, "", 17 - 16 + 1,
+                uint, "L3Size", 31 - 18 + 1,
+            ));
+        }
     }
 }
 
