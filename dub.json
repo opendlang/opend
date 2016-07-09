@@ -1,0 +1,9 @@
+{
+	"name": "cpuid",
+	"authors": [
+		"Ilya Yaroshenko"
+	],
+	"description": "CPU characteristics identificatioon",
+	"copyright": "Ilya Yaroshenko",
+	"license": "BSL-1.0"
+}
