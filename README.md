@@ -12,20 +12,21 @@
 
 # Low Level CPU Information
 
-## X86
+X86
+---
 	
-	- Vendor name
-	- Brand name
-	- `_cpuid` function
+	 - Vendor name
+	 - Brand name
+	 - `_cpuid` function
 
 	### Intel
 
-		- TLB information
-		- Cache sizes information
+		 - TLB information
+		 - Cache sizes information
 
 	### AMD
 
-		- TLB information
-		- Cache sizes information
+		 - TLB information
+		 - Cache sizes information
 
 This package also can be used as workaround for [core.cpuid Issue 16028](https://issues.dlang.org/show_bug.cgi?id=16028).
