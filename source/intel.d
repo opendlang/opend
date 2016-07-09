@@ -7,7 +7,7 @@ References:
 Authors:
     Ilya Yaroshenko
 +/
-module mir.internal.cpuid.intel;
+module cpuid.intel;
 
 version(X86)
 	version = X86_Any;
