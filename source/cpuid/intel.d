@@ -28,35 +28,6 @@ Specification: Intel
 +/
 struct Leaf2Information
 {
-    ///
-    static struct  Cache
-    {
-        ///
-        uint size; // KB
-        ///
-        uint associative;
-        ///
-        uint line;
-    }
-
-    ///
-    static struct TLB
-    {
-        ///
-        uint page; // KB
-        ///
-        uint associative;
-        ///
-        uint entries;
-
-        /// Computes size in KBs
-        uint size() @property @safe pure nothrow @nogc
-        {
-            return entries * page;
-        }
-    }
-
-
     /// Level-1 instuciton cache
     Cache il1;
     /// Level-2 data cache

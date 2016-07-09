@@ -19,6 +19,8 @@ version(X86_64)
 
 version(X86_Any):
 
+public import cpuid.common;
+
 private __gshared immutable Vendor _vendorId;
 private __gshared immutable uint _maxBasicLeaf;
 private __gshared immutable uint _maxExtendedLeaf;
