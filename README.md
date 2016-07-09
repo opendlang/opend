@@ -1,4 +1,3 @@
-[![Latest version](https://img.shields.io/github/tag/libmir/cpuid.svg?maxAge=3600)](http://code.dlang.org/packages/cpuid)
 [![Gitter](https://img.shields.io/gitter/room/libmir/public.svg)](https://gitter.im/libmir/public)
 
 [![Circle CI](https://circleci.com/gh/libmir/cpuid.svg?style=svg)](https://circleci.com/gh/libmir/cpuid)
