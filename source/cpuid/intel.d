@@ -22,6 +22,8 @@ public import cpuid.x86_any;
 /++
 TLB and Cache information.
 
+For convinient Cache information see also $(MREF Leaf4Information).
+
 Specification: Intel
 +/
 struct Leaf2Information
@@ -713,23 +715,7 @@ unittest
 }
 
 /++
-Params:
-    type = Cache Type Field.
-    level = Cache Level (starts at 1).
-    selfInitializing = Self Initializing cache level (does not need SW initialization).
-    fullyAssociative = Fully Associative cache.
-    logicalIDs = Maximum number of addressable IDs for logical processors sharing this cache. **
-    physicalIDs = Maximum number of addressable IDs for processor cores in the physical package **
-    l = System Coherency Line Size**.
-    p = Physical Line partitions**.
-    w = Ways of associativity**.
-    s = Number of Sets**.
-    invalidate = Write-Back Invalidate/Invalidate.
-        `false` if WBINVD/INVD from threads sharing this cache acts upon lower level caches for threads sharing this cache.
-        `true` if WBINVD/INVD is not guaranteed to act upon lower level caches of non-originating threads sharing this cache.
-    inclusiveness = `true` - Cache is not inclusive of lower cache levels. `false` - Cache is inclusive of lower cache levels.
-    complex = `false` - Direct mapped cache. `true` A complex function is used to index the cache, potentially using all address bits.
-    size = computes size in KBs.
+Deterministic Cache Parameters for Each Level.
 
 ** - Add one to the return value to get the result.
 
@@ -759,34 +745,68 @@ union Leaf4Information
             unified,
         }
 
-        /// EAX
-        mixin(bitfields!(
-            Type, "type", 5,
-            uint, "level", 3,
-            bool, "selfInitializing", 1,
-            bool, "fullyAssociative", 1,
-            uint, "", 4,
-            uint, "logicalIDs", 12,
-            uint, "physicalIDs", 6,
-            ));
+        version(D_Ddoc)
+        {
+            /// Cache Type Field.
+            Type type() @property;
+            /// Cache Level (starts at 1).
+            uint level() @property;
+            /// Self Initializing cache level (does not need SW initialization).
+            bool selfInitializing() @property;
+            /// Fully Associative cache.
+            bool fullyAssociative() @property;
+            /// Maximum number of addressable IDs for logical processors sharing this cache. **
+            uint logicalIDs() @property;
+            /// Maximum number of addressable IDs for processor cores in the physical package **
+            uint physicalIDs() @property;
+            /// System Coherency Line Size **.
+            uint l() @property;
+            /// Physical Line partitions **.
+            uint p() @property;
+            /// Ways of associativity **.
+            uint w() @property;
+            /// Number of Sets **.
+            uint s;
+            ///  Write-Back Invalidate/Invalidate.
+            /// `false` if WBINVD/INVD from threads sharing this cache acts upon lower level caches for threads sharing this cache.
+            /// `true` if WBINVD/INVD is not guaranteed to act upon lower level caches of non-originating threads sharing this cache.
+            bool invalidate() @property;
+            /// `true` - Cache is not inclusive of lower cache levels. `false` - Cache is inclusive of lower cache levels.
+            bool inclusiveness() @property;
+            /// `false` - Direct mapped cache. `true` A complex function is used to index the cache, potentially using all address bits.
+            bool complex() @property;
+        }
+        else
+        {
+            /// EAX
+            mixin(bitfields!(
+                Type, "type", 5,
+                uint, "level", 3,
+                bool, "selfInitializing", 1,
+                bool, "fullyAssociative", 1,
+                uint, "", 4,
+                uint, "logicalIDs", 12,
+                uint, "physicalIDs", 6,
+                ));
 
-        /// EBX
-        mixin(bitfields!(
-            uint, "l", 12,
-            uint, "p", 10,
-            uint, "w", 10,
-            ));
+            /// EBX
+            mixin(bitfields!(
+                uint, "l", 12,
+                uint, "p", 10,
+                uint, "w", 10,
+                ));
 
-        /// ECX
-        uint s;
+            /// Number of Sets**.
+            uint s;
 
-        /// EDX
-        mixin(bitfields!(
-            bool, "invalidate", 1,
-            bool, "inclusiveness", 1,
-            bool, "complex", 1,
-            uint, "",  29,
-            ));
+            /// EDX
+            mixin(bitfields!(
+                bool, "invalidate", 1,
+                bool, "inclusiveness", 1,
+                bool, "complex", 1,
+                uint, "",  29,
+                ));
+        }
 
         /// Compute cache size in KBs.
         pure nothrow @nogc
