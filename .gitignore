@@ -6,8 +6,9 @@ __dummy.html
 
 __test__library__
 
-cpuid
-
 dub.selections.json
 
 *.sublime-project
+.generated
+web
+index.html
