@@ -4,7 +4,7 @@ module cpuid.common;
 struct  Cache
 {
     ///
-    uint size; // KB
+    uint size; /// KB
     ///
     uint associative;
     ///
@@ -12,10 +12,10 @@ struct  Cache
 }
 
 ///
-struct TLB
+struct Tlb
 {
     ///
-    uint page; // KB
+    uint page; /// KB
     ///
     uint associative;
     ///

@@ -37,25 +37,25 @@ struct Leaf2Information
     /// Level-2 data cache
     Cache l3;
     /// Intruction TLB
-    TLB itlb;
+    Tlb itlb;
     /// Intruction TLB, huge pages
-    TLB hitlb;
+    Tlb hitlb;
     /// Data TLB
-    TLB dtlb;
+    Tlb dtlb;
     /// Data TLB, huge pages
-    TLB hdtlb;
+    Tlb hdtlb;
     /// Data TLB, giant pages
-    TLB gdtlb;
+    Tlb gdtlb;
     /// Data TLB1
-    TLB dtlb1;
+    Tlb dtlb1;
     /// Data TLB1, huge pages
-    TLB hdtlb1;
+    Tlb hdtlb1;
     /// Second-level unified TLB
-    TLB stlb;
+    Tlb stlb;
     /// Second-level unified TLB, huge pages
-    TLB hstlb;
+    Tlb hstlb;
     /// Second-level unified TLB, giant pages
-    TLB gstlb;
+    Tlb gstlb;
     /// prefetch line size
     int prefetch;
     /// Cache trace
