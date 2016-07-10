@@ -1,3 +1,6 @@
+/++
+Common data types and functions for all architectures.
++/
 module cpuid.common;
 
 ///

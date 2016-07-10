@@ -27,7 +27,7 @@ DLANGORG_DIR=$(DOC_SOURCE_DIR)/dlang.org
 CPUID_PACKAGES = cpuid
 #$(addprefix cpuid/,\ amd intel x86_any)
 
-PACKAGE_cpuid = amd intel x86_any
+PACKAGE_cpuid = package common x86_any intel amd
 #PACKAGE_cpuid_blas = package dot gemm gemv
 
 #MOD_EXCLUDES=$(addprefix --ex=, cpuid.internal)
