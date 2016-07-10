@@ -25,7 +25,7 @@ struct Tlb
     uint entries;
 
     /// Computes size in KBs
-    uint size() @property @safe pure nothrow @nogc
+    uint size() const @property @safe pure nothrow @nogc
     {
         return entries * page;
     }
