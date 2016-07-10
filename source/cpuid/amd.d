@@ -11,6 +11,14 @@ module cpuid.amd;
 
 public import cpuid.x86_any;
 
+version(X86)
+    version = X86_Any;
+else
+version(X86_64)
+    version = X86_Any;
+
+version(X86_Any):
+
 /++
 L1 Cache and TLB Identifiers.
 
@@ -20,50 +28,52 @@ Specification: AMD
 +/
 union LeafExt5Information
 {
+    version(BigEndian) static assert(0, "Leaf2Information is not implemented for BigEndian architecture.");
+
     ///
     uint[4] info;
 
     ///
     struct
     {
-        /// Data TLB associativity for 2 MB and 4 MB pages.
-        ubyte L1DTlb2and4MAssoc;
-        /// Data TLB number of entries for 2 MB and 4 MB pages.
-        ubyte L1DTlb2and4MSize;
-        /// Instruction TLB associativity for 2 MB and 4 MB pages.
-        ubyte L1ITlb2and4MAssoc;
         /// Instruction TLB number of entries for 2 MB and 4 MB pages.
         ubyte L1ITlb2and4MSize;
+        /// Instruction TLB associativity for 2 MB and 4 MB pages.
+        ubyte L1ITlb2and4MAssoc;
+        /// Data TLB number of entries for 2 MB and 4 MB pages.
+        ubyte L1DTlb2and4MSize;
+        /// Data TLB associativity for 2 MB and 4 MB pages.
+        ubyte L1DTlb2and4MAssoc;
 
-        /// Data TLB associativity for 4 KB pages. Data TLB associativity for 4 KB pages.
-        /// See_also: CPUID Fn8000_0005_EDX[L1IcAssoc].
-        ubyte L1DTlb4KAssoc;
-        /// Data TLB number of entries for 4 KB pages. Data TLB number of entries for 4 KB pages.
-        ubyte L1DTlb4KSize;
+        /// Instruction TLB number of entries for 4 KB pages. Instruction TLB number of entries for 4 KB pages.
+        ubyte L1ITlb4KSize;
         /// Instruction TLB associativity for 4 KB pages. Instruction TLB associativity for 4 KB pages.
         /// See_also: CPUID Fn8000_0005_EDX[L1IcAssoc].
         ubyte L1ITlb4KAssoc;
-        /// Instruction TLB number of entries for 4 KB pages. Instruction TLB number of entries for 4 KB pages.
-        ubyte L1ITlb4KSize;
+        /// Data TLB number of entries for 4 KB pages. Data TLB number of entries for 4 KB pages.
+        ubyte L1DTlb4KSize;
+        /// Data TLB associativity for 4 KB pages. Data TLB associativity for 4 KB pages.
+        /// See_also: CPUID Fn8000_0005_EDX[L1IcAssoc].
+        ubyte L1DTlb4KAssoc;
 
-        /// L1 data cache size in KB. L1 data cache size in KB.
-        ubyte L1DcSize;
+        /// L1 data cache line size in bytes. L1 data cache line size in bytes.
+        ubyte L1DcLineSize;
+        /// L1 data cache lines per tag. L1 data cache lines per tag.
+        ubyte L1DcLinesPerTag;
         /// L1 data cache associativity. L1 data cache associativity.
         /// See_also: CPUID Fn8000_0005_EDX[L1IcAssoc].
         ubyte L1DcAssoc;
-        /// L1 data cache lines per tag. L1 data cache lines per tag.
-        ubyte L1DcLinesPerTag;
-        /// L1 data cache line size in bytes. L1 data cache line size in bytes.
-        ubyte L1DcLineSize;
+        /// L1 data cache size in KB. L1 data cache size in KB.
+        ubyte L1DcSize;
 
-        /// L1 instruction cache size KB. L1 instruction cache size KB.
-        ubyte L1IcSize;
-        /// L1 instruction cache associativity. L1 instruction cache associativity.
-        ubyte L1IcAssoc;
-        /// L1 instruction cache lines per tag. L1 instruction cache lines per tag.
-        ubyte L1IcLinesPerTag;
         /// L1 instruction cache line size in bytes. L1 instruction cache line size in bytes.
         ubyte L1IcLineSize;
+        /// L1 instruction cache lines per tag. L1 instruction cache lines per tag.
+        ubyte L1IcLinesPerTag;
+        /// L1 instruction cache associativity. L1 instruction cache associativity.
+        ubyte L1IcAssoc;
+        /// L1 instruction cache size KB. L1 instruction cache size KB.
+        ubyte L1IcSize;
     }
 }
 
@@ -78,7 +88,6 @@ Note:
 
 Specification: AMD
 +/
-
 union LeafExt6Information
 {
     ///
@@ -91,7 +100,7 @@ union LeafExt6Information
 
         version(D_Ddoc)
         {
-            @property pure nothrow @nogc:
+            const @trusted @property pure nothrow @nogc:
             /// L2 instruction TLB number of entries for 4 KB pages. L2 instruction TLB num- ber of entries for 4-KB pages.
             uint L2ITlb4KSize();
             /// L2 instruction TLB associativity for 4 KB pages. L2 instruction TLB associativ- ity for 4-KB pages.
