@@ -206,7 +206,6 @@ Params:
     eax = function id
 +/
 
-pragma(inline, true)
 pure nothrow @nogc
 void _cpuid(ref uint[4] info, uint eax)
 {
@@ -246,7 +245,6 @@ Params:
     eax = function id
     ecx = sub-function id
 +/
-pragma(inline, true)
 pure nothrow @nogc
 void _cpuid(ref uint[4] info, uint eax, uint ecx)
 {
@@ -293,7 +291,6 @@ struct BasicInfo
 }
 
 /// Fills basic information.
-pragma(inline, true)
 pure nothrow @nogc
 private void _basicLeafs(ref BasicInfo info)
 {
@@ -349,7 +346,6 @@ unittest
 }
 
 /// Fills brand name, e.g. `Intel(R) Core(TM) i7-4770HQ CPU @ 2.20GHz`
-pragma(inline, true)
 pure nothrow @nogc
 private void _brand(ref char[48] name)
 {

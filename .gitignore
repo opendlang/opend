@@ -12,3 +12,5 @@ dub.selections.json
 .generated
 web
 index.html
+
+*.a
