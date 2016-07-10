@@ -12,12 +12,19 @@ struct  Cache
     ushort associative;
     /// Cache line in KBs
     ushort line;
-    /// Logical processors per thread
-    ubyte threads = 1;
-    /// Physical processors per thread
-    ubyte cores = 1;
+    /// CPU cores per cache
+    ubyte cores;
     /// `true` if cache is inclusive of lower cache levels.
-    bool inclusive = true;
+    bool inclusive;
+
+    const @property @safe pure nothrow @nogc:
+
+    ///
+    bool isFullyAssociative()
+    {
+        pragma(inline, true);
+        return associative == associative.max;
+    }
 }
 
 /// Translation Lookaside Buffer Information
@@ -30,9 +37,18 @@ struct Tlb
     /// Ways of associativity. Equals `associative.max` if TLB is fully associative.
     ushort associative;
 
+    const @property @safe pure nothrow @nogc:
+
     /// Computes size in KBs
-    uint size() const @property @safe pure nothrow @nogc
+    uint size()
     {
+        pragma(inline, true);
         return entries * page;
+    }
+    ///
+    bool isFullyAssociative()
+    {
+        pragma(inline, true);
+        return associative == associative.max;
     }
 }

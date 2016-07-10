@@ -728,9 +728,9 @@ union Leaf4Information
             /// Fully Associative cache.
             bool fullyAssociative();
             /// Maximum number of addressable IDs for logical processors sharing this cache. **
-            uint logicalIDs();
+            uint maxThreadsPerCache();
             /// Maximum number of addressable IDs for processor cores in the physical package **
-            uint physicalIDs();
+            uint maxCorePerCPU();
             /// System Coherency Line Size **.
             uint l();
             /// Physical Line partitions **.
@@ -757,8 +757,8 @@ union Leaf4Information
                 bool, "selfInitializing", 1,
                 bool, "fullyAssociative", 1,
                 uint, "", 4,
-                uint, "logicalIDs", 12,
-                uint, "physicalIDs", 6,
+                uint, "maxThreadsPerCache", 12,
+                uint, "maxCorePerCPU", 6,
                 ));
 
             /// EBX
@@ -774,7 +774,7 @@ union Leaf4Information
             /// EDX
             mixin(bitfields!(
                 bool, "invalidate", 1,
-                bool, "inclusiveness", 1,
+                bool, "inclusive", 1,
                 bool, "complex", 1,
                 uint, "",  29,
                 ));
@@ -790,6 +790,16 @@ union Leaf4Information
                 size_t(w + 1) * 
                 size_t(s + 1) >> 10);
         }
+
+        pure nothrow @nogc
+        void fill(ref Cache cache) @property
+        {
+            cache.size = size;
+            cache.inclusive = inclusive;
+            cache.associative = cast(ushort) (w + 1);
+            if(fullyAssociative)
+                cache.associative = cache.associative.max;
+        }
     }
 }
 
@@ -798,7 +808,8 @@ unittest
 {
     if(maxBasicLeaf >= 4)
     {
-        Leaf4Information leaf4;
+        Cache cache = void;
+        Leaf4Information leaf4 = void;
         //uint[4] info;
         uint ecx;
         for(;;)
@@ -807,8 +818,10 @@ unittest
             _cpuid(leaf4.info, 4, ecx++);
             if(!leaf4.type)
                 break;
+            leaf4.fill(cache);
             debug(cpuid) import std.stdio;
             debug(cpuid) writefln("Cache #%s has type '%s' and %s KB size", ecx, leaf4.type, leaf4.size);
+            debug(cpuid) writefln(" -- %s", cache);
         }
     }
 }
