@@ -402,7 +402,7 @@ enum VendorIndex
 }
 
 /++
-Fills brand name, e.g. `Intel(R) Core(TM) i7-4770HQ CPU @ 2.20GHz`.
+Brand, e.g. `Intel(R) Core(TM) i7-4770HQ CPU @ 2.20GHz`.
 +/
 string brand()
 {
