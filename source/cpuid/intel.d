@@ -51,11 +51,11 @@ struct Leaf2Information
     /// Data TLB1, huge pages
     Tlb hdtlb1;
     /// Second-level unified TLB
-    Tlb stlb;
+    Tlb utlb;
     /// Second-level unified TLB, huge pages
-    Tlb hstlb;
+    Tlb hutlb;
     /// Second-level unified TLB, giant pages
-    Tlb gstlb;
+    Tlb gutlb;
     /// prefetch line size
     int prefetch;
     /// Cache trace
@@ -75,6 +75,8 @@ struct Leaf2Information
     //pure nothrow @nogc
     this(ref uint[4] info)
     {
+        version(BigEndian) static assert(0, "Leaf2Information is not implemented for BigEndian.");
+
         foreach(i, b; (cast(ubyte[16])info)[1..$])
         switch(b)
         {
@@ -237,9 +239,13 @@ struct Leaf2Information
                 l2.line = 64;
                 break;
             case 0x49:
-                l3.size = 4 * 1024;
-                l3.associative = 16;
-                l3.line = 64;
+                if(family == 0x0F && model == 0x06)
+                {
+                    l3.size = 4 * 1024;
+                    l3.associative = 16;
+                    l3.line = 64;
+                    break;
+                }
                 l2.size = 4 * 1024;
                 l2.associative = 16;
                 l2.line = 64;
@@ -543,12 +549,12 @@ struct Leaf2Information
                 hdtlb.entries = 8;
                 break;
             case 0xC1:
-                stlb.page = 4;
-                stlb.associative = 8;
-                stlb.entries = 1024;
-                hstlb.page = 2 * 1024;
-                hstlb.associative = 8;
-                hstlb.entries = 1024;
+                utlb.page = 4;
+                utlb.associative = 8;
+                utlb.entries = 1024;
+                hutlb.page = 2 * 1024;
+                hutlb.associative = 8;
+                hutlb.entries = 1024;
                 break;
             case 0xC2:
                 dtlb.page = 4;
@@ -559,15 +565,15 @@ struct Leaf2Information
                 hdtlb.entries = 16;
                 break;
             case 0xC3:
-                stlb.page = 4;
-                stlb.associative = 6;
-                stlb.entries = 1536;
-                hstlb.page = 2 * 1024;
-                hstlb.associative = 6;
-                hstlb.entries = 1536;
-                gstlb.page = 1024 * 1024;
-                gstlb.associative = 4;
-                gstlb.entries = 16;
+                utlb.page = 4;
+                utlb.associative = 6;
+                utlb.entries = 1536;
+                hutlb.page = 2 * 1024;
+                hutlb.associative = 6;
+                hutlb.entries = 1536;
+                gutlb.page = 1024 * 1024;
+                gutlb.associative = 4;
+                gutlb.entries = 16;
                 break;
             case 0xC4:
                 hdtlb.page = 2 * 1024;
@@ -575,9 +581,9 @@ struct Leaf2Information
                 hdtlb.entries = 32;
                 break;
             case 0xCA:
-                stlb.page = 4;
-                stlb.associative = 4;
-                stlb.entries = 512;
+                utlb.page = 4;
+                utlb.associative = 4;
+                utlb.entries = 512;
                 break;
             case 0xD0:
                 l3.size = 512;
