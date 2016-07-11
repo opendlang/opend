@@ -237,7 +237,6 @@ CpuInfo _cpuid(uint eax, uint ecx = 0)
     //    info.d = asmt.v[3];
     //}
     //else
-    //
     //version(GNU)
     //{
     //    asm pure nothrow @nogc
@@ -253,7 +252,7 @@ CpuInfo _cpuid(uint eax, uint ecx = 0)
     //else
     version(InlineAsm_X86_Any)
     {
-        asm //pure nothrow @nogc
+        asm pure nothrow @nogc
         {
             mov EAX, eax;
             mov ECX, ecx;
