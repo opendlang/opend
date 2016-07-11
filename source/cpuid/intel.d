@@ -805,14 +805,14 @@ union Leaf4Information
 ///
 unittest
 {
-    if(maxBasicLeaf >= 4)
+    if(maxBasicLeaf >= 4 && vendorIndex == VendorIndex.intel)
     {
         Cache cache = void;
         Leaf4Information leaf4 = void;
         uint ecx;
-        for(;;)
+        foreach(ecx; 0..12)
         {
-            leaf4.info = _cpuid(4, ecx++);
+            leaf4.info = _cpuid(4, ecx);
             if(!leaf4.type)
                 break;
             leaf4.fill(cache);
