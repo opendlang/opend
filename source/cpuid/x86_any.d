@@ -209,7 +209,7 @@ struct CpuInfo
 
 /++
 Params:
-    info = information  received from CPUID instruction
+    info = information received from CPUID instruction
     eax = function id
     ecx = sub-function id
 +/

@@ -1,8 +1,8 @@
 /++
 +/
-module cpuid;
+module cpuid.unified;
 
-import cpuid.common;
+public import cpuid.common;
 
 version(X86)
     version = X86_Any;
@@ -255,11 +255,6 @@ shared static this()
 }
 else
 static assert(0, "cpuid is not implemented");
-
-//void main()
-//{
-//    import std.stdio;
-//}
 
 @safe pure nothrow @nogc:
 

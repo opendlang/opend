@@ -1,5 +1,5 @@
 /++
-Common data types and functions for all architectures.
+Auxiliary data types and functions.
 +/
 module cpuid.common;
 
