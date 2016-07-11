@@ -41,7 +41,7 @@ private T2 assocCopy(T2, T1)(T1 from)
     Unqual!T2 to = cast(T2) from;
     static if(is(Unqual!T1 == Unqual!T2))
     {
-        if(from = T1.max)
+        if(from == T1.max)
         {
             to = T2.max;
         }
