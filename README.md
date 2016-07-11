@@ -12,6 +12,23 @@
 
 This package also can be used as workaround for [core.cpuid Issue 16028](https://issues.dlang.org/show_bug.cgi?id=16028).
 
+## Documentation
+
+See http://docs.cpuid.dlang.io .
+
+## Testing
+
+To receive a report about your CPU, run
+
+```
+dub fetch cpuid
+dub test cpuid
+```
+
+Please report dub log in a new GitHub issue!
+
+See also [output example](https://gist.github.com/9il/66d2f824ca52e1293358b86604e7fb21).
+
 ## API Features
 
  - API was split to _unified_, _target_ specified, and _vendor_ specified parts.
@@ -35,16 +52,3 @@ This package also can be used as workaround for [core.cpuid Issue 16028](https:/
  - Add information about ARM target and ARM vendors.
  - Test a lot of different CPUs.
  - Extend testing infrastructure.
-
-## Testing
-
-To receive a report about your CPU, run
-
-```
-dub fetch cpuid
-dub test cpuid
-```
-
-Please report dub log in a new GitHub issue!
-
-See also [output example](https://gist.github.com/9il/66d2f824ca52e1293358b86604e7fb21).
