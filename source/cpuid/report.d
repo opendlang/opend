@@ -97,21 +97,21 @@ string unified()
     app.formattedWrite("Instruction Cache:\n");
     foreach(i, cache; iCache)
     {
-        app.formattedWrite("- - - - - ICahce%s: - - - - - - - - - - - - - - - - -\n", i + 1);
+        app.formattedWrite("- - - - - ICache%s: - - - - - - - - - - - - - - - - -\n", i + 1);
         putCache(cache);
     }
 
-    app.formattedWrite("Data Cahce:\n");
+    app.formattedWrite("Data Cache:\n");
     foreach(i, cache; dCache)
     {
-        app.formattedWrite("- - - - - DCahce%s: - - - - - - - - - - - - - - - - -\n", i + 1);
+        app.formattedWrite("- - - - - DCache%s: - - - - - - - - - - - - - - - - -\n", i + 1);
         putCache(cache);
     }
 
-    app.formattedWrite("Unified Cahce:\n");
+    app.formattedWrite("Unified Cache:\n");
     foreach(i, cache; uCache)
     {
-        app.formattedWrite("- - - - - UCahce%s: - - - - - - - - - - - - - - - - -\n", i + 1);
+        app.formattedWrite("- - - - - UCache%s: - - - - - - - - - - - - - - - - -\n", i + 1);
         putCache(cache);
     }
 
