@@ -234,26 +234,32 @@ CpuInfo _cpuid(uint eax, uint ecx = 0)
     //    info.d = asmt.v[3];
     //}
     //else
-    version(GNU)
-    asm pure nothrow @nogc {
-        "cpuid" : 
-            "=a" info.a,
-            "=b" info.b, 
-            "=c" info.c,
-            "=d" info.d,
-            : "a" eax, "c" ecx;
-    }
-    else
+    //
+    //version(GNU)
+    //{
+    //    asm pure nothrow @nogc
+    //    {
+    //        "cpuid" : 
+    //            "=a" info.a,
+    //            "=b" info.b, 
+    //            "=c" info.c,
+    //            "=d" info.d,
+    //            : "a" eax, "c" ecx;
+    //    }
+    //}
+    //else
     version(InlineAsm_X86_Any)
-    asm pure nothrow @nogc
     {
-        mov EAX, eax;
-        mov ECX, ecx;
-        cpuid;
-        mov info + CpuInfo.a.offsetof, EAX;
-        mov info + CpuInfo.b.offsetof, EBX;
-        mov info + CpuInfo.c.offsetof, ECX;
-        mov info + CpuInfo.d.offsetof, EDX;
+        asm pure nothrow @nogc
+        {
+            mov EAX, eax;
+            mov ECX, ecx;
+            cpuid;
+            mov info + CpuInfo.a.offsetof, EAX;
+            mov info + CpuInfo.b.offsetof, EBX;
+            mov info + CpuInfo.c.offsetof, ECX;
+            mov info + CpuInfo.d.offsetof, EDX;
+        }
     }
     return info;
 }
