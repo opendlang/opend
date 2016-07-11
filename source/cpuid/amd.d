@@ -31,7 +31,7 @@ union LeafExt5Information
     version(BigEndian) static assert(0, "Leaf2Information is not implemented for BigEndian architecture.");
 
     ///
-    uint[4] info;
+    CpuInfo info;
 
     ///
     struct
@@ -91,7 +91,7 @@ Specification: AMD
 union LeafExt6Information
 {
     ///
-    uint[4] info;
+    CpuInfo info;
 
     ///
     struct

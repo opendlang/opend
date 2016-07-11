@@ -49,16 +49,17 @@ private T2 assocCopy(T2, T1)(T1 from)
     return to;
 }
 
-pure nothrow @nogc
+//pure nothrow @nogc
 shared static this()
 {
+    import std.stdio;
+    writeln("Static constructor...");
     version(X86_Any)
     {
         import cpuid.x86_any;
         static import cpuid.intel;
         static import cpuid.amd;
 
-        uint[4] info = void;
         if(htt)
         {
             /// for old CPUs
@@ -69,11 +70,10 @@ shared static this()
             vendorIndex == VendorIndex.centaur)
         {
             // Caches and TLB
-            if(maxExtendedLeaf >= 0x5)
+            if(maxExtendedLeaf >= 0x8000_0005)
             {
                 // Level 1
-                cpuid.amd.LeafExt5Information leafExt5 = void;
-                _cpuid(leafExt5.info, 0x5);
+                auto leafExt5 = cpuid.amd.LeafExt5Information(_cpuid(0x8000_0005));
 
                 alias CacheAssoc = typeof(Cache.associative);
                 alias TlbAssoc = typeof(Tlb.associative);
@@ -108,10 +108,9 @@ shared static this()
                 }
 
                 // Levels 2 and 3
-                if(maxExtendedLeaf >= 0x6)
+                if(maxExtendedLeaf >= 0x8000_0006)
                 {
-                    cpuid.amd.LeafExt6Information leafExt6 = void;
-                    _cpuid(leafExt6.info, 0x6);
+                    auto leafExt6 = cpuid.amd.LeafExt6Information(_cpuid(0x8000_0006));
 
                     if(leafExt6.L2DTlb4KSize)
                     {
@@ -150,8 +149,7 @@ shared static this()
             if(maxBasicLeaf >= 0x2)
             {
                 /// Get TLB and Cache info
-                _cpuid(info, 2);
-                cpuid.intel.Leaf2Information leaf2 = info;
+                auto leaf2 = cpuid.intel.Leaf2Information(_cpuid(2));
 
                 /// Fill cache info
                 if(leaf2.dtlb.size)
@@ -183,7 +181,7 @@ shared static this()
                     uint ecx;
                     Leaf4Loop: for(;;)
                     {
-                        _cpuid(leaf4.info, 4, ecx++);
+                        leaf4.info = _cpuid(4, ecx++);
                         leaf4.fill(cache);
 
                         with(cpuid.intel.Leaf4Information.Type)
@@ -208,10 +206,8 @@ shared static this()
                     }
                     if(maxBasicLeaf >= 0xB)
                     {
-                        _cpuid(info, 0xB, 1);
-                        _threads = cast(ushort) info[1];
-                        _cpuid(info, 0xB, 0);
-                        _cores = _threads / cast(ushort) info[1];
+                        _threads = cast(ushort) _cpuid(0xB, 1).b;
+                        _cores = _threads / cast(ushort) _cpuid(0xB, 0).b;
                     }
                 }
                 else

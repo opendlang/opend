@@ -19,6 +19,12 @@ version(X86_64)
 
 version(X86_Any):
 
+version(D_InlineAsm_X86)
+    version = InlineAsm_X86_Any;
+else
+version(D_InlineAsm_X86_64)
+    version = InlineAsm_X86_Any;
+
 public import cpuid.common;
 
 
@@ -43,27 +49,27 @@ private __gshared immutable VendorIndex _vendorId;
 //pure nothrow @nogc
 shared static this()
 {
-    uint[4] info = void;
+    import std.stdio;
 
-    _cpuid(info, 0);
-    _maxBasicLeaf = info[0];
-    (cast(uint[3])_vendor)[0] = info[1];
-    (cast(uint[3])_vendor)[1] = info[3];
-    (cast(uint[3])_vendor)[2] = info[2];
 
-    _cpuid(info, 1);
-    leaf1Information.info = info;
+    CpuInfo info = _cpuid(0);
+    _maxBasicLeaf = _cpuid(0).a;
 
-    _cpuid(info, 0x8000_0000);
-    _maxExtendedLeaf = info[0];
+    (cast(uint[3])_vendor)[0] = info.b;
+    (cast(uint[3])_vendor)[1] = info.d;
+    (cast(uint[3])_vendor)[2] = info.c;
+
+    leaf1Information.info = _cpuid(1);
+
+    _maxExtendedLeaf = _cpuid(0x8000_0000).a;
 
     foreach(i; 0..3)
     {
-        _cpuid(info, i + 2 ^ 0x8000_0000);
-        (cast(uint[12])_brand)[i * 4 + 0] = info[0];
-        (cast(uint[12])_brand)[i * 4 + 1] = info[1];
-        (cast(uint[12])_brand)[i * 4 + 2] = info[2];
-        (cast(uint[12])_brand)[i * 4 + 3] = info[3];
+        info = _cpuid(i + 2 ^ 0x8000_0000);
+        (cast(uint[12])_brand)[i * 4 + 0] = info.a;
+        (cast(uint[12])_brand)[i * 4 + 1] = info.b;
+        (cast(uint[12])_brand)[i * 4 + 2] = info.c;
+        (cast(uint[12])_brand)[i * 4 + 3] = info.d;
     }
 
     foreach_reverse(i, char b; _brand[])
@@ -92,7 +98,7 @@ private struct Leaf1Information
 
     union
     {
-        uint[4] info;
+        CpuInfo info;
         struct
         {
             /// EAX
@@ -188,82 +194,100 @@ private struct Leaf1Information
     }
 }
 
+/// x86 CPU information
+struct CpuInfo
+{
+    /// EAX
+    uint a;
+    /// EBX
+    uint b;
+    /// ECX
+    uint c;
+    /// EDX
+    uint d;
+}
+
 /++
 Params:
     info = information received from CPUID instruction
     eax = function id
 +/
-pure nothrow @nogc
-void _cpuid(ref uint[4] info, uint eax)
-{
-    version(D_InlineAsm_X86)
-    asm pure nothrow @nogc
-    {
-        push ESI;
-        mov ESI, info;
-        mov EAX, eax;
-        cpuid;
-        mov [ESI + 0x0], EAX;
-        mov [ESI + 0x4], EBX;
-        mov [ESI + 0x8], ECX;
-        mov [ESI + 0xC], EDX;
-        pop ESI;
-    }
-    else
-    version(D_InlineAsm_X86_64)
-    asm pure nothrow @nogc
-    {
-        push RSI;
-        mov RSI, info;
-        mov EAX, eax;
-        cpuid;
-        mov [RSI + 0x0], EAX;
-        mov [RSI + 0x4], EBX;
-        mov [RSI + 0x8], ECX;
-        mov [RSI + 0xC], EDX;
-        pop RSI;
-    }
-    else static assert(0);
-}
+//CpuInfo _cpuid(uint eax)
+//{
+//    CpuInfo info = void;
+//    version(LDC)
+//    {
+//        import std.meta: Repeat;
+//        import ldc.llvmasm;
+//        auto asmt = __asmtuple!(Repeat!(4, uint))("cpuid", "={eax},={ebx},={ecx},={edx},{eax},{ecx}", eax, ecx);
+//        info.a = asmt[0];
+//        info.b = asmt[1];
+//        info.c = asmt[2];
+//        info.d = asmt[3];
+//    }
+//    else
+//    version(InlineAsm_X86_Any)
+//    asm pure nothrow @nogc
+//    {
+//        mov EAX, eax;
+//        mov ECX, ecx;
+//        cpuid;
+//        mov info + CpuInfo.a.offsetof, EAX;
+//        mov info + CpuInfo.b.offsetof, EBX;
+//        mov info + CpuInfo.c.offsetof, ECX;
+//        mov info + CpuInfo.d.offsetof, EDX;
+//    }
+//    return info;
+//}
 
 /++
 Params:
     info = information  received from CPUID instruction
     eax = function id
     ecx = sub-function id
+
+Bugs: `_cpuid` is not `pure @nothrow @nogc` function for now.
+See also $(LINK2 https://github.com/ldc-developers/druntime/pull/80, LDC bug fix).
 +/
-pure nothrow @nogc
-void _cpuid(ref uint[4] info, uint eax, uint ecx)
+CpuInfo _cpuid(uint eax, uint ecx = 0)
 {
-    version(D_InlineAsm_X86)
-    asm pure nothrow @nogc
+    CpuInfo info = void;
+    version(LDC)
     {
-        push ESI;
-        mov ESI, info;
-        mov EAX, eax;
-        mov ECX, ecx;
-        cpuid;
-        mov [ESI + 0x0], EAX;
-        mov [ESI + 0x4], EBX;
-        mov [ESI + 0x8], ECX;
-        mov [ESI + 0xC], EDX;
-        pop ESI;
+        import ldc.llvmasm;
+        auto asmt = __asmtuple!
+        (uint, uint, uint, uint) (
+            "cpuid", 
+            "={eax},={ebx},={ecx},={edx},{eax},{ecx}", 
+            eax, ecx);
+        info.a = asmt.v[0];
+        info.b = asmt.v[1];
+        info.c = asmt.v[2];
+        info.d = asmt.v[3];
     }
     else
-    version(D_InlineAsm_X86_64)
+    version(GNU)
+    asm pure nothrow @nogc {
+        "cpuid" : 
+            "=a" info.a,
+            "=b" info.b, 
+            "=c" info.c,
+            "=d" info.d,
+            : "a" eax, "c" ecx;
+    }
+    else
+    version(InlineAsm_X86_Any)
     asm pure nothrow @nogc
     {
-        push RSI;
-        mov RSI, info;
         mov EAX, eax;
         mov ECX, ecx;
         cpuid;
-        mov [RSI + 0x0], EAX;
-        mov [RSI + 0x4], EBX;
-        mov [RSI + 0x8], ECX;
-        mov [RSI + 0xC], EDX;
-        pop RSI;
+        mov info + CpuInfo.a.offsetof, EAX;
+        mov info + CpuInfo.b.offsetof, EBX;
+        mov info + CpuInfo.c.offsetof, ECX;
+        mov info + CpuInfo.d.offsetof, EDX;
     }
+    return info;
 }
 
 @trusted pure nothrow @nogc @property:

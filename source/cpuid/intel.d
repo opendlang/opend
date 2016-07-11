@@ -73,11 +73,11 @@ struct Leaf2Information
     Specification: Intel
     +/
     pure nothrow @nogc
-    this(ref uint[4] info)
+    this(CpuInfo info)
     {
         version(BigEndian) static assert(0, "Leaf2Information is not implemented for BigEndian.");
 
-        foreach(i, b; (cast(ubyte[16])info)[1..$])
+        foreach(i, b; (*(cast(ubyte[16]*)&info))[1..$])
         switch(b)
         {
             default:
@@ -677,12 +677,10 @@ struct Leaf2Information
 }
 
 
-///
+/////
 unittest
 {
-    uint[4] info;
-    _cpuid(info, 2);
-    Leaf2Information leaf2 = info;
+    auto leaf2 = Leaf2Information(_cpuid(2));
 }
 
 /++
@@ -697,7 +695,7 @@ union Leaf4Information
     import std.bitmanip: bitfields;
 
     ///
-    uint[4] info;
+    CpuInfo info;
 
     ///
     struct
@@ -811,18 +809,15 @@ unittest
     {
         Cache cache = void;
         Leaf4Information leaf4 = void;
-        //uint[4] info;
         uint ecx;
         for(;;)
         {
-            //_cpuid(info, 4, ecx++);
-            _cpuid(leaf4.info, 4, ecx++);
+            leaf4.info = _cpuid(4, ecx++);
             if(!leaf4.type)
                 break;
             leaf4.fill(cache);
             debug(cpuid) import std.stdio;
             debug(cpuid) writefln("Cache #%s has type '%s' and %s KB size", ecx, leaf4.type, leaf4.size);
-            debug(cpuid) writefln(" -- %s", cache);
         }
     }
 }
