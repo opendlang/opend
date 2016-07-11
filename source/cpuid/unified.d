@@ -279,7 +279,7 @@ uint threads() { return _threads; }
 Data Caches
 
 Returns:
-    array composed of detected data caches. Array is sorted in ascending order.
+    Array composed of detected data caches. Array is sorted in ascending order.
 +/
 immutable(Cache)[] dCache() { return _dCache[0 .. _dCache_length]; }
 
@@ -287,7 +287,7 @@ immutable(Cache)[] dCache() { return _dCache[0 .. _dCache_length]; }
 Instruction Caches
 
 Returns:
-    array composed of detected instruction caches. Array is sorted in ascending order.
+    Array composed of detected instruction caches. Array is sorted in ascending order.
 +/
 immutable(Cache)[] iCache() { return _iCache[0 .. _iCache_length]; }
 
@@ -295,7 +295,7 @@ immutable(Cache)[] iCache() { return _iCache[0 .. _iCache_length]; }
 Unified Caches
 
 Returns:
-    array composed of detected unified caches. Array is sorted in ascending order.
+    Array composed of detected unified caches. Array is sorted in ascending order.
 +/
 immutable(Cache)[] uCache() { return _uCache[0 .. _uCache_length]; }
 
@@ -303,7 +303,7 @@ immutable(Cache)[] uCache() { return _uCache[0 .. _uCache_length]; }
 Data Translation Lookaside Buffers
 
 Returns:
-    array composed of detected data translation lookaside buffers. Array is sorted in ascending order.
+    Array composed of detected data translation lookaside buffers. Array is sorted in ascending order.
 +/
 immutable(Tlb)[] dTlb() { return _dTlb[0 .. _dTlb_length]; }
 
@@ -311,7 +311,7 @@ immutable(Tlb)[] dTlb() { return _dTlb[0 .. _dTlb_length]; }
 Instruction Translation Lookaside Buffers
 
 Returns:
-    array composed of detected instruction translation lookaside buffers. Array is sorted in ascending order.
+    Array composed of detected instruction translation lookaside buffers. Array is sorted in ascending order.
 +/
 immutable(Tlb)[] iTlb() { return _iTlb[0 .. _iTlb_length]; }
 
@@ -319,7 +319,7 @@ immutable(Tlb)[] iTlb() { return _iTlb[0 .. _iTlb_length]; }
 Unified Translation Lookaside Buffers
 
 Returns:
-    array composed of detected unified translation lookaside buffers. Array is sorted in ascending order.
+    Array composed of detected unified translation lookaside buffers. Array is sorted in ascending order.
 +/
 immutable(Tlb)[] uTlb() { return _uTlb[0 .. _uTlb_length]; }
 
