@@ -26,6 +26,11 @@ notifications:
   email:
     - devteam@mir.rocks
 
+matrix:
+  allow_failures:
+   - d: ldc-1.0.0
+    env: ARCH="x86"
+
 notifications:
   webhooks:
     urls:
