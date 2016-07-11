@@ -12,7 +12,7 @@ $(BOOKTABLE ,
     )
     $(LEADINGROW Hight Level API)
     $(TR
-        $(TDNW $(LINK2 cpuid.html, cpuid.unified))
+        $(TDNW $(LINK2 cpuid_unified.html, cpuid.unified))
         $(TD High level absraction on top of all architectures)
     )
     $(TR

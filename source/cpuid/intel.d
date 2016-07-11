@@ -4,8 +4,9 @@ $(H1 Intel 64 and IA-32 CPUID Information)
 References:
     Intel® 64 and IA-32 Architectures Software Developer’s Manual
 
-Authors:
-    Ilya Yaroshenko
+License:   $(WEB www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
+
+Authors:   Ilya Yaroshenko
 +/
 module cpuid.intel;
 

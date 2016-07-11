@@ -1,4 +1,9 @@
 /++
+High level absraction on top of all architectures.
+
+License:   $(WEB www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
+
+Authors:   Ilya Yaroshenko
 +/
 module cpuid.unified;
 

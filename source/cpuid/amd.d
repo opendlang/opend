@@ -4,8 +4,9 @@ $(H1 AMD CPUID Specification)
 References:
     AMD CPUID Specification. Publication # 25481 / Revision: 2.34 / Issue Date: September 2010
 
-Authors:
-    Ilya Yaroshenko
+License:   $(WEB www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
+
+Authors:   Ilya Yaroshenko
 +/
 module cpuid.amd;
 
