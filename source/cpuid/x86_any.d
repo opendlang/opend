@@ -209,39 +209,6 @@ struct CpuInfo
 
 /++
 Params:
-    info = information received from CPUID instruction
-    eax = function id
-+/
-//CpuInfo _cpuid(uint eax)
-//{
-//    CpuInfo info = void;
-//    version(LDC)
-//    {
-//        import std.meta: Repeat;
-//        import ldc.llvmasm;
-//        auto asmt = __asmtuple!(Repeat!(4, uint))("cpuid", "={eax},={ebx},={ecx},={edx},{eax},{ecx}", eax, ecx);
-//        info.a = asmt[0];
-//        info.b = asmt[1];
-//        info.c = asmt[2];
-//        info.d = asmt[3];
-//    }
-//    else
-//    version(InlineAsm_X86_Any)
-//    asm pure nothrow @nogc
-//    {
-//        mov EAX, eax;
-//        mov ECX, ecx;
-//        cpuid;
-//        mov info + CpuInfo.a.offsetof, EAX;
-//        mov info + CpuInfo.b.offsetof, EBX;
-//        mov info + CpuInfo.c.offsetof, ECX;
-//        mov info + CpuInfo.d.offsetof, EDX;
-//    }
-//    return info;
-//}
-
-/++
-Params:
     info = information  received from CPUID instruction
     eax = function id
     ecx = sub-function id
