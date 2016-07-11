@@ -2,8 +2,333 @@
 +/
 module cpuid;
 
+import cpuid.common;
+
+version(X86)
+    version = X86_Any;
+version(X86_64)
+    version = X86_Any;
+
+version(X86_Any)
+{
+    enum uint _dCache_max_length = 1;
+    enum uint _iCache_max_length = 1;
+    enum uint _uCache_max_length = 3;
+
+    enum uint _dTlb_max_length   = 2;
+    enum uint _iTlb_max_length   = 2;
+    enum uint _uTlb_max_length   = 1;
+}
+else
+static assert(0);
+
+private __gshared immutable
+{
+    uint _cpus;
+    uint _cores;
+    uint _threads;
+    uint _iCache_length; Cache[_iCache_max_length] _iCache;
+    uint _dCache_length; Cache[_dCache_max_length] _dCache;
+    uint _uCache_length; Cache[_uCache_max_length] _uCache;
+    uint _iTlb_length;   Tlb[_iTlb_max_length] _iTlb;
+    uint _dTlb_length;   Tlb[_dTlb_max_length] _dTlb;
+    uint _uTlb_length;   Tlb[_uTlb_max_length] _uTlb;
+}
+
+private T2 assocCopy(T2, T1)(T1 from)
+{
+    import std.traits: Unqual;
+    Unqual!T2 to = cast(T2) from;
+    static if(is(Unqual!T1 == Unqual!T2))
+    {
+        if(from = T1.max)
+        {
+            to = T2.max;
+        }
+    }
+    return to;
+}
+
+pure nothrow @nogc
 shared static this()
 {
+    version(X86_Any)
+    {
+        import cpuid.x86_any;
+        static import cpuid.intel;
+        static import cpuid.amd;
 
+        uint[4] info = void;
+        if(htt)
+        {
+            /// for old CPUs
+            _threads = _cores = maxLogicalProcessors;
+        }
+        if (vendorIndex == VendorIndex.amd || 
+            vendorIndex == VendorIndex.amd_old || 
+            vendorIndex == VendorIndex.centaur)
+        {
+            // Caches and TLB
+            if(maxExtendedLeaf >= 0x5)
+            {
+                // Level 1
+                cpuid.amd.LeafExt5Information leafExt5 = void;
+                _cpuid(leafExt5.info, 0x5);
+
+                alias CacheAssoc = typeof(Cache.associative);
+                alias TlbAssoc = typeof(Tlb.associative);
+
+                 if(leafExt5.L1DTlb4KSize)
+                 {
+                    _dTlb[0].page = 4;
+                    _dTlb[0].entries = leafExt5.L1DTlb4KSize;
+                    _dTlb[0].associative = leafExt5.L1DTlb4KAssoc.assocCopy!TlbAssoc;
+                    _dTlb_length = 1;
+                 }
+                 if(leafExt5.L1ITlb4KSize)
+                 {
+                    _iTlb[0].page = 4;
+                    _iTlb[0].entries = leafExt5.L1ITlb4KSize;
+                    _iTlb[0].associative = leafExt5.L1ITlb4KAssoc.assocCopy!TlbAssoc;
+                    _iTlb_length = 1;
+                }
+                if(leafExt5.L1DcSize)
+                {
+                    _dCache_length = 1;
+                    _dCache[0].size = leafExt5.L1DcSize;
+                    _dCache[0].line = leafExt5.L1DcLineSize;
+                    _dCache[0].associative = leafExt5.L1DcAssoc.assocCopy!CacheAssoc;
+                }
+                if(leafExt5.L1IcSize)
+                {
+                    _iCache_length = 1;
+                    _iCache[0].size = leafExt5.L1IcSize;
+                    _iCache[0].line = leafExt5.L1IcLineSize;
+                    _iCache[0].associative = leafExt5.L1IcAssoc.assocCopy!CacheAssoc;
+                }
+
+                // Levels 2 and 3
+                if(maxExtendedLeaf >= 0x6)
+                {
+                    cpuid.amd.LeafExt6Information leafExt6 = void;
+                    _cpuid(leafExt6.info, 0x6);
+
+                    if(leafExt6.L2DTlb4KSize)
+                    {
+                        _dTlb[_dTlb_length].page = 4;
+                        _dTlb[_dTlb_length].entries = leafExt6.L2DTlb4KSize;
+                        _dTlb[_dTlb_length].associative = leafExt6.L2DTlb4KAssoc.assocCopy!TlbAssoc;
+                        _dTlb_length++;
+                    }
+                    if(leafExt6.L2ITlb4KSize)
+                    {
+                        _iTlb[_iTlb_length].page = 4;
+                        _iTlb[_iTlb_length].entries = leafExt6.L2ITlb4KSize;
+                        _iTlb[_iTlb_length].associative = leafExt6.L2ITlb4KAssoc.assocCopy!TlbAssoc;
+                        _iTlb_length++;
+                    }
+                    if(leafExt6.L2Size)
+                    {
+                        _uCache[_uCache_length].size = leafExt6.L2Size;
+                        _uCache[_uCache_length].line = cast(typeof(Cache.line)) leafExt6.L2LineSize;
+                        _uCache[_uCache_length].associative = leafExt6.L2Assoc.assocCopy!CacheAssoc;
+                        _uCache_length++;
+                    }
+                    if(leafExt6.L3Size)
+                    {
+                        _uCache[_uCache_length].size = leafExt6.L3Size;
+                        _uCache[_uCache_length].line = cast(typeof(Cache.line)) leafExt6.L3LineSize;
+                        _uCache[_uCache_length].associative = leafExt6.L3Assoc.assocCopy!CacheAssoc;
+                        _uCache_length++;
+                    }
+                }
+            }
+        }
+        else
+        {
+            /// Other vendors
+            if(maxBasicLeaf >= 0x2)
+            {
+                /// Get TLB and Cache info
+                _cpuid(info, 2);
+                cpuid.intel.Leaf2Information leaf2 = info;
+
+                /// Fill cache info
+                if(leaf2.dtlb.size)
+                {
+                    _dTlb[0] = leaf2.dtlb;
+                    _dTlb_length = 1;
+                }
+                if(leaf2.dtlb1.size)
+                {
+                    _dTlb[_dTlb_length] = leaf2.dtlb1;
+                    _dTlb_length++;
+                }
+                if(leaf2.itlb.size)
+                {
+                    _iTlb[0] = leaf2.itlb;
+                    _iTlb_length = 1;
+                }
+                if(leaf2.utlb.size)
+                {
+                    _uTlb[0] = leaf2.utlb;
+                    _uTlb_length = 1;
+                }
+
+                if(maxBasicLeaf >= 0x4)
+                {
+                    /// Fill cache info from leaf 4
+                    cpuid.intel.Leaf4Information leaf4 = void;
+                    Cache cache;
+                    uint ecx;
+                    Leaf4Loop: for(;;)
+                    {
+                        _cpuid(leaf4.info, 4, ecx++);
+                        leaf4.fill(cache);
+
+                        with(cpuid.intel.Leaf4Information.Type)
+                        switch(leaf4.type)
+                        {
+                            case data:
+                                if(_dCache_length < _dCache.length)
+                                    _dCache[_dCache_length++] = cache;
+                                break;
+                            case instruction:
+                                if(_iCache_length < _iCache.length)
+                                    _iCache[_iCache_length++] = cache;
+                                break;
+                            case unified:
+                                if(_uCache_length < _uCache.length)
+                                    _uCache[_uCache_length++] = cache;
+                                break;
+                            default: break Leaf4Loop;
+                        }
+                        /// Fill core number for old CPUs
+                        _cores = leaf4.maxCorePerCPU;
+                    }
+                    if(maxBasicLeaf >= 0xB)
+                    {
+                        _cpuid(info, 0xB, 1);
+                        _threads = cast(ushort) info[1];
+                        _cpuid(info, 0xB, 0);
+                        _cores = _threads / cast(ushort) info[1];
+                    }
+                }
+                else
+                {
+                    /// Fill cache info from leaf 2
+                    if(leaf2.l1.size)
+                    {
+                        _dCache[0] = leaf2.l1;
+                        _dCache_length = 1;
+                    }
+                    if(leaf2.il1.size)
+                    {
+                        _iCache[0] = leaf2.il1;
+                        _iCache_length = 1;
+                    }
+                    if(leaf2.l2.size)
+                    {
+                        _uCache[0] = leaf2.l2;
+                        _uCache_length = 1;
+                    }
+                    if(leaf2.l3.size)
+                    {
+                        _uCache[_uCache_length] = leaf2.l3;
+                        _uCache_length++;
+                    }
+                }
+            }
+        }
+
+        if(!_cpus) _cpus = 1;
+        if(!_cores) _cores = 1;
+        if(!_threads) _threads = 1;
+        if(_threads < _cores) _threads = _cores;
+
+        if(_iCache_length) _iCache[0].cores = 1;
+        if(_dCache_length) _dCache[0].cores = 1;
+        switch(_uCache_length)
+        {
+            case 0:
+                break;
+            case 1:
+                _uCache[0].cores = cast(typeof(Cache.cores)) _cores;
+                break;
+            default:
+                _uCache[0].cores = 1;
+                foreach(i; 1.._uCache_length)
+                    _uCache[i].cores = cast(typeof(Cache.cores)) _cores;
+        }
+    }
+    else
+    static assert(0, "cpuid is not implemented");
 }
+
+@safe pure nothrow @nogc:
+
+/++
+Total number of CPU packages.
+Note: not implemented
++/
+
+pragma(inline, true) uint cpus() { return _cpus; }
+
+/++
+Total number of cores per CPU.
++/
+pragma(inline, true) uint cores() { return _cores; }
+
+/++
+Total number of threads per CPU.
++/
+pragma(inline, true) uint threads() { return _threads; }
+
+/++
+Data Caches
+
+Returns:
+    array composed of detected data caches. Array is sorted in ascending order.
++/
+pragma(inline, true) immutable(Cache)[] dCache() { return _dCache[0 .. _dCache_length]; }
+
+/++
+Instruction Caches
+
+Returns:
+    array composed of detected instruction caches. Array is sorted in ascending order.
++/
+pragma(inline, true) immutable(Cache)[] iCache() { return _iCache[0 .. _iCache_length]; }
+
+/++
+Unified Caches
+
+Returns:
+    array composed of detected unified caches. Array is sorted in ascending order.
++/
+pragma(inline, true) immutable(Cache)[] uCache() { return _uCache[0 .. _uCache_length]; }
+
+/++
+Data Translation Lookaside Buffers
+
+Returns:
+    array composed of detected data translation lookaside buffers. Array is sorted in ascending order.
++/
+pragma(inline, true) immutable(Tlb)[] dTlb() { return _dTlb[0 .. _dTlb_length]; }
+
+/++
+Instruction Translation Lookaside Buffers
+
+Returns:
+    array composed of detected instruction translation lookaside buffers. Array is sorted in ascending order.
++/
+pragma(inline, true) immutable(Tlb)[] iTlb() { return _iTlb[0 .. _iTlb_length]; }
+
+/++
+Unified Translation Lookaside Buffers
+
+Returns:
+    array composed of detected unified translation lookaside buffers. Array is sorted in ascending order.
++/
+pragma(inline, true) immutable(Tlb)[] uTlb() { return _uTlb[0 .. _uTlb_length]; }
 
