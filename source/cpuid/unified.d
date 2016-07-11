@@ -118,28 +118,28 @@ shared static this()
                 {
                     _dTlb[_dTlb_length].page = 4;
                     _dTlb[_dTlb_length].entries = leafExt6.L2DTlb4KSize;
-                    _dTlb[_dTlb_length].associative = leafExt6.L2DTlb4KAssoc.assocCopy!TlbAssoc;
+                    _dTlb[_dTlb_length].associative = leafExt6.L2DTlb4KAssoc.decodeL2or3Assoc!TlbAssoc;
                     _dTlb_length++;
                 }
                 if(leafExt6.L2ITlb4KSize)
                 {
                     _iTlb[_iTlb_length].page = 4;
                     _iTlb[_iTlb_length].entries = leafExt6.L2ITlb4KSize;
-                    _iTlb[_iTlb_length].associative = leafExt6.L2ITlb4KAssoc.assocCopy!TlbAssoc;
+                    _iTlb[_iTlb_length].associative = leafExt6.L2ITlb4KAssoc.decodeL2or3Assoc!TlbAssoc;
                     _iTlb_length++;
                 }
                 if(leafExt6.L2Size)
                 {
                     _uCache[_uCache_length].size = leafExt6.L2Size;
                     _uCache[_uCache_length].line = cast(typeof(Cache.line)) leafExt6.L2LineSize;
-                    _uCache[_uCache_length].associative = leafExt6.L2Assoc.assocCopy!CacheAssoc;
+                    _uCache[_uCache_length].associative = leafExt6.L2Assoc.decodeL2or3Assoc!CacheAssoc;
                     _uCache_length++;
                 }
                 if(leafExt6.L3Size)
                 {
                     _uCache[_uCache_length].size = leafExt6.L3Size * 512;
                     _uCache[_uCache_length].line = cast(typeof(Cache.line)) leafExt6.L3LineSize;
-                    _uCache[_uCache_length].associative = leafExt6.L3Assoc.assocCopy!CacheAssoc;
+                    _uCache[_uCache_length].associative = leafExt6.L3Assoc.decodeL2or3Assoc!CacheAssoc;
                     _uCache_length++;
                 }
             }
