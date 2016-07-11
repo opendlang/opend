@@ -1,35 +1,38 @@
 sudo: false
+
 os:
  - linux
  - osx
+
 language: d
+
 d:
  - dmd-2.071.1
  - ldc-1.0.0
+
 env:
  - ARCH="x86_64"
+
 matrix:
   include:
     - {os: linux, d: dmd-2.071.1, env: ARCH="x86", addons: {apt: {packages: [[gcc-multilib]]}}}
     - {os: linux, d: ldc-1.0.0, env: ARCH="x86", addons: {apt: {packages: [[gcc-multilib]]}}}
+
 branches:
   only:
     - master
     - stable
+
 script:
  - echo "$ARCH"
  - dub test --arch "$ARCH" -b unittest-cov
+
 after_success:
  - bash <(curl -s https://codecov.io/bash)
 
 notifications:
   email:
     - devteam@mir.rocks
-
-matrix:
-  allow_failures:
-   - d: ldc-1.0.0
-    env: ARCH="x86"
 
 notifications:
   webhooks:
