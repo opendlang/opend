@@ -6,7 +6,6 @@ language: d
 d:
  - dmd-2.071.1
  - ldc-1.0.0
- - gdc
 env:
  - ARCH="x86_64"
 matrix:

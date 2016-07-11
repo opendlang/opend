@@ -443,147 +443,147 @@ string vendor()
 /++
 Brand Index
 +/
-ubyte brandIndex() { pragma(inline, true); return leaf1Information.brandIndex; }
+ubyte brandIndex() { return leaf1Information.brandIndex; }
 /++
 CLFLUSH line size
 Note: Value ∗ 8 = cache line size in bytes; used also by CLFLUSHOPT.
 +/
-ubyte clflushLineSize() { pragma(inline, true); return leaf1Information.clflushLineSize; }
+ubyte clflushLineSize() { return leaf1Information.clflushLineSize; }
 /++
 Maximum number of addressable IDs for logical processors in this physical package.
 +/
-ubyte maxLogicalProcessors() { pragma(inline, true); return leaf1Information.maxLogicalProcessors; }
+ubyte maxLogicalProcessors() { return leaf1Information.maxLogicalProcessors; }
 /++
 Initial APIC ID
 +/
-ubyte initialAPIC() { pragma(inline, true); return leaf1Information.initialAPIC; }
+ubyte initialAPIC() { return leaf1Information.initialAPIC; }
 /// Stepping ID
-uint stepping() { pragma(inline, true); return leaf1Information.stepping; }
+uint stepping() { return leaf1Information.stepping; }
 /// Model
-uint model() { pragma(inline, true); return leaf1Information.model; }
+uint model() { return leaf1Information.model; }
 /// Family ID
-uint family() { pragma(inline, true); return leaf1Information.family; }
+uint family() { return leaf1Information.family; }
 /// Processor Type, Specification: Intel
-uint type() { pragma(inline, true); return leaf1Information.type; }
+uint type() { return leaf1Information.type; }
 /// Extended Model ID
-uint extendedModel() { pragma(inline, true); return leaf1Information.extendedModel; }
+uint extendedModel() { return leaf1Information.extendedModel; }
 /// Extended Family ID
-uint extendedFamily() { pragma(inline, true); return leaf1Information.extendedFamily; }
+uint extendedFamily() { return leaf1Information.extendedFamily; }
 /// SSE3 Extensions
-bool sse3() { pragma(inline, true); return leaf1Information.sse3; }
+bool sse3() { return leaf1Information.sse3; }
 /// Carryless Multiplication
-bool pclmulqdq() { pragma(inline, true); return leaf1Information.pclmulqdq; }
+bool pclmulqdq() { return leaf1Information.pclmulqdq; }
 /// 64-bit DS Area
-bool dtes64() { pragma(inline, true); return leaf1Information.dtes64; }
+bool dtes64() { return leaf1Information.dtes64; }
 /// MONITOR/MWAIT
-bool monitor() { pragma(inline, true); return leaf1Information.monitor; }
+bool monitor() { return leaf1Information.monitor; }
 /// CPL Qualified Debug Store
-bool ds_cpl() { pragma(inline, true); return leaf1Information.ds_cpl; }
+bool ds_cpl() { return leaf1Information.ds_cpl; }
 /// Virtual Machine Extensions
-bool vmx() { pragma(inline, true); return leaf1Information.vmx; }
+bool vmx() { return leaf1Information.vmx; }
 /// Safer Mode Extensions
-bool smx() { pragma(inline, true); return leaf1Information.smx; }
+bool smx() { return leaf1Information.smx; }
 /// Enhanced Intel SpeedStep® Technology
-bool eist() { pragma(inline, true); return leaf1Information.eist; }
+bool eist() { return leaf1Information.eist; }
 /// Thermal Monitor 2
-bool tm2() { pragma(inline, true); return leaf1Information.tm2; }
+bool tm2() { return leaf1Information.tm2; }
 /// SSSE3 Extensions
-bool ssse3() { pragma(inline, true); return leaf1Information.ssse3; }
+bool ssse3() { return leaf1Information.ssse3; }
 /// L1 Context ID
-bool cnxt_id() { pragma(inline, true); return leaf1Information.cnxt_id; }
+bool cnxt_id() { return leaf1Information.cnxt_id; }
 ///
-bool sdbg() { pragma(inline, true); return leaf1Information.sdbg; }
+bool sdbg() { return leaf1Information.sdbg; }
 /// Fused Multiply Add
-bool fma() { pragma(inline, true); return leaf1Information.fma; }
+bool fma() { return leaf1Information.fma; }
 ///
-bool cmpxchg16b() { pragma(inline, true); return leaf1Information.cmpxchg16b; }
+bool cmpxchg16b() { return leaf1Information.cmpxchg16b; }
 /// TPR Update Control
-bool xtpr() { pragma(inline, true); return leaf1Information.xtpr; }
+bool xtpr() { return leaf1Information.xtpr; }
 /// Perf/Debug Capability MSR xTPR Update Control
-bool pdcm() { pragma(inline, true); return leaf1Information.pdcm; }
+bool pdcm() { return leaf1Information.pdcm; }
 /// Process-context Identifiers
-bool pcid() { pragma(inline, true); return leaf1Information.pcid; }
+bool pcid() { return leaf1Information.pcid; }
 /// Direct Cache Access
-bool dca() { pragma(inline, true); return leaf1Information.dca; }
+bool dca() { return leaf1Information.dca; }
 /// SSE4.1
-bool sse41() { pragma(inline, true); return leaf1Information.sse41; }
+bool sse41() { return leaf1Information.sse41; }
 /// SSE4.2
-bool sse42() { pragma(inline, true); return leaf1Information.sse42; }
+bool sse42() { return leaf1Information.sse42; }
 ///
-bool x2apic() { pragma(inline, true); return leaf1Information.x2apic; }
+bool x2apic() { return leaf1Information.x2apic; }
 ///
-bool movbe() { pragma(inline, true); return leaf1Information.movbe; }
+bool movbe() { return leaf1Information.movbe; }
 ///
-bool popcnt() { pragma(inline, true); return leaf1Information.popcnt; }
+bool popcnt() { return leaf1Information.popcnt; }
 ///
-bool tsc_deadline() { pragma(inline, true); return leaf1Information.tsc_deadline; }
+bool tsc_deadline() { return leaf1Information.tsc_deadline; }
 ///
-bool aes() { pragma(inline, true); return leaf1Information.aes; }
+bool aes() { return leaf1Information.aes; }
 ///
-bool xsave() { pragma(inline, true); return leaf1Information.xsave; }
+bool xsave() { return leaf1Information.xsave; }
 ///
-bool osxsave() { pragma(inline, true); return leaf1Information.osxsave; }
+bool osxsave() { return leaf1Information.osxsave; }
 ///
-bool avx() { pragma(inline, true); return leaf1Information.avx; }
+bool avx() { return leaf1Information.avx; }
 ///
-bool f16c() { pragma(inline, true); return leaf1Information.f16c; }
+bool f16c() { return leaf1Information.f16c; }
 ///
-bool rdrand() { pragma(inline, true); return leaf1Information.rdrand; }
+bool rdrand() { return leaf1Information.rdrand; }
 /// x87 FPU on Chip
-bool fpu() { pragma(inline, true); return leaf1Information.fpu; }
+bool fpu() { return leaf1Information.fpu; }
 /// Virtual-8086 Mode Enhancement
-bool vme() { pragma(inline, true); return leaf1Information.vme; }
+bool vme() { return leaf1Information.vme; }
 /// Debugging Extensions
-bool de() { pragma(inline, true); return leaf1Information.de; }
+bool de() { return leaf1Information.de; }
 /// Page Size Extensions
-bool pse() { pragma(inline, true); return leaf1Information.pse; }
+bool pse() { return leaf1Information.pse; }
 /// Time Stamp Counter
-bool tsc() { pragma(inline, true); return leaf1Information.tsc; }
+bool tsc() { return leaf1Information.tsc; }
 /// RDMSR and WRMSR Support
-bool msr() { pragma(inline, true); return leaf1Information.msr; }
+bool msr() { return leaf1Information.msr; }
 /// Physical Address Extensions
-bool pae() { pragma(inline, true); return leaf1Information.pae; }
+bool pae() { return leaf1Information.pae; }
 /// Machine Check Exception
-bool mce() { pragma(inline, true); return leaf1Information.mce; }
+bool mce() { return leaf1Information.mce; }
 /// CMPXCHG8B Inst.
-bool cx8() { pragma(inline, true); return leaf1Information.cx8; }
+bool cx8() { return leaf1Information.cx8; }
 /// APIC on Chip
-bool apic() { pragma(inline, true); return leaf1Information.apic; }
+bool apic() { return leaf1Information.apic; }
 /// SYSENTER and SYSEXIT
-bool sep() { pragma(inline, true); return leaf1Information.sep; }
+bool sep() { return leaf1Information.sep; }
 /// Memory Type Range Registers
-bool mtrr() { pragma(inline, true); return leaf1Information.mtrr; }
+bool mtrr() { return leaf1Information.mtrr; }
 /// PTE Global Bit
-bool pge() { pragma(inline, true); return leaf1Information.pge; }
+bool pge() { return leaf1Information.pge; }
 /// Machine Check Architecture
-bool mca() { pragma(inline, true); return leaf1Information.mca; }
+bool mca() { return leaf1Information.mca; }
 /// Conditional Move/Compare Instruction
-bool cmov() { pragma(inline, true); return leaf1Information.cmov; }
+bool cmov() { return leaf1Information.cmov; }
 /// Page Attribute Table
-bool pat() { pragma(inline, true); return leaf1Information.pat; }
+bool pat() { return leaf1Information.pat; }
 ///  Page Size Extension
-bool pse36() { pragma(inline, true); return leaf1Information.pse36; }
+bool pse36() { return leaf1Information.pse36; }
 /// Processor Serial Number
-bool psn() { pragma(inline, true); return leaf1Information.psn; }
+bool psn() { return leaf1Information.psn; }
 /// CLFLUSH instruction
-bool clfsh() { pragma(inline, true); return leaf1Information.clfsh; }
+bool clfsh() { return leaf1Information.clfsh; }
 /// Debug Store
-bool ds() { pragma(inline, true); return leaf1Information.ds; }
+bool ds() { return leaf1Information.ds; }
 /// Thermal Monitor and Clock Ctrl
-bool acpi() { pragma(inline, true); return leaf1Information.acpi; }
+bool acpi() { return leaf1Information.acpi; }
 /// MMX Technology
-bool mmx() { pragma(inline, true); return leaf1Information.mmx; }
+bool mmx() { return leaf1Information.mmx; }
 /// FXSAVE/FXRSTOR
-bool fxsr() { pragma(inline, true); return leaf1Information.fxsr; }
+bool fxsr() { return leaf1Information.fxsr; }
 /// SSE Extensions
-bool sse() { pragma(inline, true); return leaf1Information.sse; }
+bool sse() { return leaf1Information.sse; }
 /// SSE2 Extensions
-bool sse2() { pragma(inline, true); return leaf1Information.sse2; }
+bool sse2() { return leaf1Information.sse2; }
 /// Self Snoop
-bool ss() { pragma(inline, true); return leaf1Information.ss; }
+bool ss() { return leaf1Information.ss; }
 /// Multi-threading
-bool htt() { pragma(inline, true); return leaf1Information.htt; }
+bool htt() { return leaf1Information.htt; }
 /// Therm. Monitor
-bool tm() { pragma(inline, true); return leaf1Information.tm; }
+bool tm() { return leaf1Information.tm; }
 /// Pend. Brk. EN.
-bool pbe() { pragma(inline, true); return leaf1Information.pbe; }
+bool pbe() { return leaf1Information.pbe; }

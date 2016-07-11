@@ -268,17 +268,17 @@ Total number of CPU packages.
 Note: not implemented
 +/
 
-pragma(inline, true) uint cpus() { return _cpus; }
+uint cpus() { return _cpus; }
 
 /++
 Total number of cores per CPU.
 +/
-pragma(inline, true) uint cores() { return _cores; }
+uint cores() { return _cores; }
 
 /++
 Total number of threads per CPU.
 +/
-pragma(inline, true) uint threads() { return _threads; }
+uint threads() { return _threads; }
 
 /++
 Data Caches
@@ -286,7 +286,7 @@ Data Caches
 Returns:
     array composed of detected data caches. Array is sorted in ascending order.
 +/
-pragma(inline, true) immutable(Cache)[] dCache() { return _dCache[0 .. _dCache_length]; }
+immutable(Cache)[] dCache() { return _dCache[0 .. _dCache_length]; }
 
 /++
 Instruction Caches
@@ -294,7 +294,7 @@ Instruction Caches
 Returns:
     array composed of detected instruction caches. Array is sorted in ascending order.
 +/
-pragma(inline, true) immutable(Cache)[] iCache() { return _iCache[0 .. _iCache_length]; }
+immutable(Cache)[] iCache() { return _iCache[0 .. _iCache_length]; }
 
 /++
 Unified Caches
@@ -302,7 +302,7 @@ Unified Caches
 Returns:
     array composed of detected unified caches. Array is sorted in ascending order.
 +/
-pragma(inline, true) immutable(Cache)[] uCache() { return _uCache[0 .. _uCache_length]; }
+immutable(Cache)[] uCache() { return _uCache[0 .. _uCache_length]; }
 
 /++
 Data Translation Lookaside Buffers
@@ -310,7 +310,7 @@ Data Translation Lookaside Buffers
 Returns:
     array composed of detected data translation lookaside buffers. Array is sorted in ascending order.
 +/
-pragma(inline, true) immutable(Tlb)[] dTlb() { return _dTlb[0 .. _dTlb_length]; }
+immutable(Tlb)[] dTlb() { return _dTlb[0 .. _dTlb_length]; }
 
 /++
 Instruction Translation Lookaside Buffers
@@ -318,7 +318,7 @@ Instruction Translation Lookaside Buffers
 Returns:
     array composed of detected instruction translation lookaside buffers. Array is sorted in ascending order.
 +/
-pragma(inline, true) immutable(Tlb)[] iTlb() { return _iTlb[0 .. _iTlb_length]; }
+immutable(Tlb)[] iTlb() { return _iTlb[0 .. _iTlb_length]; }
 
 /++
 Unified Translation Lookaside Buffers
@@ -326,5 +326,5 @@ Unified Translation Lookaside Buffers
 Returns:
     array composed of detected unified translation lookaside buffers. Array is sorted in ascending order.
 +/
-pragma(inline, true) immutable(Tlb)[] uTlb() { return _uTlb[0 .. _uTlb_length]; }
+immutable(Tlb)[] uTlb() { return _uTlb[0 .. _uTlb_length]; }
 
