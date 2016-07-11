@@ -218,7 +218,10 @@ See also $(LINK2 https://github.com/ldc-developers/druntime/pull/80, LDC bug fix
 +/
 CpuInfo _cpuid(uint eax, uint ecx = 0)
 {
-    CpuInfo info = void;
+    uint a = void;
+    uint b = void;
+    uint c = void;
+    uint d = void;
     // @@@LDC_BUG@@@
     //version(LDC)
     //{
@@ -250,19 +253,19 @@ CpuInfo _cpuid(uint eax, uint ecx = 0)
     //else
     version(InlineAsm_X86_Any)
     {
-        //pure nothrow @nogc
-        asm
+        asm //pure nothrow @nogc
         {
             mov EAX, eax;
             mov ECX, ecx;
             cpuid;
-            mov info + CpuInfo.a.offsetof, EAX;
-            mov info + CpuInfo.b.offsetof, EBX;
-            mov info + CpuInfo.c.offsetof, ECX;
-            mov info + CpuInfo.d.offsetof, EDX;
+            mov a, EAX;
+            mov b, EBX;
+            mov c, ECX;
+            mov d, EDX;
         }
     }
-    return info;
+    else static assert(0);
+    return CpuInfo(a, b, c, d);
 }
 
 @trusted pure nothrow @nogc @property:
