@@ -44,7 +44,7 @@ private T2 assocCopy(T2, T1)(T1 from)
 {
     import std.traits: Unqual;
     Unqual!T2 to = cast(T2) from;
-    static if(is(Unqual!T1 != Unqual!T2))
+    static if(!is(Unqual!T1 == Unqual!T2))
     {
         if(from == T1.max)
         {
@@ -112,6 +112,7 @@ shared static this()
             // Levels 2 and 3
             if(maxExtendedLeaf >= 0x8000_0006)
             {
+                import cpuid.amd: decodeL2or3Assoc;
                 auto leafExt6 = cpuid.amd.LeafExt6Information(_cpuid(0x8000_0006));
 
                 if(leafExt6.L2DTlb4KSize)
