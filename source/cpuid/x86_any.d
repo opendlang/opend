@@ -46,7 +46,7 @@ private __gshared immutable char[48] _brand;
 private __gshared immutable VendorIndex _vendorId;
 
 
-//pure nothrow @nogc
+pure nothrow @nogc
 shared static this()
 {
     import std.stdio;
@@ -212,17 +212,16 @@ Params:
     info = information  received from CPUID instruction
     eax = function id
     ecx = sub-function id
-
-Bugs: `_cpuid` is not `pure @nothrow @nogc` function for now.
-See also $(LINK2 https://github.com/ldc-developers/druntime/pull/80, LDC bug fix).
 +/
+pure nothrow @nogc
 CpuInfo _cpuid(uint eax, uint ecx = 0)
 {
     uint a = void;
     uint b = void;
     uint c = void;
     uint d = void;
-    // @@@LDC_BUG@@@
+    // @@@FIXME@@@
+    // https://github.com/ldc-developers/druntime/pull/80
     //version(LDC)
     //{
     //    import ldc.llvmasm;
@@ -237,19 +236,19 @@ CpuInfo _cpuid(uint eax, uint ecx = 0)
     //    info.d = asmt.v[3];
     //}
     //else
-    //version(GNU)
-    //{
-    //    asm pure nothrow @nogc
-    //    {
-    //        "cpuid" : 
-    //            "=a" info.a,
-    //            "=b" info.b, 
-    //            "=c" info.c,
-    //            "=d" info.d,
-    //            : "a" eax, "c" ecx;
-    //    }
-    //}
-    //else
+    version(GNU)
+    {
+        asm pure nothrow @nogc
+        {
+            "cpuid" : 
+                "=a" info.a,
+                "=b" info.b, 
+                "=c" info.c,
+                "=d" info.d,
+                : "a" eax, "c" ecx;
+        }
+    }
+    else
     version(InlineAsm_X86_Any)
     {
         asm pure nothrow @nogc

@@ -49,216 +49,217 @@ private T2 assocCopy(T2, T1)(T1 from)
     return to;
 }
 
-//pure nothrow @nogc
+version(X86_Any)
+pure nothrow @nogc
 shared static this()
 {
-    import std.stdio;
-    writeln("Static constructor...");
-    version(X86_Any)
+    import cpuid.x86_any;
+    static import cpuid.intel;
+    static import cpuid.amd;
+
+    if(htt)
     {
-        import cpuid.x86_any;
-        static import cpuid.intel;
-        static import cpuid.amd;
-
-        if(htt)
+        /// for old CPUs
+        _threads = _cores = maxLogicalProcessors;
+    }
+    if (vendorIndex == VendorIndex.amd || 
+        vendorIndex == VendorIndex.amd_old || 
+        vendorIndex == VendorIndex.centaur)
+    {
+        // Caches and TLB
+        if(maxExtendedLeaf >= 0x8000_0005)
         {
-            /// for old CPUs
-            _threads = _cores = maxLogicalProcessors;
-        }
-        if (vendorIndex == VendorIndex.amd || 
-            vendorIndex == VendorIndex.amd_old || 
-            vendorIndex == VendorIndex.centaur)
-        {
-            // Caches and TLB
-            if(maxExtendedLeaf >= 0x8000_0005)
-            {
-                // Level 1
-                auto leafExt5 = cpuid.amd.LeafExt5Information(_cpuid(0x8000_0005));
+            // Level 1
+            auto leafExt5 = cpuid.amd.LeafExt5Information(_cpuid(0x8000_0005));
 
-                alias CacheAssoc = typeof(Cache.associative);
-                alias TlbAssoc = typeof(Tlb.associative);
+            alias CacheAssoc = typeof(Cache.associative);
+            alias TlbAssoc = typeof(Tlb.associative);
 
-                 if(leafExt5.L1DTlb4KSize)
-                 {
-                    _dTlb[0].page = 4;
-                    _dTlb[0].entries = leafExt5.L1DTlb4KSize;
-                    _dTlb[0].associative = leafExt5.L1DTlb4KAssoc.assocCopy!TlbAssoc;
-                    _dTlb_length = 1;
-                 }
-                 if(leafExt5.L1ITlb4KSize)
-                 {
-                    _iTlb[0].page = 4;
-                    _iTlb[0].entries = leafExt5.L1ITlb4KSize;
-                    _iTlb[0].associative = leafExt5.L1ITlb4KAssoc.assocCopy!TlbAssoc;
-                    _iTlb_length = 1;
-                }
-                if(leafExt5.L1DcSize)
-                {
-                    _dCache_length = 1;
-                    _dCache[0].size = leafExt5.L1DcSize;
-                    _dCache[0].line = leafExt5.L1DcLineSize;
-                    _dCache[0].associative = leafExt5.L1DcAssoc.assocCopy!CacheAssoc;
-                }
-                if(leafExt5.L1IcSize)
-                {
-                    _iCache_length = 1;
-                    _iCache[0].size = leafExt5.L1IcSize;
-                    _iCache[0].line = leafExt5.L1IcLineSize;
-                    _iCache[0].associative = leafExt5.L1IcAssoc.assocCopy!CacheAssoc;
-                }
-
-                // Levels 2 and 3
-                if(maxExtendedLeaf >= 0x8000_0006)
-                {
-                    auto leafExt6 = cpuid.amd.LeafExt6Information(_cpuid(0x8000_0006));
-
-                    if(leafExt6.L2DTlb4KSize)
-                    {
-                        _dTlb[_dTlb_length].page = 4;
-                        _dTlb[_dTlb_length].entries = leafExt6.L2DTlb4KSize;
-                        _dTlb[_dTlb_length].associative = leafExt6.L2DTlb4KAssoc.assocCopy!TlbAssoc;
-                        _dTlb_length++;
-                    }
-                    if(leafExt6.L2ITlb4KSize)
-                    {
-                        _iTlb[_iTlb_length].page = 4;
-                        _iTlb[_iTlb_length].entries = leafExt6.L2ITlb4KSize;
-                        _iTlb[_iTlb_length].associative = leafExt6.L2ITlb4KAssoc.assocCopy!TlbAssoc;
-                        _iTlb_length++;
-                    }
-                    if(leafExt6.L2Size)
-                    {
-                        _uCache[_uCache_length].size = leafExt6.L2Size;
-                        _uCache[_uCache_length].line = cast(typeof(Cache.line)) leafExt6.L2LineSize;
-                        _uCache[_uCache_length].associative = leafExt6.L2Assoc.assocCopy!CacheAssoc;
-                        _uCache_length++;
-                    }
-                    if(leafExt6.L3Size)
-                    {
-                        _uCache[_uCache_length].size = leafExt6.L3Size;
-                        _uCache[_uCache_length].line = cast(typeof(Cache.line)) leafExt6.L3LineSize;
-                        _uCache[_uCache_length].associative = leafExt6.L3Assoc.assocCopy!CacheAssoc;
-                        _uCache_length++;
-                    }
-                }
+             if(leafExt5.L1DTlb4KSize)
+             {
+                _dTlb[0].page = 4;
+                _dTlb[0].entries = leafExt5.L1DTlb4KSize;
+                _dTlb[0].associative = leafExt5.L1DTlb4KAssoc.assocCopy!TlbAssoc;
+                _dTlb_length = 1;
+             }
+             if(leafExt5.L1ITlb4KSize)
+             {
+                _iTlb[0].page = 4;
+                _iTlb[0].entries = leafExt5.L1ITlb4KSize;
+                _iTlb[0].associative = leafExt5.L1ITlb4KAssoc.assocCopy!TlbAssoc;
+                _iTlb_length = 1;
             }
-        }
-        else
-        {
-            /// Other vendors
-            if(maxBasicLeaf >= 0x2)
+            if(leafExt5.L1DcSize)
             {
-                /// Get TLB and Cache info
-                auto leaf2 = cpuid.intel.Leaf2Information(_cpuid(2));
+                _dCache_length = 1;
+                _dCache[0].size = leafExt5.L1DcSize;
+                _dCache[0].line = leafExt5.L1DcLineSize;
+                _dCache[0].associative = leafExt5.L1DcAssoc.assocCopy!CacheAssoc;
+            }
+            if(leafExt5.L1IcSize)
+            {
+                _iCache_length = 1;
+                _iCache[0].size = leafExt5.L1IcSize;
+                _iCache[0].line = leafExt5.L1IcLineSize;
+                _iCache[0].associative = leafExt5.L1IcAssoc.assocCopy!CacheAssoc;
+            }
 
-                /// Fill cache info
-                if(leaf2.dtlb.size)
+            // Levels 2 and 3
+            if(maxExtendedLeaf >= 0x8000_0006)
+            {
+                auto leafExt6 = cpuid.amd.LeafExt6Information(_cpuid(0x8000_0006));
+
+                if(leafExt6.L2DTlb4KSize)
                 {
-                    _dTlb[0] = leaf2.dtlb;
-                    _dTlb_length = 1;
-                }
-                if(leaf2.dtlb1.size)
-                {
-                    _dTlb[_dTlb_length] = leaf2.dtlb1;
+                    _dTlb[_dTlb_length].page = 4;
+                    _dTlb[_dTlb_length].entries = leafExt6.L2DTlb4KSize;
+                    _dTlb[_dTlb_length].associative = leafExt6.L2DTlb4KAssoc.assocCopy!TlbAssoc;
                     _dTlb_length++;
                 }
-                if(leaf2.itlb.size)
+                if(leafExt6.L2ITlb4KSize)
                 {
-                    _iTlb[0] = leaf2.itlb;
-                    _iTlb_length = 1;
+                    _iTlb[_iTlb_length].page = 4;
+                    _iTlb[_iTlb_length].entries = leafExt6.L2ITlb4KSize;
+                    _iTlb[_iTlb_length].associative = leafExt6.L2ITlb4KAssoc.assocCopy!TlbAssoc;
+                    _iTlb_length++;
                 }
-                if(leaf2.utlb.size)
+                if(leafExt6.L2Size)
                 {
-                    _uTlb[0] = leaf2.utlb;
-                    _uTlb_length = 1;
+                    _uCache[_uCache_length].size = leafExt6.L2Size;
+                    _uCache[_uCache_length].line = cast(typeof(Cache.line)) leafExt6.L2LineSize;
+                    _uCache[_uCache_length].associative = leafExt6.L2Assoc.assocCopy!CacheAssoc;
+                    _uCache_length++;
                 }
-
-                if(maxBasicLeaf >= 0x4)
+                if(leafExt6.L3Size)
                 {
-                    /// Fill cache info from leaf 4
-                    cpuid.intel.Leaf4Information leaf4 = void;
-                    Cache cache;
-                    Leaf4Loop: foreach(uint ecx; 0 .. 12)
-                    {
-                        leaf4.info = _cpuid(4, ecx);
-                        leaf4.fill(cache);
-
-                        with(cpuid.intel.Leaf4Information.Type)
-                        switch(leaf4.type)
-                        {
-                            case data:
-                                if(_dCache_length < _dCache.length)
-                                    _dCache[_dCache_length++] = cache;
-                                break;
-                            case instruction:
-                                if(_iCache_length < _iCache.length)
-                                    _iCache[_iCache_length++] = cache;
-                                break;
-                            case unified:
-                                if(_uCache_length < _uCache.length)
-                                    _uCache[_uCache_length++] = cache;
-                                break;
-                            default: break Leaf4Loop;
-                        }
-                        /// Fill core number for old CPUs
-                        _cores = leaf4.maxCorePerCPU;
-                    }
-                    if(maxBasicLeaf >= 0xB)
-                    {
-                        _threads = cast(ushort) _cpuid(0xB, 1).b;
-                        _cores = _threads / cast(ushort) _cpuid(0xB, 0).b;
-                    }
-                }
-                else
-                {
-                    /// Fill cache info from leaf 2
-                    if(leaf2.l1.size)
-                    {
-                        _dCache[0] = leaf2.l1;
-                        _dCache_length = 1;
-                    }
-                    if(leaf2.il1.size)
-                    {
-                        _iCache[0] = leaf2.il1;
-                        _iCache_length = 1;
-                    }
-                    if(leaf2.l2.size)
-                    {
-                        _uCache[0] = leaf2.l2;
-                        _uCache_length = 1;
-                    }
-                    if(leaf2.l3.size)
-                    {
-                        _uCache[_uCache_length] = leaf2.l3;
-                        _uCache_length++;
-                    }
+                    _uCache[_uCache_length].size = leafExt6.L3Size;
+                    _uCache[_uCache_length].line = cast(typeof(Cache.line)) leafExt6.L3LineSize;
+                    _uCache[_uCache_length].associative = leafExt6.L3Assoc.assocCopy!CacheAssoc;
+                    _uCache_length++;
                 }
             }
-        }
-
-        if(!_cpus) _cpus = 1;
-        if(!_cores) _cores = 1;
-        if(!_threads) _threads = 1;
-        if(_threads < _cores) _threads = _cores;
-
-        if(_iCache_length) _iCache[0].cores = 1;
-        if(_dCache_length) _dCache[0].cores = 1;
-        switch(_uCache_length)
-        {
-            case 0:
-                break;
-            case 1:
-                _uCache[0].cores = cast(typeof(Cache.cores)) _cores;
-                break;
-            default:
-                _uCache[0].cores = 1;
-                foreach(i; 1.._uCache_length)
-                    _uCache[i].cores = cast(typeof(Cache.cores)) _cores;
         }
     }
     else
-    static assert(0, "cpuid is not implemented");
+    {
+        /// Other vendors
+        if(maxBasicLeaf >= 0x2)
+        {
+            /// Get TLB and Cache info
+            auto leaf2 = cpuid.intel.Leaf2Information(_cpuid(2));
+
+            /// Fill cache info
+            if(leaf2.dtlb.size)
+            {
+                _dTlb[0] = leaf2.dtlb;
+                _dTlb_length = 1;
+            }
+            if(leaf2.dtlb1.size)
+            {
+                _dTlb[_dTlb_length] = leaf2.dtlb1;
+                _dTlb_length++;
+            }
+            if(leaf2.itlb.size)
+            {
+                _iTlb[0] = leaf2.itlb;
+                _iTlb_length = 1;
+            }
+            if(leaf2.utlb.size)
+            {
+                _uTlb[0] = leaf2.utlb;
+                _uTlb_length = 1;
+            }
+
+            if(maxBasicLeaf >= 0x4)
+            {
+                /// Fill cache info from leaf 4
+                cpuid.intel.Leaf4Information leaf4 = void;
+                Cache cache;
+                Leaf4Loop: foreach(uint ecx; 0 .. 12)
+                {
+                    leaf4.info = _cpuid(4, ecx);
+                    leaf4.fill(cache);
+
+                    with(cpuid.intel.Leaf4Information.Type)
+                    switch(leaf4.type)
+                    {
+                        case data:
+                            if(_dCache_length < _dCache.length)
+                                _dCache[_dCache_length++] = cache;
+                            break;
+                        case instruction:
+                            if(_iCache_length < _iCache.length)
+                                _iCache[_iCache_length++] = cache;
+                            break;
+                        case unified:
+                            if(_uCache_length < _uCache.length)
+                                _uCache[_uCache_length++] = cache;
+                            break;
+                        default: break Leaf4Loop;
+                    }
+                    /// Fill core number for old CPUs
+                    _cores = leaf4.maxCorePerCPU;
+                }
+                if(maxBasicLeaf >= 0xB)
+                {
+                    _threads = cast(ushort) _cpuid(0xB, 1).b;
+                    _cores = _threads / cast(ushort) _cpuid(0xB, 0).b;
+                }
+            }
+            else
+            {
+                /// Fill cache info from leaf 2
+                if(leaf2.l1.size)
+                {
+                    _dCache[0] = leaf2.l1;
+                    _dCache_length = 1;
+                }
+                if(leaf2.il1.size)
+                {
+                    _iCache[0] = leaf2.il1;
+                    _iCache_length = 1;
+                }
+                if(leaf2.l2.size)
+                {
+                    _uCache[0] = leaf2.l2;
+                    _uCache_length = 1;
+                }
+                if(leaf2.l3.size)
+                {
+                    _uCache[_uCache_length] = leaf2.l3;
+                    _uCache_length++;
+                }
+            }
+        }
+    }
+
+    if(!_cpus) _cpus = 1;
+    if(!_cores) _cores = 1;
+    if(!_threads) _threads = 1;
+    if(_threads < _cores) _threads = _cores;
+
+    if(_iCache_length) _iCache[0].cores = 1;
+    if(_dCache_length) _dCache[0].cores = 1;
+    switch(_uCache_length)
+    {
+        case 0:
+            break;
+        case 1:
+            _uCache[0].cores = cast(typeof(Cache.cores)) _cores;
+            break;
+        default:
+            _uCache[0].cores = 1;
+            foreach(i; 1.._uCache_length)
+                _uCache[i].cores = cast(typeof(Cache.cores)) _cores;
+    }
 }
+else
+static assert(0, "cpuid is not implemented");
+
+//void main()
+//{
+//    import std.stdio;
+//}
 
 @safe pure nothrow @nogc:
 
