@@ -250,7 +250,8 @@ CpuInfo _cpuid(uint eax, uint ecx = 0)
     //else
     version(InlineAsm_X86_Any)
     {
-        asm pure nothrow @nogc
+        //pure nothrow @nogc
+        asm
         {
             mov EAX, eax;
             mov ECX, ecx;
