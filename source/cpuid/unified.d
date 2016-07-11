@@ -137,7 +137,7 @@ shared static this()
                 }
                 if(leafExt6.L3Size)
                 {
-                    _uCache[_uCache_length].size = leafExt6.L3Size;
+                    _uCache[_uCache_length].size = leafExt6.L3Size * 512;
                     _uCache[_uCache_length].line = cast(typeof(Cache.line)) leafExt6.L3LineSize;
                     _uCache[_uCache_length].associative = leafExt6.L3Assoc.assocCopy!CacheAssoc;
                     _uCache_length++;
