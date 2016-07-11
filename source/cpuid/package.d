@@ -178,10 +178,9 @@ shared static this()
                     /// Fill cache info from leaf 4
                     cpuid.intel.Leaf4Information leaf4 = void;
                     Cache cache;
-                    uint ecx;
-                    Leaf4Loop: for(;;)
+                    Leaf4Loop: foreach(uint ecx; 0 .. 12)
                     {
-                        leaf4.info = _cpuid(4, ecx++);
+                        leaf4.info = _cpuid(4, ecx);
                         leaf4.fill(cache);
 
                         with(cpuid.intel.Leaf4Information.Type)
