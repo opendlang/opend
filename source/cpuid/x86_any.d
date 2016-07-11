@@ -219,20 +219,21 @@ See also $(LINK2 https://github.com/ldc-developers/druntime/pull/80, LDC bug fix
 CpuInfo _cpuid(uint eax, uint ecx = 0)
 {
     CpuInfo info = void;
-    version(LDC)
-    {
-        import ldc.llvmasm;
-        auto asmt = __asmtuple!
-        (uint, uint, uint, uint) (
-            "cpuid", 
-            "={eax},={ebx},={ecx},={edx},{eax},{ecx}", 
-            eax, ecx);
-        info.a = asmt.v[0];
-        info.b = asmt.v[1];
-        info.c = asmt.v[2];
-        info.d = asmt.v[3];
-    }
-    else
+    // @@@LDC_BUG@@@
+    //version(LDC)
+    //{
+    //    import ldc.llvmasm;
+    //    auto asmt = __asmtuple!
+    //    (uint, uint, uint, uint) (
+    //        "cpuid", 
+    //        "={eax},={ebx},={ecx},={edx},{eax},{ecx}", 
+    //        eax, ecx);
+    //    info.a = asmt.v[0];
+    //    info.b = asmt.v[1];
+    //    info.c = asmt.v[2];
+    //    info.d = asmt.v[3];
+    //}
+    //else
     version(GNU)
     asm pure nothrow @nogc {
         "cpuid" : 
