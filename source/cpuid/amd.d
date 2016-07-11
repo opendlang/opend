@@ -45,34 +45,34 @@ union LeafExt5Information
         /// Data TLB associativity for 2 MB and 4 MB pages.
         ubyte L1DTlb2and4MAssoc;
 
-        /// Instruction TLB number of entries for 4 KB pages. Instruction TLB number of entries for 4 KB pages.
+        /// Instruction TLB number of entries for 4 KB pages.
         ubyte L1ITlb4KSize;
-        /// Instruction TLB associativity for 4 KB pages. Instruction TLB associativity for 4 KB pages.
+        /// Instruction TLB associativity for 4 KB pages.
         /// See_also: CPUID Fn8000_0005_EDX[L1IcAssoc].
         ubyte L1ITlb4KAssoc;
-        /// Data TLB number of entries for 4 KB pages. Data TLB number of entries for 4 KB pages.
+        /// Data TLB number of entries for 4 KB pages.
         ubyte L1DTlb4KSize;
-        /// Data TLB associativity for 4 KB pages. Data TLB associativity for 4 KB pages.
+        /// Data TLB associativity for 4 KB pages.
         /// See_also: CPUID Fn8000_0005_EDX[L1IcAssoc].
         ubyte L1DTlb4KAssoc;
 
-        /// L1 data cache line size in bytes. L1 data cache line size in bytes.
+        /// L1 data cache line size in bytes.
         ubyte L1DcLineSize;
-        /// L1 data cache lines per tag. L1 data cache lines per tag.
+        /// L1 data cache lines per tag.
         ubyte L1DcLinesPerTag;
-        /// L1 data cache associativity. L1 data cache associativity.
+        /// L1 data cache associativity.
         /// See_also: CPUID Fn8000_0005_EDX[L1IcAssoc].
         ubyte L1DcAssoc;
-        /// L1 data cache size in KB. L1 data cache size in KB.
+        /// L1 data cache size in KB.
         ubyte L1DcSize;
 
-        /// L1 instruction cache line size in bytes. L1 instruction cache line size in bytes.
+        /// L1 instruction cache line size in bytes.
         ubyte L1IcLineSize;
-        /// L1 instruction cache lines per tag. L1 instruction cache lines per tag.
+        /// L1 instruction cache lines per tag.
         ubyte L1IcLinesPerTag;
-        /// L1 instruction cache associativity. L1 instruction cache associativity.
+        /// L1 instruction cache associativity.
         ubyte L1IcAssoc;
-        /// L1 instruction cache size KB. L1 instruction cache size KB.
+        /// L1 instruction cache size KB.
         ubyte L1IcSize;
     }
 }
@@ -101,21 +101,23 @@ union LeafExt6Information
         version(D_Ddoc)
         {
             const @trusted @property pure nothrow @nogc:
-            /// L2 instruction TLB number of entries for 4 KB pages. L2 instruction TLB num- ber of entries for 4-KB pages.
+            /// L2 instruction TLB number of entries for 4 KB pages.
             uint L2ITlb4KSize();
-            /// L2 instruction TLB associativity for 4 KB pages. L2 instruction TLB associativ- ity for 4-KB pages.
+            /// L2 instruction TLB associativity for 4 KB pages.
             uint L2ITlb4KAssoc();
-            /// L2 data TLB number of entries for 4 KB pages. L2 data TLB number of entries for 4-KB pages.
+            /// L2 data TLB number of entries for 4 KB pages.
             uint L2DTlb4KSize();
-            /// L2 data TLB associativity for 4 KB pages. L2 data TLB associativity for 4-KB pages.
+            /// L2 data TLB associativity for 4 KB pages.
             uint L2DTlb4KAssoc();
-            /// L2 instruction TLB number of entries for 2 MB and 4 MB pages. L2 instruction TLB number of entries for 2-MB and 4-MB pages. The value returned is for the number of entries available for the 2 MB page size; 4 MB pages require two 2 MB entries, so the number of entries available for the 4 MB page size is one-half the returned value.
+            /// L2 instruction TLB number of entries for 2 MB and 4 MB pages.
+            /// The value returned is for the number of entries available for the 2 MB page size; 4 MB pages require two 2 MB entries, so the number of entries available for the 4 MB page size is one-half the returned value.
             uint L2ITlb2and4MSize();
-            /// L2 instruction TLB associativity for 2 MB and 4 MB pages. L2 instruction TLB associativity for 2-MB and 4-MB pages.
+            /// L2 instruction TLB associativity for 2 MB and 4 MB pages.
             uint L2ITlb2and4MAssoc();
-            /// L2 data TLB number of entries for 2 MB and 4 MB pages. L2 data TLB number of entries for 2-MB and 4-MB pages. The value returned is for the number of entries available for the 2 MB page size; 4 MB pages require two 2 MB entries, so the number of entries available for the 4 MB page size is one-half the returned value.
+            /// L2 data TLB number of entries for 2 MB and 4 MB pages.
+            /// The value returned is for the number of entries available for the 2 MB page size; 4 MB pages require two 2 MB entries, so the number of entries available for the 4 MB page size is one-half the returned value.
             uint L2DTlb2and4MSize();
-            /// L2 data TLB associativity for 2 MB and 4 MB pages. L2 data TLB asso- ciativity for 2-MB and 4-MB pages.
+            /// L2 data TLB associativity for 2 MB and 4 MB pages.
             uint L2DTlb2and4MAssoc();
             /// L2 cache line size in bytes.
             uint L2LineSize();

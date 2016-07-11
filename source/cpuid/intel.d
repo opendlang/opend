@@ -32,9 +32,9 @@ struct Leaf2Information
     Cache il1;
     /// Level-2 data cache
     Cache l1;
-    /// Level-2 data cache
+    /// Level-2 unified cache
     Cache l2;
-    /// Level-2 data cache
+    /// Level-2 unified cache
     Cache l3;
     /// Intruction TLB
     Tlb itlb;
@@ -72,7 +72,7 @@ struct Leaf2Information
 
     Specification: Intel
     +/
-    //pure nothrow @nogc
+    pure nothrow @nogc
     this(ref uint[4] info)
     {
         version(BigEndian) static assert(0, "Leaf2Information is not implemented for BigEndian.");
@@ -711,7 +711,7 @@ union Leaf4Information
             ///
             data,
             ///
-            instruciton,
+            instruction,
             ///
             unified,
         }
@@ -744,7 +744,7 @@ union Leaf4Information
             /// `true` if WBINVD/INVD is not guaranteed to act upon lower level caches of non-originating threads sharing this cache.
             bool invalidate();
             /// `true` - Cache is not inclusive of lower cache levels. `false` - Cache is inclusive of lower cache levels.
-            bool inclusiveness();
+            bool inclusive();
             /// `false` - Direct mapped cache. `true` A complex function is used to index the cache, potentially using all address bits.
             bool complex();
         }
@@ -795,8 +795,9 @@ union Leaf4Information
         void fill(ref Cache cache) @property
         {
             cache.size = size;
+            cache.line = cast(typeof(cache.line))(l + 1);
             cache.inclusive = inclusive;
-            cache.associative = cast(ushort) (w + 1);
+            cache.associative = cast(typeof(cache.associative)) (w + 1);
             if(fullyAssociative)
                 cache.associative = cache.associative.max;
         }
