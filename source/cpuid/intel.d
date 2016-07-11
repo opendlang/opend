@@ -809,7 +809,6 @@ unittest
     {
         Cache cache = void;
         Leaf4Information leaf4 = void;
-        uint ecx;
         foreach(ecx; 0..12)
         {
             leaf4.info = _cpuid(4, ecx);
