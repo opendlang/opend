@@ -13,6 +13,7 @@ matrix:
     - {os: linux, d: dmd-2.071.1, env: ARCH="x86", addons: {apt: {packages: [[gcc-multilib]]}}}
     - {os: linux, d: ldc-1.0.0, env: ARCH="x86", addons: {apt: {packages: [[gcc-multilib]]}}}
     - {os: linux, d: gdc, env: ARCH="x86", addons: {apt: {packages: [[gcc-multilib]]}}}
+    - {os: linux, d: gdc, env: ARCH="x86_64"}
 branches:
   only:
     - master

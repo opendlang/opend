@@ -299,7 +299,6 @@ Params:
 +/
 bool isVirtual(VendorIndex v)
 {
-    pragma(inline, true)
     return v >= VendorIndex.undefinedvm;
 }
 
@@ -318,7 +317,6 @@ unittest
 /// VendorIndex name
 immutable(char)[12][] vendors()
 {
-    pragma(inline, true);
     align(4)
     static immutable char[12][] vendors =
     [
@@ -357,21 +355,18 @@ unittest
 /// VendorIndex encoded value.
 VendorIndex vendorIndex()
 {
-    pragma(inline, true)
     return _vendorId;
 }
 
 /// Maximum Input Value for Basic CPUID Information
 uint maxBasicLeaf()
 {
-    pragma(inline, true)
     return _maxBasicLeaf;
 }
 
 /// Maximum Input Value for Extended CPUID Information
 uint maxExtendedLeaf()
 {
-    pragma(inline, true)
     return _maxExtendedLeaf;
 }
 
@@ -430,13 +425,11 @@ Brand, e.g. `Intel(R) Core(TM) i7-4770HQ CPU @ 2.20GHz`.
 +/
 string brand()
 {
-    pragma(inline, true);
     return _brand[0 .. _brand_length];
 }
 
 string vendor()
 {
-    pragma(inline, true);
     return _vendor;
 }
 
