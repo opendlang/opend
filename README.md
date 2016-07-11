@@ -11,22 +11,3 @@
 # CPU Information
 
 This package also can be used as workaround for [core.cpuid Issue 16028](https://issues.dlang.org/show_bug.cgi?id=16028).
-
-
-## Compatibility
-
-+----------+----------------------------------------------------+
-| Compiler |                  Operating System                  |
-+          +----------------------------------------------------+
-|          |         Linux        | OS X |        Windows       |
-+          +----------------------+      +----------------------+
-|          | 64-bit |    32-bit   |      | 64-bit |    32-bit   |
-+----------+--------+-------------+------+--------+-------------+
-| DMD      |   Yes  |     Yes     |  Yes |   Yes  |     Yes     |
-+----------+--------+-------------+------+--------+-------------+
-| LDC      |   Yes  | LDC bug [1] |  Yes |   Yes  | LDC bug [1] |
-+----------+--------+-------------+------+--------+-------------+
-| GDC      |         The future GDC release is required.        |
-+----------+----------------------------------------------------+
-
-[1] 
