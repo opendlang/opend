@@ -110,7 +110,7 @@ private struct Leaf1Information
             /// EBX
             ubyte brandIndex;
             ubyte clflushLineSize;
-            ubyte logicalProcessors;
+            ubyte maxLogicalProcessors;
             ubyte initialAPIC;
 
             /// ECX
@@ -428,7 +428,7 @@ ubyte clflushLineSize() { pragma(inline, true); return leaf1Information.clflushL
 /++
 Maximum number of addressable IDs for logical processors in this physical package.
 +/
-ubyte logicalProcessors() { pragma(inline, true); return leaf1Information.logicalProcessors; }
+ubyte maxLogicalProcessors() { pragma(inline, true); return leaf1Information.maxLogicalProcessors; }
 /++
 Initial APIC ID
 +/
