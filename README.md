@@ -42,6 +42,8 @@ See http://docs.cpuid.dlang.io .
 
 ## Testing
 
+See [all reports](https://github.com/libmir/cpuid/issues?utf8=%E2%9C%93&q=is%3Aissue%20label%3AReports%20).
+
 To receive a report about your CPU, run
 
 ```
