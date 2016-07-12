@@ -10,6 +10,30 @@
 
 # CPU Information
 
+```d
+void main()
+{
+    import std.stdio;
+    import cpuid.unified;
+
+    enum fmt = "%14s: %s";
+
+    fmt.writefln("vendor", vendor);
+    fmt.writefln("brand", brand);
+
+    fmt.writefln("cores", cores);
+    fmt.writefln("threads", threads);
+
+    fmt.writefln("data caches", dCache.length);
+    fmt.writefln("code caches", iCache.length);
+    fmt.writefln("unified caches", uCache.length);
+
+    fmt.writefln("data TLBs", dTlb.length);
+    fmt.writefln("code TLBs", iTlb.length);
+    fmt.writefln("unified TLBs", uTlb.length);
+}
+```
+
 This package also can be used as workaround for [core.cpuid Issue 16028](https://issues.dlang.org/show_bug.cgi?id=16028).
 
 ## Documentation

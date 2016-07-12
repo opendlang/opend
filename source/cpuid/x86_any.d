@@ -406,6 +406,9 @@ string brand()
     return _brand[0 .. _brand_length];
 }
 
+/++
+Vendor, e.g. `GenuineIntel`.
++/
 string vendor()
 {
     return _vendor;

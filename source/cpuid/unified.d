@@ -7,6 +7,32 @@ Authors:   Ilya Yaroshenko
 +/
 module cpuid.unified;
 
+///
+unittest
+{
+    void smallReport()
+    {
+        import std.stdio;
+        import cpuid.unified;
+
+        enum fmt = "%14s: %s";
+
+        fmt.writefln("vendor", vendor);
+        fmt.writefln("brand", brand);
+
+        fmt.writefln("cores", cores);
+        fmt.writefln("threads", threads);
+
+        fmt.writefln("data caches", dCache.length);
+        fmt.writefln("code caches", iCache.length);
+        fmt.writefln("unified caches", uCache.length);
+
+        fmt.writefln("data TLBs", dTlb.length);
+        fmt.writefln("code TLBs", iTlb.length);
+        fmt.writefln("unified TLBs", uTlb.length);
+    }
+}
+
 public import cpuid.common;
 
 version(X86)
