@@ -262,6 +262,20 @@ shared static this()
 else
 static assert(0, "cpuid is not implemented");
 
+version(X86_Any)
+{
+    static import cpuid.x86_any;
+    /++
+    Vendor, e.g. `GenuineIntel`.
+    +/
+    alias vendor = cpuid.x86_any.vendor;
+    /++
+    Brand, e.g. `Intel(R) Core(TM) i7-4770HQ CPU @ 2.20GHz`.
+    +/
+    alias brand = cpuid.x86_any.brand;
+}
+else static assert(0);
+
 @safe pure nothrow @nogc:
 
 /++
