@@ -22,15 +22,12 @@ public:
         _pages = new DictionaryObject;
         _pages.add(name("Type"), name("Pages"));
         _pages.add(name("Kids"), _pagesArray);
+        _pages.add(name("MediaBox"), new ArrayObject([number(0), number(0), number(pageWidthMm), number(pageHeightMm)]));
 
         _catalog = new DictionaryObject;
         _catalog.add(name("Type"), name("Catalog"));
-        _catalog.add(name("Pages"), toRef(_pages));        
-
+        _catalog.add(name("Pages"), toRef(_pages));
         
-        _catalog.add(name("Count"), number(1));
-        _catalog.add(name("MediaBox"), new ArrayObject([number(0), number(0), number(pageWidthMm), number(pageHeightMm)]));
-
         // register
         toRef(_catalog);
 /+
@@ -80,6 +77,8 @@ public:
     {
         auto output = scoped!PDFSerializer();
 
+        _pages.add(name("Count"), number(cast(double)(_pagesArray.items.length)));
+
         // header
         output.put("%PDF-1.1\n");
 
@@ -115,21 +114,22 @@ public:
             {
                 assert(obj.generation == 0);
                 // Writing offset to object (i+1), not (i)
-                output.put(format("%010s 00000d n \n",  offsetsOfIndirectObjects[i]));
-                obj.toBytesDirect(output);
+                output.put(format("%010s 000000 n \n",  offsetsOfIndirectObjects[i]));
+             //   obj.toBytesDirect(output);
             }
         }
 
         output.put("trailer\n");
         {
             auto trailer = scoped!DictionaryObject();
-            trailer.add(name("Root"), _pool.nullObject);
+            trailer.add(name("Root"), toRef(_catalog));
             trailer.add(name("Size"), number(labelledObjects.length+1));
             trailer.toBytes(output);
             output.put("\n");
         }
 
         output.put("startxref\n");
+
         output.put(format("%s\n", offsetOfLastXref));
         output.put("%%EOF\n");
         return output.buffer;

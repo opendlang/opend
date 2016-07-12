@@ -66,7 +66,7 @@ class IndirectObject : PDFObject
     {
         output.put( to!string(identifier) ~ " 0 obj\n" );
         _obj.toBytes(output);
-        output.put("endobj\n");
+        output.put("\nendobj\n");
     }
 
     // Converts into bytes, write only the reference
@@ -175,7 +175,6 @@ public:
                 output.put(byteToHex(ch));
             }
         }
-        output.put(">");
     }
 
 private:
