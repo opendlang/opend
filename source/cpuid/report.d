@@ -65,8 +65,10 @@ string unified()
 
     app.formattedWrite("################ Unified Information ################\n");
     //app.formattedWrite("CPU count =  %s\n", cpus);
-    app.formattedWrite("Cores per CPU =  %s\n", cores);
-    app.formattedWrite("Threads per CPU =  %s\n", threads);
+    app.formattedWrite("Vendor: %s\n", vendor);
+    app.formattedWrite("Brand: %s\n", brand);
+    app.formattedWrite("Cores per CPU: %s\n", cores);
+    app.formattedWrite("Threads per CPU: %s\n", threads);
 
 
     app.formattedWrite("------------------ TLB Information ------------------\n");
@@ -128,8 +130,6 @@ string x86_any()
     app.formattedWrite("################## x86 Information ##################\n");
 
     foreach(i, name; AliasSeq!(
-        "vendor",
-        "brand",
         "vendorIndex",
         "brandIndex",
         "maxBasicLeaf",
