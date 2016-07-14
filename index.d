@@ -10,10 +10,10 @@ $(BOOKTABLE ,
         $(TH Modules)
         $(TH Description)
     )
-    $(LEADINGROW Hight Level API)
+    $(LEADINGROW High Level API)
     $(TR
         $(TDNW $(LINK2 cpuid_unified.html, cpuid.unified))
-        $(TD High level absraction on top of all architectures)
+        $(TD High level abstraction on top of all architectures)
     )
     $(TR
         $(TDNW $(LINK2 cpuid_x86_any.html, cpuid.x86_any))
@@ -22,11 +22,11 @@ $(BOOKTABLE ,
     $(LEADINGROW Low Level API)
     $(TR
         $(TDNW $(LINK2 cpuid_intel.html, cpuid.intel))
-        $(TD Intel 64 and IA-32 CPUID Information)
+        $(TD Intel 64 and IA-32 CPUID information)
     )
     $(TR
         $(TDNW $(LINK2 cpuid_amd.html, cpuid.amd))
-        $(TD AMD CPUID Information)
+        $(TD AMD CPUID information)
     )
     $(LEADINGROW Auxiliary)
     $(TR
