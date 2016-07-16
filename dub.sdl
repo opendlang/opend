@@ -1,0 +1,74 @@
+name			"erupted"
+description		"Auto-generated D bindings for Vulkan"
+copyright		"Copyright 2015-2016 The Khronos Group Inc.; Copyright 2016 Alex Parrill Peter Particle"
+authors			"Alex Parrill" "Peter Particle"
+targetType		"library"
+license			"BSD 2-clause"
+	
+// load vulkan vkGetInstanceProcAddr manually os specific or with glfw or similar
+configuration	"default"
+
+// load vulkan vkGetInstanceProcAddr with derelict
+configuration	"with-derelict-loader" {
+	versions		"ERUPTED_FROM_DERELICT"
+	dependency		"derelict-util"		version = "~>2.0.4"
+}
+
+// enable xlib specific functionality 
+configuration	"dub-platform-xlib" {
+	versions		"VK_USE_PLATFORM_XLIB_KHR"
+	dependency		"xlib-d"			version = "~>0.1.1"
+}
+
+// enable xcb specific functionality
+configuration	"dub-platform-xcb" {
+	versions		"VK_USE_PLATFORM_XCB_KHR"
+	dependency		"xcb-d"				version = "~>2.1.0"
+}
+
+// enable wayland specific functionality
+configuration	"dub-platform-wayland" {
+	versions		"VK_USE_PLATFORM_WAYLAND_KHR"
+	dependencies	"wayland-client-d"	version = "~>1.8.90"
+}
+
+// enable xlib specific functionality load vkGetInstanceProcAddr with derelict
+configuration	"dub-platform-xlib-derelict-loader" {
+	versions		"VK_USE_PLATFORM_XLIB_KHR" "ERUPTED_FROM_DERELICT"
+	dependency		"xlib-d"			version = "~>0.1.1"
+	dependency		"derelict-util"		version = "~>2.0.4"
+}
+
+// enable xcb specific functionality load vkGetInstanceProcAddr with derelict
+configuration	"dub-platform-xcb-derelict-loader" {
+	versions		"VK_USE_PLATFORM_XCB_KHR" "ERUPTED_FROM_DERELICT"
+	dependency		"xcb-d"				version = "~>2.1.0"
+	dependency		"derelict-util"		version = "~>2.0.4"
+}
+
+// enable wayland specific functionality load vkGetInstanceProcAddr with derelict
+configuration	"dub-platform-wayland-derelict-loader" {
+	versions		"VK_USE_PLATFORM_WAYLAND_KHR"  "ERUPTED_FROM_DERELICT"
+	dependencies	"wayland-client-d"	version = "~>1.8.90"
+	dependency		"derelict-util"		version = "~>2.0.4"
+}
+
+// example how to initialize a logical device
+subPackage {
+	name				"devices"
+	description			"Simple Vulkan example"
+	targetType			"executable"
+	sourceFiles			"examples/devices.d"
+	dependencies		"erupted"		path = "."
+	subConfiguration	"erupted"		"with-derelict-loader"
+}
+
+// example how query and enable layers
+subPackage {
+	name				"layers"
+	description			"Simple Vulkan example"
+	targetType			"executable"
+	sourceFiles			"examples/layers.d"
+	dependencies		"erupted"		path = "."
+	subConfiguration	"erupted"		"with-derelict-loader"
+}
