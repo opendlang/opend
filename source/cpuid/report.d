@@ -59,7 +59,6 @@ string unified()
     {
         app.formattedWrite("\t\tPage size = %s KB\n", tlb.page);
         app.formattedWrite("\t\tPages count = %s\n", tlb.entries);
-        app.formattedWrite("\t\tPages count = %s\n", tlb.entries);
         putAssociative(tlb.associative);
     }
 
