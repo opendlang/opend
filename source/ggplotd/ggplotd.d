@@ -233,17 +233,21 @@ struct GGPlotD
 
         if (legend.type == "continuous") {
             import ggplotd.legend : drawContinuousLegend; 
+            auto legendSurface = cairo.Surface.createForRectangle(surface,
+                cairo.Rectangle!double(width - 100, //margins.right, 
+                    0.5*height, 100, 100 ));//margins.right, margins.right));
             if (initCG)
-                surface = drawContinuousLegend( surface, width, height, colourIDs,
-                    colourGradientFunction );
+                legendSurface = drawContinuousLegend( legendSurface, 
+                    100, 100, 
+                    colourIDs, colourGradientFunction );
             else
-                surface = drawContinuousLegend( surface, width, height, colourIDs,
-                    colourGradient!HCY("") );
+                legendSurface = drawContinuousLegend( legendSurface,
+                    100, 100, 
+                    colourIDs, colourGradient!HCY("") );
         }
 
         return surface;
     }
- 
 
     /// save the plot to a file
     void save( string fname, int width = 470, int height = 470 ) const
