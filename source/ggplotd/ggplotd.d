@@ -10,7 +10,6 @@ import ggplotd.axes;
 import ggplotd.colour;
 import ggplotd.geom;
 import ggplotd.bounds;
-import ggscale = ggplotd.scale;
 import ggplotd.colourspace : RGBA, toCairoRGBA;
 
 version (unittest)
@@ -97,8 +96,9 @@ private auto drawTitle( in Title title, ref cairo.Surface surface,
     return surface;
 }
 
+import ggplotd.scale : ScaleType;
 private auto drawGeom( in Geom geom, ref cairo.Surface surface,
-    in ColourMap colourMap, in ggscale.ScaleType scaleFunction, in Bounds bounds, 
+    in ColourMap colourMap, in ScaleType scaleFunction, in Bounds bounds, 
     in Margins margins, int width, int height )
 {
     cairo.Context context;
@@ -136,6 +136,7 @@ struct Margins
 /// GGPlotD contains the needed information to create a plot
 struct GGPlotD
 {
+    import ggplotd.scale : ScaleType;
     /// Draw the plot to a cairo surface
     auto drawToSurface( ref cairo.Surface surface, int width, int height ) const
     {
@@ -247,7 +248,7 @@ struct GGPlotD
         {
             geomRange.put( rhs );
         }
-        static if (is(T==ggscale.ScaleType))
+        static if (is(T==ScaleType))
         {
             scaleFunction = rhs;
         }
@@ -284,13 +285,14 @@ struct GGPlotD
     }
 
     /// Active scale
-    ggscale.ScaleType scale() const
+    ScaleType scale() const
     {
+        import ggplotd.scale : defaultScale = scale;
         // Return active function or the default
         if (!scaleFunction.isNull)
             return scaleFunction;
         else 
-            return ggscale.scale();
+            return defaultScale();
     }
 
     /// Active colourGradient
@@ -318,7 +320,7 @@ private:
     Theme theme;
 
     import std.typecons : Nullable;
-    Nullable!(ggscale.ScaleType) scaleFunction;
+    Nullable!(ScaleType) scaleFunction;
 
     Nullable!(ColourGradientFunction) colourGradientFunction;
 }
@@ -374,10 +376,11 @@ unittest
 ///
 unittest
 {
+    import ggplotd.scale : scale;
     auto aes = Aes!(string[], "x", string[], "y", string[], "colour")(["a",
         "b", "c", "b"], ["x", "y", "y", "x"], ["b", "b", "b", "b"]);
     auto gg = GGPlotD();
-    gg + geomLine(aes) + ggscale.scale();
+    gg + geomLine(aes) + scale();
     gg.save( "test6.png");
 }
 
