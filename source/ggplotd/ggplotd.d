@@ -5,18 +5,18 @@ import cpdf = cairo.pdf;
 import csvg = cairo.svg;
 import cairo = cairo;
 
-import ggplotd.aes;
-import ggplotd.axes;
+//import ggplotd.axes;
 import ggplotd.colour;
-import ggplotd.geom;
-import ggplotd.bounds;
-import ggplotd.colourspace : RGBA, toCairoRGBA;
+import ggplotd.geom : Geom;
+import ggplotd.bounds : Bounds;
+import ggplotd.colourspace : RGBA;
 
 version (unittest)
 {
     import dunit.toolkit;
 }
 
+///
 alias TitleFunction = Title delegate(Title);
 
 /// Currently only holds the title. In the future could also be used to store details on location etc.
@@ -73,6 +73,7 @@ private auto createEmptySurface( string fname, int width, int height,
         surface = new cairo.ImageSurface(cairo.Format.CAIRO_FORMAT_ARGB32, width, height);
     }
 
+    import ggplotd.colourspace : toCairoRGBA;
     auto backcontext = cairo.Context(surface);
     backcontext.setSourceRGBA(colour.toCairoRGBA);
     backcontext.paint;
@@ -136,12 +137,17 @@ struct Margins
 /// GGPlotD contains the needed information to create a plot
 struct GGPlotD
 {
+    import ggplotd.bounds : height, width;
+    import ggplotd.colour : ColourGradientFunction;
     import ggplotd.scale : ScaleType;
     /// Draw the plot to a cairo surface
     auto drawToSurface( ref cairo.Surface surface, int width, int height ) const
     {
         import std.range : empty, front;
         import std.typecons : Tuple;
+
+        import ggplotd.bounds : AdaptiveBounds;
+        import ggplotd.colour : ColourID, createColourMap;
 
         AdaptiveBounds bounds;
         ColourID[] colourIDs;
@@ -163,6 +169,8 @@ struct GGPlotD
         import std.algorithm : sort, uniq, min, max;
         import std.range : chain;
         import std.array : array;
+
+        import ggplotd.axes : initialized, axisAes;
 
         // TODO move this out of here and add some tests
         // If ticks are provided then we make sure the bounds include them
@@ -204,6 +212,8 @@ struct GGPlotD
         auto aesY = axisAes("y", bounds.min_y, bounds.max_y, offset,
             sortedTicks );
 
+        import ggplotd.geom : geomAxis;
+
         auto gR = chain(
                 geomAxis(aesX, 10.0*bounds.height / height, xaxis.label), 
                 geomAxis(aesY, 10.0*bounds.width / width, yaxis.label)
@@ -244,6 +254,8 @@ struct GGPlotD
     /// Using + to extend the plot for compatibility to ggplot2 in R
     ref GGPlotD opBinary(string op, T)(T rhs) if (op == "+")
     {
+        import ggplotd.axes : XAxisFunction, YAxisFunction;
+        import ggplotd.colour : ColourGradientFunction;
         static if (is(ElementType!T==Geom))
         {
             geomRange.put( rhs );
@@ -298,12 +310,12 @@ struct GGPlotD
     /// Active colourGradient
     ColourGradientFunction colourGradient() const
     {
-        import ggcolour = ggplotd.colour;
+        import ggplotd.colour : defaultColourGradient = colourGradient;
         import ggplotd.colourspace : HCY;
         if (!colourGradientFunction.isNull)
             return colourGradientFunction;
         else
-            return ggcolour.colourGradient!HCY("");
+            return defaultColourGradient!HCY("");
     }
 
 private:
@@ -311,6 +323,7 @@ private:
     import ggplotd.theme : Theme, ThemeFunction;
     Appender!(Geom[]) geomRange;
 
+    import ggplotd.axes : XAxis, YAxis;
     XAxis xaxis;
     YAxis yaxis;
 
@@ -359,6 +372,7 @@ unittest
 
 unittest
 {
+    import ggplotd.axes : yaxisLabel, yaxisRange;
     auto gg = GGPlotD()
         .put( yaxisLabel( "My ylabel" ) )
         .put( yaxisRange( 0, 2.0 ) );
@@ -376,6 +390,8 @@ unittest
 ///
 unittest
 {
+    import ggplotd.aes : Aes;
+    import ggplotd.geom : geomLine;
     import ggplotd.scale : scale;
     auto aes = Aes!(string[], "x", string[], "y", string[], "colour")(["a",
         "b", "c", "b"], ["x", "y", "y", "x"], ["b", "b", "b", "b"]);
@@ -393,6 +409,9 @@ unittest
     import std.algorithm : map;
     import std.range : repeat, iota;
     import std.random : uniform;
+
+    import ggplotd.aes : Aes;
+    import ggplotd.geom : geomLine, geomPoint;
     // Generate some noisy data with reducing width
     auto f = (double x) { return x/(1+x); };
     auto width = (double x) { return sqrt(0.1/(1+x)); };
@@ -429,7 +448,10 @@ unittest
     import std.range : repeat, iota;
     import std.random : uniform;
 
+    import ggplotd.aes : Aes;
+    import ggplotd.geom : geomHist, geomPoint;
     import ggplotd.range : mergeRange;
+
     auto xs = iota(0,25,1).map!((x) => uniform(0.0,5)+uniform(0.0,5))
         .array;
     auto aes = Aes!(typeof(xs), "x")( xs );
@@ -451,6 +473,10 @@ unittest
     import std.algorithm : map;
     import std.range : repeat, iota, chain;
     import std.random : uniform;
+
+    import ggplotd.aes : Aes;
+    import ggplotd.geom : geomHist;
+
     auto xs = iota(0,50,1).map!((x) => uniform(0.0,5)+uniform(0.0,5)).array;
     auto cols = "a".repeat(25).chain("b".repeat(25));
     auto aes = Aes!(typeof(xs), "x", typeof(cols), "colour", 
@@ -468,6 +494,10 @@ unittest
     import std.algorithm : map;
     import std.range : repeat, iota, chain;
     import std.random : uniform;
+
+    import ggplotd.aes : Aes;
+    import ggplotd.geom : geomBox;
+
     auto xs = iota(0,50,1).map!((x) => uniform(0.0,5)+uniform(0.0,5)).array;
     auto cols = "a".repeat(25).chain("b".repeat(25)).array;
     auto aes = Aes!(typeof(xs), "x", typeof(cols), "colour", 
@@ -485,6 +515,11 @@ unittest
     import std.math : sqrt;
     import std.algorithm : map;
     import std.range : iota;
+
+    import ggplotd.aes : Aes;
+    import ggplotd.axes : xaxisLabel, yaxisLabel, xaxisOffset, yaxisOffset, xaxisRange, yaxisRange;
+    import ggplotd.geom : geomLine;
+
     // Generate some noisy data with reducing width
     auto f = (double x) { return x/(1+x); };
     auto xs = iota( 0, 10, 0.1 ).array;
@@ -518,6 +553,9 @@ unittest
 /// Polygon
 unittest
 {
+    import ggplotd.aes : Aes;
+    import ggplotd.geom : geomPolygon;
+
     // http://blackedder.github.io/ggplotd/images/polygon.png
     auto gg = GGPlotD().put( geomPolygon( 
         Aes!(
@@ -532,7 +570,10 @@ unittest
 unittest
 {
     /// http://blackedder.github.io/ggplotd/images/background.svg
+    import ggplotd.aes : Aes;
     import ggplotd.theme : background;
+    import ggplotd.geom : geomPoint;
+
     auto gg = GGPlotD().put( background( RGBA(0.7,0.7,0.7,1) ) );
     gg.put( geomPoint( 
         Aes!(
@@ -552,6 +593,9 @@ unittest
     import std.algorithm : map;
     import std.range : repeat, iota;
     import std.random : uniform;
+
+    import ggplotd.geom : geomPoint;
+
     struct Point { double x; double y; }
     // Generate some noisy data with reducing width
     auto f = (double x) { return x/(1+x); };
@@ -671,7 +715,9 @@ unittest
 unittest
 {
     // Drawing different shapes
-    import ggplotd.aes : Pixel;
+    import ggplotd.aes : Aes, Pixel;
+    import ggplotd.axes : xaxisRange, yaxisRange;
+    import ggplotd.geom : geomDiamond, geomRectangle;
 
     auto gg = GGPlotD();
 
@@ -700,7 +746,10 @@ unittest
 unittest
 {
     // Drawing different shapes
-    import ggplotd.aes : Pixel;
+    import ggplotd.aes : Aes, Pixel;
+    import ggplotd.axes : xaxisRange, yaxisRange;
+
+    import ggplotd.geom : geomEllipse, geomTriangle;
 
     auto gg = GGPlotD();
 
