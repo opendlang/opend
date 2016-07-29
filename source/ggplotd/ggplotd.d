@@ -10,7 +10,7 @@ import ggplotd.axes;
 import ggplotd.colour;
 import ggplotd.geom;
 import ggplotd.bounds;
-import ggplotd.scale;
+import ggscale = ggplotd.scale;
 import ggplotd.colourspace : RGBA, toCairoRGBA;
 
 version (unittest)
@@ -98,7 +98,7 @@ private auto drawTitle( in Title title, ref cairo.Surface surface,
 }
 
 private auto drawGeom( in Geom geom, ref cairo.Surface surface,
-    in ColourMap colourMap, in ScaleType scaleFunction, in Bounds bounds, 
+    in ColourMap colourMap, in ggscale.ScaleType scaleFunction, in Bounds bounds, 
     in Margins margins, int width, int height )
 {
     cairo.Context context;
@@ -155,15 +155,8 @@ struct GGPlotD
             yAxisTicks ~= geom.yTickLabels;
         }
 
-        import ggplotd.colourspace : HCY;
-
-        ColourMap colourMap;
-        if (initCG)
-            colourMap = createColourMap( colourIDs, 
-                colourGradientFunction );
-        else
-            colourMap = createColourMap( colourIDs, 
-                colourGradient!HCY("") );
+        auto colourMap = createColourMap( colourIDs, 
+                this.colourGradient() );
 
         // Axis
         import std.algorithm : sort, uniq, min, max;
@@ -218,15 +211,10 @@ struct GGPlotD
         // Plot axis and geomRange
         foreach (geom; chain(geomRange.data, gR) )
         {
-            if (initScale)
-                surface = geom.drawGeom( surface,
-                    colourMap, scaleFunction, bounds, 
-                    margins, width, height );
-            else 
-                surface = geom.drawGeom( surface,
-                    colourMap, scale(), bounds, 
-                    margins, width, height );
-         }
+            surface = geom.drawGeom( surface,
+                colourMap, scale(), bounds, 
+                margins, width, height );
+        }
 
         // Plot title
         surface = title.drawTitle( surface, margins, width );
@@ -259,9 +247,8 @@ struct GGPlotD
         {
             geomRange.put( rhs );
         }
-        static if (is(T==ScaleType))
+        static if (is(T==ggscale.ScaleType))
         {
-            initScale = true;
             scaleFunction = rhs;
         }
         static if (is(T==XAxisFunction))
@@ -285,7 +272,6 @@ struct GGPlotD
             margins = rhs;
         }
         static if (is(T==ColourGradientFunction)) {
-            initCG = true;
             colourGradientFunction = rhs;
         }
         return this;
@@ -295,6 +281,27 @@ struct GGPlotD
     ref GGPlotD put(T)(T rhs)
     {
         return this.opBinary!("+", T)(rhs);
+    }
+
+    /// Active scale
+    ggscale.ScaleType scale() const
+    {
+        // Return active function or the default
+        if (!scaleFunction.isNull)
+            return scaleFunction;
+        else 
+            return ggscale.scale();
+    }
+
+    /// Active colourGradient
+    ColourGradientFunction colourGradient() const
+    {
+        import ggcolour = ggplotd.colour;
+        import ggplotd.colourspace : HCY;
+        if (!colourGradientFunction.isNull)
+            return colourGradientFunction;
+        else
+            return ggcolour.colourGradient!HCY("");
     }
 
 private:
@@ -310,11 +317,10 @@ private:
     Title title;
     Theme theme;
 
-    bool initScale = false;
-    ScaleType scaleFunction;
+    import std.typecons : Nullable;
+    Nullable!(ggscale.ScaleType) scaleFunction;
 
-    bool initCG = false;
-    ColourGradientFunction colourGradientFunction;
+    Nullable!(ColourGradientFunction) colourGradientFunction;
 }
 
 unittest
@@ -371,7 +377,7 @@ unittest
     auto aes = Aes!(string[], "x", string[], "y", string[], "colour")(["a",
         "b", "c", "b"], ["x", "y", "y", "x"], ["b", "b", "b", "b"]);
     auto gg = GGPlotD();
-    gg + geomLine(aes) + scale();
+    gg + geomLine(aes) + ggscale.scale();
     gg.save( "test6.png");
 }
 
