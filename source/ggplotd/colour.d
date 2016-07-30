@@ -319,6 +319,7 @@ unittest
     assertEqual(cids.front[0], 0);
 }
 
+/// Take a ColourID and return a colour
 alias ColourMap = RGBA delegate(ColourID tup);
 
 ///

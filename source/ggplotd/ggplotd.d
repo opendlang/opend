@@ -5,7 +5,6 @@ import cpdf = cairo.pdf;
 import csvg = cairo.svg;
 import cairo = cairo;
 
-//import ggplotd.axes;
 import ggplotd.colour;
 import ggplotd.geom : Geom;
 import ggplotd.bounds : Bounds;
@@ -16,7 +15,7 @@ version (unittest)
     import dunit.toolkit;
 }
 
-///
+/// delegate that takes a Title struct and returns a changed Title struct
 alias TitleFunction = Title delegate(Title);
 
 /// Currently only holds the title. In the future could also be used to store details on location etc.
