@@ -28,8 +28,7 @@ ThemeFunction background( RGBA colour )
 +/
 ThemeFunction background( string colour )
 {
-    import ggplotd.colour : createNamedColours;
-    auto namedColours = createNamedColours();
+    import ggplotd.colour : namedColours;
     return delegate(Theme t) { t.backgroundColour = namedColours[colour]; 
         return t; };
 }

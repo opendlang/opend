@@ -5,19 +5,17 @@ import cpdf = cairo.pdf;
 import csvg = cairo.svg;
 import cairo = cairo;
 
-import ggplotd.aes;
-import ggplotd.axes;
 import ggplotd.colour;
-import ggplotd.geom;
-import ggplotd.bounds;
-import ggplotd.scale;
-import ggplotd.colourspace : RGBA, toCairoRGBA;
+import ggplotd.geom : Geom;
+import ggplotd.bounds : Bounds;
+import ggplotd.colourspace : RGBA;
 
 version (unittest)
 {
     import dunit.toolkit;
 }
 
+/// delegate that takes a Title struct and returns a changed Title struct
 alias TitleFunction = Title delegate(Title);
 
 /// Currently only holds the title. In the future could also be used to store details on location etc.
@@ -74,6 +72,7 @@ private auto createEmptySurface( string fname, int width, int height,
         surface = new cairo.ImageSurface(cairo.Format.CAIRO_FORMAT_ARGB32, width, height);
     }
 
+    import ggplotd.colourspace : toCairoRGBA;
     auto backcontext = cairo.Context(surface);
     backcontext.setSourceRGBA(colour.toCairoRGBA);
     backcontext.paint;
@@ -97,6 +96,7 @@ private auto drawTitle( in Title title, ref cairo.Surface surface,
     return surface;
 }
 
+import ggplotd.scale : ScaleType;
 private auto drawGeom( in Geom geom, ref cairo.Surface surface,
     in ColourMap colourMap, in ScaleType scaleFunction, in Bounds bounds, 
     in Margins margins, int width, int height )
@@ -136,11 +136,28 @@ struct Margins
 /// GGPlotD contains the needed information to create a plot
 struct GGPlotD
 {
-    /// Draw the plot to a cairo surface
-    cairo.Surface drawToSurface( ref cairo.Surface surface, int width, int height ) const
+    import ggplotd.bounds : height, width;
+    import ggplotd.colour : ColourGradientFunction;
+    import ggplotd.scale : ScaleType;
+
+    /**
+    Draw the plot to a cairoD cairo surface.
+
+    Params:
+        surface = Surface object of type cairo.Surface from cairoD library, on top of which this plot is drawn.
+        width = Width of the given surface.
+        height = Height of the given surface.
+
+    Returns:
+        Resulting surface of the same type as input surface, with this plot drawn on top of it.
+    */
+    ref cairo.Surface drawToSurface( ref cairo.Surface surface, int width, int height ) const
     {
         import std.range : empty, front;
         import std.typecons : Tuple;
+
+        import ggplotd.bounds : AdaptiveBounds;
+        import ggplotd.colour : ColourID, createColourMap;
 
         AdaptiveBounds bounds;
         ColourID[] colourIDs;
@@ -155,20 +172,15 @@ struct GGPlotD
             yAxisTicks ~= geom.yTickLabels;
         }
 
-        import ggplotd.colourspace : HCY;
-
-        ColourMap colourMap;
-        if (initCG)
-            colourMap = createColourMap( colourIDs, 
-                colourGradientFunction );
-        else
-            colourMap = createColourMap( colourIDs, 
-                colourGradient!HCY("") );
+        auto colourMap = createColourMap( colourIDs, 
+                this.colourGradient() );
 
         // Axis
         import std.algorithm : sort, uniq, min, max;
         import std.range : chain;
         import std.array : array;
+
+        import ggplotd.axes : initialized, axisAes;
 
         // TODO move this out of here and add some tests
         // If ticks are provided then we make sure the bounds include them
@@ -210,6 +222,8 @@ struct GGPlotD
         auto aesY = axisAes("y", bounds.min_y, bounds.max_y, offset,
             sortedTicks );
 
+        import ggplotd.geom : geomAxis;
+
         auto gR = chain(
                 geomAxis(aesX, 10.0*bounds.height / height, xaxis.label), 
                 geomAxis(aesY, 10.0*bounds.width / width, yaxis.label)
@@ -218,15 +232,10 @@ struct GGPlotD
         // Plot axis and geomRange
         foreach (geom; chain(geomRange.data, gR) )
         {
-            if (initScale)
-                surface = geom.drawGeom( surface,
-                    colourMap, scaleFunction, bounds, 
-                    margins, width, height );
-            else 
-                surface = geom.drawGeom( surface,
-                    colourMap, scale(), bounds, 
-                    margins, width, height );
-         }
+            surface = geom.drawGeom( surface,
+                colourMap, scale(), bounds, 
+                margins, width, height );
+        }
 
         // Plot title
         surface = title.drawTitle( surface, margins, width );
@@ -236,17 +245,42 @@ struct GGPlotD
             auto legendSurface = cairo.Surface.createForRectangle(surface,
                 cairo.Rectangle!double(width - 100, //margins.right, 
                     0.5*height, 100, 100 ));//margins.right, margins.right));
-            if (initCG)
-                legendSurface = drawContinuousLegend( legendSurface, 
-                    100, 100, 
-                    colourIDs, colourGradientFunction );
-            else
-                legendSurface = drawContinuousLegend( legendSurface,
-                    100, 100, 
-                    colourIDs, colourGradient!HCY("") );
+            legendSurface = drawContinuousLegend( legendSurface, 
+                100, 100, 
+                colourIDs, this.colourGradient );
         }
 
         return surface;
+    }
+ 
+    version(ggplotdGTK) 
+    {
+        import gtkdSurface = cairo.Surface; // cairo surface module in GtkD package.
+
+        /**
+        Draw the plot to a GtkD cairo surface.
+
+        Params:
+            surface = Surface object of type cairo.Surface from GtkD library, on top of which this plot is drawn.
+            width = Width of the given surface.
+            height = Height of the given surface.
+
+        Returns:
+            Resulting surface of the same type as input surface, with this plot drawn on top of it.
+        */
+        auto drawToSurface( ref gtkdSurface.Surface surface, int width, int height ) const
+        {
+            import gtkc = gtkc.cairotypes;
+            import cairod = cairo.c.cairo;
+
+            alias gtkd_surface_t = gtkc.cairo_surface_t;
+            alias cairod_surface_t = cairod.cairo_surface_t;
+
+            cairo.Surface cairodSurface = new cairo.Surface(cast(cairod_surface_t*)surface.getSurfaceStruct());
+            drawToSurface(cairodSurface, width, height);
+
+            return surface;
+        }
     }
 
     /// save the plot to a file
@@ -270,13 +304,14 @@ struct GGPlotD
     /// Using + to extend the plot for compatibility to ggplot2 in R
     ref GGPlotD opBinary(string op, T)(T rhs) if (op == "+")
     {
+        import ggplotd.axes : XAxisFunction, YAxisFunction;
+        import ggplotd.colour : ColourGradientFunction;
         static if (is(ElementType!T==Geom))
         {
             geomRange.put( rhs );
         }
         static if (is(T==ScaleType))
         {
-            initScale = true;
             scaleFunction = rhs;
         }
         static if (is(T==XAxisFunction))
@@ -300,7 +335,6 @@ struct GGPlotD
             margins = rhs;
         }
         static if (is(T==ColourGradientFunction)) {
-            initCG = true;
             colourGradientFunction = rhs;
         }
         static if (is(T==Legend)) {
@@ -315,12 +349,35 @@ struct GGPlotD
         return this.opBinary!("+", T)(rhs);
     }
 
+    /// Active scale
+    ScaleType scale() const
+    {
+        import ggplotd.scale : defaultScale = scale;
+        // Return active function or the default
+        if (!scaleFunction.isNull)
+            return scaleFunction;
+        else 
+            return defaultScale();
+    }
+
+    /// Active colourGradient
+    ColourGradientFunction colourGradient() const
+    {
+        import ggplotd.colour : defaultColourGradient = colourGradient;
+        import ggplotd.colourspace : HCY;
+        if (!colourGradientFunction.isNull)
+            return colourGradientFunction;
+        else
+            return defaultColourGradient!HCY("");
+    }
+
 private:
     import std.range : Appender;
     import ggplotd.theme : Theme, ThemeFunction;
     import ggplotd.legend : Legend;
     Appender!(Geom[]) geomRange;
 
+    import ggplotd.axes : XAxis, YAxis;
     XAxis xaxis;
     YAxis yaxis;
 
@@ -329,11 +386,9 @@ private:
     Title title;
     Theme theme;
 
-    bool initScale = false;
-    ScaleType scaleFunction;
-
-    bool initCG = false;
-    ColourGradientFunction colourGradientFunction;
+    import std.typecons : Nullable;
+    Nullable!(ScaleType) scaleFunction;
+    Nullable!(ColourGradientFunction) colourGradientFunction;
 
     Legend legend;
 }
@@ -370,8 +425,50 @@ unittest
     assertEqual( dim, gg.geomRange.data.length );
 }
 
+version(ggplotdGTK) 
+{
+    unittest 
+    {
+        // Draw same plot on cairod.ImageSurface, and on gtkd.cairo.ImageSurface,
+        // and prove resulting images are the same.
+
+        import ggplotd.geom;
+        import ggplotd.aes;
+
+        import gtkSurface = cairo.Surface;
+        import gtkImageSurface = cairo.ImageSurface;
+        import gtkCairoTypes = gtkc.cairotypes;
+
+        const win_width = 1024;
+        const win_height = 1024;
+
+        const radius = 400.;
+
+        auto line_aes11 = Aes!(double[], "x", double[], "y")( [ 0, radius*0.45 ], [ 0, radius*0.45]);
+        auto line_aes22 = Aes!(double[], "x", double[], "y")( [ 300, radius*0.45 ], [ 210, radius*0.45]);
+
+        auto gg = GGPlotD();
+        gg.put( geomLine(line_aes11) );
+        gg.put( geomLine(line_aes22) );
+
+        cairo.Surface cairodSurface = new cairo.ImageSurface(cairo.Format.CAIRO_FORMAT_RGB24, win_width, win_height);
+        gtkSurface.Surface gtkdSurface = gtkImageSurface.ImageSurface.create(gtkCairoTypes.cairo_format_t.RGB24, win_width, win_height);
+
+        auto cairodImageSurface = cast(cairo.ImageSurface)cairodSurface;
+        auto gtkdImageSurface = cast(gtkImageSurface.ImageSurface)gtkdSurface;
+
+        gg.drawToSurface(cairodSurface, win_width, win_height);
+        gg.drawToSurface(gtkdSurface, win_width, win_height);
+
+        auto byteSize = win_width*win_height*4;
+
+        assertEqual(cairodImageSurface.getData()[0..byteSize], gtkdImageSurface.getData()[0..byteSize]);
+    }
+}
+
 unittest
 {
+    import ggplotd.axes : yaxisLabel, yaxisRange;
     auto gg = GGPlotD()
         .put( yaxisLabel( "My ylabel" ) )
         .put( yaxisRange( 0, 2.0 ) );
@@ -389,6 +486,9 @@ unittest
 ///
 unittest
 {
+    import ggplotd.aes : Aes;
+    import ggplotd.geom : geomLine;
+    import ggplotd.scale : scale;
     auto aes = Aes!(string[], "x", string[], "y", string[], "colour")(["a",
         "b", "c", "b"], ["x", "y", "y", "x"], ["b", "b", "b", "b"]);
     auto gg = GGPlotD();
@@ -405,6 +505,9 @@ unittest
     import std.algorithm : map;
     import std.range : repeat, iota;
     import std.random : uniform;
+
+    import ggplotd.aes : Aes;
+    import ggplotd.geom : geomLine, geomPoint;
     // Generate some noisy data with reducing width
     auto f = (double x) { return x/(1+x); };
     auto width = (double x) { return sqrt(0.1/(1+x)); };
@@ -441,7 +544,10 @@ unittest
     import std.range : repeat, iota;
     import std.random : uniform;
 
+    import ggplotd.aes : Aes;
+    import ggplotd.geom : geomHist, geomPoint;
     import ggplotd.range : mergeRange;
+
     auto xs = iota(0,25,1).map!((x) => uniform(0.0,5)+uniform(0.0,5))
         .array;
     auto aes = Aes!(typeof(xs), "x")( xs );
@@ -463,6 +569,10 @@ unittest
     import std.algorithm : map;
     import std.range : repeat, iota, chain;
     import std.random : uniform;
+
+    import ggplotd.aes : Aes;
+    import ggplotd.geom : geomHist;
+
     auto xs = iota(0,50,1).map!((x) => uniform(0.0,5)+uniform(0.0,5)).array;
     auto cols = "a".repeat(25).chain("b".repeat(25));
     auto aes = Aes!(typeof(xs), "x", typeof(cols), "colour", 
@@ -480,6 +590,10 @@ unittest
     import std.algorithm : map;
     import std.range : repeat, iota, chain;
     import std.random : uniform;
+
+    import ggplotd.aes : Aes;
+    import ggplotd.geom : geomBox;
+
     auto xs = iota(0,50,1).map!((x) => uniform(0.0,5)+uniform(0.0,5)).array;
     auto cols = "a".repeat(25).chain("b".repeat(25)).array;
     auto aes = Aes!(typeof(xs), "x", typeof(cols), "colour", 
@@ -497,6 +611,11 @@ unittest
     import std.math : sqrt;
     import std.algorithm : map;
     import std.range : iota;
+
+    import ggplotd.aes : Aes;
+    import ggplotd.axes : xaxisLabel, yaxisLabel, xaxisOffset, yaxisOffset, xaxisRange, yaxisRange;
+    import ggplotd.geom : geomLine;
+
     // Generate some noisy data with reducing width
     auto f = (double x) { return x/(1+x); };
     auto xs = iota( 0, 10, 0.1 ).array;
@@ -530,6 +649,9 @@ unittest
 /// Polygon
 unittest
 {
+    import ggplotd.aes : Aes;
+    import ggplotd.geom : geomPolygon;
+
     // http://blackedder.github.io/ggplotd/images/polygon.png
     auto gg = GGPlotD().put( geomPolygon( 
         Aes!(
@@ -544,7 +666,10 @@ unittest
 unittest
 {
     /// http://blackedder.github.io/ggplotd/images/background.svg
+    import ggplotd.aes : Aes;
     import ggplotd.theme : background;
+    import ggplotd.geom : geomPoint;
+
     auto gg = GGPlotD().put( background( RGBA(0.7,0.7,0.7,1) ) );
     gg.put( geomPoint( 
         Aes!(
@@ -564,6 +689,9 @@ unittest
     import std.algorithm : map;
     import std.range : repeat, iota;
     import std.random : uniform;
+
+    import ggplotd.geom : geomPoint;
+
     struct Point { double x; double y; }
     // Generate some noisy data with reducing width
     auto f = (double x) { return x/(1+x); };
@@ -683,7 +811,9 @@ unittest
 unittest
 {
     // Drawing different shapes
-    import ggplotd.aes : Pixel;
+    import ggplotd.aes : Aes, Pixel;
+    import ggplotd.axes : xaxisRange, yaxisRange;
+    import ggplotd.geom : geomDiamond, geomRectangle;
 
     auto gg = GGPlotD();
 
@@ -712,7 +842,10 @@ unittest
 unittest
 {
     // Drawing different shapes
-    import ggplotd.aes : Pixel;
+    import ggplotd.aes : Aes, Pixel;
+    import ggplotd.axes : xaxisRange, yaxisRange;
+
+    import ggplotd.geom : geomEllipse, geomTriangle;
 
     auto gg = GGPlotD();
 

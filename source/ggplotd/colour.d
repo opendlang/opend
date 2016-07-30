@@ -18,7 +18,7 @@ version (unittest)
 
     Set of colors defined by X11, adopted by the W3C, SVG, and other popular libraries.
     +/
-auto createNamedColours()
+private auto createNamedColours()
 {
     RGBA[string] nameMap;
     nameMap["none"] = RGBA(0, 0, 0, 0);
@@ -172,6 +172,16 @@ auto createNamedColours()
     return nameMap;
 }
 
+/**
+    Set of colors defined by X11, adopted by the W3C, SVG, and other popular libraries.
+*/
+static RGBA[string] namedColours;
+
+static this() 
+{
+    namedColours = createNamedColours();
+}
+
 /// Converts any type into a double string pair, which is used by colour maps
 struct ColourID
 {
@@ -252,7 +262,6 @@ struct ColourIDRange(T) if (isInputRange!T && is(ElementType!T == ColourID))
     this(T range)
     {
         original = range;
-        namedColours = createNamedColours();
     }
 
     /// The front of the range
@@ -298,7 +307,6 @@ struct ColourIDRange(T) if (isInputRange!T && is(ElementType!T == ColourID))
 private:
     double[string] labelMap;
     T original;
-    RGBA[string] namedColours;
 }
 
 unittest
@@ -324,6 +332,7 @@ unittest
     assertEqual(cids.front[0], 0);
 }
 
+/// Take a ColourID and return a colour
 alias ColourMap = RGBA delegate(ColourID tup);
 
 ///
@@ -347,7 +356,6 @@ auto createColourMap(R)(R colourIDs, ColourGradientFunction gradient) if (is(Ele
             b), (a, b) => safeMax(a, b));
     }
 
-    auto namedColours = createNamedColours;
     import std.algorithm : find;
 
     return (ColourID tup) {
@@ -487,6 +495,7 @@ unittest
     assertEqual( col, RGB(0.25,0.3,0.4) );
 }
 
+/// 
 alias ColourGradientFunction = RGBA delegate( double value, double from, double till );
 
 /**
@@ -539,7 +548,6 @@ ColourGradientFunction colourGradient(T)( string name )
     if ( !name.empty && name != "default" )
     {
         import ggplotd.colourspace : toColourSpace;
-        auto namedColours = createNamedColours();
         auto cg = ColourGradient!T();
         auto splitted = name.splitter("-");
         immutable dim = splitted.walkLength;

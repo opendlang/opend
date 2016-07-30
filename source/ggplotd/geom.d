@@ -27,6 +27,7 @@ struct Geom
         mask = tup.mask;
     }
 
+    /// Delegate that takes a context and draws to it
     alias drawFunction = cairo.Context delegate(cairo.Context context, 
         ColourMap colourMap);
 
