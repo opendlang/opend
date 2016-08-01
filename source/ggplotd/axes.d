@@ -34,6 +34,8 @@ struct Axis
 
     /// Offset of the axis
     double offset;
+
+    bool show = true;
 }
 
 /// XAxis
@@ -383,4 +385,11 @@ unittest
     assertEqual( yf(yax).offset, 2 );
 }
 
+// Hide the axis 
+mixin( xy( q{auto axisShow( bool show ) 
+{ 
+    // Need to declare it as an X/YAxisFunction for the GGPlotD + overload
+    AxisFunction func = ( Axis axis ) { axis.show = show; return axis; }; 
+    return func;
+}} ) );
 

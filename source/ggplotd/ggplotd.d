@@ -123,6 +123,17 @@ private auto drawGeom( in Geom geom, ref cairo.Surface surface,
 /// Specify margins in number of pixels
 struct Margins
 {
+    this(in Margins copy) {
+        this(copy.left, copy.right, copy.bottom, copy.top);
+    }
+
+    this(in size_t l, in size_t r, in size_t b, in size_t t) {
+        left = l;
+        right = r;
+        bottom = b;
+        top = t;
+    }
+
     /// left margin
     size_t left = 50;
     /// right margin
@@ -213,12 +224,16 @@ struct GGPlotD
         auto offset = bounds.min_y;
         if (!isNaN(xaxis.offset))
             offset = xaxis.offset;
+        if (!xaxis.show) // Trixk to draw the axis off screen if it is hidden
+            offset = yaxis.min - bounds.height;
         auto aesX = axisAes("x", bounds.min_x, bounds.max_x, offset,
             sortedTicks );
 
         offset = bounds.min_x;
         if (!isNaN(yaxis.offset))
             offset = yaxis.offset;
+        if (!yaxis.show) // Trixk to draw the axis off screen if it is hidden
+            offset = xaxis.min - bounds.width;
         auto aesY = axisAes("y", bounds.min_y, bounds.max_y, offset,
             sortedTicks );
 
@@ -228,13 +243,16 @@ struct GGPlotD
                 geomAxis(aesX, 10.0*bounds.height / height, xaxis.label), 
                 geomAxis(aesY, 10.0*bounds.width / width, yaxis.label)
             );
+        auto plotMargins = Margins(margins);
+        if (!legend.type.empty && legend.type != "none")
+            plotMargins.right += legend.width;
 
         // Plot axis and geomRange
         foreach (geom; chain(geomRange.data, gR) )
         {
             surface = geom.drawGeom( surface,
                 colourMap, scale(), bounds, 
-                margins, width, height );
+                plotMargins, width, height );
         }
 
         // Plot title
@@ -243,10 +261,10 @@ struct GGPlotD
         if (legend.type == "continuous") {
             import ggplotd.legend : drawContinuousLegend; 
             auto legendSurface = cairo.Surface.createForRectangle(surface,
-                cairo.Rectangle!double(width - 100, //margins.right, 
-                    0.5*height, 100, 100 ));//margins.right, margins.right));
+                cairo.Rectangle!double(width - margins.right - legend.width, 
+                    0.5*height, legend.width, legend.height ));//margins.right, margins.right));
             legendSurface = drawContinuousLegend( legendSurface, 
-                100, 100, 
+                legend.width, legend.height, 
                 colourIDs, this.colourGradient );
         }
 

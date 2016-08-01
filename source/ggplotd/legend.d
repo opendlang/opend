@@ -7,6 +7,8 @@ import ggplotd.colour : ColourIDRange, ColourGradient;
 private struct Legend
 {
     string type = "continuous";
+    int height = 70;
+    int width = 80;
 }
 
 /++
@@ -30,13 +32,15 @@ auto drawContinuousLegend(CR, CG)
     import std.algorithm : reduce;
     import std.typecons : tuple;
 
-    import ggplotd.ggplotd : GGPlotD;
+    import ggplotd.ggplotd : GGPlotD, Margins;
     import ggplotd.algorithm : safeMin, safeMax;
     import ggplotd.aes : Aes;
     import ggplotd.geom : geomPolygon;
+    import ggplotd.axes : xaxisShow;
     // TODO: constify
     // TODO: make sure to test with alternative coloursceme (the hist2D examples, should suffice)
     auto gg = GGPlotD();
+    gg.put(Margins(10, 0, 0, 0));
     gg.put( colourGradient );
 
     auto minmax = reduce!((a,b) => safeMin(a, b.to!double),
@@ -48,6 +52,7 @@ auto drawContinuousLegend(CR, CG)
             [minmax[0], minmax[1], minmax[1], minmax[0]] );
     gg.put( geomPolygon(aes) );
     gg.put( legendType( "none" ) );
+    gg.put( xaxisShow(false) );
     
     gg.drawToSurface( surface, width, height );
     return surface;
