@@ -416,7 +416,7 @@ struct ColourGradient(C)
 
     void put( in double value, string name )
     {
-        auto rgb = createNamedColours[name];
+        auto rgb = namedColours[name];
         auto colour = toColourSpace!C( rgb );
         this.put( value, colour );
     }
@@ -514,7 +514,7 @@ GGPlotD().put( colourGradient( cg ) );
 -----------------
 */
 ColourGradientFunction colourGradient(T)( in ColourGradient!T cg, 
-    bool absolute=true )
+    bool absolute = false )
 {
     if (absolute) {
         return ( double value, double from, double till ) 
