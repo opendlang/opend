@@ -918,17 +918,38 @@ auto geomPolygon(AES)(AES aes)
             gV[1].x, gV[1].y );
 
         context.lineWidth = 0.0;
-        auto col0 = colourMap(ColourID(gV[0].z));
-        auto col1 = colourMap(ColourID(gV[1].z));
-        import ggplotd.colourspace : RGBA, toCairoRGBA;
-        gradient.addColorStopRGBA( 0,
-            RGBA(col0.r, col0.g, col0.b, flags.alpha)
-                .toCairoRGBA
-        );
-        gradient.addColorStopRGBA( 1,
-            RGBA(col1.r, col1.g, col1.b, flags.alpha)
-                .toCairoRGBA
-        );
+
+        /*
+            We add a number of stops to the gradient. Optimally we should only add the top
+            and bottom, but this is not possible for two reasons. First of all we support
+            other colour spaces than rgba, while cairo only support rgba. We _simulate_ 
+            the other colourspace in RGBA by taking small steps in the rgba colourspace.
+            Secondly to support multiple colour stops in our own colourgradient we need to 
+            add all those.
+
+            The ideal way to solve the second problem would be by using the colourGradient
+            stops here, but that wouldn't solve the first issue, so we go for the stupider
+            solution here.
+
+            Ideally we would see how cairo does their colourgradient and implement the same
+            for other colourspaces.
+i       */
+        auto no_stops = 10.0;
+        import std.range : iota;
+        import std.array : array;
+        auto stepsize = (gV[1].z - gV[0].z)/no_stops;
+        auto steps = [gV[0].z, gV[1].z];
+        if (stepsize != 0)
+            steps = iota(gV[0].z, gV[1].z+stepsize, stepsize).array;
+
+        foreach(i, z; steps) {
+            auto col = colourMap(ColourID(z));
+            import ggplotd.colourspace : RGBA, toCairoRGBA;
+            gradient.addColorStopRGBA(i/no_stops,
+                RGBA(col.r, col.g, col.b, flags.alpha).toCairoRGBA
+            );
+        }
+
         context.moveTo( vertices.front.x, vertices.front.y );
         vertices.popFront;
         foreach( v; vertices )
