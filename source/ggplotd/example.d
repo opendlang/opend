@@ -51,6 +51,7 @@ unittest
     import ggplotd.colourspace : XYZ;
     import ggplotd.geom : geomHist2D;
     import ggplotd.ggplotd : GGPlotD;
+    import ggplotd.legend : continuousLegend;
 
     auto xs = iota(0,500,1).map!((x) => uniform(0.0,5)+uniform(0.0,5))
         .array;
@@ -60,6 +61,8 @@ unittest
     auto gg = GGPlotD().put( geomHist2D( aes ) );
     // Use a different colour scheme
     gg.put( colourGradient!XYZ( "white-cornflowerBlue-crimson" ) );
+
+    gg.put(continuousLegend);
 
     gg.save( "hist2D.svg" );
 }
@@ -100,6 +103,7 @@ unittest
     import ggplotd.colourspace : XYZ;
     import ggplotd.geom : geomDensity2D;
     import ggplotd.ggplotd : GGPlotD;
+    import ggplotd.legend : continuousLegend;
 
     auto xs = iota(0,500,1).map!((x) => uniform(0.0,5)+uniform(0.0,5))
         .array;
@@ -109,6 +113,7 @@ unittest
     auto gg = GGPlotD().put( geomDensity2D( aes ) );
     // Use a different colour scheme
     gg.put( colourGradient!XYZ( "white-cornflowerBlue-crimson" ) );
+    gg.put(continuousLegend);
 
     gg.save( "density2D.png" );
 }

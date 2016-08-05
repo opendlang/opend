@@ -12,16 +12,15 @@ private struct Legend
 }
 
 /++
-Sets the type of legend to show 
+Create a legend using a continuous scale
 
 Params:
-    type = string representing the type of legend. Valid values: continuous and discrete. Any other value results in no legend being shown.
+    width Optional width in pixels
+    height Optional height in pixels
 +/
-auto legendType( string type )
+auto continuousLegend(int width = 80, int height = 70)
 {
-    Legend legend;
-    legend.type = type;
-    return legend;
+    return Legend("continuous", width, height);
 }
 
 /// Draw a legend for a continuous value to the given surface
@@ -51,7 +50,6 @@ auto drawContinuousLegend(CR, CG)
             [minmax[0], minmax[1], minmax[1], minmax[0]], 
             [minmax[0], minmax[1], minmax[1], minmax[0]] );
     gg.put( geomPolygon(aes) );
-    gg.put( legendType( "none" ) );
     gg.put( xaxisShow(false) );
     
     gg.drawToSurface( surface, width, height );

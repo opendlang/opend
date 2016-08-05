@@ -244,8 +244,8 @@ struct GGPlotD
                 geomAxis(aesY, 10.0*bounds.width / width, yaxis.label)
             );
         auto plotMargins = Margins(margins);
-        if (!legend.type.empty && legend.type != "none")
-            plotMargins.right += legend.width;
+        if (!legends.empty)
+            plotMargins.right += legends[0].width;
 
         // Plot axis and geomRange
         foreach (geom; chain(geomRange.data, gR) )
@@ -258,14 +258,20 @@ struct GGPlotD
         // Plot title
         surface = title.drawTitle( surface, margins, width );
 
-        if (legend.type == "continuous") {
-            import ggplotd.legend : drawContinuousLegend; 
-            auto legendSurface = cairo.Surface.createForRectangle(surface,
-                cairo.Rectangle!double(width - margins.right - legend.width, 
-                    0.5*height, legend.width, legend.height ));//margins.right, margins.right));
-            legendSurface = drawContinuousLegend( legendSurface, 
+        import std.range : iota, zip, dropOne;
+        foreach(ly; zip(legends, iota(0.0, height, height/(legends.length+1.0)).dropOne)) 
+        {
+            auto legend = ly[0];
+            auto y = ly[1] - legend.height*.5;
+            if (legend.type == "continuous") {
+                import ggplotd.legend : drawContinuousLegend; 
+                auto legendSurface = cairo.Surface.createForRectangle(surface,
+                    cairo.Rectangle!double(width - margins.right - legend.width, 
+                    y, legend.width, legend.height ));//margins.right, margins.right));
+                legendSurface = drawContinuousLegend( legendSurface, 
                 legend.width, legend.height, 
-                colourIDs, this.colourGradient );
+                    colourIDs, this.colourGradient );
+            }
         }
 
         return surface;
@@ -352,11 +358,12 @@ struct GGPlotD
         {
             margins = rhs;
         }
+        static if (is(T==Legend))
+        {
+            legends ~= rhs;
+        }
         static if (is(T==ColourGradientFunction)) {
             colourGradientFunction = rhs;
-        }
-        static if (is(T==Legend)) {
-            legend = rhs;
         }
         return this;
     }
@@ -408,7 +415,7 @@ private:
     Nullable!(ScaleType) scaleFunction;
     Nullable!(ColourGradientFunction) colourGradientFunction;
 
-    Legend legend;
+    Legend[] legends;
 }
 
 unittest
