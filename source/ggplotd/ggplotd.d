@@ -271,6 +271,14 @@ struct GGPlotD
                 legendSurface = drawContinuousLegend( legendSurface, 
                 legend.width, legend.height, 
                     colourIDs, this.colourGradient );
+            } else if (legend.type == "discrete") {
+                import ggplotd.legend : drawDiscreteLegend; 
+                auto legendSurface = cairo.Surface.createForRectangle(surface,
+                    cairo.Rectangle!double(width - margins.right - legend.width, 
+                    y, legend.width, legend.height ));//margins.right, margins.right));
+                legendSurface = drawDiscreteLegend( legendSurface, 
+                legend.width, legend.height, 
+                    colourIDs, this.colourGradient );
             }
         }
 

@@ -79,12 +79,14 @@ unittest
     import ggplotd.aes : Aes;
     import ggplotd.geom : geomDensity;
     import ggplotd.ggplotd : GGPlotD;
+    import ggplotd.legend : discreteLegend;
     auto xs = iota(0,50,1).map!((x) => uniform(0.0,5)+uniform(0.0,5)).array;
     auto cols = "a".repeat(25).chain("b".repeat(25));
     auto aes = Aes!(typeof(xs), "x", typeof(cols), "colour", 
         double[], "fill" )( 
             xs, cols, 0.45.repeat(xs.length).array);
     auto gg = GGPlotD().put( geomDensity( aes ) );
+    gg.put(discreteLegend);
     gg.save( "filled_density.svg" );
 }
 
