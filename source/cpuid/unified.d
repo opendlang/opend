@@ -235,7 +235,9 @@ shared static this()
                 if(maxBasicLeaf >= 0xB)
                 {
                     _threads = cast(ushort) _cpuid(0xB, 1).b;
-                    _cores = _threads / cast(ushort) _cpuid(0xB, 0).b;
+                    auto threadsPerCore = cast(ushort) _cpuid(0xB, 0).b;
+                    assert(threadsPerCore);
+                    _cores = _threads / threadsPerCore;
                 }
             }
             else
