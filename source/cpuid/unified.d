@@ -236,7 +236,11 @@ shared static this()
                 {
                     _threads = cast(ushort) _cpuid(0xB, 1).b;
                     auto threadsPerCore = cast(ushort) _cpuid(0xB, 0).b;
-                    assert(threadsPerCore);
+                    if(_treads == 0 || threadsPerCore == 0) // appveyor workaround
+                    {
+                        _treads = 1;
+                        threadsPerCore = 1;
+                    }
                     _cores = _threads / threadsPerCore;
                 }
             }
