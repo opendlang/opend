@@ -238,7 +238,7 @@ shared static this()
                     auto threadsPerCore = cast(ushort) _cpuid(0xB, 0).b;
                     if(_treads == 0 || threadsPerCore == 0) // appveyor workaround
                     {
-                        _treads = 1;
+                        _threads = 1;
                         threadsPerCore = 1;
                     }
                     _cores = _threads / threadsPerCore;
