@@ -144,6 +144,24 @@ struct Margins
     size_t top = 40; 
 }
 
+private auto defaultScaling( int size ) 
+{
+    if (size > 500)
+        return 1;
+    if (size < 100)
+        return 0.5;
+    return 0.5+(1.0-0.5)*(size-100)/(500-100);
+}
+
+unittest 
+{
+    assertEqual(defaultScaling(50), 0.5);
+    assertEqual(defaultScaling(600), 1.0);
+    assertEqual(defaultScaling(100), 0.5);
+    assertEqual(defaultScaling(500), 1.0);
+    assertEqual(defaultScaling(300), 0.75);
+}
+
 /// GGPlotD contains the needed information to create a plot
 struct GGPlotD
 {
@@ -226,7 +244,7 @@ struct GGPlotD
             offset = xaxis.offset;
         if (!xaxis.show) // Trixk to draw the axis off screen if it is hidden
             offset = yaxis.min - bounds.height;
-        auto aesX = axisAes("x", bounds.min_x, bounds.max_x, offset,
+        auto aesX = axisAes("x", bounds.min_x, bounds.max_x, offset, defaultScaling(width),
             sortedTicks );
 
         offset = bounds.min_x;
@@ -234,14 +252,19 @@ struct GGPlotD
             offset = yaxis.offset;
         if (!yaxis.show) // Trixk to draw the axis off screen if it is hidden
             offset = xaxis.min - bounds.width;
-        auto aesY = axisAes("y", bounds.min_y, bounds.max_y, offset,
+        auto aesY = axisAes("y", bounds.min_y, bounds.max_y, offset, defaultScaling(height),
             sortedTicks );
 
         import ggplotd.geom : geomAxis;
+        import ggplotd.axes : tickLength;
 
         auto gR = chain(
-                geomAxis(aesX, 10.0*bounds.height / height, xaxis.label), 
-                geomAxis(aesY, 10.0*bounds.width / width, yaxis.label)
+                geomAxis(aesX, 
+                    bounds.height.tickLength(height - margins.bottom - margins.top, 
+                        defaultScaling(width), defaultScaling(height)), xaxis.label), 
+                geomAxis(aesY, 
+                    bounds.width.tickLength(width - margins.left - margins.right, 
+                        defaultScaling(width), defaultScaling(height)), yaxis.label), 
             );
         auto plotMargins = Margins(margins);
         if (!legends.empty)

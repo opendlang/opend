@@ -233,8 +233,22 @@ unittest
     assertEqual( (-2.301).toAxisLabel, "-2.3" );
 }
 
+/// Calculate tick length in plot units
+auto tickLength(double plotSize, size_t deviceSize, double scalingX, double scalingY)
+{
+    // We want ticks to be same size irrespcetvie of aspect ratio
+    auto scaling = (scalingX+scalingY)/2.0;
+    return scaling*10.0*plotSize/deviceSize;
+}
+
+unittest
+{
+    assertEqual(tickLength(10.0, 100, 1, 0.5), tickLength(10.0, 100, 0.5, 1));
+    assertEqual(tickLength(10.0, 100, 1, 0.5), 2.0*tickLength(5.0, 100, 0.5, 1));
+}
+
 /// Aes describing the axis and its tick locations
-auto axisAes(string type, double minC, double maxC, double lvl, Tuple!(double, string)[] ticks = [])
+auto axisAes(string type, double minC, double maxC, double lvl, double scaling = 1, Tuple!(double, string)[] ticks = [])
 {
     import std.algorithm : sort, uniq, map;
     import std.array : array;
@@ -260,7 +274,9 @@ auto axisAes(string type, double minC, double maxC, double lvl, Tuple!(double, s
     }
     else
     {
-        ticksLoc = Axis(minC, maxC).adjustTickWidth(5).axisTicks.array;
+        import std.math : round;
+        import std.conv : to;
+        ticksLoc = Axis(minC, maxC).adjustTickWidth(round(7.0*scaling).to!size_t).axisTicks.array;
         labels = ticksLoc.map!((a) => a.to!double.toAxisLabel).array;
     }
 
@@ -289,7 +305,7 @@ unittest
     assertEqual(aes.front.y, 2.0);
     assertEqual(aes.front.label, "0");
 
-    aes = axisAes("y", 0.0, 1.0, 2.0, [Tuple!(double, string)(0.2, "lbl")]);
+    aes = axisAes("y", 0.0, 1.0, 2.0, 1.0, [Tuple!(double, string)(0.2, "lbl")]);
     aes.popFront;
     assertEqual(aes.front.x, 2.0);
     assertEqual(aes.front.y, 0.2);
