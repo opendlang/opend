@@ -276,23 +276,27 @@ auto axisAes(string type, double minC, double maxC, double lvl, double scaling =
     {
         import std.math : round;
         import std.conv : to;
-        ticksLoc = Axis(minC, maxC).adjustTickWidth(round(7.0*scaling).to!size_t).axisTicks.array;
+        ticksLoc = Axis(minC, maxC).adjustTickWidth(round(6.0*scaling).to!size_t).axisTicks.array;
         labels = ticksLoc.map!((a) => a.to!double.toAxisLabel).array;
     }
 
     if (type == "x")
     {
-        return Aes!(double[], "x", double[], "y", string[], "label", double[], "angle")(
+        return Aes!(double[], "x", double[], "y", string[], "label", double[], "angle",
+            double[], "size")(
             ticksLoc, lvl.repeat().take(ticksLoc.walkLength).array, labels,
-            (0.0).repeat(labels.walkLength).array);
+            (0.0).repeat(labels.walkLength).array,
+            (scaling).repeat(labels.walkLength).array);
     }
     else
     {
         import std.math : PI;
 
-        return Aes!(double[], "x", double[], "y", string[], "label", double[], "angle")(
+        return Aes!(double[], "x", double[], "y", string[], "label", double[], "angle",
+            double[], "size")(
             lvl.repeat().take(ticksLoc.walkLength).array, ticksLoc, labels,
-            ((-0.5 * PI).to!double).repeat(labels.walkLength).array);
+            ((-0.5 * PI).to!double).repeat(labels.walkLength).array,
+            (scaling).repeat(labels.walkLength).array);
     }
 }
 

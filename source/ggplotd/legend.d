@@ -52,7 +52,7 @@ auto drawContinuousLegend(CR, CG)
     // TODO: constify
     // TODO: make sure to test with alternative coloursceme (the hist2D examples, should suffice)
     auto gg = GGPlotD();
-    gg.put(Margins(10, 0, 0, 0));
+    gg.put(Margins(15, 0, 0, 0));
     gg.put( colourGradient );
 
     auto minmax = reduce!((a,b) => safeMin(a, b.to!double),
@@ -89,7 +89,7 @@ auto drawDiscreteLegend(CR, CG)
     // TODO: constify
     // TODO: make sure to test with alternative coloursceme (the hist2D examples, should suffice)
     auto gg = GGPlotD();
-    gg.put(Margins(10, 0, 0, 0));
+    gg.put(Margins(15, 0, 0, 0));
     gg.put(colourGradient);
 
     //auto ys = colourRange.uniquer.map!((a) => a.to!double);

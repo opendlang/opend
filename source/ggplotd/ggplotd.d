@@ -149,17 +149,22 @@ private auto defaultScaling( int size )
     if (size > 500)
         return 1;
     if (size < 100)
-        return 0.5;
-    return 0.5+(1.0-0.5)*(size-100)/(500-100);
+        return 0.6;
+    return 0.6+(1.0-0.6)*(size-100)/(500-100);
+}
+
+private auto defaultScaling( int size1, int size2 ) 
+{
+    return (defaultScaling(size1) + defaultScaling(size2))/2.0;
 }
 
 unittest 
 {
-    assertEqual(defaultScaling(50), 0.5);
+    assertEqual(defaultScaling(50), 0.6);
     assertEqual(defaultScaling(600), 1.0);
-    assertEqual(defaultScaling(100), 0.5);
+    assertEqual(defaultScaling(100), 0.6);
     assertEqual(defaultScaling(500), 1.0);
-    assertEqual(defaultScaling(300), 0.75);
+    assertEqual(defaultScaling(300), 0.8);
 }
 
 /// GGPlotD contains the needed information to create a plot
@@ -244,7 +249,7 @@ struct GGPlotD
             offset = xaxis.offset;
         if (!xaxis.show) // Trixk to draw the axis off screen if it is hidden
             offset = yaxis.min - bounds.height;
-        auto aesX = axisAes("x", bounds.min_x, bounds.max_x, offset, defaultScaling(width),
+        auto aesX = axisAes("x", bounds.min_x, bounds.max_x, offset, defaultScaling(width, height),
             sortedTicks );
 
         offset = bounds.min_x;
@@ -252,7 +257,7 @@ struct GGPlotD
             offset = yaxis.offset;
         if (!yaxis.show) // Trixk to draw the axis off screen if it is hidden
             offset = xaxis.min - bounds.width;
-        auto aesY = axisAes("y", bounds.min_y, bounds.max_y, offset, defaultScaling(height),
+        auto aesY = axisAes("y", bounds.min_y, bounds.max_y, offset, defaultScaling(height, width),
             sortedTicks );
 
         import ggplotd.geom : geomAxis;

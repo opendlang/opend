@@ -583,8 +583,8 @@ auto geomAxis(AES)(AES aes, double tickLength, string label)
             xs ~= [tick.x + direction[1], tick.x];
             ys ~= [tick.y + direction[0], tick.y];
 
-            lxs ~= tick.x - 1.5*direction[1];
-            lys ~= tick.y - 1.5*direction[0];
+            lxs ~= tick.x - 1.3*direction[1];
+            lys ~= tick.y - 1.3*direction[0];
             lbls ~= tick.label;
             langles ~= tick.angle;
         }
@@ -600,8 +600,8 @@ auto geomAxis(AES)(AES aes, double tickLength, string label)
     return geomLine(Aes!(typeof(xs), "x", typeof(ys), "y", bool[], "mask")(
         xs, ys, false.repeat(xs.length).array)).chain(
         geomLabel(Aes!(double[], "x", double[], "y", string[], "label",
-        double[], "angle", bool[], "mask")(lxs, lys, lbls, langles, 
-            false.repeat(lxs.length).array)))
+        double[], "angle", bool[], "mask", double[], "size")(lxs, lys, lbls, langles, 
+            false.repeat(lxs.length).array, aes.front.size.repeat(lxs.length).array)))
             .chain( geomLabel(aesM) );
 }
 
