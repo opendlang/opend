@@ -119,3 +119,42 @@ unittest
 
     gg.save( "density2D.png" );
 }
+
+///
+unittest
+{
+    /// http://blackedder.github.io/ggplotd/images/labels.png
+    import std.math : PI;
+
+    import ggplotd.aes : Aes;
+    import ggplotd.geom : geomPoint, geomLabel;
+    import ggplotd.ggplotd : GGPlotD;
+    import ggplotd.axes : xaxisRange, yaxisRange;
+    auto dt = Aes!(double[], "x", double[], "y", string[], "label", double[], "angle",
+        string[], "justify")( [0.0,1,2,3,4], [4.0,3,2,1,0], 
+        ["center", "left", "right", "bottom", "top"],
+        [0.0, 0.0, 0.0, 0.0, 0.0],
+        ["center", "left", "right", "bottom", "top"]);
+
+    auto gg = GGPlotD()
+        .put(geomPoint( dt ))
+        .put(geomLabel(dt))
+        .put(xaxisRange(-2,11))
+        .put(yaxisRange(-2,11));
+
+    auto dt2 = Aes!(double[], "x", double[], "y", string[], "label", real[], "angle",
+        string[], "justify")( [1.0,2,3,4,5], [5.0,4,3,2,1], 
+        ["center", "left", "right", "bottom", "top"],
+        [0.5*PI, 0.5*PI, 0.5*PI, 0.5*PI, 0.5*PI],
+        ["center", "left", "right", "bottom", "top"]);
+    gg.put( geomLabel(dt2) ).put(geomPoint(dt2));
+
+    dt2 = Aes!(double[], "x", double[], "y", string[], "label", real[], "angle",
+        string[], "justify")( [1.0,2,4,6,7], [8.0,7,5,3,2], 
+        ["center", "left", "right", "bottom", "top"],
+        [0.25*PI, 0.25*PI, 0.25*PI, 0.25*PI, 0.25*PI],
+        ["center", "left", "right", "bottom", "top"]);
+    gg.put( geomLabel(dt2) ).put(geomPoint(dt2));
+
+    gg.save( "labels.png" );
+}

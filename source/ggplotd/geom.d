@@ -605,15 +605,27 @@ auto geomAxis(AES)(AES aes, double tickLength, string label)
             .chain( geomLabel(aesM) );
 }
 
-/// Draw Label at given x and y position
+/**
+    Draw Label at given x and y position
+
+    You can specify justification, by passing a justify field in the passed data (aes).
+       $(UL
+        $(LI "center" (default))
+        $(LI "left")
+        $(LI "right")
+        $(LI "bottom")
+        $(LI "top"))
+*/
 template geomLabel(AES)
 {
     import std.algorithm : map;
+    import std.typecons : Tuple;
     import ggplotd.aes : numericLabel;
     import ggplotd.range : mergeRange;
     alias CoordX = typeof(numericLabel(AES.init.map!("a.x")));
     alias CoordY = typeof(numericLabel(AES.init.map!("a.y")));
     alias CoordType = typeof(DefaultValues
+        .merge(Tuple!(string, "justify").init)
         .mergeRange(AES.init)
         .mergeRange(Aes!(CoordX, "x", CoordY, "y").init));
 
@@ -623,7 +635,9 @@ template geomLabel(AES)
         {
             import std.algorithm : map;
             import ggplotd.range : mergeRange;
+
             _aes = DefaultValues
+                .merge(Tuple!(string, "justify")("center"))
                 .mergeRange(aes)
                 .mergeRange( Aes!(CoordX, "x", CoordY, "y")(
                     CoordX(aes.map!("a.x")), 
@@ -643,8 +657,18 @@ template geomLabel(AES)
                 context.identityMatrix;
                 context.rotate(tup.angle);
                 auto extents = context.textExtents(tup.label);
-                auto textSize = cairo.Point!double(0.5 * extents.width, 0.5 * extents.height);
-                context.relMoveTo(-textSize.x, textSize.y);
+                auto textSize = cairo.Point!double(extents.width, extents.height);
+                // Justify
+                if (tup.justify == "left")
+                    context.relMoveTo(0, 0.5*textSize.y);
+                else if (tup.justify == "right")
+                    context.relMoveTo(-textSize.x, 0.5*textSize.y);
+                else if (tup.justify == "bottom")
+                    context.relMoveTo(-0.5*textSize.x, 0);
+                else if (tup.justify == "top")
+                    context.relMoveTo(-0.5*textSize.x, textSize.y);
+                else
+                    context.relMoveTo(-0.5*textSize.x, 0.5*textSize.y);
 
                 auto col = colourMap(ColourID(tup.colour));
                 import ggplotd.colourspace : RGBA, toCairoRGBA;
