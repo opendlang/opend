@@ -1,4 +1,4 @@
-module ggplotd.math;
+module ggplotd.algorithm;
 /// Max function that skips NaN values
 auto safeMax(T)(T a, T b)
 {

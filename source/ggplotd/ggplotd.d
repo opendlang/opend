@@ -123,6 +123,17 @@ private auto drawGeom( in Geom geom, ref cairo.Surface surface,
 /// Specify margins in number of pixels
 struct Margins
 {
+    this(in Margins copy) {
+        this(copy.left, copy.right, copy.bottom, copy.top);
+    }
+
+    this(in size_t l, in size_t r, in size_t b, in size_t t) {
+        left = l;
+        right = r;
+        bottom = b;
+        top = t;
+    }
+
     /// left margin
     size_t left = 50;
     /// right margin
@@ -131,6 +142,29 @@ struct Margins
     size_t bottom = 50; 
     /// top margin
     size_t top = 40; 
+}
+
+private auto defaultScaling( int size ) 
+{
+    if (size > 500)
+        return 1;
+    if (size < 100)
+        return 0.6;
+    return 0.6+(1.0-0.6)*(size-100)/(500-100);
+}
+
+private auto defaultScaling( int size1, int size2 ) 
+{
+    return (defaultScaling(size1) + defaultScaling(size2))/2.0;
+}
+
+unittest 
+{
+    assertEqual(defaultScaling(50), 0.6);
+    assertEqual(defaultScaling(600), 1.0);
+    assertEqual(defaultScaling(100), 0.6);
+    assertEqual(defaultScaling(500), 1.0);
+    assertEqual(defaultScaling(300), 0.8);
 }
 
 /// GGPlotD contains the needed information to create a plot
@@ -151,7 +185,7 @@ struct GGPlotD
     Returns:
         Resulting surface of the same type as input surface, with this plot drawn on top of it.
     */
-    auto drawToSurface( ref cairo.Surface surface, int width, int height ) const
+    ref cairo.Surface drawToSurface( ref cairo.Surface surface, int width, int height ) const
     {
         import std.range : empty, front;
         import std.typecons : Tuple;
@@ -213,32 +247,72 @@ struct GGPlotD
         auto offset = bounds.min_y;
         if (!isNaN(xaxis.offset))
             offset = xaxis.offset;
-        auto aesX = axisAes("x", bounds.min_x, bounds.max_x, offset,
+        if (!xaxis.show) // Trixk to draw the axis off screen if it is hidden
+            offset = yaxis.min - bounds.height;
+
+        // TODO: Should really take separate scaling for number of ticks (defaultScaling(width)) 
+        // and for font: defaultScaling(widht, height)
+        auto aesX = axisAes("x", bounds.min_x, bounds.max_x, offset, defaultScaling(width, height),
             sortedTicks );
 
         offset = bounds.min_x;
         if (!isNaN(yaxis.offset))
             offset = yaxis.offset;
-        auto aesY = axisAes("y", bounds.min_y, bounds.max_y, offset,
+        if (!yaxis.show) // Trixk to draw the axis off screen if it is hidden
+            offset = xaxis.min - bounds.width;
+        auto aesY = axisAes("y", bounds.min_y, bounds.max_y, offset, defaultScaling(height, width),
             sortedTicks );
 
         import ggplotd.geom : geomAxis;
+        import ggplotd.axes : tickLength;
 
         auto gR = chain(
-                geomAxis(aesX, 10.0*bounds.height / height, xaxis.label), 
-                geomAxis(aesY, 10.0*bounds.width / width, yaxis.label)
+                geomAxis(aesX, 
+                    bounds.height.tickLength(height - margins.bottom - margins.top, 
+                        defaultScaling(width), defaultScaling(height)), xaxis.label), 
+                geomAxis(aesY, 
+                    bounds.width.tickLength(width - margins.left - margins.right, 
+                        defaultScaling(width), defaultScaling(height)), yaxis.label), 
             );
+        auto plotMargins = Margins(margins);
+        if (!legends.empty)
+            plotMargins.right += legends[0].width;
 
         // Plot axis and geomRange
         foreach (geom; chain(geomRange.data, gR) )
         {
             surface = geom.drawGeom( surface,
                 colourMap, scale(), bounds, 
-                margins, width, height );
+                plotMargins, width, height );
         }
 
         // Plot title
         surface = title.drawTitle( surface, margins, width );
+
+        import std.range : iota, zip, dropOne;
+        foreach(ly; zip(legends, iota(0.0, height, height/(legends.length+1.0)).dropOne)) 
+        {
+            auto legend = ly[0];
+            auto y = ly[1] - legend.height*.5;
+            if (legend.type == "continuous") {
+                import ggplotd.legend : drawContinuousLegend; 
+                auto legendSurface = cairo.Surface.createForRectangle(surface,
+                    cairo.Rectangle!double(width - margins.right - legend.width, 
+                    y, legend.width, legend.height ));//margins.right, margins.right));
+                legendSurface = drawContinuousLegend( legendSurface, 
+                legend.width, legend.height, 
+                    colourIDs, this.colourGradient );
+            } else if (legend.type == "discrete") {
+                import ggplotd.legend : drawDiscreteLegend; 
+                auto legendSurface = cairo.Surface.createForRectangle(surface,
+                    cairo.Rectangle!double(width - margins.right - legend.width, 
+                    y, legend.width, legend.height ));//margins.right, margins.right));
+                legendSurface = drawDiscreteLegend( legendSurface, 
+                legend.width, legend.height, 
+                    colourIDs, this.colourGradient );
+            }
+        }
+
         return surface;
     }
  
@@ -323,6 +397,10 @@ struct GGPlotD
         {
             margins = rhs;
         }
+        static if (is(T==Legend))
+        {
+            legends ~= rhs;
+        }
         static if (is(T==ColourGradientFunction)) {
             colourGradientFunction = rhs;
         }
@@ -360,6 +438,7 @@ struct GGPlotD
 private:
     import std.range : Appender;
     import ggplotd.theme : Theme, ThemeFunction;
+    import ggplotd.legend : Legend;
     Appender!(Geom[]) geomRange;
 
     import ggplotd.axes : XAxis, YAxis;
@@ -373,8 +452,9 @@ private:
 
     import std.typecons : Nullable;
     Nullable!(ScaleType) scaleFunction;
-
     Nullable!(ColourGradientFunction) colourGradientFunction;
+
+    Legend[] legends;
 }
 
 unittest

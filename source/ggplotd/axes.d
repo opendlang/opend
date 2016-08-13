@@ -34,6 +34,8 @@ struct Axis
 
     /// Offset of the axis
     double offset;
+
+    bool show = true;
 }
 
 /// XAxis
@@ -231,8 +233,22 @@ unittest
     assertEqual( (-2.301).toAxisLabel, "-2.3" );
 }
 
+/// Calculate tick length in plot units
+auto tickLength(double plotSize, size_t deviceSize, double scalingX, double scalingY)
+{
+    // We want ticks to be same size irrespcetvie of aspect ratio
+    auto scaling = (scalingX+scalingY)/2.0;
+    return scaling*10.0*plotSize/deviceSize;
+}
+
+unittest
+{
+    assertEqual(tickLength(10.0, 100, 1, 0.5), tickLength(10.0, 100, 0.5, 1));
+    assertEqual(tickLength(10.0, 100, 1, 0.5), 2.0*tickLength(5.0, 100, 0.5, 1));
+}
+
 /// Aes describing the axis and its tick locations
-auto axisAes(string type, double minC, double maxC, double lvl, Tuple!(double, string)[] ticks = [])
+auto axisAes(string type, double minC, double maxC, double lvl, double scaling = 1, Tuple!(double, string)[] ticks = [])
 {
     import std.algorithm : sort, uniq, map;
     import std.array : array;
@@ -258,23 +274,29 @@ auto axisAes(string type, double minC, double maxC, double lvl, Tuple!(double, s
     }
     else
     {
-        ticksLoc = Axis(minC, maxC).adjustTickWidth(5).axisTicks.array;
+        import std.math : round;
+        import std.conv : to;
+        ticksLoc = Axis(minC, maxC).adjustTickWidth(round(6.0*scaling).to!size_t).axisTicks.array;
         labels = ticksLoc.map!((a) => a.to!double.toAxisLabel).array;
     }
 
     if (type == "x")
     {
-        return Aes!(double[], "x", double[], "y", string[], "label", double[], "angle")(
+        return Aes!(double[], "x", double[], "y", string[], "label", double[], "angle",
+            double[], "size")(
             ticksLoc, lvl.repeat().take(ticksLoc.walkLength).array, labels,
-            (0.0).repeat(labels.walkLength).array);
+            (0.0).repeat(labels.walkLength).array,
+            (scaling).repeat(labels.walkLength).array);
     }
     else
     {
         import std.math : PI;
 
-        return Aes!(double[], "x", double[], "y", string[], "label", double[], "angle")(
+        return Aes!(double[], "x", double[], "y", string[], "label", double[], "angle",
+            double[], "size")(
             lvl.repeat().take(ticksLoc.walkLength).array, ticksLoc, labels,
-            ((-0.5 * PI).to!double).repeat(labels.walkLength).array);
+            ((-0.5 * PI).to!double).repeat(labels.walkLength).array,
+            (scaling).repeat(labels.walkLength).array);
     }
 }
 
@@ -287,7 +309,7 @@ unittest
     assertEqual(aes.front.y, 2.0);
     assertEqual(aes.front.label, "0");
 
-    aes = axisAes("y", 0.0, 1.0, 2.0, [Tuple!(double, string)(0.2, "lbl")]);
+    aes = axisAes("y", 0.0, 1.0, 2.0, 1.0, [Tuple!(double, string)(0.2, "lbl")]);
     aes.popFront;
     assertEqual(aes.front.x, 2.0);
     assertEqual(aes.front.y, 0.2);
@@ -383,4 +405,11 @@ unittest
     assertEqual( yf(yax).offset, 2 );
 }
 
+// Hide the axis 
+mixin( xy( q{auto axisShow( bool show ) 
+{ 
+    // Need to declare it as an X/YAxisFunction for the GGPlotD + overload
+    AxisFunction func = ( Axis axis ) { axis.show = show; return axis; }; 
+    return func;
+}} ) );
 

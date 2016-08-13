@@ -583,8 +583,8 @@ auto geomAxis(AES)(AES aes, double tickLength, string label)
             xs ~= [tick.x + direction[1], tick.x];
             ys ~= [tick.y + direction[0], tick.y];
 
-            lxs ~= tick.x - 1.5*direction[1];
-            lys ~= tick.y - 1.5*direction[0];
+            lxs ~= tick.x - 1.3*direction[1];
+            lys ~= tick.y - 1.3*direction[0];
             lbls ~= tick.label;
             langles ~= tick.angle;
         }
@@ -600,20 +600,32 @@ auto geomAxis(AES)(AES aes, double tickLength, string label)
     return geomLine(Aes!(typeof(xs), "x", typeof(ys), "y", bool[], "mask")(
         xs, ys, false.repeat(xs.length).array)).chain(
         geomLabel(Aes!(double[], "x", double[], "y", string[], "label",
-        double[], "angle", bool[], "mask")(lxs, lys, lbls, langles, 
-            false.repeat(lxs.length).array)))
+        double[], "angle", bool[], "mask", double[], "size")(lxs, lys, lbls, langles, 
+            false.repeat(lxs.length).array, aes.front.size.repeat(lxs.length).array)))
             .chain( geomLabel(aesM) );
 }
 
-/// Draw Label at given x and y position
+/**
+    Draw Label at given x and y position
+
+    You can specify justification, by passing a justify field in the passed data (aes).
+       $(UL
+        $(LI "center" (default))
+        $(LI "left")
+        $(LI "right")
+        $(LI "bottom")
+        $(LI "top"))
+*/
 template geomLabel(AES)
 {
     import std.algorithm : map;
+    import std.typecons : Tuple;
     import ggplotd.aes : numericLabel;
     import ggplotd.range : mergeRange;
     alias CoordX = typeof(numericLabel(AES.init.map!("a.x")));
     alias CoordY = typeof(numericLabel(AES.init.map!("a.y")));
     alias CoordType = typeof(DefaultValues
+        .merge(Tuple!(string, "justify").init)
         .mergeRange(AES.init)
         .mergeRange(Aes!(CoordX, "x", CoordY, "y").init));
 
@@ -623,7 +635,9 @@ template geomLabel(AES)
         {
             import std.algorithm : map;
             import ggplotd.range : mergeRange;
+
             _aes = DefaultValues
+                .merge(Tuple!(string, "justify")("center"))
                 .mergeRange(aes)
                 .mergeRange( Aes!(CoordX, "x", CoordY, "y")(
                     CoordX(aes.map!("a.x")), 
@@ -634,17 +648,27 @@ template geomLabel(AES)
         {
             immutable tup = _aes.front;
             immutable f = delegate(cairo.Context context, ColourMap colourMap) {
-                import std.math : isFinite;
+                import std.math : ceil, isFinite;
                 if (!isFinite(tup.x[0]) || !isFinite(tup.y[0]))
                     return context;
-                context.setFontSize(14.0*tup.size);
+                context.setFontSize(ceil(14.0*tup.size));
                 context.moveTo(tup.x[0], tup.y[0]);
                 context.save();
                 context.identityMatrix;
                 context.rotate(tup.angle);
                 auto extents = context.textExtents(tup.label);
-                auto textSize = cairo.Point!double(0.5 * extents.width, 0.5 * extents.height);
-                context.relMoveTo(-textSize.x, textSize.y);
+                auto textSize = cairo.Point!double(extents.width, extents.height);
+                // Justify
+                if (tup.justify == "left")
+                    context.relMoveTo(0, 0.5*textSize.y);
+                else if (tup.justify == "right")
+                    context.relMoveTo(-textSize.x, 0.5*textSize.y);
+                else if (tup.justify == "bottom")
+                    context.relMoveTo(-0.5*textSize.x, 0);
+                else if (tup.justify == "top")
+                    context.relMoveTo(-0.5*textSize.x, textSize.y);
+                else
+                    context.relMoveTo(-0.5*textSize.x, 0.5*textSize.y);
 
                 auto col = colourMap(ColourID(tup.colour));
                 import ggplotd.colourspace : RGBA, toCairoRGBA;
@@ -918,17 +942,38 @@ auto geomPolygon(AES)(AES aes)
             gV[1].x, gV[1].y );
 
         context.lineWidth = 0.0;
-        auto col0 = colourMap(ColourID(gV[0].z));
-        auto col1 = colourMap(ColourID(gV[1].z));
-        import ggplotd.colourspace : RGBA, toCairoRGBA;
-        gradient.addColorStopRGBA( 0,
-            RGBA(col0.r, col0.g, col0.b, flags.alpha)
-                .toCairoRGBA
-        );
-        gradient.addColorStopRGBA( 1,
-            RGBA(col1.r, col1.g, col1.b, flags.alpha)
-                .toCairoRGBA
-        );
+
+        /*
+            We add a number of stops to the gradient. Optimally we should only add the top
+            and bottom, but this is not possible for two reasons. First of all we support
+            other colour spaces than rgba, while cairo only support rgba. We _simulate_ 
+            the other colourspace in RGBA by taking small steps in the rgba colourspace.
+            Secondly to support multiple colour stops in our own colourgradient we need to 
+            add all those.
+
+            The ideal way to solve the second problem would be by using the colourGradient
+            stops here, but that wouldn't solve the first issue, so we go for the stupider
+            solution here.
+
+            Ideally we would see how cairo does their colourgradient and implement the same
+            for other colourspaces.
+i       */
+        auto no_stops = 10.0;
+        import std.range : iota;
+        import std.array : array;
+        auto stepsize = (gV[1].z - gV[0].z)/no_stops;
+        auto steps = [gV[0].z, gV[1].z];
+        if (stepsize != 0)
+            steps = iota(gV[0].z, gV[1].z+stepsize, stepsize).array;
+
+        foreach(i, z; steps) {
+            auto col = colourMap(ColourID(z));
+            import ggplotd.colourspace : RGBA, toCairoRGBA;
+            gradient.addColorStopRGBA(i/no_stops,
+                RGBA(col.r, col.g, col.b, flags.alpha).toCairoRGBA
+            );
+        }
+
         context.moveTo( vertices.front.x, vertices.front.y );
         vertices.popFront;
         foreach( v; vertices )
@@ -963,12 +1008,14 @@ auto geomPolygon(AES)(AES aes)
     import ggplotd.aes : Aes;
     import ggplotd.geom : geomDensity;
     import ggplotd.ggplotd : GGPlotD;
+    import ggplotd.legend : discreteLegend;
     auto xs = iota(0,50,1).map!((x) => uniform(0.0,5)+uniform(0.0,5)).array;
     auto cols = "a".repeat(25).chain("b".repeat(25));
     auto aes = Aes!(typeof(xs), "x", typeof(cols), "colour", 
         double[], "fill" )( 
             xs, cols, 0.45.repeat(xs.length).array);
     auto gg = GGPlotD().put( geomDensity( aes ) );
+    gg.put(discreteLegend);
     gg.save( "filled_density.svg" );
   --------------
 */
@@ -995,6 +1042,7 @@ auto geomDensity(AES)(AES aes)
     import ggplotd.colourspace : XYZ;
     import ggplotd.geom : geomDensity2D;
     import ggplotd.ggplotd : GGPlotD;
+    import ggplotd.legend : continuousLegend;
 
     auto xs = iota(0,500,1).map!((x) => uniform(0.0,5)+uniform(0.0,5))
         .array;
@@ -1004,6 +1052,7 @@ auto geomDensity(AES)(AES aes)
     auto gg = GGPlotD().put( geomDensity2D( aes ) );
     // Use a different colour scheme
     gg.put( colourGradient!XYZ( "white-cornflowerBlue-crimson" ) );
+    gg.put(continuousLegend);
 
     gg.save( "density2D.png" );
   --------------
