@@ -249,6 +249,9 @@ struct GGPlotD
             offset = xaxis.offset;
         if (!xaxis.show) // Trixk to draw the axis off screen if it is hidden
             offset = yaxis.min - bounds.height;
+
+        // TODO: Should really take separate scaling for number of ticks (defaultScaling(width)) 
+        // and for font: defaultScaling(widht, height)
         auto aesX = axisAes("x", bounds.min_x, bounds.max_x, offset, defaultScaling(width, height),
             sortedTicks );
 

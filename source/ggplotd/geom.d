@@ -648,10 +648,10 @@ template geomLabel(AES)
         {
             immutable tup = _aes.front;
             immutable f = delegate(cairo.Context context, ColourMap colourMap) {
-                import std.math : isFinite;
+                import std.math : ceil, isFinite;
                 if (!isFinite(tup.x[0]) || !isFinite(tup.y[0]))
                     return context;
-                context.setFontSize(14.0*tup.size);
+                context.setFontSize(ceil(14.0*tup.size));
                 context.moveTo(tup.x[0], tup.y[0]);
                 context.save();
                 context.identityMatrix;
@@ -1008,12 +1008,14 @@ i       */
     import ggplotd.aes : Aes;
     import ggplotd.geom : geomDensity;
     import ggplotd.ggplotd : GGPlotD;
+    import ggplotd.legend : discreteLegend;
     auto xs = iota(0,50,1).map!((x) => uniform(0.0,5)+uniform(0.0,5)).array;
     auto cols = "a".repeat(25).chain("b".repeat(25));
     auto aes = Aes!(typeof(xs), "x", typeof(cols), "colour", 
         double[], "fill" )( 
             xs, cols, 0.45.repeat(xs.length).array);
     auto gg = GGPlotD().put( geomDensity( aes ) );
+    gg.put(discreteLegend);
     gg.save( "filled_density.svg" );
   --------------
 */
@@ -1040,6 +1042,7 @@ auto geomDensity(AES)(AES aes)
     import ggplotd.colourspace : XYZ;
     import ggplotd.geom : geomDensity2D;
     import ggplotd.ggplotd : GGPlotD;
+    import ggplotd.legend : continuousLegend;
 
     auto xs = iota(0,500,1).map!((x) => uniform(0.0,5)+uniform(0.0,5))
         .array;
@@ -1049,6 +1052,7 @@ auto geomDensity(AES)(AES aes)
     auto gg = GGPlotD().put( geomDensity2D( aes ) );
     // Use a different colour scheme
     gg.put( colourGradient!XYZ( "white-cornflowerBlue-crimson" ) );
+    gg.put(continuousLegend);
 
     gg.save( "density2D.png" );
   --------------
