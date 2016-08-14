@@ -15,8 +15,8 @@ private struct Legend
 Create a legend using a continuous scale
 
 Params:
-    width Optional width in pixels
-    height Optional height in pixels
+    width = Optional width in pixels
+    height = Optional height in pixels
 +/
 auto continuousLegend(int width = 80, int height = 70)
 {
@@ -27,8 +27,8 @@ auto continuousLegend(int width = 80, int height = 70)
 Create a legend using a discrete scale
 
 Params:
-    width Optional width in pixels
-    height Optional height in pixels
+    width = Optional width in pixels
+    height = Optional height in pixels
 +/
 auto discreteLegend(int width = 80, int height = 70)
 {

@@ -553,7 +553,8 @@ unittest
     // Test whether type/ordering is consistent
     // Given enough benefit we can break this, but we'll have to adapt plotcli to match,
     // which to be fair is relatively straightforward
-    static assert( is(Tuple!(string, "colour", double, "size", double, "angle", double, "alpha", bool, "mask", double, "fill", double, "x", double, "y", string, "label") == typeof(merged) ) );
+    static assert( is(Tuple!(string, "colour", double, "size", double, "angle", double, "alpha", 
+        bool, "mask", double, "fill", double, "x", double, "y", string, "label") == typeof(merged) ) );
 }
 
 /// 

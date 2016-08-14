@@ -123,10 +123,12 @@ private auto drawGeom( in Geom geom, ref cairo.Surface surface,
 /// Specify margins in number of pixels
 struct Margins
 {
+    /// Create new Margins object based on old one
     this(in Margins copy) {
         this(copy.left, copy.right, copy.bottom, copy.top);
     }
 
+    /// Create new Margins object based on specified sizes
     this(in size_t l, in size_t r, in size_t b, in size_t t) {
         left = l;
         right = r;

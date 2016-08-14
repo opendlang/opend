@@ -35,6 +35,7 @@ struct Axis
     /// Offset of the axis
     double offset;
 
+    /// Show the axis or hide it
     bool show = true;
 }
 
