@@ -80,7 +80,7 @@ unittest
     */
 Axis adjustTickWidth(Axis axis, size_t approx_no_ticks)
 {
-    import std.math : abs, floor, ceil, pow, log10;
+    import std.math : abs, floor, ceil, pow, log10, round;
     assert( initialized(axis), "Axis range has not been set" );
 
     auto axis_width = axis.max - axis.min;
@@ -98,6 +98,11 @@ Axis adjustTickWidth(Axis axis, size_t approx_no_ticks)
             diff = abs(approx_width - accept);
         }
     }
+
+    if (round(best/approx_width)>1)
+        best /= round(best/approx_width);
+    if (round(approx_width/best)>1)
+        best *= round(approx_width/best);
     axis.tick_width = best * pow(10.0, scale);
     // Find good min_tick
     axis.min_tick = ceil(axis.min * pow(10.0, -scale)) * pow(10.0, scale);
@@ -276,7 +281,7 @@ auto axisAes(string type, double minC, double maxC, double lvl, double scaling =
     {
         import std.math : round;
         import std.conv : to;
-        ticksLoc = Axis(minC, maxC).adjustTickWidth(round(6.0*scaling).to!size_t).axisTicks.array;
+        ticksLoc = Axis(minC, maxC).adjustTickWidth(round(7.0*scaling).to!size_t).axisTicks.array;
         labels = ticksLoc.map!((a) => a.to!double.toAxisLabel).array;
     }
 

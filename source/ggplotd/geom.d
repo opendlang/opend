@@ -963,13 +963,13 @@ i       */
         import std.array : array;
         auto stepsize = (gV[1].z - gV[0].z)/no_stops;
         auto steps = [gV[0].z, gV[1].z];
-        if (stepsize != 0)
-            steps = iota(gV[0].z, gV[1].z+stepsize, stepsize).array;
+        if (stepsize > 0)
+            steps = iota(gV[0].z, gV[1].z, stepsize).array ~ gV[1].z;
 
         foreach(i, z; steps) {
             auto col = colourMap(ColourID(z));
             import ggplotd.colourspace : RGBA, toCairoRGBA;
-            gradient.addColorStopRGBA(i/no_stops,
+            gradient.addColorStopRGBA(i/(steps.length-1.0),
                 RGBA(col.r, col.g, col.b, flags.alpha).toCairoRGBA
             );
         }
