@@ -11,7 +11,9 @@ function build_doc {
 set -e -o pipefail
 
 dub test --compiler=${DC}
-dub test -c ggplotd-gtk --compiler=${DC}
+if [[ "$TRAVIS_OS_NAME" != "osx" ]]; then # gtkd broken on osx
+    dub test -c ggplotd-gtk --compiler=${DC}
+fi
 
 if [[ $TRAVIS_BRANCH == 'master' ]] ; then
     if [ ! -z "$GH_TOKEN" ]; then
