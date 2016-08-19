@@ -260,6 +260,13 @@ private template statHistND(int dim, AES)
 
             grouped = group(aes);
 
+            foreach( i; 0..mins.length ) {
+                if (mins[i] == maxs[i]) {
+                    mins[i] -= 0.5;
+                    maxs[i] += 0.5;
+                }
+            }
+
             defaults = grouped.front.front;
             static if (dim == 1)
               auto data = grouped.front.map!((t) => [t.x.to!double]); // Extract the x coordinates
@@ -374,8 +381,6 @@ auto statHist(AES)(AES aesRaw, size_t noBins = 0)
 
 unittest
 {
-    import std.stdio : writeln;
-
     import std.algorithm : each, map, sort;
     import std.array : array;
     import std.random : uniform;
@@ -387,6 +392,11 @@ unittest
     auto sh = statHist( Aes!(int[], "x")(xs) );
     auto binXs = sh.map!((b) => b.x).array.sort().array;
     assertEqual( binXs.length, 6 );
+
+    // Test single point 
+    xs = [1];
+    sh = statHist( Aes!(int[], "x")(xs) );
+    assertEqual(sh.walkLength, 1);
 }
 
 /**
