@@ -19,7 +19,7 @@
         {
             "name": "ggplotd-gtk",
             "dependencies": {
-                "gtk-d:gtkd": "~>3.2.2"
+                "gtk-d:gtkd": "~>3.3.0"
             },
             "versions": ["ggplotdGTK"]
         }
