@@ -43,12 +43,15 @@ import std.traits : isCallable;
 auto statFunction( FUNC, T )( FUNC func, T min, 
     T max, size_t precision = 50 ) if (isCallable!FUNC)
 {
+    import std.array : array;
     import std.algorithm : map;
     import std.range : iota;
 
     import ggplotd.aes : Aes;
     auto stepSize = (max-min)/(precision-1);
-    auto xs = iota( min, max+stepSize, stepSize );
+    auto xs = [min];
+    if (stepSize > 0)
+        xs = iota( min, max, stepSize ).array ~ max;
     auto ys = xs.map!((x) => func(x));
 
     return Aes!(typeof(xs), "x", typeof(ys), "y")( xs, ys );
@@ -447,9 +450,12 @@ auto statDensity(AES)( AES aesRaw )
 
         // Calculate the kernel width (using scott thing in dstats)
         // Initialize kernel with normal distribution.
+        import std.math : isFinite;
         import dstats.kerneldensity : scottBandwidth, KernelDensity;
         import dstats.random : normalPDF;
         auto sigma = scottBandwidth(xs);
+        if (!isFinite(sigma) || sigma <= 0)
+            sigma = 0.5;
         auto kernel = (double x) { return normalPDF(x, 0.0, sigma); };
         auto density = KernelDensity.fromCallable(kernel, xs);
 
@@ -492,6 +498,11 @@ unittest
 
     // Test that colour is passed through (merged)
     assertEqual( dens2.front.colour.length, 1 );
+
+    // Test single point 
+    xs = [1];
+    dens = statDensity( Aes!( typeof(xs), "x")( xs ) );
+    assertEqual(dens.walkLength, 3);
 }
 
 /**
