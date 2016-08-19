@@ -759,9 +759,9 @@ unittest
 /// Draw a boxplot. The "x" data is used. If labels are given then the data is grouped by the label
 auto geomBox(AES)(AES aes)
 {
-    import std.algorithm : map;
+    import std.algorithm : filter, map;
     import std.array : array;
-    import std.range : Appender;
+    import std.range : Appender, walkLength;
     import std.typecons : Tuple;
     import ggplotd.range : mergeRange;
 
@@ -789,7 +789,7 @@ auto geomBox(AES)(AES aes)
     double delta = 0.2;
     Tuple!(double, string)[] xTickLabels;
 
-    foreach( grouped; myAes.group() )
+    foreach( grouped; myAes.group().filter!((a) => a.walkLength > 3) )
     {
         auto lims = grouped.map!("a.x")
             .array.limits( [0.1,0.25,0.5,0.75,0.9] ).array;
@@ -874,6 +874,23 @@ unittest
             xs, cols, 0.45.repeat(xs.length).array, ys);
     auto gb = geomBox( aes );
     assertEqual( gb.front.bounds.min_x, 1.5 );
+}
+
+unittest 
+{
+    // Test when passing one data point
+    import std.array : array;
+    import std.algorithm : map;
+    import std.range : repeat, iota, chain;
+    import std.random : uniform;
+    auto xs = iota(0,1,1).map!((x) => uniform(0.0,5)+uniform(0.0,5)).array;
+    auto cols = "a".repeat(1).array;
+    auto ys = 2.repeat(1).array;
+    auto aes = Aes!(typeof(xs), "x", typeof(cols), "colour", 
+        double[], "fill", typeof(ys), "y" )( 
+            xs, cols, 0.45.repeat(xs.length).array, ys);
+    auto gb = geomBox( aes );
+    assertEqual( gb.length, 0 );
 }
 
 unittest 
