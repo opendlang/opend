@@ -534,16 +534,31 @@ auto statDensity2D(AES)( AES aesRaw )
             (a,b) => safeMax(a,b.y.to!double),
             )(tuple(double.init,double.init,double.init,double.init), aes);
 
+    if (minmax[0] == minmax[1]) {
+        minmax[0] -= 0.5;
+        minmax[1] += 0.5;
+    }
+    if (minmax[2] == minmax[3]) {
+        minmax[2] -= 0.5;
+        minmax[3] += 0.5;
+    }
+
     return aes.group!(Erase!("colour",DefaultGroupFields)).map!((g) {
         auto xs = g.map!((t) => t.x.to!double);
         auto ys = g.map!((t) => t.y.to!double);
 
+        import std.math : isFinite;
         // Calculate the kernel width (using scott thing in dstats)
         // Initialize kernel with normal distribution.
         import dstats.kerneldensity : scottBandwidth, KernelDensity;
         import dstats.random : normalPDF;
         auto sigmaX = scottBandwidth(xs);
+        if (!isFinite(sigmaX) || sigmaX <= 0)
+            sigmaX = 1e-5;
         auto sigmaY = scottBandwidth(ys);
+        if (!isFinite(sigmaY) || sigmaY <= 0)
+            sigmaY = 1e-5;
+
         auto kernel = (double x, double y) { return normalPDF(x, 0.0, sigmaX)*
             normalPDF(y, 0.0, sigmaY); };
         auto density = KernelDensity.fromCallable(kernel, xs, ys);
@@ -603,4 +618,12 @@ unittest
     assertGreaterThan( sD.walkLength, 1150 );
     assertLessThan( sD.walkLength, 1450 );
     assertEqual( sD.front.walkLength, 3 );
+
+    // One value
+    xs = [1];
+    ys = [2];
+    aes = Aes!(typeof(xs), "x", typeof(ys), "y")( xs, ys);
+
+    sD = statDensity2D( aes );
+    assertGreaterThan(sD.walkLength, 0);
 }
