@@ -371,7 +371,7 @@ auto geomHist(AES)(AES aes, size_t noBins = 0)
 
 Note that the above highlights the drawing part of the function.
 Converting the data into bins is done in a separate bin function, which can be
-found in the [code](./source/ggplotd/geom.d#L571).
+found in the [code](https://github.com/BlackEdder/ggplotd/blob/master/source/ggplotd/stat.d#L193).
 
 ### Heightmap/surface plots
 
