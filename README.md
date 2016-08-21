@@ -306,7 +306,7 @@ void main()
 }
 ```
 
-To add a new field to your data, you can use (mergeRange)[http://blackedder.github.io/ggplotd/ggplotd/range.html#mergeRange]. For example, if we want to plot our data using a red colour you can do the following:
+To add a new field to your data, you can use [mergeRange](http://blackedder.github.io/ggplotd/ggplotd/range.html#mergeRange). For example, if we want to plot our data using a red colour you can do the following:
 
 ```D
 import ggplotd.ggplotd; 
