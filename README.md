@@ -298,13 +298,54 @@ void main()
     auto data = xs.map!((x) => Data(x,
         f(x) + uniform(-width(x),width(x))));
 
-    # Wrap the data
+    // Wrap the data
     auto gg = GGPlotD().put( 
     	data.map!((a) => Tuple!(double, "x", double, "y")(a.value1, a.value2))
 	    .geomPoint );
     gg.save( "data.png" );
 }
 ```
+
+To add a new field to your data, you can use (mergeRange)[http://blackedder.github.io/ggplotd/ggplotd/range.html#mergeRange]. For example, if we want to plot our data using a red colour you can do the following:
+
+```D
+import ggplotd.ggplotd; 
+import ggplotd.aes; 
+import ggplotd.geom;
+import ggplotd.range : mergeRange;
+
+struct Data {
+    double value1;
+    double value2;
+}
+
+void main()
+{
+    /// http://blackedder.github.io/ggplotd/images/data_red.png
+    import std.array : array;
+    import std.math : sqrt;
+    import std.algorithm : map;
+    import std.range : iota;
+    import std.random : uniform;
+    import std.typecons : Tuple;
+    // Generate some noisy data with reducing width
+    auto f = (double x) { return x/(1+x); };
+    auto width = (double x) { return sqrt(0.1/(1+x)); };
+    auto xs = iota( 0, 10, 0.1 ).array;
+
+    auto data = xs.map!((x) => Data(x,
+        f(x) + uniform(-width(x),width(x))));
+
+    // Wrap the data and add a colour field
+    auto gg = GGPlotD().put( 
+    	Tuple!(string, "colour")("red")
+	    .mergeRange(data.map!((a) => Tuple!(double, "x", double, "y")(a.value1, a.value2)))
+	    .geomPoint );
+    gg.save( "data_red.png" );
+}
+```
+
+
 
 ## Extending GGplotD
 
