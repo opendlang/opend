@@ -270,6 +270,42 @@ void main()
 
 ```
 
+If your data uses different variable names you can wrap each element in a named Tuple as follows:
+
+```D
+import ggplotd.ggplotd; 
+import ggplotd.aes; 
+import ggplotd.geom;
+
+struct Data {
+    double value1;
+    double value2;
+}
+
+void main()
+{
+    import std.array : array;
+    import std.math : sqrt;
+    import std.algorithm : map;
+    import std.range : iota;
+    import std.random : uniform;
+    import std.typecons : Tuple;
+    // Generate some noisy data with reducing width
+    auto f = (double x) { return x/(1+x); };
+    auto width = (double x) { return sqrt(0.1/(1+x)); };
+    auto xs = iota( 0, 10, 0.1 ).array;
+
+    auto data = xs.map!((x) => Data(x,
+        f(x) + uniform(-width(x),width(x))));
+
+    # Wrap the data
+    auto gg = GGPlotD().put( 
+    	data.map!((a) => Tuple!(double, "x", double, "y")(a.value1, a.value2))
+	    .geomPoint );
+    gg.save( "data.png" );
+}
+```
+
 ## Extending GGplotD
 
 Due to GGplotD’s design it is relatively straightforward to extend GGplotD to
