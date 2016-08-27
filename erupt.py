@@ -306,7 +306,7 @@ version({NAME_PREFIX_UCASE}_FROM_DERELICT) {{
 				# write contents of type section
 				contents = self.sections[section]
 				if contents:
-					# check if opaque structs were registered and write tem into types file	
+					# check if opaque structs were registered and write them into types file	
 					if section == 'struct':
 						if self.opaqueStruct:
 							for opaque in self.opaqueStruct:
@@ -440,8 +440,21 @@ version({NAME_PREFIX_UCASE}_FROM_DERELICT) {{
 			returnType = re.match(re_funcptr, typeinfo.elem.text).group(1)
 			params = "".join(islice(typeinfo.elem.itertext(), 2, None))[2:]
 			if params == "void);" : params = ");"
-			else: params = ' '.join(' '.join(line.strip() for line in params.splitlines()).split())
+			#else: params = ' '.join(' '.join(line.strip() for line in params.splitlines()).split())
+			else:
+				concatParams = "" 
+				for line in params.splitlines():
+					lineSplit = line.split()
+					if len(lineSplit) > 2:
+						concatParams += ' ' + convertTypeConst(lineSplit[0] + ' ' + lineSplit[1]) + ' ' + lineSplit[2]
+					else:
+						concatParams += ' ' + ' '.join( param for param in lineSplit )
+
+				params = concatParams[2:]
+
 			self.appendSection("funcpointer", "alias {0} = {1} function({2}".format(name, returnType, params))
+			#write( params, file=self.testsFile )
+
 			
 		elif category == "struct" or category == "union":
 			self.genStruct(typeinfo, name)
