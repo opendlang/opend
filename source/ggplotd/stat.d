@@ -576,8 +576,8 @@ auto statDensity2D(AES)( AES aesRaw )
         // Also add points to close the path down to zero
         auto stepX = (minmax[1] - minmax[0])/25.0;
         auto stepY = (minmax[3] - minmax[2])/25.0;
-        auto xCoords = iota( minmax[0], minmax[1] + stepX, stepX ).array;
-        auto yCoords = iota( minmax[2], minmax[3] + stepY, stepY ).array;
+        auto xCoords = iota( minmax[0], minmax[1], stepX ).array ~ minmax[1];
+        auto yCoords = iota( minmax[2], minmax[3], stepY ).array ~ minmax[3];
         auto coords = zip(xCoords, xCoords[1..$]).map!( (xr) {
                 return zip(yCoords, yCoords[1..$]).map!( (yr) {
                         // Two polygons
