@@ -43,22 +43,23 @@ unittest
     import std.array : array;
     import std.algorithm : map;
     import std.conv : to;
-    import std.range : repeat, iota;
+    import std.range : repeat, iota, zip;
     import std.random : uniform;
 
-    import ggplotd.aes : Aes;
+    import ggplotd.aes : aes;
     import ggplotd.colour : colourGradient;
     import ggplotd.colourspace : XYZ;
     import ggplotd.geom : geomHist2D;
-    import ggplotd.ggplotd : GGPlotD;
+    import ggplotd.ggplotd : GGPlotD, addTo;
     import ggplotd.legend : continuousLegend;
 
     auto xs = iota(0,500,1).map!((x) => uniform(0.0,5)+uniform(0.0,5))
         .array;
     auto ys = iota(0,500,1).map!((y) => uniform(0.0,5)+uniform(0.0,5))
         .array;
-    auto aes = Aes!(typeof(xs), "x", typeof(ys), "y")( xs, ys);
-    auto gg = GGPlotD().put( geomHist2D( aes ) );
+    auto gg = xs.zip(ys)
+                .map!((t) => aes!("x","y")(t[0], t[1]))
+                .geomHist2D.addTo(GGPlotD());
     // Use a different colour scheme
     gg.put( colourGradient!XYZ( "white-cornflowerBlue-crimson" ) );
 
@@ -157,4 +158,52 @@ unittest
     gg.put( geomLabel(dt2) ).put(geomPoint(dt2));
 
     gg.save( "labels.png" );
+}
+
+auto runMCMC() {
+    import std.algorithm : map;
+    import std.array : array;
+    import std.math : pow;
+    import std.range : iota;
+    import dstats.random : rNorm;
+    return iota(0,100).map!((i) {
+        auto x = rNorm(1, 0.5);
+        auto y = rNorm(pow(x,2), 0.5);
+        auto z = rNorm(x + y, 0.5);
+        return [x, y, z];
+    }).array;
+}
+
+///
+unittest
+{
+    /// http://blackedder.github.io/ggplotd/images/parameter_distribution.png
+    import std.algorithm : map;
+    import std.format : format;
+    import ggplotd.aes : aes;
+    import ggplotd.axes : xaxisLabel, yaxisLabel;
+    import ggplotd.geom : geomDensity, geomDensity2D;
+    import ggplotd.ggplotd : Facets, GGPlotD, addTo;
+
+    auto trace = runMCMC();
+    Facets facets;
+    foreach(i; 0..3) 
+    {
+        foreach(j; 0..3) 
+        {
+            auto gg = GGPlotD();
+            format("Parameter %s", i).xaxisLabel.addTo(gg);
+            format("Parameter %s", j).yaxisLabel.addTo(gg);
+            if (i != j)
+                gg = trace.map!((sample) => aes!("x", "y")(sample[i], sample[j]))
+                    .geomDensity2D
+                    .addTo(gg);
+            else
+                gg = trace.map!((sample) => aes!("x", "y")(sample[i], sample[j]))
+                    .geomDensity
+                    .addTo(gg);
+            facets = gg.addTo(facets);
+        }
+    }
+    facets.save("parameter_distribution.png");
 }

@@ -408,8 +408,7 @@ struct GGPlotD
         }
         return this;
     }
-
-    /// put/add to the plot
+/// put/add to the plot
     ref GGPlotD put(T)(T rhs)
     {
         return this.opBinary!("+", T)(rhs);
@@ -772,14 +771,35 @@ unittest
     gg.save( "data.png" );
 }
 
+import std.range : ElementType;
 
-///
+/**
+Add element to a plot/facets struct
+
+This basically reverses a call to put and allows one to write more idiomatic D code where code flows from left to right instead of right to left.
+
+Examples:
+--------------------
+auto gg = data.aes.geomPoint.addTo(GGPlotD());
+// instead of
+auto gg = GGPlotD().put(geomPoint(aes(data)));
+--------------------
+*/
+ref auto addTo(T, U)(T t, U u) 
+{
+    return u.put(t);
+}
+
+/**
+Plot multiple (sub) plots
+*/
 struct Facets
 {
     ///
-    void put(GGPlotD facet)
+    ref Facets put(GGPlotD facet)
     {
         ggs.put( facet );
+        return this;
     }
 
     ///
