@@ -185,23 +185,26 @@ unittest
     import ggplotd.geom : geomDensity, geomDensity2D;
     import ggplotd.ggplotd : Facets, GGPlotD, addTo;
 
-    auto trace = runMCMC();
+    auto samples = runMCMC();
     Facets facets;
     foreach(i; 0..3) 
     {
         foreach(j; 0..3) 
         {
             auto gg = GGPlotD();
-            format("Parameter %s", i).xaxisLabel.addTo(gg);
-            format("Parameter %s", j).yaxisLabel.addTo(gg);
+            gg = format("Parameter %s", i).xaxisLabel.addTo(gg);
             if (i != j)
-                gg = trace.map!((sample) => aes!("x", "y")(sample[i], sample[j]))
+            {
+                gg = format("Parameter %s", j).yaxisLabel.addTo(gg);
+                gg = samples.map!((sample) => aes!("x", "y")(sample[i], sample[j]))
                     .geomDensity2D
                     .addTo(gg);
-            else
-                gg = trace.map!((sample) => aes!("x", "y")(sample[i], sample[j]))
+            } else {
+                gg = "Density".yaxisLabel.addTo(gg);
+                gg = samples.map!((sample) => aes!("x", "y")(sample[i], sample[j]))
                     .geomDensity
                     .addTo(gg);
+            }
             facets = gg.addTo(facets);
         }
     }
