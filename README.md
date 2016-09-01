@@ -1,4 +1,12 @@
-color
-=====
+std.experimental.color
+======================
 
-std.color development for eventual inclusion in phobos
+Development of std.exerpimental.color, intended for inclusion in the D standard library.
+
+Currently supported colorspaces:
+ - XYZ, xyY
+ - RGB (sRGB, gamma, linear, custom colourspace; primaries, whitepoint, compression ramp)
+ - HSV, HSL, HSI, HCY
+
+Implements comprehensive conversion between supported colourspaces.
+Flexible design supports addition of user-supplied colourspaces, with full conversion and interoperability.
