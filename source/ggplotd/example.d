@@ -210,3 +210,34 @@ unittest
     }
     facets.save("parameter_distribution.png");
 }
+
+unittest
+{
+    import std.csv : csvReader;
+    import std.file : readText;
+
+    struct Diamond {
+        double carat;
+        string clarity;
+        double price;
+    }
+
+    auto diamonds = readText("test_files/diamonds.csv").csvReader!(Diamond)( 
+        ["carat","clarity","price"]);
+    import std.stdio : writeln;
+    import std.range : tee;
+
+    import std.algorithm : cache, map;
+    import std.array : array;
+    import ggplotd.aes : aes;
+    import ggplotd.axes : xaxisLabel, yaxisLabel;
+    import ggplotd.ggplotd : GGPlotD, addTo;
+    import ggplotd.geom : geomPoint;
+    auto gg = diamonds.map!((diamond) => 
+            aes!("x", "y", "colour", "size")(diamond.carat, diamond.price, diamond.clarity, 0.8))
+        .array
+        .geomPoint.addTo(GGPlotD());
+    gg = "Carat".xaxisLabel.addTo(gg);
+    gg = "Price".yaxisLabel.addTo(gg);
+    gg.save("diamonds.png");
+}
