@@ -38,7 +38,7 @@ the easiest way is with subConfigurations:
 	}
 ```
 
-## Documentation
+# Documentation
 
 This README contains a couple of examples and basic documentation on how
 to extend GGPlotD. API documentation is automatically generated and put
@@ -47,7 +47,9 @@ http://blackedder.github.io/ggplotd/index.html. For example for the
 available geom* functions see:
 http://blackedder.github.io/ggplotd/ggplotd/geom.html
 
-### Examples
+## Examples
+
+### Diamonds
 
 Let’s assume we have a csv file with data on the price, carat and clarity of
 different diamonds.
@@ -80,13 +82,18 @@ void main()
         double price;
     }
 
-    auto diamonds = readText("test_files/diamonds.csv").csvReader!(Diamond)( 
-        ["carat","clarity","price"]);
+    // Read the data
+    auto diamonds = readText("test_files/diamonds.csv").csvReader!(Diamond)(
+    ["carat","clarity","price"]);
 
     auto gg = diamonds.map!((diamond) => 
+            // Map data to aesthetics (x, y and colour)
             aes!("x", "y", "colour", "size")(diamond.carat, diamond.price, diamond.clarity, 0.8))
         .array
+        // Draw points
         .geomPoint.addTo(GGPlotD());
+        
+    // Axis labels
     gg = "Carat".xaxisLabel.addTo(gg);
     gg = "Price".yaxisLabel.addTo(gg);
     gg.save("diamonds.png"); 
@@ -94,6 +101,66 @@ void main()
 ```
 
 ![Diamond data](http://blackedder.github.io/ggplotd/images/diamonds.png)
+
+### Variance-covariance
+
+For the next example let’s assume that we have three different variables (e.g.
+as a result of an MCMC run) and we want to plot the variance-covariances to
+get a sense of how these variables/parameters relate to eachother. This could
+be done as follows.
+
+```D
+import std.algorithm : map;
+import std.format : format;
+import ggplotd.aes : aes;
+import ggplotd.axes : xaxisLabel, yaxisLabel;
+import ggplotd.geom : geomDensity, geomDensity2D;
+import ggplotd.ggplotd : Facets, GGPlotD, addTo;
+import ggplotd.colour : colourGradient;
+import ggplotd.colourspace : XYZ;
+
+void main()
+{
+    // Running MCMC for a model that takes 3 parameters
+    // Will return 1000 posterior samples for the 3 parameters
+    // [[par1, par2, par3], ...]
+    auto samples = runMCMC();
+
+    // Facets can be used for multiple subplots
+    Facets facets;
+
+    // Cycle over the parameters
+    foreach(i; 0..3) 
+    {
+        foreach(j; 0..3) 
+        {
+            auto gg = GGPlotD();
+
+            gg = format("Parameter %s", i).xaxisLabel.addTo(gg);
+            if (i != j)
+            {
+                // Change the colourGradient used
+                gg = colourGradient!XYZ( "white-cornflowerBlue-crimson" )
+                    .addTo(gg);
+                gg = format("Parameter %s", j).yaxisLabel.addTo(gg);
+                gg = samples.map!((sample) => aes!("x", "y")(sample[i], sample[j]))
+                    .geomDensity2D
+                    .addTo(gg);
+            } else {
+                gg = "Density".yaxisLabel.addTo(gg);
+                gg = samples.map!((sample) => aes!("x", "y")(sample[i], sample[j]))
+                    .geomDensity
+                    .addTo(gg);
+            }
+            facets = gg.addTo(facets);
+        }
+    } 
+    facets.save("parameter_distribution.png", 670, 670); 
+} 
+```
+
+![Variance-covariance](http://blackedder.github.io/ggplotd/images/parameter_distribution.png)
+
 
 #### Further examples
 

@@ -166,9 +166,9 @@ auto runMCMC() {
     import std.math : pow;
     import std.range : iota;
     import dstats.random : rNorm;
-    return iota(0,100).map!((i) {
+    return iota(0,1000).map!((i) {
         auto x = rNorm(1, 0.5);
-        auto y = rNorm(pow(x,2), 0.5);
+        auto y = rNorm(pow(x,3), 0.5);
         auto z = rNorm(x + y, 0.5);
         return [x, y, z];
     }).array;
@@ -177,24 +177,37 @@ auto runMCMC() {
 ///
 unittest
 {
-    /// http://blackedder.github.io/ggplotd/images/parameter_distribution.png
+    // http://blackedder.github.io/ggplotd/images/parameter_distribution.png
     import std.algorithm : map;
     import std.format : format;
     import ggplotd.aes : aes;
     import ggplotd.axes : xaxisLabel, yaxisLabel;
     import ggplotd.geom : geomDensity, geomDensity2D;
     import ggplotd.ggplotd : Facets, GGPlotD, addTo;
+    import ggplotd.colour : colourGradient;
+    import ggplotd.colourspace : XYZ;
 
+    // Running MCMC for a model that takes 3 parameters
+    // Will return 1000 posterior samples for the 3 parameters
+    // [[par1, par2, par3], ...]
     auto samples = runMCMC();
+
+    // Facets can be used for multiple subplots
     Facets facets;
+
+    // Cycle over the parameters
     foreach(i; 0..3) 
     {
         foreach(j; 0..3) 
         {
             auto gg = GGPlotD();
+
             gg = format("Parameter %s", i).xaxisLabel.addTo(gg);
             if (i != j)
             {
+                // Change the colourGradient used
+                gg = colourGradient!XYZ( "white-cornflowerBlue-crimson" )
+                    .addTo(gg);
                 gg = format("Parameter %s", j).yaxisLabel.addTo(gg);
                 gg = samples.map!((sample) => aes!("x", "y")(sample[i], sample[j]))
                     .geomDensity2D
@@ -208,13 +221,21 @@ unittest
             facets = gg.addTo(facets);
         }
     }
-    facets.save("parameter_distribution.png");
+    facets.save("parameter_distribution.png", 670, 670);
 }
 
+///
 unittest
 {
-    import std.csv : csvReader;
-    import std.file : readText;
+    // http://blackedder.github.io/ggplotd/images/diamonds.png
+    import std.csv : csvReader; import std.file : readText;
+    import std.algorithm : map;
+    import std.array : array;
+    import ggplotd.aes : aes;
+    import ggplotd.axes : xaxisLabel, yaxisLabel;
+    import ggplotd.ggplotd : GGPlotD, addTo;
+    import ggplotd.geom : geomPoint;
+
 
     struct Diamond {
         double carat;
@@ -222,20 +243,19 @@ unittest
         double price;
     }
 
-    auto diamonds = readText("test_files/diamonds.csv").csvReader!(Diamond)( 
-        ["carat","clarity","price"]);
+    // Read the data
+    auto diamonds = readText("test_files/diamonds.csv").csvReader!(Diamond)(
+    ["carat","clarity","price"]);
 
-    import std.algorithm : map;
-    import std.array : array;
-    import ggplotd.aes : aes;
-    import ggplotd.axes : xaxisLabel, yaxisLabel;
-    import ggplotd.ggplotd : GGPlotD, addTo;
-    import ggplotd.geom : geomPoint;
     auto gg = diamonds.map!((diamond) => 
-            aes!("x", "y", "colour", "size")(diamond.carat, diamond.price, diamond.clarity, 0.8))
-        .array
-        .geomPoint.addTo(GGPlotD());
+        // Map data to aesthetics (x, y and colour)
+        aes!("x", "y", "colour", "size")(diamond.carat, diamond.price, diamond.clarity, 0.8))
+    .array
+    // Draw points
+    .geomPoint.addTo(GGPlotD());
+
+    // Axis labels
     gg = "Carat".xaxisLabel.addTo(gg);
     gg = "Price".yaxisLabel.addTo(gg);
-    gg.save("diamonds.png");
+    gg.save("diamonds.png"); 
 }
