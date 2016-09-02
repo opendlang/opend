@@ -224,10 +224,8 @@ unittest
 
     auto diamonds = readText("test_files/diamonds.csv").csvReader!(Diamond)( 
         ["carat","clarity","price"]);
-    import std.stdio : writeln;
-    import std.range : tee;
 
-    import std.algorithm : cache, map;
+    import std.algorithm : map;
     import std.array : array;
     import ggplotd.aes : aes;
     import ggplotd.axes : xaxisLabel, yaxisLabel;

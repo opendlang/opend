@@ -49,6 +49,54 @@ http://blackedder.github.io/ggplotd/ggplotd/geom.html
 
 ### Examples
 
+Let’s assume we have a csv file with data on the price, carat and clarity of
+different diamonds.
+
+carat  |  clarity  |  price
+-------|-----------|-------
+0.23   |  SI2      |  326  
+0.21   |  SI1      |  326  
+0.23   |  VS1      |  327  
+0.29   |  VS2      |  334  
+0.31   |  SI2      |  335  
+
+We can simply plot this data as follows.
+
+```D
+import std.csv : csvReader; import std.file : readText;
+import std.algorithm : map;
+import std.array : array;
+import ggplotd.aes : aes;
+import ggplotd.axes : xaxisLabel, yaxisLabel;
+import ggplotd.ggplotd : GGPlotD, addTo;
+import ggplotd.geom : geomPoint;
+
+
+void main() 
+{ 
+    struct Diamond {
+        double carat;
+        string clarity;
+        double price;
+    }
+
+    auto diamonds = readText("test_files/diamonds.csv").csvReader!(Diamond)( 
+        ["carat","clarity","price"]);
+
+    auto gg = diamonds.map!((diamond) => 
+            aes!("x", "y", "colour", "size")(diamond.carat, diamond.price, diamond.clarity, 0.8))
+        .array
+        .geomPoint.addTo(GGPlotD());
+    gg = "Carat".xaxisLabel.addTo(gg);
+    gg = "Price".yaxisLabel.addTo(gg);
+    gg.save("diamonds.png"); 
+}
+```
+
+![Diamond data](http://blackedder.github.io/ggplotd/images/diamonds.png)
+
+#### Further examples
+
 ![A noisy figure](http://blackedder.github.io/ggplotd/images/noise.png)
 ```D 
 import ggplotd.ggplotd; 
