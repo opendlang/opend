@@ -43,22 +43,23 @@ unittest
     import std.array : array;
     import std.algorithm : map;
     import std.conv : to;
-    import std.range : repeat, iota;
+    import std.range : repeat, iota, zip;
     import std.random : uniform;
 
-    import ggplotd.aes : Aes;
+    import ggplotd.aes : aes;
     import ggplotd.colour : colourGradient;
     import ggplotd.colourspace : XYZ;
     import ggplotd.geom : geomHist2D;
-    import ggplotd.ggplotd : GGPlotD;
+    import ggplotd.ggplotd : GGPlotD, addTo;
     import ggplotd.legend : continuousLegend;
 
     auto xs = iota(0,500,1).map!((x) => uniform(0.0,5)+uniform(0.0,5))
         .array;
     auto ys = iota(0,500,1).map!((y) => uniform(0.0,5)+uniform(0.0,5))
         .array;
-    auto aes = Aes!(typeof(xs), "x", typeof(ys), "y")( xs, ys);
-    auto gg = GGPlotD().put( geomHist2D( aes ) );
+    auto gg = xs.zip(ys)
+                .map!((t) => aes!("x","y")(t[0], t[1]))
+                .geomHist2D.addTo(GGPlotD());
     // Use a different colour scheme
     gg.put( colourGradient!XYZ( "white-cornflowerBlue-crimson" ) );
 
@@ -157,4 +158,84 @@ unittest
     gg.put( geomLabel(dt2) ).put(geomPoint(dt2));
 
     gg.save( "labels.png" );
+}
+
+auto runMCMC() {
+    import std.algorithm : map;
+    import std.array : array;
+    import std.math : pow;
+    import std.range : iota;
+    import dstats.random : rNorm;
+    return iota(0,100).map!((i) {
+        auto x = rNorm(1, 0.5);
+        auto y = rNorm(pow(x,2), 0.5);
+        auto z = rNorm(x + y, 0.5);
+        return [x, y, z];
+    }).array;
+}
+
+///
+unittest
+{
+    /// http://blackedder.github.io/ggplotd/images/parameter_distribution.png
+    import std.algorithm : map;
+    import std.format : format;
+    import ggplotd.aes : aes;
+    import ggplotd.axes : xaxisLabel, yaxisLabel;
+    import ggplotd.geom : geomDensity, geomDensity2D;
+    import ggplotd.ggplotd : Facets, GGPlotD, addTo;
+
+    auto samples = runMCMC();
+    Facets facets;
+    foreach(i; 0..3) 
+    {
+        foreach(j; 0..3) 
+        {
+            auto gg = GGPlotD();
+            gg = format("Parameter %s", i).xaxisLabel.addTo(gg);
+            if (i != j)
+            {
+                gg = format("Parameter %s", j).yaxisLabel.addTo(gg);
+                gg = samples.map!((sample) => aes!("x", "y")(sample[i], sample[j]))
+                    .geomDensity2D
+                    .addTo(gg);
+            } else {
+                gg = "Density".yaxisLabel.addTo(gg);
+                gg = samples.map!((sample) => aes!("x", "y")(sample[i], sample[j]))
+                    .geomDensity
+                    .addTo(gg);
+            }
+            facets = gg.addTo(facets);
+        }
+    }
+    facets.save("parameter_distribution.png");
+}
+
+unittest
+{
+    import std.csv : csvReader;
+    import std.file : readText;
+
+    struct Diamond {
+        double carat;
+        string clarity;
+        double price;
+    }
+
+    auto diamonds = readText("test_files/diamonds.csv").csvReader!(Diamond)( 
+        ["carat","clarity","price"]);
+
+    import std.algorithm : map;
+    import std.array : array;
+    import ggplotd.aes : aes;
+    import ggplotd.axes : xaxisLabel, yaxisLabel;
+    import ggplotd.ggplotd : GGPlotD, addTo;
+    import ggplotd.geom : geomPoint;
+    auto gg = diamonds.map!((diamond) => 
+            aes!("x", "y", "colour", "size")(diamond.carat, diamond.price, diamond.clarity, 0.8))
+        .array
+        .geomPoint.addTo(GGPlotD());
+    gg = "Carat".xaxisLabel.addTo(gg);
+    gg = "Price".yaxisLabel.addTo(gg);
+    gg.save("diamonds.png");
 }

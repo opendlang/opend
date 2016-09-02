@@ -282,7 +282,7 @@ auto axisAes(string type, double minC, double maxC, double lvl, double scaling =
     {
         import std.math : round;
         import std.conv : to;
-        ticksLoc = Axis(minC, maxC).adjustTickWidth(round(7.0*scaling).to!size_t).axisTicks.array;
+        ticksLoc = Axis(minC, maxC).adjustTickWidth(round(6.0*scaling).to!size_t).axisTicks.array;
         labels = ticksLoc.map!((a) => a.to!double.toAxisLabel).array;
     }
 

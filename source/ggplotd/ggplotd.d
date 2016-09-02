@@ -146,6 +146,18 @@ struct Margins
     size_t top = 40; 
 }
 
+Margins defaultMargins(int size1, int size2)
+{
+    import std.conv : to;
+    Margins margins;
+    auto scale = defaultScaling(size1, size2);
+    margins.left = (margins.left*scale).to!size_t;
+    margins.right = (margins.right*scale).to!size_t;
+    margins.top = (margins.top*scale).to!size_t;
+    margins.bottom = (margins.bottom*scale).to!size_t;
+    return margins;
+}
+
 private auto defaultScaling( int size ) 
 {
     if (size > 500)
@@ -268,15 +280,17 @@ struct GGPlotD
         import ggplotd.geom : geomAxis;
         import ggplotd.axes : tickLength;
 
+        auto currentMargins = margins(width, height);
+
         auto gR = chain(
                 geomAxis(aesX, 
-                    bounds.height.tickLength(height - margins.bottom - margins.top, 
+                    bounds.height.tickLength(height - currentMargins.bottom - currentMargins.top, 
                         defaultScaling(width), defaultScaling(height)), xaxis.label), 
                 geomAxis(aesY, 
-                    bounds.width.tickLength(width - margins.left - margins.right, 
+                    bounds.width.tickLength(width - currentMargins.left - currentMargins.right, 
                         defaultScaling(width), defaultScaling(height)), yaxis.label), 
             );
-        auto plotMargins = Margins(margins);
+        auto plotMargins = Margins(currentMargins);
         if (!legends.empty)
             plotMargins.right += legends[0].width;
 
@@ -289,7 +303,7 @@ struct GGPlotD
         }
 
         // Plot title
-        surface = title.drawTitle( surface, margins, width );
+        surface = title.drawTitle( surface, currentMargins, width );
 
         import std.range : iota, zip, dropOne;
         foreach(ly; zip(legends, iota(0.0, height, height/(legends.length+1.0)).dropOne)) 
@@ -299,7 +313,7 @@ struct GGPlotD
             if (legend.type == "continuous") {
                 import ggplotd.legend : drawContinuousLegend; 
                 auto legendSurface = cairo.Surface.createForRectangle(surface,
-                    cairo.Rectangle!double(width - margins.right - legend.width, 
+                    cairo.Rectangle!double(width - currentMargins.right - legend.width, 
                     y, legend.width, legend.height ));//margins.right, margins.right));
                 legendSurface = drawContinuousLegend( legendSurface, 
                 legend.width, legend.height, 
@@ -307,7 +321,7 @@ struct GGPlotD
             } else if (legend.type == "discrete") {
                 import ggplotd.legend : drawDiscreteLegend; 
                 auto legendSurface = cairo.Surface.createForRectangle(surface,
-                    cairo.Rectangle!double(width - margins.right - legend.width, 
+                    cairo.Rectangle!double(width - currentMargins.right - legend.width, 
                     y, legend.width, legend.height ));//margins.right, margins.right));
                 legendSurface = drawDiscreteLegend( legendSurface, 
                 legend.width, legend.height, 
@@ -397,7 +411,7 @@ struct GGPlotD
         }
         static if (is(T==Margins))
         {
-            margins = rhs;
+            _margins = rhs;
         }
         static if (is(T==Legend))
         {
@@ -408,8 +422,7 @@ struct GGPlotD
         }
         return this;
     }
-
-    /// put/add to the plot
+/// put/add to the plot
     ref GGPlotD put(T)(T rhs)
     {
         return this.opBinary!("+", T)(rhs);
@@ -437,6 +450,15 @@ struct GGPlotD
             return defaultColourGradient!HCY("");
     }
 
+    /// Active margins
+    Margins margins(int width, int height) const
+    {
+        if (!_margins.isNull)
+            return _margins;
+        else
+            return defaultMargins(width, height);
+    }
+
 private:
     import std.range : Appender;
     import ggplotd.theme : Theme, ThemeFunction;
@@ -447,12 +469,12 @@ private:
     XAxis xaxis;
     YAxis yaxis;
 
-    Margins margins;
 
     Title title;
     Theme theme;
 
     import std.typecons : Nullable;
+    Nullable!(Margins) _margins;
     Nullable!(ScaleType) scaleFunction;
     Nullable!(ColourGradientFunction) colourGradientFunction;
 
@@ -772,14 +794,35 @@ unittest
     gg.save( "data.png" );
 }
 
+import std.range : ElementType;
 
-///
+/**
+Add element to a plot/facets struct
+
+This basically reverses a call to put and allows one to write more idiomatic D code where code flows from left to right instead of right to left.
+
+Examples:
+--------------------
+auto gg = data.aes.geomPoint.addTo(GGPlotD());
+// instead of
+auto gg = GGPlotD().put(geomPoint(aes(data)));
+--------------------
+*/
+ref auto addTo(T, U)(T t, U u) 
+{
+    return u.put(t);
+}
+
+/**
+Plot multiple (sub) plots
+*/
 struct Facets
 {
     ///
-    void put(GGPlotD facet)
+    ref Facets put(GGPlotD facet)
     {
         ggs.put( facet );
+        return this;
     }
 
     ///
