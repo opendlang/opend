@@ -74,7 +74,7 @@ enum RGBColorSpace
 {
     /** sRGB, HDTV (ITU-R BT.709) */
     sRGB,
-    /** sRGB with gamma 2.2 */
+    /** sRGB approximation using gamma 2.2 */
     sRGB_Gamma2_2,
 
     // custom color space will disable automatic color space conversions

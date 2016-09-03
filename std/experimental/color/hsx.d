@@ -13,8 +13,9 @@ module std.experimental.color.hsx;
 import std.experimental.color;
 import std.experimental.color.colorspace : RGBColorSpace;
 
-import std.traits : isInstanceOf, isFloatingPoint, isUnsigned;
+import std.traits : isInstanceOf, isFloatingPoint, isUnsigned, Unqual;
 import std.typetuple : TypeTuple;
+import std.math : PI;
 
 @safe pure nothrow @nogc:
 
@@ -27,6 +28,7 @@ enum isHSx(T) = isInstanceOf!(HSx, T);
 unittest
 {
     static assert(isHSx!(HSV!ushort) == true);
+    static assert(isHSx!RGB8 == false);
     static assert(isHSx!string == false);
 }
 
@@ -84,14 +86,45 @@ struct HSx(HSxType type_, CT = float, RGBColorSpace colorSpace_ = RGBColorSpace.
     mixin("CT " ~ Components!type[1] ~ " = 0;");
     mixin("CT " ~ Components!type[2] ~ " = 0;");
 
+    /** Get hue angle in degrees. */
+    @property double degrees() const
+    {
+        static if(!isFloatingPoint!CT)
+            return h * (360/(CT.max + 1.0));
+        else
+            return (h < 0 ? 1 - h%1 : h%1) * 360;
+    }
+    /** Set hue angle in degrees. */
+    @property void degrees(double angle)
+    {
+        static if(!isFloatingPoint!CT)
+            h = cast(CT)(angle * ((CT.max + 1.0)/360));
+        else
+            h = angle * 1.0/360;
+    }
+
+    /** Get hue angle in radians. */
+    @property double radians() const
+    {
+        static if(!isFloatingPoint!CT)
+            return h * ((PI*2)/(CT.max + 1.0));
+        else
+            return (h < 0 ? 1 - h%1 : h%1) * (PI*2);
+    }
+    /** Set hue angle in radians. */
+    @property void radians(double angle)
+    {
+        static if(!isFloatingPoint!CT)
+            h = cast(CT)(angle * ((CT.max + 1.0)/(PI*2)));
+        else
+            h = angle * 1.0/(PI*2);
+    }
+
     /** Cast to other color types */
     Color opCast(Color)() const if(isColor!Color)
     {
         return convertColor!Color(this);
     }
-
-    // operators
-    mixin ColorOperators!(Components!type);
 
 
 package:
@@ -105,12 +138,12 @@ package:
     }
     unittest
     {
-        static assert(convertColorImpl!(HSL!float)(HSV!float(60, 1, 1)) == HSL!float(60, 1, 0.5));
+        static assert(convertColorImpl!(HSL!float)(HSV!float(1.0/6, 1, 1)) == HSL!float(1.0/6, 1, 0.5));
 
-        static assert(convertColorImpl!(HSV!float)(HSL!float(60, 1, 0.5)) == HSV!float(60, 1, 1));
+        static assert(convertColorImpl!(HSV!float)(HSL!float(1.0/6, 1, 0.5)) == HSV!float(1.0/6, 1, 1));
 
-        static assert(convertColorImpl!(HSI!float)(HSV!float(0, 1, 1)) == HSI!float(0, 1, 1.0/3.0));
-        static assert(convertColorImpl!(HSI!float)(HSV!float(60, 1, 1)) == HSI!float(60, 1, 2.0/3.0));
+        static assert(convertColorImpl!(HSI!float)(HSV!float(0, 1, 1)) == HSI!float(0, 1, 1.0/3));
+        static assert(convertColorImpl!(HSI!float)(HSV!float(1.0/6, 1, 1)) == HSI!float(1.0/6, 1, 2.0/3));
 
         // TODO: HCY (needs approx ==)
     }
@@ -123,7 +156,7 @@ package:
         alias WT = FloatTypeFor!ToType;
 
         auto c = color.tupleof;
-        WT h = cast(WT)c[0];
+        WT h = cast(WT)color.degrees;
         WT s = cast(WT)c[1];
         WT x = cast(WT)c[2];
 
@@ -141,7 +174,6 @@ package:
         else static if(From.type == HSxType.HSI)
         {
             C = s;
-            m = x - (r+g+b)*WT(1.0/3.0);
         }
         else static if(From.type == HSxType.HCY)
         {
@@ -165,8 +197,13 @@ package:
         else if(H < 6)
             r = C, g = 0, b = X;
 
-        static if(From.type == HSxType.HCY)
+        static if(From.type == HSxType.HSI)
         {
+            m = x - (r+g+b)*WT(1.0/3.0);
+        }
+        else static if(From.type == HSxType.HCY)
+        {
+            import std.experimental.color.colorspace : RGBColorSpaceMatrix;
             enum YAxis = RGBColorSpaceMatrix!(From.colorSpace, WT)[1];
             m = x - (YAxis[0]*r + YAxis[1]*g + YAxis[2]*b); // Derive from Luma'
         }
@@ -176,10 +213,10 @@ package:
     unittest
     {
         static assert(convertColorImpl!(RGB8)(HSV!float(0, 1, 1)) == RGB8(255, 0, 0));
-        static assert(convertColorImpl!(RGB8)(HSV!float(60, 0.5, 0.5)) == RGB8(128, 128, 64));
+        static assert(convertColorImpl!(RGB8)(HSV!float(1.0/6, 0.5, 0.5)) == RGB8(128, 128, 64));
 
         static assert(convertColorImpl!(RGB8)(HSL!float(0, 1, 0.5)) == RGB8(255, 0, 0));
-        static assert(convertColorImpl!(RGB8)(HSL!float(60, 0.5, 0.5)) == RGB8(191, 191, 64));
+        static assert(convertColorImpl!(RGB8)(HSL!float(1.0/6, 0.5, 0.5)) == RGB8(191, 191, 64));
 
 //        static assert(convertColorImpl!(RGB8)(HSI!float(0, 1, 1)) == RGB8(1, 0, 0));
 
@@ -209,11 +246,11 @@ package:
         if(C == 0)
             h = 0;
         else if(M == r)
-            h = WT(60) * ((g-b)/C % WT(6));
+            h = WT(1.0/6) * ((g-b)/C % WT(6));
         else if(M == g)
-            h = WT(60) * ((b-r)/C + WT(2));
+            h = WT(1.0/6) * ((b-r)/C + WT(2));
         else if(M == b)
-            h = WT(60) * ((r-g)/C + WT(4));
+            h = WT(1.0/6) * ((r-g)/C + WT(4));
 
         WT s, x;
         static if(To.type == HSxType.HSV)
@@ -233,10 +270,14 @@ package:
         }
         else static if(To.type == HSxType.HCY)
         {
+            import std.experimental.color.colorspace : RGBColorSpaceMatrix;
             enum YAxis = RGBColorSpaceMatrix!(To.colorSpace, WT)[1];
             x = YAxis[0]*r + YAxis[1]*g + YAxis[2]*b; // Luma'
             s = C; // Chroma
         }
+
+        static if(!isFloatingPoint!ToType)
+            h = h * WT(ToType.max + 1.0);
 
         return To(cast(ToType)h, cast(ToType)s, cast(ToType)x);
     }
@@ -245,7 +286,7 @@ package:
         static assert(convertColorImpl!(HSV!float)(RGB8(255, 0, 0)) == HSV!float(0, 1, 1));
         static assert(convertColorImpl!(HSL!float)(RGB8(255, 0, 0)) == HSL!float(0, 1, 0.5));
         static assert(convertColorImpl!(HSI!float)(RGB8(255, 0, 0)) == HSI!float(0, 1, 1.0/3));
-        static assert(convertColorImpl!(HSI!float)(RGB8(255, 255, 0)) == HSI!float(60, 1, 2.0/3));
+        static assert(convertColorImpl!(HSI!float)(RGB8(255, 255, 0)) == HSI!float(1.0/6, 1, 2.0/3));
 //        static assert(convertColorImpl!(HCY!float)(RGB8(255, 0, 0)) == HCY!float(0, 1, 1));
     }
 
@@ -261,6 +302,7 @@ private:
         else static if(type == HSxType.HCY)
             alias Components = TypeTuple!("h","c","y");
     }
+    alias AllComponents = Components!type_;
 }
 
 ///
@@ -272,8 +314,6 @@ unittest
     HSVf c = HSVf(3.1415, 1, 0.5);
 
     // test HSV operators and functions
-    static assert(HSVf(3.1415, 0.2, 0.5) + HSVf(0, 0.5, 0.5) == HSVf(3.1415, 0.7, 1));
-    static assert(HSVf(2, 0.5, 1) * 100.0 == HSVf(200, 50, 100));
 }
 ///
 unittest
@@ -284,8 +324,6 @@ unittest
     HSLf c = HSLf(3.1415, 1, 0.5);
 
     // test HSL operators and functions
-    static assert(HSLf(3.1415, 0.2, 0.5) + HSLf(0, 0.5, 0.5) == HSLf(3.1415, 0.7, 1));
-    static assert(HSLf(2, 0.5, 1) * 100.0 == HSLf(200, 50, 100));
 }
 ///
 unittest
@@ -296,8 +334,6 @@ unittest
     HSIf c = HSIf(3.1415, 1, 0.5);
 
     // test HSI operators and functions
-    static assert(HSIf(3.1415, 0.2, 0.5) + HSIf(0, 0.5, 0.5) == HSIf(3.1415, 0.7, 1));
-    static assert(HSIf(2, 0.5, 1) * 100.0 == HSIf(200, 50, 100));
 }
 ///
 unittest
@@ -308,6 +344,4 @@ unittest
     HCYf c = HCYf(3.1415, 1, 0.5);
 
     // test HCY operators and functions
-    static assert(HCYf(3.1415, 0.2, 0.5) + HCYf(0, 0.5, 0.5) == HCYf(3.1415, 0.7, 1));
-    static assert(HCYf(2, 0.5, 1) * 100.0 == HCYf(200, 50, 100));
 }

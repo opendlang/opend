@@ -80,8 +80,12 @@ alias LA8 =     RGB!("la", ubyte);
 
 /** 16 bit signed UV color type with 8 bits per channel. */
 alias UV8 =     RGB!("rg", byte);
+/** 24 bit signed UVW color type with 8 bits per channel. */
+alias UVW8 =    RGB!("rgb", byte);
 /** Floating point UV color type. */
 alias UVf32 =   RGB!("rg", float);
+/** Floating point UVW color type. */
+alias UVWf32 =  RGB!("rgb", float);
 
 
 /** Set of colors defined by X11, adopted by the W3C, SVG, and other popular libraries. */
@@ -354,34 +358,6 @@ unittest
 }
 
 
-// some common color operations
-C lerp(C, F)(C a, C b, F t)
-{
-    return blend(a, b, 1-t, t, 1-t, t);
-}
-
-C blend(C, F)(C src, C dest, F srcFactor, F destFactor)
-{
-    return blend(src, dest, srcFactor, destFactor, srcFactor, destFactor);
-}
-
-C blend(C, F)(C src, C dest, F srcFactor, F destFactor, F srcAlphaFactor, F destAlphaFactor) if(isRGB!C && isFloatingPoint!F)
-{
-    C r;
-    static if(C.CanFind!(components, 'r'))
-        r.r = cast(typeof(r.r))(src.r*srcFactor + dest.r*destFactor);
-    static if(C.CanFind!(components, 'g'))
-        r.g = cast(typeof(r.g))(src.g*srcFactor + dest.g*destFactor);
-    static if(C.CanFind!(components, 'b'))
-        r.b = cast(typeof(r.b))(src.b*srcFactor + dest.b*destFactor);
-    static if(C.CanFind!(components, 'l'))
-        r.l = cast(typeof(r.l))(src.l*srcFactor + dest.l*destFactor);
-    static if(C.CanFind!(components, 'a'))
-        r.a = cast(typeof(r.a))(src.a*srcAlphaFactor + dest.a*destAlphaFactor);
-    return r;
-}
-
-
 package:
 
 import std.traits : isInstanceOf, TemplateOf;
@@ -478,48 +454,4 @@ template ComponentExpression(string expression, string component, string op)
     enum ComponentExpression =
         "static if(is(typeof(this." ~ component ~ ")))" ~ "\n\t" ~
             BuildExpression!(expression, component, op);
-}
-
-mixin template ColorOperators(Components...)
-{
-    import std.traits : Unqual;
-
-    /** Unary operators. */
-    typeof(this) opUnary(string op)() const if(op == "+" || op == "-" || (op == "~" && is(ComponentType == NormalizedInt!U, U)))
-    {
-        Unqual!(typeof(this)) res = this;
-        foreach(c; Components)
-            mixin(ComponentExpression!("res._ = #_;", c, op));
-        return res;
-    }
-    /** Binary operators. */
-    typeof(this) opBinary(string op)(typeof(this) rh) const if(op == "+" || op == "-" || op == "*")
-    {
-        Unqual!(typeof(this)) res = this;
-        foreach(c; Components)
-            mixin(ComponentExpression!("res._ #= rh._;", c, op));
-        return res;
-    }
-    /** Binary operators. */
-    typeof(this) opBinary(string op, S)(S rh) const if(isColorScalarType!S && (op == "*" || op == "/" || op == "%" || op == "^^"))
-    {
-        Unqual!(typeof(this)) res = this;
-        foreach(c; Components)
-            mixin(ComponentExpression!("res._ #= rh;", c, op));
-        return res;
-    }
-    /** Binary assignment operators. */
-    ref typeof(this) opOpAssign(string op)(typeof(this) rh) if(op == "+" || op == "-" || op == "*")
-    {
-        foreach(c; Components)
-            mixin(ComponentExpression!("_ #= rh._;", c, op));
-        return this;
-    }
-    /** Binary assignment operators. */
-    ref typeof(this) opOpAssign(string op, S)(S rh) if(isColorScalarType!S && (op == "*" || op == "/" || op == "%" || op == "^^"))
-    {
-        foreach(c; Components)
-            mixin(ComponentExpression!("_ #= rh;", c, op));
-        return this;
-    }
 }

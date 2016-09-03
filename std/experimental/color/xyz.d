@@ -1,7 +1,7 @@
 // Written in the D programming language.
 
 /**
-    This module implements XYZ and xyY _color types.
+    This module implements CIE XYZ and xyY _color types.
 
     Authors:    Manu Evans
     Copyright:  Copyright (c) 2015, Manu Evans.
@@ -14,7 +14,7 @@ import std.experimental.color;
 version(unittest)
     import std.experimental.color.colorspace : WhitePoint;
 
-import std.traits : isInstanceOf, isFloatingPoint;
+import std.traits : isInstanceOf, isFloatingPoint, Unqual;
 import std.typetuple : TypeTuple;
 import std.typecons : tuple;
 
@@ -31,6 +31,7 @@ unittest
 {
     static assert(isXYZ!(XYZ!float) == true);
     static assert(isXYZ!(xyY!double) == false);
+    static assert(isXYZ!int == false);
 }
 
 
@@ -44,6 +45,7 @@ unittest
 {
     static assert(isxyY!(xyY!float) == true);
     static assert(isxyY!(XYZ!double) == false);
+    static assert(isxyY!int == false);
 }
 
 
@@ -84,8 +86,44 @@ struct XYZ(F = float) if(isFloatingPoint!F)
         return convertColor!Color(this);
     }
 
-    // operators
-    mixin ColorOperators!(TypeTuple!("X","Y","Z"));
+    /** Unary operators. */
+    typeof(this) opUnary(string op)() const if(op == "+" || op == "-" || (op == "~" && is(ComponentType == NormalizedInt!U, U)))
+    {
+        Unqual!(typeof(this)) res = this;
+        foreach(c; AllComponents)
+            mixin(ComponentExpression!("res._ = #_;", c, op));
+        return res;
+    }
+    /** Binary operators. */
+    typeof(this) opBinary(string op)(typeof(this) rh) const if(op == "+" || op == "-" || op == "*")
+    {
+        Unqual!(typeof(this)) res = this;
+        foreach(c; AllComponents)
+            mixin(ComponentExpression!("res._ #= rh._;", c, op));
+        return res;
+    }
+    /** Binary operators. */
+    typeof(this) opBinary(string op, S)(S rh) const if(isColorScalarType!S && (op == "*" || op == "/" || op == "%" || op == "^^"))
+    {
+        Unqual!(typeof(this)) res = this;
+        foreach(c; AllComponents)
+            mixin(ComponentExpression!("res._ #= rh;", c, op));
+        return res;
+    }
+    /** Binary assignment operators. */
+    ref typeof(this) opOpAssign(string op)(typeof(this) rh) if(op == "+" || op == "-" || op == "*")
+    {
+        foreach(c; AllComponents)
+            mixin(ComponentExpression!("_ #= rh._;", c, op));
+        return this;
+    }
+    /** Binary assignment operators. */
+    ref typeof(this) opOpAssign(string op, S)(S rh) if(isColorScalarType!S && (op == "*" || op == "/" || op == "%" || op == "^^"))
+    {
+        foreach(c; AllComponents)
+            mixin(ComponentExpression!("_ #= rh;", c, op));
+        return this;
+    }
 
 
 package:
@@ -100,6 +138,9 @@ package:
         static assert(convertColorImpl!(XYZ!float)(XYZ!double(1, 2, 3)) == XYZ!float(1, 2, 3));
         static assert(convertColorImpl!(XYZ!double)(XYZ!float(1, 2, 3)) == XYZ!double(1, 2, 3));
     }
+
+private:
+    alias AllComponents = TypeTuple!("X", "Y", "Z");
 }
 
 ///
@@ -150,8 +191,48 @@ struct xyY(F = float) if(isFloatingPoint!F)
         return convertColor!Color(this);
     }
 
-    // operators
-    mixin ColorOperators!(TypeTuple!("x","y","Y"));
+    /** Unary operators. */
+    typeof(this) opUnary(string op)() const if(op == "+" || op == "-" || (op == "~" && is(ComponentType == NormalizedInt!U, U)))
+    {
+        Unqual!(typeof(this)) res = this;
+        foreach(c; AllComponents)
+            mixin(ComponentExpression!("res._ = #_;", c, op));
+        return res;
+    }
+
+    /** Binary operators. */
+    typeof(this) opBinary(string op)(typeof(this) rh) const if(op == "+" || op == "-" || op == "*")
+    {
+        Unqual!(typeof(this)) res = this;
+        foreach(c; AllComponents)
+            mixin(ComponentExpression!("res._ #= rh._;", c, op));
+        return res;
+    }
+
+    /** Binary operators. */
+    typeof(this) opBinary(string op, S)(S rh) const if(isColorScalarType!S && (op == "*" || op == "/" || op == "%" || op == "^^"))
+    {
+        Unqual!(typeof(this)) res = this;
+        foreach(c; AllComponents)
+            mixin(ComponentExpression!("res._ #= rh;", c, op));
+        return res;
+    }
+
+    /** Binary assignment operators. */
+    ref typeof(this) opOpAssign(string op)(typeof(this) rh) if(op == "+" || op == "-" || op == "*")
+    {
+        foreach(c; AllComponents)
+            mixin(ComponentExpression!("_ #= rh._;", c, op));
+        return this;
+    }
+
+    /** Binary assignment operators. */
+    ref typeof(this) opOpAssign(string op, S)(S rh) if(isColorScalarType!S && (op == "*" || op == "/" || op == "%" || op == "^^"))
+    {
+        foreach(c; AllComponents)
+            mixin(ComponentExpression!("_ #= rh;", c, op));
+        return this;
+    }
 
 
 package:
@@ -201,6 +282,9 @@ package:
         // degenerate case
         static assert(convertColorImpl!(xyY!float)(XYZ!float(0, 0, 0)) == xyY!float(WhitePoint!float.D65.x, WhitePoint!float.D65.y, 0));
     }
+
+private:
+    alias AllComponents = TypeTuple!("x", "y", "Y");
 }
 
 ///

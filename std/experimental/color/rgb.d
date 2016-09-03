@@ -15,7 +15,7 @@ import std.experimental.color.colorspace;
 import std.experimental.color.xyz : XYZ, isXYZ;
 import std.experimental.normint;
 
-import std.traits : isInstanceOf, isNumeric, isIntegral, isFloatingPoint, isSomeChar;
+import std.traits : isInstanceOf, isNumeric, isIntegral, isFloatingPoint, isSomeChar, Unqual;
 import std.typetuple : TypeTuple;
 import std.typecons : tuple;
 
@@ -199,6 +199,12 @@ struct RGB(string components_, ComponentType_, bool linear_ = false, RGBColorSpa
     {
         this = colorFromString!(typeof(this))(hex);
     }
+    ///
+    unittest
+    {
+        static assert(RGB8("#8000FF")  == RGB8(0x80,0x00,0xFF));
+        static assert(RGBA8("0x908000FF") == RGBA8(0x80,0x00,0xFF,0x90));
+    }
 
     /** Cast to other color types */
     Color opCast(Color)() const if(isColor!Color)
@@ -213,59 +219,97 @@ struct RGB(string components_, ComponentType_, bool linear_ = false, RGBColorSpa
         return tristimulusWithAlpha == rh.tristimulusWithAlpha;
     }
 
-    // operators
-    mixin ColorOperators!AllComponents;
-
+    /** Unary operators. */
+    typeof(this) opUnary(string op)() const if(op == "+" || op == "-" || (op == "~" && is(ComponentType == NormalizedInt!U, U)))
+    {
+        Unqual!(typeof(this)) res = this;
+        foreach(c; AllComponents)
+            mixin(ComponentExpression!("res._ = #_;", c, op));
+        return res;
+    }
+    ///
     unittest
     {
-        alias UnsignedRGB = RGB!("rgb", ubyte);
-        alias SignedRGBX = RGB!("rgbx", byte);
-        alias FloatRGBA = RGB!("rgba", float);
+        static assert(+UVW8(1,2,3) == UVW8(1,2,3));
+        static assert(-UVW8(1,2,3) == UVW8(-1,-2,-3));
 
-        // test construction
-        static assert(UnsignedRGB("0x908000FF")  == UnsignedRGB(0x80,0,0xFF));
-        static assert(FloatRGBA("0x908000FF")    == FloatRGBA(float(0x80)/float(0xFF),0,1,float(0x90)/float(0xFF)));
-
-        // test operators
-        static assert(-SignedRGBX(1,2,3) == SignedRGBX(-1,-2,-3));
-        static assert(-FloatRGBA(1,2,3)  == FloatRGBA(-1,-2,-3));
-
-        static assert(~UnsignedRGB(1,2,3) == UnsignedRGB(0xFE,0xFD,0xFC));
-        static assert(~SignedRGBX(1,2,3)  == SignedRGBX(~1,~2,~3));
-
-        static assert(UnsignedRGB(10,20,30)  + UnsignedRGB(4,5,6) == UnsignedRGB(14,25,36));
-        static assert(SignedRGBX(10,20,30)   + SignedRGBX(4,5,6)  == SignedRGBX(14,25,36));
-        static assert(FloatRGBA(10,20,30,40) + FloatRGBA(4,5,6,7) == FloatRGBA(14,25,36,47));
-
-        static assert(UnsignedRGB(10,20,30)  - UnsignedRGB(4,5,6) == UnsignedRGB(6,15,24));
-        static assert(SignedRGBX(10,20,30)   - SignedRGBX(4,5,6)  == SignedRGBX(6,15,24));
-        static assert(FloatRGBA(10,20,30,40) - FloatRGBA(4,5,6,7) == FloatRGBA(6,15,24,33));
-
-        static assert(UnsignedRGB(10,20,30)  * UnsignedRGB(128,128,128) == UnsignedRGB(5,10,15));
-        static assert(SignedRGBX(10,20,30)   * SignedRGBX(-64,-64,-64)  == SignedRGBX(-5,-10,-15));
-        static assert(FloatRGBA(10,20,30,40) * FloatRGBA(0,1,2,3)       == FloatRGBA(0,20,60,120));
-
-        static assert(UnsignedRGB(10,20,30)  * 2 == UnsignedRGB(20,40,60));
-        static assert(SignedRGBX(10,20,30)   * 2 == SignedRGBX(20,40,60));
-        static assert(FloatRGBA(10,20,30,40) * 2 == FloatRGBA(20,40,60,80));
-
-        static assert(UnsignedRGB(10,20,30)   / 2 == UnsignedRGB(5,10,15));
-        static assert(SignedRGBX(-10,-20,-30) / 2 == SignedRGBX(-5,-10,-15));
-        static assert(FloatRGBA(10,20,30,40)  / 2 == FloatRGBA(5,10,15,20));
-
-        static assert(UnsignedRGB(10,20,30)  * 2.0 == UnsignedRGB(20,40,60));
-        static assert(SignedRGBX(10,20,30)   * 2.0 == SignedRGBX(20,40,60));
-        static assert(FloatRGBA(10,20,30,40) * 2.0 == FloatRGBA(20,40,60,80));
-
-        static assert(UnsignedRGB(10,20,30)  / 0.5 == UnsignedRGB(20,40,60));
-        static assert(SignedRGBX(10,20,30)   / 0.5 == SignedRGBX(20,40,60));
-        static assert(FloatRGBA(10,20,30,40) / 0.5 == FloatRGBA(20,40,60,80));
-
-        static assert(UnsignedRGB(10,20,30)   / 2.0 == UnsignedRGB(5,10,15));
-        static assert(SignedRGBX(-10,-20,-30) / 2.0 == SignedRGBX(-5,-10,-15));
-        static assert(FloatRGBA(10,20,30,40)  / 2.0 == FloatRGBA(5,10,15,20));
+        static assert(~RGB8(1,2,3) == RGB8(0xFE,0xFD,0xFC));
+        static assert(~UVW8(1,2,3) == UVW8(~1,~2,~3));
     }
 
+    /** Binary operators. */
+    typeof(this) opBinary(string op)(typeof(this) rh) const if(op == "+" || op == "-" || op == "*")
+    {
+        Unqual!(typeof(this)) res = this;
+        foreach(c; AllComponents)
+            mixin(ComponentExpression!("res._ #= rh._;", c, op));
+        return res;
+    }
+    ///
+    unittest
+    {
+        static assert(RGB8(10,20,30)       + RGB8(4,5,6) == RGB8(14,25,36));
+        static assert(UVW8(10,20,30)       + UVW8(4,5,6) == UVW8(14,25,36));
+        static assert(RGBAf32(10,20,30,40) + RGBAf32(4,5,6,7) == RGBAf32(14,25,36,47));
+
+        static assert(RGB8(10,20,30)       - RGB8(4,5,6) == RGB8(6,15,24));
+        static assert(UVW8(10,20,30)       - UVW8(4,5,6) == UVW8(6,15,24));
+        static assert(RGBAf32(10,20,30,40) - RGBAf32(4,5,6,7) == RGBAf32(6,15,24,33));
+
+        static assert(RGB8(10,20,30)       * RGB8(128,128,128) == RGB8(5,10,15));
+        static assert(UVW8(10,20,30)       * UVW8(-64,-64,-64) == UVW8(-5,-10,-15));
+        static assert(RGBAf32(10,20,30,40) * RGBAf32(0,1,2,3) == RGBAf32(0,20,60,120));
+    }
+
+    /** Binary operators. */
+    typeof(this) opBinary(string op, S)(S rh) const if(isColorScalarType!S && (op == "*" || op == "/" || op == "%" || op == "^^"))
+    {
+        Unqual!(typeof(this)) res = this;
+        foreach(c; AllComponents)
+            mixin(ComponentExpression!("res._ #= rh;", c, op));
+        return res;
+    }
+    ///
+    unittest
+    {
+        static assert(RGB8(10,20,30)       * 2 == RGB8(20,40,60));
+        static assert(UVW8(10,20,30)       * 2 == UVW8(20,40,60));
+        static assert(RGBAf32(10,20,30,40) * 2 == RGBAf32(20,40,60,80));
+
+        static assert(RGB8(10,20,30)       / 2 == RGB8(5,10,15));
+        static assert(UVW8(-10,-20,-30)    / 2 == UVW8(-5,-10,-15));
+        static assert(RGBAf32(10,20,30,40) / 2 == RGBAf32(5,10,15,20));
+
+        static assert(RGB8(10,20,30)       * 2.0 == RGB8(20,40,60));
+        static assert(UVW8(10,20,30)       * 2.0 == UVW8(20,40,60));
+        static assert(RGBAf32(10,20,30,40) * 2.0 == RGBAf32(20,40,60,80));
+        static assert(RGB8(10,20,30)       * 0.5 == RGB8(5,10,15));
+        static assert(UVW8(-10,-20,-30)    * 0.5 == UVW8(-5,-10,-15));
+        static assert(RGBAf32(5,10,15,20)  * 0.5 == RGBAf32(2.5,5,7.5,10));
+
+        static assert(RGB8(10,20,30)       / 2.0 == RGB8(5,10,15));
+        static assert(UVW8(-10,-20,-30)    / 2.0 == UVW8(-5,-10,-15));
+        static assert(RGBAf32(10,20,30,40) / 2.0 == RGBAf32(5,10,15,20));
+        static assert(RGB8(10,20,30)       / 0.5 == RGB8(20,40,60));
+        static assert(UVW8(10,20,30)       / 0.5 == UVW8(20,40,60));
+        static assert(RGBAf32(10,20,30,40) / 0.5 == RGBAf32(20,40,60,80));
+    }
+
+    /** Binary assignment operators. */
+    ref typeof(this) opOpAssign(string op)(typeof(this) rh) if(op == "+" || op == "-" || op == "*")
+    {
+        foreach(c; AllComponents)
+            mixin(ComponentExpression!("_ #= rh._;", c, op));
+        return this;
+    }
+
+    /** Binary assignment operators. */
+    ref typeof(this) opOpAssign(string op, S)(S rh) if(isColorScalarType!S && (op == "*" || op == "/" || op == "%" || op == "^^"))
+    {
+        foreach(c; AllComponents)
+            mixin(ComponentExpression!("_ #= rh;", c, op));
+        return this;
+    }
 
 package:
 
