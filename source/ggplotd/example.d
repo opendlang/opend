@@ -74,20 +74,20 @@ unittest
     /// http://blackedder.github.io/ggplotd/images/filled_density.svg
     import std.array : array;
     import std.algorithm : map;
-    import std.range : repeat, iota, chain;
+    import std.range : repeat, iota, chain, zip;
     import std.random : uniform;
 
-    import ggplotd.aes : Aes;
+    import ggplotd.aes : aes;
     import ggplotd.geom : geomDensity;
-    import ggplotd.ggplotd : GGPlotD;
+    import ggplotd.ggplotd : GGPlotD, addTo;
     import ggplotd.legend : discreteLegend;
     auto xs = iota(0,50,1).map!((x) => uniform(0.0,5)+uniform(0.0,5)).array;
     auto cols = "a".repeat(25).chain("b".repeat(25));
-    auto aes = Aes!(typeof(xs), "x", typeof(cols), "colour", 
-        double[], "fill" )( 
-            xs, cols, 0.45.repeat(xs.length).array);
-    auto gg = GGPlotD().put( geomDensity( aes ) );
-    gg.put(discreteLegend);
+    auto gg = xs.zip(cols, 0.45.repeat(xs.length))
+        .map!((a) => aes!("x", "colour", "fill")(a[0], a[1], a[2]))
+        .geomDensity
+        .addTo(GGPlotD());
+    gg = discreteLegend.addTo(gg);
     gg.save( "filled_density.svg" );
 }
 
@@ -95,25 +95,23 @@ unittest
 unittest
 {
     /// http://blackedder.github.io/ggplotd/images/density2D.png
-    import std.array : array;
     import std.algorithm : map;
-    import std.conv : to;
-    import std.range : repeat, iota;
+    import std.range : iota, zip;
     import std.random : uniform;
 
-    import ggplotd.aes : Aes;
+    import ggplotd.aes : aes;
     import ggplotd.colour : colourGradient;
     import ggplotd.colourspace : XYZ;
     import ggplotd.geom : geomDensity2D;
-    import ggplotd.ggplotd : GGPlotD;
+    import ggplotd.ggplotd : GGPlotD, addTo;
     import ggplotd.legend : continuousLegend;
 
-    auto xs = iota(0,500,1).map!((x) => uniform(0.0,5)+uniform(0.0,5))
-        .array;
-    auto ys = iota(0,500,1).map!((y) => uniform(0.5,1.5)+uniform(0.5,1.5))
-        .array;
-    auto aes = Aes!(typeof(xs), "x", typeof(ys), "y")( xs, ys);
-    auto gg = GGPlotD().put( geomDensity2D( aes ) );
+    auto xs = iota(0,500,1).map!((x) => uniform(0.0,5)+uniform(0.0,5));
+    auto ys = iota(0,500,1).map!((y) => uniform(0.5,1.5)+uniform(0.5,1.5));
+    auto gg = zip(xs, ys)
+        .map!((a) => aes!("x","y")(a[0], a[1]))
+        .geomDensity2D
+        .addTo( GGPlotD() );
     // Use a different colour scheme
     gg.put( colourGradient!XYZ( "white-cornflowerBlue-crimson" ) );
     gg.put(continuousLegend);
@@ -125,17 +123,20 @@ unittest
 unittest
 {
     /// http://blackedder.github.io/ggplotd/images/labels.png
+    import std.algorithm : map;
+    import std.range : zip;
     import std.math : PI;
 
-    import ggplotd.aes : Aes;
+    import ggplotd.aes : aes;
     import ggplotd.geom : geomPoint, geomLabel;
     import ggplotd.ggplotd : GGPlotD;
     import ggplotd.axes : xaxisRange, yaxisRange;
-    auto dt = Aes!(double[], "x", double[], "y", string[], "label", double[], "angle",
-        string[], "justify")( [0.0,1,2,3,4], [4.0,3,2,1,0], 
+    auto dt = zip( [0.0,1,2,3,4], [4.0,3,2,1,0], 
         ["center", "left", "right", "bottom", "top"],
         [0.0, 0.0, 0.0, 0.0, 0.0],
-        ["center", "left", "right", "bottom", "top"]);
+        ["center", "left", "right", "bottom", "top"])
+        .map!((a) => aes!("x", "y", "label", "angle", "justify")
+            (a[0], a[1], a[2], a[3], a[4]));
 
     auto gg = GGPlotD()
         .put(geomPoint( dt ))
@@ -143,19 +144,21 @@ unittest
         .put(xaxisRange(-2,11))
         .put(yaxisRange(-2,11));
 
-    auto dt2 = Aes!(double[], "x", double[], "y", string[], "label", real[], "angle",
-        string[], "justify")( [1.0,2,3,4,5], [5.0,4,3,2,1], 
+    auto dt2 = zip( [1.0,2,3,4,5], [5.0,4,3,2,1], 
         ["center", "left", "right", "bottom", "top"],
         [0.5*PI, 0.5*PI, 0.5*PI, 0.5*PI, 0.5*PI],
-        ["center", "left", "right", "bottom", "top"]);
+        ["center", "left", "right", "bottom", "top"])
+        .map!((a) => aes!("x", "y", "label", "angle", "justify")
+            (a[0], a[1], a[2], a[3], a[4]));
     gg.put( geomLabel(dt2) ).put(geomPoint(dt2));
 
-    dt2 = Aes!(double[], "x", double[], "y", string[], "label", real[], "angle",
-        string[], "justify")( [1.0,2,4,6,7], [8.0,7,5,3,2], 
+    auto dt3 = zip( [1.0,2,4,6,7], [8.0,7,5,3,2], 
         ["center", "left", "right", "bottom", "top"],
         [0.25*PI, 0.25*PI, 0.25*PI, 0.25*PI, 0.25*PI],
-        ["center", "left", "right", "bottom", "top"]);
-    gg.put( geomLabel(dt2) ).put(geomPoint(dt2));
+        ["center", "left", "right", "bottom", "top"])
+        .map!((a) => aes!("x", "y", "label", "angle", "justify")
+            (a[0], a[1], a[2], a[3], a[4]));
+    gg.put( geomLabel(dt3) ).put(geomPoint(dt3));
 
     gg.save( "labels.png" );
 }
