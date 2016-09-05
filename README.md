@@ -6,16 +6,13 @@ Graphics described by Leland Wilkinson. The library depends on cairo(D) for
 the actual drawing. The library is designed to make it easy to build complex
 plots from simple building blocks.
 
-[Install](#install)
-
-[Usage documentation](#documentation)
-
-- [Examples](#initial-examples)
-- [Using your own data](#data)
-- [Extending ggplotd](#extending-ggplotd)
-- [Further examples](#further-examples)
-
-[Development](#development)
+- [Install](#install)
+- [Usage documentation](#documentation)
+    - [Examples](#initial-examples)
+    - [Using your own data](#data)
+    - [Extending ggplotd](#extending-ggplotd)
+    - [Further examples](#further-examples)
+- [Development](#development)
 
 ## Install
 
