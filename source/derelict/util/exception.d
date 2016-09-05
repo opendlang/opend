@@ -31,8 +31,8 @@ module derelict.util.exception;
  Base class for all exceptions thrown by Derelict packages.
 +/
 class DerelictException : Exception {
-    public this( string msg, size_t line = __LINE__, string file = __FILE__, Throwable next = null ) {
-        super( msg, file, line, next );
+    public this( string msg, size_t line = __LINE__, string file = __FILE__ ) {
+        super( msg, file, line, null );
     }
 }
 
@@ -54,7 +54,7 @@ class SharedLibLoadException : DerelictException
     private string _sharedLibName;
 
     public {
-        static void throwNew( string[] libNames, string[] reasons, size_t line = __LINE__, string file = __FILE__, Throwable next = null ) {
+        static void throwNew( string[] libNames, string[] reasons, size_t line = __LINE__, string file = __FILE__ ) {
             string msg = "Failed to load one or more shared libraries:";
             foreach( i, n; libNames ) {
                 msg ~= "\n\t" ~ n ~ " - ";
@@ -63,16 +63,16 @@ class SharedLibLoadException : DerelictException
                 else
                     msg ~= "Unknown";
             }
-            throw new SharedLibLoadException( msg, line, file, next );
+            throw new SharedLibLoadException( msg, line, file );
         }
 
-        this( string msg, size_t line = __LINE__, string file = __FILE__, Throwable next = null ) {
-            super( msg, line, file, next );
+        this( string msg, size_t line = __LINE__, string file = __FILE__ ) {
+            super( msg, line, file );
             _sharedLibName = "";
         }
 
-        this( string msg, string sharedLibName, size_t line = __LINE__, string file = __FILE__, Throwable next = null ) {
-            super( msg, line, file, next );
+        this( string msg, string sharedLibName, size_t line = __LINE__, string file = __FILE__ ) {
+            super( msg, line, file );
             _sharedLibName = sharedLibName;
         }
 
@@ -91,12 +91,12 @@ class SymbolLoadException : DerelictException
     private string _symbolName;
 
     public {
-        this( string msg, size_t line = __LINE__, string file = __FILE__, Throwable next = null ) {
-            super( msg, line, file, next );
+        this( string msg, size_t line = __LINE__, string file = __FILE__ ) {
+            super( msg, line, file );
         }
 
-        this( string sharedLibName, string symbolName, size_t line = __LINE__, string file = __FILE__, Throwable next = null ) {
-            super( "Failed to load symbol " ~ symbolName ~ " from shared library " ~ sharedLibName, line, file, next );
+        this( string sharedLibName, string symbolName, size_t line = __LINE__, string file = __FILE__ ) {
+            super( "Failed to load symbol " ~ symbolName ~ " from shared library " ~ sharedLibName, line, file );
             _symbolName = symbolName;
         }
 
