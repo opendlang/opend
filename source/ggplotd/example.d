@@ -49,7 +49,7 @@ unittest
     import ggplotd.colour : colourGradient;
     import ggplotd.colourspace : XYZ;
     import ggplotd.geom : geomHist2D;
-    import ggplotd.ggplotd : GGPlotD, addTo;
+    import ggplotd.ggplotd : GGPlotD, putIn;
     import ggplotd.legend : continuousLegend;
 
     auto xs = iota(0,500,1).map!((x) => uniform(0.0,5)+uniform(0.0,5))
@@ -58,7 +58,7 @@ unittest
         .array;
     auto gg = xs.zip(ys)
                 .map!((t) => aes!("x","y")(t[0], t[1]))
-                .geomHist2D.addTo(GGPlotD());
+                .geomHist2D.putIn(GGPlotD());
     // Use a different colour scheme
     gg.put( colourGradient!XYZ( "white-cornflowerBlue-crimson" ) );
 
@@ -78,15 +78,15 @@ unittest
 
     import ggplotd.aes : aes;
     import ggplotd.geom : geomDensity;
-    import ggplotd.ggplotd : GGPlotD, addTo;
+    import ggplotd.ggplotd : GGPlotD, putIn;
     import ggplotd.legend : discreteLegend;
     auto xs = iota(0,50,1).map!((x) => uniform(0.0,5)+uniform(0.0,5)).array;
     auto cols = "a".repeat(25).chain("b".repeat(25));
     auto gg = xs.zip(cols, 0.45.repeat(xs.length))
         .map!((a) => aes!("x", "colour", "fill")(a[0], a[1], a[2]))
         .geomDensity
-        .addTo(GGPlotD());
-    gg = discreteLegend.addTo(gg);
+        .putIn(GGPlotD());
+    gg = discreteLegend.putIn(gg);
     gg.save( "filled_density.svg" );
 }
 
@@ -102,7 +102,7 @@ unittest
     import ggplotd.colour : colourGradient;
     import ggplotd.colourspace : XYZ;
     import ggplotd.geom : geomDensity2D;
-    import ggplotd.ggplotd : GGPlotD, addTo;
+    import ggplotd.ggplotd : GGPlotD, putIn;
     import ggplotd.legend : continuousLegend;
 
     auto xs = iota(0,500,1).map!((x) => uniform(0.0,5)+uniform(0.0,5));
@@ -110,7 +110,7 @@ unittest
     auto gg = zip(xs, ys)
         .map!((a) => aes!("x","y")(a[0], a[1]))
         .geomDensity2D
-        .addTo( GGPlotD() );
+        .putIn( GGPlotD() );
     // Use a different colour scheme
     gg.put( colourGradient!XYZ( "white-cornflowerBlue-crimson" ) );
     gg.put(continuousLegend);
@@ -185,7 +185,7 @@ unittest
     import ggplotd.aes : aes;
     import ggplotd.axes : xaxisLabel, yaxisLabel;
     import ggplotd.geom : geomDensity, geomDensity2D;
-    import ggplotd.ggplotd : Facets, GGPlotD, addTo;
+    import ggplotd.ggplotd : Facets, GGPlotD, putIn;
     import ggplotd.colour : colourGradient;
     import ggplotd.colourspace : XYZ;
 
@@ -204,23 +204,23 @@ unittest
         {
             auto gg = GGPlotD();
 
-            gg = format("Parameter %s", i).xaxisLabel.addTo(gg);
+            gg = format("Parameter %s", i).xaxisLabel.putIn(gg);
             if (i != j)
             {
                 // Change the colourGradient used
                 gg = colourGradient!XYZ( "white-cornflowerBlue-crimson" )
-                    .addTo(gg);
-                gg = format("Parameter %s", j).yaxisLabel.addTo(gg);
+                    .putIn(gg);
+                gg = format("Parameter %s", j).yaxisLabel.putIn(gg);
                 gg = samples.map!((sample) => aes!("x", "y")(sample[i], sample[j]))
                     .geomDensity2D
-                    .addTo(gg);
+                    .putIn(gg);
             } else {
-                gg = "Density".yaxisLabel.addTo(gg);
+                gg = "Density".yaxisLabel.putIn(gg);
                 gg = samples.map!((sample) => aes!("x", "y")(sample[i], sample[j]))
                     .geomDensity
-                    .addTo(gg);
+                    .putIn(gg);
             }
-            facets = gg.addTo(facets);
+            facets = gg.putIn(facets);
         }
     }
     facets.save("parameter_distribution.png", 670, 670);
@@ -235,7 +235,7 @@ unittest
     import std.array : array;
     import ggplotd.aes : aes;
     import ggplotd.axes : xaxisLabel, yaxisLabel;
-    import ggplotd.ggplotd : GGPlotD, addTo;
+    import ggplotd.ggplotd : GGPlotD, putIn;
     import ggplotd.geom : geomPoint;
 
 
@@ -254,11 +254,11 @@ unittest
         aes!("x", "y", "colour", "size")(diamond.carat, diamond.price, diamond.clarity, 0.8))
     .array
     // Draw points
-    .geomPoint.addTo(GGPlotD());
+    .geomPoint.putIn(GGPlotD());
 
     // Axis labels
-    gg = "Carat".xaxisLabel.addTo(gg);
-    gg = "Price".yaxisLabel.addTo(gg);
+    gg = "Carat".xaxisLabel.putIn(gg);
+    gg = "Price".yaxisLabel.putIn(gg);
     gg.save("diamonds.png"); 
 }
 
@@ -273,14 +273,14 @@ unittest
 
     import ggplotd.aes : aes;
     import ggplotd.geom : geomHist;
-    import ggplotd.ggplotd : addTo, GGPlotD;
+    import ggplotd.ggplotd : putIn, GGPlotD;
 
     auto xs = iota(0,50,1).map!((x) => uniform(0.0,5)+uniform(0.0,5)).array;
     auto cols = "a".repeat(25).chain("b".repeat(25));
     auto gg = xs.zip(cols)
         .map!((a) => aes!("x", "colour", "fill")(a[0], a[1], 0.45))
         .geomHist
-        .addTo(GGPlotD());
+        .putIn(GGPlotD());
     gg.save( "filled_hist.svg" );
 }
 
@@ -295,14 +295,14 @@ unittest
 
     import ggplotd.aes : aes;
     import ggplotd.geom : geomBox;
-    import ggplotd.ggplotd : GGPlotD, addTo;
+    import ggplotd.ggplotd : GGPlotD, putIn;
 
     auto xs = iota(0,50,1).map!((x) => uniform(0.0,5)+uniform(0.0,5));
     auto cols = "a".repeat(25).chain("b".repeat(25));
     auto gg = xs.zip(cols)
         .map!((a) => aes!("x", "colour", "fill", "label" )(a[0], a[1], 0.45, a[1]))
         .geomBox
-        .addTo(GGPlotD());
+        .putIn(GGPlotD());
     gg.save( "boxplot.svg" );
 }
 
@@ -318,13 +318,13 @@ unittest
     import ggplotd.aes : aes;
     import ggplotd.axes : xaxisLabel, yaxisLabel, xaxisOffset, yaxisOffset, xaxisRange, yaxisRange;
     import ggplotd.geom : geomLine;
-    import ggplotd.ggplotd : GGPlotD, addTo, Margins, title;
+    import ggplotd.ggplotd : GGPlotD, putIn, Margins, title;
     import ggplotd.stat : statFunction;
 
     auto f = (double x) { return x/(1+x); };
     auto gg = statFunction(f, 0, 10.0)
         .geomLine
-        .addTo(GGPlotD());
+        .putIn(GGPlotD());
 
     // Setting range and label for xaxis
     gg.put( xaxisRange( 0, 8 ) ).put( xaxisLabel( "My xlabel" ) );

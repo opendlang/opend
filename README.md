@@ -70,7 +70,7 @@ import std.algorithm : map;
 import std.array : array;
 import ggplotd.aes : aes;
 import ggplotd.axes : xaxisLabel, yaxisLabel;
-import ggplotd.ggplotd : GGPlotD, addTo;
+import ggplotd.ggplotd : GGPlotD, putIn;
 import ggplotd.geom : geomPoint;
 
 
@@ -91,11 +91,11 @@ void main()
             aes!("x", "y", "colour", "size")(diamond.carat, diamond.price, diamond.clarity, 0.8))
         .array
         // Draw points
-        .geomPoint.addTo(GGPlotD());
+        .geomPoint.putIn(GGPlotD());
         
     // Axis labels
-    gg = "Carat".xaxisLabel.addTo(gg);
-    gg = "Price".yaxisLabel.addTo(gg);
+    gg = "Carat".xaxisLabel.putIn(gg);
+    gg = "Price".yaxisLabel.putIn(gg);
     gg.save("diamonds.png"); 
 }
 ```
@@ -115,7 +115,7 @@ import std.format : format;
 import ggplotd.aes : aes;
 import ggplotd.axes : xaxisLabel, yaxisLabel;
 import ggplotd.geom : geomDensity, geomDensity2D;
-import ggplotd.ggplotd : Facets, GGPlotD, addTo;
+import ggplotd.ggplotd : Facets, GGPlotD, putIn;
 import ggplotd.colour : colourGradient;
 import ggplotd.colourspace : XYZ;
 
@@ -136,23 +136,23 @@ void main()
         {
             auto gg = GGPlotD();
 
-            gg = format("Parameter %s", i).xaxisLabel.addTo(gg);
+            gg = format("Parameter %s", i).xaxisLabel.putIn(gg);
             if (i != j)
             {
                 // Change the colourGradient used
                 gg = colourGradient!XYZ( "white-cornflowerBlue-crimson" )
-                    .addTo(gg);
-                gg = format("Parameter %s", j).yaxisLabel.addTo(gg);
+                    .putIn(gg);
+                gg = format("Parameter %s", j).yaxisLabel.putIn(gg);
                 gg = samples.map!((sample) => aes!("x", "y")(sample[i], sample[j]))
                     .geomDensity2D
-                    .addTo(gg);
+                    .putIn(gg);
             } else {
-                gg = "Density".yaxisLabel.addTo(gg);
+                gg = "Density".yaxisLabel.putIn(gg);
                 gg = samples.map!((sample) => aes!("x", "y")(sample[i], sample[j]))
                     .geomDensity
-                    .addTo(gg);
+                    .putIn(gg);
             }
-            facets = gg.addTo(facets);
+            facets = gg.putIn(facets);
         }
     } 
     facets.save("parameter_distribution.png", 670, 670); 

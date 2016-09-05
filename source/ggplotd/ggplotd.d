@@ -497,10 +497,10 @@ unittest
     auto gg = GGPlotD();
     gg = zip([ 0, radius*0.45 ], [ 0, radius*0.45])
         .map!((a) => aes!("x","y")(a[0], a[1]))
-        .geomLine.addTo(gg);
+        .geomLine.putIn(gg);
     gg = zip([ 300, radius*0.45 ], [ 210, radius*0.45])
         .map!((a) => aes!("x","y")(a[0], a[1]))
-        .geomLine.addTo(gg);
+        .geomLine.putIn(gg);
 
     import ggplotd.theme : Theme, ThemeFunction;
     Theme theme;
@@ -541,10 +541,10 @@ version(ggplotdGTK)
         auto gg = GGPlotD();
         gg = zip([ 0, radius*0.45 ], [ 0, radius*0.45])
             .map!((a) => aes!("x","y")(a[0], a[1]))
-            .geomLine.addTo(gg);
+            .geomLine.putIn(gg);
         gg = zip([ 300, radius*0.45 ], [ 210, radius*0.45])
             .map!((a) => aes!("x","y")(a[0], a[1]))
-            .geomLine.addTo(gg);
+            .geomLine.putIn(gg);
 
         cairo.Surface cairodSurface = 
             new cairo.ImageSurface(cairo.Format.CAIRO_FORMAT_RGB24, win_width, win_height);
@@ -594,7 +594,7 @@ unittest
     auto gg = zip(["a", "b", "c", "b"], ["x", "y", "y", "x"], ["b", "b", "b", "b"])
         .map!((a) => aes!("x", "y", "colour")(a[0], a[1], a[2]))
         .geomLine
-        .addTo(GGPlotD());
+        .putIn(GGPlotD());
     gg + scale();
     gg.save( "test6.png");
 }
@@ -622,9 +622,9 @@ unittest
     auto gg = xs.zip(ysnoise)
         .map!((a) => aes!("x", "y", "colour")(a[0], a[1], "a"))
         .geomPoint
-        .addTo(GGPlotD());
+        .putIn(GGPlotD());
 
-    gg = xs.zip(ysfit).map!((a) => aes!("x", "y")(a[0], a[1])).geomLine.addTo(gg);
+    gg = xs.zip(ysfit).map!((a) => aes!("x", "y")(a[0], a[1])).geomLine.putIn(gg);
 
     //  
     auto ys2fit = xs.map!((x) => 1-f(x));
@@ -632,11 +632,11 @@ unittest
 
     gg = xs.zip(ys2fit).map!((a) => aes!("x", "y")(a[0], a[1]))
         .geomLine
-        .addTo(gg);
+        .putIn(gg);
     gg = xs.zip(ys2noise)
         .map!((a) => aes!("x", "y", "colour")(a[0], a[1], "b"))
         .geomPoint
-        .addTo(gg);
+        .putIn(gg);
 
     gg.save( "noise.png" );
 }
@@ -658,11 +658,11 @@ unittest
     auto gg = xs 
         .map!((a) => aes!("x")(a))
         .geomHist
-        .addTo(GGPlotD());
+        .putIn(GGPlotD());
 
     gg = xs.map!((a) => aes!("x", "y")(a, 0.0))
         .geomPoint
-        .addTo(gg);
+        .putIn(gg);
 
     gg.save( "hist.png" );
 }
@@ -679,7 +679,7 @@ unittest
     auto gg = zip([1, 0, 0.0], [1, 1, 0.0], [1, 0.1, 0])
         .map!((a) => aes!("x", "y", "colour")(a[0], a[1], a[2]))
         .geomPolygon
-        .addTo(GGPlotD());
+        .putIn(GGPlotD());
     gg.save( "polygon.png" );
 }
 
@@ -697,7 +697,7 @@ unittest
     auto gg = zip([1, 0, 0.0], [1, 1, 0.0], [1, 0.1, 0])
         .map!((a) => aes!("x", "y", "colour")(a[0], a[1], a[2]))
         .geomPoint
-        .addTo(GGPlotD());
+        .putIn(GGPlotD());
     gg.save( "background.svg" );
 }
 
@@ -730,18 +730,18 @@ unittest
 import std.range : ElementType;
 
 /**
-Add element to a plot/facets struct
+Put an element into a plot/facets struct
 
 This basically reverses a call to put and allows one to write more idiomatic D code where code flows from left to right instead of right to left.
 
 Examples:
 --------------------
-auto gg = data.aes.geomPoint.addTo(GGPlotD());
+auto gg = data.aes.geomPoint.putIn(GGPlotD());
 // instead of
 auto gg = GGPlotD().put(geomPoint(aes(data)));
 --------------------
 */
-ref auto addTo(T, U)(T t, U u) 
+ref auto putIn(T, U)(T t, U u) 
 {
     return u.put(t);
 }
