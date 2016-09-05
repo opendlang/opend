@@ -667,22 +667,6 @@ unittest
     gg.save( "hist.png" );
 }
 
-/// Polygon
-unittest
-{
-    import std.range : zip;
-    import std.algorithm : map;
-    import ggplotd.aes : aes;
-    import ggplotd.geom : geomPolygon;
-
-    // http://blackedder.github.io/ggplotd/images/polygon.png
-    auto gg = zip([1, 0, 0.0], [1, 1, 0.0], [1, 0.1, 0])
-        .map!((a) => aes!("x", "y", "colour")(a[0], a[1], a[2]))
-        .geomPolygon
-        .putIn(GGPlotD());
-    gg.save( "polygon.png" );
-}
-
 /// Setting background colour
 unittest
 {

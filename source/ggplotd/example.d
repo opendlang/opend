@@ -343,3 +343,57 @@ unittest
     // Saving on a 500x300 pixel surface
     gg.save( "axes.svg", 500, 300 );
 }
+
+/// Example from the readme using aes and merge
+unittest
+{
+    import ggplotd.aes : aes, merge;
+    struct Data1
+    {
+        double value1 = 1.0;
+        double value2 = 2.0;
+    }
+
+    Data1 dat1;
+
+    // Merge to add a value
+    auto merged = aes!("x", "y")(dat1.value1, dat1.value2)
+        .merge(
+            aes!("colour")("a")
+        );
+    assertEqual(merged.x, 1.0);
+    assertEqual(merged.colour, "a");
+
+    // Merge to a second data struct
+    struct Data2 { string colour = "b"; } 
+    Data2 dat2;
+
+    auto merged2 = aes!("x", "y")(dat1.value1, dat1.value2)
+        .merge( dat2 );
+    assertEqual(merged2.x, 1.0);
+    assertEqual(merged2.colour, "b");
+
+    // Overriding a field 
+    auto merged3 = aes!("x", "y")(dat1.value1, dat1.value2)
+        .merge(
+            aes!("y")("a")
+        );
+    assertEqual(merged3.y, "a");
+}
+
+/// Polygon
+unittest
+{
+    import std.range : zip;
+    import std.algorithm : map;
+    import ggplotd.aes : aes;
+    import ggplotd.geom : geomPolygon;
+    import ggplotd.ggplotd : GGPlotD, putIn;
+
+    // http://blackedder.github.io/ggplotd/images/polygon.png
+    auto gg = zip([1, 0, 0.0], [1, 1, 0.0], [1, 0.1, 0])
+        .map!((a) => aes!("x", "y", "colour")(a[0], a[1], a[2]))
+        .geomPolygon
+        .putIn(GGPlotD());
+    gg.save( "polygon.png" );
+}

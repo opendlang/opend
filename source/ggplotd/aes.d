@@ -133,11 +133,10 @@ unittest
 
 // TODO Also update default grouping if appropiate
 /// Default values for most settings
-static auto DefaultValues = aes!( 
+static auto DefaultValues = aes!(
     "label", "colour", "size",
     "angle", "alpha", "mask", "fill" )
     ("", "black", 1.0, 0.0, 1.0, true, 0.0);
-
 
 /++
     Aes is used to store and access data for plotting
