@@ -42,8 +42,7 @@ unittest
     /// http://blackedder.github.io/ggplotd/images/hist2D.svg
     import std.array : array;
     import std.algorithm : map;
-    import std.conv : to;
-    import std.range : repeat, iota, zip;
+    import std.range : iota, zip;
     import std.random : uniform;
 
     import ggplotd.aes : aes;
@@ -261,4 +260,86 @@ unittest
     gg = "Carat".xaxisLabel.addTo(gg);
     gg = "Price".yaxisLabel.addTo(gg);
     gg.save("diamonds.png"); 
+}
+
+/// Multiple histograms examples
+unittest
+{
+    // http://blackedder.github.io/ggplotd/images/filled_hist.svg
+    import std.array : array;
+    import std.algorithm : map;
+    import std.range : repeat, iota, chain, zip;
+    import std.random : uniform;
+
+    import ggplotd.aes : aes;
+    import ggplotd.geom : geomHist;
+    import ggplotd.ggplotd : addTo, GGPlotD;
+
+    auto xs = iota(0,50,1).map!((x) => uniform(0.0,5)+uniform(0.0,5)).array;
+    auto cols = "a".repeat(25).chain("b".repeat(25));
+    auto gg = xs.zip(cols)
+        .map!((a) => aes!("x", "colour", "fill")(a[0], a[1], 0.45))
+        .geomHist
+        .addTo(GGPlotD());
+    gg.save( "filled_hist.svg" );
+}
+
+/// Boxplot example
+unittest
+{
+    // http://blackedder.github.io/ggplotd/images/boxplot.svg
+    import std.array : array;
+    import std.algorithm : map;
+    import std.range : repeat, iota, chain, zip;
+    import std.random : uniform;
+
+    import ggplotd.aes : aes;
+    import ggplotd.geom : geomBox;
+    import ggplotd.ggplotd : GGPlotD, addTo;
+
+    auto xs = iota(0,50,1).map!((x) => uniform(0.0,5)+uniform(0.0,5));
+    auto cols = "a".repeat(25).chain("b".repeat(25));
+    auto gg = xs.zip(cols)
+        .map!((a) => aes!("x", "colour", "fill", "label" )(a[0], a[1], 0.45, a[1]))
+        .geomBox
+        .addTo(GGPlotD());
+    gg.save( "boxplot.svg" );
+}
+
+/// Changing axes details
+unittest
+{
+    // http://blackedder.github.io/ggplotd/images/axes.svg
+    import std.array : array;
+    import std.math : sqrt;
+    import std.algorithm : map;
+    import std.range : iota;
+
+    import ggplotd.aes : aes;
+    import ggplotd.axes : xaxisLabel, yaxisLabel, xaxisOffset, yaxisOffset, xaxisRange, yaxisRange;
+    import ggplotd.geom : geomLine;
+    import ggplotd.ggplotd : GGPlotD, addTo, Margins, title;
+    import ggplotd.stat : statFunction;
+
+    auto f = (double x) { return x/(1+x); };
+    auto gg = statFunction(f, 0, 10.0)
+        .geomLine
+        .addTo(GGPlotD());
+
+    // Setting range and label for xaxis
+    gg.put( xaxisRange( 0, 8 ) ).put( xaxisLabel( "My xlabel" ) );
+    // Setting range and label for yaxis
+    gg.put( yaxisRange( 0, 2.0 ) ).put( yaxisLabel( "My ylabel" ) );
+
+    // change offset
+    gg.put( xaxisOffset( 0.25 ) ).put( yaxisOffset( 0.5 ) );
+
+    // Change Margins 
+    gg.put( Margins( 60, 60, 40, 30 ) );
+
+    // Set a title
+    gg.put( title( "And now for something completely different" ) );
+
+    // Saving on a 500x300 pixel surface
+    gg.save( "axes.svg", 500, 300 );
 }

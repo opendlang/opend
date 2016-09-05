@@ -20,7 +20,9 @@ import std.traits : isCallable;
   --------------
     /// http://blackedder.github.io/ggplotd/images/function.png
     import std.random : uniform;
-    import std.typecons : Tuple; import ggplotd.stat : statFunction; import ggplotd.ggplotd : GGPlotD; import ggplotd.geom : geomLine, geomPoint;
+    import std.typecons : Tuple; import ggplotd.stat : statFunction; 
+    import ggplotd.ggplotd : GGPlotD; 
+    import ggplotd.geom : geomLine, geomPoint;
     import ggplotd.range : mergeRange;
 
     auto f = (double x) { return x / (1 + x); };

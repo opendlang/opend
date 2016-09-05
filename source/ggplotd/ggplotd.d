@@ -483,6 +483,8 @@ private:
 
 unittest
 {
+    import std.range : zip;
+    import std.algorithm : map;
     import ggplotd.geom;
     import ggplotd.aes;
 
@@ -491,12 +493,14 @@ unittest
 
     const radius = 400.;
 
-    auto line_aes11 = Aes!(double[], "x", double[], "y")( [ 0, radius*0.45 ], [ 0, radius*0.45]);
-    auto line_aes22 = Aes!(double[], "x", double[], "y")( [ 300, radius*0.45 ], [ 210, radius*0.45]);
 
     auto gg = GGPlotD();
-    gg.put( geomLine(line_aes11) );
-    gg.put( geomLine(line_aes22) );
+    gg = zip([ 0, radius*0.45 ], [ 0, radius*0.45])
+        .map!((a) => aes!("x","y")(a[0], a[1]))
+        .geomLine.addTo(gg);
+    gg = zip([ 300, radius*0.45 ], [ 210, radius*0.45])
+        .map!((a) => aes!("x","y")(a[0], a[1]))
+        .geomLine.addTo(gg);
 
     import ggplotd.theme : Theme, ThemeFunction;
     Theme theme;
@@ -517,6 +521,8 @@ version(ggplotdGTK)
 {
     unittest 
     {
+        import std.range : zip;
+        import std.algorithm : map;
         // Draw same plot on cairod.ImageSurface, and on gtkd.cairo.ImageSurface,
         // and prove resulting images are the same.
 
@@ -532,15 +538,19 @@ version(ggplotdGTK)
 
         const radius = 400.;
 
-        auto line_aes11 = Aes!(double[], "x", double[], "y")( [ 0, radius*0.45 ], [ 0, radius*0.45]);
-        auto line_aes22 = Aes!(double[], "x", double[], "y")( [ 300, radius*0.45 ], [ 210, radius*0.45]);
-
         auto gg = GGPlotD();
-        gg.put( geomLine(line_aes11) );
-        gg.put( geomLine(line_aes22) );
+        gg = zip([ 0, radius*0.45 ], [ 0, radius*0.45])
+            .map!((a) => aes!("x","y")(a[0], a[1]))
+            .geomLine.addTo(gg);
+        gg = zip([ 300, radius*0.45 ], [ 210, radius*0.45])
+            .map!((a) => aes!("x","y")(a[0], a[1]))
+            .geomLine.addTo(gg);
 
-        cairo.Surface cairodSurface = new cairo.ImageSurface(cairo.Format.CAIRO_FORMAT_RGB24, win_width, win_height);
-        gtkSurface.Surface gtkdSurface = gtkImageSurface.ImageSurface.create(gtkCairoTypes.cairo_format_t.RGB24, win_width, win_height);
+        cairo.Surface cairodSurface = 
+            new cairo.ImageSurface(cairo.Format.CAIRO_FORMAT_RGB24, win_width, win_height);
+        gtkSurface.Surface gtkdSurface = 
+            gtkImageSurface.ImageSurface.create(gtkCairoTypes.cairo_format_t.RGB24, 
+                win_width, win_height);
 
         auto cairodImageSurface = cast(cairo.ImageSurface)cairodSurface;
         auto gtkdImageSurface = cast(gtkImageSurface.ImageSurface)gtkdSurface;
@@ -550,7 +560,8 @@ version(ggplotdGTK)
 
         auto byteSize = win_width*win_height*4;
 
-        assertEqual(cairodImageSurface.getData()[0..byteSize], gtkdImageSurface.getData()[0..byteSize]);
+        assertEqual(cairodImageSurface.getData()[0..byteSize], 
+            gtkdImageSurface.getData()[0..byteSize]);
     }
 }
 
@@ -574,13 +585,17 @@ unittest
 ///
 unittest
 {
-    import ggplotd.aes : Aes;
+    import std.range : zip;
+    import std.algorithm : map;
+
+    import ggplotd.aes : aes;
     import ggplotd.geom : geomLine;
     import ggplotd.scale : scale;
-    auto aes = Aes!(string[], "x", string[], "y", string[], "colour")(["a",
-        "b", "c", "b"], ["x", "y", "y", "x"], ["b", "b", "b", "b"]);
-    auto gg = GGPlotD();
-    gg + geomLine(aes) + scale();
+    auto gg = zip(["a", "b", "c", "b"], ["x", "y", "y", "x"], ["b", "b", "b", "b"])
+        .map!((a) => aes!("x", "y", "colour")(a[0], a[1], a[2]))
+        .geomLine
+        .addTo(GGPlotD());
+    gg + scale();
     gg.save( "test6.png");
 }
 
@@ -591,10 +606,10 @@ unittest
     import std.array : array;
     import std.math : sqrt;
     import std.algorithm : map;
-    import std.range : repeat, iota;
+    import std.range : zip, iota;
     import std.random : uniform;
 
-    import ggplotd.aes : Aes;
+    import ggplotd.aes : aes;
     import ggplotd.geom : geomLine, geomPoint;
     // Generate some noisy data with reducing width
     auto f = (double x) { return x/(1+x); };
@@ -604,21 +619,24 @@ unittest
     auto ysfit = xs.map!((x) => f(x));
     auto ysnoise = xs.map!((x) => f(x) + uniform(-width(x),width(x))).array;
 
-    auto aes = Aes!(typeof(xs), "x",
-        typeof(ysnoise), "y", string[], "colour" )( xs, ysnoise, ("a").repeat(xs.length).array );
-    auto gg = GGPlotD().put( geomPoint( aes ) );
-    gg.put( geomLine( Aes!(typeof(xs), "x",
-        typeof(ysfit), "y" )( xs, ysfit ) ) );
+    auto gg = xs.zip(ysnoise)
+        .map!((a) => aes!("x", "y", "colour")(a[0], a[1], "a"))
+        .geomPoint
+        .addTo(GGPlotD());
+
+    gg = xs.zip(ysfit).map!((a) => aes!("x", "y")(a[0], a[1])).geomLine.addTo(gg);
 
     //  
     auto ys2fit = xs.map!((x) => 1-f(x));
     auto ys2noise = xs.map!((x) => 1-f(x) + uniform(-width(x),width(x))).array;
 
-    gg.put( geomLine( Aes!(typeof(xs), "x", typeof(ys2fit), "y" )( xs,
-        ys2fit) ) )
-        .put(
-            geomPoint( Aes!(typeof(xs), "x", typeof(ys2noise), "y", string[],
-        "colour" )( xs, ys2noise, ("b").repeat(xs.length).array) ) );
+    gg = xs.zip(ys2fit).map!((a) => aes!("x", "y")(a[0], a[1]))
+        .geomLine
+        .addTo(gg);
+    gg = xs.zip(ys2noise)
+        .map!((a) => aes!("x", "y", "colour")(a[0], a[1], "b"))
+        .geomPoint
+        .addTo(gg);
 
     gg.save( "noise.png" );
 }
@@ -629,124 +647,39 @@ unittest
     // http://blackedder.github.io/ggplotd/images/hist.png
     import std.array : array;
     import std.algorithm : map;
-    import std.range : repeat, iota;
+    import std.range : iota, zip;
     import std.random : uniform;
 
-    import ggplotd.aes : Aes;
+    import ggplotd.aes : aes;
     import ggplotd.geom : geomHist, geomPoint;
     import ggplotd.range : mergeRange;
 
-    auto xs = iota(0,25,1).map!((x) => uniform(0.0,5)+uniform(0.0,5))
-        .array;
-    auto aes = Aes!(typeof(xs), "x")( xs );
-    auto gg = GGPlotD().put( geomHist( aes ) );
+    auto xs = iota(0,25,1).map!((x) => uniform(0.0,5)+uniform(0.0,5)).array;
+    auto gg = xs 
+        .map!((a) => aes!("x")(a))
+        .geomHist
+        .addTo(GGPlotD());
 
-    auto ys = (0.0).repeat( xs.length ).array;
-    auto aesPs = aes.mergeRange( Aes!(double[], "y", double[], "colour" )
-        ( ys, ys ) );
-    gg.put( geomPoint( aesPs ) );
+    gg = xs.map!((a) => aes!("x", "y")(a, 0.0))
+        .geomPoint
+        .addTo(gg);
 
     gg.save( "hist.png" );
-}
-
-///
-unittest
-{
-    // http://blackedder.github.io/ggplotd/images/filled_hist.svg
-    import std.array : array;
-    import std.algorithm : map;
-    import std.range : repeat, iota, chain;
-    import std.random : uniform;
-
-    import ggplotd.aes : Aes;
-    import ggplotd.geom : geomHist;
-
-    auto xs = iota(0,50,1).map!((x) => uniform(0.0,5)+uniform(0.0,5)).array;
-    auto cols = "a".repeat(25).chain("b".repeat(25));
-    auto aes = Aes!(typeof(xs), "x", typeof(cols), "colour", 
-        double[], "fill" )( 
-            xs, cols, 0.45.repeat(xs.length).array);
-    auto gg = GGPlotD().put( geomHist( aes ) );
-    gg.save( "filled_hist.svg" );
-}
-
-/// Boxplot example
-unittest
-{
-    // http://blackedder.github.io/ggplotd/images/boxplot.svg
-    import std.array : array;
-    import std.algorithm : map;
-    import std.range : repeat, iota, chain;
-    import std.random : uniform;
-
-    import ggplotd.aes : Aes;
-    import ggplotd.geom : geomBox;
-
-    auto xs = iota(0,50,1).map!((x) => uniform(0.0,5)+uniform(0.0,5)).array;
-    auto cols = "a".repeat(25).chain("b".repeat(25)).array;
-    auto aes = Aes!(typeof(xs), "x", typeof(cols), "colour", 
-        double[], "fill", typeof(cols), "label" )( 
-            xs, cols, 0.45.repeat(xs.length).array, cols);
-    auto gg = GGPlotD().put( geomBox( aes ) );
-    gg.save( "boxplot.svg" );
-}
-
-/// Changing axes details
-unittest
-{
-    // http://blackedder.github.io/ggplotd/images/axes.svg
-    import std.array : array;
-    import std.math : sqrt;
-    import std.algorithm : map;
-    import std.range : iota;
-
-    import ggplotd.aes : Aes;
-    import ggplotd.axes : xaxisLabel, yaxisLabel, xaxisOffset, yaxisOffset, xaxisRange, yaxisRange;
-    import ggplotd.geom : geomLine;
-
-    // Generate some noisy data with reducing width
-    auto f = (double x) { return x/(1+x); };
-    auto xs = iota( 0, 10, 0.1 ).array;
-
-    auto ysfit = xs.map!((x) => f(x)).array;
-
-    auto gg = GGPlotD().put( geomLine( Aes!(typeof(xs), "x",
-        typeof(ysfit), "y" )( xs, ysfit ) ) );
-
-    // Setting range and label for xaxis
-    gg.put( xaxisRange( 0, 8 ) ).put( xaxisLabel( "My xlabel" ) );
-    assertEqual( gg.xaxis.min, 0 );
-    // Setting range and label for yaxis
-    gg.put( yaxisRange( 0, 2.0 ) ).put( yaxisLabel( "My ylabel" ) );
-    assertEqual( gg.yaxis.max, 2.0 );
-    assertEqual( gg.yaxis.label, "My ylabel" );
-
-    // change offset
-    gg.put( xaxisOffset( 0.25 ) ).put( yaxisOffset( 0.5 ) );
-
-    // Change Margins gg.put( Margins( 60, 60, 40, 30 ) );
-
-    // Set a title
-    gg.put( title( "And now for something completely different" ) );
-    assertEqual( gg.title.title, "And now for something completely different" );
-
-    // Saving on a 500x300 pixel surface
-    gg.save( "axes.svg", 500, 300 );
 }
 
 /// Polygon
 unittest
 {
-    import ggplotd.aes : Aes;
+    import std.range : zip;
+    import std.algorithm : map;
+    import ggplotd.aes : aes;
     import ggplotd.geom : geomPolygon;
 
     // http://blackedder.github.io/ggplotd/images/polygon.png
-    auto gg = GGPlotD().put( geomPolygon( 
-        Aes!(
-            double[], "x",
-            double[], "y",
-            double[], "colour" )(
-            [1,0,0.0], [ 1, 1, 0.0 ], [1,0.1,0] ) ) );
+    auto gg = zip([1, 0, 0.0], [1, 1, 0.0], [1, 0.1, 0])
+        .map!((a) => aes!("x", "y", "colour")(a[0], a[1], a[2]))
+        .geomPolygon
+        .addTo(GGPlotD());
     gg.save( "polygon.png" );
 }
 
@@ -754,17 +687,17 @@ unittest
 unittest
 {
     /// http://blackedder.github.io/ggplotd/images/background.svg
-    import ggplotd.aes : Aes;
+    import std.range : zip;
+    import std.algorithm : map;
+    import ggplotd.aes : aes;
     import ggplotd.theme : background;
     import ggplotd.geom : geomPoint;
 
-    auto gg = GGPlotD().put( background( RGBA(0.7,0.7,0.7,1) ) );
-    gg.put( geomPoint( 
-        Aes!(
-            double[], "x",
-            double[], "y",
-            double[], "colour" )(
-            [1.0,0,0], [ 1.0, 1, 0 ], [1,0.1,0] ) ) );
+    // http://blackedder.github.io/ggplotd/images/polygon.png
+    auto gg = zip([1, 0, 0.0], [1, 1, 0.0], [1, 0.1, 0])
+        .map!((a) => aes!("x", "y", "colour")(a[0], a[1], a[2]))
+        .geomPoint
+        .addTo(GGPlotD());
     gg.save( "background.svg" );
 }
 
@@ -775,7 +708,7 @@ unittest
     import std.array : array;
     import std.math : sqrt;
     import std.algorithm : map;
-    import std.range : repeat, iota;
+    import std.range : iota;
     import std.random : uniform;
 
     import ggplotd.geom : geomPoint;
@@ -920,27 +853,24 @@ unittest
 unittest
 {
     // Drawing different shapes
-    import ggplotd.aes : Aes, Pixel;
+    import ggplotd.aes : aes, Pixel;
     import ggplotd.axes : xaxisRange, yaxisRange;
     import ggplotd.geom : geomDiamond, geomRectangle;
 
     auto gg = GGPlotD();
 
-    auto aes1 = Aes!(double[], "x", double[], "y", double[], "width",
-        double[], "height")( [1.0], [-1.0], [3.0], [5.0] );
+    auto aes1 = [aes!("x", "y", "width", "height")(1.0, -1.0, 3.0, 5.0)];
     gg.put( geomDiamond( aes1 ) );
     gg.put( geomRectangle( aes1 ) );
     gg.put( xaxisRange( -5, 11.0 ) );
     gg.put( yaxisRange( -9, 9.0 ) );
 
 
-    auto aes2 = Aes!(double[], "x", double[], "y", Pixel[], "width",
-        Pixel[], "height")( [8.0], [5.0], [Pixel(10)], [Pixel(20)] );
+    auto aes2 = [aes!("x", "y", "width", "height")(8.0, 5.0, Pixel(10), Pixel(20))];
     gg.put( geomDiamond( aes2 ) );
     gg.put( geomRectangle( aes2 ) );
 
-    auto aes3 = Aes!(double[], "x", double[], "y", Pixel[], "width",
-        Pixel[], "height")( [6.0], [-5.0], [Pixel(25)], [Pixel(25)] );
+    auto aes3 = [aes!("x", "y", "width", "height")(6.0, -5.0, Pixel(25), Pixel(25))];
     gg.put( geomDiamond( aes3 ) );
     gg.put( geomRectangle( aes3 ) );
  
@@ -951,28 +881,25 @@ unittest
 unittest
 {
     // Drawing different shapes
-    import ggplotd.aes : Aes, Pixel;
+    import ggplotd.aes : aes, Pixel;
     import ggplotd.axes : xaxisRange, yaxisRange;
 
     import ggplotd.geom : geomEllipse, geomTriangle;
 
     auto gg = GGPlotD();
 
-    auto aes1 = Aes!(double[], "x", double[], "y", double[], "width",
-        double[], "height")( [1.0], [-1.0], [3.0], [5.0] );
+    auto aes1 = [aes!("x", "y", "width", "height")( 1.0, -1.0, 3.0, 5.0 )];
     gg.put( geomEllipse( aes1 ) );
     gg.put( geomTriangle( aes1 ) );
     gg.put( xaxisRange( -5, 11.0 ) );
     gg.put( yaxisRange( -9, 9.0 ) );
 
 
-    auto aes2 = Aes!(double[], "x", double[], "y", Pixel[], "width",
-        Pixel[], "height")( [8.0], [5.0], [Pixel(10)], [Pixel(20)] );
+    auto aes2 = [aes!("x", "y", "width", "height")(8.0, 5.0, Pixel(10), Pixel(20))];
     gg.put( geomEllipse( aes2 ) );
     gg.put( geomTriangle( aes2 ) );
 
-    auto aes3 = Aes!(double[], "x", double[], "y", Pixel[], "width",
-        Pixel[], "height")( [6.0], [-5.0], [Pixel(25)], [Pixel(25)] );
+    auto aes3 = [aes!("x", "y", "width", "height")( 6.0, -5.0, Pixel(25), Pixel(25))];
     gg.put( geomEllipse( aes3 ) );
     gg.put( geomTriangle( aes3 ) );
  
