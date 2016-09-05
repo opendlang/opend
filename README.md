@@ -6,6 +6,14 @@ Graphics described by Leland Wilkinson. The library depends on cairo(D) for
 the actual drawing. The library is designed to make it easy to build complex
 plots from simple building blocks.
 
+- [Install](#install)
+- [Usage documentation](#documentation)
+    - [Examples](#initial-examples)
+    - [Using your own data](#data)
+    - [Extending ggplotd](#extending-ggplotd)
+    - [Further examples](#further-examples)
+- [Development](#development)
+
 ## Install
 
 Easiest is to use dub and add the library to your dub configuration file,
@@ -38,7 +46,7 @@ the easiest way is with subConfigurations:
 	}
 ```
 
-## Documentation
+# Documentation 
 
 This README contains a couple of examples and basic documentation on how
 to extend GGPlotD. API documentation is automatically generated and put
@@ -47,309 +55,172 @@ http://blackedder.github.io/ggplotd/index.html. For example for the
 available geom* functions see:
 http://blackedder.github.io/ggplotd/ggplotd/geom.html
 
-### Examples
+## Initial examples
 
-![A noisy figure](http://blackedder.github.io/ggplotd/images/noise.png)
-```D 
-import ggplotd.ggplotd; 
-import ggplotd.aes; 
-import ggplotd.geom;
+### Diamonds
 
-void main()
-{
-    import std.array : array;
-    import std.math : sqrt;
-    import std.algorithm : map;
-    import std.range : repeat, iota;
-    import std.random : uniform;
-    // Generate some noisy data with reducing width
-    auto f = (double x) { return x/(1+x); };
-    auto width = (double x) { return sqrt(0.1/(1+x)); };
-    auto xs = iota( 0, 10, 0.1 ).array;
+Let’s assume we have a csv file with data on the price, carat and clarity of
+different diamonds.
 
-    auto ysfit = xs.map!((x) => f(x)).array;
-    auto ysnoise = xs.map!((x) => f(x) + uniform(-width(x),width(x))).array;
+carat  |  clarity  |  price
+-------|-----------|-------
+0.23   |  SI2      |  326  
+0.21   |  SI1      |  326  
+0.23   |  VS1      |  327  
+0.29   |  VS2      |  334  
+0.31   |  SI2      |  335  
 
-    auto aes = Aes!(typeof(xs), "x",
-        typeof(ysnoise), "y", string[], "colour" )( xs, ysnoise,
-        ("a").repeat(xs.length).array ); 
+We can simply plot this data as follows.
+
+```D
+import std.csv : csvReader; import std.file : readText;
+import std.algorithm : map;
+import std.array : array;
+import ggplotd.aes : aes;
+import ggplotd.axes : xaxisLabel, yaxisLabel;
+import ggplotd.ggplotd : GGPlotD, putIn;
+import ggplotd.geom : geomPoint;
+
+
+void main() 
+{ 
+    struct Diamond {
+        double carat;
+        string clarity;
+        double price;
+    }
+
+    // Read the data
+    auto diamonds = readText("test_files/diamonds.csv").csvReader!(Diamond)(
+    ["carat","clarity","price"]);
+
+    auto gg = diamonds.map!((diamond) => 
+            // Map data to aesthetics (x, y and colour)
+            aes!("x", "y", "colour", "size")(diamond.carat, diamond.price, diamond.clarity, 0.8))
+        .array
+        // Draw points
+        .geomPoint.putIn(GGPlotD());
         
-    auto gg = GGPlotD().put( geomPoint( aes)); 
-    gg.put(geomLine( Aes!(typeof(xs), "x", typeof(ysfit), "y" )( xs, ysfit)));
-
-    //  
-    auto ys2fit = xs.map!((x) => 1-f(x)).array;
-    auto ys2noise = xs.map!((x) => 1-f(x) + uniform(-width(x),width(x))).array;
-
-    gg.put( geomLine( Aes!(typeof(xs), "x", typeof(ys2fit), "y" )( xs,
-        ys2fit)));
-
-    gg.put( geomPoint( Aes!(typeof(xs), "x", typeof(ys2noise), "y", string[],
-        "colour" )( xs, ys2noise, ("b").repeat(xs.length).array) ));
-
-    gg.save( "noise.png" );
+    // Axis labels
+    gg = "Carat".xaxisLabel.putIn(gg);
+    gg = "Price".yaxisLabel.putIn(gg);
+    gg.save("diamonds.png");
 }
 ```
 
-#### Histogram
+![Diamond data](http://blackedder.github.io/ggplotd/images/diamonds.png)
 
-![A histogram](http://blackedder.github.io/ggplotd/images/hist.png)
+### Variance-covariance
+
+For the next example let’s assume that we have three different variables (e.g.
+as a result of an MCMC run) and we want to plot the variance-covariances to
+get a sense of how these variables/parameters relate to eachother. This could
+be done as follows.
+
 ```D
-import ggplotd.ggplotd; 
-import ggplotd.aes; 
-import ggplotd.geom;
+import std.algorithm : map;
+import std.format : format;
+import ggplotd.aes : aes;
+import ggplotd.axes : xaxisLabel, yaxisLabel;
+import ggplotd.geom : geomDensity, geomDensity2D;
+import ggplotd.ggplotd : Facets, GGPlotD, putIn;
+import ggplotd.colour : colourGradient;
+import ggplotd.colourspace : XYZ;
 
 void main()
 {
-    import std.array : array;
-    import std.algorithm : map;
-    import std.range : repeat, iota;
-    import std.random : uniform;
-    auto xs = iota(0,25,1).map!((x) => uniform(0.0,5)+uniform(0.0,5)).array;
-    auto aes = Aes!(typeof(xs), "x")( xs );
+    // Running MCMC for a model that takes 3 parameters
+    // Will return 1000 posterior samples for the 3 parameters
+    // [[par1, par2, par3], ...]
+    auto samples = runMCMC();
 
-    auto gg = GGPlotD().put( geomHist( aes ) );
+    // Facets can be used for multiple subplots
+    Facets facets;
 
-    auto ys = (0.0).repeat( xs.length ).array;
-    auto aesPs = aes.merge( Aes!(double[], "y", double[], "colour" )
-        ( ys, ys ) );
+    // Cycle over the parameters
+    foreach(i; 0..3) 
+    {
+        foreach(j; 0..3) 
+        {
+            auto gg = GGPlotD();
 
-    gg.put( geomPoint( aesPs ) );
-
-    gg.save( "hist.png" );
-}
+            gg = format("Parameter %s", i).xaxisLabel.putIn(gg);
+            if (i != j)
+            {
+                // Change the colourGradient used
+                gg = colourGradient!XYZ( "white-cornflowerBlue-crimson" )
+                    .putIn(gg);
+                gg = format("Parameter %s", j).yaxisLabel.putIn(gg);
+                gg = samples.map!((sample) => aes!("x", "y")(sample[i], sample[j]))
+                    .geomDensity2D
+                    .putIn(gg);
+            } else {
+                gg = "Density".yaxisLabel.putIn(gg);
+                gg = samples.map!((sample) => aes!("x", "y")(sample[i], sample[j]))
+                    .geomDensity
+                    .putIn(gg);
+            }
+            facets = gg.putIn(facets);
+        }
+    } 
+    facets.save("parameter_distribution.png", 670, 670); 
+} 
 ```
 
-A 2D version of the histogram is also implemented in geomHist2D. See the
-[documentation](http://blackedder.github.io/ggplotd/ggplotd/geom.html#geomHist2D)
-for the code used to create this figure. Note that we use another colour
-gradient here than the default.
+![Variance-covariance](http://blackedder.github.io/ggplotd/images/parameter_distribution.png)
 
-![Histogram 2D](http://blackedder.github.io/ggplotd/images/hist2D.svg)
+## Data
 
+The initial step in plotting your data is to map the variables to
+“aesthetic” variables as understood by the geom functions provided in
+ggplotd. This mapping can be done using the
+[`aes`](http://blackedder.github.io/ggplotd/ggplotd/aes.html#aes) function to
+map existing variable names to `x`, `y` etc. Of course if your data already
+uses these variable names then this is not needed. Another useful function here
+is [`merge`](http://blackedder.github.io/ggplotd/ggplotd/aes/merge.html), which
+can be used to merge new/different mappings as in the following example:
 
-#### Combined histograms
-
-![Two combined data
-sources](http://blackedder.github.io/ggplotd/images/filled_hist.svg)
-```D
-import ggplotd.ggplotd; 
-import ggplotd.aes; 
-import ggplotd.geom;
-
-void main()
+```
+void main() 
 {
-    import std.array : array;
-    import std.algorithm : map;
-    import std.range : repeat, iota, chain;
-    import std.random : uniform;
-    auto xs = iota(0,50,1).map!((x) => uniform(0.0,5)+uniform(0.0,5)).array;
-    auto cols = "a".repeat(25).chain("b".repeat(25));
-    auto aes = Aes!(typeof(xs), "x", typeof(cols), "colour", 
-        double[], "fill" )( 
-            xs, cols, 0.45.repeat(xs.length).array);
-    auto gg = GGPlotD().put( geomHist( aes ) );
-    gg.save( "filled_hist.svg" );
-}
+    import ggplotd.aes : aes, merge;
+    struct Data1
+    {
+        double value1 = 1.0;
+        double value2 = 2.0;
+    }
 
-```
+    Data1 dat1;
 
-#### Box plot
+    // Merge to add a value
+    auto merged = aes!("x", "y")(dat1.value1, dat1.value2)
+        .merge(
+            aes!("colour")("a")
+        );
+    assertEqual(merged.x, 1.0);
+    assertEqual(merged.colour, "a");
 
-![Box plot](http://blackedder.github.io/ggplotd/images/boxplot.svg)
+    // Merge to a second data struct
+    struct Data2 { string colour = "b"; } 
+    Data2 dat2;
 
-```D
-import ggplotd.ggplotd; 
-import ggplotd.aes; 
-import ggplotd.geom;
+    auto merged2 = aes!("x", "y")(dat1.value1, dat1.value2)
+        .merge( dat2 );
+    assertEqual(merged2.x, 1.0);
+    assertEqual(merged2.colour, "b");
 
-void main() {
-    import std.array : array;
-    import std.algorithm : map;
-    import std.range : repeat, iota, chain;
-    import std.random : uniform;
-    auto xs = iota(0,50,1).map!((x) => uniform(0.0,5)+uniform(0.0,5)).array;
-    auto cols = "a".repeat(25).chain("b".repeat(25)).array;
-    auto aes = Aes!(typeof(xs), "x", typeof(cols), "colour", 
-        double[], "fill", typeof(cols), "label" )( 
-            xs, cols, 0.45.repeat(xs.length).array, cols);
-    auto gg = GGPlotD().put( geomBox( aes ) );
-    gg.save( "boxplot.svg" );
-}
-
-```
-
-#### Custom axes, margins, image size and title
-
-![Manipulating axes](http://blackedder.github.io/ggplotd/images/axes.svg)
-
-```D
-
-import ggplotd.ggplotd;
-import ggplotd.geom;
-import ggplotd.aes;
-import ggplotd.axes;
-
-void main()
-{
-    import std.array : array;
-    import std.math : sqrt;
-    import std.algorithm : map;
-    import std.range : iota;
-    // Generate some noisy data with reducing width
-    auto f = (double x) { return x/(1+x); };
-    auto width = (double x) { return sqrt(0.1/(1+x)); };
-    auto xs = iota( 0, 10, 0.1 ).array;
-
-    auto ysfit = xs.map!((x) => f(x)).array;
-
-    auto gg = GGPlotD().put( geomLine( Aes!(typeof(xs), "x", typeof(ysfit),
-        "y")( xs, ysfit ) ) );
-
-    // Setting range and label for xaxis
-    gg.put( xaxisRange( 0, 8 ) )
-        .put( xaxisLabel( "My xlabel" ) );
-
-    // Setting range and label for yaxis
-    gg.put( yaxisRange( 0, 2.0 ) ).put( yaxisLabel( "My ylabel" ) );
-
-    // change offset
-    gg.put( xaxisOffset( 0.25 ) ).put( yaxisOffset( 0.5 ) );
-
-    // Change margins
-    gg.put( Margins( 60, 60, 40, 30 ) );
-
-    // Set a title 
-    gg.put( title( "And now for something completely different" ) );
-
-    // Saving as 500x300 pixel svg file
-    gg.save( "axes.svg", 500, 300 );
+    // Overriding a field 
+    auto merged3 = aes!("x", "y")(dat1.value1, dat1.value2)
+        .merge(
+            aes!("y")("a")
+        );
+    assertEqual(merged3.y, "a");
 }
 ```
 
-### Data
+## Extending GGPlotD
 
-The examples above all use the
-[Aes](http://blackedder.github.io/ggplotd/ggplotd/aes/Aes.html) struct to hold
-all the data and pass it to geom* functions. It is also straightforward to use
-your own data range as long as each element provides access to the needed data
-at compile time, i.e. for geomPoint the element needs to have a x and y field.
-See below for a simple example:
-
-```D
-
-import ggplotd.ggplotd; 
-import ggplotd.aes; 
-import ggplotd.geom;
-
-struct Point { 
-    double x; 
-    double y; 
-}
-
-void main()
-{
-    /// http://blackedder.github.io/ggplotd/images/data.png
-    import std.array : array;
-    import std.math : sqrt;
-    import std.algorithm : map;
-    import std.range : iota;
-    import std.random : uniform;
-    // Generate some noisy data with reducing width
-    auto f = (double x) { return x/(1+x); };
-    auto width = (double x) { return sqrt(0.1/(1+x)); };
-    auto xs = iota( 0, 10, 0.1 ).array;
-
-    auto points = xs.map!((x) => Point(x,
-        f(x) + uniform(-width(x),width(x))));
-
-    auto gg = GGPlotD().put( geomPoint( points ) );
-
-    gg.save( "data.png" );
-}
-
-```
-
-If your data uses different variable names you can wrap each element in a named Tuple as follows:
-
-```D
-import ggplotd.ggplotd; 
-import ggplotd.aes; 
-import ggplotd.geom;
-
-struct Data {
-    double value1;
-    double value2;
-}
-
-void main()
-{
-    import std.array : array;
-    import std.math : sqrt;
-    import std.algorithm : map;
-    import std.range : iota;
-    import std.random : uniform;
-    import std.typecons : Tuple;
-    // Generate some noisy data with reducing width
-    auto f = (double x) { return x/(1+x); };
-    auto width = (double x) { return sqrt(0.1/(1+x)); };
-    auto xs = iota( 0, 10, 0.1 ).array;
-
-    auto data = xs.map!((x) => Data(x,
-        f(x) + uniform(-width(x),width(x))));
-
-    // Wrap the data
-    auto gg = GGPlotD().put( 
-    	data.map!((a) => Tuple!(double, "x", double, "y")(a.value1, a.value2))
-	    .geomPoint );
-    gg.save( "data.png" );
-}
-```
-
-To add a new field to your data, you can use [mergeRange](http://blackedder.github.io/ggplotd/ggplotd/range.html#mergeRange). For example, if we want to plot our data using a red colour you can do the following:
-
-```D
-import ggplotd.ggplotd; 
-import ggplotd.aes; 
-import ggplotd.geom;
-import ggplotd.range : mergeRange;
-
-struct Data {
-    double value1;
-    double value2;
-}
-
-void main()
-{
-    /// http://blackedder.github.io/ggplotd/images/data_red.png
-    import std.array : array;
-    import std.math : sqrt;
-    import std.algorithm : map;
-    import std.range : iota;
-    import std.random : uniform;
-    import std.typecons : Tuple;
-    // Generate some noisy data with reducing width
-    auto f = (double x) { return x/(1+x); };
-    auto width = (double x) { return sqrt(0.1/(1+x)); };
-    auto xs = iota( 0, 10, 0.1 ).array;
-
-    auto data = xs.map!((x) => Data(x,
-        f(x) + uniform(-width(x),width(x))));
-
-    // Wrap the data and add a colour field
-    auto gg = GGPlotD().put( 
-    	Tuple!(string, "colour")("red")
-	    .mergeRange(data.map!((a) => Tuple!(double, "x", double, "y")(a.value1, a.value2)))
-	    .geomPoint );
-    gg.save( "data_red.png" );
-}
-```
-
-
-
-## Extending GGplotD
-
-Due to GGplotD’s design it is relatively straightforward to extend GGplotD to
+Due to GGPlotD’s design it is relatively straightforward to extend GGplotD to
 support new types of plots. This is especially true if your function depends on
 the already implemented base types geomType, geomLine, geomEllipse,
 geomRectangle and geomPolygon. The main reason for not having added more
@@ -429,32 +300,30 @@ polygon has no curves.
 ![Polygon](http://blackedder.github.io/ggplotd/images/polygon.png)
 
 ```D 
-
-import ggplotd.ggplotd;
-import ggplotd.geom;
-import ggplotd.aes;
-
 void main()
 {
-    auto gg = GGPlotD().put( geomPolygon( 
-        Aes!(
-            double[], "x",
-            double[], "y",
-            double[], "colour" )(
-            [1,0,0], [ 1, 1, 0 ], [1,0.1,0] ) ) );
+    import std.range : zip;
+    import std.algorithm : map;
+    import ggplotd.aes : aes;
+    import ggplotd.geom : geomPolygon;
+    import ggplotd.ggplotd : GGPlotD, putIn;
+
+    // http://blackedder.github.io/ggplotd/images/polygon.png
+    auto gg = zip([1, 0, 0.0], [1, 1, 0.0], [1, 0.1, 0])
+        .map!((a) => aes!("x", "y", "colour")(a[0], a[1], a[2]))
+        .geomPolygon
+        .putIn(GGPlotD());
     gg.save( "polygon.png" );
 }
-
 ```
 
-## Usage as a library
+### Using custom surface type
 
 If you want to use ggplotd to draw the plots, but keep the plot in memory,
 you can create an image surface and use drawToSurface to draw to it,
 without saving it to file.
 
 ```D
-
 auto width = 470;
 auto height = 350;
 
@@ -497,7 +366,7 @@ void main()
 
     auto xs = iota(0,100,1).map!((x) => uniform(0.0,5)+uniform(0.0,5)).array;
     auto ys = iota(0,100,1).map!((y) => uniform(0.0,5)+uniform(0.0,5)).array;
-    auto aes = Aes!(typeof(xs), "x", typeof(ys), "y")( xs, ys);
+    auto aes = xs.zip(ys).map!((a) => aes!("x","y")(a[0], a[1]));
 
     // Start gtk window.
     auto gtkwin = new GTKWindow();
@@ -518,6 +387,146 @@ void main()
     tid.join();
 }
 ```
+
+## Further examples
+
+### Histograms
+
+![Two combined data
+sources](http://blackedder.github.io/ggplotd/images/filled_hist.svg)
+
+```D
+void main()
+{
+    // http://blackedder.github.io/ggplotd/images/filled_hist.svg
+    import std.array : array;
+    import std.algorithm : map;
+    import std.range : repeat, iota, chain, zip;
+    import std.random : uniform;
+
+    import ggplotd.aes : aes;
+    import ggplotd.geom : geomHist;
+    import ggplotd.ggplotd : putIn, GGPlotD;
+
+    auto xs = iota(0,50,1).map!((x) => uniform(0.0,5)+uniform(0.0,5)).array;
+    auto cols = "a".repeat(25).chain("b".repeat(25));
+    auto gg = xs.zip(cols)
+        .map!((a) => aes!("x", "colour", "fill")(a[0], a[1], 0.45))
+        .geomHist
+        .putIn(GGPlotD());
+    gg.save( "filled_hist.svg" );
+}
+```
+
+### Histogram2D
+
+A 2D version of the histogram is also implemented in geomHist2D. Note that we use another colour gradient here than the default.
+
+![Histogram 2D](http://blackedder.github.io/ggplotd/images/hist2D.svg)
+
+```D
+void main()
+{
+    /// http://blackedder.github.io/ggplotd/images/hist2D.svg
+    import std.array : array;
+    import std.algorithm : map;
+    import std.range : iota, zip;
+    import std.random : uniform;
+
+    import ggplotd.aes : aes;
+    import ggplotd.colour : colourGradient;
+    import ggplotd.colourspace : XYZ;
+    import ggplotd.geom : geomHist2D;
+    import ggplotd.ggplotd : GGPlotD, putIn;
+    import ggplotd.legend : continuousLegend;
+
+    auto xs = iota(0,500,1).map!((x) => uniform(0.0,5)+uniform(0.0,5))
+        .array;
+    auto ys = iota(0,500,1).map!((y) => uniform(0.0,5)+uniform(0.0,5))
+        .array;
+    auto gg = xs.zip(ys)
+                .map!((t) => aes!("x","y")(t[0], t[1]))
+                .geomHist2D.putIn(GGPlotD());
+    // Use a different colour scheme
+    gg.put( colourGradient!XYZ( "white-cornflowerBlue-crimson" ) );
+
+    gg.put(continuousLegend);
+
+    gg.save( "hist2D.svg" );
+}
+```
+
+### Box plot
+
+![Box plot](http://blackedder.github.io/ggplotd/images/boxplot.svg)
+
+```D
+void main()
+{
+    // http://blackedder.github.io/ggplotd/images/boxplot.svg
+    import std.array : array;
+    import std.algorithm : map;
+    import std.range : repeat, iota, chain, zip;
+    import std.random : uniform;
+
+    import ggplotd.aes : aes;
+    import ggplotd.geom : geomBox;
+    import ggplotd.ggplotd : GGPlotD, putIn;
+
+    auto xs = iota(0,50,1).map!((x) => uniform(0.0,5)+uniform(0.0,5));
+    auto cols = "a".repeat(25).chain("b".repeat(25));
+    auto gg = xs.zip(cols)
+        .map!((a) => aes!("x", "colour", "fill", "label" )(a[0], a[1], 0.45, a[1]))
+        .geomBox
+        .putIn(GGPlotD());
+    gg.save( "boxplot.svg" );
+}
+```
+
+### Custom axes, margins, image size and title
+
+![Manipulating axes](http://blackedder.github.io/ggplotd/images/axes.svg)
+
+```D
+void main()
+{
+    // http://blackedder.github.io/ggplotd/images/axes.svg
+    import std.array : array;
+    import std.math : sqrt;
+    import std.algorithm : map;
+    import std.range : iota;
+
+    import ggplotd.aes : aes;
+    import ggplotd.axes : xaxisLabel, yaxisLabel, xaxisOffset, yaxisOffset, xaxisRange, yaxisRange;
+    import ggplotd.geom : geomLine;
+    import ggplotd.ggplotd : GGPlotD, putIn, Margins, title;
+    import ggplotd.stat : statFunction;
+
+    auto f = (double x) { return x/(1+x); };
+    auto gg = statFunction(f, 0, 10.0)
+        .geomLine
+        .putIn(GGPlotD());
+
+    // Setting range and label for xaxis
+    gg.put( xaxisRange( 0, 8 ) ).put( xaxisLabel( "My xlabel" ) );
+    // Setting range and label for yaxis
+    gg.put( yaxisRange( 0, 2.0 ) ).put( yaxisLabel( "My ylabel" ) );
+
+    // change offset
+    gg.put( xaxisOffset( 0.25 ) ).put( yaxisOffset( 0.5 ) );
+
+    // Change Margins 
+    gg.put( Margins( 60, 60, 40, 30 ) );
+
+    // Set a title
+    gg.put( title( "And now for something completely different" ) );
+
+    // Saving on a 500x300 pixel surface
+    gg.save( "axes.svg", 500, 300 );
+}
+```
+
+Finally there are examples available in the online documentation. Mainly [here](http://blackedder.github.io/ggplotd/example.html) and [here](http://blackedder.github.io/ggplotd/ggplotd/ggplotd/GGPlotD.html).
 
 ## Development
 

@@ -36,13 +36,107 @@ unittest
         assert(false);
 }
 
-// TODO Also update default grouping if appropiate
+import std.typecons : tuple;
+/++
+    Map data fields to "aesthetic" fields understood by the ggplotd geom functions
 
+    The most commonly used aesthetic fields in ggplotd are "x" and "y". Which further data
+    fields are used/required depends on the geom function being called. 
+    
+    Other common fields: 
+    $(UL
+        $(LI "colour": Identifier for the colour. In general data points with different colour ids get different colours. This can be almost any type. You can also specify the colour by name or cairo.Color type if you want to specify an exact colour (any type that isNumeric, cairo.Color.RGB(A), or can be converted to string))
+        $(LI "size": Gives the relative size of points/lineWidth etc.)
+        $(LI "label": Text labels (string))
+        $(LI "angle": Angle of printed labels in radians (double))
+        $(LI "alpha": Alpha value of the drawn object (double))
+        $(LI "mask": Mask the area outside the axes. Prevents you from drawing outside of the area (bool))
+        $(LI "fill": Whether to fill the object/holds the alpha value to fill with (double).))
+
+    In practice aes is an alias for std.typecons.tuple.
+
+Examples:
+---------------------------
+struct Diamond 
+{
+    string clarity = "SI2";
+    double carat = 0.23;
+    double price = 326;
+}
+
+Diamond diamond;
+
+auto mapped = aes!("colour", "x", "y")(diamond.clarity, diamond.carat, diamond.price);
+assert(mapped.colour == "SI2");
+assert(mapped.x == 0.23);
+assert(mapped.y == 326);
+---------------------------
+
+Examples:
+---------------------------
+import std.typecons : Tuple;
+// aes returns a named tuple
+assert(aes!("x", "y")(1.0, 2.0) == Tuple!(double, "x", double, "y")(1.0, 2.0));
+---------------------------
+ 
+    +/
+alias aes = tuple;
+
+unittest
+{
+    struct Diamond 
+    {
+        string clarity = "SI2";
+        double carat = 0.23;
+        double price = 326;
+    }
+
+    Diamond diamond;
+
+    auto mapped = aes!("colour", "x", "y")(diamond.clarity, diamond.carat, diamond.price);
+    assertEqual(mapped.colour, "SI2");
+    assertEqual(mapped.x, 0.23);
+    assertEqual(mapped.y, 326);
+
+
+    import std.typecons : Tuple;
+    // aes is a convenient alternative to a named tuple
+    assert(aes!("x", "y")(1.0, 2.0) == Tuple!(double, "x", double, "y")(1.0, 2.0));
+}
+
+///
+unittest
+{
+    auto a = aes!(int, "y", int, "x")(1, 2);
+    assertEqual( a.y, 1 );
+    assertEqual( a.x, 2 );
+
+    auto a1 = aes!("y", "x")(1, 2);
+    assertEqual( a1.y, 1 );
+    assertEqual( a1.x, 2 );
+
+    auto a2 = aes!("y")(1);
+    assertEqual( a2.y, 1 );
+
+
+    import std.range : zip;
+    import std.algorithm : map;
+    auto xs = [0,1];
+    auto ys = [2,3];
+    auto points = xs.zip(ys).map!((t) => aes!("x", "y")(t[0], t[1]));
+    assertEqual(points.front.x, 0);
+    assertEqual(points.front.y, 2);
+    points.popFront;
+    assertEqual(points.front.x, 1);
+    assertEqual(points.front.y, 3);
+}
+
+// TODO Also update default grouping if appropiate
 /// Default values for most settings
-static auto DefaultValues = Tuple!( 
-    string, "label", string, "colour", double, "size",
-    double, "angle", double, "alpha", bool, "mask", double, "fill" )
-    ("", "black", 1.0, 0, 1, true, 0.0);
+static auto DefaultValues = aes!(
+    "label", "colour", "size",
+    "angle", "alpha", "mask", "fill" )
+    ("", "black", 1.0, 0.0, 1.0, true, 0.0);
 
 /++
     Aes is used to store and access data for plotting
