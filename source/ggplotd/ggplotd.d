@@ -682,6 +682,7 @@ unittest
         .map!((a) => aes!("x", "y", "colour")(a[0], a[1], a[2]))
         .geomPoint
         .putIn(GGPlotD());
+    gg.put(background(RGBA(0.7, 0.7, 0.7, 1)));
     gg.save( "background.svg" );
 }
 
