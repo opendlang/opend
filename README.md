@@ -6,12 +6,13 @@ Graphics described by Leland Wilkinson. The library depends on cairo(D) for
 the actual drawing. The library is designed to make it easy to build complex
 plots from simple building blocks.
 
-[Install](#Install)
-[Usage documentation](#Documentation)
+[Install](#install)
+
+[Usage documentation](#documentation)
 
 - [Examples](#initial-examples)
 - [Using your own data](#data)
-- [Extending ggplotd](#extending)
+- [Extending ggplotd](#extending-ggplotd)
 - [Further examples](#further-examples)
 
 [Development](#development)
@@ -57,7 +58,7 @@ http://blackedder.github.io/ggplotd/index.html. For example for the
 available geom* functions see:
 http://blackedder.github.io/ggplotd/ggplotd/geom.html
 
-## Initial examples (#initial-examples)
+## Initial examples
 
 ### Diamonds
 
@@ -171,7 +172,7 @@ void main()
 
 ![Variance-covariance](http://blackedder.github.io/ggplotd/images/parameter_distribution.png)
 
-## Data (#data)
+## Data
 
 The initial step in plotting your data is to map the variables to
 “aesthetic” variables as understood by the geom functions provided in
@@ -220,9 +221,9 @@ void main()
 }
 ```
 
-## Extending GGplotD (#extending)
+## Extending GGPlotD
 
-Due to GGplotD’s design it is relatively straightforward to extend GGplotD to
+Due to GGPlotD’s design it is relatively straightforward to extend GGplotD to
 support new types of plots. This is especially true if your function depends on
 the already implemented base types geomType, geomLine, geomEllipse,
 geomRectangle and geomPolygon. The main reason for not having added more
@@ -390,7 +391,7 @@ void main()
 }
 ```
 
-## Further examples (#further-examples)
+## Further examples
 
 ### Histograms
 
@@ -528,7 +529,9 @@ void main()
 }
 ```
 
-## Development (#development)
+Finally there are examples available in the online documentation. Mainly [here](http://blackedder.github.io/ggplotd/example.html) and [here](http://blackedder.github.io/ggplotd/ggplotd/ggplotd/GGPlotD.html).
+
+## Development
 
 Actual development happens on [github](https://github.com/BlackEdder/ggplotd), while planning for new features is tracked on [trello](https://trello.com/b/FvLv2rQH/ggplotd). Feel free to join the discussion there.
 
