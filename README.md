@@ -317,7 +317,7 @@ void main()
 }
 ```
 
-### Using custom surface type (#in-memory)
+### Using custom surface type
 
 If you want to use ggplotd to draw the plots, but keep the plot in memory,
 you can create an image surface and use drawToSurface to draw to it,
