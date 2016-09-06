@@ -46,6 +46,11 @@ private struct HashSet(E) {
         auto sorted = kv.sort!((a, b) => a.value < b.value);
         return sorted.map!((a) => a.key);
     }
+    
+    auto @property length()
+    {
+        return set.length;
+    }
 
     size_t[E] set;
 }

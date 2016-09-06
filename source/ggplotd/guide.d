@@ -57,12 +57,14 @@ private struct GuideStore(string type = "")
 
     double min()
     {
-        return _min;
+        import ggplotd.algorithm : safeMin;
+        return safeMin(0, _min);
     }
 
     double max()
     {
-        return _max;
+        import ggplotd.algorithm : safeMax;
+        return safeMax(_max, _store.length);
     }
 
     @property auto store()
@@ -97,19 +99,19 @@ unittest
     gs.put("b");
     assertEqual(gs.store.walkLength, 2);
     assertEqual(gs.store.array, ["b", "a"]);
-    assert(isNaN(gs.min));
-    assert(isNaN(gs.max));
+    assertEqual(gs.min, 0);
+    assertEqual(gs.max, 2);
 
     // Numeric -> add as min or max (also test int)
-    gs.put(1);
-    assertEqual(gs.min, 1.0);
-    assertEqual(gs.max, 1.0);
-    gs.put(2.0);
-    assertEqual(gs.min, 1.0);
+    gs.put(-1);
+    assertEqual(gs.min, -1.0);
     assertEqual(gs.max, 2.0);
+    gs.put(3.0);
+    assertEqual(gs.min, -1.0);
+    assertEqual(gs.max, 3.0);
     gs.put(1.5);
-    assertEqual(gs.min, 1.0);
-    assertEqual(gs.max, 2.0);
+    assertEqual(gs.min, -1.0);
+    assertEqual(gs.max, 3.0);
 
     import ggplotd.colour: RGBA;
     GuideStore!"colour" gsc;
@@ -119,8 +121,8 @@ unittest
     // Test named colour is ignored
     gsc.put("red");
     assertEqual(gsc.store.walkLength, 0);
-    assert(isNaN(gsc.min));
-    assert(isNaN(gsc.max));
+    assertEqual(gsc.min, 0);
+    assertEqual(gsc.max, 0);
     gsc.put("b");
     assertEqual(gsc.store.walkLength, 1);
 
@@ -143,10 +145,10 @@ unittest
     gs2.put(["c", "b", "a"]);
     gs.put(gs2);
     assertEqual(gs.store.walkLength, 3);
-    gs2.put([1.1,0.1]);
+    gs2.put([10.1,-0.1]);
     gs.put(gs2);
-    assertEqual(gs.min, 0.1);
-    assertEqual(gs.max, 1.1);
+    assertEqual(gs.min, -0.1);
+    assertEqual(gs.max, 10.1);
 }
 
 
