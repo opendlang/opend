@@ -9,14 +9,63 @@ version(unittest) {
 
 private struct HashSet(E) {
     // TODO switch to proper implementation (not using AA)
-    bool put( E el )
+    bool put(E el)
     {
         if ( el in set )
             return false;
         set[el] = set.length;
         return true;
     }
+
+    import std.range : ElementType;
+
+    bool put(R)(R range)
+        if (is(E==ElementType!R))
+    {
+        auto result = false;
+        foreach(el; range)
+        {
+            auto r = this.put(el);
+            if (r)
+                result = true;
+        }
+        return result;
+    }
+
+    bool put(S)(S hset)
+        if (is(S==HashSet!E))
+    {
+        return this.put(hset.data);
+    }
+
+    @property auto data()
+    {
+        import std.array : array;
+        import std.algorithm : map, sort;
+        auto kv = set.byKeyValue().array;
+        auto sorted = kv.sort!((a, b) => a.value < b.value);
+        return sorted.map!((a) => a.key);
+    }
+
     size_t[E] set;
+}
+
+unittest
+{
+    import std.array : array;
+    import std.range : walkLength;
+    HashSet!string set;
+    set.put("b");
+    assertEqual(set.data.walkLength, 1);
+    set.put("b");
+    assertEqual(set.data.walkLength, 1);
+    set.put(["a","b"]);
+    assertEqual(set.data.walkLength, 2);
+    assertEqual(set.data.array, ["b", "a"]);
+    HashSet!string set2;
+    set2.put(["a", "b", "c", "d", "e", "f", "g", "h", "i"]);
+    set.put(set2);
+    assertEqual(set.data.array, ["b", "a", "c", "d", "e", "f", "g", "h", "i"]);
 }
 
 /**

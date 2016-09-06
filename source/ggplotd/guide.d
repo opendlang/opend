@@ -11,7 +11,7 @@ private struct GuideStore(string type = "")
     void put(T)(T gs)
         if (is(T==GuideStore!(type))) 
     {
-        _store.put(gs.store);
+        _store.put(gs._store);
         import ggplotd.algorithm : safeMin, safeMax;
         _min = safeMin(_min, gs.min);
         _max = safeMax(_max, gs.max);
@@ -57,27 +57,24 @@ private struct GuideStore(string type = "")
 
     double min()
     {
-        // What if no min?
         return _min;
     }
 
     double max()
     {
-        // What if no max?
         return _max;
     }
 
     @property auto store()
     {
-        import ggplotd.range : uniquer;
-        return _store.data.uniquer();
+        return _store.data;
     }
 
     double _min;
     double _max;
 
-    import std.range : Appender;
-    Appender!(string[]) _store; // Should really only store uniques
+    import ggplotd.range : HashSet;
+    HashSet!(string) _store; // Should really only store uniques
 
     static if (type == "colour")
     {
