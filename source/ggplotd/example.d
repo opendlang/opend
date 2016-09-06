@@ -96,7 +96,7 @@ unittest
     /// http://blackedder.github.io/ggplotd/images/density2D.png
     import std.algorithm : map;
     import std.range : iota, zip;
-    import std.random : uniform;
+    import std.random : uniform, Random, unpredictableSeed;
 
     import ggplotd.aes : aes;
     import ggplotd.colour : colourGradient;
@@ -105,8 +105,13 @@ unittest
     import ggplotd.ggplotd : GGPlotD, putIn;
     import ggplotd.legend : continuousLegend;
 
-    auto xs = iota(0,500,1).map!((x) => uniform(0.0,5)+uniform(0.0,5));
-    auto ys = iota(0,500,1).map!((y) => uniform(0.5,1.5)+uniform(0.5,1.5));
+    // For debugging reasons, print out the current seed
+    import std.stdio : writeln;
+    auto rnd = Random(unpredictableSeed);
+    writeln("Random seed: ", rnd.front);
+
+    auto xs = iota(0,500,1).map!((x) => uniform(0.0,5, rnd)+uniform(0.0,5, rnd));
+    auto ys = iota(0,500,1).map!((y) => uniform(0.5,1.5, rnd)+uniform(0.5,1.5, rnd));
     auto gg = zip(xs, ys)
         .map!((a) => aes!("x","y")(a[0], a[1]))
         .geomDensity2D

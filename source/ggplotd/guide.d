@@ -7,7 +7,25 @@ version (unittest)
 
 private struct GuideStore(string type = "")
 {
+    import std.range : isInputRange;
+    void put(T)(T gs)
+        if (is(T==GuideStore!(type))) 
+    {
+        _store.put(gs.store);
+        import ggplotd.algorithm : safeMin, safeMax;
+        _min = safeMin(_min, gs.min);
+        _max = safeMax(_max, gs.max);
+    }
+
+    void put(T)(T range)
+        if (!is(T==string) && isInputRange!T)
+    {
+        foreach(t; range)
+            this.put(t);
+    }
+
     void put(T)(T value)
+        if (!is(T==GuideStore!(type)) && (is(T==string) || !isInputRange!T))
     {
         import std.conv : to;
         import std.traits : isNumeric;
@@ -117,15 +135,35 @@ unittest
     assertEqual(gs.store.walkLength, 4);
 }
 
-/+
+unittest
+{
+    GuideStore!"" gs;
+    gs.put(["a", "b", "a"]);
+    import std.range : walkLength;
+    assertEqual(gs.store.walkLength, 2);
 
+    GuideStore!"" gs2;
+    gs2.put(["c", "b", "a"]);
+    gs.put(gs2);
+    assertEqual(gs.store.walkLength, 3);
+    gs2.put([1.1,0.1]);
+    gs.put(gs2);
+    assertEqual(gs.min, 0.1);
+    assertEqual(gs.max, 1.1);
+}
+
+
+
+/+
 **** New :)
 
 As always we return to a very similar place as where we started. We need a function that add IDs to the Geom. For x and y and size, this adds a tuple with double/string. Guess for numerical we'l only end up storing the min and max values? For colour we also accept anything of type Color.
 
 This can then be passed through (continuous/discrete specific) type and result in a function that is a "guideFunction"
 
-Not the min/max in the resulting guide should replace the bounds in the end.
+Note the min/max in the resulting guide should replace the bounds in the end.
+
+Still to solve, how do things like barplots work where we need to plot around a discrete value. Still we want to have barplot use the standard functions, so either need a special type that has an offset, or for now we can just use rectangles, where width contains the offset, while the center is on the  discrete values. This would also work for histograms!
 
 ****
 
