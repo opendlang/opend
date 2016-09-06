@@ -172,11 +172,18 @@ auto runMCMC() {
     import std.array : array;
     import std.math : pow;
     import std.range : iota;
+    import std.random : Random, unpredictableSeed;
+
+    // For debugging reasons, print out the current seed
+    import std.stdio : writeln;
+    auto rnd = Random(unpredictableSeed);
+    writeln("Random seed MCMC: ", rnd.front);
+
     import dstats.random : rNorm;
     return iota(0,1000).map!((i) {
-        auto x = rNorm(1, 0.5);
-        auto y = rNorm(pow(x,3), 0.5);
-        auto z = rNorm(x + y, 0.5);
+        auto x = rNorm(1, 0.5, rnd);
+        auto y = rNorm(pow(x,3), 0.5, rnd);
+        auto z = rNorm(x + y, 0.5, rnd);
         return [x, y, z];
     }).array;
 }
