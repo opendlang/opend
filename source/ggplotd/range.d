@@ -32,7 +32,7 @@ private struct HashSet(E) {
         return result;
     }
 
-    bool put(S)(S hset)
+    bool put(S)(in S hset)
         if (is(S==HashSet!E))
     {
         return this.put(hset.data);
