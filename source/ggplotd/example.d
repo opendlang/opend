@@ -177,6 +177,7 @@ auto runMCMC() {
     // For debugging reasons, print out the current seed
     import std.stdio : writeln;
     auto rnd = Random(unpredictableSeed);
+    //auto rnd = Random(1193462362); // This is a seed that currently fails. Use it for debugging
     writeln("Random seed MCMC: ", rnd.front);
 
     import dstats.random : rNorm;

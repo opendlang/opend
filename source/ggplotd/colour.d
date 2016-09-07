@@ -557,7 +557,7 @@ ColourGradientFunction colourGradient(T)( string name )
             cg.put(0, c );
             cg.put(1, c );
         }
-        if (dim > 2)
+        if (dim > 1)
         {
             auto value = 0.0;
             immutable width = 1.0/(dim-1);

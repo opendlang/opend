@@ -38,7 +38,7 @@ private struct HashSet(E) {
         return this.put(hset.data);
     }
 
-    @property auto data()
+    @property auto data() const
     {
         import std.array : array;
         import std.algorithm : map, sort;

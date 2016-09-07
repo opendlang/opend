@@ -11,12 +11,19 @@ import cxyz = ggplotd.color.xyz;
 import cconv = ggplotd.color.conv;
 import cColor = ggplotd.color;
 
+/// HCY colourspace
 alias HCY = chsx.HCY!double;
+/// RGB colourspace
 alias RGB = crgb.RGB!("rgb",double);
+/// RGBA colourspace
 alias RGBA = crgb.RGB!("rgba",double);
+/// XYZ colourspace
 alias XYZ = cxyz.XYZ!double;
 
+/// Convert to another colour space
 alias toColourSpace = cconv.convertColor;
+
+/// Check whether it is a colour
 alias isColour = cColor.isColor;
 
 import cairo = cairo.cairo;

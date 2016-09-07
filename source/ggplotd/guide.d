@@ -5,9 +5,11 @@ version (unittest)
     import dunit.toolkit;
 }
 
+/// Store values so we can later create guides from them
 private struct GuideStore(string type = "")
 {
     import std.range : isInputRange;
+    /// Put another GuideStore into the store
     void put(T)(T gs)
         if (is(T==GuideStore!(type))) 
     {
@@ -17,6 +19,7 @@ private struct GuideStore(string type = "")
         _max = safeMax(_max, gs.max);
     }
 
+    /// Add a range of values to the store
     void put(T)(T range)
         if (!is(T==string) && isInputRange!T)
     {
@@ -24,6 +27,7 @@ private struct GuideStore(string type = "")
             this.put(t);
     }
 
+    /// Add a value of anytype to the store
     void put(T)(T value)
         if (!is(T==GuideStore!(type)) && (is(T==string) || !isInputRange!T))
     {
@@ -55,21 +59,43 @@ private struct GuideStore(string type = "")
         }
     }
 
+    /// Minimum value encountered till now
     double min()
     {
+        import std.math : isNaN;
         import ggplotd.algorithm : safeMin;
-        return safeMin(0, _min);
+        if (_store.length > 0 || isNaN(_min))
+            return safeMin(0, _min);
+        return _min;
     }
 
+    /// Maximum value encountered till now
     double max()
     {
+        import std.math : isNaN;
         import ggplotd.algorithm : safeMax;
-        return safeMax(_max, _store.length);
+        if (_store.length > 0 || isNaN(_max))
+            return safeMax(_store.length, _max);
+        return _max;
     }
 
-    @property auto store()
+    /// The discete values in the store
+    @property auto store() const
     {
         return _store.data;
+    }
+
+    /// A hash mapping the discrete values to continuous (double)
+    @property auto storeHash() const
+    {
+        double[string] hash;
+        double v = 0;
+        foreach(k; this.store()) 
+        {
+            hash[k] = v;
+            ++v;
+        }
+        return hash;
     }
 
     double _min;
@@ -99,6 +125,7 @@ unittest
     gs.put("b");
     assertEqual(gs.store.walkLength, 2);
     assertEqual(gs.store.array, ["b", "a"]);
+    assertEqual(gs.storeHash, ["b":0.0, "a":1.0]);
     assertEqual(gs.min, 0);
     assertEqual(gs.max, 2);
 
@@ -132,6 +159,17 @@ unittest
     // Test named colour is ignored
     gs.put("red");
     assertEqual(gs.store.walkLength, 4);
+
+
+    GuideStore!"" gs2;
+    gs2.put(2);
+    assertEqual(gs2.min, 2);
+    assertEqual(gs2.max, 2);
+
+    GuideStore!"" gs3;
+    gs3.put(-2);
+    assertEqual(gs3.min, -2);
+    assertEqual(gs3.max, -2);
 }
 
 unittest
@@ -151,47 +189,142 @@ unittest
     assertEqual(gs.max, 10.1);
 }
 
+/// A callable struct that translates any value into a double
+struct GuideToDoubleFunction
+{
+    /// Call the function with a value
+    auto opCall(T)(T value)
+    {
+        import std.conv : to;
+        import std.traits : isNumeric;
+        static if (isNumeric!T) {
+            return doubleConvert(value.to!double);
+        } else {
+            return stringConvert(value.to!string);
+        }
+    }
 
-
-/+
-**** New :)
-
-As always we return to a very similar place as where we started. We need a function that add IDs to the Geom. For x and y and size, this adds a tuple with double/string. Guess for numerical we'l only end up storing the min and max values? For colour we also accept anything of type Color.
-
-This can then be passed through (continuous/discrete specific) type and result in a function that is a "guideFunction"
-
-Note the min/max in the resulting guide should replace the bounds in the end.
-
-Still to solve, how do things like barplots work where we need to plot around a discrete value. Still we want to have barplot use the standard functions, so either need a special type that has an offset, or for now we can just use rectangles, where width contains the offset, while the center is on the  discrete values. This would also work for histograms!
-
-****
-
-I think me and my betters have agreed. We start with two different guideOutputRange, discrete and continuous. Discrete converts everything to string and then stores it (in the order it arrived in) as breaks. Continuous just converts everything to double. These should be stored in each Geom
-
-Before plotting, they are fed all the values in the geom chain (geom* functions shouldn't call numericLabel anymore). It derives the min and max value from that. Colourguide will ignore all values in the namedColours, since they are treated different.
-
-Think we need guides for x, y, colour and size. Size will be special in that if range is between certain sizes (0.1 and 10?) do nothing, else limit scale it to be between 0.1 and 10. Probably achieved by setting these values at the start, while others have to derive them?.
-
-Then the we create guideFunctions based on these that when receiving a value return the correct converted value (colour or doulbe (size)). Maybe at some point also pixels for x and y. We need to find out whether these guideFunctions can be templated in some way. Otherwise they must have a isDiscrete -> the draw function convertTo function that says either convert to string or double.
-
-This design might not work for mixed types, but maybe we shouldn't support that anyway... Or allow multiple guides...
-+/
-
-/++
-Support of different guides, i.e. continuous or discrete
-
-T is the type that should always be returned (double for location, 
-U is the "native" type
-F is a special function that overwrites the default conversion. This is for example
-    used in colours to support named colours. It should return a Nullable!T.
-
-For continuous, both U and T should support arithmetic (- and /) operations? (one of them is enough?) aor provide a function that returns a T based on U and two breaks.
-
-Guide(T, U, F) {
-    /// Continuous or discrete
-    string type;
-
-    /// Here we control the scaling between breaks. Each break is equal distance in T
-    U[] breaks
+    /// Function that governs translation from double to double (continuous to continuous)
+    double delegate(double) doubleConvert;
+    /// Function that governs translation from string to double (discrete to continuous)
+    double delegate(string) stringConvert;
 }
-+/
+
+/// A callable struct that translates any value into a colour
+struct GuideToColourFunction
+{
+    /// Call the function with a value
+    auto opCall(T)(T value)
+    {
+        import std.conv : to;
+        import std.traits : isNumeric;
+        static if (isNumeric!T) {
+            return doubleConvert(value.to!double);
+        } else {
+            static if (isColour!T) {
+                import ggplotd.colourspace : RGBA, toColourSpace;
+                return value.toColourSpace!RGBA;
+            } else {
+                static if (is(T==string)) {
+                    if (value in namedColours)
+                        return namedColours[value];
+                    else
+                        return stringConvert(value);
+                } else {
+                    return stringConvert(value.to!string);
+                }
+            }
+        }
+    }
+
+    /// Function that governs translation from double to colour (continuous to colour)
+    RGBA delegate(double) doubleConvert;
+    /// Function that governs translation from string to colour (discrete to colour)
+    RGBA delegate(string) stringConvert;
+    import ggplotd.colourspace : isColour;
+    import ggplotd.colour : namedColours, RGBA;
+}
+
+/// Create an appropiate GuidToDoubleFunction from a GuideStore
+auto guideFunction(string type)(GuideStore!type gs)
+    if (type != "colour")
+{
+    GuideToDoubleFunction gf;
+    static if (type == "size") {
+        gf.doubleConvert = (a) {
+            assert(a >= gs.min() || a <= gs.max(), "Value falls outside of range");
+            if (gs.min() < 0.2 || gs.max() > 5.0) // Limit the size to between these values
+                return 0.2 + a*(5.0 - 0.2)/(gs.max() - gs.min());
+            return a;
+        };
+
+    } else {
+        gf.doubleConvert = (a) {
+            assert(a >= gs.min() || a <= gs.max(), "Value falls outside of range");
+            return a;
+        };
+
+    }
+    immutable storeHash = gs.storeHash;
+
+    gf.stringConvert = (a) {
+        assert(a in storeHash, "Value not in guide");
+        return gf.doubleConvert(storeHash[a]);
+    };
+    return gf;
+}
+
+unittest
+{
+    GuideStore!"" gs;
+    gs.put(["b","a"]);
+    auto gf = guideFunction(gs);
+    assertEqual(gf(0.1), 0.1);
+    assertEqual(gf("a"), 1);
+}
+
+unittest
+{
+    GuideStore!"size" gs;
+    gs.put( [0.3, 4] );
+    auto gf = guideFunction(gs);
+    assertEqual(gf(0.5), 0.5);
+
+    gs.put( [0.0] );
+    auto gf2 = guideFunction(gs);
+    assertEqual(gf2(0.0), 0.2);
+    assertEqual(gf2(4.0), 5.0);
+}
+
+import ggplotd.colour : ColourGradientFunction;
+/// Create an appropiate GuidToColourFunction from a GuideStore
+auto guideFunction(string type)(GuideStore!type gs, ColourGradientFunction colourFunction)
+    if (type == "colour")
+{
+    GuideToColourFunction gc;
+    gc.doubleConvert = (a) {
+        assert(a >= gs.min() || a <= gs.max(), "Value falls outside of range");
+        return colourFunction(a, gs.min(), gs.max());
+    };
+
+    immutable storeHash = gs.storeHash;
+
+    gc.stringConvert = (a) {
+        assert(a in storeHash, "Value not in guide");
+        return gc.doubleConvert(storeHash[a]);
+    };
+    return gc;
+}
+
+unittest
+{
+    import ggplotd.colour : colourGradient, namedColours;
+    import ggplotd.colourspace : HCY, RGBA, toTuple;
+    GuideStore!"colour" gs;
+    gs.put([0.1, 3.0]);
+    auto gf = guideFunction(gs, colourGradient!HCY("blue-red"));
+    assertEqual(gf(0.1).toTuple, namedColours["blue"].toTuple);
+    assertEqual(gf(3.0).toTuple, namedColours["red"].toTuple);
+    assertEqual(gf("green").toTuple, namedColours["green"].toTuple);
+    assertEqual(gf(namedColours["green"]).toTuple, namedColours["green"].toTuple);
+}

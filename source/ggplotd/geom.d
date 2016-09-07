@@ -38,9 +38,9 @@ struct Geom
     ColourID[] colours; 
     import ggplotd.guide : GuideStore;
     GuideStore!"colour" colourStore;
-    GuideStore!"" xStore;
-    GuideStore!"" yStore;
-    GuideStore!"" sizeStore;
+    GuideStore!"x" xStore;
+    GuideStore!"y" yStore;
+    GuideStore!"size" sizeStore;
 
     /// Plot Bounds
     AdaptiveBounds bounds;
