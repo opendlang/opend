@@ -26,6 +26,14 @@ struct Geom
     /// Construct from a tuple
     this(T)( in T tup ) //if (is(T==Tuple))
     {
+        /+ ABC why can't we do the following and remove it from the separate cases? +/
+        import ggplotd.aes : hasAesField;
+        static if (hasAesField!(T, "x"))
+            xStore.put(tup.x);
+        static if (hasAesField!(T, "y"))
+            yStore.put(tup.y);
+        static if (hasAesField!(T, "colour"))
+            colourStore.put(tup.colour);
         mask = tup.mask;
     }
 
@@ -100,35 +108,33 @@ private template geomShape( string shape, AES )
     import std.algorithm : map;
     import ggplotd.aes : numericLabel;
     import ggplotd.range : mergeRange;
-    alias CoordX = typeof(numericLabel(AES.init.map!("a.x")));
-    alias CoordY = typeof(numericLabel(AES.init.map!("a.y")));
     alias CoordType = typeof(DefaultValues
-        .mergeRange(AES.init)
-        .mergeRange(Aes!(CoordX, "x", CoordY, "y").init));
+        .mergeRange(AES.init));
 
     struct VolderMort 
     {
         this(AES aes)
         {
-            import std.algorithm : map;
             import ggplotd.range : mergeRange;
             _aes = DefaultValues
-                .mergeRange(aes)
-                .mergeRange( Aes!(CoordX, "x", CoordY, "y")(
-                    CoordX(aes.map!("a.x")), 
-                    CoordY(aes.map!("a.y"))));
+                .mergeRange(aes);
         }
 
         @property auto front()
         {
+            import ggplotd.guide : GuideToDoubleFunction, GuideToColourFunction;
             immutable tup = _aes.front;
-            immutable f = delegate(cairo.Context context, ColourMap colourMap ) 
-            {
+            immutable f = delegate(cairo.Context context, 
+                 in GuideToDoubleFunction xFunc, in GuideToDoubleFunction yFunc,
+                 in GuideToColourFunction cFunc, in GuideToDoubleFunction sFunc ) {
                 import std.math : isFinite;
-                if (!isFinite(tup.x.to!double) || !isFinite(tup.y.to!double))
+                auto x = xFunc(tup.x);
+                auto y = yFunc(tup.y);
+                auto col = cFunc(tup.colour);
+                if (!isFinite(x) || !isFinite(y))
                     return context;
                 context.save();
-                context.translate( tup.x.to!double, tup.y.to!double );
+                context.translate(x, y);
                 static if (is(typeof(tup.width)==immutable(Pixel)))
                     auto devP = context.deviceToUserDistance(cairo.Point!double( tup.width, tup.height )); //tup.width.to!double, tup.width.to!double ));
                 context.rotate(tup.angle);
@@ -168,31 +174,28 @@ private template geomShape( string shape, AES )
                     context.closePath;
                 }
 
-                auto col = colourMap(ColourID(tup.colour));
                 context.restore();
                 context.fillAndStroke( col, tup.fill, tup.alpha );
                 return context;
             };
 
-            AdaptiveBounds bounds;
-            static if (is(typeof(tup.width)==immutable(Pixel)))
-                bounds.adapt(Point(tup.x[0], tup.y[0]));
-            else
-            {
-                bounds.adapt(Point(tup.x[0]-0.5*tup.width, 
-                            tup.y[0]-0.5*tup.height));
-                bounds.adapt(Point(tup.x[0]+0.5*tup.width,
-                            tup.y[0]+0.5*tup.height));
-            }
-
             auto geom = Geom( tup );
-            static if (!CoordX.numeric)
-                geom.xTickLabels ~= tup.x;
-            static if (!CoordY.numeric)
-                geom.yTickLabels ~= tup.y;
-            geom.draw = f;
-            geom.colours ~= ColourID(tup.colour);
-            geom.bounds = bounds;
+            geom.drawABC = f;
+
+            /+
+ABC
+-            AdaptiveBounds bounds;
+-            static if (is(typeof(tup.width)==immutable(Pixel)))
+-                bounds.adapt(Point(tup.x[0], tup.y[0]));
+-            else
+-            {
+-                bounds.adapt(Point(tup.x[0]-0.5*tup.width,
+-                            tup.y[0]-0.5*tup.height));
+-                bounds.adapt(Point(tup.x[0]+0.5*tup.width,
+-                            tup.y[0]+0.5*tup.height));
+-            }
++/
+
             return geom;
         }
 
@@ -232,11 +235,11 @@ unittest
     // numericLabel!(NumericLabel.map!((a) => a.x)) loses the information whether original
     // range was numerical or not. To keep that information DataID needs third field to carry
     // that information
-    assertEqual( geoms.front.xTickLabels.length, 1 ); 
-    assertEqual( geoms.front.yTickLabels.length, 0 );
-    geoms.popFront;
-    assertEqual( geoms.front.xTickLabels.length, 1 );
-    assertEqual( geoms.front.yTickLabels.length, 0 );
+    // ABC assertEqual( geoms.front.xTickLabels.length, 1 ); 
+    // assertEqual( geoms.front.yTickLabels.length, 0 );
+    // geoms.popFront;
+    // assertEqual( geoms.front.xTickLabels.length, 1 );
+    // assertEqual( geoms.front.yTickLabels.length, 0 );
 }
 
 /**
@@ -356,6 +359,7 @@ auto geomPoint(AES)(AES aes)
     import ggplotd.aes : Aes, Pixel;
     import ggplotd.range : mergeRange;
     auto _aes = DefaultValues.mergeRange(aes);
+    // ABC How can we use our size Store for the Point?
     auto wh = _aes.map!((a) => Pixel((8*a.size).to!int));
     auto filled = _aes.map!((a) => a.alpha);
     auto merged = Aes!(typeof(wh), "width", typeof(wh), "height",
@@ -369,7 +373,6 @@ unittest
 {
     auto aes = Aes!(double[], "x", double[], "y")([1.0], [2.0]);
     auto gl = geomPoint(aes);
-    assertEqual(gl.front.colours[0][1], "black");
     gl.popFront;
     assert(gl.empty);
 }
@@ -433,8 +436,6 @@ template geomLine(AES)
                 geom.yStore.put(tup.y);
             }
             geom.drawABC = f;
-            geom.colourStore.put(groupedAes.front.front.colour);
-            geom.sizeStore.put(1.0); // ABC this is a dummy, can we remove it
             return geom;
         }
 
