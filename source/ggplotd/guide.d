@@ -10,9 +10,11 @@ private struct GuideStore(string type = "")
 {
     import std.range : isInputRange;
     /// Put another GuideStore into the store
-    void put(T)(T gs)
-        if (is(T==GuideStore!(type))) 
+    void put(T)(in GuideStore!T gs)
+        //if (is(T==GuideStore!(type))) 
     {
+        debug import std.format : format;
+        assert(type == T, format("Wrong types %s and %s", type, T));
         _store.put(gs._store);
         import ggplotd.algorithm : safeMin, safeMax;
         _min = safeMin(_min, gs.min);
@@ -20,16 +22,21 @@ private struct GuideStore(string type = "")
     }
 
     /// Add a range of values to the store
-    void put(T)(T range)
+    void put(T)(in T range)
         if (!is(T==string) && isInputRange!T)
     {
         foreach(t; range)
             this.put(t);
     }
 
+    import std.traits : TemplateOf;
     /// Add a value of anytype to the store
-    void put(T)(T value)
-        if (!is(T==GuideStore!(type)) && (is(T==string) || !isInputRange!T))
+    void put(T)(in T value)
+        if (
+            !(__traits(isTemplate,T) &&
+                __traits(isSame, TemplateOf!T, GuideStore)) &&
+            (is(T==string) || !isInputRange!T)
+        )
     {
         import std.conv : to;
         import std.traits : isNumeric;
@@ -60,7 +67,7 @@ private struct GuideStore(string type = "")
     }
 
     /// Minimum value encountered till now
-    double min()
+    double min() const
     {
         import std.math : isNaN;
         import ggplotd.algorithm : safeMin;
@@ -70,7 +77,7 @@ private struct GuideStore(string type = "")
     }
 
     /// Maximum value encountered till now
-    double max()
+    double max() const
     {
         import std.math : isNaN;
         import ggplotd.algorithm : safeMax;
@@ -176,6 +183,7 @@ unittest
 {
     GuideStore!"" gs;
     gs.put(["a", "b", "a"]);
+    import std.array : array;
     import std.range : walkLength;
     assertEqual(gs.store.walkLength, 2);
 
@@ -183,6 +191,7 @@ unittest
     gs2.put(["c", "b", "a"]);
     gs.put(gs2);
     assertEqual(gs.store.walkLength, 3);
+    assertEqual(gs.store.array, ["a","b","c"]);
     gs2.put([10.1,-0.1]);
     gs.put(gs2);
     assertEqual(gs.min, -0.1);
@@ -192,8 +201,8 @@ unittest
 /// A callable struct that translates any value into a double
 struct GuideToDoubleFunction
 {
-    /// Call the function with a value
-    auto opCall(T)(T value)
+    /// Convert the value to double
+    auto convert(T)(in T value) const
     {
         import std.conv : to;
         import std.traits : isNumeric;
@@ -202,6 +211,12 @@ struct GuideToDoubleFunction
         } else {
             return stringConvert(value.to!string);
         }
+    }
+
+    /// Call the function with a value
+    auto opCall(T)(in T value) const
+    {
+        return this.convert!T(value);
     }
 
     /// Function that governs translation from double to double (continuous to continuous)
@@ -214,7 +229,7 @@ struct GuideToDoubleFunction
 struct GuideToColourFunction
 {
     /// Call the function with a value
-    auto opCall(T)(T value)
+    auto opCall(T)(in T value) const
     {
         import std.conv : to;
         import std.traits : isNumeric;
@@ -252,6 +267,9 @@ auto guideFunction(string type)(GuideStore!type gs)
     GuideToDoubleFunction gf;
     static if (type == "size") {
         gf.doubleConvert = (a) {
+            import std.math : isNaN;
+            if (isNaN(a))
+                return a;
             assert(a >= gs.min() || a <= gs.max(), "Value falls outside of range");
             if (gs.min() < 0.2 || gs.max() > 5.0) // Limit the size to between these values
                 return 0.2 + a*(5.0 - 0.2)/(gs.max() - gs.min());
@@ -260,7 +278,11 @@ auto guideFunction(string type)(GuideStore!type gs)
 
     } else {
         gf.doubleConvert = (a) {
-            assert(a >= gs.min() || a <= gs.max(), "Value falls outside of range");
+            import std.math : isNaN;
+            if (isNaN(a))
+                return a;
+            debug import std.format : format;
+            assert(a >= gs.min() || a <= gs.max(), format("Value %s falls outside of range %s-%s", a, gs.min(), gs.max()));
             return a;
         };
 
@@ -281,6 +303,9 @@ unittest
     auto gf = guideFunction(gs);
     assertEqual(gf(0.1), 0.1);
     assertEqual(gf("a"), 1);
+
+    import std.math : isNaN;
+    assert(isNaN(gf(double.init)));
 }
 
 unittest
@@ -310,7 +335,8 @@ auto guideFunction(string type)(GuideStore!type gs, ColourGradientFunction colou
     immutable storeHash = gs.storeHash;
 
     gc.stringConvert = (a) {
-        assert(a in storeHash, "Value not in guide");
+        debug import std.format : format;
+        assert(a in storeHash, format("Value %s not in storeHash %s", a, storeHash));
         return gc.doubleConvert(storeHash[a]);
     };
     return gc;
