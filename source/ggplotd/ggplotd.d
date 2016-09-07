@@ -101,6 +101,8 @@ private auto drawGeom( in Geom geom, ref cairo.Surface surface,
     in ColourMap colourMap, in ScaleType scaleFunction, in Bounds bounds, 
     in Margins margins, int width, int height )
 {
+    if (geom.draw.isNull)
+        return surface;
     cairo.Context context;
     if (geom.mask) {
         auto plotSurface = cairo.Surface.createForRectangle(surface,
@@ -117,6 +119,35 @@ private auto drawGeom( in Geom geom, ref cairo.Surface surface,
         width.to!double - (margins.left+margins.right),
         height.to!double - (margins.top+margins.bottom));
     context = geom.draw(context, colourMap);
+    return surface;
+}
+
+import ggplotd.guide : GuideToDoubleFunction, GuideToColourFunction;
+private auto drawGeom( in Geom geom, ref cairo.Surface surface,
+     in GuideToDoubleFunction xFunc, in GuideToDoubleFunction yFunc,
+     in GuideToColourFunction cFunc, in GuideToDoubleFunction sFunc, 
+     in ScaleType scaleFunction, 
+     in Bounds bounds, 
+     in Margins margins, int width, int height )
+{
+    if (geom.drawABC.isNull)
+        return surface;
+    cairo.Context context;
+    if (geom.mask) {
+        auto plotSurface = cairo.Surface.createForRectangle(surface,
+            cairo.Rectangle!double(margins.left, margins.top,
+            width - (margins.left+margins.right), 
+            height - (margins.top+margins.bottom)));
+        context = cairo.Context(plotSurface);
+    } else {
+        context = cairo.Context(surface);
+        context.translate(margins.left, margins.top);
+    }
+    import std.conv : to;
+    context = scaleFunction(context, bounds,
+        width.to!double - (margins.left+margins.right),
+        height.to!double - (margins.top+margins.bottom));
+    context = geom.drawABC(context, xFunc, yFunc, cFunc, sFunc);
     return surface;
 }
 
@@ -206,14 +237,25 @@ struct GGPlotD
 
         import ggplotd.bounds : AdaptiveBounds;
         import ggplotd.colour : ColourID, createColourMap;
+        import ggplotd.guide : GuideStore;
 
         AdaptiveBounds bounds;
         ColourID[] colourIDs;
         Tuple!(double, string)[] xAxisTicks;
         Tuple!(double, string)[] yAxisTicks;
 
+        GuideStore!"x" xStore;
+        GuideStore!"y" yStore;
+        GuideStore!"colour" colourStore;
+        GuideStore!"size" sizeStore;
+
         foreach (geom; geomRange.data)
         {
+            xStore.put(geom.xStore);
+            yStore.put(geom.yStore);
+            colourStore.put(geom.colourStore);
+            sizeStore.put(geom.sizeStore);
+
             bounds.adapt(geom.bounds);
             colourIDs ~= geom.colours;
             xAxisTicks ~= geom.xTickLabels;
@@ -295,10 +337,18 @@ struct GGPlotD
             plotMargins.right += legends[0].width;
 
         // Plot axis and geomRange
+        import ggplotd.guide : guideFunction;
         foreach (geom; chain(geomRange.data, gR) )
         {
+            // ABC
             surface = geom.drawGeom( surface,
                 colourMap, scale(), bounds, 
+                plotMargins, width, height );
+            surface = geom.drawGeom( surface,
+                guideFunction(xStore), guideFunction(yStore),
+                guideFunction(colourStore, this.colourGradient()),
+                guideFunction(sizeStore),
+                scale(), bounds, 
                 plotMargins, width, height );
         }
 

@@ -47,7 +47,7 @@ private struct HashSet(E) {
         return sorted.map!((a) => a.key);
     }
     
-    auto @property length()
+    auto @property length() const
     {
         return set.length;
     }

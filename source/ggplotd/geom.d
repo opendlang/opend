@@ -21,6 +21,8 @@ version (assert)
 /// Hold the data needed to draw to a plot context
 struct Geom
 {
+    import std.typecons : Nullable;
+
     /// Construct from a tuple
     this(T)( in T tup ) //if (is(T==Tuple))
     {
@@ -32,7 +34,18 @@ struct Geom
         ColourMap colourMap);
 
     /// Function to draw to a cairo context
-    drawFunction draw; 
+    Nullable!drawFunction draw; 
+
+    import ggplotd.guide : GuideToColourFunction, GuideToDoubleFunction;
+    /// Delegate that takes a context and draws to it
+    alias drawFunctionABC = cairo.Context delegate(cairo.Context context, 
+        in GuideToDoubleFunction xFunc, in GuideToDoubleFunction yFunc,
+        in GuideToColourFunction cFunc, in GuideToDoubleFunction sFunc);
+
+    /// Function to draw to a cairo context
+    Nullable!drawFunctionABC drawABC; 
+
+
 
     /// Colours
     ColourID[] colours; 
@@ -378,50 +391,51 @@ template geomLine(AES)
 
         @property auto front()
         {
-            auto xs = numericLabel(groupedAes.front.map!((t) => t.x));
-            auto ys = numericLabel(groupedAes.front.map!((t) => t.y));
-            auto coordsZip = zip(xs, ys);
+            import ggplotd.aes : aes;
+            import ggplotd.guide : GuideToColourFunction, GuideToDoubleFunction;
+            auto coordsZip = groupedAes.front
+                .map!((a) => aes!("x","y")(a.x, a.y));
+
 
             immutable flags = groupedAes.front.front;
             immutable f = delegate(cairo.Context context, 
-                ColourMap colourMap ) {
+                 in GuideToDoubleFunction xFunc, in GuideToDoubleFunction yFunc,
+                 in GuideToColourFunction cFunc, in GuideToDoubleFunction sFunc ) {
 
                 import std.math : isFinite;
                 auto coords = coordsZip.save;
                 auto fr = coords.front;
-                context.moveTo(fr[0][0], fr[1][0]);
+                context.moveTo(xFunc(fr.x), yFunc(fr.y));
                 coords.popFront;
                 foreach (tup; coords)
                 {
+                    auto x = xFunc(tup.x);
+                    auto y = yFunc(tup.y);
                     // TODO should we actually move to next coordinate here?
-                    if (isFinite(tup[0][0]) && isFinite(tup[1][0]))
+                    if (isFinite(x) && isFinite(y))
                     {
-                        context.lineTo(tup[0][0], tup[1][0]);
+                        context.lineTo(x, y);
                         context.lineWidth = 2.0*flags.size;
                     } else {
                         context.newSubPath();
                     }
                 }
 
-                auto col = colourMap(ColourID(flags.colour));
-                import ggplotd.colourspace : RGBA, toCairoRGBA;
+                auto col = cFunc(flags.colour);
                 context.fillAndStroke( col, flags.fill, flags.alpha );
                 return context;
             };
 
-            AdaptiveBounds bounds;
+
             auto geom = Geom(groupedAes.front.front);
             foreach (tup; coordsZip)
             {
-                bounds.adapt(Point(tup[0][0], tup[1][0]));
-                if (!xs.numeric)
-                    geom.xTickLabels ~= tup[0];
-                if (!ys.numeric)
-                    geom.yTickLabels ~= tup[1];
+                geom.xStore.put(tup.x);
+                geom.yStore.put(tup.y);
             }
-            geom.draw = f;
-            geom.colours ~= ColourID(groupedAes.front.front.colour);
-            geom.bounds = bounds;
+            geom.drawABC = f;
+            geom.colourStore.put(groupedAes.front.front.colour);
+            geom.sizeStore.put(1.0);
             return geom;
         }
 
