@@ -10,11 +10,12 @@ private struct GuideStore(string type = "")
 {
     import std.range : isInputRange;
     /// Put another GuideStore into the store
-    void put(T)(in GuideStore!T gs)
-        //if (is(T==GuideStore!(type))) 
+    void put(T)(in T gs)
+        if (is(T==GuideStore!(type))) 
     {
-        debug import std.format : format;
-        assert(type == T, format("Wrong types %s and %s", type, T));
+        import std.stdio : writeln;
+        "Wish I was".writeln;
+
         _store.put(gs._store);
         import ggplotd.algorithm : safeMin, safeMax;
         _min = safeMin(_min, gs.min);
@@ -32,12 +33,12 @@ private struct GuideStore(string type = "")
     import std.traits : TemplateOf;
     /// Add a value of anytype to the store
     void put(T)(in T value)
-        if (
-            !(__traits(isTemplate,T) &&
-                __traits(isSame, TemplateOf!T, GuideStore)) &&
+        if (!is(T==GuideStore!(type)) &&
             (is(T==string) || !isInputRange!T)
         )
     {
+        import std.stdio : writeln;
+        "Apparently here".writeln;
         import std.conv : to;
         import std.traits : isNumeric;
         // For now we can just ignore colour I think
@@ -189,13 +190,30 @@ unittest
 
     GuideStore!"" gs2;
     gs2.put(["c", "b", "a"]);
+    import std.stdio : writeln;
+    "Should do the correct thing".writeln;
     gs.put(gs2);
     assertEqual(gs.store.walkLength, 3);
+    gs.store.writeln;
     assertEqual(gs.store.array, ["a","b","c"]);
     gs2.put([10.1,-0.1]);
     gs.put(gs2);
     assertEqual(gs.min, -0.1);
     assertEqual(gs.max, 10.1);
+
+    GuideStore!"" gs3;
+    gs3.put(["a", "b", "a"]);
+    const(GuideStore!"") cst_gs() {
+        GuideStore!"" gs;
+        gs.put(["c", "b", "a"]);
+        return gs;
+    }
+    "Should do the correct thing".writeln;
+    gs3.put(cst_gs());
+    assertEqual(gs3.store.walkLength, 3);
+    gs3.store.writeln;
+    assertEqual(gs3.store.array, ["a","b","c"]);
+ 
 }
 
 /// A callable struct that translates any value into a double
