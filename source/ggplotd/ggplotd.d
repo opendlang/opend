@@ -105,7 +105,7 @@ private auto drawGeom( in Geom geom, ref cairo.Surface surface,
      in Bounds bounds, 
      in Margins margins, int width, int height )
 {
-    if (geom.drawABC.isNull)
+    if (geom.draw.isNull)
         return surface;
     cairo.Context context;
     if (geom.mask) {
@@ -122,7 +122,7 @@ private auto drawGeom( in Geom geom, ref cairo.Surface surface,
     context = scaleFunction(context, bounds,
         width.to!double - (margins.left+margins.right),
         height.to!double - (margins.top+margins.bottom));
-    context = geom.drawABC(context, xFunc, yFunc, cFunc, sFunc);
+    context = geom.draw(context, xFunc, yFunc, cFunc, sFunc);
     return surface;
 }
 

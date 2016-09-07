@@ -26,7 +26,6 @@ struct Geom
     /// Construct from a tuple
     this(T)( in T tup ) //if (is(T==Tuple))
     {
-        /+ ABC why can't we do the following and remove it from the separate cases? +/
         import ggplotd.aes : hasAesField;
         static if (hasAesField!(T, "x"))
             xStore.put(tup.x);
@@ -39,12 +38,12 @@ struct Geom
 
     import ggplotd.guide : GuideToColourFunction, GuideToDoubleFunction;
     /// Delegate that takes a context and draws to it
-    alias drawFunctionABC = cairo.Context delegate(cairo.Context context, 
+    alias drawFunction = cairo.Context delegate(cairo.Context context, 
         in GuideToDoubleFunction xFunc, in GuideToDoubleFunction yFunc,
         in GuideToColourFunction cFunc, in GuideToDoubleFunction sFunc);
 
     /// Function to draw to a cairo context
-    Nullable!drawFunctionABC drawABC; 
+    Nullable!drawFunction draw; 
 
 
 
@@ -161,7 +160,7 @@ private template geomShape( string shape, AES )
             };
 
             auto geom = Geom( tup );
-            geom.drawABC = f;
+            geom.draw = f;
 
             /+
 ABC
@@ -416,7 +415,7 @@ template geomLine(AES)
                 geom.xStore.put(tup.x);
                 geom.yStore.put(tup.y);
             }
-            geom.drawABC = f;
+            geom.draw = f;
             return geom;
         }
 
@@ -678,7 +677,7 @@ template geomLabel(AES)
             };
 
             auto geom = Geom( tup );
-            geom.drawABC = f;
+            geom.draw = f;
  
             return geom;
         }
@@ -986,7 +985,7 @@ i       */
         return context;
     };
 
-    geom.drawABC = f;
+    geom.draw = f;
     return [geom];
 }
 
