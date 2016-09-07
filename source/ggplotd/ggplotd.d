@@ -262,6 +262,27 @@ struct GGPlotD
             yAxisTicks ~= geom.yTickLabels;
         }
 
+        bounds.adapt(xStore.min(), yStore.min());
+        bounds.adapt(xStore.max(), yStore.max());
+
+        import std.algorithm : map;
+        import std.array : array;
+        import std.typecons : tuple;
+        if (xStore.hasDiscrete)
+            xAxisTicks = xStore
+                .storeHash
+                .byKeyValue()
+                .map!((kv) => tuple(kv.value, kv.key))
+                .array;
+        if (yStore.hasDiscrete)
+            yAxisTicks = yStore
+                .storeHash
+                .byKeyValue()
+                .map!((kv) => tuple(kv.value, kv.key))
+                .array;
+
+ 
+
         auto colourMap = createColourMap( colourIDs, 
                 this.colourGradient() );
 

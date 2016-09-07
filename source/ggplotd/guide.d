@@ -13,9 +13,6 @@ private struct GuideStore(string type = "")
     void put(T)(in T gs)
         if (is(T==GuideStore!(type))) 
     {
-        import std.stdio : writeln;
-        "Wish I was".writeln;
-
         _store.put(gs._store);
         import ggplotd.algorithm : safeMin, safeMax;
         _min = safeMin(_min, gs.min);
@@ -37,8 +34,6 @@ private struct GuideStore(string type = "")
             (is(T==string) || !isInputRange!T)
         )
     {
-        import std.stdio : writeln;
-        "Apparently here".writeln;
         import std.conv : to;
         import std.traits : isNumeric;
         // For now we can just ignore colour I think
@@ -83,7 +78,7 @@ private struct GuideStore(string type = "")
         import std.math : isNaN;
         import ggplotd.algorithm : safeMax;
         if (_store.length > 0 || isNaN(_max))
-            return safeMax(_store.length, _max);
+            return safeMax(safeMax(_store.length - 1.0,0.0), _max);
         return _max;
     }
 
@@ -104,6 +99,12 @@ private struct GuideStore(string type = "")
             ++v;
         }
         return hash;
+    }
+
+    /// True if we encountered discrete values
+    bool hasDiscrete() const
+    {
+        return _store.length > 0;
     }
 
     double _min;
@@ -135,12 +136,12 @@ unittest
     assertEqual(gs.store.array, ["b", "a"]);
     assertEqual(gs.storeHash, ["b":0.0, "a":1.0]);
     assertEqual(gs.min, 0);
-    assertEqual(gs.max, 2);
+    assertEqual(gs.max, 1);
 
     // Numeric -> add as min or max (also test int)
     gs.put(-1);
     assertEqual(gs.min, -1.0);
-    assertEqual(gs.max, 2.0);
+    assertEqual(gs.max, 1.0);
     gs.put(3.0);
     assertEqual(gs.min, -1.0);
     assertEqual(gs.max, 3.0);
@@ -190,11 +191,8 @@ unittest
 
     GuideStore!"" gs2;
     gs2.put(["c", "b", "a"]);
-    import std.stdio : writeln;
-    "Should do the correct thing".writeln;
     gs.put(gs2);
     assertEqual(gs.store.walkLength, 3);
-    gs.store.writeln;
     assertEqual(gs.store.array, ["a","b","c"]);
     gs2.put([10.1,-0.1]);
     gs.put(gs2);
@@ -208,10 +206,8 @@ unittest
         gs.put(["c", "b", "a"]);
         return gs;
     }
-    "Should do the correct thing".writeln;
     gs3.put(cst_gs());
     assertEqual(gs3.store.walkLength, 3);
-    gs3.store.writeln;
     assertEqual(gs3.store.array, ["a","b","c"]);
  
 }

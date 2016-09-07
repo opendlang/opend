@@ -396,7 +396,6 @@ template geomLine(AES)
             auto coordsZip = groupedAes.front
                 .map!((a) => aes!("x","y")(a.x, a.y));
 
-
             immutable flags = groupedAes.front.front;
             immutable f = delegate(cairo.Context context, 
                  in GuideToDoubleFunction xFunc, in GuideToDoubleFunction yFunc,
@@ -435,7 +434,7 @@ template geomLine(AES)
             }
             geom.drawABC = f;
             geom.colourStore.put(groupedAes.front.front.colour);
-            geom.sizeStore.put(1.0);
+            geom.sizeStore.put(1.0); // ABC this is a dummy, can we remove it
             return geom;
         }
 
@@ -469,15 +468,10 @@ unittest
 
     import std.range : empty;
 
-    assert(gl.front.xTickLabels.empty);
-    assert(gl.front.yTickLabels.empty);
-
-    assertEqual(gl.front.colours[0][1], "a");
-    assertEqual(gl.front.bounds.min_x, 1.0);
-    assertEqual(gl.front.bounds.max_x, 1.1);
+    assertEqual(gl.front.xStore.min(), 1.0);
+    assertEqual(gl.front.xStore.max(), 1.1);
     gl.popFront;
-    assertEqual(gl.front.colours[0][1], "b");
-    assertEqual(gl.front.bounds.max_x, 3.0);
+    assertEqual(gl.front.xStore.max(), 3.0);
     gl.popFront;
     assert(gl.empty);
 }
@@ -488,8 +482,8 @@ unittest
         "b", "c", "b"], ["a", "b", "b", "a"], ["b", "b", "b", "b"]);
 
     auto gl = geomLine(aes);
-    assertEqual(gl.front.xTickLabels.length, 4);
-    assertEqual(gl.front.yTickLabels.length, 4);
+    //ABC (should replace other test) assertEqual(gl.front.xTickLabels.length, 4);
+    //assertEqual(gl.front.yTickLabels.length, 4);
 }
 
 unittest
