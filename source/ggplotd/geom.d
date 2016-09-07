@@ -37,13 +37,6 @@ struct Geom
         mask = tup.mask;
     }
 
-    /// Delegate that takes a context and draws to it
-    alias drawFunction = cairo.Context delegate(cairo.Context context, 
-        ColourMap colourMap);
-
-    /// Function to draw to a cairo context
-    Nullable!drawFunction draw; 
-
     import ggplotd.guide : GuideToColourFunction, GuideToDoubleFunction;
     /// Delegate that takes a context and draws to it
     alias drawFunctionABC = cairo.Context delegate(cairo.Context context, 
@@ -55,26 +48,14 @@ struct Geom
 
 
 
-    /// Colours
-    ColourID[] colours; 
     import ggplotd.guide : GuideStore;
     GuideStore!"colour" colourStore;
     GuideStore!"x" xStore;
     GuideStore!"y" yStore;
     GuideStore!"size" sizeStore;
 
-    /// Plot Bounds
-    AdaptiveBounds bounds;
-
     /// Whether to mask/prevent drawing outside plotting area
     bool mask = true; 
-
-    import std.typecons : Tuple;
-
-    /// Labels for xaxis ticks
-    Tuple!(double, string)[] xTickLabels; 
-    /// Labels for yaxis ticks
-    Tuple!(double, string)[] yTickLabels;
 }
 
 import ggplotd.colourspace : RGBA;
@@ -795,14 +776,12 @@ auto geomBox(AES)(AES aes)
     }
     
     double delta = 0.2;
-    Tuple!(double, string)[] xTickLabels;
 
     foreach( grouped; myAes.group().filter!((a) => a.walkLength > 3) )
     {
         auto lims = grouped.map!("a.x")
             .array.limits( [0.1,0.25,0.5,0.75,0.9] ).array;
         auto x = grouped.front.label[0];
-        xTickLabels ~= grouped.front.label;
         // TODO this should be some kind of loop
         result.put(
             geomLine( [
@@ -839,16 +818,6 @@ auto geomBox(AES)(AES aes)
         );
     }
 
-    import std.algorithm : sort;
-    xTickLabels = xTickLabels.sort!((a,b) => a[0] < b[0]).array;
-
-    foreach( ref g; result.data )
-    {
-        g.xTickLabels = xTickLabels;
-        g.bounds.min_x = xTickLabels.front[0] - 0.5;
-        g.bounds.max_x = xTickLabels[$-1][0] + 0.5;
-    }
-
     return result.data;
 }
 
@@ -865,7 +834,7 @@ unittest
         double[], "fill", typeof(cols), "label" )( 
             xs, cols, 0.45.repeat(xs.length).array, cols);
     auto gb = geomBox( aes );
-    assertEqual( gb.front.bounds.min_x, -0.5 );
+    //ABC assertEqual( gb.front.bounds.min_x, -0.5 );
 }
 
 unittest 
@@ -881,7 +850,7 @@ unittest
         double[], "fill", typeof(ys), "y" )( 
             xs, cols, 0.45.repeat(xs.length).array, ys);
     auto gb = geomBox( aes );
-    assertEqual( gb.front.bounds.min_x, 1.5 );
+    // ABC assertEqual( gb.front.bounds.min_x, 1.5 );
 }
 
 unittest 
@@ -913,7 +882,7 @@ unittest
         double[], "fill")( 
             xs, cols, 0.45.repeat(xs.length).array);
     auto gb = geomBox( aes );
-    assertEqual( gb.front.bounds.min_x, -0.5 );
+    //ABC assertEqual( gb.front.bounds.min_x, -0.5 );
 }
 
 /// Draw a polygon 

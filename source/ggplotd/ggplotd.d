@@ -97,31 +97,6 @@ private auto drawTitle( in Title title, ref cairo.Surface surface,
 }
 
 import ggplotd.scale : ScaleType;
-private auto drawGeom( in Geom geom, ref cairo.Surface surface,
-    in ColourMap colourMap, in ScaleType scaleFunction, in Bounds bounds, 
-    in Margins margins, int width, int height )
-{
-    if (geom.draw.isNull)
-        return surface;
-    cairo.Context context;
-    if (geom.mask) {
-        auto plotSurface = cairo.Surface.createForRectangle(surface,
-            cairo.Rectangle!double(margins.left, margins.top,
-            width - (margins.left+margins.right), 
-            height - (margins.top+margins.bottom)));
-        context = cairo.Context(plotSurface);
-    } else {
-        context = cairo.Context(surface);
-        context.translate(margins.left, margins.top);
-    }
-    import std.conv : to;
-    context = scaleFunction(context, bounds,
-        width.to!double - (margins.left+margins.right),
-        height.to!double - (margins.top+margins.bottom));
-    context = geom.draw(context, colourMap);
-    return surface;
-}
-
 import ggplotd.guide : GuideToDoubleFunction, GuideToColourFunction;
 private auto drawGeom( in Geom geom, ref cairo.Surface surface,
      in GuideToDoubleFunction xFunc, in GuideToDoubleFunction yFunc,
@@ -239,8 +214,6 @@ struct GGPlotD
         import ggplotd.colour : ColourID, createColourMap;
         import ggplotd.guide : GuideStore;
 
-        AdaptiveBounds bounds;
-        ColourID[] colourIDs;
         Tuple!(double, string)[] xAxisTicks;
         Tuple!(double, string)[] yAxisTicks;
 
@@ -255,13 +228,9 @@ struct GGPlotD
             yStore.put(geom.yStore);
             colourStore.put(geom.colourStore);
             sizeStore.put(geom.sizeStore);
-
-            bounds.adapt(geom.bounds);
-            colourIDs ~= geom.colours;
-            xAxisTicks ~= geom.xTickLabels;
-            yAxisTicks ~= geom.yTickLabels;
         }
 
+        AdaptiveBounds bounds;
         bounds.adapt(xStore.min(), yStore.min());
         bounds.adapt(xStore.max(), yStore.max());
 
@@ -280,11 +249,6 @@ struct GGPlotD
                 .byKeyValue()
                 .map!((kv) => tuple(kv.value, kv.key))
                 .array;
-
- 
-
-        auto colourMap = createColourMap( colourIDs, 
-                this.colourGradient() );
 
         // Axis
         import std.algorithm : sort, uniq, min, max;
@@ -359,16 +323,15 @@ struct GGPlotD
 
         // Plot axis and geomRange
         import ggplotd.guide : guideFunction;
+        auto xFunc = guideFunction(xStore);
+        auto yFunc = guideFunction(yStore);
+        auto cFunc = guideFunction(colourStore, this.colourGradient());
+        auto sFunc = guideFunction(sizeStore);
+
         foreach (geom; chain(geomRange.data, gR) )
         {
-            // ABC
             surface = geom.drawGeom( surface,
-                colourMap, scale(), bounds, 
-                plotMargins, width, height );
-            surface = geom.drawGeom( surface,
-                guideFunction(xStore), guideFunction(yStore),
-                guideFunction(colourStore, this.colourGradient()),
-                guideFunction(sizeStore),
+                xFunc, yFunc, cFunc, sFunc,
                 scale(), bounds, 
                 plotMargins, width, height );
         }
@@ -388,7 +351,7 @@ struct GGPlotD
                     y, legend.width, legend.height ));//margins.right, margins.right));
                 legendSurface = drawContinuousLegend( legendSurface, 
                 legend.width, legend.height, 
-                    colourIDs, this.colourGradient );
+                    colourStore, this.colourGradient );
             } else if (legend.type == "discrete") {
                 import ggplotd.legend : drawDiscreteLegend; 
                 auto legendSurface = cairo.Surface.createForRectangle(surface,
@@ -396,7 +359,7 @@ struct GGPlotD
                     y, legend.width, legend.height ));//margins.right, margins.right));
                 legendSurface = drawDiscreteLegend( legendSurface, 
                 legend.width, legend.height, 
-                    colourIDs, this.colourGradient );
+                    colourStore, this.colourGradient );
             }
         }
 

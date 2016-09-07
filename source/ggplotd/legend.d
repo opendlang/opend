@@ -39,7 +39,7 @@ auto discreteLegend(int width = 80, int height = 70)
 /// Draw a legend for a continuous value to the given surface
 auto drawContinuousLegend(CR, CG)
     (ref cairo.Surface surface, int width, int height,
-        CR colourRange, CG colourGradient )
+        CR colourStore, CG colourGradient )
 {
     import std.algorithm : reduce;
     import std.typecons : tuple;
@@ -55,13 +55,10 @@ auto drawContinuousLegend(CR, CG)
     gg.put(Margins(15, 0, 0, 0));
     gg.put( colourGradient );
 
-    auto minmax = reduce!((a,b) => safeMin(a, b.to!double),
-        (a,b) => safeMax(a, b.to!double))(tuple(.0,.0), colourRange);
-
-    auto aes = Aes!( double[], "x", double[], "y", typeof(minmax[0].init)[], "colour" )
+    auto aes = Aes!( double[], "x", double[], "y", double[], "colour" )
         ( [0.0,0,1,1], 
-            [minmax[0], minmax[1], minmax[1], minmax[0]], 
-            [minmax[0], minmax[1], minmax[1], minmax[0]] );
+            [colourStore.min(), colourStore.max(), colourStore.max(), colourStore.min()], 
+            [colourStore.min(), colourStore.max(), colourStore.max(), colourStore.min()]);
     gg.put( geomPolygon(aes) );
     gg.put( xaxisShow(false) );
     
@@ -72,7 +69,7 @@ auto drawContinuousLegend(CR, CG)
 /// Draw a legend for a discrete value to the given surface
 auto drawDiscreteLegend(CR, CG)
     (ref cairo.Surface surface, int width, int height,
-        CR colourRange, CG colourGradient )
+        CR colourStore, CG colourGradient )
 {
     import std.algorithm : map;
     import std.array : array;
@@ -93,7 +90,7 @@ auto drawDiscreteLegend(CR, CG)
     gg.put(colourGradient);
 
     //auto ys = colourRange.uniquer.map!((a) => a.to!double);
-    auto cols = colourRange.uniquer.map!((a) => a.to!string).array;
+    auto cols = colourStore.store;
     auto xs = (1.0).repeat(cols.walkLength);
     auto dims = (0.8).repeat(cols.walkLength);
     auto aes = Aes!( typeof(xs), "x", typeof(cols), "y", 
