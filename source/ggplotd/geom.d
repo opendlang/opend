@@ -919,6 +919,7 @@ unittest
 /// Draw a polygon 
 auto geomPolygon(AES)(AES aes)
 {
+    // TODO would be nice to allow grouping of triangles
     import std.array : array;
     import std.algorithm : map, swap;
     import std.conv : to;
@@ -926,43 +927,49 @@ auto geomPolygon(AES)(AES aes)
     import ggplotd.range : mergeRange;
 
     auto merged = DefaultValues.mergeRange(aes);
-    // Turn into vertices.
-    static if (is(typeof(merged.front.colour)==ColourID))
-        auto vertices = merged.map!( (t) => Vertex3D( t.x.to!double, t.y.to!double, 
-                    t.colour[0] ) );
-    else
-        auto vertices = merged.map!( (t) => Vertex3D( t.x.to!double, t.y.to!double, 
-                    t.colour.to!double ) );
-
-    // Find lowest, highest
-    auto triangle = vertices.array;
-    if (triangle[1].z < triangle[0].z)
-        swap( triangle[1], triangle[0] );
-    if (triangle[2].z < triangle[0].z)
-        swap( triangle[2], triangle[0] );
-    if (triangle[1].z > triangle[2].z)
-        swap( triangle[1], triangle[2] );
-
-    if (triangle.length > 3)
-        foreach( v; triangle[3..$] )
-        {
-            if (v.z < triangle[0].z)
-                swap( triangle[0], v );
-            else if ( v.z > triangle[2].z )
-                swap( triangle[2], v );
-        }
-    auto gV = gradientVector( triangle[0..3] );
 
     immutable flags = merged.front;
 
     auto geom = Geom( flags );
 
-    foreach( v; vertices )
-        geom.bounds.adapt(Point(v.x, v.y));
-
-    // Define drawFunction
-    immutable f = delegate(cairo.Context context, ColourMap colourMap ) 
+    foreach(tup; merged)
     {
+        geom.xStore.put(tup.x);
+        geom.yStore.put(tup.y);
+        geom.colourStore.put(tup.colour);
+    }
+
+    import ggplotd.guide : GuideToDoubleFunction, GuideToColourFunction;
+    // Define drawFunction
+    immutable f = delegate(cairo.Context context, 
+         in GuideToDoubleFunction xFunc, in GuideToDoubleFunction yFunc,
+         in GuideToColourFunction cFunc, in GuideToDoubleFunction sFunc ) 
+    {
+        // Turn into vertices.
+        auto vertices = merged.map!((t) => Vertex3D( xFunc(t.x), yFunc(t.y), 
+            cFunc.toDouble(t.colour)));
+
+            // Find lowest, highest
+        auto triangle = vertices.array;
+        if (triangle[1].z < triangle[0].z)
+            swap( triangle[1], triangle[0] );
+        if (triangle[2].z < triangle[0].z)
+            swap( triangle[2], triangle[0] );
+        if (triangle[1].z > triangle[2].z)
+            swap( triangle[1], triangle[2] );
+
+        if (triangle.length > 3) 
+        { 
+            foreach( v; triangle[3..$] )
+            {
+                if (v.z < triangle[0].z)
+                    swap( triangle[0], v );
+                else if ( v.z > triangle[2].z )
+                    swap( triangle[2], v );
+            }
+        }
+        auto gV = gradientVector( triangle[0..3] );
+
         auto gradient = new cairo.LinearGradient( gV[0].x, gV[0].y, 
             gV[1].x, gV[1].y );
 
@@ -983,8 +990,7 @@ auto geomPolygon(AES)(AES aes)
             Ideally we would see how cairo does their colourgradient and implement the same
             for other colourspaces.
 i       */
-        auto no_stops = 10.0;
-        import std.range : iota;
+        auto no_stops = 10.0; import std.range : iota;
         import std.array : array;
         auto stepsize = (gV[1].z - gV[0].z)/no_stops;
         auto steps = [gV[0].z, gV[1].z];
@@ -992,7 +998,7 @@ i       */
             steps = iota(gV[0].z, gV[1].z, stepsize).array ~ gV[1].z;
 
         foreach(i, z; steps) {
-            auto col = colourMap(ColourID(z));
+            auto col = cFunc(z);
             import ggplotd.colourspace : RGBA, toCairoRGBA;
             gradient.addColorStopRGBA(i/(steps.length-1.0),
                 RGBA(col.r, col.g, col.b, flags.alpha).toCairoRGBA
@@ -1011,10 +1017,7 @@ i       */
         return context;
     };
 
-    geom.draw = f;
-
-    geom.colours = merged.map!((t) => ColourID(t.colour)).array;
-
+    geom.drawABC = f;
     return [geom];
 }
 

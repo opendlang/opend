@@ -266,10 +266,23 @@ struct GuideToColourFunction
         }
     }
 
+    auto toDouble(T)(in T value) const
+    {
+        import std.conv : to;
+        import std.traits : isNumeric;
+        if (isNumeric!T)
+            return value.to!double;
+        else
+            return stringToDoubleConvert(value.to!string);
+    }
+
     /// Function that governs translation from double to colour (continuous to colour)
     RGBA delegate(double) doubleConvert;
     /// Function that governs translation from string to colour (discrete to colour)
     RGBA delegate(string) stringConvert;
+
+    /// Function that governs translation from string to double (discrete to continuous)
+    double delegate(string) stringToDoubleConvert;
     import ggplotd.colourspace : isColour;
     import ggplotd.colour : namedColours, RGBA;
 }
@@ -342,16 +355,27 @@ auto guideFunction(string type)(GuideStore!type gs, ColourGradientFunction colou
 {
     GuideToColourFunction gc;
     gc.doubleConvert = (a) {
+        import std.math : isNaN;
+        if (isNaN(a)) {
+            import ggplotd.colourspace : RGBA;
+            return RGBA(0,0,0,0);
+        }
         assert(a >= gs.min() || a <= gs.max(), "Value falls outside of range");
         return colourFunction(a, gs.min(), gs.max());
     };
 
     immutable storeHash = gs.storeHash;
 
+    gc.stringToDoubleConvert = (a) {
+        debug import std.format : format;
+        assert(a in storeHash, format("Value %s not in storeHash %s", a, storeHash));
+        return storeHash[a];
+    };
+
     gc.stringConvert = (a) {
         debug import std.format : format;
         assert(a in storeHash, format("Value %s not in storeHash %s", a, storeHash));
-        return gc.doubleConvert(storeHash[a]);
+        return gc.doubleConvert(gc.stringToDoubleConvert(a));
     };
     return gc;
 }
@@ -367,4 +391,5 @@ unittest
     assertEqual(gf(3.0).toTuple, namedColours["red"].toTuple);
     assertEqual(gf("green").toTuple, namedColours["green"].toTuple);
     assertEqual(gf(namedColours["green"]).toTuple, namedColours["green"].toTuple);
+    assertEqual(gf(double.init).toTuple, namedColours["none"].toTuple);
 }
