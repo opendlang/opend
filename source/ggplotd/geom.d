@@ -636,12 +636,9 @@ template geomLabel(AES)
     import std.typecons : Tuple;
     import ggplotd.aes : numericLabel;
     import ggplotd.range : mergeRange;
-    alias CoordX = typeof(numericLabel(AES.init.map!("a.x")));
-    alias CoordY = typeof(numericLabel(AES.init.map!("a.y")));
     alias CoordType = typeof(DefaultValues
         .merge(Tuple!(string, "justify").init)
-        .mergeRange(AES.init)
-        .mergeRange(Aes!(CoordX, "x", CoordY, "y").init));
+        .mergeRange(AES.init));
 
     struct VolderMort
     {
@@ -652,21 +649,24 @@ template geomLabel(AES)
 
             _aes = DefaultValues
                 .merge(Tuple!(string, "justify")("center"))
-                .mergeRange(aes)
-                .mergeRange( Aes!(CoordX, "x", CoordY, "y")(
-                    CoordX(aes.map!("a.x")), 
-                    CoordY(aes.map!("a.y"))));
+                .mergeRange(aes);
         }
 
         @property auto front()
         {
+            import ggplotd.guide : GuideToDoubleFunction, GuideToColourFunction;
             immutable tup = _aes.front;
-            immutable f = delegate(cairo.Context context, ColourMap colourMap) {
+            immutable f = delegate(cairo.Context context, 
+                 in GuideToDoubleFunction xFunc, in GuideToDoubleFunction yFunc,
+                 in GuideToColourFunction cFunc, in GuideToDoubleFunction sFunc ) {
+                auto x = xFunc(tup.x);
+                auto y = yFunc(tup.y);
+                auto col = cFunc(tup.colour);
                 import std.math : ceil, isFinite;
-                if (!isFinite(tup.x[0]) || !isFinite(tup.y[0]))
+                if (!isFinite(x) || !isFinite(y))
                     return context;
                 context.setFontSize(ceil(14.0*tup.size));
-                context.moveTo(tup.x[0], tup.y[0]);
+                context.moveTo(x, y);
                 context.save();
                 context.identityMatrix;
                 context.rotate(tup.angle);
@@ -684,7 +684,6 @@ template geomLabel(AES)
                 else
                     context.relMoveTo(-0.5*textSize.x, 0.5*textSize.y);
 
-                auto col = colourMap(ColourID(tup.colour));
                 import ggplotd.colourspace : RGBA, toCairoRGBA;
 
                 context.setSourceRGBA(
@@ -697,13 +696,8 @@ template geomLabel(AES)
                 return context;
             };
 
-            AdaptiveBounds bounds;
-            bounds.adapt(Point(tup.x[0], tup.y[0]));
-
             auto geom = Geom( tup );
-            geom.draw = f;
-            geom.colours ~= ColourID(tup.colour);
-            geom.bounds = bounds;
+            geom.drawABC = f;
  
             return geom;
         }
