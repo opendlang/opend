@@ -2,7 +2,7 @@ module ggplotd.legend;
 
 import cairo = cairo;
 
-import ggplotd.colour : ColourIDRange, ColourGradient;
+import ggplotd.colour : ColourGradient;
 
 private struct Legend
 {

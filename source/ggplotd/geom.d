@@ -6,7 +6,6 @@ import cairo = cairo.cairo;
 
 import ggplotd.bounds;
 import ggplotd.aes;
-import ggplotd.colour : ColourID, ColourMap;
 
 version (unittest)
 {

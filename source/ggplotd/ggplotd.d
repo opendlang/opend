@@ -211,7 +211,6 @@ struct GGPlotD
         import std.typecons : Tuple;
 
         import ggplotd.bounds : AdaptiveBounds;
-        import ggplotd.colour : ColourID, createColourMap;
         import ggplotd.guide : GuideStore;
 
         Tuple!(double, string)[] xAxisTicks;
