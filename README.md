@@ -178,9 +178,9 @@ ggplotd. This mapping can be done using the
 map existing variable names to `x`, `y` etc. Of course if your data already
 uses these variable names then this is not needed. Another useful function here
 is [`merge`](http://blackedder.github.io/ggplotd/ggplotd/aes/merge.html), which
-can be used to merge new/different mappings as in the following example:
+can be used to merge new/different mappings as in the following examples:
 
-```
+```D
 void main() 
 {
     import ggplotd.aes : aes, merge;
@@ -234,7 +234,7 @@ adapt it than to start from scrap.
 
 The [stat* functions](http://blackedder.github.io/ggplotd/ggplotd/stat.html)
 are meant to calculate different statistics from data. The results should
-be an Aes that can be passed to a geom* function and plotted. There are
+be an range of aesthetic mappings that can be passed to a geom* function and plotted. There are
 a variety of existing functions (statHist, statDensity, statFunction
 [etc.](http://blackedder.github.io/ggplotd/ggplotd/stat.html)). Of course
 if you have written your own then you are encouraged to open a issue/pull
@@ -244,7 +244,7 @@ statFunction, which makes it straightforward to draw different functions.
 
 ![Function](http://blackedder.github.io/ggplotd/images/function.png)
 
-The goal of each stat* funtion should be to return an Aes that can be
+The goal of each stat* funtion should be to return an aesRange that can be
 drawn with a variety of different geom* functions. Still in many cases the
 results can only really be drawn in one way. In that case it might make
 sense to design your function in a way that is drawable by
