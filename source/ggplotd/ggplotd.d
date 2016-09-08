@@ -259,11 +259,11 @@ struct GGPlotD
 
         // TODO move this out of here and add some tests
         // If ticks are provided then we make sure the bounds include them
-        auto sortedTicks = xAxisTicks.sort().uniq.array;
-        if (!sortedTicks.empty)
+        auto xSortedTicks = xAxisTicks.sort().uniq.array;
+        if (!xSortedTicks.empty)
         {
-            bounds.min_x = min( bounds.min_x, sortedTicks[0][0] );
-            bounds.max_x = max( bounds.max_x, sortedTicks[$-1][0] );
+            bounds.min_x = min( bounds.min_x, xSortedTicks[0][0] );
+            bounds.max_x = max( bounds.max_x, xSortedTicks[$-1][0] );
         }
         if (initialized(xaxis))
         {
@@ -272,11 +272,11 @@ struct GGPlotD
         }
 
         // This needs to happen before the offset of x axis is set
-        sortedTicks = yAxisTicks.sort().uniq.array;
-        if (!sortedTicks.empty)
+        auto ySortedTicks = yAxisTicks.sort().uniq.array;
+        if (!ySortedTicks.empty)
         {
-            bounds.min_y = min( bounds.min_y, sortedTicks[0][0] );
-            bounds.max_y = max( bounds.max_y, sortedTicks[$-1][0] );
+            bounds.min_y = min( bounds.min_y, ySortedTicks[0][0] );
+            bounds.max_y = max( bounds.max_y, ySortedTicks[$-1][0] );
         }
         if (initialized(yaxis))
         {
@@ -294,7 +294,7 @@ struct GGPlotD
         // TODO: Should really take separate scaling for number of ticks (defaultScaling(width)) 
         // and for font: defaultScaling(widht, height)
         auto aesX = axisAes("x", bounds.min_x, bounds.max_x, offset, defaultScaling(width, height),
-            sortedTicks );
+            xSortedTicks );
 
         offset = bounds.min_x;
         if (!isNaN(yaxis.offset))
@@ -302,7 +302,7 @@ struct GGPlotD
         if (!yaxis.show) // Trixk to draw the axis off screen if it is hidden
             offset = xaxis.min - bounds.width;
         auto aesY = axisAes("y", bounds.min_y, bounds.max_y, offset, defaultScaling(height, width),
-            sortedTicks );
+            ySortedTicks );
 
         import ggplotd.geom : geomAxis;
         import ggplotd.axes : tickLength;

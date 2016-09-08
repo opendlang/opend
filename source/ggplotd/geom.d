@@ -162,19 +162,16 @@ private template geomShape( string shape, AES )
             auto geom = Geom( tup );
             geom.draw = f;
 
-            /+
-ABC
--            AdaptiveBounds bounds;
--            static if (is(typeof(tup.width)==immutable(Pixel)))
--                bounds.adapt(Point(tup.x[0], tup.y[0]));
--            else
--            {
--                bounds.adapt(Point(tup.x[0]-0.5*tup.width,
--                            tup.y[0]-0.5*tup.height));
--                bounds.adapt(Point(tup.x[0]+0.5*tup.width,
--                            tup.y[0]+0.5*tup.height));
--            }
-+/
+            static if (!is(typeof(tup.width)==immutable(Pixel))) 
+            {
+                geom.xStore.put(tup.x, 0.5*tup.width);
+                geom.xStore.put(tup.x, -0.5*tup.width);
+            }
+            static if (!is(typeof(tup.height)==immutable(Pixel))) 
+            {
+                geom.yStore.put(tup.y, 0.5*tup.height);
+                geom.yStore.put(tup.y, -0.5*tup.height);
+            }
 
             return geom;
         }
@@ -745,32 +742,28 @@ unittest
 }
 
 /// Draw a boxplot. The "x" data is used. If labels are given then the data is grouped by the label
-auto geomBox(AES)(AES aes)
+auto geomBox(AES)(AES aesRange)
 {
     import std.algorithm : filter, map;
     import std.array : array;
-    import std.range : Appender, walkLength;
+    import std.range : Appender, walkLength, ElementType;
     import std.typecons : Tuple;
+    import ggplotd.aes : aes, hasAesField;
     import ggplotd.range : mergeRange;
 
     Appender!(Geom[]) result;
 
     // If has y, use that
-    immutable fr = aes.front;
-    static if (__traits(hasMember, fr, "y"))
+    static if (hasAesField!(ElementType!AES, "y"))
     {
-        auto labels = numericLabel( aes.map!("a.y") );
-        auto myAes = aes.mergeRange( Aes!(typeof(labels), "label")( labels ) );
+        auto myAes = aesRange.map!((a) => a.merge(aes!("label")(a.y)));
     } else {
-        static if (__traits(hasMember, fr, "label"))
+        static if (!hasAesField!(ElementType!AES, "label"))
         {
-            // esle If has label, use that
-            auto labels = numericLabel( aes.map!("a.label.to!string") );
-            auto myAes = aes.mergeRange( Aes!(typeof(labels), "label")( labels ) );
-        } else {
             import std.range : repeat, walkLength;
-            auto labels = numericLabel( repeat("a", aes.walkLength) );
-            auto myAes = aes.mergeRange( Aes!(typeof(labels), "label")( labels ) );
+            auto myAes = aesRange.map!((a) => a.merge(aes!("label")(0.0)));
+        } else {
+            auto myAes = aesRange;
         }
     }
     
@@ -778,43 +771,28 @@ auto geomBox(AES)(AES aes)
 
     foreach( grouped; myAes.group().filter!((a) => a.walkLength > 3) )
     {
-        auto lims = grouped.map!("a.x")
+        auto lims = grouped.map!("a.x.to!double")
             .array.limits( [0.1,0.25,0.5,0.75,0.9] ).array;
-        auto x = grouped.front.label[0];
+        auto x = grouped.front.label;
         // TODO this should be some kind of loop
         result.put(
-            geomLine( [
-                grouped.front.merge(Tuple!(double, "x", double, "y" )( 
-                    x, lims[0] )),
-                grouped.front.merge(Tuple!(double, "x", double, "y" )( 
-                    x, lims[1] )),
-                grouped.front.merge(Tuple!(double, "x", double, "y" )( 
-                    x+delta, lims[1] )),
-                grouped.front.merge(Tuple!(double, "x", double, "y" )( 
-                    x+delta, lims[2] )),
-                grouped.front.merge(Tuple!(double, "x", double, "y" )( 
-                    x-delta, lims[2] )),
-                grouped.front.merge(Tuple!(double, "x", double, "y" )( 
-                    x-delta, lims[3] )),
-                grouped.front.merge(Tuple!(double, "x", double, "y" )( 
-                    x, lims[3] )),
-                grouped.front.merge(Tuple!(double, "x", double, "y" )( 
-                    x, lims[4] )),
-
-                grouped.front.merge(Tuple!(double, "x", double, "y" )( 
-                    x, lims[3] )),
-                grouped.front.merge(Tuple!(double, "x", double, "y" )( 
-                    x+delta, lims[3] )),
-                grouped.front.merge(Tuple!(double, "x", double, "y" )( 
-                    x+delta, lims[2] )),
-                grouped.front.merge(Tuple!(double, "x", double, "y" )( 
-                    x-delta, lims[2] )),
-                grouped.front.merge(Tuple!(double, "x", double, "y" )( 
-                    x-delta, lims[1] )),
-                grouped.front.merge(Tuple!(double, "x", double, "y" )( 
-                    x, lims[1] ))
-             ] )
+            [grouped.front.merge(aes!("x", "y", "width", "height")
+                (x, (lims[2]+lims[1])/2.0, 2*delta, lims[2]-lims[1])),
+             grouped.front.merge(aes!("x", "y", "width", "height")
+                (x, (lims[3]+lims[2])/2.0, 2*delta, lims[3]-lims[2]))
+            ].geomRectangle
         );
+
+        result.put(
+            [grouped.front.merge(aes!("x", "y")(x,lims[0])),
+                grouped.front.merge(aes!("x", "y")(x,lims[1]))].geomLine);
+        result.put(
+            [grouped.front.merge(aes!("x", "y")(x,lims[3])),
+                grouped.front.merge(aes!("x", "y")(x,lims[4]))].geomLine);
+
+        // Increase plot bounds
+        result.data.front.xStore.put(x, 2*delta);
+        result.data.front.xStore.put(x, -2*delta);
     }
 
     return result.data;

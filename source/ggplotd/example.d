@@ -8,6 +8,7 @@ module example;
 version (unittest)
 
 import dunit.toolkit;
+import std.stdio : writeln;
 
 ///
 unittest

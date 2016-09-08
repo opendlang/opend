@@ -5,6 +5,107 @@ version (unittest)
     import dunit.toolkit;
 }
 
+private struct DiscreteStoreWithOffset
+{
+    import std.typecons : Tuple, tuple;
+    size_t[string] store;
+    Tuple!(double, double)[] offsets;
+
+    bool put(in DiscreteStoreWithOffset ds)
+    {
+        bool added = false;
+        foreach(el, offset1, offset2; ds.data) 
+        {
+            if (this.put(el, offset1))
+                added = true;
+            if (this.put(el, offset2))
+                added = true;
+        }
+        return added;
+    }
+
+    bool put(string el, double offset = 0)
+    {
+        import ggplotd.algorithm : safeMin, safeMax;
+        if (el !in store)
+        {
+            store[el] = store.length;
+            offsets ~= tuple(offset, offset);
+            _min = safeMin(store.length - 1 + offset, _min);
+            _max = safeMax(store.length - 1 + offset, _max);
+            return true;
+        } else {
+            auto id = store[el];
+            offsets[id] = tuple(safeMin(offsets[id][0], offset),
+                safeMax(offsets[id][1], offset));
+            _min = safeMin(id + offsets[id][0], _min);
+            _max = safeMax(id + offsets[id][1], _max);
+        }
+        return false;
+    }
+
+    double min() const
+    {
+        if (store.length == 0)
+            return 0;
+        return _min;
+    }
+
+    double max() const
+    {
+        if (store.length == 0)
+            return 0;
+        return _max;
+    }
+
+    auto data() const
+    {
+        import std.array : array;
+        import std.algorithm : map, sort;
+        auto kv = store.byKeyValue().array;
+        auto sorted = kv.sort!((a, b) => a.value < b.value);
+        return sorted.map!((a) => tuple(a.key, offsets[a.value][0], offsets[a.value][1]));
+    }
+
+    auto length() const
+    {
+        return offsets.length;
+    }
+
+    double _min;
+    double _max;
+}
+
+unittest
+{
+    DiscreteStoreWithOffset ds;
+    assertEqual(ds.min(), 0);
+    assertEqual(ds.max(), 0);
+
+    ds.put("b", 0.5);
+    assertEqual(ds.min(), 0.5);
+    assertEqual(ds.max(), 0.5);
+
+    ds.put("a", 0.5);
+    assertEqual(ds.min(), 0.5);
+    assertEqual(ds.max(), 1.5);
+
+    ds.put("b", -0.5);
+    assertEqual(ds.min(), -0.5);
+    assertEqual(ds.max(), 1.5);
+
+    ds.put("c", -0.7);
+    assertEqual(ds.min(), -0.5);
+    assertEqual(ds.max(), 1.5);
+
+    DiscreteStoreWithOffset ds2;
+    ds2.put("d", 0.5);
+    ds2.put("b", -1.0);
+    ds.put(ds2);
+    assertEqual(ds.min(), -1.0);
+    assertEqual(ds.max(), 3.5);
+}
+
 /// Store values so we can later create guides from them
 private struct GuideStore(string type = "")
 {
@@ -14,9 +115,10 @@ private struct GuideStore(string type = "")
         if (is(T==GuideStore!(type))) 
     {
         _store.put(gs._store);
+
         import ggplotd.algorithm : safeMin, safeMax;
-        _min = safeMin(_min, gs.min);
-        _max = safeMax(_max, gs.max);
+        _min = safeMin(_min, gs._min);
+        _max = safeMax(_max, gs._max);
     }
 
     /// Add a range of values to the store
@@ -29,7 +131,7 @@ private struct GuideStore(string type = "")
 
     import std.traits : TemplateOf;
     /// Add a value of anytype to the store
-    void put(T)(in T value)
+    void put(T)(in T value, double offset = 0)
         if (!is(T==GuideStore!(type)) &&
             (is(T==string) || !isInputRange!T)
         )
@@ -40,8 +142,8 @@ private struct GuideStore(string type = "")
         static if (isNumeric!T)
         {
             import ggplotd.algorithm : safeMin, safeMax;
-            _min = safeMin(_min, value.to!double);
-            _max = safeMax(_max, value.to!double);
+            _min = safeMin(_min, value.to!double + offset);
+            _max = safeMax(_max, value.to!double + offset);
         } else {
             static if (type == "colour")
             {
@@ -50,14 +152,14 @@ private struct GuideStore(string type = "")
                     static if (is(T==string)) {
                         if (value !in namedColours) 
                         {
-                            _store.put(value);
+                            _store.put(value, offset);
                         }
                     } else {
-                        _store.put(value.to!string);
+                        _store.put(value.to!string, offset);
                     }
                 }
             } else {
-                _store.put(value.to!string);
+                _store.put(value.to!string, offset);
             }
         }
     }
@@ -68,7 +170,7 @@ private struct GuideStore(string type = "")
         import std.math : isNaN;
         import ggplotd.algorithm : safeMin;
         if (_store.length > 0 || isNaN(_min))
-            return safeMin(0, _min);
+            return safeMin(_store.min, _min);
         return _min;
     }
 
@@ -78,25 +180,25 @@ private struct GuideStore(string type = "")
         import std.math : isNaN;
         import ggplotd.algorithm : safeMax;
         if (_store.length > 0 || isNaN(_max))
-            return safeMax(safeMax(_store.length - 1.0,0.0), _max);
+            return safeMax(_store.max, _max);
         return _max;
     }
 
     /// The discete values in the store
     @property auto store() const
     {
-        return _store.data;
+        import std.algorithm : map;
+        return _store.data.map!((a) => a[0]);
     }
 
     /// A hash mapping the discrete values to continuous (double)
     @property auto storeHash() const
     {
+        import std.conv : to;
         double[string] hash;
-        double v = 0;
-        foreach(k; this.store()) 
+        foreach(k, v; _store.store) 
         {
-            hash[k] = v;
-            ++v;
+            hash[k] = v.to!double;
         }
         return hash;
     }
@@ -110,8 +212,7 @@ private struct GuideStore(string type = "")
     double _min;
     double _max;
 
-    import ggplotd.range : HashSet;
-    HashSet!(string) _store; // Should really only store uniques
+    DiscreteStoreWithOffset _store; // Should really only store uniques
 
     static if (type == "colour")
     {
@@ -210,6 +311,27 @@ unittest
     assertEqual(gs3.store.walkLength, 3);
     assertEqual(gs3.store.array, ["a","b","c"]);
  
+}
+
+unittest
+{
+    GuideStore!"" gs;
+    gs.put("a", 0.5);
+    assertEqual(gs.min(), 0.5);
+    assertEqual(gs.max(), 0.5);
+
+    GuideStore!"" gs2;
+    gs2.put("b", 0.7);
+    gs.put(gs2);
+    assertEqual(gs.min(), 0.5);
+    assertEqual(gs.max(), 1.7);
+
+    GuideStore!"" gs3;
+    gs3.put("b", -0.7);
+    gs.put(gs3);
+    import std.math : approxEqual;
+    assert(approxEqual(gs.min(), 0.3));
+    assert(approxEqual(gs.max(), 1.7));
 }
 
 /// A callable struct that translates any value into a double
