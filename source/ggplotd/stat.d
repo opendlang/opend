@@ -498,7 +498,7 @@ unittest
 Calculate kernel density for given x and y data
 
 Params:
-   aesRaw = Data that the histogram will be based on 
+   aesRange = Data that the histogram will be based on 
 
 Returns: Range of ranges that holds polygons for the kernel
 */

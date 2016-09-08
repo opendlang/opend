@@ -430,8 +430,7 @@ auto guideFunction(string type)(GuideStore!type gs)
             import std.math : isNaN;
             if (isNaN(a))
                 return a;
-            debug import std.format : format;
-            assert(a >= gs.min() || a <= gs.max(), format("Value %s falls outside of range %s-%s", a, gs.min(), gs.max()));
+            assert(a >= gs.min() || a <= gs.max(), "Value falls outside of range");
             return a;
         };
 
@@ -489,14 +488,12 @@ auto guideFunction(string type)(GuideStore!type gs, ColourGradientFunction colou
     immutable storeHash = gs.storeHash;
 
     gc.stringToDoubleConvert = (a) {
-        debug import std.format : format;
-        assert(a in storeHash, format("Value %s not in storeHash %s", a, storeHash));
+        assert(a in storeHash, "Value not in storeHash");
         return storeHash[a];
     };
 
     gc.stringConvert = (a) {
-        debug import std.format : format;
-        assert(a in storeHash, format("Value %s not in storeHash %s", a, storeHash));
+        assert(a in storeHash, "Value not in storeHash");
         return gc.doubleConvert(gc.stringToDoubleConvert(a));
     };
     return gc;
