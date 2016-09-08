@@ -195,7 +195,7 @@ unittest {
 private template statHistND(int dim, AES)
 {
     import std.algorithm : map;
-    import ggplotd.aes : Aes, numericLabel;
+    import ggplotd.aes : Aes;
     import ggplotd.range : mergeRange;
 
     struct VolderMort(AESV)
@@ -351,22 +351,10 @@ private template statHistND(int dim, AES)
         }
     }
 
-    auto statHistND(AES aesRaw, size_t[] noBins)
+    auto statHistND(AES aesRange, size_t[] noBins)
     {
-         // Turn x into numericLabel
-        auto xNumeric = numericLabel(aesRaw.map!((t) => t.x));
-        static if (dim == 1)
-            auto aes = aesRaw.mergeRange( 
-                    Aes!(typeof(xNumeric), "x")( xNumeric ) );
-        else 
-        {
-            auto yNumeric = numericLabel(aesRaw.map!((t) => t.y));
-            auto aes = aesRaw.mergeRange( 
-                    Aes!(typeof(xNumeric), "x", typeof(yNumeric), "y")( xNumeric, yNumeric ) );
-        }
-
         // Get maxs, mins and noBins
-        return VolderMort!(typeof(aes))( aes, noBins );
+        return VolderMort!(typeof(aesRange))( aesRange, noBins );
     }
 }
 
@@ -408,46 +396,45 @@ unittest
  Create Aes that specifies the bins to draw an histogram 
 
  Params:
-    aesRaw = Data that the histogram will be based on 
+    aesRange = Data that the histogram will be based on 
     noBinsX  = Optional number of bins for x axis. On a value of 0 the number of bins will be chosen automatically.
     noBinsY  = Optional number of bins for y axis. On a value of 0 the number of bins will be chosen automatically.
 
  Returns: Range that holds rectangles representing different bins
 */
-auto statHist2D(AES)(AES aesRaw, size_t noBinsX = 0, size_t noBinsY = 0)
+auto statHist2D(AES)(AES aesRange, size_t noBinsX = 0, size_t noBinsY = 0)
 {
-    return statHistND!(2,AES)( aesRaw, [noBinsX, noBinsY]);
+    return statHistND!(2,AES)( aesRange, [noBinsX, noBinsY]);
 }
 
 /**
 Calculate kernel density for given data
 
 Params:
-   aesRaw = Data that the histogram will be based on 
+   aesRange = Data that the histogram will be based on 
 
 Returns: InputRange that holds x and y coordinates for the kernel
 */
-auto statDensity(AES)( AES aesRaw )
+auto statDensity(AES)( AES aesRange )
 {
     import std.algorithm : joiner, map, min, max, reduce;
+    import std.conv : to;
     import std.range : chain, front;
     import std.typecons : tuple, Tuple;
-    import ggplotd.aes : Aes, numericLabel, group;
+    import ggplotd.aes : Aes, group;
     import ggplotd.range : mergeRange;
     import ggplotd.algorithm : safeMin, safeMax;
 
-    auto xNumeric = aesRaw.map!((t) => t.x).numericLabel;
-    auto aes = aesRaw.mergeRange( Aes!(typeof(xNumeric),"x")(xNumeric) );
     auto minmax = reduce!(
             (a,b) => safeMin(a,b.x.to!double),
-            (a,b) => safeMax(a,b.x.to!double))(tuple(double.init,double.init), aes);
+            (a,b) => safeMax(a,b.x.to!double))(tuple(double.init,double.init), aesRange);
     auto margin = (minmax[1] - minmax[0])/10.0;
     minmax[0] -= margin;
     minmax[1] += margin;
 
 
 
-    return aes.group.map!((g) {
+    return aesRange.group.map!((g) {
         auto xs = g.map!((t) => t.x.to!double);
 
         // Calculate the kernel width (using scott thing in dstats)
@@ -515,26 +502,23 @@ Params:
 
 Returns: Range of ranges that holds polygons for the kernel
 */
-auto statDensity2D(AES)( AES aesRaw )
+auto statDensity2D(AES)( AES aesRange )
 {
     import std.algorithm : joiner, map, min, max, reduce;
     import std.array : array;
+    import std.conv : to;
     import std.range : chain, front, iota, zip;
     import std.typecons : Erase, tuple, Tuple;
-    import ggplotd.aes : Aes, numericLabel, group, DefaultGroupFields;
+    import ggplotd.aes : Aes, group, DefaultGroupFields;
     import ggplotd.algorithm : safeMin, safeMax;
     import ggplotd.range : mergeRange;
 
-    auto xNumeric = aesRaw.map!((t) => t.x).numericLabel;
-    auto yNumeric = aesRaw.map!((t) => t.y).numericLabel;
-    auto aes = aesRaw.mergeRange( Aes!(typeof(xNumeric),"x",
-                typeof(yNumeric),"y")(xNumeric, yNumeric) );
     auto minmax = reduce!(
             (a,b) => safeMin(a,b.x.to!double),
             (a,b) => safeMax(a,b.x.to!double),
             (a,b) => safeMin(a,b.y.to!double),
             (a,b) => safeMax(a,b.y.to!double),
-            )(tuple(double.init,double.init,double.init,double.init), aes);
+            )(tuple(double.init,double.init,double.init,double.init), aesRange);
 
     if (minmax[0] == minmax[1]) {
         minmax[0] -= 0.5;
@@ -545,7 +529,7 @@ auto statDensity2D(AES)( AES aesRaw )
         minmax[3] += 0.5;
     }
 
-    return aes.group!(Erase!("colour",DefaultGroupFields)).map!((g) {
+    return aesRange.group!(Erase!("colour",DefaultGroupFields)).map!((g) {
         auto xs = g.map!((t) => t.x.to!double);
         auto ys = g.map!((t) => t.y.to!double);
 

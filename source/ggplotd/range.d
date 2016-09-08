@@ -226,24 +226,3 @@ unittest
     assertEqual(nlAes2.front.label, "");
     assertEqual(nlAes2.front.colour, "black");
 }
-
-///
-unittest
-{
-    import std.array : array;
-    import std.range : front;
-    import std.algorithm : map;
-    import ggplotd.aes : Aes, DefaultValues, NumericLabel;
-
-    auto xs = ["a", "b"];
-    auto ys = ["c", "d"];
-    auto labels = ["e", "f"];
-    auto aes = Aes!(string[], "x", string[], "y", string[], "label")(xs, ys, labels);
-
-    auto nlAes = mergeRange(aes, Aes!(NumericLabel!(string[]), "x",
-        NumericLabel!(string[]), "y")(NumericLabel!(string[])(aes.map!("a.x").array),
-        NumericLabel!(string[])(aes.map!("a.y").array)));
-
-    assertEqual(nlAes.front.x[0], 0);
-    assertEqual(nlAes.front.label, "e");
-}
