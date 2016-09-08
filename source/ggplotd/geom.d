@@ -196,27 +196,19 @@ private template geomShape( string shape, AES )
 
 unittest
 {
-    // ABC replace this test
-    /+
-    auto xs = numericLabel!(double[])([ 1.0, 2.0 ]);
+    import std.range : walkLength, zip;
+    import std.algorithm : map;
 
-    auto aes = Aes!( typeof(xs), "x", double[], "y", double[], "width", double[], "height" )
-        ( xs, [3.0, 4.0], [1.0,1], [2.0,2] );
-    auto geoms = geomShape!("rectangle", typeof(aes))( aes );
+    import ggplotd.aes : aes;
+    auto aesRange = zip([1.0, 2.0], [3.0, 4.0], [1.0,1], [2.0,2])
+        .map!((a) => aes!("x", "y", "width", "height")( a[0], a[1], a[2], a[3]));
+    auto geoms = geomShape!("rectangle")(aesRange);
 
-    import std.range : walkLength;
-    assertEqual( geoms.walkLength, 2 );
-
-    import std.stdio : writeln;+/
-    // TODO: ideally this would be empty, but currently when 
-    // numericLabel!(NumericLabel.map!((a) => a.x)) loses the information whether original
-    // range was numerical or not. To keep that information DataID needs third field to carry
-    // that information
-    // ABC assertEqual( geoms.front.xTickLabels.length, 1 ); 
-    // assertEqual( geoms.front.yTickLabels.length, 0 );
-    // geoms.popFront;
-    // assertEqual( geoms.front.xTickLabels.length, 1 );
-    // assertEqual( geoms.front.yTickLabels.length, 0 );
+    assertEqual(geoms.walkLength, 2);
+    assertEqual(geoms.front.xStore.min, 0.5);
+    assertEqual(geoms.front.xStore.max, 1.5);
+    geoms.popFront;
+    assertEqual(geoms.front.xStore.max, 2.5);
 }
 
 /**
@@ -337,6 +329,9 @@ auto geomPoint(AES)(AES aes)
     import ggplotd.range : mergeRange;
     auto _aes = DefaultValues.mergeRange(aes);
     // ABC How can we use our size Store for the Point?
+    // Current consences is to use a sizeStore field, because 
+    // size fills to many roles and can not be used
+    // sizeStore should be automatically added to the Geom in the constructor
     auto wh = _aes.map!((a) => Pixel((8*a.size).to!int));
     auto filled = _aes.map!((a) => a.alpha);
     auto merged = Aes!(typeof(wh), "width", typeof(wh), "height",
@@ -460,8 +455,8 @@ unittest
         "b", "c", "b"], ["a", "b", "b", "a"], ["b", "b", "b", "b"]);
 
     auto gl = geomLine(aes);
-    //ABC (should replace other test) assertEqual(gl.front.xTickLabels.length, 4);
-    //assertEqual(gl.front.yTickLabels.length, 4);
+    assertEqual(gl.front.xStore.store.length, 3);
+    assertEqual(gl.front.yStore.store.length, 2);
 }
 
 unittest
@@ -766,6 +761,8 @@ auto geomBox(AES)(AES aesRange)
         }
     }
     
+    // TODO if x (y in the original aesRange) is numerical then this should relly scale 
+    // by the range
     double delta = 0.2;
 
     foreach( grouped; myAes.group().filter!((a) => a.walkLength > 3) )
@@ -773,7 +770,6 @@ auto geomBox(AES)(AES aesRange)
         auto lims = grouped.map!("a.x.to!double")
             .array.limits( [0.1,0.25,0.5,0.75,0.9] ).array;
         auto x = grouped.front.label;
-        // TODO this should be some kind of loop
         result.put(
             [grouped.front.merge(aes!("x", "y", "width", "height")
                 (x, (lims[2]+lims[1])/2.0, 2*delta, lims[2]-lims[1])),
@@ -802,31 +798,29 @@ unittest
 {
     import std.array : array;
     import std.algorithm : map;
-    import std.range : repeat, iota, chain;
+    import std.range : repeat, iota, chain, zip;
     import std.random : uniform;
     auto xs = iota(0,50,1).map!((x) => uniform(0.0,5)+uniform(0.0,5)).array;
     auto cols = "a".repeat(25).chain("b".repeat(25)).array;
-    auto aes = Aes!(typeof(xs), "x", typeof(cols), "colour", 
-        double[], "fill", typeof(cols), "label" )( 
-            xs, cols, 0.45.repeat(xs.length).array, cols);
-    auto gb = geomBox( aes );
-    //ABC assertEqual( gb.front.bounds.min_x, -0.5 );
+    auto aesRange = zip(xs, cols)
+        .map!((a) => aes!("x", "colour", "fill", "label")(a[0], a[1], 0.45, a[1]));
+    auto gb = geomBox( aesRange );
+    assertEqual( gb.front.xStore.min(), -0.4 );
 }
 
 unittest 
 {
     import std.array : array;
     import std.algorithm : map;
-    import std.range : repeat, iota, chain;
+    import std.range : repeat, iota, chain, zip;
     import std.random : uniform;
     auto xs = iota(0,50,1).map!((x) => uniform(0.0,5)+uniform(0.0,5)).array;
     auto cols = "a".repeat(25).chain("b".repeat(25)).array;
     auto ys = 2.repeat(25).chain(3.repeat(25)).array;
-    auto aes = Aes!(typeof(xs), "x", typeof(cols), "colour", 
-        double[], "fill", typeof(ys), "y" )( 
-            xs, cols, 0.45.repeat(xs.length).array, ys);
-    auto gb = geomBox( aes );
-    // ABC assertEqual( gb.front.bounds.min_x, 1.5 );
+    auto aesRange = zip(xs, cols, ys)
+        .map!((a) => aes!("x", "colour", "fill", "y")(a[0], a[1], .45, a[2]));
+    auto gb = geomBox( aesRange );
+    assertEqual( gb.front.xStore.min, 1.6 );
 }
 
 unittest 
@@ -850,15 +844,14 @@ unittest
 {
     import std.array : array;
     import std.algorithm : map;
-    import std.range : repeat, iota, chain;
+    import std.range : repeat, iota, chain, zip;
     import std.random : uniform;
     auto xs = iota(0,50,1).map!((x) => uniform(0.0,5)+uniform(0.0,5)).array;
     auto cols = "a".repeat(25).chain("b".repeat(25)).array;
-    auto aes = Aes!(typeof(xs), "x", typeof(cols), "colour", 
-        double[], "fill")( 
-            xs, cols, 0.45.repeat(xs.length).array);
-    auto gb = geomBox( aes );
-    //ABC assertEqual( gb.front.bounds.min_x, -0.5 );
+    auto aesRange = zip(xs, cols)
+        .map!((a) => aes!("x", "colour", "fill")(a[0], a[1], .45));
+    auto gb = geomBox( aesRange );
+    assertEqual( gb.front.xStore.min, -0.4 );
 }
 
 /// Draw a polygon 
