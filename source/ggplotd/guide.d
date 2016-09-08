@@ -420,8 +420,12 @@ auto guideFunction(string type)(GuideStore!type gs)
             if (isNaN(a))
                 return a;
             assert(a >= gs.min() || a <= gs.max(), "Value falls outside of range");
-            if (gs.min() < 0.2 || gs.max() > 5.0) // Limit the size to between these values
-                return 0.2 + a*(5.0 - 0.2)/(gs.max() - gs.min());
+            if (gs.min() < 0.4 || gs.max() > 5.0) // Limit the size to between these values
+            {
+                if (gs.max() == gs.min())
+                    return 1.0;
+                return 0.7 + a*(5.0 - 0.7)/(gs.max() - gs.min());
+            }
             return a;
         };
 
@@ -459,14 +463,19 @@ unittest
 unittest
 {
     GuideStore!"size" gs;
-    gs.put( [0.3, 4] );
+    gs.put( [0.5, 4] );
     auto gf = guideFunction(gs);
-    assertEqual(gf(0.5), 0.5);
+    assertEqual(gf(0.6), 0.6);
 
     gs.put( [0.0] );
     auto gf2 = guideFunction(gs);
-    assertEqual(gf2(0.0), 0.2);
+    assertEqual(gf2(0.0), 0.7);
     assertEqual(gf2(4.0), 5.0);
+
+    GuideStore!"size" gs3;
+    gs3.put( [0.0] );
+    auto gf3 = guideFunction(gs3);
+    assertEqual(gf3(0.0), 1.0);
 }
 
 import ggplotd.colour : ColourGradientFunction;

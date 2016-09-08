@@ -32,6 +32,8 @@ struct Geom
             yStore.put(tup.y);
         static if (hasAesField!(T, "colour"))
             colourStore.put(tup.colour);
+        static if (hasAesField!(T, "sizeStore"))
+            sizeStore.put(tup.sizeStore);
         mask = tup.mask;
     }
 
@@ -43,8 +45,6 @@ struct Geom
 
     /// Function to draw to a cairo context
     Nullable!drawFunction draw; 
-
-
 
     import ggplotd.guide : GuideStore;
     GuideStore!"colour" colourStore;
@@ -113,8 +113,17 @@ private template geomShape( string shape, AES )
                     return context;
                 context.save();
                 context.translate(x, y);
+                import ggplotd.aes : hasAesField;
+                static if (hasAesField!(typeof(tup), "sizeStore")) {
+                    auto width = tup.width*sFunc(tup.sizeStore);
+                    auto height = tup.height*sFunc(tup.sizeStore);
+                } else  {
+                    auto width = tup.width;
+                    auto height = tup.height;
+                }
+
                 static if (is(typeof(tup.width)==immutable(Pixel)))
-                    auto devP = context.deviceToUserDistance(cairo.Point!double( tup.width, tup.height )); //tup.width.to!double, tup.width.to!double ));
+                    auto devP = context.deviceToUserDistance(cairo.Point!double( width, height )); //tup.width.to!double, tup.width.to!double ));
                 context.rotate(tup.angle);
                 static if (shape=="ellipse")
                 {
@@ -123,7 +132,7 @@ private template geomShape( string shape, AES )
                     {
                         context.scale( devP.x/2.0, devP.y/2.0 );
                     } else {
-                        context.scale( tup.width/2.0, tup.height/2.0 );
+                        context.scale( width/2.0, height/2.0 );
                     }
                     context.arc(0,0, 1.0, 0,2*PI);
                 } else {
@@ -131,7 +140,7 @@ private template geomShape( string shape, AES )
                     {
                         context.scale( devP.x, devP.y );
                     } else {
-                        context.scale( tup.width, tup.height );
+                        context.scale( width, height );
                     }
                     static if (shape=="triangle")
                     {
@@ -321,23 +330,16 @@ auto geomDiamond(AES)(AES aes)
 }
 
 /// Create points from the data
-auto geomPoint(AES)(AES aes)
+auto geomPoint(AES)(AES aesRange)
 {
     import std.algorithm : map;
-    import std.conv : to;
-    import ggplotd.aes : Aes, Pixel;
+    import ggplotd.aes : aes, Pixel;
     import ggplotd.range : mergeRange;
-    auto _aes = DefaultValues.mergeRange(aes);
-    // ABC How can we use our size Store for the Point?
-    // Current consences is to use a sizeStore field, because 
-    // size fills to many roles and can not be used
-    // sizeStore should be automatically added to the Geom in the constructor
-    auto wh = _aes.map!((a) => Pixel((8*a.size).to!int));
-    auto filled = _aes.map!((a) => a.alpha);
-    auto merged = Aes!(typeof(wh), "width", typeof(wh), "height",
-        typeof(filled),"fill")( wh, wh, filled )
-        .mergeRange( aes );
-    return geomEllipse!(typeof(merged))(merged);
+    return DefaultValues
+        .mergeRange(aesRange)
+        .map!((a) => a.merge(aes!("sizeStore", "width", "height", "fill")
+            (a.size, Pixel(8), Pixel(8), a.alpha)))
+        .geomEllipse;
 }
 
 ///

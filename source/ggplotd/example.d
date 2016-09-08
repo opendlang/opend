@@ -298,6 +298,25 @@ unittest
     gg.save( "filled_hist.svg" );
 }
 
+/// Size as third dimension
+unittest
+{
+    import std.range : zip;
+    import std.algorithm : map;
+    import ggplotd.aes : aes;
+    import ggplotd.geom : geomPoint;
+    import ggplotd.ggplotd : putIn, GGPlotD;
+    import ggplotd.axes : xaxisRange, yaxisRange;
+
+    auto gg = [0.0,1.0,2.0].zip([0.5, 0.25, 0.75], [1000, 10000, 50000])
+        .map!((a) => aes!("x", "y", "size")(a[0], a[1], a[2]))
+        .geomPoint
+        .putIn(GGPlotD());
+    gg.put(xaxisRange(-0.5, 2.5));
+    gg.put(yaxisRange(0, 1));
+    gg.save("sizeStore.png");
+}
+
 /// Boxplot example
 unittest
 {
