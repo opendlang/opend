@@ -190,6 +190,38 @@ unittest {
     assert( foo.failure(1) == 1 );
 }
 
+private template publicMemberFilter(T, alias filter)
+{
+    template Filter(alias memberName)
+    {
+        static if (is(typeof(__traits(getMember, T.init, memberName))))
+        {
+            static if (__traits(compiles, { enum Foo = __traits(getMember, T.init, memberName); }))
+            {
+                enum Filter = filter!(__traits(getMember, T.init, memberName));
+            }
+            else
+                enum Filter = false;
+        }
+        else
+            enum Filter = false;
+    }
+}
+
+template allPublicFieldsOrProperties(T)
+{
+    import std.meta : Filter;
+    enum allPublicFieldsOrProperties = Filter!(publicMemberFilter!(T, isFieldOrProperty).Filter, __traits(allMembers, T));
+    static assert(allPublicFieldsOrProperties.length > 0, "No properties for type " ~ T.stringof);
+}
+
+template allPublicFields(T)
+{
+    import std.meta : Filter;
+    enum allPublicFields = Filter!(publicMemberFilter!(T, isField).Filter, __traits(allMembers, T));
+    static assert(allPublicFields.length > 0, "No properties for type " ~ T.stringof);
+}
+
 unittest {
     import std.typecons : Tuple;
     // toString is template, should be ignored
