@@ -40,4 +40,10 @@ unittest {
     static assert(fields[0] == "i");
     static assert(fields[1] == "str");
     static assert(fields[2] == "l");
+
+    TestStruct s = TestStruct(4);
+    s.foo();
+    int i = s.bar();
+    assert(i == 4);
+    s.hello();
 }
