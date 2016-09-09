@@ -190,6 +190,64 @@ unittest {
     assert( foo.failure(1) == 1 );
 }
 
+private template publicMemberFilter(T, alias filter)
+{
+    template Filter(alias memberName)
+    {
+        static if (is(typeof(__traits(getMember, T.init, memberName))))
+        {
+            static if (__traits(compiles, { enum Foo = __traits(getMember, T.init, memberName); }))
+            {
+                enum Filter = filter!(__traits(getMember, T.init, memberName));
+            }
+            else
+                enum Filter = false;
+        }
+        else
+            enum Filter = false;
+    }
+}
+
+// from std.meta to support older compilers
+private template AliasSeq(TList...)
+{
+    alias AliasSeq = TList;
+}
+
+private template Filter(alias pred, TList...)
+{
+    static if (TList.length == 0)
+    {
+        alias Filter = AliasSeq!();
+    }
+    else static if (TList.length == 1)
+    {
+        static if (pred!(TList[0]))
+            alias Filter = AliasSeq!(TList[0]);
+        else
+            alias Filter = AliasSeq!();
+    }
+    else
+    {
+        alias Filter =
+            AliasSeq!(
+                Filter!(pred, TList[ 0  .. $/2]),
+                Filter!(pred, TList[$/2 ..  $ ]));
+    }
+}
+
+template allPublicFieldsOrProperties(T)
+{
+    enum allPublicFieldsOrProperties = Filter!(publicMemberFilter!(T, isFieldOrProperty).Filter, __traits(allMembers, T));
+    static assert(allPublicFieldsOrProperties.length > 0, "No properties for type " ~ T.stringof);
+}
+
+template allPublicFields(T)
+{
+    enum allPublicFields = Filter!(publicMemberFilter!(T, isField).Filter, __traits(allMembers, T));
+    static assert(allPublicFields.length > 0, "No properties for type " ~ T.stringof);
+}
+
 unittest {
     import std.typecons : Tuple;
     // toString is template, should be ignored
