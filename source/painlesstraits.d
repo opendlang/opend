@@ -194,17 +194,46 @@ private template publicMemberFilter(T, alias filter)
 {
     template Filter(alias memberName)
     {
-        static if (is(typeof(__traits(getMember, T.init, memberName))))
+        static if (is(T == class))
         {
-            static if (__traits(compiles, { enum Foo = __traits(getMember, T.init, memberName); }))
+            static if (is(typeof(__traits(getMember, T, memberName))))
             {
-                enum Filter = filter!(__traits(getMember, T.init, memberName));
+                static if (isSomeFunction!(__traits(getMember, T, memberName)))
+                {
+                    static if (!__traits(compiles, { auto foo = __traits(getMember, T, memberName); }))
+                    {
+                        enum Filter = filter!(__traits(getMember, T, memberName));
+                    }
+                    else
+                        enum Filter = false;
+                }
+                else
+                {
+                    static if (!__traits(compiles, { auto foo = &__traits(getMember, T, memberName); }))
+                    {
+                        enum Filter = filter!(__traits(getMember, T, memberName));
+                    }
+                    else
+                        enum Filter = false;
+                }
             }
             else
                 enum Filter = false;
         }
         else
-            enum Filter = false;
+        {
+            static if (is(typeof(__traits(getMember, T.init, memberName))))
+            {
+                static if (__traits(compiles, { enum Foo = __traits(getMember, T.init, memberName); }))
+                {
+                    enum Filter = filter!(__traits(getMember, T.init, memberName));
+                }
+                else
+                    enum Filter = false;
+            }
+            else
+                enum Filter = false;
+        }
     }
 }
 
