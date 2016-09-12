@@ -292,6 +292,12 @@ Here we take care to always return a valid set of bounds
         return adapted;
     }
 
+    /// Adapt by passing x and y variable
+    bool adapt(double x, double y)
+    {
+        return adapt(Point(x, y));
+    }
+
     /// Adapt bounds to include the given bounds 
     bool adapt(T : AdaptiveBounds)(in T bounds)
     {

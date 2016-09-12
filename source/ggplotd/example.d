@@ -8,6 +8,7 @@ module example;
 version (unittest)
 
 import dunit.toolkit;
+import std.stdio : writeln;
 
 ///
 unittest
@@ -96,7 +97,7 @@ unittest
     /// http://blackedder.github.io/ggplotd/images/density2D.png
     import std.algorithm : map;
     import std.range : iota, zip;
-    import std.random : uniform;
+    import std.random : uniform, Random, unpredictableSeed;
 
     import ggplotd.aes : aes;
     import ggplotd.colour : colourGradient;
@@ -105,8 +106,13 @@ unittest
     import ggplotd.ggplotd : GGPlotD, putIn;
     import ggplotd.legend : continuousLegend;
 
-    auto xs = iota(0,500,1).map!((x) => uniform(0.0,5)+uniform(0.0,5));
-    auto ys = iota(0,500,1).map!((y) => uniform(0.5,1.5)+uniform(0.5,1.5));
+    // For debugging reasons, print out the current seed
+    import std.stdio : writeln;
+    auto rnd = Random(unpredictableSeed);
+    writeln("Random seed: ", rnd.front);
+
+    auto xs = iota(0,500,1).map!((x) => uniform(0.0,5, rnd)+uniform(0.0,5, rnd));
+    auto ys = iota(0,500,1).map!((y) => uniform(0.5,1.5, rnd)+uniform(0.5,1.5, rnd));
     auto gg = zip(xs, ys)
         .map!((a) => aes!("x","y")(a[0], a[1]))
         .geomDensity2D
@@ -167,11 +173,19 @@ auto runMCMC() {
     import std.array : array;
     import std.math : pow;
     import std.range : iota;
+    import std.random : Random, unpredictableSeed;
+
+    // For debugging reasons, print out the current seed
+    import std.stdio : writeln;
+    auto rnd = Random(unpredictableSeed);
+    //auto rnd = Random(1193462362); // This is a seed that currently fails. Use it for debugging
+    writeln("Random seed MCMC: ", rnd.front);
+
     import dstats.random : rNorm;
     return iota(0,1000).map!((i) {
-        auto x = rNorm(1, 0.5);
-        auto y = rNorm(pow(x,3), 0.5);
-        auto z = rNorm(x + y, 0.5);
+        auto x = rNorm(1, 0.5, rnd);
+        auto y = rNorm(pow(x,3), 0.5, rnd);
+        auto z = rNorm(x + y, 0.5, rnd);
         return [x, y, z];
     }).array;
 }
@@ -282,6 +296,25 @@ unittest
         .geomHist
         .putIn(GGPlotD());
     gg.save( "filled_hist.svg" );
+}
+
+/// Size as third dimension
+unittest
+{
+    import std.range : zip;
+    import std.algorithm : map;
+    import ggplotd.aes : aes;
+    import ggplotd.geom : geomPoint;
+    import ggplotd.ggplotd : putIn, GGPlotD;
+    import ggplotd.axes : xaxisRange, yaxisRange;
+
+    auto gg = [0.0,1.0,2.0].zip([0.5, 0.25, 0.75], [1000, 10000, 50000])
+        .map!((a) => aes!("x", "y", "size")(a[0], a[1], a[2]))
+        .geomPoint
+        .putIn(GGPlotD());
+    gg.put(xaxisRange(-0.5, 2.5));
+    gg.put(yaxisRange(0, 1));
+    gg.save("sizeStore.png");
 }
 
 /// Boxplot example

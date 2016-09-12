@@ -6,7 +6,6 @@ import cairo = cairo.cairo;
 
 import ggplotd.bounds;
 import ggplotd.aes;
-import ggplotd.colour : ColourID, ColourMap;
 
 version (unittest)
 {
@@ -21,34 +20,40 @@ version (assert)
 /// Hold the data needed to draw to a plot context
 struct Geom
 {
+    import std.typecons : Nullable;
+
     /// Construct from a tuple
     this(T)( in T tup ) //if (is(T==Tuple))
     {
+        import ggplotd.aes : hasAesField;
+        static if (hasAesField!(T, "x"))
+            xStore.put(tup.x);
+        static if (hasAesField!(T, "y"))
+            yStore.put(tup.y);
+        static if (hasAesField!(T, "colour"))
+            colourStore.put(tup.colour);
+        static if (hasAesField!(T, "sizeStore"))
+            sizeStore.put(tup.sizeStore);
         mask = tup.mask;
     }
 
+    import ggplotd.guide : GuideToColourFunction, GuideToDoubleFunction;
     /// Delegate that takes a context and draws to it
     alias drawFunction = cairo.Context delegate(cairo.Context context, 
-        ColourMap colourMap);
+        in GuideToDoubleFunction xFunc, in GuideToDoubleFunction yFunc,
+        in GuideToColourFunction cFunc, in GuideToDoubleFunction sFunc);
 
     /// Function to draw to a cairo context
-    drawFunction draw; 
+    Nullable!drawFunction draw; 
 
-    /// Colours
-    ColourID[] colours; 
-
-    /// Plot Bounds
-    AdaptiveBounds bounds;
+    import ggplotd.guide : GuideStore;
+    GuideStore!"colour" colourStore;
+    GuideStore!"x" xStore;
+    GuideStore!"y" yStore;
+    GuideStore!"size" sizeStore;
 
     /// Whether to mask/prevent drawing outside plotting area
     bool mask = true; 
-
-    import std.typecons : Tuple;
-
-    /// Labels for xaxis ticks
-    Tuple!(double, string)[] xTickLabels; 
-    /// Labels for yaxis ticks
-    Tuple!(double, string)[] yTickLabels;
 }
 
 import ggplotd.colourspace : RGBA;
@@ -80,39 +85,45 @@ General function for drawing geomShapes
 private template geomShape( string shape, AES )
 {
     import std.algorithm : map;
-    import ggplotd.aes : numericLabel;
     import ggplotd.range : mergeRange;
-    alias CoordX = typeof(numericLabel(AES.init.map!("a.x")));
-    alias CoordY = typeof(numericLabel(AES.init.map!("a.y")));
     alias CoordType = typeof(DefaultValues
-        .mergeRange(AES.init)
-        .mergeRange(Aes!(CoordX, "x", CoordY, "y").init));
+        .mergeRange(AES.init));
 
     struct VolderMort 
     {
         this(AES aes)
         {
-            import std.algorithm : map;
             import ggplotd.range : mergeRange;
             _aes = DefaultValues
-                .mergeRange(aes)
-                .mergeRange( Aes!(CoordX, "x", CoordY, "y")(
-                    CoordX(aes.map!("a.x")), 
-                    CoordY(aes.map!("a.y"))));
+                .mergeRange(aes);
         }
 
         @property auto front()
         {
+            import ggplotd.guide : GuideToDoubleFunction, GuideToColourFunction;
             immutable tup = _aes.front;
-            immutable f = delegate(cairo.Context context, ColourMap colourMap ) 
-            {
+            immutable f = delegate(cairo.Context context, 
+                 in GuideToDoubleFunction xFunc, in GuideToDoubleFunction yFunc,
+                 in GuideToColourFunction cFunc, in GuideToDoubleFunction sFunc ) {
                 import std.math : isFinite;
-                if (!isFinite(tup.x.to!double) || !isFinite(tup.y.to!double))
+                auto x = xFunc(tup.x);
+                auto y = yFunc(tup.y);
+                auto col = cFunc(tup.colour);
+                if (!isFinite(x) || !isFinite(y))
                     return context;
                 context.save();
-                context.translate( tup.x.to!double, tup.y.to!double );
+                context.translate(x, y);
+                import ggplotd.aes : hasAesField;
+                static if (hasAesField!(typeof(tup), "sizeStore")) {
+                    auto width = tup.width*sFunc(tup.sizeStore);
+                    auto height = tup.height*sFunc(tup.sizeStore);
+                } else  {
+                    auto width = tup.width;
+                    auto height = tup.height;
+                }
+
                 static if (is(typeof(tup.width)==immutable(Pixel)))
-                    auto devP = context.deviceToUserDistance(cairo.Point!double( tup.width, tup.height )); //tup.width.to!double, tup.width.to!double ));
+                    auto devP = context.deviceToUserDistance(cairo.Point!double( width, height )); //tup.width.to!double, tup.width.to!double ));
                 context.rotate(tup.angle);
                 static if (shape=="ellipse")
                 {
@@ -121,7 +132,7 @@ private template geomShape( string shape, AES )
                     {
                         context.scale( devP.x/2.0, devP.y/2.0 );
                     } else {
-                        context.scale( tup.width/2.0, tup.height/2.0 );
+                        context.scale( width/2.0, height/2.0 );
                     }
                     context.arc(0,0, 1.0, 0,2*PI);
                 } else {
@@ -129,7 +140,7 @@ private template geomShape( string shape, AES )
                     {
                         context.scale( devP.x, devP.y );
                     } else {
-                        context.scale( tup.width, tup.height );
+                        context.scale( width, height );
                     }
                     static if (shape=="triangle")
                     {
@@ -150,31 +161,25 @@ private template geomShape( string shape, AES )
                     context.closePath;
                 }
 
-                auto col = colourMap(ColourID(tup.colour));
                 context.restore();
                 context.fillAndStroke( col, tup.fill, tup.alpha );
                 return context;
             };
 
-            AdaptiveBounds bounds;
-            static if (is(typeof(tup.width)==immutable(Pixel)))
-                bounds.adapt(Point(tup.x[0], tup.y[0]));
-            else
+            auto geom = Geom( tup );
+            geom.draw = f;
+
+            static if (!is(typeof(tup.width)==immutable(Pixel))) 
             {
-                bounds.adapt(Point(tup.x[0]-0.5*tup.width, 
-                            tup.y[0]-0.5*tup.height));
-                bounds.adapt(Point(tup.x[0]+0.5*tup.width,
-                            tup.y[0]+0.5*tup.height));
+                geom.xStore.put(tup.x, 0.5*tup.width);
+                geom.xStore.put(tup.x, -0.5*tup.width);
+            }
+            static if (!is(typeof(tup.height)==immutable(Pixel))) 
+            {
+                geom.yStore.put(tup.y, 0.5*tup.height);
+                geom.yStore.put(tup.y, -0.5*tup.height);
             }
 
-            auto geom = Geom( tup );
-            static if (!CoordX.numeric)
-                geom.xTickLabels ~= tup.x;
-            static if (!CoordY.numeric)
-                geom.yTickLabels ~= tup.y;
-            geom.draw = f;
-            geom.colours ~= ColourID(tup.colour);
-            geom.bounds = bounds;
             return geom;
         }
 
@@ -200,25 +205,19 @@ private template geomShape( string shape, AES )
 
 unittest
 {
-    auto xs = numericLabel!(double[])([ 1.0, 2.0 ]);
+    import std.range : walkLength, zip;
+    import std.algorithm : map;
 
-    auto aes = Aes!( typeof(xs), "x", double[], "y", double[], "width", double[], "height" )
-        ( xs, [3.0, 4.0], [1.0,1], [2.0,2] );
-    auto geoms = geomShape!("rectangle", typeof(aes))( aes );
+    import ggplotd.aes : aes;
+    auto aesRange = zip([1.0, 2.0], [3.0, 4.0], [1.0,1], [2.0,2])
+        .map!((a) => aes!("x", "y", "width", "height")( a[0], a[1], a[2], a[3]));
+    auto geoms = geomShape!("rectangle")(aesRange);
 
-    import std.range : walkLength;
-    assertEqual( geoms.walkLength, 2 );
-
-    import std.stdio : writeln;
-    // TODO: ideally this would be empty, but currently when 
-    // numericLabel!(NumericLabel.map!((a) => a.x)) loses the information whether original
-    // range was numerical or not. To keep that information DataID needs third field to carry
-    // that information
-    assertEqual( geoms.front.xTickLabels.length, 1 ); 
-    assertEqual( geoms.front.yTickLabels.length, 0 );
+    assertEqual(geoms.walkLength, 2);
+    assertEqual(geoms.front.xStore.min, 0.5);
+    assertEqual(geoms.front.xStore.max, 1.5);
     geoms.popFront;
-    assertEqual( geoms.front.xTickLabels.length, 1 );
-    assertEqual( geoms.front.yTickLabels.length, 0 );
+    assertEqual(geoms.front.xStore.max, 2.5);
 }
 
 /**
@@ -331,19 +330,16 @@ auto geomDiamond(AES)(AES aes)
 }
 
 /// Create points from the data
-auto geomPoint(AES)(AES aes)
+auto geomPoint(AES)(AES aesRange)
 {
     import std.algorithm : map;
-    import std.conv : to;
-    import ggplotd.aes : Aes, Pixel;
+    import ggplotd.aes : aes, Pixel;
     import ggplotd.range : mergeRange;
-    auto _aes = DefaultValues.mergeRange(aes);
-    auto wh = _aes.map!((a) => Pixel((8*a.size).to!int));
-    auto filled = _aes.map!((a) => a.alpha);
-    auto merged = Aes!(typeof(wh), "width", typeof(wh), "height",
-        typeof(filled),"fill")( wh, wh, filled )
-        .mergeRange( aes );
-    return geomEllipse!(typeof(merged))(merged);
+    return DefaultValues
+        .mergeRange(aesRange)
+        .map!((a) => a.merge(aes!("sizeStore", "width", "height", "fill")
+            (a.size, Pixel(8), Pixel(8), a.alpha)))
+        .geomEllipse;
 }
 
 ///
@@ -351,7 +347,6 @@ unittest
 {
     auto aes = Aes!(double[], "x", double[], "y")([1.0], [2.0]);
     auto gl = geomPoint(aes);
-    assertEqual(gl.front.colours[0][1], "black");
     gl.popFront;
     assert(gl.empty);
 }
@@ -373,50 +368,48 @@ template geomLine(AES)
 
         @property auto front()
         {
-            auto xs = numericLabel(groupedAes.front.map!((t) => t.x));
-            auto ys = numericLabel(groupedAes.front.map!((t) => t.y));
-            auto coordsZip = zip(xs, ys);
+            import ggplotd.aes : aes;
+            import ggplotd.guide : GuideToColourFunction, GuideToDoubleFunction;
+            auto coordsZip = groupedAes.front
+                .map!((a) => aes!("x","y")(a.x, a.y));
 
             immutable flags = groupedAes.front.front;
             immutable f = delegate(cairo.Context context, 
-                ColourMap colourMap ) {
+                 in GuideToDoubleFunction xFunc, in GuideToDoubleFunction yFunc,
+                 in GuideToColourFunction cFunc, in GuideToDoubleFunction sFunc ) {
 
                 import std.math : isFinite;
                 auto coords = coordsZip.save;
                 auto fr = coords.front;
-                context.moveTo(fr[0][0], fr[1][0]);
+                context.moveTo(xFunc(fr.x), yFunc(fr.y));
                 coords.popFront;
                 foreach (tup; coords)
                 {
+                    auto x = xFunc(tup.x);
+                    auto y = yFunc(tup.y);
                     // TODO should we actually move to next coordinate here?
-                    if (isFinite(tup[0][0]) && isFinite(tup[1][0]))
+                    if (isFinite(x) && isFinite(y))
                     {
-                        context.lineTo(tup[0][0], tup[1][0]);
+                        context.lineTo(x, y);
                         context.lineWidth = 2.0*flags.size;
                     } else {
                         context.newSubPath();
                     }
                 }
 
-                auto col = colourMap(ColourID(flags.colour));
-                import ggplotd.colourspace : RGBA, toCairoRGBA;
+                auto col = cFunc(flags.colour);
                 context.fillAndStroke( col, flags.fill, flags.alpha );
                 return context;
             };
 
-            AdaptiveBounds bounds;
+
             auto geom = Geom(groupedAes.front.front);
             foreach (tup; coordsZip)
             {
-                bounds.adapt(Point(tup[0][0], tup[1][0]));
-                if (!xs.numeric)
-                    geom.xTickLabels ~= tup[0];
-                if (!ys.numeric)
-                    geom.yTickLabels ~= tup[1];
+                geom.xStore.put(tup.x);
+                geom.yStore.put(tup.y);
             }
             geom.draw = f;
-            geom.colours ~= ColourID(groupedAes.front.front.colour);
-            geom.bounds = bounds;
             return geom;
         }
 
@@ -450,15 +443,10 @@ unittest
 
     import std.range : empty;
 
-    assert(gl.front.xTickLabels.empty);
-    assert(gl.front.yTickLabels.empty);
-
-    assertEqual(gl.front.colours[0][1], "a");
-    assertEqual(gl.front.bounds.min_x, 1.0);
-    assertEqual(gl.front.bounds.max_x, 1.1);
+    assertEqual(gl.front.xStore.min(), 1.0);
+    assertEqual(gl.front.xStore.max(), 1.1);
     gl.popFront;
-    assertEqual(gl.front.colours[0][1], "b");
-    assertEqual(gl.front.bounds.max_x, 3.0);
+    assertEqual(gl.front.xStore.max(), 3.0);
     gl.popFront;
     assert(gl.empty);
 }
@@ -469,8 +457,8 @@ unittest
         "b", "c", "b"], ["a", "b", "b", "a"], ["b", "b", "b", "b"]);
 
     auto gl = geomLine(aes);
-    assertEqual(gl.front.xTickLabels.length, 4);
-    assertEqual(gl.front.yTickLabels.length, 4);
+    assertEqual(gl.front.xStore.store.length, 3);
+    assertEqual(gl.front.yStore.store.length, 2);
 }
 
 unittest
@@ -620,14 +608,10 @@ template geomLabel(AES)
 {
     import std.algorithm : map;
     import std.typecons : Tuple;
-    import ggplotd.aes : numericLabel;
     import ggplotd.range : mergeRange;
-    alias CoordX = typeof(numericLabel(AES.init.map!("a.x")));
-    alias CoordY = typeof(numericLabel(AES.init.map!("a.y")));
     alias CoordType = typeof(DefaultValues
         .merge(Tuple!(string, "justify").init)
-        .mergeRange(AES.init)
-        .mergeRange(Aes!(CoordX, "x", CoordY, "y").init));
+        .mergeRange(AES.init));
 
     struct VolderMort
     {
@@ -638,21 +622,24 @@ template geomLabel(AES)
 
             _aes = DefaultValues
                 .merge(Tuple!(string, "justify")("center"))
-                .mergeRange(aes)
-                .mergeRange( Aes!(CoordX, "x", CoordY, "y")(
-                    CoordX(aes.map!("a.x")), 
-                    CoordY(aes.map!("a.y"))));
+                .mergeRange(aes);
         }
 
         @property auto front()
         {
+            import ggplotd.guide : GuideToDoubleFunction, GuideToColourFunction;
             immutable tup = _aes.front;
-            immutable f = delegate(cairo.Context context, ColourMap colourMap) {
+            immutable f = delegate(cairo.Context context, 
+                 in GuideToDoubleFunction xFunc, in GuideToDoubleFunction yFunc,
+                 in GuideToColourFunction cFunc, in GuideToDoubleFunction sFunc ) {
+                auto x = xFunc(tup.x);
+                auto y = yFunc(tup.y);
+                auto col = cFunc(tup.colour);
                 import std.math : ceil, isFinite;
-                if (!isFinite(tup.x[0]) || !isFinite(tup.y[0]))
+                if (!isFinite(x) || !isFinite(y))
                     return context;
                 context.setFontSize(ceil(14.0*tup.size));
-                context.moveTo(tup.x[0], tup.y[0]);
+                context.moveTo(x, y);
                 context.save();
                 context.identityMatrix;
                 context.rotate(tup.angle);
@@ -670,7 +657,6 @@ template geomLabel(AES)
                 else
                     context.relMoveTo(-0.5*textSize.x, 0.5*textSize.y);
 
-                auto col = colourMap(ColourID(tup.colour));
                 import ggplotd.colourspace : RGBA, toCairoRGBA;
 
                 context.setSourceRGBA(
@@ -683,13 +669,8 @@ template geomLabel(AES)
                 return context;
             };
 
-            AdaptiveBounds bounds;
-            bounds.adapt(Point(tup.x[0], tup.y[0]));
-
             auto geom = Geom( tup );
             geom.draw = f;
-            geom.colours ~= ColourID(tup.colour);
-            geom.bounds = bounds;
  
             return geom;
         }
@@ -757,88 +738,58 @@ unittest
 }
 
 /// Draw a boxplot. The "x" data is used. If labels are given then the data is grouped by the label
-auto geomBox(AES)(AES aes)
+auto geomBox(AES)(AES aesRange)
 {
     import std.algorithm : filter, map;
     import std.array : array;
-    import std.range : Appender, walkLength;
+    import std.range : Appender, walkLength, ElementType;
     import std.typecons : Tuple;
+    import ggplotd.aes : aes, hasAesField;
     import ggplotd.range : mergeRange;
 
     Appender!(Geom[]) result;
 
     // If has y, use that
-    immutable fr = aes.front;
-    static if (__traits(hasMember, fr, "y"))
+    static if (hasAesField!(ElementType!AES, "y"))
     {
-        auto labels = numericLabel( aes.map!("a.y") );
-        auto myAes = aes.mergeRange( Aes!(typeof(labels), "label")( labels ) );
+        auto myAes = aesRange.map!((a) => a.merge(aes!("label")(a.y)));
     } else {
-        static if (__traits(hasMember, fr, "label"))
+        static if (!hasAesField!(ElementType!AES, "label"))
         {
-            // esle If has label, use that
-            auto labels = numericLabel( aes.map!("a.label.to!string") );
-            auto myAes = aes.mergeRange( Aes!(typeof(labels), "label")( labels ) );
-        } else {
             import std.range : repeat, walkLength;
-            auto labels = numericLabel( repeat("a", aes.walkLength) );
-            auto myAes = aes.mergeRange( Aes!(typeof(labels), "label")( labels ) );
+            auto myAes = aesRange.map!((a) => a.merge(aes!("label")(0.0)));
+        } else {
+            auto myAes = aesRange;
         }
     }
     
+    // TODO if x (y in the original aesRange) is numerical then this should relly scale 
+    // by the range
     double delta = 0.2;
-    Tuple!(double, string)[] xTickLabels;
 
     foreach( grouped; myAes.group().filter!((a) => a.walkLength > 3) )
     {
-        auto lims = grouped.map!("a.x")
+        auto lims = grouped.map!("a.x.to!double")
             .array.limits( [0.1,0.25,0.5,0.75,0.9] ).array;
-        auto x = grouped.front.label[0];
-        xTickLabels ~= grouped.front.label;
-        // TODO this should be some kind of loop
+        auto x = grouped.front.label;
         result.put(
-            geomLine( [
-                grouped.front.merge(Tuple!(double, "x", double, "y" )( 
-                    x, lims[0] )),
-                grouped.front.merge(Tuple!(double, "x", double, "y" )( 
-                    x, lims[1] )),
-                grouped.front.merge(Tuple!(double, "x", double, "y" )( 
-                    x+delta, lims[1] )),
-                grouped.front.merge(Tuple!(double, "x", double, "y" )( 
-                    x+delta, lims[2] )),
-                grouped.front.merge(Tuple!(double, "x", double, "y" )( 
-                    x-delta, lims[2] )),
-                grouped.front.merge(Tuple!(double, "x", double, "y" )( 
-                    x-delta, lims[3] )),
-                grouped.front.merge(Tuple!(double, "x", double, "y" )( 
-                    x, lims[3] )),
-                grouped.front.merge(Tuple!(double, "x", double, "y" )( 
-                    x, lims[4] )),
-
-                grouped.front.merge(Tuple!(double, "x", double, "y" )( 
-                    x, lims[3] )),
-                grouped.front.merge(Tuple!(double, "x", double, "y" )( 
-                    x+delta, lims[3] )),
-                grouped.front.merge(Tuple!(double, "x", double, "y" )( 
-                    x+delta, lims[2] )),
-                grouped.front.merge(Tuple!(double, "x", double, "y" )( 
-                    x-delta, lims[2] )),
-                grouped.front.merge(Tuple!(double, "x", double, "y" )( 
-                    x-delta, lims[1] )),
-                grouped.front.merge(Tuple!(double, "x", double, "y" )( 
-                    x, lims[1] ))
-             ] )
+            [grouped.front.merge(aes!("x", "y", "width", "height")
+                (x, (lims[2]+lims[1])/2.0, 2*delta, lims[2]-lims[1])),
+             grouped.front.merge(aes!("x", "y", "width", "height")
+                (x, (lims[3]+lims[2])/2.0, 2*delta, lims[3]-lims[2]))
+            ].geomRectangle
         );
-    }
 
-    import std.algorithm : sort;
-    xTickLabels = xTickLabels.sort!((a,b) => a[0] < b[0]).array;
+        result.put(
+            [grouped.front.merge(aes!("x", "y")(x,lims[0])),
+                grouped.front.merge(aes!("x", "y")(x,lims[1]))].geomLine);
+        result.put(
+            [grouped.front.merge(aes!("x", "y")(x,lims[3])),
+                grouped.front.merge(aes!("x", "y")(x,lims[4]))].geomLine);
 
-    foreach( ref g; result.data )
-    {
-        g.xTickLabels = xTickLabels;
-        g.bounds.min_x = xTickLabels.front[0] - 0.5;
-        g.bounds.max_x = xTickLabels[$-1][0] + 0.5;
+        // Increase plot bounds
+        result.data.front.xStore.put(x, 2*delta);
+        result.data.front.xStore.put(x, -2*delta);
     }
 
     return result.data;
@@ -849,31 +800,29 @@ unittest
 {
     import std.array : array;
     import std.algorithm : map;
-    import std.range : repeat, iota, chain;
+    import std.range : repeat, iota, chain, zip;
     import std.random : uniform;
     auto xs = iota(0,50,1).map!((x) => uniform(0.0,5)+uniform(0.0,5)).array;
     auto cols = "a".repeat(25).chain("b".repeat(25)).array;
-    auto aes = Aes!(typeof(xs), "x", typeof(cols), "colour", 
-        double[], "fill", typeof(cols), "label" )( 
-            xs, cols, 0.45.repeat(xs.length).array, cols);
-    auto gb = geomBox( aes );
-    assertEqual( gb.front.bounds.min_x, -0.5 );
+    auto aesRange = zip(xs, cols)
+        .map!((a) => aes!("x", "colour", "fill", "label")(a[0], a[1], 0.45, a[1]));
+    auto gb = geomBox( aesRange );
+    assertEqual( gb.front.xStore.min(), -0.4 );
 }
 
 unittest 
 {
     import std.array : array;
     import std.algorithm : map;
-    import std.range : repeat, iota, chain;
+    import std.range : repeat, iota, chain, zip;
     import std.random : uniform;
     auto xs = iota(0,50,1).map!((x) => uniform(0.0,5)+uniform(0.0,5)).array;
     auto cols = "a".repeat(25).chain("b".repeat(25)).array;
     auto ys = 2.repeat(25).chain(3.repeat(25)).array;
-    auto aes = Aes!(typeof(xs), "x", typeof(cols), "colour", 
-        double[], "fill", typeof(ys), "y" )( 
-            xs, cols, 0.45.repeat(xs.length).array, ys);
-    auto gb = geomBox( aes );
-    assertEqual( gb.front.bounds.min_x, 1.5 );
+    auto aesRange = zip(xs, cols, ys)
+        .map!((a) => aes!("x", "colour", "fill", "y")(a[0], a[1], .45, a[2]));
+    auto gb = geomBox( aesRange );
+    assertEqual( gb.front.xStore.min, 1.6 );
 }
 
 unittest 
@@ -897,20 +846,20 @@ unittest
 {
     import std.array : array;
     import std.algorithm : map;
-    import std.range : repeat, iota, chain;
+    import std.range : repeat, iota, chain, zip;
     import std.random : uniform;
     auto xs = iota(0,50,1).map!((x) => uniform(0.0,5)+uniform(0.0,5)).array;
     auto cols = "a".repeat(25).chain("b".repeat(25)).array;
-    auto aes = Aes!(typeof(xs), "x", typeof(cols), "colour", 
-        double[], "fill")( 
-            xs, cols, 0.45.repeat(xs.length).array);
-    auto gb = geomBox( aes );
-    assertEqual( gb.front.bounds.min_x, -0.5 );
+    auto aesRange = zip(xs, cols)
+        .map!((a) => aes!("x", "colour", "fill")(a[0], a[1], .45));
+    auto gb = geomBox( aesRange );
+    assertEqual( gb.front.xStore.min, -0.4 );
 }
 
 /// Draw a polygon 
 auto geomPolygon(AES)(AES aes)
 {
+    // TODO would be nice to allow grouping of triangles
     import std.array : array;
     import std.algorithm : map, swap;
     import std.conv : to;
@@ -918,43 +867,49 @@ auto geomPolygon(AES)(AES aes)
     import ggplotd.range : mergeRange;
 
     auto merged = DefaultValues.mergeRange(aes);
-    // Turn into vertices.
-    static if (is(typeof(merged.front.colour)==ColourID))
-        auto vertices = merged.map!( (t) => Vertex3D( t.x.to!double, t.y.to!double, 
-                    t.colour[0] ) );
-    else
-        auto vertices = merged.map!( (t) => Vertex3D( t.x.to!double, t.y.to!double, 
-                    t.colour.to!double ) );
-
-    // Find lowest, highest
-    auto triangle = vertices.array;
-    if (triangle[1].z < triangle[0].z)
-        swap( triangle[1], triangle[0] );
-    if (triangle[2].z < triangle[0].z)
-        swap( triangle[2], triangle[0] );
-    if (triangle[1].z > triangle[2].z)
-        swap( triangle[1], triangle[2] );
-
-    if (triangle.length > 3)
-        foreach( v; triangle[3..$] )
-        {
-            if (v.z < triangle[0].z)
-                swap( triangle[0], v );
-            else if ( v.z > triangle[2].z )
-                swap( triangle[2], v );
-        }
-    auto gV = gradientVector( triangle[0..3] );
 
     immutable flags = merged.front;
 
     auto geom = Geom( flags );
 
-    foreach( v; vertices )
-        geom.bounds.adapt(Point(v.x, v.y));
-
-    // Define drawFunction
-    immutable f = delegate(cairo.Context context, ColourMap colourMap ) 
+    foreach(tup; merged)
     {
+        geom.xStore.put(tup.x);
+        geom.yStore.put(tup.y);
+        geom.colourStore.put(tup.colour);
+    }
+
+    import ggplotd.guide : GuideToDoubleFunction, GuideToColourFunction;
+    // Define drawFunction
+    immutable f = delegate(cairo.Context context, 
+         in GuideToDoubleFunction xFunc, in GuideToDoubleFunction yFunc,
+         in GuideToColourFunction cFunc, in GuideToDoubleFunction sFunc ) 
+    {
+        // Turn into vertices.
+        auto vertices = merged.map!((t) => Vertex3D( xFunc(t.x), yFunc(t.y), 
+            cFunc.toDouble(t.colour)));
+
+            // Find lowest, highest
+        auto triangle = vertices.array;
+        if (triangle[1].z < triangle[0].z)
+            swap( triangle[1], triangle[0] );
+        if (triangle[2].z < triangle[0].z)
+            swap( triangle[2], triangle[0] );
+        if (triangle[1].z > triangle[2].z)
+            swap( triangle[1], triangle[2] );
+
+        if (triangle.length > 3) 
+        { 
+            foreach( v; triangle[3..$] )
+            {
+                if (v.z < triangle[0].z)
+                    swap( triangle[0], v );
+                else if ( v.z > triangle[2].z )
+                    swap( triangle[2], v );
+            }
+        }
+        auto gV = gradientVector( triangle[0..3] );
+
         auto gradient = new cairo.LinearGradient( gV[0].x, gV[0].y, 
             gV[1].x, gV[1].y );
 
@@ -975,8 +930,7 @@ auto geomPolygon(AES)(AES aes)
             Ideally we would see how cairo does their colourgradient and implement the same
             for other colourspaces.
 i       */
-        auto no_stops = 10.0;
-        import std.range : iota;
+        auto no_stops = 10.0; import std.range : iota;
         import std.array : array;
         auto stepsize = (gV[1].z - gV[0].z)/no_stops;
         auto steps = [gV[0].z, gV[1].z];
@@ -984,7 +938,7 @@ i       */
             steps = iota(gV[0].z, gV[1].z, stepsize).array ~ gV[1].z;
 
         foreach(i, z; steps) {
-            auto col = colourMap(ColourID(z));
+            auto col = cFunc(z);
             import ggplotd.colourspace : RGBA, toCairoRGBA;
             gradient.addColorStopRGBA(i/(steps.length-1.0),
                 RGBA(col.r, col.g, col.b, flags.alpha).toCairoRGBA
@@ -1004,9 +958,6 @@ i       */
     };
 
     geom.draw = f;
-
-    geom.colours = merged.map!((t) => ColourID(t.colour)).array;
-
     return [geom];
 }
 

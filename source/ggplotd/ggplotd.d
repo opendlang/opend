@@ -97,10 +97,16 @@ private auto drawTitle( in Title title, ref cairo.Surface surface,
 }
 
 import ggplotd.scale : ScaleType;
+import ggplotd.guide : GuideToDoubleFunction, GuideToColourFunction;
 private auto drawGeom( in Geom geom, ref cairo.Surface surface,
-    in ColourMap colourMap, in ScaleType scaleFunction, in Bounds bounds, 
-    in Margins margins, int width, int height )
+     in GuideToDoubleFunction xFunc, in GuideToDoubleFunction yFunc,
+     in GuideToColourFunction cFunc, in GuideToDoubleFunction sFunc, 
+     in ScaleType scaleFunction, 
+     in Bounds bounds, 
+     in Margins margins, int width, int height )
 {
+    if (geom.draw.isNull)
+        return surface;
     cairo.Context context;
     if (geom.mask) {
         auto plotSurface = cairo.Surface.createForRectangle(surface,
@@ -116,7 +122,7 @@ private auto drawGeom( in Geom geom, ref cairo.Surface surface,
     context = scaleFunction(context, bounds,
         width.to!double - (margins.left+margins.right),
         height.to!double - (margins.top+margins.bottom));
-    context = geom.draw(context, colourMap);
+    context = geom.draw(context, xFunc, yFunc, cFunc, sFunc);
     return surface;
 }
 
@@ -205,23 +211,43 @@ struct GGPlotD
         import std.typecons : Tuple;
 
         import ggplotd.bounds : AdaptiveBounds;
-        import ggplotd.colour : ColourID, createColourMap;
+        import ggplotd.guide : GuideStore;
 
-        AdaptiveBounds bounds;
-        ColourID[] colourIDs;
         Tuple!(double, string)[] xAxisTicks;
         Tuple!(double, string)[] yAxisTicks;
 
+        GuideStore!"x" xStore;
+        GuideStore!"y" yStore;
+        GuideStore!"colour" colourStore;
+        GuideStore!"size" sizeStore;
+
         foreach (geom; geomRange.data)
         {
-            bounds.adapt(geom.bounds);
-            colourIDs ~= geom.colours;
-            xAxisTicks ~= geom.xTickLabels;
-            yAxisTicks ~= geom.yTickLabels;
+            xStore.put(geom.xStore);
+            yStore.put(geom.yStore);
+            colourStore.put(geom.colourStore);
+            sizeStore.put(geom.sizeStore);
         }
 
-        auto colourMap = createColourMap( colourIDs, 
-                this.colourGradient() );
+        AdaptiveBounds bounds;
+        bounds.adapt(xStore.min(), yStore.min());
+        bounds.adapt(xStore.max(), yStore.max());
+
+        import std.algorithm : map;
+        import std.array : array;
+        import std.typecons : tuple;
+        if (xStore.hasDiscrete)
+            xAxisTicks = xStore
+                .storeHash
+                .byKeyValue()
+                .map!((kv) => tuple(kv.value, kv.key))
+                .array;
+        if (yStore.hasDiscrete)
+            yAxisTicks = yStore
+                .storeHash
+                .byKeyValue()
+                .map!((kv) => tuple(kv.value, kv.key))
+                .array;
 
         // Axis
         import std.algorithm : sort, uniq, min, max;
@@ -232,11 +258,11 @@ struct GGPlotD
 
         // TODO move this out of here and add some tests
         // If ticks are provided then we make sure the bounds include them
-        auto sortedTicks = xAxisTicks.sort().uniq.array;
-        if (!sortedTicks.empty)
+        auto xSortedTicks = xAxisTicks.sort().uniq.array;
+        if (!xSortedTicks.empty)
         {
-            bounds.min_x = min( bounds.min_x, sortedTicks[0][0] );
-            bounds.max_x = max( bounds.max_x, sortedTicks[$-1][0] );
+            bounds.min_x = min( bounds.min_x, xSortedTicks[0][0] );
+            bounds.max_x = max( bounds.max_x, xSortedTicks[$-1][0] );
         }
         if (initialized(xaxis))
         {
@@ -245,11 +271,11 @@ struct GGPlotD
         }
 
         // This needs to happen before the offset of x axis is set
-        sortedTicks = yAxisTicks.sort().uniq.array;
-        if (!sortedTicks.empty)
+        auto ySortedTicks = yAxisTicks.sort().uniq.array;
+        if (!ySortedTicks.empty)
         {
-            bounds.min_y = min( bounds.min_y, sortedTicks[0][0] );
-            bounds.max_y = max( bounds.max_y, sortedTicks[$-1][0] );
+            bounds.min_y = min( bounds.min_y, ySortedTicks[0][0] );
+            bounds.max_y = max( bounds.max_y, ySortedTicks[$-1][0] );
         }
         if (initialized(yaxis))
         {
@@ -267,7 +293,7 @@ struct GGPlotD
         // TODO: Should really take separate scaling for number of ticks (defaultScaling(width)) 
         // and for font: defaultScaling(widht, height)
         auto aesX = axisAes("x", bounds.min_x, bounds.max_x, offset, defaultScaling(width, height),
-            sortedTicks );
+            xSortedTicks );
 
         offset = bounds.min_x;
         if (!isNaN(yaxis.offset))
@@ -275,7 +301,7 @@ struct GGPlotD
         if (!yaxis.show) // Trixk to draw the axis off screen if it is hidden
             offset = xaxis.min - bounds.width;
         auto aesY = axisAes("y", bounds.min_y, bounds.max_y, offset, defaultScaling(height, width),
-            sortedTicks );
+            ySortedTicks );
 
         import ggplotd.geom : geomAxis;
         import ggplotd.axes : tickLength;
@@ -295,10 +321,17 @@ struct GGPlotD
             plotMargins.right += legends[0].width;
 
         // Plot axis and geomRange
+        import ggplotd.guide : guideFunction;
+        auto xFunc = guideFunction(xStore);
+        auto yFunc = guideFunction(yStore);
+        auto cFunc = guideFunction(colourStore, this.colourGradient());
+        auto sFunc = guideFunction(sizeStore);
+
         foreach (geom; chain(geomRange.data, gR) )
         {
             surface = geom.drawGeom( surface,
-                colourMap, scale(), bounds, 
+                xFunc, yFunc, cFunc, sFunc,
+                scale(), bounds, 
                 plotMargins, width, height );
         }
 
@@ -317,7 +350,7 @@ struct GGPlotD
                     y, legend.width, legend.height ));//margins.right, margins.right));
                 legendSurface = drawContinuousLegend( legendSurface, 
                 legend.width, legend.height, 
-                    colourIDs, this.colourGradient );
+                    colourStore, this.colourGradient );
             } else if (legend.type == "discrete") {
                 import ggplotd.legend : drawDiscreteLegend; 
                 auto legendSurface = cairo.Surface.createForRectangle(surface,
@@ -325,7 +358,7 @@ struct GGPlotD
                     y, legend.width, legend.height ));//margins.right, margins.right));
                 legendSurface = drawDiscreteLegend( legendSurface, 
                 legend.width, legend.height, 
-                    colourIDs, this.colourGradient );
+                    colourStore, this.colourGradient );
             }
         }
 
@@ -682,6 +715,7 @@ unittest
         .map!((a) => aes!("x", "y", "colour")(a[0], a[1], a[2]))
         .geomPoint
         .putIn(GGPlotD());
+    gg.put(background(RGBA(0.7, 0.7, 0.7, 1)));
     gg.save( "background.svg" );
 }
 
