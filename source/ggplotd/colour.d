@@ -349,10 +349,11 @@ ColourGradientFunction colourGradient(T)( string name )
         }
         return colourGradient(cg, false);
     }
+    import std.math : PI;
     import ggplotd.colourspace : HCY;
     auto cg = ColourGradient!HCY();
-    cg.put( 0, HCY(200, 0.5, 0) ); 
-    cg.put( 1, HCY(200, 0.5, 0.7) ); 
+    cg.put( 0, HCY(200/360.0, 0.5, 0)); 
+    cg.put( 1, HCY(200/360.0, 0.5, 0.7)); 
     return colourGradient(cg, false);
 }
 
