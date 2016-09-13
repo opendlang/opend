@@ -150,7 +150,8 @@ private struct GuideStore(string type = "")
                 import ggplotd.colourspace : isColour;
                 static if (!isColour!T) {
                     static if (is(T==string)) {
-                        if (value !in namedColours) 
+                        auto col = namedColour(value);
+                        if (col.isNull) 
                         {
                             _store.put(value, offset);
                         }
@@ -216,7 +217,7 @@ private struct GuideStore(string type = "")
 
     static if (type == "colour")
     {
-        import ggplotd.colour : namedColours;
+        import ggplotd.colour : namedColour;
     }
 }
 
@@ -377,8 +378,9 @@ struct GuideToColourFunction
                 return value.toColourSpace!RGBA;
             } else {
                 static if (is(T==string)) {
-                    if (value in namedColours)
-                        return namedColours[value];
+                    auto col = namedColour(value);
+                    if (!col.isNull)
+                        return RGBA(col.r, col.g, col.b, 1);
                     else
                         return stringConvert(value);
                 } else {
@@ -406,7 +408,7 @@ struct GuideToColourFunction
     /// Function that governs translation from string to double (discrete to continuous)
     double delegate(string) stringToDoubleConvert;
     import ggplotd.colourspace : isColour;
-    import ggplotd.colour : namedColours, RGBA;
+    import ggplotd.colour : namedColour, RGBA;
 }
 
 /// Create an appropiate GuidToDoubleFunction from a GuideStore
@@ -510,14 +512,14 @@ auto guideFunction(string type)(GuideStore!type gs, ColourGradientFunction colou
 
 unittest
 {
-    import ggplotd.colour : colourGradient, namedColours;
+    import ggplotd.colour : colourGradient, namedColour;
     import ggplotd.colourspace : HCY, RGBA, toTuple;
     GuideStore!"colour" gs;
     gs.put([0.1, 3.0]);
     auto gf = guideFunction(gs, colourGradient!HCY("blue-red"));
-    assertEqual(gf(0.1).toTuple, namedColours["blue"].toTuple);
-    assertEqual(gf(3.0).toTuple, namedColours["red"].toTuple);
-    assertEqual(gf("green").toTuple, namedColours["green"].toTuple);
-    assertEqual(gf(namedColours["green"]).toTuple, namedColours["green"].toTuple);
-    assertEqual(gf(double.init).toTuple, namedColours["none"].toTuple);
+    assertEqual(gf(0.1).toTuple, namedColour("blue").get().toTuple);
+    assertEqual(gf(3.0).toTuple, namedColour("red").get().toTuple);
+    assertEqual(gf("green").toTuple, namedColour("green").get().toTuple);
+    assertEqual(gf(namedColour("green").get()).toTuple, namedColour("green").get().toTuple);
+    assertEqual(gf(double.init).toTuple, RGBA(0,0,0,0).toTuple);
 }

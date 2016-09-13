@@ -28,8 +28,11 @@ ThemeFunction background( RGBA colour )
 +/
 ThemeFunction background( string colour )
 {
-    import ggplotd.colour : namedColours;
-    return delegate(Theme t) { t.backgroundColour = namedColours[colour]; 
+    import ggplotd.colour : namedColour;
+    auto col = namedColour(colour);
+    assert(!col.isNull, "Unknown named colour");
+    return delegate(Theme t) { t.backgroundColour = 
+            RGBA(col.r, col.g, col.b, 1); 
         return t; };
 }
 

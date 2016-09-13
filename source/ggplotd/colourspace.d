@@ -5,11 +5,11 @@ This module mostly exist to have a bridge with the ggplotd code and the ggplotd.
 */
 module ggplotd.colourspace;
 
-import chsx = ggplotd.color.hsx;
-import crgb = ggplotd.color.rgb;
-import cxyz = ggplotd.color.xyz;
-import cconv = ggplotd.color.conv;
-import cColor = ggplotd.color;
+import chsx = std.experimental.color.hsx;
+import crgb = std.experimental.color.rgb;
+import cxyz = std.experimental.color.xyz;
+import cspace = std.experimental.color.colorspace;
+import cColor = std.experimental.color;
 
 /// HCY colourspace
 alias HCY = chsx.HCY!double;
@@ -21,7 +21,7 @@ alias RGBA = crgb.RGB!("rgba",double);
 alias XYZ = cxyz.XYZ!double;
 
 /// Convert to another colour space
-alias toColourSpace = cconv.convertColor;
+alias toColourSpace = cspace.convertColor;
 
 /// Check whether it is a colour
 alias isColour = cColor.isColor;
