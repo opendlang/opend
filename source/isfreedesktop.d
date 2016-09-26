@@ -3,7 +3,7 @@
  * Currently Linux, all *BSD and Hurd are considered to be freedesktop-compatible, hence isFreedesktop is evaluated to true on these platforms.
  * This guess is somewhat optimistic, since there are vendor-specific operating systems based on these kernels in the world while their desktops don't implement freedesktop specifications.
  * Authors: 
- *  $(LINK2 https://github.com/MyLittleRobo, Roman Chistokhodov)
+ *  $(LINK2 https://github.com/FreeSlave, Roman Chistokhodov)
  * Copyright:
  *  Roman Chistokhodov, 2016
  * License: 
@@ -30,7 +30,8 @@ version(OSX) {
     enum isFreedesktop = true;
 } else version(Hurd) {
     enum isFreedesktop = true;
+} else version(Solaris) {
+    enum isFreedesktop = true;
 } else {
-    //What about Solaris?
     enum isFreedesktop = false;
 }
