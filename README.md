@@ -3,9 +3,9 @@
 D library for getting standard paths (e.g. Pictures, Music, Documents and also generic configuration and data paths). 
 Inspired by QStandardPaths from Qt.
 
-[![Build Status](https://travis-ci.org/MyLittleRobo/standardpaths.svg?branch=master)](https://travis-ci.org/MyLittleRobo/standardpaths)
+[![Build Status](https://travis-ci.org/FreeSlave/standardpaths.svg?branch=master)](https://travis-ci.org/FreeSlave/standardpaths)
 
-[Online documentation](http://mylittlerobo.github.io/standardpaths/standardpaths.html)
+[Online documentation](http://freeslave.github.io/standardpaths/standardpaths.html)
 
 ## Platform support
 
