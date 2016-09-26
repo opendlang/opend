@@ -2,7 +2,7 @@
  * Getting XDG base directories.
  * Note: These functions are defined only on freedesktop systems.
  * Authors: 
- *  $(LINK2 https://github.com/MyLittleRobo, Roman Chistokhodov)
+ *  $(LINK2 https://github.com/FreeSlave, Roman Chistokhodov)
  * Copyright:
  *  Roman Chistokhodov, 2016
  * License: 
