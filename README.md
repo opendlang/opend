@@ -44,7 +44,7 @@ Examples can be found in the `examples` directory, and run with `dub run erupted
 Platform surface extensions
 ---------------------------
 
-The usage of a third party library like glfw3 is highly recommended instead of vulkan platforms. Dlang has only one official platform binding in phobos which is for windows found in module `core.sys.windows.windows`. Other bindings to XCB, XLIB and Wayland can be found in the dub registry and are supported experimentally. 
+The usage of a third party library like glfw3 is highly recommended instead of vulkan platforms surfaces. Dlang has only one official platform binding in phobos which is for windows, found in module `core.sys.windows.windows`. Other bindings to XCB, XLIB and Wayland can be found in the dub registry and are supported experimentally. 
 However, if you wish to create vulkan surface(s) yourself you have three choices:
 
 1. The dub way, this is experimental, currently only three bindings are listed in the registry. Dub fetches them and adds them to erupted build dependency when you specify any of these sub configurations in your projects dub.json (add `-derelict-loader` to the config name if you want to be able to laod `vkGetInstanceProcAddr` from derelict):
@@ -67,7 +67,13 @@ Additional info:
 `"versions" : [ "VK_USE_PLATFORM_WIN32_KHR" ]`.
 The phobos windows modules will be used in that case.
 * wayland-client.h cannot exist as module name. The maintainer of `wayland-client-d` choose `wayland.client` as module name and the name is used in `erupted/types` as well.
-* for android platform, I have not a single clue how this is supposed to work. If you are interested in android an have an idea how it should work feel free to open up an issue. 
+* for android platform, I have not a single clue how this is supposed to work. If you are interested in android and have an idea how it should work feel free to open up an issue. 
+
+
+Platform extensions
+-------------------
+
+First time non-surface platform (windows) specific extensions were released by NVidia in Vulkan-Docs-v1.0.25, `VK_NV_external_memory_win32` and `VK_NV_win32_keyed_mutex`. To use these extensions specify `"versions" : [ "VK_USE_PLATFORM_WIN32_KHR" ]`) in your projects dub.json. This will also make `VK_KHR_win32_surface` available and vice versa, even if it is not required when using e.g. `GLFW`. A more flexible platform extension mechanism is WIP.
 
 
 Generating Bindings
