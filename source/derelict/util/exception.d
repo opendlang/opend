@@ -4,7 +4,7 @@ Boost Software License - Version 1.0 - August 17th, 2003
 
 Permission is hereby granted, free of charge, to any person or organization
 obtaining a copy of the software and accompanying documentation covered by
-this license ( the "Software" ) to use, reproduce, display, distribute,
+this license (the "Software") to use, reproduce, display, distribute,
 execute, and transmit the Software, and to prepare derivative works of the
 Software, and to permit third-parties to whom the Software is furnished to
 do so, all subject to the following:
@@ -31,8 +31,8 @@ module derelict.util.exception;
  Base class for all exceptions thrown by Derelict packages.
 +/
 class DerelictException : Exception {
-    public this( string msg ) {
-        super( msg );
+    public this(string msg, size_t line = __LINE__, string file = __FILE__) {
+        super(msg, file, line, null);
     }
 }
 
@@ -54,25 +54,25 @@ class SharedLibLoadException : DerelictException
     private string _sharedLibName;
 
     public {
-        static void throwNew( string[] libNames, string[] reasons ) {
+        static void throwNew(string[] libNames, string[] reasons, size_t line = __LINE__, string file = __FILE__) {
             string msg = "Failed to load one or more shared libraries:";
-            foreach( i, n; libNames ) {
+            foreach(i, n; libNames) {
                 msg ~= "\n\t" ~ n ~ " - ";
-                if( i < reasons.length )
+                if(i < reasons.length)
                     msg ~= reasons[i];
                 else
                     msg ~= "Unknown";
             }
-            throw new SharedLibLoadException( msg );
+            throw new SharedLibLoadException(msg, line, file);
         }
 
-        this( string msg ) {
-            super( msg );
+        this(string msg, size_t line = __LINE__, string file = __FILE__) {
+            super(msg, line, file);
             _sharedLibName = "";
         }
 
-        this( string msg, string sharedLibName ) {
-            super( msg );
+        this(string msg, string sharedLibName, size_t line = __LINE__, string file = __FILE__) {
+            super(msg, line, file);
             _sharedLibName = sharedLibName;
         }
 
@@ -91,12 +91,12 @@ class SymbolLoadException : DerelictException
     private string _symbolName;
 
     public {
-        this( string msg ) {
-            super( msg );
+        this(string msg, size_t line = __LINE__, string file = __FILE__) {
+            super(msg, line, file);
         }
 
-        this( string sharedLibName, string symbolName ) {
-            super( "Failed to load symbol " ~ symbolName ~ " from shared library " ~ sharedLibName );
+        this(string sharedLibName, string symbolName, size_t line = __LINE__, string file = __FILE__) {
+            super("Failed to load symbol " ~ symbolName ~ " from shared library " ~ sharedLibName, line, file);
             _symbolName = symbolName;
         }
 
@@ -126,9 +126,9 @@ enum ShouldThrow {
  functions the loader expects to find, provided of course that the app does not need
  to use those functions.
 +/
-alias MissingSymbolCallbackFunc = ShouldThrow function( string symbolName );
+alias MissingSymbolCallbackFunc = ShouldThrow function(string symbolName);
 /// Ditto
-alias MissingSymbolCallbackDg = ShouldThrow delegate( string symbolName );
+alias MissingSymbolCallbackDg = ShouldThrow delegate(string symbolName);
 
 /// Convenient alias to use as a return value.
 alias MissingSymbolCallback = MissingSymbolCallbackDg;
