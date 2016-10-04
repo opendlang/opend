@@ -11,6 +11,6 @@
     "targetPath": "lib",
 
     "dependencies": {
-        "derelict-util": ">=1.0.3"
+        "derelict-util": "~>2.0.6"
     }
 }
