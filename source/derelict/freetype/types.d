@@ -268,7 +268,7 @@ enum : uint {
     }
 
     bool FT_IS_NAMED_INSTANCE(FT_FaceRec* face) {
-        return (face.face_index & 0x7FFF0000L);
+        return (face.face_index & 0x7FFF0000L) == 0;
     }
 
     bool FT_IS_CID_KEYED(FT_FaceRec* face) {
