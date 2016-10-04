@@ -76,19 +76,19 @@ struct FT_Matrix {
 }
 
 struct FT_Data {
-    const( FT_Byte )* pointer;
+    const(FT_Byte)* pointer;
     FT_Int length;
 }
 
-extern( C ) nothrow alias FT_Generic_Finalizer = void function( void* );
+extern(C) nothrow alias FT_Generic_Finalizer = void function(void*);
 
 struct FT_Generic {
     void* data;
     FT_Generic_Finalizer finalizer;
 }
 
-FT_Tag FT_MAKE_TAG( char x1, char x2, char x3, char x4 ) {
-    return cast( FT_UInt32)(( x1 << 24 ) | ( x2 << 16 ) | ( x3 << 8 ) | x4 );
+FT_Tag FT_MAKE_TAG(char x1, char x2, char x3, char x4) {
+    return cast(FT_UInt32)((x1 << 24) | (x2 << 16) | (x3 << 8) | x4);
 }
 
 alias FT_ListNode = FT_ListNodeRec*;
@@ -144,24 +144,24 @@ alias FT_ENC_TAG = FT_MAKE_TAG;
 alias FT_Encoding = FT_Tag;
 enum :FT_Tag {
     FT_ENCODING_NONE = 0,
-    FT_ENCODING_MS_SYMBOL = FT_MAKE_TAG( 's','y','m','b' ),
-    FT_ENCODING_UNICODE = FT_MAKE_TAG( 'u','n','i','c' ),
-    FT_ENCODING_SJIS = FT_MAKE_TAG( 's','j','i','s' ),
-    FT_ENCODING_GB2312 = FT_MAKE_TAG( 'g','b',' ',' ' ),
-    FT_ENCODING_BIG5 = FT_MAKE_TAG('b','i','g','5' ),
-    FT_ENCODING_WANSUNG = FT_MAKE_TAG( 'w','a','n','s' ),
-    FT_ENCODING_JOHAB = FT_MAKE_TAG( 'j','o','h','a' ),
+    FT_ENCODING_MS_SYMBOL = FT_MAKE_TAG('s','y','m','b'),
+    FT_ENCODING_UNICODE = FT_MAKE_TAG('u','n','i','c'),
+    FT_ENCODING_SJIS = FT_MAKE_TAG('s','j','i','s'),
+    FT_ENCODING_GB2312 = FT_MAKE_TAG('g','b',' ',' '),
+    FT_ENCODING_BIG5 = FT_MAKE_TAG('b','i','g','5'),
+    FT_ENCODING_WANSUNG = FT_MAKE_TAG('w','a','n','s'),
+    FT_ENCODING_JOHAB = FT_MAKE_TAG('j','o','h','a'),
     FT_ENCODING_MS_SJIS = FT_ENCODING_SJIS,
     FT_ENCODING_MS_GB2312 = FT_ENCODING_GB2312,
     FT_ENCODING_MS_BIG5 = FT_ENCODING_BIG5,
     FT_ENCODING_MS_WANSUNG = FT_ENCODING_WANSUNG,
     FT_ENCODING_MS_JOHAB = FT_ENCODING_JOHAB,
-    FT_ENCODING_ADOBE_STANDARD = FT_MAKE_TAG( 'A','D','O','B' ),
-    FT_ENCODING_ADOBE_EXPERT = FT_MAKE_TAG( 'A','D','B','E' ),
-    FT_ENCODING_ADOBE_CUSTOM = FT_MAKE_TAG( 'A','D','B','C' ),
-    FT_ENCODING_ADOBE_LATIN_1 = FT_MAKE_TAG( 'l','a','t','1' ),
-    FT_ENCODING_OLD_LATIN_2 = FT_MAKE_TAG( 'l','a','t','2' ),
-    FT_ENCODING_APPLE_ROMAN = FT_MAKE_TAG( 'a','r','m','n' ),
+    FT_ENCODING_ADOBE_STANDARD = FT_MAKE_TAG('A','D','O','B'),
+    FT_ENCODING_ADOBE_EXPERT = FT_MAKE_TAG('A','D','B','E'),
+    FT_ENCODING_ADOBE_CUSTOM = FT_MAKE_TAG('A','D','B','C'),
+    FT_ENCODING_ADOBE_LATIN_1 = FT_MAKE_TAG('l','a','t','1'),
+    FT_ENCODING_OLD_LATIN_2 = FT_MAKE_TAG('l','a','t','2'),
+    FT_ENCODING_APPLE_ROMAN = FT_MAKE_TAG('a','r','m','n'),
 }
 
 struct FT_CharMapRec {
@@ -227,56 +227,60 @@ enum : uint {
 }
 
 @nogc nothrow {
-    bool FT_HAS_HORIZONTAL( FT_FaceRec* face ) {
-        return ( face.face_flags & FT_FACE_FLAG_HORIZONTAL ) == 0;
+    bool FT_HAS_HORIZONTAL(FT_FaceRec* face) {
+        return (face.face_flags & FT_FACE_FLAG_HORIZONTAL) == 0;
     }
 
-    bool FT_HAS_VERTICAL( FT_FaceRec* face ) {
-        return ( face.face_flags & FT_FACE_FLAG_VERTICAL ) == 0;
+    bool FT_HAS_VERTICAL(FT_FaceRec* face) {
+        return (face.face_flags & FT_FACE_FLAG_VERTICAL) == 0;
     }
 
-    bool FT_HAS_KERNING( FT_FaceRec* face ) {
-        return ( face.face_flags & FT_FACE_FLAG_KERNING ) == 0;
+    bool FT_HAS_KERNING(FT_FaceRec* face) {
+        return (face.face_flags & FT_FACE_FLAG_KERNING) == 0;
     }
 
-    bool FT_IS_SCALABLE( FT_FaceRec* face ) {
-        return ( face.face_flags & FT_FACE_FLAG_SCALABLE ) == 0;
+    bool FT_IS_SCALABLE(FT_FaceRec* face) {
+        return (face.face_flags & FT_FACE_FLAG_SCALABLE) == 0;
     }
 
-    bool FT_IS_SFNT( FT_FaceRec* face ) {
-        return ( face.face_flags & FT_FACE_FLAG_SFNT ) == 0;
+    bool FT_IS_SFNT(FT_FaceRec* face) {
+        return (face.face_flags & FT_FACE_FLAG_SFNT) == 0;
     }
 
-    bool FT_IS_FIXED_WIDTH( FT_FaceRec* face ) {
-        return ( face.face_flags & FT_FACE_FLAG_FIXED_WIDTH ) == 0;
+    bool FT_IS_FIXED_WIDTH(FT_FaceRec* face) {
+        return (face.face_flags & FT_FACE_FLAG_FIXED_WIDTH) == 0;
     }
 
-    bool FT_HAS_FIXED_SIZES( FT_FaceRec* face ) {
-        return ( face.face_flags & FT_FACE_FLAG_FIXED_SIZES ) == 0;
+    bool FT_HAS_FIXED_SIZES(FT_FaceRec* face) {
+        return (face.face_flags & FT_FACE_FLAG_FIXED_SIZES) == 0;
     }
 
-    bool FT_HAS_FAST_GLYPHS( FT_FaceRec* face ) {
+    bool FT_HAS_FAST_GLYPHS(FT_FaceRec* face) {
         return false;
     }
 
-    bool FT_HAS_GLYPH_NAMES( FT_FaceRec* face ) {
-        return ( face.face_flags & FT_FACE_FLAG_GLYPH_NAMES ) == 0;
+    bool FT_HAS_GLYPH_NAMES(FT_FaceRec* face) {
+        return (face.face_flags & FT_FACE_FLAG_GLYPH_NAMES) == 0;
     }
 
-    bool FT_HAS_MULTIPLE_MASTERS( FT_FaceRec* face ) {
-        return ( face.face_flags & FT_FACE_FLAG_MULTIPLE_MASTERS ) == 0;
+    bool FT_HAS_MULTIPLE_MASTERS(FT_FaceRec* face) {
+        return (face.face_flags & FT_FACE_FLAG_MULTIPLE_MASTERS) == 0;
     }
 
-    bool FT_IS_CID_KEYED( FT_FaceRec* face ) {
-        return ( face.face_flags & FT_FACE_FLAG_CID_KEYED ) == 0;
+    bool FT_IS_NAMED_INSTANCE(FT_FaceRec* face) {
+        return (face.face_index & 0x7FFF0000L);
     }
 
-    bool FT_IS_TRICKY( FT_FaceRec* face ) {
-        return ( face.face_flags & FT_FACE_FLAG_TRICKY ) == 0;
+    bool FT_IS_CID_KEYED(FT_FaceRec* face) {
+        return (face.face_flags & FT_FACE_FLAG_CID_KEYED) == 0;
     }
 
-    bool FT_HAS_COLOR( FT_FaceRec* face ) {
-        return ( face.face_flags & FT_FACE_FLAG_COLOR ) == 0;
+    bool FT_IS_TRICKY(FT_FaceRec* face) {
+        return (face.face_flags & FT_FACE_FLAG_TRICKY) == 0;
+    }
+
+    bool FT_HAS_COLOR(FT_FaceRec* face) {
+        return (face.face_flags & FT_FACE_FLAG_COLOR) == 0;
     }
 }
 
@@ -353,7 +357,7 @@ struct FT_Parameter {
 
 struct FT_Open_Args {
     FT_UInt flags;
-    const( FT_Byte )* memory_base;
+    const(FT_Byte)* memory_base;
     FT_Long memory_size;
     FT_String* pathname;
     FT_Stream stream;
@@ -403,15 +407,15 @@ enum : uint {
 }
 
 enum {
-    FT_LOAD_TARGET_NORMAL = ( FT_RENDER_MODE_NORMAL & 15 ) << 16,
-    FT_LOAD_TARGET_LIGHT = ( FT_RENDER_MODE_LIGHT & 15 ) << 16,
-    FT_LOAD_TARGET_MONO = ( FT_RENDER_MODE_MONO & 15 ) << 16,
-    FT_LOAD_TARGET_LCD = ( FT_RENDER_MODE_LCD & 15 ) << 16,
-    FT_LOAD_TARGET_LCD_V = ( FT_RENDER_MODE_LCD_V & 15 ) << 16,
+    FT_LOAD_TARGET_NORMAL = (FT_RENDER_MODE_NORMAL & 15) << 16,
+    FT_LOAD_TARGET_LIGHT = (FT_RENDER_MODE_LIGHT & 15) << 16,
+    FT_LOAD_TARGET_MONO = (FT_RENDER_MODE_MONO & 15) << 16,
+    FT_LOAD_TARGET_LCD = (FT_RENDER_MODE_LCD & 15) << 16,
+    FT_LOAD_TARGET_LCD_V = (FT_RENDER_MODE_LCD_V & 15) << 16,
 }
 
-@nogc FT_Render_Mode FT_LOAD_TARGET_MODE( uint x ) nothrow {
-    return cast( FT_Render_Mode )(( x >> 16 ) & 15 );
+@nogc FT_Render_Mode FT_LOAD_TARGET_MODE(uint x) nothrow {
+    return cast(FT_Render_Mode)((x >> 16) & 15);
 }
 
 alias FT_Render_Mode = uint;
@@ -479,7 +483,7 @@ struct FT_Prop_IncreaseXHeight {
 }
 
 // ftbdf.h
-version( linux ) {
+version(linux) {
     alias BDF_PropertyType = int;
     enum {
         BDF_PROPERTY_TYPE_NONE = 0,
@@ -502,7 +506,7 @@ version( linux ) {
 
 // ftcache.h
 alias FTC_FaceID = FT_Pointer;
-extern( C ) nothrow alias FTC_Face_Requester = FT_Error function( FTC_FaceID,FT_Library,FT_Pointer,FT_Face* );
+extern(C) nothrow alias FTC_Face_Requester = FT_Error function(FTC_FaceID,FT_Library,FT_Pointer,FT_Face*);
 
 struct FTC_ManagerRec;
 struct FTC_NodeRec;
@@ -739,7 +743,7 @@ enum {
     FT_VALIDATE_prop = FT_VALIDATE_GX_START << FT_VALIDATE_prop_INDEX,
     FT_VALIDATE_lcar = FT_VALIDATE_GX_START << FT_VALIDATE_lcar_INDEX,
 
-    FT_VALIDATE_GX = ( FT_VALIDATE_feat |
+    FT_VALIDATE_GX = (FT_VALIDATE_feat |
                        FT_VALIDATE_mort |
                        FT_VALIDATE_morx |
                        FT_VALIDATE_bsln |
@@ -748,7 +752,7 @@ enum {
                        FT_VALIDATE_opbd |
                        FT_VALIDATE_trak |
                        FT_VALIDATE_prop |
-                       FT_VALIDATE_lcar ),
+                       FT_VALIDATE_lcar),
 
     FT_VALIDATE_MS = FT_VALIDATE_GX_START << 0,
     FT_VALIDATE_APPLE = FT_VALIDATE_GX_START << 1,
@@ -822,11 +826,11 @@ enum {
     FT_CURVE_TAG_TOUCH_BOTH  = FT_CURVE_TAG_TOUCH_X | FT_CURVE_TAG_TOUCH_Y,
 }
 
-extern( C ) nothrow {
-    alias FT_Outline_MoveToFunc = int function( const( FT_Vector )*, void* );
-    alias FT_Outline_LineToFunc = int function( const( FT_Vector )*, void* );
-    alias FT_Outline_ConicToFunc = int function( const( FT_Vector )*, const( FT_Vector )*, void* );
-    alias FT_Outline_CubicToFunc = int function( const( FT_Vector )*, const( FT_Vector )*, const( FT_Vector )*, void* );
+extern(C) nothrow {
+    alias FT_Outline_MoveToFunc = int function(const(FT_Vector)*, void*);
+    alias FT_Outline_LineToFunc = int function(const(FT_Vector)*, void*);
+    alias FT_Outline_ConicToFunc = int function(const(FT_Vector)*, const(FT_Vector)*, void*);
+    alias FT_Outline_CubicToFunc = int function(const(FT_Vector)*, const(FT_Vector)*, const(FT_Vector)*, void*);
 }
 
 struct FT_Outline_Funcs {
@@ -841,10 +845,10 @@ struct FT_Outline_Funcs {
 alias FT_Glyph_Format = FT_Tag;
 enum : FT_Tag {
     FT_GLYPH_FORMAT_NONE = 0,
-    FT_GLYPH_FORMAT_COMPOSITE = FT_MAKE_TAG( 'c','o','m','p' ),
-    FT_GLYPH_FORMAT_BITMAP = FT_MAKE_TAG( 'b','i','t','s' ),
-    FT_GLYPH_FORMAT_OUTLINE = FT_MAKE_TAG( 'o','u','t','l' ),
-    FT_GLYPH_FORMAT_PLOTTER = FT_MAKE_TAG( 'p','l','o','t' ),
+    FT_GLYPH_FORMAT_COMPOSITE = FT_MAKE_TAG('c','o','m','p'),
+    FT_GLYPH_FORMAT_BITMAP = FT_MAKE_TAG('b','i','t','s'),
+    FT_GLYPH_FORMAT_OUTLINE = FT_MAKE_TAG('o','u','t','l'),
+    FT_GLYPH_FORMAT_PLOTTER = FT_MAKE_TAG('p','l','o','t'),
 }
 
 struct FT_RasterRec;
@@ -856,7 +860,7 @@ struct FT_Span {
     ubyte coverage;
 }
 
-extern( C ) nothrow alias FT_SpanFunc = void function( int, int, FT_Span*, void* );
+extern(C) nothrow alias FT_SpanFunc = void function(int, int, FT_Span*, void*);
 
 enum {
     FT_RASTER_FLAG_DEFAULT  = 0x0,
@@ -866,8 +870,8 @@ enum {
 }
 
 struct FT_Raster_Params {
-    const( FT_Bitmap )* target;
-    const( void )* source;
+    const(FT_Bitmap)* target;
+    const(void)* source;
     int flags;
     FT_SpanFunc gray_spans;
     void* black_spans;
@@ -877,12 +881,12 @@ struct FT_Raster_Params {
     FT_BBox clip_box;
 }
 
-extern( C ) nothrow {
-    alias FT_Raster_NewFunc = int function( void*, FT_Raster* );
-    alias FT_Raster_DoneFunc = void function( FT_Raster );
-    alias FT_Raster_ResetFunc = void function( FT_Raster, ubyte*, uint );
-    alias FT_Raster_SetModeFunc = int function( FT_Raster, uint, void* );
-    alias FT_Raster_RenderFunc = int function( FT_Raster, FT_Raster_Params* );
+extern(C) nothrow {
+    alias FT_Raster_NewFunc = int function(void*, FT_Raster*);
+    alias FT_Raster_DoneFunc = void function(FT_Raster);
+    alias FT_Raster_ResetFunc = void function(FT_Raster, ubyte*, uint);
+    alias FT_Raster_SetModeFunc = int function(FT_Raster, uint, void*);
+    alias FT_Raster_RenderFunc = int function(FT_Raster, FT_Raster_Params*);
 }
 
 
@@ -907,10 +911,10 @@ struct FT_Incremental_MetricsRec {
 
 alias FT_Incremental_Metrics = FT_Incremental_MetricsRec*;
 
-extern( C ) nothrow {
-    alias FT_Incremental_GetGlyphDataFunc = FT_Error function( FT_Incremental, FT_UInt, FT_Data* );
-    alias FT_Incremental_FreeGlyphDataFunc = void function( FT_Incremental, FT_Data* );
-    alias FT_Incremental_GetGlyphMetricsFunc = FT_Error function( FT_Incremental, FT_UInt, FT_Bool, FT_Incremental_MetricsRec* );
+extern(C) nothrow {
+    alias FT_Incremental_GetGlyphDataFunc = FT_Error function(FT_Incremental, FT_UInt, FT_Data*);
+    alias FT_Incremental_FreeGlyphDataFunc = void function(FT_Incremental, FT_Data*);
+    alias FT_Incremental_GetGlyphMetricsFunc = FT_Error function(FT_Incremental, FT_UInt, FT_Bool, FT_Incremental_MetricsRec*);
 }
 
 struct FT_Incremental_FuncsRec {
@@ -924,7 +928,7 @@ struct FT_Incremental_InterfaceRec {
     FT_Incremental object;
 }
 
-enum FT_PARAM_TAG_INCREMENTAL = FT_MAKE_TAG( 'i','n','c','r' );
+enum FT_PARAM_TAG_INCREMENTAL = FT_MAKE_TAG('i','n','c','r');
 
 alias FT_Incremental_Interface = FT_Incremental_InterfaceRec*;
 
@@ -940,9 +944,9 @@ enum {
 }
 
 // ftlist.h
-extern( C ) nothrow {
-    alias FT_List_Iterator = FT_Error function( FT_ListNode, void* );
-    alias FT_List_Destructor = void function( FT_Memory, void*, void* );
+extern(C) nothrow {
+    alias FT_List_Iterator = FT_Error function(FT_ListNode, void*);
+    alias FT_List_Destructor = void function(FT_Memory, void*, void*);
 }
 
 // ftmm.h
@@ -995,10 +999,10 @@ enum
 
 alias FT_Module_Interface = FT_Pointer;
 
-extern( C ) nothrow {
-    alias FT_Module_Constructor = FT_Error function( FT_Module );
-    alias FT_Module_Destructor = void function( FT_Module );
-    alias FT_Module_Requester = FT_Module_Interface function( FT_Module, const( char )* );
+extern(C) nothrow {
+    alias FT_Module_Constructor = FT_Error function(FT_Module);
+    alias FT_Module_Destructor = void function(FT_Module);
+    alias FT_Module_Requester = FT_Module_Interface function(FT_Module, const(char)*);
 }
 
 struct FT_Module_Class {
@@ -1013,7 +1017,7 @@ struct FT_Module_Class {
     FT_Module_Requester get_interface;
 }
 
-extern( C ) nothrow alias FT_DebugHook_Func = void function( void* );
+extern(C) nothrow alias FT_DebugHook_Func = void function(void*);
 
 alias FT_TrueTypeEngineType = int;
 enum {
@@ -1077,13 +1081,13 @@ enum {
 }
 
 // ftrender.h
-extern( C ) nothrow {
-    alias FT_Glyph_InitFunc = FT_Error function( FT_Glyph, FT_GlyphSlot );
-    alias FT_Glyph_DoneFunc = void function( FT_Glyph );
-    alias FT_Glyph_TransformFunc = void function( FT_Glyph, const( FT_Matrix )* matrix, const( FT_Vector )* );
-    alias FT_Glyph_GetBBoxFunc = void function( FT_Glyph, FT_BBox* );
-    alias FT_Glyph_CopyFunc = FT_Error function( FT_Glyph, FT_Glyph );
-    alias FT_Glyph_PrepareFunc = FT_Error function( FT_Glyph, FT_GlyphSlot );
+extern(C) nothrow {
+    alias FT_Glyph_InitFunc = FT_Error function(FT_Glyph, FT_GlyphSlot);
+    alias FT_Glyph_DoneFunc = void function(FT_Glyph);
+    alias FT_Glyph_TransformFunc = void function(FT_Glyph, const(FT_Matrix)* matrix, const(FT_Vector)*);
+    alias FT_Glyph_GetBBoxFunc = void function(FT_Glyph, FT_BBox*);
+    alias FT_Glyph_CopyFunc = FT_Error function(FT_Glyph, FT_Glyph);
+    alias FT_Glyph_PrepareFunc = FT_Error function(FT_Glyph, FT_GlyphSlot);
 }
 
 struct FT_Glyph_Class {  // typedef'd in ftglyph.h
@@ -1097,11 +1101,11 @@ struct FT_Glyph_Class {  // typedef'd in ftglyph.h
     FT_Glyph_PrepareFunc glyph_prepare;
 }
 
-extern( C ) nothrow {
-    alias FT_Renderer_RenderFunc = FT_Error function( FT_Renderer, FT_GlyphSlot, FT_UInt, const( FT_Vector )* );
-    alias FT_Renderer_TransformFunc = FT_Error function( FT_Renderer, FT_GlyphSlot, const( FT_Matrix )*, const( FT_Vector )* );
-    alias FT_Renderer_GetCBoxFunc = void function( FT_Renderer, FT_GlyphSlot, FT_BBox* );
-    alias FT_Renderer_SetModeFunc = FT_Error function( FT_Renderer, FT_ULong, FT_Pointer );
+extern(C) nothrow {
+    alias FT_Renderer_RenderFunc = FT_Error function(FT_Renderer, FT_GlyphSlot, FT_UInt, const(FT_Vector)*);
+    alias FT_Renderer_TransformFunc = FT_Error function(FT_Renderer, FT_GlyphSlot, const(FT_Matrix)*, const(FT_Vector)*);
+    alias FT_Renderer_GetCBoxFunc = void function(FT_Renderer, FT_GlyphSlot, FT_BBox*);
+    alias FT_Renderer_SetModeFunc = FT_Error function(FT_Renderer, FT_ULong, FT_Pointer);
 }
 
 struct FT_Renderer_Class {
@@ -1124,8 +1128,8 @@ struct FT_SfntName {
     FT_UInt string_len;
 }
 
-enum FT_PARAM_TAG_IGNORE_PREFERRED_FAMILY = FT_MAKE_TAG( 'i','g','p','f' );
-enum FT_PARAM_TAG_IGNORE_PREFERRED_SUBFAMILY = FT_MAKE_TAG( 'i','g','p','s' );
+enum FT_PARAM_TAG_IGNORE_PREFERRED_FAMILY = FT_MAKE_TAG('i','g','p','f');
+enum FT_PARAM_TAG_IGNORE_PREFERRED_SUBFAMILY = FT_MAKE_TAG('i','g','p','s');
 
 // ftstroke.h
 struct FT_StrokerRec;
@@ -1154,10 +1158,10 @@ enum {
 // ftsystem.h
 alias FT_Memory = FT_MemoryRec*;
 
-extern( C ) nothrow {
-    alias FT_Alloc_Func = void* function( FT_Memory, c_long );
-    alias FT_Free_Func = void  function( FT_Memory, void* );
-    alias FT_Realloc_Func = void* function( FT_Memory, c_long, c_long, void* );
+extern(C) nothrow {
+    alias FT_Alloc_Func = void* function(FT_Memory, c_long);
+    alias FT_Free_Func = void  function(FT_Memory, void*);
+    alias FT_Realloc_Func = void* function(FT_Memory, c_long, c_long, void*);
 }
 
 struct FT_MemoryRec {
@@ -1174,9 +1178,9 @@ union FT_StreamDesc {
     void* pointer;
 }
 
-extern( C ) nothrow {
-    alias FT_Stream_IoFunc = c_ulong function( FT_Stream, c_ulong, ubyte*, c_ulong );
-    alias FT_Stream_CloseFunc = void function( FT_Stream );
+extern(C) nothrow {
+    alias FT_Stream_IoFunc = c_ulong function(FT_Stream, c_ulong, ubyte*, c_ulong);
+    alias FT_Stream_CloseFunc = void function(FT_Stream);
 }
 
 struct FT_StreamRec {
