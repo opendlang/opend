@@ -339,15 +339,20 @@ unittest
 struct GuideToDoubleFunction
 {
     /// Convert the value to double
-    auto convert(T)(in T value) const
+    private auto convert(T)(in T value) const
     {
         import std.conv : to;
         import std.traits : isNumeric;
+        double result;
         static if (isNumeric!T) {
-            return doubleConvert(value.to!double);
+            result = doubleConvert(value.to!double);
         } else {
-            return stringConvert(value.to!string);
+            result = stringConvert(value.to!string);
         }
+        if (scaleFunction.isNull)
+            return result;
+        else
+            return scaleFunction.get()(result);
     }
 
     /// Call the function with a value
@@ -360,6 +365,10 @@ struct GuideToDoubleFunction
     double delegate(double) doubleConvert;
     /// Function that governs translation from string to double (discrete to continuous)
     double delegate(string) stringConvert;
+
+    import std.typecons : Nullable;
+    /// Additional scaling of the field (i.e. log10, polar coordinates)
+    Nullable!(double delegate(double)) scaleFunction;
 }
 
 /// A callable struct that translates any value into a colour
@@ -371,7 +380,7 @@ struct GuideToColourFunction
         import std.conv : to;
         import std.traits : isNumeric;
         static if (isNumeric!T) {
-            return doubleConvert(value.to!double);
+            return doubleConvert(toDouble(value));
         } else {
             static if (isColour!T) {
                 import ggplotd.colourspace : RGBA, toColourSpace;
@@ -394,10 +403,15 @@ struct GuideToColourFunction
     {
         import std.conv : to;
         import std.traits : isNumeric;
-        if (isNumeric!T)
-            return value.to!double;
+        double result;
+        static if (isNumeric!T)
+            result = value.to!double;
         else
-            return stringToDoubleConvert(value.to!string);
+            result = stringToDoubleConvert(value.to!string);
+        if (scaleFunction.isNull)
+            return result;
+        else
+            return scaleFunction.get()(result);
     }
 
     /// Function that governs translation from double to colour (continuous to colour)
@@ -409,6 +423,10 @@ struct GuideToColourFunction
     double delegate(string) stringToDoubleConvert;
     import ggplotd.colourspace : isColour;
     import ggplotd.colour : namedColour, RGBA;
+
+    import std.typecons : Nullable;
+    /// Additional scaling of the field (i.e. log10, polar coordinates)
+    Nullable!(double delegate(double)) scaleFunction;
 }
 
 /// Create an appropiate GuidToDoubleFunction from a GuideStore
