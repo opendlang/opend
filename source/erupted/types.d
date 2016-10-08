@@ -14,22 +14,20 @@ pure {
 	uint VK_MAKE_VERSION( uint major, uint minor, uint patch ) {
 		return ( major << 22 ) | ( minor << 12 ) | ( patch );
 	}
-	uint VK_VERSION_MAJOR( uint ver ) {
-		return ver >> 22;
-	}
-	uint VK_VERSION_MINOR( uint ver ) {
-		return ( ver >> 12 ) & 0x3ff;
-	}
-	uint VK_VERSION_PATCH( uint ver ) {
-		return ver & 0xfff;
-	}
+
+	// Vulkan 1.0 version number
+	uint VK_API_VERSION_1_0() { return VK_MAKE_VERSION( 1, 0, 0 ); }
+	
+	uint VK_VERSION_MAJOR( uint ver ) { return ver >> 22; }
+	uint VK_VERSION_MINOR( uint ver ) { return ( ver >> 12 ) & 0x3ff; }
+	uint VK_VERSION_PATCH( uint ver ) { return ver & 0xfff; }
 }
 
 // Linkage of debug and allocation callbacks
 extern( System ):
 
 // Version of corresponding c header file
-enum VK_HEADER_VERSION  =  29;
+enum VK_HEADER_VERSION  =  30;
 
 enum VK_NULL_HANDLE = null;
 
@@ -42,6 +40,7 @@ version( X86_64 ) {
 	enum VK_DEFINE_NON_DISPATCHABLE_HANDLE( string name ) = "alias "~name~" = ulong;";
 	enum VK_NULL_ND_HANDLE = 0uL;
 }
+
 // VK_VERSION_1_0
 alias VkFlags = uint32_t;
 alias VkBool32 = uint32_t;
