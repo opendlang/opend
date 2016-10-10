@@ -53,7 +53,7 @@ struct TaggedAlgebraic(U) if (is(U == union) || is(U == struct))
 
 
 	private {
-		void[Largest!FieldTypes.sizeof] m_data = void;
+		void[Largest!FieldTypes.sizeof] m_data;
 		Kind m_kind;
 	}
 
@@ -277,7 +277,7 @@ unittest
 
 	alias TA = TaggedAlgebraic!Test;
 
-	TA ta = null; // FIXME: should also work for implicit initialization, but DMD complains since 2.072.0-b1
+	TA ta;
 	assert(ta.kind == TA.Kind.null_);
 
 	ta = 12;
