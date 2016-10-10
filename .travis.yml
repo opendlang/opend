@@ -2,10 +2,12 @@ language: d
 
 matrix:
   include:
+    - d: dmd-beta
+    - d: dmd-2.071.2
+    - d: dmd-2.068.2
     - d: dmd-2.070.0
     - d: dmd-2.069.2
       env: [COVERAGE=true]
-    - d: dmd-2.068.2
 
 sudo: false
 
