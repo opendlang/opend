@@ -277,7 +277,7 @@ unittest
 
 	alias TA = TaggedAlgebraic!Test;
 
-	TA ta;
+	TA ta = null; // FIXME: should also work for implicit initialization, but DMD complains since 2.072.0-b1
 	assert(ta.kind == TA.Kind.null_);
 
 	ta = 12;
@@ -338,8 +338,7 @@ unittest { // std.conv integration
 
 	alias TA = TaggedAlgebraic!Test;
 
-	TA ta;
-	ta = TA(12, TA.Kind.count);
+	TA ta = TA(12, TA.Kind.count);
 	assert(ta.kind == TA.Kind.count);
 	assert(ta == 12);
 
@@ -1074,12 +1073,12 @@ private template isNoVariant(T) {
 
 private void rawEmplace(T)(void[] dst, ref T src)
 {
-	T* tdst = () @trusted { return cast(T*)dst.ptr; } ();
+	T[] tdst = () @trusted { return cast(T[])dst[0 .. T.sizeof]; } ();
 	static if (is(T == class)) {
-		*tdst = src;
+		tdst[0] = src;
 	} else {
 		import std.conv : emplace;
-		emplace(tdst);
-		*tdst = src;
+		emplace!T(&tdst[0]);
+		tdst[0] = src;
 	}
 }
