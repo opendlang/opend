@@ -7,6 +7,14 @@ Authors:   Ilya Yaroshenko
 +/
 module cpuid.report;
 
+version(LDC)
+{
+    version(unittest) {} else
+    {
+        pragma(LDC_no_moduleinfo);
+    }
+}
+
 ///
 unittest
 {
