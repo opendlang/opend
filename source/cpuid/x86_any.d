@@ -32,7 +32,6 @@ version(LDC)
             __asmtuple_t!(T) __asmtuple(const(char)[] asmcode, const(char)[] constraints, ...) pure nothrow @nogc;
         }
     }
-
 }
 
 version(X86)
