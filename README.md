@@ -16,10 +16,9 @@ void main()
     import std.stdio;
     import cpuid.unified;
 
-    enum fmt = "%14s: %s";
+    cpuid_init();
 
-    fmt.writefln("vendor", vendor);
-    fmt.writefln("brand", brand);
+    enum fmt = "%14s: %s";
 
     fmt.writefln("cores", cores);
     fmt.writefln("threads", threads);
