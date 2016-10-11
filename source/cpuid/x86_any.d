@@ -55,6 +55,7 @@ private __gshared uint _maxBasicLeaf;
 
 /// Leaf1
 private __gshared Leaf1Information leaf1Information;
+private __gshared Leaf7Information leaf7Information;
 
 /// ExtLeaf0
 private __gshared uint _maxExtendedLeaf;
@@ -95,6 +96,8 @@ void cpuid_x86_any_init()
     }
     _virtualVendorId = _vendorId;
     leaf1Information.info = _cpuid(1);
+    if(_maxBasicLeaf >= 7)
+        leaf7Information.info = _cpuid(0x07);
     if(leaf1Information.virtual)
     {
         auto infov = _cpuid(0x4000_0000);
@@ -112,21 +115,167 @@ void cpuid_x86_any_init()
             }
         }
     }
-
     _maxExtendedLeaf = _cpuid(0x8000_0000).a;
 }
 
+
 /// Basic information about CPU.
-private struct Leaf1Information
+union Leaf1Information
 {
     import std.bitmanip: bitfields;
-
-    union
+    /// CPUID payload
+    CpuInfo info;
+    struct
     {
-        CpuInfo info;
-        struct
+        @trusted @property pure nothrow @nogc:
+        version(D_Ddoc)
         {
-            @trusted @property pure nothrow @nogc:
+            /// Stepping ID
+            uint stepping();
+            /// Model
+            uint model();
+            /// Family ID
+            uint family();
+            /// Processor Type, Specification: Intel
+            uint type();
+            /// Extended Model ID
+            uint extendedModel();
+            /// Extended Family ID
+            uint extendedFamily();
+
+
+            /// Brand Index
+            ubyte brandIndex;
+            /// `clflush` line size
+            ubyte clflushLineSize;
+            /// maximal number of logical processors
+            ubyte maxLogicalProcessors;
+            /// initial APIC
+            ubyte initialAPIC;
+
+            /// SSE3 Extensions
+            bool sse3();
+            /// Carryless Multiplication
+            bool pclmulqdq();
+            /// 64-bit DS Area
+            bool dtes64();
+            /// MONITOR/MWAIT
+            bool monitor();
+            ///(); /// CPL Qualified Debug Store
+            bool ds_cpl();
+            /// Virtual Machine Extensions
+            bool vmx();
+            /// Safer Mode Extensions
+            bool smx();
+            /// Enhanced Intel SpeedStep® Technology
+            bool eist();
+            /// Thermal Monitor 2
+            bool therm_monitor2();
+            /// SSSE3 Extensions
+            bool ssse3();
+            /// L1 Context ID
+            bool cnxt_id();
+            ///
+            bool sdbg();
+            /// Fused Multiply Add
+            bool fma();
+            ///
+            bool cmpxchg16b();
+            /// TPR Update Control
+            bool xtpr();
+            /// Perf/Debug Capability MSR xTPR Update Control
+            bool pdcm();
+            /// Process-context Identifiers
+            bool pcid();
+            /// Direct Cache Access
+            bool dca();
+            /// SSE4.1
+            bool sse41();
+            /// SSE4.2
+            bool sse42();
+            ///
+            bool x2apic();
+            ///
+            bool movbe();
+            ///
+            bool popcnt();
+            ///(
+            bool tsc_deadline();
+            ///
+            bool aes();
+            ///
+            bool xsave();
+            ///
+            bool osxsave();
+            ///
+            bool avx();
+            ///
+            bool f16c();
+            ///
+            bool rdrand();
+            ///
+            bool virtual();
+            /// x87 FPU on Chip
+            bool fpu();
+            /// Virtual-8086 Mode Enhancement
+            bool vme();
+            /// Debugging Extensions
+            bool de();
+            /// Page Size Extensions
+            bool pse();
+            /// Time Stamp Counter
+            bool tsc();
+            /// RDMSR and WRMSR Support
+            bool msr();
+            /// Physical Address Extensions
+            bool pae();
+            /// Machine Check Exception
+            bool mce();
+            /// CMPXCHG8B Inst.
+            bool cx8();
+            /// APIC on Chip
+            bool apic();
+            /// SYSENTER and SYSEXIT
+            bool sep();
+            /// Memory Type Range Registers
+            bool mtrr();
+            /// PTE Global Bit
+            bool pge();
+            /// Machine Check Architecture
+            bool mca();
+            /// Conditional Move/Compare Instruction
+            bool cmov();
+            /// Page Attribute Table
+            bool pat();
+            ///  Page Size Extension
+            bool pse36();
+            /// Processor Serial Number
+            bool psn();
+            /// CLFLUSH instruction
+            bool clfsh();
+            /// Debug Store
+            bool ds();
+            /// Thermal Monitor and Clock Ctrl
+            bool acpi();
+            /// MMX Technology
+            bool mmx();
+            /// FXSAVE/FXRSTOR
+            bool fxsr();
+            /// SSE Extensions
+            bool sse();
+            /// SSE2 Extensions
+            bool sse2();
+            /// Self Snoop
+            bool self_snoop();
+            /// Multi-threading
+            bool htt();
+            /// Therm. Monitor
+            bool therm_monitor();
+            /// Pend. Brk. EN.
+            bool pbe();
+        }
+        else
+        {
             /// EAX
             mixin(bitfields!(
                 uint, "stepping", 3 - 0 + 1, /// Stepping ID
@@ -155,7 +304,7 @@ private struct Leaf1Information
                 bool, "vmx", 1, /// Virtual Machine Extensions
                 bool, "smx", 1, /// Safer Mode Extensions
                 bool, "eist", 1, /// Enhanced Intel SpeedStep® Technology
-                bool, "tm2", 1, /// Thermal Monitor 2
+                bool, "therm_monitor2", 1, /// Thermal Monitor 2
                 bool, "ssse3", 1, /// SSSE3 Extensions
                 bool, "cnxt_id", 1, /// L1 Context ID
                 bool, "sdbg", 1,
@@ -210,15 +359,152 @@ private struct Leaf1Information
                 bool, "fxsr", 1, /// FXSAVE/FXRSTOR
                 bool, "sse", 1, /// SSE Extensions
                 bool, "sse2", 1, /// SSE2 Extensions
-                bool, "ss", 1, /// Self Snoop
+                bool, "self_snoop", 1, /// Self Snoop
                 bool, "htt", 1, /// Multi-threading
-                bool, "tm", 1, /// Therm. Monitor
+                bool, "therm_monitor", 1, /// Therm. Monitor
                 bool, "", 1,
                 bool, "pbe", 1, /// Pend. Brk. EN.
             ));
         }
     }
 }
+
+/// Extended information about CPU.
+union Leaf7Information
+{
+    import std.bitmanip: bitfields;
+    /// CPUID payload
+    CpuInfo info;
+    struct
+    {
+        /// Reports the maximum input value for supported leaf 7 sub-leaves
+        uint max7SubLeafs;
+        @trusted @property pure nothrow @nogc:
+        version(D_Ddoc)
+        {
+             /// Supports RDFSBASE/RDGSBASE/WRFSBASE/WRGSBASE if 1.
+             bool fsgsbase();
+             ///MSR is supported if 1.
+             bool ia32_tsc_adjust();
+             /// Supports Intel® Software Guard Extensions (Intel® SGX Extensions) if 1.
+             bool sgx();
+             /// Bit Manipulation Instruction Set 1
+             bool bmi1();
+             /// Transactional Synchronization Extensions
+             bool hle();
+             /// Advanced Vector Extensions 2
+             bool avx2();
+             /// x87 FPU Data Pointer updated only on x87 exceptions if 1.
+             bool fdp_excptn_only();
+             /// Supports Supervisor-Mode Execution Prevention if 1.
+             bool smep();
+             /// Bit Manipulation Instruction Set 2
+             bool bmi2();
+             /// Enhanced REP MOVSB/STOSB if 1.
+             bool supports();
+             /// If 1, supports INVPCID instruction for system software that manages process-context identifiers.
+             bool invpcid();
+             /// Transactional Synchronization Extensions
+             bool rtm();
+             /// Supports Intel® Resource Director Technology (Intel® RDT) Monitoring capability if 1.
+             bool rdt_m();
+             ///FPU CS and FPU DS values if 1.
+             bool deprecates();
+             /// Supports Intel® Memory Protection Extensions if 1.
+             bool mpx();
+             /// Supports Intel® Resource Director Technology (Intel® RDT) Allocation capability if 1.
+             bool rdt_a();
+             /// AVX-512 Foundation
+             bool avx512f();
+             /// AVX-512 Doubleword and Quadword Instructions
+             bool avx512dq();
+             /// RDSEED instruction
+             bool rdseed();
+             /// Intel ADX (Multi-Precision Add-Carry Instruction Extensions)
+             bool adx();
+             /// Supports Supervisor-Mode Access Prevention (and the CLAC/STAC instructions) if 1.
+             bool smap();
+             /// AVX-512 Integer Fused Multiply-Add Instructions
+             bool avx512ifma();
+             /// PCOMMIT instruction
+             bool pcommit();
+             /// CLFLUSHOPT instruction
+             bool clflushopt();
+             /// CLWB instruction
+             bool clwb();
+             /// Intel Processor Trace.
+             bool intel_pt();
+             /// AVX-512 Prefetch Instructions
+             bool avx512pf();
+             /// AVX-512 Exponential and Reciprocal Instructions
+             bool avx512er();
+             /// AVX-512 Conflict Detection Instructions
+             bool avx512cd();
+             /// supports Intel® Secure Hash Algorithm Extens
+             bool sha();
+             /// AVX-512 Byte and Word Instructions
+             bool avx512bw();
+             /// AVX-512 Vector Length Extensions
+             bool avx512vl();
+             /// PREFETCHWT1 instruction
+             bool prefetchwt1();
+             /// AVX-512 Vector Bit Manipulation Instructions
+             bool avx512vbmi();
+             /// Memory Protection Keys for User-mode pages
+             bool pku();
+             /// PKU enabled by OS
+             bool ospke();
+
+        }
+        else
+        {
+            mixin(bitfields!(
+                bool, "fsgsbase", 1, /// Supports RDFSBASE/RDGSBASE/WRFSBASE/WRGSBASE if 1.
+                bool, "ia32_tsc_adjust", 1, ///MSR is supported if 1.
+                bool, "sgx", 1, /// Supports Intel® Software Guard Extensions (Intel® SGX Extensions) if 1.
+                bool, "bmi1", 1, /// Bit Manipulation Instruction Set 1
+                bool, "hle", 1, /// Transactional Synchronization Extensions
+                bool, "avx2", 1, /// Advanced Vector Extensions 2
+                bool, "fdp_excptn_only", 1, /// x87 FPU Data Pointer updated only on x87 exceptions if 1.
+                bool, "smep", 1, /// Supports Supervisor-Mode Execution Prevention if 1.
+                bool, "bmi2", 1, /// Bit Manipulation Instruction Set 2
+                bool, "supports", 1, /// Enhanced REP MOVSB/STOSB if 1.
+                bool, "invpcid", 1, /// If 1, supports INVPCID instruction for system software that manages process-context identifiers.
+                bool, "rtm", 1, /// Transactional Synchronization Extensions
+                bool, "rdt_m", 1, /// Supports Intel® Resource Director Technology (Intel® RDT) Monitoring capability if 1.
+                bool, "deprecates", 1, ///FPU CS and FPU DS values if 1.
+                bool, "mpx", 1, /// Supports Intel® Memory Protection Extensions if 1.
+                bool, "rdt_a", 1, /// Supports Intel® Resource Director Technology (Intel® RDT) Allocation capability if 1.
+                bool, "avx512f", 1, /// AVX-512 Foundation
+                bool, "avx512dq", 1, /// AVX-512 Doubleword and Quadword Instructions
+                bool, "rdseed", 1, /// RDSEED instruction
+                bool, "adx", 1, /// Intel ADX (Multi-Precision Add-Carry Instruction Extensions)
+                bool, "smap", 1, /// Supports Supervisor-Mode Access Prevention (and the CLAC/STAC instructions) if 1.
+                bool, "avx512ifma", 1, /// AVX-512 Integer Fused Multiply-Add Instructions
+                bool, "pcommit", 1, /// PCOMMIT instruction
+                bool, "clflushopt", 1, /// CLFLUSHOPT instruction
+                bool, "clwb", 1, /// CLWB instruction
+                bool, "intel_pt", 1, /// Intel Processor Trace.
+                bool, "avx512pf", 1, /// AVX-512 Prefetch Instructions
+                bool, "avx512er", 1, /// AVX-512 Exponential and Reciprocal Instructions
+                bool, "avx512cd", 1, /// AVX-512 Conflict Detection Instructions
+                bool, "sha", 1, /// supports Intel® Secure Hash Algorithm Extens
+                bool, "avx512bw", 1, /// AVX-512 Byte and Word Instructions
+                bool, "avx512vl", 1, /// AVX-512 Vector Length Extensions
+            ));
+            mixin(bitfields!(
+                bool, "prefetchwt1", 1, /// PREFETCHWT1 instruction
+                bool, "avx512vbmi", 1, /// AVX-512 Vector Bit Manipulation Instructions
+                bool, "", 1, ///
+                bool, "pku", 1, /// Memory Protection Keys for User-mode pages
+                bool, "ospke", 1, /// PKU enabled by OS
+                bool, "", 27, ///
+            ));
+        }
+    }
+}
+
+
 
 /// x86 CPU information
 struct CpuInfo
@@ -390,6 +676,12 @@ uint maxExtendedLeaf()
     return _maxExtendedLeaf;
 }
 
+/// Reports the maximum input value for supported leaf 7 sub-leaves.
+uint max7SubLeafs()
+{
+    return leaf7Information.max7SubLeafs;
+}
+
 /// Encoded vendors
 enum VendorIndex
 {
@@ -540,7 +832,7 @@ bool smx() { return leaf1Information.smx; }
 /// Enhanced Intel SpeedStep® Technology
 bool eist() { return leaf1Information.eist; }
 /// Thermal Monitor 2
-bool tm2() { return leaf1Information.tm2; }
+bool therm_monitor2() { return leaf1Information.therm_monitor2; }
 /// SSSE3 Extensions
 bool ssse3() { return leaf1Information.ssse3; }
 /// L1 Context ID
@@ -636,10 +928,85 @@ bool sse() { return leaf1Information.sse; }
 /// SSE2 Extensions
 bool sse2() { return leaf1Information.sse2; }
 /// Self Snoop
-bool ss() { return leaf1Information.ss; }
+bool self_snoop() { return leaf1Information.self_snoop; }
 /// Multi-threading
 bool htt() { return leaf1Information.htt; }
 /// Therm. Monitor
-bool tm() { return leaf1Information.tm; }
+bool therm_monitor() { return leaf1Information.therm_monitor; }
 /// Pend. Brk. EN.
 bool pbe() { return leaf1Information.pbe; }
+
+// EXTENDED 7
+
+/// Supports RDFSBASE/RDGSBASE/WRFSBASE/WRGSBASE if 1.
+bool fsgsbase() { return leaf7Information.fsgsbase; }
+///MSR is supported if 1.
+bool ia32_tsc_adjust() { return leaf7Information.ia32_tsc_adjust; }
+/// Supports Intel® Software Guard Extensions (Intel® SGX Extensions) if 1.
+bool sgx() { return leaf7Information.sgx; }
+/// Bit Manipulation Instruction Set 1
+bool bmi1() { return leaf7Information.bmi1; }
+/// Transactional Synchronization Extensions
+bool hle() { return leaf7Information.hle; }
+/// Advanced Vector Extensions 2
+bool avx2() { return leaf7Information.avx2; }
+/// x87 FPU Data Pointer updated only on x87 exceptions if 1.
+bool fdp_excptn_only() { return leaf7Information.fdp_excptn_only; }
+/// Supports Supervisor-Mode Execution Prevention if 1.
+bool smep() { return leaf7Information.smep; }
+/// Bit Manipulation Instruction Set 2
+bool bmi2() { return leaf7Information.bmi2; }
+/// Enhanced REP MOVSB/STOSB if 1.
+bool supports() { return leaf7Information.supports; }
+/// If 1, supports INVPCID instruction for system software that manages process-context identifiers.
+bool invpcid() { return leaf7Information.invpcid; }
+/// Transactional Synchronization Extensions
+bool rtm() { return leaf7Information.rtm; }
+/// Supports Intel® Resource Director Technology (Intel® RDT) Monitoring capability if 1.
+bool rdt_m() { return leaf7Information.rdt_m; }
+///FPU CS and FPU DS values if 1.
+bool deprecates() { return leaf7Information.deprecates; }
+/// Supports Intel® Memory Protection Extensions if 1.
+bool mpx() { return leaf7Information.mpx; }
+/// Supports Intel® Resource Director Technology (Intel® RDT) Allocation capability if 1.
+bool rdt_a() { return leaf7Information.rdt_a; }
+/// AVX-512 Foundation
+bool avx512f() { return leaf7Information.avx512f; }
+/// AVX-512 Doubleword and Quadword Instructions
+bool avx512dq() { return leaf7Information.avx512dq; }
+/// RDSEED instruction
+bool rdseed() { return leaf7Information.rdseed; }
+/// Intel ADX (Multi-Precision Add-Carry Instruction Extensions)
+bool adx() { return leaf7Information.adx; }
+/// Supports Supervisor-Mode Access Prevention (and the CLAC/STAC instructions) if 1.
+bool smap() { return leaf7Information.smap; }
+/// AVX-512 Integer Fused Multiply-Add Instructions
+bool avx512ifma() { return leaf7Information.avx512ifma; }
+/// PCOMMIT instruction
+bool pcommit() { return leaf7Information.pcommit; }
+/// CLFLUSHOPT instruction
+bool clflushopt() { return leaf7Information.clflushopt; }
+/// CLWB instruction
+bool clwb() { return leaf7Information.clwb; }
+/// Intel Processor Trace.
+bool intel_pt() { return leaf7Information.intel_pt; }
+/// AVX-512 Prefetch Instructions
+bool avx512pf() { return leaf7Information.avx512pf; }
+/// AVX-512 Exponential and Reciprocal Instructions
+bool avx512er() { return leaf7Information.avx512er; }
+/// AVX-512 Conflict Detection Instructions
+bool avx512cd() { return leaf7Information.avx512cd; }
+/// supports Intel® Secure Hash Algorithm Extens
+bool sha() { return leaf7Information.sha; }
+/// AVX-512 Byte and Word Instructions
+bool avx512bw() { return leaf7Information.avx512bw; }
+/// AVX-512 Vector Length Extensions
+bool avx512vl() { return leaf7Information.avx512vl; }
+/// PREFETCHWT1 instruction
+bool prefetchwt1() { return leaf7Information.prefetchwt1; }
+/// AVX-512 Vector Bit Manipulation Instructions
+bool avx512vbmi() { return leaf7Information.avx512vbmi; }
+/// Memory Protection Keys for User-mode pages
+bool pku() { return leaf7Information.pku; }
+/// PKU enabled by OS
+bool ospke() { return leaf7Information.ospke; }

@@ -705,7 +705,7 @@ union Leaf4Information
 {
     import std.bitmanip: bitfields;
 
-    ///
+    /// CPUID payload
     CpuInfo info;
 
     ///
