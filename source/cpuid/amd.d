@@ -101,7 +101,7 @@ Specification: AMD
 +/
 union LeafExt6Information
 {
-    ///
+    /// CPUID payload
     CpuInfo info;
 
     ///
