@@ -1,5 +1,7 @@
 /++
-$(H1 Common information for all x86 and x86_64 vendors.)
+$(H2 Common information for all x86 and x86_64 vendors.)
+
+$(GREEN This module is available for betterC compilation mode.)
 
 Note:
     `T.max` value value is used to represent fully-associative Cache/TLB.
@@ -12,6 +14,26 @@ License:   $(WEB www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
 Authors:   Ilya Yaroshenko
 +/
 module cpuid.x86_any;
+
+version(LDC)
+{
+    version(unittest) {} else
+    {
+        pragma(LDC_no_moduleinfo);
+    }
+
+    import ldc.llvmasm;
+    // @@@FIXME@@@
+    // https://github.com/ldc-developers/druntime/pull/80
+    pragma(LDC_inline_asm)
+    {
+        template __asmtuple(T...)
+        {
+            __asmtuple_t!(T) __asmtuple(const(char)[] asmcode, const(char)[] constraints, ...) pure nothrow @nogc;
+        }
+    }
+
+}
 
 version(X86)
     version = X86_Any;
@@ -31,29 +53,34 @@ public import cpuid.common;
 
 
 /// Leaf0
-private __gshared immutable uint _maxBasicLeaf;
-private __gshared immutable char[12] _vendor;
+private __gshared uint _maxBasicLeaf;
+private __gshared char[12] _vendor;
 
 /// Leaf1
-private __gshared immutable Leaf1Information leaf1Information;
+private __gshared Leaf1Information leaf1Information;
 
 /// ExtLeaf0
-private __gshared immutable uint _maxExtendedLeaf;
-
-/// ExtLeaf2 ExtLeaf3 ExtLeaf4
-private __gshared immutable uint _brand_length;
-private __gshared immutable char[48] _brand;
+private __gshared uint _maxExtendedLeaf;
 
 /// Other
-private __gshared immutable VendorIndex _vendorId;
+private __gshared VendorIndex _vendorId;
 
-
-pure nothrow @nogc
+nothrow @nogc
 shared static this()
 {
-    import std.stdio;
+    cpuid_x86_any_init();
+}
 
-
+/++
+Initialize basic x86 CPU information.
+It is safe to call this function multiple times.
++/
+extern(C)
+nothrow @nogc
+void cpuid_x86_any_init()
+{
+    static if (__VERSION__ >= 2068)
+        pragma(inline, false);
     CpuInfo info = _cpuid(0);
     _maxBasicLeaf = _cpuid(0).a;
 
@@ -65,27 +92,16 @@ shared static this()
 
     _maxExtendedLeaf = _cpuid(0x8000_0000).a;
 
-    foreach(i; 0..3)
+    align(4)
+    static struct T
     {
-        info = _cpuid(i + 2 ^ 0x8000_0000);
-        (cast(uint[12])_brand)[i * 4 + 0] = info.a;
-        (cast(uint[12])_brand)[i * 4 + 1] = info.b;
-        (cast(uint[12])_brand)[i * 4 + 2] = info.c;
-        (cast(uint[12])_brand)[i * 4 + 3] = info.d;
+        ulong a;
+        uint b;
     }
 
-    foreach_reverse(i, char b; _brand[])
+    foreach(i, ref name; cast(T[]) vendors)
     {
-        if(b != '\0')
-        {
-            _brand_length = cast(uint) i + 1;
-            break;
-        }
-    }
-
-    foreach(i, ref name; vendors)
-    {
-        if(cast(uint[3]) _vendor  == cast(uint[3]) name)
+        if (cast(T) cast(T[1]) _vendor  == name)
         {
             _vendorId = cast(VendorIndex) i;
             break;
@@ -103,6 +119,7 @@ private struct Leaf1Information
         CpuInfo info;
         struct
         {
+            @trusted @property pure nothrow @nogc:
             /// EAX
             mixin(bitfields!(
                 uint, "stepping", 3 - 0 + 1, /// Stepping ID
@@ -222,31 +239,45 @@ CpuInfo _cpuid(uint eax, uint ecx = 0)
     uint b = void;
     uint c = void;
     uint d = void;
-    // @@@FIXME@@@
-    // https://github.com/ldc-developers/druntime/pull/80
-    //version(LDC)
-    //{
-    //    import ldc.llvmasm;
-    //    auto asmt = __asmtuple!
-    //    (uint, uint, uint, uint) (
-    //        "cpuid", 
-    //        "={eax},={ebx},={ecx},={edx},{eax},{ecx}", 
-    //        eax, ecx);
-    //    info.a = asmt.v[0];
-    //    info.b = asmt.v[1];
-    //    info.c = asmt.v[2];
-    //    info.d = asmt.v[3];
-    //}
-    //else
+    version(LDC)
+    {
+        version(Windows)
+        {
+            asm pure nothrow @nogc
+            {
+                mov EAX, eax;
+                mov ECX, ecx;
+                cpuid;
+                mov a, EAX;
+                mov b, EBX;
+                mov c, ECX;
+                mov d, EDX;
+            }
+        }
+        else
+        {
+            pragma(inline, true);
+            auto asmt = __asmtuple!
+            (uint, uint, uint, uint) (
+                "cpuid", 
+                "={eax},={ebx},={ecx},={edx},{eax},{ecx}", 
+                eax, ecx);
+            a = asmt.v[0];
+            b = asmt.v[1];
+            c = asmt.v[2];
+            d = asmt.v[3];
+        }
+    }
+    else
     version(GNU)
     {
         asm pure nothrow @nogc
         {
             "cpuid" : 
-                "=a" info.a,
-                "=b" info.b, 
-                "=c" info.c,
-                "=d" info.d,
+                "=a" a,
+                "=b" b, 
+                "=c" c,
+                "=d" d,
                 : "a" eax, "c" ecx;
         }
     }
@@ -268,7 +299,7 @@ CpuInfo _cpuid(uint eax, uint ecx = 0)
     return CpuInfo(a, b, c, d);
 }
 
-@trusted pure nothrow @nogc @property:
+nothrow @nogc @property:
 
 /++
 Returns: `true` if CPU vendor is virtual.
@@ -298,15 +329,16 @@ immutable(char)[12][] vendors()
     align(4)
     static immutable char[12][] vendors =
     [
+        "GenuineIntel",
+        "AuthenticAMD",
+
         "   undefined",
         " SiS SiS SiS",
         " UMC UMC UMC",
         " VIA VIA VIA",
         "AMDisbetter!",
-        "AuthenticAMD",
         "CentaurHauls",
         "CyrixInstead",
-        "GenuineIntel",
         "GenuineTMx86",
         "Geode by NSC",
         "NexGenDriven",
@@ -351,6 +383,11 @@ uint maxExtendedLeaf()
 /// Encoded vendors
 enum VendorIndex
 {
+    /// Intel
+    intel,
+    /// AMD
+    amd,
+
     /// undefined
     undefined,
 
@@ -362,14 +399,10 @@ enum VendorIndex
     via,
     /// early engineering samples of AMD K5 processor
     amd_old,
-    /// AMD
-    amd,
     /// Centaur (Including some VIA CPU)
     centaur,
     /// Cyrix
     cyrix,
-    /// Intel
-    intel,
     /// Transmeta
     transmeta,
     /// National Semiconductor
@@ -400,16 +433,44 @@ enum VendorIndex
 
 /++
 Brand, e.g. `Intel(R) Core(TM) i7-4770HQ CPU @ 2.20GHz`.
+Returns: brand length
+Params: brand = fixed length string to initiate
 +/
-string brand()
+size_t brand(ref char[48] brand)
 {
-    return _brand[0 .. _brand_length];
+    static if (__VERSION__ >= 2068)
+        pragma(inline, false);
+    CpuInfo info = void;
+    info = _cpuid(0 + 2 ^ 0x8000_0000);
+    (cast(uint[12])brand)[0 * 4 + 0] = info.a;
+    (cast(uint[12])brand)[0 * 4 + 1] = info.b;
+    (cast(uint[12])brand)[0 * 4 + 2] = info.c;
+    (cast(uint[12])brand)[0 * 4 + 3] = info.d;
+    info = _cpuid(1 + 2 ^ 0x8000_0000);
+    (cast(uint[12])brand)[1 * 4 + 0] = info.a;
+    (cast(uint[12])brand)[1 * 4 + 1] = info.b;
+    (cast(uint[12])brand)[1 * 4 + 2] = info.c;
+    (cast(uint[12])brand)[1 * 4 + 3] = info.d;
+    info = _cpuid(2 + 2 ^ 0x8000_0000);
+    (cast(uint[12])brand)[2 * 4 + 0] = info.a;
+    (cast(uint[12])brand)[2 * 4 + 1] = info.b;
+    (cast(uint[12])brand)[2 * 4 + 2] = info.c;
+    (cast(uint[12])brand)[2 * 4 + 3] = info.d;
+
+    size_t i = brand.length;
+    while(brand[i - 1] == '\0')
+    {
+        --i;
+        if(i == 0)
+            break;
+    }
+    return i;
 }
 
 /++
 Vendor, e.g. `GenuineIntel`.
 +/
-string vendor()
+const(char)[] vendor()
 {
     return _vendor;
 }

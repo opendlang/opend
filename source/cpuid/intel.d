@@ -1,5 +1,7 @@
 /++
-$(H1 Intel 64 and IA-32 CPUID Information)
+$(H2 Intel 64 and IA-32 CPUID Information)
+
+$(GREEN This module is available for betterC compilation mode.)
 
 References:
     Intel® 64 and IA-32 Architectures Software Developer’s Manual
@@ -9,6 +11,14 @@ License:   $(WEB www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
 Authors:   Ilya Yaroshenko
 +/
 module cpuid.intel;
+
+version(LDC)
+{
+    version(unittest) {} else
+    {
+        pragma(LDC_no_moduleinfo);
+    }
+}
 
 version(X86)
     version = X86_Any;
@@ -73,7 +83,7 @@ struct Leaf2Information
 
     Specification: Intel
     +/
-    pure nothrow @nogc
+    nothrow @nogc
     this(CpuInfo info)
     {
         version(BigEndian) static assert(0, "Leaf2Information is not implemented for BigEndian.");
@@ -717,7 +727,7 @@ union Leaf4Information
 
         version(D_Ddoc)
         {
-            const @trusted @property pure nothrow @nogc:
+            @trusted @property pure nothrow @nogc:
             /// Cache Type Field.
             Type type();
             /// Cache Level (starts at 1).
@@ -749,6 +759,7 @@ union Leaf4Information
         }
         else
         {
+            @trusted @property pure nothrow @nogc:
             /// EAX
             mixin(bitfields!(
                 Type, "type", 5,

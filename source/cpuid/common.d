@@ -1,11 +1,21 @@
 /++
-Auxiliary data types and functions.
+$(H2 Auxiliary data types and functions.)
+
+$(GREEN This module is available for betterC compilation mode.)
 
 License:   $(WEB www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
 
 Authors:   Ilya Yaroshenko
 +/
 module cpuid.common;
+
+version(LDC)
+{
+    version(unittest) {} else
+    {
+        pragma(LDC_no_moduleinfo);
+    }
+}
 
 /// Cache Information
 struct  Cache
@@ -23,10 +33,11 @@ struct  Cache
 
     const @property @safe pure nothrow @nogc:
 
-    ///
+    /// Code: `associative == associative.max`
     bool isFullyAssociative()
     {
-        pragma(inline, true);
+        static if (__VERSION__ >= 2068)
+            pragma(inline, true);
         return associative == associative.max;
     }
 }
@@ -43,16 +54,20 @@ struct Tlb
 
     const @property @safe pure nothrow @nogc:
 
-    /// Computes size in KBs
+    /** Computes size in KBs.
+    Code: `entries * page`
+    */
     uint size()
     {
-        pragma(inline, true);
+        static if (__VERSION__ >= 2068)
+            pragma(inline, true);
         return entries * page;
     }
-    ///
+    /// Code: `associative == associative.max`
     bool isFullyAssociative()
     {
-        pragma(inline, true);
+        static if (__VERSION__ >= 2068)
+            pragma(inline, true);
         return associative == associative.max;
     }
 }

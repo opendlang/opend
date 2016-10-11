@@ -7,16 +7,17 @@ os:
 language: d
 
 d:
- - dmd-2.071.1
- - ldc-1.0.0
+ - dmd-2.071.2
+ - ldc-1.1.0-beta2
 
 env:
  - ARCH="x86_64"
 
 matrix:
   include:
-    - {os: linux, d: dmd-2.071.1, env: ARCH="x86", addons: {apt: {packages: [[gcc-multilib]]}}}
-    - {os: linux, d: ldc-1.0.0, env: ARCH="x86", addons: {apt: {packages: [[gcc-multilib]]}}}
+    - {os: linux, d: dmd-2.071.2, env: ARCH="x86", addons: {apt: {packages: [[gcc-multilib]]}}}
+    - {os: linux, d: ldc-1.1.0-beta2, env: ARCH="x86", addons: {apt: {packages: [[gcc-multilib]]}}}
+    - {os: linux, d: gdc, env: ARCH="x86_64"}
 
 branches:
   only:
