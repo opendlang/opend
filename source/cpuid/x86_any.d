@@ -1,7 +1,7 @@
 /++
 $(H2 Common information for all x86 and x86_64 vendors.)
 
-$(GREEN This module is available for betterC compilation mode.)
+$(GREEN This module is compatible with betterC compilation mode.)
 
 Note:
     `T.max` value value is used to represent fully-associative Cache/TLB.
