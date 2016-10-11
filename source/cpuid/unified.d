@@ -256,14 +256,14 @@ void cpuid_init()
                 }
                 if(maxBasicLeaf >= 0xB)
                 {
-                    _threads = cast(ushort) _cpuid(0xB, 1).b;
+                    auto th = cast(ushort) _cpuid(0xB, 1).b;
+                    if(th > 0)
+                        _threads = th;
                     auto threadsPerCore = cast(ushort) _cpuid(0xB, 0).b;
-                    if(_threads == 0 || threadsPerCore == 0) // appveyor workaround
+                    if(threadsPerCore)
                     {
-                        _threads = 1;
-                        threadsPerCore = 1;
+                        _cores = _threads / threadsPerCore;
                     }
-                    _cores = _threads / threadsPerCore;
                 }
             }
             else

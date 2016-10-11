@@ -134,13 +134,16 @@ string x86_any()()
     app.formattedWrite("################## x86 Information ##################\n");
 
     //app.formattedWrite("CPU count =  %s\n", cpus);
-    app.formattedWrite("%20s: %s\n", "vendor", vendor);
     char[48] brandName = void;
     auto len = brand(brandName);
     app.formattedWrite("%20s: %s\n", "brand", brandName[0 .. len]);
 
     foreach(i, name; AliasSeq!(
+        "vendor",
+        "virtualVendor",
+        "virtual",
         "vendorIndex",
+        "virtualVendorIndex",
         "brandIndex",
         "maxBasicLeaf",
         "maxExtendedLeaf",
