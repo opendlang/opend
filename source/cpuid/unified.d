@@ -1,7 +1,7 @@
 /++
 $(H2 High level absraction on top of all architectures.)
 
-$(GREEN This module is available for betterC compilation mode.)
+$(GREEN This module is compatible with betterC compilation mode.)
 
 
 License:   $(WEB www.boost.org/LICENSE_1_0.txt, Boost License 1.0).

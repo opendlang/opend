@@ -1,7 +1,7 @@
 /++
 $(H2 AMD CPUID Information)
 
-$(GREEN This module is available for betterC compilation mode.)
+$(GREEN This module is compatible with betterC compilation mode.)
 
 References:
     AMD CPUID Specification. Publication # 25481 / Revision: 2.34 / Issue Date: September 2010
