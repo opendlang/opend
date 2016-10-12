@@ -73,7 +73,7 @@ See also [output example](https://gist.github.com/9il/66d2f824ca52e1293358b86604
 
 ## TODO
 
- [x] Add information about recent features like AVX2, AVX512F.
- [ ] Add information about ARM target and ARM vendors.
- [ ] Test a lot of different CPUs.
- [ ] Extend testing infrastructure.
+ - [x] Add information about recent features like AVX2, AVX512F.
+ - [ ] Add information about ARM target and ARM vendors.
+ - [ ] Test a lot of different CPUs.
+ - [ ] Extend testing infrastructure.
