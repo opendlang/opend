@@ -430,3 +430,23 @@ unittest
         .putIn(GGPlotD());
     gg.save( "polygon.png" );
 }
+
+/// Log scale
+unittest
+{
+    import std.range : zip;
+    import std.algorithm : map;
+    import ggplotd.aes : aes;
+    import ggplotd.scale : scale;
+    import ggplotd.ggplotd : GGPlotD, putIn;
+    import ggplotd.geom : geomLine;
+
+    auto gg = zip([1.0, 10.0, 15], [30, 100, 1000.0])
+        .map!((a) => aes!("x", "y")(a[0], a[1]))
+        .geomLine
+        .putIn(GGPlotD());
+
+    gg = scale!("x")("log").putIn(gg);
+    gg = scale!("y")("log10").putIn(gg);
+    gg.save( "logScale.png" );
+}

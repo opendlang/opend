@@ -24,22 +24,26 @@ ScaleType scale()
     };
 }
 
-struct ScaleFunction(string type = "")
+struct ScaleFunction
 {
-    string field = type;
+    string field;
+
+    this(string fld) {
+        field = fld;
+    }
 
     double delegate(double) scale;
 }
 
 unittest
 {
-    auto sf = ScaleFunction!"bla"();
+    auto sf = ScaleFunction("bla");
     assertEqual(sf.field, "bla");
 }
 
 auto scale(string field = "")(string type)
 {
-    ScaleFunction!field sf;
+    auto sf = ScaleFunction(field);
     import std.math : log;
     if (type == "log10") {
         sf.scale = (v) { return log(v)/log(10.0); };
@@ -58,4 +62,56 @@ unittest
 {
     auto sf = scale!"bla"("log10");
     assertEqual(sf.scale(10.0), 1);
+}
+
+/// 
+void applyScaleFunction(F, X, Y, Col, Size)(in F func, 
+    ref X x, ref Y y, ref Col col, ref Size size)
+{
+    if (func.field == "x")
+        x.scaleFunction = func.scale;
+    else if (func.field == "y")
+        y.scaleFunction = func.scale;
+    else if (func.field == "colour")
+        col.scaleFunction = func.scale;
+    else if (func.field == "size")
+        size.scaleFunction = func.scale;
+}
+
+auto applyScale(B, XF, X, YF, Y)(ref B bounds,
+    XF xf, X x, YF yf, Y y)
+{
+    import ggplotd.algorithm : safeMax, safeMin;
+    import std.range : iota;
+    import std.algorithm : each;
+    auto xmin = x.min();
+    auto xmax = x.max();
+    auto ymin = y.min();
+    auto ymax = y.max();
+    if (!xf.scaleFunction.isNull)
+    {
+        // xmax won't be included in the iota so use that to initialize
+        xmax = xf.scaleFunction(xmax);
+        xmin = xf.scaleFunction(xmax);
+        iota(xmin, xmax, (xmax-xmin)/100.0)
+            .each!((x) => {
+            xmin = safeMin(xmin, xf.scaleFunction(x));
+            xmax = safeMax(xmax, xf.scaleFunction(x));
+        });
+    }
+    if (!yf.scaleFunction.isNull)
+    {
+        // ymax won't be included in the iota so use that to initialize
+        ymax = yf.scaleFunction(ymax);
+        ymin = yf.scaleFunction(ymax);
+        iota(ymin, ymax, (ymax-ymin)/100.0)
+            .each!((y) => {
+            ymin = safeMin(ymin, yf.scaleFunction(y));
+            ymax = safeMax(ymax, yf.scaleFunction(y));
+        });
+    }
+
+    bounds.adapt(xmin, ymin);
+    bounds.adapt(xmax, ymax);
+    return bounds;
 }

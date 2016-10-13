@@ -229,9 +229,18 @@ struct GGPlotD
             sizeStore.put(geom.sizeStore);
         }
 
+        // Set scaling
+        import ggplotd.guide : guideFunction;
+        import ggplotd.scale : applyScaleFunction, applyScale;
+        auto xFunc = guideFunction(xStore);
+        auto yFunc = guideFunction(yStore);
+        auto cFunc = guideFunction(colourStore, this.colourGradient());
+        auto sFunc = guideFunction(sizeStore);
+        foreach (scale; scaleFunctions)
+            scale.applyScaleFunction(xFunc, yFunc, cFunc, sFunc);
+
         AdaptiveBounds bounds;
-        bounds.adapt(xStore.min(), yStore.min());
-        bounds.adapt(xStore.max(), yStore.max());
+        bounds = bounds.applyScale(xFunc, xStore, yFunc, yStore);
 
         import std.algorithm : map;
         import std.array : array;
@@ -259,7 +268,8 @@ struct GGPlotD
         // TODO move this out of here and add some tests
         // If ticks are provided then we make sure the bounds include them
         auto xSortedTicks = xAxisTicks.sort().uniq.array;
-        if (!xSortedTicks.empty)
+        // TODO this should take into account scaling
+        /+if (!xSortedTicks.empty)
         {
             bounds.min_x = min( bounds.min_x, xSortedTicks[0][0] );
             bounds.max_x = max( bounds.max_x, xSortedTicks[$-1][0] );
@@ -268,11 +278,11 @@ struct GGPlotD
         {
             bounds.min_x = xaxis.min;
             bounds.max_x = xaxis.max;
-        }
+        }+/
 
         // This needs to happen before the offset of x axis is set
         auto ySortedTicks = yAxisTicks.sort().uniq.array;
-        if (!ySortedTicks.empty)
+        /+if (!ySortedTicks.empty)
         {
             bounds.min_y = min( bounds.min_y, ySortedTicks[0][0] );
             bounds.max_y = max( bounds.max_y, ySortedTicks[$-1][0] );
@@ -281,7 +291,7 @@ struct GGPlotD
         {
             bounds.min_y = yaxis.min;
             bounds.max_y = yaxis.max;
-        }
+        }+/
 
         import std.math : isNaN;
         auto offset = bounds.min_y;
@@ -319,13 +329,6 @@ struct GGPlotD
         auto plotMargins = Margins(currentMargins);
         if (!legends.empty)
             plotMargins.right += legends[0].width;
-
-        // Plot axis and geomRange
-        import ggplotd.guide : guideFunction;
-        auto xFunc = guideFunction(xStore);
-        auto yFunc = guideFunction(yStore);
-        auto cFunc = guideFunction(colourStore, this.colourGradient());
-        auto sFunc = guideFunction(sizeStore);
 
         foreach (geom; chain(geomRange.data, gR) )
         {
@@ -453,6 +456,9 @@ struct GGPlotD
         static if (is(T==ColourGradientFunction)) {
             colourGradientFunction = rhs;
         }
+        static if (is(T==ScaleFunction)) {
+            scaleFunctions ~= rhs;
+        }
         return this;
     }
 /// put/add to the plot
@@ -497,6 +503,9 @@ private:
     import ggplotd.theme : Theme, ThemeFunction;
     import ggplotd.legend : Legend;
     Appender!(Geom[]) geomRange;
+
+    import ggplotd.scale : ScaleFunction;
+    ScaleFunction[] scaleFunctions;
 
     import ggplotd.axes : XAxis, YAxis;
     XAxis xaxis;
