@@ -1,8 +1,8 @@
 [![Gitter](https://img.shields.io/gitter/room/libmir/public.svg)](https://gitter.im/libmir/public)
 
-[![Circle CI](https://circleci.com/gh/libmir/cpuid.svg?style=svg)](https://circleci.com/gh/libmir/cpuid)
-[![Build Status](https://travis-ci.org/libmir/cpuid.svg?branch=master)](https://travis-ci.org/libmir/cpuid)
-[![Build status](https://ci.appveyor.com/api/projects/status/f2n4dih5s4c32q7u/branch/master?svg=true)](https://ci.appveyor.com/project/9il/cpuid/branch/master)
+[![Circle CI](https://circleci.com/gh/libmir/mir-cpuid.svg?style=svg)](https://circleci.com/gh/libmir/mir-cpuid)
+[![Build Status](https://travis-ci.org/libmir/mir-cpuid.svg?branch=master)](https://travis-ci.org/libmir/mir-cpuid)
+[![Build status](https://ci.appveyor.com/api/projects/status/f2n4dih5s4c32q7u/branch/master?svg=true)](https://ci.appveyor.com/project/9il/mir-cpuid/branch/master)
 
 [![Dub version](https://img.shields.io/dub/v/mir-cpuid.svg)](http://code.dlang.org/packages/mir-cpuid)
 [![Dub downloads](https://img.shields.io/dub/dt/mir-cpuid.svg)](http://code.dlang.org/packages/mir-cpuid)
@@ -41,7 +41,7 @@ See http://docs.cpuid.dlang.io .
 
 ## Testing
 
-See [all reports](https://github.com/libmir/cpuid/issues?utf8=%E2%9C%93&q=is%3Aissue%20label%3AReports%20).
+See [all reports](https://github.com/libmir/mir-cpuid/issues?utf8=%E2%9C%93&q=is%3Aissue%20label%3AReports%20).
 
 To receive a report about your CPU, run
 
