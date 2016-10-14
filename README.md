@@ -4,9 +4,9 @@
 [![Build Status](https://travis-ci.org/libmir/cpuid.svg?branch=master)](https://travis-ci.org/libmir/cpuid)
 [![Build status](https://ci.appveyor.com/api/projects/status/f2n4dih5s4c32q7u/branch/master?svg=true)](https://ci.appveyor.com/project/9il/cpuid/branch/master)
 
-[![Dub version](https://img.shields.io/dub/v/cpuid.svg)](http://code.dlang.org/packages/cpuid)
-[![Dub downloads](https://img.shields.io/dub/dt/cpuid.svg)](http://code.dlang.org/packages/cpuid)
-[![License](https://img.shields.io/dub/l/cpuid.svg)](http://code.dlang.org/packages/cpuid)
+[![Dub version](https://img.shields.io/dub/v/mir-cpuid.svg)](http://code.dlang.org/packages/mir-cpuid)
+[![Dub downloads](https://img.shields.io/dub/dt/mir-cpuid.svg)](http://code.dlang.org/packages/mir-cpuid)
+[![License](https://img.shields.io/dub/l/mir-cpuid.svg)](http://code.dlang.org/packages/mir-cpuid)
 
 # CPU Information
 
@@ -75,5 +75,5 @@ See also [output example](https://gist.github.com/9il/66d2f824ca52e1293358b86604
 
  - [x] Add information about recent features like AVX2, AVX512F.
  - [ ] Add information about ARM target and ARM vendors.
- - [ ] Test a lot of different CPUs.
+ - [x] Test a lot of different CPUs.
  - [ ] Extend testing infrastructure.
