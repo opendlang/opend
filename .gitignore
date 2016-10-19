@@ -14,3 +14,9 @@ web
 index.html
 
 *.a
+
+__.SYMDEF
+
+__.SYMDEF SORTED
+
+*.s
