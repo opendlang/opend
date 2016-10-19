@@ -68,7 +68,7 @@ private __gshared VendorIndex _virtualVendorId;
 Initialize basic x86 CPU information.
 It is safe to call this function multiple times.
 +/
-extern(C)
+export extern(C)
 nothrow @nogc
 void cpuid_x86_any_init()
 {
@@ -85,9 +85,10 @@ void cpuid_x86_any_init()
         n[1] = info.d;
         n[2] = info.c;
         _vendorId = VendorIndex.undefined;
-        foreach(i, ref name; cast(uint[3][]) vendors[0 .. $ - 1])
+        auto vs = vendors[0 .. $ - 1];
+        foreach(i, ref name; (cast(uint[3]*)(vs.ptr))[0 .. vs.length])
         {
-            if (n == name)
+            if (n[0] == name[0] && n[1] == name[1] && n[2] == name[2])
             {
                 _vendorId = cast(VendorIndex) i;
                 break;
@@ -106,9 +107,10 @@ void cpuid_x86_any_init()
         n[1] = infov.c;
         n[2] = infov.d;
         _virtualVendorId = VendorIndex.undefinedvm;
-        foreach(i, ref name; cast(uint[3][]) vendors[VendorIndex.undefined + 1 .. $ - 1])
+        auto vs = vendors[VendorIndex.undefined + 1 .. $ - 1];
+        foreach(i, ref name; (cast(uint[3]*)(vs.ptr))[0 .. vs.length])
         {
-            if (n == name)
+            if (n[0] == name[0] && n[1] == name[1] && n[2] == name[2])
             {
                 _virtualVendorId = cast(VendorIndex) (i + VendorIndex.undefined + 1);
                 break;
