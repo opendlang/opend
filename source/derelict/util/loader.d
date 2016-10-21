@@ -87,7 +87,7 @@ abstract class SharedLibLoader
      Throws:        SymbolLoadException if doThrow is true and a the symbol
                     specified by funcName is missing from the shared library.
     +/
-    void bindFunc_stdcall(Func)(ref Func f, string unmangledName)
+    final void bindFunc_stdcall(Func)(ref Func f, string unmangledName)
     {
         static if(Derelict_OS_Windows && !Derelict_Arch_64) {
             import std.format : format;
