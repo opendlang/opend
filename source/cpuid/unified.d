@@ -90,15 +90,16 @@ private T2 assocCopy(T2, T1)(T1 from)
     return to;
 }
 
+export
+nothrow @nogc
+extern(C):
+
 /++
 Initialize basic CPU information including basic architecture.
 It is safe to call this function multiple times.
 It calls appropriate basic initialization for each module (`cpuid_x86_any_init` for X86 machines).
 +/
 version(X86_Any)
-export
-nothrow @nogc
-extern(C)
 void cpuid_init()
 {
     static if (__VERSION__ >= 2068)
@@ -317,24 +318,29 @@ void cpuid_init()
 else
 static assert(0, "cpuid_init is not implemented for this target.");
 
-@trusted nothrow @nogc:
+@trusted:
 
 /++
 Total number of CPU packages.
 Note: not implemented
 +/
-
-uint cpus() { return _cpus; }
+uint cpuid_cpus() { return _cpus; }
+/// ditto
+alias cpus = cpuid_cpus;
 
 /++
 Total number of cores per CPU.
 +/
-uint cores() { return _cores; }
+uint cpuid_cores() { return _cores; }
+/// ditto
+alias cores = cpuid_cores;
 
 /++
 Total number of threads per CPU.
 +/
-uint threads() { return _threads; }
+uint cpuid_threads() { return _threads; }
+/// ditto
+alias threads = cpuid_threads;
 
 /++
 Data Caches
@@ -342,7 +348,9 @@ Data Caches
 Returns:
     Array composed of detected data caches. Array is sorted in ascending order.
 +/
-const(Cache)[] dCache() { return _dCache[0 .. _dCache_length]; }
+const(Cache)[] cpuid_dCache() { return _dCache[0 .. _dCache_length]; }
+/// ditto
+alias dCache = cpuid_dCache;
 
 /++
 Instruction Caches
@@ -350,7 +358,9 @@ Instruction Caches
 Returns:
     Array composed of detected instruction caches. Array is sorted in ascending order.
 +/
-const(Cache)[] iCache() { return _iCache[0 .. _iCache_length]; }
+const(Cache)[] cpuid_iCache() { return _iCache[0 .. _iCache_length]; }
+/// ditto
+alias iCache = cpuid_iCache;
 
 /++
 Unified Caches
@@ -358,7 +368,9 @@ Unified Caches
 Returns:
     Array composed of detected unified caches. Array is sorted in ascending order.
 +/
-const(Cache)[] uCache() { return _uCache[0 .. _uCache_length]; }
+const(Cache)[] cpuid_uCache() { return _uCache[0 .. _uCache_length]; }
+/// ditto
+alias uCache = cpuid_uCache;
 
 /++
 Data Translation Lookaside Buffers
@@ -366,7 +378,9 @@ Data Translation Lookaside Buffers
 Returns:
     Array composed of detected data translation lookaside buffers. Array is sorted in ascending order.
 +/
-const(Tlb)[] dTlb() { return _dTlb[0 .. _dTlb_length]; }
+const(Tlb)[] cpuid_dTlb() { return _dTlb[0 .. _dTlb_length]; }
+/// ditto
+alias dTlb = cpuid_dTlb;
 
 /++
 Instruction Translation Lookaside Buffers
@@ -374,7 +388,9 @@ Instruction Translation Lookaside Buffers
 Returns:
     Array composed of detected instruction translation lookaside buffers. Array is sorted in ascending order.
 +/
-const(Tlb)[] iTlb() { return _iTlb[0 .. _iTlb_length]; }
+const(Tlb)[] cpuid_iTlb() { return _iTlb[0 .. _iTlb_length]; }
+/// ditto
+alias iTlb = cpuid_iTlb;
 
 /++
 Unified Translation Lookaside Buffers
@@ -382,5 +398,6 @@ Unified Translation Lookaside Buffers
 Returns:
     Array composed of detected unified translation lookaside buffers. Array is sorted in ascending order.
 +/
-const(Tlb)[] uTlb() { return _uTlb[0 .. _uTlb_length]; }
-
+const(Tlb)[] cpuid_uTlb() { return _uTlb[0 .. _uTlb_length]; }
+/// ditto
+alias uTlb = cpuid_uTlb;

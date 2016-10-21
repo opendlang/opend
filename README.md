@@ -46,7 +46,7 @@ See [all reports](https://github.com/libmir/mir-cpuid/issues?utf8=%E2%9C%93&q=is
 To receive a report about your CPU, run
 
 ```
-dub fetch cpuid
+dub fetch cpuid --local
 dub test cpuid
 ```
 

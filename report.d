@@ -1,3 +1,9 @@
+/+ dub.json:
+{
+    "name": "cpuid-report",
+    "dependencies": {"mir-cpuid": {"path": "./"}},
+}
++/
 /++
 Text information generators.
 
@@ -7,16 +13,7 @@ Authors:   Ilya Yaroshenko
 +/
 module cpuid.report;
 
-version(LDC)
-{
-    version(unittest) {} else
-    {
-        pragma(LDC_no_moduleinfo);
-    }
-}
-
-///
-unittest
+void main()
 {
     import cpuid.unified;
     import cpuid.report;
