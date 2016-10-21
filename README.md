@@ -43,11 +43,10 @@ See http://docs.cpuid.dlang.io .
 
 See [all reports](https://github.com/libmir/mir-cpuid/issues?utf8=%E2%9C%93&q=is%3Aissue%20label%3AReports%20).
 
-To receive a report about your CPU, run
+Run the following command from the project's directory to receive a report about your CPU
 
 ```
-dub fetch cpuid --local
-dub test cpuid
+dub --single report.d
 ```
 
 Please report dub log in a new GitHub issue!
