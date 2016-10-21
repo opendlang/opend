@@ -20,3 +20,5 @@ __.SYMDEF
 __.SYMDEF SORTED
 
 *.s
+
+cpuid-report

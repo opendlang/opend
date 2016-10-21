@@ -88,7 +88,7 @@ test_script:
  - echo %DC%
  - echo %PATH%
  - '%DC% --version'
- - dub test --arch=%Darch% --compiler=%DC%
+ - dub --arch=%Darch% --compiler=%DC%  --single report.d
 
 notifications:
  - provider: Webhook
