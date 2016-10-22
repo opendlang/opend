@@ -26,6 +26,8 @@ branches:
 
 script:
  - echo "$ARCH"
+ - dub build --arch "$ARCH"
+ - ls
  - dub --arch "$ARCH" --single report.d
 
 after_success:
