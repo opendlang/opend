@@ -1,12 +1,16 @@
 #!/bin/bash
 
 function build_doc {
-    git clone -b libdparse https://github.com/BlackEdder/harbored-mod.git
-    cd harbored-mod
-    dub upgrade
-    dub build
-    cd ..
-    ./harbored-mod/bin/hmod source/
+    #git clone -b libdparse https://github.com/BlackEdder/harbored-mod.git
+    #git clone https://github.com/nemanja-boric-sociomantic/harbored-mod.git
+    #cd harbored-mod
+    #dub upgrade
+    #dub build
+    #cd ..
+    #./harbored-mod/bin/hmod source/
+    wget http://releases.defenestrate.eu/harbored-mod-0.2.0/hmod-x86-64.tar.gz
+    tar xf hmod-x86-64.tar.gz
+    ./hmod source/
 }
 
 set -e -o pipefail
