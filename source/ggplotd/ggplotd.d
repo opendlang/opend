@@ -22,7 +22,7 @@ alias TitleFunction = Title delegate(Title);
 struct Title
 {
     /// The actual title
-    string title;
+    string[] title;
 }
 
 /** 
@@ -34,6 +34,19 @@ GGPlotD().put( title( "My title" ) );
 --------------------
 */
 TitleFunction title( string title )
+{
+    return delegate(Title t) { t.title = [title]; return t; };
+}
+
+/** 
+Draw the multiline title
+
+Examples:
+--------------------
+GGPlotD().put( title( ["My title line1", "line2", "line3"] ) );
+--------------------
+*/
+TitleFunction title( string[] title )
 {
     return delegate(Title t) { t.title = title; return t; };
 }
@@ -87,12 +100,16 @@ private auto drawTitle( in Title title, ref cairo.Surface surface,
     auto context = cairo.Context(surface);
     context.setFontSize(16.0);
     context.moveTo( width/2, margins.top/2 );
-    auto extents = context.textExtents(title.title);
+    
+    auto f = context.fontExtents();
+    foreach(t; title.title)
+    {
+        auto e = context.textExtents(t);
+        context.relMoveTo( -e.width/2, 0 );
+        context.showText(t);
+        context.relMoveTo( -e.width/2, f.height );
+    }
 
-    auto textSize = cairo.Point!double(0.5 * extents.width, 0.5 * extents.height);
-    context.relMoveTo(-textSize.x, textSize.y);
-
-    context.showText(title.title);
     return surface;
 }
 
