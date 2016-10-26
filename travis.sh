@@ -3,6 +3,7 @@
 function build_doc {
     git clone -b libdparse https://github.com/BlackEdder/harbored-mod.git
     cd harbored-mod
+    dub upgrade
     dub build
     cd ..
     ./harbored-mod/bin/hmod source/
