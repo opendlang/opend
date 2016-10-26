@@ -249,13 +249,13 @@ struct GGPlotD
             xAxisTicks = xStore
                 .storeHash
                 .byKeyValue()
-                .map!((kv) => tuple(kv.value, kv.key))
+                .map!((kv) => tuple(xFunc(kv.value), kv.key))
                 .array;
         if (yStore.hasDiscrete)
             yAxisTicks = yStore
                 .storeHash
                 .byKeyValue()
-                .map!((kv) => tuple(kv.value, kv.key))
+                .map!((kv) => tuple(yFunc(kv.value), kv.key))
                 .array;
 
         // Axis
@@ -268,8 +268,7 @@ struct GGPlotD
         // TODO move this out of here and add some tests
         // If ticks are provided then we make sure the bounds include them
         auto xSortedTicks = xAxisTicks.sort().uniq.array;
-        // TODO this should take into account scaling
-        /+if (!xSortedTicks.empty)
+        if (!xSortedTicks.empty)
         {
             bounds.min_x = min( bounds.min_x, xSortedTicks[0][0] );
             bounds.max_x = max( bounds.max_x, xSortedTicks[$-1][0] );
@@ -278,11 +277,11 @@ struct GGPlotD
         {
             bounds.min_x = xaxis.min;
             bounds.max_x = xaxis.max;
-        }+/
+        }
 
         // This needs to happen before the offset of x axis is set
         auto ySortedTicks = yAxisTicks.sort().uniq.array;
-        /+if (!ySortedTicks.empty)
+        if (!ySortedTicks.empty)
         {
             bounds.min_y = min( bounds.min_y, ySortedTicks[0][0] );
             bounds.max_y = max( bounds.max_y, ySortedTicks[$-1][0] );
@@ -291,7 +290,7 @@ struct GGPlotD
         {
             bounds.min_y = yaxis.min;
             bounds.max_y = yaxis.max;
-        }+/
+        }
 
         import std.math : isNaN;
         auto offset = bounds.min_y;

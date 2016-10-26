@@ -138,6 +138,23 @@ static auto DefaultValues = aes!(
     "angle", "alpha", "mask", "fill" )
     ("", "black", 1.0, 0.0, 1.0, true, 0.0);
 
+/// Returns field if it exists, otherwise uses the passed default
+auto fieldWithDefault(alias field, AES, T)(AES aes, T theDefault)
+{
+    static if (hasAesField!(AES, field))
+        return __traits(getMember, aes, field);
+    else
+        return theDefault;
+}
+
+unittest 
+{
+    struct Point { double x; double y; string label = "Point"; }
+    auto point = Point(1.0, 2.0);
+    assertEqual(fieldWithDefault!("x")(point, "1"), 1.0);
+    assertEqual(fieldWithDefault!("z")(point, "1"), "1");
+}
+
 /++
     Aes is used to store and access data for plotting
 

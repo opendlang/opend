@@ -339,7 +339,7 @@ unittest
 struct GuideToDoubleFunction
 {
     /// Convert the value to double
-    private auto convert(T)(in T value) const
+    private auto convert(T)(in T value, bool scale = true) const
     {
         import std.conv : to;
         import std.traits : isNumeric;
@@ -349,10 +349,15 @@ struct GuideToDoubleFunction
         } else {
             result = stringConvert(value.to!string);
         }
-        if (scaleFunction.isNull)
+        if (scaleFunction.isNull || !scale)
             return result;
         else
             return scaleFunction.get()(result);
+    }
+
+    auto unscaled(T)(in T value) const
+    {
+        return this.convert!T(value, false);
     }
 
     /// Call the function with a value

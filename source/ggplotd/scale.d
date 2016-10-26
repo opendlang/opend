@@ -78,37 +78,37 @@ void applyScaleFunction(F, X, Y, Col, Size)(in F func,
         size.scaleFunction = func.scale;
 }
 
-auto applyScale(B, XF, X, YF, Y)(ref B bounds,
-    XF xf, X x, YF yf, Y y)
+auto applyScale(B, XF, XStore, YF, YStore)(ref B bounds,
+    XF xf, XStore xStore, YF yf, YStore yStore)
 {
     import ggplotd.algorithm : safeMax, safeMin;
     import std.range : iota;
     import std.algorithm : each;
-    auto xmin = x.min();
-    auto xmax = x.max();
-    auto ymin = y.min();
-    auto ymax = y.max();
+    auto xmin = xStore.min();
+    auto xmax = xStore.max();
+    auto ymin = yStore.min();
+    auto ymax = yStore.max();
     if (!xf.scaleFunction.isNull)
     {
         // xmax won't be included in the iota so use that to initialize
         xmax = xf.scaleFunction(xmax);
         xmin = xf.scaleFunction(xmax);
-        iota(xmin, xmax, (xmax-xmin)/100.0)
-            .each!((x) => {
+        foreach(x; iota(xmin, xmax, (xmax-xmin)/100.0))
+        {
             xmin = safeMin(xmin, xf.scaleFunction(x));
             xmax = safeMax(xmax, xf.scaleFunction(x));
-        });
+        }
     }
     if (!yf.scaleFunction.isNull)
     {
         // ymax won't be included in the iota so use that to initialize
         ymax = yf.scaleFunction(ymax);
         ymin = yf.scaleFunction(ymax);
-        iota(ymin, ymax, (ymax-ymin)/100.0)
-            .each!((y) => {
+        foreach(y; iota(ymin, ymax, (ymax-ymin)/100.0))
+        {
             ymin = safeMin(ymin, yf.scaleFunction(y));
             ymax = safeMax(ymax, yf.scaleFunction(y));
-        });
+        }
     }
 
     bounds.adapt(xmin, ymin);

@@ -34,7 +34,10 @@ struct Geom
             colourStore.put(tup.colour);
         static if (hasAesField!(T, "sizeStore"))
             sizeStore.put(tup.sizeStore);
-        mask = tup.mask;
+        static if (hasAesField!(T, "mask"))
+            mask = tup.mask;
+        static if (hasAesField!(T, "scale"))
+            scale = tup.scale;
     }
 
     import ggplotd.guide : GuideToColourFunction, GuideToDoubleFunction;
@@ -54,6 +57,9 @@ struct Geom
 
     /// Whether to mask/prevent drawing outside plotting area
     bool mask = true; 
+
+    /// Whether to scale the output
+    bool scale = true;
 }
 
 import ggplotd.colourspace : RGBA;
@@ -531,7 +537,7 @@ deprecated alias geomHist3D = geomHist2D;
 
 /// Draw axis, first and last location are start/finish
 /// others are ticks (perpendicular)
-auto geomAxis(AES)(AES aes, double tickLength, string label)
+auto geomAxis(AES)(AES aesRaw, double tickLength, string label)
 {
     import std.algorithm : find;
     import std.array : array;
@@ -548,7 +554,7 @@ auto geomAxis(AES)(AES aes, double tickLength, string label)
     double[] langles;
     string[] lbls;
 
-    auto merged = DefaultValues.mergeRange(aes);
+    auto merged = DefaultValues.mergeRange(aesRaw);
 
     immutable toDir = 
         merged.find!("a.x != b.x || a.y != b.y")(merged.front).front; 
@@ -582,15 +588,21 @@ auto geomAxis(AES)(AES aes, double tickLength, string label)
     auto xm = xs[0] + 0.5*(xs[$-1]-xs[0]) - 4.0*direction[1];
     auto ym = ys[0] + 0.5*(ys[$-1]-ys[0]) - 4.0*direction[0];
     auto aesM = Aes!(double[], "x", double[], "y", string[], "label", 
-        double[], "angle", bool[], "mask")( [xm], [ym], [label], 
-            langles, [false]);
+        double[], "angle", bool[], "mask", bool[], "scale")( [xm], [ym], [label], 
+            langles, [false], [false]);
 
-    return geomLine(Aes!(typeof(xs), "x", typeof(ys), "y", bool[], "mask")(
-        xs, ys, false.repeat(xs.length).array)).chain(
-        geomLabel(Aes!(double[], "x", double[], "y", string[], "label",
-        double[], "angle", bool[], "mask", double[], "size")(lxs, lys, lbls, langles, 
-            false.repeat(lxs.length).array, aes.front.size.repeat(lxs.length).array)))
-            .chain( geomLabel(aesM) );
+    import std.algorithm : map;
+    import std.range : zip;
+    return xs.zip(ys).map!((a) => aes!("x", "y", "mask", "scale")
+        (a[0], a[1], false, false)).geomLine()
+        .chain( 
+          lxs.zip(lys, lbls, langles)
+            .map!((a) => 
+                aes!("x", "y", "label", "angle", "mask", "size", "scale")
+                    (a[0], a[1], a[2], a[3], false, aesRaw.front.size, false ))
+            .geomLabel
+        )
+        .chain( geomLabel(aesM) );
 }
 
 /**
