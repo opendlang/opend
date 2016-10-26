@@ -1,5 +1,5 @@
 /++
-$(H2 High level absraction on top of all architectures.)
+$(H2 High level abstraction on top of all architectures.)
 
 $(GREEN This module is compatible with betterC compilation mode.)
 
