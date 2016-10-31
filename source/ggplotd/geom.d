@@ -36,8 +36,6 @@ struct Geom
             sizeStore.put(tup.sizeStore);
         static if (hasAesField!(T, "mask"))
             mask = tup.mask;
-        static if (hasAesField!(T, "scale"))
-            scale = tup.scale;
     }
 
     import ggplotd.guide : GuideToColourFunction, GuideToDoubleFunction;
@@ -57,9 +55,6 @@ struct Geom
 
     /// Whether to mask/prevent drawing outside plotting area
     bool mask = true; 
-
-    /// Whether to scale the output
-    bool scale = true;
 }
 
 import ggplotd.colourspace : RGBA;

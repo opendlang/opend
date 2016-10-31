@@ -349,10 +349,7 @@ struct GuideToDoubleFunction
         } else {
             result = stringConvert(value.to!string);
         }
-        if (scaleFunction.isNull || !scale)
-            return result;
-        else
-            return scaleFunction.get()(result);
+        return result;
     }
 
     auto unscaled(T)(in T value) const
@@ -361,9 +358,13 @@ struct GuideToDoubleFunction
     }
 
     /// Call the function with a value
-    auto opCall(T)(in T value) const
+    auto opCall(T)(in T value, bool scale = true) const
     {
-        return this.convert!T(value);
+        auto result = unscaled!T(value);
+        if (scaleFunction.isNull || !scale)
+            return result;
+        else
+            return scaleFunction.get()(result);
     }
 
     /// Function that governs translation from double to double (continuous to continuous)
@@ -380,7 +381,7 @@ struct GuideToDoubleFunction
 struct GuideToColourFunction
 {
     /// Call the function with a value
-    auto opCall(T)(in T value) const
+    auto opCall(T)(in T value, bool scale = true) const
     {
         import std.conv : to;
         import std.traits : isNumeric;
@@ -404,7 +405,18 @@ struct GuideToColourFunction
         }
     }
 
-    auto toDouble(T)(in T value) const
+    auto toDouble(T)(in T value, bool scale = true) const
+    {
+        import std.conv : to;
+        import std.traits : isNumeric;
+        double result = this.unscaled(value);
+        if (scaleFunction.isNull || !scale)
+            return result;
+        else
+            return scaleFunction.get()(result);
+    }
+
+    auto unscaled(T)(in T value) const
     {
         import std.conv : to;
         import std.traits : isNumeric;
@@ -413,10 +425,7 @@ struct GuideToColourFunction
             result = value.to!double;
         else
             result = stringToDoubleConvert(value.to!string);
-        if (scaleFunction.isNull)
-            return result;
-        else
-            return scaleFunction.get()(result);
+        return result;
     }
 
     /// Function that governs translation from double to colour (continuous to colour)
