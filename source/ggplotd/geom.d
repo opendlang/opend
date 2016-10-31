@@ -107,8 +107,8 @@ private template geomShape( string shape, AES )
                  in GuideToDoubleFunction xFunc, in GuideToDoubleFunction yFunc,
                  in GuideToColourFunction cFunc, in GuideToDoubleFunction sFunc ) {
                 import std.math : isFinite;
-                auto x = xFunc(tup.x);
-                auto y = yFunc(tup.y);
+                auto x = xFunc(tup.x, tup.fieldWithDefault!("scale")(true));
+                auto y = yFunc(tup.y, tup.fieldWithDefault!("scale")(true));
                 auto col = cFunc(tup.colour);
                 if (!isFinite(x) || !isFinite(y))
                     return context;
@@ -382,12 +382,14 @@ template geomLine(AES)
                 import std.math : isFinite;
                 auto coords = coordsZip.save;
                 auto fr = coords.front;
-                context.moveTo(xFunc(fr.x), yFunc(fr.y));
+                context.moveTo(
+                    xFunc(fr.x, flags.fieldWithDefault!("scale")(true)), 
+                    yFunc(fr.y, flags.fieldWithDefault!("scale")(true)));
                 coords.popFront;
                 foreach (tup; coords)
                 {
-                    auto x = xFunc(tup.x);
-                    auto y = yFunc(tup.y);
+                    auto x = xFunc(tup.x, flags.fieldWithDefault!("scale")(true));
+                    auto y = yFunc(tup.y, flags.fieldWithDefault!("scale")(true));
                     // TODO should we actually move to next coordinate here?
                     if (isFinite(x) && isFinite(y))
                     {
@@ -639,8 +641,8 @@ template geomLabel(AES)
             immutable f = delegate(cairo.Context context, 
                  in GuideToDoubleFunction xFunc, in GuideToDoubleFunction yFunc,
                  in GuideToColourFunction cFunc, in GuideToDoubleFunction sFunc ) {
-                auto x = xFunc(tup.x);
-                auto y = yFunc(tup.y);
+                auto x = xFunc(tup.x, tup.fieldWithDefault!("scale")(true));
+                auto y = yFunc(tup.y, tup.fieldWithDefault!("scale")(true));
                 auto col = cFunc(tup.colour);
                 import std.math : ceil, isFinite;
                 if (!isFinite(x) || !isFinite(y))
@@ -893,7 +895,9 @@ auto geomPolygon(AES)(AES aes)
          in GuideToColourFunction cFunc, in GuideToDoubleFunction sFunc ) 
     {
         // Turn into vertices.
-        auto vertices = merged.map!((t) => Vertex3D( xFunc(t.x), yFunc(t.y), 
+        auto vertices = merged.map!((t) => Vertex3D( 
+            xFunc(t.x, flags.fieldWithDefault!"scale"(true)),
+            yFunc(t.y, flags.fieldWithDefault!"scale"(true)), 
             cFunc.toDouble(t.colour)));
 
             // Find lowest, highest
