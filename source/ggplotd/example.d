@@ -441,6 +441,7 @@ unittest
     import ggplotd.ggplotd : GGPlotD, putIn;
     import ggplotd.geom : geomLine;
 
+    // http://blackedder.github.io/ggplotd/images/logScale.png
     auto gg = zip([1.0, 10.0, 15], [30, 100, 1000.0])
         .map!((a) => aes!("x", "y")(a[0], a[1]))
         .geomLine
