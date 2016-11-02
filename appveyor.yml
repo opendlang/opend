@@ -2,13 +2,13 @@ platform: x64
 environment:
  matrix:
   - DC: dmd
-    DVersion: 2.071.1
+    DVersion: 2.072.0
     arch: x64
   - DC: dmd
-    DVersion: 2.071.1
+    DVersion: 2.072.0
     arch: x86
   - DC: ldc
-    DVersion: '1.1.0-beta3'
+    DVersion: '1.1.0-beta2'
     arch: x64
 
 skip_tags: true
