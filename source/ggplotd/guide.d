@@ -339,39 +339,54 @@ unittest
 struct GuideToDoubleFunction
 {
     /// Convert the value to double
-    auto convert(T)(in T value) const
+    private auto convert(T)(in T value, bool scale = true) const
     {
         import std.conv : to;
         import std.traits : isNumeric;
+        double result;
         static if (isNumeric!T) {
-            return doubleConvert(value.to!double);
+            result = doubleConvert(value.to!double);
         } else {
-            return stringConvert(value.to!string);
+            result = stringConvert(value.to!string);
         }
+        return result;
+    }
+
+    auto unscaled(T)(in T value) const
+    {
+        return this.convert!T(value, false);
     }
 
     /// Call the function with a value
-    auto opCall(T)(in T value) const
+    auto opCall(T)(in T value, bool scale = true) const
     {
-        return this.convert!T(value);
+        auto result = unscaled!T(value);
+        if (scaleFunction.isNull || !scale)
+            return result;
+        else
+            return scaleFunction.get()(result);
     }
 
     /// Function that governs translation from double to double (continuous to continuous)
     double delegate(double) doubleConvert;
     /// Function that governs translation from string to double (discrete to continuous)
     double delegate(string) stringConvert;
+
+    import std.typecons : Nullable;
+    /// Additional scaling of the field (i.e. log10, polar coordinates)
+    Nullable!(double delegate(double)) scaleFunction;
 }
 
 /// A callable struct that translates any value into a colour
 struct GuideToColourFunction
 {
     /// Call the function with a value
-    auto opCall(T)(in T value) const
+    auto opCall(T)(in T value, bool scale = true) const
     {
         import std.conv : to;
         import std.traits : isNumeric;
         static if (isNumeric!T) {
-            return doubleConvert(value.to!double);
+            return doubleConvert(toDouble(value));
         } else {
             static if (isColour!T) {
                 import ggplotd.colourspace : RGBA, toColourSpace;
@@ -390,14 +405,27 @@ struct GuideToColourFunction
         }
     }
 
-    auto toDouble(T)(in T value) const
+    auto toDouble(T)(in T value, bool scale = true) const
     {
         import std.conv : to;
         import std.traits : isNumeric;
-        if (isNumeric!T)
-            return value.to!double;
+        double result = this.unscaled(value);
+        if (scaleFunction.isNull || !scale)
+            return result;
         else
-            return stringToDoubleConvert(value.to!string);
+            return scaleFunction.get()(result);
+    }
+
+    auto unscaled(T)(in T value) const
+    {
+        import std.conv : to;
+        import std.traits : isNumeric;
+        double result;
+        static if (isNumeric!T)
+            result = value.to!double;
+        else
+            result = stringToDoubleConvert(value.to!string);
+        return result;
     }
 
     /// Function that governs translation from double to colour (continuous to colour)
@@ -409,6 +437,10 @@ struct GuideToColourFunction
     double delegate(string) stringToDoubleConvert;
     import ggplotd.colourspace : isColour;
     import ggplotd.colour : namedColour, RGBA;
+
+    import std.typecons : Nullable;
+    /// Additional scaling of the field (i.e. log10, polar coordinates)
+    Nullable!(double delegate(double)) scaleFunction;
 }
 
 /// Create an appropiate GuidToDoubleFunction from a GuideStore

@@ -246,9 +246,18 @@ struct GGPlotD
             sizeStore.put(geom.sizeStore);
         }
 
+        // Set scaling
+        import ggplotd.guide : guideFunction;
+        import ggplotd.scale : applyScaleFunction, applyScale;
+        auto xFunc = guideFunction(xStore);
+        auto yFunc = guideFunction(yStore);
+        auto cFunc = guideFunction(colourStore, this.colourGradient());
+        auto sFunc = guideFunction(sizeStore);
+        foreach (scale; scaleFunctions)
+            scale.applyScaleFunction(xFunc, yFunc, cFunc, sFunc);
+
         AdaptiveBounds bounds;
-        bounds.adapt(xStore.min(), yStore.min());
-        bounds.adapt(xStore.max(), yStore.max());
+        bounds = bounds.applyScale(xFunc, xStore, yFunc, yStore);
 
         import std.algorithm : map;
         import std.array : array;
@@ -257,13 +266,13 @@ struct GGPlotD
             xAxisTicks = xStore
                 .storeHash
                 .byKeyValue()
-                .map!((kv) => tuple(kv.value, kv.key))
+                .map!((kv) => tuple(xFunc(kv.value), kv.key))
                 .array;
         if (yStore.hasDiscrete)
             yAxisTicks = yStore
                 .storeHash
                 .byKeyValue()
-                .map!((kv) => tuple(kv.value, kv.key))
+                .map!((kv) => tuple(yFunc(kv.value), kv.key))
                 .array;
 
         // Axis
@@ -336,13 +345,6 @@ struct GGPlotD
         auto plotMargins = Margins(currentMargins);
         if (!legends.empty)
             plotMargins.right += legends[0].width;
-
-        // Plot axis and geomRange
-        import ggplotd.guide : guideFunction;
-        auto xFunc = guideFunction(xStore);
-        auto yFunc = guideFunction(yStore);
-        auto cFunc = guideFunction(colourStore, this.colourGradient());
-        auto sFunc = guideFunction(sizeStore);
 
         foreach (geom; chain(geomRange.data, gR) )
         {
@@ -470,6 +472,9 @@ struct GGPlotD
         static if (is(T==ColourGradientFunction)) {
             colourGradientFunction = rhs;
         }
+        static if (is(T==ScaleFunction)) {
+            scaleFunctions ~= rhs;
+        }
         return this;
     }
 /// put/add to the plot
@@ -514,6 +519,9 @@ private:
     import ggplotd.theme : Theme, ThemeFunction;
     import ggplotd.legend : Legend;
     Appender!(Geom[]) geomRange;
+
+    import ggplotd.scale : ScaleFunction;
+    ScaleFunction[] scaleFunctions;
 
     import ggplotd.axes : XAxis, YAxis;
     XAxis xaxis;

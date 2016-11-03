@@ -34,7 +34,8 @@ struct Geom
             colourStore.put(tup.colour);
         static if (hasAesField!(T, "sizeStore"))
             sizeStore.put(tup.sizeStore);
-        mask = tup.mask;
+        static if (hasAesField!(T, "mask"))
+            mask = tup.mask;
     }
 
     import ggplotd.guide : GuideToColourFunction, GuideToDoubleFunction;
@@ -106,8 +107,8 @@ private template geomShape( string shape, AES )
                  in GuideToDoubleFunction xFunc, in GuideToDoubleFunction yFunc,
                  in GuideToColourFunction cFunc, in GuideToDoubleFunction sFunc ) {
                 import std.math : isFinite;
-                auto x = xFunc(tup.x);
-                auto y = yFunc(tup.y);
+                auto x = xFunc(tup.x, tup.fieldWithDefault!("scale")(true));
+                auto y = yFunc(tup.y, tup.fieldWithDefault!("scale")(true));
                 auto col = cFunc(tup.colour);
                 if (!isFinite(x) || !isFinite(y))
                     return context;
@@ -381,12 +382,14 @@ template geomLine(AES)
                 import std.math : isFinite;
                 auto coords = coordsZip.save;
                 auto fr = coords.front;
-                context.moveTo(xFunc(fr.x), yFunc(fr.y));
+                context.moveTo(
+                    xFunc(fr.x, flags.fieldWithDefault!("scale")(true)), 
+                    yFunc(fr.y, flags.fieldWithDefault!("scale")(true)));
                 coords.popFront;
                 foreach (tup; coords)
                 {
-                    auto x = xFunc(tup.x);
-                    auto y = yFunc(tup.y);
+                    auto x = xFunc(tup.x, flags.fieldWithDefault!("scale")(true));
+                    auto y = yFunc(tup.y, flags.fieldWithDefault!("scale")(true));
                     // TODO should we actually move to next coordinate here?
                     if (isFinite(x) && isFinite(y))
                     {
@@ -531,7 +534,7 @@ deprecated alias geomHist3D = geomHist2D;
 
 /// Draw axis, first and last location are start/finish
 /// others are ticks (perpendicular)
-auto geomAxis(AES)(AES aes, double tickLength, string label)
+auto geomAxis(AES)(AES aesRaw, double tickLength, string label)
 {
     import std.algorithm : find;
     import std.array : array;
@@ -548,7 +551,7 @@ auto geomAxis(AES)(AES aes, double tickLength, string label)
     double[] langles;
     string[] lbls;
 
-    auto merged = DefaultValues.mergeRange(aes);
+    auto merged = DefaultValues.mergeRange(aesRaw);
 
     immutable toDir = 
         merged.find!("a.x != b.x || a.y != b.y")(merged.front).front; 
@@ -582,15 +585,21 @@ auto geomAxis(AES)(AES aes, double tickLength, string label)
     auto xm = xs[0] + 0.5*(xs[$-1]-xs[0]) - 4.0*direction[1];
     auto ym = ys[0] + 0.5*(ys[$-1]-ys[0]) - 4.0*direction[0];
     auto aesM = Aes!(double[], "x", double[], "y", string[], "label", 
-        double[], "angle", bool[], "mask")( [xm], [ym], [label], 
-            langles, [false]);
+        double[], "angle", bool[], "mask", bool[], "scale")( [xm], [ym], [label], 
+            langles, [false], [false]);
 
-    return geomLine(Aes!(typeof(xs), "x", typeof(ys), "y", bool[], "mask")(
-        xs, ys, false.repeat(xs.length).array)).chain(
-        geomLabel(Aes!(double[], "x", double[], "y", string[], "label",
-        double[], "angle", bool[], "mask", double[], "size")(lxs, lys, lbls, langles, 
-            false.repeat(lxs.length).array, aes.front.size.repeat(lxs.length).array)))
-            .chain( geomLabel(aesM) );
+    import std.algorithm : map;
+    import std.range : zip;
+    return xs.zip(ys).map!((a) => aes!("x", "y", "mask", "scale")
+        (a[0], a[1], false, false)).geomLine()
+        .chain( 
+          lxs.zip(lys, lbls, langles)
+            .map!((a) => 
+                aes!("x", "y", "label", "angle", "mask", "size", "scale")
+                    (a[0], a[1], a[2], a[3], false, aesRaw.front.size, false ))
+            .geomLabel
+        )
+        .chain( geomLabel(aesM) );
 }
 
 /**
@@ -632,8 +641,8 @@ template geomLabel(AES)
             immutable f = delegate(cairo.Context context, 
                  in GuideToDoubleFunction xFunc, in GuideToDoubleFunction yFunc,
                  in GuideToColourFunction cFunc, in GuideToDoubleFunction sFunc ) {
-                auto x = xFunc(tup.x);
-                auto y = yFunc(tup.y);
+                auto x = xFunc(tup.x, tup.fieldWithDefault!("scale")(true));
+                auto y = yFunc(tup.y, tup.fieldWithDefault!("scale")(true));
                 auto col = cFunc(tup.colour);
                 import std.math : ceil, isFinite;
                 if (!isFinite(x) || !isFinite(y))
@@ -886,7 +895,9 @@ auto geomPolygon(AES)(AES aes)
          in GuideToColourFunction cFunc, in GuideToDoubleFunction sFunc ) 
     {
         // Turn into vertices.
-        auto vertices = merged.map!((t) => Vertex3D( xFunc(t.x), yFunc(t.y), 
+        auto vertices = merged.map!((t) => Vertex3D( 
+            xFunc(t.x, flags.fieldWithDefault!"scale"(true)),
+            yFunc(t.y, flags.fieldWithDefault!"scale"(true)), 
             cFunc.toDouble(t.colour)));
 
             // Find lowest, highest
