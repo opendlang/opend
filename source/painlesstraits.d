@@ -2,6 +2,8 @@ module painlesstraits;
 
 import std.traits;
 
+package alias Identity(alias A) = A;
+
 template hasAnnotation(alias f, alias Attr)
 {
     import std.typetuple : anySatisfy, TypeTuple;
