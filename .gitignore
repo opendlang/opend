@@ -4,5 +4,5 @@ __dummy.html
 *.o
 *.obj
 lib*.a
-__test__library__
+__test__*__
 dub.selections.json
