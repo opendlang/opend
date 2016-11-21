@@ -9,6 +9,7 @@ Dlang Random Number Generators
  - 64-bit Mt19937 is default for 64 bit-platforms
  - `unpredictableSeed` has not state
  - Does not depend on DRuntime (Better C concept)
+
 ##### Integer uniform generators
 [WIP]
 
