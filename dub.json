@@ -1,0 +1,9 @@
+{
+	"name": "mir-random",
+	"authors": [
+		"Ilya Yaroshenko"
+	],
+	"description": "Dlang Random Number Generators",
+	"copyright": "Copyright © 2016, Ilya Yaroshenko",
+	"license": "BSL-1.0"
+}
