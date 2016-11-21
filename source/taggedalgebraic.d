@@ -1,7 +1,7 @@
 /**
  * Algebraic data type implementation based on a tagged union.
  * 
- * Copyright: Copyright 2015, Sönke Ludwig.
+ * Copyright: Copyright 2015-2016, Sönke Ludwig.
  * License:   $(WEB www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
  * Authors:   Sönke Ludwig
 */
@@ -44,7 +44,9 @@ struct TaggedAlgebraic(U) if (is(U == union) || is(U == struct))
 	import std.string : format;
 	import std.traits : FieldTypeTuple, FieldNameTuple, Largest, hasElaborateCopyConstructor, hasElaborateDestructor;
 
-	private alias Union = U;
+	/// Alias of the type used for defining the possible storage types/kinds.
+	alias Union = U;
+
 	private alias FieldTypes = FieldTypeTuple!U;
 	private alias fieldNames = FieldNameTuple!U;
 
