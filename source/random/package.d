@@ -70,19 +70,6 @@ unittest
 version (LDC)
 {
     pragma(inline, true)
-    int bsr(size_t v) pure
-    {
-        return cast(int)(size_t.sizeof * 8 - 1 - llvm_ctlz(v, true));
-    }
-}
-else
-{
-    int bsr(size_t v) pure;
-}
-
-version (LDC)
-{
-    pragma(inline, true)
     size_t bsf(size_t v) pure @safe nothrow @nogc
     {
     	import ldc.intrinsics;
