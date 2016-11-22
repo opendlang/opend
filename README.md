@@ -10,8 +10,11 @@ Dlang Random Number Generators
  - 64-bit Mt19937 initialization is fixed
  - 64-bit Mt19937 is default for 64-bit targets
  - `unpredictableSeed` has not state, returns `ulong`
- - [WIP] additional Xorshift generators
  - `@URNG` UDA is used for for RNGs instead of a enum flag.
+ - `min` and `max` proporties was removed. Generators must always generate uniformly all set of bits.
+ - Any unsigned generators are allowed.
+ - `LinearCongruentialEngine` was removed.
+ - [WIP] additional Xorshift generators
 
 ##### Integer uniform generators
 [WIP]
