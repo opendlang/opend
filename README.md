@@ -8,6 +8,7 @@ Dlang Random Number Generators
  - 64-bit Mt19937 initialization is fixed
  - 64-bit Mt19937 is default for 64-bit targets
  - `unpredictableSeed` has not state, returns `ulong`
+ - `@URNG` UDA is used for for RNGs instead of a enum flag.
  - Does not depend on DRuntime (Better C concept)
 
 ##### Integer uniform generators
