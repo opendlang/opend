@@ -66,3 +66,57 @@ unittest
 	auto s = gen.randIndex!uint(100);
 	auto n = gen.randIndex!ulong(-100);
 }
+
+version (LDC)
+{
+    pragma(inline, true)
+    int bsr(size_t v) pure
+    {
+        return cast(int)(size_t.sizeof * 8 - 1 - llvm_ctlz(v, true));
+    }
+}
+else
+{
+    int bsr(size_t v) pure;
+}
+
+version (LDC)
+{
+    pragma(inline, true)
+    size_t bsf(size_t v) pure @safe nothrow @nogc
+    {
+    	import ldc.intrinsics;
+        return cast(int)llvm_cttz(v, true);
+    }
+}
+else
+{
+    import core.bitop: bsf;
+}
+
+/++
+	Returns: number (`n`) of bit tests strictly before the first positive test.
+	`P(n) := 1 / (2^^(n + 1)) for n >= 0`.
++/
+size_t randExponent(G)(ref G gen)
+	if(isUniformRNG!G)
+{
+	alias R = ReturnType!G;
+	static if (is(R == ulong))
+		alias T = size_t;
+	else
+		alias T = R;
+	size_t count = 0;
+	for(;;)
+	{
+		if(auto val = gen.rand!T())
+			return count + bsf(val);
+		count += T.sizeof * 8;
+	}
+}
+
+unittest
+{
+	auto gen = Xorshift(cast(uint)unpredictableSeed);
+	auto v = gen.randExponent();
+}
