@@ -95,8 +95,7 @@ else
 }
 
 /++
-	Returns: number (`n`) of bit tests strictly before the first positive test.
-	`P(n) := 1 / (2^^(n + 1)) for n >= 0`.
+	Returns: `n >= 0` such that `P(n) := 1 / (2^^(n + 1))`.
 +/
 size_t randExponent(G)(ref G gen)
 	if(isUniformRNG!G)
