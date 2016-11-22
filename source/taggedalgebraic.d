@@ -609,6 +609,13 @@ ref inout(T) get(T, U)(ref inout(TaggedAlgebraic!U) ta)
 	assert(hasType!(T, U)(ta), () { scope (failure) assert(false); return format("Trying to get %s but have %s.", T.stringof, ta.kind); } ());
 	return ta.trustedGet!T;
 }
+/// ditto
+inout(T) get(T, U)(inout(TaggedAlgebraic!U) ta)
+{
+	import std.format : format;
+	assert(hasType!(T, U)(ta), () { scope (failure) assert(false); return format("Trying to get %s but have %s.", T.stringof, ta.kind); } ());
+	return ta.trustedGet!T;
+}
 
 /// Convenience type that can be used for union fields that have no value (`void` is not allowed).
 struct Void {}
