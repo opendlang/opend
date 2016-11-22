@@ -1,7 +1,9 @@
 {
 	"name": "mir-random",
 	"authors": [
-		"Ilya Yaroshenko"
+		"Ilya Yaroshenko",
+		"Andrei Alexandrescu",
+		"Masahiro Nakagawa"
 	],
 	"description": "Dlang Random Number Generators",
 	"copyright": "Copyright © 2016, Ilya Yaroshenko",
