@@ -16,7 +16,7 @@ Returns:
 	Uniformly distributed integer for interval `[0 .. T.max]`.
 +/
 T rand(T, G)(ref G gen)
-	if (isUnsigned!T && isUniformRNG!G && !is(T == enum))
+	if (isUnsigned!T && isSURBG!G && !is(T == enum))
 {
 	alias R = ReturnType!G;
 	enum P = T.sizeof / R.sizeof;
@@ -49,7 +49,7 @@ Returns:
 	Uniformly distributed boolean.
 +/
 bool rand(T : bool, G)(ref G gen)
-	if (isUniformRNG!G)
+	if (isSURBG!G)
 {
 	return gen() & 1;
 }
@@ -80,7 +80,7 @@ Returns:
 	Uniformly distributed boolean.
 +/
 T rand(T, G)(ref G gen)
-	if (isUniformRNG!G && is(T == enum))
+	if (isSURBG!G && is(T == enum))
 {
 	static if (is(T : long))
 		enum tiny = [EnumMembers!T] == [Iota!(EnumMembers!T.length)];
@@ -129,7 +129,7 @@ Returns:
 	Uniformly distributed integer for interval `[0 .. m)`.
 +/
 T randIndex(T, G)(ref G gen, T m)
-	if(isUnsigned!T && isUniformRNG!G)
+	if(isUnsigned!T && isSURBG!G)
 {
 	assert(m, "m must be positive");
     T ret = void;
@@ -170,7 +170,7 @@ else
 	Returns: `n >= 0` such that `P(n) := 1 / (2^^(n + 1))`.
 +/
 size_t randGeometric(G)(ref G gen)
-	if(isUniformRNG!G)
+	if(isSURBG!G)
 {
 	alias R = ReturnType!G;
 	static if (is(R == ulong))

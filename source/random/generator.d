@@ -101,18 +101,269 @@ version(unittest)
 */
 
 /**
- * Test if Rng is a random-number generator.
+ * Test if T is a random-bit generator.
  */
-enum isUniformRNG(RNG) = hasUDA!(RNG, URNG) && isUnsigned!(typeof(RNG.init()));
+template isURBG(T)
+{
+    private alias R = typeof(T.init());
+    static if (hasUDA!(T, URBG) && isUnsigned!R)
+    {
+        enum isURBG = is(typeof({
+            enum max = T.max;
+            static assert(is(typeof(T.max) == R));
+            }));
+    }
+    else enum isURBG = false; 
+}
 
+/**
+ * Test if T is a saturated random-bit generator.
+ * A random number generator is saturated if `T.max == ReturnType!T.max`.
+ */
+template isSURBG(T)
+{
+    static if (isURBG!T)
+        enum isSURBG = T.max == ReturnType!T.max;
+    else
+        enum isSURBG = false;
+}
 
-/// Defenition to as Uniform Random Number Generator
-enum URNG;
+/// Defenition to as Uniform Random Bit Generator
+enum URBG;
+
+ /**
+ Linear Congruential generator.
+ */
+@URBG struct LinearCongruentialEngine(Uint, Uint a, Uint c, Uint m)
+    if (isUnsigned!Uint)
+{
+    /// Highest generated value ($(D modulus - 1 - bool(c == 0))).
+    enum Uint max = m - 1 - bool(c == 0);
+/**
+The parameters of this distribution. The random number is $(D_PARAM x
+= (x * multipler + increment) % modulus).
+ */
+    enum Uint multiplier = a;
+    ///ditto
+    enum Uint increment = c;
+    ///ditto
+    enum Uint modulus = m;
+
+    static assert(m == 0 || a < m);
+    static assert(m == 0 || c < m);
+    static assert(m == 0 || (cast(ulong)a * (m-1) + c) % m == (c < a ? c - a + m : c - a));
+
+    @disable this();
+    @disable this(this);
+
+    // Check for maximum range
+    private static ulong gcd()(ulong a, ulong b)
+    {
+        while (b)
+        {
+            auto t = b;
+            b = a % b;
+            a = t;
+        }
+        return a;
+    }
+
+    private static ulong primeFactorsOnly()(ulong n)
+    {
+        ulong result = 1;
+        ulong iter = 2;
+        for (; n >= iter * iter; iter += 2 - (iter == 2))
+        {
+            if (n % iter) continue;
+            result *= iter;
+            do
+            {
+                n /= iter;
+            } while (n % iter == 0);
+        }
+        return result * n;
+    }
+
+    @safe pure nothrow unittest
+    {
+        static assert(primeFactorsOnly(100) == 10);
+        static assert(primeFactorsOnly(11) == 11);
+        static assert(primeFactorsOnly(7 * 7 * 7 * 11 * 15 * 11) == 7 * 11 * 15);
+        static assert(primeFactorsOnly(129 * 2) == 129 * 2);
+        // enum x = primeFactorsOnly(7 * 7 * 7 * 11 * 15);
+        // static assert(x == 7 * 11 * 15);
+    }
+
+    private static bool properLinearCongruentialParameters()(ulong m,ulong a, ulong c)
+    {
+        if (m == 0)
+        {
+            static if (is(Uint == uint))
+            {
+                // Assume m is uint.max + 1
+                m = (1uL << 32);
+            }
+            else
+            {
+                return false;
+            }
+        }
+        // Bounds checking
+        if (a == 0 || a >= m || c >= m) return false;
+        // c and m are relatively prime
+        if (c > 0 && gcd(c, m) != 1) return false;
+        // a - 1 is divisible by all prime factors of m
+        if ((a - 1) % primeFactorsOnly(m)) return false;
+        // if a - 1 is multiple of 4, then m is a  multiple of 4 too.
+        if ((a - 1) % 4 == 0 && m % 4) return false;
+        // Passed all tests
+        return true;
+    }
+
+    // check here
+    static assert(c == 0 || properLinearCongruentialParameters(m, a, c),
+            "Incorrect instantiation of LinearCongruentialEngine");
+
+/**
+Constructs a $(D_PARAM LinearCongruentialEngine) generator seeded with
+$(D x0).
+Params:
+    x0 = seed, must be positive if c equals to 0.
+ */
+    this(Uint x0) @safe pure
+    {
+        static if (c == 0)
+            assert(x0, "Invalid (zero) seed for " ~ LinearCongruentialEngine.stringof);
+        _x = modulus ? (x0 % modulus) : x0;
+    }
+
+    /**
+       Advances the random sequence.
+    */
+    Uint opCall() @safe pure nothrow @nogc
+    {
+        static if (m)
+        {
+            static if (is(Uint == uint))
+            {
+                static if (m == uint.max)
+                {
+                    immutable ulong
+                        x = (cast(ulong) a * _x + c),
+                        v = x >> 32,
+                        w = x & uint.max;
+                    immutable y = cast(uint)(v + w);
+                    _x = (y < v || y == uint.max) ? (y + 1) : y;
+                }
+                else static if (m == int.max)
+                {
+                    immutable ulong
+                        x = (cast(ulong) a * _x + c),
+                        v = x >> 31,
+                        w = x & int.max;
+                    immutable uint y = cast(uint)(v + w);
+                    _x = (y >= int.max) ? (y - int.max) : y;
+                }
+                else
+                {
+                    _x = cast(uint) ((cast(ulong) a * _x + c) % m);
+                }
+            }
+            else static assert(0);
+        }
+        else
+        {
+            _x = a * _x + c;
+        }
+        static if (c == 0)
+            return _x - 1;
+        else
+            return _x;
+    }
+
+    private Uint _x;
+}
+
+/**
+Define $(D_PARAM LinearCongruentialEngine) generators with well-chosen
+parameters. $(D MinstdRand0) implements Park and Miller's "minimal
+standard" $(HTTP
+wikipedia.org/wiki/Park%E2%80%93Miller_random_number_generator,
+generator) that uses 16807 for the multiplier. $(D MinstdRand)
+implements a variant that has slightly better spectral behavior by
+using the multiplier 48271. Both generators are rather simplistic.
+ */
+alias MinstdRand0 = LinearCongruentialEngine!(uint, 16807, 0, 2147483647);
+/// ditto
+alias MinstdRand = LinearCongruentialEngine!(uint, 48271, 0, 2147483647);
+
+///
+@safe unittest
+{
+    // seed with a constant
+    auto rnd0 = MinstdRand0(1);
+    auto n = rnd0(); // same for each run
+    // Seed with an unpredictable value
+    rnd0 = MinstdRand0(cast(uint)unpredictableSeed);
+    n = rnd0(); // different across runs
+
+    import std.traits;
+    static assert(is(ReturnType!rnd0 == uint));
+}
+
+unittest
+{
+    static assert(isURBG!MinstdRand);
+    static assert(isURBG!MinstdRand0);
+
+    static assert(!isSURBG!MinstdRand);
+    static assert(!isSURBG!MinstdRand0);
+
+    // The correct numbers are taken from The Database of Integer Sequences
+    // http://www.research.att.com/~njas/sequences/eisBTfry00128.txt
+    auto checking0 = [
+        16807,282475249,1622650073,984943658,1144108930,470211272,
+        101027544,1457850878,1458777923,2007237709,823564440,1115438165,
+        1784484492,74243042,114807987,1137522503,1441282327,16531729,
+        823378840,143542612 ];
+
+    auto rnd0 = MinstdRand0(1);
+
+    foreach (e; checking0)
+    {
+        assert(rnd0() == e - 1);
+    }
+    // Test the 10000th invocation
+    // Correct value taken from:
+    // http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2007/n2461.pdf
+    rnd0 = MinstdRand0(1);
+    foreach(_; 0 .. 9999)
+        rnd0();
+    assert(rnd0() == 1043618065 - 1);
+
+    // Test MinstdRand
+    auto checking = [48271UL,182605794,1291394886,1914720637,2078669041,
+                     407355683];
+    auto rnd = MinstdRand(1);
+    foreach (e; checking)
+    {
+        assert(rnd() == e - 1);
+    }
+
+    // Test the 10000th invocation
+    // Correct value taken from:
+    // http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2007/n2461.pdf
+    rnd = MinstdRand(1);
+    foreach(_; 0 .. 9999)
+        rnd();
+    assert(rnd() == 399268537 - 1);
+}
+
 
 /**
 The $(LUCKY Mersenne Twister) generator.
  */
-@URNG struct MersenneTwisterEngine(Uint, size_t w, size_t n, size_t m, size_t r,
+@URBG struct MersenneTwisterEngine(Uint, size_t w, size_t n, size_t m, size_t r,
                              Uint a,
                              uint u, Uint d,
                              uint s, Uint b,
@@ -120,8 +371,7 @@ The $(LUCKY Mersenne Twister) generator.
                              uint l)
     if (isUnsigned!Uint)
 {
-    static assert(Uint.sizeof * 8 == w, "MersenneTwisterEngine constraint: Uint.sizeof * 8 == w");
-    //static assert(0 < w && w <= Uint.sizeof * 8);
+    static assert(0 < w && w <= Uint.sizeof * 8);
     static assert(1 <= m && m <= n);
     static assert(0 <= r && 0 <= u && 0 <= s && 0 <= t && 0 <= l);
     static assert(r <= w && u <= w && s <= w && t <= w && l <= w);
@@ -148,6 +398,10 @@ The $(LUCKY Mersenne Twister) generator.
     enum uint temperingT = t; /// ditto
     enum Uint temperingC = c; /// ditto
     enum uint temperingL = l; /// ditto
+
+    /// Largest generated value.
+    enum Uint max = Uint.max >> (Uint.sizeof * 8u - w);
+    static assert(a <= max && b <= max && c <= max);
 
     /// The default seed value.
     enum Uint defaultSeed = 5489;
@@ -284,7 +538,8 @@ else
 
 @safe nothrow unittest
 {
-    static assert(isUniformRNG!Mt19937_32);
+    static assert(isSURBG!Mt19937_32);
+    static assert(isSURBG!Mt19937_64);
     auto gen = Mt19937_32(Mt19937_32.defaultSeed);
     foreach(_; 0 .. 9999)
         gen();
@@ -306,19 +561,15 @@ else
  *  $(TR $(TD 192)  $(TD 2^192 - 2^32))
  * )
  */
-@URNG struct XorshiftEngine(uint bits, uint a, uint b, uint c)
+@URBG struct XorshiftEngine(uint bits, uint a, uint b, uint c)
     if (isUnsigned!uint)
 {
     static assert(bits == 32 || bits == 64 || bits == 96 || bits == 128 || bits == 160 || bits == 192,
                   "Xorshift supports only 32, 64, 96, 128, 160 and 192 bit versions. "
                   ~ bits.stringof ~ " is not supported.");
 
-  public:
-
-    @disable this();
-    @disable this(this);
-
   private:
+
     enum size = bits / 32;
 
     static if (bits == 32)
@@ -344,6 +595,13 @@ else
 
 
   public:
+
+    @disable this();
+    @disable this(this);
+
+    /// Largest generated value.
+    enum uint max = uint.max;
+
     /**
      * Constructs a $(D XorshiftEngine) generator seeded with $(D_PARAM x0).
      */
@@ -447,6 +705,7 @@ alias Xorshift    = Xorshift128;                      /// ditto
 
     import std.traits;
     static assert(is(ReturnType!rnd == uint));
+    static assert(isSURBG!Xorshift);
 }
 
 /* A complete list of all pseudo-random number generators implemented in
@@ -458,7 +717,7 @@ alias Xorshift    = Xorshift128;                      /// ditto
 {
     foreach (Rng; PseudoRngTypes)
     {
-        static assert(isUniformRNG!Rng);
+        static assert(isURBG!Rng);
         auto rng = Rng(cast(uint)unpredictableSeed);
     }
 }
@@ -548,6 +807,6 @@ alias Random = Mt19937;
 unittest
 {
     import std.traits;
-    static assert(isUniformRNG!Random);
+    static assert(isSURBG!Random);
     static assert(is(ReturnType!Random == size_t));
 }
