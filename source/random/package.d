@@ -177,13 +177,9 @@ size_t randGeometric(G)(ref G gen)
         alias T = size_t;
     else
         alias T = R;
-    size_t count = 0;
-    for(;;)
-    {
+    for(size_t count = 0;; count += T.sizeof * 8)
         if(auto val = gen.rand!T())
             return count + bsf(val);
-        count += T.sizeof * 8;
-    }
 }
 
 ///
