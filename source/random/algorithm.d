@@ -1,4 +1,8 @@
-///
+/++
+Authors: Ilya Yaroshenko
+Copyright: Copyright, Ilya Yaroshenko 2016-.
+License:   $(HTTP www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
++/
 module random.algorithm;
 
 import std.traits;
