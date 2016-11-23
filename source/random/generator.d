@@ -48,7 +48,7 @@ import std.traits;
 version(unittest)
 {
     static import std.meta;
-    package alias PseudoRngTypes = std.meta.AliasSeq!(Mt19937_32, Xorshift32, Xorshift64,
+    package alias PseudoRngTypes = std.meta.AliasSeq!(Mt19937_32, Mt19937_64, Xorshift32, Xorshift64,
                                                       Xorshift96, Xorshift128, Xorshift160, Xorshift192);
 }
 
