@@ -800,7 +800,6 @@ generators. You may want to use it if (1) you need to generate some
 nice random numbers, and (2) you don't care for the minutiae of the
 method being used.
  */
-
 alias Random = Mt19937;
 
 ///
