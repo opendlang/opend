@@ -16,7 +16,7 @@ Returns:
     Uniformly distributed integer for interval `[0 .. T.max]`.
 +/
 T rand(T, G)(ref G gen)
-    if (isUnsigned!T && isSURBG!G && !is(T == enum))
+    if (isIntegral!T && isSURBG!G && !is(T == enum))
 {
     alias R = ReturnType!G;
     enum P = T.sizeof / R.sizeof;
@@ -38,7 +38,7 @@ T rand(T, G)(ref G gen)
 unittest
 {
     auto gen = Xorshift(1);
-    auto s = gen.rand!ushort;
+    auto s = gen.rand!short;
     auto n = gen.rand!ulong;
 }
 
