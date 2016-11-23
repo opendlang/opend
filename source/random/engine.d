@@ -100,26 +100,27 @@ version(unittest)
    email: m-mat @ math.sci.hiroshima-u.ac.jp (remove space)
 */
 
-/**
- * Test if T is a random-bit generator.
- */
+/// User Defined Attribute definition for uniform Random Engine.
+enum RandomEngine;
+
+/++
+Test if T is a random engine.
++/
 template isRandomEngine(T)
 {
     private alias R = typeof(T.init());
     static if (hasUDA!(T, RandomEngine) && isUnsigned!R)
-    {
         enum isRandomEngine = is(typeof({
             enum max = T.max;
             static assert(is(typeof(T.max) == R));
             }));
-    }
     else enum isRandomEngine = false; 
 }
 
-/**
- * Test if T is a saturated random-bit generator.
- * A random number generator is saturated if `T.max == ReturnType!T.max`.
- */
+/++
+Test if T is a saturated random-bit generator.
+A random number generator is saturated if `T.max == ReturnType!T.max`.
++/
 template isSaturatedRandomEngine(T)
 {
     static if (isRandomEngine!T)
@@ -127,9 +128,6 @@ template isSaturatedRandomEngine(T)
     else
         enum isSaturatedRandomEngine = false;
 }
-
-/// Defenition to as Uniform Random Bit Generator
-enum RandomEngine;
 
  /**
  Linear Congruential generator.
