@@ -64,6 +64,7 @@ Returns: `X ~ U(a, b)`
 ///
 unittest
 {
+    import random.engine.xorshift;
     auto gen = Xorshift(1);
     auto rv = UniformVariable!int(-10, 10); // [-10, 11)
     auto x = rv(gen); // random variable

@@ -44,6 +44,7 @@ RandomRangeAdaptor!G randomRangeAdaptor(G)(ref G gen)
 unittest
 {
     import std.range, std.algorithm;
+    import random.engine.xorshift;
     auto rng = Xorshift(1);
     auto bitSample = rng
         .randomRangeAdaptor

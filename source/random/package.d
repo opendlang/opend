@@ -37,6 +37,7 @@ T rand(T, G)(ref G gen)
 ///
 unittest
 {
+    import random.engine.xorshift;
     auto gen = Xorshift(1);
     auto s = gen.rand!short;
     auto n = gen.rand!ulong;
@@ -57,6 +58,7 @@ bool rand(T : bool, G)(ref G gen)
 ///
 unittest
 {
+    import random.engine.xorshift;
     auto gen = Xorshift(1);
     auto s = gen.rand!bool;
 }
@@ -100,6 +102,7 @@ T rand(T, G)(ref G gen)
 ///
 unittest
 {
+    import random.engine.xorshift;
     auto gen = Xorshift(1);
     enum A { a, b, c }
     auto e = gen.rand!A;
@@ -108,6 +111,7 @@ unittest
 ///
 unittest
 {
+    import random.engine.xorshift;
     auto gen = Xorshift(1);
     enum A : dchar { a, b, c }
     auto e = gen.rand!A;
@@ -116,6 +120,7 @@ unittest
 ///
 unittest
 {
+    import random.engine.xorshift;
     auto gen = Xorshift(1);
     enum A : string { a = "a", b = "b", c = "c" }
     auto e = gen.rand!A;
@@ -151,6 +156,7 @@ T randIndex(T, G)(ref G gen, T m)
 ///
 unittest
 {
+    import random.engine.xorshift;
     auto gen = Xorshift(1);
     auto s = gen.randIndex!uint(100);
     auto n = gen.randIndex!ulong(-100);
@@ -190,6 +196,7 @@ size_t randGeometric(G)(ref G gen)
 ///
 unittest
 {
+    import random.engine.xorshift;
     auto gen = Xorshift(cast(uint)unpredictableSeed);
     auto v = gen.randGeometric();
 }
