@@ -11,7 +11,7 @@ public import random.generator;
 
 /++
 Params:
-	gen = random random number generator
+	gen = saturated random number generator
 Returns:
 	Uniformly distributed integer for interval `[0 .. T.max]`.
 +/
@@ -44,7 +44,7 @@ unittest
 
 /++
 Params:
-	gen = random random number generator
+	gen = saturated random number generator
 Returns:
 	Uniformly distributed boolean.
 +/
@@ -75,7 +75,7 @@ private template Iota(size_t i, size_t j)
 
 /++
 Params:
-	gen = random random number generator
+	gen = saturated random number generator
 Returns:
 	Uniformly distributed boolean.
 +/
