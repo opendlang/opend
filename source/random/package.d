@@ -16,7 +16,7 @@ Returns:
     Uniformly distributed integer for interval `[0 .. T.max]`.
 +/
 T rand(T, G)(ref G gen)
-    if (isIntegral!T && isSURBG!G && !is(T == enum))
+    if (isIntegral!T && !is(T == enum) && isSURBG!G)
 {
     alias R = ReturnType!G;
     enum P = T.sizeof / R.sizeof;
