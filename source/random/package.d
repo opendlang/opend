@@ -7,7 +7,7 @@ module random;
 
 import std.traits;
 
-public import random.generator;
+public import random.engine;
 
 /++
 Params:
@@ -16,7 +16,7 @@ Returns:
     Uniformly distributed integer for interval `[0 .. T.max]`.
 +/
 T rand(T, G)(ref G gen)
-    if (isIntegral!T && !is(T == enum) && isSURBG!G)
+    if (isSaturatedRandomEngine!G && isIntegral!T && !is(T == enum))
 {
     alias R = ReturnType!G;
     enum P = T.sizeof / R.sizeof;
@@ -49,7 +49,7 @@ Returns:
     Uniformly distributed boolean.
 +/
 bool rand(T : bool, G)(ref G gen)
-    if (isSURBG!G)
+    if (isSaturatedRandomEngine!G)
 {
     return gen() & 1;
 }
@@ -80,7 +80,7 @@ Returns:
     Uniformly distributed boolean.
 +/
 T rand(T, G)(ref G gen)
-    if (isSURBG!G && is(T == enum))
+    if (isSaturatedRandomEngine!G && is(T == enum))
 {
     static if (is(T : long))
         enum tiny = [EnumMembers!T] == [Iota!(EnumMembers!T.length)];
@@ -121,6 +121,11 @@ unittest
     auto e = gen.rand!A;
 }
 
+T rand(T, G)(ref G gen, sizediff_t maxExp = 0)
+    if (isSaturatedRandomEngine!G && isFloatingPoint!T)
+{
+}
+
 /++
 Params:
     gen = uniform random number generator
@@ -129,7 +134,7 @@ Returns:
     Uniformly distributed integer for interval `[0 .. m)`.
 +/
 T randIndex(T, G)(ref G gen, T m)
-    if(isUnsigned!T && isSURBG!G)
+    if(isSaturatedRandomEngine!G && isUnsigned!T)
 {
     assert(m, "m must be positive");
     T ret = void;
@@ -170,7 +175,7 @@ else
     Returns: `n >= 0` such that `P(n) := 1 / (2^^(n + 1))`.
 +/
 size_t randGeometric(G)(ref G gen)
-    if(isSURBG!G)
+    if(isSaturatedRandomEngine!G)
 {
     alias R = ReturnType!G;
     static if (is(R == ulong))

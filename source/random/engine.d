@@ -32,7 +32,7 @@ Distributed under the Boost Software License, Version 1.0.
    (See accompanying file LICENSE_1_0.txt or copy at
          http://www.boost.org/LICENSE_1_0.txt)
 */
-module random.generator;
+module random.engine;
 
 version (OSX)
     version = Darwin;
@@ -103,38 +103,38 @@ version(unittest)
 /**
  * Test if T is a random-bit generator.
  */
-template isURBG(T)
+template isRandomEngine(T)
 {
     private alias R = typeof(T.init());
-    static if (hasUDA!(T, URBG) && isUnsigned!R)
+    static if (hasUDA!(T, RandomEngine) && isUnsigned!R)
     {
-        enum isURBG = is(typeof({
+        enum isRandomEngine = is(typeof({
             enum max = T.max;
             static assert(is(typeof(T.max) == R));
             }));
     }
-    else enum isURBG = false; 
+    else enum isRandomEngine = false; 
 }
 
 /**
  * Test if T is a saturated random-bit generator.
  * A random number generator is saturated if `T.max == ReturnType!T.max`.
  */
-template isSURBG(T)
+template isSaturatedRandomEngine(T)
 {
-    static if (isURBG!T)
-        enum isSURBG = T.max == ReturnType!T.max;
+    static if (isRandomEngine!T)
+        enum isSaturatedRandomEngine = T.max == ReturnType!T.max;
     else
-        enum isSURBG = false;
+        enum isSaturatedRandomEngine = false;
 }
 
 /// Defenition to as Uniform Random Bit Generator
-enum URBG;
+enum RandomEngine;
 
  /**
  Linear Congruential generator.
  */
-@URBG struct LinearCongruentialEngine(Uint, Uint a, Uint c, Uint m)
+@RandomEngine struct LinearCongruentialEngine(Uint, Uint a, Uint c, Uint m)
     if (isUnsigned!Uint)
 {
     /// Highest generated value ($(D modulus - 1 - bool(c == 0))).
@@ -313,11 +313,11 @@ alias MinstdRand = LinearCongruentialEngine!(uint, 48271, 0, 2147483647);
 
 unittest
 {
-    static assert(isURBG!MinstdRand);
-    static assert(isURBG!MinstdRand0);
+    static assert(isRandomEngine!MinstdRand);
+    static assert(isRandomEngine!MinstdRand0);
 
-    static assert(!isSURBG!MinstdRand);
-    static assert(!isSURBG!MinstdRand0);
+    static assert(!isSaturatedRandomEngine!MinstdRand);
+    static assert(!isSaturatedRandomEngine!MinstdRand0);
 
     // The correct numbers are taken from The Database of Integer Sequences
     // http://www.research.att.com/~njas/sequences/eisBTfry00128.txt
@@ -363,7 +363,7 @@ unittest
 /**
 The $(LUCKY Mersenne Twister) generator.
  */
-@URBG struct MersenneTwisterEngine(Uint, size_t w, size_t n, size_t m, size_t r,
+@RandomEngine struct MersenneTwisterEngine(Uint, size_t w, size_t n, size_t m, size_t r,
                              Uint a,
                              uint u, Uint d,
                              uint s, Uint b,
@@ -538,8 +538,8 @@ else
 
 @safe nothrow unittest
 {
-    static assert(isSURBG!Mt19937_32);
-    static assert(isSURBG!Mt19937_64);
+    static assert(isSaturatedRandomEngine!Mt19937_32);
+    static assert(isSaturatedRandomEngine!Mt19937_64);
     auto gen = Mt19937_32(Mt19937_32.defaultSeed);
     foreach(_; 0 .. 9999)
         gen();
@@ -561,7 +561,7 @@ else
  *  $(TR $(TD 192)  $(TD 2^192 - 2^32))
  * )
  */
-@URBG struct XorshiftEngine(uint bits, uint a, uint b, uint c)
+@RandomEngine struct XorshiftEngine(uint bits, uint a, uint b, uint c)
     if (isUnsigned!uint)
 {
     static assert(bits == 32 || bits == 64 || bits == 96 || bits == 128 || bits == 160 || bits == 192,
@@ -705,7 +705,7 @@ alias Xorshift    = Xorshift128;                      /// ditto
 
     import std.traits;
     static assert(is(ReturnType!rnd == uint));
-    static assert(isSURBG!Xorshift);
+    static assert(isSaturatedRandomEngine!Xorshift);
 }
 
 /* A complete list of all pseudo-random number generators implemented in
@@ -717,7 +717,7 @@ alias Xorshift    = Xorshift128;                      /// ditto
 {
     foreach (Rng; PseudoRngTypes)
     {
-        static assert(isURBG!Rng);
+        static assert(isRandomEngine!Rng);
         auto rng = Rng(cast(uint)unpredictableSeed);
     }
 }
@@ -806,6 +806,6 @@ alias Random = Mt19937;
 unittest
 {
     import std.traits;
-    static assert(isSURBG!Random);
+    static assert(isSaturatedRandomEngine!Random);
     static assert(is(ReturnType!Random == size_t));
 }

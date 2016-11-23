@@ -7,7 +7,7 @@ module random.algorithm;
 
 import std.traits;
 
-public import random.generator;
+public import random.engine;
 
 /++
 Range interface for uniform random bit generators.
@@ -17,7 +17,7 @@ Note:
     The structure must not be copied (explicitly or implicitly) outside from a function.
 +/
 struct RandomRangeAdaptor(G)
-    if (isURBG!G)
+    if (isRandomEngine!G)
 {
     private G* _gen;
     private ReturnType!G _val;
@@ -35,7 +35,7 @@ struct RandomRangeAdaptor(G)
 
 /// ditto
 RandomRangeAdaptor!G randomRangeAdaptor(G)(ref G gen)
-    if (isURBG!G)
+    if (isRandomEngine!G)
 {
     return typeof(return)(gen);
 }
