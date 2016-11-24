@@ -139,7 +139,6 @@ T rand(T, G)(ref G gen, sizediff_t boundExp = 0)
     if (isSaturatedRandomEngine!G && isFloatingPoint!T)
 {
     assert(boundExp <= T.max_exp);
-    assert(boundExp >= T.min_exp - 1);
     static if (is(T == float))
     {
         auto d = gen.rand!uint;
@@ -148,7 +147,10 @@ T rand(T, G)(ref G gen, sizediff_t boundExp = 0)
         uint exp = EXPMASK & d;
         exp = cast(uint) (boundExp - (exp ? bsf(exp) - (T.mant_dig - 1) : gen.randGeometric));
         if(cast(int)exp < 0)
+        {
             exp = 0;
+            d &= ~long.max;
+        }
         d = (exp << (T.mant_dig - 1)) ^ (d & ~EXPMASK);
         return *cast(T*)&d;
     }
@@ -161,7 +163,10 @@ T rand(T, G)(ref G gen, sizediff_t boundExp = 0)
         ulong exp = EXPMASK & d;
         exp = cast(ulong) (boundExp - (exp ? bsf(exp) - (T.mant_dig - 1) : gen.randGeometric));
         if(cast(int)exp < 0)
+        {
             exp = 0;
+            d &= ~long.max;
+        }
         d = (exp << (T.mant_dig - 1)) ^ (d & ~EXPMASK);
         return *cast(T*)&d;
     }
@@ -175,9 +180,13 @@ T rand(T, G)(ref G gen, sizediff_t boundExp = 0)
         uint exp = EXPMASK & d;
         exp = cast(uint) (boundExp - (exp ? bsf(exp) : gen.randGeometric));
         if(cast(int)exp < 0)
+        {
             exp = 0;
+            m = 0;
+        }
+        else
         if (exp)
-            m |= 1UL << 63;
+            m |= ~long.max;
         else
             m &= long.max;
         d = exp ^ (d & ~EXPMASK);
@@ -224,8 +233,18 @@ unittest
     auto c = gen.rand!double(-2);
     assert(-0.25 < c && c < +0.25);
     
-    auto d = gen.rand!double.fabs;
+    auto d = gen.rand!real.fabs;
     assert(0 <= d && d < 1);
+}
+
+
+/// Subnormal numbers
+unittest
+{
+    import random.engine.xorshift;
+    auto gen = Xorshift(1);
+    auto x = gen.rand!double(double.min_exp-1);
+    assert(-double.min_normal < x && x < double.min_normal);
 }
 
 /++
