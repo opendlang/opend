@@ -163,7 +163,7 @@ Returns: `X ~ Exp(𝜆)`
     T opCall(G)(ref G gen)
         if (isSaturatedRandomEngine!G)
     {
-        return gen.randExponential2 * _scale;
+        return gen.randExponential2!T * _scale;
     }
 }
 
@@ -173,5 +173,6 @@ unittest
     import std.math : nextDown;
     import random.engine.xorshift;
     auto gen = Xorshift(1);
-    auto rv = ExponentialVariable!double(1); // [-8, 10)
+    auto rv = ExponentialVariable!double(1);
+    auto x = rv(gen);
 }
