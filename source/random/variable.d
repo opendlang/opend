@@ -175,6 +175,50 @@ unittest
     auto x = rv(gen);
 }
 
+private T hypot01(T)(const T x, const T y)
+{
+    // Scale x and y to avoid underflow and overflow.
+    // If one is huge and the other tiny, return the larger.
+    // If both are huge, avoid overflow by scaling by 1/sqrt(real.max/2).
+    // If both are tiny, avoid underflow by scaling by sqrt(real.min_normal*real.epsilon).
+
+    enum T SQRTMIN = 0.5f * sqrt(T.min_normal); // This is a power of 2.
+    enum T SQRTMAX = 1 / SQRTMIN; // 2^^((max_exp)/2) = nextUp(sqrt(T.max))
+
+    static assert(2*(SQRTMAX/2)*(SQRTMAX/2) <= T.max);
+
+    // Proves that sqrt(T.max) ~~  0.5/sqrt(T.min_normal)
+    static assert(T.min_normal*T.max > 2 && T.min_normal*T.max <= 4);
+
+    T u = fabs(x);
+    T v = fabs(y);
+    if (u < v)  // check for NaN as well.
+    {
+        auto t = v;
+        v = u;
+        u = t;
+    }
+
+    if (u <= SQRTMIN)
+    {
+        // hypot (tiny, tiny) -- avoid underflow
+        // This is only necessary to avoid setting the underflow
+        // flag.
+        u *= SQRTMAX / T.epsilon;
+        v *= SQRTMAX / T.epsilon;
+        return sqrt(u * u + v * v) * SQRTMIN * T.epsilon;
+    }
+
+    if (u * T.epsilon > v)
+    {
+        // hypot (huge, tiny) = huge
+        return u;
+    }
+
+    // both are in the normal range
+    return sqrt(u*u + v*v);
+}
+
 /++
 Exponential Random Variable.
 Returns: `X ~ N(μ, σ)`
@@ -213,9 +257,10 @@ Returns: `X ~ N(μ, σ)`
             {
                 u = gen.rand!T;
                 v = gen.rand!T;
-                s = u * u + v * v;
-            } while (s > 1 || s == 0);
-            auto scale = sqrt(-2 * log(s) / s);
+                s = hypot01(u, v);
+            }
+            while (s > 1 || s == 0);
+            auto scale = 2 * sqrt(-log(s)) / s;
             _y = v * scale;
             _x = u * scale;
             _hot = true;
