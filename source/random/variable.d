@@ -44,7 +44,7 @@ Returns: `X ~ U[a, b]`
 {
     private alias U = Unsigned!T;
     private U _length;
-    private T _offset;
+    private T _location = 0;
 
     /++
     Constraints: `a <= b`.
@@ -53,20 +53,20 @@ Returns: `X ~ U[a, b]`
     {
         assert(a <= b, "constraint: a <= b");
         _length = b - a + 1;
-        _offset = a;
+        _location = a;
     }
 
     ///
     T opCall(G)(ref G gen)
         if (isSaturatedRandomEngine!G)
     {
-        return _length ? gen.randIndex!U(_length) + _offset : gen.rand!U;
+        return _length ? gen.randIndex!U(_length) + _location : gen.rand!U;
     }
 
     ///
-    T min() @property { return _offset; }
+    T min() @property { return _location; }
     ///
-    T max() @property { return _length - 1 + _offset; }
+    T max() @property { return _length - 1 + _location; }
 }
 
 ///
@@ -145,17 +145,17 @@ unittest
 
 /++
 Exponential Random Variable.
-Returns: `X ~ Exp(𝜆)`
+Returns: `X ~ Exp(β)`
 +/
 @RandomVariable struct ExponentialVariable(T)
     if (isFloatingPoint!T)
 {
-    private T _scale;
+    private T _scale = 1;
 
     ///
-    this(T lambda)
+    this(T scale)
     {
-        _scale = LN2 / lambda;
+        _scale = T(LN2) * scale;
     }
 
     ///
@@ -220,22 +220,22 @@ private T hypot01(T)(const T x, const T y)
 }
 
 /++
-Exponential Random Variable.
+Normal Random Variable.
 Returns: `X ~ N(μ, σ)`
 +/
 @RandomVariable struct NormalVariable(T)
     if (isFloatingPoint!T)
 {
-    private T _offset;
-    private T _scale;
-    private T _y;
+    private T _location = 0;
+    private T _scale = 1;
+    private T _y = 0;
     private bool _hot;
 
     ///
-    this(T mean, T variance)
+    this(T location, T scale)
     {
-        _offset = mean;
-        _scale = variance;
+        _location = location;
+        _scale = scale;
     }
 
     ///
@@ -265,7 +265,7 @@ Returns: `X ~ N(μ, σ)`
             _x = u * scale;
             _hot = true;
         }
-        return _x * _scale + _offset;
+        return _x * _scale + _location;
     }
 }
 
@@ -275,5 +275,49 @@ unittest
     import random.engine.xorshift;
     auto gen = Xorshift(1);
     auto rv = NormalVariable!double(0, 1);
+    auto x = rv(gen);
+}
+
+/++
+Cauchy Random Variable.
+Returns: `X ~ Cauchy(x, γ)`
++/
+@RandomVariable struct CauchyVariable(T)
+    if (isFloatingPoint!T)
+{
+    private T _location = 0;
+    private T _scale = 1;
+
+    ///
+    this(T location, T scale)
+    {
+        _location = location;
+        _scale = scale;
+    }
+
+    ///
+    T opCall(G)(ref G gen)
+        if (isSaturatedRandomEngine!G)
+    {
+        T u = void;
+        T v = void;
+        T x = void;
+        do
+        {
+            u = gen.rand!T;
+            v = gen.rand!T;
+            x = u / v;
+        }
+        while (u * u + v * v > 1 || !(x.fabs < T.infinity));
+        return x * _scale + _location;
+    }
+}
+
+///
+unittest
+{
+    import random.engine.xorshift;
+    auto gen = Xorshift(1);
+    auto rv = CauchyVariable!double(0, 1);
     auto x = rv(gen);
 }
