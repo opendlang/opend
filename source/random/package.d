@@ -129,10 +129,9 @@ unittest
 /++
 Params:
     gen = saturated random number generator
-    boundExp = bound exponent (optional).
+    boundExp = bound exponent (optional). `boundExp` must be less or equal to `T.max_exp`.
 Returns:
     Uniformly distributed real for interval `(2^^(-boundExp) , 2^^boundExp)`.
-
 Note: `fabs` can be used to get a value from positive interval `[0, 2^^boundExp)`.
 +/
 T rand(T, G)(ref G gen, sizediff_t boundExp = 0)
@@ -144,14 +143,14 @@ T rand(T, G)(ref G gen, sizediff_t boundExp = 0)
         auto d = gen.rand!uint;
         enum uint EXPMASK = 0x7F80_0000;
         boundExp -= T.min_exp - 1;
-        uint exp = EXPMASK & d;
-        exp = cast(uint) (boundExp - (exp ? bsf(exp) - (T.mant_dig - 1) : gen.randGeometric));
-        if(cast(int)exp < 0)
+        size_t exp = EXPMASK & d;
+        exp = boundExp - (exp ? bsf(exp) - (T.mant_dig - 1) : gen.randGeometric);
+        if(cast(sizediff_t)exp < 0)
         {
             exp = 0;
             d &= ~long.max;
         }
-        d = (exp << (T.mant_dig - 1)) ^ (d & ~EXPMASK);
+        d = cast(uint)(exp << (T.mant_dig - 1)) ^ (d & ~EXPMASK);
         return *cast(T*)&d;
     }
     else
@@ -161,8 +160,8 @@ T rand(T, G)(ref G gen, sizediff_t boundExp = 0)
         enum ulong EXPMASK = 0x7FF0_0000_0000_0000;
         boundExp -= T.min_exp - 1;
         ulong exp = EXPMASK & d;
-        exp = cast(ulong) (boundExp - (exp ? bsf(exp) - (T.mant_dig - 1) : gen.randGeometric));
-        if(cast(int)exp < 0)
+        exp = boundExp - (exp ? bsf(exp) - (T.mant_dig - 1) : gen.randGeometric);
+        if(cast(long)exp < 0)
         {
             exp = 0;
             d &= ~long.max;
@@ -177,9 +176,9 @@ T rand(T, G)(ref G gen, sizediff_t boundExp = 0)
         auto m = gen.rand!ulong;
         enum uint EXPMASK = 0x7FFF;
         boundExp -= T.min_exp - 1;
-        uint exp = EXPMASK & d;
-        exp = cast(uint) (boundExp - (exp ? bsf(exp) : gen.randGeometric));
-        if(cast(int)exp < 0)
+        size_t exp = EXPMASK & d;
+        exp = boundExp - (exp ? bsf(exp) : gen.randGeometric);
+        if(cast(sizediff_t)exp < 0)
         {
             exp = 0;
             m = 0;
@@ -189,7 +188,7 @@ T rand(T, G)(ref G gen, sizediff_t boundExp = 0)
             m |= ~long.max;
         else
             m &= long.max;
-        d = exp ^ (d & ~EXPMASK);
+        d = cast(uint) exp ^ (d & ~EXPMASK);
         static union U
         {
             T r;
