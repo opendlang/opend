@@ -12,9 +12,9 @@ import std.math : nextDown, isFinite, LN2;
 
 
 version(LDC)
-    import ldc.intrinsics: fabs = llvm_fabs;
+    import ldc.intrinsics: fabs = llvm_fabs, sqrt = llvm_sqrt, log = llvm_log;
 else
-    import std.math: fabs;
+    import std.math: fabs, sqrt, log;
 
 /// User Defined Attribute definition for Random Variable.
 enum RandomVariable;
@@ -155,7 +155,6 @@ Returns: `X ~ Exp(𝜆)`
     ///
     this(T lambda)
     {
-        assert(lambda.isFinite);
         _scale = LN2 / lambda;
     }
 
@@ -170,9 +169,66 @@ Returns: `X ~ Exp(𝜆)`
 ///
 unittest
 {
-    import std.math : nextDown;
     import random.engine.xorshift;
     auto gen = Xorshift(1);
     auto rv = ExponentialVariable!double(1);
+    auto x = rv(gen);
+}
+
+/++
+Exponential Random Variable.
+Returns: `X ~ N(μ, σ)`
++/
+@RandomVariable struct NormalVariable(T)
+    if (isFloatingPoint!T)
+{
+    private T _offset;
+    private T _scale;
+    private T _y;
+    private bool _hot;
+
+    ///
+    this(T mean, T variance)
+    {
+        _offset = mean;
+        _scale = variance;
+    }
+
+    ///
+    T opCall(G)(ref G gen)
+        if (isSaturatedRandomEngine!G)
+    {
+        T _x = void;
+        if (_hot)
+        {
+            _hot = false;
+            _x = _y;
+        }
+        else
+        {
+            T u = void;
+            T v = void;
+            T s = void;
+            do
+            {
+                u = gen.rand!T;
+                v = gen.rand!T;
+                s = u * u + v * v;
+            } while (s > 1 || s == 0);
+            auto scale = sqrt(-2 * log(s) / s);
+            _y = v * scale;
+            _x = u * scale;
+            _hot = true;
+        }
+        return _x * _scale + _offset;
+    }
+}
+
+///
+unittest
+{
+    import random.engine.xorshift;
+    auto gen = Xorshift(1);
+    auto rv = NormalVariable!double(0, 1);
     auto x = rv(gen);
 }
