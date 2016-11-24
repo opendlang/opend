@@ -8,6 +8,9 @@ module random.variable;
 import random;
 import std.traits;
 
+import std.math : nextDown, isFinite, LN2;
+
+
 version(LDC)
     import ldc.intrinsics: fabs = llvm_fabs;
 else
@@ -84,7 +87,6 @@ Returns: `X ~ U[a, b)`
 @RandomVariable struct UniformVariable(T)
     if (isFloatingPoint!T)
 {
-    import std.math : nextDown, isFinite;
     private T _a;
     private T _b;
 
@@ -139,4 +141,37 @@ unittest
         auto x = rv(gen);
         assert(rv.min <= x && x <= rv.max);
     }
+}
+
+/++
+Exponential Random Variable.
+Returns: `X ~ Exp(𝜆)`
++/
+@RandomVariable struct ExponentialVariable(T)
+    if (isFloatingPoint!T)
+{
+    private T _scale;
+
+    ///
+    this(T lambda)
+    {
+        assert(lambda.isFinite);
+        _scale = LN2 / lambda;
+    }
+
+    ///
+    T opCall(G)(ref G gen)
+        if (isSaturatedRandomEngine!G)
+    {
+        return gen.randExponential2 * _scale;
+    }
+}
+
+///
+unittest
+{
+    import std.math : nextDown;
+    import random.engine.xorshift;
+    auto gen = Xorshift(1);
+    auto rv = ExponentialVariable!double(1); // [-8, 10)
 }
