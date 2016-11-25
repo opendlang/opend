@@ -317,7 +317,7 @@ size_t randGeometric(G)(ref G gen)
 Params:
     gen = saturated random number generator
 Returns:
-    `X ~ Exp(1 / LN2)`.
+    `X ~ Exp(1) / log(2)`.
 Note: `fabs` can be used to get a value from positive interval `[0, 2^^boundExp)`.
 +/
 T randExponential2(T, G)(ref G gen)

@@ -11,9 +11,23 @@ import std.traits;
 import std.math : nextDown, isFinite, LN2;
 
 version(LDC)
-    import ldc.intrinsics: fabs = llvm_fabs, sqrt = llvm_sqrt, log = llvm_log, pow = llvm_pow;
+{
+    import ldc.intrinsics: fabs = llvm_fabs, sqrt = llvm_sqrt, log = llvm_log, pow = llvm_pow, fmuladd = llvm_fmuladd;
+}
 else
+{
     import std.math: fabs, sqrt, log, pow;
+
+    private T fmuladd(T)(const T a, const T b, const T c)
+    {
+        return a * b + c;
+    }
+}
+
+private T sumSquares(T)(const T a, const T b)
+{
+    return fmuladd(a, a, b * b);
+}
 
 /// User Defined Attribute definition for Random Variable.
 enum RandomVariable;
@@ -105,7 +119,7 @@ Returns: `X ~ U[a, b)`
     T opCall(G)(ref G gen)
         if (isSaturatedRandomEngine!G)
     {
-        auto ret =  gen.rand!T.fabs * (_b - _a) + _a;
+        auto ret =  gen.rand!T.fabs.fmuladd(_b - _a, _a);
         if(ret < _b)
             return ret;
         return max;
@@ -211,7 +225,7 @@ Params:
         if (_shape > 1)
         {
             T b = _shape - 1;
-            T c = 3 * _shape - 0.75f;
+            T c = fmuladd(3, _shape, - 0.75f);
             for(;;)
             {
                 T u = gen.rand!T;
@@ -221,9 +235,10 @@ Params:
                 x = b + y;
                 if (!(0 <= x && x < T.infinity))
                     continue;
-                if (w * w * w * v * v <= 1 - 2 * y * y / x)
+                auto z = w * v;
+                if (z * z * w <= 1 - 2 * y * y / x)
                     break;
-                if (3 * log(w) + 2 * log(fabs(v)) <= 2 * (b * log(x / b) - y))
+                if (fmuladd(3, log(w), 2 * log(fabs(v))) <= 2 * (b * log(x / b) - y))
                     break;
             }
         }
@@ -239,7 +254,7 @@ Params:
                 if (u > b)
                 {
                     T e = -log((1 - u) * c);
-                    u = b + _shape * e;
+                    u = fmuladd(_shape, e, b);
                     v += e;
                 }
                 static if (Exp)
@@ -312,7 +327,7 @@ private T hypot01(T)(const T x, const T y)
         // flag.
         u *= SQRTMAX / T.epsilon;
         v *= SQRTMAX / T.epsilon;
-        return sqrt(u * u + v * v) * (SQRTMIN * T.epsilon);
+        return sumSquares(u, v).sqrt * (SQRTMIN * T.epsilon);
     }
 
     if (u * T.epsilon > v)
@@ -322,7 +337,7 @@ private T hypot01(T)(const T x, const T y)
     }
 
     // both are in the normal range
-    return sqrt(u * u + v * v);
+    return sumSquares(u, v).sqrt;
 }
 
 /++
@@ -334,8 +349,8 @@ Returns: `X ~ N(μ, σ)`
 {
     private T _location = 0;
     private T _scale = 1;
-    private T _y = 0;
-    private bool _hot;
+    private T y = 0;
+    private bool hot;
 
     ///
     this(T location, T scale)
@@ -348,11 +363,11 @@ Returns: `X ~ N(μ, σ)`
     T opCall(G)(ref G gen)
         if (isSaturatedRandomEngine!G)
     {
-        T _x = void;
-        if (_hot)
+        T x = void;
+        if (hot)
         {
-            _hot = false;
-            _x = _y;
+            hot = false;
+            x = y;
         }
         else
         {
@@ -366,12 +381,12 @@ Returns: `X ~ N(μ, σ)`
                 s = hypot01(u, v);
             }
             while (s > 1 || s == 0);
-            auto scale = 2 * sqrt(-log(s)) / s;
-            _y = v * scale;
-            _x = u * scale;
-            _hot = true;
+            s = 2 * sqrt(-log(s)) / s;
+            y = v * s;
+            x = u * s;
+            hot = true;
         }
-        return _x * _scale + _location;
+        return fmuladd(x, _scale, _location);
     }
 
     ///
@@ -419,8 +434,8 @@ Returns: `X ~ Cauchy(x, γ)`
             v = gen.rand!T;
             x = u / v;
         }
-        while (u * u + v * v > 1 || !(x.fabs < T.infinity));
-        return x * _scale + _location;
+        while (sumSquares(u, v) > 1 || !(x.fabs < T.infinity));
+        return fmuladd(x, _scale, _location);
     }
 
     ///
