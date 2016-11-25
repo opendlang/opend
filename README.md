@@ -17,10 +17,14 @@ Dlang Random Number Generators
  - [WIP] additional Xorshift generators
 
 ##### Integer uniform generators
-[WIP]
+ - Mir Random fixes underflow bugs.
 
 ##### Real uniform generators
-[WIP]
+ - Mir Random `rand!float`/`rand!double`/`rand!real` generates saturated real random numbers in `(-1, 1)`. For example, `rand!real` can produce more then 2^78 unique numbers. In other hand, `std.random.uniform01!real` produces less then `2^32` unique numbers with default Engine.
 
 ##### Nonuniform generators
-[WIP]
+ - Exponential
+ - Gamma
+ - Normal
+ - Cauchy
+ - ...
