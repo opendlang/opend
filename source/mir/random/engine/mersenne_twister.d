@@ -5,7 +5,7 @@ Copyright: Copyright Andrei Alexandrescu 2008 - 2009, Ilya Yaroshenko 2016-.
 License:   $(HTTP www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
 Authors: $(HTTP erdani.org, Andrei Alexandrescu) Ilya Yaroshenko (rework)
 +/
-module random.engine.mersenne_twister;
+module mir.random.engine.mersenne_twister;
 
 // Segments of the code in this file Copyright (c) 1997 by Rick Booth
 // From "Inner Loops" by Rick Booth, Addison-Wesley
@@ -56,7 +56,7 @@ module random.engine.mersenne_twister;
 */
 
 import std.traits;
-import random.engine;
+import mir.random.engine;
 
 /++
 The $(LUCKY Mersenne Twister) generator.
@@ -197,28 +197,39 @@ The $(LUCKY Mersenne Twister) generator.
     }
 }
 
-/**
+/++
 A $(D MersenneTwisterEngine) instantiated with the parameters of the
-original engine $(HTTP math.sci.hiroshima-u.ac.jp/~m-mat/MT/emt.html,
-MT19937), generating uniformly-distributed 32-bit or 64-bit numbers with a
-period of 2 to the power of 19937. Recommended for random number
-generation unless memory is severely restricted, in which case a $(D
-LinearCongruentialEngine) would be the generator of choice.
- */
+original engine $(HTTP en.wikipedia.org/wiki/Mersenne_Twister,
+MT19937), generating uniformly-distributed 32-bit numbers with a
+period of 2 to the power of 19937.
++/
 alias Mt19937_32 = MersenneTwisterEngine!(uint, 32, 624, 397, 31,
                                        0x9908b0df, 
                                        11, 0xffffffff,
                                         7, 0x9d2c5680,
                                        15, 0xefc60000,
                                        18);
-/// ditto
+/++
+A $(D MersenneTwisterEngine) instantiated with the parameters of the
+original engine $(HTTP en.wikipedia.org/wiki/Mersenne_Twister,
+MT19937), generating uniformly-distributed 64-bit numbers with a
+period of 2 to the power of 19937.
++/
 alias Mt19937_64 = MersenneTwisterEngine!(ulong, 64, 312, 156, 31,
                                        0xb5026f5aa96619e9, 
                                        29, 0x5555555555555555,
                                        17, 0x71d67fffeda60000,
                                        37, 0xfff7eee000000000,
                                        43);
-/// ditto
+/++
+`Mt19937` is an alias to $(LREF .Mt19937_64)
+for 64-bit targets or $(LREF .Mt19937_32) for 32 bit targets.
+
+Recommended for random number
+generation unless memory is severely restricted, in which case a
+$(REF_ALTTEXT Xorshift, Xorshift, mir, random, engine, xorshift)
+would be the generator of choice.
++/
 static if (is(size_t == uint))
     alias Mt19937 = Mt19937_32;
 else

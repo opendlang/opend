@@ -5,7 +5,7 @@ Copyright: Ilya Yaroshenko 2016-.
 License: $(HTTP www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
 Authors: Ilya Yaroshenko
 +/
-module random.engine;
+module mir.random.engine;
 
 version (OSX)
     version = Darwin;
@@ -18,7 +18,7 @@ else version (WatchOS)
 
 import std.traits;
 
-import random.engine.mersenne_twister;
+import mir.random.engine.mersenne_twister;
 
 /// User Defined Attribute definition for uniform Random Engine.
 enum RandomEngine;

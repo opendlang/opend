@@ -5,10 +5,10 @@ Copyright: Copyright Andrei Alexandrescu 2008 - 2009, Masahiro Nakagawa, Ilya Ya
 License: $(HTTP www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
 Authors: Masahiro Nakagawa, Ilya Yaroshenko (rework)
 +/
-module random.engine.xorshift;
+module mir.random.engine.xorshift;
 
 import std.traits;
-import random.engine;
+import mir.random.engine;
 
 /++
 Xorshift generator using 32bit algorithm.

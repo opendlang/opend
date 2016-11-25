@@ -3,3 +3,5 @@ __*
 *.sublime-project
 
 *.a
+web
+.generated

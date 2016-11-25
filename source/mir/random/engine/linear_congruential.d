@@ -5,10 +5,10 @@ Copyright: Copyright Andrei Alexandrescu 2008 - 2009, Ilya Yaroshenko 2016-.
 License:   $(HTTP www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
 Authors: $(HTTP erdani.org, Andrei Alexandrescu) Ilya Yaroshenko (rework)
 +/
-module random.engine.linear_congruential;
+module mir.random.engine.linear_congruential;
 
 import std.traits;
-import random.engine;
+import mir.random.engine;
 
 /++
 Linear Congruential generator.

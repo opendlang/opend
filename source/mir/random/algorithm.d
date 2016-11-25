@@ -3,12 +3,12 @@ Authors: Ilya Yaroshenko
 Copyright: Copyright, Ilya Yaroshenko 2016-.
 License:   $(HTTP www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
 +/
-module random.algorithm;
+module mir.random.algorithm;
 
 import std.traits;
 
-import random.variable;
-public import random.engine;
+import mir.random.variable;
+public import mir.random.engine;
 
 /++
 Range interface for uniform random bit generators.
@@ -45,7 +45,7 @@ RandomRange!G randomRange(G)(ref G gen)
 unittest
 {
     import std.range, std.algorithm;
-    import random.engine.xorshift;
+    import mir.random.engine.xorshift;
     auto rng = Xorshift(1);
     auto bitSample = rng // by reference
         .randomRange
@@ -93,8 +93,8 @@ unittest
 {
     import std.range;
 
-    import random;
-    import random.variable: NormalVariable;
+    import mir.random;
+    import mir.random.variable: NormalVariable;
 
     auto rng = Random(unpredictableSeed);
     auto sample = rng // by reference

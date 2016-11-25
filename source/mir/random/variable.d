@@ -3,9 +3,9 @@ Authors: Ilya Yaroshenko
 Copyright: Copyright, Ilya Yaroshenko 2016-.
 License:   $(HTTP www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
 +/
-module random.variable;
+module mir.random.variable;
 
-import random;
+import mir.random;
 import std.traits;
 
 import std.math : nextDown, isFinite, LN2;
@@ -85,7 +85,7 @@ Returns: `X ~ U[a, b]`
 ///
 unittest
 {
-    import random.engine.xorshift;
+    import mir.random.engine.xorshift;
     auto gen = Xorshift(1);
     auto rv = UniformVariable!int(-10, 10); // [-10, 10]
     auto x = rv(gen); // random variable
@@ -135,7 +135,7 @@ Returns: `X ~ U[a, b)`
 unittest
 {
     import std.math : nextDown;
-    import random.engine.xorshift;
+    import mir.random.engine.xorshift;
     auto gen = Xorshift(1);
     auto rv = UniformVariable!double(-8, 10); // [-8, 10)
     auto x = rv(gen); // random variable
@@ -146,7 +146,7 @@ unittest
 unittest
 {
     import std.math : nextDown;
-    import random.engine.xorshift;
+    import mir.random.engine.xorshift;
     auto gen = Xorshift(1);
     auto rv = UniformVariable!double(-8, 10); // [-8, 10)
     foreach(_; 0..1000)
@@ -187,7 +187,7 @@ Returns: `X ~ Exp(β)`
 ///
 unittest
 {
-    import random.engine.xorshift;
+    import mir.random.engine.xorshift;
     auto gen = Xorshift(1);
     auto rv = ExponentialVariable!double(1);
     auto x = rv(gen);
@@ -290,7 +290,7 @@ Params:
 ///
 unittest
 {
-    import random.engine.xorshift;
+    import mir.random.engine.xorshift;
     auto gen = Xorshift(1);
     auto rv = GammaVariable!double(1, 1);
     auto x = rv(gen);
@@ -403,7 +403,7 @@ Returns: `X ~ N(μ, σ)`
 ///
 unittest
 {
-    import random.engine.xorshift;
+    import mir.random.engine.xorshift;
     auto gen = Xorshift(1);
     auto rv = NormalVariable!double(0, 1);
     auto x = rv(gen);
@@ -451,7 +451,7 @@ Returns: `X ~ Cauchy(x, γ)`
 ///
 unittest
 {
-    import random.engine.xorshift;
+    import mir.random.engine.xorshift;
     auto gen = Xorshift(1);
     auto rv = CauchyVariable!double(0, 1);
     auto x = rv(gen);

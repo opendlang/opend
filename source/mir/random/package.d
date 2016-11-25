@@ -1,13 +1,15 @@
 /++
+Publicly includes  `mir.random.engine`.
+
 Authors: Ilya Yaroshenko
 Copyright: Copyright, Ilya Yaroshenko 2016-.
 License:   $(HTTP www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
 +/
-module random;
+module mir.random;
 
 import std.traits;
 
-public import random.engine;
+public import mir.random.engine;
 
 version (LDC)
 {
@@ -55,7 +57,7 @@ T rand(T, G)(ref G gen)
 ///
 unittest
 {
-    import random.engine.xorshift;
+    import mir.random.engine.xorshift;
     auto gen = Xorshift(1);
     auto s = gen.rand!short;
     auto n = gen.rand!ulong;
@@ -76,7 +78,7 @@ bool rand(T : bool, G)(ref G gen)
 ///
 unittest
 {
-    import random.engine.xorshift;
+    import mir.random.engine.xorshift;
     auto gen = Xorshift(1);
     auto s = gen.rand!bool;
 }
@@ -120,7 +122,7 @@ T rand(T, G)(ref G gen)
 ///
 unittest
 {
-    import random.engine.xorshift;
+    import mir.random.engine.xorshift;
     auto gen = Xorshift(1);
     enum A { a, b, c }
     auto e = gen.rand!A;
@@ -129,7 +131,7 @@ unittest
 ///
 unittest
 {
-    import random.engine.xorshift;
+    import mir.random.engine.xorshift;
     auto gen = Xorshift(1);
     enum A : dchar { a, b, c }
     auto e = gen.rand!A;
@@ -138,7 +140,7 @@ unittest
 ///
 unittest
 {
-    import random.engine.xorshift;
+    import mir.random.engine.xorshift;
     auto gen = Xorshift(1);
     enum A : string { a = "a", b = "b", c = "c" }
     auto e = gen.rand!A;
@@ -168,7 +170,7 @@ Params:
     gen = saturated random number generator
     boundExp = bound exponent (optional). `boundExp` must be less or equal to `T.max_exp`.
 Returns:
-    Uniformly distributed real for interval `(2^^(-boundExp) , 2^^boundExp)`.
+    Uniformly distributed real for interval `(2^^(-boundExp) , 2^^boundExp))`.
 Note: `fabs` can be used to get a value from positive interval `[0, 2^^boundExp)`.
 +/
 T rand(T, G)(ref G gen, sizediff_t boundExp = 0)
@@ -256,7 +258,7 @@ T rand(T, G)(ref G gen, sizediff_t boundExp = 0)
 unittest
 {
     import std.math: fabs;
-    import random.engine.xorshift;
+    import mir.random.engine.xorshift;
     auto gen = Xorshift(1);
     
     auto a = gen.rand!float;
@@ -276,7 +278,7 @@ unittest
 /// Subnormal numbers
 unittest
 {
-    import random.engine.xorshift;
+    import mir.random.engine.xorshift;
     auto gen = Xorshift(1);
     auto x = gen.rand!double(double.min_exp-1);
     assert(-double.min_normal < x && x < double.min_normal);
@@ -307,7 +309,7 @@ T randIndex(T, G)(ref G gen, T m)
 ///
 unittest
 {
-    import random.engine.xorshift;
+    import mir.random.engine.xorshift;
     auto gen = Xorshift(1);
     auto s = gen.randIndex!uint(100);
     auto n = gen.randIndex!ulong(-100);
@@ -382,7 +384,7 @@ T randExponential2(T, G)(ref G gen)
 ///
 unittest
 {
-    import random.engine.xorshift;
+    import mir.random.engine.xorshift;
     auto gen = Xorshift(cast(uint)unpredictableSeed);
     auto v = gen.randExponential2!double();
 }
