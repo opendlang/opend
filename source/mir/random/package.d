@@ -195,7 +195,7 @@ T rand(T, G)(ref G gen, sizediff_t boundExp = 0)
 {
     assert(boundExp <= T.max_exp);
     enum W = T.sizeof * 8 - T.mant_dig - 1 - bool(T.mant_dig == 64);
-    static if (is(T == float))
+    static if (T.mant_dig == float.mant_dig)
     {
         auto d = gen.rand!int;
         enum uint EXPMASK = 0x7F80_0000;
@@ -218,7 +218,7 @@ T rand(T, G)(ref G gen, sizediff_t boundExp = 0)
         return *cast(T*)&d;
     }
     else
-    static if (is(T == double))
+    static if (T.mant_dig == double.mant_dig)
     {
         auto d = gen.rand!long;
         enum ulong EXPMASK = 0x7FF0_0000_0000_0000;
