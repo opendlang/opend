@@ -63,7 +63,7 @@ Returns:
 A single unsigned integer seed value, different on each successive call
 */
 pragma(inline, true)
-@property ulong unpredictableSeed() @trusted nothrow @nogc
+@property size_t unpredictableSeed() @trusted nothrow @nogc
 {
     version(Windows)
     {
@@ -118,13 +118,13 @@ pragma(inline, true)
     k ^= k >> 33;
     k *= 0xc4ceb9fe1a85ec53;
     k ^= k >> 33;
-    return k;
+    return cast(size_t)k;
 }
 
 ///
 @safe unittest
 {
-    auto rnd = Random(cast(size_t)unpredictableSeed);
+    auto rnd = Random(unpredictableSeed);
     auto n = rnd();
     static assert(is(typeof(n) == size_t));
 }

@@ -105,7 +105,7 @@ The $(LUCKY Mersenne Twister) generator.
     enum Uint defaultSeed = 5489;
 
     /// payload index
-    Uint index; /* means mt is not initialized */
+    size_t index; /* means mt is not initialized */
     /// payload
     Uint[n] mt;
 
@@ -130,10 +130,10 @@ The $(LUCKY Mersenne Twister) generator.
             enum Uint f = 6364136223846793005;
         else
         static assert(0, "ucent is not supported by MersenneTwisterEngine.");
-        Uint i = 1;
+        size_t i = 1;
         for (; i < n; ++i)
         {
-            mt[i] = f * (mt[i-1] ^ (mt[i-1] >> (w - 2))) + i;
+            mt[i] = f * (mt[i-1] ^ (mt[i-1] >> (w - 2))) + cast(Uint)i;
         }
         index = i;
     }
@@ -155,7 +155,7 @@ The $(LUCKY Mersenne Twister) generator.
         if (mixin(cond))
         {
             /* generate N words at one time */
-            Uint kk = 0;
+            size_t kk = 0;
             const limit1 = n - m;
             for (; kk < limit1; ++kk)
             {
@@ -227,7 +227,7 @@ else
 ///
 @safe unittest
 {
-    auto gen = Mt19937(cast(size_t)unpredictableSeed);
+    auto gen = Mt19937(unpredictableSeed);
     auto n = gen();
 
     import std.traits;
