@@ -18,11 +18,18 @@ $(BOOKTABLE ,
             function that generates real, integral, boolean, and enumerated uniformly distributed values.
             Publicly includes $(MREF mir,random,engine).)
     )
-    $(LEADINGROW Random Variable)
+    $(LEADINGROW Random Variables)
     $(TR
         $(TDNW $(MREF mir,random,variable))
         $(TD
             Random variables for uniform, exponential, gamma, normal, and other distributions.
+        )
+    )
+    $(LEADINGROW Integration with Phobos)
+    $(TR
+        $(TDNW $(MREF mir,random,algorithm))
+        $(TD
+            $(REF_ALTTEXT $(TT Random ranges), RandomRange, mir, random, algorithm).
         )
     )
     $(LEADINGROW Entropy Generators)

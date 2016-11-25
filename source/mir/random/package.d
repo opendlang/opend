@@ -1,9 +1,26 @@
 /++
+$(SCRIPT inhibitQuickIndex = 1;)
+
+Basic API to construct non-uniform random number generators and stochastic algorithms.
+Non-unoform distribution can be found at `mir.random.variable`.
+
+$(TABLE $(H2 Generation runctions),
+$(TR $(TH Function Name) $(TH Description))
+$(T2 rand, Generates real, integral, boolean, and enumerated uniformly distributed values.)
+$(T2 randIndex, Generates uniformly distributed index.)
+$(T2 randGeometric, Generates geometric distribution with `p = 1/2`.)
+$(T2 randExponential2, Generates scaled Exponential distribution.)
+)
+
 Publicly includes  `mir.random.engine`.
 
 Authors: Ilya Yaroshenko
 Copyright: Copyright, Ilya Yaroshenko 2016-.
 License:   $(HTTP www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
+Macros:
+SUBREF = $(REF_ALTTEXT $(TT $2), $2, mir, ndslice, $1)$(NBSP)
+T2=$(TR $(TDNW $(LREF $1)) $(TD $+))
+
 +/
 module mir.random;
 
