@@ -26,7 +26,6 @@ Mir Random fixes Phobos underflow bugs.
  - 64-bit Mt19937 is default for 64-bit targets
  - `unpredictableSeed` has not state, returns `ulong`
  - `@URNG` UDA is used for for RNGs instead of a enum flag.
- - `min` and `max` proporties was removed. Generators must always generate uniformly all set of bits.
+ - `min` proporty was removed. Any integer generator can normalize its minimum down to zero.
  - Any unsigned generators are allowed.
- - `LinearCongruentialEngine` was removed.
  - [WIP] additional Xorshift generators
