@@ -12,9 +12,9 @@ import std.math : nextDown, isFinite, LN2;
 
 
 version(LDC)
-    import ldc.intrinsics: fabs = llvm_fabs, sqrt = llvm_sqrt, log = llvm_log;
+    import ldc.intrinsics: fabs = llvm_fabs, sqrt = llvm_sqrt, log = llvm_log, pow = llvm_pow;
 else
-    import std.math: fabs, sqrt, log;
+    import std.math: fabs, sqrt, log, pow;
 
 /// User Defined Attribute definition for Random Variable.
 enum RandomVariable;
@@ -175,6 +175,84 @@ unittest
     auto x = rv(gen);
 }
 
+/++
+Gamma Random Variable.
+Returns: `X ~ Gamma(𝝰, 𝞫)`
++/
+@RandomVariable struct GammaVariable(T)
+    if (isFloatingPoint!T)
+{
+    private T _shape = 1;
+    private T _scale = 1;
+
+    ///
+    this(T shape, T scale)
+    {
+        _shape = shape;
+        _scale = scale;
+    }
+
+    ///
+    T opCall(G)(ref G gen)
+        if (isSaturatedRandomEngine!G)
+    {
+        T x = void;
+        if (_shape > 1)
+        {
+            T b = _shape - 1;
+            T c = 3 * _shape - 0.75f;
+            for(;;)
+            {
+                T u = gen.rand!T;
+                T v = gen.rand!T;
+                T w = (u + 1) * (1 - u);
+                T y = sqrt(c / w) * u;
+                x = b + y;
+                if (!(0 <= x && x < T.infinity))
+                    continue;
+                if (w * w * w * v * v <= 1 - 2 * y * y / x)
+                    break;
+                if (3 * log(w) + 2 * log(fabs(v)) <= 2 * (b * log(x / b) - y))
+                    break;
+            }
+        }
+        else
+        if (_shape < 1)
+        {
+            T b = 1 - _shape;
+            T c = 1 / _shape;
+            for (;;)
+            {
+                T u = gen.rand!T.fabs;
+                T v = gen.randExponential2!T * T(LN2);
+                if (u > b)
+                {
+                    T e = -log((1 - u) * c);
+                    u = b + _shape * e;
+                    v += e;
+                }
+                x = pow(u, c);
+                if (x <= v)
+                    break;
+            }
+        }
+        else
+        {
+            x = gen.randExponential2!T * T(LN2);
+        }
+        return x * _scale;
+    }
+}
+
+///
+unittest
+{
+    import random.engine.xorshift;
+    auto gen = Xorshift(1);
+    auto rv = GammaVariable!double(1, 1);
+    auto x = rv(gen);
+}
+
 private T hypot01(T)(const T x, const T y)
 {
     // Scale x and y to avoid underflow and overflow.
@@ -192,7 +270,7 @@ private T hypot01(T)(const T x, const T y)
 
     T u = fabs(x);
     T v = fabs(y);
-    if (u < v)  // check for NaN as well.
+    if (u < v)
     {
         auto t = v;
         v = u;
@@ -206,7 +284,7 @@ private T hypot01(T)(const T x, const T y)
         // flag.
         u *= SQRTMAX / T.epsilon;
         v *= SQRTMAX / T.epsilon;
-        return sqrt(u * u + v * v) * SQRTMIN * T.epsilon;
+        return sqrt(u * u + v * v) * (SQRTMIN * T.epsilon);
     }
 
     if (u * T.epsilon > v)
@@ -216,7 +294,7 @@ private T hypot01(T)(const T x, const T y)
     }
 
     // both are in the normal range
-    return sqrt(u*u + v*v);
+    return sqrt(u * u + v * v);
 }
 
 /++
