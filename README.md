@@ -13,7 +13,7 @@ Dlang Random Number Generators
 
 ##### Real uniform generators (fixed, 100% new implementation)
 
-Mir Random `rand!float`/`rand!double`/`rand!real` generates saturated real random numbers in `(-1, 1)`. For example, `rand!real` can produce more then 2^78 unique numbers. In other hand, `std.random.uniform01!real` produces less then `2^32` unique numbers with default Engine.
+Mir Random `rand!float`/`rand!double`/`rand!real` generates saturated real random numbers in `(-1, 1)`. For example, `rand!real` can produce more then 2^78 unique numbers. In other hand, `std.random.uniform01!real` produces less then `2^31` unique numbers with default Engine.
 
 ##### Integer uniform generators (fixed)
 
