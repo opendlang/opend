@@ -70,7 +70,7 @@ pragma(inline, true)
         import core.sys.windows.windows;
         import core.sys.windows.winbase;
         ulong ticks = void;
-        QueryPerformanceCounter(&ticks);
+        QueryPerformanceCounter(cast(long*)&ticks);
     }
     else
     version(Darwin)
