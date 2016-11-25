@@ -50,7 +50,7 @@ writeln(sample);
  - `opCall` API instead of range interface is used (similar to C++)
  - No default and copy constructors are allowed for generators.
  - `@RandomEngine` UDA is used for for Engines instead of a enum flag.
- - `unpredictableSeed` has not state, returns `ulong`
+ - `unpredictableSeed` has not state, returns `size_t`
  - Any unsigned generators are allowed.
  - `min` proporty was removed. Any integer generator can normalize its minimum down to zero.
  - 64-bit Mt19937 initialization is fixed
