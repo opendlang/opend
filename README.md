@@ -12,6 +12,8 @@
 # mir-random
 Professional Random Number Generators
 
+Documentation: http://docs.random.dlang.io/latest/index.html
+
 ```d
 import std.range, std.stdio;
 
