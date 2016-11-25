@@ -17,8 +17,8 @@ Documentation: http://docs.random.dlang.io/latest/index.html
 ```d
 import std.range, std.stdio;
 
-import random;
-import random.variable: NormalVariable;
+import mir.random;
+import mir.random.variable: NormalVariable;
 
 auto rng = Random(unpredictableSeed);        // Engines are allocated on stack or global
 auto sample = rng                            // Engines are passed by reference to algorithms
