@@ -432,9 +432,8 @@ Returns: `X ~ Cauchy(x, γ)`
         {
             u = gen.rand!T;
             v = gen.rand!T;
-            x = u / v;
         }
-        while (sumSquares(u, v) > 1 || !(x.fabs < T.infinity));
+        while (sumSquares(u, v) > 1 || !(fabs(x = u / v) < T.infinity));
         return fmuladd(x, _scale, _location);
     }
 
