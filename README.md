@@ -1,5 +1,5 @@
 # mir-random
-Dlang Random Number Generators
+Professional Random Number Generators
 
 ## Comparison with Phobos
  - Does not depend on DRuntime (Better C concept)
