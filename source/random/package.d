@@ -15,10 +15,10 @@ version (LDC)
 
     private
     pragma(inline, true)
-    size_t bsf(size_t v) pure @safe nothrow @nogc
+    T bsf(T)(T v) pure @safe nothrow @nogc
     {
         import ldc.intrinsics;
-        return cast(int)llvm_cttz(v, true);
+        return llvm_cttz(v, true);
     }
 }
 else
