@@ -1,0 +1,22 @@
+sudo: false
+os:
+ - linux
+ - osx
+language: d
+d:
+ - ldc-1.1.0-beta2
+ - dmd
+env:
+ - ARCH="x86_64"
+matrix:
+  include:
+    - {os: linux, d: ldc-1.1.0-beta2, env: ARCH="x86", addons: {apt: {packages: [[gcc-multilib]]}}}
+branches:
+  only:
+    - master
+script:
+ - dub test --arch "$ARCH"
+
+notifications:
+  email:
+    - devteam@mir.rocks
