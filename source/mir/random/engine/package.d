@@ -136,7 +136,10 @@ generators. You may want to use it if (1) you need to generate some
 nice random numbers, and (2) you don't care for the minutiae of the
 method being used.
 +/
-alias Random = Mt19937;
+static if (is(size_t == uint))
+    alias Random = Mt19937_32;
+else
+    alias Random = Mt19937_64;
 
 ///
 unittest
