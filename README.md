@@ -1,6 +1,21 @@
 # mir-random
 Professional Random Number Generators
 
+```d
+import std.range, std.stdio;
+
+import random;
+import random.variable: NormalVariable;
+
+auto rng = Random(unpredictableSeed);
+auto sample = rng // by reference
+    .randomRange(NormalVariable!double(0, 1))
+    .take(1000)
+    .array;
+
+writeln(sample);
+```
+
 ## Comparison with Phobos
  - Does not depend on DRuntime (Better C concept)
 
