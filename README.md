@@ -1,7 +1,7 @@
 # mir-random
 Dlang Random Number Generators
 
-#### Comparison with Phobos
+## Comparison with Phobos
  - Does not depend on DRuntime (Better C concept)
 
 ##### `random` (new implementation and API)
