@@ -2,9 +2,9 @@
 $(SCRIPT inhibitQuickIndex = 1;)
 
 Basic API to construct non-uniform random number generators and stochastic algorithms.
-Non-unoform distribution can be found at `mir.random.variable`.
+Non-unoform and uniform random variable can be found at `mir.random.variable`.
 
-$(TABLE $(H2 Generation runctions),
+$(TABLE $(H2 Generation functions),
 $(TR $(TH Function Name) $(TH Description))
 $(T2 rand, Generates real, integral, boolean, and enumerated uniformly distributed values.)
 $(T2 randIndex, Generates uniformly distributed index.)
