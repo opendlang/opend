@@ -178,54 +178,70 @@ T rand(T, G)(ref G gen, sizediff_t boundExp = 0)
     enum W = T.sizeof * 8 - T.mant_dig - 1 - bool(T.mant_dig == 64);
     static if (is(T == float))
     {
-        auto d = gen.rand!uint;
+        auto d = gen.rand!int;
         enum uint EXPMASK = 0x7F80_0000;
         boundExp -= T.min_exp - 1;
         size_t exp = EXPMASK & d;
         exp = boundExp - (exp ? bsf(exp) - (T.mant_dig - 1) : gen.randGeometric + W);
+        d &= ~EXPMASK;
         if(cast(sizediff_t)exp < 0)
         {
+            exp = -cast(sizediff_t)exp;
+            uint m = d & int.max;
+            if(exp >= T.mant_dig)
+                m = 0;
+            else
+                m >>= cast(uint)exp;
+            d = (d & ~int.max) ^ m;
             exp = 0;
-            d &= ~long.max;
         }
-        d = cast(uint)(exp << (T.mant_dig - 1)) ^ (d & ~EXPMASK);
+        d = cast(uint)(exp << (T.mant_dig - 1)) ^ d;
         return *cast(T*)&d;
     }
     else
     static if (is(T == double))
     {
-        auto d = gen.rand!ulong;
+        auto d = gen.rand!long;
         enum ulong EXPMASK = 0x7FF0_0000_0000_0000;
         boundExp -= T.min_exp - 1;
         ulong exp = EXPMASK & d;
         exp = boundExp - (exp ? bsf(exp) - (T.mant_dig - 1) : gen.randGeometric + W);
+        d &= ~EXPMASK;
         if(cast(long)exp < 0)
         {
+            exp = -cast(sizediff_t)exp;
+            ulong m = d & long.max;
+            if(exp >= T.mant_dig)
+                m = 0;
+            else
+                m >>= cast(uint)exp;
+            d = (d & ~long.max) ^ m;
             exp = 0;
-            d &= ~long.max;
         }
-        d = (exp << (T.mant_dig - 1)) ^ (d & ~EXPMASK);
+        d = (exp << (T.mant_dig - 1)) ^ d;
         return *cast(T*)&d;
     }
     else
     static if (T.mant_dig == 64)
     {
-        auto d = gen.rand!uint;
+        auto d = gen.rand!int;
         auto m = gen.rand!ulong;
         enum uint EXPMASK = 0x7FFF;
         boundExp -= T.min_exp - 1;
         size_t exp = EXPMASK & d;
         exp = boundExp - (exp ? bsf(exp) : gen.randGeometric + W);
-        if(cast(sizediff_t)exp < 0)
-        {
-            exp = 0;
-            m = 0;
-        }
-        else
-        if (exp)
+        if (cast(sizediff_t)exp > 0)
             m |= ~long.max;
         else
+        {
             m &= long.max;
+            exp = -cast(sizediff_t)exp;
+            if(exp >= T.mant_dig)
+                m = 0;
+            else
+                m >>= cast(uint)exp;
+            exp = 0;
+        }
         d = cast(uint) exp ^ (d & ~EXPMASK);
         _U ret = void;
         ret.e = cast(ushort)d;
@@ -245,7 +261,7 @@ unittest
     
     auto a = gen.rand!float;
     assert(-1 < a && a < +1);
-    
+
     auto b = gen.rand!double(4);
     assert(-16 < b && b < +16);
     
@@ -253,7 +269,7 @@ unittest
     assert(-0.25 < c && c < +0.25);
     
     auto d = gen.rand!real.fabs;
-    assert(0 <= d && d < 1);
+    assert(0.0L <= d && d < 1.0L);
 }
 
 
