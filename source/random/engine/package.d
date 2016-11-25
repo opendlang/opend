@@ -78,9 +78,19 @@ pragma(inline, true)
     else
     version(Posix)
     {
+        version(linux)
+            import core.sys.linux.time;
+        else
+        version(FreeBSD)
+            import core.sys.freebsd.time;
+        else
+        version(Solaris)
+            import core.sys.solaris.time;
+
+
         import core.sys.posix.time;
         timespec ts;
-        if(clock_gettime(clockArg, &ts) != 0)
+        if(clock_gettime(CLOCK_MONOTONIC, &ts) != 0)
         {
             import core.internal.abort : abort;
             abort("Call to clock_gettime failed.");
