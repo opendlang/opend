@@ -10,7 +10,7 @@ import random.variable: NormalVariable;
 auto rng = Random(unpredictableSeed);        // Engines are allocated on stack or global
 auto sample = rng                            // Engines are passed by reference to algorithms
     .randomRange(NormalVariable!double(0, 1))// Random variables are passed by value
-    .take(1000)                              // Fix sample length to 1000 elements (common Input Range API)
+    .take(1000)                              // Fix sample length to 1000 elements (Input Range API)
     .array;                                  // Allocates memory and performs computation
 
 writeln(sample);                             
