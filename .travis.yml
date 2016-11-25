@@ -16,7 +16,3 @@ branches:
     - master
 script:
  - dub test --arch "$ARCH"
-
-notifications:
-  email:
-    - devteam@mir.rocks
