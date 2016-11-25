@@ -95,7 +95,7 @@ unittest
 
     import random;
     import random.variable: NormalVariable;
- 
+
     auto rng = Random(unpredictableSeed);
     auto sample = rng // by reference
         .randomRange(NormalVariable!double(0, 1))

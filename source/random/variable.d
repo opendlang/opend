@@ -359,6 +359,11 @@ Returns: `X ~ N(μ, σ)`
         _scale = scale;
     }
 
+    this(this)
+    {
+        hot = false;
+    }
+
     ///
     T opCall(G)(ref G gen)
         if (isSaturatedRandomEngine!G)
