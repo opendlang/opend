@@ -67,6 +67,8 @@ pragma(inline, true)
 {
     version(Windows)
     {
+        import core.sys.windows.windows;
+        import core.sys.windows.winbase;
         ulong ticks = void;
         QueryPerformanceCounter(&ticks);
     }
@@ -107,8 +109,6 @@ pragma(inline, true)
     else
     version(Windows)
     {
-        import core.sys.windows.windows;
-        import core.sys.windows.winbase;
         auto pid = cast(uint) GetCurrentProcessId;
         auto tid = cast(uint) GetCurrentThreadId;
     }
