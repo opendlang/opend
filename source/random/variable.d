@@ -178,8 +178,12 @@ unittest
 /++
 Gamma Random Variable.
 Returns: `X ~ Gamma(𝝰, 𝞫)`
+Params:
+    T = floating point type
+    Exp = if true log-scaled values are produced. `ExpGamma(𝝰, 𝞫)`.
+        The flag is useful when shape parameter is small (`𝝰 << 1`).
 +/
-@RandomVariable struct GammaVariable(T)
+@RandomVariable struct GammaVariable(T, bool Exp = false)
     if (isFloatingPoint!T)
 {
     private T _shape = 1;
@@ -189,7 +193,10 @@ Returns: `X ~ Gamma(𝝰, 𝞫)`
     this(T shape, T scale)
     {
         _shape = shape;
-        _scale = scale;
+        if(Exp)
+            _scale = log(scale);
+        else
+            _scale = scale;
     }
 
     ///
@@ -231,16 +238,28 @@ Returns: `X ~ Gamma(𝝰, 𝞫)`
                     u = b + _shape * e;
                     v += e;
                 }
-                x = pow(u, c);
-                if (x <= v)
-                    break;
+                static if (Exp)
+                {
+                    x = log(u) * c;
+                    if (x <= log(v))
+                        return x + _scale;
+                }
+                else
+                {
+                    x = pow(u, c);
+                    if (x <= v)
+                        break;
+                }
             }
         }
         else
         {
             x = gen.randExponential2!T * T(LN2);
         }
-        return x * _scale;
+        static if (Exp)
+            return log(x) + _scale;
+        else
+            return x * _scale;
     }
 }
 
