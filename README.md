@@ -19,6 +19,7 @@ import std.range, std.stdio;
 
 import mir.random;
 import mir.random.variable: NormalVariable;
+import mir.random.algorithm: randomRange;
 
 auto rng = Random(unpredictableSeed);        // Engines are allocated on stack or global
 auto sample = rng                            // Engines are passed by reference to algorithms
