@@ -10,7 +10,6 @@ import std.traits;
 
 import std.math : nextDown, isFinite, LN2;
 
-
 version(LDC)
     import ldc.intrinsics: fabs = llvm_fabs, sqrt = llvm_sqrt, log = llvm_log, pow = llvm_pow;
 else
@@ -164,6 +163,11 @@ Returns: `X ~ Exp(β)`
     {
         return gen.randExponential2!T * _scale;
     }
+
+    ///
+    enum T min = 0;
+    ///
+    enum T max = T.infinity;
 }
 
 ///
@@ -261,6 +265,11 @@ Params:
         else
             return x * _scale;
     }
+
+    ///
+    enum T min = Exp ? -T.infinity : 0;
+    ///
+    enum T max = T.infinity;
 }
 
 ///
@@ -364,6 +373,11 @@ Returns: `X ~ N(μ, σ)`
         }
         return _x * _scale + _location;
     }
+
+    ///
+    enum T min = -T.infinity;
+    ///
+    enum T max = T.infinity;
 }
 
 ///
@@ -408,6 +422,11 @@ Returns: `X ~ Cauchy(x, γ)`
         while (u * u + v * v > 1 || !(x.fabs < T.infinity));
         return x * _scale + _location;
     }
+
+    ///
+    enum T min = -T.infinity;
+    ///
+    enum T max = T.infinity;
 }
 
 ///
