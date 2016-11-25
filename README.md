@@ -17,7 +17,7 @@ Mir Random `rand!float`/`rand!double`/`rand!real` generates saturated real rando
 
 ##### Integer uniform generators (fixed)
 
-Mir Random fixes Phobos underflow bugs.
+Mir Random fixes Phobos underflow bugs. Addition optization was added for enumerated types.
 
 ##### Generators (fixed, reworked)
  - `opCall` API instead of range interface is used (similar to C++)
