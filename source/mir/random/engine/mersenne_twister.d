@@ -104,10 +104,15 @@ The $(LUCKY Mersenne Twister) generator.
     /// The default seed value.
     enum Uint defaultSeed = 5489;
 
+    private Uint _z = void;
     /++
-    `mt[1 .. $]` - reversed payload. `mt[0]` - payload index.
+    Current reversed payload index with initial value equals to `n-1`
     +/
-    Uint[n + 1] mt;
+    private Uint index = void;
+    /++
+    Reversed(!) payload.
+    +/
+    Uint[n] data = void;
 
     /**
        Constructs a MersenneTwisterEngine object.
@@ -116,12 +121,12 @@ The $(LUCKY Mersenne Twister) generator.
     {
         static if (w == Uint.sizeof * 8)
         {
-            mt[$-1] = value;
+            data[$-1] = value;
         }
         else
         {
             static assert(max + 1 > 0);
-            mt[$-1] = value % (max + 1);
+            data[$-1] = value % (max + 1);
         }
         static if (is(Uint == uint))
             enum Uint f = 1812433253;
@@ -130,9 +135,10 @@ The $(LUCKY Mersenne Twister) generator.
             enum Uint f = 6364136223846793005;
         else
         static assert(0, "ucent is not supported by MersenneTwisterEngine.");
-        foreach_reverse (size_t i, ref e; mt[1 .. $-1])
-            e = f * (mt[i + 2] ^ (mt[i + 2] >> (w - 2))) + cast(Uint)(n - (i + 1));
-        mt[0] = n;
+        foreach_reverse (size_t i, ref e; data[0 .. $-1])
+            e = f * (data[i + 1] ^ (data[i + 1] >> (w - 2))) + cast(Uint)(n - (i + 1));
+        index = n-1;
+        opCall();
     }
 
     /++
@@ -140,29 +146,31 @@ The $(LUCKY Mersenne Twister) generator.
     +/
     Uint opCall() @safe pure nothrow @nogc
     {
-        size_t index = mt[0];
-        size_t next = index - 1;
-        if(next == 0)
-            next = n;
-        auto y = (mt[index] & upperMask) | (mt[next] & lowerMask);
+        sizediff_t index = cast(size_t)this.index;
+        sizediff_t next = index - 1;
+        if(next < 0)
+            next = n - 1;
+        auto z = _z;
+        sizediff_t conj = index - m;
+        if(conj < 0)
+            conj = index - m + n;
+        static if (d == Uint.max)
+            z ^= (z >> u);
+        else
+            z ^= (z >> u) & d;
+        auto q = data[index] & upperMask;
+        auto p = data[next] & lowerMask;
+        z ^= (z << s) & b;
+        auto y = q | p;
         auto x = y >> 1;
+        z ^= (z << t) & c;
         if (y & 1)
             x ^= a;
-        sizediff_t conj = index - m;
-        if(conj <= 0)
-            conj = index - m + n;
-        y = mt[index] = mt[conj] ^ x;
-        mt[0] = cast(Uint)next;
-
-        /* Tempering */
-        static if (d == Uint.max)
-            y ^= (y >> u);
-        else
-            y ^= (y >> u) & d;
-        y ^= (y << s) & b;
-        y ^= (y << t) & c;
-        y ^= (y >> l);
-        return y;
+        auto e = data[conj] ^ x;
+        z ^= (z >> l);
+        _z = data[index] = e;
+        this.index = cast(Uint)next;
+        return z;
     }
 }
 
