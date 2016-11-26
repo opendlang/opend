@@ -104,10 +104,10 @@ The $(LUCKY Mersenne Twister) generator.
     /// The default seed value.
     enum Uint defaultSeed = 5489;
 
-    /// payload index
-    size_t index; /* means mt is not initialized */
-    /// payload
-    Uint[n] mt;
+    /++
+    `mt[1 .. $]` - reversed payload. `mt[0]` - payload index.
+    +/
+    Uint[n + 1] mt;
 
     /**
        Constructs a MersenneTwisterEngine object.
@@ -116,12 +116,12 @@ The $(LUCKY Mersenne Twister) generator.
     {
         static if (w == Uint.sizeof * 8)
         {
-            mt[0] = value;
+            mt[$-1] = value;
         }
         else
         {
             static assert(max + 1 > 0);
-            mt[0] = value % (max + 1);
+            mt[$-1] = value % (max + 1);
         }
         static if (is(Uint == uint))
             enum Uint f = 1812433253;
@@ -130,59 +130,29 @@ The $(LUCKY Mersenne Twister) generator.
             enum Uint f = 6364136223846793005;
         else
         static assert(0, "ucent is not supported by MersenneTwisterEngine.");
-        size_t i = 1;
-        for (; i < n; ++i)
-        {
-            mt[i] = f * (mt[i-1] ^ (mt[i-1] >> (w - 2))) + cast(Uint)i;
-        }
-        index = i;
+        foreach_reverse (size_t i, ref e; mt[1 .. $-1])
+            e = f * (mt[i + 2] ^ (mt[i + 2] >> (w - 2))) + cast(Uint)(n - (i + 1));
+        mt[0] = n;
     }
 
-    /**
-       Advances the generator.
-    */
+    /++
+    Advances the generator.
+    +/
     Uint opCall() @safe pure nothrow @nogc
     {
-        version (LDC)
-        {
-            import ldc.intrinsics: llvm_expect;
-            enum cond = `llvm_expect(index >= n, false)`;
-        }
-        else
-        {
-            enum cond = `index >= n`;
-        }
-        if (mixin(cond))
-        {
-            /* generate N words at one time */
-            size_t kk = 0;
-            const limit1 = n - m;
-            for (; kk < limit1; ++kk)
-            {
-                auto y = (mt[kk] & upperMask) | (mt[kk + 1] & lowerMask);
-                auto x = y >> 1;
-                if (y & 1)
-                    x ^= a;
-                mt[kk] = mt[kk + m] ^ x;
-            }
-            const limit2 = n - 1;
-            for (; kk < limit2; ++kk)
-            {
-                auto y = (mt[kk] & upperMask) | (mt[kk + 1] & lowerMask);
-                auto x = y >> 1;
-                if (y & 1)
-                    x ^= a;
-                mt[kk] = mt[kk + m - n] ^ x;
-            }
-            auto y = (mt[n - 1] & upperMask) | (mt[0] & lowerMask);
-            auto x = y >> 1;
-            if (y & 1)
-                x ^= a;
-            mt[n - 1] = mt[m - 1] ^ x;
-            index = 0;
-        }
-
-        auto y = mt[index++];
+        size_t index = mt[0];
+        size_t next = index - 1;
+        if(next == 0)
+            next = n;
+        auto y = (mt[index] & upperMask) | (mt[next] & lowerMask);
+        auto x = y >> 1;
+        if (y & 1)
+            x ^= a;
+        sizediff_t conj = index - m;
+        if(conj <= 0)
+            conj = index - m + n;
+        y = mt[index] = mt[conj] ^ x;
+        mt[0] = cast(Uint)next;
 
         /* Tempering */
         static if (d == Uint.max)
@@ -192,7 +162,6 @@ The $(LUCKY Mersenne Twister) generator.
         y ^= (y << s) & b;
         y ^= (y << t) & c;
         y ^= (y >> l);
-
         return y;
     }
 }
