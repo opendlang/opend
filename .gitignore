@@ -5,3 +5,9 @@ __*
 *.a
 web
 .generated
+
+bench/Mt19937_bench
+
+*.o
+
+bench/Mt19937_32
