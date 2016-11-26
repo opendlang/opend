@@ -187,7 +187,7 @@ Params:
     gen = saturated random number generator
     boundExp = bound exponent (optional). `boundExp` must be less or equal to `T.max_exp`.
 Returns:
-    Uniformly distributed real for interval `(2^^(-boundExp) , 2^^boundExp))`.
+    Uniformly distributed real for interval `(-2^^boundExp , 2^^boundExp))`.
 Note: `fabs` can be used to get a value from positive interval `[0, 2^^boundExp)`.
 +/
 T rand(T, G)(ref G gen, sizediff_t boundExp = 0)
