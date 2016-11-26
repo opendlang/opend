@@ -56,6 +56,9 @@ writeln(sample);
  - `unpredictableSeed` has not state, returns `size_t`
  - Any unsigned generators are allowed.
  - `min` proporty was removed. Any integer generator can normalize its minimum down to zero.
+ - Mt19937: +100% performance for initialization.
+ - Mt19937: +54% performance for generation.
+ - Mt19937: fixed to be more CPU cache friendly.
  - 64-bit Mt19937 initialization is fixed
  - 64-bit Mt19937 is default for 64-bit targets
  - [WIP] additional Engines, see https://github.com/libmir/mir-random/pulls
