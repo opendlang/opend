@@ -17,7 +17,7 @@ check sum = 8857660070542815631
 Phobos 32-bit Mt19937: 4.41989 Gb/s
 check sum = 214724495853043511
 
-Phobos 64-bit Mt19937: wrong initilization and tempering
+Phobos 64-bit Mt19937: wrong initialization and tempering
 
 1.54 = 6.80851 / 4.41989
 2.85 = 12.5984 / 4.41989
@@ -73,5 +73,5 @@ void main()
 	sw.stop;
 	writefln("Phobos 32-bit Mt19937: %s Gb/s", double(count * 32u) / sw.peek.msecs / 1000 ^^ 2);
 	writeln("check sum = ", s, "\n");
-	writefln("Phobos 64-bit Mt19937: wrong initilization and tempering");
+	writefln("Phobos 64-bit Mt19937: wrong initialization and tempering");
 }
