@@ -1,11 +1,15 @@
 /++
 Authors: Ilya Yaroshenko
 Copyright: Copyright, Ilya Yaroshenko 2016-.
-License:   $(HTTP www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
+License: $(HTTP www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
 +/
 module mir.random.algorithm;
 
 import std.traits;
+
+import std.math: LN2;
+
+import mir.math.internal;
 
 import mir.random.variable;
 public import mir.random.engine;
@@ -35,7 +39,7 @@ struct RandomRange(G)
 }
 
 /// ditto
-RandomRange!G randomRange(G)(ref G gen)
+RandomRange!G range(G)(ref G gen)
     if (isRandomEngine!G)
 {
     return typeof(return)(gen);
@@ -48,7 +52,7 @@ unittest
     import mir.random.engine.xorshift;
     auto rng = Xorshift(1);
     auto bitSample = rng // by reference
-        .randomRange
+        .range
         .filter!(val => val % 2 == 0)
         .map!(val => val % 100)
         .take(5)
@@ -82,7 +86,7 @@ struct RandomRange(G, D)
 }
 
 /// ditto
-RandomRange!(G, D) randomRange(G, D)(ref G gen, D var)
+RandomRange!(G, D) range(G, D)(ref G gen, D var)
     if (isRandomEngine!G)
 {
     return typeof(return)(gen, var);
@@ -91,17 +95,124 @@ RandomRange!(G, D) randomRange(G, D)(ref G gen, D var)
 ///
 unittest
 {
-    import std.range;
+    import std.range : take, array;
 
     import mir.random;
     import mir.random.variable: NormalVariable;
 
     auto rng = Random(unpredictableSeed);
     auto sample = rng // by reference
-        .randomRange(NormalVariable!double(0, 1))
+        .range(NormalVariable!double(0, 1))
         .take(1000)
         .array;
 
     //import std.stdio;
     //writeln(sample);
+}
+
+struct VitterStrides
+{
+    enum alphainv = 16;
+    private double vprime;
+    private size_t N;
+    private size_t n;
+    private bool hot;
+
+    this(size_t N, size_t n)
+    {
+        assert(N >= n);
+        this.N = N;
+        this.n = n;
+    }
+
+    this(this)
+    {
+        hot = false;
+    }
+
+    size_t length() @property
+    {
+        return n;
+    }
+
+    sizediff_t opCall(Random gen)
+    {
+        import mir.random;
+        size_t S;
+        switch(n)
+        {
+        default:
+            double Nr = N;
+            if(alphainv * n > N)
+            {
+                hot = false;
+                double top = N - n;
+                double v = gen.rand!double.fabs;
+                double quot = top / Nr;
+                while(quot > v)
+                {
+                    top--;
+                    Nr--;
+                    S++;
+                    quot *= top / Nr;
+                }
+                goto R;
+            }
+            double nr = n;
+            if(hot)
+            {
+                hot = false;
+                goto L;
+            }
+        M:
+            vprime = exp2(-gen.randExponential2!double / nr);
+        L:
+            double X = Nr * (1 - vprime);
+            S = cast(size_t) X;
+            if (S + n > N)
+                goto M;
+            size_t qu1 = N - n + 1;
+            double qu1r = qu1;
+            double y1 = exp2(gen.randExponential2!double / (1 - nr) + double(1 / LN2) / qu1r);
+            vprime = y1 * (1 - X / Nr) * (qu1r / (qu1r - S));
+            if (vprime <= 1)
+            {
+                hot = true;
+                goto R;
+            }
+            double y2 = 1;
+            double top = Nr - 1;
+            double bottom = void;
+            size_t limit = void;
+            if(n > S + 1)
+            {
+                bottom = N - n;
+                limit = N - S;
+            }
+            else
+            {
+                bottom = N - (S + 1);
+                limit = qu1;
+            }
+            foreach_reverse(size_t t; limit .. N)
+            {
+                y2 *= top / bottom;
+                top--;
+                bottom--;
+            }
+            if(Nr / (Nr - X) >= y1 * exp2(log2(y2) / (nr - 1)))
+                goto R;
+            goto M;
+        case 1:
+            S = gen.randIndex(N);
+        R:
+            N -= S + 1;
+            n--;
+        F:
+            return S;
+        case 0:
+            S = -1;
+            goto F;
+        }
+    }
 }

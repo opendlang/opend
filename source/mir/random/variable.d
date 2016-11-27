@@ -10,19 +10,7 @@ import std.traits;
 
 import std.math : nextDown, isFinite, LN2;
 
-version(LDC)
-{
-    import ldc.intrinsics: fabs = llvm_fabs, sqrt = llvm_sqrt, log = llvm_log, pow = llvm_pow, fmuladd = llvm_fmuladd;
-}
-else
-{
-    import std.math: fabs, sqrt, log, pow;
-
-    private T fmuladd(T)(const T a, const T b, const T c)
-    {
-        return a * b + c;
-    }
-}
+import mir.math.internal;
 
 private T sumSquares(T)(const T a, const T b)
 {
