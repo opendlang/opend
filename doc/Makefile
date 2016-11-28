@@ -14,7 +14,7 @@ DDOC=$(DMD) -w -c -o- -version=StdDdoc
 DOC_OUTPUT_DIR=web
 DOC_SOURCE_DIR=doc
 GENERATED=.generated
-GLAS_DIR=source
+RANDOM_DIR=source
 DLANGORG_DIR=$(DOC_SOURCE_DIR)/dlang.org
 ARTWORK_DIR=$(DOC_SOURCE_DIR)/artwork
 
@@ -25,12 +25,13 @@ ARTWORK_DIR=$(DOC_SOURCE_DIR)/artwork
 # Packages in mir. Just mention the package name here. The contents of package
 # xy/zz is in variable PACKAGE_xy_zz. This allows automation in iterating
 # packages and their modules.
-MIR_PACKAGES = mir/random mir/random/engine
+MIR_PACKAGES = mir/random mir/random/engine mir/random/flex
 
 PACKAGE_mir_random = package algorithm variable
 PACKAGE_mir_random_engine = package linear_congruential mersenne_twister xorshift
+PACKAGE_mir_random_flex = package
 
-MOD_EXCLUDES=$(addprefix --ex=, _nothing)
+MOD_EXCLUDES=$(addprefix --ex=, random.flex.internal.)
 
 ###########################################################
 # Setup macros + generate dynamic info needed
@@ -45,9 +46,9 @@ ${GENERATED}/${LATEST}.ddoc :
 	mkdir -p $(dir $@)
 	echo "LATEST=${LATEST}" >$@
 
-${GENERATED}/mir.ddoc : $(DOC_SOURCE_DIR)/gen_modlist.d $(GLAS_DIR)
+${GENERATED}/mir.ddoc : $(DOC_SOURCE_DIR)/gen_modlist.d $(RANDOM_DIR)
 	mkdir -p $(dir $@)
-	$(RDMD) --compiler=$(DMD) $< $(GLAS_DIR) $(MOD_EXCLUDES) >$@
+	$(RDMD) --compiler=$(DMD) $< $(RANDOM_DIR) $(MOD_EXCLUDES) >$@
 
 ###########################################################
 # Makefile bootstrapping
@@ -70,13 +71,13 @@ $(DOC_OUTPUT_DIR)/. :
 	mkdir -p $@
 
 # everything except index.d needs a source path
-ADDSOURCE=$(if $(subst index.d,,$1),$(GLAS_DIR)/$1,$1)
+ADDSOURCE=$(if $(subst index.d,,$1),$(RANDOM_DIR)/$1,$1)
 
 # For each module, define a rule e.g.:
 # ../web/phobos/std_conv.html : std/conv.d $(STDDOC) ; ...
 $(foreach p,$(SRC_DOCUMENTABLES),$(eval \
 $(DOC_OUTPUT_DIR)/$(call D2HTML,$p) : $(call ADDSOURCE,$p) $(STDDOC) ;\
-  $(DDOC) $(STDDOC) -I$(GLAS_DIR) -Df$$@ $$<))
+  $(DDOC) $(STDDOC) -I$(RANDOM_DIR) -Df$$@ $$<))
 
 ###########################################################
 # Setup all other resources needed by dlang.org

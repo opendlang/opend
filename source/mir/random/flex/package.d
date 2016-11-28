@@ -84,7 +84,7 @@ Macros:
 module mir.random.flex;
 import mir.random.flex.internal.types;
 
-import mir.random.discrete : Discrete;
+import mir.random.variable : Discrete, RandomVariable;
 
 import mir.random;
 import std.traits : isCallable, isFloatingPoint, ReturnType;
@@ -165,11 +165,11 @@ auto flex(S, Pdf)(in Pdf pdf, in FlexInterval!S[] intervals)
     return Flex!(S, typeof(pdf))(pdf, intervals);
 }
 
-/**
+/++
 Data body of the Flex algorithm.
 Can be used to sample from the distribution.
-*/
-struct Flex(S, Pdf)
++/
+@RandomVariable struct Flex(S, Pdf)
     if (isFloatingPoint!S)
 {
     // density function

@@ -1,5 +1,5 @@
 /++
-Authors: Ilya Yaroshenko
+Authors: Ilya Yaroshenko, Sebastian Wilzbach (Discrete)
 Copyright: Copyright, Ilya Yaroshenko 2016-.
 License:   $(HTTP www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
 +/
@@ -443,4 +443,183 @@ unittest
     auto gen = Xorshift(1);
     auto rv = CauchyVariable!double(0, 1);
     auto x = rv(gen);
+}
+
+/++
+_Discrete distribution sampler that draws random values from a _discrete
+distribution given an array of the respective probability density points (weights).
++/
+@RandomVariable struct Discrete(T)
+    if (isNumeric!T)
+{
+    import mir.random;
+
+    private T[] cdf;
+
+    /++
+    The density points `weights`.
+    `Discrete` constructor computes comulative density points
+    in place without memory allocation.
+
+    Params:
+        weights = density points
+        comulative = optional flag indiciates if `weights` are already comulative
+    +/
+    this(T[] weights, bool comulative = false)
+    {
+        if(!comulative)
+        {
+            static if (isFloatingPoint!T)
+            {
+                import mir.math.sum;
+                Summator!(T, Summation.kb2) s = 0;
+                foreach(ref e; weights)
+                {
+                    s += e;
+                    e = s.sum;
+                }
+            }
+            else
+            {
+                import mir.math.sum;
+                T s = 0;
+                foreach(ref e; weights)
+                {
+                    s += e;
+                    e = s;
+                }
+            }
+        }
+        this.cdf = weights;
+    }
+
+    /++
+    Samples a value from the discrete distribution using a custom random generator.
+    Complexity:
+        `O(log n)` where `n` is the number of `weights`.
+    +/
+    size_t opCall(RNG)(ref RNG gen)
+        if (isRandomEngine!RNG)
+    {
+        import std.range : assumeSorted;
+        static if (isFloatingPoint!T)
+            T v = gen.rand!T.fabs * cdf[$-1];
+        else
+            T v = gen.randIndex!(Unsigned!T)(cdf[$-1]);
+        return cdf.length - cdf.assumeSorted!"a < b".upperBound(v).length;
+    }
+}
+
+///
+unittest
+{
+    import mir.random.engine.xorshift;
+    auto gen = Xorshift(1);
+    // 10%, 20%, 20%, 40%, 10%
+    auto weights = [10.0, 20, 20, 40, 10];
+    auto ds = Discrete!double(weights);
+
+    // weight is changed to comulative sums
+    assert(weights == [10, 30, 50, 90, 100]);
+
+    // sample from the discrete distribution
+    auto obs = new uint[weights.length];
+    
+    foreach (i; 0..1000)
+        obs[ds(gen)]++;
+
+    //import std.stdio;
+    //writeln(obs);
+}
+
+/// Comulative
+unittest
+{
+    import mir.random.engine.xorshift;
+    auto gen = Xorshift(1);
+
+    auto comulative = [10.0, 30, 40, 90, 120];
+    auto ds = Discrete!double(comulative, true);
+
+    // weight is changed to comulative sums
+    assert(comulative == [10.0, 30, 40, 90, 120]);
+
+    // sample from the discrete distribution
+    auto obs = new uint[comulative.length];
+    foreach (i; 0..1000)
+        obs[ds(gen)]++;
+}
+
+//
+unittest
+{
+    import mir.random.engine.xorshift;
+    auto gen = Xorshift(1);
+    // 10%, 20%, 20%, 40%, 10%
+    auto weights = [10.0, 20, 20, 40, 10];
+    auto ds = Discrete!double(weights);
+
+    // weight is changed to comulative sums
+    assert(weights == [10, 30, 50, 90, 100]);
+
+    // sample from the discrete distribution
+    auto obs = new uint[weights.length];
+    foreach (i; 0..1000)
+        obs[ds(gen)]++;
+
+    //import std.stdio;
+    //writeln(obs);
+    //[999, 1956, 2063, 3960, 1022]
+}
+
+// test with cumulative probs
+unittest
+{
+    import mir.random.engine.xorshift : Xorshift;
+    auto gen = Xorshift(42);
+
+    // 10%, 20%, 20%, 40%, 10%
+    auto weights = [0.1, 0.3, 0.5, 0.9, 1];
+    auto ds = Discrete!double(weights, true);
+
+    auto obs = new uint[weights.length];
+    foreach (i; 0..1000)
+        obs[ds(gen)]++;
+
+
+    //assert(obs == [1030, 1964, 1968, 4087, 951]);
+}
+
+// test with cumulative count
+unittest
+{
+    import mir.random.engine.xorshift : Xorshift;
+    auto gen = Xorshift(42);
+
+    // 1, 2, 1
+    auto weights = [1, 2, 1];
+    auto ds = Discrete!int(weights);
+
+    auto obs = new uint[weights.length];
+    foreach (i; 0..1000)
+        obs[ds(gen)]++;
+
+    //assert(obs == [2536, 4963, 2501]);
+}
+
+// test with zero probabilities
+unittest
+{
+    import mir.random.engine.xorshift : Xorshift;
+    auto gen = Xorshift(42);
+
+    // 0, 1, 2, 0, 1
+    auto weights = [0, 1, 3, 3, 4];
+    auto ds = Discrete!int(weights, true);
+
+    auto obs = new uint[weights.length];
+    foreach (i; 0..1000)
+        obs[ds(gen)]++;
+
+    assert(obs[3] == 0);
 }
