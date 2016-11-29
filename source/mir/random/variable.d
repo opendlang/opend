@@ -4,7 +4,7 @@ Copyright: Copyright, Ilya Yaroshenko 2016-.
 License:   $(HTTP www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
 
 Macros:
-    WIKI_D = $(HTTP https://en.wikipedia.org/wiki/$1_distribution, $1 random variable).
+    WIKI_D = $(HTTP en.wikipedia.org/wiki/$1_distribution, $1 random variable)
 +/
 module mir.random.variable;
 
