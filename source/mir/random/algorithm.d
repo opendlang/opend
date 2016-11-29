@@ -296,7 +296,7 @@ unittest
 
 /++
 Lazy input or forward range containing a random sample.
-It uses $(MREF VitterStrides) to skip elements.
+$(MREF VitterStrides) is used to skip elements.
 Complexity: O(n)
 Note:
     The structure holds a pointer to a generator.
