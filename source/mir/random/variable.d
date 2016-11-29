@@ -361,6 +361,90 @@ unittest
     auto x = rv(gen);
 }
 
+/++
+$(WIKI_D F).
++/
+@RandomVariable struct FisherFVariable(T)
+    if (isFloatingPoint!T)
+{
+    private T _d1 = 1, _d2 = 1;
+
+    ///
+    this(T d1, T d2)
+    {
+        _d1 = d1;
+        _d2 = d2;
+    }
+
+    ///
+    T opCall(G)(ref G gen)
+        if (isSaturatedRandomEngine!G)
+    {
+        auto xv = GammaVariable!T(_d1 * 0.5f);
+        auto yv = GammaVariable!T(_d2 * 0.5f);
+        auto x = xv(gen);
+        auto y = yv(gen);
+        x *= _d1;
+        y *= _d2;
+        return x / y; 
+    }
+
+    ///
+    enum T min = 0;
+    ///
+    enum T max = T.infinity;
+}
+
+///
+unittest
+{
+    import mir.random.engine.xorshift;
+    auto gen = Xorshift(32);
+    auto rv = FisherFVariable!double(3, 4);
+    auto x = rv(gen);
+}
+
+/++
+$(WIKI_D Student's_t).
++/
+@RandomVariable struct StudentTVariable(T)
+    if (isFloatingPoint!T)
+{
+    private NormalVariable!T _nv;
+    private T _nu = 1;
+
+    ///
+    this(T nu)
+    {
+        _nu = nu;
+    }
+
+    ///
+    T opCall(G)(ref G gen)
+        if (isSaturatedRandomEngine!G)
+    {
+        auto x = _nv(gen);
+        auto y = _nu / GammaVariable!T(_nu * 0.5f, 2)(gen);
+        if(y < T.infinity)
+            x *= y.sqrt;
+        return x;
+    }
+
+    ///
+    enum T min = -T.infinity;
+    ///
+    enum T max = T.infinity;
+}
+
+///
+unittest
+{
+    import mir.random.engine.xorshift;
+    auto gen = Xorshift(32);
+    auto rv = StudentTVariable!double(10);
+    auto x = rv(gen);
+}
+
 private T hypot01(T)(const T x, const T y)
 {
     // Scale x and y to avoid underflow and overflow.
@@ -471,6 +555,46 @@ unittest
     import mir.random.engine.xorshift;
     auto gen = Xorshift(1);
     auto rv = NormalVariable!double(0, 1);
+    auto x = rv(gen);
+}
+
+/++
+$(WIKI_D Log-normal).
++/
+@RandomVariable struct LogNormalVariable(T)
+    if (isFloatingPoint!T)
+{
+    private NormalVariable!T _nv;
+
+    /++
+    Params:
+        normalLocation = location of associated normal
+        normalScale = scale of associated normal
+    +/
+    this(T normalLocation, T normalScale = 1)
+    {
+        _nv = NormalVariable!T(normalLocation, normalScale);
+    }
+
+    ///
+    T opCall(G)(ref G gen)
+        if (isSaturatedRandomEngine!G)
+    {
+       return _nv(gen);
+    }
+
+    ///
+    enum T min = 0;
+    ///
+    enum T max = T.infinity;
+}
+
+///
+unittest
+{
+    import mir.random.engine.xorshift;
+    auto gen = Xorshift(1);
+    auto rv = LogNormalVariable!double(0, 1);
     auto x = rv(gen);
 }
 
