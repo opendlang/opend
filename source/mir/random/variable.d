@@ -5,6 +5,7 @@ License:   $(HTTP www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
 
 Macros:
     WIKI_D = $(HTTP en.wikipedia.org/wiki/$1_distribution, $1 random variable)
+    WIKI_D2 = $(HTTP en.wikipedia.org/wiki/$1_distribution, $2 random variable)
 +/
 module mir.random.variable;
 
@@ -643,6 +644,44 @@ unittest
     import mir.random.engine.xorshift;
     auto gen = Xorshift(1);
     auto rv = CauchyVariable!double(0, 1);
+    auto x = rv(gen);
+}
+
+/++
+$(WIKI_D2 Generalized_extreme_value, Extreme value).
++/
+@RandomVariable struct ExtremeValueVariable(T)
+    if (isFloatingPoint!T)
+{
+    private T _location = 0;
+    private T _scale = 1;
+
+    ///
+    this(T location, T scale = 1)
+    {
+        _location = location;
+        _scale = scale * -T(LN2);
+    }
+
+    ///
+    T opCall(G)(ref G gen)
+        if (isSaturatedRandomEngine!G)
+    {
+        return fmuladd(log2(gen.randExponential2!T * T(LN2)), _scale, _location);
+    }
+
+    ///
+    enum T min = -T.infinity;
+    ///
+    enum T max = T.infinity;
+}
+
+///
+unittest
+{
+    import mir.random.engine.xorshift;
+    auto gen = Xorshift(1);
+    auto rv = ExtremeValueVariable!double(0, 1);
     auto x = rv(gen);
 }
 
