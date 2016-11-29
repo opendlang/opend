@@ -450,6 +450,45 @@ unittest
 }
 
 /++
+$(WIKI_D Bernoulli).
++/
+@RandomVariable struct BernoulliVariable(T)
+    if (isFloatingPoint!T)
+{
+    private T p = 0;
+
+    /++
+    Params:
+        p = probability
+    +/
+    this(T p)
+    {
+        assert(0 <= p && p <= 1);
+        this.p = p;
+    }
+
+    ///
+    bool opCall(RNG)(ref RNG gen)
+        if (isSaturatedRandomEngine!RNG)
+    {
+        return gen.rand!T.fabs < p;
+    }
+}
+
+///
+unittest
+{
+    import mir.random.engine.xorshift;
+    auto gen = Xorshift(42);
+    auto rv = BernoulliVariable!double(0.7);
+    size_t[bool] hist;
+    foreach(_; 0..1000)
+        hist[rv(gen)]++;
+    //import std.stdio;
+    //writeln(hist);
+}
+
+/++
 $(WIKI_D Geometric).
 +/
 @RandomVariable struct GeometricVariable(T)
