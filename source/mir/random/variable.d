@@ -2,6 +2,9 @@
 Authors: Ilya Yaroshenko, Sebastian Wilzbach (Discrete)
 Copyright: Copyright, Ilya Yaroshenko 2016-.
 License:   $(HTTP www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
+
+Macros:
+    WIKI_D = $(HTTP https://en.wikipedia.org/wiki/$1_distribution, $1 random variable).
 +/
 module mir.random.variable;
 
@@ -37,7 +40,7 @@ template isRandomVariable(T)
 }
 
 /++
-Discrete Uniform Random Variable.
+$(WIKI_D Discrete_uniform).
 Returns: `X ~ U[a, b]`
 +/
 @RandomVariable struct UniformVariable(T)
@@ -82,7 +85,7 @@ unittest
 }
 
 /++
-Real Uniform Random Variable.
+$(HTTP en.wikipedia.org/wiki/Uniform_distribution_(continuous), Uniform distribution (continuous)).
 Returns: `X ~ U[a, b)`
 +/
 @RandomVariable struct UniformVariable(T)
@@ -145,6 +148,7 @@ unittest
 }
 
 /++
+$(WIKI_D Exponential).
 Exponential Random Variable.
 Returns: `X ~ Exp(β)`
 +/
@@ -182,7 +186,7 @@ unittest
 }
 
 /++
-Gamma Random Variable.
+$(WIKI_D Gamma).
 Returns: `X ~ Gamma(𝝰, 𝞫)`
 Params:
     T = floating point type
@@ -329,7 +333,7 @@ private T hypot01(T)(const T x, const T y)
 }
 
 /++
-Normal Random Variable.
+$(WIKI_D Normal).
 Returns: `X ~ N(μ, σ)`
 +/
 @RandomVariable struct NormalVariable(T)
@@ -398,7 +402,7 @@ unittest
 }
 
 /++
-Cauchy Random Variable.
+$(WIKI_D Cauchy).
 Returns: `X ~ Cauchy(x, γ)`
 +/
 @RandomVariable struct CauchyVariable(T)
@@ -446,14 +450,58 @@ unittest
 }
 
 /++
+$(WIKI_D Geometric).
++/
+@RandomVariable struct GeometricVariable(T)
+    if (isFloatingPoint!T)
+{
+    private T scale = 0;
+
+    /++
+    Params:
+        p = probability
+        reverse = p is success probability if `true` and failure probability otherwise.
+    +/
+    this(T p, bool success = true)
+    {
+        assert(0 <= p && p <= 1);
+        scale = -1 / log2(success ? 1 - p : p);
+    }
+
+    ///
+    size_t opCall(RNG)(ref RNG gen)
+        if (isSaturatedRandomEngine!RNG)
+    {
+        auto ret = gen.randExponential2!T * scale;
+        return ret < size_t.max ? cast(size_t)ret : size_t.max;
+    }
+}
+
+///
+unittest
+{
+    import mir.random.engine.xorshift;
+    auto gen = Xorshift(42);
+    auto rv = GeometricVariable!double(0.1);
+    size_t[size_t] hist;
+    foreach(_; 0..1000)
+        hist[rv(gen)]++;
+    //import std.stdio;
+    //foreach(i; 0..100)
+    //    if(auto count = i in hist)
+    //        write(*count, ", ");
+    //    else
+    //        write("0, ");
+    //writeln();
+}
+
+/++
 _Discrete distribution sampler that draws random values from a _discrete
 distribution given an array of the respective probability density points (weights).
 +/
 @RandomVariable struct Discrete(T)
     if (isNumeric!T)
 {
-    import mir.random;
-
     private T[] cdf;
 
     /++
@@ -499,7 +547,7 @@ distribution given an array of the respective probability density points (weight
         `O(log n)` where `n` is the number of `weights`.
     +/
     size_t opCall(RNG)(ref RNG gen)
-        if (isRandomEngine!RNG)
+        if (isSaturatedRandomEngine!RNG)
     {
         import std.range : assumeSorted;
         static if (isFloatingPoint!T)
