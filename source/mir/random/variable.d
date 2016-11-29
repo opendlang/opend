@@ -149,13 +149,12 @@ unittest
 
 /++
 $(WIKI_D Exponential).
-Exponential Random Variable.
 Returns: `X ~ Exp(β)`
 +/
 @RandomVariable struct ExponentialVariable(T)
     if (isFloatingPoint!T)
 {
-    private T _scale = 1;
+    private T _scale = T(LN2);
 
     ///
     this(T scale)
@@ -180,8 +179,46 @@ Returns: `X ~ Exp(β)`
 unittest
 {
     import mir.random.engine.xorshift;
-    auto gen = Xorshift(1);
+    auto gen = Xorshift(14);
     auto rv = ExponentialVariable!double(1);
+    auto x = rv(gen);
+}
+
+/++
+$(WIKI_D Weibull).
++/
+@RandomVariable struct WeibullVariable(T)
+    if (isFloatingPoint!T)
+{
+    private T _pow = 1;
+    private T _scale = 1;
+
+    ///
+    this(T shape, T scale = 1)
+    {
+        _pow = 1 / shape;
+        _scale = scale;
+    }
+
+    ///
+    T opCall(G)(ref G gen)
+        if (isSaturatedRandomEngine!G)
+    {
+        return ExponentialVariable!T()(gen).pow(_pow) * _scale;
+    }
+
+    ///
+    enum T min = 0;
+    ///
+    enum T max = T.infinity;
+}
+
+///
+unittest
+{
+    import mir.random.engine.xorshift;
+    auto gen = Xorshift(13);
+    auto rv = WeibullVariable!double(3, 2);
     auto x = rv(gen);
 }
 
@@ -200,7 +237,7 @@ Params:
     private T _scale = 1;
 
     ///
-    this(T shape, T scale)
+    this(T shape, T scale = 1)
     {
         _shape = shape;
         if(Exp)
@@ -288,6 +325,42 @@ unittest
     auto x = rv(gen);
 }
 
+/++
+$(WIKI_D Chi-squared).
++/
+@RandomVariable struct ChiSquaredVariable(T)
+    if (isFloatingPoint!T)
+{
+    private T _shape = 1;
+
+    ///
+    this(size_t k)
+    {
+        _shape = T(k) / 2;
+    }
+
+    ///
+    T opCall(G)(ref G gen)
+        if (isSaturatedRandomEngine!G)
+    {
+        return GammaVariable!T(_shape, 2)(gen);
+    }
+
+    ///
+    enum T min = 0;
+    ///
+    enum T max = T.infinity;
+}
+
+///
+unittest
+{
+    import mir.random.engine.xorshift;
+    auto gen = Xorshift(32);
+    auto rv = ChiSquaredVariable!double(3);
+    auto x = rv(gen);
+}
+
 private T hypot01(T)(const T x, const T y)
 {
     // Scale x and y to avoid underflow and overflow.
@@ -345,7 +418,7 @@ Returns: `X ~ N(μ, σ)`
     private bool hot;
 
     ///
-    this(T location, T scale)
+    this(T location, T scale = 1)
     {
         _location = location;
         _scale = scale;
@@ -412,7 +485,7 @@ Returns: `X ~ Cauchy(x, γ)`
     private T _scale = 1;
 
     ///
-    this(T location, T scale)
+    this(T location, T scale = 1)
     {
         _location = location;
         _scale = scale;
@@ -473,6 +546,11 @@ $(WIKI_D Bernoulli).
     {
         return gen.rand!T.fabs < p;
     }
+
+    ///
+    enum bool min = 0;
+    ///
+    enum bool max = 1;
 }
 
 ///
@@ -514,6 +592,11 @@ $(WIKI_D Geometric).
         auto ret = gen.randExponential2!T * scale;
         return ret < size_t.max ? cast(size_t)ret : size_t.max;
     }
+
+    ///
+    enum size_t min = 0;
+    ///
+    enum size_t max = size_t.max;
 }
 
 ///
