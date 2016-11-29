@@ -253,7 +253,7 @@ unittest
 /++
 Selects a random subsample out of `range`, containing exactly `n` elements.
 The order of elements is the same as in the original range.
-Returns: $(MREF RandomSample) over the `range`.
+Returns: $(LREF RandomSample) over the `range`.
 Params:
     range = range to sample from
     gen = random number generator to use
@@ -296,7 +296,7 @@ unittest
 
 /++
 Lazy input or forward range containing a random sample.
-$(MREF VitterStrides) is used to skip elements.
+$(LREF VitterStrides) is used to skip elements.
 Complexity: O(n)
 Note:
     The structure holds a pointer to a generator.
