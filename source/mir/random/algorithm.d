@@ -5,10 +5,8 @@ License: $(HTTP www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
 +/
 module mir.random.algorithm;
 
+import std.range.primitives;
 import std.traits;
-
-import std.math: LN2;
-
 import mir.math.internal;
 
 import mir.random.variable;
@@ -18,11 +16,11 @@ public import mir.random.engine;
 Range interface for uniform random bit generators.
 
 Note:
-    The structure hold a pointer to a generator.
+    The structure holds a pointer to a generator.
     The structure must not be copied (explicitly or implicitly) outside from a function.
 +/
 struct RandomRange(G)
-    if (isRandomEngine!G)
+    if (isSaturatedRandomEngine!G)
 {
     private G* _gen;
     private ReturnType!G _val;
@@ -40,7 +38,7 @@ struct RandomRange(G)
 
 /// ditto
 RandomRange!G range(G)(ref G gen)
-    if (isRandomEngine!G)
+    if (isSaturatedRandomEngine!G)
 {
     return typeof(return)(gen);
 }
@@ -68,7 +66,7 @@ Note:
     The structure must not be copied (explicitly or implicitly) outside from a function.
 +/
 struct RandomRange(G, D)
-    if (isRandomEngine!G)
+    if (isSaturatedRandomEngine!G)
 {
     private D _var;
     private G* _gen;
@@ -87,7 +85,7 @@ struct RandomRange(G, D)
 
 /// ditto
 RandomRange!(G, D) range(G, D)(ref G gen, D var)
-    if (isRandomEngine!G)
+    if (isSaturatedRandomEngine!G)
 {
     return typeof(return)(gen, var);
 }
@@ -110,6 +108,13 @@ unittest
     //writeln(sample);
 }
 
+/++
+Random sampling utility.
+Complexity:
+    O(n)
+References:
+    Jeffrey Scott Vitter, An efficient algorithm for sequential random sampling
++/
 struct VitterStrides
 {
     private enum alphainv = 16;
@@ -123,6 +128,11 @@ struct VitterStrides
         hot = false;
     }
 
+    /++
+    Params:
+        N = range length
+        n = sample length
+    +/
     this(size_t N, size_t n)
     {
         assert(N >= n);
@@ -130,15 +140,23 @@ struct VitterStrides
         this.n = n;
     }
 
+    /// Returns: `true` if sample length equals to 0.
+    bool empty() @property { return n == 0; }
+    /// Returns: `N` (remaining sample length)
+    size_t length() @property { return n; }
+    /// Returns: `n` (remaining range length)
     size_t tail() @property { return N; }
 
-    size_t length() @property { return n; }
-
-    bool empty() @property { return n == 0; }
-
+    /++
+    Returns: random stride step (`S`).
+        After each call `N` decreases by `S + 1` and `n` decreases by `1`.
+    Params:
+        gen = random number generator to use
+    +/
     sizediff_t opCall(G)(ref G gen)
     {
         pragma(inline, false);
+        import std.math: LN2;
         import mir.random;
         size_t S;
         switch(n)
@@ -210,60 +228,99 @@ struct VitterStrides
         R:
             N -= S + 1;
             n--;
-        F:
             return S;
         case 0:
             S = -1;
-            goto F;
+            goto R;
         }
     }
 }
 
+///
+unittest
+{
+    import mir.random.engine.xorshift;
+    auto gen = Xorshift(112);
+    auto strides = VitterStrides(20, 3);
+    size_t s;
+    foreach(_; 0..3)
+    {
+        s += strides(gen) + 1;
+        assert(s + strides.tail == 20);
+    }
+}
+
+/++
+Chooses a sample of `n` items from the `range` containing `N` items.
+Returns: $(MREF RandomSample) over the `range`.
+Params:
+    range = range to sample from
+    gen = random number generator to use
+    n = number of elements to include in the sample; must be less than or equal to the `range.length`
+Complexity: O(n)
++/
+auto sample(Range, G)(Range range, ref G gen, size_t n)
+    if(isInputRange!Range && hasLength!Range && isSaturatedRandomEngine!G)
+{
+    return RandomSample!(Range, G)(range, gen, n);
+}
+
+///
+unittest
+{
+    import std.experimental.ndslice.selection;
+    import mir.random.engine.xorshift;
+    auto gen = Xorshift(112);
+    auto sample = iotaSlice(100).sample(gen, 7);
+}
+
+unittest
+{
+    import std.algorithm.comparison;
+    import std.experimental.ndslice.selection;
+    import mir.random.engine.xorshift;
+    auto gen = Xorshift(232);
+    assert(iotaSlice(0).equal(iotaSlice(0).sample(gen, 0)));
+    assert(iotaSlice(1).equal(iotaSlice(1).sample(gen, 1)));
+    assert(iotaSlice(2).equal(iotaSlice(2).sample(gen, 2)));
+    assert(iotaSlice(3).equal(iotaSlice(3).sample(gen, 3)));
+    assert(iotaSlice(8).equal(iotaSlice(8).sample(gen, 8)));
+    assert(iotaSlice(1000).equal(iotaSlice(1000).sample(gen, 1000)));
+}
+
+/++
+Lazy input or forward range containing a random sample.
+It uses $(MREF VitterStrides) to skip elements.
+Complexity: O(n)
+Note:
+    The structure holds a pointer to a generator.
+    The structure must not be copied (explicitly or implicitly) outside from a function.
++/
 struct RandomSample(Range, G)
 {
     private VitterStrides strides;
     private G* gen;
     private Range range;
-
     ///
     this(Range range, ref G gen, size_t n)
     {
         this.range = range;
         this.gen = &gen;
         strides = VitterStrides(range.length, n);
-        if(!strides.empty)
-            range.popFrontExactly(strides(ge0) GF ıNn));
+        auto s = strides(*this.gen);
+        if(s > 0)
+            this.range.popFrontExactly(s);
     }
 
-    ///
-    size_t length() @property { return strides.length; }
-
-    ///
-    bool empty() @property { return strides.empty; }
-
-    ///
+    /// Range primitives
+    size_t length() @property { return strides.length + 1; }
+    /// ditto
+    bool empty() @property { return length == 0; }
+    /// ditto
     auto front() @property { return range.front; }
-
-    ///
-    void popFront()
-    {
-        range.popFrontExactly(strides(*gen) + 1);
-    }
-}
-
-///
-auto sample(Range, G)(Range range, ref G gen, size_t n)
-{
-    return RandomSample!(Range, G)(range, gen, n);
-}
-
-unittest
-{
-    import std.experimental.ndslice.selection;
-    import std.stdio;
-    import mir.random.engine.xorshift;
-    import mir.random.engine;
-    auto gen = Random(unpredictableSeed);
-    auto sample = iotaSlice(1600).sample(gen, 100);
-    writeln(sample);
+    /// ditto
+    void popFront() { range.popFrontExactly(strides(*gen) + 1); }
+    /// ditto
+    static if (isForwardRange!Range)
+    auto save() @property { return RandomSample(range.save, *gen, length); }
 }
