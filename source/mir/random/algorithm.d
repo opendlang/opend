@@ -112,11 +112,16 @@ unittest
 
 struct VitterStrides
 {
-    enum alphainv = 16;
+    private enum alphainv = 16;
     private double vprime;
     private size_t N;
     private size_t n;
     private bool hot;
+
+    this(this)
+    {
+        hot = false;
+    }
 
     this(size_t N, size_t n)
     {
@@ -125,27 +130,13 @@ struct VitterStrides
         this.n = n;
     }
 
-    this(this)
-    {
-        hot = false;
-    }
+    size_t tail() @property { return N; }
 
-    size_t tail() @property
-    {
-        return N;
-    }
+    size_t length() @property { return n; }
 
-    size_t length() @property
-    {
-        return n;
-    }
+    bool empty() @property { return n == 0; }
 
-    bool empty() @property
-    {
-        return n == 0;
-    }
-
-    sizediff_t opCall(Random gen)
+    sizediff_t opCall(G)(ref G gen)
     {
         pragma(inline, false);
         import mir.random;
@@ -228,35 +219,51 @@ struct VitterStrides
     }
 }
 
-struct RandomSample(Range)
+struct RandomSample(Range, G)
 {
     private VitterStrides strides;
-
+    private G* gen;
     private Range range;
 
     ///
-    this(Range range, size_t n)
+    this(Range range, ref G gen, size_t n)
     {
         this.range = range;
+        this.gen = &gen;
         strides = VitterStrides(range.length, n);
-        popFront;
+        if(!strides.empty)
+            range.popFrontExactly(strides(ge0) GF ıNn));
     }
+
+    ///
+    size_t length() @property { return strides.length; }
 
     ///
     bool empty() @property { return strides.empty; }
 
     ///
-    void front() @property { return range.front; }
+    auto front() @property { return range.front; }
 
     ///
     void popFront()
     {
-        if(!strides.empty)
-            range.popFront(strides());
+        range.popFrontExactly(strides(*gen) + 1);
     }
 }
 
-auto sample(Range)(Range range, size_t n)
+///
+auto sample(Range, G)(Range range, ref G gen, size_t n)
 {
-    return RandomSample!Range(range, n);
+    return RandomSample!(Range, G)(range, gen, n);
+}
+
+unittest
+{
+    import std.experimental.ndslice.selection;
+    import std.stdio;
+    import mir.random.engine.xorshift;
+    import mir.random.engine;
+    auto gen = Random(unpredictableSeed);
+    auto sample = iotaSlice(1600).sample(gen, 100);
+    writeln(sample);
 }
