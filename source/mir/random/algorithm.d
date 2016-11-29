@@ -132,7 +132,7 @@ struct VitterStrides
 
     size_t tail() @property
     {
-        return 
+        return N;
     }
 
     size_t length() @property
@@ -232,12 +232,14 @@ struct RandomSample(Range)
 {
     private VitterStrides strides;
 
-    private range;
+    private Range range;
 
+    ///
     this(Range range, size_t n)
     {
         this.range = range;
         strides = VitterStrides(range.length, n);
+        popFront;
     }
 
     ///
@@ -250,9 +252,11 @@ struct RandomSample(Range)
     void popFront()
     {
         if(!strides.empty)
-        {
-            auto s = strides();
-            range.popFront(s);
-        }
+            range.popFront(strides());
     }
+}
+
+auto sample(Range)(Range range, size_t n)
+{
+    return RandomSample!Range(range, n);
 }
