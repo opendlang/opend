@@ -6,7 +6,7 @@
     "libs-posix": ["dl","util"],
     "dependencies": {
         "pyd": "~>0.9.8",
-        "mir": {
+        "mir-random": {
             "path": "../../.."
         }
     },
