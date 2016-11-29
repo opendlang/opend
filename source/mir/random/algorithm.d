@@ -71,8 +71,6 @@ struct RandomRange(G, D)
     private D _var;
     private G* _gen;
     private Unqual!(typeof(_var(*_gen))) _val;
-    /// Largest generated value.
-    enum ReturnType!G max = G.max;
     /// Constructor. Stores the pointer to the `gen` engine.
     this(ref G gen, D var) { _gen = &gen; _var = var; popFront(); }
     /// Infinity Input Range primitives
