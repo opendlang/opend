@@ -130,13 +130,24 @@ struct VitterStrides
         hot = false;
     }
 
+    size_t tail() @property
+    {
+        return 
+    }
+
     size_t length() @property
     {
         return n;
     }
 
+    bool empty() @property
+    {
+        return n == 0;
+    }
+
     sizediff_t opCall(Random gen)
     {
+        pragma(inline, false);
         import mir.random;
         size_t S;
         switch(n)
@@ -213,6 +224,35 @@ struct VitterStrides
         case 0:
             S = -1;
             goto F;
+        }
+    }
+}
+
+struct RandomSample(Range)
+{
+    private VitterStrides strides;
+
+    private range;
+
+    this(Range range, size_t n)
+    {
+        this.range = range;
+        strides = VitterStrides(range.length, n);
+    }
+
+    ///
+    bool empty() @property { return strides.empty; }
+
+    ///
+    void front() @property { return range.front; }
+
+    ///
+    void popFront()
+    {
+        if(!strides.empty)
+        {
+            auto s = strides();
+            range.popFront(s);
         }
     }
 }
