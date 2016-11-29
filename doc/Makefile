@@ -32,7 +32,7 @@ PACKAGE_mir_random = package algorithm variable
 PACKAGE_mir_random_engine = package linear_congruential mersenne_twister xorshift
 PACKAGE_mir_random_flex = package
 
-MOD_EXCLUDES=$(addprefix --ex=, random.flex.internal.)
+MOD_EXCLUDES=$(addprefix --ex=, mir.random.flex.internal.)
 
 ###########################################################
 # Setup macros + generate dynamic info needed
