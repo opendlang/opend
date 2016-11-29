@@ -459,7 +459,7 @@ $(WIKI_D Bernoulli).
 
     /++
     Params:
-        p = probability
+        p = `true` probability
     +/
     this(T p)
     {
