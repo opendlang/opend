@@ -1,7 +1,5 @@
 module mir.random.flex.internal.area;
 
-import mir.random.flex.internal.types : Interval;
-import mir.random.flex.internal.types;
 import std.traits : ReturnType;
 
 version(Flex_logging)
@@ -11,6 +9,7 @@ version(Flex_logging)
 
 import std.math: signbit, frexp, LOG2E, isFinite;
 import mir.math.internal;
+import mir.random.flex.internal.types;
 
 /*
 FP operations depend on
@@ -47,16 +46,21 @@ version(unittest)
     }
     version(Flex_fpEqual)
     {
-        import std.math : approxEqual;
-        bool fpEqual(float a, float b) { return a.approxEqual(b, 1e-5, 1e-5); }
-        bool fpEqual(double a, double b) { return a.approxEqual(b, 1e-14, 1e-14); }
+        bool fpEqual(float a, float b) { 
+            import std.math : approxEqual;
+            return a.approxEqual(b, 1e-5, 1e-5); }
+        bool fpEqual(double a, double b) {
+            import std.math : approxEqual;
+            return a.approxEqual(b, 1e-14, 1e-14); }
 
         version(Windows)
             enum real maxError = 1e-14;
         else
             enum real maxError = 1e-18;
 
-        bool fpEqual(real a, real b) { return a.approxEqual(b, 1e-18, 1e-18); }
+        bool fpEqual(real a, real b) {
+            import std.math : approxEqual;
+            return a.approxEqual(b, 1e-18, 1e-18); }
     }
 }
 
@@ -221,12 +225,12 @@ unittest
 unittest
 {
     alias S = double;
-    import std.math : isFinite, isNaN, log, PI;
+    static import std.math;
     import mir.random.flex.internal.transformations : transformInterval;
     import mir.random.flex.internal.types : determineType, FunType;
 
     S[] ps = [-S.infinity, -1.5, 0, 1.5, S.infinity];
-    enum S halfLog2PI = S(0.5) * log(2 * PI);
+    enum S halfLog2PI = S(0.5) * log(2 * std.math.PI);
     auto f0 = (S x) => -(x * x) * S(0.5) - halfLog2PI;
     auto f1 = (S x) => -x;
     auto f2 = (S x) => S(-1);
@@ -250,12 +254,12 @@ unittest
         assert(t == FunType.T4a);
         determineSqueezeAndHat(iv);
 
-        assert(iv.hat.approxEqual(res[i][0]));
+        assert(approxEqual(iv.hat, res[i][0]));
 
-        if (iv.squeeze.slope.isFinite)
+        if (std.math.isFinite(iv.squeeze.slope))
             assert(iv.squeeze.approxEqual(res[i][1]));
         else
-            assert(res[i][1].slope.isNaN);
+            assert(std.math.isNaN(res[i][1].slope));
     }
 }
 

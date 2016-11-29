@@ -1,6 +1,6 @@
 machine:
   environment:
-    DMD: 2.071.2
+    DMD: 2.072.0
     PATH: "${HOME}/dmd2/linux/bin64:${PATH}"
     LD_LIBRARY_PATH: "${HOME}/dmd2/linux/lib64:${LD_LIBRARY_PATH}"
 checkout:
@@ -11,11 +11,10 @@ dependencies:
   override:
     - curl -fsSL --retry 3 "http://downloads.dlang.org/releases/2.x/$DMD/dmd.$DMD.linux.tar.xz" | tar -C ~ -Jxf -
     - dmd --version
+    - git clone https://github.com/libmir/mir-math
 test:
   override:
     - make -f doc/Makefile html
-    - dub build --compiler=ldmd2 --root=examples/flex_plot
-    - dub build --compiler=ldmd2 --root=examples/flex_plot/flex_common_pack
 deployment:
   aws:
     branch: master
