@@ -251,7 +251,8 @@ unittest
 }
 
 /++
-Chooses a sample of `n` items from the `range` containing `N` items.
+Selects a random subsample out of `range`, containing exactly `n` elements.
+The order of elements is the same as in the original range.
 Returns: $(MREF RandomSample) over the `range`.
 Params:
     range = range to sample from
@@ -268,24 +269,29 @@ auto sample(Range, G)(Range range, ref G gen, size_t n)
 ///
 unittest
 {
-    import std.experimental.ndslice.selection;
+    import std.range;
     import mir.random.engine.xorshift;
     auto gen = Xorshift(112);
-    auto sample = iotaSlice(100).sample(gen, 7);
+    auto sample = iota(100).sample(gen, 7);
+    foreach(elem; sample)
+    {
+        //import std.stdio;
+        //writeln(elem);
+    }
 }
 
 unittest
 {
     import std.algorithm.comparison;
-    import std.experimental.ndslice.selection;
+    import std.range;
     import mir.random.engine.xorshift;
     auto gen = Xorshift(232);
-    assert(iotaSlice(0).equal(iotaSlice(0).sample(gen, 0)));
-    assert(iotaSlice(1).equal(iotaSlice(1).sample(gen, 1)));
-    assert(iotaSlice(2).equal(iotaSlice(2).sample(gen, 2)));
-    assert(iotaSlice(3).equal(iotaSlice(3).sample(gen, 3)));
-    assert(iotaSlice(8).equal(iotaSlice(8).sample(gen, 8)));
-    assert(iotaSlice(1000).equal(iotaSlice(1000).sample(gen, 1000)));
+    assert(iota(0).equal(iota(0).sample(gen, 0)));
+    assert(iota(1).equal(iota(1).sample(gen, 1)));
+    assert(iota(2).equal(iota(2).sample(gen, 2)));
+    assert(iota(3).equal(iota(3).sample(gen, 3)));
+    assert(iota(8).equal(iota(8).sample(gen, 8)));
+    assert(iota(1000).equal(iota(1000).sample(gen, 1000)));
 }
 
 /++
