@@ -753,7 +753,7 @@ unittest
 {
     auto gen = Random(unpredictableSeed);
     auto rv = GeometricVariable!double(0.1);
-    size_t[size_t] hist;
+    size_t[ulong] hist;
     foreach(_; 0..1000)
         hist[rv(gen)]++;
     //import std.stdio;
@@ -858,7 +858,7 @@ unittest
     import mir.random;
     auto gen = Random(unpredictableSeed);
     auto rv = PoissonVariable!double(10);
-    size_t[size_t] hist;
+    size_t[ulong] hist;
     foreach(_; 0..1000)
         hist[rv(gen)]++;
     //import std.stdio;
