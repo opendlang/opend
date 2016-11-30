@@ -1,5 +1,5 @@
 /++
-Authors: Ilya Yaroshenko, Sebastian Wilzbach (Discrete)
+Authors: Ilya Yaroshenko, Sebastian Wilzbach (DiscreteVariable)
 Copyright: Copyright, Ilya Yaroshenko 2016-.
 License:   $(HTTP www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
 
@@ -874,14 +874,14 @@ unittest
 _Discrete distribution sampler that draws random values from a _discrete
 distribution given an array of the respective probability density points (weights).
 +/
-@RandomVariable struct Discrete(T)
+@RandomVariable struct DiscreteVariable(T)
     if (isNumeric!T)
 {
     private T[] cdf;
 
     /++
     The density points `weights`.
-    `Discrete` constructor computes comulative density points
+    `DiscreteVariable` constructor computes comulative density points
     in place without memory allocation.
 
     Params:
@@ -939,7 +939,7 @@ unittest
     auto gen = Random(unpredictableSeed);
     // 10%, 20%, 20%, 40%, 10%
     auto weights = [10.0, 20, 20, 40, 10];
-    auto ds = Discrete!double(weights);
+    auto ds = DiscreteVariable!double(weights);
 
     // weight is changed to comulative sums
     assert(weights == [10, 30, 50, 90, 100]);
@@ -960,7 +960,7 @@ unittest
     auto gen = Random(unpredictableSeed);
 
     auto comulative = [10.0, 30, 40, 90, 120];
-    auto ds = Discrete!double(comulative, true);
+    auto ds = DiscreteVariable!double(comulative, true);
 
     assert(comulative == [10.0, 30, 40, 90, 120]);
 
@@ -976,7 +976,7 @@ unittest
     auto gen = Random(unpredictableSeed);
     // 10%, 20%, 20%, 40%, 10%
     auto weights = [10.0, 20, 20, 40, 10];
-    auto ds = Discrete!double(weights);
+    auto ds = DiscreteVariable!double(weights);
 
     // weight is changed to comulative sums
     assert(weights == [10, 30, 50, 90, 100]);
@@ -998,7 +998,7 @@ unittest
 
     // 10%, 20%, 20%, 40%, 10%
     auto weights = [0.1, 0.3, 0.5, 0.9, 1];
-    auto ds = Discrete!double(weights, true);
+    auto ds = DiscreteVariable!double(weights, true);
 
     auto obs = new uint[weights.length];
     foreach (i; 0..1000)
@@ -1015,7 +1015,7 @@ unittest
 
     // 1, 2, 1
     auto weights = [1, 2, 1];
-    auto ds = Discrete!int(weights);
+    auto ds = DiscreteVariable!int(weights);
 
     auto obs = new uint[weights.length];
     foreach (i; 0..1000)
@@ -1031,7 +1031,7 @@ unittest
 
     // 0, 1, 2, 0, 1
     auto weights = [0, 1, 3, 3, 4];
-    auto ds = Discrete!int(weights, true);
+    auto ds = DiscreteVariable!int(weights, true);
 
     auto obs = new uint[weights.length];
     foreach (i; 0..1000)

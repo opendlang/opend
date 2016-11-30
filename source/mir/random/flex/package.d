@@ -84,7 +84,7 @@ Macros:
 module mir.random.flex;
 import mir.random.flex.internal.types;
 
-import mir.random.variable : Discrete, RandomVariable;
+import mir.random.variable : DiscreteVariable, RandomVariable;
 
 import mir.random;
 import std.traits : isCallable, isFloatingPoint, ReturnType;
@@ -179,7 +179,7 @@ Can be used to sample from the distribution.
     private const FlexInterval!S[] _intervals;
 
     // discrete density sampler
-    private Discrete!S ds;
+    private DiscreteVariable!S ds;
 
     package this(in Pdf pdf, in FlexInterval!S[] intervals)
     {
@@ -201,7 +201,7 @@ Can be used to sample from the distribution.
         foreach (i, ref cd; cdPoints)
             cd = intervals[i].hatArea / totalSum;
 
-        this.ds = Discrete!S(cdPoints);
+        this.ds = DiscreteVariable!S(cdPoints);
     }
 
     /// Generated partition points
@@ -329,7 +329,7 @@ See_Also:
 */
 private S flexImpl(S, Pdf, RNG)
           (in Pdf pdf, in FlexInterval!S[] intervals,
-           Discrete!S ds, ref RNG rng)
+           DiscreteVariable!S ds, ref RNG rng)
     if (isRandomEngine!RNG)
 {
     import mir.math.internal: exp, fabs, log;
