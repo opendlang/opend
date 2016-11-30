@@ -77,8 +77,7 @@ Returns: `X ~ U[a, b]`
 ///
 unittest
 {
-    import mir.random.engine.xorshift;
-    auto gen = Xorshift(1);
+    auto gen = Random(unpredictableSeed);
     auto rv = UniformVariable!int(-10, 10); // [-10, 10]
     auto x = rv(gen); // random variable
     assert(rv.min == -10);
@@ -127,8 +126,7 @@ Returns: `X ~ U[a, b)`
 unittest
 {
     import std.math : nextDown;
-    import mir.random.engine.xorshift;
-    auto gen = Xorshift(1);
+    auto gen = Random(unpredictableSeed);
     auto rv = UniformVariable!double(-8, 10); // [-8, 10)
     auto x = rv(gen); // random variable
     assert(rv.min == -8.0);
@@ -138,8 +136,7 @@ unittest
 unittest
 {
     import std.math : nextDown;
-    import mir.random.engine.xorshift;
-    auto gen = Xorshift(1);
+    auto gen = Random(unpredictableSeed);
     auto rv = UniformVariable!double(-8, 10); // [-8, 10)
     foreach(_; 0..1000)
     {
@@ -179,8 +176,7 @@ Returns: `X ~ Exp(β)`
 ///
 unittest
 {
-    import mir.random.engine.xorshift;
-    auto gen = Xorshift(14);
+    auto gen = Random(unpredictableSeed);
     auto rv = ExponentialVariable!double(1);
     auto x = rv(gen);
 }
@@ -217,8 +213,7 @@ $(WIKI_D Weibull).
 ///
 unittest
 {
-    import mir.random.engine.xorshift;
-    auto gen = Xorshift(13);
+    auto gen = Random(unpredictableSeed);
     auto rv = WeibullVariable!double(3, 2);
     auto x = rv(gen);
 }
@@ -320,8 +315,7 @@ Params:
 ///
 unittest
 {
-    import mir.random.engine.xorshift;
-    auto gen = Xorshift(1);
+    auto gen = Random(unpredictableSeed);
     auto rv = GammaVariable!double(1, 1);
     auto x = rv(gen);
 }
@@ -356,8 +350,7 @@ $(WIKI_D Chi-squared).
 ///
 unittest
 {
-    import mir.random.engine.xorshift;
-    auto gen = Xorshift(32);
+    auto gen = Random(unpredictableSeed);
     auto rv = ChiSquaredVariable!double(3);
     auto x = rv(gen);
 }
@@ -399,8 +392,7 @@ $(WIKI_D F).
 ///
 unittest
 {
-    import mir.random.engine.xorshift;
-    auto gen = Xorshift(32);
+    auto gen = Random(unpredictableSeed);
     auto rv = FisherFVariable!double(3, 4);
     auto x = rv(gen);
 }
@@ -440,8 +432,7 @@ $(WIKI_D Student's_t).
 ///
 unittest
 {
-    import mir.random.engine.xorshift;
-    auto gen = Xorshift(32);
+    auto gen = Random(unpredictableSeed);
     auto rv = StudentTVariable!double(10);
     auto x = rv(gen);
 }
@@ -553,8 +544,7 @@ Returns: `X ~ N(μ, σ)`
 ///
 unittest
 {
-    import mir.random.engine.xorshift;
-    auto gen = Xorshift(1);
+    auto gen = Random(unpredictableSeed);
     auto rv = NormalVariable!double(0, 1);
     auto x = rv(gen);
 }
@@ -593,8 +583,7 @@ $(WIKI_D Log-normal).
 ///
 unittest
 {
-    import mir.random.engine.xorshift;
-    auto gen = Xorshift(1);
+    auto gen = Random(unpredictableSeed);
     auto rv = LogNormalVariable!double(0, 1);
     auto x = rv(gen);
 }
@@ -641,8 +630,7 @@ Returns: `X ~ Cauchy(x, γ)`
 ///
 unittest
 {
-    import mir.random.engine.xorshift;
-    auto gen = Xorshift(1);
+    auto gen = Random(unpredictableSeed);
     auto rv = CauchyVariable!double(0, 1);
     auto x = rv(gen);
 }
@@ -679,8 +667,7 @@ $(WIKI_D2 Generalized_extreme_value, Extreme value).
 ///
 unittest
 {
-    import mir.random.engine.xorshift;
-    auto gen = Xorshift(1);
+    auto gen = Random(unpredictableSeed);
     auto rv = ExtremeValueVariable!double(0, 1);
     auto x = rv(gen);
 }
@@ -719,8 +706,7 @@ $(WIKI_D Bernoulli).
 ///
 unittest
 {
-    import mir.random.engine.xorshift;
-    auto gen = Xorshift(42);
+    auto gen = Random(unpredictableSeed);
     auto rv = BernoulliVariable!double(0.7);
     size_t[bool] hist;
     foreach(_; 0..1000)
@@ -765,8 +751,7 @@ $(WIKI_D Geometric).
 ///
 unittest
 {
-    import mir.random.engine.xorshift;
-    auto gen = Xorshift(42);
+    auto gen = Random(unpredictableSeed);
     auto rv = GeometricVariable!double(0.1);
     size_t[size_t] hist;
     foreach(_; 0..1000)
@@ -874,7 +859,7 @@ unittest
     auto gen = Random(unpredictableSeed);
     auto rv = PoissonVariable!double(10);
     size_t[size_t] hist;
-    foreach(_; 0..10000)
+    foreach(_; 0..1000)
         hist[rv(gen)]++;
     //import std.stdio;
     //foreach(i; 0..100)
@@ -951,8 +936,7 @@ distribution given an array of the respective probability density points (weight
 ///
 unittest
 {
-    import mir.random.engine.xorshift;
-    auto gen = Xorshift(1);
+    auto gen = Random(unpredictableSeed);
     // 10%, 20%, 20%, 40%, 10%
     auto weights = [10.0, 20, 20, 40, 10];
     auto ds = Discrete!double(weights);
@@ -973,8 +957,7 @@ unittest
 /// Comulative
 unittest
 {
-    import mir.random.engine.xorshift;
-    auto gen = Xorshift(1);
+    auto gen = Random(unpredictableSeed);
 
     auto comulative = [10.0, 30, 40, 90, 120];
     auto ds = Discrete!double(comulative, true);
@@ -991,8 +974,7 @@ unittest
 //
 unittest
 {
-    import mir.random.engine.xorshift;
-    auto gen = Xorshift(1);
+    auto gen = Random(unpredictableSeed);
     // 10%, 20%, 20%, 40%, 10%
     auto weights = [10.0, 20, 20, 40, 10];
     auto ds = Discrete!double(weights);
@@ -1013,8 +995,7 @@ unittest
 // test with cumulative probs
 unittest
 {
-    import mir.random.engine.xorshift : Xorshift;
-    auto gen = Xorshift(42);
+    auto gen = Random(unpredictableSeed);
 
     // 10%, 20%, 20%, 40%, 10%
     auto weights = [0.1, 0.3, 0.5, 0.9, 1];
@@ -1031,8 +1012,7 @@ unittest
 // test with cumulative count
 unittest
 {
-    import mir.random.engine.xorshift : Xorshift;
-    auto gen = Xorshift(42);
+    auto gen = Random(unpredictableSeed);
 
     // 1, 2, 1
     auto weights = [1, 2, 1];
@@ -1048,8 +1028,7 @@ unittest
 // test with zero probabilities
 unittest
 {
-    import mir.random.engine.xorshift : Xorshift;
-    auto gen = Xorshift(42);
+    auto gen = Random(unpredictableSeed);
 
     // 0, 1, 2, 0, 1
     auto weights = [0, 1, 3, 3, 4];
