@@ -821,11 +821,13 @@ $(WIKI_D Poisson).
     {
         this.rate = rate;
         if (rate >= 10)
+        {
             temp1 = rate.log;
+            b = fmuladd(sqrt(rate), T(2.53), T(0.931));
+            a = fmuladd(b, T(0.02483), T(-0.059));
+        }
         else
             temp1 = exp(-rate);
-        b = fmuladd(sqrt(rate), T(2.53), T(0.931));
-        a = fmuladd(b, T(0.02483), T(-0.059));
     }
 
     ///
