@@ -807,10 +807,10 @@ $(WIKI_D Poisson).
 @RandomVariable struct PoissonVariable(T)
     if (isFloatingPoint!T)
 {
-    import std.math : E, PI;
+    import std.math : E;
     private T rate = 1;
     private T temp1 = 1 / E;
-    private T temp2 = 1;
+    T a = void, b = void;
 
     /++
     Params:
@@ -821,14 +821,11 @@ $(WIKI_D Poisson).
     {
         this.rate = rate;
         if (rate >= 10)
-        {
             temp1 = rate.log;
-            temp2 = rate.sqrt;
-        }
         else
-        {
             temp1 = exp(-rate);
-        }
+        b = fmuladd(sqrt(rate), T(2.53), T(0.931));
+        a = fmuladd(b, T(0.02483), T(-0.059));
     }
 
     ///
@@ -836,27 +833,22 @@ $(WIKI_D Poisson).
         if (isSaturatedRandomEngine!RNG)
     {
         import core.stdc.tgmath: lgamma;
-        if (rate >= 10)
+        if (rate >= 10) for (;;)
         {
-            T b = fmuladd(sqrt(rate), T(2.53), T(0.931));
-            T a = fmuladd(b, T(0.02483), T(-0.059));
-            for (;;)
-            {
-                T u = gen.rand!T(-1);
-                T v = gen.rand!T.fabs;
-                T us = 0.5f - fabs(u);
-                T kr = (2 * a / us + b) * u + rate + T(0.43);
-                if(!(kr >= 0))
-                    continue;
-                long k = cast(long)kr;
-                if (us >= T(0.07) && v <= T(0.9277) - T(3.6224) / (b - 2))
-                    return k;
-                if (k < 0 || us < T(0.013) && v > us)
-                    continue;
-                if (log(v) + log(T(1.1239) + T(1.1328) / (b - T(3.4))) - log(a / (us * us) + b)
-                    <= -rate + k * log(rate) - lgamma(T(k + 1)))
-                    return k;
-            }
+            T u = gen.rand!T(-1);
+            T v = gen.rand!T.fabs;
+            T us = 0.5f - fabs(u);
+            T kr = (2 * a / us + b) * u + rate + T(0.43);
+            if (!(kr >= 0))
+                continue;
+            long k = cast(long)kr;
+            if (us >= T(0.07) && v <= T(0.9277) - T(3.6224) / (b - 2))
+                return k;
+            if (k < 0 || us < T(0.013) && v > us)
+                continue;
+            if (log(v * (T(1.1239) + T(1.1328) / (b - T(3.4))) / (a / (us * us) + b))
+                    <= k * temp1 - rate - lgamma(T(k + 1)))
+                return k;
         }
         T prod = 1.0;
         for(size_t x = 0; ; x++)
@@ -882,13 +874,13 @@ unittest
     size_t[size_t] hist;
     foreach(_; 0..10000)
         hist[rv(gen)]++;
-    import std.stdio;
-    foreach(i; 0..100)
-        if(auto count = i in hist)
-            write(*count, ", ");
-        else
-            write("0, ");
-    writeln();
+    //import std.stdio;
+    //foreach(i; 0..100)
+    //    if(auto count = i in hist)
+    //        write(*count, ", ");
+    //    else
+    //        write("0, ");
+    //writeln();
 }
 
 /++
