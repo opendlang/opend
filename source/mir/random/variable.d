@@ -962,7 +962,6 @@ unittest
     auto comulative = [10.0, 30, 40, 90, 120];
     auto ds = Discrete!double(comulative, true);
 
-    // weight is changed to comulative sums
     assert(comulative == [10.0, 30, 40, 90, 120]);
 
     // sample from the discrete distribution
