@@ -48,8 +48,8 @@ Returns: `X ~ U[a, b]`
     if (isIntegral!T)
 {
     private alias U = Unsigned!T;
-    private U _length;
-    private T _location = 0;
+    private U length;
+    private T location = 0;
 
     /++
     Constraints: `a <= b`.
@@ -57,21 +57,21 @@ Returns: `X ~ U[a, b]`
     this(T a, T b)
     {
         assert(a <= b, "constraint: a <= b");
-        _length = b - a + 1;
-        _location = a;
+        length = b - a + 1;
+        location = a;
     }
 
     ///
     T opCall(G)(ref G gen)
         if (isSaturatedRandomEngine!G)
     {
-        return _length ? gen.randIndex!U(_length) + _location : gen.rand!U;
+        return length ? gen.randIndex!U(length) + location : gen.rand!U;
     }
 
     ///
-    T min() @property { return _location; }
+    T min() @property { return location; }
     ///
-    T max() @property { return _length - 1 + _location; }
+    T max() @property { return length - 1 + location; }
 }
 
 ///
@@ -155,19 +155,19 @@ Returns: `X ~ Exp(β)`
 @RandomVariable struct ExponentialVariable(T)
     if (isFloatingPoint!T)
 {
-    private T _scale = T(LN2);
+    private T scale = T(LN2);
 
     ///
     this(T scale)
     {
-        _scale = T(LN2) * scale;
+        this.scale = T(LN2) * scale;
     }
 
     ///
     T opCall(G)(ref G gen)
         if (isSaturatedRandomEngine!G)
     {
-        return gen.randExponential2!T * _scale;
+        return gen.randExponential2!T * scale;
     }
 
     ///
@@ -192,20 +192,20 @@ $(WIKI_D Weibull).
     if (isFloatingPoint!T)
 {
     private T _pow = 1;
-    private T _scale = 1;
+    private T scale = 1;
 
     ///
     this(T shape, T scale = 1)
     {
         _pow = 1 / shape;
-        _scale = scale;
+        this.scale = scale;
     }
 
     ///
     T opCall(G)(ref G gen)
         if (isSaturatedRandomEngine!G)
     {
-        return ExponentialVariable!T()(gen).pow(_pow) * _scale;
+        return ExponentialVariable!T()(gen).pow(_pow) * scale;
     }
 
     ///
@@ -234,17 +234,17 @@ Params:
 @RandomVariable struct GammaVariable(T, bool Exp = false)
     if (isFloatingPoint!T)
 {
-    private T _shape = 1;
-    private T _scale = 1;
+    private T shape = 1;
+    private T scale = 1;
 
     ///
     this(T shape, T scale = 1)
     {
-        _shape = shape;
+        this.shape = shape;
         if(Exp)
-            _scale = log(scale);
+            this.scale = log(scale);
         else
-            _scale = scale;
+            this.scale = scale;
     }
 
     ///
@@ -252,10 +252,10 @@ Params:
         if (isSaturatedRandomEngine!G)
     {
         T x = void;
-        if (_shape > 1)
+        if (shape > 1)
         {
-            T b = _shape - 1;
-            T c = fmuladd(3, _shape, - 0.75f);
+            T b = shape - 1;
+            T c = fmuladd(3, shape, - 0.75f);
             for(;;)
             {
                 T u = gen.rand!T;
@@ -273,10 +273,10 @@ Params:
             }
         }
         else
-        if (_shape < 1)
+        if (shape < 1)
         {
-            T b = 1 - _shape;
-            T c = 1 / _shape;
+            T b = 1 - shape;
+            T c = 1 / shape;
             for (;;)
             {
                 T u = gen.rand!T.fabs;
@@ -284,14 +284,14 @@ Params:
                 if (u > b)
                 {
                     T e = -log((1 - u) * c);
-                    u = fmuladd(_shape, e, b);
+                    u = fmuladd(shape, e, b);
                     v += e;
                 }
                 static if (Exp)
                 {
                     x = log(u) * c;
                     if (x <= log(v))
-                        return x + _scale;
+                        return x + scale;
                 }
                 else
                 {
@@ -306,9 +306,9 @@ Params:
             x = gen.randExponential2!T * T(LN2);
         }
         static if (Exp)
-            return log(x) + _scale;
+            return log(x) + scale;
         else
-            return x * _scale;
+            return x * scale;
     }
 
     ///
@@ -497,16 +497,16 @@ Returns: `X ~ N(μ, σ)`
 @RandomVariable struct NormalVariable(T)
     if (isFloatingPoint!T)
 {
-    private T _location = 0;
-    private T _scale = 1;
+    private T location = 0;
+    private T scale = 1;
     private T y = 0;
     private bool hot;
 
     ///
     this(T location, T scale = 1)
     {
-        _location = location;
-        _scale = scale;
+        this.location = location;
+        this.scale = scale;
     }
 
     this(this)
@@ -541,7 +541,7 @@ Returns: `X ~ N(μ, σ)`
             x = u * s;
             hot = true;
         }
-        return fmuladd(x, _scale, _location);
+        return fmuladd(x, scale, location);
     }
 
     ///
@@ -606,14 +606,14 @@ Returns: `X ~ Cauchy(x, γ)`
 @RandomVariable struct CauchyVariable(T)
     if (isFloatingPoint!T)
 {
-    private T _location = 0;
-    private T _scale = 1;
+    private T location = 0;
+    private T scale = 1;
 
     ///
     this(T location, T scale = 1)
     {
-        _location = location;
-        _scale = scale;
+        this.location = location;
+        this.scale = scale;
     }
 
     ///
@@ -629,7 +629,7 @@ Returns: `X ~ Cauchy(x, γ)`
             v = gen.rand!T;
         }
         while (sumSquares(u, v) > 1 || !(fabs(x = u / v) < T.infinity));
-        return fmuladd(x, _scale, _location);
+        return fmuladd(x, scale, location);
     }
 
     ///
@@ -653,21 +653,21 @@ $(WIKI_D2 Generalized_extreme_value, Extreme value).
 @RandomVariable struct ExtremeValueVariable(T)
     if (isFloatingPoint!T)
 {
-    private T _location = 0;
-    private T _scale = 1;
+    private T location = 0;
+    private T scale = 1;
 
     ///
     this(T location, T scale = 1)
     {
-        _location = location;
-        _scale = scale * -T(LN2);
+        this.location = location;
+        this.scale = scale * -T(LN2);
     }
 
     ///
     T opCall(G)(ref G gen)
         if (isSaturatedRandomEngine!G)
     {
-        return fmuladd(log2(gen.randExponential2!T * T(LN2)), _scale, _location);
+        return fmuladd(log2(gen.randExponential2!T * T(LN2)), scale, location);
     }
 
     ///
@@ -749,17 +749,17 @@ $(WIKI_D Geometric).
     }
 
     ///
-    size_t opCall(RNG)(ref RNG gen)
+    ulong opCall(RNG)(ref RNG gen)
         if (isSaturatedRandomEngine!RNG)
     {
         auto ret = gen.randExponential2!T * scale;
-        return ret < size_t.max ? cast(size_t)ret : size_t.max;
+        return ret < ulong.max ? cast(ulong)ret : ulong.max;
     }
 
     ///
-    enum size_t min = 0;
+    enum ulong min = 0;
     ///
-    enum size_t max = size_t.max;
+    enum ulong max = ulong.max;
 }
 
 ///
@@ -778,6 +778,117 @@ unittest
     //    else
     //        write("0, ");
     //writeln();
+}
+
+private T _mLogFactorial(T)(ulong k)
+{
+    ulong r = 1;
+    foreach(i; 2 .. k + 1)
+        r *= k;
+    return -log(T(k));
+}
+
+private enum mLogFactorial(T) = [
+    _mLogFactorial!T(0),
+    _mLogFactorial!T(1),
+    _mLogFactorial!T(2),
+    _mLogFactorial!T(3),
+    _mLogFactorial!T(4),
+    _mLogFactorial!T(5),
+    _mLogFactorial!T(6),
+    _mLogFactorial!T(7),
+    _mLogFactorial!T(8),
+    _mLogFactorial!T(9),
+];
+
+/++
+$(WIKI_D Poisson).
++/
+@RandomVariable struct PoissonVariable(T)
+    if (isFloatingPoint!T)
+{
+    import std.math : E, PI;
+    private T rate = 1;
+    private T temp1 = 1 / E;
+    private T temp2 = 1;
+
+    /++
+    Params:
+        p = probability
+        reverse = p is success probability if `true` and failure probability otherwise.
+    +/
+    this(T rate)
+    {
+        this.rate = rate;
+        if (rate >= 10)
+        {
+            temp1 = rate.log;
+            temp2 = rate.sqrt;
+        }
+        else
+        {
+            temp1 = exp(-rate);
+        }
+    }
+
+    ///
+    ulong opCall(RNG)(ref RNG gen)
+        if (isSaturatedRandomEngine!RNG)
+    {
+        import core.stdc.tgmath: lgamma;
+        if (rate >= 10)
+        {
+            T b = fmuladd(sqrt(rate), T(2.53), T(0.931));
+            T a = fmuladd(b, T(0.02483), T(-0.059));
+            for (;;)
+            {
+                T u = gen.rand!T(-1);
+                T v = gen.rand!T.fabs;
+                T us = 0.5f - fabs(u);
+                T kr = (2 * a / us + b) * u + rate + T(0.43);
+                if(!(kr >= 0))
+                    continue;
+                long k = cast(long)kr;
+                if (us >= T(0.07) && v <= T(0.9277) - T(3.6224) / (b - 2))
+                    return k;
+                if (k < 0 || us < T(0.013) && v > us)
+                    continue;
+                if (log(v) + log(T(1.1239) + T(1.1328) / (b - T(3.4))) - log(a / (us * us) + b)
+                    <= -rate + k * log(rate) - lgamma(T(k + 1)))
+                    return k;
+            }
+        }
+        T prod = 1.0;
+        for(size_t x = 0; ; x++)
+        {
+            prod *= gen.rand!T.fabs;
+            if (prod <= temp1)
+                return x;
+        }
+    }
+
+    ///
+    enum ulong min = 0;
+    ///
+    enum ulong max = ulong.max;
+}
+
+///
+unittest
+{
+    import mir.random;
+    auto gen = Random(unpredictableSeed);
+    auto rv = PoissonVariable!double(10);
+    size_t[size_t] hist;
+    foreach(_; 0..10000)
+        hist[rv(gen)]++;
+    import std.stdio;
+    foreach(i; 0..100)
+        if(auto count = i in hist)
+            write(*count, ", ");
+        else
+            write("0, ");
+    writeln();
 }
 
 /++
@@ -823,7 +934,7 @@ distribution given an array of the respective probability density points (weight
                 }
             }
         }
-        this.cdf = weights;
+        cdf = weights;
     }
 
     /++
