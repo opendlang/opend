@@ -766,7 +766,7 @@ $(WIKI_D Geometric).
 @RandomVariable struct GeometricVariable(T)
     if (isFloatingPoint!T)
 {
-    private T scale = 0;
+    private T scale = 1;
 
     /++
     Params:

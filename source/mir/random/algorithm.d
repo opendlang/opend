@@ -345,6 +345,7 @@ void shuffle(Range, G)(ref G gen, Range range)
 }
 
 ///
+static if (__VERSION__ >= 2072)
 unittest
 {
     import std.experimental.ndslice;
@@ -383,6 +384,7 @@ void shuffle(Range, G)(ref G gen, Range range, size_t n)
 }
 
 ///
+static if (__VERSION__ >= 2072)
 unittest
 {
     import std.experimental.ndslice;
