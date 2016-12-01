@@ -1,5 +1,5 @@
 /++
-Authors: Ilya Yaroshenko
+Authors: Ilya Yaroshenko, documentation is partially based on Phobos.
 Copyright: Copyright, Ilya Yaroshenko 2016-.
 License: $(HTTP www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
 +/
@@ -9,7 +9,7 @@ import std.range.primitives;
 import std.traits;
 import mir.math.internal;
 
-import mir.random.variable;
+import mir.random;
 public import mir.random.engine;
 
 /++
@@ -149,7 +149,7 @@ struct VitterStrides
     Returns: random stride step (`S`).
         After each call `N` decreases by `S + 1` and `n` decreases by `1`.
     Params:
-        gen = random number generator to use
+        gen = random number engine to use
     +/
     sizediff_t opCall(G)(ref G gen)
     {
@@ -254,7 +254,7 @@ The order of elements is the same as in the original range.
 Returns: $(LREF RandomSample) over the `range`.
 Params:
     range = range to sample from
-    gen = random number generator to use
+    gen = random number engine to use
     n = number of elements to include in the sample; must be less than or equal to the `range.length`
 Complexity: O(n)
 +/
@@ -321,10 +321,78 @@ struct RandomSample(Range, G)
     /// ditto
     bool empty() @property { return length == 0; }
     /// ditto
-    auto front() @property { return range.front; }
+    auto ref front() @property { return range.front; }
     /// ditto
     void popFront() { range.popFrontExactly(strides(*gen) + 1); }
     /// ditto
     static if (isForwardRange!Range)
     auto save() @property { return RandomSample(range.save, *gen, length); }
+}
+
+/++
+Shuffles elements of `range`.
+Params:
+    gen = random number engine to use
+    range = random-access range whose elements are to be shuffled
+Complexity: O(range.length)
++/
+void shuffle(Range, G)(ref G gen, Range range)
+    if (isSaturatedRandomEngine!G && isRandomAccessRange!Range && hasLength!Range)
+{
+    import std.algorithm.mutation : swapAt;
+    for (; !range.empty; range.popFront)
+        range.swapAt(0, gen.randIndex(range.length));
+}
+
+///
+unittest
+{
+    import std.experimental.ndslice;
+    import std.algorithm.sorting;
+
+    auto gen = Random(unpredictableSeed);
+    auto a = iotaSlice(10).slice;
+
+    gen.shuffle(a);
+
+    sort(a);
+    assert(a == iotaSlice(10));
+}
+
+/++
+Partially shuffles the elements of `range` such that upon returning `range[0..n]`
+is a random subset of `range` and is randomly ordered. 
+`range[n..r.length]` will contain the elements not in `range[0..n]`.
+These will be in an undefined order, but will not be random in the sense that their order after
+`shuffle` returns will not be independent of their order before
+`shuffle` was called.
+Params:
+    gen = random number engine to use
+    range = random-access range with length whose elements are to be shuffled
+    n = number of elements of `r) to shuffle (counting from the beginning);
+        must be less than `r.length)
+Complexity: O(n)
++/
+void shuffle(Range, G)(ref G gen, Range range, size_t n)
+    if (isSaturatedRandomEngine!G && isRandomAccessRange!Range && hasLength!Range)
+{
+    import std.algorithm.mutation : swapAt;
+    assert(n <= range.length, "n must be <= range.length for shuffle.");
+    for (; n; n--, range.popFront)
+        range.swapAt(0, gen.randIndex(range.length));
+}
+
+///
+unittest
+{
+    import std.experimental.ndslice;
+    import std.algorithm.sorting;
+
+    auto gen = Random(unpredictableSeed);
+    auto a = iotaSlice(10).slice;
+
+    gen.shuffle(a, 4);
+
+    sort(a);
+    assert(a == iotaSlice(10));
 }
