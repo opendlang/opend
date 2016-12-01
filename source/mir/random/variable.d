@@ -708,7 +708,47 @@ unittest
 {
     auto gen = Random(unpredictableSeed);
     auto rv = BernoulliVariable!double(0.7);
-    size_t[bool] hist;
+    int[2] hist;
+    foreach(_; 0..1000)
+        hist[rv(gen)]++;
+    //import std.stdio;
+    //writeln(hist);
+}
+
+/++
+$(WIKI_D Bernoulli). A fast specialization for `p := 1/2`.
++/
+@RandomVariable struct Bernoulli2Variable
+{
+    private size_t payload;
+    private size_t mask;
+
+    ///
+    bool opCall(RNG)(ref RNG gen)
+        if (isSaturatedRandomEngine!RNG)
+    {
+        if(mask == 0)
+        {
+            mask = sizediff_t.min;
+            payload = gen.rand!size_t;
+        }
+        bool ret = (payload & mask) != 0;
+        mask >>>= 1;
+        return ret;
+    }
+
+    ///
+    enum bool min = 0;
+    ///
+    enum bool max = 1;
+}
+
+///
+unittest
+{
+    auto gen = Random(unpredictableSeed);
+    auto rv = Bernoulli2Variable.init;
+    int[2] hist;
     foreach(_; 0..1000)
         hist[rv(gen)]++;
     //import std.stdio;
