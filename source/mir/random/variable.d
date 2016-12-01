@@ -870,7 +870,7 @@ $(WIKI_D Poisson).
             T u = gen.rand!T(-1);
             T v = gen.rand!T.fabs;
             T us = 0.5f - fabs(u);
-            T kr = (2 * a / us + b) * u + rate + T(0.43);
+            T kr = fmuladd(2 * a / us + b, u, rate) + T(0.43);
             if (!(kr >= 0))
                 continue;
             long k = cast(long)kr;
@@ -903,6 +903,65 @@ unittest
     import mir.random;
     auto gen = Random(unpredictableSeed);
     auto rv = PoissonVariable!double(10);
+    size_t[ulong] hist;
+    foreach(_; 0..1000)
+        hist[rv(gen)]++;
+    //import std.stdio;
+    //foreach(i; 0..100)
+    //    if(auto count = i in hist)
+    //        write(*count, ", ");
+    //    else
+    //        write("0, ");
+    //writeln();
+}
+
+/++
+$(WIKI_D Negative_binomial).
++/
+@RandomVariable struct NegativeBinomialVariable(T)
+    if (isFloatingPoint!T)
+{
+    size_t r;
+    T p;
+
+    /++
+    Params:
+        r = r > 0; number of failures until the experiment is stopped
+        p = p ∈ (0,1); success probability in each experiment
+    +/
+    this(size_t r, T p)
+    {
+        this.r = r;
+        this.p = p;
+    }
+
+    ///
+    ulong opCall(RNG)(ref RNG gen)
+        if (isSaturatedRandomEngine!RNG)
+    {
+        if (r <= 21 * p)
+        {
+            auto bv = BernoulliVariable!T(p);
+            size_t s, f;
+            do (bv(gen) ? s : f)++;
+            while (s < r);
+            return f;
+        }
+        return PoissonVariable!T(GammaVariable!T(r, (1 - p) / p)(gen))(gen);
+    }
+
+    ///
+    enum ulong min = 0;
+    ///
+    enum ulong max = ulong.max;
+}
+
+///
+unittest
+{
+    import mir.random;
+    auto gen = Random(unpredictableSeed);
+    auto rv = NegativeBinomialVariable!double(30, 0.3);
     size_t[ulong] hist;
     foreach(_; 0..1000)
         hist[rv(gen)]++;
