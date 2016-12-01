@@ -723,6 +723,11 @@ $(WIKI_D Bernoulli). A fast specialization for `p := 1/2`.
     private size_t payload;
     private size_t mask;
 
+    this(this)
+    {
+        payload = mask = 0;
+    }
+
     ///
     bool opCall(RNG)(ref RNG gen)
         if (isSaturatedRandomEngine!RNG)
