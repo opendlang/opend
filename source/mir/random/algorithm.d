@@ -370,8 +370,8 @@ These will be in an undefined order, but will not be random in the sense that th
 Params:
     gen = random number engine to use
     range = random-access range with length whose elements are to be shuffled
-    n = number of elements of `r) to shuffle (counting from the beginning);
-        must be less than `r.length)
+    n = number of elements of `r` to shuffle (counting from the beginning);
+        must be less than `r.length`
 Complexity: O(n)
 +/
 void shuffle(Range, G)(ref G gen, Range range, size_t n)
