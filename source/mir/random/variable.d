@@ -1263,6 +1263,11 @@ distribution given an array of the respective probability density points (weight
             T v = gen.randIndex!(Unsigned!T)(cdf[$-1]);
         return cdf.length - cdf.assumeSorted!"a < b".upperBound(v).length;
     }
+
+    ///
+    enum size_t min = 0;
+    ///
+    size_t max() @property { return cdf.length - 1; }
 }
 
 ///
@@ -1407,6 +1412,11 @@ Piecewise constant variable.
         size_t index = dv(gen);
         return UniformVariable!T(intervals[index], intervals[index + 1])(gen);
     }
+
+    ///
+    T min() @property { return intervals[0]; }
+    ///
+    T max() @property { return intervals[$-1].nextDown; }
 }
 
 ///
@@ -1499,6 +1509,11 @@ Piecewise constant variable.
             ret = b1.nextDown;
         return ret;
     }
+
+    ///
+    T min() @property { return points[0]; }
+    ///
+    T max() @property { return points[$-1].nextDown; }
 }
 
 ///
