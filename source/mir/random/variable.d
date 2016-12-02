@@ -321,6 +321,68 @@ unittest
 }
 
 /++
+$(WIKI_D Beta).
+Returns: `X ~ Beta(𝝰, 𝞫)`
++/
+@RandomVariable struct BetaVariable(T)
+    if (isFloatingPoint!T)
+{
+    private T a = 1;
+    private T b = 1;
+
+    ///
+    this(T a, T b)
+    {
+        this.a = a;
+        this.b = b;
+    }
+
+    ///
+    T opCall(G)(ref G gen)
+        if (isSaturatedRandomEngine!G)
+    {
+        if (a <= 1 && b <= 1) for (;;)
+        {
+            T u = gen.randExponential2!T;
+            T v = gen.randExponential2!T;
+            u = -u;
+            v = -v;
+            u /= a;
+            v /= b;
+            T x = exp2(u);
+            T y = exp2(v);
+            T z = x + y;
+            if (z <= 1)
+            {
+                if (z)
+                    return x / z;
+                z = fmax(u, v);
+                u -= z;
+                v -= z;
+                return exp2(u - log2(exp2(u) + exp2(v)));
+            }
+        }
+        T x = GammaVariable!T(a)(gen);
+        T y = GammaVariable!T(b)(gen);
+        T z = x + y;
+        return x / z;
+    }
+
+    ///
+    enum T min = 0;
+    ///
+    enum T max = 1;
+}
+
+///
+unittest
+{
+    auto gen = Random(unpredictableSeed);
+    auto rv = BetaVariable!double(2, 5);
+    auto x = rv(gen);
+}
+
+/++
 $(WIKI_D Chi-squared).
 +/
 @RandomVariable struct ChiSquaredVariable(T)
