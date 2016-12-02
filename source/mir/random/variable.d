@@ -1198,7 +1198,6 @@ distribution given an array of the respective probability density points (weight
             }
             else
             {
-                import mir.math.sum;
                 T s = 0;
                 foreach(ref e; weights)
                 {
@@ -1360,7 +1359,6 @@ Piecewise constant variable.
     }
 
     /++
-    Samples a value from the discrete distribution using a custom random generator.
     Complexity:
         `O(log n)` where `n` is the number of `weights`.
     +/
@@ -1400,5 +1398,107 @@ unittest
     12 **********
     13 *********
     14 **********
+    +/
+}
+
+/++
+Piecewise constant variable.
++/
+@RandomVariable struct PiecewiseLinearVariable(T)
+    if (isFloatingPoint!T)
+{
+    private DiscreteVariable!T dv;
+    private T[] points;
+    private T[] weights;
+
+    /++
+    `PiecewiseLinearVariable` constructor computes cumulative density points
+    in place without memory allocation.
+    Params:
+        intervals = strictly increasing sequence of interval bounds.
+        weights = density points
+        areas =  user allocated uninitialized array
+    Constrains:
+        `points.length == weights.length` $(BR)
+        `areas.length > 0` $(BR)
+        `areas.length + 1 == weights.length`
+    +/
+    this(T[] points, T[] weights, T[] areas)
+    in {
+        assert(points.length == weights.length);
+        assert(areas.length);
+        assert(areas.length + 1 == weights.length);
+    }
+    body {
+        foreach(size_t i; 0 .. areas.length)
+            areas[i] = (weights[i + 1] + weights[i]) * (points[i + 1] - points[i]);
+        dv = DiscreteVariable!T(areas);
+        this.points = points;
+        this.weights = weights;
+    }
+
+    /++
+    Complexity:
+        `O(log n)` where `n` is the number of `weights`.
+    +/
+    T opCall(RNG)(ref RNG gen)
+        if (isSaturatedRandomEngine!RNG)
+    {
+        size_t index = dv(gen);
+        T w0 = weights[index];
+        T w1 = weights[index + 1];
+        T b0 = points[index];
+        T b1 = points[index + 1];
+        T ret = gen.rand!T.fabs;
+        if(!BernoulliVariable!T(fmin(w0, w1) / fmax(w0, w1))(gen))
+            ret = ret.sqrt;
+        ret *= b1 - b0;
+        if(w0 > w1)
+            ret = b1 - ret;
+        else
+            ret = ret + b0;
+        if(!(ret < b1))
+            ret = b1.nextDown;
+        return ret;
+    }
+}
+
+///
+unittest
+{
+    auto gen = Random(unpredictableSeed);
+    // increase the probability from 0 to 5
+    // remain flat from 5 to 10
+    // decrease from 10 to 15 at the same rate
+    double[] i = [0, 5, 10, 15];
+    double[] w = [0, 1,  1,  0];
+    auto pcv = PiecewiseLinearVariable!double(i, w, new double[w.length - 1]);
+
+    int[int] hist;
+    foreach(_; 0 .. 10000)
+        ++hist[cast(int)pcv(gen)];
+
+    //import std.stdio, std.range;
+    //foreach(j; 0..15)
+    //    if(auto count = j in hist)
+    //        writefln("%2s %s", j, '*'.repeat.take(*count / 100));
+
+    //////// output example /////////
+    /+
+     0 *
+     1 **
+     2 *****
+     3 *******
+     4 ********
+     5 **********
+     6 *********
+     7 *********
+     8 **********
+     9 *********
+    10 *********
+    11 *******
+    12 ****
+    13 **
+    14 *
     +/
 }
