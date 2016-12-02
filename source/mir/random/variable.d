@@ -10,7 +10,7 @@ $(BOOKTABLE $(H2 Utilities),
 
 $(BOOKTABLE $(H2 Random Variables),
 
-    $(TR $(TH Generator name) $(TH Distribution class))
+    $(TR $(TH Generator name) $(TH Description))
     $(RVAR Bernoulli, $(WIKI_D Bernoulli))
     $(RVAR Bernoulli2, Optimized $(WIKI_D Bernoulli) for `p = 1/2`)
     $(RVAR Beta, $(WIKI_D Beta))
