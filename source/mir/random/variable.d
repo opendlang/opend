@@ -1175,17 +1175,16 @@ distribution given an array of the respective probability density points (weight
     private T[] cdf;
 
     /++
-    The density points `weights`.
-    `DiscreteVariable` constructor computes comulative density points
+    `DiscreteVariable` constructor computes cumulative density points
     in place without memory allocation.
 
     Params:
         weights = density points
-        comulative = optional flag indiciates if `weights` are already comulative
+        cumulative = optional flag indiciates if `weights` are already cumulative
     +/
-    this(T[] weights, bool comulative = false)
+    this(T[] weights, bool cumulative = false)
     {
-        if(!comulative)
+        if(!cumulative)
         {
             static if (isFloatingPoint!T)
             {
@@ -1236,7 +1235,7 @@ unittest
     auto weights = [10.0, 20, 20, 40, 10];
     auto ds = DiscreteVariable!double(weights);
 
-    // weight is changed to comulative sums
+    // weight is changed to cumulative sums
     assert(weights == [10, 30, 50, 90, 100]);
 
     // sample from the discrete distribution
@@ -1254,13 +1253,13 @@ unittest
 {
     auto gen = Random(unpredictableSeed);
 
-    auto comulative = [10.0, 30, 40, 90, 120];
-    auto ds = DiscreteVariable!double(comulative, true);
+    auto cumulative = [10.0, 30, 40, 90, 120];
+    auto ds = DiscreteVariable!double(cumulative, true);
 
-    assert(comulative == [10.0, 30, 40, 90, 120]);
+    assert(cumulative == [10.0, 30, 40, 90, 120]);
 
     // sample from the discrete distribution
-    auto obs = new uint[comulative.length];
+    auto obs = new uint[cumulative.length];
     foreach (i; 0..1000)
         obs[ds(gen)]++;
 }
@@ -1273,7 +1272,7 @@ unittest
     auto weights = [10.0, 20, 20, 40, 10];
     auto ds = DiscreteVariable!double(weights);
 
-    // weight is changed to comulative sums
+    // weight is changed to cumulative sums
     assert(weights == [10, 30, 50, 90, 100]);
 
     // sample from the discrete distribution
@@ -1333,4 +1332,73 @@ unittest
         obs[ds(gen)]++;
 
     assert(obs[3] == 0);
+}
+
+/++
+Piecewise constant variable.
++/
+@RandomVariable struct PiecewiseConstantVariable(T, W = T)
+    if (isNumeric!T && isNumeric!W)
+{
+    private DiscreteVariable!W dv;
+    private T[] intervals;
+
+    /++
+    `PiecewiseConstantVariable` constructor computes cumulative density points
+    in place without memory allocation.
+    Params:
+        intervals = strictly increasing sequence of interval bounds.
+        weights = density points
+        cumulative = optional flag indicates if `weights` are already cumulative
+    +/
+    this(T[] intervals, W[] weights, bool cumulative = false)
+    {
+        assert(weights.length);
+        assert(intervals.length == weights.length + 1);
+        dv = DiscreteVariable!W(weights, cumulative);
+        this.intervals = intervals; 
+    }
+
+    /++
+    Samples a value from the discrete distribution using a custom random generator.
+    Complexity:
+        `O(log n)` where `n` is the number of `weights`.
+    +/
+    T opCall(RNG)(ref RNG gen)
+        if (isSaturatedRandomEngine!RNG)
+    {
+        size_t index = dv(gen);
+        return UniformVariable!T(intervals[index], intervals[index + 1])(gen);
+    }
+}
+
+///
+unittest
+{
+    auto gen = Random(unpredictableSeed);
+    // 50% of the time, generate a random number between 0 and 1
+    // 50% of the time, generate a random number between 10 and 15
+    double[] i = [0,  1, 10, 15];
+    double[] w =   [1,  0,  1];
+    auto pcv = PiecewiseConstantVariable!(double, double)(i, w);
+    assert(w == [1, 1, 2]);
+
+    int[int] hist;
+    foreach(_; 0 .. 10000)
+        ++hist[cast(int)pcv(gen)];
+
+    //import std.stdio, std.range;
+    //foreach(j; 0..cast(int)i[$-1])
+    //    if(auto count = j in hist)
+    //        writefln("%2s %s", j, '*'.repeat.take(*count / 100));
+
+    //////// output example /////////
+    /+
+     0 **************************************************
+    10 *********
+    11 *********
+    12 **********
+    13 *********
+    14 **********
+    +/
 }
