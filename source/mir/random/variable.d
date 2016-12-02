@@ -975,6 +975,135 @@ unittest
 }
 
 /++
+$(WIKI_D Binomial).
++/
+@RandomVariable struct BinomialVariable(T)
+    if (isFloatingPoint!T)
+{
+    import core.stdc.tgmath: lgamma;
+    size_t n = void;
+    T np = void;
+    T q = void;
+    T qn = void;
+    T r = void;
+    T g = void;
+    T b = void;
+    T a = void;
+    T c = void;
+    T vr = void;
+    T alpha = void;
+    T lpq = void;
+    T fm = void;
+    T h = void;
+    bool swap = void;
+    @disable this();
+
+    /++
+    Params:
+        n = n > 0; number of trials
+        p = p ∈ [0,1]; success probability in each trial
+    +/
+    this(size_t n, T p)
+    {
+        this.n = n;
+        if(p <= 0.5f)
+        {
+            this.q = 1 - p;
+            swap = false;
+        }
+        else
+        {
+            this.q = p;
+            swap = true;
+            p = 1 - p;
+        }
+        np = p * n;
+        if (np >= 10)
+        {
+            auto spq = sqrt(np * q);
+
+            b = fmuladd(spq, 2.53f, 1.15f);
+            a = fmuladd(p, 0.01f, fmuladd(b, 0.0248f, -0.0873f));
+            c = fmuladd(p, n, 0.5f);
+            vr = 0.92f - 4.2f/ b;
+            alpha = (2.83f+5.1f / b) * spq;
+            lpq = log(p / q);
+            fm = floor((n + 1) * p);
+            h = lgamma(fm + 1) + lgamma(n - fm - 1);
+        }
+        else
+        {
+            qn = pow (q, n);
+            r = p / q;
+            g = r *  (n + 1);
+        }
+    }
+
+    ///
+    size_t opCall(RNG)(ref RNG gen)
+        if (isSaturatedRandomEngine!RNG)
+    {
+        T kr = void;
+        if (np >= 10) for (;;)
+        {
+            T u = gen.rand!T(-1);
+            T us = 0.5 - u.fabs;
+            kr = floor (fmuladd(2 * a / us + b, u, c));
+            if (kr < 0)
+                continue;
+            if (kr > n)
+                continue;
+            T v = gen.rand!T();
+            if (us >= 0.07f && v <= vr)
+                break;
+            v = log (v * alpha / (a / (us * us) + b));
+            if (v <= (h - lgamma(kr + 1) - lgamma(n - kr + 1) + (kr - fm) * lpq))
+                break;
+        }
+        else
+        {
+            enum max_k = 110;
+
+            T f = qn;
+            T u = gen.rand!T.fabs;
+            T kmax = n > max_k ? max_k : n;
+            kr = 0;
+            do
+            {
+                if (u < f)
+                    break;
+                u -= f;
+                kr++;
+                f *= (g / kr - r);
+            }
+            while (kr <= kmax);
+        }
+        auto ret = cast(typeof(return)) kr;
+        return swap ? n - ret : ret;
+    }
+
+    ///
+    enum size_t min = 0;
+    ///
+    size_t max() @property { return n; };
+}
+
+///
+unittest
+{
+    import mir.random;
+    auto gen = Random(unpredictableSeed);
+    auto rv = BinomialVariable!double(20, 0.5);
+    int[] hist = new int[rv.max + 1];
+    auto cnt = 1000;
+    foreach(_; 0..cnt)
+        hist[rv(gen)]++;
+    //import std.stdio;
+    //foreach(n, e; hist)
+    //    writefln("p(x = %s) = %s", n, double(e) / cnt);
+}
+
+/++
 _Discrete distribution sampler that draws random values from a _discrete
 distribution given an array of the respective probability density points (weights).
 +/
