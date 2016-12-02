@@ -1,9 +1,45 @@
 /++
+$(SCRIPT inhibitQuickIndex = 1;)
+
+$(BOOKTABLE $(H2 Utilities),
+
+    $(TR $(TH Name))
+    $(T2 RandomVariable, attribute)
+    $(T2 isRandomVariable, traits)
+)
+
+$(BOOKTABLE $(H2 Random Variable),
+
+    $(TR $(TH Generator name))
+    $(RVAR Bernoulli)
+    $(RVAR Beta)
+    $(RVAR Binomial)
+    $(RVAR Cauchy)
+    $(RVAR ChiSquared)
+    $(RVAR Discrete)
+    $(RVAR Exponential)
+    $(RVAR ExtremeValue)
+    $(RVAR FisherF)
+    $(RVAR Gamma)
+    $(RVAR Geometric)
+    $(RVAR LogNormal)
+    $(RVAR NegativeBinomial)
+    $(RVAR Normal)
+    $(RVAR PiecewiseConstant)
+    $(RVAR PiecewiseLinear)
+    $(RVAR Poisson)
+    $(RVAR StudentT)
+    $(RVAR Uniform)
+    $(RVAR Weibull)
+)
+
 Authors: Ilya Yaroshenko, Sebastian Wilzbach (DiscreteVariable)
 Copyright: Copyright, Ilya Yaroshenko 2016-.
 License:   $(HTTP www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
 
 Macros:
+    T2=$(TR $(TDNW $(LREF $1)) $(TD $+))
+    RVAR = $(TR $(TDNW $(LREF $1Variable)))
     WIKI_D = $(HTTP en.wikipedia.org/wiki/$1_distribution, $1 random variable)
     WIKI_D2 = $(HTTP en.wikipedia.org/wiki/$1_distribution, $2 random variable)
 +/
