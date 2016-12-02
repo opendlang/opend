@@ -1412,8 +1412,6 @@ Piecewise constant variable.
     private T[] weights;
 
     /++
-    `PiecewiseLinearVariable` constructor computes cumulative density points
-    in place without memory allocation.
     Params:
         intervals = strictly increasing sequence of interval bounds.
         weights = density points
@@ -1445,12 +1443,13 @@ Piecewise constant variable.
         if (isSaturatedRandomEngine!RNG)
     {
         size_t index = dv(gen);
-        T w0 = weights[index];
+        T w0 = weights[index + 0];
         T w1 = weights[index + 1];
-        T b0 = points[index];
-        T b1 = points[index + 1];
+        T b0 = points [index + 0];
+        T b1 = points [index + 1];
         T ret = gen.rand!T.fabs;
-        if(!BernoulliVariable!T(fmin(w0, w1) / fmax(w0, w1))(gen))
+        T z = fmin(w0, w1) / fmax(w0, w1);
+        if(!(z > gen.rand!T(-1).fabs * (1 + z)))
             ret = ret.sqrt;
         ret *= b1 - b0;
         if(w0 > w1)
@@ -1479,7 +1478,7 @@ unittest
         ++hist[cast(int)pcv(gen)];
 
     //import std.stdio, std.range;
-    //foreach(j; 0..15)
+    //foreach(j; 0..cast(int)i[$-1]+1)
     //    if(auto count = j in hist)
     //        writefln("%2s %s", j, '*'.repeat.take(*count / 100));
 
