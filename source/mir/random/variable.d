@@ -3,9 +3,9 @@ $(SCRIPT inhibitQuickIndex = 1;)
 
 $(BOOKTABLE $(H2 Utilities),
 
-    $(TR $(TH Name, description))
-    $(T2 RandomVariable, attribute)
-    $(T2 isRandomVariable, traits)
+    $(TR $(TH Name), $(TH Description))
+    $(T2 RandomVariable, Attribute)
+    $(T2 isRandomVariable, Trait)
 )
 
 $(BOOKTABLE $(H2 Random Variables),
@@ -25,8 +25,8 @@ $(BOOKTABLE $(H2 Random Variables),
     $(RVAR LogNormal, $(WIKI_D Log-normal))
     $(RVAR NegativeBinomial, $(WIKI_D Negative_binomial))
     $(RVAR Normal, $(WIKI_D Normal))
-    $(RVAR PiecewiseConstant, Piecewise constant distribution))
-    $(RVAR PiecewiseLinear, Piecewise linear distribution))
+    $(RVAR PiecewiseConstant, Piecewise constant distribution)
+    $(RVAR PiecewiseLinear, Piecewise linear distribution)
     $(RVAR Poisson, $(WIKI_D Poisson))
     $(RVAR StudentT, $(WIKI_D Student's_t))
     $(RVAR Uniform, $(WIKI_D Discrete_uniform)
