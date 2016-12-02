@@ -3,34 +3,36 @@ $(SCRIPT inhibitQuickIndex = 1;)
 
 $(BOOKTABLE $(H2 Utilities),
 
-    $(TR $(TH Name))
+    $(TR $(TH Name, description))
     $(T2 RandomVariable, attribute)
     $(T2 isRandomVariable, traits)
 )
 
-$(BOOKTABLE $(H2 Random Variable),
+$(BOOKTABLE $(H2 Random Variables),
 
-    $(TR $(TH Generator name))
-    $(RVAR Bernoulli)
-    $(RVAR Beta)
-    $(RVAR Binomial)
-    $(RVAR Cauchy)
-    $(RVAR ChiSquared)
-    $(RVAR Discrete)
-    $(RVAR Exponential)
-    $(RVAR ExtremeValue)
-    $(RVAR FisherF)
-    $(RVAR Gamma)
-    $(RVAR Geometric)
-    $(RVAR LogNormal)
-    $(RVAR NegativeBinomial)
-    $(RVAR Normal)
-    $(RVAR PiecewiseConstant)
-    $(RVAR PiecewiseLinear)
-    $(RVAR Poisson)
-    $(RVAR StudentT)
-    $(RVAR Uniform)
-    $(RVAR Weibull)
+    $(TR $(TH Generator name) $(TH Distribution class))
+    $(RVAR Bernoulli, $(WIKI_D Bernoulli))
+    $(RVAR Beta, $(WIKI_D Beta))
+    $(RVAR Binomial, $(WIKI_D Binomial))
+    $(RVAR Cauchy, $(WIKI_D Cauchy))
+    $(RVAR ChiSquared, $(WIKI_D Chi-squared))
+    $(RVAR Discrete, Discrete distribution)
+    $(RVAR Exponential, $(WIKI_D Exponential))
+    $(RVAR ExtremeValue, $(WIKI_D2 Generalized_extreme_value, Extreme value))
+    $(RVAR FisherF, $(WIKI_D F))
+    $(RVAR Gamma, $(WIKI_D Gamma))
+    $(RVAR Geometric, $(WIKI_D Geometric))
+    $(RVAR LogNormal, $(WIKI_D Log-normal))
+    $(RVAR NegativeBinomial, $(WIKI_D Negative_binomial))
+    $(RVAR Normal, $(WIKI_D Normal))
+    $(RVAR PiecewiseConstant, Piecewise constant distribution))
+    $(RVAR PiecewiseLinear, Piecewise linear distribution))
+    $(RVAR Poisson, $(WIKI_D Poisson))
+    $(RVAR StudentT, $(WIKI_D Student's_t))
+    $(RVAR Uniform, $(WIKI_D Discrete_uniform)
+and $(HTTP en.wikipedia.org/wiki/Uniform_distribution_(continuous),
+    Uniform distribution (continuous)))
+    $(RVAR Weibull, $(WIKI_D Weibull))
 )
 
 Authors: Ilya Yaroshenko, Sebastian Wilzbach (DiscreteVariable)
@@ -38,10 +40,10 @@ Copyright: Copyright, Ilya Yaroshenko 2016-.
 License:   $(HTTP www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
 
 Macros:
-    T2=$(TR $(TDNW $(LREF $1)) $(TD $+))
-    RVAR = $(TR $(TDNW $(LREF $1Variable)))
     WIKI_D = $(HTTP en.wikipedia.org/wiki/$1_distribution, $1 random variable)
     WIKI_D2 = $(HTTP en.wikipedia.org/wiki/$1_distribution, $2 random variable)
+    T2=$(TR $(TDNW $(LREF $1)) $(TD $+))
+    RVAR = $(TR $(TDNW $(LREF $1Variable)) $(TD $+))
 +/
 module mir.random.variable;
 
