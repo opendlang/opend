@@ -15,18 +15,30 @@ Professional Random Number Generators
 Documentation: http://docs.random.dlang.io/latest/index.html
 
 ```d
+#!/usr/bin/env dub
+/+ dub.json:
+{
+    "name": "test_random",
+    "dependencies": {"mir": "0.22.0"}
+}
++/
+
 import std.range, std.stdio;
 
 import mir.random;
 import mir.random.variable: NormalVariable;
 import mir.random.algorithm: range;
-auto rng = Random(unpredictableSeed);        // Engines are allocated on stack or global
-auto sample = rng                            // Engines are passed by reference to algorithms
-    .range(NormalVariable!double(0, 1))// Random variables are passed by value
-    .take(1000)                              // Fix sample length to 1000 elements (Input Range API)
-    .array;                                  // Allocates memory and performs computation
 
-writeln(sample);                             
+
+void main(){
+    auto rng = Random(unpredictableSeed);        // Engines are allocated on stack or global
+    auto sample = rng                            // Engines are passed by reference to algorithms
+        .range(NormalVariable!double(0, 1))// Random variables are passed by value
+        .take(1000)                              // Fix sample length to 1000 elements (Input Range API)
+        .array;                                  // Allocates memory and performs computation
+
+    writeln(sample);
+}
 ```
 
 ## Comparison with Phobos
