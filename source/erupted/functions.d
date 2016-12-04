@@ -227,6 +227,17 @@ extern( System ) @nogc nothrow {
 	version( VK_USE_PLATFORM_WIN32_KHR ) {
 		alias PFN_vkGetMemoryWin32HandleNV = VkResult function( VkDevice device, VkDeviceMemory memory, VkExternalMemoryHandleTypeFlagsNV handleType, HANDLE* pHandle );
 	}
+
+	// VK_NVX_device_generated_commands
+	alias PFN_vkCmdProcessCommandsNVX = void function( VkCommandBuffer commandBuffer, const( VkCmdProcessCommandsInfoNVX )* pProcessCommandsInfo );
+	alias PFN_vkCmdReserveSpaceForCommandsNVX = void function( VkCommandBuffer commandBuffer, const( VkCmdReserveSpaceForCommandsInfoNVX )* pReserveSpaceInfo );
+	alias PFN_vkCreateIndirectCommandsLayoutNVX = VkResult function( VkDevice device, const( VkIndirectCommandsLayoutCreateInfoNVX )* pCreateInfo, const( VkAllocationCallbacks )* pAllocator, VkIndirectCommandsLayoutNVX* pIndirectCommandsLayout );
+	alias PFN_vkDestroyIndirectCommandsLayoutNVX = void function( VkDevice device, VkIndirectCommandsLayoutNVX indirectCommandsLayout, const( VkAllocationCallbacks )* pAllocator );
+	alias PFN_vkCreateObjectTableNVX = VkResult function( VkDevice device, const( VkObjectTableCreateInfoNVX )* pCreateInfo, const( VkAllocationCallbacks )* pAllocator, VkObjectTableNVX* pObjectTable );
+	alias PFN_vkDestroyObjectTableNVX = void function( VkDevice device, VkObjectTableNVX objectTable, const( VkAllocationCallbacks )* pAllocator );
+	alias PFN_vkRegisterObjectsNVX = VkResult function( VkDevice device, VkObjectTableNVX objectTable, uint32_t objectCount, const( VkObjectTableEntryNVX* )* ppObjectTableEntries, const( uint32_t )* pObjectIndices );
+	alias PFN_vkUnregisterObjectsNVX = VkResult function( VkDevice device, VkObjectTableNVX objectTable, uint32_t objectCount, const( VkObjectEntryTypeNVX )* pObjectEntryTypes, const( uint32_t )* pObjectIndices );
+	alias PFN_vkGetPhysicalDeviceGeneratedCommandsPropertiesNVX = void function( VkPhysicalDevice physicalDevice, VkDeviceGeneratedCommandsFeaturesNVX* pFeatures, VkDeviceGeneratedCommandsLimitsNVX* pLimits );
 }
 
 __gshared {
@@ -454,6 +465,17 @@ __gshared {
 	version( VK_USE_PLATFORM_WIN32_KHR ) {
 		PFN_vkGetMemoryWin32HandleNV vkGetMemoryWin32HandleNV;
 	}
+
+	// VK_NVX_device_generated_commands
+	PFN_vkCmdProcessCommandsNVX vkCmdProcessCommandsNVX;
+	PFN_vkCmdReserveSpaceForCommandsNVX vkCmdReserveSpaceForCommandsNVX;
+	PFN_vkCreateIndirectCommandsLayoutNVX vkCreateIndirectCommandsLayoutNVX;
+	PFN_vkDestroyIndirectCommandsLayoutNVX vkDestroyIndirectCommandsLayoutNVX;
+	PFN_vkCreateObjectTableNVX vkCreateObjectTableNVX;
+	PFN_vkDestroyObjectTableNVX vkDestroyObjectTableNVX;
+	PFN_vkRegisterObjectsNVX vkRegisterObjectsNVX;
+	PFN_vkUnregisterObjectsNVX vkUnregisterObjectsNVX;
+	PFN_vkGetPhysicalDeviceGeneratedCommandsPropertiesNVX vkGetPhysicalDeviceGeneratedCommandsPropertiesNVX;
 }
 
 /// if not using version "with-derelict-loader" this function must be called first
@@ -542,6 +564,9 @@ void loadInstanceLevelFunctions( VkInstance instance ) {
 
 	// VK_NV_external_memory_capabilities
 	vkGetPhysicalDeviceExternalImageFormatPropertiesNV = cast( typeof( vkGetPhysicalDeviceExternalImageFormatPropertiesNV )) vkGetInstanceProcAddr( instance, "vkGetPhysicalDeviceExternalImageFormatPropertiesNV" );
+
+	// VK_NVX_device_generated_commands
+	vkGetPhysicalDeviceGeneratedCommandsPropertiesNVX = cast( typeof( vkGetPhysicalDeviceGeneratedCommandsPropertiesNVX )) vkGetInstanceProcAddr( instance, "vkGetPhysicalDeviceGeneratedCommandsPropertiesNVX" );
 }
 
 /// with a valid VkInstance call this function to retrieve VkDevice, VkQueue and VkCommandBuffer related functions
@@ -697,6 +722,16 @@ void loadDeviceLevelFunctions( VkInstance instance ) {
 	version( VK_USE_PLATFORM_WIN32_KHR ) {
 		vkGetMemoryWin32HandleNV = cast( typeof( vkGetMemoryWin32HandleNV )) vkGetInstanceProcAddr( instance, "vkGetMemoryWin32HandleNV" );
 	}
+
+	// VK_NVX_device_generated_commands
+	vkCmdProcessCommandsNVX = cast( typeof( vkCmdProcessCommandsNVX )) vkGetInstanceProcAddr( instance, "vkCmdProcessCommandsNVX" );
+	vkCmdReserveSpaceForCommandsNVX = cast( typeof( vkCmdReserveSpaceForCommandsNVX )) vkGetInstanceProcAddr( instance, "vkCmdReserveSpaceForCommandsNVX" );
+	vkCreateIndirectCommandsLayoutNVX = cast( typeof( vkCreateIndirectCommandsLayoutNVX )) vkGetInstanceProcAddr( instance, "vkCreateIndirectCommandsLayoutNVX" );
+	vkDestroyIndirectCommandsLayoutNVX = cast( typeof( vkDestroyIndirectCommandsLayoutNVX )) vkGetInstanceProcAddr( instance, "vkDestroyIndirectCommandsLayoutNVX" );
+	vkCreateObjectTableNVX = cast( typeof( vkCreateObjectTableNVX )) vkGetInstanceProcAddr( instance, "vkCreateObjectTableNVX" );
+	vkDestroyObjectTableNVX = cast( typeof( vkDestroyObjectTableNVX )) vkGetInstanceProcAddr( instance, "vkDestroyObjectTableNVX" );
+	vkRegisterObjectsNVX = cast( typeof( vkRegisterObjectsNVX )) vkGetInstanceProcAddr( instance, "vkRegisterObjectsNVX" );
+	vkUnregisterObjectsNVX = cast( typeof( vkUnregisterObjectsNVX )) vkGetInstanceProcAddr( instance, "vkUnregisterObjectsNVX" );
 }
 
 /// with a valid VkDevice call this function to retrieve VkDevice, VkQueue and VkCommandBuffer related functions
@@ -853,6 +888,16 @@ void loadDeviceLevelFunctions( VkDevice device ) {
 	version( VK_USE_PLATFORM_WIN32_KHR ) {
 		vkGetMemoryWin32HandleNV = cast( typeof( vkGetMemoryWin32HandleNV )) vkGetDeviceProcAddr( device, "vkGetMemoryWin32HandleNV" );
 	}
+
+	// VK_NVX_device_generated_commands
+	vkCmdProcessCommandsNVX = cast( typeof( vkCmdProcessCommandsNVX )) vkGetDeviceProcAddr( device, "vkCmdProcessCommandsNVX" );
+	vkCmdReserveSpaceForCommandsNVX = cast( typeof( vkCmdReserveSpaceForCommandsNVX )) vkGetDeviceProcAddr( device, "vkCmdReserveSpaceForCommandsNVX" );
+	vkCreateIndirectCommandsLayoutNVX = cast( typeof( vkCreateIndirectCommandsLayoutNVX )) vkGetDeviceProcAddr( device, "vkCreateIndirectCommandsLayoutNVX" );
+	vkDestroyIndirectCommandsLayoutNVX = cast( typeof( vkDestroyIndirectCommandsLayoutNVX )) vkGetDeviceProcAddr( device, "vkDestroyIndirectCommandsLayoutNVX" );
+	vkCreateObjectTableNVX = cast( typeof( vkCreateObjectTableNVX )) vkGetDeviceProcAddr( device, "vkCreateObjectTableNVX" );
+	vkDestroyObjectTableNVX = cast( typeof( vkDestroyObjectTableNVX )) vkGetDeviceProcAddr( device, "vkDestroyObjectTableNVX" );
+	vkRegisterObjectsNVX = cast( typeof( vkRegisterObjectsNVX )) vkGetDeviceProcAddr( device, "vkRegisterObjectsNVX" );
+	vkUnregisterObjectsNVX = cast( typeof( vkUnregisterObjectsNVX )) vkGetDeviceProcAddr( device, "vkUnregisterObjectsNVX" );
 }
 
 /// with a valid VkDevice call this function to retrieve VkDevice, VkQueue and VkCommandBuffer related functions grouped in a DispatchDevice struct
@@ -1010,6 +1055,16 @@ DispatchDevice createDispatchDeviceLevelFunctions( VkDevice device ) {
 		version( VK_USE_PLATFORM_WIN32_KHR ) {
 			vkGetMemoryWin32HandleNV = cast( typeof( vkGetMemoryWin32HandleNV )) vkGetDeviceProcAddr( device, "vkGetMemoryWin32HandleNV" );
 		}
+
+		// VK_NVX_device_generated_commands
+		vkCmdProcessCommandsNVX = cast( typeof( vkCmdProcessCommandsNVX )) vkGetDeviceProcAddr( device, "vkCmdProcessCommandsNVX" );
+		vkCmdReserveSpaceForCommandsNVX = cast( typeof( vkCmdReserveSpaceForCommandsNVX )) vkGetDeviceProcAddr( device, "vkCmdReserveSpaceForCommandsNVX" );
+		vkCreateIndirectCommandsLayoutNVX = cast( typeof( vkCreateIndirectCommandsLayoutNVX )) vkGetDeviceProcAddr( device, "vkCreateIndirectCommandsLayoutNVX" );
+		vkDestroyIndirectCommandsLayoutNVX = cast( typeof( vkDestroyIndirectCommandsLayoutNVX )) vkGetDeviceProcAddr( device, "vkDestroyIndirectCommandsLayoutNVX" );
+		vkCreateObjectTableNVX = cast( typeof( vkCreateObjectTableNVX )) vkGetDeviceProcAddr( device, "vkCreateObjectTableNVX" );
+		vkDestroyObjectTableNVX = cast( typeof( vkDestroyObjectTableNVX )) vkGetDeviceProcAddr( device, "vkDestroyObjectTableNVX" );
+		vkRegisterObjectsNVX = cast( typeof( vkRegisterObjectsNVX )) vkGetDeviceProcAddr( device, "vkRegisterObjectsNVX" );
+		vkUnregisterObjectsNVX = cast( typeof( vkUnregisterObjectsNVX )) vkGetDeviceProcAddr( device, "vkUnregisterObjectsNVX" );
 	}
 
 	return dispatchDevice;
@@ -1154,6 +1209,14 @@ private struct DispatchDevice {
 	version( VK_USE_PLATFORM_WIN32_KHR ) {
 		PFN_vkGetMemoryWin32HandleNV vkGetMemoryWin32HandleNV;
 	}
+	PFN_vkCmdProcessCommandsNVX vkCmdProcessCommandsNVX;
+	PFN_vkCmdReserveSpaceForCommandsNVX vkCmdReserveSpaceForCommandsNVX;
+	PFN_vkCreateIndirectCommandsLayoutNVX vkCreateIndirectCommandsLayoutNVX;
+	PFN_vkDestroyIndirectCommandsLayoutNVX vkDestroyIndirectCommandsLayoutNVX;
+	PFN_vkCreateObjectTableNVX vkCreateObjectTableNVX;
+	PFN_vkDestroyObjectTableNVX vkDestroyObjectTableNVX;
+	PFN_vkRegisterObjectsNVX vkRegisterObjectsNVX;
+	PFN_vkUnregisterObjectsNVX vkUnregisterObjectsNVX;
 }
 
 // Derelict loader to acquire entry point vkGetInstanceProcAddr
