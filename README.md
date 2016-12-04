@@ -19,9 +19,8 @@ import std.range, std.stdio;
 
 import mir.random;
 import mir.random.variable: NormalVariable;
-import mir.random.algorithm: randomRange;
-
-auto rng = Random(unpredictableSeed);        // Engines are allocated on stack or global
+import mir.random.algorithm: range;
+auto rng = Random(unpredictableSeed);        // Engines are allocated on stack or global
 auto sample = rng                            // Engines are passed by reference to algorithms
     .range(NormalVariable!double(0, 1))// Random variables are passed by value
     .take(1000)                              // Fix sample length to 1000 elements (Input Range API)
