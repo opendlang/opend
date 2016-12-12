@@ -93,7 +93,7 @@ int main() {
 		if (properties.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
 			writeln("\tVK_QUEUE_GRAPHICS_BIT");
 			if (graphicsQueueFamilyIndex == uint.max) {
-				graphicsQueueFamilyIndex = i;
+				graphicsQueueFamilyIndex = cast(uint)i;
 			}
 		}
 
