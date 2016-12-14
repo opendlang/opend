@@ -8,7 +8,6 @@ Authors: Masahiro Nakagawa, Ilya Yaroshenko (rework)
 module mir.random.engine.xorshift;
 
 import std.traits;
-import mir.random.engine;
 
 /++
 Xorshift generator using 32bit algorithm.
@@ -23,9 +22,12 @@ $(BOOKTABLE $(TEXTWITHCOMMAS Supporting bits are below, $(D bits) means second p
  $(TR $(TD 192)  $(TD 2^192 - 2^32))
 )
 +/
-@RandomEngine struct XorshiftEngine(uint bits, uint a, uint b, uint c)
+struct XorshiftEngine(uint bits, uint a, uint b, uint c)
     if (isUnsigned!uint)
 {
+    ///
+    enum isRandomEngine = true;
+
     static assert(bits == 32 || bits == 64 || bits == 96 || bits == 128 || bits == 160 || bits == 192,
                   "Xorshift supports only 32, 64, 96, 128, 160 and 192 bit versions. "
                   ~ bits.stringof ~ " is not supported.");
@@ -162,6 +164,7 @@ alias Xorshift    = Xorshift128;                      /// ditto
 ///
 @safe unittest
 {
+    import mir.random.engine;
     auto rnd = Xorshift(cast(uint)unpredictableSeed);
     auto num = rnd();
 

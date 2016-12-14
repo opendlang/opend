@@ -68,14 +68,17 @@ Test if T is a random variable.
 +/
 template isRandomVariable(T)
 {
-    static if (hasUDA!(T, RandomEngine))
-        enum isRandomVariable = is(typeof({
+    static if (is(typeof(T.isRandomVariable) : bool))
+    {
+        enum isRandomVariable = T.isRandomVariable && 
+            is(typeof({
                 auto gen = Random(1);
                 T rv;
                 auto x = rv(gen);
                 auto y = rv!Random(gen);
                 static assert(is(typeof(x) == typeof(y)));
             }));
+    }
     else enum isRandomVariable = false;
 }
 
@@ -83,9 +86,12 @@ template isRandomVariable(T)
 $(WIKI_D Discrete_uniform).
 Returns: `X ~ U[a, b]`
 +/
-@RandomVariable struct UniformVariable(T)
+struct UniformVariable(T)
     if (isIntegral!T)
 {
+    ///
+    enum isRandomVariable = true;
+
     private alias U = Unsigned!T;
     private U length;
     private T location = 0;
@@ -127,9 +133,12 @@ unittest
 $(HTTP en.wikipedia.org/wiki/Uniform_distribution_(continuous), Uniform distribution (continuous)).
 Returns: `X ~ U[a, b)`
 +/
-@RandomVariable struct UniformVariable(T)
+struct UniformVariable(T)
     if (isFloatingPoint!T)
 {
+    ///
+    enum isRandomVariable = true;
+
     private T _a;
     private T _b;
 
@@ -188,9 +197,12 @@ unittest
 $(WIKI_D Exponential).
 Returns: `X ~ Exp(β)`
 +/
-@RandomVariable struct ExponentialVariable(T)
+struct ExponentialVariable(T)
     if (isFloatingPoint!T)
 {
+    ///
+    enum isRandomVariable = true;
+
     private T scale = T(LN2);
 
     ///
@@ -223,9 +235,12 @@ unittest
 /++
 $(WIKI_D Weibull).
 +/
-@RandomVariable struct WeibullVariable(T)
+struct WeibullVariable(T)
     if (isFloatingPoint!T)
 {
+    ///
+    enum isRandomVariable = true;
+
     private T _pow = 1;
     private T scale = 1;
 
@@ -265,9 +280,12 @@ Params:
     Exp = if true log-scaled values are produced. `ExpGamma(𝝰, 𝞫)`.
         The flag is useful when shape parameter is small (`𝝰 << 1`).
 +/
-@RandomVariable struct GammaVariable(T, bool Exp = false)
+struct GammaVariable(T, bool Exp = false)
     if (isFloatingPoint!T)
 {
+    ///
+    enum isRandomVariable = true;
+
     private T shape = 1;
     private T scale = 1;
 
@@ -363,9 +381,12 @@ unittest
 $(WIKI_D Beta).
 Returns: `X ~ Beta(𝝰, 𝞫)`
 +/
-@RandomVariable struct BetaVariable(T)
+struct BetaVariable(T)
     if (isFloatingPoint!T)
 {
+    ///
+    enum isRandomVariable = true;
+
     private T a = 1;
     private T b = 1;
 
@@ -424,9 +445,12 @@ unittest
 /++
 $(WIKI_D Chi-squared).
 +/
-@RandomVariable struct ChiSquaredVariable(T)
+struct ChiSquaredVariable(T)
     if (isFloatingPoint!T)
 {
+    ///
+    enum isRandomVariable = true;
+
     private T _shape = 1;
 
     ///
@@ -459,9 +483,12 @@ unittest
 /++
 $(WIKI_D F).
 +/
-@RandomVariable struct FisherFVariable(T)
+struct FisherFVariable(T)
     if (isFloatingPoint!T)
 {
+    ///
+    enum isRandomVariable = true;
+
     private T _d1 = 1, _d2 = 1;
 
     ///
@@ -501,9 +528,12 @@ unittest
 /++
 $(WIKI_D Student's_t).
 +/
-@RandomVariable struct StudentTVariable(T)
+struct StudentTVariable(T)
     if (isFloatingPoint!T)
 {
+    ///
+    enum isRandomVariable = true;
+
     private NormalVariable!T _nv;
     private T _nu = 1;
 
@@ -586,9 +616,12 @@ private T hypot01(T)(const T x, const T y)
 $(WIKI_D Normal).
 Returns: `X ~ N(μ, σ)`
 +/
-@RandomVariable struct NormalVariable(T)
+struct NormalVariable(T)
     if (isFloatingPoint!T)
 {
+    ///
+    enum isRandomVariable = true;
+
     private T location = 0;
     private T scale = 1;
     private T y = 0;
@@ -653,9 +686,12 @@ unittest
 /++
 $(WIKI_D Log-normal).
 +/
-@RandomVariable struct LogNormalVariable(T)
+struct LogNormalVariable(T)
     if (isFloatingPoint!T)
 {
+    ///
+    enum isRandomVariable = true;
+
     private NormalVariable!T _nv;
 
     /++
@@ -693,9 +729,12 @@ unittest
 $(WIKI_D Cauchy).
 Returns: `X ~ Cauchy(x, γ)`
 +/
-@RandomVariable struct CauchyVariable(T)
+struct CauchyVariable(T)
     if (isFloatingPoint!T)
 {
+    ///
+    enum isRandomVariable = true;
+
     private T location = 0;
     private T scale = 1;
 
@@ -739,9 +778,12 @@ unittest
 /++
 $(WIKI_D2 Generalized_extreme_value, Extreme value).
 +/
-@RandomVariable struct ExtremeValueVariable(T)
+struct ExtremeValueVariable(T)
     if (isFloatingPoint!T)
 {
+    ///
+    enum isRandomVariable = true;
+
     private T location = 0;
     private T scale = 1;
 
@@ -776,9 +818,12 @@ unittest
 /++
 $(WIKI_D Bernoulli).
 +/
-@RandomVariable struct BernoulliVariable(T)
+struct BernoulliVariable(T)
     if (isFloatingPoint!T)
 {
+    ///
+    enum isRandomVariable = true;
+
     private T p = 0;
 
     /++
@@ -819,9 +864,11 @@ unittest
 /++
 $(WIKI_D Bernoulli). A fast specialization for `p := 1/2`.
 +/
-@RandomVariable struct Bernoulli2Variable
+struct Bernoulli2Variable
 {
-    private size_t payload;
+    ///
+    enum isRadomVariable = true;
+   private size_t payload;
     private size_t mask;
 
     this(this)
@@ -864,9 +911,12 @@ unittest
 /++
 $(WIKI_D Geometric).
 +/
-@RandomVariable struct GeometricVariable(T)
+struct GeometricVariable(T)
     if (isFloatingPoint!T)
 {
+    ///
+    enum isRandomVariable = true;
+
     private T scale = 1;
 
     /++
@@ -935,9 +985,12 @@ private enum mLogFactorial(T) = [
 /++
 $(WIKI_D Poisson).
 +/
-@RandomVariable struct PoissonVariable(T)
+struct PoissonVariable(T)
     if (isFloatingPoint!T)
 {
+    ///
+    enum isRandomVariable = true;
+
     import std.math : E;
     private T rate = 1;
     private T temp1 = 1 / E;
@@ -1019,9 +1072,12 @@ unittest
 /++
 $(WIKI_D Negative_binomial).
 +/
-@RandomVariable struct NegativeBinomialVariable(T)
+struct NegativeBinomialVariable(T)
     if (isFloatingPoint!T)
 {
+    ///
+    enum isRandomVariable = true;
+
     size_t r;
     T p;
 
@@ -1078,9 +1134,12 @@ unittest
 /++
 $(WIKI_D Binomial).
 +/
-@RandomVariable struct BinomialVariable(T)
+struct BinomialVariable(T)
     if (isFloatingPoint!T)
 {
+    ///
+    enum isRandomVariable = true;
+
     import core.stdc.tgmath: lgamma;
     size_t n = void;
     T np = void;
@@ -1208,9 +1267,12 @@ unittest
 _Discrete distribution sampler that draws random values from a _discrete
 distribution given an array of the respective probability density points (weights).
 +/
-@RandomVariable struct DiscreteVariable(T)
+struct DiscreteVariable(T)
     if (isNumeric!T)
 {
+    ///
+    enum isRandomVariable = true;
+
     private T[] cdf;
 
     /++
@@ -1380,9 +1442,12 @@ unittest
 /++
 Piecewise constant variable.
 +/
-@RandomVariable struct PiecewiseConstantVariable(T, W = T)
+struct PiecewiseConstantVariable(T, W = T)
     if (isNumeric!T && isNumeric!W)
 {
+    ///
+    enum isRandomVariable = true;
+
     private DiscreteVariable!W dv;
     private T[] intervals;
 
@@ -1453,9 +1518,12 @@ unittest
 /++
 Piecewise constant variable.
 +/
-@RandomVariable struct PiecewiseLinearVariable(T)
+struct PiecewiseLinearVariable(T)
     if (isFloatingPoint!T)
 {
+    ///
+    enum isRandomVariable = true;
+
     private DiscreteVariable!T dv;
     private T[] points;
     private T[] weights;

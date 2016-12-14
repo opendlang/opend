@@ -8,14 +8,16 @@ Authors: $(HTTP erdani.org, Andrei Alexandrescu) Ilya Yaroshenko (rework)
 module mir.random.engine.linear_congruential;
 
 import std.traits;
-import mir.random.engine;
 
 /++
 Linear Congruential generator.
 +/
-@RandomEngine struct LinearCongruentialEngine(Uint, Uint a, Uint c, Uint m)
+struct LinearCongruentialEngine(Uint, Uint a, Uint c, Uint m)
     if (isUnsigned!Uint)
 {
+    ///
+    enum isRandomEngine = true;
+
     /// Highest generated value ($(D modulus - 1 - bool(c == 0))).
     enum Uint max = m - 1 - bool(c == 0);
 /**
@@ -179,6 +181,7 @@ alias MinstdRand = LinearCongruentialEngine!(uint, 48271, 0, 2147483647);
 ///
 @safe unittest
 {
+    import mir.random.engine;
     // seed with a constant
     auto rnd0 = MinstdRand0(1);
     auto n = rnd0(); // same for each run
@@ -192,6 +195,7 @@ alias MinstdRand = LinearCongruentialEngine!(uint, 48271, 0, 2147483647);
 
 unittest
 {
+    import mir.random.engine;
     static assert(isRandomEngine!MinstdRand);
     static assert(isRandomEngine!MinstdRand0);
 

@@ -56,12 +56,11 @@ module mir.random.engine.mersenne_twister;
 */
 
 import std.traits;
-import mir.random.engine;
 
 /++
 The $(LUCKY Mersenne Twister) generator.
 +/
-@RandomEngine struct MersenneTwisterEngine(Uint, size_t w, size_t n, size_t m, size_t r,
+struct MersenneTwisterEngine(Uint, size_t w, size_t n, size_t m, size_t r,
                              Uint a,
                              uint u, Uint d,
                              uint s, Uint b,
@@ -69,6 +68,9 @@ The $(LUCKY Mersenne Twister) generator.
                              uint l)
     if (isUnsigned!Uint)
 {
+    ///
+    enum isRandomEngine = true;
+
     static assert(0 < w && w <= Uint.sizeof * 8);
     static assert(1 <= m && m <= n);
     static assert(0 <= r && 0 <= u && 0 <= s && 0 <= t && 0 <= l);
@@ -215,6 +217,8 @@ else
 ///
 @safe unittest
 {
+    import mir.random.engine;
+
     auto gen = Mt19937(unpredictableSeed);
     auto n = gen();
 
@@ -224,6 +228,8 @@ else
 
 @safe nothrow unittest
 {
+    import mir.random.engine;
+
     static assert(isSaturatedRandomEngine!Mt19937_32);
     static assert(isSaturatedRandomEngine!Mt19937_64);
     auto gen = Mt19937_32(Mt19937_32.defaultSeed);

@@ -20,26 +20,29 @@ import std.traits;
 
 import mir.random.engine.mersenne_twister;
 
-/// User Defined Attribute definition for uniform Random Engine.
-enum RandomEngine;
-
 /++
 Test if T is a random engine.
+A type should define `enum isRandomEngine = true;` to be random engine.
 +/
 template isRandomEngine(T)
 {
-    private alias R = typeof(T.init());
-    static if (hasUDA!(T, RandomEngine) && isUnsigned!R)
-        enum isRandomEngine = is(typeof({
-            enum max = T.max;
-            static assert(is(typeof(T.max) == R));
-            }));
-    else enum isRandomEngine = false; 
+    static if (is(typeof(T.isRandomEngine) : bool) && is(typeof(T.init())))
+    {
+        private alias R = typeof(T.init());
+        static if (T.isRandomEngine && isUnsigned!R)
+            enum isRandomEngine = is(typeof({
+                enum max = T.max;
+                static assert(is(typeof(T.max) == R));
+                }));
+        else enum isRandomEngine = false;
+    }
+    else enum isRandomEngine = false;
 }
 
 /++
 Test if T is a saturated random-bit generator.
 A random number generator is saturated if `T.max == ReturnType!T.max`.
+A type should define `enum isRandomEngine = true;` to be random engine.
 +/
 template isSaturatedRandomEngine(T)
 {
