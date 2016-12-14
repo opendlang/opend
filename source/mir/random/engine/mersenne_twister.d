@@ -104,7 +104,7 @@ The $(LUCKY Mersenne Twister) generator.
     /// The default seed value.
     enum Uint defaultSeed = 5489;
 
-    private Uint _z = void;
+    private Uint _z;
     /++
     Current reversed payload index with initial value equals to `n-1`
     +/
