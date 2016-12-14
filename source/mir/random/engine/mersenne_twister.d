@@ -100,6 +100,18 @@ struct MersenneTwisterEngine(Uint, size_t w, size_t n, size_t m, size_t r,
     +/
     Uint opCall() @safe pure nothrow @nogc
     {
+        // This function blends two nominally independent
+        // processes: (i) calculation of the next random
+        // variate from the cached previous `data` entry
+        // `_z`, and (ii) updating `data[index]` and `_z`
+        // and advancing the `index` value to the next in
+        // sequence.
+        //
+        // By interweaving the steps involved in these
+        // procedures, rather than performing each of
+        // them separately in sequence, the variables
+        // are kept 'hot' in CPU registers, allowing
+        // for significantly faster performance.
         sizediff_t index = cast(size_t)this.index;
         sizediff_t next = index - 1;
         if(next < 0)
