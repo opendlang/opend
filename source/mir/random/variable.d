@@ -38,7 +38,7 @@ and $(HTTP en.wikipedia.org/wiki/Uniform_distribution_(continuous),
 
 Authors: Ilya Yaroshenko, Sebastian Wilzbach (DiscreteVariable)
 Copyright: Copyright, Ilya Yaroshenko 2016-.
-License:   BSD 3-clause.
+License:    $(HTTP www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
 
 Macros:
     WIKI_D = $(HTTP en.wikipedia.org/wiki/$1_distribution, $1 random variable)

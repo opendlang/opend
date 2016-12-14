@@ -1,7 +1,7 @@
 /++
 Authors: Ilya Yaroshenko, documentation is partially based on Phobos.
 Copyright: Copyright, Ilya Yaroshenko 2016-.
-License: BSD 3-clause.
+License:  $(HTTP www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
 +/
 module mir.random.algorithm;
 
