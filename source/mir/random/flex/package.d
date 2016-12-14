@@ -1,7 +1,7 @@
 /**
 Flex module that allows to sample from arbitrary random distributions.
 
-License: $(LINK2 http://boost.org/LICENSE_1_0.txt, Boost License 1.0).
+License: BSD 3-clause.
 
 Authors: Sebastian Wilzbach, Ilya Yaroshenko
 

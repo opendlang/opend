@@ -16,7 +16,7 @@ Publicly includes  `mir.random.engine`.
 
 Authors: Ilya Yaroshenko
 Copyright: Copyright, Ilya Yaroshenko 2016-.
-License:   $(HTTP www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
+License:   BSD 3-clause.
 Macros:
 SUBREF = $(REF_ALTTEXT $(TT $2), $2, mir, ndslice, $1)$(NBSP)
 T2=$(TR $(TDNW $(LREF $1)) $(TD $+))
