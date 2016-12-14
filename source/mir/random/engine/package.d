@@ -22,7 +22,7 @@ import mir.random.engine.mersenne_twister;
 
 /++
 Test if T is a random engine.
-A type should define `enum isRandomEngine = true;` to be random engine.
+A type should define `enum isRandomEngine = true;` to be a random engine.
 +/
 template isRandomEngine(T)
 {
@@ -42,7 +42,7 @@ template isRandomEngine(T)
 /++
 Test if T is a saturated random-bit generator.
 A random number generator is saturated if `T.max == ReturnType!T.max`.
-A type should define `enum isRandomEngine = true;` to be random engine.
+A type should define `enum isRandomEngine = true;` to be a random engine.
 +/
 template isSaturatedRandomEngine(T)
 {
