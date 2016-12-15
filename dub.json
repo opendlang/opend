@@ -7,7 +7,7 @@
 	],
 	"description": "Dlang Random Number Generators",
 	"copyright": "Copyright © 2016, Ilya Yaroshenko",
-	"license": "BSD 3-clause",
+	"license": "BSL-1.0",
 	"dependencies": {
 		"mir-math": "~>0.0.1"
 	}
