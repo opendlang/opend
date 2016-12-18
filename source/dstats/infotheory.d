@@ -410,7 +410,7 @@ if(isInputRange!(T) && isInputRange!(U)) {
         auto alloc = newRegionAllocator();
         auto condForward = alloc.array(cond);
     }
-    
+
     return entropy(joint(data, condForward.save)) - entropy(condForward.save);
 }
 

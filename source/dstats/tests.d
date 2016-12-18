@@ -36,7 +36,7 @@ import std.functional, std.range, std.conv, std.math, std.traits,
 import std.algorithm : reverse, copy, max, min, swap, map, reduce;
 
 import dstats.base, dstats.distrib, dstats.alloc, dstats.summary, dstats.sort;
-    
+
 static import dstats.cor;
 
 private static import dstats.infotheory;
@@ -123,19 +123,19 @@ One-sample Student's T-test for difference between mean of data and
  a fixed value.  Alternatives are Alt.less, meaning mean(data) < testMean,
  Alt.greater, meaning mean(data) > testMean, and Alt.twoSided, meaning
  mean(data)!= testMean.
- 
+
  data may be either an iterable with elements implicitly convertible to
  double or a summary struct (see isSummary).
  *
  Examples:
  ---
  uint[] data = [1,2,3,4,5];
- 
+
  // Test the null hypothesis that the mean of data is >= 1 against the
  // alternative that the mean of data is < 1.  Calculate confidence
  // intervals at 90%.
  auto result1 = studentsTTest(data, 1, Alt.less, 0.9);
- 
+
  // Do the same thing, only this time we've already calculated the summary
  // statistics explicitly before passing them to studensTTest.
  auto summary = meanStdev(data);
@@ -143,15 +143,15 @@ One-sample Student's T-test for difference between mean of data and
  result2 = studentsTTest(summary, 1, Alt.less, 0.9);  // Same as result1.
  assert(result1 == result2);
  ---
- 
+
  Returns:  A ConfInt containing T, the P-value and the boundaries of
  the confidence interval for mean(data) at the level specified.
- 
+
  References:  http://en.wikipedia.org/wiki/Student%27s_t-test
  */
 ConfInt studentsTTest(T)(
-    T data, 
-    double testMean = 0, 
+    T data,
+    double testMean = 0,
     Alt alt = Alt.twoSided,
     double confLevel = 0.95
 ) if( (isSummary!T || doubleIterable!T)) {
@@ -203,10 +203,10 @@ of sample1 and sample2 at the specified level.
 References:  http://en.wikipedia.org/wiki/Student%27s_t-test
  */
 ConfInt studentsTTest(T, U)(
-    T sample1, 
-    U sample2, 
+    T sample1,
+    U sample2,
     double testMean = 0,
-    Alt alt = Alt.twoSided, 
+    Alt alt = Alt.twoSided,
     double confLevel = 0.95
 ) if( (doubleIterable!T || isSummary!T) && (doubleIterable!U || isSummary!U)) {
     enforceConfidence(confLevel);
@@ -453,10 +453,10 @@ corresponding elements of sample1 and sample2 at the specified level.
 References:  http://en.wikipedia.org/wiki/Student%27s_t-test
 */
 ConfInt pairedTTest(T, U)(
-    T before, 
-    U after, 
+    T before,
+    U after,
     double testMean = 0,
-    Alt alt = Alt.twoSided, 
+    Alt alt = Alt.twoSided,
     double confLevel = 0.95
 ) if(doubleInput!(T) && doubleInput!(U) && isInputRange!T && isInputRange!U) {
     enforceConfidence(confLevel);
@@ -470,16 +470,16 @@ ConfInt pairedTTest(T, U)(
         msd.put(diff);
     }
 
-    dstatsEnforce(before.empty && after.empty, 
+    dstatsEnforce(before.empty && after.empty,
         "before and after have different lengths in pairedTTest.");
-        
+
     return pairedTTest(msd, testMean, alt, confLevel);
 }
 
 /**
-Compute a paired T test directly from summary statistics of the differences 
+Compute a paired T test directly from summary statistics of the differences
 between corresponding samples.
- 
+
 Examples:
 ---
 float[] data1 = [8, 6, 7, 5, 3, 0, 9];
@@ -503,9 +503,9 @@ auto result2 = pairedTTest(data1, data2, 5, Alt.twoSided, 0.99);
 References:  http://en.wikipedia.org/wiki/Student%27s_t-test
  */
 ConfInt pairedTTest(T)(
-    T diffSummary, 
+    T diffSummary,
     double testMean = 0,
-    Alt alt = Alt.twoSided, 
+    Alt alt = Alt.twoSided,
     double confLevel = 0.95
 ) if(isSummary!T) {
     enforceConfidence(confLevel);
@@ -2043,28 +2043,28 @@ enum Expected {
 /**Performs a one-way Pearson's chi-square goodness of fit test between a range
 of observed and a range of expected values.  This is a useful statistical
 test for testing whether a set of observations fits a discrete distribution.
- 
+
 Returns:  A TestRes of the chi-square statistic and the P-value for the
 alternative hypothesis that observed is not a sample from expected against
 the null that observed is a sample from expected.
- 
+
 Notes:  By default, expected is assumed to be a range of expected proportions.
 These proportions are automatically normalized, and can sum to any number.
 By passing Expected.count in as the last parameter, calculating expected
 counts will be skipped, and expected will assume to already be properly
 normalized.  This is slightly faster, but more importantly
 allows input ranges to be used.
- 
+
 The chi-square test relies on asymptotic statistical properties
 and is therefore not considered valid, as a rule of thumb,  when expected
 counts are below 5.  However, this rule is likely to be unnecessarily
 stringent in most cases.
- 
+
 Examples:
 ---
 // Test to see whether a set of categorical observations differs
 // statistically from a discrete uniform distribution.
- 
+
 uint[] observed = [980, 1028, 1001, 964, 1102];
 auto expected = repeat(1.0);
 auto res2 = chiSquareFit(observed, expected);
@@ -2075,8 +2075,8 @@ assert(approxEqual(res2.testStat, 11.59));
 References:  http://en.wikipedia.org/wiki/Pearson%27s_chi-square_test
  */
 TestRes chiSquareFit(T, U)(
-    T observed, 
-    U expected, 
+    T observed,
+    U expected,
     Expected countProp = Expected.proportion
 ) if(doubleInput!(T) && doubleInput!(U)) {
     return goodnessFit!(pearsonChiSqElem, T, U)(observed, expected, countProp);
@@ -2295,27 +2295,27 @@ in the contingency table.  These can be expressed either as a tuple of ranges
 or a range of ranges.  Returns a P-value for the alternative hypothesis that
 frequencies in each row of the contingency table depend on the column against
 the null that they don't.
- 
+
 Notes:  The chi-square test relies on asymptotic statistical properties
 and is therefore not exact.  The typical rule of thumb is that each cell
 should have an expected value of at least 5.  However, this is likely to
 be unnecessarily stringent.
- 
+
 Yates's continuity correction is never used in this implementation.  If
 you want something that's guaranteed to be conservative, use fisherExact().
- 
+
 This is, for all practical purposes, an inherently non-directional test.
 Therefore, the one-sided verses two-sided option is not provided.
- 
+
 For 2x2 contingency tables, fisherExact is a more conservative test, in that
 the type I error rate is guaranteed to never be above the nominal P-value.
 However, even for small sample sizes this test may produce results closer
 to the true P-value, at the risk of possibly being non-conservative.
- 
+
 Examples:
 ---
 // Test to see whether the relative frequency of outcome 0, 1, and 2
-// depends on the treatment (drug1, drug2 or placebo) in some hypothetical 
+// depends on the treatment (drug1, drug2 or placebo) in some hypothetical
 // experiment.  For example, 1500 people had outcome 2 if they were treated
 // with drug1 and 1100 had outcome 1 if treated with placebo.
 uint[] drug1 = [1000, 2000, 1500];
@@ -2328,7 +2328,7 @@ auto result1 = chiSquareContingency(drug1, drug2, placebo);
 auto rangeOfRanges = [drug1, drug2, placebo];
 auto result2 = chiSquareContingency(rangeOfRanges);
 ---
- 
+
 References: http://en.wikipedia.org/wiki/Pearson%27s_chi-square_test
  *
  */
@@ -2438,11 +2438,11 @@ private GTestRes testContingency(alias elemFun, T...)(T rangesIn) {
     static if(isInputRange!(T[0]) && T.length == 1 &&
         isForwardRange!(typeof(rangesIn[0].front()))) {
         auto ranges = alloc.array(rangesIn[0]);
-        
+
         foreach(ref range; ranges) {
             range = range.save;
         }
-        
+
     } else static if(allSatisfy!(isForwardRange, typeof(rangesIn))) {
         auto saved = saveAll(rangesIn);
         auto ranges = saved.expand;
@@ -2611,14 +2611,14 @@ unittest {
     auto result = chiSquareObs(x, y);
     assert(approxEqual(result.testStat, 2.22222222));
     assert(approxEqual(result.p, 0.136037));
-    
+
     auto contingency = new uint[][](2, 2);
     foreach(i; 0..x.length) {
         immutable index1 = (x[i] == "foo");
         immutable index2 = (y[i] == "xxx");
         contingency[index1][index2]++;
     }
-    
+
     auto result2 = chiSquareContingency(contingency);
     assert(approxEqual(result.testStat, result2.testStat),
         text(result.testStat, ' ', result2.testStat));
@@ -3037,10 +3037,10 @@ template isArrayLike(T) {
 }
 
 /**
-One-sample Kolmogorov-Smirnov test against a reference distribution.  
+One-sample Kolmogorov-Smirnov test against a reference distribution.
 Takes a callable object for the CDF of refernce distribution.
 
-Returns:  A TestRes with the Kolmogorov-Smirnov D value and a P value for the 
+Returns:  A TestRes with the Kolmogorov-Smirnov D value and a P value for the
 null that Femp is a sample from F against the alternative that it isn't. This
 implementation uses a signed D value to indicate the direction of the
 difference between distributions.  To get the D value used in standard
@@ -3270,7 +3270,7 @@ deprecated {
 
 /**
 Tests the hypothesis that the Pearson correlation between two ranges is
-different from some 0.  Alternatives are Alt.less 
+different from some 0.  Alternatives are Alt.less
 (pearsonCor(range1, range2) < 0), Alt.greater (pearsonCor(range1, range2)
  0) and Alt.twoSided (pearsonCor(range1, range2) != 0).
 
@@ -3281,9 +3281,9 @@ the correlation at the level specified by confLevel.
 References:  http://en.wikipedia.org/wiki/Pearson_correlation
 */
 ConfInt pearsonCorTest(T, U)(
-    T range1, 
-    U range2, 
-    Alt alt = Alt.twoSided, 
+    T range1,
+    U range2,
+    Alt alt = Alt.twoSided,
     double confLevel = 0.95
 ) if(doubleInput!(T) && doubleInput!(U)) {
     enforceConfidence(confLevel);
@@ -3303,9 +3303,9 @@ size instead of computing them.
 Note:  This is a template only because of DMD Bug 2972.
  */
 ConfInt pearsonCorTest()(
-    double cor, 
-    double N, 
-    Alt alt = Alt.twoSided, 
+    double cor,
+    double N,
+    Alt alt = Alt.twoSided,
     double confLevel = 0.95
 ) {
     dstatsEnforce(N >= 0, "N must be >= 0 for pearsonCorTest.");
@@ -3441,7 +3441,7 @@ the P-value for the given alternative.
 Bugs:  Exact P-value computation not yet implemented.  Uses asymptotic
 approximation only.  This is good enough for most practical purposes given
 reasonably large N, but is not perfectly accurate.  Not valid for data with
-very large amounts of ties.  
+very large amounts of ties.
 */
 TestRes spearmanCorTest(T, U)(T range1, U range2, Alt alt = Alt.twoSided)
 if(isInputRange!(T) && isInputRange!(U) &&
@@ -3478,11 +3478,11 @@ unittest {
 
 /**
 Tests the hypothesis that the Kendall Tau-b between two ranges is
-different from 0.  Alternatives are Alt.less (kendallCor(range1, range2) < 0), 
-Alt.greater (kendallCor(range1, range2) > 0) and Alt.twoSided 
+different from 0.  Alternatives are Alt.less (kendallCor(range1, range2) < 0),
+Alt.greater (kendallCor(range1, range2) > 0) and Alt.twoSided
 (kendallCor(range1, range2) != 0).
 
- 
+
 exactThresh controls the maximum length of the range for which exact P-value
 computation is used.  The default is 50.  Exact calculation is never used
 when ties are present because it is not computationally feasible.
@@ -3506,25 +3506,25 @@ The Variance of Tau When Both Rankings Contain Ties.  M.G. Kendall.
 Biometrika, Vol 34, No. 3/4 (Dec., 1947), pp. 297-298
  */
 TestRes kendallCorTest(T, U)(
-    T range1, 
-    U range2, 
-    Alt alt = Alt.twoSided, 
+    T range1,
+    U range2,
+    Alt alt = Alt.twoSided,
     uint exactThresh = 50
 ) if(isInputRange!(T) && isInputRange!(U)) {
     auto alloc = newRegionAllocator();
-    
+
     static if(dstats.cor.isDefaultSorted!T) {
         alias range1 i1d;
     } else {
         auto i1d = alloc.array(range1);
     }
-    
+
     static if(dstats.cor.isDefaultSorted!U) {
         alias range2 i2d;
     } else {
         auto i2d = alloc.array(range2);
     }
-    
+
     immutable res = dstats.cor.kendallCorDestructiveLowLevel(i1d, i2d, true);
     immutable double n = i1d.length;
 
@@ -3877,7 +3877,7 @@ enum Dependency : bool {
 
     /**
     Assume hypotheses are independent.  (Less conservative, Benjamine-
-    Hochberg procedure.) 
+    Hochberg procedure.)
     */
     no = false
 }

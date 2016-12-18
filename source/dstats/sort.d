@@ -171,7 +171,7 @@ auto prepareForSorting(alias comp, T)(T arr) {
                     throw new SortException("Can't sort NaNs.");
                 }
             }
-            
+
             return arr;
         } else static if(is(T == double[]) || is(T == float[])) {
             static if(is(T == double[])) {
@@ -203,7 +203,7 @@ auto prepareForSorting(alias comp, T)(T arr) {
         } else {
             return arr;
         }
-        
+
     } else {
         return arr;
     }

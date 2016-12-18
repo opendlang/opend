@@ -35,7 +35,7 @@ module dstats.regress;
 
 import std.math, std.traits, std.array, std.traits, std.string,
     std.exception, std.typetuple, std.typecons, std.numeric, std.parallelism;
-   
+
 import std.algorithm : map, copy, max, min, filter, reduce;
 
 alias std.range.repeat repeat;
@@ -1868,13 +1868,13 @@ unittest {
 }
 
 /**
-This function performs loess regression.  Loess regression is a local 
+This function performs loess regression.  Loess regression is a local
 regression procedure, where a prediction of the dependent (y) variable
 is made from an observation of the independent (x) variable by weighted
 least squares over x values in the neighborhood of the value being evaluated.
 
 In the future a separate function may be included to perform loess regression
-with multiple predictors.  However, one predictor is the much more common 
+with multiple predictors.  However, one predictor is the much more common
 case and the multiple predictor case will require a much different API
 and implementation, so for now only one predictor is supported.
 
@@ -1888,11 +1888,11 @@ span   = The fraction of x observations considered to be "in the neighborhood"
          the 4 nearest neighbors will be used on evaluation.
 degree = The polynomial degree of the local regression.  Must be less than
          the number of neighbors (span * x.length).
-         
+
 Returns:
 
-A Loess1D object.  This object can be used to make predictions based on 
-the loess model.  The computations involved are done lazily, i.e. this 
+A Loess1D object.  This object can be used to make predictions based on
+the loess model.  The computations involved are done lazily, i.e. this
 function sets up the Loess1D instance and returns without computing
 any regression models.
 
@@ -1913,9 +1913,9 @@ auto prediction = model.predict(5.5, 2);
 
 References:
 
-Cleveland, W.S. (1979). "Robust Locally Weighted Regression and Smoothing 
-Scatterplots". Journal of the American Statistical Association 74 (368): 
-829-836. 
+Cleveland, W.S. (1979). "Robust Locally Weighted Regression and Smoothing
+Scatterplots". Journal of the American Statistical Association 74 (368):
+829-836.
 */
 Loess1D loess1D(RX, RY)(
     RY y,
@@ -1932,13 +1932,13 @@ Loess1D loess1D(RX, RY)(
     ret._x = array(map!(to!double)(x));
     ret._y = array(map!(to!double)(y));
     qsort(ret._x, ret._y);
-    
+
     ret.nNeighbors = to!int(ret.x.length * span);
     dstatsEnforce(ret.nNeighbors > degree, format(
         "Cannot do degree %s loess with a window of only %s points.  " ~
         "Increase the span parameter.", degree, ret.nNeighbors
     ));
-    
+
     ret._degree = degree;
     auto xPoly = new double[][degree];
     if(degree > 0) xPoly[0] = ret._x;
@@ -1955,28 +1955,28 @@ Loess1D loess1D(RX, RY)(
 unittest {
     auto x = [1, 2, 3, 4, 5, 6, 7, 8];
     auto y = [3, 2, 8, 2, 6, 9, 0, 1];
-    
+
     auto loess1 = loess1D(y, x, 0.75, 1);
-    
+
     // Values from R's lowess() function.  This gets slightly different
     // results than loess(), probably due to disagreements bout windowing
     // details.
-    assert(approxEqual(loess1.predictions(0), 
+    assert(approxEqual(loess1.predictions(0),
         [2.9193046, 3.6620295, 4.2229953, 5.2642335, 5.3433985, 4.4225636,
          2.7719778, 0.6643268]
     ));
-    
+
     loess1 = loess1D(y, x, 0.5, 1);
     assert(approxEqual(loess1.predictions(0),
         [2.1615941, 4.0041736, 4.5642738, 4.8631052, 5.7136895, 5.5642738,
          2.8631052, -0.1977227]
     ));
- 
+
     assert(approxEqual(loess1.predictions(2),
         [2.2079526, 3.9809030, 4.4752888, 4.8849727, 5.7260333, 5.4465225,
          2.8769120, -0.1116018]
     ));
-    
+
     // Test 0th and 2nd order using R's loess() function since lowess() doesn't
     // support anything besides first degree.
     auto loess0 = loess1D(y, x, 0.5, 0);
@@ -1984,10 +1984,10 @@ unittest {
         [3.378961, 4.004174, 4.564274, 4.863105, 5.713689, 5.564274, 2.863105,
          1.845369]
     ));
-    
+
     // Not testing the last point.  R's loess() consistently gets slightly
     // different answers for the last point than either this function or
-    // R's lowess() for degree > 0.  (This function and R's lowess() agree 
+    // R's lowess() for degree > 0.  (This function and R's lowess() agree
     // when this happens.)  It's not clear which is right but the differences
     // are small and not practically important.
     auto loess2 = loess1D(y, x, 0.75, 2);
@@ -2028,7 +2028,7 @@ private:
 
         return trisected[0].length;
     }
-    
+
     static void computexTWx(
         const double[][] xPoly,
         const(double)[] weights,
@@ -2039,12 +2039,12 @@ private:
                 xPoly[i], weights, xPoly[j]
             );
         }
-        
+
         // Handle intercept terms
         foreach(i; 1..covMatrix.rows) {
             covMatrix[0, i] = covMatrix[i, 0] = dotProduct(weights, xPoly[i - 1]);
         }
-        
+
         covMatrix[0, 0] = sum(weights);
     }
 
@@ -2057,7 +2057,7 @@ private:
         foreach(i; 0..xPoly.length) {
             ans[i + 1] = threeDot(xPoly[i], weights, y);
         }
-        
+
         // Intercept:
         ans[0] = dotProduct(weights, y);
     }
@@ -2067,16 +2067,16 @@ public:
     Predict the value of y when x == point, using robustness iterations
     of the biweight procedure outlined in the reference to make the
     estimates more robust.
-    
-    Notes:  
-    
+
+    Notes:
+
     This function is computationally intensive but may be called
     from multiple threads simultaneously.  When predicting a
     large number of points, a parallel foreach loop may be used.
-    
-    Before calling this function with robustness > 0, 
+
+    Before calling this function with robustness > 0,
     computeRobustWeights() must be called.  See this function for details.
-    
+
     Returns:  The predicted y value.
     */
     double predict(double point, int robustness = 0) const {
@@ -2085,7 +2085,7 @@ public:
             "must be called with the proper robustness level before " ~
             "calling predict()."
         );
-            
+
         auto alloc = newRegionAllocator();
         auto covMatrix = doubleMatrix(degree + 1, degree + 1, alloc);
         auto xTy = alloc.uninitializedArray!(double[])(degree + 1);
@@ -2132,24 +2132,24 @@ public:
         }
 
         return ret;
-    }    
+    }
 
     /**
-    Compute the weights for robust loess, for all robustness levels <= the 
-    robustness parameter.  This computation is embarrassingly parallel, so if a 
+    Compute the weights for robust loess, for all robustness levels <= the
+    robustness parameter.  This computation is embarrassingly parallel, so if a
     TaskPool is provided it will be parallelized.
-    
+
     This function must be called before calling predict() with a robustness
     value > 0.  computeRobustWeights() must be called with a robustness level
-    >= the robustness level predict() is to be called with.  This is not 
+    >= the robustness level predict() is to be called with.  This is not
     handled implicitly because computeRobustWeights() is very computationally
     intensive and because it modifies the state of the Loess1D object, while
-    predict() is const.  Forcing computeRobustWeights() to be called explicitly 
+    predict() is const.  Forcing computeRobustWeights() to be called explicitly
     allows multiple instances of predict() to be evaluated in parallel.
     */
     void computeRobustWeights(int robustness, TaskPool pool = null) {
         dstatsEnforce(robustness >= 0, "Robustness cannot be <0.");
-        
+
         if(cast(int) yHat.length < robustness) {
             computeRobustWeights(robustness - 1, pool);
         }
@@ -2172,7 +2172,7 @@ public:
         }
 
         yHat ~= new double[y.length];
-        
+
         if(pool is null) {
             foreach(i, point; x) {
                 yHat[robustness][i] = predict(point, robustness);
@@ -2195,7 +2195,7 @@ public:
         computeRobustWeights(robustness, pool);
         return yHat[robustness];
     }
-    
+
 const pure nothrow @property @safe:
 
     /// The polynomial degree for the local regression.

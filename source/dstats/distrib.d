@@ -1747,7 +1747,7 @@ unittest {
 double kolmDist()(double x) {
     pragma(msg, "kolmDist is scheduled for deprecation.  Please use " ~
         "kolmogorovDistrib instead.");
-        
+
     return kolmogorovDistrib(x);
 }
 
@@ -1762,7 +1762,7 @@ double kolmogorovDistrib(immutable double x) {
         //Handle as a special case.  Otherwise, get NAN b/c of divide by zero.
         return 0;
     }
-    
+
     double result = 0;
     double i = 1;
     immutable xSquared = x * x;

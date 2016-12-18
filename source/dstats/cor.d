@@ -108,7 +108,7 @@ if(doubleInput!(T) && doubleInput!(U)) {
             corCalc._cov = _cov[0];
 
             foreach(j; 1..nILP) {
-                auto tmp = PearsonCor(_k, _mean1[j], _mean2[j], 
+                auto tmp = PearsonCor(_k, _mean1[j], _mean2[j],
                         _var1[j], _var2[j], _cov[j]);
                 corCalc.put(tmp);
             }
@@ -434,7 +434,7 @@ package template isDefaultSorted(R) {
     static if(!is(typeof(R.init.release()))) {
         enum isDefaultSorted = false;
     } else {
-        enum isDefaultSorted = 
+        enum isDefaultSorted =
             is(R == SortedRange!(typeof(R.init.release()), "a < b"));
     }
 }
@@ -452,7 +452,7 @@ unittest {
 Kendall's Tau-b, O(N log N) version.  This is a non-parametric measure
 of monotonic association and can be defined in terms of the
 bubble sort distance, or the number of swaps that would be needed in a
-bubble sort to sort input2 into the same order as input1. 
+bubble sort to sort input2 into the same order as input1.
 
 Since a copy of the inputs is made anyhow because they need to be sorted,
 this function can work with any input range.  However, the ranges must
@@ -475,7 +475,7 @@ foreach(i; 0..1_000) {
     auto lhsSorted = assumeSorted(
         indexed(lhs, indices)
     );
-    
+
     // Rearrange rhs according to the sorting permutation of lhs.
     // kendallCor(lhsSorted, rhsRearranged) will be much faster than
     // kendallCor(lhs, rhs).
@@ -501,9 +501,9 @@ if(isInputRange!(T) && isInputRange!(U)) {
             return kendallCorSmallN(input1, input2);
         }
     }
-    
+
     auto alloc = newRegionAllocator();
-    
+
     auto prepare(V)(V range) {
         static if(isDefaultSorted!V) {
             return range;
@@ -511,7 +511,7 @@ if(isInputRange!(T) && isInputRange!(U)) {
             return prepareForSorting!compFun(alloc.array(range));
         }
     }
-    
+
     try {
         auto i1d = prepare(input1);
         auto i2d = prepare(input2);
@@ -561,7 +561,7 @@ auto kendallCorDestructiveLowLevel(R1, R2)
         static assert(isArray!R2);
         alias typeof(R1.init[0]) T;
         alias typeof(R2.init[0]) U;
-        
+
         static if(T.sizeof > U.sizeof) {
             return kendallCorDestructiveLowLevelImpl(input1, input2, needTies);
         } else {
@@ -664,12 +664,12 @@ in {
     }
 
     computeTies(input1, ret.tieCorrectT1, ret.tieCorrectT2, ret.tieCorrectT3);
-    
+
     static if(isArray!R2) {
         ulong swapCount = 0;
         static if(isArray!R1) {
-            // We've already guaranteed that input1 is the bigger array by 
-            // bytes and we own these arrays and won't use input1 again, so 
+            // We've already guaranteed that input1 is the bigger array by
+            // bytes and we own these arrays and won't use input1 again, so
             // this is safe.
             alias typeof(input2[0]) U;
             U[] input1Temp = (cast(U*) input1.ptr)[0..input2.length];
@@ -813,20 +813,20 @@ unittest {
     // handling.
     auto rng = chain(repeat(0, 100_000), repeat(1, 100_000));
     assert(approxEqual(kendallCor(rng, rng), 1));
-    
+
     // Test the case where we have one range sorted already.
     assert(kendallCor(iota(5), [3, 1, 2, 5, 4]) ==
         kendallCor(assumeSorted(iota(5)), [3, 1, 2, 5, 4])
     );
-    
+
     assert(kendallCor(iota(5), [3, 1, 2, 5, 4]) ==
         kendallCor([3, 1, 2, 5, 4], assumeSorted(iota(5)))
     );
-    
+
     assert(approxEqual(
         kendallCor(assumeSorted(iota(5)), assumeSorted(iota(5))), 1
     ));
-    
+
     auto lhs = randArray!rNorm(1_000, 0, 1);
     auto indices = new size_t[1_000];
     import std.algorithm;
@@ -837,7 +837,7 @@ unittest {
         auto lhsSorted = assumeSorted(
             indexed(lhs, indices)
         );
-        
+
         // Rearrange rhs according to the sorting permutation of lhs.
         // kendallCor(lhsSorted, rhsRearranged) will be much faster than
         // kendallCor(lhs, rhs).
@@ -913,7 +913,7 @@ if(isInputRange!T && isInputRange!U && allSatisfy!(isInputRange, V)) {
 
     auto invMatrix = doubleMatrix(cond.length + 2, cond.length + 2, alloc);
     invert(corMatrix, invMatrix);
-    
+
     // This code is written so verbosely to work around a compiler segfault
     // that I have no idea how to reduce.
     immutable denom = sqrt(invMatrix[0, 0] * invMatrix[1, 1]);
@@ -940,29 +940,29 @@ unittest {
 private struct DelMap(R, Del) {
     R range;
     Del del;
-    
+
     @property auto front() { return del(range.front); }
     void popFront() { range.popFront(); }
     bool empty() @property { return range.empty; }
-    
+
     static if(isBidirectionalRange!R) {
         @property auto back() { return del(range.back); }
         void popBack() { range.popBack(); }
     }
-    
+
     static if(hasLength!R) {
         size_t length() @property { return range.length; }
     }
-    
+
     static if(isForwardRange!R) {
         typeof(this) save() @property { return typeof(this)(range.save, del); }
     }
-    
+
     static if(isRandomAccessRange!R) {
         auto opIndex(size_t index) {
             return del(range[index]);
         }
-        
+
         typeof(this) opSlice(size_t low, size_t up) {
             return typeof(this)(range[low..up], del);
         }
@@ -974,7 +974,7 @@ private struct DelMap(R, Del) {
 private auto delMap(R, Del)(R range, scope Del del) {
     return DelMap!(R, Del)(range, del);
 }
-    
+
 private __gshared TaskPool emptyPool;
 shared static this() {
     emptyPool = new TaskPool(0);
@@ -982,15 +982,15 @@ shared static this() {
 
 private struct RorToMatrix(RoR) {
     RoR* ror;
-    
+
     auto ref opIndex(size_t i, size_t j) {
         return (*ror)[i][j];
     }
-    
+
     void opIndexAssign(typeof((*ror)[0][0]) val, size_t i, size_t j) {
         (*ror)[i][j] = val;
     }
-    
+
     size_t rows() @property {
         return (*ror).length;
     }
@@ -1009,13 +1009,13 @@ private template isMatrixLike(T) {
 }
 
 version(scid) {
-import scid.matrix;    
+import scid.matrix;
 
 /**
 These functions allow efficient calculation of the Pearson, Spearman and
 Kendall correlation matrices and the covariance matrix respectively.  They
 are optimized to avoid computing certain values multiple times when computing
-correlations of one vector to several others.  
+correlations of one vector to several others.
 
 Note:  These functions are only available when SciD is installed and
        dstats is compiled with version=scid.
@@ -1026,9 +1026,9 @@ mat = A range of ranges to be treated as a set of vectors.  This must be
       a finite range, and must be rectangular, i.e. all elements must be
       the same length.  For Pearson correlation and covariance, the ranges
       must also have elements implicitly convertible to double.
-      SciD matrices can be treated as ranges of ranges and can be used with 
+      SciD matrices can be treated as ranges of ranges and can be used with
       these functions.
-      
+
 taskPool = A std.parallelism.TaskPool used to parallelize the computation.
            This is useful for very large matrices.  If none is provided,
            the computation will not be parallelized.
@@ -1042,7 +1042,7 @@ auto input = [[8.0, 6, 7, 5],
 auto pearson = pearsonMatrix(input);
 assert(approxEqual(pearson[0, 0], 1));
 ---
-*/    
+*/
 SymmetricMatrix!double pearsonMatrix(RoR)(RoR mat, TaskPool pool = null)
 if(isInputRange!RoR && isInputRange!(ElementType!RoR) &&
    is(ElementType!(ElementType!RoR) : double) &&
@@ -1062,7 +1062,7 @@ if(isInputRange!RoR && isInputRange!(ElementType!RoR) && !isInfinite!RoR) {
 }
 
 /// Ditto
-SymmetricMatrix!double kendallMatrix(RoR)(RoR mat, TaskPool pool = null) 
+SymmetricMatrix!double kendallMatrix(RoR)(RoR mat, TaskPool pool = null)
 if(isInputRange!RoR && isInputRange!(ElementType!RoR) && !isInfinite!RoR) {
     SymmetricMatrix!double ret;
     kendallMatrixImpl!true(mat, ret, pool);
@@ -1084,7 +1084,7 @@ if(isInputRange!RoR && isInputRange!(ElementType!RoR) &&
 /**
 These overloads allow for correlation and covariance matrices to be computed
 with the results being stored in a pre-allocated variable, ans.  ans must
-be either a SciD matrix or a random-access range of ranges with assignable 
+be either a SciD matrix or a random-access range of ranges with assignable
 elements of a floating point type.  It must have the same number of rows
 as the number of vectors in mat and must have at least enough columns in
 each row to support storing the lower triangle.  If ans is a full rectangular
@@ -1103,7 +1103,7 @@ assert(approxEqual(pearsonRoR[1][1], 1));
 void pearsonMatrix(RoR, Ret)(RoR mat, ref Ret ans, TaskPool pool = null)
 if(isInputRange!RoR && isInputRange!(ElementType!RoR) &&
    is(ElementType!(ElementType!RoR) : double) &&
-   !isInfinite!RoR && 
+   !isInfinite!RoR &&
    (is(typeof(ans[0, 0] = 2.0)) || is(typeof(ans[0][0] = 2.0)))
 ) {
     static if(isMatrixLike!Ret) {
@@ -1111,7 +1111,7 @@ if(isInputRange!RoR && isInputRange!(ElementType!RoR) &&
     } else {
         auto ret = makeMatrixLike(ans);
     }
-    
+
     pearsonSpearmanCov!false(mat, pool, CorCovType.pearson, ret);
 }
 
@@ -1125,12 +1125,12 @@ if(isInputRange!RoR && isInputRange!(ElementType!RoR) && !isInfinite!RoR &&
     } else {
         auto ret = makeMatrixLike(ans);
     }
-    
+
     pearsonSpearmanCov!false(mat, pool, CorCovType.spearman, ret);
 }
 
 /// Ditto
-void kendallMatrix(RoR, Ret)(RoR mat, ref Ret ans, TaskPool pool = null) 
+void kendallMatrix(RoR, Ret)(RoR mat, ref Ret ans, TaskPool pool = null)
 if(isInputRange!RoR && isInputRange!(ElementType!RoR) && !isInfinite!RoR &&
    (is(typeof(ans[0, 0] = 2.0)) || is(typeof(ans[0][0] = 2.0)))
 ) {
@@ -1139,7 +1139,7 @@ if(isInputRange!RoR && isInputRange!(ElementType!RoR) && !isInfinite!RoR &&
     } else {
         auto ret = makeMatrixLike(ans);
     }
-    
+
     kendallMatrixImpl!false(mat, ret, pool);
 }
 
@@ -1147,7 +1147,7 @@ if(isInputRange!RoR && isInputRange!(ElementType!RoR) && !isInfinite!RoR &&
 void covarianceMatrix(RoR, Ret)(RoR mat, ref Ret ans, TaskPool pool = null)
 if(isInputRange!RoR && isInputRange!(ElementType!RoR) &&
    is(ElementType!(ElementType!RoR) : double) &&
-   !isInfinite!RoR && 
+   !isInfinite!RoR &&
    (is(typeof(ans[0, 0] = 2.0)) || is(typeof(ans[0][0] = 2.0)))
 ) {
     static if(isMatrixLike!Ret) {
@@ -1155,7 +1155,7 @@ if(isInputRange!RoR && isInputRange!(ElementType!RoR) &&
     } else {
         auto ret = makeMatrixLike(ans);
     }
-    
+
     pearsonSpearmanCov!false(mat, pool, CorCovType.covariance, ret);
 }
 
@@ -1164,11 +1164,11 @@ private void kendallMatrixImpl(bool makeNewMatrix, RoR, Matrix)
     if(pool is null) {
         pool = emptyPool;
     }
- 
+
     auto alloc = newRegionAllocator();
     alias ElementType!RoR R;
     alias ElementType!R E;
-    
+
     static if(!isRandomAccessRange!R || !isForwardRange!RoR) {
         typeof(prepareForSorting(alloc.array(R.init))) prepare(R range) {
             return prepareForSorting(alloc.array((range)));
@@ -1180,38 +1180,38 @@ private void kendallMatrixImpl(bool makeNewMatrix, RoR, Matrix)
     } else {
         alias mat randomMat;
     }
-    
+
     if(randomMat.empty) return;
     immutable nElems = randomMat.front.length;
-    
+
     foreach(row; randomMat.save) {
-        dstatsEnforce(row.length == nElems, 
+        dstatsEnforce(row.length == nElems,
             "Range of ranges must be rectangular for kendallMatrix."
         );
     }
-    
+
     static if(makeNewMatrix) {
         static assert(is(typeof(ret) == SymmetricMatrix!double));
         ret = SymmetricMatrix!double(walkLength(randomMat));
     }
-      
+
     // HACK:  Before the multithreaded portion of this algorithm
     // starts, make sure that there's no need to unshare ret if it's
     // using ref-counted COW semantics.
     ret[0, 0] = 0;
-    
+
     foreach(i, row1; pool.parallel(randomMat.save, 1)) {
         auto alloc2 = newRegionAllocator();
         auto indices = alloc2.uninitializedArray!(size_t[])(row1.length);
         foreach(ii, ref elem; indices) elem = ii;
-        
-        bool less(size_t a, size_t b) { 
+
+        bool less(size_t a, size_t b) {
             return row1[a] < row1[b];
         }
-        
+
         qsort!less(indices);
         auto row1Sorted = assumeSorted(indexed(row1, indices));
-                
+
         size_t j = 0;
         foreach(row2; randomMat.save) {
             scope(exit) j++;
@@ -1219,7 +1219,7 @@ private void kendallMatrixImpl(bool makeNewMatrix, RoR, Matrix)
                 ret[i, i] = 1;
                 break;
             }
-    
+
             auto row2Rearranged = indexed(row2, indices);
             ret[i, j] = kendallCor(row1Sorted, row2Rearranged);
         }
@@ -1237,7 +1237,7 @@ private void pearsonSpearmanCov(bool makeNewMatrix, RoR, Matrix)
     if(pool is null) {
         pool = emptyPool;
     }
-    
+
     auto alloc = newRegionAllocator();
     double[] doubleArray(ElementType!RoR range) {
         return alloc.array(map!(to!double)(range));
@@ -1246,21 +1246,21 @@ private void pearsonSpearmanCov(bool makeNewMatrix, RoR, Matrix)
     auto normalized = alloc.array(
         delMap(mat, &doubleArray)
     );
-     
+
     foreach(row; normalized[1..$]) {
         dstatsEnforce(row.length == normalized[0].length,
             "Matrix must be rectangular for pearsonMatrix.");
     }
-    
+
     immutable double nCols = (normalized.length) ? (normalized[0].length) : 0;
-    
+
     final switch(type) {
         case CorCovType.pearson:
             foreach(row; pool.parallel(normalized)) {
                 immutable msd = meanStdev(row);
                 row[] = (row[] - msd.mean) / sqrt(msd.mse * nCols);
             }
-            
+
             break;
         case CorCovType.covariance:
             immutable divisor = sqrt(nCols - 1.0);
@@ -1275,26 +1275,26 @@ private void pearsonSpearmanCov(bool makeNewMatrix, RoR, Matrix)
                 auto alloc = newRegionAllocator();
                 auto buf = alloc.uninitializedArray!(double[])(row.length);
                 rank(row, buf);
-                
+
                 // Need to find mean, stdev separately for every row b/c
                 // of ties.
                 immutable msd = meanStdev(buf);
                 row[] = (buf[] - msd.mean) / sqrt(msd.mse * nCols);
             }
-            
+
             break;
     }
- 
+
     static if(makeNewMatrix) {
         static assert(is(typeof(ret) == SymmetricMatrix!double));
         ret = SymmetricMatrix!double(normalized.length);
     }
-    
+
     dotMatrix(normalized, ret, pool);
 }
 
 // This uses an array-of-arrays to avoid heap fragmentation issues with large
-// matrices and because the loss of efficiency from poitner chasing is 
+// matrices and because the loss of efficiency from poitner chasing is
 // negligible given that we always access them one row at a time.
 private void dotMatrix(Matrix)(
     double[][] rows,
@@ -1304,47 +1304,47 @@ private void dotMatrix(Matrix)(
     foreach(row; rows[1..$]) {
         assert(row.length == rows[0].length);
     }
-    
+
     assert(ret.rows == rows.length);
 } body {
     // HACK:  Before the multithreaded portion of this algorithm
     // starts, make sure that there's no need to unshare ret if it's
     // using ref-counted COW semantics.
     ret[0, 0] = 0;
-    
+
     foreach(i; pool.parallel(iota(0, rows.length), 1)) {
         auto row1 = rows[i];
-        
+
         foreach(j; 0..i + 1) {
             ret[i, j] = dotProduct(row1, rows[j]);
         }
     }
-}   
+}
 
 unittest {
     auto input = [[8.0, 6, 7, 5],
                   [3.0, 0, 9, 3],
                   [1.0, 4, 1, 5]];
-                  
-    
+
+
     static double[][] makeRoR() {
         return [[0.0], [0.0, 0.0], [0.0, 0.0, 0.0]];
     }
 
     auto pearsonRoR = makeRoR();
     pearsonMatrix(input, pearsonRoR);
-    
+
     auto spearmanRoR = makeRoR();
     spearmanMatrix(input, spearmanRoR);
-    
+
     auto kendallRoR = makeRoR();
     kendallMatrix(input, kendallRoR);
-    
+
     auto covRoR = makeRoR();
     covarianceMatrix(input, covRoR);
-    
+
     // Values from R.
-    
+
     alias approxEqual ae; // Save typing.
     assert(ae(pearsonRoR[0][0], 1));
     assert(ae(pearsonRoR[1][1], 1));
@@ -1352,42 +1352,42 @@ unittest {
     assert(ae(pearsonRoR[1][0], 0.3077935));
     assert(ae(pearsonRoR[2][0], -0.9393364));
     assert(ae(pearsonRoR[2][1], -0.6103679));
-    
+
     assert(ae(spearmanRoR[0][0], 1));
     assert(ae(spearmanRoR[1][1], 1));
     assert(ae(spearmanRoR[2][2], 1));
     assert(ae(spearmanRoR[1][0], 0.3162278));
     assert(ae(spearmanRoR[2][0], -0.9486833));
     assert(ae(spearmanRoR[2][1], -0.5));
-    
+
     assert(ae(kendallRoR[0][0], 1));
     assert(ae(kendallRoR[1][1], 1));
     assert(ae(kendallRoR[2][2], 1));
     assert(ae(kendallRoR[1][0], 0.1825742));
     assert(ae(kendallRoR[2][0], -0.9128709));
     assert(ae(kendallRoR[2][1], -0.4));
-    
+
     assert(ae(covRoR[0][0], 1.66666));
     assert(ae(covRoR[1][1], 14.25));
     assert(ae(covRoR[2][2], 4.25));
     assert(ae(covRoR[1][0], 1.5));
     assert(ae(covRoR[2][0], -2.5));
     assert(ae(covRoR[2][1], -4.75));
-            
+
     version(scid) {
     static bool test(double[][] a, SymmetricMatrix!double b) {
         foreach(i; 0..3) foreach(j; 0..i + 1) {
             if(!ae(a[i][j], b[i, j])) return false;
-        } 
-        
+        }
+
         return true;
     }
-    
+
     auto pearson = pearsonMatrix(input, taskPool);
     auto spearman = spearmanMatrix(input, taskPool);
     auto kendall = kendallMatrix(input, taskPool);
     auto cov = covarianceMatrix(input, taskPool);
-    
+
     test(pearsonRoR, pearson);
     test(spearmanRoR, spearman);
     test(kendallRoR, kendall);

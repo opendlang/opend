@@ -458,7 +458,7 @@ private double[][] doubleTempdupMatrix(R)(R data, RegionAllocator alloc) {
     foreach(i, ref elem; dataFixed) {
         elem = doubleTempdup(data[i], alloc);
     }
-    
+
     return dataFixed;
 }
 

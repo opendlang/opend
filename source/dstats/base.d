@@ -108,7 +108,7 @@ package void enforceConfidence
         text("Confidence intervals must be between 0 and 1, not ", conf, "."));
 }
 
-/** 
+/**
 Tests whether T is an input range whose elements can be implicitly
 converted to doubles.*/
 template doubleInput(T) {
@@ -397,7 +397,7 @@ unittest {
 Ret[] rank(alias compFun = "a < b", Ret = double, T)(T input, Ret[] buf = null)
 if(isInputRange!(T) && is(typeof(input.front < input.front))) {
     auto alloc = newRegionAllocator();
-    
+
     static if(!isRandomAccessRange!(T) || !hasLength!(T)) {
         return rankSort!(compFun, Ret)( alloc.array(input), buf);
     } else {
@@ -564,7 +564,7 @@ in {
     }
 }
 
-/**Returns an associative array of counts of every element in input.  
+/**Returns an associative array of counts of every element in input.
  * Works w/ any iterable.
  *
  * Examples:
@@ -877,12 +877,12 @@ static if(size_t.sizeof == 4) {
 /**
 A struct that generates all possible permutations of a sequence.
 
-Notes:  
+Notes:
 
 Permutations are output in undefined order.
 
 The array returned by front is recycled across iterations.  To preserve
-it across iterations, wrap this range using map!"a.dup" or 
+it across iterations, wrap this range using map!"a.dup" or
 map!"a.idup".
 
 Bugs:  Only supports iterating over up to size_t.max permutations.
@@ -1122,7 +1122,7 @@ unittest {
 }
 
 /**
-Generates every possible combination of r elements of the given sequence, or 
+Generates every possible combination of r elements of the given sequence, or
 array indices from zero to N, depending on which c'tor is called.  Uses
 an input range interface.
 
@@ -1211,7 +1211,7 @@ public:
     array.  This is a special-case optimization and is faster than simply
     using the other ctor to generate all length r combinations from
     seq(0, length).
-    
+
     For efficiency, uint is used instead of size_t since, on a 64-bit system,
     generating all possible combinations of an array bigger than uint.max
     wouldn't be feasible anyhow.
