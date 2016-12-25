@@ -108,8 +108,10 @@ unittest
 
     // For debugging reasons, print out the current seed
     import std.stdio : writeln;
-    auto rnd = Random(unpredictableSeed);
-    writeln("Random seed: ", rnd.front);
+    auto seed = unpredictableSeed;
+    auto rnd = Random(seed);
+    //auto rnd = Random(1193462362); // This is a seed that currently fails. Use it for debugging
+    writeln("Random seed MCMC: ", seed);
 
     auto xs = iota(0,500,1).map!((x) => uniform(0.0,5, rnd)+uniform(0.0,5, rnd));
     auto ys = iota(0,500,1).map!((y) => uniform(0.5,1.5, rnd)+uniform(0.5,1.5, rnd));
@@ -177,9 +179,12 @@ auto runMCMC() {
 
     // For debugging reasons, print out the current seed
     import std.stdio : writeln;
-    auto rnd = Random(unpredictableSeed);
+    auto seed = unpredictableSeed;
+    auto rnd = Random(seed);
     //auto rnd = Random(1193462362); // This is a seed that currently fails. Use it for debugging
-    writeln("Random seed MCMC: ", rnd.front);
+    writeln("Random seed MCMC: ", seed);
+    //writeln("Random seed MCMC: ", rnd.front);
+
 
     import dstats.random : rNorm;
     return iota(0,1000).map!((i) {
