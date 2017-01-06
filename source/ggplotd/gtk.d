@@ -70,10 +70,10 @@ protected:
 
 	Timeout m_timeout;
 
-    cairod.Surface surface;
+    __gshared cairod.Surface surface;
 
-    int width = 470;
-    int height = 470;
+    __gshared int width = 470;
+    __gshared int height = 470;
 }
 
 import core.thread;
@@ -153,5 +153,5 @@ class GTKWindow
         Main.run();
     }
 
-    SurfaceArea sa;
+    __gshared SurfaceArea sa;
 }
