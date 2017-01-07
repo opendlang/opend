@@ -30,8 +30,12 @@ struct MersenneTwisterEngine(UIntType, size_t w, size_t n, size_t m, size_t r,
     @disable this();
     @disable this(this);
 
+    /// Largest generated value.
+    enum UIntType max = UIntType.max >> (UIntType.sizeof * 8u - w);
+    static assert(a <= max && b <= max && c <= max);
+
     private enum UIntType lowerMask = (cast(UIntType) 1u << r) - 1;
-    private enum UIntType upperMask = ~lowerMask;
+    private enum UIntType upperMask = ~lowerMask & max;
 
     /**
     Parameters for the generator.
@@ -50,9 +54,6 @@ struct MersenneTwisterEngine(UIntType, size_t w, size_t n, size_t m, size_t r,
     enum size_t   temperingL = l; /// ditto
     enum UIntType initializationMultiplier = f; /// ditto
 
-    /// Largest generated value.
-    enum UIntType max = UIntType.max >> (UIntType.sizeof * 8u - w);
-    static assert(a <= max && b <= max && c <= max);
 
     /// The default seed value.
     enum UIntType defaultSeed = 5489;
