@@ -61,9 +61,9 @@ struct MersenneTwisterEngine(UIntType, size_t w, size_t n, size_t m, size_t r,
     /++
     Current reversed payload index with initial value equals to `n-1`
     +/
-    ptrdiff_t index = void;
+    size_t index = void;
 
-    private UIntType _z;
+    private UIntType _z = void;
 
     /++
     Reversed(!) payload.
