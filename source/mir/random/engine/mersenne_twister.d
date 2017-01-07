@@ -12,18 +12,16 @@ import std.traits;
 /++
 The $(LUCKY Mersenne Twister) generator.
 +/
-struct MersenneTwisterEngine(Uint, size_t w, size_t n, size_t m, size_t r,
-                             Uint a,
-                             uint u, Uint d,
-                             uint s, Uint b,
-                             uint t, Uint c,
-                             uint l)
-    if (isUnsigned!Uint)
+struct MersenneTwisterEngine(UIntType, size_t w, size_t n, size_t m, size_t r,
+                             UIntType a, size_t u, UIntType d, size_t s,
+                             UIntType b, size_t t,
+                             UIntType c, size_t l)
+    if (isUnsigned!UIntType)
 {
     ///
     enum isRandomEngine = true;
 
-    static assert(0 < w && w <= Uint.sizeof * 8);
+    static assert(0 < w && w <= UIntType.sizeof * 8);
     static assert(1 <= m && m <= n);
     static assert(0 <= r && 0 <= u && 0 <= s && 0 <= t && 0 <= l);
     static assert(r <= w && u <= w && s <= w && t <= w && l <= w);
@@ -32,48 +30,48 @@ struct MersenneTwisterEngine(Uint, size_t w, size_t n, size_t m, size_t r,
     @disable this();
     @disable this(this);
 
-    private enum Uint upperMask = ~((cast(Uint) 1u << (Uint.sizeof * 8 - (w - r))) - 1);
-    private enum Uint lowerMask = (cast(Uint) 1u << r) - 1;
+    private enum UIntType upperMask = ~((cast(UIntType) 1u << (UIntType.sizeof * 8 - (w - r))) - 1);
+    private enum UIntType lowerMask = (cast(UIntType) 1u << r) - 1;
 
     /**
     Parameters for the generator.
     */
-    enum size_t wordSize   = w;
-    enum size_t stateSize  = n; /// ditto
-    enum size_t shiftSize  = m; /// ditto
-    enum size_t maskBits   = r; /// ditto
-    enum Uint xorMask    = a; /// ditto
-    enum uint temperingU = u; /// ditto
-    enum Uint temperingD = d; /// ditto
-    enum uint temperingS = s; /// ditto
-    enum Uint temperingB = b; /// ditto
-    enum uint temperingT = t; /// ditto
-    enum Uint temperingC = c; /// ditto
-    enum uint temperingL = l; /// ditto
+    enum size_t   wordSize   = w;
+    enum size_t   stateSize  = n; /// ditto
+    enum size_t   shiftSize  = m; /// ditto
+    enum size_t   maskBits   = r; /// ditto
+    enum UIntType xorMask    = a; /// ditto
+    enum size_t   temperingU = u; /// ditto
+    enum UIntType temperingD = d; /// ditto
+    enum size_t   temperingS = s; /// ditto
+    enum UIntType temperingB = b; /// ditto
+    enum size_t   temperingT = t; /// ditto
+    enum UIntType temperingC = c; /// ditto
+    enum size_t   temperingL = l; /// ditto
 
     /// Largest generated value.
-    enum Uint max = Uint.max >> (Uint.sizeof * 8u - w);
+    enum UIntType max = UIntType.max >> (UIntType.sizeof * 8u - w);
     static assert(a <= max && b <= max && c <= max);
 
     /// The default seed value.
-    enum Uint defaultSeed = 5489;
+    enum UIntType defaultSeed = 5489;
 
-    private Uint _z;
+    private UIntType _z;
     /++
     Current reversed payload index with initial value equals to `n-1`
     +/
-    private Uint index = void;
+    private UIntType index = void;
     /++
     Reversed(!) payload.
     +/
-    Uint[n] data = void;
+    UIntType[n] data = void;
 
     /**
        Constructs a MersenneTwisterEngine object.
     */
-    this(Uint value) @safe pure nothrow @nogc
+    this(UIntType value) @safe pure nothrow @nogc
     {
-        static if (w == Uint.sizeof * 8)
+        static if (w == UIntType.sizeof * 8)
         {
             data[$-1] = value;
         }
@@ -82,15 +80,15 @@ struct MersenneTwisterEngine(Uint, size_t w, size_t n, size_t m, size_t r,
             static assert(max + 1 > 0);
             data[$-1] = value % (max + 1);
         }
-        static if (is(Uint == uint))
-            enum Uint f = 1812433253;
+        static if (is(UIntType == uint))
+            enum UIntType f = 1812433253;
         else
-        static if (is(Uint == ulong))
-            enum Uint f = 6364136223846793005;
+        static if (is(UIntType == ulong))
+            enum UIntType f = 6364136223846793005;
         else
         static assert(0, "ucent is not supported by MersenneTwisterEngine.");
         foreach_reverse (size_t i, ref e; data[0 .. $-1])
-            e = f * (data[i + 1] ^ (data[i + 1] >> (w - 2))) + cast(Uint)(n - (i + 1));
+            e = f * (data[i + 1] ^ (data[i + 1] >> (w - 2))) + cast(UIntType)(n - (i + 1));
         index = n-1;
         opCall();
     }
@@ -98,7 +96,7 @@ struct MersenneTwisterEngine(Uint, size_t w, size_t n, size_t m, size_t r,
     /++
     Advances the generator.
     +/
-    Uint opCall() @safe pure nothrow @nogc
+    UIntType opCall() @safe pure nothrow @nogc
     {
         // This function blends two nominally independent
         // processes: (i) calculation of the next random
@@ -120,7 +118,7 @@ struct MersenneTwisterEngine(Uint, size_t w, size_t n, size_t m, size_t r,
         sizediff_t conj = index - m;
         if(conj < 0)
             conj = index - m + n;
-        static if (d == Uint.max)
+        static if (d == UIntType.max)
             z ^= (z >> u);
         else
             z ^= (z >> u) & d;
@@ -135,7 +133,7 @@ struct MersenneTwisterEngine(Uint, size_t w, size_t n, size_t m, size_t r,
         auto e = data[conj] ^ x;
         z ^= (z >> l);
         _z = data[index] = e;
-        this.index = cast(Uint)next;
+        this.index = cast(UIntType)next;
         return z;
     }
 }
@@ -147,11 +145,9 @@ MT19937), generating uniformly-distributed 32-bit numbers with a
 period of 2 to the power of 19937.
 +/
 alias Mt19937_32 = MersenneTwisterEngine!(uint, 32, 624, 397, 31,
-                                       0x9908b0df, 
-                                       11, 0xffffffff,
-                                        7, 0x9d2c5680,
-                                       15, 0xefc60000,
-                                       18);
+                                          0x9908b0df, 11, 0xffffffff, 7,
+                                          0x9d2c5680, 15,
+                                          0xefc60000, 18);
 /++
 A $(D MersenneTwisterEngine) instantiated with the parameters of the
 original engine $(HTTP en.wikipedia.org/wiki/Mersenne_Twister,
@@ -159,11 +155,9 @@ MT19937), generating uniformly-distributed 64-bit numbers with a
 period of 2 to the power of 19937.
 +/
 alias Mt19937_64 = MersenneTwisterEngine!(ulong, 64, 312, 156, 31,
-                                       0xb5026f5aa96619e9, 
-                                       29, 0x5555555555555555,
-                                       17, 0x71d67fffeda60000,
-                                       37, 0xfff7eee000000000,
-                                       43);
+                                          0xb5026f5aa96619e9, 29, 0x5555555555555555, 17,
+                                          0x71d67fffeda60000, 37,
+                                          0xfff7eee000000000, 43);
 /++
 `Mt19937` is an alias to $(LREF .Mt19937_64)
 for 64-bit targets or $(LREF .Mt19937_32) for 32 bit targets.
