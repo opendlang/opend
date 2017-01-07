@@ -200,4 +200,9 @@ else
     foreach(_; 0 .. 9999)
         gen();
     assert(gen() == 4123659995);
+
+    auto gen64 = Mt19937_64(Mt19937_64.defaultSeed);
+    foreach(_; 0 .. 9999)
+        gen64();
+    assert(gen64() == 9981545732273789042uL);
 }
