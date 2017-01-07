@@ -30,8 +30,8 @@ struct MersenneTwisterEngine(UIntType, size_t w, size_t n, size_t m, size_t r,
     @disable this();
     @disable this(this);
 
-    private enum UIntType upperMask = ~((cast(UIntType) 1u << (UIntType.sizeof * 8 - (w - r))) - 1);
     private enum UIntType lowerMask = (cast(UIntType) 1u << r) - 1;
+    private enum UIntType upperMask = ~lowerMask;
 
     /**
     Parameters for the generator.
@@ -62,27 +62,27 @@ struct MersenneTwisterEngine(UIntType, size_t w, size_t n, size_t m, size_t r,
     Current reversed payload index with initial value equals to `n-1`
     +/
     private UIntType index = void;
+
     /++
     Reversed(!) payload.
     +/
     UIntType[n] data = void;
 
-    /**
-       Constructs a MersenneTwisterEngine object.
-    */
+    /++
+    Constructs a MersenneTwisterEngine object.
+    +/
     this(UIntType value) @safe pure nothrow @nogc
     {
-        static if (w == UIntType.sizeof * 8)
-        {
+        static if (max == UIntType.max)
             data[$-1] = value;
-        }
         else
-        {
-            static assert(max + 1 > 0);
-            data[$-1] = value % (max + 1);
-        }
+            data[$-1] = value & max;
         foreach_reverse (size_t i, ref e; data[0 .. $-1])
+        {
             e = f * (data[i + 1] ^ (data[i + 1] >> (w - 2))) + cast(UIntType)(n - (i + 1));
+            static if (max != UIntType.max)
+                e &= max;
+        }
         index = n-1;
         opCall();
     }
@@ -128,7 +128,10 @@ struct MersenneTwisterEngine(UIntType, size_t w, size_t n, size_t m, size_t r,
         z ^= (z >> l);
         _z = data[index] = e;
         this.index = cast(UIntType)next;
-        return z;
+        static if (max == UIntType.max)
+            return z;
+        else
+            return z & max;
     }
 }
 
@@ -193,4 +196,23 @@ else
     foreach(_; 0 .. 9999)
         gen64();
     assert(gen64() == 9981545732273789042uL);
+}
+
+unittest
+{
+    enum val = [1341017984, 62051482162767];
+    alias MT(UIntType, uint w) = MersenneTwisterEngine!(UIntType, w, 624, 397, 31,
+                                                        0x9908b0df, 11, 0xffffffff, 7,
+                                                        0x9d2c5680, 15,
+                                                        0xefc60000, 18, 1812433253);
+
+    import std.meta: AliasSeq;
+    foreach (i, R; AliasSeq!(MT!(ulong, 32), MT!(ulong, 48)))
+    {
+        static if (R.wordSize == 48) static assert(R.max == 0xFFFFFFFFFFFF);
+        auto a = R(R.defaultSeed);
+        foreach(_; 0..999)
+            a();
+        assert(val[i] == a());
+    }
 }
