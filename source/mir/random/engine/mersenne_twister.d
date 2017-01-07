@@ -139,54 +139,66 @@ A $(D MersenneTwisterEngine) instantiated with the parameters of the
 original engine $(HTTP en.wikipedia.org/wiki/Mersenne_Twister,
 MT19937), generating uniformly-distributed 32-bit numbers with a
 period of 2 to the power of 19937.
-+/
-alias Mt19937_32 = MersenneTwisterEngine!(uint, 32, 624, 397, 31,
-                                          0x9908b0df, 11, 0xffffffff, 7,
-                                          0x9d2c5680, 15,
-                                          0xefc60000, 18, 1812433253);
-/++
-A $(D MersenneTwisterEngine) instantiated with the parameters of the
-original engine $(HTTP en.wikipedia.org/wiki/Mersenne_Twister,
-MT19937), generating uniformly-distributed 64-bit numbers with a
-period of 2 to the power of 19937.
-+/
-alias Mt19937_64 = MersenneTwisterEngine!(ulong, 64, 312, 156, 31,
-                                          0xb5026f5aa96619e9, 29, 0x5555555555555555, 17,
-                                          0x71d67fffeda60000, 37,
-                                          0xfff7eee000000000, 43, 6364136223846793005);
-/++
-`Mt19937` is an alias to $(LREF .Mt19937_64)
-for 64-bit targets or $(LREF .Mt19937_32) for 32 bit targets.
 
-Recommended for random number
-generation unless memory is severely restricted, in which case a
+This is recommended for random number generation on 32-bit systems
+unless memory is severely restricted, in which case a
 $(REF_ALTTEXT Xorshift, Xorshift, mir, random, engine, xorshift)
 would be the generator of choice.
 +/
-static if (is(size_t == uint))
-    alias Mt19937 = Mt19937_32;
-else
-    alias Mt19937 = Mt19937_64;
+alias Mt19937 = MersenneTwisterEngine!(uint, 32, 624, 397, 31,
+                                       0x9908b0df, 11, 0xffffffff, 7,
+                                       0x9d2c5680, 15,
+                                       0xefc60000, 18, 1812433253);
 
 ///
 @safe unittest
 {
     import mir.random.engine;
 
-    auto gen = Mt19937(unpredictableSeed);
+    // bit-masking by generator maximum is necessary
+    // to handle 64-bit `unpredictableSeed`
+    auto gen = Mt19937(unpredictableSeed & Mt19937.max);
     auto n = gen();
 
     import std.traits;
-    static assert(is(ReturnType!gen == size_t));
+    static assert(is(ReturnType!gen == uint));
+}
+
+/++
+A $(D MersenneTwisterEngine) instantiated with the parameters of the
+original engine $(HTTP en.wikipedia.org/wiki/Mersenne_Twister,
+MT19937), generating uniformly-distributed 64-bit numbers with a
+period of 2 to the power of 19937.
+
+This is recommended for random number generation on 64-bit systems
+unless memory is severely restricted, in which case a
+$(REF_ALTTEXT Xorshift, Xorshift, mir, random, engine, xorshift)
+would be the generator of choice.
++/
+alias Mt19937_64 = MersenneTwisterEngine!(ulong, 64, 312, 156, 31,
+                                          0xb5026f5aa96619e9, 29, 0x5555555555555555, 17,
+                                          0x71d67fffeda60000, 37,
+                                          0xfff7eee000000000, 43, 6364136223846793005);
+
+///
+@safe unittest
+{
+    import mir.random.engine;
+
+    auto gen = Mt19937_64(unpredictableSeed);
+    auto n = gen();
+
+    import std.traits;
+    static assert(is(ReturnType!gen == ulong));
 }
 
 @safe nothrow unittest
 {
     import mir.random.engine;
 
-    static assert(isSaturatedRandomEngine!Mt19937_32);
+    static assert(isSaturatedRandomEngine!Mt19937);
     static assert(isSaturatedRandomEngine!Mt19937_64);
-    auto gen = Mt19937_32(Mt19937_32.defaultSeed);
+    auto gen = Mt19937(Mt19937.defaultSeed);
     foreach(_; 0 .. 9999)
         gen();
     assert(gen() == 4123659995);

@@ -140,7 +140,7 @@ nice random numbers, and (2) you don't care for the minutiae of the
 method being used.
 +/
 static if (is(size_t == uint))
-    alias Random = Mt19937_32;
+    alias Random = Mt19937;
 else
     alias Random = Mt19937_64;
 
