@@ -58,11 +58,12 @@ struct MersenneTwisterEngine(UIntType, size_t w, size_t n, size_t m, size_t r,
     /// The default seed value.
     enum UIntType defaultSeed = 5489;
 
-    private UIntType _z;
     /++
     Current reversed payload index with initial value equals to `n-1`
     +/
-    private UIntType index = void;
+    ptrdiff_t index = void;
+
+    private UIntType _z;
 
     /++
     Reversed(!) payload.
@@ -105,7 +106,7 @@ struct MersenneTwisterEngine(UIntType, size_t w, size_t n, size_t m, size_t r,
         // them separately in sequence, the variables
         // are kept 'hot' in CPU registers, allowing
         // for significantly faster performance.
-        sizediff_t index = cast(size_t)this.index;
+        sizediff_t index = this.index;
         sizediff_t next = index - 1;
         if(next < 0)
             next = n - 1;
@@ -128,7 +129,7 @@ struct MersenneTwisterEngine(UIntType, size_t w, size_t n, size_t m, size_t r,
         auto e = data[conj] ^ x;
         z ^= (z >> l);
         _z = data[index] = e;
-        this.index = cast(UIntType)next;
+        this.index = next;
         return z;
     }
 }
