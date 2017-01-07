@@ -15,7 +15,7 @@ The $(LUCKY Mersenne Twister) generator.
 struct MersenneTwisterEngine(UIntType, size_t w, size_t n, size_t m, size_t r,
                              UIntType a, size_t u, UIntType d, size_t s,
                              UIntType b, size_t t,
-                             UIntType c, size_t l)
+                             UIntType c, size_t l, UIntType f)
     if (isUnsigned!UIntType)
 {
     ///
@@ -48,6 +48,7 @@ struct MersenneTwisterEngine(UIntType, size_t w, size_t n, size_t m, size_t r,
     enum size_t   temperingT = t; /// ditto
     enum UIntType temperingC = c; /// ditto
     enum size_t   temperingL = l; /// ditto
+    enum UIntType initializationMultiplier = f; /// ditto
 
     /// Largest generated value.
     enum UIntType max = UIntType.max >> (UIntType.sizeof * 8u - w);
@@ -80,13 +81,6 @@ struct MersenneTwisterEngine(UIntType, size_t w, size_t n, size_t m, size_t r,
             static assert(max + 1 > 0);
             data[$-1] = value % (max + 1);
         }
-        static if (is(UIntType == uint))
-            enum UIntType f = 1812433253;
-        else
-        static if (is(UIntType == ulong))
-            enum UIntType f = 6364136223846793005;
-        else
-        static assert(0, "ucent is not supported by MersenneTwisterEngine.");
         foreach_reverse (size_t i, ref e; data[0 .. $-1])
             e = f * (data[i + 1] ^ (data[i + 1] >> (w - 2))) + cast(UIntType)(n - (i + 1));
         index = n-1;
@@ -147,7 +141,7 @@ period of 2 to the power of 19937.
 alias Mt19937_32 = MersenneTwisterEngine!(uint, 32, 624, 397, 31,
                                           0x9908b0df, 11, 0xffffffff, 7,
                                           0x9d2c5680, 15,
-                                          0xefc60000, 18);
+                                          0xefc60000, 18, 1812433253);
 /++
 A $(D MersenneTwisterEngine) instantiated with the parameters of the
 original engine $(HTTP en.wikipedia.org/wiki/Mersenne_Twister,
@@ -157,7 +151,7 @@ period of 2 to the power of 19937.
 alias Mt19937_64 = MersenneTwisterEngine!(ulong, 64, 312, 156, 31,
                                           0xb5026f5aa96619e9, 29, 0x5555555555555555, 17,
                                           0x71d67fffeda60000, 37,
-                                          0xfff7eee000000000, 43);
+                                          0xfff7eee000000000, 43, 6364136223846793005);
 /++
 `Mt19937` is an alias to $(LREF .Mt19937_64)
 for 64-bit targets or $(LREF .Mt19937_32) for 32 bit targets.
