@@ -128,10 +128,7 @@ struct MersenneTwisterEngine(UIntType, size_t w, size_t n, size_t m, size_t r,
         z ^= (z >> l);
         _z = data[index] = e;
         this.index = cast(UIntType)next;
-        static if (max == UIntType.max)
-            return z;
-        else
-            return z & max;
+        return z;
     }
 }
 
