@@ -32,7 +32,7 @@ struct MersenneTwisterEngine(UIntType, size_t w, size_t n, size_t m, size_t r,
 
     /// Largest generated value.
     enum UIntType max = UIntType.max >> (UIntType.sizeof * 8u - w);
-    static assert(a <= max && b <= max && c <= max);
+    static assert(a <= max && b <= max && c <= max && f <= max);
 
     private enum UIntType lowerMask = (cast(UIntType) 1u << r) - 1;
     private enum UIntType upperMask = ~lowerMask & max;
