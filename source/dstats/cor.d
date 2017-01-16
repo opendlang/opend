@@ -936,45 +936,6 @@ unittest {
     assert(approxEqual(spearmanPartial, -0.7252));
 }
 
-// Work around std.algorithm.map's deficiencies.
-private struct DelMap(R, Del) {
-    R range;
-    Del del;
-
-    @property auto front() { return del(range.front); }
-    void popFront() { range.popFront(); }
-    bool empty() @property { return range.empty; }
-
-    static if(isBidirectionalRange!R) {
-        @property auto back() { return del(range.back); }
-        void popBack() { range.popBack(); }
-    }
-
-    static if(hasLength!R) {
-        size_t length() @property { return range.length; }
-    }
-
-    static if(isForwardRange!R) {
-        typeof(this) save() @property { return typeof(this)(range.save, del); }
-    }
-
-    static if(isRandomAccessRange!R) {
-        auto opIndex(size_t index) {
-            return del(range[index]);
-        }
-
-        typeof(this) opSlice(size_t low, size_t up) {
-            return typeof(this)(range[low..up], del);
-        }
-    }
-}
-
-// Cheating and using scope delegate b/c this is private and the DelMap
-// struct is always restricted to a scope.
-private auto delMap(R, Del)(R range, scope Del del) {
-    return DelMap!(R, Del)(range, del);
-}
-
 private __gshared TaskPool emptyPool;
 shared static this() {
     emptyPool = new TaskPool(0);
@@ -1170,13 +1131,8 @@ private void kendallMatrixImpl(bool makeNewMatrix, RoR, Matrix)
     alias ElementType!R E;
 
     static if(!isRandomAccessRange!R || !isForwardRange!RoR) {
-        typeof(prepareForSorting(alloc.array(R.init))) prepare(R range) {
-            return prepareForSorting(alloc.array((range)));
-        }
-
-        auto randomMat = alloc.array(
-            delMap(mat, &prepare)
-        );
+        auto randomMat = alloc.array(mat
+                .map!(r => prepareForSorting(alloc.array(r))));
     } else {
         alias mat randomMat;
     }
@@ -1239,13 +1195,9 @@ private void pearsonSpearmanCov(bool makeNewMatrix, RoR, Matrix)
     }
 
     auto alloc = newRegionAllocator();
-    double[] doubleArray(ElementType!RoR range) {
-        return alloc.array(map!(to!double)(range));
-    }
 
-    auto normalized = alloc.array(
-        delMap(mat, &doubleArray)
-    );
+    auto normalized = alloc.array(mat
+            .map!(r => alloc.array(r.map!(to!double))));
 
     foreach(row; normalized[1..$]) {
         dstatsEnforce(row.length == normalized[0].length,
