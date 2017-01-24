@@ -204,6 +204,18 @@ extern( System ) @nogc nothrow {
 		alias PFN_vkGetPhysicalDeviceWin32PresentationSupportKHR = VkBool32 function( VkPhysicalDevice physicalDevice, uint32_t queueFamilyIndex );
 	}
 
+	// VK_KHR_get_physical_device_properties2
+	alias PFN_vkGetPhysicalDeviceFeatures2KHR = void function( VkPhysicalDevice physicalDevice, VkPhysicalDeviceFeatures2KHR* pFeatures );
+	alias PFN_vkGetPhysicalDeviceProperties2KHR = void function( VkPhysicalDevice physicalDevice, VkPhysicalDeviceProperties2KHR* pProperties );
+	alias PFN_vkGetPhysicalDeviceFormatProperties2KHR = void function( VkPhysicalDevice physicalDevice, VkFormat format, VkFormatProperties2KHR* pFormatProperties );
+	alias PFN_vkGetPhysicalDeviceImageFormatProperties2KHR = VkResult function( VkPhysicalDevice physicalDevice, const( VkPhysicalDeviceImageFormatInfo2KHR )* pImageFormatInfo, VkImageFormatProperties2KHR* pImageFormatProperties );
+	alias PFN_vkGetPhysicalDeviceQueueFamilyProperties2KHR = void function( VkPhysicalDevice physicalDevice, uint32_t* pQueueFamilyPropertyCount, VkQueueFamilyProperties2KHR* pQueueFamilyProperties );
+	alias PFN_vkGetPhysicalDeviceMemoryProperties2KHR = void function( VkPhysicalDevice physicalDevice, VkPhysicalDeviceMemoryProperties2KHR* pMemoryProperties );
+	alias PFN_vkGetPhysicalDeviceSparseImageFormatProperties2KHR = void function( VkPhysicalDevice physicalDevice, const( VkPhysicalDeviceSparseImageFormatInfo2KHR )* pFormatInfo, uint32_t* pPropertyCount, VkSparseImageFormatProperties2KHR* pProperties );
+
+	// VK_KHR_maintenance1
+	alias PFN_vkTrimCommandPoolKHR = void function( VkDevice device, VkCommandPool commandPool, VkCommandPoolTrimFlagsKHR flags );
+
 	// VK_EXT_debug_report
 	alias PFN_vkCreateDebugReportCallbackEXT = VkResult function( VkInstance instance, const( VkDebugReportCallbackCreateInfoEXT )* pCreateInfo, const( VkAllocationCallbacks )* pAllocator, VkDebugReportCallbackEXT* pCallback );
 	alias PFN_vkDestroyDebugReportCallbackEXT = void function( VkInstance instance, VkDebugReportCallbackEXT callback, const( VkAllocationCallbacks )* pAllocator );
@@ -228,6 +240,9 @@ extern( System ) @nogc nothrow {
 		alias PFN_vkGetMemoryWin32HandleNV = VkResult function( VkDevice device, VkDeviceMemory memory, VkExternalMemoryHandleTypeFlagsNV handleType, HANDLE* pHandle );
 	}
 
+	// VK_NN_vi_surface
+	alias PFN_vkCreateViSurfaceNN = VkResult function( VkInstance instance, const( VkViSurfaceCreateInfoNN )* pCreateInfo, const( VkAllocationCallbacks )* pAllocator, VkSurfaceKHR* pSurface );
+
 	// VK_NVX_device_generated_commands
 	alias PFN_vkCmdProcessCommandsNVX = void function( VkCommandBuffer commandBuffer, const( VkCmdProcessCommandsInfoNVX )* pProcessCommandsInfo );
 	alias PFN_vkCmdReserveSpaceForCommandsNVX = void function( VkCommandBuffer commandBuffer, const( VkCmdReserveSpaceForCommandsInfoNVX )* pReserveSpaceInfo );
@@ -238,6 +253,24 @@ extern( System ) @nogc nothrow {
 	alias PFN_vkRegisterObjectsNVX = VkResult function( VkDevice device, VkObjectTableNVX objectTable, uint32_t objectCount, const( VkObjectTableEntryNVX* )* ppObjectTableEntries, const( uint32_t )* pObjectIndices );
 	alias PFN_vkUnregisterObjectsNVX = VkResult function( VkDevice device, VkObjectTableNVX objectTable, uint32_t objectCount, const( VkObjectEntryTypeNVX )* pObjectEntryTypes, const( uint32_t )* pObjectIndices );
 	alias PFN_vkGetPhysicalDeviceGeneratedCommandsPropertiesNVX = void function( VkPhysicalDevice physicalDevice, VkDeviceGeneratedCommandsFeaturesNVX* pFeatures, VkDeviceGeneratedCommandsLimitsNVX* pLimits );
+
+	// VK_EXT_direct_mode_display
+	alias PFN_vkReleaseDisplayEXT = VkResult function( VkPhysicalDevice physicalDevice, VkDisplayKHR display );
+
+	// VK_EXT_acquire_xlib_display
+	version( VK_USE_PLATFORM_XLIB_KHR ) {
+		alias PFN_vkAcquireXlibDisplayEXT = VkResult function( VkPhysicalDevice physicalDevice, Display* dpy, VkDisplayKHR display );
+		alias PFN_vkGetRandROutputDisplayEXT = VkResult function( VkPhysicalDevice physicalDevice, Display* dpy, RROutput rrOutput, VkDisplayKHR* pDisplay );
+	}
+
+	// VK_EXT_display_surface_counter
+	alias PFN_vkGetPhysicalDeviceSurfaceCapabilities2EXT = VkResult function( VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, VkSurfaceCapabilities2EXT* pSurfaceCapabilities );
+
+	// VK_EXT_display_control
+	alias PFN_vkDisplayPowerControlEXT = VkResult function( VkDevice device, VkDisplayKHR display, const( VkDisplayPowerInfoEXT )* pDisplayPowerInfo );
+	alias PFN_vkRegisterDeviceEventEXT = VkResult function( VkDevice device, const( VkDeviceEventInfoEXT )* pDeviceEventInfo, const( VkAllocationCallbacks )* pAllocator, VkFence* pFence );
+	alias PFN_vkRegisterDisplayEventEXT = VkResult function( VkDevice device, VkDisplayKHR display, const( VkDisplayEventInfoEXT )* pDisplayEventInfo, const( VkAllocationCallbacks )* pAllocator, VkFence* pFence );
+	alias PFN_vkGetSwapchainCounterEXT = VkResult function( VkDevice device, VkSwapchainKHR swapchain, VkSurfaceCounterFlagBitsEXT counter, uint64_t* pCounterValue );
 }
 
 __gshared {
@@ -442,6 +475,18 @@ __gshared {
 		PFN_vkGetPhysicalDeviceWin32PresentationSupportKHR vkGetPhysicalDeviceWin32PresentationSupportKHR;
 	}
 
+	// VK_KHR_get_physical_device_properties2
+	PFN_vkGetPhysicalDeviceFeatures2KHR vkGetPhysicalDeviceFeatures2KHR;
+	PFN_vkGetPhysicalDeviceProperties2KHR vkGetPhysicalDeviceProperties2KHR;
+	PFN_vkGetPhysicalDeviceFormatProperties2KHR vkGetPhysicalDeviceFormatProperties2KHR;
+	PFN_vkGetPhysicalDeviceImageFormatProperties2KHR vkGetPhysicalDeviceImageFormatProperties2KHR;
+	PFN_vkGetPhysicalDeviceQueueFamilyProperties2KHR vkGetPhysicalDeviceQueueFamilyProperties2KHR;
+	PFN_vkGetPhysicalDeviceMemoryProperties2KHR vkGetPhysicalDeviceMemoryProperties2KHR;
+	PFN_vkGetPhysicalDeviceSparseImageFormatProperties2KHR vkGetPhysicalDeviceSparseImageFormatProperties2KHR;
+
+	// VK_KHR_maintenance1
+	PFN_vkTrimCommandPoolKHR vkTrimCommandPoolKHR;
+
 	// VK_EXT_debug_report
 	PFN_vkCreateDebugReportCallbackEXT vkCreateDebugReportCallbackEXT;
 	PFN_vkDestroyDebugReportCallbackEXT vkDestroyDebugReportCallbackEXT;
@@ -466,6 +511,9 @@ __gshared {
 		PFN_vkGetMemoryWin32HandleNV vkGetMemoryWin32HandleNV;
 	}
 
+	// VK_NN_vi_surface
+	PFN_vkCreateViSurfaceNN vkCreateViSurfaceNN;
+
 	// VK_NVX_device_generated_commands
 	PFN_vkCmdProcessCommandsNVX vkCmdProcessCommandsNVX;
 	PFN_vkCmdReserveSpaceForCommandsNVX vkCmdReserveSpaceForCommandsNVX;
@@ -476,6 +524,24 @@ __gshared {
 	PFN_vkRegisterObjectsNVX vkRegisterObjectsNVX;
 	PFN_vkUnregisterObjectsNVX vkUnregisterObjectsNVX;
 	PFN_vkGetPhysicalDeviceGeneratedCommandsPropertiesNVX vkGetPhysicalDeviceGeneratedCommandsPropertiesNVX;
+
+	// VK_EXT_direct_mode_display
+	PFN_vkReleaseDisplayEXT vkReleaseDisplayEXT;
+
+	// VK_EXT_acquire_xlib_display
+	version( VK_USE_PLATFORM_XLIB_KHR ) {
+		PFN_vkAcquireXlibDisplayEXT vkAcquireXlibDisplayEXT;
+		PFN_vkGetRandROutputDisplayEXT vkGetRandROutputDisplayEXT;
+	}
+
+	// VK_EXT_display_surface_counter
+	PFN_vkGetPhysicalDeviceSurfaceCapabilities2EXT vkGetPhysicalDeviceSurfaceCapabilities2EXT;
+
+	// VK_EXT_display_control
+	PFN_vkDisplayPowerControlEXT vkDisplayPowerControlEXT;
+	PFN_vkRegisterDeviceEventEXT vkRegisterDeviceEventEXT;
+	PFN_vkRegisterDisplayEventEXT vkRegisterDisplayEventEXT;
+	PFN_vkGetSwapchainCounterEXT vkGetSwapchainCounterEXT;
 }
 
 /// if not using version "with-derelict-loader" this function must be called first
@@ -557,6 +623,15 @@ void loadInstanceLevelFunctions( VkInstance instance ) {
 		vkGetPhysicalDeviceWin32PresentationSupportKHR = cast( typeof( vkGetPhysicalDeviceWin32PresentationSupportKHR )) vkGetInstanceProcAddr( instance, "vkGetPhysicalDeviceWin32PresentationSupportKHR" );
 	}
 
+	// VK_KHR_get_physical_device_properties2
+	vkGetPhysicalDeviceFeatures2KHR = cast( typeof( vkGetPhysicalDeviceFeatures2KHR )) vkGetInstanceProcAddr( instance, "vkGetPhysicalDeviceFeatures2KHR" );
+	vkGetPhysicalDeviceProperties2KHR = cast( typeof( vkGetPhysicalDeviceProperties2KHR )) vkGetInstanceProcAddr( instance, "vkGetPhysicalDeviceProperties2KHR" );
+	vkGetPhysicalDeviceFormatProperties2KHR = cast( typeof( vkGetPhysicalDeviceFormatProperties2KHR )) vkGetInstanceProcAddr( instance, "vkGetPhysicalDeviceFormatProperties2KHR" );
+	vkGetPhysicalDeviceImageFormatProperties2KHR = cast( typeof( vkGetPhysicalDeviceImageFormatProperties2KHR )) vkGetInstanceProcAddr( instance, "vkGetPhysicalDeviceImageFormatProperties2KHR" );
+	vkGetPhysicalDeviceQueueFamilyProperties2KHR = cast( typeof( vkGetPhysicalDeviceQueueFamilyProperties2KHR )) vkGetInstanceProcAddr( instance, "vkGetPhysicalDeviceQueueFamilyProperties2KHR" );
+	vkGetPhysicalDeviceMemoryProperties2KHR = cast( typeof( vkGetPhysicalDeviceMemoryProperties2KHR )) vkGetInstanceProcAddr( instance, "vkGetPhysicalDeviceMemoryProperties2KHR" );
+	vkGetPhysicalDeviceSparseImageFormatProperties2KHR = cast( typeof( vkGetPhysicalDeviceSparseImageFormatProperties2KHR )) vkGetInstanceProcAddr( instance, "vkGetPhysicalDeviceSparseImageFormatProperties2KHR" );
+
 	// VK_EXT_debug_report
 	vkCreateDebugReportCallbackEXT = cast( typeof( vkCreateDebugReportCallbackEXT )) vkGetInstanceProcAddr( instance, "vkCreateDebugReportCallbackEXT" );
 	vkDestroyDebugReportCallbackEXT = cast( typeof( vkDestroyDebugReportCallbackEXT )) vkGetInstanceProcAddr( instance, "vkDestroyDebugReportCallbackEXT" );
@@ -565,8 +640,23 @@ void loadInstanceLevelFunctions( VkInstance instance ) {
 	// VK_NV_external_memory_capabilities
 	vkGetPhysicalDeviceExternalImageFormatPropertiesNV = cast( typeof( vkGetPhysicalDeviceExternalImageFormatPropertiesNV )) vkGetInstanceProcAddr( instance, "vkGetPhysicalDeviceExternalImageFormatPropertiesNV" );
 
+	// VK_NN_vi_surface
+	vkCreateViSurfaceNN = cast( typeof( vkCreateViSurfaceNN )) vkGetInstanceProcAddr( instance, "vkCreateViSurfaceNN" );
+
 	// VK_NVX_device_generated_commands
 	vkGetPhysicalDeviceGeneratedCommandsPropertiesNVX = cast( typeof( vkGetPhysicalDeviceGeneratedCommandsPropertiesNVX )) vkGetInstanceProcAddr( instance, "vkGetPhysicalDeviceGeneratedCommandsPropertiesNVX" );
+
+	// VK_EXT_direct_mode_display
+	vkReleaseDisplayEXT = cast( typeof( vkReleaseDisplayEXT )) vkGetInstanceProcAddr( instance, "vkReleaseDisplayEXT" );
+
+	// VK_EXT_acquire_xlib_display
+	version( VK_USE_PLATFORM_XLIB_KHR ) {
+		vkAcquireXlibDisplayEXT = cast( typeof( vkAcquireXlibDisplayEXT )) vkGetInstanceProcAddr( instance, "vkAcquireXlibDisplayEXT" );
+		vkGetRandROutputDisplayEXT = cast( typeof( vkGetRandROutputDisplayEXT )) vkGetInstanceProcAddr( instance, "vkGetRandROutputDisplayEXT" );
+	}
+
+	// VK_EXT_display_surface_counter
+	vkGetPhysicalDeviceSurfaceCapabilities2EXT = cast( typeof( vkGetPhysicalDeviceSurfaceCapabilities2EXT )) vkGetInstanceProcAddr( instance, "vkGetPhysicalDeviceSurfaceCapabilities2EXT" );
 }
 
 /// with a valid VkInstance call this function to retrieve VkDevice, VkQueue and VkCommandBuffer related functions
@@ -707,6 +797,9 @@ void loadDeviceLevelFunctions( VkInstance instance ) {
 	// VK_KHR_display_swapchain
 	vkCreateSharedSwapchainsKHR = cast( typeof( vkCreateSharedSwapchainsKHR )) vkGetInstanceProcAddr( instance, "vkCreateSharedSwapchainsKHR" );
 
+	// VK_KHR_maintenance1
+	vkTrimCommandPoolKHR = cast( typeof( vkTrimCommandPoolKHR )) vkGetInstanceProcAddr( instance, "vkTrimCommandPoolKHR" );
+
 	// VK_EXT_debug_marker
 	vkDebugMarkerSetObjectTagEXT = cast( typeof( vkDebugMarkerSetObjectTagEXT )) vkGetInstanceProcAddr( instance, "vkDebugMarkerSetObjectTagEXT" );
 	vkDebugMarkerSetObjectNameEXT = cast( typeof( vkDebugMarkerSetObjectNameEXT )) vkGetInstanceProcAddr( instance, "vkDebugMarkerSetObjectNameEXT" );
@@ -732,6 +825,12 @@ void loadDeviceLevelFunctions( VkInstance instance ) {
 	vkDestroyObjectTableNVX = cast( typeof( vkDestroyObjectTableNVX )) vkGetInstanceProcAddr( instance, "vkDestroyObjectTableNVX" );
 	vkRegisterObjectsNVX = cast( typeof( vkRegisterObjectsNVX )) vkGetInstanceProcAddr( instance, "vkRegisterObjectsNVX" );
 	vkUnregisterObjectsNVX = cast( typeof( vkUnregisterObjectsNVX )) vkGetInstanceProcAddr( instance, "vkUnregisterObjectsNVX" );
+
+	// VK_EXT_display_control
+	vkDisplayPowerControlEXT = cast( typeof( vkDisplayPowerControlEXT )) vkGetInstanceProcAddr( instance, "vkDisplayPowerControlEXT" );
+	vkRegisterDeviceEventEXT = cast( typeof( vkRegisterDeviceEventEXT )) vkGetInstanceProcAddr( instance, "vkRegisterDeviceEventEXT" );
+	vkRegisterDisplayEventEXT = cast( typeof( vkRegisterDisplayEventEXT )) vkGetInstanceProcAddr( instance, "vkRegisterDisplayEventEXT" );
+	vkGetSwapchainCounterEXT = cast( typeof( vkGetSwapchainCounterEXT )) vkGetInstanceProcAddr( instance, "vkGetSwapchainCounterEXT" );
 }
 
 /// with a valid VkDevice call this function to retrieve VkDevice, VkQueue and VkCommandBuffer related functions
@@ -873,6 +972,9 @@ void loadDeviceLevelFunctions( VkDevice device ) {
 	// VK_KHR_display_swapchain
 	vkCreateSharedSwapchainsKHR = cast( typeof( vkCreateSharedSwapchainsKHR )) vkGetDeviceProcAddr( device, "vkCreateSharedSwapchainsKHR" );
 
+	// VK_KHR_maintenance1
+	vkTrimCommandPoolKHR = cast( typeof( vkTrimCommandPoolKHR )) vkGetDeviceProcAddr( device, "vkTrimCommandPoolKHR" );
+
 	// VK_EXT_debug_marker
 	vkDebugMarkerSetObjectTagEXT = cast( typeof( vkDebugMarkerSetObjectTagEXT )) vkGetDeviceProcAddr( device, "vkDebugMarkerSetObjectTagEXT" );
 	vkDebugMarkerSetObjectNameEXT = cast( typeof( vkDebugMarkerSetObjectNameEXT )) vkGetDeviceProcAddr( device, "vkDebugMarkerSetObjectNameEXT" );
@@ -898,6 +1000,12 @@ void loadDeviceLevelFunctions( VkDevice device ) {
 	vkDestroyObjectTableNVX = cast( typeof( vkDestroyObjectTableNVX )) vkGetDeviceProcAddr( device, "vkDestroyObjectTableNVX" );
 	vkRegisterObjectsNVX = cast( typeof( vkRegisterObjectsNVX )) vkGetDeviceProcAddr( device, "vkRegisterObjectsNVX" );
 	vkUnregisterObjectsNVX = cast( typeof( vkUnregisterObjectsNVX )) vkGetDeviceProcAddr( device, "vkUnregisterObjectsNVX" );
+
+	// VK_EXT_display_control
+	vkDisplayPowerControlEXT = cast( typeof( vkDisplayPowerControlEXT )) vkGetDeviceProcAddr( device, "vkDisplayPowerControlEXT" );
+	vkRegisterDeviceEventEXT = cast( typeof( vkRegisterDeviceEventEXT )) vkGetDeviceProcAddr( device, "vkRegisterDeviceEventEXT" );
+	vkRegisterDisplayEventEXT = cast( typeof( vkRegisterDisplayEventEXT )) vkGetDeviceProcAddr( device, "vkRegisterDisplayEventEXT" );
+	vkGetSwapchainCounterEXT = cast( typeof( vkGetSwapchainCounterEXT )) vkGetDeviceProcAddr( device, "vkGetSwapchainCounterEXT" );
 }
 
 /// with a valid VkDevice call this function to retrieve VkDevice, VkQueue and VkCommandBuffer related functions grouped in a DispatchDevice struct
@@ -1040,6 +1148,9 @@ DispatchDevice createDispatchDeviceLevelFunctions( VkDevice device ) {
 		// VK_KHR_display_swapchain
 		vkCreateSharedSwapchainsKHR = cast( typeof( vkCreateSharedSwapchainsKHR )) vkGetDeviceProcAddr( device, "vkCreateSharedSwapchainsKHR" );
 
+		// VK_KHR_maintenance1
+		vkTrimCommandPoolKHR = cast( typeof( vkTrimCommandPoolKHR )) vkGetDeviceProcAddr( device, "vkTrimCommandPoolKHR" );
+
 		// VK_EXT_debug_marker
 		vkDebugMarkerSetObjectTagEXT = cast( typeof( vkDebugMarkerSetObjectTagEXT )) vkGetDeviceProcAddr( device, "vkDebugMarkerSetObjectTagEXT" );
 		vkDebugMarkerSetObjectNameEXT = cast( typeof( vkDebugMarkerSetObjectNameEXT )) vkGetDeviceProcAddr( device, "vkDebugMarkerSetObjectNameEXT" );
@@ -1065,6 +1176,12 @@ DispatchDevice createDispatchDeviceLevelFunctions( VkDevice device ) {
 		vkDestroyObjectTableNVX = cast( typeof( vkDestroyObjectTableNVX )) vkGetDeviceProcAddr( device, "vkDestroyObjectTableNVX" );
 		vkRegisterObjectsNVX = cast( typeof( vkRegisterObjectsNVX )) vkGetDeviceProcAddr( device, "vkRegisterObjectsNVX" );
 		vkUnregisterObjectsNVX = cast( typeof( vkUnregisterObjectsNVX )) vkGetDeviceProcAddr( device, "vkUnregisterObjectsNVX" );
+
+		// VK_EXT_display_control
+		vkDisplayPowerControlEXT = cast( typeof( vkDisplayPowerControlEXT )) vkGetDeviceProcAddr( device, "vkDisplayPowerControlEXT" );
+		vkRegisterDeviceEventEXT = cast( typeof( vkRegisterDeviceEventEXT )) vkGetDeviceProcAddr( device, "vkRegisterDeviceEventEXT" );
+		vkRegisterDisplayEventEXT = cast( typeof( vkRegisterDisplayEventEXT )) vkGetDeviceProcAddr( device, "vkRegisterDisplayEventEXT" );
+		vkGetSwapchainCounterEXT = cast( typeof( vkGetSwapchainCounterEXT )) vkGetDeviceProcAddr( device, "vkGetSwapchainCounterEXT" );
 	}
 
 	return dispatchDevice;
@@ -1199,6 +1316,7 @@ private struct DispatchDevice {
 	PFN_vkAcquireNextImageKHR vkAcquireNextImageKHR;
 	PFN_vkQueuePresentKHR vkQueuePresentKHR;
 	PFN_vkCreateSharedSwapchainsKHR vkCreateSharedSwapchainsKHR;
+	PFN_vkTrimCommandPoolKHR vkTrimCommandPoolKHR;
 	PFN_vkDebugMarkerSetObjectTagEXT vkDebugMarkerSetObjectTagEXT;
 	PFN_vkDebugMarkerSetObjectNameEXT vkDebugMarkerSetObjectNameEXT;
 	PFN_vkCmdDebugMarkerBeginEXT vkCmdDebugMarkerBeginEXT;
@@ -1217,6 +1335,10 @@ private struct DispatchDevice {
 	PFN_vkDestroyObjectTableNVX vkDestroyObjectTableNVX;
 	PFN_vkRegisterObjectsNVX vkRegisterObjectsNVX;
 	PFN_vkUnregisterObjectsNVX vkUnregisterObjectsNVX;
+	PFN_vkDisplayPowerControlEXT vkDisplayPowerControlEXT;
+	PFN_vkRegisterDeviceEventEXT vkRegisterDeviceEventEXT;
+	PFN_vkRegisterDisplayEventEXT vkRegisterDisplayEventEXT;
+	PFN_vkGetSwapchainCounterEXT vkGetSwapchainCounterEXT;
 }
 
 // Derelict loader to acquire entry point vkGetInstanceProcAddr
