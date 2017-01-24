@@ -498,26 +498,23 @@ version( {NAME_PREFIX_UCASE}_FROM_DERELICT ) {{
 		for member in typeinfo.elem.findall( "member" ):
 			memberType = convertTypeConst( getFullType( member, self.opaqueStruct ).strip())
 			memberName = member.find( "name" ).text
+
 			if memberName == "module":
 				# don't use D identifiers
 				memberName = "_module"
+
+			if member.get( "values" ):
+				memberName += " = " + member.get( "values" )
+				write( memberName, file = self.testsFile )
 			
-			# get tha maximum string length of all member types
+			# get the maximum string length of all member types
 			memberType, memberName = convertTypeArray( memberType, memberName )
 			memberTypeName.append( ( memberType, memberName ))
 			targetLen = max( targetLen, len( memberType ))
 
 		# loop second time and use maximum type string length to offset member names
 		for type_name in memberTypeName:
-			memberType = type_name[ 0 ]
-			memberName = type_name[ 1 ]
-			if memberName == "sType" and memberType == "VkStructureType":
-				enumName = re.sub( re_camel_case, "\g<1>_\g<2>", name[ 2: ] ).upper().replace( "WIN32", "WIN32_" )
-				structType = "\t{0}  sType = VK_STRUCTURE_TYPE_{1};".format( "VkStructureType".ljust( targetLen ), enumName )
-				self.appendSection( "struct", structType )
-				#write( name + " : " + enumName, file = self.testsFile )
-			else:
-				self.appendSection( "struct", "\t{0}  {1};".format( memberType.ljust( targetLen ), memberName ))
+			self.appendSection( "struct", "\t{0}  {1};".format( type_name[0].ljust( targetLen ), type_name[1] ))
 
 		self.appendSection( "struct", "}" )
 
