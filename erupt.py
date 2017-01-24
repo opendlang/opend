@@ -152,6 +152,7 @@ class DGenerator( OutputGenerator ):
 			"// VK_KHR_xcb_surface"          : [ "VK_USE_PLATFORM_XCB_KHR",     "public import xcb.xcb;\n" ],
 			"// VK_NV_external_memory_win32" : [ "VK_USE_PLATFORM_WIN32_KHR",   "public import core.sys.windows.winnt;\n" ],
 			"// VK_NV_win32_keyed_mutex"     : [ "VK_USE_PLATFORM_WIN32_KHR",   "" ],
+			"// VK_EXT_acquire_xlib_display" : [ "VK_USE_PLATFORM_XLIB_KHR" ,   "" ],
 		}
 
 	def beginFile( self, genOpts ):
@@ -297,7 +298,7 @@ version( {NAME_PREFIX_UCASE}_FROM_DERELICT ) {{
 		if self.emit:
 			# first write all types into types.d
 
-			# special treat for platform surface extension which get wraped into a version block
+			# special treat for platform surface extension which get wrapped into a version block
 			extIndent = self.surfaceExtensionVersionIndent
 			fileContent = self.typesFileContent
 			fileContent += "\n{0}\n".format( self.currentFeature )
