@@ -2,11 +2,12 @@
 	"name": "mir-random",
 	"authors": [
 		"Ilya Yaroshenko",
+		"Sebastian Wilzbach",
 		"Andrei Alexandrescu",
 		"Masahiro Nakagawa"
 	],
 	"description": "Dlang Random Number Generators",
-	"copyright": "Copyright © 2016, Ilya Yaroshenko",
+	"copyright": "Copyright © 2016-2017, Ilya Yaroshenko, see also copyright per file",
 	"license": "BSL-1.0",
 	"dependencies": {
 		"mir-math": "~>0.0.1"
