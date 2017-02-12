@@ -27,7 +27,7 @@ pure {
 extern( System ):
 
 // Version of corresponding c header file
-enum VK_HEADER_VERSION  =  39;
+enum VK_HEADER_VERSION  =  40;
 
 enum VK_NULL_HANDLE = null;
 
@@ -3728,6 +3728,18 @@ enum VK_KHR_EXTENSION_116_EXTENSION_NAME = "VK_KHR_extension_116";
 enum VK_KHR_EXTENSION_117_SPEC_VERSION = 0;
 enum VK_KHR_EXTENSION_117_EXTENSION_NAME = "VK_KHR_extension_117";
 
+// VK_KHR_extension_118
+enum VK_KHR_EXTENSION_118_SPEC_VERSION = 0;
+enum VK_KHR_EXTENSION_118_EXTENSION_NAME = "VK_KHR_extension_118";
+
+// VK_KHR_extension_119
+enum VK_KHR_EXTENSION_119_SPEC_VERSION = 0;
+enum VK_KHR_EXTENSION_119_EXTENSION_NAME = "VK_KHR_extension_119";
+
+// VK_KHR_extension_120
+enum VK_KHR_EXTENSION_120_SPEC_VERSION = 0;
+enum VK_KHR_EXTENSION_120_EXTENSION_NAME = "VK_KHR_extension_120";
+
 // VK_ANDROID_native_buffer
 enum VK_ANDROID_NATIVE_BUFFER_SPEC_VERSION = 4;
 enum VK_ANDROID_NATIVE_BUFFER_NUMBER = 11;
@@ -3736,7 +3748,7 @@ enum VK_ANDROID_NATIVE_BUFFER_NAME = "VK_ANDROID_native_buffer";
 // VK_EXT_debug_report
 mixin( VK_DEFINE_NON_DISPATCHABLE_HANDLE!q{VkDebugReportCallbackEXT} );
 
-enum VK_EXT_DEBUG_REPORT_SPEC_VERSION = 4;
+enum VK_EXT_DEBUG_REPORT_SPEC_VERSION = 5;
 enum VK_EXT_DEBUG_REPORT_EXTENSION_NAME = "VK_EXT_debug_report";
 enum VK_STRUCTURE_TYPE_DEBUG_REPORT_CREATE_INFO_EXT = VkStructureType.VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT;
 
@@ -3927,7 +3939,7 @@ enum VK_AMD_SHADER_EXPLICIT_VERTEX_PARAMETER_SPEC_VERSION = 1;
 enum VK_AMD_SHADER_EXPLICIT_VERTEX_PARAMETER_EXTENSION_NAME = "VK_AMD_shader_explicit_vertex_parameter";
 
 // VK_EXT_debug_marker
-enum VK_EXT_DEBUG_MARKER_SPEC_VERSION = 3;
+enum VK_EXT_DEBUG_MARKER_SPEC_VERSION = 4;
 enum VK_EXT_DEBUG_MARKER_EXTENSION_NAME = "VK_EXT_debug_marker";
 
 struct VkDebugMarkerObjectNameInfoEXT {
@@ -4624,12 +4636,26 @@ enum VK_NV_EXTENSION_104_SPEC_VERSION = 0;
 enum VK_NV_EXTENSION_104_EXTENSION_NAME = "VK_NV_extension_104";
 
 // VK_EXT_swapchain_colorspace
-enum VK_SWAPCHAIN_COLOR_SPACE_SPEC_VERSION = 1;
-enum VK_SWAPCHAIN_COLOR_SPACE_EXTENSION_NAME = "VK_EXT_swapchain_colorspace";
+enum VK_EXT_SWAPCHAIN_COLOR_SPACE_SPEC_VERSION = 1;
+enum VK_EXT_SWAPCHAIN_COLOR_SPACE_EXTENSION_NAME = "VK_EXT_swapchain_colorspace";
 
-// VK_EXT_extension_106
-enum VK_KHR_EXTENSION_106_SPEC_VERSION = 0;
-enum VK_KHR_EXTENSION_106_EXTENSION_NAME = "VK_EXT_extension_106";
+// VK_EXT_SMPTE2086_metadata
+enum VK_EXT_SMPTE2086_METADATA_SPEC_VERSION = 0;
+enum VK_EXT_SMPTE2086_METADATA_EXTENSION_NAME = "VK_EXT_SMPTE2086_metadata";
+
+struct VkXYColorEXT {
+	float  x;
+	float  y;
+}
+
+struct VkSMPTE2086MetadataEXT {
+	VkXYColorEXT  displayPrimaryRed;
+	VkXYColorEXT  displayPrimaryGreen;
+	VkXYColorEXT  displayPrimaryBlue;
+	VkXYColorEXT  whitePoint;
+	float         maxLuminance;
+	float         minLuminance;
+}
 
 // VK_IMG_extension_107
 enum VK_IMG_EXTENSION_107_SPEC_VERSION = 0;

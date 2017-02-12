@@ -271,6 +271,9 @@ extern( System ) @nogc nothrow {
 	alias PFN_vkRegisterDeviceEventEXT = VkResult function( VkDevice device, const( VkDeviceEventInfoEXT )* pDeviceEventInfo, const( VkAllocationCallbacks )* pAllocator, VkFence* pFence );
 	alias PFN_vkRegisterDisplayEventEXT = VkResult function( VkDevice device, VkDisplayKHR display, const( VkDisplayEventInfoEXT )* pDisplayEventInfo, const( VkAllocationCallbacks )* pAllocator, VkFence* pFence );
 	alias PFN_vkGetSwapchainCounterEXT = VkResult function( VkDevice device, VkSwapchainKHR swapchain, VkSurfaceCounterFlagBitsEXT counter, uint64_t* pCounterValue );
+
+	// VK_EXT_SMPTE2086_metadata
+	alias PFN_vkSetSMPTE2086MetadataEXT = void function( VkDevice device, uint32_t swapchainCount, const( VkSwapchainKHR )* pSwapchains, const( VkSMPTE2086MetadataEXT )* pMetadata );
 }
 
 __gshared {
@@ -542,6 +545,9 @@ __gshared {
 	PFN_vkRegisterDeviceEventEXT vkRegisterDeviceEventEXT;
 	PFN_vkRegisterDisplayEventEXT vkRegisterDisplayEventEXT;
 	PFN_vkGetSwapchainCounterEXT vkGetSwapchainCounterEXT;
+
+	// VK_EXT_SMPTE2086_metadata
+	PFN_vkSetSMPTE2086MetadataEXT vkSetSMPTE2086MetadataEXT;
 }
 
 /// if not using version "with-derelict-loader" this function must be called first
@@ -831,6 +837,9 @@ void loadDeviceLevelFunctions( VkInstance instance ) {
 	vkRegisterDeviceEventEXT = cast( typeof( vkRegisterDeviceEventEXT )) vkGetInstanceProcAddr( instance, "vkRegisterDeviceEventEXT" );
 	vkRegisterDisplayEventEXT = cast( typeof( vkRegisterDisplayEventEXT )) vkGetInstanceProcAddr( instance, "vkRegisterDisplayEventEXT" );
 	vkGetSwapchainCounterEXT = cast( typeof( vkGetSwapchainCounterEXT )) vkGetInstanceProcAddr( instance, "vkGetSwapchainCounterEXT" );
+
+	// VK_EXT_SMPTE2086_metadata
+	vkSetSMPTE2086MetadataEXT = cast( typeof( vkSetSMPTE2086MetadataEXT )) vkGetInstanceProcAddr( instance, "vkSetSMPTE2086MetadataEXT" );
 }
 
 /// with a valid VkDevice call this function to retrieve VkDevice, VkQueue and VkCommandBuffer related functions
@@ -1006,6 +1015,9 @@ void loadDeviceLevelFunctions( VkDevice device ) {
 	vkRegisterDeviceEventEXT = cast( typeof( vkRegisterDeviceEventEXT )) vkGetDeviceProcAddr( device, "vkRegisterDeviceEventEXT" );
 	vkRegisterDisplayEventEXT = cast( typeof( vkRegisterDisplayEventEXT )) vkGetDeviceProcAddr( device, "vkRegisterDisplayEventEXT" );
 	vkGetSwapchainCounterEXT = cast( typeof( vkGetSwapchainCounterEXT )) vkGetDeviceProcAddr( device, "vkGetSwapchainCounterEXT" );
+
+	// VK_EXT_SMPTE2086_metadata
+	vkSetSMPTE2086MetadataEXT = cast( typeof( vkSetSMPTE2086MetadataEXT )) vkGetDeviceProcAddr( device, "vkSetSMPTE2086MetadataEXT" );
 }
 
 /// with a valid VkDevice call this function to retrieve VkDevice, VkQueue and VkCommandBuffer related functions grouped in a DispatchDevice struct
@@ -1182,6 +1194,9 @@ DispatchDevice createDispatchDeviceLevelFunctions( VkDevice device ) {
 		vkRegisterDeviceEventEXT = cast( typeof( vkRegisterDeviceEventEXT )) vkGetDeviceProcAddr( device, "vkRegisterDeviceEventEXT" );
 		vkRegisterDisplayEventEXT = cast( typeof( vkRegisterDisplayEventEXT )) vkGetDeviceProcAddr( device, "vkRegisterDisplayEventEXT" );
 		vkGetSwapchainCounterEXT = cast( typeof( vkGetSwapchainCounterEXT )) vkGetDeviceProcAddr( device, "vkGetSwapchainCounterEXT" );
+
+		// VK_EXT_SMPTE2086_metadata
+		vkSetSMPTE2086MetadataEXT = cast( typeof( vkSetSMPTE2086MetadataEXT )) vkGetDeviceProcAddr( device, "vkSetSMPTE2086MetadataEXT" );
 	}
 
 	return dispatchDevice;
@@ -1339,6 +1354,7 @@ private struct DispatchDevice {
 	PFN_vkRegisterDeviceEventEXT vkRegisterDeviceEventEXT;
 	PFN_vkRegisterDisplayEventEXT vkRegisterDisplayEventEXT;
 	PFN_vkGetSwapchainCounterEXT vkGetSwapchainCounterEXT;
+	PFN_vkSetSMPTE2086MetadataEXT vkSetSMPTE2086MetadataEXT;
 }
 
 // Derelict loader to acquire entry point vkGetInstanceProcAddr
