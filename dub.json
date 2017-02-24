@@ -5,13 +5,13 @@
     "license": "Boost",
     "authors": [
         "Gerbrand Kamphuis (vuaru)",
-        "p0nce"
+        "Guillaume Piolat (p0nce)"
     ],
 
     "targetName": "DerelictCL",
     "targetPath": "lib",
 
     "dependencies": {
-        "derelict-util": "~>2.0"
+        "derelict-util": "~>3.0"
     }
 }
