@@ -806,19 +806,11 @@ alias cudaTextureObject_t = ulong;
 
 // vector_types.h
 // only dim3 translated
-
 struct dim3
 {
     uint x = 1,
          y = 1,
          z = 1;
-
-    this(uint vx = 1, uint vy = 1, uint vz = 1)
-    {
-        vx = x;
-        vy = y;
-        vz = z;
-    }
 };
 
 

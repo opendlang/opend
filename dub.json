@@ -1,10 +1,10 @@
 ﻿{
     "name": "derelict-cuda",
     "description": "A dynamic binding to the CUDA API.",
-    "homepage": "https://github.com/p0nce/DerelictCUDA",
+    "homepage": "https://github.com/DerelictOrg/DerelictCUDA",
     "license": "Boost",
     "authors": [
-        "ponce"
+        "Guillaume Piolat (p0nce)"
     ],
 
     "importPaths": ["source"],
@@ -14,6 +14,6 @@
     "targetPath": "lib",
 
     "dependencies": {
-        "derelict-util": "~>2.0"
+        "derelict-util": "~>3.0-alpha.1"
     }
 }
