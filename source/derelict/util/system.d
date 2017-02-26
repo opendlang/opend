@@ -78,3 +78,13 @@ version(FreeBSD) {
 }
 
 static if(__VERSION__ < 2066) enum nogc = 1;
+
+enum MakeEnum(EnumType, string fqnEnumType = EnumType.stringof) = (){
+  string MakeEnum = "enum {";
+  foreach(m;__traits(allMembers, EnumType))
+  {
+      MakeEnum ~= m ~ " = " ~ fqnEnumType ~ "." ~ m ~ ",";
+  }
+  MakeEnum  ~= "}";
+  return MakeEnum;
+}();
