@@ -144,15 +144,18 @@ class DGenerator( OutputGenerator ):
 		self.dispatchTypeDefinition = ""
 		self.opaqueStruct = set()
 		self.platformExtensions = {
-			"// VK_KHR_android_surface"      : [ "VK_USE_PLATFORM_ANDROID_KHR", "public import android.native_window;\n" ],
-			"// VK_KHR_mir_surface"          : [ "VK_USE_PLATFORM_MIR_KHR",     "public import mir_toolkit.client_types;\n" ],
-			"// VK_KHR_wayland_surface"      : [ "VK_USE_PLATFORM_WAYLAND_KHR", "public import wayland.client;\n" ],
-			"// VK_KHR_win32_surface"        : [ "VK_USE_PLATFORM_WIN32_KHR",   "public import core.sys.windows.windows;\n" ],
-			"// VK_KHR_xlib_surface"         : [ "VK_USE_PLATFORM_XLIB_KHR",    "public import X11.Xlib;\n" ],
-			"// VK_KHR_xcb_surface"          : [ "VK_USE_PLATFORM_XCB_KHR",     "public import xcb.xcb;\n" ],
-			"// VK_NV_external_memory_win32" : [ "VK_USE_PLATFORM_WIN32_KHR",   "public import core.sys.windows.winnt;\n" ],
-			"// VK_NV_win32_keyed_mutex"     : [ "VK_USE_PLATFORM_WIN32_KHR",   "" ],
-			"// VK_EXT_acquire_xlib_display" : [ "VK_USE_PLATFORM_XLIB_KHR" ,   "" ],
+			"// VK_KHR_android_surface"          : [ "VK_USE_PLATFORM_ANDROID_KHR", "public import android.native_window;\n" ],
+			"// VK_KHR_mir_surface"              : [ "VK_USE_PLATFORM_MIR_KHR",     "public import mir_toolkit.client_types;\n" ],
+			"// VK_KHR_wayland_surface"          : [ "VK_USE_PLATFORM_WAYLAND_KHR", "public import wayland.client;\n" ],
+			"// VK_KHR_win32_surface"            : [ "VK_USE_PLATFORM_WIN32_KHR",   "public import core.sys.windows.windows;\n" ],
+			"// VK_KHR_xlib_surface"             : [ "VK_USE_PLATFORM_XLIB_KHR",    "public import X11.Xlib;\n" ],
+			"// VK_EXT_acquire_xlib_display"     : [ "VK_USE_PLATFORM_XLIB_KHR" ,   "" ],
+			"// VK_KHR_xcb_surface"              : [ "VK_USE_PLATFORM_XCB_KHR",     "public import xcb.xcb;\n" ],
+			"// VK_NV_external_memory_win32"     : [ "VK_USE_PLATFORM_WIN32_KHR",   "public import core.sys.windows.winnt;\n" ],
+			"// VK_KHX_external_memory_win32"    : [ "VK_USE_PLATFORM_WIN32_KHR",   "" ],
+			"// VK_NV_win32_keyed_mutex"         : [ "VK_USE_PLATFORM_WIN32_KHR",   "" ],
+			"// VK_KHX_win32_keyed_mutex"        : [ "VK_USE_PLATFORM_WIN32_KHR",   "" ],
+			"// VK_KHX_external_semaphore_win32" : [ "VK_USE_PLATFORM_WIN32_KHR",   "" ],
 		}
 
 	def beginFile( self, genOpts ):
@@ -448,6 +451,11 @@ version( {NAME_PREFIX_UCASE}_FROM_DERELICT ) {{
 			elif required == "vk_platform":
 				return
 
+		if "category" not in typeinfo.elem.attrib:
+			#for k, v in typeinfo.elem.attrib.items():
+			#	write( k, v, file = self.testsFile )
+			return
+
 		category = typeinfo.elem.attrib[ "category" ]
 
 		if category == "handle":
@@ -506,7 +514,7 @@ version( {NAME_PREFIX_UCASE}_FROM_DERELICT ) {{
 
 			if member.get( "values" ):
 				memberName += " = " + member.get( "values" )
-				write( memberName, file = self.testsFile )
+				#write( memberName, file = self.testsFile )
 			
 			# get the maximum string length of all member types
 			memberType, memberName = convertTypeArray( memberType, memberName )
@@ -656,5 +664,7 @@ if __name__ == "__main__":
 		#defaultExtensions = "defaultExtensions",
 		addExtensions = r".*",
 		#removeExtensions = None#r"VK_KHR_.*_surface$"
-	 ))
-	
+	))
+
+# 146: Platform Extensions
+# 171: Test File
