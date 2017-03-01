@@ -18,8 +18,14 @@ nothrow @nogc:
 
 
 // SSE2
+pragma(LDC_intrinsic, "llvm.x86.sse2.add.sd")
+    double2 __builtin_ia32_addsd(double2, double2) pure @safe;
 alias _mm_add_sd = __builtin_ia32_addsd;
+
 alias _mm_clflush = __builtin_ia32_clflush;
+
+pragma(LDC_intrinsic, "llvm.x86.sse2.cmp.pd")
+    double2 __builtin_ia32_cmppd(double2, double2, byte) pure @safe;
 alias _mm_cmpeq_pd = __builtin_ia32_cmppd;
 alias _mm_cmpeq_sd = __builtin_ia32_cmpsd;
 alias _mm_comieq_sd = __builtin_ia32_comisdeq;
@@ -28,12 +34,20 @@ alias _mm_comigt_sd = __builtin_ia32_comisdgt;
 alias _mm_comile_sd = __builtin_ia32_comisdle;
 alias _mm_comilt_sd = __builtin_ia32_comisdlt;
 alias _mm_comineq_sd = __builtin_ia32_comisdneq;
+
+pragma(LDC_intrinsic, "llvm.x86.sse2.cvtdq2pd")
+    double2 __builtin_ia32_cvtdq2pd(int4) pure @safe;
 alias _mm_cvtepi32_pd = __builtin_ia32_cvtdq2pd;
+
 alias _mm_cvtepi32_ps = __builtin_ia32_cvtdq2ps;
 alias _mm_cvtpd_epi32 = __builtin_ia32_cvtpd2dq;
 alias _mm_cvtpd_ps = __builtin_ia32_cvtpd2ps;
 alias _mm_cvtps_epi32 = __builtin_ia32_cvtps2dq;
+
+pragma(LDC_intrinsic, "llvm.x86.sse2.cvtps2pd")
+    double2 __builtin_ia32_cvtps2pd(float4) pure @safe;
 alias _mm_cvtps_pd = __builtin_ia32_cvtps2pd;
+
 alias _mm_cvtsd_si32 = __builtin_ia32_cvtsd2si;
 alias _mm_cvtsd_si64 = __builtin_ia32_cvtsd2si64;
 alias _mm_cvtsd_ss = __builtin_ia32_cvtsd2ss;
@@ -44,7 +58,11 @@ alias _mm_cvttpd_epi32 = __builtin_ia32_cvttpd2dq;
 alias _mm_cvttps_epi32 = __builtin_ia32_cvttps2dq;
 alias _mm_cvttsd_si32 = __builtin_ia32_cvttsd2si;
 alias _mm_cvttsd_si64 = __builtin_ia32_cvttsd2si64;
+
+pragma(LDC_intrinsic, "llvm.x86.sse2.div.sd")
+    double2 __builtin_ia32_divsd(double2, double2) pure @safe;
 alias _mm_div_sd = __builtin_ia32_divsd;
+
 alias _mm_lfence = __builtin_ia32_lfence;
 alias _mm_maskmoveu_si128 = __builtin_ia32_maskmovdqu;
 alias _mm_max_pd = __builtin_ia32_maxpd;
@@ -53,7 +71,11 @@ alias _mm_mfence = __builtin_ia32_mfence;
 alias _mm_min_pd = __builtin_ia32_minpd;
 alias _mm_min_sd = __builtin_ia32_minsd;
 alias _mm_movemask_pd = __builtin_ia32_movmskpd;
+
+pragma(LDC_intrinsic, "llvm.x86.sse2.mul.sd")
+    double2 __builtin_ia32_mulsd(double2, double2) pure @safe;
 alias _mm_mul_sd = __builtin_ia32_mulsd;
+
 alias _mm_packs_epi32 = __builtin_ia32_packssdw128;
 alias _mm_packs_epi16 = __builtin_ia32_packsswb128;
 alias _mm_packus_epi16 = __builtin_ia32_packuswb128;
@@ -65,18 +87,42 @@ alias _mm_pause = __builtin_ia32_pause;
 alias _mm_avg_epu8 = __builtin_ia32_pavgb128;
 alias _mm_avg_epu16 = __builtin_ia32_pavgw128;
 alias _mm_madd_epi16 = __builtin_ia32_pmaddwd128;
+
+pragma(LDC_intrinsic, "llvm.x86.sse2.pmaxs.w")
+    short8 __builtin_ia32_pmaxsw128(short8, short8) pure @safe;
 alias _mm_max_epi16 = __builtin_ia32_pmaxsw128;
+
+pragma(LDC_intrinsic, "llvm.x86.sse2.pmaxu.b")
+    byte16 __builtin_ia32_pmaxub128(byte16, byte16) pure @safe;
 alias _mm_max_epu8 = __builtin_ia32_pmaxub128;
+
+pragma(LDC_intrinsic, "llvm.x86.sse2.pmins.w")
+    short8 __builtin_ia32_pminsw128(short8, short8) pure @safe;
 alias _mm_min_epi16 = __builtin_ia32_pminsw128;
+
+pragma(LDC_intrinsic, "llvm.x86.sse2.pminu.b")
+    byte16 __builtin_ia32_pminub128(byte16, byte16) pure @safe;
 alias _mm_min_epu8 = __builtin_ia32_pminub128;
+
 alias _mm_movemask_epi8 = __builtin_ia32_pmovmskb128;
 alias _mm_mulhi_epi16 = __builtin_ia32_pmulhw128;
 alias _mm_mulhi_epu16 = __builtin_ia32_pmulhuw128;
 alias _mm_mul_epu32 = __builtin_ia32_pmuludq128;
 alias _mm_sad_epu8 = __builtin_ia32_psadbw128;
+
+pragma(LDC_intrinsic, "llvm.x86.sse2.pshuf.d")
+    int4 __builtin_ia32_pshufd(int4, byte) pure @safe;
 alias _mm_shuffle_epi32 = __builtin_ia32_pshufd;
+
+pragma(LDC_intrinsic, "llvm.x86.sse2.pshufh.w")
+    short8 __builtin_ia32_pshufhw(short8, byte) pure @safe;
 alias _mm_shufflehi_epi16 = __builtin_ia32_pshufhw;
+
+pragma(LDC_intrinsic, "llvm.x86.sse2.pshufl.w")
+    short8 __builtin_ia32_pshuflw(short8, byte) pure @safe;
 alias _mm_shufflelo_epi16 = __builtin_ia32_pshuflw;
+
+
 alias _mm_sll_epi32 = __builtin_ia32_pslld128;
 alias _mm_sll_epi64 = __builtin_ia32_psllq128;
 alias _mm_sll_epi16 = __builtin_ia32_psllw128;
@@ -125,10 +171,23 @@ alias _mm_subs_epu8 = __builtin_ia32_psubusb128;
 alias _mm_subs_epu16 = __builtin_ia32_psubusw128;
 alias _mm_sqrt_pd = __builtin_ia32_sqrtpd;
 alias _mm_sqrt_sd = __builtin_ia32_sqrtsd;
+
+pragma(LDC_intrinsic, "llvm.x86.sse2.storel.dq")
+    void __builtin_ia32_storelv4si(void*, int4);
 alias _mm_storel_epi64 = __builtin_ia32_storelv4si;
+
+pragma(LDC_intrinsic, "llvm.x86.sse2.storeu.dq")
+    void __builtin_ia32_storedqu(void*, byte16);
 alias _mm_store_si128 = __builtin_ia32_storedqu;
+
+pragma(LDC_intrinsic, "llvm.x86.sse2.storeu.pd")
+    void __builtin_ia32_storeupd(void*, double2);
 alias _mm_storeu_pd = __builtin_ia32_storeupd;
+
+pragma(LDC_intrinsic, "llvm.x86.sse2.sub.sd")
+    double2 __builtin_ia32_subsd(double2, double2) pure @safe;
 alias _mm_sub_sd = __builtin_ia32_subsd;
+
 alias _mm_ucomieq_sd = __builtin_ia32_ucomisdeq;
 alias _mm_ucomige_sd = __builtin_ia32_ucomisdge;
 alias _mm_ucomigt_sd = __builtin_ia32_ucomisdgt;
