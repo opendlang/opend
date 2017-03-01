@@ -9,6 +9,7 @@ version(LDC):
 
 public import inteli.types;
 import ldc.gccbuiltins_x86;
+import ldc.simd;
 
 // SSE1
 
@@ -189,9 +190,6 @@ float _mm_cvtss_f32(__m128 a) pure @safe
     return a.ptr[0];
 }
 
-// TODO: float _mm256_cvtss_f32 (__m256 a)
-// TODO: float _mm512_cvtss_f32 (__m512 a)
-
 alias _mm_cvtss_si32 = __builtin_ia32_cvttss2si;
 alias _mm_cvtss_si64 = __builtin_ia32_cvtss2si64;
 
@@ -252,6 +250,17 @@ alias _mm_max_ps = __builtin_ia32_maxps;
 alias _mm_max_ss = __builtin_ia32_maxss;
 alias _mm_min_ps = __builtin_ia32_minps;
 alias _mm_min_ss = __builtin_ia32_minss;
+
+__m128 _mm_movehl_ps (__m128 a, __m128 b) pure @safe
+{
+    return shufflevector!(float4, 2, 3, 6, 7)(a, b);
+}
+
+__m128 _mm_movelh_ps (__m128 a, __m128 b) pure @safe
+{
+    return shufflevector!(float4, 0, 1, 4, 5)(a, b);
+}
+
 alias _mm_movemask_ps = __builtin_ia32_movmskps;
 
 __m128 _mm_mul_ps(__m128 a, __m128 b) pure @safe
@@ -286,6 +295,19 @@ __m128 _mm_sub_ps(__m128 a, __m128 b) pure @safe
 pragma(LDC_intrinsic, "llvm.x86.sse.sub.ss")
     float4 _mm_sub_ss(float4, float4) pure @safe;
 
+void _MM_TRANSPOSE4_PS (ref __m128 row0, ref __m128 row1, ref __m128 row2, ref __m128 row3) pure @safe
+{
+    __m128 tmp3, tmp2, tmp1, tmp0; 
+    tmp0 = _mm_unpacklo_ps(row0, row1); 
+    tmp2 = _mm_unpacklo_ps(row2, row3); 
+    tmp1 = _mm_unpackhi_ps(row0, row1); 
+    tmp3 = _mm_unpackhi_ps(row2, row3); 
+    row0 = _mm_movelh_ps(tmp0, tmp2); 
+    row1 = _mm_movehl_ps(tmp2, tmp0); 
+    row2 = _mm_movelh_ps(tmp1, tmp3); 
+    row3 = _mm_movehl_ps(tmp3, tmp1);
+}
+
 alias _mm_ucomieq_ss = __builtin_ia32_ucomieq;
 alias _mm_ucomige_ss = __builtin_ia32_ucomige;
 alias _mm_ucomigt_ss = __builtin_ia32_ucomigt;
@@ -293,4 +315,23 @@ alias _mm_ucomile_ss = __builtin_ia32_ucomile;
 alias _mm_ucomilt_ss = __builtin_ia32_ucomilt;
 alias _mm_ucomineq_ss = __builtin_ia32_ucomineq;
 
+__m128 _mm_undefined_ps() pure @safe
+{
+    __m128 undef = void;
+    return undef;
+}
 
+__m128 _mm_unpackhi_ps (__m128 a, __m128 b) pure @safe
+{
+    return shufflevector!(float4, 2, 6, 3, 7)(a, b);
+}
+
+__m128 _mm_unpacklo_ps (__m128 a, __m128 b) pure @safe
+{
+    return shufflevector!(float4, 0, 4, 1, 5)(a, b);
+}
+
+__m128i _mm_xor_ps (__m128i a, __m128i b) pure @safe
+{
+    return a ^ b;
+}
