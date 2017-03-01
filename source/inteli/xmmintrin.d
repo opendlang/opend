@@ -15,12 +15,12 @@ import ldc.simd;
 
 nothrow @nogc:
 
-float4 _mm_add_ps(float4 a, float4 b) pure @safe
+__m128 _mm_add_ps(__m128 a, __m128 b) pure @safe
 {
     return a + b;
 }
 pragma(LDC_intrinsic, "llvm.x86.sse.add.ss")
-    float4 _mm_add_ss(float4, float4) pure @safe;
+    __m128 _mm_add_ss(__m128, __m128) pure @safe;
 
 __m128i _mm_and_ps (__m128i a, __m128i b) pure @safe
 {
@@ -36,8 +36,8 @@ __m128i _mm_andnot_ps (__m128i a, __m128i b) pure @safe
 // TODO: _mm_avg_pu8
 
 pragma(LDC_intrinsic, "llvm.x86.sse.cmp.ps")
-    float4 __builtin_ia32_cmpps(float4, float4, byte) pure @safe;
-    
+    __m128 __builtin_ia32_cmpps(__m128, __m128, byte) pure @safe;
+
 __m128 _mm_cmpeq_ps (__m128 a, __m128 b) pure @safe
 {
     return __builtin_ia32_cmpps(a, b, 0);
@@ -265,7 +265,7 @@ alias _mm_movemask_ps = __builtin_ia32_movmskps;
 
 __m128 _mm_mul_ps(__m128 a, __m128 b) pure @safe
 {
-    return a * b;    
+    return a * b;
 }
 pragma(LDC_intrinsic, "llvm.x86.sse.mul.ss")
     float4 _mm_mul_ss(float4, float4) pure @safe;
@@ -275,18 +275,97 @@ alias _mm_rcp_ss = __builtin_ia32_rcpss;
 alias _mm_rsqrt_ps = __builtin_ia32_rsqrtps;
 alias _mm_rsqrt_ss = __builtin_ia32_rsqrtss;
 
-__m128i _mm_setzero_si128()
+// TODO: void _MM_SET_EXCEPTION_MASK (unsigned int a)
+// TODO: void _MM_SET_EXCEPTION_STATE (unsigned int a)
+// TODO: void _MM_SET_FLUSH_ZERO_MODE (unsigned int a)
+
+__m128 _mm_set_ps (float e3, float e2, float e1, float e0) pure @safe
 {
-    return __m128i([0, 0, 0, 0]);
+    return [e0, e1, e2, e3];
+}
+
+alias _mm_set_ps1 = _mm_set1_ps;
+
+// TODO: _MM_SET_ROUNDING_MODE
+
+__m128 _mm_set_ss (float a) pure @safe
+{
+    return [a, 0.0f, 0.0f, 0.0f];
+}
+
+__m128 _mm_set1_ps (float a) pure @safe
+{
+    return [a, a, a, a];
+}
+
+// TODO: _mm_setcsr
+
+__m128 _mm_setr_ps (float e3, float e2, float e1, float e0) pure @safe
+{
+    return [e3, e2, e1, e0];
+}
+
+__m128 _mm_setzero_ps() pure @safe
+{
+    return [0, 0, 0, 0];
 }
 
 alias _mm_sfence = __builtin_ia32_sfence;
+
+// TODO: mm_shuffle_pi16
+
+// Note: the immediate shuffle value is given at compile-time instead of runtime.
+__m128 _mm_shuffle_ps(ubyte imm)(__m128 a, __m128 b) pure @safe
+{
+    return shufflevector!(__m128, imm & 3, (imm>>2) & 3, 4 + ((imm>>4) & 3), 4 + ((imm>>6) & 3) )(a, b);
+}
+
 alias _mm_sqrt_ps = __builtin_ia32_sqrtps;
 alias _mm_sqrt_ss = __builtin_ia32_sqrtss;
 
-pragma(LDC_intrinsic, "llvm.x86.sse.storeu.ps")
-    void __builtin_ia32_storeups(void*, float4);
-alias _mm_storeu_ps = __builtin_ia32_storeups;
+void _mm_store_ps (float* mem_addr, __m128 a) pure // not safe since nothing guarantees alignment
+{
+    __m128* aligned = cast(__m128*)mem_addr;
+    *aligned = a;
+}
+
+alias _mm_store_ps1 = _mm_store1_ps;
+
+void _mm_store_ss (float* mem_addr, __m128 a) pure @safe
+{
+    *mem_addr = extractelement!(__m128, 0)(a);
+}
+
+void _mm_store1_ps (float* mem_addr, __m128 a) pure // not safe since nothing guarantees alignment
+{
+    __m128* aligned = cast(__m128*)mem_addr;
+    *aligned = shufflevector!(__m128, 0, 0, 0, 0)(a, a);
+}
+
+void _mm_storeh_pi(__m64* p, __m128 a) pure @safe
+{
+    *p = extractelement!(long2, 1)(a);
+}
+
+void _mm_storel_pi(__m64* p, __m128 a) pure @safe
+{
+    *p = extractelement!(long2, 0)(a);
+}
+
+void _mm_storer_ps(float* mem_addr, __m128 a) pure // not safe since nothing guarantees alignment
+{
+    __m128* aligned = cast(__m128*)mem_addr;
+    *aligned = shufflevector!(__m128, 3, 2, 1, 0)(a, a);
+}
+
+void _mm_storeu_ps(float* mem_addr, __m128 a) pure @safe
+{
+    storeUnaligned!__m128(a, mem_addr);
+}
+
+// TODO: _mm_stream_pi
+// TODO: _mm_stream_ps
+
 
 __m128 _mm_sub_ps(__m128 a, __m128 b) pure @safe
 {
@@ -297,14 +376,14 @@ pragma(LDC_intrinsic, "llvm.x86.sse.sub.ss")
 
 void _MM_TRANSPOSE4_PS (ref __m128 row0, ref __m128 row1, ref __m128 row2, ref __m128 row3) pure @safe
 {
-    __m128 tmp3, tmp2, tmp1, tmp0; 
-    tmp0 = _mm_unpacklo_ps(row0, row1); 
-    tmp2 = _mm_unpacklo_ps(row2, row3); 
-    tmp1 = _mm_unpackhi_ps(row0, row1); 
-    tmp3 = _mm_unpackhi_ps(row2, row3); 
-    row0 = _mm_movelh_ps(tmp0, tmp2); 
-    row1 = _mm_movehl_ps(tmp2, tmp0); 
-    row2 = _mm_movelh_ps(tmp1, tmp3); 
+    __m128 tmp3, tmp2, tmp1, tmp0;
+    tmp0 = _mm_unpacklo_ps(row0, row1);
+    tmp2 = _mm_unpacklo_ps(row2, row3);
+    tmp1 = _mm_unpackhi_ps(row0, row1);
+    tmp3 = _mm_unpackhi_ps(row2, row3);
+    row0 = _mm_movelh_ps(tmp0, tmp2);
+    row1 = _mm_movehl_ps(tmp2, tmp0);
+    row2 = _mm_movelh_ps(tmp1, tmp3);
     row3 = _mm_movehl_ps(tmp3, tmp1);
 }
 

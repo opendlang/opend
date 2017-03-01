@@ -110,6 +110,11 @@ alias _mm_mulhi_epu16 = __builtin_ia32_pmulhuw128;
 alias _mm_mul_epu32 = __builtin_ia32_pmuludq128;
 alias _mm_sad_epu8 = __builtin_ia32_psadbw128;
 
+__m128i _mm_setzero_si128() pure @safe
+{
+    return [0, 0, 0, 0];
+}
+
 pragma(LDC_intrinsic, "llvm.x86.sse2.pshuf.d")
     int4 __builtin_ia32_pshufd(int4, byte) pure @safe;
 alias _mm_shuffle_epi32 = __builtin_ia32_pshufd;
@@ -132,10 +137,10 @@ alias _mm_slli_epi16 = __builtin_ia32_psllwi128;
 
 __m128i _mm_slli_si128(ubyte imm8)(__m128i op)
 {
-    static if (imm8 & 0xF0) 
+    static if (imm8 & 0xF0)
         return _mm_setzero_si128();
     else
-        return shufflevector!(byte16, 
+        return shufflevector!(byte16,
         16 - imm8, 17 - imm8, 18 - imm8, 19 - imm8, 20 - imm8, 21 - imm8, 22 - imm8, 23 - imm8,
         24 - imm8, 25 - imm8, 26 - imm8, 27 - imm8, 28 - imm8, 29 - imm8, 30 - imm8, 31 - imm8)
         (_mm_setzero_si128(), op);
@@ -152,10 +157,10 @@ alias _mm_srli_epi32 = __builtin_ia32_psrldi128;
 
 __m128i _mm_srli_si128(ubyte imm8)(__m128i op)
 {
-    static if (imm8 & 0xF0) 
+    static if (imm8 & 0xF0)
         return _mm_setzero_si128();
     else
-        return shufflevector!(byte16, 
+        return shufflevector!(byte16,
         imm8+0, imm8+1, imm8+2, imm8+3, imm8+4, imm8+5, imm8+6, imm8+7,
         imm8+8, imm8+9, imm8+10, imm8+11, imm8+12, imm8+13, imm8+14, imm8+15)(op, _mm_setzero_si128());
 }
@@ -195,7 +200,7 @@ alias _mm_ucomile_sd = __builtin_ia32_ucomisdle;
 alias _mm_ucomilt_sd = __builtin_ia32_ucomisdlt;
 alias _mm_ucomineq_sd = __builtin_ia32_ucomisdneq;
 
-unittest 
+unittest
 {
     // distance between two points in 4D
     float distance(float[4] a, float[4] b) nothrow @nogc
