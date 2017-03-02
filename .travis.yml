@@ -1,0 +1,14 @@
+language: d
+
+os:
+  - osx
+  - linux
+
+d:
+ - ldc-1.0.0
+ - ldc-1.1.0
+ - dmd-beta
+
+script:
+  - dub test --compiler=${DC} -a x86
+  - dub test --compiler=${DC}
