@@ -10,10 +10,12 @@ version(LDC):
 public import inteli.types;
 import ldc.gccbuiltins_x86;
 import ldc.simd;
+import ldc.intrinsics;
 
 // SSE1
 // Note: intrinsics noted MMXREG are actually using MMX registers, 
-// and were not translated.
+// and were not translated. These intrinsics are for instruction
+// introduced with SSE1, that also work on MMX registers.
 
 nothrow @nogc:
 
@@ -182,24 +184,22 @@ alias _mm_cvt_ss2si = __builtin_ia32_cvtss2si;
 // MMXREG: __m64 _mm_cvtps_pi8 (__m128 a)
 // MMXREG: __m128 _mm_cvtpu16_ps (__m64 a)
 // MMXREG: __m128 _mm_cvtpu8_ps (__m64 a)
-// TODO: __m128 _mm_cvtsi32_ss (__m128 a, int b)
 
+alias _mm_cvtsi32_ss = __builtin_ia32_cvtsi2ss;
 alias _mm_cvtsi64_ss = __builtin_ia32_cvtsi642ss;
 
-// TODO: is this the right way?
 float _mm_cvtss_f32(__m128 a) pure @safe
 {
-    return extractElement!(__m128, 0)(a);
+    return extractelement!(__m128, 0)(a);
 }
 
-alias _mm_cvtss_si32 = __builtin_ia32_cvttss2si;
+alias _mm_cvtss_si32 = __builtin_ia32_cvtss2si;
 alias _mm_cvtss_si64 = __builtin_ia32_cvtss2si64;
-
-// TODO: __m64 _mm_cvtt_ps2pi (__m128 a)
-// TODO: int _mm_cvtt_ss2si (__m128 a)
-// TODO: __m64 _mm_cvttps_pi32 (__m128 a)
-// TODO: int _mm_cvttss_si32 (__m128 a)
-// TODO: __int64 _mm_cvttss_si64 (__m128 a)
+// MMXREG: __m64 _mm_cvtt_ps2pi (__m128 a)
+alias _mm_cvtt_ss2si = __builtin_ia32_cvttss2si;
+// MMXREG: _mm_cvttps_pi32
+alias _mm_cvttss_si32 = _mm_cvtt_ss2si; // it's actually the same op
+alias _mm_cvttss_si64 = __builtin_ia32_cvttss2si64;
 
 float4 _mm_div_ps(float4 a, float4 b) pure @safe
 {
@@ -208,7 +208,7 @@ float4 _mm_div_ps(float4 a, float4 b) pure @safe
 pragma(LDC_intrinsic, "llvm.x86.sse.div.ss")
     float4 _mm_div_ss(float4, float4) pure @safe;
 
-// TODO: int _mm_extract_pi16 (__m64 a, int imm8)
+// MMXREG: int _mm_extract_pi16 (__m64 a, int imm8)
 // TODO: unsigned int _MM_GET_EXCEPTION_MASK ()
 // TODO: unsigned int _MM_GET_EXCEPTION_STATE ()
 // TODO: unsigned int _MM_GET_FLUSH_ZERO_MODE ()
@@ -216,7 +216,7 @@ pragma(LDC_intrinsic, "llvm.x86.sse.div.ss")
 // TODO: stmxcsr
 // TODO: unsigned int _mm_getcsr (void)
 
-// TODO: __m64 _mm_insert_pi16 (__m64 a, int i, int imm8)
+// MMXREG: __m64 _mm_insert_pi16 (__m64 a, int i, int imm8)
 
 float4 _mm_load_ps(const(float)*p)
 {
@@ -259,17 +259,17 @@ float4 _mm_loadu_ps(const(float)*p) pure
     return loadUnaligned!(__m128)(p);
 }
 
-// TODO: _mm_maskmove_si64
-// TODO: _m_maskmovq
+// MMXREG: _mm_maskmove_si64
+// MMXREG: _m_maskmovq
 
-// TODO: _mm_max_pi16
+// MMXREG: _mm_max_pi16
 alias _mm_max_ps = __builtin_ia32_maxps;
-// TODO: _mm_max_pu8
+// MMXREG: _mm_max_pu8
 alias _mm_max_ss = __builtin_ia32_maxss;
 
-// TODO: _mm_min_pi16
+// MMXREG: _mm_min_pi16
 alias _mm_min_ps = __builtin_ia32_minps;
-// TODO: _mm_min_pi8
+// MMXREG: _mm_min_pi8
 alias _mm_min_ss = __builtin_ia32_minss;
 
 __m128 _mm_move_ss (__m128 a, __m128 b) pure @safe
@@ -297,30 +297,32 @@ __m128 _mm_mul_ps(__m128 a, __m128 b) pure @safe
 pragma(LDC_intrinsic, "llvm.x86.sse.mul.ss")
     float4 _mm_mul_ss(float4, float4) pure @safe;
 
-// TODO: _mm_mulhi_pu16
+// MMXREG: _mm_mulhi_pu16
 
 __m128 _mm_or_ps (__m128 a, __m128 b) pure @safe
 {
     return a | b;
 }
 
-// MMXREG:__m64 _m_pavgb (__m64 a, __m64 b)
-// MMXREG:__m64 _m_pavgw (__m64 a, __m64 b)
-// MMXREG:int _m_pextrw (__m64 a, int imm8)
-// MMXREG:__m64 _m_pinsrw (__m64 a, int i, int imm8)
-// MMXREG:__m64 _m_pmaxsw (__m64 a, __m64 b)
-// MMXREG:__m64 _m_pmaxub (__m64 a, __m64 b)
-// MMXREG:__m64 _m_pminsw (__m64 a, __m64 b)
-// MMXREG:__m64 _m_pminub (__m64 a, __m64 b)
+// MMXREG: __m64 _m_pavgb (__m64 a, __m64 b)
+// MMXREG: __m64 _m_pavgw (__m64 a, __m64 b)
+// MMXREG: int _m_pextrw (__m64 a, int imm8)
+// MMXREG: __m64 _m_pinsrw (__m64 a, int i, int imm8)
+// MMXREG: __m64 _m_pmaxsw (__m64 a, __m64 b)
+// MMXREG: __m64 _m_pmaxub (__m64 a, __m64 b)
+// MMXREG: __m64 _m_pminsw (__m64 a, __m64 b)
+// MMXREG: __m64 _m_pminub (__m64 a, __m64 b)
 // MMXREG: int _m_pmovmskb (__m64 a)
 
-__m64 _m_pmulhuw (__m64 a, __m64 b)
-prefetchnta, prefetcht0, prefetcht1, prefetcht2
-void _mm_prefetch (char const* p, int i)
-psadbw
-__m64 _m_psadbw (__m64 a, __m64 b)
-pshufw
-__m64 _m_pshufw (__m64 a, int imm8)
+// MMXREG: __m64 _m_pmulhuw (__m64 a, __m64 b)
+
+void _mm_prefetch(void* p, int locality) pure @safe
+{
+    llvm_prefetch(p, 0, locality, 1);
+}
+
+// MMXREG: __m64 _m_psadbw (__m64 a, __m64 b)
+// MMXREG: __m64 _m_pshufw (__m64 a, int imm8)
 
 
 alias _mm_rcp_ps = __builtin_ia32_rcpps;
@@ -365,7 +367,7 @@ __m128 _mm_setzero_ps() pure @safe
 
 alias _mm_sfence = __builtin_ia32_sfence;
 
-// TODO: mm_shuffle_pi16
+// MMXREG: mm_shuffle_pi16
 
 // Note: the immediate shuffle value is given at compile-time instead of runtime.
 __m128 _mm_shuffle_ps(ubyte imm)(__m128 a, __m128 b) pure @safe
@@ -416,8 +418,8 @@ void _mm_storeu_ps(float* mem_addr, __m128 a) pure @safe
     storeUnaligned!__m128(a, mem_addr);
 }
 
-// TODO: _mm_stream_pi
-// TODO: _mm_stream_ps
+// TODO: _mm_stream_pi, does not seem possible
+// TODO: _mm_stream_ps, does not seem possible
 
 
 __m128 _mm_sub_ps(__m128 a, __m128 b) pure @safe
