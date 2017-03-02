@@ -391,52 +391,80 @@ __m128d _mm_load_sd (const(double)* mem_addr) pure @safe
     return [*mem_addr, 0];
 }
 
-__m128i _mm_load_si128 (const(__m128i)* mem_addr)
+__m128i _mm_load_si128 (const(__m128i)* mem_addr) pure
 {
     return *mem_addr;
 }
 
 alias _mm_load1_pd = _mm_load_pd1;
 
-__m128d _mm_loadh_pd (__m128d a, const(double)* mem_addr)
+__m128d _mm_loadh_pd (__m128d a, const(double)* mem_addr) pure @safe
 {
     return insertelement!(__m128d, 1)(a, *mem_addr);
 }
 
 // Note: strange signature since the memory doesn't have to aligned
-__m128i _mm_loadl_epi64 (const(__m128i)* mem_addr)
+__m128i _mm_loadl_epi64 (const(__m128i)* mem_addr) pure @safe
 {
     auto pLong = cast(const(long)*)mem_addr;
     long2 res = [*pLong, 0];
     return cast(__m128i)res;
 }
-__m128d _mm_loadl_pd (__m128d a, const(double)* mem_addr)
+__m128d _mm_loadl_pd (__m128d a, const(double)* mem_addr) pure @safe
 {
     return insertelement!(__m128d, 0)(a, *mem_addr);
 }
 
-__m128d _mm_loadr_pd (const(double)* mem_addr)
+__m128d _mm_loadr_pd (const(double)* mem_addr) pure
 {
     __m128d a = _mm_load_pd(mem_addr);
     return shufflevector!(__m128d, 1, 0)(a, a);
 }
 
-__m128d _mm_loadu_pd (const(double)* mem_addr)
+__m128d _mm_loadu_pd (const(double)* mem_addr) pure @safe
 {
     return loadUnaligned!(double2)(mem_addr);
 }
 
-__m128i _mm_loadu_si128 (const(__m128i)* mem_addr)
+__m128i _mm_loadu_si128 (const(__m128i)* mem_addr) pure
 {
     return loadUnaligned!(__m128i)(cast(int*)mem_addr);
 }
 
+alias _mm_madd_epi16 = __builtin_ia32_pmaddwd128;
+
 alias _mm_maskmoveu_si128 = __builtin_ia32_maskmovdqu;
+
+pragma(LDC_intrinsic, "llvm.x86.sse2.pmaxs.w")
+    short8 __builtin_ia32_pmaxsw128(short8, short8) pure @safe;
+alias _mm_max_epi16 = __builtin_ia32_pmaxsw128;
+
+pragma(LDC_intrinsic, "llvm.x86.sse2.pmaxu.b")
+    byte16 __builtin_ia32_pmaxub128(byte16, byte16) pure @safe;
+alias _mm_max_epu8 = __builtin_ia32_pmaxub128;
+
 alias _mm_max_pd = __builtin_ia32_maxpd;
 alias _mm_max_sd = __builtin_ia32_maxsd;
+
 alias _mm_mfence = __builtin_ia32_mfence;
+
+pragma(LDC_intrinsic, "llvm.x86.sse2.pmins.w")
+    short8 __builtin_ia32_pminsw128(short8, short8) pure @safe;
+alias _mm_min_epi16 = __builtin_ia32_pminsw128;
+
+pragma(LDC_intrinsic, "llvm.x86.sse2.pminu.b")
+    byte16 __builtin_ia32_pminub128(byte16, byte16) pure @safe;
+alias _mm_min_epu8 = __builtin_ia32_pminub128;
+
 alias _mm_min_pd = __builtin_ia32_minpd;
 alias _mm_min_sd = __builtin_ia32_minsd;
+
+__m128i _mm_move_epi64 (__m128i a)
+{
+    long2 result = [ extractelement!(long2, 0)(a), 0 ];
+    return result;
+}
+
 alias _mm_movemask_pd = __builtin_ia32_movmskpd;
 
 pragma(LDC_intrinsic, "llvm.x86.sse2.mul.sd")
@@ -448,23 +476,8 @@ alias _mm_packs_epi16 = __builtin_ia32_packsswb128;
 alias _mm_packus_epi16 = __builtin_ia32_packuswb128;
 
 alias _mm_pause = __builtin_ia32_pause;
-alias _mm_madd_epi16 = __builtin_ia32_pmaddwd128;
 
-pragma(LDC_intrinsic, "llvm.x86.sse2.pmaxs.w")
-    short8 __builtin_ia32_pmaxsw128(short8, short8) pure @safe;
-alias _mm_max_epi16 = __builtin_ia32_pmaxsw128;
 
-pragma(LDC_intrinsic, "llvm.x86.sse2.pmaxu.b")
-    byte16 __builtin_ia32_pmaxub128(byte16, byte16) pure @safe;
-alias _mm_max_epu8 = __builtin_ia32_pmaxub128;
-
-pragma(LDC_intrinsic, "llvm.x86.sse2.pmins.w")
-    short8 __builtin_ia32_pminsw128(short8, short8) pure @safe;
-alias _mm_min_epi16 = __builtin_ia32_pminsw128;
-
-pragma(LDC_intrinsic, "llvm.x86.sse2.pminu.b")
-    byte16 __builtin_ia32_pminub128(byte16, byte16) pure @safe;
-alias _mm_min_epu8 = __builtin_ia32_pminub128;
 
 alias _mm_movemask_epi8 = __builtin_ia32_pmovmskb128;
 alias _mm_mulhi_epi16 = __builtin_ia32_pmulhw128;
