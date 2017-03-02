@@ -12,6 +12,8 @@ import ldc.gccbuiltins_x86;
 import ldc.simd;
 
 // SSE1
+// Note: intrinsics noted MMXREG are actually using MMX registers, 
+// and were not translated.
 
 nothrow @nogc:
 
@@ -32,8 +34,8 @@ __m128i _mm_andnot_ps (__m128i a, __m128i b) pure @safe
     return (~a) & b;
 }
 
-// TODO: _mm_avg_pu16
-// TODO: _mm_avg_pu8
+// MMXREG: _mm_avg_pu16
+// MMXREG: _mm_avg_pu8
 
 pragma(LDC_intrinsic, "llvm.x86.sse.cmp.ps")
     __m128 __builtin_ia32_cmpps(__m128, __m128, byte) pure @safe;
@@ -165,21 +167,21 @@ alias _mm_comile_ss = __builtin_ia32_comile;
 alias _mm_comilt_ss = __builtin_ia32_comilt;
 alias _mm_comineq_ss = __builtin_ia32_comineq;
 
-// TODO: __m128 _mm_cvt_pi2ps (__m128 a, __m64 b)
-// TODO: __m64 _mm_cvt_ps2pi (__m128 a)
+// MMXREG: __m128 _mm_cvt_pi2ps (__m128 a, __m64 b)
+// MMXREG: __m64 _mm_cvt_ps2pi (__m128 a)
 
 alias _mm_cvt_si2ss = __builtin_ia32_cvtsi2ss;
 alias _mm_cvt_ss2si = __builtin_ia32_cvtss2si;
 
-// TODO: __m128 _mm_cvtpi16_ps (__m64 a)
-// TODO: __m128 _mm_cvtpi32_ps (__m128 a, __m64 b)
-// TODO: __m128 _mm_cvtpi32x2_ps (__m64 a, __m64 b)
-// TODO: __m128 _mm_cvtpi8_ps (__m64 a)
-// TODO: __m64 _mm_cvtps_pi16 (__m128 a)
-// TODO: __m64 _mm_cvtps_pi32 (__m128 a)
-// TODO: __m64 _mm_cvtps_pi8 (__m128 a)
-// TODO: __m128 _mm_cvtpu16_ps (__m64 a)
-// TODO: __m128 _mm_cvtpu8_ps (__m64 a)
+// MMXREG: __m128 _mm_cvtpi16_ps (__m64 a)
+// MMXREG: __m128 _mm_cvtpi32_ps (__m128 a, __m64 b)
+// MMXREG: __m128 _mm_cvtpi32x2_ps (__m64 a, __m64 b)
+// MMXREG: __m128 _mm_cvtpi8_ps (__m64 a)
+// MMXREG: __m64 _mm_cvtps_pi16 (__m128 a)
+// MMXREG: __m64 _mm_cvtps_pi32 (__m128 a)
+// MMXREG: __m64 _mm_cvtps_pi8 (__m128 a)
+// MMXREG: __m128 _mm_cvtpu16_ps (__m64 a)
+// MMXREG: __m128 _mm_cvtpu8_ps (__m64 a)
 // TODO: __m128 _mm_cvtsi32_ss (__m128 a, int b)
 
 alias _mm_cvtsi64_ss = __builtin_ia32_cvtsi642ss;
@@ -187,7 +189,7 @@ alias _mm_cvtsi64_ss = __builtin_ia32_cvtsi642ss;
 // TODO: is this the right way?
 float _mm_cvtss_f32(__m128 a) pure @safe
 {
-    return a.ptr[0];
+    return extractElement!(__m128, 0)(a);
 }
 
 alias _mm_cvtss_si32 = __builtin_ia32_cvttss2si;
@@ -221,35 +223,59 @@ float4 _mm_load_ps(const(float)*p)
     return *cast(__m128*)p;
 }
 
-alias _mm_load1_ps = _mm_load_ps1;
 float4 _mm_load_ps1(const(float)*p)
 {
     float4 f = [ *p, *p, *p, *p ];
     return f;
 }
 
-float4 _mm_load_ss (const(float)* mem_addr)
+float4 _mm_load_ss (const(float)* mem_addr) pure @safe
 {
     float4 f = [ *mem_addr, 0.0f, 0.0f, 0.0f ];
     return f;
 }
 
-float4 _mm_loadu_ps(const(float)*p)
+alias _mm_load1_ps = _mm_load_ps1;
+
+__m128 _mm_loadh_pi (__m128 a, const(__m64)* mem_addr) pure @safe
 {
-    union float4_array
-    {
-        __m128 vec;
-        float[4] arr;
-    }
-    float4_array fa = void;
-    fa.arr = *cast(float[4]*)p;
-    return fa.vec;
+    return insertelement!(long2, 1)(a, *mem_addr);
 }
 
+__m128 _mm_loadl_pi (__m128 a, const(__m64)* mem_addr) pure @safe
+{
+    return insertelement!(long2, 0)(a, *mem_addr);
+}
+
+__m128 _mm_loadr_ps (const(float)* mem_addr) pure
+{
+    __m128* aligned = cast(__m128*)mem_addr;
+    __m128 a = *aligned;
+    return shufflevector!(__m128, 3, 2, 1, 0)(a, a);
+}
+
+float4 _mm_loadu_ps(const(float)*p) pure
+{
+    return loadUnaligned!(__m128)(p);
+}
+
+// TODO: _mm_maskmove_si64
+// TODO: _m_maskmovq
+
+// TODO: _mm_max_pi16
 alias _mm_max_ps = __builtin_ia32_maxps;
+// TODO: _mm_max_pu8
 alias _mm_max_ss = __builtin_ia32_maxss;
+
+// TODO: _mm_min_pi16
 alias _mm_min_ps = __builtin_ia32_minps;
+// TODO: _mm_min_pi8
 alias _mm_min_ss = __builtin_ia32_minss;
+
+__m128 _mm_move_ss (__m128 a, __m128 b) pure @safe
+{
+    return shufflevector!(__m128, 4, 1, 2, 3)(a, b);
+}
 
 __m128 _mm_movehl_ps (__m128 a, __m128 b) pure @safe
 {
@@ -261,6 +287,7 @@ __m128 _mm_movelh_ps (__m128 a, __m128 b) pure @safe
     return shufflevector!(float4, 0, 1, 4, 5)(a, b);
 }
 
+// TODO: int _mm_movemask_pi8
 alias _mm_movemask_ps = __builtin_ia32_movmskps;
 
 __m128 _mm_mul_ps(__m128 a, __m128 b) pure @safe
@@ -269,6 +296,32 @@ __m128 _mm_mul_ps(__m128 a, __m128 b) pure @safe
 }
 pragma(LDC_intrinsic, "llvm.x86.sse.mul.ss")
     float4 _mm_mul_ss(float4, float4) pure @safe;
+
+// TODO: _mm_mulhi_pu16
+
+__m128 _mm_or_ps (__m128 a, __m128 b) pure @safe
+{
+    return a | b;
+}
+
+// MMXREG:__m64 _m_pavgb (__m64 a, __m64 b)
+// MMXREG:__m64 _m_pavgw (__m64 a, __m64 b)
+// MMXREG:int _m_pextrw (__m64 a, int imm8)
+// MMXREG:__m64 _m_pinsrw (__m64 a, int i, int imm8)
+// MMXREG:__m64 _m_pmaxsw (__m64 a, __m64 b)
+// MMXREG:__m64 _m_pmaxub (__m64 a, __m64 b)
+// MMXREG:__m64 _m_pminsw (__m64 a, __m64 b)
+// MMXREG:__m64 _m_pminub (__m64 a, __m64 b)
+// MMXREG: int _m_pmovmskb (__m64 a)
+
+__m64 _m_pmulhuw (__m64 a, __m64 b)
+prefetchnta, prefetcht0, prefetcht1, prefetcht2
+void _mm_prefetch (char const* p, int i)
+psadbw
+__m64 _m_psadbw (__m64 a, __m64 b)
+pshufw
+__m64 _m_pshufw (__m64 a, int imm8)
+
 
 alias _mm_rcp_ps = __builtin_ia32_rcpps;
 alias _mm_rcp_ss = __builtin_ia32_rcpss;
