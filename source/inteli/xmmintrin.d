@@ -10,6 +10,7 @@ version(LDC):
 public import inteli.types;
 import ldc.gccbuiltins_x86;
 import ldc.simd;
+import ldc.intrinsics;
 
 // SSE1
 
@@ -184,10 +185,9 @@ alias _mm_cvt_ss2si = __builtin_ia32_cvtss2si;
 
 alias _mm_cvtsi64_ss = __builtin_ia32_cvtsi642ss;
 
-// TODO: is this the right way?
 float _mm_cvtss_f32(__m128 a) pure @safe
 {
-    return a.ptr[0];
+    return extractelement!(__m128, 0)(a);
 }
 
 alias _mm_cvtss_si32 = __builtin_ia32_cvttss2si;
@@ -270,11 +270,26 @@ __m128 _mm_mul_ps(__m128 a, __m128 b) pure @safe
 pragma(LDC_intrinsic, "llvm.x86.sse.mul.ss")
     float4 _mm_mul_ss(float4, float4) pure @safe;
 
+enum _MM_HINT_NTA = 0;
+enum _MM_HINT_T0 = 1;
+enum _MM_HINT_T1 = 2;
+enum _MM_HINT_T2 = 3;
+
+// Note: locality must be compile-time
+void _mm_prefetch(int locality)(void* p) pure @safe
+{
+    llvm_prefetch(p, 0, locality, 1);
+}
+
+// TODO: _m_psadbw
+// TODO: _m_pshufw
+
 alias _mm_rcp_ps = __builtin_ia32_rcpps;
 alias _mm_rcp_ss = __builtin_ia32_rcpss;
 alias _mm_rsqrt_ps = __builtin_ia32_rsqrtps;
 alias _mm_rsqrt_ss = __builtin_ia32_rsqrtss;
 
+// TODO: _mm_sad_pu8
 // TODO: void _MM_SET_EXCEPTION_MASK (unsigned int a)
 // TODO: void _MM_SET_EXCEPTION_STATE (unsigned int a)
 // TODO: void _MM_SET_FLUSH_ZERO_MODE (unsigned int a)
