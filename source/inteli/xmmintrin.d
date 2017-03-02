@@ -7,10 +7,13 @@ module inteli.xmmintrin;
 
 version(LDC):
 
-public import inteli.types;
 import ldc.gccbuiltins_x86;
-import ldc.simd;
+public import inteli.types;
+
+
 import ldc.intrinsics;
+
+import inteli.ldc_compat;
 
 // SSE1
 // Note: intrinsics noted MMXREG are actually using MMX registers, 
@@ -254,7 +257,7 @@ __m128 _mm_loadr_ps (const(float)* mem_addr) pure
     return shufflevector!(__m128, 3, 2, 1, 0)(a, a);
 }
 
-float4 _mm_loadu_ps(const(float)*p) pure
+float4 _mm_loadu_ps(float*p) pure
 {
     return loadUnaligned!(__m128)(p);
 }
@@ -301,7 +304,7 @@ pragma(LDC_intrinsic, "llvm.x86.sse.mul.ss")
 
 __m128 _mm_or_ps (__m128 a, __m128 b) pure @safe
 {
-    return a | b;
+    return cast(__m128)(cast(__m128i)a | cast(__m128i)b);
 }
 
 // MMXREG: __m64 _m_pavgb (__m64 a, __m64 b)
@@ -316,7 +319,7 @@ __m128 _mm_or_ps (__m128 a, __m128 b) pure @safe
 
 // MMXREG: __m64 _m_pmulhuw (__m64 a, __m64 b)
 
-void _mm_prefetch(void* p, int locality) pure @safe
+void _mm_prefetch(int locality)(void* p) pure @safe
 {
     llvm_prefetch(p, 0, locality, 1);
 }
@@ -415,7 +418,7 @@ void _mm_storer_ps(float* mem_addr, __m128 a) pure // not safe since nothing gua
 
 void _mm_storeu_ps(float* mem_addr, __m128 a) pure @safe
 {
-    storeUnaligned!__m128(a, mem_addr);
+    storeUnaligned!(float4)(a, mem_addr);
 }
 
 // TODO: _mm_stream_pi, does not seem possible
