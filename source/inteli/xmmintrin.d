@@ -27,6 +27,16 @@ __m128 _mm_add_ps(__m128 a, __m128 b) pure @safe
 pragma(LDC_intrinsic, "llvm.x86.sse.add.ss")
     __m128 _mm_add_ss(__m128, __m128) pure @safe;
 
+unittest
+{
+    __m128 a = [1, 2, 3, 4];
+    a = _mm_add_ss(a, a);
+    assert(a.ptr[0] == 2);
+    assert(a.ptr[1] == 2);
+    assert(a.ptr[2] == 3);
+    assert(a.ptr[3] == 4);
+}
+
 __m128i _mm_and_ps (__m128i a, __m128i b) pure @safe
 {
     return a & b;

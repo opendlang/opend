@@ -459,17 +459,49 @@ alias _mm_min_epu8 = __builtin_ia32_pminub128;
 alias _mm_min_pd = __builtin_ia32_minpd;
 alias _mm_min_sd = __builtin_ia32_minsd;
 
-__m128i _mm_move_epi64 (__m128i a)
+__m128i _mm_move_epi64 (__m128i a) pure @safe
 {
     long2 result = [ extractelement!(long2, 0)(a), 0 ];
     return result;
 }
 
+__m128d _mm_move_sd (__m128d a, __m128d b) pure @safe
+{
+    return shufflevector!(double2, 2, 1)(a, b);
+}
+
+alias _mm_movemask_epi8 = __builtin_ia32_pmovmskb128;
 alias _mm_movemask_pd = __builtin_ia32_movmskpd;
+// MMXREG: _mm_movepi64_pi64
+// MMXREG: __m128i _mm_movpi64_epi64 (__m64 a)
+
+alias _mm_mul_epu32 = __builtin_ia32_pmuludq128;
+
+__m128d _mm_mul_pd(__m128d a, __m128d b) pure @safe
+{
+    return a * b;
+}
 
 pragma(LDC_intrinsic, "llvm.x86.sse2.mul.sd")
     double2 __builtin_ia32_mulsd(double2, double2) pure @safe;
 alias _mm_mul_sd = __builtin_ia32_mulsd;
+
+// MMXREG: _mm_mul_su32
+
+alias _mm_mulhi_epi16 = __builtin_ia32_pmulhw128;
+alias _mm_mulhi_epu16 = __builtin_ia32_pmulhuw128;
+
+__m128i _mm_mullo_epi16 (__m128i a, __m128i b)
+{
+    return cast(__m128i)(cast(short8)a * cast(short8)b);
+}
+
+unittest
+{
+    short8 a;
+    short8 b;
+    a = _mm_mullo_epi16(a, b);
+}
 
 alias _mm_packs_epi32 = __builtin_ia32_packssdw128;
 alias _mm_packs_epi16 = __builtin_ia32_packsswb128;
@@ -479,10 +511,6 @@ alias _mm_pause = __builtin_ia32_pause;
 
 
 
-alias _mm_movemask_epi8 = __builtin_ia32_pmovmskb128;
-alias _mm_mulhi_epi16 = __builtin_ia32_pmulhw128;
-alias _mm_mulhi_epu16 = __builtin_ia32_pmulhuw128;
-alias _mm_mul_epu32 = __builtin_ia32_pmuludq128;
 alias _mm_sad_epu8 = __builtin_ia32_psadbw128;
 
 __m128i _mm_setzero_si128() pure @safe
