@@ -496,11 +496,14 @@ __m128i _mm_mullo_epi16 (__m128i a, __m128i b)
     return cast(__m128i)(cast(short8)a * cast(short8)b);
 }
 
-unittest
+__m128d _mm_or_pd (__m128d a, __m128d b) pure @safe
 {
-    short8 a;
-    short8 b;
-    a = _mm_mullo_epi16(a, b);
+    return cast(__m128d)( cast(__m128i)a | cast(__m128i)b );
+}
+
+__m128i _mm_or_si128 (__m128i a, __m128i b) pure @safe
+{
+    return a | b;
 }
 
 alias _mm_packs_epi32 = __builtin_ia32_packssdw128;
@@ -509,13 +512,149 @@ alias _mm_packus_epi16 = __builtin_ia32_packuswb128;
 
 alias _mm_pause = __builtin_ia32_pause;
 
-
-
 alias _mm_sad_epu8 = __builtin_ia32_psadbw128;
+
+__m128i _mm_set_epi16 (short e7, short e6, short e5, short e4, short e3, short e2, short e1, short e0) pure @safe
+{
+    short8 result = [e0, e1, e2, e3, e4, e5, e6, e7];
+    return cast(__m128i) result;
+}
+
+__m128i _mm_set_epi32 (int e3, int e2, int e1, int e0) pure @safe
+{
+    int4 result = [e0, e1, e2, e3];
+    return cast(__m128i) result;
+}
+
+__m128i _mm_set_epi64x (long e1, long e0) pure @safe
+{
+    long2 result = [e0, e1];
+    return cast(__m128i) result;
+}
+
+__m128i _mm_set_epi8 (byte e15, byte e14, byte e13, byte e12, 
+                      byte e11, byte e10, byte e9, byte e8, 
+                      byte e7, byte e6, byte e5, byte e4, 
+                      byte e3, byte e2, byte e1, byte e0) pure @safe
+{
+    byte16 result = [e0, e1,  e2,  e3,  e4,  e5,  e6, e7,
+                     e8, e9, e10, e11, e12, e13, e14, e15];
+    return cast(__m128i)result;
+}
+
+__m128d _mm_set_pd (double e1, double e0) pure @safe
+{
+    return [e0, e1];
+}
+
+__m128d _mm_set_pd1 (double a) pure @safe
+{
+    return [a, a];
+}
+
+__m128d _mm_set_sd (double a) pure @safe
+{
+    return [a, 0];
+}
+
+__m128i _mm_set1_epi16 (short a) pure @safe
+{
+    short8 result = [a, a, a, a, a, a, a, a];
+    return cast(__m128i) result;
+}
+
+__m128i _mm_set1_epi32 (int a) pure @safe
+{
+    int4 result = [a, a, a, a];
+    return cast(__m128i) result;
+}
+
+__m128i _mm_set1_epi64x (long a) pure @safe
+{
+    long2 result = [a, a];
+    return cast(__m128i) result;
+}
+
+__m128i _mm_set1_epi8 (char a) pure @safe
+{
+    byte16 result = [a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a];
+    return cast(__m128i) result;
+}
+
+alias _mm_set1_pd = _mm_set_pd1;
+
+__m128i _mm_setr_epi16 (short e7, short e6, short e5, short e4, short e3, short e2, short e1, short e0) pure @safe
+{
+    short8 result = [e7, e6, e5, e4, e3, e2, e1, e0];
+    return cast(__m128i) result;
+}
+
+__m128i _mm_setr_epi32 (int e3, int e2, int e1, int e0) pure @safe
+{
+    int4 result = [e3, e2, e1, e0];
+    return cast(__m128i) result;
+}
+
+__m128i _mm_setr_epi64 (long e1, long e0) pure @safe
+{
+    long2 result = [e1, e0];
+    return cast(__m128i) result;
+}
+
+__m128i _mm_setr_epi8 (char e15, char e14, char e13, char e12, 
+                       char e11, char e10, char e9, char e8, 
+                       char e7, char e6, char e5, char e4, 
+                       char e3, char e2, char e1, char e0) pure @safe
+{
+    byte16 result = [e15, e14, e13, e12, e11, e10, e9, e8,
+                      e7,  e6,  e5,  e4,  e3,  e2, e1, e0];
+    return cast(__m128i) result;
+}
+
+__m128d _mm_setr_pd (double e1, double e0) pure @safe
+{
+    double2 result =;
+    return [e1, e0];
+}
+
+__m128d _mm_setzero_pd () pure @safe
+{
+    return [0.0, 0.0]; 
+}
 
 __m128i _mm_setzero_si128() pure @safe
 {
     return [0, 0, 0, 0];
+}
+
+__m128i _mm_shuffle_epi32(int imm8)(__m128i a) pure @safe
+{
+    return shufflevector!(int4, (imm8 >> 0) & 3,
+                                (imm8 >> 2) & 3,
+                                (imm8 >> 4) & 3,
+                                (imm8 >> 6) & 3)(a, a);
+}
+
+__m128d _mm_shuffle_pd (int imm8)(__m128d a, __m128d b) pure @safe
+{
+    return shufflevector!(double, 0 + ( (imm8 >> 0) & 1 ),
+                                  2 + ( (imm8 >> 1) & 1 ))(a, b); 
+}
+
+__m128i _mm_shufflehi_epi16(int imm8)(__m128i a) pure @safe
+{
+    return shufflevector!(int4, 4 + ( (imm8 >> 0) & 3 ),
+                                4 + ( (imm8 >> 2) & 3 ),
+                                4 + ( (imm8 >> 4) & 3 ),
+                                4 + ( (imm8 >> 6) & 3 ))(a, a);   
+}
+
+__m128i _mm_shufflelo_epi16(int imm8)(__m128i a) pure @safe
+{
+    return shufflevector!(int4, ( (imm8 >> 0) & 3 ),
+                                ( (imm8 >> 2) & 3 ),
+                                ( (imm8 >> 4) & 3 ),
+                                ( (imm8 >> 6) & 3 ))(a, a);   
 }
 
 pragma(LDC_intrinsic, "llvm.x86.sse2.pshuf.d")
