@@ -679,9 +679,9 @@ __m128d _mm_sqrt_pd (__m128d a) pure @safe
     return __builtin_ia32_sqrtpd(a);
 }
 
-__m128d _mm_sqrt_sd (__m128d a, __m128d b) pure @safe
+__m128d _mm_sqrt_sd (__m128d a) pure @safe
 {
-    return __builtin_ia32_sqrtsd(a, b);
+    return __builtin_ia32_sqrtsd(a);
 }
 
 alias _mm_sra_epi16  = __builtin_ia32_psraw128;
@@ -706,81 +706,101 @@ __m128i _mm_srli_si128(ubyte imm8)(__m128i op) pure @safe
         imm8+8, imm8+9, imm8+10, imm8+11, imm8+12, imm8+13, imm8+14, imm8+15)(op, _mm_setzero_si128());
 }
 
-void _mm_store_pd (double* mem_addr, __m128d a) pure @safe
+void _mm_store_pd (double* mem_addr, __m128d a) pure
 {
     __m128d* aligned = cast(__m128d*)mem_addr;
     *aligned = a;
 }
 
-void _mm_store_pd1 (double* mem_addr, __m128d a) pure @safe
+void _mm_store_pd1 (double* mem_addr, __m128d a) pure
 {
     __m128d* aligned = cast(__m128d*)mem_addr;
     *aligned = shufflevector!(double2, 0, 0)(a, a);
 }
 
-void _mm_store_sd (double* mem_addr, __m128d a)
+void _mm_store_sd (double* mem_addr, __m128d a) pure @safe
 {
     *mem_addr = extractelement!(double2, 0)(a);
 }
 
-void _mm_store_si128 (__m128i* mem_addr, __m128i a)
-...
-void _mm_store1_pd (double* mem_addr, __m128d a)
-movhpd
-void _mm_storeh_pd (double* mem_addr, __m128d a)
-movq
-void _mm_storel_epi64 (__m128i* mem_addr, __m128i a)
-movlpd
-void _mm_storel_pd (double* mem_addr, __m128d a)
-...
-void _mm_storer_pd (double* mem_addr, __m128d a)
-movupd
-void _mm_storeu_pd (double* mem_addr, __m128d a)
-movdqu
-void _mm_storeu_si128 (__m128i* mem_addr, __m128i a)
-movntpd
-void _mm_stream_pd (double* mem_addr, __m128d a)
-movntdq
-void _mm_stream_si128 (__m128i* mem_addr, __m128i a)
+void _mm_store_si128 (__m128i* mem_addr, __m128i a) pure @safe
+{
+    *mem_addr = a;
+}
 
-alias _mm_sra_epi32 = __builtin_ia32_psrad128;
-alias _mm_sra_epi16 = __builtin_ia32_psraw128;
-alias _mm_srai_epi32 = __builtin_ia32_psradi128;
-alias _mm_srai_epi16= __builtin_ia32_psrawi128;
-alias _mm_srl_epi32 = __builtin_ia32_psrld128;
-alias _mm_srl_epi64 = __builtin_ia32_psrlq128;
-alias _mm_srl_epi16 = __builtin_ia32_psrlw128;
-alias _mm_srli_epi32 = __builtin_ia32_psrldi128;
+alias _mm_store1_pd = _mm_store_pd1;
 
+void _mm_storeh_pd (double* mem_addr, __m128d a) pure @safe
+{
+    *mem_addr = extractelement!(double2, 1)(a);
+}
 
+void _mm_storel_epi64 (__m128i* mem_addr, __m128i a) pure @safe
+{
+    long* dest = cast(long*)mem_addr;
+    *dest = extractelement!(long2, 0)(cast(long2)a);
+}
 
-alias _mm_bsrli_si128 = _mm_srli_si128;
+void _mm_storel_pd (double* mem_addr, __m128d a) pure @safe
+{
+    *mem_addr = extractelement!(double2, 0)(a);
+}
 
-alias _mm_srlq_epi32 = __builtin_ia32_psrlqi128;
-alias _mm_srlw_epi32 = __builtin_ia32_psrlwi128;
+void _mm_storer_pd (double* mem_addr, __m128d a) pure
+{
+    __m128d* aligned = cast(__m128d*)mem_addr;
+    *aligned = shufflevector!(double2, 1, 0)(a, a);
+}
 
-alias _mm_subs_epi8 = __builtin_ia32_psubsb128;
-alias _mm_subs_epi16 = __builtin_ia32_psubsw128;
-alias _mm_subs_epu8 = __builtin_ia32_psubusb128;
-alias _mm_subs_epu16 = __builtin_ia32_psubusw128;
-alias _mm_sqrt_pd = __builtin_ia32_sqrtpd;
-alias _mm_sqrt_sd = __builtin_ia32_sqrtsd;
+void _mm_storeu_pd (double* mem_addr, __m128d a) pure @safe
+{
+    storeUnaligned!double2(a, mem_addr);
+}
 
-pragma(LDC_intrinsic, "llvm.x86.sse2.storel.dq")
-    void __builtin_ia32_storelv4si(void*, int4);
-alias _mm_storel_epi64 = __builtin_ia32_storelv4si;
+void _mm_storeu_si128 (__m128i* mem_addr, __m128i a) pure @safe
+{
+    storeUnaligned!__m128i(a, cast(int*)mem_addr);
+}
 
-pragma(LDC_intrinsic, "llvm.x86.sse2.storeu.dq")
-    void __builtin_ia32_storedqu(void*, byte16);
-alias _mm_store_si128 = __builtin_ia32_storedqu;
+// TODO: _mm_stream_pd
+// TODO: _mm_stream_si128
+// TODO: _mm_stream_si32
+// TODO: _mm_stream_si64
 
-pragma(LDC_intrinsic, "llvm.x86.sse2.storeu.pd")
-    void __builtin_ia32_storeupd(void*, double2);
-alias _mm_storeu_pd = __builtin_ia32_storeupd;
+__m128i _mm_sub_epi16(__m128i a, __m128i b) pure @safe
+{
+    return cast(__m128i)(cast(short8)a - cast(short8)b);
+}
 
+__m128i _mm_sub_epi32(__m128i a, __m128i b) pure @safe
+{
+    return cast(__m128i)(cast(int4)a - cast(int4)b);
+}
+
+__m128i _mm_sub_epi64(__m128i a, __m128i b) pure @safe
+{
+    return cast(__m128i)(cast(long2)a - cast(long2)b);
+}
+
+__m128i _mm_sub_epi8(__m128i a, __m128i b) pure @safe
+{
+    return cast(__m128i)(cast(byte16)a - cast(byte16)b);
+}
+
+__m128d _mm_sub_pd(__m128d a, __m128d b) pure @safe
+{
+    return a - b;
+}
 pragma(LDC_intrinsic, "llvm.x86.sse2.sub.sd")
     double2 __builtin_ia32_subsd(double2, double2) pure @safe;
 alias _mm_sub_sd = __builtin_ia32_subsd;
+
+// MMXREG: _mm_sub_si64
+
+alias _mm_subs_epi16 = __builtin_ia32_psubsw128;
+alias _mm_subs_epi8 = __builtin_ia32_psubsb128;
+alias _mm_subs_epu16 = __builtin_ia32_psubusw128;
+alias _mm_subs_epu8 = __builtin_ia32_psubusb128;
 
 alias _mm_ucomieq_sd = __builtin_ia32_ucomisdeq;
 alias _mm_ucomige_sd = __builtin_ia32_ucomisdge;
@@ -788,6 +808,88 @@ alias _mm_ucomigt_sd = __builtin_ia32_ucomisdgt;
 alias _mm_ucomile_sd = __builtin_ia32_ucomisdle;
 alias _mm_ucomilt_sd = __builtin_ia32_ucomisdlt;
 alias _mm_ucomineq_sd = __builtin_ia32_ucomisdneq;
+
+__m128d _mm_undefined_pd() pure @safe
+{
+    __m128d result = void;
+    return result;
+}
+__m128i _mm_undefined_si128() pure @safe
+{
+    __m128i result = void;
+    return result;
+}
+
+__m128i _mm_unpackhi_epi16 (__m128i a, __m128i b) pure @safe
+{
+    return shufflevector!(short8, 4, 12, 5, 13, 6, 14, 7, 15)
+                         (cast(short8)a, cast(short8)b);
+}
+
+__m128i _mm_unpackhi_epi32 (__m128i a, __m128i b) pure @safe
+{
+    return shufflevector!(int4, 2, 6, 3, 7)
+                         (cast(int4)a, cast(int4)b);
+}
+
+__m128i _mm_unpackhi_epi64 (__m128i a, __m128i b) pure @safe
+{
+        return shufflevector!(long2, 1, 3)
+                         (cast(long2)a, cast(long2)b);
+}
+
+__m128i _mm_unpackhi_epi8 (__m128i a, __m128i b) pure @safe
+{
+    return shufflevector!(byte16, 8,  24,  9, 25, 10, 26, 11, 27,
+                                  12, 28, 13, 29, 14, 30, 15, 31)
+                         (cast(byte16)a, cast(byte16)b);
+}
+
+__m128d _mm_unpackhi_pd (__m128d a, __m128d b) pure @safe
+{
+    return shufflevector!(__m128d, 1, 3)(a, b);
+}
+
+__m128i _mm_unpacklo_epi16 (__m128i a, __m128i b) pure @safe
+{
+    return shufflevector!(short8, 0, 8, 1, 9, 2, 10, 3, 11)
+                         (cast(short8)a, cast(short8)b);
+}
+
+__m128i _mm_unpacklo_epi32 (__m128i a, __m128i b) pure @safe
+{
+    return shufflevector!(int4, 0, 4, 1, 6)
+                         (cast(int4)a, cast(int4)b);
+}
+
+__m128i _mm_unpacklo_epi64 (__m128i a, __m128i b) pure @safe
+{
+    return shufflevector!(long2, 0, 2)
+                         (cast(long2)a, cast(long2)b);
+}
+
+__m128i _mm_unpacklo_epi8 (__m128i a, __m128i b) pure @safe
+{
+    return shufflevector!(byte16, 0, 16, 1, 17, 2, 18, 3, 19,
+                                  4, 20, 5, 21, 6, 22, 7, 23)
+                         (cast(byte16)a, cast(byte16)b);
+}
+
+__m128d _mm_unpacklo_pd (__m128d a, __m128d b) pure @safe
+{
+    return shufflevector!(__m128d, 0, 2)(a, b);
+}
+
+__m128d _mm_xor_pd (__m128d a, __m128d b) pure @safe
+{
+    return cast(__m128d)(cast(__m128i)a, cast(__m128i)b);
+}
+
+__m128i _mm_xor_si128 (__m128i a, __m128i b) pure @safe
+{
+    return a ^ b;
+}
+
 
 unittest
 {
