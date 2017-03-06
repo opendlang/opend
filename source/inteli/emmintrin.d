@@ -613,7 +613,6 @@ __m128i _mm_setr_epi8 (char e15, char e14, char e13, char e12,
 
 __m128d _mm_setr_pd (double e1, double e0) pure @safe
 {
-    double2 result =;
     return [e1, e0];
 }
 
@@ -657,19 +656,6 @@ __m128i _mm_shufflelo_epi16(int imm8)(__m128i a) pure @safe
                                 ( (imm8 >> 6) & 3 ))(a, a);   
 }
 
-pragma(LDC_intrinsic, "llvm.x86.sse2.pshuf.d")
-    int4 __builtin_ia32_pshufd(int4, byte) pure @safe;
-alias _mm_shuffle_epi32 = __builtin_ia32_pshufd;
-
-pragma(LDC_intrinsic, "llvm.x86.sse2.pshufh.w")
-    short8 __builtin_ia32_pshufhw(short8, byte) pure @safe;
-alias _mm_shufflehi_epi16 = __builtin_ia32_pshufhw;
-
-pragma(LDC_intrinsic, "llvm.x86.sse2.pshufl.w")
-    short8 __builtin_ia32_pshuflw(short8, byte) pure @safe;
-alias _mm_shufflelo_epi16 = __builtin_ia32_pshuflw;
-
-
 alias _mm_sll_epi32 = __builtin_ia32_pslld128;
 alias _mm_sll_epi64 = __builtin_ia32_psllq128;
 alias _mm_sll_epi16 = __builtin_ia32_psllw128;
@@ -677,7 +663,7 @@ alias _mm_slli_epi32 = __builtin_ia32_pslldi128;
 alias _mm_slli_epi64 = __builtin_ia32_psllqi128;
 alias _mm_slli_epi16 = __builtin_ia32_psllwi128;
 
-__m128i _mm_slli_si128(ubyte imm8)(__m128i op)
+__m128i _mm_slli_si128(ubyte imm8)(__m128i op) pure @safe
 {
     static if (imm8 & 0xF0)
         return _mm_setzero_si128();
@@ -688,6 +674,75 @@ __m128i _mm_slli_si128(ubyte imm8)(__m128i op)
         (_mm_setzero_si128(), op);
 }
 
+__m128d _mm_sqrt_pd (__m128d a) pure @safe
+{
+    return __builtin_ia32_sqrtpd(a);
+}
+
+__m128d _mm_sqrt_sd (__m128d a, __m128d b) pure @safe
+{
+    return __builtin_ia32_sqrtsd(a, b);
+}
+
+alias _mm_sra_epi16  = __builtin_ia32_psraw128;
+alias _mm_sra_epi32  = __builtin_ia32_psrad128;
+alias _mm_srai_epi16 = __builtin_ia32_psrawi128;
+alias _mm_srai_epi32 = __builtin_ia32_psradi128;
+
+alias _mm_srl_epi16  = __builtin_ia32_psrlw128;
+alias _mm_srl_epi32  = __builtin_ia32_psrld128;
+alias _mm_srl_epi64  = __builtin_ia32_psrlq128;
+alias _mm_srli_epi16 = __builtin_ia32_psrlwi128;
+alias _mm_srli_epi32 = __builtin_ia32_psrldi128;
+alias _mm_srli_epi64 = __builtin_ia32_psrlqi128;
+
+__m128i _mm_srli_si128(ubyte imm8)(__m128i op) pure @safe
+{
+    static if (imm8 & 0xF0)
+        return _mm_setzero_si128();
+    else
+        return shufflevector!(byte16,
+        imm8+0, imm8+1, imm8+2, imm8+3, imm8+4, imm8+5, imm8+6, imm8+7,
+        imm8+8, imm8+9, imm8+10, imm8+11, imm8+12, imm8+13, imm8+14, imm8+15)(op, _mm_setzero_si128());
+}
+
+void _mm_store_pd (double* mem_addr, __m128d a) pure @safe
+{
+    __m128d* aligned = cast(__m128d*)mem_addr;
+    *aligned = a;
+}
+
+void _mm_store_pd1 (double* mem_addr, __m128d a) pure @safe
+{
+    __m128d* aligned = cast(__m128d*)mem_addr;
+    *aligned = shufflevector!(double2, 0, 0)(a, a);
+}
+
+void _mm_store_sd (double* mem_addr, __m128d a)
+{
+    *mem_addr = extractelement!(double2, 0)(a);
+}
+
+void _mm_store_si128 (__m128i* mem_addr, __m128i a)
+...
+void _mm_store1_pd (double* mem_addr, __m128d a)
+movhpd
+void _mm_storeh_pd (double* mem_addr, __m128d a)
+movq
+void _mm_storel_epi64 (__m128i* mem_addr, __m128i a)
+movlpd
+void _mm_storel_pd (double* mem_addr, __m128d a)
+...
+void _mm_storer_pd (double* mem_addr, __m128d a)
+movupd
+void _mm_storeu_pd (double* mem_addr, __m128d a)
+movdqu
+void _mm_storeu_si128 (__m128i* mem_addr, __m128i a)
+movntpd
+void _mm_stream_pd (double* mem_addr, __m128d a)
+movntdq
+void _mm_stream_si128 (__m128i* mem_addr, __m128i a)
+
 alias _mm_sra_epi32 = __builtin_ia32_psrad128;
 alias _mm_sra_epi16 = __builtin_ia32_psraw128;
 alias _mm_srai_epi32 = __builtin_ia32_psradi128;
@@ -697,15 +752,7 @@ alias _mm_srl_epi64 = __builtin_ia32_psrlq128;
 alias _mm_srl_epi16 = __builtin_ia32_psrlw128;
 alias _mm_srli_epi32 = __builtin_ia32_psrldi128;
 
-__m128i _mm_srli_si128(ubyte imm8)(__m128i op)
-{
-    static if (imm8 & 0xF0)
-        return _mm_setzero_si128();
-    else
-        return shufflevector!(byte16,
-        imm8+0, imm8+1, imm8+2, imm8+3, imm8+4, imm8+5, imm8+6, imm8+7,
-        imm8+8, imm8+9, imm8+10, imm8+11, imm8+12, imm8+13, imm8+14, imm8+15)(op, _mm_setzero_si128());
-}
+
 
 alias _mm_bsrli_si128 = _mm_srli_si128;
 
