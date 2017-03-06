@@ -1,5 +1,7 @@
 # intel-intrinsics
 
+![Travis Status](https://travis-ci.org/p0nce/intel-intrinsics.svg?branch=master)
+
 The goal is to allow you to use Intel intrinsics in D code.
 
 Why Intel intrinsic syntax? Because it is more familier to C++ programmers and there is a convenient online guide provided by Intel: https://software.intel.com/sites/landingpage/IntrinsicsGuide/

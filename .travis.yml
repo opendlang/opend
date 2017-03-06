@@ -4,6 +4,10 @@ os:
   - osx
   - linux
 
+matrix:
+  allow_failures:
+    - os: linux
+
 d:
  - ldc-1.0.0
  - ldc-1.1.0
