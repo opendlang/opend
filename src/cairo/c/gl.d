@@ -1,4 +1,4 @@
-﻿module cairo.c.gl;
+module cairo.c.gl;
 import cairo.c.cairo;
 
 /* Cairo - a vector graphics library with display and print output
@@ -64,68 +64,68 @@ extern (C):
 
 static if (CAIRO_HAS_GL_SURFACE || CAIRO_HAS_GLESV2_SURFACE)
 {
-	cairo_surface_t* cairo_gl_surface_create(cairo_device_t* device,
-		cairo_content_t content, int width, int height);
-	
-	cairo_surface_t* cairo_gl_surface_create_for_texture(cairo_device_t* abstract_device,
-		cairo_content_t content, uint tex, int width, int height);
-	
-	void cairo_gl_surface_set_size(cairo_surface_t* surface, int width, int height);
-	
-	int cairo_gl_surface_get_width(cairo_surface_t* abstract_surface);
-	
-	int cairo_gl_surface_get_height(cairo_surface_t* abstract_surface);
-	
-	void cairo_gl_surface_swapbuffers(cairo_surface_t* surface);
-	
-	void cairo_gl_device_set_thread_aware(cairo_device_t* device, cairo_bool_t thread_aware);
-	
-	static if (CAIRO_HAS_GLX_FUNCTIONS)
-	{
-		import x11.X;
-		import x11.Xlib;
-		pragma(msg, "cairo.c.gl: FIX: need proper GLX bindings");
-		alias GLXContext = void*;
-		
-		cairo_device_t* cairo_glx_device_create(Display* dpy, GLXContext gl_ctx);
-		
-		Display* cairo_glx_device_get_display(cairo_device_t* device);
-		
-		GLXContext cairo_glx_device_get_context(cairo_device_t* device);
-		
-		cairo_surface_t* cairo_gl_surface_create_for_window(cairo_device_t* device,
-			Window win, int width, int height);
-	}
-	
-	static if (CAIRO_HAS_WGL_FUNCTIONS)
-	{
-		pragma(msg, "cairo.c.gl: FIX: need proper Windows bindings");
-		alias HGLRC = void*;
-		alias HDC = void*;
-		
-		cairo_device_t* cairo_wgl_device_create(HGLRC rc);
-		
-		HGLRC cairo_wgl_device_get_context(cairo_device_t* device);
-		
-		cairo_surface_t* cairo_gl_surface_create_for_dc(cairo_device_t* device,
-			HDC dc, int width, int height);
-	}
-	
-	static if (CAIRO_HAS_EGL_FUNCTIONS)
-	{
-		pragma(msg, "cairo.c.gl: FIX: need proper EGL bindings");
-		alias EGLDisplay = void*;
-		alias EGLSurface = void*;
-		alias EGLContext = void*;
-		
-		cairo_device_t* cairo_egl_device_create(EGLDisplay dpy, EGLContext egl);
-		
-		cairo_surface_t* cairo_gl_surface_create_for_egl(cairo_device_t* device,
-			EGLSurface egl, int width, int height);
-		
-		EGLDisplay cairo_egl_device_get_display(cairo_device_t* device);
-		
-		EGLSurface cairo_egl_device_get_context(cairo_device_t* device);
-	}
-	
+    cairo_surface_t* cairo_gl_surface_create(cairo_device_t* device,
+            cairo_content_t content, int width, int height);
+
+    cairo_surface_t* cairo_gl_surface_create_for_texture(cairo_device_t* abstract_device,
+            cairo_content_t content, uint tex, int width, int height);
+
+    void cairo_gl_surface_set_size(cairo_surface_t* surface, int width, int height);
+
+    int cairo_gl_surface_get_width(cairo_surface_t* abstract_surface);
+
+    int cairo_gl_surface_get_height(cairo_surface_t* abstract_surface);
+
+    void cairo_gl_surface_swapbuffers(cairo_surface_t* surface);
+
+    void cairo_gl_device_set_thread_aware(cairo_device_t* device, cairo_bool_t thread_aware);
+
+    static if (CAIRO_HAS_GLX_FUNCTIONS)
+    {
+        import x11.X;
+        import x11.Xlib;
+
+        pragma(msg, "cairo.c.gl: FIX: need proper GLX bindings");
+        alias GLXContext = void*;
+
+        cairo_device_t* cairo_glx_device_create(Display* dpy, GLXContext gl_ctx);
+
+        Display* cairo_glx_device_get_display(cairo_device_t* device);
+
+        GLXContext cairo_glx_device_get_context(cairo_device_t* device);
+
+        cairo_surface_t* cairo_gl_surface_create_for_window(cairo_device_t* device,
+                Window win, int width, int height);
+    }
+
+    static if (CAIRO_HAS_WGL_FUNCTIONS)
+    {
+        pragma(msg, "cairo.c.gl: FIX: need proper Windows bindings");
+        alias HGLRC = void*;
+        alias HDC = void*;
+
+        cairo_device_t* cairo_wgl_device_create(HGLRC rc);
+
+        HGLRC cairo_wgl_device_get_context(cairo_device_t* device);
+
+        cairo_surface_t* cairo_gl_surface_create_for_dc(cairo_device_t* device,
+                HDC dc, int width, int height);
+    }
+
+    static if (CAIRO_HAS_EGL_FUNCTIONS)
+    {
+        pragma(msg, "cairo.c.gl: FIX: need proper EGL bindings");
+        alias EGLDisplay = void*;
+        alias EGLSurface = void*;
+        alias EGLContext = void*;
+
+        cairo_device_t* cairo_egl_device_create(EGLDisplay dpy, EGLContext egl);
+
+        cairo_surface_t* cairo_gl_surface_create_for_egl(cairo_device_t* device,
+                EGLSurface egl, int width, int height);
+
+        EGLDisplay cairo_egl_device_get_display(cairo_device_t* device);
+
+        EGLSurface cairo_egl_device_get_context(cairo_device_t* device);
+    }
 }
