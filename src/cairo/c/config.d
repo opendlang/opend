@@ -88,6 +88,31 @@ else
             enum bool CAIRO_HAS_XLIB_SURFACE = true;
         else
             enum bool CAIRO_HAS_XLIB_SURFACE = false;
+
+        version (CarioGLSurface)
+            enum bool CAIRO_HAS_GL_SURFACE = true;
+        else
+            enum bool CAIRO_HAS_GL_SURFACE = false;
+
+        version (CarioGLESV2Surface)
+            enum bool CAIRO_HAS_GLESV2_SURFACE = true;
+        else
+            enum bool CAIRO_HAS_GLESV2_SURFACE = false;
+
+        version (CairoGLX)
+            enum bool CAIRO_HAS_GLX_FUNCTIONS = true;
+        else
+            enum bool CAIRO_HAS_GLX_FUNCTIONS = false;
+
+        version (CairoWGL)
+            enum bool CAIRO_HAS_WGL_FUNCTIONS = true;
+        else
+            enum bool CAIRO_HAS_WGL_FUNCTIONS = false;
+
+        version (CairoEGL)
+            enum bool CAIRO_HAS_EGL_FUNCTIONS = true;
+        else
+            enum bool CAIRO_HAS_EGL_FUNCTIONS = false;
     }
 }
 
