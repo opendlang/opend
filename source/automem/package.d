@@ -14,17 +14,22 @@ struct UniquePointer(Type, Allocator) {
     alias Pointer = Type*;
 
     static if(hasInstance)
-        static assert(false);
+        /**
+           The allocator is a singleton, so no need to pass it in to the
+           constructor
+         */
+        this(Args...)(Args args) {
+            makeObject(args);
+        }
     else
         /**
            Non-singleton allocator, must be passed in
          */
         this(Args...)(Allocator allocator, Args args) {
-            import std.experimental.allocator: make;
-
             _allocator = allocator;
-            _object = _allocator.make!Type(args);
+            makeObject(args);
         }
+
 
     ~this() {
         import std.experimental.allocator: dispose;
@@ -43,6 +48,11 @@ private:
         alias _allocator = Allocator.instance;
     else
         Allocator _allocator;
+
+    void makeObject(Args...)(Args args) {
+        import std.experimental.allocator: make;
+        _object = _allocator.make!Type(args);
+    }
 }
 
 
@@ -60,6 +70,20 @@ private:
 
     Struct.numStructs.shouldEqual(0);
 }
+
+@("UniquePointer with struct and mallocator")
+@system unittest {
+
+    import std.experimental.allocator.mallocator: Mallocator;
+    {
+        const foo = UniquePointer!(Struct, Mallocator)(5);
+        foo.twice.shouldEqual(10);
+        Struct.numStructs.shouldEqual(1);
+    }
+
+    Struct.numStructs.shouldEqual(0);
+}
+
 
 
 version(unittest) {
@@ -81,5 +105,4 @@ version(unittest) {
         }
 
     }
-
 }
