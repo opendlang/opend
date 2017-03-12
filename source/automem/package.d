@@ -44,6 +44,12 @@ struct UniquePointer(Type, Allocator) {
         return _object;
     }
 
+    Pointer release() @safe pure nothrow {
+        auto ret = _object;
+        _object = null;
+        return ret;
+    }
+
     auto opDispatch(string func, A...)(A args) inout {
         mixin(`return _object.` ~ func ~ `(args);`);
     }
@@ -123,6 +129,19 @@ private:
     ptr.get.shouldNotBeNull;
     ptr.get.twice.shouldEqual(10);
     ptr.shouldBeTrue;
+}
+
+
+@("UniquePointer release")
+@system unittest {
+    import std.experimental.allocator: dispose;
+
+    auto allocator = TestAllocator();
+
+    auto ptr = UniquePointer!(Struct, TestAllocator*)(&allocator, 5);
+    auto obj = ptr.release;
+    obj.twice.shouldEqual(10);
+    allocator.dispose(obj);
 }
 
 
