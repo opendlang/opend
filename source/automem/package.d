@@ -11,7 +11,11 @@ struct UniquePointer(Type, Allocator) {
     import std.traits: hasMember;
 
     enum hasInstance = hasMember!(Allocator, "instance");
-    alias Pointer = Type*;
+
+    static if(is(Type == class))
+        alias Pointer = Type;
+    else
+        alias Pointer = Type*;
 
     static if(hasInstance)
         /**
@@ -33,11 +37,19 @@ struct UniquePointer(Type, Allocator) {
 
     ~this() {
         import std.experimental.allocator: dispose;
-        _allocator.dispose(_object);
+        if(_object !is null) _allocator.dispose(_object);
+    }
+
+    inout(Pointer) get() @safe pure nothrow inout {
+        return _object;
     }
 
     auto opDispatch(string func, A...)(A args) inout {
         mixin(`return _object.` ~ func ~ `(args);`);
+    }
+
+    bool opCast(T)() @safe pure nothrow const if(is(T == bool)) {
+        return _object !is null;
     }
 
 private:
@@ -59,7 +71,6 @@ private:
 @("UniquePointer with struct and test allocator")
 @system unittest {
 
-
     auto allocator = TestAllocator();
     {
         const foo = UniquePointer!(Struct, TestAllocator*)(&allocator, 5);
@@ -70,6 +81,21 @@ private:
 
     Struct.numStructs.shouldEqual(0);
 }
+
+@("UniquePointer with class and test allocator")
+@system unittest {
+
+    auto allocator = TestAllocator();
+    {
+        const foo = UniquePointer!(Class, TestAllocator*)(&allocator, 5);
+        foo.twice.shouldEqual(10);
+        allocator.numAllocations.shouldEqual(1);
+        Class.numClasses.shouldEqual(1);
+    }
+
+    Class.numClasses.shouldEqual(0);
+}
+
 
 @("UniquePointer with struct and mallocator")
 @system unittest {
@@ -85,8 +111,23 @@ private:
 }
 
 
+@("UniquePointer default constructor")
+@system unittest {
+    auto allocator = TestAllocator();
+
+    auto ptr = UniquePointer!(Struct, TestAllocator*)();
+    ptr.shouldBeFalse;
+    ptr.get.shouldBeNull;
+
+    ptr = UniquePointer!(Struct, TestAllocator*)(&allocator, 5);
+    ptr.get.shouldNotBeNull;
+    ptr.get.twice.shouldEqual(10);
+    ptr.shouldBeTrue;
+}
+
 
 version(unittest) {
+
     private struct Struct {
         int i;
         static int numStructs = 0;
@@ -103,6 +144,23 @@ version(unittest) {
         int twice() @safe pure const nothrow {
             return i * 2;
         }
+    }
 
+    private class Class {
+        int i;
+        static int numClasses = 0;
+
+        this(int i) @safe nothrow {
+            this.i = i;
+            ++numClasses;
+        }
+
+        ~this() @safe nothrow {
+            --numClasses;
+        }
+
+        int twice() @safe pure const nothrow {
+            return i * 2;
+        }
     }
 }
