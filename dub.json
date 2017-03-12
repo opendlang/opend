@@ -1,0 +1,26 @@
+{
+    "name": "automem",
+    "authors": [
+        "Atila Neves"
+    ],
+    "description": "Automatic memory management",
+    "copyright": "Copyright © 2017, atila",
+    "license": "BSD 3-clause",
+    "targetType": "library",
+    "configurations": [
+
+        { "name": "library" },
+        {
+            "name": "unittest",
+            "targetType": "executable",
+            "targetName": "ut",
+            "preBuildCommands": ["dub run unit-threaded -c gen_ut_main -- -f bin/ut.d"],
+            "mainSourceFile": "bin/ut.d",
+            "excludedSourceFiles": ["src/main.d"],
+            "dependencies": {
+                "unit-threaded": "~>0.7.5",
+                "test_allocator": "~>0.0.1"
+            }
+        }
+    ]
+}
