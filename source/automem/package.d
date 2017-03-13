@@ -22,14 +22,14 @@ struct UniquePointer(Type, Allocator) {
            The allocator is a singleton, so no need to pass it in to the
            constructor
          */
-        this(Args...)(Args args) {
+        this(Args...)(auto ref Args args) {
             makeObject(args);
         }
     else
         /**
            Non-singleton allocator, must be passed in
          */
-        this(Args...)(Allocator allocator, Args args) {
+        this(Args...)(Allocator allocator, auto ref Args args) {
             _allocator = allocator;
             makeObject(args);
         }
@@ -55,7 +55,7 @@ struct UniquePointer(Type, Allocator) {
         _object = newObject;
     }
 
-    auto opDispatch(string func, A...)(A args) inout {
+    auto opDispatch(string func, A...)(auto ref A args) inout {
         mixin(`return _object.` ~ func ~ `(args);`);
     }
 
@@ -72,7 +72,7 @@ private:
     else
         Allocator _allocator;
 
-    void makeObject(Args...)(Args args) {
+    void makeObject(Args...)(auto ref Args args) {
         import std.experimental.allocator: make;
         _object = _allocator.make!Type(args);
     }
