@@ -36,8 +36,7 @@ struct UniquePointer(Type, Allocator) {
 
 
     ~this() {
-        import std.experimental.allocator: dispose;
-        if(_object !is null) _allocator.dispose(_object);
+        deleteObject;
     }
 
     inout(Pointer) get() @safe pure nothrow inout {
@@ -48,6 +47,11 @@ struct UniquePointer(Type, Allocator) {
         auto ret = _object;
         _object = null;
         return ret;
+    }
+
+    void reset(Pointer newObject) {
+        deleteObject;
+        _object = newObject;
     }
 
     auto opDispatch(string func, A...)(A args) inout {
@@ -70,6 +74,11 @@ private:
     void makeObject(Args...)(Args args) {
         import std.experimental.allocator: make;
         _object = _allocator.make!Type(args);
+    }
+
+    void deleteObject() {
+        import std.experimental.allocator: dispose;
+        if(_object !is null) _allocator.dispose(_object);
     }
 }
 
@@ -142,6 +151,17 @@ private:
     auto obj = ptr.release;
     obj.twice.shouldEqual(10);
     allocator.dispose(obj);
+}
+
+@("UniquePointer reset")
+@system unittest {
+    import std.experimental.allocator: make;
+
+    auto allocator = TestAllocator();
+
+    auto ptr = UniquePointer!(Struct, TestAllocator*)(&allocator, 5);
+    ptr.reset(allocator.make!Struct(2));
+    ptr.twice.shouldEqual(4);
 }
 
 
