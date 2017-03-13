@@ -34,6 +34,7 @@ struct UniquePointer(Type, Allocator) {
             makeObject(args);
         }
 
+    @disable this(this);
 
     ~this() {
         deleteObject;
@@ -162,6 +163,29 @@ private:
     auto ptr = UniquePointer!(Struct, TestAllocator*)(&allocator, 5);
     ptr.reset(allocator.make!Struct(2));
     ptr.twice.shouldEqual(4);
+}
+
+@("UniquePointer move")
+@system unittest {
+    import std.algorithm: move;
+
+    auto allocator = TestAllocator();
+    auto oldPtr = UniquePointer!(Struct, TestAllocator*)(&allocator, 5);
+    UniquePointer!(Struct, TestAllocator*) newPtr;
+    move(oldPtr, newPtr);
+    oldPtr.shouldBeNull;
+    newPtr.twice.shouldEqual(10);
+}
+
+@("UniquePointer copy")
+@system unittest {
+    import std.algorithm: move;
+
+    auto allocator = TestAllocator();
+    auto oldPtr = UniquePointer!(Struct, TestAllocator*)(&allocator, 5);
+    UniquePointer!(Struct, TestAllocator*) newPtr;
+    // non-copyable
+    static assert(!__traits(compiles, newPtr = oldPtr));
 }
 
 
