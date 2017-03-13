@@ -49,6 +49,14 @@ struct Unique(Type, Allocator) {
         return _object;
     }
 
+    Unique unique() {
+        import std.algorithm: move;
+        Unique u;
+        move(this, u);
+        assert(_object is null);
+        return u;
+    }
+
     Pointer release() @safe pure nothrow {
         auto ret = _object;
         _object = null;
@@ -240,6 +248,15 @@ private:
 
     auto ptr = produce(4);
     ptr.twice.shouldEqual(8);
+}
+
+@("Unique unique")
+@system unittest {
+    auto allocator = TestAllocator();
+    auto oldPtr = Unique!(Struct, TestAllocator*)(&allocator, 5);
+    auto newPtr = oldPtr.unique;
+    newPtr.twice.shouldEqual(10);
+    oldPtr.shouldBeNull;
 }
 
 version(unittest) {
