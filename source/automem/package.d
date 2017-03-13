@@ -7,7 +7,7 @@ version(unittest) {
 }
 
 
-struct UniquePointer(Type, Allocator) {
+struct Unique(Type, Allocator) {
     import std.traits: hasMember;
 
     enum hasInstance = hasMember!(Allocator, "instance");
@@ -84,12 +84,12 @@ private:
 }
 
 
-@("UniquePointer with struct and test allocator")
+@("Unique with struct and test allocator")
 @system unittest {
 
     auto allocator = TestAllocator();
     {
-        const foo = UniquePointer!(Struct, TestAllocator*)(&allocator, 5);
+        const foo = Unique!(Struct, TestAllocator*)(&allocator, 5);
         foo.twice.shouldEqual(10);
         allocator.numAllocations.shouldEqual(1);
         Struct.numStructs.shouldEqual(1);
@@ -98,12 +98,12 @@ private:
     Struct.numStructs.shouldEqual(0);
 }
 
-@("UniquePointer with class and test allocator")
+@("Unique with class and test allocator")
 @system unittest {
 
     auto allocator = TestAllocator();
     {
-        const foo = UniquePointer!(Class, TestAllocator*)(&allocator, 5);
+        const foo = Unique!(Class, TestAllocator*)(&allocator, 5);
         foo.twice.shouldEqual(10);
         allocator.numAllocations.shouldEqual(1);
         Class.numClasses.shouldEqual(1);
@@ -113,12 +113,12 @@ private:
 }
 
 
-@("UniquePointer with struct and mallocator")
+@("Unique with struct and mallocator")
 @system unittest {
 
     import std.experimental.allocator.mallocator: Mallocator;
     {
-        const foo = UniquePointer!(Struct, Mallocator)(5);
+        const foo = Unique!(Struct, Mallocator)(5);
         foo.twice.shouldEqual(10);
         Struct.numStructs.shouldEqual(1);
     }
@@ -127,63 +127,63 @@ private:
 }
 
 
-@("UniquePointer default constructor")
+@("Unique default constructor")
 @system unittest {
     auto allocator = TestAllocator();
 
-    auto ptr = UniquePointer!(Struct, TestAllocator*)();
+    auto ptr = Unique!(Struct, TestAllocator*)();
     ptr.shouldBeFalse;
     ptr.get.shouldBeNull;
 
-    ptr = UniquePointer!(Struct, TestAllocator*)(&allocator, 5);
+    ptr = Unique!(Struct, TestAllocator*)(&allocator, 5);
     ptr.get.shouldNotBeNull;
     ptr.get.twice.shouldEqual(10);
     ptr.shouldBeTrue;
 }
 
 
-@("UniquePointer release")
+@("Unique release")
 @system unittest {
     import std.experimental.allocator: dispose;
 
     auto allocator = TestAllocator();
 
-    auto ptr = UniquePointer!(Struct, TestAllocator*)(&allocator, 5);
+    auto ptr = Unique!(Struct, TestAllocator*)(&allocator, 5);
     auto obj = ptr.release;
     obj.twice.shouldEqual(10);
     allocator.dispose(obj);
 }
 
-@("UniquePointer reset")
+@("Unique reset")
 @system unittest {
     import std.experimental.allocator: make;
 
     auto allocator = TestAllocator();
 
-    auto ptr = UniquePointer!(Struct, TestAllocator*)(&allocator, 5);
+    auto ptr = Unique!(Struct, TestAllocator*)(&allocator, 5);
     ptr.reset(allocator.make!Struct(2));
     ptr.twice.shouldEqual(4);
 }
 
-@("UniquePointer move")
+@("Unique move")
 @system unittest {
     import std.algorithm: move;
 
     auto allocator = TestAllocator();
-    auto oldPtr = UniquePointer!(Struct, TestAllocator*)(&allocator, 5);
-    UniquePointer!(Struct, TestAllocator*) newPtr;
+    auto oldPtr = Unique!(Struct, TestAllocator*)(&allocator, 5);
+    Unique!(Struct, TestAllocator*) newPtr;
     move(oldPtr, newPtr);
     oldPtr.shouldBeNull;
     newPtr.twice.shouldEqual(10);
 }
 
-@("UniquePointer copy")
+@("Unique copy")
 @system unittest {
     import std.algorithm: move;
 
     auto allocator = TestAllocator();
-    auto oldPtr = UniquePointer!(Struct, TestAllocator*)(&allocator, 5);
-    UniquePointer!(Struct, TestAllocator*) newPtr;
+    auto oldPtr = Unique!(Struct, TestAllocator*)(&allocator, 5);
+    Unique!(Struct, TestAllocator*) newPtr;
     // non-copyable
     static assert(!__traits(compiles, newPtr = oldPtr));
 }
