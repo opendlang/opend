@@ -9,6 +9,7 @@ version(unittest) {
 
 struct Unique(Type, Allocator) {
     import std.traits: hasMember;
+    import std.typecons: Proxy;
 
     enum hasInstance = hasMember!(Allocator, "instance");
 
@@ -68,9 +69,7 @@ struct Unique(Type, Allocator) {
         moveFrom(other);
     }
 
-    auto opDispatch(string func, A...)(auto ref A args) inout {
-        mixin(`return _object.` ~ func ~ `(args);`);
-    }
+    mixin Proxy!_object;
 
 private:
 
@@ -151,13 +150,13 @@ private:
     auto allocator = TestAllocator();
 
     auto ptr = Unique!(Struct, TestAllocator*)();
-    ptr.shouldBeFalse;
+    (cast(bool)ptr).shouldBeFalse;
     ptr.get.shouldBeNull;
 
     ptr = Unique!(Struct, TestAllocator*)(&allocator, 5);
     ptr.get.shouldNotBeNull;
     ptr.get.twice.shouldEqual(10);
-    ptr.shouldBeTrue;
+    (cast(bool)ptr).shouldBeTrue;
 }
 
 
@@ -231,6 +230,17 @@ private:
     Class.numClasses.shouldEqual(0);
 }
 
+@("Return Unique from function")
+@system unittest {
+    auto allocator = TestAllocator();
+
+    auto produce(int i) {
+        return Unique!(Struct, TestAllocator*)(&allocator, i);
+    }
+
+    auto ptr = produce(4);
+    ptr.twice.shouldEqual(8);
+}
 
 version(unittest) {
 
