@@ -259,6 +259,85 @@ private:
     oldPtr.shouldBeNull;
 }
 
+
+struct RefCounted(Type, Allocator) {
+    import std.traits: hasMember;
+    import std.typecons: Proxy;
+
+    enum hasInstance = hasMember!(Allocator, "instance");
+
+    static if(is(Type == class))
+        alias Pointer = Type;
+    else
+        alias Pointer = Type*;
+
+    static if(hasInstance)
+        /**
+           The allocator is a singleton, so no need to pass it in to the
+           constructor
+        */
+        this(Args...)(auto ref Args args) {
+            makeObject(args);
+        }
+    else
+        /**
+           Non-singleton allocator, must be passed in
+        */
+        this(Args...)(Allocator allocator, auto ref Args args) {
+            _allocator = allocator;
+            makeObject(args);
+        }
+
+    ~this() {
+        destroy(_impl._object);
+        auto mem = cast(void*)_impl;
+        _allocator.deallocate(mem[0 .. Impl.sizeof]);
+    }
+
+    mixin Proxy!(_impl);
+
+private:
+
+    static struct Impl {
+        Type _object;
+        size_t _count;
+        alias _object this;
+    }
+
+    static if(hasInstance)
+        alias _allocator = Allocator.instance;
+    else
+        Allocator _allocator;
+
+    Impl* _impl;
+
+    void makeObject(Args...)(auto ref Args args) {
+        import std.experimental.allocator: make;
+        import std.conv: emplace;
+        import std.traits: hasIndirections;
+        import core.memory : GC;
+
+        _impl = cast(Impl*)_allocator.allocate(Impl.sizeof);
+        emplace(&_impl._object, args);
+        _impl._count= 1;
+
+        static if (hasIndirections!Type)
+            GC.addRange(&_impl._object, Type.sizeof);
+    }
+
+
+}
+
+@("RefCounted something something darkside")
+@system unittest {
+    auto allocator = TestAllocator();
+    {
+        auto ptr = RefCounted!(Struct, TestAllocator*)(&allocator, 5);
+        Struct.numStructs.shouldEqual(1);
+    }
+    Struct.numStructs.shouldEqual(0);
+}
+
 version(unittest) {
 
     private struct Struct {
