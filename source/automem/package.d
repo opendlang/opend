@@ -34,6 +34,10 @@ struct Unique(Type, Allocator) {
             makeObject(args);
         }
 
+    this(T)(Unique!(T, Allocator) other) if(is(T: Type)) {
+        moveFrom(other);
+    }
+
     @disable this(this);
 
     ~this() {
@@ -55,12 +59,17 @@ struct Unique(Type, Allocator) {
         _object = newObject;
     }
 
-    auto opDispatch(string func, A...)(auto ref A args) inout {
-        mixin(`return _object.` ~ func ~ `(args);`);
-    }
-
     bool opCast(T)() @safe pure nothrow const if(is(T == bool)) {
         return _object !is null;
+    }
+
+    void opAssign(T)(Unique!(T, Allocator) other) if(is(T: Type)) {
+        deleteObject;
+        moveFrom(other);
+    }
+
+    auto opDispatch(string func, A...)(auto ref A args) inout {
+        mixin(`return _object.` ~ func ~ `(args);`);
     }
 
 private:
@@ -80,6 +89,16 @@ private:
     void deleteObject() {
         import std.experimental.allocator: dispose;
         if(_object !is null) _allocator.dispose(_object);
+    }
+
+    void moveFrom(T)(ref Unique!(T, Allocator) other) if(is(T: Type)) {
+        _object = other._object;
+        other._object = null;
+
+        static if(!hasInstance) {
+            import std.algorithm: move;
+            move(other._allocator, _allocator);
+        }
     }
 }
 
@@ -186,6 +205,30 @@ private:
     Unique!(Struct, TestAllocator*) newPtr;
     // non-copyable
     static assert(!__traits(compiles, newPtr = oldPtr));
+}
+
+@("Unique construct base class")
+@system unittest {
+    auto allocator = TestAllocator();
+    {
+        Unique!(Object, TestAllocator*) bar = Unique!(Class, TestAllocator*)(&allocator, 5);
+        Class.numClasses.shouldEqual(1);
+    }
+
+    Class.numClasses.shouldEqual(0);
+}
+
+@("Unique assign base class")
+@system unittest {
+    import std.algorithm: move;
+    auto allocator = TestAllocator();
+    {
+        Unique!(Object, TestAllocator*) bar;
+        bar = Unique!(Class, TestAllocator*)(&allocator, 5);
+        Class.numClasses.shouldEqual(1);
+    }
+
+    Class.numClasses.shouldEqual(0);
 }
 
 
