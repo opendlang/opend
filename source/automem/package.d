@@ -309,6 +309,24 @@ struct RefCounted(Type, Allocator) {
         ++_impl._count;
     }
 
+    void opAssign(Type object) {
+        import std.traits: isPointer;
+        import std.algorithm: move;
+
+        static if(!hasInstance && isPointer!(typeof(_allocator)))
+            assert(_allocator !is null, "Cannot assign to RefCounted with null allocator");
+
+        if(_impl is null) {
+            allocateImpl;
+        }
+
+        move(object, _impl._object);
+    }
+
+    ref inout(Type) get() inout {
+        return _impl._object;
+    }
+
     alias _impl this;
 
 private:
@@ -327,13 +345,18 @@ private:
     Impl* _impl;
 
     void makeObject(Args...)(auto ref Args args) {
-        import std.experimental.allocator: make;
         import std.conv: emplace;
+
+        allocateImpl;
+        emplace(&_impl._object, args);
+    }
+
+    void allocateImpl() {
+        import std.experimental.allocator: make;
         import std.traits: hasIndirections;
         import core.memory : GC;
 
         _impl = cast(Impl*)_allocator.allocate(Impl.sizeof);
-        emplace(&_impl._object, args);
         _impl._count= 1;
 
         static if (hasIndirections!Type)
@@ -425,6 +448,30 @@ private:
     val.shouldEqual(4);
 }
 
+@("RefCounted assign from T with null allocator")
+@system unittest
+{
+    import core.exception: AssertError;
+
+    RefCounted!(int, TestAllocator*) a;
+    // no allocator in a, so throw
+    (a = 5).shouldThrow!AssertError;
+}
+
+@("RefCounted assign from T with non-null allocator")
+@system unittest
+{
+    auto allocator = TestAllocator();
+    auto a = RefCounted!(int, TestAllocator*)(&allocator, 3);
+    a = 5; //This should not assert
+    // TODO - change this to not use get
+    a.get.shouldEqual(5);
+
+    RefCounted!(int, TestAllocator*) b;
+    b = a; //This should not assert either
+    // TODO - change this to not use get
+    b.get.shouldEqual(5);
+}
 
 version(unittest) {
 
