@@ -322,7 +322,7 @@ struct RefCounted(Type, Allocator) if(isAllocator!Allocator) {
 
     this(this) {
         assert(_impl !is null);
-        ++_impl._count;
+        inc;
     }
 
     ~this() {
@@ -338,7 +338,7 @@ struct RefCounted(Type, Allocator) if(isAllocator!Allocator) {
             _allocator = other._allocator;
 
         _impl = other._impl;
-        ++_impl._count;
+        inc;
     }
 
     void opAssign(RefCounted other) {
@@ -374,7 +374,12 @@ private:
 
     static struct Impl {
         Type _object;
-        size_t _count;
+
+        static if(is(Type == shared))
+            shared size_t _count;
+        else
+            size_t _count;
+
         alias _object this;
     }
 
@@ -409,13 +414,30 @@ private:
         if(_impl is null) return;
         assert(_impl._count > 0);
 
-        --_impl._count;
+        dec;
 
         if(_impl._count == 0) {
             destroy(_impl._object);
             auto mem = cast(void*)_impl;
             _allocator.deallocate(mem[0 .. Impl.sizeof]);
         }
+    }
+
+    void inc() {
+        static if(is(Type == shared)) {
+            import core.atomic: atomicOp;
+            _impl._count.atomicOp!"+="(1);
+        } else
+            ++_impl._count;
+
+    }
+
+    void dec() {
+        static if(is(Type == shared)) {
+            import core.atomic: atomicOp;
+            _impl._count.atomicOp!"-="(1);
+        } else
+            --_impl._count;
     }
 
 }
@@ -609,6 +631,17 @@ private:
     Struct.numStructs.shouldEqual(0);
 }
 
+@("RefCounted SharedStruct")
+@system unittest {
+    auto allocator = TestAllocator();
+    {
+        auto ptr = RefCounted!(shared SharedStruct, TestAllocator*)(&allocator, 5);
+        SharedStruct.numStructs.shouldEqual(1);
+    }
+    SharedStruct.numStructs.shouldEqual(0);
+}
+
+
 version(unittest) {
 
     private struct Struct {
@@ -640,6 +673,39 @@ version(unittest) {
         }
 
         int twice() @safe pure const nothrow {
+            return i * 2;
+        }
+    }
+
+    private struct SharedStruct {
+        int i;
+        static int numStructs = 0;
+
+        this(int i) @safe nothrow shared {
+            this.i = i;
+
+            ++numStructs;
+            try () @trusted {
+                    writelnUt("Struct normal ctor ", &this, ", i=", i, ", N=", numStructs);
+                }();
+            catch(Exception ex) {}
+        }
+
+        this(this) @safe nothrow shared {
+            ++numStructs;
+            try () @trusted {
+                    writelnUt("Struct postBlit ctor ", &this, ", i=", i, ", N=", numStructs);
+                }();
+            catch(Exception ex) {}
+        }
+
+        ~this() @safe nothrow shared {
+            --numStructs;
+            try () @trusted { writelnUt("Struct dtor ", &this, ", i=", i, ", N=", numStructs); }();
+            catch(Exception ex) {}
+        }
+
+        int twice() @safe pure const nothrow shared {
             return i * 2;
         }
     }
