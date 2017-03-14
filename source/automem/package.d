@@ -309,18 +309,20 @@ struct RefCounted(Type, Allocator) {
         ++_impl._count;
     }
 
-    void opAssign(Type object) {
-        import std.traits: isPointer;
-        import std.algorithm: move;
+    /**
+     If the allocator isn't a singleton, assigning to the raw type is unsafe.
+     If RefCounted was default-contructed then there is no allocator
+     */
+    static if(hasInstance) {
+        void opAssign(Type object) {
+            import std.algorithm: move;
 
-        static if(!hasInstance && isPointer!(typeof(_allocator)))
-            assert(_allocator !is null, "Cannot assign to RefCounted with null allocator");
+            if(_impl is null) {
+                allocateImpl;
+            }
 
-        if(_impl is null) {
-            allocateImpl;
+            move(object, _impl._object);
         }
-
-        move(object, _impl._object);
     }
 
     ref inout(Type) get() inout {
@@ -448,29 +450,28 @@ private:
     val.shouldEqual(4);
 }
 
-@("RefCounted assign from T with null allocator")
-@system unittest
-{
-    import core.exception: AssertError;
+@("RefCounted assign from T")
+@system unittest {
+    import std.experimental.allocator.mallocator: Mallocator;
 
-    RefCounted!(int, TestAllocator*) a;
-    // no allocator in a, so throw
-    (a = 5).shouldThrow!AssertError;
-}
+    {
+        auto a = RefCounted!(Struct, Mallocator)(3);
+        Struct.numStructs.shouldEqual(1);
 
-@("RefCounted assign from T with non-null allocator")
-@system unittest
-{
-    auto allocator = TestAllocator();
-    auto a = RefCounted!(int, TestAllocator*)(&allocator, 3);
-    a = 5; //This should not assert
-    // TODO - change this to not use get
-    a.get.shouldEqual(5);
+        a = Struct(5);
+        ++Struct.numStructs; // compensate for move not calling the constructor
+        Struct.numStructs.shouldEqual(1);
+        // TODO - change this to not use get
+        a.get.shouldEqual(Struct(5));
 
-    RefCounted!(int, TestAllocator*) b;
-    b = a; //This should not assert either
-    // TODO - change this to not use get
-    b.get.shouldEqual(5);
+        RefCounted!(Struct, Mallocator) b;
+        b = a;
+        // TODO - change this to not use get
+        b.get.shouldEqual(Struct(5));
+        Struct.numStructs.shouldEqual(1);
+    }
+
+    Struct.numStructs.shouldEqual(0);
 }
 
 version(unittest) {
@@ -481,11 +482,26 @@ version(unittest) {
 
         this(int i) @safe nothrow {
             this.i = i;
+
             ++numStructs;
+            try () @trusted {
+                    writelnUt("Struct normal ctor ", &this, ", i=", i, ", N=", numStructs);
+                }();
+            catch(Exception ex) {}
+        }
+
+        this(this) @safe nothrow {
+            ++numStructs;
+            try () @trusted {
+                    writelnUt("Struct postBlit ctor ", &this, ", i=", i, ", N=", numStructs);
+                }();
+            catch(Exception ex) {}
         }
 
         ~this() @safe nothrow {
             --numStructs;
+            try () @trusted { writelnUt("Struct dtor ", &this, ", i=", i, ", N=", numStructs); }();
+            catch(Exception ex) {}
         }
 
         int twice() @safe pure const nothrow {
