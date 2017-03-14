@@ -288,10 +288,25 @@ struct RefCounted(Type, Allocator) {
             makeObject(args);
         }
 
+    this(this) @safe pure nothrow @nogc {
+        assert(_impl !is null);
+        ++_impl._count;
+    }
+
     ~this() {
-        destroy(_impl._object);
-        auto mem = cast(void*)_impl;
-        _allocator.deallocate(mem[0 .. Impl.sizeof]);
+        release;
+    }
+
+    void opAssign(ref RefCounted other) {
+
+        if(_impl !is null) {
+            release;
+        }
+        static if(!hasInstance)
+            _allocator = other._allocator;
+
+        _impl = other._impl;
+        ++_impl._count;
     }
 
     mixin Proxy!(_impl);
@@ -325,10 +340,22 @@ private:
             GC.addRange(&_impl._object, Type.sizeof);
     }
 
+    void release() {
+        if(_impl is null) return;
+        assert(_impl._count > 0);
+
+        --_impl._count;
+
+        if(_impl._count == 0) {
+            destroy(_impl._object);
+            auto mem = cast(void*)_impl;
+            _allocator.deallocate(mem[0 .. Impl.sizeof]);
+        }
+    }
 
 }
 
-@("RefCounted something something darkside")
+@("RefCounted struct test allocator no copies")
 @system unittest {
     auto allocator = TestAllocator();
     {
@@ -337,6 +364,32 @@ private:
     }
     Struct.numStructs.shouldEqual(0);
 }
+
+@("RefCounted struct test allocator one assignment")
+@system unittest {
+    auto allocator = TestAllocator();
+    {
+        auto ptr1 = RefCounted!(Struct, TestAllocator*)(&allocator, 5);
+        Struct.numStructs.shouldEqual(1);
+        RefCounted!(Struct, TestAllocator*) ptr2;
+        ptr2 = ptr1;
+        Struct.numStructs.shouldEqual(1);
+    }
+    Struct.numStructs.shouldEqual(0);
+}
+
+@("RefCounted struct test allocator one copy constructor")
+@system unittest {
+    auto allocator = TestAllocator();
+    {
+        auto ptr1 = RefCounted!(Struct, TestAllocator*)(&allocator, 5);
+        Struct.numStructs.shouldEqual(1);
+        auto ptr2 = ptr1;
+        Struct.numStructs.shouldEqual(1);
+    }
+    Struct.numStructs.shouldEqual(0);
+}
+
 
 version(unittest) {
 
