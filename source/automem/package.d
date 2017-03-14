@@ -427,11 +427,26 @@ private:
 //     rc1.shouldEqual(42);
 // }
 
-@("phobos bug 6606")
+@("RefCounted swap")
 @system unittest {
     import std.algorithm: swap;
     RefCounted!(int, TestAllocator*) rc1, rc2;
     swap(rc1, rc2);
+}
+
+@("phobos bug 6606")
+@system unittest {
+
+    union U {
+       size_t i;
+       void* p;
+    }
+
+    struct S {
+       U u;
+    }
+
+    alias SRC = RefCounted!(S, TestAllocator*);
 }
 
 @("phobos bug 6436")
