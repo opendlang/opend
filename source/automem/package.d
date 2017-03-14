@@ -309,6 +309,13 @@ struct RefCounted(Type, Allocator) {
         ++_impl._count;
     }
 
+    void opAssign(RefCounted other) {
+        import std.algorithm: swap;
+        swap(_impl, other._impl);
+        static if(!hasInstance)
+            swap(_allocator, other._allocator);
+    }
+
     /**
      If the allocator isn't a singleton, assigning to the raw type is unsafe.
      If RefCounted was default-contructed then there is no allocator
@@ -390,7 +397,7 @@ private:
     Struct.numStructs.shouldEqual(0);
 }
 
-@("RefCounted struct test allocator one assignment")
+@("RefCounted struct test allocator one lvalue assignment")
 @system unittest {
     auto allocator = TestAllocator();
     {
@@ -403,7 +410,30 @@ private:
     Struct.numStructs.shouldEqual(0);
 }
 
-@("RefCounted struct test allocator one copy constructor")
+@("RefCounted struct test allocator one rvalue assignment test allocator")
+@system unittest {
+    auto allocator = TestAllocator();
+    {
+        RefCounted!(Struct, TestAllocator*) ptr;
+        ptr = RefCounted!(Struct, TestAllocator*)(&allocator, 5);
+        Struct.numStructs.shouldEqual(1);
+    }
+    Struct.numStructs.shouldEqual(0);
+}
+
+@("RefCounted struct test allocator one rvalue assignment mallocator")
+@system unittest {
+    import std.experimental.allocator.mallocator: Mallocator;
+    {
+        RefCounted!(Struct, Mallocator) ptr;
+        ptr = RefCounted!(Struct, Mallocator)(5);
+        Struct.numStructs.shouldEqual(1);
+    }
+    Struct.numStructs.shouldEqual(0);
+}
+
+
+@("RefCounted struct test allocator one lvalue copy constructor")
 @system unittest {
     auto allocator = TestAllocator();
     {
@@ -414,6 +444,17 @@ private:
     }
     Struct.numStructs.shouldEqual(0);
 }
+
+@("RefCounted struct test allocator one rvalue copy constructor")
+@system unittest {
+    auto allocator = TestAllocator();
+    {
+        auto ptr = RefCounted!(Struct, TestAllocator*)(&allocator, 5);
+        Struct.numStructs.shouldEqual(1);
+    }
+    Struct.numStructs.shouldEqual(0);
+}
+
 
 // TODO: get this to compile
 // @("RefCounted reference semantics")
