@@ -309,7 +309,7 @@ struct RefCounted(Type, Allocator) {
         ++_impl._count;
     }
 
-    mixin Proxy!(_impl);
+    alias _impl this;
 
 private:
 
@@ -388,6 +388,41 @@ private:
         Struct.numStructs.shouldEqual(1);
     }
     Struct.numStructs.shouldEqual(0);
+}
+
+// TODO: get this to compile
+// @("RefCounted reference semantics")
+// @system unittest {
+//     auto allocator = TestAllocator();
+//     auto rc1 = RefCounted!(int, TestAllocator*)(&allocator, 5);
+
+//     rc1.shouldEqual(5);
+//     auto rc2 = rc1;
+//     rc2 = 42;
+//     rc1.shouldEqual(42);
+// }
+
+@("phobos bug 6606")
+@system unittest {
+    import std.algorithm: swap;
+    RefCounted!(int, TestAllocator*) rc1, rc2;
+    swap(rc1, rc2);
+}
+
+@("phobos bug 6436")
+@system unittest
+{
+    static struct S {
+        this(ref int val, string file = __FILE__, size_t line = __LINE__) {
+            val.shouldEqual(3, file, line);
+            ++val;
+        }
+    }
+
+    auto allocator = TestAllocator();
+    int val = 3;
+    auto s = RefCounted!(S, TestAllocator*)(&allocator, val);
+    val.shouldEqual(4);
 }
 
 
