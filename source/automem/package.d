@@ -7,7 +7,31 @@ version(unittest) {
 }
 
 
-struct Unique(Type, Allocator) {
+private void checkAllocator(T)() {
+    import std.experimental.allocator: make, dispose;
+    import std.traits: hasMember;
+
+    static if(hasMember!(T, "instance"))
+        alias allocator = T.instance;
+    else
+        T allocator;
+
+    int* i = allocator.make!int;
+    allocator.dispose(&i);
+    void[] bytes = allocator.allocate(size_t.init);
+    allocator.deallocate(bytes);
+}
+enum isAllocator(T) = is(typeof(checkAllocator!T));
+
+@("isAllocator")
+@safe pure unittest {
+    import std.experimental.allocator.mallocator: Mallocator;
+    static assert(isAllocator!Mallocator);
+    static assert(isAllocator!TestAllocator);
+    static assert(!isAllocator!Struct);
+}
+
+struct Unique(Type, Allocator) if(isAllocator!Allocator) {
     import std.traits: hasMember;
     import std.typecons: Proxy;
 
@@ -260,7 +284,7 @@ private:
 }
 
 
-struct RefCounted(Type, Allocator) {
+struct RefCounted(Type, Allocator) if(isAllocator!Allocator) {
     import std.traits: hasMember;
     import std.typecons: Proxy;
 
