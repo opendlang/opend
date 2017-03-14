@@ -114,7 +114,14 @@ private:
 
     void makeObject(Args...)(auto ref Args args) {
         import std.experimental.allocator: make;
+        import std.traits: hasIndirections;
+
         _object = _allocator.make!Type(args);
+
+        static if (hasIndirections!Type) {
+            import core.memory: GC;
+            GC.addRange(&_object, Type.sizeof);
+        }
     }
 
     void deleteObject() {
@@ -387,13 +394,14 @@ private:
     void allocateImpl() {
         import std.experimental.allocator: make;
         import std.traits: hasIndirections;
-        import core.memory : GC;
 
         _impl = cast(Impl*)_allocator.allocate(Impl.sizeof);
         _impl._count= 1;
 
-        static if (hasIndirections!Type)
+        static if (hasIndirections!Type) {
+            import core.memory: GC;
             GC.addRange(&_impl._object, Type.sizeof);
+        }
     }
 
     void release() {
