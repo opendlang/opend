@@ -4,7 +4,7 @@
         "Atila Neves"
     ],
     "description": "Automatic memory management",
-    "copyright": "Copyright © 2017, atila",
+    "copyright": "Copyright © 2017, Atila Neves",
     "license": "BSD 3-clause",
     "targetType": "library",
     "configurations": [
