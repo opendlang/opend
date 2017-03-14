@@ -27,7 +27,7 @@ pure {
 extern( System ):
 
 // Version of corresponding c header file
-enum VK_HEADER_VERSION  =  42;
+enum VK_HEADER_VERSION  =  43;
 
 enum VK_NULL_HANDLE = null;
 
@@ -315,10 +315,12 @@ enum VkStructureType {
 	VK_STRUCTURE_TYPE_DEVICE_EVENT_INFO_EXT = 1000091001,
 	VK_STRUCTURE_TYPE_DISPLAY_EVENT_INFO_EXT = 1000091002,
 	VK_STRUCTURE_TYPE_SWAPCHAIN_COUNTER_CREATE_INFO_EXT = 1000091003,
+	VK_STRUCTURE_TYPE_PRESENT_TIMES_INFO_GOOGLE = 1000092000,
 	VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PER_VIEW_ATTRIBUTES_PROPERTIES_NVX = 1000097000,
 	VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_SWIZZLE_STATE_CREATE_INFO_NV = 1000098000,
 	VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DISCARD_RECTANGLE_PROPERTIES_EXT = 1000099000,
 	VK_STRUCTURE_TYPE_PIPELINE_DISCARD_RECTANGLE_STATE_CREATE_INFO_EXT = 1000099001,
+	VK_STRUCTURE_TYPE_HDR_METADATA_EXT = 1000105000,
 	VK_STRUCTURE_TYPE_IOS_SURFACE_CREATE_INFO_MVK = 1000122000,
 	VK_STRUCTURE_TYPE_MACOS_SURFACE_CREATE_INFO_MVK = 1000123000,
 	VK_STRUCTURE_TYPE_BEGIN_RANGE = VK_STRUCTURE_TYPE_APPLICATION_INFO,
@@ -468,10 +470,12 @@ enum VK_STRUCTURE_TYPE_DISPLAY_POWER_INFO_EXT = VkStructureType.VK_STRUCTURE_TYP
 enum VK_STRUCTURE_TYPE_DEVICE_EVENT_INFO_EXT = VkStructureType.VK_STRUCTURE_TYPE_DEVICE_EVENT_INFO_EXT;
 enum VK_STRUCTURE_TYPE_DISPLAY_EVENT_INFO_EXT = VkStructureType.VK_STRUCTURE_TYPE_DISPLAY_EVENT_INFO_EXT;
 enum VK_STRUCTURE_TYPE_SWAPCHAIN_COUNTER_CREATE_INFO_EXT = VkStructureType.VK_STRUCTURE_TYPE_SWAPCHAIN_COUNTER_CREATE_INFO_EXT;
+enum VK_STRUCTURE_TYPE_PRESENT_TIMES_INFO_GOOGLE = VkStructureType.VK_STRUCTURE_TYPE_PRESENT_TIMES_INFO_GOOGLE;
 enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PER_VIEW_ATTRIBUTES_PROPERTIES_NVX = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PER_VIEW_ATTRIBUTES_PROPERTIES_NVX;
 enum VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_SWIZZLE_STATE_CREATE_INFO_NV = VkStructureType.VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_SWIZZLE_STATE_CREATE_INFO_NV;
 enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DISCARD_RECTANGLE_PROPERTIES_EXT = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DISCARD_RECTANGLE_PROPERTIES_EXT;
 enum VK_STRUCTURE_TYPE_PIPELINE_DISCARD_RECTANGLE_STATE_CREATE_INFO_EXT = VkStructureType.VK_STRUCTURE_TYPE_PIPELINE_DISCARD_RECTANGLE_STATE_CREATE_INFO_EXT;
+enum VK_STRUCTURE_TYPE_HDR_METADATA_EXT = VkStructureType.VK_STRUCTURE_TYPE_HDR_METADATA_EXT;
 enum VK_STRUCTURE_TYPE_IOS_SURFACE_CREATE_INFO_MVK = VkStructureType.VK_STRUCTURE_TYPE_IOS_SURFACE_CREATE_INFO_MVK;
 enum VK_STRUCTURE_TYPE_MACOS_SURFACE_CREATE_INFO_MVK = VkStructureType.VK_STRUCTURE_TYPE_MACOS_SURFACE_CREATE_INFO_MVK;
 enum VK_STRUCTURE_TYPE_BEGIN_RANGE = VkStructureType.VK_STRUCTURE_TYPE_BEGIN_RANGE;
@@ -3623,7 +3627,7 @@ version( VK_USE_PLATFORM_XCB_KHR ) {
 version( VK_USE_PLATFORM_WAYLAND_KHR ) {
 	public import wayland.client;
 
-	enum VK_KHR_WAYLAND_SURFACE_SPEC_VERSION = 5;
+	enum VK_KHR_WAYLAND_SURFACE_SPEC_VERSION = 6;
 	enum VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME = "VK_KHR_wayland_surface";
 
 	alias VkWaylandSurfaceCreateFlagsKHR = VkFlags;
@@ -3847,10 +3851,6 @@ struct VkDescriptorUpdateTemplateCreateInfoKHR {
 	uint32_t                                      set;
 }
 
-// VK_KHR_extension_93
-enum VK_GOOGLE_EXTENSION_93_SPEC_VERSION = 0;
-enum VK_GOOGLE_EXTENSION_93_EXTENSION_NAME = "VK_GOOGLE_extension_93";
-
 // VK_KHR_extension_94
 enum VK_KHR_EXTENSION_94_SPEC_VERSION = 0;
 enum VK_KHR_EXTENSION_94_EXTENSION_NAME = "VK_KHR_extension_94";
@@ -3898,6 +3898,14 @@ enum VK_KHR_variable_pointers_EXTENSION_NAME = "VK_KHR_variable_pointers";
 // VK_KHR_extension_122
 enum VK_KHR_EXTENSION_122_SPEC_VERSION = 0;
 enum VK_KHR_EXTENSION_122_EXTENSION_NAME = "VK_KHR_extension_122";
+
+// VK_KHR_extension_128
+enum VK_KHR_EXTENSION_128_SPEC_VERSION = 0;
+enum VK_KHR_EXTENSION_128_EXTENSION_NAME = "VK_KHR_extension_128";
+
+// VK_KHR_extension_130
+enum VK_KHR_EXTENSION_130_SPEC_VERSION = 0;
+enum VK_KHR_EXTENSION_130_EXTENSION_NAME = "VK_KHR_extension_130";
 
 // VK_ANDROID_native_buffer
 enum VK_ANDROID_NATIVE_BUFFER_SPEC_VERSION = 4;
@@ -4713,28 +4721,6 @@ struct VkPhysicalDeviceIDPropertiesKHX {
 	VkBool32                     deviceLUIDValid;
 }
 
-struct VkPhysicalDeviceProperties2KHX {
-	VkStructureType             sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2_KHX;
-	void*                       pNext;
-	VkPhysicalDeviceProperties  properties;
-}
-
-struct VkImageFormatProperties2KHX {
-	VkStructureType          sType = VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2_KHX;
-	void*                    pNext;
-	VkImageFormatProperties  imageFormatProperties;
-}
-
-struct VkPhysicalDeviceImageFormatInfo2KHX {
-	VkStructureType     sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2_KHX;
-	const( void )*      pNext;
-	VkFormat            format;
-	VkImageType         type;
-	VkImageTiling       tiling;
-	VkImageUsageFlags   usage;
-	VkImageCreateFlags  flags;
-}
-
 // VK_KHX_external_memory
 enum VK_KHX_EXTERNAL_MEMORY_SPEC_VERSION = 1;
 enum VK_KHX_EXTERNAL_MEMORY_EXTENSION_NAME = "VK_KHX_external_memory";
@@ -5264,6 +5250,34 @@ struct VkSwapchainCounterCreateInfoEXT {
 	VkSurfaceCounterFlagsEXT  surfaceCounters;
 }
 
+// VK_GOOGLE_display_timing
+enum VK_GOOGLE_DISPLAY_TIMING_SPEC_VERSION = 1;
+enum VK_GOOGLE_DISPLAY_TIMING_EXTENSION_NAME = "VK_GOOGLE_display_timing";
+
+struct VkRefreshCycleDurationGOOGLE {
+	uint64_t  refreshDuration;
+}
+
+struct VkPastPresentationTimingGOOGLE {
+	uint32_t  presentID;
+	uint64_t  desiredPresentTime;
+	uint64_t  actualPresentTime;
+	uint64_t  earliestPresentTime;
+	uint64_t  presentMargin;
+}
+
+struct VkPresentTimeGOOGLE {
+	uint32_t  presentID;
+	uint64_t  desiredPresentTime;
+}
+
+struct VkPresentTimesInfoGOOGLE {
+	VkStructureType                sType = VK_STRUCTURE_TYPE_PRESENT_TIMES_INFO_GOOGLE;
+	const( void )*                 pNext;
+	uint32_t                       swapchainCount;
+	const( VkPresentTimeGOOGLE )*  pTimes;
+}
+
 // VK_NV_sample_mask_override_coverage
 enum VK_NV_SAMPLE_MASK_OVERRIDE_COVERAGE_SPEC_VERSION = 1;
 enum VK_NV_SAMPLE_MASK_OVERRIDE_COVERAGE_EXTENSION_NAME = "VK_NV_sample_mask_override_coverage";
@@ -5396,22 +5410,26 @@ enum VK_NV_EXTENSION_104_EXTENSION_NAME = "VK_NV_extension_104";
 enum VK_EXT_SWAPCHAIN_COLOR_SPACE_SPEC_VERSION = 1;
 enum VK_EXT_SWAPCHAIN_COLOR_SPACE_EXTENSION_NAME = "VK_EXT_swapchain_colorspace";
 
-// VK_EXT_SMPTE2086_metadata
-enum VK_EXT_SMPTE2086_METADATA_SPEC_VERSION = 0;
-enum VK_EXT_SMPTE2086_METADATA_EXTENSION_NAME = "VK_EXT_SMPTE2086_metadata";
+// VK_EXT_hdr_metadata
+enum VK_EXT_HDR_METADATA_SPEC_VERSION = 0;
+enum VK_EXT_HDR_METADATA_EXTENSION_NAME = "VK_EXT_hdr_metadata";
 
 struct VkXYColorEXT {
 	float  x;
 	float  y;
 }
 
-struct VkSMPTE2086MetadataEXT {
-	VkXYColorEXT  displayPrimaryRed;
-	VkXYColorEXT  displayPrimaryGreen;
-	VkXYColorEXT  displayPrimaryBlue;
-	VkXYColorEXT  whitePoint;
-	float         maxLuminance;
-	float         minLuminance;
+struct VkHdrMetadataEXT {
+	VkStructureType  sType = VK_STRUCTURE_TYPE_HDR_METADATA_EXT;
+	const( void )*   pNext;
+	VkXYColorEXT     displayPrimaryRed;
+	VkXYColorEXT     displayPrimaryGreen;
+	VkXYColorEXT     displayPrimaryBlue;
+	VkXYColorEXT     whitePoint;
+	float            maxLuminance;
+	float            minLuminance;
+	float            maxContentLightLevel;
+	float            maxFrameAverageLightLevel;
 }
 
 // VK_IMG_extension_107
@@ -5471,4 +5489,8 @@ enum VK_MESA_EXTENSION_126_EXTENSION_NAME = "VK_MESA_extension_126";
 // VK_MESA_extension_127
 enum VK_MESA_EXTENSION_127_SPEC_VERSION = 0;
 enum VK_MESA_EXTENSION_127_EXTENSION_NAME = "VK_MESA_extension_127";
+
+// VK_EXT_extension_129
+enum VK_KHR_EXTENSION_129_SPEC_VERSION = 0;
+enum VK_KHR_EXTENSION_129_EXTENSION_NAME = "VK_EXT_extension_129";
 

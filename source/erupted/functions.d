@@ -268,8 +268,6 @@ extern( System ) @nogc nothrow {
 
 	// VK_KHX_external_memory_capabilities
 	alias PFN_vkGetPhysicalDeviceExternalBufferPropertiesKHX = void function( VkPhysicalDevice physicalDevice, const( VkPhysicalDeviceExternalBufferInfoKHX )* pExternalBufferInfo, VkExternalBufferPropertiesKHX* pExternalBufferProperties );
-	alias PFN_vkGetPhysicalDeviceProperties2KHX = void function( VkPhysicalDevice physicalDevice, VkPhysicalDeviceProperties2KHX* pProperties );
-	alias PFN_vkGetPhysicalDeviceImageFormatProperties2KHX = VkResult function( VkPhysicalDevice physicalDevice, const( VkPhysicalDeviceImageFormatInfo2KHX )* pImageFormatInfo, VkImageFormatProperties2KHX* pImageFormatProperties );
 
 	// VK_KHX_external_memory_win32
 	version( VK_USE_PLATFORM_WIN32_KHR ) {
@@ -326,11 +324,15 @@ extern( System ) @nogc nothrow {
 	alias PFN_vkRegisterDisplayEventEXT = VkResult function( VkDevice device, VkDisplayKHR display, const( VkDisplayEventInfoEXT )* pDisplayEventInfo, const( VkAllocationCallbacks )* pAllocator, VkFence* pFence );
 	alias PFN_vkGetSwapchainCounterEXT = VkResult function( VkDevice device, VkSwapchainKHR swapchain, VkSurfaceCounterFlagBitsEXT counter, uint64_t* pCounterValue );
 
+	// VK_GOOGLE_display_timing
+	alias PFN_vkGetRefreshCycleDurationGOOGLE = VkResult function( VkDevice device, VkSwapchainKHR swapchain, VkRefreshCycleDurationGOOGLE* pDisplayTimingProperties );
+	alias PFN_vkGetPastPresentationTimingGOOGLE = VkResult function( VkDevice device, VkSwapchainKHR swapchain, uint32_t* pPresentationTimingCount, VkPastPresentationTimingGOOGLE* pPresentationTimings );
+
 	// VK_EXT_discard_rectangles
 	alias PFN_vkCmdSetDiscardRectangleEXT = void function( VkCommandBuffer commandBuffer, uint32_t firstDiscardRectangle, uint32_t discardRectangleCount, const( VkRect2D )* pDiscardRectangles );
 
-	// VK_EXT_SMPTE2086_metadata
-	alias PFN_vkSetSMPTE2086MetadataEXT = void function( VkDevice device, uint32_t swapchainCount, const( VkSwapchainKHR )* pSwapchains, const( VkSMPTE2086MetadataEXT )* pMetadata );
+	// VK_EXT_hdr_metadata
+	alias PFN_vkSetHdrMetadataEXT = void function( VkDevice device, uint32_t swapchainCount, const( VkSwapchainKHR )* pSwapchains, const( VkHdrMetadataEXT )* pMetadata );
 
 	// VK_MVK_ios_surface
 	alias PFN_vkCreateIOSSurfaceMVK = VkResult function( VkInstance instance, const( VkIOSSurfaceCreateInfoMVK )* pCreateInfo, const( VkAllocationCallbacks )* pAllocator, VkSurfaceKHR* pSurface );
@@ -605,8 +607,6 @@ __gshared {
 
 	// VK_KHX_external_memory_capabilities
 	PFN_vkGetPhysicalDeviceExternalBufferPropertiesKHX vkGetPhysicalDeviceExternalBufferPropertiesKHX;
-	PFN_vkGetPhysicalDeviceProperties2KHX vkGetPhysicalDeviceProperties2KHX;
-	PFN_vkGetPhysicalDeviceImageFormatProperties2KHX vkGetPhysicalDeviceImageFormatProperties2KHX;
 
 	// VK_KHX_external_memory_win32
 	version( VK_USE_PLATFORM_WIN32_KHR ) {
@@ -663,11 +663,15 @@ __gshared {
 	PFN_vkRegisterDisplayEventEXT vkRegisterDisplayEventEXT;
 	PFN_vkGetSwapchainCounterEXT vkGetSwapchainCounterEXT;
 
+	// VK_GOOGLE_display_timing
+	PFN_vkGetRefreshCycleDurationGOOGLE vkGetRefreshCycleDurationGOOGLE;
+	PFN_vkGetPastPresentationTimingGOOGLE vkGetPastPresentationTimingGOOGLE;
+
 	// VK_EXT_discard_rectangles
 	PFN_vkCmdSetDiscardRectangleEXT vkCmdSetDiscardRectangleEXT;
 
-	// VK_EXT_SMPTE2086_metadata
-	PFN_vkSetSMPTE2086MetadataEXT vkSetSMPTE2086MetadataEXT;
+	// VK_EXT_hdr_metadata
+	PFN_vkSetHdrMetadataEXT vkSetHdrMetadataEXT;
 
 	// VK_MVK_ios_surface
 	PFN_vkCreateIOSSurfaceMVK vkCreateIOSSurfaceMVK;
@@ -783,8 +787,6 @@ void loadInstanceLevelFunctions( VkInstance instance ) {
 
 	// VK_KHX_external_memory_capabilities
 	vkGetPhysicalDeviceExternalBufferPropertiesKHX = cast( typeof( vkGetPhysicalDeviceExternalBufferPropertiesKHX )) vkGetInstanceProcAddr( instance, "vkGetPhysicalDeviceExternalBufferPropertiesKHX" );
-	vkGetPhysicalDeviceProperties2KHX = cast( typeof( vkGetPhysicalDeviceProperties2KHX )) vkGetInstanceProcAddr( instance, "vkGetPhysicalDeviceProperties2KHX" );
-	vkGetPhysicalDeviceImageFormatProperties2KHX = cast( typeof( vkGetPhysicalDeviceImageFormatProperties2KHX )) vkGetInstanceProcAddr( instance, "vkGetPhysicalDeviceImageFormatProperties2KHX" );
 
 	// VK_KHX_external_semaphore_capabilities
 	vkGetPhysicalDeviceExternalSemaphorePropertiesKHX = cast( typeof( vkGetPhysicalDeviceExternalSemaphorePropertiesKHX )) vkGetInstanceProcAddr( instance, "vkGetPhysicalDeviceExternalSemaphorePropertiesKHX" );
@@ -1026,11 +1028,15 @@ void loadDeviceLevelFunctions( VkInstance instance ) {
 	vkRegisterDisplayEventEXT = cast( typeof( vkRegisterDisplayEventEXT )) vkGetInstanceProcAddr( instance, "vkRegisterDisplayEventEXT" );
 	vkGetSwapchainCounterEXT = cast( typeof( vkGetSwapchainCounterEXT )) vkGetInstanceProcAddr( instance, "vkGetSwapchainCounterEXT" );
 
+	// VK_GOOGLE_display_timing
+	vkGetRefreshCycleDurationGOOGLE = cast( typeof( vkGetRefreshCycleDurationGOOGLE )) vkGetInstanceProcAddr( instance, "vkGetRefreshCycleDurationGOOGLE" );
+	vkGetPastPresentationTimingGOOGLE = cast( typeof( vkGetPastPresentationTimingGOOGLE )) vkGetInstanceProcAddr( instance, "vkGetPastPresentationTimingGOOGLE" );
+
 	// VK_EXT_discard_rectangles
 	vkCmdSetDiscardRectangleEXT = cast( typeof( vkCmdSetDiscardRectangleEXT )) vkGetInstanceProcAddr( instance, "vkCmdSetDiscardRectangleEXT" );
 
-	// VK_EXT_SMPTE2086_metadata
-	vkSetSMPTE2086MetadataEXT = cast( typeof( vkSetSMPTE2086MetadataEXT )) vkGetInstanceProcAddr( instance, "vkSetSMPTE2086MetadataEXT" );
+	// VK_EXT_hdr_metadata
+	vkSetHdrMetadataEXT = cast( typeof( vkSetHdrMetadataEXT )) vkGetInstanceProcAddr( instance, "vkSetHdrMetadataEXT" );
 }
 
 /// with a valid VkDevice call this function to retrieve VkDevice, VkQueue and VkCommandBuffer related functions
@@ -1249,11 +1255,15 @@ void loadDeviceLevelFunctions( VkDevice device ) {
 	vkRegisterDisplayEventEXT = cast( typeof( vkRegisterDisplayEventEXT )) vkGetDeviceProcAddr( device, "vkRegisterDisplayEventEXT" );
 	vkGetSwapchainCounterEXT = cast( typeof( vkGetSwapchainCounterEXT )) vkGetDeviceProcAddr( device, "vkGetSwapchainCounterEXT" );
 
+	// VK_GOOGLE_display_timing
+	vkGetRefreshCycleDurationGOOGLE = cast( typeof( vkGetRefreshCycleDurationGOOGLE )) vkGetDeviceProcAddr( device, "vkGetRefreshCycleDurationGOOGLE" );
+	vkGetPastPresentationTimingGOOGLE = cast( typeof( vkGetPastPresentationTimingGOOGLE )) vkGetDeviceProcAddr( device, "vkGetPastPresentationTimingGOOGLE" );
+
 	// VK_EXT_discard_rectangles
 	vkCmdSetDiscardRectangleEXT = cast( typeof( vkCmdSetDiscardRectangleEXT )) vkGetDeviceProcAddr( device, "vkCmdSetDiscardRectangleEXT" );
 
-	// VK_EXT_SMPTE2086_metadata
-	vkSetSMPTE2086MetadataEXT = cast( typeof( vkSetSMPTE2086MetadataEXT )) vkGetDeviceProcAddr( device, "vkSetSMPTE2086MetadataEXT" );
+	// VK_EXT_hdr_metadata
+	vkSetHdrMetadataEXT = cast( typeof( vkSetHdrMetadataEXT )) vkGetDeviceProcAddr( device, "vkSetHdrMetadataEXT" );
 }
 
 /// with a valid VkDevice call this function to retrieve VkDevice, VkQueue and VkCommandBuffer related functions grouped in a DispatchDevice struct
@@ -1473,11 +1483,15 @@ DispatchDevice createDispatchDeviceLevelFunctions( VkDevice device ) {
 		vkRegisterDisplayEventEXT = cast( typeof( vkRegisterDisplayEventEXT )) vkGetDeviceProcAddr( device, "vkRegisterDisplayEventEXT" );
 		vkGetSwapchainCounterEXT = cast( typeof( vkGetSwapchainCounterEXT )) vkGetDeviceProcAddr( device, "vkGetSwapchainCounterEXT" );
 
+		// VK_GOOGLE_display_timing
+		vkGetRefreshCycleDurationGOOGLE = cast( typeof( vkGetRefreshCycleDurationGOOGLE )) vkGetDeviceProcAddr( device, "vkGetRefreshCycleDurationGOOGLE" );
+		vkGetPastPresentationTimingGOOGLE = cast( typeof( vkGetPastPresentationTimingGOOGLE )) vkGetDeviceProcAddr( device, "vkGetPastPresentationTimingGOOGLE" );
+
 		// VK_EXT_discard_rectangles
 		vkCmdSetDiscardRectangleEXT = cast( typeof( vkCmdSetDiscardRectangleEXT )) vkGetDeviceProcAddr( device, "vkCmdSetDiscardRectangleEXT" );
 
-		// VK_EXT_SMPTE2086_metadata
-		vkSetSMPTE2086MetadataEXT = cast( typeof( vkSetSMPTE2086MetadataEXT )) vkGetDeviceProcAddr( device, "vkSetSMPTE2086MetadataEXT" );
+		// VK_EXT_hdr_metadata
+		vkSetHdrMetadataEXT = cast( typeof( vkSetHdrMetadataEXT )) vkGetDeviceProcAddr( device, "vkSetHdrMetadataEXT" );
 	}
 
 	return dispatchDevice;
@@ -1661,8 +1675,10 @@ private struct DispatchDevice {
 	PFN_vkRegisterDeviceEventEXT vkRegisterDeviceEventEXT;
 	PFN_vkRegisterDisplayEventEXT vkRegisterDisplayEventEXT;
 	PFN_vkGetSwapchainCounterEXT vkGetSwapchainCounterEXT;
+	PFN_vkGetRefreshCycleDurationGOOGLE vkGetRefreshCycleDurationGOOGLE;
+	PFN_vkGetPastPresentationTimingGOOGLE vkGetPastPresentationTimingGOOGLE;
 	PFN_vkCmdSetDiscardRectangleEXT vkCmdSetDiscardRectangleEXT;
-	PFN_vkSetSMPTE2086MetadataEXT vkSetSMPTE2086MetadataEXT;
+	PFN_vkSetHdrMetadataEXT vkSetHdrMetadataEXT;
 }
 
 // Derelict loader to acquire entry point vkGetInstanceProcAddr
