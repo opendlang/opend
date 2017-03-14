@@ -69,7 +69,7 @@ struct Unique(Type, Allocator) if(isAllocator!Allocator) {
         deleteObject;
     }
 
-    inout(Pointer) get() @safe pure nothrow inout {
+    inout(Pointer) get() inout {
         return _object;
     }
 
@@ -81,7 +81,7 @@ struct Unique(Type, Allocator) if(isAllocator!Allocator) {
         return u;
     }
 
-    Pointer release() @safe pure nothrow {
+    Pointer release() {
         auto ret = _object;
         _object = null;
         return ret;
@@ -92,7 +92,7 @@ struct Unique(Type, Allocator) if(isAllocator!Allocator) {
         _object = newObject;
     }
 
-    bool opCast(T)() @safe pure nothrow const if(is(T == bool)) {
+    bool opCast(T)() const if(is(T == bool)) {
         return _object !is null;
     }
 
@@ -128,6 +128,7 @@ private:
         import std.experimental.allocator: dispose;
         if(_object !is null) _allocator.dispose(_object);
     }
+
 
     void moveFrom(T)(ref Unique!(T, Allocator) other) if(is(T: Type)) {
         _object = other._object;
@@ -319,7 +320,7 @@ struct RefCounted(Type, Allocator) if(isAllocator!Allocator) {
             makeObject(args);
         }
 
-    this(this) @safe pure nothrow @nogc {
+    this(this) {
         assert(_impl !is null);
         ++_impl._count;
     }
@@ -659,5 +660,10 @@ version(unittest) {
         int twice() @safe pure const nothrow {
             return i * 2;
         }
+    }
+
+    private struct SafeAllocator {
+        void[] allocate(size_t) @safe pure nothrow @nogc { return []; }
+        void deallocate(void[]) @safe pure nothrow @nogc {}
     }
 }
