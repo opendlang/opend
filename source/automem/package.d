@@ -455,6 +455,52 @@ private:
     Struct.numStructs.shouldEqual(0);
 }
 
+@("RefCounted many copies made")
+@system unittest {
+    auto allocator = TestAllocator();
+
+    // helper function for intrusive testing, in case the implementation
+    // ever changes
+    size_t refCount(T)(ref T ptr) {
+        return ptr._impl._count;
+    }
+
+    {
+        auto ptr1 = RefCounted!(Struct, TestAllocator*)(&allocator, 5);
+        Struct.numStructs.shouldEqual(1);
+
+        auto ptr2 = ptr1;
+        Struct.numStructs.shouldEqual(1);
+
+        {
+            auto ptr3 = ptr2;
+            Struct.numStructs.shouldEqual(1);
+
+            refCount(ptr1).shouldEqual(3);
+            refCount(ptr2).shouldEqual(3);
+            refCount(ptr3).shouldEqual(3);
+        }
+
+        Struct.numStructs.shouldEqual(1);
+        refCount(ptr1).shouldEqual(2);
+        refCount(ptr2).shouldEqual(2);
+
+        auto produce() {
+            return RefCounted!(Struct, TestAllocator*)(&allocator, 3);
+        }
+
+        ptr1 = produce;
+        Struct.numStructs.shouldEqual(2);
+        refCount(ptr1).shouldEqual(1);
+        refCount(ptr2).shouldEqual(1);
+
+        ptr1.twice.shouldEqual(6);
+        ptr2.twice.shouldEqual(10);
+    }
+
+    Struct.numStructs.shouldEqual(0);
+}
+
 
 // TODO: get this to compile
 // @("RefCounted reference semantics")
