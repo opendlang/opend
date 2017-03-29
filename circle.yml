@@ -11,7 +11,7 @@ dependencies:
   override:
     - curl -fsSL --retry 3 "http://downloads.dlang.org/releases/2.x/$DMD/dmd.$DMD.linux.tar.xz" | tar -C ~ -Jxf -
     - dmd --version
-    - git clone https://github.com/libmir/mir-math
+    - git clone https://github.com/libmir/mir-algorithm
 test:
   override:
     - make -f doc/Makefile html
