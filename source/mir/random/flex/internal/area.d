@@ -8,7 +8,7 @@ version(Flex_logging)
 }
 
 import std.math: signbit, frexp, LOG2E, isFinite;
-import mir.math.internal;
+import mir.math.common;
 import mir.random.flex.internal.types;
 
 /*

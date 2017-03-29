@@ -53,7 +53,7 @@ import std.traits;
 
 import std.math : nextDown, isFinite, LN2;
 
-import mir.math.internal;
+import mir.math.common;
 
 private T sumSquares(T)(const T a, const T b)
 {

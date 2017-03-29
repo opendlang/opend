@@ -7,7 +7,7 @@ module mir.random.algorithm;
 
 import std.range.primitives;
 import std.traits;
-import mir.math.internal;
+import mir.math.common;
 
 import mir.random;
 public import mir.random.engine;
@@ -345,19 +345,19 @@ void shuffle(Range, G)(ref G gen, Range range)
 }
 
 ///
-static if (__VERSION__ >= 2072)
 unittest
 {
-    import std.experimental.ndslice;
-    import std.algorithm.sorting;
+    import mir.ndslice.allocation: slice;
+    import mir.ndslice.topology: iota;
+    import mir.ndslice.sorting;
 
     auto gen = Random(unpredictableSeed);
-    auto a = iotaSlice(10).slice;
+    auto a = iota(10).slice;
 
     gen.shuffle(a);
 
     sort(a);
-    assert(a == iotaSlice(10));
+    assert(a == iota(10));
 }
 
 /++
@@ -384,17 +384,17 @@ void shuffle(Range, G)(ref G gen, Range range, size_t n)
 }
 
 ///
-static if (__VERSION__ >= 2072)
 unittest
 {
-    import std.experimental.ndslice;
-    import std.algorithm.sorting;
+    import mir.ndslice.allocation: slice;
+    import mir.ndslice.topology: iota;
+    import mir.ndslice.sorting;
 
     auto gen = Random(unpredictableSeed);
-    auto a = iotaSlice(10).slice;
+    auto a = iota(10).slice;
 
     gen.shuffle(a, 4);
 
     sort(a);
-    assert(a == iotaSlice(10));
+    assert(a == iota(10));
 }

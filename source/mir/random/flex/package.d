@@ -94,7 +94,7 @@ version(Flex_logging)
     import std.experimental.logger;
 }
 
-import mir.math.internal;
+import mir.math.common;
 
 /**
 The Transformed Density Rejection with Inflection Points (Flex) algorithm
@@ -246,7 +246,7 @@ version(X86_64) unittest
     import std.meta : AliasSeq;
     import std.math : approxEqual, PI;
     import mir.random.engine.xorshift : Xorshift;
-    import mir.math.internal : exp, sqrt;
+    import mir.math.common : exp, sqrt;
     foreach (S; AliasSeq!(float, double, real))
     {
         S sqrt2PI = sqrt(2 * PI);
@@ -332,7 +332,7 @@ private S flexImpl(S, Pdf, RNG)
            DiscreteVariable!S ds, ref RNG rng)
     if (isRandomEngine!RNG)
 {
-    import mir.math.internal: exp, fabs, log;
+    import mir.math.common: exp, fabs, log;
     import mir.random.flex.internal.transformations : antiderivative, inverseAntiderivative;
 
     S X = void;
@@ -959,7 +959,7 @@ unittest
 // test standard normal distribution
 version(X86_64) unittest
 {
-    import mir.math.internal : exp, sqrt;
+    import mir.math.common : exp, sqrt;
     import std.algorithm : equal, map;
     import std.meta : AliasSeq;
     import std.math : approxEqual, PI;
@@ -988,7 +988,7 @@ version(X86_64) unittest
     import std.math : approxEqual;
     import std.meta : AliasSeq;
     import std.range : repeat;
-    import mir.math.internal : log;
+    import mir.math.common : log;
 
     static immutable hats = [0.00648327, 0.0133705, 0.33157, 0.5, 0.5, 0.16167,
                              0.136019, 0.0133705, 0.00648327];
