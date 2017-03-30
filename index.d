@@ -29,7 +29,7 @@ $(BOOKTABLE ,
     $(TR
         $(TDNW $(MREF mir,random,algorithm))
         $(TD
-            $(REF_ALTTEXT $(TT Random ranges), RandomRange, mir, random, algorithm).
+            $(REF_ALTTEXT $(TT Random ndslices and ranges), RandomRange, mir, random, algorithm).
         )
     )
     $(LEADINGROW Entropy Generators)

@@ -13,31 +13,49 @@ import mir.random;
 public import mir.random.engine;
 
 /++
-Range interface for uniform random bit generators.
+Field interface for uniform random bit generators.
+It used to construct ndslices in combination with `slicedField` and `slice`.
 
-Note:
-    The structure holds a pointer to a generator.
-    The structure must not be copied (explicitly or implicitly) outside from a function.
+Note: $(UL $(LI The structure holds a pointer to a generator.) $(LI The structure must not be copied (explicitly or implicitly) outside from a function.))
 +/
-struct RandomRange(G)
+struct RandomField(G, D)
     if (isSaturatedRandomEngine!G)
 {
+    private D _var;
     private G* _gen;
-    private ReturnType!G _val;
-    /// Largest generated value.
-    enum ReturnType!G max = G.max;
-    /// Constructor. Stores the pointer to the `gen` engine.
-    this(ref G gen) { _gen = &gen; popFront(); }
-    /// Infinity Input Range primitives
-    enum empty = false;
-    /// ditto
-    ReturnType!G front() @property { return _val; }
-    /// ditto
-    void popFront() { _val = (*_gen)(); }
+    private Unqual!(typeof(_var(*_gen))) _val;
+    /++
+    Constructor.
+    Stores the pointer to the `gen` engine.
+    +/
+    this()(ref G gen, D var) { _gen = &gen; _var = var; }
+    ///
+    Unqual!(typeof(_var(*_gen))) opIndex()(size_t) { return _var(*_gen); }
 }
 
 /// ditto
-RandomRange!G range(G)(ref G gen)
+struct RandomField(G)
+    if (isSaturatedRandomEngine!G)
+{
+    private G* _gen;
+    /++
+    Constructor.
+    Stores the pointer to the `gen` engine.
+    +/
+    this()(ref G gen) { _gen = &gen; }
+    ///
+    Unqual!(ReturnType!G) opIndex()(size_t) { return (*_gen)(); }
+}
+
+/// ditto
+RandomField!(G, D) field(G, D)(ref G gen, D var)
+    if (isSaturatedRandomEngine!G)
+{
+    return typeof(return)(gen, var);
+}
+
+/// ditto
+RandomField!G field(G)(ref G gen)
     if (isSaturatedRandomEngine!G)
 {
     return typeof(return)(gen);
@@ -46,24 +64,38 @@ RandomRange!G range(G)(ref G gen)
 ///
 unittest
 {
-    import std.range, std.algorithm;
+    import mir.ndslice: slicedField, slice;
+    import mir.random;
+    import mir.random.variable: NormalVariable;
+
+    auto var = NormalVariable!double(0, 1);
+    auto rng = Random(unpredictableSeed);
+    auto sample = rng      // passed by reference
+        .field(var)        // construct random field from standard normal distribution
+        .slicedField(5, 3) // construct random matrix 5 row x 3 col (lazy, without allocation)
+        .slice;            // allocates data of random matrix
+
+    //import std.stdio;
+    //writeln(sample);
+}
+
+///
+unittest
+{
+    import mir.ndslice: slicedField, slice;
     import mir.random.engine.xorshift;
+
     auto rng = Xorshift(1);
-    auto bitSample = rng // by reference
-        .range
-        .filter!(val => val % 2 == 0)
-        .map!(val => val % 100)
-        .take(5)
-        .array;
-    assert(bitSample == [58, 30, 86, 16, 76]);
+    auto bitSample = rng    // passed by reference
+        .field              // construct random field
+        .slicedField(5, 3)  // construct random matrix 5 row x 3 col (lazy, without allocation)
+        .slice;             // allocates data of random matrix
 }
 
 /++
-Range interface for random variables.
+Range interface for uniform random bit generators.
 
-Note:
-    The structure hold a pointer to a generator.
-    The structure must not be copied (explicitly or implicitly) outside from a function.
+Note: $(UL $(LI The structure holds a pointer to a generator.) $(LI The structure must not be copied (explicitly or implicitly) outside from a function.))
 +/
 struct RandomRange(G, D)
     if (isSaturatedRandomEngine!G)
@@ -71,21 +103,53 @@ struct RandomRange(G, D)
     private D _var;
     private G* _gen;
     private Unqual!(typeof(_var(*_gen))) _val;
-    /// Constructor. Stores the pointer to the `gen` engine.
-    this(ref G gen, D var) { _gen = &gen; _var = var; popFront(); }
+    /++
+    Constructor.
+    Stores the pointer to the `gen` engine.
+    +/
+    this()(ref G gen, D var) { _gen = &gen; _var = var; popFront(); }
     /// Infinity Input Range primitives
     enum empty = false;
     /// ditto
-    auto front() @property { return _val; }
+    auto front()() @property { return _val; }
     /// ditto
-    void popFront() { _val = _var(*_gen); }
+    void popFront()() { _val = _var(*_gen); }
 }
+
+///ditto
+struct RandomRange(G)
+    if (isSaturatedRandomEngine!G)
+{
+    private G* _gen;
+    private ReturnType!G _val;
+    /// Largest generated value.
+    enum Unqual!(ReturnType!G) max = G.max;
+    /++
+    Constructor.
+    Stores the pointer to the `gen` engine.
+    +/
+    this()(ref G gen) { _gen = &gen; popFront(); }
+    /// Infinity Input Range primitives
+    enum empty = false;
+    /// ditto
+    Unqual!(ReturnType!G) front()() @property { return _val; }
+    /// ditto
+    void popFront()() { _val = (*_gen)(); }
+}
+
 
 /// ditto
 RandomRange!(G, D) range(G, D)(ref G gen, D var)
     if (isSaturatedRandomEngine!G)
 {
     return typeof(return)(gen, var);
+}
+
+/// ditto
+RandomRange!G range(G)(ref G gen)
+    if (isSaturatedRandomEngine!G)
+{
+    return typeof(return)(gen);
 }
 
 ///
@@ -104,6 +168,21 @@ unittest
 
     //import std.stdio;
     //writeln(sample);
+}
+
+///
+unittest
+{
+    import std.range, std.algorithm;
+    import mir.random.engine.xorshift;
+    auto rng = Xorshift(1);
+    auto bitSample = rng // by reference
+        .range
+        .filter!"a % 2 == 0"
+        .map!"a % 100"
+        .take(5)
+        .array;
+    assert(bitSample == [58, 30, 86, 16, 76]);
 }
 
 /++
@@ -296,9 +375,7 @@ unittest
 Lazy input or forward range containing a random sample.
 $(LREF VitterStrides) is used to skip elements.
 Complexity: O(n)
-Note:
-    The structure holds a pointer to a generator.
-    The structure must not be copied (explicitly or implicitly) outside from a function.
+Note: $(UL $(LI The structure holds a pointer to a generator.) $(LI The structure must not be copied (explicitly or implicitly) outside from a function.))
 +/
 struct RandomSample(Range, G)
 {
