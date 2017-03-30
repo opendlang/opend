@@ -13,12 +13,12 @@ import mir.random;
 public import mir.random.engine;
 
 /++
-Field interface for uniform random bit generators.
+Field interface for random distributions and uniform random bit generators.
 It used to construct ndslices in combination with `slicedField` and `slice`.
 
 Note: $(UL $(LI The structure holds a pointer to a generator.) $(LI The structure must not be copied (explicitly or implicitly) outside from a function.))
 +/
-struct RandomField(G, D)
+struct RandomField(G, D, T)
     if (isSaturatedRandomEngine!G)
 {
     private D _var;
@@ -30,7 +30,19 @@ struct RandomField(G, D)
     +/
     this()(ref G gen, D var) { _gen = &gen; _var = var; }
     ///
-    Unqual!(typeof(_var(*_gen))) opIndex()(size_t) { return _var(*_gen); }
+    T opIndex()(size_t)
+    {
+        import mir.internal.utility: isComplex;
+        static if (isComplex!T)
+        {
+            return _var(*_gen) + _var(*_gen) * 1fi;
+        }
+        else
+        {
+            return _var(*_gen);
+        }
+
+    }
 }
 
 /// ditto
@@ -48,10 +60,17 @@ struct RandomField(G)
 }
 
 /// ditto
-RandomField!(G, D) field(G, D)(ref G gen, D var)
+RandomField!(G, D, T) field(T, G, D)(ref G gen, D var)
     if (isSaturatedRandomEngine!G)
 {
     return typeof(return)(gen, var);
+}
+
+/// ditto
+auto field(G, D)(ref G gen, D var)
+    if (isSaturatedRandomEngine!G)
+{
+    return RandomField!(G, D, Unqual!(typeof(var(gen))))(gen, var);
 }
 
 /// ditto
@@ -61,7 +80,7 @@ RandomField!G field(G)(ref G gen)
     return typeof(return)(gen);
 }
 
-///
+/// Normal distribution
 unittest
 {
     import mir.ndslice: slicedField, slice;
@@ -79,7 +98,25 @@ unittest
     //writeln(sample);
 }
 
-///
+/// Normal distribution for complex numbers
+unittest
+{
+    import mir.ndslice: slicedField, slice;
+    import mir.random;
+    import mir.random.variable: NormalVariable;
+
+    auto var = NormalVariable!double(0, 1);
+    auto rng = Random(unpredictableSeed);
+    auto sample = rng      // passed by reference
+        .field!cdouble(var)// construct random field from standard normal distribution
+        .slicedField(5, 3) // construct random matrix 5 row x 3 col (lazy, without allocation)
+        .slice;            // allocates data of random matrix
+
+    //import std.stdio;
+    //writeln(sample);
+}
+
+/// Bi
 unittest
 {
     import mir.ndslice: slicedField, slice;
@@ -93,7 +130,7 @@ unittest
 }
 
 /++
-Range interface for uniform random bit generators.
+Range interface for random distributions and uniform random bit generators.
 
 Note: $(UL $(LI The structure holds a pointer to a generator.) $(LI The structure must not be copied (explicitly or implicitly) outside from a function.))
 +/
@@ -170,7 +207,7 @@ unittest
     //writeln(sample);
 }
 
-///
+/// Uniform random bit generation
 unittest
 {
     import std.range, std.algorithm;
