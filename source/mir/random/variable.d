@@ -131,7 +131,7 @@ unittest
 
 /++
 $(HTTP en.wikipedia.org/wiki/Uniform_distribution_(continuous), Uniform distribution (continuous)).
-Returns: `X ~ U[a, b)`
+Returns: `X ~ U[a, b$(RPAREN)`
 +/
 struct UniformVariable(T)
     if (isFloatingPoint!T)
@@ -922,7 +922,7 @@ struct GeometricVariable(T)
     /++
     Params:
         p = probability
-        reverse = p is success probability if `true` and failure probability otherwise.
+        success = p is success probability if `true` and failure probability otherwise.
     +/
     this(T p, bool success = true)
     {
@@ -998,8 +998,7 @@ struct PoissonVariable(T)
 
     /++
     Params:
-        p = probability
-        reverse = p is success probability if `true` and failure probability otherwise.
+        rate = rate
     +/
     this(T rate)
     {
@@ -1499,10 +1498,11 @@ unittest
     foreach(_; 0 .. 10000)
         ++hist[cast(int)pcv(gen)];
 
-    //import std.stdio, std.range;
+    //import std.stdio;
+    //import mir.ndslice.topology: repeat;
     //foreach(j; 0..cast(int)i[$-1])
     //    if(auto count = j in hist)
-    //        writefln("%2s %s", j, '*'.repeat.take(*count / 100));
+    //        writefln("%2s %s", j, '*'.repeat(*count / 100));
 
     //////// output example /////////
     /+
@@ -1530,7 +1530,7 @@ struct PiecewiseLinearVariable(T)
 
     /++
     Params:
-        intervals = strictly increasing sequence of interval bounds.
+        points = strictly increasing sequence of interval bounds.
         weights = density points
         areas =  user allocated uninitialized array
     Constrains:
@@ -1599,10 +1599,11 @@ unittest
     foreach(_; 0 .. 10000)
         ++hist[cast(int)pcv(gen)];
 
-    //import std.stdio, std.range;
+    //import std.stdio;
+    //import mir.ndslice.topology: repeat;
     //foreach(j; 0..cast(int)i[$-1]+1)
     //    if(auto count = j in hist)
-    //        writefln("%2s %s", j, '*'.repeat.take(*count / 100));
+    //        writefln("%2s %s", j, '*'.repeat(*count / 100));
 
     //////// output example /////////
     /+

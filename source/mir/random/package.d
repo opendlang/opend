@@ -187,8 +187,8 @@ Params:
     gen = saturated random number generator
     boundExp = bound exponent (optional). `boundExp` must be less or equal to `T.max_exp`.
 Returns:
-    Uniformly distributed real for interval `(-2^^boundExp , 2^^boundExp))`.
-Note: `fabs` can be used to get a value from positive interval `[0, 2^^boundExp)`.
+    Uniformly distributed real for interval `(-2^^boundExp , 2^^boundExp)`.
+Note: `fabs` can be used to get a value from positive interval `[0, 2^^boundExp$(RPAREN)`.
 +/
 T rand(T, G)(ref G gen, sizediff_t boundExp = 0)
     if (isSaturatedRandomEngine!G && isFloatingPoint!T)
@@ -306,7 +306,7 @@ Params:
     gen = uniform random number generator
     m = positive module
 Returns:
-    Uniformly distributed integer for interval `[0 .. m)`.
+    Uniformly distributed integer for interval `[0 .. m$(RPAREN)`.
 +/
 T randIndex(T, G)(ref G gen, T m)
     if(isSaturatedRandomEngine!G && isUnsigned!T)
@@ -353,7 +353,7 @@ Params:
     gen = saturated random number generator
 Returns:
     `X ~ Exp(1) / log(2)`.
-Note: `fabs` can be used to get a value from positive interval `[0, 2^^boundExp)`.
+Note: `fabs` can be used to get a value from positive interval `[0, 2^^boundExp$(RPAREN)`.
 +/
 T randExponential2(T, G)(ref G gen)
     if (isSaturatedRandomEngine!G && isFloatingPoint!T)
