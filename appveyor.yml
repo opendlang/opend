@@ -13,7 +13,7 @@ environment:
 
 matrix:
   allow_failures:
-    - {DC: dmd, arch: ARCH="x86"}
+    - {DC: dmd, arch: x86}
 
 skip_tags: true
 branches:
