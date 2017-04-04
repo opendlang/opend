@@ -413,20 +413,8 @@ struct RefCounted(Type, Allocator) if(isAllocator!Allocator) {
             swap(_allocator, other._allocator);
     }
 
-    /**
-     If the allocator isn't a singleton, assigning to the raw type is unsafe.
-     If RefCounted was default-contructed then there is no allocator
-     */
-    static if(hasInstance) {
-        void opAssign(Type object) {
-            import std.algorithm: move;
-
-            if(_impl is null) {
-                allocateImpl;
-            }
-
-            move(object, _impl._object);
-        }
+    ref inout(Type) opUnary(string s)() inout if(s == "*") {
+        return _impl._object;
     }
 
     ref inout(Type) get() inout {
@@ -561,6 +549,9 @@ private:
         Struct.numStructs.shouldEqual(1);
         auto ptr2 = ptr1;
         Struct.numStructs.shouldEqual(1);
+
+        ptr1.i.shouldEqual(5);
+        ptr2.i.shouldEqual(5);
     }
     Struct.numStructs.shouldEqual(0);
 }
@@ -622,17 +613,16 @@ private:
 }
 
 
-// TODO: get this to compile
-// @("RefCounted reference semantics")
-// @system unittest {
-//     auto allocator = TestAllocator();
-//     auto rc1 = RefCounted!(int, TestAllocator*)(&allocator, 5);
+@("RefCounted deref")
+@system unittest {
+    auto allocator = TestAllocator();
+    auto rc1 = RefCounted!(int, TestAllocator*)(&allocator, 5);
 
-//     rc1.shouldEqual(5);
-//     auto rc2 = rc1;
-//     rc2 = 42;
-//     rc1.shouldEqual(42);
-// }
+    (*rc1).shouldEqual(5);
+    auto rc2 = rc1;
+    *rc2 = 42;
+    (*rc1).shouldEqual(42);
+}
 
 @("RefCounted swap")
 @system unittest {
@@ -680,16 +670,13 @@ private:
         auto a = RefCounted!(Struct, Mallocator)(3);
         Struct.numStructs.shouldEqual(1);
 
-        a = Struct(5);
-        ++Struct.numStructs; // compensate for move not calling the constructor
+        *a = Struct(5);
         Struct.numStructs.shouldEqual(1);
-        // TODO - change this to not use get
-        a.get.shouldEqual(Struct(5));
+        (*a).shouldEqual(Struct(5));
 
         RefCounted!(Struct, Mallocator) b;
         b = a;
-        // TODO - change this to not use get
-        b.get.shouldEqual(Struct(5));
+        (*b).shouldEqual(Struct(5));
         Struct.numStructs.shouldEqual(1);
     }
 
