@@ -692,14 +692,17 @@ private:
     Struct.numStructs.shouldEqual(0);
 }
 
-@("RefCounted SharedStruct")
-@system unittest {
-    auto allocator = TestAllocator();
-    {
-        auto ptr = RefCounted!(shared SharedStruct, TestAllocator*)(&allocator, 5);
-        SharedStruct.numStructs.shouldEqual(1);
+version(LDC) {}
+else {
+    @("RefCounted SharedStruct")
+        @system unittest {
+        auto allocator = TestAllocator();
+        {
+            auto ptr = RefCounted!(shared SharedStruct, TestAllocator*)(&allocator, 5);
+            SharedStruct.numStructs.shouldEqual(1);
+        }
+        SharedStruct.numStructs.shouldEqual(0);
     }
-    SharedStruct.numStructs.shouldEqual(0);
 }
 
 
