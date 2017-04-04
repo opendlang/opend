@@ -293,6 +293,18 @@ private:
     assert(NoGcStruct.numStructs == 0);
 }
 
+@("Unique deref")
+@system unittest {
+    {
+        auto allocator = TestAllocator();
+        auto ptr = Unique!(Struct, TestAllocator*)(&allocator, 5);
+        *ptr = Struct(13);
+        ptr.twice.shouldEqual(26);
+        Struct.numStructs.shouldEqual(1);
+    }
+    Struct.numStructs.shouldEqual(0);
+}
+
 
 struct RefCounted(Type, Allocator) if(isAllocator!Allocator) {
     import std.traits: hasMember;
