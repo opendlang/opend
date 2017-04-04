@@ -81,17 +81,6 @@ struct Unique(Type, Allocator) if(isAllocator!Allocator) {
         return u;
     }
 
-    Pointer release() {
-        auto ret = _object;
-        _object = null;
-        return ret;
-    }
-
-    void reset(Pointer newObject) {
-        deleteObject;
-        _object = newObject;
-    }
-
     bool opCast(T)() const if(is(T == bool)) {
         return _object !is null;
     }
@@ -204,30 +193,6 @@ private:
     ptr.get.shouldNotBeNull;
     ptr.get.twice.shouldEqual(10);
     (cast(bool)ptr).shouldBeTrue;
-}
-
-
-@("Unique release")
-@system unittest {
-    import std.experimental.allocator: dispose;
-
-    auto allocator = TestAllocator();
-
-    auto ptr = Unique!(Struct, TestAllocator*)(&allocator, 5);
-    auto obj = ptr.release;
-    obj.twice.shouldEqual(10);
-    allocator.dispose(obj);
-}
-
-@("Unique reset")
-@system unittest {
-    import std.experimental.allocator: make;
-
-    auto allocator = TestAllocator();
-
-    auto ptr = Unique!(Struct, TestAllocator*)(&allocator, 5);
-    ptr.reset(allocator.make!Struct(2));
-    ptr.twice.shouldEqual(4);
 }
 
 @("Unique move")
