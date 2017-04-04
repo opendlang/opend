@@ -430,16 +430,6 @@ struct RefCounted(Type, Allocator) if(isAllocator!Allocator) {
         return _impl._object;
     }
 
-    version(LDC) {}
-    else {
-        /**
-           Gets the pointer to the object. Use with caution.
-        */
-        ref inout(Pointer) get() inout @system {
-            return &(_impl._object);
-        }
-    }
-
     alias _impl this;
 
 private:
