@@ -24,7 +24,7 @@ private void checkAllocator(T)() {
 enum isAllocator(T) = is(typeof(checkAllocator!T));
 
 @("isAllocator")
-@safe pure unittest {
+@safe @nogc pure unittest {
     import std.experimental.allocator.mallocator: Mallocator;
     static assert(isAllocator!Mallocator);
     static assert(isAllocator!TestAllocator);
@@ -117,9 +117,9 @@ private:
         _object = _allocator.make!Type(args);
     }
 
-    void deleteObject() {
+    void deleteObject() @safe {
         import std.experimental.allocator: dispose;
-        if(_object !is null) _allocator.dispose(_object);
+        if(_object !is null) () @trusted { _allocator.dispose(_object); }();
     }
 
 
@@ -183,6 +183,20 @@ private:
     auto allocator = TestAllocator();
 
     auto ptr = Unique!(Struct, TestAllocator*)();
+    (cast(bool)ptr).shouldBeFalse;
+    ptr.get.shouldBeNull;
+
+    ptr = Unique!(Struct, TestAllocator*)(&allocator, 5);
+    ptr.get.shouldNotBeNull;
+    ptr.get.twice.shouldEqual(10);
+    (cast(bool)ptr).shouldBeTrue;
+}
+
+@("Unique .init")
+@system unittest {
+    auto allocator = TestAllocator();
+
+    Unique!(Struct, TestAllocator*) ptr;
     (cast(bool)ptr).shouldBeFalse;
     ptr.get.shouldBeNull;
 
@@ -282,6 +296,36 @@ private:
     auto newPtr = oldPtr.unique;
     newPtr.twice.shouldEqual(10);
     oldPtr.shouldBeNull;
+}
+
+@("Unique @nogc")
+@system @nogc unittest {
+
+    import std.experimental.allocator.mallocator: Mallocator;
+
+    {
+        const ptr = Unique!(NoGcStruct, Mallocator)(5);
+        // shouldEqual isn't @nogc
+        assert(ptr.i == 5);
+        assert(NoGcStruct.numStructs == 1);
+    }
+
+    assert(NoGcStruct.numStructs == 0);
+}
+
+@("Unique @nogc @safe")
+@safe @nogc unittest {
+
+    auto allocator = SafeAllocator();
+
+    {
+        const ptr = Unique!(NoGcStruct, SafeAllocator)(SafeAllocator(), 6);
+        // shouldEqual isn't @nogc
+        assert(ptr.i == 6);
+        assert(NoGcStruct.numStructs == 1);
+    }
+
+    assert(NoGcStruct.numStructs == 0);
 }
 
 
@@ -637,6 +681,14 @@ private:
 
 version(unittest) {
 
+    void _writelnUt(T...)(T args) {
+        try {
+            () @trusted { writelnUt(args); }();
+        } catch(Exception ex) {
+            assert(false);
+        }
+    }
+
     private struct Struct {
         int i;
         static int numStructs = 0;
@@ -645,24 +697,17 @@ version(unittest) {
             this.i = i;
 
             ++numStructs;
-            try () @trusted {
-                    writelnUt("Struct normal ctor ", &this, ", i=", i, ", N=", numStructs);
-                }();
-            catch(Exception ex) {}
+            _writelnUt("Struct normal ctor ", &this, ", i=", i, ", N=", numStructs);
         }
 
         this(this) @safe nothrow {
             ++numStructs;
-            try () @trusted {
-                    writelnUt("Struct postBlit ctor ", &this, ", i=", i, ", N=", numStructs);
-                }();
-            catch(Exception ex) {}
+            _writelnUt("Struct postBlit ctor ", &this, ", i=", i, ", N=", numStructs);
         }
 
         ~this() @safe nothrow {
             --numStructs;
-            try () @trusted { writelnUt("Struct dtor ", &this, ", i=", i, ", N=", numStructs); }();
-            catch(Exception ex) {}
+            _writelnUt("Struct dtor ", &this, ", i=", i, ", N=", numStructs);
         }
 
         int twice() @safe pure const nothrow {
@@ -722,7 +767,36 @@ version(unittest) {
     }
 
     private struct SafeAllocator {
-        void[] allocate(size_t) @safe pure nothrow @nogc { return []; }
-        void deallocate(void[]) @safe pure nothrow @nogc {}
+
+        import std.experimental.allocator.mallocator: Mallocator;
+
+        void[] allocate(size_t i) @trusted nothrow @nogc {
+            return Mallocator.instance.allocate(i);
+        }
+
+        void deallocate(void[] bytes) @trusted nothrow @nogc {
+            Mallocator.instance.deallocate(bytes);
+        }
+    }
+
+    static struct NoGcStruct {
+        int i;
+
+        static int numStructs = 0;
+
+        this(int i) @safe @nogc nothrow {
+            this.i = i;
+
+            ++numStructs;
+        }
+
+        this(this) @safe @nogc nothrow {
+            ++numStructs;
+        }
+
+        ~this() @safe @nogc nothrow {
+            --numStructs;
+        }
+
     }
 }
