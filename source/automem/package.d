@@ -114,14 +114,7 @@ private:
 
     void makeObject(Args...)(auto ref Args args) {
         import std.experimental.allocator: make;
-        import std.traits: hasIndirections;
-
         _object = _allocator.make!Type(args);
-
-        static if (hasIndirections!Type) {
-            import core.memory: GC;
-            GC.addRange(&_object, Type.sizeof);
-        }
     }
 
     void deleteObject() {
