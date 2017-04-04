@@ -69,10 +69,17 @@ struct Unique(Type, Allocator) if(isAllocator!Allocator) {
         deleteObject;
     }
 
+    /**
+       Gets the owned pointer. Use with caution.
+     */
     inout(Pointer) get() inout {
         return _object;
     }
 
+    /**
+       Releases ownership and transfers it to the returned
+       Unique object.
+     */
     Unique unique() {
         import std.algorithm: move;
         Unique u;
@@ -81,6 +88,9 @@ struct Unique(Type, Allocator) if(isAllocator!Allocator) {
         return u;
     }
 
+    /**
+       "Truthiness" cast
+     */
     bool opCast(T)() const if(is(T == bool)) {
         return _object !is null;
     }
@@ -110,7 +120,6 @@ private:
         import std.experimental.allocator: dispose;
         if(_object !is null) () @trusted { _allocator.dispose(_object); }();
     }
-
 
     void moveFrom(T)(ref Unique!(T, Allocator) other) if(is(T: Type)) {
         _object = other._object;
@@ -205,12 +214,11 @@ private:
     move(oldPtr, newPtr);
     oldPtr.shouldBeNull;
     newPtr.twice.shouldEqual(10);
+    Struct.numStructs.shouldEqual(1);
 }
 
 @("Unique copy")
 @system unittest {
-    import std.algorithm: move;
-
     auto allocator = TestAllocator();
     auto oldPtr = Unique!(Struct, TestAllocator*)(&allocator, 5);
     Unique!(Struct, TestAllocator*) newPtr;
@@ -231,7 +239,6 @@ private:
 
 @("Unique assign base class")
 @system unittest {
-    import std.algorithm: move;
     auto allocator = TestAllocator();
     {
         Unique!(Object, TestAllocator*) bar;
@@ -304,6 +311,50 @@ private:
     }
     Struct.numStructs.shouldEqual(0);
 }
+
+@("Unique move from populated other unique")
+@system unittest {
+
+    import std.algorithm: move;
+
+    {
+        auto allocator = TestAllocator();
+
+        auto ptr1 = Unique!(Struct, TestAllocator*)(&allocator, 5);
+        Struct.numStructs.shouldEqual(1);
+
+        {
+            auto ptr2 = Unique!(Struct, TestAllocator*)(&allocator, 10);
+            Struct.numStructs.shouldEqual(2);
+            move(ptr2, ptr1);
+            Struct.numStructs.shouldEqual(1);
+            ptr2.shouldBeNull;
+            ptr1.twice.shouldEqual(20);
+        }
+
+    }
+
+    Struct.numStructs.shouldEqual(0);
+}
+
+@("Unique assign to rvalue")
+@system unittest {
+
+    import std.algorithm: move;
+
+    {
+        auto allocator = TestAllocator();
+
+        auto ptr = Unique!(Struct, TestAllocator*)(&allocator, 5);
+        ptr = Unique!(Struct, TestAllocator*)(&allocator, 7);
+
+        Struct.numStructs.shouldEqual(1);
+        ptr.twice.shouldEqual(14);
+    }
+
+    Struct.numStructs.shouldEqual(0);
+}
+
 
 
 struct RefCounted(Type, Allocator) if(isAllocator!Allocator) {
