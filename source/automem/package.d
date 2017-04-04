@@ -72,7 +72,7 @@ struct Unique(Type, Allocator) if(isAllocator!Allocator) {
     /**
        Gets the owned pointer. Use with caution.
      */
-    inout(Pointer) get() inout {
+    inout(Pointer) get() inout @system {
         return _object;
     }
 
@@ -394,6 +394,9 @@ struct RefCounted(Type, Allocator) if(isAllocator!Allocator) {
         release;
     }
 
+    /**
+       Assign to an lvalue RefCounted
+    */
     void opAssign(ref RefCounted other) {
 
         if(_impl !is null) {
@@ -406,6 +409,9 @@ struct RefCounted(Type, Allocator) if(isAllocator!Allocator) {
         inc;
     }
 
+    /**
+       Assign to an rvalue RefCounted
+     */
     void opAssign(RefCounted other) {
         import std.algorithm: swap;
         swap(_impl, other._impl);
@@ -413,12 +419,19 @@ struct RefCounted(Type, Allocator) if(isAllocator!Allocator) {
             swap(_allocator, other._allocator);
     }
 
+    /**
+       Dereference the smart pointer and yield a reference
+       to the contained type.
+     */
     ref inout(Type) opUnary(string s)() inout if(s == "*") {
         return _impl._object;
     }
 
-    ref inout(Type) get() inout {
-        return _impl._object;
+    /**
+       Gets the pointer to the object. Use with caution.
+     */
+    ref inout(Pointer) get() inout @system {
+        return &_impl._object;
     }
 
     alias _impl this;
