@@ -103,7 +103,7 @@ private:
 
     Impl* _impl;
 
-    void makeObject(Args...)(auto ref Args args) {
+    void makeObject(Args...)(auto ref Args args) @trusted {
         import std.conv: emplace;
 
         allocateImpl;
@@ -132,7 +132,7 @@ private:
         if(_impl._count == 0) {
             destroy(_impl._object);
             auto mem = cast(void*)_impl;
-            _allocator.deallocate(mem[0 .. Impl.sizeof]);
+            _allocator.deallocate(() @trusted { return mem[0 .. Impl.sizeof]; }());
         }
     }
 
@@ -351,4 +351,18 @@ private:
         SharedStruct.numStructs.shouldEqual(1);
     }
     SharedStruct.numStructs.shouldEqual(0);
+}
+
+@("@nogc @safe")
+@safe @nogc unittest {
+
+    auto allocator = SafeAllocator();
+
+    {
+        const ptr = RefCounted!(NoGcStruct, SafeAllocator)(SafeAllocator(), 6);
+        assert(ptr.i == 6);
+        assert(NoGcStruct.numStructs == 1);
+    }
+
+    assert(NoGcStruct.numStructs == 0);
 }

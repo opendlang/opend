@@ -296,3 +296,10 @@ version(unittest) {
         assert(arr[] == expected[]);
     }
 }
+
+@("@nogc @safe")
+@safe @nogc unittest {
+    auto allocator = SafeAllocator();
+    auto arr = UniqueArray!(NoGcStruct[], SafeAllocator)(SafeAllocator(), 6);
+    assert(arr.length == 6);
+}
