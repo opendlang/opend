@@ -101,7 +101,7 @@ private:
     else
         Allocator _allocator;
 
-    Impl* _impl;
+    public Impl* _impl; // or alias this doesn't work
 
     void makeObject(Args...)(auto ref Args args) @trusted {
         import std.conv: emplace;
@@ -365,4 +365,11 @@ private:
     }
 
     assert(NoGcStruct.numStructs == 0);
+}
+
+
+@("cont object")
+@system unittest {
+    auto allocator = TestAllocator();
+    auto ptr1 = RefCounted!(const Struct, TestAllocator*)(&allocator, 5);
 }

@@ -46,7 +46,7 @@ mixin template TestUtils() {
                 _writelnUt("Struct postBlit ctor ", &this, ", i=", i, ", N=", numStructs);
             }
 
-            ~this() @safe nothrow {
+            ~this() @safe nothrow const {
                 --numStructs;
                 _writelnUt("Struct dtor ", &this, ", i=", i, ", N=", numStructs);
             }
