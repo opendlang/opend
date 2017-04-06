@@ -2,7 +2,6 @@ module automem.unique_array;
 
 import automem.traits: isAllocator;
 import automem.test_utils: TestUtils;
-import std.traits: isArray;
 
 version(unittest) {
     import unit_threaded;
@@ -11,13 +10,11 @@ version(unittest) {
 
 mixin TestUtils;
 
-struct UniqueArray(Type, Allocator) if(isArray!Type && isAllocator!Allocator) {
+struct UniqueArray(Type, Allocator) if(isAllocator!Allocator) {
 
     import std.traits: hasMember;
-    import std.range: ElementType;
 
     enum isSingleton = hasMember!(Allocator, "instance");
-    alias Element = ElementType!Type;
 
     static if(isSingleton) {
 
@@ -41,7 +38,7 @@ struct UniqueArray(Type, Allocator) if(isArray!Type && isAllocator!Allocator) {
             makeObjects(size);
         }
 
-    this(T)(UniqueArray!(T, Allocator) other) if(is(T: Type)) {
+    this(T)(UniqueArray!(T, Allocator) other) if(is(T: Type[])) {
         moveFrom(other);
     }
 
@@ -70,20 +67,20 @@ struct UniqueArray(Type, Allocator) if(isArray!Type && isAllocator!Allocator) {
         return _objects.ptr !is null;
     }
 
-    void opAssign(T)(UniqueArray!(T, Allocator) other) if(is(T: Type)) {
+    void opAssign(T)(UniqueArray!(T, Allocator) other) if(is(T: Type[])) {
         deleteObject;
         moveFrom(other);
     }
 
-    ref inout(Element) opIndex(long i) inout nothrow {
+    ref inout(Type) opIndex(long i) inout nothrow {
         return _objects[i];
     }
 
-    const(Element)[] opSlice(long i, long j) const nothrow {
+    const(Type)[] opSlice(long i, long j) const nothrow {
         return _objects[i .. j];
     }
 
-    const(Element)[] opSlice() const nothrow {
+    const(Type)[] opSlice() const nothrow {
         return _objects[0 .. length];
     }
 
@@ -108,18 +105,18 @@ struct UniqueArray(Type, Allocator) if(isArray!Type && isAllocator!Allocator) {
        Dereference. const  since this otherwise could be used to try
        and append to the array, which would not be nice
      */
-    ref const(Type) opUnary(string s)() const if(s == "*") {
+    ref const(Type[]) opUnary(string s)() const if(s == "*") {
         return _objects;
     }
 
-    void opOpAssign(string op)(Element other) if(op == "~") {
+    void opOpAssign(string op)(Type other) if(op == "~") {
         import std.experimental.allocator: expandArray;
 
         _allocator.expandArray(_objects, 1);
         _objects[$ - 1] = other;
     }
 
-    void opOpAssign(string op)(Type other) if(op == "~") {
+    void opOpAssign(string op)(Type[] other) if(op == "~") {
         import std.experimental.allocator: expandArray;
         const originalLength = length;
         _allocator.expandArray(_objects, other.length);
@@ -133,14 +130,14 @@ struct UniqueArray(Type, Allocator) if(isArray!Type && isAllocator!Allocator) {
         _objects[originalLength .. $] = other[];
     }
 
-    void opAssign(Type other) {
+    void opAssign(Type[] other) {
         this.length = other.length;
         _objects[] = other[];
     }
 
 private:
 
-    Type _objects;
+    Type[] _objects;
 
     static if(isSingleton)
         alias _allocator = Allocator.instance;
@@ -150,25 +147,20 @@ private:
 
     void makeObjects(size_t size) {
         import std.experimental.allocator: makeArray;
-        _objects = _allocator.makeArray!Element(size);
+        _objects = _allocator.makeArray!Type(size);
     }
 
     void deleteObjects() {
-        deleteObjects(_objects);
-    }
-
-
-    void deleteObjects(Element[] objects) {
         import std.experimental.allocator: dispose;
         import std.traits: isPointer;
 
         static if(isPointer!Allocator)
-            assert((objects.length == 0 && objects.ptr is null) || _allocator !is null);
+            assert((_objects.length == 0 && _objects.ptr is null) || _allocator !is null);
 
-        if(objects.ptr !is null) _allocator.dispose(objects);
+        if(_objects.ptr !is null) _allocator.dispose(_objects);
     }
 
-    void moveFrom(T)(ref UniqueArray!(T, Allocator) other) if(is(T: Type)) {
+    void moveFrom(T)(ref UniqueArray!(T, Allocator) other) if(is(T: Type[])) {
         _object = other._object;
         other._object = null;
 
@@ -204,13 +196,13 @@ version(unittest) {
 
             alias allocator = T.instance;
             alias Allocator = T;
-            auto ptr = UniqueArray!(Struct[], Allocator)(3);
+            auto ptr = UniqueArray!(Struct, Allocator)(3);
             Struct.numStructs += 1; // this ends up at -3 for some reason
         } else {
 
             auto allocator = T();
             alias Allocator = T*;
-            auto ptr = UniqueArray!(Struct[], Allocator)(&allocator, 3);
+            auto ptr = UniqueArray!(Struct, Allocator)(&allocator, 3);
             Struct.numStructs += 1; // this ends up at -2 for some reason
         }
 
@@ -253,16 +245,16 @@ version(unittest) {
         ptr3.length = 1;
 
         static if(isSingleton)
-            ptr3 ~= UniqueArray!(Struct[], Allocator)(1);
+            ptr3 ~= UniqueArray!(Struct, Allocator)(1);
         else
-            ptr3 ~= UniqueArray!(Struct[], Allocator)(&allocator, 1);
+            ptr3 ~= UniqueArray!(Struct, Allocator)(&allocator, 1);
 
         ptr3[].shouldEqual([Struct(), Struct()]);
 
         static if(isSingleton)
-            auto ptr4 = UniqueArray!(Struct[], Allocator)(1);
+            auto ptr4 = UniqueArray!(Struct, Allocator)(1);
         else
-            auto ptr4 = UniqueArray!(Struct[], Allocator)(&allocator, 1);
+            auto ptr4 = UniqueArray!(Struct, Allocator)(&allocator, 1);
 
         ptr3 ~= ptr4.unique;
         ptr3[].shouldEqual([Struct(), Struct(), Struct()]);
@@ -277,7 +269,7 @@ version(unittest) {
 
     import std.experimental.allocator.mallocator: Mallocator;
 
-    auto arr = UniqueArray!(NoGcStruct[], Mallocator)(2);
+    auto arr = UniqueArray!(NoGcStruct, Mallocator)(2);
     assert(arr.length == 2);
 
     arr[0] = NoGcStruct(1);
@@ -288,7 +280,7 @@ version(unittest) {
         assert(arr[] == expected[]);
     }
 
-    auto arr2 = UniqueArray!(NoGcStruct[], Mallocator)(1);
+    auto arr2 = UniqueArray!(NoGcStruct, Mallocator)(1);
     arr ~= arr2.unique;
 
     {
@@ -300,6 +292,13 @@ version(unittest) {
 @("@nogc @safe")
 @safe @nogc unittest {
     auto allocator = SafeAllocator();
-    auto arr = UniqueArray!(NoGcStruct[], SafeAllocator)(SafeAllocator(), 6);
+    auto arr = UniqueArray!(NoGcStruct, SafeAllocator)(SafeAllocator(), 6);
     assert(arr.length == 6);
+}
+
+
+@("")
+@system unittest {
+    auto allocator = TestAllocator();
+    auto arr = UniqueArray!(Struct, TestAllocator*)(&allocator, 6);
 }
