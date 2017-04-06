@@ -1,0 +1,144 @@
+module automem.test_utils;
+
+mixin template TestUtils() {
+    version(unittest) {
+        import unit_threaded;
+        import test_allocator;
+
+        @Setup
+            void before() {
+        }
+
+        @Shutdown
+            void after() {
+            reset;
+        }
+
+        void reset() {
+            Struct.numStructs = 0;
+            Class.numClasses = 0;
+            SharedStruct.numStructs = 0;
+            NoGcStruct.numStructs = 0;
+        }
+
+
+        void _writelnUt(T...)(T args) {
+            try {
+                () @trusted { writelnUt(args); }();
+            } catch(Exception ex) {
+                assert(false);
+            }
+        }
+
+        private struct Struct {
+            int i;
+            static int numStructs = 0;
+
+            this(int i) @safe nothrow {
+                this.i = i;
+
+                ++numStructs;
+                _writelnUt("Struct normal ctor ", &this, ", i=", i, ", N=", numStructs);
+            }
+
+            this(this) @safe nothrow {
+                ++numStructs;
+                _writelnUt("Struct postBlit ctor ", &this, ", i=", i, ", N=", numStructs);
+            }
+
+            ~this() @safe nothrow {
+                --numStructs;
+                _writelnUt("Struct dtor ", &this, ", i=", i, ", N=", numStructs);
+            }
+
+            int twice() @safe pure const nothrow {
+                return i * 2;
+            }
+        }
+
+        private struct SharedStruct {
+            int i;
+            static int numStructs = 0;
+
+            this(int i) @safe nothrow shared {
+                this.i = i;
+
+                ++numStructs;
+                try () @trusted {
+                        _writelnUt("Struct normal ctor ", &this, ", i=", i, ", N=", numStructs);
+                    }();
+                catch(Exception ex) {}
+            }
+
+            this(this) @safe nothrow shared {
+                ++numStructs;
+                try () @trusted {
+                        _writelnUt("Struct postBlit ctor ", &this, ", i=", i, ", N=", numStructs);
+                    }();
+                catch(Exception ex) {}
+            }
+
+            ~this() @safe nothrow shared {
+                --numStructs;
+                try () @trusted { _writelnUt("Struct dtor ", &this, ", i=", i, ", N=", numStructs); }();
+                catch(Exception ex) {}
+            }
+
+            int twice() @safe pure const nothrow shared {
+                return i * 2;
+            }
+        }
+
+        private class Class {
+            int i;
+            static int numClasses = 0;
+
+            this(int i) @safe nothrow {
+                this.i = i;
+                ++numClasses;
+            }
+
+            ~this() @safe nothrow {
+                --numClasses;
+            }
+
+            int twice() @safe pure const nothrow {
+                return i * 2;
+            }
+        }
+
+        private struct SafeAllocator {
+
+            import std.experimental.allocator.mallocator: Mallocator;
+
+            void[] allocate(size_t i) @trusted nothrow @nogc {
+                return Mallocator.instance.allocate(i);
+            }
+
+            void deallocate(void[] bytes) @trusted nothrow @nogc {
+                Mallocator.instance.deallocate(bytes);
+            }
+        }
+
+        static struct NoGcStruct {
+            int i;
+
+            static int numStructs = 0;
+
+            this(int i) @safe @nogc nothrow {
+                this.i = i;
+
+                ++numStructs;
+            }
+
+            this(this) @safe @nogc nothrow {
+                ++numStructs;
+            }
+
+            ~this() @safe @nogc nothrow {
+                --numStructs;
+            }
+
+        }
+    }
+}
