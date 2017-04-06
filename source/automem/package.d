@@ -512,6 +512,10 @@ struct UniqueArray(Type, Allocator) if(isArray!Type && isAllocator!Allocator) {
         _objects[originalLength .. $] = other[];
     }
 
+    void opAssign(Type other) {
+        this.length = other.length;
+        _objects[] = other[];
+    }
 
 private:
 
@@ -641,6 +645,9 @@ version(unittest) {
 
         ptr3 ~= ptr4.unique;
         ptr3[].shouldEqual([Struct(), Struct(), Struct()]);
+
+        ptr3 = [Struct(7), Struct(9)];
+        ptr3[].shouldEqual([Struct(7), Struct(9)]);
     }
 }
 
