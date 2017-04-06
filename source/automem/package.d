@@ -147,6 +147,11 @@ private:
 
     void deleteObject() @safe {
         import std.experimental.allocator: dispose;
+        import std.traits: isPointer;
+
+        static if(isPointer!Allocator)
+            assert(_object is null || _allocator !is null);
+
         if(_object !is null) () @trusted { _allocator.dispose(_object); }();
     }
 
@@ -421,18 +426,14 @@ struct UniqueArray(Type, Allocator) if(isArray!Type && isAllocator!Allocator) {
 
     @disable this(this);
 
-    static if(isArray!Type) {
+    ~this() {
+        import std.experimental.allocator: dispose;
+        import std.traits: isPointer;
 
-        ~this() {
-            import std.experimental.allocator: dispose;
-            _allocator.dispose(_objects);
-        }
+        static if(isPointer!Allocator)
+            assert((_objects.length == 0 && _objects.ptr is null) || _allocator !is null);
 
-    } else {
-
-        ~this() {
-            deleteObject;
-        }
+        if(_objects.ptr !is null) _allocator.dispose(_objects);
     }
 
     /**
@@ -544,6 +545,9 @@ version(unittest) {
 
         ptr.length.shouldEqual(3);
         ptr[1..$].shouldEqual([Struct(), Struct(5)]);
+
+        typeof(ptr) ptr2;
+        move(ptr, ptr2);
     }
 }
 
