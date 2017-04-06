@@ -4,6 +4,23 @@ module automem;
 version(unittest) {
     import unit_threaded;
     import test_allocator;
+
+    @Setup
+    void before() {
+    }
+
+    @Shutdown
+    void after() {
+        reset;
+    }
+
+    void reset() {
+        Struct.numStructs = 0;
+        Class.numClasses = 0;
+        SharedStruct.numStructs = 0;
+        NoGcStruct.numStructs = 0;
+    }
+
 }
 
 
@@ -61,8 +78,7 @@ struct Unique(Type, Allocator) if(isAllocator!Allocator) {
         static if(isArray!Type) {
 
             this(size_t size) {
-                import std.experimental.allocator: makeArray;
-                _objects = _allocator.makeArray!Element(size);
+                makeObjects(size);
             }
 
         } else {
@@ -79,17 +95,19 @@ struct Unique(Type, Allocator) if(isAllocator!Allocator) {
          */
 
         static if(isArray!Type) {
-            this(Allocator allocator, size_t size) {
-                import std.experimental.allocator: makeArray;
 
+            this(Allocator allocator, size_t size) {
                 _allocator = allocator;
-                _objects = _allocator.makeArray!Element(size);
+                makeObjects(size);
             }
+
         } else {
+
             this(Args...)(Allocator allocator, auto ref Args args) {
                 _allocator = allocator;
                 makeObject(args);
             }
+
         }
 
     this(T)(Unique!(T, Allocator) other) if(is(T: Type)) {
@@ -99,11 +117,14 @@ struct Unique(Type, Allocator) if(isAllocator!Allocator) {
     @disable this(this);
 
     static if(isArray!Type) {
+
         ~this() {
             import std.experimental.allocator: dispose;
             _allocator.dispose(_objects);
         }
+
     } else {
+
         ~this() {
             deleteObject;
         }
@@ -168,6 +189,12 @@ private:
             _object = () @trusted { return _allocator.make!Type(args); }();
         else
             _object = _allocator.make!Type(args);
+    }
+
+    static if(isArray!Type)
+    void makeObjects(size_t size) {
+        import std.experimental.allocator: makeArray;
+        _objects = _allocator.makeArray!Element(size);
     }
 
     static if(!isArray!Type)
@@ -410,28 +437,46 @@ private:
     Struct.numStructs.shouldEqual(0);
 }
 
+
 @("Unique array default TestAllocator")
 @system unittest {
-    auto allocator = TestAllocator();
-    auto ptr = Unique!(Struct[], TestAllocator*)(&allocator, 3);
-    ++Struct.numStructs; // this ends up at -1 for some reason
-
-    ptr[2].twice.shouldEqual(0);
-    ptr[2] = Struct(5);
-    ptr[2].twice.shouldEqual(10);
+    uniqueArrayTest!TestAllocator;
 }
 
 
 @("Unique array default Mallocator")
 @system unittest {
     import std.experimental.allocator.mallocator: Mallocator;
-    alias allocator = Mallocator.instance;
+    uniqueArrayTest!Mallocator;
+}
 
-    auto ptr = Unique!(Struct[], Mallocator)(3);
-    ++Struct.numStructs; // this ends up at -1 for some reason
-    ptr[2].twice.shouldEqual(0);
-    ptr[2] = Struct(5);
-    ptr[2].twice.shouldEqual(10);
+version(unittest) {
+
+    void uniqueArrayTest(T)() {
+        import std.traits: hasMember;
+
+        enum isSingleton = hasMember!(T, "instance");
+
+        static if(isSingleton) {
+
+            alias allocator = T.instance;
+            alias Allocator = T;
+            auto ptr = Unique!(Struct[], Allocator)(3);
+            Struct.numStructs += 1; // this ends up at -3 for some reason
+        } else {
+
+            auto allocator = T();
+            alias Allocator = T*;
+            auto ptr = Unique!(Struct[], Allocator)(&allocator, 3);
+            Struct.numStructs += 1; // this ends up at -2 for some reason
+        }
+
+        Struct.numStructs.shouldEqual(0);
+
+        ptr[2].twice.shouldEqual(0);
+        ptr[2] = Struct(5);
+        ptr[2].twice.shouldEqual(10);
+    }
 }
 
 
