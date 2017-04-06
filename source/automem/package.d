@@ -7,7 +7,7 @@ version(unittest) {
 }
 
 
-private void checkAllocator(T)() {
+void checkAllocator(T)() {
     import std.experimental.allocator: make, dispose;
     import std.traits: hasMember;
 
@@ -23,6 +23,7 @@ private void checkAllocator(T)() {
 }
 enum isAllocator(T) = is(typeof(checkAllocator!T));
 
+
 @("isAllocator")
 @safe @nogc pure unittest {
     import std.experimental.allocator.mallocator: Mallocator;
@@ -31,32 +32,64 @@ enum isAllocator(T) = is(typeof(checkAllocator!T));
     static assert(!isAllocator!Struct);
 }
 
+
 struct Unique(Type, Allocator) if(isAllocator!Allocator) {
-    import std.traits: hasMember;
+
+    import std.traits: hasMember, isArray;
     import std.typecons: Proxy;
 
-    enum hasInstance = hasMember!(Allocator, "instance");
+    enum isSingleton = hasMember!(Allocator, "instance");
 
     static if(is(Type == class))
         alias Pointer = Type;
     else
         alias Pointer = Type*;
 
-    static if(hasInstance)
+    static if(isArray!Type) {
+        import std.range: ElementType;
+        alias Element = ElementType!Type;
+    }
+
+
+    static if(isSingleton) {
+
         /**
            The allocator is a singleton, so no need to pass it in to the
            constructor
-         */
-        this(Args...)(auto ref Args args) {
-            makeObject(args);
+        */
+
+        static if(isArray!Type) {
+
+            this(size_t size) {
+                import std.experimental.allocator: makeArray;
+                _objects = _allocator.makeArray!Element(size);
+            }
+
+        } else {
+
+            this(Args...)(auto ref Args args) {
+                makeObject(args);
+            }
+
         }
-    else
+    } else
+
         /**
            Non-singleton allocator, must be passed in
          */
-        this(Args...)(Allocator allocator, auto ref Args args) {
-            _allocator = allocator;
-            makeObject(args);
+
+        static if(isArray!Type) {
+            this(Allocator allocator, size_t size) {
+                import std.experimental.allocator: makeArray;
+
+                _allocator = allocator;
+                _objects = _allocator.makeArray!Element(size);
+            }
+        } else {
+            this(Args...)(Allocator allocator, auto ref Args args) {
+                _allocator = allocator;
+                makeObject(args);
+            }
         }
 
     this(T)(Unique!(T, Allocator) other) if(is(T: Type)) {
@@ -65,13 +98,21 @@ struct Unique(Type, Allocator) if(isAllocator!Allocator) {
 
     @disable this(this);
 
-    ~this() {
-        deleteObject;
+    static if(isArray!Type) {
+        ~this() {
+            import std.experimental.allocator: dispose;
+            _allocator.dispose(_objects);
+        }
+    } else {
+        ~this() {
+            deleteObject;
+        }
     }
 
     /**
        Gets the owned pointer. Use with caution.
      */
+    static if(!isArray!Type)
     inout(Pointer) get() inout @system {
         return _object;
     }
@@ -80,6 +121,7 @@ struct Unique(Type, Allocator) if(isAllocator!Allocator) {
        Releases ownership and transfers it to the returned
        Unique object.
      */
+    static if(!isArray!Type)
     Unique unique() {
         import std.algorithm: move;
         Unique u;
@@ -100,13 +142,22 @@ struct Unique(Type, Allocator) if(isAllocator!Allocator) {
         moveFrom(other);
     }
 
-    mixin Proxy!_object;
+    static if(isArray!Type)
+        ref inout(Element) opIndex(long i) inout {
+            return _objects[i];
+        }
+
+    static if(isArray!Type)
+        private Element[] _objects;
+    else
+        private Pointer _object;
+
+    static if(!isArray!Type)
+        mixin Proxy!_object;
 
 private:
 
-    Pointer _object;
-
-    static if(hasInstance)
+    static if(isSingleton)
         alias _allocator = Allocator.instance;
     else
         Allocator _allocator;
@@ -119,16 +170,17 @@ private:
             _object = _allocator.make!Type(args);
     }
 
-    void deleteObject() @safe {
-        import std.experimental.allocator: dispose;
-        if(_object !is null) () @trusted { _allocator.dispose(_object); }();
-    }
+    static if(!isArray!Type)
+        void deleteObject() @safe {
+            import std.experimental.allocator: dispose;
+            if(_object !is null) () @trusted { _allocator.dispose(_object); }();
+        }
 
     void moveFrom(T)(ref Unique!(T, Allocator) other) if(is(T: Type)) {
         _object = other._object;
         other._object = null;
 
-        static if(!hasInstance) {
+        static if(!isSingleton) {
             import std.algorithm: move;
             move(other._allocator, _allocator);
         }
@@ -358,20 +410,43 @@ private:
     Struct.numStructs.shouldEqual(0);
 }
 
+@("Unique array default TestAllocator")
+@system unittest {
+    auto allocator = TestAllocator();
+    auto ptr = Unique!(Struct[], TestAllocator*)(&allocator, 3);
+    ++Struct.numStructs; // this ends up at -1 for some reason
+
+    ptr[2].twice.shouldEqual(0);
+    ptr[2] = Struct(5);
+    ptr[2].twice.shouldEqual(10);
+}
+
+
+@("Unique array default Mallocator")
+@system unittest {
+    import std.experimental.allocator.mallocator: Mallocator;
+    alias allocator = Mallocator.instance;
+
+    auto ptr = Unique!(Struct[], Mallocator)(3);
+    ++Struct.numStructs; // this ends up at -1 for some reason
+    ptr[2].twice.shouldEqual(0);
+    ptr[2] = Struct(5);
+    ptr[2].twice.shouldEqual(10);
+}
 
 
 struct RefCounted(Type, Allocator) if(isAllocator!Allocator) {
     import std.traits: hasMember;
     import std.typecons: Proxy;
 
-    enum hasInstance = hasMember!(Allocator, "instance");
+    enum isSingleton = hasMember!(Allocator, "instance");
 
     static if(is(Type == class))
         alias Pointer = Type;
     else
         alias Pointer = Type*;
 
-    static if(hasInstance)
+    static if(isSingleton)
         /**
            The allocator is a singleton, so no need to pass it in to the
            constructor
@@ -405,7 +480,7 @@ struct RefCounted(Type, Allocator) if(isAllocator!Allocator) {
         if(_impl !is null) {
             release;
         }
-        static if(!hasInstance)
+        static if(!isSingleton)
             _allocator = other._allocator;
 
         _impl = other._impl;
@@ -418,7 +493,7 @@ struct RefCounted(Type, Allocator) if(isAllocator!Allocator) {
     void opAssign(RefCounted other) {
         import std.algorithm: swap;
         swap(_impl, other._impl);
-        static if(!hasInstance)
+        static if(!isSingleton)
             swap(_allocator, other._allocator);
     }
 
@@ -445,7 +520,7 @@ private:
         alias _object this;
     }
 
-    static if(hasInstance)
+    static if(isSingleton)
         alias _allocator = Allocator.instance;
     else
         Allocator _allocator;
@@ -751,7 +826,7 @@ version(unittest) {
 
             ++numStructs;
             try () @trusted {
-                    writelnUt("Struct normal ctor ", &this, ", i=", i, ", N=", numStructs);
+                    _writelnUt("Struct normal ctor ", &this, ", i=", i, ", N=", numStructs);
                 }();
             catch(Exception ex) {}
         }
@@ -759,14 +834,14 @@ version(unittest) {
         this(this) @safe nothrow shared {
             ++numStructs;
             try () @trusted {
-                    writelnUt("Struct postBlit ctor ", &this, ", i=", i, ", N=", numStructs);
+                    _writelnUt("Struct postBlit ctor ", &this, ", i=", i, ", N=", numStructs);
                 }();
             catch(Exception ex) {}
         }
 
         ~this() @safe nothrow shared {
             --numStructs;
-            try () @trusted { writelnUt("Struct dtor ", &this, ", i=", i, ", N=", numStructs); }();
+            try () @trusted { _writelnUt("Struct dtor ", &this, ", i=", i, ", N=", numStructs); }();
             catch(Exception ex) {}
         }
 
