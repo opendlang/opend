@@ -18,7 +18,7 @@
             "mainSourceFile": "bin/ut.d",
             "excludedSourceFiles": ["src/main.d"],
             "dependencies": {
-                "unit-threaded": "~>0.7.5",
+                "unit-threaded": "~>0.7.11",
                 "test_allocator": "~>0.0.2"
             }
         }
