@@ -2,3 +2,7 @@ language: d
 sudo: false
 install:
   - mkdir bin
+
+script:
+  - dub test
+  - dub build
