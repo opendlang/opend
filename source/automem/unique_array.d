@@ -13,6 +13,7 @@ mixin TestUtils;
 struct UniqueArray(Type, Allocator) if(isAllocator!Allocator) {
 
     import std.traits: hasMember;
+    import std.range: isInputRange;
 
     enum isSingleton = hasMember!(Allocator, "instance");
 
@@ -24,11 +25,15 @@ struct UniqueArray(Type, Allocator) if(isAllocator!Allocator) {
         */
 
         this(size_t size) {
-            this(size, Type.init);
+            makeObjects(size);
         }
 
         this(size_t size, Type init) {
             makeObjects(size, init);
+        }
+
+        this(R)(R range) if(isInputRange!R) {
+            makeObjects(range);
         }
 
 
@@ -39,12 +44,18 @@ struct UniqueArray(Type, Allocator) if(isAllocator!Allocator) {
          */
 
         this(Allocator allocator, size_t size) {
-            this(allocator, size, Type.init);
+            _allocator = allocator;
+            makeObjects(size);
         }
 
         this(Allocator allocator, size_t size, Type init) {
             _allocator = allocator;
             makeObjects(size, init);
+        }
+
+        this(R)(Allocator allocator, R range) if(isInputRange!R) {
+            _allocator = allocator;
+            makeObjects(range);
         }
     }
 
@@ -155,11 +166,21 @@ private:
     else
         Allocator _allocator;
 
+    void makeObjects(size_t size) {
+        import std.experimental.allocator: makeArray;
+        _objects = _allocator.makeArray!Type(size);
+    }
 
     void makeObjects(size_t size, Type init) {
         import std.experimental.allocator: makeArray;
         _objects = _allocator.makeArray!Type(size, init);
     }
+
+    void makeObjects(R)(R range) if(isInputRange!R) {
+        import std.experimental.allocator: makeArray;
+        _objects = _allocator.makeArray!Type(range);
+    }
+
 
     void deleteObjects() {
         import std.experimental.allocator: dispose;
@@ -321,4 +342,20 @@ version(unittest) {
     alias allocator = Mallocator.instance;
     auto arr = UniqueArray!(Struct, Mallocator)(2, Struct(7));
     arr[].shouldEqual([Struct(7), Struct(7)]);
+}
+
+
+@("range TestAllocator")
+@system unittest {
+    auto allocator = TestAllocator();
+    auto arr = UniqueArray!(Struct, TestAllocator*)(&allocator, [Struct(1), Struct(2)]);
+    arr[].shouldEqual([Struct(1), Struct(2)]);
+}
+
+@("range Mallocator")
+@system unittest {
+    import std.experimental.allocator.mallocator: Mallocator;
+    alias allocator = Mallocator.instance;
+    auto arr = UniqueArray!(Struct, Mallocator)([Struct(1), Struct(2)]);
+    arr[].shouldEqual([Struct(1), Struct(2)]);
 }
