@@ -278,10 +278,21 @@ version(unittest) {
     import std.experimental.allocator.mallocator: Mallocator;
 
     auto arr = UniqueArray!(NoGcStruct[], Mallocator)(2);
-    // shouldEqual isn't @nogc
     assert(arr.length == 2);
+
     arr[0] = NoGcStruct(1);
     arr[1] = NoGcStruct(3);
-    NoGcStruct[2] expected = [NoGcStruct(1), NoGcStruct(3)];
-    assert(arr[] == expected[]);
+
+    {
+        NoGcStruct[2] expected = [NoGcStruct(1), NoGcStruct(3)];
+        assert(arr[] == expected[]);
+    }
+
+    auto arr2 = UniqueArray!(NoGcStruct[], Mallocator)(1);
+    arr ~= arr2.unique;
+
+    {
+        NoGcStruct[3] expected = [NoGcStruct(1), NoGcStruct(3), NoGcStruct()];
+        assert(arr[] == expected[]);
+    }
 }
