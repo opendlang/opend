@@ -155,7 +155,10 @@ struct Unique(Type, Allocator) if(isAllocator!Allocator) {
        "Truthiness" cast
      */
     bool opCast(T)() const if(is(T == bool)) {
-        return _object !is null;
+        static if(isArray!Type)
+            return _objects.ptr !is null;
+        else
+            return _object !is null;
     }
 
     void opAssign(T)(Unique!(T, Allocator) other) if(is(T: Type)) {
@@ -173,7 +176,9 @@ struct Unique(Type, Allocator) if(isAllocator!Allocator) {
     else
         private Pointer _object;
 
-    static if(!isArray!Type)
+    static if(isArray!Type)
+        alias _objects this;
+    else
         mixin Proxy!_object;
 
 private:
@@ -476,6 +481,9 @@ version(unittest) {
         ptr[2].twice.shouldEqual(0);
         ptr[2] = Struct(5);
         ptr[2].twice.shouldEqual(10);
+
+        ptr.length.shouldEqual(3);
+        ptr[1..$].shouldEqual([Struct(), Struct(5)]);
     }
 }
 
