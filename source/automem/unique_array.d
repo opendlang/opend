@@ -180,13 +180,13 @@ private:
 }
 
 
-@("UniqueArray default TestAllocator")
+@("default TestAllocator")
 @system unittest {
     uniqueArrayTest!TestAllocator;
 }
 
 
-@("UniqueArray default Mallocator")
+@("default Mallocator")
 @system unittest {
     import std.experimental.allocator.mallocator: Mallocator;
     uniqueArrayTest!Mallocator;
@@ -272,7 +272,7 @@ version(unittest) {
     }
 }
 
-@("UniqueArray @nogc")
+@("@nogc")
 @system @nogc unittest {
 
     import std.experimental.allocator.mallocator: Mallocator;

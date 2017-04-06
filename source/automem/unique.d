@@ -127,7 +127,7 @@ private:
 }
 
 
-@("Unique with struct and test allocator")
+@("with struct and test allocator")
 @system unittest {
 
     auto allocator = TestAllocator();
@@ -141,7 +141,7 @@ private:
     Struct.numStructs.shouldEqual(0);
 }
 
-@("Unique with class and test allocator")
+@("with class and test allocator")
 @system unittest {
 
     auto allocator = TestAllocator();
@@ -156,7 +156,7 @@ private:
 }
 
 
-@("Unique with struct and mallocator")
+@("with struct and mallocator")
 @system unittest {
 
     import std.experimental.allocator.mallocator: Mallocator;
@@ -170,7 +170,7 @@ private:
 }
 
 
-@("Unique default constructor")
+@("default constructor")
 @system unittest {
     auto allocator = TestAllocator();
 
@@ -184,7 +184,7 @@ private:
     (cast(bool)ptr).shouldBeTrue;
 }
 
-@("Unique .init")
+@(".init")
 @system unittest {
     auto allocator = TestAllocator();
 
@@ -198,7 +198,7 @@ private:
     (cast(bool)ptr).shouldBeTrue;
 }
 
-@("Unique move")
+@("move")
 @system unittest {
     import std.algorithm: move;
 
@@ -211,7 +211,7 @@ private:
     Struct.numStructs.shouldEqual(1);
 }
 
-@("Unique copy")
+@("copy")
 @system unittest {
     auto allocator = TestAllocator();
     auto oldPtr = Unique!(Struct, TestAllocator*)(&allocator, 5);
@@ -220,7 +220,7 @@ private:
     static assert(!__traits(compiles, newPtr = oldPtr));
 }
 
-@("Unique construct base class")
+@("construct base class")
 @system unittest {
     auto allocator = TestAllocator();
     {
@@ -231,7 +231,7 @@ private:
     Class.numClasses.shouldEqual(0);
 }
 
-@("Unique assign base class")
+@("assign base class")
 @system unittest {
     auto allocator = TestAllocator();
     {
@@ -255,7 +255,7 @@ private:
     ptr.twice.shouldEqual(8);
 }
 
-@("Unique unique")
+@("unique")
 @system unittest {
     auto allocator = TestAllocator();
     auto oldPtr = Unique!(Struct, TestAllocator*)(&allocator, 5);
@@ -264,7 +264,7 @@ private:
     oldPtr.shouldBeNull;
 }
 
-@("Unique @nogc")
+@("@nogc")
 @system @nogc unittest {
 
     import std.experimental.allocator.mallocator: Mallocator;
@@ -279,7 +279,7 @@ private:
     assert(NoGcStruct.numStructs == 0);
 }
 
-@("Unique @nogc @safe")
+@("@nogc @safe")
 @safe @nogc unittest {
 
     auto allocator = SafeAllocator();
@@ -294,7 +294,7 @@ private:
     assert(NoGcStruct.numStructs == 0);
 }
 
-@("Unique deref")
+@("deref")
 @system unittest {
     {
         auto allocator = TestAllocator();
@@ -306,7 +306,7 @@ private:
     Struct.numStructs.shouldEqual(0);
 }
 
-@("Unique move from populated other unique")
+@("move from populated other unique")
 @system unittest {
 
     import std.algorithm: move;
@@ -331,7 +331,7 @@ private:
     Struct.numStructs.shouldEqual(0);
 }
 
-@("Unique assign to rvalue")
+@("assign to rvalue")
 @system unittest {
 
     import std.algorithm: move;

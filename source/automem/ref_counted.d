@@ -155,7 +155,7 @@ private:
 
 }
 
-@("RefCounted struct test allocator no copies")
+@("struct test allocator no copies")
 @system unittest {
     auto allocator = TestAllocator();
     {
@@ -165,7 +165,7 @@ private:
     Struct.numStructs.shouldEqual(0);
 }
 
-@("RefCounted struct test allocator one lvalue assignment")
+@("struct test allocator one lvalue assignment")
 @system unittest {
     auto allocator = TestAllocator();
     {
@@ -178,7 +178,7 @@ private:
     Struct.numStructs.shouldEqual(0);
 }
 
-@("RefCounted struct test allocator one rvalue assignment test allocator")
+@("struct test allocator one rvalue assignment test allocator")
 @system unittest {
     auto allocator = TestAllocator();
     {
@@ -189,7 +189,7 @@ private:
     Struct.numStructs.shouldEqual(0);
 }
 
-@("RefCounted struct test allocator one rvalue assignment mallocator")
+@("struct test allocator one rvalue assignment mallocator")
 @system unittest {
     import std.experimental.allocator.mallocator: Mallocator;
     {
@@ -201,7 +201,7 @@ private:
 }
 
 
-@("RefCounted struct test allocator one lvalue copy constructor")
+@("struct test allocator one lvalue copy constructor")
 @system unittest {
     auto allocator = TestAllocator();
     {
@@ -216,7 +216,7 @@ private:
     Struct.numStructs.shouldEqual(0);
 }
 
-@("RefCounted struct test allocator one rvalue copy constructor")
+@("struct test allocator one rvalue copy constructor")
 @system unittest {
     auto allocator = TestAllocator();
     {
@@ -226,7 +226,7 @@ private:
     Struct.numStructs.shouldEqual(0);
 }
 
-@("RefCounted many copies made")
+@("many copies made")
 @system unittest {
     auto allocator = TestAllocator();
 
@@ -273,7 +273,7 @@ private:
 }
 
 
-@("RefCounted deref")
+@("deref")
 @system unittest {
     auto allocator = TestAllocator();
     auto rc1 = RefCounted!(int, TestAllocator*)(&allocator, 5);
@@ -284,7 +284,7 @@ private:
     (*rc1).shouldEqual(42);
 }
 
-@("RefCounted swap")
+@("swap")
 @system unittest {
     import std.algorithm: swap;
     RefCounted!(int, TestAllocator*) rc1, rc2;
@@ -322,7 +322,7 @@ private:
     val.shouldEqual(4);
 }
 
-@("RefCounted assign from T")
+@("assign from T")
 @system unittest {
     import std.experimental.allocator.mallocator: Mallocator;
 
@@ -343,7 +343,7 @@ private:
     Struct.numStructs.shouldEqual(0);
 }
 
-@("RefCounted SharedStruct")
+@("SharedStruct")
 @system unittest {
     auto allocator = TestAllocator();
     {
