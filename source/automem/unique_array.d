@@ -24,19 +24,30 @@ struct UniqueArray(Type, Allocator) if(isAllocator!Allocator) {
         */
 
         this(size_t size) {
-            makeObjects(size);
+            this(size, Type.init);
         }
 
-    } else
+        this(size_t size, Type init) {
+            makeObjects(size, init);
+        }
+
+
+    } else {
 
         /**
            Non-singleton allocator, must be passed in
          */
 
         this(Allocator allocator, size_t size) {
-            _allocator = allocator;
-            makeObjects(size);
+            this(allocator, size, Type.init);
         }
+
+        this(Allocator allocator, size_t size, Type init) {
+            _allocator = allocator;
+            makeObjects(size, init);
+        }
+    }
+
 
     this(T)(UniqueArray!(T, Allocator) other) if(is(T: Type[])) {
         moveFrom(other);
@@ -145,9 +156,9 @@ private:
         Allocator _allocator;
 
 
-    void makeObjects(size_t size) {
+    void makeObjects(size_t size, Type init) {
         import std.experimental.allocator: makeArray;
-        _objects = _allocator.makeArray!Type(size);
+        _objects = _allocator.makeArray!Type(size, init);
     }
 
     void deleteObjects() {
@@ -297,8 +308,17 @@ version(unittest) {
 }
 
 
-@("")
+@("init TestAllocator")
 @system unittest {
     auto allocator = TestAllocator();
-    auto arr = UniqueArray!(Struct, TestAllocator*)(&allocator, 6);
+    auto arr = UniqueArray!(Struct, TestAllocator*)(&allocator, 2, Struct(7));
+    arr[].shouldEqual([Struct(7), Struct(7)]);
+}
+
+@("init Mallocator")
+@system unittest {
+    import std.experimental.allocator.mallocator: Mallocator;
+    alias allocator = Mallocator.instance;
+    auto arr = UniqueArray!(Struct, Mallocator)(2, Struct(7));
+    arr[].shouldEqual([Struct(7), Struct(7)]);
 }
