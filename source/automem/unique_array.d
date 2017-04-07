@@ -231,22 +231,17 @@ version(unittest) {
         import std.traits: hasMember;
         import std.algorithm: move;
 
-        enum isSingleton = hasMember!(T, "instance");
+        enum isGlobal = hasMember!(T, "instance");
 
-        static if(isSingleton) {
-
+        static if(isGlobal) {
             alias allocator = T.instance;
             alias Allocator = T;
-            auto ptr = UniqueArray!(Struct, Allocator)(3);
-            Struct.numStructs += 1; // this ends up at -3 for some reason
         } else {
-
             auto allocator = T();
             alias Allocator = T*;
-            auto ptr = UniqueArray!(Struct, Allocator)(&allocator, 3);
-            Struct.numStructs += 1; // this ends up at -2 for some reason
         }
 
+        auto ptr = makeUniqueArray!(Struct, Allocator)(allocator, 3);
         ptr.length.shouldEqual(3);
 
         ptr[2].twice.shouldEqual(0);
@@ -285,23 +280,31 @@ version(unittest) {
 
         ptr3.length = 1;
 
-        static if(isSingleton)
-            ptr3 ~= UniqueArray!(Struct, Allocator)(1);
-        else
-            ptr3 ~= UniqueArray!(Struct, Allocator)(&allocator, 1);
+        ptr3 ~= makeUniqueArray!(Struct, Allocator)(allocator, 1);
 
         ptr3[].shouldEqual([Struct(), Struct()]);
 
-        static if(isSingleton)
-            auto ptr4 = UniqueArray!(Struct, Allocator)(1);
-        else
-            auto ptr4 = UniqueArray!(Struct, Allocator)(&allocator, 1);
+        auto ptr4 = makeUniqueArray!(Struct, Allocator)(allocator, 1);
 
         ptr3 ~= ptr4.unique;
         ptr3[].shouldEqual([Struct(), Struct(), Struct()]);
 
         ptr3 = [Struct(7), Struct(9)];
         ptr3[].shouldEqual([Struct(7), Struct(9)]);
+    }
+
+    auto makeUniqueArray(T, A1, A2, Args...)(ref A2 allocator, Args args) {
+
+        import std.traits: isPointer, hasMember;
+
+        enum isGlobal = hasMember!(A1, "instance");
+
+        static if(isGlobal)
+            return UniqueArray!(T, A1)(args);
+        else static if(isPointer!A1)
+            return UniqueArray!(T, A1)(&allocator, args);
+        else
+            return UniqueArray!(T, A1)(allocator, args);
     }
 }
 
