@@ -228,18 +228,9 @@ private:
 version(unittest) {
 
     void uniqueArrayTest(T)() {
-        import std.traits: hasMember;
         import std.algorithm: move;
 
-        enum isGlobal = hasMember!(T, "instance");
-
-        static if(isGlobal) {
-            alias allocator = T.instance;
-            alias Allocator = T;
-        } else {
-            auto allocator = T();
-            alias Allocator = T*;
-        }
+        mixin AllocatorAlias;
 
         auto ptr = makeUniqueArray!(Struct, Allocator)(allocator, 3);
         ptr.length.shouldEqual(3);
@@ -292,6 +283,21 @@ version(unittest) {
         ptr3 = [Struct(7), Struct(9)];
         ptr3[].shouldEqual([Struct(7), Struct(9)]);
     }
+
+    mixin template AllocatorAlias() {
+        import std.traits: hasMember;
+
+        enum isGlobal = hasMember!(T, "instance");
+
+        static if(isGlobal) {
+            alias allocator = T.instance;
+            alias Allocator = T;
+        } else {
+            auto allocator = T();
+            alias Allocator = T*;
+        }
+    }
+
 
     auto makeUniqueArray(T, A1, A2, Args...)(ref A2 allocator, Args args) {
 
