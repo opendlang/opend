@@ -215,22 +215,22 @@ private:
 
 @("default TestAllocator")
 @system unittest {
-    uniqueArrayTest!TestAllocator;
+    defaultTest!TestAllocator;
 }
 
 
 @("default Mallocator")
 @system unittest {
     import std.experimental.allocator.mallocator: Mallocator;
-    uniqueArrayTest!Mallocator;
+    defaultTest!Mallocator;
 }
 
 version(unittest) {
 
-    void uniqueArrayTest(T)() {
+    void defaultTest(T)() {
         import std.algorithm: move;
 
-        mixin AllocatorAlias;
+        mixin AllocatorAlias!T;
 
         auto ptr = makeUniqueArray!(Struct, Allocator)(allocator, 3);
         ptr.length.shouldEqual(3);
@@ -282,35 +282,6 @@ version(unittest) {
 
         ptr3 = [Struct(7), Struct(9)];
         ptr3[].shouldEqual([Struct(7), Struct(9)]);
-    }
-
-    mixin template AllocatorAlias() {
-        import std.traits: hasMember;
-
-        enum isGlobal = hasMember!(T, "instance");
-
-        static if(isGlobal) {
-            alias allocator = T.instance;
-            alias Allocator = T;
-        } else {
-            auto allocator = T();
-            alias Allocator = T*;
-        }
-    }
-
-
-    auto makeUniqueArray(T, A1, A2, Args...)(ref A2 allocator, Args args) {
-
-        import std.traits: isPointer, hasMember;
-
-        enum isGlobal = hasMember!(A1, "instance");
-
-        static if(isGlobal)
-            return UniqueArray!(T, A1)(args);
-        else static if(isPointer!A1)
-            return UniqueArray!(T, A1)(&allocator, args);
-        else
-            return UniqueArray!(T, A1)(allocator, args);
     }
 }
 
@@ -393,4 +364,38 @@ version(unittest) {
 
     auto arr = UniqueArray!Struct(2);
     arr[].shouldEqual([Struct(), Struct()]);
+}
+
+
+version(unittest) {
+
+    mixin template AllocatorAlias(T) {
+        import std.traits: hasMember;
+
+        enum isGlobal = hasMember!(T, "instance");
+
+        static if(isGlobal) {
+            alias allocator = T.instance;
+            alias Allocator = T;
+        } else {
+            auto allocator = T();
+            alias Allocator = T*;
+        }
+    }
+
+
+    auto makeUniqueArray(T, A1, A2, Args...)(ref A2 allocator, Args args) {
+
+        import std.traits: isPointer, hasMember;
+
+        enum isGlobal = hasMember!(A1, "instance");
+
+        static if(isGlobal)
+            return UniqueArray!(T, A1)(args);
+        else static if(isPointer!A1)
+            return UniqueArray!(T, A1)(&allocator, args);
+        else
+            return UniqueArray!(T, A1)(allocator, args);
+    }
+
 }
