@@ -14,18 +14,12 @@ mixin TestUtils;
 
 
 struct RefCounted(Type, Allocator = typeof(theAllocator)) if(isAllocator!Allocator) {
-    import std.traits: hasMember;
-    import std.typecons: Proxy;
 
+    import std.traits: hasMember;
 
     enum isSingleton = hasMember!(Allocator, "instance");
     enum isTheAllocator = is(Allocator == typeof(theAllocator));
     enum isGlobal = isSingleton || isTheAllocator;
-
-    static if(is(Type == class))
-        alias Pointer = Type;
-    else
-        alias Pointer = Type*;
 
     static if(isGlobal)
         /**
