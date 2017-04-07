@@ -173,7 +173,11 @@ private:
 
     void makeObjects(size_t size) {
         import std.experimental.allocator: makeArray;
-        _objects = _allocator.makeArray!Type(size);
+        version(LDC)
+            _objects = () @trusted { return _allocator.makeArray!Type(size); }();
+        else
+            _objects = _allocator.makeArray!Type(size);
+
     }
 
     void makeObjects(size_t size, Type init) {
