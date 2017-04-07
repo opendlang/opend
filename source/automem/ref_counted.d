@@ -102,7 +102,12 @@ private:
     else
         Allocator _allocator;
 
-    public Impl* _impl; // or alias this doesn't work
+    static if(is(Type == shared))
+        alias ImplType = shared Impl;
+    else
+        alias ImplType = Impl;
+
+    public ImplType* _impl; // public or alias this doesn't work
 
     void makeObject(Args...)(auto ref Args args) @trusted {
         import std.conv: emplace;
@@ -127,7 +132,7 @@ private:
         import std.experimental.allocator: make;
         import std.traits: hasIndirections;
 
-        _impl = cast(Impl*)_allocator.allocate(Impl.sizeof);
+        _impl = cast(typeof(_impl))_allocator.allocate(Impl.sizeof);
         _impl._count= 1;
 
         static if (hasIndirections!Type) {
@@ -407,6 +412,46 @@ private:
     }
 
     Struct.numStructs.shouldEqual(0);
+}
+
+
+@("threads Mallocator")
+@system unittest {
+    import std.experimental.allocator.mallocator: Mallocator;
+    static assert(__traits(compiles, sendRefCounted!Mallocator(7)));
+}
+
+@("threads SafeAllocator by value")
+@system unittest {
+    // can't even use TestAllocator because it has indirections
+    // can't pass by pointer since it's an indirection
+    auto allocator = SafeAllocator();
+    static assert(__traits(compiles, sendRefCounted!(SafeAllocator)(allocator, 7)));
+}
+
+@("threads SafeAllocator by shared pointer")
+@system unittest {
+    // can't even use TestAllocator because it has indirections
+    // can't only pass by pointer if shared
+    auto allocator = shared SafeAllocator();
+    static assert(__traits(compiles, sendRefCounted!(shared SafeAllocator*)(&allocator, 7)));
+}
+
+
+version(unittest) {
+
+    void sendRefCounted(Allocator, Args...)(Args args) {
+        import std.concurrency: spawn, send;
+
+        auto tid = spawn(&threadFunc);
+        auto ptr = RefCounted!(shared SharedStruct, Allocator)(args);
+
+        tid.send(ptr);
+    }
+
+    void threadFunc() {
+
+    }
 }
 
 version(LDC) {

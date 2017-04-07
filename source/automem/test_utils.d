@@ -111,11 +111,11 @@ mixin template TestUtils() {
 
             import std.experimental.allocator.mallocator: Mallocator;
 
-            void[] allocate(size_t i) @trusted nothrow @nogc {
+            void[] allocate(this T)(size_t i) @trusted nothrow @nogc {
                 return Mallocator.instance.allocate(i);
             }
 
-            void deallocate(void[] bytes) @trusted nothrow @nogc {
+            void deallocate(this T)(void[] bytes) @trusted nothrow @nogc {
                 Mallocator.instance.deallocate(bytes);
             }
         }
