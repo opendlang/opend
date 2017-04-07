@@ -2,6 +2,7 @@ module automem.unique;
 
 import automem.test_utils: TestUtils;
 import automem.traits: isAllocator;
+import std.experimental.allocator: theAllocator;
 
 version(unittest) {
     import unit_threaded;
@@ -10,23 +11,24 @@ version(unittest) {
 
 mixin TestUtils;
 
-struct Unique(Type, Allocator) if(isAllocator!Allocator) {
+struct Unique(Type, Allocator = typeof(theAllocator())) if(isAllocator!Allocator) {
 
     import std.traits: hasMember;
     import std.typecons: Proxy;
 
     enum isSingleton = hasMember!(Allocator, "instance");
+    enum isTheAllocator = is(Allocator == typeof(theAllocator));
+    enum isGlobal = isSingleton || isTheAllocator;
 
     static if(is(Type == class))
         alias Pointer = Type;
     else
         alias Pointer = Type*;
 
-    static if(isSingleton) {
+    static if(isGlobal) {
 
         /**
-           The allocator is a singleton, so no need to pass it in to the
-           constructor
+           The allocator is global, so no need to pass it in to the constructor
         */
         this(Args...)(auto ref Args args) {
             makeObject(args);
@@ -94,6 +96,8 @@ private:
 
     static if(isSingleton)
         alias _allocator = Allocator.instance;
+    else static if(isTheAllocator)
+        alias _allocator = theAllocator;
     else
         Allocator _allocator;
 
@@ -119,7 +123,7 @@ private:
         _object = other._object;
         other._object = null;
 
-        static if(!isSingleton) {
+        static if(!isGlobal) {
             import std.algorithm: move;
             move(other._allocator, _allocator);
         }
@@ -344,6 +348,28 @@ private:
 
         Struct.numStructs.shouldEqual(1);
         ptr.twice.shouldEqual(14);
+    }
+
+    Struct.numStructs.shouldEqual(0);
+}
+
+
+@("theAllocator")
+@system unittest {
+    import std.experimental.allocator: allocatorObject, dispose;
+
+    auto allocator = TestAllocator();
+    auto oldAllocator = theAllocator;
+    scope(exit) {
+        allocator.dispose(theAllocator);
+        theAllocator = oldAllocator;
+    }
+    theAllocator = allocatorObject(allocator);
+
+    {
+        auto ptr = Unique!Struct(42);
+        (*ptr).shouldEqual(Struct(42));
+        Struct.numStructs.shouldEqual(1);
     }
 
     Struct.numStructs.shouldEqual(0);

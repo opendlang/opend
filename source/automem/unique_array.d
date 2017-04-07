@@ -2,6 +2,7 @@ module automem.unique_array;
 
 import automem.traits: isAllocator;
 import automem.test_utils: TestUtils;
+import std.experimental.allocator: theAllocator;
 
 version(unittest) {
     import unit_threaded;
@@ -10,17 +11,19 @@ version(unittest) {
 
 mixin TestUtils;
 
-struct UniqueArray(Type, Allocator) if(isAllocator!Allocator) {
+struct UniqueArray(Type, Allocator = typeof(theAllocator)) if(isAllocator!Allocator) {
 
     import std.traits: hasMember;
     import std.range: isInputRange;
 
     enum isSingleton = hasMember!(Allocator, "instance");
+    enum isTheAllocator = is(Allocator == typeof(theAllocator));
+    enum isGlobal = isSingleton || isTheAllocator;
 
-    static if(isSingleton) {
+    static if(isGlobal) {
 
         /**
-           The allocator is a singleton, so no need to pass it in to the
+           The allocator is global, so no need to pass it in to the
            constructor
         */
 
@@ -163,6 +166,8 @@ private:
 
     static if(isSingleton)
         alias _allocator = Allocator.instance;
+    else static if(isTheAllocator)
+        alias _allocator = theAllocator;
     else
         Allocator _allocator;
 
@@ -196,7 +201,7 @@ private:
         _object = other._object;
         other._object = null;
 
-        static if(!isSingleton) {
+        static if(!isGlobal) {
             import std.algorithm: move;
             move(other._allocator, _allocator);
         }
@@ -358,4 +363,21 @@ version(unittest) {
     alias allocator = Mallocator.instance;
     auto arr = UniqueArray!(Struct, Mallocator)([Struct(1), Struct(2)]);
     arr[].shouldEqual([Struct(1), Struct(2)]);
+}
+
+
+@("theAllocator")
+@system unittest {
+    import std.experimental.allocator: allocatorObject, dispose;
+
+    auto allocator = TestAllocator();
+    auto oldAllocator = theAllocator;
+    scope(exit) {
+        allocator.dispose(theAllocator);
+        theAllocator = oldAllocator;
+    }
+    theAllocator = allocatorObject(allocator);
+
+    auto arr = UniqueArray!Struct(2);
+    arr[].shouldEqual([Struct(), Struct()]);
 }

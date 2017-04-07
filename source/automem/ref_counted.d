@@ -2,6 +2,7 @@ module automem.ref_counted;
 
 import automem.traits: isAllocator;
 import automem.test_utils: TestUtils;
+import std.experimental.allocator: theAllocator;
 
 version(unittest) {
     import unit_threaded;
@@ -11,18 +12,21 @@ version(unittest) {
 mixin TestUtils;
 
 
-struct RefCounted(Type, Allocator) if(isAllocator!Allocator) {
+struct RefCounted(Type, Allocator = typeof(theAllocator)) if(isAllocator!Allocator) {
     import std.traits: hasMember;
     import std.typecons: Proxy;
 
+
     enum isSingleton = hasMember!(Allocator, "instance");
+    enum isTheAllocator = is(Allocator == typeof(theAllocator));
+    enum isGlobal = isSingleton || isTheAllocator;
 
     static if(is(Type == class))
         alias Pointer = Type;
     else
         alias Pointer = Type*;
 
-    static if(isSingleton)
+    static if(isGlobal)
         /**
            The allocator is a singleton, so no need to pass it in to the
            constructor
@@ -56,7 +60,7 @@ struct RefCounted(Type, Allocator) if(isAllocator!Allocator) {
         if(_impl !is null) {
             release;
         }
-        static if(!isSingleton)
+        static if(!isGlobal)
             _allocator = other._allocator;
 
         _impl = other._impl;
@@ -69,7 +73,7 @@ struct RefCounted(Type, Allocator) if(isAllocator!Allocator) {
     void opAssign(RefCounted other) {
         import std.algorithm: swap;
         swap(_impl, other._impl);
-        static if(!isSingleton)
+        static if(!isGlobal)
             swap(_allocator, other._allocator);
     }
 
@@ -98,6 +102,8 @@ private:
 
     static if(isSingleton)
         alias _allocator = Allocator.instance;
+    else static if(isTheAllocator)
+        alias _allocator = theAllocator;
     else
         Allocator _allocator;
 
@@ -372,4 +378,26 @@ private:
 @system unittest {
     auto allocator = TestAllocator();
     auto ptr1 = RefCounted!(const Struct, TestAllocator*)(&allocator, 5);
+}
+
+
+@("theAllocator")
+@system unittest {
+    import std.experimental.allocator: allocatorObject, dispose;
+
+    auto allocator = TestAllocator();
+    auto oldAllocator = theAllocator;
+    scope(exit) {
+        allocator.dispose(theAllocator);
+        theAllocator = oldAllocator;
+    }
+    theAllocator = allocatorObject(allocator);
+
+    {
+        auto ptr = RefCounted!Struct(42);
+        (*ptr).shouldEqual(Struct(42));
+        Struct.numStructs.shouldEqual(1);
+    }
+
+    Struct.numStructs.shouldEqual(0);
 }

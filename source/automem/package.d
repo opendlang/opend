@@ -56,3 +56,21 @@ public import automem.ref_counted;
 
     } // memory for the array released here
 }
+
+// just use theAllocator
+@system unittest {
+    import std.experimental.allocator: theAllocator, allocatorObject, dispose;
+    import test_allocator: TestAllocator; // test_allocator is a dub package
+
+    auto allocator = TestAllocator();
+    auto oldAllocator = theAllocator;
+    scope(exit) {
+        allocator.dispose(theAllocator);
+        theAllocator = oldAllocator;
+    }
+    theAllocator = allocatorObject(allocator);
+
+    auto ptr = Unique!int(42);
+    assert(*ptr == 42);
+
+} // TestAllocator will throw here if any memory leaks

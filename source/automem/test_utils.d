@@ -38,17 +38,17 @@ mixin template TestUtils() {
                 this.i = i;
 
                 ++numStructs;
-                _writelnUt("Struct normal ctor ", &this, ", i=", i, ", N=", numStructs);
+                _writelnUt("Struct ", &this, " normal   ctor, i=", i, ", N=", numStructs);
             }
 
             this(this) @safe nothrow {
                 ++numStructs;
-                _writelnUt("Struct postBlit ctor ", &this, ", i=", i, ", N=", numStructs);
+                _writelnUt("Struct ", &this, " postBlit ctor, i=", i, ", N=", numStructs);
             }
 
             ~this() @safe nothrow const {
                 --numStructs;
-                _writelnUt("Struct dtor ", &this, ", i=", i, ", N=", numStructs);
+                _writelnUt("Struct ", &this, "          dtor, i=", i, ", N=", numStructs);
             }
 
             int twice() @safe pure const nothrow {
