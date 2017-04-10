@@ -120,10 +120,14 @@ struct UniqueArray(Type, Allocator = typeof(theAllocator)) if(isAllocator!Alloca
     @property void length(long i) {
         import std.experimental.allocator: expandArray, shrinkArray;
 
-        if(i > length)
-            _allocator.expandArray(_objects, i - length);
-        else
-            _allocator.shrinkArray(_objects, length - i);
+        if(_objects is null)
+            makeObjects(i);
+        else {
+            if(i > length)
+                _allocator.expandArray(_objects, i - length);
+            else
+                _allocator.shrinkArray(_objects, length - i);
+        }
     }
 
     /**
@@ -135,24 +139,18 @@ struct UniqueArray(Type, Allocator = typeof(theAllocator)) if(isAllocator!Alloca
     }
 
     void opOpAssign(string op)(Type other) if(op == "~") {
-        import std.experimental.allocator: expandArray;
-
-        _allocator.expandArray(_objects, 1);
+        length(length + 1);
         _objects[$ - 1] = other;
     }
 
     void opOpAssign(string op)(Type[] other) if(op == "~") {
-        import std.experimental.allocator: expandArray;
         const originalLength = length;
-        _allocator.expandArray(_objects, other.length);
+        length(originalLength + other.length);
         _objects[originalLength .. $] = other[];
     }
 
     void opOpAssign(string op)(UniqueArray other) if(op == "~") {
-        import std.experimental.allocator: expandArray;
-        const originalLength = length;
-        _allocator.expandArray(_objects, other.length);
-        _objects[originalLength .. $] = other[];
+        this ~= other._objects;
     }
 
     void opAssign(Type[] other) {
@@ -344,7 +342,6 @@ version(unittest) {
 @("range Mallocator")
 @system unittest {
     import std.experimental.allocator.mallocator: Mallocator;
-    alias allocator = Mallocator.instance;
     auto arr = UniqueArray!(Struct, Mallocator)([Struct(1), Struct(2)]);
     arr[].shouldEqual([Struct(1), Struct(2)]);
 }
@@ -366,6 +363,26 @@ version(unittest) {
     arr[].shouldEqual([Struct(), Struct()]);
 }
 
+@("issue 1 array")
+@system unittest {
+    import std.experimental.allocator.mallocator;
+    UniqueArray!(int, Mallocator) a;
+    a ~= [0,1];
+}
+
+@("issue 1 value")
+@system unittest {
+    import std.experimental.allocator.mallocator;
+    UniqueArray!(int, Mallocator) a;
+    a ~= 7;
+}
+
+@("issue 1 UniqueArray")
+@system unittest {
+    import std.experimental.allocator.mallocator;
+    UniqueArray!(int, Mallocator) a;
+    a ~= UniqueArray!(int, Mallocator)([1, 2, 3]);
+}
 
 version(unittest) {
 
