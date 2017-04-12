@@ -2,7 +2,7 @@ module automem.ref_counted;
 
 import automem.traits: isAllocator;
 import automem.test_utils: TestUtils;
-import std.experimental.allocator: theAllocator;
+import std.experimental.allocator: theAllocator, processAllocator;
 
 version(unittest) {
     import unit_threaded;
@@ -10,8 +10,6 @@ version(unittest) {
 }
 
 mixin TestUtils;
-
-
 
 struct RefCounted(Type, Allocator = typeof(theAllocator)) if(isAllocator!Allocator) {
 
@@ -100,8 +98,14 @@ private:
 
     static if(isSingleton)
         alias _allocator = Allocator.instance;
-    else static if(isTheAllocator)
-        alias _allocator = theAllocator;
+    else static if(isTheAllocator) {
+        static if (is(Type == shared))
+            // 'processAllocator' should be used for allocating
+            // memory shared across threads
+            alias _allocator = processAllocator;
+        else
+            alias _allocator = theAllocator;
+    }
     else
         Allocator _allocator;
 
@@ -293,6 +297,23 @@ private:
     Struct.numStructs.shouldEqual(0);
 }
 
+@("default allocator")
+@system unittest {
+    {
+        auto ptr = RefCounted!Struct(5);
+        Struct.numStructs.shouldEqual(1);
+    }
+    Struct.numStructs.shouldEqual(0);
+}
+
+@("default allocator (shared)")
+@system unittest {
+    {
+        auto ptr = RefCounted!(shared SharedStruct)(5);
+        SharedStruct.numStructs.shouldEqual(1);
+    }
+    SharedStruct.numStructs.shouldEqual(0);
+}
 
 @("deref")
 @system unittest {
@@ -427,7 +448,6 @@ private:
 
     Struct.numStructs.shouldEqual(0);
 }
-
 
 @("threads Mallocator")
 @system unittest {
