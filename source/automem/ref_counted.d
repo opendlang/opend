@@ -52,6 +52,9 @@ struct RefCounted(Type, Allocator = typeof(theAllocator)) if(isAllocator!Allocat
     */
     void opAssign(ref RefCounted other) {
 
+        if (_impl == other._impl)
+            return;
+
         if(_impl !is null) {
             release;
         }
@@ -358,6 +361,17 @@ private:
         Struct.numStructs.shouldEqual(1);
     }
 
+    Struct.numStructs.shouldEqual(0);
+}
+
+@("assign self")
+@system unittest {
+    auto allocator = TestAllocator();
+    {
+        auto a = RefCounted!(Struct, TestAllocator*)(&allocator, 1);
+        a = a;
+        Struct.numStructs.shouldEqual(1);
+    }
     Struct.numStructs.shouldEqual(0);
 }
 
