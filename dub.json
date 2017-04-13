@@ -3,7 +3,14 @@
 	"authors": [
 		"Ilya Yaroshenko"
 	],
+	"dependencies": {"mir-algorithm": "~>0.4.10"},
 	"description": "CPU characteristics identification",
 	"copyright": "Ilya Yaroshenko",
-	"license": "BSL-1.0"
+	"license": "BSL-1.0",
+	"buildTypes": {
+		"betterC": {
+			"buildOptions": ["releaseMode", "optimize", "inline", "noBoundsCheck"],
+			"dflags-ldc": ["-betterC", "-linkonce-templates",  "-enable-cross-module-inlining"]
+		}
+	}
 }

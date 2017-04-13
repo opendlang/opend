@@ -20,5 +20,9 @@ __.SYMDEF
 __.SYMDEF SORTED
 
 *.s
-
+docs
 cpuid-report
+
+*.sublime-workspace
+
+mir-cpuid-test-library
