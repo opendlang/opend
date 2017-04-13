@@ -35,14 +35,6 @@ unittest
     }
 }
 
-version(LDC)
-{
-    version(unittest) {} else
-    {
-        pragma(LDC_no_moduleinfo);
-    }
-}
-
 public import cpuid.common;
 
 version(X86)
@@ -316,7 +308,12 @@ void cpuid_init()
     }
 }
 else
-static assert(0, "cpuid_init is not implemented for this target.");
+void cpuid_init()
+{
+    _cpus = 1;
+    _cores = 1;
+    _threads = 1;
+}
 
 @trusted:
 

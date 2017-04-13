@@ -12,14 +12,6 @@ Authors:   Ilya Yaroshenko
 +/
 module cpuid.amd;
 
-version(LDC)
-{
-    version(unittest) {} else
-    {
-        pragma(LDC_no_moduleinfo);
-    }
-}
-
 version(X86)
     version = X86_Any;
 else
@@ -107,7 +99,7 @@ union LeafExt6Information
     ///
     struct
     {
-        import std.bitmanip: bitfields;
+        import mir.bitmanip: bitfields;
 
         version(D_Ddoc)
         {

@@ -12,14 +12,6 @@ Authors:   Ilya Yaroshenko
 +/
 module cpuid.intel;
 
-version(LDC)
-{
-    version(unittest) {} else
-    {
-        pragma(LDC_no_moduleinfo);
-    }
-}
-
 version(X86)
     version = X86_Any;
 else
@@ -84,7 +76,7 @@ struct Leaf2Information
     Specification: Intel
     +/
     nothrow @nogc
-    this(CpuInfo info)
+    this()(CpuInfo info)
     {
         version(BigEndian) static assert(0, "Leaf2Information is not implemented for BigEndian.");
 
@@ -703,7 +695,7 @@ Specification: Intel
 +/
 union Leaf4Information
 {
-    import std.bitmanip: bitfields;
+    import mir.bitmanip: bitfields;
 
     /// CPUID payload
     CpuInfo info;
@@ -711,7 +703,6 @@ union Leaf4Information
     ///
     struct
     {
-
         ///
         enum Type
         {
@@ -792,7 +783,7 @@ union Leaf4Information
 
         /// Compute cache size in KBs.
         pure nothrow @nogc
-        uint size() @property
+        uint size()() @property
         {
             return cast(uint) (
                 size_t(l + 1) * 
@@ -801,8 +792,9 @@ union Leaf4Information
                 size_t(s + 1) >> 10);
         }
 
+        ///
         pure nothrow @nogc
-        void fill(ref Cache cache) @property
+        void fill()(ref Cache cache) @property
         {
             cache.size = size;
             cache.line = cast(typeof(cache.line))(l + 1);

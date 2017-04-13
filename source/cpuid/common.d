@@ -9,14 +9,6 @@ Authors:   Ilya Yaroshenko
 +/
 module cpuid.common;
 
-version(LDC)
-{
-    version(unittest) {} else
-    {
-        pragma(LDC_no_moduleinfo);
-    }
-}
-
 /// Cache Information
 struct  Cache
 {
@@ -34,7 +26,7 @@ struct  Cache
     const @property @safe pure nothrow @nogc:
 
     /// Code: `associative == associative.max`
-    bool isFullyAssociative()
+    bool isFullyAssociative()()
     {
         static if (__VERSION__ >= 2068)
             pragma(inline, true);
@@ -57,14 +49,14 @@ struct Tlb
     /** Computes size in KBs.
     Code: `entries * page`
     */
-    uint size()
+    uint size()()
     {
         static if (__VERSION__ >= 2068)
             pragma(inline, true);
         return entries * page;
     }
     /// Code: `associative == associative.max`
-    bool isFullyAssociative()
+    bool isFullyAssociative()()
     {
         static if (__VERSION__ >= 2068)
             pragma(inline, true);

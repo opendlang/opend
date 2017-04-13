@@ -53,6 +53,12 @@ Please report dub log in a new GitHub issue!
 
 See also [output example](https://gist.github.com/9il/66d2f824ca52e1293358b86604e7fb21).
 
+## Building a betterC library
+
+```
+dub build --compiler=ldmd2 --build=betterC --build-mode=singleFile --parallel
+```
+
 ## API Features
 
  - API was split to _unified_, _target_ specified, and _vendor_ specified parts.
@@ -68,7 +74,8 @@ See also [output example](https://gist.github.com/9il/66d2f824ca52e1293358b86604
 
  - The library was written completely from scratch.
  - Code is clean and simple.
- - Unions and `std.bitmanip.bitfields` are used instead of bit operations.
+ - Unions and `mir.bitmanip.bitfields` are used instead of bit operations.
+ - Slim betterC library with `extern(C)` insterface.
 
 ## TODO
 

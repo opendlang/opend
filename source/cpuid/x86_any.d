@@ -17,11 +17,6 @@ module cpuid.x86_any;
 
 version(LDC)
 {
-    version(unittest) {} else
-    {
-        pragma(LDC_no_moduleinfo);
-    }
-
     import ldc.llvmasm;
     // @@@FIXME@@@
     // https://github.com/ldc-developers/druntime/pull/80
@@ -125,7 +120,7 @@ void cpuid_x86_any_init()
 /// Basic information about CPU.
 union Leaf1Information
 {
-    import std.bitmanip: bitfields;
+    import mir.bitmanip: bitfields;
     /// CPUID payload
     CpuInfo info;
     struct
@@ -375,7 +370,7 @@ union Leaf1Information
 /// Extended information about CPU.
 union Leaf7Information
 {
-    import std.bitmanip: bitfields;
+    import mir.bitmanip: bitfields;
     /// CPUID payload
     CpuInfo info;
     struct
@@ -529,7 +524,7 @@ Params:
     ecx = sub-function id
 +/
 pure nothrow @nogc
-CpuInfo _cpuid(uint eax, uint ecx = 0)
+CpuInfo _cpuid()(uint eax, uint ecx = 0)
 {
     uint a = void;
     uint b = void;
@@ -644,7 +639,7 @@ private __gshared immutable char[12][21] _vendors =
 ];
 
 /// VendorIndex name
-immutable(char)[12][] vendors()
+immutable(char)[12][] vendors()()
 {
     return _vendors;
 }
@@ -656,31 +651,31 @@ unittest
 }
 
 /// VendorIndex encoded value.
-VendorIndex vendorIndex()
+VendorIndex vendorIndex()()
 {
     return _vendorId;
 }
 
 /// VendorIndex encoded value for virtual machine.
-VendorIndex virtualVendorIndex()
+VendorIndex virtualVendorIndex()()
 {
     return _virtualVendorId;
 }
 
 /// Maximum Input Value for Basic CPUID Information
-uint maxBasicLeaf()
+uint maxBasicLeaf()()
 {
     return _maxBasicLeaf;
 }
 
 /// Maximum Input Value for Extended CPUID Information
-uint maxExtendedLeaf()
+uint maxExtendedLeaf()()
 {
     return _maxExtendedLeaf;
 }
 
 /// Reports the maximum input value for supported leaf 7 sub-leaves.
-uint max7SubLeafs()
+uint max7SubLeafs()()
 {
     return leaf7Information.max7SubLeafs;
 }
@@ -742,7 +737,7 @@ Brand, e.g. `Intel(R) Core(TM) i7-4770HQ CPU @ 2.20GHz`.
 Returns: brand length
 Params: brand = fixed length string to initiate
 +/
-size_t brand(ref char[48] brand)
+size_t brand()(ref char[48] brand)
 {
     static if (__VERSION__ >= 2068)
         pragma(inline, false);
@@ -776,7 +771,7 @@ size_t brand(ref char[48] brand)
 /++
 Vendor, e.g. `GenuineIntel`.
 +/
-string vendor()
+string vendor()()
 {
     return vendors[_vendorId];
 }
@@ -784,7 +779,7 @@ string vendor()
 /++
 Virtual vendor, e.g. `GenuineIntel` or `VMwareVMware`.
 +/
-string virtualVendor()
+string virtualVendor()()
 {
     return vendors[_virtualVendorId];
 }
@@ -792,224 +787,224 @@ string virtualVendor()
 /++
 Brand Index
 +/
-ubyte brandIndex() { return leaf1Information.brandIndex; }
+ubyte brandIndex()() { return leaf1Information.brandIndex; }
 /++
 CLFLUSH line size
 Note: Value ∗ 8 = cache line size in bytes; used also by CLFLUSHOPT.
 +/
-ubyte clflushLineSize() { return leaf1Information.clflushLineSize; }
+ubyte clflushLineSize()() { return leaf1Information.clflushLineSize; }
 /++
 Maximum number of addressable IDs for logical processors in this physical package.
 +/
-ubyte maxLogicalProcessors() { return leaf1Information.maxLogicalProcessors; }
+ubyte maxLogicalProcessors()() { return leaf1Information.maxLogicalProcessors; }
 /++
 Initial APIC ID
 +/
-ubyte initialAPIC() { return leaf1Information.initialAPIC; }
+ubyte initialAPIC()() { return leaf1Information.initialAPIC; }
 /// Stepping ID
-uint stepping() { return leaf1Information.stepping; }
+uint stepping()() { return leaf1Information.stepping; }
 /// Model
-uint model() { return leaf1Information.model; }
+uint model()() { return leaf1Information.model; }
 /// Family ID
-uint family() { return leaf1Information.family; }
+uint family()() { return leaf1Information.family; }
 /// Processor Type, Specification: Intel
-uint type() { return leaf1Information.type; }
+uint type()() { return leaf1Information.type; }
 /// Extended Model ID
-uint extendedModel() { return leaf1Information.extendedModel; }
+uint extendedModel()() { return leaf1Information.extendedModel; }
 /// Extended Family ID
-uint extendedFamily() { return leaf1Information.extendedFamily; }
+uint extendedFamily()() { return leaf1Information.extendedFamily; }
 /// SSE3 Extensions
-bool sse3() { return leaf1Information.sse3; }
+bool sse3()() { return leaf1Information.sse3; }
 /// Carryless Multiplication
-bool pclmulqdq() { return leaf1Information.pclmulqdq; }
+bool pclmulqdq()() { return leaf1Information.pclmulqdq; }
 /// 64-bit DS Area
-bool dtes64() { return leaf1Information.dtes64; }
+bool dtes64()() { return leaf1Information.dtes64; }
 /// MONITOR/MWAIT
-bool monitor() { return leaf1Information.monitor; }
+bool monitor()() { return leaf1Information.monitor; }
 /// CPL Qualified Debug Store
-bool ds_cpl() { return leaf1Information.ds_cpl; }
+bool ds_cpl()() { return leaf1Information.ds_cpl; }
 /// Virtual Machine Extensions
-bool vmx() { return leaf1Information.vmx; }
+bool vmx()() { return leaf1Information.vmx; }
 /// Safer Mode Extensions
-bool smx() { return leaf1Information.smx; }
+bool smx()() { return leaf1Information.smx; }
 /// Enhanced Intel SpeedStep® Technology
-bool eist() { return leaf1Information.eist; }
+bool eist()() { return leaf1Information.eist; }
 /// Thermal Monitor 2
-bool therm_monitor2() { return leaf1Information.therm_monitor2; }
+bool therm_monitor2()() { return leaf1Information.therm_monitor2; }
 /// SSSE3 Extensions
-bool ssse3() { return leaf1Information.ssse3; }
+bool ssse3()() { return leaf1Information.ssse3; }
 /// L1 Context ID
-bool cnxt_id() { return leaf1Information.cnxt_id; }
+bool cnxt_id()() { return leaf1Information.cnxt_id; }
 ///
-bool sdbg() { return leaf1Information.sdbg; }
+bool sdbg()() { return leaf1Information.sdbg; }
 /// Fused Multiply Add
-bool fma() { return leaf1Information.fma; }
+bool fma()() { return leaf1Information.fma; }
 ///
-bool cmpxchg16b() { return leaf1Information.cmpxchg16b; }
+bool cmpxchg16b()() { return leaf1Information.cmpxchg16b; }
 /// TPR Update Control
-bool xtpr() { return leaf1Information.xtpr; }
+bool xtpr()() { return leaf1Information.xtpr; }
 /// Perf/Debug Capability MSR xTPR Update Control
-bool pdcm() { return leaf1Information.pdcm; }
+bool pdcm()() { return leaf1Information.pdcm; }
 /// Process-context Identifiers
-bool pcid() { return leaf1Information.pcid; }
+bool pcid()() { return leaf1Information.pcid; }
 /// Direct Cache Access
-bool dca() { return leaf1Information.dca; }
+bool dca()() { return leaf1Information.dca; }
 /// SSE4.1
-bool sse41() { return leaf1Information.sse41; }
+bool sse41()() { return leaf1Information.sse41; }
 /// SSE4.2
-bool sse42() { return leaf1Information.sse42; }
+bool sse42()() { return leaf1Information.sse42; }
 ///
-bool x2apic() { return leaf1Information.x2apic; }
+bool x2apic()() { return leaf1Information.x2apic; }
 ///
-bool movbe() { return leaf1Information.movbe; }
+bool movbe()() { return leaf1Information.movbe; }
 ///
-bool popcnt() { return leaf1Information.popcnt; }
+bool popcnt()() { return leaf1Information.popcnt; }
 ///
-bool tsc_deadline() { return leaf1Information.tsc_deadline; }
+bool tsc_deadline()() { return leaf1Information.tsc_deadline; }
 ///
-bool aes() { return leaf1Information.aes; }
+bool aes()() { return leaf1Information.aes; }
 ///
-bool xsave() { return leaf1Information.xsave; }
+bool xsave()() { return leaf1Information.xsave; }
 ///
-bool osxsave() { return leaf1Information.osxsave; }
+bool osxsave()() { return leaf1Information.osxsave; }
 ///
-bool avx() { return leaf1Information.avx; }
+bool avx()() { return leaf1Information.avx; }
 ///
-bool f16c() { return leaf1Information.f16c; }
+bool f16c()() { return leaf1Information.f16c; }
 ///
-bool rdrand() { return leaf1Information.rdrand; }
+bool rdrand()() { return leaf1Information.rdrand; }
 /// Virtual machine
-bool virtual() { return leaf1Information.virtual; }
+bool virtual()() { return leaf1Information.virtual; }
 /// x87 FPU on Chip
-bool fpu() { return leaf1Information.fpu; }
+bool fpu()() { return leaf1Information.fpu; }
 /// Virtual-8086 Mode Enhancement
-bool vme() { return leaf1Information.vme; }
+bool vme()() { return leaf1Information.vme; }
 /// Debugging Extensions
-bool de() { return leaf1Information.de; }
+bool de()() { return leaf1Information.de; }
 /// Page Size Extensions
-bool pse() { return leaf1Information.pse; }
+bool pse()() { return leaf1Information.pse; }
 /// Time Stamp Counter
-bool tsc() { return leaf1Information.tsc; }
+bool tsc()() { return leaf1Information.tsc; }
 /// RDMSR and WRMSR Support
-bool msr() { return leaf1Information.msr; }
+bool msr()() { return leaf1Information.msr; }
 /// Physical Address Extensions
-bool pae() { return leaf1Information.pae; }
+bool pae()() { return leaf1Information.pae; }
 /// Machine Check Exception
-bool mce() { return leaf1Information.mce; }
+bool mce()() { return leaf1Information.mce; }
 /// CMPXCHG8B Inst.
-bool cx8() { return leaf1Information.cx8; }
+bool cx8()() { return leaf1Information.cx8; }
 /// APIC on Chip
-bool apic() { return leaf1Information.apic; }
+bool apic()() { return leaf1Information.apic; }
 /// SYSENTER and SYSEXIT
-bool sep() { return leaf1Information.sep; }
+bool sep()() { return leaf1Information.sep; }
 /// Memory Type Range Registers
-bool mtrr() { return leaf1Information.mtrr; }
+bool mtrr()() { return leaf1Information.mtrr; }
 /// PTE Global Bit
-bool pge() { return leaf1Information.pge; }
+bool pge()() { return leaf1Information.pge; }
 /// Machine Check Architecture
-bool mca() { return leaf1Information.mca; }
+bool mca()() { return leaf1Information.mca; }
 /// Conditional Move/Compare Instruction
-bool cmov() { return leaf1Information.cmov; }
+bool cmov()() { return leaf1Information.cmov; }
 /// Page Attribute Table
-bool pat() { return leaf1Information.pat; }
+bool pat()() { return leaf1Information.pat; }
 ///  Page Size Extension
-bool pse36() { return leaf1Information.pse36; }
+bool pse36()() { return leaf1Information.pse36; }
 /// Processor Serial Number
-bool psn() { return leaf1Information.psn; }
+bool psn()() { return leaf1Information.psn; }
 /// CLFLUSH instruction
-bool clfsh() { return leaf1Information.clfsh; }
+bool clfsh()() { return leaf1Information.clfsh; }
 /// Debug Store
-bool ds() { return leaf1Information.ds; }
+bool ds()() { return leaf1Information.ds; }
 /// Thermal Monitor and Clock Ctrl
-bool acpi() { return leaf1Information.acpi; }
+bool acpi()() { return leaf1Information.acpi; }
 /// MMX Technology
-bool mmx() { return leaf1Information.mmx; }
+bool mmx()() { return leaf1Information.mmx; }
 /// FXSAVE/FXRSTOR
-bool fxsr() { return leaf1Information.fxsr; }
+bool fxsr()() { return leaf1Information.fxsr; }
 /// SSE Extensions
-bool sse() { return leaf1Information.sse; }
+bool sse()() { return leaf1Information.sse; }
 /// SSE2 Extensions
-bool sse2() { return leaf1Information.sse2; }
+bool sse2()() { return leaf1Information.sse2; }
 /// Self Snoop
-bool self_snoop() { return leaf1Information.self_snoop; }
+bool self_snoop()() { return leaf1Information.self_snoop; }
 /// Multi-threading
-bool htt() { return leaf1Information.htt; }
+bool htt()() { return leaf1Information.htt; }
 /// Therm. Monitor
-bool therm_monitor() { return leaf1Information.therm_monitor; }
+bool therm_monitor()() { return leaf1Information.therm_monitor; }
 /// Pend. Brk. EN.
-bool pbe() { return leaf1Information.pbe; }
+bool pbe()() { return leaf1Information.pbe; }
 
 // EXTENDED 7
 
 /// Supports RDFSBASE/RDGSBASE/WRFSBASE/WRGSBASE if 1.
-bool fsgsbase() { return leaf7Information.fsgsbase; }
+bool fsgsbase()() { return leaf7Information.fsgsbase; }
 ///MSR is supported if 1.
-bool ia32_tsc_adjust() { return leaf7Information.ia32_tsc_adjust; }
+bool ia32_tsc_adjust()() { return leaf7Information.ia32_tsc_adjust; }
 /// Supports Intel® Software Guard Extensions (Intel® SGX Extensions) if 1.
-bool sgx() { return leaf7Information.sgx; }
+bool sgx()() { return leaf7Information.sgx; }
 /// Bit Manipulation Instruction Set 1
-bool bmi1() { return leaf7Information.bmi1; }
+bool bmi1()() { return leaf7Information.bmi1; }
 /// Transactional Synchronization Extensions
-bool hle() { return leaf7Information.hle; }
+bool hle()() { return leaf7Information.hle; }
 /// Advanced Vector Extensions 2
-bool avx2() { return leaf7Information.avx2; }
+bool avx2()() { return leaf7Information.avx2; }
 /// x87 FPU Data Pointer updated only on x87 exceptions if 1.
-bool fdp_excptn_only() { return leaf7Information.fdp_excptn_only; }
+bool fdp_excptn_only()() { return leaf7Information.fdp_excptn_only; }
 /// Supports Supervisor-Mode Execution Prevention if 1.
-bool smep() { return leaf7Information.smep; }
+bool smep()() { return leaf7Information.smep; }
 /// Bit Manipulation Instruction Set 2
-bool bmi2() { return leaf7Information.bmi2; }
+bool bmi2()() { return leaf7Information.bmi2; }
 /// Enhanced REP MOVSB/STOSB if 1.
-bool supports() { return leaf7Information.supports; }
+bool supports()() { return leaf7Information.supports; }
 /// If 1, supports INVPCID instruction for system software that manages process-context identifiers.
-bool invpcid() { return leaf7Information.invpcid; }
+bool invpcid()() { return leaf7Information.invpcid; }
 /// Transactional Synchronization Extensions
-bool rtm() { return leaf7Information.rtm; }
+bool rtm()() { return leaf7Information.rtm; }
 /// Supports Intel® Resource Director Technology (Intel® RDT) Monitoring capability if 1.
-bool rdt_m() { return leaf7Information.rdt_m; }
+bool rdt_m()() { return leaf7Information.rdt_m; }
 ///FPU CS and FPU DS values if 1.
-bool deprecates() { return leaf7Information.deprecates; }
+bool deprecates()() { return leaf7Information.deprecates; }
 /// Supports Intel® Memory Protection Extensions if 1.
-bool mpx() { return leaf7Information.mpx; }
+bool mpx()() { return leaf7Information.mpx; }
 /// Supports Intel® Resource Director Technology (Intel® RDT) Allocation capability if 1.
-bool rdt_a() { return leaf7Information.rdt_a; }
+bool rdt_a()() { return leaf7Information.rdt_a; }
 /// AVX-512 Foundation
-bool avx512f() { return leaf7Information.avx512f; }
+bool avx512f()() { return leaf7Information.avx512f; }
 /// AVX-512 Doubleword and Quadword Instructions
-bool avx512dq() { return leaf7Information.avx512dq; }
+bool avx512dq()() { return leaf7Information.avx512dq; }
 /// RDSEED instruction
-bool rdseed() { return leaf7Information.rdseed; }
+bool rdseed()() { return leaf7Information.rdseed; }
 /// Intel ADX (Multi-Precision Add-Carry Instruction Extensions)
-bool adx() { return leaf7Information.adx; }
+bool adx()() { return leaf7Information.adx; }
 /// Supports Supervisor-Mode Access Prevention (and the CLAC/STAC instructions) if 1.
-bool smap() { return leaf7Information.smap; }
+bool smap()() { return leaf7Information.smap; }
 /// AVX-512 Integer Fused Multiply-Add Instructions
-bool avx512ifma() { return leaf7Information.avx512ifma; }
+bool avx512ifma()() { return leaf7Information.avx512ifma; }
 /// PCOMMIT instruction
-bool pcommit() { return leaf7Information.pcommit; }
+bool pcommit()() { return leaf7Information.pcommit; }
 /// CLFLUSHOPT instruction
-bool clflushopt() { return leaf7Information.clflushopt; }
+bool clflushopt()() { return leaf7Information.clflushopt; }
 /// CLWB instruction
-bool clwb() { return leaf7Information.clwb; }
+bool clwb()() { return leaf7Information.clwb; }
 /// Intel Processor Trace.
-bool intel_pt() { return leaf7Information.intel_pt; }
+bool intel_pt()() { return leaf7Information.intel_pt; }
 /// AVX-512 Prefetch Instructions
-bool avx512pf() { return leaf7Information.avx512pf; }
+bool avx512pf()() { return leaf7Information.avx512pf; }
 /// AVX-512 Exponential and Reciprocal Instructions
-bool avx512er() { return leaf7Information.avx512er; }
+bool avx512er()() { return leaf7Information.avx512er; }
 /// AVX-512 Conflict Detection Instructions
-bool avx512cd() { return leaf7Information.avx512cd; }
+bool avx512cd()() { return leaf7Information.avx512cd; }
 /// supports Intel® Secure Hash Algorithm Extens
-bool sha() { return leaf7Information.sha; }
+bool sha()() { return leaf7Information.sha; }
 /// AVX-512 Byte and Word Instructions
-bool avx512bw() { return leaf7Information.avx512bw; }
+bool avx512bw()() { return leaf7Information.avx512bw; }
 /// AVX-512 Vector Length Extensions
-bool avx512vl() { return leaf7Information.avx512vl; }
+bool avx512vl()() { return leaf7Information.avx512vl; }
 /// PREFETCHWT1 instruction
-bool prefetchwt1() { return leaf7Information.prefetchwt1; }
+bool prefetchwt1()() { return leaf7Information.prefetchwt1; }
 /// AVX-512 Vector Bit Manipulation Instructions
-bool avx512vbmi() { return leaf7Information.avx512vbmi; }
+bool avx512vbmi()() { return leaf7Information.avx512vbmi; }
 /// Memory Protection Keys for User-mode pages
-bool pku() { return leaf7Information.pku; }
+bool pku()() { return leaf7Information.pku; }
 /// PKU enabled by OS
-bool ospke() { return leaf7Information.ospke; }
+bool ospke()() { return leaf7Information.ospke; }
