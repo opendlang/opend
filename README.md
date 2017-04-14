@@ -4,7 +4,7 @@
 
 The goal is to allow you to use Intel intrinsics in D code.
 
-Why Intel intrinsic syntax? Because it is more familier to C++ programmers and there is a convenient online guide provided by Intel: https://software.intel.com/sites/landingpage/IntrinsicsGuide/
+Why Intel intrinsic syntax? Because it is more familiar to C++ programmers and there is a convenient online guide provided by Intel: https://software.intel.com/sites/landingpage/IntrinsicsGuide/
 
 For now only LDC is supported.
 But be sure to know about the superior SIMD capabilities of LDC exposed in `ldc.simd`.
