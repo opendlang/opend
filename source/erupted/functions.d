@@ -1268,11 +1268,37 @@ void loadDeviceLevelFunctions( VkDevice device ) {
 
 /// with a valid VkDevice call this function to retrieve VkDevice, VkQueue and VkCommandBuffer related functions grouped in a DispatchDevice struct
 /// the functions call directly VkDevice and related resources and can be retrieved for any VkDevice
+deprecated( "Use DispatchDevice( VkDevice ) or DispatchDevice.loadDeviceLevelFunctions( VkDevice ) instead" )
 DispatchDevice createDispatchDeviceLevelFunctions( VkDevice device ) {
-	assert( vkGetDeviceProcAddr !is null, "Must call loadInstanceLevelFunctions before loadDeviceLevelFunctions" );
-	
-	DispatchDevice dispatchDevice;
-	with( dispatchDevice ) {
+	return DispatchDevice( device );
+}
+
+
+// struct to group per device deviceLevelFunctions into a custom namespace
+// keeps track of the device to which the functions are bound
+struct DispatchDevice {
+	private VkDevice device = VK_NULL_HANDLE;
+	VkCommandBuffer commandBuffer;
+
+	// return copy of the internal VkDevice
+	VkDevice vkDevice() {
+		return device;
+	}
+
+	// Constructor forwards parameter 'device' to 'this.loadDeviceLevelFunctions'
+	this( VkDevice device ) {
+		this.loadDeviceLevelFunctions( device );
+	}
+
+	// load the device level member functions
+	// this also sets the private member 'device' to the passed in VkDevice
+	// now the DispatchDevice can be used e.g.:
+	//		auto dd = DispatchDevice( device );
+	//		dd.vkDestroyDevice( dd.vkDevice, pAllocator );
+	// convenience functions to omit the first arg do exist, see bellow
+	void loadDeviceLevelFunctions( VkDevice device ) {
+		assert( vkGetDeviceProcAddr !is null, "Must call loadInstanceLevelFunctions before loadDeviceLevelFunctions" );
+		this.device = device;
 
 		// VK_VERSION_1_0
 		vkDestroyDevice = cast( typeof( vkDestroyDevice )) vkGetDeviceProcAddr( device, "vkDestroyDevice" );
@@ -1494,12 +1520,512 @@ DispatchDevice createDispatchDeviceLevelFunctions( VkDevice device ) {
 		vkSetHdrMetadataEXT = cast( typeof( vkSetHdrMetadataEXT )) vkGetDeviceProcAddr( device, "vkSetHdrMetadataEXT" );
 	}
 
-	return dispatchDevice;
-}
+	// Convenience member functions, forwarded to corresponding vulkan functions
+	// If the first arg of the vulkan function is VkDevice it can be omitted
+	// private 'DipatchDevice' member 'device' will be passed to the forwarded vulkan functions
+	// the crux is that function pointers can't be overloaded with regular functions
+	// hence the vk prefix is ditched for the convenience variants
+	// e.g.:
+	//		auto dd = DispatchDevice( device );
+	//		dd.DestroyDevice( pAllocator );		// instead of: dd.vkDestroyDevice( dd.vkDevice, pAllocator );
+	//
+	// Same mechanism works with functions which require a VkCommandBuffer as first arg
+	// In this case the public member 'commandBuffer' must be set beforehand
+	// e.g.:
+	//		dd.commandBuffer = some_command_buffer;
+	//		dd.BeginCommandBuffer( &beginInfo );
+	//		dd.CmdBindPipeline( VK_PIPELINE_BIND_POINT_GRAPHICS, some_pipeline );
+	//
+	// Does not work with queues, there are just too few queue related functions
 
+	// VK_VERSION_1_0
+	void DestroyDevice( const( VkAllocationCallbacks )* pAllocator ) {
+		vkDestroyDevice( this.device, pAllocator );
+	}
+	void GetDeviceQueue( uint32_t queueFamilyIndex, uint32_t queueIndex, VkQueue* pQueue ) {
+		vkGetDeviceQueue( this.device, queueFamilyIndex, queueIndex, pQueue );
+	}
+	VkResult DeviceWaitIdle() {
+		return vkDeviceWaitIdle( this.device );
+	}
+	VkResult AllocateMemory( const( VkMemoryAllocateInfo )* pAllocateInfo, const( VkAllocationCallbacks )* pAllocator, VkDeviceMemory* pMemory ) {
+		return vkAllocateMemory( this.device, pAllocateInfo, pAllocator, pMemory );
+	}
+	void FreeMemory( VkDeviceMemory memory, const( VkAllocationCallbacks )* pAllocator ) {
+		vkFreeMemory( this.device, memory, pAllocator );
+	}
+	VkResult MapMemory( VkDeviceMemory memory, VkDeviceSize offset, VkDeviceSize size, VkMemoryMapFlags flags, void** ppData ) {
+		return vkMapMemory( this.device, memory, offset, size, flags, ppData );
+	}
+	void UnmapMemory( VkDeviceMemory memory ) {
+		vkUnmapMemory( this.device, memory );
+	}
+	VkResult FlushMappedMemoryRanges( uint32_t memoryRangeCount, const( VkMappedMemoryRange )* pMemoryRanges ) {
+		return vkFlushMappedMemoryRanges( this.device, memoryRangeCount, pMemoryRanges );
+	}
+	VkResult InvalidateMappedMemoryRanges( uint32_t memoryRangeCount, const( VkMappedMemoryRange )* pMemoryRanges ) {
+		return vkInvalidateMappedMemoryRanges( this.device, memoryRangeCount, pMemoryRanges );
+	}
+	void GetDeviceMemoryCommitment( VkDeviceMemory memory, VkDeviceSize* pCommittedMemoryInBytes ) {
+		vkGetDeviceMemoryCommitment( this.device, memory, pCommittedMemoryInBytes );
+	}
+	VkResult BindBufferMemory( VkBuffer buffer, VkDeviceMemory memory, VkDeviceSize memoryOffset ) {
+		return vkBindBufferMemory( this.device, buffer, memory, memoryOffset );
+	}
+	VkResult BindImageMemory( VkImage image, VkDeviceMemory memory, VkDeviceSize memoryOffset ) {
+		return vkBindImageMemory( this.device, image, memory, memoryOffset );
+	}
+	void GetBufferMemoryRequirements( VkBuffer buffer, VkMemoryRequirements* pMemoryRequirements ) {
+		vkGetBufferMemoryRequirements( this.device, buffer, pMemoryRequirements );
+	}
+	void GetImageMemoryRequirements( VkImage image, VkMemoryRequirements* pMemoryRequirements ) {
+		vkGetImageMemoryRequirements( this.device, image, pMemoryRequirements );
+	}
+	void GetImageSparseMemoryRequirements( VkImage image, uint32_t* pSparseMemoryRequirementCount, VkSparseImageMemoryRequirements* pSparseMemoryRequirements ) {
+		vkGetImageSparseMemoryRequirements( this.device, image, pSparseMemoryRequirementCount, pSparseMemoryRequirements );
+	}
+	VkResult CreateFence( const( VkFenceCreateInfo )* pCreateInfo, const( VkAllocationCallbacks )* pAllocator, VkFence* pFence ) {
+		return vkCreateFence( this.device, pCreateInfo, pAllocator, pFence );
+	}
+	void DestroyFence( VkFence fence, const( VkAllocationCallbacks )* pAllocator ) {
+		vkDestroyFence( this.device, fence, pAllocator );
+	}
+	VkResult ResetFences( uint32_t fenceCount, const( VkFence )* pFences ) {
+		return vkResetFences( this.device, fenceCount, pFences );
+	}
+	VkResult GetFenceStatus( VkFence fence ) {
+		return vkGetFenceStatus( this.device, fence );
+	}
+	VkResult WaitForFences( uint32_t fenceCount, const( VkFence )* pFences, VkBool32 waitAll, uint64_t timeout ) {
+		return vkWaitForFences( this.device, fenceCount, pFences, waitAll, timeout );
+	}
+	VkResult CreateSemaphore( const( VkSemaphoreCreateInfo )* pCreateInfo, const( VkAllocationCallbacks )* pAllocator, VkSemaphore* pSemaphore ) {
+		return vkCreateSemaphore( this.device, pCreateInfo, pAllocator, pSemaphore );
+	}
+	void DestroySemaphore( VkSemaphore semaphore, const( VkAllocationCallbacks )* pAllocator ) {
+		vkDestroySemaphore( this.device, semaphore, pAllocator );
+	}
+	VkResult CreateEvent( const( VkEventCreateInfo )* pCreateInfo, const( VkAllocationCallbacks )* pAllocator, VkEvent* pEvent ) {
+		return vkCreateEvent( this.device, pCreateInfo, pAllocator, pEvent );
+	}
+	void DestroyEvent( VkEvent event, const( VkAllocationCallbacks )* pAllocator ) {
+		vkDestroyEvent( this.device, event, pAllocator );
+	}
+	VkResult GetEventStatus( VkEvent event ) {
+		return vkGetEventStatus( this.device, event );
+	}
+	VkResult SetEvent( VkEvent event ) {
+		return vkSetEvent( this.device, event );
+	}
+	VkResult ResetEvent( VkEvent event ) {
+		return vkResetEvent( this.device, event );
+	}
+	VkResult CreateQueryPool( const( VkQueryPoolCreateInfo )* pCreateInfo, const( VkAllocationCallbacks )* pAllocator, VkQueryPool* pQueryPool ) {
+		return vkCreateQueryPool( this.device, pCreateInfo, pAllocator, pQueryPool );
+	}
+	void DestroyQueryPool( VkQueryPool queryPool, const( VkAllocationCallbacks )* pAllocator ) {
+		vkDestroyQueryPool( this.device, queryPool, pAllocator );
+	}
+	VkResult GetQueryPoolResults( VkQueryPool queryPool, uint32_t firstQuery, uint32_t queryCount, size_t dataSize, void* pData, VkDeviceSize stride, VkQueryResultFlags flags ) {
+		return vkGetQueryPoolResults( this.device, queryPool, firstQuery, queryCount, dataSize, pData, stride, flags );
+	}
+	VkResult CreateBuffer( const( VkBufferCreateInfo )* pCreateInfo, const( VkAllocationCallbacks )* pAllocator, VkBuffer* pBuffer ) {
+		return vkCreateBuffer( this.device, pCreateInfo, pAllocator, pBuffer );
+	}
+	void DestroyBuffer( VkBuffer buffer, const( VkAllocationCallbacks )* pAllocator ) {
+		vkDestroyBuffer( this.device, buffer, pAllocator );
+	}
+	VkResult CreateBufferView( const( VkBufferViewCreateInfo )* pCreateInfo, const( VkAllocationCallbacks )* pAllocator, VkBufferView* pView ) {
+		return vkCreateBufferView( this.device, pCreateInfo, pAllocator, pView );
+	}
+	void DestroyBufferView( VkBufferView bufferView, const( VkAllocationCallbacks )* pAllocator ) {
+		vkDestroyBufferView( this.device, bufferView, pAllocator );
+	}
+	VkResult CreateImage( const( VkImageCreateInfo )* pCreateInfo, const( VkAllocationCallbacks )* pAllocator, VkImage* pImage ) {
+		return vkCreateImage( this.device, pCreateInfo, pAllocator, pImage );
+	}
+	void DestroyImage( VkImage image, const( VkAllocationCallbacks )* pAllocator ) {
+		vkDestroyImage( this.device, image, pAllocator );
+	}
+	void GetImageSubresourceLayout( VkImage image, const( VkImageSubresource )* pSubresource, VkSubresourceLayout* pLayout ) {
+		vkGetImageSubresourceLayout( this.device, image, pSubresource, pLayout );
+	}
+	VkResult CreateImageView( const( VkImageViewCreateInfo )* pCreateInfo, const( VkAllocationCallbacks )* pAllocator, VkImageView* pView ) {
+		return vkCreateImageView( this.device, pCreateInfo, pAllocator, pView );
+	}
+	void DestroyImageView( VkImageView imageView, const( VkAllocationCallbacks )* pAllocator ) {
+		vkDestroyImageView( this.device, imageView, pAllocator );
+	}
+	VkResult CreateShaderModule( const( VkShaderModuleCreateInfo )* pCreateInfo, const( VkAllocationCallbacks )* pAllocator, VkShaderModule* pShaderModule ) {
+		return vkCreateShaderModule( this.device, pCreateInfo, pAllocator, pShaderModule );
+	}
+	void DestroyShaderModule( VkShaderModule shaderModule, const( VkAllocationCallbacks )* pAllocator ) {
+		vkDestroyShaderModule( this.device, shaderModule, pAllocator );
+	}
+	VkResult CreatePipelineCache( const( VkPipelineCacheCreateInfo )* pCreateInfo, const( VkAllocationCallbacks )* pAllocator, VkPipelineCache* pPipelineCache ) {
+		return vkCreatePipelineCache( this.device, pCreateInfo, pAllocator, pPipelineCache );
+	}
+	void DestroyPipelineCache( VkPipelineCache pipelineCache, const( VkAllocationCallbacks )* pAllocator ) {
+		vkDestroyPipelineCache( this.device, pipelineCache, pAllocator );
+	}
+	VkResult GetPipelineCacheData( VkPipelineCache pipelineCache, size_t* pDataSize, void* pData ) {
+		return vkGetPipelineCacheData( this.device, pipelineCache, pDataSize, pData );
+	}
+	VkResult MergePipelineCaches( VkPipelineCache dstCache, uint32_t srcCacheCount, const( VkPipelineCache )* pSrcCaches ) {
+		return vkMergePipelineCaches( this.device, dstCache, srcCacheCount, pSrcCaches );
+	}
+	VkResult CreateGraphicsPipelines( VkPipelineCache pipelineCache, uint32_t createInfoCount, const( VkGraphicsPipelineCreateInfo )* pCreateInfos, const( VkAllocationCallbacks )* pAllocator, VkPipeline* pPipelines ) {
+		return vkCreateGraphicsPipelines( this.device, pipelineCache, createInfoCount, pCreateInfos, pAllocator, pPipelines );
+	}
+	VkResult CreateComputePipelines( VkPipelineCache pipelineCache, uint32_t createInfoCount, const( VkComputePipelineCreateInfo )* pCreateInfos, const( VkAllocationCallbacks )* pAllocator, VkPipeline* pPipelines ) {
+		return vkCreateComputePipelines( this.device, pipelineCache, createInfoCount, pCreateInfos, pAllocator, pPipelines );
+	}
+	void DestroyPipeline( VkPipeline pipeline, const( VkAllocationCallbacks )* pAllocator ) {
+		vkDestroyPipeline( this.device, pipeline, pAllocator );
+	}
+	VkResult CreatePipelineLayout( const( VkPipelineLayoutCreateInfo )* pCreateInfo, const( VkAllocationCallbacks )* pAllocator, VkPipelineLayout* pPipelineLayout ) {
+		return vkCreatePipelineLayout( this.device, pCreateInfo, pAllocator, pPipelineLayout );
+	}
+	void DestroyPipelineLayout( VkPipelineLayout pipelineLayout, const( VkAllocationCallbacks )* pAllocator ) {
+		vkDestroyPipelineLayout( this.device, pipelineLayout, pAllocator );
+	}
+	VkResult CreateSampler( const( VkSamplerCreateInfo )* pCreateInfo, const( VkAllocationCallbacks )* pAllocator, VkSampler* pSampler ) {
+		return vkCreateSampler( this.device, pCreateInfo, pAllocator, pSampler );
+	}
+	void DestroySampler( VkSampler sampler, const( VkAllocationCallbacks )* pAllocator ) {
+		vkDestroySampler( this.device, sampler, pAllocator );
+	}
+	VkResult CreateDescriptorSetLayout( const( VkDescriptorSetLayoutCreateInfo )* pCreateInfo, const( VkAllocationCallbacks )* pAllocator, VkDescriptorSetLayout* pSetLayout ) {
+		return vkCreateDescriptorSetLayout( this.device, pCreateInfo, pAllocator, pSetLayout );
+	}
+	void DestroyDescriptorSetLayout( VkDescriptorSetLayout descriptorSetLayout, const( VkAllocationCallbacks )* pAllocator ) {
+		vkDestroyDescriptorSetLayout( this.device, descriptorSetLayout, pAllocator );
+	}
+	VkResult CreateDescriptorPool( const( VkDescriptorPoolCreateInfo )* pCreateInfo, const( VkAllocationCallbacks )* pAllocator, VkDescriptorPool* pDescriptorPool ) {
+		return vkCreateDescriptorPool( this.device, pCreateInfo, pAllocator, pDescriptorPool );
+	}
+	void DestroyDescriptorPool( VkDescriptorPool descriptorPool, const( VkAllocationCallbacks )* pAllocator ) {
+		vkDestroyDescriptorPool( this.device, descriptorPool, pAllocator );
+	}
+	VkResult ResetDescriptorPool( VkDescriptorPool descriptorPool, VkDescriptorPoolResetFlags flags ) {
+		return vkResetDescriptorPool( this.device, descriptorPool, flags );
+	}
+	VkResult AllocateDescriptorSets( const( VkDescriptorSetAllocateInfo )* pAllocateInfo, VkDescriptorSet* pDescriptorSets ) {
+		return vkAllocateDescriptorSets( this.device, pAllocateInfo, pDescriptorSets );
+	}
+	VkResult FreeDescriptorSets( VkDescriptorPool descriptorPool, uint32_t descriptorSetCount, const( VkDescriptorSet )* pDescriptorSets ) {
+		return vkFreeDescriptorSets( this.device, descriptorPool, descriptorSetCount, pDescriptorSets );
+	}
+	void UpdateDescriptorSets( uint32_t descriptorWriteCount, const( VkWriteDescriptorSet )* pDescriptorWrites, uint32_t descriptorCopyCount, const( VkCopyDescriptorSet )* pDescriptorCopies ) {
+		vkUpdateDescriptorSets( this.device, descriptorWriteCount, pDescriptorWrites, descriptorCopyCount, pDescriptorCopies );
+	}
+	VkResult CreateFramebuffer( const( VkFramebufferCreateInfo )* pCreateInfo, const( VkAllocationCallbacks )* pAllocator, VkFramebuffer* pFramebuffer ) {
+		return vkCreateFramebuffer( this.device, pCreateInfo, pAllocator, pFramebuffer );
+	}
+	void DestroyFramebuffer( VkFramebuffer framebuffer, const( VkAllocationCallbacks )* pAllocator ) {
+		vkDestroyFramebuffer( this.device, framebuffer, pAllocator );
+	}
+	VkResult CreateRenderPass( const( VkRenderPassCreateInfo )* pCreateInfo, const( VkAllocationCallbacks )* pAllocator, VkRenderPass* pRenderPass ) {
+		return vkCreateRenderPass( this.device, pCreateInfo, pAllocator, pRenderPass );
+	}
+	void DestroyRenderPass( VkRenderPass renderPass, const( VkAllocationCallbacks )* pAllocator ) {
+		vkDestroyRenderPass( this.device, renderPass, pAllocator );
+	}
+	void GetRenderAreaGranularity( VkRenderPass renderPass, VkExtent2D* pGranularity ) {
+		vkGetRenderAreaGranularity( this.device, renderPass, pGranularity );
+	}
+	VkResult CreateCommandPool( const( VkCommandPoolCreateInfo )* pCreateInfo, const( VkAllocationCallbacks )* pAllocator, VkCommandPool* pCommandPool ) {
+		return vkCreateCommandPool( this.device, pCreateInfo, pAllocator, pCommandPool );
+	}
+	void DestroyCommandPool( VkCommandPool commandPool, const( VkAllocationCallbacks )* pAllocator ) {
+		vkDestroyCommandPool( this.device, commandPool, pAllocator );
+	}
+	VkResult ResetCommandPool( VkCommandPool commandPool, VkCommandPoolResetFlags flags ) {
+		return vkResetCommandPool( this.device, commandPool, flags );
+	}
+	VkResult AllocateCommandBuffers( const( VkCommandBufferAllocateInfo )* pAllocateInfo, VkCommandBuffer* pCommandBuffers ) {
+		return vkAllocateCommandBuffers( this.device, pAllocateInfo, pCommandBuffers );
+	}
+	void FreeCommandBuffers( VkCommandPool commandPool, uint32_t commandBufferCount, const( VkCommandBuffer )* pCommandBuffers ) {
+		vkFreeCommandBuffers( this.device, commandPool, commandBufferCount, pCommandBuffers );
+	}
+	VkResult BeginCommandBuffer( const( VkCommandBufferBeginInfo )* pBeginInfo ) {
+		return vkBeginCommandBuffer( this.commandBuffer, pBeginInfo );
+	}
+	VkResult EndCommandBuffer() {
+		return vkEndCommandBuffer( this.commandBuffer );
+	}
+	VkResult ResetCommandBuffer( VkCommandBufferResetFlags flags ) {
+		return vkResetCommandBuffer( this.commandBuffer, flags );
+	}
+	void CmdBindPipeline( VkPipelineBindPoint pipelineBindPoint, VkPipeline pipeline ) {
+		vkCmdBindPipeline( this.commandBuffer, pipelineBindPoint, pipeline );
+	}
+	void CmdSetViewport( uint32_t firstViewport, uint32_t viewportCount, const( VkViewport )* pViewports ) {
+		vkCmdSetViewport( this.commandBuffer, firstViewport, viewportCount, pViewports );
+	}
+	void CmdSetScissor( uint32_t firstScissor, uint32_t scissorCount, const( VkRect2D )* pScissors ) {
+		vkCmdSetScissor( this.commandBuffer, firstScissor, scissorCount, pScissors );
+	}
+	void CmdSetLineWidth( float lineWidth ) {
+		vkCmdSetLineWidth( this.commandBuffer, lineWidth );
+	}
+	void CmdSetDepthBias( float depthBiasConstantFactor, float depthBiasClamp, float depthBiasSlopeFactor ) {
+		vkCmdSetDepthBias( this.commandBuffer, depthBiasConstantFactor, depthBiasClamp, depthBiasSlopeFactor );
+	}
+	void CmdSetBlendConstants( const float[4] blendConstants ) {
+		vkCmdSetBlendConstants( this.commandBuffer, blendConstants );
+	}
+	void CmdSetDepthBounds( float minDepthBounds, float maxDepthBounds ) {
+		vkCmdSetDepthBounds( this.commandBuffer, minDepthBounds, maxDepthBounds );
+	}
+	void CmdSetStencilCompareMask( VkStencilFaceFlags faceMask, uint32_t compareMask ) {
+		vkCmdSetStencilCompareMask( this.commandBuffer, faceMask, compareMask );
+	}
+	void CmdSetStencilWriteMask( VkStencilFaceFlags faceMask, uint32_t writeMask ) {
+		vkCmdSetStencilWriteMask( this.commandBuffer, faceMask, writeMask );
+	}
+	void CmdSetStencilReference( VkStencilFaceFlags faceMask, uint32_t reference ) {
+		vkCmdSetStencilReference( this.commandBuffer, faceMask, reference );
+	}
+	void CmdBindDescriptorSets( VkPipelineBindPoint pipelineBindPoint, VkPipelineLayout layout, uint32_t firstSet, uint32_t descriptorSetCount, const( VkDescriptorSet )* pDescriptorSets, uint32_t dynamicOffsetCount, const( uint32_t )* pDynamicOffsets ) {
+		vkCmdBindDescriptorSets( this.commandBuffer, pipelineBindPoint, layout, firstSet, descriptorSetCount, pDescriptorSets, dynamicOffsetCount, pDynamicOffsets );
+	}
+	void CmdBindIndexBuffer( VkBuffer buffer, VkDeviceSize offset, VkIndexType indexType ) {
+		vkCmdBindIndexBuffer( this.commandBuffer, buffer, offset, indexType );
+	}
+	void CmdBindVertexBuffers( uint32_t firstBinding, uint32_t bindingCount, const( VkBuffer )* pBuffers, const( VkDeviceSize )* pOffsets ) {
+		vkCmdBindVertexBuffers( this.commandBuffer, firstBinding, bindingCount, pBuffers, pOffsets );
+	}
+	void CmdDraw( uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance ) {
+		vkCmdDraw( this.commandBuffer, vertexCount, instanceCount, firstVertex, firstInstance );
+	}
+	void CmdDrawIndexed( uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t vertexOffset, uint32_t firstInstance ) {
+		vkCmdDrawIndexed( this.commandBuffer, indexCount, instanceCount, firstIndex, vertexOffset, firstInstance );
+	}
+	void CmdDrawIndirect( VkBuffer buffer, VkDeviceSize offset, uint32_t drawCount, uint32_t stride ) {
+		vkCmdDrawIndirect( this.commandBuffer, buffer, offset, drawCount, stride );
+	}
+	void CmdDrawIndexedIndirect( VkBuffer buffer, VkDeviceSize offset, uint32_t drawCount, uint32_t stride ) {
+		vkCmdDrawIndexedIndirect( this.commandBuffer, buffer, offset, drawCount, stride );
+	}
+	void CmdDispatch( uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ ) {
+		vkCmdDispatch( this.commandBuffer, groupCountX, groupCountY, groupCountZ );
+	}
+	void CmdDispatchIndirect( VkBuffer buffer, VkDeviceSize offset ) {
+		vkCmdDispatchIndirect( this.commandBuffer, buffer, offset );
+	}
+	void CmdCopyBuffer( VkBuffer srcBuffer, VkBuffer dstBuffer, uint32_t regionCount, const( VkBufferCopy )* pRegions ) {
+		vkCmdCopyBuffer( this.commandBuffer, srcBuffer, dstBuffer, regionCount, pRegions );
+	}
+	void CmdCopyImage( VkImage srcImage, VkImageLayout srcImageLayout, VkImage dstImage, VkImageLayout dstImageLayout, uint32_t regionCount, const( VkImageCopy )* pRegions ) {
+		vkCmdCopyImage( this.commandBuffer, srcImage, srcImageLayout, dstImage, dstImageLayout, regionCount, pRegions );
+	}
+	void CmdBlitImage( VkImage srcImage, VkImageLayout srcImageLayout, VkImage dstImage, VkImageLayout dstImageLayout, uint32_t regionCount, const( VkImageBlit )* pRegions, VkFilter filter ) {
+		vkCmdBlitImage( this.commandBuffer, srcImage, srcImageLayout, dstImage, dstImageLayout, regionCount, pRegions, filter );
+	}
+	void CmdCopyBufferToImage( VkBuffer srcBuffer, VkImage dstImage, VkImageLayout dstImageLayout, uint32_t regionCount, const( VkBufferImageCopy )* pRegions ) {
+		vkCmdCopyBufferToImage( this.commandBuffer, srcBuffer, dstImage, dstImageLayout, regionCount, pRegions );
+	}
+	void CmdCopyImageToBuffer( VkImage srcImage, VkImageLayout srcImageLayout, VkBuffer dstBuffer, uint32_t regionCount, const( VkBufferImageCopy )* pRegions ) {
+		vkCmdCopyImageToBuffer( this.commandBuffer, srcImage, srcImageLayout, dstBuffer, regionCount, pRegions );
+	}
+	void CmdUpdateBuffer( VkBuffer dstBuffer, VkDeviceSize dstOffset, VkDeviceSize dataSize, const( void )* pData ) {
+		vkCmdUpdateBuffer( this.commandBuffer, dstBuffer, dstOffset, dataSize, pData );
+	}
+	void CmdFillBuffer( VkBuffer dstBuffer, VkDeviceSize dstOffset, VkDeviceSize size, uint32_t data ) {
+		vkCmdFillBuffer( this.commandBuffer, dstBuffer, dstOffset, size, data );
+	}
+	void CmdClearColorImage( VkImage image, VkImageLayout imageLayout, const( VkClearColorValue )* pColor, uint32_t rangeCount, const( VkImageSubresourceRange )* pRanges ) {
+		vkCmdClearColorImage( this.commandBuffer, image, imageLayout, pColor, rangeCount, pRanges );
+	}
+	void CmdClearDepthStencilImage( VkImage image, VkImageLayout imageLayout, const( VkClearDepthStencilValue )* pDepthStencil, uint32_t rangeCount, const( VkImageSubresourceRange )* pRanges ) {
+		vkCmdClearDepthStencilImage( this.commandBuffer, image, imageLayout, pDepthStencil, rangeCount, pRanges );
+	}
+	void CmdClearAttachments( uint32_t attachmentCount, const( VkClearAttachment )* pAttachments, uint32_t rectCount, const( VkClearRect )* pRects ) {
+		vkCmdClearAttachments( this.commandBuffer, attachmentCount, pAttachments, rectCount, pRects );
+	}
+	void CmdResolveImage( VkImage srcImage, VkImageLayout srcImageLayout, VkImage dstImage, VkImageLayout dstImageLayout, uint32_t regionCount, const( VkImageResolve )* pRegions ) {
+		vkCmdResolveImage( this.commandBuffer, srcImage, srcImageLayout, dstImage, dstImageLayout, regionCount, pRegions );
+	}
+	void CmdSetEvent( VkEvent event, VkPipelineStageFlags stageMask ) {
+		vkCmdSetEvent( this.commandBuffer, event, stageMask );
+	}
+	void CmdResetEvent( VkEvent event, VkPipelineStageFlags stageMask ) {
+		vkCmdResetEvent( this.commandBuffer, event, stageMask );
+	}
+	void CmdWaitEvents( uint32_t eventCount, const( VkEvent )* pEvents, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, uint32_t memoryBarrierCount, const( VkMemoryBarrier )* pMemoryBarriers, uint32_t bufferMemoryBarrierCount, const( VkBufferMemoryBarrier )* pBufferMemoryBarriers, uint32_t imageMemoryBarrierCount, const( VkImageMemoryBarrier )* pImageMemoryBarriers ) {
+		vkCmdWaitEvents( this.commandBuffer, eventCount, pEvents, srcStageMask, dstStageMask, memoryBarrierCount, pMemoryBarriers, bufferMemoryBarrierCount, pBufferMemoryBarriers, imageMemoryBarrierCount, pImageMemoryBarriers );
+	}
+	void CmdPipelineBarrier( VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkDependencyFlags dependencyFlags, uint32_t memoryBarrierCount, const( VkMemoryBarrier )* pMemoryBarriers, uint32_t bufferMemoryBarrierCount, const( VkBufferMemoryBarrier )* pBufferMemoryBarriers, uint32_t imageMemoryBarrierCount, const( VkImageMemoryBarrier )* pImageMemoryBarriers ) {
+		vkCmdPipelineBarrier( this.commandBuffer, srcStageMask, dstStageMask, dependencyFlags, memoryBarrierCount, pMemoryBarriers, bufferMemoryBarrierCount, pBufferMemoryBarriers, imageMemoryBarrierCount, pImageMemoryBarriers );
+	}
+	void CmdBeginQuery( VkQueryPool queryPool, uint32_t query, VkQueryControlFlags flags ) {
+		vkCmdBeginQuery( this.commandBuffer, queryPool, query, flags );
+	}
+	void CmdEndQuery( VkQueryPool queryPool, uint32_t query ) {
+		vkCmdEndQuery( this.commandBuffer, queryPool, query );
+	}
+	void CmdResetQueryPool( VkQueryPool queryPool, uint32_t firstQuery, uint32_t queryCount ) {
+		vkCmdResetQueryPool( this.commandBuffer, queryPool, firstQuery, queryCount );
+	}
+	void CmdWriteTimestamp( VkPipelineStageFlagBits pipelineStage, VkQueryPool queryPool, uint32_t query ) {
+		vkCmdWriteTimestamp( this.commandBuffer, pipelineStage, queryPool, query );
+	}
+	void CmdCopyQueryPoolResults( VkQueryPool queryPool, uint32_t firstQuery, uint32_t queryCount, VkBuffer dstBuffer, VkDeviceSize dstOffset, VkDeviceSize stride, VkQueryResultFlags flags ) {
+		vkCmdCopyQueryPoolResults( this.commandBuffer, queryPool, firstQuery, queryCount, dstBuffer, dstOffset, stride, flags );
+	}
+	void CmdPushConstants( VkPipelineLayout layout, VkShaderStageFlags stageFlags, uint32_t offset, uint32_t size, const( void )* pValues ) {
+		vkCmdPushConstants( this.commandBuffer, layout, stageFlags, offset, size, pValues );
+	}
+	void CmdBeginRenderPass( const( VkRenderPassBeginInfo )* pRenderPassBegin, VkSubpassContents contents ) {
+		vkCmdBeginRenderPass( this.commandBuffer, pRenderPassBegin, contents );
+	}
+	void CmdNextSubpass( VkSubpassContents contents ) {
+		vkCmdNextSubpass( this.commandBuffer, contents );
+	}
+	void CmdEndRenderPass() {
+		vkCmdEndRenderPass( this.commandBuffer );
+	}
+	void CmdExecuteCommands( uint32_t commandBufferCount, const( VkCommandBuffer )* pCommandBuffers ) {
+		vkCmdExecuteCommands( this.commandBuffer, commandBufferCount, pCommandBuffers );
+	}
 
-// struct to group per device deviceLevelFunctions into a custom namespace
-private struct DispatchDevice {
+	// VK_KHR_display_swapchain
+	VkResult CreateSharedSwapchainsKHR( uint32_t swapchainCount, const( VkSwapchainCreateInfoKHR )* pCreateInfos, const( VkAllocationCallbacks )* pAllocator, VkSwapchainKHR* pSwapchains ) {
+		return vkCreateSharedSwapchainsKHR( this.device, swapchainCount, pCreateInfos, pAllocator, pSwapchains );
+	}
+
+	// VK_KHR_maintenance1
+	void TrimCommandPoolKHR( VkCommandPool commandPool, VkCommandPoolTrimFlagsKHR flags ) {
+		vkTrimCommandPoolKHR( this.device, commandPool, flags );
+	}
+
+	// VK_KHR_push_descriptor
+	void CmdPushDescriptorSetKHR( VkPipelineBindPoint pipelineBindPoint, VkPipelineLayout layout, uint32_t set, uint32_t descriptorWriteCount, const( VkWriteDescriptorSet )* pDescriptorWrites ) {
+		vkCmdPushDescriptorSetKHR( this.commandBuffer, pipelineBindPoint, layout, set, descriptorWriteCount, pDescriptorWrites );
+	}
+
+	// VK_KHR_descriptor_update_template
+	VkResult CreateDescriptorUpdateTemplateKHR( const( VkDescriptorUpdateTemplateCreateInfoKHR )* pCreateInfo, const( VkAllocationCallbacks )* pAllocator, VkDescriptorUpdateTemplateKHR* pDescriptorUpdateTemplate ) {
+		return vkCreateDescriptorUpdateTemplateKHR( this.device, pCreateInfo, pAllocator, pDescriptorUpdateTemplate );
+	}
+	void DestroyDescriptorUpdateTemplateKHR( VkDescriptorUpdateTemplateKHR descriptorUpdateTemplate, const( VkAllocationCallbacks )* pAllocator ) {
+		vkDestroyDescriptorUpdateTemplateKHR( this.device, descriptorUpdateTemplate, pAllocator );
+	}
+	void UpdateDescriptorSetWithTemplateKHR( VkDescriptorSet descriptorSet, VkDescriptorUpdateTemplateKHR descriptorUpdateTemplate, const( void )* pData ) {
+		vkUpdateDescriptorSetWithTemplateKHR( this.device, descriptorSet, descriptorUpdateTemplate, pData );
+	}
+	void CmdPushDescriptorSetWithTemplateKHR( VkDescriptorUpdateTemplateKHR descriptorUpdateTemplate, VkPipelineLayout layout, uint32_t set, const( void )* pData ) {
+		vkCmdPushDescriptorSetWithTemplateKHR( this.commandBuffer, descriptorUpdateTemplate, layout, set, pData );
+	}
+
+	// VK_EXT_debug_marker
+	VkResult DebugMarkerSetObjectTagEXT( VkDebugMarkerObjectTagInfoEXT* pTagInfo ) {
+		return vkDebugMarkerSetObjectTagEXT( this.device, pTagInfo );
+	}
+	VkResult DebugMarkerSetObjectNameEXT( VkDebugMarkerObjectNameInfoEXT* pNameInfo ) {
+		return vkDebugMarkerSetObjectNameEXT( this.device, pNameInfo );
+	}
+	void CmdDebugMarkerBeginEXT( VkDebugMarkerMarkerInfoEXT* pMarkerInfo ) {
+		vkCmdDebugMarkerBeginEXT( this.commandBuffer, pMarkerInfo );
+	}
+	void CmdDebugMarkerEndEXT() {
+		vkCmdDebugMarkerEndEXT( this.commandBuffer );
+	}
+	void CmdDebugMarkerInsertEXT( VkDebugMarkerMarkerInfoEXT* pMarkerInfo ) {
+		vkCmdDebugMarkerInsertEXT( this.commandBuffer, pMarkerInfo );
+	}
+
+	// VK_AMD_draw_indirect_count
+	void CmdDrawIndirectCountAMD( VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, uint32_t maxDrawCount, uint32_t stride ) {
+		vkCmdDrawIndirectCountAMD( this.commandBuffer, buffer, offset, countBuffer, countBufferOffset, maxDrawCount, stride );
+	}
+	void CmdDrawIndexedIndirectCountAMD( VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, uint32_t maxDrawCount, uint32_t stride ) {
+		vkCmdDrawIndexedIndirectCountAMD( this.commandBuffer, buffer, offset, countBuffer, countBufferOffset, maxDrawCount, stride );
+	}
+
+	// VK_NV_external_memory_win32
+	version( VK_USE_PLATFORM_WIN32_KHR ) {
+		VkResult GetMemoryWin32HandleNV( VkDeviceMemory memory, VkExternalMemoryHandleTypeFlagsNV handleType, HANDLE* pHandle ) {
+			return vkGetMemoryWin32HandleNV( this.device, memory, handleType, pHandle );
+		}
+	}
+
+	// VK_KHX_external_memory_win32
+	version( VK_USE_PLATFORM_WIN32_KHR ) {
+		VkResult GetMemoryWin32HandleKHX( VkDeviceMemory memory, VkExternalMemoryHandleTypeFlagBitsKHX handleType, HANDLE* pHandle ) {
+			return vkGetMemoryWin32HandleKHX( this.device, memory, handleType, pHandle );
+		}
+		VkResult GetMemoryWin32HandlePropertiesKHX( VkExternalMemoryHandleTypeFlagBitsKHX handleType, HANDLE handle, VkMemoryWin32HandlePropertiesKHX* pMemoryWin32HandleProperties ) {
+			return vkGetMemoryWin32HandlePropertiesKHX( this.device, handleType, handle, pMemoryWin32HandleProperties );
+		}
+	}
+
+	// VK_KHX_external_memory_fd
+	VkResult GetMemoryFdKHX( VkDeviceMemory memory, VkExternalMemoryHandleTypeFlagBitsKHX handleType, int* pFd ) {
+		return vkGetMemoryFdKHX( this.device, memory, handleType, pFd );
+	}
+	VkResult GetMemoryFdPropertiesKHX( VkExternalMemoryHandleTypeFlagBitsKHX handleType, int fd, VkMemoryFdPropertiesKHX* pMemoryFdProperties ) {
+		return vkGetMemoryFdPropertiesKHX( this.device, handleType, fd, pMemoryFdProperties );
+	}
+
+	// VK_KHX_external_semaphore_win32
+	version( VK_USE_PLATFORM_WIN32_KHR ) {
+		VkResult ImportSemaphoreWin32HandleKHX( const( VkImportSemaphoreWin32HandleInfoKHX )* pImportSemaphoreWin32HandleInfo ) {
+			return vkImportSemaphoreWin32HandleKHX( this.device, pImportSemaphoreWin32HandleInfo );
+		}
+		VkResult GetSemaphoreWin32HandleKHX( VkSemaphore semaphore, VkExternalSemaphoreHandleTypeFlagBitsKHX handleType, HANDLE* pHandle ) {
+			return vkGetSemaphoreWin32HandleKHX( this.device, semaphore, handleType, pHandle );
+		}
+	}
+
+	// VK_KHX_external_semaphore_fd
+	VkResult ImportSemaphoreFdKHX( const( VkImportSemaphoreFdInfoKHX )* pImportSemaphoreFdInfo ) {
+		return vkImportSemaphoreFdKHX( this.device, pImportSemaphoreFdInfo );
+	}
+	VkResult GetSemaphoreFdKHX( VkSemaphore semaphore, VkExternalSemaphoreHandleTypeFlagBitsKHX handleType, int* pFd ) {
+		return vkGetSemaphoreFdKHX( this.device, semaphore, handleType, pFd );
+	}
+
+	// VK_NV_clip_space_w_scaling
+	void CmdSetViewportWScalingNV( uint32_t firstViewport, uint32_t viewportCount, const( VkViewportWScalingNV )* pViewportWScalings ) {
+		vkCmdSetViewportWScalingNV( this.commandBuffer, firstViewport, viewportCount, pViewportWScalings );
+	}
+
+	// VK_EXT_display_control
+	VkResult DisplayPowerControlEXT( VkDisplayKHR display, const( VkDisplayPowerInfoEXT )* pDisplayPowerInfo ) {
+		return vkDisplayPowerControlEXT( this.device, display, pDisplayPowerInfo );
+	}
+	VkResult RegisterDeviceEventEXT( const( VkDeviceEventInfoEXT )* pDeviceEventInfo, const( VkAllocationCallbacks )* pAllocator, VkFence* pFence ) {
+		return vkRegisterDeviceEventEXT( this.device, pDeviceEventInfo, pAllocator, pFence );
+	}
+	VkResult RegisterDisplayEventEXT( VkDisplayKHR display, const( VkDisplayEventInfoEXT )* pDisplayEventInfo, const( VkAllocationCallbacks )* pAllocator, VkFence* pFence ) {
+		return vkRegisterDisplayEventEXT( this.device, display, pDisplayEventInfo, pAllocator, pFence );
+	}
+	VkResult GetSwapchainCounterEXT( VkSwapchainKHR swapchain, VkSurfaceCounterFlagBitsEXT counter, uint64_t* pCounterValue ) {
+		return vkGetSwapchainCounterEXT( this.device, swapchain, counter, pCounterValue );
+	}
+
+	// VK_GOOGLE_display_timing
+	VkResult GetRefreshCycleDurationGOOGLE( VkSwapchainKHR swapchain, VkRefreshCycleDurationGOOGLE* pDisplayTimingProperties ) {
+		return vkGetRefreshCycleDurationGOOGLE( this.device, swapchain, pDisplayTimingProperties );
+	}
+	VkResult GetPastPresentationTimingGOOGLE( VkSwapchainKHR swapchain, uint32_t* pPresentationTimingCount, VkPastPresentationTimingGOOGLE* pPresentationTimings ) {
+		return vkGetPastPresentationTimingGOOGLE( this.device, swapchain, pPresentationTimingCount, pPresentationTimings );
+	}
+
+	// VK_EXT_discard_rectangles
+	void CmdSetDiscardRectangleEXT( uint32_t firstDiscardRectangle, uint32_t discardRectangleCount, const( VkRect2D )* pDiscardRectangles ) {
+		vkCmdSetDiscardRectangleEXT( this.commandBuffer, firstDiscardRectangle, discardRectangleCount, pDiscardRectangles );
+	}
+
+	// VK_EXT_hdr_metadata
+	void SetHdrMetadataEXT( uint32_t swapchainCount, const( VkSwapchainKHR )* pSwapchains, const( VkHdrMetadataEXT )* pMetadata ) {
+		vkSetHdrMetadataEXT( this.device, swapchainCount, pSwapchains, pMetadata );
+	}
+
+	// Member vulkan function decelerations
 	PFN_vkDestroyDevice vkDestroyDevice;
 	PFN_vkGetDeviceQueue vkGetDeviceQueue;
 	PFN_vkQueueSubmit vkQueueSubmit;
@@ -1685,7 +2211,7 @@ private struct DispatchDevice {
 version( ERUPTED_FROM_DERELICT ) {
 	import derelict.util.loader;
 	import derelict.util.system;
-	
+
 	private {
 		version( Windows )
 			enum libNames = "vulkan-1.dll";
@@ -1696,19 +2222,19 @@ version( ERUPTED_FROM_DERELICT ) {
 		else
 			static assert( 0,"Need to implement Vulkan libNames for this operating system." );
 	}
-	
+
 	class DerelictEruptedLoader : SharedLibLoader {
 		this() {
 			super( libNames );
 		}
-		
+
 		protected override void loadSymbols() {
 			typeof( vkGetInstanceProcAddr ) getProcAddr;
 			bindFunc( cast( void** )&getProcAddr, "vkGetInstanceProcAddr" );
 			loadGlobalLevelFunctions( getProcAddr );
 		}
 	}
-	
+
 	__gshared DerelictEruptedLoader DerelictErupted;
 
 	shared static this() {

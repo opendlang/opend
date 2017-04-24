@@ -20,16 +20,16 @@ To use without configuration:
 4. Create a `VkInstance` using the above functions.
 5. Call `loadInstanceLevelFunctions(VkInstance)` to load additional `VkInstance` related functions. Get information about available physical devices (e.g. GPU(s), APU(s), etc.) and physical device related resources (e.g. Queue Families, Queues per Family, etc. )
 6. Now three options are available to acquire a logical device and device resource related functions (functions with first param of `VkDevice`, `VkQueue` or `VkCommandBuffer`):
-	* Call `loadDeviceLevelFunctions(VkInstance)`, the acquired functions call indirectly through the `VkInstance` and will be internally dispatched by the implementation
-	* Call `loadDeviceLevelFunctions(VkDevice)`, the acquired functions call directly the `VkDevice` and related resources. This path is faster, skips one indirection, but (in theory, not tested yet!) is useful only in a single physical device environment. Calling the same function with another `VkDevice` should overwrite (this is the not tested theory) all the previously fetched __gshared function
-	* Call `createDispatchDeviceLevelFunctions(VkDevice)` and capture the result, which is a struct with all the device level function pointers kind of namespaced in that struct. This should avoid collisions.
+	* Call `loadDeviceLevelFunctions(VkInstance);`, the acquired functions call indirectly through the `VkInstance` and will be internally dispatched by the implementation
+	* Call `loadDeviceLevelFunctions(VkDevice);`, the acquired functions call directly the `VkDevice` and related resources. This path is faster, skips one indirection, but (in theory, not tested yet!) is useful only in a single physical device environment. Calling the same function with another `VkDevice` should overwrite (this is the not tested theory) all the previously fetched __gshared function
+	* Create a DispatchDevice with vulkan functions as members kind of namespaced, see [DispatchDevice](https://github.com/ParticlePeter/ErupteD#platform-surface-extensions)
 
 To use with the `with-derelict-loader` configuration, follow the above steps, but call `EruptedDerelict.load()` instead of performing steps two and three.
 
 Available configurations:
 * `with-derelict-loader` fetches derelictUtil, gets a pointer to `vkGetInstanceProcAddr` and loads few additional global functions (see above)
-* `dub-platform-xcb`, `dub-platform-xlib`, `dub-platform-wayland` fetches corresponding dub packages `xcb-d`, `xlib-d`, `wayland-client-d`, see [Platform surface extensions](https://github.com/ParticlePeter/ErupteD#platform-surface-extensions)
-* `dub-platform-???-derelict-loader` combines the platforms above with the derelict loader 
+* `dub-platform-xcb`, `dub-platform-xlib`, `dub-platform-wayland` fetches corresponding dub packages `xcb-d`, `xlib-d`, `wayland-client-d`, see [Platform surface extensions](https://github.com/ParticlePeter/ErupteD#DispatchDevice)
+* `dub-platform-???-derelict-loader` combines the platforms above with the derelict loader
 
 The API is similar to the C Vulkan API, but with some differences:
 * `VK_NULL_HANDLE` is defined as `0` and can be used as `uint64_t` type and `pointer` type argument in C world. D's `null` can be used only as a pointer argument. This is an issue when compiling for 32 bit, as dispatchable handles (`VkInstance`, `VkPhysicalDevice`, `VkDevice`, `VkQueue`) are pointer types while non dispatchable handles (e.g. `VkSemaphore`) are `uint64_t` types. Hence erupted `VK_NULL_HANDLE` can only be used as dispatchable null handle (on 32 Bit!). For non dispatchable handles another ErupteD symbol exist `VK_NULL_ND_HANDLE`. On 64 bit all handles are pointer types and `VK_NULL_HANDLE` can be used at any place. However `VK_NULL_ND_HANDLE` is still defined for sake of completeness and ease of use. The issue might be solved when `multiple alias this` is released, hence I recommend building 64 Bit apps and ignore `VK_NULL_ND_HANDLE`.
@@ -41,10 +41,44 @@ The API is similar to the C Vulkan API, but with some differences:
 
 Examples can be found in the `examples` directory, and run with `dub run erupted:examplename`
 
+DispatchDevice
+--------------
+The DispatchDevice holds a VkDevice and the vulkan functions loaded from that device collision protected.
+Before usage the device must be initialize, either immediately:
+```
+	auto dd = DispatchDevice(device);
+```
+or delayed:
+```
+	DispatchDevice dd;
+	dd.loadDeviceLevelFunctions(device);
+```
+The VkMember is private, it should never change as the functions can be used only with this device.
+It can be accessed with the getter `vkDevice()` e.g.:
+```
+	auto dd = DispatchDevice( device );
+	dd.vkDestroyDevice( dd.vkDevice, pAllocator );
+```
+The Device has also convenience functions such that the `device` argument can be omitted.
+They forward to the corresponding vulkan function and the `device` argument is supplied by the private `VkDevice` member. The crux is that function pointers can't be overloaded with regular functions hence the `vk` prefix is ditched for the convenience variants:
+```
+	auto dd = DispatchDevice( device );
+	dd.DestroyDevice( pAllocator );		// instead of: dd.vkDestroyDevice( dd.vkDevice, pAllocator );
+```
+Same mechanism works with functions which require a VkCommandBuffer as first arg, but before using them the public member 'commandBuffer' must be set with the target VkCommandBuffer:
+```
+	dd.commandBuffer = some_command_buffer;
+	dd.BeginCommandBuffer( &beginInfo );
+	dd.CmdBindPipeline( VK_PIPELINE_BIND_POINT_GRAPHICS, some_pipeline );
+```
+Needless to say that `some_command_buffer` must have been acquired from the private device member, or some other handle to that device.
+The Mechanism does NOT work with queues, there are about four queue related functions which most probably won't be used in bulk.
+
+
 Platform surface extensions
 ---------------------------
 
-The usage of a third party library like glfw3 is highly recommended instead of vulkan platforms surfaces. Dlang has only one official platform binding in phobos which is for windows, found in module `core.sys.windows.windows`. Other bindings to XCB, XLIB and Wayland can be found in the dub registry and are supported experimentally. 
+The usage of a third party library like glfw3 is highly recommended instead of vulkan platforms surfaces. Dlang has only one official platform binding in phobos which is for windows, found in module `core.sys.windows.windows`. Other bindings to XCB, XLIB and Wayland can be found in the dub registry and are supported experimentally.
 However, if you wish to create vulkan surface(s) yourself you have three choices:
 
 1. The dub way, this is experimental, currently only three bindings are listed in the registry. Dub fetches them and adds them to erupted build dependency when you specify any of these sub configurations in your projects dub.json (add `-derelict-loader` to the config name if you want to be able to laod `vkGetInstanceProcAddr` from derelict):
@@ -67,7 +101,7 @@ Additional info:
 `"versions" : [ "VK_USE_PLATFORM_WIN32_KHR" ]`.
 The phobos windows modules will be used in that case.
 * wayland-client.h cannot exist as module name. The maintainer of `wayland-client-d` choose `wayland.client` as module name and the name is used in `erupted/types` as well.
-* for android platform, I have not a single clue how this is supposed to work. If you are interested in android and have an idea how it should work feel free to open up an issue. 
+* for android platform, I have not a single clue how this is supposed to work. If you are interested in android and have an idea how it should work feel free to open up an issue.
 
 
 Platform extensions

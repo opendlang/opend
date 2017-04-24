@@ -55,7 +55,7 @@ pure {{
 
 	// Vulkan 1.0 version number
 	uint VK_API_VERSION_1_0() {{ return VK_MAKE_VERSION( 1, 0, 0 ); }}
-	
+
 	uint VK_VERSION_MAJOR( uint ver ) {{ return ver >> 22; }}
 	uint VK_VERSION_MINOR( uint ver ) {{ return ( ver >> 12 ) & 0x3ff; }}
 	uint VK_VERSION_PATCH( uint ver ) {{ return ver & 0xfff; }}
@@ -98,7 +98,7 @@ def getFullType( elem, opaqueStruct = None ):
 		typstr = typstr.lstrip( 'struct ' )
 		if isinstance( opaqueStruct, set ):
 			opaqueStruct.add( typstr.rstrip( '*' ))
-	
+
 	arrlen = elem.find( "enum" )
 	if arrlen is not None:
 		return "{0}[ {1} ]".format( typstr, arrlen.text )
@@ -134,15 +134,22 @@ class DGenerator( OutputGenerator ):
 		super().__init__( errFile, warnFile, diagFile )
 		self.headerVersion = ""
 		self.typesFileContent = ""
+
+		self.opaqueStruct = set()
+		self.sections = dict( [ ( section, [] ) for section in self.ALL_SECTIONS ] )
+		self.functionTypeName = dict()
+		self.functionTypeDefinition = ""
+
 		self.instanceLevelFuncNames = set()
 		self.instanceLevelFunctions = ""
 		self.deviceLevelFuncNames = set()
 		self.deviceLevelFunctions = ""
-		self.sections = dict( [ ( section, [] ) for section in self.ALL_SECTIONS ] )
-		self.functionTypeName = dict()
-		self.functionTypeDefinition = ""
+
 		self.dispatchTypeDefinition = ""
-		self.opaqueStruct = set()
+		self.dispatchConvenienceFuncNames = dict()
+		self.dispatchConvenienceFunctions = ""
+		self.maxDispatchConvenienceFuncName = 0
+
 		self.platformExtensions = {
 			"// VK_KHR_android_surface"          : [ "VK_USE_PLATFORM_ANDROID_KHR", "public import android.native_window;\n" ],
 			"// VK_KHR_mir_surface"              : [ "VK_USE_PLATFORM_MIR_KHR",     "public import mir_toolkit.client_types;\n" ],
@@ -164,17 +171,17 @@ class DGenerator( OutputGenerator ):
 			os.mkdir( genOpts.filename )
 		except FileExistsError:
 			pass
-		
+
 		self.typesFile = open( path.join( genOpts.filename, "types.d" ), "w", encoding = "utf-8" )
 		self.funcsFile = open( path.join( genOpts.filename, "functions.d" ), "w", encoding = "utf-8" )
 
-		self.testsFile = open( path.join( genOpts.filename, "test.txt" ), "w", encoding = "utf-8" )
-		
+		#self.testsFile = open( path.join( genOpts.filename, "test.txt" ), "w", encoding = "utf-8" )
+
 		with open( path.join( genOpts.filename, "package.d" ), "w", encoding = "utf-8" ) as packageFile:
 			write( PACKAGE_HEADER.format( PACKAGE_PREFIX = genOpts.packagePrefix ), file = packageFile )
-		
+
 		write( FUNCTIONS_HEADER.format( PACKAGE_PREFIX = genOpts.packagePrefix ), file = self.funcsFile )
-	
+
 	def endFile( self ):
 
 		# write types.d file
@@ -223,29 +230,71 @@ void loadDeviceLevelFunctions( VkDevice device ) {
 
 /// with a valid VkDevice call this function to retrieve VkDevice, VkQueue and VkCommandBuffer related functions grouped in a DispatchDevice struct
 /// the functions call directly VkDevice and related resources and can be retrieved for any VkDevice
+deprecated( \"Use DispatchDevice( VkDevice ) or DispatchDevice.loadDeviceLevelFunctions( VkDevice ) instead\" )
 DispatchDevice createDispatchDeviceLevelFunctions( VkDevice device ) {
-	assert( vkGetDeviceProcAddr !is null, "Must call loadInstanceLevelFunctions before loadDeviceLevelFunctions" );
-	
-	DispatchDevice dispatchDevice;
-	with( dispatchDevice ) {\
-"""
-		+ self.deviceLevelFunctions.format( INSTANCE_OR_DEVICE = "Device", instance_or_device = "device" ).replace( '\t', '\t\t' ).replace( '\t\t\t\t', '\t\t\t' )
-		+ """\n\
-	}}
-
-	return dispatchDevice;
-}}
+	return DispatchDevice( device );
+}
 
 
 // struct to group per device deviceLevelFunctions into a custom namespace
-private struct DispatchDevice {{{DISPATCH_FUNCTION_DEFINITIONS}
+// keeps track of the device to which the functions are bound
+struct DispatchDevice {
+	private VkDevice device = VK_NULL_HANDLE;
+	VkCommandBuffer commandBuffer;
+
+	// return copy of the internal VkDevice
+	VkDevice vkDevice() {
+		return device;
+	}
+
+	// Constructor forwards parameter 'device' to 'this.loadDeviceLevelFunctions'
+	this( VkDevice device ) {
+		this.loadDeviceLevelFunctions( device );
+	}
+
+	// load the device level member functions
+	// this also sets the private member 'device' to the passed in VkDevice
+	// now the DispatchDevice can be used e.g.:
+	//		auto dd = DispatchDevice( device );
+	//		dd.vkDestroyDevice( dd.vkDevice, pAllocator );
+	// convenience functions to omit the first arg do exist, see bellow
+	void loadDeviceLevelFunctions( VkDevice device ) {
+		assert( vkGetDeviceProcAddr !is null, "Must call loadInstanceLevelFunctions before loadDeviceLevelFunctions" );
+		this.device = device;\
+"""
+			+ self.deviceLevelFunctions.format( INSTANCE_OR_DEVICE = "Device", instance_or_device = "device" ).replace( '\t', '\t\t' ).replace( '\t\t\t\t', '\t\t\t' )
+			+ """\n\
+	}
+
+	// Convenience member functions, forwarded to corresponding vulkan functions
+	// If the first arg of the vulkan function is VkDevice it can be omitted
+	// private 'DipatchDevice' member 'device' will be passed to the forwarded vulkan functions
+	// the crux is that function pointers can't be overloaded with regular functions
+	// hence the vk prefix is ditched for the convenience variants
+	// e.g.:
+	//		auto dd = DispatchDevice( device );
+	//		dd.DestroyDevice( pAllocator );		// instead of: dd.vkDestroyDevice( dd.vkDevice, pAllocator );
+	//
+	// Same mechanism works with functions which require a VkCommandBuffer as first arg
+	// In this case the public member 'commandBuffer' must be set beforehand
+	// e.g.:
+	//		dd.commandBuffer = some_command_buffer;
+	//		dd.BeginCommandBuffer( &beginInfo );
+	//		dd.CmdBindPipeline( VK_PIPELINE_BIND_POINT_GRAPHICS, some_pipeline );
+	//
+	// Does not work with queues, there are just too few queue related functions"""
+
+	+ self.dispatchConvenienceFunctions
+	+ """\n\
+
+	// Member vulkan function decelerations{DISPATCH_FUNCTION_DEFINITIONS}
 }}
 
 // Derelict loader to acquire entry point vkGetInstanceProcAddr
 version( {NAME_PREFIX_UCASE}_FROM_DERELICT ) {{
 	import derelict.util.loader;
 	import derelict.util.system;
-	
+
 	private {{
 		version( Windows )
 			enum libNames = "vulkan-1.dll";
@@ -256,19 +305,19 @@ version( {NAME_PREFIX_UCASE}_FROM_DERELICT ) {{
 		else
 			static assert( 0,"Need to implement Vulkan libNames for this operating system." );
 	}}
-	
+
 	class Derelict{NAME_PREFIX}Loader : SharedLibLoader {{
 		this() {{
 			super( libNames );
 		}}
-		
+
 		protected override void loadSymbols() {{
 			typeof( vkGetInstanceProcAddr ) getProcAddr;
 			bindFunc( cast( void** )&getProcAddr, "vkGetInstanceProcAddr" );
 			loadGlobalLevelFunctions( getProcAddr );
 		}}
 	}}
-	
+
 	__gshared Derelict{NAME_PREFIX}Loader Derelict{NAME_PREFIX};
 
 	shared static this() {{
@@ -276,8 +325,8 @@ version( {NAME_PREFIX_UCASE}_FROM_DERELICT ) {{
 	}}
 }}
 
-""".format( 
-	NAME_PREFIX = self.genOpts.namePrefix, 
+""".format(
+	NAME_PREFIX = self.genOpts.namePrefix,
 	NAME_PREFIX_UCASE = self.genOpts.namePrefix.upper(),
 	DISPATCH_FUNCTION_DEFINITIONS = self.dispatchTypeDefinition ),
 	file = self.funcsFile )
@@ -292,30 +341,30 @@ version( {NAME_PREFIX_UCASE}_FROM_DERELICT ) {{
 		self.currentFeature = "// {0}".format( interface.attrib[ 'name' ] )
 		self.sections = dict( [ ( section, [] ) for section in self.ALL_SECTIONS ] )
 		self.opaqueStruct.clear()
-		self.surfaceExtensionVersionIndent = ""
-		self.isSurfaceExtension = self.currentFeature in self.platformExtensions
-		if self.isSurfaceExtension:
-			self.surfaceExtensionVersionIndent = "\t"
+		self.platformExtensionVersionIndent = ""
+		self.isPlatformExtension = self.currentFeature in self.platformExtensions
+		if self.isPlatformExtension:
+			self.platformExtensionVersionIndent = "\t"
 
 	def endFeature( self ):
 		if self.emit:
 			# first write all types into types.d
 
 			# special treat for platform surface extension which get wrapped into a version block
-			extIndent = self.surfaceExtensionVersionIndent
+			extIndent = self.platformExtensionVersionIndent
 			fileContent = self.typesFileContent
 			fileContent += "\n{0}\n".format( self.currentFeature )
 			version_platform = ""
-			if self.isSurfaceExtension:
+			if self.isPlatformExtension:
 				version_platform = "version( {0} ) {{".format( self.platformExtensions[ self.currentFeature ][ 0 ] )
 				fileContent += "{0}\n\t{1}\n".format( version_platform, self.platformExtensions[ self.currentFeature ][ 1 ] )
-			
+
 			isFirstSectionInFeature = True		# for output file formating
 			for section in self.TYPE_SECTIONS:
 				# write contents of type section
 				contents = self.sections[ section ]
 				if contents:
-					# check if opaque structs were registered and write them into types file	
+					# check if opaque structs were registered and write them into types file
 					if section == 'struct':
 						if self.opaqueStruct:
 							for opaque in self.opaqueStruct:
@@ -332,18 +381,18 @@ version( {NAME_PREFIX_UCASE}_FROM_DERELICT ) {{
 					for content in self.sections[ section ]:
 						fileContent += "{1}{0}\n".format( content, extIndent )
 
-			if self.isSurfaceExtension:
+			if self.isPlatformExtension:
 				fileContent += "}\n"
 
 			self.typesFileContent = fileContent
 
 			fileContent = ""
 
-			# currently the commandPointer token is not used
+			# currently the commandPointer token is not used by Khronos
 			if self.genOpts.genFuncPointers and self.sections[ 'commandPointer' ]:
-				if self.isSurfaceExtension: fileContent += version_platform#write( version_platform, file = self.funcsFile )
+				if self.isPlatformExtension: fileContent += version_platform#write( version_platform, file = self.funcsFile )
 				fileContent += '\n' + extIndent + ( '\n' + extIndent ).join( self.sections[ 'commandPointer' ] ) #write( extIndent + ( '\n' + extIndent ).join( self.sections[ 'commandPointer' ] ), file = self.funcsFile )
-				if self.isSurfaceExtension: fileContent += "\n}" #write( "}", file = self.funcsFile )
+				if self.isPlatformExtension: fileContent += "\n}" #write( "}", file = self.funcsFile )
 				fileContent += '\n' #write( '', file = self.funcsFile )
 				write( fileContent, file = self.funcsFile )
 				fileContent = ""
@@ -355,21 +404,22 @@ version( {NAME_PREFIX_UCASE}_FROM_DERELICT ) {{
 
 				# write the aliases to function types
 				fileContent += "\n{0}".format( self.currentFeature ) #write( "\n{0}".format( self.currentFeature ), file = self.funcsFile )
-				if self.isSurfaceExtension: fileContent += "\n\t" + version_platform #write( "\t" + version_platform, file = self.funcsFile )
+				if self.isPlatformExtension: fileContent += "\n\t" + version_platform #write( "\t" + version_platform, file = self.funcsFile )
 				fileContent += "\n" + extIndent + ( '\n' + extIndent ).join( self.sections[ 'command' ] ) #write( extIndent + ( '\n' + extIndent ).join( self.sections[ 'command' ] ), file = self.funcsFile )
-				if self.isSurfaceExtension: fileContent += "\n\t}" #write( "\t}", file = self.funcsFile )
+				if self.isPlatformExtension: fileContent += "\n\t}" #write( "\t}", file = self.funcsFile )
 				write( fileContent, file = self.funcsFile )
 				fileContent = ""
 
 				# capture if function is a instance or device level function
 				inInstanceLevelFuncNames = False
 				inDeviceLevelFuncNames = False
+				inDispatchConvenienceFuncNames = False
 
 				# comment the current feature
 				self.functionTypeDefinition += "\n\n{0}".format( self.currentFeature )
 
 				# surface extension version directive
-				if self.isSurfaceExtension: self.functionTypeDefinition += "\n\t" + version_platform
+				if self.isPlatformExtension: self.functionTypeDefinition += "\n\t" + version_platform
 
 				# create string of functionTypes functionVars
 				for command in self.sections[ 'command' ]:
@@ -383,8 +433,10 @@ version( {NAME_PREFIX_UCASE}_FROM_DERELICT ) {{
 					if not inDeviceLevelFuncNames and name in self.deviceLevelFuncNames:
 						inDeviceLevelFuncNames = True
 
+					inDispatchConvenienceFuncNames = name in self.dispatchConvenienceFuncNames
+
 				# surface extension version closing curly brace
-				if self.isSurfaceExtension: self.functionTypeDefinition += "\n\t}"
+				if self.isPlatformExtension: self.functionTypeDefinition += "\n\t}"
 
 				# create a strings to load instance level functions
 				if inInstanceLevelFuncNames:
@@ -392,8 +444,8 @@ version( {NAME_PREFIX_UCASE}_FROM_DERELICT ) {{
 					self.instanceLevelFunctions += "\n\n{0}".format( self.currentFeature )
 
 					# surface extension version directive
-					if self.isSurfaceExtension: self.instanceLevelFunctions += "\n\t" + version_platform
-					
+					if self.isPlatformExtension: self.instanceLevelFunctions += "\n\t" + version_platform
+
 					# set of global level function names, function pointers are ignored here are set in endFile method
 					gloablLevelFuncNames = {"vkGetInstanceProcAddr", "vkEnumerateInstanceExtensionProperties", "vkEnumerateInstanceLayerProperties", "vkCreateInstance"}
 
@@ -404,15 +456,16 @@ version( {NAME_PREFIX_UCASE}_FROM_DERELICT ) {{
 							self.instanceLevelFunctions += "\n\t{1}{0} = cast( typeof( {0} )) vkGetInstanceProcAddr( instance, \"{0}\" );".format( name, extIndent )
 
 					# surface extension version closing curly brace
-					if self.isSurfaceExtension: self.instanceLevelFunctions += "\n\t}"
+					if self.isPlatformExtension:
+						self.instanceLevelFunctions += "\n\t}"
 
-				# create a strings to load device level functions
+				# create a string to load device level functions
 				if inDeviceLevelFuncNames:
 					# comment the current feature
 					self.deviceLevelFunctions += "\n\n{0}".format( self.currentFeature )
 
 					# surface extension version directive
-					if self.isSurfaceExtension:
+					if self.isPlatformExtension:
 						# add version_platform into the DispatchDevice struct
 						self.dispatchTypeDefinition += "\n\t" + version_platform
 
@@ -429,11 +482,36 @@ version( {NAME_PREFIX_UCASE}_FROM_DERELICT ) {{
 
 							# this function type definitions end up in the DispatchDevice struct
 							self.dispatchTypeDefinition += "\n\t{1}PFN_{0} {0};".format( name, extIndent )
-					
+
 					# surface extension version closing curly brace
-					if self.isSurfaceExtension:
+					if self.isPlatformExtension:
 						self.deviceLevelFunctions += "\n\t}}"	# closing braces for formated device level functions
 						self.dispatchTypeDefinition += "\n\t}"	# closing braces for unformated dispatch device struct
+
+
+				# create a string for DispatchDevice convenience functions
+				if inDispatchConvenienceFuncNames:
+					# comment the current feature
+					self.dispatchConvenienceFunctions += "\n\n{0}".format( self.currentFeature )
+
+					# surface extension version directive
+					if self.isPlatformExtension:
+
+						# need to change version platform due to INSTANCE_OR_DEVICE format element
+						version_platform = "version( {0} ) {{".format( self.platformExtensions[ self.currentFeature[1:] ][ 0 ] )
+						self.dispatchConvenienceFunctions += "\n\t" + version_platform
+
+
+					# build the commands
+					for command in self.sections[ 'command' ]:
+						name = self.functionTypeName[ command ]
+						if name in self.dispatchConvenienceFuncNames:
+							self.dispatchConvenienceFunctions +=  '\n' + self.dispatchConvenienceFuncNames[ name ].format( extIndent )
+
+					# surface extension version closing curly brace
+					if self.isPlatformExtension:
+						self.dispatchConvenienceFunctions += "\n\t}"	# closing braces for formated device level functions
+
 
 		# Finish processing in superclass
 		OutputGenerator.endFeature( self )
@@ -460,20 +538,20 @@ version( {NAME_PREFIX_UCASE}_FROM_DERELICT ) {{
 
 		if category == "handle":
 			self.appendSection( "handle", "mixin( {0}!q{{{1}}} );".format( typeinfo.elem.find( "type" ).text, name ))
-			
+
 		elif category == "basetype":
 			self.appendSection( "basetype", "alias {0} = {1};".format( name, typeinfo.elem.find( "type" ).text ))
-			
+
 		elif category == "bitmask":
 			self.appendSection( "bitmask", "alias {0} = VkFlags;".format( name ))
-			
+
 		elif category == "funcpointer":
 			returnType = re.match( re_funcptr, typeinfo.elem.text ).group( 1 )
 			params = "".join( islice( typeinfo.elem.itertext(), 2, None ))[ 2: ]
 			if params == "void);" or params == " void );" : params = ");"
 			#else: params = ' '.join( ' '.join( line.strip() for line in params.splitlines()).split())
 			else:
-				concatParams = "" 
+				concatParams = ""
 				for line in params.splitlines():
 					lineSplit = line.split()
 					if len( lineSplit ) > 2:
@@ -486,7 +564,7 @@ version( {NAME_PREFIX_UCASE}_FROM_DERELICT ) {{
 			self.appendSection( "funcpointer", "alias {0} = {1} function( {2}".format( name, returnType, params ))
 			#write( params, file = self.testsFile )
 
-			
+
 		elif category == "struct" or category == "union":
 			self.genStruct( typeinfo, name )
 
@@ -496,11 +574,11 @@ version( {NAME_PREFIX_UCASE}_FROM_DERELICT ) {{
 
 		else:
 			pass
-		
+
 	def genStruct( self, typeinfo, name ):
 		super().genStruct( typeinfo, name )
 		category = typeinfo.elem.attrib[ "category" ]
-		self.appendSection( "struct", "\n{2}{0} {1} {{".format( category, name, self.surfaceExtensionVersionIndent ))
+		self.appendSection( "struct", "\n{2}{0} {1} {{".format( category, name, self.platformExtensionVersionIndent ))
 		targetLen = 0
 		memberTypeName = []
 
@@ -515,7 +593,7 @@ version( {NAME_PREFIX_UCASE}_FROM_DERELICT ) {{
 			if member.get( "values" ):
 				memberName += " = " + member.get( "values" )
 				#write( memberName, file = self.testsFile )
-			
+
 			# get the maximum string length of all member types
 			memberType, memberName = convertTypeArray( memberType, memberName )
 			memberTypeName.append( ( memberType, memberName ))
@@ -527,7 +605,7 @@ version( {NAME_PREFIX_UCASE}_FROM_DERELICT ) {{
 
 		self.appendSection( "struct", "}" )
 
-	
+
 	def genGroup( self, groupinfo, groupName ):
 		super().genGroup( groupinfo, groupName )
 
@@ -607,20 +685,50 @@ version( {NAME_PREFIX_UCASE}_FROM_DERELICT ) {{
 			strVal = "VkStructureType." + strVal
 		strVal = re.sub( re_long_int, "\g<1>UL", strVal )
 		self.appendSection( 'enum', "enum {0} = {1};".format( name, strVal ))
-		
+
 	def genCmd( self, cmdinfo, name ):
 		#if name not in {"vkGetInstanceProcAddr", "vkEnumerateInstanceExtensionProperties", "vkEnumerateInstanceLayerProperties", "vkCreateInstance"}:
 		super().genCmd( cmdinfo, name )
 		proto = cmdinfo.elem.find( "proto" )
 		returnType = convertTypeConst( getFullType( proto ).strip())
-		params = ", ".join( convertTypeConst( getFullType( param, self.opaqueStruct ).strip()) + " " + param.find( "name" ).text for param in cmdinfo.elem.findall( "param" ))
-		funTypeName = "\talias PFN_{0} = {1} function( {2} );".format( name, returnType, params )
-		self.appendSection( 'command', funTypeName )
-		self.functionTypeName[ funTypeName ] = name
+		#write( returnType, file = self.testsFile )
 
 		params = cmdinfo.elem.findall( "param" )
-		if name != "vkGetDeviceProcAddr" and getFullType( params[ 0 ] ) in {"VkDevice", "VkQueue", "VkCommandBuffer"}:
+		joinedParams = ", ".join( convertTypeConst( getFullType( param, self.opaqueStruct ).strip()) + " " + param.find( "name" ).text for param in params )
+		funcTypeName = "\talias PFN_{0} = {1} function( {2} );".format( name, returnType, joinedParams )
+		self.appendSection( 'command', funcTypeName )
+		self.functionTypeName[ funcTypeName ] = name
+
+		if name != "vkGetDeviceProcAddr" and getFullType( params[ 0 ] ) in { "VkDevice", "VkQueue", "VkCommandBuffer" }:
 			self.deviceLevelFuncNames.add( name )
+
+			doReturn = ""
+			if returnType != "void":
+				doReturn = "return "
+
+			joinedArgs = ""
+			if len( params[1:] ):
+				joinedArgs = ", " + ", ".join( param.find( "name" ).text for param in params[1:] )
+			joinedParams = ", ".join( convertTypeConst( getFullType( param, self.opaqueStruct ).strip()) + " " + param.find( "name" ).text for param in params[1:] )
+			self.maxDispatchConvenienceFuncName = max( len( returnType ) + 2 + len( name ) + 2 + len( joinedParams ) + 2, self.maxDispatchConvenienceFuncName )
+
+			# create convenience functions for DispatchDevice
+			if getFullType( params[ 0 ] ) == "VkDevice":
+				forwardFuncs = "\t{{0}}{0} {1}( {2} ) {{{{\n{{0}}\t\t{3}{4}( this.device{5} );\n{{0}}\t}}}}".format(
+					returnType, name[2:], joinedParams, doReturn, name, joinedArgs ).replace( '(  )', '()' )
+				self.dispatchConvenienceFuncNames[ name ] = forwardFuncs
+				#write( forwardFuncs, file = self.testsFile )
+
+			elif getFullType( params[ 0 ] ) == "VkCommandBuffer":
+				forwardFuncs = "{{0}}\t{0} {1}( {2} ) {{{{\n{{0}}\t\t{3}{4}( this.commandBuffer{5} );\n{{0}}\t}}}}".format(
+					returnType, name[2:], joinedParams, doReturn, name, joinedArgs ).replace( '(  )', '()' )
+				self.dispatchConvenienceFuncNames[ name ] = forwardFuncs
+				#write( forwardFuncs, file = self.testsFile )
+
+			#else: #elif getFullType( params[ 0 ] ) == "VkQueue":
+				#forwardFuncs = "\t{0} {1}( {2} ) {{ queue.{1}( {4} ); }}".format( returnType, name, joinedParams, joinedArgs ).replace( '(  )', '()' )
+				#self.dispatchConvenienceFuncNames[ name ] = forwardFuncs
+				#write( forwardFuncs, file = self.testsFile )
 
 		else:
 			self.instanceLevelFuncNames.add( name )
@@ -645,15 +753,15 @@ if __name__ == "__main__":
 	parser.add_argument( "outfolder" )
 	parser.add_argument( "--packagePrefix", default = "erupted" )
 	parser.add_argument( "--namePrefix", default = "Erupted" )
-	
+
 	args = parser.parse_args()
-	
+
 	gen = DGenerator()
 	reg = Registry()
 	reg.loadElementTree( etree.parse( vkxml ))
 	reg.setGenerator( gen )
-	reg.apiGen( 
-		DGeneratorOptions( 
+	reg.apiGen(
+		DGeneratorOptions(
 		filename = args.outfolder,
 		apiname = "vulkan",
 		versions = ".*",
