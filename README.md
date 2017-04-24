@@ -22,13 +22,13 @@ To use without configuration:
 6. Now three options are available to acquire a logical device and device resource related functions (functions with first param of `VkDevice`, `VkQueue` or `VkCommandBuffer`):
 	* Call `loadDeviceLevelFunctions(VkInstance);`, the acquired functions call indirectly through the `VkInstance` and will be internally dispatched by the implementation
 	* Call `loadDeviceLevelFunctions(VkDevice);`, the acquired functions call directly the `VkDevice` and related resources. This path is faster, skips one indirection, but (in theory, not tested yet!) is useful only in a single physical device environment. Calling the same function with another `VkDevice` should overwrite (this is the not tested theory) all the previously fetched __gshared function
-	* Create a DispatchDevice with vulkan functions as members kind of namespaced, see [DispatchDevice](https://github.com/ParticlePeter/ErupteD#platform-surface-extensions)
+	* Create a DispatchDevice with vulkan functions as members kind of namespaced, see [DispatchDevice](https://github.com/ParticlePeter/ErupteD#dispatchdevice)
 
 To use with the `with-derelict-loader` configuration, follow the above steps, but call `EruptedDerelict.load()` instead of performing steps two and three.
 
 Available configurations:
 * `with-derelict-loader` fetches derelictUtil, gets a pointer to `vkGetInstanceProcAddr` and loads few additional global functions (see above)
-* `dub-platform-xcb`, `dub-platform-xlib`, `dub-platform-wayland` fetches corresponding dub packages `xcb-d`, `xlib-d`, `wayland-client-d`, see [Platform surface extensions](https://github.com/ParticlePeter/ErupteD#DispatchDevice)
+* `dub-platform-xcb`, `dub-platform-xlib`, `dub-platform-wayland` fetches corresponding dub packages `xcb-d`, `xlib-d`, `wayland-client-d`, see [Platform surface extensions](https://github.com/ParticlePeter/ErupteD#platform-surface-extensions)
 * `dub-platform-???-derelict-loader` combines the platforms above with the derelict loader
 
 The API is similar to the C Vulkan API, but with some differences:
@@ -41,17 +41,19 @@ The API is similar to the C Vulkan API, but with some differences:
 
 Examples can be found in the `examples` directory, and run with `dub run erupted:examplename`
 
+
 DispatchDevice
 --------------
+
 The DispatchDevice holds a VkDevice and the vulkan functions loaded from that device collision protected.
 Before usage the device must be initialize, either immediately:
 ```
-	auto dd = DispatchDevice(device);
+	auto dd = DispatchDevice( device );
 ```
 or delayed:
 ```
 	DispatchDevice dd;
-	dd.loadDeviceLevelFunctions(device);
+	dd.loadDeviceLevelFunctions( device );
 ```
 The VkMember is private, it should never change as the functions can be used only with this device.
 It can be accessed with the getter `vkDevice()` e.g.:
@@ -59,7 +61,7 @@ It can be accessed with the getter `vkDevice()` e.g.:
 	auto dd = DispatchDevice( device );
 	dd.vkDestroyDevice( dd.vkDevice, pAllocator );
 ```
-The Device has also convenience functions such that the `device` argument can be omitted.
+The `DispatchDevice` has also convenience functions such that the `device` argument can be omitted.
 They forward to the corresponding vulkan function and the `device` argument is supplied by the private `VkDevice` member. The crux is that function pointers can't be overloaded with regular functions hence the `vk` prefix is ditched for the convenience variants:
 ```
 	auto dd = DispatchDevice( device );
