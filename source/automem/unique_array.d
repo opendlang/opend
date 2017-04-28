@@ -88,6 +88,7 @@ struct UniqueArray(Type, Allocator = typeof(theAllocator)) if(isAllocator!Alloca
         assert(_objects.length == 0 && _objects.ptr is null);
         return u;
     }
+    alias move = unique;
 
     /**
        "Truthiness" cast
@@ -152,6 +153,11 @@ struct UniqueArray(Type, Allocator = typeof(theAllocator)) if(isAllocator!Alloca
      */
     const(Type[]) opUnary(string s)() const if(s == "*") {
         return this[];
+    }
+
+    UniqueArray opBinary(string s)(UniqueArray other) if(s == "~") {
+        this ~= other.unique;
+        return this.unique;
     }
 
     void opOpAssign(string op)(Type other) if(op == "~") {
@@ -470,6 +476,14 @@ unittest {
     a ~= [5, 6];  // should not allocate
     a[].shouldEqual([1, 2, 5, 6]);
     allocator.numAllocations.shouldEqual(1);
+}
+
+@("Append 2 arrays")
+@system unittest {
+    auto allocator = TestAllocator();
+    auto a = UniqueArray!(int, TestAllocator*)(&allocator, [1, 2, 3]) ~
+             UniqueArray!(int, TestAllocator*)(&allocator, [4, 5]);
+    a[].shouldEqual([1, 2, 3, 4, 5]);
 }
 
 
