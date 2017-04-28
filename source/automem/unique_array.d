@@ -13,7 +13,7 @@ mixin TestUtils;
 
 struct UniqueArray(Type, Allocator = typeof(theAllocator)) if(isAllocator!Allocator) {
 
-    import std.traits: hasMember;
+    import std.traits: hasMember, isScalarType;
     import std.range: isInputRange;
 
     enum isSingleton = hasMember!(Allocator, "instance");
@@ -180,6 +180,9 @@ struct UniqueArray(Type, Allocator = typeof(theAllocator)) if(isAllocator!Alloca
         _objects[0 .. length] = other[0 .. length];
     }
 
+    /**
+       Reserves memory to prevent too many allocations
+     */
     void reserve(in long size) {
         import std.experimental.allocator: expandArray;
 
@@ -199,8 +202,25 @@ struct UniqueArray(Type, Allocator = typeof(theAllocator)) if(isAllocator!Alloca
         _allocator.expandArray(_objects, _capacity);
     }
 
+    /**
+       Returns a pointer to the underlying data. @system
+     */
     inout(Type)* ptr() inout {
         return _objects.ptr;
+    }
+
+    static if(isGlobal) {
+        UniqueArray dup() const {
+            return UniqueArray(_objects);
+        }
+    } else static if(isScalarType!Allocator && is(typeof(() { auto a = Allocator.init; auto b = a; }))) {
+        UniqueArray dup() const {
+            return UniqueArray(_allocator, _objects);
+        }
+    } else {
+        UniqueArray dup() {
+            return UniqueArray(_allocator, _objects);
+        }
     }
 
 private:
@@ -498,6 +518,37 @@ unittest {
     ++ptr;
     (*ptr).shouldEqual(2);
 }
+
+@("dup TestAllocator")
+@system unittest {
+    auto allocator = TestAllocator();
+    auto a = UniqueArray!(int, TestAllocator*)(&allocator, [1, 2, 3, 4, 5]);
+    auto b = a.dup;
+    allocator.numAllocations.shouldEqual(2);
+    b[].shouldEqual([1, 2, 3, 4, 5]);
+}
+
+@("dup Mallocator")
+@system unittest {
+    import std.experimental.allocator.mallocator: Mallocator;
+    auto a = UniqueArray!(int, Mallocator)([1, 2, 3, 4, 5]);
+    auto b = a.dup;
+    b[].shouldEqual([1, 2, 3, 4, 5]);
+}
+
+@("dup TestAllocator indirections")
+@system unittest {
+    auto allocator = TestAllocator();
+    struct String { string s; }
+    auto a = UniqueArray!(String, TestAllocator*)(&allocator, [String("foo"), String("bar")]);
+    auto b = a.dup;
+    a[0] = String("quux");
+    a[1] = String("toto");
+    allocator.numAllocations.shouldEqual(2);
+    a[].shouldEqual([String("quux"), String("toto")]);
+    b[].shouldEqual([String("foo"), String("bar")]);
+}
+
 
 version(unittest) {
 
