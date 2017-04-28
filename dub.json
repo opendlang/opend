@@ -21,6 +21,19 @@
                 "unit-threaded": "~>0.7.11",
                 "test_allocator": "~>0.0.2"
             }
+        },
+        {
+            "name": "ut",
+            "targetType": "executable",
+            "targetName": "ut",
+            "mainSourceFile": "bin/ut.d",
+            "excludedSourceFiles": ["src/main.d"],
+            "dependencies": {
+                "unit-threaded": "~>0.7.11",
+                "test_allocator": "~>0.0.2"
+            },
+            "versions": ["unitThreadedLight"]
         }
+
     ]
 }
