@@ -184,6 +184,11 @@ struct UniqueArray(Type, Allocator = typeof(theAllocator)) if(isAllocator!Alloca
             return;
         }
 
+        if(size < _capacity) {
+            if(size < _length) _length = size;
+            return;
+        }
+
         _capacity = size;
         _allocator.expandArray(_objects, _capacity);
     }
@@ -435,7 +440,7 @@ unittest {
     (*a).shouldEqual([0, 1]);
 }
 
-@("reserve")
+@("reserve from nothing")
 @system unittest {
     auto allocator = TestAllocator();
     auto a = UniqueArray!(int, TestAllocator*)(&allocator);
@@ -445,6 +450,28 @@ unittest {
     a[].shouldEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
     allocator.numAllocations.shouldEqual(1);
 }
+
+@("reserve from existing expand")
+@system unittest {
+    auto allocator = TestAllocator();
+    auto a = UniqueArray!(int, TestAllocator*)(&allocator, [1, 2]); //allocates here
+    a.reserve(10); //allocates here
+    a ~= [3, 4]; // should not allocate
+    a ~= [5, 6, 7, 8, 9]; //should not allocate
+    a[].shouldEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+    allocator.numAllocations.shouldEqual(2);
+}
+
+@("reserve from existing reduce")
+@system unittest {
+    auto allocator = TestAllocator();
+    auto a = UniqueArray!(int, TestAllocator*)(&allocator, [1, 2, 3, 4, 5]); //allocates here
+    a.reserve(2); // should not allocate, changes length to 2
+    a ~= [5, 6];  // should not allocate
+    a[].shouldEqual([1, 2, 5, 6]);
+    allocator.numAllocations.shouldEqual(1);
+}
+
 
 version(unittest) {
 
