@@ -199,6 +199,10 @@ struct UniqueArray(Type, Allocator = typeof(theAllocator)) if(isAllocator!Alloca
         _allocator.expandArray(_objects, _capacity);
     }
 
+    inout(Type)* ptr() inout {
+        return _objects.ptr;
+    }
+
 private:
 
     Type[] _objects;
@@ -486,6 +490,14 @@ unittest {
     a[].shouldEqual([1, 2, 3, 4, 5]);
 }
 
+@("ptr")
+@system unittest {
+    auto allocator = TestAllocator();
+    auto a = UniqueArray!(int, TestAllocator*)(&allocator, [1, 2, 3, 4, 5]);
+    auto ptr = a.ptr;
+    ++ptr;
+    (*ptr).shouldEqual(2);
+}
 
 version(unittest) {
 
