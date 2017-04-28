@@ -283,7 +283,7 @@ private:
 
         static if(!isGlobal) {
             import std.algorithm: move;
-            move(other._allocator, _allocator);
+            _allocator = other._allocator.move;
         }
     }
 }
@@ -317,8 +317,7 @@ version(unittest) {
 
         ptr[1..$].shouldEqual([Struct(), Struct(5)]);
 
-        typeof(ptr) ptr2;
-        move(ptr, ptr2);
+        typeof(ptr) ptr2 = ptr.move;
 
         ptr.length.shouldEqual(0);
         (cast(bool)ptr).shouldBeFalse;

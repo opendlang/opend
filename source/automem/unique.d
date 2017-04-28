@@ -125,7 +125,7 @@ private:
 
         static if(!isGlobal) {
             import std.algorithm: move;
-            move(other._allocator, _allocator);
+            _allocator = other._allocator.move;
         }
     }
 }
@@ -208,8 +208,7 @@ private:
 
     auto allocator = TestAllocator();
     auto oldPtr = Unique!(Struct, TestAllocator*)(&allocator, 5);
-    Unique!(Struct, TestAllocator*) newPtr;
-    move(oldPtr, newPtr);
+    Unique!(Struct, TestAllocator*) newPtr = oldPtr.move;
     oldPtr.shouldBeNull;
     newPtr.twice.shouldEqual(10);
     Struct.numStructs.shouldEqual(1);
@@ -324,7 +323,7 @@ private:
         {
             auto ptr2 = Unique!(Struct, TestAllocator*)(&allocator, 10);
             Struct.numStructs.shouldEqual(2);
-            move(ptr2, ptr1);
+            ptr1 = ptr2.move;
             Struct.numStructs.shouldEqual(1);
             ptr2.shouldBeNull;
             ptr1.twice.shouldEqual(20);
