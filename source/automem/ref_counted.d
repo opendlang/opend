@@ -2,6 +2,7 @@ module automem.ref_counted;
 
 import automem.traits: isAllocator;
 import automem.test_utils: TestUtils;
+import automem.unique: Unique;
 import std.experimental.allocator: theAllocator, processAllocator;
 
 version(unittest) {
@@ -471,6 +472,26 @@ private:
     static assert(__traits(compiles, sendRefCounted!(shared SafeAllocator*)(&allocator, 7)));
 }
 
+auto refCounted(Type, Allocator)(Unique!(Type, Allocator) ptr) {
+
+    RefCounted!(Type, Allocator) ret;
+
+    static if(!ptr.isGlobal)
+        ret._allocator = ptr.allocator;
+
+    ret.allocateImpl;
+    *ret = *ptr;
+
+    return ret;
+}
+
+@("Construct RefCounted from Unique")
+@system unittest {
+    import automem.unique: Unique;
+    auto allocator = TestAllocator();
+    auto ptr = refCounted(Unique!(int, TestAllocator*)(&allocator, 42));
+    (*ptr).shouldEqual(42);
+}
 
 version(unittest) {
 

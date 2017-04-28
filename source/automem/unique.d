@@ -76,6 +76,16 @@ struct Unique(Type, Allocator = typeof(theAllocator())) if(isAllocator!Allocator
         return u;
     }
 
+    package Pointer release() {
+        auto ret = _object;
+        _object = null;
+        return ret;
+    }
+
+    package Allocator allocator() {
+        return _allocator;
+    }
+
     /**
        "Truthiness" cast
      */
