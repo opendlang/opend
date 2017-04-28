@@ -46,6 +46,10 @@ struct UniqueArray(Type, Allocator = typeof(theAllocator)) if(isAllocator!Alloca
            Non-singleton allocator, must be passed in
          */
 
+        this(Allocator allocator) {
+            _allocator = allocator;
+        }
+
         this(Allocator allocator, size_t size) {
             _allocator = allocator;
             makeObjects(size);
@@ -114,19 +118,31 @@ struct UniqueArray(Type, Allocator = typeof(theAllocator)) if(isAllocator!Alloca
     }
 
     @property long length() const nothrow {
-        return _objects.length;
+        return _length;
     }
 
-    @property void length(long i) {
+    @property void length(long size) {
+
         import std.experimental.allocator: expandArray, shrinkArray;
 
-        if(_objects is null)
-            makeObjects(i);
-        else {
-            if(i > length)
-                _allocator.expandArray(_objects, i - length);
-            else
-                _allocator.shrinkArray(_objects, length - i);
+        if(_objects is null) {
+            makeObjects(size);
+        } else if(size == length) {
+            return;
+        } else if(size <= _capacity && size > length) {
+            foreach(ref obj; _objects[_length .. size])
+                obj = obj.init;
+            _length = size;
+        } else if(size < length) {
+            _length = size;
+        } else {
+            if(size > length) {
+                _allocator.expandArray(_objects, size - length);
+                setLength;
+            } else {
+                _allocator.shrinkArray(_objects, length - size);
+                setLength;
+            }
         }
     }
 
@@ -134,8 +150,8 @@ struct UniqueArray(Type, Allocator = typeof(theAllocator)) if(isAllocator!Alloca
        Dereference. const  since this otherwise could be used to try
        and append to the array, which would not be nice
      */
-    ref const(Type[]) opUnary(string s)() const if(s == "*") {
-        return _objects;
+    const(Type[]) opUnary(string s)() const if(s == "*") {
+        return this[];
     }
 
     void opOpAssign(string op)(Type other) if(op == "~") {
@@ -146,7 +162,7 @@ struct UniqueArray(Type, Allocator = typeof(theAllocator)) if(isAllocator!Alloca
     void opOpAssign(string op)(Type[] other) if(op == "~") {
         const originalLength = length;
         length(originalLength + other.length);
-        _objects[originalLength .. $] = other[];
+        _objects[originalLength .. length] = other[];
     }
 
     void opOpAssign(string op)(UniqueArray other) if(op == "~") {
@@ -154,13 +170,29 @@ struct UniqueArray(Type, Allocator = typeof(theAllocator)) if(isAllocator!Alloca
     }
 
     void opAssign(Type[] other) {
-        this.length = other.length;
-        _objects[] = other[];
+        length = other.length;
+        _objects[0 .. length] = other[0 .. length];
+    }
+
+    void reserve(in long size) {
+        import std.experimental.allocator: expandArray;
+
+        if(_objects is null) {
+            const oldLength = length;
+            makeObjects(size); // length = capacity here
+            _length = oldLength;
+            return;
+        }
+
+        _capacity = size;
+        _allocator.expandArray(_objects, _capacity);
     }
 
 private:
 
     Type[] _objects;
+    long _length;
+    long _capacity;
 
     static if(isSingleton)
         alias _allocator = Allocator.instance;
@@ -175,19 +207,25 @@ private:
             _objects = () @trusted { return _allocator.makeArray!Type(size); }();
         else
             _objects = _allocator.makeArray!Type(size);
-
+        setLength;
     }
 
     void makeObjects(size_t size, Type init) {
         import std.experimental.allocator: makeArray;
         _objects = _allocator.makeArray!Type(size, init);
+        setLength;
+
     }
 
     void makeObjects(R)(R range) if(isInputRange!R) {
         import std.experimental.allocator: makeArray;
         _objects = _allocator.makeArray!Type(range);
+        setLength;
     }
 
+    void setLength() {
+        _capacity = _length = _objects.length;
+    }
 
     void deleteObjects() {
         import std.experimental.allocator: dispose;
@@ -197,11 +235,16 @@ private:
             assert((_objects.length == 0 && _objects.ptr is null) || _allocator !is null);
 
         if(_objects.ptr !is null) _allocator.dispose(_objects);
+        _length = 0;
     }
 
     void moveFrom(T)(ref UniqueArray!(T, Allocator) other) if(is(T: Type[])) {
+        import std.algorithm: swap;
         _object = other._object;
         other._object = null;
+
+        swap(_length, other._length);
+        swap(_capacity, other._capacity);
 
         static if(!isGlobal) {
             import std.algorithm: move;
@@ -367,7 +410,7 @@ version(unittest) {
 @system unittest {
     import std.experimental.allocator.mallocator;
     UniqueArray!(int, Mallocator) a;
-    a ~= [0,1];
+    a ~= [0, 1];
 }
 
 @("issue 1 value")
@@ -382,6 +425,25 @@ version(unittest) {
     import std.experimental.allocator.mallocator;
     UniqueArray!(int, Mallocator) a;
     a ~= UniqueArray!(int, Mallocator)([1, 2, 3]);
+}
+
+@("dereference")
+unittest {
+    import std.experimental.allocator.mallocator;
+    UniqueArray!(int, Mallocator) a;
+    a ~= [0, 1];
+    (*a).shouldEqual([0, 1]);
+}
+
+@("reserve")
+@system unittest {
+    auto allocator = TestAllocator();
+    auto a = UniqueArray!(int, TestAllocator*)(&allocator);
+    a.reserve(10); //allocates here
+    a ~= [1, 2, 3]; // should not allocate
+    a ~= [4, 5, 6, 7, 8, 9]; //should not allocate
+    a[].shouldEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+    allocator.numAllocations.shouldEqual(1);
 }
 
 version(unittest) {
