@@ -26,7 +26,7 @@ struct RefCounted(Type, Allocator = typeof(theAllocator)) if(isAllocator!Allocat
            constructor
         */
         this(Args...)(auto ref Args args) {
-            makeObject(args);
+            this.makeObject!args();
         }
     else
         /**
@@ -34,7 +34,7 @@ struct RefCounted(Type, Allocator = typeof(theAllocator)) if(isAllocator!Allocat
         */
         this(Args...)(Allocator allocator, auto ref Args args) {
             _allocator = allocator;
-            makeObject(args);
+            this.makeObject!args();
         }
 
     this(this) {
@@ -117,25 +117,6 @@ private:
 
     public ImplType* _impl; // public or alias this doesn't work
 
-    void makeObject(Args...)(auto ref Args args) @trusted {
-        import std.conv: emplace;
-
-        allocateImpl;
-
-        version(LDC) { // bug with emplace
-
-            import std.traits: Unqual;
-            alias UnqualType = Unqual!Type;
-
-            static if(is(Type == shared))
-                ldcEmplace(cast(UnqualType*)&_impl._object, args);
-            else
-                emplace(cast(UnqualType*)&_impl._object, args);
-
-        } else
-            emplace(&_impl._object, args);
-    }
-
     void allocateImpl() {
         import std.experimental.allocator: make;
         import std.traits: hasIndirections;
@@ -179,6 +160,29 @@ private:
             --_impl._count;
     }
 
+}
+
+private template makeObject(args...)
+{
+    void makeObject(Type,A)(ref RefCounted!(Type,A) rc) @trusted {
+        import std.conv: emplace;
+        import std.functional : forward;
+
+        rc.allocateImpl;
+
+        version(LDC) { // bug with emplace
+
+            import std.traits: Unqual;
+            alias UnqualType = Unqual!Type;
+
+            static if(is(Type == shared))
+                ldcEmplace(cast(UnqualType*)&rc._impl._object, forward!args);
+            else
+                emplace(cast(UnqualType*)&rc._impl._object, forward!args);
+
+        } else
+            emplace(&rc._impl._object, forward!args);
+    }
 }
 
 @("struct test allocator no copies")
