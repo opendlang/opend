@@ -10,7 +10,7 @@ API Documentation: https://cairod.github.io/cairoD/api/cairo/cairo.html
 
 ## Examples
 
-The cairoD library ships with some examples in the [example](https://github.com/cairoD/cairoD/tree/master/example) directory.
+The cairoD library ships with some examples in the [examples](https://github.com/cairoD/cairoD/tree/master/examples) directory.
 Some of these examples are ported from [cairographics.org](http://cairographics.org/samples/), some are original. To build these
 examples, simply use dub:
 
