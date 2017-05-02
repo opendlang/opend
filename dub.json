@@ -10,6 +10,6 @@
 	"copyright": "Copyright © 2016-2017, Ilya Yaroshenko, see also copyright per file",
 	"license": "BSL-1.0",
 	"dependencies": {
-		"mir-algorithm": "~>0.4.3"
+		"mir-algorithm": "~>0.5.0"
 	}
 }
