@@ -31,7 +31,7 @@ struct Unique(Type, Allocator = typeof(theAllocator())) if(isAllocator!Allocator
            The allocator is global, so no need to pass it in to the constructor
         */
         this(Args...)(auto ref Args args) {
-            makeObject(args);
+            this.makeObject!args();
         }
 
     } else {
@@ -42,7 +42,7 @@ struct Unique(Type, Allocator = typeof(theAllocator())) if(isAllocator!Allocator
 
         this(Args...)(Allocator allocator, auto ref Args args) {
             _allocator = allocator;
-            makeObject(args);
+            this.makeObject!args();
         }
     }
 
@@ -111,14 +111,6 @@ private:
     else
         Allocator _allocator;
 
-    void makeObject(Args...)(auto ref Args args) {
-        import std.experimental.allocator: make;
-        version(LDC)
-            _object = () @trusted { return _allocator.make!Type(args); }();
-        else
-            _object = _allocator.make!Type(args);
-    }
-
     void deleteObject() @safe {
         import std.experimental.allocator: dispose;
         import std.traits: isPointer;
@@ -140,6 +132,17 @@ private:
     }
 }
 
+private template makeObject(args...)
+{
+    void makeObject(Type,A)(ref Unique!(Type, A) u) {
+        import std.experimental.allocator: make;
+        import std.functional : forward;
+        version(LDC)
+            u._object = () @trusted { return u._allocator.make!Type(forward!args); }();
+        else
+            u._object = u._allocator.make!Type(forward!args);
+    }
+}
 
 @("with struct and test allocator")
 @system unittest {
