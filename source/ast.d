@@ -1,5 +1,9 @@
 module commonmarkd.ast;
 
+
+// The AST describes a "document". It should be designed to support
+// the following outputs: HTML, PDF, Markdown, SVG, images...
+
 enum NodeType
 {
     text,
@@ -9,6 +13,9 @@ enum NodeType
 
 class Node
 {
+private:
+    NodeType _type;
+
 public:
     this(NodeType type)
     {
@@ -20,15 +27,11 @@ public:
         return _type;
     }
 
-    abstract void renderHTML(RendererHTML r);
+    /// Renders HTML and return a UTF-8 string
+    abstract string renderHTML();
 
-private:
-    NodeType _type;
-}
-
-interface RendererHTML
-{
-    void outString(string s);
+    /// Renders CommonMark and return a UTF-8 string
+    abstract string renderCommonMark();
 }
 
 class NodeText : Node
@@ -39,10 +42,15 @@ class NodeText : Node
         _text = text;
     }
 
-    override void renderHTML(RendererHTML r)
+    override string renderHTML()
     {
         // TODO: escape HTML
-        r.outString(_text);
+        return _text;
+    }
+
+    override string renderCommonMark()
+    {
+        return _text;
     }
 
 private:
