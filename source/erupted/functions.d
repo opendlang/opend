@@ -225,6 +225,13 @@ extern( System ) @nogc nothrow {
 	alias PFN_vkUpdateDescriptorSetWithTemplateKHR = void function( VkDevice device, VkDescriptorSet descriptorSet, VkDescriptorUpdateTemplateKHR descriptorUpdateTemplate, const( void )* pData );
 	alias PFN_vkCmdPushDescriptorSetWithTemplateKHR = void function( VkCommandBuffer commandBuffer, VkDescriptorUpdateTemplateKHR descriptorUpdateTemplate, VkPipelineLayout layout, uint32_t set, const( void )* pData );
 
+	// VK_KHR_shared_presentable_image
+	alias PFN_vkGetSwapchainStatusKHR = VkResult function( VkDevice device, VkSwapchainKHR swapchain );
+
+	// VK_KHR_get_surface_capabilities2
+	alias PFN_vkGetPhysicalDeviceSurfaceCapabilities2KHR = VkResult function( VkPhysicalDevice physicalDevice, const( VkPhysicalDeviceSurfaceInfo2KHR )* pSurfaceInfo, VkSurfaceCapabilities2KHR* pSurfaceCapabilities );
+	alias PFN_vkGetPhysicalDeviceSurfaceFormats2KHR = VkResult function( VkPhysicalDevice physicalDevice, const( VkPhysicalDeviceSurfaceInfo2KHR )* pSurfaceInfo, uint32_t* pSurfaceFormatCount, VkSurfaceFormat2KHR* pSurfaceFormats );
+
 	// VK_EXT_debug_report
 	alias PFN_vkCreateDebugReportCallbackEXT = VkResult function( VkInstance instance, const( VkDebugReportCallbackCreateInfoEXT )* pCreateInfo, const( VkAllocationCallbacks )* pAllocator, VkDebugReportCallbackEXT* pCallback );
 	alias PFN_vkDestroyDebugReportCallbackEXT = void function( VkInstance instance, VkDebugReportCallbackEXT callback, const( VkAllocationCallbacks )* pAllocator );
@@ -564,6 +571,13 @@ __gshared {
 	PFN_vkUpdateDescriptorSetWithTemplateKHR vkUpdateDescriptorSetWithTemplateKHR;
 	PFN_vkCmdPushDescriptorSetWithTemplateKHR vkCmdPushDescriptorSetWithTemplateKHR;
 
+	// VK_KHR_shared_presentable_image
+	PFN_vkGetSwapchainStatusKHR vkGetSwapchainStatusKHR;
+
+	// VK_KHR_get_surface_capabilities2
+	PFN_vkGetPhysicalDeviceSurfaceCapabilities2KHR vkGetPhysicalDeviceSurfaceCapabilities2KHR;
+	PFN_vkGetPhysicalDeviceSurfaceFormats2KHR vkGetPhysicalDeviceSurfaceFormats2KHR;
+
 	// VK_EXT_debug_report
 	PFN_vkCreateDebugReportCallbackEXT vkCreateDebugReportCallbackEXT;
 	PFN_vkDestroyDebugReportCallbackEXT vkDestroyDebugReportCallbackEXT;
@@ -768,6 +782,10 @@ void loadInstanceLevelFunctions( VkInstance instance ) {
 	vkGetPhysicalDeviceMemoryProperties2KHR = cast( typeof( vkGetPhysicalDeviceMemoryProperties2KHR )) vkGetInstanceProcAddr( instance, "vkGetPhysicalDeviceMemoryProperties2KHR" );
 	vkGetPhysicalDeviceSparseImageFormatProperties2KHR = cast( typeof( vkGetPhysicalDeviceSparseImageFormatProperties2KHR )) vkGetInstanceProcAddr( instance, "vkGetPhysicalDeviceSparseImageFormatProperties2KHR" );
 
+	// VK_KHR_get_surface_capabilities2
+	vkGetPhysicalDeviceSurfaceCapabilities2KHR = cast( typeof( vkGetPhysicalDeviceSurfaceCapabilities2KHR )) vkGetInstanceProcAddr( instance, "vkGetPhysicalDeviceSurfaceCapabilities2KHR" );
+	vkGetPhysicalDeviceSurfaceFormats2KHR = cast( typeof( vkGetPhysicalDeviceSurfaceFormats2KHR )) vkGetInstanceProcAddr( instance, "vkGetPhysicalDeviceSurfaceFormats2KHR" );
+
 	// VK_EXT_debug_report
 	vkCreateDebugReportCallbackEXT = cast( typeof( vkCreateDebugReportCallbackEXT )) vkGetInstanceProcAddr( instance, "vkCreateDebugReportCallbackEXT" );
 	vkDestroyDebugReportCallbackEXT = cast( typeof( vkDestroyDebugReportCallbackEXT )) vkGetInstanceProcAddr( instance, "vkDestroyDebugReportCallbackEXT" );
@@ -962,6 +980,9 @@ void loadDeviceLevelFunctions( VkInstance instance ) {
 	vkDestroyDescriptorUpdateTemplateKHR = cast( typeof( vkDestroyDescriptorUpdateTemplateKHR )) vkGetInstanceProcAddr( instance, "vkDestroyDescriptorUpdateTemplateKHR" );
 	vkUpdateDescriptorSetWithTemplateKHR = cast( typeof( vkUpdateDescriptorSetWithTemplateKHR )) vkGetInstanceProcAddr( instance, "vkUpdateDescriptorSetWithTemplateKHR" );
 	vkCmdPushDescriptorSetWithTemplateKHR = cast( typeof( vkCmdPushDescriptorSetWithTemplateKHR )) vkGetInstanceProcAddr( instance, "vkCmdPushDescriptorSetWithTemplateKHR" );
+
+	// VK_KHR_shared_presentable_image
+	vkGetSwapchainStatusKHR = cast( typeof( vkGetSwapchainStatusKHR )) vkGetInstanceProcAddr( instance, "vkGetSwapchainStatusKHR" );
 
 	// VK_EXT_debug_marker
 	vkDebugMarkerSetObjectTagEXT = cast( typeof( vkDebugMarkerSetObjectTagEXT )) vkGetInstanceProcAddr( instance, "vkDebugMarkerSetObjectTagEXT" );
@@ -1189,6 +1210,9 @@ void loadDeviceLevelFunctions( VkDevice device ) {
 	vkDestroyDescriptorUpdateTemplateKHR = cast( typeof( vkDestroyDescriptorUpdateTemplateKHR )) vkGetDeviceProcAddr( device, "vkDestroyDescriptorUpdateTemplateKHR" );
 	vkUpdateDescriptorSetWithTemplateKHR = cast( typeof( vkUpdateDescriptorSetWithTemplateKHR )) vkGetDeviceProcAddr( device, "vkUpdateDescriptorSetWithTemplateKHR" );
 	vkCmdPushDescriptorSetWithTemplateKHR = cast( typeof( vkCmdPushDescriptorSetWithTemplateKHR )) vkGetDeviceProcAddr( device, "vkCmdPushDescriptorSetWithTemplateKHR" );
+
+	// VK_KHR_shared_presentable_image
+	vkGetSwapchainStatusKHR = cast( typeof( vkGetSwapchainStatusKHR )) vkGetDeviceProcAddr( device, "vkGetSwapchainStatusKHR" );
 
 	// VK_EXT_debug_marker
 	vkDebugMarkerSetObjectTagEXT = cast( typeof( vkDebugMarkerSetObjectTagEXT )) vkGetDeviceProcAddr( device, "vkDebugMarkerSetObjectTagEXT" );
@@ -1443,6 +1467,9 @@ struct DispatchDevice {
 		vkDestroyDescriptorUpdateTemplateKHR = cast( typeof( vkDestroyDescriptorUpdateTemplateKHR )) vkGetDeviceProcAddr( device, "vkDestroyDescriptorUpdateTemplateKHR" );
 		vkUpdateDescriptorSetWithTemplateKHR = cast( typeof( vkUpdateDescriptorSetWithTemplateKHR )) vkGetDeviceProcAddr( device, "vkUpdateDescriptorSetWithTemplateKHR" );
 		vkCmdPushDescriptorSetWithTemplateKHR = cast( typeof( vkCmdPushDescriptorSetWithTemplateKHR )) vkGetDeviceProcAddr( device, "vkCmdPushDescriptorSetWithTemplateKHR" );
+
+		// VK_KHR_shared_presentable_image
+		vkGetSwapchainStatusKHR = cast( typeof( vkGetSwapchainStatusKHR )) vkGetDeviceProcAddr( device, "vkGetSwapchainStatusKHR" );
 
 		// VK_EXT_debug_marker
 		vkDebugMarkerSetObjectTagEXT = cast( typeof( vkDebugMarkerSetObjectTagEXT )) vkGetDeviceProcAddr( device, "vkDebugMarkerSetObjectTagEXT" );
@@ -1920,6 +1947,11 @@ struct DispatchDevice {
 		vkCmdPushDescriptorSetWithTemplateKHR( this.commandBuffer, descriptorUpdateTemplate, layout, set, pData );
 	}
 
+	// VK_KHR_shared_presentable_image
+	VkResult GetSwapchainStatusKHR( VkSwapchainKHR swapchain ) {
+		return vkGetSwapchainStatusKHR( this.device, swapchain );
+	}
+
 	// VK_EXT_debug_marker
 	VkResult DebugMarkerSetObjectTagEXT( VkDebugMarkerObjectTagInfoEXT* pTagInfo ) {
 		return vkDebugMarkerSetObjectTagEXT( this.device, pTagInfo );
@@ -2158,6 +2190,7 @@ struct DispatchDevice {
 	PFN_vkDestroyDescriptorUpdateTemplateKHR vkDestroyDescriptorUpdateTemplateKHR;
 	PFN_vkUpdateDescriptorSetWithTemplateKHR vkUpdateDescriptorSetWithTemplateKHR;
 	PFN_vkCmdPushDescriptorSetWithTemplateKHR vkCmdPushDescriptorSetWithTemplateKHR;
+	PFN_vkGetSwapchainStatusKHR vkGetSwapchainStatusKHR;
 	PFN_vkDebugMarkerSetObjectTagEXT vkDebugMarkerSetObjectTagEXT;
 	PFN_vkDebugMarkerSetObjectNameEXT vkDebugMarkerSetObjectNameEXT;
 	PFN_vkCmdDebugMarkerBeginEXT vkCmdDebugMarkerBeginEXT;
