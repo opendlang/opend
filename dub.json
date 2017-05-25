@@ -1,0 +1,12 @@
+{
+	"name": "lapack",
+	"authors": [
+		"William V. Baxter III",
+		"Lars Tandle Kyllingstad (first modification)",
+		"Ilya Yaroshenko (second modification)"
+	],
+	"description": "Dlang LAPACK header",
+	"copyright": "Copyright (c) 2009, Lars T. Kyllingstad; Copyright © 2017, Symmetry Investments & Kaleidic Associates",
+	"license": "BSL-1.0",
+	"targetType": "sourceLibrary"
+}
