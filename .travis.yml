@@ -1,0 +1,7 @@
+language: d
+
+d:
+  - dmd
+  - ldc
+
+script: dub --root example

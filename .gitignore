@@ -8,3 +8,5 @@ __test__*__
 *.sublime-project
 
 lapack-test-library
+
+example/example
