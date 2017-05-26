@@ -10,3 +10,5 @@ __test__*__
 example/example
 
 dub.selections.json
+
+*.sublime-workspace
