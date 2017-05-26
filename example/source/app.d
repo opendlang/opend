@@ -3,20 +3,20 @@ static import lapack;
 import lapack: lapackint;
 
 // column major storage
-__gshared double[] a = [
+__gshared double[9] a = [
      1.0,  2, -1,
     -1.0,  2,  5,
      1.0, -4,  0];
 // ditto
-__gshared double[] b = [
+__gshared double[6] b = [
     2.0, -6, 9,
     0  , -6, 1];
 // ditto
-__gshared double[] t = [
+__gshared double[6] t = [
      1.0, 2, 3,
     -1.0, 0, 1];
 
-__gshared lapackint[] ipiv = [0, 0, 0];
+__gshared lapackint[3] ipiv = [0, 0, 0];
 
 nothrow @nogc extern(C)
 int main()
