@@ -1,0 +1,14 @@
+sudo: false
+
+language: d
+
+d:
+  - dmd
+  - ldc
+
+script: dub --root example
+
+addons:
+  apt:
+    packages:
+      liblapack-dev

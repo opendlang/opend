@@ -1,0 +1,14 @@
+{
+	"name": "mir-lapack",
+	"authors": [
+		"Ilya Yaroshenko"
+	],
+	"dependencies": {
+		"lapack77": "~>0.0.1",
+		"mir-algorithm": "~>0.6.5"
+	},
+	"description": "NDSLICE wrapper for LAPACK",
+	"copyright": "Copyright © 2017, Symmetry Investments & Kaleidic Associates",
+	"license": "BSL-1.0",
+	"targetType": "sourceLibrary"
+}
