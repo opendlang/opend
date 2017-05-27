@@ -4,7 +4,7 @@
 		"Ilya Yaroshenko"
 	],
 	"dependencies": {
-		"lapack77": "~>0.0.1",
+		"lapack": "~>0.0.2",
 		"mir-algorithm": "~>0.6.5"
 	},
 	"description": "NDSLICE wrapper for LAPACK",
