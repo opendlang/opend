@@ -8,6 +8,7 @@
 module taggedalgebraic;
 
 import std.typetuple;
+import std.traits : isInstanceOf;
 
 // TODO:
 //  - distinguish between @property and non@-property methods.
@@ -616,6 +617,64 @@ inout(T) get(T, U)(inout(TaggedAlgebraic!U) ta)
 	assert(hasType!(T, U)(ta), () { scope (failure) assert(false); return format("Trying to get %s but have %s.", T.stringof, ta.kind); } ());
 	return ta.trustedGet!T;
 }
+
+
+/** Calls a the given callback with the static type of the contained value.
+
+	The `handler` callback must be a lambda or a single-argument template
+	function that accepts all possible types that the given `TaggedAlgebraic`
+	can hold.
+
+	Returns:
+		If `handler` has a non-void return value, its return value gets
+		forwarded to the caller.
+*/
+auto apply(alias handler, TA)(TA ta)
+	if (isInstanceOf!(TaggedAlgebraic, TA))
+{
+	final switch (ta.kind) {
+		foreach (i, fn; TA.fieldNames) {
+			case __traits(getMember, ta.Kind, fn):
+				return handler(get!(TA.FieldTypes[i])(ta));
+		}
+	}
+}
+
+///
+unittest {
+	union U {
+		int i;
+		string s;
+	}
+	alias TA = TaggedAlgebraic!U;
+
+	auto ta = TA(12);
+	bool matched = false;
+	ta.apply!((v) {
+		static if (is(typeof(v) == int)) {
+			assert(v == 12);
+			assert(!matched);
+			matched = true;
+		} else {
+			assert(false);
+		}
+	});
+	assert(matched);
+
+	ta = TA("foo");
+	matched = false;
+	ta.apply!((v) {
+		static if (is(typeof(v) == string)) {
+			assert(v == "foo");
+			assert(!matched);
+			matched = true;
+		} else {
+			assert(false);
+		}
+	});
+	assert(matched);
+}
+
 
 /// Convenience type that can be used for union fields that have no value (`void` is not allowed).
 struct Void {}
