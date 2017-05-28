@@ -639,6 +639,12 @@ auto apply(alias handler, TA)(TA ta)
 		}
 	}
 }
+/// ditto
+auto apply(alias handler, T)(T value)
+	if (!isInstanceOf!(TaggedAlgebraic, T))
+{
+	return handler(value);
+}
 
 ///
 unittest {
@@ -648,31 +654,27 @@ unittest {
 	}
 	alias TA = TaggedAlgebraic!U;
 
-	auto ta = TA(12);
-	bool matched = false;
-	ta.apply!((v) {
+	assert(TA(12).apply!((v) {
 		static if (is(typeof(v) == int)) {
 			assert(v == 12);
-			assert(!matched);
-			matched = true;
+			return 1;
 		} else {
-			assert(false);
+			return 0;
 		}
-	});
-	assert(matched);
+	}) == 1);
 
-	ta = TA("foo");
-	matched = false;
-	ta.apply!((v) {
+	assert(TA("foo").apply!((v) {
 		static if (is(typeof(v) == string)) {
 			assert(v == "foo");
-			assert(!matched);
-			matched = true;
+			return 2;
 		} else {
-			assert(false);
+			return 0;
 		}
+	}) == 2);
+
+	"baz".apply!((v) {
+		assert(v == "baz");
 	});
-	assert(matched);
 }
 
 
