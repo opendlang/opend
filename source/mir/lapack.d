@@ -240,6 +240,55 @@ size_t gesdd(T)(
 	return info;
 }
 
+/// `gesvd` work space query
+size_t gesvd_wq(T)(
+	char jobu,
+	char jobvt,
+	Slice!(Canonical, [2], T*) a,
+	Slice!(Canonical, [2], T*) u,
+	Slice!(Canonical, [2], T*) vt,
+	)
+{
+	lapackint m = cast(lapackint) a.length!1;
+	lapackint n = cast(lapackint) a.length!0;
+	lapackint lda = cast(lapackint) a._stride.max(1);
+	lapackint ldu = cast(lapackint) u._stride.max(1);
+	lapackint ldvt = cast(lapackint) vt._stride.max(1);
+	T work = void;
+	lapackint lwork = -1;
+	lapackint info = void;
+
+	lapack.gesvd_(jobu, jobvt, m, n, null, lda, null, null, ldu, null, ldvt, &work, lwork, info);
+
+	assert(info == 0);
+	return cast(size_t) work;
+}
+
+///
+size_t gesvd(T)(
+	char jobu,
+	char jobvt,
+	Slice!(Canonical, [2], T*) a,
+	Slice!(Contiguous, [1], T*) s,
+	Slice!(Canonical, [2], T*) u,
+	Slice!(Canonical, [2], T*) vt,
+	Slice!(Contiguous, [1], T*) work,
+	)
+{
+	lapackint m = cast(lapackint) a.length!1;
+	lapackint n = cast(lapackint) a.length!0;
+	lapackint lda = cast(lapackint) a._stride.max(1);
+	lapackint ldu = cast(lapackint) u._stride.max(1);
+	lapackint ldvt = cast(lapackint) vt._stride.max(1);
+	lapackint lwork = cast(lapackint) work.length;
+	lapackint info = void;
+
+	lapack.gesvd_(jobu, jobvt, m, n, a.iterator, lda, s.iterator, u.iterator, ldu, vt.iterator, ldvt, work.iterator, lwork, info);
+
+	assert(info >= 0);
+	return info;
+}
+
 ///
 size_t spev(T)(
 	char jobz,

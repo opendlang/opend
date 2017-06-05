@@ -9,6 +9,7 @@ NDSLICE wrapper for LAPACK
  - gelsd
  - gesdd
  - gesv
+ - gesvd
  - getrf
  - getri
  - spev
