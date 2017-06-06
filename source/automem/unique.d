@@ -112,7 +112,7 @@ private:
         Allocator _allocator;
 
     void deleteObject() @safe {
-        import std.experimental.allocator: dispose;
+        import automem.allocator: dispose;
         import std.traits: isPointer;
 
         static if(isPointer!Allocator)
@@ -385,4 +385,20 @@ private template makeObject(args...)
     }
 
     Struct.numStructs.shouldEqual(0);
+}
+
+
+@("@nogc class destructor")
+@nogc unittest {
+
+    auto allocator = SafeAllocator();
+
+    {
+        const ptr = Unique!(NoGcClass, SafeAllocator)(SafeAllocator(), 6);
+        // shouldEqual isn't @nogc
+        assert(ptr.i == 6);
+        assert(NoGcClass.numClasses == 1);
+    }
+
+    assert(NoGcClass.numClasses == 0);
 }

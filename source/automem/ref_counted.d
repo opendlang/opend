@@ -87,7 +87,14 @@ struct RefCounted(Type, Allocator = typeof(theAllocator)) if(isAllocator!Allocat
 private:
 
     static struct Impl {
-        Type _object;
+
+        static if(is(Type == class)) {
+
+            void[__traits(classInstanceSize, Type)] _rawMemory;
+            Type _object;
+
+        } else
+            Type _object;
 
         static if(is(Type == shared))
             shared size_t _count;
@@ -126,13 +133,16 @@ private:
 
         static if (hasIndirections!Type) {
             import core.memory: GC;
-            GC.addRange(&_impl._object, Type.sizeof);
+            static if(is(Type == class))
+                GC.addRange(&_impl._rawMemory[0], Type.sizeof);
+            else
+                GC.addRange(&_impl._object, Type.sizeof);
         }
     }
 
     void release() {
         if(_impl is null) return;
-        assert(_impl._count > 0);
+        assert(_impl._count > 0, "Trying to release a RefCounted but ref count is 0 or less");
 
         dec;
 
@@ -164,7 +174,7 @@ private:
 
 private template makeObject(args...)
 {
-    void makeObject(Type,A)(ref RefCounted!(Type,A) rc) @trusted {
+    void makeObject(Type, A)(ref RefCounted!(Type, A) rc) @trusted {
         import std.conv: emplace;
         import std.functional : forward;
 
@@ -180,8 +190,12 @@ private template makeObject(args...)
             else
                 emplace(cast(UnqualType*)&rc._impl._object, forward!args);
 
-        } else
-            emplace(&rc._impl._object, forward!args);
+        } else {
+            static if(is(Type == class)) {
+                rc._impl._object = emplace!Type(rc._impl._rawMemory, forward!args);
+            } else
+                emplace(&rc._impl._object, forward!args);
+        }
     }
 }
 
@@ -496,6 +510,34 @@ auto refCounted(Type, Allocator)(Unique!(Type, Allocator) ptr) {
     auto ptr = refCounted(Unique!(int, TestAllocator*)(&allocator, 42));
     (*ptr).shouldEqual(42);
 }
+
+@("RefCounted with class")
+@system unittest {
+    auto allocator = TestAllocator();
+    {
+        writelnUt("Creating ptr");
+        auto ptr = RefCounted!(Class, TestAllocator*)(&allocator, 33);
+        (*ptr).i.shouldEqual(33);
+        Class.numClasses.shouldEqual(1);
+    }
+    Class.numClasses.shouldEqual(0);
+}
+
+@("@nogc class destructor")
+@nogc unittest {
+
+    auto allocator = SafeAllocator();
+
+    {
+        const ptr = Unique!(NoGcClass, SafeAllocator)(SafeAllocator(), 6);
+        // shouldEqual isn't @nogc
+        assert(ptr.i == 6);
+        assert(NoGcClass.numClasses == 1);
+    }
+
+    assert(NoGcClass.numClasses == 0);
+}
+
 
 version(unittest) {
 
