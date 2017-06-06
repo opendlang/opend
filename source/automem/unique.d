@@ -386,3 +386,19 @@ private template makeObject(args...)
 
     Struct.numStructs.shouldEqual(0);
 }
+
+
+@("@nogc class destructor")
+@nogc unittest {
+
+    auto allocator = SafeAllocator();
+
+    {
+        const ptr = Unique!(NoGcClass, SafeAllocator)(SafeAllocator(), 6);
+        // shouldEqual isn't @nogc
+        assert(ptr.i == 6);
+        assert(NoGcStruct.numStructs == 1);
+    }
+
+    assert(NoGcStruct.numStructs == 0);
+}

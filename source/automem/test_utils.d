@@ -120,7 +120,7 @@ mixin template TestUtils() {
             }
         }
 
-        static struct NoGcStruct {
+        private struct NoGcStruct {
             int i;
 
             static int numStructs = 0;
@@ -139,6 +139,18 @@ mixin template TestUtils() {
                 --numStructs;
             }
 
+        }
+
+        private class NoGcClass {
+            int i;
+
+            this(int i) @safe @nogc nothrow pure {
+                this.i = i;
+            }
+
+            ~this() @safe @nogc nothrow pure {
+
+            }
         }
     }
 }
