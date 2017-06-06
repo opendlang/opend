@@ -143,13 +143,15 @@ mixin template TestUtils() {
 
         private class NoGcClass {
             int i;
+            static int numClasses = 0;
 
-            this(int i) @safe @nogc nothrow pure {
+            this(int i) @safe @nogc nothrow {
                 this.i = i;
+                ++numClasses;
             }
 
-            ~this() @safe @nogc nothrow pure {
-
+            ~this() @safe @nogc nothrow {
+                --numClasses;
             }
         }
     }

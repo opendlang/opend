@@ -1,9 +1,23 @@
 module automem.utils;
 
-import std.traits: isFunctionPointer, isDelegate, functionAttributes, FunctionAttribute;
+import std.traits: isFunctionPointer, isDelegate;
+
+template hasNoGcDestructor(T) {
+
+    import std.traits: functionAttributes, FunctionAttribute, hasMember;
+
+    static if(!is(T == class))
+        enum hasNoGcDestructor = false;
+    else static if(!hasMember!(T, "__dtor"))
+        enum hasNoGcDestructor = true;
+    else
+        enum hasNoGcDestructor = functionAttributes!(typeof(T.__dtor)) & FunctionAttribute.nogc;
 
 
-enum hasNoGcDestructor(T) = is(T == class) && functionAttributes!(typeof(T.__dtor)) & FunctionAttribute.nogc;
+}
+
+// enum hasNoGcDestructor(T) = is(T == class) &&
+//     (!hasMember!(T, "__dtor") || (functionAttributes!(typeof(T.__dtor)) & FunctionAttribute.nogc));
 
 @("hasNoGcDestructor")
 @safe pure unittest {
@@ -27,7 +41,7 @@ void destroyNoGC(T)(T x) nothrow @nogc
 */
 auto assumeNothrowNoGC(T)(T t) if (isFunctionPointer!T || isDelegate!T)
 {
-    import std.traits: functionAttributes, FunctionAttribute;
+    import std.traits: functionAttributes, FunctionAttribute, SetFunctionAttributes, functionLinkage;
 
     enum attrs = functionAttributes!T
                | FunctionAttribute.nogc
