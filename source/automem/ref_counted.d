@@ -523,6 +523,22 @@ auto refCounted(Type, Allocator)(Unique!(Type, Allocator) ptr) {
     Class.numClasses.shouldEqual(0);
 }
 
+@("@nogc class destructor")
+@nogc unittest {
+
+    auto allocator = SafeAllocator();
+
+    {
+        const ptr = Unique!(NoGcClass, SafeAllocator)(SafeAllocator(), 6);
+        // shouldEqual isn't @nogc
+        assert(ptr.i == 6);
+        assert(NoGcClass.numClasses == 1);
+    }
+
+    assert(NoGcClass.numClasses == 0);
+}
+
+
 version(unittest) {
 
     void sendRefCounted(Allocator, Args...)(Args args) {
