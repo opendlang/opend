@@ -15,6 +15,8 @@ mixin TestUtils;
 struct RefCounted(Type, Allocator = typeof(theAllocator)) if(isAllocator!Allocator) {
 
     import std.traits: hasMember;
+    static if (is(Type == class))
+        import std.traits : classInstanceAlignment;
 
     enum isSingleton = hasMember!(Allocator, "instance");
     enum isTheAllocator = is(Allocator == typeof(theAllocator));
@@ -78,8 +80,8 @@ struct RefCounted(Type, Allocator = typeof(theAllocator)) if(isAllocator!Allocat
        Dereference the smart pointer and yield a reference
        to the contained type.
      */
-    ref inout(Type) opUnary(string s)() inout if(s == "*") {
-        return _impl._object;
+    ref auto opUnary(string s)() inout if (s == "*") {
+        return _impl._get;
     }
 
     alias _impl this;
@@ -90,8 +92,8 @@ private:
 
         static if(is(Type == class)) {
 
+            align (classInstanceAlignment!Type)
             void[__traits(classInstanceSize, Type)] _rawMemory;
-            Type _object;
 
         } else
             Type _object;
@@ -101,7 +103,25 @@ private:
         else
             size_t _count;
 
-        alias _object this;
+        static if (is(Type == class)) {
+            inout(Type) _get() inout {
+                return cast(inout(Type))&_rawMemory[0];
+            }
+
+            inout(shared(Type)) _get() inout shared {
+                return cast(inout(shared(Type)))&_rawMemory[0];
+            }
+        } else {
+            ref inout(Type) _get() inout {
+                return _object;
+            }
+
+            ref inout(shared(Type)) _get() inout shared {
+                return _object;
+            }
+        }
+
+        alias _get this;
     }
 
     static if(isSingleton)
@@ -131,23 +151,43 @@ private:
         _impl = cast(typeof(_impl))_allocator.allocate(Impl.sizeof);
         _impl._count= 1;
 
-        static if (hasIndirections!Type) {
+        static if (is(Type == class)) {
+            // class representation:
+            // void* classInfoPtr
+            // void* monitorPtr
+            // []    interfaces
+            // T...  members
             import core.memory: GC;
-            static if(is(Type == class))
-                GC.addRange(&_impl._rawMemory[0], Type.sizeof);
+            if (!(typeid(Type).m_flags & TypeInfo_Class.ClassFlags.noPointers))
+                // members have pointers: we have to watch the monitor
+                // and all members; skip the classInfoPtr
+                GC.addRange(&_impl._rawMemory[(void*).sizeof],
+                        __traits(classInstanceSize, Type) - (void*).sizeof);
             else
-                GC.addRange(&_impl._object, Type.sizeof);
+                // representation doesn't have pointers, just watch the
+                // monitor pointer; skip the classInfoPtr
+                GC.addRange(&_impl._rawMemory[(void*).sizeof], (void*).sizeof);
+        } else static if (hasIndirections!Type) {
+            import core.memory: GC;
+            GC.addRange(&_impl._object, Type.sizeof);
         }
     }
 
     void release() {
+        import std.traits : hasIndirections;
+        import core.memory : GC;
         if(_impl is null) return;
         assert(_impl._count > 0, "Trying to release a RefCounted but ref count is 0 or less");
 
         dec;
 
         if(_impl._count == 0) {
-            destroy(_impl._object);
+            destroy(_impl._get);
+            static if (is(Type == class)) {
+                GC.removeRange(&_impl._rawMemory[(void*).sizeof]);
+            } else static if (hasIndirections!Type) {
+                GC.removeRange(&_impl._object);
+            }
             auto mem = cast(void*)_impl;
             _allocator.deallocate(() @trusted { return mem[0 .. Impl.sizeof]; }());
         }
@@ -192,7 +232,7 @@ private template makeObject(args...)
 
         } else {
             static if(is(Type == class)) {
-                rc._impl._object = emplace!Type(rc._impl._rawMemory, forward!args);
+                emplace!Type(rc._impl._rawMemory, forward!args);
             } else
                 emplace(&rc._impl._object, forward!args);
         }
