@@ -114,11 +114,23 @@ private:
     void deleteObject() @safe {
         import automem.allocator: dispose;
         import std.traits: isPointer;
+        import std.traits : hasIndirections;
+        import core.memory : GC;
 
         static if(isPointer!Allocator)
             assert(_object is null || _allocator !is null);
 
         if(_object !is null) () @trusted { _allocator.dispose(_object); }();
+        static if (is(Type == class)) {
+            () @trusted {
+                auto repr = (cast(void*)_object)[0..__traits(classInstanceSize, Type)];
+                GC.removeRange(&repr[(void*).sizeof]);
+            }();
+        } else static if (hasIndirections!Type) {
+            () @trusted {
+                GC.removeRange(_object);
+            }();
+        }
     }
 
     void moveFrom(T)(ref Unique!(T, Allocator) other) if(is(T: Type)) {
@@ -137,10 +149,28 @@ private template makeObject(args...)
     void makeObject(Type,A)(ref Unique!(Type, A) u) {
         import std.experimental.allocator: make;
         import std.functional : forward;
+        import std.traits : hasIndirections;
+        import core.memory : GC;
         version(LDC)
             u._object = () @trusted { return u._allocator.make!Type(forward!args); }();
         else
             u._object = u._allocator.make!Type(forward!args);
+
+        static if (is(Type == class)) {
+            () @trusted {
+                auto repr = (cast(void*)u._object)[0..__traits(classInstanceSize, Type)];
+                if (!(typeid(Type).m_flags & TypeInfo_Class.ClassFlags.noPointers)) {
+                    GC.addRange(&repr[(void*).sizeof],
+                            __traits(classInstanceSize, Type) - (void*).sizeof);
+                } else {
+                    GC.addRange(&repr[(void*).sizeof], (void*).sizeof);
+                }
+            }();
+        } else static if (hasIndirections!Type) {
+            () @trusted {
+                GC.addRange(u._object, Type.sizeof);
+            }();
+        }
     }
 }
 
