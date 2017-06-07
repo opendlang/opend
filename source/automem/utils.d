@@ -1,55 +1,90 @@
 module automem.utils;
 
-import std.traits: isFunctionPointer, isDelegate;
+// This is a destroy() copied and modified from
+// druntime, to allow for destruction attribute inference
 
-template hasNoGcDestructor(T) {
+void destruct(T)(T obj) if (is(T == class)) {
+    (cast(_finalizeType!T)&rt_finalize)(cast(void*)obj);
+}
 
-    import std.traits: functionAttributes, FunctionAttribute, hasMember;
+void destruct(T)(T obj) if (is(T == interface)) {
+    destruct(cast(Object)obj);
+}
 
-    static if(!is(T == class))
-        enum hasNoGcDestructor = false;
-    else static if(!hasMember!(T, "__dtor"))
-        enum hasNoGcDestructor = true;
+void destruct(T)(ref T obj) if (is(T == struct)) {
+    static if (__traits(hasMember, T, "__xdtor") &&
+               __traits(isSame, T, __traits(parent, obj.__xdtor)))
+        obj.__xdtor;
+}
+
+void destruct(T : U[n], U, size_t n)(ref T obj) if (!is(T == struct)) {
+    foreach_reverse (ref e; obj[])
+        destruct(e);
+}
+
+void destruct(T)(ref T obj)
+if(!is(T == struct) && !is(T == class) && !is(T == interface) && !_isStaticArray!T) {
+    obj = T.init;
+}
+
+private:
+
+template _isStaticArray(T : U[n], U, size_t n) {
+    enum bool _isStaticArray = true;
+}
+
+template _isStaticArray(T) {
+    enum bool _isStaticArray = false;
+}
+
+template _Seq(TList...) {
+    alias _Seq = TList;
+}
+
+template _BaseType(A) {
+    static if (is(A P == super))
+        alias _BaseType = P;
     else
-        enum hasNoGcDestructor = functionAttributes!(typeof(T.__dtor)) & FunctionAttribute.nogc;
-
-
+        static assert(0, "argument is not a class or interface");
 }
 
-// enum hasNoGcDestructor(T) = is(T == class) &&
-//     (!hasMember!(T, "__dtor") || (functionAttributes!(typeof(T.__dtor)) & FunctionAttribute.nogc));
-
-@("hasNoGcDestructor")
-@safe pure unittest {
-    static assert(hasNoGcDestructor!NoGc);
-    static assert(!hasNoGcDestructor!Gc);
+template _Bases(T) if (is(T == class)) {
+    static if (is(T == Throwable)) {
+        alias _Bases = Object;
+    } else static if (is(T == Object)) {
+        alias _Bases = _Seq!();
+    } else static if (is(_Bases!T[0] == Object)) {
+        alias _Bases = Object;
+    } else {
+        alias _Bases = _Seq!(_BaseType!T[0], _Bases!(_BaseType!T[0]));
+    }
 }
 
+extern(C) void rt_finalize(void* p, bool det = true);
+
+// A slightly better hack than the one presented by
 // https://www.auburnsounds.com/blog/2016-11-10_Running-D-without-its-runtime.html
-void destroyNoGC(T)(T x) nothrow @nogc
-    if (is(T == class) || is(T == interface))
-{
-    assumeNothrowNoGC(
-        (T x) {
-            return destroy(x);
-        })(x);
-}
-
-/**
-   Assumes a function to be nothrow and @nogc
-   From: https://www.auburnsounds.com/blog/2016-11-10_Running-D-without-its-runtime.html
-*/
-auto assumeNothrowNoGC(T)(T t) if (isFunctionPointer!T || isDelegate!T)
-{
-    import std.traits: functionAttributes, FunctionAttribute, SetFunctionAttributes, functionLinkage;
-
-    enum attrs = functionAttributes!T
-               | FunctionAttribute.nogc
-               | FunctionAttribute.nothrow_;
-    return cast(SetFunctionAttributes!(T, functionLinkage!T, attrs)) t;
-}
-
-version(unittest) {
-    private class NoGc { ~this() @nogc {} }
-    private class Gc { ~this() { }}
+//
+// This template infers destruction attributes from the given
+// class hierarchy. It actually may be incorrect, as by
+// the current language rules derived class can still
+// have weaker set of destruction attributes.
+extern(C)
+template _finalizeType(T) {
+    static if (is(T == Object)) {
+        alias _finalizeType = typeof(&rt_finalize);
+    } else {
+        alias _finalizeType = typeof((void* p, bool det = true) {
+            // generate a body that calls all the destructors in the chain,
+            // compiler should infer the intersection of attributes
+            foreach (B; _Seq!(T, _Bases!T)) {
+                // __dtor, i.e. B.~this
+                static if (__traits(hasMember, B, "__dtor"))
+                    () { B obj; obj.__dtor; } ();
+                // __xdtor, i.e. dtors for all RAII members
+                static if (__traits(hasMember, B, "__xdtor"))
+                    () { B obj; obj.__xdtor; } ();
+            }
+        });
+    }
 }

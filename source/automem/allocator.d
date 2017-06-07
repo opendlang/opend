@@ -3,6 +3,8 @@
  */
 module automem.allocator;
 
+import automem.utils: destruct;
+
 /**
 
 Destroys and then deallocates (using $(D alloc)) the object pointed to by a
@@ -17,8 +19,7 @@ void dispose(A, T)(auto ref A alloc, T* p)
 
     static if (hasElaborateDestructor!T)
     {
-        import std.experimental.allocator: _destroy = destroy;
-        _destroy(*p);
+        destruct(*p);
     }
     alloc.deallocate((cast(void*) p)[0 .. T.sizeof]);
 }
@@ -27,7 +28,6 @@ void dispose(A, T)(auto ref A alloc, T* p)
 void dispose(A, T)(auto ref A alloc, T p)
 if (is(T == class) || is(T == interface))
 {
-    import automem.utils: hasNoGcDestructor, destroyNoGC;
 
     if (!p) return;
     static if (is(T == interface))
@@ -44,10 +44,7 @@ if (is(T == class) || is(T == interface))
         alias ob = p;
     auto support = (cast(void*) ob)[0 .. typeid(ob).initializer.length];
 
-    static if(is(T == class) && hasNoGcDestructor!T)
-        destroyNoGC(p);
-    else
-        destroy(p);
+    destruct(p);
 
     alloc.deallocate(support);
 }
@@ -61,7 +58,7 @@ void dispose(A, T)(auto ref A alloc, T[] array)
     {
         foreach (ref e; array)
         {
-            destroy(e);
+            destruct(e);
         }
     }
     alloc.deallocate(array);
