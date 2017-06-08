@@ -1,5 +1,8 @@
 module automem.utils;
 
+import std.traits : isStaticArray, BaseClassesTuple;
+import std.meta : AliasSeq;
+
 // This is a destroy() copied and modified from
 // druntime, to allow for destruction attribute inference
 
@@ -23,42 +26,11 @@ void destruct(T : U[n], U, size_t n)(ref T obj) if (!is(T == struct)) {
 }
 
 void destruct(T)(ref T obj)
-if(!is(T == struct) && !is(T == class) && !is(T == interface) && !_isStaticArray!T) {
+if(!is(T == struct) && !is(T == class) && !is(T == interface) && !isStaticArray!T) {
     obj = T.init;
 }
 
 private:
-
-template _isStaticArray(T : U[n], U, size_t n) {
-    enum bool _isStaticArray = true;
-}
-
-template _isStaticArray(T) {
-    enum bool _isStaticArray = false;
-}
-
-template _Seq(TList...) {
-    alias _Seq = TList;
-}
-
-template _BaseType(A) {
-    static if (is(A P == super))
-        alias _BaseType = P;
-    else
-        static assert(0, "argument is not a class or interface");
-}
-
-template _Bases(T) if (is(T == class)) {
-    static if (is(T == Throwable)) {
-        alias _Bases = Object;
-    } else static if (is(T == Object)) {
-        alias _Bases = _Seq!();
-    } else static if (is(_Bases!T[0] == Object)) {
-        alias _Bases = Object;
-    } else {
-        alias _Bases = _Seq!(_BaseType!T[0], _Bases!(_BaseType!T[0]));
-    }
-}
 
 extern(C) void rt_finalize(void* p, bool det = true);
 
@@ -77,7 +49,7 @@ template _finalizeType(T) {
         alias _finalizeType = typeof((void* p, bool det = true) {
             // generate a body that calls all the destructors in the chain,
             // compiler should infer the intersection of attributes
-            foreach (B; _Seq!(T, _Bases!T)) {
+            foreach (B; AliasSeq!(T, BaseClassesTuple!T)) {
                 // __dtor, i.e. B.~this
                 static if (__traits(hasMember, B, "__dtor"))
                     () { B obj; obj.__dtor; } ();
