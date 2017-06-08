@@ -2,4 +2,4 @@
 
 set -euo pipefail
 
-[ ! -e bin ] || mkdir bin
+[ -e bin ] || mkdir bin
