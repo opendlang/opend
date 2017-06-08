@@ -1,7 +1,7 @@
 language: d
 sudo: false
 install:
-  - mkdir bin
+  - [[ ! -e bin ]] || mkdir bin
 
 script:
   - dub test
