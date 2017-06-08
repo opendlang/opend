@@ -15,8 +15,6 @@ mixin TestUtils;
 struct RefCounted(Type, Allocator = typeof(theAllocator)) if(isAllocator!Allocator) {
 
     import std.traits: hasMember;
-    static if (is(Type == class))
-        import std.traits : classInstanceAlignment;
 
     enum isSingleton = hasMember!(Allocator, "instance");
     enum isTheAllocator = is(Allocator == typeof(theAllocator));
@@ -92,7 +90,7 @@ private:
 
         static if(is(Type == class)) {
 
-            align (classInstanceAlignment!Type)
+            align ((void*).alignof)
             void[__traits(classInstanceSize, Type)] _rawMemory;
 
         } else
