@@ -1,7 +1,7 @@
 language: d
 sudo: false
 install:
-  - [[ ! -e bin ]] || mkdir bin
+  - ./travis_install.sh
 
 script:
   - dub test
