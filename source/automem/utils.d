@@ -30,6 +30,28 @@ if(!is(T == struct) && !is(T == class) && !is(T == interface) && !isStaticArray!
     obj = T.init;
 }
 
+@("class dtor inference")
+unittest {
+    class A { ~this() @nogc {} }
+    class B : A { ~this() {} }
+    class C : B { ~this() @nogc {} }
+
+    static assert( __traits(compiles, () @nogc { A a; destruct(a); }));
+    static assert(!__traits(compiles, () @nogc { B a; destruct(b); }));
+    static assert(!__traits(compiles, () @nogc { C a; destruct(c); }));
+}
+
+@("class dtor inference with struct members")
+unittest {
+    struct A { ~this() @nogc {} }
+    struct B { ~this() {} }
+    class CA { A a; ~this() @nogc {} }
+    class CB { B b; ~this() @nogc {} }
+
+    static assert( __traits(compiles, () @nogc { A a; destruct(a); }));
+    static assert(!__traits(compiles, () @nogc { B a; destruct(b); }));
+}
+
 private:
 
 extern(C) void rt_finalize(void* p, bool det = true);
@@ -60,3 +82,4 @@ template _finalizeType(T) {
         });
     }
 }
+
