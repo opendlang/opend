@@ -1,7 +1,6 @@
 module automem.utils;
 
-import std.traits : isStaticArray, BaseClassesTuple;
-import std.meta : AliasSeq;
+import std.traits : isStaticArray;
 
 // This is a destroy() copied and modified from
 // druntime, to allow for destruction attribute inference
@@ -68,6 +67,8 @@ template _finalizeType(T) {
     static if (is(T == Object)) {
         alias _finalizeType = typeof(&rt_finalize);
     } else {
+        import std.traits : BaseClassesTuple;
+        import std.meta : AliasSeq;
         alias _finalizeType = typeof((void* p, bool det = true) {
             // generate a body that calls all the destructors in the chain,
             // compiler should infer the intersection of attributes
