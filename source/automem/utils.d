@@ -48,8 +48,8 @@ unittest {
     class CA { A a; ~this() @nogc {} }
     class CB { B b; ~this() @nogc {} }
 
-    static assert( __traits(compiles, () @nogc { A a; destruct(a); }));
-    static assert(!__traits(compiles, () @nogc { B a; destruct(b); }));
+    static assert( __traits(compiles, () @nogc { CA a; destruct(a); }));
+    static assert(!__traits(compiles, () @nogc { CB a; destruct(b); }));
 }
 
 private:
