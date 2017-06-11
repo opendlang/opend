@@ -174,13 +174,14 @@ private:
     void release() {
         import std.traits : hasIndirections;
         import core.memory : GC;
+        import automem.utils : destruct;
         if(_impl is null) return;
         assert(_impl._count > 0, "Trying to release a RefCounted but ref count is 0 or less");
 
         dec;
 
         if(_impl._count == 0) {
-            destroy(_impl._get);
+            destruct(_impl._get);
             static if (is(Type == class)) {
                 GC.removeRange(&_impl._rawMemory[(void*).sizeof]);
             } else static if (hasIndirections!Type) {
