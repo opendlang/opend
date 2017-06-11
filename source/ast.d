@@ -7,7 +7,9 @@ module commonmarkd.ast;
 enum NodeType
 {
     text,
-    paragraph
+    paragraph,
+    italic,
+    bold,
 }
 
 
@@ -57,7 +59,69 @@ private:
     string _text;
 }
 
-class NodeParagraph
+class NodeParagraph : Node
 {
+    this(Node wrapped)
+    {
+        super(NodeType.paragraph);
+        _wrapped = wrapped;
+    }
 
+    override string renderHTML()
+    {
+        // TODO: escape HTML
+        return "<p>" ~ _wrapped.renderHTML() ~ "</p>";
+    }
+
+    override string renderCommonMark()
+    {
+        return _wrapped.renderCommonMark() ~ "\n\n";
+    }
+private:
+    Node _wrapped;
+}
+
+class NodeItalic : Node
+{
+    this(Node wrapped)
+    {
+        super(NodeType.italic);
+        _wrapped = wrapped;
+    }
+
+    override string renderHTML()
+    {
+        // TODO: escape HTML
+        return "<em>" ~ _wrapped.renderHTML() ~ "</em>";
+    }
+
+    override string renderCommonMark()
+    {
+        return "_" ~ _wrapped.renderCommonMark() ~ "_";
+    }
+private:
+    Node _wrapped;
+}
+
+class NodeBold : Node
+{
+    this(Node wrapped)
+    {
+        super(NodeType.bold);
+        _wrapped = wrapped;
+    }
+
+    override string renderHTML()
+    {
+        // TODO: escape HTML
+        return "<strong>" ~ _wrapped.renderHTML() ~ "</strong>";
+    }
+
+    override string renderCommonMark()
+    {
+        return "**" ~ _wrapped.renderCommonMark() ~ "**";
+    }
+
+private:
+    Node _wrapped;    
 }
