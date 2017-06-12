@@ -638,6 +638,7 @@ auto apply(alias handler, TA)(TA ta)
 				return handler(get!(TA.FieldTypes[i])(ta));
 		}
 	}
+	static if (__VERSION__ <= 2068) assert(false);
 }
 /// ditto
 auto apply(alias handler, T)(T value)
