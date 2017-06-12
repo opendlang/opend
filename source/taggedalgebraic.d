@@ -56,7 +56,16 @@ struct TaggedAlgebraic(U) if (is(U == union) || is(U == struct))
 
 
 	private {
-		void[Largest!FieldTypes.sizeof] m_data;
+		static if (is(FieldTypes[0] == typeof(null)) || is(FieldTypes[0] == Void) || __VERSION__ < 2072) {
+			void[Largest!FieldTypes.sizeof] m_data;
+		} else {
+			union Dummy {
+				FieldTypes[0] initField;
+				void[Largest!FieldTypes.sizeof] data;
+				alias data this;
+			}
+			Dummy m_data = { initField: FieldTypes[0].init };
+		}
 		Kind m_kind;
 	}
 
@@ -556,6 +565,17 @@ unittest {
 	assert(c[0] == "hello");
 }
 
+static if (__VERSION__ >= 2072) unittest { // default initialization
+	struct S {
+		int i = 42;
+	}
+
+	union U { S s; int j; }
+
+	TaggedAlgebraic!U ta;
+	assert(ta.i == 42);
+}
+
 
 /** Tests if the algebraic type stores a value of a certain data type.
 */
@@ -981,12 +1001,14 @@ private string generateConstructors(U)()
 
 	string ret;
 
-	// disable default construction if first type is not a null/Void type
-	static if (!is(FieldTypeTuple!U[0] == typeof(null)) && !is(FieldTypeTuple!U[0] == Void))
-	{
-		ret ~= q{
-			@disable this();
-		};
+	static if (__VERSION__ < 2072) {
+		// disable default construction if first type is not a null/Void type
+		static if (!is(FieldTypeTuple!U[0] == typeof(null)) && !is(FieldTypeTuple!U[0] == Void))
+		{
+			ret ~= q{
+				@disable this();
+			};
+		}
 	}
 
 	// normal type constructors
