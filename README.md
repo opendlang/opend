@@ -7,7 +7,7 @@ Dlang LAPACK header
 ## Related packages
 
  - [lubeck](http://code.dlang.org/packages/lubeck) - high level linear algebra library for Dlang
- - [mir-lapack](http://code.dlang.org/packages/mir-lapack) - dslice wrapper for lapack
+ - [mir-lapack](http://code.dlang.org/packages/mir-lapack) - ndslice wrapper for lapack
  - [lapacke](http://code.dlang.org/packages/lapacke) - LAPACKE bindings
 
 ---------------
