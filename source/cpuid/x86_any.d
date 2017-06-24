@@ -523,7 +523,7 @@ Params:
     eax = function id
     ecx = sub-function id
 +/
-pure nothrow @nogc
+pure nothrow @nogc @trusted
 CpuInfo _cpuid()(uint eax, uint ecx = 0)
 {
     uint a = void;
@@ -532,77 +532,39 @@ CpuInfo _cpuid()(uint eax, uint ecx = 0)
     uint d = void;
     version(LDC)
     {
-        // @@@FIXME@@@
-        // https://github.com/ldc-developers/ldc/issues/1823
-        version(Windows)
-        {
-            asm pure nothrow @nogc
-            {
-                mov EAX, eax;
-                mov ECX, ecx;
-                cpuid;
-                mov a, EAX;
-                mov b, EBX;
-                mov c, ECX;
-                mov d, EDX;
-            }
-        }
-        else
-        // @@@FIXME@@@
-        // https://github.com/ldc-developers/ldc/issues/1823
-        version(X86)
-        {
-            asm pure nothrow @nogc
-            {
-                mov EAX, eax;
-                mov ECX, ecx;
-                cpuid;
-                mov a, EAX;
-                mov b, EBX;
-                mov c, ECX;
-                mov d, EDX;
-            }
-        }
-        else
-        {
-            pragma(inline, true);
-            auto asmt = __asmtuple!
-            (uint, uint, uint, uint) (
-                "cpuid", 
-                "={eax},={ebx},={ecx},={edx},{eax},{ecx}", 
-                eax, ecx);
-            a = asmt.v[0];
-            b = asmt.v[1];
-            c = asmt.v[2];
-            d = asmt.v[3];
-        }
+        pragma(inline, true);
+        auto asmt = __asmtuple!
+        (uint, uint, uint, uint) (
+            "cpuid", 
+            "={eax},={ebx},={ecx},={edx},{eax},{ecx}", 
+            eax, ecx);
+        a = asmt.v[0];
+        b = asmt.v[1];
+        c = asmt.v[2];
+        d = asmt.v[3];
     }
     else
     version(GNU)
+    asm pure nothrow @nogc
     {
-        asm pure nothrow @nogc
-        {
-            "cpuid" : 
-                "=a" a,
-                "=b" b, 
-                "=c" c,
-                "=d" d,
-                : "a" eax, "c" ecx;
-        }
+        "cpuid" : 
+            "=a" a,
+            "=b" b, 
+            "=c" c,
+            "=d" d,
+            : "a" eax, "c" ecx;
     }
     else
     version(InlineAsm_X86_Any)
+    asm pure nothrow @nogc
     {
-        asm pure nothrow @nogc
-        {
-            mov EAX, eax;
-            mov ECX, ecx;
-            cpuid;
-            mov a, EAX;
-            mov b, EBX;
-            mov c, ECX;
-            mov d, EDX;
-        }
+        mov EAX, eax;
+        mov ECX, ecx;
+        cpuid;
+        mov a, EAX;
+        mov b, EBX;
+        mov c, ECX;
+        mov d, EDX;
     }
     else static assert(0);
     return CpuInfo(a, b, c, d);
