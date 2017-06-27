@@ -438,9 +438,7 @@ static if (isFreedesktop)
             collectException(environment.get("XDG_RUNTIME_DIR"), runtime);
             
             if (!runtime.length) {
-                setpwent();
                 passwd* pw = getpwuid(uid);
-                endpwent();
                 
                 try {
                     if (pw && pw.pw_name) {
