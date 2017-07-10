@@ -508,7 +508,8 @@ auto statDensity2D(AES)( AES aesRange )
     import std.array : array;
     import std.conv : to;
     import std.range : chain, front, iota, zip;
-    import std.typecons : Erase, tuple, Tuple;
+    import std.meta : Erase;
+    import std.typecons : tuple, Tuple;
     import ggplotd.aes : Aes, group, DefaultGroupFields;
     import ggplotd.algorithm : safeMin, safeMax;
     import ggplotd.range : mergeRange;

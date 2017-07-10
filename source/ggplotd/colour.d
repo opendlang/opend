@@ -27,7 +27,7 @@ auto namedColour(in string name)
     try
     {
         colour = colorFromString(name).toColourSpace!RGB;
-    } catch {}
+    } catch (Throwable) {}
     return colour;
 }
 
