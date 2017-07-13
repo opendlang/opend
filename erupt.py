@@ -159,10 +159,11 @@ class DGenerator( OutputGenerator ):
 			"// VK_EXT_acquire_xlib_display"     : [ "VK_USE_PLATFORM_XLIB_KHR" ,   "" ],
 			"// VK_KHR_xcb_surface"              : [ "VK_USE_PLATFORM_XCB_KHR",     "public import xcb.xcb;\n" ],
 			"// VK_NV_external_memory_win32"     : [ "VK_USE_PLATFORM_WIN32_KHR",   "public import core.sys.windows.winnt;\n" ],
-			"// VK_KHX_external_memory_win32"    : [ "VK_USE_PLATFORM_WIN32_KHR",   "" ],
+			"// VK_KHR_external_memory_win32"    : [ "VK_USE_PLATFORM_WIN32_KHR",   "" ],
 			"// VK_NV_win32_keyed_mutex"         : [ "VK_USE_PLATFORM_WIN32_KHR",   "" ],
 			"// VK_KHX_win32_keyed_mutex"        : [ "VK_USE_PLATFORM_WIN32_KHR",   "" ],
-			"// VK_KHX_external_semaphore_win32" : [ "VK_USE_PLATFORM_WIN32_KHR",   "" ],
+			"// VK_KHR_external_semaphore_win32" : [ "VK_USE_PLATFORM_WIN32_KHR",   "" ],
+			"// VK_KHR_external_fence_win32"     : [ "VK_USE_PLATFORM_WIN32_KHR",   "" ],
 		}
 
 	def beginFile( self, genOpts ):

@@ -216,6 +216,32 @@ extern( System ) @nogc nothrow {
 	// VK_KHR_maintenance1
 	alias PFN_vkTrimCommandPoolKHR = void function( VkDevice device, VkCommandPool commandPool, VkCommandPoolTrimFlagsKHR flags );
 
+	// VK_KHR_external_memory_capabilities
+	alias PFN_vkGetPhysicalDeviceExternalBufferPropertiesKHR = void function( VkPhysicalDevice physicalDevice, const( VkPhysicalDeviceExternalBufferInfoKHR )* pExternalBufferInfo, VkExternalBufferPropertiesKHR* pExternalBufferProperties );
+
+	// VK_KHR_external_memory_win32
+	version( VK_USE_PLATFORM_WIN32_KHR ) {
+		alias PFN_vkGetMemoryWin32HandleKHR = VkResult function( VkDevice device, const( VkMemoryGetWin32HandleInfoKHR )* pGetWin32HandleInfo, HANDLE* pHandle );
+		alias PFN_vkGetMemoryWin32HandlePropertiesKHR = VkResult function( VkDevice device, VkExternalMemoryHandleTypeFlagBitsKHR handleType, HANDLE handle, VkMemoryWin32HandlePropertiesKHR* pMemoryWin32HandleProperties );
+	}
+
+	// VK_KHR_external_memory_fd
+	alias PFN_vkGetMemoryFdKHR = VkResult function( VkDevice device, const( VkMemoryGetFdInfoKHR )* pGetFdInfo, int* pFd );
+	alias PFN_vkGetMemoryFdPropertiesKHR = VkResult function( VkDevice device, VkExternalMemoryHandleTypeFlagBitsKHR handleType, int fd, VkMemoryFdPropertiesKHR* pMemoryFdProperties );
+
+	// VK_KHR_external_semaphore_capabilities
+	alias PFN_vkGetPhysicalDeviceExternalSemaphorePropertiesKHR = void function( VkPhysicalDevice physicalDevice, const( VkPhysicalDeviceExternalSemaphoreInfoKHR )* pExternalSemaphoreInfo, VkExternalSemaphorePropertiesKHR* pExternalSemaphoreProperties );
+
+	// VK_KHR_external_semaphore_win32
+	version( VK_USE_PLATFORM_WIN32_KHR ) {
+		alias PFN_vkImportSemaphoreWin32HandleKHR = VkResult function( VkDevice device, const( VkImportSemaphoreWin32HandleInfoKHR )* pImportSemaphoreWin32HandleInfo );
+		alias PFN_vkGetSemaphoreWin32HandleKHR = VkResult function( VkDevice device, const( VkSemaphoreGetWin32HandleInfoKHR )* pGetWin32HandleInfo, HANDLE* pHandle );
+	}
+
+	// VK_KHR_external_semaphore_fd
+	alias PFN_vkImportSemaphoreFdKHR = VkResult function( VkDevice device, const( VkImportSemaphoreFdInfoKHR )* pImportSemaphoreFdInfo );
+	alias PFN_vkGetSemaphoreFdKHR = VkResult function( VkDevice device, const( VkSemaphoreGetFdInfoKHR )* pGetFdInfo, int* pFd );
+
 	// VK_KHR_push_descriptor
 	alias PFN_vkCmdPushDescriptorSetKHR = void function( VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipelineLayout layout, uint32_t set, uint32_t descriptorWriteCount, const( VkWriteDescriptorSet )* pDescriptorWrites );
 
@@ -228,9 +254,27 @@ extern( System ) @nogc nothrow {
 	// VK_KHR_shared_presentable_image
 	alias PFN_vkGetSwapchainStatusKHR = VkResult function( VkDevice device, VkSwapchainKHR swapchain );
 
+	// VK_KHR_external_fence_capabilities
+	alias PFN_vkGetPhysicalDeviceExternalFencePropertiesKHR = void function( VkPhysicalDevice physicalDevice, const( VkPhysicalDeviceExternalFenceInfoKHR )* pExternalFenceInfo, VkExternalFencePropertiesKHR* pExternalFenceProperties );
+
+	// VK_KHR_external_fence_win32
+	version( VK_USE_PLATFORM_WIN32_KHR ) {
+		alias PFN_vkImportFenceWin32HandleKHR = VkResult function( VkDevice device, const( VkImportFenceWin32HandleInfoKHR )* pImportFenceWin32HandleInfo );
+		alias PFN_vkGetFenceWin32HandleKHR = VkResult function( VkDevice device, const( VkFenceGetWin32HandleInfoKHR )* pGetWin32HandleInfo, HANDLE* pHandle );
+	}
+
+	// VK_KHR_external_fence_fd
+	alias PFN_vkImportFenceFdKHR = VkResult function( VkDevice device, const( VkImportFenceFdInfoKHR )* pImportFenceFdInfo );
+	alias PFN_vkGetFenceFdKHR = VkResult function( VkDevice device, const( VkFenceGetFdInfoKHR )* pGetFdInfo, int* pFd );
+
 	// VK_KHR_get_surface_capabilities2
 	alias PFN_vkGetPhysicalDeviceSurfaceCapabilities2KHR = VkResult function( VkPhysicalDevice physicalDevice, const( VkPhysicalDeviceSurfaceInfo2KHR )* pSurfaceInfo, VkSurfaceCapabilities2KHR* pSurfaceCapabilities );
 	alias PFN_vkGetPhysicalDeviceSurfaceFormats2KHR = VkResult function( VkPhysicalDevice physicalDevice, const( VkPhysicalDeviceSurfaceInfo2KHR )* pSurfaceInfo, uint32_t* pSurfaceFormatCount, VkSurfaceFormat2KHR* pSurfaceFormats );
+
+	// VK_KHR_get_memory_requirements2
+	alias PFN_vkGetImageMemoryRequirements2KHR = void function( VkDevice device, const( VkImageMemoryRequirementsInfo2KHR )* pInfo, VkMemoryRequirements2KHR* pMemoryRequirements );
+	alias PFN_vkGetBufferMemoryRequirements2KHR = void function( VkDevice device, const( VkBufferMemoryRequirementsInfo2KHR )* pInfo, VkMemoryRequirements2KHR* pMemoryRequirements );
+	alias PFN_vkGetImageSparseMemoryRequirements2KHR = void function( VkDevice device, const( VkImageSparseMemoryRequirementsInfo2KHR )* pInfo, uint32_t* pSparseMemoryRequirementCount, VkSparseImageMemoryRequirements2KHR* pSparseMemoryRequirements );
 
 	// VK_EXT_debug_report
 	alias PFN_vkCreateDebugReportCallbackEXT = VkResult function( VkInstance instance, const( VkDebugReportCallbackCreateInfoEXT )* pCreateInfo, const( VkAllocationCallbacks )* pAllocator, VkDebugReportCallbackEXT* pCallback );
@@ -272,32 +316,6 @@ extern( System ) @nogc nothrow {
 
 	// VK_KHX_device_group_creation
 	alias PFN_vkEnumeratePhysicalDeviceGroupsKHX = VkResult function( VkInstance instance, uint32_t* pPhysicalDeviceGroupCount, VkPhysicalDeviceGroupPropertiesKHX* pPhysicalDeviceGroupProperties );
-
-	// VK_KHX_external_memory_capabilities
-	alias PFN_vkGetPhysicalDeviceExternalBufferPropertiesKHX = void function( VkPhysicalDevice physicalDevice, const( VkPhysicalDeviceExternalBufferInfoKHX )* pExternalBufferInfo, VkExternalBufferPropertiesKHX* pExternalBufferProperties );
-
-	// VK_KHX_external_memory_win32
-	version( VK_USE_PLATFORM_WIN32_KHR ) {
-		alias PFN_vkGetMemoryWin32HandleKHX = VkResult function( VkDevice device, VkDeviceMemory memory, VkExternalMemoryHandleTypeFlagBitsKHX handleType, HANDLE* pHandle );
-		alias PFN_vkGetMemoryWin32HandlePropertiesKHX = VkResult function( VkDevice device, VkExternalMemoryHandleTypeFlagBitsKHX handleType, HANDLE handle, VkMemoryWin32HandlePropertiesKHX* pMemoryWin32HandleProperties );
-	}
-
-	// VK_KHX_external_memory_fd
-	alias PFN_vkGetMemoryFdKHX = VkResult function( VkDevice device, VkDeviceMemory memory, VkExternalMemoryHandleTypeFlagBitsKHX handleType, int* pFd );
-	alias PFN_vkGetMemoryFdPropertiesKHX = VkResult function( VkDevice device, VkExternalMemoryHandleTypeFlagBitsKHX handleType, int fd, VkMemoryFdPropertiesKHX* pMemoryFdProperties );
-
-	// VK_KHX_external_semaphore_capabilities
-	alias PFN_vkGetPhysicalDeviceExternalSemaphorePropertiesKHX = void function( VkPhysicalDevice physicalDevice, const( VkPhysicalDeviceExternalSemaphoreInfoKHX )* pExternalSemaphoreInfo, VkExternalSemaphorePropertiesKHX* pExternalSemaphoreProperties );
-
-	// VK_KHX_external_semaphore_win32
-	version( VK_USE_PLATFORM_WIN32_KHR ) {
-		alias PFN_vkImportSemaphoreWin32HandleKHX = VkResult function( VkDevice device, const( VkImportSemaphoreWin32HandleInfoKHX )* pImportSemaphoreWin32HandleInfo );
-		alias PFN_vkGetSemaphoreWin32HandleKHX = VkResult function( VkDevice device, VkSemaphore semaphore, VkExternalSemaphoreHandleTypeFlagBitsKHX handleType, HANDLE* pHandle );
-	}
-
-	// VK_KHX_external_semaphore_fd
-	alias PFN_vkImportSemaphoreFdKHX = VkResult function( VkDevice device, const( VkImportSemaphoreFdInfoKHX )* pImportSemaphoreFdInfo );
-	alias PFN_vkGetSemaphoreFdKHX = VkResult function( VkDevice device, VkSemaphore semaphore, VkExternalSemaphoreHandleTypeFlagBitsKHX handleType, int* pFd );
 
 	// VK_NVX_device_generated_commands
 	alias PFN_vkCmdProcessCommandsNVX = void function( VkCommandBuffer commandBuffer, const( VkCmdProcessCommandsInfoNVX )* pProcessCommandsInfo );
@@ -562,6 +580,32 @@ __gshared {
 	// VK_KHR_maintenance1
 	PFN_vkTrimCommandPoolKHR vkTrimCommandPoolKHR;
 
+	// VK_KHR_external_memory_capabilities
+	PFN_vkGetPhysicalDeviceExternalBufferPropertiesKHR vkGetPhysicalDeviceExternalBufferPropertiesKHR;
+
+	// VK_KHR_external_memory_win32
+	version( VK_USE_PLATFORM_WIN32_KHR ) {
+		PFN_vkGetMemoryWin32HandleKHR vkGetMemoryWin32HandleKHR;
+		PFN_vkGetMemoryWin32HandlePropertiesKHR vkGetMemoryWin32HandlePropertiesKHR;
+	}
+
+	// VK_KHR_external_memory_fd
+	PFN_vkGetMemoryFdKHR vkGetMemoryFdKHR;
+	PFN_vkGetMemoryFdPropertiesKHR vkGetMemoryFdPropertiesKHR;
+
+	// VK_KHR_external_semaphore_capabilities
+	PFN_vkGetPhysicalDeviceExternalSemaphorePropertiesKHR vkGetPhysicalDeviceExternalSemaphorePropertiesKHR;
+
+	// VK_KHR_external_semaphore_win32
+	version( VK_USE_PLATFORM_WIN32_KHR ) {
+		PFN_vkImportSemaphoreWin32HandleKHR vkImportSemaphoreWin32HandleKHR;
+		PFN_vkGetSemaphoreWin32HandleKHR vkGetSemaphoreWin32HandleKHR;
+	}
+
+	// VK_KHR_external_semaphore_fd
+	PFN_vkImportSemaphoreFdKHR vkImportSemaphoreFdKHR;
+	PFN_vkGetSemaphoreFdKHR vkGetSemaphoreFdKHR;
+
 	// VK_KHR_push_descriptor
 	PFN_vkCmdPushDescriptorSetKHR vkCmdPushDescriptorSetKHR;
 
@@ -574,9 +618,27 @@ __gshared {
 	// VK_KHR_shared_presentable_image
 	PFN_vkGetSwapchainStatusKHR vkGetSwapchainStatusKHR;
 
+	// VK_KHR_external_fence_capabilities
+	PFN_vkGetPhysicalDeviceExternalFencePropertiesKHR vkGetPhysicalDeviceExternalFencePropertiesKHR;
+
+	// VK_KHR_external_fence_win32
+	version( VK_USE_PLATFORM_WIN32_KHR ) {
+		PFN_vkImportFenceWin32HandleKHR vkImportFenceWin32HandleKHR;
+		PFN_vkGetFenceWin32HandleKHR vkGetFenceWin32HandleKHR;
+	}
+
+	// VK_KHR_external_fence_fd
+	PFN_vkImportFenceFdKHR vkImportFenceFdKHR;
+	PFN_vkGetFenceFdKHR vkGetFenceFdKHR;
+
 	// VK_KHR_get_surface_capabilities2
 	PFN_vkGetPhysicalDeviceSurfaceCapabilities2KHR vkGetPhysicalDeviceSurfaceCapabilities2KHR;
 	PFN_vkGetPhysicalDeviceSurfaceFormats2KHR vkGetPhysicalDeviceSurfaceFormats2KHR;
+
+	// VK_KHR_get_memory_requirements2
+	PFN_vkGetImageMemoryRequirements2KHR vkGetImageMemoryRequirements2KHR;
+	PFN_vkGetBufferMemoryRequirements2KHR vkGetBufferMemoryRequirements2KHR;
+	PFN_vkGetImageSparseMemoryRequirements2KHR vkGetImageSparseMemoryRequirements2KHR;
 
 	// VK_EXT_debug_report
 	PFN_vkCreateDebugReportCallbackEXT vkCreateDebugReportCallbackEXT;
@@ -618,32 +680,6 @@ __gshared {
 
 	// VK_KHX_device_group_creation
 	PFN_vkEnumeratePhysicalDeviceGroupsKHX vkEnumeratePhysicalDeviceGroupsKHX;
-
-	// VK_KHX_external_memory_capabilities
-	PFN_vkGetPhysicalDeviceExternalBufferPropertiesKHX vkGetPhysicalDeviceExternalBufferPropertiesKHX;
-
-	// VK_KHX_external_memory_win32
-	version( VK_USE_PLATFORM_WIN32_KHR ) {
-		PFN_vkGetMemoryWin32HandleKHX vkGetMemoryWin32HandleKHX;
-		PFN_vkGetMemoryWin32HandlePropertiesKHX vkGetMemoryWin32HandlePropertiesKHX;
-	}
-
-	// VK_KHX_external_memory_fd
-	PFN_vkGetMemoryFdKHX vkGetMemoryFdKHX;
-	PFN_vkGetMemoryFdPropertiesKHX vkGetMemoryFdPropertiesKHX;
-
-	// VK_KHX_external_semaphore_capabilities
-	PFN_vkGetPhysicalDeviceExternalSemaphorePropertiesKHX vkGetPhysicalDeviceExternalSemaphorePropertiesKHX;
-
-	// VK_KHX_external_semaphore_win32
-	version( VK_USE_PLATFORM_WIN32_KHR ) {
-		PFN_vkImportSemaphoreWin32HandleKHX vkImportSemaphoreWin32HandleKHX;
-		PFN_vkGetSemaphoreWin32HandleKHX vkGetSemaphoreWin32HandleKHX;
-	}
-
-	// VK_KHX_external_semaphore_fd
-	PFN_vkImportSemaphoreFdKHX vkImportSemaphoreFdKHX;
-	PFN_vkGetSemaphoreFdKHX vkGetSemaphoreFdKHX;
 
 	// VK_NVX_device_generated_commands
 	PFN_vkCmdProcessCommandsNVX vkCmdProcessCommandsNVX;
@@ -782,6 +818,15 @@ void loadInstanceLevelFunctions( VkInstance instance ) {
 	vkGetPhysicalDeviceMemoryProperties2KHR = cast( typeof( vkGetPhysicalDeviceMemoryProperties2KHR )) vkGetInstanceProcAddr( instance, "vkGetPhysicalDeviceMemoryProperties2KHR" );
 	vkGetPhysicalDeviceSparseImageFormatProperties2KHR = cast( typeof( vkGetPhysicalDeviceSparseImageFormatProperties2KHR )) vkGetInstanceProcAddr( instance, "vkGetPhysicalDeviceSparseImageFormatProperties2KHR" );
 
+	// VK_KHR_external_memory_capabilities
+	vkGetPhysicalDeviceExternalBufferPropertiesKHR = cast( typeof( vkGetPhysicalDeviceExternalBufferPropertiesKHR )) vkGetInstanceProcAddr( instance, "vkGetPhysicalDeviceExternalBufferPropertiesKHR" );
+
+	// VK_KHR_external_semaphore_capabilities
+	vkGetPhysicalDeviceExternalSemaphorePropertiesKHR = cast( typeof( vkGetPhysicalDeviceExternalSemaphorePropertiesKHR )) vkGetInstanceProcAddr( instance, "vkGetPhysicalDeviceExternalSemaphorePropertiesKHR" );
+
+	// VK_KHR_external_fence_capabilities
+	vkGetPhysicalDeviceExternalFencePropertiesKHR = cast( typeof( vkGetPhysicalDeviceExternalFencePropertiesKHR )) vkGetInstanceProcAddr( instance, "vkGetPhysicalDeviceExternalFencePropertiesKHR" );
+
 	// VK_KHR_get_surface_capabilities2
 	vkGetPhysicalDeviceSurfaceCapabilities2KHR = cast( typeof( vkGetPhysicalDeviceSurfaceCapabilities2KHR )) vkGetInstanceProcAddr( instance, "vkGetPhysicalDeviceSurfaceCapabilities2KHR" );
 	vkGetPhysicalDeviceSurfaceFormats2KHR = cast( typeof( vkGetPhysicalDeviceSurfaceFormats2KHR )) vkGetInstanceProcAddr( instance, "vkGetPhysicalDeviceSurfaceFormats2KHR" );
@@ -802,12 +847,6 @@ void loadInstanceLevelFunctions( VkInstance instance ) {
 
 	// VK_KHX_device_group_creation
 	vkEnumeratePhysicalDeviceGroupsKHX = cast( typeof( vkEnumeratePhysicalDeviceGroupsKHX )) vkGetInstanceProcAddr( instance, "vkEnumeratePhysicalDeviceGroupsKHX" );
-
-	// VK_KHX_external_memory_capabilities
-	vkGetPhysicalDeviceExternalBufferPropertiesKHX = cast( typeof( vkGetPhysicalDeviceExternalBufferPropertiesKHX )) vkGetInstanceProcAddr( instance, "vkGetPhysicalDeviceExternalBufferPropertiesKHX" );
-
-	// VK_KHX_external_semaphore_capabilities
-	vkGetPhysicalDeviceExternalSemaphorePropertiesKHX = cast( typeof( vkGetPhysicalDeviceExternalSemaphorePropertiesKHX )) vkGetInstanceProcAddr( instance, "vkGetPhysicalDeviceExternalSemaphorePropertiesKHX" );
 
 	// VK_NVX_device_generated_commands
 	vkGetPhysicalDeviceGeneratedCommandsPropertiesNVX = cast( typeof( vkGetPhysicalDeviceGeneratedCommandsPropertiesNVX )) vkGetInstanceProcAddr( instance, "vkGetPhysicalDeviceGeneratedCommandsPropertiesNVX" );
@@ -972,6 +1011,26 @@ void loadDeviceLevelFunctions( VkInstance instance ) {
 	// VK_KHR_maintenance1
 	vkTrimCommandPoolKHR = cast( typeof( vkTrimCommandPoolKHR )) vkGetInstanceProcAddr( instance, "vkTrimCommandPoolKHR" );
 
+	// VK_KHR_external_memory_win32
+	version( VK_USE_PLATFORM_WIN32_KHR ) {
+		vkGetMemoryWin32HandleKHR = cast( typeof( vkGetMemoryWin32HandleKHR )) vkGetInstanceProcAddr( instance, "vkGetMemoryWin32HandleKHR" );
+		vkGetMemoryWin32HandlePropertiesKHR = cast( typeof( vkGetMemoryWin32HandlePropertiesKHR )) vkGetInstanceProcAddr( instance, "vkGetMemoryWin32HandlePropertiesKHR" );
+	}
+
+	// VK_KHR_external_memory_fd
+	vkGetMemoryFdKHR = cast( typeof( vkGetMemoryFdKHR )) vkGetInstanceProcAddr( instance, "vkGetMemoryFdKHR" );
+	vkGetMemoryFdPropertiesKHR = cast( typeof( vkGetMemoryFdPropertiesKHR )) vkGetInstanceProcAddr( instance, "vkGetMemoryFdPropertiesKHR" );
+
+	// VK_KHR_external_semaphore_win32
+	version( VK_USE_PLATFORM_WIN32_KHR ) {
+		vkImportSemaphoreWin32HandleKHR = cast( typeof( vkImportSemaphoreWin32HandleKHR )) vkGetInstanceProcAddr( instance, "vkImportSemaphoreWin32HandleKHR" );
+		vkGetSemaphoreWin32HandleKHR = cast( typeof( vkGetSemaphoreWin32HandleKHR )) vkGetInstanceProcAddr( instance, "vkGetSemaphoreWin32HandleKHR" );
+	}
+
+	// VK_KHR_external_semaphore_fd
+	vkImportSemaphoreFdKHR = cast( typeof( vkImportSemaphoreFdKHR )) vkGetInstanceProcAddr( instance, "vkImportSemaphoreFdKHR" );
+	vkGetSemaphoreFdKHR = cast( typeof( vkGetSemaphoreFdKHR )) vkGetInstanceProcAddr( instance, "vkGetSemaphoreFdKHR" );
+
 	// VK_KHR_push_descriptor
 	vkCmdPushDescriptorSetKHR = cast( typeof( vkCmdPushDescriptorSetKHR )) vkGetInstanceProcAddr( instance, "vkCmdPushDescriptorSetKHR" );
 
@@ -983,6 +1042,21 @@ void loadDeviceLevelFunctions( VkInstance instance ) {
 
 	// VK_KHR_shared_presentable_image
 	vkGetSwapchainStatusKHR = cast( typeof( vkGetSwapchainStatusKHR )) vkGetInstanceProcAddr( instance, "vkGetSwapchainStatusKHR" );
+
+	// VK_KHR_external_fence_win32
+	version( VK_USE_PLATFORM_WIN32_KHR ) {
+		vkImportFenceWin32HandleKHR = cast( typeof( vkImportFenceWin32HandleKHR )) vkGetInstanceProcAddr( instance, "vkImportFenceWin32HandleKHR" );
+		vkGetFenceWin32HandleKHR = cast( typeof( vkGetFenceWin32HandleKHR )) vkGetInstanceProcAddr( instance, "vkGetFenceWin32HandleKHR" );
+	}
+
+	// VK_KHR_external_fence_fd
+	vkImportFenceFdKHR = cast( typeof( vkImportFenceFdKHR )) vkGetInstanceProcAddr( instance, "vkImportFenceFdKHR" );
+	vkGetFenceFdKHR = cast( typeof( vkGetFenceFdKHR )) vkGetInstanceProcAddr( instance, "vkGetFenceFdKHR" );
+
+	// VK_KHR_get_memory_requirements2
+	vkGetImageMemoryRequirements2KHR = cast( typeof( vkGetImageMemoryRequirements2KHR )) vkGetInstanceProcAddr( instance, "vkGetImageMemoryRequirements2KHR" );
+	vkGetBufferMemoryRequirements2KHR = cast( typeof( vkGetBufferMemoryRequirements2KHR )) vkGetInstanceProcAddr( instance, "vkGetBufferMemoryRequirements2KHR" );
+	vkGetImageSparseMemoryRequirements2KHR = cast( typeof( vkGetImageSparseMemoryRequirements2KHR )) vkGetInstanceProcAddr( instance, "vkGetImageSparseMemoryRequirements2KHR" );
 
 	// VK_EXT_debug_marker
 	vkDebugMarkerSetObjectTagEXT = cast( typeof( vkDebugMarkerSetObjectTagEXT )) vkGetInstanceProcAddr( instance, "vkDebugMarkerSetObjectTagEXT" );
@@ -1009,26 +1083,6 @@ void loadDeviceLevelFunctions( VkInstance instance ) {
 	vkGetDeviceGroupSurfacePresentModesKHX = cast( typeof( vkGetDeviceGroupSurfacePresentModesKHX )) vkGetInstanceProcAddr( instance, "vkGetDeviceGroupSurfacePresentModesKHX" );
 	vkAcquireNextImage2KHX = cast( typeof( vkAcquireNextImage2KHX )) vkGetInstanceProcAddr( instance, "vkAcquireNextImage2KHX" );
 	vkCmdDispatchBaseKHX = cast( typeof( vkCmdDispatchBaseKHX )) vkGetInstanceProcAddr( instance, "vkCmdDispatchBaseKHX" );
-
-	// VK_KHX_external_memory_win32
-	version( VK_USE_PLATFORM_WIN32_KHR ) {
-		vkGetMemoryWin32HandleKHX = cast( typeof( vkGetMemoryWin32HandleKHX )) vkGetInstanceProcAddr( instance, "vkGetMemoryWin32HandleKHX" );
-		vkGetMemoryWin32HandlePropertiesKHX = cast( typeof( vkGetMemoryWin32HandlePropertiesKHX )) vkGetInstanceProcAddr( instance, "vkGetMemoryWin32HandlePropertiesKHX" );
-	}
-
-	// VK_KHX_external_memory_fd
-	vkGetMemoryFdKHX = cast( typeof( vkGetMemoryFdKHX )) vkGetInstanceProcAddr( instance, "vkGetMemoryFdKHX" );
-	vkGetMemoryFdPropertiesKHX = cast( typeof( vkGetMemoryFdPropertiesKHX )) vkGetInstanceProcAddr( instance, "vkGetMemoryFdPropertiesKHX" );
-
-	// VK_KHX_external_semaphore_win32
-	version( VK_USE_PLATFORM_WIN32_KHR ) {
-		vkImportSemaphoreWin32HandleKHX = cast( typeof( vkImportSemaphoreWin32HandleKHX )) vkGetInstanceProcAddr( instance, "vkImportSemaphoreWin32HandleKHX" );
-		vkGetSemaphoreWin32HandleKHX = cast( typeof( vkGetSemaphoreWin32HandleKHX )) vkGetInstanceProcAddr( instance, "vkGetSemaphoreWin32HandleKHX" );
-	}
-
-	// VK_KHX_external_semaphore_fd
-	vkImportSemaphoreFdKHX = cast( typeof( vkImportSemaphoreFdKHX )) vkGetInstanceProcAddr( instance, "vkImportSemaphoreFdKHX" );
-	vkGetSemaphoreFdKHX = cast( typeof( vkGetSemaphoreFdKHX )) vkGetInstanceProcAddr( instance, "vkGetSemaphoreFdKHX" );
 
 	// VK_NVX_device_generated_commands
 	vkCmdProcessCommandsNVX = cast( typeof( vkCmdProcessCommandsNVX )) vkGetInstanceProcAddr( instance, "vkCmdProcessCommandsNVX" );
@@ -1202,6 +1256,26 @@ void loadDeviceLevelFunctions( VkDevice device ) {
 	// VK_KHR_maintenance1
 	vkTrimCommandPoolKHR = cast( typeof( vkTrimCommandPoolKHR )) vkGetDeviceProcAddr( device, "vkTrimCommandPoolKHR" );
 
+	// VK_KHR_external_memory_win32
+	version( VK_USE_PLATFORM_WIN32_KHR ) {
+		vkGetMemoryWin32HandleKHR = cast( typeof( vkGetMemoryWin32HandleKHR )) vkGetDeviceProcAddr( device, "vkGetMemoryWin32HandleKHR" );
+		vkGetMemoryWin32HandlePropertiesKHR = cast( typeof( vkGetMemoryWin32HandlePropertiesKHR )) vkGetDeviceProcAddr( device, "vkGetMemoryWin32HandlePropertiesKHR" );
+	}
+
+	// VK_KHR_external_memory_fd
+	vkGetMemoryFdKHR = cast( typeof( vkGetMemoryFdKHR )) vkGetDeviceProcAddr( device, "vkGetMemoryFdKHR" );
+	vkGetMemoryFdPropertiesKHR = cast( typeof( vkGetMemoryFdPropertiesKHR )) vkGetDeviceProcAddr( device, "vkGetMemoryFdPropertiesKHR" );
+
+	// VK_KHR_external_semaphore_win32
+	version( VK_USE_PLATFORM_WIN32_KHR ) {
+		vkImportSemaphoreWin32HandleKHR = cast( typeof( vkImportSemaphoreWin32HandleKHR )) vkGetDeviceProcAddr( device, "vkImportSemaphoreWin32HandleKHR" );
+		vkGetSemaphoreWin32HandleKHR = cast( typeof( vkGetSemaphoreWin32HandleKHR )) vkGetDeviceProcAddr( device, "vkGetSemaphoreWin32HandleKHR" );
+	}
+
+	// VK_KHR_external_semaphore_fd
+	vkImportSemaphoreFdKHR = cast( typeof( vkImportSemaphoreFdKHR )) vkGetDeviceProcAddr( device, "vkImportSemaphoreFdKHR" );
+	vkGetSemaphoreFdKHR = cast( typeof( vkGetSemaphoreFdKHR )) vkGetDeviceProcAddr( device, "vkGetSemaphoreFdKHR" );
+
 	// VK_KHR_push_descriptor
 	vkCmdPushDescriptorSetKHR = cast( typeof( vkCmdPushDescriptorSetKHR )) vkGetDeviceProcAddr( device, "vkCmdPushDescriptorSetKHR" );
 
@@ -1213,6 +1287,21 @@ void loadDeviceLevelFunctions( VkDevice device ) {
 
 	// VK_KHR_shared_presentable_image
 	vkGetSwapchainStatusKHR = cast( typeof( vkGetSwapchainStatusKHR )) vkGetDeviceProcAddr( device, "vkGetSwapchainStatusKHR" );
+
+	// VK_KHR_external_fence_win32
+	version( VK_USE_PLATFORM_WIN32_KHR ) {
+		vkImportFenceWin32HandleKHR = cast( typeof( vkImportFenceWin32HandleKHR )) vkGetDeviceProcAddr( device, "vkImportFenceWin32HandleKHR" );
+		vkGetFenceWin32HandleKHR = cast( typeof( vkGetFenceWin32HandleKHR )) vkGetDeviceProcAddr( device, "vkGetFenceWin32HandleKHR" );
+	}
+
+	// VK_KHR_external_fence_fd
+	vkImportFenceFdKHR = cast( typeof( vkImportFenceFdKHR )) vkGetDeviceProcAddr( device, "vkImportFenceFdKHR" );
+	vkGetFenceFdKHR = cast( typeof( vkGetFenceFdKHR )) vkGetDeviceProcAddr( device, "vkGetFenceFdKHR" );
+
+	// VK_KHR_get_memory_requirements2
+	vkGetImageMemoryRequirements2KHR = cast( typeof( vkGetImageMemoryRequirements2KHR )) vkGetDeviceProcAddr( device, "vkGetImageMemoryRequirements2KHR" );
+	vkGetBufferMemoryRequirements2KHR = cast( typeof( vkGetBufferMemoryRequirements2KHR )) vkGetDeviceProcAddr( device, "vkGetBufferMemoryRequirements2KHR" );
+	vkGetImageSparseMemoryRequirements2KHR = cast( typeof( vkGetImageSparseMemoryRequirements2KHR )) vkGetDeviceProcAddr( device, "vkGetImageSparseMemoryRequirements2KHR" );
 
 	// VK_EXT_debug_marker
 	vkDebugMarkerSetObjectTagEXT = cast( typeof( vkDebugMarkerSetObjectTagEXT )) vkGetDeviceProcAddr( device, "vkDebugMarkerSetObjectTagEXT" );
@@ -1239,26 +1328,6 @@ void loadDeviceLevelFunctions( VkDevice device ) {
 	vkGetDeviceGroupSurfacePresentModesKHX = cast( typeof( vkGetDeviceGroupSurfacePresentModesKHX )) vkGetDeviceProcAddr( device, "vkGetDeviceGroupSurfacePresentModesKHX" );
 	vkAcquireNextImage2KHX = cast( typeof( vkAcquireNextImage2KHX )) vkGetDeviceProcAddr( device, "vkAcquireNextImage2KHX" );
 	vkCmdDispatchBaseKHX = cast( typeof( vkCmdDispatchBaseKHX )) vkGetDeviceProcAddr( device, "vkCmdDispatchBaseKHX" );
-
-	// VK_KHX_external_memory_win32
-	version( VK_USE_PLATFORM_WIN32_KHR ) {
-		vkGetMemoryWin32HandleKHX = cast( typeof( vkGetMemoryWin32HandleKHX )) vkGetDeviceProcAddr( device, "vkGetMemoryWin32HandleKHX" );
-		vkGetMemoryWin32HandlePropertiesKHX = cast( typeof( vkGetMemoryWin32HandlePropertiesKHX )) vkGetDeviceProcAddr( device, "vkGetMemoryWin32HandlePropertiesKHX" );
-	}
-
-	// VK_KHX_external_memory_fd
-	vkGetMemoryFdKHX = cast( typeof( vkGetMemoryFdKHX )) vkGetDeviceProcAddr( device, "vkGetMemoryFdKHX" );
-	vkGetMemoryFdPropertiesKHX = cast( typeof( vkGetMemoryFdPropertiesKHX )) vkGetDeviceProcAddr( device, "vkGetMemoryFdPropertiesKHX" );
-
-	// VK_KHX_external_semaphore_win32
-	version( VK_USE_PLATFORM_WIN32_KHR ) {
-		vkImportSemaphoreWin32HandleKHX = cast( typeof( vkImportSemaphoreWin32HandleKHX )) vkGetDeviceProcAddr( device, "vkImportSemaphoreWin32HandleKHX" );
-		vkGetSemaphoreWin32HandleKHX = cast( typeof( vkGetSemaphoreWin32HandleKHX )) vkGetDeviceProcAddr( device, "vkGetSemaphoreWin32HandleKHX" );
-	}
-
-	// VK_KHX_external_semaphore_fd
-	vkImportSemaphoreFdKHX = cast( typeof( vkImportSemaphoreFdKHX )) vkGetDeviceProcAddr( device, "vkImportSemaphoreFdKHX" );
-	vkGetSemaphoreFdKHX = cast( typeof( vkGetSemaphoreFdKHX )) vkGetDeviceProcAddr( device, "vkGetSemaphoreFdKHX" );
 
 	// VK_NVX_device_generated_commands
 	vkCmdProcessCommandsNVX = cast( typeof( vkCmdProcessCommandsNVX )) vkGetDeviceProcAddr( device, "vkCmdProcessCommandsNVX" );
@@ -1459,6 +1528,26 @@ struct DispatchDevice {
 		// VK_KHR_maintenance1
 		vkTrimCommandPoolKHR = cast( typeof( vkTrimCommandPoolKHR )) vkGetDeviceProcAddr( device, "vkTrimCommandPoolKHR" );
 
+		// VK_KHR_external_memory_win32
+		version( VK_USE_PLATFORM_WIN32_KHR ) {
+			vkGetMemoryWin32HandleKHR = cast( typeof( vkGetMemoryWin32HandleKHR )) vkGetDeviceProcAddr( device, "vkGetMemoryWin32HandleKHR" );
+			vkGetMemoryWin32HandlePropertiesKHR = cast( typeof( vkGetMemoryWin32HandlePropertiesKHR )) vkGetDeviceProcAddr( device, "vkGetMemoryWin32HandlePropertiesKHR" );
+		}
+
+		// VK_KHR_external_memory_fd
+		vkGetMemoryFdKHR = cast( typeof( vkGetMemoryFdKHR )) vkGetDeviceProcAddr( device, "vkGetMemoryFdKHR" );
+		vkGetMemoryFdPropertiesKHR = cast( typeof( vkGetMemoryFdPropertiesKHR )) vkGetDeviceProcAddr( device, "vkGetMemoryFdPropertiesKHR" );
+
+		// VK_KHR_external_semaphore_win32
+		version( VK_USE_PLATFORM_WIN32_KHR ) {
+			vkImportSemaphoreWin32HandleKHR = cast( typeof( vkImportSemaphoreWin32HandleKHR )) vkGetDeviceProcAddr( device, "vkImportSemaphoreWin32HandleKHR" );
+			vkGetSemaphoreWin32HandleKHR = cast( typeof( vkGetSemaphoreWin32HandleKHR )) vkGetDeviceProcAddr( device, "vkGetSemaphoreWin32HandleKHR" );
+		}
+
+		// VK_KHR_external_semaphore_fd
+		vkImportSemaphoreFdKHR = cast( typeof( vkImportSemaphoreFdKHR )) vkGetDeviceProcAddr( device, "vkImportSemaphoreFdKHR" );
+		vkGetSemaphoreFdKHR = cast( typeof( vkGetSemaphoreFdKHR )) vkGetDeviceProcAddr( device, "vkGetSemaphoreFdKHR" );
+
 		// VK_KHR_push_descriptor
 		vkCmdPushDescriptorSetKHR = cast( typeof( vkCmdPushDescriptorSetKHR )) vkGetDeviceProcAddr( device, "vkCmdPushDescriptorSetKHR" );
 
@@ -1470,6 +1559,21 @@ struct DispatchDevice {
 
 		// VK_KHR_shared_presentable_image
 		vkGetSwapchainStatusKHR = cast( typeof( vkGetSwapchainStatusKHR )) vkGetDeviceProcAddr( device, "vkGetSwapchainStatusKHR" );
+
+		// VK_KHR_external_fence_win32
+		version( VK_USE_PLATFORM_WIN32_KHR ) {
+			vkImportFenceWin32HandleKHR = cast( typeof( vkImportFenceWin32HandleKHR )) vkGetDeviceProcAddr( device, "vkImportFenceWin32HandleKHR" );
+			vkGetFenceWin32HandleKHR = cast( typeof( vkGetFenceWin32HandleKHR )) vkGetDeviceProcAddr( device, "vkGetFenceWin32HandleKHR" );
+		}
+
+		// VK_KHR_external_fence_fd
+		vkImportFenceFdKHR = cast( typeof( vkImportFenceFdKHR )) vkGetDeviceProcAddr( device, "vkImportFenceFdKHR" );
+		vkGetFenceFdKHR = cast( typeof( vkGetFenceFdKHR )) vkGetDeviceProcAddr( device, "vkGetFenceFdKHR" );
+
+		// VK_KHR_get_memory_requirements2
+		vkGetImageMemoryRequirements2KHR = cast( typeof( vkGetImageMemoryRequirements2KHR )) vkGetDeviceProcAddr( device, "vkGetImageMemoryRequirements2KHR" );
+		vkGetBufferMemoryRequirements2KHR = cast( typeof( vkGetBufferMemoryRequirements2KHR )) vkGetDeviceProcAddr( device, "vkGetBufferMemoryRequirements2KHR" );
+		vkGetImageSparseMemoryRequirements2KHR = cast( typeof( vkGetImageSparseMemoryRequirements2KHR )) vkGetDeviceProcAddr( device, "vkGetImageSparseMemoryRequirements2KHR" );
 
 		// VK_EXT_debug_marker
 		vkDebugMarkerSetObjectTagEXT = cast( typeof( vkDebugMarkerSetObjectTagEXT )) vkGetDeviceProcAddr( device, "vkDebugMarkerSetObjectTagEXT" );
@@ -1496,26 +1600,6 @@ struct DispatchDevice {
 		vkGetDeviceGroupSurfacePresentModesKHX = cast( typeof( vkGetDeviceGroupSurfacePresentModesKHX )) vkGetDeviceProcAddr( device, "vkGetDeviceGroupSurfacePresentModesKHX" );
 		vkAcquireNextImage2KHX = cast( typeof( vkAcquireNextImage2KHX )) vkGetDeviceProcAddr( device, "vkAcquireNextImage2KHX" );
 		vkCmdDispatchBaseKHX = cast( typeof( vkCmdDispatchBaseKHX )) vkGetDeviceProcAddr( device, "vkCmdDispatchBaseKHX" );
-
-		// VK_KHX_external_memory_win32
-		version( VK_USE_PLATFORM_WIN32_KHR ) {
-			vkGetMemoryWin32HandleKHX = cast( typeof( vkGetMemoryWin32HandleKHX )) vkGetDeviceProcAddr( device, "vkGetMemoryWin32HandleKHX" );
-			vkGetMemoryWin32HandlePropertiesKHX = cast( typeof( vkGetMemoryWin32HandlePropertiesKHX )) vkGetDeviceProcAddr( device, "vkGetMemoryWin32HandlePropertiesKHX" );
-		}
-
-		// VK_KHX_external_memory_fd
-		vkGetMemoryFdKHX = cast( typeof( vkGetMemoryFdKHX )) vkGetDeviceProcAddr( device, "vkGetMemoryFdKHX" );
-		vkGetMemoryFdPropertiesKHX = cast( typeof( vkGetMemoryFdPropertiesKHX )) vkGetDeviceProcAddr( device, "vkGetMemoryFdPropertiesKHX" );
-
-		// VK_KHX_external_semaphore_win32
-		version( VK_USE_PLATFORM_WIN32_KHR ) {
-			vkImportSemaphoreWin32HandleKHX = cast( typeof( vkImportSemaphoreWin32HandleKHX )) vkGetDeviceProcAddr( device, "vkImportSemaphoreWin32HandleKHX" );
-			vkGetSemaphoreWin32HandleKHX = cast( typeof( vkGetSemaphoreWin32HandleKHX )) vkGetDeviceProcAddr( device, "vkGetSemaphoreWin32HandleKHX" );
-		}
-
-		// VK_KHX_external_semaphore_fd
-		vkImportSemaphoreFdKHX = cast( typeof( vkImportSemaphoreFdKHX )) vkGetDeviceProcAddr( device, "vkImportSemaphoreFdKHX" );
-		vkGetSemaphoreFdKHX = cast( typeof( vkGetSemaphoreFdKHX )) vkGetDeviceProcAddr( device, "vkGetSemaphoreFdKHX" );
 
 		// VK_NVX_device_generated_commands
 		vkCmdProcessCommandsNVX = cast( typeof( vkCmdProcessCommandsNVX )) vkGetDeviceProcAddr( device, "vkCmdProcessCommandsNVX" );
@@ -1928,6 +2012,42 @@ struct DispatchDevice {
 		vkTrimCommandPoolKHR( this.device, commandPool, flags );
 	}
 
+	// VK_KHR_external_memory_win32
+	version( VK_USE_PLATFORM_WIN32_KHR ) {
+		VkResult GetMemoryWin32HandleKHR( const( VkMemoryGetWin32HandleInfoKHR )* pGetWin32HandleInfo, HANDLE* pHandle ) {
+			return vkGetMemoryWin32HandleKHR( this.device, pGetWin32HandleInfo, pHandle );
+		}
+		VkResult GetMemoryWin32HandlePropertiesKHR( VkExternalMemoryHandleTypeFlagBitsKHR handleType, HANDLE handle, VkMemoryWin32HandlePropertiesKHR* pMemoryWin32HandleProperties ) {
+			return vkGetMemoryWin32HandlePropertiesKHR( this.device, handleType, handle, pMemoryWin32HandleProperties );
+		}
+	}
+
+	// VK_KHR_external_memory_fd
+	VkResult GetMemoryFdKHR( const( VkMemoryGetFdInfoKHR )* pGetFdInfo, int* pFd ) {
+		return vkGetMemoryFdKHR( this.device, pGetFdInfo, pFd );
+	}
+	VkResult GetMemoryFdPropertiesKHR( VkExternalMemoryHandleTypeFlagBitsKHR handleType, int fd, VkMemoryFdPropertiesKHR* pMemoryFdProperties ) {
+		return vkGetMemoryFdPropertiesKHR( this.device, handleType, fd, pMemoryFdProperties );
+	}
+
+	// VK_KHR_external_semaphore_win32
+	version( VK_USE_PLATFORM_WIN32_KHR ) {
+		VkResult ImportSemaphoreWin32HandleKHR( const( VkImportSemaphoreWin32HandleInfoKHR )* pImportSemaphoreWin32HandleInfo ) {
+			return vkImportSemaphoreWin32HandleKHR( this.device, pImportSemaphoreWin32HandleInfo );
+		}
+		VkResult GetSemaphoreWin32HandleKHR( const( VkSemaphoreGetWin32HandleInfoKHR )* pGetWin32HandleInfo, HANDLE* pHandle ) {
+			return vkGetSemaphoreWin32HandleKHR( this.device, pGetWin32HandleInfo, pHandle );
+		}
+	}
+
+	// VK_KHR_external_semaphore_fd
+	VkResult ImportSemaphoreFdKHR( const( VkImportSemaphoreFdInfoKHR )* pImportSemaphoreFdInfo ) {
+		return vkImportSemaphoreFdKHR( this.device, pImportSemaphoreFdInfo );
+	}
+	VkResult GetSemaphoreFdKHR( const( VkSemaphoreGetFdInfoKHR )* pGetFdInfo, int* pFd ) {
+		return vkGetSemaphoreFdKHR( this.device, pGetFdInfo, pFd );
+	}
+
 	// VK_KHR_push_descriptor
 	void CmdPushDescriptorSetKHR( VkPipelineBindPoint pipelineBindPoint, VkPipelineLayout layout, uint32_t set, uint32_t descriptorWriteCount, const( VkWriteDescriptorSet )* pDescriptorWrites ) {
 		vkCmdPushDescriptorSetKHR( this.commandBuffer, pipelineBindPoint, layout, set, descriptorWriteCount, pDescriptorWrites );
@@ -1950,6 +2070,35 @@ struct DispatchDevice {
 	// VK_KHR_shared_presentable_image
 	VkResult GetSwapchainStatusKHR( VkSwapchainKHR swapchain ) {
 		return vkGetSwapchainStatusKHR( this.device, swapchain );
+	}
+
+	// VK_KHR_external_fence_win32
+	version( VK_USE_PLATFORM_WIN32_KHR ) {
+		VkResult ImportFenceWin32HandleKHR( const( VkImportFenceWin32HandleInfoKHR )* pImportFenceWin32HandleInfo ) {
+			return vkImportFenceWin32HandleKHR( this.device, pImportFenceWin32HandleInfo );
+		}
+		VkResult GetFenceWin32HandleKHR( const( VkFenceGetWin32HandleInfoKHR )* pGetWin32HandleInfo, HANDLE* pHandle ) {
+			return vkGetFenceWin32HandleKHR( this.device, pGetWin32HandleInfo, pHandle );
+		}
+	}
+
+	// VK_KHR_external_fence_fd
+	VkResult ImportFenceFdKHR( const( VkImportFenceFdInfoKHR )* pImportFenceFdInfo ) {
+		return vkImportFenceFdKHR( this.device, pImportFenceFdInfo );
+	}
+	VkResult GetFenceFdKHR( const( VkFenceGetFdInfoKHR )* pGetFdInfo, int* pFd ) {
+		return vkGetFenceFdKHR( this.device, pGetFdInfo, pFd );
+	}
+
+	// VK_KHR_get_memory_requirements2
+	void GetImageMemoryRequirements2KHR( const( VkImageMemoryRequirementsInfo2KHR )* pInfo, VkMemoryRequirements2KHR* pMemoryRequirements ) {
+		vkGetImageMemoryRequirements2KHR( this.device, pInfo, pMemoryRequirements );
+	}
+	void GetBufferMemoryRequirements2KHR( const( VkBufferMemoryRequirementsInfo2KHR )* pInfo, VkMemoryRequirements2KHR* pMemoryRequirements ) {
+		vkGetBufferMemoryRequirements2KHR( this.device, pInfo, pMemoryRequirements );
+	}
+	void GetImageSparseMemoryRequirements2KHR( const( VkImageSparseMemoryRequirementsInfo2KHR )* pInfo, uint32_t* pSparseMemoryRequirementCount, VkSparseImageMemoryRequirements2KHR* pSparseMemoryRequirements ) {
+		vkGetImageSparseMemoryRequirements2KHR( this.device, pInfo, pSparseMemoryRequirementCount, pSparseMemoryRequirements );
 	}
 
 	// VK_EXT_debug_marker
@@ -1982,42 +2131,6 @@ struct DispatchDevice {
 		VkResult GetMemoryWin32HandleNV( VkDeviceMemory memory, VkExternalMemoryHandleTypeFlagsNV handleType, HANDLE* pHandle ) {
 			return vkGetMemoryWin32HandleNV( this.device, memory, handleType, pHandle );
 		}
-	}
-
-	// VK_KHX_external_memory_win32
-	version( VK_USE_PLATFORM_WIN32_KHR ) {
-		VkResult GetMemoryWin32HandleKHX( VkDeviceMemory memory, VkExternalMemoryHandleTypeFlagBitsKHX handleType, HANDLE* pHandle ) {
-			return vkGetMemoryWin32HandleKHX( this.device, memory, handleType, pHandle );
-		}
-		VkResult GetMemoryWin32HandlePropertiesKHX( VkExternalMemoryHandleTypeFlagBitsKHX handleType, HANDLE handle, VkMemoryWin32HandlePropertiesKHX* pMemoryWin32HandleProperties ) {
-			return vkGetMemoryWin32HandlePropertiesKHX( this.device, handleType, handle, pMemoryWin32HandleProperties );
-		}
-	}
-
-	// VK_KHX_external_memory_fd
-	VkResult GetMemoryFdKHX( VkDeviceMemory memory, VkExternalMemoryHandleTypeFlagBitsKHX handleType, int* pFd ) {
-		return vkGetMemoryFdKHX( this.device, memory, handleType, pFd );
-	}
-	VkResult GetMemoryFdPropertiesKHX( VkExternalMemoryHandleTypeFlagBitsKHX handleType, int fd, VkMemoryFdPropertiesKHX* pMemoryFdProperties ) {
-		return vkGetMemoryFdPropertiesKHX( this.device, handleType, fd, pMemoryFdProperties );
-	}
-
-	// VK_KHX_external_semaphore_win32
-	version( VK_USE_PLATFORM_WIN32_KHR ) {
-		VkResult ImportSemaphoreWin32HandleKHX( const( VkImportSemaphoreWin32HandleInfoKHX )* pImportSemaphoreWin32HandleInfo ) {
-			return vkImportSemaphoreWin32HandleKHX( this.device, pImportSemaphoreWin32HandleInfo );
-		}
-		VkResult GetSemaphoreWin32HandleKHX( VkSemaphore semaphore, VkExternalSemaphoreHandleTypeFlagBitsKHX handleType, HANDLE* pHandle ) {
-			return vkGetSemaphoreWin32HandleKHX( this.device, semaphore, handleType, pHandle );
-		}
-	}
-
-	// VK_KHX_external_semaphore_fd
-	VkResult ImportSemaphoreFdKHX( const( VkImportSemaphoreFdInfoKHX )* pImportSemaphoreFdInfo ) {
-		return vkImportSemaphoreFdKHX( this.device, pImportSemaphoreFdInfo );
-	}
-	VkResult GetSemaphoreFdKHX( VkSemaphore semaphore, VkExternalSemaphoreHandleTypeFlagBitsKHX handleType, int* pFd ) {
-		return vkGetSemaphoreFdKHX( this.device, semaphore, handleType, pFd );
 	}
 
 	// VK_NV_clip_space_w_scaling
@@ -2185,12 +2298,33 @@ struct DispatchDevice {
 	PFN_vkQueuePresentKHR vkQueuePresentKHR;
 	PFN_vkCreateSharedSwapchainsKHR vkCreateSharedSwapchainsKHR;
 	PFN_vkTrimCommandPoolKHR vkTrimCommandPoolKHR;
+	version( VK_USE_PLATFORM_WIN32_KHR ) {
+		PFN_vkGetMemoryWin32HandleKHR vkGetMemoryWin32HandleKHR;
+		PFN_vkGetMemoryWin32HandlePropertiesKHR vkGetMemoryWin32HandlePropertiesKHR;
+	}
+	PFN_vkGetMemoryFdKHR vkGetMemoryFdKHR;
+	PFN_vkGetMemoryFdPropertiesKHR vkGetMemoryFdPropertiesKHR;
+	version( VK_USE_PLATFORM_WIN32_KHR ) {
+		PFN_vkImportSemaphoreWin32HandleKHR vkImportSemaphoreWin32HandleKHR;
+		PFN_vkGetSemaphoreWin32HandleKHR vkGetSemaphoreWin32HandleKHR;
+	}
+	PFN_vkImportSemaphoreFdKHR vkImportSemaphoreFdKHR;
+	PFN_vkGetSemaphoreFdKHR vkGetSemaphoreFdKHR;
 	PFN_vkCmdPushDescriptorSetKHR vkCmdPushDescriptorSetKHR;
 	PFN_vkCreateDescriptorUpdateTemplateKHR vkCreateDescriptorUpdateTemplateKHR;
 	PFN_vkDestroyDescriptorUpdateTemplateKHR vkDestroyDescriptorUpdateTemplateKHR;
 	PFN_vkUpdateDescriptorSetWithTemplateKHR vkUpdateDescriptorSetWithTemplateKHR;
 	PFN_vkCmdPushDescriptorSetWithTemplateKHR vkCmdPushDescriptorSetWithTemplateKHR;
 	PFN_vkGetSwapchainStatusKHR vkGetSwapchainStatusKHR;
+	version( VK_USE_PLATFORM_WIN32_KHR ) {
+		PFN_vkImportFenceWin32HandleKHR vkImportFenceWin32HandleKHR;
+		PFN_vkGetFenceWin32HandleKHR vkGetFenceWin32HandleKHR;
+	}
+	PFN_vkImportFenceFdKHR vkImportFenceFdKHR;
+	PFN_vkGetFenceFdKHR vkGetFenceFdKHR;
+	PFN_vkGetImageMemoryRequirements2KHR vkGetImageMemoryRequirements2KHR;
+	PFN_vkGetBufferMemoryRequirements2KHR vkGetBufferMemoryRequirements2KHR;
+	PFN_vkGetImageSparseMemoryRequirements2KHR vkGetImageSparseMemoryRequirements2KHR;
 	PFN_vkDebugMarkerSetObjectTagEXT vkDebugMarkerSetObjectTagEXT;
 	PFN_vkDebugMarkerSetObjectNameEXT vkDebugMarkerSetObjectNameEXT;
 	PFN_vkCmdDebugMarkerBeginEXT vkCmdDebugMarkerBeginEXT;
@@ -2209,18 +2343,6 @@ struct DispatchDevice {
 	PFN_vkGetDeviceGroupSurfacePresentModesKHX vkGetDeviceGroupSurfacePresentModesKHX;
 	PFN_vkAcquireNextImage2KHX vkAcquireNextImage2KHX;
 	PFN_vkCmdDispatchBaseKHX vkCmdDispatchBaseKHX;
-	version( VK_USE_PLATFORM_WIN32_KHR ) {
-		PFN_vkGetMemoryWin32HandleKHX vkGetMemoryWin32HandleKHX;
-		PFN_vkGetMemoryWin32HandlePropertiesKHX vkGetMemoryWin32HandlePropertiesKHX;
-	}
-	PFN_vkGetMemoryFdKHX vkGetMemoryFdKHX;
-	PFN_vkGetMemoryFdPropertiesKHX vkGetMemoryFdPropertiesKHX;
-	version( VK_USE_PLATFORM_WIN32_KHR ) {
-		PFN_vkImportSemaphoreWin32HandleKHX vkImportSemaphoreWin32HandleKHX;
-		PFN_vkGetSemaphoreWin32HandleKHX vkGetSemaphoreWin32HandleKHX;
-	}
-	PFN_vkImportSemaphoreFdKHX vkImportSemaphoreFdKHX;
-	PFN_vkGetSemaphoreFdKHX vkGetSemaphoreFdKHX;
 	PFN_vkCmdProcessCommandsNVX vkCmdProcessCommandsNVX;
 	PFN_vkCmdReserveSpaceForCommandsNVX vkCmdReserveSpaceForCommandsNVX;
 	PFN_vkCreateIndirectCommandsLayoutNVX vkCreateIndirectCommandsLayoutNVX;
