@@ -282,11 +282,11 @@ extern( System ) @nogc nothrow {
 	alias PFN_vkDebugReportMessageEXT = void function( VkInstance instance, VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objectType, uint64_t object, size_t location, int32_t messageCode, const( char )* pLayerPrefix, const( char )* pMessage );
 
 	// VK_EXT_debug_marker
-	alias PFN_vkDebugMarkerSetObjectTagEXT = VkResult function( VkDevice device, VkDebugMarkerObjectTagInfoEXT* pTagInfo );
-	alias PFN_vkDebugMarkerSetObjectNameEXT = VkResult function( VkDevice device, VkDebugMarkerObjectNameInfoEXT* pNameInfo );
-	alias PFN_vkCmdDebugMarkerBeginEXT = void function( VkCommandBuffer commandBuffer, VkDebugMarkerMarkerInfoEXT* pMarkerInfo );
+	alias PFN_vkDebugMarkerSetObjectTagEXT = VkResult function( VkDevice device, const( VkDebugMarkerObjectTagInfoEXT )* pTagInfo );
+	alias PFN_vkDebugMarkerSetObjectNameEXT = VkResult function( VkDevice device, const( VkDebugMarkerObjectNameInfoEXT )* pNameInfo );
+	alias PFN_vkCmdDebugMarkerBeginEXT = void function( VkCommandBuffer commandBuffer, const( VkDebugMarkerMarkerInfoEXT )* pMarkerInfo );
 	alias PFN_vkCmdDebugMarkerEndEXT = void function( VkCommandBuffer commandBuffer );
-	alias PFN_vkCmdDebugMarkerInsertEXT = void function( VkCommandBuffer commandBuffer, VkDebugMarkerMarkerInfoEXT* pMarkerInfo );
+	alias PFN_vkCmdDebugMarkerInsertEXT = void function( VkCommandBuffer commandBuffer, const( VkDebugMarkerMarkerInfoEXT )* pMarkerInfo );
 
 	// VK_AMD_draw_indirect_count
 	alias PFN_vkCmdDrawIndirectCountAMD = void function( VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, uint32_t maxDrawCount, uint32_t stride );
@@ -2102,19 +2102,19 @@ struct DispatchDevice {
 	}
 
 	// VK_EXT_debug_marker
-	VkResult DebugMarkerSetObjectTagEXT( VkDebugMarkerObjectTagInfoEXT* pTagInfo ) {
+	VkResult DebugMarkerSetObjectTagEXT( const( VkDebugMarkerObjectTagInfoEXT )* pTagInfo ) {
 		return vkDebugMarkerSetObjectTagEXT( this.device, pTagInfo );
 	}
-	VkResult DebugMarkerSetObjectNameEXT( VkDebugMarkerObjectNameInfoEXT* pNameInfo ) {
+	VkResult DebugMarkerSetObjectNameEXT( const( VkDebugMarkerObjectNameInfoEXT )* pNameInfo ) {
 		return vkDebugMarkerSetObjectNameEXT( this.device, pNameInfo );
 	}
-	void CmdDebugMarkerBeginEXT( VkDebugMarkerMarkerInfoEXT* pMarkerInfo ) {
+	void CmdDebugMarkerBeginEXT( const( VkDebugMarkerMarkerInfoEXT )* pMarkerInfo ) {
 		vkCmdDebugMarkerBeginEXT( this.commandBuffer, pMarkerInfo );
 	}
 	void CmdDebugMarkerEndEXT() {
 		vkCmdDebugMarkerEndEXT( this.commandBuffer );
 	}
-	void CmdDebugMarkerInsertEXT( VkDebugMarkerMarkerInfoEXT* pMarkerInfo ) {
+	void CmdDebugMarkerInsertEXT( const( VkDebugMarkerMarkerInfoEXT )* pMarkerInfo ) {
 		vkCmdDebugMarkerInsertEXT( this.commandBuffer, pMarkerInfo );
 	}
 
