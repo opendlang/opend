@@ -305,11 +305,11 @@ extern( System ) @nogc nothrow {
 	alias PFN_vkBindBufferMemory2KHX = VkResult function( VkDevice device, uint32_t bindInfoCount, const( VkBindBufferMemoryInfoKHX )* pBindInfos );
 	alias PFN_vkBindImageMemory2KHX = VkResult function( VkDevice device, uint32_t bindInfoCount, const( VkBindImageMemoryInfoKHX )* pBindInfos );
 	alias PFN_vkCmdSetDeviceMaskKHX = void function( VkCommandBuffer commandBuffer, uint32_t deviceMask );
+	alias PFN_vkCmdDispatchBaseKHX = void function( VkCommandBuffer commandBuffer, uint32_t baseGroupX, uint32_t baseGroupY, uint32_t baseGroupZ, uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ );
 	alias PFN_vkGetDeviceGroupPresentCapabilitiesKHX = VkResult function( VkDevice device, VkDeviceGroupPresentCapabilitiesKHX* pDeviceGroupPresentCapabilities );
 	alias PFN_vkGetDeviceGroupSurfacePresentModesKHX = VkResult function( VkDevice device, VkSurfaceKHR surface, VkDeviceGroupPresentModeFlagsKHX* pModes );
-	alias PFN_vkAcquireNextImage2KHX = VkResult function( VkDevice device, const( VkAcquireNextImageInfoKHX )* pAcquireInfo, uint32_t* pImageIndex );
-	alias PFN_vkCmdDispatchBaseKHX = void function( VkCommandBuffer commandBuffer, uint32_t baseGroupX, uint32_t baseGroupY, uint32_t baseGroupZ, uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ );
 	alias PFN_vkGetPhysicalDevicePresentRectanglesKHX = VkResult function( VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, uint32_t* pRectCount, VkRect2D* pRects );
+	alias PFN_vkAcquireNextImage2KHX = VkResult function( VkDevice device, const( VkAcquireNextImageInfoKHX )* pAcquireInfo, uint32_t* pImageIndex );
 
 	// VK_NN_vi_surface
 	alias PFN_vkCreateViSurfaceNN = VkResult function( VkInstance instance, const( VkViSurfaceCreateInfoNN )* pCreateInfo, const( VkAllocationCallbacks )* pAllocator, VkSurfaceKHR* pSurface );
@@ -364,6 +364,16 @@ extern( System ) @nogc nothrow {
 
 	// VK_MVK_macos_surface
 	alias PFN_vkCreateMacOSSurfaceMVK = VkResult function( VkInstance instance, const( VkMacOSSurfaceCreateInfoMVK )* pCreateInfo, const( VkAllocationCallbacks )* pAllocator, VkSurfaceKHR* pSurface );
+
+	// VK_EXT_sample_locations
+	alias PFN_vkCmdSetSampleLocationsEXT = void function( VkCommandBuffer commandBuffer, const( VkSampleLocationsInfoEXT )* pSampleLocationsInfo );
+	alias PFN_vkGetPhysicalDeviceMultisamplePropertiesEXT = void function( VkPhysicalDevice physicalDevice, VkSampleCountFlagBits samples, VkMultisamplePropertiesEXT* pMultisampleProperties );
+
+	// VK_EXT_validation_cache
+	alias PFN_vkCreateValidationCacheEXT = VkResult function( VkDevice device, const( VkValidationCacheCreateInfoEXT )* pCreateInfo, const( VkAllocationCallbacks )* pAllocator, VkValidationCacheEXT* pValidationCache );
+	alias PFN_vkDestroyValidationCacheEXT = void function( VkDevice device, VkValidationCacheEXT validationCache, const( VkAllocationCallbacks )* pAllocator );
+	alias PFN_vkMergeValidationCachesEXT = VkResult function( VkDevice device, VkValidationCacheEXT dstCache, uint32_t srcCacheCount, const( VkValidationCacheEXT )* pSrcCaches );
+	alias PFN_vkGetValidationCacheDataEXT = VkResult function( VkDevice device, VkValidationCacheEXT validationCache, size_t* pDataSize, void* pData );
 }
 
 __gshared {
@@ -669,11 +679,11 @@ __gshared {
 	PFN_vkBindBufferMemory2KHX vkBindBufferMemory2KHX;
 	PFN_vkBindImageMemory2KHX vkBindImageMemory2KHX;
 	PFN_vkCmdSetDeviceMaskKHX vkCmdSetDeviceMaskKHX;
+	PFN_vkCmdDispatchBaseKHX vkCmdDispatchBaseKHX;
 	PFN_vkGetDeviceGroupPresentCapabilitiesKHX vkGetDeviceGroupPresentCapabilitiesKHX;
 	PFN_vkGetDeviceGroupSurfacePresentModesKHX vkGetDeviceGroupSurfacePresentModesKHX;
-	PFN_vkAcquireNextImage2KHX vkAcquireNextImage2KHX;
-	PFN_vkCmdDispatchBaseKHX vkCmdDispatchBaseKHX;
 	PFN_vkGetPhysicalDevicePresentRectanglesKHX vkGetPhysicalDevicePresentRectanglesKHX;
+	PFN_vkAcquireNextImage2KHX vkAcquireNextImage2KHX;
 
 	// VK_NN_vi_surface
 	PFN_vkCreateViSurfaceNN vkCreateViSurfaceNN;
@@ -728,6 +738,16 @@ __gshared {
 
 	// VK_MVK_macos_surface
 	PFN_vkCreateMacOSSurfaceMVK vkCreateMacOSSurfaceMVK;
+
+	// VK_EXT_sample_locations
+	PFN_vkCmdSetSampleLocationsEXT vkCmdSetSampleLocationsEXT;
+	PFN_vkGetPhysicalDeviceMultisamplePropertiesEXT vkGetPhysicalDeviceMultisamplePropertiesEXT;
+
+	// VK_EXT_validation_cache
+	PFN_vkCreateValidationCacheEXT vkCreateValidationCacheEXT;
+	PFN_vkDestroyValidationCacheEXT vkDestroyValidationCacheEXT;
+	PFN_vkMergeValidationCachesEXT vkMergeValidationCachesEXT;
+	PFN_vkGetValidationCacheDataEXT vkGetValidationCacheDataEXT;
 }
 
 /// if not using version "with-derelict-loader" this function must be called first
@@ -868,6 +888,9 @@ void loadInstanceLevelFunctions( VkInstance instance ) {
 
 	// VK_MVK_macos_surface
 	vkCreateMacOSSurfaceMVK = cast( typeof( vkCreateMacOSSurfaceMVK )) vkGetInstanceProcAddr( instance, "vkCreateMacOSSurfaceMVK" );
+
+	// VK_EXT_sample_locations
+	vkGetPhysicalDeviceMultisamplePropertiesEXT = cast( typeof( vkGetPhysicalDeviceMultisamplePropertiesEXT )) vkGetInstanceProcAddr( instance, "vkGetPhysicalDeviceMultisamplePropertiesEXT" );
 }
 
 /// with a valid VkInstance call this function to retrieve VkDevice, VkQueue and VkCommandBuffer related functions
@@ -1079,10 +1102,10 @@ void loadDeviceLevelFunctions( VkInstance instance ) {
 	vkBindBufferMemory2KHX = cast( typeof( vkBindBufferMemory2KHX )) vkGetInstanceProcAddr( instance, "vkBindBufferMemory2KHX" );
 	vkBindImageMemory2KHX = cast( typeof( vkBindImageMemory2KHX )) vkGetInstanceProcAddr( instance, "vkBindImageMemory2KHX" );
 	vkCmdSetDeviceMaskKHX = cast( typeof( vkCmdSetDeviceMaskKHX )) vkGetInstanceProcAddr( instance, "vkCmdSetDeviceMaskKHX" );
+	vkCmdDispatchBaseKHX = cast( typeof( vkCmdDispatchBaseKHX )) vkGetInstanceProcAddr( instance, "vkCmdDispatchBaseKHX" );
 	vkGetDeviceGroupPresentCapabilitiesKHX = cast( typeof( vkGetDeviceGroupPresentCapabilitiesKHX )) vkGetInstanceProcAddr( instance, "vkGetDeviceGroupPresentCapabilitiesKHX" );
 	vkGetDeviceGroupSurfacePresentModesKHX = cast( typeof( vkGetDeviceGroupSurfacePresentModesKHX )) vkGetInstanceProcAddr( instance, "vkGetDeviceGroupSurfacePresentModesKHX" );
 	vkAcquireNextImage2KHX = cast( typeof( vkAcquireNextImage2KHX )) vkGetInstanceProcAddr( instance, "vkAcquireNextImage2KHX" );
-	vkCmdDispatchBaseKHX = cast( typeof( vkCmdDispatchBaseKHX )) vkGetInstanceProcAddr( instance, "vkCmdDispatchBaseKHX" );
 
 	// VK_NVX_device_generated_commands
 	vkCmdProcessCommandsNVX = cast( typeof( vkCmdProcessCommandsNVX )) vkGetInstanceProcAddr( instance, "vkCmdProcessCommandsNVX" );
@@ -1112,6 +1135,15 @@ void loadDeviceLevelFunctions( VkInstance instance ) {
 
 	// VK_EXT_hdr_metadata
 	vkSetHdrMetadataEXT = cast( typeof( vkSetHdrMetadataEXT )) vkGetInstanceProcAddr( instance, "vkSetHdrMetadataEXT" );
+
+	// VK_EXT_sample_locations
+	vkCmdSetSampleLocationsEXT = cast( typeof( vkCmdSetSampleLocationsEXT )) vkGetInstanceProcAddr( instance, "vkCmdSetSampleLocationsEXT" );
+
+	// VK_EXT_validation_cache
+	vkCreateValidationCacheEXT = cast( typeof( vkCreateValidationCacheEXT )) vkGetInstanceProcAddr( instance, "vkCreateValidationCacheEXT" );
+	vkDestroyValidationCacheEXT = cast( typeof( vkDestroyValidationCacheEXT )) vkGetInstanceProcAddr( instance, "vkDestroyValidationCacheEXT" );
+	vkMergeValidationCachesEXT = cast( typeof( vkMergeValidationCachesEXT )) vkGetInstanceProcAddr( instance, "vkMergeValidationCachesEXT" );
+	vkGetValidationCacheDataEXT = cast( typeof( vkGetValidationCacheDataEXT )) vkGetInstanceProcAddr( instance, "vkGetValidationCacheDataEXT" );
 }
 
 /// with a valid VkDevice call this function to retrieve VkDevice, VkQueue and VkCommandBuffer related functions
@@ -1324,10 +1356,10 @@ void loadDeviceLevelFunctions( VkDevice device ) {
 	vkBindBufferMemory2KHX = cast( typeof( vkBindBufferMemory2KHX )) vkGetDeviceProcAddr( device, "vkBindBufferMemory2KHX" );
 	vkBindImageMemory2KHX = cast( typeof( vkBindImageMemory2KHX )) vkGetDeviceProcAddr( device, "vkBindImageMemory2KHX" );
 	vkCmdSetDeviceMaskKHX = cast( typeof( vkCmdSetDeviceMaskKHX )) vkGetDeviceProcAddr( device, "vkCmdSetDeviceMaskKHX" );
+	vkCmdDispatchBaseKHX = cast( typeof( vkCmdDispatchBaseKHX )) vkGetDeviceProcAddr( device, "vkCmdDispatchBaseKHX" );
 	vkGetDeviceGroupPresentCapabilitiesKHX = cast( typeof( vkGetDeviceGroupPresentCapabilitiesKHX )) vkGetDeviceProcAddr( device, "vkGetDeviceGroupPresentCapabilitiesKHX" );
 	vkGetDeviceGroupSurfacePresentModesKHX = cast( typeof( vkGetDeviceGroupSurfacePresentModesKHX )) vkGetDeviceProcAddr( device, "vkGetDeviceGroupSurfacePresentModesKHX" );
 	vkAcquireNextImage2KHX = cast( typeof( vkAcquireNextImage2KHX )) vkGetDeviceProcAddr( device, "vkAcquireNextImage2KHX" );
-	vkCmdDispatchBaseKHX = cast( typeof( vkCmdDispatchBaseKHX )) vkGetDeviceProcAddr( device, "vkCmdDispatchBaseKHX" );
 
 	// VK_NVX_device_generated_commands
 	vkCmdProcessCommandsNVX = cast( typeof( vkCmdProcessCommandsNVX )) vkGetDeviceProcAddr( device, "vkCmdProcessCommandsNVX" );
@@ -1357,6 +1389,15 @@ void loadDeviceLevelFunctions( VkDevice device ) {
 
 	// VK_EXT_hdr_metadata
 	vkSetHdrMetadataEXT = cast( typeof( vkSetHdrMetadataEXT )) vkGetDeviceProcAddr( device, "vkSetHdrMetadataEXT" );
+
+	// VK_EXT_sample_locations
+	vkCmdSetSampleLocationsEXT = cast( typeof( vkCmdSetSampleLocationsEXT )) vkGetDeviceProcAddr( device, "vkCmdSetSampleLocationsEXT" );
+
+	// VK_EXT_validation_cache
+	vkCreateValidationCacheEXT = cast( typeof( vkCreateValidationCacheEXT )) vkGetDeviceProcAddr( device, "vkCreateValidationCacheEXT" );
+	vkDestroyValidationCacheEXT = cast( typeof( vkDestroyValidationCacheEXT )) vkGetDeviceProcAddr( device, "vkDestroyValidationCacheEXT" );
+	vkMergeValidationCachesEXT = cast( typeof( vkMergeValidationCachesEXT )) vkGetDeviceProcAddr( device, "vkMergeValidationCachesEXT" );
+	vkGetValidationCacheDataEXT = cast( typeof( vkGetValidationCacheDataEXT )) vkGetDeviceProcAddr( device, "vkGetValidationCacheDataEXT" );
 }
 
 /// with a valid VkDevice call this function to retrieve VkDevice, VkQueue and VkCommandBuffer related functions grouped in a DispatchDevice struct
@@ -1596,10 +1637,10 @@ struct DispatchDevice {
 		vkBindBufferMemory2KHX = cast( typeof( vkBindBufferMemory2KHX )) vkGetDeviceProcAddr( device, "vkBindBufferMemory2KHX" );
 		vkBindImageMemory2KHX = cast( typeof( vkBindImageMemory2KHX )) vkGetDeviceProcAddr( device, "vkBindImageMemory2KHX" );
 		vkCmdSetDeviceMaskKHX = cast( typeof( vkCmdSetDeviceMaskKHX )) vkGetDeviceProcAddr( device, "vkCmdSetDeviceMaskKHX" );
+		vkCmdDispatchBaseKHX = cast( typeof( vkCmdDispatchBaseKHX )) vkGetDeviceProcAddr( device, "vkCmdDispatchBaseKHX" );
 		vkGetDeviceGroupPresentCapabilitiesKHX = cast( typeof( vkGetDeviceGroupPresentCapabilitiesKHX )) vkGetDeviceProcAddr( device, "vkGetDeviceGroupPresentCapabilitiesKHX" );
 		vkGetDeviceGroupSurfacePresentModesKHX = cast( typeof( vkGetDeviceGroupSurfacePresentModesKHX )) vkGetDeviceProcAddr( device, "vkGetDeviceGroupSurfacePresentModesKHX" );
 		vkAcquireNextImage2KHX = cast( typeof( vkAcquireNextImage2KHX )) vkGetDeviceProcAddr( device, "vkAcquireNextImage2KHX" );
-		vkCmdDispatchBaseKHX = cast( typeof( vkCmdDispatchBaseKHX )) vkGetDeviceProcAddr( device, "vkCmdDispatchBaseKHX" );
 
 		// VK_NVX_device_generated_commands
 		vkCmdProcessCommandsNVX = cast( typeof( vkCmdProcessCommandsNVX )) vkGetDeviceProcAddr( device, "vkCmdProcessCommandsNVX" );
@@ -1629,6 +1670,15 @@ struct DispatchDevice {
 
 		// VK_EXT_hdr_metadata
 		vkSetHdrMetadataEXT = cast( typeof( vkSetHdrMetadataEXT )) vkGetDeviceProcAddr( device, "vkSetHdrMetadataEXT" );
+
+		// VK_EXT_sample_locations
+		vkCmdSetSampleLocationsEXT = cast( typeof( vkCmdSetSampleLocationsEXT )) vkGetDeviceProcAddr( device, "vkCmdSetSampleLocationsEXT" );
+
+		// VK_EXT_validation_cache
+		vkCreateValidationCacheEXT = cast( typeof( vkCreateValidationCacheEXT )) vkGetDeviceProcAddr( device, "vkCreateValidationCacheEXT" );
+		vkDestroyValidationCacheEXT = cast( typeof( vkDestroyValidationCacheEXT )) vkGetDeviceProcAddr( device, "vkDestroyValidationCacheEXT" );
+		vkMergeValidationCachesEXT = cast( typeof( vkMergeValidationCachesEXT )) vkGetDeviceProcAddr( device, "vkMergeValidationCachesEXT" );
+		vkGetValidationCacheDataEXT = cast( typeof( vkGetValidationCacheDataEXT )) vkGetDeviceProcAddr( device, "vkGetValidationCacheDataEXT" );
 	}
 
 	// Convenience member functions, forwarded to corresponding vulkan functions
@@ -2133,6 +2183,32 @@ struct DispatchDevice {
 		}
 	}
 
+	// VK_KHX_device_group
+	void GetDeviceGroupPeerMemoryFeaturesKHX( uint32_t heapIndex, uint32_t localDeviceIndex, uint32_t remoteDeviceIndex, VkPeerMemoryFeatureFlagsKHX* pPeerMemoryFeatures ) {
+		vkGetDeviceGroupPeerMemoryFeaturesKHX( this.device, heapIndex, localDeviceIndex, remoteDeviceIndex, pPeerMemoryFeatures );
+	}
+	VkResult BindBufferMemory2KHX( uint32_t bindInfoCount, const( VkBindBufferMemoryInfoKHX )* pBindInfos ) {
+		return vkBindBufferMemory2KHX( this.device, bindInfoCount, pBindInfos );
+	}
+	VkResult BindImageMemory2KHX( uint32_t bindInfoCount, const( VkBindImageMemoryInfoKHX )* pBindInfos ) {
+		return vkBindImageMemory2KHX( this.device, bindInfoCount, pBindInfos );
+	}
+	void CmdSetDeviceMaskKHX( uint32_t deviceMask ) {
+		vkCmdSetDeviceMaskKHX( this.commandBuffer, deviceMask );
+	}
+	void CmdDispatchBaseKHX( uint32_t baseGroupX, uint32_t baseGroupY, uint32_t baseGroupZ, uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ ) {
+		vkCmdDispatchBaseKHX( this.commandBuffer, baseGroupX, baseGroupY, baseGroupZ, groupCountX, groupCountY, groupCountZ );
+	}
+	VkResult GetDeviceGroupPresentCapabilitiesKHX( VkDeviceGroupPresentCapabilitiesKHX* pDeviceGroupPresentCapabilities ) {
+		return vkGetDeviceGroupPresentCapabilitiesKHX( this.device, pDeviceGroupPresentCapabilities );
+	}
+	VkResult GetDeviceGroupSurfacePresentModesKHX( VkSurfaceKHR surface, VkDeviceGroupPresentModeFlagsKHX* pModes ) {
+		return vkGetDeviceGroupSurfacePresentModesKHX( this.device, surface, pModes );
+	}
+	VkResult AcquireNextImage2KHX( const( VkAcquireNextImageInfoKHX )* pAcquireInfo, uint32_t* pImageIndex ) {
+		return vkAcquireNextImage2KHX( this.device, pAcquireInfo, pImageIndex );
+	}
+
 	// VK_NV_clip_space_w_scaling
 	void CmdSetViewportWScalingNV( uint32_t firstViewport, uint32_t viewportCount, const( VkViewportWScalingNV )* pViewportWScalings ) {
 		vkCmdSetViewportWScalingNV( this.commandBuffer, firstViewport, viewportCount, pViewportWScalings );
@@ -2168,6 +2244,20 @@ struct DispatchDevice {
 	// VK_EXT_hdr_metadata
 	void SetHdrMetadataEXT( uint32_t swapchainCount, const( VkSwapchainKHR )* pSwapchains, const( VkHdrMetadataEXT )* pMetadata ) {
 		vkSetHdrMetadataEXT( this.device, swapchainCount, pSwapchains, pMetadata );
+	}
+
+	// VK_EXT_validation_cache
+	VkResult CreateValidationCacheEXT( const( VkValidationCacheCreateInfoEXT )* pCreateInfo, const( VkAllocationCallbacks )* pAllocator, VkValidationCacheEXT* pValidationCache ) {
+		return vkCreateValidationCacheEXT( this.device, pCreateInfo, pAllocator, pValidationCache );
+	}
+	void DestroyValidationCacheEXT( VkValidationCacheEXT validationCache, const( VkAllocationCallbacks )* pAllocator ) {
+		vkDestroyValidationCacheEXT( this.device, validationCache, pAllocator );
+	}
+	VkResult MergeValidationCachesEXT( VkValidationCacheEXT dstCache, uint32_t srcCacheCount, const( VkValidationCacheEXT )* pSrcCaches ) {
+		return vkMergeValidationCachesEXT( this.device, dstCache, srcCacheCount, pSrcCaches );
+	}
+	VkResult GetValidationCacheDataEXT( VkValidationCacheEXT validationCache, size_t* pDataSize, void* pData ) {
+		return vkGetValidationCacheDataEXT( this.device, validationCache, pDataSize, pData );
 	}
 
 	// Member vulkan function decelerations
@@ -2339,10 +2429,10 @@ struct DispatchDevice {
 	PFN_vkBindBufferMemory2KHX vkBindBufferMemory2KHX;
 	PFN_vkBindImageMemory2KHX vkBindImageMemory2KHX;
 	PFN_vkCmdSetDeviceMaskKHX vkCmdSetDeviceMaskKHX;
+	PFN_vkCmdDispatchBaseKHX vkCmdDispatchBaseKHX;
 	PFN_vkGetDeviceGroupPresentCapabilitiesKHX vkGetDeviceGroupPresentCapabilitiesKHX;
 	PFN_vkGetDeviceGroupSurfacePresentModesKHX vkGetDeviceGroupSurfacePresentModesKHX;
 	PFN_vkAcquireNextImage2KHX vkAcquireNextImage2KHX;
-	PFN_vkCmdDispatchBaseKHX vkCmdDispatchBaseKHX;
 	PFN_vkCmdProcessCommandsNVX vkCmdProcessCommandsNVX;
 	PFN_vkCmdReserveSpaceForCommandsNVX vkCmdReserveSpaceForCommandsNVX;
 	PFN_vkCreateIndirectCommandsLayoutNVX vkCreateIndirectCommandsLayoutNVX;
@@ -2360,6 +2450,11 @@ struct DispatchDevice {
 	PFN_vkGetPastPresentationTimingGOOGLE vkGetPastPresentationTimingGOOGLE;
 	PFN_vkCmdSetDiscardRectangleEXT vkCmdSetDiscardRectangleEXT;
 	PFN_vkSetHdrMetadataEXT vkSetHdrMetadataEXT;
+	PFN_vkCmdSetSampleLocationsEXT vkCmdSetSampleLocationsEXT;
+	PFN_vkCreateValidationCacheEXT vkCreateValidationCacheEXT;
+	PFN_vkDestroyValidationCacheEXT vkDestroyValidationCacheEXT;
+	PFN_vkMergeValidationCachesEXT vkMergeValidationCachesEXT;
+	PFN_vkGetValidationCacheDataEXT vkGetValidationCacheDataEXT;
 }
 
 // Derelict loader to acquire entry point vkGetInstanceProcAddr
