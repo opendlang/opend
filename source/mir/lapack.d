@@ -383,3 +383,55 @@ size_t sysv_rook(T)(
 	assert(info >= 0);
 	return info;
 }
+
+size_t potrf(T)(
+       Slice!(Canonical, [2], T*) a,
+       char uplo = 'U'
+       )
+{
+    import lapack : potrf_;
+    
+    assert(a.length!0 == a.length!1, "potrf: a must be a square matrix.");
+    
+    lapackint n = cast(lapackint) a.length;
+    lapackint lda = cast(lapackint) a._stride.max(1);
+    lapackint info = void;
+    
+    lapack.potrf_(uplo, n, a.iterator, lda, info);
+    
+    assert(info >= 0);
+    
+    return info;
+}
+
+size_t pptrf(T)(
+       Slice!(Contiguous, [1], StairsIterator!(T*)) ap
+       )
+{
+    import lapack : pptrf_;
+    
+    lapackint n = cast(lapackint) ap.length;
+    lapackint info = void;
+    
+    lapack.pptrf_('U', n, ap.iterator, info);
+    
+    assert(info >= 0);
+    
+    return info;
+}
+
+size_t pptrf(T)(
+       Slice!(Contiguous, [1], RetroIterator!(MapIterator!(StairsIterator!(RetroIterator!(T*)), retro))) ap
+       )
+{
+    import lapack : pptrf_;
+    
+    lapackint n = cast(lapackint) ap.length;
+    lapackint info = void;
+    
+    lapack.pptrf_('L', n, ap.iterator, info);
+    
+    assert(info >= 0);
+    
+    return info;
+}
