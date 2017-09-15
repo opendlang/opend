@@ -228,31 +228,31 @@ enum : uint {
 
 @nogc nothrow {
     bool FT_HAS_HORIZONTAL(FT_FaceRec* face) {
-        return (face.face_flags & FT_FACE_FLAG_HORIZONTAL) == 0;
+        return (face.face_flags & FT_FACE_FLAG_HORIZONTAL) != 0;
     }
 
     bool FT_HAS_VERTICAL(FT_FaceRec* face) {
-        return (face.face_flags & FT_FACE_FLAG_VERTICAL) == 0;
+        return (face.face_flags & FT_FACE_FLAG_VERTICAL) != 0;
     }
 
     bool FT_HAS_KERNING(FT_FaceRec* face) {
-        return (face.face_flags & FT_FACE_FLAG_KERNING) == 0;
+        return (face.face_flags & FT_FACE_FLAG_KERNING) != 0;
     }
 
     bool FT_IS_SCALABLE(FT_FaceRec* face) {
-        return (face.face_flags & FT_FACE_FLAG_SCALABLE) == 0;
+        return (face.face_flags & FT_FACE_FLAG_SCALABLE) != 0;
     }
 
     bool FT_IS_SFNT(FT_FaceRec* face) {
-        return (face.face_flags & FT_FACE_FLAG_SFNT) == 0;
+        return (face.face_flags & FT_FACE_FLAG_SFNT) != 0;
     }
 
     bool FT_IS_FIXED_WIDTH(FT_FaceRec* face) {
-        return (face.face_flags & FT_FACE_FLAG_FIXED_WIDTH) == 0;
+        return (face.face_flags & FT_FACE_FLAG_FIXED_WIDTH) != 0;
     }
 
     bool FT_HAS_FIXED_SIZES(FT_FaceRec* face) {
-        return (face.face_flags & FT_FACE_FLAG_FIXED_SIZES) == 0;
+        return (face.face_flags & FT_FACE_FLAG_FIXED_SIZES) != 0;
     }
 
     bool FT_HAS_FAST_GLYPHS(FT_FaceRec* face) {
@@ -260,27 +260,27 @@ enum : uint {
     }
 
     bool FT_HAS_GLYPH_NAMES(FT_FaceRec* face) {
-        return (face.face_flags & FT_FACE_FLAG_GLYPH_NAMES) == 0;
+        return (face.face_flags & FT_FACE_FLAG_GLYPH_NAMES) != 0;
     }
 
     bool FT_HAS_MULTIPLE_MASTERS(FT_FaceRec* face) {
-        return (face.face_flags & FT_FACE_FLAG_MULTIPLE_MASTERS) == 0;
+        return (face.face_flags & FT_FACE_FLAG_MULTIPLE_MASTERS) != 0;
     }
 
     bool FT_IS_NAMED_INSTANCE(FT_FaceRec* face) {
-        return (face.face_index & 0x7FFF0000L) == 0;
+        return (face.face_index & 0x7FFF0000L) != 0;
     }
 
     bool FT_IS_CID_KEYED(FT_FaceRec* face) {
-        return (face.face_flags & FT_FACE_FLAG_CID_KEYED) == 0;
+        return (face.face_flags & FT_FACE_FLAG_CID_KEYED) != 0;
     }
 
     bool FT_IS_TRICKY(FT_FaceRec* face) {
-        return (face.face_flags & FT_FACE_FLAG_TRICKY) == 0;
+        return (face.face_flags & FT_FACE_FLAG_TRICKY) != 0;
     }
 
     bool FT_HAS_COLOR(FT_FaceRec* face) {
-        return (face.face_flags & FT_FACE_FLAG_COLOR) == 0;
+        return (face.face_flags & FT_FACE_FLAG_COLOR) != 0;
     }
 }
 
