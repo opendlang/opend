@@ -76,6 +76,10 @@ enum
     CL_INVALID_COMPILER_OPTIONS                 = -66,
     CL_INVALID_LINKER_OPTIONS                   = -67,
     CL_INVALID_DEVICE_PARTITION_COUNT           = -68,
+    CL_INVALID_PIPE_SIZE                        = -69,
+    CL_INVALID_DEVICE_QUEUE                     = -70,
+    CL_INVALID_SPEC_ID                          = -71,
+    CL_MAX_SIZE_RESTRICTION_EXCEEDED            = -72,
 }
 
 // cl_bool
@@ -185,6 +189,23 @@ enum
     CL_DEVICE_REFERENCE_COUNT                   = 0x1047,
     CL_DEVICE_PREFERRED_INTEROP_USER_SYNC       = 0x1048,
     CL_DEVICE_PRINTF_BUFFER_SIZE                = 0x1049,
+    CL_DEVICE_IMAGE_PITCH_ALIGNMENT             = 0x104A,
+    CL_DEVICE_IMAGE_BASE_ADDRESS_ALIGNMENT      = 0x104B,
+    CL_DEVICE_MAX_READ_WRITE_IMAGE_ARGS         = 0x104C,
+    CL_DEVICE_MAX_GLOBAL_VARIABLE_SIZE          = 0x104D,
+    CL_DEVICE_QUEUE_ON_DEVICE_PROPERTIES        = 0x104E,
+    CL_DEVICE_QUEUE_ON_DEVICE_PREFERRED_SIZE    = 0x104F,
+    CL_DEVICE_QUEUE_ON_DEVICE_MAX_SIZE          = 0x1050,
+    CL_DEVICE_MAX_ON_DEVICE_QUEUES              = 0x1051,
+    CL_DEVICE_MAX_ON_DEVICE_EVENTS              = 0x1052,
+    CL_DEVICE_SVM_CAPABILITIES                  = 0x1053,
+    CL_DEVICE_GLOBAL_VARIABLE_PREFERRED_TOTAL_SIZE = 0x1054,
+    CL_DEVICE_MAX_PIPE_ARGS                     = 0x1055,
+    CL_DEVICE_PIPE_MAX_ACTIVE_RESERVATIONS      = 0x1056,
+    CL_DEVICE_PIPE_MAX_PACKET_SIZE              = 0x1057,
+    CL_DEVICE_PREFERRED_PLATFORM_ATOMIC_ALIGNMENT = 0x1058,
+    CL_DEVICE_PREFERRED_GLOBAL_ATOMIC_ALIGNMENT = 0x1059,
+    CL_DEVICE_PREFERRED_LOCAL_ATOMIC_ALIGNMENT  = 0x105A,
 }
 
 // cl_device_fp_config
@@ -227,6 +248,8 @@ enum : cl_bitfield
 {
     CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE      = (1 << 0),
     CL_QUEUE_PROFILING_ENABLE                   = (1 << 1),
+    CL_QUEUE_ON_DEVICE                          = (1 << 2),
+    CL_QUEUE_ON_DEVICE_DEFAULT                  = (1 << 3),
 }
 
 // cl_context_info
@@ -265,6 +288,14 @@ enum : cl_bitfield
     CL_DEVICE_AFFINITY_DOMAIN_NEXT_PARTITIONABLE = (1 << 5),
 }
 
+// cl_device_svm_capabilities
+enum
+{
+    CL_DEVICE_SVM_COARSE_GRAIN_BUFFER = (1 << 0),
+    CL_DEVICE_SVM_FINE_GRAIN_BUFFER   = (1 << 1),
+    CL_DEVICE_SVM_FINE_GRAIN_SYSTEM   = (1 << 2),
+    CL_DEVICE_SVM_ATOMICS             = (1 << 3),
+}
 // cl_command_queue_info
 enum
 {
@@ -272,9 +303,10 @@ enum
     CL_QUEUE_DEVICE                             = 0x1091,
     CL_QUEUE_REFERENCE_COUNT                    = 0x1092,
     CL_QUEUE_PROPERTIES                         = 0x1093,
+    CL_QUEUE_SIZE                               = 0x1094,
 }
 
-// cl_mem_flags - bitfield
+// cl_mem_flags and cl_svm_mem_flags - bitfield
 enum : cl_bitfield
 {
     CL_MEM_READ_WRITE                           = (1 << 0),
@@ -287,6 +319,9 @@ enum : cl_bitfield
     CL_MEM_HOST_WRITE_ONLY                      = (1 << 7),
     CL_MEM_HOST_READ_ONLY                       = (1 << 8),
     CL_MEM_HOST_NO_ACCESS                       = (1 << 9),
+    CL_MEM_SVM_FINE_GRAIN_BUFFER                = (1 << 10), // cl_svm_mem_flags only
+    CL_MEM_SVM_ATOMICS                          = (1 << 11), // cl_svm_mem_flags only
+    CL_MEM_KERNEL_READ_AND_WRITE                = (1 << 12),
 }
 
 // cl_mem_migration_flags
@@ -314,6 +349,11 @@ enum
     CL_RGBx                                     = 0x10BC,
     CL_DEPTH                                    = 0x10BD,
     CL_DEPTH_STENCIL                            = 0x10BE,
+    CL_sRGB                                     = 0x10BF,
+    CL_sRGBx                                    = 0x10C0,
+    CL_sRGBA                                    = 0x10C1,
+    CL_sBRGA                                    = 0x10C2,
+    CL_ABGR                                     = 0x10C3,
 }
 
 // cl_channel_type
@@ -347,6 +387,7 @@ enum
     CL_MEM_OBJECT_IMAGE1D                       = 0x10F4,
     CL_MEM_OBJECT_IMAGE1D_ARRAY                 = 0x10F5,
     CL_MEM_OBJECT_IMAGE1D_BUFFER                = 0x10F6,
+    CL_MEM_OBJECT_PIPE                          = 0x10F7,
 }
 
 // cl_mem_info
@@ -361,6 +402,7 @@ enum
     CL_MEM_CONTEXT                              = 0x1106,
     CL_MEM_ASSOCIATED_MEMOBJECT                 = 0x1107,
     CL_MEM_OFFSET                               = 0x1108,
+    CL_MEM_USES_SVM_POINTER                     = 0x1109,
 }
 
 // cl_image_info
@@ -377,6 +419,13 @@ enum
     CL_IMAGE_BUFFER                             = 0x1118,
     CL_IMAGE_NUM_MIP_LEVELS                     = 0x1119,
     CL_IMAGE_NUM_SAMPLES                        = 0x111A,
+}
+
+// cl_pipe_info
+enum
+{
+    CL_PIPE_PACKET_SIZE                         = 0x1120,
+    CL_PIPE_MAX_PACKETS                         = 0x1121,
 }
 
 // cl_addressing_mode
@@ -404,6 +453,9 @@ enum
     CL_SAMPLER_NORMALIZED_COORDS                = 0x1152,
     CL_SAMPLER_ADDRESSING_MODE                  = 0x1153,
     CL_SAMPLER_FILTER_MODE                      = 0x1154,
+    CL_SAMPLER_MIP_FILTER_MODE                  = 0x1155,
+    CL_SAMPLER_LOD_MIN                          = 0x1156,
+    CL_SAMPLER_LOD_MAX                          = 0x1157,
 }
 
 // cl_map_flags - bitfield
@@ -426,6 +478,9 @@ enum
     CL_PROGRAM_BINARIES                         = 0x1166,
     CL_PROGRAM_NUM_KERNELS                      = 0x1167,
     CL_PROGRAM_KERNEL_NAMES                     = 0x1168,
+    CL_PROGRAM_IL                               = 0x1169,
+    CL_PROGRAM_SCOPE_GLOBAL_CTORS_PRESENT       = 0x116A,
+    CL_PROGRAM_SCOPE_GLOBAL_DTORS_PRESENT       = 0x116B,
 }
 
 // cl_program_build_info
@@ -435,6 +490,7 @@ enum
     CL_PROGRAM_BUILD_OPTIONS                    = 0x1182,
     CL_PROGRAM_BUILD_LOG                        = 0x1183,
     CL_PROGRAM_BINARY_TYPE                      = 0x1184,
+    CL_PROGRAM_BUILD_GLOBAL_VARIABLE_TOTAL_SIZE = 0x1185,
 }
 
 // cl_program_binary_type
@@ -501,6 +557,7 @@ enum : cl_bitfield
     CL_KERNEL_ARG_TYPE_CONST                    = (1 << 0),
     CL_KERNEL_ARG_TYPE_RESTRICT                 = (1 << 1),
     CL_KERNEL_ARG_TYPE_VOLATILE                 = (1 << 2),
+    CL_KERNEL_ARG_TYPE_PIPE                     = (1 << 3),
 }
 
 // cl_kernel_work_group_info
@@ -512,6 +569,13 @@ enum
     CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE= 0x11B3,
     CL_KERNEL_PRIVATE_MEM_SIZE                  = 0x11B4,
     CL_KERNEL_GLOBAL_WORK_SIZE                  = 0x11B5,
+}
+
+// cl_kernel_exec_info
+enum
+{
+    CL_KERNEL_EXEC_INFO_SVM_PTRS                = 0x11B6,
+    CL_KERNEL_EXEC_INFO_SVM_FINE_GRAIN_SYSTEM   = 0x11B7,
 }
 
 // cl_event_info
@@ -552,6 +616,11 @@ enum
     CL_COMMAND_MIGRATE_MEM_OBJECTS              = 0x1206,
     CL_COMMAND_FILL_BUFFER                      = 0x1207,
     CL_COMMAND_FILL_IMAGE                       = 0x1208,
+    CL_COMMAND_SVM_FREE                         = 0x1209,
+    CL_COMMAND_SVM_MEMCPY                       = 0x120A,
+    CL_COMMAND_SVM_MEMFILL                      = 0x120B,
+    CL_COMMAND_SVM_MAP                          = 0x120C,
+    CL_COMMAND_SVM_UNMAP                        = 0x120D,
 }
 
 // cl_command_execution_status
@@ -576,6 +645,7 @@ enum
     CL_PROFILING_COMMAND_SUBMIT                 = 0x1281,
     CL_PROFILING_COMMAND_START                  = 0x1282,
     CL_PROFILING_COMMAND_END                    = 0x1283,
+    CL_PROFILING_COMMAND_COMPLETE               = 0x1284,
 }
 
 
