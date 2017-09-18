@@ -276,6 +276,14 @@ extern( System ) @nogc nothrow {
 	alias PFN_vkGetBufferMemoryRequirements2KHR = void function( VkDevice device, const( VkBufferMemoryRequirementsInfo2KHR )* pInfo, VkMemoryRequirements2KHR* pMemoryRequirements );
 	alias PFN_vkGetImageSparseMemoryRequirements2KHR = void function( VkDevice device, const( VkImageSparseMemoryRequirementsInfo2KHR )* pInfo, uint32_t* pSparseMemoryRequirementCount, VkSparseImageMemoryRequirements2KHR* pSparseMemoryRequirements );
 
+	// VK_KHR_sampler_ycbcr_conversion
+	alias PFN_vkCreateSamplerYcbcrConversionKHR = VkResult function( VkDevice device, const( VkSamplerYcbcrConversionCreateInfoKHR )* pCreateInfo, const( VkAllocationCallbacks )* pAllocator, VkSamplerYcbcrConversionKHR* pYcbcrConversion );
+	alias PFN_vkDestroySamplerYcbcrConversionKHR = void function( VkDevice device, VkSamplerYcbcrConversionKHR ycbcrConversion, const( VkAllocationCallbacks )* pAllocator );
+
+	// VK_KHR_bind_memory2
+	alias PFN_vkBindBufferMemory2KHR = VkResult function( VkDevice device, uint32_t bindInfoCount, const( VkBindBufferMemoryInfoKHR )* pBindInfos );
+	alias PFN_vkBindImageMemory2KHR = VkResult function( VkDevice device, uint32_t bindInfoCount, const( VkBindImageMemoryInfoKHR )* pBindInfos );
+
 	// VK_EXT_debug_report
 	alias PFN_vkCreateDebugReportCallbackEXT = VkResult function( VkInstance instance, const( VkDebugReportCallbackCreateInfoEXT )* pCreateInfo, const( VkAllocationCallbacks )* pAllocator, VkDebugReportCallbackEXT* pCallback );
 	alias PFN_vkDestroyDebugReportCallbackEXT = void function( VkInstance instance, VkDebugReportCallbackEXT callback, const( VkAllocationCallbacks )* pAllocator );
@@ -302,8 +310,6 @@ extern( System ) @nogc nothrow {
 
 	// VK_KHX_device_group
 	alias PFN_vkGetDeviceGroupPeerMemoryFeaturesKHX = void function( VkDevice device, uint32_t heapIndex, uint32_t localDeviceIndex, uint32_t remoteDeviceIndex, VkPeerMemoryFeatureFlagsKHX* pPeerMemoryFeatures );
-	alias PFN_vkBindBufferMemory2KHX = VkResult function( VkDevice device, uint32_t bindInfoCount, const( VkBindBufferMemoryInfoKHX )* pBindInfos );
-	alias PFN_vkBindImageMemory2KHX = VkResult function( VkDevice device, uint32_t bindInfoCount, const( VkBindImageMemoryInfoKHX )* pBindInfos );
 	alias PFN_vkCmdSetDeviceMaskKHX = void function( VkCommandBuffer commandBuffer, uint32_t deviceMask );
 	alias PFN_vkCmdDispatchBaseKHX = void function( VkCommandBuffer commandBuffer, uint32_t baseGroupX, uint32_t baseGroupY, uint32_t baseGroupZ, uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ );
 	alias PFN_vkGetDeviceGroupPresentCapabilitiesKHX = VkResult function( VkDevice device, VkDeviceGroupPresentCapabilitiesKHX* pDeviceGroupPresentCapabilities );
@@ -650,6 +656,14 @@ __gshared {
 	PFN_vkGetBufferMemoryRequirements2KHR vkGetBufferMemoryRequirements2KHR;
 	PFN_vkGetImageSparseMemoryRequirements2KHR vkGetImageSparseMemoryRequirements2KHR;
 
+	// VK_KHR_sampler_ycbcr_conversion
+	PFN_vkCreateSamplerYcbcrConversionKHR vkCreateSamplerYcbcrConversionKHR;
+	PFN_vkDestroySamplerYcbcrConversionKHR vkDestroySamplerYcbcrConversionKHR;
+
+	// VK_KHR_bind_memory2
+	PFN_vkBindBufferMemory2KHR vkBindBufferMemory2KHR;
+	PFN_vkBindImageMemory2KHR vkBindImageMemory2KHR;
+
 	// VK_EXT_debug_report
 	PFN_vkCreateDebugReportCallbackEXT vkCreateDebugReportCallbackEXT;
 	PFN_vkDestroyDebugReportCallbackEXT vkDestroyDebugReportCallbackEXT;
@@ -676,8 +690,6 @@ __gshared {
 
 	// VK_KHX_device_group
 	PFN_vkGetDeviceGroupPeerMemoryFeaturesKHX vkGetDeviceGroupPeerMemoryFeaturesKHX;
-	PFN_vkBindBufferMemory2KHX vkBindBufferMemory2KHX;
-	PFN_vkBindImageMemory2KHX vkBindImageMemory2KHX;
 	PFN_vkCmdSetDeviceMaskKHX vkCmdSetDeviceMaskKHX;
 	PFN_vkCmdDispatchBaseKHX vkCmdDispatchBaseKHX;
 	PFN_vkGetDeviceGroupPresentCapabilitiesKHX vkGetDeviceGroupPresentCapabilitiesKHX;
@@ -1081,6 +1093,14 @@ void loadDeviceLevelFunctions( VkInstance instance ) {
 	vkGetBufferMemoryRequirements2KHR = cast( typeof( vkGetBufferMemoryRequirements2KHR )) vkGetInstanceProcAddr( instance, "vkGetBufferMemoryRequirements2KHR" );
 	vkGetImageSparseMemoryRequirements2KHR = cast( typeof( vkGetImageSparseMemoryRequirements2KHR )) vkGetInstanceProcAddr( instance, "vkGetImageSparseMemoryRequirements2KHR" );
 
+	// VK_KHR_sampler_ycbcr_conversion
+	vkCreateSamplerYcbcrConversionKHR = cast( typeof( vkCreateSamplerYcbcrConversionKHR )) vkGetInstanceProcAddr( instance, "vkCreateSamplerYcbcrConversionKHR" );
+	vkDestroySamplerYcbcrConversionKHR = cast( typeof( vkDestroySamplerYcbcrConversionKHR )) vkGetInstanceProcAddr( instance, "vkDestroySamplerYcbcrConversionKHR" );
+
+	// VK_KHR_bind_memory2
+	vkBindBufferMemory2KHR = cast( typeof( vkBindBufferMemory2KHR )) vkGetInstanceProcAddr( instance, "vkBindBufferMemory2KHR" );
+	vkBindImageMemory2KHR = cast( typeof( vkBindImageMemory2KHR )) vkGetInstanceProcAddr( instance, "vkBindImageMemory2KHR" );
+
 	// VK_EXT_debug_marker
 	vkDebugMarkerSetObjectTagEXT = cast( typeof( vkDebugMarkerSetObjectTagEXT )) vkGetInstanceProcAddr( instance, "vkDebugMarkerSetObjectTagEXT" );
 	vkDebugMarkerSetObjectNameEXT = cast( typeof( vkDebugMarkerSetObjectNameEXT )) vkGetInstanceProcAddr( instance, "vkDebugMarkerSetObjectNameEXT" );
@@ -1099,8 +1119,6 @@ void loadDeviceLevelFunctions( VkInstance instance ) {
 
 	// VK_KHX_device_group
 	vkGetDeviceGroupPeerMemoryFeaturesKHX = cast( typeof( vkGetDeviceGroupPeerMemoryFeaturesKHX )) vkGetInstanceProcAddr( instance, "vkGetDeviceGroupPeerMemoryFeaturesKHX" );
-	vkBindBufferMemory2KHX = cast( typeof( vkBindBufferMemory2KHX )) vkGetInstanceProcAddr( instance, "vkBindBufferMemory2KHX" );
-	vkBindImageMemory2KHX = cast( typeof( vkBindImageMemory2KHX )) vkGetInstanceProcAddr( instance, "vkBindImageMemory2KHX" );
 	vkCmdSetDeviceMaskKHX = cast( typeof( vkCmdSetDeviceMaskKHX )) vkGetInstanceProcAddr( instance, "vkCmdSetDeviceMaskKHX" );
 	vkCmdDispatchBaseKHX = cast( typeof( vkCmdDispatchBaseKHX )) vkGetInstanceProcAddr( instance, "vkCmdDispatchBaseKHX" );
 	vkGetDeviceGroupPresentCapabilitiesKHX = cast( typeof( vkGetDeviceGroupPresentCapabilitiesKHX )) vkGetInstanceProcAddr( instance, "vkGetDeviceGroupPresentCapabilitiesKHX" );
@@ -1335,6 +1353,14 @@ void loadDeviceLevelFunctions( VkDevice device ) {
 	vkGetBufferMemoryRequirements2KHR = cast( typeof( vkGetBufferMemoryRequirements2KHR )) vkGetDeviceProcAddr( device, "vkGetBufferMemoryRequirements2KHR" );
 	vkGetImageSparseMemoryRequirements2KHR = cast( typeof( vkGetImageSparseMemoryRequirements2KHR )) vkGetDeviceProcAddr( device, "vkGetImageSparseMemoryRequirements2KHR" );
 
+	// VK_KHR_sampler_ycbcr_conversion
+	vkCreateSamplerYcbcrConversionKHR = cast( typeof( vkCreateSamplerYcbcrConversionKHR )) vkGetDeviceProcAddr( device, "vkCreateSamplerYcbcrConversionKHR" );
+	vkDestroySamplerYcbcrConversionKHR = cast( typeof( vkDestroySamplerYcbcrConversionKHR )) vkGetDeviceProcAddr( device, "vkDestroySamplerYcbcrConversionKHR" );
+
+	// VK_KHR_bind_memory2
+	vkBindBufferMemory2KHR = cast( typeof( vkBindBufferMemory2KHR )) vkGetDeviceProcAddr( device, "vkBindBufferMemory2KHR" );
+	vkBindImageMemory2KHR = cast( typeof( vkBindImageMemory2KHR )) vkGetDeviceProcAddr( device, "vkBindImageMemory2KHR" );
+
 	// VK_EXT_debug_marker
 	vkDebugMarkerSetObjectTagEXT = cast( typeof( vkDebugMarkerSetObjectTagEXT )) vkGetDeviceProcAddr( device, "vkDebugMarkerSetObjectTagEXT" );
 	vkDebugMarkerSetObjectNameEXT = cast( typeof( vkDebugMarkerSetObjectNameEXT )) vkGetDeviceProcAddr( device, "vkDebugMarkerSetObjectNameEXT" );
@@ -1353,8 +1379,6 @@ void loadDeviceLevelFunctions( VkDevice device ) {
 
 	// VK_KHX_device_group
 	vkGetDeviceGroupPeerMemoryFeaturesKHX = cast( typeof( vkGetDeviceGroupPeerMemoryFeaturesKHX )) vkGetDeviceProcAddr( device, "vkGetDeviceGroupPeerMemoryFeaturesKHX" );
-	vkBindBufferMemory2KHX = cast( typeof( vkBindBufferMemory2KHX )) vkGetDeviceProcAddr( device, "vkBindBufferMemory2KHX" );
-	vkBindImageMemory2KHX = cast( typeof( vkBindImageMemory2KHX )) vkGetDeviceProcAddr( device, "vkBindImageMemory2KHX" );
 	vkCmdSetDeviceMaskKHX = cast( typeof( vkCmdSetDeviceMaskKHX )) vkGetDeviceProcAddr( device, "vkCmdSetDeviceMaskKHX" );
 	vkCmdDispatchBaseKHX = cast( typeof( vkCmdDispatchBaseKHX )) vkGetDeviceProcAddr( device, "vkCmdDispatchBaseKHX" );
 	vkGetDeviceGroupPresentCapabilitiesKHX = cast( typeof( vkGetDeviceGroupPresentCapabilitiesKHX )) vkGetDeviceProcAddr( device, "vkGetDeviceGroupPresentCapabilitiesKHX" );
@@ -1616,6 +1640,14 @@ struct DispatchDevice {
 		vkGetBufferMemoryRequirements2KHR = cast( typeof( vkGetBufferMemoryRequirements2KHR )) vkGetDeviceProcAddr( device, "vkGetBufferMemoryRequirements2KHR" );
 		vkGetImageSparseMemoryRequirements2KHR = cast( typeof( vkGetImageSparseMemoryRequirements2KHR )) vkGetDeviceProcAddr( device, "vkGetImageSparseMemoryRequirements2KHR" );
 
+		// VK_KHR_sampler_ycbcr_conversion
+		vkCreateSamplerYcbcrConversionKHR = cast( typeof( vkCreateSamplerYcbcrConversionKHR )) vkGetDeviceProcAddr( device, "vkCreateSamplerYcbcrConversionKHR" );
+		vkDestroySamplerYcbcrConversionKHR = cast( typeof( vkDestroySamplerYcbcrConversionKHR )) vkGetDeviceProcAddr( device, "vkDestroySamplerYcbcrConversionKHR" );
+
+		// VK_KHR_bind_memory2
+		vkBindBufferMemory2KHR = cast( typeof( vkBindBufferMemory2KHR )) vkGetDeviceProcAddr( device, "vkBindBufferMemory2KHR" );
+		vkBindImageMemory2KHR = cast( typeof( vkBindImageMemory2KHR )) vkGetDeviceProcAddr( device, "vkBindImageMemory2KHR" );
+
 		// VK_EXT_debug_marker
 		vkDebugMarkerSetObjectTagEXT = cast( typeof( vkDebugMarkerSetObjectTagEXT )) vkGetDeviceProcAddr( device, "vkDebugMarkerSetObjectTagEXT" );
 		vkDebugMarkerSetObjectNameEXT = cast( typeof( vkDebugMarkerSetObjectNameEXT )) vkGetDeviceProcAddr( device, "vkDebugMarkerSetObjectNameEXT" );
@@ -1634,8 +1666,6 @@ struct DispatchDevice {
 
 		// VK_KHX_device_group
 		vkGetDeviceGroupPeerMemoryFeaturesKHX = cast( typeof( vkGetDeviceGroupPeerMemoryFeaturesKHX )) vkGetDeviceProcAddr( device, "vkGetDeviceGroupPeerMemoryFeaturesKHX" );
-		vkBindBufferMemory2KHX = cast( typeof( vkBindBufferMemory2KHX )) vkGetDeviceProcAddr( device, "vkBindBufferMemory2KHX" );
-		vkBindImageMemory2KHX = cast( typeof( vkBindImageMemory2KHX )) vkGetDeviceProcAddr( device, "vkBindImageMemory2KHX" );
 		vkCmdSetDeviceMaskKHX = cast( typeof( vkCmdSetDeviceMaskKHX )) vkGetDeviceProcAddr( device, "vkCmdSetDeviceMaskKHX" );
 		vkCmdDispatchBaseKHX = cast( typeof( vkCmdDispatchBaseKHX )) vkGetDeviceProcAddr( device, "vkCmdDispatchBaseKHX" );
 		vkGetDeviceGroupPresentCapabilitiesKHX = cast( typeof( vkGetDeviceGroupPresentCapabilitiesKHX )) vkGetDeviceProcAddr( device, "vkGetDeviceGroupPresentCapabilitiesKHX" );
@@ -2151,6 +2181,22 @@ struct DispatchDevice {
 		vkGetImageSparseMemoryRequirements2KHR( this.device, pInfo, pSparseMemoryRequirementCount, pSparseMemoryRequirements );
 	}
 
+	// VK_KHR_sampler_ycbcr_conversion
+	VkResult CreateSamplerYcbcrConversionKHR( const( VkSamplerYcbcrConversionCreateInfoKHR )* pCreateInfo, const( VkAllocationCallbacks )* pAllocator, VkSamplerYcbcrConversionKHR* pYcbcrConversion ) {
+		return vkCreateSamplerYcbcrConversionKHR( this.device, pCreateInfo, pAllocator, pYcbcrConversion );
+	}
+	void DestroySamplerYcbcrConversionKHR( VkSamplerYcbcrConversionKHR ycbcrConversion, const( VkAllocationCallbacks )* pAllocator ) {
+		vkDestroySamplerYcbcrConversionKHR( this.device, ycbcrConversion, pAllocator );
+	}
+
+	// VK_KHR_bind_memory2
+	VkResult BindBufferMemory2KHR( uint32_t bindInfoCount, const( VkBindBufferMemoryInfoKHR )* pBindInfos ) {
+		return vkBindBufferMemory2KHR( this.device, bindInfoCount, pBindInfos );
+	}
+	VkResult BindImageMemory2KHR( uint32_t bindInfoCount, const( VkBindImageMemoryInfoKHR )* pBindInfos ) {
+		return vkBindImageMemory2KHR( this.device, bindInfoCount, pBindInfos );
+	}
+
 	// VK_EXT_debug_marker
 	VkResult DebugMarkerSetObjectTagEXT( const( VkDebugMarkerObjectTagInfoEXT )* pTagInfo ) {
 		return vkDebugMarkerSetObjectTagEXT( this.device, pTagInfo );
@@ -2186,12 +2232,6 @@ struct DispatchDevice {
 	// VK_KHX_device_group
 	void GetDeviceGroupPeerMemoryFeaturesKHX( uint32_t heapIndex, uint32_t localDeviceIndex, uint32_t remoteDeviceIndex, VkPeerMemoryFeatureFlagsKHX* pPeerMemoryFeatures ) {
 		vkGetDeviceGroupPeerMemoryFeaturesKHX( this.device, heapIndex, localDeviceIndex, remoteDeviceIndex, pPeerMemoryFeatures );
-	}
-	VkResult BindBufferMemory2KHX( uint32_t bindInfoCount, const( VkBindBufferMemoryInfoKHX )* pBindInfos ) {
-		return vkBindBufferMemory2KHX( this.device, bindInfoCount, pBindInfos );
-	}
-	VkResult BindImageMemory2KHX( uint32_t bindInfoCount, const( VkBindImageMemoryInfoKHX )* pBindInfos ) {
-		return vkBindImageMemory2KHX( this.device, bindInfoCount, pBindInfos );
 	}
 	void CmdSetDeviceMaskKHX( uint32_t deviceMask ) {
 		vkCmdSetDeviceMaskKHX( this.commandBuffer, deviceMask );
@@ -2415,6 +2455,10 @@ struct DispatchDevice {
 	PFN_vkGetImageMemoryRequirements2KHR vkGetImageMemoryRequirements2KHR;
 	PFN_vkGetBufferMemoryRequirements2KHR vkGetBufferMemoryRequirements2KHR;
 	PFN_vkGetImageSparseMemoryRequirements2KHR vkGetImageSparseMemoryRequirements2KHR;
+	PFN_vkCreateSamplerYcbcrConversionKHR vkCreateSamplerYcbcrConversionKHR;
+	PFN_vkDestroySamplerYcbcrConversionKHR vkDestroySamplerYcbcrConversionKHR;
+	PFN_vkBindBufferMemory2KHR vkBindBufferMemory2KHR;
+	PFN_vkBindImageMemory2KHR vkBindImageMemory2KHR;
 	PFN_vkDebugMarkerSetObjectTagEXT vkDebugMarkerSetObjectTagEXT;
 	PFN_vkDebugMarkerSetObjectNameEXT vkDebugMarkerSetObjectNameEXT;
 	PFN_vkCmdDebugMarkerBeginEXT vkCmdDebugMarkerBeginEXT;
@@ -2426,8 +2470,6 @@ struct DispatchDevice {
 		PFN_vkGetMemoryWin32HandleNV vkGetMemoryWin32HandleNV;
 	}
 	PFN_vkGetDeviceGroupPeerMemoryFeaturesKHX vkGetDeviceGroupPeerMemoryFeaturesKHX;
-	PFN_vkBindBufferMemory2KHX vkBindBufferMemory2KHX;
-	PFN_vkBindImageMemory2KHX vkBindImageMemory2KHX;
 	PFN_vkCmdSetDeviceMaskKHX vkCmdSetDeviceMaskKHX;
 	PFN_vkCmdDispatchBaseKHX vkCmdDispatchBaseKHX;
 	PFN_vkGetDeviceGroupPresentCapabilitiesKHX vkGetDeviceGroupPresentCapabilitiesKHX;
