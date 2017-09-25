@@ -389,8 +389,6 @@ size_t potrf(T)(
        char uplo = 'U'
        )
 {
-    import lapack : potrf_;
-    
     assert(a.length!0 == a.length!1, "potrf: a must be a square matrix.");
     
     lapackint n = cast(lapackint) a.length;
@@ -408,8 +406,6 @@ size_t pptrf(T)(
        Slice!(Contiguous, [1], StairsIterator!(T*)) ap
        )
 {
-    import lapack : pptrf_;
-    
     lapackint n = cast(lapackint) ap.length;
     lapackint info = void;
     
@@ -424,8 +420,6 @@ size_t pptrf(T)(
        Slice!(Contiguous, [1], RetroIterator!(MapIterator!(StairsIterator!(RetroIterator!(T*)), retro))) ap
        )
 {
-    import lapack : pptrf_;
-    
     lapackint n = cast(lapackint) ap.length;
     lapackint info = void;
     
