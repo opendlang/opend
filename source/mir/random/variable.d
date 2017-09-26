@@ -70,7 +70,7 @@ template isRandomVariable(T)
 {
     static if (is(typeof(T.isRandomVariable) : bool))
     {
-        enum isRandomVariable = T.isRandomVariable && 
+        enum isRandomVariable = T.isRandomVariable &&
             is(typeof({
                 auto gen = Random(1);
                 T rv;
@@ -508,7 +508,7 @@ struct FisherFVariable(T)
         auto y = yv(gen);
         x *= _d1;
         y *= _d2;
-        return x / y; 
+        return x / y;
     }
 
     ///
@@ -1344,7 +1344,7 @@ unittest
 
     // sample from the discrete distribution
     auto obs = new uint[weights.length];
-    
+
     foreach (i; 0..1000)
         obs[ds(gen)]++;
 
@@ -1463,7 +1463,7 @@ struct PiecewiseConstantVariable(T, W = T)
         assert(weights.length);
         assert(intervals.length == weights.length + 1);
         dv = DiscreteVariable!W(weights, cumulative);
-        this.intervals = intervals; 
+        this.intervals = intervals;
     }
 
     /++
