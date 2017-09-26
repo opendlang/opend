@@ -4,7 +4,6 @@ $(SCRIPT inhibitQuickIndex = 1;)
 $(BOOKTABLE $(H2 Utilities),
 
     $(TR $(TH Name), $(TH Description))
-    $(T2 RandomVariable, Attribute)
     $(T2 isRandomVariable, Trait)
 )
 

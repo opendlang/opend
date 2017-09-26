@@ -25,6 +25,12 @@ $(BOOKTABLE ,
             Random variables for uniform, exponential, gamma, normal, and other distributions.
         )
     )
+    $(TR
+        $(TDNW $(MREF mir,random,ndvariable))
+        $(TD
+            Random variables for sphere, simplex, multivariate normal, and other multidimensional distributions.
+        )
+    )
     $(LEADINGROW Integration with Phobos)
     $(TR
         $(TDNW $(MREF mir,random,algorithm))

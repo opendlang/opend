@@ -1,13 +1,6 @@
 /++
 $(SCRIPT inhibitQuickIndex = 1;)
 
-$(BOOKTABLE $(H2 Utilities),
-
-    $(TR $(TH Name), $(TH Description))
-    $(T2 RandomVariable, Attribute)
-    $(T2 isRandomVariable, Trait)
-)
-
 $(BOOKTABLE $(H2 Multidimensional Random Variables),
 
     $(TR $(TH Generator name) $(TH Description))
