@@ -31,7 +31,6 @@
 module mir.random.engine.pcg;
 
 import mir.random.engine;
-import core.bitop;
 import std.traits : ReturnType, TemplateArgsOf;
 
 @safe:
@@ -112,56 +111,75 @@ private template default_increment_unset_stream(Uint)
 /// Increment for LCG portion of the PCG is the address of the RNG
 mixin template unique_stream(Uint)
 {
+    ///
     enum is_mcg = false;
-    @property Uint increment() const
+    ///
+    @property Uint increment()() const
     {
         Uint this_addr = (() @trusted => cast(Uint)(*cast(ulong*)&this))();
         return this_addr | 1;
     }
-    Uint stream()
+    ///
+    Uint stream()()
     {
         return increment >> 1;
     }
+    ///
     enum can_specify_stream = false;
-    enum size_t streams_pow2 = Uint.sizeof < size_t.sizeof ? Uint.sizeof :
-                                                             size_t.sizeof - 1u;
+    ///
+    enum size_t streams_pow2 = Uint.sizeof < size_t.sizeof ? Uint.sizeof : size_t.sizeof - 1u;
 }
 
 
 /// Increment is 0. The LCG portion of the PCG is an MCG.
 mixin template no_stream(Uint)
 {
+    ///
     enum is_mcg = true;
+    ///
     @property Uint increment = 0;
     
+    ///
     enum can_specify_stream = false;
+    ///
     enum size_t streams_pow2 = 0;
 }
 
 /// Increment of the LCG portion of the PCG is default_increment.
 mixin template oneseq_stream(Uint)
 {
+    ///
     enum is_mcg = false;
+    ///
     @property Uint increment()
     {
         return default_increment!Uint;
     }
+    ///
     enum can_specify_stream = false;
+    ///
     enum size_t streams_pow2 = 0;
 }
 
 /// The increment is dynamically settable and defaults to default_increment!T.
 mixin template specific_stream(Uint)
 {
+    ///
     enum is_mcg = false;
+    ///
     Uint inc_ = default_increment!Uint;
-    @property Uint increment() { return inc_; }
-    @property void increment(Uint u) { inc_ = u;}
+    ///
+    @property Uint increment()() { return inc_; }
+    ///
+    @property void increment()(Uint u) { inc_ = u;}
+    ///
     enum can_specify_stream = true;
-    void set_stream(Uint u)
+    ///
+    void set_stream()(Uint u)
     {
         inc_ = cast(Uint)((u << 1) | 1);
     }
+    ///
     enum size_t streams_pow2 = size_t.sizeof*8 -1u;
 }
 
@@ -171,7 +189,7 @@ enum stream_t
     unique,
     none,
     oneseq,
-    specific
+    specific,
 }
 
 /++
@@ -215,7 +233,7 @@ Uint unxorshift(Uint)(Uint x, size_t bits, size_t shift)
  +
  + Fast.  A good performer.
  +/
-O xsh_rs(O,Uint)(Uint state)
+O xsh_rs(O, Uint)(Uint state)
 {
     enum bits        = Uint.sizeof * 8;
     enum xtypebits   = O.sizeof * 8;
@@ -242,7 +260,7 @@ O xsh_rs(O,Uint)(Uint state)
  +
  + Fast.  A good performer.  Slightly better statistically than XSH RS.
  +/
-O xsh_rr(O,Uint)(Uint state)
+O xsh_rr(O, Uint)(Uint state)
 {
     enum bits        = Uint.sizeof * 8;
     enum xtypebits   = O.sizeof * 8;
@@ -263,13 +281,14 @@ O xsh_rr(O,Uint)(Uint state)
     auto amprot = (rot << amplifier) & mask;
     state ^= state >> xshift;
     O result = cast(O)(state >> bottomspare);
+    import core.bitop: ror;
     result = ror(result, cast(uint)amprot);
     return result;
 }
 /++
  + RXS -- random xorshift
  +/
-O rxs(O,Uint)(Uint state)
+O rxs(O, Uint)(Uint state)
 {
     enum bits        = Uint.sizeof * 8;
     enum xtypebits   = O.sizeof * 8;
@@ -297,7 +316,8 @@ O rxs(O,Uint)(Uint state)
  + We thus provide a function to invert it.  This function is used to
  + for the "inside out" generator used by the extended generator.
  +/
-O rxs_m_xs_forward(O,Uint)(Uint state) if(is(O == Uint))
+O rxs_m_xs_forward(O, Uint)(Uint state)
+    if(is(O == Uint))
 {
     enum bits        = Uint.sizeof * 8;
     enum xtypebits   = O.sizeof * 8;
@@ -316,7 +336,8 @@ O rxs_m_xs_forward(O,Uint)(Uint state) if(is(O == Uint))
     return result;
 }
 /// ditto
-O rxs_m_xs_reverse(O,Uint)(Uint state) if(is(O == Uint))
+O rxs_m_xs_reverse(O, Uint)(Uint state)
+    if(is(O == Uint))
 {
     enum bits        = Uint.sizeof * 8;
     enum opbits = bits >= 128 ? 6
@@ -340,7 +361,7 @@ O rxs_m_xs_reverse(O,Uint)(Uint state) if(is(O == Uint))
  +
  + Useful for 128-bit types that are split across two CPU registers.
  +/
-O xsl_rr(O,Uint)(Uint state)
+O xsl_rr(O, Uint)(Uint state)
 {
     enum bits        = Uint.sizeof * 8;
     enum xtypebits   = O.sizeof * 8;
@@ -386,7 +407,8 @@ private template half_size(Uint)
  + If you really want an invertable 128-bit RNG, I guess this is the one.
  +/
 
-O xsl_rr_rr(O,Uint)(Uint state) if(is(O == Uint))
+O xsl_rr_rr(O, Uint)(Uint state)
+    if(is(O == Uint))
 {
     alias H = half_size!Uint;
     enum htypebits = H.sizeof * 8;
@@ -422,7 +444,7 @@ O xsl_rr_rr(O,Uint)(Uint state) if(is(O == Uint))
  + Not available at 64-bits or less.
  +/
 
-O xsh(O,Uint)(Uint state) if(Uint.sizeof > 8)
+O xsh(O, Uint)(Uint state) if(Uint.sizeof > 8)
 {
     enum bits        = Uint.sizeof * 8;
     enum xtypebits   = O.sizeof * 8;
@@ -442,7 +464,7 @@ O xsh(O,Uint)(Uint state) if(Uint.sizeof > 8)
  + Not available at 64-bits or less.
  +/
 
-O xsl(O,Uint)(Uint state) if(Uint.sizeof > 8)
+O xsl(O, Uint)(Uint state) if(Uint.sizeof > 8)
 {
     enum bits        = Uint.sizeof * 8;
     enum xtypebits   = O.sizeof * 8;
@@ -477,9 +499,11 @@ struct PermutedCongruentialEngine(alias output,        // Output function
                                   bool output_previous,
                                   mult_...) if (mult_.length <= 1)
 {
+    ///
     enum isRandomEngine = true;
-    
-    alias Uint  = TemplateArgsOf!output [1];
+
+    ///
+    alias Uint  = TemplateArgsOf!output[1];
 
     static if (mult_.length == 0)
         enum mult = default_multiplier!Uint;
@@ -502,56 +526,64 @@ struct PermutedCongruentialEngine(alias output,        // Output function
         mixin oneseq_stream!Uint;
     else
         static assert(0);
-        
+
+    ///
     Uint state;
     
+    ///
     enum period_pow2 = Uint.sizeof*8 - 2*is_mcg;
+
+    ///
     enum max = (ReturnType!output).max;
-    
+
 private:
-    Uint bump(Uint state_)
+
+    Uint bump()(Uint state_)
     {
         return cast(Uint)(state_ * mult + increment);
     }
-    
-    Uint base_generate()
+
+    Uint base_generate()()
     {
         return state = bump(state);
     }
-    
-    Uint base_generate0()
+
+    Uint base_generate0()()
     {
         Uint old_state = state;
         state = bump(state);
         return old_state;
     }
+
 public:
-    static if (!can_specify_stream)
-    this(Uint seed)
+    static if (can_specify_stream)
+    ///
+    this()(Uint seed, Uint stream_ = default_increment_unset_stream!Uint)
+    {
+        state = bump(cast(Uint)(seed + increment));
+        set_stream(stream_);
+    }
+    else
+    ///
+    this()(Uint seed)
     {
         static if (is_mcg)
             state = seed | 3u;
         else
             state = bump(cast(Uint)(seed + increment));
     }
-    else
-    {
-        this(Uint seed, Uint stream_ = default_increment_unset_stream!Uint)
-        {
-            state = bump(cast(Uint)(seed + increment));
-            set_stream(stream_);
-        }
-    }
-    
-    ReturnType!output opCall()
+
+    ///
+    ReturnType!output opCall()()
     {
         static if(output_previous)
             return output(base_generate0());
         else
             return output(base_generate());
     }
-    //opCall(O upperbound)
-    void skip(Uint delta)
+
+    ///
+    void skip()(Uint delta)
     {
         // The method used here is based on Brown, "Random Number Generation
         // with Arbitrary Stride,", Transactions of the American Nuclear
@@ -580,42 +612,47 @@ public:
 
 /// 32-bit output PCGs with 64 bits of state.
 alias pcg32        = PermutedCongruentialEngine!(xsh_rr!(uint,ulong),stream_t.specific,true);
-///ditto
+/// ditto
 alias pcg32_unique = PermutedCongruentialEngine!(xsh_rr!(uint,ulong),stream_t.unique,true);
-///ditto
+/// ditto
 alias pcg32_oneseq = PermutedCongruentialEngine!(xsh_rr!(uint,ulong),stream_t.oneseq,true);
-///ditto
+/// ditto
 alias pcg32_fast   = PermutedCongruentialEngine!(xsh_rr!(uint,ulong),stream_t.none,true);
 
-//alias pcg64        = PermutedCongruentialEngine!(xsh_rr!(ulong,ucent),stream_t.specific,true);
-//alias pcg64_unique = PermutedCongruentialEngine!(xsh_rr!(ulong,ucent),stream_t.unique,true);
-//alias pcg64_oneseq = PermutedCongruentialEngine!(xsh_rr!(ulong,ucent),stream_t.oneseq,true);
-//alias pcg64_fast   = PermutedCongruentialEngine!(xsh_rr!(ulong,ucent),stream_t.none,true);
+static if (__traits(compiles, ucent.max))
+{
+    /// 64-bit output PCGs with 128 bits of state. Requires `ucent` type.
+    alias pcg64        = PermutedCongruentialEngine!(xsh_rr!(ulong,ucent),stream_t.specific,true);
+    ///
+    alias pcg64_unique = PermutedCongruentialEngine!(xsh_rr!(ulong,ucent),stream_t.unique,true);
+    ///
+    alias pcg64_oneseq = PermutedCongruentialEngine!(xsh_rr!(ulong,ucent),stream_t.oneseq,true);
+    ///
+    alias pcg64_fast   = PermutedCongruentialEngine!(xsh_rr!(ulong,ucent),stream_t.none,true);
+}
 
 /// PCGs with n bits output and n bits of state.
 alias pcg8_once_insecure  = PermutedCongruentialEngine!(rxs_m_xs_forward!(ubyte ,ubyte ),stream_t.specific,true);
-///ditto
+/// ditto
 alias pcg16_once_insecure = PermutedCongruentialEngine!(rxs_m_xs_forward!(ushort,ushort),stream_t.specific,true);
-///ditto
+/// ditto
 alias pcg32_once_insecure = PermutedCongruentialEngine!(rxs_m_xs_forward!(uint  ,uint  ),stream_t.specific,true);
-///ditto
+/// ditto
 alias pcg64_once_insecure = PermutedCongruentialEngine!(rxs_m_xs_forward!(ulong,ulong  ),stream_t.specific,true);
 //alias pcg128_once_insecure = PermutedCongruentialEngine!(rxs_m_xs_forward!(ucent,ucent,stream_t.specific,true);
 
 /// As above but the increment is not dynamically setable.
-alias pcg8_oneseq_once_insecure
-        = PermutedCongruentialEngine!(rxs_m_xs_forward!(ubyte ,ubyte ),stream_t.oneseq,true);
-///ditto
-alias pcg16_oneseq_once_insecure
-        = PermutedCongruentialEngine!(rxs_m_xs_forward!(ushort,ushort),stream_t.oneseq,true);
-///ditto
-alias pcg32_oneseq_once_insecure
-        = PermutedCongruentialEngine!(rxs_m_xs_forward!(uint  ,uint  ),stream_t.oneseq,true);
-///ditto
-alias pcg64_oneseq_once_insecure
-        = PermutedCongruentialEngine!(rxs_m_xs_forward!(ulong,ulong  ),stream_t.oneseq,true);
-//alias pcg128_oneseq_once_insecure
-//      = PermutedCongruentialEngine!(rxs_m_xs_forward!(ucent,ucent,stream_t.specific,true);
+alias pcg8_oneseq_once_insecure = PermutedCongruentialEngine!(rxs_m_xs_forward!(ubyte ,ubyte ),stream_t.oneseq,true);
+/// ditto
+alias pcg16_oneseq_once_insecure = PermutedCongruentialEngine!(rxs_m_xs_forward!(ushort,ushort),stream_t.oneseq,true);
+/// ditto
+alias pcg32_oneseq_once_insecure = PermutedCongruentialEngine!(rxs_m_xs_forward!(uint  ,uint  ),stream_t.oneseq,true);
+/// ditto
+alias pcg64_oneseq_once_insecure = PermutedCongruentialEngine!(rxs_m_xs_forward!(ulong,ulong  ),stream_t.oneseq,true);
+/// ditto
+/// Requires `ucent` type.
+static if (__traits(compiles, ucent.max))
+alias pcg128_oneseq_once_insecure = PermutedCongruentialEngine!(rxs_m_xs_forward!(ucent,ucent  ),stream_t.specific,true);
 
 private alias AliasSeq(T...) = T;
 
