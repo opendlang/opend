@@ -182,7 +182,6 @@ unittest
 private bool cholesky(SliceKind kind, Iterator)(Slice!(kind, [2], Iterator) m)
     if(isFloatingPoint!(DeepElementType!(typeof(m))))
 {
-    alias dotm = reduce!"a - b * c"; // note the `-`
     assert(m.length!0 == m.length!1);
 
     /* this is a straight-forward implementation of the Cholesky-Crout algorithm
