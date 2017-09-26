@@ -12,5 +12,6 @@
 	"license": "BSL-1.0 (default), Apache License, Version 2.0 for (for PCG)",
 	"dependencies": {
 		"mir-algorithm": "~>0.6.0"
-	}
+	},
+ 	"libs-windows": ["advapi32"]
 }
