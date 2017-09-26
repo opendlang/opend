@@ -209,6 +209,7 @@ private bool cholesky(SliceKind kind, Iterator)(Slice!(kind, [2], Iterator) m)
 
 /++
 Multivariate normal distribution.
+Beta version (has not properly tested).
 +/
 struct MultivariateNormalVariable(T)
     if(isFloatingPoint!T)
