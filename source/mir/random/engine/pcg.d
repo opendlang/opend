@@ -37,6 +37,183 @@ import std.traits : ReturnType, TemplateArgsOf;
 nothrow:
 @nogc:
 
+/// 32-bit output PCGs with 64 bits of state.
+alias pcg32        = PermutedCongruentialEngine!(xsh_rr!(uint,ulong),stream_t.specific,true);
+/// ditto
+alias pcg32_unique = PermutedCongruentialEngine!(xsh_rr!(uint,ulong),stream_t.unique,true);
+/// ditto
+alias pcg32_oneseq = PermutedCongruentialEngine!(xsh_rr!(uint,ulong),stream_t.oneseq,true);
+/// ditto
+alias pcg32_fast   = PermutedCongruentialEngine!(xsh_rr!(uint,ulong),stream_t.none,true);
+
+static if (__traits(compiles, ucent.max))
+{
+    /// 64-bit output PCGs with 128 bits of state. Requires `ucent` type.
+    alias pcg64        = PermutedCongruentialEngine!(xsh_rr!(ulong,ucent),stream_t.specific,true);
+    ///
+    alias pcg64_unique = PermutedCongruentialEngine!(xsh_rr!(ulong,ucent),stream_t.unique,true);
+    ///
+    alias pcg64_oneseq = PermutedCongruentialEngine!(xsh_rr!(ulong,ucent),stream_t.oneseq,true);
+    ///
+    alias pcg64_fast   = PermutedCongruentialEngine!(xsh_rr!(ulong,ucent),stream_t.none,true);
+}
+
+/// PCGs with n bits output and n bits of state.
+alias pcg8_once_insecure  = PermutedCongruentialEngine!(rxs_m_xs_forward!(ubyte ,ubyte ),stream_t.specific,true);
+/// ditto
+alias pcg16_once_insecure = PermutedCongruentialEngine!(rxs_m_xs_forward!(ushort,ushort),stream_t.specific,true);
+/// ditto
+alias pcg32_once_insecure = PermutedCongruentialEngine!(rxs_m_xs_forward!(uint  ,uint  ),stream_t.specific,true);
+/// ditto
+alias pcg64_once_insecure = PermutedCongruentialEngine!(rxs_m_xs_forward!(ulong,ulong  ),stream_t.specific,true);
+//alias pcg128_once_insecure = PermutedCongruentialEngine!(rxs_m_xs_forward!(ucent,ucent,stream_t.specific,true);
+
+/// As above but the increment is not dynamically setable.
+alias pcg8_oneseq_once_insecure = PermutedCongruentialEngine!(rxs_m_xs_forward!(ubyte ,ubyte ),stream_t.oneseq,true);
+/// ditto
+alias pcg16_oneseq_once_insecure = PermutedCongruentialEngine!(rxs_m_xs_forward!(ushort,ushort),stream_t.oneseq,true);
+/// ditto
+alias pcg32_oneseq_once_insecure = PermutedCongruentialEngine!(rxs_m_xs_forward!(uint  ,uint  ),stream_t.oneseq,true);
+/// ditto
+alias pcg64_oneseq_once_insecure = PermutedCongruentialEngine!(rxs_m_xs_forward!(ulong,ulong  ),stream_t.oneseq,true);
+/// ditto
+/// Requires `ucent` type.
+static if (__traits(compiles, ucent.max))
+alias pcg128_oneseq_once_insecure = PermutedCongruentialEngine!(rxs_m_xs_forward!(ucent,ucent  ),stream_t.specific,true);
+
+/++
+ + The PermutedCongruentialEngine:
+ + Params:
+ +  output - should be one of the above functions.
+ +      Controls the output permutation of the state.
+ +  stream - one of unique, none, oneseq, specific.
+ +      Controls the Increment of the LCG portion of the PCG.
+ +      unique   - increment is cast(size_t) &RNG
+ +      none     - increment is 0.
+ +      oneseq   - increment is the default increment.
+ +      specific - increment is runtime setable and defaults to the default (same as oneseq)
+ +  output_previous
+ +      if true then the pre-advance version (increasing instruction-level parallelism)
+ +      if false then use the post-advance version (reducing register pressure)
+ +  mult_
+ +      optionally set the multiplier for the LCG.
+ +/
+struct PermutedCongruentialEngine(alias output,        // Output function
+                                  stream_t stream,     // The stream type
+                                  bool output_previous,
+                                  mult_...) if (mult_.length <= 1)
+{
+    ///
+    enum isRandomEngine = true;
+
+    ///
+    alias Uint  = TemplateArgsOf!output[1];
+
+    static if (mult_.length == 0)
+        enum mult = default_multiplier!Uint;
+    else
+    {
+        static assert(is(typeof(mult_[0]) == Uint),
+            "The specified multiplier must be the state type of the output function");
+        enum mult = mult_[0];
+    }
+        
+    @disable this(this);
+    @disable this();
+    static if (stream == stream_t.none)
+        mixin no_stream!Uint;
+    else static if (stream == stream_t.unique)
+        mixin unique_stream!Uint;
+    else static if (stream == stream_t.specific)
+        mixin specific_stream!Uint;
+    else static if (stream == stream_t.oneseq)
+        mixin oneseq_stream!Uint;
+    else
+        static assert(0);
+
+    ///
+    Uint state;
+    
+    ///
+    enum period_pow2 = Uint.sizeof*8 - 2*is_mcg;
+
+    ///
+    enum max = (ReturnType!output).max;
+
+private:
+
+    Uint bump()(Uint state_)
+    {
+        return cast(Uint)(state_ * mult + increment);
+    }
+
+    Uint base_generate()()
+    {
+        return state = bump(state);
+    }
+
+    Uint base_generate0()()
+    {
+        Uint old_state = state;
+        state = bump(state);
+        return old_state;
+    }
+
+public:
+    static if (can_specify_stream)
+    ///
+    this()(Uint seed, Uint stream_ = default_increment_unset_stream!Uint)
+    {
+        state = bump(cast(Uint)(seed + increment));
+        set_stream(stream_);
+    }
+    else
+    ///
+    this()(Uint seed)
+    {
+        static if (is_mcg)
+            state = seed | 3u;
+        else
+            state = bump(cast(Uint)(seed + increment));
+    }
+
+    ///
+    ReturnType!output opCall()()
+    {
+        static if(output_previous)
+            return output(base_generate0());
+        else
+            return output(base_generate());
+    }
+
+    ///
+    void skip()(Uint delta)
+    {
+        // The method used here is based on Brown, "Random Number Generation
+        // with Arbitrary Stride,", Transactions of the American Nuclear
+        // Society (Nov. 1994).  The algorithm is very similar to fast
+        // exponentiation.
+        //
+        // Even though delta is an unsigned integer, we can pass a
+        // signed integer to go backwards, it just goes "the long way round".
+        
+        Uint acc_mult = 1, acc_plus = 0;
+        Uint cur_plus = increment, cur_mult = mult;
+        while (delta > 0)
+        {
+            if (delta & 1)
+            {
+                acc_mult *= cur_mult;
+                acc_plus = cast(Uint)(acc_plus * cur_mult + cur_plus);
+            }
+            cur_plus  *= cur_mult + 1;
+            cur_mult *= cur_mult;
+            delta >>= 1;
+        }
+        state = cast(Uint)(acc_mult*state + acc_plus);
+    }
+}
+
 // Default multiplier to use for the LCG portion of the PCG
 private template default_multiplier(Uint)
 {
@@ -477,182 +654,6 @@ O xsl(O, Uint)(Uint state) if(Uint.sizeof > 8)
     O result = state >> bottomspare;
     return result;
 }
-/++
- + The PermutedCongruentialEngine:
- + Params:
- +  output - should be one of the above functions.
- +      Controls the output permutation of the state.
- +  stream - one of unique, none, oneseq, specific.
- +      Controls the Increment of the LCG portion of the PCG.
- +      unique   - increment is cast(size_t) &RNG
- +      none     - increment is 0.
- +      oneseq   - increment is the default increment.
- +      specific - increment is runtime setable and defaults to the default (same as oneseq)
- +  output_previous
- +      if true then the pre-advance version (increasing instruction-level parallelism)
- +      if false then use the post-advance version (reducing register pressure)
- +  mult_
- +      optionally set the multiplier for the LCG.
- +/
-struct PermutedCongruentialEngine(alias output,        // Output function
-                                  stream_t stream,     // The stream type
-                                  bool output_previous,
-                                  mult_...) if (mult_.length <= 1)
-{
-    ///
-    enum isRandomEngine = true;
-
-    ///
-    alias Uint  = TemplateArgsOf!output[1];
-
-    static if (mult_.length == 0)
-        enum mult = default_multiplier!Uint;
-    else
-    {
-        static assert(is(typeof(mult_[0]) == Uint),
-            "The specified multiplier must be the state type of the output function");
-        enum mult = mult_[0];
-    }
-        
-    @disable this(this);
-    @disable this();
-    static if (stream == stream_t.none)
-        mixin no_stream!Uint;
-    else static if (stream == stream_t.unique)
-        mixin unique_stream!Uint;
-    else static if (stream == stream_t.specific)
-        mixin specific_stream!Uint;
-    else static if (stream == stream_t.oneseq)
-        mixin oneseq_stream!Uint;
-    else
-        static assert(0);
-
-    ///
-    Uint state;
-    
-    ///
-    enum period_pow2 = Uint.sizeof*8 - 2*is_mcg;
-
-    ///
-    enum max = (ReturnType!output).max;
-
-private:
-
-    Uint bump()(Uint state_)
-    {
-        return cast(Uint)(state_ * mult + increment);
-    }
-
-    Uint base_generate()()
-    {
-        return state = bump(state);
-    }
-
-    Uint base_generate0()()
-    {
-        Uint old_state = state;
-        state = bump(state);
-        return old_state;
-    }
-
-public:
-    static if (can_specify_stream)
-    ///
-    this()(Uint seed, Uint stream_ = default_increment_unset_stream!Uint)
-    {
-        state = bump(cast(Uint)(seed + increment));
-        set_stream(stream_);
-    }
-    else
-    ///
-    this()(Uint seed)
-    {
-        static if (is_mcg)
-            state = seed | 3u;
-        else
-            state = bump(cast(Uint)(seed + increment));
-    }
-
-    ///
-    ReturnType!output opCall()()
-    {
-        static if(output_previous)
-            return output(base_generate0());
-        else
-            return output(base_generate());
-    }
-
-    ///
-    void skip()(Uint delta)
-    {
-        // The method used here is based on Brown, "Random Number Generation
-        // with Arbitrary Stride,", Transactions of the American Nuclear
-        // Society (Nov. 1994).  The algorithm is very similar to fast
-        // exponentiation.
-        //
-        // Even though delta is an unsigned integer, we can pass a
-        // signed integer to go backwards, it just goes "the long way round".
-        
-        Uint acc_mult = 1, acc_plus = 0;
-        Uint cur_plus = increment, cur_mult = mult;
-        while (delta > 0)
-        {
-            if (delta & 1)
-            {
-                acc_mult *= cur_mult;
-                acc_plus = cast(Uint)(acc_plus * cur_mult + cur_plus);
-            }
-            cur_plus  *= cur_mult + 1;
-            cur_mult *= cur_mult;
-            delta >>= 1;
-        }
-        state = cast(Uint)(acc_mult*state + acc_plus);
-    }
-}
-
-/// 32-bit output PCGs with 64 bits of state.
-alias pcg32        = PermutedCongruentialEngine!(xsh_rr!(uint,ulong),stream_t.specific,true);
-/// ditto
-alias pcg32_unique = PermutedCongruentialEngine!(xsh_rr!(uint,ulong),stream_t.unique,true);
-/// ditto
-alias pcg32_oneseq = PermutedCongruentialEngine!(xsh_rr!(uint,ulong),stream_t.oneseq,true);
-/// ditto
-alias pcg32_fast   = PermutedCongruentialEngine!(xsh_rr!(uint,ulong),stream_t.none,true);
-
-static if (__traits(compiles, ucent.max))
-{
-    /// 64-bit output PCGs with 128 bits of state. Requires `ucent` type.
-    alias pcg64        = PermutedCongruentialEngine!(xsh_rr!(ulong,ucent),stream_t.specific,true);
-    ///
-    alias pcg64_unique = PermutedCongruentialEngine!(xsh_rr!(ulong,ucent),stream_t.unique,true);
-    ///
-    alias pcg64_oneseq = PermutedCongruentialEngine!(xsh_rr!(ulong,ucent),stream_t.oneseq,true);
-    ///
-    alias pcg64_fast   = PermutedCongruentialEngine!(xsh_rr!(ulong,ucent),stream_t.none,true);
-}
-
-/// PCGs with n bits output and n bits of state.
-alias pcg8_once_insecure  = PermutedCongruentialEngine!(rxs_m_xs_forward!(ubyte ,ubyte ),stream_t.specific,true);
-/// ditto
-alias pcg16_once_insecure = PermutedCongruentialEngine!(rxs_m_xs_forward!(ushort,ushort),stream_t.specific,true);
-/// ditto
-alias pcg32_once_insecure = PermutedCongruentialEngine!(rxs_m_xs_forward!(uint  ,uint  ),stream_t.specific,true);
-/// ditto
-alias pcg64_once_insecure = PermutedCongruentialEngine!(rxs_m_xs_forward!(ulong,ulong  ),stream_t.specific,true);
-//alias pcg128_once_insecure = PermutedCongruentialEngine!(rxs_m_xs_forward!(ucent,ucent,stream_t.specific,true);
-
-/// As above but the increment is not dynamically setable.
-alias pcg8_oneseq_once_insecure = PermutedCongruentialEngine!(rxs_m_xs_forward!(ubyte ,ubyte ),stream_t.oneseq,true);
-/// ditto
-alias pcg16_oneseq_once_insecure = PermutedCongruentialEngine!(rxs_m_xs_forward!(ushort,ushort),stream_t.oneseq,true);
-/// ditto
-alias pcg32_oneseq_once_insecure = PermutedCongruentialEngine!(rxs_m_xs_forward!(uint  ,uint  ),stream_t.oneseq,true);
-/// ditto
-alias pcg64_oneseq_once_insecure = PermutedCongruentialEngine!(rxs_m_xs_forward!(ulong,ulong  ),stream_t.oneseq,true);
-/// ditto
-/// Requires `ucent` type.
-static if (__traits(compiles, ucent.max))
-alias pcg128_oneseq_once_insecure = PermutedCongruentialEngine!(rxs_m_xs_forward!(ucent,ucent  ),stream_t.specific,true);
 
 private alias AliasSeq(T...) = T;
 
