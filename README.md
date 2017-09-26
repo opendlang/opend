@@ -19,7 +19,7 @@ Documentation: http://docs.random.dlang.io/latest/index.html
 /+ dub.json:
 {
     "name": "test_random",
-    "dependencies": {"mir": "0.22.0"}
+    "dependencies": {"mir-random": "~>0.2.5"}
 }
 +/
 
