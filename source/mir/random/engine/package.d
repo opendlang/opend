@@ -162,7 +162,7 @@ version(linux)
 
     // checks whether the Linux kernel supports getRandom by looking at the
     // reported version
-    private auto initHasGetRandom() @nogc @trusted nothrow
+    private auto initHasGetRandom()() @nogc @trusted nothrow
     {
         import core.stdc.string : strtok;
         import core.stdc.stdlib : atoi;
@@ -210,7 +210,7 @@ version(linux)
         interrupted by signals.  No such guarantees apply for larger buffer
         sizes.
     */
-    private ptrdiff_t genRandomImplSysBlocking(void* ptr, size_t len) @nogc @trusted nothrow
+    private ptrdiff_t genRandomImplSysBlocking()(void* ptr, size_t len) @nogc @trusted nothrow
     {
         while (len > 0)
         {
@@ -233,7 +233,7 @@ version(linux)
     *   getrandom() does not block in these cases, but instead
     *   immediately returns -1 with errno set to EAGAIN.
     */
-    private ptrdiff_t genRandomImplSysNonBlocking(void* ptr, size_t len) @nogc @trusted nothrow
+    private ptrdiff_t genRandomImplSysNonBlocking()(void* ptr, size_t len) @nogc @trusted nothrow
     {
         return syscall(GETRANDOM, cast(size_t) ptr, len, GRND_NONBLOCK);
     }
@@ -267,7 +267,7 @@ version(Posix)
        When the entropy pool is empty, reads from /dev/random will block
        until additional environmental noise is gathered.
     */
-    private ptrdiff_t genRandomImplFileBlocking(void* ptr, size_t len) @nogc @trusted nothrow
+    private ptrdiff_t genRandomImplFileBlocking()(void* ptr, size_t len) @nogc @trusted nothrow
     {
         if (fdRandom is null)
         {
@@ -303,7 +303,7 @@ version(Posix)
        When read during early boot time, /dev/urandom may return data prior
        to the entropy pool being initialized.
     */
-    private ptrdiff_t genRandomImplFileNonBlocking(void* ptr, size_t len) @nogc @trusted nothrow
+    private ptrdiff_t genRandomImplFileNonBlocking()(void* ptr, size_t len) @nogc @trusted nothrow
     {
         if (fdURandom is null)
         {
@@ -344,7 +344,7 @@ version(Windows)
 
     private __gshared ULONG_PTR hProvider;
 
-    private auto initGetRandom() @nogc @trusted nothrow
+    private auto initGetRandom()() @nogc @trusted nothrow
     {
         import core.sys.windows.winbase : GetLastError;
         import core.sys.windows.winerror : NTE_BAD_KEYSET;
@@ -371,20 +371,15 @@ version(Windows)
 
         return 0;
     }
-
-    ///
-    extern(C) shared static ~this()
-    {
-        if (hProvider > 0)
-            CryptReleaseContext(hProvider, 0);
-    }
 }
 
-/**
-Initialize the mir random engines.
+/++
+Constructs the mir random seed generators.
 This constructor needs to be called once $(I before)
 other calls in `mir.random.engine`.
-*/
+
+Automatically called by DRuntime.
++/
 extern(C) void mir_random_engine_ctor()
 {
     version(Windows)
@@ -394,21 +389,43 @@ extern(C) void mir_random_engine_ctor()
     }
 
     version(linux)
-    with(GET_RANDOM)
     {
-        if (hasGetRandom == UNINTIALIZED)
-            hasGetRandom = initHasGetRandom ? AVAILABLE : NOT_AVAILABLE;
+        with(GET_RANDOM)
+        {
+            if (hasGetRandom == UNINTIALIZED)
+                hasGetRandom = initHasGetRandom ? AVAILABLE : NOT_AVAILABLE;
+        }
     }
-
 }
 
-// automatically calls the extern(C) module initializer
+/++
+Destructs the mir random seed generators.
+
+Automatically called by DRuntime.
++/
+extern(C) void mir_random_engine_dtor()
+{
+    version(Windows)
+    {
+        if (hProvider > 0)
+            CryptReleaseContext(hProvider, 0);
+    }
+}
+
+/// Automatically calls the extern(C) module constructor
 extern(C) shared static this()
 {
     mir_random_engine_ctor();
 }
 
-/**
+/// Automatically calls the extern(C) module destructor
+extern(C) shared static ~this()
+{
+    mir_random_engine_dtor();
+}
+
+
+/++
 Fills a buffer with random data.
 If not enough entropy has been gathered, it will block.
 
@@ -418,7 +435,7 @@ Params:
 
 Returns:
     A non-zero integer if an error occurred.
-*/
++/
 extern(C) ptrdiff_t mir_random_genRandomBlocking(void* ptr , size_t len) @nogc @trusted nothrow
 {
     version(Windows)
@@ -469,7 +486,7 @@ alias genRandomBlocking = mir_random_genRandomBlocking;
     assert(sum > 0, "Only zero points generated");
 }
 
-/**
+/++
 Fills a buffer with random data.
 If not enough entropy has been gathered, it won't block.
 Hence the error code should be inspected.
@@ -483,7 +500,7 @@ Params:
 
 Returns:
     The number of bytes filled - a negative number of an error occurred
-*/
++/
 extern(C) size_t mir_random_genRandomNonBlocking(void* ptr, size_t len) @nogc @trusted nothrow
 {
     version(Windows)
