@@ -49,6 +49,10 @@ $(BOOKTABLE ,
         $(TD $(HTTP en.wikipedia.org/wiki/Mersenne_Twister, Mersenne Twister)  generator.)
     )
     $(TR
+        $(TDNW $(MREF mir,random,engine,pcg))
+        $(TD $(HTTP www.pcg-random.org, Permuted Congruential)  generator.)
+    )
+    $(TR
         $(TDNW $(MREF mir,random,engine,xorshift))
         $(TD $(HTTP en.wikipedia.org/wiki/Xorshift, Xorshift) generator.)
     )

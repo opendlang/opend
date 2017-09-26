@@ -4,7 +4,8 @@
 		"Ilya Yaroshenko",
 		"Sebastian Wilzbach",
 		"Andrei Alexandrescu",
-		"Masahiro Nakagawa"
+		"Masahiro Nakagawa",
+		"Nicholas Wilson"
 	],
 	"description": "Dlang Random Number Generators",
 	"copyright": "Copyright © 2016-2017, Ilya Yaroshenko, see also copyright per file",
