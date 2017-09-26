@@ -17,8 +17,8 @@ $(BOOKTABLE $(H2 Multidimensional Random Variables),
     $(RVAR MultivariateNormal, $(WIKI_D Multivariate_normal))
 )
 
-Authors: Simon Bürger
-Copyright: Copyright, Simon Bürger, 2017-.
+Authors: Simon Bürger, Ilya Yaroshenko
+Copyright: Mir Community 2017-.
 License:    $(HTTP www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
 
 Macros:
@@ -35,19 +35,14 @@ import mir.math.common;
 import mir.ndslice;
 
 /++
-$(Uniform distribution on a sphere).
+Uniform distribution on a sphere.
 Returns: `X ~ 1` with `X[0]^^2 + .. + X[$-1]^^2 = 1`
 +/
 struct SphereVariable(T)
     if (isFloatingPoint!T)
 {
-    import mir.random.variable : NormalVariable;
-    import mir.math.sum : sum;
-
     ///
     enum isRandomVariable = true;
-
-    private NormalVariable!T norm;
 
     ///
     void opCall(G)(ref G gen, T[] result)
@@ -56,13 +51,21 @@ struct SphereVariable(T)
     }
 
     ///
-    void opCall(G, SliceKind kind, Iterator)(ref G gen, Slice!(kind, [1], Iterator) result)
+    void opCall(G, SliceKind kind)(ref G gen, Slice!(kind, [1], T*) result)
         if (isSaturatedRandomEngine!G)
     {
+        import mir.math.sum : Summator, Summation;
+        import mir.random.variable : NormalVariable;
+
         assert(result.length);
-        for(size_t i = 0; i < result.length; ++i)
-            result[i] = norm(gen);
-        result[] /= result.map!"a*a".sum!"kbn".sqrt;
+        Summator!(T, Summation.kbn) summator = 0;
+        auto norm = NormalVariable!T(0, 1);
+        foreach (ref e; result)
+        {
+            auto x = e = norm(gen);
+            summator += x * x;
+        }
+        result[] /= summator.sum.sqrt;
     }
 }
 
@@ -73,19 +76,16 @@ unittest
     SphereVariable!double rv;
     double[2] x;
     rv(gen, x);
-    assert(fabs(x[0]*x[0] + x[1]*x[1] - 1) < 1e-10);
+    assert(fabs(x[0] * x[0] + x[1] * x[1] - 1) < 1e-10);
 }
 
 /++
-$(Uniform distribution on a simplex).
+Uniform distribution on a simplex.
 Returns: `X ~ 1` with `X[i] >= 0` and `X[0] + .. + X[$-1] = 1`
 +/
 struct SimplexVariable(T)
     if (isFloatingPoint!T)
 {
-    import mir.ndslice.sorting : sort;
-    import mir.math.sum : sum;
-
     ///
     enum isRandomVariable = true;
 
@@ -96,18 +96,18 @@ struct SimplexVariable(T)
     }
 
     ///
-    void opCall(G, SliceKind kind, Iterator)(ref G gen, Slice!(kind, [1], Iterator) result)
+    void opCall(G, SliceKind kind)(ref G gen, Slice!(kind, [1], T*) result)
         if (isSaturatedRandomEngine!G)
     {
+        import mir.ndslice.sorting : sort;
+        import mir.ndslice.topology: diff, retro;
+
         assert(result.length);
-
-        for(size_t i = 0; i < result.length; ++i)
-            result[i] = gen.rand!T.fabs;
-        result[$-1] = T(1);
-
-        sort(result[]);
-        for(size_t i = result.length-1; i > 0; --i)
-            result[i] = result[i] - result[i-1];
+        foreach (ref e; result[0 .. $ - 1])
+            e = gen.rand!T.fabs;
+        result.back = T(1);
+        sort(result[0 .. $ - 1]);
+        result[1 .. $].retro[] = result.diff.retro;
     }
 }
 
@@ -123,31 +123,33 @@ unittest
 }
 
 /++
-$(Dirichlet distribution).
+Dirichlet distribution.
 +/
-struct DirichletVariable(T, AlphaParams = const(T)[])
+struct DirichletVariable(T)
     if (isFloatingPoint!T)
 {
     import mir.random.variable : GammaVariable;
-    import mir.math.sum : sum;
 
     ///
     enum isRandomVariable = true;
 
-    private AlphaParams alpha;
+    ///
+    Slice!(Contiguous, [1], const(T)*) alpha;
 
     /++
     Params:
-        alpha = (array of) concentration parameters
+        alpha = concentration parameters
     Constraints: `alpha[i] > 0`
     +/
-    this(AlphaParams alpha)
+    this()(Slice!(Contiguous, [1], const(T)*) alpha)
     {
-        assert(alpha.length >= 1);
-        for(size_t i = 0; i < alpha.length; ++i)
-            assert(alpha[i] > T(0));
-
         this.alpha = alpha;
+    }
+
+    /// ditto
+    this()(const(T)[] alpha)
+    {
+        this.alpha = alpha.sliced;
     }
 
     ///
@@ -161,9 +163,11 @@ struct DirichletVariable(T, AlphaParams = const(T)[])
         if (isSaturatedRandomEngine!G)
     {
         assert(result.length == alpha.length);
-        for(size_t i = 0; i < result.length; ++i)
-            result[i] = GammaVariable!T(alpha[i])(gen);
-        result[] /= result.sum!"kbn";
+        import mir.math.sum : Summator, Summation;
+        Summator!(T, Summation.kbn) summator = 0;
+        foreach (size_t i; 0 .. result.length)
+            summator += result[i] = GammaVariable!T(alpha[i])(gen);
+        result[] /= summator.sum;
     }
 }
 
@@ -190,32 +194,31 @@ private bool cholesky(SliceKind kind, Iterator)(Slice!(kind, [2], Iterator) m)
 
     /* this is a straight-forward implementation of the Cholesky-Crout algorithm
     from https://en.wikipedia.org/wiki/Cholesky_decomposition#Computation */
-    for(size_t i = 0; i < m.length!0; ++i)
+    foreach(size_t i; 0 .. m.length)
     {
-        for(size_t j = 0; j < i; ++j)
-            m[i,j] = dotm(m[i,j], m[i,0..j], m[j,0..j]) / m[j,j];
-        m[i,i] = dotm(m[i,i], m[i,0..i], m[i,0..i]);
-        if(!(m[i,i] > 0)) // this catches nan's as well
+        auto r = m[i];
+        foreach(size_t j; 0 .. i)
+            r[j] = (r[j] - reduce!"a + b * c"(typeof(r[j])(0), r[0 .. j], m[j, 0 .. j])) / m[j, j];
+        r[i] -= reduce!"a + b * b"(typeof(r[i])(0), r[0 .. i]);
+        if(!(r[i] > 0)) // this catches nan's as well
             return false;
-        m[i,i] = sqrt(m[i,i]);
+        r[i] = sqrt(r[i]);
     }
     return true;
 }
 
 /++
-$(Multivariate normal distribution).
+Multivariate normal distribution.
 +/
-struct MultivariateNormalVariable(T, MuParams = const(T)[], SigmaParams = ContiguousMatrix!T)
+struct MultivariateNormalVariable(T)
     if(isFloatingPoint!T)
 {
-    import mir.random.variable : NormalVariable;
-
     ///
     enum isRandomVariable = true;
 
-    private MuParams mu; // mean vector (can be empty)
-    private SigmaParams sigma; // cholesky decomposition of covariance matrix
-    private NormalVariable!T norm;
+    private size_t n;
+    private const(T)* sigma; // cholesky decomposition of covariance matrix
+    private const(T)* mu; // mean vector (can be empty)
 
     /++
     Constructor computes the Cholesky decomposition of `sigma` in place without
@@ -229,7 +232,7 @@ struct MultivariateNormalVariable(T, MuParams = const(T)[], SigmaParams = Contig
 
     Constraints: sigma has to be positive-definite
     +/
-    this(MuParams mu, SigmaParams sigma, bool chol = false)
+    this()(Slice!(Contiguous, [1], const(T)*) mu, Slice!(Contiguous, [2], T*) sigma, bool chol = false)
     {
         assert(mu.length == sigma.length!0);
         assert(mu.length == sigma.length!1);
@@ -237,21 +240,22 @@ struct MultivariateNormalVariable(T, MuParams = const(T)[], SigmaParams = Contig
         if(!chol && !cholesky(sigma))
             assert(false, "covariance matrix not positive definite");
 
-        this.mu = mu;
-        this.sigma = sigma;
-        this.norm = NormalVariable!T(0, 1);
+        this.n = sigma.length;
+        this.mu = mu.iterator;
+        this.sigma = sigma.iterator;
     }
 
     /++ ditto +/
-    this(SigmaParams sigma, bool chol = false)
+    this()(Slice!(Contiguous, [2], T*) sigma, bool chol = false)
     {
         assert(sigma.length!0 == sigma.length!1);
 
         if(!chol && !cholesky(sigma))
             assert(false, "covariance matrix not positive definite");
 
-        this.sigma = sigma;
-        this.norm = NormalVariable!T(0, 1);
+        this.n = sigma.length;
+        this.mu = null;
+        this.sigma = sigma.iterator;
     }
 
     ///
@@ -261,19 +265,20 @@ struct MultivariateNormalVariable(T, MuParams = const(T)[], SigmaParams = Contig
     }
 
     ///
-    void opCall(G, SliceKind kind, Iterator)(ref G gen, Slice!(kind, [1], Iterator) result)
+    void opCall(G, SliceKind kind)(ref G gen, Slice!(kind, [1], T*) result)
         if (isSaturatedRandomEngine!G)
     {
-        alias dot = reduce!"a + b * c";
-        assert(result.length == sigma.length!0);
-        for(size_t i = 0; i < result.length; ++i)
-            result[i] = norm(gen);
-        if(mu.length)
-            for(size_t i = result.length; i > 0; --i)
-                result[i-1] = dot(mu[i-1], sigma[i-1,0..i], result[0..i]);
-        else
-            for(size_t i = result.length; i > 0; --i)
-                result[i-1] = dot(T(0), sigma[i-1,0..i], result[0..i]);
+        assert(result.length == n);
+        import mir.random.variable : NormalVariable;
+        auto norm = NormalVariable!T(0, 1);
+
+        auto s = sigma.sliced(n, n);
+        foreach(ref e; result)
+            e = norm(gen);
+        foreach_reverse(size_t i; 0 .. n - 1)
+            result[i] = reduce!"a + b * c"(T(0), s[i, 0 .. i + 1], result[0 .. i + 1]);
+        if (mu)
+            result[] += mu.sliced(n);
     }
 }
 
@@ -281,9 +286,9 @@ struct MultivariateNormalVariable(T, MuParams = const(T)[], SigmaParams = Contig
 unittest
 {
     auto gen = Random(unpredictableSeed);
-    auto mu = [0.0, 0.0];
+    auto mu = [10.0, 0.0].sliced;
     auto sigma = [2.0, -1.5, -1.5, 2.0].sliced(2,2);
     auto rv = MultivariateNormalVariable!double(mu, sigma);
     double[2] x;
-    rv(gen, x);
+    rv(gen, x[]);
 }
