@@ -1,11 +1,11 @@
 /++
  + Permuted Congruential Generator (PCG)
  +
- + Implemeted as per the C++ version of PCG. see $(HTTP www.pcg-random.org)
+ + Implemeted as per the C++ version of PCG, $(HTTP www.pcg-random.org).
  +
- + Paper available http://www.pcg-random.org/paper.html
+ + Paper available $(HTTP www.pcg-random.org/paper.html)
  +
- + Author C++: Melissa O'Neill. D translation Nicholas Wilson.
+ + Author:  Melissa O'Neill (C++). D translation Nicholas Wilson.
  +
  + PCG Random Number Generation for C++
  +
@@ -15,7 +15,7 @@
  + you may not use this file except in compliance with the License.
  + You may obtain a copy of the License at
  +
- +     http://www.apache.org/licenses/LICENSE-2.0
+ +     $(HTTP www.apache.org/licenses/LICENSE-2.0)
  +
  + Unless required by applicable law or agreed to in writing, software
  + distributed under the License is distributed on an "AS IS" BASIS,
@@ -26,7 +26,7 @@
  + For additional information about the PCG random number generation scheme,
  + including its license and other licensing options, visit
  +
- +     http://www.pcg-random.org
+ +     $(HTTP www.pcg-random.org)
  +/
 module mir.random.engine.pcg;
 
