@@ -1,7 +1,7 @@
 /++
 $(SCRIPT inhibitQuickIndex = 1;)
 
-$(BOOKTABLE $(H2 Utilities),
+$(BOOKTABLE $(H2 Utilities)
 
     $(TR $(TH Name), $(TH Description))
     $(T2 isRandomVariable, Trait)
