@@ -74,7 +74,7 @@ void main(){
  - Any unsigned generators are allowed.
  - `min` property was removed. Any integer generator can normalize its minimum down to zero.
  - Mt19937: +100% performance for initialization. (merged to Phobos)
- - Mt19937: +54% performance for generation.
+ - Mt19937: +54% performance for generation. (merged to Phobos)
  - Mt19937: fixed to be more CPU cache friendly. (merged to Phobos)
  - 64-bit Mt19937 initialization is fixed
  - 64-bit Mt19937 is default for 64-bit targets
