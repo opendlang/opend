@@ -111,7 +111,7 @@ extern(System)
     alias @nogc nothrow cl_int function(cl_command_queue, cl_uint, const(cl_event*), cl_event*) da_clEnqueueBarrierWithWaitList;
     alias @nogc nothrow void* function(cl_platform_id, const(char*)) da_clGetExtensionFunctionAddressForPlatform;
     // OpenCL 2.0
-    alias @nogc nothrow cl_command_queue function(cl_context, cl_device_id, const cl_queue_properties *, cl_int*) da_clCreateCommandQueueWithProperties
+    alias @nogc nothrow cl_command_queue function(cl_context, cl_device_id, const cl_queue_properties *, cl_int*) da_clCreateCommandQueueWithProperties;
     alias @nogc nothrow cl_mem function(cl_context, cl_mem_flags, cl_uint, cl_uint, const cl_pipe_properties*, cl_int*) da_clCreatePipe;
     alias @nogc nothrow cl_int function(cl_mem, cl_pipe_info, size_t, void*, size_t*) da_clGetPipeInfo;
     alias @nogc nothrow void* function(cl_context, cl_svm_mem_flags, size_t, cl_uint) da_clSVMAlloc;
@@ -121,6 +121,7 @@ extern(System)
     alias @nogc nothrow cl_int function(cl_kernel, cl_kernel_exec_info, size_t, const void *) da_clSetKernelExecInfo;
     alias @nogc nothrow cl_int function(cl_command_queue, cl_uint, void**, void function(cl_command_queue, cl_uint, void**, void*), void*, cl_uint, const cl_event*, cl_event*) da_clEnqueueSVMFree;
     alias @nogc nothrow cl_int function(cl_command_queue, cl_bool, void*, const void*, size_t, cl_uint, const cl_event*, cl_event*) da_clEnqueueSVMMemcpy;
+	alias @nogc nothrow cl_int function(cl_command_queue,void*, const void*, size_t,size_t, cl_uint, const cl_event*, cl_event*) da_clEnqueueSVMMemFill;
     alias @nogc nothrow cl_int function(cl_command_queue, cl_bool, cl_map_flags, void*, size_t, cl_uint, const cl_event*, cl_event*) da_clEnqueueSVMMap;
     alias @nogc nothrow cl_int function(cl_command_queue, void *, cl_uint,const cl_event*, cl_event*) da_clEnqueueSVMUnmap;
     // OpenCL 2.1
