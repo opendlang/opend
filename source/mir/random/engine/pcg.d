@@ -657,7 +657,7 @@ O xsl(O, Uint)(Uint state) if(Uint.sizeof > 8)
 
 private alias AliasSeq(T...) = T;
 
-@safe unittest
+@safe version(mir_random_test) unittest
 {
     
     foreach(RNG; AliasSeq!(pcg32,pcg32_unique,pcg32_oneseq,pcg32_fast,
@@ -669,7 +669,7 @@ private alias AliasSeq(T...) = T;
         gen();
     }
 }
-@safe unittest
+@safe version(mir_random_test) unittest
 {
     auto gen = pcg32(0x198c8585);
     gen.skip(1000);

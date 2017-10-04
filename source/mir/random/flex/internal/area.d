@@ -157,7 +157,7 @@ void determineSqueezeAndHat(S)(ref Interval!S iv)
     }
 }
 
-unittest
+version(mir_random_test) unittest
 {
     import std.meta : AliasSeq;
     import mir.random.flex.internal.types: determineType;
@@ -191,7 +191,7 @@ unittest
 }
 
 // test undefined type
-unittest
+version(mir_random_test) unittest
 {
     import std.math : fabs, log;
     import mir.random.flex.internal.transformations : transformInterval;
@@ -222,7 +222,7 @@ unittest
 }
 
 // T4a with infinity
-unittest
+version(mir_random_test) unittest
 {
     alias S = double;
     static import std.math;
@@ -438,7 +438,7 @@ body
 
 // example from Botts et al. (2013) (distribution 1)
 // split up into all three floating-point types
-unittest
+version(mir_random_test) unittest
 {
     import mir.random.flex.internal.transformations : transformInterval;
     import mir.random.flex.internal.types : determineType;
@@ -526,7 +526,7 @@ unittest
     }
 }
 
-unittest
+version(mir_random_test) unittest
 {
     import mir.random.flex.internal.transformations : transformInterval;
     import mir.random.flex.internal.types : determineType;
@@ -614,7 +614,7 @@ unittest
     }
 }
 
-unittest
+version(mir_random_test) unittest
 {
     import mir.random.flex.internal.transformations : transformInterval;
     import mir.random.flex.internal.types : determineType;
@@ -716,7 +716,7 @@ unittest
 }
 
 // standard normal distribution
-unittest
+version(mir_random_test) unittest
 {
     import mir.random.flex.internal.transformations : transformInterval;
     import mir.random.flex.internal.types : determineType;
@@ -810,7 +810,7 @@ unittest
 }
 
 // distribution 3
-unittest
+version(mir_random_test) unittest
 {
     import mir.random.flex.internal.transformations : transformInterval;
     import mir.random.flex.internal.types : determineType;
@@ -889,7 +889,7 @@ unittest
 }
 
 // distribution 4
-unittest
+version(mir_random_test) unittest
 {
     import mir.random.flex.internal.transformations : transformInterval;
     import mir.random.flex.internal.types : determineType;
@@ -960,7 +960,7 @@ unittest
 }
 
 // distribution 4 with less points
-unittest
+version(mir_random_test) unittest
 {
     import mir.random.flex.internal.transformations : transformInterval;
     import mir.random.flex.internal.types : determineType;
@@ -1036,7 +1036,7 @@ unittest
 }
 
 // distribution 3 with other boundaries
-unittest
+version(mir_random_test) unittest
 {
     import mir.random.flex.internal.transformations : transformInterval;
     import mir.random.flex.internal.types : determineType;

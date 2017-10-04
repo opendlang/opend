@@ -78,7 +78,7 @@ body
 }
 
 // example from Botts et al. (2013)
-unittest
+version(mir_random_test) unittest
 {
     import std.math: approxEqual;
     import std.meta : AliasSeq;
@@ -101,7 +101,7 @@ unittest
 }
 
 // test for c=1
-unittest
+version(mir_random_test) unittest
 {
     import std.math: approxEqual;
     import std.meta : AliasSeq;
@@ -133,7 +133,7 @@ unittest
 }
 
 // test for c=-1
-unittest
+version(mir_random_test) unittest
 {
     import std.math: approxEqual;
     import std.meta : AliasSeq;
@@ -167,7 +167,7 @@ unittest
 }
 
 // test for c=0
-unittest
+version(mir_random_test) unittest
 {
     import std.math: approxEqual;
     import std.meta : AliasSeq;
@@ -196,7 +196,7 @@ unittest
 }
 
 // test with exact values
-unittest
+version(mir_random_test) unittest
 {
     alias S = float;
     S c = -0.9;
@@ -254,7 +254,7 @@ body
     return v * p;
 }
 
-unittest
+version(mir_random_test) unittest
 {
     import std.math: E, approxEqual;
     import std.meta : AliasSeq;
@@ -265,7 +265,7 @@ unittest
     }
 }
 
-unittest
+version(mir_random_test) unittest
 {
     import std.math;
     import std.meta : AliasSeq;
@@ -297,7 +297,7 @@ unittest
     }
 }
 
-unittest
+version(mir_random_test) unittest
 {
     import std.math;
     import std.meta : AliasSeq;
@@ -348,7 +348,7 @@ S inverseAntiderivative(S)(in S x, in S c)
     return pow(d / fabs(c) * x, c / d).copysign(c);
 }
 
-unittest
+version(mir_random_test) unittest
 {
     import std.math: approxEqual, E, isNaN;
     import std.meta : AliasSeq;
@@ -371,7 +371,7 @@ unittest
     }
 }
 
-unittest
+version(mir_random_test) unittest
 {
     import std.math;
     import std.meta : AliasSeq;
@@ -408,7 +408,7 @@ unittest
     }
 }
 
-unittest
+version(mir_random_test) unittest
 {
     import std.math;
     import std.meta : AliasSeq;

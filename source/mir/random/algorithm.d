@@ -81,7 +81,7 @@ RandomField!G field(G)(ref G gen)
 }
 
 /// Normal distribution
-unittest
+version(mir_random_test) unittest
 {
     import mir.ndslice: slicedField, slice;
     import mir.random;
@@ -99,7 +99,7 @@ unittest
 }
 
 /// Normal distribution for complex numbers
-unittest
+version(mir_random_test) unittest
 {
     import mir.ndslice: slicedField, slice;
     import mir.random;
@@ -117,7 +117,7 @@ unittest
 }
 
 /// Bi
-unittest
+version(mir_random_test) unittest
 {
     import mir.ndslice: slicedField, slice;
     import mir.random.engine.xorshift;
@@ -190,7 +190,7 @@ RandomRange!G range(G)(ref G gen)
 }
 
 ///
-unittest
+version(mir_random_test) unittest
 {
     import std.range : take, array;
 
@@ -208,7 +208,7 @@ unittest
 }
 
 /// Uniform random bit generation
-unittest
+version(mir_random_test) unittest
 {
     import std.range, std.algorithm;
     import mir.random.engine.xorshift;
@@ -351,7 +351,7 @@ struct VitterStrides
 }
 
 ///
-unittest
+version(mir_random_test) unittest
 {
     import mir.random.engine.xorshift;
     auto gen = Xorshift(112);
@@ -381,7 +381,7 @@ auto sample(Range, G)(Range range, ref G gen, size_t n)
 }
 
 ///
-unittest
+version(mir_random_test) unittest
 {
     import std.range;
     import mir.random.engine.xorshift;
@@ -394,7 +394,7 @@ unittest
     }
 }
 
-unittest
+version(mir_random_test) unittest
 {
     import std.algorithm.comparison;
     import std.range;
@@ -459,7 +459,7 @@ void shuffle(Range, G)(ref G gen, Range range)
 }
 
 ///
-unittest
+version(mir_random_test) unittest
 {
     import mir.ndslice.allocation: slice;
     import mir.ndslice.topology: iota;
@@ -498,7 +498,7 @@ void shuffle(Range, G)(ref G gen, Range range, size_t n)
 }
 
 ///
-unittest
+version(mir_random_test) unittest
 {
     import mir.ndslice.allocation: slice;
     import mir.ndslice.topology: iota;

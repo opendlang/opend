@@ -225,7 +225,7 @@ Can be used to sample from the distribution.
 }
 
 ///
-unittest
+version(mir_random_test) unittest
 {
     import std.math : approxEqual;
     import std.meta : AliasSeq;
@@ -241,7 +241,7 @@ unittest
     auto value = tf(gen);
 }
 
-version(X86_64) unittest
+version(X86_64) version(mir_random_test) unittest
 {
     import std.meta : AliasSeq;
     import std.math : approxEqual, PI;
@@ -292,7 +292,7 @@ version(X86_64) unittest
     }
 }
 
-version(X86_64) unittest
+version(X86_64) version(mir_random_test) unittest
 {
     import std.math : approxEqual, pow;
     import std.meta : AliasSeq;
@@ -460,7 +460,7 @@ private S flexImpl(S, Pdf, RNG)
 }
 
 version(X86_64) version(DigitalMars)
-unittest
+version(mir_random_test) unittest
 {
     import std.math : approxEqual, pow, log;
     import std.meta : AliasSeq;
@@ -506,7 +506,7 @@ unittest
 }
 
 version(X86_64) version(DigitalMars)
-unittest
+version(mir_random_test) unittest
 {
     import std.math : approxEqual, pow;
     import std.meta : AliasSeq;
@@ -830,7 +830,7 @@ body
 }
 
 // default flex with c=1.5
-unittest
+version(mir_random_test) unittest
 {
     import std.algorithm : equal, map;
     import std.math : approxEqual;
@@ -876,7 +876,7 @@ unittest
 }
 
 // default flex with c=1
-unittest
+version(mir_random_test) unittest
 {
     import std.algorithm : equal, map;
     import std.math : approxEqual;
@@ -920,7 +920,7 @@ unittest
 }
 
 // default flex with custom c's
-unittest
+version(mir_random_test) unittest
 {
     import std.algorithm : equal, map;
     import std.math : approxEqual;
@@ -957,7 +957,7 @@ unittest
 }
 
 // test standard normal distribution
-version(X86_64) unittest
+version(X86_64) version(mir_random_test) unittest
 {
     import mir.math.common : exp, sqrt;
     import std.algorithm : equal, map;
@@ -981,7 +981,7 @@ version(X86_64) unittest
     }
 }
 
-version(X86_64) unittest
+version(X86_64) version(mir_random_test) unittest
 {
     import std.algorithm : equal, map;
     import std.array : array;
@@ -1060,7 +1060,7 @@ S flexInverse(bool common = false, S)(in S x, in S c)
     return pow(fabs(x), 1 / c);
 }
 
-unittest
+version(mir_random_test) unittest
 {
     import std.math: E, approxEqual;
     import std.meta : AliasSeq;
@@ -1076,7 +1076,7 @@ unittest
     }
 }
 
-unittest
+version(mir_random_test) unittest
 {
     import std.math;
     import std.meta : AliasSeq;

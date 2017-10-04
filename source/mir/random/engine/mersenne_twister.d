@@ -151,7 +151,7 @@ alias Mt19937 = MersenneTwisterEngine!(uint, 32, 624, 397, 31,
                                        0xefc60000, 18, 1812433253);
 
 ///
-@safe unittest
+@safe version(mir_random_test) unittest
 {
     import mir.random.engine;
 
@@ -181,7 +181,7 @@ alias Mt19937_64 = MersenneTwisterEngine!(ulong, 64, 312, 156, 31,
                                           0xfff7eee000000000, 43, 6364136223846793005);
 
 ///
-@safe unittest
+@safe version(mir_random_test) unittest
 {
     import mir.random.engine;
 
@@ -192,7 +192,7 @@ alias Mt19937_64 = MersenneTwisterEngine!(ulong, 64, 312, 156, 31,
     static assert(is(ReturnType!gen == ulong));
 }
 
-@safe nothrow unittest
+@safe nothrow version(mir_random_test) unittest
 {
     import mir.random.engine;
 
@@ -209,7 +209,7 @@ alias Mt19937_64 = MersenneTwisterEngine!(ulong, 64, 312, 156, 31,
     assert(gen64() == 9981545732273789042uL);
 }
 
-unittest
+version(mir_random_test) unittest
 {
     enum val = [1341017984, 62051482162767];
     alias MT(UIntType, uint w) = MersenneTwisterEngine!(UIntType, w, 624, 397, 31,

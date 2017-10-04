@@ -65,7 +65,7 @@ The parameters of this distribution. The random number is $(D_PARAM x
         return result * n;
     }
 
-    @safe pure nothrow unittest
+    @safe pure nothrow version(mir_random_test) unittest
     {
         static assert(primeFactorsOnly(100) == 10);
         static assert(primeFactorsOnly(11) == 11);
@@ -179,7 +179,7 @@ alias MinstdRand0 = LinearCongruentialEngine!(uint, 16807, 0, 2147483647);
 alias MinstdRand = LinearCongruentialEngine!(uint, 48271, 0, 2147483647);
 
 ///
-@safe unittest
+@safe version(mir_random_test) unittest
 {
     import mir.random.engine;
     // seed with a constant
@@ -193,7 +193,7 @@ alias MinstdRand = LinearCongruentialEngine!(uint, 48271, 0, 2147483647);
     static assert(is(ReturnType!rnd0 == uint));
 }
 
-unittest
+version(mir_random_test) unittest
 {
     import mir.random.engine;
     static assert(isRandomEngine!MinstdRand);

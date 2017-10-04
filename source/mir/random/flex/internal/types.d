@@ -220,7 +220,7 @@ body
     }
 }
 
-unittest
+version(mir_random_test) unittest
 {
     import std.meta : AliasSeq;
     foreach (S; AliasSeq!(float, double, real)) with(FunType)
@@ -240,7 +240,7 @@ unittest
 }
 
 // test x^3
-unittest
+version(mir_random_test) unittest
 {
     import std.meta : AliasSeq;
     foreach (S; AliasSeq!(float, double, real)) with(FunType)
@@ -264,7 +264,7 @@ unittest
 }
 
 // test sin(x)
-unittest
+version(mir_random_test) unittest
 {
     import std.math: PI;
     // due to numerical errors a small padding must be added
@@ -318,7 +318,7 @@ unittest
     }
 }
 
-unittest
+version(mir_random_test) unittest
 {
     import std.meta : AliasSeq;
     foreach (S; AliasSeq!(float, double, real)) with(FunType)
@@ -464,7 +464,7 @@ LinearFun!S linearFun(S)(S slope, S y, S a)
 }
 
 /// tangent of a point
-unittest
+version(mir_random_test) unittest
 {
     import std.format : format;
     auto f = (double x) => x * x + 1;
@@ -488,7 +488,7 @@ unittest
 }
 
 /// secant of two points
-unittest
+version(mir_random_test) unittest
 {
     import std.format : format;
     auto f = (double x) => x * x + 1;
@@ -502,7 +502,7 @@ unittest
 }
 
 /// construct an arbitrary linear function
-unittest
+version(mir_random_test) unittest
 {
     import std.format : format;
 
@@ -513,7 +513,7 @@ unittest
     assert(t(-2) == -3);
 }
 
-unittest
+version(mir_random_test) unittest
 {
     import std.meta : AliasSeq;
     foreach (S; AliasSeq!(float, double, real))
@@ -530,7 +530,7 @@ unittest
     }
 }
 
-unittest
+version(mir_random_test) unittest
 {
     import std.math : cos;
     import std.math : PI, approxEqual;
@@ -550,7 +550,7 @@ unittest
 }
 
 // test default toString
-unittest
+version(mir_random_test) unittest
 {
     import std.format : format;
     auto t = linearFun!double(2, 0, 1);
@@ -558,7 +558,7 @@ unittest
 }
 
 // test NaN behavior
-unittest
+version(mir_random_test) unittest
 {
     import std.format : format;
     auto t = linearFun!double(double.nan, 0, 1);
@@ -587,7 +587,7 @@ bool approxEqual(S)(LinearFun!S x, LinearFun!S y, S maxRelDiff = 1e-2, S maxAbsD
 }
 
 ///
-unittest
+version(mir_random_test) unittest
 {
     auto x = linearFun!double(2, 0, 1);
     auto x2 = linearFun!double(2, 0, 1);

@@ -63,7 +63,7 @@ struct SphereVariable(T)
 }
 
 /// Generate random points on a circle
-unittest
+version(mir_random_test) version(mir_random_test) unittest
 {
     auto gen = Random(unpredictableSeed);
     SphereVariable!double rv;
@@ -105,7 +105,7 @@ struct SimplexVariable(T)
 }
 
 ///
-unittest
+version(mir_random_test) unittest
 {
     auto gen = Random(unpredictableSeed);
     SimplexVariable!double rv;
@@ -165,7 +165,7 @@ struct DirichletVariable(T)
 }
 
 ///
-unittest
+version(mir_random_test) unittest
 {
     auto gen = Random(unpredictableSeed);
     auto rv = DirichletVariable!double([1.0, 5.7, 0.3]);
@@ -276,7 +276,7 @@ struct MultivariateNormalVariable(T)
 }
 
 ///
-unittest
+version(mir_random_test) unittest
 {
     auto gen = Random(unpredictableSeed);
     auto mu = [10.0, 0.0].sliced;

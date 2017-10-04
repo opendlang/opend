@@ -117,7 +117,7 @@ pragma(inline, true)
 }
 
 ///
-@safe unittest
+@safe version(mir_random_test) unittest
 {
     auto rnd = Random(unpredictableSeed);
     auto n = rnd();
@@ -137,7 +137,7 @@ else
     alias Random = Mt19937_64;
 
 ///
-unittest
+version(mir_random_test) unittest
 {
     import std.traits;
     static assert(isSaturatedRandomEngine!Random);
@@ -465,7 +465,7 @@ extern(C) ptrdiff_t mir_random_genRandomBlocking(void* ptr , size_t len) @nogc @
 alias genRandomBlocking = mir_random_genRandomBlocking;
 
 ///
-@safe nothrow unittest
+@safe nothrow version(mir_random_test) unittest
 {
     ubyte[] buf = new ubyte[10];
     genRandomBlocking(&buf[0], buf.length);
@@ -474,7 +474,7 @@ alias genRandomBlocking = mir_random_genRandomBlocking;
     assert(buf.sum > 0, "Only zero points generated");
 }
 
-@nogc nothrow unittest
+@nogc nothrow version(mir_random_test) unittest
 {
     ubyte[10] buf;
     genRandomBlocking(buf.ptr, buf.length);
@@ -530,7 +530,7 @@ extern(C) size_t mir_random_genRandomNonBlocking(void* ptr, size_t len) @nogc @t
 alias genRandomNonBlocking = mir_random_genRandomNonBlocking;
 
 ///
-@safe nothrow unittest
+@safe nothrow version(mir_random_test) unittest
 {
     ubyte[] buf = new ubyte[10];
     genRandomNonBlocking(&buf[0], buf.length);
@@ -540,7 +540,7 @@ alias genRandomNonBlocking = mir_random_genRandomNonBlocking;
 }
 
 @nogc nothrow
-unittest
+version(mir_random_test) unittest
 {
     ubyte[10] buf;
     genRandomNonBlocking(buf.ptr, buf.length);

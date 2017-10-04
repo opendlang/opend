@@ -13,5 +13,11 @@
 	"dependencies": {
 		"mir-algorithm": "~>0.6.0"
 	},
+	"buildTypes": {
+		"unittest": {
+			"buildOptions": ["unittests", "debugMode", "debugInfo"],
+			"versions": ["mir_random_test"]
+		}
+	},
  	"libs-windows": ["advapi32"]
 }

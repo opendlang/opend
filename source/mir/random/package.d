@@ -72,7 +72,7 @@ T rand(T, G)(ref G gen)
 }
 
 ///
-unittest
+version(mir_random_test) unittest
 {
     import mir.random.engine.xorshift;
     auto gen = Xorshift(1);
@@ -93,7 +93,7 @@ bool rand(T : bool, G)(ref G gen)
 }
 
 ///
-unittest
+version(mir_random_test) unittest
 {
     import mir.random.engine.xorshift;
     auto gen = Xorshift(1);
@@ -137,7 +137,7 @@ T rand(T, G)(ref G gen)
 }
 
 ///
-unittest
+version(mir_random_test) unittest
 {
     import mir.random.engine.xorshift;
     auto gen = Xorshift(1);
@@ -146,7 +146,7 @@ unittest
 }
 
 ///
-unittest
+version(mir_random_test) unittest
 {
     import mir.random.engine.xorshift;
     auto gen = Xorshift(1);
@@ -155,7 +155,7 @@ unittest
 }
 
 ///
-unittest
+version(mir_random_test) unittest
 {
     import mir.random.engine.xorshift;
     auto gen = Xorshift(1);
@@ -272,7 +272,7 @@ T rand(T, G)(ref G gen, sizediff_t boundExp = 0)
 }
 
 ///
-unittest
+version(mir_random_test) unittest
 {
     import std.math: fabs;
     import mir.random.engine.xorshift;
@@ -293,7 +293,7 @@ unittest
 
 
 /// Subnormal numbers
-unittest
+version(mir_random_test) unittest
 {
     import mir.random.engine.xorshift;
     auto gen = Xorshift(1);
@@ -324,7 +324,7 @@ T randIndex(T, G)(ref G gen, T m)
 }
 
 ///
-unittest
+version(mir_random_test) unittest
 {
     import mir.random.engine.xorshift;
     auto gen = Xorshift(1);
@@ -399,7 +399,7 @@ T randExponential2(T, G)(ref G gen)
 }
 
 ///
-unittest
+version(mir_random_test) unittest
 {
     import mir.random.engine.xorshift;
     auto gen = Xorshift(cast(uint)unpredictableSeed);

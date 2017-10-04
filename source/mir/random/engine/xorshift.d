@@ -162,7 +162,7 @@ alias Xorshift192 = XorshiftEngine!(192, 2,  1,  4);  /// ditto
 alias Xorshift    = Xorshift128;                      /// ditto
 
 ///
-@safe unittest
+@safe version(mir_random_test) unittest
 {
     import mir.random.engine;
     auto rnd = Xorshift(cast(uint)unpredictableSeed);
