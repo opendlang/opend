@@ -17,6 +17,10 @@
 		"unittest": {
 			"buildOptions": ["unittests", "debugMode", "debugInfo"],
 			"versions": ["mir_random_test"]
+		},
+		"unittest-cov": {
+			"buildOptions": ["unittests", "coverage", "debugMode", "debugInfo"],
+			"versions": ["mir_random_test"]
 		}
 	},
  	"libs-windows": ["advapi32"]
