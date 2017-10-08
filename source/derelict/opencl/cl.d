@@ -145,10 +145,10 @@ class DerelictCLLoader : SharedLibLoader
 			    bindFunc(cast(void**)&clGetKernelSubGroupInfo, "clGetKernelSubGroupInfo");
             }
 
-			if(clVer >= CLVersion.CL21)
+            if(clVer >= CLVersion.CL22)
             {
                 bindFunc(cast(void**)&clSetProgramReleaseCallback, "clSetProgramReleaseCallback");
-			    bindFunc(cast(void**)&clSetProgramSpecializationConstant, "clSetProgramSpecializationConstant");
+                bindFunc(cast(void**)&clSetProgramSpecializationConstant, "clSetProgramSpecializationConstant");
             }
 
             derelict.opencl.cl_ext.reload(&bindFunc, clVer);
