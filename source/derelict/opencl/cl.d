@@ -137,18 +137,18 @@ class DerelictCLLoader : SharedLibLoader
 
             if(clVer >= CLVersion.CL21)
             {
-                bindFunc(cast(void**)&clSetDefaultDeviceCommandQueue, "clSetDefaultDeviceCommandQueue");
-                bindFunc(cast(void**)&clGetDeviceAndHostTimer, "clGetDeviceAndHostTimer");
-                bindFunc(cast(void**)&clGetHostTimer, "clGetHostTimer");
-                bindFunc(cast(void**)&clCreateProgramWithIL, "clCreateProgramWithIL");
-                bindFunc(cast(void**)&clCloneKernel, "clCloneKernel");
-                bindFunc(cast(void**)&clGetKernelSubGroupInfo, "clGetKernelSubGroupInfo");
+			    bindFunc(cast(void**)&clSetDefaultDeviceCommandQueue, "clSetDefaultDeviceCommandQueue");
+			    bindFunc(cast(void**)&clGetDeviceAndHostTimer, "clGetDeviceAndHostTimer");
+			    bindFunc(cast(void**)&clGetHostTimer, "clGetHostTimer");
+			    bindFunc(cast(void**)&clCreateProgramWithIL, "clCreateProgramWithIL");
+			    bindFunc(cast(void**)&clCloneKernel, "clCloneKernel");
+			    bindFunc(cast(void**)&clGetKernelSubGroupInfo, "clGetKernelSubGroupInfo");
             }
 
-            if(clVer >= CLVersion.CL22)
+			if(clVer >= CLVersion.CL21)
             {
                 bindFunc(cast(void**)&clSetProgramReleaseCallback, "clSetProgramReleaseCallback");
-                bindFunc(cast(void**)&clSetProgramSpecializationConstant, "clSetProgramSpecializationConstant");
+			    bindFunc(cast(void**)&clSetProgramSpecializationConstant, "clSetProgramSpecializationConstant");
             }
 
             derelict.opencl.cl_ext.reload(&bindFunc, clVer);
