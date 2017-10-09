@@ -118,6 +118,39 @@ class DerelictCLLoader : SharedLibLoader
                 bindFunc(cast(void**)&clGetExtensionFunctionAddressForPlatform, "clGetExtensionFunctionAddressForPlatform");
             }
 
+			if(clVer >= CLVersion.CL20)
+            {
+                bindFunc(cast(void**)&clCreateCommandQueueWithProperties, "clCreateCommandQueueWithProperties");
+                bindFunc(cast(void**)&clCreatePipe, "clCreatePipe");
+                bindFunc(cast(void**)&clGetPipeInfo, "clGetPipeInfo");
+                bindFunc(cast(void**)&clSVMAlloc, "clSVMAlloc");
+                bindFunc(cast(void**)&clSVMFree, "clSVMFree");
+                bindFunc(cast(void**)&clCreateSamplerWithProperties, "clCreateSamplerWithProperties");
+                bindFunc(cast(void**)&clSetKernelArgSVMPointer, "clSetKernelArgSVMPointer");
+                bindFunc(cast(void**)&clSetKernelExecInfo, "clSetKernelExecInfo");
+                bindFunc(cast(void**)&clEnqueueSVMFree, "clEnqueueSVMFree");
+                bindFunc(cast(void**)&clEnqueueSVMMemcpy, "clEnqueueSVMMemcpy");
+                bindFunc(cast(void**)&clEnqueueSVMMemFill, "clEnqueueSVMMemFill");
+                bindFunc(cast(void**)&clEnqueueSVMMap, "clEnqueueSVMMap");
+                bindFunc(cast(void**)&clEnqueueSVMUnmap, "clEnqueueSVMUnmap");
+            }
+
+            if(clVer >= CLVersion.CL21)
+            {
+			    bindFunc(cast(void**)&clSetDefaultDeviceCommandQueue, "clSetDefaultDeviceCommandQueue");
+			    bindFunc(cast(void**)&clGetDeviceAndHostTimer, "clGetDeviceAndHostTimer");
+			    bindFunc(cast(void**)&clGetHostTimer, "clGetHostTimer");
+			    bindFunc(cast(void**)&clCreateProgramWithIL, "clCreateProgramWithIL");
+			    bindFunc(cast(void**)&clCloneKernel, "clCloneKernel");
+			    bindFunc(cast(void**)&clGetKernelSubGroupInfo, "clGetKernelSubGroupInfo");
+            }
+
+            if(clVer >= CLVersion.CL22)
+            {
+                bindFunc(cast(void**)&clSetProgramReleaseCallback, "clSetProgramReleaseCallback");
+                bindFunc(cast(void**)&clSetProgramSpecializationConstant, "clSetProgramSpecializationConstant");
+            }
+
             derelict.opencl.cl_ext.reload(&bindFunc, clVer);
             derelict.opencl.cl_gl_ext.reload(&bindFunc, clVer);
             derelict.opencl.cl_gl.reload(&bindFunc, clVer);

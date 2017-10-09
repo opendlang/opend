@@ -47,16 +47,19 @@ alias cl_bitfield       cl_device_fp_config;
 alias cl_uint           cl_device_mem_cache_type;
 alias cl_uint           cl_device_local_mem_type;
 alias cl_bitfield       cl_device_exec_capabilities;
+alias cl_bitfield       cl_device_svm_capabilities;
 alias cl_bitfield       cl_command_queue_properties;
 alias ptrdiff_t         cl_device_partition_property;
 alias cl_bitfield       cl_device_affinity_domain;
 
 alias ptrdiff_t         cl_context_properties;
 alias cl_uint           cl_context_info;
+alias cl_bitfield       cl_queue_properties;
 alias cl_uint           cl_command_queue_info;
 alias cl_uint           cl_channel_order;
 alias cl_uint           cl_channel_type;
 alias cl_bitfield       cl_mem_flags;
+alias cl_bitfield       cl_svm_mem_flags;
 alias cl_uint           cl_mem_object_type;
 alias cl_uint           cl_mem_info;
 alias cl_bitfield       cl_mem_migration_flags;
@@ -66,6 +69,8 @@ alias cl_uint           cl_addressing_mode;
 alias cl_uint           cl_filter_mode;
 alias cl_uint           cl_sampler_info;
 alias cl_bitfield       cl_map_flags;
+alias ptrdiff_t         cl_pipe_properties;
+alias cl_uint           cl_pipe_info;
 alias cl_uint           cl_program_info;
 alias cl_uint           cl_program_build_info;
 alias cl_uint           cl_program_binary_type;
@@ -76,9 +81,12 @@ alias cl_uint           cl_kernel_arg_address_qualifier;
 alias cl_uint           cl_kernel_arg_access_qualifier;
 alias cl_bitfield       cl_kernel_arg_type_qualifier;
 alias cl_uint           cl_kernel_work_group_info;
+alias cl_int            cl_kernel_sub_group_info;
 alias cl_uint           cl_event_info;
 alias cl_uint           cl_command_type;
 alias cl_uint           cl_profiling_info;
+alias cl_bitfield       cl_sampler_properties;
+alias cl_uint           cl_kernel_exec_info;
 
 struct cl_image_format
 {
@@ -98,6 +106,8 @@ struct cl_image_desc
     cl_uint             num_mip_levels;
     cl_uint             num_samples;
     cl_mem              buffer;
+    //annonymous union
+    alias mem_object =  buffer;
 }
 
 struct cl_buffer_region
@@ -163,5 +173,8 @@ enum CLVersion
     CL10 = 10,
     CL11 = 11,
     CL12 = 12,
-    HighestSupported = CL12,
+    CL20 = 20,
+    CL21 = 21,
+    CL22 = 22,
+    HighestSupported = CL22,
 }
