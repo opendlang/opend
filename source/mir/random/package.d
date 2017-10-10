@@ -55,7 +55,7 @@ Returns:
 T rand(T, G)(ref G gen)
     if (isSaturatedRandomEngine!G && isIntegral!T && !is(T == enum))
 {
-    alias R = ReturnType!G;
+    alias R = EngineReturnType!G;
     enum P = T.sizeof / R.sizeof;
     static if (P > 1)
     {
@@ -338,7 +338,7 @@ version(mir_random_test) unittest
 size_t randGeometric(G)(ref G gen)
     if(isSaturatedRandomEngine!G)
 {
-    alias R = ReturnType!G;
+    alias R = EngineReturnType!G;
     static if (is(R == ulong))
         alias T = size_t;
     else

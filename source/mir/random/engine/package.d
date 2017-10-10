@@ -21,6 +21,19 @@ import std.traits;
 import mir.random.engine.mersenne_twister;
 
 /++
+Like `std.traits.ReturnType!T` but it works even if
+T.opCall is a function template.
++/
+template EngineReturnType(T)
+{
+    import std.traits : ReturnType;
+    static if (is(ReturnType!T))
+        alias EngineReturnType = ReturnType!T;
+    else
+        alias EngineReturnType = typeof(T.init());
+}
+
+/++
 Test if T is a random engine.
 A type should define `enum isRandomEngine = true;` to be a random engine.
 +/
@@ -47,7 +60,7 @@ A type should define `enum isRandomEngine = true;` to be a random engine.
 template isSaturatedRandomEngine(T)
 {
     static if (isRandomEngine!T)
-        enum isSaturatedRandomEngine = T.max == ReturnType!T.max;
+        enum isSaturatedRandomEngine = T.max == EngineReturnType!T.max;
     else
         enum isSaturatedRandomEngine = false;
 }
@@ -141,7 +154,7 @@ version(mir_random_test) unittest
 {
     import std.traits;
     static assert(isSaturatedRandomEngine!Random);
-    static assert(is(ReturnType!Random == size_t));
+    static assert(is(EngineReturnType!Random == size_t));
 }
 
 version(linux)

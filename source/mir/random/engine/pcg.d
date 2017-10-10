@@ -665,6 +665,7 @@ private alias AliasSeq(T...) = T;
                            pcg8_oneseq_once_insecure,pcg16_oneseq_once_insecure,pcg32_oneseq_once_insecure,
                            pcg64_oneseq_once_insecure))
     {
+        static assert(isSaturatedRandomEngine!RNG);
         auto gen = RNG(cast(RNG.Uint)unpredictableSeed);
         gen();
     }

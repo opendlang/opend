@@ -56,7 +56,7 @@ struct RandomField(G)
     +/
     this()(ref G gen) { _gen = &gen; }
     ///
-    Unqual!(ReturnType!G) opIndex()(size_t) { return (*_gen)(); }
+    Unqual!(EngineReturnType!G) opIndex()(size_t) { return (*_gen)(); }
 }
 
 /// ditto
@@ -158,9 +158,9 @@ struct RandomRange(G)
     if (isSaturatedRandomEngine!G)
 {
     private G* _gen;
-    private ReturnType!G _val;
+    private EngineReturnType!G _val;
     /// Largest generated value.
-    enum Unqual!(ReturnType!G) max = G.max;
+    enum Unqual!(EngineReturnType!G) max = G.max;
     /++
     Constructor.
     Stores the pointer to the `gen` engine.
@@ -169,7 +169,7 @@ struct RandomRange(G)
     /// Infinity Input Range primitives
     enum empty = false;
     /// ditto
-    Unqual!(ReturnType!G) front()() @property { return _val; }
+    Unqual!(EngineReturnType!G) front()() @property { return _val; }
     /// ditto
     void popFront()() { _val = (*_gen)(); }
 }
