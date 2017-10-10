@@ -111,11 +111,15 @@ $(D x0).
 Params:
     x0 = seed, must be positive if c equals to 0.
  */
-    this(Uint x0) @safe pure
+    this(Uint x0) @safe pure nothrow @nogc
     {
-        static if (c == 0)
-            assert(x0, "Invalid (zero) seed for " ~ LinearCongruentialEngine.stringof);
         _x = modulus ? (x0 % modulus) : x0;
+        static if (c == 0)
+        {
+            //Necessary to prevent generator from outputting an endless series of zeroes.
+            if (_x == 0)
+                _x = max;
+        }
     }
 
     /**
@@ -191,6 +195,13 @@ alias MinstdRand = LinearCongruentialEngine!(uint, 48271, 0, 2147483647);
 
     import std.traits;
     static assert(is(ReturnType!rnd0 == uint));
+}
+
+@safe version(mir_random_test) unittest
+{
+    auto rnd0 = MinstdRand0(MinstdRand0.modulus);
+    auto n = rnd0();
+    assert(n != rnd0());
 }
 
 version(mir_random_test) unittest
