@@ -162,7 +162,15 @@ enum StandardPath {
      * On OSX it's not available.
      * On Freedesktop it's directory where autostarted .desktop files are stored.
      */
-    startup
+    startup,
+    /**
+     * Roaming directory that stores a user data which should be shared between user profiles on different machines. Windows-only.
+     */
+    roaming,
+    /**
+     * Common directory for game save files. Windows-only.
+     */
+    savedGames
 }
 
 /**
@@ -320,7 +328,7 @@ version(D_Ddoc)
      * Returns: User's Roaming directory. On fail returns an empty string.
      * See_Also: $(D writablePath), $(D FolderFlag)
      */
-    string roamingPath(FolderFlag params = FolderFlag.none) nothrow @safe;
+    deprecated string roamingPath(FolderFlag params = FolderFlag.none) nothrow @safe;
     
     /**
      * Location where games may store their saves. Windows only.
@@ -328,7 +336,7 @@ version(D_Ddoc)
      * Returns: User's Saved Games directory. On fail returns an empty string.
      * See_Also: $(D writablePath), $(D FolderFlag)
      */
-    string savedGames(FolderFlag params = FolderFlag.none) nothrow @safe;
+    deprecated string savedGames(FolderFlag params = FolderFlag.none) nothrow @safe;
 }
 
 version(Windows) {
@@ -525,24 +533,14 @@ version(Windows) {
         return null;
     }
     
-    string roamingPath(FolderFlag params = FolderFlag.none) nothrow @safe
+    deprecated("use writablePath(StandardPath.roaming)") string roamingPath(FolderFlag params = FolderFlag.none) nothrow @safe
     {
-        if (hasSHGetKnownFolderPath()) {
-            return getKnownFolder(FOLDERID_RoamingAppData, params);
-        } else if (hasSHGetSpecialFolderPath()) {
-            return getCSIDLFolder(CSIDL_APPDATA, params);
-        } else {
-            return null;
-        }
+        return writablePath(StandardPath.roaming, params);
     }
     
-    string savedGames(FolderFlag params = FolderFlag.none) nothrow @safe
+    deprecated("use writablePath(StandardPath.savedGames)") string savedGames(FolderFlag params = FolderFlag.none) nothrow @safe
     {
-        if (hasSHGetKnownFolderPath()) {
-            return getKnownFolder(FOLDERID_SavedGames, params);
-        } else {
-            return null;
-        }
+        return writablePath(StandardPath.savedGames, params);
     }
     
     string writablePath(StandardPath type, FolderFlag params = FolderFlag.none) nothrow @safe
@@ -576,6 +574,10 @@ version(Windows) {
                     return getKnownFolder(FOLDERID_Programs, params);
                 case StandardPath.startup:
                     return getKnownFolder(FOLDERID_Startup, params);
+                case StandardPath.roaming:
+                    return getKnownFolder(FOLDERID_RoamingAppData, params);
+                case StandardPath.savedGames:
+                    return getKnownFolder(FOLDERID_SavedGames, params);
             }
         } else if (hasSHGetSpecialFolderPath()) {
             final switch(type) {
@@ -606,6 +608,10 @@ version(Windows) {
                     return getCSIDLFolder(CSIDL_PROGRAMS, params);
                 case StandardPath.startup:
                     return getCSIDLFolder(CSIDL_STARTUP, params);
+                case StandardPath.roaming:
+                    return getCSIDLFolder(CSIDL_APPDATA, params);
+                case StandardPath.savedGames:
+                    return null;
             }
         } else {
             return null;
@@ -993,6 +999,10 @@ version(Windows) {
                     return domainDir(NSApplicationDirectory, NSUserDomainMask, shouldCreate);
                 case StandardPath.startup:
                     return null;
+                case StandardPath.roaming:
+                    return null;
+                case StandardPath.savedGames:
+                    return null;
             }
         } else {
             final switch(type) {
@@ -1023,6 +1033,10 @@ version(Windows) {
                 case StandardPath.applications:
                     return fsPath(kUserDomain, kApplicationsFolderType, shouldCreate);
                 case StandardPath.startup:
+                    return null;
+                case StandardPath.roaming:
+                    return null;
+                case StandardPath.savedGames:
                     return null;
             }
         }
@@ -1253,6 +1267,10 @@ PICTURES=Images
                     return xdgDataHome("applications", shouldCreate);
                 case StandardPath.startup:
                     return xdgConfigHome("autostart", shouldCreate);
+                case StandardPath.roaming:
+                    return null;
+                case StandardPath.savedGames:
+                    return null;
             }
         }
         

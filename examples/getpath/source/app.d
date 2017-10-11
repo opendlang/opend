@@ -44,6 +44,12 @@ bool stringToType(string typeStr, out StandardPath type)
         case "startup" :
             type = StandardPath.startup;
             return true;
+        case "roaming":
+            type = StandardPath.roaming;
+            return true;
+        case "savedGames":
+            type = StandardPath.savedGames;
+            return true;
         default:
             break;
     }

@@ -26,8 +26,8 @@ int main()
     
     version(Windows) {
         writeln("\nSpecific functions for Windows:");
-        writeln("Roaming data: ", roamingPath());
-        writeln("Saved games: ", savedGames());
+        writeln("Roaming data: ", writablePath(StandardPath.roaming));
+        writeln("Saved games: ", writablePath(StandardPath.savedGames));
     } else version(linux) {
         writeln("\nSpecific functions for Linux:");
         writeln("Runtime: ", xdgRuntimeDir());
