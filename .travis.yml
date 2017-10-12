@@ -1,12 +1,12 @@
 language: d
 matrix:
     allow_failures:
-        - d: ldc-0.16.1
+        - d: ldc
     include:
-        - d: dmd-2.069.2
+        - d: dmd
           env: USE_DOVERALLS=true
-        - d: ldc-0.16.1
-  
+        - d: ldc
+
 script:
     - chmod +x travis-script.sh
     - ./travis-script.sh

@@ -477,8 +477,7 @@ static if (isFreedesktop)
         }
     }
 
-    ///
-    unittest
+    version(xdgpathsFileTest) unittest
     {
         string runtimePath = buildPath(tempDir(), "xdgpaths-runtime-test");
         try {
