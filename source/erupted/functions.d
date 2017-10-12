@@ -284,6 +284,11 @@ extern( System ) @nogc nothrow {
 	alias PFN_vkBindBufferMemory2KHR = VkResult function( VkDevice device, uint32_t bindInfoCount, const( VkBindBufferMemoryInfoKHR )* pBindInfos );
 	alias PFN_vkBindImageMemory2KHR = VkResult function( VkDevice device, uint32_t bindInfoCount, const( VkBindImageMemoryInfoKHR )* pBindInfos );
 
+	// VK_ANDROID_native_buffer
+	alias PFN_vkGetSwapchainGrallocUsageANDROID = VkResult function( VkDevice device, VkFormat format, VkImageUsageFlags imageUsage, int* grallocUsage );
+	alias PFN_vkAcquireImageANDROID = VkResult function( VkDevice device, VkImage image, int nativeFenceFd, VkSemaphore semaphore, VkFence fence );
+	alias PFN_vkQueueSignalReleaseImageANDROID = VkResult function( VkQueue queue, uint32_t waitSemaphoreCount, const( VkSemaphore )* pWaitSemaphores, VkImage image, int* pNativeFenceFd );
+
 	// VK_EXT_debug_report
 	alias PFN_vkCreateDebugReportCallbackEXT = VkResult function( VkInstance instance, const( VkDebugReportCallbackCreateInfoEXT )* pCreateInfo, const( VkAllocationCallbacks )* pAllocator, VkDebugReportCallbackEXT* pCallback );
 	alias PFN_vkDestroyDebugReportCallbackEXT = void function( VkInstance instance, VkDebugReportCallbackEXT callback, const( VkAllocationCallbacks )* pAllocator );
@@ -663,6 +668,11 @@ __gshared {
 	// VK_KHR_bind_memory2
 	PFN_vkBindBufferMemory2KHR vkBindBufferMemory2KHR;
 	PFN_vkBindImageMemory2KHR vkBindImageMemory2KHR;
+
+	// VK_ANDROID_native_buffer
+	PFN_vkGetSwapchainGrallocUsageANDROID vkGetSwapchainGrallocUsageANDROID;
+	PFN_vkAcquireImageANDROID vkAcquireImageANDROID;
+	PFN_vkQueueSignalReleaseImageANDROID vkQueueSignalReleaseImageANDROID;
 
 	// VK_EXT_debug_report
 	PFN_vkCreateDebugReportCallbackEXT vkCreateDebugReportCallbackEXT;
@@ -1101,6 +1111,11 @@ void loadDeviceLevelFunctions( VkInstance instance ) {
 	vkBindBufferMemory2KHR = cast( typeof( vkBindBufferMemory2KHR )) vkGetInstanceProcAddr( instance, "vkBindBufferMemory2KHR" );
 	vkBindImageMemory2KHR = cast( typeof( vkBindImageMemory2KHR )) vkGetInstanceProcAddr( instance, "vkBindImageMemory2KHR" );
 
+	// VK_ANDROID_native_buffer
+	vkGetSwapchainGrallocUsageANDROID = cast( typeof( vkGetSwapchainGrallocUsageANDROID )) vkGetInstanceProcAddr( instance, "vkGetSwapchainGrallocUsageANDROID" );
+	vkAcquireImageANDROID = cast( typeof( vkAcquireImageANDROID )) vkGetInstanceProcAddr( instance, "vkAcquireImageANDROID" );
+	vkQueueSignalReleaseImageANDROID = cast( typeof( vkQueueSignalReleaseImageANDROID )) vkGetInstanceProcAddr( instance, "vkQueueSignalReleaseImageANDROID" );
+
 	// VK_EXT_debug_marker
 	vkDebugMarkerSetObjectTagEXT = cast( typeof( vkDebugMarkerSetObjectTagEXT )) vkGetInstanceProcAddr( instance, "vkDebugMarkerSetObjectTagEXT" );
 	vkDebugMarkerSetObjectNameEXT = cast( typeof( vkDebugMarkerSetObjectNameEXT )) vkGetInstanceProcAddr( instance, "vkDebugMarkerSetObjectNameEXT" );
@@ -1360,6 +1375,11 @@ void loadDeviceLevelFunctions( VkDevice device ) {
 	// VK_KHR_bind_memory2
 	vkBindBufferMemory2KHR = cast( typeof( vkBindBufferMemory2KHR )) vkGetDeviceProcAddr( device, "vkBindBufferMemory2KHR" );
 	vkBindImageMemory2KHR = cast( typeof( vkBindImageMemory2KHR )) vkGetDeviceProcAddr( device, "vkBindImageMemory2KHR" );
+
+	// VK_ANDROID_native_buffer
+	vkGetSwapchainGrallocUsageANDROID = cast( typeof( vkGetSwapchainGrallocUsageANDROID )) vkGetDeviceProcAddr( device, "vkGetSwapchainGrallocUsageANDROID" );
+	vkAcquireImageANDROID = cast( typeof( vkAcquireImageANDROID )) vkGetDeviceProcAddr( device, "vkAcquireImageANDROID" );
+	vkQueueSignalReleaseImageANDROID = cast( typeof( vkQueueSignalReleaseImageANDROID )) vkGetDeviceProcAddr( device, "vkQueueSignalReleaseImageANDROID" );
 
 	// VK_EXT_debug_marker
 	vkDebugMarkerSetObjectTagEXT = cast( typeof( vkDebugMarkerSetObjectTagEXT )) vkGetDeviceProcAddr( device, "vkDebugMarkerSetObjectTagEXT" );
@@ -1647,6 +1667,11 @@ struct DispatchDevice {
 		// VK_KHR_bind_memory2
 		vkBindBufferMemory2KHR = cast( typeof( vkBindBufferMemory2KHR )) vkGetDeviceProcAddr( device, "vkBindBufferMemory2KHR" );
 		vkBindImageMemory2KHR = cast( typeof( vkBindImageMemory2KHR )) vkGetDeviceProcAddr( device, "vkBindImageMemory2KHR" );
+
+		// VK_ANDROID_native_buffer
+		vkGetSwapchainGrallocUsageANDROID = cast( typeof( vkGetSwapchainGrallocUsageANDROID )) vkGetDeviceProcAddr( device, "vkGetSwapchainGrallocUsageANDROID" );
+		vkAcquireImageANDROID = cast( typeof( vkAcquireImageANDROID )) vkGetDeviceProcAddr( device, "vkAcquireImageANDROID" );
+		vkQueueSignalReleaseImageANDROID = cast( typeof( vkQueueSignalReleaseImageANDROID )) vkGetDeviceProcAddr( device, "vkQueueSignalReleaseImageANDROID" );
 
 		// VK_EXT_debug_marker
 		vkDebugMarkerSetObjectTagEXT = cast( typeof( vkDebugMarkerSetObjectTagEXT )) vkGetDeviceProcAddr( device, "vkDebugMarkerSetObjectTagEXT" );
@@ -2459,6 +2484,9 @@ struct DispatchDevice {
 	PFN_vkDestroySamplerYcbcrConversionKHR vkDestroySamplerYcbcrConversionKHR;
 	PFN_vkBindBufferMemory2KHR vkBindBufferMemory2KHR;
 	PFN_vkBindImageMemory2KHR vkBindImageMemory2KHR;
+	PFN_vkGetSwapchainGrallocUsageANDROID vkGetSwapchainGrallocUsageANDROID;
+	PFN_vkAcquireImageANDROID vkAcquireImageANDROID;
+	PFN_vkQueueSignalReleaseImageANDROID vkQueueSignalReleaseImageANDROID;
 	PFN_vkDebugMarkerSetObjectTagEXT vkDebugMarkerSetObjectTagEXT;
 	PFN_vkDebugMarkerSetObjectNameEXT vkDebugMarkerSetObjectNameEXT;
 	PFN_vkCmdDebugMarkerBeginEXT vkCmdDebugMarkerBeginEXT;
