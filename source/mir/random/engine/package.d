@@ -16,6 +16,13 @@ else version (TVOS)
 else version (WatchOS)
     version = Darwin;
 
+version (Darwin)
+    version = GOOD_ARC4RANDOM_BUF;//AES
+version (OpenBSD)
+    version = GOOD_ARC4RANDOM_BUF;//ChaCha20
+version (NetBSD)
+    version = GOOD_ARC4RANDOM_BUF;//ChaCha20
+
 import std.traits;
 
 import mir.random.engine.mersenne_twister;
@@ -77,8 +84,12 @@ pragma(inline, true)
 @property size_t unpredictableSeed() @trusted nothrow @nogc
 {
     size_t seed;
+    version (GOOD_ARC4RANDOM_BUF)
+    {
+        arc4random_buf(&seed, seed.sizeof);
+    }
     // fallback to old time/thread-based implementation in case of errors
-    if (genRandomBlocking(&seed, seed.sizeof) < 0)
+    else if (genRandomBlocking(&seed, seed.sizeof) < 0)
     {
         version(Windows)
         {
@@ -252,12 +263,29 @@ version(linux)
     }
 }
 
-version(Posix)
+version(GOOD_ARC4RANDOM_BUF)
+{
+    //ChaCha20 on OpenBSD/NetBSD, AES on Mac OS X.
+    extern(C) void arc4random_buf(void* buf, size_t nbytes) @nogc nothrow;
+}
+
+version(Darwin)
+{
+    //On Darwin /dev/random is identical to /dev/urandom (neither blocks
+    //when there is low system entropy) so there is no point mucking
+    //about with file descriptors. Just use arc4random_buf for both.
+}
+else version(Posix)
 {
     import core.stdc.stdio : fclose, feof, ferror, fopen, fread;
     alias IOType = typeof(fopen("a", "b"));
     private __gshared IOType fdRandom;
-    private __gshared IOType fdURandom;
+    version (GOOD_ARC4RANDOM_BUF)
+    {
+        //Don't need /dev/urandom if we have arc4random_buf.
+    }
+    else
+        private __gshared IOType fdURandom;
 
     ///
     extern(C) shared static ~this()
@@ -265,7 +293,11 @@ version(Posix)
         if (fdRandom !is null)
             fdRandom.fclose;
 
-        if (fdURandom !is null)
+        version (GOOD_ARC4RANDOM_BUF)
+        {
+            //Don't need /dev/urandom if we have arc4random_buf.
+        }
+        else if (fdURandom !is null)
             fdURandom.fclose;
     }
 
@@ -307,7 +339,14 @@ version(Posix)
 
         return 0;
     }
+}
 
+version (GOOD_ARC4RANDOM_BUF)
+{
+    //Don't need /dev/urandom if we have arc4random_buf.
+}
+else version(Posix)
+{
     /**
        When read, the /dev/urandom device returns random bytes using a
        pseudorandom number generator seeded from the entropy pool.  Reads
@@ -442,6 +481,8 @@ extern(C) shared static ~this()
 Fills a buffer with random data.
 If not enough entropy has been gathered, it will block.
 
+Note that on Mac OS X this method will never block.
+
 Params:
     ptr = pointer to the buffer to fill
     len = length of the buffer (in bytes)
@@ -454,6 +495,11 @@ extern(C) ptrdiff_t mir_random_genRandomBlocking(void* ptr , size_t len) @nogc @
     version(Windows)
     {
         while(!CryptGenRandom(hProvider, len, cast(PBYTE) ptr)) {}
+        return 0;
+    }
+    else version (Darwin)
+    {
+        arc4random_buf(ptr, len);
         return 0;
     }
     else
@@ -507,6 +553,9 @@ Hence the error code should be inspected.
 On Linux >= 3.17 genRandomNonBlocking is guaranteed to succeed for 256 bytes and
 less.
 
+On Mac OS X, OpenBSD, and NetBSD genRandomNonBlocking is guaranteed to
+succeed for any number of bytes.
+
 Params:
     buffer = the buffer to fill
     len = length of the buffer (in bytes)
@@ -520,6 +569,11 @@ extern(C) size_t mir_random_genRandomNonBlocking(void* ptr, size_t len) @nogc @t
     {
         if (!CryptGenRandom(hProvider, len, cast(PBYTE) ptr))
             return -1;
+        return len;
+    }
+    else version(GOOD_ARC4RANDOM_BUF)
+    {
+        arc4random_buf(ptr, len);
         return len;
     }
     else
