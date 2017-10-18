@@ -9,13 +9,13 @@ void main(string[] args)
     string subfolder;
     string pathType;
     string[] paths;
-    
-    getopt(args, 
+
+    getopt(args,
         "path", "Path type to request. Possible values: config, data, cache", &pathType,
         "shouldCreate", "Create directory if does not exist", &shouldCreate,
         "subfolder", "Subfolder of requested path", &subfolder
     );
-    
+
     string path;
     switch(pathType) {
         case "config":
@@ -41,7 +41,7 @@ void main(string[] args)
             return;
         }
     }
-    
+
     writeln("Requested path: ", path);
     if (paths.length) {
         writefln("Other paths: %s", paths);
