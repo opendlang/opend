@@ -128,9 +128,10 @@ static if (isFreedesktop)
 
         private struct EnvGuard
         {
-            this(string env) {
+            this(string env, string newValue) {
                 envVar = env;
                 envValue = environment.get(env);
+                environment[env] = newValue;
             }
 
             ~this() {
@@ -261,18 +262,15 @@ static if (isFreedesktop)
 
     version(unittest) {
         void testXdgBaseDir(string envVar, string fallback) {
-            auto homeGuard = EnvGuard("HOME");
-            auto dataHomeGuard = EnvGuard(envVar);
-
-            auto newHome = "/home/myuser";
             auto newDataHome = "/home/myuser/data";
-
+            auto dataHomeGuard = EnvGuard(envVar, newDataHome);
             environment[envVar] = newDataHome;
             assert(xdgBaseDir(envVar, fallback) == newDataHome);
             assert(xdgBaseDir(envVar, fallback, "applications") == buildPath(newDataHome, "applications"));
 
             environment.remove(envVar);
-            environment["HOME"] = newHome;
+            auto newHome = "/home/myuser";
+            auto homeGuard = EnvGuard("HOME", newHome);
             assert(xdgBaseDir(envVar, fallback) == buildPath(newHome, fallback));
             assert(xdgBaseDir(envVar, fallback, "icons") == buildPath(newHome, fallback, "icons"));
 
@@ -295,11 +293,9 @@ static if (isFreedesktop)
     ///
     unittest
     {
-        auto dataDirsGuard = EnvGuard("XDG_DATA_DIRS");
-
+        auto dataDirsGuard = EnvGuard("XDG_DATA_DIRS", "/usr/local/data:/usr/data:/usr/local/data/:/usr/data/");
         auto newDataDirs = ["/usr/local/data", "/usr/data"];
 
-        environment["XDG_DATA_DIRS"] = "/usr/local/data:/usr/data:/usr/local/data/:/usr/data/";
         assert(xdgDataDirs() == newDataDirs);
         assert(equal(xdgDataDirs("applications"), newDataDirs.map!(p => buildPath(p, "applications"))));
 
@@ -322,14 +318,12 @@ static if (isFreedesktop)
     ///
     unittest
     {
-        auto homeGuard = EnvGuard("HOME");
-        auto dataHomeGuard = EnvGuard("XDG_DATA_HOME");
-        auto dataDirsGuard = EnvGuard("XDG_DATA_DIRS");
-
         auto newDataHome = "/home/myuser/data";
         auto newDataDirs = ["/usr/local/data", "/usr/data"];
-        environment["XDG_DATA_HOME"] = newDataHome;
-        environment["XDG_DATA_DIRS"] = "/usr/local/data:/usr/data";
+
+        auto homeGuard = EnvGuard("HOME", "");
+        auto dataHomeGuard = EnvGuard("XDG_DATA_HOME", newDataHome);
+        auto dataDirsGuard = EnvGuard("XDG_DATA_DIRS", "/usr/local/data:/usr/data");
 
         assert(xdgAllDataDirs() == newDataHome ~ newDataDirs);
 
@@ -352,11 +346,9 @@ static if (isFreedesktop)
     ///
     unittest
     {
-        auto dataConfigGuard = EnvGuard("XDG_CONFIG_DIRS");
-
+        auto dataConfigGuard = EnvGuard("XDG_CONFIG_DIRS", "/usr/local/config:/usr/config");
         auto newConfigDirs = ["/usr/local/config", "/usr/config"];
 
-        environment["XDG_CONFIG_DIRS"] = "/usr/local/config:/usr/config";
         assert(xdgConfigDirs() == newConfigDirs);
         assert(equal(xdgConfigDirs("menus"), newConfigDirs.map!(p => buildPath(p, "menus"))));
 
@@ -379,14 +371,12 @@ static if (isFreedesktop)
     ///
     unittest
     {
-        auto homeGuard = EnvGuard("HOME");
-        auto configHomeGuard = EnvGuard("XDG_CONFIG_HOME");
-        auto configDirsGuard = EnvGuard("XDG_CONFIG_DIRS");
-
         auto newConfigHome = "/home/myuser/data";
-        environment["XDG_CONFIG_HOME"] = newConfigHome;
         auto newConfigDirs = ["/usr/local/data", "/usr/data"];
-        environment["XDG_CONFIG_DIRS"] = "/usr/local/data:/usr/data";
+
+        auto homeGuard = EnvGuard("HOME", "");
+        auto configHomeGuard = EnvGuard("XDG_CONFIG_HOME", newConfigHome);
+        auto configDirsGuard = EnvGuard("XDG_CONFIG_DIRS", "/usr/local/data:/usr/data");
 
         assert(xdgAllConfigDirs() == newConfigHome ~ newConfigDirs);
 
@@ -484,8 +474,7 @@ static if (isFreedesktop)
             collectException(std.file.rmdir(runtimePath));
 
             if (mkdir(runtimePath.toStringz, privateMode) == 0) {
-                auto runtimeGuard = EnvGuard("XDG_RUNTIME_DIR");
-                environment["XDG_RUNTIME_DIR"] = runtimePath;
+                auto runtimeGuard = EnvGuard("XDG_RUNTIME_DIR", runtimePath);
                 assert(xdgRuntimeDir() == runtimePath);
 
                 if (chmod(runtimePath.toStringz, octal!777) == 0) {
