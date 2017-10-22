@@ -142,9 +142,19 @@ struct PermutedCongruentialEngine(alias output,        // Output function
 
 private:
 
-    Uint bump()(Uint state_)
+    static if (__traits(compiles, { enum e = mult + increment; }))
     {
-        return cast(Uint)(state_ * mult + increment);
+        static Uint bump()(Uint state_)
+        {
+            return cast(Uint)(state_ * mult + increment);
+        }
+    }
+    else
+    {
+        Uint bump()(Uint state_)
+        {
+            return cast(Uint)(state_ * mult + increment);
+        }
     }
 
     Uint base_generate()()
@@ -310,7 +320,7 @@ mixin template unique_stream(Uint)
 {
     pcg32_unique gen = pcg32_unique(1);
     void* address = &gen;
-    assert(gen.increment == (1 | cast(size_t) address));
+    assert(gen.increment == (1 | cast(ulong) address));
 }
 
 
@@ -320,7 +330,7 @@ mixin template no_stream(Uint)
     ///
     enum is_mcg = true;
     ///
-    @property Uint increment = 0;
+    enum Uint increment = 0;
     
     ///
     enum can_specify_stream = false;
@@ -334,10 +344,7 @@ mixin template oneseq_stream(Uint)
     ///
     enum is_mcg = false;
     ///
-    @property Uint increment()
-    {
-        return default_increment!Uint;
-    }
+    enum Uint increment = default_increment!Uint;
     ///
     enum can_specify_stream = false;
     ///
@@ -687,4 +694,13 @@ private alias AliasSeq(T...) = T;
         gen2();
     assert(gen2() == 0xd187a760);
     assert(gen() == gen2());
+}
+
+@nogc nothrow pure @safe unittest
+{
+    foreach (ShouldHaveStaticBump; AliasSeq!(pcg32_oneseq, pcg32_fast, pcg32_oneseq_once_insecure))
+        static assert (__traits(compiles, { enum e = ShouldHaveStaticBump.bump(1u); }));
+
+    foreach (ShouldLackStaticBump; AliasSeq!(pcg32, pcg32_unique, pcg32_once_insecure))
+        static assert (!__traits(compiles, { enum e = ShouldLackStaticBump.bump(1u); }));
 }
