@@ -291,10 +291,9 @@ mixin template unique_stream(Uint)
     ///
     enum is_mcg = false;
     ///
-    @property Uint increment()() const
+    @property Uint increment()() const @trusted
     {
-        Uint this_addr = (() @trusted => cast(Uint)(*cast(ulong*)&this))();
-        return this_addr | 1;
+        return cast(Uint) (&this) | 1;
     }
     ///
     Uint stream()()
@@ -305,6 +304,13 @@ mixin template unique_stream(Uint)
     enum can_specify_stream = false;
     ///
     enum size_t streams_pow2 = Uint.sizeof < size_t.sizeof ? Uint.sizeof : size_t.sizeof - 1u;
+}
+
+@nogc nothrow pure @system unittest
+{
+    pcg32_unique gen = pcg32_unique(1);
+    void* address = &gen;
+    assert(gen.increment == (1 | cast(size_t) address));
 }
 
 
