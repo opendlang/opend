@@ -79,3 +79,4 @@ void main(){
  - 64-bit Mt19937 initialization is fixed
  - 64-bit Mt19937 is default for 64-bit targets
  - Permuted Congruential Generators
+ - XorshiftStar Generators
