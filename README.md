@@ -67,7 +67,7 @@ void main(){
 ##### `random.algorithm` (new)
  - Ndslice and range API adaptors
 
-##### `random.engine.*` (fixed, reworked)
+##### `random.engine.*` (fixed, reworked, new)
  - `opCall` API instead of range interface is used (similar to C++)
  - No default and copy constructors are allowed for generators.
  - `unpredictableSeed` has not state, returns `size_t`
@@ -76,7 +76,7 @@ void main(){
  - Mt19937: +100% performance for initialization. (merged to Phobos)
  - Mt19937: +54% performance for generation. (merged to Phobos)
  - Mt19937: fixed to be more CPU cache friendly. (merged to Phobos)
- - 64-bit Mt19937 initialization is fixed
+ - 64-bit Mt19937 initialization is fixed (merged to Phobos)
  - 64-bit Mt19937 is default for 64-bit targets
- - Permuted Congruential Generators
- - XorshiftStar Generators
+ - Permuted Congruential Generators (new)
+ - XorshiftStar Generators (new)
