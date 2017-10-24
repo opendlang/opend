@@ -193,6 +193,15 @@ if (isIntegral!StateUInt && isIntegral!OutputUInt
     static assert(multiplier != 1 && multiplier % 2 != 0,
         typeof(this).stringof~": multiplier must be an odd number other than 1!");
 
+    /++
+    Note that when StateUInt is the same size as OutputUInt the two lowest bits
+    of this generator are
+    $(LINK2 https://en.wikipedia.org/wiki/Linear-feedback_shift_register,
+    LSFRs), and thus will fail binary rank tests. We suggest to use a sign test
+    to extract a random Boolean value, and right shifts to extract subsets of bits.
+    +/
+    enum bool preferHighBits = true;
+
   private:
     enum uint N = nbits / (StateUInt.sizeof * 8);
     enum bool usePointer = N > 3;
@@ -431,6 +440,17 @@ struct Xoroshiro128Plus
     The constructor ensures this condition is met.
     +/
     ulong[2] s = void;
+
+    /++
+    The lowest bit of this generator is an
+    $(LINK2 https://en.wikipedia.org/wiki/Linear-feedback_shift_register,
+    LSFR). The next bit is not an LFSR, but in the long run it will fail
+    binary rank tests, too. The other bits have no LFSR artifacts.
+
+    We suggest to use a sign test to extract a random Boolean value, and
+    right shifts to extract subsets of bits.
+    +/
+    enum bool preferHighBits = true;
 
     @disable this();
     @disable this(this);

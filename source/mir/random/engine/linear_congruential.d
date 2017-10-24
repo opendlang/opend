@@ -18,7 +18,7 @@ struct LinearCongruentialEngine(Uint, Uint a, Uint c, Uint m)
     ///
     enum isRandomEngine = true;
 
-    /// Highest generated value ($(D modulus - 1 - bool(c == 0))).
+    /// Highest generated value (`modulus - 1 - bool(c == 0)`).
     enum Uint max = m - 1 - bool(c == 0);
 /**
 The parameters of this distribution. The random number is $(D_PARAM x
@@ -33,6 +33,14 @@ The parameters of this distribution. The random number is $(D_PARAM x
     static assert(m == 0 || a < m);
     static assert(m == 0 || c < m);
     static assert(m == 0 || (cast(ulong)a * (m-1) + c) % m == (c < a ? c - a + m : c - a));
+
+    /++
+    The low bits of a linear congruential generator whose modulus is a
+    power of 2 have a much shorter period than the high bits.
+    Note that for LinearCongruentialEngine, `modulus == 0` signifies
+    a modulus of `2 ^^ Uint.sizeof` which is not representable as `Uint`.
+    +/
+    enum bool preferHighBits = 0 == (modulus & (modulus - 1));
 
     @disable this();
     @disable this(this);
@@ -107,7 +115,7 @@ The parameters of this distribution. The random number is $(D_PARAM x
 
 /**
 Constructs a $(D_PARAM LinearCongruentialEngine) generator seeded with
-$(D x0).
+`x0`.
 Params:
     x0 = seed, must be positive if c equals to 0.
  */
@@ -171,10 +179,10 @@ Params:
 
 /**
 Define $(D_PARAM LinearCongruentialEngine) generators with well-chosen
-parameters. $(D MinstdRand0) implements Park and Miller's "minimal
+parameters. `MinstdRand0` implements Park and Miller's "minimal
 standard" $(HTTP
 wikipedia.org/wiki/Park%E2%80%93Miller_random_number_generator,
-generator) that uses 16807 for the multiplier. $(D MinstdRand)
+generator) that uses 16807 for the multiplier. `MinstdRand`
 implements a variant that has slightly better spectral behavior by
 using the multiplier 48271. Both generators are rather simplistic.
  */

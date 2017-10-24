@@ -64,6 +64,11 @@ T rand(T, G)(ref G gen)
             (cast(R*)(&ret))[p] = gen();
         return ret;
     }
+    else static if (preferHighBits!G && P == 0)
+    {
+        version(LDC) pragma(inline, true);
+        return cast(T) (gen() >>> ((R.sizeof - T.sizeof) * 8));
+    }
     else
     {
         version(LDC) pragma(inline, true);
@@ -89,7 +94,8 @@ Returns:
 bool rand(T : bool, G)(ref G gen)
     if (isSaturatedRandomEngine!G)
 {
-    return gen() & 1;
+    import std.traits : Signed;
+    return 0 > cast(Signed!(EngineReturnType!G)) gen();
 }
 
 ///

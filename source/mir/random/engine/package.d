@@ -72,6 +72,32 @@ template isSaturatedRandomEngine(T)
         enum isSaturatedRandomEngine = false;
 }
 
+/++
+Are the high bits of the engine's output known to have
+better statistical properties than the low bits of the
+output? This property is set by checking the value of
+an optional enum named `preferHighBits`. If the property
+is missing it is treated as false.
+
+This should be specified as true for:
+<ul>
+<li>linear congruential generators with power-of-2 modulus</li>
+<li>xorshift+ family</li>
+<li>xorshift* family</li>
+<li>in principle any generator whose final operation is something like
+multiplication or addition in which the high bits depend on the low bits
+but the low bits are unaffected by the high bits.</li>
+</ul>
++/
+template preferHighBits(G)
+    if (isSaturatedRandomEngine!G)
+{
+    static if (__traits(compiles, { enum bool e = G.preferHighBits; }))
+        private enum bool preferHighBits = G.preferHighBits;
+    else
+        private enum bool preferHighBits = false;
+}
+
 /**
 A "good" seed for initializing random number engines. Initializing
 with $(D_PARAM unpredictableSeed) makes engines generate different
