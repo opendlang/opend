@@ -1,3 +1,4 @@
 .dub
 dub.selections.json
 __*
+*.exe
