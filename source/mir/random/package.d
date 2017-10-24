@@ -280,7 +280,7 @@ T rand(T, G)(ref G gen, sizediff_t boundExp = 0)
 ///
 version(mir_random_test) unittest
 {
-    import std.math: fabs;
+    import mir.math.common: fabs;
     import mir.random.engine.xorshift;
     auto gen = Xorshift(1);
     
