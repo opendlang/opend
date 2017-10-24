@@ -6,6 +6,9 @@ language: d
 d:
  - ldc
  - dmd
+ - ldc-beta
+ - dmd-nightly
+ - dmd-beta
 env:
  - ARCH="x86_64"
 matrix:
