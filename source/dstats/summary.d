@@ -558,7 +558,7 @@ unittest {
 
     foreach(i; 0..100) {
         // Monte carlo test the unrolled version.
-        auto foo = randArray!rNorm(uniform(5, 100), 0, 1);
+        auto foo = randArray!rNormal(uniform(5, 100), 0, 1);
         auto res1 = mean(foo);
         Mean res2;
         foreach(elem; foo) {
@@ -785,7 +785,7 @@ unittest {
 
     foreach(i; 0..100) {
         // Monte carlo test the unrolled version.
-        auto foo = randArray!rNorm(uniform(5, 100), 0, 1);
+        auto foo = randArray!rNormal(uniform(5, 100), 0, 1);
         auto res1 = meanStdev(foo);
         MeanSD res2;
         foreach(elem; foo) {

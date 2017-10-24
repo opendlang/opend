@@ -133,7 +133,7 @@ version(unittest) {
  * Examples:
  * ---
  * // Create an array of 10 random numbers distributed Normal(0, 1).
- * auto normals = randArray!rNorm(10, 0, 1);
+ * auto normals = randArray!rNormal(10, 0, 1);
  * ---
  */
 auto randArray(alias randFun, Args...)(size_t N, auto ref Args args) {
@@ -143,7 +143,7 @@ auto randArray(alias randFun, Args...)(size_t N, auto ref Args args) {
 
 unittest {
     // Just check if it compiles.
-    auto nums = randArray!rNorm(5, 0, 1);
+    auto nums = randArray!rNormal(5, 0, 1);
     auto nums2 = randArray!rBinomial(10, 5, 0.5);
 }
 
@@ -154,7 +154,7 @@ unittest {
  * Examples:
  * ---
  * // Create an array of 10 million floats distributed Normal(0, 1).
- * float[] normals = randArray!(float, rNorm)(10, 0, 1);
+ * float[] normals = randArray!(float, rNormal)(10, 0, 1);
  * ---
  */
 R[] randArray(R, alias randFun, Args...)(size_t N, auto ref Args args) {
@@ -188,7 +188,7 @@ public:
         /* This is a kludge to make the contents of this range deterministic
          * given the state of the underlying random number generator without
          * a massive redesign.  We store the state in this struct and
-         * swap w/ the TLS data for rNorm on each call to popFront.  This has to
+         * swap w/ the TLS data for rNormal on each call to popFront.  This has to
          * be done no matter what distribution we're using b/c a lot of others
          * rely on the normal.*/
         auto lastNormPtr = &lastNorm;  // Cache ptr once, avoid repeated TLS lookup.
@@ -237,7 +237,7 @@ unittest {
     // an underlying RNG.
 
     {
-        auto norms = take(randRange!rNorm(0, 1, Random(unpredictableSeed)), 99);
+        auto norms = take(randRange!rNormal(0, 1, Random(unpredictableSeed)), 99);
         auto arr1 = array(norms);
         auto arr2 = array(norms);
         assert(arr1 == arr2);
@@ -263,8 +263,8 @@ unittest {
 private static double lastNorm = double.nan;
 
 ///
-double rNorm(RGen = Random)(double mean, double sd, ref RGen gen = rndGen) {
-    dstatsEnforce(sd > 0, "Standard deviation must be > 0 for rNorm.");
+double rNormal(RGen = Random)(double mean, double sd, ref RGen gen = rndGen) {
+    dstatsEnforce(sd > 0, "Standard deviation must be > 0 for rNormal.");
 
     double lr = lastNorm;
     if (!isNaN(lr)) {
@@ -285,7 +285,7 @@ double rNorm(RGen = Random)(double mean, double sd, ref RGen gen = rndGen) {
 
 
 unittest {
-    auto observ = randArray!rNorm(100_000, 0, 1);
+    auto observ = randArray!rNormal(100_000, 0, 1);
     auto ksRes = ksTest(observ, parametrize!(normalCDF)(0.0L, 1.0L));
     auto summ = summary(observ);
 
@@ -301,7 +301,7 @@ unittest {
 double rCauchy(RGen = Random)(double X0, double gamma, ref RGen gen = rndGen) {
     dstatsEnforce(gamma > 0, "gamma must be > 0 for Cauchy distribution.");
 
-    return (rNorm(0, 1, gen) / rNorm(0, 1, gen)) * gamma + X0;
+    return (rNormal(0, 1, gen) / rNormal(0, 1, gen)) * gamma + X0;
 }
 
 unittest {
@@ -318,17 +318,17 @@ unittest {
 }
 
 ///
-double rStudentT(RGen = Random)(double df, ref RGen gen = rndGen) {
+double rStudentsT(RGen = Random)(double df, ref RGen gen = rndGen) {
     dstatsEnforce(df > 0, "Student's T distribution must have >0 degrees of freedom.");
 
-    double N = rNorm(0, 1, gen);
+    double N = rNormal(0, 1, gen);
     double G = stdGamma(df / 2, gen);
     double X = sqrt(df / 2) * N / sqrt(G);
     return X;
 }
 
 unittest {
-    auto observ = randArray!rStudentT(100_000, 5);
+    auto observ = randArray!rStudentsT(100_000, 5);
     auto ksRes = ksTest(observ, parametrize!(studentsTCDF)(5));
 
     auto summ = summary(observ);
@@ -984,7 +984,7 @@ private double stdGamma(RGen = Random)(double shape, ref RGen gen) {
         c = 1./sqrt(9*b);
         for (;;) {
             do {
-                X = rNorm(0.0L, 1.0L, gen);
+                X = rNormal(0.0L, 1.0L, gen);
                 V = 1.0 + c*X;
             } while (V <= 0.0);
 
@@ -1113,14 +1113,14 @@ unittest {
 }
 
 ///
-double rLogNorm(RGen = Random)(double mu, double sigma, ref RGen gen = rndGen) {
+double rLogNormal(RGen = Random)(double mu, double sigma, ref RGen gen = rndGen) {
     dstatsEnforce(sigma > 0, "sigma must be > 0 for log-normal distribution.");
 
-    return exp(rNorm(mu, sigma, gen));
+    return exp(rNormal(mu, sigma, gen));
 }
 
 unittest {
-    auto observ = randArray!rLogNorm(100_000, -2, 1);
+    auto observ = randArray!rLogNormal(100_000, -2, 1);
     auto ksRes = ksTest(observ, paramFunctor!(logNormalCDF)(-2, 1));
 
     auto summ = summary(observ);
@@ -1160,7 +1160,7 @@ double rWald(RGen = Random)(double mu, double lambda, ref RGen gen = rndGen) {
     alias lambda scale;
 
     double mu_2l = mean / (2*scale);
-    double Y = rNorm(0, 1, gen);
+    double Y = rNormal(0, 1, gen);
     Y = mean*Y*Y;
     double X = mean + mu_2l*(Y - sqrt(4*scale*Y + Y*Y));
     double U = uniform(0.0L, 1.0L, gen);
@@ -1199,4 +1199,8 @@ unittest {
     writeln("100k samples from rayleigh(3):  K-S P-val:  ", ksRes.p);
 }
 
-
+deprecated {
+    alias rNorm = rNormal;
+    alias rLogNorm = rLogNormal;
+    alias rStudentT = rStudentsT;
+}

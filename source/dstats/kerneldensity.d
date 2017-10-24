@@ -116,7 +116,7 @@ public:
      *
      * Examples:
      * ---
-     * auto randNums = randArray!rNorm(1_000, 0, 1);
+     * auto randNums = randArray!rNormal(1_000, 0, 1);
      * auto kernel = parametrize!normalPDF(0, 0.01);
      * auto density = KernelDensity1D(kernel, randNums);
      * writeln(normalPDF(1, 0, 1), "  ", density(1)).  // Should be about the same.
@@ -481,7 +481,7 @@ class KernelDensity {
 }
 
 unittest {
-    auto data = randArray!rNorm(100, 0, 1);
+    auto data = randArray!rNormal(100, 0, 1);
     auto kernel = parametrize!normalPDF(0, scottBandwidth(data));
     auto kde = KernelDensity.fromCallable(kernel, data);
     auto kde1 = KernelDensity1D.fromCallable(kernel, data);

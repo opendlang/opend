@@ -174,8 +174,8 @@ unittest {
     foreach(iter; 0..1000) {
         // Make sure results for the ILP-optimized and non-optimized versions
         // agree.
-        auto foo = randArray!(rNorm)(uniform(5, 100), 0, 1);
-        auto bar = randArray!(rNorm)(foo.length, 0, 1);
+        auto foo = randArray!(rNormal)(uniform(5, 100), 0, 1);
+        auto bar = randArray!(rNormal)(foo.length, 0, 1);
         auto res1 = pearsonCor(foo, bar);
         PearsonCor res2;
         foreach(i; 0..foo.length) {
@@ -466,12 +466,12 @@ This is useful when applying this function multiple times with one of the
 arguments the same every time:
 
 ---
-auto lhs = randArray!rNorm(1_000, 0, 1);
+auto lhs = randArray!rNormal(1_000, 0, 1);
 auto indices = new size_t[1_000];
 makeIndex(lhs, indices);
 
 foreach(i; 0..1_000) {
-    auto rhs = randArray!rNorm(1_000, 0, 1);
+    auto rhs = randArray!rNormal(1_000, 0, 1);
     auto lhsSorted = assumeSorted(
         indexed(lhs, indices)
     );
@@ -827,13 +827,13 @@ unittest {
         kendallCor(assumeSorted(iota(5)), assumeSorted(iota(5))), 1
     ));
 
-    auto lhs = randArray!rNorm(1_000, 0, 1);
+    auto lhs = randArray!rNormal(1_000, 0, 1);
     auto indices = new size_t[1_000];
     import std.algorithm;
     makeIndex(lhs, indices);
 
     foreach(i; 0..1_000) {
-        auto rhs = randArray!rNorm(1_000, 0, 1);
+        auto rhs = randArray!rNormal(1_000, 0, 1);
         auto lhsSorted = assumeSorted(
             indexed(lhs, indices)
         );

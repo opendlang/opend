@@ -1382,8 +1382,8 @@ unittest {
     auto gen = Random(31415);  // For random but repeatable results.
 
     foreach(iter; 0..1000) {
-        foreach(col; x[1..$]) foreach(ref elem; col) elem = rNorm(0, 1, gen);
-        foreach(ref elem; y) elem = rNorm(0, 1, gen);
+        foreach(col; x[1..$]) foreach(ref elem; col) elem = rNormal(0, 1, gen);
+        foreach(ref elem; y) elem = rNormal(0, 1, gen);
         immutable ridge = uniform(0.1, 10.0, gen);
 
         auto normalEq = linearRegressBeta(y, x, ridge);
@@ -1807,7 +1807,7 @@ unittest {
     auto gen = Random(31415);  // For random but repeatable results.
 
     foreach(iter; 0..1000) {
-        foreach(col; x[1..$]) foreach(ref elem; col) elem = rNorm(0, 1, gen);
+        foreach(col; x[1..$]) foreach(ref elem; col) elem = rNormal(0, 1, gen);
 
         // Nothing will converge if y is all true's or all false's.
         size_t trueCount;

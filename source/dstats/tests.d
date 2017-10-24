@@ -3717,8 +3717,8 @@ unittest {
     // between the exact and approximate version should be extremely small.
     foreach(i; 0..100) {
         uint nToTake = uniform(15, 65);
-        auto lhs = array(take(randRange!rNorm(0, 1), nToTake));
-        auto rhs = array(take(randRange!rNorm(0, 1), nToTake));
+        auto lhs = array(take(randRange!rNormal(0, 1), nToTake));
+        auto rhs = array(take(randRange!rNormal(0, 1), nToTake));
         if(i & 1) {
             lhs[] += rhs[] * 0.2;  // Make sure there's some correlation.
         } else {
