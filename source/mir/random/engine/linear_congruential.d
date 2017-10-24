@@ -38,7 +38,7 @@ The parameters of this distribution. The random number is $(D_PARAM x
     The low bits of a linear congruential generator whose modulus is a
     power of 2 have a much shorter period than the high bits.
     Note that for LinearCongruentialEngine, `modulus == 0` signifies
-    a modulus of `2 ^^ Uint.sizeof` which is not representable as `Uint`.
+    a modulus of `2 ^^ (Uint.sizeof*8)` which is not representable as `Uint`.
     +/
     enum bool preferHighBits = 0 == (modulus & (modulus - 1));
 

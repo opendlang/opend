@@ -587,7 +587,7 @@ Params:
     len = length of the buffer (in bytes)
 
 Returns:
-    The number of bytes filled - a negative number of an error occurred
+    The number of bytes filled - a negative number if an error occurred
 +/
 extern(C) size_t mir_random_genRandomNonBlocking(void* ptr, size_t len) @nogc @trusted nothrow
 {

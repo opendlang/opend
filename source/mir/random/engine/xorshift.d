@@ -399,7 +399,7 @@ alias Xorshift1024StarPhi = XorshiftStarEngine!(ulong,1024,31,11,30,0x9e3779b97f
 }
 
 /++
-$(LINK2 xoroshiro.di.unimi.it, xoroshiro128+) generator.
+$(HTTP xoroshiro.di.unimi.it, xoroshiro128+) generator.
 
 Created in 2016 by David Blackman and Sebastiano Vigna as the successor
 to Vigna's extremely popular $(HTTP vigna.di.unimi.it/ftp/papers/xorshiftplus.pdf,
@@ -488,7 +488,7 @@ struct Xoroshiro128Plus
 
     /++
     This is the jump function for the generator. It is equivalent
-    to 2^^64 calls to $(D opCall()); it can be used to generate 2^64
+    to 2^^64 calls to $(D opCall()); it can be used to generate 2^^64
     non-overlapping subsequences for parallel computations.
     +/
     void jump()() @nogc nothrow pure @safe
