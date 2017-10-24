@@ -47,7 +47,7 @@ void main(){
  - Mir Random `rand!float`/`rand!double`/`rand!real` generates saturated real random numbers in `(-1, 1)`. For example, `rand!real` can produce more than 2^78 unique numbers. In other hand, `std.random.uniform01!real` produces less than `2^31` unique numbers with default Engine.
  - Mir Random fixes Phobos integer underflow bugs.
  - Addition optimization was added for enumerated types.
- - Random ndslices generation.
+ - Random [nd-array (ndslice)](https://github.com/libmir/mir-algorithm) generation.
 
 ##### `random.variable` (new)
  - Uniform
