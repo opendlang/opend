@@ -305,6 +305,9 @@ extern( System ) @nogc nothrow {
 	alias PFN_vkCmdDrawIndirectCountAMD = void function( VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, uint32_t maxDrawCount, uint32_t stride );
 	alias PFN_vkCmdDrawIndexedIndirectCountAMD = void function( VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, uint32_t maxDrawCount, uint32_t stride );
 
+	// VK_AMD_shader_info
+	alias PFN_vkGetShaderInfoAMD = VkResult function( VkDevice device, VkPipeline pipeline, VkShaderStageFlagBits shaderStage, VkShaderInfoTypeAMD infoType, size_t* pInfoSize, void* pInfo );
+
 	// VK_NV_external_memory_capabilities
 	alias PFN_vkGetPhysicalDeviceExternalImageFormatPropertiesNV = VkResult function( VkPhysicalDevice physicalDevice, VkFormat format, VkImageType type, VkImageTiling tiling, VkImageUsageFlags usage, VkImageCreateFlags flags, VkExternalMemoryHandleTypeFlagsNV externalHandleType, VkExternalImageFormatPropertiesNV* pExternalImageFormatProperties );
 
@@ -689,6 +692,9 @@ __gshared {
 	// VK_AMD_draw_indirect_count
 	PFN_vkCmdDrawIndirectCountAMD vkCmdDrawIndirectCountAMD;
 	PFN_vkCmdDrawIndexedIndirectCountAMD vkCmdDrawIndexedIndirectCountAMD;
+
+	// VK_AMD_shader_info
+	PFN_vkGetShaderInfoAMD vkGetShaderInfoAMD;
 
 	// VK_NV_external_memory_capabilities
 	PFN_vkGetPhysicalDeviceExternalImageFormatPropertiesNV vkGetPhysicalDeviceExternalImageFormatPropertiesNV;
@@ -1127,6 +1133,9 @@ void loadDeviceLevelFunctions( VkInstance instance ) {
 	vkCmdDrawIndirectCountAMD = cast( typeof( vkCmdDrawIndirectCountAMD )) vkGetInstanceProcAddr( instance, "vkCmdDrawIndirectCountAMD" );
 	vkCmdDrawIndexedIndirectCountAMD = cast( typeof( vkCmdDrawIndexedIndirectCountAMD )) vkGetInstanceProcAddr( instance, "vkCmdDrawIndexedIndirectCountAMD" );
 
+	// VK_AMD_shader_info
+	vkGetShaderInfoAMD = cast( typeof( vkGetShaderInfoAMD )) vkGetInstanceProcAddr( instance, "vkGetShaderInfoAMD" );
+
 	// VK_NV_external_memory_win32
 	version( VK_USE_PLATFORM_WIN32_KHR ) {
 		vkGetMemoryWin32HandleNV = cast( typeof( vkGetMemoryWin32HandleNV )) vkGetInstanceProcAddr( instance, "vkGetMemoryWin32HandleNV" );
@@ -1391,6 +1400,9 @@ void loadDeviceLevelFunctions( VkDevice device ) {
 	// VK_AMD_draw_indirect_count
 	vkCmdDrawIndirectCountAMD = cast( typeof( vkCmdDrawIndirectCountAMD )) vkGetDeviceProcAddr( device, "vkCmdDrawIndirectCountAMD" );
 	vkCmdDrawIndexedIndirectCountAMD = cast( typeof( vkCmdDrawIndexedIndirectCountAMD )) vkGetDeviceProcAddr( device, "vkCmdDrawIndexedIndirectCountAMD" );
+
+	// VK_AMD_shader_info
+	vkGetShaderInfoAMD = cast( typeof( vkGetShaderInfoAMD )) vkGetDeviceProcAddr( device, "vkGetShaderInfoAMD" );
 
 	// VK_NV_external_memory_win32
 	version( VK_USE_PLATFORM_WIN32_KHR ) {
@@ -1683,6 +1695,9 @@ struct DispatchDevice {
 		// VK_AMD_draw_indirect_count
 		vkCmdDrawIndirectCountAMD = cast( typeof( vkCmdDrawIndirectCountAMD )) vkGetDeviceProcAddr( device, "vkCmdDrawIndirectCountAMD" );
 		vkCmdDrawIndexedIndirectCountAMD = cast( typeof( vkCmdDrawIndexedIndirectCountAMD )) vkGetDeviceProcAddr( device, "vkCmdDrawIndexedIndirectCountAMD" );
+
+		// VK_AMD_shader_info
+		vkGetShaderInfoAMD = cast( typeof( vkGetShaderInfoAMD )) vkGetDeviceProcAddr( device, "vkGetShaderInfoAMD" );
 
 		// VK_NV_external_memory_win32
 		version( VK_USE_PLATFORM_WIN32_KHR ) {
@@ -2247,6 +2262,11 @@ struct DispatchDevice {
 		vkCmdDrawIndexedIndirectCountAMD( this.commandBuffer, buffer, offset, countBuffer, countBufferOffset, maxDrawCount, stride );
 	}
 
+	// VK_AMD_shader_info
+	VkResult GetShaderInfoAMD( VkPipeline pipeline, VkShaderStageFlagBits shaderStage, VkShaderInfoTypeAMD infoType, size_t* pInfoSize, void* pInfo ) {
+		return vkGetShaderInfoAMD( this.device, pipeline, shaderStage, infoType, pInfoSize, pInfo );
+	}
+
 	// VK_NV_external_memory_win32
 	version( VK_USE_PLATFORM_WIN32_KHR ) {
 		VkResult GetMemoryWin32HandleNV( VkDeviceMemory memory, VkExternalMemoryHandleTypeFlagsNV handleType, HANDLE* pHandle ) {
@@ -2494,6 +2514,7 @@ struct DispatchDevice {
 	PFN_vkCmdDebugMarkerInsertEXT vkCmdDebugMarkerInsertEXT;
 	PFN_vkCmdDrawIndirectCountAMD vkCmdDrawIndirectCountAMD;
 	PFN_vkCmdDrawIndexedIndirectCountAMD vkCmdDrawIndexedIndirectCountAMD;
+	PFN_vkGetShaderInfoAMD vkGetShaderInfoAMD;
 	version( VK_USE_PLATFORM_WIN32_KHR ) {
 		PFN_vkGetMemoryWin32HandleNV vkGetMemoryWin32HandleNV;
 	}
