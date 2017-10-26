@@ -59,6 +59,11 @@ private T sumSquares(T)(const T a, const T b)
     return fmuladd(a, a, b * b);
 }
 
+@nogc nothrow pure @safe version(mir_random_test) unittest
+{
+    assert(13.0 == sumSquares(2.0, 3.0));
+}
+
 /// User Defined Attribute definition for Random Variable.
 enum RandomVariable;
 
@@ -119,7 +124,7 @@ struct UniformVariable(T)
 }
 
 ///
-version(mir_random_test) unittest
+@nogc nothrow @safe version(mir_random_test) unittest
 {
     auto gen = Random(unpredictableSeed);
     auto rv = UniformVariable!int(-10, 10); // [-10, 10]
@@ -170,7 +175,7 @@ struct UniformVariable(T)
 }
 
 ///
-version(mir_random_test) unittest
+@nogc nothrow @safe version(mir_random_test) unittest
 {
     import std.math : nextDown;
     auto gen = Random(unpredictableSeed);
@@ -180,7 +185,7 @@ version(mir_random_test) unittest
     assert(rv.max == 10.0.nextDown);
 }
 
-version(mir_random_test) unittest
+@nogc nothrow @safe version(mir_random_test) unittest
 {
     import std.math : nextDown;
     auto gen = Random(unpredictableSeed);
@@ -224,7 +229,7 @@ struct ExponentialVariable(T)
 }
 
 ///
-version(mir_random_test) unittest
+@nogc nothrow @safe version(mir_random_test) unittest
 {
     auto gen = Random(unpredictableSeed);
     auto rv = ExponentialVariable!double(1);
@@ -264,7 +269,7 @@ struct WeibullVariable(T)
 }
 
 ///
-version(mir_random_test) unittest
+@nogc nothrow @safe version(mir_random_test) unittest
 {
     auto gen = Random(unpredictableSeed);
     auto rv = WeibullVariable!double(3, 2);
@@ -369,7 +374,7 @@ struct GammaVariable(T, bool Exp = false)
 }
 
 ///
-version(mir_random_test) unittest
+@nogc nothrow @safe version(mir_random_test) unittest
 {
     auto gen = Random(unpredictableSeed);
     auto rv = GammaVariable!double(1, 1);
@@ -434,7 +439,7 @@ struct BetaVariable(T)
 }
 
 ///
-version(mir_random_test) unittest
+@nogc nothrow @safe version(mir_random_test) unittest
 {
     auto gen = Random(unpredictableSeed);
     auto rv = BetaVariable!double(2, 5);
@@ -472,7 +477,7 @@ struct ChiSquaredVariable(T)
 }
 
 ///
-version(mir_random_test) unittest
+@nogc nothrow @safe version(mir_random_test) unittest
 {
     auto gen = Random(unpredictableSeed);
     auto rv = ChiSquaredVariable!double(3);
@@ -517,7 +522,7 @@ struct FisherFVariable(T)
 }
 
 ///
-version(mir_random_test) unittest
+@nogc nothrow @safe version(mir_random_test) unittest
 {
     auto gen = Random(unpredictableSeed);
     auto rv = FisherFVariable!double(3, 4);
@@ -560,7 +565,7 @@ struct StudentTVariable(T)
 }
 
 ///
-version(mir_random_test) unittest
+@nogc nothrow @safe version(mir_random_test) unittest
 {
     auto gen = Random(unpredictableSeed);
     auto rv = StudentTVariable!double(10);
@@ -675,7 +680,7 @@ struct NormalVariable(T)
 }
 
 ///
-version(mir_random_test) unittest
+@nogc nothrow @safe version(mir_random_test) unittest
 {
     auto gen = Random(unpredictableSeed);
     auto rv = NormalVariable!double(0, 1);
@@ -717,7 +722,7 @@ struct LogNormalVariable(T)
 }
 
 ///
-version(mir_random_test) unittest
+@nogc nothrow @safe version(mir_random_test) unittest
 {
     auto gen = Random(unpredictableSeed);
     auto rv = LogNormalVariable!double(0, 1);
@@ -767,7 +772,7 @@ struct CauchyVariable(T)
 }
 
 ///
-version(mir_random_test) unittest
+@nogc nothrow @safe version(mir_random_test) unittest
 {
     auto gen = Random(unpredictableSeed);
     auto rv = CauchyVariable!double(0, 1);
@@ -807,7 +812,7 @@ struct ExtremeValueVariable(T)
 }
 
 ///
-version(mir_random_test) unittest
+@nogc nothrow @safe version(mir_random_test) unittest
 {
     auto gen = Random(unpredictableSeed);
     auto rv = ExtremeValueVariable!double(0, 1);
@@ -849,7 +854,7 @@ struct BernoulliVariable(T)
 }
 
 ///
-version(mir_random_test) unittest
+@nogc nothrow @safe version(mir_random_test) unittest
 {
     auto gen = Random(unpredictableSeed);
     auto rv = BernoulliVariable!double(0.7);
@@ -896,7 +901,7 @@ struct Bernoulli2Variable
 }
 
 ///
-version(mir_random_test) unittest
+@nogc nothrow @safe version(mir_random_test) unittest
 {
     auto gen = Random(unpredictableSeed);
     auto rv = Bernoulli2Variable.init;
@@ -944,7 +949,7 @@ struct GeometricVariable(T)
 }
 
 ///
-version(mir_random_test) unittest
+nothrow @safe version(mir_random_test) unittest
 {
     auto gen = Random(unpredictableSeed);
     auto rv = GeometricVariable!double(0.1);
@@ -1050,7 +1055,7 @@ struct PoissonVariable(T)
 }
 
 ///
-version(mir_random_test) unittest
+nothrow @safe version(mir_random_test) unittest
 {
     import mir.random;
     auto gen = Random(unpredictableSeed);
@@ -1112,7 +1117,7 @@ struct NegativeBinomialVariable(T)
 }
 
 ///
-version(mir_random_test) unittest
+nothrow @safe version(mir_random_test) unittest
 {
     import mir.random;
     auto gen = Random(unpredictableSeed);
@@ -1247,7 +1252,7 @@ struct BinomialVariable(T)
 }
 
 ///
-version(mir_random_test) unittest
+nothrow @safe version(mir_random_test) unittest
 {
     import mir.random;
     auto gen = Random(unpredictableSeed);
@@ -1331,7 +1336,7 @@ struct DiscreteVariable(T)
 }
 
 ///
-version(mir_random_test) unittest
+nothrow @safe version(mir_random_test) unittest
 {
     auto gen = Random(unpredictableSeed);
     // 10%, 20%, 20%, 40%, 10%
@@ -1352,7 +1357,7 @@ version(mir_random_test) unittest
 }
 
 /// Comulative
-version(mir_random_test) unittest
+nothrow @safe version(mir_random_test) unittest
 {
     auto gen = Random(unpredictableSeed);
 
@@ -1368,7 +1373,7 @@ version(mir_random_test) unittest
 }
 
 //
-version(mir_random_test) unittest
+nothrow @safe version(mir_random_test) unittest
 {
     auto gen = Random(unpredictableSeed);
     // 10%, 20%, 20%, 40%, 10%
@@ -1389,7 +1394,7 @@ version(mir_random_test) unittest
 }
 
 // test with cumulative probs
-version(mir_random_test) unittest
+nothrow @safe version(mir_random_test) unittest
 {
     auto gen = Random(unpredictableSeed);
 
@@ -1406,7 +1411,7 @@ version(mir_random_test) unittest
 }
 
 // test with cumulative count
-version(mir_random_test) unittest
+nothrow @safe version(mir_random_test) unittest
 {
     auto gen = Random(unpredictableSeed);
 
@@ -1422,7 +1427,7 @@ version(mir_random_test) unittest
 }
 
 // test with zero probabilities
-version(mir_random_test) unittest
+nothrow @safe version(mir_random_test) unittest
 {
     auto gen = Random(unpredictableSeed);
 
@@ -1483,7 +1488,7 @@ struct PiecewiseConstantVariable(T, W = T)
 }
 
 ///
-version(mir_random_test) unittest
+nothrow @safe version(mir_random_test) unittest
 {
     auto gen = Random(unpredictableSeed);
     // 50% of the time, generate a random number between 0 and 1
@@ -1584,7 +1589,7 @@ struct PiecewiseLinearVariable(T)
 }
 
 ///
-version(mir_random_test) unittest
+nothrow @safe version(mir_random_test) unittest
 {
     auto gen = Random(unpredictableSeed);
     // increase the probability from 0 to 5
