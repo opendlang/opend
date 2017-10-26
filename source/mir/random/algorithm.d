@@ -28,7 +28,7 @@ struct RandomField(G, D, T)
     Constructor.
     Stores the pointer to the `gen` engine.
     +/
-    this()(ref G gen, D var) { _gen = &gen; _var = var; }
+    this()(ref G gen, D var) { _gen = (() @trusted => &gen)(); _var = var; }
     ///
     T opIndex()(size_t)
     {
@@ -54,7 +54,7 @@ struct RandomField(G)
     Constructor.
     Stores the pointer to the `gen` engine.
     +/
-    this()(ref G gen) { _gen = &gen; }
+    this()(ref G gen) @trusted { _gen = &gen; }
     ///
     Unqual!(EngineReturnType!G) opIndex()(size_t) { return (*_gen)(); }
 }
@@ -81,7 +81,7 @@ RandomField!G field(G)(ref G gen)
 }
 
 /// Normal distribution
-version(mir_random_test) unittest
+nothrow @safe version(mir_random_test) unittest
 {
     import mir.ndslice: slicedField, slice;
     import mir.random;
@@ -99,7 +99,7 @@ version(mir_random_test) unittest
 }
 
 /// Normal distribution for complex numbers
-version(mir_random_test) unittest
+nothrow @safe version(mir_random_test) unittest
 {
     import mir.ndslice: slicedField, slice;
     import mir.random;
@@ -117,7 +117,7 @@ version(mir_random_test) unittest
 }
 
 /// Bi
-version(mir_random_test) unittest
+nothrow pure @safe version(mir_random_test) unittest
 {
     import mir.ndslice: slicedField, slice;
     import mir.random.engine.xorshift;
@@ -144,7 +144,7 @@ struct RandomRange(G, D)
     Constructor.
     Stores the pointer to the `gen` engine.
     +/
-    this()(ref G gen, D var) { _gen = &gen; _var = var; popFront(); }
+    this()(ref G gen, D var) { _gen = (() @trusted => &gen)(); _var = var; popFront(); }
     /// Infinity Input Range primitives
     enum empty = false;
     /// ditto
@@ -165,7 +165,7 @@ struct RandomRange(G)
     Constructor.
     Stores the pointer to the `gen` engine.
     +/
-    this()(ref G gen) { _gen = &gen; popFront(); }
+    this()(ref G gen) { _gen = (() @trusted => &gen)(); popFront(); }
     /// Infinity Input Range primitives
     enum empty = false;
     /// ditto
@@ -190,7 +190,7 @@ RandomRange!G range(G)(ref G gen)
 }
 
 ///
-version(mir_random_test) unittest
+nothrow @safe version(mir_random_test) unittest
 {
     import std.range : take, array;
 
@@ -208,7 +208,7 @@ version(mir_random_test) unittest
 }
 
 /// Uniform random bit generation
-version(mir_random_test) unittest
+nothrow pure @safe version(mir_random_test) unittest
 {
     import std.range, std.algorithm;
     import mir.random.engine.xorshift;
@@ -231,6 +231,11 @@ References:
 +/
 struct VitterStrides
 {
+    @nogc:
+    nothrow:
+    pure:
+    @safe:
+
     private enum alphainv = 16;
     private double vprime;
     private size_t N;
@@ -351,7 +356,7 @@ struct VitterStrides
 }
 
 ///
-version(mir_random_test) unittest
+@nogc nothrow pure @safe version(mir_random_test) unittest
 {
     import mir.random.engine.xorshift;
     auto gen = Xorshift(112);
@@ -381,7 +386,7 @@ auto sample(Range, G)(Range range, ref G gen, size_t n)
 }
 
 ///
-version(mir_random_test) unittest
+@nogc nothrow pure @safe version(mir_random_test) unittest
 {
     import std.range;
     import mir.random.engine.xorshift;
@@ -394,7 +399,7 @@ version(mir_random_test) unittest
     }
 }
 
-version(mir_random_test) unittest
+@nogc nothrow pure @safe version(mir_random_test) unittest
 {
     import std.algorithm.comparison;
     import std.range;
@@ -423,7 +428,7 @@ struct RandomSample(Range, G)
     this(Range range, ref G gen, size_t n)
     {
         this.range = range;
-        this.gen = &gen;
+        this.gen = (() @trusted => &gen)();
         strides = VitterStrides(range.length, n);
         auto s = strides(*this.gen);
         if(s > 0)
@@ -474,6 +479,29 @@ version(mir_random_test) unittest
     assert(a == iota(10));
 }
 
+//Above unittest cannot be @safe because mir.ndslice.sorting.sort(...) is not @safe
+//so we have another:
+@nogc nothrow pure @safe version(mir_random_test) unittest
+{
+    import mir.random.engine.xorshift: Xoroshiro128Plus;
+    import std.algorithm.sorting: isSorted;
+
+    auto gen = Xoroshiro128Plus(0);
+    uint[10] deck = void;
+    foreach (i, ref e; deck)
+        e = cast(uint)i;
+    gen.shuffle(deck[]);
+
+    bool[deck.length] seen;
+    foreach (i, x; deck)
+    {
+        assert(seen[x] == false);
+        seen[x] = true;
+    }
+
+    assert(!isSorted(deck[]));
+}
+
 /++
 Partially shuffles the elements of `range` such that upon returning `range[0..n]`
 is a random subset of `range` and is randomly ordered. 
@@ -511,4 +539,28 @@ version(mir_random_test) unittest
 
     sort(a);
     assert(a == iota(10));
+}
+
+//Above unittest cannot be @safe because mir.ndslice.sorting.sort(...) is not @safe
+//so we have another:
+@nogc nothrow pure @safe version(mir_random_test) unittest
+{
+    import mir.random.engine.xorshift: Xoroshiro128Plus;
+    import std.algorithm.sorting: isSorted;
+
+    auto gen = Xoroshiro128Plus(0);
+    uint[20] deck = void;
+    foreach (i, ref e; deck)
+        e = cast(uint)i;
+    size_t n = deck.length / 2;
+    gen.shuffle(deck[], n);
+
+    bool[deck.length] seen;
+    foreach (i, x; deck)
+    {
+        assert(seen[x] == false);
+        seen[x] = true;
+    }
+
+    assert(!isSorted(deck[]));
 }
