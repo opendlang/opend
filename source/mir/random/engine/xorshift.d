@@ -3,7 +3,7 @@ Xorshift and related generators.
 
 Copyright: Copyright Andrei Alexandrescu 2008 - 2009, Masahiro Nakagawa, Ilya Yaroshenko 2016-.
 License: $(HTTP www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
-Authors: Masahiro Nakagawa, Ilya Yaroshenko (rework)
+Authors: Masahiro Nakagawa, Ilya Yaroshenko (rework), Nathan Sashihara
 +/
 module mir.random.engine.xorshift;
 
