@@ -7,3 +7,6 @@ __test__*__
 bin
 ut
 *.a
+*.ninja
+compile_commands.json
+.reggae
