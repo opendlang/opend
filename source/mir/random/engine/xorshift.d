@@ -512,6 +512,29 @@ struct Xoroshiro128Plus
         s[0] = s0;
         s[1] = s1;
     }
+
+
+    /++
+    Compatibility with Phobos random interface. Presents this RNG as an InputRange.
+
+    This class disables the default copy constructor and so will only work with
+    Phobos functions that "do the right thing" and take RNGs by reference and
+    do not accidentally make implicit copies.
+    +/
+    enum bool isUniformRandom = true;
+    /// ditto
+    enum typeof(this.max) min = typeof(this.max).min;
+    /// ditto
+    enum bool empty = false;
+    /// ditto
+    @property ulong front()() const { return s[0] + s[1]; }
+    /// ditto
+    void popFront()() { opCall(); }
+    /// ditto
+    void seed()(ulong x0)
+    {
+        this.__ctor(x0);
+    }
 }
 
 ///
@@ -528,4 +551,20 @@ struct Xoroshiro128Plus
     //to 2 ^^ 64 invocations of opCall.
     gen.jump();
     auto n = gen();
+}
+
+@nogc nothrow pure @safe version(mir_random_test) unittest
+{
+    //Test Xoroshiro128Plus can be used as a Phobos-style random.
+    import std.random: isSeedable, isPhobosUniformRNG = isUniformRNG;
+    static assert(isPhobosUniformRNG!(Xoroshiro128Plus, ulong));
+    static assert(isSeedable!(Xoroshiro128Plus, ulong));
+    auto gen1 = Xoroshiro128Plus(1);
+    auto gen2 = Xoroshiro128Plus(2);
+    gen2.seed(1);
+    assert(gen1 == gen2);
+    immutable a = gen1.front;
+    gen1.popFront();
+    assert(a == gen2());
+    assert(gen1.front == gen2());
 }

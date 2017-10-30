@@ -222,6 +222,61 @@ public:
         }
         state = cast(Uint)(acc_mult*state + acc_plus);
     }
+
+    static if (output_previous)
+    {
+        /++
+        Compatibility with Phobos library methods. Presents this RNG as an
+        InputRange. Only available if `output_previous == true`.
+
+        The reason that this is enabled when `output_previous == true` is because
+        `front` can be implemented without additional cost.
+
+        This class disables the default copy constructor and so will only work with
+        Phobos functions that "do the right thing" and take RNGs by reference and
+        do not accidentally make implicit copies.
+        +/
+        enum bool isUniformRandom = true;
+        /// ditto
+        enum ReturnType!output min = (ReturnType!output).min;
+        /// ditto
+        enum bool empty = false;
+        /// ditto
+        @property ReturnType!output front()() const { return output(state); }
+        /// ditto
+        void popFront()() { state = bump(state); }
+        /// ditto
+        void seed()(Uint seed) { this.__ctor(seed); }
+    }
+}
+
+@nogc nothrow pure @safe version(mir_random_test) unittest
+{
+    //Test that the default generators (all having output_previous==true)
+    //can be used as Phobos-style randoms.
+    import std.meta: AliasSeq;
+    import std.random: isSeedable, isPhobosUniformRNG = isUniformRNG;
+    foreach(RNG; AliasSeq!(pcg32, pcg32_oneseq, pcg32_fast,
+                           pcg32_once_insecure, pcg32_oneseq_once_insecure,
+                           pcg64_once_insecure, pcg64_oneseq_once_insecure))
+    {
+        static assert(isPhobosUniformRNG!(RNG, typeof(RNG.max)));
+        static assert(isSeedable!(RNG, RNG.Uint));
+        auto gen1 = RNG(1);
+        auto gen2 = RNG(2);
+        gen2.seed(1);
+        assert(gen1 == gen2);
+        immutable a = gen1.front;
+        gen1.popFront();
+        assert(a == gen2());
+        assert(gen1.front == gen2());
+    }
+
+    foreach(RNG; AliasSeq!(pcg32_unique))
+    {
+        static assert(isPhobosUniformRNG!(RNG, typeof(RNG.max)));
+        static assert(isSeedable!(RNG, RNG.Uint));
+    }
 }
 
 // Default multiplier to use for the LCG portion of the PCG
