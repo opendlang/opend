@@ -3,6 +3,13 @@ sudo: false
 install:
   - ./travis_install.sh
 
+matrix:
+    include:
+        - d: dmd
+        - d: dmd-2.076.1
+        - d: dmd-2.075.1
+        - d: ldc
+
 script:
   - dub test
   - dub build
