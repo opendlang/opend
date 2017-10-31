@@ -12,6 +12,45 @@ import mir.math.common;
 import mir.random;
 public import mir.random.engine;
 
+private enum bool isPassByRef(P) = !is(P == struct) && !is(P == union) && !isPointer!P && !isScalarType!P
+    && (isFunction!P || isDelegate!P || is(P == class) || is(P == interface));
+
+private ref PointerTarget!Gptr deref(Gptr)(Gptr g) @nogc nothrow pure @safe
+    if (isPointer!Gptr && !isPassByRef!Gptr)
+{
+    pragma(inline, true);
+    return *g;
+}
+private Gptr deref(Gptr)(Gptr g) @nogc nothrow pure @safe
+    if (isPassByRef!Gptr && !isPointer!Gptr)
+{
+    pragma(inline, true);
+    return g;
+}
+nothrow pure @system version(mir_random_test) unittest
+{
+    uint i = 5;
+    uint* i_ptr = &i;
+    assert(deref(i_ptr) == 5);
+
+    Object o = new Object();
+    assert(o is deref(o));
+}
+
+private alias DerefType(Gptr) = typeof(deref(Gptr.init));
+@nogc nothrow pure @system version(mir_random_test) unittest
+{
+    static assert(is(DerefType!(uint*) == uint));
+    static assert(is(DerefType!Object == Object));
+}
+
+/++
+Is the argument either an object (reference type) or a pointer to a struct
+that meets $(REF_ALTTEXT mir.random.engine.isSaturatedRandomEngine,
+isSaturatedRandomEngine, mir, random, engine)?
++/
+public enum isReferenceToSaturatedRandomEngine(G) = isSaturatedRandomEngine!(typeof(deref(G.init)));
+
 /++
 Field interface for random distributions and uniform random bit generators.
 It used to construct ndslices in combination with `slicedField` and `slice`.
@@ -19,27 +58,27 @@ It used to construct ndslices in combination with `slicedField` and `slice`.
 Note: $(UL $(LI The structure holds a pointer to a generator.) $(LI The structure must not be copied (explicitly or implicitly) outside from a function.))
 +/
 struct RandomField(G, D, T)
-    if (isSaturatedRandomEngine!G)
+    if (isReferenceToSaturatedRandomEngine!G)
 {
     private D _var;
-    private G* _gen;
-    private Unqual!(typeof(_var(*_gen))) _val;
+    private G _gen;
+    private Unqual!(typeof(_var(deref(_gen)))) _val;
     /++
     Constructor.
     Stores the pointer to the `gen` engine.
     +/
-    this()(ref G gen, D var) { _gen = (() @trusted => &gen)(); _var = var; }
+    this()(G gen, D var) { _gen = gen; _var = var; }
     ///
     T opIndex()(size_t)
     {
         import mir.internal.utility: isComplex;
         static if (isComplex!T)
         {
-            return _var(*_gen) + _var(*_gen) * 1fi;
+            return _var(deref(_gen)) + _var(deref(_gen)) * 1fi;
         }
         else
         {
-            return _var(*_gen);
+            return _var(deref(_gen));
         }
 
     }
@@ -47,35 +86,35 @@ struct RandomField(G, D, T)
 
 /// ditto
 struct RandomField(G)
-    if (isSaturatedRandomEngine!G)
+    if (isReferenceToSaturatedRandomEngine!G)
 {
-    private G* _gen;
+    private G _gen;
     /++
     Constructor.
     Stores the pointer to the `gen` engine.
     +/
-    this()(ref G gen) @trusted { _gen = &gen; }
+    this()(G gen) { _gen = gen; }
     ///
-    Unqual!(EngineReturnType!G) opIndex()(size_t) { return (*_gen)(); }
+    Unqual!(EngineReturnType!(DerefType!G)) opIndex()(size_t) { return (deref(_gen))(); }
 }
 
 /// ditto
 RandomField!(G, D, T) field(T, G, D)(ref G gen, D var)
-    if (isSaturatedRandomEngine!G)
+    if (isReferenceToSaturatedRandomEngine!G)
 {
     return typeof(return)(gen, var);
 }
 
 /// ditto
 auto field(G, D)(ref G gen, D var)
-    if (isSaturatedRandomEngine!G)
+    if (isReferenceToSaturatedRandomEngine!G)
 {
-    return RandomField!(G, D, Unqual!(typeof(var(gen))))(gen, var);
+    return RandomField!(G, D, Unqual!(typeof(var(deref(gen)))))(gen, var);
 }
 
 /// ditto
-RandomField!G field(G)(ref G gen)
-    if (isSaturatedRandomEngine!G)
+RandomField!(G) field(G)(ref G gen)
+    if (isReferenceToSaturatedRandomEngine!G)
 {
     return typeof(return)(gen);
 }
@@ -88,8 +127,8 @@ nothrow @safe version(mir_random_test) unittest
     import mir.random.variable: NormalVariable;
 
     auto var = NormalVariable!double(0, 1);
-    auto rng = Random(unpredictableSeed);
-    auto sample = rng      // passed by reference
+    Random* rng = new Random(unpredictableSeed);
+    auto sample = rng
         .field(var)        // construct random field from standard normal distribution
         .slicedField(5, 3) // construct random matrix 5 row x 3 col (lazy, without allocation)
         .slice;            // allocates data of random matrix
@@ -106,8 +145,8 @@ nothrow @safe version(mir_random_test) unittest
     import mir.random.variable: NormalVariable;
 
     auto var = NormalVariable!double(0, 1);
-    auto rng = Random(unpredictableSeed);
-    auto sample = rng      // passed by reference
+    Random* rng = new Random(unpredictableSeed);
+    auto sample = rng
         .field!cdouble(var)// construct random field from standard normal distribution
         .slicedField(5, 3) // construct random matrix 5 row x 3 col (lazy, without allocation)
         .slice;            // allocates data of random matrix
@@ -122,7 +161,7 @@ nothrow pure @safe version(mir_random_test) unittest
     import mir.ndslice: slicedField, slice;
     import mir.random.engine.xorshift;
 
-    auto rng = Xorshift(1);
+    Xorshift* rng = new Xorshift(1);
     auto bitSample = rng    // passed by reference
         .field              // construct random field
         .slicedField(5, 3)  // construct random matrix 5 row x 3 col (lazy, without allocation)
@@ -135,56 +174,56 @@ Range interface for random distributions and uniform random bit generators.
 Note: $(UL $(LI The structure holds a pointer to a generator.) $(LI The structure must not be copied (explicitly or implicitly) outside from a function.))
 +/
 struct RandomRange(G, D)
-    if (isSaturatedRandomEngine!G)
+    if (isReferenceToSaturatedRandomEngine!G)
 {
     private D _var;
-    private G* _gen;
-    private Unqual!(typeof(_var(*_gen))) _val;
+    private G _gen;
+    private Unqual!(typeof(_var(deref(_gen)))) _val;
     /++
     Constructor.
     Stores the pointer to the `gen` engine.
     +/
-    this()(ref G gen, D var) { _gen = (() @trusted => &gen)(); _var = var; popFront(); }
+    this()(G gen, D var) { _gen = gen; _var = var; popFront(); }
     /// Infinity Input Range primitives
     enum empty = false;
     /// ditto
     auto front()() @property { return _val; }
     /// ditto
-    void popFront()() { _val = _var(*_gen); }
+    void popFront()() { _val = _var(deref(_gen)); }
 }
 
 ///ditto
 struct RandomRange(G)
-    if (isSaturatedRandomEngine!G)
+    if (isReferenceToSaturatedRandomEngine!G)
 {
-    private G* _gen;
-    private EngineReturnType!G _val;
+    private G _gen;
+    private EngineReturnType!(DerefType!G) _val;
     /// Largest generated value.
-    enum Unqual!(EngineReturnType!G) max = G.max;
+    enum Unqual!(EngineReturnType!(DerefType!G)) max = G.max;
     /++
     Constructor.
     Stores the pointer to the `gen` engine.
     +/
-    this()(ref G gen) { _gen = (() @trusted => &gen)(); popFront(); }
+    this()(G gen) { _gen = gen; popFront(); }
     /// Infinity Input Range primitives
     enum empty = false;
     /// ditto
-    Unqual!(EngineReturnType!G) front()() @property { return _val; }
+    Unqual!(EngineReturnType!(DerefType!G)) front()() @property { return _val; }
     /// ditto
-    void popFront()() { _val = (*_gen)(); }
+    void popFront()() { _val = (deref(_gen))(); }
 }
 
 
 /// ditto
 RandomRange!(G, D) range(G, D)(ref G gen, D var)
-    if (isSaturatedRandomEngine!G)
+    if (isReferenceToSaturatedRandomEngine!G)
 {
     return typeof(return)(gen, var);
 }
 
 /// ditto
 RandomRange!G range(G)(ref G gen)
-    if (isSaturatedRandomEngine!G)
+    if (isReferenceToSaturatedRandomEngine!G)
 {
     return typeof(return)(gen);
 }
@@ -197,8 +236,8 @@ nothrow @safe version(mir_random_test) unittest
     import mir.random;
     import mir.random.variable: NormalVariable;
 
-    auto rng = Random(unpredictableSeed);
-    auto sample = rng // by reference
+    Random* rng = new Random(unpredictableSeed);
+    auto sample = rng
         .range(NormalVariable!double(0, 1))
         .take(1000)
         .array;
@@ -212,8 +251,8 @@ nothrow pure @safe version(mir_random_test) unittest
 {
     import std.range, std.algorithm;
     import mir.random.engine.xorshift;
-    auto rng = Xorshift(1);
-    auto bitSample = rng // by reference
+    Xorshift* rng = new Xorshift(1);
+    auto bitSample = rng
         .range
         .filter!"a % 2 == 0"
         .map!"a % 100"
@@ -379,18 +418,18 @@ Params:
     n = number of elements to include in the sample; must be less than or equal to the `range.length`
 Complexity: O(n)
 +/
-auto sample(Range, G)(Range range, ref G gen, size_t n)
-    if(isInputRange!Range && hasLength!Range && isSaturatedRandomEngine!G)
+auto sample(Range, G)(Range range, G gen, size_t n)
+    if(isInputRange!Range && hasLength!Range && isReferenceToSaturatedRandomEngine!G)
 {
     return RandomSample!(Range, G)(range, gen, n);
 }
 
 ///
-@nogc nothrow pure @safe version(mir_random_test) unittest
+nothrow pure @safe version(mir_random_test) unittest
 {
     import std.range;
     import mir.random.engine.xorshift;
-    auto gen = Xorshift(112);
+    Xorshift* gen = new Xorshift(112);
     auto sample = iota(100).sample(gen, 7);
     foreach(elem; sample)
     {
@@ -399,12 +438,13 @@ auto sample(Range, G)(Range range, ref G gen, size_t n)
     }
 }
 
-@nogc nothrow pure @safe version(mir_random_test) unittest
+nothrow pure @safe version(mir_random_test) unittest
 {
     import std.algorithm.comparison;
     import std.range;
     import mir.random.engine.xorshift;
-    auto gen = Xorshift(232);
+    Xorshift* gen = new Xorshift(232);//GC!
+
     assert(iota(0).equal(iota(0).sample(gen, 0)));
     assert(iota(1).equal(iota(1).sample(gen, 1)));
     assert(iota(2).equal(iota(2).sample(gen, 2)));
@@ -422,15 +462,15 @@ Note: $(UL $(LI The structure holds a pointer to a generator.) $(LI The structur
 struct RandomSample(Range, G)
 {
     private VitterStrides strides;
-    private G* gen;
+    private G gen;
     private Range range;
     ///
-    this(Range range, ref G gen, size_t n)
+    this(Range range, G gen, size_t n)
     {
         this.range = range;
-        this.gen = (() @trusted => &gen)();
+        this.gen = gen;
         strides = VitterStrides(range.length, n);
-        auto s = strides(*this.gen);
+        auto s = strides(deref(this.gen));
         if(s > 0)
             this.range.popFrontExactly(s);
     }
@@ -442,10 +482,10 @@ struct RandomSample(Range, G)
     /// ditto
     auto ref front() @property { return range.front; }
     /// ditto
-    void popFront() { range.popFrontExactly(strides(*gen) + 1); }
+    void popFront() { range.popFrontExactly(strides(deref(gen)) + 1); }
     /// ditto
     static if (isForwardRange!Range)
-    auto save() @property { return RandomSample(range.save, *gen, length); }
+    auto save() @property { return RandomSample(range.save, gen, length); }
 }
 
 /++
@@ -455,12 +495,18 @@ Params:
     range = random-access range whose elements are to be shuffled
 Complexity: O(range.length)
 +/
-void shuffle(Range, G)(ref G gen, Range range)
-    if (isSaturatedRandomEngine!G && isRandomAccessRange!Range && hasLength!Range)
+void shuffle(Range, G)(scope ref G gen, scope Range range)
+    if ((isSaturatedRandomEngine!G || isReferenceToSaturatedRandomEngine!G)
+        && isRandomAccessRange!Range && hasLength!Range)
 {
     import std.algorithm.mutation : swapAt;
     for (; !range.empty; range.popFront)
-        range.swapAt(0, gen.randIndex(range.length));
+    {
+        static if (isSaturatedRandomEngine!G)
+            range.swapAt(0, gen.randIndex(range.length));
+        else
+            range.swapAt(0, deref(gen).randIndex(range.length));
+    }
 }
 
 ///
@@ -516,13 +562,19 @@ Params:
         must be less than `r.length`
 Complexity: O(n)
 +/
-void shuffle(Range, G)(ref G gen, Range range, size_t n)
-    if (isSaturatedRandomEngine!G && isRandomAccessRange!Range && hasLength!Range)
+void shuffle(Range, G)(scope ref G gen, scope Range range, size_t n)
+    if ((isSaturatedRandomEngine!G || isReferenceToSaturatedRandomEngine!G)
+        && isRandomAccessRange!Range && hasLength!Range)
 {
     import std.algorithm.mutation : swapAt;
     assert(n <= range.length, "n must be <= range.length for shuffle.");
     for (; n; n--, range.popFront)
-        range.swapAt(0, gen.randIndex(range.length));
+    {
+        static if (isSaturatedRandomEngine!G)
+            range.swapAt(0, gen.randIndex(range.length));
+        else
+            range.swapAt(0, deref(gen).randIndex(range.length));
+    }
 }
 
 ///
