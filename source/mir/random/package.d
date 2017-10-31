@@ -14,7 +14,7 @@ $(T2 randExponential2, Generates scaled Exponential distribution.)
 
 Publicly includes  `mir.random.engine`.
 
-Authors: Ilya Yaroshenko
+Authors: Ilya Yaroshenko, Nathan Sashihara
 Copyright: Copyright, Ilya Yaroshenko 2016-.
 License:    $(HTTP www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
 Macros:
@@ -342,16 +342,99 @@ Returns:
 T randIndex(T, G)(ref G gen, T m)
     if(isSaturatedRandomEngine!G && isUnsigned!T)
 {
-    assert(m, "m must be positive");
-    T ret = void;
-    T val = void;
-    do
+    static if (EngineReturnType!G.sizeof >= T.sizeof * 2)
+        alias MaybeR = EngineReturnType!G;
+    else static if (uint.sizeof >= T.sizeof * 2)
+        alias MaybeR = uint;
+    else static if (ulong.sizeof >= T.sizeof * 2)
+        alias MaybeR = ulong;
+    else static if (is(ucent) && __traits(compiles, {static assert(ucent.sizeof >= T.sizeof * 2);}))
+        mixin ("alias MaybeR = ucent;");
+    else
+        alias MaybeR = void;
+
+    version (LDC) if (!__ctfe)
     {
-        val = gen.rand!T;
-        ret = val % m;
+        static if (!is(MaybeR == void))
+        {
+            alias R = MaybeR;
+            static assert(R.sizeof >= T.sizeof * 2);
+            import mir.ndslice.internal: _expect;
+            //Use Daniel Lemire's fast alternative to modulo reduction:
+            //https://lemire.me/blog/2016/06/30/fast-random-shuffling/
+            R randombits = cast(R) gen.rand!T;
+            R multiresult = randombits * m;
+            T leftover = cast(T) multiresult;
+            if (_expect(leftover < m, false))
+            {
+                immutable threshold = -m % m ;
+                while (leftover < threshold)
+                {
+                    randombits =  cast(R) gen.rand!T;
+                    multiresult = randombits * m;
+                    leftover = cast(T) multiresult;
+                }
+            }
+            enum finalshift = T.sizeof * 8;
+            return cast(T) (multiresult >>> finalshift);
+        }
+        else
+        {
+            import mir.utility : extMul;
+            import mir.ndslice.internal: _expect;
+            //Use Daniel Lemire's fast alternative to modulo reduction:
+            //https://lemire.me/blog/2016/06/30/fast-random-shuffling/
+            auto u = extMul!T(gen.rand!T, m);
+            if (_expect(u.low < m, false))
+            {
+                immutable T threshold = -m % m;
+                while (u.low < threshold)
+                {
+                    u = extMul!T(gen.rand!T, m);
+                }
+            }
+            return u.high;
+        }
     }
-    while (val - ret > -m);
-    return ret;
+
+    static if (!is(MaybeR == void))
+    {
+        alias R = MaybeR;
+        static assert(R.sizeof >= T.sizeof * 2);
+        //Use Daniel Lemire's fast alternative to modulo reduction:
+        //https://lemire.me/blog/2016/06/30/fast-random-shuffling/
+        R randombits = cast(R) gen.rand!T;
+        R multiresult = randombits * m;
+        T leftover = cast(T) multiresult;
+        if (leftover < m)
+        {
+            immutable threshold = -m % m ;
+            while (leftover < threshold)
+            {
+                randombits =  cast(R) gen.rand!T;
+                multiresult = randombits * m;
+                leftover = cast(T) multiresult;
+            }
+        }
+        enum finalshift = T.sizeof * 8;
+        return cast(T) (multiresult >>> finalshift);
+    }
+    else
+    {
+        import mir.utility : extMul;
+        //Use Daniel Lemire's fast alternative to modulo reduction:
+        //https://lemire.me/blog/2016/06/30/fast-random-shuffling/
+        auto u = extMul!T(gen.rand!T, m);
+        if (u.low < m)
+        {
+            immutable T threshold = -m % m;
+            while (u.low < threshold)
+            {
+                u = extMul!T(gen.rand!T, m);
+            }
+        }
+        return u.high;
+    }
 }
 
 ///
@@ -361,6 +444,37 @@ T randIndex(T, G)(ref G gen, T m)
     auto gen = Xorshift(1);
     auto s = gen.randIndex!uint(100);
     auto n = gen.randIndex!ulong(-100);
+}
+
+@nogc nothrow pure @safe version(mir_random_test) unittest
+{
+    //CTFE check.
+    import std.meta : AliasSeq;
+    import mir.random.engine.xorshift : Xoroshiro128Plus;
+    foreach (IntType; AliasSeq!(ubyte,ushort,uint,ulong))
+    {
+        enum IntType e = (){auto g = Xoroshiro128Plus(1); return g.randIndex!IntType(100);}();
+        auto gen = Xoroshiro128Plus(1);
+        assert(e == gen.randIndex!IntType(100));
+    }
+}
+
+@nogc nothrow pure @safe version(mir_random_test) unittest
+{
+    //Test production of ulong from ulong generator.
+    import mir.random.engine.xorshift;
+    auto gen = Xoroshiro128Plus(1);
+    enum ulong limit = 10;
+    enum count = 10;
+    ulong[limit] buckets;
+    foreach (_; 0 .. count)
+    {
+        ulong x = gen.randIndex!ulong(limit);
+        assert(x < limit);
+        buckets[cast(size_t) x] += 1;
+    }
+    foreach (i, x; buckets)
+        assert(x != count, "All values were the same!");
 }
 
 /++
