@@ -38,6 +38,14 @@ $(BOOKTABLE ,
             $(REF_ALTTEXT $(TT Random ndslices and ranges), RandomRange, mir, random, algorithm).
         )
     )
+    $(TR
+        $(TDNW $(MREF mir,random))
+        $(TD
+            $(REF_ALTTEXT $(TT mir.random.PhobosRandom!Engine), PhobosRandom, mir, random)
+            can be used to extend any Mir random number generator to also be a Phobos-style
+            random number generator.
+        )
+    )
     $(LEADINGROW Entropy Generators)
     $(TR
         $(TDNW $(MREF mir,random,engine))
@@ -60,7 +68,7 @@ $(BOOKTABLE ,
     )
     $(TR
         $(TDNW $(MREF mir,random,engine,xorshift))
-        $(TD $(HTTP en.wikipedia.org/wiki/Xorshift, Xorshift) generator.)
+        $(TD $(HTTP xoroshiro.di.unimi.it, xoroshiro128+), $(HTTP en.wikipedia.org/wiki/Xorshift#xorshift.2A, xorshift1024*φ), and legacy $(HTTP en.wikipedia.org/wiki/Xorshift, xorshift) generators.)
     )
 )
 

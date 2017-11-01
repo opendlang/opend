@@ -2,7 +2,7 @@
 $(SCRIPT inhibitQuickIndex = 1;)
 
 Basic API to construct non-uniform random number generators and stochastic algorithms.
-Non-unoform and uniform random variable can be found at `mir.random.variable`.
+Non-uniform and uniform random variable can be found at `mir.random.variable`.
 
 $(TABLE $(H2 Generation functions),
 $(TR $(TH Function Name) $(TH Description))
@@ -10,6 +10,12 @@ $(T2 rand, Generates real, integral, boolean, and enumerated uniformly distribut
 $(T2 randIndex, Generates uniformly distributed index.)
 $(T2 randGeometric, Generates geometric distribution with `p = 1/2`.)
 $(T2 randExponential2, Generates scaled Exponential distribution.)
+)
+
+$(TABLE $(H2 Phobos Compatibility),
+$(TR $(TH Template Name) $(TH Description))
+$(T2 PhobosRandom, Extends a Mir random number engine to meet Phobos `std.random` interface)
+$(T2 isPhobosUniformRNG, Tests if type is a Phobos-style uniform RNG)
 )
 
 Publicly includes  `mir.random.engine`.
@@ -562,7 +568,7 @@ T randExponential2(T, G)(ref G gen)
 
 /++
 $(LINK2 https://dlang.org/phobos/std_random.html#.isUniformRNG,
-std.random.isUniformRNG!T)
+Tests if T is a Phobos-style uniform RNG.)
 +/
 template isPhobosUniformRNG(T)
 {
@@ -571,8 +577,9 @@ template isPhobosUniformRNG(T)
 }
 
 /++
-Extends a Mir-style random number generator to also meet
-the Phobos `std.random` interface.
+Extends a Mir-style random number generator to also be a Phobos-style
+uniform RNG. If `Engine` is already a Phobos-style uniform RNG,
+`PhobosRandom` is just an alias for `Engine`.
 +/
 struct PhobosRandom(Engine) if (isRandomEngine!Engine && !isPhobosUniformRNG!Engine)//Doesn't need to be saturated.
 {
@@ -634,7 +641,7 @@ struct PhobosRandom(Engine) if (isRandomEngine!Engine && !isPhobosUniformRNG!Eng
     alias engine this;
 }
 /// ditto
-template PhobosRandom(Engine) if (isSaturatedRandomEngine!Engine && isPhobosUniformRNG!Engine)
+template PhobosRandom(Engine) if (isRandomEngine!Engine && isPhobosUniformRNG!Engine)
 {
     alias PhobosRandom = Engine;
 }

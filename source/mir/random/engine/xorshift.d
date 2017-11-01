@@ -1,9 +1,31 @@
 /++
-Xorshift and related generators.
+$(SCRIPT inhibitQuickIndex = 1;)
+
+$(BOOKTABLE $(H2 Generators)
+
+    $(TR $(TH Generator name) $(TH Description))
+    $(RROW Xoroshiro128Plus, $(HTTP xoroshiro.di.unimi.it, xoroshiro128+): fast, small, and high-quality)
+    $(RROW Xorshift1024StarPhi, $(HTTP xoroshiro.di.unimi.it, xorshift1024*φ): when something larger than `xoroshiro128+` is needed)
+    $(TR $(TD $(LREF Xorshift32) .. $(LREF Xorshift160)) $(TD Basic xorshift generator with `n` bits of state (32, 64, 96, 128, 160)))
+    $(RROW Xorshift192, Generator from Marsaglia's paper combining 160-bit xorshift with a counter)
+    $(RROW Xorshift, An alias to one of the generators in this package))
+
+$(BOOKTABLE $(H2 Generic Templates)
+
+    $(TR $(TH Template name) $(TH Description))
+    $(RROW XorshiftStarEngine, `xorshift*` generator with any word size and any number of bits of state.)
+    $(RROW XorshiftEngine, `xorshift` generator with 32 bit words and 32 to 160 bits of state.)
+)
 
 Copyright: Copyright Andrei Alexandrescu 2008 - 2009, Masahiro Nakagawa, Ilya Yaroshenko 2016-.
 License: $(HTTP www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
 Authors: Masahiro Nakagawa, Ilya Yaroshenko (rework), Nathan Sashihara
+
+Macros:
+    WIKI_D = $(HTTP en.wikipedia.org/wiki/$1_distribution, $1 random variable)
+    WIKI_D2 = $(HTTP en.wikipedia.org/wiki/$1_distribution, $2 random variable)
+    T2=$(TR $(TDNW $(LREF $1)) $(TD $+))
+    RROW = $(TR $(TDNW $(LREF $1)) $(TD $+))
 +/
 module mir.random.engine.xorshift;
 
@@ -11,7 +33,8 @@ import std.traits;
 
 /++
 Xorshift generator using 32bit algorithm.
-Implemented according to $(HTTP www.jstatsoft.org/v08/i14/paper, Xorshift RNGs).
+Implemented according to $(HTTP www.jstatsoft.org/v08/i14/paper, Xorshift RNGs)
+(Marsaglia, 2003).
 $(BOOKTABLE $(TEXTWITHCOMMAS Supporting bits are below, $(D bits) means second parameter of XorshiftEngine.),
  $(TR $(TH bits) $(TH period))
  $(TR $(TD 32)   $(TD 2^32 - 1))
@@ -175,10 +198,8 @@ alias Xorshift    = Xorshift128;                      /// ditto
 
 
 /++
-Template for the `xorshift*` family of generators
-described in $(HTTP vigna.di.unimi.it/ftp/papers/xorshift.pdf,
-An experimental exploration of Marsaglia’s xorshift generators scrambled)
-(Vigna, 2016; draft made public in 2014).
+Template for the $(HTTP vigna.di.unimi.it/ftp/papers/xorshift.pdf,
+xorshift* family of generators) (Vigna, 2016; draft 2014).
 +/
 struct XorshiftStarEngine(StateUInt, uint nbits, uint a, uint b, uint c, StateUInt multiplier, OutputUInt = StateUInt)
 if (isIntegral!StateUInt && isIntegral!OutputUInt
@@ -260,6 +281,7 @@ if (isIntegral!StateUInt && isIntegral!OutputUInt
         }
     }
 
+    /// Advances the random sequence.
     OutputUInt opCall()() @safe pure nothrow @nogc
     {
         static if (N == 1)
@@ -354,10 +376,11 @@ while occupying significantly less memory. This generator is recommended
 for random number generation on 64-bit systems except when $(D 1024 + 32)
 bits of state are excessive.
 
-As described in $(HTTP vigna.di.unimi.it/ftp/papers/xorshift.pdf,
-An experimental exploration of Marsaglia’s xorshift generators
-scrambled) (Vigna, 2016; draft made public in 2014) except with
-a better multiplier recommended by the author as of 2017-10-08.
+As described by Vigna in the 2014 draft of
+$(HTTP vigna.di.unimi.it/ftp/papers/xorshift.pdf, his paper published in
+2016 detailing the xorshift* family), except with a better multiplier recommended by the
+author as of 2017-10-08.
+
 Public domain reference implementation:
 $(HTTP xoroshiro.di.unimi.it/xorshift1024star.c).
 +/
@@ -400,6 +423,7 @@ alias Xorshift1024StarPhi = XorshiftStarEngine!(ulong,1024,31,11,30,0x9e3779b97f
 
 /++
 $(HTTP xoroshiro.di.unimi.it, xoroshiro128+) generator.
+64 bit output. 128 bits of state. Period of $(D (2 ^^ 128) - 1).
 
 Created in 2016 by David Blackman and Sebastiano Vigna as the successor
 to Vigna's extremely popular $(HTTP vigna.di.unimi.it/ftp/papers/xorshiftplus.pdf,
@@ -408,10 +432,10 @@ $(HTTP v8project.blogspot.com/2015/12/theres-mathrandom-and-then-theres.html,
 Google Chrome), $(LINK2 https://bugzilla.mozilla.org/show_bug.cgi?id=322529#c99,
 Mozilla Firefox), $(LINK2 https://bugs.webkit.org/show_bug.cgi?id=151641, Safari),
 and $(LINK2 https://github.com/Microsoft/ChakraCore/commit/dbda0182dc0a983dfb37d90c05000e79b6fc75b0,
-Microsoft Edge).
+Microsoft Edge). From the authors:
 
-<blockquote="http://xoroshiro.di.unimi.it/xoroshiro128plus.c">
-This is the successor to xorshift128+. It is the fastest full-period
+----
+/* This is the successor to xorshift128+. It is the fastest full-period
 generator passing BigCrush without systematic failures, but due to the
 relatively short period it is acceptable only for applications with a
 mild amount of parallelism; otherwise, use a xorshift1024* generator.
@@ -423,10 +447,11 @@ LFSR, but in the long run it will fail binary rank tests, too. The
 other bits have no LFSR artifacts.
 
 We suggest to use a sign test to extract a random Boolean value, and
-right shifts to extract subsets of bits.
-</blockquote>
+right shifts to extract subsets of bits. */
+----
 
-64 bit output. 128 bits of state. Period of $(D (2 ^^ 128) - 1).
+Public domain reference implementation:
+$(HTTP xoroshiro.di.unimi.it/xoroshiro128plus.c).
 +/
 struct Xoroshiro128Plus
 {
@@ -515,9 +540,10 @@ struct Xoroshiro128Plus
 
 
     /++
-    Compatibility with Phobos random interface. Presents this RNG as an InputRange.
+    Compatibility with $(LINK2 https://dlang.org/phobos/std_random.html#.isUniformRNG,
+    Phobos library methods). Presents this RNG as an InputRange.
 
-    This class disables the default copy constructor and so will only work with
+    This struct disables its default copy constructor and so will only work with
     Phobos functions that "do the right thing" and take RNGs by reference and
     do not accidentally make implicit copies.
     +/

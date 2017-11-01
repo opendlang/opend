@@ -196,7 +196,11 @@ public:
             return output(base_generate());
     }
 
-    ///
+    /++
+    Skip forward in the random sequence in $(BIGOH log n) time.
+    Even though delta is an unsigned integer, we can pass a
+    signed integer to go backwards, it just goes "the long way round".
+    +/
     void skip()(Uint delta)
     {
         // The method used here is based on Brown, "Random Number Generation
@@ -226,13 +230,14 @@ public:
     static if (output_previous)
     {
         /++
-        Compatibility with Phobos library methods. Presents this RNG as an
-        InputRange. Only available if `output_previous == true`.
+        Compatibility with $(LINK2 https://dlang.org/phobos/std_random.html#.isUniformRNG,
+        Phobos library methods). Presents this RNG as an InputRange.
+        Only available if `output_previous == true`.
 
         The reason that this is enabled when `output_previous == true` is because
         `front` can be implemented without additional cost.
 
-        This class disables the default copy constructor and so will only work with
+        This struct disables its default copy constructor and so will only work with
         Phobos functions that "do the right thing" and take RNGs by reference and
         do not accidentally make implicit copies.
         +/

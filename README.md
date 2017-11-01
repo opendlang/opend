@@ -18,7 +18,7 @@ Documentation: http://docs.random.dlang.io/latest/index.html
 /+ dub.json:
 {
     "name": "test_random",
-    "dependencies": {"mir-random": "~>0.2.5"}
+    "dependencies": {"mir-random": "~>0.2.8"}
 }
 +/
 
@@ -79,3 +79,4 @@ void main(){
  - 64-bit Mt19937 is default for 64-bit targets
  - Permuted Congruential Generators (new)
  - XorshiftStar Generators (new)
+ - Xoroshiro128Plus generator (new)
