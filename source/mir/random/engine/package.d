@@ -23,6 +23,11 @@ version (OpenBSD)
 version (NetBSD)
     version = GOOD_ARC4RANDOM_BUF;//ChaCha20
 
+version(X86)
+    version = X86_Any;
+version(X86_64)
+    version = X86_Any;
+
 import std.traits;
 
 import mir.random.engine.mersenne_twister;
@@ -194,7 +199,7 @@ version(mir_random_test) unittest
     static assert(is(EngineReturnType!Random == size_t));
 }
 
-version(linux)
+version(linux) version(X86_Any)
 {
     private enum GET_RANDOM {
         UNINTIALIZED,
@@ -466,7 +471,7 @@ extern(C) void mir_random_engine_ctor()
             initGetRandom;
     }
 
-    version(linux)
+    version(linux) version (X86_Any)
     {
         with(GET_RANDOM)
         {
@@ -531,11 +536,16 @@ extern(C) ptrdiff_t mir_random_genRandomBlocking(void* ptr , size_t len) @nogc @
     else
     {
         version(linux)
-        with(GET_RANDOM)
         {
-            // Linux >= 3.17 has getRandom
-            if (hasGetRandom == AVAILABLE)
-                return genRandomImplSysBlocking(ptr, len);
+            version (X86_Any)
+                with(GET_RANDOM)
+                {
+                    // Linux >= 3.17 has getRandom
+                    if (hasGetRandom == AVAILABLE)
+                        return genRandomImplSysBlocking(ptr, len);
+                    else
+                        return genRandomImplFileBlocking(ptr, len);
+                }
             else
                 return genRandomImplFileBlocking(ptr, len);
         }
@@ -577,7 +587,7 @@ If not enough entropy has been gathered, it won't block.
 Hence the error code should be inspected.
 
 On Linux >= 3.17 genRandomNonBlocking is guaranteed to succeed for 256 bytes and
-less.
+less (only currently supported on x86 and x86_64).
 
 On Mac OS X, OpenBSD, and NetBSD genRandomNonBlocking is guaranteed to
 succeed for any number of bytes.
@@ -605,11 +615,18 @@ extern(C) size_t mir_random_genRandomNonBlocking(void* ptr, size_t len) @nogc @t
     else
     {
         version(linux)
-        with(GET_RANDOM)
         {
-            // Linux >= 3.17 has getRandom
-            if (hasGetRandom == AVAILABLE)
-                return genRandomImplSysNonBlocking(ptr, len);
+            version (X86_Any)
+            {
+                with(GET_RANDOM)
+                {
+                    // Linux >= 3.17 has getRandom
+                    if (hasGetRandom == AVAILABLE)
+                        return genRandomImplSysNonBlocking(ptr, len);
+                    else
+                        return genRandomImplFileNonBlocking(ptr, len);
+                }
+            }
             else
                 return genRandomImplFileNonBlocking(ptr, len);
         }
