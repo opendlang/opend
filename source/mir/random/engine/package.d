@@ -273,7 +273,7 @@ static if (LINUX_NR_GETRANDOM)
         interrupted by signals.  No such guarantees apply for larger buffer
         sizes.
     */
-    private ptrdiff_t genRandomImplSysBlocking()(void* ptr, size_t len) @nogc @trusted nothrow
+    private ptrdiff_t genRandomImplSysBlocking()(scope void* ptr, size_t len) @nogc nothrow @system
     {
         while (len > 0)
         {
@@ -296,7 +296,7 @@ static if (LINUX_NR_GETRANDOM)
     *   getrandom() does not block in these cases, but instead
     *   immediately returns -1 with errno set to EAGAIN.
     */
-    private ptrdiff_t genRandomImplSysNonBlocking()(void* ptr, size_t len) @nogc @trusted nothrow
+    private ptrdiff_t genRandomImplSysNonBlocking()(scope void* ptr, size_t len) @nogc nothrow @system
     {
         return syscall(GETRANDOM, cast(size_t) ptr, len, GRND_NONBLOCK);
     }
@@ -305,7 +305,7 @@ static if (LINUX_NR_GETRANDOM)
 version(GOOD_ARC4RANDOM_BUF)
 {
     //ChaCha20 on OpenBSD/NetBSD, AES on Mac OS X.
-    extern(C) void arc4random_buf(void* buf, size_t nbytes) @nogc nothrow;
+    extern(C) void arc4random_buf(scope void* buf, size_t nbytes) @nogc nothrow @system;
 }
 
 version(Darwin)
@@ -351,7 +351,7 @@ else version(Posix)
        When the entropy pool is empty, reads from /dev/random will block
        until additional environmental noise is gathered.
     */
-    private ptrdiff_t genRandomImplFileBlocking()(void* ptr, size_t len) @nogc @trusted nothrow
+    private ptrdiff_t genRandomImplFileBlocking()(scope void* ptr, size_t len) @nogc nothrow @system
     {
         if (fdRandom is null)
         {
@@ -394,7 +394,7 @@ else version(Posix)
        When read during early boot time, /dev/urandom may return data prior
        to the entropy pool being initialized.
     */
-    private ptrdiff_t genRandomImplFileNonBlocking()(void* ptr, size_t len) @nogc @trusted nothrow
+    private ptrdiff_t genRandomImplFileNonBlocking()(scope void* ptr, size_t len) @nogc nothrow @system
     {
         if (fdURandom is null)
         {
@@ -532,7 +532,7 @@ Params:
 Returns:
     A non-zero integer if an error occurred.
 +/
-extern(C) ptrdiff_t mir_random_genRandomBlocking(void* ptr , size_t len) @nogc @trusted nothrow
+extern(C) ptrdiff_t mir_random_genRandomBlocking(scope void* ptr , size_t len) @nogc nothrow @system
 {
     version(Windows)
     {
@@ -564,20 +564,27 @@ extern(C) ptrdiff_t mir_random_genRandomBlocking(void* ptr , size_t len) @nogc @
 /// ditto
 alias genRandomBlocking = mir_random_genRandomBlocking;
 
+/// ditto
+ptrdiff_t genRandomBlocking()(scope ubyte[] buffer) @nogc nothrow @trusted
+{
+    pragma(inline, true);
+    return mir_random_genRandomBlocking(buffer.ptr, buffer.length);
+}
+
 ///
 @safe nothrow version(mir_random_test) unittest
 {
     ubyte[] buf = new ubyte[10];
-    genRandomBlocking(&buf[0], buf.length);
+    genRandomBlocking(buf);
 
     import std.algorithm.iteration : sum;
     assert(buf.sum > 0, "Only zero points generated");
 }
 
-@nogc nothrow version(mir_random_test) unittest
+@nogc nothrow @safe version(mir_random_test) unittest
 {
     ubyte[10] buf;
-    genRandomBlocking(buf.ptr, buf.length);
+    genRandomBlocking(buf);
 
     int sum;
     foreach (b; buf)
@@ -604,7 +611,7 @@ Params:
 Returns:
     The number of bytes filled - a negative number if an error occurred
 +/
-extern(C) size_t mir_random_genRandomNonBlocking(void* ptr, size_t len) @nogc @trusted nothrow
+extern(C) size_t mir_random_genRandomNonBlocking(scope void* ptr, size_t len) @nogc nothrow @system
 {
     version(Windows)
     {
@@ -635,22 +642,28 @@ extern(C) size_t mir_random_genRandomNonBlocking(void* ptr, size_t len) @nogc @t
 }
 /// ditto
 alias genRandomNonBlocking = mir_random_genRandomNonBlocking;
+/// ditto
+size_t genRandomNonBlocking()(scope ubyte[] buffer) @nogc nothrow @trusted
+{
+    pragma(inline, true);
+    return mir_random_genRandomNonBlocking(buffer.ptr, buffer.length);
+}
 
 ///
 @safe nothrow version(mir_random_test) unittest
 {
     ubyte[] buf = new ubyte[10];
-    genRandomNonBlocking(&buf[0], buf.length);
+    genRandomNonBlocking(buf);
 
     import std.algorithm.iteration : sum;
     assert(buf.sum > 0, "Only zero points generated");
 }
 
-@nogc nothrow
+@nogc nothrow @safe
 version(mir_random_test) unittest
 {
     ubyte[10] buf;
-    genRandomNonBlocking(buf.ptr, buf.length);
+    genRandomNonBlocking(buf);
 
     int sum;
     foreach (b; buf)
