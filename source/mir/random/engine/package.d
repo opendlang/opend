@@ -23,11 +23,6 @@ version (OpenBSD)
 version (NetBSD)
     version = GOOD_ARC4RANDOM_BUF;//ChaCha20
 
-version(X86)
-    version = X86_Any;
-version(X86_64)
-    version = X86_Any;
-
 import std.traits;
 
 import mir.random.engine.mersenne_twister;
@@ -199,7 +194,23 @@ version(mir_random_test) unittest
     static assert(is(EngineReturnType!Random == size_t));
 }
 
-version(linux) version(X86_Any)
+version(linux)
+{
+    import mir.linux._asm.unistd;
+    enum bool LINUX_NR_GETRANDOM = (__traits(compiles, {enum e = NR_getrandom;}));
+    //If X86_64 or X86 are missing there is a problem with the library.
+    static if (!LINUX_NR_GETRANDOM)
+    {
+        version (X86_64)
+            static assert(0, "Missing linux syscall constants!");
+        version (X86)
+            static assert(0, "Missing linux syscall constants!");
+    }
+}
+else
+    enum bool LINUX_NR_GETRANDOM = false;
+
+static if (LINUX_NR_GETRANDOM)
 {
     private enum GET_RANDOM {
         UNINTIALIZED,
@@ -253,10 +264,7 @@ version(linux) version(X86_Any)
     private enum GRND_NONBLOCK = 0x0001;
     private enum GRND_RANDOM = 0x0002;
 
-    version (X86_64)
-        private enum GETRANDOM = 318;
-    version (X86)
-        private enum GETRANDOM = 355;
+    private enum GETRANDOM = NR_getrandom;
 
     /*
         http://man7.org/linux/man-pages/man2/getrandom.2.html
@@ -471,12 +479,15 @@ extern(C) void mir_random_engine_ctor()
             initGetRandom;
     }
 
-    version(linux) version (X86_Any)
+    version(linux)
     {
-        with(GET_RANDOM)
+        static if (LINUX_NR_GETRANDOM)
         {
-            if (hasGetRandom == UNINTIALIZED)
-                hasGetRandom = initHasGetRandom ? AVAILABLE : NOT_AVAILABLE;
+            with(GET_RANDOM)
+            {
+                if (hasGetRandom == UNINTIALIZED)
+                    hasGetRandom = initHasGetRandom ? AVAILABLE : NOT_AVAILABLE;
+            }
         }
     }
 }
@@ -533,26 +544,20 @@ extern(C) ptrdiff_t mir_random_genRandomBlocking(void* ptr , size_t len) @nogc @
         arc4random_buf(ptr, len);
         return 0;
     }
-    else
+    else static if (LINUX_NR_GETRANDOM)
     {
-        version(linux)
+        with(GET_RANDOM)
         {
-            version (X86_Any)
-                with(GET_RANDOM)
-                {
-                    // Linux >= 3.17 has getRandom
-                    if (hasGetRandom == AVAILABLE)
-                        return genRandomImplSysBlocking(ptr, len);
-                    else
-                        return genRandomImplFileBlocking(ptr, len);
-                }
+            // Linux >= 3.17 has getRandom
+            if (hasGetRandom == AVAILABLE)
+                return genRandomImplSysBlocking(ptr, len);
             else
                 return genRandomImplFileBlocking(ptr, len);
         }
-        else
-        {
-            return genRandomImplFileBlocking(ptr, len);
-        }
+    }
+    else
+    {
+        return genRandomImplFileBlocking(ptr, len);
     }
 }
 
@@ -612,28 +617,20 @@ extern(C) size_t mir_random_genRandomNonBlocking(void* ptr, size_t len) @nogc @t
         arc4random_buf(ptr, len);
         return len;
     }
-    else
+    else static if (LINUX_NR_GETRANDOM)
     {
-        version(linux)
+        with(GET_RANDOM)
         {
-            version (X86_Any)
-            {
-                with(GET_RANDOM)
-                {
-                    // Linux >= 3.17 has getRandom
-                    if (hasGetRandom == AVAILABLE)
-                        return genRandomImplSysNonBlocking(ptr, len);
-                    else
-                        return genRandomImplFileNonBlocking(ptr, len);
-                }
-            }
+            // Linux >= 3.17 has getRandom
+            if (hasGetRandom == AVAILABLE)
+                return genRandomImplSysNonBlocking(ptr, len);
             else
                 return genRandomImplFileNonBlocking(ptr, len);
         }
-        else
-        {
-            return genRandomImplFileNonBlocking(ptr, len);
-        }
+    }
+    else
+    {
+        return genRandomImplFileNonBlocking(ptr, len);
     }
 }
 /// ditto
