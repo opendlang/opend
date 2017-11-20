@@ -29,7 +29,7 @@ ARTWORK_DIR=$(DOC_SOURCE_DIR)/artwork
 MIR_PACKAGES = mir/random mir/random/engine mir/random/flex
 
 PACKAGE_mir_random = package algorithm variable ndvariable
-PACKAGE_mir_random_engine = package linear_congruential mersenne_twister pcg xorshift
+PACKAGE_mir_random_engine = package linear_congruential mersenne_twister pcg splitmix xorshift
 PACKAGE_mir_random_flex = package
 
 MOD_EXCLUDES=$(addprefix --ex=, mir.random.flex.internal.)

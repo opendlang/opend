@@ -67,6 +67,10 @@ $(BOOKTABLE ,
         $(TD $(HTTP www.pcg-random.org, Permuted Congruential)  generator.)
     )
     $(TR
+        $(TDNW $(MREF mir,random,engine,splitmix))
+        $(TD SplitMix64 generator and bit mixers.)
+    )
+    $(TR
         $(TDNW $(MREF mir,random,engine,xorshift))
         $(TD $(HTTP xoroshiro.di.unimi.it, xoroshiro128+), $(HTTP en.wikipedia.org/wiki/Xorshift#xorshift.2A, xorshift1024*φ), and legacy $(HTTP en.wikipedia.org/wiki/Xorshift, xorshift) generators.)
     )
