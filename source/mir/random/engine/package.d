@@ -1,9 +1,49 @@
 /++
+$(SCRIPT inhibitQuickIndex = 1;)
 Uniform random engines.
+
+$(B Sections:)
+        $(LINK2 #Convenience, Convenience)
+&#8226; $(LINK2 #Entropy, Entropy)
+&#8226; $(LINK2 #Traits, Traits)
+&#8226; $(LINK2 #CInterface, C Interface)
+
+$(BOOKTABLE
+
+$(LEADINGROW <a id="Convenience"></a>Convenience)
+$(TR
+    $(RROW Random, Default random number _engine))
+    $(RROW rne, Per-thread uniquely-seeded instance of default `Random`. Requires $(LINK2 https://en.wikipedia.org/wiki/Thread-local_storage, TLS).)
+    $(TR $(TDNW $(LREF threadLocal)`!(Engine)`) $(TD Per-thread uniquely-seeded instance of of any specified `Engine`. Requires $(LINK2 https://en.wikipedia.org/wiki/Thread-local_storage, TLS).))
+
+$(LEADINGROW <a id="Entropy"></a>Entropy)
+$(TR
+    $(RROW unpredictableSeed, Seed of `size_t` using system entropy)
+    $(RROW unpredictableSeedOf, Generalization of `unpredictableSeed` for unsigned integers of different sizes)
+    $(RROW genRandomNonBlocking, Fills a buffer with system entropy, returning number of bytes copied or negative number on error)
+    $(RROW genRandomBlocking, Fills a buffer with system entropy, possibly waiting if the system believes it has insufficient entropy. Returns 0 on success.))
+
+$(LEADINGROW <a id="Traits"></a>Traits)
+$(TR
+    $(RROW isRandomEngine, Check if is random number _engine)
+    $(RROW EngineReturnType, Get return type of random number _engine's `opCall()`)
+    $(RROW isSaturatedRandomEngine, Check if random number _engine `G` such that `G.max == EngineReturnType!(G).max`)
+    $(RROW preferHighBits, Are the high bits of the _engine's output known to have better statistical properties than the low bits?))
+
+$(LEADINGROW <a id="CInterface"></a>C Interface)
+    $(RROW mir_random_engine_ctor, Perform any necessary setup. Automatically called by DRuntime.)
+    $(RROW mir_random_engine_dtor, Release any resources. Automatically called by DRuntime.)
+    $(RROW mir_random_genRandomNonBlocking, External name for $(LREF genRandomNonBlocking))
+    $(RROW mir_random_genRandomBlocking, External name for $(LREF genRandomBlocking))
+)
 
 Copyright: Ilya Yaroshenko 2016-.
 License:  $(HTTP www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
 Authors: Ilya Yaroshenko
+
+Macros:
+    T2=$(TR $(TDNW $(LREF $1)) $(TD $+))
+    RROW = $(TR $(TDNW $(LREF $1)) $(TD $+))
 +/
 module mir.random.engine;
 
@@ -22,6 +62,11 @@ version (OpenBSD)
     version = GOOD_ARC4RANDOM_BUF;//ChaCha20
 version (NetBSD)
     version = GOOD_ARC4RANDOM_BUF;//ChaCha20
+
+version (D_betterC)
+    private enum bool THREAD_LOCAL_STORAGE_AVAILABLE = false;
+else
+    private enum bool THREAD_LOCAL_STORAGE_AVAILABLE = __traits(compiles, { static size_t x = 0; });
 
 import std.traits;
 
@@ -98,18 +143,36 @@ template preferHighBits(G)
         private enum bool preferHighBits = false;
 }
 
-/**
-A "good" seed for initializing random number engines. Initializing
-with $(D_PARAM unpredictableSeed) makes engines generate different
-random number sequences every run.
-
-Returns:
-A single unsigned integer seed value, different on each successive call
-*/
-pragma(inline, true)
-@property size_t unpredictableSeed() @trusted nothrow @nogc
+version (D_Ddoc)
 {
-    size_t seed;
+    /++
+    A "good" seed for initializing random number engines. Initializing
+    with $(D_PARAM unpredictableSeed) makes engines generate different
+    random number sequences every run.
+
+    Returns:
+    A single unsigned integer seed value, different on each successive call
+    +/
+    pragma(inline, true)
+    @property size_t unpredictableSeed() @trusted nothrow @nogc
+    {
+        return unpredictableSeedOf!size_t;
+    }
+}
+else
+{
+    //If D_Doc saw this it would produce incorrect documentation:
+    //instead of "size_t" it would say either "uint" or "ulong"
+    //depending on the machine generating the documentation (!!!)
+    public alias unpredictableSeed = unpredictableSeedOf!size_t;
+}
+
+/// ditto
+pragma(inline, true)
+@property T unpredictableSeedOf(T)() @trusted nothrow @nogc
+    if (isUnsigned!T && T.sizeof >= uint.sizeof)
+{
+    T seed = void;
     version (GOOD_ARC4RANDOM_BUF)
     {
         arc4random_buf(&seed, seed.sizeof);
@@ -161,9 +224,17 @@ pragma(inline, true)
         k ^= k >> 33;
         k *= 0xc4ceb9fe1a85ec53;
         k ^= k >> 33;
-        return cast(size_t)k;
+        seed = cast(T)k;
     }
     return seed;
+}
+
+/// ditto
+pragma(inline, true)
+@property T unpredictableSeedOf(T)() @safe nothrow @nogc
+    if (isUnsigned!T && T.sizeof < uint.sizeof)
+{
+    return cast(T) unpredictableSeedOf!uint;
 }
 
 ///
@@ -192,6 +263,188 @@ version(mir_random_test) unittest
     import std.traits;
     static assert(isSaturatedRandomEngine!Random);
     static assert(is(EngineReturnType!Random == size_t));
+}
+
+static if (THREAD_LOCAL_STORAGE_AVAILABLE)
+{
+    /++
+    Thread-local instance of the default $(LREF Random) allocated and seeded independently
+    for each thread. Requires $(LINK2 https://en.wikipedia.org/wiki/Thread-local_storage, TLS).
+    +/
+    alias rne = threadLocal!Random;
+    ///
+    @nogc nothrow @safe version(mir_random_test) unittest
+    {
+        import mir.random;
+        import std.complex;
+
+        auto c = complex(rne.rand!real, rne.rand!real);
+
+        int[10] array;
+        foreach (ref e; array)
+            e = rne.rand!int;
+        auto picked = array[rne.randIndex(array.length)];
+    }
+
+    private static struct TL(Engine)
+        if (isSaturatedRandomEngine!Engine && is(Engine == struct))
+    {
+        static bool initialized;
+        static if (__traits(compiles, { Engine defaultConstructed; }))
+            static Engine engine;
+        else
+            static Engine engine = Engine.init;
+    }
+    /++
+    Thread-local instance of the specified random number generator allocated and seeded uniquely
+    for each thread. Requires $(LINK2 https://en.wikipedia.org/wiki/Thread-local_storage, TLS).
+
+    `threadLocalPtr!Engine` is a pointer to the area of thread-local
+    storage used by `threadLocal!Engine`. This function is provided because
+    the compiler can infer it is `@safe`, unlike `&(threadLocal!Engine)`.
+    Like `threadLocal!Engine` this function will auto-initialize the engine.
+
+    `threadLocalInitialized!Engine` is a low-level way to explicitly change
+    the "intialized" flag used by `threadLocal!Engine` to determine whether
+    the Engine needs to be seeded. Setting this to `false` gives a way of
+    forcing the next call to `threadLocal!Engine` to reseed. In general this
+    is unnecessary but there are some specialized use cases where users have
+    requested this ability.
+    +/
+    @property ref Engine threadLocal(Engine)()
+        if (isSaturatedRandomEngine!Engine && is(Engine == struct))
+    {
+        version (DigitalMars)
+            pragma(inline);//DMD may fail to inline this.
+        else
+            pragma(inline, true);
+        return *threadLocalPtr!Engine;
+    }
+    /// ditto
+    @property Engine* threadLocalPtr(Engine)()
+        if (isSaturatedRandomEngine!Engine && is(Engine == struct))
+    {
+        version (DigitalMars)
+            pragma(inline);//DMD may fail to inline this.
+        else
+            pragma(inline, true);
+        import mir.ndslice.internal: _expect;
+        if (_expect(!TL!Engine.initialized, false))
+        {
+            static if (is(typeof((ulong t) => Engine(t))))
+                alias seed_t = ulong;
+            else static if (is(typeof((uint t) => Engine(t))))
+                alias seed_t = uint;
+            else
+                alias seed_t = EngineReturnType!Engine;
+            static if (seed_t.sizeof <= uint.sizeof)
+                seed_t seed = cast(seed_t) unpredictableSeedOf!uint;
+            else
+                seed_t seed = unpredictableSeedOf!seed_t;
+            TL!Engine.engine.__ctor(seed);
+        }
+        return &(TL!Engine.engine);
+    }
+    /// ditto
+    @property ref bool threadLocalInitialized(Engine)()
+        if (isSaturatedRandomEngine!Engine && is(Engine == struct))
+    {
+        version (DigitalMars)
+            pragma(inline);//DMD may fail to inline this.
+        else
+            pragma(inline, true);
+        return TL!Engine.initialized;
+    }
+    ///
+    @nogc nothrow @safe version(mir_random_test) unittest
+    {
+        import mir.random;
+        import mir.random.engine.xorshift;
+
+        alias gen = threadLocal!Xorshift1024StarPhi;
+        double x = gen.rand!double;
+        size_t i = gen.randIndex(100u);
+        ulong a = gen.rand!ulong;
+    }
+    ///
+    @nogc nothrow @safe version(mir_random_test) unittest
+    {
+        import mir.random;
+        //If you need a pointer to the engine, getting it like this is @safe:
+        Random* ptr = threadLocalPtr!Random;
+    }
+    ///
+    @nogc nothrow @safe version(mir_random_test) unittest
+    {
+        import mir.random;
+        import mir.random.engine.xorshift;
+        //If you need to mark the engine as uninitialized to force a reseed,
+        //you can do it like this:
+        threadLocalInitialized!Xorshift1024StarPhi = false;
+    }
+    ///
+    @nogc nothrow @safe version(mir_random_test) unittest
+    {
+        import mir.random;
+        import mir.random.engine.xorshift;
+
+        alias gen = threadLocal!Xorshift1024StarPhi;
+
+        //If you want to you can call the generator's opCall instead of using
+        //rand!T but it is somewhat clunky because of the ambiguity of
+        //@property syntax: () looks like optional function parentheses.
+        static assert(!__traits(compiles, {ulong x0 = gen();}));//<-- Won't work
+        static assert(is(typeof(gen()) == Xorshift1024StarPhi));//<-- because the type is this.
+        ulong x1 = gen.opCall();//<-- This works though.
+        ulong x2 = gen()();//<-- This also works.
+
+        //But instead of any of those you should really just use gen.rand!T.
+        ulong x3 = gen.rand!ulong;
+    }
+//    ///
+//    @nogc nothrow pure @safe version(mir_random_test) unittest
+//    {
+//        //If you want something like Phobos std.random.rndGen and
+//        //don't care about the specific algorithm you can do this:
+//        alias rndGen = threadLocal!Random;
+//    }
+
+    @nogc nothrow @system version(mir_random_test) unittest
+    {
+        //Verify Returns same instance every time per thread.
+        import mir.random;
+        import mir.random.engine.xorshift;
+
+        Xorshift1024StarPhi* addr = &(threadLocal!Xorshift1024StarPhi());
+        Xorshift1024StarPhi* sameAddr = &(threadLocal!Xorshift1024StarPhi());
+        assert(addr is sameAddr);
+        assert(sameAddr is threadLocalPtr!Xorshift1024StarPhi);
+    }
+
+}
+else
+{
+    static assert(!THREAD_LOCAL_STORAGE_AVAILABLE);
+
+    @property ref Random rne()()
+    {
+        static assert(0, "Thread-local storage not available!");
+    }
+
+    template threadLocal(T)
+    {
+        static assert(0, "Thread-local storage not available!");
+    }
+
+    template threadLocalPtr(T)
+    {
+        static assert(0, "Thread-local storage not available!");
+    }
+
+    template threadLocalInitialized(T)
+    {
+        static assert(0, "Thread-local storage not available!");
+    }
 }
 
 version(linux)
