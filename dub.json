@@ -13,7 +13,7 @@
 	"license": "BSL-1.0 (default), Apache License, Version 2.0 for (for PCG)",
 	"dependencies": {
 		"mir-linux-kernel": "~>1.0.0",
-		"mir-algorithm": "~>0.7.0-alpha7"
+		"mir-algorithm": "~>0.7.0-alpha8"
 	},
 	"buildTypes": {
 		"unittest": {
