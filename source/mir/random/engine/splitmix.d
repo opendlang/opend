@@ -159,7 +159,7 @@ alias staffordMix14() = .fmix64!(0x4be98134a5976fd3UL, 0x3bc0993a5ad19a13UL, 30,
 
  64 bits of state, period of `2 ^^ 64`.
  +/
-alias SplitMix64 = SplitMixEngine!staffordMix13;
+alias SplitMix64 = SplitMixEngine!(staffordMix13, false);
 ///
 @nogc nothrow pure @safe version(mir_random_test) unittest
 {
@@ -169,13 +169,37 @@ alias SplitMix64 = SplitMixEngine!staffordMix13;
     ulong x = rng.rand!ulong;
     assert(x == 10451216379200822465UL);
 }
+///
+@nogc nothrow pure @safe version(mir_random_test) unittest
+{
+    import mir.random;
+    import std.range.primitives: isRandomAccessRange;
+    // SplitMix64 should be both a Mir-style saturated
+    // random engine and a Phobos-style uniform RNG
+    // and random access range.
+    static assert(isPhobosUniformRNG!SplitMix64);
+    static assert(isRandomAccessRange!SplitMix64);
+    static assert(isSaturatedRandomEngine!SplitMix64);
+
+    SplitMix64 a = SplitMix64(1);
+    immutable ulong x = a.front;
+    SplitMix64 b = a.save;
+    assert (x == a.front);
+    assert (x == b.front);
+    assert (x == a[0]);
+
+    immutable ulong y = a[1];
+    assert(x == a());
+    assert(x == b());
+    assert(a.front == y);
+}
 
 /++
  Canonical splittable (specifiable-increment) SplitMix64 engine.
 
  128 bits of state, period of `2 ^^ 64`.
  +/
-alias Splittable64 = SplitMixEngine!(staffordMix13, SPLIT_MIX_SPECIFIABLE_INCREMENT);
+alias Splittable64 = SplitMixEngine!(staffordMix13, true);
 ///
 @nogc nothrow pure @safe version(mir_random_test) unittest
 {
@@ -193,12 +217,31 @@ alias Splittable64 = SplitMixEngine!(staffordMix13, SPLIT_MIX_SPECIFIABLE_INCREM
     assert(rng2.rand!ulong == 14201552918486545593UL);
     assert(rng1.increment != rng2.increment);
 }
+///
+@nogc nothrow pure @safe version(mir_random_test) unittest
+{
+    import mir.random;
+    import std.range.primitives: isRandomAccessRange;
+    // Splittable64 should be both a Mir-style saturated
+    // random engine and a Phobos-style uniform RNG
+    // and random access range.
+    static assert(isPhobosUniformRNG!Splittable64);
+    static assert(isRandomAccessRange!Splittable64);
+    static assert(isSaturatedRandomEngine!Splittable64);
 
+    Splittable64 a = Splittable64(1);
+    immutable ulong x = a.front;
+    Splittable64 b = a.save;
+    assert (x == a.front);
+    assert (x == b.front);
+    assert (x == a[0]);
 
-/// Flags used in optional argument of $(LREF SplitMixEngine).
-enum SPLIT_MIX_SPECIFIABLE_INCREMENT = 1;
-/// ditto
-enum SPLIT_MIX_OUTPUT_PREVIOUS = 2;
+    immutable ulong y = a[1];
+    assert(x == a());
+    assert(x == b());
+    assert(a.front == y);
+}
+
 
 /++
 Default increment used by $(LREF SplitMixEngine).
@@ -228,36 +271,20 @@ The first parameter $(D_PARAM mixer) should be a explicit instantiation
 of $(LREF fmix64) or a predefined parameterization of `fmix64` such as
 $(LREF murmurHash3Mix) or $(LREF staffordMix13).
 
-The optional second parameter is an optional $(D_PARAM flags) bitfield.
-Accepted flags are:
+The second parameter is whether the $(LREF split) operation is enabled.
+Allows each instance to have a distinct increment, increasing the size
+from 64 bits to 128 bits.
 
-$(TABLE
-    $(TR $(TH Flag) $(TH Description))
-
-    $(TR $(TD $(LREF SPLIT_MIX_SPECIFIABLE_INCREMENT))
-    $(TD Allows each instance to have a distinct increment, enabling the
-    $(LREF split) operation at the cost of increasing the size from 64 bits
-    to 128 bits.))
-
-    $(TR $(TD $(LREF SPLIT_MIX_OUTPUT_PREVIOUS))
-    $(TD Makes this engine also a
-    $(LINK2 https://dlang.org/phobos/std_random.html#.isUniformRNG,
-    Phobos-style uniform RNG) at no additional size cost, possibly
-    increasing instruction-level parallelism at the cost of increased
-    register pressure.))
-)
-
-The optional third parameter is a $(LREF default_increment) to be used as an
-alternative to $(LREF DEFAULT_SPLITMIX_INCREMENT). For a SplitMixEngine with
-a fixed seed the default increment is used by all instances.
+The third parameter is the $(LREF default_increment). If the
+SplitMixEngine has a fixed increment this value will be used for
+each instance. If omitted this paramter defaults to
+$(LREF DEFAULT_SPLITMIX_INCREMENT).
 +/
-struct SplitMixEngine(alias mixer, OptionalArgs...)
+struct SplitMixEngine(alias mixer, bool split_enabled = false, OptionalArgs...)
     if ((__traits(compiles, {static assert(__traits(isSame, TemplateOf!(mixer!()), fmix64));})
             || __traits(compiles, {static assert(__traits(isSame, TemplateOf!mixer, fmix64));}))
-        && OptionalArgs.length <= 2
-        && (OptionalArgs.length < 1 || (is(typeof(OptionalArgs[0]) : ulong) && OptionalArgs[0] <= (SPLIT_MIX_SPECIFIABLE_INCREMENT | SPLIT_MIX_OUTPUT_PREVIOUS)))
-        && (OptionalArgs.length < 2 || (is(typeof(OptionalArgs[1]) == ulong) && OptionalArgs[1] != DEFAULT_SPLITMIX_INCREMENT))
-        && (OptionalArgs.length != 1 || OptionalArgs[0] != 0))
+        && (OptionalArgs.length < 1 || (is(typeof(OptionalArgs[1]) == ulong) && OptionalArgs[1] != DEFAULT_SPLITMIX_INCREMENT))
+        && OptionalArgs.length < 2)
 {
     @nogc:
     nothrow:
@@ -269,7 +296,7 @@ struct SplitMixEngine(alias mixer, OptionalArgs...)
     else
         alias fmix64 = mixer;
 
-    static if (OptionalArgs.length >= 2)
+    static if (OptionalArgs.length >= 1)
         /++
          + Either $(LREF DEFAULT_SPLITMIX_INCREMENT) or the optional
          + third argument of this template.
@@ -278,11 +305,6 @@ struct SplitMixEngine(alias mixer, OptionalArgs...)
     else
         /// ditto
         enum ulong default_increment = DEFAULT_SPLITMIX_INCREMENT;
-
-    static if (OptionalArgs.length >= 1)
-        private enum flags = OptionalArgs[0];
-    else
-        private enum flags = 0;
 
     static assert(default_increment % 2 != 0, "Increment must be an odd number!");
 
@@ -294,11 +316,12 @@ struct SplitMixEngine(alias mixer, OptionalArgs...)
     /// Full period (2 ^^ 64).
     enum uint period_pow2 = 64;
 
-    /// True when `0 != (SPLIT_MIX_OUTPUT_PREVIOUS & flags)`
-    enum bool output_previous = 0 != (SPLIT_MIX_OUTPUT_PREVIOUS & flags);
-
-    /// True when `0 != (SPLIT_MIX_SPECIFIABLE_INCREMENT & flags)`
-    enum bool increment_specifiable = 0 != (SPLIT_MIX_SPECIFIABLE_INCREMENT & flags);
+    /++
+    Whether each instance can set its increment individually.
+    Enables the $(LREF split) operation at the cost of increasing
+    size from 64 bits to 128 bits.
+    +/
+    enum bool increment_specifiable = split_enabled;
 
     /// Current internal state of the generator.
     public ulong state;
@@ -330,10 +353,7 @@ struct SplitMixEngine(alias mixer, OptionalArgs...)
     {
         static if (increment_specifiable)
             increment = default_increment;
-        static if (output_previous)
-            this.state = x0 + increment;
-        else
-            this.state = x0;
+        this.state = x0;
     }
 
     /++
@@ -357,25 +377,15 @@ struct SplitMixEngine(alias mixer, OptionalArgs...)
     this()(ulong x0, ulong increment) if (increment_specifiable)
     {
         this.increment = increment | 1UL;
-        static if (output_previous)
-            this.state = x0 + increment;
-        else
-            this.state = x0;
+        this.state = x0;
     }
 
     /// Advances the random sequence.
     ulong opCall()()
     {
-        static if (output_previous)
-        {
-            auto result = fmix64(state);
-            state += increment;
-            return result;
-        }
-        else
-        {
-            return fmix64(state += increment);
-        }
+        version(LDC) pragma(inline, true);
+        else pragma(inline);
+        return fmix64(state += increment);
     }
     ///
     @nogc nothrow pure @safe version(mir_random_test) unittest
@@ -393,18 +403,11 @@ struct SplitMixEngine(alias mixer, OptionalArgs...)
     typeof(this) split()() if (increment_specifiable)
     {
         immutable state1 = opCall();
-        static if (output_previous)
-        {
-            auto gamma1 = state;
-            state += increment;
-        }
-        else
-            auto gamma1 = state += increment;
         //Use a different mix function for the increment.
         static if (fmix64(1) == .murmurHash3Mix(1))
-            gamma1 = .staffordMix13(gamma1);
+            ulong gamma1 = .staffordMix13(state += increment);
         else
-            gamma1 = .murmurHash3Mix(gamma1);
+            ulong gamma1 = .murmurHash3Mix(state += increment);
         gamma1 |= 1UL;//Ensure increment is odd.
         import core.bitop: popcnt;
         import mir.ndslice.internal: _expect;
@@ -416,7 +419,7 @@ struct SplitMixEngine(alias mixer, OptionalArgs...)
     ///
     @nogc nothrow pure @safe version(mir_random_test) unittest
     {
-        auto rnd1 = SplitMixEngine!(staffordMix13,SPLIT_MIX_SPECIFIABLE_INCREMENT)(1);
+        auto rnd1 = SplitMixEngine!(staffordMix13,true)(1);
         auto rnd2 = rnd1.split();
         assert(rnd1.state != rnd2.state);
         assert(rnd1.increment != rnd2.increment);
@@ -431,58 +434,59 @@ struct SplitMixEngine(alias mixer, OptionalArgs...)
         state += n * increment;
     }
 
-    static if (output_previous)
+    /++
+    Compatibility with $(LINK2 https://dlang.org/phobos/std_random.html#.isUniformRNG,
+    Phobos library methods). Presents this RNG as an InputRange.
+    +/
+    enum bool isUniformRandom = true;
+    /// ditto
+    enum ulong min = ulong.min;
+    /// ditto
+    enum bool empty = false;
+    /// ditto
+    @property ulong front()() const
     {
-        /++
-        Compatibility with $(LINK2 https://dlang.org/phobos/std_random.html#.isUniformRNG,
-        Phobos library methods). Presents this RNG as an InputRange.
-        Only available if `output_previous == true`.
-
-        The reason that this is enabled when <a href="#.SplitMixEngine.output_previous">
-        `output_previous == true`</a> is because
-        `front` can be implemented without additional cost.
-        +/
-        enum bool isUniformRandom = true;
-        /// ditto
-        enum ulong min = ulong.min;
-        /// ditto
-        enum bool empty = false;
-        /// ditto
-        @property ulong front()() const { return fmix64(state); }
-        /// ditto
-        void popFront()() { state += increment; }
-        /// ditto
-        void seed()(ulong x0)
-        {
-            this.__ctor(x0);
-        }
-        /// ditto
-        void seed()(ulong x0, ulong increment) if (increment_specifiable)
-        {
-            this.__ctor(x0, increment);
-        }
-        /// ditto
-        @property typeof(this) save()() const
-        {
-            static if (increment_specifiable)
-                return typeof(this)(state - increment, increment);
-            else
-                return typeof(this)(state - increment);
-        }
-        /// ditto
-        ulong opIndex()(size_t n) const
-        {
-            return fmix64(state + n * increment);
-        }
-        /// ditto
-        size_t popFrontN()(size_t n)
-        {
-            skip(n);
-            return n;
-        }
-        /// ditto
-        alias popFrontExactly() = skip;
+        version (LDC) pragma(inline, true);
+        else pragma(inline);
+        return fmix64(state + increment);
     }
+    /// ditto
+    void popFront()()
+    {
+        pragma(inline, true);
+        state += increment;
+    }
+    /// ditto
+    void seed()(ulong x0)
+    {
+        this.__ctor(x0);
+    }
+    /// ditto
+    void seed()(ulong x0, ulong increment) if (increment_specifiable)
+    {
+        this.__ctor(x0, increment);
+    }
+    /// ditto
+    @property typeof(this) save()() const
+    {
+        static if (increment_specifiable)
+            return typeof(this)(state, increment);
+        else
+            return typeof(this)(state);
+    }
+    /// ditto
+    ulong opIndex()(size_t n) const
+    {
+        return fmix64(state + (n + 1) * increment);
+    }
+    /// ditto
+    size_t popFrontN()(size_t n)
+    {
+        skip(n);
+        return n;
+    }
+    /// ditto
+    alias popFrontExactly() = skip;
 }
 ///
 @nogc nothrow pure @safe version(mir_random_test) unittest
@@ -495,44 +499,18 @@ struct SplitMixEngine(alias mixer, OptionalArgs...)
     assert(RNG1(1).opCall() == RNG2(1).opCall());
 
     //However not each result's name is equally informative.
-    static assert(RNG1.stringof == `SplitMixEngine!(staffordMix13)`);
-    static assert(RNG2.stringof == `SplitMixEngine!(fmix64)`);//Doesn't include parameters!
-}
-///
-@nogc nothrow pure @safe version(mir_random_test) unittest
-{
-    import mir.random;
-    import std.range.primitives: isRandomAccessRange;
-    // With `output_previous == true`, should be both a Mir-style saturated
-    // random engine and a Phobos-style uniform RNG.
-    alias RNG = SplitMixEngine!(staffordMix13, SPLIT_MIX_OUTPUT_PREVIOUS);
-    static assert(RNG.output_previous);
-    static assert(isPhobosUniformRNG!RNG);
-    static assert(isSaturatedRandomEngine!RNG);
-    static assert(isRandomAccessRange!RNG);
-
-    auto a = RNG(1);
-    immutable ulong x = a.front;
-    auto b = a.save;
-    assert (x == a.front);
-    assert (x == b.front);
-    assert (x == a[0]);
-
-    immutable ulong y = a[1];
-    assert(x == a());
-    assert(x == b());
-    assert(a.front == y);
+    static assert(RNG1.stringof == `SplitMixEngine!(staffordMix13, false)`);
+    static assert(RNG2.stringof == `SplitMixEngine!(fmix64, false)`);//Doesn't include parameters of fmix64!
 }
 
 @nogc nothrow pure @safe version(mir_random_test) unittest
 {
-    alias RNG = SplitMixEngine!(staffordMix13, SPLIT_MIX_OUTPUT_PREVIOUS);
-    auto a = RNG(1);
+    SplitMix64 a = SplitMix64(1);
     a.popFrontExactly(1);
     import std.meta: AliasSeq;
     foreach (f; AliasSeq!(murmurHash3Mix,staffordMix11,staffordMix13))
     {
-        auto rnd = SplitMixEngine!(f, SPLIT_MIX_SPECIFIABLE_INCREMENT)(0);
+        auto rnd = SplitMixEngine!(f, true)(0);
         auto rnd2 = rnd.split();
     }
 }
