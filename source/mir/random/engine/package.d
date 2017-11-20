@@ -386,6 +386,21 @@ static if (THREAD_LOCAL_STORAGE_AVAILABLE)
     @nogc nothrow @safe version(mir_random_test) unittest
     {
         import mir.random;
+        import mir.random.engine.mersenne_twister;
+        //You can mark the engine as already initialized to skip
+        //automatic seeding then initialize it yourself, for instance
+        //if you want to use a known seed rather than a random one.
+        threadLocalInitialized!Mt19937 = true;
+        immutable uint[4] customSeed = [0x123, 0x234, 0x345, 0x456];
+        threadLocal!Mt19937.__ctor(customSeed);
+        foreach(_; 0..999)
+            threadLocal!Mt19937.rand!uint;
+        assert(3460025646u == threadLocal!Mt19937.rand!uint);
+    }
+    ///
+    @nogc nothrow @safe version(mir_random_test) unittest
+    {
+        import mir.random;
         import mir.random.engine.xorshift;
 
         alias gen = threadLocal!Xorshift1024StarPhi;
