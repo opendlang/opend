@@ -867,7 +867,7 @@ If not enough entropy has been gathered, it won't block.
 Hence the error code should be inspected.
 
 On Linux >= 3.17 genRandomNonBlocking is guaranteed to succeed for 256 bytes and
-less (only currently supported on x86 and x86_64).
+fewer.
 
 On Mac OS X, OpenBSD, and NetBSD genRandomNonBlocking is guaranteed to
 succeed for any number of bytes.
