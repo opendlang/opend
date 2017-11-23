@@ -151,10 +151,8 @@ private template makeObject(args...)
         import std.functional : forward;
         import std.traits : hasIndirections;
         import core.memory : GC;
-        version(LDC)
-            u._object = () @trusted { return u._allocator.make!Type(forward!args); }();
-        else
-            u._object = u._allocator.make!Type(forward!args);
+
+        u._object = u._allocator.make!Type(forward!args);
 
         static if (is(Type == class)) {
             () @trusted {

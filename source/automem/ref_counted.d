@@ -219,26 +219,10 @@ private template makeObject(args...)
 
         rc.allocateImpl;
 
-        version(LDC) { // bug with emplace
-
-            import std.traits: Unqual;
-            alias UnqualType = Unqual!Type;
-
-            static if(is(Type == shared))
-                ldcEmplace(cast(UnqualType*)&rc._impl._object, forward!args);
-            else {
-                static if(is(Type == class)) {
-                    emplace!Type(rc._impl._rawMemory, forward!args);
-                } else
-                    emplace(&rc._impl._object, forward!args);
-            }
-
-        } else {
-            static if(is(Type == class)) {
-                emplace!Type(rc._impl._rawMemory, forward!args);
-            } else
-                emplace(&rc._impl._object, forward!args);
-        }
+        static if(is(Type == class))
+            emplace!Type(rc._impl._rawMemory, forward!args);
+        else
+            emplace(&rc._impl._object, forward!args);
     }
 }
 
@@ -587,124 +571,17 @@ auto refCounted(Type, Allocator)(Unique!(Type, Allocator) ptr) {
 }
 
 
-version(unittest) {
+version(unittest):
 
-    void sendRefCounted(Allocator, Args...)(Args args) {
-        import std.concurrency: spawn, send;
+void sendRefCounted(Allocator, Args...)(Args args) {
+    import std.concurrency: spawn, send;
 
-        auto tid = spawn(&threadFunc);
-        auto ptr = RefCounted!(shared SharedStruct, Allocator)(args);
+    auto tid = spawn(&threadFunc);
+    auto ptr = RefCounted!(shared SharedStruct, Allocator)(args);
 
-        tid.send(ptr);
-    }
-
-    void threadFunc() {
-
-    }
+    tid.send(ptr);
 }
 
-version(LDC) {
-
-    //copied and modified from Phobos or else won't compile
-
-    T* ldcEmplace(T, Args...)(T* chunk, auto ref Args args) if (is(T == struct) || Args.length == 1)
-    {
-        ldcEmplaceRef!T(*chunk, args);
-        return chunk;
-    }
-
-
-    import std.traits;
-
-    void ldcEmplaceRef(T, UT, Args...)(ref UT chunk, auto ref Args args)
-        if (is(UT == Unqual!T))
-        {
-            static if (args.length == 0)
-            {
-                static assert (is(typeof({static T i;})),
-                               convFormat("Cannot emplace a %1$s because %1$s.this() is annotated with @disable.", T.stringof));
-                static if (is(T == class)) static assert (!isAbstractClass!T,
-                                                          T.stringof ~ " is abstract and it can't be emplaced");
-                emplaceInitializer(chunk);
-            }
-            else static if (
-                !is(T == struct) && Args.length == 1 /* primitives, enums, arrays */
-                ||
-                Args.length == 1 && is(typeof({T t = args[0];})) /* conversions */
-                ||
-                is(typeof(T(args))) /* general constructors */
-                ||
-                is(typeof(shared T(args)))
-                )
-            {
-                static struct S
-                {
-                    static if(is(typeof(shared T(args))))
-                        shared T payload;
-                    else
-                        T payload;
-
-                    this(ref Args x)
-                        {
-                            static if (Args.length == 1)
-                                static if (is(typeof(payload = x[0])))
-                                    payload = x[0];
-                                else static if(is(typeof(shared T(x[0]))))
-                                    payload = shared T(x[0]);
-                                else
-                                    payload = T(x[0]);
-                            else static if(is(typeof(shared T(x))))
-                                payload = shared T(x);
-                            else
-                                payload = T(x);
-                        }
-                }
-                if (__ctfe)
-                {
-                    static if (is(typeof(chunk = T(args))))
-                        chunk = T(args);
-                    else static if (args.length == 1 && is(typeof(chunk = args[0])))
-                        chunk = args[0];
-                    else assert(0, "CTFE emplace doesn't support "
-                                ~ T.stringof ~ " from " ~ Args.stringof);
-                }
-                else
-                {
-                    S* p = () @trusted { return cast(S*) &chunk; }();
-                    emplaceInitializer(*p);
-                    p.__ctor(args);
-                }
-            }
-            else static if (is(typeof(chunk.__ctor(args))))
-            {
-                // This catches the rare case of local types that keep a frame pointer
-                emplaceInitializer(chunk);
-                chunk.__ctor(args);
-            }
-            else
-            {
-                //We can't emplace. Try to diagnose a disabled postblit.
-                static assert(!(Args.length == 1 && is(Args[0] : T)),
-                              convFormat("Cannot emplace a %1$s because %1$s.this(this) is annotated with @disable.", T.stringof));
-
-                //We can't emplace.
-                static assert(false,
-                              convFormat("%s cannot be emplaced from %s.", T.stringof, Args[].stringof));
-            }
-        }
-
-
-    //emplace helper functions
-    private void emplaceInitializer(T)(ref T chunk) @trusted pure nothrow
-    {
-        static if (!hasElaborateAssign!T && isAssignable!T)
-            chunk = T.init;
-        else
-        {
-            import core.stdc.string : memcpy;
-            static immutable T init = T.init;
-            memcpy(&chunk, &init, T.sizeof);
-        }
-    }
+void threadFunc() {
 
 }
