@@ -226,8 +226,12 @@ private template makeObject(args...)
 
             static if(is(Type == shared))
                 ldcEmplace(cast(UnqualType*)&rc._impl._object, forward!args);
-            else
-                emplace(cast(UnqualType*)&rc._impl._object, forward!args);
+            else {
+                static if(is(Type == class)) {
+                    emplace!Type(rc._impl._rawMemory, forward!args);
+                } else
+                    emplace(&rc._impl._object, forward!args);
+            }
 
         } else {
             static if(is(Type == class)) {
