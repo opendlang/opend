@@ -1,6 +1,6 @@
 /**
  * Algebraic data type implementation based on a tagged union.
- * 
+ *
  * Copyright: Copyright 2015-2016, Sönke Ludwig.
  * License:   $(WEB www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
  * Authors:   Sönke Ludwig
@@ -144,10 +144,13 @@ struct TaggedAlgebraic(U) if (is(U == union) || is(U == struct))
 		final switch (m_kind) {
 			foreach (i, FT; FieldTypes) {
 				case __traits(getMember, Kind, fieldNames[i]):
-					static if (is(typeof(to!T(trustedGet!(fieldNames[i]))))) {
+					static if (is(typeof(trustedGet!(fieldNames[i])) : T))
+						return trustedGet!(fieldNames[i]);
+					else static if (is(typeof(to!T(trustedGet!(fieldNames[i]))))) {
 						return to!T(trustedGet!(fieldNames[i]));
 					} else {
-						assert(false, "Cannot cast a "~(cast(Kind)m_kind).to!string~" value ("~FT.stringof~") to "~T.stringof);
+						assert(false, "Cannot cast a " ~ m_kind.to!string
+								~ " value of type " ~ FT.stringof ~ " to " ~ T.stringof);
 					}
 			}
 		}
@@ -162,10 +165,13 @@ struct TaggedAlgebraic(U) if (is(U == union) || is(U == struct))
 		final switch (m_kind) {
 			foreach (i, FT; FieldTypes) {
 				case __traits(getMember, Kind, fieldNames[i]):
-					static if (is(typeof(to!T(trustedGet!(fieldNames[i]))))) {
+					static if (is(typeof(trustedGet!(fieldNames[i])) : T))
+						return trustedGet!(fieldNames[i]);
+					else static if (is(typeof(to!T(trustedGet!(fieldNames[i]))))) {
 						return to!T(trustedGet!(fieldNames[i]));
 					} else {
-						assert(false, "Cannot cast a "~(cast(Kind)m_kind).to!string~" value ("~FT.stringof~") to "~T.stringof);
+						assert(false, "Cannot cast a " ~ m_kind.to!string
+								~ " value of type" ~ FT.stringof ~ " to " ~ T.stringof);
 					}
 			}
 		}
@@ -232,7 +238,7 @@ unittest
 	Tagged taggedAny = taggedInt;
 	taggedAny = taggedString;
 	taggedAny = taggedFoo;
-	
+
 	// Check type: Tagged.Kind is an enum
 	assert(taggedInt.kind == Tagged.Kind.i);
 	assert(taggedString.kind == Tagged.Kind.str);
@@ -370,7 +376,7 @@ unittest {
 	static union U {
 		S s;
 	}
-	
+
 	auto u = TaggedAlgebraic!U(S.init);
 	const uc = u;
 	immutable ui = cast(immutable)u;
@@ -574,6 +580,19 @@ static if (__VERSION__ >= 2072) unittest { // default initialization
 
 	TaggedAlgebraic!U ta;
 	assert(ta.i == 42);
+}
+
+unittest
+{
+	import std.meta : AliasSeq;
+
+	union U { int[int] a; }
+
+	foreach (TA; AliasSeq!(TaggedAlgebraic!U, const(TaggedAlgebraic!U)))
+	{
+		TA ta = [1 : 2];
+		assert(cast(int[int])ta == [1 : 2]);
+	}
 }
 
 
