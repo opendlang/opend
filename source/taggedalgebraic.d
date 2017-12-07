@@ -611,6 +611,11 @@ bool hasType(T, U)(in ref TaggedAlgebraic!U ta)
 	}
 	assert(false); // never reached
 }
+/// ditto
+bool hasType(T, U)(in TaggedAlgebraic!U ta)
+{
+	return hasType!(T, U)(ta);
+}
 
 ///
 unittest {
@@ -640,6 +645,18 @@ unittest { // issue #1
 	static assert(!is(typeof(ta.hasType!double)));
 	assert(ta.hasType!int);
 }
+
+unittest {
+	union U {
+		int a;
+		float b;
+	}
+	alias TA = TaggedAlgebraic!U;
+
+	const(TA) test() { return TA(12); }
+	assert(test().hasType!int);
+}
+
 
 /** Gets the value stored in an algebraic type based on its data type.
 */
