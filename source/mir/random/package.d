@@ -66,8 +66,12 @@ T rand(T, G)(ref G gen)
     static if (P > 1)
     {
         _Uab!(R[P],T) u = void;
-        foreach (ref e; u.asArray)
-            e = gen();
+        version(LittleEndian)
+            foreach (ref e; u.asArray)
+                e = gen();
+        else
+            foreach_reverse (ref e; u.asArray)
+                e = gen();
         return u.asInteger;
     }
     else static if (preferHighBits!G && P == 0)
