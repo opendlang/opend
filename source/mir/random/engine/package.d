@@ -305,7 +305,7 @@ static if (THREAD_LOCAL_STORAGE_AVAILABLE)
     Like `threadLocal!Engine` this function will auto-initialize the engine.
 
     `threadLocalInitialized!Engine` is a low-level way to explicitly change
-    the "intialized" flag used by `threadLocal!Engine` to determine whether
+    the "initialized" flag used by `threadLocal!Engine` to determine whether
     the Engine needs to be seeded. Setting this to `false` gives a way of
     forcing the next call to `threadLocal!Engine` to reseed. In general this
     is unnecessary but there are some specialized use cases where users have
@@ -481,13 +481,13 @@ else
 static if (LINUX_NR_GETRANDOM)
 {
     private enum GET_RANDOM {
-        UNINTIALIZED,
+        UNINITIALIZED,
         NOT_AVAILABLE,
         AVAILABLE,
     }
 
     // getrandom was introduced in Linux 3.17
-    private __gshared GET_RANDOM hasGetRandom = GET_RANDOM.UNINTIALIZED;
+    private __gshared GET_RANDOM hasGetRandom = GET_RANDOM.UNINITIALIZED;
 
     import core.sys.posix.sys.utsname : utsname;
 
@@ -753,7 +753,7 @@ extern(C) void mir_random_engine_ctor()
         {
             with(GET_RANDOM)
             {
-                if (hasGetRandom == UNINTIALIZED)
+                if (hasGetRandom == UNINITIALIZED)
                     hasGetRandom = initHasGetRandom ? AVAILABLE : NOT_AVAILABLE;
             }
         }

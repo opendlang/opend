@@ -1,7 +1,7 @@
 /++
  + Permuted Congruential Generator (PCG)
  +
- + Implemeted as per the C++ version of PCG, $(HTTP _pcg-random.org).
+ + Implemented as per the C++ version of PCG, $(HTTP _pcg-random.org).
  +
  + Paper available $(HTTP _pcg-random.org/paper.html)
  +
@@ -443,7 +443,7 @@ enum stream_t
 }
 
 /++
- + XorShifts are invertable, but they are someting of a pain to invert.
+ + XorShifts are invertible, but they are someting of a pain to invert.
  + This function backs them out.  It's used by the whacky "inside out"
  + generator defined later.
  +/
@@ -562,7 +562,7 @@ O rxs(O, Uint)(Uint state)
  + make it slower than some of the others.  We give it the rottenest jobs.
  +
  + Because it's usually used in contexts where the state type and the
- + result type are the same, it is a permutation and is thus invertable.
+ + result type are the same, it is a permutation and is thus invertible.
  + We thus provide a function to invert it.  This function is used to
  + for the "inside out" generator used by the extended generator.
  +/
@@ -654,7 +654,7 @@ private template half_size(Uint)
  + XSL RR RR -- fixed xorshift (to low bits), random rotate (both parts)
  +
  + Useful for 128-bit types that are split across two CPU registers.
- + If you really want an invertable 128-bit RNG, I guess this is the one.
+ + If you really want an invertible 128-bit RNG, I guess this is the one.
  +/
 
 O xsl_rr_rr(O, Uint)(Uint state)

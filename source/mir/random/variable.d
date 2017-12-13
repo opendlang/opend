@@ -1356,7 +1356,7 @@ nothrow @safe version(mir_random_test) unittest
     //writeln(obs);
 }
 
-/// Comulative
+/// Cumulative
 nothrow @safe version(mir_random_test) unittest
 {
     auto gen = Random(unpredictableSeed);

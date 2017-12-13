@@ -218,8 +218,13 @@ if (isIntegral!StateUInt && isIntegral!OutputUInt
     Note that when StateUInt is the same size as OutputUInt the two lowest bits
     of this generator are
     $(LINK2 https://en.wikipedia.org/wiki/Linear-feedback_shift_register,
-    LSFRs), and thus will fail binary rank tests. We suggest to use a sign test
-    to extract a random Boolean value, and right shifts to extract subsets of bits.
+    LFSRs), and thus will fail binary rank tests.
+    To provide some context, $(I every) bit of a Mersenne Twister generator
+    (either the 32-bit or 64-bit variant) is an LFSR.
+
+    The `rand!T` functions in `mir.random` automatically will discard
+    the low bits when generating output smaller than `OutputUInt` due to
+    this generator having `preferHighBits` defined `true`.
     +/
     enum bool preferHighBits = true;
 
@@ -434,21 +439,21 @@ Mozilla Firefox), $(LINK2 https://bugs.webkit.org/show_bug.cgi?id=151641, Safari
 and $(LINK2 https://github.com/Microsoft/ChakraCore/commit/dbda0182dc0a983dfb37d90c05000e79b6fc75b0,
 Microsoft Edge). From the authors:
 
-----
-/* This is the successor to xorshift128+. It is the fastest full-period
+<blockquote>
+This is the successor to xorshift128+. It is the fastest full-period
 generator passing BigCrush without systematic failures, but due to the
 relatively short period it is acceptable only for applications with a
 mild amount of parallelism; otherwise, use a xorshift1024* generator.
 
 Beside passing BigCrush, this generator passes the PractRand test suite
 up to (and included) 16TB, with the exception of binary rank tests, as
-the lowest bit of this generator is an LSFR. The next bit is not an
+the lowest bit of this generator is an LFSR. The next bit is not an
 LFSR, but in the long run it will fail binary rank tests, too. The
 other bits have no LFSR artifacts.
 
 We suggest to use a sign test to extract a random Boolean value, and
-right shifts to extract subsets of bits. */
-----
+right shifts to extract subsets of bits.
+</blockquote>
 
 Public domain reference implementation:
 $(HTTP xoroshiro.di.unimi.it/xoroshiro128plus.c).
@@ -469,11 +474,14 @@ struct Xoroshiro128Plus
     /++
     The lowest bit of this generator is an
     $(LINK2 https://en.wikipedia.org/wiki/Linear-feedback_shift_register,
-    LSFR). The next bit is not an LFSR, but in the long run it will fail
+    LFSR). The next bit is not an LFSR, but in the long run it will fail
     binary rank tests, too. The other bits have no LFSR artifacts.
+    To provide some context, $(I every) bit of a Mersenne Twister generator
+    (either the 32-bit or 64-bit variant) is an LFSR.
 
-    We suggest to use a sign test to extract a random Boolean value, and
-    right shifts to extract subsets of bits.
+    The `rand!T` functions in `mir.random` automatically will discard
+    the low bits when generating output smaller than `ulong` due to
+    this generator having `preferHighBits` defined `true`.
     +/
     enum bool preferHighBits = true;
 

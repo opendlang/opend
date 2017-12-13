@@ -22,7 +22,7 @@ struct LinearCongruentialEngine(Uint, Uint a, Uint c, Uint m)
     enum Uint max = m - 1 - bool(c == 0);
 /**
 The parameters of this distribution. The random number is $(D_PARAM x
-= (x * multipler + increment) % modulus).
+= (x * multiplier + increment) % modulus).
  */
     enum Uint multiplier = a;
     ///ditto

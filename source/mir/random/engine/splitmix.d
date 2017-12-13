@@ -277,7 +277,7 @@ from 64 bits to 128 bits.
 
 The third parameter is the $(LREF default_increment). If the
 SplitMixEngine has a fixed increment this value will be used for
-each instance. If omitted this paramter defaults to
+each instance. If omitted this parameter defaults to
 $(LREF DEFAULT_SPLITMIX_INCREMENT).
 +/
 struct SplitMixEngine(alias mixer, bool split_enabled = false, OptionalArgs...)

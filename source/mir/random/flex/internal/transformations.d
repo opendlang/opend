@@ -247,7 +247,7 @@ body
             return -log(-x);
     }
     auto d = c + 1;
-    // surpress DMD's annoying FP magic
+    // suppress DMD's annoying FP magic
     S v = fabs(c) / d;
     S e = d / c;
     S p = pow(fabs(x), e);
