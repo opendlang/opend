@@ -223,6 +223,15 @@ if (isIntegral!StateUInt && isIntegral!OutputUInt
     +/
     enum bool preferHighBits = true;
 
+    /*
+     * Marker indicating it's safe to construct from void
+     * (i.e. the constructor doesn't depend on the struct
+     * being in an initially valid state).
+     * Non-public because we don't want to commit to this
+     * design.
+     */
+    package enum bool _isVoidInitOkay = true;
+
   private:
     enum uint N = nbits / (StateUInt.sizeof * 8);
     enum bool usePointer = N > 3;
