@@ -143,6 +143,64 @@ template preferHighBits(G)
         private enum bool preferHighBits = false;
 }
 
+/*
+ * Marker indicating it's safe to construct from void
+ * (i.e. the constructor doesn't depend on the struct
+ * being in an initially valid state).
+ * Either checks an explicit flag `_isVoidInitOkay`
+ * or tests to make sure that the structure contains
+ * nothing that looks like a pointer or an index into
+ * an array. Also ensures that there is not an elaborate
+ * destructor since it could be called when the struct
+ * is in an invalid state.
+ * Non-public because we don't want to commit to this
+ * design.
+ */
+package template _isVoidInitOkay(G) if (isRandomEngine!G && is(G == struct))
+{
+    static if (is(typeof(G._isVoidInitOkay) : bool))
+        enum bool _isVoidInitOkay = G._isVoidInitOkay;
+    else static if (!hasNested!G && !hasElaborateDestructor!G)
+    {
+        import std.meta : allSatisfy;
+        static if (allSatisfy!(isScalarType, FieldTypeTuple!G))
+            //All members are scalars.
+            enum bool _isVoidInitOkay = true;
+        else static if (FieldTypeTuple!(G).length == 1 && isStaticArray!(FieldTypeTuple!(G)[0]))
+            //Only has one member which is a static array of scalars.
+            enum bool _isVoidInitOkay = isScalarType!(typeof(FieldTypeTuple!(G)[0].init[0]));
+        else
+            enum bool _isVoidInitOkay = false;
+    }
+    else
+        enum bool _isVoidInitOkay = false;
+}
+@nogc nothrow pure @safe version(mir_random_test)
+{
+    import mir.random.engine.mersenne_twister: Mt19937, Mt19937_64;
+    //Ensure that this property is set for the Mersenne Twister,
+    //whose internal state is huge enough for this to potentially
+    //matter:
+    static assert(_isVoidInitOkay!Mt19937);
+    static assert(_isVoidInitOkay!Mt19937_64);
+    //Check that the property is set for a moderately-sized PRNG.
+    import mir.random.engine.xorshift: Xorshift1024StarPhi;
+    static assert(_isVoidInitOkay!Xorshift1024StarPhi);
+    //Check that PRNGs not explicitly marked as void-init safe
+    //can be inferred as such if they only have scalar fields.
+    import mir.random.engine.pcg: pcg32, pcg32_oneseq;
+    import mir.random.engine.splitmix: SplitMix64;
+    static assert(_isVoidInitOkay!pcg32);
+    static assert(_isVoidInitOkay!pcg32_oneseq);
+    static assert(_isVoidInitOkay!SplitMix64);
+    //Check that PRNGs not explicitly marked as void-init safe
+    //can be inferred as such if their only field is a static
+    //array of scalars.
+    import mir.random.engine.xorshift: Xorshift128, Xoroshiro128Plus;
+    static assert(_isVoidInitOkay!Xorshift128);
+    static assert(_isVoidInitOkay!Xoroshiro128Plus);
+}
+
 version (D_Ddoc)
 {
     /++
@@ -290,7 +348,9 @@ static if (THREAD_LOCAL_STORAGE_AVAILABLE)
         if (isSaturatedRandomEngine!Engine && is(Engine == struct))
     {
         static bool initialized;
-        static if (__traits(compiles, { Engine defaultConstructed; }))
+        static if (_isVoidInitOkay!Engine)
+            static Engine engine = void;
+        else static if (__traits(compiles, { Engine defaultConstructed; }))
             static Engine engine;
         else
             static Engine engine = Engine.init;

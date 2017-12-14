@@ -71,6 +71,15 @@ struct MersenneTwisterEngine(UIntType, size_t w, size_t n, size_t m, size_t r,
     +/
     UIntType[n] data = void;
 
+    /*
+     * Marker indicating it's safe to construct from void
+     * (i.e. the constructor doesn't depend on the struct
+     * being in an initially valid state).
+     * Non-public because we don't want to commit to this
+     * design.
+     */
+    package enum bool _isVoidInitOkay = true;
+
     /++
     Constructs a MersenneTwisterEngine object.
     +/
