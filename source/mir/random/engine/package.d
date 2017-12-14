@@ -346,6 +346,15 @@ static if (THREAD_LOCAL_STORAGE_AVAILABLE)
             static Engine engine;
         else
             static Engine engine = Engine.init;
+
+        static if (is(ucent) && is(typeof((ucent t) => Engine(t))))
+            alias seed_t = ucent;
+        else static if (is(typeof((ulong t) => Engine(t))))
+            alias seed_t = ulong;
+        else static if (is(typeof((uint t) => Engine(t))))
+            alias seed_t = uint;
+        else
+            alias seed_t = EngineReturnType!Engine;
     }
     /++
     Thread-local instance of the specified random number generator allocated and seeded uniquely
@@ -370,7 +379,12 @@ static if (THREAD_LOCAL_STORAGE_AVAILABLE)
             pragma(inline);//DMD may fail to inline this.
         else
             pragma(inline, true);
-        return *threadLocalPtr!Engine;
+        import mir.ndslice.internal: _expect;
+        if (_expect(!TL!Engine.initialized, false))
+        {
+            TL!Engine.engine.__ctor(unpredictableSeedOf!(TL!Engine.seed_t));
+        }
+        return TL!Engine.engine;
     }
     /// ditto
     @property Engine* threadLocalPtr(Engine)()
@@ -383,19 +397,9 @@ static if (THREAD_LOCAL_STORAGE_AVAILABLE)
         import mir.ndslice.internal: _expect;
         if (_expect(!TL!Engine.initialized, false))
         {
-            static if (is(typeof((ulong t) => Engine(t))))
-                alias seed_t = ulong;
-            else static if (is(typeof((uint t) => Engine(t))))
-                alias seed_t = uint;
-            else
-                alias seed_t = EngineReturnType!Engine;
-            static if (seed_t.sizeof <= uint.sizeof)
-                seed_t seed = cast(seed_t) unpredictableSeedOf!uint;
-            else
-                seed_t seed = unpredictableSeedOf!seed_t;
-            TL!Engine.engine.__ctor(seed);
+            TL!Engine.engine.__ctor(unpredictableSeedOf!(TL!Engine.seed_t));
         }
-        return &(TL!Engine.engine);
+        return &TL!Engine.engine;
     }
     /// ditto
     @property ref bool threadLocalInitialized(Engine)()
