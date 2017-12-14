@@ -228,7 +228,7 @@ else
 /// ditto
 pragma(inline, true)
 @property T unpredictableSeedOf(T)() @trusted nothrow @nogc
-    if (isUnsigned!T && T.sizeof >= uint.sizeof)
+    if (isUnsigned!T)
 {
     T seed = void;
     version (GOOD_ARC4RANDOM_BUF)
@@ -236,7 +236,7 @@ pragma(inline, true)
         arc4random_buf(&seed, seed.sizeof);
     }
     // fallback to old time/thread-based implementation in case of errors
-    else if (genRandomBlocking(&seed, seed.sizeof) < 0)
+    else if (genRandomNonBlocking(&seed, seed.sizeof) != T.sizeof)
     {
         version(Windows)
         {
@@ -285,14 +285,6 @@ pragma(inline, true)
         seed = cast(T)k;
     }
     return seed;
-}
-
-/// ditto
-pragma(inline, true)
-@property T unpredictableSeedOf(T)() @safe nothrow @nogc
-    if (isUnsigned!T && T.sizeof < uint.sizeof)
-{
-    return cast(T) unpredictableSeedOf!uint;
 }
 
 ///
