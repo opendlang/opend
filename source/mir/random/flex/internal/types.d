@@ -220,7 +220,7 @@ body
     }
 }
 
-version(mir_random_test) unittest
+nothrow pure @safe version(mir_random_test) unittest
 {
     import std.meta : AliasSeq;
     foreach (S; AliasSeq!(float, double, real)) with(FunType)
@@ -240,7 +240,7 @@ version(mir_random_test) unittest
 }
 
 // test x^3
-version(mir_random_test) unittest
+nothrow pure @safe version(mir_random_test) unittest
 {
     import std.meta : AliasSeq;
     foreach (S; AliasSeq!(float, double, real)) with(FunType)
@@ -264,7 +264,7 @@ version(mir_random_test) unittest
 }
 
 // test sin(x)
-version(mir_random_test) unittest
+nothrow pure @safe version(mir_random_test) unittest
 {
     import std.math: PI;
     // due to numerical errors a small padding must be added
@@ -318,7 +318,7 @@ version(mir_random_test) unittest
     }
 }
 
-version(mir_random_test) unittest
+nothrow pure @safe version(mir_random_test) unittest
 {
     import std.meta : AliasSeq;
     foreach (S; AliasSeq!(float, double, real)) with(FunType)
@@ -370,10 +370,8 @@ struct LinearFun(S)
         this.a = a;
     }
 
-    /// textual representation of the function
-    void toString(scope void delegate(const(char)[]) sink,
-                  FormatSpec!char fmt) const
-    {
+    private enum string _toString =
+    q{
         import std.range : put;
         import std.format: formatValue, singleSpec;
         switch(fmt.spec)
@@ -418,6 +416,19 @@ struct LinearFun(S)
                 sink.put(")");
                 break;
         }
+    };
+
+    /// textual representation of the function
+    void toString()(scope void delegate(const(char)[]) @system sink,
+                  FormatSpec!char fmt) const
+    {
+        mixin(_toString);
+    }
+    /// ditto
+    void toString()(scope void delegate(const(char)[]) @safe sink,
+                  FormatSpec!char fmt) const
+    {
+        mixin(_toString);
     }
 
     /// call the linear function with x
@@ -464,7 +475,7 @@ LinearFun!S linearFun(S)(S slope, S y, S a)
 }
 
 /// tangent of a point
-version(mir_random_test) unittest
+@safe version(mir_random_test) unittest
 {
     import std.format : format;
     auto f = (double x) => x * x + 1;
@@ -488,7 +499,7 @@ version(mir_random_test) unittest
 }
 
 /// secant of two points
-version(mir_random_test) unittest
+@safe version(mir_random_test) unittest
 {
     import std.format : format;
     auto f = (double x) => x * x + 1;
@@ -502,7 +513,7 @@ version(mir_random_test) unittest
 }
 
 /// construct an arbitrary linear function
-version(mir_random_test) unittest
+@safe version(mir_random_test) unittest
 {
     import std.format : format;
 
@@ -513,7 +524,7 @@ version(mir_random_test) unittest
     assert(t(-2) == -3);
 }
 
-version(mir_random_test) unittest
+@nogc nothrow pure @safe version(mir_random_test) unittest
 {
     import std.meta : AliasSeq;
     foreach (S; AliasSeq!(float, double, real))
@@ -530,7 +541,7 @@ version(mir_random_test) unittest
     }
 }
 
-version(mir_random_test) unittest
+nothrow pure @safe version(mir_random_test) unittest
 {
     import std.math : cos;
     import std.math : PI, approxEqual;
@@ -550,7 +561,7 @@ version(mir_random_test) unittest
 }
 
 // test default toString
-version(mir_random_test) unittest
+@safe version(mir_random_test) unittest
 {
     import std.format : format;
     auto t = linearFun!double(2, 0, 1);
@@ -558,7 +569,7 @@ version(mir_random_test) unittest
 }
 
 // test NaN behavior
-version(mir_random_test) unittest
+@safe version(mir_random_test) unittest
 {
     import std.format : format;
     auto t = linearFun!double(double.nan, 0, 1);
@@ -587,7 +598,7 @@ bool approxEqual(S)(LinearFun!S x, LinearFun!S y, S maxRelDiff = 1e-2, S maxAbsD
 }
 
 ///
-version(mir_random_test) unittest
+@nogc nothrow pure @safe version(mir_random_test) unittest
 {
     auto x = linearFun!double(2, 0, 1);
     auto x2 = linearFun!double(2, 0, 1);

@@ -38,13 +38,13 @@ struct SphereVariable(T)
     enum isRandomVariable = true;
 
     ///
-    void opCall(G)(ref G gen, T[] result)
+    void opCall(G)(scope ref G gen, scope T[] result)
     {
         opCall(gen, result.sliced);
     }
 
     ///
-    void opCall(G, SliceKind kind)(ref G gen, Slice!(kind, [1], T*) result)
+    void opCall(G, SliceKind kind)(scope ref G gen, scope Slice!(kind, [1], T*) result)
         if (isSaturatedRandomEngine!G)
     {
         import mir.math.sum : Summator, Summation;
@@ -63,7 +63,7 @@ struct SphereVariable(T)
 }
 
 /// Generate random points on a circle
-version(mir_random_test) version(mir_random_test) unittest
+@nogc nothrow @safe version(mir_random_test) version(mir_random_test) unittest
 {
     auto gen = Random(unpredictableSeed);
     SphereVariable!double rv;
@@ -83,13 +83,13 @@ struct SimplexVariable(T)
     enum isRandomVariable = true;
 
     ///
-    void opCall(G)(ref G gen, T[] result)
+    void opCall(G)(scope ref G gen, scope T[] result)
     {
         opCall(gen, result.sliced);
     }
 
     ///
-    void opCall(G, SliceKind kind)(ref G gen, Slice!(kind, [1], T*) result)
+    void opCall(G, SliceKind kind)(scope ref G gen, scope Slice!(kind, [1], T*) result)
         if (isSaturatedRandomEngine!G)
     {
         import mir.ndslice.sorting : sort;
@@ -105,7 +105,7 @@ struct SimplexVariable(T)
 }
 
 ///
-version(mir_random_test) unittest
+@nogc nothrow @safe version(mir_random_test) unittest
 {
     auto gen = Random(unpredictableSeed);
     SimplexVariable!double rv;
@@ -146,13 +146,13 @@ struct DirichletVariable(T)
     }
 
     ///
-    void opCall(G)(ref G gen, T[] result)
+    void opCall(G)(scope ref G gen, scope T[] result)
     {
         opCall(gen, result.sliced);
     }
 
     ///
-    void opCall(G, SliceKind kind, Iterator)(ref G gen, Slice!(kind, [1], Iterator) result)
+    void opCall(G, SliceKind kind, Iterator)(scope ref G gen, scope Slice!(kind, [1], Iterator) result)
         if (isSaturatedRandomEngine!G)
     {
         assert(result.length == alpha.length);
@@ -165,7 +165,7 @@ struct DirichletVariable(T)
 }
 
 ///
-version(mir_random_test) unittest
+nothrow @safe version(mir_random_test) unittest
 {
     auto gen = Random(unpredictableSeed);
     auto rv = DirichletVariable!double([1.0, 5.7, 0.3]);
@@ -179,7 +179,7 @@ version(mir_random_test) unittest
  Compute Cholesky decomposition in place. Only accesses lower/left half of
  the matrix. Returns false if the matrix is not positive definite.
  +/
-private bool cholesky(SliceKind kind, Iterator)(Slice!(kind, [2], Iterator) m)
+private bool cholesky(SliceKind kind, Iterator)(scope Slice!(kind, [2], Iterator) m)
     if(isFloatingPoint!(DeepElementType!(typeof(m))))
 {
     assert(m.length!0 == m.length!1);
@@ -192,7 +192,10 @@ private bool cholesky(SliceKind kind, Iterator)(Slice!(kind, [2], Iterator) m)
         foreach(size_t j; 0 .. i)
             r[j] = (r[j] - reduce!"a + b * c"(typeof(r[j])(0), r[0 .. j], m[j, 0 .. j])) / m[j, j];
         r[i] -= reduce!"a + b * b"(typeof(r[i])(0), r[0 .. i]);
-        if(!(r[i] > 0)) // this catches nan's as well
+        //In this module this function returning `false` is always
+        //an error condition, so let's assume it is rare.
+        import mir.ndslice.internal: _expect;
+        if(_expect(!(r[i] > 0), false)) // this catches nan's as well
             return false;
         r[i] = sqrt(r[i]);
     }
@@ -227,8 +230,13 @@ struct MultivariateNormalVariable(T)
     +/
     this()(Slice!(Contiguous, [1], const(T)*) mu, Slice!(Contiguous, [2], T*) sigma, bool chol = false)
     {
-        assert(mu.length == sigma.length!0);
-        assert(mu.length == sigma.length!1);
+        //Check the dimenstions even in release mode to _guarantee_
+        //that unless memory corruption has already occurred sigma
+        //and mu have the correct dimensions and it is correct in opCall
+        //to "@trust" slicing sigma to [n x n] and mu to [n].
+        import mir.ndslice.internal: _expect;
+        if (_expect((mu.length != sigma.length!0) | (mu.length != sigma.length!1), false))
+            assert(false);
 
         if(!chol && !cholesky(sigma))
             assert(false, "covariance matrix not positive definite");
@@ -241,7 +249,13 @@ struct MultivariateNormalVariable(T)
     /++ ditto +/
     this()(Slice!(Contiguous, [2], T*) sigma, bool chol = false)
     {
-        assert(sigma.length!0 == sigma.length!1);
+        //Check the dimenstions even in release mode to _guarantee_
+        //that unless memory corruption has already occurred sigma
+        //and mu have the correct dimensions and it is correct in opCall
+        //to "@trust" slicing sigma as (n,n) and slicing mu as (n).
+        import mir.ndslice.internal: _expect;
+        if (_expect(sigma.length!0 != sigma.length!1, false))
+            assert(false);
 
         if(!chol && !cholesky(sigma))
             assert(false, "covariance matrix not positive definite");
@@ -252,31 +266,31 @@ struct MultivariateNormalVariable(T)
     }
 
     ///
-    void opCall(G)(ref G gen, T[] result)
+    void opCall(G)(scope ref G gen, scope T[] result)
     {
         opCall(gen, result.sliced);
     }
 
     ///
-    void opCall(G, SliceKind kind)(ref G gen, Slice!(kind, [1], T*) result)
+    void opCall(G, SliceKind kind)(scope ref G gen, scope Slice!(kind, [1], T*) result)
         if (isSaturatedRandomEngine!G)
     {
         assert(result.length == n);
         import mir.random.variable : NormalVariable;
         auto norm = NormalVariable!T(0, 1);
 
-        auto s = sigma.sliced(n, n);
+        auto s = (() @trusted => sigma.sliced(n, n))();//sigma is n x n matrix.
         foreach(ref e; result)
             e = norm(gen);
         foreach_reverse(size_t i; 0 .. n - 1)
             result[i] = reduce!"a + b * c"(T(0), s[i, 0 .. i + 1], result[0 .. i + 1]);
         if (mu)
-            result[] += mu.sliced(n);
+            result[] += (() @trusted => mu.sliced(n))();//mu is n vector.
     }
 }
 
 ///
-version(mir_random_test) unittest
+nothrow @safe version(mir_random_test) unittest
 {
     auto gen = Random(unpredictableSeed);
     auto mu = [10.0, 0.0].sliced;

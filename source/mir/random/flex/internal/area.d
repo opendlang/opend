@@ -46,10 +46,10 @@ version(unittest)
     }
     version(Flex_fpEqual)
     {
-        bool fpEqual(float a, float b) { 
+        bool fpEqual(float a, float b) @nogc nothrow pure @safe {
             import std.math : approxEqual;
             return a.approxEqual(b, 1e-5, 1e-5); }
-        bool fpEqual(double a, double b) {
+        bool fpEqual(double a, double b) @nogc nothrow pure @safe {
             import std.math : approxEqual;
             return a.approxEqual(b, 1e-14, 1e-14); }
 
@@ -58,7 +58,7 @@ version(unittest)
         else
             enum real maxError = 1e-18;
 
-        bool fpEqual(real a, real b) {
+        bool fpEqual(real a, real b) @nogc nothrow pure @safe {
             import std.math : approxEqual;
             return a.approxEqual(b, 1e-18, 1e-18); }
     }
@@ -157,7 +157,7 @@ void determineSqueezeAndHat(S)(ref Interval!S iv)
     }
 }
 
-version(mir_random_test) unittest
+nothrow pure @safe version(mir_random_test) unittest
 {
     import std.meta : AliasSeq;
     import mir.random.flex.internal.types: determineType;
@@ -191,7 +191,7 @@ version(mir_random_test) unittest
 }
 
 // test undefined type
-version(mir_random_test) unittest
+@nogc nothrow pure @safe version(mir_random_test) unittest
 {
     import std.math : fabs, log;
     import mir.random.flex.internal.transformations : transformInterval;
@@ -222,7 +222,7 @@ version(mir_random_test) unittest
 }
 
 // T4a with infinity
-version(mir_random_test) unittest
+nothrow pure @safe version(mir_random_test) unittest
 {
     alias S = double;
     static import std.math;
@@ -438,13 +438,13 @@ body
 
 // example from Botts et al. (2013) (distribution 1)
 // split up into all three floating-point types
-version(mir_random_test) unittest
+@safe version(mir_random_test) unittest
 {
     import mir.random.flex.internal.transformations : transformInterval;
     import mir.random.flex.internal.types : determineType;
     import std.math: approxEqual;
     import std.meta : AliasSeq;
-    import std.range: dropOne, lockstep, save;
+    import std.range: dropOne, save, zip;
 
     alias S = float;
 
@@ -500,7 +500,8 @@ version(mir_random_test) unittest
     // calculate the area of all intervals
     foreach (i, c; cs)
     {
-        foreach (j, p1, p2; points.lockstep(points.save.dropOne))
+        size_t j = 0;
+        foreach (p1, p2; points.zip(points.save.dropOne))
         {
             auto iv = it(p1, p2, c);
             version(Flex_logging)
@@ -522,17 +523,19 @@ version(mir_random_test) unittest
 
             squeezeArea!S(iv);
             assert(iv.squeezeArea.fpEqual(sqs[i][j]));
+
+            ++j;
         }
     }
 }
 
-version(mir_random_test) unittest
+@safe version(mir_random_test) unittest
 {
     import mir.random.flex.internal.transformations : transformInterval;
     import mir.random.flex.internal.types : determineType;
     import std.math: approxEqual;
     import std.meta : AliasSeq;
-    import std.range: dropOne, lockstep, save;
+    import std.range: dropOne, save, zip;
 
     alias S = double;
 
@@ -588,7 +591,8 @@ version(mir_random_test) unittest
     // calculate the area of all intervals
     foreach (i, c; cs)
     {
-        foreach (j, p1, p2; points.lockstep(points.save.dropOne))
+        size_t j = 0;
+        foreach (p1, p2; points.zip(points.save.dropOne))
         {
             auto iv = it(p1, p2, c);
             version(Flex_logging)
@@ -610,17 +614,19 @@ version(mir_random_test) unittest
 
             squeezeArea!S(iv);
             assert(iv.squeezeArea.fpEqual(sqs[i][j]));
+
+            ++j;
         }
     }
 }
 
-version(mir_random_test) unittest
+@safe version(mir_random_test) unittest
 {
     import mir.random.flex.internal.transformations : transformInterval;
     import mir.random.flex.internal.types : determineType;
     import std.math: approxEqual;
     import std.meta : AliasSeq;
-    import std.range: dropOne, lockstep, save;
+    import std.range: dropOne, save, zip;
 
     alias S = real;
 
@@ -676,7 +682,8 @@ version(mir_random_test) unittest
     // calculate the area of all intervals
     foreach (i, c; cs)
     {
-        foreach (j, p1, p2; points.lockstep(points.save.dropOne))
+        size_t j = 0;
+        foreach (p1, p2; points.zip(points.save.dropOne))
         {
             auto iv = it(p1, p2, c);
             version(Flex_logging)
@@ -711,18 +718,20 @@ version(mir_random_test) unittest
 
             assert(iv.hatArea.approxEqual(hats[i][j]));
             assert(iv.squeezeArea.approxEqual(sqs[i][j]));
+
+            ++j;
         }
     }
 }
 
 // standard normal distribution
-version(mir_random_test) unittest
+@safe version(mir_random_test) unittest
 {
     import mir.random.flex.internal.transformations : transformInterval;
     import mir.random.flex.internal.types : determineType;
     import std.math: approxEqual;
     import std.meta : AliasSeq;
-    import std.range: dropOne, lockstep, save;
+    import std.range: dropOne, save, zip;
 
     static immutable points = [-3.0, -1.5, 0.0, 1.5, 3];
     static immutable cs = [50, 30, -20, -15, -10, -5, -3, -1, -0.5 -0.1, 0,
@@ -794,7 +803,8 @@ version(mir_random_test) unittest
         // calculate the area of all intervals
         foreach (i, c; cs)
         {
-            foreach (j, p1, p2; points.lockstep(points.save.dropOne))
+            size_t j = 0;
+            foreach (p1, p2; points.zip(points.save.dropOne))
             {
                 auto iv = it(p1, p2, c);
                 determineSqueezeAndHat(iv);
@@ -804,19 +814,21 @@ version(mir_random_test) unittest
 
                 squeezeArea!S(iv);
                 assert(iv.squeezeArea.approxEqual(sqs[i][j]));
+
+                ++j;
             }
         }
     }
 }
 
 // distribution 3
-version(mir_random_test) unittest
+@safe version(mir_random_test) unittest
 {
     import mir.random.flex.internal.transformations : transformInterval;
     import mir.random.flex.internal.types : determineType;
     import std.math: approxEqual, isInfinity;
     import std.meta : AliasSeq;
-    import std.range: dropOne, lockstep, save;
+    import std.range: dropOne, save, zip;
 
     alias T = double;
 
@@ -869,7 +881,8 @@ version(mir_random_test) unittest
         // calculate the area of all intervals
         foreach (i, c; cs)
         {
-            foreach (j, p1, p2; points.lockstep(points.save.dropOne))
+            size_t j = 0;
+            foreach (p1, p2; points.zip(points.save.dropOne))
             {
                 auto iv = it(p1, p2, c);
 
@@ -883,19 +896,21 @@ version(mir_random_test) unittest
 
                 squeezeArea!S(iv);
                 assert(iv.squeezeArea.approxEqual(sqs[i][j]));
+
+                ++j;
             }
         }
     }
 }
 
 // distribution 4
-version(mir_random_test) unittest
+@safe version(mir_random_test) unittest
 {
     import mir.random.flex.internal.transformations : transformInterval;
     import mir.random.flex.internal.types : determineType;
     import std.math: abs, approxEqual, isInfinity;
     import std.meta : AliasSeq;
-    import std.range: dropOne, lockstep, save;
+    import std.range: dropOne, save, zip;
 
     static immutable points = [-1, -0.5, 0, 0.5, 1];
     // -2 yields "undefined" type
@@ -941,7 +956,8 @@ version(mir_random_test) unittest
         // calculate the area of all intervals
         foreach (i, c; cs)
         {
-            foreach (j, p1, p2; points.lockstep(points.save.dropOne))
+            size_t j = 0;
+            foreach (p1, p2; points.zip(points.save.dropOne))
             {
                 auto iv = it(p1, p2, c);
                 determineSqueezeAndHat(iv);
@@ -954,19 +970,21 @@ version(mir_random_test) unittest
 
                 squeezeArea!S(iv);
                 assert(iv.squeezeArea.approxEqual(sqs[i][j]));
+
+                ++j;
             }
         }
     }
 }
 
 // distribution 4 with less points
-version(mir_random_test) unittest
+@safe version(mir_random_test) unittest
 {
     import mir.random.flex.internal.transformations : transformInterval;
     import mir.random.flex.internal.types : determineType;
     import std.math: abs, approxEqual, isInfinity;
     import std.meta : AliasSeq;
-    import std.range: dropOne, lockstep, save;
+    import std.range: dropOne, save, zip;
 
     static immutable points = [-1, 0, 1];
     // -2 yields "undefined" type
@@ -1016,7 +1034,8 @@ version(mir_random_test) unittest
         // calculate the area of all intervals
         foreach (i, c; cs)
         {
-            foreach (j, p1, p2; points.lockstep(points.save.dropOne))
+            size_t j = 0;
+            foreach (p1, p2; points.zip(points.save.dropOne))
             {
                 auto iv = it(p1, p2, c);
                 determineSqueezeAndHat(iv);
@@ -1030,19 +1049,21 @@ version(mir_random_test) unittest
 
                 squeezeArea!S(iv);
                 assert(iv.squeezeArea.approxEqual(sqs[i][0]));
+
+                ++j;
             }
         }
     }
 }
 
 // distribution 3 with other boundaries
-version(mir_random_test) unittest
+@safe version(mir_random_test) unittest
 {
     import mir.random.flex.internal.transformations : transformInterval;
     import mir.random.flex.internal.types : determineType;
     import std.math: approxEqual, isInfinity;
     import std.meta : AliasSeq;
-    import std.range: dropOne, lockstep, save;
+    import std.range: dropOne, save, zip;
 
     alias T = double;
 
@@ -1084,7 +1105,8 @@ version(mir_random_test) unittest
         // calculate the area of all intervals
         foreach (i, c; cs)
         {
-            foreach (j, p1, p2; points.lockstep(points.save.dropOne))
+            size_t j = 0;
+            foreach (p1, p2; points.zip(points.save.dropOne))
             {
                 auto iv = it(p1, p2, c);
                 determineSqueezeAndHat(iv);
@@ -1094,6 +1116,8 @@ version(mir_random_test) unittest
 
                 squeezeArea!S(iv);
                 assert(iv.squeezeArea.approxEqual(sqs[i][j]));
+
+                ++j;
             }
         }
     }
@@ -1128,3 +1152,4 @@ body
     assert(iv.hatArea.isFinite, "hat area should be lower than infinity");
     assert(iv.squeezeArea.isFinite, "squeezeArea area should be lower than infinity");
 }
+//calcInterval tested in mir.random.flex.d.

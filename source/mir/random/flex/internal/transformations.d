@@ -78,7 +78,7 @@ body
 }
 
 // example from Botts et al. (2013)
-version(mir_random_test) unittest
+@nogc nothrow pure @safe version(mir_random_test) unittest
 {
     import std.math: approxEqual;
     import std.meta : AliasSeq;
@@ -101,11 +101,12 @@ version(mir_random_test) unittest
 }
 
 // test for c=1
-version(mir_random_test) unittest
+pure @safe version(mir_random_test) unittest
 {
     import std.math: approxEqual;
     import std.meta : AliasSeq;
-    import std.range: dropOne, lockstep, save;
+    import std.range: dropOne, save, zip;
+    //Use zip instead of lockstep because lockstep fails to infer @safe-ty here.
     foreach (S; AliasSeq!(float, double, real))
     {
         auto f0 = (S x) => -x^^4 + 5 * x^^2 - 4;
@@ -121,23 +122,26 @@ version(mir_random_test) unittest
         S[] resT2x = [2.54306485721755e-14, -131.4653189726813878,
                       0.1831563888873418, -1.31465318972681e+02];
 
-        foreach (i, l, r; lockstep(points, points.save.dropOne))
+        size_t i = 0;
+        foreach (l, r; zip(points, points.save.dropOne))
         {
             auto iv = Interval!S(l, r, c, f0(l), f1(l), f2(l), f0(r), f1(r), f2(r));
             iv.transformInterval;
             assert(iv.ltx.approxEqual(resT0x[i]));
             assert(iv.lt1x.approxEqual(resT1x[i]));
             assert(iv.lt2x.approxEqual(resT2x[i]));
+            ++i;
         }
     }
 }
 
 // test for c=-1
-version(mir_random_test) unittest
+pure @safe version(mir_random_test) unittest
 {
     import std.math: approxEqual;
     import std.meta : AliasSeq;
-    import std.range: dropOne, lockstep, save;
+    import std.range: dropOne, save, zip;
+    //Use zip instead of lockstep because lockstep fails to infer @safe-ty here.
     foreach (S; AliasSeq!(float, double, real))
     {
         auto f0 = (S x) => -x^^4 + 5 * x^^2 - 4;
@@ -155,23 +159,26 @@ version(mir_random_test) unittest
                       545.9815003314423620, -2.15979014251662e+00,
                       -1.45515171958646e+21];
 
-        foreach (i, l, r; lockstep(points, points.save.dropOne))
+        size_t i = 0;
+        foreach (l, r; zip(points, points.save.dropOne))
         {
             auto iv = Interval!S(l, r, c, f0(l), f1(l), f2(l), f0(r), f1(r), f2(r));
             iv.transformInterval;
             assert(iv.ltx.approxEqual(resT0x[i]));
             assert(iv.lt1x.approxEqual(resT1x[i]));
             assert(iv.lt2x.approxEqual(resT2x[i]));
+            ++i;
         }
     }
 }
 
 // test for c=0
-version(mir_random_test) unittest
+pure @safe version(mir_random_test) unittest
 {
     import std.math: approxEqual;
     import std.meta : AliasSeq;
-    import std.range: dropOne, lockstep, save;
+    import std.range: dropOne, save, zip;
+    //Use zip instead of lockstep because lockstep fails to infer @safe-ty here.
     foreach (S; AliasSeq!(float, double, real))
     {
         auto f0 = (S x) => -x^^4 + 5 * x^^2 - 4;
@@ -184,19 +191,21 @@ version(mir_random_test) unittest
         S[] resT1x = [78, -1.5,  0,  1.5, -78];
         S[] resT2x = [-98, -17, 10,-17, -98];
 
-        foreach (i, l, r; lockstep(points, points.save.dropOne))
+        size_t i = 0;
+        foreach (l, r; zip(points, points.save.dropOne))
         {
             auto iv = Interval!S(l, r, c, f0(l), f1(l), f2(l), f0(r), f1(r), f2(r));
             iv.transformInterval;
             assert(iv.ltx.approxEqual(resT0x[i]));
             assert(iv.lt1x.approxEqual(resT1x[i]));
             assert(iv.lt2x.approxEqual(resT2x[i]));
+            ++i;
         }
     }
 }
 
 // test with exact values
-version(mir_random_test) unittest
+@nogc nothrow pure @safe version(mir_random_test) unittest
 {
     alias S = float;
     S c = -0.9;
@@ -254,7 +263,7 @@ body
     return v * p;
 }
 
-version(mir_random_test) unittest
+@nogc nothrow pure @safe version(mir_random_test) unittest
 {
     import std.math: E, approxEqual;
     import std.meta : AliasSeq;
@@ -265,7 +274,7 @@ version(mir_random_test) unittest
     }
 }
 
-version(mir_random_test) unittest
+nothrow pure @safe version(mir_random_test) unittest
 {
     import std.math;
     import std.meta : AliasSeq;
@@ -297,7 +306,7 @@ version(mir_random_test) unittest
     }
 }
 
-version(mir_random_test) unittest
+nothrow pure @safe version(mir_random_test) unittest
 {
     import std.math;
     import std.meta : AliasSeq;
@@ -348,7 +357,7 @@ S inverseAntiderivative(S)(in S x, in S c)
     return pow(d / fabs(c) * x, c / d).copysign(c);
 }
 
-version(mir_random_test) unittest
+@nogc nothrow pure @safe version(mir_random_test) unittest
 {
     import std.math: approxEqual, E, isNaN;
     import std.meta : AliasSeq;
@@ -371,7 +380,7 @@ version(mir_random_test) unittest
     }
 }
 
-version(mir_random_test) unittest
+@safe version(mir_random_test) unittest
 {
     import std.math;
     import std.meta : AliasSeq;
@@ -408,7 +417,7 @@ version(mir_random_test) unittest
     }
 }
 
-version(mir_random_test) unittest
+@safe version(mir_random_test) unittest
 {
     import std.math;
     import std.meta : AliasSeq;
