@@ -191,7 +191,8 @@ nothrow @safe version(mir_random_test) unittest
 
     //Using pointer to RNG:
     auto var = NormalVariable!double(0, 1);
-    Random* rng_ptr = new Random(seed);
+    setThreadLocalSeed!Random(seed);//Use a known seed instead of a random seed.
+    Random* rng_ptr = threadLocalPtr!Random;
     auto sample1 = rng_ptr
         .field(var)        // construct random field from standard normal distribution
         .slicedField(5, 3) // construct random matrix 5 row x 3 col (lazy, without allocation)
@@ -219,7 +220,8 @@ nothrow @safe version(mir_random_test) unittest
 
     //Using pointer to RNG:
     auto var = NormalVariable!double(0, 1);
-    Random* rng_ptr = new Random(seed);
+    setThreadLocalSeed!Random(seed);//Use a known seed instead of a random seed.
+    Random* rng_ptr = threadLocalPtr!Random;
     auto sample1 = rng_ptr
         .field!cdouble(var)// construct random field from standard normal distribution
         .slicedField(5, 3) // construct random matrix 5 row x 3 col (lazy, without allocation)
@@ -237,13 +239,14 @@ nothrow @safe version(mir_random_test) unittest
 }
 
 /// Bi
-nothrow pure @safe version(mir_random_test) unittest
+nothrow @safe version(mir_random_test) unittest
 {
     import mir.ndslice: slicedField, slice;
     import mir.random.engine.xorshift;
 
     //Using pointer to RNG:
-    Xorshift* rng_ptr = new Xorshift(1);
+    setThreadLocalSeed!Xorshift(1);//Use a known seed instead of a random seed.
+    Xorshift* rng_ptr = threadLocalPtr!Xorshift;
     auto bitSample1 = rng_ptr
         .field              // construct random field
         .slicedField(5, 3)  // construct random matrix 5 row x 3 col (lazy, without allocation)
@@ -399,7 +402,8 @@ nothrow @safe version(mir_random_test) unittest
     immutable seed = unpredictableSeed;
 
     //Using pointer to RNG:
-    Random* rng_ptr = new Random(seed);
+    setThreadLocalSeed!Random(seed);//Use a known seed instead of a random seed.
+    Random* rng_ptr = threadLocalPtr!Random;
     auto sample1 = rng_ptr
         .range(NormalVariable!double(0, 1))
         .take(1000)
@@ -416,14 +420,15 @@ nothrow @safe version(mir_random_test) unittest
 }
 
 /// Uniform random bit generation
-nothrow pure @safe version(mir_random_test) unittest
+nothrow @safe version(mir_random_test) unittest
 {
     import std.stdio;
     import std.range, std.algorithm;
     import std.algorithm: filter;
     import mir.random.engine.xorshift;
     //Using pointer to RNG:
-    Xorshift* rng_ptr = new Xorshift(1);
+    setThreadLocalSeed!Xorshift(1);//Use a known seed instead of a random seed.
+    Xorshift* rng_ptr = threadLocalPtr!Xorshift;
     auto bitSample1 = rng_ptr
         .range
         .filter!"a % 2 == 0"
@@ -613,12 +618,13 @@ auto sample(Range, alias gen)(Range range, size_t n)
 }
 
 ///
-nothrow pure @safe version(mir_random_test) unittest
+nothrow @safe version(mir_random_test) unittest
 {
     import std.range;
     import mir.random.engine.xorshift;
     //Using pointer to RNG:
-    Xorshift* gen_ptr = new Xorshift(112);
+    setThreadLocalSeed!Xorshift(112);//Use a known seed instead of a random seed.
+    Xorshift* gen_ptr = threadLocalPtr!Xorshift;
     auto sample1 = iota(100).sample(gen_ptr, 7);
     size_t sum1 = 0;
     foreach(elem; sample1)
@@ -637,12 +643,13 @@ nothrow pure @safe version(mir_random_test) unittest
     assert(sum1 == sum2);
 }
 
-nothrow pure @safe version(mir_random_test) unittest
+@nogc nothrow @safe version(mir_random_test) unittest
 {
     import std.algorithm.comparison;
     import std.range;
     import mir.random.engine.xorshift;
-    Xorshift* gen = new Xorshift(232);//GC!
+    setThreadLocalSeed!Xorshift(232);//Use a known seed instead of a random seed.
+    Xorshift* gen = threadLocalPtr!Xorshift;
 
     assert(iota(0).equal(iota(0).sample(gen, 0)));
     assert(iota(1).equal(iota(1).sample(gen, 1)));

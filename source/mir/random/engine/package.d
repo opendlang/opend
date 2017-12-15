@@ -492,6 +492,34 @@ static if (THREAD_LOCAL_STORAGE_AVAILABLE)
         assert(sameAddr is threadLocalPtr!Xorshift1024StarPhi);
     }
 
+    /++
+    Resets the seed of `threadLocal!Engine` using the given arguments.
+    It is not necessary to call this except if you wish to ensure the
+    PRNG uses a known seed.
+    +/
+    void setThreadLocalSeed(Engine, A...)(auto ref A seedArgs)
+        if (isSaturatedRandomEngine!Engine && is(Engine == struct)
+            && A.length >= 1 && is(typeof((ref A a) => Engine(a))))
+    {
+        TL!Engine.initialized = true;
+        TL!Engine.engine.__ctor(seedArgs);
+    }
+    ///
+    @nogc nothrow @system version(mir_random_test) unittest
+    {
+        import mir.random;
+        alias rnd = threadLocal!Random;
+
+        setThreadLocalSeed!Random(123);
+        immutable float x = rnd.rand!float;
+
+        assert(x != rnd.rand!float);
+
+        setThreadLocalSeed!Random(123);
+        immutable float y = rnd.rand!float;
+
+        assert(x == y);
+    }
 }
 else
 {
