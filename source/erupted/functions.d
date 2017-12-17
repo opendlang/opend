@@ -388,6 +388,9 @@ extern( System ) @nogc nothrow {
 	alias PFN_vkDestroyValidationCacheEXT = void function( VkDevice device, VkValidationCacheEXT validationCache, const( VkAllocationCallbacks )* pAllocator );
 	alias PFN_vkMergeValidationCachesEXT = VkResult function( VkDevice device, VkValidationCacheEXT dstCache, uint32_t srcCacheCount, const( VkValidationCacheEXT )* pSrcCaches );
 	alias PFN_vkGetValidationCacheDataEXT = VkResult function( VkDevice device, VkValidationCacheEXT validationCache, size_t* pDataSize, void* pData );
+
+	// VK_EXT_external_memory_host
+	alias PFN_vkGetMemoryHostPointerPropertiesEXT = VkResult function( VkDevice device, VkExternalMemoryHandleTypeFlagBitsKHR handleType, const( void )* pHostPointer, VkMemoryHostPointerPropertiesEXT* pMemoryHostPointerProperties );
 }
 
 __gshared {
@@ -776,6 +779,9 @@ __gshared {
 	PFN_vkDestroyValidationCacheEXT vkDestroyValidationCacheEXT;
 	PFN_vkMergeValidationCachesEXT vkMergeValidationCachesEXT;
 	PFN_vkGetValidationCacheDataEXT vkGetValidationCacheDataEXT;
+
+	// VK_EXT_external_memory_host
+	PFN_vkGetMemoryHostPointerPropertiesEXT vkGetMemoryHostPointerPropertiesEXT;
 }
 
 /// if not using version "with-derelict-loader" this function must be called first
@@ -1186,6 +1192,9 @@ void loadDeviceLevelFunctions( VkInstance instance ) {
 	vkDestroyValidationCacheEXT = cast( typeof( vkDestroyValidationCacheEXT )) vkGetInstanceProcAddr( instance, "vkDestroyValidationCacheEXT" );
 	vkMergeValidationCachesEXT = cast( typeof( vkMergeValidationCachesEXT )) vkGetInstanceProcAddr( instance, "vkMergeValidationCachesEXT" );
 	vkGetValidationCacheDataEXT = cast( typeof( vkGetValidationCacheDataEXT )) vkGetInstanceProcAddr( instance, "vkGetValidationCacheDataEXT" );
+
+	// VK_EXT_external_memory_host
+	vkGetMemoryHostPointerPropertiesEXT = cast( typeof( vkGetMemoryHostPointerPropertiesEXT )) vkGetInstanceProcAddr( instance, "vkGetMemoryHostPointerPropertiesEXT" );
 }
 
 /// with a valid VkDevice call this function to retrieve VkDevice, VkQueue and VkCommandBuffer related functions
@@ -1454,6 +1463,9 @@ void loadDeviceLevelFunctions( VkDevice device ) {
 	vkDestroyValidationCacheEXT = cast( typeof( vkDestroyValidationCacheEXT )) vkGetDeviceProcAddr( device, "vkDestroyValidationCacheEXT" );
 	vkMergeValidationCachesEXT = cast( typeof( vkMergeValidationCachesEXT )) vkGetDeviceProcAddr( device, "vkMergeValidationCachesEXT" );
 	vkGetValidationCacheDataEXT = cast( typeof( vkGetValidationCacheDataEXT )) vkGetDeviceProcAddr( device, "vkGetValidationCacheDataEXT" );
+
+	// VK_EXT_external_memory_host
+	vkGetMemoryHostPointerPropertiesEXT = cast( typeof( vkGetMemoryHostPointerPropertiesEXT )) vkGetDeviceProcAddr( device, "vkGetMemoryHostPointerPropertiesEXT" );
 }
 
 /// with a valid VkDevice call this function to retrieve VkDevice, VkQueue and VkCommandBuffer related functions grouped in a DispatchDevice struct
@@ -1749,6 +1761,9 @@ struct DispatchDevice {
 		vkDestroyValidationCacheEXT = cast( typeof( vkDestroyValidationCacheEXT )) vkGetDeviceProcAddr( device, "vkDestroyValidationCacheEXT" );
 		vkMergeValidationCachesEXT = cast( typeof( vkMergeValidationCachesEXT )) vkGetDeviceProcAddr( device, "vkMergeValidationCachesEXT" );
 		vkGetValidationCacheDataEXT = cast( typeof( vkGetValidationCacheDataEXT )) vkGetDeviceProcAddr( device, "vkGetValidationCacheDataEXT" );
+
+		// VK_EXT_external_memory_host
+		vkGetMemoryHostPointerPropertiesEXT = cast( typeof( vkGetMemoryHostPointerPropertiesEXT )) vkGetDeviceProcAddr( device, "vkGetMemoryHostPointerPropertiesEXT" );
 	}
 
 	// Convenience member functions, forwarded to corresponding vulkan functions
@@ -2345,6 +2360,11 @@ struct DispatchDevice {
 		return vkGetValidationCacheDataEXT( this.device, validationCache, pDataSize, pData );
 	}
 
+	// VK_EXT_external_memory_host
+	VkResult GetMemoryHostPointerPropertiesEXT( VkExternalMemoryHandleTypeFlagBitsKHR handleType, const( void )* pHostPointer, VkMemoryHostPointerPropertiesEXT* pMemoryHostPointerProperties ) {
+		return vkGetMemoryHostPointerPropertiesEXT( this.device, handleType, pHostPointer, pMemoryHostPointerProperties );
+	}
+
 	// Member vulkan function decelerations
 	PFN_vkDestroyDevice vkDestroyDevice;
 	PFN_vkGetDeviceQueue vkGetDeviceQueue;
@@ -2546,6 +2566,7 @@ struct DispatchDevice {
 	PFN_vkDestroyValidationCacheEXT vkDestroyValidationCacheEXT;
 	PFN_vkMergeValidationCachesEXT vkMergeValidationCachesEXT;
 	PFN_vkGetValidationCacheDataEXT vkGetValidationCacheDataEXT;
+	PFN_vkGetMemoryHostPointerPropertiesEXT vkGetMemoryHostPointerPropertiesEXT;
 }
 
 // Derelict loader to acquire entry point vkGetInstanceProcAddr
