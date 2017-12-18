@@ -5,6 +5,7 @@ Uniform random engines.
 $(B Sections:)
         $(LINK2 #Convenience, Convenience)
 &#8226; $(LINK2 #Entropy, Entropy)
+&#8226; $(LINK2 #ThreadLocal, Thread-Local)
 &#8226; $(LINK2 #Traits, Traits)
 &#8226; $(LINK2 #CInterface, C Interface)
 
@@ -14,7 +15,6 @@ $(LEADINGROW <a id="Convenience"></a>Convenience)
 $(TR
     $(RROW Random, Default random number _engine))
     $(RROW rne, Per-thread uniquely-seeded instance of default `Random`. Requires $(LINK2 https://en.wikipedia.org/wiki/Thread-local_storage, TLS).)
-    $(TR $(TDNW $(LREF threadLocal)`!(Engine)`) $(TD Per-thread uniquely-seeded instance of of any specified `Engine`. Requires $(LINK2 https://en.wikipedia.org/wiki/Thread-local_storage, TLS).))
 
 $(LEADINGROW <a id="Entropy"></a>Entropy)
 $(TR
@@ -23,10 +23,18 @@ $(TR
     $(RROW genRandomNonBlocking, Fills a buffer with system entropy, returning number of bytes copied or negative number on error)
     $(RROW genRandomBlocking, Fills a buffer with system entropy, possibly waiting if the system believes it has insufficient entropy. Returns 0 on success.))
 
+$(LEADINGROW <a id="ThreadLocal"></a>Thread-Local (when $(LINK2 https://en.wikipedia.org/wiki/Thread-local_storage, TLS) enabled))
+$(TR
+    $(TR $(TDNW $(LREF threadLocal)`!(Engine)`) $(TD Per-thread uniquely-seeded instance of any specified `Engine`. Requires $(LINK2 https://en.wikipedia.org/wiki/Thread-local_storage, TLS).))
+    $(TR $(TDNW $(LREF threadLocalPtr)`!(Engine)`) $(TD `@safe` pointer to `threadLocal!Engine`. Always initializes before return. $(I Warning: do not share between threads!)))
+    $(TR $(TDNW $(LREF threadLocalInitialized)`!(Engine)`) $(TD Explicitly manipulate "is seeded" flag for thread-local instance. Not needed by most library users.))
+    $(TR $(TDNW $(LREF setThreadLocalSeed)`!(Engine, A...)`) $(TD Initialize thread-local `Engine` with a known seed rather than a random seed.))
+    )
+
 $(LEADINGROW <a id="Traits"></a>Traits)
 $(TR
-    $(RROW isRandomEngine, Check if is random number _engine)
     $(RROW EngineReturnType, Get return type of random number _engine's `opCall()`)
+    $(RROW isRandomEngine, Check if is random number _engine)
     $(RROW isSaturatedRandomEngine, Check if random number _engine `G` such that `G.max == EngineReturnType!(G).max`)
     $(RROW preferHighBits, Are the high bits of the _engine's output known to have better statistical properties than the low bits?))
 
@@ -357,13 +365,16 @@ static if (THREAD_LOCAL_STORAGE_AVAILABLE)
             alias seed_t = EngineReturnType!Engine;
     }
     /++
-    Thread-local instance of the specified random number generator allocated and seeded uniquely
+    `threadLocal!Engine` returns a reference to a thread-local instance of
+    the specified random number generator allocated and seeded uniquely
     for each thread. Requires $(LINK2 https://en.wikipedia.org/wiki/Thread-local_storage, TLS).
 
     `threadLocalPtr!Engine` is a pointer to the area of thread-local
     storage used by `threadLocal!Engine`. This function is provided because
     the compiler can infer it is `@safe`, unlike `&(threadLocal!Engine)`.
     Like `threadLocal!Engine` this function will auto-initialize the engine.
+    $(I Do not share pointers returned by threadLocalPtr between
+    threads!)
 
     `threadLocalInitialized!Engine` is a low-level way to explicitly change
     the "initialized" flag used by `threadLocal!Engine` to determine whether
@@ -493,16 +504,16 @@ static if (THREAD_LOCAL_STORAGE_AVAILABLE)
     }
 
     /++
-    Resets the seed of `threadLocal!Engine` using the given arguments.
+    Sets or resets the _seed of `threadLocal!Engine` using the given arguments.
     It is not necessary to call this except if you wish to ensure the
-    PRNG uses a known seed.
+    PRNG uses a known _seed.
     +/
-    void setThreadLocalSeed(Engine, A...)(auto ref A seedArgs)
+    void setThreadLocalSeed(Engine, A...)(auto ref A seed)
         if (isSaturatedRandomEngine!Engine && is(Engine == struct)
             && A.length >= 1 && is(typeof((ref A a) => Engine(a))))
     {
         TL!Engine.initialized = true;
-        TL!Engine.engine.__ctor(seedArgs);
+        TL!Engine.engine.__ctor(seed);
     }
     ///
     @nogc nothrow @system version(mir_random_test) unittest
@@ -541,6 +552,11 @@ else
     }
 
     template threadLocalInitialized(T)
+    {
+        static assert(0, "Thread-local storage not available!");
+    }
+
+    template setThreadLocalSeed(T, A...)
     {
         static assert(0, "Thread-local storage not available!");
     }
