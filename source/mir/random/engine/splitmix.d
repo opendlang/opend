@@ -410,9 +410,8 @@ struct SplitMixEngine(alias mixer, bool split_enabled = false, OptionalArgs...)
             ulong gamma1 = .murmurHash3Mix(state += increment);
         gamma1 |= 1UL;//Ensure increment is odd.
         import core.bitop: popcnt;
-        import mir.ndslice.internal: _expect;
         //Approximately 2.15% chance.
-        if (_expect(popcnt(gamma1 ^ (gamma1 >>> 1)) < 24, false))
+        if (popcnt(gamma1 ^ (gamma1 >>> 1)) < 24)
             gamma1 ^= 0xaaaa_aaaa_aaaa_aaaaUL;
         return typeof(this)(state1, gamma1);
     }

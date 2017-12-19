@@ -192,10 +192,7 @@ private bool cholesky(SliceKind kind, Iterator)(scope Slice!(kind, [2], Iterator
         foreach(size_t j; 0 .. i)
             r[j] = (r[j] - reduce!"a + b * c"(typeof(r[j])(0), r[0 .. j], m[j, 0 .. j])) / m[j, j];
         r[i] -= reduce!"a + b * b"(typeof(r[i])(0), r[0 .. i]);
-        //In this module this function returning `false` is always
-        //an error condition, so let's assume it is rare.
-        import mir.ndslice.internal: _expect;
-        if(_expect(!(r[i] > 0), false)) // this catches nan's as well
+        if (!(r[i] > 0)) // this catches nan's as well
             return false;
         r[i] = sqrt(r[i]);
     }
@@ -234,8 +231,7 @@ struct MultivariateNormalVariable(T)
         //that unless memory corruption has already occurred sigma
         //and mu have the correct dimensions and it is correct in opCall
         //to "@trust" slicing sigma to [n x n] and mu to [n].
-        import mir.ndslice.internal: _expect;
-        if (_expect((mu.length != sigma.length!0) | (mu.length != sigma.length!1), false))
+        if ((mu.length != sigma.length!0) | (mu.length != sigma.length!1))
             assert(false);
 
         if(!chol && !cholesky(sigma))
@@ -253,8 +249,7 @@ struct MultivariateNormalVariable(T)
         //that unless memory corruption has already occurred sigma
         //and mu have the correct dimensions and it is correct in opCall
         //to "@trust" slicing sigma as (n,n) and slicing mu as (n).
-        import mir.ndslice.internal: _expect;
-        if (_expect(sigma.length!0 != sigma.length!1, false))
+        if (sigma.length!0 != sigma.length!1)
             assert(false);
 
         if(!chol && !cholesky(sigma))
