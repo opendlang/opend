@@ -46,8 +46,9 @@ void main(){
 ##### `random` (new implementation and API)
  - Mir Random `rand!float`/`rand!double`/`rand!real` generates saturated real random numbers in `(-1, 1)`. For example, `rand!real` can produce more than 2^78 unique numbers. In other hand, `std.random.uniform01!real` produces less than `2^31` unique numbers with default Engine.
  - Mir Random fixes Phobos integer underflow bugs.
- - Addition optimization was added for enumerated types.
+ - Additional optimization was added for enumerated types.
  - Random [nd-array (ndslice)](https://github.com/libmir/mir-algorithm) generation.
+ - Bounded integer generation in `randIndex` uses Daniel Lemire's fast alternative to modulo reduction. The throughput increase measured for `randIndex!uint` on an x86-64 processor compiled with LDC 1.6.0 was 1.40x for `Mt19937_64` and 1.73x for `Xoroshiro128Plus`. The throughput increase measured for `randIndex!ulong` was 2.36x for `Mt19937_64` and 4.25x for `Xoroshiro128Plus`.
 
 ##### `random.variable` (new)
  - Uniform
@@ -78,5 +79,6 @@ void main(){
  - 64-bit Mt19937 initialization is fixed (merged to Phobos)
  - 64-bit Mt19937 is default for 64-bit targets
  - Permuted Congruential Generators (new)
+ - SplitMix generators (new)
  - XorshiftStar Generators (new)
  - Xoroshiro128Plus generator (new)
