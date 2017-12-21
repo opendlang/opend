@@ -804,3 +804,22 @@ nothrow @safe version(mir_random_test) unittest
     sort(a);
     assert(a == iota(10));
 }
+
+// Ensure that the demo code in README.md stays up to date.
+// If this unittest needs to be updated due to a change, update
+// README.md too!
+nothrow @safe version(mir_random_test) unittest
+{
+    import std.range;
+
+    import mir.random;
+    import mir.random.variable: NormalVariable;
+    import mir.random.algorithm: range;
+
+
+    auto rng = Random(unpredictableSeed);        // Engines are allocated on stack or global
+    auto sample = range!rng                      // Engines can passed by alias to algorithms
+        (NormalVariable!double(0, 1))            // Random variables are passed by value
+        .take(1000)                              // Fix sample length to 1000 elements (Input Range API)
+        .array;                                  // Allocates memory and performs computation
+}
