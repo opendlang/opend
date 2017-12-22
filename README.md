@@ -18,7 +18,7 @@ Documentation: http://docs.random.dlang.io/latest/index.html
 /+ dub.json:
 {
     "name": "test_random",
-    "dependencies": {"mir-random": "~>0.2.8"}
+    "dependencies": {"mir-random": "~>0.3.0"}
 }
 +/
 
