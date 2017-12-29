@@ -38,6 +38,8 @@ private
 
     static if(Derelict_OS_Windows)
         enum libNames = "cudart32_65.dll,cudart64_65.dll";
+    else static if (Derelict_OS_Mac)
+        enum libNames = "libcudart.dylib,/usr/local/lib/libcudart.dylib";
     else static if (Derelict_OS_Linux)
     {
         version(X86)
