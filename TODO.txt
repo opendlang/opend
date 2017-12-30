@@ -1,0 +1,2 @@
+The problem is that pdf-d is retained mode instead of immediate mode.
+This makes everything impractical
