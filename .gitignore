@@ -5,7 +5,9 @@ __dummy.html
 *.obj
 __test__*__
 bin
+automem
 ut
+utl
 *.a
 *.ninja
 compile_commands.json
