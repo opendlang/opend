@@ -9,6 +9,7 @@ void main(string[] args)
 
     doc.save();
 
+    doc.strokeStyle = "#ff0000";
 
     doc.lineWidth(4);
     doc.beginPath(100, 150);

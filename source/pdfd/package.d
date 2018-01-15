@@ -3,15 +3,25 @@ module pdfd;
 import std.string;
 
 
-/// A PDF Context allows you draw PDF primitives in immediate mode.
-
-pure:
 @safe:
 
-/// Low-level implementation of the PDF byte stream.
+class PDFException : Exception
+{
+    public
+    {
+        @safe pure nothrow this(string message,
+                                string file =__FILE__,
+                                size_t line = __LINE__,
+                                Throwable next = null)
+        {
+            super(message, file, line, next);
+        }
+    }
+}
+
+
 class PDFDocument
 {
-pure:
 @safe:
 
     this(int pageWidthMm = 210, int pageHeightMm = 297)
@@ -46,7 +56,7 @@ pure:
     PDFDocument end()
     {
         if (_finished)
-            assert(false, "PDFDocument already finalized.");
+            throw new PDFException("PDFDocument already finalized.");
 
         _finished = true;
 
@@ -82,6 +92,26 @@ pure:
         output('Q');
     }
 
+    // Color selection
+
+    void fillStyle(string color)
+    {
+        ubyte[3] c = parseHTMLColor(color);
+        outFloat(c[0] / 255.0f);
+        outFloat(c[1] / 255.0f);
+        outFloat(c[2] / 255.0f);
+        output(" rg");
+    }
+
+    void strokeStyle(string color)
+    {
+        ubyte[3] c = parseHTMLColor(color);
+        outFloat(c[0] / 255.0f);
+        outFloat(c[1] / 255.0f);
+        outFloat(c[2] / 255.0f);
+        output(" RG");
+    }
+
     // Path construction
 
     void beginPath(int x, int y)
@@ -108,17 +138,12 @@ pure:
 
     // Path painting operators
 
-    void fill(string htmlColor)
+    void fill()
     {
         outDelim();
         output("f");
     }
 
-    void fillEvenOdd(string htmlColor)
-    {
-        outDelim();
-        output("f*");
-    }
 
     void stroke()
     {
@@ -132,11 +157,6 @@ pure:
         output("B");
     }
 
-    void fillEvenOddAndStroke(string htmlColor)
-    {
-        outDelim();
-        output("B*");
-    }
 
     void closePath()
     {
@@ -407,6 +427,12 @@ private:
         output(format("%d", d));
     }
 
+    void outFloat(float f)
+    {
+        outDelim();
+        output(format("%.3f", f));
+    }
+
     void outName(string name)
     {
         // no delimiter needed as '/' is a delimiter
@@ -419,7 +445,7 @@ private:
     {
         outDelim();
         output("stream\n");
-        return currentOffset();        
+        return currentOffset();
     }
 
     byte_offset outEndStream()
@@ -499,4 +525,42 @@ private:
         byte_offset[] _offsetsOfIndirectObjects; // offset of 
         object_id _currentObject = 0;
     }
+}
+
+
+ubyte[3] parseHTMLColor(string s)
+{
+    int fromHex(char ch)
+    {
+        if (ch >= '0' && ch <= '9')
+            return ch - '0';
+        if (ch >= 'a' && ch <= 'f')
+            return ch + 10 - 'a';
+        if (ch >= 'A' && ch <= 'F')
+            return ch + 10 - 'A';
+        throw new Exception("Couldn't parse color " ~ s);
+    }
+
+    if (s.length == 4) // eg: "#4af"
+    {
+        if (s[0] != '#')
+            throw new Exception("Couldn't parse color " ~ s);
+
+        int r = fromHex(s[1]);
+        int g = fromHex(s[2]);
+        int b = fromHex(s[3]);
+        r |= (r << 4);
+        g |= (g << 4);
+        b |= (b << 4);
+        return [cast(ubyte)r, cast(ubyte)g, cast(ubyte)b];
+    }
+    else if (s.length == 7) // eg: "#44AAff"
+    {
+        int r = (fromHex(s[1]) << 4)| fromHex(s[2]);
+        int g = (fromHex(s[3]) << 4)| fromHex(s[4]);
+        int b = (fromHex(s[5]) << 4)| fromHex(s[6]);
+        return [cast(ubyte)r, cast(ubyte)g, cast(ubyte)b];
+    }
+    else
+        throw new Exception("Couldn't parse color " ~ s);
 }
