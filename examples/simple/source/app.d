@@ -5,14 +5,16 @@ import pdfd;
 
 void main(string[] args)
 {
-    PDF pdf = new PDF(210, 297);
-    pdf.beginPage();
+    auto doc = new PDFDocument();
 
-    pdf.endPage();
-    pdf.beginPage();
+    doc.save();
 
-    pdf.endPage();
 
-    pdf.finish();
-    std.file.write("output.pdf", pdf.getBytes());
+    doc.lineWidth(4);
+    doc.beginPath(100, 150);
+    doc.lineTo(100, 250);
+    doc.stroke();
+
+    doc.restore();
+    std.file.write("output.pdf", doc.bytes);
 }

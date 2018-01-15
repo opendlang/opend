@@ -9,15 +9,12 @@ pure:
 @safe:
 
 /// Low-level implementation of the PDF byte stream.
-class PDF
+class PDFDocument
 {
 pure:
 @safe:
 
-    alias object_id = uint;
-    alias byte_offset = uint;
-
-    this(int pageWidthMm, int pageHeightMm)
+    this(int pageWidthMm = 210, int pageHeightMm = 297)
     {
         _pageWidthMm = pageWidthMm;
         _pageHeightMm = pageHeightMm;
@@ -33,52 +30,162 @@ pure:
         // This ensures proper behaviour of file transfer applications that inspect data near 
         // the beginning of a file to determine whether to treat the file’s contents as text or as binary."
         output("%¥±ë\n");
+
+        // Start the first page
+        beginPage();
     }
 
-    const(ubyte)[] getBytes() const
+    PDFDocument addPage()
     {
-        return _bytes;
+        // end the current page, and add one
+        endPage();
+        beginPage();
+        return this;
+    }
+
+    PDFDocument end()
+    {
+        if (_finished)
+            assert(false, "PDFDocument already finalized.");
+
+        _finished = true;
+
+        // end the current page
+        endPage();
+
+        // Add all deferred object and finalize the PDF output
+        finalizeOutput();
+
+        return this;
     }    
 
-  
-    void finish()
+    const(ubyte)[] bytes()
     {
-        // end the current stream
+        if (!_finished)
+            end();
+        return _bytes;
+    }
 
+    // <Graphics operations>
 
+    // State stack
+
+    void save()
+    {
+        outDelim();
+        output('q');
+    }
+
+    void restore()
+    {
+        outDelim();
+        output('Q');
+    }
+
+    // Path construction
+
+    void beginPath(int x, int y)
+    {
+        outInteger(x);
+        outInteger(y);
+        output(" m");
+    }
+
+    void lineTo(int x, int y)
+    {
+        outInteger(x);
+        outInteger(y);
+        output(" l");
+    }
+
+    // line parameters
+
+    void lineWidth(int width)
+    {
+        outInteger(width);
+        output(" w");
+    }
+
+    // Path painting operators
+
+    void fill(string htmlColor)
+    {
+        outDelim();
+        output("f");
+    }
+
+    void fillEvenOdd(string htmlColor)
+    {
+        outDelim();
+        output("f*");
+    }
+
+    void stroke()
+    {
+        outDelim();
+        output("S");
+    }
+
+    void fillAndStroke()
+    {
+        outDelim();
+        output("B");
+    }
+
+    void fillEvenOddAndStroke(string htmlColor)
+    {
+        outDelim();
+        output("B*");
+    }
+
+    void closePath()
+    {
+        outDelim();
+        output(" h");
+    }
+  
+
+    // </Graphics operations>
+
+private:
+
+    bool _finished = false;
+
+    void finalizeOutput()
+    {
         // Add every page object
         foreach(i; 0..numberOfPages())
         {
             beginDictObject(_pageDescriptions[i].id);
-                outName("Type"); outName("Page");
-                outName("Parent"); outReference(_pageTreeId);
-                outName("Contents"); outReference(_pageDescriptions[i].contentId);
+            outName("Type"); outName("Page");
+            outName("Parent"); outReference(_pageTreeId);
+            outName("Contents"); outReference(_pageDescriptions[i].contentId);
             endDictObject();
         }
 
         // Add the pages object
         beginDictObject(_pageTreeId);
-            outName("Type"); outName("Catalog");
-            outName("Count"); outInteger(numberOfPages());
-            outName("MediaBox"); 
-                outBeginArray();
-                    outInteger(0);
-                    outInteger(0);
-                    outInteger(_pageWidthMm);
-                    outInteger(_pageHeightMm);
-                outEndArray();
-            outName("Kids"); 
-                outBeginArray();
-                    foreach(i; 0..numberOfPages()) 
-                        outReference(_pageDescriptions[i].id);
-                outEndArray();
+        outName("Type"); outName("Catalog");
+        outName("Count"); outInteger(numberOfPages());
+        outName("MediaBox"); 
+        outBeginArray();
+        outInteger(0);
+        outInteger(0);
+        outInteger(_pageWidthMm);
+        outInteger(_pageHeightMm);
+        outEndArray();
+        outName("Kids"); 
+        outBeginArray();
+        foreach(i; 0..numberOfPages()) 
+            outReference(_pageDescriptions[i].id);
+        outEndArray();
         endDictObject();
 
         // Add the root object
         object_id rootId = _pool.allocateObjectId();            
         beginDictObject(rootId);
-            outName("Type"); outName("Catalog");
-            outName("Pages"); outReference(_pageTreeId);            
+        outName("Type"); outName("Catalog");
+        outName("Pages"); outReference(_pageTreeId);            
         endDictObject();
 
         // Note: at this point all indirect objects should have been added to the output
@@ -86,16 +193,21 @@ pure:
 
         output("trailer\n");
         outBeginDict();
-            outName("Size");
-            outInteger(_pool.numberOfObjects());
-            outName("Root");
-            outReference(rootId);
+        outName("Size");
+        outInteger(_pool.numberOfObjects());
+        outName("Root");
+        outReference(rootId);
         outEndDict();
 
         output("startxref\n");
         output(format("%s\n", offsetOfXref));
         output("%%EOF\n");
     }
+
+    alias object_id = int;
+    alias byte_offset = int;
+
+    // <pages>
 
     void beginPage()
     {
@@ -111,7 +223,7 @@ pure:
         // (as described in the PDF 32000-1:2008 specification section 7.3.2)
         beginObject(p.contentId);
         outBeginDict();
-            outName("Length"); outReference(_currentStreamLengthId);
+        outName("Length"); outReference(_currentStreamLengthId);
         outEndDict();
         _currentStreamStart = outBeginStream();
     }
@@ -128,16 +240,12 @@ pure:
 
         // Create a new object with the length
         beginObject(_currentStreamLengthId);
-            outInteger(streamBytes);
+        outInteger(streamBytes);
         endObject();
 
         // close stream object
     }
 
-private:
-
-
-    // <pages>
     object_id _pageTreeId;
 
     struct PageDesc
@@ -278,15 +386,13 @@ private:
 
     void output(string s)
     {
-        foreach(char c; s)
-        {
-            output(c);
-        }
+        _bytes ~= s.representation;
     }
 
     void outString(string s)
     {
         outDelim();
+        assert(false); // TODO
     }
 
     void outBool(bool b)
@@ -394,5 +500,3 @@ private:
         object_id _currentObject = 0;
     }
 }
-
-
