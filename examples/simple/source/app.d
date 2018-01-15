@@ -6,7 +6,13 @@ import pdfd;
 void main(string[] args)
 {
     PDF pdf = new PDF(210, 297);
-    pdf.newPage();
-    pdf.newPage();
-    std.file.write("output.pdf", pdf.toBytes());
+    pdf.beginPage();
+
+    pdf.endPage();
+    pdf.beginPage();
+
+    pdf.endPage();
+
+    pdf.finish();
+    std.file.write("output.pdf", pdf.getBytes());
 }
