@@ -82,6 +82,26 @@ struct RefCounted(Type, Allocator = typeof(theAllocator)) if(isAllocator!Allocat
         return _impl._get;
     }
 
+    // Prevent opSlice and opIndex from being hidden by Impl*.
+    // This comment is deliberately not DDOC.
+    auto ref opSlice(A...)(auto ref A args)
+    if (__traits(compiles, Type.init.opSlice(args)))
+    {
+        return _impl._get.opSlice(args);
+    }
+    // ditto
+    auto ref opIndex(A...)(auto ref A args)
+    if (__traits(compiles, Type.init.opIndex(args)))
+    {
+        return _impl._get.opIndex(args);
+    }
+    // ditto
+    auto ref opIndexAssign(A...)(auto ref A args)
+    if (__traits(compiles, Type.init.opIndexAssign(args)))
+    {
+        return _impl._get.opIndexAssign(args);
+    }
+
     alias _impl this;
 
 private:
@@ -570,6 +590,19 @@ auto refCounted(Type, Allocator)(Unique!(Type, Allocator) ptr) {
     assert(NoGcClass.numClasses == 0);
 }
 
+@("RefCounted opSlice and opIndex")
+@system unittest {
+    import std.mmfile: MmFile;
+    auto file = RefCounted!MmFile(null, MmFile.Mode.readWriteNew, 120, null);
+    // The type of file[0] should be ubyte, not Impl.
+    static assert(is(typeof(file[0]) == typeof(MmFile.init[0])));
+    // opSlice should result in void[] not Impl[].
+    static assert(is(typeof(file[0 .. size_t.max]) == typeof(MmFile.init[0 .. size_t.max])));
+    ubyte[] data = cast(ubyte[]) file[0 .. cast(size_t) file.length];
+    immutable ubyte b = file[1];
+    file[1] = cast(ubyte) (b + 1);
+    assert(data[1] == cast(ubyte) (b + 1));
+}
 
 version(unittest):
 
