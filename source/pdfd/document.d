@@ -2,7 +2,7 @@ module pdfd.document;
 
 import std.string;
 import pdfd.color;
-import pdfd.font;
+import pdfd.systemfonts;
 
 class PDFException : Exception
 {
@@ -21,8 +21,6 @@ class PDFException : Exception
 
 class PDFDocument
 {
-@safe:
-
     this(int pageWidthMm = 210, int pageHeightMm = 297)
     {
         _pageWidthMm = pageWidthMm;
@@ -97,12 +95,13 @@ class PDFDocument
         string fontPDFName;
         object_id fontObjectId;
 
-        _fontManager.getFont(_fontFace, false, false, fontPDFName, fontObjectId);
+        _fontManager.getFont(_pool, _fontFace, false, false, fontPDFName, fontObjectId);
 
         // Mark the current page as using this font
         currentPage.markAsUsingThisFont(fontPDFName, fontObjectId);
 
-        outDelim("BT");
+        outDelim();
+        output("BT");
         outName(fontPDFName);
         outFloat(_fontSize);
         output(" Tf");
@@ -239,14 +238,12 @@ private:
             outName("Resources");
                 outBeginDict();                    
                     outName("Font"); 
-                    outBeginDict();     
-
-                        foreach(fontId; _pageDescriptions[i].fontUsed)
+                    outBeginDict();
+                        foreach(f; _pageDescriptions[i].fontUsed.byKeyValue)
                         {
-                            
-                            outReference(fontId);
-
-
+                            outName(f.key);
+                            outReference(f.value);
+                        }
                     outEndDict();
                 outEndDict();
             endDictObject();
@@ -254,7 +251,7 @@ private:
 
         // Include every font object
         // TODO: TTF embed
-        foreach(fontDesc; _fontManager.usedFont)
+        foreach(fontDesc; _fontManager.usedFonts)
         {
             beginDictObject(fontDesc.id);
                 outName("Type"); outName("Font");
@@ -353,7 +350,7 @@ private:
     {
         object_id id;              // page id
         object_id contentId;       // content of the page id
-        string[object_id] fontUsed;  // a map of font objects used in that page
+        object_id[string] fontUsed;  // a map of font objects used in that page
 
         void markAsUsingThisFont(string fontPDFName, object_id fontObjectId)
         {
@@ -370,7 +367,7 @@ private:
 
     PageDesc* currentPage()
     {
-        return _pageDescriptions[$-1];
+        return &_pageDescriptions[$-1];
     }
 
     int _pageWidthMm, _pageHeightMm;
@@ -464,207 +461,197 @@ private:
             return t;
         }();
 
-        bool isDelimiter(char c)
+    bool isDelimiter(char c)
+    {
+        return spaceOrdelimiterFlag[c];
+    }
+
+    // insert delimiter only if necessary
+    void outDelim()
+    {
+        char lastChar = _bytes[$-1];
+        if (!isDelimiter(lastChar))
+            output(' '); // space separates entities
+    }
+
+    void outReference(object_id id)
+    {
+        outDelim();
+        output( format("%d 0 R", id) );
+    }
+
+    ubyte[] _bytes;
+
+    byte_offset currentOffset()
+    {
+        return cast(byte_offset) _bytes.length;
+    }
+
+    void output(ubyte b)
+    {
+        _bytes ~= b;
+    }
+
+    void output(string s)
+    {
+        _bytes ~= s.representation;
+    }
+
+    void outString(string s)
+    {
+        outDelim();
+        output('(');
+        output(s); // TODO: it is only allowed for latin-1 and matching parenthesis, etc
+        output(')');
+    }
+
+    void outBool(bool b)
+    {
+        outDelim();
+        output(b ? "true" : "false");
+    }
+
+    void outInteger(int d)
+    {
+        outDelim();
+        output(format("%d", d));
+    }
+
+    void outFloat(float f)
+    {
+        outDelim();
+        output(format("%.3f", f));
+    }
+
+    void outName(string name)
+    {
+        // no delimiter needed as '/' is a delimiter
+        output('/');
+        output(name);
+    }
+
+    // begins a stream, return the current byte offset
+    byte_offset outBeginStream()
+    {
+        outDelim();
+        output("stream\n");
+        return currentOffset();
+    }
+
+    byte_offset outEndStream()
+    {
+        byte_offset here = currentOffset();
+        output("endstream");
+        return here;        
+    }
+
+    void outBeginDict()
+    {        
+        output("<<");
+    }
+
+    void outEndDict()
+    {
+        output(">>");
+    }
+
+    void outBeginArray()
+    {        
+        output("[");
+    }
+
+    void outEndArray()
+    {
+        output("]");
+    }
+    // </Low-level syntax>
+
+
+    // <Object Pool>
+    // The object pool stores id and offsets of indirect objects
+    // exluding the "zero object".
+    // There is support for allocating objects in advance, in order to reference them 
+    // in the stream before they appear.
+    ObjectPool _pool;
+
+    static struct ObjectPool
+    {
+    public:
+
+        enum invalidOffset = cast(byte_offset)-1;
+
+        // Return a new object ID
+        object_id allocateObjectId()
         {
-            return spaceOrdelimiterFlag[c];
+            _currentObject += 1;
+            _offsetsOfIndirectObjects ~= invalidOffset;
+            assert(_currentObject == _offsetsOfIndirectObjects.length);
+            return _currentObject;
         }
 
-        // insert delimiter only if necessary
-        void outDelim()
+        byte_offset offsetOfObject(object_id id)
         {
-            char lastChar = _bytes[$-1];
-            if (!isDelimiter(lastChar))
-                output(' '); // space separates entities
+            assert(id > 0);
+            assert(id <= _currentObject);
+            return _offsetsOfIndirectObjects[id - 1];
         }
 
-        void outReference(object_id id)
+        int numberOfObjects()
         {
-            outDelim();
-            output( format("%d 0 R", id) );
+            assert(_currentObject == _offsetsOfIndirectObjects.length);
+            return _currentObject;
         }
 
-        ubyte[] _bytes;
-
-        byte_offset currentOffset()
+        void setObjectOffset(object_id id, byte_offset offset)
         {
-            return cast(byte_offset) _bytes.length;
+            assert(id > 0);
+            assert(id <= _currentObject);
+            _offsetsOfIndirectObjects[id - 1] = offset;
         }
 
-        void output(ubyte b)
+    private:
+        byte_offset[] _offsetsOfIndirectObjects; // offset of 
+        object_id _currentObject = 0;
+    }
+
+    // Enough data to describe a font resource in a PDF
+    static struct FontDesc
+    {
+        object_id id;
+        string pdfName; // "Fxx", associated name in the PDF (will be of the form /Fxx)
+    }
+
+    // Hold a list of all font used in the document, to be added at the end.
+    // This also associate names with fonts
+    static struct FontManager
+    {
+        // Ensure this font exist, generate a /name and give it back 
+        // Only PDF builtin fonts supported.
+        // TODO: bold and oblique support
+        void getFont(ObjectPool pool, string fontFace, bool bold, bool oblique, 
+                        out string fontPDFName, out object_id fontObjectId)
         {
-            _bytes ~= b;
-        }
-
-        void output(string s)
-        {
-            _bytes ~= s.representation;
-        }
-
-        void outString(string s)
-        {
-            outDelim();
-            output('(');
-            output(s); // TODO: it is only allowed for latin-1 and matching parenthesis, etc
-            output(')');
-        }
-
-        void outBool(bool b)
-        {
-            outDelim();
-            output(b ? "true" : "false");
-        }
-
-        void outInteger(int d)
-        {
-            outDelim();
-            output(format("%d", d));
-        }
-
-        void outFloat(float f)
-        {
-            outDelim();
-            output(format("%.3f", f));
-        }
-
-        void outName(string name)
-        {
-            // no delimiter needed as '/' is a delimiter
-            output('/');
-            output(name);
-        }
-
-        // begins a stream, return the current byte offset
-        byte_offset outBeginStream()
-        {
-            outDelim();
-            output("stream\n");
-            return currentOffset();
-        }
-
-        byte_offset outEndStream()
-        {
-            byte_offset here = currentOffset();
-            output("endstream");
-            return here;        
-        }
-
-        void outBeginDict()
-        {        
-            output("<<");
-        }
-
-        void outEndDict()
-        {
-            output(">>");
-        }
-
-        void outBeginArray()
-        {        
-            output("[");
-        }
-
-        void outEndArray()
-        {
-            output("]");
-        }
-        // </Low-level syntax>
-
-
-        // <Object Pool>
-        // The object pool stores id and offsets of indirect objects
-        // exluding the "zero object".
-        // There is support for allocating objects in advance, in order to reference them 
-        // in the stream before they appear.
-        ObjectPool _pool;
-
-        static struct ObjectPool
-        {
-        pure:
-        @safe:
-        public:
-
-            enum invalidOffset = cast(byte_offset)-1;
-
-            // Return a new object ID
-            object_id allocateObjectId()
+            FontDesc* desc = fontFace in _usedFonts;
+            if (desc is null)
             {
-                _currentObject += 1;
-                _offsetsOfIndirectObjects ~= invalidOffset;
-                assert(_currentObject == _offsetsOfIndirectObjects.length);
-                return _currentObject;
+                // lazily create the font object in the PDF
+                _usedFonts[fontFace].id = pool.allocateObjectId();
+                _usedFonts[fontFace].pdfName = format("F%d", ++_fontCount);
             }
 
-            byte_offset offsetOfObject(object_id id)
-            {
-                assert(id > 0);
-                assert(id <= _currentObject);
-                return _offsetsOfIndirectObjects[id - 1];
-            }
-
-            int numberOfObjects()
-            {
-                assert(_currentObject == _offsetsOfIndirectObjects.length);
-                return _currentObject;
-            }
-
-            void setObjectOffset(object_id id, byte_offset offset)
-            {
-                assert(id > 0);
-                assert(id <= _currentObject);
-                _offsetsOfIndirectObjects[id - 1] = offset;
-            }
-
-        private:
-            byte_offset[] _offsetsOfIndirectObjects; // offset of 
-            object_id _currentObject = 0;
+            fontObjectId = _usedFonts[fontFace].id;
+            fontPDFName = _usedFonts[fontFace].pdfName;
         }
 
-        // Enough data to describe a font resource in a PDF
-        static struct FontDesc
+        int _fontCount = 0;
+        FontDesc[string] _usedFonts;
+
+        // Returns: something foreachable with FontDesc elements
+        auto usedFonts()
         {
-            object_id id;
-            string pdfName; // "Fxx", associated name in the PDF (will be of the form /Fxx)
+            return _usedFonts.byValue();
         }
+    }
 
-        // Hold a list of all font used in the document, to be added at the end.
-        // This also associate names with fonts
-        static struct FontManager
-        {
-            // Ensure this font exist, generate a /name and give it back 
-            // Only PDF builtin fonts supported.
-            // TODO: bold and oblique support
-            void getFont(ObjectPool pool, string fontFace, bool bold, bool oblique, 
-                         out string fontPDFName, out object_id fontObjectId)
-            {
-                FontDesc* desc = fontFace in usedFonts;
-                if (desc is null)
-                {
-                    // lazily create the font object in the PDF
-                    _usedFonts[fontFace].id = pool.allocateObjectId();
-                    _usedFonts[fontFace].pdfName = format("F%d", ++_fontCount);
-                }
-
-                fontObjectId = _usedFonts[fontFace].id;
-                fontPDFName = _usedFonts[fontFace].pdfName;
-            }
-
-            int _fontCount = 0;
-            FontDesc[string] _usedFonts;
-
-            // Returns: something foreachable with FontDesc elements
-            auto usedFonts()
-            {
-                return _usedFonts();
-            }
-        }
-
-        FontManager _fontManager;
-}
-
-// A list of all TTF files available on the system, and from the current directory
-__gshared string[] allTTFFontFiles;
-
-shared static this()
-{
-    allTTFFontFiles = listAllFontFiles();
+    FontManager _fontManager;
 }
