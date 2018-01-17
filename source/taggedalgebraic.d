@@ -595,6 +595,47 @@ unittest
 	}
 }
 
+static if (__VERSION__ >= 2072) {
+	unittest { // issue #8
+		static struct Result(T,E)
+		{
+			static union U
+			{
+				T ok;
+				E err;
+			}
+			alias TA = TaggedAlgebraic!U;
+			TA payload;
+			alias payload this;
+
+			this(T ok) { payload = ok; }
+			this(E err) { payload = err; }
+		}
+
+		static struct Option(T)
+		{
+			static union U
+			{
+				T some;
+				typeof(null) none;
+			}
+			alias TA = TaggedAlgebraic!U;
+			TA payload;
+			alias payload this;
+
+			this(T some) { payload = some; }
+			this(typeof(null) none) { payload = null; }
+		}
+
+		Result!(Option!size_t, int) foo()
+		{
+			return Result!(Option!size_t, int)(42);
+		}
+
+		assert(foo() == 42);
+	}
+}
+
 unittest { // issue #13
 	struct S1 { int foo; }
 	struct S {
