@@ -637,10 +637,11 @@ static if (__VERSION__ >= 2072) {
 }
 
 unittest { // issue #13
-	struct S1 { int foo; }
+	struct S1 { Void dummy; int foo; }
 	struct S {
 		struct T { TaggedAlgebraic!S1 foo() { return TaggedAlgebraic!S1(42); } }
 		struct U { string foo() { return "foo"; } }
+		Void dummy;
 		T t;
 		U u;
 	}
