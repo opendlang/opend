@@ -75,13 +75,11 @@ template isRandomVariable(T)
     static if (is(typeof(T.isRandomVariable) : bool))
     {
         enum isRandomVariable = T.isRandomVariable &&
-            is(typeof({
-                auto gen = Random(1);
-                T rv;
-                auto x = rv(gen);
-                auto y = rv!Random(gen);
-                static assert(is(typeof(x) == typeof(y)));
-            }));
+            is(typeof(((T rv, Random* gen) => rv(*gen))(T.init, null)))
+            &&
+            is(typeof(((T rv, Random* gen) => rv(*gen))(T.init, null))
+                ==
+               typeof(((T rv, Random* gen) => rv.opCall!(Random)(*gen))(T.init, null)));
     }
     else enum isRandomVariable = false;
 }
@@ -128,6 +126,7 @@ struct UniformVariable(T)
 {
     auto gen = Random(unpredictableSeed);
     auto rv = UniformVariable!int(-10, 10); // [-10, 10]
+    static assert(isRandomVariable!(typeof(rv)));
     auto x = rv(gen); // random variable
     assert(rv.min == -10);
     assert(rv.max == 10);
@@ -180,6 +179,7 @@ struct UniformVariable(T)
     import std.math : nextDown;
     auto gen = Random(unpredictableSeed);
     auto rv = UniformVariable!double(-8, 10); // [-8, 10)
+    static assert(isRandomVariable!(typeof(rv)));
     auto x = rv(gen); // random variable
     assert(rv.min == -8.0);
     assert(rv.max == 10.0.nextDown);
@@ -233,6 +233,7 @@ struct ExponentialVariable(T)
 {
     auto gen = Random(unpredictableSeed);
     auto rv = ExponentialVariable!double(1);
+    static assert(isRandomVariable!(typeof(rv)));
     auto x = rv(gen);
 }
 
@@ -273,6 +274,7 @@ struct WeibullVariable(T)
 {
     auto gen = Random(unpredictableSeed);
     auto rv = WeibullVariable!double(3, 2);
+    static assert(isRandomVariable!(typeof(rv)));
     auto x = rv(gen);
 }
 
@@ -378,6 +380,7 @@ struct GammaVariable(T, bool Exp = false)
 {
     auto gen = Random(unpredictableSeed);
     auto rv = GammaVariable!double(1, 1);
+    static assert(isRandomVariable!(typeof(rv)));
     auto x = rv(gen);
 }
 
@@ -443,6 +446,7 @@ struct BetaVariable(T)
 {
     auto gen = Random(unpredictableSeed);
     auto rv = BetaVariable!double(2, 5);
+    static assert(isRandomVariable!(typeof(rv)));
     auto x = rv(gen);
 }
 
@@ -481,6 +485,7 @@ struct ChiSquaredVariable(T)
 {
     auto gen = Random(unpredictableSeed);
     auto rv = ChiSquaredVariable!double(3);
+    static assert(isRandomVariable!(typeof(rv)));
     auto x = rv(gen);
 }
 
@@ -526,6 +531,7 @@ struct FisherFVariable(T)
 {
     auto gen = Random(unpredictableSeed);
     auto rv = FisherFVariable!double(3, 4);
+    static assert(isRandomVariable!(typeof(rv)));
     auto x = rv(gen);
 }
 
@@ -569,6 +575,7 @@ struct StudentTVariable(T)
 {
     auto gen = Random(unpredictableSeed);
     auto rv = StudentTVariable!double(10);
+    static assert(isRandomVariable!(typeof(rv)));
     auto x = rv(gen);
 }
 
@@ -684,6 +691,7 @@ struct NormalVariable(T)
 {
     auto gen = Random(unpredictableSeed);
     auto rv = NormalVariable!double(0, 1);
+    static assert(isRandomVariable!(typeof(rv)));
     auto x = rv(gen);
 }
 
@@ -726,6 +734,7 @@ struct LogNormalVariable(T)
 {
     auto gen = Random(unpredictableSeed);
     auto rv = LogNormalVariable!double(0, 1);
+    static assert(isRandomVariable!(typeof(rv)));
     auto x = rv(gen);
 }
 
@@ -776,6 +785,7 @@ struct CauchyVariable(T)
 {
     auto gen = Random(unpredictableSeed);
     auto rv = CauchyVariable!double(0, 1);
+    static assert(isRandomVariable!(typeof(rv)));
     auto x = rv(gen);
 }
 
@@ -816,6 +826,7 @@ struct ExtremeValueVariable(T)
 {
     auto gen = Random(unpredictableSeed);
     auto rv = ExtremeValueVariable!double(0, 1);
+    static assert(isRandomVariable!(typeof(rv)));
     auto x = rv(gen);
 }
 
@@ -858,6 +869,7 @@ struct BernoulliVariable(T)
 {
     auto gen = Random(unpredictableSeed);
     auto rv = BernoulliVariable!double(0.7);
+    static assert(isRandomVariable!(typeof(rv)));
     int[2] hist;
     foreach(_; 0..1000)
         hist[rv(gen)]++;
@@ -871,7 +883,7 @@ $(WIKI_D Bernoulli). A fast specialization for `p := 1/2`.
 struct Bernoulli2Variable
 {
     ///
-    enum isRadomVariable = true;
+    enum isRandomVariable = true;
    private size_t payload;
     private size_t mask;
 
@@ -905,6 +917,7 @@ struct Bernoulli2Variable
 {
     auto gen = Random(unpredictableSeed);
     auto rv = Bernoulli2Variable.init;
+    static assert(isRandomVariable!(typeof(rv)));
     int[2] hist;
     foreach(_; 0..1000)
         hist[rv(gen)]++;
@@ -953,6 +966,7 @@ nothrow @safe version(mir_random_test) unittest
 {
     auto gen = Random(unpredictableSeed);
     auto rv = GeometricVariable!double(0.1);
+    static assert(isRandomVariable!(typeof(rv)));
     size_t[ulong] hist;
     foreach(_; 0..1000)
         hist[rv(gen)]++;
@@ -1060,6 +1074,7 @@ nothrow @safe version(mir_random_test) unittest
     import mir.random;
     auto gen = Random(unpredictableSeed);
     auto rv = PoissonVariable!double(10);
+    static assert(isRandomVariable!(typeof(rv)));
     size_t[ulong] hist;
     foreach(_; 0..1000)
         hist[rv(gen)]++;
@@ -1122,6 +1137,7 @@ nothrow @safe version(mir_random_test) unittest
     import mir.random;
     auto gen = Random(unpredictableSeed);
     auto rv = NegativeBinomialVariable!double(30, 0.3);
+    static assert(isRandomVariable!(typeof(rv)));
     size_t[ulong] hist;
     foreach(_; 0..1000)
         hist[rv(gen)]++;
@@ -1257,6 +1273,7 @@ nothrow @safe version(mir_random_test) unittest
     import mir.random;
     auto gen = Random(unpredictableSeed);
     auto rv = BinomialVariable!double(20, 0.5);
+    static assert(isRandomVariable!(typeof(rv)));
     int[] hist = new int[rv.max + 1];
     auto cnt = 1000;
     foreach(_; 0..cnt)
@@ -1342,6 +1359,7 @@ nothrow @safe version(mir_random_test) unittest
     // 10%, 20%, 20%, 40%, 10%
     auto weights = [10.0, 20, 20, 40, 10];
     auto ds = DiscreteVariable!double(weights);
+    static assert(isRandomVariable!(typeof(ds)));
 
     // weight is changed to cumulative sums
     assert(weights == [10, 30, 50, 90, 100]);
@@ -1496,6 +1514,7 @@ nothrow @safe version(mir_random_test) unittest
     double[] i = [0,  1, 10, 15];
     double[] w =   [1,  0,  1];
     auto pcv = PiecewiseConstantVariable!(double, double)(i, w);
+    static assert(isRandomVariable!(typeof(pcv)));
     assert(w == [1, 1, 2]);
 
     int[int] hist;
@@ -1598,6 +1617,7 @@ nothrow @safe version(mir_random_test) unittest
     double[] i = [0, 5, 10, 15];
     double[] w = [0, 1,  1,  0];
     auto pcv = PiecewiseLinearVariable!double(i, w, new double[w.length - 1]);
+    static assert(isRandomVariable!(typeof(pcv)));
 
     int[int] hist;
     foreach(_; 0 .. 10000)
