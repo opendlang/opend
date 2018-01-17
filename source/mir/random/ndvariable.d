@@ -42,6 +42,11 @@ struct SphereVariable(T)
     {
         opCall(gen, result.sliced);
     }
+    /// ditto
+    void opCall(G)(scope G* gen, scope T[] result)
+    {
+        opCall(*gen, result.sliced);
+    }
 
     ///
     void opCall(G, SliceKind kind)(scope ref G gen, scope Slice!(kind, [1], T*) result)
@@ -60,12 +65,28 @@ struct SphereVariable(T)
         }
         result[] /= summator.sum.sqrt;
     }
+    /// ditto
+    void opCall(G, SliceKind kind)(scope G* gen, scope Slice!(kind, [1], T*) result)
+        if (isSaturatedRandomEngine!G)
+    {
+        pragma(inline, true);
+        opCall(*gen, result);
+    }
 }
 
 /// Generate random points on a circle
-@nogc nothrow @safe version(mir_random_test) version(mir_random_test) unittest
+@nogc nothrow @safe version(mir_random_test) unittest
 {
     auto gen = Random(unpredictableSeed);
+    SphereVariable!double rv;
+    double[2] x;
+    rv(gen, x);
+    assert(fabs(x[0] * x[0] + x[1] * x[1] - 1) < 1e-10);
+}
+
+@nogc nothrow @safe version(mir_random_test) unittest
+{
+    Random* gen = threadLocalPtr!Random;
     SphereVariable!double rv;
     double[2] x;
     rv(gen, x);
@@ -87,6 +108,11 @@ struct SimplexVariable(T)
     {
         opCall(gen, result.sliced);
     }
+    /// ditto
+    void opCall(G)(scope G* gen, scope T[] result)
+    {
+        opCall(*gen, result.sliced);
+    }
 
     ///
     void opCall(G, SliceKind kind)(scope ref G gen, scope Slice!(kind, [1], T*) result)
@@ -102,12 +128,29 @@ struct SimplexVariable(T)
         sort(result[0 .. $ - 1]);
         result[1 .. $].retro[] = result.diff.retro;
     }
+    /// ditto
+    void opCall(G, SliceKind kind)(scope G* gen, scope Slice!(kind, [1], T*) result)
+        if (isSaturatedRandomEngine!G)
+    {
+        pragma(inline, true);
+        opCall(*gen, result);
+    }
 }
 
 ///
 @nogc nothrow @safe version(mir_random_test) unittest
 {
     auto gen = Random(unpredictableSeed);
+    SimplexVariable!double rv;
+    double[3] x;
+    rv(gen, x);
+    assert(x[0] >= 0 && x[1] >= 0 && x[2] >= 0);
+    assert(fabs(x[0] + x[1] + x[2] - 1) < 1e-10);
+}
+
+@nogc nothrow @safe version(mir_random_test) unittest
+{
+    Random* gen = threadLocalPtr!Random;
     SimplexVariable!double rv;
     double[3] x;
     rv(gen, x);
@@ -150,6 +193,11 @@ struct DirichletVariable(T)
     {
         opCall(gen, result.sliced);
     }
+    /// ditto
+    void opCall(G)(scope G* gen, scope T[] result)
+    {
+        opCall(*gen, result.sliced);
+    }
 
     ///
     void opCall(G, SliceKind kind, Iterator)(scope ref G gen, scope Slice!(kind, [1], Iterator) result)
@@ -162,12 +210,29 @@ struct DirichletVariable(T)
             summator += result[i] = GammaVariable!T(alpha[i])(gen);
         result[] /= summator.sum;
     }
+    /// ditto
+    void opCall(G, SliceKind kind, Iterator)(scope G* gen, scope Slice!(kind, [1], Iterator) result)
+        if (isSaturatedRandomEngine!G)
+    {
+        pragma(inline, true);
+        opCall(*gen, result);
+    }
 }
 
 ///
 nothrow @safe version(mir_random_test) unittest
 {
     auto gen = Random(unpredictableSeed);
+    auto rv = DirichletVariable!double([1.0, 5.7, 0.3]);
+    double[3] x;
+    rv(gen, x);
+    assert(x[0] >= 0 && x[1] >= 0 && x[2] >= 0);
+    assert(fabs(x[0] + x[1] + x[2] - 1) < 1e-10);
+}
+
+nothrow @safe version(mir_random_test) unittest
+{
+    Random* gen = threadLocalPtr!Random;
     auto rv = DirichletVariable!double([1.0, 5.7, 0.3]);
     double[3] x;
     rv(gen, x);
@@ -265,6 +330,11 @@ struct MultivariateNormalVariable(T)
     {
         opCall(gen, result.sliced);
     }
+    /// ditto
+    void opCall(G)(scope G* gen, scope T[] result)
+    {
+        opCall(*gen, result.sliced);
+    }
 
     ///
     void opCall(G, SliceKind kind)(scope ref G gen, scope Slice!(kind, [1], T*) result)
@@ -282,12 +352,29 @@ struct MultivariateNormalVariable(T)
         if (mu)
             result[] += (() @trusted => mu.sliced(n))();//mu is n vector.
     }
+    /// ditto
+    void opCall(G, SliceKind kind)(scope G* gen, scope Slice!(kind, [1], T*) result)
+        if (isSaturatedRandomEngine!G)
+    {
+        pragma(inline, true);
+        opCall(*gen, result);
+    }
 }
 
 ///
 nothrow @safe version(mir_random_test) unittest
 {
     auto gen = Random(unpredictableSeed);
+    auto mu = [10.0, 0.0].sliced;
+    auto sigma = [2.0, -1.5, -1.5, 2.0].sliced(2,2);
+    auto rv = MultivariateNormalVariable!double(mu, sigma);
+    double[2] x;
+    rv(gen, x[]);
+}
+
+nothrow @safe version(mir_random_test) unittest
+{
+    Random* gen = threadLocalPtr!Random;
     auto mu = [10.0, 0.0].sliced;
     auto sigma = [2.0, -1.5, -1.5, 2.0].sliced(2,2);
     auto rv = MultivariateNormalVariable!double(mu, sigma);

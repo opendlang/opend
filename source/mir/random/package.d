@@ -58,7 +58,7 @@ Params:
 Returns:
     Uniformly distributed integer for interval `[0 .. T.max]`.
 +/
-T rand(T, G)(ref G gen)
+T rand(T, G)(scope ref G gen)
     if (isSaturatedRandomEngine!G && isIntegral!T && !is(T == enum))
 {
     alias R = EngineReturnType!G;
@@ -85,6 +85,12 @@ T rand(T, G)(ref G gen)
         return cast(T) gen();
     }
 }
+/// ditto
+T rand(T, G)(scope G* gen)
+    if (isSaturatedRandomEngine!G && isIntegral!T && !is(T == enum))
+{
+    return rand!(T, G)(*gen);
+}
 
 ///
 @nogc nothrow pure @safe version(mir_random_test) unittest
@@ -101,11 +107,17 @@ Params:
 Returns:
     Uniformly distributed boolean.
 +/
-bool rand(T : bool, G)(ref G gen)
+bool rand(T : bool, G)(scope ref G gen)
     if (isSaturatedRandomEngine!G)
 {
     import std.traits : Signed;
     return 0 > cast(Signed!(EngineReturnType!G)) gen();
+}
+/// ditto
+bool rand(T : bool, G)(scope G* gen)
+    if (isSaturatedRandomEngine!G)
+{
+    return rand!(T, G)(*gen);
 }
 
 ///
@@ -113,6 +125,13 @@ bool rand(T : bool, G)(ref G gen)
 {
     import mir.random.engine.xorshift;
     auto gen = Xorshift(1);
+    auto s = gen.rand!bool;
+}
+
+@nogc nothrow @safe version(mir_random_test) unittest
+{
+    //Coverage. Impure because uses thread-local.
+    Random* gen = threadLocalPtr!Random;
     auto s = gen.rand!bool;
 }
 
@@ -134,7 +153,7 @@ Params:
 Returns:
     Uniformly distributed enumeration.
 +/
-T rand(T, G)(ref G gen)
+T rand(T, G)(scope ref G gen)
     if (isSaturatedRandomEngine!G && is(T == enum))
 {
     static if (is(T : long))
@@ -150,6 +169,12 @@ T rand(T, G)(ref G gen)
         static immutable T[EnumMembers!T.length] members = [EnumMembers!T];
         return members[gen.randIndex($)];
     }
+}
+/// ditto
+T rand(T, G)(scope G* gen)
+    if (isSaturatedRandomEngine!G && is(T == enum))
+{
+    return rand!(T, G)(*gen);
 }
 
 ///
@@ -176,6 +201,14 @@ T rand(T, G)(ref G gen)
     import mir.random.engine.xorshift;
     auto gen = Xorshift(1);
     enum A : string { a = "a", b = "b", c = "c" }
+    auto e = gen.rand!A;
+}
+
+@nogc nothrow @safe version(mir_random_test) unittest
+{
+    //Coverage. Impure because uses thread-local.
+    Random* gen = threadLocalPtr!Random;
+    enum A : dchar { a, b, c }
     auto e = gen.rand!A;
 }
 
@@ -229,7 +262,7 @@ Returns:
     Uniformly distributed real for interval `(-2^^boundExp , 2^^boundExp)`.
 Note: `fabs` can be used to get a value from positive interval `[0, 2^^boundExp$(RPAREN)`.
 +/
-T rand(T, G)(ref G gen, sizediff_t boundExp = 0)
+T rand(T, G)(scope ref G gen, sizediff_t boundExp = 0)
     if (isSaturatedRandomEngine!G && isFloatingPoint!T)
 {
     assert(boundExp <= T.max_exp);
@@ -311,6 +344,12 @@ T rand(T, G)(ref G gen, sizediff_t boundExp = 0)
     /// TODO: quadruple
     else static assert(0);
 }
+/// ditto
+T rand(T, G)(scope ref G* gen, sizediff_t boundExp = 0)
+    if (isSaturatedRandomEngine!G && isFloatingPoint!T)
+{
+    return rand!(T, G)(*gen, boundExp);
+}
 
 ///
 @nogc nothrow pure @safe version(mir_random_test) unittest
@@ -342,6 +381,28 @@ T rand(T, G)(ref G gen, sizediff_t boundExp = 0)
     assert(-double.min_normal < x && x < double.min_normal);
 }
 
+@nogc nothrow @safe version(mir_random_test) unittest
+{
+    //Coverage. Impure because uses thread-local.
+    import mir.math.common: fabs;
+    Random* gen = threadLocalPtr!Random;
+    
+    auto a = gen.rand!float;
+    assert(-1 < a && a < +1);
+
+    auto b = gen.rand!double(4);
+    assert(-16 < b && b < +16);
+    
+    auto c = gen.rand!double(-2);
+    assert(-0.25 < c && c < +0.25);
+    
+    auto d = gen.rand!real.fabs;
+    assert(0.0L <= d && d < 1.0L);
+
+    auto x = gen.rand!double(double.min_exp-1);
+    assert(-double.min_normal < x && x < double.min_normal);
+}
+
 /++
 Params:
     gen = uniform random number generator
@@ -349,7 +410,7 @@ Params:
 Returns:
     Uniformly distributed integer for interval `[0 .. m$(RPAREN)`.
 +/
-T randIndex(T, G)(ref G gen, T m)
+T randIndex(T, G)(scope ref G gen, T m)
     if(isSaturatedRandomEngine!G && isUnsigned!T)
 {
     static if (EngineReturnType!G.sizeof >= T.sizeof * 2)
@@ -446,6 +507,12 @@ T randIndex(T, G)(ref G gen, T m)
         return u.high;
     }
 }
+/// ditto
+T randIndex(T, G)(scope G* gen, T m)
+    if(isSaturatedRandomEngine!G && isUnsigned!T)
+{
+    return randIndex!(T, G)(*gen, m);
+}
 
 ///
 @nogc nothrow pure @safe version(mir_random_test) unittest
@@ -487,10 +554,18 @@ T randIndex(T, G)(ref G gen, T m)
         assert(x != count, "All values were the same!");
 }
 
+@nogc nothrow @safe version(mir_random_test) unittest
+{
+    //Coverage. Impure because uses thread-local.
+    Random* gen = threadLocalPtr!Random;
+    auto s = gen.randIndex!uint(100);
+    auto n = gen.randIndex!ulong(-100);
+}
+
 /++
     Returns: `n >= 0` such that `P(n) := 1 / (2^^(n + 1))`.
 +/
-size_t randGeometric(G)(ref G gen)
+size_t randGeometric(G)(scope ref G gen)
     if(isSaturatedRandomEngine!G)
 {
     alias R = EngineReturnType!G;
@@ -502,11 +577,24 @@ size_t randGeometric(G)(ref G gen)
         if(auto val = gen.rand!T())
             return count + bsf(val);
 }
+/// ditto
+size_t randGeometric(G)(scope G* gen)
+    if(isSaturatedRandomEngine!G)
+{
+    return randGeometric!(G)(*gen);
+}
 
 @nogc nothrow pure @safe version(mir_random_test) unittest
 {
     import mir.random.engine.xorshift;
     auto gen = Xoroshiro128Plus(1);
+    size_t s = gen.randGeometric;//Merely verify the call is @safe etc.
+}
+
+@nogc nothrow @safe version(mir_random_test) unittest
+{
+    //Coverage. Impure because uses thread-local.
+    Random* gen = threadLocalPtr!Random;
     size_t s = gen.randGeometric;//Merely verify the call is @safe etc.
 }
 
@@ -517,7 +605,7 @@ Returns:
     `X ~ Exp(1) / log(2)`.
 Note: `fabs` can be used to get a value from positive interval `[0, 2^^boundExp$(RPAREN)`.
 +/
-T randExponential2(T, G)(ref G gen)
+T randExponential2(T, G)(scope ref G gen)
     if (isSaturatedRandomEngine!G && isFloatingPoint!T)
 {
     enum W = T.sizeof * 8 - T.mant_dig - 1 - bool(T.mant_dig == 64);
@@ -561,12 +649,25 @@ T randExponential2(T, G)(ref G gen)
     else
         return -log2(x) + y;
 }
+/// ditto
+T randExponential2(T, G)(scope G* gen)
+    if (isSaturatedRandomEngine!G && isFloatingPoint!T)
+{
+    return randExponential2!(T, G)(*gen);
+}
 
 ///
 @nogc nothrow @safe version(mir_random_test) unittest
 {
     import mir.random.engine.xorshift;
     auto gen = Xorshift(cast(uint)unpredictableSeed);
+    auto v = gen.randExponential2!double();
+}
+
+@nogc nothrow @safe version(mir_random_test) unittest
+{
+    //Coverage. Impure because uses thread-local.
+    Random* gen = threadLocalPtr!Random;
     auto v = gen.randExponential2!double();
 }
 
