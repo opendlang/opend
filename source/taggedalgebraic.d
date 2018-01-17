@@ -658,32 +658,33 @@ unittest {
 }
 
 
-/** Maps a kind enumeration value to the corresponding field type.
+static if (__VERSION__ >= 2072) {
+	/** Maps a kind enumeration value to the corresponding field type.
 
-	`kind` must be a value of the `TaggedAlgebraic!T.Kind` enumeration.
-*/
-template TypeOf(alias kind)
-	if (isInstanceOf!(TypeEnum, typeof(kind)))
-{
-	import std.traits : FieldTypeTuple, TemplateArgsOf;
-	alias U = TemplateArgsOf!(typeof(kind));
-	alias TypeOf = FieldTypeTuple!U[kind];
-}
-
-///
-unittest {
-	static struct S {
-		int a;
-		string b;
-		string c;
+		`kind` must be a value of the `TaggedAlgebraic!T.Kind` enumeration.
+	*/
+	template TypeOf(alias kind)
+		if (isInstanceOf!(TypeEnum, typeof(kind)))
+	{
+		import std.traits : FieldTypeTuple, TemplateArgsOf;
+		alias U = TemplateArgsOf!(typeof(kind));
+		alias TypeOf = FieldTypeTuple!U[kind];
 	}
-	alias TA = TaggedAlgebraic!S;
 
-	static assert(is(TypeOf!(TA.Kind.a) == int));
-	static assert(is(TypeOf!(TA.Kind.b) == string));
-	static assert(is(TypeOf!(TA.Kind.c) == string));
+	///
+	unittest {
+		static struct S {
+			int a;
+			string b;
+			string c;
+		}
+		alias TA = TaggedAlgebraic!S;
+
+		static assert(is(TypeOf!(TA.Kind.a) == int));
+		static assert(is(TypeOf!(TA.Kind.b) == string));
+		static assert(is(TypeOf!(TA.Kind.c) == string));
+	}
 }
-
 
 
 /** Gets the value stored in an algebraic type based on its data type.

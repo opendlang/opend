@@ -3,9 +3,9 @@
 set -ueo pipefail
 
 if [ ! -z "${COVERAGE:-}" ]; then
-    dub fetch doveralls
     dub test -b unittest-cov
-    dub run doveralls
+    wget https://codecov.io/bash -O codecov.sh
+    bash codecov.sh
 else
 	dub test
 fi
