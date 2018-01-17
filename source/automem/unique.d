@@ -3,6 +3,7 @@ module automem.unique;
 import automem.test_utils: TestUtils;
 import automem.traits: isAllocator;
 import std.experimental.allocator: theAllocator;
+import std.typecons: Flag;
 
 version(unittest) {
     import unit_threaded;
@@ -11,7 +12,9 @@ version(unittest) {
 
 mixin TestUtils;
 
-struct Unique(Type, Allocator = typeof(theAllocator())) if(isAllocator!Allocator) {
+struct Unique(Type, Allocator = typeof(theAllocator()),
+    Flag!"supportGC" supportGC = Flag!"supportGC".yes)
+if(isAllocator!Allocator) {
 
     import std.traits: hasMember;
     import std.typecons: Proxy;
@@ -31,7 +34,7 @@ struct Unique(Type, Allocator = typeof(theAllocator())) if(isAllocator!Allocator
            The allocator is global, so no need to pass it in to the constructor
         */
         this(Args...)(auto ref Args args) {
-            this.makeObject!args();
+            this.makeObject!(supportGC, args)();
         }
 
     } else {
@@ -42,7 +45,7 @@ struct Unique(Type, Allocator = typeof(theAllocator())) if(isAllocator!Allocator
 
         this(Args...)(Allocator allocator, auto ref Args args) {
             _allocator = allocator;
-            this.makeObject!args();
+            this.makeObject!(supportGC, args)();
         }
     }
 
@@ -122,11 +125,12 @@ private:
 
         if(_object !is null) () @trusted { _allocator.dispose(_object); }();
         static if (is(Type == class)) {
+            // need to watch the monitor pointer even if supportGC is false.
             () @trusted {
                 auto repr = (cast(void*)_object)[0..__traits(classInstanceSize, Type)];
                 GC.removeRange(&repr[(void*).sizeof]);
             }();
-        } else static if (hasIndirections!Type) {
+        } else static if (supportGC && hasIndirections!Type) {
             () @trusted {
                 GC.removeRange(_object);
             }();
@@ -144,7 +148,7 @@ private:
     }
 }
 
-private template makeObject(args...)
+private template makeObject(Flag!"supportGC" supportGC, args...)
 {
     void makeObject(Type,A)(ref Unique!(Type, A) u) {
         import std.experimental.allocator: make;
@@ -157,14 +161,15 @@ private template makeObject(args...)
         static if (is(Type == class)) {
             () @trusted {
                 auto repr = (cast(void*)u._object)[0..__traits(classInstanceSize, Type)];
-                if (!(typeid(Type).m_flags & TypeInfo_Class.ClassFlags.noPointers)) {
+                if (supportGC && !(typeid(Type).m_flags & TypeInfo_Class.ClassFlags.noPointers)) {
                     GC.addRange(&repr[(void*).sizeof],
                             __traits(classInstanceSize, Type) - (void*).sizeof);
                 } else {
+                    // need to watch the monitor pointer even if supportGC is false.
                     GC.addRange(&repr[(void*).sizeof], (void*).sizeof);
                 }
             }();
-        } else static if (hasIndirections!Type) {
+        } else static if (supportGC && hasIndirections!Type) {
             () @trusted {
                 GC.addRange(u._object, Type.sizeof);
             }();
