@@ -4,6 +4,7 @@ import automem.traits: isAllocator;
 import automem.test_utils: TestUtils;
 import automem.unique: Unique;
 import std.experimental.allocator: theAllocator, processAllocator;
+import std.typecons: Flag;
 
 version(unittest) {
     import unit_threaded;
@@ -12,7 +13,9 @@ version(unittest) {
 
 mixin TestUtils;
 
-struct RefCounted(Type, Allocator = typeof(theAllocator)) if(isAllocator!Allocator) {
+struct RefCounted(Type, Allocator = typeof(theAllocator),
+    Flag!"supportGC" supportGC = Flag!"supportGC".yes)
+if(isAllocator!Allocator) {
 
     import std.traits: hasMember;
 
@@ -176,7 +179,7 @@ private:
             // []    interfaces
             // T...  members
             import core.memory: GC;
-            if (!(typeid(Type).m_flags & TypeInfo_Class.ClassFlags.noPointers))
+            if (supportGC && !(typeid(Type).m_flags & TypeInfo_Class.ClassFlags.noPointers))
                 // members have pointers: we have to watch the monitor
                 // and all members; skip the classInfoPtr
                 GC.addRange(&_impl._rawMemory[(void*).sizeof],
@@ -184,8 +187,9 @@ private:
             else
                 // representation doesn't have pointers, just watch the
                 // monitor pointer; skip the classInfoPtr
+                // need to watch the monitor pointer even if supportGC is false.
                 GC.addRange(&_impl._rawMemory[(void*).sizeof], (void*).sizeof);
-        } else static if (hasIndirections!Type) {
+        } else static if (supportGC && hasIndirections!Type) {
             import core.memory: GC;
             GC.addRange(&_impl._object, Type.sizeof);
         }
@@ -203,8 +207,9 @@ private:
         if(_impl._count == 0) {
             destruct(_impl._get);
             static if (is(Type == class)) {
+                // need to watch the monitor pointer even if supportGC is false.
                 GC.removeRange(&_impl._rawMemory[(void*).sizeof]);
-            } else static if (hasIndirections!Type) {
+            } else static if (supportGC && hasIndirections!Type) {
                 GC.removeRange(&_impl._object);
             }
             auto mem = cast(void*)_impl;
