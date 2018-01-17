@@ -2,5 +2,10 @@
     "name": "pdf-d",
     "license": "BSL-1.0",
     "importPaths": [ "source" ],
-    "sourcePaths": [ "source" ]
+    "sourcePaths": [ "source" ],
+
+    "dependencies": 
+    {
+        "standardpaths": "~>0.0"
+    }
 }
