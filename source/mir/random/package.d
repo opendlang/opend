@@ -640,9 +640,6 @@ struct PhobosRandom(Engine) if (isRandomEngine!Engine && !isPhobosUniformRNG!Eng
     {
         return _engine;
     }
-
-    ///
-    alias engine this;
 }
 /// ditto
 template PhobosRandom(Engine) if (isRandomEngine!Engine && isPhobosUniformRNG!Engine)
@@ -676,7 +673,4 @@ template PhobosRandom(Engine) if (isRandomEngine!Engine && isPhobosUniformRNG!En
     gen.__ctor(1);
     rng.seed(1);
     assert(gen() == rng());
-
-    //Can still access unique methods due to "alias this":
-    rng.jump();
 }
