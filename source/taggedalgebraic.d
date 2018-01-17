@@ -595,6 +595,22 @@ unittest
 	}
 }
 
+unittest { // issue #13
+	struct S1 { int foo; }
+	struct S {
+		struct T { TaggedAlgebraic!S1 foo() { return TaggedAlgebraic!S1(42); } }
+		struct U { string foo() { return "foo"; } }
+		T t;
+		U u;
+	}
+	alias TA = TaggedAlgebraic!S;
+	auto ta = TA(S.T.init);
+	assert(ta.foo().get!(TaggedAlgebraic!S1) == 42);
+
+	ta = TA(S.U.init);
+	assert(ta.foo() == "foo");
+}
+
 
 /** Tests if the algebraic type stores a value of a certain data type.
 */
@@ -867,8 +883,7 @@ private static auto implementOp(OpKind kind, string name, T, ARGS...)(ref T self
 					alias Alg = Algebraic!(NoDuplicates!(info.ReturnTypes));
 					info.ReturnTypes[i] ret = info.perform(self.trustedGet!FT, args);
 					import std.traits : isInstanceOf;
-					static if (isInstanceOf!(TaggedAlgebraic, typeof(ret))) return Alg(ret.payload);
-					else return Alg(ret);
+					return Alg(ret);
 				}
 				else static if (is(FT == Variant))
 					return info.perform(self.trustedGet!FT, args);
