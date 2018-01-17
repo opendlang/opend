@@ -3,13 +3,15 @@ language: d
 matrix:
   include:
     - d: dmd-beta
-    - d: dmd-2.077.1
+    - d: dmd-2.078.0
       env: [COVERAGE=true]
     - d: dmd-2.068.2
+    - d: ldc-1.7.0
     - d: ldc-1.6.0
     - d: ldc-1.2.0
     - d: ldc-1.1.0
     - d: ldc-1.0.0
+    - d: dmd-2.077.1
     - d: dmd-2.074.1
     - d: dmd-2.073.2
     - d: dmd-2.072.2
