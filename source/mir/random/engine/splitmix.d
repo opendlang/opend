@@ -148,7 +148,7 @@ alias staffordMix14() = .fmix64!(0x4be98134a5976fd3UL, 0x3bc0993a5ad19a13UL, 30,
     array[12] = staffordMix12(1);
     array[13] = staffordMix13(1);
     array[14] = staffordMix14(1);
-    foreach (i; 1 .. array.length - 1)
+    foreach (i; 1 .. array.length)
         foreach (e; array[0 .. i])
             if (e == array[i])
                 assert(0, "fmix64 predefines are not all distinct!");
