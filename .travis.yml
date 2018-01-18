@@ -1,7 +1,8 @@
 sudo: false
 os:
  - linux
- - osx
+# Temporarily disable osx builds in Travis CI because of very long wait times
+# - osx
 language: d
 d:
  - ldc
