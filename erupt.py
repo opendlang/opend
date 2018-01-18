@@ -153,7 +153,7 @@ class DGenerator( OutputGenerator ):
 		self.platformExtensions = {
 			"// VK_KHR_android_surface"          : [ "VK_USE_PLATFORM_ANDROID_KHR", "public import android.native_window;\n" ],
 			"// VK_KHR_mir_surface"              : [ "VK_USE_PLATFORM_MIR_KHR",     "public import mir_toolkit.client_types;\n" ],
-			"// VK_KHR_wayland_surface"          : [ "VK_USE_PLATFORM_WAYLAND_KHR", "public import wayland.client;\n" ],
+			"// VK_KHR_wayland_surface"          : [ "VK_USE_PLATFORM_WAYLAND_KHR", "public import wayland.native.client;\n" ],
 			"// VK_KHR_win32_surface"            : [ "VK_USE_PLATFORM_WIN32_KHR",   "public import core.sys.windows.windows;\n" ],
 			"// VK_KHR_xlib_surface"             : [ "VK_USE_PLATFORM_XLIB_KHR",    "public import X11.Xlib;\n" ],
 			"// VK_EXT_acquire_xlib_display"     : [ "VK_USE_PLATFORM_XLIB_KHR" ,   "" ],
@@ -369,7 +369,13 @@ version( {NAME_PREFIX_UCASE}_FROM_DERELICT ) {{
 					if section == 'struct':
 						if self.opaqueStruct:
 							for opaque in self.opaqueStruct:
-								fileContent += "{1}struct {0};\n".format( opaque, extIndent )
+								# special handling for wayland
+								if opaque == "wl_display":
+									continue
+								elif opaque == "wl_surface":
+									fileContent += "{0}alias wl_surface = wl_proxy;\n".format( extIndent );
+								else:
+									fileContent += "{1}struct {0};\n".format( opaque, extIndent )
 							fileContent += '\n'
 
 					elif not isFirstSectionInFeature:

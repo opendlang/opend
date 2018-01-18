@@ -4,7 +4,7 @@ copyright		"Copyright 2015-2016 The Khronos Group Inc.; Copyright 2016 Alex Parr
 authors			"Alex Parrill" "Peter Particle"
 targetType		"sourceLibrary"
 license			"BSD 2-clause"
-	
+
 // load vulkan vkGetInstanceProcAddr manually os specific or with glfw or similar
 configuration	"default"
 
@@ -14,7 +14,7 @@ configuration	"with-derelict-loader" {
 	dependency		"derelict-util"		version = "~>2.0.4"
 }
 
-// enable xlib specific functionality 
+// enable xlib specific functionality
 configuration	"dub-platform-xlib" {
 	versions		"VK_USE_PLATFORM_XLIB_KHR"
 	dependency		"xlib-d"			version = "~>0.1.1"
@@ -29,7 +29,7 @@ configuration	"dub-platform-xcb" {
 // enable wayland specific functionality
 configuration	"dub-platform-wayland" {
 	versions		"VK_USE_PLATFORM_WAYLAND_KHR"
-	dependency		"wayland-client-d"	version = "~>1.8.90"
+	dependency		"wayland:client"	version = "~>0.1.0"
 }
 
 // enable xlib specific functionality load vkGetInstanceProcAddr with derelict
@@ -49,7 +49,7 @@ configuration	"dub-platform-xcb-derelict-loader" {
 // enable wayland specific functionality load vkGetInstanceProcAddr with derelict
 configuration	"dub-platform-wayland-derelict-loader" {
 	versions		"VK_USE_PLATFORM_WAYLAND_KHR"  "ERUPTED_FROM_DERELICT"
-	dependency		"wayland-client-d"	version = "~>1.8.90"
+	dependency		"wayland:client"	version = "~>0.1.0"
 	dependency		"derelict-util"		version = "~>2.0.4"
 }
 

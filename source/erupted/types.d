@@ -4038,14 +4038,13 @@ version( VK_USE_PLATFORM_XCB_KHR ) {
 
 // VK_KHR_wayland_surface
 version( VK_USE_PLATFORM_WAYLAND_KHR ) {
-	public import wayland.client;
+	public import wayland.native.client;
 
 	enum VK_KHR_WAYLAND_SURFACE_SPEC_VERSION = 6;
 	enum VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME = "VK_KHR_wayland_surface";
 
 	alias VkWaylandSurfaceCreateFlagsKHR = VkFlags;
-	struct wl_display;
-	struct wl_surface;
+	alias wl_surface = wl_proxy;
 
 	
 	struct VkWaylandSurfaceCreateInfoKHR {

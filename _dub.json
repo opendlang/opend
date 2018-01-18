@@ -38,7 +38,7 @@
             "name"          :   "dub-platform-wayland",
             "versions"      :   [ "VK_USE_PLATFORM_WAYLAND_KHR" ],
             "dependencies"  :   {
-                "wayland-client-d"  : "~>1.8.90"
+                "wayland:client"  : "~>0.1.0"
             }
         },
 
@@ -64,7 +64,7 @@
             "name"          :   "dub-platform-wayland-derelict-loader",
             "versions"      :   [ "VK_USE_PLATFORM_WAYLAND_KHR", "ERUPTED_FROM_DERELICT" ],
             "dependencies"  :   {
-                "wayland-client-d"  : "~>1.8.90",
+                "wayland:client"  : "~>0.1.0",
                 "derelict-util"     : "~>2.0.4"
             }
         },
