@@ -345,7 +345,7 @@ T rand(T, G)(scope ref G gen, sizediff_t boundExp = 0)
     else static assert(0);
 }
 /// ditto
-T rand(T, G)(scope ref G* gen, sizediff_t boundExp = 0)
+T rand(T, G)(scope G* gen, sizediff_t boundExp = 0)
     if (isSaturatedRandomEngine!G && isFloatingPoint!T)
 {
     return rand!(T, G)(*gen, boundExp);
