@@ -6,6 +6,7 @@
 
     "dependencies": 
     {
-        "standardpaths": "~>0.0"
+        "standardpaths": "~>0.0",
+        "binrange": "~>1.0"
     }
 }

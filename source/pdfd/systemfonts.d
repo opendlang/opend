@@ -55,9 +55,17 @@ private:
 
             foreach(fontDir; getFontDirectories() )
             {
-                auto files = filter!`endsWith(a.name,".ttf")`(dirEntries(fontDir, SpanMode.breadth)).array;
-                foreach(f; files)
+                auto filesTTF = filter!`endsWith(a.name,".ttf")`(dirEntries(fontDir, SpanMode.breadth)).array;
+                foreach(f; filesTTF)
                     fontAbsolutepathes ~= f.name;
+
+                auto filesTTC = filter!`endsWith(a.name,".ttc")`(dirEntries(fontDir, SpanMode.breadth)).array;
+                foreach(f; filesTTC)
+                {
+                    import std.stdio;
+                    writeln(f.name);
+                    fontAbsolutepathes ~= f.name;
+                }
             }
             return fontAbsolutepathes;
         }
