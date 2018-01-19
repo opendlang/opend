@@ -16,6 +16,10 @@ void main(string[] args)
     doc.lineTo(100, 250);
     doc.stroke();
 
+    doc.fontFace("Helvetica");
+    doc.fontSize(14);
+    doc.fillText("Coucou", 100, 100);
+
     doc.restore();
     std.file.write("output.pdf", doc.bytes);
 }

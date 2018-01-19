@@ -16,16 +16,18 @@ class FontRegistry
     this()
     {
         // Extract all known fonts from system directories
-
+        foreach(fontFile; listAllFontFiles())
+            registerFontFile(fontFile);
     }
 
     /// Add a font file to parse.
-    /// Register every font within that file.
+    /// Registers every font within that file.
     /// Important: the file must outlive the `FontRegistry` itself.
-    void addFontFile(string pathToTrueTypeFontFile)
+    void registerFontFile(string pathToTrueTypeFontFile)
     {
         ubyte[] fileContents = cast(ubyte[]) std.file.read(pathToTrueTypeFontFile);
-        auto ttf = new TrueTypeFont(fileContents);        
+        auto ttf = new TrueTypeFont(fileContents);
+        // TODO
     }
 
 private:
@@ -76,11 +78,6 @@ private:
         return listAllLocalFontFiles() ~ listAllSystemFontFiles();
     }
 }
-
-
-
-
-
 
 unittest
 {

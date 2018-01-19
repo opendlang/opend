@@ -23,6 +23,8 @@ class PDFDocument
 {
     this(int pageWidthMm = 210, int pageHeightMm = 297)
     {
+        _fontManager = new FontManager();
+
         _pageWidthMm = pageWidthMm;
         _pageHeightMm = pageHeightMm;
 
@@ -520,7 +522,7 @@ private:
     void outFloat(float f)
     {
         outDelim();
-        output(format("%.3f", f));
+        output(stripNumber(format("%f", f)));
     }
 
     void outName(string name)
@@ -617,41 +619,128 @@ private:
     // Enough data to describe a font resource in a PDF
     static struct FontDesc
     {
+        string familyName;
+        bool bold;
+        bool oblique;
         object_id id;
         string pdfName; // "Fxx", associated name in the PDF (will be of the form /Fxx)
     }
 
     // Hold a list of all font used in the document, to be added at the end.
     // This also associate names with fonts
-    static struct FontManager
+    // TODO: remove linear search for fonts
+    static class FontManager
     {
+        this()
+        {
+        }
         // Ensure this font exist, generate a /name and give it back 
         // Only PDF builtin fonts supported.
         // TODO: bold and oblique support
-        void getFont(ObjectPool pool, string fontFace, bool bold, bool oblique, 
+        void getFont(ref ObjectPool pool, string familyName, bool bold, bool oblique, 
                         out string fontPDFName, out object_id fontObjectId)
         {
-            FontDesc* desc = fontFace in _usedFonts;
+            FontDesc* desc = findFont(familyName, bold, oblique);
+
+            // lazily create the font object in the PDF
             if (desc is null)
             {
-                // lazily create the font object in the PDF
-                _usedFonts[fontFace].id = pool.allocateObjectId();
-                _usedFonts[fontFace].pdfName = format("F%d", ++_fontCount);
+                FontDesc f;
+                f.familyName = familyName;
+                f.bold = bold;
+                f.oblique = oblique;
+                f.id = pool.allocateObjectId();
+                f.pdfName = format("F%d", ++_fontCount);
+                _usedFonts ~= f;
+                desc = &_usedFonts[$-1];
             }
 
-            fontObjectId = _usedFonts[fontFace].id;
-            fontPDFName = _usedFonts[fontFace].pdfName;
+            fontObjectId = desc.id;
+            fontPDFName = desc.pdfName;
+        }
+
+        FontDesc* findFont(string familyName, bool bold, bool oblique)
+        {
+            foreach(ref f; _usedFonts)
+            {
+                if (familyName == f.familyName && bold == f.bold && oblique == f.oblique)
+                    return &f;
+            }
+            return null;
         }
 
         int _fontCount = 0;
-        FontDesc[string] _usedFonts;
+        FontDesc[] _usedFonts;
 
         // Returns: something foreachable with FontDesc elements
         auto usedFonts()
         {
-            return _usedFonts.byValue();
+            return _usedFonts;
         }
     }
 
     FontManager _fontManager;
+}
+
+
+
+private:
+
+
+// Strip number of non-significant characters.
+// "1.10000" => "1.1"
+// "1.00000" => "1"
+// "4"       => "4"
+string stripNumber(string s)
+{
+    assert(s.length > 0);
+
+    // Remove leading +
+    // "+0.4" => "0.4"
+    if (s[0] == '+')
+        s = s[1..$];
+
+    // if there is a dot, remove all trailing zeroes
+    // ".45000" => ".45"
+    int positionOfDot = -1;
+    foreach(int i, char c; s)
+    {
+        if (c == '.')
+            positionOfDot = i;
+    }
+    if (positionOfDot != -1) 
+    {
+        for (size_t i = s.length - 1; i > positionOfDot ; --i)
+        {
+            bool isZero = (s[i] == '0');
+            if (isZero)
+                s = s[0..$-1]; // drop last char
+            else
+                break;
+        }
+    }
+
+    // if the final character is a dot, drop it
+    if (s.length >= 2 && s[$-1] == '.')
+        s = s[0..$-1];
+
+    // Remove useless zero
+    // "-0.1" => "-.1"
+    // "0.1" => ".1"
+    if (s.length >= 2 && s[0..2] == "0.")
+        s = "." ~ s[2..$]; // TODO: this allocates
+    else if (s.length >= 3 && s[0..3] == "-0.")
+        s = "-." ~ s[3..$]; // TODO: this allocates
+
+    return s;
+}
+
+unittest
+{
+    assert(stripNumber("1.10000") == "1.1");
+    assert(stripNumber("1.0000") == "1");
+    assert(stripNumber("4") == "4");
+    assert(stripNumber("+0.4") == ".4");
+    assert(stripNumber("-0.4") == "-.4");
+    assert(stripNumber("0.0") == "0");
 }
