@@ -7,7 +7,7 @@ import standardpaths;
 
 import pdfd.ttf;
 
-/// FontRegistry parses all fonts from thhee system.
+/// FontRegistry parses all fonts from the system.
 /// Aggregates all fonts by family, like a browser does with @font-face
 /// This allows to get one particular physical font with just a family name, an approximate weight etc.
 class FontRegistry
@@ -25,9 +25,28 @@ class FontRegistry
     /// Important: the file must outlive the `FontRegistry` itself.
     void registerFontFile(string pathToTrueTypeFontFile)
     {
+        import std.stdio;
         ubyte[] fileContents = cast(ubyte[]) std.file.read(pathToTrueTypeFontFile);
-        auto ttf = new TrueTypeFont(fileContents);
-        // TODO
+
+        try
+        {
+            auto fontFile = new OpenTypeFile(fileContents);
+            scope(exit) fontFile.destroy();
+
+            writefln("parsing %s => %s fonts", pathToTrueTypeFontFile, fontFile.numberOfFonts);
+
+            foreach(fontIndex; 0..fontFile.numberOfFonts)
+            {
+                auto font = new OpenTypeFont(fontFile, fontIndex);
+                scope(exit) font.destroy;
+
+                writefln("Family name: %s", font.familyName);
+            }
+        }
+        catch(Exception e)
+        {
+            // fails silently
+        }
     }
 
 private:
@@ -41,7 +60,7 @@ private:
     }
 
     /// Get a list of system font directories
-    static private string[] getFontDirectories() 
+    static private string[] getFontDirectories()
     {
         return standardPaths(StandardPath.fonts);
     }
@@ -55,17 +74,10 @@ private:
 
             foreach(fontDir; getFontDirectories() )
             {
-                auto filesTTF = filter!`endsWith(a.name,".ttf")`(dirEntries(fontDir, SpanMode.breadth)).array;
-                foreach(f; filesTTF)
-                    fontAbsolutepathes ~= f.name;
-
-                auto filesTTC = filter!`endsWith(a.name,".ttc")`(dirEntries(fontDir, SpanMode.breadth)).array;
-                foreach(f; filesTTC)
-                {
-                    import std.stdio;
-                    writeln(f.name);
-                    fontAbsolutepathes ~= f.name;
-                }
+                auto files = dirEntries(fontDir, SpanMode.shallow);
+                foreach(f; files)
+                    if (hasFontExt(f.name))
+                        fontAbsolutepathes ~= f.name;
             }
             return fontAbsolutepathes;
         }
@@ -76,9 +88,10 @@ private:
 
             foreach(fontDir; getFontDirectories() )
             {
-                auto files = filter!`endsWith(a.name,".ttf")`(dirEntries(fontDir, SpanMode.shallow)).array;
+                auto files = dirEntries(fontDir, SpanMode.shallow);
                 foreach(f; files)
-                    fontAbsolutepathes ~= f.name;
+                    if (hasFontExt(f.name))
+                        fontAbsolutepathes ~= f.name;
             }
             return fontAbsolutepathes;
         }
@@ -91,4 +104,21 @@ unittest
 {
     auto registry = new FontRegistry();
     registry.destroy();
+}
+
+private:
+
+
+static bool hasFontExt(string path)
+{
+    if (path.length < 4)
+        return false;
+
+    string ext = path[$-4..$];
+
+    if (ext == ".ttf" || ext == ".ttc"
+     || ext == ".otf" || ext == ".otc")
+        return true; // This is very likely a font
+
+    return false;
 }

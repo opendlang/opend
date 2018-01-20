@@ -33,10 +33,10 @@ class PDFDocument
         // header
         output("%PDF-1.7\n");
 
-        // "If a PDF file contains binary data, as most do (see 7.2, "Lexical Conventions"), 
-        // the header line shall be immediately followed by a comment line containing at least 
+        // "If a PDF file contains binary data, as most do (see 7.2, "Lexical Conventions"),
+        // the header line shall be immediately followed by a comment line containing at least
         // four binary characters—that is, characters whose codes are 128 or greater.
-        // This ensures proper behaviour of file transfer applications that inspect data near 
+        // This ensures proper behaviour of file transfer applications that inspect data near
         // the beginning of a file to determine whether to treat the file’s contents as text or as binary."
         output("%¥±ë\n");
 
@@ -66,7 +66,7 @@ class PDFDocument
         finalizeOutput();
 
         return this;
-    }    
+    }
 
     const(ubyte)[] bytes()
     {
@@ -218,7 +218,7 @@ class PDFDocument
     {
         outDelim();
         output(" h");
-    }  
+    }
 
     // </Graphics operations>
 
@@ -238,8 +238,8 @@ private:
 
             // List all fonts used by that page
             outName("Resources");
-                outBeginDict();                    
-                    outName("Font"); 
+                outBeginDict();
+                    outName("Font");
                     outBeginDict();
                         foreach(f; _pageDescriptions[i].fontUsed.byKeyValue)
                         {
@@ -266,25 +266,25 @@ private:
         beginDictObject(_pageTreeId);
             outName("Type"); outName("Catalog");
             outName("Count"); outInteger(numberOfPages());
-            outName("MediaBox"); 
+            outName("MediaBox");
             outBeginArray();
             outInteger(0);
             outInteger(0);
             outInteger(_pageWidthMm);
             outInteger(_pageHeightMm);
             outEndArray();
-            outName("Kids"); 
+            outName("Kids");
             outBeginArray();
-            foreach(i; 0..numberOfPages()) 
+            foreach(i; 0..numberOfPages())
                 outReference(_pageDescriptions[i].id);
             outEndArray();
         endDictObject();
 
         // Add the root object
-        object_id rootId = _pool.allocateObjectId();            
+        object_id rootId = _pool.allocateObjectId();
         beginDictObject(rootId);
         outName("Type"); outName("Catalog");
-        outName("Pages"); outReference(_pageTreeId);            
+        outName("Pages"); outReference(_pageTreeId);
         endDictObject();
 
         // Note: at this point all indirect objects should have been added to the output
@@ -416,7 +416,7 @@ private:
     byte_offset generatexrefTable()
     {
         int numberOfObjects = _pool.numberOfObjects;
-        size_t offsetOfLastXref = currentOffset();
+        byte_offset offsetOfLastXref = currentOffset();
         output("xref\n");
         output(format("0 %s\n", numberOfObjects));
 
@@ -544,11 +544,11 @@ private:
     {
         byte_offset here = currentOffset();
         output("endstream");
-        return here;        
+        return here;
     }
 
     void outBeginDict()
-    {        
+    {
         output("<<");
     }
 
@@ -558,7 +558,7 @@ private:
     }
 
     void outBeginArray()
-    {        
+    {
         output("[");
     }
 
@@ -572,7 +572,7 @@ private:
     // <Object Pool>
     // The object pool stores id and offsets of indirect objects
     // exluding the "zero object".
-    // There is support for allocating objects in advance, in order to reference them 
+    // There is support for allocating objects in advance, in order to reference them
     // in the stream before they appear.
     ObjectPool _pool;
 
@@ -612,7 +612,7 @@ private:
         }
 
     private:
-        byte_offset[] _offsetsOfIndirectObjects; // offset of 
+        byte_offset[] _offsetsOfIndirectObjects; // offset of
         object_id _currentObject = 0;
     }
 
@@ -634,10 +634,10 @@ private:
         this()
         {
         }
-        // Ensure this font exist, generate a /name and give it back 
+        // Ensure this font exist, generate a /name and give it back
         // Only PDF builtin fonts supported.
         // TODO: bold and oblique support
-        void getFont(ref ObjectPool pool, string familyName, bool bold, bool oblique, 
+        void getFont(ref ObjectPool pool, string familyName, bool bold, bool oblique,
                         out string fontPDFName, out object_id fontObjectId)
         {
             FontDesc* desc = findFont(familyName, bold, oblique);
@@ -708,7 +708,7 @@ string stripNumber(string s)
         if (c == '.')
             positionOfDot = i;
     }
-    if (positionOfDot != -1) 
+    if (positionOfDot != -1)
     {
         for (size_t i = s.length - 1; i > positionOfDot ; --i)
         {
