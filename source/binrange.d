@@ -143,7 +143,7 @@ private
         else
         {
             for (int i = 0; i < NumBytes; ++i)
-                result = (result << 8) | popUbyte(input);
+                result = cast(T)(result << 8) | popUbyte(input);
         }
 
         static if (WantSigned)
@@ -205,16 +205,19 @@ private
 unittest
 {
     ubyte[] arr = [ 0x00, 0x01, 0x02, 0x03 ,
-                    0x00, 0x01, 0x02, 0x03 ];
+                    0x00, 0x01, 0x02, 0x03,
+                    0x04, 0x05 ];
 
     assert(popLE!uint(arr) == 0x03020100);
     assert(popBE!int(arr) == 0x00010203);
+    assert(popBE!ushort(arr) == 0x0405);
 
     import std.array;
     ubyte[] arr2;
     auto app = appender(arr2);
     writeBE!float(app, 1.0f);
     writeLE!double(app, 2.0);
+    writeLE!short(app, 2);
 }
 
 
@@ -224,4 +227,4 @@ unittest
     assert(popLE!double(arr) == 0.5);
     arr = [0, 0, 0, 0, 0, 0, 0xe0, 0xbf];
     assert(popLE!double(arr) == -0.5);
-} 
+}
