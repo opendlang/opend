@@ -633,6 +633,7 @@ private:
     {
         this()
         {
+            _registry = new FontRegistry;
         }
         // Ensure this font exist, generate a /name and give it back
         // Only PDF builtin fonts supported.
@@ -677,6 +678,8 @@ private:
         {
             return _usedFonts;
         }
+
+        FontRegistry _registry;
     }
 
     FontManager _fontManager;

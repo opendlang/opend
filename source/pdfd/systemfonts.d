@@ -33,7 +33,7 @@ class FontRegistry
             auto fontFile = new OpenTypeFile(fileContents);
             scope(exit) fontFile.destroy();
 
-            writefln("parsing %s => %s fonts", pathToTrueTypeFontFile, fontFile.numberOfFonts);
+            writefln("number of Fonts: %s", fontFile.numberOfFonts);
 
             foreach(fontIndex; 0..fontFile.numberOfFonts)
             {
@@ -45,6 +45,8 @@ class FontRegistry
         }
         catch(Exception e)
         {
+            throw e;
+
             // fails silently
         }
     }
