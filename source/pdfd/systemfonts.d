@@ -33,14 +33,15 @@ class FontRegistry
             auto fontFile = new OpenTypeFile(fileContents);
             scope(exit) fontFile.destroy();
 
-            writefln("number of Fonts: %s", fontFile.numberOfFonts);
-
             foreach(fontIndex; 0..fontFile.numberOfFonts)
             {
                 auto font = new OpenTypeFont(fontFile, fontIndex);
                 scope(exit) font.destroy;
 
                 writefln("Family name: %s", font.familyName);
+                writefln("SubFamily name: %s", font.subFamilyName);
+                writefln("Weight extracted: %s", font.weight);
+                writefln("Style: %s\n", font.style());
             }
         }
         catch(Exception e)

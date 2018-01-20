@@ -3,6 +3,8 @@ module pdfd.ttf;
 import std.stdio;
 import std.conv;
 import std.string;
+import std.uni;
+import std.algorithm.searching;
 
 import binrange;
 
@@ -64,6 +66,29 @@ private:
     }
 }
 
+
+enum FontWeight : int
+{
+    thinest = 0,
+    thin = 100,
+    extraLight = 200,
+    light = 300,
+    normal = 400,
+    medium = 500,
+    semiBold = 600,
+    bold = 700,
+    extraBold = 800,
+    black = 900
+}
+
+enum FontStyle
+{
+    normal,
+    italic,
+    oblique
+}
+
+
 /// Parses a font from a font file (which could contain data for several of them).
 class OpenTypeFont
 {
@@ -75,6 +100,84 @@ public:
         _fontIndex = index;
         _wholeFileData = file._wholeFileData;
     }
+   
+    
+    /// Returns: a typographics family name suitable for grouping fonts per family in menus
+    string familyName()
+    {
+        string family = getName(NameID.preferredFamily);
+        if (family is null)
+            return getName(NameID.fontFamily);
+        else
+            return family;
+    }
+
+    /// Returns: a typographics sub-family name suitable for grouping fonts per family in menus
+    string subFamilyName()
+    {
+        string family = getName(NameID.preferredSubFamily);
+        if (family is null)
+            return getName(NameID.fontSubFamily);
+        else
+            return family;
+    }
+
+    /// Computes font weight information based on a subfamily heuristic.
+    FontWeight weight()
+    {
+        string subFamily = subFamilyName().toLower;
+        if (subFamily.canFind("thin"))
+            return FontWeight.thin;
+        else if (subFamily.canFind("ultra light"))
+            return FontWeight.thinest;
+        else if (subFamily.canFind("hairline"))
+            return FontWeight.thinest;
+        else if (subFamily.canFind("extralight"))
+            return FontWeight.extraLight;
+        else if (subFamily.canFind("light"))
+            return FontWeight.light;
+        else if (subFamily.canFind("semibold"))
+            return FontWeight.semiBold;
+        else if (subFamily.canFind("extrabold"))
+            return FontWeight.extraBold;
+        else if (subFamily.canFind("bold"))
+            return FontWeight.bold;
+        else if (subFamily.canFind("heavy"))
+            return FontWeight.bold;
+        else if (subFamily.canFind("medium"))
+            return FontWeight.medium;
+        else if (subFamily.canFind("black"))
+            return FontWeight.black;
+        else if (subFamily.canFind("negreta"))
+            return FontWeight.black;
+        else if (subFamily.canFind("regular"))
+            return FontWeight.normal;
+        else if (subFamily == "italic")
+            return FontWeight.normal;
+        else
+        {
+            return FontWeight.normal;
+        }
+    }
+
+    FontStyle style()
+    {
+        string subFamily = subFamilyName().toLower;
+        if (subFamily.canFind("italic"))
+            return FontStyle.italic;
+        else if (subFamily.canFind("oblique"))
+            return FontStyle.oblique;
+        return FontStyle.normal;
+    }
+
+private:
+    // need whole file since some data may be shared across fonts
+    // And also table offsets are relative to the whole file.
+    const(ubyte)[] _wholeFileData;
+
+    OpenTypeFile _file;
+    int _fontIndex;
+    
 
     /// Returns: an index in the file, where that table start for this particular font.
     const(ubyte)[] findTable(uint fourCC)
@@ -126,19 +229,6 @@ public:
         return result;
     }
 
-    string familyName()
-    {
-        return getName(NameID.fontFamily);
-    }
-
-private:
-    // need whole file since some data may be shared across fonts
-    // And also table offsets are relative to the whole file.
-    const(ubyte)[] _wholeFileData;
-
-    OpenTypeFile _file;
-    int _fontIndex;
-
     /// Returns: that "name" information, in UTF-8
     string getName(NameID requestedNameID)
     {
@@ -164,12 +254,6 @@ private:
             ushort offset = popBE!ushort(nameTableParsed); // String offset from start of storage area (in bytes)
             if (nameID == requestedNameID)
             {
-                writeln("platform ID = ", platformID);
-                writeln("encodingID = ", encodingID);
-                writeln("languageID = ", encodingID);
-                writeln("nameID = ", nameID);
-                writeln("length = ", length);
-
                 // found
                 const(ubyte)[] stringSlice = stringDataStorage[offset..offset+length];
                 string name;
@@ -213,8 +297,8 @@ private:
         manufacturer         = 8,
         designer             = 9,
         description          = 10,
-        // There are other information available in a font
-        // not reproduced here
+        preferredFamily      = 16,
+        preferredSubFamily   = 17,
     }
 }
 
