@@ -130,12 +130,16 @@ public:
             return FontWeight.thin;
         else if (subFamily.canFind("ultra light"))
             return FontWeight.thinest;
+        else if (subFamily.canFind("ultraLight"))
+            return FontWeight.thinest;
         else if (subFamily.canFind("hairline"))
             return FontWeight.thinest;
         else if (subFamily.canFind("extralight"))
             return FontWeight.extraLight;
         else if (subFamily.canFind("light"))
             return FontWeight.light;
+        else if (subFamily.canFind("demi bold"))
+            return FontWeight.semiBold;
         else if (subFamily.canFind("semibold"))
             return FontWeight.semiBold;
         else if (subFamily.canFind("extrabold"))
@@ -177,7 +181,7 @@ private:
 
     OpenTypeFile _file;
     int _fontIndex;
-    
+
 
     /// Returns: an index in the file, where that table start for this particular font.
     const(ubyte)[] findTable(uint fourCC)
@@ -207,10 +211,10 @@ private:
                 L = m + 1;
             else if (tag > fourCC)
                 R = m - 1;
-            else 
+            else
             {
                 // found
-                assert (tag == fourCC);                
+                assert (tag == fourCC);
                 uint checkSum = forceBigEndian(tableRecordEntries[m*4+1]);
                 uint offset = forceBigEndian(tableRecordEntries[m*4+2]);
                 uint len = forceBigEndian(tableRecordEntries[m*4+3]);
@@ -266,9 +270,9 @@ private:
                 else
                 {
                     // Most of the time it's UTF16-BE
-                    name = decodeUTF16BE(stringSlice);                
+                    name = decodeUTF16BE(stringSlice);
                 }
-                return name;                
+                return name;
             }
         }
 
@@ -347,7 +351,7 @@ string decodeMacRoman(const(ubyte)[] input) pure
 string decodeUTF16BE(const(ubyte)[] input) pure
 {
     wstring utf16 = "";
-    
+
     if ((input.length % 2) != 0)
         throw new Exception("Couldn't decode UTF-16 string");
 
