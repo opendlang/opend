@@ -2,7 +2,7 @@ module pdfd.document;
 
 import std.string;
 import pdfd.color;
-import pdfd.systemfonts;
+import pdfd.fontregistry;
 
 class PDFException : Exception
 {
@@ -23,8 +23,6 @@ class PDFDocument
 {
     this(int pageWidthMm = 210, int pageHeightMm = 297)
     {
-        _fontManager = new FontManager();
-
         _pageWidthMm = pageWidthMm;
         _pageHeightMm = pageHeightMm;
 
@@ -97,7 +95,9 @@ class PDFDocument
         string fontPDFName;
         object_id fontObjectId;
 
-        _fontManager.getFont(_pool, _fontFace, false, false, fontPDFName, fontObjectId);
+        FontWeight weight = FontWeight.normal;
+        FontStyle style = FontStyle.normal;
+        getFont(_fontFace, weight, style, fontPDFName, fontObjectId);
 
         // Mark the current page as using this font
         currentPage.markAsUsingThisFont(fontPDFName, fontObjectId);
@@ -253,12 +253,36 @@ private:
 
         // Include every font object
         // TODO: TTF embed
-        foreach(fontDesc; _fontManager.usedFonts)
+        foreach(pair; _fontPDFInfos.byKeyValue())
         {
-            beginDictObject(fontDesc.id);
+            OpenTypeFont font = pair.key;
+            beginDictObject(pair.value.id);
                 outName("Type"); outName("Font");
-                outName("Subtype"); outName("Type1");
-                outName("BaseFont"); outName("Helvetica");
+                outName("Subtype"); outName("TrueType");
+
+                /*
+                This is tricky. The specification says:
+
+                "The PostScript name for the value of BaseFont
+                may be determined in one of two ways:
+                - If the TrueType font program's “name” table contains a
+                  PostScript name, it shall be used.
+                - In the absence of such an entry in the “name” table, a
+                  PostScript name shall be derived from the name by
+                  which the font is known in the host operating system.
+                  On a Windows system, the name shall be based on
+                  the lfFaceName field in a LOGFONT structure; in the Mac OS,
+                  it shall be based on the name of the FOND resource. If the
+                  name contains any SPACEs, the SPACEs shall be removed."
+                */
+                string postScriptName = font.postScriptName();
+
+                // FIXME: follow the above instruction if no PostScript name in the truetype file.
+                if (postScriptName is null)
+                    throw new Exception("Couldn't find a PostScript name in the %s font.");
+
+                // TODO: throw if the PostScript name is not valid characters in PDF
+                outName("BaseFont"); outName(postScriptName);
             endDictObject();
         }
 
@@ -617,75 +641,46 @@ private:
     }
 
     // Enough data to describe a font resource in a PDF
-    static struct FontDesc
+    static struct FontPDFInfo
     {
-        string familyName;
-        bool bold;
-        bool oblique;
         object_id id;
         string pdfName; // "Fxx", associated name in the PDF (will be of the form /Fxx)
     }
 
-    // Hold a list of all font used in the document, to be added at the end.
-    // This also associate names with fonts
-    // TODO: remove linear search for fonts
-    static class FontManager
+    // Ensure this font exist, generate a /name and give it back
+    // Only PDF builtin fonts supported.
+    // TODO: bold and oblique support
+    void getFont(string fontFamily,
+                 FontWeight weight,
+                 FontStyle style,
+                 out string fontPDFName,
+                 out object_id fontObjectId)
     {
-        this()
-        {
-            _registry = new FontRegistry;
-        }
-        // Ensure this font exist, generate a /name and give it back
-        // Only PDF builtin fonts supported.
-        // TODO: bold and oblique support
-        void getFont(ref ObjectPool pool, string familyName, bool bold, bool oblique,
-                        out string fontPDFName, out object_id fontObjectId)
-        {
-            FontDesc* desc = findFont(familyName, bold, oblique);
+        OpenTypeFont font = theFontRegistry().findBestMatchingFont(fontFamily, weight, style);
 
-            // lazily create the font object in the PDF
-            if (desc is null)
-            {
-                FontDesc f;
-                f.familyName = familyName;
-                f.bold = bold;
-                f.oblique = oblique;
-                f.id = pool.allocateObjectId();
-                f.pdfName = format("F%d", ++_fontCount);
-                _usedFonts ~= f;
-                desc = &_usedFonts[$-1];
-            }
+        // is this font known already?
+        FontPDFInfo* info = font in _fontPDFInfos;
 
-            fontObjectId = desc.id;
-            fontPDFName = desc.pdfName;
+        // lazily create the font object in the PDF
+        if (info is null)
+        {
+            // Give a PDF name, and object id for this font
+            FontPDFInfo f;
+            f.id = _pool.allocateObjectId();
+            f.pdfName = format("F%d", _fontPDFInfos.length);
+            _fontPDFInfos[font] = f;
+            info = font in _fontPDFInfos;
+            assert(info !is null);
         }
 
-        FontDesc* findFont(string familyName, bool bold, bool oblique)
-        {
-            foreach(ref f; _usedFonts)
-            {
-                if (familyName == f.familyName && bold == f.bold && oblique == f.oblique)
-                    return &f;
-            }
-            return null;
-        }
-
-        int _fontCount = 0;
-        FontDesc[] _usedFonts;
-
-        // Returns: something foreachable with FontDesc elements
-        auto usedFonts()
-        {
-            return _usedFonts;
-        }
-
-        FontRegistry _registry;
+        fontObjectId = info.id;
+        fontPDFName = info.pdfName;
     }
 
-    FontManager _fontManager;
+    /// Associates with each open font information about
+    /// the PDF embedding of that font.
+    FontPDFInfo[OpenTypeFont] _fontPDFInfos;
 }
-
-
 
 private:
 

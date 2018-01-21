@@ -1,4 +1,4 @@
-module pdfd.ttf;
+module pdfd.opentype;
 
 import std.stdio;
 import std.conv;
@@ -7,6 +7,27 @@ import std.uni;
 import std.algorithm.searching;
 
 import binrange;
+
+enum FontWeight : int
+{
+    thinest = 0,
+    thin = 100,
+    extraLight = 200,
+    light = 300,
+    normal = 400,
+    medium = 500,
+    semiBold = 600,
+    bold = 700,
+    extraBold = 800,
+    black = 900
+}
+
+enum FontStyle
+{
+    normal,
+    italic,
+    oblique
+}
 
 /// OpenType 1.8 file parser, for the purpose of finding all fonts in a file, their family name, their weight, etc.
 /// This OpenType file might either be:
@@ -67,41 +88,17 @@ private:
 }
 
 
-enum FontWeight : int
-{
-    thinest = 0,
-    thin = 100,
-    extraLight = 200,
-    light = 300,
-    normal = 400,
-    medium = 500,
-    semiBold = 600,
-    bold = 700,
-    extraBold = 800,
-    black = 900
-}
-
-enum FontStyle
-{
-    normal,
-    italic,
-    oblique
-}
-
-
 /// Parses a font from a font file (which could contain data for several of them).
 class OpenTypeFont
 {
 public:
-
     this(OpenTypeFile file, int index)
     {
         _file = file;
         _fontIndex = index;
         _wholeFileData = file._wholeFileData;
     }
-   
-    
+
     /// Returns: a typographics family name suitable for grouping fonts per family in menus
     string familyName()
     {
@@ -120,6 +117,12 @@ public:
             return getName(NameID.fontSubFamily);
         else
             return family;
+    }
+
+    /// Returns: the PostScript name of that font, if available.
+    string postScriptName()
+    {
+        return getName(NameID.postscriptName);
     }
 
     /// Computes font weight information based on a subfamily heuristic.
