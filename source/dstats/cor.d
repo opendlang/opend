@@ -1190,6 +1190,7 @@ private enum CorCovType {
 
 private void pearsonSpearmanCov(bool makeNewMatrix, RoR, Matrix)
 (RoR mat, TaskPool pool, CorCovType type, ref Matrix ret) {
+    import dstats.summary : mean;
     if(pool is null) {
         pool = emptyPool;
     }

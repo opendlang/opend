@@ -117,8 +117,9 @@
 
 module dstats.random;
 
-import std.math, std.algorithm, dstats.distrib, std.traits, std.typetuple,
+import std.math, dstats.distrib, std.traits, std.typetuple,
     std.exception, std.mathspecial, std.array;
+import std.algorithm : min, max;
 public import std.random; //For uniform distrib.
 
 import dstats.alloc, dstats.base;
