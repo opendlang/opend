@@ -251,38 +251,50 @@ private:
             endDictObject();
         }
 
-        // Include every font object
-        // TODO: TTF embed
+        // Generates /Font object
         foreach(pair; _fontPDFInfos.byKeyValue())
         {
             OpenTypeFont font = pair.key;
+            FontPDFInfo info = pair.value;
+            beginDictObject(info.id);
+                outName("Type"); outName("Font");
+                outName("Subtype"); outName("TrueType");
+                outName("BaseFont"); outName(info.baseFont);
+                outName("FirstChar"); outInteger(0);
+                outName("LastChar"); outInteger(127);
+
+                // TODO: give width extracted from the font
+                //outName("Widths");
+            endDictObject();
+
+            beginDictObject(info.descriptorId);
+                outName("Type"); outName("FontDescriptor");
+                outName("FontName"); outName(info.baseFont);
+                //outName("Flags"); outInteger( font.isMonospaced ? 5 : 4);
+
+                // TODO /FontBBox[-123 -220 1762 1031]
+                //outName(ItalicAngle); outInteger(0); // does this work for italic fonts?
+
+               //TODO /Ascent 1030
+               //TODO /Descent -220
+               //TODO /CapHeight 1030
+               //TODO /StemV 80
+               outName("FontFile2"); outReference(info.streamId);
+            endDictObject();
+
+            // font embedded as stream
+            outStream(info.streamId, font.fileData);
+        }
+
+        // Generates /FontDescriptor object
+        foreach(pair; _fontPDFInfos.byKeyValue())
+        {
+            OpenTypeFont font = pair.key;
+            FontPDFInfo info = pair.value;
             beginDictObject(pair.value.id);
                 outName("Type"); outName("Font");
                 outName("Subtype"); outName("TrueType");
-
-                /*
-                This is tricky. The specification says:
-
-                "The PostScript name for the value of BaseFont
-                may be determined in one of two ways:
-                - If the TrueType font program's “name” table contains a
-                  PostScript name, it shall be used.
-                - In the absence of such an entry in the “name” table, a
-                  PostScript name shall be derived from the name by
-                  which the font is known in the host operating system.
-                  On a Windows system, the name shall be based on
-                  the lfFaceName field in a LOGFONT structure; in the Mac OS,
-                  it shall be based on the name of the FOND resource. If the
-                  name contains any SPACEs, the SPACEs shall be removed."
-                */
-                string postScriptName = font.postScriptName();
-
-                // FIXME: follow the above instruction if no PostScript name in the truetype file.
-                if (postScriptName is null)
-                    throw new Exception("Couldn't find a PostScript name in the %s font.");
-
-                // TODO: throw if the PostScript name is not valid characters in PDF
-                outName("BaseFont"); outName(postScriptName);
+                outName("BaseFont"); outName(info.baseFont);
             endDictObject();
         }
 
@@ -347,7 +359,7 @@ private:
         // (as described in the PDF 32000-1:2008 specification section 7.3.2)
         beginObject(p.contentId);
         outBeginDict();
-        outName("Length"); outReference(_currentStreamLengthId);
+            outName("Length"); outReference(_currentStreamLengthId);
         outEndDict();
         _currentStreamStart = outBeginStream();
     }
@@ -436,6 +448,27 @@ private:
         output("endobj");
     }
 
+    void outStream(object_id id, const(ubyte)[] content)
+    {
+        // TODO: zip
+        beginObject(id);
+            outBeginDict();
+                outName("Length"); outInteger(cast(int)(content.length));
+            outEndDict();
+            outBeginStream();
+                outputBytes(content);
+            outEndStream();
+        endObject();
+    }
+/+
+            229 0 obj
+<</Length 230 0 R/Filter/FlateDecode/Length1 15724>>
+stream
+xœÝ{y|\G™`U½÷º_ß·ZRëx­×êÖÑÝÖ-Y’íV·.[²,Ù²Ýí8¶ÚRËRtF’í8†…b)v.H`ì„ìlž’p…,;Ã‘,;™&ìâ~?Ž a˜Ø­ýªÞk¶Lfg÷¯•¢÷¾ªúªê»¿¯ê9Kg2ÈŒîEŠÎ¤çÿü~ÿU„ÐkaçèÙ%©Ñ•]ø§ÐŸ?=sAj?ƒ    dš:=}~ü‹MC„,#$MdÒcüvâoªyð›& ãÔšž‡öUh&f–îz¶ðÍ„jEhÿnzn4ÝÅßýkh_ƒö{fÒwÍÛÌXw<¤ÙôLfoúýÐþ(BÆÐüÜâR3ú<ÐÓþ
+Ÿ_ÈÌ7>ßò´)}+ð‡á—þ˜ÔÑ6áxA§
+F“ÙbµÙN—Û“çÍ/(ô—”Jþ29PUTVU‡#Ñ5µuõ
+MÍ-;[ÛÚÑÿÇ?Âïš" ÎGÊZðºµ
++/
     /// Returns: the offset of the xref table generated
     byte_offset generatexrefTable()
     {
@@ -514,6 +547,11 @@ private:
     }
 
     void output(ubyte b)
+    {
+        _bytes ~= b;
+    }
+
+    void outputBytes(const(ubyte)[] b)
     {
         _bytes ~= b;
     }
@@ -643,8 +681,11 @@ private:
     // Enough data to describe a font resource in a PDF
     static struct FontPDFInfo
     {
-        object_id id;
+        object_id id; // ID for the /Font object
+        object_id descriptorId; // ID for the /FontDescriptor object
+        object_id streamId;     // ID for the file stream
         string pdfName; // "Fxx", associated name in the PDF (will be of the form /Fxx)
+        string baseFont;
     }
 
     // Ensure this font exist, generate a /name and give it back
@@ -667,7 +708,33 @@ private:
             // Give a PDF name, and object id for this font
             FontPDFInfo f;
             f.id = _pool.allocateObjectId();
-            f.pdfName = format("F%d", _fontPDFInfos.length);
+            f.descriptorId = _pool.allocateObjectId();
+            f.streamId = _pool.allocateObjectId();
+            f.pdfName = format("F%d", _fontPDFInfos.length); // technically this is only namespaced at the /Page resource level
+
+            /*
+            This is tricky. The specification says:
+
+            "The PostScript name for the value of BaseFont
+            may be determined in one of two ways:
+            - If the TrueType font program's “name” table contains a
+              PostScript name, it shall be used.
+            - In the absence of such an entry in the “name” table, a
+              PostScript name shall be derived from the name by
+              which the font is known in the host operating system.
+              On a Windows system, the name shall be based on
+              the lfFaceName field in a LOGFONT structure; in the Mac OS,
+              it shall be based on the name of the FOND resource. If the
+              name contains any SPACEs, the SPACEs shall be removed."
+            */
+            f.baseFont = font.postScriptName();
+
+            // FIXME: follow the above instruction if no PostScript name in the truetype file.
+            if (f.baseFont is null)
+                throw new Exception("Couldn't find a PostScript name in the %s font.");
+
+            // TODO: throw if the PostScript name is not a valid PDF name
+
             _fontPDFInfos[font] = f;
             info = font in _fontPDFInfos;
             assert(info !is null);

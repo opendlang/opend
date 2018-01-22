@@ -125,6 +125,11 @@ public:
         return getName(NameID.postscriptName);
     }
 
+    bool isMonospaced()
+    {
+        return false; // TODO
+    }
+
     /// Computes font weight information based on a subfamily heuristic.
     FontWeight weight()
     {
@@ -175,6 +180,11 @@ public:
         else if (subFamily.canFind("oblique"))
             return FontStyle.oblique;
         return FontStyle.normal;
+    }
+
+    const(ubyte)[] fileData()
+    {
+        return _wholeFileData;
     }
 
 private:
