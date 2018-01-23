@@ -270,14 +270,24 @@ private:
             beginDictObject(info.descriptorId);
                 outName("Type"); outName("FontDescriptor");
                 outName("FontName"); outName(info.baseFont);
-                //outName("Flags"); outInteger( font.isMonospaced ? 5 : 4);
+                outName("Flags"); outInteger( font.isMonospaced ? 5 : 4);
 
-                // TODO /FontBBox[-123 -220 1762 1031]
-                //outName(ItalicAngle); outInteger(0); // does this work for italic fonts?
+                outName("FontBBox");
+                    outBeginArray();
+                        int[4] bb = font.boundingBox();
+                        outInteger(bb[0]);
+                        outInteger(bb[1]);
+                        outInteger(bb[2]);
+                        outInteger(bb[3]);
+                    outEndArray();
 
-               //TODO /Ascent 1030
-               //TODO /Descent -220
-               //TODO /CapHeight 1030
+                outName("ItalicAngle"); outInteger(0); // TODO does this work for italic fonts?
+
+                outName("Ascent"); outInteger(font.ascent);
+                outName("Descent"); outInteger(font.descent);
+                outName("Leading"); outInteger(font.lineGap);
+                outName("CapHeight"); outInteger(font.capHeight);
+
                //TODO /StemV 80
                outName("FontFile2"); outReference(info.streamId);
             endDictObject();

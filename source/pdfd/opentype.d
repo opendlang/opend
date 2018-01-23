@@ -10,7 +10,7 @@ import binrange;
 
 enum FontWeight : int
 {
-    thinest = 0,
+    thinest = 0, // Note: thinest doesn't exist in PostScript
     thin = 100,
     extraLight = 200,
     light = 300,
@@ -182,9 +182,51 @@ public:
         return FontStyle.normal;
     }
 
+    /// Returns: The whole OpenType file where this font is located.
     const(ubyte)[] fileData()
     {
         return _wholeFileData;
+    }
+
+    int[4] boundingBox()
+    {
+        computeFontMetrics();
+        return _boundingBox;
+    }
+
+    /// Returns: Maximum height above the basline reached by glyphs in this font.
+    ///          In glyph units.
+    int ascent()
+    {
+        computeFontMetrics();
+        return _ascender;
+    }
+
+    /// Returns: Maximum depth below the basline reached by glyphs in this font.
+    ///          Should be negative.
+    ///          In glyph units.
+    int descent()
+    {
+        computeFontMetrics();
+        return _descender;
+    }
+
+    /// Returns: The spacing between baselines of consecutive lines of text.
+    ///          In glyph units.
+    ///          Also called "leading".
+    int lineGap()
+    {
+        computeFontMetrics();
+        return _lineGap;
+    }
+
+    /// Returns: The spacing between baselines of consecutive lines of text.
+    ///          In glyph units.
+    /// TODO: eventually extract from OS/2 table
+    int capHeight()
+    {
+        computeFontMetrics();
+        return _ascender; // looks like ascent, but perhaps not
     }
 
 private:
@@ -194,6 +236,51 @@ private:
 
     OpenTypeFile _file;
     int _fontIndex;
+
+    bool metricsParsed = false;
+
+    // xmin ymin xmax ymax
+    int[4] _boundingBox;
+
+    int _unitsPerEm;
+
+    short _ascender, _descender, _lineGap;
+
+    /// Returns: A bounding box for each glyph, in glyph space.
+    void computeFontMetrics()
+    {
+        if (metricsParsed)
+            return;
+        metricsParsed = true;
+
+        const(ubyte)[] headTable = getTable(0x68656164 /* 'head' */);
+
+        skipBytes(headTable, 4); // Table version number
+        skipBytes(headTable, 4); // fontRevision
+        skipBytes(headTable, 4); // checkSumAdjustment
+        uint magicNumber = popBE!uint(headTable);
+        if (magicNumber != 0x5F0F3CF5)
+            throw new Exception("Invalid magicNumber in 'head' table.");
+        skipBytes(headTable, 2); // flags
+        _unitsPerEm = popBE!ushort(headTable);
+        skipBytes(headTable, 8); // created
+        skipBytes(headTable, 8); // modified
+        _boundingBox[0] = popBE!short(headTable);
+        _boundingBox[1] = popBE!short(headTable);
+        _boundingBox[2] = popBE!short(headTable);
+        _boundingBox[3] = popBE!short(headTable);
+        skipBytes(headTable, 2); // macStyle TODO use it
+        skipBytes(headTable, 2); // lowestRecPPEM
+        skipBytes(headTable, 2); // fontDirectionHint
+        skipBytes(headTable, 2); // indexToLocFormat
+        skipBytes(headTable, 2); // glyphDataFormat
+
+        const(ubyte)[] hheaTable = getTable(0x68686561 /* 'hhea' */);
+        skipBytes(hheaTable, 4); // Table version number
+        _ascender = popBE!short(hheaTable);
+        _descender = popBE!short(hheaTable);
+        _lineGap = popBE!short(hheaTable);
+    }
 
 
     /// Returns: an index in the file, where that table start for this particular font.
