@@ -4092,3 +4092,100 @@ unittest {
     ps = holmBonferroni([0.3, 0.1, 0.4, 0.1, 0.5, 0.9].dup);
     assert(ps == [1f, 0.6f, 1f, 0.6f, 1f, 1f]);
 }
+
+// old unconstrained approxEqual to work around https://issues.dlang.org/show_bug.cgi?id=18287
+static if (__VERSION__ == 2078) private
+{
+    /**
+       Computes whether two values are approximately equal, admitting a maximum
+       relative difference, and a maximum absolute difference.
+       Params:
+            lhs = First item to compare.
+            rhs = Second item to compare.
+            maxRelDiff = Maximum allowable difference relative to `rhs`.
+            maxAbsDiff = Maximum absolute difference.
+       Returns:
+           `true` if the two items are approximately equal under either criterium.
+           If one item is a range, and the other is a single value, then the result
+           is the logical and-ing of calling `approxEqual` on each element of the
+           ranged item against the single item. If both items are ranges, then
+           `approxEqual` returns `true` if and only if the ranges have the same
+           number of elements and if `approxEqual` evaluates to `true` for each
+           pair of elements.
+     */
+    bool approxEqual(T, U, V)(T lhs, U rhs, V maxRelDiff, V maxAbsDiff = 1e-5)
+    {
+        import std.range.primitives : empty, front, isInputRange, popFront;
+        static if (isInputRange!T)
+        {
+            static if (isInputRange!U)
+            {
+                // Two ranges
+                for (;; lhs.popFront(), rhs.popFront())
+                {
+                    if (lhs.empty) return rhs.empty;
+                    if (rhs.empty) return lhs.empty;
+                    if (!approxEqual(lhs.front, rhs.front, maxRelDiff, maxAbsDiff))
+                        return false;
+                }
+            }
+            else static if (isIntegral!U)
+            {
+                // convert rhs to real
+                return approxEqual(lhs, real(rhs), maxRelDiff, maxAbsDiff);
+            }
+            else
+            {
+                // lhs is range, rhs is number
+                for (; !lhs.empty; lhs.popFront())
+                {
+                    if (!approxEqual(lhs.front, rhs, maxRelDiff, maxAbsDiff))
+                        return false;
+                }
+                return true;
+            }
+        }
+        else
+        {
+            static if (isInputRange!U)
+            {
+                // lhs is number, rhs is range
+                for (; !rhs.empty; rhs.popFront())
+                {
+                    if (!approxEqual(lhs, rhs.front, maxRelDiff, maxAbsDiff))
+                        return false;
+                }
+                return true;
+            }
+            else static if (isIntegral!T || isIntegral!U)
+            {
+                // convert both lhs and rhs to real
+                return approxEqual(real(lhs), real(rhs), maxRelDiff, maxAbsDiff);
+            }
+            else
+            {
+                // two numbers
+                //static assert(is(T : real) && is(U : real));
+                if (rhs == 0)
+                {
+                    return fabs(lhs) <= maxAbsDiff;
+                }
+                static if (is(typeof(lhs.infinity)) && is(typeof(rhs.infinity)))
+                {
+                    if (lhs == lhs.infinity && rhs == rhs.infinity ||
+                        lhs == -lhs.infinity && rhs == -rhs.infinity) return true;
+                }
+                return fabs((lhs - rhs) / rhs) <= maxRelDiff
+                    || maxAbsDiff != 0 && fabs(lhs - rhs) <= maxAbsDiff;
+            }
+        }
+    }
+
+    /**
+       Returns $(D approxEqual(lhs, rhs, 1e-2, 1e-5)).
+     */
+    bool approxEqual(T, U)(T lhs, U rhs)
+    {
+        return approxEqual(lhs, rhs, 1e-2, 1e-5);
+    }
+}
