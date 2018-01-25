@@ -281,14 +281,15 @@ private:
                         outInteger(bb[3]);
                     outEndArray();
 
-                outName("ItalicAngle"); outInteger(0); // TODO does this work for italic fonts?
+                outName("ItalicAngle"); outFloat(font.postScriptItalicAngle);
 
                 outName("Ascent"); outInteger(font.ascent);
                 outName("Descent"); outInteger(font.descent);
                 outName("Leading"); outInteger(font.lineGap);
                 outName("CapHeight"); outInteger(font.capHeight);
 
-               //TODO /StemV 80
+                outName("StemV"); outInteger(80); // TODO: extract from font
+
                outName("FontFile2"); outReference(info.streamId);
             endDictObject();
 

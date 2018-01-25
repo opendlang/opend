@@ -229,6 +229,13 @@ public:
         return _ascender; // looks like ascent, but perhaps not
     }
 
+    /// Returns: Italic angle in counter-clockwise degrees from the vertical. 
+    /// Zero for upright text, negative for text that leans to the right (forward).
+    float postScriptItalicAngle()
+    {
+        return _italicAngle / 65536.0f;
+    }
+
 private:
     // need whole file since some data may be shared across fonts
     // And also table offsets are relative to the whole file.
@@ -236,6 +243,9 @@ private:
 
     OpenTypeFile _file;
     int _fontIndex;
+
+
+    // <parsed-by-computeFontMetrics>
 
     bool metricsParsed = false;
 
@@ -245,6 +255,16 @@ private:
     int _unitsPerEm;
 
     short _ascender, _descender, _lineGap;
+    int _italicAngle; // fixed 16.16 format
+
+    static struct GlyphDesc
+    {
+        ushort horzAdvance;
+        short leftSideBearing;
+    }
+    GlyphDesc[] _glyphs;
+
+    // </parsed-by-computeFontMetrics>
 
     /// Returns: A bounding box for each glyph, in glyph space.
     void computeFontMetrics()
@@ -280,8 +300,49 @@ private:
         _ascender = popBE!short(hheaTable);
         _descender = popBE!short(hheaTable);
         _lineGap = popBE!short(hheaTable);
-    }
+        skipBytes(hheaTable, 2); // advanceWidthMax
+        skipBytes(hheaTable, 2); // minLeftSideBearing
+        skipBytes(hheaTable, 2); // minRightSideBearing
+        skipBytes(hheaTable, 2); // xMaxExtent
+        skipBytes(hheaTable, 2); // caretSlopeRise
+        skipBytes(hheaTable, 2); // caretSlopeRun
+        skipBytes(hheaTable, 2); // caretOffset
+        skipBytes(hheaTable, 8); // reserved
+        short metricDataFormat = popBE!short(hheaTable);
+        if (metricDataFormat != 0)
+            throw new Exception("Unsupported metricDataFormat in 'hhea' table");
 
+        int numberOfHMetrics = popBE!ushort(hheaTable);
+
+        const(ubyte)[] maxpTable = getTable(0x6D617870 /* 'maxp' */);
+        skipBytes(maxpTable, 4); // version
+        int numGlyphs = popBE!ushort(maxpTable);
+
+        _glyphs.length = numGlyphs;
+
+        const(ubyte)[] hmtxTable = getTable(0x686D7478 /* 'hmtx' */);
+
+        ushort lastAdvance = 0;
+        foreach(g; 0..numberOfHMetrics)
+        {
+            lastAdvance = popBE!ushort(hmtxTable);
+            _glyphs[g].horzAdvance = lastAdvance;
+            _glyphs[g].leftSideBearing = popBE!short(hmtxTable);
+        }
+        foreach(g; numberOfHMetrics.._glyphs.length)
+        {
+            _glyphs[g].horzAdvance = lastAdvance;
+            _glyphs[g].leftSideBearing = popBE!short(hmtxTable);
+        }
+
+        const(ubyte)[] postTable = getTable(0x706F7374 /* 'post' */);
+        skipBytes(postTable, 4); // version
+        _italicAngle = popBE!int(postTable);
+
+        // Parse italicAngle
+
+
+    }
 
     /// Returns: an index in the file, where that table start for this particular font.
     const(ubyte)[] findTable(uint fourCC)
