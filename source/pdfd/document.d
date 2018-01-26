@@ -260,11 +260,11 @@ private:
                 outName("Type"); outName("Font");
                 outName("Subtype"); outName("TrueType");
                 outName("BaseFont"); outName(info.baseFont);
-                outName("FirstChar"); outInteger(0);
-                outName("LastChar"); outInteger(127);
 
-                // TODO: give width extracted from the font
-                //outName("Widths");
+                // It seems you don't need those for TrueType fonts after all
+                //    outName("FirstChar"); outInteger(0);
+                //    outName("LastChar"); outInteger(127);
+                //    outName("Widths");
             endDictObject();
 
             beginDictObject(info.descriptorId);
@@ -288,7 +288,8 @@ private:
                 outName("Leading"); outInteger(font.lineGap);
                 outName("CapHeight"); outInteger(font.capHeight);
 
-                outName("StemV"); outInteger(80); // TODO: extract from font
+                // It seems you don't need those for TrueType fonts?
+                // outName("StemV"); outInteger(80);
 
                outName("FontFile2"); outReference(info.streamId);
             endDictObject();

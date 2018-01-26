@@ -14,7 +14,7 @@ void main(string[] args)
     doc.beginPath(100, 150);
     doc.lineTo(100, 250);
     doc.stroke();
-    doc.fontFace("Lucida Grande");
+    doc.fontFace("Comic Sans Ms");
     doc.fontSize(14);
     doc.fillText("Coucou", 100, 100);
     doc.restore();
