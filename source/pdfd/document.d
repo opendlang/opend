@@ -333,6 +333,7 @@ private:
         outName("Type"); outName("Catalog");
         outName("Pages"); outReference(_pageTreeId);
         endDictObject();
+        output("\n");
 
         // Note: at this point all indirect objects should have been added to the output
         byte_offset offsetOfXref = generatexrefTable();
@@ -345,7 +346,7 @@ private:
         outReference(rootId);
         outEndDict();
 
-        output("startxref\n");
+        output("\nstartxref\n");
         output(format("%s\n", offsetOfXref));
         output("%%EOF\n");
     }
@@ -471,15 +472,7 @@ private:
             outEndStream();
         endObject();
     }
-/+
-            229 0 obj
-<</Length 230 0 R/Filter/FlateDecode/Length1 15724>>
-stream
-xœÝ{y|\G™`U½÷º_ß·ZRëx­×êÖÑÝÖ-Y’íV·.[²,Ù²Ýí8¶ÚRËRtF’í8†…b)v.H`ì„ìlž’p…,;Ã‘,;™&ìâ~?Ž a˜Ø­ýªÞk¶Lfg÷¯•¢÷¾ªúªê»¿¯ê9Kg2ÈŒîEŠÎ¤çÿü~ÿU„ÐkaçèÙ%©Ñ•]ø§ÐŸ?=sAj?ƒ    dš:=}~ü‹MC„,#$MdÒcüvâoªyð›& ãÔšž‡öUh&f–îz¶ðÍ„jEhÿnzn4ÝÅßýkh_ƒö{fÒwÍÛÌXw<¤ÙôLfoúýÐþ(BÆÐüÜâR3ú<ÐÓþ
-Ÿ_ÈÌ7>ßò´)}+ð‡á—þ˜ÔÑ6áxA§
-F“ÙbµÙN—Û“çÍ/(ô—”Jþ29PUTVU‡#Ñ5µuõ
-MÍ-;[ÛÚÑÿÇ?Âïš" ÎGÊZðºµ
-+/
+
     /// Returns: the offset of the xref table generated
     byte_offset generatexrefTable()
     {

@@ -102,15 +102,6 @@ class FontRegistry
             }
         }
 
-        struct KnownFont
-        {
-            string filePath; // path to the font file
-            int fontIndex;   // index into that font file, which could contain multiple fonts
-            string familyName;
-            FontStyle style;
-            FontWeight weight;
-        }
-
         if (best is null)
             throw new Exception(format("No matching font found for '%s'.", familyName));
 
@@ -141,6 +132,11 @@ private:
                 instance = new OpenTypeFont(file, fontIndex);
             }
             return instance;
+        }
+
+        void releaseParsedFont()
+        {
+            instance = null;
         }
     }
 
@@ -191,10 +187,18 @@ private:
 unittest
 {
     auto registry = new FontRegistry();
+
+    foreach(FontRegistry.KnownFont font; registry._knownFonts)
+    {
+        font.getParsedFont().ascent(); // This will parse all fonts metrics on the system, thus validating CMAP parsing etc.
+        font.releaseParsedFont(); // else it takes so much memory one could crash
+    }
+
     registry.destroy();
 }
 
 /// Returns: A global, lazily constructed font registry.
+// TODO: synchronization
 FontRegistry theFontRegistry()
 {
     __gshared FontRegistry globalFontRegistry;
@@ -220,3 +224,4 @@ static bool hasFontExt(string path)
 
     return false;
 }
+

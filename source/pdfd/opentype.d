@@ -264,6 +264,9 @@ private:
     }
     GlyphDesc[] _glyphs;
 
+    /// Unicode char to glyph mapping
+    int[dchar] charToGlyphMapping;
+
     // </parsed-by-computeFontMetrics>
 
     /// Returns: A bounding box for each glyph, in glyph space.
@@ -335,13 +338,45 @@ private:
             _glyphs[g].leftSideBearing = popBE!short(hmtxTable);
         }
 
+        // Parse italicAngle
         const(ubyte)[] postTable = getTable(0x706F7374 /* 'post' */);
         skipBytes(postTable, 4); // version
         _italicAngle = popBE!int(postTable);
 
-        // Parse italicAngle
+        parseCMAP();
+    }
 
+    // Parse all codepoints-to-glyph mappings, fills the hashmap `charToGlyphMapping`
+    void parseCMAP()
+    {
+        const(ubyte)[] cmapTableFull = getTable(0x636d6170 /* 'cmap' */);
+        const(ubyte)[] cmapTable = cmapTableFull;
 
+        skipBytes(cmapTable, 2); // version
+        int numTables = popBE!ushort(cmapTable);
+
+        // Looking for a BMP Unicode 'cmap' only
+        for(int table = 0; table < numTables; ++table)
+        {
+            ushort platformID = popBE!ushort(cmapTable);
+            ushort encodingID = popBE!ushort(cmapTable);
+            uint offset = popBE!uint(cmapTable);
+
+            if (platformID == 3 && (encodingID == 1 /* Unicode UCS-2 */ || encodingID == 4 /* Unicode UCS-4 */))
+            {
+                const(ubyte)[] subTable = cmapTableFull[offset..$];
+                ushort format = popBE!ushort(subTable);
+
+                // TODO format 0
+                // TODO format 4
+                // TODO format 6
+                // TODO format 12/13
+
+                //writefln("format = %s", format);
+
+                break;
+            }
+        }
     }
 
     /// Returns: an index in the file, where that table start for this particular font.
