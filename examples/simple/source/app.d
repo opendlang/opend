@@ -16,7 +16,7 @@ void main(string[] args)
     doc.stroke();
     doc.fontFace("Comic Sans Ms");
     doc.fontSize(14);
-    doc.fillText("Coucou", 100, 100);
+    doc.fillText("Coucou", 20, 20);
     doc.restore();
 
     std.file.write("output.pdf", doc.bytes);

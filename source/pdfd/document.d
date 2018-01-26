@@ -1,6 +1,7 @@
 module pdfd.document;
 
 import std.string;
+import std.conv;
 import pdfd.color;
 import pdfd.fontregistry;
 
@@ -109,6 +110,7 @@ class PDFDocument
         output(" Tf");
         outFloat(x);
         outFloat(y);
+        output(" Td");
         outString(text);
         output(" Tj");
     }
@@ -316,23 +318,23 @@ private:
             outName("Count"); outInteger(numberOfPages());
             outName("MediaBox");
             outBeginArray();
-            outInteger(0);
-            outInteger(0);
-            outInteger(_pageWidthMm);
-            outInteger(_pageHeightMm);
+                outInteger(0);
+                outInteger(0);
+                outInteger(_pageWidthMm);
+                outInteger(_pageHeightMm);
             outEndArray();
             outName("Kids");
             outBeginArray();
-            foreach(i; 0..numberOfPages())
-                outReference(_pageDescriptions[i].id);
+                foreach(i; 0..numberOfPages())
+                    outReference(_pageDescriptions[i].id);
             outEndArray();
         endDictObject();
 
         // Add the root object
         object_id rootId = _pool.allocateObjectId();
         beginDictObject(rootId);
-        outName("Type"); outName("Catalog");
-        outName("Pages"); outReference(_pageTreeId);
+            outName("Type"); outName("Catalog");
+            outName("Pages"); outReference(_pageTreeId);
         endDictObject();
         output("\n");
 
@@ -341,10 +343,10 @@ private:
 
         output("trailer\n");
         outBeginDict();
-        outName("Size");
-        outInteger(_pool.numberOfObjects());
-        outName("Root");
-        outReference(rootId);
+            outName("Size");
+            outInteger(_pool.numberOfObjects());
+            outName("Root");
+            outReference(rootId);
         outEndDict();
 
         output("\nstartxref\n");
@@ -570,7 +572,21 @@ private:
     {
         outDelim();
         output('(');
-        output(s); // TODO: it is only allowed for latin-1 and matching parenthesis, etc
+
+        // TODO: selection of shortest encoding instead of always UTF16-BE
+
+        wstring utf16 = to!wstring(s);
+
+        output(254);
+        output(255);
+        foreach(wchar ch; utf16)
+        {
+            // TODO: escape codes
+            ubyte hi = (ch >> 8) & 255;
+            ubyte lo = ch & 255;
+            output(hi);
+            output(lo);
+        }
         output(')');
     }
 
