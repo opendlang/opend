@@ -6,7 +6,7 @@ import std.traits;
 static if (__traits(hasMember, std.meta, "ApplyLeft"))
 {
     import std.meta : ApplyLeft;
-    alias ApplyLeft = ApplyLeft;
+    alias ApplyLeft = std.meta.ApplyLeft;
 } else { // Compatibility with older versions
     template ApplyLeft(alias Template, args...)
     {
