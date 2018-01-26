@@ -570,22 +570,48 @@ private:
 
     void outString(string s)
     {
-        outDelim();
-        output('(');
-
         // TODO: selection of shortest encoding instead of always UTF16-BE
 
         wstring utf16 = to!wstring(s);
 
-        output(254);
-        output(255);
+        ubyte[] bytes;
+
+        bytes ~= 254;
+        bytes ~= 255;
+
         foreach(wchar ch; utf16)
         {
-            // TODO: escape codes
             ubyte hi = (ch >> 8) & 255;
             ubyte lo = ch & 255;
-            output(hi);
-            output(lo);
+            bytes ~= hi;
+            bytes ~= lo;
+        }
+        outLiteralString(bytes);
+    }
+
+    void outLiteralString(ubyte[] s)
+    {
+        outDelim();
+        output('(');
+        foreach(ubyte b; s)
+        {
+            if (b == '(')
+            {
+                output('\\');
+                output('(');
+            }
+            else if (b == ')')
+            {
+                output('\\');
+                output(')');
+            }
+            else if (b == '\\')
+            {
+                output('\\');
+                output('\\');
+            }
+            else
+                output(b);
         }
         output(')');
     }
