@@ -98,7 +98,8 @@ class PDFDocument
 
         FontWeight weight = FontWeight.normal;
         FontStyle style = FontStyle.normal;
-        getFont(_fontFace, weight, style, fontPDFName, fontObjectId);
+        OpenTypeFont font;
+        getFont(_fontFace, weight, style, fontPDFName, fontObjectId, font);
 
         // Mark the current page as using this font
         currentPage.markAsUsingThisFont(fontPDFName, fontObjectId);
@@ -111,7 +112,7 @@ class PDFDocument
         outFloat(x);
         outFloat(y);
         output(" Td");
-        outString(text);
+        outStringForDisplay(text, font);
         output(" Tj");
     }
 
@@ -568,23 +569,27 @@ private:
         _bytes ~= s.representation;
     }
 
-    void outString(string s)
+    void outStringForDisplay(string s, OpenTypeFont font)
     {
         // TODO: selection of shortest encoding instead of always UTF16-BE
 
-        wstring utf16 = to!wstring(s);
+      //  wstring utf16 = to!wstring(s);
 
         ubyte[] bytes;
 
         bytes ~= 254;
         bytes ~= 255;
 
-        foreach(wchar ch; utf16)
+        foreach(dchar ch; s)
         {
-            ubyte hi = (ch >> 8) & 255;
-            ubyte lo = ch & 255;
-            bytes ~= hi;
-            bytes ~= lo;
+            if (font.hasGlyphFor(ch)) // PERF: this is redundant
+            {
+                ushort glyph = font.glyphIndexFor(ch);
+                ubyte hi = (glyph >> 8) & 255;
+                ubyte lo = glyph & 255;
+                bytes ~= hi;
+                bytes ~= lo;
+            }
         }
         outLiteralString(bytes);
     }
@@ -742,9 +747,11 @@ private:
                  FontWeight weight,
                  FontStyle style,
                  out string fontPDFName,
-                 out object_id fontObjectId)
+                 out object_id fontObjectId,
+                 out OpenTypeFont outFont)
     {
         OpenTypeFont font = theFontRegistry().findBestMatchingFont(fontFamily, weight, style);
+        outFont = font;
 
         // is this font known already?
         FontPDFInfo* info = font in _fontPDFInfos;

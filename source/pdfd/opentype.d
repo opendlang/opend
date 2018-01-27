@@ -240,6 +240,34 @@ public:
         return _italicAngle / 65536.0f;
     }
 
+    /// Does this font has a glyph for this codepoint?
+    bool hasGlyphFor(dchar ch)
+    {
+        computeFontMetrics();
+        ushort* index = ch in _charToGlyphMapping;
+        return index !is null;
+    }
+
+    ushort glyphIndexFor(dchar ch)
+    {
+        computeFontMetrics();
+        return _charToGlyphMapping[ch];
+    }
+
+    /// Returns: left side bearing for this character.
+    int leftSideBearing(dchar ch)
+    {
+        computeFontMetrics();
+        return _glyphs[ _charToGlyphMapping[ch] ].leftSideBearing;
+    }
+
+    /// Returns: horizontal advance for this character.
+    int horizontalAdvance(dchar ch)
+    {
+        computeFontMetrics();
+        return _glyphs[ _charToGlyphMapping[ch] ].horzAdvance;
+    }
+
 private:
     // need whole file since some data may be shared across fonts
     // And also table offsets are relative to the whole file.
@@ -269,7 +297,9 @@ private:
     GlyphDesc[] _glyphs;
 
     /// Unicode char to glyph mapping, parsed from 'cmap' table
-    ushort[dchar] charToGlyphMapping;
+    /// Note: it's not sure at all if parsing the 'cmap' table each time is more costly.
+    /// Also this could be an array sorted by dchar.
+    ushort[dchar] _charToGlyphMapping;
 
     // </parsed-by-computeFontMetrics>
 
@@ -350,7 +380,7 @@ private:
         parseCMAP();
     }
 
-    // Parse all codepoints-to-glyph mappings, fills the hashmap `charToGlyphMapping`
+    /// Parses all codepoints-to-glyph mappings, fills the hashmap `_charToGlyphMapping`
     void parseCMAP()
     {
         const(ubyte)[] cmapTableFull = getTable(0x636d6170 /* 'cmap' */);
@@ -372,6 +402,7 @@ private:
                 const(ubyte)[] subTable = cmapTableFull[offset..$];
                 ushort format = popBE!ushort(subTable);
 
+                // TODO: support other format because this only works within the BMP
                 if (format == 4)
                 {
                     ushort len = popBE!ushort(subTable);
@@ -409,19 +440,17 @@ private:
                             throw new Exception("idRangeOffset[i] is not an even number");
                     }
 
-                    const(ubyte)[] glyphIdArray = subTable;
-
                     foreach(seg; 0..segCount)
                     {
                         foreach(dchar ch; startCount[seg]..endCount[seg])
                         {
+                            // Yes, this is what the spec says to do
                             ushort* p = cast(ushort*)(idRangeOffsetArray.ptr) + seg 
                                       + (ch - startCount[seg]) + (idRangeOffset[seg]/2);
                             ushort glyphIndex = *p;
-                            charToGlyphMapping[ch] = glyphIndex;
+                            _charToGlyphMapping[ch] = glyphIndex;
                         }
                     }
-                    writeln(charToGlyphMapping.length);
                 }
                 else
                     throw new Exception("Unsupported 'cmap' format");
