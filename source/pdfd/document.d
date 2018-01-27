@@ -259,15 +259,25 @@ private:
         {
             OpenTypeFont font = pair.key;
             FontPDFInfo info = pair.value;
-            beginDictObject(info.id);
-                outName("Type"); outName("Font");
-                outName("Subtype"); outName("TrueType");
-                outName("BaseFont"); outName(info.baseFont);
 
-                // It seems you don't need those for TrueType fonts after all
-                //    outName("FirstChar"); outInteger(0);
-                //    outName("LastChar"); outInteger(127);
-                //    outName("Widths");
+            beginDictObject(info.compositeFontId);
+                outName("Type"); outName("Font");
+                outName("Subtype"); outName("Type0");
+                outName("BaseFont"); outName(info.baseFont);
+                outName("DescendantFonts"); outBeginArray(); outReference(info.cidFontId); outEndArray();
+
+                // TODO ToUnicode
+                // TODO /Encoding
+            endDictObject();
+
+            beginDictObject(info.cidFontId);
+                outName("Type"); outName("Font");
+                outName("Subtype"); outName("CIDFontType2");
+                outName("BaseFont"); outName(info.baseFont);
+                outName("FontDescriptor"); outReference(info.descriptorId);
+
+                outName("CIDToGIDMap"); outName("Identity"); // CIDs are GIDs
+                // TODO CIDSystemInfo
             endDictObject();
 
             beginDictObject(info.descriptorId);
@@ -301,17 +311,6 @@ private:
             outStream(info.streamId, font.fileData);
         }
 
-        // Generates /FontDescriptor object
-        foreach(pair; _fontPDFInfos.byKeyValue())
-        {
-            OpenTypeFont font = pair.key;
-            FontPDFInfo info = pair.value;
-            beginDictObject(pair.value.id);
-                outName("Type"); outName("Font");
-                outName("Subtype"); outName("TrueType");
-                outName("BaseFont"); outName(info.baseFont);
-            endDictObject();
-        }
 
         // Add the pages object
         beginDictObject(_pageTreeId);
@@ -733,7 +732,8 @@ private:
     // Enough data to describe a font resource in a PDF
     static struct FontPDFInfo
     {
-        object_id id; // ID for the /Font object
+        object_id compositeFontId; // ID for the composite Type0 /Font object
+        object_id cidFontId; // ID for the CID /Font object
         object_id descriptorId; // ID for the /FontDescriptor object
         object_id streamId;     // ID for the file stream
         string pdfName; // "Fxx", associated name in the PDF (will be of the form /Fxx)
@@ -761,7 +761,8 @@ private:
         {
             // Give a PDF name, and object id for this font
             FontPDFInfo f;
-            f.id = _pool.allocateObjectId();
+            f.compositeFontId = _pool.allocateObjectId();
+            f.cidFontId = _pool.allocateObjectId();
             f.descriptorId = _pool.allocateObjectId();
             f.streamId = _pool.allocateObjectId();
             f.pdfName = format("F%d", _fontPDFInfos.length); // technically this is only namespaced at the /Page resource level
@@ -794,7 +795,7 @@ private:
             assert(info !is null);
         }
 
-        fontObjectId = info.id;
+        fontObjectId = info.compositeFontId;
         fontPDFName = info.pdfName;
     }
 
