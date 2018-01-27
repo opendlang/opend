@@ -14,9 +14,11 @@ void main(string[] args)
     doc.beginPath(100, 150);
     doc.lineTo(100, 250);
     doc.stroke();
-    doc.fontFace("Comic Sans Ms");
+    doc.fontFace("Arial");
+    doc.fontWeight(FontWeight.bold);
+    doc.fontStyle(FontStyle.italic);
     doc.fontSize(14);
-    doc.fillText("Coucou", 20, 20);
+    doc.fillText("Coucéù%ù»", 20, 20);
     doc.restore();
 
     std.file.write("output.pdf", doc.bytes);

@@ -78,8 +78,17 @@ class PDFDocument
 
     // Text drawing
 
+    // Current font size
     float _fontSize = 11;
+
+    // Current font face
     string _fontFace = "Helvetica";
+
+    // Current font weight
+    FontWeight _fontWeight = FontWeight.normal;
+
+    // Current font style
+    FontStyle _fontStyle = FontStyle.normal;
 
     void fontFace(string face)
     {
@@ -91,15 +100,23 @@ class PDFDocument
         _fontSize = size;
     }
 
+    void fontWeight(FontWeight weight)
+    {
+        _fontWeight = weight;
+    }
+
+    void fontStyle(FontStyle style)
+    {
+        _fontStyle = style;
+    }
+
     void fillText(string text, float x, float y)
     {
         string fontPDFName;
         object_id fontObjectId;
 
-        FontWeight weight = FontWeight.normal;
-        FontStyle style = FontStyle.normal;
         OpenTypeFont font;
-        getFont(_fontFace, weight, style, fontPDFName, fontObjectId, font);
+        getFont(_fontFace, _fontWeight, _fontStyle, fontPDFName, fontObjectId, font);
 
         // Mark the current page as using this font
         currentPage.markAsUsingThisFont(fontPDFName, fontObjectId);
@@ -588,7 +605,7 @@ private:
                 ushort glyph = font.glyphIndexFor(ch);
                 ubyte hi = (glyph >> 8) & 255;
                 ubyte lo = glyph & 255;
-                static immutable string hex = "0123456789abcdef";
+                static immutable string hex = "0123456789ABCDEF";
                 output(hex[hi >> 4]);
                 output(hex[hi & 15]);
                 output(hex[lo >> 4]);
