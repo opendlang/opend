@@ -264,10 +264,13 @@ private:
                 outName("Type"); outName("Font");
                 outName("Subtype"); outName("Type0");
                 outName("BaseFont"); outName(info.baseFont);
-                outName("DescendantFonts"); outBeginArray(); outReference(info.cidFontId); outEndArray();
+                outName("DescendantFonts"); 
+                    outBeginArray(); 
+                        outReference(info.cidFontId); 
+                    outEndArray();
 
                 // TODO ToUnicode
-                // TODO /Encoding
+                outName("Encoding"); outName("Identity-H"); // map character to same CID
             endDictObject();
 
             beginDictObject(info.cidFontId);
@@ -277,7 +280,12 @@ private:
                 outName("FontDescriptor"); outReference(info.descriptorId);
 
                 outName("CIDToGIDMap"); outName("Identity"); // CIDs are GIDs
-                // TODO CIDSystemInfo
+                outName("CIDSystemInfo"); 
+                outBeginDict();
+                    outName("Registry"); outLiteralString("pdf-d");
+                    outName("Ordering"); outLiteralString("pdf-d");
+                    outName("Supplement"); outInteger(0);
+                outEndDict();
             endDictObject();
 
             beginDictObject(info.descriptorId);
@@ -301,8 +309,8 @@ private:
                 outName("Leading"); outInteger(font.lineGap);
                 outName("CapHeight"); outInteger(font.capHeight);
 
-                // It seems you don't need those for TrueType fonts?
-                // outName("StemV"); outInteger(80);
+                // TODO
+                outName("StemV"); outInteger(80);
 
                outName("FontFile2"); outReference(info.streamId);
             endDictObject();
@@ -482,7 +490,7 @@ private:
         int numberOfObjects = _pool.numberOfObjects;
         byte_offset offsetOfLastXref = currentOffset();
         output("xref\n");
-        output(format("0 %s\n", numberOfObjects));
+        output(format("0 %s\n", numberOfObjects+1));
 
         // special object 0, head of the freelist of objects
         output("0000000000 65535 f \n");
@@ -492,7 +500,7 @@ private:
         {
             // Writing offset of object (i+1), not (i)
             // Note: all objects are generation 0
-            output(format("%010s 000000 n \n",  _pool.offsetOfObject(id)));
+            output(format("%010s 00000 n \n",  _pool.offsetOfObject(id)));
         }
         return offsetOfLastXref;
     }
@@ -593,7 +601,12 @@ private:
         outLiteralString(bytes);
     }
 
-    void outLiteralString(ubyte[] s)
+    void outLiteralString(string s)
+    {
+        outLiteralString(cast(ubyte[])s);
+    }
+
+    void outLiteralString(const(ubyte)[] s)
     {
         outDelim();
         output('(');
