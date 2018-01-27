@@ -282,8 +282,8 @@ private:
                 outName("CIDToGIDMap"); outName("Identity"); // CIDs are GIDs
                 outName("CIDSystemInfo"); 
                 outBeginDict();
-                    outName("Registry"); outLiteralString("pdf-d");
-                    outName("Ordering"); outLiteralString("pdf-d");
+                    outName("Registry"); outLiteralString("Adobe");
+                    outName("Ordering"); outLiteralString("Identity");
                     outName("Supplement"); outInteger(0);
                 outEndDict();
             endDictObject();
@@ -310,7 +310,7 @@ private:
                 outName("CapHeight"); outInteger(font.capHeight);
 
                 // TODO
-                outName("StemV"); outInteger(80);
+                outName("StemV"); outInteger(0);
 
                outName("FontFile2"); outReference(info.streamId);
             endDictObject();
@@ -580,13 +580,7 @@ private:
     {
         // TODO: selection of shortest encoding instead of always UTF16-BE
 
-      //  wstring utf16 = to!wstring(s);
-
-        ubyte[] bytes;
-
-        bytes ~= 254;
-        bytes ~= 255;
-
+        output('<');
         foreach(dchar ch; s)
         {
             if (font.hasGlyphFor(ch)) // PERF: this is redundant
@@ -594,11 +588,14 @@ private:
                 ushort glyph = font.glyphIndexFor(ch);
                 ubyte hi = (glyph >> 8) & 255;
                 ubyte lo = glyph & 255;
-                bytes ~= hi;
-                bytes ~= lo;
+                static immutable string hex = "0123456789abcdef";
+                output(hex[hi >> 4]);
+                output(hex[hi & 15]);
+                output(hex[lo >> 4]);
+                output(hex[lo & 15]);
             }
         }
-        outLiteralString(bytes);
+        output('>');
     }
 
     void outLiteralString(string s)

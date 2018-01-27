@@ -417,7 +417,7 @@ private:
 
                     int[] endCount = new int[segCount];
                     int[] startCount = new int[segCount];
-                    int[] idDelta = new int[segCount];
+                    short[] idDelta = new short[segCount];
 
                     const(ubyte)[] idRangeOffsetArray = subTable;
 
@@ -444,10 +444,32 @@ private:
                     {
                         foreach(dchar ch; startCount[seg]..endCount[seg])
                         {
-                            // Yes, this is what the spec says to do
-                            ushort* p = cast(ushort*)(idRangeOffsetArray.ptr) + seg 
-                                      + (ch - startCount[seg]) + (idRangeOffset[seg]/2);
-                            ushort glyphIndex = *p;
+                            if (ch == 178)
+                                writeln("ok");
+                            ushort glyphIndex;
+
+                            if (idRangeOffset[seg] == 0)
+                            {
+                                glyphIndex = cast(ushort)(ch + idDelta[seg]);
+                            }
+                            else
+                            {
+                                // Yes, this is what the spec says to do
+                                ushort* p = cast(ushort*)(idRangeOffsetArray.ptr);
+                                p = p + seg;
+                                p = p + (ch - startCount[seg]);
+                                p = p + (idRangeOffset[seg]/2);    
+                                ubyte[] pslice = cast(ubyte[])(p[0..1]);
+                                glyphIndex = popBE!ushort(pslice);
+
+                                if (glyphIndex == 0) // missing glyph
+                                    continue;
+                                glyphIndex += idDelta[seg];
+                            }
+
+                            // Some glyph index seem to not exist in 'maxp'
+                            //      if (glyphIndex >= _glyphs.length)
+                            //          throw new Exception("Non existing glyph index");
                             _charToGlyphMapping[ch] = glyphIndex;
                         }
                     }
