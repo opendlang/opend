@@ -92,6 +92,7 @@ private:
 class OpenTypeFont
 {
 public:
+
     this(OpenTypeFile file, int index)
     {
         _file = file;
@@ -127,10 +128,11 @@ public:
 
     bool isMonospaced()
     {
-        return false; // TODO
+        return false; // TODO parse from tables
     }
 
     /// Computes font weight information based on a subfamily heuristic.
+    // TODO: extract from tables
     FontWeight weight()
     {
         string subFamily = subFamilyName().toLower;
@@ -172,6 +174,7 @@ public:
         }
     }
 
+    // TODO: extract from tables
     FontStyle style()
     {
         string subFamily = subFamilyName().toLower;
@@ -233,6 +236,7 @@ public:
     /// Zero for upright text, negative for text that leans to the right (forward).
     float postScriptItalicAngle()
     {
+        computeFontMetrics();
         return _italicAngle / 65536.0f;
     }
 
@@ -264,8 +268,8 @@ private:
     }
     GlyphDesc[] _glyphs;
 
-    /// Unicode char to glyph mapping
-    int[dchar] charToGlyphMapping;
+    /// Unicode char to glyph mapping, parsed from 'cmap' table
+    ushort[dchar] charToGlyphMapping;
 
     // </parsed-by-computeFontMetrics>
 
@@ -362,18 +366,65 @@ private:
             ushort encodingID = popBE!ushort(cmapTable);
             uint offset = popBE!uint(cmapTable);
 
+            // in stb_truetype, only case supported, seems to be common
             if (platformID == 3 && (encodingID == 1 /* Unicode UCS-2 */ || encodingID == 4 /* Unicode UCS-4 */))
             {
                 const(ubyte)[] subTable = cmapTableFull[offset..$];
                 ushort format = popBE!ushort(subTable);
 
-                // TODO format 0
-                // TODO format 4
-                // TODO format 6
-                // TODO format 12/13
+                if (format == 4)
+                {
+                    ushort len = popBE!ushort(subTable);
+                    skipBytes(subTable, 2); // language, not useful here
+                    int segCountX2 = popBE!ushort(subTable);
+                    if ((segCountX2 % 2) != 0)
+                        throw new Exception("segCountX2 is not an even number");
+                    int segCount = segCountX2/2;
+                    int searchRange = popBE!ushort(subTable);
+                    int entrySelector = popBE!ushort(subTable);
+                    int rangeShift = popBE!ushort(subTable);
 
-                //writefln("format = %s", format);
+                    int[] endCount = new int[segCount];
+                    int[] startCount = new int[segCount];
+                    int[] idDelta = new int[segCount];
 
+                    const(ubyte)[] idRangeOffsetArray = subTable;
+
+                    int[] idRangeOffset = new int[segCount];
+
+                    foreach(seg; 0..segCount)
+                        endCount[seg] = popBE!ushort(subTable);
+                    skipBytes(subTable, 2); // reserved, should be zero
+
+                    foreach(seg; 0..segCount)
+                        startCount[seg] = popBE!ushort(subTable);
+
+                    foreach(seg; 0..segCount)
+                        idDelta[seg] = popBE!short(subTable);
+
+                    foreach(seg; 0..segCount)
+                    {
+                        idRangeOffset[seg] = popBE!short(subTable);
+                        if ((idRangeOffset[seg] % 2) != 0)
+                            throw new Exception("idRangeOffset[i] is not an even number");
+                    }
+
+                    const(ubyte)[] glyphIdArray = subTable;
+
+                    foreach(seg; 0..segCount)
+                    {
+                        foreach(dchar ch; startCount[seg]..endCount[seg])
+                        {
+                            ushort* p = cast(ushort*)(idRangeOffsetArray.ptr) + seg 
+                                      + (ch - startCount[seg]) + (idRangeOffset[seg]/2);
+                            ushort glyphIndex = *p;
+                            charToGlyphMapping[ch] = glyphIndex;
+                        }
+                    }
+                    writeln(charToGlyphMapping.length);
+                }
+                else
+                    throw new Exception("Unsupported 'cmap' format");
                 break;
             }
         }
