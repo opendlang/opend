@@ -251,7 +251,11 @@ public:
     ushort glyphIndexFor(dchar ch)
     {
         computeFontMetrics();
-        return _charToGlyphMapping[ch];
+        ushort* index = ch in _charToGlyphMapping;
+        if (index)
+            return *index;
+        else
+            return 0; // special value for non available characters
     }
 
     /// Returns: left side bearing for this character.
@@ -419,8 +423,6 @@ private:
                     int[] startCount = new int[segCount];
                     short[] idDelta = new short[segCount];
 
-                    const(ubyte)[] idRangeOffsetArray = subTable;
-
                     int[] idRangeOffset = new int[segCount];
 
                     foreach(seg; 0..segCount)
@@ -433,27 +435,26 @@ private:
                     foreach(seg; 0..segCount)
                         idDelta[seg] = popBE!short(subTable);
 
+                    const(ubyte)[] idRangeOffsetArray = subTable;
+
                     foreach(seg; 0..segCount)
-                    {
-                        idRangeOffset[seg] = popBE!short(subTable);
-                        if ((idRangeOffset[seg] % 2) != 0)
-                            throw new Exception("idRangeOffset[i] is not an even number");
-                    }
+                        idRangeOffset[seg] = popBE!ushort(subTable);
 
                     foreach(seg; 0..segCount)
                     {
                         foreach(dchar ch; startCount[seg]..endCount[seg])
                         {
-                            if (ch == 178)
-                                writeln("ok");
                             ushort glyphIndex;
 
                             if (idRangeOffset[seg] == 0)
                             {
-                                glyphIndex = cast(ushort)(ch + idDelta[seg]);
+                                glyphIndex = cast(ushort)( cast(ushort)ch + idDelta[seg] );
                             }
                             else
                             {
+                                if ((idRangeOffset[seg] % 2) != 0)
+                                    throw new Exception("idRangeOffset[i] is not an even number");
+
                                 // Yes, this is what the spec says to do
                                 ushort* p = cast(ushort*)(idRangeOffsetArray.ptr);
                                 p = p + seg;
@@ -467,9 +468,10 @@ private:
                                 glyphIndex += idDelta[seg];
                             }
 
-                            // Some glyph index seem to not exist in 'maxp'
-                            //      if (glyphIndex >= _glyphs.length)
-                            //          throw new Exception("Non existing glyph index");
+                            if (glyphIndex >= _glyphs.length)
+                            {
+                                throw new Exception("Non existing glyph index");
+                            }
                             _charToGlyphMapping[ch] = glyphIndex;
                         }
                     }
