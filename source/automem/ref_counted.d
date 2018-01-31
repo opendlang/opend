@@ -40,6 +40,28 @@ if(isAllocator!Allocator) {
             this.makeObject!args();
         }
 
+    static if(isGlobal)
+        /**
+            Factory method so can construct with zero args.
+        */
+        static typeof(this) construct(Args...)(auto ref Args args) {
+            static if (Args.length != 0)
+                return typeof(return)(args);
+            else {
+                typeof(return) ret;
+                ret.makeObject!()();
+                return ret;
+            }
+        }
+    else
+        /**
+            Factory method. Not necessary with non-global allocator
+            but included for symmetry.
+        */
+        static typeof(this) construct(Args...)(auto ref Allocator allocator, auto ref Args args) {
+            return typeof(return)(allocator, args);
+        }
+
     this(this) {
         assert(_impl !is null);
         inc;
@@ -607,6 +629,17 @@ auto refCounted(Type, Allocator)(Unique!(Type, Allocator) ptr) {
     immutable ubyte b = file[1];
     file[1] = cast(ubyte) (b + 1);
     assert(data[1] == cast(ubyte) (b + 1));
+}
+
+@("Construct RefCounted using global allocator for struct with zero-args ctor")
+@system unittest {
+    struct S {
+        private ulong zeroArgsCtorTest = 3;
+    }
+    auto s = RefCounted!S.construct();
+    static assert(is(typeof(s) == RefCounted!S));
+    assert(s._impl !is null);
+    assert(s.zeroArgsCtorTest == 3);
 }
 
 version(unittest):

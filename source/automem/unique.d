@@ -50,6 +50,28 @@ if(isAllocator!Allocator) {
     }
 
 
+    static if(isGlobal)
+        /**
+            Factory method so can construct with zero args.
+        */
+        static typeof(this) construct(Args...)(auto ref Args args) {
+            static if (Args.length != 0)
+                return typeof(return)(args);
+            else {
+                typeof(return) ret;
+                ret.makeObject!(supportGC)();
+                return ret;
+            }
+        }
+    else
+        /**
+            Factory method. Not necessary with non-global allocator
+            but included for symmetry.
+        */
+        static typeof(this) construct(Args...)(auto ref Allocator allocator, auto ref Args args) {
+            return typeof(return)(allocator, args);
+        }
+
     this(T)(Unique!(T, Allocator) other) if(is(T: Type)) {
         moveFrom(other);
     }
@@ -434,4 +456,15 @@ private template makeObject(Flag!"supportGC" supportGC, args...)
     }
 
     assert(NoGcClass.numClasses == 0);
+}
+
+@("Construct Unique using global allocator for struct with zero-args ctor")
+@system unittest {
+    struct S {
+        private ulong zeroArgsCtorTest = 3;
+    }
+    auto s = Unique!S.construct();
+    static assert(is(typeof(s) == Unique!S));
+    assert(s._object !is null);
+    assert(s.zeroArgsCtorTest == 3);
 }
