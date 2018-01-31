@@ -241,7 +241,12 @@ pragma(inline, true)
     T seed = void;
     version (GOOD_ARC4RANDOM_BUF)
     {
-        arc4random_buf(&seed, seed.sizeof);
+        // On macOS if we just need 32 bits it's faster to call arc4random()
+        // than arc4random(&seed, seed.sizeof).
+        static if (T.sizeof <= uint.sizeof)
+            seed = cast(T) arc4random();
+        else
+            arc4random_buf(&seed, seed.sizeof);
     }
     // fallback to old time/thread-based implementation in case of errors
     else if (genRandomNonBlocking(&seed, seed.sizeof) != T.sizeof)
@@ -671,9 +676,11 @@ static if (LINUX_NR_GETRANDOM)
 }
 
 version(GOOD_ARC4RANDOM_BUF)
+extern(C) private @nogc nothrow
 {
     //ChaCha20 on OpenBSD/NetBSD, AES on Mac OS X.
-    extern(C) void arc4random_buf(scope void* buf, size_t nbytes) @nogc nothrow @system;
+    void arc4random_buf(scope void* buf, size_t nbytes) @system;
+    uint arc4random() @trusted;
 }
 
 version(Darwin)
