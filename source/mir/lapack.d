@@ -334,3 +334,19 @@ size_t spev(T)(
 	assert(info >= 0);
 	return info;
 }
+
+///
+size_t sytrf(T)(
+	Slice!(Canonical, [2], T*) a,
+	Slice!(Contiguous, [1], lapackint*) ipiv,
+	Slice!(Contiguous, [1], T*) work
+	)
+{
+	char uplo = 'L';
+	lapackint info = void;
+	lapackint n = cast(lapackint) a.length;
+	lapackint lda = n;
+        lapackint lwork = cast(lapackint) work.length;
+	lapack.sytrf_(uplo, n, a.iterator, lda, ipiv.iterator, work.iterator, lwork, info);
+	return info;
+}
