@@ -13,12 +13,38 @@ Professional Random Number Generators
 
 Documentation: http://docs.random.dlang.io/latest/index.html
 
+
+### Example (3 seconds)
 ```d
 #!/usr/bin/env dub
 /+ dub.json:
 {
     "name": "test_random",
-    "dependencies": {"mir-random": "~>0.3.1"}
+    "dependencies": {"mir-random": "~>0.3.3"}
+}
++/
+
+import std.range, std.stdio;
+
+import mir.random.variable: NormalVariable;
+import mir.random.algorithm: range;
+
+void main()
+{
+    auto sample = NormalVariable!double(0, 1).range.take(10).array;
+
+    sample[$.randIndex].writeln; // prints random element from the sample
+}
+```
+
+
+### Example (10 seconds)
+```d
+#!/usr/bin/env dub
+/+ dub.json:
+{
+    "name": "test_random",
+    "dependencies": {"mir-random": "~>0.3.3"}
 }
 +/
 
@@ -31,12 +57,12 @@ import mir.random.algorithm: range;
 
 void main(){
     auto rng = Random(unpredictableSeed);        // Engines are allocated on stack or global
-    auto sample = range!rng                      // Engines can passed by alias to algorithms
+    auto sample = range!rng                      // Engines can passed to algorithms by alias or by pointer
         (NormalVariable!double(0, 1))            // Random variables are passed by value
-        .take(1000)                              // Fix sample length to 1000 elements (Input Range API)
+        .take(10)                                // Fix sample length to 10 elements (Input Range API)
         .array;                                  // Allocates memory and performs computation
 
-    writeln(sample);
+    sample[$.randIndex].writeln;                 // prints random element from the sample
 }
 ```
 

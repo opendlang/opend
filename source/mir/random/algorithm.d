@@ -11,6 +11,7 @@ import mir.math.common;
 
 import mir.random;
 public import mir.random.engine;
+import mir.random.variable: isRandomVariable;
 
 private enum bool isPassByRef(P) = !is(P == struct) && !is(P == union) && !isPointer!P && !isScalarType!P
     && (isFunction!P || isDelegate!P || is(P == class) || is(P == interface));
@@ -140,28 +141,28 @@ struct RandomField(alias gen)
 
 /// ditto
 RandomField!(G, D, T) field(T, G, D)(ref G gen, D var)
-    if (isReferenceToSaturatedRandomEngine!G)
+    if (isReferenceToSaturatedRandomEngine!G && isRandomVariable!D)
 {
     return typeof(return)(gen, var);
 }
 
 /// ditto
 RandomField!(gen, D, T) field(alias gen, D, T)(D var)
-    if (isSaturatedRandomEngine!(typeof(gen)))
+    if (isSaturatedRandomEngine!(typeof(gen)) && isRandomVariable!D)
 {
     return RandomField!(gen,D,T)(var);
 }
 
 /// ditto
 auto field(G, D)(ref G gen, D var)
-    if (isReferenceToSaturatedRandomEngine!G)
+    if (isReferenceToSaturatedRandomEngine!G && isRandomVariable!D)
 {
     return RandomField!(G, D, Unqual!(typeof(var(deref(gen)))))(gen, var);
 }
 
 /// ditto
 auto field(alias gen, D)(D var)
-    if (isSaturatedRandomEngine!(typeof(gen)))
+    if (isSaturatedRandomEngine!(typeof(gen)) && isRandomVariable!D)
 {
     return RandomField!(gen,D,Unqual!(typeof(var(gen))))(var);
 }
@@ -268,7 +269,7 @@ Range interface for random distributions and uniform random bit generators.
 Note: $(UL $(LI The structure holds a pointer to a generator.) $(LI The structure must not be copied (explicitly or implicitly) outside from a function.))
 +/
 struct RandomRange(G, D)
-    if (isReferenceToSaturatedRandomEngine!G)
+    if (isReferenceToSaturatedRandomEngine!G && isRandomVariable!D)
 {
     private D _var;
     private G _gen;
@@ -288,7 +289,7 @@ struct RandomRange(G, D)
 
 /// ditto
 struct RandomRange(alias gen, D)
-    if (isSaturatedRandomEngine!(typeof(gen)))
+    if (isSaturatedRandomEngine!(typeof(gen)) && isRandomVariable!D)
 {
     private D _var;
     private Unqual!(typeof(_var(gen))) _val;
@@ -364,21 +365,21 @@ struct RandomRange(alias gen)
 }
 
 /// ditto
-RandomRange!(G, D) range(G, D)(ref G gen, D var)
-    if (isReferenceToSaturatedRandomEngine!G)
+RandomRange!(G, D) range(G, D)(G gen, D var)
+    if (isReferenceToSaturatedRandomEngine!G && isRandomVariable!D)
 {
     return typeof(return)(gen, var);
 }
 
 /// ditto
-RandomRange!(gen, D) range(alias gen, D)(D var)
-    if (isSaturatedRandomEngine!(typeof(gen)))
+RandomRange!(gen, D) range(alias gen = rne, D)(D var)
+    if (isSaturatedRandomEngine!(typeof(gen)) && isRandomVariable!D)
 {
     return typeof(return)(var);
 }
 
 /// ditto
-RandomRange!G range(G)(ref G gen)
+RandomRange!G range(G)(G gen)
     if (isReferenceToSaturatedRandomEngine!G)
 {
     return typeof(return)(gen);
@@ -743,6 +744,20 @@ void shuffle(Range, G)(scope ref G gen, scope Range range)
     }
 }
 
+/// ditto
+void shuffle(Range, G)(scope G* gen, scope Range range)
+    if (isSaturatedRandomEngine!G && isRandomAccessRange!Range && hasLength!Range)
+{
+    return .shuffle(*gen, range);
+}
+
+/// ditto
+void shuffle(Range)(scope Range range)
+    if (isRandomAccessRange!Range && hasLength!Range)
+{
+    return .shuffle(rne, range);
+}
+
 ///
 nothrow @safe version(mir_random_test) unittest
 {
@@ -750,10 +765,9 @@ nothrow @safe version(mir_random_test) unittest
     import mir.ndslice.topology: iota;
     import mir.ndslice.sorting;
 
-    auto gen = Random(unpredictableSeed);
     auto a = iota(10).slice;
 
-    gen.shuffle(a);
+    shuffle(a);
 
     sort(a);
     assert(a == iota(10));
@@ -768,15 +782,14 @@ These will be in an undefined order, but will not be random in the sense that th
 `shuffle` returns will not be independent of their order before
 `shuffle` was called.
 Params:
-    gen = random number engine to use
+    gen = (optional) random number engine to use
     range = random-access range with length whose elements are to be shuffled
     n = number of elements of `r` to shuffle (counting from the beginning);
         must be less than `r.length`
 Complexity: O(n)
 +/
 void shuffle(Range, G)(scope ref G gen, scope Range range, size_t n)
-    if ((isSaturatedRandomEngine!G || isReferenceToSaturatedRandomEngine!G)
-        && isRandomAccessRange!Range && hasLength!Range)
+    if (isSaturatedRandomEngine!G && isRandomAccessRange!Range && hasLength!Range)
 {
     import std.algorithm.mutation : swapAt;
     assert(n <= range.length, "n must be <= range.length for shuffle.");
@@ -789,6 +802,20 @@ void shuffle(Range, G)(scope ref G gen, scope Range range, size_t n)
     }
 }
 
+/// ditto
+void shuffle(Range, G)(scope G* gen, scope Range range, size_t n)
+    if (isSaturatedRandomEngine!G && isRandomAccessRange!Range && hasLength!Range)
+{
+    return .shuffle(*gen, range, n);
+}
+
+/// ditto
+void shuffle(Range)(scope Range range, size_t n)
+    if (isRandomAccessRange!Range && hasLength!Range)
+{
+    return .shuffle(rne, range, n);
+}
+
 ///
 nothrow @safe version(mir_random_test) unittest
 {
@@ -796,10 +823,9 @@ nothrow @safe version(mir_random_test) unittest
     import mir.ndslice.topology: iota;
     import mir.ndslice.sorting;
 
-    auto gen = Random(unpredictableSeed);
     auto a = iota(10).slice;
 
-    gen.shuffle(a, 4);
+    shuffle(a, 4);
 
     sort(a);
     assert(a == iota(10));
