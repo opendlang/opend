@@ -5,7 +5,7 @@
 	],
 	"dependencies": {
 		"lapack": "~>0.0.2",
-		"mir-algorithm": "~>0.6.5"
+		"mir-algorithm": ">=0.6.5"
 	},
 	"description": "NDSLICE wrapper for LAPACK",
 	"copyright": "Copyright © 2017, Symmetry Investments & Kaleidic Associates",
