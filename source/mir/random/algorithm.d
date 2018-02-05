@@ -13,50 +13,15 @@ import mir.random;
 public import mir.random.engine;
 import mir.random.variable: isRandomVariable;
 
-private enum bool isPassByRef(P) = !is(P == struct) && !is(P == union) && !isPointer!P && !isScalarType!P
-    && (isFunction!P || isDelegate!P || is(P == class) || is(P == interface));
-
-private ref PointerTarget!Gptr deref(Gptr)(Gptr g) @nogc nothrow pure @safe
-    if (isPointer!Gptr && !isPassByRef!Gptr)
-{
-    pragma(inline, true);
-    return *g;
-}
-private Gptr deref(Gptr)(Gptr g) @nogc nothrow pure @safe
-    if (isPassByRef!Gptr && !isPointer!Gptr)
-{
-    pragma(inline, true);
-    return g;
-}
-nothrow pure @system version(mir_random_test) unittest
-{
-    uint i = 5;
-    uint* i_ptr = &i;
-    assert(deref(i_ptr) == 5);
-
-    Object o = new Object();
-    assert(o is deref(o));
-}
-
-private alias DerefType(Gptr) = typeof(deref(Gptr.init));
-@nogc nothrow pure @system version(mir_random_test) unittest
-{
-    static assert(is(DerefType!(uint*) == uint));
-    static assert(is(DerefType!Object == Object));
-}
-
-/++
-Is the argument either an object (reference type) or a pointer to a struct
-that meets $(REF_ALTTEXT mir.random.engine.isSaturatedRandomEngine,
-isSaturatedRandomEngine, mir, random, engine)?
-+/
+// Removed documentation because no longer needed
+// but leaving in code in case anyone was using it.
 public template isReferenceToSaturatedRandomEngine(G)
 {
-    static if (is(typeof(deref(G.init))))
-        ///
-        enum bool isReferenceToSaturatedRandomEngine = isSaturatedRandomEngine!(typeof(deref(G.init)));
+    static if (isPointer!G)
+        enum bool isReferenceToSaturatedRandomEngine = isSaturatedRandomEngine!(typeof(((G g) => *g)(G.init)));
+    else static if (is(G == class) || is(G == interface))
+        enum bool isReferenceToSaturatedRandomEngine = isSaturatedRandomEngine!G;
     else
-        ///
         enum bool isReferenceToSaturatedRandomEngine = false;
 }
 
@@ -67,27 +32,43 @@ It used to construct ndslices in combination with `slicedField` and `slice`.
 Note: $(UL $(LI The structure holds a pointer to a generator.) $(LI The structure must not be copied (explicitly or implicitly) outside from a function.))
 +/
 struct RandomField(G, D, T)
-    if (isReferenceToSaturatedRandomEngine!G)
+    if (isSaturatedRandomEngine!G && isRandomVariable!D)
 {
     private D _var;
-    private G _gen;
-    private Unqual!(typeof(_var(deref(_gen)))) _val;
+    static if (!is(G == class) && !is(G == interface))
+        private G* _gen;
+    else
+        private G _gen;
+
     /++
     Constructor.
     Stores the pointer to the `gen` engine.
     +/
-    this()(G gen, D var) { _gen = gen; _var = var; }
+    this()(G gen, D var)
+    if (is(G == class) || is(G == interface))
+    { _gen = gen; _var = var; }
+
+    /// ditto
+    this()(G* gen, D var)
+    if (!is(G == class) && !is(G == interface))
+    { _gen = gen; _var = var; }
+
+    /// ditto
+    this()(ref G gen, D var) @system
+    if (!is(G == class) && !is(G == interface))
+    { _gen = &gen; _var = var; }
+
     ///
     T opIndex()(size_t)
     {
         import mir.internal.utility: isComplex;
         static if (isComplex!T)
         {
-            return _var(deref(_gen)) + _var(deref(_gen)) * 1fi;
+            return _var(_gen) + _var(_gen) * 1fi;
         }
         else
         {
-            return _var(deref(_gen));
+            return _var(_gen);
         }
 
     }
@@ -95,10 +76,10 @@ struct RandomField(G, D, T)
 
 /// ditto
 struct RandomField(alias gen, D, T)
-    if (isSaturatedRandomEngine!(typeof(gen)))
+    if (__traits(compiles, { static assert(isSaturatedRandomEngine!(typeof(gen))); })
+        && isRandomVariable!D)
 {
     private D _var;
-    private Unqual!(typeof(_var(gen))) _val;
     ///
     this()(D var) { _var = var; }
     ///
@@ -119,29 +100,63 @@ struct RandomField(alias gen, D, T)
 
 /// ditto
 struct RandomField(G)
-    if (isReferenceToSaturatedRandomEngine!G)
+    if (isSaturatedRandomEngine!G)
 {
-    private G _gen;
+    static if (!is(G == class) && !is(G == interface))
+        private G* _gen;
+    else
+        private G _gen;
     /++
     Constructor.
     Stores the pointer to the `gen` engine.
     +/
-    this()(G gen) { _gen = gen; }
+    this()(G* gen)
+    if (!is(G == class) && !is(G == interface))
+    { _gen = gen; }
+
+    /// ditto
+    this()(ref G gen) @system
+    if (!is(G == class) && !is(G == interface))
+    { _gen = &gen; }
+
+    /// ditto
+    this()(G gen)
+    if (is(G == class) || is(G == interface))
+    { _gen = gen; }
+
     ///
-    Unqual!(EngineReturnType!(DerefType!G)) opIndex()(size_t) { return (deref(_gen))(); }
+    Unqual!(EngineReturnType!G) opIndex()(size_t)
+    { return _gen.opCall(); }
 }
 
 /// ditto
 struct RandomField(alias gen)
-    if (isSaturatedRandomEngine!(typeof(gen)))
+    if (__traits(compiles, { static assert(isSaturatedRandomEngine!(typeof(gen))); }))
 {
     ///
     Unqual!(typeof(gen())) opIndex()(size_t) { return gen(); }
 }
 
 /// ditto
-RandomField!(G, D, T) field(T, G, D)(ref G gen, D var)
-    if (isReferenceToSaturatedRandomEngine!G && isRandomVariable!D)
+RandomField!(G, D, T) field(T, G, D)(G gen, D var)
+    if (isSaturatedRandomEngine!G && isRandomVariable!D &&
+        (is(G == class) || is(G == interface)))
+{
+    return typeof(return)(gen, var);
+}
+
+/// ditto
+RandomField!(G, D, T) field(T, G, D)(G* gen, D var)
+    if (isSaturatedRandomEngine!G && isRandomVariable!D &&
+        !is(G == class) && !is(G == interface))
+{
+    return typeof(return)(gen, var);
+}
+
+/// ditto
+RandomField!(G, D, T) field(T, G, D)(ref G gen, D var) @system
+    if (isSaturatedRandomEngine!G && isRandomVariable!D &&
+        !is(G == class) && !is(G == interface))
 {
     return typeof(return)(gen, var);
 }
@@ -154,29 +169,64 @@ RandomField!(gen, D, T) field(alias gen, D, T)(D var)
 }
 
 /// ditto
-auto field(G, D)(ref G gen, D var)
-    if (isReferenceToSaturatedRandomEngine!G && isRandomVariable!D)
+auto field(G, D)(G gen, D var)
+    if (isSaturatedRandomEngine!G &&
+        (is(G == class) || is(G == interface)))
 {
-    return RandomField!(G, D, Unqual!(typeof(var(deref(gen)))))(gen, var);
+    return RandomField!(G, D, Unqual!(typeof(var(gen))))(gen, var);
+}
+
+/// ditto
+auto field(G, D)(G* gen, D var)
+    if (isSaturatedRandomEngine!G && isRandomVariable!D &&
+        !is(G == class) && !is(G == interface))
+{
+    return RandomField!(G, D, Unqual!(typeof(var(*gen))))(gen, var);
+}
+
+/// ditto
+auto field(G, D)(ref G gen, D var) @system
+    if (isSaturatedRandomEngine!G && isRandomVariable!D &&
+        !is(G == class) && !is(G == interface))
+{
+    return RandomField!(G, D, Unqual!(typeof(var(gen))))(gen, var);
 }
 
 /// ditto
 auto field(alias gen, D)(D var)
-    if (isSaturatedRandomEngine!(typeof(gen)) && isRandomVariable!D)
+    if (__traits(compiles, { static assert(isSaturatedRandomEngine!(typeof(gen))); })
+        && isRandomVariable!D)
 {
     return RandomField!(gen,D,Unqual!(typeof(var(gen))))(var);
 }
 
 /// ditto
-RandomField!(G) field(G)(ref G gen)
-    if (isReferenceToSaturatedRandomEngine!G)
+RandomField!(G) field(G)(G gen)
+    if (isSaturatedRandomEngine!G &&
+        (is(G == class) || is(G == interface)))
+{
+    return typeof(return)(gen);
+}
+
+/// ditto
+RandomField!(G) field(G)(G* gen)
+    if (isSaturatedRandomEngine!G &&
+        !is(G == class) && !is(G == interface))
+{
+    return typeof(return)(gen);
+}
+
+/// ditto
+RandomField!(G) field(G)(ref G gen) @system
+    if (isSaturatedRandomEngine!G &&
+        !is(G == class) && !is(G == interface))
 {
     return typeof(return)(gen);
 }
 
 /// ditto
 RandomField!(gen) field(alias gen)()
-    if (isSaturatedRandomEngine!(typeof(gen)))
+    if (__traits(compiles, { static assert(isSaturatedRandomEngine!(typeof(gen))); }))
 {
     return RandomField!(gen)();
 }
@@ -208,6 +258,20 @@ nothrow @safe version(mir_random_test) unittest
         .slice;            // allocates data of random matrix    }
 
     assert(sample1 == sample2);
+
+    // Can write using old syntax but it isn't @safe
+    // due to lack of escape analysis.
+    () @trusted
+    {
+        var = NormalVariable!double(0, 1);
+        Random rng2 = Random(seed);
+        auto sample3 = rng2
+            .field(var)        // construct random field from standard normal distribution
+            .slicedField(5, 3) // construct random matrix 5 row x 3 col (lazy, without allocation)
+            .slice;            // allocates data of random matrix    }
+
+        assert(sample1 == sample3);
+    }();
 }
 
 /// Normal distribution for complex numbers
@@ -269,27 +333,44 @@ Range interface for random distributions and uniform random bit generators.
 Note: $(UL $(LI The structure holds a pointer to a generator.) $(LI The structure must not be copied (explicitly or implicitly) outside from a function.))
 +/
 struct RandomRange(G, D)
-    if (isReferenceToSaturatedRandomEngine!G && isRandomVariable!D)
+    if (isSaturatedRandomEngine!G && isRandomVariable!D)
 {
     private D _var;
-    private G _gen;
-    private Unqual!(typeof(_var(deref(_gen)))) _val;
+    static if (!is(G == class) && !is(G == interface))
+        private G* _gen;
+    else
+        private G _gen;
+    private Unqual!(typeof(_var(_gen))) _val;
     /++
     Constructor.
     Stores the pointer to the `gen` engine.
     +/
-    this()(G gen, D var) { _gen = gen; _var = var; popFront(); }
+    this()(G gen, D var)
+    if (is(G == class) || is(G == interface))
+    { _gen = gen; _var = var; popFront(); }
+
+    /// ditto
+    this()(G* gen, D var)
+    if (!is(G == class) && !is(G == interface))
+    { _gen = gen; _var = var; popFront(); }
+
+    /// ditto
+    this()(ref G gen, D var) @system
+    if (!is(G == class) && !is(G == interface))
+    { _gen = &gen; _var = var; popFront(); }
+
     /// Infinity Input Range primitives
     enum empty = false;
     /// ditto
     auto front()() @property { return _val; }
     /// ditto
-    void popFront()() { _val = _var(deref(_gen)); }
+    void popFront()() { _val = _var(_gen); }
 }
 
 /// ditto
 struct RandomRange(alias gen, D)
-    if (isSaturatedRandomEngine!(typeof(gen)) && isRandomVariable!D)
+    if (__traits(compiles, { static assert(isSaturatedRandomEngine!(typeof(gen))); })
+        && isRandomVariable!D)
 {
     private D _var;
     private Unqual!(typeof(_var(gen))) _val;
@@ -305,30 +386,46 @@ struct RandomRange(alias gen, D)
 
 ///ditto
 struct RandomRange(G)
-    if (isReferenceToSaturatedRandomEngine!G)
+    if (isSaturatedRandomEngine!G)
 {
-    private G _gen;
-    private EngineReturnType!(DerefType!G) _val;
+    static if (!is(G == class) && !is(G == interface))
+        private G* _gen;
+    else
+        private G _gen;
+    private EngineReturnType!G _val;
     /// Largest generated value.
-    enum Unqual!(EngineReturnType!(DerefType!G)) max = G.max;
+    enum Unqual!(EngineReturnType!G) max = G.max;
     /++
     Constructor.
     Stores the pointer to the `gen` engine.
     +/
-    this()(G gen) { _gen = gen; popFront(); }
+    this()(G gen)
+    if (is(G == class) || is(G == interface))
+    { _gen = gen; popFront(); }
+
+    /// ditto
+    this()(G* gen)
+    if (!is(G == class) && !is(G == interface))
+    { _gen = gen; popFront(); }
+
+    /// ditto
+    this()(ref G gen) @system
+    if (!is(G == class) && !is(G == interface))
+    { _gen = &gen; popFront(); }
+
     /// Infinity Input Range primitives
     enum empty = false;
     /// ditto
-    Unqual!(EngineReturnType!(DerefType!G)) front()() @property { return _val; }
+    Unqual!(EngineReturnType!G) front()() @property { return _val; }
     /// ditto
-    void popFront()() { _val = (deref(_gen))(); }
+    void popFront()() { _val = _gen.opCall(); }
 }
 
 ///ditto
 struct RandomRange(alias gen)
-    if (isSaturatedRandomEngine!(typeof(gen)))
+    if (__traits(compiles, { static assert(isSaturatedRandomEngine!(typeof(gen))); }))
 {
-    private typeof((() => gen())()) _val;
+    private Unqual!(typeof(gen.opCall())) _val;
     //Necessary because it's impossible for a struct
     //to have a zero-args ctor that does anything,
     //so we can't just do:
@@ -343,11 +440,11 @@ struct RandomRange(alias gen)
     /// Infinity Input Range primitives
     enum empty = false;
     /// ditto
-    typeof((() => gen())()) front()() @property
+    typeof(gen.opCall()) front()() @property
     { 
         if (!_ready)
         {
-            _val = gen();
+            _val = gen.opCall();
             _ready = true;
         }
         return _val;
@@ -357,7 +454,7 @@ struct RandomRange(alias gen)
     {
         if (!_ready)
         {
-            _val = gen();
+            _val = gen.opCall();
             _ready = true;
         }
         _val = gen();
@@ -366,28 +463,63 @@ struct RandomRange(alias gen)
 
 /// ditto
 RandomRange!(G, D) range(G, D)(G gen, D var)
-    if (isReferenceToSaturatedRandomEngine!G && isRandomVariable!D)
+    if (isSaturatedRandomEngine!G && isRandomVariable!D &&
+        (is(G == class) || is(G == interface)))
 {
     return typeof(return)(gen, var);
 }
 
 /// ditto
-RandomRange!(gen, D) range(alias gen = rne, D)(D var)
-    if (isSaturatedRandomEngine!(typeof(gen)) && isRandomVariable!D)
+RandomRange!(G, D) range(G, D)(G* gen, D var)
+    if (isSaturatedRandomEngine!G && isRandomVariable!D &&
+        !is(G == class) && !is(G == interface))
+{
+    return typeof(return)(gen, var);
+}
+
+/// ditto
+RandomRange!(G, D) range(G, D)(ref G gen, D var) @system
+    if (isSaturatedRandomEngine!G && isRandomVariable!D &&
+        !is(G == class) && !is(G == interface))
+{
+    return typeof(return)(gen, var);
+}
+
+/// ditto
+RandomRange!(gen, D) range(alias gen, D)(D var)
+    if (__traits(compiles, { static assert(isSaturatedRandomEngine!(typeof(gen))); })
+        && isRandomVariable!D)
 {
     return typeof(return)(var);
 }
 
 /// ditto
 RandomRange!G range(G)(G gen)
-    if (isReferenceToSaturatedRandomEngine!G)
+    if (isSaturatedRandomEngine!G &&
+        (is(G == class) || is(G == interface)))
+{
+    return typeof(return)(gen);
+}
+
+/// ditto
+RandomRange!G range(G)(G* gen)
+    if (isSaturatedRandomEngine!G &&
+        !is(G == class) && !is(G == interface))
+{
+    return typeof(return)(gen);
+}
+
+/// ditto
+RandomRange!G range(G)(ref G gen) @system
+    if (isSaturatedRandomEngine!G &&
+        !is(G == class) && !is(G == interface))
 {
     return typeof(return)(gen);
 }
 
 /// ditto
 auto range(alias gen)()
-    if (isSaturatedRandomEngine!(typeof(gen)))
+    if (__traits(compiles, { static assert(isSaturatedRandomEngine!(typeof(gen))); }))
 {
     return RandomRange!(gen)();
 }
@@ -607,13 +739,35 @@ Params:
 Complexity: O(n)
 +/
 auto sample(Range, G)(Range range, G gen, size_t n)
-    if(isInputRange!Range && hasLength!Range && isReferenceToSaturatedRandomEngine!G)
+    if(isInputRange!Range && hasLength!Range &&
+        isSaturatedRandomEngine!G &&
+        (is(G == class) || is(G == interface)))
 {
     return RandomSample!(Range, G)(range, gen, n);
 }
+
+/// ditto
+auto sample(Range, G)(Range range, G* gen, size_t n)
+    if(isInputRange!Range && hasLength!Range &&
+        isSaturatedRandomEngine!G &&
+        !is(G == class) && !is(G == interface))
+{
+    return RandomSample!(Range, G)(range, gen, n);
+}
+
+/// ditto
+auto sample(Range, G)(Range range, ref G gen, size_t n) @system
+    if(isInputRange!Range && hasLength!Range &&
+        isSaturatedRandomEngine!G &&
+        !is(G == class) && !is(G == interface))
+{
+    return RandomSample!(Range, G)(range, gen, n);
+}
+
 /// ditto
 auto sample(Range, alias gen)(Range range, size_t n)
-    if(isInputRange!Range && hasLength!Range && isSaturatedRandomEngine!(typeof(gen)))
+    if(isInputRange!Range && hasLength!Range &&
+        __traits(compiles, { static assert(isSaturatedRandomEngine!(typeof(gen))); }))
 {
     return RandomSample!(Range, gen)(range, n);
 }
@@ -669,17 +823,41 @@ Note: $(UL $(LI The structure holds a pointer to a generator.) $(LI The structur
 struct RandomSample(Range, G)
 {
     private VitterStrides strides;
-    private G gen;
+    static if (!is(G == class) && !is(G == interface))
+        private G* gen;
+    else
+        private G gen;
     private Range range;
+
     ///
-    this(Range range, G gen, size_t n)
+    this()(Range range, G gen, size_t n)
+    if (is(G == class) || is(G == interface))
     {
         this.range = range;
         this.gen = gen;
         strides = VitterStrides(range.length, n);
-        auto s = strides(deref(this.gen));
+        auto s = strides(gen);
         if(s > 0)
             this.range.popFrontExactly(s);
+    }
+
+    /// ditto
+    this()(Range range, G* gen, size_t n)
+    if (!is(G == class) && !is(G == interface))
+    {
+        this.range = range;
+        this.gen = gen;
+        strides = VitterStrides(range.length, n);
+        auto s = strides(*this.gen);
+        if(s > 0)
+            this.range.popFrontExactly(s);
+    }
+
+    /// ditto
+    this()(Range range, ref G gen, size_t n) @system
+    if (!is(G == class) && !is(G == interface))
+    {
+        this(range, &gen, n);
     }
 
     /// Range primitives
@@ -689,7 +867,7 @@ struct RandomSample(Range, G)
     /// ditto
     auto ref front() @property { return range.front; }
     /// ditto
-    void popFront() { range.popFrontExactly(strides(deref(gen)) + 1); }
+    void popFront() { range.popFrontExactly(strides(gen) + 1); }
     /// ditto
     static if (isForwardRange!Range)
     auto save() @property { return RandomSample(range.save, gen, length); }
@@ -731,16 +909,13 @@ Params:
 Complexity: O(range.length)
 +/
 void shuffle(Range, G)(scope ref G gen, scope Range range)
-    if ((isSaturatedRandomEngine!G || isReferenceToSaturatedRandomEngine!G)
+    if (isSaturatedRandomEngine!G
         && isRandomAccessRange!Range && hasLength!Range)
 {
     import std.algorithm.mutation : swapAt;
     for (; !range.empty; range.popFront)
     {
-        static if (isSaturatedRandomEngine!G)
-            range.swapAt(0, gen.randIndex(range.length));
-        else
-            range.swapAt(0, deref(gen).randIndex(range.length));
+        range.swapAt(0, gen.randIndex(range.length));
     }
 }
 
@@ -795,10 +970,7 @@ void shuffle(Range, G)(scope ref G gen, scope Range range, size_t n)
     assert(n <= range.length, "n must be <= range.length for shuffle.");
     for (; n; n--, range.popFront)
     {
-        static if (isSaturatedRandomEngine!G)
-            range.swapAt(0, gen.randIndex(range.length));
-        else
-            range.swapAt(0, deref(gen).randIndex(range.length));
+        range.swapAt(0, gen.randIndex(range.length));
     }
 }
 
@@ -846,6 +1018,23 @@ nothrow @safe version(mir_random_test) unittest
     auto rng = Random(unpredictableSeed);        // Engines are allocated on stack or global
     auto sample = range!rng                      // Engines can passed by alias to algorithms
         (NormalVariable!double(0, 1))            // Random variables are passed by value
+        .take(1000)                              // Fix sample length to 1000 elements (Input Range API)
+        .array;                                  // Allocates memory and performs computation
+}
+
+// Re-enable the old code from readme, although it is @system.
+nothrow @system version(mir_random_test) unittest
+{
+    import std.range;
+
+    import mir.random;
+    import mir.random.variable: NormalVariable;
+    import mir.random.algorithm: range;
+
+
+    auto rng = Random(unpredictableSeed);        // Engines are allocated on stack or global
+    auto sample = rng                            // Engines can passed by reference to algorithms
+        .range(NormalVariable!double(0, 1))      // Random variables are passed by value
         .take(1000)                              // Fix sample length to 1000 elements (Input Range API)
         .array;                                  // Allocates memory and performs computation
 }
