@@ -350,3 +350,36 @@ size_t sytrf(T)(
 	lapack.sytrf_(uplo, n, a.iterator, lda, ipiv.iterator, work.iterator, lwork, info);
 	return info;
 }
+
+///
+size_t geqrf(T)(
+    Slice!(Canonical, [2], T*) a,
+    Slice!(Contiguous, [1], T*) tau,
+    Slice!(Contiguous, [1], T*) work
+    )
+{
+    lapackint m = cast(lapackint) a.length!0;
+    lapackint n = cast(lapackint) a.length!1;
+    lapackint lda = m;
+    lapackint lwork = cast(lapackint) work.length;
+    lapackint info = void;
+    lapack.geqrf_(m, n, a.iterator, lda, tau.iterator, work.iterator, lwork, info);
+    return info;
+}
+
+///
+size_t orgqr(T)(
+    Slice!(Canonical, [2], T*) a,
+    Slice!(Contiguous, [1], T*) tau,
+    Slice!(Contiguous, [1], T*) work
+    )
+{
+    lapackint info = void;
+    lapackint m = cast(lapackint) a.length!0;
+    lapackint n = cast(lapackint) a.length!1;
+    lapackint k = cast(lapackint) tau.length;
+    lapackint lda = cast(lapackint) a.length!0;
+    lapackint lwork = cast(lapackint) work.length;
+    lapack.orgqr_(m, n, k, a.iterator, lda, tau.iterator, work.iterator, lwork, info);
+    return info;
+}
