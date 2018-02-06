@@ -486,7 +486,7 @@ RandomRange!(G, D) range(G, D)(ref G gen, D var) @system
 }
 
 /// ditto
-RandomRange!(gen, D) range(alias gen, D)(D var)
+RandomRange!(gen, D) range(alias gen = rne, D)(D var)
     if (__traits(compiles, { static assert(isSaturatedRandomEngine!(typeof(gen))); })
         && isRandomVariable!D)
 {
@@ -550,6 +550,12 @@ nothrow @safe version(mir_random_test) unittest
         .array;
 
     assert(sample1 == sample2);
+
+    /// using default threadlocal Random Engine
+    auto sample3 = NormalVariable!double(0, 1)
+        .range
+        .take(1000)
+        .array;
 }
 
 /// Uniform random bit generation
