@@ -383,3 +383,16 @@ size_t orgqr(T)(
     lapack.orgqr_(m, n, k, a.iterator, lda, tau.iterator, work.iterator, lwork, info);
     return info;
 }
+
+///
+size_t potrf(T)(
+    Slice!(Canonical, [2], T*) a,
+    char uplo
+    )
+{
+    lapackint n = cast(lapackint) a.length;
+    lapackint lda = cast(lapackint) a.length;
+    lapackint info = void;
+    lapack.potrf_(uplo, n, a.iterator, lda, info);
+    return info;
+}
