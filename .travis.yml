@@ -6,7 +6,7 @@ install:
 matrix:
     include:
         - d: dmd
-        - d: dmd-2.078.2
+        - d: dmd-2.078.1
         - d: dmd-2.077.1
         - d: dmd-2.076.1
         - d: dmd-2.075.1
