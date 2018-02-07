@@ -1,6 +1,7 @@
 # automem
 
 [![Build Status](https://travis-ci.org/atilaneves/automem.png?branch=master)](https://travis-ci.org/atilaneves/automem)
+[![Open on run.dlang.io](https://img.shields.io/badge/run.dlang.io-open-blue.svg)](https://run.dlang.io/is/hZE7IT)
 
 C++-style automatic memory management smart pointers for D using `std.experimental.allocator`.
 
