@@ -26,6 +26,7 @@ Documentation: http://docs.random.dlang.io/latest/index.html
 
 import std.range, std.stdio;
 
+import mir.random;
 import mir.random.variable: NormalVariable;
 import mir.random.algorithm: range;
 
@@ -36,6 +37,8 @@ void main()
     sample[$.randIndex].writeln; // prints random element from the sample
 }
 ```
+
+[![Open on run.dlang.io](https://img.shields.io/badge/run.dlang.io-open-blue.svg)](https://run.dlang.io/is/2pgbti)
 
 
 ### Example (10 seconds)
@@ -65,6 +68,9 @@ void main(){
     sample[$.randIndex].writeln;                 // prints random element from the sample
 }
 ```
+
+[![Open on run.dlang.io](https://img.shields.io/badge/run.dlang.io-open-blue.svg)](https://run.dlang.io/is/Uasbw1)
+
 
 ## Comparison with Phobos
  - Does not depend on DRuntime (Better C concept)
