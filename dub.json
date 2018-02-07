@@ -14,8 +14,7 @@
             "name": "unittest",
             "targetType": "executable",
             "targetName": "ut",
-            "preBuildCommands": ["dub run unit-threaded -c gen_ut_main -- -f bin/ut.d"],
-            "mainSourceFile": "bin/ut.d",
+            "mainSourceFile": "ut.d",
             "excludedSourceFiles": ["src/main.d"],
             "dependencies": {
                 "unit-threaded": "~>0.7.0",
@@ -26,7 +25,7 @@
             "name": "ut",
             "targetType": "executable",
             "targetName": "utl",
-            "mainSourceFile": "bin/ut.d",
+            "mainSourceFile": "ut.d",
             "excludedSourceFiles": ["src/main.d"],
             "dependencies": {
                 "unit-threaded": "~>0.7.0",
