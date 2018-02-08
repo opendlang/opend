@@ -423,18 +423,10 @@ version(unittest) {
 
 @("theAllocator")
 @system unittest {
-    import std.experimental.allocator: allocatorObject, dispose;
-
-    auto allocator = TestAllocator();
-    auto oldAllocator = theAllocator;
-    scope(exit) {
-        allocator.dispose(theAllocator);
-        theAllocator = oldAllocator;
+    with(theTestAllocator) {
+        auto arr = UniqueArray!Struct(2);
+        arr[].shouldEqual([Struct(), Struct()]);
     }
-    theAllocator = allocatorObject(allocator);
-
-    auto arr = UniqueArray!Struct(2);
-    arr[].shouldEqual([Struct(), Struct()]);
 }
 
 @("issue 1 array")

@@ -423,17 +423,7 @@ private template makeObject(Flag!"supportGC" supportGC, args...)
 
 @("theAllocator")
 @system unittest {
-    import std.experimental.allocator: allocatorObject, dispose;
-
-    auto allocator = TestAllocator();
-    auto oldAllocator = theAllocator;
-    scope(exit) {
-        allocator.dispose(theAllocator);
-        theAllocator = oldAllocator;
-    }
-    theAllocator = allocatorObject(allocator);
-
-    {
+    with(theTestAllocator){
         auto ptr = Unique!Struct(42);
         (*ptr).shouldEqual(Struct(42));
         Struct.numStructs.shouldEqual(1);

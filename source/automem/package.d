@@ -4,6 +4,9 @@ public import automem.unique;
 public import automem.unique_array;
 public import automem.ref_counted;
 
+import automem.test_utils: TestUtils;
+
+mixin TestUtils;
 
 // can be @safe if the allocator has @safe functions
 @system @nogc unittest {
@@ -56,20 +59,11 @@ public import automem.ref_counted;
     } // memory for the array released here
 }
 
-// just use theAllocator
+
+@("theAllocator")
 @system unittest {
-    import std.experimental.allocator: theAllocator, allocatorObject, dispose;
-    import test_allocator: TestAllocator; // test_allocator is a dub package
-
-    auto allocator = TestAllocator();
-    auto oldAllocator = theAllocator;
-    scope(exit) {
-        allocator.dispose(theAllocator);
-        theAllocator = oldAllocator;
+    with(theTestAllocator) {
+        auto ptr = Unique!int(42);
+        assert(*ptr == 42);
     }
-    theAllocator = allocatorObject(allocator);
-
-    auto ptr = Unique!int(42);
-    assert(*ptr == 42);
-
 } // TestAllocator will throw here if any memory leaks
