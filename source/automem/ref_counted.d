@@ -13,9 +13,11 @@ version(unittest) {
 
 mixin TestUtils;
 
-struct RefCounted(Type, Allocator = typeof(theAllocator),
-    Flag!"supportGC" supportGC = Flag!"supportGC".yes)
-if(isAllocator!Allocator) {
+struct RefCounted(Type,
+                  Allocator = typeof(theAllocator),
+                  Flag!"supportGC" supportGC = Flag!"supportGC".yes)
+    if(isAllocator!Allocator)
+{
 
     import std.traits: hasMember;
 
