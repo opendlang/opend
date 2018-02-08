@@ -20,7 +20,7 @@ Singleton allocators such as Mallocator (that have an `instance` attribute/membe
 don't need to be passed in to the constructor. This is detected at compile-time as an example
 of design by instrospection.
 
-`RefCounted` leverages D's type system by doing atomic reference counting iff the type of the contained
+`RefCounted` leverages D's type system by doing atomic reference counting *iff* the type of the contained
 object is `shared`. Otherwise it's non-atomic.
 
 Sample code:
