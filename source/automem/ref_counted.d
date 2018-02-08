@@ -288,6 +288,7 @@ private template makeObject(args...)
     {
         auto ptr1 = RefCounted!(Struct, TestAllocator*)(&allocator, 5);
         Struct.numStructs.shouldEqual(1);
+
         RefCounted!(Struct, TestAllocator*) ptr2;
         ptr2 = ptr1;
         Struct.numStructs.shouldEqual(1);
@@ -313,6 +314,26 @@ private template makeObject(args...)
 
     Struct.numStructs.shouldEqual(0);
 }
+
+@("struct test allocator one lvalue assignment both non-null")
+@system unittest {
+
+    auto allocator = TestAllocator();
+
+    {
+        auto ptr1 = RefCounted!(Struct, TestAllocator*)(&allocator, 5);
+        Struct.numStructs.shouldEqual(1);
+
+        auto ptr2 = RefCounted!(Struct, TestAllocator*)(&allocator, 7);
+        Struct.numStructs.shouldEqual(2);
+
+        ptr2 = ptr1;
+        Struct.numStructs.shouldEqual(1);
+    }
+
+    Struct.numStructs.shouldEqual(0);
+}
+
 
 
 @("struct test allocator one rvalue assignment test allocator")

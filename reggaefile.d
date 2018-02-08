@@ -8,7 +8,7 @@ else
     enum allTogether = Yes.allTogether;
 
 alias lib = dubDefaultTarget!(CompilerFlags(debugFlags));
-alias ut = dubTestTarget!(CompilerFlags(debugFlags),
+alias ut = dubTestTarget!(CompilerFlags(debugFlags ~ " -cov"),
                           LinkerFlags(),
                           allTogether);
 alias utl = dubConfigurationTarget!(
