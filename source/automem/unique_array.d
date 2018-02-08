@@ -140,10 +140,8 @@ struct UniqueArray(Type, Allocator = typeof(theAllocator)) if(isAllocator!Alloca
             if(size > length) {
                 _allocator.expandArray(_objects, size - length);
                 setLength;
-            } else {
-                _allocator.shrinkArray(_objects, length - size);
-                setLength;
-            }
+            } else
+                assert(0);
         }
     }
 
@@ -537,6 +535,12 @@ unittest {
     b[].shouldEqual([String("foo"), String("bar")]);
 }
 
+@("Set length to the same length")
+unittest {
+    auto allocator = TestAllocator();
+    auto a = UniqueArray!(Struct, TestAllocator*)(&allocator, [Struct(2), Struct(3)]);
+    a.length = 2;
+}
 
 version(unittest) {
 
