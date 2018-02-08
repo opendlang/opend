@@ -5,12 +5,48 @@ mixin template TestUtils() {
         import unit_threaded;
         import test_allocator;
 
+        /**
+           Returns an object that, while in scope, replaces whatever
+           theAllocator was with TestAllocator.
+         */
+        auto theTestAllocator() {
+            static struct Context {
+                import std.experimental.allocator: theAllocator;
+
+                TestAllocator testAllocator;
+                typeof(theAllocator) oldAllocator;
+
+                static auto create() {
+                    import std.experimental.allocator: allocatorObject;
+
+                    Context ctx;
+
+                    ctx.oldAllocator = theAllocator;
+                    theAllocator = allocatorObject(ctx.testAllocator);
+
+                    return ctx;
+                }
+
+                ~this() {
+                    import std.experimental.allocator: dispose;
+
+                    // 2.079.0 changed the API - we check here
+                    static if(__traits(compiles, testAllocator.dispose(theAllocator)))
+                        testAllocator.dispose(theAllocator);
+
+                    theAllocator = oldAllocator;
+                }
+            }
+
+            return Context.create;
+        }
+
         @Setup
-            void before() {
+        void before() {
         }
 
         @Shutdown
-            void after() {
+        void after() {
             reset;
         }
 
