@@ -458,3 +458,21 @@ private template makeObject(Flag!"supportGC" supportGC, args...)
     assert(s._object !is null);
     assert(s.zeroArgsCtorTest == 3);
 }
+
+
+@("release")
+@system unittest {
+    import std.experimental.allocator: dispose;
+    import core.exception: AssertError;
+
+    try {
+        auto allocator = TestAllocator();
+        auto ptr = Unique!(Struct, TestAllocator*)(&allocator, 42);
+        ptr.release;
+        Struct.numStructs.shouldEqual(0);
+    } catch(AssertError _) { // TestAllocator should throw due to memory leak
+        return;
+    }
+
+    assert(0); // should throw above
+}
