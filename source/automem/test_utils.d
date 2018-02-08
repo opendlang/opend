@@ -30,7 +30,10 @@ mixin template TestUtils() {
                 ~this() {
                     import std.experimental.allocator: dispose;
 
-                    testAllocator.dispose(theAllocator);
+                    // 2.079.0 changed the API - we check here
+                    static if(__traits(compiles, testAllocator.dispose(theAllocator)))
+                        testAllocator.dispose(theAllocator);
+
                     theAllocator = oldAllocator;
                 }
             }

@@ -1,7 +1,7 @@
 {
 	"fileVersion": 1,
 	"versions": {
-		"test_allocator": "0.0.5",
+		"test_allocator": "0.1.0",
 		"unit-threaded": "0.7.38"
 	}
 }

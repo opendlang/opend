@@ -18,7 +18,7 @@
             "excludedSourceFiles": ["src/main.d"],
             "dependencies": {
                 "unit-threaded": "~>0.7.0",
-                "test_allocator": "~>0.0.2"
+                "test_allocator": "~>0.1.0"
             }
         },
         {
@@ -29,7 +29,7 @@
             "excludedSourceFiles": ["src/main.d"],
             "dependencies": {
                 "unit-threaded": "~>0.7.0",
-                "test_allocator": "~>0.0.2"
+                "test_allocator": "~>0.1.0"
             },
             "versions": ["unitThreadedLight"]
         }
