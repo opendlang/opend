@@ -76,17 +76,16 @@ if(isAllocator!Allocator) {
     */
     void opAssign(ref RefCounted other) {
 
-        if (_impl == other._impl)
-            return;
+        if (_impl == other._impl) return;
 
-        if(_impl !is null) {
-            release;
-        }
+        if(_impl !is null) release;
+
         static if(!isGlobal)
             _allocator = other._allocator;
 
         _impl = other._impl;
-        inc;
+
+        if(_impl !is null) inc;
     }
 
     /**
@@ -295,6 +294,26 @@ private template makeObject(args...)
     }
     Struct.numStructs.shouldEqual(0);
 }
+
+@("struct test allocator one lvalue assignment from T.init")
+@system unittest {
+
+    auto allocator = TestAllocator();
+
+    {
+        RefCounted!(Struct, TestAllocator*) ptr1;
+        Struct.numStructs.shouldEqual(0);
+
+        auto ptr2 = RefCounted!(Struct, TestAllocator*)(&allocator, 5);
+        Struct.numStructs.shouldEqual(1);
+
+        ptr2 = ptr1;
+        Struct.numStructs.shouldEqual(0);
+    }
+
+    Struct.numStructs.shouldEqual(0);
+}
+
 
 @("struct test allocator one rvalue assignment test allocator")
 @system unittest {

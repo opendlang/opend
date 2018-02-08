@@ -13,7 +13,7 @@ alias ut = dubTestTarget!(CompilerFlags(debugFlags),
                           allTogether);
 alias utl = dubConfigurationTarget!(
     Configuration("ut"),
-    CompilerFlags(debugFlags ~ " -unittest -version=unitThreadedLight")
+    CompilerFlags(debugFlags ~ " -unittest -version=unitThreadedLight -cov")
 );
 
 mixin build!(lib, ut, utl);
