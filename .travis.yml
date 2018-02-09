@@ -16,8 +16,6 @@ matrix:
   include:
     - {os: linux, d: ldc, env: ARCH="x86", addons: {apt: {packages: [[gcc-multilib]]}}}
     - {os: linux, d: dmd, env: ARCH="x86", addons: {apt: {packages: [[gcc-multilib]]}}}
-  allow_failures:
-    - {d: dmd, env: ARCH="x86"}
 branches:
   only:
     - master
