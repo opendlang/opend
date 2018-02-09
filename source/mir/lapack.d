@@ -16,6 +16,7 @@ import mir.utility: min, max;
 static import lapack;
 
 public import lapack: lapackint;
+public import cblas: Uplo;
 
 /// `getri` work space query.
 size_t getri_wq(T)(Slice!(Canonical, [2], T*) a)
@@ -387,12 +388,15 @@ size_t orgqr(T)(
 ///
 size_t potrf(T)(
     Slice!(Canonical, [2], T*) a,
-    char uplo
+    Uplo uplo
     )
 {
     lapackint n = cast(lapackint) a.length;
     lapackint lda = cast(lapackint) a.length;
     lapackint info = void;
-    lapack.potrf_(uplo, n, a.iterator, lda, info);
+    char c_uplo = 'L';
+    if(uplo == Uplo.Upper)
+        c_uplo = 'U';
+    lapack.potrf_(c_uplo, n, a.iterator, lda, info);
     return info;
 }
