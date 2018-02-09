@@ -341,7 +341,7 @@ T rand(T, G)(scope ref G gen, sizediff_t boundExp = 0)
         enum ulong EXPMASK = 0x7FF0_0000_0000_0000;
         boundExp -= T.min_exp - 1;
         ulong exp = EXPMASK & u.asInteger;
-        exp = boundExp - (exp ? bsf(exp) - (T.mant_dig - 1) : gen.randGeometric + W);
+        exp = ulong(boundExp) - (exp ? bsf(exp) - (T.mant_dig - 1) : gen.randGeometric + W);
         u.asInteger &= ~EXPMASK;
         if(cast(long)exp < 0)
         {
@@ -454,22 +454,24 @@ T rand(T)(sizediff_t boundExp = 0)
 {
     //Coverage. Impure because uses thread-local.
     import mir.math.common: fabs;
-    Random* gen = threadLocalPtr!Random;
     
-    auto a = gen.rand!float;
+    auto a = rne.rand!float;
     assert(-1 < a && a < +1);
 
-    auto b = gen.rand!double(4);
+    auto b = rne.rand!double(4);
     assert(-16 < b && b < +16);
     
-    auto c = gen.rand!double(-2);
+    auto c = rne.rand!double(-2);
     assert(-0.25 < c && c < +0.25);
     
-    auto d = gen.rand!real.fabs;
+    auto d = rne.rand!real.fabs;
     assert(0.0L <= d && d < 1.0L);
 
-    auto x = gen.rand!double(double.min_exp-1);
-    assert(-double.min_normal < x && x < double.min_normal);
+    foreach(T; AliasSeq!(float, double, real))
+    {
+        auto f = rne.rand!T(T.min_exp-1);
+        assert(f.fabs < T.min_normal, T.stringof);
+    }
 }
 
 /++
@@ -654,7 +656,7 @@ size_t randGeometric(G)(scope ref G gen)
     if(isSaturatedRandomEngine!G)
 {
     alias R = EngineReturnType!G;
-    static if (is(R == ulong))
+    static if (R.sizeof >= size_t.sizeof)
         alias T = size_t;
     else
         alias T = R;
