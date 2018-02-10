@@ -340,15 +340,19 @@ size_t spev(T)(
 size_t sytrf(T)(
     Slice!(Canonical, [2], T*) a,
     Slice!(Contiguous, [1], lapackint*) ipiv,
-    Slice!(Contiguous, [1], T*) work
+    Slice!(Contiguous, [1], T*) work,
+    Uplo uplo
     )
 {
-    char uplo = 'L';
+    char c_uplo = 'L';
+    if(uplo == Uplo.Upper)
+        c_uplo = 'U';
     lapackint info = void;
     lapackint n = cast(lapackint) a.length;
     lapackint lda = n;
     lapackint lwork = cast(lapackint) work.length;
-    lapack.sytrf_(uplo, n, a.iterator, lda, ipiv.iterator, work.iterator, lwork, info);
+    lapack.sytrf_(c_uplo, n, a.iterator, lda, ipiv.iterator, work.iterator, lwork, info);
+    assert(info >= 0);
     return info;
 }
 
@@ -365,6 +369,7 @@ size_t geqrf(T)(
     lapackint lwork = cast(lapackint) work.length;
     lapackint info = void;
     lapack.geqrf_(m, n, a.iterator, lda, tau.iterator, work.iterator, lwork, info);
+    assert(info == 0);
     return info;
 }
 
@@ -382,6 +387,7 @@ size_t orgqr(T)(
     lapackint lda = cast(lapackint) a.length!0;
     lapackint lwork = cast(lapackint) work.length;
     lapack.orgqr_(m, n, k, a.iterator, lda, tau.iterator, work.iterator, lwork, info);
+    assert(info == 0);
     return info;
 }
 
@@ -394,9 +400,10 @@ size_t potrf(T)(
     lapackint n = cast(lapackint) a.length;
     lapackint lda = cast(lapackint) a.length;
     lapackint info = void;
-    char c_uplo = 'L';
+    char c_uplo = 'U';
     if(uplo == Uplo.Upper)
-        c_uplo = 'U';
+        c_uplo = 'L';
     lapack.potrf_(c_uplo, n, a.iterator, lda, info);
+    assert(info >= 0);
     return info;
 }
