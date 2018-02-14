@@ -14,6 +14,7 @@ NDSLICE wrapper for LAPACK
  - getri
  - spev
  - sptrf
+ - sysv_rook
 
 ---------------
 
