@@ -334,3 +334,52 @@ size_t spev(T)(
 	assert(info >= 0);
 	return info;
 }
+
+///
+size_t sysv_rook_wk(T)(
+	char uplo,
+	Slice!(Canonical, [2], T*) a,
+	Slice!(Canonical, [2], T*) b,
+	) 
+{
+	assert(a.length!0 == a.length!1, "sysv: a must be a square matrix.");
+	assert(b.length!1 == a.length);
+
+	lapackint n = cast(lapackint) a.length;
+	lapackint nrhs = cast(lapackint) b.length;
+	lapackint lda = cast(lapackint) a._stride.max(1);
+	lapackint ldb = cast(lapackint) b._stride.max(1);
+	T work = void;
+	lapackint lwork = -1;
+	lapackint info = void;
+
+	lapack.sysv_rook_(uplo, n, nrhs, a._iterator, lda, null, b._iterator, ldb, &work, lwork, info);
+
+	return cast(size_t) work;
+}
+
+///
+size_t sysv_rook(T)(
+	char uplo,
+	Slice!(Canonical, [2], T*) a,
+	Slice!(Contiguous, [1], lapackint*) ipiv,
+	Slice!(Canonical, [2], T*) b,
+	Slice!(Contiguous, [1], T*) work,
+	)
+{
+	assert(a.length!0 == a.length!1, "sysv: a must be a square matrix.");
+	assert(ipiv.length == a.length);
+	assert(b.length!1 == a.length);
+
+	lapackint n = cast(lapackint) a.length;
+	lapackint nrhs = cast(lapackint) b.length;
+	lapackint lda = cast(lapackint) a._stride.max(1);
+	lapackint ldb = cast(lapackint) b._stride.max(1);
+	lapackint lwork = cast(lapackint) work.length;
+	lapackint info = void;
+
+	lapack.sysv_rook_(uplo, n, nrhs, a._iterator, lda, ipiv._iterator, b._iterator, ldb, work._iterator, lwork, info);
+
+	assert(info >= 0);
+	return info;
+}
