@@ -141,6 +141,18 @@ void dsysv_(ref char uplo, ref lapackint n, ref lapackint nrhs, double *a, ref l
 void csysv_(ref char uplo, ref lapackint n, ref lapackint nrhs, _cfloat *a, ref lapackint lda, lapackint *ipiv, _cfloat *b, ref lapackint ldb, _cfloat *work, ref lapackint lwork, ref lapackint info);
 void zsysv_(ref char uplo, ref lapackint n, ref lapackint nrhs, _cdouble *a, ref lapackint lda, lapackint *ipiv, _cdouble *b, ref lapackint ldb, _cdouble *work, ref lapackint lwork, ref lapackint info);
 
+/// Solves a real symmetric indefinite system of linear equations AX=B. Rook method (LDL decomposition)
+void ssysv_rk_(ref char uplo, ref lapackint n, ref lapackint nrhs, float *a, ref lapackint lda, float *e, lapackint *ipiv, float *b, ref lapackint ldb, float *work, ref lapackint lwork, ref lapackint info);
+void dsysv_rk_(ref char uplo, ref lapackint n, ref lapackint nrhs, double *a, ref lapackint lda, double *e, lapackint *ipiv, double *b, ref lapackint ldb, double *work, ref lapackint lwork, ref lapackint info);
+void csysv_rk_(ref char uplo, ref lapackint n, ref lapackint nrhs, _cfloat *a, ref lapackint lda, _cfloat *e, lapackint *ipiv, _cfloat *b, ref lapackint ldb, _cfloat *work, ref lapackint lwork, ref lapackint info);
+void zsysv_rk_(ref char uplo, ref lapackint n, ref lapackint nrhs, _cdouble *a, ref lapackint lda, _cdouble *e, lapackint *ipiv, _cdouble *b, ref lapackint ldb, _cdouble *work, ref lapackint lwork, ref lapackint info);
+
+/// Solves a real symmetric indefinite system of linear equations AX=B. Rook method (LDL decomposition)
+void ssysv_rook_(ref char uplo, ref lapackint n, ref lapackint nrhs, float *a, ref lapackint lda, lapackint *ipiv, float *b, ref lapackint ldb, float *work, ref lapackint lwork, ref lapackint info);
+void dsysv_rook_(ref char uplo, ref lapackint n, ref lapackint nrhs, double *a, ref lapackint lda, lapackint *ipiv, double *b, ref lapackint ldb, double *work, ref lapackint lwork, ref lapackint info);
+void csysv_rook_(ref char uplo, ref lapackint n, ref lapackint nrhs, _cfloat *a, ref lapackint lda, lapackint *ipiv, _cfloat *b, ref lapackint ldb, _cfloat *work, ref lapackint lwork, ref lapackint info);
+void zsysv_rook_(ref char uplo, ref lapackint n, ref lapackint nrhs, _cdouble *a, ref lapackint lda, lapackint *ipiv, _cdouble *b, ref lapackint ldb, _cdouble *work, ref lapackint lwork, ref lapackint info);
+
 /// Solves a complex Hermitian indefinite system of linear equations AX=B.
 void chesv_(ref char uplo, ref lapackint n, ref lapackint nrhs, _cfloat *a, ref lapackint lda, lapackint *ipiv, _cfloat *b, ref lapackint ldb, _cfloat *work, ref lapackint lwork, ref lapackint info);
 void zhesv_(ref char uplo, ref lapackint n, ref lapackint nrhs, _cdouble *a, ref lapackint lda, lapackint *ipiv, _cdouble *b, ref lapackint ldb, _cdouble *work, ref lapackint lwork, ref lapackint info);
