@@ -54,7 +54,7 @@ else
 
 
 // Prototypes for the raw Fortran interface to BLAS
-nothrow @nogc extern(C):
+pure nothrow @nogc extern(C):
 
 alias FCB_CGEES_SELECT  = lapackint function(_cfloat *);
 alias FCB_CGEESX_SELECT = lapackint function(_cfloat *);
