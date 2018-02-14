@@ -883,7 +883,7 @@ struct NormalVariable(T)
 
 
 /// ditto
-NormalVariable!T normalVariable(T)(in T location = 0.0, in T scale = 1)
+NormalVariable!T normalVar(T = double)(in T location = 0.0, in T scale = 1)
     if(isFloatingPoint!T)
 {
     return typeof(return)(location, scale);
@@ -892,7 +892,7 @@ NormalVariable!T normalVariable(T)(in T location = 0.0, in T scale = 1)
 ///
 @nogc nothrow @safe version(mir_random_test) unittest
 {
-    auto rv = normalVariable;
+    auto rv = normalVar;
     static assert(isRandomVariable!(typeof(rv)));
     auto x = rv(rne);
 }
@@ -946,7 +946,7 @@ struct LogNormalVariable(T)
 }
 
 /// ditto
-LogNormalVariable!T logNormalVariable(T = double)(in T normalLocation = 0.0, in T normalScale = 1)
+LogNormalVariable!T logNormalVar(T = double)(in T normalLocation = 0.0, in T normalScale = 1)
     if(isFloatingPoint!T)
 {
     return typeof(return)(normalLocation, normalScale);
@@ -955,7 +955,7 @@ LogNormalVariable!T logNormalVariable(T = double)(in T normalLocation = 0.0, in 
 ///
 @nogc nothrow @safe version(mir_random_test) unittest
 {
-    auto rv = logNormalVariable;
+    auto rv = logNormalVar;
     static assert(isRandomVariable!(typeof(rv)));
     auto x = rv(rne);
 }
