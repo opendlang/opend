@@ -84,7 +84,7 @@ Macros:
 module mir.random.flex;
 import mir.random.flex.internal.types;
 
-import mir.random.variable : DiscreteVariable, RandomVariable;
+import mir.random.variable : DiscreteVariable, discreteVar, RandomVariable;
 
 import mir.random;
 import std.traits : isCallable, isFloatingPoint, ReturnType;
@@ -201,7 +201,7 @@ Can be used to sample from the distribution.
         foreach (i, ref cd; cdPoints)
             cd = intervals[i].hatArea / totalSum;
 
-        this.ds = DiscreteVariable!S(cdPoints);
+        this.ds = discreteVar!S(cdPoints);
     }
 
     /// Generated partition points

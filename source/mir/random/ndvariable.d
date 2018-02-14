@@ -74,22 +74,26 @@ struct SphereVariable(T)
     }
 }
 
+/// ditto
+SphereVariable!T sphereVar(T = double)()
+    if (isFloatingPoint!T)
+{   
+    return typeof(return).init;
+}
+
 /// Generate random points on a circle
 @nogc nothrow @safe version(mir_random_test) unittest
 {
-    auto gen = Random(unpredictableSeed);
-    SphereVariable!double rv;
     double[2] x;
-    rv(gen, x);
+    sphereVar()(rne, x);
     assert(fabs(x[0] * x[0] + x[1] * x[1] - 1) < 1e-10);
 }
 
 @nogc nothrow @safe version(mir_random_test) unittest
 {
     Random* gen = threadLocalPtr!Random;
-    SphereVariable!double rv;
     double[2] x;
-    rv(gen, x);
+    sphereVar()(gen, x);
     assert(fabs(x[0] * x[0] + x[1] * x[1] - 1) < 1e-10);
 }
 
@@ -137,17 +141,24 @@ struct SimplexVariable(T)
     }
 }
 
+/// ditto
+SimplexVariable!T simplexVar(T = double)()
+    if (isFloatingPoint!T)
+{   
+    return typeof(return).init;
+}
+
 ///
 @nogc nothrow @safe version(mir_random_test) unittest
 {
-    auto gen = Random(unpredictableSeed);
-    SimplexVariable!double rv;
+    auto rv = simplexVar;
     double[3] x;
-    rv(gen, x);
+    rv(rne, x);
     assert(x[0] >= 0 && x[1] >= 0 && x[2] >= 0);
     assert(fabs(x[0] + x[1] + x[2] - 1) < 1e-10);
 }
 
+///
 @nogc nothrow @safe version(mir_random_test) unittest
 {
     Random* gen = threadLocalPtr!Random;
@@ -207,7 +218,7 @@ struct DirichletVariable(T)
         import mir.math.sum : Summator, Summation;
         Summator!(T, Summation.kbn) summator = 0;
         foreach (size_t i; 0 .. result.length)
-            summator += result[i] = GammaVariable!T(alpha[i])(gen);
+            summator += result[i] = GammaVariable!T(alpha[i], 1)(gen);
         result[] /= summator.sum;
     }
     /// ditto
@@ -219,17 +230,31 @@ struct DirichletVariable(T)
     }
 }
 
+/// ditto
+DirichletVariable!T dirichletVar(T)(in T[] alpha)
+    if (isFloatingPoint!T)
+{   
+    return typeof(return)(alpha);
+}
+
+/// ditto
+DirichletVariable!T dirichletVar(T)(Slice!(Contiguous, [1], const(T)*) alpha)
+    if (isFloatingPoint!T)
+{   
+    return typeof(return)(alpha);
+}
+
 ///
 nothrow @safe version(mir_random_test) unittest
 {
-    auto gen = Random(unpredictableSeed);
-    auto rv = DirichletVariable!double([1.0, 5.7, 0.3]);
+    auto rv = dirichletVar([1.0, 5.7, 0.3]);
     double[3] x;
-    rv(gen, x);
+    rv(rne, x);
     assert(x[0] >= 0 && x[1] >= 0 && x[2] >= 0);
     assert(fabs(x[0] + x[1] + x[2] - 1) < 1e-10);
 }
 
+///
 nothrow @safe version(mir_random_test) unittest
 {
     Random* gen = threadLocalPtr!Random;
@@ -330,6 +355,7 @@ struct MultivariateNormalVariable(T)
     {
         opCall(gen, result.sliced);
     }
+
     /// ditto
     void opCall(G)(scope G* gen, scope T[] result)
     {
@@ -361,23 +387,37 @@ struct MultivariateNormalVariable(T)
     }
 }
 
+/// ditto
+MultivariateNormalVariable!T multivariateNormalVar(T)(Slice!(Contiguous, [1], const(T)*) mu, Slice!(Contiguous, [2], T*) sigma, bool chol = false)
+    if (isFloatingPoint!T)
+{   
+    return typeof(return)(mu, sigma, chol);
+}
+
+/// ditto
+MultivariateNormalVariable!T multivariateNormalVar(T)(Slice!(Contiguous, [2], T*) sigma, bool chol = false)
+    if (isFloatingPoint!T)
+{   
+    return typeof(return)(sigma, chol);
+}
+
 ///
 nothrow @safe version(mir_random_test) unittest
 {
-    auto gen = Random(unpredictableSeed);
     auto mu = [10.0, 0.0].sliced;
     auto sigma = [2.0, -1.5, -1.5, 2.0].sliced(2,2);
-    auto rv = MultivariateNormalVariable!double(mu, sigma);
+    auto rv = multivariateNormalVar(mu, sigma);
     double[2] x;
-    rv(gen, x[]);
+    rv(rne, x[]);
 }
 
+///
 nothrow @safe version(mir_random_test) unittest
 {
     Random* gen = threadLocalPtr!Random;
     auto mu = [10.0, 0.0].sliced;
     auto sigma = [2.0, -1.5, -1.5, 2.0].sliced(2,2);
-    auto rv = MultivariateNormalVariable!double(mu, sigma);
+    auto rv = multivariateNormalVar(mu, sigma);
     double[2] x;
     rv(gen, x[]);
 }

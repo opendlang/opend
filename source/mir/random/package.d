@@ -454,6 +454,7 @@ T rand(T)(sizediff_t boundExp = 0)
 {
     //Coverage. Impure because uses thread-local.
     import mir.math.common: fabs;
+    import std.meta: AliasSeq;
     
     auto a = rne.rand!float;
     assert(-1 < a && a < +1);

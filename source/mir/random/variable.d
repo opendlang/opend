@@ -127,17 +127,25 @@ struct UniformVariable(T)
     T max() @property { return length - 1 + location; }
 }
 
+/// ditto
+UniformVariable!T uniformVar(T)(in T a, in T b)
+    if(isIntegral!T)
+{
+    return typeof(return)(a, b);
+}
+
 ///
 @nogc nothrow @safe version(mir_random_test) unittest
 {
     auto gen = Random(unpredictableSeed);
-    auto rv = UniformVariable!int(-10, 10); // [-10, 10]
+    auto rv = uniformVar(-10, 10); // [-10, 10]
     static assert(isRandomVariable!(typeof(rv)));
     auto x = rv(gen); // random variable
     assert(rv.min == -10);
     assert(rv.max == 10);
 }
 
+///
 @nogc nothrow @safe version(mir_random_test) unittest
 {
     Random* gen = threadLocalPtr!Random;
@@ -195,18 +203,26 @@ struct UniformVariable(T)
     T max() @property { return _b.nextDown; }
 }
 
+/// ditto
+UniformVariable!T uniformVar(T = double)(in T a, in T b)
+    if(isFloatingPoint!T)
+{
+    return typeof(return)(a, b);
+}
+
 ///
 @nogc nothrow @safe version(mir_random_test) unittest
 {
     import std.math : nextDown;
     auto gen = Random(unpredictableSeed);
-    auto rv = UniformVariable!double(-8, 10); // [-8, 10)
+    auto rv = uniformVar(-8.0, 10); // [-8, 10)
     static assert(isRandomVariable!(typeof(rv)));
     auto x = rv(gen); // random variable
     assert(rv.min == -8.0);
     assert(rv.max == 10.0.nextDown);
 }
 
+///
 @nogc nothrow @safe version(mir_random_test) unittest
 {
     import std.math : nextDown;
@@ -219,6 +235,7 @@ struct UniformVariable(T)
     }
 }
 
+///
 @nogc nothrow @safe version(mir_random_test) unittest
 {
     import std.math : nextDown;
@@ -266,15 +283,22 @@ struct ExponentialVariable(T)
     enum T max = T.infinity;
 }
 
+/// ditto
+ExponentialVariable!T exponentialVar(T = double)(in T scale = 1)
+    if (isFloatingPoint!T)
+{
+    return typeof(return)(scale);
+}
+
 ///
 @nogc nothrow @safe version(mir_random_test) unittest
 {
-    auto gen = Random(unpredictableSeed);
-    auto rv = ExponentialVariable!double(1);
+    auto rv = exponentialVar;
     static assert(isRandomVariable!(typeof(rv)));
-    auto x = rv(gen);
+    auto x = rv(rne);
 }
 
+///
 @nogc nothrow @safe version(mir_random_test) unittest
 {
     Random* gen = threadLocalPtr!Random;
@@ -295,7 +319,7 @@ struct WeibullVariable(T)
     private T scale = 1;
 
     ///
-    this(T shape, T scale = 1)
+    this(T shape, T scale)
     {
         _pow = 1 / shape;
         this.scale = scale;
@@ -320,15 +344,23 @@ struct WeibullVariable(T)
     enum T max = T.infinity;
 }
 
+/// ditto
+WeibullVariable!T weibullVar(T = double)(T shape = 1, T scale = 1)
+    if (isFloatingPoint!T)
+{
+    return typeof(return)(shape, scale);
+}
+
 ///
 @nogc nothrow @safe version(mir_random_test) unittest
 {
     auto gen = Random(unpredictableSeed);
-    auto rv = WeibullVariable!double(3, 2);
+    auto rv = weibullVar;
     static assert(isRandomVariable!(typeof(rv)));
     auto x = rv(gen);
 }
 
+///
 @nogc nothrow @safe version(mir_random_test) unittest
 {
     Random* gen = threadLocalPtr!Random;
@@ -354,7 +386,7 @@ struct GammaVariable(T, bool Exp = false)
     private T scale = 1;
 
     ///
-    this(T shape, T scale = 1)
+    this(T shape, T scale)
     {
         this.shape = shape;
         if(Exp)
@@ -439,15 +471,23 @@ struct GammaVariable(T, bool Exp = false)
     enum T max = T.infinity;
 }
 
+/// ditto
+GammaVariable!T gammaVar(T = double)(in T shape = 1, in T scale = 1)
+    if (isFloatingPoint!T)
+{
+    return typeof(return)(shape, scale);
+}
+
+
 ///
 @nogc nothrow @safe version(mir_random_test) unittest
 {
-    auto gen = Random(unpredictableSeed);
-    auto rv = GammaVariable!double(1, 1);
+    auto rv = gammaVar;
     static assert(isRandomVariable!(typeof(rv)));
-    auto x = rv(gen);
+    auto x = rv(rne);
 }
 
+///
 @nogc nothrow @safe version(mir_random_test) unittest
 {
     Random* gen = threadLocalPtr!Random;
@@ -500,8 +540,8 @@ struct BetaVariable(T)
                 return exp2(u - log2(exp2(u) + exp2(v)));
             }
         }
-        T x = GammaVariable!T(a)(gen);
-        T y = GammaVariable!T(b)(gen);
+        T x = GammaVariable!T(a, 1)(gen);
+        T y = GammaVariable!T(b, 1)(gen);
         T z = x + y;
         return x / z;
     }
@@ -518,13 +558,19 @@ struct BetaVariable(T)
     enum T max = 1;
 }
 
+/// ditto
+BetaVariable!T betaVariable(T)(in T a, in T b)
+    if (isFloatingPoint!T)
+{
+    return typeof(return)(a, b);
+}
+
 ///
 @nogc nothrow @safe version(mir_random_test) unittest
 {
-    auto gen = Random(unpredictableSeed);
-    auto rv = BetaVariable!double(2, 5);
+    auto rv = betaVariable(2.0, 5);
     static assert(isRandomVariable!(typeof(rv)));
-    auto x = rv(gen);
+    auto x = rv(rne);
 }
 
 @nogc nothrow @safe version(mir_random_test) unittest
@@ -570,15 +616,22 @@ struct ChiSquaredVariable(T)
     enum T max = T.infinity;
 }
 
+/// ditto
+ChiSquaredVariable!T chiSquared(T = double)(size_t k)
+    if(isFloatingPoint!T)
+{
+    return typeof(return)(k);
+}
+
 ///
 @nogc nothrow @safe version(mir_random_test) unittest
 {
-    auto gen = Random(unpredictableSeed);
-    auto rv = ChiSquaredVariable!double(3);
+    auto rv = chiSquared(3);
     static assert(isRandomVariable!(typeof(rv)));
-    auto x = rv(gen);
+    auto x = rv(rne);
 }
 
+///
 @nogc nothrow @safe version(mir_random_test) unittest
 {
     Random* gen = threadLocalPtr!Random;
@@ -608,8 +661,8 @@ struct FisherFVariable(T)
     T opCall(G)(scope ref G gen)
         if (isSaturatedRandomEngine!G)
     {
-        auto xv = GammaVariable!T(_d1 * 0.5f);
-        auto yv = GammaVariable!T(_d2 * 0.5f);
+        auto xv = GammaVariable!T(_d1 * 0.5f, 1);
+        auto yv = GammaVariable!T(_d2 * 0.5f, 1);
         auto x = xv(gen);
         auto y = yv(gen);
         x *= _d1;
@@ -629,13 +682,19 @@ struct FisherFVariable(T)
     enum T max = T.infinity;
 }
 
+/// ditto
+FisherFVariable!T fisherFVar(T)(in T d1, in T d2)
+    if (isFloatingPoint!T)
+{
+    return typeof(return)(d1, d2);
+}
+
 ///
 @nogc nothrow @safe version(mir_random_test) unittest
 {
-    auto gen = Random(unpredictableSeed);
-    auto rv = FisherFVariable!double(3, 4);
+    auto rv = fisherFVar(3.0, 4);
     static assert(isRandomVariable!(typeof(rv)));
-    auto x = rv(gen);
+    auto x = rv(rne);
 }
 
 @nogc nothrow @safe version(mir_random_test) unittest
@@ -686,15 +745,22 @@ struct StudentTVariable(T)
     enum T max = T.infinity;
 }
 
+/// ditto
+StudentTVariable!T studentTVar(T)(in T nu)
+    if(isFloatingPoint!T)
+{
+    return typeof(return)(nu);
+}
+
 ///
 @nogc nothrow @safe version(mir_random_test) unittest
 {
-    auto gen = Random(unpredictableSeed);
-    auto rv = StudentTVariable!double(10);
+    auto rv = studentTVar(10.0);
     static assert(isRandomVariable!(typeof(rv)));
-    auto x = rv(gen);
+    auto x = rv(rne);
 }
 
+///
 @nogc nothrow @safe version(mir_random_test) unittest
 {
     Random* gen = threadLocalPtr!Random;
@@ -762,7 +828,7 @@ struct NormalVariable(T)
     private bool hot;
 
     ///
-    this(T location, T scale = 1)
+    this(T location, T scale)
     {
         this.location = location;
         this.scale = scale;
@@ -815,15 +881,23 @@ struct NormalVariable(T)
     enum T max = T.infinity;
 }
 
+
+/// ditto
+NormalVariable!T normalVariable(T)(in T location = 0.0, in T scale = 1)
+    if(isFloatingPoint!T)
+{
+    return typeof(return)(location, scale);
+}
+
 ///
 @nogc nothrow @safe version(mir_random_test) unittest
 {
-    auto gen = Random(unpredictableSeed);
-    auto rv = NormalVariable!double(0, 1);
+    auto rv = normalVariable;
     static assert(isRandomVariable!(typeof(rv)));
-    auto x = rv(gen);
+    auto x = rv(rne);
 }
 
+///
 @nogc nothrow @safe version(mir_random_test) unittest
 {
     Random* gen = threadLocalPtr!Random;
@@ -847,7 +921,7 @@ struct LogNormalVariable(T)
         normalLocation = location of associated normal
         normalScale = scale of associated normal
     +/
-    this(T normalLocation, T normalScale = 1)
+    this(T normalLocation, T normalScale)
     {
         _nv = NormalVariable!T(normalLocation, normalScale);
     }
@@ -871,15 +945,22 @@ struct LogNormalVariable(T)
     enum T max = T.infinity;
 }
 
+/// ditto
+LogNormalVariable!T logNormalVariable(T = double)(in T normalLocation = 0.0, in T normalScale = 1)
+    if(isFloatingPoint!T)
+{
+    return typeof(return)(normalLocation, normalScale);
+}
+
 ///
 @nogc nothrow @safe version(mir_random_test) unittest
 {
-    auto gen = Random(unpredictableSeed);
-    auto rv = LogNormalVariable!double(0, 1);
+    auto rv = logNormalVariable;
     static assert(isRandomVariable!(typeof(rv)));
-    auto x = rv(gen);
+    auto x = rv(rne);
 }
 
+///
 @nogc nothrow @safe version(mir_random_test) unittest
 {
     Random* gen = threadLocalPtr!Random;
@@ -901,7 +982,7 @@ struct CauchyVariable(T)
     private T scale = 1;
 
     ///
-    this(T location, T scale = 1)
+    this(T location, T scale)
     {
         this.location = location;
         this.scale = scale;
@@ -935,15 +1016,23 @@ struct CauchyVariable(T)
     enum T max = T.infinity;
 }
 
+
+/// ditto
+CauchyVariable!T cauchyVar(T = double)(in T location = 0.0, in T scale = 1)
+    if(isFloatingPoint!T)
+{
+    return typeof(return)(location, scale);
+}
+
 ///
 @nogc nothrow @safe version(mir_random_test) unittest
 {
-    auto gen = Random(unpredictableSeed);
-    auto rv = CauchyVariable!double(0, 1);
+    auto rv = cauchyVar;
     static assert(isRandomVariable!(typeof(rv)));
-    auto x = rv(gen);
+    auto x = rv(rne);
 }
 
+///
 @nogc nothrow @safe version(mir_random_test) unittest
 {
     Random* gen = threadLocalPtr!Random;
@@ -964,7 +1053,7 @@ struct ExtremeValueVariable(T)
     private T scale = 1;
 
     ///
-    this(T location, T scale = 1)
+    this(T location, T scale)
     {
         this.location = location;
         this.scale = scale * -T(LN2);
@@ -989,15 +1078,22 @@ struct ExtremeValueVariable(T)
     enum T max = T.infinity;
 }
 
+/// ditto
+ExtremeValueVariable!T extremeValueVar(T = double)(in T location = 0.0, in T scale = 1)
+    if(isFloatingPoint!T)
+{
+    return typeof(return)(location, scale);
+}
+
 ///
 @nogc nothrow @safe version(mir_random_test) unittest
 {
-    auto gen = Random(unpredictableSeed);
-    auto rv = ExtremeValueVariable!double(0, 1);
+    auto rv = extremeValueVar;
     static assert(isRandomVariable!(typeof(rv)));
-    auto x = rv(gen);
+    auto x = rv(rne);
 }
 
+///
 @nogc nothrow @safe version(mir_random_test) unittest
 {
     Random* gen = threadLocalPtr!Random;
@@ -1045,19 +1141,26 @@ struct BernoulliVariable(T)
     enum bool max = 1;
 }
 
+/// ditto
+BernoulliVariable!T bernoulliVar(T)(in T p)
+    if(isFloatingPoint!T)
+{
+    return typeof(return)(p);
+}
+
 ///
 @nogc nothrow @safe version(mir_random_test) unittest
 {
-    auto gen = Random(unpredictableSeed);
-    auto rv = BernoulliVariable!double(0.7);
+    auto rv = bernoulliVar(0.7);
     static assert(isRandomVariable!(typeof(rv)));
     int[2] hist;
     foreach(_; 0..1000)
-        hist[rv(gen)]++;
+        hist[rv(rne)]++;
     //import std.stdio;
     //writeln(hist);
 }
 
+///
 @nogc nothrow @safe version(mir_random_test) unittest
 {
     Random* gen = threadLocalPtr!Random;
@@ -1074,7 +1177,7 @@ struct Bernoulli2Variable
 {
     ///
     enum isRandomVariable = true;
-   private size_t payload;
+    private size_t payload;
     private size_t mask;
 
     this(this)
@@ -1108,19 +1211,23 @@ struct Bernoulli2Variable
     enum bool max = 1;
 }
 
+/// ditto
+Bernoulli2Variable bernoulli2Var()()
+{
+    return typeof(return).init;
+}
+
 ///
 @nogc nothrow @safe version(mir_random_test) unittest
 {
-    auto gen = Random(unpredictableSeed);
-    auto rv = Bernoulli2Variable.init;
+    auto rv = bernoulli2Var;
     static assert(isRandomVariable!(typeof(rv)));
     int[2] hist;
     foreach(_; 0..1000)
-        hist[rv(gen)]++;
-    //import std.stdio;
-    //writeln(hist);
+        hist[rv(rne)]++;
 }
 
+///
 @nogc nothrow @safe version(mir_random_test) unittest
 {
     Random* gen = threadLocalPtr!Random;
@@ -1146,7 +1253,7 @@ struct GeometricVariable(T)
         p = probability
         success = p is success probability if `true` and failure probability otherwise.
     +/
-    this(T p, bool success = true)
+    this(T p, bool success)
     {
         assert(0 <= p && p <= 1);
         scale = -1 / log2(success ? 1 - p : p);
@@ -1172,15 +1279,22 @@ struct GeometricVariable(T)
     enum ulong max = ulong.max;
 }
 
+
+/// ditto
+GeometricVariable!T geometricVar(T)(in T p, bool success = true)
+    if(isFloatingPoint!T)
+{
+    return typeof(return)(p, success);
+}
+
 ///
 nothrow @safe version(mir_random_test) unittest
 {
-    auto gen = Random(unpredictableSeed);
-    auto rv = GeometricVariable!double(0.1);
+    auto rv = geometricVar(0.1);
     static assert(isRandomVariable!(typeof(rv)));
     size_t[ulong] hist;
     foreach(_; 0..1000)
-        hist[rv(gen)]++;
+        hist[rv(rne)]++;
     //import std.stdio;
     //foreach(i; 0..100)
     //    if(auto count = i in hist)
@@ -1190,10 +1304,11 @@ nothrow @safe version(mir_random_test) unittest
     //writeln();
 }
 
+///
 nothrow @safe version(mir_random_test) unittest
 {
     Random* gen = threadLocalPtr!Random;
-    auto rv = GeometricVariable!double(0.1);
+    auto rv = GeometricVariable!double(0.1, true);
     size_t[ulong] hist;
     foreach(_; 0..10)
         hist[rv(gen)]++;
@@ -1294,16 +1409,22 @@ struct PoissonVariable(T)
     enum ulong max = ulong.max;
 }
 
+/// ditto
+PoissonVariable!T poissonVar(T = double)(in T rate = 1.0)
+    if(isFloatingPoint!T)
+{
+    return typeof(return)(rate);
+}
+
 ///
 nothrow @safe version(mir_random_test) unittest
 {
     import mir.random;
-    auto gen = Random(unpredictableSeed);
-    auto rv = PoissonVariable!double(10);
+    auto rv = poissonVar;
     static assert(isRandomVariable!(typeof(rv)));
     size_t[ulong] hist;
     foreach(_; 0..1000)
-        hist[rv(gen)]++;
+        hist[rv(rne)]++;
     //import std.stdio;
     //foreach(i; 0..100)
     //    if(auto count = i in hist)
@@ -1313,6 +1434,7 @@ nothrow @safe version(mir_random_test) unittest
     //writeln();
 }
 
+///
 nothrow @safe version(mir_random_test) unittest
 {
     Random* gen = threadLocalPtr!Random;
@@ -1372,16 +1494,22 @@ struct NegativeBinomialVariable(T)
     enum ulong max = ulong.max;
 }
 
+/// ditto
+NegativeBinomialVariable!T negativeBinomialVar(T)(size_t r, in T p)
+    if(isFloatingPoint!T)
+{
+    return typeof(return)(r, p);
+}
+
 ///
 nothrow @safe version(mir_random_test) unittest
 {
     import mir.random;
-    auto gen = Random(unpredictableSeed);
-    auto rv = NegativeBinomialVariable!double(30, 0.3);
+    auto rv = negativeBinomialVar(30, 0.3);
     static assert(isRandomVariable!(typeof(rv)));
     size_t[ulong] hist;
     foreach(_; 0..1000)
-        hist[rv(gen)]++;
+        hist[rv(rne)]++;
     //import std.stdio;
     //foreach(i; 0..100)
     //    if(auto count = i in hist)
@@ -1391,6 +1519,7 @@ nothrow @safe version(mir_random_test) unittest
     //writeln();
 }
 
+///
 nothrow @safe version(mir_random_test) unittest
 {
     Random* gen = threadLocalPtr!Random;
@@ -1523,22 +1652,29 @@ struct BinomialVariable(T)
     size_t max() @property { return n; };
 }
 
+/// ditto
+BinomialVariable!T binomialVar(T)(size_t r, in T p)
+    if(isFloatingPoint!T)
+{
+    return typeof(return)(r, p);
+}
+
 ///
 nothrow @safe version(mir_random_test) unittest
 {
     import mir.random;
-    auto gen = Random(unpredictableSeed);
-    auto rv = BinomialVariable!double(20, 0.5);
+    auto rv = binomialVar(20, 0.5);
     static assert(isRandomVariable!(typeof(rv)));
     int[] hist = new int[rv.max + 1];
     auto cnt = 1000;
     foreach(_; 0..cnt)
-        hist[rv(gen)]++;
+        hist[rv(rne)]++;
     //import std.stdio;
     //foreach(n, e; hist)
     //    writefln("p(x = %s) = %s", n, double(e) / cnt);
 }
 
+///
 nothrow @safe version(mir_random_test) unittest
 {
     Random* gen = threadLocalPtr!Random;
@@ -1569,7 +1705,7 @@ struct DiscreteVariable(T)
         weights = density points
         cumulative = optional flag indiciates if `weights` are already cumulative
     +/
-    this(T[] weights, bool cumulative = false)
+    this(T[] weights, bool cumulative)
     {
         if(!cumulative)
         {
@@ -1624,13 +1760,20 @@ struct DiscreteVariable(T)
     size_t max() @property { return cdf.length - 1; }
 }
 
+/// ditto
+DiscreteVariable!T discreteVar(T)(T[] weights, bool cumulative = false)
+    if (isNumeric!T)
+{   
+    return typeof(return)(weights, cumulative);
+}
+
 ///
 nothrow @safe version(mir_random_test) unittest
 {
     auto gen = Random(unpredictableSeed);
     // 10%, 20%, 20%, 40%, 10%
     auto weights = [10.0, 20, 20, 40, 10];
-    auto ds = DiscreteVariable!double(weights);
+    auto ds = discreteVar(weights);
     static assert(isRandomVariable!(typeof(ds)));
 
     // weight is changed to cumulative sums
@@ -1652,7 +1795,7 @@ nothrow @safe version(mir_random_test) unittest
     auto gen = Random(unpredictableSeed);
 
     auto cumulative = [10.0, 30, 40, 90, 120];
-    auto ds = DiscreteVariable!double(cumulative, true);
+    auto ds = discreteVar(cumulative, true);
 
     assert(cumulative == [10.0, 30, 40, 90, 120]);
 
@@ -1662,13 +1805,13 @@ nothrow @safe version(mir_random_test) unittest
         obs[ds(gen)]++;
 }
 
-//
+///
 nothrow @safe version(mir_random_test) unittest
 {
     auto gen = Random(unpredictableSeed);
     // 10%, 20%, 20%, 40%, 10%
     auto weights = [10.0, 20, 20, 40, 10];
-    auto ds = DiscreteVariable!double(weights);
+    auto ds = discreteVar(weights);
 
     // weight is changed to cumulative sums
     assert(weights == [10, 30, 50, 90, 100]);
@@ -1707,7 +1850,7 @@ nothrow @safe version(mir_random_test) unittest
 
     // 1, 2, 1
     auto weights = [1, 2, 1];
-    auto ds = DiscreteVariable!int(weights);
+    auto ds = discreteVar(weights);
 
     auto obs = new uint[weights.length];
     foreach (i; 0..1000)
@@ -1766,7 +1909,7 @@ struct PiecewiseConstantVariable(T, W = T)
         weights = density points
         cumulative = optional flag indicates if `weights` are already cumulative
     +/
-    this(T[] intervals, W[] weights, bool cumulative = false)
+    this(T[] intervals, W[] weights, bool cumulative)
     {
         assert(weights.length);
         assert(intervals.length == weights.length + 1);
@@ -1797,21 +1940,27 @@ struct PiecewiseConstantVariable(T, W = T)
     T max() @property { return intervals[$-1].nextDown; }
 }
 
+/// ditto
+PiecewiseConstantVariable!(T, W) piecewiseConstantVar(T, W)(T[] intervals, W[] weights, bool cumulative = false)
+    if (isNumeric!T && isNumeric!W)
+{   
+    return typeof(return)(intervals, weights, cumulative);
+}
+
 ///
 nothrow @safe version(mir_random_test) unittest
 {
-    auto gen = Random(unpredictableSeed);
     // 50% of the time, generate a random number between 0 and 1
     // 50% of the time, generate a random number between 10 and 15
     double[] i = [0,  1, 10, 15];
     double[] w =   [1,  0,  1];
-    auto pcv = PiecewiseConstantVariable!(double, double)(i, w);
+    auto pcv = piecewiseConstantVar(i, w);
     static assert(isRandomVariable!(typeof(pcv)));
     assert(w == [1, 1, 2]);
 
     int[int] hist;
     foreach(_; 0 .. 10000)
-        ++hist[cast(int)pcv(gen)];
+        ++hist[cast(int)pcv(rne)];
 
     //import std.stdio;
     //import mir.ndslice.topology: repeat;
@@ -1830,6 +1979,7 @@ nothrow @safe version(mir_random_test) unittest
     +/
 }
 
+///
 nothrow @safe version(mir_random_test) unittest
 {
     Random* gen = threadLocalPtr!Random;
@@ -1837,7 +1987,7 @@ nothrow @safe version(mir_random_test) unittest
     // 50% of the time, generate a random number between 10 and 15
     double[] i = [0,  1, 10, 15];
     double[] w =   [1,  0,  1];
-    auto pcv = PiecewiseConstantVariable!(double, double)(i, w);
+    auto pcv = piecewiseConstantVar(i, w);
     assert(w == [1, 1, 2]);
 
     int[int] hist;
@@ -1877,7 +2027,7 @@ struct PiecewiseLinearVariable(T)
     body {
         foreach(size_t i; 0 .. areas.length)
             areas[i] = (weights[i + 1] + weights[i]) * (points[i + 1] - points[i]);
-        dv = DiscreteVariable!T(areas);
+        dv = discreteVar(areas);
         this.points = points;
         this.weights = weights;
     }
@@ -1920,6 +2070,13 @@ struct PiecewiseLinearVariable(T)
     T max() @property { return points[$-1].nextDown; }
 }
 
+/// ditto
+PiecewiseLinearVariable!T piecewiseLinearVar(T)(T[] points, T[] weights, T[] areas)
+    if (isFloatingPoint!T)
+{   
+    return typeof(return)(points, weights, areas);
+}
+
 ///
 nothrow @safe version(mir_random_test) unittest
 {
@@ -1929,7 +2086,7 @@ nothrow @safe version(mir_random_test) unittest
     // decrease from 10 to 15 at the same rate
     double[] i = [0, 5, 10, 15];
     double[] w = [0, 1,  1,  0];
-    auto pcv = PiecewiseLinearVariable!double(i, w, new double[w.length - 1]);
+    auto pcv = piecewiseLinearVar(i, w, new double[w.length - 1]);
     static assert(isRandomVariable!(typeof(pcv)));
 
     int[int] hist;
@@ -1962,6 +2119,7 @@ nothrow @safe version(mir_random_test) unittest
     +/
 }
 
+///
 nothrow @safe version(mir_random_test) unittest
 {
     Random* gen = threadLocalPtr!Random;

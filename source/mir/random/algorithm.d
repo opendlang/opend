@@ -26,6 +26,194 @@ public template isReferenceToSaturatedRandomEngine(G)
 }
 
 /++
+Allocates ndslice (vector, matrix, or tensor) and fills it with random numbers.
+
+Params:
+    gen = random engine (optional, param or template param)
+    var = random variable (optional)
+    lengths = one or more lengths
++/
+auto randomSlice(T, G, D, size_t N)(G gen, D var, size_t[N] lengths...)
+    if (isSaturatedRandomEngine!G && isRandomVariable!D &&
+        (is(G == class) || is(G == interface)))
+{
+    import mir.ndslice.allocation: slice;
+    import mir.ndslice.slice: slicedField;
+    return field(gen, var).slicedField(lengths).slice;
+}
+
+/// ditto
+auto randomSlice(T, G, D, size_t N)(G* gen, D var, size_t[N] lengths...)
+    if (isSaturatedRandomEngine!G && isRandomVariable!D &&
+        !is(G == class) && !is(G == interface))
+{
+    import mir.ndslice.allocation: slice;
+    import mir.ndslice.slice: slicedField;
+    return field(gen, var).slicedField(lengths).slice;
+}
+
+/// ditto
+auto randomSlice(T, G, D, size_t N)(ref G gen, D var, size_t[N] lengths...)
+    if (isSaturatedRandomEngine!G && isRandomVariable!D &&
+        !is(G == class) && !is(G == interface))
+{
+    import mir.ndslice.allocation: slice;
+    import mir.ndslice.slice: slicedField;
+    return field((()@trusted => &gen)(), var).slicedField(lengths).slice;
+}
+
+/// ditto
+auto randomSlice(T, alias gen = rne, D, size_t N)(D var, size_t[N] lengths...)
+    if (isSaturatedRandomEngine!(typeof(gen)) && isRandomVariable!D)
+{
+    import mir.ndslice.allocation: slice;
+    import mir.ndslice.slice: slicedField;
+    return field!(T, gen)(var).slicedField(lengths).slice;
+}
+
+/// ditto
+auto randomSlice(G, D, size_t N)(G gen, D var, size_t[N] lengths...)
+    if (isSaturatedRandomEngine!G &&
+        (is(G == class) || is(G == interface)))
+{
+    import mir.ndslice.allocation: slice;
+    import mir.ndslice.slice: slicedField;
+    return field(gen, var).slicedField(lengths).slice;
+}
+
+/// ditto
+auto randomSlice(G, D, size_t N)(G* gen, D var, size_t[N] lengths...)
+    if (isSaturatedRandomEngine!G && isRandomVariable!D &&
+        !is(G == class) && !is(G == interface))
+{
+    import mir.ndslice.allocation: slice;
+    import mir.ndslice.slice: slicedField;
+    return field(gen, var).slicedField(lengths).slice;
+}
+
+/// ditto
+auto randomSlice(G, D, size_t N)(ref G gen, D var, size_t[N] lengths...)
+    if (isSaturatedRandomEngine!G && isRandomVariable!D &&
+        !is(G == class) && !is(G == interface))
+{
+    import mir.ndslice.allocation: slice;
+    import mir.ndslice.slice: slicedField;
+    return field((()@trusted => &gen)(), var).slicedField(lengths).slice;
+}
+
+/// ditto
+auto randomSlice(alias gen = rne, D, size_t N)(D var, size_t[N] lengths...)
+    if (__traits(compiles, { static assert(isSaturatedRandomEngine!(typeof(gen))); })
+        && isRandomVariable!D)
+{
+    import mir.ndslice.allocation: slice;
+    import mir.ndslice.slice: slicedField;
+    return field!gen(var).slicedField(lengths).slice;
+}
+
+/// ditto
+auto randomSlice(G, size_t N)(G gen, size_t[N] lengths...)
+    if (isSaturatedRandomEngine!G &&
+        (is(G == class) || is(G == interface)))
+{
+    import mir.ndslice.allocation: slice;
+    import mir.ndslice.slice: slicedField;
+    return field(gen).slicedField(lengths).slice;
+}
+
+/// ditto
+auto randomSlice(G, size_t N)(G* gen, size_t[N] lengths...)
+    if (isSaturatedRandomEngine!G &&
+        !is(G == class) && !is(G == interface))
+{
+    import mir.ndslice.allocation: slice;
+    import mir.ndslice.slice: slicedField;
+    return field(gen).slicedField(lengths).slice;
+}
+
+/// ditto
+auto randomSlice(G, size_t N)(ref G gen, size_t[N] lengths...)
+    if (isSaturatedRandomEngine!G &&
+        !is(G == class) && !is(G == interface))
+{
+    import mir.ndslice.allocation: slice;
+    import mir.ndslice.slice: slicedField;
+    return field(gen).slicedField(lengths).slice;
+}
+
+/// ditto
+auto randomSlice(alias gen = rne, size_t N)(size_t[N] lengths...)
+    if (__traits(compiles, { static assert(isSaturatedRandomEngine!(typeof(gen))); }))
+{
+    import mir.ndslice.allocation: slice;
+    import mir.ndslice.slice: slicedField;
+    return field!gen.slicedField(lengths).slice;
+}
+
+/// Normal distribution
+nothrow @safe version(mir_random_test) unittest
+{
+    import mir.ndslice: slicedField, slice;
+    import mir.random.variable: NormalVariable;
+    auto sample = NormalVariable!double(0, 1).randomSlice(100);
+
+    assert(sample.shape == [100]);
+
+    import mir.ndslice.slice;
+    assert(is(typeof(sample) == ContiguousVector!double));
+}
+
+/// Normal distribution for complex numbers
+nothrow @safe version(mir_random_test) unittest
+{
+    import mir.ndslice: slicedField, slice;
+    import mir.random;
+    import mir.random.variable: NormalVariable;
+
+    //Using pointer to RNG:
+    auto var = NormalVariable!double(0, 1);
+    auto sample1 = threadLocalPtr!Random.randomSlice(var, 5, 3);
+
+    //Using alias of default thread local Random Engine (`rne`):
+    auto sample2 = randomSlice!cdouble(var, 5, 3);
+
+    Random rng = Random(12345);
+    auto sample3 = rng.randomSlice!cdouble(var, 5, 3); //rng safely passed by ref
+}
+
+/// Normal distribution for complex numbers
+nothrow @safe version(mir_random_test) unittest
+{
+    import mir.ndslice: slicedField, slice;
+    import mir.random;
+    import mir.random.variable: NormalVariable;
+
+    //Using pointer to RNG:
+    auto var = NormalVariable!double(0, 1);
+    auto sample1 = threadLocalPtr!Random.randomSlice(var, 5, 3);
+
+    //Using alias of default thread local Random Engine (`rne`):
+    auto sample2 = randomSlice!cdouble(var, 5, 3);
+
+    Random rng = Random(12345);
+    auto sample3 = rng.randomSlice!cdouble(var, 5, 3); //rng safely passed by ref
+}
+
+/// Random binary data
+nothrow @safe version(mir_random_test) unittest
+{
+    import mir.ndslice: slicedField, slice;
+    import mir.random.engine.xorshift;
+
+    //Using pointer to RNG:
+    auto bitSample1 = randomSlice(threadLocalPtr!Random, 15);
+
+    //Using alias of RNG:
+    auto rng = Random(12345);
+    auto bitSample2 = randomSlice!rng(15);
+}
+
+/++
 Field interface for random distributions and uniform random bit generators.
 It used to construct ndslices in combination with `slicedField` and `slice`.
 
@@ -162,7 +350,7 @@ RandomField!(G, D, T) field(T, G, D)(ref G gen, D var) @system
 }
 
 /// ditto
-RandomField!(gen, D, T) field(alias gen, D, T)(D var)
+RandomField!(gen, D, T) field(T, alias gen = rne, D)(D var)
     if (isSaturatedRandomEngine!(typeof(gen)) && isRandomVariable!D)
 {
     return RandomField!(gen,D,T)(var);
@@ -193,7 +381,7 @@ auto field(G, D)(ref G gen, D var) @system
 }
 
 /// ditto
-auto field(alias gen, D)(D var)
+auto field(alias gen = rne, D)(D var)
     if (__traits(compiles, { static assert(isSaturatedRandomEngine!(typeof(gen))); })
         && isRandomVariable!D)
 {
@@ -225,7 +413,7 @@ RandomField!(G) field(G)(ref G gen) @system
 }
 
 /// ditto
-RandomField!(gen) field(alias gen)()
+RandomField!(gen) field(alias gen = rne)()
     if (__traits(compiles, { static assert(isSaturatedRandomEngine!(typeof(gen))); }))
 {
     return RandomField!(gen)();
@@ -235,42 +423,43 @@ RandomField!(gen) field(alias gen)()
 nothrow @safe version(mir_random_test) unittest
 {
     import mir.ndslice: slicedField, slice;
+    import mir.random.variable: NormalVariable;
+    auto sample1 = NormalVariable!double(0, 1)
+            .field             // construct random field from standard normal distribution
+            .slicedField(5, 3) // construct random matrix 5 row x 3 col (lazy, without allocation)
+            .slice;            // allocates data of random matrix
+}
+
+///
+nothrow @safe version(mir_random_test) unittest
+{
+    import mir.ndslice: slicedField, slice;
     import mir.random;
     import mir.random.variable: NormalVariable;
 
-    immutable seed = unpredictableSeed;
-
     //Using pointer to RNG:
     auto var = NormalVariable!double(0, 1);
-    setThreadLocalSeed!Random(seed);//Use a known seed instead of a random seed.
-    Random* rng_ptr = threadLocalPtr!Random;
-    auto sample1 = rng_ptr
+    auto sample1 = threadLocalPtr!Random
         .field(var)        // construct random field from standard normal distribution
         .slicedField(5, 3) // construct random matrix 5 row x 3 col (lazy, without allocation)
         .slice;            // allocates data of random matrix
 
-    //Using alias of local RNG:
-    var = NormalVariable!double(0, 1);//Reset internal state of NormalVariable.
-    Random rng = Random(seed);
-    auto sample2 =
-         field!rng(var)    // construct random field from standard normal distribution
+    //Using alias of default thread local Random Engine (`rne`):
+    auto sample2 = var
+        .field    // construct random field from standard normal distribution
         .slicedField(5, 3) // construct random matrix 5 row x 3 col (lazy, without allocation)
         .slice;            // allocates data of random matrix    }
 
-    assert(sample1 == sample2);
 
     // Can write using old syntax but it isn't @safe
     // due to lack of escape analysis.
     () @trusted
     {
-        var = NormalVariable!double(0, 1);
-        Random rng2 = Random(seed);
+        Random rng2 = Random(12345);
         auto sample3 = rng2
             .field(var)        // construct random field from standard normal distribution
             .slicedField(5, 3) // construct random matrix 5 row x 3 col (lazy, without allocation)
             .slice;            // allocates data of random matrix    }
-
-        assert(sample1 == sample3);
     }();
 }
 
@@ -285,25 +474,20 @@ nothrow @safe version(mir_random_test) unittest
 
     //Using pointer to RNG:
     auto var = NormalVariable!double(0, 1);
-    setThreadLocalSeed!Random(seed);//Use a known seed instead of a random seed.
-    Random* rng_ptr = threadLocalPtr!Random;
-    auto sample1 = rng_ptr
+
+    auto sample1 = threadLocalPtr!Random
         .field!cdouble(var)// construct random field from standard normal distribution
         .slicedField(5, 3) // construct random matrix 5 row x 3 col (lazy, without allocation)
         .slice;            // allocates data of random matrix
 
-    //Using alias of local RNG:
-    var = NormalVariable!double(0, 1);//Reset internal state of NormalVariable.
-    Random rng = Random(seed);
-    auto sample2 =
-         field!(rng,typeof(var),cdouble)(var)// construct random field from standard normal distribution
+    //Using alias of default thread local Random Engine (`rne`):
+    auto sample2 = var
+        .field!(cdouble, rne) // construct random field from standard normal distribution
         .slicedField(5, 3) // construct random matrix 5 row x 3 col (lazy, without allocation)
         .slice;            // allocates data of random matrix
-
-    assert(sample1 == sample2);
 }
 
-/// Bi
+/// Random binary data
 nothrow @safe version(mir_random_test) unittest
 {
     import mir.ndslice: slicedField, slice;
