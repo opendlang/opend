@@ -416,10 +416,9 @@ size_t getrs(T)(
 {
     assert(a.length!0 == a.length!1, "matrix must be squared");
     assert(ipiv.length == a.length, "size ipiv must be equally num rows a");
-    assert(a.length == b.length!0, "num rows b must be equally num columns a");
 
     lapackint n = cast(lapackint) a.length;
-    lapackint nrhs = cast(lapackint) b.length!1;
+    lapackint nrhs = cast(lapackint) b.length;
     lapackint lda = cast(lapackint) a._stride.max(1);
     lapackint ldb = cast(lapackint) b._stride.max(1);
     lapackint info = void;
