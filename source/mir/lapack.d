@@ -16,7 +16,6 @@ import mir.utility: min, max;
 static import lapack;
 
 public import lapack: lapackint;
-public import cblas: Uplo;
 
 /// `getri` work space query.
 size_t getri_wq(T)(Slice!(Canonical, [2], T*) a)
@@ -410,26 +409,21 @@ size_t potrf(T)(
 
 size_t getrs(T)(
     Slice!(Canonical, [2], T*) a,
-    Slice!(Canonical, [2], T*) b,
+    Slice!(Universal, [2], T*) b,
     Slice!(Contiguous, [1], lapackint*) ipiv,
-    Transpose transpose
+    char trans
     )
 {
     assert(a.length!0 == a.length!1, "matrix must be squared");
     assert(ipiv.length == a.length, "size ipiv must be equally num rows a");
     assert(a.length == b.length!0, "num rows b must be equally num columns a");
 
-    char trans = 'N';
-    if(transpose == Transpose.Trans)
-        trans = 'T';
-    if(transpose == Transpose.ConjTrans)
-        trans = 'C';
-
     lapackint n = cast(lapackint) a.length;
     lapackint nrhs = cast(lapackint) b.length!1;
-    lapackint lda = max(1, n);
-    lapackint ldb = max(1, n);
+    lapackint lda = cast(lapackint) a._stride.max(1);
+    lapackint ldb = cast(lapackint) b._stride.max(1);
     lapackint info = void;
+
     lapack.getrs_(trans, n, nrhs, a.iterator, lda, ipiv.iterator, b.iterator, ldb, info);
 
     assert(info == 0);
