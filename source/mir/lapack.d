@@ -425,6 +425,8 @@ size_t getrs(T)(
 
     lapack.getrs_(trans, n, nrhs, a.iterator, lda, ipiv.iterator, b.iterator, ldb, info);
 
+    ///if info == 0: successful exit.
+    ///if info < 0: if info == -i, the i-th argument had an illegal value.
     assert(info == 0);
     return info;
 }
