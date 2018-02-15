@@ -409,7 +409,7 @@ size_t potrf(T)(
 
 size_t getrs(T)(
     Slice!(Canonical, [2], T*) a,
-    Slice!(Universal, [2], T*) b,
+    Slice!(Canonical, [2], T*) b,
     Slice!(Contiguous, [1], lapackint*) ipiv,
     char trans
     )
