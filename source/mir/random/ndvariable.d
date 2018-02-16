@@ -81,6 +81,9 @@ SphereVariable!T sphereVar(T = double)()
     return typeof(return).init;
 }
 
+/// ditto
+alias sphereVariable = sphereVar;
+
 /// Generate random points on a circle
 @nogc nothrow @safe version(mir_random_test) unittest
 {
@@ -147,6 +150,9 @@ SimplexVariable!T simplexVar(T = double)()
 {   
     return typeof(return).init;
 }
+
+/// ditto
+alias simplexVariable = simplexVar;
 
 ///
 @nogc nothrow @safe version(mir_random_test) unittest
@@ -243,6 +249,9 @@ DirichletVariable!T dirichletVar(T)(Slice!(Contiguous, [1], const(T)*) alpha)
 {   
     return typeof(return)(alpha);
 }
+
+/// ditto
+alias dirichletVariable = dirichletVar;
 
 ///
 nothrow @safe version(mir_random_test) unittest
@@ -400,6 +409,9 @@ MultivariateNormalVariable!T multivariateNormalVar(T)(Slice!(Contiguous, [2], T*
 {   
     return typeof(return)(sigma, chol);
 }
+
+/// ditto
+alias multivariateNormalVariable = multivariateNormalVar;
 
 ///
 nothrow @safe version(mir_random_test) unittest

@@ -134,6 +134,20 @@ UniformVariable!T uniformVar(T)(in T a, in T b)
     return typeof(return)(a, b);
 }
 
+version (D_Ddoc)
+{
+    // For DDoc we pretend uniformVariable is two separate functions
+    // rather than a single alias because otherwise it couldn't appear
+    // in two separate places in the documentation.
+
+    /// ditto
+    UniformVariable!T uniformVariable(T = double)(in T a, in T b)
+        if(isIntegral!T)
+    {
+        return typeof(return)(a, b);
+    }
+}
+
 ///
 @nogc nothrow @safe version(mir_random_test) unittest
 {
@@ -155,6 +169,11 @@ UniformVariable!T uniformVar(T)(in T a, in T b)
     assert(rv.max == 10);
 }
 
+@nogc nothrow pure @safe version(mir_random_test) unittest
+{
+    // Test alias.
+    assert(uniformVariable(-10, 10) == uniformVar(-10, 10));
+}
 
 /++
 $(HTTP en.wikipedia.org/wiki/Uniform_distribution_(continuous), Uniform distribution (continuous)).
@@ -210,6 +229,20 @@ UniformVariable!T uniformVar(T = double)(in T a, in T b)
     return typeof(return)(a, b);
 }
 
+version (D_Ddoc)
+{
+    // For DDoc we pretend uniformVariable is two separate functions
+    // rather than a single alias because otherwise it couldn't appear
+    // in two separate places in the documentation.
+
+    /// ditto
+    UniformVariable!T uniformVariable(T = double)(in T a, in T b)
+        if(isFloatingPoint!T)
+    {
+        return typeof(return)(a, b);
+    }
+}
+
 ///
 @nogc nothrow @safe version(mir_random_test) unittest
 {
@@ -244,6 +277,23 @@ UniformVariable!T uniformVar(T = double)(in T a, in T b)
     auto x = rv(gen); // random variable
     assert(rv.min == -8.0);
     assert(rv.max == 10.0.nextDown);
+}
+
+@nogc nothrow pure @safe version(mir_random_test) unittest
+{
+    // Test alias.
+    assert(uniformVariable(-8.0, 10.0) == uniformVar(-8.0, 10.0));
+}
+
+version (D_Ddoc)
+{
+    // For DDoc we pretend uniformVariable is two separate functions
+    // rather than a single alias because otherwise it couldn't appear
+    // in two separate places in the documentation.
+}
+else
+{
+    alias uniformVariable = uniformVar;
 }
 
 /++
@@ -289,6 +339,9 @@ ExponentialVariable!T exponentialVar(T = double)(in T scale = 1)
 {
     return typeof(return)(scale);
 }
+
+/// ditto
+alias exponentialVariable = exponentialVar;
 
 ///
 @nogc nothrow @safe version(mir_random_test) unittest
@@ -350,6 +403,9 @@ WeibullVariable!T weibullVar(T = double)(T shape = 1, T scale = 1)
 {
     return typeof(return)(shape, scale);
 }
+
+/// ditto
+alias weibullVariable = weibullVar;
 
 ///
 @nogc nothrow @safe version(mir_random_test) unittest
@@ -478,6 +534,8 @@ GammaVariable!T gammaVar(T = double)(in T shape = 1, in T scale = 1)
     return typeof(return)(shape, scale);
 }
 
+/// ditto
+alias gammaVariable = gammaVar;
 
 ///
 @nogc nothrow @safe version(mir_random_test) unittest
@@ -559,11 +617,14 @@ struct BetaVariable(T)
 }
 
 /// ditto
-BetaVariable!T betaVariable(T)(in T a, in T b)
+BetaVariable!T betaVar(T)(in T a, in T b)
     if (isFloatingPoint!T)
 {
     return typeof(return)(a, b);
 }
+
+/// ditto
+alias betaVariable = betaVar;
 
 ///
 @nogc nothrow @safe version(mir_random_test) unittest
@@ -689,6 +750,9 @@ FisherFVariable!T fisherFVar(T)(in T d1, in T d2)
     return typeof(return)(d1, d2);
 }
 
+/// ditto
+alias fisherFVariable = fisherFVar;
+
 ///
 @nogc nothrow @safe version(mir_random_test) unittest
 {
@@ -751,6 +815,9 @@ StudentTVariable!T studentTVar(T)(in T nu)
 {
     return typeof(return)(nu);
 }
+
+/// ditto
+alias studentTVariable = studentTVar;
 
 ///
 @nogc nothrow @safe version(mir_random_test) unittest
@@ -889,6 +956,9 @@ NormalVariable!T normalVar(T = double)(in T location = 0.0, in T scale = 1)
     return typeof(return)(location, scale);
 }
 
+/// ditto
+alias normalVariable = normalVar;
+
 ///
 @nogc nothrow @safe version(mir_random_test) unittest
 {
@@ -951,6 +1021,9 @@ LogNormalVariable!T logNormalVar(T = double)(in T normalLocation = 0.0, in T nor
 {
     return typeof(return)(normalLocation, normalScale);
 }
+
+/// ditto
+alias logNormalVariable = logNormalVar;
 
 ///
 @nogc nothrow @safe version(mir_random_test) unittest
@@ -1024,6 +1097,9 @@ CauchyVariable!T cauchyVar(T = double)(in T location = 0.0, in T scale = 1)
     return typeof(return)(location, scale);
 }
 
+/// ditto
+alias cauchyVariable = cauchyVar;
+
 ///
 @nogc nothrow @safe version(mir_random_test) unittest
 {
@@ -1084,6 +1160,9 @@ ExtremeValueVariable!T extremeValueVar(T = double)(in T location = 0.0, in T sca
 {
     return typeof(return)(location, scale);
 }
+
+/// ditto
+alias extremeValueVariable = extremeValueVar;
 
 ///
 @nogc nothrow @safe version(mir_random_test) unittest
@@ -1147,6 +1226,9 @@ BernoulliVariable!T bernoulliVar(T)(in T p)
 {
     return typeof(return)(p);
 }
+
+/// ditto
+alias bernoulliVariable = bernoulliVar;
 
 ///
 @nogc nothrow @safe version(mir_random_test) unittest
@@ -1217,6 +1299,9 @@ Bernoulli2Variable bernoulli2Var()()
     return typeof(return).init;
 }
 
+/// ditto
+alias bernoulli2Variable = bernoulli2Var;
+
 ///
 @nogc nothrow @safe version(mir_random_test) unittest
 {
@@ -1286,6 +1371,9 @@ GeometricVariable!T geometricVar(T)(in T p, bool success = true)
 {
     return typeof(return)(p, success);
 }
+
+/// ditto
+alias geometricVariable = geometricVar;
 
 ///
 nothrow @safe version(mir_random_test) unittest
@@ -1416,6 +1504,9 @@ PoissonVariable!T poissonVar(T = double)(in T rate = 1.0)
     return typeof(return)(rate);
 }
 
+/// ditto
+alias poissonVariable = poissonVar;
+
 ///
 nothrow @safe version(mir_random_test) unittest
 {
@@ -1500,6 +1591,9 @@ NegativeBinomialVariable!T negativeBinomialVar(T)(size_t r, in T p)
 {
     return typeof(return)(r, p);
 }
+
+/// ditto
+alias negativeBinomialVariable = negativeBinomialVar;
 
 ///
 nothrow @safe version(mir_random_test) unittest
@@ -1659,6 +1753,9 @@ BinomialVariable!T binomialVar(T)(size_t r, in T p)
     return typeof(return)(r, p);
 }
 
+/// ditto
+alias binomialVariable = binomialVar;
+
 ///
 nothrow @safe version(mir_random_test) unittest
 {
@@ -1766,6 +1863,9 @@ DiscreteVariable!T discreteVar(T)(T[] weights, bool cumulative = false)
 {   
     return typeof(return)(weights, cumulative);
 }
+
+/// ditto
+alias discreteVariable = discreteVar;
 
 ///
 nothrow @safe version(mir_random_test) unittest
@@ -1947,6 +2047,9 @@ PiecewiseConstantVariable!(T, W) piecewiseConstantVar(T, W)(T[] intervals, W[] w
     return typeof(return)(intervals, weights, cumulative);
 }
 
+/// ditto
+alias piecewiseConstantVariable = piecewiseConstantVar;
+
 ///
 nothrow @safe version(mir_random_test) unittest
 {
@@ -2076,6 +2179,9 @@ PiecewiseLinearVariable!T piecewiseLinearVar(T)(T[] points, T[] weights, T[] are
 {   
     return typeof(return)(points, weights, areas);
 }
+
+/// ditto
+alias piecewiseLinearVariable = piecewiseLinearVar;
 
 ///
 nothrow @safe version(mir_random_test) unittest
