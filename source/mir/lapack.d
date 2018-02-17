@@ -393,18 +393,16 @@ size_t orgqr(T)(
 ///
 size_t potrf(T)(
     Slice!(Canonical, [2], T*) a,
-    Uplo uplo
+    char uplo
     )
 {
     assert(a.length!0 == a.length!1, "matrix must be squared");
-    import mir.ndslice.dynamic: transposed;
-    assert(a == a.transposed, "matrix must be symmetric");
 
     lapackint n = cast(lapackint) a.length;
     lapackint lda = cast(lapackint) a.length;
     lapackint info = void;
     char c_uplo = 'U';
-    if(uplo == Uplo.Upper)
+    if(uplo == 'U')
         c_uplo = 'L';
 
     lapack.potrf_(c_uplo, n, a.iterator, lda, info);
