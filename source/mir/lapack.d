@@ -396,14 +396,24 @@ size_t potrf(T)(
     Uplo uplo
     )
 {
+    assert(a.length!0 == a.length!1, "matrix must be squared");
+    import mir.ndslice.dynamic: transposed;
+    assert(a == a.transposed, "matrix must be symmetric");
+
     lapackint n = cast(lapackint) a.length;
     lapackint lda = cast(lapackint) a.length;
     lapackint info = void;
     char c_uplo = 'U';
     if(uplo == Uplo.Upper)
         c_uplo = 'L';
+
     lapack.potrf_(c_uplo, n, a.iterator, lda, info);
-    assert(info >= 0);
+
+    ///if info == 0: successful exit.
+    ///if info > 0: the leading minor of order i is not positive definite, and the
+    ///factorization could not be completed.
+    ///if info < 0: if info == -i, the i-th argument had an illegal value.
+    assert(info == 0);
     return info;
 }
 
@@ -424,6 +434,31 @@ size_t getrs(T)(
     lapackint info = void;
 
     lapack.getrs_(trans, n, nrhs, a.iterator, lda, ipiv.iterator, b.iterator, ldb, info);
+
+    ///if info == 0: successful exit.
+    ///if info < 0: if info == -i, the i-th argument had an illegal value.
+    assert(info == 0);
+    return info;
+}
+
+size_t potrs(T)(
+    Slice!(Canonical, [2], T*) a,
+    Slice!(Canonical, [2], T*) b,
+    char uplo
+    )
+{
+    assert(a.length!0 == a.length!1, "matrix must be squared");
+
+    lapackint n = cast(lapackint) a.length;
+    lapackint nrhs = cast(lapackint) b.length;
+    lapackint lda = cast(lapackint) a._stride.max(1);
+    lapackint ldb = cast(lapackint) b._stride.max(1);
+    lapackint info = void;
+    auto c_uplo = 'L';
+    if(uplo == 'L')
+        c_uplo = 'U';
+
+    lapack.potrs_(c_uplo, n, nrhs, a.iterator, lda, b.iterator, ldb, info);
 
     ///if info == 0: successful exit.
     ///if info < 0: if info == -i, the i-th argument had an illegal value.
