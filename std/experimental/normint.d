@@ -48,9 +48,10 @@ pure nothrow @nogc:
     alias IntType = I;
 
     /** Maximum integral value. */
-    enum max = I.max;
+    enum I max = I.max;
     /** Minimum integral value. */
-    enum min = isSigned!I ? -I.max : 0;
+    enum I min = isSigned!I ? -cast(int)I.max : 0;
+
     /** Maximum floating point value. */
     enum max_float = 1.0;
     /** Minimum floating point value. */
