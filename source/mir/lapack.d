@@ -522,7 +522,7 @@ size_t tptri(T)(
 
 /// `tptri` for lower triangular input.
 size_t tptri(T)(
-	Slice!(Contiguous, [1], RetroIterator!(MapIterator!(StairsIterator!(RetroIterator!(T*)), retro))) ap
+	Slice!(Contiguous, [1], RetroIterator!(MapIterator!(StairsIterator!(RetroIterator!(T*)), retro))) ap,
     char diag = 'N'
 	)
 {
