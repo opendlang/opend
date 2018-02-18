@@ -771,3 +771,7 @@ alias tzrzf_ = ctzrzf_; ///
 alias tzrzf_ = ztzrzf_; ///
 alias upmtr_ = cupmtr_; ///
 alias upmtr_ = zupmtr_; ///
+alias sytrs2_ = ssytrs2_;///
+alias sytrs2_ = dsytrs2_;///
+alias sytrs2_ = csytrs2_;///
+alias sytrs2_ = zsytrs2_;///
