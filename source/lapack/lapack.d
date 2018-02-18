@@ -1743,6 +1743,12 @@ void ztzrzf_(ref lapackint m, ref lapackint n, _cdouble *a, ref lapackint lda, _
 void cupmtr_(ref char side, ref char uplo, ref char trans, ref lapackint m, ref lapackint n, _cfloat *ap, _cfloat *tau, _cfloat *c, ref lapackint ldc, _cfloat *work, ref lapackint info);
 void zupmtr_(ref char side, ref char uplo, ref char trans, ref lapackint m, ref lapackint n, _cdouble *ap, _cdouble *tau, _cdouble *c, ref lapackint ldc, _cdouble *work, ref lapackint info);
 
+/// Solves a real symmetric indefinite system of linear equations AX=B,
+/// using the factorization computed by SSPTRF.
+void ssytrs2_(ref char uplo, ref lapackint n, ref lapackint nrhs, float *a, ref lapackint lda, lapackint *ipiv, float *b, ref lapackint ldb, float *work, ref lapackint info);
+void dsytrs2_(ref char uplo, ref lapackint n, ref lapackint nrhs, double *a, ref lapackint lda, lapackint *ipiv, double *b, ref lapackint ldb, double *work, ref lapackint info);
+void csytrs2_(ref char uplo, ref lapackint n, ref lapackint nrhs, _cfloat *a, ref lapackint lda, lapackint *ipiv, _cfloat *b, ref lapackint ldb, _cfloat *work, ref lapackint info);
+void zsytrs2_(ref char uplo, ref lapackint n, ref lapackint nrhs, _cdouble *a, ref lapackint lda, lapackint *ipiv, _cdouble *b, ref lapackint ldb, _cdouble *work, ref lapackint info);
 
 //------------------------------------
 //     ----- MISC routines -----
