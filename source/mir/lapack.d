@@ -463,3 +463,27 @@ size_t potrs(T)(
     assert(info == 0);
     return info;
 }
+
+size_t sytrs2(T)(
+    Slice!(Canonical, [2], T*) a,
+    Slice!(Canonical, [2], T*) b,
+    Slice!(Contiguous, [1], lapackint*) ipiv,
+    char uplo,
+    T* work,
+    )
+{
+    assert(a.length!0 == a.length!1, "matrix must be squared");
+
+    lapackint n = cast(lapackint) a.length;
+    lapackint nrhs = cast(lapackint) b.length;
+    lapackint lda = cast(lapackint) a._stride.max(1);
+    lapackint ldb = cast(lapackint) b._stride.max(1);
+    lapackint info = void;
+
+    lapack.sytrs2_(uplo, n, nrhs, a.iterator, lda, ipiv.iterator, b.iterator, ldb, work, info);
+
+    ///if info == 0: successful exit.
+    ///if info < 0: if info == -i, the i-th argument had an illegal value.
+    assert(info == 0);
+    return info;
+}
