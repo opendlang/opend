@@ -386,7 +386,7 @@ size_t sysv_rook(T)(
 
 size_t potrf(T)(
        Slice!(Canonical, [2], T*) a,
-       char uplo = 'U'
+       char uplo
        )
 {
     assert(a.length!0 == a.length!1, "potrf: a must be a square matrix.");
