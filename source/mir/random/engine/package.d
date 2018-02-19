@@ -66,9 +66,11 @@ else version (WatchOS)
 
 version (Darwin)
     version = GOOD_ARC4RANDOM_BUF;//AES
-version (OpenBSD)
+else version (OpenBSD)
     version = GOOD_ARC4RANDOM_BUF;//ChaCha20
-version (NetBSD)
+else version (NetBSD)
+    version = GOOD_ARC4RANDOM_BUF;//ChaCha20
+else version (CRuntime_Bionic)
     version = GOOD_ARC4RANDOM_BUF;//ChaCha20
 
 version (D_betterC)
