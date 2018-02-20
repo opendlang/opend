@@ -340,18 +340,22 @@ size_t sytrf(T)(
     Slice!(Canonical, [2], T*) a,
     Slice!(Contiguous, [1], lapackint*) ipiv,
     Slice!(Contiguous, [1], T*) work,
-    Uplo uplo
+    char uplo
     )
 {
-    char c_uplo = 'L';
-    if(uplo == Uplo.Upper)
-        c_uplo = 'U';
+    assert(a.length!0 == a.length!1, "mutrix must be squared");
     lapackint info = void;
     lapackint n = cast(lapackint) a.length;
     lapackint lda = n;
     lapackint lwork = cast(lapackint) work.length;
-    lapack.sytrf_(c_uplo, n, a.iterator, lda, ipiv.iterator, work.iterator, lwork, info);
-    assert(info >= 0);
+
+    lapack.sytrf_(uplo, n, a.iterator, lda, ipiv.iterator, work.iterator, lwork, info);
+    ///if info = 0: successful exit.
+    ///if info > 0: if info = i, D(i, i) is exactly zero. The factorization has been
+    ///completed, but the block diagonal matrix D is exactly singular, and division by
+    ///zero will occur if it is used to solve a system of equations.
+    ///if info < 0: if info == -i, the i-th argument had an illegal value.
+    assert(info == 0);
     return info;
 }
 
@@ -367,49 +371,10 @@ size_t geqrf(T)(
     lapackint lda = m;
     lapackint lwork = cast(lapackint) work.length;
     lapackint info = void;
+
     lapack.geqrf_(m, n, a.iterator, lda, tau.iterator, work.iterator, lwork, info);
-    assert(info == 0);
-    return info;
-}
 
-///
-size_t orgqr(T)(
-    Slice!(Canonical, [2], T*) a,
-    Slice!(Contiguous, [1], T*) tau,
-    Slice!(Contiguous, [1], T*) work
-    )
-{
-    lapackint info = void;
-    lapackint m = cast(lapackint) a.length!0;
-    lapackint n = cast(lapackint) a.length!1;
-    lapackint k = cast(lapackint) tau.length;
-    lapackint lda = cast(lapackint) a.length!0;
-    lapackint lwork = cast(lapackint) work.length;
-    lapack.orgqr_(m, n, k, a.iterator, lda, tau.iterator, work.iterator, lwork, info);
-    assert(info == 0);
-    return info;
-}
-
-///
-size_t potrf(T)(
-    Slice!(Canonical, [2], T*) a,
-    char uplo
-    )
-{
-    assert(a.length!0 == a.length!1, "matrix must be squared");
-
-    lapackint n = cast(lapackint) a.length;
-    lapackint lda = cast(lapackint) a.length;
-    lapackint info = void;
-    char c_uplo = 'U';
-    if(uplo == 'U')
-        c_uplo = 'L';
-
-    lapack.potrf_(c_uplo, n, a.iterator, lda, info);
-
-    ///if info == 0: successful exit.
-    ///if info > 0: the leading minor of order i is not positive definite, and the
-    ///factorization could not be completed.
+    ///if info == 0: successful exit;
     ///if info < 0: if info == -i, the i-th argument had an illegal value.
     assert(info == 0);
     return info;
@@ -423,7 +388,7 @@ size_t getrs(T)(
     )
 {
     assert(a.length!0 == a.length!1, "matrix must be squared");
-    assert(ipiv.length == a.length, "size ipiv must be equally num rows a");
+    assert(ipiv.length == a.length, "size of ipiv must be equal to the number of rows a");
 
     lapackint n = cast(lapackint) a.length;
     lapackint nrhs = cast(lapackint) b.length;
@@ -452,11 +417,8 @@ size_t potrs(T)(
     lapackint lda = cast(lapackint) a._stride.max(1);
     lapackint ldb = cast(lapackint) b._stride.max(1);
     lapackint info = void;
-    auto c_uplo = 'L';
-    if(uplo == 'L')
-        c_uplo = 'U';
 
-    lapack.potrs_(c_uplo, n, nrhs, a.iterator, lda, b.iterator, ldb, info);
+    lapack.potrs_(uplo, n, nrhs, a.iterator, lda, b.iterator, ldb, info);
 
     ///if info == 0: successful exit.
     ///if info < 0: if info == -i, the i-th argument had an illegal value.
@@ -468,8 +430,8 @@ size_t sytrs2(T)(
     Slice!(Canonical, [2], T*) a,
     Slice!(Canonical, [2], T*) b,
     Slice!(Contiguous, [1], lapackint*) ipiv,
+    Slice!(Contiguous, [1], T*) work,
     char uplo,
-    T* work,
     )
 {
     assert(a.length!0 == a.length!1, "matrix must be squared");
@@ -480,7 +442,7 @@ size_t sytrs2(T)(
     lapackint ldb = cast(lapackint) b._stride.max(1);
     lapackint info = void;
 
-    lapack.sytrs2_(uplo, n, nrhs, a.iterator, lda, ipiv.iterator, b.iterator, ldb, work, info);
+    lapack.sytrs2_(uplo, n, nrhs, a.iterator, lda, ipiv.iterator, b.iterator, ldb, work.iterator, info);
 
     ///if info == 0: successful exit.
     ///if info < 0: if info == -i, the i-th argument had an illegal value.
