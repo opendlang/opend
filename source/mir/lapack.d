@@ -355,7 +355,7 @@ size_t sytrf(T)(
     ///completed, but the block diagonal matrix D is exactly singular, and division by
     ///zero will occur if it is used to solve a system of equations.
     ///if info < 0: if info == -i, the i-th argument had an illegal value.
-    assert(info == 0);
+    assert(info >= 0);
     return info;
 }
 
@@ -376,7 +376,7 @@ size_t geqrf(T)(
 
     ///if info == 0: successful exit;
     ///if info < 0: if info == -i, the i-th argument had an illegal value.
-    assert(info == 0);
+    assert(info >= 0);
     return info;
 }
 
@@ -401,7 +401,7 @@ size_t getrs(T)(
 
     ///if info == 0: successful exit.
     ///if info < 0: if info == -i, the i-th argument had an illegal value.
-    assert(info == 0);
+    assert(info >= 0);
     return info;
 }
 
@@ -424,7 +424,7 @@ size_t potrs(T)(
 
     ///if info == 0: successful exit.
     ///if info < 0: if info == -i, the i-th argument had an illegal value.
-    assert(info == 0);
+    assert(info >= 0);
     return info;
 }
 
@@ -449,7 +449,7 @@ size_t sytrs2(T)(
 
     ///if info == 0: successful exit.
     ///if info < 0: if info == -i, the i-th argument had an illegal value.
-    assert(info == 0);
+    assert(info >= 0);
     return info;
 }
 
@@ -474,7 +474,7 @@ size_t geqrs(T)(
 
     ///if info == 0: successful exit.
     ///if info < 0: if info == -i, the i-th argument had an illegal value.
-    assert(info == 0);
+    assert(info >= 0);
     return info;
 }
   
