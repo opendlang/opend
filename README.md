@@ -14,7 +14,17 @@ NDSLICE wrapper for LAPACK
  - getri
  - spev
  - sptrf
+ - sysv_rook
+ - potrf
+ - pptrf
+ - sptri
+ - potri
+ - pptri
+ - trtri
+ - tptri
+
 
 ---------------
 
 This work has been sponsored by [Symmetry Investments](http://symmetryinvestments.com) and [Kaleidic Associates](https://github.com/kaleidicassociates).
+ 
