@@ -346,7 +346,7 @@ size_t sytrf(T)(
     assert(a.length!0 == a.length!1, "mutrix must be squared");
     lapackint info = void;
     lapackint n = cast(lapackint) a.length;
-    lapackint lda = n;
+    lapackint lda = cast(lapackint) a._stride.max(1);
     lapackint lwork = cast(lapackint) work.length;
 
     lapack.sytrf_(uplo, n, a.iterator, lda, ipiv.iterator, work.iterator, lwork, info);
@@ -368,7 +368,7 @@ size_t geqrf(T)(
 {
     lapackint m = cast(lapackint) a.length!0;
     lapackint n = cast(lapackint) a.length!1;
-    lapackint lda = m;
+    lapackint lda = a._stride.max(1);
     lapackint lwork = cast(lapackint) work.length;
     lapackint info = void;
 
@@ -380,6 +380,7 @@ size_t geqrf(T)(
     return info;
 }
 
+///
 size_t getrs(T)(
     Slice!(Canonical, [2], T*) a,
     Slice!(Canonical, [2], T*) b,
@@ -404,6 +405,7 @@ size_t getrs(T)(
     return info;
 }
 
+///
 size_t potrs(T)(
     Slice!(Canonical, [2], T*) a,
     Slice!(Canonical, [2], T*) b,
@@ -426,6 +428,7 @@ size_t potrs(T)(
     return info;
 }
 
+///
 size_t sytrs2(T)(
     Slice!(Canonical, [2], T*) a,
     Slice!(Canonical, [2], T*) b,
@@ -440,6 +443,31 @@ size_t sytrs2(T)(
     lapackint nrhs = cast(lapackint) b.length;
     lapackint lda = cast(lapackint) a._stride.max(1);
     lapackint ldb = cast(lapackint) b._stride.max(1);
+    lapackint info = void;
+
+    lapack.sytrs2_(uplo, n, nrhs, a.iterator, lda, ipiv.iterator, b.iterator, ldb, work.iterator, info);
+
+    ///if info == 0: successful exit.
+    ///if info < 0: if info == -i, the i-th argument had an illegal value.
+    assert(info == 0);
+    return info;
+}
+
+///
+size_t geqrs(T)(
+    Slice!(Canonical, [2], T*) a,
+    Slice!(Canonical, [2], T*) b,
+    Slice!(Contiguous, [1], T*) tau,
+    Slice!(Contiguous, [1], T*) work,
+    char uplo,
+    )
+{
+	lapackint m = cast(lapackint) a.length!0;
+    lapackint n = cast(lapackint) a.length!1;
+    lapackint nrhs = cast(lapackint) b.length;
+    lapackint lda = cast(lapackint) a._stride.max(1);
+    lapackint ldb = cast(lapackint) b._stride.max(1);
+    lapackint lwork = cast(lapackint) work.length;
     lapackint info = void;
 
     lapack.sytrs2_(uplo, n, nrhs, a.iterator, lda, ipiv.iterator, b.iterator, ldb, work.iterator, info);
