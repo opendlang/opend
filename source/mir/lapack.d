@@ -462,7 +462,7 @@ size_t geqrs(T)(
     char uplo,
     )
 {
-	lapackint m = cast(lapackint) a.length!0;
+    lapackint m = cast(lapackint) a.length!0;
     lapackint n = cast(lapackint) a.length!1;
     lapackint nrhs = cast(lapackint) b.length;
     lapackint lda = cast(lapackint) a._stride.max(1);
@@ -476,6 +476,7 @@ size_t geqrs(T)(
     ///if info < 0: if info == -i, the i-th argument had an illegal value.
     assert(info == 0);
     return info;
+}
   
 size_t sysv_rook_wk(T)(
 	char uplo,
