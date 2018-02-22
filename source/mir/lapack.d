@@ -368,7 +368,7 @@ size_t geqrf(T)(
 {
     lapackint m = cast(lapackint) a.length!0;
     lapackint n = cast(lapackint) a.length!1;
-    lapackint lda = a._stride.max(1);
+    lapackint lda = cast(lapackint) a._stride.max(1);
     lapackint lwork = cast(lapackint) work.length;
     lapackint info = void;
 
@@ -458,8 +458,7 @@ size_t geqrs(T)(
     Slice!(Canonical, [2], T*) a,
     Slice!(Canonical, [2], T*) b,
     Slice!(Contiguous, [1], T*) tau,
-    Slice!(Contiguous, [1], T*) work,
-    char uplo,
+    Slice!(Contiguous, [1], T*) work
     )
 {
     lapackint m = cast(lapackint) a.length!0;
@@ -470,7 +469,7 @@ size_t geqrs(T)(
     lapackint lwork = cast(lapackint) work.length;
     lapackint info = void;
 
-    lapack.sytrs2_(uplo, n, nrhs, a.iterator, lda, ipiv.iterator, b.iterator, ldb, work.iterator, info);
+    lapack.geqrs_(m, n, nrhs, a.iterator, lda, tau.iterator, b.iterator, ldb, work.iterator, lwork, info);
 
     ///if info == 0: successful exit.
     ///if info < 0: if info == -i, the i-th argument had an illegal value.
