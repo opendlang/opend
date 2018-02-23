@@ -14,6 +14,7 @@ install:
     - cd OpenBLAS*
     - travis_wait 30 make FC=gfortran
     - sudo make install
+    - cd ../
 
 script: dub --root example
 
