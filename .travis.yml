@@ -7,11 +7,10 @@ d:
   - ldc
 
 install:
-    - travis_wait 30 mvn install
     - wget http://github.com/xianyi/OpenBLAS/archive/v0.2.20.tar.gz
     - tar zxvf v0.2.20.tar.gz
     - cd OpenBLAS*
-    - make FC=gfortran
+    - travis_wait 30 make FC=gfortran
     - sudo make install
 
 script: dub --root example
