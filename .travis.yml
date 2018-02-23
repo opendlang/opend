@@ -11,7 +11,6 @@ install:
     - tar zxvf v0.2.20.tar.gz
     - cd OpenBLAS*
     - make FC=gfortran
-    - sudo make install
 
 script: dub --root example
 
