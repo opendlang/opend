@@ -7,10 +7,10 @@ d:
   - ldc
 
 before_install:
-    wget http://github.com/xianyi/OpenBLAS/archive/v0.2.20.tar.gz
-    tar zxvf OpenBLAS-0.2.18.tar.gz
-    cd OpenBLAS*
-    make FC=gfortran
+    - wget http://github.com/xianyi/OpenBLAS/archive/v0.2.20.tar.gz
+    - tar zxvf OpenBLAS-0.2.18.tar.gz
+    - cd OpenBLAS*
+    - make FC=gfortran
 install:
     sudo make install
 
