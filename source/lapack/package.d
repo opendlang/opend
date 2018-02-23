@@ -775,3 +775,7 @@ alias sytrs2_ = ssytrs2_;///
 alias sytrs2_ = dsytrs2_;///
 alias sytrs2_ = csytrs2_;///
 alias sytrs2_ = zsytrs2_;///
+alias geqrs_ = sgeqrs_;///
+alias geqrs_ = dgeqrs_;///
+alias geqrs_ = cgeqrs_;///
+alias geqrs_ = zgeqrs_;///
