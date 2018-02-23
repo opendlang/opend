@@ -6,14 +6,12 @@ d:
   - dmd
   - ldc
 
-before_install:
+install:
     - wget http://github.com/xianyi/OpenBLAS/archive/v0.2.20.tar.gz
-    - cd downloads
-    - tar zxvf OpenBLAS-0.2.20.tar.gz
+    - tar zxvf v0.2.20.tar.gz
     - cd OpenBLAS*
     - make FC=gfortran
-install:
-    sudo make install
+    - sudo make install
 
 script: dub --root example
 
