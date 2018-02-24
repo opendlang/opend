@@ -6,7 +6,7 @@
 	"dependencies": {
 		"mir-lapack": {"path": "../"},
 	},
-	"libs": ["openblas"],
+	"libs": ["lapack"],
 	"description": "Mir-LAPACK example",
 	"license": "BSL-1.0"
 }
