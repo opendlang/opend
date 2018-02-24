@@ -16,7 +16,7 @@ install:
     - sudo make install
     - cd ../
 
-script: dub --root example
+script: dub --root examples
 
 addons:
   apt:
