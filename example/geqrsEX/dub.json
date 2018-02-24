@@ -1,0 +1,13 @@
+{
+	"name": "geqrsex",
+	"authors": [
+		"Sergey"
+	],
+	"dependencies": {
+		"mir-lapack": {"path": "../../"},
+	},
+	"libs": ["openblas"],
+	"description": "geqrs example",
+	"copyright": "Copyright © 2018, Sergey",
+	"license": "BSL-1.0"
+}
