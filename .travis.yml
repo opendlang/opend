@@ -15,7 +15,7 @@ script:
     - tar zxvf v0.2.20.tar.gz
     - cd OpenBLAS*
     - travis_wait 30 make FC=gfortran
-    - sudo make install
+    - sudo make install PREFIX=/home/libOfBlas
     - cd ../examples/example
     - dub
     - cd ../example2
