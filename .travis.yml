@@ -17,6 +17,7 @@ script:
     - travis_wait 30 make FC=gfortran
     - sudo make install PREFIX=/home/libOfBlas
     - ls /home/libOfBlas
+    - ls /home/libOfBlas/lib
     - cd ../examples/example
     - dub
     - cd ../example2
