@@ -6,7 +6,7 @@
 	"dependencies": {
 		"mir-lapack": {"path": "../../"},
 	},
-	"libs": ["lapack"],
+	"libs": ["openblas"],
 	"description": "GEQRS example",
 	"copyright": "Copyright © 2018, Sergey Batratskiy",
 	"license": "BSL-1.0"
