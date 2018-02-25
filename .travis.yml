@@ -9,14 +9,15 @@ d:
 install:
     - sudo apt-get update
     - sudo apt-get install gfortran
+
+script:
     - wget http://github.com/xianyi/OpenBLAS/archive/v0.2.20.tar.gz
     - tar zxvf v0.2.20.tar.gz
     - cd OpenBLAS*
     - travis_wait 30 make FC=gfortran
     - sudo make install
-    - cd ../
-
-script: dub --root examples
+    - cd ../examples/example
+    - dub
 
 addons:
   apt:

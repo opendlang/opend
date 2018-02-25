@@ -1,8 +1,0 @@
-{
-	"fileVersion": 1,
-	"versions": {
-		"lapack": "0.0.4",
-		"mir-algorithm": "0.6.21",
-		"mir-lapack": {"path":"../"}
-	}
-}
