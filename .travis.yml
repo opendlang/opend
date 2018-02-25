@@ -18,6 +18,8 @@ script:
     - sudo make install
     - cd ../examples/example
     - dub
+    - cd ../example2
+    - dub
 
 addons:
   apt:

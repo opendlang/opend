@@ -1,0 +1,13 @@
+{
+	"name": "example2",
+	"authors": [
+		"Sergey Batratskiy"
+	],
+	"dependencies": {
+		"mir-lapack": {"path": "../../"},
+	},
+	"libs": ["lapack"],
+	"description": "GEQRS example",
+	"copyright": "Copyright © 2018, Sergey Batratskiy",
+	"license": "BSL-1.0"
+}
