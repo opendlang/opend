@@ -31,6 +31,7 @@ int main()
     auto work_ = work[].sliced(double.sizeof).canonical;
     auto tau_ = tau[].sliced(3).canonical;
     geqrf(A_, tau_, work_);
+    geqrs(A_, B_, tau_, work_);
 
     auto K_ = K[].sliced(3, 3).canonical;
     K_[] = 0;
@@ -44,5 +45,9 @@ int main()
             }
         }
     }
+    import std.math: approxEqual;
+    import mir.ndslice.algorithm: all;
+    if(!all!approxEqual(K_, C_))
+        return 1;
     return 0;
 }
