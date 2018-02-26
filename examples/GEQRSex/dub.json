@@ -1,12 +1,12 @@
 {
-	"name": "example2",
+	"name": "GEQRSex",
 	"authors": [
 		"Sergey Batratskiy"
 	],
 	"dependencies": {
 		"mir-lapack": {"path": "../../"},
 	},
-	"lflags": ["-L/home/libOfBlas/lib"],
+	"lflags": ["-L/home/openblas/lib"],
 	"libs": ["openblas"],
 	"description": "GEQRS example",
 	"copyright": "Copyright © 2018, Sergey Batratskiy",

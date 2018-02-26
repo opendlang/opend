@@ -17,6 +17,11 @@ static import lapack;
 
 public import lapack: lapackint;
 
+//enum for errors.
+private enum Error {
+    squareM = "The matrix must be square"
+};
+
 /// `getri` work space query.
 size_t getri_wq(T)(Slice!(Canonical, [2], T*) a)
 {
@@ -343,7 +348,7 @@ size_t sytrf(T)(
     char uplo
     )
 {
-    assert(a.length!0 == a.length!1, "mutrix must be squared");
+    assert(a.length!0 == a.length!1, Error.squareM);
     lapackint info = void;
     lapackint n = cast(lapackint) a.length;
     lapackint lda = cast(lapackint) a._stride.max(1);
@@ -388,7 +393,7 @@ size_t getrs(T)(
     char trans
     )
 {
-    assert(a.length!0 == a.length!1, "matrix must be squared");
+    assert(a.length!0 == a.length!1, Error.squareM);
     assert(ipiv.length == a.length, "size of ipiv must be equal to the number of rows a");
 
     lapackint n = cast(lapackint) a.length;
@@ -412,7 +417,7 @@ size_t potrs(T)(
     char uplo
     )
 {
-    assert(a.length!0 == a.length!1, "matrix must be squared");
+    assert(a.length!0 == a.length!1, Error.squareM);
 
     lapackint n = cast(lapackint) a.length;
     lapackint nrhs = cast(lapackint) b.length;
@@ -437,7 +442,7 @@ size_t sytrs2(T)(
     char uplo,
     )
 {
-    assert(a.length!0 == a.length!1, "matrix must be squared");
+    assert(a.length!0 == a.length!1, Error.squareM);
 
     lapackint n = cast(lapackint) a.length;
     lapackint nrhs = cast(lapackint) b.length;

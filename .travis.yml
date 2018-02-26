@@ -15,12 +15,15 @@ script:
     - tar zxvf v0.2.20.tar.gz
     - cd OpenBLAS*
     - travis_wait 30 make FC=gfortran
-    - sudo make install PREFIX=/home/libOfBlas
-    - ls /home/libOfBlas
-    - ls /home/libOfBlas/lib
-    - cd ../examples/example
+    - sudo make install PREFIX=/home/openblas
+    - ls /home/openblas
+    - ls /home/openblas/lib
+    - cd ../examples/GESVex
     - dub
-    - cd ../example2
+    - cd ../GEQRSex/source
+    - cp /home/openblas/lib/*.so $PWD
+    - cp /home/openblas/lib/*.so.0 $PWD
+    - cd ../
     - dub
 
 addons:

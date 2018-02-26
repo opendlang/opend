@@ -1,0 +1,15 @@
+.dub
+docs.json
+__dummy.html
+docs/
+GEQRSex.so
+GEQRSex.dylib
+GEQRSex.dll
+GEQRSex.a
+GEQRSex.lib
+GEQRSex-test-*
+GEQRSex
+*.exe
+*.o
+*.obj
+*.lst
