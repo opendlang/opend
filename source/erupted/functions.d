@@ -391,6 +391,9 @@ extern( System ) @nogc nothrow {
 
 	// VK_EXT_external_memory_host
 	alias PFN_vkGetMemoryHostPointerPropertiesEXT = VkResult function( VkDevice device, VkExternalMemoryHandleTypeFlagBitsKHR handleType, const( void )* pHostPointer, VkMemoryHostPointerPropertiesEXT* pMemoryHostPointerProperties );
+
+	// VK_AMD_buffer_marker
+	alias PFN_vkCmdWriteBufferMarkerAMD = void function( VkCommandBuffer commandBuffer, VkPipelineStageFlagBits pipelineStage, VkBuffer dstBuffer, VkDeviceSize dstOffset, uint32_t marker );
 }
 
 __gshared {
@@ -782,6 +785,9 @@ __gshared {
 
 	// VK_EXT_external_memory_host
 	PFN_vkGetMemoryHostPointerPropertiesEXT vkGetMemoryHostPointerPropertiesEXT;
+
+	// VK_AMD_buffer_marker
+	PFN_vkCmdWriteBufferMarkerAMD vkCmdWriteBufferMarkerAMD;
 }
 
 /// if not using version "with-derelict-loader" this function must be called first
@@ -1195,6 +1201,9 @@ void loadDeviceLevelFunctions( VkInstance instance ) {
 
 	// VK_EXT_external_memory_host
 	vkGetMemoryHostPointerPropertiesEXT = cast( typeof( vkGetMemoryHostPointerPropertiesEXT )) vkGetInstanceProcAddr( instance, "vkGetMemoryHostPointerPropertiesEXT" );
+
+	// VK_AMD_buffer_marker
+	vkCmdWriteBufferMarkerAMD = cast( typeof( vkCmdWriteBufferMarkerAMD )) vkGetInstanceProcAddr( instance, "vkCmdWriteBufferMarkerAMD" );
 }
 
 /// with a valid VkDevice call this function to retrieve VkDevice, VkQueue and VkCommandBuffer related functions
@@ -1466,6 +1475,9 @@ void loadDeviceLevelFunctions( VkDevice device ) {
 
 	// VK_EXT_external_memory_host
 	vkGetMemoryHostPointerPropertiesEXT = cast( typeof( vkGetMemoryHostPointerPropertiesEXT )) vkGetDeviceProcAddr( device, "vkGetMemoryHostPointerPropertiesEXT" );
+
+	// VK_AMD_buffer_marker
+	vkCmdWriteBufferMarkerAMD = cast( typeof( vkCmdWriteBufferMarkerAMD )) vkGetDeviceProcAddr( device, "vkCmdWriteBufferMarkerAMD" );
 }
 
 /// with a valid VkDevice call this function to retrieve VkDevice, VkQueue and VkCommandBuffer related functions grouped in a DispatchDevice struct
@@ -1764,6 +1776,9 @@ struct DispatchDevice {
 
 		// VK_EXT_external_memory_host
 		vkGetMemoryHostPointerPropertiesEXT = cast( typeof( vkGetMemoryHostPointerPropertiesEXT )) vkGetDeviceProcAddr( device, "vkGetMemoryHostPointerPropertiesEXT" );
+
+		// VK_AMD_buffer_marker
+		vkCmdWriteBufferMarkerAMD = cast( typeof( vkCmdWriteBufferMarkerAMD )) vkGetDeviceProcAddr( device, "vkCmdWriteBufferMarkerAMD" );
 	}
 
 	// Convenience member functions, forwarded to corresponding vulkan functions
@@ -2365,6 +2380,11 @@ struct DispatchDevice {
 		return vkGetMemoryHostPointerPropertiesEXT( this.device, handleType, pHostPointer, pMemoryHostPointerProperties );
 	}
 
+	// VK_AMD_buffer_marker
+	void CmdWriteBufferMarkerAMD( VkPipelineStageFlagBits pipelineStage, VkBuffer dstBuffer, VkDeviceSize dstOffset, uint32_t marker ) {
+		vkCmdWriteBufferMarkerAMD( this.commandBuffer, pipelineStage, dstBuffer, dstOffset, marker );
+	}
+
 	// Member vulkan function decelerations
 	PFN_vkDestroyDevice vkDestroyDevice;
 	PFN_vkGetDeviceQueue vkGetDeviceQueue;
@@ -2567,6 +2587,7 @@ struct DispatchDevice {
 	PFN_vkMergeValidationCachesEXT vkMergeValidationCachesEXT;
 	PFN_vkGetValidationCacheDataEXT vkGetValidationCacheDataEXT;
 	PFN_vkGetMemoryHostPointerPropertiesEXT vkGetMemoryHostPointerPropertiesEXT;
+	PFN_vkCmdWriteBufferMarkerAMD vkCmdWriteBufferMarkerAMD;
 }
 
 // Derelict loader to acquire entry point vkGetInstanceProcAddr
