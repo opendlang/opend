@@ -23,12 +23,7 @@ script:
     - echo $PATH
     - cd ../examples/GESVex
     - dub
-    - cd ../GEQRSex/source
-    - cp /home/openblas/lib/*.so $PWD
-    - cp /home/openblas/lib/*.so.0 $PWD
-    - cd ../
-    - cp /home/openblas/lib/*.so $PWD
-    - cp /home/openblas/lib/*.so.0 $PWD
+    - cd ../GEQRSex
     - dub
 
 addons:
