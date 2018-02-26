@@ -23,7 +23,11 @@ script:
     - cd ../GEQRSex/source
     - cp /home/openblas/lib/*.so $PWD
     - cp /home/openblas/lib/*.so.0 $PWD
+    - ls
     - cd ../
+    - cp /home/openblas/lib/*.so $PWD
+    - cp /home/openblas/lib/*.so.0 $PWD
+    - ls
     - dub
 
 addons:
