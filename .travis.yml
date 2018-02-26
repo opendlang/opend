@@ -16,18 +16,19 @@ script:
     - cd OpenBLAS*
     - travis_wait 30 make FC=gfortran
     - sudo make install PREFIX=/home/openblas
-    - ls /home/openblas
-    - ls /home/openblas/lib
+    - export PATH = "/home/openblas/bin:$PATH"
+    - export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/openblas/lib:$HOME/lib:$/usr/local/lib
+    - export DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:/usr/local/lib:/home/openblas/lib
+    - echo $LD_LIBRARY_PATH
+    - echo $PATH
     - cd ../examples/GESVex
     - dub
     - cd ../GEQRSex/source
     - cp /home/openblas/lib/*.so $PWD
     - cp /home/openblas/lib/*.so.0 $PWD
-    - ls
     - cd ../
     - cp /home/openblas/lib/*.so $PWD
     - cp /home/openblas/lib/*.so.0 $PWD
-    - ls
     - dub
 
 addons:
