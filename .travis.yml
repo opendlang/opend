@@ -7,7 +7,7 @@ d:
   - ldc
 
 script:
-    - cd examples/GESVex
+    - cd examples/gesv
     - dub
 
 addons:
