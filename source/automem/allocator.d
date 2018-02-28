@@ -64,6 +64,7 @@ void dispose(A, T)(auto ref A alloc, T[] array)
     alloc.deallocate(array);
 }
 
+///
 @system unittest
 {
 
@@ -105,6 +106,7 @@ void dispose(A, T)(auto ref A alloc, T[] array)
     theAllocator.dispose(arr);
 }
 
+///
 @system unittest //bugzilla 15721
 {
     import std.experimental.allocator: make;

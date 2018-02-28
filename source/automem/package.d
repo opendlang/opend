@@ -1,3 +1,23 @@
+/**
+C++-style automatic memory management smart pointers for D using `std.experimental.allocator`.
+
+Unlike the C++ variants, the smart pointers themselves allocate the memory for the objects they contain.
+That ensures the right allocator is used to dispose of the memory as well.
+
+Allocators are template arguments instead of using `theAllocator` so
+that these smart pointers can be used in `@nogc` code. However, they
+will default to `typeof(theAllocator)` for simplicity. The examples
+above will be explicit.
+
+Another reason to have to pass in the type of allocator is to decide how it is to
+be stored. Stateless allocators can be "stored" by value and imply zero-cost `Unique` pointers.
+Singleton allocators such as Mallocator (that have an `instance` attribute/member function)
+don't need to be passed in to the constructor. This is detected at compile-time as an example
+of design by instrospection.
+
+`RefCounted` leverages D's type system by doing atomic reference counting *iff* the type of the contained
+object is `shared`. Otherwise it's non-atomic.
+*/
 module automem;
 
 public import automem.unique;
@@ -8,7 +28,9 @@ import automem.test_utils: TestUtils;
 
 mixin TestUtils;
 
-// can be @safe if the allocator has @safe functions
+/**
+ This unittest can be @safe if the allocator has @safe functions
+*/
 @system @nogc unittest {
 
     import std.experimental.allocator.mallocator: Mallocator;
@@ -59,11 +81,12 @@ mixin TestUtils;
     } // memory for the array released here
 }
 
-
+///
 @("theAllocator")
 @system unittest {
     with(theTestAllocator) {
         auto ptr = Unique!int(42);
         assert(*ptr == 42);
     }
-} // TestAllocator will throw here if any memory leaks
+    // TestAllocator will throw here if any memory leaks
+}

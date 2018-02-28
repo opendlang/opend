@@ -1,3 +1,6 @@
+/**
+   A unique pointer.
+ */
 module automem.unique;
 
 import automem.test_utils: TestUtils;
@@ -12,6 +15,9 @@ version(unittest) {
 
 mixin TestUtils;
 
+/**
+   A unique pointer similar to C++'s std::unique_ptr.
+ */
 struct Unique(Type, Allocator = typeof(theAllocator()),
     Flag!"supportGC" supportGC = Flag!"supportGC".yes)
 if(isAllocator!Allocator) {
@@ -42,7 +48,6 @@ if(isAllocator!Allocator) {
         /**
            Non-singleton allocator, must be passed in
          */
-
         this(Args...)(Allocator allocator, auto ref Args args) {
             _allocator = allocator;
             this.makeObject!(supportGC, args)();
@@ -72,12 +77,15 @@ if(isAllocator!Allocator) {
             return typeof(return)(allocator, args);
         }
 
+    ///
     this(T)(Unique!(T, Allocator) other) if(is(T: Type)) {
         moveFrom(other);
     }
 
+    ///
     @disable this(this);
 
+    ///
     ~this() {
         deleteObject;
     }
@@ -101,12 +109,14 @@ if(isAllocator!Allocator) {
         return u;
     }
 
+    /// Release ownership
     package Pointer release() {
         auto ret = _object;
         _object = null;
         return ret;
     }
 
+    ///
     package Allocator allocator() {
         return _allocator;
     }
@@ -118,6 +128,7 @@ if(isAllocator!Allocator) {
         return _object !is null;
     }
 
+    /// Move from another smart pointer
     void opAssign(T)(Unique!(T, Allocator) other) if(is(T: Type)) {
         deleteObject;
         moveFrom(other);
@@ -199,6 +210,7 @@ private template makeObject(Flag!"supportGC" supportGC, args...)
     }
 }
 
+///
 @("with struct and test allocator")
 @system unittest {
 
@@ -227,7 +239,7 @@ private template makeObject(Flag!"supportGC" supportGC, args...)
     Class.numClasses.shouldEqual(0);
 }
 
-
+///
 @("with struct and mallocator")
 @system unittest {
 

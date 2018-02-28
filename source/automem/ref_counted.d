@@ -1,3 +1,6 @@
+/**
+   A reference-counted smart pointer.
+ */
 module automem.ref_counted;
 
 import automem.traits: isAllocator;
@@ -13,6 +16,9 @@ version(unittest) {
 
 mixin TestUtils;
 
+/**
+   A reference-counted smart pointer similar to C++'s std::shared_ptr.
+ */
 struct RefCounted(Type,
                   Allocator = typeof(theAllocator),
                   Flag!"supportGC" supportGC = Flag!"supportGC".yes)
@@ -64,11 +70,13 @@ struct RefCounted(Type,
             return typeof(return)(allocator, args);
         }
 
+    ///
     this(this) {
         assert(_impl !is null);
         inc;
     }
 
+    ///
     ~this() {
         release;
     }
@@ -108,20 +116,22 @@ struct RefCounted(Type,
         return _impl._get;
     }
 
-    // Prevent opSlice and opIndex from being hidden by Impl*.
-    // This comment is deliberately not DDOC.
+    /**
+        Prevent opSlice and opIndex from being hidden by Impl*.
+        This comment is deliberately not DDOC.
+    */
     auto ref opSlice(A...)(auto ref A args)
     if (__traits(compiles, Type.init.opSlice(args)))
     {
         return _impl._get.opSlice(args);
     }
-    // ditto
+    /// ditto
     auto ref opIndex(A...)(auto ref A args)
     if (__traits(compiles, Type.init.opIndex(args)))
     {
         return _impl._get.opIndex(args);
     }
-    // ditto
+    /// ditto
     auto ref opIndexAssign(A...)(auto ref A args)
     if (__traits(compiles, Type.init.opIndexAssign(args)))
     {
@@ -274,6 +284,7 @@ private template makeObject(args...)
     }
 }
 
+///
 @("struct test allocator no copies")
 @system unittest {
     auto allocator = TestAllocator();

@@ -1,3 +1,6 @@
+/**
+   RAII arrays
+ */
 module automem.unique_array;
 
 import automem.traits: isAllocator;
@@ -11,6 +14,9 @@ version(unittest) {
 
 mixin TestUtils;
 
+/**
+   A unique array similar to C++'s std::unique_ptr<T> when T is an array
+ */
 struct UniqueArray(Type, Allocator = typeof(theAllocator)) if(isAllocator!Allocator) {
 
     import std.traits: hasMember, isScalarType;
@@ -153,26 +159,33 @@ struct UniqueArray(Type, Allocator = typeof(theAllocator)) if(isAllocator!Alloca
         return this[];
     }
 
+    /**
+       Append to the array
+     */
     UniqueArray opBinary(string s)(UniqueArray other) if(s == "~") {
         this ~= other.unique;
         return this.unique;
     }
 
+    /// Append to the array
     void opOpAssign(string op)(Type other) if(op == "~") {
         length(length + 1);
         _objects[$ - 1] = other;
     }
 
+    /// Append to the array
     void opOpAssign(string op)(Type[] other) if(op == "~") {
         const originalLength = length;
         length(originalLength + other.length);
         _objects[originalLength .. length] = other[];
     }
 
+    /// Append to the array
     void opOpAssign(string op)(UniqueArray other) if(op == "~") {
         this ~= other._objects;
     }
 
+    /// Assign from a slice.
     void opAssign(Type[] other) {
         length = other.length;
         _objects[0 .. length] = other[0 .. length];
@@ -355,6 +368,7 @@ version(unittest) {
     }
 }
 
+///
 @("@nogc")
 @system @nogc unittest {
 
