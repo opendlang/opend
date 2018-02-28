@@ -1,10 +1,10 @@
 {
-	"name": "example",
+	"name": "gesv",
 	"authors": [
 		"Ilya Yaroshenko"
 	],
 	"dependencies": {
-		"mir-lapack": {"path": "../"},
+		"mir-lapack": {"path": "../../"},
 	},
 	"libs": ["lapack"],
 	"description": "Mir-LAPACK example",

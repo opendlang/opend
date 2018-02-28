@@ -1,0 +1,15 @@
+.dub
+docs.json
+__dummy.html
+docs/
+gesvex.so
+gesvex.dylib
+gesvex.dll
+gesvex.a
+gesvex.lib
+gesvex-test-*
+gesvex
+*.exe
+*.o
+*.obj
+*.lst

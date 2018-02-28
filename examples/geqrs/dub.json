@@ -1,0 +1,14 @@
+{
+	"name": "geqrs",
+	"authors": [
+		"Sergey Batratskiy"
+	],
+	"dependencies": {
+		"mir-lapack": {"path": "../../"},
+	},
+	"lflags": ["-L/home/openblas/lib"],
+	"libs": ["openblas"],
+	"description": "GEQRS example",
+	"copyright": "Copyright © 2018, Sergey Batratskiy",
+	"license": "BSL-1.0"
+}

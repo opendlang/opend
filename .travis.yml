@@ -6,7 +6,9 @@ d:
   - dmd
   - ldc
 
-script: dub --root example
+script:
+    - cd examples/gesv
+    - dub
 
 addons:
   apt:

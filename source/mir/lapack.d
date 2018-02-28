@@ -17,6 +17,11 @@ static import lapack;
 
 public import lapack: lapackint;
 
+//enum for errors.
+private enum Error {
+    squareM = "The matrix must be square"
+};
+
 /// `getri` work space query.
 size_t getri_wq(T)(Slice!(Canonical, [2], T*) a)
 {
@@ -336,6 +341,147 @@ size_t spev(T)(
 }
 
 ///
+size_t sytrf(T)(
+    Slice!(Canonical, [2], T*) a,
+    Slice!(Contiguous, [1], lapackint*) ipiv,
+    Slice!(Contiguous, [1], T*) work,
+    char uplo
+    )
+{
+    assert(a.length!0 == a.length!1, Error.squareM);
+    lapackint info = void;
+    lapackint n = cast(lapackint) a.length;
+    lapackint lda = cast(lapackint) a._stride.max(1);
+    lapackint lwork = cast(lapackint) work.length;
+
+    lapack.sytrf_(uplo, n, a.iterator, lda, ipiv.iterator, work.iterator, lwork, info);
+    ///if info = 0: successful exit.
+    ///if info > 0: if info = i, D(i, i) is exactly zero. The factorization has been
+    ///completed, but the block diagonal matrix D is exactly singular, and division by
+    ///zero will occur if it is used to solve a system of equations.
+    ///if info < 0: if info == -i, the i-th argument had an illegal value.
+    assert(info >= 0);
+    return info;
+}
+
+///
+size_t geqrf(T)(
+    Slice!(Canonical, [2], T*) a,
+    Slice!(Contiguous, [1], T*) tau,
+    Slice!(Contiguous, [1], T*) work
+    )
+{
+    lapackint m = cast(lapackint) a.length!0;
+    lapackint n = cast(lapackint) a.length!1;
+    lapackint lda = cast(lapackint) a._stride.max(1);
+    lapackint lwork = cast(lapackint) work.length;
+    lapackint info = void;
+
+    lapack.geqrf_(m, n, a.iterator, lda, tau.iterator, work.iterator, lwork, info);
+
+    ///if info == 0: successful exit;
+    ///if info < 0: if info == -i, the i-th argument had an illegal value.
+    assert(info >= 0);
+    return info;
+}
+
+///
+size_t getrs(T)(
+    Slice!(Canonical, [2], T*) a,
+    Slice!(Canonical, [2], T*) b,
+    Slice!(Contiguous, [1], lapackint*) ipiv,
+    char trans
+    )
+{
+    assert(a.length!0 == a.length!1, Error.squareM);
+    assert(ipiv.length == a.length, "size of ipiv must be equal to the number of rows a");
+
+    lapackint n = cast(lapackint) a.length;
+    lapackint nrhs = cast(lapackint) b.length;
+    lapackint lda = cast(lapackint) a._stride.max(1);
+    lapackint ldb = cast(lapackint) b._stride.max(1);
+    lapackint info = void;
+
+    lapack.getrs_(trans, n, nrhs, a.iterator, lda, ipiv.iterator, b.iterator, ldb, info);
+
+    ///if info == 0: successful exit.
+    ///if info < 0: if info == -i, the i-th argument had an illegal value.
+    assert(info >= 0);
+    return info;
+}
+
+///
+size_t potrs(T)(
+    Slice!(Canonical, [2], T*) a,
+    Slice!(Canonical, [2], T*) b,
+    char uplo
+    )
+{
+    assert(a.length!0 == a.length!1, Error.squareM);
+
+    lapackint n = cast(lapackint) a.length;
+    lapackint nrhs = cast(lapackint) b.length;
+    lapackint lda = cast(lapackint) a._stride.max(1);
+    lapackint ldb = cast(lapackint) b._stride.max(1);
+    lapackint info = void;
+
+    lapack.potrs_(uplo, n, nrhs, a.iterator, lda, b.iterator, ldb, info);
+
+    ///if info == 0: successful exit.
+    ///if info < 0: if info == -i, the i-th argument had an illegal value.
+    assert(info >= 0);
+    return info;
+}
+
+///
+size_t sytrs2(T)(
+    Slice!(Canonical, [2], T*) a,
+    Slice!(Canonical, [2], T*) b,
+    Slice!(Contiguous, [1], lapackint*) ipiv,
+    Slice!(Contiguous, [1], T*) work,
+    char uplo,
+    )
+{
+    assert(a.length!0 == a.length!1, Error.squareM);
+
+    lapackint n = cast(lapackint) a.length;
+    lapackint nrhs = cast(lapackint) b.length;
+    lapackint lda = cast(lapackint) a._stride.max(1);
+    lapackint ldb = cast(lapackint) b._stride.max(1);
+    lapackint info = void;
+
+    lapack.sytrs2_(uplo, n, nrhs, a.iterator, lda, ipiv.iterator, b.iterator, ldb, work.iterator, info);
+
+    ///if info == 0: successful exit.
+    ///if info < 0: if info == -i, the i-th argument had an illegal value.
+    assert(info >= 0);
+    return info;
+}
+
+///
+size_t geqrs(T)(
+    Slice!(Canonical, [2], T*) a,
+    Slice!(Canonical, [2], T*) b,
+    Slice!(Contiguous, [1], T*) tau,
+    Slice!(Contiguous, [1], T*) work
+    )
+{
+    lapackint m = cast(lapackint) a.length!0;
+    lapackint n = cast(lapackint) a.length!1;
+    lapackint nrhs = cast(lapackint) b.length;
+    lapackint lda = cast(lapackint) a._stride.max(1);
+    lapackint ldb = cast(lapackint) b._stride.max(1);
+    lapackint lwork = cast(lapackint) work.length;
+    lapackint info = void;
+
+    lapack.geqrs_(m, n, nrhs, a.iterator, lda, tau.iterator, b.iterator, ldb, work.iterator, lwork, info);
+
+    ///if info == 0: successful exit.
+    ///if info < 0: if info == -i, the i-th argument had an illegal value.
+    assert(info >= 0);
+    return info;
+}
+  
 size_t sysv_rook_wk(T)(
 	char uplo,
 	Slice!(Canonical, [2], T*) a,
@@ -581,4 +727,56 @@ size_t tptri(T)(
 	assert(info >= 0);
 	return info;
 
+}
+
+///
+size_t ormqr(T)(
+    Slice!(Canonical, [2], T*) a,
+    Slice!(Contiguous, [1], T*) tau,
+    Slice!(Canonical, [2], T*) c,
+    Slice!(Contiguous, [1], T*) work,
+    char side,
+    char trans
+    )
+{
+    lapackint m = cast(lapackint) c.length!1;
+    lapackint n = cast(lapackint) c.length!0;
+    lapackint k = cast(lapackint) tau.length;
+    lapackint lda = cast(lapackint) a._stride.max(1);
+    lapackint ldc = cast(lapackint) c._stride.max(1);
+    lapackint lwork = cast(lapackint) work.length;
+    lapackint info = void;
+
+    lapack.ormqr_(side, trans, m, n, k, a.iterator, lda, tau.iterator, c.iterator, ldc, work.iterator, lwork, info);
+
+    ///if info == 0: successful exit.
+    ///if info < 0: if info == -i, the i-th argument had an illegal value.
+    assert(info >= 0);
+    return info;
+}
+
+///
+size_t unmqr(T)(
+    Slice!(Canonical, [2], T*) a,
+    Slice!(Contiguous, [1], T*) tau,
+    Slice!(Canonical, [2], T*) c,
+    Slice!(Contiguous, [1], T*) work,
+    char side,
+    char trans
+    )
+{
+    lapackint m = cast(lapackint) c.length!1;
+    lapackint n = cast(lapackint) c.length!0;
+    lapackint k = cast(lapackint) tau.length;
+    lapackint lda = cast(lapackint) a._stride.max(1);
+    lapackint ldc = cast(lapackint) c._stride.max(1);
+    lapackint lwork = cast(lapackint) work.length;
+    lapackint info = void;
+
+    lapack.unmqr_(side, trans, m, n, k, a.iterator, lda, tau.iterator, c.iterator, ldc, work.iterator, lwork, info);
+
+    ///if info == 0: successful exit.
+    ///if info < 0: if info == -i, the i-th argument had an illegal value.
+    assert(info >= 0);
+    return info;
 }

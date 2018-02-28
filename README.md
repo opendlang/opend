@@ -13,6 +13,11 @@ NDSLICE wrapper for LAPACK
  - getrf
  - getri
  - spev
+ - sytrf
+ - geqrf
+ - getrs
+ - potrs
+ - sytrs2
  - sptrf
  - sysv_rook
  - potrf
@@ -22,6 +27,8 @@ NDSLICE wrapper for LAPACK
  - pptri
  - trtri
  - tptri
+ - ormqr
+ - unmqr
 
 
 ---------------
