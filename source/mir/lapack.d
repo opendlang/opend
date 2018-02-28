@@ -728,3 +728,55 @@ size_t tptri(T)(
 	return info;
 
 }
+
+///
+size_t ormqr(T)(
+    Slice!(Canonical, [2], T*) a,
+    Slice!(Contiguous, [1], T*) tau,
+    Slice!(Canonical, [2], T*) c,
+    Slice!(Contiguous, [1], T*) work,
+    char side,
+    char trans
+    )
+{
+    lapackint m = cast(lapackint) c.length!1;
+    lapackint n = cast(lapackint) c.length!0;
+    lapackint k = cast(lapackint) tau.length;
+    lapackint lda = cast(lapackint) a._stride.max(1);
+    lapackint ldc = cast(lapackint) c._stride.max(1);
+    lapackint lwork = cast(lapackint) work.length;
+    lapackint info = void;
+
+    lapack.ormqr_(side, trans, m, n, k, a.iterator, lda, tau.iterator, c.iterator, ldc, work.iterator, lwork, info);
+
+    ///if info == 0: successful exit.
+    ///if info < 0: if info == -i, the i-th argument had an illegal value.
+    assert(info >= 0);
+    return info;
+}
+
+///
+size_t unmqr(T)(
+    Slice!(Canonical, [2], T*) a,
+    Slice!(Contiguous, [1], T*) tau,
+    Slice!(Canonical, [2], T*) c,
+    Slice!(Contiguous, [1], T*) work,
+    char side,
+    char trans
+    )
+{
+    lapackint m = cast(lapackint) c.length!1;
+    lapackint n = cast(lapackint) c.length!0;
+    lapackint k = cast(lapackint) tau.length;
+    lapackint lda = cast(lapackint) a._stride.max(1);
+    lapackint ldc = cast(lapackint) c._stride.max(1);
+    lapackint lwork = cast(lapackint) work.length;
+    lapackint info = void;
+
+    lapack.unmqr_(side, trans, m, n, k, a.iterator, lda, tau.iterator, c.iterator, ldc, work.iterator, lwork, info);
+
+    ///if info == 0: successful exit.
+    ///if info < 0: if info == -i, the i-th argument had an illegal value.
+    assert(info >= 0);
+    return info;
+}
