@@ -27,6 +27,8 @@ NDSLICE wrapper for LAPACK
  - pptri
  - trtri
  - tptri
+ - ormqr
+ - unmqr
 
 
 ---------------

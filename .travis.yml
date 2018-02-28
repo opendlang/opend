@@ -21,11 +21,10 @@ script:
 //    - export DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:/usr/local/lib:/home/openblas/lib
 //    - echo $LD_LIBRARY_PATH
 //    - echo $PATH
-//    - cd ../examples/GESVex
-//    - dub
+    - cd examples/GESVex
+    - dub
 //    - cd ../GEQRSex
 //    - dub
-    - dub --root examples/GESVex
 
 addons:
   apt:
