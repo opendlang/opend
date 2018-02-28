@@ -13,3 +13,4 @@ dub.selections.json
 mir-lapack-test-library
 *.sublime-workspace
 .vscode
+*.DS_Store

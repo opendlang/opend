@@ -7,29 +7,28 @@ NDSLICE wrapper for LAPACK
 ## Wrapped API
 
  - gelsd
+ - geqrf
  - gesdd
  - gesv
  - gesvd
  - getrf
  - getri
- - spev
- - sytrf
- - geqrf
  - getrs
- - potrs
- - sytrs2
- - sptrf
- - sysv_rook
- - potrf
- - pptrf
- - sptri
- - potri
- - pptri
- - trtri
- - tptri
  - ormqr
+ - potrf
+ - potri
+ - potrs
+ - pptrf
+ - pptri
+ - spev
+ - sptrf
+ - sptri
+ - sysv_rook
+ - sytrf
+ - sytrs2
+ - tptri
+ - trtri
  - unmqr
-
 
 ---------------
 
