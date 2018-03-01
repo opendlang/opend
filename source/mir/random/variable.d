@@ -104,7 +104,7 @@ struct UniformVariable(T)
     this(T a, T b)
     {
         assert(a <= b, "constraint: a <= b");
-        length = b - a + 1;
+        length = cast(U) (b - a + 1);
         location = a;
     }
 
@@ -112,7 +112,7 @@ struct UniformVariable(T)
     T opCall(G)(scope ref G gen)
         if (isSaturatedRandomEngine!G)
     {
-        return length ? gen.randIndex!U(length) + location : gen.rand!U;
+        return length ? cast(T) (gen.randIndex!U(length) + location) : gen.rand!U;
     }
     /// ditto
     T opCall(G)(scope G* gen)
@@ -124,7 +124,7 @@ struct UniformVariable(T)
     ///
     T min() @property { return location; }
     ///
-    T max() @property { return length - 1 + location; }
+    T max() @property { return cast(T) (length - 1 + location); }
 }
 
 /// ditto
@@ -173,6 +173,8 @@ version (D_Ddoc)
 {
     // Test alias.
     assert(uniformVariable(-10, 10) == uniformVar(-10, 10));
+    // Test that uniformVar works correctly with ubyte.
+    static assert(isRandomVariable!(typeof(uniformVar!ubyte(0, 255))));
 }
 
 /++
