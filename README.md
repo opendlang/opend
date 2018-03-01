@@ -28,7 +28,7 @@ To use with the `with-derelict-loader` configuration, follow the above steps, bu
 
 Available configurations:
 * `with-derelict-loader` fetches derelictUtil, gets a pointer to `vkGetInstanceProcAddr` and loads few additional global functions (see above)
-* `dub-platform-xcb`, `dub-platform-xlib`, `dub-platform-wayland` fetches corresponding dub packages `xcb-d`, `xlib-d`, `wayland-client-d`, see [Platform surface extensions](https://github.com/ParticlePeter/ErupteD#platform-surface-extensions)
+* `dub-platform-xcb`, `dub-platform-xlib`, `dub-platform-wayland` fetches corresponding dub packages `xcb-d`, `xlib-d`, `wayland:client`, see [Platform surface extensions](https://github.com/ParticlePeter/ErupteD#platform-surface-extensions)
 * `dub-platform-???-derelict-loader` combines the platforms above with the derelict loader
 
 The API is similar to the C Vulkan API, but with some differences:
@@ -102,7 +102,7 @@ Additional info:
 * for windows platform, in your project specify:
 `"versions" : [ "VK_USE_PLATFORM_WIN32_KHR" ]`.
 The phobos windows modules will be used in that case.
-* wayland-client.h cannot exist as module name. The maintainer of `wayland-client-d` choose `wayland.client` as module name and the name is used in `erupted/types` as well.
+* wayland-client.h cannot exist as module name. The maintainer of `wayland:client` choose `wayland.client` as module name and the name is used in `erupted/types` as well.
 * for android platform, I have not a single clue how this is supposed to work. If you are interested in android and have an idea how it should work feel free to open up an issue.
 
 
