@@ -5,7 +5,7 @@ dist: trusty
 
 before_install:
 - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update          ; fi
-- if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install libjpeg cairo gtk+3; fi
+- if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install cairo gtk+3; fi
 
 matrix:
   include:
