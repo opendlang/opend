@@ -378,6 +378,13 @@ static if (THREAD_LOCAL_STORAGE_AVAILABLE)
             alias seed_t = uint;
         else
             alias seed_t = EngineReturnType!Engine;
+
+        pragma(inline, false) // Usually called only once per thread.
+        private static void reseed()
+        {
+            engine.__ctor(unpredictableSeedOf!(seed_t));
+            initialized = true;
+        }
     }
     /++
     `threadLocal!Engine` returns a reference to a thread-local instance of
@@ -408,7 +415,7 @@ static if (THREAD_LOCAL_STORAGE_AVAILABLE)
         import mir.ndslice.internal: _expect;
         if (_expect(!TL!Engine.initialized, false))
         {
-            TL!Engine.engine.__ctor(unpredictableSeedOf!(TL!Engine.seed_t));
+            TL!Engine.reseed();
         }
         return TL!Engine.engine;
     }
@@ -423,7 +430,7 @@ static if (THREAD_LOCAL_STORAGE_AVAILABLE)
         import mir.ndslice.internal: _expect;
         if (_expect(!TL!Engine.initialized, false))
         {
-            TL!Engine.engine.__ctor(unpredictableSeedOf!(TL!Engine.seed_t));
+            TL!Engine.reseed();
         }
         return &TL!Engine.engine;
     }
