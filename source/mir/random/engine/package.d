@@ -240,6 +240,7 @@ pragma(inline, true)
 @property T unpredictableSeedOf(T)() @trusted nothrow @nogc
     if (isUnsigned!T)
 {
+    import mir.ndslice.internal: _expect;
     T seed = void;
     version (GOOD_ARC4RANDOM_BUF)
     {
@@ -250,56 +251,63 @@ pragma(inline, true)
         else
             arc4random_buf(&seed, seed.sizeof);
     }
-    // fallback to old time/thread-based implementation in case of errors
-    else if (genRandomNonBlocking(&seed, seed.sizeof) != T.sizeof)
+    else if (_expect(genRandomNonBlocking(&seed, seed.sizeof) != T.sizeof, false))
     {
-        version(Windows)
-        {
-            import core.sys.windows.winbase : QueryPerformanceCounter;
-            ulong ticks = void;
-            QueryPerformanceCounter(cast(long*)&ticks);
-        }
-        else
-        version(Darwin)
-        {
-            import core.time : mach_absolute_time;
-            ulong ticks = mach_absolute_time();
-        }
-        else
-        version(Posix)
-        {
-            import core.sys.posix.time : clock_gettime, CLOCK_MONOTONIC, timespec;
-            timespec ts;
-            if(clock_gettime(CLOCK_MONOTONIC, &ts) != 0)
-            {
-                import core.internal.abort : abort;
-                abort("Call to clock_gettime failed.");
-            }
-            ulong ticks = (cast(ulong) ts.tv_sec << 32) ^ ts.tv_nsec;
-        }
-        version(Posix)
-        {
-            import core.sys.posix.unistd : getpid;
-            import core.sys.posix.pthread : pthread_self;
-            auto pid = cast(uint) getpid;
-            auto tid = cast(uint) pthread_self();
-        }
-        else
-        version(Windows)
-        {
-            import core.sys.windows.winbase : GetCurrentProcessId, GetCurrentThreadId;
-            auto pid = cast(uint) GetCurrentProcessId;
-            auto tid = cast(uint) GetCurrentThreadId;
-        }
-        ulong k = ((cast(ulong)pid << 32) ^ tid) + ticks;
-        k ^= k >> 33;
-        k *= 0xff51afd7ed558ccd;
-        k ^= k >> 33;
-        k *= 0xc4ceb9fe1a85ec53;
-        k ^= k >> 33;
-        seed = cast(T)k;
+        // fallback to old time/thread-based implementation in case of errors
+        seed = cast(T) fallbackSeed();
     }
     return seed;
+}
+
+pragma(inline, false)
+private ulong fallbackSeed()()
+{
+    // fallback to old time/thread-based implementation in case of errors
+    version(Windows)
+    {
+        import core.sys.windows.winbase : QueryPerformanceCounter;
+        ulong ticks = void;
+        QueryPerformanceCounter(cast(long*)&ticks);
+    }
+    else
+    version(Darwin)
+    {
+        import core.time : mach_absolute_time;
+        ulong ticks = mach_absolute_time();
+    }
+    else
+    version(Posix)
+    {
+        import core.sys.posix.time : clock_gettime, CLOCK_MONOTONIC, timespec;
+        timespec ts;
+        if(clock_gettime(CLOCK_MONOTONIC, &ts) != 0)
+        {
+            import core.internal.abort : abort;
+            abort("Call to clock_gettime failed.");
+        }
+        ulong ticks = (cast(ulong) ts.tv_sec << 32) ^ ts.tv_nsec;
+    }
+    version(Posix)
+    {
+        import core.sys.posix.unistd : getpid;
+        import core.sys.posix.pthread : pthread_self;
+        auto pid = cast(uint) getpid;
+        auto tid = cast(uint) pthread_self();
+    }
+    else
+    version(Windows)
+    {
+        import core.sys.windows.winbase : GetCurrentProcessId, GetCurrentThreadId;
+        auto pid = cast(uint) GetCurrentProcessId;
+        auto tid = cast(uint) GetCurrentThreadId;
+    }
+    ulong k = ((cast(ulong)pid << 32) ^ tid) + ticks;
+    k ^= k >> 33;
+    k *= 0xff51afd7ed558ccd;
+    k ^= k >> 33;
+    k *= 0xc4ceb9fe1a85ec53;
+    k ^= k >> 33;
+    return k;
 }
 
 ///
