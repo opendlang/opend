@@ -72,7 +72,7 @@ $(BOOKTABLE ,
     )
     $(TR
         $(TDNW $(MREF mir,random,engine,xorshift))
-        $(TD $(HTTP xoroshiro.di.unimi.it, xoroshiro128+), $(HTTP en.wikipedia.org/wiki/Xorshift#xorshift.2A, xorshift1024*φ), and legacy $(HTTP en.wikipedia.org/wiki/Xorshift, xorshift) generators.)
+        $(TD $(HTTP xoroshiro.di.unimi.it, xoroshiro128+), $(HTTP en.wikipedia.org/wiki/Xorshift#xorshift.2A, xorshift1024*φ), xorshift64*/32, and legacy $(HTTP en.wikipedia.org/wiki/Xorshift, xorshift) generators.)
     )
 )
 

@@ -6,6 +6,7 @@ $(BOOKTABLE $(H2 Generators)
     $(TR $(TH Generator name) $(TH Description))
     $(RROW Xoroshiro128Plus, $(HTTP xoroshiro.di.unimi.it, xoroshiro128+): fast, small, and high-quality)
     $(RROW Xorshift1024StarPhi, $(HTTP xoroshiro.di.unimi.it, xorshift1024*φ): when something larger than `xoroshiro128+` is needed)
+    $(RROW Xorshift64Star32, xorshift64*/32: internal state of 64 bits and output of 32 bits)
     $(TR $(TD $(LREF Xorshift32) .. $(LREF Xorshift160)) $(TD Basic xorshift generator with `n` bits of state (32, 64, 96, 128, 160)))
     $(RROW Xorshift192, Generator from Marsaglia's paper combining 160-bit xorshift with a counter)
     $(RROW Xorshift, An alias to one of the generators in this package))
@@ -200,6 +201,15 @@ alias Xorshift    = Xorshift128;                      /// ditto
 /++
 Template for the $(HTTP vigna.di.unimi.it/ftp/papers/xorshift.pdf,
 xorshift* family of generators) (Vigna, 2016; draft 2014).
+
+<blockquote>
+xorshift* generators are very fast, high-quality PRNGs (pseudorandom
+number generators) obtained by scrambling the output of a Marsaglia
+xorshift generator with a 64-bit invertible multiplier (as suggested by
+Marsaglia in his paper). They are an excellent choice for all
+non-cryptographic applications, as they are incredibly fast, have long
+periods and their output passes strong statistical test suites.
+</blockquote>
 +/
 struct XorshiftStarEngine(StateUInt, uint nbits, uint a, uint b, uint c, StateUInt multiplier, OutputUInt = StateUInt)
 if (isIntegral!StateUInt && isIntegral!OutputUInt
@@ -418,21 +428,42 @@ alias Xorshift1024StarPhi = XorshiftStarEngine!(ulong,1024,31,11,30,0x9e3779b97f
     assert(num != rnd());
 }
 
+/++
+Generates 32 bits of output from 64 bits of state. A fast generator
+with excellent statistical properties for memory-constrained situations
+where more than 64 bits of state would be too much and generating
+only 32 bits with each `opCall` will not cause a slowdown. Today
+$(REF_ALTTEXT SplitMix64, SplitMix64, mir, random, engine, splitmix)
+(which has 64 bit output) or $(REF_ALTTEXT pcg32_oneseq, pcg32_oneseq,
+mir, random, engine, pcg) from the PCG family of generators might fill
+this niche better but the wide popularity of this generator and its
+$(HTTP www.pcg-random.org/posts/other-good-options.html#xorshift42-12864-andor-xorshift42-6432,
+continued recommendation by some) in 2017 merit its inclusion in a PRNG
+library.
+
+Note that `xorshift64*/32` is slower than `xorshift1024*` even when only
+32 bits of output are needed at a time.
+<a href="https://web.archive.org/web/20151209100332/http://xorshift.di.unimi.it:80/">
+Per Vigna:</a>
+<blockquote>
+The three xor/shifts of a `xorshift64*` generator must be executed sequentially,
+as each one is dependent on the result of the previous one. In a `xorshift1024*`
+generator two of the xor/shifts are completely independent and can be
+parallelized internally by the CPU.
+</blockquote>
+
+<a href="https://web.archive.org/web/20151011045529/http://xorshift.di.unimi.it:80/xorshift64star.c">
+Public domain xorshift64* reference implementation (Internet Archive).</a>
++/
+alias Xorshift64Star32 = XorshiftStarEngine!(ulong,64,12,25,27,2685821657736338717uL,uint);
+///
 @nogc nothrow pure @safe version(mir_random_test) unittest
 {
-    //Test other sizes of XorshiftStarEngine.
-    import mir.random.engine : EngineReturnType, isSaturatedRandomEngine;
-
-    alias XorshiftStar64_32 = XorshiftStarEngine!(ulong,64,12,25,27,2685821657736338717uL,uint);
-    //Generates 32 bits of output from 64 bits of state.
-    //A nice generator when 64 bit multiplication is fast
-    //and more than 64 bits is too much, but the PCG family 
-    //of generators probably fills this niche better.
-    static assert(isSaturatedRandomEngine!XorshiftStar64_32);
-    XorshiftStar64_32 rnd = XorshiftStar64_32(uint(0));
-    auto n = rnd();
-    assert(n != rnd());
-    static assert(is(typeof(n) == uint));
+    import mir.random.engine : isSaturatedRandomEngine;
+    static assert(isSaturatedRandomEngine!Xorshift64Star32);
+    Xorshift64Star32 rnd = Xorshift64Star32(123456789);
+    uint x = rnd();
+    assert(x == 3988833114);
 }
 
 /++
