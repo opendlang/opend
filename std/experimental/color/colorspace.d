@@ -73,7 +73,7 @@ template WhitePoint(F) if (isFloatingPoint!F)
         /** Philips TL83, Ultralume 30 */
         F12 = xyY!F(0.43695, 0.40441, 1.00000),
         /** DCI-P3 digital cinema projector */
-        DCI = xyY!F(0.31270, 0.32900, 1.00000)
+        DCI = xyY!F(0.31400, 0.35100, 1.00000)
     }
 }
 
@@ -128,6 +128,8 @@ enum RGBColorSpace
     DCI_P3_Theater,
     /** DCI-P3 D65 */
     DCI_P3_D65,
+    /** DCI-P3 Apple */
+    DCI_P3_Apple,
 }
 
 
@@ -237,7 +239,7 @@ F[3][3] chromaticAdaptationMatrix(ChromaticAdaptationMethod method = ChromaticAd
     return multiply!F(multiply!F(iMa, t), Ma);
 }
 
-/** Linear to hybrid linear-gamma ramp function.  The function and parameters are detailed in the example below. */
+/** Linear to hybrid linear-gamma transfer function. The function and parameters are detailed in the example below. */
 T linearToHybridGamma(double a, double b, double s, double e, T)(T v) if (isFloatingPoint!T)
 {
     if (v <= T(b))
@@ -265,7 +267,7 @@ unittest
     assert(abs(v - linearToHybridGamma!(a, b, s, e)(0.5)) < double.epsilon);
 }
 
-/** Hybrid linear-gamma to linear function. The function and parameters are detailed in the example below. */
+/** Hybrid linear-gamma to linear transfer function. The function and parameters are detailed in the example below. */
 T hybridGammaToLinear(double a, double b, double s, double e, T)(T v) if (isFloatingPoint!T)
 {
     if (v <= T(b*s))
@@ -293,37 +295,37 @@ unittest
     assert(abs(v - hybridGammaToLinear!(a, b, s, e)(0.5)) < double.epsilon);
 }
 
-/** Linear to sRGB ramp function. */
+/** Linear to sRGB transfer function. */
 alias linearTosRGB(F) = linearToHybridGamma!(1.055, 0.0031308, 12.92, 1/2.4, F);
-/** sRGB to linear function. */
+/** sRGB to linear transfer function. */
 alias sRGBToLinear(F) = hybridGammaToLinear!(1.055, 0.0031308, 12.92, 2.4, F);
 
-/** Linear to Rec.601 ramp function. Note, Rec.709 also uses this same function.*/
+/** Linear to Rec.601 transfer function. Note, Rec.709 also uses this same function.*/
 alias linearToRec601(F) = linearToHybridGamma!(1.099, 0.018, 4.5, 0.45, F);
-/** Rec.601 to linear function. Note, Rec.709 also uses this same function. */
+/** Rec.601 to linear transfer function. Note, Rec.709 also uses this same function. */
 alias rec601ToLinear(F) = hybridGammaToLinear!(1.099, 0.018, 4.5, 1/0.45, F);
-/** Linear to Rec.2020 ramp function. */
+/** Linear to Rec.2020 transfer function. */
 alias linearToRec2020(F) = linearToHybridGamma!(1.09929682680944, 0.018053968510807, 4.5, 0.45, F);
-/** Rec.2020 to linear function. */
+/** Rec.2020 to linear transfer function. */
 alias rec2020ToLinear(F) = hybridGammaToLinear!(1.09929682680944, 0.018053968510807, 4.5, 1/0.45, F);
 
-/** Linear to gamma space function. */
+/** Linear to gamma transfer function. */
 T linearToGamma(double gamma, T)(T v) if (isFloatingPoint!T)
 {
     return v^^T(1.0/gamma);
 }
-/** Linear to gamma space function. */
+/** Linear to gamma transfer function. */
 T linearToGamma(T)(T v, T gamma) if (isFloatingPoint!T)
 {
     return v^^T(1.0/gamma);
 }
 
-/** Gamma to linear function. */
+/** Gamma to linear transfer function. */
 T gammaToLinear(double gamma, T)(T v) if (isFloatingPoint!T)
 {
     return v^^T(gamma);
 }
-/** Gamma to linear function. */
+/** Gamma to linear transfer function. */
 T gammaToLinear(T)(T v, T gamma) if (isFloatingPoint!T)
 {
     return v^^T(gamma);
@@ -360,6 +362,7 @@ __gshared immutable RGBColorSpaceDesc!F[RGBColorSpace.max + 1] rgbColorSpaceDefs
 
     RGBColorSpaceDesc!F("DCI-P3 Theater",   &linearToGamma!(2.6, F), &gammaToLinear!(2.6, F), WhitePoint!F.DCI, xyY!F(0.6800, 0.3200, 0.228975), xyY!F(0.2650, 0.6900, 0.691739), xyY!F(0.1500, 0.0600, 0.079287)),
     RGBColorSpaceDesc!F("DCI-P3 D65",       &linearToGamma!(2.6, F), &gammaToLinear!(2.6, F), WhitePoint!F.D65, xyY!F(0.6800, 0.3200, 0.228973), xyY!F(0.2650, 0.6900, 0.691752), xyY!F(0.1500, 0.0600, 0.079275)),
+    RGBColorSpaceDesc!F("DCI-P3 Apple",     &linearTosRGB!F,         &sRGBToLinear!F,         WhitePoint!F.D65, xyY!F(0.6800, 0.3200, 0.228973), xyY!F(0.2650, 0.6900, 0.691752), xyY!F(0.1500, 0.0600, 0.079275)),
 ];
 
 __gshared immutable F[3][3][ChromaticAdaptationMethod.max + 1] chromaticAdaptationMatrices(F) = [
