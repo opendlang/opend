@@ -114,7 +114,7 @@ mixin template TestUtils() {
                 catch(Exception ex) {}
             }
 
-            ~this() @safe nothrow shared {
+            ~this() @safe nothrow {
                 --numStructs;
                 try () @trusted { _writelnUt("Struct dtor ", &this, ", i=", i, ", N=", numStructs); }();
                 catch(Exception ex) {}
