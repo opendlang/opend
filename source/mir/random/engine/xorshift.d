@@ -317,7 +317,9 @@ if (isIntegral!StateUInt && isIntegral!OutputUInt
         else static if (!usePointer)
         {
             auto s1 = s[0];
-            s[0 .. (N-1)] = s[1 .. N];
+            import mir.internal.utility: Iota;
+            foreach (i; Iota!(N - 1))
+                s[i] = s[i + 1];
             const s0 = s[N-1];
             s1 ^= s1 << a;
             s[N-1] = s1 ^ s0 ^ (s1 >>> b) ^ (s0 >>> c);
