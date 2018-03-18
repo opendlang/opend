@@ -121,7 +121,7 @@ struct HSx(HSxType type_, ComponentType_ = float, RGBColorSpace colorSpace_ = RG
     /** The parent RGB color space descriptor. */
     enum RGBColorSpaceDesc!F colorSpaceDesc(F = double) = rgbColorSpaceDef!F(colorSpace_);
     /** The color type from the HSx family. */
-    enum type = type_;
+    enum HSxType type = type_;
 
     // mixin the color channels according to the type
     mixin("HueType " ~ Components!type[0] ~ " = 0;");
