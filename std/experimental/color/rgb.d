@@ -498,7 +498,7 @@ T toGrayscale(bool linear, RGBColorSpace colorSpace = RGBColorSpace.sRGB, T)(T r
         return YAxis[0]*r + YAxis[1]*g + YAxis[2]*b;
     }
     else static if (colorSpace == RGBColorSpace.Colorimetry ||
-                   colorSpace == RGBColorSpace.SMPTE_C ||
+                   colorSpace == RGBColorSpace.NTSC ||
                    colorSpace == RGBColorSpace.NTSC_J ||
                    colorSpace == RGBColorSpace.PAL_SECAM)
     {

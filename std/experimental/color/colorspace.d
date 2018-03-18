@@ -91,7 +91,7 @@ enum RGBColorSpace
     /** NTSC Colorimetry (1953) */
     Colorimetry,
     /** NTSC SMPTE/C (1987) (ITU-R BT.601) */
-    SMPTE_C,
+    NTSC,
     /** Japanese NTSC (1987) (ITU-R BT.601) */
     NTSC_J,
     /** PAL/SECAM (ITU-R BT.601) */
@@ -338,14 +338,12 @@ __gshared immutable RGBColorSpaceDesc!F[RGBColorSpace.max + 1] rgbColorSpaceDefs
     RGBColorSpaceDesc!F("sRGB",             &linearTosRGB!F,         &sRGBToLinear!F,         WhitePoint!F.D65, xyY!F(0.6400, 0.3300, 0.212656), xyY!F(0.3000, 0.6000, 0.715158), xyY!F(0.1500, 0.0600, 0.072186)),
     RGBColorSpaceDesc!F("sRGB simple",      &linearToGamma!(2.2, F), &gammaToLinear!(2.2, F), WhitePoint!F.D65, xyY!F(0.6400, 0.3300, 0.212656), xyY!F(0.3000, 0.6000, 0.715158), xyY!F(0.1500, 0.0600, 0.072186)),
 
-    RGBColorSpaceDesc!F("Colorimetry",      &linearToRec601!F,       &rec601ToLinear!F,       WhitePoint!F.C,   xyY!F(0.6700, 0.3300, 0.298839), xyY!F(0.2100, 0.7100, 0.586811), xyY!F(0.1400, 0.0800, 0.114350)),
-    RGBColorSpaceDesc!F("SMPTE/C",          &linearToRec601!F,       &rec601ToLinear!F,       WhitePoint!F.D65, xyY!F(0.6300, 0.3400, 0.212395), xyY!F(0.3100, 0.5950, 0.701049), xyY!F(0.1550, 0.0700, 0.086556)),
-//  RGBColorSpaceDesc!F("Rec601 NTSC",      &linearToRec601!F,       &rec601ToLinear!F,       WhitePoint!F.D65, xyY!F(0.6300, 0.3400, 0.299),    xyY!F(0.3100, 0.5950, 0.587),    xyY!F(0.1550, 0.0700, 0.114)), // what's with the Y difference?
-    RGBColorSpaceDesc!F("NTSC-J",           &linearToRec601!F,       &rec601ToLinear!F,       WhitePoint!F.D93, xyY!F(0.6300, 0.3400, 0.212395), xyY!F(0.3100, 0.5950, 0.701049), xyY!F(0.1550, 0.0700, 0.086556)),
-    RGBColorSpaceDesc!F("PAL/SECAM",        &linearToRec601!F,       &rec601ToLinear!F,       WhitePoint!F.D65, xyY!F(0.6400, 0.3300, 0.222021), xyY!F(0.2900, 0.6000, 0.706645), xyY!F(0.1500, 0.0600, 0.071334)),
-//  RGBColorSpaceDesc!F("Rec601 PAL/SECAM", &linearToRec601!F,       &rec601ToLinear!F,       WhitePoint!F.D65, xyY!F(0.6400, 0.3300, 0.299),    xyY!F(0.2900, 0.6000, 0.587),    xyY!F(0.1500, 0.0600, 0.114)), // what's with the Y difference?
-    RGBColorSpaceDesc!F("HDTV",             &linearToRec601!F,       &rec601ToLinear!F,       WhitePoint!F.D65, xyY!F(0.6400, 0.3300, 0.212656), xyY!F(0.3000, 0.6000, 0.715158), xyY!F(0.1500, 0.0600, 0.072186)),
-    RGBColorSpaceDesc!F("UHDTV",            &linearToRec2020!F,      &rec2020ToLinear!F,      WhitePoint!F.D65, xyY!F(0.7080, 0.2920, 0.262698), xyY!F(0.1700, 0.7970, 0.678009), xyY!F(0.1310, 0.0460, 0.059293)),
+    RGBColorSpaceDesc!F("Colorimetry",      &linearToRec601!F,       &rec601ToLinear!F,       WhitePoint!F.C,   xyY!F(0.6700, 0.3300, 0.299000), xyY!F(0.2100, 0.7100, 0.587000), xyY!F(0.1400, 0.0800, 0.114000)),
+    RGBColorSpaceDesc!F("NTSC",             &linearToRec601!F,       &rec601ToLinear!F,       WhitePoint!F.D65, xyY!F(0.6300, 0.3400, 0.299000), xyY!F(0.3100, 0.5950, 0.587000), xyY!F(0.1550, 0.0700, 0.114000)),
+    RGBColorSpaceDesc!F("NTSC-J",           &linearToRec601!F,       &rec601ToLinear!F,       WhitePoint!F.D93, xyY!F(0.6300, 0.3400, 0.299000), xyY!F(0.3100, 0.5950, 0.587000), xyY!F(0.1550, 0.0700, 0.114000)),
+    RGBColorSpaceDesc!F("PAL/SECAM",        &linearToRec601!F,       &rec601ToLinear!F,       WhitePoint!F.D65, xyY!F(0.6400, 0.3300, 0.299000), xyY!F(0.2900, 0.6000, 0.587000), xyY!F(0.1500, 0.0600, 0.114000)),
+    RGBColorSpaceDesc!F("HDTV",             &linearToRec601!F,       &rec601ToLinear!F,       WhitePoint!F.D65, xyY!F(0.6400, 0.3300, 0.212600), xyY!F(0.3000, 0.6000, 0.715200), xyY!F(0.1500, 0.0600, 0.072200)),
+    RGBColorSpaceDesc!F("UHDTV",            &linearToRec2020!F,      &rec2020ToLinear!F,      WhitePoint!F.D65, xyY!F(0.7080, 0.2920, 0.262700), xyY!F(0.1700, 0.7970, 0.678000), xyY!F(0.1310, 0.0460, 0.059300)),
 
     RGBColorSpaceDesc!F("Adobe RGB",        &linearToGamma!(2.2, F), &gammaToLinear!(2.2, F), WhitePoint!F.D65, xyY!F(0.6400, 0.3300, 0.297361), xyY!F(0.2100, 0.7100, 0.627355), xyY!F(0.1500, 0.0600, 0.075285)),
     RGBColorSpaceDesc!F("Wide Gamut RGB",   &linearToGamma!(2.2, F), &gammaToLinear!(2.2, F), WhitePoint!F.D50, xyY!F(0.7350, 0.2650, 0.258187), xyY!F(0.1150, 0.8260, 0.724938), xyY!F(0.1570, 0.0180, 0.016875)),
