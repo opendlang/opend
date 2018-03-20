@@ -1188,7 +1188,7 @@ private string generateConstructors(U)()
 		}.format(tname, tname, tname, tname, tname, tname);
 
 	// type constructors with explicit type tag
-	foreach (tname; AmbiguousTypeFields!U)
+	foreach (tname; TypeTuple!(UniqueTypeFields!U, AmbiguousTypeFields!U))
 		ret ~= q{
 			this(typeof(U.%s) value, Kind type)
 			{
