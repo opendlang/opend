@@ -189,7 +189,18 @@ struct TaggedAlgebraic(U) if (is(U == union) || is(U == struct))
 	/// Enables accessing properties/fields of the stored value.
 	@property auto opDispatch(string name, this TA, ARGS...)(auto ref ARGS args) if (hasOp!(TA, OpKind.field, name, ARGS) && !hasOp!(TA, OpKind.method, name, ARGS)) { return implementOp!(OpKind.field, name)(this, args); }
 	/// Enables equality comparison with the stored value.
-	auto opEquals(T, this TA)(auto ref T other) if (hasOp!(TA, OpKind.binary, "==", T)) { return implementOp!(OpKind.binary, "==")(this, other); }
+	auto opEquals(T, this TA)(auto ref T other)
+		if (is(Unqual!T == TaggedAlgebraic) || hasOp!(TA, OpKind.binary, "==", T))
+	{
+		static if (is(Unqual!T == TaggedAlgebraic)) {
+			if (this.kind != other.kind) return false;
+			final switch (this.kind)
+				foreach (i, fname; fieldNames)
+					case __traits(getMember, Kind, fname):
+						return trustedGet!fname == other.trustedGet!fname;
+			assert(false); // never reached
+		} else return implementOp!(OpKind.binary, "==")(this, other);
+	}
 	/// Enables relational comparisons with the stored value.
 	auto opCmp(T, this TA)(auto ref T other) if (hasOp!(TA, OpKind.binary, "<", T)) { assert(false, "TODO!"); }
 	/// Enables the use of unary operators with the stored value.
@@ -360,6 +371,28 @@ unittest { // std.conv integration
 
 	ta = null;
 	assert(ta.kind == TA.Kind.null_);
+}
+
+@safe unittest { // comparison of whole TAs
+	static union Test {
+		typeof(null) a;
+		typeof(null) b;
+		Void c;
+		Void d;
+		int e;
+		int f;
+	}
+	alias TA = TaggedAlgebraic!Test;
+
+	assert(TA(null, TA.Kind.a) == TA(null, TA.Kind.a));
+	assert(TA(null, TA.Kind.a) != TA(null, TA.Kind.b));
+	assert(TA(null, TA.Kind.a) != TA(Void.init, TA.Kind.c));
+	assert(TA(null, TA.Kind.a) != TA(0, TA.Kind.e));
+	assert(TA(Void.init, TA.Kind.c) == TA(Void.init, TA.Kind.c));
+	assert(TA(Void.init, TA.Kind.c) != TA(Void.init, TA.Kind.d));
+	assert(TA(1, TA.Kind.e) == TA(1, TA.Kind.e));
+	assert(TA(1, TA.Kind.e) != TA(2, TA.Kind.e));
+	assert(TA(1, TA.Kind.e) != TA(1, TA.Kind.f));
 }
 
 unittest {
@@ -1309,4 +1342,13 @@ private void rawSwap(T)(ref T a, ref T b)
 	tmp[] = ab[];
 	ab[] = bb[];
 	bb[] = tmp[];
+}
+
+
+unittest {
+	struct TU { int i; }
+	alias TA = TaggedAlgebraic!TU;
+
+	auto ta = TA(12);
+	static assert(!is(typeof(ta.put(12))));
 }
