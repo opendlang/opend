@@ -88,14 +88,12 @@ struct TaggedAlgebraic(U) if (is(U == union) || is(U == struct))
 
 	this(TaggedAlgebraic other)
 	{
-		import std.algorithm : swap;
-		swap(this, other);
+		rawSwap(this, other);
 	}
 
 	void opAssign(TaggedAlgebraic other)
 	{
-		import std.algorithm : swap;
-		swap(this, other);
+		rawSwap(this, other);
 	}
 
 	// postblit constructor
@@ -1297,4 +1295,18 @@ private void rawEmplace(T)(void[] dst, ref T src)
 		emplace!T(&tdst[0]);
 		tdst[0] = src;
 	}
+}
+
+// std.algorithm.mutation.swap sometimes fails to compile due to
+// internal errors in hasElaborateAssign!T/isAssignable!T. This is probably
+// caused by cyclic dependencies. However, there is no reason to do these
+// checks in this context, so we just directly move the raw memory.
+private void rawSwap(T)(ref T a, ref T b)
+@trusted {
+	void[T.sizeof] tmp = void;
+	void[] ab = (cast(void*)&a)[0 .. T.sizeof];
+	void[] bb = (cast(void*)&b)[0 .. T.sizeof];
+	tmp[] = ab[];
+	ab[] = bb[];
+	bb[] = tmp[];
 }
