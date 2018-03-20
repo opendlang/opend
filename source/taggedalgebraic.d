@@ -464,29 +464,26 @@ unittest {
 	static assert( is(typeof(ta.testI())));
 }
 
-version (unittest) {
-	// test recursive definition using a wrapper dummy struct
-	// (needed to avoid "no size yet for forward reference" errors)
-	template ID(What) { alias ID = What; }
-	private struct _test_Wrapper {
-		TaggedAlgebraic!_test_U u;
+// test recursive definition using a wrapper dummy struct
+// (needed to avoid "no size yet for forward reference" errors)
+unittest {
+	static struct TA {
+		union U {
+			TA[] children;
+			int value;
+		}
+		TaggedAlgebraic!U u;
 		alias u this;
-		this(ARGS...)(ARGS args) { u = TaggedAlgebraic!_test_U(args); }
+		this(ARGS...)(ARGS args) { u = TaggedAlgebraic!U(args); }
 	}
-	private union _test_U {
-		_test_Wrapper[] children;
-		int value;
-	}
-	unittest {
-		alias TA = _test_Wrapper;
-		auto ta = TA(null);
-		ta ~= TA(0);
-		ta ~= TA(1);
-		ta ~= TA([TA(2)]);
-		assert(ta[0] == 0);
-		assert(ta[1] == 1);
-		assert(ta[2][0] == 2);
-	}
+
+	auto ta = TA(null);
+	ta ~= TA(0);
+	ta ~= TA(1);
+	ta ~= TA([TA(2)]);
+	assert(ta[0] == 0);
+	assert(ta[1] == 1);
+	assert(ta[2][0] == 2);
 }
 
 unittest { // postblit/destructor test
