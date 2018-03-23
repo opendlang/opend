@@ -1,6 +1,14 @@
+
 ErupteD
 =======
 
+**Developement Information:**  
+Project ErupteD has been deprecated, it was upgraded with breaking changes into Project [ErupteD-V2](https://github.com/ParticlePeter/Erupted-V2).  
+If the old functionality is required use [ErupteD-V1](https://github.com/ParticlePeter/ErupteD-V1) instead. ErupteD-V1 represents the current state of ErupteD without deprecation information. Neither ErupteD nor ErupteD-V1 will  be further developed, vulkan v1.0.69 is the last suported version.  
+ErupteD-V2 comes with a new versioning system corresponding to Vulkan-Docs versioning. Eventually ErupteD will be destroyed and ErupteD-V2 renamed to ErupteD.  
+Additional details can be found in ErupteD-V2 - [Deprecation and Upgrade Process](https://github.com/ParticlePeter/Erupted-V2#erupted-deprecation-and-upgrade-process).
+
+**Original Introduction:**
 Automatically-generated D bindings for Vulkan based on [D-Vulkan](https://github.com/ColonelThirtyTwo/dvulkan). Acquiring Vulkan functions is based on Intel [API without Secrets](https://software.intel.com/en-us/api-without-secrets-introduction-to-vulkan-part-1)
 
 Usage
