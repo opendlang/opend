@@ -1,6 +1,6 @@
-name			"erupted"
+name			"erupted_v1"
 description		"Auto-generated D bindings for Vulkan"
-copyright		"Copyright 2015-2016 The Khronos Group Inc.; Copyright 2016 Alex Parrill Peter Particle"
+copyright		"Copyright 2015-2016 The Khronos Group Inc.; Copyright 2016 Alex Parrill, Peter Particle"
 authors			"Alex Parrill" "Peter Particle"
 targetType		"sourceLibrary"
 license			"BSD 2-clause"
