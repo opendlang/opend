@@ -36,7 +36,7 @@ public import mir.random.engine;
 
 version (LDC)
 {
-    import ldc.intrinsics: log2 = llvm_log2;
+    import ldc.intrinsics: llvm_expect, log2 = llvm_log2;
 
     private
     pragma(inline, true)
@@ -45,11 +45,22 @@ version (LDC)
         import ldc.intrinsics;
         return llvm_cttz(v, true);
     }
+
+    // LDC 1.8.0 supports llvm_expect in CTFE.
+    private template _ctfeExpect(string expr, string expected)
+    {
+        static if (__traits(compiles, { enum a = llvm_expect(123, 456); static assert(a == 123); }))
+            private enum _ctfeExpect = "llvm_expect("~expr~","~expected~")";
+        else
+            private enum _ctfeExpect = expr;
+    }
 }
 else
 {
     import std.math: log2;
     import core.bitop: bsf;
+
+    private enum _ctfeExpect(string expr, string expected) = expr;
 }
 
 /++
@@ -497,50 +508,6 @@ T randIndex(T, G)(scope ref G gen, T _m)
     else
         alias MaybeR = void;
 
-    version (LDC) if (!__ctfe)
-    {
-        static if (!is(MaybeR == void))
-        {
-            alias R = MaybeR;
-            static assert(R.sizeof >= T.sizeof * 2);
-            import mir.ndslice.internal: _expect;
-            //Use Daniel Lemire's fast alternative to modulo reduction:
-            //https://lemire.me/blog/2016/06/30/fast-random-shuffling/
-            R randombits = cast(R) gen.rand!T;
-            R multiresult = randombits * m;
-            T leftover = cast(T) multiresult;
-            if (_expect(leftover < m, false))
-            {
-                immutable threshold = -m % m ;
-                while (leftover < threshold)
-                {
-                    randombits =  cast(R) gen.rand!T;
-                    multiresult = randombits * m;
-                    leftover = cast(T) multiresult;
-                }
-            }
-            enum finalshift = T.sizeof * 8;
-            return cast(T) (multiresult >>> finalshift);
-        }
-        else
-        {
-            import mir.utility : extMul;
-            import mir.ndslice.internal: _expect;
-            //Use Daniel Lemire's fast alternative to modulo reduction:
-            //https://lemire.me/blog/2016/06/30/fast-random-shuffling/
-            auto u = extMul!T(gen.rand!T, m);
-            if (_expect(u.low < m, false))
-            {
-                immutable T threshold = -m % m;
-                while (u.low < threshold)
-                {
-                    u = extMul!T(gen.rand!T, m);
-                }
-            }
-            return u.high;
-        }
-    }
-
     static if (!is(MaybeR == void))
     {
         alias R = MaybeR;
@@ -550,7 +517,7 @@ T randIndex(T, G)(scope ref G gen, T _m)
         R randombits = cast(R) gen.rand!T;
         R multiresult = randombits * m;
         T leftover = cast(T) multiresult;
-        if (leftover < m)
+        if (mixin(_ctfeExpect!(`leftover < m`, `false`)))
         {
             immutable threshold = -m % m ;
             while (leftover < threshold)
@@ -569,7 +536,7 @@ T randIndex(T, G)(scope ref G gen, T _m)
         //Use Daniel Lemire's fast alternative to modulo reduction:
         //https://lemire.me/blog/2016/06/30/fast-random-shuffling/
         auto u = extMul!T(gen.rand!T, m);
-        if (u.low < m)
+        if (mixin(_ctfeExpect!(`u.low < m`, `false`)))
         {
             immutable T threshold = -m % m;
             while (u.low < threshold)
