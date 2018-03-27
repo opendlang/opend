@@ -1,3 +1,4 @@
+/*
 deprecated( "
 
 Developement information: Project ErupteD has been deprecated.
@@ -12,7 +13,8 @@ coresponding to Vulkan-Docs versioning. Details are found in ErupteD-V2 project.
 (https://github.com/ParticlePeter/Erupted-V2#erupted-deprecation-and-upgrade-process)
 
 "
-) module erupted.types;
+)*/
+module erupted.types;
 
 alias uint8_t = ubyte;
 alias uint16_t = ushort;
