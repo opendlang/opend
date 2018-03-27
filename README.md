@@ -20,7 +20,7 @@ Documentation: http://docs.random.dlang.io/latest/index.html
 /+ dub.json:
 {
     "name": "test_random",
-    "dependencies": {"mir-random": "~>0.3.3"}
+    "dependencies": {"mir-random": "~>0.4.0"}
 }
 +/
 
@@ -47,7 +47,7 @@ void main()
 /+ dub.json:
 {
     "name": "test_random",
-    "dependencies": {"mir-random": "~>0.3.3"}
+    "dependencies": {"mir-random": "~>0.4.0"}
 }
 +/
 
@@ -112,5 +112,6 @@ void main(){
  - 64-bit Mt19937 is default for 64-bit targets
  - Permuted Congruential Generators (new)
  - SplitMix generators (new)
+ - Fixed XorshiftEngine's support for non-`uint` word sizes & allow various shift directions
  - XorshiftStar Generators (new)
  - Xoroshiro128Plus generator (new)
