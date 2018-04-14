@@ -28,7 +28,21 @@ private:
 
 
 /// private helper functions for posix platforms
-version( Posix ) {
+else version( Android ) {
+private:
+    import core.sys.posix.dlfcn : dlerror, dlopen, dlclose, dlsym, RTLD_NOW, RTLD_LOCAL;
+    void*           vulkan_lib  = null;
+    auto loadLib()  { return dlopen( "libvulkan.so", RTLD_NOW | RTLD_LOCAL ); }
+    auto freeLib()  { return dlclose( vulkan_lib ) == 0; }
+    auto loadSym()  { return cast( PFN_vkGetInstanceProcAddr )dlsym( vulkan_lib, "vkGetInstanceProcAddr" ); }
+    void logLibError( FILE* log_stream, const( char )* message ) {
+        fprintf( log_stream, "%slibvulkan.so.1! Error: %s\n", message, dlerror );
+    }
+}
+
+
+/// private helper functions for posix platforms
+else version( Posix ) {
 private:
     import core.sys.posix.dlfcn : dlerror, dlopen, dlclose, dlsym, RTLD_LAZY, RTLD_LOCAL;
     void*           vulkan_lib  = null;
