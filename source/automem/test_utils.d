@@ -11,13 +11,13 @@ mixin template TestUtils() {
          */
         auto theTestAllocator() {
             static struct Context {
-                import std.experimental.allocator: theAllocator;
+                import stdx.allocator: theAllocator;
 
                 TestAllocator testAllocator;
                 typeof(theAllocator) oldAllocator;
 
                 static auto create() {
-                    import std.experimental.allocator: allocatorObject;
+                    import stdx.allocator: allocatorObject;
 
                     Context ctx;
 
@@ -28,7 +28,7 @@ mixin template TestUtils() {
                 }
 
                 ~this() {
-                    import std.experimental.allocator: dispose;
+                    import stdx.allocator: dispose;
 
                     // 2.079.0 changed the API - we check here
                     static if(__traits(compiles, testAllocator.dispose(theAllocator)))
@@ -145,7 +145,7 @@ mixin template TestUtils() {
 
         private struct SafeAllocator {
 
-            import std.experimental.allocator.mallocator: Mallocator;
+            import stdx.allocator.mallocator: Mallocator;
 
             void[] allocate(this T)(size_t i) @trusted nothrow @nogc {
                 return Mallocator.instance.allocate(i);

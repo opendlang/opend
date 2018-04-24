@@ -5,7 +5,7 @@ module automem.unique;
 
 import automem.test_utils: TestUtils;
 import automem.traits: isAllocator;
-import std.experimental.allocator: theAllocator;
+import stdx.allocator: theAllocator;
 import std.typecons: Flag;
 
 version(unittest) {
@@ -184,7 +184,7 @@ private:
 private template makeObject(Flag!"supportGC" supportGC, args...)
 {
     void makeObject(Type,A)(ref Unique!(Type, A) u) {
-        import std.experimental.allocator: make;
+        import stdx.allocator: make;
         import std.functional : forward;
         import std.traits : hasIndirections;
         import core.memory : GC;
@@ -243,7 +243,7 @@ private template makeObject(Flag!"supportGC" supportGC, args...)
 @("with struct and mallocator")
 @system unittest {
 
-    import std.experimental.allocator.mallocator: Mallocator;
+    import stdx.allocator.mallocator: Mallocator;
     {
         const foo = Unique!(Struct, Mallocator)(5);
         foo.twice.shouldEqual(10);
@@ -350,7 +350,7 @@ private template makeObject(Flag!"supportGC" supportGC, args...)
 @("@nogc")
 @system @nogc unittest {
 
-    import std.experimental.allocator.mallocator: Mallocator;
+    import stdx.allocator.mallocator: Mallocator;
 
     {
         const ptr = Unique!(NoGcStruct, Mallocator)(5);
@@ -474,7 +474,7 @@ private template makeObject(Flag!"supportGC" supportGC, args...)
 
 @("release")
 @system unittest {
-    import std.experimental.allocator: dispose;
+    import stdx.allocator: dispose;
     import core.exception: AssertError;
 
     try {
