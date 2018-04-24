@@ -5,7 +5,7 @@ module automem.unique_array;
 
 import automem.traits: isAllocator;
 import automem.test_utils: TestUtils;
-import std.experimental.allocator: theAllocator;
+import stdx.allocator: theAllocator;
 
 version(unittest) {
     import unit_threaded;
@@ -130,7 +130,7 @@ struct UniqueArray(Type, Allocator = typeof(theAllocator)) if(isAllocator!Alloca
 
     @property void length(long size) {
 
-        import std.experimental.allocator: expandArray, shrinkArray;
+        import stdx.allocator: expandArray, shrinkArray;
 
         if(_objects is null) {
             makeObjects(size);
@@ -195,7 +195,7 @@ struct UniqueArray(Type, Allocator = typeof(theAllocator)) if(isAllocator!Alloca
        Reserves memory to prevent too many allocations
      */
     void reserve(in long size) {
-        import std.experimental.allocator: expandArray;
+        import stdx.allocator: expandArray;
 
         if(_objects is null) {
             const oldLength = length;
@@ -248,20 +248,20 @@ private:
         Allocator _allocator;
 
     void makeObjects(size_t size) {
-        import std.experimental.allocator: makeArray;
+        import stdx.allocator: makeArray;
         _objects = _allocator.makeArray!Type(size);
         setLength;
     }
 
     void makeObjects(size_t size, Type init) {
-        import std.experimental.allocator: makeArray;
+        import stdx.allocator: makeArray;
         _objects = _allocator.makeArray!Type(size, init);
         setLength;
 
     }
 
     void makeObjects(R)(R range) if(isInputRange!R) {
-        import std.experimental.allocator: makeArray;
+        import stdx.allocator: makeArray;
         _objects = _allocator.makeArray!Type(range);
         setLength;
     }
@@ -271,7 +271,7 @@ private:
     }
 
     void deleteObjects() {
-        import std.experimental.allocator: dispose;
+        import stdx.allocator: dispose;
         import std.traits: isPointer;
 
         static if(isPointer!Allocator)
@@ -305,7 +305,7 @@ private:
 
 @("default Mallocator")
 @system unittest {
-    import std.experimental.allocator.mallocator: Mallocator;
+    import stdx.allocator.mallocator: Mallocator;
     defaultTest!Mallocator;
 }
 
@@ -372,7 +372,7 @@ version(unittest) {
 @("@nogc")
 @system @nogc unittest {
 
-    import std.experimental.allocator.mallocator: Mallocator;
+    import stdx.allocator.mallocator: Mallocator;
 
     auto arr = UniqueArray!(NoGcStruct, Mallocator)(2);
     assert(arr.length == 2);
@@ -411,7 +411,7 @@ version(unittest) {
 
 @("init Mallocator")
 @system unittest {
-    import std.experimental.allocator.mallocator: Mallocator;
+    import stdx.allocator.mallocator: Mallocator;
     alias allocator = Mallocator.instance;
     auto arr = UniqueArray!(Struct, Mallocator)(2, Struct(7));
     arr[].shouldEqual([Struct(7), Struct(7)]);
@@ -427,7 +427,7 @@ version(unittest) {
 
 @("range Mallocator")
 @system unittest {
-    import std.experimental.allocator.mallocator: Mallocator;
+    import stdx.allocator.mallocator: Mallocator;
     auto arr = UniqueArray!(Struct, Mallocator)([Struct(1), Struct(2)]);
     arr[].shouldEqual([Struct(1), Struct(2)]);
 }
@@ -443,28 +443,28 @@ version(unittest) {
 
 @("issue 1 array")
 @system unittest {
-    import std.experimental.allocator.mallocator;
+    import stdx.allocator.mallocator;
     UniqueArray!(int, Mallocator) a;
     a ~= [0, 1];
 }
 
 @("issue 1 value")
 @system unittest {
-    import std.experimental.allocator.mallocator;
+    import stdx.allocator.mallocator;
     UniqueArray!(int, Mallocator) a;
     a ~= 7;
 }
 
 @("issue 1 UniqueArray")
 @system unittest {
-    import std.experimental.allocator.mallocator;
+    import stdx.allocator.mallocator;
     UniqueArray!(int, Mallocator) a;
     a ~= UniqueArray!(int, Mallocator)([1, 2, 3]);
 }
 
 @("dereference")
 unittest {
-    import std.experimental.allocator.mallocator;
+    import stdx.allocator.mallocator;
     UniqueArray!(int, Mallocator) a;
     a ~= [0, 1];
     (*a).shouldEqual([0, 1]);
@@ -530,7 +530,7 @@ unittest {
 
 @("dup Mallocator")
 @system unittest {
-    import std.experimental.allocator.mallocator: Mallocator;
+    import stdx.allocator.mallocator: Mallocator;
     auto a = UniqueArray!(int, Mallocator)([1, 2, 3, 4, 5]);
     auto b = a.dup;
     b[].shouldEqual([1, 2, 3, 4, 5]);

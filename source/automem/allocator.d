@@ -1,5 +1,5 @@
 /**
-   Custom versions of std.experimental.allocator functions (unfortunately)
+   Custom versions of stdx.allocator functions (unfortunately)
  */
 module automem.allocator;
 
@@ -68,7 +68,7 @@ void dispose(A, T)(auto ref A alloc, T[] array)
 @system unittest
 {
 
-    import std.experimental.allocator: theAllocator, make, makeArray;
+    import stdx.allocator: theAllocator, make, makeArray;
 
     static int x;
     static interface I
@@ -109,8 +109,8 @@ void dispose(A, T)(auto ref A alloc, T[] array)
 ///
 @system unittest //bugzilla 15721
 {
-    import std.experimental.allocator: make;
-    import std.experimental.allocator.mallocator : Mallocator;
+    import stdx.allocator: make;
+    import stdx.allocator.mallocator : Mallocator;
 
     interface Foo {}
     class Bar: Foo {}

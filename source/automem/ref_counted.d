@@ -6,7 +6,7 @@ module automem.ref_counted;
 import automem.traits: isAllocator;
 import automem.test_utils: TestUtils;
 import automem.unique: Unique;
-import std.experimental.allocator: theAllocator, processAllocator;
+import stdx.allocator: theAllocator, processAllocator;
 import std.typecons: Flag;
 
 version(unittest) {
@@ -199,7 +199,7 @@ private:
     public ImplType* _impl; // public or alias this doesn't work
 
     void allocateImpl() {
-        import std.experimental.allocator: make;
+        import stdx.allocator: make;
         import std.traits: hasIndirections;
 
         _impl = cast(typeof(_impl))_allocator.allocate(Impl.sizeof);
@@ -362,7 +362,7 @@ private template makeObject(args...)
 
 @("struct test allocator one rvalue assignment mallocator")
 @system unittest {
-    import std.experimental.allocator.mallocator: Mallocator;
+    import stdx.allocator.mallocator: Mallocator;
     {
         RefCounted!(Struct, Mallocator) ptr;
         ptr = RefCounted!(Struct, Mallocator)(5);
@@ -513,7 +513,7 @@ static if (__VERSION__ >= 2079)
 
 @("assign from T")
 @system unittest {
-    import std.experimental.allocator.mallocator: Mallocator;
+    import stdx.allocator.mallocator: Mallocator;
 
     {
         auto a = RefCounted!(Struct, Mallocator)(3);
@@ -592,7 +592,7 @@ static if (__VERSION__ >= 2079) {
 
     @("threads Mallocator")
         @system unittest {
-        import std.experimental.allocator.mallocator: Mallocator;
+        import stdx.allocator.mallocator: Mallocator;
         static assert(__traits(compiles, sendRefCounted!Mallocator(7)));
     }
 

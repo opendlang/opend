@@ -4,7 +4,7 @@
 [![Coverage](https://codecov.io/gh/atilaneves/automem/branch/master/graph/badge.svg)](https://codecov.io/gh/atilaneves/automem)
 [![Open on run.dlang.io](https://img.shields.io/badge/run.dlang.io-open-blue.svg)](https://run.dlang.io/is/P3yCpG)
 
-C++-style automatic memory management smart pointers for D using `std.experimental.allocator`.
+C++-style automatic memory management smart pointers for D using `stdx.allocator`.
 
 Unlike the C++ variants, the smart pointers themselves allocate the memory for the objects they contain.
 That ensures the right allocator is used to dispose of the memory as well.
@@ -29,7 +29,7 @@ Sample code:
 // can be @safe if the allocator has @safe functions
 @system @nogc unittest {
 
-    import std.experimental.allocator.mallocator: Mallocator;
+    import stdx.allocator.mallocator: Mallocator;
     import std.algorithm: move;
 
     struct Point {
