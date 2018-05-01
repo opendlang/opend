@@ -482,7 +482,7 @@ unittest
     assertEqual( 3, aesFields!(typeof(pnt2)).length );
 }
 
-private template hasAesField(T, alias name)
+package template hasAesField(T, alias name)
 {
     enum bool hasAesField = (function() {
         bool has = false;

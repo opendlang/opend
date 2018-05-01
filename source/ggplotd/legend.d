@@ -4,7 +4,7 @@ import cairo = cairo;
 
 import ggplotd.colour : ColourGradient;
 
-private struct Legend
+package struct Legend
 {
     string type = "continuous";
     int height = 70;
