@@ -3,6 +3,6 @@
 	"versions": {
 		"stdx-allocator": "2.77.1",
 		"test_allocator": "0.2.0",
-		"unit-threaded": "0.7.43"
+		"unit-threaded": "0.7.45"
 	}
 }
