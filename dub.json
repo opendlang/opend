@@ -9,6 +9,5 @@
     "dependencies": {
         "isfreedesktop" : "~>0.1.0"
     },
-    "versions" : ["xdgpathsFileTest"],
-    "subPackages" : ["./examples/test"]
+    "versions" : ["xdgpathsFileTest"]
 }
