@@ -2,18 +2,12 @@ import reggae;
 import std.typecons;
 
 enum debugFlags = "-w -g -debug";
-static if (__VERSION__ >= 2077)
-    enum allTogether = No.allTogether;
-else
-    enum allTogether = Yes.allTogether;
 
 alias lib = dubDefaultTarget!(CompilerFlags(debugFlags));
-alias ut = dubTestTarget!(CompilerFlags(debugFlags ~ " -cov"),
-                          LinkerFlags(),
-                          allTogether);
+alias ut = dubTestTarget!(CompilerFlags(debugFlags ~ " -cov"));
 alias utl = dubConfigurationTarget!(
-    Configuration("ut"),
+    Configuration("utl"),
     CompilerFlags(debugFlags ~ " -unittest -version=unitThreadedLight -cov")
 );
 
-mixin build!(lib, ut, utl);
+mixin build!(lib, optional!ut, optional!utl);
