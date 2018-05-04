@@ -6,7 +6,7 @@ D library for retrieving XDG base directories as described by [XDG Base Director
 
 [Online documentation](https://freeslave.github.io/d-freedesktop/docs/xdgpaths.html)
 
-## Run [example](examples/xdgpathstest/source/app.d)
+## Run [example](examples/test.d)
 
     XDG_CONFIG_HOME=$HOME/config-test dub examples/test.d --path=config --shouldCreate --subfolder=Company/Product
 
