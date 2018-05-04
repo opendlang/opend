@@ -1,0 +1,26 @@
+name "automem"
+authors "Atila Neves"
+description "Automatic memory management"
+license "BSD 3-clause"
+targetType "library"
+dependency "stdx-allocator" version="~>2.77.0"
+
+configuration "library" {
+}
+
+configuration "unittest" {
+    targetType "executable"
+    targetName "ut"
+    mainSourceFile "ut.d"
+    dependency "unit-threaded" version="~>0.7.0"
+    dependency "test_allocator" version="~>0.2.0"
+}
+
+configuration "utl" {
+    targetType "executable"
+    targetName "utl"
+    mainSourceFile "ut.d"
+    dependency "unit-threaded" version="~>0.7.0"
+    dependency "test_allocator" version="~>0.2.0"
+    version "unitThreadedLight"
+}
