@@ -13,7 +13,7 @@ Works on Freedesktop (GNU/Linux, FreeBSD, etc.), Windows and OS X.
 
 ## Running examples
 
-### [Print directories](examples/printdirs/source/app.d)
+### [Print directories](examples/printdirs.d)
 
 Prints some standard paths to stdout.
 
@@ -23,7 +23,7 @@ On OSX it also can be built to use Cocoa instead of Carbon:
 
     dub --single examples/printdirs.d --override-config=standardpaths/cocoa
 
-### [Get path](examples/getpath/source/app.d)
+### [Get path](examples/getpath.d)
 
 Get path of given type, verify it exists or create if it does not.
 

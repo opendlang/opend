@@ -16,4 +16,4 @@ matrix:
 
 script:
     - dub build --compiler=${DC} --config=${CONFIG}
-    - dub --single examples/printdirs --compiler=${DC} --override-config=standardpaths/${CONFIG}
+    - dub --single examples/printdirs.d --compiler=${DC} --override-config=standardpaths/${CONFIG}
