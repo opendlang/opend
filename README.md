@@ -17,26 +17,26 @@ Works on Freedesktop (GNU/Linux, FreeBSD, etc.), Windows and OS X.
 
 Prints some standard paths to stdout.
 
-    dub run :printdirs --build=release
-    
-On OSX it also can be built to use Cocoa instead of Carbon (compiler must have proper Objective-C support. Tested with ldc 1.0.0):
+    dub examples/printdirs.d
 
-    dub run :printdirs --config=cocoa --compiler=ldc2
+On OSX it also can be built to use Cocoa instead of Carbon:
+
+    dub --single examples/printdirs.d --override-config=standardpaths/cocoa
 
 ### [Get path](examples/getpath/source/app.d)
 
 Get path of given type, verify it exists or create if it does not.
 
-    dub run :getpath -- --verify --create templates
-    
+    dub examples/getpath.d --verify --create templates
+
 Use Cocoa instead of Carbon on OSX:
 
-    dub run :getpath --config=cocoa --compiler=ldc2 -- --create music
-    
+    dub --single examples/getpath.d --override-config=standardpaths/cocoa -- --create music
+
 With subfolder:
-    
-    dub run :getpath -- --subfolder=MyLittleCompany/MyLittleApplication data
-    
+
+    dub examples/getpath.d --subfolder=MyLittleCompany/MyLittleApplication data
+
 ## Use cases
 
 Some code snippets showing how standardpaths library is supposed to be used.
@@ -55,7 +55,7 @@ void showFileDialog()
 {
     auto fileDialog = new FileDialog;
     auto folderFlag = FolderFlag.verify;
-    
+
     string[] paths = [
         homeDir(),
         writablePath(StandardPath.desktop, folderFlag),
@@ -99,7 +99,7 @@ void saveSettings(const Config config)
         throw new Exception("Could not create config directory");
     }
     string configFile = buildPath(configDir, "config.conf");
-    
+
     auto f = File(configFile, "w"); 
     // write settings
     writeln("Settings saved!");
@@ -115,7 +115,7 @@ It's up to developer to decide how to read configs, e.g. whether to read the fir
 Config readSettings()
 {
     string[] configDirs = standardPaths(StandardPath.config, buildPath(organizationName, applicationName));
-    
+
     foreach(configDir; configDirs) {
         string configFile = buildPath(configDir, "config.conf");
         if (configFile.exists) {

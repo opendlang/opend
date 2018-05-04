@@ -1,8 +1,8 @@
 /**
  * Functions for retrieving standard paths in cross-platform manner.
- * Authors: 
+ * Authors:
  *  $(LINK2 https://github.com/FreeSlave, Roman Chistokhodov)
- * License: 
+ * License:
  *  $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
  * Copyright:
  *  Roman Chistokhodov 2015-2016
@@ -16,15 +16,15 @@ private {
     import std.file;
     import std.exception;
     import std.range;
-    
+
     import isfreedesktop;
-    
+
     debug {
         import std.stdio : stderr;
     }
-    
+
     static if( __VERSION__ < 2066 ) enum nogc = 1;
-    
+
     string verifyIfNeeded(string path, bool shouldVerify) nothrow @trusted
     {
         if (path.length && shouldVerify) {
@@ -59,13 +59,13 @@ version(Windows) {
         } else {
             import core.sys.windows.windows;
         }
-        
+
         import std.utf;
     }
 } else version(Posix) {
     private {
         import std.string : toStringz;
-        
+
         static if (is(typeof({import std.string : fromStringz;}))) {
             import std.string : fromStringz;
         } else { //own fromStringz implementation for compatibility reasons
@@ -80,7 +80,7 @@ version(Windows) {
         {
             return start.empty ? null : start ~ path;
         }
-        
+
         string maybeBuild(string start, string path) nothrow @safe
         {
             return start.empty ? null : buildPath(start, path);
@@ -90,13 +90,13 @@ version(Windows) {
     static assert(false, "Unsupported platform");
 }
 
-/** 
+/**
  * Location types that can be passed to $(D writablePath) and $(D standardPaths) functions.
- * 
- * Not all these paths are suggested for showing in file managers or file dialogs. 
+ *
+ * Not all these paths are suggested for showing in file managers or file dialogs.
  * Some of them are meant for internal application usage or should be treated in special way.
  * On usual circumstances user wants to see Desktop, Documents, Downloads, Pictures, Music and Videos directories.
- * 
+ *
  * See_Also:
  *  $(D writablePath), $(D standardPaths)
  */
@@ -122,23 +122,23 @@ enum StandardPath {
     documents,
     ///User's pictures.
     pictures,
-    
+
     ///User's music.
     music,
-    
+
     ///User's videos (movies).
     videos,
-    
+
     ///Directory for user's downloaded files.
     downloads,
-    
+
     /**
      * Location of file templates (e.g. office suite document templates).
      * Note: Not available on OS X.
      */
     templates,
-    
-    /** 
+
+    /**
      * Public share folder.
      * Note: Not available on Windows.
      */
@@ -155,7 +155,7 @@ enum StandardPath {
      * On Freedesktop it's directory where .desktop files are put.
      */
     applications,
-    
+
     /**
      * Automatically started applications.
      * On Windows it's directory where links (.lnk) to autostarted programs are stored.
@@ -180,8 +180,8 @@ enum StandardPath {
 enum FolderFlag
 {
     none = 0,   /// Don't verify that folder exist.
-    /** 
-     * Create if folder does not exist. 
+    /**
+     * Create if folder does not exist.
      * On Windows and OS X directory will be created using platform specific API, so it will have appropriate icon and other settings special for this kind of folder.
      */
     create = 1,
@@ -253,7 +253,7 @@ string writablePath(StandardPath type, FolderFlag params = FolderFlag.none) noth
  * Get paths for various locations.
  * Returns: Array of paths where files of $(U type) belong including one returned by $(D writablePath), or an empty array if no paths are defined for $(U type).
  * This function does not ensure if all returned paths exist and appear to be accessible directories. Returned strings are not required to be unique.
- * Note: This function does cache its results. 
+ * Note: This function does cache its results.
  * It may cause performance impact to call this function often since retrieving some paths can be relatively expensive operation.
  * Example:
 --------------------
@@ -267,11 +267,11 @@ string[] standardPaths(StandardPath type) nothrow @safe;
 /**
  * Evaluate writable path for specific location and append subfolder.
  * This can be used with $(D StandardPath.config) and $(D StandardPath.data) to retrieve folder specific for this application instead of generic path.
- * Returns: Path where files of $(U type) should be written to by current user concatenated with subfolder, 
+ * Returns: Path where files of $(U type) should be written to by current user concatenated with subfolder,
  *  or an empty string if could not determine path.
  * Params:
  *  type = Location to lookup.
- *  subfolder = Subfolder that will be appended to base writable path. 
+ *  subfolder = Subfolder that will be appended to base writable path.
  *  params = Union of $(D FolderFlag)s. This affects both base path and sub path.
  * Note: This function does not cache its results.
  * Example:
@@ -322,14 +322,14 @@ string[] standardPaths(StandardPath type, string subfolder) nothrow @safe
 }
 
 version(D_Ddoc)
-{   
+{
     /**
      * Path to $(B Roaming) data directory. Windows only.
      * Returns: User's Roaming directory. On fail returns an empty string.
      * See_Also: $(D writablePath), $(D FolderFlag)
      */
     deprecated string roamingPath(FolderFlag params = FolderFlag.none) nothrow @safe;
-    
+
     /**
      * Location where games may store their saves. Windows only.
      * Note: This is common path for games. One should use subfolder for their game saves.
@@ -340,7 +340,6 @@ version(D_Ddoc)
 }
 
 version(Windows) {
-    
     private {
         enum {
             CSIDL_DESKTOP            =  0,
@@ -403,7 +402,7 @@ version(Windows) {
             CSIDL_FLAG_CREATE      = 0x8000,
             CSIDL_FLAG_MASK        = 0xFF00
         }
-        
+
         enum {
             KF_FLAG_SIMPLE_IDLIST                = 0x00000100,
             KF_FLAG_NOT_PARENT_RELATIVE          = 0x00000200,
@@ -416,9 +415,9 @@ version(Windows) {
             KF_FLAG_NO_APPCONTAINER_REDIRECTION  = 0x00010000,
             KF_FLAG_ALIAS_ONLY                   = 0x80000000
         };
-        
+
         alias GUID KNOWNFOLDERID;
-        
+
         enum KNOWNFOLDERID FOLDERID_LocalAppData = {0xf1b32785, 0x6fba, 0x4fcf, [0x9d,0x55,0x7b,0x8e,0x7f,0x15,0x70,0x91]};
         enum KNOWNFOLDERID FOLDERID_RoamingAppData = {0x3eb685db, 0x65f9, 0x4cf6, [0xa0,0x3a,0xe3,0xef,0x65,0x72,0x9f,0x3d]};
 
@@ -448,26 +447,26 @@ version(Windows) {
         enum KNOWNFOLDERID FOLDERID_PublicPictures = {0xb6ebfb86, 0x6907, 0x413c, [0x9a,0xf7,0x4f,0xc2,0xab,0xf0,0x7c,0xc5]};
         enum KNOWNFOLDERID FOLDERID_PublicVideos = {0x2400183a, 0x6185, 0x49fb, [0xa2,0xd8,0x4a,0x39,0x2a,0x60,0x2b,0xa3]};
     }
-    
+
     private  {
         extern(Windows) @nogc @system BOOL _dummy_SHGetSpecialFolderPath(HWND, wchar*, int, BOOL) nothrow { return 0; }
         extern(Windows) @nogc @system HRESULT _dummy_SHGetKnownFolderPath(const(KNOWNFOLDERID)* rfid, DWORD dwFlags, HANDLE hToken, wchar** ppszPath) nothrow { return 0; }
         extern(Windows) @nogc @system void _dummy_CoTaskMemFree(void* pv) nothrow {return;}
-        
+
         __gshared typeof(&_dummy_SHGetSpecialFolderPath) ptrSHGetSpecialFolderPath = null;
         __gshared typeof(&_dummy_SHGetKnownFolderPath) ptrSHGetKnownFolderPath = null;
         __gshared typeof(&_dummy_CoTaskMemFree) ptrCoTaskMemFree = null;
-        
+
         @nogc @trusted bool hasSHGetSpecialFolderPath() nothrow {
             return ptrSHGetSpecialFolderPath !is null;
         }
-        
+
         @nogc @trusted bool hasSHGetKnownFolderPath() nothrow {
             return ptrSHGetKnownFolderPath !is null && ptrCoTaskMemFree !is null;
         }
     }
-    
-    shared static this() 
+
+    shared static this()
     {
         HMODULE shellLib = LoadLibraryA("Shell32");
         if (shellLib !is null) {
@@ -481,16 +480,16 @@ version(Windows) {
                     }
                 }
             }
-            
+
             if (!hasSHGetKnownFolderPath()) {
                 ptrSHGetSpecialFolderPath = cast(typeof(ptrSHGetSpecialFolderPath))GetProcAddress(shellLib, "SHGetSpecialFolderPathW");
             }
         }
     }
-    
+
     private string getCSIDLFolder(int csidl, FolderFlag params = FolderFlag.none) nothrow @trusted {
         import core.stdc.wchar_ : wcslen;
-        
+
         if (params & FolderFlag.create) {
             csidl |= CSIDL_FLAG_CREATE;
         }
@@ -503,17 +502,17 @@ version(Windows) {
             try {
                 return toUTF8(path[0..len]);
             } catch(Exception e) {
-                
+
             }
         }
         return null;
     }
-    
+
     private string getKnownFolder(const(KNOWNFOLDERID) folder, FolderFlag params = FolderFlag.none) nothrow @trusted {
         import core.stdc.wchar_ : wcslen;
-        
+
         wchar* str;
-        
+
         DWORD flags = 0;
         if (params & FolderFlag.create) {
             flags |= KF_FLAG_CREATE;
@@ -521,28 +520,28 @@ version(Windows) {
         if (!(params & FolderFlag.verify)) {
             flags |= KF_FLAG_DONT_VERIFY;
         }
-        
+
         if (hasSHGetKnownFolderPath() && ptrSHGetKnownFolderPath(&folder, flags, null, &str) == S_OK) {
             scope(exit) ptrCoTaskMemFree(str);
             try {
                 return str[0..wcslen(str)].toUTF8;
             } catch(Exception e) {
-                
+
             }
         }
         return null;
     }
-    
+
     deprecated("use writablePath(StandardPath.roaming)") string roamingPath(FolderFlag params = FolderFlag.none) nothrow @safe
     {
         return writablePath(StandardPath.roaming, params);
     }
-    
+
     deprecated("use writablePath(StandardPath.savedGames)") string savedGames(FolderFlag params = FolderFlag.none) nothrow @safe
     {
         return writablePath(StandardPath.savedGames, params);
     }
-    
+
     string writablePath(StandardPath type, FolderFlag params = FolderFlag.none) nothrow @safe
     {
         if (hasSHGetKnownFolderPath()) {
@@ -617,11 +616,11 @@ version(Windows) {
             return null;
         }
     }
-    
+
     string[] standardPaths(StandardPath type) nothrow @safe
-    {   
+    {
         string commonPath;
-        
+
         if (hasSHGetKnownFolderPath()) {
             switch(type) {
                 case StandardPath.config:
@@ -698,10 +697,10 @@ version(Windows) {
                     break;
             }
         }
-        
+
         string[] paths;
         string userPath = writablePath(type);
-        if (userPath.length) 
+        if (userPath.length)
             paths ~= userPath;
         if (commonPath.length)
             paths ~= commonPath;
@@ -711,8 +710,7 @@ version(Windows) {
     private {
         version(StandardPathsCocoa) {
             alias size_t NSUInteger;
-            
-            
+
             enum objectiveC_declarations = q{
                 extern (Objective-C)
                 interface NSString
@@ -753,7 +751,7 @@ version(Windows) {
                     NSURL URLForDirectory(NSSearchPathDirectory, NSSearchPathDomainMask domain, NSURL url, int shouldCreate, NSError* error) @selector("URLForDirectory:inDomain:appropriateForURL:create:error:");
                 }
             };
-            
+
             mixin(objectiveC_declarations);
 
             enum : NSUInteger {
@@ -816,7 +814,7 @@ version(Windows) {
                     if (!url) {
                         return null;
                     }
-                    scope(exit) url.release();  
+                    scope(exit) url.release();
                     NSString nsstr = url.absoluteString();
                     scope(exit) nsstr.release();
 
@@ -824,12 +822,12 @@ version(Windows) {
 
                     enum fileProtocol = "file://";
                     if (str.startsWith(fileProtocol)) {
-						str = str.decode()[fileProtocol.length..$];
-						if (str.length > 1 && str[$-1] == '/') {
-							return str[0..$-1];
-						} else {
-							return str;
-						}
+                        str = str.decode()[fileProtocol.length..$];
+                        if (str.length > 1 && str[$-1] == '/') {
+                            return str[0..$-1];
+                        } else {
+                            return str;
+                        }
                     }
                 } catch(Exception e) {
 
@@ -901,7 +899,7 @@ version(Windows) {
 
                 kDropBoxFolderType            = k("drop") /* Refers to the "Drop Box" folder inside the user's home directory*/
             };
-            
+
             struct FSRef {
               char[80] hidden;    /* private to File Manager*/
             };
@@ -910,7 +908,7 @@ version(Windows) {
             alias int OSType;
             alias short OSErr;
             alias int OSStatus;
-            
+
             extern(C) @nogc @system OSErr _dummy_FSFindFolder(short, OSType, Boolean, FSRef*) nothrow { return 0; }
             extern(C) @nogc @system OSStatus _dummy_FSRefMakePath(const(FSRef)*, char*, uint) nothrow { return 0; }
 
@@ -948,7 +946,7 @@ version(Windows) {
 
         private string fsPath(short domain, OSType type, bool shouldCreate = false) nothrow @trusted
         {
-            import std.stdio;   
+            import std.stdio;
             FSRef fsref;
             if (isCarbonLoaded() && ptrFSFindFolder(domain, type, shouldCreate, &fsref) == noErr) {
 
@@ -966,7 +964,7 @@ version(Windows) {
             return null;
         }
     }
-    
+
     private string writablePathImpl(StandardPath type, bool shouldCreate = false) nothrow @safe
     {
         version(StandardPathsCocoa) {
@@ -1041,18 +1039,18 @@ version(Windows) {
             }
         }
     }
-    
+
     string writablePath(StandardPath type, FolderFlag params = FolderFlag.none) nothrow @safe
     {
         const bool shouldCreate = (params & FolderFlag.create) != 0;
         const bool shouldVerify = (params & FolderFlag.verify) != 0;
         return writablePathImpl(type, shouldCreate).verifyIfNeeded(shouldVerify);
     }
-    
+
     string[] standardPaths(StandardPath type) nothrow @safe
     {
         string commonPath;
-        
+
         version(StandardPathsCocoa) {
             switch(type) {
                 case StandardPath.fonts:
@@ -1088,7 +1086,7 @@ version(Windows) {
                     break;
             }
         }
-        
+
         string[] paths;
         string userPath = writablePath(type);
         if (userPath.length)
@@ -1097,27 +1095,27 @@ version(Windows) {
             paths ~= commonPath;
         return paths;
     }
-    
+
 } else {
-    
+
     static if (!isFreedesktop) {
         static assert(false, "Unsupported platform");
     } else {
         public import xdgpaths;
-        
+
         private {
             import std.stdio : File;
             import std.algorithm : startsWith;
             import std.string;
             import std.traits;
         }
-        
+
         unittest
         {
             assert(maybeConcat(null, "path") == string.init);
             assert(maybeConcat("path", "/file") == "path/file");
         }
-        
+
         private @trusted string getFromUserDirs(Range)(string xdgdir, string home, Range range) if (isInputRange!Range && isSomeString!(ElementType!Range))
         {
             foreach(line; range) {
@@ -1125,10 +1123,10 @@ version(Windows) {
                 auto index = xdgdir.length;
                 if (line.startsWith(xdgdir) && line.length > index && line[index] == '=') {
                     line = line[index+1..$];
-                    if (line.length > 2 && line[0] == '"' && line[$-1] == '"') 
+                    if (line.length > 2 && line[0] == '"' && line[$-1] == '"')
                     {
                         line = line[1..$-1];
-                    
+
                         if (line.startsWith("$HOME")) {
                             return maybeConcat(home, assumeUnique(line[5..$]));
                         }
@@ -1141,31 +1139,31 @@ version(Windows) {
             }
             return null;
         }
-        
-        
+
+
         unittest
         {
-            string content = 
+            string content =
 `# Comment
 
-XDG_DOCUMENTS_DIR="$HOME/My Documents" 
+XDG_DOCUMENTS_DIR="$HOME/My Documents"
 XDG_MUSIC_DIR="/data/Music"
 XDG_VIDEOS_DIR="data/Video"
 `;
             string home = "/home/user";
-            
+
             assert(getFromUserDirs("XDG_DOCUMENTS_DIR", home, content.splitLines) == "/home/user/My Documents");
             assert(getFromUserDirs("XDG_MUSIC_DIR", home, content.splitLines) == "/data/Music");
             assert(getFromUserDirs("XDG_DOWNLOAD_DIR", home, content.splitLines).empty);
             assert(getFromUserDirs("XDG_VIDEOS_DIR", home, content.splitLines).empty);
         }
-        
+
         private @trusted string getFromDefaultDirs(Range)(string key, string home, Range range) if (isInputRange!Range && isSomeString!(ElementType!Range))
         {
             foreach(line; range) {
                 line = strip(line);
                 auto index = key.length;
-                if (line.startsWith(key) && line.length > index && line[index] == '=') 
+                if (line.startsWith(key) && line.length > index && line[index] == '=')
                 {
                     line = line[index+1..$];
                     return home ~ "/" ~ assumeUnique(line);
@@ -1173,10 +1171,10 @@ XDG_VIDEOS_DIR="data/Video"
             }
             return null;
         }
-        
+
         unittest
         {
-            string content = 
+            string content =
 `# Comment
 
 DOCUMENTS=MyDocuments
@@ -1187,7 +1185,7 @@ PICTURES=Images
             assert(getFromDefaultDirs("PICTURES", home, content.splitLines) == "/home/user/Images");
             assert(getFromDefaultDirs("VIDEOS", home, content.splitLines).empty);
         }
-        
+
         private string xdgUserDir(string key, string fallback = null) nothrow @trusted {
             string fileName = maybeConcat(writablePath(StandardPath.config), "/user-dirs.dirs");
             string home = homeDir();
@@ -1199,9 +1197,9 @@ PICTURES=Images
                     return path;
                 }
             } catch(Exception e) {
-                
+
             }
-            
+
             if (home.length) {
                 try {
                     auto f = File("/etc/xdg/user-dirs.defaults", "r");
@@ -1210,7 +1208,7 @@ PICTURES=Images
                         return path;
                     }
                 } catch (Exception e) {
-                    
+
                 }
                 if (fallback.length) {
                     return home ~ fallback;
@@ -1218,16 +1216,16 @@ PICTURES=Images
             }
             return null;
         }
-        
+
         private string homeFontsPath() nothrow @trusted {
             return maybeConcat(homeDir(), "/.fonts");
         }
-        
+
         private string[] fontPaths() nothrow @trusted
         {
             enum localShare = "/usr/local/share/fonts";
             enum share = "/usr/share/fonts";
-            
+
             string homeFonts = homeFontsPath();
             if (homeFonts.length) {
                 return [homeFonts, localShare, share];
@@ -1235,7 +1233,7 @@ PICTURES=Images
                 return [localShare, share];
             }
         }
-        
+
         private string writablePathImpl(StandardPath type, bool shouldCreate) nothrow @safe
         {
             final switch(type) {
@@ -1273,18 +1271,18 @@ PICTURES=Images
                     return null;
             }
         }
-        
+
         string writablePath(StandardPath type, FolderFlag params = FolderFlag.none) nothrow @safe
         {
             const bool shouldCreate = (params & FolderFlag.create) != 0;
             const bool shouldVerify = (params & FolderFlag.verify) != 0;
             return writablePathImpl(type, shouldCreate).verifyIfNeeded(shouldVerify);
         }
-        
+
         string[] standardPaths(StandardPath type) nothrow @safe
         {
             string[] paths;
-            
+
             switch(type) {
                 case StandardPath.data:
                     return xdgAllDataDirs();
@@ -1299,7 +1297,7 @@ PICTURES=Images
                 default:
                     break;
             }
-            
+
             string userPath = writablePath(type);
             if (userPath.length) {
                 return [userPath];

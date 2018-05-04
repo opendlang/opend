@@ -8,12 +8,9 @@
     "targetPath" : "lib", 
     "targetType" : "library",
 
-    "subPackages" : ["./examples/printdirs", "./examples/getpath"],
-    
     "dependencies" : {
-        "xdgpaths" : "~>0.2.2"
+        "xdgpaths" : "~>0.2.5"
     },
-    
     "configurations" : [
         {
             "name" : "default"

@@ -13,3 +13,4 @@ docs/
 lib/
 *.lst
 .DS_store
+dub.selections.json

@@ -1,3 +1,8 @@
+/+dub.sdl:
+name "printdirs"
+dependency "standardpaths" path="../"
++/
+
 import std.stdio;
 import std.getopt;
 import standardpaths;
@@ -66,12 +71,12 @@ void main(string[] args)
            "create", "Create if does not exist", &create,
            "subfolder", "Subfolder path", &subfolder
           );
-    
+
     if (args.length < 2) {
         stderr.writeln("Path type must be specified");
         return;
     }
-    
+
     foreach(pathType; args[1..$]) {
         StandardPath type;
         if (stringToType(pathType, type)) {
@@ -88,7 +93,7 @@ void main(string[] args)
             } else {
                 path = writablePath(type, flags);
             }
-            
+
             if (path.length) {
                 writefln("%s: %s", pathType, path);
             } else {
@@ -104,6 +109,4 @@ void main(string[] args)
             stderr.writeln("Unknown type: %s", pathType);
         }
     }
-    
-    
 }

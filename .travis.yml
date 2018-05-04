@@ -1,19 +1,19 @@
 language: d
 matrix:
   include:
-    - d: dmd-2.071.0
+    - d: dmd
       os: linux
       env: CONFIG=default
-    - d: dmd-2.071.0
+    - d: dmd
       os: osx
       env: CONFIG=default
-    - d: ldc-1.0.0
+    - d: ldc
       os: linux
       env: CONFIG=default
-    - d: ldc-1.0.0
+    - d: ldc
       os: osx
       env: CONFIG=cocoa
-  
+
 script:
     - dub build --compiler=${DC} --config=${CONFIG}
-    - dub run :printdirs --compiler=${DC} --config=${CONFIG}
+    - dub --single examples/printdirs --compiler=${DC} --override-config=standardpaths/${CONFIG}
