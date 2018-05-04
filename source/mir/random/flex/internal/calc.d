@@ -27,14 +27,19 @@ References:
 auto arcmean(S)(in ref Interval!S iv)
 {
     import std.math: atan, tan;
+    // Use at least double precision trigonometric functions.
+    static if (S.mant_dig < double.mant_dig)
+        alias T = double;
+    else
+        alias T = S;
 
     with(iv)
     {
         if (rx < -S(1e3) || lx > S(1e3))
             return 2 / (1 / lx + 1 / rx);
 
-        immutable d = atan(lx);
-        immutable b = atan(rx);
+        immutable d = atan(cast(T) lx);
+        immutable b = atan(cast(T) rx);
 
         assert(d <= b);
         if (b - d < S(1e-6))
