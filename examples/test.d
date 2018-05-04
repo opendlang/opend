@@ -1,3 +1,8 @@
+/+dub.sdl:
+name "test"
+dependency "xdgpaths" path="../"
++/
+
 import std.stdio;
 import std.getopt;
 
