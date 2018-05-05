@@ -690,6 +690,7 @@ version(Windows) {
     }
 } else version(OSX) {
     private {
+        import std.string : fromStringz;
         version(StandardPathsCocoa) {
             alias size_t NSUInteger;
 
