@@ -1104,6 +1104,7 @@ version (IN_LLVM)
     inout(BitFieldDeclaration)         isBitFieldDeclaration()         inout { return null; }
     inout(TypeInfoDeclaration)         isTypeInfoDeclaration()         inout { return null; }
     inout(TupleDeclaration)            isTupleDeclaration()            inout { return null; }
+    inout(UnpackDeclaration)           isUnpackDeclaration()           inout { return null; }
     inout(AliasDeclaration)            isAliasDeclaration()            inout { return null; }
     inout(AggregateDeclaration)        isAggregateDeclaration()        inout { return null; }
     inout(FuncDeclaration)             isFuncDeclaration()             inout { return null; }
