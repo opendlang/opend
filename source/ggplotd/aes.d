@@ -224,15 +224,45 @@ template Aes(Specs...)
                 "Attempted to instantiate Tuple with an " ~ "invalid argument: " ~ Specs[0].stringof);
         }
     }
+
+    // maps a type to its init value 
+    private auto init(T)()
+    {
+        return T.init; 
+    }
+
+    // ArgsCall taken from https://dlang.org/library/std/meta/alias_seq.html
+    private auto ref ArgCall(alias Func, arg)()
+    {
+        return Func!(arg)();
+    }
+
+    // Map taken from https://dlang.org/library/std/meta/alias_seq.html
+    private template Map(alias Func, args...)
+    {
+        static if (args.length > 1)
+        {
+            alias Map = AliasSeq!(ArgCall!(Func, args[0]), Map!(Func, args[1 .. $]));
+        }
+        else
+        {
+            alias Map = ArgCall!(Func, args[0]);
+        }
+    }
+
     alias elementsType = parseSpecs!Specs;
     alias types = parseTypes!Specs;
 
     struct Aes
     {
-        import std.range : Zip;
-        private Zip!(types) aes;
+        import std.range : zip;
+        
+        // from 2.080.0 on zip can return not only Zip, but also ZipShortest. On top of that it is not accessible from
+        // outside. Therefore, use "typeof" the accessible convenience template function "zip" only. 
+        private typeof(zip!types(Map!(init, types))) aes;
 
-        this(Args...)(Args args)
+        // use explicit types as they are known from template argument deduction stage
+        this(types args)
         {
             import std.range : zip;
             aes = zip(args);
@@ -482,7 +512,7 @@ unittest
     assertEqual( 3, aesFields!(typeof(pnt2)).length );
 }
 
-private template hasAesField(T, alias name)
+package template hasAesField(T, alias name)
 {
     enum bool hasAesField = (function() {
         bool has = false;

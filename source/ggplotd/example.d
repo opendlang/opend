@@ -186,11 +186,11 @@ auto runMCMC() {
     //writeln("Random seed MCMC: ", rnd.front);
 
 
-    import dstats.random : rNorm;
+    import dstats.random : rNormal;
     return iota(0,1000).map!((i) {
-        auto x = rNorm(1, 0.5, rnd);
-        auto y = rNorm(pow(x,3), 0.5, rnd);
-        auto z = rNorm(x + y, 0.5, rnd);
+        auto x = rNormal(1, 0.5, rnd);
+        auto y = rNormal(pow(x,3), 0.5, rnd);
+        auto z = rNormal(x + y, 0.5, rnd);
         return [x, y, z];
     }).array;
 }

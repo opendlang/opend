@@ -107,7 +107,7 @@ unittest
 }
 
 /// Store values so we can later create guides from them
-private struct GuideStore(string type = "")
+package struct GuideStore(string type = "")
 {
     import std.range : isInputRange;
     /// Put another GuideStore into the store

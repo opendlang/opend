@@ -6,7 +6,7 @@ module ggplotd.colour;
 import std.range : ElementType;
 import std.typecons : Tuple;
 
-import ggplotd.colourspace : RGBA;
+public import ggplotd.colourspace : RGBA;
 
 version (unittest)
 {
