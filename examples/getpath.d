@@ -7,86 +7,45 @@ import std.stdio;
 import std.getopt;
 import standardpaths;
 
-bool stringToType(string typeStr, out StandardPath type)
-{
-    switch(typeStr) {
-        case "config":
-            type = StandardPath.config;
-            return true;
-        case "cache":
-            type = StandardPath.cache;
-            return true;
-        case "data":
-            type = StandardPath.data;
-            return true;
-        case "desktop":
-            type = StandardPath.desktop;
-            return true;
-        case "documents" :
-            type = StandardPath.documents;
-            return true;
-        case "pictures":
-            type = StandardPath.pictures;
-            return true;
-        case "music":
-            type = StandardPath.music;
-            return true;
-        case "videos":
-            type = StandardPath.videos;
-            return true;
-        case "downloads" :
-            type = StandardPath.downloads;
-            return true;
-        case "templates" :
-            type = StandardPath.templates;
-            return true;
-        case "publicShare" :
-            type = StandardPath.publicShare;
-            return true;
-        case "applications" :
-            type = StandardPath.applications;
-            return true;
-        case "startup" :
-            type = StandardPath.startup;
-            return true;
-        case "roaming":
-            type = StandardPath.roaming;
-            return true;
-        case "savedGames":
-            type = StandardPath.savedGames;
-            return true;
-        default:
-            break;
-    }
-    return false;
-}
-
 void main(string[] args)
 {
+    import std.conv : to;
+    import std.range : iota;
+    StandardPath[string] stringToType;
+    foreach(StandardPath i; StandardPath.min..StandardPath.max) {
+        stringToType[to!string(i)] = i;
+    }
     bool verify;
     bool create;
     string subfolder;
-    getopt(args, 
+    auto helpInformation = getopt(args,
            "verify", "Verify if path exists", &verify,
            "create", "Create if does not exist", &create,
            "subfolder", "Subfolder path", &subfolder
           );
+
+    if (helpInformation.helpWanted)
+    {
+        defaultGetoptPrinter("Usage: getpath [options...] <pathType>", helpInformation.options);
+        return;
+    }
 
     if (args.length < 2) {
         stderr.writeln("Path type must be specified");
         return;
     }
 
+    FolderFlag flags;
+    if (verify) {
+        flags |= FolderFlag.verify;
+    }
+    if (create) {
+        flags |= FolderFlag.create;
+    }
     foreach(pathType; args[1..$]) {
-        StandardPath type;
-        if (stringToType(pathType, type)) {
-            FolderFlag flags;
-            if (verify) {
-                flags |= FolderFlag.verify;
-            }
-            if (create) {
-                flags |= FolderFlag.create;
-            }
+        StandardPath* typePtr = pathType in stringToType;
+        if (typePtr) {
+            StandardPath type = *typePtr;
             string path;
             if (subfolder.length) {
                 path = writablePath(type, subfolder, flags);
@@ -106,7 +65,8 @@ void main(string[] args)
                 }
             }
         } else {
-            stderr.writeln("Unknown type: %s", pathType);
+            stderr.writefln("Unknown type: %s", pathType);
+            writefln("Available types: %s", iota(StandardPath.min, StandardPath.max));
         }
     }
 }

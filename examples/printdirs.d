@@ -6,7 +6,7 @@ dependency "standardpaths" path="../"
 import std.stdio;
 import standardpaths;
 
-int main()
+void main()
 {
     writeln("Home: ", homeDir());
 
@@ -55,6 +55,4 @@ int main()
         writefln("Videos dirs: %-(%s, %)", standardPaths(StandardPath.videos));
         writefln("Templates dirs: %-(%s, %)", standardPaths(StandardPath.templates));
     }
-
-    return 0;
 }
