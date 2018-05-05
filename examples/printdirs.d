@@ -33,9 +33,6 @@ void main()
         writeln("\nSpecific functions for Windows:");
         writeln("Roaming data: ", writablePath(StandardPath.roaming));
         writeln("Saved games: ", writablePath(StandardPath.savedGames));
-    } else version(linux) {
-        writeln("\nSpecific functions for Linux:");
-        writeln("Runtime: ", xdgRuntimeDir());
     }
 
     writeln("\nSystem directories");

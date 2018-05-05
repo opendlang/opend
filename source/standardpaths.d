@@ -23,8 +23,6 @@ private {
         import std.stdio : stderr;
     }
 
-    static if( __VERSION__ < 2066 ) enum nogc = 1;
-
     string verifyIfNeeded(string path, bool shouldVerify) nothrow @trusted
     {
         if (path.length && shouldVerify) {
@@ -54,27 +52,11 @@ private {
 
 version(Windows) {
     private {
-        static if (__VERSION__ < 2070) {
-            import std.c.windows.windows;
-        } else {
-            import core.sys.windows.windows;
-        }
-
+        import core.sys.windows.windows;
         import std.utf;
     }
 } else version(Posix) {
     private {
-        import std.string : toStringz;
-
-        static if (is(typeof({import std.string : fromStringz;}))) {
-            import std.string : fromStringz;
-        } else { //own fromStringz implementation for compatibility reasons
-            import std.c.string : strlen;
-            @system pure inout(char)[] fromStringz(inout(char)* cString) {
-                return cString ? cString[0..strlen(cString)] : null;
-            }
-        }
-
         //Concat two strings, but if the first one is empty, then null string is returned.
         string maybeConcat(string start, string path) nothrow @safe
         {
@@ -922,11 +904,11 @@ version(Windows) {
     } else {
         shared static this()
         {
-            enum carbonPath = "CoreServices.framework/Versions/A/CoreServices";
+            enum carbonPath = "CoreServices.framework/Versions/A/CoreServices\0";
 
             import core.sys.posix.dlfcn;
 
-            void* handle = dlopen(toStringz(carbonPath), RTLD_NOW | RTLD_LOCAL);
+            void* handle = dlopen(carbonPath.ptr, RTLD_NOW | RTLD_LOCAL);
             if (handle) {
                 ptrFSFindFolder = cast(typeof(ptrFSFindFolder))dlsym(handle, "FSFindFolder");
                 ptrFSRefMakePath = cast(typeof(ptrFSRefMakePath))dlsym(handle, "FSRefMakePath");
