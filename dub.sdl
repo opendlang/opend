@@ -14,9 +14,18 @@ configuration "unittest" {
     targetType "executable"
     targetName "ut"
     mainSourceFile "ut.d"
+    dependency "unit-threaded" version="~>0.7.0"
+    dependency "test_allocator" version="~>0.2.1"
+}
+
+configuration "asan" {
+    targetType "executable"
+    targetName "ut"
+    mainSourceFile "ut.d"
     dflags "-fsanitize=address" platform="ldc"
     dependency "unit-threaded" version="~>0.7.0"
     dependency "test_allocator" version="~>0.2.1"
+    versions "unitUnthreaded"
 }
 
 configuration "utl" {
