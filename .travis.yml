@@ -13,7 +13,7 @@ matrix:
         - d: ldc-1.7.0
 
 script:
-  - dub test -c asan --build=unittest-cov --compiler=${DC}
+  - dub test --build=unittest-cov --compiler=${DC}
   - dub build
 
 after_success:
