@@ -25,13 +25,13 @@ configuration "asan" {
     dflags "-fsanitize=address" platform="ldc"
     dependency "unit-threaded" version="~>0.7.0"
     dependency "test_allocator" version="~>0.2.1"
-    versions "unitUnthreaded"
+    // unit threaded light is necessary for the tests to actually run
+    versions "unitUnthreaded" "unitThreadedLight"
 }
 
 configuration "utl" {
     targetType "executable"
     targetName "utl"
-    mainSourceFile "ut.d"
     dependency "unit-threaded" version="~>0.7.0"
     dependency "test_allocator" version="~>0.2.1"
     version "unitThreadedLight"
