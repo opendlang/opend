@@ -21,46 +21,16 @@ FP operations depend on
 */
 version(unittest)
 {
-    // the difference is marginal, but measurable
-    version(Windows)
+    import std.traits : isFloatingPoint;
+    /+
+    Approximate equality. Arguments must match except in the last two bits
+    of the mantissa.
+    +/
+    bool fpEqual(S)(in S a, in S b) @nogc nothrow pure @safe
+    if (isFloatingPoint!S)
     {
-        version = Flex_fpEqual;
-    }
-    else
-    {
-        version(DigitalMars)
-        {
-            version(X86_64)
-            {
-                alias fpEqual = (a, b) => a == b;
-            }
-            else
-            {
-                version = Flex_fpEqual;
-            }
-        }
-        else
-        {
-            version = Flex_fpEqual;
-        }
-    }
-    version(Flex_fpEqual)
-    {
-        bool fpEqual(float a, float b) @nogc nothrow pure @safe {
-            import std.math : approxEqual;
-            return a.approxEqual(b, 1e-5, 1e-5); }
-        bool fpEqual(double a, double b) @nogc nothrow pure @safe {
-            import std.math : approxEqual;
-            return a.approxEqual(b, 1e-14, 1e-14); }
-
-        version(Windows)
-            enum real maxError = 1e-14;
-        else
-            enum real maxError = 1e-18;
-
-        bool fpEqual(real a, real b) @nogc nothrow pure @safe {
-            import std.math : approxEqual;
-            return a.approxEqual(b, 1e-18, 1e-18); }
+        import std.math : feqrel;
+        return feqrel(a, b) >= S.mant_dig - 2;
     }
 }
 
