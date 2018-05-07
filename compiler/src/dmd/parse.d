@@ -1135,8 +1135,7 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
                 return false;
         }
     }
-
-    AST.UnpackDeclaration parseUnpackDeclaration(StorageClass storage_class)
+    AST.UnpackDeclaration parseUnpackDeclaration(StorageClass g_storage_class, bool parseInitializer = true)
     in
     {
         assert(token.value == TOK.leftParenthesis);
@@ -1155,6 +1154,7 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
             AST.Expression ealign = null;
             AST.Expressions* udas = null;
             Loc linkloc = this.linkLoc; // (ignored)
+            auto storage_class = g_storage_class;
             parseStorageClasses(storage_class, link, setAlignment, ealign, udas, linkloc);
 
             /+if (link)
@@ -1163,7 +1163,7 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
                 error("user defined attributes not allowed within unpack declarations");
             if (token.value == TOK.leftParenthesis)
             {
-                vars.push(parseUnpackDeclaration(storage_class));
+                vars.push(parseUnpackDeclaration(storage_class, false));
             }
             else
             {
@@ -1223,9 +1223,13 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
             error("expected ')' to close unpack declarators");
         }
         nextToken();
-        check(TOK.assign);
-        auto _init = parseAssignExp();
-        return new AST.UnpackDeclaration(unpackLoc, vars, _init, storage_class);
+        AST.Expression _init = null;
+        if (parseInitializer)
+        {
+            check(TOK.assign);
+            _init = parseAssignExp();
+        }
+        return new AST.UnpackDeclaration(unpackLoc, vars, _init, g_storage_class);
     }
 
     /*****************************************

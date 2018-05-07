@@ -112,6 +112,7 @@ class ConditionalDeclaration;
 class StaticIfDeclaration;
 class MixinDeclaration;
 class StaticForeachDeclaration;
+class UnpackDeclaration;
 class UserAttributeDeclaration;
 class ForwardingAttribDeclaration;
 
@@ -380,6 +381,7 @@ public:
     virtual void visit(StorageClassDeclaration *s) { visit((AttribDeclaration *)s); }
     virtual void visit(ConditionalDeclaration *s) { visit((AttribDeclaration *)s); }
     virtual void visit(StaticForeachDeclaration *s) { visit((AttribDeclaration *)s); }
+    virtual void visit(UnpackDeclaration *s) { visit((AttribDeclaration *)s); }
 
     // Miscellaneous
     virtual void visit(DeprecatedDeclaration *s) { visit((StorageClassDeclaration *)s); }
