@@ -115,3 +115,4 @@ void main(){
  - Fixed XorshiftEngine's support for non-`uint` word sizes & allow various shift directions
  - XorshiftStar Generators (new)
  - Xoroshiro128Plus generator (new)
+ - Xoshiro256StarStar generator (new)

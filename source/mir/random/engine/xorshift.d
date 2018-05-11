@@ -4,7 +4,8 @@ $(SCRIPT inhibitQuickIndex = 1;)
 $(BOOKTABLE $(H2 Generators)
 
     $(TR $(TH Generator name) $(TH Description))
-    $(RROW Xoroshiro128Plus, $(HTTP xoroshiro.di.unimi.it, xoroshiro128+): fast, small, and high-quality)
+    $(RROW Xoshiro256StarStar, $(HTTP xoshiro.di.unimi.it, xoshiro256*): all-purpose, rock-solid generator)
+    $(RROW Xoroshiro128Plus, $(HTTP en.wikipedia.org/wiki/Xoroshiro128%2B, xoroshiro128+): fast, small, and high-quality)
     $(RROW Xorshift1024StarPhi, $(HTTP xoroshiro.di.unimi.it, xorshift1024*φ): when something larger than `xoroshiro128+` is needed)
     $(RROW Xorshift64Star32, xorshift64*/32: internal state of 64 bits and output of 32 bits)
     $(TR $(TD $(LREF Xorshift32) .. $(LREF Xorshift160)) $(TD Basic xorshift generator with `n` bits of state (32, 64, 96, 128, 160)))
@@ -31,6 +32,34 @@ Macros:
 module mir.random.engine.xorshift;
 
 import std.traits;
+
+/+
+Mixin to initialize an array of ulongs `s` from a single ulong `x0`.
+If s.length > 1 this will never initialize `s` to all zeroes. If
+s.length == 1 it is up to the caller to check s[0].
+
+Remark from Sebastino Vigna:
+<blockquote>
+We suggest to use a SplitMix64 to initialize the state of our generators
+starting from a 64-bit seed, as research has shown[*] that initialization
+must be performed with a generator radically different in nature from the
+one initialized to avoid correlation on similar seeds.
+</blockquote>
+[*] https://dl.acm.org/citation.cfm?doid=1276927.1276928
++/
+private enum init_s_from_x0_using_splitmix64 =
+q{
+    static assert(is(typeof(s[0]) == ulong));
+    static assert(is(typeof(x0) == ulong));
+    //http://xoroshiro.di.unimi.it/splitmix64.c
+    foreach (ref e; s)
+    {
+        ulong z = (x0 += 0x9e3779b97f4a7c15uL);
+        z = (z ^ (z >>> 30)) * 0xbf58476d1ce4e5b9uL;
+        z = (z ^ (z >>> 27)) * 0x94d049bb133111ebuL;
+        e = z ^ (z >>> 31);
+    }
+};
 
 /++
 Xorshift generator.
@@ -138,14 +167,7 @@ if (isUnsigned!UIntType)
         static if (UIntType.sizeof == ulong.sizeof)
         {
             //Seed using splitmix64 as recommended by Vigna.
-            //http://xoroshiro.di.unimi.it/splitmix64.c
-            foreach (ref e; s)
-            {
-                Unqual!UIntType z = (x0 += cast(Unqual!UIntType) 0x9e3779b97f4a7c15uL);
-                z = (z ^ (z >>> 30)) * cast(Unqual!UIntType) 0xbf58476d1ce4e5b9uL;
-                z = (z ^ (z >>> 27)) * cast(Unqual!UIntType) 0x94d049bb133111ebuL;
-                e = z ^ (z >>> 31);
-            }
+            mixin(init_s_from_x0_using_splitmix64);
         }
         else
         {
@@ -403,14 +425,7 @@ if (isUnsigned!StateUInt && isUnsigned!OutputUInt && OutputUInt.sizeof <= StateU
         else static if (StateUInt.sizeof == ulong.sizeof)
         {
             //Seed using splitmix64 as recommended by Vigna.
-            //http://xoroshiro.di.unimi.it/splitmix64.c
-            foreach (ref e; s)
-            {
-                Unqual!StateUInt z = (x0 += cast(Unqual!StateUInt) 0x9e3779b97f4a7c15uL);
-                z = (z ^ (z >>> 30)) * cast(Unqual!StateUInt) 0xbf58476d1ce4e5b9uL;
-                z = (z ^ (z >>> 27)) * cast(Unqual!StateUInt) 0x94d049bb133111ebuL;
-                e = z ^ (z >>> 31);
-            }
+            mixin(init_s_from_x0_using_splitmix64);
         }
         else
         {
@@ -609,7 +624,7 @@ alias Xorshift64Star32 = XorshiftStarEngine!(ulong,64,12,25,27,26858216577363387
 }
 
 /++
-$(HTTP xoroshiro.di.unimi.it, xoroshiro128+) generator.
+$(HTTP xoroshiro.di.unimi.it, xoroshiro128+) (XOR/rotate/shift/rotate) generator.
 64 bit output. 128 bits of state. Period of $(D (2 ^^ 128) - 1).
 
 Created in 2016 by David Blackman and Sebastiano Vigna as the successor
@@ -674,14 +689,7 @@ struct Xoroshiro128Plus
     this()(ulong x0) @nogc nothrow pure @safe
     {
         //Seed using splitmix64 as recommended by Vigna.
-        //http://xoroshiro.di.unimi.it/splitmix64.c
-        foreach (ref e; s)
-        {
-            ulong z = (x0 += 0x9e3779b97f4a7c15uL);
-            z = (z ^ (z >>> 30)) * 0xbf58476d1ce4e5b9uL;
-            z = (z ^ (z >>> 27)) * 0x94d049bb133111ebuL;
-            e = z ^ (z >>> 31);
-        }
+        mixin(init_s_from_x0_using_splitmix64);
     }
 
     /// Advances the random sequence.
@@ -771,18 +779,186 @@ struct Xoroshiro128Plus
 
 @nogc nothrow pure @safe version(mir_random_test) unittest
 {
-    //Test Xoroshiro128Plus can be used as a Phobos-style random.
+    testIsPhobosStyleRandom!Xoroshiro128Plus();
+}
+
+version(mir_random_test) version(unittest)
+private void testIsPhobosStyleRandom(RNG)()
+{
+    //Test RNG can be used as a Phobos-style random.
     import std.random: isSeedable, isPhobosUniformRNG = isUniformRNG;
-    static assert(isPhobosUniformRNG!(Xoroshiro128Plus, ulong));
-    static assert(isSeedable!(Xoroshiro128Plus, ulong));
-    auto gen1 = Xoroshiro128Plus(1);
-    auto gen2 = Xoroshiro128Plus(2);
+    import std.random: isSeedable, isPhobosUniformRNG = isUniformRNG;
+    static assert(isPhobosUniformRNG!(RNG, ulong));
+    static assert(isSeedable!(RNG, ulong));
+    auto gen1 = RNG(1);
+    auto gen2 = RNG(2);
     gen2.seed(1);
     assert(gen1 == gen2);
     immutable a = gen1.front;
     gen1.popFront();
     assert(a == gen2());
     assert(gen1.front == gen2());
+}
+
+/++
+`xoshiro256**` (XOR/shift/rotate) as described in $(HTTP arxiv.org/abs/1805.01407,
+Scrambled linear pseudorandom number generators) (Blackman and Vigna, 2018).
+64 bit output. 256 bits of state. Period of `2^^256-1`. 4-dimensionally
+equidistributed. It is 15% slower than `xoroshiro128+` but none of its
+bits fail binary rank tests and it passes tests for Hamming-weight
+dependencies introduced in the linked paper. From the authors:
+
+<blockquote>
+This is xoshiro256** 1.0, our all-purpose, rock-solid generator. It has
+excellent (sub-ns) speed, a state (256 bits) that is large enough for
+any parallel application, and it passes all tests we are aware of.
+</blockquote>
+
+A `jump()` function is included that skips ahead by `2^^128` calls,
+to generate non-overlapping subsequences for parallel computations.
+
+Public domain reference implementation:
+$(HTTP http://xoshiro.di.unimi.it/xoshiro256starstar.c).
++/
+struct Xoshiro256StarStar
+{
+    ///
+    enum isRandomEngine = true;
+    /// Largest generated value.
+    enum ulong max = ulong.max;
+
+    /++
+    No bits of this generator's output fail any tests, but
+    the high bits provably have greater linear complexity
+    than the low bits.
+    +/
+    enum bool preferHighBits = true;
+
+    @disable this();
+    @disable this(this);
+
+    /++
+    State must not be entirely zero.
+    The constructor ensures this condition is met.
+    +/
+    ulong[4] s = void;
+
+
+    /// Initializes the generator with a 64-bit seed.
+    this(ulong x0) @nogc nothrow pure @safe
+    {
+        //Seed using splitmix64 as recommended by Vigna.
+        mixin(init_s_from_x0_using_splitmix64);
+    }
+
+    /++
+    Advances the random sequence.
+
+    Returns:
+        A uniformly-distributed integer in the closed range
+        `[0, OutputUInt.max]`.
+    +/
+    ulong opCall() @nogc nothrow pure @safe
+    {
+        import core.bitop : rol;
+        const result_starstar = rol!(7, ulong)(s[1] * 5) * 9;
+
+        const t = s[1] << 17;
+
+        s[2] ^= s[0];
+        s[3] ^= s[1];
+        s[1] ^= s[2];
+        s[0] ^= s[3];
+
+        s[2] ^= t;
+        s[3] = rol!(45, ulong)(s[3]);
+
+        return result_starstar;
+    }
+
+    /++
+    This is the jump function for the generator. It is equivalent
+    to `2^^128` calls to next(); it can be used to generate `2^^128`
+    non-overlapping subsequences for parallel computations.
+    +/
+    void jump()() @nogc nothrow pure @safe
+    {
+        static immutable ulong[4] JUMP = [
+            0x180ec6d33cfd0aba, 0xd5a61266f0c9392c,
+            0xa9582618e03fc9aa, 0x39abdc4529b1661c,
+            ];
+
+        ulong s0 = 0;
+        ulong s1 = 0;
+        ulong s2 = 0;
+        ulong s3 = 0;
+        foreach (i; 0 .. JUMP.length)
+            foreach (b; 0 .. 64)
+            {
+                if (JUMP[i] & (1UL << b))
+                {
+                    s0 ^= s[0];
+                    s1 ^= s[1];
+                    s2 ^= s[2];
+                    s3 ^= s[3];
+                }
+                opCall();
+            }
+        s[0] = s0;
+        s[1] = s1;
+        s[2] = s2;
+        s[3] = s3;
+    }
+
+    /++
+    Compatibility with $(LINK2 https://dlang.org/phobos/std_random.html#.isUniformRNG,
+    Phobos library methods). Presents this RNG as an InputRange.
+
+    This struct disables its default copy constructor and so will only work with
+    Phobos functions that "do the right thing" and take RNGs by reference and
+    do not accidentally make implicit copies.
+    +/
+    enum bool isUniformRandom = true;
+    /// ditto
+    enum typeof(this.max) min = typeof(this.max).min;
+    /// ditto
+    enum bool empty = false;
+    /// ditto
+    @property ulong front()() const
+    {
+        import core.bitop : rol;
+        return rol!(7, ulong)(s[1] * 5) * 9;
+    }
+    /// ditto
+    void popFront()() { opCall(); }
+    /// ditto
+    void seed()(ulong x0)
+    {
+        this.__ctor(x0);
+    }
+}
+
+///
+@nogc nothrow pure @safe version(mir_random_test) unittest
+{
+    import mir.random : isSaturatedRandomEngine, rand;
+    import mir.random.engine.xorshift : Xoshiro256StarStar;
+    import mir.math.common: fabs;
+
+    static assert(isSaturatedRandomEngine!Xoshiro256StarStar);
+    auto gen = Xoshiro256StarStar(1234u);//Seed with constant.
+    assert(gen.rand!double.fabs == 0x1.b45d9a0e3ae53p-2);//Generate number from 0 inclusive to 1 exclusive.
+    assert(gen.rand!double.fabs == 0x1.640660c19433ep-3);
+    //Xoshiro256StarStar has a jump function that is equivalent
+    //to 2 ^^ 128 invocations of opCall.
+    gen.jump();
+    assert(gen.rand!uint == 2505151307);
+}
+
+
+@nogc nothrow pure @safe version(mir_random_test) unittest
+{
+    testIsPhobosStyleRandom!Xoshiro256StarStar();
 }
 
 // Verify that code rewriting has not changed algorithm results.
@@ -794,7 +970,8 @@ struct Xoroshiro128Plus
         XorshiftEngine!(ulong, 64, -12, 25, -27),
         XorshiftEngine!(ulong, 128, 23, -18, -5),
         XorshiftEngine!(ulong, 1024, 31, -11, -30),
-        Xorshift64Star32, Xorshift1024StarPhi, Xoroshiro128Plus);
+        Xorshift64Star32, Xorshift1024StarPhi, Xoroshiro128Plus,
+        Xoshiro256StarStar,);
     immutable ulong[2][PRNGTypes.length] expected = [
         // xorshift 32, 64, 128 with uint words
         [2731401742UL, 136850760UL],
@@ -808,6 +985,8 @@ struct Xoroshiro128Plus
         [3988833114UL, 2123560186UL],
         [13627154139265517578UL, 4343624370592319777UL],
         [11299058612650730663UL, 6338390222986562044UL],
+        // xoshiro256**
+        [15127205273500847298UL, 16265768176396019016UL],
     ];
     foreach (i, PRNGType; PRNGTypes)
     {
@@ -826,6 +1005,12 @@ struct Xoroshiro128Plus
             rnd.jump();
             assert(rnd() == 12213380293688671629UL);
             assert(rnd() == 12219340912072210038UL);
+        }
+        else static if (is(PRNGType == Xoshiro256StarStar))
+        {
+            rnd.jump();
+            assert(rnd() == 3991360392352292703UL);
+            assert(rnd() == 17616895517737714975UL);
         }
     }
 }
