@@ -33,7 +33,7 @@ pure {
 extern( System ):
 
 // Version of corresponding c header file
-enum VK_HEADER_VERSION = 72;
+enum VK_HEADER_VERSION = 75;
 
 enum VK_NULL_HANDLE = null;
 
@@ -3941,6 +3941,16 @@ struct VkDrawIndirectCommand {
     uint32_t  instanceCount;
     uint32_t  firstVertex;
     uint32_t  firstInstance;
+}
+
+struct VkBaseOutStructure {
+    VkStructureType               sType;
+    const( VkBaseOutStructure )*  pNext;
+}
+
+struct VkBaseInStructure {
+    VkStructureType              sType;
+    const( VkBaseInStructure )*  pNext;
 }
 
 
