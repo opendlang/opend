@@ -829,7 +829,7 @@ to generate non-overlapping subsequences for parallel computations.
 Public domain reference implementation:
 $(HTTP xoshiro.di.unimi.it/xoshiro256starstar.c).
 +/
-alias Xoshiro256StarStar = XoshiroEngine!(ulong,256,"**",17,45,1,5,7,9);
+alias Xoshiro256StarStar = XoshiroEngine!(ulong,256,"**",17,45,1,7,5,9);
 
 ///
 @nogc nothrow pure @safe version(mir_random_test) unittest
@@ -878,7 +878,7 @@ to generate non-overlapping subsequences for parallel computations.
 Public domain reference implementation:
 $(HTTP xoshiro.di.unimi.it/xoshiro128starstar.c).
 +/
-alias Xoshiro128StarStar_32 = XoshiroEngine!(uint,128,"**",9,11,0,5,7,9);
+alias Xoshiro128StarStar_32 = XoshiroEngine!(uint,128,"**",9,11,0,7,5,9);
 
 ///
 @nogc nothrow pure @safe version(mir_random_test) unittest
@@ -917,12 +917,12 @@ Params:
     A = state xor-lshift
     B = state rotate left
     I = index of element used for output
-    S = output scramble multiplier 1 (must be odd)
     R = output scramble rotate left
-    T = output scramble multiplier 2 (must be odd)
+    S = output scramble pre-rotate multiplier (must be odd)
+    T = output scramble post-rotate multiplier (must be odd)
 +/
 struct XoshiroEngine(UIntType, uint nbits, string scrambler,
-uint A, uint B, uint I, UIntType S, uint R, UIntType T)
+uint A, uint B, uint I, uint R, UIntType S, UIntType T)
 if ((is(UIntType == uint) || is(UIntType == ulong))
     && "**" == scrambler
     && (UIntType.sizeof * 8 * 4 == nbits
@@ -958,7 +958,7 @@ if ((is(UIntType == uint) || is(UIntType == ulong))
     UIntType[nbits / (UIntType.sizeof * 8)] s;
 
     /// Initializes the generator with a seed.
-    this(UIntType x0) @nogc nothrow pure @safe
+    this()(UIntType x0) @nogc nothrow pure @safe
     {
         static if (is(UIntType == ulong))
             mixin(init_s_from_x0_using_splitmix64);
@@ -976,7 +976,7 @@ if ((is(UIntType == uint) || is(UIntType == ulong))
         A uniformly-distributed integer in the closed range
         `[0, UIntType.max]`.
     +/
-    UIntType opCall() @nogc nothrow pure @safe
+    UIntType opCall()() @nogc nothrow pure @safe
     {
         import core.bitop : rol;
         const result = rol!(R, UIntType)(s[I] * S) * T;
@@ -1121,7 +1121,7 @@ if ((is(UIntType == uint) || is(UIntType == ulong))
         Xorshift64Star32, Xorshift1024StarPhi, Xoroshiro128Plus,
         Xoshiro256StarStar, Xoshiro128StarStar_32,
         // (test-only) xoshiro512**
-        XoshiroEngine!(ulong,512,"**",11,21,1,5,7,9));
+        XoshiroEngine!(ulong,512,"**",11,21,1,7,5,9));
     // Each PRNG has a length 4 array.
     // The first two items are the first two results after seeding with 123456789.
     // If the PRNG has a jump function the next two items in the array are the
