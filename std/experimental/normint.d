@@ -75,7 +75,7 @@ pure nothrow @nogc:
         static if (op == "-" && isUnsigned!I)
             return NormalizedInt!I(0); // unsigned negate saturates at 0
         else
-            return NormalizedInt!I(mixin(op ~ "value"));
+            return NormalizedInt!I(mixin("cast(I)" ~ op ~ "cast(WorkInt!I)value"));
     }
 
     /** Binary operators. */
@@ -523,7 +523,7 @@ T convertNormBits(size_t srcBits, bool srcSigned, size_t destBits, bool destSign
         else
         {
             if (v & SignBit!srcBits)
-                return -convertNormBits!(srcBits - 1, false, destBits - 1, false, T, S)(((v ^ SignBit!srcBits) == 0 ? ~v : -v) & BitsSMax!srcBits) & BitsUMax!destBits;
+                return cast(T)-cast(WorkInt!T)convertNormBits!(srcBits - 1, false, destBits - 1, false, T, S)(((v ^ SignBit!srcBits) == 0 ? cast(S)~cast(WorkInt!S)v : cast(S)-cast(WorkInt!S)v) & BitsSMax!srcBits) & BitsUMax!destBits;
             else
                 return convertNormBits!(srcBits - 1, false, destBits - 1, false, T, S)(v);
         }
