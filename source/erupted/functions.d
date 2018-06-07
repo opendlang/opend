@@ -237,6 +237,16 @@ extern( System ) {
     alias PFN_vkGetPhysicalDeviceSurfaceCapabilities2KHR         = VkResult  function( VkPhysicalDevice physicalDevice, const( VkPhysicalDeviceSurfaceInfo2KHR )* pSurfaceInfo, VkSurfaceCapabilities2KHR* pSurfaceCapabilities );
     alias PFN_vkGetPhysicalDeviceSurfaceFormats2KHR              = VkResult  function( VkPhysicalDevice physicalDevice, const( VkPhysicalDeviceSurfaceInfo2KHR )* pSurfaceInfo, uint32_t* pSurfaceFormatCount, VkSurfaceFormat2KHR* pSurfaceFormats );
 
+    // VK_KHR_get_display_properties2
+    alias PFN_vkGetPhysicalDeviceDisplayProperties2KHR           = VkResult  function( VkPhysicalDevice physicalDevice, uint32_t* pPropertyCount, VkDisplayProperties2KHR* pProperties );
+    alias PFN_vkGetPhysicalDeviceDisplayPlaneProperties2KHR      = VkResult  function( VkPhysicalDevice physicalDevice, uint32_t* pPropertyCount, VkDisplayPlaneProperties2KHR* pProperties );
+    alias PFN_vkGetDisplayModeProperties2KHR                     = VkResult  function( VkPhysicalDevice physicalDevice, VkDisplayKHR display, uint32_t* pPropertyCount, VkDisplayModeProperties2KHR* pProperties );
+    alias PFN_vkGetDisplayPlaneCapabilities2KHR                  = VkResult  function( VkPhysicalDevice physicalDevice, const( VkDisplayPlaneInfo2KHR )* pDisplayPlaneInfo, VkDisplayPlaneCapabilities2KHR* pCapabilities );
+
+    // VK_KHR_draw_indirect_count
+    alias PFN_vkCmdDrawIndirectCountKHR                          = void      function( VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, uint32_t maxDrawCount, uint32_t stride );
+    alias PFN_vkCmdDrawIndexedIndirectCountKHR                   = void      function( VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, uint32_t maxDrawCount, uint32_t stride );
+
     // VK_EXT_debug_report
     alias PFN_vkCreateDebugReportCallbackEXT                     = VkResult  function( VkInstance instance, const( VkDebugReportCallbackCreateInfoEXT )* pCreateInfo, const( VkAllocationCallbacks )* pAllocator, VkDebugReportCallbackEXT* pCallback );
     alias PFN_vkDestroyDebugReportCallbackEXT                    = void      function( VkInstance instance, VkDebugReportCallbackEXT callback, const( VkAllocationCallbacks )* pAllocator );
@@ -551,6 +561,16 @@ __gshared {
     PFN_vkGetPhysicalDeviceSurfaceCapabilities2KHR         vkGetPhysicalDeviceSurfaceCapabilities2KHR;
     PFN_vkGetPhysicalDeviceSurfaceFormats2KHR              vkGetPhysicalDeviceSurfaceFormats2KHR;
 
+    // VK_KHR_get_display_properties2
+    PFN_vkGetPhysicalDeviceDisplayProperties2KHR           vkGetPhysicalDeviceDisplayProperties2KHR;
+    PFN_vkGetPhysicalDeviceDisplayPlaneProperties2KHR      vkGetPhysicalDeviceDisplayPlaneProperties2KHR;
+    PFN_vkGetDisplayModeProperties2KHR                     vkGetDisplayModeProperties2KHR;
+    PFN_vkGetDisplayPlaneCapabilities2KHR                  vkGetDisplayPlaneCapabilities2KHR;
+
+    // VK_KHR_draw_indirect_count
+    PFN_vkCmdDrawIndirectCountKHR                          vkCmdDrawIndirectCountKHR;
+    PFN_vkCmdDrawIndexedIndirectCountKHR                   vkCmdDrawIndexedIndirectCountKHR;
+
     // VK_EXT_debug_report
     PFN_vkCreateDebugReportCallbackEXT                     vkCreateDebugReportCallbackEXT;
     PFN_vkDestroyDebugReportCallbackEXT                    vkDestroyDebugReportCallbackEXT;
@@ -760,6 +780,12 @@ void loadInstanceLevelFunctions( VkInstance instance ) {
     vkGetPhysicalDeviceSurfaceCapabilities2KHR         = cast( PFN_vkGetPhysicalDeviceSurfaceCapabilities2KHR         ) vkGetInstanceProcAddr( instance, "vkGetPhysicalDeviceSurfaceCapabilities2KHR" );
     vkGetPhysicalDeviceSurfaceFormats2KHR              = cast( PFN_vkGetPhysicalDeviceSurfaceFormats2KHR              ) vkGetInstanceProcAddr( instance, "vkGetPhysicalDeviceSurfaceFormats2KHR" );
 
+    // VK_KHR_get_display_properties2
+    vkGetPhysicalDeviceDisplayProperties2KHR           = cast( PFN_vkGetPhysicalDeviceDisplayProperties2KHR           ) vkGetInstanceProcAddr( instance, "vkGetPhysicalDeviceDisplayProperties2KHR" );
+    vkGetPhysicalDeviceDisplayPlaneProperties2KHR      = cast( PFN_vkGetPhysicalDeviceDisplayPlaneProperties2KHR      ) vkGetInstanceProcAddr( instance, "vkGetPhysicalDeviceDisplayPlaneProperties2KHR" );
+    vkGetDisplayModeProperties2KHR                     = cast( PFN_vkGetDisplayModeProperties2KHR                     ) vkGetInstanceProcAddr( instance, "vkGetDisplayModeProperties2KHR" );
+    vkGetDisplayPlaneCapabilities2KHR                  = cast( PFN_vkGetDisplayPlaneCapabilities2KHR                  ) vkGetInstanceProcAddr( instance, "vkGetDisplayPlaneCapabilities2KHR" );
+
     // VK_EXT_debug_report
     vkCreateDebugReportCallbackEXT                     = cast( PFN_vkCreateDebugReportCallbackEXT                     ) vkGetInstanceProcAddr( instance, "vkCreateDebugReportCallbackEXT" );
     vkDestroyDebugReportCallbackEXT                    = cast( PFN_vkDestroyDebugReportCallbackEXT                    ) vkGetInstanceProcAddr( instance, "vkDestroyDebugReportCallbackEXT" );
@@ -964,6 +990,10 @@ void loadDeviceLevelFunctions( VkInstance instance ) {
     // VK_KHR_external_fence_fd
     vkImportFenceFdKHR                          = cast( PFN_vkImportFenceFdKHR                          ) vkGetInstanceProcAddr( instance, "vkImportFenceFdKHR" );
     vkGetFenceFdKHR                             = cast( PFN_vkGetFenceFdKHR                             ) vkGetInstanceProcAddr( instance, "vkGetFenceFdKHR" );
+
+    // VK_KHR_draw_indirect_count
+    vkCmdDrawIndirectCountKHR                   = cast( PFN_vkCmdDrawIndirectCountKHR                   ) vkGetInstanceProcAddr( instance, "vkCmdDrawIndirectCountKHR" );
+    vkCmdDrawIndexedIndirectCountKHR            = cast( PFN_vkCmdDrawIndexedIndirectCountKHR            ) vkGetInstanceProcAddr( instance, "vkCmdDrawIndexedIndirectCountKHR" );
 
     // VK_EXT_debug_marker
     vkDebugMarkerSetObjectTagEXT                = cast( PFN_vkDebugMarkerSetObjectTagEXT                ) vkGetInstanceProcAddr( instance, "vkDebugMarkerSetObjectTagEXT" );
@@ -1213,6 +1243,10 @@ void loadDeviceLevelFunctions( VkDevice device ) {
     // VK_KHR_external_fence_fd
     vkImportFenceFdKHR                          = cast( PFN_vkImportFenceFdKHR                          ) vkGetDeviceProcAddr( device, "vkImportFenceFdKHR" );
     vkGetFenceFdKHR                             = cast( PFN_vkGetFenceFdKHR                             ) vkGetDeviceProcAddr( device, "vkGetFenceFdKHR" );
+
+    // VK_KHR_draw_indirect_count
+    vkCmdDrawIndirectCountKHR                   = cast( PFN_vkCmdDrawIndirectCountKHR                   ) vkGetDeviceProcAddr( device, "vkCmdDrawIndirectCountKHR" );
+    vkCmdDrawIndexedIndirectCountKHR            = cast( PFN_vkCmdDrawIndexedIndirectCountKHR            ) vkGetDeviceProcAddr( device, "vkCmdDrawIndexedIndirectCountKHR" );
 
     // VK_EXT_debug_marker
     vkDebugMarkerSetObjectTagEXT                = cast( PFN_vkDebugMarkerSetObjectTagEXT                ) vkGetDeviceProcAddr( device, "vkDebugMarkerSetObjectTagEXT" );

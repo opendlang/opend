@@ -33,17 +33,17 @@ pure {
 extern( System ):
 
 // Version of corresponding c header file
-enum VK_HEADER_VERSION = 75;
+enum VK_HEADER_VERSION = 76;
 
 enum VK_NULL_HANDLE = null;
 
-enum VK_DEFINE_HANDLE( string name ) = "struct "~name~"_handle; alias "~name~" = "~name~"_handle*;";
+enum VK_DEFINE_HANDLE( string name ) = "struct " ~ name ~ "_handle; alias " ~ name ~ " = " ~ name ~ "_handle*;";
 
 version( X86_64 ) {
     alias VK_DEFINE_NON_DISPATCHABLE_HANDLE( string name ) = VK_DEFINE_HANDLE!name;
     enum VK_NULL_ND_HANDLE = null;
 } else {
-    enum VK_DEFINE_NON_DISPATCHABLE_HANDLE( string name ) = "alias "~name~" = ulong;";
+    enum VK_DEFINE_NON_DISPATCHABLE_HANDLE( string name ) = "alias " ~ name ~ " = ulong;";
     enum VK_NULL_ND_HANDLE = 0uL;
 }
 
@@ -421,6 +421,11 @@ enum VkStructureType {
     VK_STRUCTURE_TYPE_SURFACE_CAPABILITIES_2_KHR                                    = 1000119001,
     VK_STRUCTURE_TYPE_SURFACE_FORMAT_2_KHR                                          = 1000119002,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTER_FEATURES_KHR                 = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTER_FEATURES,
+    VK_STRUCTURE_TYPE_DISPLAY_PROPERTIES_2_KHR                                      = 1000121000,
+    VK_STRUCTURE_TYPE_DISPLAY_PLANE_PROPERTIES_2_KHR                                = 1000121001,
+    VK_STRUCTURE_TYPE_DISPLAY_MODE_PROPERTIES_2_KHR                                 = 1000121002,
+    VK_STRUCTURE_TYPE_DISPLAY_PLANE_INFO_2_KHR                                      = 1000121003,
+    VK_STRUCTURE_TYPE_DISPLAY_PLANE_CAPABILITIES_2_KHR                              = 1000121004,
     VK_STRUCTURE_TYPE_IOS_SURFACE_CREATE_INFO_MVK                                   = 1000122000,
     VK_STRUCTURE_TYPE_MACOS_SURFACE_CREATE_INFO_MVK                                 = 1000123000,
     VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS_KHR                             = VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS,
@@ -717,6 +722,11 @@ enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SURFACE_INFO_2_KHR                       
 enum VK_STRUCTURE_TYPE_SURFACE_CAPABILITIES_2_KHR                                   = VkStructureType.VK_STRUCTURE_TYPE_SURFACE_CAPABILITIES_2_KHR;
 enum VK_STRUCTURE_TYPE_SURFACE_FORMAT_2_KHR                                         = VkStructureType.VK_STRUCTURE_TYPE_SURFACE_FORMAT_2_KHR;
 enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTER_FEATURES_KHR                = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTER_FEATURES_KHR;
+enum VK_STRUCTURE_TYPE_DISPLAY_PROPERTIES_2_KHR                                     = VkStructureType.VK_STRUCTURE_TYPE_DISPLAY_PROPERTIES_2_KHR;
+enum VK_STRUCTURE_TYPE_DISPLAY_PLANE_PROPERTIES_2_KHR                               = VkStructureType.VK_STRUCTURE_TYPE_DISPLAY_PLANE_PROPERTIES_2_KHR;
+enum VK_STRUCTURE_TYPE_DISPLAY_MODE_PROPERTIES_2_KHR                                = VkStructureType.VK_STRUCTURE_TYPE_DISPLAY_MODE_PROPERTIES_2_KHR;
+enum VK_STRUCTURE_TYPE_DISPLAY_PLANE_INFO_2_KHR                                     = VkStructureType.VK_STRUCTURE_TYPE_DISPLAY_PLANE_INFO_2_KHR;
+enum VK_STRUCTURE_TYPE_DISPLAY_PLANE_CAPABILITIES_2_KHR                             = VkStructureType.VK_STRUCTURE_TYPE_DISPLAY_PLANE_CAPABILITIES_2_KHR;
 enum VK_STRUCTURE_TYPE_IOS_SURFACE_CREATE_INFO_MVK                                  = VkStructureType.VK_STRUCTURE_TYPE_IOS_SURFACE_CREATE_INFO_MVK;
 enum VK_STRUCTURE_TYPE_MACOS_SURFACE_CREATE_INFO_MVK                                = VkStructureType.VK_STRUCTURE_TYPE_MACOS_SURFACE_CREATE_INFO_MVK;
 enum VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS_KHR                            = VkStructureType.VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS_KHR;
@@ -5492,6 +5502,44 @@ enum VK_KHR_VARIABLE_POINTERS_EXTENSION_NAME = "VK_KHR_variable_pointers";
 alias VkPhysicalDeviceVariablePointerFeaturesKHR = VkPhysicalDeviceVariablePointerFeatures;
 
 
+// - VK_KHR_get_display_properties2 -
+enum VK_KHR_get_display_properties2 = 1;
+
+enum VK_KHR_GET_DISPLAY_PROPERTIES_2_SPEC_VERSION = 1;
+enum VK_KHR_GET_DISPLAY_PROPERTIES_2_EXTENSION_NAME = "VK_KHR_get_display_properties2";
+
+struct VkDisplayProperties2KHR {
+    VkStructureType         sType = VK_STRUCTURE_TYPE_DISPLAY_PROPERTIES_2_KHR;
+    void*                   pNext;
+    VkDisplayPropertiesKHR  displayProperties;
+}
+
+struct VkDisplayPlaneProperties2KHR {
+    VkStructureType              sType = VK_STRUCTURE_TYPE_DISPLAY_PLANE_PROPERTIES_2_KHR;
+    void*                        pNext;
+    VkDisplayPlanePropertiesKHR  displayPlaneProperties;
+}
+
+struct VkDisplayModeProperties2KHR {
+    VkStructureType             sType = VK_STRUCTURE_TYPE_DISPLAY_MODE_PROPERTIES_2_KHR;
+    void*                       pNext;
+    VkDisplayModePropertiesKHR  displayModeProperties;
+}
+
+struct VkDisplayPlaneInfo2KHR {
+    VkStructureType   sType = VK_STRUCTURE_TYPE_DISPLAY_PLANE_INFO_2_KHR;
+    const( void )*    pNext;
+    VkDisplayModeKHR  mode;
+    uint32_t          planeIndex;
+}
+
+struct VkDisplayPlaneCapabilities2KHR {
+    VkStructureType                sType = VK_STRUCTURE_TYPE_DISPLAY_PLANE_CAPABILITIES_2_KHR;
+    void*                          pNext;
+    VkDisplayPlaneCapabilitiesKHR  capabilities;
+}
+
+
 // - VK_KHR_dedicated_allocation -
 enum VK_KHR_dedicated_allocation = 1;
 
@@ -5580,6 +5628,13 @@ enum VK_KHR_MAINTENANCE3_EXTENSION_NAME = "VK_KHR_maintenance3";
 
 alias VkPhysicalDeviceMaintenance3PropertiesKHR = VkPhysicalDeviceMaintenance3Properties;
 alias VkDescriptorSetLayoutSupportKHR = VkDescriptorSetLayoutSupport;
+
+
+// - VK_KHR_draw_indirect_count -
+enum VK_KHR_draw_indirect_count = 1;
+
+enum VK_KHR_DRAW_INDIRECT_COUNT_SPEC_VERSION = 1;
+enum VK_KHR_DRAW_INDIRECT_COUNT_EXTENSION_NAME = "VK_KHR_draw_indirect_count";
 
 
 // - VK_EXT_debug_report -
