@@ -129,8 +129,7 @@ enum FunType {undefined, T1a, T1b, T2a, T2b, T3a, T3b, T4a, T4b}
 Determine the function type of an interval.
 Based on Theorem 1 of the Flex paper.
 Params:
-    bl = left side of the interval
-    br = right side of the interval
+    iv = interval
 */
 FunType determineType(S)(in Interval!S iv)
 in

@@ -17,7 +17,7 @@ Returns:
     Splitting point within the interval
 
 See_Also:
-    $(LINK2 http://www.wolframalpha.com/input/?i=tan(0.5+*+(ArcTan%5Bx%5D+%2B+ArcTan%5By%5D)),
+    $(LINK2 http://www.wolframalpha.com/input/?i=tan(0.5+*+(ArcTan%5Bx%5D+%2B+ArcTan%5By%5D))),
     WolframAlpha visualization of the arc-mean)
 
 References:
