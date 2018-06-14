@@ -814,7 +814,7 @@ version(Windows)
     // the wincrypt headers in druntime are broken for x64!
     private alias ULONG_PTR = size_t; // uint in druntime
     private alias BOOL = bool;
-    private alias DWORD = size_t; // uint in druntime
+    private alias DWORD = uint;
     private alias LPCWSTR = wchar*;
     private alias PBYTE = ubyte*;
     private alias HCRYPTPROV = ULONG_PTR;
@@ -928,7 +928,18 @@ extern(C) ptrdiff_t mir_random_genRandomBlocking(scope void* ptr , size_t len) @
 {
     version(Windows)
     {
-        while(!CryptGenRandom(hProvider, len, cast(PBYTE) ptr)) {}
+        static if (DWORD.max >= size_t.max)
+            while(!CryptGenRandom(hProvider, len, cast(PBYTE) ptr)) {}
+        else
+            while (len != 0)
+            {
+                import mir.utility : min;
+                const n = min(DWORD.max, len);
+                if (CryptGenRandom(hProvider, cast(DWORD) n, cast(PBYTE) ptr))
+                {
+                    len -= n;
+                }
+            }
         return 0;
     }
     else version (Darwin)
@@ -1007,7 +1018,10 @@ extern(C) size_t mir_random_genRandomNonBlocking(scope void* ptr, size_t len) @n
 {
     version(Windows)
     {
-        if (!CryptGenRandom(hProvider, len, cast(PBYTE) ptr))
+        static if (DWORD.max < size_t.max)
+            if (len > DWORD.max)
+                len = DWORD.max;
+        if (!CryptGenRandom(hProvider, cast(DWORD) len, cast(PBYTE) ptr))
             return -1;
         return len;
     }
