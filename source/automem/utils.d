@@ -30,7 +30,7 @@ if(!is(T == struct) && !is(T == class) && !is(T == interface) && !isStaticArray!
 }
 
 @("class dtor inference")
-unittest {
+@safe @nogc pure unittest {
     class A { ~this() @nogc {} }
     class B : A { ~this() {} }
     class C : B { ~this() @nogc {} }
@@ -41,7 +41,7 @@ unittest {
 }
 
 @("class dtor inference with struct members")
-unittest {
+@safe @nogc pure unittest {
     struct A { ~this() @nogc {} }
     struct B { ~this() {} }
     class CA { A a; ~this() @nogc {} }
@@ -83,4 +83,3 @@ template _finalizeType(T) {
         });
     }
 }
-
