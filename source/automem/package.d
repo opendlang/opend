@@ -24,9 +24,6 @@ public import automem.unique;
 public import automem.unique_array;
 public import automem.ref_counted;
 
-import automem.test_utils: TestUtils;
-
-mixin TestUtils;
 
 /**
  This unittest can be @safe if the allocator has @safe functions

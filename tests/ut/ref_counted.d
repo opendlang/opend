@@ -357,6 +357,8 @@ static if (__VERSION__ >= 2079) {
 @("@nogc class destructor")
 @nogc unittest {
 
+    import automem: Unique;
+
     auto allocator = SafeAllocator();
 
     {

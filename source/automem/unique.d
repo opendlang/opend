@@ -3,17 +3,15 @@
  */
 module automem.unique;
 
-import automem.test_utils: TestUtils;
 import automem.traits: isAllocator;
 import stdx.allocator: theAllocator;
 import std.typecons: Flag;
 
 version(AutomemTesting) {
-    import unit_threaded;
-    import test_allocator: TestAllocator;
+    import ut;
+    mixin TestUtils;
 }
 
-mixin TestUtils;
 
 /**
    A unique pointer similar to C++'s std::unique_ptr.
