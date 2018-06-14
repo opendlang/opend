@@ -7,7 +7,7 @@ import automem.traits: isAllocator;
 import automem.test_utils: TestUtils;
 import stdx.allocator: theAllocator;
 
-version(unittest) {
+version(AutomemTesting) {
     import unit_threaded;
     import test_allocator: TestAllocator;
 }
@@ -309,7 +309,7 @@ private:
     defaultTest!Mallocator;
 }
 
-version(unittest) {
+version(AutomemTesting) {
 
     void defaultTest(T)() {
         import std.algorithm: move;
@@ -556,7 +556,7 @@ unittest {
     a.length = 2;
 }
 
-version(unittest) {
+version(AutomemTesting) {
 
     mixin template AllocatorAlias(T) {
         import std.traits: hasMember;

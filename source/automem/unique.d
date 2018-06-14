@@ -8,7 +8,7 @@ import automem.traits: isAllocator;
 import stdx.allocator: theAllocator;
 import std.typecons: Flag;
 
-version(unittest) {
+version(AutomemTesting) {
     import unit_threaded;
     import test_allocator: TestAllocator;
 }

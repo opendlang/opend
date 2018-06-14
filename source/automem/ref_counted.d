@@ -9,7 +9,7 @@ import automem.unique: Unique;
 import stdx.allocator: theAllocator, processAllocator;
 import std.typecons: Flag;
 
-version(unittest) {
+version(AutomemTesting) {
     import unit_threaded;
     import test_allocator: TestAllocator;
 }
@@ -687,7 +687,7 @@ auto refCounted(Type, Allocator)(Unique!(Type, Allocator) ptr) {
     assert(s.zeroArgsCtorTest == 3);
 }
 
-version(unittest):
+version(AutomemTesting):
 
 void sendRefCounted(Allocator, Args...)(Args args) {
     import std.concurrency: spawn, send;

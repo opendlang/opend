@@ -1,7 +1,7 @@
 module automem.test_utils;
 
 mixin template TestUtils() {
-    version(unittest) {
+    version(AutomemTesting) {
         import unit_threaded;
         import test_allocator;
 
