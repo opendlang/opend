@@ -12,6 +12,7 @@ configuration "library" {
 
 configuration "unittest" {
     targetType "executable"
+    targetPath "bin"
     targetName "ut"
     importPaths "tests"
     sourcePaths "tests"
@@ -23,6 +24,7 @@ configuration "unittest" {
 
 configuration "asan" {
     targetType "executable"
+    targetPath "bin"
     targetName "ut"
     importPaths "tests"
     sourcePaths "tests"
@@ -38,6 +40,7 @@ configuration "asan" {
 
 configuration "utl" {
     targetType "executable"
+    targetPath "bin"
     targetName "utl"
     importPaths "tests"
     sourcePaths "tests"
