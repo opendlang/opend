@@ -5,7 +5,7 @@ import mir.random.flex.internal.types : Interval;
 /**
 Calculate the mean between two points using the arcmean:
 
-    tan(0.5 * (atan(l) + atan(r))
+    tan(0.5 * (atan(l) + atan(r)))
 
 In contrast to the normal mean (`0.5 * (l + r)`) being a geometric plane,
 the arcmean favors the mean region more.
