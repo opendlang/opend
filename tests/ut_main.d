@@ -10,5 +10,7 @@ int main(string[] args) {
         "automem.utils",
         "ut.allocator",
         "ut.ref_counted",
+        "ut.unique",
+        "ut.unique_array",
     );
 }
