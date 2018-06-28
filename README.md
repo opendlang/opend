@@ -37,10 +37,12 @@ https://software.intel.com/sites/landingpage/IntrinsicsGuide/
 ### Future-proof
 
 LDC SIMD intrinsics are a moving target (https://github.com/ldc-developers/ldc/issues/2019), 
-and you need a layer over it if you want to
+and you need a layer over it if you want to be safe.
+
+We maintain that layer because we need it for our products.
 
 Because those x86 intrinsics are internally converted to IR, **they don't tie to a particular architecture**.
-So you could target ARM and still get some speed-up.
+So you could target ARM one day and still get some speed-up.
 
 
 ### Portability
