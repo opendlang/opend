@@ -74,8 +74,11 @@ __m128i _mm_andnot_si128 (__m128i a, __m128i b) pure @safe
     return (~a) & b;
 }
 
-alias _mm_avg_epu16 = __builtin_ia32_pavgw128;
-alias _mm_avg_epu8 = __builtin_ia32_pavgb128;
+pragma(LDC_intrinsic, "llvm.x86.sse2.pavg.w")
+    short8 _mm_avg_epu16(short8, short8) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.sse2.pavg.b")
+    byte16 _mm_avg_epu8(byte16, byte16) pure @safe;
 
 // TODO: __m128i _mm_bslli_si128 (__m128i a, int imm8)
 // TODO: __m128i _mm_bsrli_si128 (__m128i a, int imm8)
@@ -325,28 +328,31 @@ long _mm_cvtsi128_si64 (__m128i a) pure @safe
 }
 alias _mm_cvtsi128_si64x = _mm_cvtsi128_si64;
 
-alias _mm_cvtsi32_sd = __builtin_ia32_cvtsi2sd;
+pragma(LDC_intrinsic, "llvm.x86.sse2.cvtsi2sd")
+    double2 _mm_cvtsi32_sd(double2, int) pure @safe;
 
 __m128i _mm_cvtsi32_si128 (int a) pure @safe
 {
-    int4 r = [a, 0, 0, 0];
-    return r;
+    int4 r = [0, 0, 0, 0];    
+    return insertelement!(int4, 0)(r, a);
 }
 
-alias _mm_cvtsi64_sd = __builtin_ia32_cvtsi642sd;
+pragma(LDC_intrinsic, "llvm.x86.sse2.cvtsi642sd")
+    double2 _mm_cvtsi64_sd(double2, long) pure @safe;
 
 __m128i _mm_cvtsi64_si128 (long a) pure @safe
 {
-    long2 r = [a, 0];
-    return r;
+    long2 r = [0, 0];    
+    return insertelement!(long2, 0)(r, a);
 }
 
 alias _mm_cvtsi64x_sd = _mm_cvtsi64_sd;
 alias _mm_cvtsi64x_si128 = _mm_cvtsi64_si128;
 
 
+pragma(LDC_intrinsic, "llvm.x86.sse2.cvtss2sd")
+    double2 _mm_cvtss_sd(double2, float4) pure @safe;
 
-alias _mm_cvtss_sd = __builtin_ia32_cvtss2sd;
 alias _mm_cvttpd_epi32 = __builtin_ia32_cvttpd2dq;
 //MMXREG: _mm_cvttpd_pi32
 alias _mm_cvttps_epi32 = __builtin_ia32_cvttps2dq;
@@ -381,14 +387,16 @@ __m128d _mm_load_pd (const(double) * mem_addr) pure
     return *aligned;
 }
 
-__m128d _mm_load_pd1 (const(double)* mem_addr) pure @safe
+__m128d _mm_load_pd1 (const(double)* mem_addr) pure
 {
-    return [*mem_addr, *mem_addr];
+    double[2] arr = [*mem_addr, *mem_addr];
+    return loadUnaligned!(double2)(&arr[0]);
 }
 
 __m128d _mm_load_sd (const(double)* mem_addr) pure @safe
 {
-    return [*mem_addr, 0];
+    double2 r = [0, 0];    
+    return insertelement!(double2, 0)(r, *mem_addr);
 }
 
 __m128i _mm_load_si128 (const(__m128i)* mem_addr) pure
@@ -407,9 +415,10 @@ __m128d _mm_loadh_pd (__m128d a, const(double)* mem_addr) pure @safe
 __m128i _mm_loadl_epi64 (const(__m128i)* mem_addr) pure @safe
 {
     auto pLong = cast(const(long)*)mem_addr;
-    long2 res = [*pLong, 0];
-    return cast(__m128i)res;
+    long2 r = [0, 0];    
+    return insertelement!(long2, 0)(r, *pLong);
 }
+
 __m128d _mm_loadl_pd (__m128d a, const(double)* mem_addr) pure @safe
 {
     return insertelement!(__m128d, 0)(a, *mem_addr);
@@ -461,8 +470,8 @@ alias _mm_min_sd = __builtin_ia32_minsd;
 
 __m128i _mm_move_epi64 (__m128i a) pure @safe
 {
-    long2 result = [ extractelement!(long2, 0)(a), 0 ];
-    return result;
+    long2 result = [ 0, 0 ];
+    return insertelement!(long2, 0)(result, extractelement!(long2, 0)(a));
 }
 
 __m128d _mm_move_sd (__m128d a, __m128d b) pure @safe
@@ -514,116 +523,122 @@ alias _mm_pause = __builtin_ia32_pause;
 
 alias _mm_sad_epu8 = __builtin_ia32_psadbw128;
 
-__m128i _mm_set_epi16 (short e7, short e6, short e5, short e4, short e3, short e2, short e1, short e0) pure @safe
+__m128i _mm_set_epi16 (short e7, short e6, short e5, short e4, short e3, short e2, short e1, short e0) pure @trusted
 {
-    short8 result = [e0, e1, e2, e3, e4, e5, e6, e7];
-    return cast(__m128i) result;
+    short[8] result = [e0, e1, e2, e3, e4, e5, e6, e7];
+    return loadUnaligned!(short8)(result.ptr);
 }
 
-__m128i _mm_set_epi32 (int e3, int e2, int e1, int e0) pure @safe
+__m128i _mm_set_epi32 (int e3, int e2, int e1, int e0) pure @trusted
 {
-    int4 result = [e0, e1, e2, e3];
-    return cast(__m128i) result;
+    int[4] result = [e0, e1, e2, e3];
+    return loadUnaligned!(int4)(result.ptr);
 }
 
-__m128i _mm_set_epi64x (long e1, long e0) pure @safe
+__m128i _mm_set_epi64x (long e1, long e0) pure @trusted
 {
-    long2 result = [e0, e1];
-    return cast(__m128i) result;
+    long[2] result = [e0, e1];
+    return loadUnaligned!(long2)(result.ptr);
 }
 
 __m128i _mm_set_epi8 (byte e15, byte e14, byte e13, byte e12, 
                       byte e11, byte e10, byte e9, byte e8, 
                       byte e7, byte e6, byte e5, byte e4, 
-                      byte e3, byte e2, byte e1, byte e0) pure @safe
+                      byte e3, byte e2, byte e1, byte e0) pure @trusted
 {
-    byte16 result = [e0, e1,  e2,  e3,  e4,  e5,  e6, e7,
+    byte[16] result = [e0, e1,  e2,  e3,  e4,  e5,  e6, e7,
                      e8, e9, e10, e11, e12, e13, e14, e15];
-    return cast(__m128i)result;
+    return loadUnaligned!(byte16)(result.ptr);
 }
 
-__m128d _mm_set_pd (double e1, double e0) pure @safe
+__m128d _mm_set_pd (double e1, double e0) pure @trusted
 {
-    return [e0, e1];
+    double[2] result = [e0, e1];
+    return loadUnaligned!(double2)(result.ptr);
 }
 
-__m128d _mm_set_pd1 (double a) pure @safe
+__m128d _mm_set_pd1 (double a) pure @trusted
 {
-    return [a, a];
+    double[2] result = [a, a];
+    return loadUnaligned!(double2)(result.ptr);
 }
 
-__m128d _mm_set_sd (double a) pure @safe
+__m128d _mm_set_sd (double a) pure @trusted
 {
-    return [a, 0];
+    double[2] result = [a, 0];
+    return loadUnaligned!(double2)(result.ptr);
 }
 
-__m128i _mm_set1_epi16 (short a) pure @safe
+__m128i _mm_set1_epi16 (short a) pure @trusted
 {
-    short8 result = [a, a, a, a, a, a, a, a];
-    return cast(__m128i) result;
+    short[8] result = [a, a, a, a, a, a, a, a];
+    return loadUnaligned!(short8)(result.ptr);
 }
 
-__m128i _mm_set1_epi32 (int a) pure @safe
+__m128i _mm_set1_epi32 (int a) pure @trusted
 {
-    int4 result = [a, a, a, a];
-    return cast(__m128i) result;
+    int[4] result = [a, a, a, a];
+    return loadUnaligned!(int4)(result.ptr);
 }
 
-__m128i _mm_set1_epi64x (long a) pure @safe
+__m128i _mm_set1_epi64x (long a) pure @trusted
 {
-    long2 result = [a, a];
-    return cast(__m128i) result;
+    long[2] result = [a, a];
+    return loadUnaligned!(long2)(result.ptr);
 }
 
-__m128i _mm_set1_epi8 (char a) pure @safe
+__m128i _mm_set1_epi8 (char a) pure @trusted
 {
-    byte16 result = [a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a];
-    return cast(__m128i) result;
+    byte[16] result = [a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a];
+    return loadUnaligned!(byte16)(result.ptr);
 }
 
 alias _mm_set1_pd = _mm_set_pd1;
 
-__m128i _mm_setr_epi16 (short e7, short e6, short e5, short e4, short e3, short e2, short e1, short e0) pure @safe
+__m128i _mm_setr_epi16 (short e7, short e6, short e5, short e4, short e3, short e2, short e1, short e0) pure @trusted
 {
-    short8 result = [e7, e6, e5, e4, e3, e2, e1, e0];
-    return cast(__m128i) result;
+    short[8] result = [e7, e6, e5, e4, e3, e2, e1, e0];
+    return loadUnaligned!(short8)(result.ptr);
 }
 
-__m128i _mm_setr_epi32 (int e3, int e2, int e1, int e0) pure @safe
+__m128i _mm_setr_epi32 (int e3, int e2, int e1, int e0) pure @trusted
 {
-    int4 result = [e3, e2, e1, e0];
-    return cast(__m128i) result;
+    int[4] result = [e3, e2, e1, e0];
+    return loadUnaligned!(int4)(result.ptr);
 }
 
-__m128i _mm_setr_epi64 (long e1, long e0) pure @safe
+__m128i _mm_setr_epi64 (long e1, long e0) pure @trusted
 {
-    long2 result = [e1, e0];
-    return cast(__m128i) result;
+    long[2] result = [e1, e0];
+    return loadUnaligned!(long2)(result.ptr);
 }
 
 __m128i _mm_setr_epi8 (char e15, char e14, char e13, char e12, 
                        char e11, char e10, char e9, char e8, 
                        char e7, char e6, char e5, char e4, 
-                       char e3, char e2, char e1, char e0) pure @safe
+                       char e3, char e2, char e1, char e0) pure @trusted
 {
-    byte16 result = [e15, e14, e13, e12, e11, e10, e9, e8,
+    byte[16] result = [e15, e14, e13, e12, e11, e10, e9, e8,
                       e7,  e6,  e5,  e4,  e3,  e2, e1, e0];
-    return cast(__m128i) result;
+    return loadUnaligned!(byte16)(result.ptr);
 }
 
-__m128d _mm_setr_pd (double e1, double e0) pure @safe
+__m128d _mm_setr_pd (double e1, double e0) pure @trusted
 {
-    return [e1, e0];
+    double[2] result = [e1, e0];
+    return loadUnaligned!(double2)(result.ptr);
 }
 
-__m128d _mm_setzero_pd () pure @safe
+__m128d _mm_setzero_pd () pure @trusted
 {
-    return [0.0, 0.0]; 
+    double[2] result = [0.0, 0.0];
+    return loadUnaligned!(double2)(result.ptr);
 }
 
-__m128i _mm_setzero_si128() pure @safe
+__m128i _mm_setzero_si128() pure @trusted
 {
-    return [0, 0, 0, 0];
+    int[4] result = [0, 0, 0, 0];
+    return loadUnaligned!(int4)(result.ptr);
 }
 
 __m128i _mm_shuffle_epi32(int imm8)(__m128i a) pure @safe
@@ -882,7 +897,7 @@ __m128d _mm_unpacklo_pd (__m128d a, __m128d b) pure @safe
 
 __m128d _mm_xor_pd (__m128d a, __m128d b) pure @safe
 {
-    return cast(__m128d)(cast(__m128i)a, cast(__m128i)b);
+    return cast(__m128d)(cast(__m128i)a ^ cast(__m128i)b);
 }
 
 __m128i _mm_xor_si128 (__m128i a, __m128i b) pure @safe

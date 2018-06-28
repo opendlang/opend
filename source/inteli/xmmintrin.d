@@ -24,6 +24,13 @@ __m128 _mm_add_ps(__m128 a, __m128 b) pure @safe
 {
     return a + b;
 }
+
+__m128 _mm_add_ss(__m128 a, __m128 b) pure @safe
+{
+    // Because the LDC intrinsic disappeared
+    return insertelement!(float4, 0)(a, a.array[0] + b.array[0]);
+}
+
 pragma(LDC_intrinsic, "llvm.x86.sse.add.ss")
     __m128 _mm_add_ss(__m128, __m128) pure @safe;
 
@@ -182,8 +189,18 @@ alias _mm_comineq_ss = __builtin_ia32_comineq;
 
 // MMXREG: __m128 _mm_cvt_pi2ps (__m128 a, __m64 b)
 // MMXREG: __m64 _mm_cvt_ps2pi (__m128 a)
+/*
+pragma(LDC_intrinsic, "llvm.x86.sse2.cvtsi2sd")
+    double2 __builtin_ia32_cvtsi2sd(double2, int) pure @safe;
 
-alias _mm_cvt_si2ss = __builtin_ia32_cvtsi2ss;
+pragma(LDC_intrinsic, "llvm.x86.sse2.cvtsi642sd")
+    double2 __builtin_ia32_cvtsi642sd(double2, long) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.sse2.cvtss2sd")
+    double2 __builtin_ia32_cvtss2sd(double2, float4) pure @safe;*/
+
+pragma(LDC_intrinsic, "llvm.x86.sse2.cvtsi2sd")
+    double2 _mm_cvt_si2ss(double2, int) pure @safe;
 alias _mm_cvt_ss2si = __builtin_ia32_cvtss2si;
 
 // MMXREG: __m128 _mm_cvtpi16_ps (__m64 a)
@@ -196,8 +213,11 @@ alias _mm_cvt_ss2si = __builtin_ia32_cvtss2si;
 // MMXREG: __m128 _mm_cvtpu16_ps (__m64 a)
 // MMXREG: __m128 _mm_cvtpu8_ps (__m64 a)
 
-alias _mm_cvtsi32_ss = __builtin_ia32_cvtsi2ss;
-alias _mm_cvtsi64_ss = __builtin_ia32_cvtsi642ss;
+pragma(LDC_intrinsic, "llvm.x86.sse.cvtsi2ss")
+    float4 _mm_cvtsi32_ss(float4, int) pure @safe;
+
+pragma(LDC_intrinsic, "llvm.x86.sse.cvtsi642ss")
+    float4 _mm_cvtsi64_ss(float4, long) pure @safe;
 
 float _mm_cvtss_f32(__m128 a) pure @safe
 {
@@ -234,16 +254,16 @@ float4 _mm_load_ps(const(float)*p)
     return *cast(__m128*)p;
 }
 
-float4 _mm_load_ps1(const(float)*p)
+float4 _mm_load_ps1(const(float)*p) pure @trusted
 {
-    float4 f = [ *p, *p, *p, *p ];
-    return f;
+    float[4] f = [ *p, *p, *p, *p ];
+    return loadUnaligned!(float4)(f.ptr);
 }
 
-float4 _mm_load_ss (const(float)* mem_addr) pure @safe
+float4 _mm_load_ss (const(float)* mem_addr) pure @trusted
 {
-    float4 f = [ *mem_addr, 0.0f, 0.0f, 0.0f ];
-    return f;
+    float[4] f = [ *mem_addr, 0.0f, 0.0f, 0.0f ];
+    return loadUnaligned!(float4)(f.ptr);
 }
 
 alias _mm_load1_ps = _mm_load_ps1;
@@ -352,35 +372,40 @@ alias _mm_rsqrt_ss = __builtin_ia32_rsqrtss;
 // TODO: void _MM_SET_EXCEPTION_STATE (unsigned int a)
 // TODO: void _MM_SET_FLUSH_ZERO_MODE (unsigned int a)
 
-__m128 _mm_set_ps (float e3, float e2, float e1, float e0) pure @safe
+__m128 _mm_set_ps (float e3, float e2, float e1, float e0) pure @trusted
 {
-    return [e0, e1, e2, e3];
+    float[4] result = [e0, e1, e2, e3];
+    return loadUnaligned!(float4)(result.ptr);
 }
 
 alias _mm_set_ps1 = _mm_set1_ps;
 
 // TODO: _MM_SET_ROUNDING_MODE
 
-__m128 _mm_set_ss (float a) pure @safe
+__m128 _mm_set_ss (float a) pure @trusted
 {
-    return [a, 0.0f, 0.0f, 0.0f];
+    float[4] result = [a, 0.0f, 0.0f, 0.0f];
+    return loadUnaligned!(float4)(result.ptr);
 }
 
-__m128 _mm_set1_ps (float a) pure @safe
+__m128 _mm_set1_ps (float a) pure @trusted
 {
-    return [a, a, a, a];
+    float[4] result = [a, a, a, a];
+    return loadUnaligned!(float4)(result.ptr);
 }
 
 // TODO: _mm_setcsr
 
-__m128 _mm_setr_ps (float e3, float e2, float e1, float e0) pure @safe
+__m128 _mm_setr_ps (float e3, float e2, float e1, float e0) pure @trusted
 {
-    return [e3, e2, e1, e0];
+    float[4] result = [e3, e2, e1, e0];
+    return loadUnaligned!(float4)(result.ptr);
 }
 
-__m128 _mm_setzero_ps() pure @safe
+__m128 _mm_setzero_ps() pure @trusted
 {
-    return [0, 0, 0, 0];
+    float[4] result = [0.0f, 0.0f, 0.0f, 0.0f];
+    return loadUnaligned!(float4)(result.ptr);
 }
 
 alias _mm_sfence = __builtin_ia32_sfence;
