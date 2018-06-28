@@ -33,6 +33,7 @@ Why Intel intrinsic syntax? Because it is more familiar to C++ programmers
 and there is a convenient online guide provided by Intel: 
 https://software.intel.com/sites/landingpage/IntrinsicsGuide/
 
+Without this guide it's much more difficult to write sizeable SIMD code.
 
 ### Future-proof
 
