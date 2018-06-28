@@ -1,7 +1,6 @@
 # intel-intrinsics
 
-![Travis Status](https://travis-ci.org/p0nce/intel-intrinsics.svg?branch=master)
-
+![Travis Status](https://travis-ci.org/AuburnSounds/intel-intrinsics.svg?branch=master)
 This package allows you to use Intel intrinsics in D code.
 
 ## Usage
