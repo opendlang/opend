@@ -36,12 +36,12 @@ unittest
     assert(a.ptr[2] == 6);
     assert(a.ptr[3] == 8);
 }
-
+/*
 __m128 _mm_add_ss(__m128 a, __m128 b) pure @safe
 {
     // Because the LDC intrinsic disappeared
     return insertelement!(float4, 0)(a, a.array[0] + b.array[0]);
-}
+}*/
 
 version(LDC)
 {
@@ -94,124 +94,127 @@ else
     }
 }
 
-__m128 _mm_cmpeq_ps (__m128 a, __m128 b) pure @safe
+version(LDC)
 {
-    return __builtin_ia32_cmpps(a, b, 0);
-}
+    __m128 _mm_cmpeq_ps (__m128 a, __m128 b) pure @safe
+    {
+        return __builtin_ia32_cmpps(a, b, 0);
+    }
 
-__m128 _mm_cmpeq_ss (__m128 a, __m128 b) pure @safe
-{
-    return __builtin_ia32_cmpss(a, b, 0);
-}
+    __m128 _mm_cmpeq_ss (__m128 a, __m128 b) pure @safe
+    {
+        return __builtin_ia32_cmpss(a, b, 0);
+    }
 
-__m128 _mm_cmpge_ps (__m128 a, __m128 b) pure @safe
-{
-    return __builtin_ia32_cmpps(b, a, 2); // CMPLEPS reversed
-}
+    __m128 _mm_cmpge_ps (__m128 a, __m128 b) pure @safe
+    {
+        return __builtin_ia32_cmpps(b, a, 2); // CMPLEPS reversed
+    }
 
-__m128 _mm_cmpge_ss (__m128 a, __m128 b) pure @safe
-{
-    return __builtin_ia32_cmpss(b, a, 2); // CMPLESS reversed
-}
+    __m128 _mm_cmpge_ss (__m128 a, __m128 b) pure @safe
+    {
+        return __builtin_ia32_cmpss(b, a, 2); // CMPLESS reversed
+    }
 
-__m128 _mm_cmpgt_ps (__m128 a, __m128 b) pure @safe
-{
-    return __builtin_ia32_cmpps(b, a, 1); // CMPLTPS reversed
-}
+    __m128 _mm_cmpgt_ps (__m128 a, __m128 b) pure @safe
+    {
+        return __builtin_ia32_cmpps(b, a, 1); // CMPLTPS reversed
+    }
 
-__m128 _mm_cmpgt_ss (__m128 a, __m128 b) pure @safe
-{
-    return __builtin_ia32_cmpss(b, a, 1); // CMPLTSS reversed
-}
+    __m128 _mm_cmpgt_ss (__m128 a, __m128 b) pure @safe
+    {
+        return __builtin_ia32_cmpss(b, a, 1); // CMPLTSS reversed
+    }
 
-__m128 _mm_cmple_ps (__m128 a, __m128 b) pure @safe
-{
-    return __builtin_ia32_cmpps(a, b, 2); // CMPLEPS
-}
+    __m128 _mm_cmple_ps (__m128 a, __m128 b) pure @safe
+    {
+        return __builtin_ia32_cmpps(a, b, 2); // CMPLEPS
+    }
 
-__m128 _mm_cmple_ss (__m128 a, __m128 b) pure @safe
-{
-    return __builtin_ia32_cmpss(a, b, 2); // CMPLESS
-}
+    __m128 _mm_cmple_ss (__m128 a, __m128 b) pure @safe
+    {
+        return __builtin_ia32_cmpss(a, b, 2); // CMPLESS
+    }
 
-__m128 _mm_cmplt_ps (__m128 a, __m128 b) pure @safe
-{
-    return __builtin_ia32_cmpps(a, b, 1); // CMPLTPS
-}
+    __m128 _mm_cmplt_ps (__m128 a, __m128 b) pure @safe
+    {
+        return __builtin_ia32_cmpps(a, b, 1); // CMPLTPS
+    }
 
-__m128 _mm_cmplt_ss (__m128 a, __m128 b) pure @safe
-{
-    return __builtin_ia32_cmpss(a, b, 1); // CMPLTSS
-}
+    __m128 _mm_cmplt_ss (__m128 a, __m128 b) pure @safe
+    {
+        return __builtin_ia32_cmpss(a, b, 1); // CMPLTSS
+    }
 
-__m128 _mm_cmpneq_ps (__m128 a, __m128 b) pure @safe
-{
-    return __builtin_ia32_cmpps(a, b, 4); // CMPNEQPS
-}
+    __m128 _mm_cmpneq_ps (__m128 a, __m128 b) pure @safe
+    {
+        return __builtin_ia32_cmpps(a, b, 4); // CMPNEQPS
+    }
 
-__m128 _mm_cmpneq_ss (__m128 a, __m128 b) pure @safe
-{
-    return __builtin_ia32_cmpss(a, b, 4); // CMPNEQSS
-}
+    __m128 _mm_cmpneq_ss (__m128 a, __m128 b) pure @safe
+    {
+        return __builtin_ia32_cmpss(a, b, 4); // CMPNEQSS
+    }
 
-__m128 _mm_cmpnge_ps (__m128 a, __m128 b) pure @safe
-{
-    return __builtin_ia32_cmpps(b, a, 6); // CMPNLEPS reversed
-}
+    __m128 _mm_cmpnge_ps (__m128 a, __m128 b) pure @safe
+    {
+        return __builtin_ia32_cmpps(b, a, 6); // CMPNLEPS reversed
+    }
 
-__m128 _mm_cmpnge_ss (__m128 a, __m128 b) pure @safe
-{
-    return __builtin_ia32_cmpss(b, a, 6); // CMPNLESS reversed
-}
+    __m128 _mm_cmpnge_ss (__m128 a, __m128 b) pure @safe
+    {
+        return __builtin_ia32_cmpss(b, a, 6); // CMPNLESS reversed
+    }
 
-__m128 _mm_cmpngt_ps (__m128 a, __m128 b) pure @safe
-{
-    return __builtin_ia32_cmpps(b, a, 5); // CMPNLTPS reversed
-}
+    __m128 _mm_cmpngt_ps (__m128 a, __m128 b) pure @safe
+    {
+        return __builtin_ia32_cmpps(b, a, 5); // CMPNLTPS reversed
+    }
 
-__m128 _mm_cmpngt_ss (__m128 a, __m128 b) pure @safe
-{
-    return __builtin_ia32_cmpss(b, a, 5); // CMPNLTPS reversed
-}
+    __m128 _mm_cmpngt_ss (__m128 a, __m128 b) pure @safe
+    {
+        return __builtin_ia32_cmpss(b, a, 5); // CMPNLTPS reversed
+    }
 
-__m128 _mm_cmpnle_ps (__m128 a, __m128 b) pure @safe
-{
-    return __builtin_ia32_cmpps(a, b, 6); // CMPNLEPS
-}
+    __m128 _mm_cmpnle_ps (__m128 a, __m128 b) pure @safe
+    {
+        return __builtin_ia32_cmpps(a, b, 6); // CMPNLEPS
+    }
 
-__m128 _mm_cmpnle_ss (__m128 a, __m128 b) pure @safe
-{
-    return __builtin_ia32_cmpss(a, b, 6); // CMPNLESS
-}
+    __m128 _mm_cmpnle_ss (__m128 a, __m128 b) pure @safe
+    {
+        return __builtin_ia32_cmpss(a, b, 6); // CMPNLESS
+    }
 
-__m128 _mm_cmpnlt_ps (__m128 a, __m128 b) pure @safe
-{
-    return __builtin_ia32_cmpps(a, b, 5); // CMPNLTPS
-}
+    __m128 _mm_cmpnlt_ps (__m128 a, __m128 b) pure @safe
+    {
+        return __builtin_ia32_cmpps(a, b, 5); // CMPNLTPS
+    }
 
-__m128 _mm_cmpnlt_ss (__m128 a, __m128 b) pure @safe
-{
-    return __builtin_ia32_cmpss(a, b, 5); // CMPNLTSS
-}
+    __m128 _mm_cmpnlt_ss (__m128 a, __m128 b) pure @safe
+    {
+        return __builtin_ia32_cmpss(a, b, 5); // CMPNLTSS
+    }
 
-__m128 _mm_cmpord_ps (__m128 a, __m128 b) pure @safe
-{
-    return __builtin_ia32_cmpps(a, b, 7); // CMPORDPS
-}
+    __m128 _mm_cmpord_ps (__m128 a, __m128 b) pure @safe
+    {
+        return __builtin_ia32_cmpps(a, b, 7); // CMPORDPS
+    }
 
-__m128 _mm_cmpord_ss (__m128 a, __m128 b) pure @safe
-{
-    return __builtin_ia32_cmpss(a, b, 7); // CMPORDSS
-}
+    __m128 _mm_cmpord_ss (__m128 a, __m128 b) pure @safe
+    {
+        return __builtin_ia32_cmpss(a, b, 7); // CMPORDSS
+    }
 
-__m128 _mm_cmpunord_ps (__m128 a, __m128 b) pure @safe
-{
-    return __builtin_ia32_cmpps(a, b, 3); // CMPUNORDPS
-}
+    __m128 _mm_cmpunord_ps (__m128 a, __m128 b) pure @safe
+    {
+        return __builtin_ia32_cmpps(a, b, 3); // CMPUNORDPS
+    }
 
-__m128 _mm_cmpunord_ss (__m128 a, __m128 b) pure @safe
-{
-    return __builtin_ia32_cmpss(a, b, 3); // CMPUNORDSS
+    __m128 _mm_cmpunord_ss (__m128 a, __m128 b) pure @safe
+    {
+        return __builtin_ia32_cmpss(a, b, 3); // CMPUNORDSS
+    }
 }
 
 version(LDC)
@@ -440,12 +443,12 @@ alias _mm_load1_ps = _mm_load_ps1;
 
 __m128 _mm_loadh_pi (__m128 a, const(__m64)* mem_addr) pure @safe
 {
-    return insertelement!(long2, 1)(a, *mem_addr);
+    return cast(__m128) insertelement!(long2, 1)(cast(long2)a, *mem_addr);
 }
 
 __m128 _mm_loadl_pi (__m128 a, const(__m64)* mem_addr) pure @safe
 {
-    return insertelement!(long2, 0)(a, *mem_addr);
+    return cast(__m128) insertelement!(long2, 0)(cast(long2)a, *mem_addr);
 }
 
 __m128 _mm_loadr_ps (const(float)* mem_addr) pure
@@ -631,10 +634,37 @@ version(LDC)
 {
     alias _mm_sqrt_ps = __builtin_ia32_sqrtps;
 }
+else
+{
+     __m128 _mm_sqrt_ps(__m128 vec) pure @safe
+    {
+        import std.math: sqrt;
+        vec.array[0] = sqrt(vec.array[0]);
+        vec.array[1] = sqrt(vec.array[1]);
+        vec.array[2] = sqrt(vec.array[2]);
+        vec.array[3] = sqrt(vec.array[3]);
+        return vec;
+    }
+}
 
 version(LDC)
 {
     alias _mm_sqrt_ss = __builtin_ia32_sqrtss;
+}
+else
+{
+    __m128 _mm_sqrt_ss(__m128 vec) pure @safe
+    {
+        import std.math: sqrt;
+        vec.array[0] = sqrt(vec.array[0]);
+        return vec;
+    }
+}
+
+unittest
+{
+    __m128 A = _mm_sqrt_ps(_mm_set1_ps(4.0f));
+    assert(A[0] == 2.0f);
 }
 
 void _mm_store_ps (float* mem_addr, __m128 a) pure // not safe since nothing guarantees alignment

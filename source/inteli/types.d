@@ -137,6 +137,30 @@ else
     {
         return *cast(Vec*)(pvec);
     }
+
+     // Note: can't be @safe with this signature
+    void storeUnaligned(Vec)(Vec v, Vec.Base* pvec, ) @trusted
+    {
+        *cast(Vec*)(pvec) = v;
+    }
+
+
+    Vec shufflevector(Vec, mask...)(Vec a, Vec b)
+    {
+        static assert(mask.length == Vec.Count);
+
+        Vec r = void;
+        foreach(int i, m; mask)
+        {
+            static assert (m < Vec.Count * 2);
+            int ind = cast(int)m;
+            if (ind < Vec.Count)
+                r.array[i] = a.array[ind];
+            else
+                r.array[i] = b.array[ind-Vec.Count];
+        }
+        return r;
+    }
 }
 
 alias __m128 = float4;
