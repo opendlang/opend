@@ -1,5 +1,5 @@
 /**
-* Copyright: Copyright Auburn Sounds 2016.
+* Copyright: Copyright Auburn Sounds 2016-2018.
 * License:   $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost License 1.0)
 * Authors:   Guillaume Piolat
 */
@@ -31,41 +31,26 @@ unittest
 {
     __m128 a = [1, 2, 3, 4];
     a = _mm_add_ps(a, a);
-    assert(a.ptr[0] == 2);
-    assert(a.ptr[1] == 4);
-    assert(a.ptr[2] == 6);
-    assert(a.ptr[3] == 8);
+    assert(a.array[0] == 2);
+    assert(a.array[1] == 4);
+    assert(a.array[2] == 6);
+    assert(a.array[3] == 8);
 }
-/*
+
 __m128 _mm_add_ss(__m128 a, __m128 b) pure @safe
 {
     // Because the LDC intrinsic disappeared
     return insertelement!(float4, 0)(a, a.array[0] + b.array[0]);
-}*/
-
-version(LDC)
-{
-    pragma(LDC_intrinsic, "llvm.x86.sse.add.ss")
-        __m128 _mm_add_ss(__m128, __m128) pure @safe;
-}
-else
-{
-    __m128 _mm_add_ss(__m128 a, __m128 b) pure @safe
-    {
-        __m128 res = a;
-        res[0] += b[0];
-        return res;
-    }
 }
 
 unittest
 {
     __m128 a = [1, 2, 3, 4];
     a = _mm_add_ss(a, a);
-    assert(a.ptr[0] == 2);
-    assert(a.ptr[1] == 2);
-    assert(a.ptr[2] == 3);
-    assert(a.ptr[3] == 4);
+    assert(a.array[0] == 2);
+    assert(a.array[1] == 2);
+    assert(a.array[2] == 3);
+    assert(a.array[3] == 4);
 }
 
 __m128i _mm_and_ps (__m128i a, __m128i b) pure @safe
@@ -451,14 +436,14 @@ __m128 _mm_loadl_pi (__m128 a, const(__m64)* mem_addr) pure @safe
     return cast(__m128) insertelement!(long2, 0)(cast(long2)a, *mem_addr);
 }
 
-__m128 _mm_loadr_ps (const(float)* mem_addr) pure
+__m128 _mm_loadr_ps (const(float)* mem_addr) pure @trusted
 {
     __m128* aligned = cast(__m128*)mem_addr;
     __m128 a = *aligned;
     return shufflevector!(__m128, 3, 2, 1, 0)(a, a);
 }
 
-__m128 _mm_loadu_ps(float*p) pure
+__m128 _mm_loadu_ps(float*p) pure @safe
 {
     return loadUnaligned!(__m128)(p);
 }
@@ -664,7 +649,7 @@ else
 unittest
 {
     __m128 A = _mm_sqrt_ps(_mm_set1_ps(4.0f));
-    assert(A[0] == 2.0f);
+    assert(A.array[0] == 2.0f);
 }
 
 void _mm_store_ps (float* mem_addr, __m128 a) pure // not safe since nothing guarantees alignment

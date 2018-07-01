@@ -1,5 +1,5 @@
 /**
-* Copyright: Copyright Auburn Sounds 2016.
+* Copyright: Copyright Auburn Sounds 2016-2018.
 * License:   $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost License 1.0)
 * Authors:   Guillaume Piolat
 */
@@ -9,66 +9,55 @@ version(LDC)
 {
     public import core.simd;
 }
-else version(D_SIMD)
-{
-    // DMD 64-bit
-    public import core.simd;
-}
 else
 {
-    // DMD 32-bit
+    // This is a LDC SIMD emulation layer, for use with other D compilers.
+    // The goal is to be very similar in precision.
+    // The biggest differences are:
+    // 
+    // 1. `cast` everywhere. With LDC vector types, short8 is implicitely convertible to int4
+    //   but this is sadly impossible in D.
+    // 
+    // 2. `vec.array` is directly writeable.
 
     nothrow:
     @nogc:
     pure:
 
-    // This is a D_SIMD emulation layer.
 
     struct float4
     {
         float[4] array;
-        alias array this;
-
         mixin VectorOps!(float4, float[4], float, 4);
     }
 
     struct byte16
     {
         byte[16] array;
-        alias array this;
-
         mixin VectorOps!(byte16, byte[16], byte, 16);
     }
 
     struct short8
     {
         short[8] array;
-        alias array this;
-
         mixin VectorOps!(short8, short[8], short, 8);
     }
 
     struct int4
     {
         int[4] array;
-        alias array this;
-
         mixin VectorOps!(int4, int[4], int, 4);
     }
 
     struct long2
     {
         long[2] array;
-        alias array this;
-
         mixin VectorOps!(long2, long[2], long, 2);
     }
 
     struct double2
     {
         double[2] array;
-        alias array this;
-
         mixin VectorOps!(double2, double[2], double, 2);
     }
 
@@ -88,7 +77,7 @@ else
         VectorType opUnary(string op)() pure nothrow @safe @nogc 
         {
             VectorType res = void;
-            mixin("res[] = " ~ op ~ "array[];");
+            mixin("res.array[] = " ~ op ~ "array[];");
             return res;
         }
 
@@ -96,7 +85,7 @@ else
         VectorType opBinary(string op)(VectorType other) pure nothrow @safe @nogc 
         {
             VectorType res = void;
-            mixin("res[] = array[] " ~ op ~ " other.array[];");
+            mixin("res.array[] = array[] " ~ op ~ " other.array[];");
             return res;
         }
 

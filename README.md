@@ -56,7 +56,9 @@ This is intended to be the most practical SIMD solution for D.
 Including an emulation layer for DMD 32-bit which doesn't have any SIMD capability right now.
 
 
-## Supported instructions set
+### Supported instructions set
 
 - SSE1
 - SSE2
+
+The lack of AVX intrinsics is explained by the lack of raw speed gain with these instruction sets.
