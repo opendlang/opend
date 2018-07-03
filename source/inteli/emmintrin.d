@@ -825,6 +825,11 @@ __m128 _mm_srli_si128(ubyte imm8)(__m128 op) pure @safe
     return cast(__m128) _mm_srli_si128!imm8(cast(__m128i)op);
 }
 
+__m128d _mm_srli_si128(ubyte imm8)(__m128d op) pure @safe
+{
+    return cast(__m128d) _mm_srli_si128!imm8(cast(__m128i)op);
+}
+
 void _mm_store_pd (double* mem_addr, __m128d a) pure
 {
     __m128d* aligned = cast(__m128d*)mem_addr;
