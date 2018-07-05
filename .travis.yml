@@ -7,7 +7,7 @@ d:
   - ldc
 
 script:
-  - dub test
+  - dub test -c blas
   - dub --root examples/gesv
 
 addons:
