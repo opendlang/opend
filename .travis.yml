@@ -13,4 +13,4 @@ script:
 addons:
   apt:
     packages:
-      libopenblas-dev
+      liblapack-dev
