@@ -1,0 +1,47 @@
+name "mir-lapack"
+description "ndslice wrapper for LAPACK"
+authors "Ilya Yaroshenko"
+copyright "Copyright © 2017-2018, Symmetry Investments & Kaleidic Associates"
+license "BSL-1.0"
+
+dependency "lapack" version="~>0.0.3"
+dependency "mir-algorithm" version=">=0.6.5"
+dependency "mir-blas" version=">=0.2.0"
+
+systemDependencies "mir-lapack requires CBLAS and LAPACK API, see dub.sdl for options."
+
+configuration "openblas" {
+	subConfiguration "mir-blas" "openblas"
+}
+
+configuration "threelib" {
+	libs "lapack"
+	subConfiguration "mir-blas" "twolib"
+}
+
+configuration "cblas" {
+	libs "lapack"
+	subConfiguration "mir-blas" "cblas"
+}
+
+configuration "blas" {
+	libs "lapack"
+	subConfiguration "mir-blas" "blas"
+}
+
+configuration "lapack" { # CBLAS and BLAS API are assumed to be in LAPACK
+	libs "lapack"
+	subConfiguration "mir-blas" "zerolib"
+}
+
+configuration "mkl-sequential" {
+	platforms "x86_64" "x86"
+	libs "mkl_lapack95_lp64"platform="x86_64"
+	libs "mkl_lapack95"platform="x86"
+	subConfiguration "mir-blas" "mkl-sequential"
+}
+
+configuration "zerolib" {
+	systemDependencies "mir-lapack configuration zerolib requires user to add specify libraries to link."
+	subConfiguration "mir-blas" "zerolib"
+}

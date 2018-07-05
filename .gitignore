@@ -14,3 +14,6 @@ mir-lapack-test-library
 *.sublime-workspace
 .vscode
 *.DS_Store
+libmir-lapack.a
+mir-lapack-test-openblas
+examples/gesv/gesv
