@@ -8,7 +8,7 @@ d:
 
 script:
   - dub test
-  - dub --root examples/gesv -v
+  - dub --root examples/gesv
 
 addons:
   apt:
