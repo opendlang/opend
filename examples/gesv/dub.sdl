@@ -4,6 +4,5 @@ description "GESV example"
 copyright "Copyright © 2018, Ilya Yaroshenko"
 license "BSL-1.0"
 dependency "mir-lapack" path="../../"
-dflags "-betterC"
 # Change configuration according to your blas & lapack setup.
 subConfiguration "mir-lapack" "blas"
