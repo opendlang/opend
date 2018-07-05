@@ -7,9 +7,10 @@ d:
   - ldc
 
 script:
-    - dub --root examples/gesv
+  - dub test
+  - dub --root examples/gesv
 
 addons:
   apt:
     packages:
-      liblapack-dev
+      libopenblas-dev
