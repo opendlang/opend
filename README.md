@@ -62,3 +62,17 @@ Including an emulation layer for DMD 32-bit which doesn't have any SIMD capabili
 - SSE2
 
 The lack of AVX intrinsics is explained by the lack of raw speed gain with these instruction sets.
+
+### Important difference
+
+When using the LDC compatibility layer (ie. when not using LDC), every implicit conversion of similarly-sized vectors
+should be done with a `cast` instead.
+
+```d
+__m128i b = _mm_set1_epi32(42);
+__m128 a = b;             // NO, only works in LDC
+__m128 a = cast(__m128)b; // YES, works in all D compilers
+
+```
+
+This is because D does not allow implicit conversions, except magically in the compiler for real vector types.
