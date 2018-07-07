@@ -14,10 +14,10 @@ else
     // This is a LDC SIMD emulation layer, for use with other D compilers.
     // The goal is to be very similar in precision.
     // The biggest differences are:
-    // 
+    //
     // 1. `cast` everywhere. With LDC vector types, short8 is implicitely convertible to int4
     //   but this is sadly impossible in D.
-    // 
+    //
     // 2. `vec.array` is directly writeable.
 
     nothrow:
@@ -74,7 +74,7 @@ else
         alias Base = BaseType;
 
         // Unary operators
-        VectorType opUnary(string op)() pure nothrow @safe @nogc 
+        VectorType opUnary(string op)() pure nothrow @safe @nogc
         {
             VectorType res = void;
             mixin("res.array[] = " ~ op ~ "array[];");
@@ -82,7 +82,7 @@ else
         }
 
         // Binary operators
-        VectorType opBinary(string op)(VectorType other) pure nothrow @safe @nogc 
+        VectorType opBinary(string op)(VectorType other) pure nothrow @safe @nogc
         {
             VectorType res = void;
             mixin("res.array[] = array[] " ~ op ~ " other.array[];");
@@ -90,7 +90,7 @@ else
         }
 
         // Assigning a static array
-        void opAssign(ArrayType v) pure nothrow @safe @nogc 
+        void opAssign(ArrayType v) pure nothrow @safe @nogc
         {
             array[] = v[];
         }
@@ -100,13 +100,26 @@ else
         {
             array[] = v[];
         }
+
+        /// We can't support implicit conversion but do support explicit casting.
+        /// "Vector types of the same size can be implicitly converted among each other."
+        /// Casting to another vector type is always just a raw copy.
+        VecDest opCast(VecDest)() pure nothrow @trusted @nogc
+        {
+            static assert(VectorType.sizeof == VecDest.sizeof, "non matching sizes between vector types");
+            import core.stdc.string: memcpy;
+            VecDest dest = void;
+            memcpy(dest.array.ptr, array.ptr, VectorType.sizeof);
+            return dest;
+        }
+
     }
 
     auto extractelement(Vec, int index, Vec2)(Vec2 vec) @trusted
     {
         static assert(Vec.sizeof == Vec2.sizeof);
         import core.stdc.string: memcpy;
-        Vec v = void;        
+        Vec v = void;
         memcpy(&v, &vec, Vec2.sizeof);
         return v.array[index];
     }
@@ -115,7 +128,7 @@ else
     {
         static assert(Vec.sizeof == Vec2.sizeof);
         import core.stdc.string: memcpy;
-        Vec v = void;        
+        Vec v = void;
         memcpy(&v, &vec, Vec2.sizeof);
         v.array[index] = e;
         return v;
