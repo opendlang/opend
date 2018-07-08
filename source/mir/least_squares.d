@@ -549,7 +549,7 @@ unittest
 }
 
 ///
-unittest
+@safe pure unittest
 {
     import mir.ndslice.algorithm: all;
     import mir.ndslice.allocation: slice;

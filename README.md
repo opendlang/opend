@@ -1,11 +1,27 @@
 # mir-optim
+
 Dlang Nonlinear Optimisers with external C API.
 
 ### Algorithms
  
  - Modified Levenberg-Marquardt Algorithm (Nonlinear Least Squares).
 
-### Least Squares With Jacobian
+### Features
+
+ - Idiomatic BetterC library. See `example.cpp` for compilation details.
+ - C/C++ header
+ - Multithread C++ example
+ - Tiny library size, <38KB
+ - Based on LAPACK
+ - Fast compilaiton speed. There are two  (for `float` and `double`) precompiled algorithm instatiations. All generic API is thin wrappers around them.
+ - Four APIs for any purpose:
+  - Extern C/C++ API
+  - Powerfull high level generic D API
+  - Nothrow middle level generic D API
+  - Low level nongeneric D API
+
+### Least Squares. Analitical Jacobian.
+
 ```d
 unittest
 {
@@ -35,7 +51,7 @@ unittest
 }
 ```
 
-###  Least Squares Multithread Jacobian approximation.
+###  Least Squares. Multithread Jacobian approximation.
 
 Jacobian finite difference approximation computed using in multiple threads.
 
@@ -60,3 +76,14 @@ unittest
     assert(nrm2((lm.x - [0, 2].sliced).slice) < 1e-8);
 }
 ```
+
+### TODO
+
+ - More algorithms.
+ - Appveyor CI.
+ - Online documentation.
+
+### Our sponsors
+
+[<img src="https://raw.githubusercontent.com/libmir/mir-algorithm/master/images/symmetry.png" height="80" />](http://symmetryinvestments.com/) 	&nbsp; 	&nbsp;	&nbsp;	&nbsp;
+[<img src="https://raw.githubusercontent.com/libmir/mir-algorithm/master/images/kaleidic.jpeg" height="80" />](https://github.com/kaleidicassociates)
