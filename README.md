@@ -1,3 +1,10 @@
+[![Gitter](https://img.shields.io/gitter/room/libmir/public.svg)](https://gitter.im/libmir/public)
+[![Build Status](https://travis-ci.org/libmir/mir-optim.svg?branch=master)](https://travis-ci.org/libmir/mir-optim)
+[![Dub downloads](https://img.shields.io/dub/dt/mir-optim.svg)](http://code.dlang.org/packages/mir-optim)
+[![Dub downloads](https://img.shields.io/dub/dm/mir-optim.svg)](http://code.dlang.org/packages/mir-optim)
+[![License](https://img.shields.io/dub/l/mir-optim.svg)](http://code.dlang.org/packages/mir-optim)
+[![Latest version](https://img.shields.io/dub/v/mir-optim.svg)](http://code.dlang.org/packages/mir-optim)
+
 # mir-optim
 
 Dlang Nonlinear Optimisers with external C API.
@@ -10,8 +17,8 @@ Dlang Nonlinear Optimisers with external C API.
 
  - Idiomatic BetterC library. See `example.cpp` for compilation details.
  - C/C++ header
- - Multithread C++ example
- - Tiny library size, <38KB
+ - Multithread C++ examples
+ - Tiny BetterC library size, <38KB
  - Based on LAPACK
  - Fast compilaiton speed. There are two  (for `float` and `double`) precompiled algorithm instatiations. All generic API is thin wrappers around them.
  - Four APIs for any purpose:
