@@ -1,3 +1,10 @@
+[![Gitter](https://img.shields.io/gitter/room/libmir/public.svg)](https://gitter.im/libmir/public)
+[![Build Status](https://travis-ci.org/libmir/mir-optim.svg?branch=master)](https://travis-ci.org/libmir/mir-optim)
+[![Dub downloads](https://img.shields.io/dub/dt/mir-optim.svg)](http://code.dlang.org/packages/mir-optim)
+[![Dub downloads](https://img.shields.io/dub/dm/mir-optim.svg)](http://code.dlang.org/packages/mir-optim)
+[![License](https://img.shields.io/dub/l/mir-optim.svg)](http://code.dlang.org/packages/mir-optim)
+[![Latest version](https://img.shields.io/dub/v/mir-optim.svg)](http://code.dlang.org/packages/mir-optim)
+
 # mir-optim
 
 Dlang Nonlinear Optimisers with external C API.
