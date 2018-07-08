@@ -4,7 +4,7 @@
 // 2. Compile the mir-optim with following flags
 // dub build --build-mode=singleFile --build=better-c-release --compiler=ldmd2 --force
 // 3. Compile and run example:
-// g++ -std=c++14 example.cpp -L./ -lopenblas -lmir-optim && ./a.out
+// g++ -std=c++14 -pthread example.cpp -L./ -lmir-optim -lopenblas && ./a.out
 // Windows instruction: TODO
 
 #include "mir_least_squares.h"
