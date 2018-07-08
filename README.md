@@ -92,12 +92,6 @@ unittest
 }
 ```
 
-### TODO
-
- - More algorithms.
- - Appveyor CI.
- - Online documentation.
-
 ### Our sponsors
 
 [<img src="https://raw.githubusercontent.com/libmir/mir-algorithm/master/images/symmetry.png" height="80" />](http://symmetryinvestments.com/) 	&nbsp; 	&nbsp;	&nbsp;	&nbsp;
