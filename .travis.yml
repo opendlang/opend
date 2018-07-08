@@ -1,0 +1,21 @@
+dist: trusty
+sudo: false
+os:
+ - linux
+language: d
+d:
+ - ldc
+ - ldc-beta
+matrix:
+  allow_failures:
+    - {d: ldc-beta}
+branches:
+  only:
+    - master
+script:
+ - dub test
+ - rm -rf .dub && dub build --build-mode=singleFile --build=better-c-release --force && g++ -std=c++14 example.cpp -L./ -lopenblas -lmir-optim && ./a.out
+addons:
+  apt:
+    packages:
+      libopenblas-dev
