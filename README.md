@@ -2,7 +2,8 @@
 NDSLICE wrapper for LAPACK
 
 ## Required static libraries
- - `lapack` - FORTRAN 77 LAPACK API
+
+See [wiki: Link with CBLAS & LAPACK](https://github.com/libmir/mir-lapack/wiki/Link-with-CBLAS-&-LAPACK).
 
 ## Wrapped API
 
