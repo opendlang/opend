@@ -10,8 +10,8 @@ Dlang Nonlinear Optimisers with external C API.
 
  - Idiomatic BetterC library. See `example.cpp` for compilation details.
  - C/C++ header
- - Multithread C++ example
- - Tiny library size, <38KB
+ - Multithread C++ examples
+ - Tiny BetterC library size, <38KB
  - Based on LAPACK
  - Fast compilaiton speed. There are two  (for `float` and `double`) precompiled algorithm instatiations. All generic API is thin wrappers around them.
  - Four APIs for any purpose:
