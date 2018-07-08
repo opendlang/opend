@@ -17,7 +17,7 @@ buildType "better-c-release" {
 
 configuration "library" {
 	targetType "library"
-	# use default or user specific mir-lapack sub-configuration
+	# default or user specified mir-lapack sub-configuration is used
 }
 
 configuration "unittest" {
@@ -42,6 +42,14 @@ configuration "blas" {
 
 configuration "lapack" {
 	subConfiguration "mir-lapack" "lapack"
+}
+
+configuration "mkl-sequential" {
+	subConfiguration "mir-lapack" "mkl-sequential"
+}
+
+configuration "zerolib" {
+	subConfiguration "mir-lapack" "zerolib"
 }
 
 configuration "unittest-openblas" {
@@ -69,14 +77,7 @@ configuration "unittest-lapack" {
 	subConfiguration "mir-lapack" "lapack"
 }
 
-configuration "mkl-sequential" {
-	platforms "x86_64" "x86"
-	libs "mkl_lapack95_lp64"platform="x86_64"
-	libs "mkl_lapack95"platform="x86"
+configuration "unittest-mkl-sequential" {
+	dependency "mir-random" version="~>0.4.1"
 	subConfiguration "mir-lapack" "mkl-sequential"
-}
-
-configuration "zerolib" {
-	systemDependencies "mir-lapack configuration zerolib requires user to add specify libraries to link."
-	subConfiguration "mir-lapack" "zerolib"
 }

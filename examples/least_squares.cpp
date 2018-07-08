@@ -1,13 +1,14 @@
 // Posix instruction:
+// 0. Change dir to the project folder.
 // 1. Remove local .dub folder
-// rm -rf .dub
+// $ rm -rf .dub
 // 2. Compile the mir-optim with following flags
-// dub build --build-mode=singleFile --build=better-c-release --compiler=ldmd2 --force
+// $ dub build --build-mode=singleFile --build=better-c-release --compiler=ldmd2 --force
 // 3. Compile and run example:
-// g++ -std=c++14 -pthread example.cpp -L./ -lmir-optim -lopenblas && ./a.out
+// $ g++ -std=c++14 -pthread -I./include examples/least_squares.cpp -L./ -lmir-optim -lopenblas && ./a.out
 // Windows instruction: TODO
 
-#include "mir_least_squares.h"
+#include "mir/least_squares.h"
 
 #include <stdio.h>
 #include <vector>

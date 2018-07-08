@@ -13,6 +13,8 @@ Dlang Nonlinear Optimisers with external C API.
  
  - Modified Levenberg-Marquardt Algorithm (Nonlinear Least Squares).
 
+See also [online documentation](https://mir-optim.dpldocs.info/mir.html).
+
 ### Features
 
  - Idiomatic BetterC library. See `example.cpp` for compilation details.
@@ -26,6 +28,12 @@ Dlang Nonlinear Optimisers with external C API.
     * Powerfull high level generic D API
     * Nothrow middle level generic D API
     * Low level nongeneric D API
+
+## Required system libraries
+
+See [wiki: Link with CBLAS & LAPACK](https://github.com/libmir/mir-lapack/wiki/Link-with-CBLAS-&-LAPACK).
+
+# Examples
 
 ### Least Squares. Analitical Jacobian.
 

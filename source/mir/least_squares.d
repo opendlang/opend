@@ -691,6 +691,7 @@ enum LMStatus : byte
 }
 
 /++
+Status string for low (extern) and middle (nothrow) levels D API.
 Params:
     st = optimization status
 Returns: description for $(LMStatus)
@@ -777,6 +778,7 @@ alias optimizeLeastSquaresLM(T : float) = optimizeLeastSquaresLMS;
 extern(C) @safe nothrow @nogc
 {
     /++
+    Status string for extern(C) API.
     Params:
         st = optimization status
     Returns: description for $(LMStatus)
@@ -851,13 +853,13 @@ extern(C) @safe nothrow @nogc
     Params:
         lm = Levenberg-Marquart data structure
     +/
-    void mir_least_squares_lm_init_params_d(ref LeastSquaresLM!double lm)
+    void mir_least_squares_lm_init_params_d(ref LeastSquaresLM!double lm) pure
     {
         lm.initParams;
     }
 
     /// ditto
-    void mir_least_squares_lm_init_params_s(ref LeastSquaresLM!float lm)
+    void mir_least_squares_lm_init_params_s(ref LeastSquaresLM!float lm) pure
     {
         lm.initParams;
     }
@@ -873,13 +875,13 @@ extern(C) @safe nothrow @nogc
     Params:
         lm = Levenberg-Marquart data structure
     +/
-    void mir_least_squares_lm_reset_d(ref LeastSquaresLM!double lm)
+    void mir_least_squares_lm_reset_d(ref LeastSquaresLM!double lm) pure
     {
         lm.reset;
     }
 
     /// ditto
-    void mir_least_squares_lm_reset_s(ref LeastSquaresLM!float lm)
+    void mir_least_squares_lm_reset_s(ref LeastSquaresLM!float lm) pure
     {
         lm.reset;
     }
