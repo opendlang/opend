@@ -1,7 +1,7 @@
 # mir-lapack
 NDSLICE wrapper for LAPACK
 
-## Required static libraries
+## Required libraries
 
 See [wiki: Link with CBLAS & LAPACK](https://github.com/libmir/mir-lapack/wiki/Link-with-CBLAS-&-LAPACK).
 
