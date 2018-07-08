@@ -16,7 +16,7 @@ struct  Cache
     uint size;
     /// Ways of associativity. Equals `associative.max` if cache is fully associative.
     ushort associative;
-    /// Cache line in KBs
+    /// Cache line in bytes
     ushort line;
     /// CPU cores per cache
     ubyte cores;
