@@ -17,7 +17,7 @@ See also [online documentation](https://mir-optim.dpldocs.info/mir.html).
 
 ### Features
 
- - Idiomatic BetterC library. See `example.cpp` for compilation details.
+ - Idiomatic BetterC library. See `examples/least_squares.cpp` for compilation details.
  - C/C++ header
  - Multithread C++ examples
  - Tiny BetterC library size, <38KB
