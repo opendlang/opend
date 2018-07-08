@@ -15,10 +15,10 @@ Dlang Nonlinear Optimisers with external C API.
  - Based on LAPACK
  - Fast compilaiton speed. There are two  (for `float` and `double`) precompiled algorithm instatiations. All generic API is thin wrappers around them.
  - Four APIs for any purpose:
-  - Extern C/C++ API
-  - Powerfull high level generic D API
-  - Nothrow middle level generic D API
-  - Low level nongeneric D API
+    1. Extern C/C++ API
+    2. Powerfull high level generic D API
+    3. Nothrow middle level generic D API
+    4. Low level nongeneric D API
 
 ### Least Squares. Analitical Jacobian.
 
