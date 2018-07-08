@@ -1,8 +1,9 @@
 # mir-optim
 Dlang Nonlinear Optimisers with external C API.
 
-Algorithms:
-    - Modified Levenberg-Marquardt Algorithm (Nonlinear Least Squares).
+### Algorithms
+ 
+ - Modified Levenberg-Marquardt Algorithm (Nonlinear Least Squares).
 
 ### Least Squares With Jacobian
 ```d
