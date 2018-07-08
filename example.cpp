@@ -1,7 +1,7 @@
 // Posix instruction:
 // 1. Remove local .dub folder
 // rm -rf .dub
-// 2. compiler the mir-optim with following flags
+// 2. Compile the mir-optim with following flags
 // dub build --build-mode=singleFile --build=better-c-release --compiler=ldmd2 --force
 // 3. Compile and run example:
 // g++ -std=c++14 example.cpp -L./ -lopenblas -lmir-optim && ./a.out
