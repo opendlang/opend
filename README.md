@@ -40,6 +40,7 @@ See [wiki: Link with CBLAS & LAPACK](https://github.com/libmir/mir-lapack/wiki/L
 ```d
 unittest
 {
+    import mir.least_squares;
     import mir.ndslice.allocation: slice;
     import mir.ndslice.slice: sliced;
     import mir.blas: nrm2;
@@ -73,22 +74,23 @@ Jacobian finite difference approximation computed using in multiple threads.
 ```d
 unittest
 {
+    import mir.least_squares;
     import mir.ndslice.allocation: slice;
     import mir.ndslice.slice: sliced;
     import mir.blas: nrm2;
     import std.parallelism: taskPool;
 
     auto lm = LeastSquaresLM!double(2, 2);
-    lm.x[] = [100, 100];
+    lm.x[] = [-1.2, 1];
     lm.optimize!(
-        (x, y)
+        (x, y) // Rosenbrock function
         {
-            y[0] = x[0];
-            y[1] = 2 - x[1];
+            y[0] = 10 * (x[1] - x[0]^^2);
+            y[1] = 1 - x[0];
         },
     )(taskPool);
 
-    assert(nrm2((lm.x - [0, 2].sliced).slice) < 1e-8);
+    assert(nrm2((lm.x - [1, 1].sliced).slice) < 1e-8);
 }
 ```
 
