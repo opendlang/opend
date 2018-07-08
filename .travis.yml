@@ -15,7 +15,7 @@ branches:
 script:
   # use -c openblas on newer ubuntu version
  - dub test -c unittest-blas
- - rm -rf .dub && dub build -c blas --compiler=ldmd2 --build-mode=singleFile --build=better-c-release --force && g++ -std=c++14 example.cpp -L./ -lblas -llapack -lmir-optim && ./a.out
+ - rm -rf .dub && dub build -c blas --compiler=ldmd2 --build-mode=singleFile --build=better-c-release --force && g++ -std=c++1y example.cpp -L./ -lblas -llapack -lmir-optim && ./a.out
 addons:
   apt:
     packages:
