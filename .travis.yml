@@ -13,9 +13,11 @@ branches:
   only:
     - master
 script:
- - dub test
- - rm -rf .dub && dub build --build-mode=singleFile --build=better-c-release --force && g++ -std=c++14 example.cpp -L./ -lopenblas -lmir-optim && ./a.out
+  # use -c openblas on newer ubuntu version
+ - dub test -c blas
+ - rm -rf .dub && dub build -c blas --build-mode=singleFile --build=better-c-release --force && g++ -std=c++14 example.cpp -L./ -lblas -llapack -lmir-optim && ./a.out
 addons:
   apt:
     packages:
-      libopenblas-dev
+      # use openblas on newer ubuntu versions
+      liblapack-dev

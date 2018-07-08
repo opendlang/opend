@@ -8,17 +8,75 @@ license "BSL-1.0"
 dependency "mir-algorithm" version=">=0.9.1"
 dependency "mir-lapack" version="~>0.1.0"
 
+buildType "better-c-release" {
+	buildOptions "releaseMode" "inline" "noBoundsCheck"
+	dflags "-betterC" "-Os" "-nogc" "-linkonce-templates" "-enable-cross-module-inlining" platform="ldc"
+	dflags "-betterC" "-O" platform="dmd" # no proper betterC support in DMD
+	dflags "-betterC" "-O"  platform="gdc" # no proper betterC support in GDC
+}
+
 configuration "library" {
 	targetType "library"
+	# use default or user specific mir-lapack sub-configuration
 }
 
 configuration "unittest" {
 	dependency "mir-random" version="~>0.4.1"
 }
 
-buildType "better-c-release" {
-	buildOptions "releaseMode" "inline" "noBoundsCheck"
-	dflags "-betterC" "-Os" "-nogc" "-linkonce-templates" "-enable-cross-module-inlining" platform="ldc"
-	dflags "-betterC" "-O" platform="dmd" # no proper betterC support in DMD
-	dflags "-betterC" "-O"  platform="gdc" # no proper betterC support in GDC
+configuration "openblas" {
+	subConfiguration "mir-lapack" "openblas"
+}
+
+configuration "threelib" {
+	subConfiguration "mir-lapack" "threelib"
+}
+
+configuration "cblas" {
+	subConfiguration "mir-lapack" "cblas"
+}
+
+configuration "blas" {
+	subConfiguration "mir-lapack" "blas"
+}
+
+configuration "lapack" {
+	subConfiguration "mir-lapack" "lapack"
+}
+
+configuration "unittest-openblas" {
+	dependency "mir-random" version="~>0.4.1"
+	subConfiguration "mir-lapack" "openblas"
+}
+
+configuration "unittest-threelib" {
+	dependency "mir-random" version="~>0.4.1"
+	subConfiguration "mir-lapack" "threelib"
+}
+
+configuration "unittest-cblas" {
+	dependency "mir-random" version="~>0.4.1"
+	subConfiguration "mir-lapack" "cblas"
+}
+
+configuration "unittest-blas" {
+	dependency "mir-random" version="~>0.4.1"
+	subConfiguration "mir-lapack" "blas"
+}
+
+configuration "unittest-lapack" {
+	dependency "mir-random" version="~>0.4.1"
+	subConfiguration "mir-lapack" "lapack"
+}
+
+configuration "mkl-sequential" {
+	platforms "x86_64" "x86"
+	libs "mkl_lapack95_lp64"platform="x86_64"
+	libs "mkl_lapack95"platform="x86"
+	subConfiguration "mir-lapack" "mkl-sequential"
+}
+
+configuration "zerolib" {
+	systemDependencies "mir-lapack configuration zerolib requires user to add specify libraries to link."
+	subConfiguration "mir-lapack" "zerolib"
 }
