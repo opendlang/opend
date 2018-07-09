@@ -45,51 +45,34 @@ version(D_BetterC)
 }
 
 /++
-Parameters:
-    f = function
-    g = Jacobian of `f`
-    x = current (initial/final) `X` solution.
-    y = current (final) `Y = f(X)`.
-    tolX = search tolerance in x
-    tolG = search tolerance in gradient
-    maxIter = maximum number of iterations
-    minStepQuality = for steps below this quality, the trust region is shrinked
-    goodStepQuality = for steps above this quality, the trust region is expanded
-    lambda = (inverse of) initial trust region radius
-    lambdaIncrease = `lambda` is multiplied by this factor after step below min quality
-    lambdaDecrease = `lambda` is multiplied by this factor after good quality steps
-    lower = lower bound solution to these limits
-    upper = upper bound solution to these limits
-    maxLambda = minimum trust region radius
-    minLambda = maximum trust region radius
-    minDiagonal = lower bound on values of diagonal matrix used to regularize the trust region step
+Modified Levenberg-Marquardt parameters, data, and state.
 +/
 struct LeastSquaresLM(T)
     if (is(T == double) || is(T == float))
 {
     import lapack: lapackint;
 
-    /// Default iteration parameters.
+    /// Default tolerance in x
     enum T tolXDefault = T(2) ^^ ((1 - T.mant_dig) / 2);
-    /// ditto
+    /// Default tolerance in gradient
     enum T tolGDefault = T(2) ^^ ((1 - T.mant_dig) * 3 / 4);
-    /// ditto
+    /// Default epsilon for finite difference Jacobian approximation
     enum T jacobianEpsilonDefault = T(2) ^^ ((1 - T.mant_dig) / 3);
-    /// ditto
+    /// Default (inverse of) initial trust region radius
     enum T lambdaDefault = T(2) ^^ 3;
-    /// ditto
+    /// Default `lambda` is multiplied by this factor after step below min quality
     enum T lambdaIncreaseDefault = T(2) ^^ 3;
-    /// ditto
+    /// Default `lambda` is multiplied by this factor after good quality steps
     enum T lambdaDecreaseDefault = T(2) ^^ -3;
-    /// ditto
+    /// Default scale such as for steps below this quality, the trust region is shrinked
     enum T minStepQualityDefault = T(2) ^^ -10;
-    /// ditto
+    /// Default scale such as for steps above this quality, the trust region is expanded
     enum T goodStepQualityDefault = 0.75;
-    /// ditto
+    /// Default maximum trust region radius
     enum T maxLambdaDefault = 1 / T.epsilon;
-    /// ditto
+    /// Default maximum trust region radius
     enum T minLambdaDefault = T.epsilon;
-    /// ditto
+    /// Default lower bound on values of diagonal matrix used to regularize the trust region step
     enum T minDiagonalDefault = T.epsilon;
 
     /// Delegates for low level D API.
@@ -129,34 +112,29 @@ struct LeastSquaresLM(T)
     +/
     size_t n;
 
-    /++
-    Iteration params.
-
-    Default values can be set by $(LREF LeastSquaresLM) constructor,
-        $(LREF LeastSquaresLM.reset), or $(LREF mir_least_squares_lm_reset).
-    +/
+    /// maximum number of iterations
     size_t maxIter;
-    /// ditto
+    /// tolerance in x
     T tolX = 0;
-    /// ditto
+    /// tolerance in gradient
     T tolG = 0;
-    /// ditto
+    /// (inverse of) initial trust region radius
     T lambda = 0;
-    /// ditto
+    /// `lambda` is multiplied by this factor after step below min quality
     T lambdaIncrease = 0;
-    /// ditto
+    /// `lambda` is multiplied by this factor after good quality steps
     T lambdaDecrease = 0;
-    /// ditto
+    /// for steps below this quality, the trust region is shrinked
     T minStepQuality = 0;
-    /// ditto
+    /// for steps above this quality, the trust region is expanded
     T goodStepQuality = 0;
-    /// ditto
+    /// minimum trust region radius
     T maxLambda = 0;
-    /// ditto
+    /// maximum trust region radius
     T minLambda = 0;
-    /// ditto
+    /// lower bound on values of diagonal matrix used to regularize the trust region step
     T minDiagonal = 0;
-    /// ditto
+    /// epsilon for finite difference Jacobian approximation
     T jacobianEpsilon = 0;
 
     /++
