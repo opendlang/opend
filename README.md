@@ -69,7 +69,7 @@ unittest
 
 ###  Least Squares. Multithread Jacobian approximation.
 
-Jacobian finite difference approximation computed using in multiple threads.
+Jacobian finite difference approximation computed in multiple threads.
 
 ```d
 unittest
