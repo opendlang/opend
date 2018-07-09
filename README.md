@@ -1,7 +1,7 @@
 [![Gitter](https://img.shields.io/gitter/room/libmir/public.svg)](https://gitter.im/libmir/public)
 
 [![Build Status](https://travis-ci.org/libmir/mir-cpuid.svg?branch=master)](https://travis-ci.org/libmir/mir-cpuid)
-[![Build Status](https://ci.appveyor.com/api/projects/github/libmir/mir-cpuid?svg=true)](https://ci.appveyor.com/project/9il/mir-cpuid/branch/master)
+[![Build Status](https://ci.appveyor.com/api/projects/status/github/libmir/mir-cpuid?svg=true)](https://ci.appveyor.com/project/9il/mir-cpuid/branch/master)
 
 [![Dub version](https://img.shields.io/dub/v/mir-cpuid.svg)](http://code.dlang.org/packages/mir-cpuid)
 [![Dub downloads](https://img.shields.io/dub/dt/mir-cpuid.svg)](http://code.dlang.org/packages/mir-cpuid)
