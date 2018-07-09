@@ -35,7 +35,7 @@ See [wiki: Link with CBLAS & LAPACK](https://github.com/libmir/mir-lapack/wiki/L
 
 # Examples
 
-### Least Squares. Analitical Jacobian.
+### Least Squares. Analytical Jacobian.
 
 ```d
 unittest
