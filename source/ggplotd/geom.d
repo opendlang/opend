@@ -446,10 +446,10 @@ unittest
 
     import std.range : empty;
 
-    assertEqual(gl.front.xStore.min(), 1.0);
-    assertEqual(gl.front.xStore.max(), 1.1);
+    assertHasValue([1.0, 2.0], gl.front.xStore.min());
+    assertHasValue([1.1, 3.0], gl.front.xStore.max());
     gl.popFront;
-    assertEqual(gl.front.xStore.max(), 3.0);
+    assertHasValue([1.1, 3.0], gl.front.xStore.max());
     gl.popFront;
     assert(gl.empty);
 }
