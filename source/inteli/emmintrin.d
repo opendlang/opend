@@ -477,18 +477,10 @@ __m128i _mm_cvtsi32_si128 (int a) pure @safe
     return insertelement!(int4, 0)(r, a);
 }
 
-version(LDC)
+// Note: on macOS, using "llvm.x86.sse2.cvtsi642sd" was buggy
+__m128d _mm_cvtsi64_sd(__m128d v, long x) pure @safe
 {
-    // this LLVM intrinsics seems to still be there
-    pragma(LDC_intrinsic, "llvm.x86.sse2.cvtsi642sd")
-        double2 _mm_cvtsi64_sd(double2, long) pure @safe;
-}
-else
-{
-    __m128d _mm_cvtsi64_sd(__m128d v, long x) pure @safe
-    {
-        return insertelement!(__m128d, 0)(v, cast(double)x);
-    }
+    return insertelement!(__m128d, 0)(v, cast(double)x);
 }
 unittest
 {
