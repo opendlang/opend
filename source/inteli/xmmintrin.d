@@ -7,13 +7,7 @@ module inteli.xmmintrin;
 
 public import inteli.types;
 
-version(LDC)
-{
-    import core.simd;
-    import ldc.simd;
-    import ldc.gccbuiltins_x86;
-    import ldc.intrinsics;
-}
+import inteli.internals;
 
 // SSE1
 // Note: intrinsics noted MMXREG are actually using MMX registers,

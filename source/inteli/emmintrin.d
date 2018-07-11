@@ -8,12 +8,7 @@ module inteli.emmintrin;
 public import inteli.types;
 public import inteli.xmmintrin; // SSE2 includes SSE1
 
-version(LDC)
-{
-    import core.simd;
-    import ldc.simd;
-    import ldc.gccbuiltins_x86;
-}
+import inteli.internals;
 
 nothrow @nogc:
 
@@ -40,18 +35,10 @@ __m128i _mm_add_epi8 (__m128i a, __m128i b) pure @safe
     return cast(__m128i)(cast(byte16)a + cast(byte16)b);
 }
 
-version(LDC)
+__m128d _mm_add_sd(__m128d a, __m128d b) pure @safe
 {
-    pragma(LDC_intrinsic, "llvm.x86.sse2.add.sd")
-        double2 _mm_add_sd(double2, double2) pure @safe;
-}
-else
-{
-    __m128d _mm_add_sd(__m128d a, __m128d b) pure @safe
-    {
-        // Because the LDC intrinsic disappeared
-        return insertelement!(__m128d, 0)(a, a.array[0] + b.array[0]);
-    }
+    // Note: the LDC intrinsic disappeared
+    return insertelement!(__m128d, 0)(a, a.array[0] + b.array[0]);
 }
 unittest
 {
@@ -77,9 +64,84 @@ unittest
 version(LDC)
 {
     alias _mm_adds_epi16 = __builtin_ia32_paddsw128;
+}
+else
+{
+    __m128i _mm_adds_epi16(__m128i a, __m128i b) pure @trusted
+    {
+        short[8] res;
+        short8 sa = cast(short8)a;
+        short8 sb = cast(short8)b;
+        foreach(i; 0..8)
+            res[i] = saturateSignedIntToSignedShort(sa.array[i] + sb.array[i]);
+        return _mm_loadu_si128(cast(int4*)res.ptr);
+    }
+}
+unittest
+{
+    short8 res = cast(short8) _mm_adds_epi16(_mm_set_epi16(7, 6, 5, 4, 3, 2, 1, 0), 
+                                             _mm_set_epi16(7, 6, 5, 4, 3, 2, 1, 0));
+    static immutable short[8] correctResult = [0, 2, 4, 6, 8, 10, 12, 14];
+    assert(res.array == correctResult);
+}
+
+version(LDC)
+{
     alias _mm_adds_epi8 = __builtin_ia32_paddsb128;
+}
+else
+{
+    __m128i _mm_adds_epi8(__m128i a, __m128i b) pure @trusted
+    {
+        byte[16] res;
+        byte16 sa = cast(byte16)a;
+        byte16 sb = cast(byte16)b;
+        foreach(i; 0..16)
+            res[i] = saturateSignedWordToSignedByte(sa.array[i] + sb.array[i]);
+        return _mm_loadu_si128(cast(int4*)res.ptr);
+    }
+}
+unittest
+{
+    byte16 res = cast(byte16) _mm_adds_epi8(_mm_set_epi8(15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0), 
+                                            _mm_set_epi8(15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0));
+    static immutable byte[16] correctResult = [0, 2, 4, 6, 8, 10, 12, 14, 
+                                               16, 18, 20, 22, 24, 26, 28, 30];
+    assert(res.array == correctResult);
+}
+
+version(LDC)
+{
     alias _mm_adds_epu8 = __builtin_ia32_paddusb128;
+}
+else
+{
+    __m128i _mm_adds_epu8(__m128i a, __m128i b) pure @trusted
+    {
+        ubyte[16] res;
+        byte16 sa = cast(byte16)a;
+        byte16 sb = cast(byte16)b;
+        foreach(i; 0..16)
+            res[i] = saturateSignedWordToUnsignedByte(cast(ubyte)(sa.array[i]) + cast(ubyte)(sb.array[i]));
+        return _mm_loadu_si128(cast(int4*)res.ptr);
+    }
+}
+
+version(LDC)
+{
     alias _mm_adds_epu16 = __builtin_ia32_paddusw128;
+}
+else
+{
+    __m128i _mm_adds_epu16(__m128i a, __m128i b) pure @trusted
+    {
+        ushort[8] res;
+        short8 sa = cast(short8)a;
+        short8 sb = cast(short8)b;
+        foreach(i; 0..8)
+            res[i] = saturateSignedIntToUnsignedShort(cast(ushort)(sa.array[i]) + cast(ushort)(sb.array[i]));
+        return _mm_loadu_si128(cast(int4*)res.ptr);
+    }
 }
 
 __m128d _mm_and_pd (__m128d a, __m128d b) pure @safe
@@ -481,7 +543,7 @@ __m128d _mm_load_sd (const(double)* mem_addr) pure @safe
     return insertelement!(double2, 0)(r, *mem_addr);
 }
 
-__m128i _mm_load_si128 (const(__m128i)* mem_addr) pure
+__m128i _mm_load_si128 (const(__m128i)* mem_addr) pure @trusted
 {
     return *mem_addr;
 }
@@ -506,7 +568,7 @@ __m128d _mm_loadl_pd (__m128d a, const(double)* mem_addr) pure @safe
     return insertelement!(__m128d, 0)(a, *mem_addr);
 }
 
-__m128d _mm_loadr_pd (const(double)* mem_addr) pure
+__m128d _mm_loadr_pd (const(double)* mem_addr) pure @trusted
 {
     __m128d a = _mm_load_pd(mem_addr);
     return shufflevector!(__m128d, 1, 0)(a, a);
@@ -517,7 +579,7 @@ __m128d _mm_loadu_pd (const(double)* mem_addr) pure @safe
     return loadUnaligned!(double2)(mem_addr);
 }
 
-__m128i _mm_loadu_si128 (const(__m128i)* mem_addr) pure
+__m128i _mm_loadu_si128 (const(__m128i)* mem_addr) pure @trusted
 {
     return loadUnaligned!(__m128i)(cast(int*)mem_addr);
 }
