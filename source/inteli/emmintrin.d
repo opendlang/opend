@@ -45,11 +45,33 @@ version(LDC)
     pragma(LDC_intrinsic, "llvm.x86.sse2.add.sd")
         double2 _mm_add_sd(double2, double2) pure @safe;
 }
+else
+{
+    __m128d _mm_add_sd(__m128d a, __m128d b) pure @safe
+    {
+        // Because the LDC intrinsic disappeared
+        return insertelement!(__m128d, 0)(a, a.array[0] + b.array[0]);
+    }
+}
+unittest
+{
+    __m128d a = [1.5, -2.0];
+    a = _mm_add_sd(a, a);
+    assert(a.array == [3.0, -2.0]);
+}
+
 
 __m128d _mm_add_pd (__m128d a, __m128d b) pure @safe
 {
     return a + b;
 }
+unittest
+{
+    __m128d a = [1.5, -2.0];
+    a = _mm_add_pd(a, a);
+    assert(a.array == [3.0, -4.0]);
+}
+
 // MMXREG: _mm_add_si64
 
 version(LDC)
