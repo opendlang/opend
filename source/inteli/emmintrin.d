@@ -454,8 +454,21 @@ alias _mm_cvtsi128_si64x = _mm_cvtsi128_si64;
 
 version(LDC)
 {
+    // this LLVM intrinsics seems to still be there
     pragma(LDC_intrinsic, "llvm.x86.sse2.cvtsi2sd")
         double2 _mm_cvtsi32_sd(double2, int) pure @safe;
+}
+else
+{
+    __m128d _mm_cvtsi32_sd(__m128d v, int x) pure @safe
+    {
+        return insertelement!(__m128d, 0)(v, cast(double)x);
+    }
+}
+unittest
+{
+    __m128d a = _mm_cvtsi32_sd(_mm_set1_pd(0.0f), 42);
+    assert(a.array == [42.0, 0]);
 }
 
 __m128i _mm_cvtsi32_si128 (int a) pure @safe
@@ -466,8 +479,21 @@ __m128i _mm_cvtsi32_si128 (int a) pure @safe
 
 version(LDC)
 {
+    // this LLVM intrinsics seems to still be there
     pragma(LDC_intrinsic, "llvm.x86.sse2.cvtsi642sd")
         double2 _mm_cvtsi64_sd(double2, long) pure @safe;
+}
+else
+{
+    __m128d _mm_cvtsi64_sd(__m128d v, long x) pure @safe
+    {
+        return insertelement!(__m128d, 0)(v, cast(double)x);
+    }
+}
+unittest
+{
+    __m128d a = _mm_cvtsi64_sd(_mm_set1_pd(0.0f), 42);
+    assert(a.array == [42.0, 0]);
 }
 
 __m128i _mm_cvtsi64_si128 (long a) pure @safe

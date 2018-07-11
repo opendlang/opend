@@ -333,32 +333,40 @@ else
 
 version(LDC)
 {
+    // this LLVM intrinsics seems to still be there
     pragma(LDC_intrinsic, "llvm.x86.sse.cvtsi2ss")
         float4 _mm_cvtsi32_ss(float4, int) pure @safe;
 }
 else
 {
-    /*
-    __m128 _mm_cvtsi32_ss(__m128, int) pure @safe
+    __m128 _mm_cvtsi32_ss(__m128 v, int x) pure @safe
     {
-        assert(false, "unimplemented");
+        return insertelement!(float4, 0)(v, cast(float)x);
     }
-    */
+}
+unittest
+{
+    __m128 a = _mm_cvtsi32_ss(_mm_set1_ps(0.0f), 42);
+    assert(a.array == [42.0f, 0, 0, 0]);
 }
 
 version(LDC)
 {
+    // this LLVM intrinsics seems to still be there
     pragma(LDC_intrinsic, "llvm.x86.sse.cvtsi642ss")
         float4 _mm_cvtsi64_ss(float4, long) pure @safe;
 }
 else
 {
-    /*
-    __m128 _mm_cvtsi64_ss(__m128, long) pure @safe
+    __m128 _mm_cvtsi64_ss(__m128 v, long x) pure @safe
     {
-        assert(false, "unimplemented");
+        return insertelement!(float4, 0)(v, cast(float)x);
     }
-    */
+}
+unittest
+{
+    __m128 a = _mm_cvtsi64_ss(_mm_set1_ps(0.0f), 42);
+    assert(a.array == [42.0f, 0, 0, 0]);
 }
 
 float _mm_cvtss_f32(__m128 a) pure @safe
