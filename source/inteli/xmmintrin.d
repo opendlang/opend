@@ -350,18 +350,10 @@ unittest
     assert(a.array == [42.0f, 0, 0, 0]);
 }
 
-version(LDC)
+// Note: on macOS, using "llvm.x86.sse.cvtsi642ss" was buggy
+__m128 _mm_cvtsi64_ss(__m128 v, long x) pure @safe
 {
-    // this LLVM intrinsics seems to still be there
-    pragma(LDC_intrinsic, "llvm.x86.sse.cvtsi642ss")
-        float4 _mm_cvtsi64_ss(float4, long) pure @safe;
-}
-else
-{
-    __m128 _mm_cvtsi64_ss(__m128 v, long x) pure @safe
-    {
-        return insertelement!(float4, 0)(v, cast(float)x);
-    }
+    return insertelement!(float4, 0)(v, cast(float)x);
 }
 unittest
 {
