@@ -504,10 +504,17 @@ __m128d _mm_div_ps(__m128d a, __m128d b)
 {
     return a / b;
 }
-version(LDC)
+
+__m128d _mm_div_sd(__m128d a, __m128d b) pure @safe
 {
-    pragma(LDC_intrinsic, "llvm.x86.sse2.div.sd")
-        double2 _mm_div_sd(double2, double2) pure @safe;
+    // Note: the LDC intrinsic disappeared
+    return insertelement!(__m128d, 0)(a, a.array[0] / b.array[0]);
+}
+unittest
+{
+    __m128d a = [2.0, 4.5];
+    a = _mm_div_sd(a, a);
+    assert(a.array == [1.0, 4.5]);
 }
 
 int _mm_extract_epi16(int imm8)(__m128i a) pure @safe
@@ -645,12 +652,17 @@ __m128d _mm_mul_pd(__m128d a, __m128d b) pure @safe
     return a * b;
 }
 
-version(LDC)
+__m128d _mm_mul_sd(__m128d a, __m128d b) pure @safe
 {
-    pragma(LDC_intrinsic, "llvm.x86.sse2.mul.sd")
-        double2 _mm_mul_sd(double2, double2) pure @safe;
+    // Note: the LDC intrinsic disappeared
+    return insertelement!(__m128d, 0)(a, a.array[0] * b.array[0]);
 }
-
+unittest
+{
+    __m128d a = [-2.0, 1.5];
+    a = _mm_mul_sd(a, a);
+    assert(a.array == [4.0, 1.5]);
+}
 
 
 // MMXREG: _mm_mul_su32
@@ -1030,11 +1042,18 @@ __m128d _mm_sub_pd(__m128d a, __m128d b) pure @safe
     return a - b;
 }
 
-version(LDC)
+__m128d _mm_sub_sd(__m128d a, __m128d b) pure @safe
 {
-    pragma(LDC_intrinsic, "llvm.x86.sse2.sub.sd")
-        double2 _mm_sub_sd(double2, double2) pure @safe;
+    // Note: the LLVM intrinsic "llvm.x86.sse2.sub.sd" disappeared
+    return insertelement!(__m128d, 0)(a, a.array[0] - b.array[0]);
 }
+unittest
+{
+    __m128d a = [1.5, -2.0];
+    a = _mm_sub_sd(a, a);
+    assert(a.array == [0.0, -2.0]);
+}
+
 
 // MMXREG: _mm_sub_si64
 
