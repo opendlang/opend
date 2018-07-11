@@ -502,11 +502,8 @@ __m128i _mm_cvtsi64_si128 (long a) pure @safe
     return cast(__m128i)( insertelement!(long2, 0)(r, a) );
 }
 
-version(LDC)
-{
-    alias _mm_cvtsi64x_sd = _mm_cvtsi64_sd;
-    alias _mm_cvtsi64x_si128 = _mm_cvtsi64_si128;
-}
+alias _mm_cvtsi64x_sd = _mm_cvtsi64_sd;
+alias _mm_cvtsi64x_si128 = _mm_cvtsi64_si128;
 
 version(LDC)
 {
