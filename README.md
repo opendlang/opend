@@ -22,7 +22,7 @@ See also [online documentation](https://mir-optim.dpldocs.info/mir.html).
  - Multithread C++ examples
  - Tiny BetterC library size, <38KB
  - Based on LAPACK
- - Fast compilaiton speed. There are two  (for `float` and `double`) precompiled algorithm instatiations. All generic API is thin wrappers around them.
+ - Fast compilaiton speed. There are two  (for `float` and `double`) precompiled algorithm instatiations. Generic API is a thin wrappers around them.
  - Four APIs for any purpose:
     * Extern C/C++ API
     * Powerfull high level generic D API
