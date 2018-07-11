@@ -63,10 +63,11 @@ version(LDC)
 }
 else
 {
-    __m128 __builtin_ia32_cmpps(__m128, __m128, byte) pure @safe
+    // unimplemented
+    /*__m128 __builtin_ia32_cmpps(__m128, __m128, byte) pure @safe
     {
         assert(false, "unimplemented");
-    }
+    }*/
 }
 
 version(LDC)
@@ -198,10 +199,11 @@ version(LDC)
 }
 else
 {
-    __m128i _mm_comieq_ss(__m128, __m128) pure @safe
+    /*__m128i _mm_comieq_ss(__m128, __m128) pure @safe
     {
         assert(false, "unimplemented");
     }
+    */
 }
 
 
@@ -211,10 +213,12 @@ version(LDC)
 }
 else
 {
+    /*
     __m128i _mm_comige_ss(__m128, __m128) pure @safe
     {
         assert(false, "unimplemented");
     }
+    */
 }
 
 
@@ -224,10 +228,12 @@ version(LDC)
 }
 else
 {
+    /*
     __m128i _mm_comigt_ss(__m128, __m128) pure @safe
     {
         assert(false, "unimplemented");
     }
+    */
 }
 
 
@@ -237,10 +243,12 @@ version(LDC)
 }
 else
 {
+    /*
     __m128i _mm_comile_ss(__m128, __m128) pure @safe
     {
         assert(false, "unimplemented");
     }
+    */
 }
 
 
@@ -250,10 +258,12 @@ version(LDC)
 }
 else
 {
+    /*
     __m128i _mm_comilt_ss(__m128, __m128) pure @safe
     {
         assert(false, "unimplemented");
     }
+    */
 }
 
 version(LDC)
@@ -262,10 +272,12 @@ version(LDC)
 }
 else
 {
+    /*
     __m128i _mm_comineq_ss(__m128, __m128) pure @safe
     {
         assert(false, "unimplemented");
     }
+    */
 }
 
 // MMXREG: __m128 _mm_cvt_pi2ps (__m128 a, __m64 b)
@@ -287,10 +299,12 @@ version(LDC)
 }
 else
 {
+    /*
     __m128d _mm_cvt_si2ss(__m128d, int) pure @safe
     {
         assert(false, "unimplemented");
     }
+    */
 }
 
 version(LDC)
@@ -299,10 +313,12 @@ version(LDC)
 }
 else
 {
+    /*
     int _mm_cvt_ss2si(__m128 v) pure @safe
     {
         assert(false, "unimplemented");
     }
+    */
 }
 
 // MMXREG: __m128 _mm_cvtpi16_ps (__m64 a)
@@ -322,10 +338,12 @@ version(LDC)
 }
 else
 {
+    /*
     __m128 _mm_cvtsi32_ss(__m128, int) pure @safe
     {
         assert(false, "unimplemented");
     }
+    */
 }
 
 version(LDC)
@@ -335,10 +353,12 @@ version(LDC)
 }
 else
 {
+    /*
     __m128 _mm_cvtsi64_ss(__m128, long) pure @safe
     {
         assert(false, "unimplemented");
     }
+    */
 }
 
 float _mm_cvtss_f32(__m128 a) pure @safe
