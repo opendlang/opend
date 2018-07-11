@@ -36,15 +36,11 @@ __m128 _mm_add_ss(__m128 a, __m128 b) pure @safe
     // Because the LDC intrinsic disappeared
     return insertelement!(float4, 0)(a, a.array[0] + b.array[0]);
 }
-
-unittest
+unittest 
 {
     __m128 a = [1, 2, 3, 4];
     a = _mm_add_ss(a, a);
-    assert(a.array[0] == 2);
-    assert(a.array[1] == 2);
-    assert(a.array[2] == 3);
-    assert(a.array[3] == 4);
+    assert(a.array == [2.0f, 2, 3, 4]);
 }
 
 __m128i _mm_and_ps (__m128i a, __m128i b) pure @safe
@@ -385,10 +381,17 @@ __m128 _mm_div_ps(__m128 a, __m128 b) pure @safe
     return a / b;
 }
 
-version(LDC)
+__m128 _mm_div_ss(__m128 a, __m128 b) pure @safe
 {
-    pragma(LDC_intrinsic, "llvm.x86.sse.div.ss")
-        float4 _mm_div_ss(float4, float4) pure @safe;
+    // Note: the LLVM intrinsic "llvm.x86.sse.div.ss" disappeared
+    return insertelement!(__m128, 0)(a, a.array[0] / b.array[0]);
+}
+unittest
+{
+    __m128 a = [1.5f, -2.0f, 3.0f, 1.0f];
+    a = _mm_div_ss(a, a);
+    float[4] correct = [1.0f, -2.0, 3.0f, 1.0f];
+    assert(a.array == correct);
 }
 
 // MMXREG: int _mm_extract_pi16 (__m64 a, int imm8)
@@ -496,10 +499,17 @@ __m128 _mm_mul_ps(__m128 a, __m128 b) pure @safe
     return a * b;
 }
 
-version(LDC)
+__m128 _mm_mul_ss(__m128 a, __m128 b) pure @safe
 {
-    pragma(LDC_intrinsic, "llvm.x86.sse.mul.ss")
-        float4 _mm_mul_ss(float4, float4) pure @safe;
+    // Note: the LLVM intrinsic "llvm.x86.sse.mul.ss" disappeared
+    return insertelement!(__m128, 0)(a, a.array[0] * b.array[0]);
+}
+unittest
+{
+    __m128 a = [1.5f, -2.0f, 3.0f, 1.0f];
+    a = _mm_mul_ss(a, a);
+    float[4] correct = [2.25f, -2.0, 3.0f, 1.0f];
+    assert(a.array == correct);
 }
 
 // MMXREG: _mm_mulhi_pu16
@@ -695,11 +705,19 @@ __m128 _mm_sub_ps(__m128 a, __m128 b) pure @safe
     return a - b;
 }
 
-version(LDC)
+__m128 _mm_sub_ss(__m128 a, __m128 b) pure @safe
 {
-    pragma(LDC_intrinsic, "llvm.x86.sse.sub.ss")
-        float4 _mm_sub_ss(float4, float4) pure @safe;
+    // Note: the LLVM intrinsic "llvm.x86.sse2.sub.sd" disappeared
+    return insertelement!(__m128, 0)(a, a.array[0] - b.array[0]);
 }
+unittest
+{
+    __m128 a = [1.5f, -2.0f, 3.0f, 1.0f];
+    a = _mm_sub_ss(a, a);
+    float[4] correct = [0.0f, -2.0, 3.0f, 1.0f];
+    assert(a.array == correct);
+}
+
 
 void _MM_TRANSPOSE4_PS (ref __m128 row0, ref __m128 row1, ref __m128 row2, ref __m128 row3) pure @safe
 {
