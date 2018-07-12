@@ -34,8 +34,8 @@ unittest
 
 __m128 _mm_add_ss(__m128 a, __m128 b) pure @safe
 {
-    // Because the LDC intrinsic disappeared
-    return insertelement!(float4, 0)(a, a.array[0] + b.array[0]);
+    a[0] += b[0];
+    return a;
 }
 unittest
 {
@@ -347,7 +347,8 @@ else
 {
     __m128 _mm_cvtsi32_ss(__m128 v, int x) pure @safe
     {
-        return insertelement!(float4, 0)(v, cast(float)x);
+        v[0] = cast(float)x;
+        return v;
     }
 }
 unittest
@@ -359,7 +360,8 @@ unittest
 // Note: on macOS, using "llvm.x86.sse.cvtsi642ss" was buggy
 __m128 _mm_cvtsi64_ss(__m128 v, long x) pure @safe
 {
-    return insertelement!(float4, 0)(v, cast(float)x);
+    v[0] = cast(float)x;
+    return v;
 }
 unittest
 {
@@ -369,7 +371,7 @@ unittest
 
 float _mm_cvtss_f32(__m128 a) pure @safe
 {
-    return extractelement!(__m128, 0)(a);
+    return a[0];
 }
 
 version(LDC)
@@ -394,11 +396,6 @@ version(LDC)
 
 version(LDC)
 {
-
-}
-
-version(LDC)
-{
     alias _mm_cvttss_si64 = __builtin_ia32_cvttss2si64;
 }
 
@@ -406,11 +403,18 @@ __m128 _mm_div_ps(__m128 a, __m128 b) pure @safe
 {
     return a / b;
 }
+unittest
+{
+    __m128 a = [1.5f, -2.0f, 3.0f, 1.0f];
+    a = _mm_div_ps(a, a);
+    float[4] correct = [1.0f, 1.0f, 1.0f, 1.0f];
+    assert(a.array == correct);
+}
 
 __m128 _mm_div_ss(__m128 a, __m128 b) pure @safe
 {
-    // Note: the LLVM intrinsic "llvm.x86.sse.div.ss" disappeared
-    return insertelement!(__m128, 0)(a, a.array[0] / b.array[0]);
+    a[0] /= b[0];
+    return a;
 }
 unittest
 {
@@ -451,12 +455,16 @@ alias _mm_load1_ps = _mm_load_ps1;
 
 __m128 _mm_loadh_pi (__m128 a, const(__m64)* mem_addr) pure @safe
 {
-    return cast(__m128) insertelement!(long2, 1)(cast(long2)a, *mem_addr);
+    long2 la = cast(long2)a;
+    la[1] = *mem_addr;
+    return cast(__m128)la;
 }
 
 __m128 _mm_loadl_pi (__m128 a, const(__m64)* mem_addr) pure @safe
 {
-    return cast(__m128) insertelement!(long2, 0)(cast(long2)a, *mem_addr);
+    long2 la = cast(long2)a;
+    la[0] = *mem_addr;
+    return cast(__m128)la;
 }
 
 __m128 _mm_loadr_ps (const(float)* mem_addr) pure @trusted
@@ -524,17 +532,24 @@ __m128 _mm_mul_ps(__m128 a, __m128 b) pure @safe
 {
     return a * b;
 }
+unittest
+{
+    __m128 a = [1.5f, -2.0f, 3.0f, 1.0f];
+    a = _mm_mul_ps(a, a);
+    float[4] correct = [2.25f, 4.0f, 9.0f, 1.0f];
+    assert(a.array == correct);
+}
 
 __m128 _mm_mul_ss(__m128 a, __m128 b) pure @safe
 {
-    // Note: the LLVM intrinsic "llvm.x86.sse.mul.ss" disappeared
-    return insertelement!(__m128, 0)(a, a.array[0] * b.array[0]);
+    a[0] *= b[0];
+    return a;
 }
 unittest
 {
     __m128 a = [1.5f, -2.0f, 3.0f, 1.0f];
     a = _mm_mul_ss(a, a);
-    float[4] correct = [2.25f, -2.0, 3.0f, 1.0f];
+    float[4] correct = [2.25f, -2.0f, 3.0f, 1.0f];
     assert(a.array == correct);
 }
 
@@ -692,7 +707,7 @@ alias _mm_store_ps1 = _mm_store1_ps;
 
 void _mm_store_ss (float* mem_addr, __m128 a) pure @safe
 {
-    *mem_addr = extractelement!(__m128, 0)(a);
+    *mem_addr = a[0];
 }
 
 void _mm_store1_ps (float* mem_addr, __m128 a) pure // not safe since nothing guarantees alignment
@@ -730,11 +745,18 @@ __m128 _mm_sub_ps(__m128 a, __m128 b) pure @safe
 {
     return a - b;
 }
+unittest
+{
+    __m128 a = [1.5f, -2.0f, 3.0f, 1.0f];
+    a = _mm_sub_ps(a, a);
+    float[4] correct = [0.0f, 0.0f, 0.0f, 0.0f];
+    assert(a.array == correct);
+}
 
 __m128 _mm_sub_ss(__m128 a, __m128 b) pure @safe
 {
-    // Note: the LLVM intrinsic "llvm.x86.sse2.sub.sd" disappeared
-    return insertelement!(__m128, 0)(a, a.array[0] - b.array[0]);
+    a[0] -= b[0];
+    return a;
 }
 unittest
 {
