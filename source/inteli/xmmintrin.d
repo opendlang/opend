@@ -198,6 +198,10 @@ version(LDC)
         return __builtin_ia32_cmpss(a, b, 3); // CMPUNORDSS
     }
 }
+else
+{
+    // TODO
+}
 
 version(LDC)
 {
@@ -205,6 +209,7 @@ version(LDC)
 }
 else
 {
+    // TODO
     /*__m128i _mm_comieq_ss(__m128, __m128) pure @safe
     {
         assert(false, "unimplemented");
@@ -219,6 +224,7 @@ version(LDC)
 }
 else
 {
+    // TODO
     /*
     __m128i _mm_comige_ss(__m128, __m128) pure @safe
     {
@@ -234,6 +240,7 @@ version(LDC)
 }
 else
 {
+    // TODO
     /*
     __m128i _mm_comigt_ss(__m128, __m128) pure @safe
     {
@@ -249,6 +256,7 @@ version(LDC)
 }
 else
 {
+    // TODO
     /*
     __m128i _mm_comile_ss(__m128, __m128) pure @safe
     {
@@ -264,6 +272,7 @@ version(LDC)
 }
 else
 {
+    // TODO
     /*
     __m128i _mm_comilt_ss(__m128, __m128) pure @safe
     {
@@ -278,6 +287,7 @@ version(LDC)
 }
 else
 {
+    // TODO
     /*
     __m128i _mm_comineq_ss(__m128, __m128) pure @safe
     {
@@ -288,15 +298,7 @@ else
 
 // MMXREG: __m128 _mm_cvt_pi2ps (__m128 a, __m64 b)
 // MMXREG: __m64 _mm_cvt_ps2pi (__m128 a)
-/*
-pragma(LDC_intrinsic, "llvm.x86.sse2.cvtsi2sd")
-    double2 __builtin_ia32_cvtsi2sd(double2, int) pure @safe;
 
-pragma(LDC_intrinsic, "llvm.x86.sse2.cvtsi642sd")
-    double2 __builtin_ia32_cvtsi642sd(double2, long) pure @safe;
-
-pragma(LDC_intrinsic, "llvm.x86.sse2.cvtss2sd")
-    double2 __builtin_ia32_cvtss2sd(double2, float4) pure @safe;*/
 
 version(LDC)
 {
@@ -305,6 +307,7 @@ version(LDC)
 }
 else
 {
+    // TODO
     /*
     __m128d _mm_cvt_si2ss(__m128d, int) pure @safe
     {
@@ -319,6 +322,7 @@ version(LDC)
 }
 else
 {
+    // TODO
     /*
     int _mm_cvt_ss2si(__m128 v) pure @safe
     {
@@ -378,10 +382,18 @@ version(LDC)
 {
     alias _mm_cvtss_si32 = __builtin_ia32_cvtss2si;
 }
+else
+{
+    // TODO
+}
 
 version(LDC)
 {
     alias _mm_cvtss_si64 = __builtin_ia32_cvtss2si64;
+}
+else
+{
+    // TODO
 }
 
 // MMXREG: __m64 _mm_cvtt_ps2pi (__m128 a)
@@ -391,12 +403,20 @@ version(LDC)
     alias _mm_cvtt_ss2si = __builtin_ia32_cvttss2si;
     alias _mm_cvttss_si32 = _mm_cvtt_ss2si; // it's actually the same op
 }
+else
+{
+    // TODO
+}
 
 // MMXREG: _mm_cvttps_pi32
 
 version(LDC)
 {
     alias _mm_cvttss_si64 = __builtin_ia32_cvttss2si64;
+}
+else
+{
+    // TODO
 }
 
 __m128 _mm_div_ps(__m128 a, __m128 b) pure @safe
@@ -425,6 +445,7 @@ unittest
 }
 
 // MMXREG: int _mm_extract_pi16 (__m64 a, int imm8)
+
 // TODO: unsigned int _MM_GET_EXCEPTION_MASK ()
 // TODO: unsigned int _MM_GET_EXCEPTION_STATE ()
 // TODO: unsigned int _MM_GET_FLUSH_ZERO_MODE ()
@@ -434,7 +455,7 @@ unittest
 
 // MMXREG: __m64 _mm_insert_pi16 (__m64 a, int i, int imm8)
 
-__m128 _mm_load_ps(const(float)*p)
+__m128 _mm_load_ps(const(float)*p) pure @trusted
 {
     return *cast(__m128*)p;
 }
@@ -487,17 +508,29 @@ version(LDC)
 {
     alias _mm_max_ps = __builtin_ia32_maxps;
 }
+else
+{
+    // TODO
+}
 
 // MMXREG: _mm_max_pu8
 version(LDC)
 {
     alias _mm_max_ss = __builtin_ia32_maxss;
 }
+else
+{
+    // TODO
+}
 
 // MMXREG: _mm_min_pi16
 version(LDC)
 {
     alias _mm_min_ps = __builtin_ia32_minps;
+}
+else
+{
+    // TODO
 }
 
 // MMXREG: _mm_min_pi8
@@ -590,21 +623,25 @@ version(LDC)
 {
     alias _mm_rcp_ps = __builtin_ia32_rcpps;
 }
+// TODO
 
 version(LDC)
 {
     alias _mm_rcp_ss = __builtin_ia32_rcpss;
 }
+// TODO
 
 version(LDC)
 {
     alias _mm_rsqrt_ps = __builtin_ia32_rsqrtps;
 }
+// TODO
 
 version(LDC)
 {
     alias _mm_rsqrt_ss = __builtin_ia32_rsqrtss;
 }
+// TODO
 
 // TODO: _mm_sad_pu8
 // TODO: void _MM_SET_EXCEPTION_MASK (unsigned int a)
@@ -651,6 +688,7 @@ version(LDC)
 {
     alias _mm_sfence = __builtin_ia32_sfence;
 }
+// TODO
 
 // MMXREG: mm_shuffle_pi16
 
@@ -784,31 +822,37 @@ version(LDC)
 {
     alias _mm_ucomieq_ss = __builtin_ia32_ucomieq;
 }
+// TODO
 
 version(LDC)
 {
     alias _mm_ucomige_ss = __builtin_ia32_ucomige;
 }
+// TODO
 
 version(LDC)
 {
     alias _mm_ucomigt_ss = __builtin_ia32_ucomigt;
 }
+// TODO
 
 version(LDC)
 {
     alias _mm_ucomile_ss = __builtin_ia32_ucomile;
 }
+// TODO
 
 version(LDC)
 {
     alias _mm_ucomilt_ss = __builtin_ia32_ucomilt;
 }
+// TODO
 
 version(LDC)
 {
     alias _mm_ucomineq_ss = __builtin_ia32_ucomineq;
 }
+// TODO
 
 
 __m128 _mm_undefined_ps() pure @safe

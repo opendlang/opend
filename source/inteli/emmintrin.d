@@ -172,6 +172,8 @@ version(LDC)
     pragma(LDC_intrinsic, "llvm.x86.sse2.pavg.b")
         byte16 _mm_avg_epu8(byte16, byte16) pure @safe;
 }
+// TODO
+
 
 // TODO: __m128i _mm_bslli_si128 (__m128i a, int imm8)
 // TODO: __m128i _mm_bsrli_si128 (__m128i a, int imm8)
@@ -210,12 +212,14 @@ version(LDC)
 {
     alias _mm_clflush = __builtin_ia32_clflush;
 }
+// TODO
 
 version(LDC)
 {
     pragma(LDC_intrinsic, "llvm.x86.sse2.cmp.pd")
         double2 __builtin_ia32_cmppd(double2, double2, byte) pure @safe;
 }
+// TODO
 
 __m128i _mm_cmpeq_epi16 (__m128i a, __m128i b) pure @safe
 {
@@ -267,6 +271,8 @@ version(LDC)
         return __builtin_ia32_cmpsd(b, a, 2);
     }
 }
+// TODO
+
 
 // TODO
 /+__m128i _mm_cmpgt_epi16 (__m128i a, __m128i b) pure @safe
@@ -306,6 +312,7 @@ version(LDC)
         return __builtin_ia32_cmpsd(a, b, 2);
     }
 }
+// TODO
 
 // TODO
 /+__m128i _mm_cmplt_epi16 (__m128i a, __m128i b) pure @safe
@@ -405,6 +412,7 @@ version(LDC)
         return __builtin_ia32_cmpsd(a, b, 3);
     }
 }
+// TODO
 
 version(LDC)
 {
@@ -415,6 +423,7 @@ version(LDC)
     alias _mm_comilt_sd = __builtin_ia32_comisdlt;
     alias _mm_comineq_sd = __builtin_ia32_comisdneq;
 }
+// TODO
 
 // TODO: alias _mm_cvtepi32_pd = __builtin_ia32_cvtdq2pd;
 
@@ -431,6 +440,7 @@ version(LDC)
 // MMXREG: _mm_cvtpi32_pd
     alias _mm_cvtps_epi32 = __builtin_ia32_cvtps2dq;
 }
+// TODO
 
 // TODO: alias _mm_cvtps_pd = __builtin_ia32_cvtps2pd;
 
@@ -445,20 +455,23 @@ version(LDC)
     alias _mm_cvtsd_si64 = __builtin_ia32_cvtsd2si64;
     alias _mm_cvtsd_si64x = _mm_cvtsd_si64;
 }
+// TODO
 
 version(LDC)
 {
     alias _mm_cvtsd_ss = __builtin_ia32_cvtsd2ss;
 }
+// TODO
 
 int _mm_cvtsi128_si32 (__m128i a) pure @safe
 {
-    return extractelement!(int4, 0)(a);
+    return a[0];
 }
 
 long _mm_cvtsi128_si64 (__m128i a) pure @safe
 {
-    return extractelement!(long2, 0)(a);
+    long2 la = cast(long2)a;
+    return la[0];
 }
 alias _mm_cvtsi128_si64x = _mm_cvtsi128_si64;
 
@@ -539,6 +552,7 @@ version(LDC)
     alias _mm_cvttsd_si64 = __builtin_ia32_cvttsd2si64;
     alias _mm_cvttsd_si64x = _mm_cvttsd_si64;
 }
+// TODO
 
 
 
@@ -573,6 +587,8 @@ version(LDC)
 {
     alias _mm_lfence = __builtin_ia32_lfence;
 }
+// TODO
+
 
 __m128d _mm_load_pd (const(double) * mem_addr) pure
 {
@@ -673,6 +689,7 @@ version(LDC)
     alias _mm_min_pd = __builtin_ia32_minpd;
     alias _mm_min_sd = __builtin_ia32_minsd;
 }
+// TODO
 
 __m128i _mm_move_epi64 (__m128i a) pure @safe
 {
@@ -716,6 +733,7 @@ version(LDC)
 {
     alias _mm_mul_epu32 = __builtin_ia32_pmuludq128;
 }
+// TODO
 
 __m128d _mm_mul_pd(__m128d a, __m128d b) pure @safe
 {
@@ -748,6 +766,7 @@ version(LDC)
     alias _mm_mulhi_epi16 = __builtin_ia32_pmulhw128;
     alias _mm_mulhi_epu16 = __builtin_ia32_pmulhuw128;
 }
+// TODO
 
 __m128i _mm_mullo_epi16 (__m128i a, __m128i b)
 {
@@ -770,16 +789,19 @@ version(LDC)
     alias _mm_packs_epi16 = __builtin_ia32_packsswb128;
     alias _mm_packus_epi16 = __builtin_ia32_packuswb128;
 }
+// TODO
 
 version(LDC)
 {
     alias _mm_pause = __builtin_ia32_pause;
 }
+// TODO
 
 version(LDC)
 {
     alias _mm_sad_epu8 = __builtin_ia32_psadbw128;
 }
+// TODO
 
 __m128i _mm_set_epi16 (short e7, short e6, short e5, short e4, short e3, short e2, short e1, short e0) pure @trusted
 {
@@ -964,6 +986,7 @@ version(LDC)
     alias _mm_slli_epi64 = __builtin_ia32_psllqi128;
     alias _mm_slli_epi16 = __builtin_ia32_psllwi128;
 }
+// TODO
 
 __m128i _mm_slli_si128(ubyte imm8)(__m128i op) pure @safe
 {
@@ -983,6 +1006,7 @@ version(LDC)
         return __builtin_ia32_sqrtpd(a);
     }
 }
+// TODO
 
 version(LDC)
 {
@@ -991,6 +1015,8 @@ version(LDC)
         return __builtin_ia32_sqrtsd(a);
     }
 }
+// TODO
+
 
 version(LDC)
 {
@@ -1006,6 +1032,7 @@ version(LDC)
     alias _mm_srli_epi32 = __builtin_ia32_psrldi128;
     alias _mm_srli_epi64 = __builtin_ia32_psrlqi128;
 }
+// TODO
 
 __m128i _mm_srli_si128(ubyte imm8)(__m128i op) pure @safe
 {
@@ -1018,6 +1045,7 @@ __m128i _mm_srli_si128(ubyte imm8)(__m128i op) pure @safe
                                            (cast(byte16) op, cast(byte16)_mm_setzero_si128());
 }
 
+// Note: this is a bonus intrinsic
 __m128 _mm_srli_si128(ubyte imm8)(__m128 op) @safe
 {
     return cast(__m128)_mm_srli_si128!imm8(cast(__m128i)op);
@@ -1153,6 +1181,7 @@ version(LDC)
     alias _mm_ucomilt_sd = __builtin_ia32_ucomisdlt;
     alias _mm_ucomineq_sd = __builtin_ia32_ucomisdneq;
 }
+// TODO
 
 __m128d _mm_undefined_pd() pure @safe
 {
