@@ -4,11 +4,8 @@ os:
   - osx
   - linux
 
-matrix:
-  allow_failures:
-    - os: linux
-
 d:
+ - ldc-1.10.0
  - ldc-1.9.0
  - ldc-1.8.0
  - ldc-1.7.0
@@ -18,8 +15,8 @@ d:
  - ldc-1.3.0
  - ldc-1.2.0
  - dmd-beta
- - dmd-2.080.1 
- - dmd-2.079.1 
+ - dmd-2.080.1
+ - dmd-2.079.1
  - dmd-2.078.2
  - dmd-2.077.1
  - dmd-2.076.1
@@ -38,5 +35,5 @@ matrix:
 
 # Note: 32-bit x86 isn't tested for Linux
 script:
-  - dub test --compiler=${DC} 
+  - dub test --compiler=${DC}
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then dub test --compiler=${DC} -a x86 ; fi

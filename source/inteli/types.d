@@ -29,36 +29,62 @@ else
     {
         float[4] array;
         mixin VectorOps!(float4, float[4], float, 4);
+
+        enum float TrueMask = allOnes();
+        enum float FalseMask = 0.0f;
+
+        private static float allOnes()
+        {
+            uint m1 = 0xffffffff;
+            return *cast(float*)(&m1);
+        }
     }
 
     struct byte16
     {
         byte[16] array;
         mixin VectorOps!(byte16, byte[16], byte, 16);
+        enum byte TrueMask = -1;
+        enum byte FalseMask = 0;
     }
 
     struct short8
     {
         short[8] array;
         mixin VectorOps!(short8, short[8], short, 8);
+        enum short TrueMask = -1;
+        enum short FalseMask = 0;
     }
 
     struct int4
     {
         int[4] array;
         mixin VectorOps!(int4, int[4], int, 4);
+        enum int TrueMask = -1;
+        enum int FalseMask = 0;
     }
 
     struct long2
     {
         long[2] array;
         mixin VectorOps!(long2, long[2], long, 2);
+        enum long TrueMask = -1;
+        enum long FalseMask = 0;
     }
 
     struct double2
     {
         double[2] array;
         mixin VectorOps!(double2, double[2], double, 2);
+
+        enum double TrueMask = allOnes();
+        enum double FalseMask = 0.0f;
+
+        private static double allOnes()
+        {
+            ulong m1 = 0xffffffff_ffffffff;
+            return *cast(double*)(&m1);
+        }
     }
 
     static assert(float4.sizeof == 16);
@@ -113,6 +139,11 @@ else
             return dest;
         }
 
+        ref BaseType opIndex(size_t i) pure nothrow @safe @nogc
+        {
+            return array[i];
+        }
+
     }
 
     auto extractelement(Vec, int index, Vec2)(Vec2 vec) @trusted
@@ -147,7 +178,7 @@ else
     }
 
 
-    Vec shufflevector(Vec, mask...)(Vec a, Vec b)
+    Vec shufflevector(Vec, mask...)(Vec a, Vec b) @safe
     {
         static assert(mask.length == Vec.Count);
 
@@ -163,7 +194,71 @@ else
         }
         return r;
     }
+
+    // emulate ldc.simd cmpMask
+
+    Vec equalMask(Vec)(Vec a, Vec b) @safe
+    {
+        alias BaseType = Vec.Base;
+        alias Count = Vec.Count;
+        Vec result;
+        foreach(int i; 0..Count)
+        {
+            bool cond = a.array[i] == b.array[i];
+            result.array[i] = cond ? Vec.TrueMask : Vec.FalseMask;
+        }
+        return result;
+    }
+
+    Vec notEqualMask(Vec)(Vec a, Vec b) @safe
+    {
+        alias BaseType = Vec.Base;
+        alias Count = Vec.Count;
+        Vec result;
+        foreach(int i; 0..Count)
+        {
+            bool cond = a.array[i] != b.array[i];
+            result.array[i] = cond ? Vec.TrueMask : Vec.FalseMask;
+        }
+        return result;
+    }
+
+    Vec greaterMask(Vec)(Vec a, Vec b) @safe
+    {
+        alias BaseType = Vec.Base;
+        alias Count = Vec.Count;
+        Vec result;
+        foreach(int i; 0..Count)
+        {
+            bool cond = a.array[i] > b.array[i];
+            result.array[i] = cond ? Vec.TrueMask : Vec.FalseMask;
+        }
+        return result;
+    }
+
+    Vec greaterOrEqualMask(Vec)(Vec a, Vec b) @safe
+    {
+        alias BaseType = Vec.Base;
+        alias Count = Vec.Count;
+        Vec result;
+        foreach(int i; 0..Count)
+        {
+            bool cond = a.array[i] > b.array[i];
+            result.array[i] = cond ? Vec.TrueMask : Vec.FalseMask;
+        }
+        return result;
+    }
+
+    unittest
+    {
+        float4 a = [1, 3, 5, 7];
+        float4 b = [2, 3, 4, 5];
+        int4 c = cast(int4)(greaterMask!float4(a, b));
+        static immutable int[4] correct = [0, 0, 0xffff_ffff, 0xffff_ffff];
+        assert(c.array == correct);
+    }
 }
+
 
 alias __m128 = float4;
 alias __m128i = int4;

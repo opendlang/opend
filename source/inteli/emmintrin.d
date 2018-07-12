@@ -79,7 +79,7 @@ else
 }
 unittest
 {
-    short8 res = cast(short8) _mm_adds_epi16(_mm_set_epi16(7, 6, 5, 4, 3, 2, 1, 0), 
+    short8 res = cast(short8) _mm_adds_epi16(_mm_set_epi16(7, 6, 5, 4, 3, 2, 1, 0),
                                              _mm_set_epi16(7, 6, 5, 4, 3, 2, 1, 0));
     static immutable short[8] correctResult = [0, 2, 4, 6, 8, 10, 12, 14];
     assert(res.array == correctResult);
@@ -103,9 +103,9 @@ else
 }
 unittest
 {
-    byte16 res = cast(byte16) _mm_adds_epi8(_mm_set_epi8(15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0), 
+    byte16 res = cast(byte16) _mm_adds_epi8(_mm_set_epi8(15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0),
                                             _mm_set_epi8(15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0));
-    static immutable byte[16] correctResult = [0, 2, 4, 6, 8, 10, 12, 14, 
+    static immutable byte[16] correctResult = [0, 2, 4, 6, 8, 10, 12, 14,
                                                16, 18, 20, 22, 24, 26, 28, 30];
     assert(res.array == correctResult);
 }
@@ -217,23 +217,33 @@ version(LDC)
         double2 __builtin_ia32_cmppd(double2, double2, byte) pure @safe;
 }
 
-// TODO
-/+
 __m128i _mm_cmpeq_epi16 (__m128i a, __m128i b) pure @safe
 {
-    return cast(__m128i)( cast(short8)a == cast(short8)b );
+    return cast(__m128i) equalMask!short8(cast(short8)a, cast(short8)b);
 }
 
 __m128i _mm_cmpeq_epi32 (__m128i a, __m128i b) pure @safe
 {
-    return cast(__m128i)( cast(int4)a == cast(int4)b );
+    return equalMask!__m128i(a, b);
 }
 
 __m128i _mm_cmpeq_epi8 (__m128i a, __m128i b) pure @safe
 {
-    return cast(__m128i)( cast(byte16)a == cast(byte16)b );
+    return cast(__m128i) equalMask!byte16(cast(byte16)a, cast(byte16)b);
 }
-+/
+unittest
+{
+    __m128i A = _mm_setr_epi8(1, 2, 3, 1, 2, 1, 1, 2, 3, 2, 1, 0, 0, 1, 2, 1);
+    __m128i B = _mm_setr_epi8(2, 2, 1, 2, 3, 1, 2, 3, 2, 1, 0, 0, 1, 2, 1, 1);
+
+    byte16 C = cast(byte16) _mm_cmpeq_epi8(A, B);
+    static immutable byte[16] correct =
+                             [0,-1, 0, 0, 0,-1, 0, 0, 0, 0, 0,-1, 0, 0, 0, -1];
+
+    __m128i D = _mm_cmpeq_epi8(A, B);
+    assert(C.array == correct);
+}
+
 
 version(LDC)
 {
@@ -796,6 +806,12 @@ __m128i _mm_set1_epi32 (int a) pure @trusted
 {
     int[4] result = [a, a, a, a];
     return loadUnaligned!(int4)(result.ptr);
+}
+unittest
+{
+    __m128 a = _mm_set1_ps(-1.0f);
+    __m128 b = cast(__m128) _mm_set1_epi32(0x7fffffff);
+    assert(_mm_and_ps(a, b).array == [1.0f, 1, 1, 1]);
 }
 
 __m128i _mm_set1_epi64x (long a) pure @trusted

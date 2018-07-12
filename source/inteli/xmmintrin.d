@@ -3,6 +3,7 @@
 * License:   $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost License 1.0)
 * Authors:   Guillaume Piolat
 */
+
 module inteli.xmmintrin;
 
 public import inteli.types;
@@ -36,22 +37,27 @@ __m128 _mm_add_ss(__m128 a, __m128 b) pure @safe
     // Because the LDC intrinsic disappeared
     return insertelement!(float4, 0)(a, a.array[0] + b.array[0]);
 }
-unittest 
+unittest
 {
     __m128 a = [1, 2, 3, 4];
     a = _mm_add_ss(a, a);
     assert(a.array == [2.0f, 2, 3, 4]);
 }
 
-__m128i _mm_and_ps (__m128i a, __m128i b) pure @safe
+__m128 _mm_and_ps (__m128 a, __m128 b) pure @safe
 {
-    return a & b;
+    return cast(__m128)(cast(__m128i)a & cast(__m128i)b);
+}
+unittest
+{
+    // Note: tested in emmintrin.d
 }
 
 __m128i _mm_andnot_ps (__m128i a, __m128i b) pure @safe
 {
     return (~a) & b;
 }
+
 
 // MMXREG: _mm_avg_pu16
 // MMXREG: _mm_avg_pu8
@@ -388,7 +394,7 @@ version(LDC)
 
 version(LDC)
 {
-    
+
 }
 
 version(LDC)
