@@ -1,6 +1,6 @@
 # intel-intrinsics
 
-![Travis Status](https://travis-ci.org/AuburnSounds/intel-intrinsics.svg?branch=master)
+[![Travis Status](https://travis-ci.org/AuburnSounds/intel-intrinsics.svg?branch=master)](https://travis-ci.org/AuburnSounds/intel-intrinsics)
 This package allows you to use Intel intrinsics in D code.
 
 ## Usage
@@ -32,15 +32,15 @@ version(LDC)
 
 ### Familiar syntax
 
-Why Intel intrinsic syntax? Because it is more familiar to C++ programmers 
-and there is a convenient online guide provided by Intel: 
+Why Intel intrinsic syntax? Because it is more familiar to C++ programmers
+and there is a convenient online guide provided by Intel:
 https://software.intel.com/sites/landingpage/IntrinsicsGuide/
 
 Without this guide it's much more difficult to write sizeable SIMD code.
 
 ### Future-proof
 
-LDC SIMD intrinsics are a moving target (https://github.com/ldc-developers/ldc/issues/2019), 
+LDC SIMD intrinsics are a moving target (https://github.com/ldc-developers/ldc/issues/2019),
 and you need a layer over it if you want to be safe.
 
 We maintain that layer because we need it for our products.
@@ -51,8 +51,8 @@ So you could target ARM one day and still get some speed-up.
 
 ### Portability
 
-**For now only LDC is supported**, but in the future the same set of intrinsics will work with DMD too. 
-This is intended to be the most practical SIMD solution for D. 
+**For now only LDC is supported**, but in the future the same set of intrinsics will work with DMD too.
+This is intended to be the most practical SIMD solution for D.
 Including an emulation layer for DMD 32-bit which doesn't have any SIMD capability right now.
 
 
