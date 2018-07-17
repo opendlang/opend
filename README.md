@@ -3,28 +3,29 @@
 [![Travis Status](https://travis-ci.org/AuburnSounds/intel-intrinsics.svg?branch=master)](https://travis-ci.org/AuburnSounds/intel-intrinsics)
 This package allows you to use Intel intrinsics in D code.
 
+**This is a work in progress, some intrinsics are missing with DMD. Please complain in the bugtracker.**
+
 ## Usage
 
 ```d
 
-version(LDC)
-{
-    import inteli.xmmintrin; // allows SSE1 intrinsics
-    import inteli.emmintrin; // allows SSE2 intrinsics
 
-    // distance between two points in 4D
-    float distance(float[4] a, float[4] b) nothrow @nogc
-    {
-        __m128 va = _mm_loadu_ps(a.ptr);
-        __m128 vb = _mm_loadu_ps(b.ptr);
-        __m128 diffSquared = _mm_sub_ps(va, vb);
-        diffSquared = _mm_mul_ps(diffSquared, diffSquared);
-        __m128 sum = _mm_add_ps(diffSquared, _mm_srli_si128!8(diffSquared));
-        sum = _mm_add_ps(sum, _mm_srli_si128!4(sum));
-        return _mm_cvtss_f32(_mm_sqrt_ss(sum));
-    }
-    assert(distance([0, 2, 0, 0], [0, 0, 0, 0]) == 2);
+import inteli.xmmintrin; // allows SSE1 intrinsics
+import inteli.emmintrin; // allows SSE2 intrinsics
+
+// distance between two points in 4D
+float distance(float[4] a, float[4] b) nothrow @nogc
+{
+    __m128 va = _mm_loadu_ps(a.ptr);
+    __m128 vb = _mm_loadu_ps(b.ptr);
+    __m128 diffSquared = _mm_sub_ps(va, vb);
+    diffSquared = _mm_mul_ps(diffSquared, diffSquared);
+    __m128 sum = _mm_add_ps(diffSquared, _mm_srli_si128!8(diffSquared));
+    sum = _mm_add_ps(sum, _mm_srli_si128!4(sum));
+    return _mm_cvtss_f32(_mm_sqrt_ss(sum));
 }
+assert(distance([0, 2, 0, 0], [0, 0, 0, 0]) == 2);
+
 
 ```
 
