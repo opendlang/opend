@@ -1,7 +1,7 @@
 {
     "name": "intel-intrinsics",
-    "description": "Reuse your C++ SIMD code using Intel intrinsics syntax. Works with LDC.",
-    "copyright": "Guillaume Piolat 2016",
+    "description": "The most practical D SIMD solution! Using SIMD intrinsics with Intel syntax with D.",
+    "copyright": "Auburn Sounds 2016-2018",
     "license": "BSL-1.0",
     "importPaths": ["source"],
     "sourcePaths": ["source"]

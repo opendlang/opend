@@ -29,6 +29,12 @@ assert(distance([0, 2, 0, 0], [0, 0, 0, 0]) == 2);
 
 ```
 
+## Who is using it?
+
+- Pixel Perfect Engine is using `intel-intrinsics` for blitting images: https://github.com/ZILtoid1991/CPUblit/blob/master/src/CPUblit/composing.d
+- Dplug is using `intel-intrinsics` for biquad processing for a 10% speed gain over equivalent assembly: https://github.com/AuburnSounds/Dplug/blob/master/dsp/dplug/dsp/iir.d#L104
+
+
 ## Why?
 
 ### Familiar syntax
