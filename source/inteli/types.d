@@ -28,7 +28,7 @@ else
     struct float4
     {
         float[4] array;
-        mixin VectorOps!(float4, float[4], float, 4);
+        mixin VectorOps!(float4, float[4]);
 
         enum float TrueMask = allOnes();
         enum float FalseMask = 0.0f;
@@ -43,7 +43,7 @@ else
     struct byte16
     {
         byte[16] array;
-        mixin VectorOps!(byte16, byte[16], byte, 16);
+        mixin VectorOps!(byte16, byte[16]);
         enum byte TrueMask = -1;
         enum byte FalseMask = 0;
     }
@@ -51,7 +51,7 @@ else
     struct short8
     {
         short[8] array;
-        mixin VectorOps!(short8, short[8], short, 8);
+        mixin VectorOps!(short8, short[8]);
         enum short TrueMask = -1;
         enum short FalseMask = 0;
     }
@@ -59,7 +59,7 @@ else
     struct int4
     {
         int[4] array;
-        mixin VectorOps!(int4, int[4], int, 4);
+        mixin VectorOps!(int4, int[4]);
         enum int TrueMask = -1;
         enum int FalseMask = 0;
     }
@@ -67,7 +67,7 @@ else
     struct long2
     {
         long[2] array;
-        mixin VectorOps!(long2, long[2], long, 2);
+        mixin VectorOps!(long2, long[2]);
         enum long TrueMask = -1;
         enum long FalseMask = 0;
     }
@@ -75,7 +75,7 @@ else
     struct double2
     {
         double[2] array;
-        mixin VectorOps!(double2, double[2], double, 2);
+        mixin VectorOps!(double2, double[2]);
 
         enum double TrueMask = allOnes();
         enum double FalseMask = 0.0f;
@@ -94,7 +94,7 @@ else
     static assert(long2.sizeof == 16);
     static assert(double2.sizeof == 16);
 
-    mixin template VectorOps(VectorType, ArrayType, BaseType, int N)
+    mixin template VectorOps(VectorType, ArrayType: BaseType[N], BaseType, size_t N)
     {
         enum Count = N;
         alias Base = BaseType;
@@ -131,11 +131,13 @@ else
         /// "Vector types of the same size can be implicitly converted among each other."
         /// Casting to another vector type is always just a raw copy.
         VecDest opCast(VecDest)() pure nothrow @trusted @nogc
+            if (VecDest.sizeof == VectorType.sizeof)
         {
-            static assert(VectorType.sizeof == VecDest.sizeof, "non matching sizes between vector types");
-            import core.stdc.string: memcpy;
+            // import core.stdc.string: memcpy;
             VecDest dest = void;
-            memcpy(dest.array.ptr, array.ptr, VectorType.sizeof);
+            // Copy
+            dest.array[] = (cast(typeof(dest.array))cast(void[VectorType.sizeof])array)[];
+            // memcpy(dest.array.ptr, array.ptr, VectorType.sizeof);
             return dest;
         }
 
