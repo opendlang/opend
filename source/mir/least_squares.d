@@ -1015,19 +1015,19 @@ LMStatus optimizeLMImplGeneric(T)
     version(LDC) pragma(inline, true);
 
     if (_lower_ptr && lower.length != x.length || _upper_ptr && upper.length != x.length)
-        return LMStatus.badBounds;
+        return lm.status = LMStatus.badBounds;
     if (!(!_lower_ptr || allLessOrEqual(lower, x)) || !(!_upper_ptr || allLessOrEqual(x, upper)))
-        return LMStatus.badGuess;
+        return lm.status = LMStatus.badGuess;
     if (!(0 <= minStepQuality && minStepQuality < 1))
-        return LMStatus.badMinStepQuality;
+        return lm.status = LMStatus.badMinStepQuality;
     if (!(0 <= goodStepQuality && goodStepQuality <= 1))
-        return LMStatus.badGoodStepQuality;
+        return lm.status = LMStatus.badGoodStepQuality;
     if (!(minStepQuality < goodStepQuality))
-        return LMStatus.badStepQuality;
+        return lm.status = LMStatus.badStepQuality;
     if (!(1 <= lambdaIncrease && lambdaIncrease <= T.max.sqrt))
-        return LMStatus.badLambdaParams;
+        return lm.status = LMStatus.badLambdaParams;
     if (!(T.min_normal.sqrt <= lambdaDecrease && lambdaDecrease <= 1))
-        return LMStatus.badLambdaParams;
+        return lm.status = LMStatus.badLambdaParams;
 
     maxAge = maxAge ? maxAge : g ? 3 : cast(uint)(2 * n);
     uint age = maxAge;
@@ -1146,7 +1146,7 @@ LMStatus optimizeLMImplGeneric(T)
     }
     while (iterCt < maxIter && !(gConverged || xConverged));
 
-    return LMStatus.success;
+    return lm.status = LMStatus.success;
 }}
 
 pragma(inline, false)
