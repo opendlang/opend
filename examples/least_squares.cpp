@@ -82,9 +82,9 @@ void printReport(const LeastSquaresLMD& lm)
     printf("status: %s\n", mir_least_squares_lm_status_string((LeastSquaresLMStatus) lm.status));
     printf("lm.xConverged = %d\n", lm.xConverged);
     printf("lm.gConverged = %d\n", lm.gConverged);
-    printf("lm.iterCt = %lu\n", lm.iterCt);
-    printf("lm.fCalls = %lu\n", lm.fCalls);
-    printf("lm.gCalls = %lu\n", lm.gCalls);
+    printf("lm.iterCt = %zu\n", lm.iterCt);
+    printf("lm.fCalls = %zu\n", lm.fCalls);
+    printf("lm.gCalls = %zu\n", lm.gCalls);
     if (lm.lower)
         printVector("lower bounds", lm.n, lm.lower);
     if (lm.upper)
