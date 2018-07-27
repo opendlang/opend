@@ -41,14 +41,17 @@ if(!is(T == struct) && !is(T == class) && !is(T == interface) && !isStaticArray!
 }
 
 @("class dtor inference with struct members")
-@safe @nogc pure unittest {
+@system @nogc pure unittest {
+    import std.traits: functionAttributes, FunctionAttribute;
+    import std.conv: text;
+
     struct A { ~this() @nogc {} }
     struct B { ~this() {} }
     class CA { A a; ~this() @nogc {} }
     class CB { B b; ~this() @nogc {} }
 
     static assert( __traits(compiles, () @nogc { CA a; destruct(a); }));
-    static assert(!__traits(compiles, () @nogc { CB a; destruct(b); }));
+    static assert(!__traits(compiles, () @system @nogc { CB b; destruct(b); }));
 }
 
 private:
