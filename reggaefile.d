@@ -9,5 +9,10 @@ alias utl = dubConfigurationTarget!(
     Configuration("utl"),
     CompilerFlags(debugFlags ~ " -unittest -version=unitThreadedLight -cov")
 );
+alias asan = dubConfigurationTarget!(
+    Configuration("asan"),
+    CompilerFlags(debugFlags ~ " -unittest -cov")
+);
 
-mixin build!(lib, optional!ut, optional!utl);
+
+mixin build!(lib, optional!ut, optional!utl, optional!asan);

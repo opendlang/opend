@@ -25,7 +25,7 @@ configuration "unittest" {
 configuration "asan" {
     targetType "executable"
     targetPath "bin"
-    targetName "ut"
+    targetName "asan"
     importPaths "tests"
     sourcePaths "tests"
 
@@ -35,7 +35,7 @@ configuration "asan" {
     dependency "test_allocator" version="~>0.2.1"
     versions "AutomemTesting"
     // unit threaded light is necessary for the tests to actually run
-    versions "unitUnthreaded" "unitThreadedLight"
+    versions "AutomemTesting" "unitUnthreaded" "unitThreadedLight"
 }
 
 configuration "utl" {
