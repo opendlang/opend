@@ -88,7 +88,7 @@ struct LeastSquaresLMS_S
     float* JJ;
     float* J;
     size_t work_length;
-    float work;
+    float* work;
 
     size_t m;
     size_t n;
@@ -111,7 +111,7 @@ struct LeastSquaresLMS_S
     size_t gCalls;
     float residual;
     uint32_t maxAge;
-    int8_t status;
+    LeastSquaresLMStatus_E status;
     bool xConverged;
     bool gConverged;
 };
@@ -130,7 +130,7 @@ struct LeastSquaresLMD_S
     double* JJ;
     double* J;
     size_t work_length;
-    double work;
+    double* work;
 
     size_t m;
     size_t n;
@@ -153,7 +153,7 @@ struct LeastSquaresLMD_S
     size_t gCalls;
     double residual;
     uint32_t maxAge;
-    int8_t status;
+    LeastSquaresLMStatus_E status;
     bool xConverged;
     bool gConverged;
 };

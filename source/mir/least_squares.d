@@ -227,11 +227,12 @@ struct LeastSquaresLM(T)
     pragma(inline, false)
     void reset()() @safe pure nothrow @nogc
     {
-        status = LMStatus.initialized;
-        maxAge = 0;
         iterCt = 0;
         fCalls = 0;
         gCalls = 0;     
+        residual = T.infinity;
+        maxAge = 0;
+        status = LMStatus.initialized;
         xConverged = false;
         gConverged = false;    
         fill(T.nan, x);
@@ -267,24 +268,26 @@ struct LeastSquaresLM(T)
     auto gcAlloc()(size_t m, size_t n, bool lowerBounds = false, bool upperBounds = false) //nothrow @trusted pure
     {
         import mir.lapack: sysv_rook_wk;
-        import mir.ndslice.allocation: uninitSlice;
+        import mir.ndslice.allocation: uninitSlice, uninitAlignedSlice;
         import mir.ndslice.slice: sliced;
         import mir.ndslice.topology: canonical;
 
+        enum alignment = 64;
+
         this.m = m;
         this.n = n;
-        _lower_ptr = lowerBounds ? n.uninitSlice!T._iterator : null;
-        _upper_ptr = upperBounds ? n.uninitSlice!T._iterator : null;
-        _x_ptr = n.uninitSlice!T._iterator;
-        _deltaX_ptr = n.uninitSlice!T._iterator;
-        _mJy_ptr = n.uninitSlice!T._iterator;
-        _deltaXBase_ptr = n.uninitSlice!T._iterator;
-        _ipiv_ptr = n.uninitSlice!lapackint._iterator;
-        _y_ptr = m.uninitSlice!T._iterator;
-        _mBuffer_ptr = m.uninitSlice!T._iterator;
-        _JJ_ptr = [n, n].uninitSlice!T._iterator;
-        _J_ptr = [m, n].uninitSlice!T._iterator;
-        _work = sysv_rook_wk('L', JJ.canonical, _deltaX_ptr.sliced([1, n]).canonical).uninitSlice!T;
+        _lower_ptr = lowerBounds ? [n].uninitSlice!T._iterator : null;
+        _upper_ptr = upperBounds ? [n].uninitSlice!T._iterator : null;
+        _ipiv_ptr = [n].uninitSlice!lapackint._iterator;
+        _x_ptr = [n].uninitAlignedSlice!T(alignment)._iterator;
+        _deltaX_ptr = [n].uninitAlignedSlice!T(alignment)._iterator;
+        _mJy_ptr = [n].uninitAlignedSlice!T(alignment)._iterator;
+        _deltaXBase_ptr = [n].uninitAlignedSlice!T(alignment)._iterator;
+        _y_ptr = [m].uninitAlignedSlice!T(alignment)._iterator;
+        _mBuffer_ptr = [m].uninitAlignedSlice!T(alignment)._iterator;
+        _JJ_ptr = [n, n].uninitAlignedSlice!T(alignment)._iterator;
+        _J_ptr = [m, n].uninitAlignedSlice!T(alignment)._iterator;
+        _work = [sysv_rook_wk('L', JJ.canonical, _deltaX_ptr.sliced([1, n]).canonical)].uninitAlignedSlice!T(alignment);
         reset;
     }
 
@@ -295,24 +298,26 @@ struct LeastSquaresLM(T)
     void stdcAlloc()(size_t m, size_t n, bool lowerBounds = false, bool upperBounds = false) nothrow @nogc @trusted
     {
         import mir.lapack: sysv_rook_wk;
-        import mir.ndslice.allocation: stdcUninitSlice;
+        import mir.ndslice.allocation: stdcUninitSlice, stdcUninitAlignedSlice;
         import mir.ndslice.slice: sliced;
         import mir.ndslice.topology: canonical;
 
+        enum alignment = 64; // AVX512 compatible
+
         this.m = m;
         this.n = n;
-        _lower_ptr = lowerBounds ? n.stdcUninitSlice!T._iterator : null;
-        _upper_ptr = upperBounds ? n.stdcUninitSlice!T._iterator : null;
-        _x_ptr = n.stdcUninitSlice!T._iterator;
-        _deltaX_ptr = n.stdcUninitSlice!T._iterator;
-        _mJy_ptr = n.stdcUninitSlice!T._iterator;
-        _deltaXBase_ptr = n.stdcUninitSlice!T._iterator;
-        _ipiv_ptr = n.stdcUninitSlice!lapackint._iterator;
-        _y_ptr = m.stdcUninitSlice!T._iterator;
-        _mBuffer_ptr = m.stdcUninitSlice!T._iterator;
-        _JJ_ptr = [n, n].stdcUninitSlice!T._iterator;
-        _J_ptr = [m, n].stdcUninitSlice!T._iterator;
-        _work = sysv_rook_wk('L', JJ.canonical, _deltaX_ptr.sliced([1, n]).canonical).stdcUninitSlice!T;
+        _lower_ptr = lowerBounds ? [n].stdcUninitSlice!T._iterator : null;
+        _upper_ptr = upperBounds ? [n].stdcUninitSlice!T._iterator : null;
+        _ipiv_ptr = [n].stdcUninitSlice!lapackint._iterator;
+        _x_ptr = [n].stdcUninitAlignedSlice!T(alignment)._iterator;
+        _deltaX_ptr = [n].stdcUninitAlignedSlice!T(alignment)._iterator;
+        _mJy_ptr = [n].stdcUninitAlignedSlice!T(alignment)._iterator;
+        _deltaXBase_ptr = [n].stdcUninitAlignedSlice!T(alignment)._iterator;
+        _y_ptr = [m].stdcUninitAlignedSlice!T(alignment)._iterator;
+        _mBuffer_ptr = [m].stdcUninitAlignedSlice!T(alignment)._iterator;
+        _JJ_ptr = [n, n].stdcUninitAlignedSlice!T(alignment)._iterator;
+        _J_ptr = [m, n].stdcUninitAlignedSlice!T(alignment)._iterator;
+        _work = [sysv_rook_wk('L', JJ.canonical, _deltaX_ptr.sliced([1, n]).canonical)].stdcUninitAlignedSlice!T(alignment);
         reset;
     }
 
@@ -323,18 +328,19 @@ struct LeastSquaresLM(T)
     void stdcFree()() nothrow @nogc @trusted
     {
         import core.stdc.stdlib: free;
+        import mir.internal.memory: alignedFree;
         if (_lower_ptr) _lower_ptr.free;
         if (_upper_ptr) _upper_ptr.free;
-        _x_ptr.free;
-        _deltaX_ptr.free;
-        _mJy_ptr.free;
-        _deltaXBase_ptr.free;
         _ipiv_ptr.free;
-        _y_ptr.free;
-        _mBuffer_ptr.free;
-        _JJ_ptr.free;
-        _J_ptr.free;
-        _work._iterator.free;
+        _x_ptr.alignedFree;
+        _deltaX_ptr.alignedFree;
+        _mJy_ptr.alignedFree;
+        _deltaXBase_ptr.alignedFree;
+        _y_ptr.alignedFree;
+        _mBuffer_ptr.alignedFree;
+        _JJ_ptr.alignedFree;
+        _J_ptr.alignedFree;
+        _work._iterator.alignedFree;
     }
 
     // size_t toHash() @safe pure nothrow @nogc
@@ -648,7 +654,7 @@ LMStatus optimizeImpl(alias f, alias g = null, alias tm = null, T)(scope ref Lea
 //         Slice!(cast(SliceKind)2, [1LU], const(double)*), Slice!(cast(SliceKind)2, [2LU], double*)) pure nothrow @nogc @safe, void delegate(ulong, void*, scope void function(void*, ulong, ulong, ulong) pure nothrow @nogc @safe) pure nothrow @nogc @safe)
 
 ///
-enum LMStatus : byte
+enum LMStatus
 {
     ///
     success = 0,
@@ -684,9 +690,9 @@ string lmStatusString(LMStatus st) @safe pure nothrow @nogc
         case initialized:
             return "data structure was initialized";
         case badBounds:
-            return "bounds must either be empty or of the same as argument number of parameters.";
-        case badGuess:
             return "Initial guess must be within bounds.";
+        case badGuess:
+            return "Initial guess must be an array of finite numbers.";
         case badMinStepQuality:
             return "0 <= minStepQuality < 1 must hold.";
         case badGoodStepQuality:
@@ -1007,6 +1013,7 @@ LMStatus optimizeLMImplGeneric(T)
     import mir.lapack;
     import mir.math.common;
     import mir.math.sum: sum;
+    import mir.ndslice.algorithm: all;
     import mir.ndslice.dynamic: transposed;
     import mir.ndslice.topology: canonical, diagonal;
     import mir.utility: max;
@@ -1014,10 +1021,10 @@ LMStatus optimizeLMImplGeneric(T)
 
     version(LDC) pragma(inline, true);
 
-    if (_lower_ptr && lower.length != x.length || _upper_ptr && upper.length != x.length)
-        return lm.status = LMStatus.badBounds;
+    if (m == 0 || n == 0 || !x.all!"-a.infinity < a && a < a.infinity")
+        return lm.status = LMStatus.badGuess; 
     if (!(!_lower_ptr || allLessOrEqual(lower, x)) || !(!_upper_ptr || allLessOrEqual(x, upper)))
-        return lm.status = LMStatus.badGuess;
+        return lm.status = LMStatus.badBounds; 
     if (!(0 <= minStepQuality && minStepQuality < 1))
         return lm.status = LMStatus.badMinStepQuality;
     if (!(0 <= goodStepQuality && goodStepQuality <= 1))
@@ -1087,19 +1094,9 @@ LMStatus optimizeLMImplGeneric(T)
         axpy(1, x, deltaX);
 
         if (_lower_ptr)
-        {
-            foreach(i; 0 .. n)
-            {
-                deltaX[i] = deltaX[i].fmax(lower[i]);
-            }
-        }
+            applyLowerBound(deltaX, lower);
         if (_upper_ptr)
-        {
-            foreach(i; 0 .. n)
-            {
-                deltaX[i] = deltaX[i].fmin(upper[i]);
-            }
-        }
+            applyUpperBound(deltaX, upper);
 
         axpy(-1, x, deltaX);
         copy(y, mBuffer);
@@ -1150,6 +1147,22 @@ LMStatus optimizeLMImplGeneric(T)
 }}
 
 pragma(inline, false)
+void applyLowerBound(T)(Slice!(Contiguous, [1], T*) x, Slice!(Contiguous, [1], const(T)*) bound)
+{
+    import mir.math.common: fmax;
+    import mir.ndslice.algorithm: each;
+    each!((ref x, y) { x = x.fmax(y); } )(x, bound);
+}
+
+pragma(inline, false)
+void applyUpperBound(T)(Slice!(Contiguous, [1], T*) x, Slice!(Contiguous, [1], const(T)*) bound)
+{
+    import mir.math.common: fmin;
+    import mir.ndslice.algorithm: each;
+    each!((ref x, y) { x = x.fmin(y); } )(x, bound);
+}
+
+pragma(inline, false)
 T amax(T)(Slice!(Contiguous, [1], const(T)*) x)
 {
     import mir.math.common: fmax, fabs;
@@ -1160,7 +1173,7 @@ T amax(T)(Slice!(Contiguous, [1], const(T)*) x)
 }
 
 pragma(inline, false)
-void fill(T, SliceKind kind)(T value, Slice!(kind, [1], T*) x)
+void fill(T, size_t[] packs, SliceKind kind)(T value, Slice!(kind, packs, T*) x)
 {
     x[] = value;
 }
