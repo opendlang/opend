@@ -217,7 +217,7 @@ private:
                 GC.addRange(&_impl._rawMemory[(void*).sizeof], (void*).sizeof);
         } else static if (supportGC && hasIndirections!Type) {
             import core.memory: GC;
-            GC.addRange(&_impl._object, Type.sizeof);
+            GC.addRange(cast(void*) &_impl._object, Type.sizeof);
         }
     }
 
@@ -225,6 +225,7 @@ private:
         import std.traits : hasIndirections;
         import core.memory : GC;
         import automem.utils : destruct;
+
         if(_impl is null) return;
         assert(_impl._count > 0, "Trying to release a RefCounted but ref count is 0 or less");
 
@@ -236,7 +237,7 @@ private:
                 // need to watch the monitor pointer even if supportGC is false.
                 GC.removeRange(&_impl._rawMemory[(void*).sizeof]);
             } else static if (supportGC && hasIndirections!Type) {
-                GC.removeRange(&_impl._object);
+                GC.removeRange(cast(void*) &_impl._object);
             }
             auto mem = cast(void*)_impl;
             _allocator.deallocate(() @trusted { return mem[0 .. Impl.sizeof]; }());

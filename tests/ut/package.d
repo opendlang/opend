@@ -192,4 +192,11 @@ mixin template TestUtils() {
             --numClasses;
         }
     }
+
+    private struct SharedStructWithIndirection {
+        string s;
+        this(string s) shared {
+            this.s = s;
+        }
+    }
 }

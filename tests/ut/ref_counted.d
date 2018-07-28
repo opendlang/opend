@@ -410,3 +410,8 @@ void sendRefCounted(Allocator, Args...)(Args args) {
 void threadFunc() {
 
 }
+
+@("shared struct with indirection")
+@system unittest {
+    auto s = RefCounted!(shared SharedStructWithIndirection)("foobar");
+}
