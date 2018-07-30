@@ -1,12 +1,12 @@
 name "mir-optim"
 authors "Ilya Yaroshenko"
-description "Optimization Framework"
+description "Optimisation Framework"
 copyright "Copyright © 2018, Kaleidic Associates and Symmetry Investments"
 targetType "library"
 license "BSL-1.0"
 
 dependency "mir-algorithm" version=">=1.1.5"
-dependency "mir-lapack" version="~>0.1.0"
+dependency "mir-lapack" version="~>0.3.0"
 
 buildType "better-c-release" {
 	buildOptions "releaseMode" "inline" "noBoundsCheck"
@@ -14,6 +14,9 @@ buildType "better-c-release" {
 	dflags "-betterC" "-O" platform="dmd" # no proper betterC support in DMD
 	dflags "-betterC" "-O"  platform="gdc" # no proper betterC support in GDC
 }
+
+dependency "mir-lapack" version="~>0.3.0"
+dependency "mir-algorithm" version=">=1.1.0"
 
 configuration "library" {
 	targetType "library"
@@ -46,6 +49,34 @@ configuration "lapack" {
 
 configuration "mkl-sequential" {
 	subConfiguration "mir-lapack" "mkl-sequential"
+}
+
+configuration "mkl-sequential-ilp" {
+	subConfiguration "mir-lapack" "mkl-sequential-ilp"
+}
+
+configuration "mkl-tbb-thread" {
+	subConfiguration "mir-lapack" "mkl-tbb-thread"
+}
+
+configuration "mkl-tbb-thread-ilp" {
+	subConfiguration "mir-lapack" "mkl-tbb-thread-ilp"
+}
+
+configuration "mkl-sequential-dll" {
+	subConfiguration "mir-lapack" "mkl-sequential-dll"
+}
+
+configuration "mkl-sequential-ilp-dll" {
+	subConfiguration "mir-lapack" "mkl-sequential-ilp-dll"
+}
+
+configuration "mkl-tbb-thread-dll" {
+	subConfiguration "mir-lapack" "mkl-tbb-thread-dll"
+}
+
+configuration "mkl-tbb-thread-ilp-dll" {
+	subConfiguration "mir-lapack" "mkl-tbb-thread-ilp-dll"
 }
 
 configuration "zerolib" {
