@@ -15,9 +15,6 @@ buildType "better-c-release" {
 	dflags "-betterC" "-O"  platform="gdc" # no proper betterC support in GDC
 }
 
-dependency "mir-lapack" version="~>0.3.0"
-dependency "mir-algorithm" version=">=1.1.0"
-
 configuration "library" {
 	targetType "library"
 	# default or user specified mir-lapack sub-configuration is used
