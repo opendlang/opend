@@ -19,7 +19,7 @@ __gshared double[6] t = [
 
 __gshared lapackint[3] ipiv = [0, 0, 0];
 
-nothrow @nogc extern(C)
+// nothrow @nogc extern(C)
 int main()
 {
     // Canonical kind is required

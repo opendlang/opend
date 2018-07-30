@@ -8,7 +8,7 @@ d:
 
 script:
   - dub test -c blas
-  - dub --root examples/gesv
+  - dub --root examples/gesv -c travis
 
 addons:
   apt:
