@@ -105,7 +105,7 @@ struct MersenneTwisterEngine(UIntType, size_t w, size_t n, size_t m, size_t r,
     Note that `MersenneTwisterEngine([123])` will not result in
     the same initial state as `MersenneTwisterEngine(123)`.
     +/
-    this()(scope Slice!(Contiguous, [1], const(UIntType)*) slice) @safe pure nothrow @nogc
+    this()(scope Slice!(const(UIntType)*) slice) @safe pure nothrow @nogc
     {
         static if (is(UIntType == uint))
         {

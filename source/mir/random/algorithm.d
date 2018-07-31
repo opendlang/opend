@@ -160,7 +160,7 @@ nothrow @safe version(mir_random_test) unittest
     assert(sample.shape == [100]);
 
     import mir.ndslice.slice;
-    assert(is(typeof(sample) == ContiguousVector!double));
+    assert(is(typeof(sample) == Slice!(double*)));
 }
 
 /// Normal distribution for complex numbers

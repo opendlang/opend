@@ -49,7 +49,7 @@ struct SphereVariable(T)
     }
 
     ///
-    void opCall(G, SliceKind kind)(scope ref G gen, scope Slice!(kind, [1], T*) result)
+    void opCall(G, SliceKind kind)(scope ref G gen, scope Slice!(T*, 1, kind) result)
         if (isSaturatedRandomEngine!G)
     {
         import mir.math.sum : Summator, Summation;
@@ -66,7 +66,7 @@ struct SphereVariable(T)
         result[] /= summator.sum.sqrt;
     }
     /// ditto
-    void opCall(G, SliceKind kind)(scope G* gen, scope Slice!(kind, [1], T*) result)
+    void opCall(G, SliceKind kind)(scope G* gen, scope Slice!(T*, 1, kind) result)
         if (isSaturatedRandomEngine!G)
     {
         pragma(inline, true);
@@ -122,7 +122,7 @@ struct SimplexVariable(T)
     }
 
     ///
-    void opCall(G, SliceKind kind)(scope ref G gen, scope Slice!(kind, [1], T*) result)
+    void opCall(G, SliceKind kind)(scope ref G gen, scope Slice!(T*, 1, kind) result)
         if (isSaturatedRandomEngine!G)
     {
         import mir.ndslice.sorting : sort;
@@ -136,7 +136,7 @@ struct SimplexVariable(T)
         result[1 .. $].retro[] = result.diff.retro;
     }
     /// ditto
-    void opCall(G, SliceKind kind)(scope G* gen, scope Slice!(kind, [1], T*) result)
+    void opCall(G, SliceKind kind)(scope G* gen, scope Slice!(T*, 1, kind) result)
         if (isSaturatedRandomEngine!G)
     {
         pragma(inline, true);
@@ -187,14 +187,14 @@ struct DirichletVariable(T)
     enum isRandomVariable = true;
 
     ///
-    Slice!(Contiguous, [1], const(T)*) alpha;
+    Slice!(const(T)*) alpha;
 
     /++
     Params:
         alpha = concentration parameters
     Constraints: `alpha[i] > 0`
     +/
-    this()(Slice!(Contiguous, [1], const(T)*) alpha)
+    this()(Slice!(const(T)*) alpha)
     {
         this.alpha = alpha;
     }
@@ -217,7 +217,7 @@ struct DirichletVariable(T)
     }
 
     ///
-    void opCall(G, SliceKind kind, Iterator)(scope ref G gen, scope Slice!(kind, [1], Iterator) result)
+    void opCall(G, SliceKind kind, Iterator)(scope ref G gen, scope Slice!(Iterator, 1, kind) result)
         if (isSaturatedRandomEngine!G)
     {
         assert(result.length == alpha.length);
@@ -228,7 +228,7 @@ struct DirichletVariable(T)
         result[] /= summator.sum;
     }
     /// ditto
-    void opCall(G, SliceKind kind, Iterator)(scope G* gen, scope Slice!(kind, [1], Iterator) result)
+    void opCall(G, SliceKind kind, Iterator)(scope G* gen, scope Slice!(Iterator, 1, kind) result)
         if (isSaturatedRandomEngine!G)
     {
         pragma(inline, true);
@@ -244,7 +244,7 @@ DirichletVariable!T dirichletVar(T)(in T[] alpha)
 }
 
 /// ditto
-DirichletVariable!T dirichletVar(T)(Slice!(Contiguous, [1], const(T)*) alpha)
+DirichletVariable!T dirichletVar(T)(Slice!(const(T)*) alpha)
     if (isFloatingPoint!T)
 {   
     return typeof(return)(alpha);
@@ -278,7 +278,7 @@ nothrow @safe version(mir_random_test) unittest
  Compute Cholesky decomposition in place. Only accesses lower/left half of
  the matrix. Returns false if the matrix is not positive definite.
  +/
-private bool cholesky(SliceKind kind, Iterator)(scope Slice!(kind, [2], Iterator) m)
+private bool cholesky(SliceKind kind, Iterator)(scope Slice!(Iterator, 2, kind) m)
     if(isFloatingPoint!(DeepElementType!(typeof(m))))
 {
     assert(m.length!0 == m.length!1);
@@ -324,7 +324,7 @@ struct MultivariateNormalVariable(T)
 
     Constraints: sigma has to be positive-definite
     +/
-    this()(Slice!(Contiguous, [1], const(T)*) mu, Slice!(Contiguous, [2], T*) sigma, bool chol = false)
+    this()(Slice!(const(T)*) mu, Slice!(T*, 2) sigma, bool chol = false)
     {
         //Check the dimenstions even in release mode to _guarantee_
         //that unless memory corruption has already occurred sigma
@@ -342,7 +342,7 @@ struct MultivariateNormalVariable(T)
     }
 
     /++ ditto +/
-    this()(Slice!(Contiguous, [2], T*) sigma, bool chol = false)
+    this()(Slice!(T*, 2) sigma, bool chol = false)
     {
         //Check the dimenstions even in release mode to _guarantee_
         //that unless memory corruption has already occurred sigma
@@ -372,7 +372,7 @@ struct MultivariateNormalVariable(T)
     }
 
     ///
-    void opCall(G, SliceKind kind)(scope ref G gen, scope Slice!(kind, [1], T*) result)
+    void opCall(G, SliceKind kind)(scope ref G gen, scope Slice!(T*, 1, kind) result)
         if (isSaturatedRandomEngine!G)
     {
         assert(result.length == n);
@@ -388,7 +388,7 @@ struct MultivariateNormalVariable(T)
             result[] += (() @trusted => mu.sliced(n))();//mu is n vector.
     }
     /// ditto
-    void opCall(G, SliceKind kind)(scope G* gen, scope Slice!(kind, [1], T*) result)
+    void opCall(G, SliceKind kind)(scope G* gen, scope Slice!(T*, 1, kind) result)
         if (isSaturatedRandomEngine!G)
     {
         pragma(inline, true);
@@ -397,14 +397,14 @@ struct MultivariateNormalVariable(T)
 }
 
 /// ditto
-MultivariateNormalVariable!T multivariateNormalVar(T)(Slice!(Contiguous, [1], const(T)*) mu, Slice!(Contiguous, [2], T*) sigma, bool chol = false)
+MultivariateNormalVariable!T multivariateNormalVar(T)(Slice!(const(T)*) mu, Slice!(T*, 2) sigma, bool chol = false)
     if (isFloatingPoint!T)
 {   
     return typeof(return)(mu, sigma, chol);
 }
 
 /// ditto
-MultivariateNormalVariable!T multivariateNormalVar(T)(Slice!(Contiguous, [2], T*) sigma, bool chol = false)
+MultivariateNormalVariable!T multivariateNormalVar(T)(Slice!(T*, 2) sigma, bool chol = false)
     if (isFloatingPoint!T)
 {   
     return typeof(return)(sigma, chol);
