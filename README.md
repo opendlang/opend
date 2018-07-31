@@ -9,7 +9,7 @@
 
 
 # mir-random
-Professional Random Number Generators
+Advanced Random Number Generators
 
 Documentation: http://docs.random.dlang.io/latest/index.html
 
