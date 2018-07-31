@@ -259,32 +259,71 @@ pragma(inline, true)
     return seed;
 }
 
+// Is llvm_readcyclecounter supported on this platform?
+// We need to whitelist platforms where it is known to work because if it
+// isn't supported it will compile but always return 0.
+// https://llvm.org/docs/LangRef.html#llvm-readcyclecounter-intrinsic
+version(LDC)
+{
+    // The only architectures the documentation says are supported are
+    // x86 and Alpha. x86 uses RDTSC and Alpha uses RPCC.
+    version(X86_64) version = LLVMReadCycleCounter;
+    // Do *not* support 32-bit x86 because some x86 processors don't
+    // support `rdtsc` and because on x86 (but not x86-64) Linux
+    // `prctl` can disable a process's ability to use `rdtsc`.
+    else version(Alpha) version = LLVMReadCycleCounter;
+}
+
+
 pragma(inline, false)
 private ulong fallbackSeed()()
 {
     // fallback to old time/thread-based implementation in case of errors
-    version(Windows)
+    version(LLVMReadCycleCounter)
+    {
+        import ldc.intrinsics : llvm_readcyclecounter;
+        ulong ticks = llvm_readcyclecounter();
+    }
+    else version(D_InlineAsm_X86_64)
+    {
+        // RDTSC takes around 22 clock cycles.
+        ulong ticks = void;
+        asm @nogc nothrow
+        {
+            rdtsc;
+            shl RDX, 32;
+            xor RDX, RAX;
+            mov ticks, RDX;
+        }
+    }
+    //else version(D_InlineAsm_X86)
+    //{
+    //    // We don't use `rdtsc` with version(D_InlineAsm_X86) because
+    //    // some x86 processors don't support `rdtsc` and because on
+    //    // x86 (but not x86-64) Linux `prctl` can disable a process's
+    //    // ability to use `rdtsc`.
+    //    static assert(0);
+    //}
+    else version(Windows)
     {
         import core.sys.windows.winbase : QueryPerformanceCounter;
         ulong ticks = void;
         QueryPerformanceCounter(cast(long*)&ticks);
     }
-    else
-    version(Darwin)
+    else version(Darwin)
     {
         import core.time : mach_absolute_time;
         ulong ticks = mach_absolute_time();
     }
-    else
-    version(Posix)
+    else version(Posix)
     {
         import core.sys.posix.time : clock_gettime, CLOCK_MONOTONIC, timespec;
-        timespec ts;
-        if(clock_gettime(CLOCK_MONOTONIC, &ts) != 0)
-        {
-            import core.internal.abort : abort;
-            abort("Call to clock_gettime failed.");
-        }
+        timespec ts = void;
+        const tserr = clock_gettime(CLOCK_MONOTONIC, &ts);
+        // Should never fail. Only allowed arror codes are
+        // EINVAL if the 1st argument is an invalid clock ID and
+        // EFAULT if the 2nd argument is an invalid address.
+        assert(tserr == 0, "Call to clock_gettime failed.");
         ulong ticks = (cast(ulong) ts.tv_sec << 32) ^ ts.tv_nsec;
     }
     version(Posix)
