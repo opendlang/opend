@@ -9,6 +9,7 @@ See [wiki: Link with CBLAS & LAPACK](https://github.com/libmir/mir-lapack/wiki/L
 
  - gelsd
  - geqrf
+ - geqrs
  - gesdd
  - gesv
  - gesvd

@@ -7,7 +7,7 @@ d:
   - ldc
 
 script:
-  - dub test -c blas
+  - dub build --build=unittest -c blas
   - dub --root examples/gesv -c travis
 
 addons:

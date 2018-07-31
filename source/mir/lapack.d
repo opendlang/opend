@@ -23,7 +23,7 @@ private enum Error {
 };
 
 /// `getri` work space query.
-size_t getri_wq(T)(Slice!(Canonical, [2], T*) a)
+size_t getri_wq(T)(Slice!(T*, 2, Canonical) a)
 {
 	assert(a.length!0 == a.length!1, "getri: a must be a square matrix.");
 
@@ -39,11 +39,17 @@ size_t getri_wq(T)(Slice!(Canonical, [2], T*) a)
 	return cast(size_t) work;
 }
 
+unittest
+{
+	alias s = getri_wq!float;
+	alias d = getri_wq!double;
+}
+
 ///
 size_t getri(T)(
-	Slice!(Canonical, [2], T*) a,
-	Slice!(Contiguous, [1], lapackint*) ipiv,
-	Slice!(Contiguous, [1], T*) work,
+	Slice!(T*, 2, Canonical) a,
+	Slice!(lapackint*) ipiv,
+	Slice!(T*) work,
 	)
 {
 	assert(a.length!0 == a.length!1, "getri: a must be a square matrix.");
@@ -61,10 +67,16 @@ size_t getri(T)(
 	return info;
 }
 
+unittest
+{
+	alias s = getri!float;
+	alias d = getri!double;
+}
+
 ///
 size_t getrf(T)(
-	Slice!(Canonical, [2], T*) a,
-	Slice!(Contiguous, [1], lapackint*) ipiv,
+	Slice!(T*, 2, Canonical) a,
+	Slice!(lapackint*) ipiv,
 	)
 {
 	assert(ipiv.length == min(a.length!0, a.length!1));
@@ -80,47 +92,63 @@ size_t getrf(T)(
 	return info;
 }
 
-/// `sptrf` for upper triangular input.
-size_t sptrf(T)(
-	Slice!(Contiguous, [1], StairsIterator!(T*)) ap,
-	Slice!(Contiguous, [1], lapackint*) ipiv,
-	)
+unittest
 {
-	assert(ipiv.length == ap.length);
-
-	char uplo = 'U';
-	lapackint n = cast(lapackint) ap.length;
-	lapackint info = void;
-
-	lapack.sptrf_(uplo, n, &ap[0][0], ipiv.iterator, info);
-
-	assert(info >= 0);
-	return info;
+	alias s = getrf!float;
+	alias d = getrf!double;
 }
 
-/// `sptrf` for lower triangular input.
-size_t sptrf(T)(
-	Slice!(Contiguous, [1], RetroIterator!(MapIterator!(StairsIterator!(RetroIterator!(T*)), retro))) ap,
-	Slice!(Contiguous, [1], lapackint*) ipiv,
-	)
+///
+template sptrf(T)
 {
-	assert(ipiv.length == ap.length);
+	/// `sptrf` for upper triangular input.
+	size_t sptrf(
+		Slice!(StairsIterator!(T*)) ap,
+		Slice!(lapackint*) ipiv,
+		)
+	{
+		assert(ipiv.length == ap.length);
 
-	char uplo = 'L';
-	lapackint n = cast(lapackint) ap.length;
-	lapackint info = void;
+		char uplo = 'U';
+		lapackint n = cast(lapackint) ap.length;
+		lapackint info = void;
 
-	lapack.sptrf_(uplo, n, &ap[0][0], ipiv.iterator, info);
+		lapack.sptrf_(uplo, n, &ap[0][0], ipiv.iterator, info);
 
-	assert(info >= 0);
-	return info;
+		assert(info >= 0);
+		return info;
+	}
+
+	/// `sptrf` for lower triangular input.
+	size_t sptrf(
+		Slice!(RetroIterator!(MapIterator!(StairsIterator!(RetroIterator!(T*)), retro))) ap,
+		Slice!(lapackint*) ipiv,
+		)
+	{
+		assert(ipiv.length == ap.length);
+
+		char uplo = 'L';
+		lapackint n = cast(lapackint) ap.length;
+		lapackint info = void;
+
+		lapack.sptrf_(uplo, n, &ap[0][0], ipiv.iterator, info);
+
+		assert(info >= 0);
+		return info;
+	}
+}
+
+unittest
+{
+	alias s = sptrf!float;
+	alias d = sptrf!double;
 }
 
 ///
 size_t gesv(T)(
-	Slice!(Canonical, [2], T*) a,
-	Slice!(Contiguous, [1], lapackint*) ipiv,
-	Slice!(Canonical, [2], T*) b,
+	Slice!(T*, 2, Canonical) a,
+	Slice!(lapackint*) ipiv,
+	Slice!(T*, 2, Canonical) b,
 	)
 {
 	assert(a.length!0 == a.length!1, "gesv: a must be a square matrix.");
@@ -139,10 +167,16 @@ size_t gesv(T)(
 	return info;
 }
 
+unittest
+{
+	alias s = gesv!float;
+	alias d = gesv!double;
+}
+
 /// `gelsd` work space query.
 size_t gelsd_wq(T)(
-	Slice!(Canonical, [2], T*) a,
-	Slice!(Canonical, [2], T*) b,
+	Slice!(T*, 2, Canonical) a,
+	Slice!(T*, 2, Canonical) b,
 	ref size_t liwork,
 	)
 {
@@ -167,15 +201,21 @@ size_t gelsd_wq(T)(
 	return cast(size_t) work;
 }
 
+unittest
+{
+	alias s = gelsd_wq!float;
+	alias d = gelsd_wq!double;
+}
+
 ///
 size_t gelsd(T)(
-	Slice!(Canonical, [2], T*) a,
-	Slice!(Canonical, [2], T*) b,
-	Slice!(Contiguous, [1], T*) s,
+	Slice!(T*, 2, Canonical) a,
+	Slice!(T*, 2, Canonical) b,
+	Slice!(T*) s,
 	T rcond,
 	ref size_t rank,
-	Slice!(Contiguous, [1], T*) work,
-	Slice!(Contiguous, [1], lapackint*) iwork,
+	Slice!(T*) work,
+	Slice!(lapackint*) iwork,
 	)
 {
 	assert(b.length!1 == a.length!1);
@@ -197,12 +237,18 @@ size_t gelsd(T)(
 	return info;
 }
 
+unittest
+{
+	alias s = gelsd!float;
+	alias d = gelsd!double;
+}
+
 /// `gesdd` work space query
 size_t gesdd_wq(T)(
 	char jobz,
-	Slice!(Canonical, [2], T*) a,
-	Slice!(Canonical, [2], T*) u,
-	Slice!(Canonical, [2], T*) vt,
+	Slice!(T*, 2, Canonical) a,
+	Slice!(T*, 2, Canonical) u,
+	Slice!(T*, 2, Canonical) vt,
 	)
 {
 	lapackint m = cast(lapackint) a.length!1;
@@ -220,15 +266,21 @@ size_t gesdd_wq(T)(
 	return cast(size_t) work;
 }
 
+unittest
+{
+	alias s = gesdd_wq!float;
+	alias d = gesdd_wq!double;
+}
+
 ///
 size_t gesdd(T)(
 	char jobz,
-	Slice!(Canonical, [2], T*) a,
-	Slice!(Contiguous, [1], T*) s,
-	Slice!(Canonical, [2], T*) u,
-	Slice!(Canonical, [2], T*) vt,
-	Slice!(Contiguous, [1], T*) work,
-	Slice!(Contiguous, [1], lapackint*) iwork,
+	Slice!(T*, 2, Canonical) a,
+	Slice!(T*) s,
+	Slice!(T*, 2, Canonical) u,
+	Slice!(T*, 2, Canonical) vt,
+	Slice!(T*) work,
+	Slice!(lapackint*) iwork,
 	)
 {
 	lapackint m = cast(lapackint) a.length!1;
@@ -245,13 +297,19 @@ size_t gesdd(T)(
 	return info;
 }
 
+unittest
+{
+	alias s = gesdd!float;
+	alias d = gesdd!double;
+}
+
 /// `gesvd` work space query
 size_t gesvd_wq(T)(
 	char jobu,
 	char jobvt,
-	Slice!(Canonical, [2], T*) a,
-	Slice!(Canonical, [2], T*) u,
-	Slice!(Canonical, [2], T*) vt,
+	Slice!(T*, 2, Canonical) a,
+	Slice!(T*, 2, Canonical) u,
+	Slice!(T*, 2, Canonical) vt,
 	)
 {
 	lapackint m = cast(lapackint) a.length!1;
@@ -269,15 +327,21 @@ size_t gesvd_wq(T)(
 	return cast(size_t) work;
 }
 
+unittest
+{
+	alias s = gesvd_wq!float;
+	alias d = gesvd_wq!double;
+}
+
 ///
 size_t gesvd(T)(
 	char jobu,
 	char jobvt,
-	Slice!(Canonical, [2], T*) a,
-	Slice!(Contiguous, [1], T*) s,
-	Slice!(Canonical, [2], T*) u,
-	Slice!(Canonical, [2], T*) vt,
-	Slice!(Contiguous, [1], T*) work,
+	Slice!(T*, 2, Canonical) a,
+	Slice!(T*) s,
+	Slice!(T*, 2, Canonical) u,
+	Slice!(T*, 2, Canonical) vt,
+	Slice!(T*) work,
 	)
 {
 	lapackint m = cast(lapackint) a.length!1;
@@ -294,57 +358,73 @@ size_t gesvd(T)(
 	return info;
 }
 
-///
-size_t spev(T)(
-	char jobz,
-	Slice!(Contiguous, [1], StairsIterator!(T*)) ap,
-	Slice!(Contiguous, [1], T*) w,
-	Slice!(Canonical, [2], T*) z,
-	Slice!(Contiguous, [1], T*) work,
-	)
+unittest
 {
-	assert(work.length == 3 * ap.length);
-	assert(w.length == ap.length);
-
-	char uplo = 'U';
-	lapackint n = cast(lapackint) ap.length;
-	lapackint ldz = cast(lapackint) z._stride.max(1);
-	lapackint info = void;
-
-	lapack.spev_(jobz, uplo, n, &ap[0][0], w.iterator, z.iterator, ldz, work.iterator, info);
-
-	assert(info >= 0);
-	return info;
+	alias s = gesvd!float;
+	alias d = gesvd!double;
 }
 
 ///
-size_t spev(T)(
-	char jobz,
-	Slice!(Contiguous, [1], RetroIterator!(MapIterator!(StairsIterator!(RetroIterator!(T*)), retro))) ap,
-	Slice!(Contiguous, [1], T*) w,
-	Slice!(Canonical, [2], T*) z,
-	Slice!(Contiguous, [1], T*) work,
-	)
+template spev(T)
 {
-	assert(work.length == 3 * ap.length);
-	assert(w.length == ap.length);
+	///
+	size_t spev(
+		char jobz,
+		Slice!(StairsIterator!(T*)) ap,
+		Slice!(T*) w,
+		Slice!(T*, 2, Canonical) z,
+		Slice!(T*) work,
+		)
+	{
+		assert(work.length == 3 * ap.length);
+		assert(w.length == ap.length);
 
-	char uplo = 'L';
-	lapackint n = cast(lapackint) ap.length;
-	lapackint ldz = cast(lapackint) z._stride.max(1);
-	lapackint info = void;
+		char uplo = 'U';
+		lapackint n = cast(lapackint) ap.length;
+		lapackint ldz = cast(lapackint) z._stride.max(1);
+		lapackint info = void;
 
-	lapack.spev_(jobz, uplo, n, &ap[0][0], w.iterator, z.iterator, ldz, work.iterator, info);
+		lapack.spev_(jobz, uplo, n, &ap[0][0], w.iterator, z.iterator, ldz, work.iterator, info);
 
-	assert(info >= 0);
-	return info;
+		assert(info >= 0);
+		return info;
+	}
+
+	///
+	size_t spev(
+		char jobz,
+		Slice!(RetroIterator!(MapIterator!(StairsIterator!(RetroIterator!(T*)), retro))) ap,
+		Slice!(T*) w,
+		Slice!(T*, 2, Canonical) z,
+		Slice!(T*) work,
+		)
+	{
+		assert(work.length == 3 * ap.length);
+		assert(w.length == ap.length);
+
+		char uplo = 'L';
+		lapackint n = cast(lapackint) ap.length;
+		lapackint ldz = cast(lapackint) z._stride.max(1);
+		lapackint info = void;
+
+		lapack.spev_(jobz, uplo, n, &ap[0][0], w.iterator, z.iterator, ldz, work.iterator, info);
+
+		assert(info >= 0);
+		return info;
+	}
+}
+
+unittest
+{
+	alias s = spev!float;
+	alias d = spev!double;
 }
 
 ///
 size_t sytrf(T)(
-    Slice!(Canonical, [2], T*) a,
-    Slice!(Contiguous, [1], lapackint*) ipiv,
-    Slice!(Contiguous, [1], T*) work,
+    Slice!(T*, 2, Canonical) a,
+    Slice!(lapackint*) ipiv,
+    Slice!(T*) work,
     char uplo
     )
 {
@@ -364,11 +444,17 @@ size_t sytrf(T)(
     return info;
 }
 
+unittest
+{
+	alias s = sytrf!float;
+	alias d = sytrf!double;
+}
+
 ///
 size_t geqrf(T)(
-    Slice!(Canonical, [2], T*) a,
-    Slice!(Contiguous, [1], T*) tau,
-    Slice!(Contiguous, [1], T*) work
+    Slice!(T*, 2, Canonical) a,
+    Slice!(T*) tau,
+    Slice!(T*) work
     )
 {
     lapackint m = cast(lapackint) a.length!0;
@@ -385,11 +471,17 @@ size_t geqrf(T)(
     return info;
 }
 
+unittest
+{
+	alias s = geqrf!float;
+	alias d = geqrf!double;
+}
+
 ///
 size_t getrs(T)(
-    Slice!(Canonical, [2], T*) a,
-    Slice!(Canonical, [2], T*) b,
-    Slice!(Contiguous, [1], lapackint*) ipiv,
+    Slice!(T*, 2, Canonical) a,
+    Slice!(T*, 2, Canonical) b,
+    Slice!(lapackint*) ipiv,
     char trans
     )
 {
@@ -410,10 +502,16 @@ size_t getrs(T)(
     return info;
 }
 
+unittest
+{
+	alias s = getrs!float;
+	alias d = getrs!double;
+}
+
 ///
 size_t potrs(T)(
-    Slice!(Canonical, [2], T*) a,
-    Slice!(Canonical, [2], T*) b,
+    Slice!(T*, 2, Canonical) a,
+    Slice!(T*, 2, Canonical) b,
     char uplo
     )
 {
@@ -433,12 +531,18 @@ size_t potrs(T)(
     return info;
 }
 
+unittest
+{
+	alias s = potrs!float;
+	alias d = potrs!double;
+}
+
 ///
 size_t sytrs2(T)(
-    Slice!(Canonical, [2], T*) a,
-    Slice!(Canonical, [2], T*) b,
-    Slice!(Contiguous, [1], lapackint*) ipiv,
-    Slice!(Contiguous, [1], T*) work,
+    Slice!(T*, 2, Canonical) a,
+    Slice!(T*, 2, Canonical) b,
+    Slice!(lapackint*) ipiv,
+    Slice!(T*) work,
     char uplo,
     )
 {
@@ -458,12 +562,18 @@ size_t sytrs2(T)(
     return info;
 }
 
+unittest
+{
+	alias s = sytrs2!float;
+	alias d = sytrs2!double;
+}
+
 ///
 size_t geqrs(T)(
-    Slice!(Canonical, [2], T*) a,
-    Slice!(Canonical, [2], T*) b,
-    Slice!(Contiguous, [1], T*) tau,
-    Slice!(Contiguous, [1], T*) work
+    Slice!(T*, 2, Canonical) a,
+    Slice!(T*, 2, Canonical) b,
+    Slice!(T*) tau,
+    Slice!(T*) work
     )
 {
     lapackint m = cast(lapackint) a.length!0;
@@ -481,11 +591,18 @@ size_t geqrs(T)(
     assert(info >= 0);
     return info;
 }
-  
+
+version(none) unittest
+{
+	alias s = geqrs!float;
+	alias d = geqrs!double;
+}
+
+///
 size_t sysv_rook_wk(T)(
 	char uplo,
-	Slice!(Canonical, [2], T*) a,
-	Slice!(Canonical, [2], T*) b,
+	Slice!(T*, 2, Canonical) a,
+	Slice!(T*, 2, Canonical) b,
 	) 
 {
 	assert(a.length!0 == a.length!1, "sysv: a must be a square matrix.");
@@ -504,13 +621,19 @@ size_t sysv_rook_wk(T)(
 	return cast(size_t) work;
 }
 
+unittest
+{
+	alias s = sysv_rook_wk!float;
+	alias d = sysv_rook_wk!double;
+}
+
 ///
 size_t sysv_rook(T)(
 	char uplo,
-	Slice!(Canonical, [2], T*) a,
-	Slice!(Contiguous, [1], lapackint*) ipiv,
-	Slice!(Canonical, [2], T*) b,
-	Slice!(Contiguous, [1], T*) work,
+	Slice!(T*, 2, Canonical) a,
+	Slice!(lapackint*) ipiv,
+	Slice!(T*, 2, Canonical) b,
+	Slice!(T*) work,
 	)
 {
 	assert(a.length!0 == a.length!1, "sysv: a must be a square matrix.");
@@ -530,9 +653,15 @@ size_t sysv_rook(T)(
 	return info;
 }
 
+unittest
+{
+	alias s = sysv_rook!float;
+	alias d = sysv_rook!double;
+}
 
+///
 size_t potrf(T)(
-       Slice!(Canonical, [2], T*) a,
+       Slice!(T*, 2, Canonical) a,
        char uplo
        )
 {
@@ -549,141 +678,155 @@ size_t potrf(T)(
     return info;
 }
 
-size_t pptrf(T)(
-       Slice!(Contiguous, [1], StairsIterator!(T*)) ap
-       )
+unittest
 {
-    lapackint n = cast(lapackint) ap.length;
-    lapackint info = void;
-    
-    lapack.pptrf_('U', n, ap.iterator, info);
-    
-    assert(info >= 0);
-    
-    return info;
-}
-
-size_t pptrf(T)(
-       Slice!(Contiguous, [1], RetroIterator!(MapIterator!(StairsIterator!(RetroIterator!(T*)), retro))) ap
-       )
-{
-    lapackint n = cast(lapackint) ap.length;
-    lapackint info = void;
-    
-    lapack.pptrf_('L', n, ap.iterator, info);
-    
-    assert(info >= 0);
-    
-    return info;
-}
-
-/// `sptri` for upper triangular input.
-size_t sptri(T)(
-	Slice!(Contiguous, [1], StairsIterator!(T*)) ap,
-	Slice!(Contiguous, [1], lapackint*) ipiv,
-    Slice!(Contiguous, [1], T*) work
-	)
-{
-	assert(ipiv.length == ap.length);
-    assert(work.length == ap.length);
-
-	lapackint n = cast(lapackint) ap.length;
-	lapackint info = void;
-
-	lapack.sptri_('U', n, &ap[0][0], ipiv.iterator, info, work);
-
-	assert(info >= 0);
-	return info;
-}
-
-/// `sptri` for lower triangular input.
-size_t sptri(T)(
-	Slice!(Contiguous, [1], RetroIterator!(MapIterator!(StairsIterator!(RetroIterator!(T*)), retro))) ap,
-	Slice!(Contiguous, [1], lapackint*) ipiv,
-    Slice!(Contiguous, [1], T*) work
-	)
-{
-	assert(ipiv.length == ap.length);
-    assert(work.length == ap.length);
-
-	lapackint n = cast(lapackint) ap.length;
-	lapackint info = void;
-
-	lapack.sptri_('L', n, &ap[0][0], ipiv.iterator, info, work);
-
-	assert(info >= 0);
-	return info;
+	alias s = potrf!float;
+	alias d = potrf!double;
 }
 
 ///
-size_t sptri(T)(
-	Slice!(Canonical, [2], T*) a,
-    char uplo = 'U',
+size_t pptrf(T)(
+	char uplo,
+	Slice!(T*, 2, Canonical) ap,
 	)
 {
-	assert(a.length!0 == a.length!1, "trtri: a must be a square matrix.");
-
-	lapackint n = cast(lapackint) a.length;
-	lapackint lda = cast(lapackint) a._stride.max(1);
+	lapackint n = cast(lapackint) ap.length;
 	lapackint info = void;
-
-	lapack.potri_(uplo, diag, n, a.iterator, lda, info);
-
+	
+	lapack.pptrf_(uplo, n, ap.iterator, info);
+	
 	assert(info >= 0);
+	
 	return info;
+}
+
+unittest
+{
+	alias s = pptrf!float;
+	alias d = pptrf!double;
+	alias c = pptrf!cfloat;
+	alias z = pptrf!cdouble;
+}
+
+///
+template sptri(T)
+{
+	/// `sptri` for upper triangular input.
+	size_t sptri(
+		Slice!(StairsIterator!(T*)) ap,
+		Slice!(lapackint*) ipiv,
+		Slice!(T*) work
+		)
+	{
+		assert(ipiv.length == ap.length);
+		assert(work.length == ap.length);
+
+		lapackint n = cast(lapackint) ap.length;
+		lapackint info = void;
+
+		char uplo = 'U';
+		lapack.sptri_(uplo, n, &ap[0][0], ipiv.iterator, work.iterator, info);
+
+		assert(info >= 0);
+		return info;
+	}
+
+	/// `sptri` for lower triangular input.
+	size_t sptri(
+		Slice!(RetroIterator!(MapIterator!(StairsIterator!(RetroIterator!(T*)), retro))) ap,
+		Slice!(lapackint*) ipiv,
+		Slice!(T*) work
+		)
+	{
+		assert(ipiv.length == ap.length);
+		assert(work.length == ap.length);
+
+		lapackint n = cast(lapackint) ap.length;
+		lapackint info = void;
+
+		char uplo = 'L';
+		lapack.sptri_(uplo, n, &ap[0][0], ipiv.iterator, work.iterator, info);
+
+		assert(info >= 0);
+		return info;
+	}
+}
+
+unittest
+{
+	alias s = sptri!float;
+	alias d = sptri!double;
 }
 
 ///
 size_t potri(T)(
-	Slice!(Canonical, [2], T*) a,
-    char uplo = 'U',
+    char uplo,
+	Slice!(T*, 2, Canonical) a,
 	)
 {
-	assert(a.length!0 == a.length!1, "trtri: a must be a square matrix.");
+	assert(a.length!0 == a.length!1, "potri: a must be a square matrix.");
 
 	lapackint n = cast(lapackint) a.length;
 	lapackint lda = cast(lapackint) a._stride.max(1);
 	lapackint info = void;
 
-	lapack.potri_(uplo, diag, n, a.iterator, lda, info);
+	lapack.potri_(uplo, n, a.iterator, lda, info);
 
 	assert(info >= 0);
 	return info;
 }
 
-/// `pptri` for upper triangular input.
-size_t pptri(T)(
-	Slice!(Contiguous, [1], StairsIterator!(T*)) ap
-	)
+unittest
 {
-	lapackint n = cast(lapackint) ap.length;
-	lapackint info = void;
-
-	lapack.pptri_('U', n, &ap[0][0], info);
-
-	assert(info >= 0);
-	return info;
+	alias s = potri!float;
+	alias d = potri!double;
 }
 
-/// `pptri` for lower triangular input.
-size_t pptri(T)(
-	Slice!(Contiguous, [1], RetroIterator!(MapIterator!(StairsIterator!(RetroIterator!(T*)), retro))) ap
-	)
+///
+template pptri(T)
 {
-	lapackint n = cast(lapackint) ap.length;
-	lapackint info = void;
+	/// `pptri` for upper triangular input.
+	size_t pptri(
+		Slice!(StairsIterator!(T*)) ap
+		)
+	{
+		lapackint n = cast(lapackint) ap.length;
+		lapackint info = void;
 
-	lapack.pptri_('L', n, &ap[0][0], info);
+		char uplo = 'U';
+		lapack.pptri_(uplo, n, &ap[0][0], info);
 
-	assert(info >= 0);
-	return info;
+		assert(info >= 0);
+		return info;
+	}
+
+	/// `pptri` for lower triangular input.
+	size_t pptri(
+		Slice!(RetroIterator!(MapIterator!(StairsIterator!(RetroIterator!(T*)), retro))) ap
+		)
+	{
+		lapackint n = cast(lapackint) ap.length;
+		lapackint info = void;
+
+		char uplo = 'L';
+		lapack.pptri_(uplo, n, &ap[0][0], info);
+
+		assert(info >= 0);
+		return info;
+	}
+}
+
+unittest
+{
+	alias s = pptri!float;
+	alias d = pptri!double;
 }
 
 ///
 size_t trtri(T)(
-	Slice!(Canonical, [2], T*) a,
-    char uplo = 'U',
-    char diag = 'N'
+    char uplo,
+    char diag,
+	Slice!(T*, 2, Canonical) a,
 	)
 {
 	assert(a.length!0 == a.length!1, "trtri: a must be a square matrix.");
@@ -698,43 +841,61 @@ size_t trtri(T)(
 	return info;
 }
 
-/// `tptri` for upper triangular input.
-size_t tptri(T)(
-	Slice!(Contiguous, [1], StairsIterator!(T*)) ap,
-    char diag = 'N'
-	)
+unittest
 {
-	lapackint n = cast(lapackint) ap.length;
-	lapackint info = void;
-
-	lapack.tptri_('U', diag, n, &ap[0][0], info);
-
-	assert(info >= 0);
-	return info;
+	alias s = trtri!float;
+	alias d = trtri!double;
 }
 
-/// `tptri` for lower triangular input.
-size_t tptri(T)(
-	Slice!(Contiguous, [1], RetroIterator!(MapIterator!(StairsIterator!(RetroIterator!(T*)), retro))) ap,
-    char diag = 'N'
-	)
+///
+template tptri(T)
 {
-	lapackint n = cast(lapackint) ap.length;
-	lapackint info = void;
+	/// `tptri` for upper triangular input.
+	size_t tptri(
+		char diag,
+		Slice!(StairsIterator!(T*)) ap,
+		)
+	{
+		lapackint n = cast(lapackint) ap.length;
+		lapackint info = void;
 
-	lapack.tptri_('L', diag, n, &ap[0][0], info);
+		char uplo = 'U';
+		lapack.tptri_(uplo, diag, n, &ap[0][0], info);
 
-	assert(info >= 0);
-	return info;
+		assert(info >= 0);
+		return info;
+	}
 
+	/// `tptri` for lower triangular input.
+	size_t tptri(
+		char diag,
+		Slice!(RetroIterator!(MapIterator!(StairsIterator!(RetroIterator!(T*)), retro))) ap,
+		)
+	{
+		lapackint n = cast(lapackint) ap.length;
+		lapackint info = void;
+
+		char uplo = 'L';
+		lapack.tptri_(uplo, diag, n, &ap[0][0], info);
+
+		assert(info >= 0);
+		return info;
+
+	}
+}
+
+unittest
+{
+	alias s = tptri!float;
+	alias d = tptri!double;
 }
 
 ///
 size_t ormqr(T)(
-    Slice!(Canonical, [2], T*) a,
-    Slice!(Contiguous, [1], T*) tau,
-    Slice!(Canonical, [2], T*) c,
-    Slice!(Contiguous, [1], T*) work,
+    Slice!(T*, 2, Canonical) a,
+    Slice!(T*) tau,
+    Slice!(T*, 2, Canonical) c,
+    Slice!(T*) work,
     char side,
     char trans
     )
@@ -755,14 +916,20 @@ size_t ormqr(T)(
     return info;
 }
 
+unittest
+{
+	alias s = ormqr!float;
+	alias d = ormqr!double;
+}
+
 ///
 size_t unmqr(T)(
-    Slice!(Canonical, [2], T*) a,
-    Slice!(Contiguous, [1], T*) tau,
-    Slice!(Canonical, [2], T*) c,
-    Slice!(Contiguous, [1], T*) work,
     char side,
-    char trans
+    char trans,
+    Slice!(T*, 2, Canonical) a,
+    Slice!(T*) tau,
+    Slice!(T*, 2, Canonical) c,
+    Slice!(T*) work,
     )
 {
     lapackint m = cast(lapackint) c.length!1;
@@ -779,4 +946,10 @@ size_t unmqr(T)(
     ///if info < 0: if info == -i, the i-th argument had an illegal value.
     assert(info >= 0);
     return info;
+}
+
+unittest
+{
+	alias s = unmqr!cfloat;
+	alias d = unmqr!cdouble;
 }
