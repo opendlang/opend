@@ -103,7 +103,7 @@ template sptrf(T)
 {
 	/// `sptrf` for upper triangular input.
 	size_t sptrf(
-		Slice!(StairsIterator!(T*)) ap,
+		Slice!(StairsIterator!(T*, "+")) ap,
 		Slice!(lapackint*) ipiv,
 		)
 	{
@@ -121,7 +121,7 @@ template sptrf(T)
 
 	/// `sptrf` for lower triangular input.
 	size_t sptrf(
-		Slice!(RetroIterator!(MapIterator!(StairsIterator!(RetroIterator!(T*)), retro))) ap,
+		Slice!(StairsIterator!(T*, "-")) ap,
 		Slice!(lapackint*) ipiv,
 		)
 	{
@@ -370,7 +370,7 @@ template spev(T)
 	///
 	size_t spev(
 		char jobz,
-		Slice!(StairsIterator!(T*)) ap,
+		Slice!(StairsIterator!(T*, "+")) ap,
 		Slice!(T*) w,
 		Slice!(T*, 2, Canonical) z,
 		Slice!(T*) work,
@@ -393,7 +393,7 @@ template spev(T)
 	///
 	size_t spev(
 		char jobz,
-		Slice!(RetroIterator!(MapIterator!(StairsIterator!(RetroIterator!(T*)), retro))) ap,
+		Slice!(StairsIterator!(T*, "-")) ap,
 		Slice!(T*) w,
 		Slice!(T*, 2, Canonical) z,
 		Slice!(T*) work,
@@ -713,7 +713,7 @@ template sptri(T)
 {
 	/// `sptri` for upper triangular input.
 	size_t sptri(
-		Slice!(StairsIterator!(T*)) ap,
+		Slice!(StairsIterator!(T*, "+")) ap,
 		Slice!(lapackint*) ipiv,
 		Slice!(T*) work
 		)
@@ -733,7 +733,7 @@ template sptri(T)
 
 	/// `sptri` for lower triangular input.
 	size_t sptri(
-		Slice!(RetroIterator!(MapIterator!(StairsIterator!(RetroIterator!(T*)), retro))) ap,
+		Slice!(StairsIterator!(T*, "-")) ap,
 		Slice!(lapackint*) ipiv,
 		Slice!(T*) work
 		)
@@ -787,7 +787,7 @@ template pptri(T)
 {
 	/// `pptri` for upper triangular input.
 	size_t pptri(
-		Slice!(StairsIterator!(T*)) ap
+		Slice!(StairsIterator!(T*, "+")) ap
 		)
 	{
 		lapackint n = cast(lapackint) ap.length;
@@ -802,7 +802,7 @@ template pptri(T)
 
 	/// `pptri` for lower triangular input.
 	size_t pptri(
-		Slice!(RetroIterator!(MapIterator!(StairsIterator!(RetroIterator!(T*)), retro))) ap
+		Slice!(StairsIterator!(T*, "-")) ap
 		)
 	{
 		lapackint n = cast(lapackint) ap.length;
@@ -853,7 +853,7 @@ template tptri(T)
 	/// `tptri` for upper triangular input.
 	size_t tptri(
 		char diag,
-		Slice!(StairsIterator!(T*)) ap,
+		Slice!(StairsIterator!(T*, "+")) ap,
 		)
 	{
 		lapackint n = cast(lapackint) ap.length;
@@ -869,7 +869,7 @@ template tptri(T)
 	/// `tptri` for lower triangular input.
 	size_t tptri(
 		char diag,
-		Slice!(RetroIterator!(MapIterator!(StairsIterator!(RetroIterator!(T*)), retro))) ap,
+		Slice!(StairsIterator!(T*, "-")) ap,
 		)
 	{
 		lapackint n = cast(lapackint) ap.length;
