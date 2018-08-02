@@ -422,10 +422,10 @@ unittest
 
 ///
 size_t sytrf(T)(
+    char uplo,
     Slice!(T*, 2, Canonical) a,
     Slice!(lapackint*) ipiv,
     Slice!(T*) work,
-    char uplo
     )
 {
     assert(a.length!0 == a.length!1, Error.squareM);
@@ -479,10 +479,10 @@ unittest
 
 ///
 size_t getrs(T)(
+    char trans,
     Slice!(T*, 2, Canonical) a,
     Slice!(T*, 2, Canonical) b,
     Slice!(lapackint*) ipiv,
-    char trans
     )
 {
     assert(a.length!0 == a.length!1, Error.squareM);
@@ -510,9 +510,9 @@ unittest
 
 ///
 size_t potrs(T)(
+    char uplo,
     Slice!(T*, 2, Canonical) a,
     Slice!(T*, 2, Canonical) b,
-    char uplo
     )
 {
     assert(a.length!0 == a.length!1, Error.squareM);
@@ -661,8 +661,8 @@ unittest
 
 ///
 size_t potrf(T)(
+       char uplo,
        Slice!(T*, 2, Canonical) a,
-       char uplo
        )
 {
     assert(a.length!0 == a.length!1, "potrf: a must be a square matrix.");
@@ -892,12 +892,12 @@ unittest
 
 ///
 size_t ormqr(T)(
+    char side,
+    char trans,
     Slice!(T*, 2, Canonical) a,
     Slice!(T*) tau,
     Slice!(T*, 2, Canonical) c,
     Slice!(T*) work,
-    char side,
-    char trans
     )
 {
     lapackint m = cast(lapackint) c.length!1;
