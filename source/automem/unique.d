@@ -89,11 +89,14 @@ if(isAllocator!Allocator) {
     }
 
     /**
-       Gets the owned pointer. Use with caution.
+       Borrow the owned pointer.
+       Can be @safe with DIP1000 and if used in a scope fashion.
      */
-    inout(Pointer) get() inout @system {
+    auto borrow() inout {
         return _object;
     }
+
+    alias get = borrow; // backwards compatibility
 
     /**
        Releases ownership and transfers it to the returned
@@ -107,7 +110,7 @@ if(isAllocator!Allocator) {
         return u;
     }
 
-    /// Release ownership
+    /// release ownership
     package Pointer release() {
         auto ret = _object;
         _object = null;

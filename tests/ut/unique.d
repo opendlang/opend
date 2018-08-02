@@ -257,3 +257,20 @@ mixin TestUtils;
 
     assert(NoGcClass.numClasses == 0);
 }
+
+
+@("borrow")
+@safe unittest {
+
+    auto allocator = SafeAllocator();
+
+    {
+        const ptr = Unique!(Struct, SafeAllocator)(SafeAllocator(), 6);
+        scopeFunc(ptr.borrow).shouldEqual(18);
+    }
+}
+
+private int scopeFunc(scope const(Struct)* s) @safe {
+
+    return s.i * 3;
+}
