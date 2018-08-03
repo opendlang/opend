@@ -8,9 +8,9 @@ Macros:
 NDSLICE = $(REF_ALTTEXT $(TT $2), $2, mir, ndslice, $1)$(NBSP)
 T2=$(TR $(TDNW $(LREF $1)) $(TD $+))
 +/
-module mir.least_squares;
+module mir.optim.least_squares;
 
-import mir.ndslice.slice: Slice, SliceKind, Contiguous, ContiguousVector, ContiguousMatrix;
+import mir.ndslice.slice: Slice, SliceKind, Contiguous;
 import std.meta;
 import std.traits;
 
@@ -76,9 +76,9 @@ struct LeastSquaresLM(T)
     enum T minDiagonalDefault = T.epsilon;
 
     /// Delegates for low level D API.
-    alias FunctionDelegate = void delegate(ContiguousVector!(const T) x, ContiguousVector!T y) @safe nothrow @nogc pure;
+    alias FunctionDelegate = void delegate(Slice!(const(T)*) x, Slice!(T*) y) @safe nothrow @nogc pure;
     /// ditto
-    alias JacobianDelegate = void delegate(ContiguousVector!(const T) x, ContiguousMatrix!T J) @safe nothrow @nogc pure;
+    alias JacobianDelegate = void delegate(Slice!(const(T)*) x, Slice!(T*, 2) J) @safe nothrow @nogc pure;
 
     /// Delegates for low level C API.
     alias FunctionFunction = extern(C) void function(void* context, size_t m, size_t n, const(T)* x, T* y) @system nothrow @nogc pure;
@@ -96,7 +96,7 @@ struct LeastSquaresLM(T)
     private T* _mBuffer_ptr;
     private T* _JJ_ptr;
     private T* _J_ptr;
-    private ContiguousVector!T _work;
+    private Slice!(T*) _work;
 
     /++
     Y = f(X) dimension.
@@ -195,30 +195,30 @@ struct LeastSquaresLM(T)
         /++
         Returns: lower bounds if they were set or zero length vector otherwise.
         +/
-        ContiguousVector!T lower() { return ContiguousVector!T([_lower_ptr ? n : 0], sizediff_t[0].init, _lower_ptr); }
+        Slice!(T*) lower() { return Slice!(T*)([_lower_ptr ? n : 0], sizediff_t[0].init, _lower_ptr); }
         /++
         Returns: upper bounds if they were set or zero length vector otherwise.
         +/
-        ContiguousVector!T upper() { return ContiguousVector!T([_upper_ptr ? n : 0], sizediff_t[0].init, _upper_ptr); }
+        Slice!(T*) upper() { return Slice!(T*)([_upper_ptr ? n : 0], sizediff_t[0].init, _upper_ptr); }
         /++
         Returns: Current X vector.
         +/
-        ContiguousVector!T x() { return ContiguousVector!T([n], sizediff_t[0].init, _x_ptr); }
+        Slice!(T*) x() { return Slice!(T*)([n], sizediff_t[0].init, _x_ptr); }
         /++
         Returns: The last success ΔX.
         +/
-        ContiguousVector!T deltaX() { return ContiguousVector!T([n], sizediff_t[0].init, _deltaX_ptr); }
+        Slice!(T*) deltaX() { return Slice!(T*)([n], sizediff_t[0].init, _deltaX_ptr); }
         /++
         Returns: Current Y = f(X).
         +/
-        ContiguousVector!T y() { return ContiguousVector!T([m], sizediff_t[0].init, _y_ptr); }
+        Slice!(T*) y() { return Slice!(T*)([m], sizediff_t[0].init, _y_ptr); }
     private:
-        ContiguousVector!T mJy() { return ContiguousVector!T([n], sizediff_t[0].init, _mJy_ptr); }
-        ContiguousVector!T deltaXBase() { return ContiguousVector!T([n], sizediff_t[0].init, _deltaXBase_ptr); }
-        ContiguousVector!lapackint ipiv() { return ContiguousVector!lapackint([n], sizediff_t[0].init, _ipiv_ptr); }
-        ContiguousVector!T mBuffer() { return ContiguousVector!T([m], sizediff_t[0].init, _mBuffer_ptr); }
-        ContiguousMatrix!T JJ() { return ContiguousMatrix!T([n, n], sizediff_t[0].init, _JJ_ptr); }
-        ContiguousMatrix!T J() { return ContiguousMatrix!T([m, n], sizediff_t[0].init, _J_ptr); }
+        Slice!(T*) mJy() { return Slice!(T*)([n], sizediff_t[0].init, _mJy_ptr); }
+        Slice!(T*) deltaXBase() { return Slice!(T*)([n], sizediff_t[0].init, _deltaXBase_ptr); }
+        Slice!(lapackint*) ipiv() { return Slice!(lapackint*)([n], sizediff_t[0].init, _ipiv_ptr); }
+        Slice!(T*) mBuffer() { return Slice!(T*)([m], sizediff_t[0].init, _mBuffer_ptr); }
+        Slice!(T*, 2) JJ() { return Slice!(T*, 2)([n, n], sizediff_t[0].init, _JJ_ptr); }
+        Slice!(T*, 2) J() { return Slice!(T*, 2)([m, n], sizediff_t[0].init, _J_ptr); }
     }
 
     /++
@@ -477,7 +477,7 @@ unittest
 
     static class FFF
     {
-        static auto opCall(ContiguousVector!(const double) x, ContiguousMatrix!double J)
+        static auto opCall(Slice!(const(double)*) x, Slice!(double*, 2) J)
         {
             rosenbrockJac(x, J);
         }
@@ -594,7 +594,7 @@ See_also: $(LREF optimize)
 +/
 LMStatus optimizeImpl(alias f, alias g = null, alias tm = null, T)(scope ref LeastSquaresLM!T lm)
 {
-    auto fInst = delegate(ContiguousVector!(const T) x, ContiguousVector!T y)
+    auto fInst = delegate(Slice!(const(T)*) x, Slice!(T*) y)
     {
         f(x, y);
     };
@@ -604,7 +604,7 @@ LMStatus optimizeImpl(alias f, alias g = null, alias tm = null, T)(scope ref Lea
         enum LeastSquaresLM!T.JacobianDelegate gInst = null;
     else
     {
-        auto gInst = delegate(ContiguousVector!(const T) x, ContiguousMatrix!T J)
+        auto gInst = delegate(Slice!(const(T)*) x, Slice!(T*, 2) J)
         {
             g(x, J);
         };
@@ -996,7 +996,8 @@ extern(C) void defaultLMThreadManagerDelegate(T)(void* context, size_t totalThre
     }
     else
     {
-        fill(0, Jj);
+        import mir.ndslice.topology: flattened;
+        fill(T(0), Jj);
     }
 }}
 
@@ -1147,7 +1148,7 @@ LMStatus optimizeLMImplGeneric(T)
 }}
 
 pragma(inline, false)
-void applyLowerBound(T)(Slice!(Contiguous, [1], T*) x, Slice!(Contiguous, [1], const(T)*) bound)
+void applyLowerBound(T)(Slice!(T*) x, Slice!(const(T)*) bound)
 {
     import mir.math.common: fmax;
     import mir.ndslice.algorithm: each;
@@ -1155,7 +1156,7 @@ void applyLowerBound(T)(Slice!(Contiguous, [1], T*) x, Slice!(Contiguous, [1], c
 }
 
 pragma(inline, false)
-void applyUpperBound(T)(Slice!(Contiguous, [1], T*) x, Slice!(Contiguous, [1], const(T)*) bound)
+void applyUpperBound(T)(Slice!(T*) x, Slice!(const(T)*) bound)
 {
     import mir.math.common: fmin;
     import mir.ndslice.algorithm: each;
@@ -1163,7 +1164,7 @@ void applyUpperBound(T)(Slice!(Contiguous, [1], T*) x, Slice!(Contiguous, [1], c
 }
 
 pragma(inline, false)
-T amax(T)(Slice!(Contiguous, [1], const(T)*) x)
+T amax(T)(Slice!(const(T)*) x)
 {
     import mir.math.common: fmax, fabs;
     T ret = 0;
@@ -1173,15 +1174,15 @@ T amax(T)(Slice!(Contiguous, [1], const(T)*) x)
 }
 
 pragma(inline, false)
-void fill(T, size_t[] packs, SliceKind kind)(T value, Slice!(kind, packs, T*) x)
+void fill(T, SliceKind kind)(T value, Slice!(T*, 1, kind) x)
 {
     x[] = value;
 }
 
 pragma(inline, false)
-bool allLessOrEqual(T, SliceKind kind)(
-    Slice!(kind, [1], const(T)*) a,
-    Slice!(kind, [1], const(T)*) b,
+bool allLessOrEqual(T)(
+    Slice!(const(T)*) a,
+    Slice!(const(T)*) b,
     )
 {
     import mir.ndslice.algorithm: all;

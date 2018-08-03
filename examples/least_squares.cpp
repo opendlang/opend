@@ -8,7 +8,7 @@
 // $ g++ -std=c++14 -pthread -I./include examples/least_squares.cpp -L./ -lmir-optim -lopenblas && ./a.out
 // Windows instruction: TODO
 
-#include "mir/least_squares.h"
+#include "mir/optim/least_squares.h"
 
 #include <stdio.h>
 #include <vector>

@@ -40,7 +40,7 @@ See [wiki: Link with CBLAS & LAPACK](https://github.com/libmir/mir-lapack/wiki/L
 ```d
 unittest
 {
-    import mir.least_squares;
+    import mir.optim.least_squares;
     import mir.ndslice.allocation: slice;
     import mir.ndslice.slice: sliced;
     import mir.blas: nrm2;
@@ -74,7 +74,7 @@ Jacobian finite difference approximation computed in multiple threads.
 ```d
 unittest
 {
-    import mir.least_squares;
+    import mir.optim.least_squares;
     import mir.ndslice.allocation: slice;
     import mir.ndslice.slice: sliced;
     import mir.blas: nrm2;
