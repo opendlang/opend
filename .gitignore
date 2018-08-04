@@ -16,3 +16,10 @@ mir-optim-test-*
 *.out
 dub.selections.json
 *.a
+build/
+build/mir-algorithm/
+build/mir-blas/
+build/mir-lapack/
+build/cblas/
+build/lapack/
+build/mir-random/

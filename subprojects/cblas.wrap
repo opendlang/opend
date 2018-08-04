@@ -1,0 +1,4 @@
+[wrap-git]
+directory=cblas
+url=https://github.com/DlangScience/cblas.git
+revision=head
