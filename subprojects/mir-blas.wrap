@@ -1,0 +1,4 @@
+[wrap-git]
+directory=mir-blas
+url=https://github.com/libmir/mir-blas.git
+revision=head

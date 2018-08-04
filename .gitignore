@@ -19,3 +19,4 @@ mir-lapack-test-openblas
 examples/gesv/gesv
 *.lib
 *.dll
+build/
