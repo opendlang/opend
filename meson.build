@@ -4,6 +4,11 @@ mir_algorithm_dep = dependency('mir-algorithm', fallback : ['mir-algorithm', 'mi
 
 required_deps = [mir_algorithm_dep]
 
+if target_machine.system() == 'linux'
+    mir_linux_kernel_dep = dependency('mir-linux-kernel', fallback : ['mir-linux-kernel', 'mir_linux_kernel_dep'])
+    required_deps = [required_deps, mir_linux_kernel_dep]
+endif
+
 mir_random_dir = include_directories('source/')
 
 mir_random_src = [
