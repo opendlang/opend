@@ -1,16 +1,23 @@
 project('mir-lapack', 'd', 'c', version : '1.0.0', license: 'BSL-1.0')
 
-mir_algorithm_dep = dependency('mir-algorithm', fallback : ['mir-algorithm', 'mir_algorithm_dep'])
 cblas_d_dep = dependency('cblas-d', fallback : ['cblas', 'cblas_dep'])
+lapack_d_dep = dependency('lapack-d', fallback : ['lapack', 'lapack_dep'])
+mir_algorithm_dep = dependency('mir-algorithm', fallback : ['mir-algorithm', 'mir_algorithm_dep'])
 mir_blas_dep = dependency('mir-blas', fallback : ['mir-blas', 'mir_blas_dep'])
-lapack_dep = dependency('lapack', fallback : ['lapack', 'lapack_dep'])
+
 cc = meson.get_compiler('c')
 lapack_deps = []
 if not cc.find_library('openblas', required : false).found()
     lapack_deps = [cc.find_library('lapack')]
 endif
 
-required_deps = [cblas_d_dep, lapack_deps, lapack_dep, mir_algorithm_dep, mir_blas_dep]
+required_deps = [
+    cblas_d_dep,
+    lapack_d_dep,
+    lapack_deps,
+    mir_algorithm_dep,
+    mir_blas_dep,
+]
 
 mir_lapack_dir = include_directories('source/')
 
