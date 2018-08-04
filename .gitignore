@@ -10,3 +10,5 @@ __test__*__
 lapack-test-library
 
 example/example
+.DS_Store
+build/
