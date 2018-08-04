@@ -19,7 +19,7 @@ if target_machine.system() == 'linux'
     required_deps = [required_deps, mir_linux_kernel_dep]
 endif
 
-mir_optim_dir = include_directories('source/')
+mir_optim_dir = include_directories('source/', 'include/')
 
 mir_optim_src = [
     'source/mir/optim/least_squares.d',
@@ -46,6 +46,11 @@ mir_optim_test_exe = executable(meson.project_name() + '-test',
     d_module_versions: ['mir_test'],
     link_args: '-main',
     dependencies: required_deps,
+)
+
+install_subdir('include/',
+    strip_directory :true,
+    install_dir: 'include/',
 )
 
 install_subdir('source/',
