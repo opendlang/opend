@@ -15,3 +15,5 @@ dub.selections.json
 
 mir-random-test-library
 docs.json
+build/
+build/mir-algorithm/

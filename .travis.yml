@@ -10,6 +10,8 @@ d:
  - ldc-beta
  - dmd-nightly
  - dmd-beta
+packages:
+  - pkg-config
 env:
  - ARCH="x86_64"
 matrix:
@@ -28,6 +30,7 @@ script:
  - dub test --arch "$ARCH"
  - dub build --root=examples/flex_plot
  # - dub build --root=examples/flex_plot/flex_common_pack
+ - meson build && cd build && ninja -j4 && ninja test -v && cd ..
 
 build_script:
  - echo dummy build script - dont remove me
@@ -35,3 +38,12 @@ build_script:
  # For now only python 3.4 is supported with pyd
  - sed 's/python35/python34/' -i examples/flex_plot.d
  # - sed 's/python35/python34/' -i examples/flex_plot/flex_common_pack/dub.json
+
+install:
+  - pyenv global system 3.6
+  - pip3 install 'meson>=0.45'
+  - mkdir .ntmp
+  - curl -L https://github.com/ninja-build/ninja/releases/download/v1.8.2/ninja-linux.zip -o .ntmp/ninja-linux.zip
+  - unzip .ntmp/ninja-linux.zip -d .ntmp
+before_script:
+  - export PATH=$PATH:$PWD/.ntmp
