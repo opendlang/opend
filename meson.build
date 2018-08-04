@@ -48,7 +48,7 @@ install_subdir('source/',
 
 import('pkgconfig').generate(
     name: meson.project_name(),
-    description: 'ndslice API for BLAS.',
+    description: 'ndslice API for LAPACK',
     subdirs: 'd/' + meson.project_name(),
     libraries: [mir_lapack_lib],
     version: meson.project_version(),
