@@ -14,6 +14,11 @@ endif
 
 required_deps = [cblas_d_dep, lapack_deps, lapack_dep, mir_algorithm_dep, mir_random_dep, mir_blas_dep, mir_lapack_dep]
 
+if target_machine.system() == 'linux'
+    mir_linux_kernel_dep = dependency('mir-linux-kernel', fallback : ['mir-linux-kernel', 'mir_linux_kernel_dep'])
+    required_deps = [required_deps, mir_linux_kernel_dep]
+endif
+
 mir_optim_dir = include_directories('source/')
 
 mir_optim_src = [
