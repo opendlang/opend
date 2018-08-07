@@ -33,7 +33,7 @@ pure {
 extern( System ):
 
 // Version of corresponding c header file
-enum VK_HEADER_VERSION = 80;
+enum VK_HEADER_VERSION = 81;
 
 enum VK_NULL_HANDLE = null;
 
@@ -6219,10 +6219,10 @@ enum VK_VALIDATION_CHECK_RANGE_SIZE_EXT = VkValidationCheckEXT.VK_VALIDATION_CHE
 enum VK_VALIDATION_CHECK_MAX_ENUM_EXT = VkValidationCheckEXT.VK_VALIDATION_CHECK_MAX_ENUM_EXT;
 
 struct VkValidationFlagsEXT {
-    VkStructureType        sType = VK_STRUCTURE_TYPE_VALIDATION_FLAGS_EXT;
-    const( void )*         pNext;
-    uint32_t               disabledValidationCheckCount;
-    VkValidationCheckEXT*  pDisabledValidationChecks;
+    VkStructureType                 sType = VK_STRUCTURE_TYPE_VALIDATION_FLAGS_EXT;
+    const( void )*                  pNext;
+    uint32_t                        disabledValidationCheckCount;
+    const( VkValidationCheckEXT )*  pDisabledValidationChecks;
 }
 
 
@@ -7429,7 +7429,7 @@ struct VkPhysicalDeviceShaderCorePropertiesAMD {
 // - VK_EXT_vertex_attribute_divisor -
 enum VK_EXT_vertex_attribute_divisor = 1;
 
-enum VK_EXT_VERTEX_ATTRIBUTE_DIVISOR_SPEC_VERSION = 1;
+enum VK_EXT_VERTEX_ATTRIBUTE_DIVISOR_SPEC_VERSION = 2;
 enum VK_EXT_VERTEX_ATTRIBUTE_DIVISOR_EXTENSION_NAME = "VK_EXT_vertex_attribute_divisor";
 
 struct VkPhysicalDeviceVertexAttributeDivisorPropertiesEXT {
