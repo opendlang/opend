@@ -33,7 +33,7 @@ pure {
 extern( System ):
 
 // Version of corresponding c header file
-enum VK_HEADER_VERSION = 81;
+enum VK_HEADER_VERSION = 82;
 
 enum VK_NULL_HANDLE = null;
 
@@ -494,6 +494,8 @@ enum VkStructureType {
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_PROPERTIES_AMD                    = 1000185000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_DIVISOR_PROPERTIES_EXT       = 1000190000,
     VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_DIVISOR_STATE_CREATE_INFO_EXT           = 1000190001,
+    VK_STRUCTURE_TYPE_CHECKPOINT_DATA_NV                                            = 1000206000,
+    VK_STRUCTURE_TYPE_QUEUE_FAMILY_CHECKPOINT_PROPERTIES_NV                         = 1000206001,
     VK_STRUCTURE_TYPE_BEGIN_RANGE                                                   = VK_STRUCTURE_TYPE_APPLICATION_INFO,
     VK_STRUCTURE_TYPE_END_RANGE                                                     = VK_STRUCTURE_TYPE_LOADER_DEVICE_CREATE_INFO,
     VK_STRUCTURE_TYPE_RANGE_SIZE                                                    = VK_STRUCTURE_TYPE_LOADER_DEVICE_CREATE_INFO - VK_STRUCTURE_TYPE_APPLICATION_INFO + 1,
@@ -806,6 +808,8 @@ enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_HOST_PROPERTIES_EXT      
 enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_PROPERTIES_AMD                   = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_PROPERTIES_AMD;
 enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_DIVISOR_PROPERTIES_EXT      = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_DIVISOR_PROPERTIES_EXT;
 enum VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_DIVISOR_STATE_CREATE_INFO_EXT          = VkStructureType.VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_DIVISOR_STATE_CREATE_INFO_EXT;
+enum VK_STRUCTURE_TYPE_CHECKPOINT_DATA_NV                                           = VkStructureType.VK_STRUCTURE_TYPE_CHECKPOINT_DATA_NV;
+enum VK_STRUCTURE_TYPE_QUEUE_FAMILY_CHECKPOINT_PROPERTIES_NV                        = VkStructureType.VK_STRUCTURE_TYPE_QUEUE_FAMILY_CHECKPOINT_PROPERTIES_NV;
 enum VK_STRUCTURE_TYPE_BEGIN_RANGE                                                  = VkStructureType.VK_STRUCTURE_TYPE_BEGIN_RANGE;
 enum VK_STRUCTURE_TYPE_END_RANGE                                                    = VkStructureType.VK_STRUCTURE_TYPE_END_RANGE;
 enum VK_STRUCTURE_TYPE_RANGE_SIZE                                                   = VkStructureType.VK_STRUCTURE_TYPE_RANGE_SIZE;
@@ -7456,5 +7460,25 @@ enum VK_NV_shader_subgroup_partitioned = 1;
 
 enum VK_NV_SHADER_SUBGROUP_PARTITIONED_SPEC_VERSION = 1;
 enum VK_NV_SHADER_SUBGROUP_PARTITIONED_EXTENSION_NAME = "VK_NV_shader_subgroup_partitioned";
+
+
+// - VK_NV_device_diagnostic_checkpoints -
+enum VK_NV_device_diagnostic_checkpoints = 1;
+
+enum VK_NV_DEVICE_DIAGNOSTIC_CHECKPOINTS_SPEC_VERSION = 2;
+enum VK_NV_DEVICE_DIAGNOSTIC_CHECKPOINTS_EXTENSION_NAME = "VK_NV_device_diagnostic_checkpoints";
+
+struct VkQueueFamilyCheckpointPropertiesNV {
+    VkStructureType       sType = VK_STRUCTURE_TYPE_QUEUE_FAMILY_CHECKPOINT_PROPERTIES_NV;
+    void*                 pNext;
+    VkPipelineStageFlags  checkpointExecutionStageMask;
+}
+
+struct VkCheckpointDataNV {
+    VkStructureType          sType = VK_STRUCTURE_TYPE_CHECKPOINT_DATA_NV;
+    void*                    pNext;
+    VkPipelineStageFlagBits  stage;
+    void*                    pCheckpointMarker;
+}
 
 

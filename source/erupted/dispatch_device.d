@@ -312,6 +312,10 @@ struct DispatchDevice {
 
         // VK_AMD_buffer_marker
         vkCmdWriteBufferMarkerAMD                   = cast( PFN_vkCmdWriteBufferMarkerAMD                   ) vkGetDeviceProcAddr( device, "vkCmdWriteBufferMarkerAMD" );
+
+        // VK_NV_device_diagnostic_checkpoints
+        vkCmdSetCheckpointNV                        = cast( PFN_vkCmdSetCheckpointNV                        ) vkGetDeviceProcAddr( device, "vkCmdSetCheckpointNV" );
+        vkGetQueueCheckpointDataNV                  = cast( PFN_vkGetQueueCheckpointDataNV                  ) vkGetDeviceProcAddr( device, "vkGetQueueCheckpointDataNV" );
     }
 
 
@@ -577,6 +581,9 @@ struct DispatchDevice {
 
     // VK_AMD_buffer_marker
     void      CmdWriteBufferMarkerAMD( VkPipelineStageFlagBits pipelineStage, VkBuffer dstBuffer, VkDeviceSize dstOffset, uint32_t marker ) { vkCmdWriteBufferMarkerAMD( commandBuffer, pipelineStage, dstBuffer, dstOffset, marker ); }
+
+    // VK_NV_device_diagnostic_checkpoints
+    void      CmdSetCheckpointNV( const( void )* pCheckpointMarker ) { vkCmdSetCheckpointNV( commandBuffer, pCheckpointMarker ); }
 
     // VK_KHR_device_group
     alias GetDeviceGroupPeerMemoryFeaturesKHR             = GetDeviceGroupPeerMemoryFeatures;
@@ -863,6 +870,10 @@ struct DispatchDevice {
 
     // VK_AMD_buffer_marker
     PFN_vkCmdWriteBufferMarkerAMD                   vkCmdWriteBufferMarkerAMD;
+
+    // VK_NV_device_diagnostic_checkpoints
+    PFN_vkCmdSetCheckpointNV                        vkCmdSetCheckpointNV;
+    PFN_vkGetQueueCheckpointDataNV                  vkGetQueueCheckpointDataNV;
 
     // VK_KHR_device_group
     alias vkGetDeviceGroupPeerMemoryFeaturesKHR             = vkGetDeviceGroupPeerMemoryFeatures;

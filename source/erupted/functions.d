@@ -343,6 +343,10 @@ extern( System ) {
 
     // VK_AMD_buffer_marker
     alias PFN_vkCmdWriteBufferMarkerAMD                          = void      function( VkCommandBuffer commandBuffer, VkPipelineStageFlagBits pipelineStage, VkBuffer dstBuffer, VkDeviceSize dstOffset, uint32_t marker );
+
+    // VK_NV_device_diagnostic_checkpoints
+    alias PFN_vkCmdSetCheckpointNV                               = void      function( VkCommandBuffer commandBuffer, const( void )* pCheckpointMarker );
+    alias PFN_vkGetQueueCheckpointDataNV                         = void      function( VkQueue queue, uint32_t* pCheckpointDataCount, VkCheckpointDataNV* pCheckpointData );
 }
 
 
@@ -677,6 +681,10 @@ __gshared {
 
     // VK_AMD_buffer_marker
     PFN_vkCmdWriteBufferMarkerAMD                          vkCmdWriteBufferMarkerAMD;
+
+    // VK_NV_device_diagnostic_checkpoints
+    PFN_vkCmdSetCheckpointNV                               vkCmdSetCheckpointNV;
+    PFN_vkGetQueueCheckpointDataNV                         vkGetQueueCheckpointDataNV;
 
     // VK_KHR_get_physical_device_properties2
     alias vkGetPhysicalDeviceFeatures2KHR                          = vkGetPhysicalDeviceFeatures2;
@@ -1092,6 +1100,10 @@ void loadDeviceLevelFunctions( VkInstance instance ) {
 
     // VK_AMD_buffer_marker
     vkCmdWriteBufferMarkerAMD                   = cast( PFN_vkCmdWriteBufferMarkerAMD                   ) vkGetInstanceProcAddr( instance, "vkCmdWriteBufferMarkerAMD" );
+
+    // VK_NV_device_diagnostic_checkpoints
+    vkCmdSetCheckpointNV                        = cast( PFN_vkCmdSetCheckpointNV                        ) vkGetInstanceProcAddr( instance, "vkCmdSetCheckpointNV" );
+    vkGetQueueCheckpointDataNV                  = cast( PFN_vkGetQueueCheckpointDataNV                  ) vkGetInstanceProcAddr( instance, "vkGetQueueCheckpointDataNV" );
 }
 
 
@@ -1355,5 +1367,9 @@ void loadDeviceLevelFunctions( VkDevice device ) {
 
     // VK_AMD_buffer_marker
     vkCmdWriteBufferMarkerAMD                   = cast( PFN_vkCmdWriteBufferMarkerAMD                   ) vkGetDeviceProcAddr( device, "vkCmdWriteBufferMarkerAMD" );
+
+    // VK_NV_device_diagnostic_checkpoints
+    vkCmdSetCheckpointNV                        = cast( PFN_vkCmdSetCheckpointNV                        ) vkGetDeviceProcAddr( device, "vkCmdSetCheckpointNV" );
+    vkGetQueueCheckpointDataNV                  = cast( PFN_vkGetQueueCheckpointDataNV                  ) vkGetDeviceProcAddr( device, "vkGetQueueCheckpointDataNV" );
 }
 
