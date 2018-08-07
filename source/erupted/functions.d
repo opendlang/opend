@@ -226,6 +226,12 @@ extern( System ) {
     alias PFN_vkCmdPushDescriptorSetKHR                          = void      function( VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipelineLayout layout, uint32_t set, uint32_t descriptorWriteCount, const( VkWriteDescriptorSet )* pDescriptorWrites );
     alias PFN_vkCmdPushDescriptorSetWithTemplateKHR              = void      function( VkCommandBuffer commandBuffer, VkDescriptorUpdateTemplate descriptorUpdateTemplate, VkPipelineLayout layout, uint32_t set, const( void )* pData );
 
+    // VK_KHR_create_renderpass2
+    alias PFN_vkCreateRenderPass2KHR                             = VkResult  function( VkDevice device, const( VkRenderPassCreateInfo2KHR )* pCreateInfo, const( VkAllocationCallbacks )* pAllocator, VkRenderPass* pRenderPass );
+    alias PFN_vkCmdBeginRenderPass2KHR                           = void      function( VkCommandBuffer commandBuffer, const( VkRenderPassBeginInfo )* pRenderPassBegin, const( VkSubpassBeginInfoKHR )* pSubpassBeginInfo );
+    alias PFN_vkCmdNextSubpass2KHR                               = void      function( VkCommandBuffer commandBuffer, const( VkSubpassBeginInfoKHR )* pSubpassBeginInfo, const( VkSubpassEndInfoKHR )* pSubpassEndInfo );
+    alias PFN_vkCmdEndRenderPass2KHR                             = void      function( VkCommandBuffer commandBuffer, const( VkSubpassEndInfoKHR )* pSubpassEndInfo );
+
     // VK_KHR_shared_presentable_image
     alias PFN_vkGetSwapchainStatusKHR                            = VkResult  function( VkDevice device, VkSwapchainKHR swapchain );
 
@@ -268,6 +274,10 @@ extern( System ) {
 
     // VK_NV_external_memory_capabilities
     alias PFN_vkGetPhysicalDeviceExternalImageFormatPropertiesNV = VkResult  function( VkPhysicalDevice physicalDevice, VkFormat format, VkImageType type, VkImageTiling tiling, VkImageUsageFlags usage, VkImageCreateFlags flags, VkExternalMemoryHandleTypeFlagsNV externalHandleType, VkExternalImageFormatPropertiesNV* pExternalImageFormatProperties );
+
+    // VK_EXT_conditional_rendering
+    alias PFN_vkCmdBeginConditionalRenderingEXT                  = void      function( VkCommandBuffer commandBuffer, const( VkConditionalRenderingBeginInfoEXT )* pConditionalRenderingBegin );
+    alias PFN_vkCmdEndConditionalRenderingEXT                    = void      function( VkCommandBuffer commandBuffer );
 
     // VK_NVX_device_generated_commands
     alias PFN_vkCmdProcessCommandsNVX                            = void      function( VkCommandBuffer commandBuffer, const( VkCmdProcessCommandsInfoNVX )* pProcessCommandsInfo );
@@ -550,6 +560,12 @@ __gshared {
     PFN_vkCmdPushDescriptorSetKHR                          vkCmdPushDescriptorSetKHR;
     PFN_vkCmdPushDescriptorSetWithTemplateKHR              vkCmdPushDescriptorSetWithTemplateKHR;
 
+    // VK_KHR_create_renderpass2
+    PFN_vkCreateRenderPass2KHR                             vkCreateRenderPass2KHR;
+    PFN_vkCmdBeginRenderPass2KHR                           vkCmdBeginRenderPass2KHR;
+    PFN_vkCmdNextSubpass2KHR                               vkCmdNextSubpass2KHR;
+    PFN_vkCmdEndRenderPass2KHR                             vkCmdEndRenderPass2KHR;
+
     // VK_KHR_shared_presentable_image
     PFN_vkGetSwapchainStatusKHR                            vkGetSwapchainStatusKHR;
 
@@ -592,6 +608,10 @@ __gshared {
 
     // VK_NV_external_memory_capabilities
     PFN_vkGetPhysicalDeviceExternalImageFormatPropertiesNV vkGetPhysicalDeviceExternalImageFormatPropertiesNV;
+
+    // VK_EXT_conditional_rendering
+    PFN_vkCmdBeginConditionalRenderingEXT                  vkCmdBeginConditionalRenderingEXT;
+    PFN_vkCmdEndConditionalRenderingEXT                    vkCmdEndConditionalRenderingEXT;
 
     // VK_NVX_device_generated_commands
     PFN_vkCmdProcessCommandsNVX                            vkCmdProcessCommandsNVX;
@@ -984,6 +1004,12 @@ void loadDeviceLevelFunctions( VkInstance instance ) {
     vkCmdPushDescriptorSetKHR                   = cast( PFN_vkCmdPushDescriptorSetKHR                   ) vkGetInstanceProcAddr( instance, "vkCmdPushDescriptorSetKHR" );
     vkCmdPushDescriptorSetWithTemplateKHR       = cast( PFN_vkCmdPushDescriptorSetWithTemplateKHR       ) vkGetInstanceProcAddr( instance, "vkCmdPushDescriptorSetWithTemplateKHR" );
 
+    // VK_KHR_create_renderpass2
+    vkCreateRenderPass2KHR                      = cast( PFN_vkCreateRenderPass2KHR                      ) vkGetInstanceProcAddr( instance, "vkCreateRenderPass2KHR" );
+    vkCmdBeginRenderPass2KHR                    = cast( PFN_vkCmdBeginRenderPass2KHR                    ) vkGetInstanceProcAddr( instance, "vkCmdBeginRenderPass2KHR" );
+    vkCmdNextSubpass2KHR                        = cast( PFN_vkCmdNextSubpass2KHR                        ) vkGetInstanceProcAddr( instance, "vkCmdNextSubpass2KHR" );
+    vkCmdEndRenderPass2KHR                      = cast( PFN_vkCmdEndRenderPass2KHR                      ) vkGetInstanceProcAddr( instance, "vkCmdEndRenderPass2KHR" );
+
     // VK_KHR_shared_presentable_image
     vkGetSwapchainStatusKHR                     = cast( PFN_vkGetSwapchainStatusKHR                     ) vkGetInstanceProcAddr( instance, "vkGetSwapchainStatusKHR" );
 
@@ -1008,6 +1034,10 @@ void loadDeviceLevelFunctions( VkInstance instance ) {
 
     // VK_AMD_shader_info
     vkGetShaderInfoAMD                          = cast( PFN_vkGetShaderInfoAMD                          ) vkGetInstanceProcAddr( instance, "vkGetShaderInfoAMD" );
+
+    // VK_EXT_conditional_rendering
+    vkCmdBeginConditionalRenderingEXT           = cast( PFN_vkCmdBeginConditionalRenderingEXT           ) vkGetInstanceProcAddr( instance, "vkCmdBeginConditionalRenderingEXT" );
+    vkCmdEndConditionalRenderingEXT             = cast( PFN_vkCmdEndConditionalRenderingEXT             ) vkGetInstanceProcAddr( instance, "vkCmdEndConditionalRenderingEXT" );
 
     // VK_NVX_device_generated_commands
     vkCmdProcessCommandsNVX                     = cast( PFN_vkCmdProcessCommandsNVX                     ) vkGetInstanceProcAddr( instance, "vkCmdProcessCommandsNVX" );
@@ -1237,6 +1267,12 @@ void loadDeviceLevelFunctions( VkDevice device ) {
     vkCmdPushDescriptorSetKHR                   = cast( PFN_vkCmdPushDescriptorSetKHR                   ) vkGetDeviceProcAddr( device, "vkCmdPushDescriptorSetKHR" );
     vkCmdPushDescriptorSetWithTemplateKHR       = cast( PFN_vkCmdPushDescriptorSetWithTemplateKHR       ) vkGetDeviceProcAddr( device, "vkCmdPushDescriptorSetWithTemplateKHR" );
 
+    // VK_KHR_create_renderpass2
+    vkCreateRenderPass2KHR                      = cast( PFN_vkCreateRenderPass2KHR                      ) vkGetDeviceProcAddr( device, "vkCreateRenderPass2KHR" );
+    vkCmdBeginRenderPass2KHR                    = cast( PFN_vkCmdBeginRenderPass2KHR                    ) vkGetDeviceProcAddr( device, "vkCmdBeginRenderPass2KHR" );
+    vkCmdNextSubpass2KHR                        = cast( PFN_vkCmdNextSubpass2KHR                        ) vkGetDeviceProcAddr( device, "vkCmdNextSubpass2KHR" );
+    vkCmdEndRenderPass2KHR                      = cast( PFN_vkCmdEndRenderPass2KHR                      ) vkGetDeviceProcAddr( device, "vkCmdEndRenderPass2KHR" );
+
     // VK_KHR_shared_presentable_image
     vkGetSwapchainStatusKHR                     = cast( PFN_vkGetSwapchainStatusKHR                     ) vkGetDeviceProcAddr( device, "vkGetSwapchainStatusKHR" );
 
@@ -1261,6 +1297,10 @@ void loadDeviceLevelFunctions( VkDevice device ) {
 
     // VK_AMD_shader_info
     vkGetShaderInfoAMD                          = cast( PFN_vkGetShaderInfoAMD                          ) vkGetDeviceProcAddr( device, "vkGetShaderInfoAMD" );
+
+    // VK_EXT_conditional_rendering
+    vkCmdBeginConditionalRenderingEXT           = cast( PFN_vkCmdBeginConditionalRenderingEXT           ) vkGetDeviceProcAddr( device, "vkCmdBeginConditionalRenderingEXT" );
+    vkCmdEndConditionalRenderingEXT             = cast( PFN_vkCmdEndConditionalRenderingEXT             ) vkGetDeviceProcAddr( device, "vkCmdEndConditionalRenderingEXT" );
 
     // VK_NVX_device_generated_commands
     vkCmdProcessCommandsNVX                     = cast( PFN_vkCmdProcessCommandsNVX                     ) vkGetDeviceProcAddr( device, "vkCmdProcessCommandsNVX" );

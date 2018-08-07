@@ -33,7 +33,7 @@ pure {
 extern( System ):
 
 // Version of corresponding c header file
-enum VK_HEADER_VERSION = 79;
+enum VK_HEADER_VERSION = 80;
 
 enum VK_NULL_HANDLE = null;
 
@@ -381,6 +381,9 @@ enum VkStructureType {
     VK_STRUCTURE_TYPE_IMPORT_SEMAPHORE_FD_INFO_KHR                                  = 1000079000,
     VK_STRUCTURE_TYPE_SEMAPHORE_GET_FD_INFO_KHR                                     = 1000079001,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PUSH_DESCRIPTOR_PROPERTIES_KHR                = 1000080000,
+    VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_CONDITIONAL_RENDERING_INFO_EXT     = 1000081000,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CONDITIONAL_RENDERING_FEATURES_EXT            = 1000081001,
+    VK_STRUCTURE_TYPE_CONDITIONAL_RENDERING_BEGIN_INFO_EXT                          = 1000081002,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_16BIT_STORAGE_FEATURES_KHR                    = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_16BIT_STORAGE_FEATURES,
     VK_STRUCTURE_TYPE_PRESENT_REGIONS_KHR                                           = 1000084000,
     VK_STRUCTURE_TYPE_DESCRIPTOR_UPDATE_TEMPLATE_CREATE_INFO_KHR                    = VK_STRUCTURE_TYPE_DESCRIPTOR_UPDATE_TEMPLATE_CREATE_INFO,
@@ -404,6 +407,13 @@ enum VkStructureType {
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CONSERVATIVE_RASTERIZATION_PROPERTIES_EXT     = 1000101000,
     VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_CONSERVATIVE_STATE_CREATE_INFO_EXT     = 1000101001,
     VK_STRUCTURE_TYPE_HDR_METADATA_EXT                                              = 1000105000,
+    VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2_KHR                                  = 1000109000,
+    VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2_KHR                                    = 1000109001,
+    VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_2_KHR                                     = 1000109002,
+    VK_STRUCTURE_TYPE_SUBPASS_DEPENDENCY_2_KHR                                      = 1000109003,
+    VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO_2_KHR                                 = 1000109004,
+    VK_STRUCTURE_TYPE_SUBPASS_BEGIN_INFO_KHR                                        = 1000109005,
+    VK_STRUCTURE_TYPE_SUBPASS_END_INFO_KHR                                          = 1000109006,
     VK_STRUCTURE_TYPE_SHARED_PRESENT_SURFACE_CAPABILITIES_KHR                       = 1000111000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_FENCE_INFO_KHR                       = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_FENCE_INFO,
     VK_STRUCTURE_TYPE_EXTERNAL_FENCE_PROPERTIES_KHR                                 = VK_STRUCTURE_TYPE_EXTERNAL_FENCE_PROPERTIES,
@@ -477,6 +487,7 @@ enum VkStructureType {
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_3_PROPERTIES_KHR                  = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_3_PROPERTIES,
     VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_SUPPORT_KHR                             = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_SUPPORT,
     VK_STRUCTURE_TYPE_DEVICE_QUEUE_GLOBAL_PRIORITY_CREATE_INFO_EXT                  = 1000174000,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_8BIT_STORAGE_FEATURES_KHR                     = 1000177000,
     VK_STRUCTURE_TYPE_IMPORT_MEMORY_HOST_POINTER_INFO_EXT                           = 1000178000,
     VK_STRUCTURE_TYPE_MEMORY_HOST_POINTER_PROPERTIES_EXT                            = 1000178001,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_HOST_PROPERTIES_EXT           = 1000178002,
@@ -682,6 +693,9 @@ enum VK_STRUCTURE_TYPE_SEMAPHORE_GET_WIN32_HANDLE_INFO_KHR                      
 enum VK_STRUCTURE_TYPE_IMPORT_SEMAPHORE_FD_INFO_KHR                                 = VkStructureType.VK_STRUCTURE_TYPE_IMPORT_SEMAPHORE_FD_INFO_KHR;
 enum VK_STRUCTURE_TYPE_SEMAPHORE_GET_FD_INFO_KHR                                    = VkStructureType.VK_STRUCTURE_TYPE_SEMAPHORE_GET_FD_INFO_KHR;
 enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PUSH_DESCRIPTOR_PROPERTIES_KHR               = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PUSH_DESCRIPTOR_PROPERTIES_KHR;
+enum VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_CONDITIONAL_RENDERING_INFO_EXT    = VkStructureType.VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_CONDITIONAL_RENDERING_INFO_EXT;
+enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CONDITIONAL_RENDERING_FEATURES_EXT           = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CONDITIONAL_RENDERING_FEATURES_EXT;
+enum VK_STRUCTURE_TYPE_CONDITIONAL_RENDERING_BEGIN_INFO_EXT                         = VkStructureType.VK_STRUCTURE_TYPE_CONDITIONAL_RENDERING_BEGIN_INFO_EXT;
 enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_16BIT_STORAGE_FEATURES_KHR                   = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_16BIT_STORAGE_FEATURES_KHR;
 enum VK_STRUCTURE_TYPE_PRESENT_REGIONS_KHR                                          = VkStructureType.VK_STRUCTURE_TYPE_PRESENT_REGIONS_KHR;
 enum VK_STRUCTURE_TYPE_DESCRIPTOR_UPDATE_TEMPLATE_CREATE_INFO_KHR                   = VkStructureType.VK_STRUCTURE_TYPE_DESCRIPTOR_UPDATE_TEMPLATE_CREATE_INFO_KHR;
@@ -705,6 +719,13 @@ enum VK_STRUCTURE_TYPE_PIPELINE_DISCARD_RECTANGLE_STATE_CREATE_INFO_EXT         
 enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CONSERVATIVE_RASTERIZATION_PROPERTIES_EXT    = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CONSERVATIVE_RASTERIZATION_PROPERTIES_EXT;
 enum VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_CONSERVATIVE_STATE_CREATE_INFO_EXT    = VkStructureType.VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_CONSERVATIVE_STATE_CREATE_INFO_EXT;
 enum VK_STRUCTURE_TYPE_HDR_METADATA_EXT                                             = VkStructureType.VK_STRUCTURE_TYPE_HDR_METADATA_EXT;
+enum VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2_KHR                                 = VkStructureType.VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2_KHR;
+enum VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2_KHR                                   = VkStructureType.VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2_KHR;
+enum VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_2_KHR                                    = VkStructureType.VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_2_KHR;
+enum VK_STRUCTURE_TYPE_SUBPASS_DEPENDENCY_2_KHR                                     = VkStructureType.VK_STRUCTURE_TYPE_SUBPASS_DEPENDENCY_2_KHR;
+enum VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO_2_KHR                                = VkStructureType.VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO_2_KHR;
+enum VK_STRUCTURE_TYPE_SUBPASS_BEGIN_INFO_KHR                                       = VkStructureType.VK_STRUCTURE_TYPE_SUBPASS_BEGIN_INFO_KHR;
+enum VK_STRUCTURE_TYPE_SUBPASS_END_INFO_KHR                                         = VkStructureType.VK_STRUCTURE_TYPE_SUBPASS_END_INFO_KHR;
 enum VK_STRUCTURE_TYPE_SHARED_PRESENT_SURFACE_CAPABILITIES_KHR                      = VkStructureType.VK_STRUCTURE_TYPE_SHARED_PRESENT_SURFACE_CAPABILITIES_KHR;
 enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_FENCE_INFO_KHR                      = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_FENCE_INFO_KHR;
 enum VK_STRUCTURE_TYPE_EXTERNAL_FENCE_PROPERTIES_KHR                                = VkStructureType.VK_STRUCTURE_TYPE_EXTERNAL_FENCE_PROPERTIES_KHR;
@@ -778,6 +799,7 @@ enum VK_STRUCTURE_TYPE_DESCRIPTOR_SET_VARIABLE_DESCRIPTOR_COUNT_LAYOUT_SUPPORT_E
 enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_3_PROPERTIES_KHR                 = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_3_PROPERTIES_KHR;
 enum VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_SUPPORT_KHR                            = VkStructureType.VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_SUPPORT_KHR;
 enum VK_STRUCTURE_TYPE_DEVICE_QUEUE_GLOBAL_PRIORITY_CREATE_INFO_EXT                 = VkStructureType.VK_STRUCTURE_TYPE_DEVICE_QUEUE_GLOBAL_PRIORITY_CREATE_INFO_EXT;
+enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_8BIT_STORAGE_FEATURES_KHR                    = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_8BIT_STORAGE_FEATURES_KHR;
 enum VK_STRUCTURE_TYPE_IMPORT_MEMORY_HOST_POINTER_INFO_EXT                          = VkStructureType.VK_STRUCTURE_TYPE_IMPORT_MEMORY_HOST_POINTER_INFO_EXT;
 enum VK_STRUCTURE_TYPE_MEMORY_HOST_POINTER_PROPERTIES_EXT                           = VkStructureType.VK_STRUCTURE_TYPE_MEMORY_HOST_POINTER_PROPERTIES_EXT;
 enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_HOST_PROPERTIES_EXT          = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_HOST_PROPERTIES_EXT;
@@ -2448,6 +2470,7 @@ enum VkPipelineStageFlagBits {
     VK_PIPELINE_STAGE_HOST_BIT                            = 0x00004000,
     VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT                    = 0x00008000,
     VK_PIPELINE_STAGE_ALL_COMMANDS_BIT                    = 0x00010000,
+    VK_PIPELINE_STAGE_CONDITIONAL_RENDERING_BIT_EXT       = 0x00040000,
     VK_PIPELINE_STAGE_COMMAND_PROCESS_BIT_NVX             = 0x00020000,
     VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM                  = 0x7FFFFFFF
 }
@@ -2468,6 +2491,7 @@ enum VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT                 = VkPipelineStageFlagB
 enum VK_PIPELINE_STAGE_HOST_BIT                           = VkPipelineStageFlagBits.VK_PIPELINE_STAGE_HOST_BIT;
 enum VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT                   = VkPipelineStageFlagBits.VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT;
 enum VK_PIPELINE_STAGE_ALL_COMMANDS_BIT                   = VkPipelineStageFlagBits.VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+enum VK_PIPELINE_STAGE_CONDITIONAL_RENDERING_BIT_EXT      = VkPipelineStageFlagBits.VK_PIPELINE_STAGE_CONDITIONAL_RENDERING_BIT_EXT;
 enum VK_PIPELINE_STAGE_COMMAND_PROCESS_BIT_NVX            = VkPipelineStageFlagBits.VK_PIPELINE_STAGE_COMMAND_PROCESS_BIT_NVX;
 enum VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM                 = VkPipelineStageFlagBits.VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM;
 alias VkPipelineStageFlags = VkFlags;
@@ -2587,27 +2611,29 @@ enum VK_BUFFER_CREATE_FLAG_BITS_MAX_ENUM     = VkBufferCreateFlagBits.VK_BUFFER_
 alias VkBufferCreateFlags = VkFlags;
 
 enum VkBufferUsageFlagBits {
-    VK_BUFFER_USAGE_TRANSFER_SRC_BIT          = 0x00000001,
-    VK_BUFFER_USAGE_TRANSFER_DST_BIT          = 0x00000002,
-    VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT  = 0x00000004,
-    VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT  = 0x00000008,
-    VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT        = 0x00000010,
-    VK_BUFFER_USAGE_STORAGE_BUFFER_BIT        = 0x00000020,
-    VK_BUFFER_USAGE_INDEX_BUFFER_BIT          = 0x00000040,
-    VK_BUFFER_USAGE_VERTEX_BUFFER_BIT         = 0x00000080,
-    VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT       = 0x00000100,
-    VK_BUFFER_USAGE_FLAG_BITS_MAX_ENUM        = 0x7FFFFFFF
+    VK_BUFFER_USAGE_TRANSFER_SRC_BIT               = 0x00000001,
+    VK_BUFFER_USAGE_TRANSFER_DST_BIT               = 0x00000002,
+    VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT       = 0x00000004,
+    VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT       = 0x00000008,
+    VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT             = 0x00000010,
+    VK_BUFFER_USAGE_STORAGE_BUFFER_BIT             = 0x00000020,
+    VK_BUFFER_USAGE_INDEX_BUFFER_BIT               = 0x00000040,
+    VK_BUFFER_USAGE_VERTEX_BUFFER_BIT              = 0x00000080,
+    VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT            = 0x00000100,
+    VK_BUFFER_USAGE_CONDITIONAL_RENDERING_BIT_EXT  = 0x00000200,
+    VK_BUFFER_USAGE_FLAG_BITS_MAX_ENUM             = 0x7FFFFFFF
 }
-enum VK_BUFFER_USAGE_TRANSFER_SRC_BIT         = VkBufferUsageFlagBits.VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-enum VK_BUFFER_USAGE_TRANSFER_DST_BIT         = VkBufferUsageFlagBits.VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-enum VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT = VkBufferUsageFlagBits.VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT;
-enum VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT = VkBufferUsageFlagBits.VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT;
-enum VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT       = VkBufferUsageFlagBits.VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-enum VK_BUFFER_USAGE_STORAGE_BUFFER_BIT       = VkBufferUsageFlagBits.VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-enum VK_BUFFER_USAGE_INDEX_BUFFER_BIT         = VkBufferUsageFlagBits.VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
-enum VK_BUFFER_USAGE_VERTEX_BUFFER_BIT        = VkBufferUsageFlagBits.VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-enum VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT      = VkBufferUsageFlagBits.VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
-enum VK_BUFFER_USAGE_FLAG_BITS_MAX_ENUM       = VkBufferUsageFlagBits.VK_BUFFER_USAGE_FLAG_BITS_MAX_ENUM;
+enum VK_BUFFER_USAGE_TRANSFER_SRC_BIT              = VkBufferUsageFlagBits.VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+enum VK_BUFFER_USAGE_TRANSFER_DST_BIT              = VkBufferUsageFlagBits.VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+enum VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT      = VkBufferUsageFlagBits.VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT;
+enum VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT      = VkBufferUsageFlagBits.VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT;
+enum VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT            = VkBufferUsageFlagBits.VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+enum VK_BUFFER_USAGE_STORAGE_BUFFER_BIT            = VkBufferUsageFlagBits.VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+enum VK_BUFFER_USAGE_INDEX_BUFFER_BIT              = VkBufferUsageFlagBits.VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+enum VK_BUFFER_USAGE_VERTEX_BUFFER_BIT             = VkBufferUsageFlagBits.VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+enum VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT           = VkBufferUsageFlagBits.VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
+enum VK_BUFFER_USAGE_CONDITIONAL_RENDERING_BIT_EXT = VkBufferUsageFlagBits.VK_BUFFER_USAGE_CONDITIONAL_RENDERING_BIT_EXT;
+enum VK_BUFFER_USAGE_FLAG_BITS_MAX_ENUM            = VkBufferUsageFlagBits.VK_BUFFER_USAGE_FLAG_BITS_MAX_ENUM;
 alias VkBufferUsageFlags = VkFlags;
 alias VkBufferViewCreateFlags = VkFlags;
 alias VkImageViewCreateFlags = VkFlags;
@@ -2755,6 +2781,7 @@ enum VkAccessFlagBits {
     VK_ACCESS_HOST_WRITE_BIT                             = 0x00004000,
     VK_ACCESS_MEMORY_READ_BIT                            = 0x00008000,
     VK_ACCESS_MEMORY_WRITE_BIT                           = 0x00010000,
+    VK_ACCESS_CONDITIONAL_RENDERING_READ_BIT_EXT         = 0x00100000,
     VK_ACCESS_COMMAND_PROCESS_READ_BIT_NVX               = 0x00020000,
     VK_ACCESS_COMMAND_PROCESS_WRITE_BIT_NVX              = 0x00040000,
     VK_ACCESS_COLOR_ATTACHMENT_READ_NONCOHERENT_BIT_EXT  = 0x00080000,
@@ -2777,6 +2804,7 @@ enum VK_ACCESS_HOST_READ_BIT                             = VkAccessFlagBits.VK_A
 enum VK_ACCESS_HOST_WRITE_BIT                            = VkAccessFlagBits.VK_ACCESS_HOST_WRITE_BIT;
 enum VK_ACCESS_MEMORY_READ_BIT                           = VkAccessFlagBits.VK_ACCESS_MEMORY_READ_BIT;
 enum VK_ACCESS_MEMORY_WRITE_BIT                          = VkAccessFlagBits.VK_ACCESS_MEMORY_WRITE_BIT;
+enum VK_ACCESS_CONDITIONAL_RENDERING_READ_BIT_EXT        = VkAccessFlagBits.VK_ACCESS_CONDITIONAL_RENDERING_READ_BIT_EXT;
 enum VK_ACCESS_COMMAND_PROCESS_READ_BIT_NVX              = VkAccessFlagBits.VK_ACCESS_COMMAND_PROCESS_READ_BIT_NVX;
 enum VK_ACCESS_COMMAND_PROCESS_WRITE_BIT_NVX             = VkAccessFlagBits.VK_ACCESS_COMMAND_PROCESS_WRITE_BIT_NVX;
 enum VK_ACCESS_COLOR_ATTACHMENT_READ_NONCOHERENT_BIT_EXT = VkAccessFlagBits.VK_ACCESS_COLOR_ATTACHMENT_READ_NONCOHERENT_BIT_EXT;
@@ -5407,6 +5435,89 @@ alias VkDescriptorUpdateTemplateEntryKHR = VkDescriptorUpdateTemplateEntry;
 alias VkDescriptorUpdateTemplateCreateInfoKHR = VkDescriptorUpdateTemplateCreateInfo;
 
 
+// - VK_KHR_create_renderpass2 -
+enum VK_KHR_create_renderpass2 = 1;
+
+enum VK_KHR_CREATE_RENDERPASS_2_SPEC_VERSION = 1;
+enum VK_KHR_CREATE_RENDERPASS_2_EXTENSION_NAME = "VK_KHR_create_renderpass2";
+
+struct VkAttachmentDescription2KHR {
+    VkStructureType               sType = VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2_KHR;
+    const( void )*                pNext;
+    VkAttachmentDescriptionFlags  flags;
+    VkFormat                      format;
+    VkSampleCountFlagBits         samples;
+    VkAttachmentLoadOp            loadOp;
+    VkAttachmentStoreOp           storeOp;
+    VkAttachmentLoadOp            stencilLoadOp;
+    VkAttachmentStoreOp           stencilStoreOp;
+    VkImageLayout                 initialLayout;
+    VkImageLayout                 finalLayout;
+}
+
+struct VkAttachmentReference2KHR {
+    VkStructureType     sType = VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2_KHR;
+    const( void )*      pNext;
+    uint32_t            attachment;
+    VkImageLayout       layout;
+    VkImageAspectFlags  aspectMask;
+}
+
+struct VkSubpassDescription2KHR {
+    VkStructureType                      sType = VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_2_KHR;
+    const( void )*                       pNext;
+    VkSubpassDescriptionFlags            flags;
+    VkPipelineBindPoint                  pipelineBindPoint;
+    uint32_t                             viewMask;
+    uint32_t                             inputAttachmentCount;
+    const( VkAttachmentReference2KHR )*  pInputAttachments;
+    uint32_t                             colorAttachmentCount;
+    const( VkAttachmentReference2KHR )*  pColorAttachments;
+    const( VkAttachmentReference2KHR )*  pResolveAttachments;
+    const( VkAttachmentReference2KHR )*  pDepthStencilAttachment;
+    uint32_t                             preserveAttachmentCount;
+    const( uint32_t )*                   pPreserveAttachments;
+}
+
+struct VkSubpassDependency2KHR {
+    VkStructureType       sType = VK_STRUCTURE_TYPE_SUBPASS_DEPENDENCY_2_KHR;
+    const( void )*        pNext;
+    uint32_t              srcSubpass;
+    uint32_t              dstSubpass;
+    VkPipelineStageFlags  srcStageMask;
+    VkPipelineStageFlags  dstStageMask;
+    VkAccessFlags         srcAccessMask;
+    VkAccessFlags         dstAccessMask;
+    VkDependencyFlags     dependencyFlags;
+    int32_t               viewOffset;
+}
+
+struct VkRenderPassCreateInfo2KHR {
+    VkStructureType                        sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO_2_KHR;
+    const( void )*                         pNext;
+    VkRenderPassCreateFlags                flags;
+    uint32_t                               attachmentCount;
+    const( VkAttachmentDescription2KHR )*  pAttachments;
+    uint32_t                               subpassCount;
+    const( VkSubpassDescription2KHR )*     pSubpasses;
+    uint32_t                               dependencyCount;
+    const( VkSubpassDependency2KHR )*      pDependencies;
+    uint32_t                               correlatedViewMaskCount;
+    const( uint32_t )*                     pCorrelatedViewMasks;
+}
+
+struct VkSubpassBeginInfoKHR {
+    VkStructureType    sType = VK_STRUCTURE_TYPE_SUBPASS_BEGIN_INFO_KHR;
+    const( void )*     pNext;
+    VkSubpassContents  contents;
+}
+
+struct VkSubpassEndInfoKHR {
+    VkStructureType  sType = VK_STRUCTURE_TYPE_SUBPASS_END_INFO_KHR;
+    const( void )*   pNext;
+}
+
+
 // - VK_KHR_shared_presentable_image -
 enum VK_KHR_shared_presentable_image = 1;
 
@@ -5652,6 +5763,21 @@ enum VK_KHR_draw_indirect_count = 1;
 
 enum VK_KHR_DRAW_INDIRECT_COUNT_SPEC_VERSION = 1;
 enum VK_KHR_DRAW_INDIRECT_COUNT_EXTENSION_NAME = "VK_KHR_draw_indirect_count";
+
+
+// - VK_KHR_8bit_storage -
+enum VK_KHR_8bit_storage = 1;
+
+enum VK_KHR_8BIT_STORAGE_SPEC_VERSION = 1;
+enum VK_KHR_8BIT_STORAGE_EXTENSION_NAME = "VK_KHR_8bit_storage";
+
+struct VkPhysicalDevice8BitStorageFeaturesKHR {
+    VkStructureType  sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_8BIT_STORAGE_FEATURES_KHR;
+    void*            pNext;
+    VkBool32         storageBuffer8BitAccess;
+    VkBool32         uniformAndStorageBuffer8BitAccess;
+    VkBool32         storagePushConstant8;
+}
 
 
 // - VK_EXT_debug_report -
@@ -6112,6 +6238,42 @@ enum VK_EXT_shader_subgroup_vote = 1;
 
 enum VK_EXT_SHADER_SUBGROUP_VOTE_SPEC_VERSION = 1;
 enum VK_EXT_SHADER_SUBGROUP_VOTE_EXTENSION_NAME = "VK_EXT_shader_subgroup_vote";
+
+
+// - VK_EXT_conditional_rendering -
+enum VK_EXT_conditional_rendering = 1;
+
+enum VK_EXT_CONDITIONAL_RENDERING_SPEC_VERSION = 1;
+enum VK_EXT_CONDITIONAL_RENDERING_EXTENSION_NAME = "VK_EXT_conditional_rendering";
+
+enum VkConditionalRenderingFlagBitsEXT {
+    VK_CONDITIONAL_RENDERING_INVERTED_BIT_EXT        = 0x00000001,
+    VK_CONDITIONAL_RENDERING_FLAG_BITS_MAX_ENUM_EXT  = 0x7FFFFFFF
+}
+enum VK_CONDITIONAL_RENDERING_INVERTED_BIT_EXT       = VkConditionalRenderingFlagBitsEXT.VK_CONDITIONAL_RENDERING_INVERTED_BIT_EXT;
+enum VK_CONDITIONAL_RENDERING_FLAG_BITS_MAX_ENUM_EXT = VkConditionalRenderingFlagBitsEXT.VK_CONDITIONAL_RENDERING_FLAG_BITS_MAX_ENUM_EXT;
+alias VkConditionalRenderingFlagsEXT = VkFlags;
+
+struct VkConditionalRenderingBeginInfoEXT {
+    VkStructureType                 sType = VK_STRUCTURE_TYPE_CONDITIONAL_RENDERING_BEGIN_INFO_EXT;
+    const( void )*                  pNext;
+    VkBuffer                        buffer;
+    VkDeviceSize                    offset;
+    VkConditionalRenderingFlagsEXT  flags;
+}
+
+struct VkPhysicalDeviceConditionalRenderingFeaturesEXT {
+    VkStructureType  sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CONDITIONAL_RENDERING_FEATURES_EXT;
+    void*            pNext;
+    VkBool32         conditionalRendering;
+    VkBool32         inheritedConditionalRendering;
+}
+
+struct VkCommandBufferInheritanceConditionalRenderingInfoEXT {
+    VkStructureType  sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_CONDITIONAL_RENDERING_INFO_EXT;
+    const( void )*   pNext;
+    VkBool32         conditionalRenderingEnable;
+}
 
 
 // - VK_NVX_device_generated_commands -

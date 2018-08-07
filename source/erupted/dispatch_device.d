@@ -224,6 +224,12 @@ struct DispatchDevice {
         vkCmdPushDescriptorSetKHR                   = cast( PFN_vkCmdPushDescriptorSetKHR                   ) vkGetDeviceProcAddr( device, "vkCmdPushDescriptorSetKHR" );
         vkCmdPushDescriptorSetWithTemplateKHR       = cast( PFN_vkCmdPushDescriptorSetWithTemplateKHR       ) vkGetDeviceProcAddr( device, "vkCmdPushDescriptorSetWithTemplateKHR" );
 
+        // VK_KHR_create_renderpass2
+        vkCreateRenderPass2KHR                      = cast( PFN_vkCreateRenderPass2KHR                      ) vkGetDeviceProcAddr( device, "vkCreateRenderPass2KHR" );
+        vkCmdBeginRenderPass2KHR                    = cast( PFN_vkCmdBeginRenderPass2KHR                    ) vkGetDeviceProcAddr( device, "vkCmdBeginRenderPass2KHR" );
+        vkCmdNextSubpass2KHR                        = cast( PFN_vkCmdNextSubpass2KHR                        ) vkGetDeviceProcAddr( device, "vkCmdNextSubpass2KHR" );
+        vkCmdEndRenderPass2KHR                      = cast( PFN_vkCmdEndRenderPass2KHR                      ) vkGetDeviceProcAddr( device, "vkCmdEndRenderPass2KHR" );
+
         // VK_KHR_shared_presentable_image
         vkGetSwapchainStatusKHR                     = cast( PFN_vkGetSwapchainStatusKHR                     ) vkGetDeviceProcAddr( device, "vkGetSwapchainStatusKHR" );
 
@@ -248,6 +254,10 @@ struct DispatchDevice {
 
         // VK_AMD_shader_info
         vkGetShaderInfoAMD                          = cast( PFN_vkGetShaderInfoAMD                          ) vkGetDeviceProcAddr( device, "vkGetShaderInfoAMD" );
+
+        // VK_EXT_conditional_rendering
+        vkCmdBeginConditionalRenderingEXT           = cast( PFN_vkCmdBeginConditionalRenderingEXT           ) vkGetDeviceProcAddr( device, "vkCmdBeginConditionalRenderingEXT" );
+        vkCmdEndConditionalRenderingEXT             = cast( PFN_vkCmdEndConditionalRenderingEXT             ) vkGetDeviceProcAddr( device, "vkCmdEndConditionalRenderingEXT" );
 
         // VK_NVX_device_generated_commands
         vkCmdProcessCommandsNVX                     = cast( PFN_vkCmdProcessCommandsNVX                     ) vkGetDeviceProcAddr( device, "vkCmdProcessCommandsNVX" );
@@ -482,6 +492,12 @@ struct DispatchDevice {
     void      CmdPushDescriptorSetKHR( VkPipelineBindPoint pipelineBindPoint, VkPipelineLayout layout, uint32_t set, uint32_t descriptorWriteCount, const( VkWriteDescriptorSet )* pDescriptorWrites ) { vkCmdPushDescriptorSetKHR( commandBuffer, pipelineBindPoint, layout, set, descriptorWriteCount, pDescriptorWrites ); }
     void      CmdPushDescriptorSetWithTemplateKHR( VkDescriptorUpdateTemplate descriptorUpdateTemplate, VkPipelineLayout layout, uint32_t set, const( void )* pData ) { vkCmdPushDescriptorSetWithTemplateKHR( commandBuffer, descriptorUpdateTemplate, layout, set, pData ); }
 
+    // VK_KHR_create_renderpass2
+    VkResult  CreateRenderPass2KHR( const( VkRenderPassCreateInfo2KHR )* pCreateInfo, VkRenderPass* pRenderPass ) { return vkCreateRenderPass2KHR( vkDevice, pCreateInfo, pAllocator, pRenderPass ); }
+    void      CmdBeginRenderPass2KHR( const( VkRenderPassBeginInfo )* pRenderPassBegin, const( VkSubpassBeginInfoKHR )* pSubpassBeginInfo ) { vkCmdBeginRenderPass2KHR( commandBuffer, pRenderPassBegin, pSubpassBeginInfo ); }
+    void      CmdNextSubpass2KHR( const( VkSubpassBeginInfoKHR )* pSubpassBeginInfo, const( VkSubpassEndInfoKHR )* pSubpassEndInfo ) { vkCmdNextSubpass2KHR( commandBuffer, pSubpassBeginInfo, pSubpassEndInfo ); }
+    void      CmdEndRenderPass2KHR( const( VkSubpassEndInfoKHR )* pSubpassEndInfo ) { vkCmdEndRenderPass2KHR( commandBuffer, pSubpassEndInfo ); }
+
     // VK_KHR_shared_presentable_image
     VkResult  GetSwapchainStatusKHR( VkSwapchainKHR swapchain ) { return vkGetSwapchainStatusKHR( vkDevice, swapchain ); }
 
@@ -506,6 +522,10 @@ struct DispatchDevice {
 
     // VK_AMD_shader_info
     VkResult  GetShaderInfoAMD( VkPipeline pipeline, VkShaderStageFlagBits shaderStage, VkShaderInfoTypeAMD infoType, size_t* pInfoSize, void* pInfo ) { return vkGetShaderInfoAMD( vkDevice, pipeline, shaderStage, infoType, pInfoSize, pInfo ); }
+
+    // VK_EXT_conditional_rendering
+    void      CmdBeginConditionalRenderingEXT( const( VkConditionalRenderingBeginInfoEXT )* pConditionalRenderingBegin ) { vkCmdBeginConditionalRenderingEXT( commandBuffer, pConditionalRenderingBegin ); }
+    void      CmdEndConditionalRenderingEXT() { vkCmdEndConditionalRenderingEXT( commandBuffer ); }
 
     // VK_NVX_device_generated_commands
     void      CmdProcessCommandsNVX( const( VkCmdProcessCommandsInfoNVX )* pProcessCommandsInfo ) { vkCmdProcessCommandsNVX( commandBuffer, pProcessCommandsInfo ); }
@@ -755,6 +775,12 @@ struct DispatchDevice {
     PFN_vkCmdPushDescriptorSetKHR                   vkCmdPushDescriptorSetKHR;
     PFN_vkCmdPushDescriptorSetWithTemplateKHR       vkCmdPushDescriptorSetWithTemplateKHR;
 
+    // VK_KHR_create_renderpass2
+    PFN_vkCreateRenderPass2KHR                      vkCreateRenderPass2KHR;
+    PFN_vkCmdBeginRenderPass2KHR                    vkCmdBeginRenderPass2KHR;
+    PFN_vkCmdNextSubpass2KHR                        vkCmdNextSubpass2KHR;
+    PFN_vkCmdEndRenderPass2KHR                      vkCmdEndRenderPass2KHR;
+
     // VK_KHR_shared_presentable_image
     PFN_vkGetSwapchainStatusKHR                     vkGetSwapchainStatusKHR;
 
@@ -779,6 +805,10 @@ struct DispatchDevice {
 
     // VK_AMD_shader_info
     PFN_vkGetShaderInfoAMD                          vkGetShaderInfoAMD;
+
+    // VK_EXT_conditional_rendering
+    PFN_vkCmdBeginConditionalRenderingEXT           vkCmdBeginConditionalRenderingEXT;
+    PFN_vkCmdEndConditionalRenderingEXT             vkCmdEndConditionalRenderingEXT;
 
     // VK_NVX_device_generated_commands
     PFN_vkCmdProcessCommandsNVX                     vkCmdProcessCommandsNVX;
