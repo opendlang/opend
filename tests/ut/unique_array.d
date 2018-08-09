@@ -285,3 +285,13 @@ unittest {
     auto a = UniqueArray!(Struct, TestAllocator*)(&allocator, [Struct(2), Struct(3)]);
     a.length = 2;
 }
+
+@("UniqueString TestAllocator")
+@safe unittest {
+    auto allocator = TestAllocator();
+    auto str = () @trusted { return UniqueString!(TestAllocator*)(&allocator); }();
+    str ~= 'f';
+    str ~= 'o';
+    str ~= 'o';
+    str[].shouldEqual("foo");
+}

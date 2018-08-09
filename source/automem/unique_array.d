@@ -7,6 +7,8 @@ import automem.traits: isAllocator;
 import stdx.allocator: theAllocator;
 
 
+alias UniqueString(Allocator = typeof(theAllocator)) = UniqueArray!(char, Allocator);
+
 
 /**
    A unique array similar to C++'s std::unique_ptr<T> when T is an array
