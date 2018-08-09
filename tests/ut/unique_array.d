@@ -66,34 +66,34 @@ private void defaultTest(T)() {
 
     auto ptr3 = ptr2.unique;
     ptr3.length.shouldEqual(3);
-    ptr3[].shouldEqual([Struct(), Struct(), Struct(5)]);
+    ptr3.shouldEqual([Struct(), Struct(), Struct(5)]);
     (*ptr3).shouldEqual([Struct(), Struct(), Struct(5)]);
 
     ptr3 ~= Struct(10);
-    ptr3[].shouldEqual([Struct(), Struct(), Struct(5), Struct(10)]);
+    ptr3.shouldEqual([Struct(), Struct(), Struct(5), Struct(10)]);
 
     ptr3 ~= [Struct(11), Struct(12)];
-    ptr3[].shouldEqual([Struct(), Struct(), Struct(5), Struct(10), Struct(11), Struct(12)]);
+    ptr3.shouldEqual([Struct(), Struct(), Struct(5), Struct(10), Struct(11), Struct(12)]);
 
     ptr3.length = 3;
-    ptr3[].shouldEqual([Struct(), Struct(), Struct(5)]);
+    ptr3.shouldEqual([Struct(), Struct(), Struct(5)]);
 
     ptr3.length = 4;
-    ptr3[].shouldEqual([Struct(), Struct(), Struct(5), Struct()]);
+    ptr3.shouldEqual([Struct(), Struct(), Struct(5), Struct()]);
 
     ptr3.length = 1;
 
     ptr3 ~= makeUniqueArray!(Struct, Allocator)(allocator, 1);
 
-    ptr3[].shouldEqual([Struct(), Struct()]);
+    ptr3.shouldEqual([Struct(), Struct()]);
 
     auto ptr4 = makeUniqueArray!(Struct, Allocator)(allocator, 1);
 
     ptr3 ~= ptr4.unique;
-    ptr3[].shouldEqual([Struct(), Struct(), Struct()]);
+    ptr3.shouldEqual([Struct(), Struct(), Struct()]);
 
     ptr3 = [Struct(7), Struct(9)];
-    ptr3[].shouldEqual([Struct(7), Struct(9)]);
+    ptr3.shouldEqual([Struct(7), Struct(9)]);
 }
 
 ///
@@ -110,7 +110,7 @@ private void defaultTest(T)() {
 
     {
         NoGcStruct[2] expected = [NoGcStruct(1), NoGcStruct(3)];
-        assert(arr[] == expected[]);
+        assert(arr == expected);
     }
 
     auto arr2 = UniqueArray!(NoGcStruct, Mallocator)(1);
@@ -118,7 +118,7 @@ private void defaultTest(T)() {
 
     {
         NoGcStruct[3] expected = [NoGcStruct(1), NoGcStruct(3), NoGcStruct()];
-        assert(arr[] == expected[]);
+        assert(arr == expected);
     }
 }
 
@@ -136,7 +136,7 @@ private void defaultTest(T)() {
 @system unittest {
     auto allocator = TestAllocator();
     auto arr = UniqueArray!(Struct, TestAllocator*)(&allocator, 2, Struct(7));
-    arr[].shouldEqual([Struct(7), Struct(7)]);
+    arr.shouldEqual([Struct(7), Struct(7)]);
 }
 
 @("init Mallocator")
@@ -144,7 +144,7 @@ private void defaultTest(T)() {
     import stdx.allocator.mallocator: Mallocator;
     alias allocator = Mallocator.instance;
     auto arr = UniqueArray!(Struct, Mallocator)(2, Struct(7));
-    arr[].shouldEqual([Struct(7), Struct(7)]);
+    arr.shouldEqual([Struct(7), Struct(7)]);
 }
 
 
@@ -152,14 +152,14 @@ private void defaultTest(T)() {
 @system unittest {
     auto allocator = TestAllocator();
     auto arr = UniqueArray!(Struct, TestAllocator*)(&allocator, [Struct(1), Struct(2)]);
-    arr[].shouldEqual([Struct(1), Struct(2)]);
+    arr.shouldEqual([Struct(1), Struct(2)]);
 }
 
 @("range Mallocator")
 @system unittest {
     import stdx.allocator.mallocator: Mallocator;
     auto arr = UniqueArray!(Struct, Mallocator)([Struct(1), Struct(2)]);
-    arr[].shouldEqual([Struct(1), Struct(2)]);
+    arr.shouldEqual([Struct(1), Struct(2)]);
 }
 
 
@@ -167,7 +167,7 @@ private void defaultTest(T)() {
 @system unittest {
     with(theTestAllocator) {
         auto arr = UniqueArray!Struct(2);
-        arr[].shouldEqual([Struct(), Struct()]);
+        arr.shouldEqual([Struct(), Struct()]);
     }
 }
 
@@ -207,7 +207,7 @@ unittest {
     a.reserve(10); //allocates here
     a ~= [1, 2, 3]; // should not allocate
     a ~= [4, 5, 6, 7, 8, 9]; //should not allocate
-    a[].shouldEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+    a.shouldEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
     allocator.numAllocations.shouldEqual(1);
 }
 
@@ -218,7 +218,7 @@ unittest {
     a.reserve(10); //allocates here
     a ~= [3, 4]; // should not allocate
     a ~= [5, 6, 7, 8, 9]; //should not allocate
-    a[].shouldEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+    a.shouldEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
     allocator.numAllocations.shouldEqual(2);
 }
 
@@ -228,7 +228,7 @@ unittest {
     auto a = UniqueArray!(int, TestAllocator*)(&allocator, [1, 2, 3, 4, 5]); //allocates here
     a.reserve(2); // should not allocate, changes length to 2
     a ~= [5, 6];  // should not allocate
-    a[].shouldEqual([1, 2, 5, 6]);
+    a.shouldEqual([1, 2, 5, 6]);
     allocator.numAllocations.shouldEqual(1);
 }
 
@@ -237,7 +237,7 @@ unittest {
     auto allocator = TestAllocator();
     auto a = UniqueArray!(int, TestAllocator*)(&allocator, [1, 2, 3]) ~
              UniqueArray!(int, TestAllocator*)(&allocator, [4, 5]);
-    a[].shouldEqual([1, 2, 3, 4, 5]);
+    a.shouldEqual([1, 2, 3, 4, 5]);
 }
 
 @("ptr")
@@ -255,7 +255,7 @@ unittest {
     auto a = UniqueArray!(int, TestAllocator*)(&allocator, [1, 2, 3, 4, 5]);
     auto b = a.dup;
     allocator.numAllocations.shouldEqual(2);
-    b[].shouldEqual([1, 2, 3, 4, 5]);
+    b.shouldEqual([1, 2, 3, 4, 5]);
 }
 
 @("dup Mallocator")
@@ -263,7 +263,7 @@ unittest {
     import stdx.allocator.mallocator: Mallocator;
     auto a = UniqueArray!(int, Mallocator)([1, 2, 3, 4, 5]);
     auto b = a.dup;
-    b[].shouldEqual([1, 2, 3, 4, 5]);
+    b.shouldEqual([1, 2, 3, 4, 5]);
 }
 
 @("dup TestAllocator indirections")
@@ -275,8 +275,8 @@ unittest {
     a[0] = String("quux");
     a[1] = String("toto");
     allocator.numAllocations.shouldEqual(2);
-    a[].shouldEqual([String("quux"), String("toto")]);
-    b[].shouldEqual([String("foo"), String("bar")]);
+    a.shouldEqual([String("quux"), String("toto")]);
+    b.shouldEqual([String("foo"), String("bar")]);
 }
 
 @("Set length to the same length")
@@ -293,5 +293,5 @@ unittest {
     str ~= 'f';
     str ~= 'o';
     str ~= 'o';
-    str[].shouldEqual("foo");
+    str.shouldEqual("foo");
 }

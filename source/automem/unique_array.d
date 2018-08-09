@@ -22,6 +22,8 @@ struct UniqueArray(Type, Allocator = typeof(theAllocator)) if(isAllocator!Alloca
     enum isTheAllocator = is(Allocator == typeof(theAllocator));
     enum isGlobal = isSingleton || isTheAllocator;
 
+    alias opSlice this;
+
     static if(isGlobal) {
 
         /**
