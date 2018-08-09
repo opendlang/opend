@@ -7,6 +7,9 @@ import automem.traits: isAllocator;
 import stdx.allocator: theAllocator;
 
 
+alias UniqueString(Allocator = typeof(theAllocator)) = UniqueArray!(char, Allocator);
+
+
 /**
    A unique array similar to C++'s std::unique_ptr<T> when T is an array
  */
@@ -18,6 +21,8 @@ struct UniqueArray(Type, Allocator = typeof(theAllocator)) if(isAllocator!Alloca
     enum isSingleton = hasMember!(Allocator, "instance");
     enum isTheAllocator = is(Allocator == typeof(theAllocator));
     enum isGlobal = isSingleton || isTheAllocator;
+
+    alias opSlice this;
 
     static if(isGlobal) {
 
@@ -117,7 +122,7 @@ struct UniqueArray(Type, Allocator = typeof(theAllocator)) if(isAllocator!Alloca
         return length;
     }
 
-    @property long length() const nothrow {
+    @property long length() nothrow const {
         return _length;
     }
 
@@ -137,7 +142,7 @@ struct UniqueArray(Type, Allocator = typeof(theAllocator)) if(isAllocator!Alloca
             _length = size;
         } else {
             if(size > length) {
-                _allocator.expandArray(_objects, size - length);
+                () @trusted { _allocator.expandArray(_objects, size - length); }();
                 setLength;
             } else
                 assert(0);
