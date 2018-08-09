@@ -11,7 +11,8 @@ alias utl = dubConfigurationTarget!(
 );
 alias asan = dubConfigurationTarget!(
     Configuration("asan"),
-    CompilerFlags(debugFlags ~ " -unittest -cov")
+    CompilerFlags(debugFlags ~ " -unittest -cov -fsanitize=address"),
+    LinkerFlags("-fsanitize=address"),
 );
 
 

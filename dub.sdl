@@ -3,18 +3,21 @@ authors "Atila Neves"
 description "Automatic memory management"
 license "BSD 3-clause"
 targetType "library"
+targetPath "bin"
 dependency "stdx-allocator" version="~>2.77.0"
+
 
 configuration "library" {
 }
 
 configuration "unittest" {
     targetType "executable"
-    targetPath "bin"
     targetName "ut"
+
     importPaths "tests"
     sourcePaths "tests"
     mainSourceFile "tests/ut_main.d"
+
     dependency "unit-threaded" version="*"
     dependency "test_allocator" version="~>0.2.1"
     versions "AutomemTesting"
@@ -22,28 +25,31 @@ configuration "unittest" {
 
 configuration "asan" {
     targetType "executable"
-    targetPath "bin"
     targetName "asan"
+
     importPaths "tests"
     sourcePaths "tests"
-
     mainSourceFile "tests/ut_main.d"
+
     dflags "-fsanitize=address" platform="ldc"
-    dependency "unit-threaded" version="*"
-    dependency "test_allocator" version="~>0.2.1"
     versions "AutomemTesting"
     // unit threaded light is necessary for the tests to actually run
     versions "AutomemTesting" "unitUnthreaded" "unitThreadedLight"
+
+    dependency "unit-threaded" version="*"
+    dependency "test_allocator" version="~>0.2.1"
 }
 
 configuration "utl" {
     targetType "executable"
-    targetPath "bin"
     targetName "utl"
+
     importPaths "tests"
     sourcePaths "tests"
-    dependency "unit-threaded" version="*"
-    dependency "test_allocator" version="~>0.2.1"
+
     versions "AutomemTesting"
     version "unitThreadedLight"
+
+    dependency "unit-threaded" version="*"
+    dependency "test_allocator" version="~>0.2.1"
 }

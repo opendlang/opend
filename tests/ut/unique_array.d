@@ -286,12 +286,21 @@ unittest {
     a.length = 2;
 }
 
-@("UniqueString TestAllocator")
+@("UniqueString TestAllocator append")
 @safe unittest {
     auto allocator = TestAllocator();
-    auto str = () @trusted { return UniqueString!(TestAllocator*)(&allocator); }();
+    auto allocatorPtr = () @trusted { return &allocator; }();
+    auto str = UniqueString!(TestAllocator*)(allocatorPtr);
     str ~= 'f';
     str ~= 'o';
     str ~= 'o';
     str.shouldEqual("foo");
+}
+
+@("UniqueString TestAllocator init with string")
+@safe unittest {
+    auto allocator = TestAllocator();
+    auto allocatorPtr = () @trusted { return &allocator; }();
+    auto str = UniqueString!(TestAllocator*)(allocatorPtr, "foobar");
+    str.shouldEqual("foobar");
 }
