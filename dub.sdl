@@ -15,7 +15,7 @@ configuration "unittest" {
     importPaths "tests"
     sourcePaths "tests"
     mainSourceFile "tests/ut_main.d"
-    dependency "unit-threaded" version="~>0.7.0"
+    dependency "unit-threaded" version="*"
     dependency "test_allocator" version="~>0.2.1"
     versions "AutomemTesting"
 }
@@ -29,7 +29,7 @@ configuration "asan" {
 
     mainSourceFile "tests/ut_main.d"
     dflags "-fsanitize=address" platform="ldc"
-    dependency "unit-threaded" version="~>0.7.0"
+    dependency "unit-threaded" version="*"
     dependency "test_allocator" version="~>0.2.1"
     versions "AutomemTesting"
     // unit threaded light is necessary for the tests to actually run
@@ -42,7 +42,7 @@ configuration "utl" {
     targetName "utl"
     importPaths "tests"
     sourcePaths "tests"
-    dependency "unit-threaded" version="~>0.7.0"
+    dependency "unit-threaded" version="*"
     dependency "test_allocator" version="~>0.2.1"
     versions "AutomemTesting"
     version "unitThreadedLight"
