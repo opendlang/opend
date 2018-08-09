@@ -7,6 +7,7 @@ import automem.traits: isAllocator;
 import stdx.allocator: theAllocator;
 
 
+
 /**
    A unique array similar to C++'s std::unique_ptr<T> when T is an array
  */
@@ -117,7 +118,7 @@ struct UniqueArray(Type, Allocator = typeof(theAllocator)) if(isAllocator!Alloca
         return length;
     }
 
-    @property long length() const nothrow {
+    @property long length() nothrow const {
         return _length;
     }
 
@@ -137,7 +138,7 @@ struct UniqueArray(Type, Allocator = typeof(theAllocator)) if(isAllocator!Alloca
             _length = size;
         } else {
             if(size > length) {
-                _allocator.expandArray(_objects, size - length);
+                () @trusted { _allocator.expandArray(_objects, size - length); }();
                 setLength;
             } else
                 assert(0);

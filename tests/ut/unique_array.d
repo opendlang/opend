@@ -104,6 +104,8 @@ private void defaultTest(T)() {
     auto allocator = SafeAllocator();
     auto arr = UniqueArray!(NoGcStruct, SafeAllocator)(SafeAllocator(), 6);
     assert(arr.length == 6);
+    arr ~= NoGcStruct();
+    assert(arr.length == 7);
 }
 
 
