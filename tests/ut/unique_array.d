@@ -17,6 +17,62 @@ mixin TestUtils;
     defaultTest!Mallocator;
 }
 
+private void defaultTest(T)() {
+    import std.algorithm: move;
+
+    mixin AllocatorAlias!T;
+
+    auto ptr = makeUniqueArray!(Struct, Allocator)(allocator, 3);
+    ptr.length.shouldEqual(3);
+
+    ptr[2].twice.shouldEqual(0);
+    ptr[2] = Struct(5);
+    ptr[2].twice.shouldEqual(10);
+
+    ptr[1..$].shouldEqual([Struct(), Struct(5)]);
+
+    typeof(ptr) ptr2 = ptr.move;
+
+    ptr.length.shouldEqual(0);
+    (cast(bool)ptr).shouldBeFalse;
+    ptr2.length.shouldEqual(3);
+    (cast(bool)ptr2).shouldBeTrue;
+
+    // not copyable
+    static assert(!__traits(compiles, ptr2 = ptr1));
+
+    auto ptr3 = ptr2.unique;
+    ptr3.length.shouldEqual(3);
+    ptr3[].shouldEqual([Struct(), Struct(), Struct(5)]);
+    (*ptr3).shouldEqual([Struct(), Struct(), Struct(5)]);
+
+    ptr3 ~= Struct(10);
+    ptr3[].shouldEqual([Struct(), Struct(), Struct(5), Struct(10)]);
+
+    ptr3 ~= [Struct(11), Struct(12)];
+    ptr3[].shouldEqual([Struct(), Struct(), Struct(5), Struct(10), Struct(11), Struct(12)]);
+
+    ptr3.length = 3;
+    ptr3[].shouldEqual([Struct(), Struct(), Struct(5)]);
+
+    ptr3.length = 4;
+    ptr3[].shouldEqual([Struct(), Struct(), Struct(5), Struct()]);
+
+    ptr3.length = 1;
+
+    ptr3 ~= makeUniqueArray!(Struct, Allocator)(allocator, 1);
+
+    ptr3[].shouldEqual([Struct(), Struct()]);
+
+    auto ptr4 = makeUniqueArray!(Struct, Allocator)(allocator, 1);
+
+    ptr3 ~= ptr4.unique;
+    ptr3[].shouldEqual([Struct(), Struct(), Struct()]);
+
+    ptr3 = [Struct(7), Struct(9)];
+    ptr3[].shouldEqual([Struct(7), Struct(9)]);
+}
+
 ///
 @("@nogc")
 @system @nogc unittest {
@@ -188,7 +244,7 @@ unittest {
 @("dup TestAllocator indirections")
 @system unittest {
     auto allocator = TestAllocator();
-    struct String { string s; }
+    static struct String { string s; }
     auto a = UniqueArray!(String, TestAllocator*)(&allocator, [String("foo"), String("bar")]);
     auto b = a.dup;
     a[0] = String("quux");
@@ -205,62 +261,6 @@ unittest {
     a.length = 2;
 }
 
-
-void defaultTest(T)() {
-    import std.algorithm: move;
-
-    mixin AllocatorAlias!T;
-
-    auto ptr = makeUniqueArray!(Struct, Allocator)(allocator, 3);
-    ptr.length.shouldEqual(3);
-
-    ptr[2].twice.shouldEqual(0);
-    ptr[2] = Struct(5);
-    ptr[2].twice.shouldEqual(10);
-
-    ptr[1..$].shouldEqual([Struct(), Struct(5)]);
-
-    typeof(ptr) ptr2 = ptr.move;
-
-    ptr.length.shouldEqual(0);
-    (cast(bool)ptr).shouldBeFalse;
-    ptr2.length.shouldEqual(3);
-    (cast(bool)ptr2).shouldBeTrue;
-
-    // not copyable
-    static assert(!__traits(compiles, ptr2 = ptr1));
-
-    auto ptr3 = ptr2.unique;
-    ptr3.length.shouldEqual(3);
-    ptr3[].shouldEqual([Struct(), Struct(), Struct(5)]);
-    (*ptr3).shouldEqual([Struct(), Struct(), Struct(5)]);
-
-    ptr3 ~= Struct(10);
-    ptr3[].shouldEqual([Struct(), Struct(), Struct(5), Struct(10)]);
-
-    ptr3 ~= [Struct(11), Struct(12)];
-    ptr3[].shouldEqual([Struct(), Struct(), Struct(5), Struct(10), Struct(11), Struct(12)]);
-
-    ptr3.length = 3;
-    ptr3[].shouldEqual([Struct(), Struct(), Struct(5)]);
-
-    ptr3.length = 4;
-    ptr3[].shouldEqual([Struct(), Struct(), Struct(5), Struct()]);
-
-    ptr3.length = 1;
-
-    ptr3 ~= makeUniqueArray!(Struct, Allocator)(allocator, 1);
-
-    ptr3[].shouldEqual([Struct(), Struct()]);
-
-    auto ptr4 = makeUniqueArray!(Struct, Allocator)(allocator, 1);
-
-    ptr3 ~= ptr4.unique;
-    ptr3[].shouldEqual([Struct(), Struct(), Struct()]);
-
-    ptr3 = [Struct(7), Struct(9)];
-    ptr3[].shouldEqual([Struct(7), Struct(9)]);
-}
 
 mixin template AllocatorAlias(T) {
     import std.traits: hasMember;
