@@ -1,9 +1,10 @@
 # intel-intrinsics
 
 [![Travis Status](https://travis-ci.org/AuburnSounds/intel-intrinsics.svg?branch=master)](https://travis-ci.org/AuburnSounds/intel-intrinsics)
-This package allows you to use Intel intrinsics in D code.
 
-**This is a work in progress, some intrinsics are missing with DMD. Please complain in the bugtracker.**
+The practical D SIMD solution. Use Intel intrinsics in D code.
+
+**This is a work in progress, please complain in the bugtracker.**
 
 ## Usage
 
