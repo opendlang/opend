@@ -6,6 +6,11 @@ import automem.array;
 mixin TestUtils;
 
 
+@("length")
+@safe unittest {
+    array("foo", "bar", "baz").length.should == 3;
+    array("quux", "toto").length.should == 2;
+}
 
 @("array.int")
 @safe unittest {

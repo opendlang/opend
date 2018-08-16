@@ -28,6 +28,10 @@ struct Array(E) {
         return _elements.length == 0;
     }
 
+    long length() {
+        return _elements.length;
+    }
+
     ref E opIndex(long i) {
         return _elements[i];
     }
