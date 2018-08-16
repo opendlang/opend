@@ -1,5 +1,5 @@
 /**
-   RAII arrays
+   Uncopyable arrays similar to the array version of C++'s std::unique_ptr
  */
 module automem.unique_array;
 
