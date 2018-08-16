@@ -16,7 +16,7 @@ struct Array(E) {
         _elements = _elements.dup;
     }
 
-    E front() {
+    inout(E) front() inout {
         return _elements[0];
     }
 
@@ -24,15 +24,15 @@ struct Array(E) {
         _elements = _elements[1 .. $];
     }
 
-    bool empty() {
+    bool empty() const {
         return _elements.length == 0;
     }
 
-    long length() {
+    long length() const {
         return _elements.length;
     }
 
-    ref E opIndex(long i) {
+    ref inout(E) opIndex(long i) inout {
         return _elements[i];
     }
 
