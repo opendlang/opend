@@ -150,7 +150,7 @@ struct UniqueArray(Type, Allocator = typeof(theAllocator)) if(isAllocator!Alloca
     }
 
     /**
-       Dereference. const  since this otherwise could be used to try
+       Dereference. const since this otherwise could be used to try
        and append to the array, which would not be nice
      */
     const(Type[]) opUnary(string s)() const if(s == "*") {

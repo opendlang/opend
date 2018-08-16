@@ -48,7 +48,7 @@ private void defaultTest(T)() {
     auto ptr = makeUniqueArray!(Struct, Allocator)(allocator, 3);
     ptr.length.shouldEqual(3);
 
-    ptr[2].twice.shouldEqual(0);
+    ptr[2].twice.shouldEqual(0);  // Struct.init
     ptr[2] = Struct(5);
     ptr[2].twice.shouldEqual(10);
 
@@ -56,7 +56,7 @@ private void defaultTest(T)() {
 
     typeof(ptr) ptr2 = ptr.move;
 
-    ptr.length.shouldEqual(0);
+    ptr.length.shouldEqual(0);  // moved from
     (cast(bool)ptr).shouldBeFalse;
     ptr2.length.shouldEqual(3);
     (cast(bool)ptr2).shouldBeTrue;
@@ -64,7 +64,7 @@ private void defaultTest(T)() {
     // not copyable
     static assert(!__traits(compiles, ptr2 = ptr1));
 
-    auto ptr3 = ptr2.unique;
+    auto ptr3 = ptr2.unique;  // same as move
     ptr3.length.shouldEqual(3);
     ptr3.shouldEqual([Struct(), Struct(), Struct(5)]);
     (*ptr3).shouldEqual([Struct(), Struct(), Struct(5)]);
