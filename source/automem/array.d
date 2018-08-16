@@ -4,13 +4,23 @@
  */
 module automem.array;
 
+import std.range.primitives: isInputRange;
+
 
 auto array(E)(E[] elements...) {
     return Array!E(elements.dup);
 }
 
+auto array(R)(R range) if(isInputRange!R) {
+    import std.range.primitives: ElementType;
+    return Array!(ElementType!R)(range);
+}
 
 struct Array(E) {
+
+    this(R)(R range) if(isInputRange!R) {
+        this = range;
+    }
 
     this(this) {
         _elements = _elements.dup;
@@ -38,6 +48,11 @@ struct Array(E) {
 
     Array opBinary(string s)(Array other) if(s == "~") {
         return Array(_elements ~ other._elements);
+    }
+
+    void opAssign(R)(R other) if(isInputRangeOf!(R, E)) {
+        import std.array: array;
+        _elements = other.array;
     }
 
     /// Append to the array

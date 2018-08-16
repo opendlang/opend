@@ -80,3 +80,17 @@ mixin TestUtils;
     arr[2 .. 5].should == [2, 3, 4];
     arr[1 .. $ - 1].should == [1, 2, 3, 4];
 }
+
+@("assign")
+@safe unittest {
+    import std.range: iota;
+    auto arr = array(10, 11, 12);
+    arr = 5.iota;
+    arr.should == [0, 1, 2, 3, 4];
+}
+
+@("construct from range")
+@safe unittest {
+    import std.range: iota;
+    array(5.iota).should == [0, 1, 2, 3, 4];
+}
