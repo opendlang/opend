@@ -50,6 +50,10 @@ struct Array(E) {
         return _elements.length;
     }
 
+    void clear() {
+        _elements.length = 0;
+    }
+
     ref inout(E) opIndex(long i) inout {
         return _elements[i];
     }

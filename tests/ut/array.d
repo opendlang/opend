@@ -132,3 +132,11 @@ mixin TestUtils;
     arr[1..3] ~= "oops";
     arr.should == ["foo", "baroops", "quuxoops", "toto"];
 }
+
+@("clear")
+@safe unittest {
+    auto arr = array(0, 1, 2, 3);
+    arr.clear;
+    int[] empty;
+    arr.should == empty;
+}
