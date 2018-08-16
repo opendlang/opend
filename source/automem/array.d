@@ -49,6 +49,18 @@ struct Array(E) {
         _elements ~= other.array;
     }
 
+    inout(E)[] opSlice() inout {
+        return _elements[];
+    }
+
+    inout(E)[] opSlice(long start, long end) inout {
+        return _elements[start .. end];
+    }
+
+    long opDollar() const {
+        return _elements.length;
+    }
+
     E[] _elements;
 }
 

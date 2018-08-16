@@ -52,3 +52,14 @@ mixin TestUtils;
     arr ~= [1, 2].map!(a => a + 10);
     arr.should == [0, 1, 2, 3, 4, 5, 6, 11, 12];
 }
+
+
+@("slice")
+@safe unittest {
+    const arr = array(0, 1, 2, 3, 4, 5);
+    arr[].should == [0, 1, 2, 3, 4, 5];
+    arr[1 .. 3].should == [1, 2];
+    arr[1 .. 4].should == [1, 2, 3];
+    arr[2 .. 5].should == [2, 3, 4];
+    arr[1 .. $ - 1].should == [1, 2, 3, 4];
+}
