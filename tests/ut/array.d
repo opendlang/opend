@@ -28,3 +28,11 @@ mixin TestUtils;
     arr1.should == [1, 7, 3];
     arr2.should == [1, 2, 3];
 }
+
+@("bounds check")
+@safe unittest {
+    import core.exception: RangeError;
+
+    auto arr = array(1, 2, 3);
+    arr[3].shouldThrow!RangeError;
+}
