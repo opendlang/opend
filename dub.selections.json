@@ -2,7 +2,7 @@
 	"fileVersion": 1,
 	"versions": {
 		"stdx-allocator": "2.77.2",
-		"test_allocator": "0.2.2",
-		"unit-threaded": "0.7.49"
+		"test_allocator": "0.2.3",
+		"unit-threaded": "0.7.50"
 	}
 }

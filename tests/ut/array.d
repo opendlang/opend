@@ -14,14 +14,14 @@ mixin TestUtils;
 
 @("array.int")
 @safe unittest {
-    array(1, 2, 3, 4, 5).should == [1, 2, 3, 4, 5];
-    array(2, 3, 4).should == [2, 3, 4];
+    array(1, 2, 3, 4, 5)[].shouldEqual([1, 2, 3, 4, 5]);
+    array(2, 3, 4)[].shouldEqual([2, 3, 4]);
 }
 
 @("array.double")
 @safe unittest {
-    array(33.3).should == [33.3];
-    array(22.2, 77.7).should == [22.2, 77.7];
+    array(33.3)[].shouldEqual([33.3]);
+    array(22.2, 77.7)[].shouldEqual([22.2, 77.7]);
 }
 
 @("copying")
@@ -30,8 +30,8 @@ mixin TestUtils;
     auto arr2 = arr1;
     arr1[1] = 7;
 
-    arr1.should == [1, 7, 3];
-    arr2.should == [1, 2, 3];
+    arr1[].shouldEqual([1, 7, 3]);
+    arr2[].shouldEqual([1, 2, 3]);
 }
 
 @("bounds check")
@@ -49,13 +49,13 @@ mixin TestUtils;
     auto arr = array(0, 1, 2, 3);
 
     arr ~= 4;
-    arr.should == [0, 1, 2, 3, 4];
+    arr[].shouldEqual([0, 1, 2, 3, 4]);
 
     arr ~= [5, 6];
-    arr.should == [0, 1, 2, 3, 4, 5, 6];
+    arr[].shouldEqual([0, 1, 2, 3, 4, 5, 6]);
 
     arr ~= [1, 2].map!(a => a + 10);
-    arr.should == [0, 1, 2, 3, 4, 5, 6, 11, 12];
+    arr[].shouldEqual([0, 1, 2, 3, 4, 5, 6, 11, 12]);
 }
 
 @("append")
@@ -64,21 +64,21 @@ mixin TestUtils;
     auto arr2 = array(3, 4);
 
     auto arr3 =  arr1 ~ arr2;
-    arr3.should == [0, 1, 2, 3, 4];
+    arr3[].shouldEqual([0, 1, 2, 3, 4]);
 
     arr1[0] = 7;
     arr2[0] = 9;
-    arr3.should == [0, 1, 2, 3, 4];
+    arr3[].shouldEqual([0, 1, 2, 3, 4]);
 }
 
 @("slice")
 @safe unittest {
     const arr = array(0, 1, 2, 3, 4, 5);
-    arr[].should == [0, 1, 2, 3, 4, 5];
-    arr[1 .. 3].should == [1, 2];
-    arr[1 .. 4].should == [1, 2, 3];
-    arr[2 .. 5].should == [2, 3, 4];
-    arr[1 .. $ - 1].should == [1, 2, 3, 4];
+    arr[][].shouldEqual([0, 1, 2, 3, 4, 5]);
+    arr[1 .. 3][].shouldEqual([1, 2]);
+    arr[1 .. 4][].shouldEqual([1, 2, 3]);
+    arr[2 .. 5][].shouldEqual([2, 3, 4]);
+    arr[1 .. $ - 1][].shouldEqual([1, 2, 3, 4]);
 }
 
 @("assign")
@@ -86,26 +86,26 @@ mixin TestUtils;
     import std.range: iota;
     auto arr = array(10, 11, 12);
     arr = 5.iota;
-    arr.should == [0, 1, 2, 3, 4];
+    arr[].shouldEqual([0, 1, 2, 3, 4]);
 }
 
 @("construct from range")
 @safe unittest {
     import std.range: iota;
-    array(5.iota).should == [0, 1, 2, 3, 4];
+    array(5.iota)[].shouldEqual([0, 1, 2, 3, 4]);
 }
 
 @("popBack")
 @safe unittest {
     auto arr = array(0, 1, 2);
     arr.popBack;
-    arr.should == [0, 1];
+    arr[].shouldEqual([0, 1]);
 }
 
 @("back")
 @safe unittest {
     const arr = array("foo", "bar", "baz");
-    arr.back.should == "baz";
+    arr.back[].shouldEqual("baz");
 }
 
 @("opSliceAssign")
@@ -113,24 +113,24 @@ mixin TestUtils;
     auto arr = array("foo", "bar", "quux", "toto");
 
     arr[] = "haha";
-    arr.should == ["haha", "haha", "haha", "haha"];
+    arr[].shouldEqual(["haha", "haha", "haha", "haha"]);
 
     arr[1..3] = "oops";
-    arr.should == ["haha", "oops", "oops", "haha"];
+    arr[].shouldEqual(["haha", "oops", "oops", "haha"]);
 }
 
 @("opSliceOpAssign")
 @safe unittest {
     auto arr = array("foo", "bar", "quux", "toto");
     arr[] ~= "oops";
-    arr.should == ["foooops", "baroops", "quuxoops", "totooops"];
+    arr[].shouldEqual(["foooops", "baroops", "quuxoops", "totooops"]);
 }
 
 @("opSliceOpAssign range")
 @safe unittest {
     auto arr = array("foo", "bar", "quux", "toto");
     arr[1..3] ~= "oops";
-    arr.should == ["foo", "baroops", "quuxoops", "toto"];
+    arr[].shouldEqual(["foo", "baroops", "quuxoops", "toto"]);
 }
 
 @("clear")
@@ -138,5 +138,30 @@ mixin TestUtils;
     auto arr = array(0, 1, 2, 3);
     arr.clear;
     int[] empty;
-    arr.should == empty;
+    arr[].shouldEqual(empty);
+}
+
+
+@("Mallocator")
+@safe @nogc unittest {
+    import stdx.allocator.mallocator: Mallocator;
+    auto arr = array!Mallocator(0, 1, 2, 3);
+}
+
+@("Mallocator null")
+@safe @nogc unittest {
+    import stdx.allocator.mallocator: Mallocator;
+    Array!(Mallocator, int) arr;
+}
+
+@("Cannot escape slice")
+@safe @nogc unittest {
+    import stdx.allocator.mallocator: Mallocator;
+
+    int[] ints1;
+    scope arr = array!Mallocator(0, 1, 2, 3);
+    int[] ints2;
+
+    static assert(!__traits(compiles, ints1 = arr[]));
+    static assert(__traits(compiles, ints2 = arr[]));
 }
