@@ -94,3 +94,10 @@ mixin TestUtils;
     import std.range: iota;
     array(5.iota).should == [0, 1, 2, 3, 4];
 }
+
+@("popBack")
+@safe unittest {
+    auto arr = array(0, 1, 2);
+    arr.popBack;
+    arr.should == [0, 1];
+}

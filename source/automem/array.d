@@ -30,6 +30,10 @@ struct Array(E) {
         return _elements[0];
     }
 
+    void popBack() {
+        _elements = _elements[0 .. $ - 1];
+    }
+
     void popFront() {
         _elements = _elements[1 .. $];
     }
