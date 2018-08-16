@@ -36,6 +36,10 @@ struct Array(E) {
         return _elements[i];
     }
 
+    Array opBinary(string s)(Array other) if(s == "~") {
+        return Array(_elements ~ other._elements);
+    }
+
     /// Append to the array
     void opOpAssign(string op)
                    (E other)
