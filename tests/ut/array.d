@@ -19,7 +19,6 @@ mixin TestUtils;
     array(22.2, 77.7).should == [22.2, 77.7];
 }
 
-@ShouldFail
 @("copying")
 @safe unittest {
     auto arr1 = array(1, 2, 3);
