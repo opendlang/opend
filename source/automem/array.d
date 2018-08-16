@@ -92,6 +92,14 @@ struct Array(E) {
         return _elements.length;
     }
 
+    void opSliceAssign(E value) {
+        _elements[] = value;
+    }
+
+    void opSliceAssign(E value, long start, long end) {
+        _elements[start .. end] = value;
+    }
+
     E[] _elements;
 }
 

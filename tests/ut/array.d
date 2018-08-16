@@ -107,3 +107,14 @@ mixin TestUtils;
     const arr = array("foo", "bar", "baz");
     arr.back.should == "baz";
 }
+
+@("sliceAssign")
+@safe unittest {
+    auto arr = array("foo", "bar", "quux", "toto");
+
+    arr[] = "haha";
+    arr.should == ["haha", "haha", "haha", "haha"];
+
+    arr[1..3] = "oops";
+    arr.should == ["haha", "oops", "oops", "haha"];
+}
