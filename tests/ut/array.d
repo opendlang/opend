@@ -108,7 +108,7 @@ mixin TestUtils;
     arr.back.should == "baz";
 }
 
-@("sliceAssign")
+@("opSliceAssign")
 @safe unittest {
     auto arr = array("foo", "bar", "quux", "toto");
 
@@ -117,4 +117,18 @@ mixin TestUtils;
 
     arr[1..3] = "oops";
     arr.should == ["haha", "oops", "oops", "haha"];
+}
+
+@("opSliceOpAssign")
+@safe unittest {
+    auto arr = array("foo", "bar", "quux", "toto");
+    arr[] ~= "oops";
+    arr.should == ["foooops", "baroops", "quuxoops", "totooops"];
+}
+
+@("opSliceOpAssign range")
+@safe unittest {
+    auto arr = array("foo", "bar", "quux", "toto");
+    arr[1..3] ~= "oops";
+    arr.should == ["foo", "baroops", "quuxoops", "toto"];
 }

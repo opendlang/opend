@@ -100,6 +100,16 @@ struct Array(E) {
         _elements[start .. end] = value;
     }
 
+    void opSliceOpAssign(string op)(E value) {
+        foreach(ref elt; _elements)
+            mixin(`elt ` ~ op ~ `= value;`);
+    }
+
+    void opSliceOpAssign(string op)(E value, long start, long end) {
+        foreach(ref elt; _elements[start .. end])
+            mixin(`elt ` ~ op ~ `= value;`);
+    }
+
     E[] _elements;
 }
 
