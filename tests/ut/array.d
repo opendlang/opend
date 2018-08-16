@@ -101,3 +101,9 @@ mixin TestUtils;
     arr.popBack;
     arr.should == [0, 1];
 }
+
+@("back")
+@safe unittest {
+    const arr = array("foo", "bar", "baz");
+    arr.back.should == "baz";
+}

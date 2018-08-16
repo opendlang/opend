@@ -30,12 +30,16 @@ struct Array(E) {
         return _elements[0];
     }
 
-    void popBack() {
-        _elements = _elements[0 .. $ - 1];
+    inout(E) back() inout {
+        return _elements[$ - 1];
     }
 
     void popFront() {
         _elements = _elements[1 .. $];
+    }
+
+    void popBack() {
+        _elements = _elements[0 .. $ - 1];
     }
 
     bool empty() const {
