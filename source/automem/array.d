@@ -5,6 +5,6 @@
 module automem.array;
 
 
-auto array(int[] numbers...) {
-    return numbers.dup;
+auto array(T)(T[] elements...) {
+    return elements.dup;
 }
