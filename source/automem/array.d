@@ -32,5 +32,30 @@ struct Array(E) {
         return _elements[i];
     }
 
+    /// Append to the array
+    void opOpAssign(string op)
+                   (E other)
+        if(op == "~")
+    {
+        _elements ~= other;
+    }
+
+    /// Append to the array
+    void opOpAssign(string op, R)
+                   (R other)
+        if(op == "~" && isInputRangeOf!(R, E))
+    {
+        import std.array: array;
+        _elements ~= other.array;
+    }
+
     E[] _elements;
+}
+
+
+private template isInputRangeOf(R, E) {
+    import std.range.primitives: isInputRange, ElementType;
+    import std.traits: Unqual;
+
+    enum isInputRangeOf = isInputRange!R && is(Unqual!(ElementType!R) == E);
 }

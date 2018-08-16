@@ -36,3 +36,19 @@ mixin TestUtils;
     auto arr = array(1, 2, 3);
     arr[3].shouldThrow!RangeError;
 }
+
+@("append")
+@safe unittest {
+    import std.algorithm: map;
+
+    auto arr = array(0, 1, 2, 3);
+
+    arr ~= 4;
+    arr.should == [0, 1, 2, 3, 4];
+
+    arr ~= [5, 6];
+    arr.should == [0, 1, 2, 3, 4, 5, 6];
+
+    arr ~= [1, 2].map!(a => a + 10);
+    arr.should == [0, 1, 2, 3, 4, 5, 6, 11, 12];
+}
