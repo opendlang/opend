@@ -1001,6 +1001,15 @@ extern(C) void defaultLMThreadManagerDelegate(T)(void* context, size_t totalThre
     }
 }}
 
+private auto assumePure(T)(T t)
+if (isFunctionPointer!T || isDelegate!T)
+{
+    enum attrs = functionAttributes!T | FunctionAttribute.pure_;
+    return cast(SetFunctionAttributes!(T, functionLinkage!T, attrs)) t;
+}
+
+// version = mir_optim_debug;
+
 // LM algorithm
 LMStatus optimizeLMImplGeneric(T)
     (
@@ -1050,6 +1059,12 @@ LMStatus optimizeLMImplGeneric(T)
     f(x, y);
     fCalls += 1;
     residual = dot(y, y);
+
+    version(mir_optim_debug)
+    {
+        import core.stdc.stdio;
+        auto file = assumePure(&fopen)("x.txt", "w");
+    }
 
     do
     {
@@ -1106,6 +1121,22 @@ LMStatus optimizeLMImplGeneric(T)
         auto nBuffer = JJ[0];
         copy(x, nBuffer);
         axpy(1, deltaX, nBuffer);
+
+        if (_lower_ptr)
+            applyLowerBound(nBuffer, lower);
+        if (_upper_ptr)
+            applyUpperBound(nBuffer, upper);
+
+        version(mir_optim_debug)
+        {
+            foreach (ref e; nBuffer)
+            {
+                assumePure(&fprintf)(file, "%.4f ", e);
+            }
+            assumePure(&fprintf)(file, "\n");
+            assumePure(&fflush)(file);
+        }
+
         f(nBuffer, mBuffer);
         fCalls += 1;
         auto trialResidual = dot(mBuffer, mBuffer);
