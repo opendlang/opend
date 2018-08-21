@@ -83,6 +83,16 @@ mixin TestUtils;
     vec[1 .. $ - 1][].shouldEqual([1, 2, 3, 4]);
 }
 
+@("opDollar")
+@safe unittest {
+    auto vec = vector(0, 1, 2, 3, 4);
+    vec ~= 5;
+    vec ~= 6;
+    vec.capacity.shouldBeGreaterThan(vec.length);
+
+    vec[1 .. $ - 1][].shouldEqual([1, 2, 3, 4, 5]);
+}
+
 @("assign")
 @safe unittest {
     import std.range: iota;

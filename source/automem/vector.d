@@ -215,7 +215,7 @@ struct Vector(Allocator, E) if(isAllocator!Allocator) {
     }
 
     long opDollar() const {
-        return _elements.length;
+        return length;
     }
 
     /// Assign all elements to the given value
