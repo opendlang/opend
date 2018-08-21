@@ -11,22 +11,31 @@ import stdx.allocator: theAllocator;
 import stdx.allocator.mallocator: Mallocator;
 
 
+/**
+   Create a vector from a variadic list of elements, inferring the type of
+   the elements and the allocator
+ */
 auto vector(A = typeof(theAllocator), E)
-          (E[] elements...)
+           (E[] elements...)
     if(isAllocator!A && isGlobal!A)
 {
     return Vector!(A, E)(elements);
 }
 
+/// ditto
 auto vector(A = typeof(theAllocator), E)
-          (A allocator, E[] elements...)
+           (A allocator, E[] elements...)
     if(isAllocator!A && !isGlobal!A)
 {
     return Vector!(A, E)(allocator, elements);
 }
 
+/**
+   Create a vector from an input range, inferring the type of the elements
+   and the allocator.
+ */
 auto vector(A = typeof(theAllocator), R)
-          (R range)
+           (R range)
     if(isAllocator!A && isGlobal!A && isInputRange!R)
 {
     import std.range.primitives: ElementType;
@@ -34,14 +43,19 @@ auto vector(A = typeof(theAllocator), R)
 }
 
 
+/// ditto
 auto vector(A = typeof(theAllocator), R)
-          (A allocator, R range)
+           (A allocator, R range)
     if(isAllocator!A && !isGlobal!A && isInputRange!R)
 {
     import std.range.primitives: ElementType;
     return Vector!(A, ElementType!R)(range);
 }
 
+/**
+   A dynamic array with deterministic memory usage
+   akin to C++'s std::vector or Rust's std::vec::Vec
+ */
 
 struct Vector(Allocator, E) if(isAllocator!Allocator) {
 
@@ -82,57 +96,70 @@ struct Vector(Allocator, E) if(isAllocator!Allocator) {
         () @trusted { _allocator.dispose(_elements); }();
     }
 
+    /// Returns the first element
     inout(E) front() inout {
         return _elements[0];
     }
 
+    /// Returns the last element
     inout(E) back() inout {
         return _elements[length - 1];
     }
 
+    /// When implemented, pops the front element off
     void popFront() {
         throw new Exception("Not implemented yet");
     }
 
+    /// Pops the last element off
     void popBack() {
         --_length;
     }
 
+    /// If the vector is empty
     bool empty() const {
         return length == 0;
     }
 
+    /// The current length of the vector
     long length() const {
         return _length;
     }
 
+    /// The current memory capacity of the vector
     long capacity() const {
         return _elements.length;
     }
 
+    /// Clears the vector, resulting in an empty one
     void clear() {
         _length = 0;
     }
 
+    /// Reserve memory to avoid allocations when appending
     void reserve(long newLength) {
         expandMemory(newLength);
     }
 
+    /// Shrink to fit the new length given.
     void shrink(long newLength) scope {
         import stdx.allocator: shrinkArray;
         () @trusted { _allocator.shrinkArray(_elements, newLength); }();
         _length = newLength;
     }
 
+    /// Access the ith element. Can throw RangeError.
     ref inout(E) opIndex(long i) inout {
         return _elements[i];
     }
 
+    /// Returns a new vector after appending to the given vector.
     Vector opBinary(string s)(Vector other) if(s == "~") {
         import std.range: chain;
         return Vector(chain(_elements, other._elements));
     }
 
+    /// Assigns from a range.
     void opAssign(R)(R range) scope if(isForwardRangeOf!(R, E)) {
         import std.range.primitives: walkLength, save;
 
@@ -168,10 +195,12 @@ struct Vector(Allocator, E) if(isAllocator!Allocator) {
             _elements[index++] = element;
     }
 
+    /// Returns a slice
     scope auto opSlice(this This)() {
         return _elements[0 .. length];
     }
 
+    /// Returns a slice
     scope auto opSlice(this This)(long start, long end) {
         return _elements[start .. end];
     }
@@ -180,19 +209,23 @@ struct Vector(Allocator, E) if(isAllocator!Allocator) {
         return _elements.length;
     }
 
+    /// Assign all elements to the given value
     void opSliceAssign(E value) {
         _elements[] = value;
     }
 
+    /// Assign all elements in the given range to the given value
     void opSliceAssign(E value, long start, long end) {
         _elements[start .. end] = value;
     }
 
+    /// Assign all elements using the given operation and the given value
     void opSliceOpAssign(string op)(E value) scope {
         foreach(ref elt; _elements)
             mixin(`elt ` ~ op ~ `= value;`);
     }
 
+    /// Assign all elements in the given range  using the given operation and the given value
     void opSliceOpAssign(string op)(E value, long start, long end) scope {
         foreach(ref elt; _elements[start .. end])
             mixin(`elt ` ~ op ~ `= value;`);
