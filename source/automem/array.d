@@ -27,7 +27,7 @@ struct Array(A, E) {
 
     this(E[] elements...) {
         import stdx.allocator: makeArray;
-        _elements = _allocator.makeArray!E(elements.length);
+        _elements = () @trusted { return _allocator.makeArray!E(elements.length); }();
         _elements[] = elements[];
     }
 
@@ -38,7 +38,7 @@ struct Array(A, E) {
     this(this) scope {
         import stdx.allocator: makeArray;
         auto oldElements = _elements;
-        _elements = _allocator.makeArray!E(_elements.length);
+        _elements = () @trusted { return _allocator.makeArray!E(_elements.length); }();
         _elements[] = oldElements[];
     }
 
@@ -94,7 +94,7 @@ struct Array(A, E) {
         // FIXME - what if it's smaller?
         if(rangeLength > length) {
             if(length == 0)
-                _elements = _allocator.makeArray!E(rangeLength);
+                _elements = () @trusted { return _allocator.makeArray!E(rangeLength); }();
             else
                 () @trusted { _allocator.expandArray(_elements, rangeLength - length); }();
         }
