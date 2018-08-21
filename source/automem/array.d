@@ -5,35 +5,73 @@
 module automem.array;
 
 
-import automem.traits: isAllocator;
+import automem.traits: isAllocator, isGlobal;
 import std.range.primitives: isInputRange;
 import stdx.allocator: theAllocator;
 import stdx.allocator.mallocator: Mallocator;
 
 
-auto array(A = typeof(theAllocator), E)(E[] elements...) if(isAllocator!A) {
+auto array(A = typeof(theAllocator), E)
+          (E[] elements...)
+    if(isAllocator!A && isGlobal!A)
+{
     return Array!(A, E)(elements);
 }
 
+auto array(A = typeof(theAllocator), E)
+          (A allocator, E[] elements...)
+    if(isAllocator!A && !isGlobal!A)
+{
+    return Array!(A, E)(allocator, elements);
+}
 
-auto array(A = typeof(theAllocator), R)(R range) if(isAllocator!A && isInputRange!R) {
+auto array(A = typeof(theAllocator), R)
+          (R range)
+    if(isAllocator!A && isGlobal!A && isInputRange!R)
+{
     import std.range.primitives: ElementType;
     return Array!(A, ElementType!R)(range);
 }
 
 
-struct Array(Allocator, E) {
+auto array(A = typeof(theAllocator), R)
+          (A allocator, R range)
+    if(isAllocator!A && !isGlobal!A && isInputRange!R)
+{
+    import std.range.primitives: ElementType;
+    return Array!(A, ElementType!R)(range);
+}
+
+
+struct Array(Allocator, E) if(isAllocator!Allocator) {
 
     import automem.traits: isGlobal, isSingleton, isTheAllocator;
 
-    this(E[] elements...) {
-        import stdx.allocator: makeArray;
-        _elements = () @trusted { return _allocator.makeArray!E(elements.length); }();
-        _elements[] = elements[];
-    }
+    static if(isGlobal!Allocator) {
 
-    this(R)(R range) if(isInputRangeOf!(R, E)) {
-        this = range;
+        this(E[] elements...) {
+            import stdx.allocator: makeArray;
+            _elements = () @trusted { return _allocator.makeArray!E(elements.length); }();
+            _elements[] = elements[];
+        }
+
+        this(R)(R range) if(isInputRangeOf!(R, E)) {
+            this = range;
+        }
+
+    } else {
+
+        this(Allocator allocator, E[] elements...) {
+            import stdx.allocator: makeArray;
+            _allocator = allocator;
+            _elements = () @trusted { return _allocator.makeArray!E(elements.length); }();
+            _elements[] = elements[];
+        }
+
+        this(R)(Allocator allocator, R range) if(isInputRangeOf!(R, E)) {
+            _allocator = allocator;
+            this = range;
+        }
     }
 
     this(this) scope {

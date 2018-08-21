@@ -165,3 +165,11 @@ mixin TestUtils;
     static assert(!__traits(compiles, ints1 = arr[]));
     static assert(__traits(compiles, ints2 = arr[]));
 }
+
+
+@("TestAllocator elements")
+@safe unittest {
+    import test_allocator;
+    static TestAllocator allocator;
+    auto arr = array(&allocator, 0, 1, 2);
+}
