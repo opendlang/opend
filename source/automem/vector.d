@@ -159,6 +159,9 @@ struct Vector(Allocator, E) if(isAllocator!Allocator) {
 
     /// Access the ith element. Can throw RangeError.
     ref inout(E) opIndex(long i) inout {
+        static immutable exception = new BoundsException("Out of bounds index");
+        if(i < 0 || i >= length)
+            throw exception;
         return _elements[i];
     }
 
@@ -281,6 +284,12 @@ private:
             }
         }
     }
+}
+
+class BoundsException: Exception {
+    import std.exception: basicExceptionCtors;
+
+    mixin basicExceptionCtors;
 }
 
 private template isInputRangeOf(R, E) {
