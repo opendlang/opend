@@ -209,7 +209,6 @@ private:
     void expandMemory(long newLength) scope {
         import stdx.allocator: expandArray;
 
-        // FIXME - what if it's smaller?
         if(newLength > capacity) {
             if(length == 0)
                 _elements = createArray(newLength);
