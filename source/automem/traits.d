@@ -1,5 +1,6 @@
 module automem.traits;
 
+
 void checkAllocator(T)() {
     import stdx.allocator: make, dispose;
     import std.traits: hasMember;
@@ -14,6 +15,7 @@ void checkAllocator(T)() {
     void[] bytes = allocator.allocate(size_t.init);
     allocator.deallocate(bytes);
 }
+
 enum isAllocator(T) = is(typeof(checkAllocator!T));
 
 
@@ -25,4 +27,19 @@ enum isAllocator(T) = is(typeof(checkAllocator!T));
     static assert(isAllocator!Mallocator);
     static assert(isAllocator!TestAllocator);
     static assert(!isAllocator!int);
+}
+
+
+template isGlobal(Allocator) {
+    enum isGlobal = isSingleton!Allocator || isTheAllocator!Allocator;
+}
+
+template isSingleton(Allocator) {
+    import std.traits: hasMember;
+    enum isSingleton = hasMember!(Allocator, "instance");
+}
+
+template isTheAllocator(Allocator) {
+    import stdx.allocator: theAllocator;
+    enum isTheAllocator = is(Allocator == typeof(theAllocator));
 }

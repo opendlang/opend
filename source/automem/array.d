@@ -21,10 +21,9 @@ auto array(A = Mallocator, R)(R range) if(isAllocator!A && isInputRange!R) {
 }
 
 
-struct Array(A, E) {
+struct Array(Allocator, E) {
 
-    alias Allocator = A;
-    private alias _allocator = Allocator.instance;
+    import automem.traits: isGlobal, isSingleton, isTheAllocator;
 
     this(E[] elements...) {
         import stdx.allocator: makeArray;
@@ -165,7 +164,16 @@ struct Array(A, E) {
             mixin(`elt ` ~ op ~ `= value;`);
     }
 
-    private E[] _elements;
+private:
+
+    E[] _elements;
+
+    static if(isSingleton!Allocator)
+        alias _allocator = Allocator.instance;
+    else static if(isTheAllocator!Allocator)
+        alias _allocator = theAllocator;
+    else
+        Allocator _allocator;
 }
 
 
