@@ -228,3 +228,30 @@ mixin TestUtils;
     arr[].shouldEqual([0, 1, 2, 3, 4, 5]);
     allocator.numAllocations.should == 3;
 }
+
+@("TestAllocator copy")
+@safe unittest {
+    static TestAllocator allocator;
+
+    auto arr1 = vector(&allocator, "foo", "bar", "baz");
+    allocator.numAllocations.should == 1;
+
+    auto arr2 = arr1;
+    allocator.numAllocations.should == 2;
+}
+
+@("TestAllocator move")
+@safe unittest {
+    static TestAllocator allocator;
+
+    auto arr = vector(&allocator, "foo", "bar", "baz");
+    allocator.numAllocations.should == 1;
+
+    consumeVec(arr);
+    allocator.numAllocations.should == 1;
+}
+
+
+private void consumeVec(T)(auto ref T vec) {
+
+}
