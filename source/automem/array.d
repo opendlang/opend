@@ -7,15 +7,16 @@ module automem.array;
 
 import automem.traits: isAllocator;
 import std.range.primitives: isInputRange;
+import stdx.allocator: theAllocator;
 import stdx.allocator.mallocator: Mallocator;
 
 
-auto array(A = Mallocator, E)(E[] elements...) if(isAllocator!A) {
+auto array(A = typeof(theAllocator), E)(E[] elements...) if(isAllocator!A) {
     return Array!(A, E)(elements);
 }
 
 
-auto array(A = Mallocator, R)(R range) if(isAllocator!A && isInputRange!R) {
+auto array(A = typeof(theAllocator), R)(R range) if(isAllocator!A && isInputRange!R) {
     import std.range.primitives: ElementType;
     return Array!(A, ElementType!R)(range);
 }
