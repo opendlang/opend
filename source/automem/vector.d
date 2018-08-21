@@ -118,6 +118,12 @@ struct Vector(Allocator, E) if(isAllocator!Allocator) {
         expandMemory(newLength);
     }
 
+    void shrink(long newLength) scope {
+        import stdx.allocator: shrinkArray;
+        () @trusted { _allocator.shrinkArray(_elements, newLength); }();
+        _length = newLength;
+    }
+
     ref inout(E) opIndex(long i) inout {
         return _elements[i];
     }

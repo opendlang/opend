@@ -211,3 +211,20 @@ mixin TestUtils;
     arr[].shouldEqual([0, 1, 2, 3, 4, 5]);
     allocator.numAllocations.should == 2;
 }
+
+
+@("TestAllocator shrink")
+@safe unittest {
+    static TestAllocator allocator;
+
+    auto arr = vector(&allocator, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9);
+    arr.capacity.should == 10;
+
+    arr.shrink(5);
+    arr[].shouldEqual([0, 1, 2, 3, 4]);
+    arr.capacity.should == 5;
+
+    arr ~= 5;
+    arr[].shouldEqual([0, 1, 2, 3, 4, 5]);
+    allocator.numAllocations.should == 3;
+}
