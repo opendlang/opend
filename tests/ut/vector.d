@@ -150,10 +150,23 @@ mixin TestUtils;
 }
 
 
-@("Mallocator")
+@("Mallocator elements")
 @safe @nogc unittest {
+    import std.algorithm: equal;
     auto vec = vector!Mallocator(0, 1, 2, 3);
+    int[4] exp = [0, 1, 2, 3];
+    assert(equal(vec[], exp[]));
 }
+
+@("Mallocator range")
+@safe @nogc unittest {
+    import std.algorithm: equal;
+    import std.range: iota;
+    auto vec = vector!Mallocator(iota(5));
+    int[5] exp = [0, 1, 2, 3, 4];
+    assert(equal(vec[], exp[]));
+}
+
 
 @("Mallocator null")
 @safe @nogc unittest {
