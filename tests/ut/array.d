@@ -188,3 +188,26 @@ mixin TestUtils;
     arr[].shouldEqual([0, 1, 2, 3, 4, 5, 6, 7, 8]);
     allocator.numAllocations.shouldBeSmallerThan(4);
 }
+
+@("TestAllocator reserve")
+@safe unittest {
+    static TestAllocator allocator;
+
+    auto arr = array!(TestAllocator*, int)(&allocator);
+
+    arr.reserve(5);
+    () @trusted { arr.shouldBeEmpty; }();
+
+    arr ~= 0;
+    arr ~= 1;
+    arr ~= 2;
+    arr ~= 3;
+    arr ~= 4;
+
+    arr[].shouldEqual([0, 1, 2, 3, 4]);
+    allocator.numAllocations.should == 1;
+
+    arr ~= 5;
+    arr[].shouldEqual([0, 1, 2, 3, 4, 5]);
+    allocator.numAllocations.should == 2;
+}

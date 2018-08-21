@@ -74,6 +74,7 @@ struct Array(Allocator, E) if(isAllocator!Allocator) {
         auto oldElements = _elements;
         _elements = createArray(_elements.length);
         _elements[] = oldElements[];
+        _length = _elements.length;
     }
 
     ~this() scope {
@@ -98,7 +99,7 @@ struct Array(Allocator, E) if(isAllocator!Allocator) {
     }
 
     bool empty() const {
-        return _elements.length == 0;
+        return length == 0;
     }
 
     long length() const {
@@ -113,6 +114,10 @@ struct Array(Allocator, E) if(isAllocator!Allocator) {
         _length = 0;
     }
 
+    void reserve(long newLength) {
+        expandMemory(newLength);
+    }
+
     ref inout(E) opIndex(long i) inout {
         return _elements[i];
     }
@@ -125,7 +130,7 @@ struct Array(Allocator, E) if(isAllocator!Allocator) {
     void opAssign(R)(R range) scope if(isForwardRangeOf!(R, E)) {
         import std.range.primitives: walkLength, save;
 
-        expandMemory(range.save.walkLength);
+        expand(range.save.walkLength);
 
         long i = 0;
         foreach(element; range)
@@ -138,7 +143,7 @@ struct Array(Allocator, E) if(isAllocator!Allocator) {
         scope
         if(op == "~")
     {
-        expandMemory(length + 1);
+        expand(length + 1);
         _elements[length - 1] = other;
     }
 
@@ -151,7 +156,7 @@ struct Array(Allocator, E) if(isAllocator!Allocator) {
         import std.range.primitives: walkLength, save;
 
         long index = length;
-        expandMemory(length + range.save.walkLength);
+        expand(length + range.save.walkLength);
 
         foreach(element; range)
             _elements[index++] = element;
@@ -201,13 +206,18 @@ private:
 
     E[] createArray(long length) {
         import stdx.allocator: makeArray;
-        _length = length;
         return () @trusted { return _allocator.makeArray!E(length); }();
     }
 
     void fromElements(E[] elements) {
         _elements = createArray(elements.length);
         _elements[] = elements[];
+        _length = elements.length;
+    }
+
+    void expand(long newLength) scope {
+        expandMemory(newLength);
+        _length = newLength;
     }
 
     void expandMemory(long newLength) scope {
@@ -222,8 +232,6 @@ private:
                 () @trusted { _allocator.expandArray(_elements, delta); }();
             }
         }
-
-        _length = newLength;
     }
 }
 
