@@ -223,7 +223,7 @@ private:
         _length = newLength;
     }
 
-    long capacity() pure const {
+    long capacity() const {
         return _elements.length;
     }
 }

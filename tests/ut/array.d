@@ -97,6 +97,12 @@ mixin TestUtils;
     array(5.iota)[].shouldEqual([0, 1, 2, 3, 4]);
 }
 
+@("front")
+@safe unittest {
+    array(1, 2, 3).front.should == 1;
+    array(2, 3).front.should == 2;
+}
+
 @("popBack")
 @safe unittest {
     auto arr = array(0, 1, 2);
