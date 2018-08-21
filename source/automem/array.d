@@ -105,6 +105,10 @@ struct Array(Allocator, E) if(isAllocator!Allocator) {
         return _length;
     }
 
+    long capacity() const {
+        return _elements.length;
+    }
+
     void clear() {
         _length = 0;
     }
@@ -221,12 +225,7 @@ private:
 
         _length = newLength;
     }
-
-    long capacity() const {
-        return _elements.length;
-    }
 }
-
 
 private template isInputRangeOf(R, E) {
     import std.range.primitives: isInputRange, ElementType;
