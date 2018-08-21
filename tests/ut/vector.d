@@ -80,6 +80,19 @@ mixin TestUtils;
     vec1[0] = 7;
     vec2[0] = 9;
     vec3[].shouldEqual([0, 1, 2, 3, 4]);
+
+
+    // make sure capacity is larger
+    vec1 ~= 100;
+    vec1.capacity.shouldBeGreaterThan(vec1.length);
+    vec1[].shouldEqual([7, 1, 2, 100]);
+
+    vec2 ~= 200;
+    vec2.capacity.shouldBeGreaterThan(vec2.length);
+    vec2[].shouldEqual([9, 4, 200]);
+
+    (vec1 ~ vec2)[].shouldEqual([7, 1, 2, 100, 9, 4, 200]);
+    (vec1 ~ vector(11, 12, 13, 14, 15))[].shouldEqual([7, 1, 2, 100, 11, 12, 13, 14, 15]);
 }
 
 @("slice")

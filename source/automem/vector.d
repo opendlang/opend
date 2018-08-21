@@ -60,6 +60,7 @@ auto vector(A = typeof(theAllocator), R)
 struct Vector(Allocator, E) if(isAllocator!Allocator) {
 
     import automem.traits: isGlobal, isSingleton, isTheAllocator;
+    import std.traits: Unqual;
 
     static if(isGlobal!Allocator) {
 
@@ -166,9 +167,9 @@ struct Vector(Allocator, E) if(isAllocator!Allocator) {
     }
 
     /// Returns a new vector after appending to the given vector.
-    Vector opBinary(string s)(Vector other) if(s == "~") {
+    Vector opBinary(string s, T)(auto ref T other) const if(s == "~" && is(Unqual!T == Vector)) {
         import std.range: chain;
-        return Vector(chain(_elements, other._elements));
+        return Vector(chain(this[], other[]));
     }
 
     /// Assigns from a range.
