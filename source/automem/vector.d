@@ -88,8 +88,7 @@ struct Vector(Allocator, E) if(isAllocator!Allocator) {
     this(this) scope {
         auto oldElements = _elements;
         _elements = createVector(_elements.length);
-        _elements[] = oldElements[];
-        _length = _elements.length;
+        _elements[0 .. length] = oldElements[0 .. length];
     }
 
     ~this() scope {

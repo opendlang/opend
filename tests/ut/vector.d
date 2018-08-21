@@ -29,6 +29,7 @@ mixin TestUtils;
 @("copying")
 @safe unittest {
     auto vec1 = vector(1, 2, 3);
+    vec1.reserve(10);
     auto vec2 = vec1;
     vec1[1] = 7;
 
