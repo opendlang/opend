@@ -225,8 +225,58 @@ mixin TestUtils;
     allocator.numAllocations.should == 2;
 }
 
+@("TestAllocator shrink no length")
+@safe unittest {
+    static TestAllocator allocator;
 
-@("TestAllocator shrink")
+    auto vec = vector!(TestAllocator*, int)(&allocator);
+    vec.reserve(10);
+
+    vec ~= 0;
+    vec ~= 1;
+    vec ~= 2;
+    vec ~= 3;
+
+    vec.length.should == 4;
+    vec.capacity.should == 10;
+
+    vec.shrink;
+    vec.length.should == 4;
+    vec.capacity.should == 4;
+}
+
+@("TestAllocator shrink negative number")
+@safe unittest {
+    static TestAllocator allocator;
+
+    auto vec = vector(&allocator, 0);
+    vec ~= 1;
+    vec ~= 2;
+    vec ~= 3;
+    vec.capacity.shouldBeGreaterThan(vec.length);
+    const oldCapacity = vec.capacity;
+
+    vec.shrink(-1).shouldBeFalse;
+    vec.capacity.should == oldCapacity;
+}
+
+@("TestAllocator shrink larger than capacity")
+@safe unittest {
+    static TestAllocator allocator;
+
+    auto vec = vector(&allocator, 0);
+    vec ~= 1;
+    vec ~= 2;
+    vec ~= 3;
+    vec.capacity.shouldBeGreaterThan(vec.length);
+    const oldCapacity = vec.capacity;
+
+    vec.shrink(oldCapacity * 2).shouldBeFalse;
+    vec.capacity.should == oldCapacity;
+}
+
+
+@("TestAllocator shrink with length")
 @safe unittest {
     static TestAllocator allocator;
 
@@ -240,6 +290,10 @@ mixin TestUtils;
     vec ~= 5;
     vec[].shouldEqual([0, 1, 2, 3, 4, 5]);
     allocator.numAllocations.should == 3;
+
+    vec.reserve(10);
+    vec.length.should == 6;
+    vec.capacity.shouldBeGreaterThan(6);
 }
 
 @("TestAllocator copy")

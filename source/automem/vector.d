@@ -141,11 +141,20 @@ struct Vector(Allocator, E) if(isAllocator!Allocator) {
         expandMemory(newLength);
     }
 
-    /// Shrink to fit the new length given.
-    void shrink(long newLength) scope {
+    /// Shrink to fit the current length. Returns if shrunk.
+    bool shrink() scope {
+        return shrink(length);
+    }
+
+    /// Shrink to fit the new length given. Returns if shrunk.
+    bool shrink(long newLength) scope {
         import stdx.allocator: shrinkArray;
-        () @trusted { _allocator.shrinkArray(_elements, newLength); }();
+
+        const delta = capacity - newLength;
+        const shrunk = () @trusted { return _allocator.shrinkArray(_elements, delta); }();
         _length = newLength;
+
+        return shrunk;
     }
 
     /// Access the ith element. Can throw RangeError.
