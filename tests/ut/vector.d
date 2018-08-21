@@ -28,67 +28,67 @@ mixin TestUtils;
 
 @("copying")
 @safe unittest {
-    auto arr1 = vector(1, 2, 3);
-    auto arr2 = arr1;
-    arr1[1] = 7;
+    auto vec1 = vector(1, 2, 3);
+    auto vec2 = vec1;
+    vec1[1] = 7;
 
-    arr1[].shouldEqual([1, 7, 3]);
-    arr2[].shouldEqual([1, 2, 3]);
+    vec1[].shouldEqual([1, 7, 3]);
+    vec2[].shouldEqual([1, 2, 3]);
 }
 
 @("bounds check")
 @safe unittest {
     import core.exception: RangeError;
 
-    auto arr = vector(1, 2, 3);
-    arr[3].shouldThrow!RangeError;
+    auto vec = vector(1, 2, 3);
+    vec[3].shouldThrow!RangeError;
 }
 
 @("extend")
 @safe unittest {
     import std.algorithm: map;
 
-    auto arr = vector(0, 1, 2, 3);
+    auto vec = vector(0, 1, 2, 3);
 
-    arr ~= 4;
-    arr[].shouldEqual([0, 1, 2, 3, 4]);
+    vec ~= 4;
+    vec[].shouldEqual([0, 1, 2, 3, 4]);
 
-    arr ~= [5, 6];
-    arr[].shouldEqual([0, 1, 2, 3, 4, 5, 6]);
+    vec ~= [5, 6];
+    vec[].shouldEqual([0, 1, 2, 3, 4, 5, 6]);
 
-    arr ~= [1, 2].map!(a => a + 10);
-    arr[].shouldEqual([0, 1, 2, 3, 4, 5, 6, 11, 12]);
+    vec ~= [1, 2].map!(a => a + 10);
+    vec[].shouldEqual([0, 1, 2, 3, 4, 5, 6, 11, 12]);
 }
 
 @("append")
 @safe unittest {
-    auto arr1 = vector(0, 1, 2);
-    auto arr2 = vector(3, 4);
+    auto vec1 = vector(0, 1, 2);
+    auto vec2 = vector(3, 4);
 
-    auto arr3 =  arr1 ~ arr2;
-    arr3[].shouldEqual([0, 1, 2, 3, 4]);
+    auto vec3 =  vec1 ~ vec2;
+    vec3[].shouldEqual([0, 1, 2, 3, 4]);
 
-    arr1[0] = 7;
-    arr2[0] = 9;
-    arr3[].shouldEqual([0, 1, 2, 3, 4]);
+    vec1[0] = 7;
+    vec2[0] = 9;
+    vec3[].shouldEqual([0, 1, 2, 3, 4]);
 }
 
 @("slice")
 @safe unittest {
-    const arr = vector(0, 1, 2, 3, 4, 5);
-    arr[][].shouldEqual([0, 1, 2, 3, 4, 5]);
-    arr[1 .. 3][].shouldEqual([1, 2]);
-    arr[1 .. 4][].shouldEqual([1, 2, 3]);
-    arr[2 .. 5][].shouldEqual([2, 3, 4]);
-    arr[1 .. $ - 1][].shouldEqual([1, 2, 3, 4]);
+    const vec = vector(0, 1, 2, 3, 4, 5);
+    vec[][].shouldEqual([0, 1, 2, 3, 4, 5]);
+    vec[1 .. 3][].shouldEqual([1, 2]);
+    vec[1 .. 4][].shouldEqual([1, 2, 3]);
+    vec[2 .. 5][].shouldEqual([2, 3, 4]);
+    vec[1 .. $ - 1][].shouldEqual([1, 2, 3, 4]);
 }
 
 @("assign")
 @safe unittest {
     import std.range: iota;
-    auto arr = vector(10, 11, 12);
-    arr = 5.iota;
-    arr[].shouldEqual([0, 1, 2, 3, 4]);
+    auto vec = vector(10, 11, 12);
+    vec = 5.iota;
+    vec[].shouldEqual([0, 1, 2, 3, 4]);
 }
 
 @("construct from range")
@@ -105,69 +105,69 @@ mixin TestUtils;
 
 @("popBack")
 @safe unittest {
-    auto arr = vector(0, 1, 2);
-    arr.popBack;
-    arr[].shouldEqual([0, 1]);
+    auto vec = vector(0, 1, 2);
+    vec.popBack;
+    vec[].shouldEqual([0, 1]);
 }
 
 @("back")
 @safe unittest {
-    const arr = vector("foo", "bar", "baz");
-    arr.back[].shouldEqual("baz");
+    const vec = vector("foo", "bar", "baz");
+    vec.back[].shouldEqual("baz");
 }
 
 @("opSliceAssign")
 @safe unittest {
-    auto arr = vector("foo", "bar", "quux", "toto");
+    auto vec = vector("foo", "bar", "quux", "toto");
 
-    arr[] = "haha";
-    arr[].shouldEqual(["haha", "haha", "haha", "haha"]);
+    vec[] = "haha";
+    vec[].shouldEqual(["haha", "haha", "haha", "haha"]);
 
-    arr[1..3] = "oops";
-    arr[].shouldEqual(["haha", "oops", "oops", "haha"]);
+    vec[1..3] = "oops";
+    vec[].shouldEqual(["haha", "oops", "oops", "haha"]);
 }
 
 @("opSliceOpAssign")
 @safe unittest {
-    auto arr = vector("foo", "bar", "quux", "toto");
-    arr[] ~= "oops";
-    arr[].shouldEqual(["foooops", "baroops", "quuxoops", "totooops"]);
+    auto vec = vector("foo", "bar", "quux", "toto");
+    vec[] ~= "oops";
+    vec[].shouldEqual(["foooops", "baroops", "quuxoops", "totooops"]);
 }
 
 @("opSliceOpAssign range")
 @safe unittest {
-    auto arr = vector("foo", "bar", "quux", "toto");
-    arr[1..3] ~= "oops";
-    arr[].shouldEqual(["foo", "baroops", "quuxoops", "toto"]);
+    auto vec = vector("foo", "bar", "quux", "toto");
+    vec[1..3] ~= "oops";
+    vec[].shouldEqual(["foo", "baroops", "quuxoops", "toto"]);
 }
 
 @("clear")
 @safe unittest {
-    auto arr = vector(0, 1, 2, 3);
-    arr.clear;
+    auto vec = vector(0, 1, 2, 3);
+    vec.clear;
     int[] empty;
-    arr[].shouldEqual(empty);
+    vec[].shouldEqual(empty);
 }
 
 
 @("Mallocator")
 @safe @nogc unittest {
-    auto arr = vector!Mallocator(0, 1, 2, 3);
+    auto vec = vector!Mallocator(0, 1, 2, 3);
 }
 
 @("Mallocator null")
 @safe @nogc unittest {
-    Vector!(Mallocator, int) arr;
+    Vector!(Mallocator, int) vec;
 }
 
 @("Cannot escape slice")
 @safe @nogc unittest {
     int[] ints1;
-    scope arr = vector!Mallocator(0, 1, 2, 3);
+    scope vec = vector!Mallocator(0, 1, 2, 3);
     int[] ints2;
 
-    static assert(!__traits(compiles, ints1 = arr[]));
-    static assert(__traits(compiles, ints2 = arr[]));
+    static assert(!__traits(compiles, ints1 = vec[]));
+    static assert(__traits(compiles, ints2 = vec[]));
 }
 
 
@@ -175,17 +175,17 @@ mixin TestUtils;
 @safe unittest {
     static TestAllocator allocator;
 
-    auto arr = vector(&allocator, 0, 1, 2);
-    arr[].shouldEqual([0, 1, 2]);
+    auto vec = vector(&allocator, 0, 1, 2);
+    vec[].shouldEqual([0, 1, 2]);
 
-    arr ~= 3;
-    arr ~= 4;
-    arr ~= 5;
-    arr ~= 6;
-    arr ~= 7;
-    arr ~= 8;
+    vec ~= 3;
+    vec ~= 4;
+    vec ~= 5;
+    vec ~= 6;
+    vec ~= 7;
+    vec ~= 8;
 
-    arr[].shouldEqual([0, 1, 2, 3, 4, 5, 6, 7, 8]);
+    vec[].shouldEqual([0, 1, 2, 3, 4, 5, 6, 7, 8]);
     allocator.numAllocations.shouldBeSmallerThan(4);
 }
 
@@ -193,22 +193,22 @@ mixin TestUtils;
 @safe unittest {
     static TestAllocator allocator;
 
-    auto arr = vector!(TestAllocator*, int)(&allocator);
+    auto vec = vector!(TestAllocator*, int)(&allocator);
 
-    arr.reserve(5);
-    () @trusted { arr.shouldBeEmpty; }();
+    vec.reserve(5);
+    () @trusted { vec.shouldBeEmpty; }();
 
-    arr ~= 0;
-    arr ~= 1;
-    arr ~= 2;
-    arr ~= 3;
-    arr ~= 4;
+    vec ~= 0;
+    vec ~= 1;
+    vec ~= 2;
+    vec ~= 3;
+    vec ~= 4;
 
-    arr[].shouldEqual([0, 1, 2, 3, 4]);
+    vec[].shouldEqual([0, 1, 2, 3, 4]);
     allocator.numAllocations.should == 1;
 
-    arr ~= 5;
-    arr[].shouldEqual([0, 1, 2, 3, 4, 5]);
+    vec ~= 5;
+    vec[].shouldEqual([0, 1, 2, 3, 4, 5]);
     allocator.numAllocations.should == 2;
 }
 
@@ -217,15 +217,15 @@ mixin TestUtils;
 @safe unittest {
     static TestAllocator allocator;
 
-    auto arr = vector(&allocator, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9);
-    arr.capacity.should == 10;
+    auto vec = vector(&allocator, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9);
+    vec.capacity.should == 10;
 
-    arr.shrink(5);
-    arr[].shouldEqual([0, 1, 2, 3, 4]);
-    arr.capacity.should == 5;
+    vec.shrink(5);
+    vec[].shouldEqual([0, 1, 2, 3, 4]);
+    vec.capacity.should == 5;
 
-    arr ~= 5;
-    arr[].shouldEqual([0, 1, 2, 3, 4, 5]);
+    vec ~= 5;
+    vec[].shouldEqual([0, 1, 2, 3, 4, 5]);
     allocator.numAllocations.should == 3;
 }
 
@@ -233,10 +233,10 @@ mixin TestUtils;
 @safe unittest {
     static TestAllocator allocator;
 
-    auto arr1 = vector(&allocator, "foo", "bar", "baz");
+    auto vec1 = vector(&allocator, "foo", "bar", "baz");
     allocator.numAllocations.should == 1;
 
-    auto arr2 = arr1;
+    auto vec2 = vec1;
     allocator.numAllocations.should == 2;
 }
 
@@ -244,10 +244,10 @@ mixin TestUtils;
 @safe unittest {
     static TestAllocator allocator;
 
-    auto arr = vector(&allocator, "foo", "bar", "baz");
+    auto vec = vector(&allocator, "foo", "bar", "baz");
     allocator.numAllocations.should == 1;
 
-    consumeVec(arr);
+    consumeVec(vec);
     allocator.numAllocations.should == 1;
 }
 
