@@ -50,9 +50,7 @@ struct Array(Allocator, E) if(isAllocator!Allocator) {
     static if(isGlobal!Allocator) {
 
         this(E[] elements...) {
-            import stdx.allocator: makeArray;
-            _elements = () @trusted { return _allocator.makeArray!E(elements.length); }();
-            _elements[] = elements[];
+            fromElements(elements);
         }
 
         this(R)(R range) if(isInputRangeOf!(R, E)) {
@@ -62,10 +60,8 @@ struct Array(Allocator, E) if(isAllocator!Allocator) {
     } else {
 
         this(Allocator allocator, E[] elements...) {
-            import stdx.allocator: makeArray;
             _allocator = allocator;
-            _elements = () @trusted { return _allocator.makeArray!E(elements.length); }();
-            _elements[] = elements[];
+            fromElements(elements);
         }
 
         this(R)(Allocator allocator, R range) if(isInputRangeOf!(R, E)) {
@@ -75,9 +71,8 @@ struct Array(Allocator, E) if(isAllocator!Allocator) {
     }
 
     this(this) scope {
-        import stdx.allocator: makeArray;
         auto oldElements = _elements;
-        _elements = () @trusted { return _allocator.makeArray!E(_elements.length); }();
+        _elements = createArray(_elements.length);
         _elements[] = oldElements[];
     }
 
@@ -125,23 +120,12 @@ struct Array(Allocator, E) if(isAllocator!Allocator) {
 
     void opAssign(R)(R range) scope if(isForwardRangeOf!(R, E)) {
         import std.range.primitives: walkLength, save;
-        import stdx.allocator: makeArray, expandArray;
 
-        const rangeLength = range.save.walkLength;
-        const oldLength = length;
+        expandMemory(range.save.walkLength);
 
-        // FIXME - what if it's smaller?
-        if(rangeLength > length) {
-            if(length == 0)
-                _elements = () @trusted { return _allocator.makeArray!E(rangeLength); }();
-            else
-                () @trusted { _allocator.expandArray(_elements, rangeLength - length); }();
-        }
-
-        long index = 0;
-
+        long i;
         foreach(element; range)
-            _elements[index++] = element;
+            _elements[i++] = element;
     }
 
     /// Append to the array
@@ -150,8 +134,7 @@ struct Array(Allocator, E) if(isAllocator!Allocator) {
         scope
         if(op == "~")
     {
-        import stdx.allocator: expandArray;
-        () @trusted { _allocator.expandArray(_elements, 1); }();
+        expandMemory(length + 1);
         _elements[$-1] = other;
     }
 
@@ -162,12 +145,9 @@ struct Array(Allocator, E) if(isAllocator!Allocator) {
         if(op == "~" && isForwardRangeOf!(R, E))
     {
         import std.range.primitives: walkLength, save;
-        import stdx.allocator: expandArray;
 
-        const rangeLength = range.save.walkLength;
         long index = length;
-
-        () @trusted { _allocator.expandArray(_elements, rangeLength); }();
+        expandMemory(length + range.save.walkLength);
 
         foreach(element; range)
             _elements[index++] = element;
@@ -206,6 +186,7 @@ struct Array(Allocator, E) if(isAllocator!Allocator) {
 private:
 
     E[] _elements;
+    long _capacity;
 
     static if(isSingleton!Allocator)
         alias _allocator = Allocator.instance;
@@ -213,6 +194,29 @@ private:
         alias _allocator = theAllocator;
     else
         Allocator _allocator;
+
+    E[] createArray(long length) {
+        import stdx.allocator: makeArray;
+        _capacity = length;
+        return () @trusted { return _allocator.makeArray!E(length); }();
+    }
+
+    void fromElements(E[] elements) {
+        _elements = createArray(elements.length);
+        _elements[] = elements[];
+    }
+
+    void expandMemory(long newLength) scope {
+        import stdx.allocator: expandArray;
+
+        // FIXME - what if it's smaller?
+        if(newLength > length) {
+            if(length == 0)
+                _elements = createArray(newLength);
+            else
+                () @trusted { _allocator.expandArray(_elements, newLength - length); }();
+        }
+    }
 }
 
 
