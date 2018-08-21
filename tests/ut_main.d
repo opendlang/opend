@@ -10,5 +10,5 @@ mixin runTestsMain!(
     "ut.ref_counted",
     "ut.unique",
     "ut.unique_array",
-    "ut.array",
+    "ut.vector",
 );

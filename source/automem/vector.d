@@ -2,7 +2,7 @@
    Dynamic arrays with deterministic memory usage
    akin to C++'s std::vector or Rust's std::vec::Vec
  */
-module automem.array;
+module automem.vector;
 
 
 import automem.traits: isAllocator, isGlobal;
@@ -11,39 +11,39 @@ import stdx.allocator: theAllocator;
 import stdx.allocator.mallocator: Mallocator;
 
 
-auto array(A = typeof(theAllocator), E)
+auto vector(A = typeof(theAllocator), E)
           (E[] elements...)
     if(isAllocator!A && isGlobal!A)
 {
-    return Array!(A, E)(elements);
+    return Vector!(A, E)(elements);
 }
 
-auto array(A = typeof(theAllocator), E)
+auto vector(A = typeof(theAllocator), E)
           (A allocator, E[] elements...)
     if(isAllocator!A && !isGlobal!A)
 {
-    return Array!(A, E)(allocator, elements);
+    return Vector!(A, E)(allocator, elements);
 }
 
-auto array(A = typeof(theAllocator), R)
+auto vector(A = typeof(theAllocator), R)
           (R range)
     if(isAllocator!A && isGlobal!A && isInputRange!R)
 {
     import std.range.primitives: ElementType;
-    return Array!(A, ElementType!R)(range);
+    return Vector!(A, ElementType!R)(range);
 }
 
 
-auto array(A = typeof(theAllocator), R)
+auto vector(A = typeof(theAllocator), R)
           (A allocator, R range)
     if(isAllocator!A && !isGlobal!A && isInputRange!R)
 {
     import std.range.primitives: ElementType;
-    return Array!(A, ElementType!R)(range);
+    return Vector!(A, ElementType!R)(range);
 }
 
 
-struct Array(Allocator, E) if(isAllocator!Allocator) {
+struct Vector(Allocator, E) if(isAllocator!Allocator) {
 
     import automem.traits: isGlobal, isSingleton, isTheAllocator;
 
@@ -72,7 +72,7 @@ struct Array(Allocator, E) if(isAllocator!Allocator) {
 
     this(this) scope {
         auto oldElements = _elements;
-        _elements = createArray(_elements.length);
+        _elements = createVector(_elements.length);
         _elements[] = oldElements[];
         _length = _elements.length;
     }
@@ -122,9 +122,9 @@ struct Array(Allocator, E) if(isAllocator!Allocator) {
         return _elements[i];
     }
 
-    Array opBinary(string s)(Array other) if(s == "~") {
+    Vector opBinary(string s)(Vector other) if(s == "~") {
         import std.range: chain;
-        return Array(chain(_elements, other._elements));
+        return Vector(chain(_elements, other._elements));
     }
 
     void opAssign(R)(R range) scope if(isForwardRangeOf!(R, E)) {
@@ -137,7 +137,7 @@ struct Array(Allocator, E) if(isAllocator!Allocator) {
             _elements[i++] = element;
     }
 
-    /// Append to the array
+    /// Append to the vector
     void opOpAssign(string op)
                    (E other)
         scope
@@ -147,7 +147,7 @@ struct Array(Allocator, E) if(isAllocator!Allocator) {
         _elements[length - 1] = other;
     }
 
-    /// Append to the array
+    /// Append to the vector
     void opOpAssign(string op, R)
                    (R range)
         scope
@@ -204,13 +204,13 @@ private:
     else
         Allocator _allocator;
 
-    E[] createArray(long length) {
+    E[] createVector(long length) {
         import stdx.allocator: makeArray;
         return () @trusted { return _allocator.makeArray!E(length); }();
     }
 
     void fromElements(E[] elements) {
-        _elements = createArray(elements.length);
+        _elements = createVector(elements.length);
         _elements[] = elements[];
         _length = elements.length;
     }
@@ -225,7 +225,7 @@ private:
 
         if(newLength > capacity) {
             if(length == 0)
-                _elements = createArray(newLength);
+                _elements = createVector(newLength);
             else {
                 const newCapacity = (newLength * 3) / 2;
                 const delta = newCapacity - capacity;
