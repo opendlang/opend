@@ -2,6 +2,8 @@ module ut.array;
 
 import ut;
 import automem.array;
+import stdx.allocator.mallocator: Mallocator;
+import test_allocator;
 
 mixin TestUtils;
 
@@ -144,20 +146,16 @@ mixin TestUtils;
 
 @("Mallocator")
 @safe @nogc unittest {
-    import stdx.allocator.mallocator: Mallocator;
     auto arr = array!Mallocator(0, 1, 2, 3);
 }
 
 @("Mallocator null")
 @safe @nogc unittest {
-    import stdx.allocator.mallocator: Mallocator;
     Array!(Mallocator, int) arr;
 }
 
 @("Cannot escape slice")
 @safe @nogc unittest {
-    import stdx.allocator.mallocator: Mallocator;
-
     int[] ints1;
     scope arr = array!Mallocator(0, 1, 2, 3);
     int[] ints2;
@@ -167,9 +165,20 @@ mixin TestUtils;
 }
 
 
-@("TestAllocator elements")
+@("TestAllocator elements capacity")
 @safe unittest {
-    import test_allocator;
     static TestAllocator allocator;
+
     auto arr = array(&allocator, 0, 1, 2);
+    arr[].shouldEqual([0, 1, 2]);
+
+    arr ~= 3;
+    arr ~= 4;
+    arr ~= 5;
+    arr ~= 6;
+    arr ~= 7;
+    arr ~= 8;
+
+    arr[].shouldEqual([0, 1, 2, 3, 4, 5, 6, 7, 8]);
+    allocator.numAllocations.shouldBeSmallerThan(4);
 }

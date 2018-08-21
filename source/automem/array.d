@@ -86,15 +86,15 @@ struct Array(Allocator, E) if(isAllocator!Allocator) {
     }
 
     inout(E) back() inout {
-        return _elements[$ - 1];
+        return _elements[length - 1];
     }
 
     void popFront() {
-        _elements = _elements[1 .. $];
+        throw new Exception("Not implemented yet");
     }
 
     void popBack() {
-        _elements = _elements[0 .. $ - 1];
+        --_length;
     }
 
     bool empty() const {
@@ -102,11 +102,11 @@ struct Array(Allocator, E) if(isAllocator!Allocator) {
     }
 
     long length() const {
-        return _elements.length;
+        return _length;
     }
 
     void clear() {
-        _elements.length = 0;
+        _length = 0;
     }
 
     ref inout(E) opIndex(long i) inout {
@@ -123,7 +123,7 @@ struct Array(Allocator, E) if(isAllocator!Allocator) {
 
         expandMemory(range.save.walkLength);
 
-        long i;
+        long i = 0;
         foreach(element; range)
             _elements[i++] = element;
     }
@@ -135,7 +135,7 @@ struct Array(Allocator, E) if(isAllocator!Allocator) {
         if(op == "~")
     {
         expandMemory(length + 1);
-        _elements[$-1] = other;
+        _elements[length - 1] = other;
     }
 
     /// Append to the array
@@ -154,7 +154,7 @@ struct Array(Allocator, E) if(isAllocator!Allocator) {
     }
 
     scope auto opSlice(this This)() {
-        return _elements;
+        return _elements[0 .. length];
     }
 
     scope auto opSlice(this This)(long start, long end) {
@@ -186,7 +186,7 @@ struct Array(Allocator, E) if(isAllocator!Allocator) {
 private:
 
     E[] _elements;
-    long _capacity;
+    long _length;
 
     static if(isSingleton!Allocator)
         alias _allocator = Allocator.instance;
@@ -197,7 +197,7 @@ private:
 
     E[] createArray(long length) {
         import stdx.allocator: makeArray;
-        _capacity = length;
+        _length = length;
         return () @trusted { return _allocator.makeArray!E(length); }();
     }
 
@@ -210,12 +210,21 @@ private:
         import stdx.allocator: expandArray;
 
         // FIXME - what if it's smaller?
-        if(newLength > length) {
+        if(newLength > capacity) {
             if(length == 0)
                 _elements = createArray(newLength);
-            else
-                () @trusted { _allocator.expandArray(_elements, newLength - length); }();
+            else {
+                const newCapacity = (newLength * 3) / 2;
+                const delta = newCapacity - capacity;
+                () @trusted { _allocator.expandArray(_elements, delta); }();
+            }
         }
+
+        _length = newLength;
+    }
+
+    long capacity() pure const {
+        return _elements.length;
     }
 }
 
