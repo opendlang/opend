@@ -159,9 +159,8 @@ struct Vector(Allocator, E) if(isAllocator!Allocator) {
 
     /// Access the ith element. Can throw RangeError.
     ref inout(E) opIndex(long i) inout {
-        static immutable exception = new BoundsException("Out of bounds index");
         if(i < 0 || i >= length)
-            throw exception;
+            throw boundsException;
         return _elements[i];
     }
 
@@ -214,6 +213,12 @@ struct Vector(Allocator, E) if(isAllocator!Allocator) {
 
     /// Returns a slice
     scope auto opSlice(this This)(long start, long end) {
+        if(start < 0 || start >= length)
+            throw boundsException;
+
+        if(end < 0 || end >= length)
+            throw boundsException;
+
         return _elements[start .. end];
     }
 
@@ -228,6 +233,12 @@ struct Vector(Allocator, E) if(isAllocator!Allocator) {
 
     /// Assign all elements in the given range to the given value
     void opSliceAssign(E value, long start, long end) {
+        if(start < 0 || start >= length)
+            throw boundsException;
+
+        if(end < 0 || end >= length)
+            throw boundsException;
+
         _elements[start .. end] = value;
     }
 
@@ -239,6 +250,12 @@ struct Vector(Allocator, E) if(isAllocator!Allocator) {
 
     /// Assign all elements in the given range  using the given operation and the given value
     void opSliceOpAssign(string op)(E value, long start, long end) scope {
+        if(start < 0 || start >= length)
+            throw boundsException;
+
+        if(end < 0 || end >= length)
+            throw boundsException;
+
         foreach(ref elt; _elements[start .. end])
             mixin(`elt ` ~ op ~ `= value;`);
     }
@@ -285,6 +302,8 @@ private:
         }
     }
 }
+
+private static immutable boundsException = new BoundsException("Out of bounds index");
 
 class BoundsException: Exception {
     import std.exception: basicExceptionCtors;

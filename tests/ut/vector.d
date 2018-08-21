@@ -40,18 +40,10 @@ mixin TestUtils;
 @("bounds check")
 @safe unittest {
 
-    {
-        auto vec = vector(1, 2, 3);
-        vec[3].shouldThrow!BoundsException;
-        vec[-1].shouldThrow!BoundsException;
-    }
-
-    {
-        auto vec = vector(1, 2, 3);
-        vec.reserve(10);
-        vec[3].shouldThrow!BoundsException;
-        vec[-1].shouldThrow!BoundsException;
-    }
+    auto vec = vector(1, 2, 3);
+    vec.reserve(10);
+    vec[3].shouldThrow!BoundsException;
+    vec[-1].shouldThrow!BoundsException;
 }
 
 @("extend")
