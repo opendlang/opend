@@ -21,8 +21,9 @@ object is `shared`. Otherwise it's non-atomic.
 module automem;
 
 public import automem.unique;
-public import automem.unique_array;
 public import automem.ref_counted;
+public import automem.vector;
+public import automem.unique_array;
 
 
 /**
