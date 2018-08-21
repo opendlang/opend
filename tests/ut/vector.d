@@ -5,8 +5,6 @@ import automem.vector;
 import stdx.allocator.mallocator: Mallocator;
 import test_allocator;
 
-mixin TestUtils;
-
 
 @("length")
 @safe unittest {
