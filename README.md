@@ -25,6 +25,8 @@ See [wiki: Link with CBLAS & LAPACK](https://github.com/libmir/mir-lapack/wiki/L
  - spev
  - sptrf
  - sptri
+ - syev
+ - syev_2stage
  - sysv_rook
  - sytrf
  - sytrs2

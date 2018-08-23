@@ -20,3 +20,4 @@ examples/gesv/gesv
 *.lib
 *.dll
 build/
+*.exe

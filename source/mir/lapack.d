@@ -660,6 +660,120 @@ unittest
 }
 
 ///
+size_t syev_wk(T)(
+	char jobz,
+	char uplo,
+	Slice!(T*, 2, Canonical) a,
+	Slice!(T*) w,
+	) 
+{
+	assert(a.length!0 == a.length!1, "sysv: a must be a square matrix.");
+	assert(w.length == a.length);
+
+	lapackint n = cast(lapackint) a.length;
+	lapackint lda = cast(lapackint) a._stride.max(1);
+	T work = void;
+	lapackint lwork = -1;
+	lapackint info = void;
+
+	lapack.syev_(jobz, uplo, n, a._iterator, lda, w._iterator, &work, lwork, info);
+
+	return cast(size_t) work;
+}
+
+unittest
+{
+	alias s = syev_wk!float;
+	alias d = syev_wk!double;
+}
+
+///
+size_t syev(T)(
+	char jobz,
+	char uplo,
+	Slice!(T*, 2, Canonical) a,
+	Slice!(T*) w,
+	Slice!(T*) work,
+	)
+{
+	assert(a.length!0 == a.length!1, "sysv: a must be a square matrix.");
+	assert(w.length == a.length);
+
+	lapackint n = cast(lapackint) a.length;
+	lapackint lda = cast(lapackint) a._stride.max(1);
+	lapackint lwork = cast(lapackint) work.length;
+	lapackint info = void;
+
+	lapack.syev_(jobz, uplo, n, a._iterator, lda, w._iterator, work._iterator, lwork, info);
+
+	assert(info >= 0);
+	return info;
+}
+
+unittest
+{
+	alias s = syev!float;
+	alias d = syev!double;
+}
+
+///
+size_t syev_2stage_wk(T)(
+	char jobz,
+	char uplo,
+	Slice!(T*, 2, Canonical) a,
+	Slice!(T*) w,
+	) 
+{
+	assert(a.length!0 == a.length!1, "sysv: a must be a square matrix.");
+	assert(w.length == a.length);
+
+	lapackint n = cast(lapackint) a.length;
+	lapackint lda = cast(lapackint) a._stride.max(1);
+	T work = void;
+	lapackint lwork = -1;
+	lapackint info = void;
+
+	lapack.syev_2stage_(jobz, uplo, n, a._iterator, lda, w._iterator, &work, lwork, info);
+
+	return cast(size_t) work;
+}
+
+unittest
+{
+	alias s = syev_2stage_wk!float;
+	alias d = syev_2stage_wk!double;
+}
+
+///
+size_t syev_2stage(T)(
+	char jobz,
+	char uplo,
+	Slice!(T*, 2, Canonical) a,
+	Slice!(T*) w,
+	Slice!(T*) work,
+	)
+{
+	assert(a.length!0 == a.length!1, "sysv: a must be a square matrix.");
+	assert(w.length == a.length);
+
+	lapackint n = cast(lapackint) a.length;
+	lapackint lda = cast(lapackint) a._stride.max(1);
+	lapackint lwork = cast(lapackint) work.length;
+	lapackint info = void;
+
+	lapack.syev_2stage_(jobz, uplo, n, a._iterator, lda, w._iterator, work._iterator, lwork, info);
+
+	assert(info >= 0);
+	return info;
+}
+
+unittest
+{
+	alias s = syev_2stage!float;
+	alias d = syev_2stage!double;
+}
+
+///
 size_t potrf(T)(
        char uplo,
        Slice!(T*, 2, Canonical) a,
