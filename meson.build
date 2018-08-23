@@ -41,18 +41,12 @@ mir_optim_dep = declare_dependency(
     dependencies: required_deps,
 )
 
-if meson.get_compiler('d').get_id() == 'llvm'
-    test_link_args = ['-main', '-link-defaultlib-shared']
-else
-    test_link_args = ['-main']
-endif
-
 mir_optim_test_exe = executable(meson.project_name() + '-test',
     mir_optim_src,
     include_directories: mir_optim_dir,
     d_unittest: true,
     d_module_versions: ['mir_test'],
-    link_args: test_link_args,
+    link_args: '-main',
     dependencies: required_deps,
 )
 
