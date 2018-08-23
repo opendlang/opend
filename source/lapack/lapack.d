@@ -207,11 +207,16 @@ void zggglm_(ref lapackint n, ref lapackint m, ref lapackint p, _cdouble *a, ref
 /// symmetric matrix.
 void ssyev_(ref char jobz, ref char uplo, ref lapackint n, float *a, ref lapackint lda, float *w, float *work, ref lapackint lwork, ref lapackint info);
 void dsyev_(ref char jobz, ref char uplo, ref lapackint n, double *a, ref lapackint lda, double *w, double *work, ref lapackint lwork, ref lapackint info);
+void ssyev_2stage_(ref char jobz, ref char uplo, ref lapackint n, float *a, ref lapackint lda, float *w, float *work, ref lapackint lwork, ref lapackint info);
+void dsyev_2stage_(ref char jobz, ref char uplo, ref lapackint n, double *a, ref lapackint lda, double *w, double *work, ref lapackint lwork, ref lapackint info);
+
 
 /// Computes all eigenvalues and, optionally, eigenvectors of a complex
 /// Hermitian matrix.
 void cheev_(ref char jobz, ref char uplo, ref lapackint n, _cfloat *a, ref lapackint lda, float *w, _cfloat *work, ref lapackint lwork, float *rwork, ref lapackint info);
 void zheev_(ref char jobz, ref char uplo, ref lapackint n, _cdouble *a, ref lapackint lda, double *w, _cdouble *work, ref lapackint lwork, double *rwork, ref lapackint info);
+void cheev_2stage_(ref char jobz, ref char uplo, ref lapackint n, _cfloat *a, ref lapackint lda, float *w, _cfloat *work, ref lapackint lwork, float *rwork, ref lapackint info);
+void zheev_2stage_(ref char jobz, ref char uplo, ref lapackint n, _cdouble *a, ref lapackint lda, double *w, _cdouble *work, ref lapackint lwork, double *rwork, ref lapackint info);
 
 
 /// Computes all eigenvalues, and optionally, eigenvectors of a real
@@ -219,12 +224,16 @@ void zheev_(ref char jobz, ref char uplo, ref lapackint n, _cdouble *a, ref lapa
 /// and conquer algorithm.
 void ssyevd_(ref char jobz, ref char uplo, ref lapackint n, float *a, ref lapackint lda, float *w, float *work, ref lapackint lwork, lapackint *iwork, lapackint *liwork, ref lapackint info);
 void dsyevd_(ref char jobz, ref char uplo, ref lapackint n, double *a, ref lapackint lda, double *w, double *work, ref lapackint lwork, lapackint *iwork, lapackint *liwork, ref lapackint info);
+void ssyevd_2stage_(ref char jobz, ref char uplo, ref lapackint n, float *a, ref lapackint lda, float *w, float *work, ref lapackint lwork, lapackint *iwork, lapackint *liwork, ref lapackint info);
+void dsyevd_2stage_(ref char jobz, ref char uplo, ref lapackint n, double *a, ref lapackint lda, double *w, double *work, ref lapackint lwork, lapackint *iwork, lapackint *liwork, ref lapackint info);
 
 /// Computes all eigenvalues and, optionally, eigenvectors of a complex
 /// Hermitian matrix.  If eigenvectors are desired, it uses a divide
 /// and conquer algorithm.
 void cheevd_(ref char jobz, ref char uplo, ref lapackint n, _cfloat *a, ref lapackint lda, float *w, _cfloat *work, ref lapackint lwork, float *rwork, lapackint *lrwork, lapackint *iwork, lapackint *liwork, ref lapackint info);
 void zheevd_(ref char jobz, ref char uplo, ref lapackint n, _cdouble *a, ref lapackint lda, double *w, _cdouble *work, ref lapackint lwork, double *rwork, lapackint *lrwork, lapackint *iwork, lapackint *liwork, ref lapackint info);
+void cheevd_2stage_(ref char jobz, ref char uplo, ref lapackint n, _cfloat *a, ref lapackint lda, float *w, _cfloat *work, ref lapackint lwork, float *rwork, lapackint *lrwork, lapackint *iwork, lapackint *liwork, ref lapackint info);
+void zheevd_2stage_(ref char jobz, ref char uplo, ref lapackint n, _cdouble *a, ref lapackint lda, double *w, _cdouble *work, ref lapackint lwork, double *rwork, lapackint *lrwork, lapackint *iwork, lapackint *liwork, ref lapackint info);
 
 /// Computes all eigenvalues, and optionally, eigenvectors of a real
 /// symmetric matrix in packed storage.
