@@ -23,3 +23,5 @@ build/mir-lapack/
 build/cblas/
 build/lapack/
 build/mir-random/
+*.dll
+x.txt

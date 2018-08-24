@@ -85,6 +85,7 @@ struct LeastSquaresLMS_S
     lapackint* ipiv;
     float* y;
     float* mBuffer;
+    float* nBuffer;
     float* JJ;
     float* J;
     size_t work_length;
@@ -103,7 +104,6 @@ struct LeastSquaresLMS_S
     float goodStepQuality;
     float maxLambda;
     float minLambda;
-    float minDiagonal;
     float jacobianEpsilon;
 
     size_t iterCt;
@@ -127,6 +127,7 @@ struct LeastSquaresLMD_S
     lapackint* ipiv;
     double* y;
     double* mBuffer;
+    double* nBuffer;
     double* JJ;
     double* J;
     size_t work_length;
@@ -145,7 +146,6 @@ struct LeastSquaresLMD_S
     double goodStepQuality;
     double maxLambda;
     double minLambda;
-    double minDiagonal;
     double jacobianEpsilon;
 
     size_t iterCt;

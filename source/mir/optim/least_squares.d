@@ -50,6 +50,7 @@ Modified Levenberg-Marquardt parameters, data, and state.
 struct LeastSquaresLM(T)
     if (is(T == double) || is(T == float))
 {
+    import mir.math.common: sqrt;
     import lapack: lapackint;
 
     /// Default tolerance in x
@@ -58,22 +59,18 @@ struct LeastSquaresLM(T)
     enum T tolGDefault = T(2) ^^ ((1 - T.mant_dig) * 3 / 4);
     /// Default epsilon for finite difference Jacobian approximation
     enum T jacobianEpsilonDefault = T(2) ^^ ((1 - T.mant_dig) / 3);
-    /// Default (inverse of) initial trust region radius
-    enum T lambdaDefault = T(2) ^^ 3;
     /// Default `lambda` is multiplied by this factor after step below min quality
-    enum T lambdaIncreaseDefault = T(2) ^^ 3;
+    enum T lambdaIncreaseDefault = 4;
     /// Default `lambda` is multiplied by this factor after good quality steps
-    enum T lambdaDecreaseDefault = T(2) ^^ -3;
+    enum T lambdaDecreaseDefault = 0.25 / 1.618;
     /// Default scale such as for steps below this quality, the trust region is shrinked
-    enum T minStepQualityDefault = T(2) ^^ -10;
-    /// Default scale such as for steps above this quality, the trust region is expanded
-    enum T goodStepQualityDefault = 0.75;
+    enum T minStepQualityDefault = 0.1;
+    /// Default scale such as for steps above thsis quality, the trust region is expanded
+    enum T goodStepQualityDefault = 0.68;
     /// Default maximum trust region radius
     enum T maxLambdaDefault = 1 / T.epsilon;
     /// Default maximum trust region radius
     enum T minLambdaDefault = T.epsilon;
-    /// Default lower bound on values of diagonal matrix used to regularize the trust region step
-    enum T minDiagonalDefault = T.epsilon;
 
     /// Delegates for low level D API.
     alias FunctionDelegate = void delegate(Slice!(const(T)*) x, Slice!(T*) y) @safe nothrow @nogc pure;
@@ -94,6 +91,7 @@ struct LeastSquaresLM(T)
     private lapackint* _ipiv_ptr;
     private T* _y_ptr;
     private T* _mBuffer_ptr;
+    private T* _nBuffer_ptr;
     private T* _JJ_ptr;
     private T* _J_ptr;
     private Slice!(T*) _work;
@@ -132,8 +130,6 @@ struct LeastSquaresLM(T)
     T maxLambda = 0;
     /// maximum trust region radius
     T minLambda = 0;
-    /// lower bound on values of diagonal matrix used to regularize the trust region step
-    T minDiagonal = 0;
     /// epsilon for finite difference Jacobian approximation
     T jacobianEpsilon = 0;
 
@@ -217,6 +213,7 @@ struct LeastSquaresLM(T)
         Slice!(T*) deltaXBase() { return Slice!(T*)([n], sizediff_t[0].init, _deltaXBase_ptr); }
         Slice!(lapackint*) ipiv() { return Slice!(lapackint*)([n], sizediff_t[0].init, _ipiv_ptr); }
         Slice!(T*) mBuffer() { return Slice!(T*)([m], sizediff_t[0].init, _mBuffer_ptr); }
+        Slice!(T*) nBuffer() { return Slice!(T*)([n], sizediff_t[0].init, _nBuffer_ptr); }
         Slice!(T*, 2) JJ() { return Slice!(T*, 2)([n, n], sizediff_t[0].init, _JJ_ptr); }
         Slice!(T*, 2) J() { return Slice!(T*, 2)([m, n], sizediff_t[0].init, _J_ptr); }
     }
@@ -227,6 +224,7 @@ struct LeastSquaresLM(T)
     pragma(inline, false)
     void reset()() @safe pure nothrow @nogc
     {
+        lambda = 0;
         iterCt = 0;
         fCalls = 0;
         gCalls = 0;     
@@ -250,14 +248,13 @@ struct LeastSquaresLM(T)
         maxIter = 100;
         tolX = tolXDefault;
         tolG = tolGDefault;
-        lambda = lambdaDefault;
+        lambda = 0;
         lambdaIncrease = lambdaIncreaseDefault;
         lambdaDecrease = lambdaDecreaseDefault;
         minStepQuality = minStepQualityDefault;
         goodStepQuality = goodStepQualityDefault;
         maxLambda = maxLambdaDefault;
         minLambda = minLambdaDefault;
-        minDiagonal = minDiagonalDefault;
         jacobianEpsilon = jacobianEpsilonDefault;
     }
 
@@ -267,7 +264,7 @@ struct LeastSquaresLM(T)
     pragma(inline, false)
     auto gcAlloc()(size_t m, size_t n, bool lowerBounds = false, bool upperBounds = false) //nothrow @trusted pure
     {
-        import mir.lapack: sysv_rook_wk;
+        import mir.lapack: syev_wk;
         import mir.ndslice.allocation: uninitSlice, uninitAlignedSlice;
         import mir.ndslice.slice: sliced;
         import mir.ndslice.topology: canonical;
@@ -285,9 +282,10 @@ struct LeastSquaresLM(T)
         _deltaXBase_ptr = [n].uninitAlignedSlice!T(alignment)._iterator;
         _y_ptr = [m].uninitAlignedSlice!T(alignment)._iterator;
         _mBuffer_ptr = [m].uninitAlignedSlice!T(alignment)._iterator;
+        _nBuffer_ptr = [n].uninitAlignedSlice!T(alignment)._iterator;
         _JJ_ptr = [n, n].uninitAlignedSlice!T(alignment)._iterator;
         _J_ptr = [m, n].uninitAlignedSlice!T(alignment)._iterator;
-        _work = [sysv_rook_wk('L', JJ.canonical, _deltaX_ptr.sliced([1, n]).canonical)].uninitAlignedSlice!T(alignment);
+        _work = [syev_wk('V', 'L', JJ.canonical, nBuffer)].uninitAlignedSlice!T(alignment);
         reset;
     }
 
@@ -297,7 +295,7 @@ struct LeastSquaresLM(T)
     pragma(inline, false)
     void stdcAlloc()(size_t m, size_t n, bool lowerBounds = false, bool upperBounds = false) nothrow @nogc @trusted
     {
-        import mir.lapack: sysv_rook_wk;
+        import mir.lapack: syev_wk;
         import mir.ndslice.allocation: stdcUninitSlice, stdcUninitAlignedSlice;
         import mir.ndslice.slice: sliced;
         import mir.ndslice.topology: canonical;
@@ -315,9 +313,10 @@ struct LeastSquaresLM(T)
         _deltaXBase_ptr = [n].stdcUninitAlignedSlice!T(alignment)._iterator;
         _y_ptr = [m].stdcUninitAlignedSlice!T(alignment)._iterator;
         _mBuffer_ptr = [m].stdcUninitAlignedSlice!T(alignment)._iterator;
+        _nBuffer_ptr = [n].stdcUninitAlignedSlice!T(alignment)._iterator;
         _JJ_ptr = [n, n].stdcUninitAlignedSlice!T(alignment)._iterator;
         _J_ptr = [m, n].stdcUninitAlignedSlice!T(alignment)._iterator;
-        _work = [sysv_rook_wk('L', JJ.canonical, _deltaX_ptr.sliced([1, n]).canonical)].stdcUninitAlignedSlice!T(alignment);
+        _work = [syev_wk('V', 'L', JJ.canonical, nBuffer)].stdcUninitAlignedSlice!T(alignment);
         reset;
     }
 
@@ -338,6 +337,7 @@ struct LeastSquaresLM(T)
         _deltaXBase_ptr.alignedFree;
         _y_ptr.alignedFree;
         _mBuffer_ptr.alignedFree;
+        _nBuffer_ptr.alignedFree;
         _JJ_ptr.alignedFree;
         _J_ptr.alignedFree;
         _work._iterator.alignedFree;
@@ -485,6 +485,8 @@ unittest
 
     lm.optimize!(rosenbrockRes, FFF);
 
+    // import std.stdio;
+
     // writeln(lm.iterCt, " ", lm.fCalls, " ", lm.gCalls);
 
     assert(nrm2((lm.x - [1, 1].sliced).slice) < 1e-8);
@@ -558,8 +560,10 @@ unittest
 
     assert(all!"a >= b"(lm.x, lm.lower));
 
+    // import std.stdio;
+
     // writeln(lm.x);
-    // writeln(lm);
+    // writeln(lm.iterCt, " ", lm.fCalls, " ", lm.gCalls);
 
     lm.reset;
     lm.x[] = [5.0, 5.0, 5.0];
@@ -569,9 +573,28 @@ unittest
     assert(all!"a <= b"(lm.x, lm.upper));
 
     // writeln(lm.x);
-    // writeln(lm);
+    // writeln(lm.iterCt, " ", lm.fCalls, " ", lm.gCalls);
 }
 
+///
+pure unittest
+{
+    import mir.blas: nrm2;
+    import mir.math.common: sqrt;
+    import mir.ndslice.allocation: slice;
+    import mir.ndslice.slice: sliced;
+
+    auto lm = LeastSquaresLM!double(1, 2, [-0.5, -0.5], [0.5, 0.5]);
+    lm.x[] = [0.001, 0.0001];
+    lm.optimize!(
+        (x, y)
+        {
+            y[0] = sqrt(1 - (x[0] ^^ 2 + x[1] ^^ 2));
+        },
+    );
+
+    assert(nrm2((lm.x - lm.upper).slice) < 1e-8);
+}
 
 /++
 High level nothtow D API for Levenberg-Marquardt Algorithm.
@@ -672,6 +695,8 @@ enum LMStatus
     badStepQuality,
     ///
     badLambdaParams,
+    ///
+    numericError,
 }
 
 /++
@@ -701,6 +726,8 @@ string lmStatusString(LMStatus st) @safe pure nothrow @nogc
             return "minStepQuality < goodStepQuality must hold.";
         case badLambdaParams:
             return "1 <= lambdaIncrease && lambdaIncrease <= T.max.sqrt and T.min_normal.sqrt <= lambdaDecrease && lambdaDecrease <= 1 must hold.";
+        case numericError:
+            return "numeric error";
     }
 }
 
@@ -1031,6 +1058,12 @@ LMStatus optimizeLMImplGeneric(T)
 
     version(LDC) pragma(inline, true);
 
+    version(mir_optim_debug)
+    {
+        import core.stdc.stdio;
+        auto file = assumePure(&fopen)("x.txt", "w");
+    }
+
     if (m == 0 || n == 0 || !x.all!"-a.infinity < a && a < a.infinity")
         return lm.status = LMStatus.badGuess; 
     if (!(!_lower_ptr || allLessOrEqual(lower, x)) || !(!_upper_ptr || allLessOrEqual(x, upper)))
@@ -1048,7 +1081,7 @@ LMStatus optimizeLMImplGeneric(T)
 
     maxAge = maxAge ? maxAge : g ? 3 : cast(uint)(2 * n);
     uint age = maxAge;
-    
+
     tm = tm ? tm : delegate(size_t count, void* taskContext, scope LeastSquaresTask task) pure @nogc nothrow @trusted
     {
         foreach(i; 0 .. count)
@@ -1057,56 +1090,78 @@ LMStatus optimizeLMImplGeneric(T)
 
     bool needJacobian = true;
     f(x, y);
-    fCalls += 1;
+    ++fCalls;
     residual = dot(y, y);
-
-    version(mir_optim_debug)
-    {
-        import core.stdc.stdio;
-        auto file = assumePure(&fopen)("x.txt", "w");
-    }
 
     do
     {
+        if (!allLessOrEqual(x, x))
+            return lm.status = LMStatus.numericError;
+        T mJy_nrm2 = void;
+        T deltaXBase_dot = void;
         if (needJacobian)
         {
             needJacobian = false;
             if (age < maxAge)
             {
                 age++;
-                auto d = 1 / dot(deltaXBase, deltaXBase);
+                auto d = 1 / deltaXBase_dot;
                 axpy(-1, y, mBuffer); // -deltaY
                 gemv(1, J, deltaXBase, 1, mBuffer); //-(f_new - f_old - J_old*h)
                 scal(-d, mBuffer);
                 ger(1, mBuffer, deltaXBase, J); //J_new = J_old + u*h'
             }
             else
-            if (g)
             {
-                age = 0;
-                g(x, J);
-                gCalls += 1;
-            }
-            else
-            {
-                age = 0;
-                fill(0, ipiv);
-                void*[2] context;
-                context[0] = &lm;
-                context[1] = &f;
-                tm(n, context.ptr, &defaultLMThreadManagerDelegate!T);
-                fCalls += ipiv.sum;
+                if (g)
+                {
+                    age = 0;
+                    g(x, J);
+                    gCalls += 1;
+                }
+                else
+                {
+                    age = 0;
+                    fill(0, ipiv);
+                    void*[2] context;
+                    context[0] = &lm;
+                    context[1] = &f;
+                    tm(n, context.ptr, &defaultLMThreadManagerDelegate!T);
+                    fCalls += ipiv.sum;
+                }
             }
             gemv(-1, J.transposed, y, 0, mJy);
+            mJy_nrm2 = mJy.nrm2;
         }
 
         syrk(Uplo.Upper, 1, J.transposed, 0, JJ);
-        foreach(ref e; JJ.diagonal)
+        if (syev('V', 'L', JJ.canonical, nBuffer, _work))
+            return lm.status = LMStatus.numericError;
+
+        if (!(lambda > T.min_normal))
         {
-            e += lambda * fmax(e, minDiagonal);
+            lambda = 0.0001 * nBuffer.back;
+            if (!(lambda > T.min_normal))
+                lambda = 1;
         }
-        copy(mJy, deltaX);
-        sysv_rook('L', JJ.canonical, ipiv, deltaX.sliced([1, n]).canonical, _work);
+
+        T sigma = 0;
+
+        if (nBuffer.front < 0)
+            sigma = nBuffer.front * -(1 + T.epsilon);
+        
+        if (nBuffer.front + sigma < T.min_normal)
+            sigma += T.min_normal;
+
+        if (mJy_nrm2 / ((nBuffer.front + sigma) * (1 + lambda)) * 2 >= T.max )
+            lambda = (mJy_nrm2 / ((nBuffer.front + sigma) * T.max) - 1) * 2;
+
+        gemv(1, JJ, mJy, 0, deltaX);
+        auto lambdaScale = 1 + lambda;
+        foreach(i; 0 .. n)
+            nBuffer[i] = deltaX[i] / ((nBuffer[i] + sigma) * (1 + lambda));
+        gemv(1, JJ.transposed, nBuffer, 0, deltaX);
+
         axpy(1, x, deltaX);
 
         if (_lower_ptr)
@@ -1116,9 +1171,8 @@ LMStatus optimizeLMImplGeneric(T)
 
         axpy(-1, x, deltaX);
         copy(y, mBuffer);
-        gemv(1, J, deltaX, 1, mBuffer);
+        gemv(1, J, deltaX, 1, mBuffer); // (J * dx + y) * (J * dx + y)^T
         auto predictedResidual = dot(mBuffer, mBuffer);
-        auto nBuffer = JJ[0];
         copy(x, nBuffer);
         axpy(1, deltaX, nBuffer);
 
@@ -1127,53 +1181,98 @@ LMStatus optimizeLMImplGeneric(T)
         if (_upper_ptr)
             applyUpperBound(nBuffer, upper);
 
+        f(nBuffer, mBuffer);
+
+        ++fCalls;
+        ++iterCt;
+        auto trialResidual = dot(mBuffer, mBuffer);
+        if (trialResidual != trialResidual || trialResidual == T.infinity)
+            return lm.status = LMStatus.numericError;
+        auto improvement = residual - trialResidual;
+        auto predictedImprovement = residual - predictedResidual;
+        auto rho = improvement / predictedImprovement;
+
         version(mir_optim_debug)
         {
+            assumePure(&fprintf)(file, "x = ");
             foreach (ref e; nBuffer)
             {
                 assumePure(&fprintf)(file, "%.4f ", e);
             }
             assumePure(&fprintf)(file, "\n");
+            assumePure(&fprintf)(file, "lambda = %e\n", lambda);
+            assumePure(&fprintf)(file, "improvement = %e\n", improvement);
+            assumePure(&fprintf)(file, "predictedImprovement = %e\n", predictedImprovement);
+            assumePure(&fprintf)(file, "rho = %e\n", rho);
             assumePure(&fflush)(file);
         }
 
-        f(nBuffer, mBuffer);
-        fCalls += 1;
-        auto trialResidual = dot(mBuffer, mBuffer);
-        auto rho = (trialResidual - residual) / (predictedResidual - residual);
 
-        if (rho > minStepQuality)
+        if (rho > 0)
         {
             copy(deltaX, deltaXBase);
+            deltaXBase_dot = dot(deltaXBase, deltaXBase);
+            if (deltaXBase_dot != deltaXBase_dot || deltaXBase_dot == T.infinity)
+                return lm.status = LMStatus.numericError;
             copy(nBuffer, x);
             swap(y, mBuffer);
             residual = trialResidual;
+            needJacobian = true;
+        }
+        if (rho > minStepQuality)
+        {
+            gemv(1, J.transposed, y, 0, nBuffer);
+            gConverged = !(nBuffer.amax > tolG);
+            xConverged = !(deltaXBase_dot.sqrt > tolX * (tolX + x.nrm2));
+
+            if (gConverged || xConverged)
+            {
+                if (age)
+                {
+                    gConverged = false;
+                    xConverged = false;
+                    age = maxAge;
+                }
+                else
+                {
+                    break;
+                }
+            }
+
             if (rho > goodStepQuality)
             {
                 lambda = fmax(lambdaDecrease * lambda, minLambda);
             }
-            needJacobian = true;
         }
         else
         {
-            lambda = fmin(lambdaIncrease * lambda, maxLambda);
+            if (age == 0)
+            {
+                auto newLambda = lambdaIncrease * lambda;
+                if (newLambda > maxLambda)
+                {
+                    if (age == 0)
+                    {
+                        lambda = newLambda;
+                        break;
+                    }
+                    else
+                    {
+                        needJacobian = true;
+                        age = maxAge;
+                        continue;
+                    }
+                }
+                lambda = newLambda;
+            }
+            else
+            {
+                needJacobian = true;
+                age = maxAge;
+            }
         }
-
-        gemv(1, J.transposed, y, 0, nBuffer);
-        gConverged = nBuffer.amax < tolG;
-        xConverged = deltaX.nrm2 < tolX * (tolX + x.nrm2);
-
-        if (age && (gConverged || xConverged))
-        {
-            gConverged = false;
-            xConverged = false;
-            age = maxAge;
-            needJacobian = true;
-        }
-
-        ++iterCt;
     }
-    while (iterCt < maxIter && !(gConverged || xConverged));
+    while (iterCt < maxIter);
 
     return lm.status = LMStatus.success;
 }}
@@ -1195,11 +1294,11 @@ void applyUpperBound(T)(Slice!(T*) x, Slice!(const(T)*) bound)
 }
 
 pragma(inline, false)
-T amax(T)(Slice!(const(T)*) x)
+T amax(T, SliceKind kind)(Slice!(const(T)*, 1, kind) x)
 {
     import mir.math.common: fmax, fabs;
     T ret = 0;
-    foreach(ref e; x.field)
+    foreach(ref e; x)
         ret = fmax(fabs(e), ret);
     return ret;
 }
