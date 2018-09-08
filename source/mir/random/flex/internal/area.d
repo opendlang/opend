@@ -862,10 +862,10 @@ body
                 if (iv.hatArea == S.max)
                     assert(hats[i][j].isInfinity);
                 else
-                    assert(iv.hatArea.approxEqual(hats[i][j], 1e-4, 1e-4));
+                    assert(iv.hatArea.approxEqual(hats[i][j], 1e-4));
 
                 squeezeArea!S(iv);
-                assert(iv.squeezeArea.approxEqual(sqs[i][j], 1e-4, 1e-4));
+                assert(iv.squeezeArea == 0 || iv.squeezeArea.approxEqual(sqs[i][j], 1e-4));
 
                 ++j;
             }
