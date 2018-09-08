@@ -11,8 +11,7 @@
 # mir-random
 Advanced Random Number Generators
 
-Documentation: http://docs.random.dlang.io/latest/index.html
-
+Documentation: http://docs.random.dlang.io
 
 ### Example (3 seconds)
 ```d
