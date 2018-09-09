@@ -6,10 +6,12 @@ d:
   - dmd
   - ldc
 
-packages:
-  # - pkg-config
-  - liblapack-dev
-  - libblas-dev
+addons:
+  apt:
+    packages:
+      # - pkg-config
+      - liblapack-dev
+      - libblas-dev
 
 # install:
 #   - pyenv global system 3.6
