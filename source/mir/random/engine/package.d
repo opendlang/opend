@@ -1019,7 +1019,7 @@ ptrdiff_t genRandomBlocking()(scope ubyte[] buffer) @nogc nothrow @trusted
     ubyte[] buf = new ubyte[10];
     genRandomBlocking(buf);
 
-    import std.algorithm.iteration : sum;
+    import mir.math.sum: sum;
     assert(buf.sum > 0, "Only zero points generated");
 }
 
@@ -1100,7 +1100,7 @@ size_t genRandomNonBlocking()(scope ubyte[] buffer) @nogc nothrow @trusted
     ubyte[] buf = new ubyte[10];
     genRandomNonBlocking(buf);
 
-    import std.algorithm.iteration : sum;
+    import mir.math.sum: sum;
     assert(buf.sum > 0, "Only zero points generated");
 }
 

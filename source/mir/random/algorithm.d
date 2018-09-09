@@ -12,6 +12,7 @@ import mir.math.common;
 import mir.random;
 public import mir.random.engine;
 import mir.random.variable: isRandomVariable;
+import mir.random.ndvariable: isNdRandomVariable;
 
 // Removed documentation because no longer needed
 // but leaving in code in case anyone was using it.
@@ -524,23 +525,25 @@ struct RandomRange(G, D)
         private G* _gen;
     else
         private G _gen;
-    private Unqual!(typeof(_var(_gen))) _val;
+    private alias V = Unqual!(typeof(_var(_gen)));
+    private V _val;
+
     /++
     Constructor.
     Stores the pointer to the `gen` engine.
     +/
+    static if (is(G == class) || is(G == interface))
     this()(G gen, D var)
-    if (is(G == class) || is(G == interface))
     { _gen = gen; _var = var; popFront(); }
 
     /// ditto
+    static if (!is(G == class) && !is(G == interface))
     this()(G* gen, D var)
-    if (!is(G == class) && !is(G == interface))
     { _gen = gen; _var = var; popFront(); }
 
     /// ditto
+    static if (!is(G == class) && !is(G == interface))
     this()(ref G gen, D var) @system
-    if (!is(G == class) && !is(G == interface))
     { _gen = &gen; _var = var; popFront(); }
 
     /// Infinity Input Range primitives
@@ -548,7 +551,51 @@ struct RandomRange(G, D)
     /// ditto
     auto front()() @property { return _val; }
     /// ditto
-    void popFront()() { _val = _var(_gen); }
+    void popFront()()
+    {
+        _val = _var(_gen);
+    }
+}
+
+/// ditto
+struct RandomRange(G, D)
+    if (isSaturatedRandomEngine!G && isNdRandomVariable!D)
+{
+    private D _var;
+    static if (!is(G == class) && !is(G == interface))
+        private G* _gen;
+    else
+        private G _gen;
+    private alias V = D.Element[];
+    private V _val;
+
+    /++
+    Constructor.
+    Stores the pointer to the `gen` engine.
+    +/
+    static if (is(G == class) || is(G == interface))
+    this()(G gen, D var, D.Element[] payload)
+    { _gen = gen; _var = var; _val = payload; popFront(); }
+
+    /// ditto
+    static if (!is(G == class) && !is(G == interface))
+    this()(G* gen, D var, D.Element[] payload)
+    { _gen = gen; _var = var; _val = payload; popFront(); }
+
+    /// ditto
+    static if (!is(G == class) && !is(G == interface))
+    this()(ref G gen, D var, D.Element[] payload) @system
+    { _gen = &gen; _var = var; _val = payload; popFront(); }
+
+    /// Infinity Input Range primitives
+    enum empty = false;
+    /// ditto
+    auto front()() @property { return _val; }
+    /// ditto
+    void popFront()()
+    {
+        _var(_gen, _val);
+    }
 }
 
 /// ditto
@@ -557,15 +604,44 @@ struct RandomRange(alias gen, D)
         && isRandomVariable!D)
 {
     private D _var;
-    private Unqual!(typeof(_var(gen))) _val;
+    private alias V = Unqual!(typeof(_var(gen)));
+    private V _val;
+
     ///
-    this()(D var) { _var = var; popFront(); }
+    this()(D var)
+    { _var = var; popFront(); }
     /// Infinity Input Range primitives
     enum empty = false;
     /// ditto
     auto front()() @property { return _val; }
     /// ditto
-    void popFront()() { _val = _var(gen); }
+    void popFront()()
+    {
+        _val = _var(gen);
+    }
+}
+
+/// ditto
+struct RandomRange(alias gen, D)
+    if (__traits(compiles, { static assert(isSaturatedRandomEngine!(typeof(gen))); })
+        && isNdRandomVariable!D)
+{
+    private D _var;
+    private alias V = D.Element[];
+    private V _val;
+
+    ///
+    this()(D var, D.Element[] payload)
+    { _var = var; _val = payload; popFront(); }
+    /// Infinity Input Range primitives
+    enum empty = false;
+    /// ditto
+    auto front()() @property { return _val; }
+    /// ditto
+    void popFront()()
+    {
+        _var(gen, _val);
+    }
 }
 
 ///ditto
@@ -678,6 +754,38 @@ RandomRange!(gen, D) range(alias gen = rne, D)(D var)
 }
 
 /// ditto
+RandomRange!(G, D) range(G, D, T)(G gen, D var, T[] payload)
+    if (isSaturatedRandomEngine!G && isNdRandomVariable!D && is(T == D.Element) &&
+        (is(G == class) || is(G == interface)))
+{
+    return typeof(return)(gen, var, payload);
+}
+
+/// ditto
+RandomRange!(G, D) range1(G, D, T)(G* gen, D var, T[] payload)
+    if (isSaturatedRandomEngine!G && isNdRandomVariable!D && is(T == D.Element) &&
+        !is(G == class) && !is(G == interface))
+{
+    return typeof(return)(gen, var, payload);
+}
+
+/// ditto
+RandomRange!(G, D) range(G, D, T)(ref G gen, D var, T[] payload) @system
+    if (isSaturatedRandomEngine!G && isNdRandomVariable!D && is(T == D.Element) &&
+        !is(G == class) && !is(G == interface))
+{
+    return typeof(return)(gen, var, payload);
+}
+
+/// ditto
+RandomRange!(gen, D) range(alias gen = rne, D, T)(D var, T[] payload)
+    if (__traits(compiles, { static assert(isSaturatedRandomEngine!(typeof(gen))); })
+        && is(T == D.Element) && isNdRandomVariable!D)
+{
+    return typeof(return)(var, payload);
+}
+
+/// ditto
 RandomRange!G range(G)(G gen)
     if (isSaturatedRandomEngine!G &&
         (is(G == class) || is(G == interface)))
@@ -711,43 +819,62 @@ auto range(alias gen)()
 ///
 nothrow @safe version(mir_random_test) unittest
 {
-    import std.range : take, array;
-
+    import mir.array.allocation: array;
     import mir.random;
-    import mir.random.variable: NormalVariable;
+    import mir.random.variable: normalVar;
+    import std.range: take;
 
     immutable seed = unpredictableSeed;
 
     //Using pointer to RNG:
     setThreadLocalSeed!Random(seed);//Use a known seed instead of a random seed.
     Random* rng_ptr = threadLocalPtr!Random;
-    auto sample1 = rng_ptr
-        .range(NormalVariable!double(0, 1))
-        .take(1000)
-        .array;
+    auto sample1 = rng_ptr.range(normalVar).take(1000).array;
 
     //Using alias of local RNG:
     Random rng = Random(seed);
-    auto sample2 =
-         range!rng(NormalVariable!double(0, 1))
-        .take(1000)
-        .array;
+    auto sample2 = normalVar.range!rng.take(1000).array;
 
     assert(sample1 == sample2);
 
     /// using default threadlocal Random Engine
-    auto sample3 = NormalVariable!double(0, 1)
-        .range
-        .take(1000)
-        .array;
+    auto sample3 = normalVar.range.take(1000).array;
+}
+
+/// n-dimensional random variable infinity range
+unittest
+{
+    import mir.array.allocation: array;
+    import mir.random;
+    import mir.random.ndvariable: sphereVar;
+    import std.algorithm.iteration: map;
+    import std.range: take;
+
+    immutable seed = unpredictableSeed;
+
+    double[4] payload;
+
+    //Using pointer to RNG:
+    setThreadLocalSeed!Random(seed);//Use a known seed instead of a random seed.
+    Random* rng_ptr = threadLocalPtr!Random;
+    auto sample1 = rng_ptr.range1(sphereVar, payload[]).take(1000).map!"a.dup".array;
+
+    //Using alias of local RNG:
+    Random rng = Random(seed);
+    auto sample2 = sphereVar.range!rng(payload[]).take(1000).map!"a.dup".array;
+
+    assert(sample1 == sample2);
+
+    /// using default threadlocal Random Engine
+    auto sample3 = sphereVar.range(payload[]).take(1000).map!"a.dup".array;
 }
 
 /// Uniform random bit generation
 nothrow @safe version(mir_random_test) unittest
 {
-    import std.stdio;
-    import std.range, std.algorithm;
-    import std.algorithm: filter;
+    import std.range: take;
+    import mir.array.allocation: array;
+    import std.algorithm: filter, map;
     import mir.random.engine.xorshift;
     //Using pointer to RNG:
     setThreadLocalSeed!Xorshift(1);//Use a known seed instead of a random seed.
@@ -965,7 +1092,7 @@ auto sample(Range, alias gen)(Range range, size_t n)
 ///
 nothrow @safe version(mir_random_test) unittest
 {
-    import std.range;
+    import mir.ndslice.topology: iota;
     import mir.random.engine.xorshift;
     //Using pointer to RNG:
     setThreadLocalSeed!Xorshift(112);//Use a known seed instead of a random seed.
@@ -990,8 +1117,8 @@ nothrow @safe version(mir_random_test) unittest
 
 @nogc nothrow @safe version(mir_random_test) unittest
 {
-    import std.algorithm.comparison;
-    import std.range;
+    import mir.algorithm.iteration: equal;
+    import mir.ndslice.topology: iota;
     import mir.random.engine.xorshift;
     setThreadLocalSeed!Xorshift(232);//Use a known seed instead of a random seed.
     Xorshift* gen = threadLocalPtr!Xorshift;
@@ -1198,8 +1325,8 @@ nothrow @safe version(mir_random_test) unittest
 // README.md too!
 nothrow @safe version(mir_random_test) unittest
 {
-    import std.range;
-
+    import std.range: take;
+    import mir.array.allocation: array;
     import mir.random;
     import mir.random.variable: NormalVariable;
     import mir.random.algorithm: range;
@@ -1215,12 +1342,11 @@ nothrow @safe version(mir_random_test) unittest
 // Re-enable the old code from readme, although it is @system.
 nothrow @system version(mir_random_test) unittest
 {
-    import std.range;
-
+    import mir.array.allocation: array;
     import mir.random;
-    import mir.random.variable: NormalVariable;
     import mir.random.algorithm: range;
-
+    import mir.random.variable: NormalVariable;
+    import std.range: take;
 
     auto rng = Random(unpredictableSeed);        // Engines are allocated on stack or global
     auto sample = rng                            // Engines can passed by reference to algorithms

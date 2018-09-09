@@ -65,7 +65,7 @@ in
 }
 body
 {
-    import std.math: copysign, exp, copysign;
+    import mir.math.common: exp, copysign;
     with(iv)
     {
         // for c=0 no transformations are applied
@@ -82,7 +82,6 @@ body
 {
     import std.math: approxEqual;
     import std.meta : AliasSeq;
-    import std.range: dropOne, lockstep, save;
     foreach (S; AliasSeq!(float, double, real))
     {
         auto f0 = (S x) => -x^^4 + 5 * x^^2 - 4;
@@ -105,8 +104,9 @@ pure @safe version(mir_random_test) unittest
 {
     import std.math: approxEqual;
     import std.meta : AliasSeq;
-    import std.range: dropOne, save, zip;
-    //Use zip instead of lockstep because lockstep fails to infer @safe-ty here.
+    import mir.ndslice.topology: pairwise;
+    import mir.functional: refTuple;
+
     foreach (S; AliasSeq!(float, double, real))
     {
         auto f0 = (S x) => -x^^4 + 5 * x^^2 - 4;
@@ -123,7 +123,7 @@ pure @safe version(mir_random_test) unittest
                       0.1831563888873418, -1.31465318972681e+02];
 
         size_t i = 0;
-        foreach (l, r; zip(points, points.save.dropOne))
+        foreach (l, r; points.pairwise!refTuple)
         {
             auto iv = Interval!S(l, r, c, f0(l), f1(l), f2(l), f0(r), f1(r), f2(r));
             iv.transformInterval;
@@ -140,8 +140,9 @@ pure @safe version(mir_random_test) unittest
 {
     import std.math: approxEqual;
     import std.meta : AliasSeq;
-    import std.range: dropOne, save, zip;
-    //Use zip instead of lockstep because lockstep fails to infer @safe-ty here.
+    import mir.ndslice.topology: pairwise;
+    import mir.functional: refTuple;
+
     foreach (S; AliasSeq!(float, double, real))
     {
         auto f0 = (S x) => -x^^4 + 5 * x^^2 - 4;
@@ -160,7 +161,7 @@ pure @safe version(mir_random_test) unittest
                       -1.45515171958646e+21];
 
         size_t i = 0;
-        foreach (l, r; zip(points, points.save.dropOne))
+        foreach (l, r; points.pairwise!refTuple)
         {
             auto iv = Interval!S(l, r, c, f0(l), f1(l), f2(l), f0(r), f1(r), f2(r));
             iv.transformInterval;
@@ -177,8 +178,9 @@ pure @safe version(mir_random_test) unittest
 {
     import std.math: approxEqual;
     import std.meta : AliasSeq;
-    import std.range: dropOne, save, zip;
-    //Use zip instead of lockstep because lockstep fails to infer @safe-ty here.
+    import mir.ndslice.topology: pairwise;
+    import mir.functional: refTuple;
+
     foreach (S; AliasSeq!(float, double, real))
     {
         auto f0 = (S x) => -x^^4 + 5 * x^^2 - 4;
@@ -192,7 +194,7 @@ pure @safe version(mir_random_test) unittest
         S[] resT2x = [-98, -17, 10,-17, -98];
 
         size_t i = 0;
-        foreach (l, r; zip(points, points.save.dropOne))
+        foreach (l, r; points.pairwise!refTuple)
         {
             auto iv = Interval!S(l, r, c, f0(l), f1(l), f2(l), f0(r), f1(r), f2(r));
             iv.transformInterval;

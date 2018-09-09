@@ -79,7 +79,7 @@ template isRandomVariable(T)
             &&
             is(typeof(((T rv, Random* gen) => rv(*gen))(T.init, null))
                 ==
-               typeof(((T rv, Random* gen) => rv.opCall!(Random)(*gen))(T.init, null)));
+               typeof(((T rv, Random* gen) => rv.opCall!Random(*gen))(T.init, null)));
     }
     else enum isRandomVariable = false;
 }

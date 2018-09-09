@@ -28,6 +28,42 @@ import mir.math.common;
 import mir.ndslice;
 
 /++
+Test if T is an n-dimensional random variable.
++/
+template isNdRandomVariable(T)
+{
+    static if (is(typeof(T.isNdRandomVariable) : bool))
+    {
+        static if (T.isNdRandomVariable)
+        {
+            alias E = T.Element;
+            enum isNdRandomVariable =
+                is(typeof(((T rv, Random* gen) => rv(*gen, E[].init))(T.init, null)) == void)
+                &&
+                is(typeof(((T rv, Random* gen) => rv.opCall!Random(*gen, E[].init))(T.init, null)) == void)
+                &&
+                is(typeof(((T rv, Random* gen) => rv(*gen, Slice!(E*).init))(T.init, null)) == void)
+                &&
+                is(typeof(((T rv, Random* gen) => rv.opCall!Random(*gen, Slice!(E*).init))(T.init, null)) == void);
+        }
+        else
+        {
+            enum isNdRandomVariable = false;
+        }
+    }
+    else
+    {
+        enum isNdRandomVariable = false;
+    }
+}
+
+///
+unittest
+{
+    static assert(isNdRandomVariable!(SphereVariable!double));
+}
+
+/++
 Uniform distribution on a sphere.
 Returns: `X ~ 1` with `X[0]^^2 + .. + X[$-1]^^2 = 1`
 +/
@@ -35,7 +71,9 @@ struct SphereVariable(T)
     if (isFloatingPoint!T)
 {
     ///
-    enum isRandomVariable = true;
+    enum isNdRandomVariable = true;
+    ///
+    alias Element = T;
 
     ///
     void opCall(G)(scope ref G gen, scope T[] result)
@@ -108,7 +146,9 @@ struct SimplexVariable(T)
     if (isFloatingPoint!T)
 {
     ///
-    enum isRandomVariable = true;
+    enum isNdRandomVariable = true;
+    ///
+    alias Element = T;
 
     ///
     void opCall(G)(scope ref G gen, scope T[] result)
@@ -184,7 +224,9 @@ struct DirichletVariable(T)
     import mir.random.variable : GammaVariable;
 
     ///
-    enum isRandomVariable = true;
+    enum isNdRandomVariable = true;
+    ///
+    alias Element = T;
 
     ///
     Slice!(const(T)*) alpha;
@@ -306,7 +348,9 @@ struct MultivariateNormalVariable(T)
     if(isFloatingPoint!T)
 {
     ///
-    enum isRandomVariable = true;
+    enum isNdRandomVariable = true;
+    ///
+    alias Element = T;
 
     private size_t n;
     private const(T)* sigma; // cholesky decomposition of covariance matrix

@@ -184,7 +184,7 @@ Can be used to sample from the distribution.
     package this(in Pdf pdf, in FlexInterval!S[] intervals)
     {
         import mir.math.sum: Summator, Summation;
-        import std.algorithm.iteration : map;
+        import mir.ndslice.topology: member;
 
         _pdf = pdf;
         _intervals = intervals;
@@ -193,7 +193,7 @@ Can be used to sample from the distribution.
         auto cdPoints = new S[intervals.length];
         Summator!(S, Summation.precise) total = 0;
 
-        foreach (el; intervals.map!`a.hatArea`)
+        foreach (el; intervals.member!`hatArea`)
             total += el;
 
         S totalSum = total.sum;
@@ -294,7 +294,8 @@ version(X86_64) version(mir_random_test) unittest
 
 version(X86_64) version(mir_random_test) unittest
 {
-    import std.math : approxEqual, pow;
+    import mir.math.common;
+    import std.math : approxEqual;
     import std.meta : AliasSeq;
     import mir.random.engine.xorshift : Xorshift;
     foreach (S; AliasSeq!(float, double, real))
@@ -462,7 +463,8 @@ private S flexImpl(S, Pdf, RNG)
 version(X86_64) version(DigitalMars)
 version(mir_random_test) unittest
 {
-    import std.math : approxEqual, pow, log;
+    import mir.math.common;
+    import std.math : approxEqual;
     import std.meta : AliasSeq;
     import mir.random.engine.xorshift : Xorshift;
     //foreach (S; AliasSeq!(double, real))
@@ -508,7 +510,8 @@ version(mir_random_test) unittest
 version(X86_64) version(DigitalMars)
 version(mir_random_test) unittest
 {
-    import std.math : approxEqual, pow;
+    import mir.math.common;
+    import std.math : approxEqual;
     import std.meta : AliasSeq;
     import mir.random.engine.xorshift : Xorshift;
 
@@ -606,9 +609,8 @@ FlexInterval!S[] flexIntervals(S, F0, F1, F2)
                              in int maxApproxPoints = 1_000)
 in
 {
-    import std.algorithm.searching : all;
+    import mir.algorithm.iteration : all;
     import std.math : isFinite, isInfinity;
-    import std.range: drop, empty, front, save;
 
     // check efficiency rho
     assert(rho.isFinite, "rho must be a valid value");
@@ -623,7 +625,7 @@ in
 
     // check first c
     if (points[0].isInfinity)
-        assert(cs.front > - 1, "c must be > -1 for unbounded domains");
+        assert(cs[0] > - 1, "c must be > -1 for unbounded domains");
 
     // check last c
     if (points[$ - 1].isInfinity)
@@ -636,11 +638,10 @@ body
     import mir.random.flex.internal.transformations : transform, transformInterval;
     import mir.random.flex.internal.types: Interval;
     import mir.math.sum: Summator, Summation;
-    import std.algorithm.sorting : sort;
+    import mir.ndslice.sorting : sort;
     import std.container.array: Array;
     import std.container.binaryheap: BinaryHeap;
     import std.math: nextDown;
-    import std.range.primitives : front, empty, popFront;
 
     alias Sum = Summator!(S, Summation.precise);
 
@@ -697,22 +698,21 @@ body
     version(Windows) {} else
     version(Flex_logging)
     {
-        import std.algorithm.iteration : map;
-        import std.array : array;
-        auto ipsD = ips.dup.array;
+        import std.ndslice.topology: member;
+        auto ipsD = ips.dup;
         log("----");
 
-        logf("Interval: %(%f, %)", ipsD.map!`a.lx`);
+        logf("Interval: %(%f, %)", ipsD.member!`lx`);
         version(Flex_logging_hex)
-            logf("Interval: %(%a, %)", ipsD.map!`a.lx`);
+            logf("Interval: %(%a, %)", ipsD.member!`lx`);
 
-        logf("hatArea: %(%f, %)", ipsD.map!`a.hatArea`);
+        logf("hatArea: %(%f, %)", ipsD.member!`hatArea`);
         version(Flex_logging_hex)
-            logf("hatArea: %(%a, %)", ipsD.map!`a.hatArea`);
+            logf("hatArea: %(%a, %)", ipsD.member!`hatArea`);
 
-        logf("squeezeArea %(%f, %)", ipsD.map!`a.squeezeArea`);
+        logf("squeezeArea %(%f, %)", ipsD.member!`squeezeArea`);
         version(Flex_logging_hex)
-            logf("squeezeArea %(%a, %)", ipsD.map!`a.squeezeArea`);
+            logf("squeezeArea %(%a, %)", ipsD.member!`squeezeArea`);
 
         log("----");
     }
@@ -815,13 +815,12 @@ body
     intervals.sort!`a.lx < b.lx`();
     version(Flex_logging)
     {
-        import std.algorithm;
-        import std.array;
+        import mir.ndslice.topology: member;
         log("----");
         log("Intervals generated: ", intervals.length);
-        log("Interval: ", intervals.map!`a.lx`);
-        log("hatArea", intervals.map!`a.hatArea`);
-        log("squeezeArea", intervals.map!`a.squeezeArea`);
+        log("Interval: ", intervals.member!`lx`);
+        log("hatArea", intervals.member!`hatArea`);
+        log("squeezeArea", intervals.member!`squeezeArea`);
         log("rho: ", totalHatAreaSummator.sum / totalSqueezeAreaSummator.sum);
         log("----");
     }
@@ -832,7 +831,7 @@ body
 // default flex with c=1.5
 version(mir_random_test) unittest
 {
-    import std.algorithm : equal, map;
+    import mir.ndslice.topology: member;
     import std.math : approxEqual;
     import std.meta : AliasSeq;
 
@@ -878,7 +877,7 @@ version(mir_random_test) unittest
 // default flex with c=1
 version(mir_random_test) unittest
 {
-    import std.algorithm : equal, map;
+    import mir.ndslice.topology: member;
     import std.math : approxEqual;
     import std.meta : AliasSeq;
     static immutable hats = [1.49622e-05, 0.00227029, 0.0540631, 0.0880036,
@@ -922,7 +921,8 @@ version(mir_random_test) unittest
 // default flex with custom c's
 version(mir_random_test) unittest
 {
-    import std.algorithm : equal, map;
+    import mir.ndslice.topology: member;
+    import mir.algorithm.iteration: equal;
     import std.math : approxEqual;
     import std.meta : AliasSeq;
 
@@ -951,8 +951,8 @@ version(mir_random_test) unittest
         S[] points = [-3, -1.5, 0, 1.5, 3];
         auto ips = flexIntervals(f0, f1, f2, cs, points, S(1.1));
 
-        assert(ips.map!`a.hatArea`.equal!approxEqual(hats));
-        assert(ips.map!`a.squeezeArea`.equal!approxEqual(sqs));
+        assert(ips.member!`hatArea`.equal!approxEqual(hats));
+        assert(ips.member!`squeezeArea`.equal!approxEqual(sqs));
     }
 }
 
@@ -960,7 +960,8 @@ version(mir_random_test) unittest
 version(X86_64) version(mir_random_test) unittest
 {
     import mir.math.common : exp, sqrt;
-    import std.algorithm : equal, map;
+    import mir.ndslice.topology: member;
+    import mir.algorithm.iteration: equal;
     import std.meta : AliasSeq;
     import std.math : approxEqual, PI;
     static immutable hats = [1.60809, 2.23537, 0.797556, 1.23761, 1.60809];
@@ -976,19 +977,20 @@ version(X86_64) version(mir_random_test) unittest
         S[] points = [-3, -1.5, 0, 1.5, 3];
         auto ips = flexIntervals(f0, f1, f2, cs, points, S(1.1));
 
-        assert(ips.map!`a.hatArea`.equal!approxEqual(hats));
-        assert(ips.map!`a.squeezeArea`.equal!approxEqual(sqs));
+        assert(ips.member!`hatArea`.equal!approxEqual(hats));
+        assert(ips.member!`squeezeArea`.equal!approxEqual(sqs));
     }
 }
 
 version(X86_64) version(mir_random_test) unittest
 {
-    import std.algorithm : equal, map;
-    import std.array : array;
+    import mir.algorithm.iteration: equal;
+    import mir.math.common : log;
+    import mir.ndslice.allocation: slice;
+    import mir.ndslice.topology: member;
+    import mir.ndslice.topology: repeat;
     import std.math : approxEqual;
     import std.meta : AliasSeq;
-    import std.range : repeat;
-    import mir.math.common : log;
 
     static immutable hats = [0.00648327, 0.0133705, 0.33157, 0.5, 0.5, 0.16167,
                              0.136019, 0.0133705, 0.00648327];
@@ -1003,11 +1005,11 @@ version(X86_64) version(mir_random_test) unittest
         auto f1 = (S x) => S(-4) * x^^3 / (1 - x^^4);
         auto f2 = (S x) => -(S(4) * x^^6 + 12 * x^^2) / (x^^8 - 2 * x^^4 + 1);
         S[] points = [S(-1), -0.9, -0.5, 0.5, 0.9, 1];
-        S[] cs = S(2).repeat(points.length - 1).array;
+        S[] cs = S(2).repeat(points.length - 1).slice.field;
 
         auto ips = flexIntervals(f0, f1, f2, cs, points, S(1.1));
-        assert(ips.map!`a.hatArea`.equal!approxEqual(hats));
-        assert(ips.map!`a.squeezeArea`.equal!approxEqual(sqs));
+        assert(ips.member!`hatArea`.equal!approxEqual(hats));
+        assert(ips.member!`squeezeArea`.equal!approxEqual(sqs));
     }
 
     // double behavior is different
@@ -1021,12 +1023,12 @@ version(X86_64) version(mir_random_test) unittest
         auto f1 = (S x) => -S(4) * x^^3 / (1 - x^^4);
         auto f2 = (S x) => -(S(4) * x^^6 + 12 * x^^2) / (x^^8 - 2 * x^^4 + 1);
         S[] points = [S(-1), -0.9, -0.5, 0.5, 0.9, 1];
-        S[] cs = S(2).repeat(points.length - 1).array;
+        S[] cs = S(2).repeat(points.length - 1).slice.field;
 
         auto ips = flexIntervals(f0, f1, f2, cs, points, S(1.1));
 
-        assert(ips.map!`a.hatArea`.equal!approxEqual(hatsD));
-        assert(ips.map!`a.squeezeArea`.equal!approxEqual(sqsD));
+        assert(ips.member!`hatArea`.equal!approxEqual(hatsD));
+        assert(ips.member!`squeezeArea`.equal!approxEqual(sqsD));
     }
 }
 

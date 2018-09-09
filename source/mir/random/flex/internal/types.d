@@ -268,7 +268,7 @@ nothrow pure @safe version(mir_random_test) unittest
     import std.math: PI;
     // due to numerical errors a small padding must be added
     // see e.g. https://gist.github.com/wilzbach/3d27d06b55821aa9795deb15d4d47679
-    import std.math : cos, sin;
+    import mir.math.common : cos, sin;
 
     import std.meta : AliasSeq;
     foreach (S; AliasSeq!(float, double, real)) with(FunType)
@@ -369,65 +369,52 @@ struct LinearFun(S)
         this.a = a;
     }
 
-    private enum string _toString =
-    q{
-        import std.range : put;
+    /// textual representation of the function
+    void toString(W)(auto ref W w, const ref FormatSpec!char fmt) const
+    {
+        import std.range: put;
+        import mir.math.common: fabs;
         import std.format: formatValue, singleSpec;
         switch(fmt.spec)
         {
             case 'l':
-                import std.math: abs, approxEqual, isNaN;
+                import std.math: approxEqual, isNaN;
                 if (slope.isNaN)
-                    sink.put("#NaN#");
+                    w.put("#NaN#");
                 else
                 {
                     auto spec2g = singleSpec("%.2g");
                     if (!slope.approxEqual(0))
                     {
-                        sink.formatValue(slope, spec2g);
-                        sink.put("x");
+                        w.formatValue(slope, spec2g);
+                        w.put("x");
                         if (!intercept.approxEqual(0))
                         {
-                            sink.put(" ");
-                            char sgn = intercept > 0 ? '+' : '-';
-                            sink.put(sgn);
-                            sink.put(" ");
-                            sink.formatValue(abs(intercept), spec2g);
+                            auto sgn = intercept > 0 ? " + " : " - ";
+                            w.put(sgn);
+                            w.formatValue(fabs(intercept), spec2g);
                         }
                     }
                     else
                     {
-                        sink.formatValue(intercept, spec2g);
+                        w.formatValue(intercept, spec2g);
                     }
             }
                 break;
             case 's':
             default:
                 import std.traits : Unqual;
-                sink.put(Unqual!(typeof(this)).stringof);
+                w.put(Unqual!(typeof(this)).stringof);
                 auto spec2g = singleSpec("%.6g");
-                sink.put("(");
-                sink.formatValue(slope, spec2g);
-                sink.put(", ");
-                sink.formatValue(y, spec2g);
-                sink.put(", ");
-                sink.formatValue(a, spec2g);
-                sink.put(")");
+                w.put("(");
+                w.formatValue(slope, spec2g);
+                w.put(", ");
+                w.formatValue(y, spec2g);
+                w.put(", ");
+                w.formatValue(a, spec2g);
+                w.put(")");
                 break;
         }
-    };
-
-    /// textual representation of the function
-    void toString()(scope void delegate(const(char)[]) @system sink,
-                  FormatSpec!char fmt) const
-    {
-        mixin(_toString);
-    }
-    /// ditto
-    void toString()(scope void delegate(const(char)[]) @safe sink,
-                  FormatSpec!char fmt) const
-    {
-        mixin(_toString);
     }
 
     /// call the linear function with x
@@ -542,7 +529,7 @@ LinearFun!S linearFun(S)(S slope, S y, S a)
 
 nothrow pure @safe version(mir_random_test) unittest
 {
-    import std.math : cos;
+    import mir.math.common : cos;
     import std.math : PI, approxEqual;
     import std.meta : AliasSeq;
     foreach (S; AliasSeq!(float, double, real))

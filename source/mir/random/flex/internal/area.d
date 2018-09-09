@@ -410,11 +410,12 @@ body
 // split up into all three floating-point types
 @safe version(mir_random_test) unittest
 {
+    import mir.ndslice.topology: pairwise;
+    import mir.functional: refTuple;
     import mir.random.flex.internal.transformations : transformInterval;
     import mir.random.flex.internal.types : determineType;
     import std.math: approxEqual;
     import std.meta : AliasSeq;
-    import std.range: dropOne, save, zip;
 
     alias S = float;
 
@@ -471,7 +472,7 @@ body
     foreach (i, c; cs)
     {
         size_t j = 0;
-        foreach (p1, p2; points.zip(points.save.dropOne))
+        foreach (p1, p2; points.pairwise!refTuple)
         {
             auto iv = it(p1, p2, c);
             version(Flex_logging)
@@ -501,11 +502,12 @@ body
 
 @safe version(mir_random_test) unittest
 {
+    import mir.ndslice.topology: pairwise;
+    import mir.functional: refTuple;
     import mir.random.flex.internal.transformations : transformInterval;
     import mir.random.flex.internal.types : determineType;
     import std.math: approxEqual;
     import std.meta : AliasSeq;
-    import std.range: dropOne, save, zip;
 
     alias S = double;
 
@@ -562,7 +564,7 @@ body
     foreach (i, c; cs)
     {
         size_t j = 0;
-        foreach (p1, p2; points.zip(points.save.dropOne))
+        foreach (p1, p2; points.pairwise!refTuple)
         {
             auto iv = it(p1, p2, c);
             version(Flex_logging)
@@ -592,11 +594,12 @@ body
 
 @safe version(mir_random_test) unittest
 {
+    import mir.ndslice.topology: pairwise;
+    import mir.functional: refTuple;
     import mir.random.flex.internal.transformations : transformInterval;
     import mir.random.flex.internal.types : determineType;
     import std.math: approxEqual;
     import std.meta : AliasSeq;
-    import std.range: dropOne, save, zip;
 
     alias S = real;
 
@@ -653,7 +656,7 @@ body
     foreach (i, c; cs)
     {
         size_t j = 0;
-        foreach (p1, p2; points.zip(points.save.dropOne))
+        foreach (p1, p2; points.pairwise!refTuple)
         {
             auto iv = it(p1, p2, c);
             version(Flex_logging)
@@ -697,11 +700,12 @@ body
 // standard normal distribution
 @safe version(mir_random_test) unittest
 {
+    import mir.ndslice.topology: pairwise;
+    import mir.functional: refTuple;
     import mir.random.flex.internal.transformations : transformInterval;
     import mir.random.flex.internal.types : determineType;
     import std.math: approxEqual;
     import std.meta : AliasSeq;
-    import std.range: dropOne, save, zip;
 
     static immutable points = [-3.0, -1.5, 0.0, 1.5, 3];
     static immutable cs = [50, 30, -20, -15, -10, -5, -3, -1, -0.5 -0.1, 0,
@@ -774,7 +778,7 @@ body
         foreach (i, c; cs)
         {
             size_t j = 0;
-            foreach (p1, p2; points.zip(points.save.dropOne))
+            foreach (p1, p2; points.pairwise!refTuple)
             {
                 auto iv = it(p1, p2, c);
                 determineSqueezeAndHat(iv);
@@ -794,11 +798,12 @@ body
 // distribution 3
 @safe version(mir_random_test) unittest
 {
+    import mir.ndslice.topology: pairwise;
+    import mir.functional: refTuple;
     import mir.random.flex.internal.transformations : transformInterval;
     import mir.random.flex.internal.types : determineType;
     import std.math: approxEqual, isInfinity;
     import std.meta : AliasSeq;
-    import std.range: dropOne, save, zip;
 
     alias T = double;
 
@@ -852,7 +857,7 @@ body
         foreach (i, c; cs)
         {
             size_t j = 0;
-            foreach (p1, p2; points.zip(points.save.dropOne))
+            foreach (p1, p2; points.pairwise!refTuple)
             {
                 auto iv = it(p1, p2, c);
 
@@ -876,11 +881,12 @@ body
 // distribution 4
 @safe version(mir_random_test) unittest
 {
+    import mir.ndslice.topology: pairwise;
+    import mir.functional: refTuple;
     import mir.random.flex.internal.transformations : transformInterval;
     import mir.random.flex.internal.types : determineType;
-    import std.math: abs, approxEqual, isInfinity;
+    import std.math: approxEqual, isInfinity;
     import std.meta : AliasSeq;
-    import std.range: dropOne, save, zip;
 
     static immutable points = [-1, -0.5, 0, 0.5, 1];
     // -2 yields "undefined" type
@@ -912,7 +918,7 @@ body
     foreach (S; AliasSeq!(float, double, real))
     {
 
-        auto f0 = (S x) => -log(abs(x)) / 2;
+        auto f0 = (S x) => -log(fabs(x)) / 2;
         auto f1 = (S x) => -1 / (2 * x);
         auto f2 = (S x) => 1 / (2 * x * x);
 
@@ -927,7 +933,7 @@ body
         foreach (i, c; cs)
         {
             size_t j = 0;
-            foreach (p1, p2; points.zip(points.save.dropOne))
+            foreach (p1, p2; points.pairwise!refTuple)
             {
                 auto iv = it(p1, p2, c);
                 determineSqueezeAndHat(iv);
@@ -950,11 +956,12 @@ body
 // distribution 4 with less points
 @safe version(mir_random_test) unittest
 {
+    import mir.ndslice.topology: pairwise;
+    import mir.functional: refTuple;
     import mir.random.flex.internal.transformations : transformInterval;
     import mir.random.flex.internal.types : determineType;
     import std.math: abs, approxEqual, isInfinity;
     import std.meta : AliasSeq;
-    import std.range: dropOne, save, zip;
 
     static immutable points = [-1, 0, 1];
     // -2 yields "undefined" type
@@ -1005,7 +1012,7 @@ body
         foreach (i, c; cs)
         {
             size_t j = 0;
-            foreach (p1, p2; points.zip(points.save.dropOne))
+            foreach (p1, p2; points.pairwise!refTuple)
             {
                 auto iv = it(p1, p2, c);
                 determineSqueezeAndHat(iv);
@@ -1029,11 +1036,12 @@ body
 // distribution 3 with other boundaries
 @safe version(mir_random_test) unittest
 {
+    import mir.ndslice.topology: pairwise;
+    import mir.functional: refTuple;
     import mir.random.flex.internal.transformations : transformInterval;
     import mir.random.flex.internal.types : determineType;
     import std.math: approxEqual, isInfinity;
     import std.meta : AliasSeq;
-    import std.range: dropOne, save, zip;
 
     alias T = double;
 
@@ -1076,7 +1084,7 @@ body
         foreach (i, c; cs)
         {
             size_t j = 0;
-            foreach (p1, p2; points.zip(points.save.dropOne))
+            foreach (p1, p2; points.pairwise!refTuple)
             {
                 auto iv = it(p1, p2, c);
                 determineSqueezeAndHat(iv);
