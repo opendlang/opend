@@ -738,6 +738,7 @@ size_t syev_2stage_wk(T)(
 	return cast(size_t) work;
 }
 
+version(none)
 unittest
 {
 	alias s = syev_2stage_wk!float;
@@ -767,6 +768,7 @@ size_t syev_2stage(T)(
 	return info;
 }
 
+version(none)
 unittest
 {
 	alias s = syev_2stage!float;
