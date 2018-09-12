@@ -1066,6 +1066,80 @@ size_t unmqr(T)(
 
 unittest
 {
-	alias s = unmqr!cfloat;
-	alias d = unmqr!cdouble;
+    alias s = unmqr!cfloat;
+    alias d = unmqr!cdouble;
+}
+
+///
+size_t orgqr(T)(
+    Slice!(T*, 2, Canonical) a,
+    Slice!(T*) tau,
+    Slice!(T*) work,
+    )
+in
+{
+    assert(a.length!1 >= 0); //n>=0
+    assert(a.length!0 >= a.length!1); //m>=n
+    assert(tau.length >= 0); //k>=0
+    assert(a.length!1 >= tau.length); //n>=k
+    assert(work.length >= a.length!1); //lwork>=n
+}
+do
+{
+    lapackint m = cast(lapackint) a.length!0;
+    lapackint n = cast(lapackint) a.length!1;
+    lapackint k = cast(lapackint) tau.length;
+    lapackint lda = cast(lapackint) a._stride.max(1);
+    lapackint lwork = cast(lapackint) work.length;
+    lapackint info = void;
+
+    lapack.orgqr_(m, n, k, a.iterator, lda, tau.iterator, work.iterator, lwork, info);
+
+    ///if info == 0: successful exit.
+    ///if info < 0: if info == -i, the i-th argument had an illegal value.
+    assert(info >= 0);
+    return info;
+}
+
+unittest
+{
+    alias s = orgqr!float;
+    alias d = orgqr!double;
+}
+
+///
+size_t ungqr (T)(
+    Slice!(T*, 2, Canonical) a,
+    Slice!(T*) tau,
+    Slice!(T*) work,
+    )
+in
+{
+    assert(a.length!1 >= 0); //n>=0
+    assert(a.length!0 >= a.length!1); //m>=n
+    assert(tau.length >= 0); //k>=0
+    assert(a.length!1 >= tau.length); //n>=k
+    assert(work.length >= a.length!1); //lwork>=n
+}
+do
+{
+    lapackint m = cast(lapackint) a.length!0;
+    lapackint n = cast(lapackint) a.length!1;
+    lapackint k = cast(lapackint) tau.length;
+    lapackint lda = cast(lapackint) a._stride.max(1);
+    lapackint lwork = cast(lapackint) work.length;
+    lapackint info = void;
+
+    lapack.ungqr_(m, n, k, a.iterator, lda, tau.iterator, work.iterator, lwork, info);
+
+    ///if info == 0: successful exit.
+    ///if info < 0: if info == -i, the i-th argument had an illegal value.
+    assert(info >= 0);
+    return info;
+}
+
+unittest
+{
+    alias s = ungqr!cfloat;
+    alias d = ungqr!cdouble;
 }
