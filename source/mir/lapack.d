@@ -1108,7 +1108,7 @@ unittest
 }
 
 ///
-size_t ungqr (T)(
+size_t ungqr(T)(
     Slice!(T*, 2, Canonical) a,
     Slice!(T*) tau,
     Slice!(T*) work,
