@@ -18,7 +18,7 @@ auto vector(A = typeof(theAllocator), E)
            (E[] elements...)
     if(isAllocator!A && isGlobal!A)
 {
-    return Vector!(A, E)(elements);
+    return Vector!(E, A)(elements);
 }
 
 /// ditto
@@ -26,7 +26,7 @@ auto vector(A = typeof(theAllocator), E)
            (A allocator, E[] elements...)
     if(isAllocator!A && !isGlobal!A)
 {
-    return Vector!(A, E)(allocator, elements);
+    return Vector!(E, A)(allocator, elements);
 }
 
 /**
@@ -38,7 +38,7 @@ auto vector(A = typeof(theAllocator), R)
     if(isAllocator!A && isGlobal!A && isInputRange!R)
 {
     import std.range.primitives: ElementType;
-    return Vector!(A, ElementType!R)(range);
+    return Vector!(ElementType!R, A)(range);
 }
 
 
@@ -48,14 +48,14 @@ auto vector(A = typeof(theAllocator), R)
     if(isAllocator!A && !isGlobal!A && isInputRange!R)
 {
     import std.range.primitives: ElementType;
-    return Vector!(A, ElementType!R)(range);
+    return Vector!(ElementType!R, A)(range);
 }
 
 /**
    A dynamic array with deterministic memory usage
    akin to C++'s std::vector or Rust's std::vec::Vec
  */
-struct Vector(Allocator, E) if(isAllocator!Allocator) {
+struct Vector(E, Allocator = typeof(theAllocator)) if(isAllocator!Allocator) {
 
     import automem.traits: isGlobal, isSingleton, isTheAllocator;
     import std.traits: Unqual;

@@ -191,9 +191,15 @@ import test_allocator;
 }
 
 
+@("theAllocator null")
+@safe unittest {
+    Vector!int vec;
+}
+
+
 @("Mallocator null")
 @safe @nogc unittest {
-    Vector!(Mallocator, int) vec;
+    Vector!(int, Mallocator) vec;
 }
 
 @("Cannot escape slice")
