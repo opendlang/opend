@@ -81,8 +81,9 @@ public import automem.unique_array;
 }
 
 ///
-@("theAllocator")
+@("theTestAllocator")
 @system unittest {
+
     with(theTestAllocator) {
         auto ptr = Unique!int(42);
         assert(*ptr == 42);
