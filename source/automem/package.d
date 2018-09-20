@@ -23,6 +23,7 @@ module automem;
 public import automem.unique;
 public import automem.ref_counted;
 public import automem.vector;
+public import automem.array;
 public import automem.unique_array;
 
 

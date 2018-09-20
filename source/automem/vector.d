@@ -10,7 +10,6 @@ import std.range.primitives: isInputRange;
 import stdx.allocator: theAllocator;
 import stdx.allocator.mallocator: Mallocator;
 
-
 /**
    Create a vector from a variadic list of elements, inferring the type of
    the elements and the allocator
@@ -56,7 +55,6 @@ auto vector(A = typeof(theAllocator), R)
    A dynamic array with deterministic memory usage
    akin to C++'s std::vector or Rust's std::vec::Vec
  */
-
 struct Vector(Allocator, E) if(isAllocator!Allocator) {
 
     import automem.traits: isGlobal, isSingleton, isTheAllocator;
