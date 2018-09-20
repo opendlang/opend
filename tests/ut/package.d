@@ -1,6 +1,7 @@
 module ut;
 
 public import unit_threaded;
+public import unit_threaded.should: should;  // FIXME
 public import test_allocator: TestAllocator;
 
 mixin template TestUtils() {

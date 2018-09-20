@@ -18,9 +18,11 @@ configuration "unittest" {
     sourcePaths "tests"
     mainSourceFile "tests/ut_main.d"
 
-    dependency "unit-threaded" version="*"
-    dependency "test_allocator" version="~>0.2.1"
+    dflags "-dip25" "-dip1000" "-dip1008"
     versions "AutomemTesting"
+
+    dependency "unit-threaded" version="*"
+    dependency "test_allocator" version="*"
 }
 
 configuration "asan" {
@@ -31,13 +33,14 @@ configuration "asan" {
     sourcePaths "tests"
     mainSourceFile "tests/ut_main.d"
 
+    dflags "-dip25" "-dip1000" "-dip1008"
     dflags "-fsanitize=address" platform="ldc"
-    versions "AutomemTesting"
+
     // unit threaded light is necessary for the tests to actually run
     versions "AutomemTesting" "unitUnthreaded" "unitThreadedLight"
 
     dependency "unit-threaded" version="*"
-    dependency "test_allocator" version="~>0.2.1"
+    dependency "test_allocator" version="*"
 }
 
 configuration "utl" {
@@ -47,9 +50,10 @@ configuration "utl" {
     importPaths "tests"
     sourcePaths "tests"
 
-    versions "AutomemTesting"
-    version "unitThreadedLight"
+    dflags "-dip25" "-dip1000" "-dip1008"
+
+    versions "AutomemTesting" "unitThreadedLight"
 
     dependency "unit-threaded" version="*"
-    dependency "test_allocator" version="~>0.2.1"
+    dependency "test_allocator" version="*"
 }

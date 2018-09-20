@@ -21,8 +21,10 @@ object is `shared`. Otherwise it's non-atomic.
 module automem;
 
 public import automem.unique;
-public import automem.unique_array;
 public import automem.ref_counted;
+public import automem.vector;
+public import automem.array;
+public import automem.unique_array;
 
 
 /**
@@ -79,8 +81,9 @@ public import automem.ref_counted;
 }
 
 ///
-@("theAllocator")
+@("theTestAllocator")
 @system unittest {
+
     with(theTestAllocator) {
         auto ptr = Unique!int(42);
         assert(*ptr == 42);
