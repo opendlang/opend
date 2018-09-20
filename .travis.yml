@@ -5,8 +5,10 @@ install:
 
 matrix:
     include:
+        - d: dmd-2.082.0
         - d: dmd-2.081.2
         - d: dmd-2.080.1
+        - d: ldc-1.11.0
         - d: ldc-1.10.0
 
 script:
