@@ -941,7 +941,8 @@ private static auto implementOp(OpKind kind, string name, T, ARGS...)(ref T self
 	//import std.meta : staticMap; pragma(msg, staticMap!(isMatchingUniqueType!(T.Union), info.ReturnTypes));
 
 	switch (self.m_kind) {
-		default: assert(false, "Operator "~name~" ("~kind.stringof~") can only be used on values of the following types: "~[info.fields].join(", "));
+		enum assert_msg = "Operator "~name~" ("~kind.stringof~") can only be used on values of the following types: "~[info.fields].join(", ");
+		default: assert(false, assert_msg);
 		foreach (i, f; info.fields) {
 			alias FT = typeof(__traits(getMember, T.Union, f));
 			case __traits(getMember, T.Kind, f):
