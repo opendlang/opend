@@ -120,8 +120,14 @@ struct Vector(E, Allocator = typeof(theAllocator)) if(isAllocator!Allocator) {
     }
 
     /// The current length of the vector
-    long length() const {
+    @property long length() const {
         return _length;
+    }
+
+    /// Set the length of the vector
+    @property void length(long newLength) {
+        if(capacity < newLength) reserve(newLength);
+        _length = newLength;
     }
 
     /// The current memory capacity of the vector

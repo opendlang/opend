@@ -351,3 +351,11 @@ import test_allocator;
 private void consumeVec(T)(auto ref T vec) {
 
 }
+
+
+@("set length")
+@safe unittest {
+    Vector!int vec;
+    vec.length = 3;
+    vec[].shouldEqual([0, 0, 0]);
+}
