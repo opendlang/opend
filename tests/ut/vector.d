@@ -359,3 +359,11 @@ private void consumeVec(T)(auto ref T vec) {
     vec.length = 3;
     vec[].shouldEqual([0, 0, 0]);
 }
+
+
+@("foreach")
+@safe unittest {
+    foreach(e; vector(7, 7, 7)) {
+        e.should == 7;
+    }
+}
