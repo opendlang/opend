@@ -367,3 +367,14 @@ private void consumeVec(T)(auto ref T vec) {
         e.should == 7;
     }
 }
+
+
+@ShouldFail
+@("equal")
+@safe unittest {
+    import std.range: iota;
+    import std.algorithm: equal;
+
+    auto v = vector(0, 1, 2, 3);
+    assert(equal(v, 3.iota));
+}
