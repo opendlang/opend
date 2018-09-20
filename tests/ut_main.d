@@ -12,3 +12,10 @@ mixin runTestsMain!(
     "ut.unique_array",
     "ut.vector",
 );
+
+
+shared static this() @safe nothrow {
+    import stdx.allocator: theAllocator, allocatorObject;
+    import stdx.allocator.mallocator: Mallocator;
+    theAllocator = () @trusted { return allocatorObject(Mallocator.instance); }();
+}
