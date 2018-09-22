@@ -1,8 +1,7 @@
 module pdfd;
 
 public import pdfd.document;
-public import pdfd.opentype: FontStyle, FontWeight;
-
+public import pdfd.renderer;
 
 @safe:
 

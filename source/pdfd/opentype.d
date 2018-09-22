@@ -5,6 +5,7 @@ import std.conv;
 import std.string;
 import std.uni;
 import std.algorithm.searching;
+import pdfd.renderer;
 
 import binrange;
 

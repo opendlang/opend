@@ -3,6 +3,7 @@ module pdfd.document;
 import std.string;
 import std.conv;
 import pdfd.color;
+import pdfd.renderer;
 import pdfd.fontregistry;
 
 class PDFException : Exception
@@ -20,7 +21,7 @@ class PDFException : Exception
 }
 
 
-class PDFDocument
+class PDFDocument : IRenderer2D
 {
     this(int pageWidthMm = 210, int pageHeightMm = 297)
     {
@@ -43,15 +44,14 @@ class PDFDocument
         beginPage();
     }
 
-    PDFDocument addPage()
+    override void newPage()
     {
         // end the current page, and add one
         endPage();
         beginPage();
-        return this;
     }
 
-    PDFDocument end()
+    void end()
     {
         if (_finished)
             throw new PDFException("PDFDocument already finalized.");
@@ -63,8 +63,6 @@ class PDFDocument
 
         // Add all deferred object and finalize the PDF output
         finalizeOutput();
-
-        return this;
     }
 
     const(ubyte)[] bytes()
@@ -78,39 +76,27 @@ class PDFDocument
 
     // Text drawing
 
-    // Current font size
-    float _fontSize = 11;
-
-    // Current font face
-    string _fontFace = "Helvetica";
-
-    // Current font weight
-    FontWeight _fontWeight = FontWeight.normal;
-
-    // Current font style
-    FontStyle _fontStyle = FontStyle.normal;
-
-    void fontFace(string face)
+    override void fontFace(string face)
     {
         _fontFace = face;
     }
 
-    void fontSize(float size)
+    override void fontSize(float size)
     {
         _fontSize = size;
     }
 
-    void fontWeight(FontWeight weight)
+    override void fontWeight(FontWeight weight)
     {
         _fontWeight = weight;
     }
 
-    void fontStyle(FontStyle style)
+    override void fontStyle(FontStyle style)
     {
         _fontStyle = style;
     }
 
-    void fillText(string text, float x, float y)
+    override void fillText(string text, float x, float y)
     {
         string fontPDFName;
         object_id fontObjectId;
@@ -135,13 +121,13 @@ class PDFDocument
 
     // State stack
 
-    void save()
+    override void save()
     {
         outDelim();
         output('q');
     }
 
-    void restore()
+    override void restore()
     {
         outDelim();
         output('Q');
@@ -149,7 +135,7 @@ class PDFDocument
 
     // Color selection
 
-    void fillStyle(string color)
+    override void fillStyle(string color)
     {
         ubyte[3] c = parseHTMLColor(color);
         outFloat(c[0] / 255.0f);
@@ -158,7 +144,7 @@ class PDFDocument
         output(" rg");
     }
 
-    void strokeStyle(string color)
+    override void strokeStyle(string color)
     {
         ubyte[3] c = parseHTMLColor(color);
         outFloat(c[0] / 255.0f);
@@ -170,7 +156,7 @@ class PDFDocument
     // Basic shapes
     // UB if you are into a path.
 
-    void fillRect(float x, float y, float width, float height)
+    override void fillRect(float x, float y, float width, float height)
     {
         outFloat(x);
         outFloat(y);
@@ -180,7 +166,7 @@ class PDFDocument
         fill();
     }
 
-    void strokeRect(float x, float y, float width, float height)
+    override void strokeRect(float x, float y, float width, float height)
     {
         outFloat(x);
         outFloat(y);
@@ -192,14 +178,14 @@ class PDFDocument
 
     // Path construction
 
-    void beginPath(float x, float y)
+    override void beginPath(float x, float y)
     {
         outFloat(x);
         outFloat(y);
         output(" m");
     }
 
-    void lineTo(float x, float y)
+    override void lineTo(float x, float y)
     {
         outFloat(x);
         outFloat(y);
@@ -208,7 +194,7 @@ class PDFDocument
 
     // line parameters
 
-    void lineWidth(float width)
+    override void lineWidth(float width)
     {
         outFloat(width);
         output(" w");
@@ -216,13 +202,13 @@ class PDFDocument
 
     // Path painting operators
 
-    void fill()
+    override void fill()
     {
         outDelim();
         output("f");
     }
 
-    void stroke()
+    override void stroke()
     {
         outDelim();
         output("S");
@@ -234,7 +220,7 @@ class PDFDocument
         output("B");
     }
 
-    void closePath()
+    override void closePath()
     {
         outDelim();
         output(" h");
@@ -245,6 +231,18 @@ class PDFDocument
 private:
 
     bool _finished = false;
+
+    // Current font size
+    float _fontSize = 11;
+
+    // Current font face
+    string _fontFace = "Helvetica";
+
+    // Current font weight
+    FontWeight _fontWeight = FontWeight.normal;
+
+    // Current font style
+    FontStyle _fontStyle = FontStyle.normal;
 
     void finalizeOutput()
     {
