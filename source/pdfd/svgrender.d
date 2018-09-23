@@ -19,20 +19,14 @@ class SVGException : Exception
 
 /// Renders 2D commands in a SVG file.
 /// For comparisons between PDF and SVG.
-class SVGDocument : IRenderer2D
+final class SVGDocument : IRenderer2D
 {
 public:
     this(int pageWidthMm = 210, int pageHeightMm = 297)
     {
-
-        // write header
-        output(`<?xml version="1.0" encoding="UTF-8" standalone="no"?>`);
-        output(format(`<svg xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg"`
-                     ~` width="%dmm" height="%dmm" viewBox="0 0 %d %d" version="1.1">`,
-                      pageWidthMm, pageHeightMm, pageWidthMm, pageHeightMm));
-
-
-
+        _pageWidthMm = pageWidthMm;
+        _pageHeightMm = pageHeightMm;
+        _numberOfPage = 1;
     }
 
     const(ubyte)[] bytes()
@@ -41,7 +35,6 @@ public:
             end();
         return _bytes;
     }
-
 
     /// Save the graphical context: transformation matrices.
     override void save()
@@ -52,23 +45,23 @@ public:
     /// Restore the graphical contect: transformation matrices.
     override void restore()
     {
-        output("</g>");
+        //output("</g>");
     }
 
     /// Start a new page, finish the previous one.
     override void newPage()
     {
-        assert(false, "not implemented");
+        _numberOfPage += 1;
     }
 
     override void fillStyle(string color)
     {
-        assert(false, "not implemented");
+        _currentFill = color;
     }
 
-    override void strokeStyle(string style)
+    override void strokeStyle(string color)
     {
-        assert(false, "not implemented");
+        _currentStroke = color;
     }
 
     override void fillRect(float x, float y, float width, float height)
@@ -93,7 +86,7 @@ public:
 
     override void lineWidth(float width)
     {
-        assert(false, "not implemented");
+        _currentLineWidth = width;
     }
 
     override void lineTo(float dx, float dy)
@@ -141,6 +134,13 @@ private:
     bool _finished = false;
     ubyte[] _bytes;
 
+    string _currentFill = "transparent";
+    string _currentStroke = "#000";
+    float _currentLineWidth = 1;
+    int _numberOfPage = 1;
+    int _pageWidthMm;
+    int _pageHeightMm;
+
     void output(ubyte b)
     {
         _bytes ~= b;
@@ -164,5 +164,14 @@ private:
         _finished = true;
 
         output(`</svg>`);
+    }
+
+    string getHeader()
+    {
+        int heightInMm = _pageHeightMm * _numberOfPage;
+        return `<?xml version="1.0" encoding="UTF-8" standalone="no"?>`
+            ~ format(`<svg xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg"`
+                     ~` width="%dmm" height="%dmm" viewBox="0 0 %d %d" version="1.1">`,
+                     _pageWidthMm, heightInMm, _pageWidthMm, heightInMm);
     }
 }

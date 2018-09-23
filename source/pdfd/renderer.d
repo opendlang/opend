@@ -20,12 +20,15 @@ interface IRenderer2D
 
     // COLOURS
 
-    ///
+    /// Changes the current fill color.
+    /// Params:
+    ///    color Any HTML color string.
     void fillStyle(string color);
 
-    ///
+    /// Changes the current stroke color.
+    /// Params:
+    ///    color Any HTML color string.
     void strokeStyle(string style);
-
 
 
     // BASIC SHAPES

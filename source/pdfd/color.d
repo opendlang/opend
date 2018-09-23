@@ -2,6 +2,8 @@ module pdfd.color;
 
 @safe:
 
+/// Parses a HTML color and gives back a RGB triplet.
+/// Currently only some HTML colors are supported.
 ubyte[3] parseHTMLColor(string s)
 {
     int fromHex(char ch)

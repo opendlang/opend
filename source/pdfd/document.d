@@ -21,7 +21,7 @@ class PDFException : Exception
 }
 
 
-class PDFDocument : IRenderer2D
+final class PDFDocument : IRenderer2D
 {
     this(int pageWidthMm = 210, int pageHeightMm = 297)
     {

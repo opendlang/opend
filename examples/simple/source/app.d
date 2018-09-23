@@ -5,21 +5,26 @@ import pdfd;
 
 void main(string[] args)
 {
-    auto doc = new PDFDocument();
+    auto pdfDoc = new PDFDocument();
+    auto svgDoc = new SVGDocument();
 
-    doc.save();
+    foreach(IRenderer2D renderer; [cast(IRenderer2D) pdfDoc , cast(IRenderer2D) svgDoc])
+        with(renderer)
+        {
+            save();
+            strokeStyle = "#ff0000";
+            lineWidth(4);
+            beginPath(100, 150);
+            lineTo(100, 250);
+            stroke();
+            fontFace("Arial");
+            fontWeight(FontWeight.bold);
+            fontStyle(FontStyle.italic);
+            fontSize(14);
+            fillText("This is a Unicode test: çéù%ù»", 20, 20);
+            restore();
+        }
 
-    doc.strokeStyle = "#ff0000";
-    doc.lineWidth(4);
-    doc.beginPath(100, 150);
-    doc.lineTo(100, 250);
-    doc.stroke();
-    doc.fontFace("Arial");
-    doc.fontWeight(FontWeight.bold);
-    doc.fontStyle(FontStyle.italic);
-    doc.fontSize(14);
-    doc.fillText("Coucéù%ù»", 20, 20);
-    doc.restore();
-
-    std.file.write("output.pdf", doc.bytes);
+    std.file.write("output.pdf", pdfDoc.bytes);
+    std.file.write("output.svg", svgDoc.bytes);
 }
