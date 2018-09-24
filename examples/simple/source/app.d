@@ -8,7 +8,7 @@ void main(string[] args)
     auto pdfDoc = new PDFDocument();
     auto svgDoc = new SVGDocument();
 
-    foreach(IRenderer2D renderer; [cast(IRenderer2D) pdfDoc , cast(IRenderer2D) svgDoc])
+    foreach(renderer; [cast(IRenderingContext2D) pdfDoc , cast(IRenderingContext2D) svgDoc])
         with(renderer)
         {
             save();

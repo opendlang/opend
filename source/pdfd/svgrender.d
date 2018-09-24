@@ -19,39 +19,48 @@ class SVGException : Exception
 
 /// Renders 2D commands in a SVG file.
 /// For comparisons between PDF and SVG.
-final class SVGDocument : IRenderer2D
+final class SVGDocument : IRenderingContext2D
 {
 public:
     this(int pageWidthMm = 210, int pageHeightMm = 297)
     {
         _pageWidthMm = pageWidthMm;
         _pageHeightMm = pageHeightMm;
-        _numberOfPage = 1;
+        beginPage();
+
     }
 
     const(ubyte)[] bytes()
     {
         if (!_finished)
             end();
-        return _bytes;
+        auto header = cast(const(ubyte)[])( getHeader() );
+        return header ~ _bytes;
     }
 
     /// Save the graphical context: transformation matrices.
     override void save()
     {
-        // nothing to do, a new <g> is open for each transform
+        _numberOfNestedGroups += 1;
+        output("<g>");
     }
 
     /// Restore the graphical contect: transformation matrices.
     override void restore()
     {
-        //output("</g>");
+        _numberOfNestedGroups = 0;
+        foreach(i; 0.._numberOfNestedGroups)
+        {
+            output("</g>");
+        }
     }
 
     /// Start a new page, finish the previous one.
     override void newPage()
     {
+        endPage();
         _numberOfPage += 1;
+        beginPage();        
     }
 
     override void fillStyle(string color)
@@ -66,17 +75,19 @@ public:
 
     override void fillRect(float x, float y, float width, float height)
     {
-        assert(false, "not implemented");
+        output(format(`<rect x="%s" y="%s" width="%s" height="%s" fill="%s">`, x, y, width, height, _currentFill));
     }
 
     override void strokeRect(float x, float y, float width, float height)
     {
-        assert(false, "not implemented");
+        output(format(`<rect x="%s" y="%s" width="%s" height="%s" stroke="%s">`, x, y, width, height, _currentStroke));
     }
 
     override void fillText(string text, float x, float y)
     {
-        assert(false, "not implemented");
+        output(format(`<text x="%f" y="%f" font-family="%s" font-size="%s" fill="%s">%s</text>`, 
+                      x, y, _fontFace, _fontSize, _currentFill, text)); 
+        // TODO escape XML sequences in text
     }
 
     override void beginPath(float x, float y)
@@ -111,22 +122,22 @@ public:
 
     override void fontFace(string fontFace)
     {
-        assert(false, "not implemented");
+        _fontFace = fontFace;
     }
 
     override void fontWeight(FontWeight fontWeight)
     {
-        assert(false, "not implemented");
+        _fontWeight = fontWeight;
     }
 
     override void fontStyle(FontStyle fontStyle)
     {
-        assert(false, "not implemented");
+        _fontStyle = fontStyle;
     }
 
     override void fontSize(float size)
     {
-        assert(false, "not implemented");
+        _fontSize = size;
     }
 
 private:
@@ -137,9 +148,15 @@ private:
     string _currentFill = "transparent";
     string _currentStroke = "#000";
     float _currentLineWidth = 1;
+    int _numberOfNestedGroups = 0;
     int _numberOfPage = 1;
     int _pageWidthMm;
     int _pageHeightMm;
+
+    string _fontFace = "Arial";    
+    FontWeight _fontWeight = FontWeight.normal;
+    FontStyle _fontStyle = FontStyle.normal;
+    float _fontSize = 16;
 
     void output(ubyte b)
     {
@@ -156,6 +173,17 @@ private:
         _bytes ~= s.representation;
     }
 
+    void endPage()
+    {
+        restore();
+    }
+
+    void beginPage()
+    {        
+        output(format(`<g transform="translate(0,%d)">`, _pageHeightMm * (_numberOfPage-1)));
+        _numberOfNestedGroups = 1;
+    }
+
     void end()
     {
         if (_finished)
@@ -163,6 +191,7 @@ private:
 
         _finished = true;
 
+        endPage();
         output(`</svg>`);
     }
 

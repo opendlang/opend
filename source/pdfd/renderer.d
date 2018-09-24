@@ -3,7 +3,7 @@ module pdfd.renderer;
 public import pdfd.opentype: FontWeight, FontStyle;
 
 /// Describes a HTML5-style renderer.
-interface IRenderer2D
+interface IRenderingContext2D 
 {
     // GRAPHICAL CONTEXT
 
@@ -14,6 +14,7 @@ interface IRenderer2D
     void restore();
 
     /// Start a new page, finish the previous one.
+    /// This invalidates any transformation.
     void newPage();
 
 
@@ -41,8 +42,10 @@ interface IRenderer2D
     void fillText(string text, float x, float y);
 
     // PATHS
+    /// The context always has a current default path. 
+    /// There is only one current path, it is not part of the drawing state.
 
-    ///
+    /// Resets the current path, and move the cursor to (x, y).
     void beginPath(float x, float y);
 
     /// Change the width of a line.
@@ -51,10 +54,10 @@ interface IRenderer2D
     ///
     void lineTo(float dx, float dy);
 
-    ///
+    /// Fills the subpaths of the current path or the given path with the current fill style.
     void fill();
 
-    ///
+    /// Strokes the subpaths of the current path or the given path with the current stroke style.
     void stroke();
 
     ///
