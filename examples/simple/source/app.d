@@ -32,6 +32,7 @@ void main(string[] args)
             fontWeight(FontWeight.bold);
             fontStyle(FontStyle.italic);
             fontSize(14);
+
             fillText("çéù%ù»", 20, 20); // Unicode test
             
             restore();
