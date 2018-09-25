@@ -34,7 +34,6 @@ import std.traits: TemplateOf;
 
 @nogc:
 nothrow:
-pure:
 @safe:
 
 /++
@@ -273,7 +272,9 @@ $(LREF murmurHash3Mix) or $(LREF staffordMix13).
 
 The second parameter is whether the $(LREF split) operation is enabled.
 Allows each instance to have a distinct increment, increasing the size
-from 64 bits to 128 bits.
+from 64 bits to 128 bits. If `split` is not enabled then the `opCall`,
+`seed`, and `skip` operations will be `shared` provided the platform
+supports 64-bit atomic operations.
 
 The third parameter is the $(LREF default_increment). If the
 SplitMixEngine has a fixed increment this value will be used for
@@ -387,6 +388,12 @@ struct SplitMixEngine(alias mixer, bool split_enabled = false, OptionalArgs...)
         else pragma(inline);
         return fmix64(state += increment);
     }
+    /// ditto
+    ulong opCall()() shared if (!increment_specifiable)
+    {
+        import core.atomic : atomicOp;
+        return fmix64(atomicOp!"+="(state, increment));
+    }
     ///
     @nogc nothrow pure @safe version(mir_random_test) unittest
     {
@@ -432,6 +439,12 @@ struct SplitMixEngine(alias mixer, bool split_enabled = false, OptionalArgs...)
     {
         state += n * increment;
     }
+    /// ditto
+    void skip()(size_t n) shared if (!increment_specifiable)
+    {
+        import core.atomic : atomicOp;
+        atomicOp!"+="(state, n * increment);
+    }
 
     /++
     Compatibility with $(LINK2 https://dlang.org/phobos/std_random.html#.isUniformRNG,
@@ -459,6 +472,12 @@ struct SplitMixEngine(alias mixer, bool split_enabled = false, OptionalArgs...)
     void seed()(ulong x0)
     {
         this.__ctor(x0);
+    }
+    /// ditto
+    void seed()(ulong x0) shared if (!increment_specifiable)
+    {
+        import core.atomic : atomicStore;
+        atomicStore(this.state, x0);
     }
     /// ditto
     void seed()(ulong x0, ulong increment) if (increment_specifiable)
@@ -512,4 +531,18 @@ struct SplitMixEngine(alias mixer, bool split_enabled = false, OptionalArgs...)
         auto rnd = SplitMixEngine!(f, true)(0);
         auto rnd2 = rnd.split();
     }
+}
+
+@nogc nothrow @safe version(mir_random_test) unittest
+{
+    // Check there is no inconsistency between shared and unshared.
+    auto localRNG = SplitMixEngine!staffordMix13(1);
+    shared static sharedRNG = typeof(localRNG)(2);
+    assert(localRNG() != sharedRNG());
+    localRNG.seed(3);
+    sharedRNG.seed(3);
+    assert(localRNG() == sharedRNG());
+    localRNG.skip(10);
+    sharedRNG.skip(10);
+    assert(localRNG() == sharedRNG());
 }
