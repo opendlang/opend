@@ -19,7 +19,7 @@ class SVGException : Exception
 
 /// Renders 2D commands in a SVG file.
 /// For comparisons between PDF and SVG.
-final class SVGDocument : IRenderingContext2D
+class SVGDocument : IRenderingContext2D
 {
 public:
     this(int pageWidthMm = 210, int pageHeightMm = 297)
@@ -154,6 +154,12 @@ public:
         _fontSize = size;
     }
 
+protected:
+    string getXMLHeader()
+    {
+        return `<?xml version="1.0" encoding="UTF-8" standalone="no"?>`;
+    }
+
 private:
 
     bool _finished = false;
@@ -209,12 +215,12 @@ private:
 
         endPage();
         output(`</svg>`);
-    }
+    }    
 
     string getHeader()
     {
         int heightInMm = _pageHeightMm * _numberOfPage;
-        return `<?xml version="1.0" encoding="UTF-8" standalone="no"?>`
+        return getXMLHeader()
             ~ format(`<svg xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg"`
                      ~` width="%dmm" height="%dmm" viewBox="0 0 %d %d" version="1.1">`,
                      _pageWidthMm, heightInMm, _pageWidthMm, heightInMm);

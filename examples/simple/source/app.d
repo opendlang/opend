@@ -7,8 +7,11 @@ void main(string[] args)
 {
     auto pdfDoc = new PDFDocument();
     auto svgDoc = new SVGDocument();
+    auto htmlDoc = new HTMLDocument();
 
-    foreach(renderer; [cast(IRenderingContext2D) pdfDoc , cast(IRenderingContext2D) svgDoc])
+    foreach(renderer; [cast(IRenderingContext2D) pdfDoc, 
+                       cast(IRenderingContext2D) svgDoc,
+                       cast(IRenderingContext2D) htmlDoc,])
         with(renderer)
         {
             save();
@@ -39,4 +42,5 @@ void main(string[] args)
 
     std.file.write("output.pdf", pdfDoc.bytes);
     std.file.write("output.svg", svgDoc.bytes);
+    std.file.write("output.html", htmlDoc.bytes);
 }
