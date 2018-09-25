@@ -57,22 +57,27 @@ interface IRenderingContext2D
     void beginPath(float x, float y);
 
     /// Change the width of a line.
+    /// The whole path has the same line width.
     void lineWidth(float width);
 
-    ///
+    /// Add a subpath forming a line. Its exact width is set when the path is drawn with `fill`, `stroke` or `fillAndStroke`.
     void lineTo(float dx, float dy);
 
     /// Fills the subpaths of the current path or the given path with the current fill style.
+    /// Uses the last set fill style, line width for the whole path.
     void fill();
 
     /// Strokes the subpaths of the current path or the given path with the current stroke style.
+    /// Uses the last set fill style, line width for the whole path.
     void stroke();
 
     /// Both fills and strokes the subpaths of the current path, in a way more efficient than calling
     /// `fill` and `stroke` separately.
+    /// Uses the last set fill style, line width for the whole path.
     void fillAndStroke();
 
-    ///
+    /// Close the path, returning to the initial first point.
+    /// TODO: specify exactly what it does.
     void closePath();
 
 
