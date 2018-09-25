@@ -64,14 +64,32 @@ else version (TVOS)
 else version (WatchOS)
     version = Darwin;
 
+// A secure arc4random implementation that uses some modern algorithm rather
+// than ARC4 may be used synonymously with non-blocking system entropy.
+version (CRuntime_Bionic)
+    version = SecureARC4Random; // ChaCha20
 version (Darwin)
-    version = GOOD_ARC4RANDOM_BUF;//AES
-else version (OpenBSD)
-    version = GOOD_ARC4RANDOM_BUF;//ChaCha20
-else version (NetBSD)
-    version = GOOD_ARC4RANDOM_BUF;//ChaCha20
-else version (CRuntime_Bionic)
-    version = GOOD_ARC4RANDOM_BUF;//ChaCha20
+    version = SecureARC4Random; // AES
+version (OpenBSD)
+    version = SecureARC4Random; // ChaCha20
+version (NetBSD)
+    version = SecureARC4Random; // ChaCha20
+
+// A legacy arc4random should not be used when cryptographic security
+// is required but may used for `unpredictableSeed`.
+version (CRuntime_UClibc)
+    version = LegacyARC4Random; // ARC4
+version (FreeBSD)
+    version = LegacyARC4Random; // ARC4
+version (DragonFlyBSD)
+    version = LegacyARC4Random; // ARC4
+version (BSD)
+    version = LegacyARC4Random; // Unknown implementation
+
+version (SecureARC4Random)
+    version = AnyARC4Random;
+version (LegacyARC4Random)
+    version = AnyARC4Random;
 
 version (D_betterC)
     private enum bool THREAD_LOCAL_STORAGE_AVAILABLE = false;
@@ -242,10 +260,10 @@ pragma(inline, true)
 {
     import mir.ndslice.internal: _expect;
     T seed = void;
-    version (GOOD_ARC4RANDOM_BUF)
+    version (AnyARC4Random)
     {
-        // On macOS if we just need 32 bits it's faster to call arc4random()
-        // than arc4random(&seed, seed.sizeof).
+        // If we just need 32 bits it's faster to call arc4random()
+        // than arc4random_buf(&seed, seed.sizeof).
         static if (T.sizeof <= uint.sizeof)
             seed = cast(T) arc4random();
         else
@@ -731,10 +749,9 @@ static if (LINUX_NR_GETRANDOM)
     }
 }
 
-version(GOOD_ARC4RANDOM_BUF)
+version(AnyARC4Random)
 extern(C) private @nogc nothrow
 {
-    //ChaCha20 on OpenBSD/NetBSD, AES on Mac OS X.
     void arc4random_buf(scope void* buf, size_t nbytes) @system;
     uint arc4random() @trusted;
 }
@@ -750,7 +767,7 @@ else version(Posix)
     import core.stdc.stdio : fclose, feof, ferror, fopen, fread;
     alias IOType = typeof(fopen("a", "b"));
     private __gshared IOType fdRandom;
-    version (GOOD_ARC4RANDOM_BUF)
+    version (SecureARC4Random)
     {
         //Don't need /dev/urandom if we have arc4random_buf.
     }
@@ -763,7 +780,7 @@ else version(Posix)
         if (fdRandom !is null)
             fdRandom.fclose;
 
-        version (GOOD_ARC4RANDOM_BUF)
+        version (SecureARC4Random)
         {
             //Don't need /dev/urandom if we have arc4random_buf.
         }
@@ -811,7 +828,7 @@ else version(Posix)
     }
 }
 
-version (GOOD_ARC4RANDOM_BUF)
+version (SecureARC4Random)
 {
     //Don't need /dev/urandom if we have arc4random_buf.
 }
@@ -1064,7 +1081,7 @@ extern(C) size_t mir_random_genRandomNonBlocking(scope void* ptr, size_t len) @n
             return -1;
         return len;
     }
-    else version(GOOD_ARC4RANDOM_BUF)
+    else version(SecureARC4Random)
     {
         arc4random_buf(ptr, len);
         return len;
