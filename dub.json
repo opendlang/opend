@@ -1,5 +1,6 @@
 {
-    "name": "pdf-d",
+    "name": "printed",
+    "description": "Low-level API to generate self-contained PDF/SVG/HTML documents suitable for print",
     "license": "BSL-1.0",
     "importPaths": [ "source" ],
     "sourcePaths": [ "source" ],

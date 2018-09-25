@@ -1,7 +1,9 @@
-# pdf-d
+# `printed`
 
-pdf-d provides an immediate graphical context API for drawing vectorial content inside a multi-page PDF, HTML or SVG.
-It is intended to provide a barebones API, in order to build text-aware APIs on top of it. 
+Low-level API to generate self-contained PDF/SVG/HTML documents suitable for print.
+
+`printed` provides an immediate graphical context API for drawing vectorial content inside a multi-page PDF, HTML or SVG.
+It is intended to provide a barebones API, and need text-aware APIs on top of it. 
 
 Its API is similar to the HTML5 Canvas 2D API.
 
@@ -10,6 +12,7 @@ would need a text layout library._
 
 ## Features
 
+- [x] **TrueType and OpenType font embedding** in order to have fully reproducible vectors
 - [x] PDF 1.7 output
 - [x] SVG 1.1 output
 - [x] HTML5 output through SVG embedding
@@ -19,6 +22,6 @@ would need a text layout library._
 ## Goals
 
 - Simplicity
-- Reproducibility: pdf-d provides **TrueType and OpenType font embedding** in order to have fully reproducible vectors.
+- Reproducibility
 - Common denominator API, support many vectorial formats before being a rich API.
 
