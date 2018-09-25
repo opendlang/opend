@@ -7,6 +7,14 @@ interface IRenderingContext2D
 {
     // GRAPHICAL CONTEXT
 
+    /// Number of units in a page.
+    /// Return: Page width in millimeters.
+    int pageWidth();
+
+    /// Number of units in a page.
+    /// Return: Page height in millimeters.
+    int pageHeight();
+
     /// Save the graphical context: transformation matrices.
     void save();
 
@@ -59,6 +67,10 @@ interface IRenderingContext2D
 
     /// Strokes the subpaths of the current path or the given path with the current stroke style.
     void stroke();
+
+    /// Both fills and strokes the subpaths of the current path, in a way more efficient than calling
+    /// `fill` and `stroke` separately.
+    void fillAndStroke();
 
     ///
     void closePath();

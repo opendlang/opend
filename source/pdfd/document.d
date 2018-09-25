@@ -44,6 +44,17 @@ final class PDFDocument : IRenderingContext2D
         beginPage();
     }
 
+    override int pageWidth()
+    {
+        return _pageWidthMm;
+    }
+
+    override int pageHeight()
+    {
+        return _pageHeightMm;
+    }
+
+
     override void newPage()
     {
         // end the current page, and add one
@@ -214,7 +225,7 @@ final class PDFDocument : IRenderingContext2D
         output("S");
     }
 
-    void fillAndStroke()
+    override void fillAndStroke()
     {
         outDelim();
         output("B");

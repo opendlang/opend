@@ -12,17 +12,29 @@ void main(string[] args)
         with(renderer)
         {
             save();
+
+            // Fill page with light grey
+            fillStyle = "#eee";
+            fillRect(0, 0, pageWidth, pageHeight);
+
+
             strokeStyle = "#ff0000";
             lineWidth(4);
             beginPath(100, 150);
             lineTo(100, 250);
             stroke();
+
+            fillStyle = "#000";
             fontFace("Arial");
             fontWeight(FontWeight.bold);
             fontStyle(FontStyle.italic);
             fontSize(14);
-            fillText("This is a Unicode test: çéù%ù»", 20, 20);
+            fillText("çéù%ù»", 20, 20); // Unicode test
+            
             restore();
+
+            newPage();
+            fillText("Empty page", 20, 20);
         }
 
     std.file.write("output.pdf", pdfDoc.bytes);

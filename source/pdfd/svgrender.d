@@ -38,7 +38,16 @@ public:
         return header ~ _bytes;
     }
 
-    /// Save the graphical context: transformation matrices.
+    override int pageWidth()
+    {
+        return _pageWidthMm;
+    }
+
+    override int pageHeight()
+    {
+        return _pageHeightMm;
+    }
+
     override void save()
     {
         _numberOfNestedGroups += 1;
@@ -47,12 +56,12 @@ public:
 
     /// Restore the graphical contect: transformation matrices.
     override void restore()
-    {
-        _numberOfNestedGroups = 0;
+    {        
         foreach(i; 0.._numberOfNestedGroups)
         {
             output("</g>");
         }
+        _numberOfNestedGroups = 0;
     }
 
     /// Start a new page, finish the previous one.
@@ -75,12 +84,12 @@ public:
 
     override void fillRect(float x, float y, float width, float height)
     {
-        output(format(`<rect x="%s" y="%s" width="%s" height="%s" fill="%s">`, x, y, width, height, _currentFill));
+        output(format(`<rect x="%s" y="%s" width="%s" height="%s" fill="%s"/>`, x, y, width, height, _currentFill));
     }
 
     override void strokeRect(float x, float y, float width, float height)
     {
-        output(format(`<rect x="%s" y="%s" width="%s" height="%s" stroke="%s">`, x, y, width, height, _currentStroke));
+        output(format(`<rect x="%s" y="%s" width="%s" height="%s" stroke="%s"/>`, x, y, width, height, _currentStroke));
     }
 
     override void fillText(string text, float x, float y)
@@ -92,7 +101,7 @@ public:
 
     override void beginPath(float x, float y)
     {
-        assert(false, "not implemented");
+        _currentPath = format("M%s %s", x, y);
     }
 
     override void lineWidth(float width)
@@ -102,22 +111,27 @@ public:
 
     override void lineTo(float dx, float dy)
     {
-        assert(false, "not implemented");
+        _currentPath ~= format(" L%s %s", dx, dy);
     }
 
     override void fill()
     {
-        assert(false, "not implemented");
+        output(format(`<path d="%s" fill="%s"/>`, _currentPath, _currentFill));
     }
 
     override void stroke()
     {
-        assert(false, "not implemented");
+        output(format(`<path d="%s" stroke="%s" stroke-width="%s"/>`, _currentPath, _currentStroke, _currentLineWidth));
+    }
+
+    override void fillAndStroke()
+    {
+        output(format(`<path d="%s" fill="%s" stroke="%s" stroke-width="%s"/>`, _currentPath, _currentFill, _currentStroke, _currentLineWidth));
     }
 
     override void closePath()
     {
-        assert(false, "not implemented");
+        _currentPath ~= " Z";
     }
 
     override void fontFace(string fontFace)
@@ -152,6 +166,8 @@ private:
     int _numberOfPage = 1;
     int _pageWidthMm;
     int _pageHeightMm;
+
+    string _currentPath;
 
     string _fontFace = "Arial";    
     FontWeight _fontWeight = FontWeight.normal;
