@@ -1,6 +1,5 @@
-module pdfd.renderer;
-
-public import pdfd.opentype: FontWeight, FontStyle;
+/// Generic 2D vector renderer
+module pdfd.irenderer;
 
 /// Describes a HTML5-style renderer.
 interface IRenderingContext2D 
@@ -94,4 +93,27 @@ interface IRenderingContext2D
 
     ///
     void fontSize(float size);
+}
+
+/// Font weight
+enum FontWeight : int
+{
+    thinest = 0, // Note: thinest doesn't exist in PostScript
+    thin = 100,
+    extraLight = 200,
+    light = 300,
+    normal = 400,
+    medium = 500,
+    semiBold = 600,
+    bold = 700,
+    extraBold = 800,
+    black = 900
+}
+
+/// Font style
+enum FontStyle
+{
+    normal,
+    italic,
+    oblique
 }

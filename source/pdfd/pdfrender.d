@@ -1,9 +1,9 @@
-module pdfd.document;
+module pdfd.pdfrender;
 
 import std.string;
 import std.conv;
 import pdfd.color;
-import pdfd.renderer;
+import pdfd.irenderer;
 import pdfd.fontregistry;
 
 class PDFException : Exception

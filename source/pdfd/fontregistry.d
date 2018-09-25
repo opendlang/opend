@@ -10,6 +10,8 @@ import standardpaths;
 
 public import pdfd.opentype;
 
+import pdfd.irenderer: FontWeight, FontStyle;
+
 /// FontRegistry register partial font information for all fonts
 /// from the system directories, plus the ones added by the user.
 /// Aggregates all fonts by family, a bit like a browser or Word does.

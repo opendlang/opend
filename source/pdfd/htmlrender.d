@@ -1,7 +1,7 @@
 module pdfd.htmlrender;
 
 import std.string;
-import pdfd.renderer;
+import pdfd.irenderer;
 import pdfd.svgrender;
 
 

@@ -1,7 +1,11 @@
 module pdfd.svgrender;
 
 import std.string;
-import pdfd.renderer;
+import std.file;
+import std.base64;
+
+import pdfd.irenderer;
+import pdfd.fontregistry;
 
 class SVGException : Exception
 {
@@ -35,7 +39,9 @@ public:
         if (!_finished)
             end();
         auto header = cast(const(ubyte)[])( getHeader() );
-        return header ~ _bytes;
+        auto defs = cast(const(ubyte)[])( getDefinitions() );
+
+        return header ~ defs ~ _bytes;
     }
 
     override int pageWidth()
@@ -94,8 +100,12 @@ public:
 
     override void fillText(string text, float x, float y)
     {
+        string svgFamilyName;
+        OpenTypeFont font;
+        getFont(_fontFace, _fontWeight, _fontStyle, svgFamilyName, font);        
+
         output(format(`<text x="%f" y="%f" font-family="%s" font-size="%s" fill="%s">%s</text>`, 
-                      x, y, _fontFace, _fontSize, _currentFill, text)); 
+                      x, y, svgFamilyName, _fontSize, _currentFill, text)); 
         // TODO escape XML sequences in text
     }
 
@@ -224,5 +234,74 @@ private:
             ~ format(`<svg xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg"`
                      ~` width="%dmm" height="%dmm" viewBox="0 0 %d %d" version="1.1">`,
                      _pageWidthMm, heightInMm, _pageWidthMm, heightInMm);
+    }
+
+    static struct FontSVGInfo
+    {
+        string svgFamilyName; // name used as family name in this SVG, doesn't have to be the real one
+    }
+    
+    /// Associates with each open font information about
+    /// the SVG embedding of that font.
+    FontSVGInfo[OpenTypeFont] _fontSVGInfos;
+
+    // Generates the <defs> section.
+    string getDefinitions()
+    {
+        string defs;
+        defs ~= 
+        `<defs>` ~
+            `<style type="text/css">` ~
+                "<![CDATA[\n";
+
+                // Embed this font into the SVG as a base64 data URI
+                foreach(pair; _fontSVGInfos.byKeyValue())
+                {
+                    OpenTypeFont font = pair.key;
+                    FontSVGInfo info = pair.value;
+
+                    const(ubyte)[] fontContent = font.fileData;
+                    const(char)[] base64font = Base64.encode(fontContent);
+                    defs ~= 
+                        `@font-face` ~
+                        `{` ~
+                            `font-family: ` ~ info.svgFamilyName ~ `;` ~
+                            `src: url('data:application/x-font-ttf;charset=utf-8;base64,` ~ base64font ~ `');` ~
+                        "}\n";
+                }
+
+        defs ~= `]]>`~
+            `</style>` ~
+        `</defs>`;
+        return defs;
+    }
+
+    // Ensure this font exist, generate a /name and give it back
+    // Only PDF builtin fonts supported.
+    // TODO: bold and oblique support
+    void getFont(string fontFamily,
+                 FontWeight weight,
+                 FontStyle style,
+                 out string svgFamilyName,
+                 out OpenTypeFont outFont)
+    {
+        OpenTypeFont font = theFontRegistry().findBestMatchingFont(fontFamily, weight, style);
+        outFont = font;
+
+        // is this font known already?
+        FontSVGInfo* info = font in _fontSVGInfos;
+
+        // lazily create the font object in the PDF
+        if (info is null)
+        {
+            // Give a family name for this font
+            FontSVGInfo f;
+            f.svgFamilyName = format("f%d", cast(int)(_fontSVGInfos.length));
+            _fontSVGInfos[font] = f;
+            info = font in _fontSVGInfos;
+            assert(info !is null);
+        }
+
+        svgFamilyName = info.svgFamilyName;
     }
 }
