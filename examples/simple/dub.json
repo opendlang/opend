@@ -7,6 +7,6 @@
 
     "dependencies":
     {
-        "pdf-d": { "path": "../.." }
+        "printed": { "path": "../.." }
     }
 }

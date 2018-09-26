@@ -1,5 +1,5 @@
 /// Generic 2D vector renderer
-module pdfd.irenderer;
+module printed.irenderer;
 
 /// Describes a HTML5-style renderer.
 interface IRenderingContext2D 

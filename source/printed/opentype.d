@@ -1,11 +1,11 @@
-module pdfd.opentype;
+module printed.opentype;
 
 import std.stdio;
 import std.conv;
 import std.string;
 import std.uni;
 import std.algorithm.searching;
-import pdfd.irenderer;
+import printed.irenderer;
 
 import binrange;
 

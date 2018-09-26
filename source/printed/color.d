@@ -1,4 +1,4 @@
-module pdfd.color;
+module printed.color;
 
 @safe:
 

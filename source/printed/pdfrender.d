@@ -1,10 +1,10 @@
-module pdfd.pdfrender;
+module printed.pdfrender;
 
 import std.string;
 import std.conv;
-import pdfd.color;
-import pdfd.irenderer;
-import pdfd.fontregistry;
+import printed.color;
+import printed.irenderer;
+import printed.fontregistry;
 
 class PDFException : Exception
 {

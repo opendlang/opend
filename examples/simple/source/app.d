@@ -1,7 +1,7 @@
 import std.stdio;
 import std.file;
 
-import pdfd;
+import printed;
 
 void main(string[] args)
 {
@@ -20,20 +20,22 @@ void main(string[] args)
             fillStyle = "#eee";
             fillRect(0, 0, pageWidth, pageHeight);
 
-
+            // Make a red line
             strokeStyle = "#ff0000";
             lineWidth(4);
             beginPath(100, 150);
             lineTo(100, 250);
             stroke();
 
+            // Prepare text
             fillStyle = "#000";
             fontFace("Arial");
             fontWeight(FontWeight.bold);
             fontStyle(FontStyle.italic);
             fontSize(14);
 
-            fillText("çéù%ù»", 20, 20); // Unicode test
+            // Unicode test
+            fillText("çéù%ù»", 20, 20); 
             
             restore();
 

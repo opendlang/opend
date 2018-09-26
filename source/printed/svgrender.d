@@ -1,11 +1,11 @@
-module pdfd.svgrender;
+module printed.svgrender;
 
 import std.string;
 import std.file;
 import std.base64;
 
-import pdfd.irenderer;
-import pdfd.fontregistry;
+import printed.irenderer;
+import printed.fontregistry;
 
 class SVGException : Exception
 {
@@ -31,7 +31,6 @@ public:
         _pageWidthMm = pageWidthMm;
         _pageHeightMm = pageHeightMm;
         beginPage();
-
     }
 
     const(ubyte)[] bytes()

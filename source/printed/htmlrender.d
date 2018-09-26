@@ -1,8 +1,8 @@
-module pdfd.htmlrender;
+module printed.htmlrender;
 
 import std.string;
-import pdfd.irenderer;
-import pdfd.svgrender;
+import printed.irenderer;
+import printed.svgrender;
 
 
 /// Renders 2D commands in a HTML file.

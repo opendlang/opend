@@ -1,4 +1,4 @@
-module pdfd.fontregistry;
+module printed.fontregistry;
 
 import std.algorithm;
 import std.file;
@@ -8,9 +8,9 @@ import std.string: format;
 import std.math: abs;
 import standardpaths;
 
-public import pdfd.opentype;
+public import printed.opentype;
 
-import pdfd.irenderer: FontWeight, FontStyle;
+import printed.irenderer: FontWeight, FontStyle;
 
 /// FontRegistry register partial font information for all fonts
 /// from the system directories, plus the ones added by the user.
@@ -151,7 +151,7 @@ private:
         return standardPaths(StandardPath.fonts);
     }
 
-    /// Gives back a list of absoliute pathes of .ttf files we know about
+    /// Gives back a list of absolute pathes of .ttf files we know about
     static string[] listAllFontFiles()
     {
         string[] listAllLocalFontFiles()
