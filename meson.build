@@ -1,5 +1,9 @@
 project('mir-cpuid', 'd', version : '0.5.4', license: 'BSL-1.0')
 
+mir_algorithm_dep = dependency('mir-algorithm', fallback : ['mir-algorithm', 'mir_algorithm_dep'])
+
+required_deps = [mir_algorithm_dep]
+
 mir_cpuid_dir = include_directories('source/')
 
 mir_cpuid_src = [
@@ -15,19 +19,22 @@ mir_cpuid_lib = library(meson.project_name(),
     include_directories: mir_cpuid_dir,
     install: true,
     version: meson.project_version(),
+    dependencies: required_deps,
 )
 
 mir_cpuid_dep = declare_dependency(
     link_with: [mir_cpuid_lib],
     include_directories: mir_cpuid_dir,
+    dependencies: required_deps,
 )
 
 mir_cpuid_test_exe = executable(meson.project_name() + '-test',
     mir_cpuid_src,
     include_directories: mir_cpuid_dir,
     d_unittest: true,
-    d_module_versions: ['mir_test'],
+    d_module_versions: ['mir_cpuid_test'],
     link_args: '-main',
+    dependencies: required_deps,
 )
 
 install_subdir('source/',
