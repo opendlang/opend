@@ -24,7 +24,7 @@ class PDFException : Exception
 
 final class PDFDocument : IRenderingContext2D
 {
-    this(int pageWidthMm = 210, int pageHeightMm = 297)
+    this(float pageWidthMm = 210, float pageHeightMm = 297)
     {
         _pageWidthMm = pageWidthMm;
         _pageHeightMm = pageHeightMm;
@@ -45,16 +45,15 @@ final class PDFDocument : IRenderingContext2D
         beginPage();
     }
 
-    override int pageWidth()
+    override float pageWidth()
     {
         return _pageWidthMm;
     }
 
-    override int pageHeight()
+    override float pageHeight()
     {
         return _pageHeightMm;
     }
-
 
     override void newPage()
     {
@@ -126,7 +125,7 @@ final class PDFDocument : IRenderingContext2D
         outFloat(_fontSize);
         output(" Tf");
         outFloat(x);
-        outFloat(-y);
+        outFloat(-y); // inverted else text is not positionned rightly
         output(" Td");
 
         // save CTM
@@ -410,8 +409,8 @@ private:
             outBeginArray();
                 outInteger(0);
                 outInteger(0);
-                outInteger(_pageWidthMm);
-                outInteger(_pageHeightMm);
+                outFloat(_pageWidthMm);
+                outFloat(_pageHeightMm);
             outEndArray();
             outName("Kids");
             outBeginArray();
@@ -518,7 +517,7 @@ private:
         return &_pageDescriptions[$-1];
     }
 
-    int _pageWidthMm, _pageHeightMm;
+    float _pageWidthMm, _pageHeightMm;
 
     // </pages>
 

@@ -27,7 +27,7 @@ class SVGException : Exception
 class SVGDocument : IRenderingContext2D
 {
 public:
-    this(int pageWidthMm = 210, int pageHeightMm = 297)
+    this(float pageWidthMm = 210, float pageHeightMm = 297)
     {
         _pageWidthMm = pageWidthMm;
         _pageHeightMm = pageHeightMm;
@@ -44,12 +44,12 @@ public:
         return header ~ defs ~ _bytes;
     }
 
-    override int pageWidth()
+    override float pageWidth()
     {
         return _pageWidthMm;
     }
 
-    override int pageHeight()
+    override float pageHeight()
     {
         return _pageHeightMm;
     }
@@ -201,8 +201,8 @@ private:
     float _currentLineWidth = 1;
     int _numberOfNestedGroups = 0;
     int _numberOfPage = 1;
-    int _pageWidthMm;
-    int _pageHeightMm;
+    float _pageWidthMm;
+    float _pageHeightMm;
 
     string _currentPath;
 
@@ -233,7 +233,7 @@ private:
 
     void beginPage()
     {        
-        output(format(`<g transform="translate(0,%d)">`, _pageHeightMm * (_numberOfPage-1)));
+        output(format(`<g transform="translate(0,%s)">`, _pageHeightMm * (_numberOfPage-1)));
         _numberOfNestedGroups = 1;
     }
 
@@ -250,10 +250,10 @@ private:
 
     string getHeader()
     {
-        int heightInMm = _pageHeightMm * _numberOfPage;
+        float heightInMm = _pageHeightMm * _numberOfPage;
         return getXMLHeader()
             ~ format(`<svg xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg"`
-                     ~` width="%dmm" height="%dmm" viewBox="0 0 %d %d" version="1.1">`,
+                     ~` width="%smm" height="%smm" viewBox="0 0 %s %s" version="1.1">`,
                      _pageWidthMm, heightInMm, _pageWidthMm, heightInMm);
     }
 

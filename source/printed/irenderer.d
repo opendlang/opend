@@ -1,7 +1,12 @@
 /// Generic 2D vector renderer
 module printed.irenderer;
 
-/// Describes a HTML5-style renderer.
+/// Describes the `printed` 2D renderer.
+///
+/// This is the law, specific implementation MUST obey this interface and 
+/// not the underlying implementation in PDF/SVG/whatever (and if necessary revise this spec).
+///
+/// We are heavily influenced by the HTML5 Canvas 2D context API, for its familiarity.
 /// See_also: https://www.w3.org/TR/2dcontext/
 interface IRenderingContext2D 
 {
@@ -9,24 +14,28 @@ interface IRenderingContext2D
 
     /// Number of units in a page.
     /// Return: Page width in millimeters.
-    int pageWidth();
+    float pageWidth();
 
     /// Number of units in a page.
     /// Return: Page height in millimeters.
-    int pageHeight();
+    float pageHeight();
 
     /// Push state on state stack.
+    /// What this states contains:
+    /// - transformation matrices
     void save();
 
     /// Pop state stack and restore state
     void restore();
 
     /// Start a new page, finish the previous one.
-    /// This invalidates any transformation.
+    /// This invalidates any transformation. 
+    /// The origin (0, 0) becomes again the top-left point of each page.
     void newPage();
 
 
     // TRANSFORMATIONS (default: transform is the identity matrix)
+    // The origin (0, 0) of the default is the top-left point of each page.
 
     /// Changes the transformation matrix to apply a scaling transformation with the given characteristics.
     void scale(float x, float y);
@@ -61,7 +70,7 @@ interface IRenderingContext2D
     void fillRect(float x, float y, float width, float height);
     void strokeRect(float x, float y, float width, float height);
 
-    ///
+    /// Draw filled text. 
     void fillText(string text, float x, float y);
 
     // PATHS
@@ -86,7 +95,7 @@ interface IRenderingContext2D
     /// Uses the last set fill style, line width for the whole path.
     void stroke();
 
-    /// Both fills and strokes the subpaths of the current path, in a way more efficient than calling
+    /// Both fills and strokes the subpaths of the current path, in a more efficient way than calling
     /// `fill` and `stroke` separately.
     /// Uses the last set fill style, line width for the whole path.
     void fillAndStroke();
@@ -97,6 +106,9 @@ interface IRenderingContext2D
 
 
     // FONTS
+    // The specific font will be lazily choosen across all available fonts, 
+    // with a matching algorithm.
+    // See_also: `findBestMatchingFont`.
     
     /// Changes font face.
     void fontFace(string fontFace);
