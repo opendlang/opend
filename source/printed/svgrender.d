@@ -2,6 +2,7 @@ module printed.svgrender;
 
 import std.string;
 import std.file;
+import std.math;
 import std.base64;
 
 import printed.irenderer;
@@ -160,8 +161,29 @@ public:
 
     override void fontSize(float size)
     {
-        _fontSize = size;
+        // points to millimeters
+        _fontSize = size * 0.3527f;
     }
+
+    override void scale(float x, float y)
+    {
+        output(format(`<g transform="scale(%s %s)">`, x, y));
+        _numberOfNestedGroups++;
+    }
+
+    override void translate(float dx, float dy)
+    {
+        output(format(`<g transform="translate(%s %s)">`, dx, dy));
+        _numberOfNestedGroups++;
+    }
+
+    override void rotate(float angle)
+    {
+        float angleInDegrees = (angle * 180) / PI;
+        output(format(`<g transform="rotate(%s)">`, angleInDegrees));
+        _numberOfNestedGroups++;
+    }
+
 
 protected:
     string getXMLHeader()

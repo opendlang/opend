@@ -2,6 +2,7 @@ module printed.pdfrender;
 
 import std.string;
 import std.conv;
+import std.math;
 import printed.color;
 import printed.irenderer;
 import printed.fontregistry;
@@ -94,7 +95,8 @@ final class PDFDocument : IRenderingContext2D
 
     override void fontSize(float size)
     {
-        _fontSize = size;
+        // points to millimeters
+        _fontSize = size * 0.3527f;
     }
 
     override void fontWeight(FontWeight weight)
@@ -124,10 +126,22 @@ final class PDFDocument : IRenderingContext2D
         outFloat(_fontSize);
         output(" Tf");
         outFloat(x);
-        outFloat(y);
+        outFloat(-y);
         output(" Td");
+
+        // save CTM
+        outDelim();
+        output('q');
+
+        // Note: text has to be flipped vertically since we have flipped PDF coordinates vertically
+        scale(1, -1);
+
         outStringForDisplay(text, font);
         output(" Tj");
+
+        // restore CTM
+        outDelim();
+        output('Q');
     }
 
     // State stack
@@ -142,6 +156,48 @@ final class PDFDocument : IRenderingContext2D
     {
         outDelim();
         output('Q');
+    }
+
+    // Transformations
+    override void scale(float x, float y)
+    {
+        if (x == 1 && y == 1) return;
+        transform(x, 0,
+                  0, y,
+                  0, 0);
+    }
+
+    override void translate(float dx, float dy)
+    {
+        if (dx == 0 && dy == 0) return;
+        transform(1, 0,
+                  0, 1,
+                  dx, dy);
+    }
+
+    override void rotate(float angle)
+    {
+        if (angle == 0) return;
+        float cosi = cos(angle);        
+        float sine = sin(angle);
+        transform(cosi, sine,
+                  -sine, cosi,
+                  0, 0);
+    }
+
+    /// Multiply current transformation matrix by:
+    /// [a b 0
+    ///  c d 0
+    ///  e f 1]
+    void transform(float a, float b, float c, float d, float e, float f)
+    {
+        outFloat(a);
+        outFloat(b);
+        outFloat(c);
+        outFloat(d);
+        outFloat(e);
+        outFloat(f);
+        output(" cm");
     }
 
     // Color selection
@@ -411,6 +467,11 @@ private:
             outName("Length"); outReference(_currentStreamLengthId);
         outEndDict();
         _currentStreamStart = outBeginStream();
+
+        // Change coordinate system to match CSS, SVG, and general intuition
+        transform(1.0f, 0.0f,
+                  0.0f, -1.0f,
+                  0.0f, _pageHeightMm);
     }
 
     byte_offset _currentStreamStart;

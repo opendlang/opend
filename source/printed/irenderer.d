@@ -2,6 +2,7 @@
 module printed.irenderer;
 
 /// Describes a HTML5-style renderer.
+/// See_also: https://www.w3.org/TR/2dcontext/
 interface IRenderingContext2D 
 {
     // GRAPHICAL CONTEXT
@@ -14,15 +15,30 @@ interface IRenderingContext2D
     /// Return: Page height in millimeters.
     int pageHeight();
 
-    /// Save the graphical context: transformation matrices.
+    /// Push state on state stack.
     void save();
 
-    /// Restore the graphical contect: transformation matrices.
+    /// Pop state stack and restore state
     void restore();
 
     /// Start a new page, finish the previous one.
     /// This invalidates any transformation.
     void newPage();
+
+
+    // TRANSFORMATIONS (default: transform is the identity matrix)
+
+    /// Changes the transformation matrix to apply a scaling transformation with the given characteristics.
+    void scale(float x, float y);
+
+    /// Changes the transformation matrix to apply a translation transformation with the given characteristics.
+    void translate(float dx, float dy);
+
+    /// Changes the transformation matrix to apply a rotation transformation with the given characteristics. 
+    /// The angle is in radians, the direction is clockwise.
+    /// Params:
+    ///     angle The rotation angle, in radians.
+    void rotate(float angle);
 
 
 
@@ -82,17 +98,19 @@ interface IRenderingContext2D
 
     // FONTS
     
-    ///
+    /// Changes font face.
     void fontFace(string fontFace);
 
-    ///
+    /// Changes font weight.
     void fontWeight(FontWeight fontWeight);
 
-    ///
+    /// Changes font style.
     void fontStyle(FontStyle fontStyle);
 
-    ///
-    void fontSize(float size);
+    /// Changes font size in points (1/72 inch).
+    /// Warning: not millimeters.
+    void fontSize(float sizeInPt);
+
 }
 
 /// Font weight

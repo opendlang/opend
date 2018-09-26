@@ -13,20 +13,21 @@ void main(string[] args)
     foreach(renderer; [cast(IRenderingContext2D) pdfDoc, 
                        cast(IRenderingContext2D) svgDoc,
                        cast(IRenderingContext2D) htmlDoc,])
+    {
         with(renderer)
         {
             // Fill page with light grey
             fillStyle = "#eee";
             fillRect(0, 0, pageWidth, pageHeight);
 
-            // Make a red line
+            // Draw a red line
             strokeStyle = "#ff0000";
             lineWidth(4);
             beginPath(100, 150);
             lineTo(100, 250);
             stroke();
 
-            // Prepare text
+            // Prepare text settings
             fillStyle = "#000";
             fontFace("Arial");
             fontWeight(FontWeight.bold);
@@ -34,10 +35,13 @@ void main(string[] args)
             fontSize(14);
 
             // Unicode test
-            fillText("çéù%ù»", 20, 20); 
+            translate(20, 20);
+            fillText("çéù%ù»", 0, 0); 
             
+            // Go to the next page
             newPage();
-            
+
+            // Draw rotated text            
             fontStyle(FontStyle.normal);
             save();
                 translate(20, 20);
@@ -49,7 +53,9 @@ void main(string[] args)
                 fillText("Rotated 90°", 15, 0);
             restore();
         }
+    }
 
+    /// Draw the result of each specific renderer.
     std.file.write("output.pdf", pdfDoc.bytes);
     std.file.write("output.svg", svgDoc.bytes);
     std.file.write("output.html", htmlDoc.bytes);
