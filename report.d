@@ -17,7 +17,7 @@ void main()
 {
     import cpuid.unified;
     import cpuid.report;
-    cpuid_init();
+
     import std.stdio;
     cpuid.report.unified.writeln;
     version(X86)

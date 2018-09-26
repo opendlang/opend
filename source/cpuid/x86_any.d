@@ -46,19 +46,19 @@ version(D_InlineAsm_X86_64)
 public import cpuid.common;
 
 /// Leaf0
-private __gshared uint _maxBasicLeaf;
+private immutable uint _maxBasicLeaf;
 
 /// Leaf1
-private __gshared Leaf1Information leaf1Information;
+private immutable Leaf1Information leaf1Information;
 /// Leaf7
-private __gshared Leaf7Information leaf7Information;
+private immutable Leaf7Information leaf7Information;
 
 /// ExtLeaf0
-private __gshared uint _maxExtendedLeaf;
+private immutable uint _maxExtendedLeaf;
 
 /// Other
-private __gshared VendorIndex _vendorId;
-private __gshared VendorIndex _virtualVendorId;
+private immutable VendorIndex _vendorId;
+private immutable VendorIndex _virtualVendorId;
 
 /++
 Initialize basic x86 CPU information.
@@ -66,35 +66,36 @@ It is safe to call this function multiple times.
 +/
 export extern(C)
 nothrow @nogc
-void cpuid_x86_any_init()
+void mir_cpuid_x86_any_init()
 {
+    import cpuid.unified: _mut;
     static if (__VERSION__ >= 2068)
         pragma(inline, false);
     CpuInfo info = void;
 
     info = _cpuid(0);
-    _maxBasicLeaf = info.a;
+    _maxBasicLeaf._mut = info.a;
 
     {
         uint[3] n = void;
         n[0] = info.b;
         n[1] = info.d;
         n[2] = info.c;
-        _vendorId = VendorIndex.undefined;
+        _vendorId._mut = VendorIndex.undefined;
         auto vs = vendors[0 .. $ - 1];
         foreach(i, ref name; (cast(uint[3]*)(vs.ptr))[0 .. vs.length])
         {
             if (n[0] == name[0] && n[1] == name[1] && n[2] == name[2])
             {
-                _vendorId = cast(VendorIndex) i;
+                _vendorId._mut = cast(VendorIndex) i;
                 break;
             }
         }
     }
-    _virtualVendorId = _vendorId;
-    leaf1Information.info = _cpuid(1);
+    _virtualVendorId._mut = _vendorId;
+    leaf1Information._mut.info = _cpuid(1);
     if(_maxBasicLeaf >= 7)
-        leaf7Information.info = _cpuid(0x07);
+        leaf7Information._mut.info = _cpuid(0x07);
     if(leaf1Information.virtual)
     {
         auto infov = _cpuid(0x4000_0000);
@@ -102,20 +103,19 @@ void cpuid_x86_any_init()
         n[0] = infov.b;
         n[1] = infov.c;
         n[2] = infov.d;
-        _virtualVendorId = VendorIndex.undefinedvm;
+        _virtualVendorId._mut = VendorIndex.undefinedvm;
         auto vs = vendors[VendorIndex.undefined + 1 .. $ - 1];
         foreach(i, ref name; (cast(uint[3]*)(vs.ptr))[0 .. vs.length])
         {
             if (n[0] == name[0] && n[1] == name[1] && n[2] == name[2])
             {
-                _virtualVendorId = cast(VendorIndex) (i + VendorIndex.undefined + 1);
+                _virtualVendorId._mut = cast(VendorIndex) (i + VendorIndex.undefined + 1);
                 break;
             }
         }
     }
-    _maxExtendedLeaf = _cpuid(0x8000_0000).a;
+    _maxExtendedLeaf._mut = _cpuid(0x8000_0000).a;
 }
-
 
 /// Basic information about CPU.
 union Leaf1Information
@@ -128,6 +128,7 @@ union Leaf1Information
         @trusted @property pure nothrow @nogc:
         version(D_Ddoc)
         {
+        const:
             /// Stepping ID
             uint stepping();
             /// Model
@@ -197,7 +198,7 @@ union Leaf1Information
             bool movbe();
             ///
             bool popcnt();
-            ///(
+            ///
             bool tsc_deadline();
             ///
             bool aes();
@@ -367,6 +368,9 @@ union Leaf1Information
     }
 }
 
+/// ditto
+alias cpuid_x86_any_init = mir_cpuid_x86_any_init;
+
 /// Extended information about CPU.
 union Leaf7Information
 {
@@ -380,6 +384,7 @@ union Leaf7Information
         @trusted @property pure nothrow @nogc:
         version(D_Ddoc)
         {
+        const:
              /// Supports RDFSBASE/RDGSBASE/WRFSBASE/WRGSBASE if 1.
              bool fsgsbase();
              ///MSR is supported if 1.
@@ -519,7 +524,6 @@ struct CpuInfo
 
 /++
 Params:
-    info = information received from CPUID instruction
     eax = function id
     ecx = sub-function id
 +/

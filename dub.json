@@ -3,7 +3,7 @@
 	"authors": [
 		"Ilya Yaroshenko"
 	],
-	"dependencies": {"mir-algorithm": ">=0.4.10"},
+	"dependencies": {"mir-algorithm": ">=2.0.6"},
 	"description": "CPU characteristics identification",
 	"copyright": "Ilya Yaroshenko",
 	"license": "BSL-1.0",

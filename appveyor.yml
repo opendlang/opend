@@ -2,10 +2,10 @@ platform: x64
 environment:
  matrix:
   - DC: dmd
-    DVersion: 2.080.0
+    DVersion: 2.082.0
     arch: x64
   - DC: dmd
-    DVersion: 2.080.0
+    DVersion: 2.082.0
     arch: x86
   - DC: ldc
     DVersion: '1.10.0'

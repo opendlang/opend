@@ -1,4 +1,4 @@
-project('mir-cpuid', 'd', version : '0.5.4', license: 'BSL-1.0')
+project('mir-cpuid', 'd', version : '1.0.0', license: 'BSL-1.0')
 
 mir_algorithm_dep = dependency('mir-algorithm', fallback : ['mir-algorithm', 'mir_algorithm_dep'])
 

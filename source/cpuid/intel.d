@@ -75,7 +75,7 @@ struct Leaf2Information
 
     Specification: Intel
     +/
-    nothrow @nogc
+    nothrow @nogc pure
     this()(CpuInfo info)
     {
         version(BigEndian) static assert(0, "Leaf2Information is not implemented for BigEndian.");
@@ -718,7 +718,7 @@ union Leaf4Information
 
         version(D_Ddoc)
         {
-            @trusted @property pure nothrow @nogc:
+            @trusted @property pure nothrow @nogc const:
             /// Cache Type Field.
             Type type();
             /// Cache Level (starts at 1).

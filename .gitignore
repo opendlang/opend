@@ -27,3 +27,6 @@ cpuid-report
 *.sublime-workspace
 
 mir-cpuid-test-library
+cpuid-report.exe
+mir-cpuid-test-library.exe
+mir-cpuid.lib
