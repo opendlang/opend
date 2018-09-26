@@ -1,5 +1,6 @@
 import std.stdio;
 import std.file;
+import std.math;
 
 import printed;
 
@@ -14,8 +15,6 @@ void main(string[] args)
                        cast(IRenderingContext2D) htmlDoc,])
         with(renderer)
         {
-            save();
-
             // Fill page with light grey
             fillStyle = "#eee";
             fillRect(0, 0, pageWidth, pageHeight);
@@ -37,10 +36,18 @@ void main(string[] args)
             // Unicode test
             fillText("çéù%ù»", 20, 20); 
             
-            restore();
-
             newPage();
-            fillText("Empty page", 20, 20);
+            
+            fontStyle(FontStyle.normal);
+            save();
+                translate(20, 20);
+                fillText("Straight", 15, 0);
+                rotate(PI / 4);
+                fillText("Rotated 45°", 15, 0);
+
+                rotate(PI / 4);
+                fillText("Rotated 90°", 15, 0);
+            restore();
         }
 
     std.file.write("output.pdf", pdfDoc.bytes);
