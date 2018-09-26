@@ -179,7 +179,7 @@ public:
         return _boundingBox;
     }
 
-    /// Returns: Maximum height above the basline reached by glyphs in this font.
+    /// Returns: Maximum height above the baseline reached by glyphs in this font.
     ///          In glyph units.
     int ascent()
     {
@@ -187,7 +187,7 @@ public:
         return _ascender;
     }
 
-    /// Returns: Maximum depth below the basline reached by glyphs in this font.
+    /// Returns: Maximum depth below the baseline reached by glyphs in this font.
     ///          Should be negative.
     ///          In glyph units.
     int descent()
@@ -205,8 +205,7 @@ public:
         return _lineGap;
     }
 
-    /// Returns: The spacing between baselines of consecutive lines of text.
-    ///          In glyph units.
+    /// Returns: 'A' height.
     /// TODO: eventually extract from OS/2 table
     int capHeight()
     {
@@ -252,6 +251,21 @@ public:
     {
         computeFontMetrics();
         return _glyphs[ _charToGlyphMapping[ch] ].horzAdvance;
+    }
+
+    /// Returns: number of glyphs in the font.
+    int numGlyphs()
+    {
+        computeFontMetrics();
+        return cast(int)(_glyphs.length);
+    }
+
+    /// Returns: horizontal advance for a glyph.
+    /// In glyph units.
+    int horizontalAdvanceForGlyph(int glyphIndex)
+    {
+        computeFontMetrics();
+        return _glyphs[glyphIndex].horzAdvance;
     }
 
 private:

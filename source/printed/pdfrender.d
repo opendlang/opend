@@ -341,6 +341,9 @@ private:
             OpenTypeFont font = pair.key;
             FontPDFInfo info = pair.value;
 
+            // Important: the font sizes given in the PDF have to be in the default glyph space where 1em = 1000 units
+            float scale = font.scaleFactorForPDF();
+
             beginDictObject(info.compositeFontId);
                 outName("Type"); outName("Font");
                 outName("Subtype"); outName("Type0");
@@ -360,6 +363,22 @@ private:
                 outName("BaseFont"); outName(info.baseFont);
                 outName("FontDescriptor"); outReference(info.descriptorId);
 
+                // this shouldn't be used, but is currently...
+                outName("DW"); outFloat(0);//font.defaultHorizontalAdvance);
+
+
+                // Export text advance ("widths") of glyphs in the font
+                outName("W"); 
+                    outBeginArray();
+
+                        outInteger(0); // first glyph index is always 0
+                        outBeginArray();
+                            foreach(int glyph; 0..font.numGlyphs)
+                                outFloat(scale * font.horizontalAdvanceForGlyph(glyph));
+                        outEndArray();
+
+                    outEndArray();
+
                 outName("CIDToGIDMap"); outName("Identity"); // CIDs are GIDs
                 outName("CIDSystemInfo"); 
                 outBeginDict();
@@ -377,21 +396,21 @@ private:
                 outName("FontBBox");
                     outBeginArray();
                         int[4] bb = font.boundingBox();
-                        outInteger(bb[0]);
-                        outInteger(bb[1]);
-                        outInteger(bb[2]);
-                        outInteger(bb[3]);
+                        outFloat(scale * bb[0]);
+                        outFloat(scale * bb[1]);
+                        outFloat(scale * bb[2]);
+                        outFloat(scale * bb[3]);
                     outEndArray();
 
                 outName("ItalicAngle"); outFloat(font.postScriptItalicAngle);
 
-                outName("Ascent"); outInteger(font.ascent);
-                outName("Descent"); outInteger(font.descent);
-                outName("Leading"); outInteger(font.lineGap);
-                outName("CapHeight"); outInteger(font.capHeight);
+                outName("Ascent"); outFloat(scale * font.ascent);
+                outName("Descent"); outFloat(scale * font.descent);
+                outName("Leading"); outFloat(scale * font.lineGap);
+                outName("CapHeight"); outFloat(scale * font.capHeight);
 
-                // TODO
-                outName("StemV"); outInteger(0);
+                // See_also: https://stackoverflow.com/questions/35485179/stemv-value-of-the-truetype-font
+                outName("StemV"); outFloat(scale * 120); // since the font is always embedded in the PDF, we do not feel obligated with a valid value
 
                outName("FontFile2"); outReference(info.streamId);
             endDictObject();
@@ -959,4 +978,10 @@ unittest
     assert(stripNumber("+0.4") == ".4");
     assert(stripNumber("-0.4") == "-.4");
     assert(stripNumber("0.0") == "0");
+}
+
+/// Returns: scale factor to convert from glyph space to the PDF glyph space which is fixed for the CIFFont we use.
+float scaleFactorForPDF(OpenTypeFont font)
+{
+    return 1000.0f / font.ascent();
 }

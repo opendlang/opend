@@ -36,12 +36,12 @@ void main(string[] args)
 
             // Unicode test
             translate(20, 20);
-            fillText("çéù%ù»", 0, 0); 
+            fillText("çéù%ù»", 0, 0);
             
             // Go to the next page
             newPage();
 
-            // Draw rotated text            
+            // Draw rotated text
             fontStyle(FontStyle.normal);
             save();
                 translate(20, 20);
