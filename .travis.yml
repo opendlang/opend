@@ -19,7 +19,7 @@ script:
 
 packages:
   # use openblas on newer ubuntu versions
-  - liblapack-dev
+  - libopenblas-dev
   - pkg-config
 
 install:
