@@ -3,6 +3,7 @@ module printed.pdfrender;
 import std.string;
 import std.conv;
 import std.math;
+import std.zlib;
 import printed.color;
 import printed.irenderer;
 import printed.fontregistry;
@@ -578,13 +579,26 @@ private:
 
     void outStream(object_id id, const(ubyte)[] content)
     {
-        // TODO: zip
+        // Note: there is very little to win between compression level 6 and 9
+        ubyte[] compressedContent = compress(content);
+
+        // Only compress if this actually reduce sizes
+        bool compressed = true;
+        if (compressedContent.length > content.length)
+            compressed = false;
+
+        const(ubyte)[] streamData = compressed ? compressedContent : content;
+
         beginObject(id);
             outBeginDict();
-                outName("Length"); outInteger(cast(int)(content.length));
+                outName("Length"); outInteger(cast(int)(streamData.length));
+                if (compressed)
+                {
+                    outName("Filter"); outName("FlateDecode");
+                }
             outEndDict();
             outBeginStream();
-                outputBytes(content);
+                outputBytes(streamData);
             outEndStream();
         endObject();
     }
