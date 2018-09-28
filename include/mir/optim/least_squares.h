@@ -97,6 +97,7 @@ struct LeastSquaresLMS_S
     size_t maxIter;
     float tolX;
     float tolG;
+    float maxGoodResidual;
     float lambda;
     float lambdaIncrease;
     float lambdaDecrease;
@@ -139,6 +140,7 @@ struct LeastSquaresLMD_S
     size_t maxIter;
     double tolX;
     double tolG;
+    double maxGoodResidual;
     double lambda;
     double lambdaIncrease;
     double lambdaDecrease;

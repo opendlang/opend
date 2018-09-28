@@ -57,6 +57,8 @@ struct LeastSquaresLM(T)
     enum T tolXDefault = T(2) ^^ ((1 - T.mant_dig) / 2);
     /// Default tolerance in gradient
     enum T tolGDefault = T(2) ^^ ((1 - T.mant_dig) * 3 / 4);
+    /// Default value for `maxGoodResidual`.
+    enum T maxGoodResidualDefault = T.epsilon;
     /// Default epsilon for finite difference Jacobian approximation
     enum T jacobianEpsilonDefault = T(2) ^^ ((1 - T.mant_dig) / 3);
     /// Default `lambda` is multiplied by this factor after step below min quality
@@ -116,6 +118,8 @@ struct LeastSquaresLM(T)
     T tolX = 0;
     /// tolerance in gradient
     T tolG = 0;
+    /// the algorithm stops iteration when the residual value is less or equal to `maxGoodResidual`.
+    T maxGoodResidual = 0;
     /// (inverse of) initial trust region radius
     T lambda = 0;
     /// `lambda` is multiplied by this factor after step below min quality
@@ -151,6 +155,12 @@ struct LeastSquaresLM(T)
     bool xConverged;
     /// ditto
     bool gConverged;
+    /// ditto
+    /// `residual <= maxGoodResidual`
+    bool fConverged()() const @property
+    {
+        return residual <= maxGoodResidual;
+    }
 
     /++
     Initialize iteration params and allocates vectors in GC and resets iteration counters, states a.
@@ -248,6 +258,7 @@ struct LeastSquaresLM(T)
         maxIter = 100;
         tolX = tolXDefault;
         tolG = tolGDefault;
+        maxGoodResidual = maxGoodResidualDefault;
         lambda = 0;
         lambdaIncrease = lambdaIncreaseDefault;
         lambdaDecrease = lambdaDecreaseDefault;
