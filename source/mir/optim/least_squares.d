@@ -1288,6 +1288,10 @@ LMStatus optimizeLMImplGeneric(T)
 
             auto newsigma = sigma * nu;
             auto newlambda = lambdaIncrease * lambda * mu;
+            if (newsigma > maxLambda)
+                newsigma = sigma + sigma;
+            if (newlambda > maxLambda)
+                newlambda = lambda + lambda;
             if (newlambda > maxLambda || newsigma > maxLambda)
             {
                 if (age == 0)
