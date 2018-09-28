@@ -120,8 +120,10 @@ final class PDFDocument : IRenderingContext2D
         // Mark the current page as using this font
         currentPage.markAsUsingThisFont(fontPDFName, fontObjectId);
 
+        // being text object
         outDelim();
         output("BT");
+
         outName(fontPDFName);
         outFloat(_fontSize);
         output(" Tf");
@@ -142,6 +144,10 @@ final class PDFDocument : IRenderingContext2D
         // restore CTM
         outDelim();
         output('Q');
+
+        // end text object
+        outDelim();
+        output("ET");
     }
 
     // State stack
@@ -423,14 +429,15 @@ private:
 
         // Add the pages object
         beginDictObject(_pageTreeId);
-            outName("Type"); outName("Catalog");
+            outName("Type"); outName("Pages");
             outName("Count"); outInteger(numberOfPages());
             outName("MediaBox");
             outBeginArray();
                 outInteger(0);
                 outInteger(0);
-                outFloat(_pageWidthMm);
-                outFloat(_pageHeightMm);
+                // Note: device space is in point by default
+                outFloat(convertMillimetersToPoints(_pageWidthMm));
+                outFloat(convertMillimetersToPoints(_pageHeightMm));
             outEndArray();
             outName("Kids");
             outBeginArray();
@@ -488,9 +495,10 @@ private:
         _currentStreamStart = outBeginStream();
 
         // Change coordinate system to match CSS, SVG, and general intuition
-        transform(1.0f, 0.0f,
-                  0.0f, -1.0f,
-                  0.0f, _pageHeightMm);
+        float scale = kMillimetersToPoints;
+        transform(scale, 0.0f,
+                  0.0f, -1 * scale,
+                  0.0f, scale * _pageHeightMm);
     }
 
     byte_offset _currentStreamStart;
@@ -998,4 +1006,13 @@ unittest
 float scaleFactorForPDF(OpenTypeFont font)
 {
     return 1000.0f / font.ascent();
+}
+
+enum float kMillimetersToPoints = 2.83465f;
+
+
+/// Returns: scale factor to convert from glyph space to the PDF glyph space which is fixed for the CIFFont we use.
+float convertMillimetersToPoints(float x) pure
+{
+    return x * kMillimetersToPoints;
 }
