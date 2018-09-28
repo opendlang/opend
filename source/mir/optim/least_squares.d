@@ -1107,7 +1107,7 @@ LMStatus optimizeLMImplGeneric(T)
     residual = dot(y, y);
 
     T nu = 2;
-    T mu = 1;
+    // T mu = 1;
     T sigma = 0;
 
     do
@@ -1230,7 +1230,7 @@ LMStatus optimizeLMImplGeneric(T)
             assumePure(&fprintf)(file, "\n");
             assumePure(&fprintf)(file, "lambda = %e\n", lambda);
             assumePure(&fprintf)(file, "sigma = %e\n", sigma);
-            assumePure(&fprintf)(file, "mu = %e\n", mu);
+            // assumePure(&fprintf)(file, "mu = %e\n", mu);
             assumePure(&fprintf)(file, "nu = %e\n", nu);
             assumePure(&fprintf)(file, "improvement = %e\n", improvement);
             assumePure(&fprintf)(file, "predictedImprovement = %e\n", predictedImprovement);
@@ -1278,7 +1278,7 @@ LMStatus optimizeLMImplGeneric(T)
                 lambda = fmax(lambdaDecrease * lambda, minLambda);
                 sigma = sigma * 0.5;
                 nu = 2;
-                mu = 1;
+                // mu = 1;
             }
         }
         else
@@ -1287,12 +1287,13 @@ LMStatus optimizeLMImplGeneric(T)
                 break;
 
             auto newsigma = sigma * nu;
-            auto newlambda = lambdaIncrease * lambda * mu;
-            if (newsigma > maxLambda)
+            // auto newlambda = lambdaIncrease * lambda * mu;
+            auto newlambda = lambdaIncrease * lambda;
+            if (newsigma > T.max / 8)
                 newsigma = sigma + sigma;
             if (newlambda > maxLambda)
                 newlambda = lambda + lambda;
-            if (newlambda > maxLambda || newsigma > maxLambda)
+            if (newlambda > maxLambda || newsigma > T.max / 8)
             {
                 if (age == 0)
                 {
@@ -1306,7 +1307,7 @@ LMStatus optimizeLMImplGeneric(T)
                 }
             }
             nu += nu;
-            mu += mu;
+            // mu += mu;
             lambda = newlambda;
             sigma = newsigma;
         }
