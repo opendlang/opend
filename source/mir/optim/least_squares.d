@@ -1072,7 +1072,9 @@ LMStatus optimizeLMImplGeneric(T)
     version(mir_optim_debug)
     {
         import core.stdc.stdio;
-        auto file = assumePure(&fopen)("x.txt", "w");
+        auto file = assumePure(&fopen)("x.txt", "a");
+        scope(exit)
+            assumePure(&fclose)(file);
     }
 
     if (m == 0 || n == 0 || !x.all!"-a.infinity < a && a < a.infinity")
@@ -1103,6 +1105,10 @@ LMStatus optimizeLMImplGeneric(T)
     f(x, y);
     ++fCalls;
     residual = dot(y, y);
+
+    T nu = 2;
+    T mu = 1;
+    T sigma = 0;
 
     do
     {
@@ -1149,28 +1155,39 @@ LMStatus optimizeLMImplGeneric(T)
         if (syev('V', 'L', JJ.canonical, nBuffer, _work))
             return lm.status = LMStatus.numericError;
 
-        if (!(lambda > T.min_normal))
+        if (!(lambda >= minLambda))
         {
             lambda = 0.0001 * nBuffer.back;
-            if (!(lambda > T.min_normal))
+            if (!(lambda >= minLambda))
                 lambda = 1;
         }
 
-        T sigma = 0;
+        T sigmaInit = 0;
 
         if (nBuffer.front < 0)
-            sigma = nBuffer.front * -(1 + T.epsilon);
-        
-        if (nBuffer.front + sigma < T.min_normal)
-            sigma += T.min_normal;
+            sigmaInit = nBuffer.front * -(1 + T.epsilon);
 
-        if (mJy_nrm2 / ((nBuffer.front + sigma) * (1 + lambda)) * 2 >= T.max )
-            lambda = (mJy_nrm2 / ((nBuffer.front + sigma) * T.max) - 1) * 2;
+        if (nBuffer.front + sigmaInit < T.epsilon)
+            sigmaInit += T.epsilon;
+
+        if (!(mJy_nrm2 / ((nBuffer.front + sigmaInit) * (1 + lambda)) < T.max / 2))
+            sigmaInit = mJy_nrm2 / ((T.max / 2) * (1 + lambda)) - nBuffer.front;
+
+        if (sigmaInit == 0)
+        {
+            sigma = 0;
+            nu = 2;
+        }
+        else
+        {
+            sigma = fmax(sigma, sigmaInit);
+        }
 
         gemv(1, JJ, mJy, 0, deltaX);
-        auto lambdaScale = 1 + lambda;
+
         foreach(i; 0 .. n)
             nBuffer[i] = deltaX[i] / ((nBuffer[i] + sigma) * (1 + lambda));
+
         gemv(1, JJ.transposed, nBuffer, 0, deltaX);
 
         axpy(1, x, deltaX);
@@ -1212,6 +1229,9 @@ LMStatus optimizeLMImplGeneric(T)
             }
             assumePure(&fprintf)(file, "\n");
             assumePure(&fprintf)(file, "lambda = %e\n", lambda);
+            assumePure(&fprintf)(file, "sigma = %e\n", sigma);
+            assumePure(&fprintf)(file, "mu = %e\n", mu);
+            assumePure(&fprintf)(file, "nu = %e\n", nu);
             assumePure(&fprintf)(file, "improvement = %e\n", improvement);
             assumePure(&fprintf)(file, "predictedImprovement = %e\n", predictedImprovement);
             assumePure(&fprintf)(file, "rho = %e\n", rho);
@@ -1250,37 +1270,41 @@ LMStatus optimizeLMImplGeneric(T)
                 }
             }
 
+            if (fConverged)
+                break;
+
             if (rho > goodStepQuality)
             {
                 lambda = fmax(lambdaDecrease * lambda, minLambda);
+                sigma = sigma * 0.5;
+                nu = 2;
+                mu = 1;
             }
         }
         else
         {
-            if (age == 0)
+            if (fConverged)
+                break;
+
+            auto newsigma = sigma * nu;
+            auto newlambda = lambdaIncrease * lambda * mu;
+            if (newlambda > maxLambda || newsigma > maxLambda)
             {
-                auto newLambda = lambdaIncrease * lambda;
-                if (newLambda > maxLambda)
+                if (age == 0)
                 {
-                    if (age == 0)
-                    {
-                        lambda = newLambda;
-                        break;
-                    }
-                    else
-                    {
-                        needJacobian = true;
-                        age = maxAge;
-                        continue;
-                    }
+                    break;
                 }
-                lambda = newLambda;
+                else
+                {
+                    needJacobian = true;
+                    age = maxAge;
+                    continue;
+                }
             }
-            else
-            {
-                needJacobian = true;
-                age = maxAge;
-            }
+            nu += nu;
+            mu += mu;
+            lambda = newlambda;
+            sigma = newsigma;
         }
     }
     while (iterCt < maxIter);
