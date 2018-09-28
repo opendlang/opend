@@ -17,12 +17,10 @@ script:
  - rm -rf .dub && dub build -c blas --compiler=ldmd2 --build-mode=singleFile --build=better-c-release --force && g++ -std=c++1y -pthread -I./include examples/least_squares.cpp -L./ -lmir-optim -llapack -lblas && ./a.out
  - meson build && cd build && ninja -j4 && ninja test -v && cd ..
 
- addons:
-  apt:
-    packages:
-      # use openblas on newer ubuntu versions
-      - liblapack-dev
-      - pkg-config
+packages:
+  # use openblas on newer ubuntu versions
+  - liblapack-dev
+  - pkg-config
 
 install:
   - pyenv global system 3.6
