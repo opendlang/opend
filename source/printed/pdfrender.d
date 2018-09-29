@@ -33,7 +33,7 @@ final class PDFDocument : IRenderingContext2D
         _pageTreeId = _pool.allocateObjectId();
 
         // header
-        output("%PDF-1.7\n");
+        output("%PDF-1.4\n");
 
         // "If a PDF file contains binary data, as most do (see 7.2, "Lexical Conventions"),
         // the header line shall be immediately followed by a comment line containing at least
