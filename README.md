@@ -15,60 +15,40 @@ Documentation - http://docs.random.dlang.io
 
 ### Example (3 seconds)
 ```d
-#!/usr/bin/env dub
-/+ dub.json:
-{
-    "name": "test_random",
-    "dependencies": {"mir-random": "~>1.0.0-beta"}
-}
-+/
-
-import std.range, std.stdio;
-
-import mir.random;
-import mir.random.variable: NormalVariable;
-import mir.random.algorithm: range;
-
 void main()
 {
-    auto sample = NormalVariable!double(0, 1).range.take(10).array;
+    import mir.random;
+    import mir.random.variable: normalVar;
+    import mir.random.algorithm: randomSlice;
 
-    sample[$.randIndex].writeln; // prints random element from the sample
+    auto sample = normalVar.randomSlice(10);
+
+    import std.stdio;
+    sample[$.randIndex].writeln;
 }
 ```
 
-[![Open on run.dlang.io](https://img.shields.io/badge/run.dlang.io-open-blue.svg)](https://run.dlang.io/is/mTVJL6)
+<!-- [![Open on run.dlang.io](https://img.shields.io/badge/run.dlang.io-open-blue.svg)](https://run.dlang.io/is/mTVJL6) -->
 
 
 ### Example (10 seconds)
 ```d
-#!/usr/bin/env dub
-/+ dub.json:
+void main()
 {
-    "name": "test_random",
-    "dependencies": {"mir-random": "~>1.0.0-beta"}
-}
-+/
+    import mir.random;
+    import mir.random.variable: normalVar;
+    import mir.random.algorithm: randomSlice;
 
-import std.range, std.stdio;
+    // Engines are allocated on stack or global
+    auto rng = Random(unpredictableSeed);
+    auto sample = rng.randomSlice(normalVar, 10);
 
-import mir.random;
-import mir.random.variable: NormalVariable;
-import mir.random.algorithm: range;
-
-
-void main(){
-    auto rng = Random(unpredictableSeed);        // Engines are allocated on stack or global
-    auto sample = range!rng                      // Engines can passed to algorithms by alias or by pointer
-        (NormalVariable!double(0, 1))            // Random variables are passed by value
-        .take(10)                                // Fix sample length to 10 elements (Input Range API)
-        .array;                                  // Allocates memory and performs computation
-
-    sample[$.randIndex].writeln;                 // prints random element from the sample
+    import std.stdio;
+    sample[rng.randIndex($)].writeln;
 }
 ```
 
-[![Open on run.dlang.io](https://img.shields.io/badge/run.dlang.io-open-blue.svg)](https://run.dlang.io/is/F1Iucp)
+<!-- [![Open on run.dlang.io](https://img.shields.io/badge/run.dlang.io-open-blue.svg)](https://run.dlang.io/is/F1Iucp) -->
 
 
 ## Comparison with Phobos
