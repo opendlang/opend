@@ -10,6 +10,12 @@ import printed.irenderer;
 import binrange;
 
 
+/// A POD-type to represent a range of Unicode characters.
+struct CharRange
+{
+    dchar start;
+    dchar stop;
+}
 
 /// OpenType 1.8 file parser, for the purpose of finding all fonts in a file, their family name, their weight, etc.
 /// This OpenType file might either be:
@@ -268,6 +274,18 @@ public:
         return _glyphs[glyphIndex].horzAdvance;
     }
 
+    /// maximum Unicode char available in this font
+    dchar maxAvailableChar()
+    {
+        computeFontMetrics();
+        return _maxCodepoint;
+    }
+
+    const(CharRange)[] charRanges()
+    {
+        return _charRanges;
+    }
+
 private:
     // need whole file since some data may be shared across fonts
     // And also table offsets are relative to the whole file.
@@ -300,6 +318,10 @@ private:
     /// Note: it's not sure at all if parsing the 'cmap' table each time is more costly.
     /// Also this could be an array sorted by dchar.
     ushort[dchar] _charToGlyphMapping;
+
+    CharRange[] _charRanges;
+
+    dchar _maxCodepoint;
 
     // </parsed-by-computeFontMetrics>
 
@@ -438,6 +460,8 @@ private:
 
                     foreach(seg; 0..segCount)
                     {
+                        _charRanges ~= CharRange(startCount[seg], endCount[seg]);
+
                         foreach(dchar ch; startCount[seg]..endCount[seg])
                         {
                             ushort glyphIndex;
@@ -469,6 +493,9 @@ private:
                                 throw new Exception("Non existing glyph index");
                             }
                             _charToGlyphMapping[ch] = glyphIndex;
+
+                            if (ch > _maxCodepoint) 
+                                _maxCodepoint = ch;
                         }
                     }
                 }

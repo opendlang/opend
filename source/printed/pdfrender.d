@@ -360,7 +360,7 @@ private:
                         outReference(info.cidFontId); 
                     outEndArray();
 
-                // TODO ToUnicode
+                // TODO ToUnicode?
                 outName("Encoding"); outName("Identity-H"); // map character to same CID
             endDictObject();
 
@@ -370,23 +370,24 @@ private:
                 outName("BaseFont"); outName(info.baseFont);
                 outName("FontDescriptor"); outReference(info.descriptorId);
 
-                // this shouldn't be used, but is currently...
-                outName("DW"); outFloat(0);//font.defaultHorizontalAdvance);
-
-
                 // Export text advance ("widths") of glyphs in the font
                 outName("W"); 
                     outBeginArray();
-
-                        outInteger(0); // first glyph index is always 0
-                        outBeginArray();
-                            foreach(int glyph; 0..font.numGlyphs)
-                                outFloat(scale * font.horizontalAdvanceForGlyph(glyph));
-                        outEndArray();
-
+                        foreach(crange; font.charRanges())
+                        {
+                            outInteger(crange.start); // first glyph index is always 0
+                            outBeginArray();
+                                foreach(dchar ch; crange.start .. crange.stop)
+                                {
+                                    int glyph = font.glyphIndexFor(ch);
+                                    outFloat(scale * font.horizontalAdvanceForGlyph(glyph));
+                                }
+                            outEndArray();
+                        }
                     outEndArray();
 
-                outName("CIDToGIDMap"); outName("Identity"); // CIDs are GIDs
+                outName("CIDToGIDMap"); outReference(info.cidToGidId);                
+                
                 outName("CIDSystemInfo"); 
                 outBeginDict();
                     outName("Registry"); outLiteralString("Adobe");
@@ -424,6 +425,20 @@ private:
 
             // font embedded as stream
             outStream(info.streamId, font.fileData);
+
+            // CIDToGIDMap as a stream
+            // this can take quite some space
+            {
+                dchar N = font.maxAvailableChar()+1;
+                ubyte[] cidToGid = new ubyte[N*2];
+                foreach(dchar ch;  0..N)
+                {
+                    ushort gid = font.glyphIndexFor(ch);
+                    cidToGid[ch*2] = (gid >> 8);
+                    cidToGid[ch*2+1] = (gid & 255);
+                }
+                outStream(info.cidToGidId, cidToGid[]);
+            }
         }
 
 
@@ -712,7 +727,7 @@ private:
         {
             if (font.hasGlyphFor(ch)) // PERF: this is redundant
             {
-                ushort glyph = font.glyphIndexFor(ch);
+                ushort glyph = cast(ushort)(ch);
                 ubyte hi = (glyph >> 8) & 255;
                 ubyte lo = glyph & 255;
                 static immutable string hex = "0123456789ABCDEF";
@@ -873,6 +888,7 @@ private:
         object_id cidFontId; // ID for the CID /Font object
         object_id descriptorId; // ID for the /FontDescriptor object
         object_id streamId;     // ID for the file stream
+        object_id cidToGidId;   // ID for the /CIDToGIDMap stream object
         string pdfName; // "Fxx", associated name in the PDF (will be of the form /Fxx)
         string baseFont;
     }
@@ -902,6 +918,7 @@ private:
             f.cidFontId = _pool.allocateObjectId();
             f.descriptorId = _pool.allocateObjectId();
             f.streamId = _pool.allocateObjectId();
+            f.cidToGidId = _pool.allocateObjectId();
             f.pdfName = format("F%d", _fontPDFInfos.length); // technically this is only namespaced at the /Page resource level
 
             /*
