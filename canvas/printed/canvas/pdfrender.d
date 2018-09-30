@@ -718,26 +718,49 @@ private:
         _bytes ~= s.representation;
     }
 
-    void outStringForDisplay(string s, OpenTypeFont font)
+    void outStringForDisplay(string s)
     {
         // TODO: selection of shortest encoding instead of always UTF16-BE
 
-        output('<');
+        bool allCharUnder512 = true;
+
         foreach(dchar ch; s)
         {
-            if (font.hasGlyphFor(ch)) // PERF: this is redundant
+            if (ch >= 512)
             {
-                ushort glyph = cast(ushort)(ch);
-                ubyte hi = (glyph >> 8) & 255;
-                ubyte lo = glyph & 255;
+                allCharUnder512 = false;
+                break;
+            }
+        }
+
+        if (allCharUnder512)
+        {
+            outDelim();
+            output('(');
+
+
+assert(false);
+// TODO
+            output(')');
+        }
+        else
+        {
+            // Using encoding UTF16-BE
+            output('<');
+            foreach(dchar ch; s)
+            {
+                ushort CID = cast(ushort)(ch);
+                ubyte hi = (CID >> 8) & 255;
+                ubyte lo = CID & 255;
                 static immutable string hex = "0123456789ABCDEF";
                 output(hex[hi >> 4]);
                 output(hex[hi & 15]);
                 output(hex[lo >> 4]);
                 output(hex[lo & 15]);
+                }
             }
+            output('>');
         }
-        output('>');
     }
 
     void outLiteralString(string s)

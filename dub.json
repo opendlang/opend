@@ -5,9 +5,45 @@
     "importPaths": [ "source" ],
     "sourcePaths": [ "source" ],
 
-    "dependencies": 
+    "dependencies":
     {
-        "standardpaths": "~>0.0",
-        "binrange": "~>1.0"
-    }
+        "printed:canvas": "*",
+        "printed:shaping": "*"
+    },
+
+   "subPackages": [
+        {
+            "name": "font",
+            "sourcePaths": 
+            [ 
+                "font/printed/font" 
+            ],
+
+            "importPaths": [ "font" ],
+
+            "dependencies": 
+            {
+                "standardpaths": "~>0.0",
+                "binrange": "~>1.0"
+            }
+        },
+        {
+            "name": "canvas",
+            "sourcePaths": 
+            [ 
+                "canvas/printed/canvas" 
+            ],
+
+            "importPaths": [ "canvas" ]
+        },
+        {
+            "name": "shaping",
+            "sourcePaths": 
+            [ 
+                "shaping/printed/shaping" 
+            ],
+
+            "importPaths": [ "shaping" ]
+        }
+    ]
 }
