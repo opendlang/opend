@@ -2,7 +2,7 @@ import std.stdio;
 import std.file;
 import std.math;
 
-import printed;
+import printed.canvas;
 
 void main(string[] args)
 {

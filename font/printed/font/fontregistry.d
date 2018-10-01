@@ -1,4 +1,4 @@
-module printed.fontregistry;
+module printed.font.fontregistry;
 
 import std.algorithm;
 import std.file;
@@ -8,9 +8,7 @@ import std.string: format;
 import std.math: abs;
 import standardpaths;
 
-public import printed.opentype;
-
-import printed.irenderer: FontWeight, FontStyle;
+import printed.font.opentype;
 
 /// FontRegistry register partial font information for all fonts
 /// from the system directories, plus the ones added by the user.
@@ -67,7 +65,9 @@ class FontRegistry
     }
 
     /// Returns: a font which best follows the requested characteristics given.
-    OpenTypeFont findBestMatchingFont(string familyName, FontWeight weight, FontStyle style)
+    OpenTypeFont findBestMatchingFont(string familyName, 
+                                      OpenTypeFontWeight weight, 
+                                      OpenTypeFontStyle style)
     {
         KnownFont* best = null;
         float bestScore = float.infinity;
@@ -89,9 +89,9 @@ class FontRegistry
             if (style != kf.style)
             {
                 // not a big problem to choose oblique and italic interchangeably
-                if (style == FontStyle.oblique && kf.style == FontStyle.italic)
+                if (style == OpenTypeFontStyle.oblique && kf.style == OpenTypeFontStyle.italic)
                     score += 1;
-                else if (style == FontStyle.italic && kf.style == FontStyle.oblique)
+                else if (style == OpenTypeFontStyle.italic && kf.style == OpenTypeFontStyle.oblique)
                     score += 1;
                 else
                     score += 10000;
@@ -121,8 +121,8 @@ private:
         string filePath; // path to the font file
         int fontIndex;   // index into that font file, which could contain multiple fonts
         string familyName;
-        FontStyle style;
-        FontWeight weight;
+        OpenTypeFontStyle style;
+        OpenTypeFontWeight weight;
         OpenTypeFont instance;
 
         OpenTypeFont getParsedFont() // opens and parses that font, lazily

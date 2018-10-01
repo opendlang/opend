@@ -34,7 +34,11 @@
                 "canvas/printed/canvas" 
             ],
 
-            "importPaths": [ "canvas" ]
+            "importPaths": [ "canvas" ],
+            "dependencies": 
+            {
+                "printed:font": "*"
+            }
         },
         {
             "name": "shaping",

@@ -1,4 +1,4 @@
-module printed.color;
+module printed.canvas.color;
 
 @safe:
 

@@ -1,11 +1,10 @@
-module printed.opentype;
+module printed.font.opentype;
 
 import std.stdio;
 import std.conv;
 import std.string;
 import std.uni;
 import std.algorithm.searching;
-import printed.irenderer;
 
 import binrange;
 
@@ -15,6 +14,29 @@ struct CharRange
 {
     dchar start;
     dchar stop;
+}
+
+/// Font weight
+enum OpenTypeFontWeight : int
+{
+    thinest = 0, // Note: thinest doesn't exist in PostScript
+    thin = 100,
+    extraLight = 200,
+    light = 300,
+    normal = 400,
+    medium = 500,
+    semiBold = 600,
+    bold = 700,
+    extraBold = 800,
+    black = 900
+}
+
+/// Font style
+enum OpenTypeFontStyle
+{
+    normal,
+    italic,
+    oblique
 }
 
 /// OpenType 1.8 file parser, for the purpose of finding all fonts in a file, their family name, their weight, etc.
@@ -121,56 +143,56 @@ public:
 
     /// Computes font weight information based on a subfamily heuristic.
     // TODO: extract from tables
-    FontWeight weight()
+    OpenTypeFontWeight weight()
     {
         string subFamily = subFamilyName().toLower;
         if (subFamily.canFind("thin"))
-            return FontWeight.thin;
+            return OpenTypeFontWeight.thin;
         else if (subFamily.canFind("ultra light"))
-            return FontWeight.thinest;
+            return OpenTypeFontWeight.thinest;
         else if (subFamily.canFind("ultraLight"))
-            return FontWeight.thinest;
+            return OpenTypeFontWeight.thinest;
         else if (subFamily.canFind("hairline"))
-            return FontWeight.thinest;
+            return OpenTypeFontWeight.thinest;
         else if (subFamily.canFind("extralight"))
-            return FontWeight.extraLight;
+            return OpenTypeFontWeight.extraLight;
         else if (subFamily.canFind("light"))
-            return FontWeight.light;
+            return OpenTypeFontWeight.light;
         else if (subFamily.canFind("demi bold"))
-            return FontWeight.semiBold;
+            return OpenTypeFontWeight.semiBold;
         else if (subFamily.canFind("semibold"))
-            return FontWeight.semiBold;
+            return OpenTypeFontWeight.semiBold;
         else if (subFamily.canFind("extrabold"))
-            return FontWeight.extraBold;
+            return OpenTypeFontWeight.extraBold;
         else if (subFamily.canFind("bold"))
-            return FontWeight.bold;
+            return OpenTypeFontWeight.bold;
         else if (subFamily.canFind("heavy"))
-            return FontWeight.bold;
+            return OpenTypeFontWeight.bold;
         else if (subFamily.canFind("medium"))
-            return FontWeight.medium;
+            return OpenTypeFontWeight.medium;
         else if (subFamily.canFind("black"))
-            return FontWeight.black;
+            return OpenTypeFontWeight.black;
         else if (subFamily.canFind("negreta"))
-            return FontWeight.black;
+            return OpenTypeFontWeight.black;
         else if (subFamily.canFind("regular"))
-            return FontWeight.normal;
+            return OpenTypeFontWeight.normal;
         else if (subFamily == "italic")
-            return FontWeight.normal;
+            return OpenTypeFontWeight.normal;
         else
         {
-            return FontWeight.normal;
+            return OpenTypeFontWeight.normal;
         }
     }
 
     // TODO: extract from tables
-    FontStyle style()
+    OpenTypeFontStyle style()
     {
         string subFamily = subFamilyName().toLower;
         if (subFamily.canFind("italic"))
-            return FontStyle.italic;
+            return OpenTypeFontStyle.italic;
         else if (subFamily.canFind("oblique"))
-            return FontStyle.oblique;
-        return FontStyle.normal;
+            return OpenTypeFontStyle.oblique;
+        return OpenTypeFontStyle.normal;
     }
 
     /// Returns: The whole OpenType file where this font is located.

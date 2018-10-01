@@ -1,8 +1,8 @@
-module printed.htmlrender;
+module printed.canvas.htmlrender;
 
 import std.string;
-import printed.irenderer;
-import printed.svgrender;
+import printed.canvas.irenderer;
+import printed.canvas.svgrender;
 
 
 /// Renders 2D commands in a HTML file.

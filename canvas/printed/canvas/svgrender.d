@@ -1,12 +1,13 @@
-module printed.svgrender;
+module printed.canvas.svgrender;
 
 import std.string;
 import std.file;
 import std.math;
 import std.base64;
 
-import printed.irenderer;
-import printed.fontregistry;
+import printed.canvas.irenderer;
+import printed.font.fontregistry;
+import printed.font.opentype;
 
 class SVGException : Exception
 {
@@ -306,7 +307,9 @@ private:
                  out string svgFamilyName,
                  out OpenTypeFont outFont)
     {
-        OpenTypeFont font = theFontRegistry().findBestMatchingFont(fontFamily, weight, style);
+        auto otWeight = cast(OpenTypeFontWeight)weight;
+        auto otStyle = cast(OpenTypeFontStyle)style;
+        OpenTypeFont font = theFontRegistry().findBestMatchingFont(fontFamily, otWeight, otStyle);
         outFont = font;
 
         // is this font known already?

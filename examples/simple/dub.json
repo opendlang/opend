@@ -7,6 +7,6 @@
 
     "dependencies":
     {
-        "printed": { "path": "../.." }
+        "printed:canvas": { "path": "../.." }
     }
 }

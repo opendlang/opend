@@ -1,9 +1,9 @@
-module printed;
+module printed.canvas;
 
-public import printed.irenderer;
-public import printed.svgrender;
-public import printed.htmlrender;
-public import printed.pdfrender;
+public import printed.canvas.irenderer;
+public import printed.canvas.svgrender;
+public import printed.canvas.htmlrender;
+public import printed.canvas.pdfrender;
 
 @safe:
 

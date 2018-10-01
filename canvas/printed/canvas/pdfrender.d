@@ -1,12 +1,13 @@
-module printed.pdfrender;
+module printed.canvas.pdfrender;
 
 import std.string;
 import std.conv;
 import std.math;
 import std.zlib;
-import printed.color;
-import printed.irenderer;
-import printed.fontregistry;
+import printed.canvas.color;
+import printed.canvas.irenderer;
+import printed.font.fontregistry;
+import printed.font.opentype;
 
 class PDFException : Exception
 {
@@ -138,7 +139,7 @@ final class PDFDocument : IRenderingContext2D
         // Note: text has to be flipped vertically since we have flipped PDF coordinates vertically
         scale(1, -1);
 
-        outStringForDisplay(text, font);
+        outStringForDisplay(text);
         output(" Tj");
 
         // restore CTM
@@ -733,17 +734,14 @@ private:
             }
         }
 
-        if (allCharUnder512)
+  /*      if (allCharUnder512)
         {
             outDelim();
             output('(');
 
-
-assert(false);
-// TODO
             output(')');
         }
-        else
+        else */
         {
             // Using encoding UTF16-BE
             output('<');
@@ -757,7 +755,6 @@ assert(false);
                 output(hex[hi & 15]);
                 output(hex[lo >> 4]);
                 output(hex[lo & 15]);
-                }
             }
             output('>');
         }
@@ -926,7 +923,9 @@ assert(false);
                  out object_id fontObjectId,
                  out OpenTypeFont outFont)
     {
-        OpenTypeFont font = theFontRegistry().findBestMatchingFont(fontFamily, weight, style);
+        auto otWeight = cast(OpenTypeFontWeight)weight;
+        auto otStyle = cast(OpenTypeFontStyle)style;
+        OpenTypeFont font = theFontRegistry().findBestMatchingFont(fontFamily, otWeight, otStyle);
         outFont = font;
 
         // is this font known already?

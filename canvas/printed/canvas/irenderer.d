@@ -1,5 +1,5 @@
 /// Generic 2D vector renderer
-module printed.irenderer;
+module printed.canvas.irenderer;
 
 /// Describes the `printed` 2D renderer.
 ///
