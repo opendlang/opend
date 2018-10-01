@@ -17,7 +17,7 @@ would need a text layout library._
 - [x] SVG 1.1 output
 - [x] HTML5 output through SVG embedding
 
-[See features of the 2D renderer...](https://github.com/p0nce/printed/blob/master/source/printed/irenderer.d)
+[See features of the 2D renderer...](https://github.com/p0nce/printed/blob/master/canvas/printed/canvas/irenderer.d)
 
 ## Goals
 
