@@ -9,6 +9,8 @@ import stdx.allocator: theAllocator, processAllocator;
 import std.typecons: Flag;
 
 
+alias RC = RefCounted;
+
 /**
    A reference-counted smart pointer similar to C++'s std::shared_ptr.
  */
