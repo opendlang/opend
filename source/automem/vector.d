@@ -104,9 +104,12 @@ struct Vector(E, Allocator = typeof(theAllocator)) if(isAllocator!Allocator) {
         return _elements[length - 1];
     }
 
-    /// When implemented, pops the front element off
+    /// Pops the front element off
     void popFront() {
-        throw new Exception("Not implemented yet");
+        foreach(i; 0 .. length - 1)
+            _elements[i] = _elements[i + 1];
+
+        popBack;
     }
 
     /// Pops the last element off

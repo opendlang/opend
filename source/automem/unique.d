@@ -212,6 +212,7 @@ private template makeObject(Flag!"supportGC" supportGC, args...)
 }
 
 
+///
 @("Construct Unique using global allocator for struct with zero-args ctor")
 @system unittest {
     struct S {
@@ -224,6 +225,7 @@ private template makeObject(Flag!"supportGC" supportGC, args...)
 }
 
 
+///
 @("release")
 @system unittest {
     import stdx.allocator: dispose;

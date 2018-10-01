@@ -133,6 +133,18 @@ import test_allocator;
     vec[].shouldEqual([0, 1]);
 }
 
+@("popFront")
+@safe unittest {
+    auto vec = vector(0, 1, 2, 3, 4);
+    vec.popFront;
+    vec[].shouldEqual([1, 2, 3, 4]);
+    vec.empty.shouldBeFalse;
+
+    foreach(i; 0 ..  vec.length) vec.popFront;
+    vec.empty.shouldBeTrue;
+}
+
+
 @("back")
 @safe unittest {
     const vec = vector("foo", "bar", "baz");
@@ -358,4 +370,22 @@ private void consumeVec(T)(auto ref T vec) {
     Vector!int vec;
     vec.length = 3;
     vec[].shouldEqual([0, 0, 0]);
+}
+
+
+@("foreach")
+@safe unittest {
+    foreach(e; vector(7, 7, 7)) {
+        e.should == 7;
+    }
+}
+
+
+@("equal")
+@safe unittest {
+    import std.range: iota;
+    import std.algorithm: equal;
+
+    auto v = vector(0, 1, 2, 3);
+    assert(equal(v, 4.iota));
 }
