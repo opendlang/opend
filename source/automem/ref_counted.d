@@ -65,8 +65,9 @@ struct RefCounted(Type,
 
     ///
     this(this) {
-        assert(_impl !is null);
-        inc;
+        // assert(_impl !is null, "Postblit ctor with null impl");
+        // inc;
+        if(_impl !is null) inc;
     }
 
     ///

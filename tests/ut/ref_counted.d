@@ -415,3 +415,17 @@ void threadFunc() {
 @system unittest {
     auto s = RefCounted!(shared SharedStructWithIndirection)("foobar");
 }
+
+
+@("copy from T.init")
+unittest {
+    static struct X {
+        int i;
+    }
+    static struct Y {
+        RefCounted!X x;
+    }
+    Y y1;
+    Y y2;
+    y2 = y1;
+}
