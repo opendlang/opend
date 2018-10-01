@@ -13,7 +13,7 @@ would need a text layout library._
 ## Features
 
 - [x] **TrueType and OpenType font embedding** in order to have fully reproducible vectors
-- [x] PDF 1.7 output
+- [x] PDF 1.4 output
 - [x] SVG 1.1 output
 - [x] HTML5 output through SVG embedding
 
