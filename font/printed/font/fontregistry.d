@@ -110,6 +110,8 @@ class FontRegistry
         return best.getParsedFont();
     }
 
+    auto knownFonts() @property const { return _knownFonts; }
+
 private:
 
     // Describe a single font registered somewhere, with the information needed
@@ -158,9 +160,10 @@ private:
         {
             string[] fontAbsolutepathes;
 
-            foreach(fontDir; getFontDirectories() )
+            foreach(fontDir; getFontDirectories())
             {
-                auto files = dirEntries(fontDir, SpanMode.shallow);
+                if (!fontDir.exists) continue;
+                auto files = dirEntries(fontDir, SpanMode.breadth);
                 foreach(f; files)
                     if (hasFontExt(f.name))
                         fontAbsolutepathes ~= f.name;
@@ -172,9 +175,10 @@ private:
         {
             string[] fontAbsolutepathes;
 
-            foreach(fontDir; getFontDirectories() )
+            foreach(fontDir; getFontDirectories())
             {
-                auto files = dirEntries(fontDir, SpanMode.shallow);
+                if (!fontDir.exists) continue;
+                auto files = dirEntries(fontDir, SpanMode.breadth);
                 foreach(f; files)
                     if (hasFontExt(f.name))
                         fontAbsolutepathes ~= f.name;
