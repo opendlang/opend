@@ -67,7 +67,7 @@ else
 Params:
     gen = saturated random number generator
 Returns:
-    Uniformly distributed integer for interval `[0 .. T.max]`.
+    Uniformly distributed integer for interval `[T.min .. T.max]`.
 +/
 T rand(T, G)(scope ref G gen)
     if (isSaturatedRandomEngine!G && isIntegral!T && !is(T == enum))
