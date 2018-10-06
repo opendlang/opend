@@ -45,7 +45,7 @@ install_subdir('source/',
 
 import('pkgconfig').generate(
     name: meson.project_name(),
-    description: 'Mir Core - Base softwarebuilding blocks and conventions.',
+    description: 'Mir Core - Base software building blocks and conventions.',
     subdirs: 'd/' + meson.project_name(),
     libraries: [mir_core_lib],
     version: meson.project_version(),

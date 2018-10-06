@@ -1,5 +1,5 @@
 name "mir-core"
-description "Base softwarebuilding blocks and conventions"
+description "Base software building blocks and conventions"
 
 authors "Ilya Yaroshenko" "Phobos developers (Walter Bright, Andrei Alexandrescu)"
 copyright "Copyright © 2016 - 2018, Ilya Yaroshenko; see also information per file."

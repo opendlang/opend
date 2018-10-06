@@ -1,7 +1,7 @@
 Mir Core
 ==============
 
-Base softwarebuilding blocks and conventions.
+Base software building blocks and conventions.
 
 
 #### Code Constraints
