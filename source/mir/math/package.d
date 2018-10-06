@@ -4,7 +4,6 @@ $(BOOKTABLE $(H2 ,Math modules),
 $(TR $(TH Module) $(TH Math kind))
 $(T2M common, Common math functions)
 $(T2M constant, Constants)
-$(T2M numeric, Simple numeric algorithms)
 )
 Copyright: Ilya Yaroshenko, Kaleidic Associates Advisory Limited
 Authors: Ilya Yaroshenko
