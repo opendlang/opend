@@ -14,7 +14,6 @@ mir_core_src = [
     'source/mir/math/package.d',
     'source/mir/primitives.d',
     'source/mir/qualifier.d',
-    'source/mir/range.d',
     'source/mir/utility.d',
     'source/std/backdoor.d',
 ]
