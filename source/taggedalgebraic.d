@@ -8,7 +8,7 @@
 module taggedalgebraic;
 
 import std.typetuple;
-import std.traits : isInstanceOf;
+import std.traits : Unqual, isInstanceOf;
 
 // TODO:
 //  - distinguish between @property and non@-property methods.
