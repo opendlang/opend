@@ -42,42 +42,42 @@ template LightImmutableOf(T)
 
 /// ditto
 auto lightImmutable(T)(auto ref immutable T v)
-    if (!is(T : P*, P) && __traits(hasMember, immutable T, "lightImmutable") && !isSlice!T)
+    if (!is(T : P*, P) && __traits(hasMember, immutable T, "lightImmutable"))
 {
-    return v.lightImmutable();
+    return v.lightImmutable;
 }
 
 ///
 auto lightConst(T)(auto ref const T v)
-    if (!is(T : P*, P) && __traits(hasMember, const T, "lightConst") && !isSlice!T)
+    if (!is(T : P*, P) && __traits(hasMember, const T, "lightConst"))
 {
-    return v.lightConst();
+    return v.lightConst;
 }
 
 ///
 auto lightConst(T)(auto ref immutable T v)
-    if (!is(T : P*, P) && __traits(hasMember, immutable T, "lightConst") && !isSlice!T)
+    if (!is(T : P*, P) && __traits(hasMember, immutable T, "lightConst"))
 {
-    return v.lightConst();
+    return v.lightConst;
 }
 
 /// ditto
 T lightConst(T)(auto ref const T e)
-    if (isImplicitlyConvertible!(const T, T) && !__traits(hasMember, const T, "lightConst") && !isSlice!T)
+    if (isImplicitlyConvertible!(const T, T) && !__traits(hasMember, const T, "lightConst"))
 {
     return e;
 }
 
 /// ditto
 T lightConst(T)(auto ref immutable T e)
-    if (isImplicitlyConvertible!(immutable T, T) && !__traits(hasMember, immutable T, "lightConst") && !isSlice!T)
+    if (isImplicitlyConvertible!(immutable T, T) && !__traits(hasMember, immutable T, "lightConst"))
 {
     return e;
 }
 
 /// ditto
 T lightImmutable(T)(auto ref immutable T e)
-    if (isImplicitlyConvertible!(immutable T, T) && !__traits(hasMember, immutable T, "lightImmutable") && !isSlice!T)
+    if (isImplicitlyConvertible!(immutable T, T) && !__traits(hasMember, immutable T, "lightImmutable"))
 {
     return e;
 }

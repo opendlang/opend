@@ -20,3 +20,4 @@ docs.json
 out/
 build/
 files
+*.lib
