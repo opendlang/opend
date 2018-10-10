@@ -86,7 +86,7 @@ struct Vector(E, Allocator = typeof(theAllocator)) if(isAllocator!Allocator) {
     this(this) scope {
         auto oldElements = _elements;
         _elements = createVector(_elements.length);
-        _elements[0 .. length] = oldElements[0 .. length];
+        _elements[0 .. length.toSizeT] = oldElements[0 .. length.toSizeT];
     }
 
     ~this() scope {
@@ -101,13 +101,13 @@ struct Vector(E, Allocator = typeof(theAllocator)) if(isAllocator!Allocator) {
 
     /// Returns the last element
     inout(E) back() inout {
-        return _elements[length - 1];
+        return _elements[(length - 1).toSizeT];
     }
 
     /// Pops the front element off
     void popFront() {
         foreach(i; 0 .. length - 1)
-            _elements[i] = _elements[i + 1];
+            _elements[i.toSizeT] = _elements[i.toSizeT + 1];
 
         popBack;
     }
@@ -158,7 +158,7 @@ struct Vector(E, Allocator = typeof(theAllocator)) if(isAllocator!Allocator) {
         import stdx.allocator: shrinkArray;
 
         const delta = capacity - newLength;
-        const shrunk = () @trusted { return _allocator.shrinkArray(_elements, delta); }();
+        const shrunk = () @trusted { return _allocator.shrinkArray(_elements, delta.toSizeT); }();
         _length = newLength;
 
         return shrunk;
@@ -168,7 +168,7 @@ struct Vector(E, Allocator = typeof(theAllocator)) if(isAllocator!Allocator) {
     ref inout(E) opIndex(long i) inout {
         if(i < 0 || i >= length)
             throw boundsException;
-        return _elements[i];
+        return _elements[i.toSizeT];
     }
 
     /// Returns a new vector after appending to the given vector.
@@ -185,7 +185,7 @@ struct Vector(E, Allocator = typeof(theAllocator)) if(isAllocator!Allocator) {
 
         long i = 0;
         foreach(element; range)
-            _elements[i++] = element;
+            _elements[toSizeT(i++)] = element;
     }
 
     /// Append to the vector
@@ -195,7 +195,7 @@ struct Vector(E, Allocator = typeof(theAllocator)) if(isAllocator!Allocator) {
         if(op == "~")
     {
         expand(length + 1);
-        _elements[length - 1] = other;
+        _elements[(length - 1).toSizeT] = other;
     }
 
     /// Append to the vector
@@ -210,12 +210,12 @@ struct Vector(E, Allocator = typeof(theAllocator)) if(isAllocator!Allocator) {
         expand(length + range.save.walkLength);
 
         foreach(element; range)
-            _elements[index++] = element;
+            _elements[toSizeT(index++)] = element;
     }
 
     /// Returns a slice
     scope auto opSlice(this This)() {
-        return _elements[0 .. length];
+        return _elements[0 .. length.toSizeT];
     }
 
     /// Returns a slice
@@ -226,7 +226,7 @@ struct Vector(E, Allocator = typeof(theAllocator)) if(isAllocator!Allocator) {
         if(end < 0 || end >= length)
             throw boundsException;
 
-        return _elements[start .. end];
+        return _elements[start.toSizeT .. end.toSizeT];
     }
 
     long opDollar() const {
@@ -246,7 +246,7 @@ struct Vector(E, Allocator = typeof(theAllocator)) if(isAllocator!Allocator) {
         if(end < 0 || end >= length)
             throw boundsException;
 
-        _elements[start .. end] = value;
+        _elements[start.toSizeT .. end.toSizeT] = value;
     }
 
     /// Assign all elements using the given operation and the given value
@@ -263,7 +263,7 @@ struct Vector(E, Allocator = typeof(theAllocator)) if(isAllocator!Allocator) {
         if(end < 0 || end >= length)
             throw boundsException;
 
-        foreach(ref elt; _elements[start .. end])
+        foreach(ref elt; _elements[start.toSizeT .. end.toSizeT])
             mixin(`elt ` ~ op ~ `= value;`);
     }
 
@@ -281,7 +281,7 @@ private:
 
     E[] createVector(long length) {
         import stdx.allocator: makeArray;
-        return () @trusted { return _allocator.makeArray!E(length); }();
+        return () @trusted { return _allocator.makeArray!E(length.toSizeT); }();
     }
 
     void fromElements(E[] elements) {
@@ -304,7 +304,7 @@ private:
             else {
                 const newCapacity = (newLength * 3) / 2;
                 const delta = newCapacity - capacity;
-                () @trusted { _allocator.expandArray(_elements, delta); }();
+                () @trusted { _allocator.expandArray(_elements, delta.toSizeT); }();
             }
         }
     }
@@ -330,4 +330,11 @@ private template isForwardRangeOf(R, E) {
     import std.traits: Unqual;
 
     enum isForwardRangeOf = isForwardRange!R && is(Unqual!(ElementType!R) == E);
+}
+
+
+private size_t toSizeT(long length) @safe @nogc pure nothrow {
+    static if(size_t.sizeof < long.sizeof)
+        assert(length < cast(long) size_t.max);
+    return cast(size_t) length;
 }

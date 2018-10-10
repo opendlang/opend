@@ -9,7 +9,6 @@ mixin runTestsMain!(
     "ut.allocator",
     "ut.ref_counted",
     "ut.unique",
-    "ut.unique_array",
     "ut.vector",
 );
 

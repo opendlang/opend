@@ -1,7 +1,11 @@
 language: d
 sudo: false
+
 install:
   - ./travis_install.sh
+
+packages:
+  - gcc-multilib
 
 matrix:
     include:
