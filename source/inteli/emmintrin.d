@@ -787,10 +787,44 @@ version(LDC)
 {
     alias _mm_packs_epi32 = __builtin_ia32_packssdw128;
     alias _mm_packs_epi16 = __builtin_ia32_packsswb128;
+}
+version(LDC)
+{
     alias _mm_packus_epi16 = __builtin_ia32_packuswb128;
 }
-// TODO
+else
+{
+    __m128i _mm_packus_epi16 (__m128i a, __m128i b) pure
+    {
+        short8 sa = cast(short8)a;
+        short8 sb = cast(short8)b;
+        ubyte[16] result = void;
+        for (int i = 0; i < 8; ++i)
+        {
+            short s = sa[i];
+            if (s < 0) s = 0;
+            if (s > 255) s = 255;
+            result[i] = cast(ubyte)s;
 
+            s = sb[i];
+            if (s < 0) s = 0;
+            if (s > 255) s = 255;
+            result[i+8] = cast(ubyte)s;
+        }
+        return cast(__m128i) loadUnaligned!(byte16)(cast(byte*)result.ptr);
+    }
+}
+unittest
+{    
+    __m128i A = _mm_setr_epi16(-10, 400, 0, 256, 255, 2, 1, 0);
+    byte16 AA = cast(byte16) _mm_packus_epi16(A, A);
+    static immutable ubyte[16] correctResult = [0, 255, 0, 255, 255, 2, 1, 0, 
+                                                0, 255, 0, 255, 255, 2, 1, 0];
+    foreach(i; 0..16)
+        assert(AA[i] == cast(byte)(correctResult[i]));
+}
+
+// TODO
 version(LDC)
 {
     alias _mm_pause = __builtin_ia32_pause;
