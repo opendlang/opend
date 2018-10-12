@@ -988,27 +988,60 @@ __m128i _mm_shuffle_epi32(int imm8)(__m128i a) pure @safe
                                 (imm8 >> 4) & 3,
                                 (imm8 >> 6) & 3)(a, a);
 }
-
-__m128d _mm_shuffle_pd (int imm8)(__m128d a, __m128d b) pure @safe
+unittest
 {
-    return shufflevector!(double, 0 + ( (imm8 >> 0) & 1 ),
-                                  2 + ( (imm8 >> 1) & 1 ))(a, b);
+    __m128i A = _mm_setr_epi32(0, 1, 2, 3);
+    enum int SHUFFLE = _MM_SHUFFLE(0, 1, 2, 3);
+    int4 B = cast(int4) _mm_shuffle_epi32!SHUFFLE(A);
+    int[4] expectedB = [ 3, 2, 1, 0 ];
+    assert(B.array == expectedB);
+}
+
+__m128d _mm_shuffle_pd (int imm8)(__m128d a) pure @safe
+{
+    return shufflevector!(double2, 0 + ( imm8 & 1 ), 
+                                   2 + ( (imm8 >> 1) & 1 ))(a, a);
+}
+unittest
+{
+    __m128d A = _mm_setr_pd(0.5f, 2.0f);
+    enum int SHUFFLE = _MM_SHUFFLE2(1, 1);
+    __m128d B = _mm_shuffle_pd!SHUFFLE(A);
+    double[2] expectedB = [ 2.0f, 2.0f ];
+    assert(B.array == expectedB);  
 }
 
 __m128i _mm_shufflehi_epi16(int imm8)(__m128i a) pure @safe
 {
-    return shufflevector!(int4, 4 + ( (imm8 >> 0) & 3 ),
-                                4 + ( (imm8 >> 2) & 3 ),
-                                4 + ( (imm8 >> 4) & 3 ),
-                                4 + ( (imm8 >> 6) & 3 ))(a, a);
+    return cast(__m128i) shufflevector!(short8, 0, 1, 2, 3,
+                                      4 + ( (imm8 >> 0) & 3 ),
+                                      4 + ( (imm8 >> 2) & 3 ),
+                                      4 + ( (imm8 >> 4) & 3 ),
+                                      4 + ( (imm8 >> 6) & 3 ))(cast(short8)a, cast(short8)a);
+}
+unittest
+{
+    __m128i A = _mm_setr_epi16(0, 1, 2, 3, 4, 5, 6, 7);
+    enum int SHUFFLE = _MM_SHUFFLE(0, 1, 2, 3);
+    short8 C = cast(short8) _mm_shufflehi_epi16!SHUFFLE(A);
+    short[8] expectedC = [ 0, 1, 2, 3, 7, 6, 5, 4 ];
+    assert(C.array == expectedC);    
 }
 
 __m128i _mm_shufflelo_epi16(int imm8)(__m128i a) pure @safe
 {
-    return shufflevector!(int4, ( (imm8 >> 0) & 3 ),
-                                ( (imm8 >> 2) & 3 ),
-                                ( (imm8 >> 4) & 3 ),
-                                ( (imm8 >> 6) & 3 ))(a, a);
+    return cast(__m128i) shufflevector!(short8, ( (imm8 >> 0) & 3 ),
+                                                ( (imm8 >> 2) & 3 ),
+                                                ( (imm8 >> 4) & 3 ),
+                                                ( (imm8 >> 6) & 3 ), 4, 5, 6, 7)(cast(short8)a, cast(short8)a);
+}
+unittest
+{
+    __m128i A = _mm_setr_epi16(0, 1, 2, 3, 4, 5, 6, 7);
+    enum int SHUFFLE = _MM_SHUFFLE(0, 1, 2, 3);
+    short8 B = cast(short8) _mm_shufflelo_epi16!SHUFFLE(A);
+    short[8] expectedB = [ 3, 2, 1, 0, 4, 5, 6, 7 ];
+    assert(B.array == expectedB);
 }
 
 version(LDC)

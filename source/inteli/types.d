@@ -261,6 +261,8 @@ else
     }
 }
 
+nothrow:
+@nogc:
 
 alias __m128 = float4;
 alias __m128i = int4;
