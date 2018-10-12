@@ -389,3 +389,13 @@ private void consumeVec(T)(auto ref T vec) {
     auto v = vector(0, 1, 2, 3);
     assert(equal(v, 4.iota));
 }
+
+
+@("bool")
+@safe unittest {
+    vector(0, 1, 2).shouldBeTrue;
+    Vector!int v;
+    if(v) {
+        assert(0);
+    }
+}

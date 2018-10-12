@@ -267,6 +267,10 @@ struct Vector(E, Allocator = typeof(theAllocator)) if(isAllocator!Allocator) {
             mixin(`elt ` ~ op ~ `= value;`);
     }
 
+    bool opCast(U)() const scope if(is(U == bool)) {
+        return length > 0;
+    }
+
 private:
 
     E[] _elements;
