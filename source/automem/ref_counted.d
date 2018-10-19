@@ -235,15 +235,15 @@ private:
         dec;
 
         if(_impl._count == 0) {
-            destruct(_impl._get);
+            () @trusted { destruct(_impl._get); }();
             static if (is(Type == class)) {
                 // need to watch the monitor pointer even if supportGC is false.
-                GC.removeRange(&_impl._rawMemory[(void*).sizeof]);
+                () @trusted { GC.removeRange(&_impl._rawMemory[(void*).sizeof]); }();
             } else static if (supportGC && hasIndirections!Type) {
-                GC.removeRange(cast(void*) &_impl._object);
+                () @trusted { GC.removeRange(cast(void*) &_impl._object); }();
             }
-            auto mem = cast(void*)_impl;
-            _allocator.deallocate(() @trusted { return mem[0 .. Impl.sizeof]; }());
+            auto mem = () @trusted { return cast(void*)_impl; }();
+            () @trusted { _allocator.deallocate(mem[0 .. Impl.sizeof]); }();
         }
     }
 

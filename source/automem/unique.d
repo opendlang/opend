@@ -16,9 +16,13 @@ version(AutomemTesting) {
 /**
    A unique pointer similar to C++'s std::unique_ptr.
  */
-struct Unique(Type, Allocator = typeof(theAllocator()),
-    Flag!"supportGC" supportGC = Flag!"supportGC".yes)
-if(isAllocator!Allocator) {
+struct Unique(
+    Type,
+    Allocator = typeof(theAllocator()),
+    Flag!"supportGC" supportGC = Flag!"supportGC".yes
+)
+    if(isAllocator!Allocator)
+{
 
     import std.traits: hasMember;
     import std.typecons: Proxy;
@@ -190,7 +194,7 @@ private template makeObject(Flag!"supportGC" supportGC, args...)
         import std.traits : hasIndirections;
         import core.memory : GC;
 
-        u._object = u._allocator.make!Type(forward!args);
+        u._object = () @trusted { return u._allocator.make!Type(forward!args); }();
 
         static if (is(Type == class)) {
             () @trusted {

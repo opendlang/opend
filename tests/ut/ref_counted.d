@@ -82,7 +82,7 @@ mixin TestUtils;
 }
 
 @("struct test allocator one rvalue assignment mallocator")
-@system unittest {
+@safe unittest {
     import stdx.allocator.mallocator: Mallocator;
     {
         RefCounted!(Struct, Mallocator) ptr;
@@ -233,7 +233,7 @@ static if (__VERSION__ >= 2079)
 }
 
 @("assign from T")
-@system unittest {
+@safe unittest {
     import stdx.allocator.mallocator: Mallocator;
 
     {
@@ -312,13 +312,13 @@ static if (__VERSION__ >= 2079)
 static if (__VERSION__ >= 2079) {
 
     @("threads Mallocator")
-        @system unittest {
+    @system unittest {
         import stdx.allocator.mallocator: Mallocator;
         static assert(__traits(compiles, sendRefCounted!Mallocator(7)));
     }
 
     @("threads SafeAllocator by value")
-        @system unittest {
+    @system unittest {
         // can't even use TestAllocator because it has indirections
         // can't pass by pointer since it's an indirection
         auto allocator = SafeAllocator();
@@ -326,7 +326,7 @@ static if (__VERSION__ >= 2079) {
     }
 
     @("threads SafeAllocator by shared pointer")
-        @system unittest {
+    @system unittest {
         // can't even use TestAllocator because it has indirections
         // can't only pass by pointer if shared
         auto allocator = shared SafeAllocator();
