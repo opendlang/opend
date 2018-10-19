@@ -10,7 +10,14 @@ import std.range.primitives: isInputRange;
 import stdx.allocator: theAllocator;
 import stdx.allocator.mallocator: Mallocator;
 
-alias String = Vector!(immutable char);
+
+alias String = StringA!(typeof(theAllocator));
+alias StringM = StringA!Mallocator;
+
+
+template StringA(A = typeof(theAllocator)) if(isAllocator!A) {
+    alias StringA = Vector!(immutable char, A);
+}
 
 /**
    Create a vector from a variadic list of elements, inferring the type of
