@@ -248,6 +248,14 @@ struct DispatchDevice {
         vkCmdDebugMarkerEndEXT                                 = cast( PFN_vkCmdDebugMarkerEndEXT                                 ) vkGetDeviceProcAddr( device, "vkCmdDebugMarkerEndEXT" );
         vkCmdDebugMarkerInsertEXT                              = cast( PFN_vkCmdDebugMarkerInsertEXT                              ) vkGetDeviceProcAddr( device, "vkCmdDebugMarkerInsertEXT" );
 
+        // VK_EXT_transform_feedback
+        vkCmdBindTransformFeedbackBuffersEXT                   = cast( PFN_vkCmdBindTransformFeedbackBuffersEXT                   ) vkGetDeviceProcAddr( device, "vkCmdBindTransformFeedbackBuffersEXT" );
+        vkCmdBeginTransformFeedbackEXT                         = cast( PFN_vkCmdBeginTransformFeedbackEXT                         ) vkGetDeviceProcAddr( device, "vkCmdBeginTransformFeedbackEXT" );
+        vkCmdEndTransformFeedbackEXT                           = cast( PFN_vkCmdEndTransformFeedbackEXT                           ) vkGetDeviceProcAddr( device, "vkCmdEndTransformFeedbackEXT" );
+        vkCmdBeginQueryIndexedEXT                              = cast( PFN_vkCmdBeginQueryIndexedEXT                              ) vkGetDeviceProcAddr( device, "vkCmdBeginQueryIndexedEXT" );
+        vkCmdEndQueryIndexedEXT                                = cast( PFN_vkCmdEndQueryIndexedEXT                                ) vkGetDeviceProcAddr( device, "vkCmdEndQueryIndexedEXT" );
+        vkCmdDrawIndirectByteCountEXT                          = cast( PFN_vkCmdDrawIndirectByteCountEXT                          ) vkGetDeviceProcAddr( device, "vkCmdDrawIndirectByteCountEXT" );
+
         // VK_AMD_draw_indirect_count
         vkCmdDrawIndirectCountAMD                              = cast( PFN_vkCmdDrawIndirectCountAMD                              ) vkGetDeviceProcAddr( device, "vkCmdDrawIndirectCountAMD" );
         vkCmdDrawIndexedIndirectCountAMD                       = cast( PFN_vkCmdDrawIndexedIndirectCountAMD                       ) vkGetDeviceProcAddr( device, "vkCmdDrawIndexedIndirectCountAMD" );
@@ -301,6 +309,9 @@ struct DispatchDevice {
         // VK_EXT_sample_locations
         vkCmdSetSampleLocationsEXT                             = cast( PFN_vkCmdSetSampleLocationsEXT                             ) vkGetDeviceProcAddr( device, "vkCmdSetSampleLocationsEXT" );
 
+        // VK_EXT_image_drm_format_modifier
+        vkGetImageDrmFormatModifierPropertiesEXT               = cast( PFN_vkGetImageDrmFormatModifierPropertiesEXT               ) vkGetDeviceProcAddr( device, "vkGetImageDrmFormatModifierPropertiesEXT" );
+
         // VK_EXT_validation_cache
         vkCreateValidationCacheEXT                             = cast( PFN_vkCreateValidationCacheEXT                             ) vkGetDeviceProcAddr( device, "vkCreateValidationCacheEXT" );
         vkDestroyValidationCacheEXT                            = cast( PFN_vkDestroyValidationCacheEXT                            ) vkGetDeviceProcAddr( device, "vkDestroyValidationCacheEXT" );
@@ -332,6 +343,9 @@ struct DispatchDevice {
 
         // VK_AMD_buffer_marker
         vkCmdWriteBufferMarkerAMD                              = cast( PFN_vkCmdWriteBufferMarkerAMD                              ) vkGetDeviceProcAddr( device, "vkCmdWriteBufferMarkerAMD" );
+
+        // VK_EXT_calibrated_timestamps
+        vkGetCalibratedTimestampsEXT                           = cast( PFN_vkGetCalibratedTimestampsEXT                           ) vkGetDeviceProcAddr( device, "vkGetCalibratedTimestampsEXT" );
 
         // VK_NV_mesh_shader
         vkCmdDrawMeshTasksNV                                   = cast( PFN_vkCmdDrawMeshTasksNV                                   ) vkGetDeviceProcAddr( device, "vkCmdDrawMeshTasksNV" );
@@ -548,6 +562,14 @@ struct DispatchDevice {
     void      CmdDebugMarkerEndEXT() { vkCmdDebugMarkerEndEXT( commandBuffer ); }
     void      CmdDebugMarkerInsertEXT( const( VkDebugMarkerMarkerInfoEXT )* pMarkerInfo ) { vkCmdDebugMarkerInsertEXT( commandBuffer, pMarkerInfo ); }
 
+    // VK_EXT_transform_feedback
+    void      CmdBindTransformFeedbackBuffersEXT( uint32_t firstBinding, uint32_t bindingCount, const( VkBuffer )* pBuffers, const( VkDeviceSize )* pOffsets, const( VkDeviceSize )* pSizes ) { vkCmdBindTransformFeedbackBuffersEXT( commandBuffer, firstBinding, bindingCount, pBuffers, pOffsets, pSizes ); }
+    void      CmdBeginTransformFeedbackEXT( uint32_t firstCounterBuffer, uint32_t counterBufferCount, const( VkBuffer )* pCounterBuffers, const( VkDeviceSize )* pCounterBufferOffsets ) { vkCmdBeginTransformFeedbackEXT( commandBuffer, firstCounterBuffer, counterBufferCount, pCounterBuffers, pCounterBufferOffsets ); }
+    void      CmdEndTransformFeedbackEXT( uint32_t firstCounterBuffer, uint32_t counterBufferCount, const( VkBuffer )* pCounterBuffers, const( VkDeviceSize )* pCounterBufferOffsets ) { vkCmdEndTransformFeedbackEXT( commandBuffer, firstCounterBuffer, counterBufferCount, pCounterBuffers, pCounterBufferOffsets ); }
+    void      CmdBeginQueryIndexedEXT( VkQueryPool queryPool, uint32_t query, VkQueryControlFlags flags, uint32_t index ) { vkCmdBeginQueryIndexedEXT( commandBuffer, queryPool, query, flags, index ); }
+    void      CmdEndQueryIndexedEXT( VkQueryPool queryPool, uint32_t query, uint32_t index ) { vkCmdEndQueryIndexedEXT( commandBuffer, queryPool, query, index ); }
+    void      CmdDrawIndirectByteCountEXT( uint32_t instanceCount, uint32_t firstInstance, VkBuffer counterBuffer, VkDeviceSize counterBufferOffset, uint32_t counterOffset, uint32_t vertexStride ) { vkCmdDrawIndirectByteCountEXT( commandBuffer, instanceCount, firstInstance, counterBuffer, counterBufferOffset, counterOffset, vertexStride ); }
+
     // VK_AMD_draw_indirect_count
     void      CmdDrawIndirectCountAMD( VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, uint32_t maxDrawCount, uint32_t stride ) { vkCmdDrawIndirectCountAMD( commandBuffer, buffer, offset, countBuffer, countBufferOffset, maxDrawCount, stride ); }
     void      CmdDrawIndexedIndirectCountAMD( VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, uint32_t maxDrawCount, uint32_t stride ) { vkCmdDrawIndexedIndirectCountAMD( commandBuffer, buffer, offset, countBuffer, countBufferOffset, maxDrawCount, stride ); }
@@ -598,6 +620,9 @@ struct DispatchDevice {
     // VK_EXT_sample_locations
     void      CmdSetSampleLocationsEXT( const( VkSampleLocationsInfoEXT )* pSampleLocationsInfo ) { vkCmdSetSampleLocationsEXT( commandBuffer, pSampleLocationsInfo ); }
 
+    // VK_EXT_image_drm_format_modifier
+    VkResult  GetImageDrmFormatModifierPropertiesEXT( VkImage image, VkImageDrmFormatModifierPropertiesEXT* pProperties ) { return vkGetImageDrmFormatModifierPropertiesEXT( vkDevice, image, pProperties ); }
+
     // VK_EXT_validation_cache
     VkResult  CreateValidationCacheEXT( const( VkValidationCacheCreateInfoEXT )* pCreateInfo, VkValidationCacheEXT* pValidationCache ) { return vkCreateValidationCacheEXT( vkDevice, pCreateInfo, pAllocator, pValidationCache ); }
     void      DestroyValidationCacheEXT( VkValidationCacheEXT validationCache ) { vkDestroyValidationCacheEXT( vkDevice, validationCache, pAllocator ); }
@@ -629,6 +654,9 @@ struct DispatchDevice {
 
     // VK_AMD_buffer_marker
     void      CmdWriteBufferMarkerAMD( VkPipelineStageFlagBits pipelineStage, VkBuffer dstBuffer, VkDeviceSize dstOffset, uint32_t marker ) { vkCmdWriteBufferMarkerAMD( commandBuffer, pipelineStage, dstBuffer, dstOffset, marker ); }
+
+    // VK_EXT_calibrated_timestamps
+    VkResult  GetCalibratedTimestampsEXT( uint32_t timestampCount, const( VkCalibratedTimestampInfoEXT )* pTimestampInfos, uint64_t* pTimestamps, uint64_t* pMaxDeviation ) { return vkGetCalibratedTimestampsEXT( vkDevice, timestampCount, pTimestampInfos, pTimestamps, pMaxDeviation ); }
 
     // VK_NV_mesh_shader
     void      CmdDrawMeshTasksNV( uint32_t taskCount, uint32_t firstTask ) { vkCmdDrawMeshTasksNV( commandBuffer, taskCount, firstTask ); }
@@ -862,6 +890,14 @@ struct DispatchDevice {
     PFN_vkCmdDebugMarkerEndEXT                                 vkCmdDebugMarkerEndEXT;
     PFN_vkCmdDebugMarkerInsertEXT                              vkCmdDebugMarkerInsertEXT;
 
+    // VK_EXT_transform_feedback
+    PFN_vkCmdBindTransformFeedbackBuffersEXT                   vkCmdBindTransformFeedbackBuffersEXT;
+    PFN_vkCmdBeginTransformFeedbackEXT                         vkCmdBeginTransformFeedbackEXT;
+    PFN_vkCmdEndTransformFeedbackEXT                           vkCmdEndTransformFeedbackEXT;
+    PFN_vkCmdBeginQueryIndexedEXT                              vkCmdBeginQueryIndexedEXT;
+    PFN_vkCmdEndQueryIndexedEXT                                vkCmdEndQueryIndexedEXT;
+    PFN_vkCmdDrawIndirectByteCountEXT                          vkCmdDrawIndirectByteCountEXT;
+
     // VK_AMD_draw_indirect_count
     PFN_vkCmdDrawIndirectCountAMD                              vkCmdDrawIndirectCountAMD;
     PFN_vkCmdDrawIndexedIndirectCountAMD                       vkCmdDrawIndexedIndirectCountAMD;
@@ -915,6 +951,9 @@ struct DispatchDevice {
     // VK_EXT_sample_locations
     PFN_vkCmdSetSampleLocationsEXT                             vkCmdSetSampleLocationsEXT;
 
+    // VK_EXT_image_drm_format_modifier
+    PFN_vkGetImageDrmFormatModifierPropertiesEXT               vkGetImageDrmFormatModifierPropertiesEXT;
+
     // VK_EXT_validation_cache
     PFN_vkCreateValidationCacheEXT                             vkCreateValidationCacheEXT;
     PFN_vkDestroyValidationCacheEXT                            vkDestroyValidationCacheEXT;
@@ -946,6 +985,9 @@ struct DispatchDevice {
 
     // VK_AMD_buffer_marker
     PFN_vkCmdWriteBufferMarkerAMD                              vkCmdWriteBufferMarkerAMD;
+
+    // VK_EXT_calibrated_timestamps
+    PFN_vkGetCalibratedTimestampsEXT                           vkGetCalibratedTimestampsEXT;
 
     // VK_NV_mesh_shader
     PFN_vkCmdDrawMeshTasksNV                                   vkCmdDrawMeshTasksNV;

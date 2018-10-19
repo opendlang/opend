@@ -265,6 +265,14 @@ extern( System ) {
     alias PFN_vkCmdDebugMarkerEndEXT                                 = void      function( VkCommandBuffer commandBuffer );
     alias PFN_vkCmdDebugMarkerInsertEXT                              = void      function( VkCommandBuffer commandBuffer, const( VkDebugMarkerMarkerInfoEXT )* pMarkerInfo );
 
+    // VK_EXT_transform_feedback
+    alias PFN_vkCmdBindTransformFeedbackBuffersEXT                   = void      function( VkCommandBuffer commandBuffer, uint32_t firstBinding, uint32_t bindingCount, const( VkBuffer )* pBuffers, const( VkDeviceSize )* pOffsets, const( VkDeviceSize )* pSizes );
+    alias PFN_vkCmdBeginTransformFeedbackEXT                         = void      function( VkCommandBuffer commandBuffer, uint32_t firstCounterBuffer, uint32_t counterBufferCount, const( VkBuffer )* pCounterBuffers, const( VkDeviceSize )* pCounterBufferOffsets );
+    alias PFN_vkCmdEndTransformFeedbackEXT                           = void      function( VkCommandBuffer commandBuffer, uint32_t firstCounterBuffer, uint32_t counterBufferCount, const( VkBuffer )* pCounterBuffers, const( VkDeviceSize )* pCounterBufferOffsets );
+    alias PFN_vkCmdBeginQueryIndexedEXT                              = void      function( VkCommandBuffer commandBuffer, VkQueryPool queryPool, uint32_t query, VkQueryControlFlags flags, uint32_t index );
+    alias PFN_vkCmdEndQueryIndexedEXT                                = void      function( VkCommandBuffer commandBuffer, VkQueryPool queryPool, uint32_t query, uint32_t index );
+    alias PFN_vkCmdDrawIndirectByteCountEXT                          = void      function( VkCommandBuffer commandBuffer, uint32_t instanceCount, uint32_t firstInstance, VkBuffer counterBuffer, VkDeviceSize counterBufferOffset, uint32_t counterOffset, uint32_t vertexStride );
+
     // VK_AMD_draw_indirect_count
     alias PFN_vkCmdDrawIndirectCountAMD                              = void      function( VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, uint32_t maxDrawCount, uint32_t stride );
     alias PFN_vkCmdDrawIndexedIndirectCountAMD                       = void      function( VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, uint32_t maxDrawCount, uint32_t stride );
@@ -332,6 +340,9 @@ extern( System ) {
     alias PFN_vkCmdSetSampleLocationsEXT                             = void      function( VkCommandBuffer commandBuffer, const( VkSampleLocationsInfoEXT )* pSampleLocationsInfo );
     alias PFN_vkGetPhysicalDeviceMultisamplePropertiesEXT            = void      function( VkPhysicalDevice physicalDevice, VkSampleCountFlagBits samples, VkMultisamplePropertiesEXT* pMultisampleProperties );
 
+    // VK_EXT_image_drm_format_modifier
+    alias PFN_vkGetImageDrmFormatModifierPropertiesEXT               = VkResult  function( VkDevice device, VkImage image, VkImageDrmFormatModifierPropertiesEXT* pProperties );
+
     // VK_EXT_validation_cache
     alias PFN_vkCreateValidationCacheEXT                             = VkResult  function( VkDevice device, const( VkValidationCacheCreateInfoEXT )* pCreateInfo, const( VkAllocationCallbacks )* pAllocator, VkValidationCacheEXT* pValidationCache );
     alias PFN_vkDestroyValidationCacheEXT                            = void      function( VkDevice device, VkValidationCacheEXT validationCache, const( VkAllocationCallbacks )* pAllocator );
@@ -363,6 +374,10 @@ extern( System ) {
 
     // VK_AMD_buffer_marker
     alias PFN_vkCmdWriteBufferMarkerAMD                              = void      function( VkCommandBuffer commandBuffer, VkPipelineStageFlagBits pipelineStage, VkBuffer dstBuffer, VkDeviceSize dstOffset, uint32_t marker );
+
+    // VK_EXT_calibrated_timestamps
+    alias PFN_vkGetPhysicalDeviceCalibrateableTimeDomainsEXT         = VkResult  function( VkPhysicalDevice physicalDevice, uint32_t* pTimeDomainCount, VkTimeDomainEXT* pTimeDomains );
+    alias PFN_vkGetCalibratedTimestampsEXT                           = VkResult  function( VkDevice device, uint32_t timestampCount, const( VkCalibratedTimestampInfoEXT )* pTimestampInfos, uint64_t* pTimestamps, uint64_t* pMaxDeviation );
 
     // VK_NV_mesh_shader
     alias PFN_vkCmdDrawMeshTasksNV                                   = void      function( VkCommandBuffer commandBuffer, uint32_t taskCount, uint32_t firstTask );
@@ -631,6 +646,14 @@ __gshared {
     PFN_vkCmdDebugMarkerEndEXT                                 vkCmdDebugMarkerEndEXT;
     PFN_vkCmdDebugMarkerInsertEXT                              vkCmdDebugMarkerInsertEXT;
 
+    // VK_EXT_transform_feedback
+    PFN_vkCmdBindTransformFeedbackBuffersEXT                   vkCmdBindTransformFeedbackBuffersEXT;
+    PFN_vkCmdBeginTransformFeedbackEXT                         vkCmdBeginTransformFeedbackEXT;
+    PFN_vkCmdEndTransformFeedbackEXT                           vkCmdEndTransformFeedbackEXT;
+    PFN_vkCmdBeginQueryIndexedEXT                              vkCmdBeginQueryIndexedEXT;
+    PFN_vkCmdEndQueryIndexedEXT                                vkCmdEndQueryIndexedEXT;
+    PFN_vkCmdDrawIndirectByteCountEXT                          vkCmdDrawIndirectByteCountEXT;
+
     // VK_AMD_draw_indirect_count
     PFN_vkCmdDrawIndirectCountAMD                              vkCmdDrawIndirectCountAMD;
     PFN_vkCmdDrawIndexedIndirectCountAMD                       vkCmdDrawIndexedIndirectCountAMD;
@@ -698,6 +721,9 @@ __gshared {
     PFN_vkCmdSetSampleLocationsEXT                             vkCmdSetSampleLocationsEXT;
     PFN_vkGetPhysicalDeviceMultisamplePropertiesEXT            vkGetPhysicalDeviceMultisamplePropertiesEXT;
 
+    // VK_EXT_image_drm_format_modifier
+    PFN_vkGetImageDrmFormatModifierPropertiesEXT               vkGetImageDrmFormatModifierPropertiesEXT;
+
     // VK_EXT_validation_cache
     PFN_vkCreateValidationCacheEXT                             vkCreateValidationCacheEXT;
     PFN_vkDestroyValidationCacheEXT                            vkDestroyValidationCacheEXT;
@@ -729,6 +755,10 @@ __gshared {
 
     // VK_AMD_buffer_marker
     PFN_vkCmdWriteBufferMarkerAMD                              vkCmdWriteBufferMarkerAMD;
+
+    // VK_EXT_calibrated_timestamps
+    PFN_vkGetPhysicalDeviceCalibrateableTimeDomainsEXT         vkGetPhysicalDeviceCalibrateableTimeDomainsEXT;
+    PFN_vkGetCalibratedTimestampsEXT                           vkGetCalibratedTimestampsEXT;
 
     // VK_NV_mesh_shader
     PFN_vkCmdDrawMeshTasksNV                                   vkCmdDrawMeshTasksNV;
@@ -894,6 +924,9 @@ void loadInstanceLevelFunctions( VkInstance instance ) {
 
     // VK_EXT_sample_locations
     vkGetPhysicalDeviceMultisamplePropertiesEXT        = cast( PFN_vkGetPhysicalDeviceMultisamplePropertiesEXT        ) vkGetInstanceProcAddr( instance, "vkGetPhysicalDeviceMultisamplePropertiesEXT" );
+
+    // VK_EXT_calibrated_timestamps
+    vkGetPhysicalDeviceCalibrateableTimeDomainsEXT     = cast( PFN_vkGetPhysicalDeviceCalibrateableTimeDomainsEXT     ) vkGetInstanceProcAddr( instance, "vkGetPhysicalDeviceCalibrateableTimeDomainsEXT" );
 }
 
 
@@ -1092,6 +1125,14 @@ void loadDeviceLevelFunctions( VkInstance instance ) {
     vkCmdDebugMarkerEndEXT                                 = cast( PFN_vkCmdDebugMarkerEndEXT                                 ) vkGetInstanceProcAddr( instance, "vkCmdDebugMarkerEndEXT" );
     vkCmdDebugMarkerInsertEXT                              = cast( PFN_vkCmdDebugMarkerInsertEXT                              ) vkGetInstanceProcAddr( instance, "vkCmdDebugMarkerInsertEXT" );
 
+    // VK_EXT_transform_feedback
+    vkCmdBindTransformFeedbackBuffersEXT                   = cast( PFN_vkCmdBindTransformFeedbackBuffersEXT                   ) vkGetInstanceProcAddr( instance, "vkCmdBindTransformFeedbackBuffersEXT" );
+    vkCmdBeginTransformFeedbackEXT                         = cast( PFN_vkCmdBeginTransformFeedbackEXT                         ) vkGetInstanceProcAddr( instance, "vkCmdBeginTransformFeedbackEXT" );
+    vkCmdEndTransformFeedbackEXT                           = cast( PFN_vkCmdEndTransformFeedbackEXT                           ) vkGetInstanceProcAddr( instance, "vkCmdEndTransformFeedbackEXT" );
+    vkCmdBeginQueryIndexedEXT                              = cast( PFN_vkCmdBeginQueryIndexedEXT                              ) vkGetInstanceProcAddr( instance, "vkCmdBeginQueryIndexedEXT" );
+    vkCmdEndQueryIndexedEXT                                = cast( PFN_vkCmdEndQueryIndexedEXT                                ) vkGetInstanceProcAddr( instance, "vkCmdEndQueryIndexedEXT" );
+    vkCmdDrawIndirectByteCountEXT                          = cast( PFN_vkCmdDrawIndirectByteCountEXT                          ) vkGetInstanceProcAddr( instance, "vkCmdDrawIndirectByteCountEXT" );
+
     // VK_AMD_draw_indirect_count
     vkCmdDrawIndirectCountAMD                              = cast( PFN_vkCmdDrawIndirectCountAMD                              ) vkGetInstanceProcAddr( instance, "vkCmdDrawIndirectCountAMD" );
     vkCmdDrawIndexedIndirectCountAMD                       = cast( PFN_vkCmdDrawIndexedIndirectCountAMD                       ) vkGetInstanceProcAddr( instance, "vkCmdDrawIndexedIndirectCountAMD" );
@@ -1145,6 +1186,9 @@ void loadDeviceLevelFunctions( VkInstance instance ) {
     // VK_EXT_sample_locations
     vkCmdSetSampleLocationsEXT                             = cast( PFN_vkCmdSetSampleLocationsEXT                             ) vkGetInstanceProcAddr( instance, "vkCmdSetSampleLocationsEXT" );
 
+    // VK_EXT_image_drm_format_modifier
+    vkGetImageDrmFormatModifierPropertiesEXT               = cast( PFN_vkGetImageDrmFormatModifierPropertiesEXT               ) vkGetInstanceProcAddr( instance, "vkGetImageDrmFormatModifierPropertiesEXT" );
+
     // VK_EXT_validation_cache
     vkCreateValidationCacheEXT                             = cast( PFN_vkCreateValidationCacheEXT                             ) vkGetInstanceProcAddr( instance, "vkCreateValidationCacheEXT" );
     vkDestroyValidationCacheEXT                            = cast( PFN_vkDestroyValidationCacheEXT                            ) vkGetInstanceProcAddr( instance, "vkDestroyValidationCacheEXT" );
@@ -1176,6 +1220,9 @@ void loadDeviceLevelFunctions( VkInstance instance ) {
 
     // VK_AMD_buffer_marker
     vkCmdWriteBufferMarkerAMD                              = cast( PFN_vkCmdWriteBufferMarkerAMD                              ) vkGetInstanceProcAddr( instance, "vkCmdWriteBufferMarkerAMD" );
+
+    // VK_EXT_calibrated_timestamps
+    vkGetCalibratedTimestampsEXT                           = cast( PFN_vkGetCalibratedTimestampsEXT                           ) vkGetInstanceProcAddr( instance, "vkGetCalibratedTimestampsEXT" );
 
     // VK_NV_mesh_shader
     vkCmdDrawMeshTasksNV                                   = cast( PFN_vkCmdDrawMeshTasksNV                                   ) vkGetInstanceProcAddr( instance, "vkCmdDrawMeshTasksNV" );
@@ -1387,6 +1434,14 @@ void loadDeviceLevelFunctions( VkDevice device ) {
     vkCmdDebugMarkerEndEXT                                 = cast( PFN_vkCmdDebugMarkerEndEXT                                 ) vkGetDeviceProcAddr( device, "vkCmdDebugMarkerEndEXT" );
     vkCmdDebugMarkerInsertEXT                              = cast( PFN_vkCmdDebugMarkerInsertEXT                              ) vkGetDeviceProcAddr( device, "vkCmdDebugMarkerInsertEXT" );
 
+    // VK_EXT_transform_feedback
+    vkCmdBindTransformFeedbackBuffersEXT                   = cast( PFN_vkCmdBindTransformFeedbackBuffersEXT                   ) vkGetDeviceProcAddr( device, "vkCmdBindTransformFeedbackBuffersEXT" );
+    vkCmdBeginTransformFeedbackEXT                         = cast( PFN_vkCmdBeginTransformFeedbackEXT                         ) vkGetDeviceProcAddr( device, "vkCmdBeginTransformFeedbackEXT" );
+    vkCmdEndTransformFeedbackEXT                           = cast( PFN_vkCmdEndTransformFeedbackEXT                           ) vkGetDeviceProcAddr( device, "vkCmdEndTransformFeedbackEXT" );
+    vkCmdBeginQueryIndexedEXT                              = cast( PFN_vkCmdBeginQueryIndexedEXT                              ) vkGetDeviceProcAddr( device, "vkCmdBeginQueryIndexedEXT" );
+    vkCmdEndQueryIndexedEXT                                = cast( PFN_vkCmdEndQueryIndexedEXT                                ) vkGetDeviceProcAddr( device, "vkCmdEndQueryIndexedEXT" );
+    vkCmdDrawIndirectByteCountEXT                          = cast( PFN_vkCmdDrawIndirectByteCountEXT                          ) vkGetDeviceProcAddr( device, "vkCmdDrawIndirectByteCountEXT" );
+
     // VK_AMD_draw_indirect_count
     vkCmdDrawIndirectCountAMD                              = cast( PFN_vkCmdDrawIndirectCountAMD                              ) vkGetDeviceProcAddr( device, "vkCmdDrawIndirectCountAMD" );
     vkCmdDrawIndexedIndirectCountAMD                       = cast( PFN_vkCmdDrawIndexedIndirectCountAMD                       ) vkGetDeviceProcAddr( device, "vkCmdDrawIndexedIndirectCountAMD" );
@@ -1440,6 +1495,9 @@ void loadDeviceLevelFunctions( VkDevice device ) {
     // VK_EXT_sample_locations
     vkCmdSetSampleLocationsEXT                             = cast( PFN_vkCmdSetSampleLocationsEXT                             ) vkGetDeviceProcAddr( device, "vkCmdSetSampleLocationsEXT" );
 
+    // VK_EXT_image_drm_format_modifier
+    vkGetImageDrmFormatModifierPropertiesEXT               = cast( PFN_vkGetImageDrmFormatModifierPropertiesEXT               ) vkGetDeviceProcAddr( device, "vkGetImageDrmFormatModifierPropertiesEXT" );
+
     // VK_EXT_validation_cache
     vkCreateValidationCacheEXT                             = cast( PFN_vkCreateValidationCacheEXT                             ) vkGetDeviceProcAddr( device, "vkCreateValidationCacheEXT" );
     vkDestroyValidationCacheEXT                            = cast( PFN_vkDestroyValidationCacheEXT                            ) vkGetDeviceProcAddr( device, "vkDestroyValidationCacheEXT" );
@@ -1471,6 +1529,9 @@ void loadDeviceLevelFunctions( VkDevice device ) {
 
     // VK_AMD_buffer_marker
     vkCmdWriteBufferMarkerAMD                              = cast( PFN_vkCmdWriteBufferMarkerAMD                              ) vkGetDeviceProcAddr( device, "vkCmdWriteBufferMarkerAMD" );
+
+    // VK_EXT_calibrated_timestamps
+    vkGetCalibratedTimestampsEXT                           = cast( PFN_vkGetCalibratedTimestampsEXT                           ) vkGetDeviceProcAddr( device, "vkGetCalibratedTimestampsEXT" );
 
     // VK_NV_mesh_shader
     vkCmdDrawMeshTasksNV                                   = cast( PFN_vkCmdDrawMeshTasksNV                                   ) vkGetDeviceProcAddr( device, "vkCmdDrawMeshTasksNV" );
