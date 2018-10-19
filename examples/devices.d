@@ -15,19 +15,20 @@ private void enforceVK(VkResult res) {
 
 int main() {
 
-	// load global level functions 
-	DerelictErupted.load();
-	
+	// load global level functions
+	import erupted.vulkan_lib_loader;	// not part of erupted package, as not part of original vulkan
+	loadGlobalLevelFunctions;
+
 	// prepare VkInstance creation
 	VkApplicationInfo appInfo = {
 		pApplicationName: "Vulkan Test",
 		apiVersion: VK_MAKE_VERSION(1, 0, 2),
 	};
-	
+
 	VkInstanceCreateInfo instInfo = {
 		pApplicationInfo: &appInfo,
 	};
-	
+
 	// create the vulkan instance
 	VkInstance instance;
 	enforceVK(vkCreateInstance(&instInfo, null, &instance));
@@ -42,7 +43,7 @@ int main() {
 			vkDestroyInstance(instance, null);
 		}
 	}
-	
+
 	// enumerate physical devices
 	uint numPhysDevices;
 	writeln("Before vkEnumeratePhysicalDevices");
@@ -52,15 +53,15 @@ int main() {
 		return 1;
 	}
 	writeln("After vkEnumeratePhysicalDevices");
-	
+
 	writeln;
 	writeln("Found ", numPhysDevices, " physical device(s)\n==========================");
 	writeln;
-	
+
 	// acquire physical devices
 	auto physDevices = new VkPhysicalDevice[](numPhysDevices);
 	enforceVK(vkEnumeratePhysicalDevices(instance, &numPhysDevices, physDevices.ptr));
-	
+
 	// print information about physical devices
 	foreach(i, physDevice; physDevices) {
 		VkPhysicalDeviceProperties properties;

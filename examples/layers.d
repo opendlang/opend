@@ -14,13 +14,16 @@ private void enforceVK(VkResult res) {
 }
 
 int main() {
-	DerelictErupted.load();
-	
+
+	// load global level functions
+	import erupted.vulkan_lib_loader;	// not part of erupted package, as not part of original vulkan
+	loadGlobalLevelFunctions;
+
 	uint numLayerProps;
 	enforceVK(vkEnumerateInstanceLayerProperties(&numLayerProps, null));
 	auto layerProps = new VkLayerProperties[](numLayerProps);
 	enforceVK(vkEnumerateInstanceLayerProperties(&numLayerProps, layerProps.ptr));
-	
+
 	writeln;
 	writeln("Instance Layers:");
 	writeln("================");
@@ -34,34 +37,34 @@ int main() {
 	}
 
 	writeln;
-	
+
 	VkApplicationInfo appInfo = {
 		pApplicationName: "Vulkan Test",
 		apiVersion: VK_MAKE_VERSION(1, 0, 2),
 	};
-	
+
 	VkInstanceCreateInfo instInfo = {
 		pApplicationInfo: &appInfo,
 	};
-	
+
 	VkInstance instance;
 	enforceVK(vkCreateInstance(&instInfo, null, &instance));
 	loadInstanceLevelFunctions(instance);
 	scope(exit) vkDestroyInstance(instance, null);
-	
+
 	uint numDevices;
 	enforceVK(vkEnumeratePhysicalDevices(instance, &numDevices, null));
 	auto physDevices = new VkPhysicalDevice[](numDevices);
 	enforceVK(vkEnumeratePhysicalDevices(instance, &numDevices, physDevices.ptr));
-	
+
 	foreach(i, ref physDevice; physDevices) {
 		writeln("Device ", i+1, " layers:");
 		writeln("================");
-		
+
 		enforceVK(vkEnumerateDeviceLayerProperties(physDevice, &numLayerProps, null));
 		layerProps = new VkLayerProperties[](numLayerProps);
 		enforceVK(vkEnumerateDeviceLayerProperties(physDevice, &numLayerProps, layerProps.ptr));
-		
+
 		foreach(j, const ref layer; layerProps) {
 			if(j != 0)
 				writeln("\t----------------------");
@@ -71,6 +74,6 @@ int main() {
 			writeln("\t", layer.description.ptr.fromStringz);
 		}
 	}
-	
+
 	return 0;
 }
