@@ -60,6 +60,9 @@ struct Vector(E, Allocator = typeof(theAllocator)) if(isAllocator!Allocator) {
     import automem.traits: isGlobal, isSingleton, isTheAllocator;
     import std.traits: Unqual;
 
+    alias MutE = Unqual!E;
+    enum isElementMutable = !is(E == immutable) && !is(E == const);
+
     static if(isGlobal!Allocator) {
 
         this(E[] elements...) {
@@ -86,12 +89,14 @@ struct Vector(E, Allocator = typeof(theAllocator)) if(isAllocator!Allocator) {
     this(this) scope {
         auto oldElements = _elements;
         _elements = createVector(_elements.length);
-        _elements[0 .. length.toSizeT] = oldElements[0 .. length.toSizeT];
+        () @trusted {
+            cast(MutE[])(_elements)[0 .. length.toSizeT] = oldElements[0 .. length.toSizeT];
+        }();
     }
 
     ~this() scope {
         import stdx.allocator: dispose;
-        () @trusted { _allocator.dispose(_elements); }();
+        () @trusted { _allocator.dispose(cast(void[]) _elements); }();
     }
 
     /// Returns the first element
@@ -104,12 +109,14 @@ struct Vector(E, Allocator = typeof(theAllocator)) if(isAllocator!Allocator) {
         return _elements[(length - 1).toSizeT];
     }
 
-    /// Pops the front element off
-    void popFront() {
-        foreach(i; 0 .. length - 1)
-            _elements[i.toSizeT] = _elements[i.toSizeT + 1];
+    static if(isElementMutable) {
+        /// Pops the front element off
+        void popFront() {
+            foreach(i; 0 .. length - 1)
+                _elements[i.toSizeT] = _elements[i.toSizeT + 1];
 
-        popBack;
+            popBack;
+        }
     }
 
     /// Pops the last element off
@@ -148,20 +155,23 @@ struct Vector(E, Allocator = typeof(theAllocator)) if(isAllocator!Allocator) {
         expandMemory(newLength);
     }
 
-    /// Shrink to fit the current length. Returns if shrunk.
-    bool shrink() scope {
-        return shrink(length);
-    }
+    static if(isElementMutable) {
 
-    /// Shrink to fit the new length given. Returns if shrunk.
-    bool shrink(long newLength) scope {
-        import stdx.allocator: shrinkArray;
+        /// Shrink to fit the current length. Returns if shrunk.
+        bool shrink() scope {
+            return shrink(length);
+        }
 
-        const delta = capacity - newLength;
-        const shrunk = () @trusted { return _allocator.shrinkArray(_elements, delta.toSizeT); }();
-        _length = newLength;
+        /// Shrink to fit the new length given. Returns if shrunk.
+        bool shrink(long newLength) scope @trusted {
+            import stdx.allocator: shrinkArray;
 
-        return shrunk;
+            const delta = capacity - newLength;
+            const shrunk = _allocator.shrinkArray(_elements, delta.toSizeT);
+            _length = newLength;
+
+            return shrunk;
+        }
     }
 
     /// Access the ith element. Can throw RangeError.
@@ -214,12 +224,12 @@ struct Vector(E, Allocator = typeof(theAllocator)) if(isAllocator!Allocator) {
     }
 
     /// Returns a slice
-    scope auto opSlice(this This)() {
+    auto opSlice(this This)() scope return {
         return _elements[0 .. length.toSizeT];
     }
 
     /// Returns a slice
-    scope auto opSlice(this This)(long start, long end) {
+    auto opSlice(this This)(long start, long end) scope return {
         if(start < 0 || start >= length)
             throw boundsException;
 
@@ -233,38 +243,47 @@ struct Vector(E, Allocator = typeof(theAllocator)) if(isAllocator!Allocator) {
         return length;
     }
 
-    /// Assign all elements to the given value
-    void opSliceAssign(E value) {
-        _elements[] = value;
+    static if(isElementMutable) {
+        /// Assign all elements to the given value
+        void opSliceAssign(E value) {
+            _elements[] = value;
+        }
     }
 
-    /// Assign all elements in the given range to the given value
-    void opSliceAssign(E value, long start, long end) {
-        if(start < 0 || start >= length)
-            throw boundsException;
 
-        if(end < 0 || end >= length)
-            throw boundsException;
+    static if(isElementMutable) {
+        /// Assign all elements in the given range to the given value
+        void opSliceAssign(E value, long start, long end) {
+            if(start < 0 || start >= length)
+                throw boundsException;
 
-        _elements[start.toSizeT .. end.toSizeT] = value;
+            if(end < 0 || end >= length)
+                throw boundsException;
+
+            _elements[start.toSizeT .. end.toSizeT] = value;
+        }
     }
 
-    /// Assign all elements using the given operation and the given value
-    void opSliceOpAssign(string op)(E value) scope {
-        foreach(ref elt; _elements)
-            mixin(`elt ` ~ op ~ `= value;`);
+    static if(isElementMutable) {
+        /// Assign all elements using the given operation and the given value
+        void opSliceOpAssign(string op)(E value) scope {
+            foreach(ref elt; _elements)
+                mixin(`elt ` ~ op ~ `= value;`);
+        }
     }
 
-    /// Assign all elements in the given range  using the given operation and the given value
-    void opSliceOpAssign(string op)(E value, long start, long end) scope {
-        if(start < 0 || start >= length)
-            throw boundsException;
+    static if(isElementMutable) {
+        /// Assign all elements in the given range  using the given operation and the given value
+        void opSliceOpAssign(string op)(E value, long start, long end) scope {
+            if(start < 0 || start >= length)
+                throw boundsException;
 
-        if(end < 0 || end >= length)
-            throw boundsException;
+            if(end < 0 || end >= length)
+                throw boundsException;
 
-        foreach(ref elt; _elements[start.toSizeT .. end.toSizeT])
-            mixin(`elt ` ~ op ~ `= value;`);
+            foreach(ref elt; _elements[start.toSizeT .. end.toSizeT])
+                mixin(`elt ` ~ op ~ `= value;`);
+        }
     }
 
     bool opCast(U)() const scope if(is(U == bool)) {
@@ -289,8 +308,9 @@ private:
     }
 
     void fromElements(E[] elements) {
+
         _elements = createVector(elements.length);
-        _elements[] = elements[];
+        () @trusted { (cast(MutE[]) _elements)[] = elements[]; }();
         _length = elements.length;
     }
 
@@ -308,9 +328,14 @@ private:
             else {
                 const newCapacity = (newLength * 3) / 2;
                 const delta = newCapacity - capacity;
-                () @trusted { _allocator.expandArray(_elements, delta.toSizeT); }();
+                () @trusted { _allocator.expandArray(mutableElements, delta.toSizeT); }();
             }
         }
+    }
+
+    ref MutE[] mutableElements() scope return @system {
+        auto ptr = &_elements;
+        return *(cast(MutE[]*) ptr);
     }
 }
 

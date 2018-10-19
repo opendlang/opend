@@ -399,3 +399,9 @@ private void consumeVec(T)(auto ref T vec) {
         assert(0);
     }
 }
+
+
+@("immutable")
+@safe unittest {
+    Vector!(immutable int) vec;
+}
