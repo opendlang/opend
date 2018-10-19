@@ -104,8 +104,14 @@ struct Vector(E, Allocator = typeof(theAllocator)) if(isAllocator!Allocator) {
     }
 
     ~this() scope {
+        free;
+    }
+
+    /// Frees the memory and returns to .init
+    void free() scope {
         import stdx.allocator: dispose;
         () @trusted { _allocator.dispose(cast(void[]) _elements); }();
+        clear;
     }
 
     /// Returns the first element
