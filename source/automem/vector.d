@@ -37,7 +37,6 @@ auto vector(A = typeof(theAllocator), R)
            (R range)
     if(isAllocator!A && isGlobal!A && isInputRange!R)
 {
-    import std.range.primitives: ElementType;
     return Vector!(ElementType!R, A)(range);
 }
 
@@ -47,7 +46,6 @@ auto vector(A = typeof(theAllocator), R)
            (A allocator, R range)
     if(isAllocator!A && !isGlobal!A && isInputRange!R)
 {
-    import std.range.primitives: ElementType;
     return Vector!(ElementType!R, A)(range);
 }
 
@@ -348,14 +346,14 @@ class BoundsException: Exception {
 }
 
 private template isInputRangeOf(R, E) {
-    import std.range.primitives: isInputRange, ElementType;
+    import std.range.primitives: isInputRange;
     import std.traits: Unqual;
 
     enum isInputRangeOf = isInputRange!R && is(Unqual!(ElementType!R) == E);
 }
 
 private template isForwardRangeOf(R, E) {
-    import std.range.primitives: isForwardRange, ElementType;
+    import std.range.primitives: isForwardRange;
     import std.traits: Unqual;
 
     enum isForwardRangeOf = isForwardRange!R && is(Unqual!(ElementType!R) == E);
@@ -366,4 +364,24 @@ private size_t toSizeT(long length) @safe @nogc pure nothrow {
     static if(size_t.sizeof < long.sizeof)
         assert(length < cast(long) size_t.max);
     return cast(size_t) length;
+}
+
+// Because autodecoding is fun
+private template ElementType(R) {
+    import std.traits: isSomeString;
+
+    static if(isSomeString!R) {
+        alias ElementType = typeof(R.init[0]);
+    } else {
+        import std.range.primitives: ElementType_ = ElementType;
+        alias ElementType = ElementType_!R;
+    }
+}
+
+@("ElementType")
+@safe pure unittest {
+    static assert(is(ElementType!(int[]) == int));
+    static assert(is(ElementType!(char[]) == char));
+    static assert(is(ElementType!(wchar[]) == wchar));
+    static assert(is(ElementType!(dchar[]) == dchar));
 }

@@ -400,6 +400,26 @@ private void consumeVec(T)(auto ref T vec) {
     }
 }
 
+@("char")
+unittest {
+    {
+        auto vec = vector('f', 'o', 'o');
+        vec[].shouldEqual("foo");
+        vec ~= 'b';
+        vec ~= ['a', 'r'];
+        vec[].shouldEqual("foobar");
+        vec ~= "quux";
+        vec[].shouldEqual("foobarquux");
+    }
+
+    {
+        auto vec = vector("foo");
+        vec[].shouldEqual("foo");
+        vec.popBack;
+        vec[].shouldEqual("fo");
+    }
+}
+
 
 @("immutable")
 @safe unittest {
