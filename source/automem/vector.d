@@ -203,7 +203,14 @@ struct Vector(E, Allocator = typeof(theAllocator)) if(isAllocator!Allocator) {
         if(op == "~")
     {
         expand(length + 1);
-        _elements[(length - 1).toSizeT] = other;
+
+        const lastIndex = (length - 1).toSizeT;
+        static if(!isElementMutable) {
+            assert(_elements[lastIndex] == E.init,
+                   "Assigning to non default initialised non mutable member");
+        }
+
+        () @trusted { mutableElements[lastIndex] = other; }();
     }
 
     /// Append to the vector

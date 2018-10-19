@@ -424,4 +424,6 @@ unittest {
 @("immutable")
 @safe unittest {
     Vector!(immutable int) vec;
+    vec ~= 42;
+    vec[].shouldEqual([42]);
 }
