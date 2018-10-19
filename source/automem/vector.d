@@ -37,6 +37,7 @@ auto vector(A = typeof(theAllocator), R)
            (R range)
     if(isAllocator!A && isGlobal!A && isInputRange!R)
 {
+    import automem.vector: ElementType;
     return Vector!(ElementType!R, A)(range);
 }
 
@@ -46,6 +47,7 @@ auto vector(A = typeof(theAllocator), R)
            (A allocator, R range)
     if(isAllocator!A && !isGlobal!A && isInputRange!R)
 {
+    import automem.vector: ElementType;
     return Vector!(ElementType!R, A)(range);
 }
 
@@ -213,7 +215,7 @@ struct Vector(E, Allocator = typeof(theAllocator)) if(isAllocator!Allocator) {
         () @trusted { mutableElements[lastIndex] = other; }();
     }
 
-    /// Append to the vector
+    /// Append to the vector from a range
     void opOpAssign(string op, R)
                    (R range)
         scope
@@ -224,8 +226,14 @@ struct Vector(E, Allocator = typeof(theAllocator)) if(isAllocator!Allocator) {
         long index = length;
         expand(length + range.save.walkLength);
 
-        foreach(element; range)
-            _elements[toSizeT(index++)] = element;
+        foreach(element; range) {
+            const safeIndex = toSizeT(index++);
+            static if(!isElementMutable) {
+                assert(_elements[safeIndex] == E.init,
+                       "Assigning to non default initialised non mutable member");
+            }
+            () @trusted { mutableElements[safeIndex] = element; }();
+        }
     }
 
     /// Returns a slice
@@ -354,19 +362,21 @@ class BoundsException: Exception {
 
 private template isInputRangeOf(R, E) {
     import std.range.primitives: isInputRange;
-    import std.traits: Unqual;
-
-    enum isInputRangeOf = isInputRange!R && is(Unqual!(ElementType!R) == E);
+    enum isInputRangeOf = isInputRange!R && canAssignFrom!(R, E);
 }
 
 private template isForwardRangeOf(R, E) {
     import std.range.primitives: isForwardRange;
-    import std.traits: Unqual;
-
-    enum isForwardRangeOf = isForwardRange!R && is(Unqual!(ElementType!R) == E);
+    enum isForwardRangeOf = isForwardRange!R && canAssignFrom!(R, E);
 }
 
 
+private template canAssignFrom(R, E) {
+    enum canAssignFrom = is(typeof({
+        import automem.vector: frontNoAutoDecode;
+        E element = R.init.frontNoAutoDecode;
+    }));
+}
 private size_t toSizeT(long length) @safe @nogc pure nothrow {
     static if(size_t.sizeof < long.sizeof)
         assert(length < cast(long) size_t.max);
@@ -387,8 +397,22 @@ private template ElementType(R) {
 
 @("ElementType")
 @safe pure unittest {
+    import automem.vector: ElementType;
     static assert(is(ElementType!(int[]) == int));
     static assert(is(ElementType!(char[]) == char));
     static assert(is(ElementType!(wchar[]) == wchar));
     static assert(is(ElementType!(dchar[]) == dchar));
+}
+
+
+// More fun with autodecoding
+private auto frontNoAutoDecode(R)(R range) {
+    import std.traits: isSomeString;
+
+    static if(isSomeString!R)
+        return range[0];
+    else {
+        import std.range.primitives: front;
+        return range.front;
+    }
 }

@@ -418,6 +418,12 @@ unittest {
         vec.popBack;
         vec[].shouldEqual("fo");
     }
+
+    {
+        auto vec = vector("foo");
+        vec ~= "bar";
+        vec[].shouldEqual("foobar");
+    }
 }
 
 
