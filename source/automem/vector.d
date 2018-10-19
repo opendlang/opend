@@ -57,7 +57,7 @@ auto vector(A = typeof(theAllocator), R)
     if(isAllocator!A && !isGlobal!A && isInputRange!R)
 {
     import automem.vector: ElementType;
-    return Vector!(ElementType!R, A)(range);
+    return Vector!(ElementType!R, A)(allocator, range);
 }
 
 /**
