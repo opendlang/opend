@@ -26,6 +26,7 @@ enum EXT_acquire_xlib_display;
 enum MVK_ios_surface;
 enum MVK_macos_surface;
 enum ANDROID_external_memory_android_hardware_buffer;
+enum FUCHSIA_imagepipe_surface;
 
 
 /// extensions to a specific platform are grouped in these enum sequences
@@ -40,6 +41,7 @@ alias USE_PLATFORM_VI_NN           = AliasSeq!( NN_vi_surface );
 alias USE_PLATFORM_XLIB_XRANDR_EXT = AliasSeq!( EXT_acquire_xlib_display );
 alias USE_PLATFORM_IOS_MVK         = AliasSeq!( MVK_ios_surface );
 alias USE_PLATFORM_MACOS_MVK       = AliasSeq!( MVK_macos_surface );
+alias USE_PLATFORM_FUCHSIA         = AliasSeq!( FUCHSIA_imagepipe_surface );
 
 
 
@@ -500,6 +502,25 @@ mixin template Platform_Extensions( extensions... ) {
             alias PFN_vkGetMemoryAndroidHardwareBufferANDROID                = VkResult  function( VkDevice device, const( VkMemoryGetAndroidHardwareBufferInfoANDROID )* pInfo, AHardwareBuffer pBuffer );
         }
 
+        // VK_FUCHSIA_imagepipe_surface : types and function pointer type aliases
+        else static if( __traits( isSame, extension, FUCHSIA_imagepipe_surface )) {
+            enum VK_FUCHSIA_imagepipe_surface = 1;
+
+            enum VK_FUCHSIA_IMAGEPIPE_SURFACE_SPEC_VERSION = 1;
+            enum VK_FUCHSIA_IMAGEPIPE_SURFACE_EXTENSION_NAME = "VK_FUCHSIA_imagepipe_surface";
+            
+            alias VkImagePipeSurfaceCreateFlagsFUCHSIA = VkFlags;
+            
+            struct VkImagePipeSurfaceCreateInfoFUCHSIA {
+                VkStructureType                       sType = VK_STRUCTURE_TYPE_IMAGEPIPE_SURFACE_CREATE_INFO_FUCHSIA;
+                const( void )*                        pNext;
+                VkImagePipeSurfaceCreateFlagsFUCHSIA  flags;
+                zx_handle_t                           imagePipeHandle;
+            }
+            
+            alias PFN_vkCreateImagePipeSurfaceFUCHSIA                        = VkResult  function( VkInstance instance, const( VkImagePipeSurfaceCreateInfoFUCHSIA )* pCreateInfo, const( VkAllocationCallbacks )* pAllocator, VkSurfaceKHR* pSurface );
+        }
+
         __gshared {
 
             // VK_KHR_xlib_surface : function pointer decelerations
@@ -586,6 +607,11 @@ mixin template Platform_Extensions( extensions... ) {
                 PFN_vkGetAndroidHardwareBufferPropertiesANDROID            vkGetAndroidHardwareBufferPropertiesANDROID;
                 PFN_vkGetMemoryAndroidHardwareBufferANDROID                vkGetMemoryAndroidHardwareBufferANDROID;
             }
+
+            // VK_FUCHSIA_imagepipe_surface : function pointer decelerations
+            else static if( __traits( isSame, extension, FUCHSIA_imagepipe_surface )) {
+                PFN_vkCreateImagePipeSurfaceFUCHSIA                        vkCreateImagePipeSurfaceFUCHSIA;
+            }
         }
     }
 
@@ -654,6 +680,11 @@ mixin template Platform_Extensions( extensions... ) {
             // VK_MVK_macos_surface : load instance level function definitions
             else static if( __traits( isSame, extension, MVK_macos_surface )) {
                 vkCreateMacOSSurfaceMVK                            = cast( PFN_vkCreateMacOSSurfaceMVK                            ) vkGetInstanceProcAddr( instance, "vkCreateMacOSSurfaceMVK" );
+            }
+
+            // VK_FUCHSIA_imagepipe_surface : load instance level function definitions
+            else static if( __traits( isSame, extension, FUCHSIA_imagepipe_surface )) {
+                vkCreateImagePipeSurfaceFUCHSIA                    = cast( PFN_vkCreateImagePipeSurfaceFUCHSIA                    ) vkGetInstanceProcAddr( instance, "vkCreateImagePipeSurfaceFUCHSIA" );
             }
         }
     }
@@ -918,6 +949,11 @@ mixin template Platform_Extensions( extensions... ) {
             else static if( __traits( isSame, extension, ANDROID_external_memory_android_hardware_buffer )) {
                 PFN_vkGetAndroidHardwareBufferPropertiesANDROID            vkGetAndroidHardwareBufferPropertiesANDROID;
                 PFN_vkGetMemoryAndroidHardwareBufferANDROID                vkGetMemoryAndroidHardwareBufferANDROID;
+            }
+
+            // VK_FUCHSIA_imagepipe_surface : dispatch device member function pointer decelerations
+            else static if( __traits( isSame, extension, FUCHSIA_imagepipe_surface )) {
+                PFN_vkCreateImagePipeSurfaceFUCHSIA                        vkCreateImagePipeSurfaceFUCHSIA;
             }
         }
     }
