@@ -10,6 +10,8 @@ import std.range.primitives: isInputRange;
 import stdx.allocator: theAllocator;
 import stdx.allocator.mallocator: Mallocator;
 
+alias String = Vector!(immutable char);
+
 /**
    Create a vector from a variadic list of elements, inferring the type of
    the elements and the allocator

@@ -401,7 +401,7 @@ private void consumeVec(T)(auto ref T vec) {
 }
 
 @("char")
-unittest {
+@safe unittest {
     {
         auto vec = vector('f', 'o', 'o');
         vec[].shouldEqual("foo");
@@ -432,4 +432,11 @@ unittest {
     Vector!(immutable int) vec;
     vec ~= 42;
     vec[].shouldEqual([42]);
+}
+
+
+@("String")
+@safe unittest {
+    foreach(c; String("oooooo"))
+        c.should == 'o';
 }
