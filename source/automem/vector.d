@@ -10,6 +10,15 @@ import std.range.primitives: isInputRange;
 import stdx.allocator: theAllocator;
 import stdx.allocator.mallocator: Mallocator;
 
+
+alias String = StringA!(typeof(theAllocator));
+alias StringM = StringA!Mallocator;
+
+
+template StringA(A = typeof(theAllocator)) if(isAllocator!A) {
+    alias StringA = Vector!(immutable char, A);
+}
+
 /**
    Create a vector from a variadic list of elements, inferring the type of
    the elements and the allocator
@@ -37,7 +46,7 @@ auto vector(A = typeof(theAllocator), R)
            (R range)
     if(isAllocator!A && isGlobal!A && isInputRange!R)
 {
-    import std.range.primitives: ElementType;
+    import automem.vector: ElementType;
     return Vector!(ElementType!R, A)(range);
 }
 
@@ -47,8 +56,8 @@ auto vector(A = typeof(theAllocator), R)
            (A allocator, R range)
     if(isAllocator!A && !isGlobal!A && isInputRange!R)
 {
-    import std.range.primitives: ElementType;
-    return Vector!(ElementType!R, A)(range);
+    import automem.vector: ElementType;
+    return Vector!(ElementType!R, A)(allocator, range);
 }
 
 /**
@@ -59,6 +68,9 @@ struct Vector(E, Allocator = typeof(theAllocator)) if(isAllocator!Allocator) {
 
     import automem.traits: isGlobal, isSingleton, isTheAllocator;
     import std.traits: Unqual;
+
+    alias MutE = Unqual!E;
+    enum isElementMutable = !is(E == immutable) && !is(E == const);
 
     static if(isGlobal!Allocator) {
 
@@ -86,12 +98,14 @@ struct Vector(E, Allocator = typeof(theAllocator)) if(isAllocator!Allocator) {
     this(this) scope {
         auto oldElements = _elements;
         _elements = createVector(_elements.length);
-        _elements[0 .. length.toSizeT] = oldElements[0 .. length.toSizeT];
+        () @trusted {
+            cast(MutE[])(_elements)[0 .. length.toSizeT] = oldElements[0 .. length.toSizeT];
+        }();
     }
 
     ~this() scope {
         import stdx.allocator: dispose;
-        () @trusted { _allocator.dispose(_elements); }();
+        () @trusted { _allocator.dispose(cast(void[]) _elements); }();
     }
 
     /// Returns the first element
@@ -104,12 +118,14 @@ struct Vector(E, Allocator = typeof(theAllocator)) if(isAllocator!Allocator) {
         return _elements[(length - 1).toSizeT];
     }
 
-    /// Pops the front element off
-    void popFront() {
-        foreach(i; 0 .. length - 1)
-            _elements[i.toSizeT] = _elements[i.toSizeT + 1];
+    static if(isElementMutable) {
+        /// Pops the front element off
+        void popFront() {
+            foreach(i; 0 .. length - 1)
+                _elements[i.toSizeT] = _elements[i.toSizeT + 1];
 
-        popBack;
+            popBack;
+        }
     }
 
     /// Pops the last element off
@@ -148,20 +164,23 @@ struct Vector(E, Allocator = typeof(theAllocator)) if(isAllocator!Allocator) {
         expandMemory(newLength);
     }
 
-    /// Shrink to fit the current length. Returns if shrunk.
-    bool shrink() scope {
-        return shrink(length);
-    }
+    static if(isElementMutable) {
 
-    /// Shrink to fit the new length given. Returns if shrunk.
-    bool shrink(long newLength) scope {
-        import stdx.allocator: shrinkArray;
+        /// Shrink to fit the current length. Returns if shrunk.
+        bool shrink() scope {
+            return shrink(length);
+        }
 
-        const delta = capacity - newLength;
-        const shrunk = () @trusted { return _allocator.shrinkArray(_elements, delta.toSizeT); }();
-        _length = newLength;
+        /// Shrink to fit the new length given. Returns if shrunk.
+        bool shrink(long newLength) scope @trusted {
+            import stdx.allocator: shrinkArray;
 
-        return shrunk;
+            const delta = capacity - newLength;
+            const shrunk = _allocator.shrinkArray(_elements, delta.toSizeT);
+            _length = newLength;
+
+            return shrunk;
+        }
     }
 
     /// Access the ith element. Can throw RangeError.
@@ -195,10 +214,17 @@ struct Vector(E, Allocator = typeof(theAllocator)) if(isAllocator!Allocator) {
         if(op == "~")
     {
         expand(length + 1);
-        _elements[(length - 1).toSizeT] = other;
+
+        const lastIndex = (length - 1).toSizeT;
+        static if(!isElementMutable) {
+            assert(_elements[lastIndex] == E.init,
+                   "Assigning to non default initialised non mutable member");
+        }
+
+        () @trusted { mutableElements[lastIndex] = other; }();
     }
 
-    /// Append to the vector
+    /// Append to the vector from a range
     void opOpAssign(string op, R)
                    (R range)
         scope
@@ -209,17 +235,23 @@ struct Vector(E, Allocator = typeof(theAllocator)) if(isAllocator!Allocator) {
         long index = length;
         expand(length + range.save.walkLength);
 
-        foreach(element; range)
-            _elements[toSizeT(index++)] = element;
+        foreach(element; range) {
+            const safeIndex = toSizeT(index++);
+            static if(!isElementMutable) {
+                assert(_elements[safeIndex] == E.init,
+                       "Assigning to non default initialised non mutable member");
+            }
+            () @trusted { mutableElements[safeIndex] = element; }();
+        }
     }
 
     /// Returns a slice
-    scope auto opSlice(this This)() {
+    auto opSlice(this This)() scope return {
         return _elements[0 .. length.toSizeT];
     }
 
     /// Returns a slice
-    scope auto opSlice(this This)(long start, long end) {
+    auto opSlice(this This)(long start, long end) scope return {
         if(start < 0 || start >= length)
             throw boundsException;
 
@@ -233,38 +265,47 @@ struct Vector(E, Allocator = typeof(theAllocator)) if(isAllocator!Allocator) {
         return length;
     }
 
-    /// Assign all elements to the given value
-    void opSliceAssign(E value) {
-        _elements[] = value;
+    static if(isElementMutable) {
+        /// Assign all elements to the given value
+        void opSliceAssign(E value) {
+            _elements[] = value;
+        }
     }
 
-    /// Assign all elements in the given range to the given value
-    void opSliceAssign(E value, long start, long end) {
-        if(start < 0 || start >= length)
-            throw boundsException;
 
-        if(end < 0 || end >= length)
-            throw boundsException;
+    static if(isElementMutable) {
+        /// Assign all elements in the given range to the given value
+        void opSliceAssign(E value, long start, long end) {
+            if(start < 0 || start >= length)
+                throw boundsException;
 
-        _elements[start.toSizeT .. end.toSizeT] = value;
+            if(end < 0 || end >= length)
+                throw boundsException;
+
+            _elements[start.toSizeT .. end.toSizeT] = value;
+        }
     }
 
-    /// Assign all elements using the given operation and the given value
-    void opSliceOpAssign(string op)(E value) scope {
-        foreach(ref elt; _elements)
-            mixin(`elt ` ~ op ~ `= value;`);
+    static if(isElementMutable) {
+        /// Assign all elements using the given operation and the given value
+        void opSliceOpAssign(string op)(E value) scope {
+            foreach(ref elt; _elements)
+                mixin(`elt ` ~ op ~ `= value;`);
+        }
     }
 
-    /// Assign all elements in the given range  using the given operation and the given value
-    void opSliceOpAssign(string op)(E value, long start, long end) scope {
-        if(start < 0 || start >= length)
-            throw boundsException;
+    static if(isElementMutable) {
+        /// Assign all elements in the given range  using the given operation and the given value
+        void opSliceOpAssign(string op)(E value, long start, long end) scope {
+            if(start < 0 || start >= length)
+                throw boundsException;
 
-        if(end < 0 || end >= length)
-            throw boundsException;
+            if(end < 0 || end >= length)
+                throw boundsException;
 
-        foreach(ref elt; _elements[start.toSizeT .. end.toSizeT])
-            mixin(`elt ` ~ op ~ `= value;`);
+            foreach(ref elt; _elements[start.toSizeT .. end.toSizeT])
+                mixin(`elt ` ~ op ~ `= value;`);
+        }
     }
 
     bool opCast(U)() const scope if(is(U == bool)) {
@@ -289,8 +330,9 @@ private:
     }
 
     void fromElements(E[] elements) {
+
         _elements = createVector(elements.length);
-        _elements[] = elements[];
+        () @trusted { (cast(MutE[]) _elements)[] = elements[]; }();
         _length = elements.length;
     }
 
@@ -308,9 +350,14 @@ private:
             else {
                 const newCapacity = (newLength * 3) / 2;
                 const delta = newCapacity - capacity;
-                () @trusted { _allocator.expandArray(_elements, delta.toSizeT); }();
+                () @trusted { _allocator.expandArray(mutableElements, delta.toSizeT); }();
             }
         }
+    }
+
+    ref MutE[] mutableElements() scope return @system {
+        auto ptr = &_elements;
+        return *(cast(MutE[]*) ptr);
     }
 }
 
@@ -323,22 +370,58 @@ class BoundsException: Exception {
 }
 
 private template isInputRangeOf(R, E) {
-    import std.range.primitives: isInputRange, ElementType;
-    import std.traits: Unqual;
-
-    enum isInputRangeOf = isInputRange!R && is(Unqual!(ElementType!R) == E);
+    import std.range.primitives: isInputRange;
+    enum isInputRangeOf = isInputRange!R && canAssignFrom!(R, E);
 }
 
 private template isForwardRangeOf(R, E) {
-    import std.range.primitives: isForwardRange, ElementType;
-    import std.traits: Unqual;
-
-    enum isForwardRangeOf = isForwardRange!R && is(Unqual!(ElementType!R) == E);
+    import std.range.primitives: isForwardRange;
+    enum isForwardRangeOf = isForwardRange!R && canAssignFrom!(R, E);
 }
 
 
+private template canAssignFrom(R, E) {
+    enum canAssignFrom = is(typeof({
+        import automem.vector: frontNoAutoDecode;
+        E element = R.init.frontNoAutoDecode;
+    }));
+}
 private size_t toSizeT(long length) @safe @nogc pure nothrow {
     static if(size_t.sizeof < long.sizeof)
         assert(length < cast(long) size_t.max);
     return cast(size_t) length;
+}
+
+// Because autodecoding is fun
+private template ElementType(R) {
+    import std.traits: isSomeString;
+
+    static if(isSomeString!R) {
+        alias ElementType = typeof(R.init[0]);
+    } else {
+        import std.range.primitives: ElementType_ = ElementType;
+        alias ElementType = ElementType_!R;
+    }
+}
+
+@("ElementType")
+@safe pure unittest {
+    import automem.vector: ElementType;
+    static assert(is(ElementType!(int[]) == int));
+    static assert(is(ElementType!(char[]) == char));
+    static assert(is(ElementType!(wchar[]) == wchar));
+    static assert(is(ElementType!(dchar[]) == dchar));
+}
+
+
+// More fun with autodecoding
+private auto frontNoAutoDecode(R)(R range) {
+    import std.traits: isSomeString;
+
+    static if(isSomeString!R)
+        return range[0];
+    else {
+        import std.range.primitives: front;
+        return range.front;
+    }
 }

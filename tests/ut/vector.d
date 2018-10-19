@@ -399,3 +399,44 @@ private void consumeVec(T)(auto ref T vec) {
         assert(0);
     }
 }
+
+@("char")
+@safe unittest {
+    {
+        auto vec = vector('f', 'o', 'o');
+        vec[].shouldEqual("foo");
+        vec ~= 'b';
+        vec ~= ['a', 'r'];
+        vec[].shouldEqual("foobar");
+        vec ~= "quux";
+        vec[].shouldEqual("foobarquux");
+    }
+
+    {
+        auto vec = vector("foo");
+        vec[].shouldEqual("foo");
+        vec.popBack;
+        vec[].shouldEqual("fo");
+    }
+
+    {
+        auto vec = vector("foo");
+        vec ~= "bar";
+        vec[].shouldEqual("foobar");
+    }
+}
+
+
+@("immutable")
+@safe unittest {
+    Vector!(immutable int) vec;
+    vec ~= 42;
+    vec[].shouldEqual([42]);
+}
+
+
+@("String")
+@safe unittest {
+    foreach(c; String("oooooo"))
+        c.should == 'o';
+}
