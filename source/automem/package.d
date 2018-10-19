@@ -26,8 +26,7 @@ public import automem.vector;
 public import automem.array;
 
 
-// This unittest can be @safe if the allocator has @safe functions
-@system unittest {
+@safe unittest {
 
     import std.algorithm: move;
 
@@ -46,7 +45,7 @@ public import automem.array;
         assert(u1.y == 3);
 
         // auto u2 = u1; // won't compile, can only move
-        typeof(u1) u2 = u1.move;
+        typeof(u1) u2 = () @trusted { return u1.move; }();
         assert(cast(bool)u1 == false); // u1 is now empty
     }
     // memory freed for the Point structure created in the block
@@ -82,7 +81,7 @@ public import automem.array;
 
 
 // @nogc test - must explicitly use the allocator for compile-time guarantees
-@system @nogc unittest {
+@safe @nogc unittest {
     import stdx.allocator.mallocator: Mallocator;
 
     static struct Point {
