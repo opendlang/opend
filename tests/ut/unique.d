@@ -40,7 +40,7 @@ mixin TestUtils;
 
 ///
 @("with struct and mallocator")
-@system unittest {
+@safe unittest {
 
     import stdx.allocator.mallocator: Mallocator;
     {
@@ -146,7 +146,7 @@ mixin TestUtils;
 }
 
 @("@nogc")
-@system @nogc unittest {
+@safe @nogc unittest {
 
     import stdx.allocator.mallocator: Mallocator;
 
