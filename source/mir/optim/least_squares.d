@@ -464,7 +464,7 @@ unittest
 /// Rosenbrock
 unittest
 {
-    import mir.ndslice.algorithm: all;
+    import mir.algorithm.iteration: all;
     import mir.ndslice.allocation: slice;
     import mir.ndslice.slice: sliced;
     import mir.blas: nrm2;
@@ -548,7 +548,7 @@ unittest
 ///
 @safe pure unittest
 {
-    import mir.ndslice.algorithm: all;
+    import mir.algorithm.iteration: all;
     import mir.ndslice.allocation: slice;
     import mir.ndslice.topology: map, repeat, iota;
     import mir.ndslice.slice: sliced;
@@ -1061,7 +1061,7 @@ LMStatus optimizeLMImplGeneric(T)
     import mir.lapack;
     import mir.math.common;
     import mir.math.sum: sum;
-    import mir.ndslice.algorithm: all;
+    import mir.algorithm.iteration: all;
     import mir.ndslice.dynamic: transposed;
     import mir.ndslice.topology: canonical, diagonal;
     import mir.utility: max;
@@ -1321,7 +1321,7 @@ pragma(inline, false)
 void applyLowerBound(T)(Slice!(T*) x, Slice!(const(T)*) bound)
 {
     import mir.math.common: fmax;
-    import mir.ndslice.algorithm: each;
+    import mir.algorithm.iteration: each;
     each!((ref x, y) { x = x.fmax(y); } )(x, bound);
 }
 
@@ -1329,7 +1329,7 @@ pragma(inline, false)
 void applyUpperBound(T)(Slice!(T*) x, Slice!(const(T)*) bound)
 {
     import mir.math.common: fmin;
-    import mir.ndslice.algorithm: each;
+    import mir.algorithm.iteration: each;
     each!((ref x, y) { x = x.fmin(y); } )(x, bound);
 }
 
@@ -1355,7 +1355,7 @@ bool allLessOrEqual(T)(
     Slice!(const(T)*) b,
     )
 {
-    import mir.ndslice.algorithm: all;
+    import mir.algorithm.iteration: all;
     return all!"a <= b"(a, b);
 }
 
