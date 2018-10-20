@@ -448,4 +448,5 @@ private void consumeVec(T)(auto ref T vec) {
     const strz = str.stringz;
     const back = () @trusted { return fromStringz(strz); }();
     back.should == "foobar";
+    str[].shouldEqual("foobar");
 }
