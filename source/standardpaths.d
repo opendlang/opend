@@ -235,7 +235,7 @@ string writablePath(StandardPath type, FolderFlag params = FolderFlag.none) noth
  * Get paths for various locations.
  * Returns: Array of paths where files of $(U type) belong including one returned by $(D writablePath), or an empty array if no paths are defined for $(U type).
  * This function does not ensure if all returned paths exist and appear to be accessible directories. Returned strings are not required to be unique.
- * Note: This function does cache its results.
+ * Note: This function does not cache its results.
  * It may cause performance impact to call this function often since retrieving some paths can be relatively expensive operation.
  * Example:
 --------------------
