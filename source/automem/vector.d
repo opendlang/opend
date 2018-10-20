@@ -103,7 +103,7 @@ struct Vector(E, Allocator = typeof(theAllocator)) if(isAllocator!Allocator) {
         }();
     }
 
-    ~this() scope {
+    ~this() {
         free;
     }
 
@@ -232,14 +232,14 @@ struct Vector(E, Allocator = typeof(theAllocator)) if(isAllocator!Allocator) {
 
     /// Append to the vector from a range
     void opOpAssign(string op, R)
-                   (R range)
+                   (scope R range)
         scope
         if(op == "~" && isForwardRangeOf!(R, E))
     {
         import std.range.primitives: walkLength, save;
 
         long index = length;
-        expand(length + range.save.walkLength);
+        expand(length + () @trusted { return range.save.walkLength; }());
 
         foreach(element; range) {
             const safeIndex = toSizeT(index++);

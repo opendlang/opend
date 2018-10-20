@@ -440,3 +440,22 @@ private void consumeVec(T)(auto ref T vec) {
     foreach(c; String("oooooo"))
         c.should == 'o';
 }
+
+
+@("assign to member vector")
+@safe unittest {
+    static struct Foo {
+        StringM str;
+
+        this(int i) {
+            str = createString();
+        }
+    }
+
+}
+
+private auto createString() {
+    StringM ret;
+    ret ~= "foo";
+    return ret;
+}
