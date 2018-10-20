@@ -441,21 +441,11 @@ private void consumeVec(T)(auto ref T vec) {
         c.should == 'o';
 }
 
-
-@("assign to member vector")
+@("stringz")
 @safe unittest {
-    static struct Foo {
-        StringM str;
-
-        this(int i) {
-            str = createString();
-        }
-    }
-
-}
-
-private auto createString() {
-    StringM ret;
-    ret ~= "foo";
-    return ret;
+    import std.string: fromStringz;
+    auto str = vector("foobar");
+    const strz = str.stringz;
+    const back = () @trusted { return fromStringz(strz); }();
+    back.should == "foobar";
 }

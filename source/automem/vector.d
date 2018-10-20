@@ -318,6 +318,22 @@ struct Vector(E, Allocator = typeof(theAllocator)) if(isAllocator!Allocator) {
         return length > 0;
     }
 
+    static if(is(Unqual!E == char)) {
+        // return a null-terminated C string
+        auto stringz(this This)() return scope {
+            if(capacity == length) reserve(length + 1);
+
+            static if(!isElementMutable) {
+                assert(_elements[length] == E.init || _elements[length] == 0,
+                       "Assigning to non default initialised non mutable member");
+            }
+
+            () @trusted { mutableElements[length] = 0; }();
+
+            return &_elements[0];
+        }
+    }
+
 private:
 
     E[] _elements;
