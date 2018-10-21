@@ -17,18 +17,18 @@ void main(string[] args)
         with(renderer)
         {
             // Fill page with light grey
-            fillStyle = "#eee";
+            fillStyle = brush("#eee");
             fillRect(0, 0, pageWidth, pageHeight);
 
             // Draw a red line
-            strokeStyle = "#ff0000";
+            strokeStyle = brush("#ff0000");
             lineWidth(4);
             beginPath(100, 150);
             lineTo(100, 250);
             stroke();
 
             // Prepare text settings
-            fillStyle = "#000";
+            fillStyle = brush("#000");
             fontFace("Arial");
             fontWeight(FontWeight.bold);
             fontStyle(FontStyle.italic);

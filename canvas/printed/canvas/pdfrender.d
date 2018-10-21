@@ -209,18 +209,20 @@ final class PDFDocument : IRenderingContext2D
 
     // Color selection
 
-    override void fillStyle(string color)
+    override void fillStyle(Brush brush)
     {
-        ubyte[3] c = parseHTMLColor(color);
+        // TODO support alpha here
+        ubyte[4] c = brush.toRGBAColor();
         outFloat(c[0] / 255.0f);
         outFloat(c[1] / 255.0f);
         outFloat(c[2] / 255.0f);
         output(" rg");
     }
 
-    override void strokeStyle(string color)
+    override void strokeStyle(Brush brush)
     {
-        ubyte[3] c = parseHTMLColor(color);
+        // TODO support alpha here
+        ubyte[4] c = brush.toRGBAColor();
         outFloat(c[0] / 255.0f);
         outFloat(c[1] / 255.0f);
         outFloat(c[2] / 255.0f);

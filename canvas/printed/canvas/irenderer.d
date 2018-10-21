@@ -53,15 +53,15 @@ interface IRenderingContext2D
 
     // COLOURS
 
-    /// Changes the current fill color.
+    /// Changes the current fill brush.
     /// Params:
     ///    color Any HTML color string.
-    void fillStyle(string color);
+    void fillStyle(Brush brush);
 
-    /// Changes the current stroke color.
+    /// Changes the current stroke brush.
     /// Params:
     ///    color Any HTML color string.
-    void strokeStyle(string style);
+    void strokeStyle(Brush brush);
 
 
     // BASIC SHAPES
@@ -146,4 +146,64 @@ enum FontStyle
     normal,
     italic,
     oblique
+}
+
+/// Make a brush suitable for `fillStyle` and `strokeStyle`.
+Brush brush(int r, int g, int b, int a)
+{
+    return Brush(r, g, b, a);
+}
+///ditto
+Brush brush(int r, int g, int b)
+{
+    return Brush(r, g, b);
+}
+///ditto
+Brush brush(string htmlColor)
+{
+    return Brush(htmlColor);
+}
+
+struct Brush
+{
+    ubyte[4] rgba;
+
+    this(int r, int g, int b)
+    {
+        rgba[0] = cast(ubyte)r;
+        rgba[1] = cast(ubyte)g;
+        rgba[2] = cast(ubyte)b;
+        rgba[3] = 255;
+    }
+
+    this(int r, int g, int b, int a)
+    {
+        rgba[0] = cast(ubyte)r;
+        rgba[1] = cast(ubyte)g;
+        rgba[2] = cast(ubyte)b;
+        rgba[3] = cast(ubyte)a;
+    }
+
+    this(string htmlColor)
+    {
+        import printed.canvas.color;
+        rgba = parseHTMLColor(htmlColor);
+    }
+
+    bool isOpaque()
+    {
+        return rgba[3] == 255;
+    }
+
+    ubyte[4] toRGBAColor()
+    {
+        return rgba;
+    }
+
+    string toSVGColor()
+    {
+        import std.string;
+        // TODO: optimize
+        return format("rgba(%d, %d, %d, %f)", rgba[0], rgba[1], rgba[2], rgba[3] / 255.0f);
+    }
 }

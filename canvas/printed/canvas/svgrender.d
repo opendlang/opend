@@ -79,14 +79,14 @@ public:
         beginPage();        
     }
 
-    override void fillStyle(string color)
+    override void fillStyle(Brush brush)
     {
-        _currentFill = color;
+        _currentFill = brush.toSVGColor();
     }
 
-    override void strokeStyle(string color)
+    override void strokeStyle(Brush brush)
     {
-        _currentStroke = color;
+        _currentStroke = brush.toSVGColor();
     }
 
     override void fillRect(float x, float y, float width, float height)

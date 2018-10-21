@@ -4,7 +4,7 @@ module printed.canvas.color;
 
 /// Parses a HTML color and gives back a RGB triplet.
 /// Currently only some HTML colors are supported.
-ubyte[3] parseHTMLColor(string s)
+ubyte[4] parseHTMLColor(string s)
 {
     int fromHex(char ch)
     {
@@ -28,14 +28,14 @@ ubyte[3] parseHTMLColor(string s)
         r |= (r << 4);
         g |= (g << 4);
         b |= (b << 4);
-        return [cast(ubyte)r, cast(ubyte)g, cast(ubyte)b];
+        return [cast(ubyte)r, cast(ubyte)g, cast(ubyte)b, 255];
     }
     else if (s.length == 7) // eg: "#44AAff"
     {
         int r = (fromHex(s[1]) << 4)| fromHex(s[2]);
         int g = (fromHex(s[3]) << 4)| fromHex(s[4]);
         int b = (fromHex(s[5]) << 4)| fromHex(s[6]);
-        return [cast(ubyte)r, cast(ubyte)g, cast(ubyte)b];
+        return [cast(ubyte)r, cast(ubyte)g, cast(ubyte)b, 255];
     }
     else
         throw new Exception("Couldn't parse color " ~ s);
