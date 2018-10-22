@@ -147,7 +147,7 @@ struct TaggedAlgebraic(U) if (is(U == union) || is(U == struct))
 					else static if (is(typeof(to!T(trustedGet!(fieldNames[i]))))) {
 						return to!T(trustedGet!(fieldNames[i]));
 					} else {
-						assert(false, "Cannot cast a " ~ m_kind.to!string
+						assert(false, "Cannot cast a " ~ fieldNames[i]
 								~ " value of type " ~ FT.stringof ~ " to " ~ T.stringof);
 					}
 			}
@@ -168,7 +168,7 @@ struct TaggedAlgebraic(U) if (is(U == union) || is(U == struct))
 					else static if (is(typeof(to!T(trustedGet!(fieldNames[i]))))) {
 						return to!T(trustedGet!(fieldNames[i]));
 					} else {
-						assert(false, "Cannot cast a " ~ m_kind.to!string
+						assert(false, "Cannot cast a " ~ fieldNames[i]
 								~ " value of type" ~ FT.stringof ~ " to " ~ T.stringof);
 					}
 			}
@@ -223,13 +223,13 @@ struct TaggedAlgebraic(U) if (is(U == union) || is(U == struct))
 }
 
 ///
-unittest
+@safe unittest
 {
 	import taggedalgebraic;
 
 	struct Foo {
 		string name;
-		void bar() {}
+		void bar() @safe {}
 	}
 
 	union Base {
@@ -778,15 +778,29 @@ static if (__VERSION__ >= 2072) {
 ref inout(T) get(T, U)(ref inout(TaggedAlgebraic!U) ta)
 {
 	import std.format : format;
-	assert(hasType!(T, U)(ta), () { scope (failure) assert(false); return format("Trying to get %s but have %s.", T.stringof, ta.kind); } ());
+	assert(hasType!(T, U)(ta), "Type mismatch!");
 	return ta.trustedGet!T;
 }
 /// ditto
 inout(T) get(T, U)(inout(TaggedAlgebraic!U) ta)
 {
 	import std.format : format;
-	assert(hasType!(T, U)(ta), () { scope (failure) assert(false); return format("Trying to get %s but have %s.", T.stringof, ta.kind); } ());
+	assert(hasType!(T, U)(ta), "Type mismatch!");
 	return ta.trustedGet!T;
+}
+
+@nogc @safe nothrow unittest {
+	struct Fields {
+		int a;
+		float b;
+	}
+	alias TA = TaggedAlgebraic!Fields;
+	auto ta = TA(1);
+	assert(ta.get!int == 1);
+	ta.get!int = 2;
+	assert(ta.get!int == 2);
+	ta = TA(1.0);
+	assert(ta.get!float == 1.0);
 }
 
 
