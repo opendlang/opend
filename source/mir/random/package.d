@@ -582,7 +582,7 @@ T randIndex(T)(T m)
 {
     //CTFE check.
     import std.meta : AliasSeq;
-    import mir.random.engine.xorshift : Xoroshiro128Plus;
+    import mir.random.engine.xoshiro : Xoroshiro128Plus;
     foreach (IntType; AliasSeq!(ubyte,ushort,uint,ulong))
     {
         enum IntType e = (){auto g = Xoroshiro128Plus(1); return g.randIndex!IntType(100);}();
@@ -594,7 +594,7 @@ T randIndex(T)(T m)
 @nogc nothrow pure @safe version(mir_random_test) unittest
 {
     //Test production of ulong from ulong generator.
-    import mir.random.engine.xorshift;
+    import mir.random.engine.xoshiro;
     auto gen = Xoroshiro128Plus(1);
     enum ulong limit = 10;
     enum count = 10;
@@ -655,7 +655,7 @@ size_t randGeometric()()
 ///
 @nogc nothrow pure @safe version(mir_random_test) unittest
 {
-    import mir.random.engine.xorshift;
+    import mir.random.engine.xoshiro;
     auto gen = Xoroshiro128Plus(1);
 
     size_t s = gen.randGeometric;

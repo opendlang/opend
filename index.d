@@ -72,7 +72,11 @@ $(BOOKTABLE ,
     )
     $(TR
         $(TDNW $(MREF mir,random,engine,xorshift))
-        $(TD $(HTTP xoshiro.di.unimi.it, xoshiro256**), $(HTTP xoshiro.di.unimi.it, 32-bit xoshiro128**), $(HTTP en.wikipedia.org/wiki/Xoroshiro128%2B, xoroshiro128+), $(HTTP en.wikipedia.org/wiki/Xorshift#xorshift.2A, xorshift1024*φ), xorshift64*/32, and $(HTTP en.wikipedia.org/wiki/Xorshift, xorshift) generators.)
+        $(TD $(HTTP en.wikipedia.org/wiki/Xorshift#xorshift.2A, xorshift1024*φ), xorshift64*/32, and $(HTTP en.wikipedia.org/wiki/Xorshift, xorshift) generators.)
+    )
+    $(TR
+        $(TDNW $(MREF mir,random,engine,xoshiro))
+        $(TD $(HTTP xoshiro.di.unimi.it, xoshiro256**), $(HTTP xoshiro.di.unimi.it, 32-bit xoshiro128**), $(HTTP en.wikipedia.org/wiki/Xoroshiro128%2B, xoroshiro128+) generators.)
     )
 )
 
