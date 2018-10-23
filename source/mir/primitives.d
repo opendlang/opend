@@ -70,7 +70,7 @@ enum bool hasShape(R) = is(typeof(
 }
 
 ///
-auto shape(Range)(auto ref Range range) @property
+auto shape(Range)(scope const auto ref Range range) @property
     if (hasLength!Range || hasShape!Range)
 {
     static if (__traits(hasMember, Range, "shape"))
@@ -105,7 +105,7 @@ template DimensionCount(T)
         enum size_t DimensionCount = 1;
 }
 
-package(mir) bool anyEmptyShape(size_t N)(auto ref in size_t[N] shape) @property
+package(mir) bool anyEmptyShape(size_t N)(scope const auto ref size_t[N] shape) @property
 {
     foreach (i; Iota!N)
         if (shape[i] == 0)
