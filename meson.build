@@ -19,6 +19,7 @@ mir_random_src = [
     'source/mir/random/engine/pcg.d',
     'source/mir/random/engine/splitmix.d',
     'source/mir/random/engine/xorshift.d',
+    'source/mir/random/engine/xoshiro.d',
     'source/mir/random/flex/internal/area.d',
     'source/mir/random/flex/internal/calc.d',
     'source/mir/random/flex/internal/transformations.d',
