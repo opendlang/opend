@@ -401,7 +401,7 @@ void optimize(alias f, TaskPool, T)(scope ref LeastSquaresLM!T lm, TaskPool task
         {
             import mir.ndslice.topology: iota;
             foreach(i; taskPool.parallel(count.iota))
-                task(taskContext, taskPool.size, taskPool.workerIndex - 1, i);
+                task(taskContext, taskPool.size, taskPool.size <= 1 ? 0 : taskPool.workerIndex - 1, i);
         }
         else // for debug
         {
