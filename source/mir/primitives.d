@@ -114,7 +114,7 @@ package(mir) bool anyEmptyShape(size_t N)(scope const auto ref size_t[N] shape) 
 }
 
 ///
-bool anyEmpty(Range)(Range range) @property
+bool anyEmpty(Range)(scope const auto ref Range range) @property
     if (hasShape!Range || __traits(hasMember, Range, "anyEmpty"))
 {
     static if (__traits(hasMember, Range, "anyEmpty"))
@@ -133,7 +133,7 @@ bool anyEmpty(Range)(Range range) @property
 }
 
 ///
-size_t elementCount(Range)(Range range) @property
+size_t elementCount(Range)(scope const auto ref Range range) @property
     if (hasShape!Range || __traits(hasMember, Range, "elementCount"))
 {
     static if (__traits(hasMember, Range, "elementCount"))
@@ -176,7 +176,7 @@ alias DeepElementType(S : T[], T) = T;
 pragma(inline, true):
 
 ///
-bool empty(size_t dim = 0, T)(in T[] ar)
+bool empty(size_t dim = 0, T)(scope const T[] ar)
     if (!dim)
 {
     return !ar.length;
