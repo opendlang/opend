@@ -4,6 +4,7 @@ os:
  - linux
 language: d
 d:
+ - dmd
  - ldc
  - ldc-beta
 matrix:
@@ -15,18 +16,19 @@ branches:
 script:
  - dub test -c unittest-openblas
  - rm -rf .dub && dub build -c blas --compiler=ldmd2 --build-mode=singleFile --build=better-c-release --force && g++ -std=c++1y -pthread -I./include examples/least_squares.cpp -L./ -lmir-optim -llapack -lblas && ./a.out
- - meson build && cd build && ninja -j4 && ninja test -v && cd ..
+#  - meson build && cd build && ninja -j4 && ninja test -v && cd ..
 
 packages:
-  - libopenblas-dev
+  # - libopenblas-dev
+  # - libopenblas-dev
   - pkg-config
 
-install:
-  - pyenv global system 3.6
-  - pip3 install 'meson>=0.45'
-  - mkdir .ntmp
-  - curl -L https://github.com/ninja-build/ninja/releases/download/v1.8.2/ninja-linux.zip -o .ntmp/ninja-linux.zip
-  - unzip .ntmp/ninja-linux.zip -d .ntmp
-before_script:
-  - export PATH=$PATH:$PWD/.ntmp
+# install:
+#   - pyenv global system 3.6
+#   - pip3 install 'meson>=0.45'
+#   - mkdir .ntmp
+#   - curl -L https://github.com/ninja-build/ninja/releases/download/v1.8.2/ninja-linux.zip -o .ntmp/ninja-linux.zip
+#   - unzip .ntmp/ninja-linux.zip -d .ntmp
+# before_script:
+#   - export PATH=$PATH:$PWD/.ntmp
 

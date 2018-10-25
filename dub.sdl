@@ -5,8 +5,7 @@ copyright "Copyright © 2018, Kaleidic Associates and Symmetry Investments"
 targetType "library"
 license "BSL-1.0"
 
-dependency "mir-algorithm" version=">=2.0.0-beta2 <4.0.0"
-dependency "mir-lapack" version="~>1.0.0"
+dependency "mir-lapack" version="~>1.0.1"
 
 buildType "better-c-release" {
 	buildOptions "releaseMode" "inline" "noBoundsCheck"
@@ -21,7 +20,7 @@ configuration "library" {
 }
 
 configuration "unittest" {
-	dependency "mir-random" version="~>1.0.0-beta"
+	dependency "mir-random" version=">=1.0.0-beta"
 }
 
 configuration "openblas" {
@@ -81,31 +80,31 @@ configuration "zerolib" {
 }
 
 configuration "unittest-openblas" {
-	dependency "mir-random" version="~>1.0.0-beta"
+	dependency "mir-random" version=">=1.0.0-beta"
 	subConfiguration "mir-lapack" "openblas"
 }
 
 configuration "unittest-threelib" {
-	dependency "mir-random" version="~>1.0.0-beta"
+	dependency "mir-random" version=">=1.0.0-beta"
 	subConfiguration "mir-lapack" "threelib"
 }
 
 configuration "unittest-cblas" {
-	dependency "mir-random" version="~>1.0.0-beta"
+	dependency "mir-random" version=">=1.0.0-beta"
 	subConfiguration "mir-lapack" "cblas"
 }
 
 configuration "unittest-blas" {
-	dependency "mir-random" version="~>1.0.0-beta"
+	dependency "mir-random" version=">=1.0.0-beta"
 	subConfiguration "mir-lapack" "blas"
 }
 
 configuration "unittest-lapack" {
-	dependency "mir-random" version="~>1.0.0-beta"
+	dependency "mir-random" version=">=1.0.0-beta"
 	subConfiguration "mir-lapack" "lapack"
 }
 
 configuration "unittest-mkl-sequential" {
-	dependency "mir-random" version="~>1.0.0-beta"
+	dependency "mir-random" version=">=1.0.0-beta"
 	subConfiguration "mir-lapack" "mkl-sequential"
 }
