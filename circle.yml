@@ -1,6 +1,6 @@
 machine:
   environment:
-    DMD: 2.074.1
+    DMD: 2.082.1
     PATH: "${HOME}/dmd2/linux/bin64:${PATH}"
     LD_LIBRARY_PATH: "${HOME}/dmd2/linux/lib64:${LD_LIBRARY_PATH}"
 checkout:
@@ -11,6 +11,7 @@ dependencies:
   override:
     - curl -fsSL --retry 3 "http://downloads.dlang.org/releases/2.x/$DMD/dmd.$DMD.linux.tar.xz" | tar -C ~ -Jxf -
     - dmd --version
+    - git clone https://github.com/libmir/mir-core
     - git clone https://github.com/libmir/mir-algorithm
     - git clone https://github.com/libmir/mir-linux-kernel
 test:

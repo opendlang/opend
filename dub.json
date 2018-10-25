@@ -12,7 +12,7 @@
 	"copyright": "Copyright © 2016-2017, Ilya Yaroshenko, see also copyright per file",
 	"license": "BSL-1.0 (default), Apache License, Version 2.0 for PCG",
 	"dependencies": {
-		"mir-algorithm": ">=2.0.0 <3.0.0"
+		"mir-algorithm": ">=2.0.0 <3.1.0"
 	},
 	"dependencies-linux": {
 		"mir-linux-kernel": "~>1.0.0"
@@ -31,5 +31,5 @@
 			"versions": ["mir_random_test"]
 		}
 	},
- 	"libs-windows": ["advapi32"]
+	"libs-windows": ["advapi32"]
 }

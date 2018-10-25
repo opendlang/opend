@@ -185,7 +185,7 @@ nothrow @safe version(mir_random_test) unittest
 /// Random sample from uniform distribution strictly in the interval `(-1, 1)`.
 nothrow @safe version(mir_random_test) unittest
 {
-    import mir.ndslice.algorithm: all;
+    import mir.algorithm.iteration: all;
     import mir.math.common: fabs;
     // Using default RNE:
     auto sample = randomSlice!double(10);
@@ -282,11 +282,11 @@ struct VitterStrides
     }
 
     /// Returns: `true` if sample length equals to 0.
-    bool empty()() @property { return n == 0; }
+    bool empty()() const @property { return n == 0; }
     /// Returns: `N` (remaining sample length)
-    size_t length()() @property { return n; }
+    size_t length()() const @property { return n; }
     /// Returns: `n` (remaining range length)
-    size_t tail()() @property { return N; }
+    size_t tail()() const @property { return N; }
 
     /++
     Returns: random stride step (`S`).
@@ -447,7 +447,7 @@ nothrow @safe version(mir_random_test) unittest
 ///
 nothrow @safe version(mir_random_test) unittest
 {
-    import mir.ndslice.algorithm: equal;
+    import mir.algorithm.iteration: equal;
     import mir.ndslice.topology: iota;
     import mir.random.engine.xorshift;
 
@@ -526,9 +526,9 @@ struct RandomSample(G, Range)
     }
 
     /// Range primitives
-    size_t length()() @property { return strides.length + 1; }
+    size_t length() const @property { return strides.length + 1; }
     /// ditto
-    bool empty()() @property { return length == 0; }
+    bool empty()() const @property { return length == 0; }
     /// ditto
     auto ref front()() @property { return range.front; }
     /// ditto
@@ -554,9 +554,9 @@ struct RandomSample(Range, alias gen)
     }
 
     /// Range primitives
-    size_t length()() @property { return strides.length + 1; }
+    size_t length()() const @property { return strides.length + 1; }
     /// ditto
-    bool empty()() @property { return length == 0; }
+    bool empty()() const @property { return length == 0; }
     /// ditto
     auto ref front()() @property { return range.front; }
     /// ditto
