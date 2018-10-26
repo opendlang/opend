@@ -324,11 +324,11 @@ struct Vector(E, Allocator = typeof(theAllocator)) if(isAllocator!Allocator) {
             if(capacity == length) reserve(length + 1);
 
             static if(!isElementMutable) {
-                assert(_elements[length] == E.init || _elements[length] == 0,
+                assert(_elements[length.toSizeT] == E.init || _elements[length.toSizeT] == 0,
                        "Assigning to non default initialised non mutable member");
             }
 
-            () @trusted { mutableElements[length] = 0; }();
+            () @trusted { mutableElements[length.toSizeT] = 0; }();
 
             return &_elements[0];
         }
