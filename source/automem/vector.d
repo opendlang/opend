@@ -192,7 +192,7 @@ struct Vector(E, Allocator = typeof(theAllocator)) if(isAllocator!Allocator) {
     /// Access the ith element. Can throw RangeError.
     ref inout(E) opIndex(long i) inout {
         if(i < 0 || i >= length)
-            throw boundsException;
+            mixin(throwBoundsException);
         return _elements[i.toSizeT];
     }
 
@@ -259,10 +259,10 @@ struct Vector(E, Allocator = typeof(theAllocator)) if(isAllocator!Allocator) {
     /// Returns a slice
     auto opSlice(this This)(long start, long end) scope return {
         if(start < 0 || start >= length)
-            throw boundsException;
+            mixin(throwBoundsException);
 
         if(end < 0 || end >= length)
-            throw boundsException;
+            mixin(throwBoundsException);
 
         return _elements[start.toSizeT .. end.toSizeT];
     }
@@ -283,10 +283,10 @@ struct Vector(E, Allocator = typeof(theAllocator)) if(isAllocator!Allocator) {
         /// Assign all elements in the given range to the given value
         void opSliceAssign(E value, long start, long end) {
             if(start < 0 || start >= length)
-                throw boundsException;
+                mixin(throwBoundsException);
 
             if(end < 0 || end >= length)
-                throw boundsException;
+                mixin(throwBoundsException);
 
             _elements[start.toSizeT .. end.toSizeT] = value;
         }
@@ -304,10 +304,10 @@ struct Vector(E, Allocator = typeof(theAllocator)) if(isAllocator!Allocator) {
         /// Assign all elements in the given range  using the given operation and the given value
         void opSliceOpAssign(string op)(E value, long start, long end) scope {
             if(start < 0 || start >= length)
-                throw boundsException;
+                mixin(throwBoundsException);
 
             if(end < 0 || end >= length)
-                throw boundsException;
+                mixin(throwBoundsException);
 
             foreach(ref elt; _elements[start.toSizeT .. end.toSizeT])
                 mixin(`elt ` ~ op ~ `= value;`);
@@ -383,12 +383,34 @@ private:
     }
 }
 
-private static immutable boundsException = new BoundsException("Out of bounds index");
+static if (__VERSION__ >= 2082) // version identifier D_Exceptions was added in 2.082
+{
+    version (D_Exceptions)
+        private enum haveExceptions = true;
+    else
+        private enum haveExceptions = false;
+}
+else
+{
+    version (D_BetterC)
+        private enum haveExceptions = false;
+    else
+        private enum haveExceptions = true;
+}
 
-class BoundsException: Exception {
-    import std.exception: basicExceptionCtors;
+static if (haveExceptions)
+{
+    private static immutable boundsException = new BoundsException("Out of bounds index");
+    private enum throwBoundsException = q{throw boundsException;};
+    class BoundsException: Exception {
+        import std.exception: basicExceptionCtors;
 
-    mixin basicExceptionCtors;
+        mixin basicExceptionCtors;
+    }
+}
+else
+{
+    private enum throwBoundsException = q{assert(0, "Out of bounds index");};
 }
 
 private template isInputRangeOf(R, E) {
