@@ -1,11 +1,99 @@
 module printed.canvas.color;
 
+import std.algorithm;
+
 @safe:
 
 /// Parses a HTML color and gives back a RGB triplet.
 /// Currently only some HTML colors are supported.
 ubyte[4] parseHTMLColor(string s)
 {
+    // Add a terminal char (we chose zero)
+    s ~= '\0';
+    
+    int index = 0;
+
+    char peek()
+    {
+        return s[index];
+    }
+
+    void next()
+    {
+        index++;
+    }
+
+    void expect(char ch)
+    {
+        if (!parse(ch))
+            throw new Exception(format("Expected char %s in color string", ch));
+    }
+
+    bool parse(char ch)
+    {
+        if (peek() == ch)
+        {
+            next;
+            return true;
+        }
+        return false;
+    }
+
+    bool parse(string s)
+    {
+        int save = index;
+
+        for (int i = 0; i < s.length; ++i)
+        {
+            if (!parse(s[i]))
+            {
+                index = save;
+                return false;
+            }
+        }
+        return true;
+    }
+
+    void skipWhiteSpace()
+    {
+        while (!eol)
+        {
+            char ch = peek();
+            if (ch == ' ') next;
+        }
+    }
+
+    skipWhiteSpace();
+
+    if (peek() == '#')
+    {
+
+    }
+    else if (parse("rgb"))
+    {
+        bool hasAlpha = parse("a");
+        skipWhiteSpace();
+        expect('(');
+
+        expect(')');
+    }
+    else if (parse("hsv"))
+    {
+        bool hasAlpha = parse("a");
+        skipWhiteSpace();
+        expect('(');
+        int r = parseInt();
+        expect(')');
+    }
+
+    skipWhiteSpace();
+    if (!parse('\0'))
+        throw new Exception("Expected end of input at the end of color string");
+
+    // clamp and return
+}
+
+/*
     int fromHex(char ch)
     {
         if (ch >= '0' && ch <= '9')
@@ -40,3 +128,4 @@ ubyte[4] parseHTMLColor(string s)
     else
         throw new Exception("Couldn't parse color " ~ s);
 }
+*/

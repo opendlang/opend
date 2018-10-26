@@ -204,6 +204,6 @@ struct Brush
     {
         import std.string;
         // TODO: optimize
-        return format("rgba(%d, %d, %d, %f)", rgba[0], rgba[1], rgba[2], rgba[3] / 255.0f);
+        return format("rgba(%d,%d,%d,%f)", rgba[0], rgba[1], rgba[2], rgba[3] / 255.0f);
     }
 }
