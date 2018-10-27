@@ -20,7 +20,7 @@ branches:
 
 script:
  - dub test -c unittest-blas
- - rm -rf .dub && dub build -c blas --compiler=ldmd2 --build-mode=singleFile --build=better-c-release --force && g++ -std=c++1y -pthread -I./include examples/least_squares.cpp -L./ -lmir-optim -llapack -lblas && ./a.out
+ - if [ "$DC" = "ldc2" ]; then rm -rf .dub && dub build -c blas --compiler=ldmd2 --build-mode=singleFile --build=better-c-release --force && g++ -std=c++1y -pthread -I./include examples/least_squares.cpp -L./ -lmir-optim -llapack -lblas && ./a.out; fi
 #  - meson build && cd build && ninja -j4 && ninja test -v && cd ..
 
 addons:
