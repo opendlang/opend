@@ -618,7 +618,7 @@ template forward(args...)
         else
             @optmath @property fwd()()
             {
-                static if (is(arg[0] == struct))
+                static if (is(typeof(arg) == struct))
                 {
                     import std.algorithm.mutation : move;
                     return arg.move;
