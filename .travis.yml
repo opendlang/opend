@@ -19,8 +19,7 @@ script:
 #  - meson build && cd build && ninja -j4 && ninja test -v && cd ..
 
 packages:
-  # - libopenblas-dev
-  # - libopenblas-dev
+  - libopenblas-dev
   - pkg-config
 
 # install:
