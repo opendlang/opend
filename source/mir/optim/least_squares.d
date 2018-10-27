@@ -458,7 +458,7 @@ unittest
         },
     )(taskPool);
 
-    assert(nrm2((lm.x - [1, 1].sliced).slice) < 1e-8);
+    assert(nrm2((lm.x - [1, 1].sliced).slice) < 1e-6);
 }
 
 /// Rosenbrock
