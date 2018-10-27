@@ -89,10 +89,7 @@ export
 nothrow @nogc
 extern(C):
 
-version(LDC) version = CRT;
-version(D_BetterC) version = CRT;
-
-version(CRT)
+version(D_BetterC)
 {
     pragma(crt_constructor)
     void crt_mir_cpuid_init()

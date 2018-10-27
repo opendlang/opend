@@ -15,7 +15,7 @@ DOC_OUTPUT_DIR=web
 DOC_SOURCE_DIR=doc
 GENERATED=.generated
 CPUID_DIR=source
-ALGORITHM_DIR=mir-algorithm/source
+CORE_DIR=mir-core/source
 DLANGORG_DIR=$(DOC_SOURCE_DIR)/dlang.org
 
 ###########################################################
@@ -77,7 +77,7 @@ ADDSOURCE=$(if $(subst index.d,,$1),$(CPUID_DIR)/$1,$1)
 # ../web/phobos/std_conv.html : std/conv.d $(STDDOC) ; ...
 $(foreach p,$(SRC_DOCUMENTABLES),$(eval \
 $(DOC_OUTPUT_DIR)/$(call D2HTML,$p) : $(call ADDSOURCE,$p) $(STDDOC) ;\
-  $(DDOC) $(STDDOC) -I$(CPUID_DIR) -I$(ALGORITHM_DIR) -Df$$@ $$<))
+  $(DDOC) $(STDDOC) -I$(CPUID_DIR) -I$(CORE_DIR) -Df$$@ $$<))
 
 ###########################################################
 # Setup all other resources needed by dlang.org

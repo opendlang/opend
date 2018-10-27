@@ -1,8 +1,8 @@
 project('mir-cpuid', 'd', version : '1.0.0', license: 'BSL-1.0')
 
-mir_algorithm_dep = dependency('mir-algorithm', fallback : ['mir-algorithm', 'mir_algorithm_dep'])
+mir_core_dep = dependency('mir-core', fallback : ['mir-core', 'mir_core_dep'])
 
-required_deps = [mir_algorithm_dep]
+required_deps = [mir_core_dep]
 
 mir_cpuid_dir = include_directories('source/')
 
