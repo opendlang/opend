@@ -27,7 +27,7 @@ addons:
   apt:
     update: true
     packages:
-     - libolapack-dev
+     - liblapack-dev
      - pkg-config
 
 # install:
