@@ -109,7 +109,7 @@ void emplaceRef(T, UT, Args...)(ref UT chunk, auto ref Args args)
     }
 }
 // ditto
-package void emplaceRef(UT, Args...)(ref UT chunk, auto ref Args args)
+void emplaceRef(UT, Args...)(ref UT chunk, auto ref Args args)
 if (is(UT == Unqual!UT))
 {
     emplaceRef!(UT, UT)(chunk, args);
