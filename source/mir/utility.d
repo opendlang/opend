@@ -26,6 +26,20 @@ pragma(LDC_inline_ir) R inlineIR(string s, R, P...)(P) @safe pure nothrow @nogc;
 
 @optmath:
 
+version(LDC)
+{
+    ///
+    public import ldc.intrinsics: _expect = llvm_expect;
+}
+else
+{
+    ///
+    T _expect(T)(T val, T expected_val) if (__traits(isIntegral, T))
+    {
+        return val;
+    }
+}
+
 public import std.algorithm.mutation: swap;
 
 void swapStars(I1, I2)(auto ref I1 i1, auto ref I2 i2)
