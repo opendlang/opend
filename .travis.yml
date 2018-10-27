@@ -1,26 +1,34 @@
-dist: trusty
 sudo: false
+
 os:
  - linux
+
 language: d
+
 d:
  - dmd
  - ldc
  - ldc-beta
+
 matrix:
   allow_failures:
     - {d: ldc-beta}
+
 branches:
   only:
     - master
+
 script:
+ - ln -s /opt/OpenBLAS/lib/libopenblas.so /usr/lib/libopenblas.so
  - dub test -c unittest-openblas
  - rm -rf .dub && dub build -c blas --compiler=ldmd2 --build-mode=singleFile --build=better-c-release --force && g++ -std=c++1y -pthread -I./include examples/least_squares.cpp -L./ -lmir-optim -llapack -lblas && ./a.out
 #  - meson build && cd build && ninja -j4 && ninja test -v && cd ..
 
-packages:
-  - libopenblas-dev
-  - pkg-config
+addons:
+  apt:
+    packages:
+     - libopenblas-dev
+     - pkg-config
 
 # install:
 #   - pyenv global system 3.6
