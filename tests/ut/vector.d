@@ -450,3 +450,15 @@ private void consumeVec(T)(auto ref T vec) {
     back.should == "foobar";
     str[].shouldEqual("foobar");
 }
+
+
+@("ptr")
+@safe unittest {
+    const vec = vector(0, 1, 2, 3);
+    takesScopePtr(vec.ptr);
+    () @trusted { vec.ptr[1].shouldEqual(1); }();
+}
+
+private void takesScopePtr(T)(scope const(T)* ptr) {
+
+}

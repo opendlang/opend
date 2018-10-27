@@ -334,6 +334,10 @@ struct Vector(E, Allocator = typeof(theAllocator)) if(isAllocator!Allocator) {
         }
     }
 
+    auto ptr(this This)() return scope {
+        return &_elements[0];
+    }
+
 private:
 
     E[] _elements;
