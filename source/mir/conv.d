@@ -46,73 +46,78 @@ Furthermore, emplaceRef optionally takes a type parameter, which specifies
 the type we want to build. This helps to build qualified objects on mutable
 buffer, without breaking the type system with unsafe casts.
 +/
-void emplaceRef(T, UT, Args...)(ref UT chunk, auto ref Args args)
+template emplaceRef(T)
 {
-    static if (args.length == 0)
+    ///
+    void emplaceRef(UT, Args...)(ref UT chunk, auto ref Args args)
     {
-        static assert(is(typeof({static T i;})), "Cannot emplace a %1$s because " ~ T.stringof ~ "s.this() is annotated with @disable.");
-        static if (is(T == class))
-            static assert(!isAbstractClass!T, T.stringof ~ " is abstract and it can't be emplaced");
-        emplaceInitializer(chunk);
-    }
-    else static if (
-        !is(T == struct) && Args.length == 1 /* primitives, enums, arrays */
-        ||
-        Args.length == 1 && is(typeof({T t = args[0];})) /* conversions */
-        ||
-        is(typeof(T(args))) /* general constructors */)
-    {
-        static struct S
+        static if (args.length == 0)
         {
-            T payload;
-            this(ref Args x)
+            static assert(is(typeof({static T i;})), "Cannot emplace a %1$s because " ~ T.stringof ~ "s.this() is annotated with @disable.");
+            static if (is(T == class))
+                static assert(!isAbstractClass!T, T.stringof ~ " is abstract and it can't be emplaced");
+            emplaceInitializer(chunk);
+        }
+        else static if (
+            !is(T == struct) && Args.length == 1 /* primitives, enums, arrays */
+            ||
+            Args.length == 1 && is(typeof({T t = args[0];})) /* conversions */
+            ||
+            is(typeof(T(args))) /* general constructors */)
+        {
+            static struct S
             {
-                static if (Args.length == 1)
-                    static if (is(typeof(payload = x[0])))
-                        payload = x[0];
+                T payload;
+                this(ref Args x)
+                {
+                    static if (Args.length == 1)
+                        static if (is(typeof(payload = x[0])))
+                            payload = x[0];
+                        else
+                            payload = T(x[0]);
                     else
-                        payload = T(x[0]);
-                else
-                    payload = T(x);
+                        payload = T(x);
+                }
+            }
+            if (__ctfe)
+            {
+                static if (is(typeof(chunk = T(args))))
+                    chunk = T(args);
+                else static if (args.length == 1 && is(typeof(chunk = args[0])))
+                    chunk = args[0];
+                else assert(0, "CTFE emplace doesn't support "
+                    ~ T.stringof ~ " from " ~ Args.stringof);
+            }
+            else
+            {
+                S* p = () @trusted { return cast(S*) &chunk; }();
+                static if (UT.sizeof > 0)
+                    emplaceInitializer(*p);
+                p.__ctor(args);
             }
         }
-        if (__ctfe)
+        else static if (is(typeof(chunk.__ctor(args))))
         {
-            static if (is(typeof(chunk = T(args))))
-                chunk = T(args);
-            else static if (args.length == 1 && is(typeof(chunk = args[0])))
-                chunk = args[0];
-            else assert(0, "CTFE emplace doesn't support "
-                ~ T.stringof ~ " from " ~ Args.stringof);
+            // This catches the rare case of local types that keep a frame pointer
+            emplaceInitializer(chunk);
+            chunk.__ctor(args);
         }
         else
         {
-            S* p = () @trusted { return cast(S*) &chunk; }();
-            static if (UT.sizeof > 0)
-                emplaceInitializer(*p);
-            p.__ctor(args);
+            //We can't emplace. Try to diagnose a disabled postblit.
+            static assert(!(Args.length == 1 && is(Args[0] : T)), "Cannot emplace a " ~ T.stringof ~ " because " ~ T.stringof ~ ".this(this) is annotated with @disable.");
+
+            //We can't emplace.
+            static assert(false, T.stringof ~ " cannot be emplaced from " ~ Args[].stringof ~ ".");
         }
     }
-    else static if (is(typeof(chunk.__ctor(args))))
-    {
-        // This catches the rare case of local types that keep a frame pointer
-        emplaceInitializer(chunk);
-        chunk.__ctor(args);
-    }
-    else
-    {
-        //We can't emplace. Try to diagnose a disabled postblit.
-        static assert(!(Args.length == 1 && is(Args[0] : T)), "Cannot emplace a " ~ T.stringof ~ " because " ~ T.stringof ~ ".this(this) is annotated with @disable.");
-
-        //We can't emplace.
-        static assert(false, T.stringof ~ " cannot be emplaced from " ~ Args[].stringof ~ ".");
-    }
 }
+
 // ditto
 void emplaceRef(UT, Args...)(ref UT chunk, auto ref Args args)
 if (is(UT == Unqual!UT))
 {
-    emplaceRef!(UT, UT)(chunk, args);
+    emplaceRef!UT(chunk, args);
 }
 
 /++
@@ -402,7 +407,7 @@ T* emplace(T, Args...)(void[] chunk, auto ref Args args)
 if (!is(T == class))
 {
     testEmplaceChunk(chunk, T.sizeof, T.alignof);
-    emplaceRef!(T, Unqual!T)(*cast(Unqual!T*) chunk.ptr, args);
+    emplaceRef!T(*cast(Unqual!T*) chunk.ptr, args);
     return cast(T*) chunk.ptr;
 }
 
