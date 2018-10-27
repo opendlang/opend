@@ -21,3 +21,4 @@ out/
 build/
 files
 *.lib
+mir-core-test-library
