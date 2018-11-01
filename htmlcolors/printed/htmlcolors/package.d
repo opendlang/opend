@@ -152,7 +152,7 @@ ubyte[4] parseHTMLColor(string s)
     }
 
     // See: https://www.w3.org/TR/css-syntax/#consume-a-number
-    double parseNumber()
+    double parseNumber() pure @safe
     {
         string repr = ""; // PERF: fixed size buffer?
         if (parseChar('+'))
@@ -196,7 +196,7 @@ ubyte[4] parseHTMLColor(string s)
         return to!double(repr);
     }
 
-    ubyte parseColorValue(double range = 255.0)
+    ubyte parseColorValue(double range = 255.0) pure @safe
     {
         double num = parseNumber();
         bool isPercentage = parseChar('%');
@@ -206,7 +206,7 @@ ubyte[4] parseHTMLColor(string s)
         return clamp0to255(c);
     }
 
-    ubyte parseOpacity()
+    ubyte parseOpacity() pure @safe
     {
         double num = parseNumber();
         bool isPercentage = parseChar('%');
@@ -313,7 +313,74 @@ ubyte[4] parseHTMLColor(string s)
         blue = clamp0to255(val);
     }
     else
-        throw new Exception("Expected #, rgb, rgba, or color name");
+    {
+        // Initiate a binary search inside the sorted named color array
+        // See_also: https://en.wikipedia.org/wiki/Binary_search_algorithm
+
+        // Current search range
+        // this range will only reduce because the color names are sorted
+        int L = 0;
+        int R = cast(int)(namedColorKeywords.length); 
+        int charPos = 0;
+
+        matchloop:
+        while (true)
+        {
+            // Expect 
+            char ch = peek();
+            if (ch >= 'A' && ch <= 'Z')
+                ch += ('a' - 'A');
+            if (ch < 'a' || ch > 'z') // not alpha?
+            {
+                // Examine all alive cases. Select the one which have matched entirely.               
+                foreach(color; L..R)
+                {
+                    if (namedColorKeywords[color].length == charPos)// found it, return as there are no duplicates
+                    {
+                        // If we have matched all the alpha of the only remaining candidate, we have found a named color
+                        uint rgba = namedColorValues[color];
+                        red   = (rgba >> 24) & 0xff;
+                        green = (rgba >> 16) & 0xff;
+                        blue  = (rgba >>  8) & 0xff;
+                        alpha = (rgba >>  0) & 0xff;
+                        break matchloop;
+                    }
+                }
+                throw new Exception(format("Unexpected char %s in named color", ch));
+            }
+            next;
+
+            // PERF: there could be something better with a dichotomy
+            // PERF: can elid search once we've passed the last match
+            bool firstFound = false;
+            int firstFoundIndex = R;
+            int lastFoundIndex = -1;
+            foreach(color; L..R)
+            {
+                // Have we found ch in name[charPos] position?
+                string candidate = namedColorKeywords[color];
+                bool charIsMatching = (candidate.length > charPos) && (candidate[charPos] == ch);
+                if (!firstFound && charIsMatching)
+                {
+                    firstFound = true;
+                    firstFoundIndex = color;
+                }
+                if (charIsMatching)
+                    lastFoundIndex = color;
+            }
+
+            // Zero candidate remain
+            if (lastFoundIndex < firstFoundIndex)
+                throw new Exception("Can't recognize color string '%s'", s);
+            else
+            {
+                // Several candidate remain, go on and reduce the search range
+                L = firstFoundIndex;
+                R = lastFoundIndex + 1;
+                charPos += 1;
+            }
+        }
+    }
 
     skipWhiteSpace();
     if (!parseChar('\0'))
@@ -324,6 +391,56 @@ ubyte[4] parseHTMLColor(string s)
 
     // clamp and return
 }
+
+private:
+
+// 147 predefined color + "transparent"
+static immutable string[148] namedColorKeywords =
+[
+    "aliceblue", "antiquewhite", "aqua", "aquamarine",     "azure", "beige", "bisque", "black",
+    "blanchedalmond", "blue", "blueviolet", "brown",       "burlywood", "cadetblue", "chartreuse", "chocolate",
+    "coral", "cornflowerblue", "cornsilk", "crimson",      "cyan", "darkblue", "darkcyan", "darkgoldenrod",
+    "darkgray", "darkgreen", "darkgrey", "darkkhaki",      "darkmagenta", "darkolivegreen", "darkorange", "darkorchid",
+    "darkred","darksalmon","darkseagreen","darkslateblue", "darkslategray", "darkslategrey", "darkturquoise", "darkviolet",
+    "deeppink", "deepskyblue", "dimgray", "dimgrey",       "dodgerblue", "firebrick", "floralwhite", "forestgreen",
+    "fuchsia", "gainsboro", "ghostwhite", "gold",          "goldenrod", "gray", "green", "greenyellow",
+    "grey", "honeydew", "hotpink", "indianred",            "indigo", "ivory", "khaki", "lavender",
+    "lavenderblush","lawngreen","lemonchiffon","lightblue","lightcoral", "lightcyan", "lightgoldenrodyellow", "lightgray",
+    "lightgreen", "lightgrey", "lightpink", "lightsalmon", "lightseagreen", "lightskyblue", "lightslategray", "lightslategrey",
+    "lightsteelblue", "lightyellow", "lime", "limegreen",  "linen", "magenta", "maroon", "mediumaquamarine",
+    "mediumblue", "mediumorchid", "mediumpurple", "mediumseagreen", "mediumslateblue", "mediumspringgreen", "mediumturquoise", "mediumvioletred",
+    "midnightblue", "mintcream", "mistyrose", "moccasin",  "navajowhite", "navy", "oldlace", "olive",
+    "olivedrab", "orange", "orangered",  "orchid",         "palegoldenrod", "palegreen", "paleturquoise", "palevioletred",
+    "papayawhip", "peachpuff", "peru", "pink",             "plum", "powderblue", "purple", "red",
+    "rosybrown", "royalblue", "saddlebrown", "salmon",     "sandybrown", "seagreen", "seashell", "sienna",
+    "silver", "skyblue", "slateblue", "slategray",         "slategrey", "snow", "springgreen", "steelblue",
+    "tan", "teal", "thistle", "tomato",                    "transparent", "turquoise", "violet", "wheat", 
+    "white", "whitesmoke", "yellow", "yellowgreen"
+];
+
+immutable static uint[147 + 1] namedColorValues =
+[
+    0xf0f8ffff, 0xfaebd7ff, 0x00ffffff, 0x7fffd4ff, 0xf0ffffff, 0xf5f5dcff, 0xffe4c4ff, 0x000000ff, 
+    0xffebcdff, 0x0000ffff, 0x8a2be2ff, 0xa52a2aff, 0xdeb887ff, 0x5f9ea0ff, 0x7fff00ff, 0xd2691eff, 
+    0xff7f50ff, 0x6495edff, 0xfff8dcff, 0xdc143cff, 0x00ffffff, 0x00008bff, 0x008b8bff, 0xb8860bff, 
+    0xa9a9a9ff, 0x006400ff, 0xa9a9a9ff, 0xbdb76bff, 0x8b008bff, 0x556b2fff, 0xff8c00ff, 0x9932ccff, 
+    0x8b0000ff, 0xe9967aff, 0x8fbc8fff, 0x483d8bff, 0x2f4f4fff, 0x2f4f4fff, 0x00ced1ff, 0x9400d3ff, 
+    0xff1493ff, 0x00bfffff, 0x696969ff, 0x696969ff, 0x1e90ffff, 0xb22222ff, 0xfffaf0ff, 0x228b22ff, 
+    0xff00ffff, 0xdcdcdcff, 0xf8f8ffff, 0xffd700ff, 0xdaa520ff, 0x808080ff, 0x008000ff, 0xadff2fff, 
+    0x808080ff, 0xf0fff0ff, 0xff69b4ff, 0xcd5c5cff, 0x4b0082ff, 0xfffff0ff, 0xf0e68cff, 0xe6e6faff, 
+    0xfff0f5ff, 0x7cfc00ff, 0xfffacdff, 0xadd8e6ff, 0xf08080ff, 0xe0ffffff, 0xfafad2ff, 0xd3d3d3ff, 
+    0x90ee90ff, 0xd3d3d3ff, 0xffb6c1ff, 0xffa07aff, 0x20b2aaff, 0x87cefaff, 0x778899ff, 0x778899ff, 
+    0xb0c4deff, 0xffffe0ff, 0x00ff00ff, 0x32cd32ff, 0xfaf0e6ff, 0xff00ffff, 0x800000ff, 0x66cdaaff, 
+    0x0000cdff, 0xba55d3ff, 0x9370dbff, 0x3cb371ff, 0x7b68eeff, 0x00fa9aff, 0x48d1ccff, 0xc71585ff, 
+    0x191970ff, 0xf5fffaff, 0xffe4e1ff, 0xffe4b5ff, 0xffdeadff, 0x000080ff, 0xfdf5e6ff, 0x808000ff, 
+    0x6b8e23ff, 0xffa500ff, 0xff4500ff, 0xda70d6ff, 0xeee8aaff, 0x98fb98ff, 0xafeeeeff, 0xdb7093ff, 
+    0xffefd5ff, 0xffdab9ff, 0xcd853fff, 0xffc0cbff, 0xdda0ddff, 0xb0e0e6ff, 0x800080ff, 0xff0000ff, 
+    0xbc8f8fff, 0x4169e1ff, 0x8b4513ff, 0xfa8072ff, 0xf4a460ff, 0x2e8b57ff, 0xfff5eeff, 0xa0522dff,
+    0xc0c0c0ff, 0x87ceebff, 0x6a5acdff, 0x708090ff, 0x708090ff, 0xfffafaff, 0x00ff7fff, 0x4682b4ff, 
+    0xd2b48cff, 0x008080ff, 0xd8bfd8ff, 0xff6347ff, 0x00000000,  0x40e0d0ff, 0xee82eeff, 0xf5deb3ff, 
+    0xffffffff, 0xf5f5f5ff, 0xffff00ff, 0x9acd32ff,
+];
+
 
 unittest
 {
@@ -339,7 +456,10 @@ unittest
             return true;
         }
     }
+
     assert(doesntParse(""));
+
+    // #hex colors    
     assert(parseHTMLColor("#aB9")      == [0xaa, 0xBB, 0x99, 255]);
     assert(parseHTMLColor("#aB98")     == [0xaa, 0xBB, 0x99, 0x88]);
     assert(doesntParse("#"));
@@ -349,11 +469,22 @@ unittest
     assert(doesntParse("#0123456"));
     assert(doesntParse("#012345678"));
 
+    // rgb() and rgba()
     assert(parseHTMLColor("  rgba( 14.01, 25.0e+0%, 16, 0.5)  ") == [14, 64, 16, 128]);
     assert(parseHTMLColor("rgb(10e3,112,-3.4e-2)")               == [255, 112, 0, 255]);
 
+    // gray values
     assert(parseHTMLColor(" gray( +0.0% )")      == [0, 0, 0, 255]);
     assert(parseHTMLColor(" gray ")              == [128, 128, 128, 255]);
     assert(parseHTMLColor(" gray( 100%, 50% ) ") == [255, 255, 255, 128]);
-}
 
+    // Named colors
+    assert(parseHTMLColor("transparent") == [0, 0, 0, 0]);
+    assert(parseHTMLColor(" navy ") == [0, 0, 128, 255]);
+    assert(parseHTMLColor("lightgoldenrodyellow") == [250, 250, 210, 255]);
+    assert(doesntParse("animaginarycolorname")); // unknown named color
+    assert(doesntParse("navyblahblah")); // too much chars
+    assert(doesntParse("blac")); // incomplete color
+    assert(parseHTMLColor("lime") == [0, 255, 0, 255]); // termination with 2 candidate alive
+    assert(parseHTMLColor("limegreen") == [50, 205, 50, 255]);
+}

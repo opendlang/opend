@@ -28,7 +28,7 @@ void main(string[] args)
             stroke();
 
             // Prepare text settings
-            fillStyle = brush("#000");
+            fillStyle = brush("black");
             fontFace("Arial");
             fontWeight(FontWeight.bold);
             fontStyle(FontStyle.italic);
