@@ -7,9 +7,9 @@ License:   $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost License 1.0)
 */
 module printed.htmlcolors;
 
-import std.algorithm;
-import std.string;
-import std.conv;
+import std.string: format;
+import std.conv: to;
+import std.math: PI, floor;
 
 
 pure @safe:
@@ -54,7 +54,7 @@ ubyte[4] parseHTMLColor(const(char)[] htmlColorString)
         return false;
     }
 
-    void expect(char ch) pure @safe
+    void expectChar(char ch) pure @safe
     {
         if (!parseChar(ch))
             throw new Exception(format("Expected char %s in color string", ch));
@@ -131,7 +131,7 @@ ubyte[4] parseHTMLColor(const(char)[] htmlColorString)
     void expectPunct(char ch) pure @safe
     {
         skipWhiteSpace();
-        expect(ch);
+        expectChar(ch);
         skipWhiteSpace();
     }
 
@@ -142,22 +142,10 @@ ubyte[4] parseHTMLColor(const(char)[] htmlColorString)
         return cast(ubyte)a;
     }
 
-    ubyte clampOpacity0to255(double alpha) pure @safe
-    {
-        int c = cast(int)(0.5 + 255.0 * alpha);
-        return clamp0to255(c);
-    }
-
-    ubyte clampNumber0to255(double i) pure @safe
-    {
-        int c = cast(int)(0.5 + i);
-        return clamp0to255(c);
-    }
-
     // See: https://www.w3.org/TR/css-syntax/#consume-a-number
     double parseNumber() pure @safe
     {
-        string repr = ""; // PERF: fixed size buffer?
+        string repr = ""; // PERF: fixed size buffer or reusing input string
         if (parseChar('+'))
         {}
         else if (parseChar('-'))
@@ -217,6 +205,31 @@ ubyte[4] parseHTMLColor(const(char)[] htmlColorString)
             num *= 0.01;
         int c = cast(int)(0.5 + num * 255.0);
         return clamp0to255(c);
+    }
+
+    double parsePercentage() pure @safe
+    {
+        double num = parseNumber();
+        expectChar('%');
+        return num *= 0.01;
+    }
+
+    double parseHueInDegrees() pure @safe
+    {
+        double num = parseNumber();
+        if (parseString("deg"))
+            return num;
+        else if (parseString("rad"))
+            return num * 360.0 / (2 * PI);
+        else if (parseString("turn"))
+            return num * 360.0;
+        else if (parseString("grad"))
+            return num * 360.0 / 400.0;
+        else
+        {
+            // assume degrees
+            return num;
+        }
     }
 
     skipWhiteSpace();
@@ -295,26 +308,31 @@ ubyte[4] parseHTMLColor(const(char)[] htmlColorString)
         }
         expectPunct(')');
     }
-   /* else if (parseString("hsv"))
+    else if (parseString("hsl"))
     {
         bool hasAlpha = parseChar('a');
         expectPunct('(');
-        int hue = parseColorValue();
+        double hueDegrees = parseHueInDegrees();
+        // Convert to turns
+        double hueTurns = hueDegrees / 360.0;
+        hueTurns -= floor(hueTurns); // take remainder
+        double hue = 6.0 * hueTurns;
         expectPunct(',');
-        int sat = parseColorValue();
+        double sat = parsePercentage();
         expectPunct(',');
-        int val = parseColorValue();
+        double light = parsePercentage();
+
         if (hasAlpha)
         {
             expectPunct(',');
             alpha = parseOpacity();
         }
         expectPunct(')');
-        // TODO convert
-        red = clamp0to255(hue);
-        green = clamp0to255(sat);
-        blue = clamp0to255(val);
-    }*/
+        double[3] rgb = convertHSLtoRGB(hue, sat, light);
+        red   = clamp0to255( cast(int)(0.5 + 255.0 * rgb[0]) );
+        green = clamp0to255( cast(int)(0.5 + 255.0 * rgb[1]) );
+        blue  = clamp0to255( cast(int)(0.5 + 255.0 * rgb[2]) );
+    }
     else
     {
         // Initiate a binary search inside the sorted named color array
@@ -442,6 +460,39 @@ immutable static uint[147 + 1] namedColorValues =
 ];
 
 
+// Reference: https://www.w3.org/TR/css-color-4/#hsl-to-rgb
+// this algorithm assumes that the hue has been normalized to a number in the half-open range [0, 6), 
+// and the saturation and lightness have been normalized to the range [0, 1]. 
+double[3] convertHSLtoRGB(double hue, double sat, double light) 
+{
+    double t2;
+    if( light <= .5 ) 
+        t2 = light * (sat + 1);
+    else 
+        t2 = light + sat - (light * sat);
+    double t1 = light * 2 - t2;
+    double r = convertHueToRGB(t1, t2, hue + 2);
+    double g = convertHueToRGB(t1, t2, hue);
+    double b = convertHueToRGB(t1, t2, hue - 2);
+    return [r, g, b];
+}
+
+double convertHueToRGB(double t1, double t2, double hue) 
+{
+    if (hue < 0) 
+        hue = hue + 6;
+    if (hue >= 6) 
+        hue = hue - 6;
+    if (hue < 1) 
+        return (t2 - t1) * hue + t1;
+    else if(hue < 3) 
+        return t2;
+    else if(hue < 4) 
+        return (t2 - t1) * (4 - hue) + t1;
+    else 
+        return t1;
+}
+
 unittest
 {
     bool doesntParse(string color)
@@ -472,6 +523,18 @@ unittest
     // rgb() and rgba()
     assert(parseHTMLColor("  rgba( 14.01, 25.0e+0%, 16, 0.5)  ") == [14, 64, 16, 128]);
     assert(parseHTMLColor("rgb(10e3,112,-3.4e-2)")               == [255, 112, 0, 255]);
+
+    // hsl() and hsla()
+    assert(parseHTMLColor("hsl(0   ,  100%, 50%)")        == [255, 0, 0, 255]);
+    assert(parseHTMLColor("hsl(720,  100%, 50%)")         == [255, 0, 0, 255]);
+    assert(parseHTMLColor("hsl(180deg,  100%, 50%)")      == [0, 255, 255, 255]);
+    assert(parseHTMLColor("hsl(0grad, 100%, 50%)")        == [255, 0, 0, 255]);
+    assert(parseHTMLColor("hsl(0rad,  100%, 50%)")        == [255, 0, 0, 255]);
+    assert(parseHTMLColor("hsl(0turn, 100%, 50%)")        == [255, 0, 0, 255]);
+    assert(parseHTMLColor("hsl(120deg, 100%, 50%)")       == [0, 255, 0, 255]);
+    assert(parseHTMLColor("hsl(123deg,   2.5%, 0%)")      == [0, 0, 0, 255]);
+    assert(parseHTMLColor("hsl(5.4e-5rad, 25%, 100%)")    == [255, 255, 255, 255]);
+    assert(parseHTMLColor("hsla(0turn, 100%, 50%, 0.25)") == [255, 0, 0, 64]);
 
     // gray values
     assert(parseHTMLColor(" gray( +0.0% )")      == [0, 0, 0, 255]);
