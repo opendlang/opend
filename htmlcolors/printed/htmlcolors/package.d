@@ -28,13 +28,13 @@ pure @safe:
 /// Example:
 /// ---
 /// import printed.htmlcolors;
-/// parseHTMLColor("black");                     // all HTML named colors
-/// parseHTMLColor("#fe85dc");                   // hex colors including alpha versions
-/// parseHTMLColor("rgba(64, 255, 128, 0.24");   // alpha
-/// parseHTMLColor("rgb(9e-1, 50%, 128");        // percentage, floating-point
-/// parseHTMLColor("hsl(120deg, 25%, 75%");      // hsv colors
-/// parseHTMLColor("gray(0.5)");                 // gray colors
-/// parseHTMLColor(" rgb ( 245 , 112 , 74 )  "); // strips whitespace
+/// parseHTMLColor("black");                      // all HTML named colors
+/// parseHTMLColor("#fe85dc");                    // hex colors including alpha versions
+/// parseHTMLColor("rgba(64, 255, 128, 0.24)");   // alpha
+/// parseHTMLColor("rgb(9e-1, 50%, 128)");        // percentage, floating-point
+/// parseHTMLColor("hsl(120deg, 25%, 75%)");      // hsv colors
+/// parseHTMLColor("gray(0.5)");                  // gray colors
+/// parseHTMLColor(" rgb ( 245 , 112 , 74 )  ");  // strips whitespace
 /// ---
 ///
 ubyte[4] parseHTMLColor(const(char)[] htmlColorString)
@@ -562,5 +562,5 @@ unittest
     assert(doesntParse("navyblahblah")); // too much chars
     assert(doesntParse("blac")); // incomplete color
     assert(parseHTMLColor("lime") == [0, 255, 0, 255]); // termination with 2 candidate alive
-    assert(parseHTMLColor("limegreen") == [50, 205, 50, 255]);
+    assert(parseHTMLColor("limegreen") == [50, 205, 50, 255]);    
 }
