@@ -1,10 +1,15 @@
+/**
+PDF renderer.
+
+Copyright: Guillaume Piolat 2018.
+License:   $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost License 1.0)
+*/
 module printed.canvas.pdfrender;
 
 import std.string;
 import std.conv;
 import std.math;
 import std.zlib;
-import printed.canvas.color;
 import printed.canvas.irenderer;
 import printed.font.fontregistry;
 import printed.font.opentype;

@@ -37,8 +37,18 @@
             "importPaths": [ "canvas" ],
             "dependencies": 
             {
-                "printed:font": "*"
+                "printed:font": "*",
+                "printed:htmlcolors": "*",
             }
+        },
+        {
+            "name": "htmlcolors",
+            "sourcePaths": 
+            [ 
+                "htmlcolors/printed/htmlcolors" 
+            ],
+
+            "importPaths": [ "htmlcolors" ]
         },
         {
             "name": "shaping",

@@ -1,4 +1,9 @@
-/// Generic 2D vector renderer
+/**
+Generic 2D vector renderer.
+
+Copyright: Guillaume Piolat 2018.
+License:   $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost License 1.0)
+*/
 module printed.canvas.irenderer;
 
 /// Describes the `printed` 2D renderer.
@@ -186,7 +191,7 @@ struct Brush
 
     this(string htmlColor)
     {
-        import printed.canvas.color;
+        import printed.htmlcolors;
         rgba = parseHTMLColor(htmlColor);
     }
 
