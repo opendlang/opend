@@ -15,14 +15,27 @@ import std.math: PI, floor;
 pure @safe:
 
 /// Parses a HTML color and gives back a RGBA triplet.
+///
+/// Params:
+///     htmlColorString = A CSS string describing a color.
+///
+/// Returns:
+///     A 32-bit RGBA color, with each component between 0 and 255.
+///
 /// See_also: https://www.w3.org/TR/css-color-4/
 ///
-/// Supported:
-///    Named colors like          "black"
-///    Hexadecimal colors like    "#fe85dc" including the alpha versions
-///    rgb/rgba colors like       "rgba(14, 50%, 128, 9e-1)"
-///    gray colors like           "gray(0.5)"
-///    whitespace characters like " rgb ( 245 , 112 , 74 )  "
+///
+/// Example:
+/// ---
+/// import printed.htmlcolors;
+/// parseHTMLColor("black");                     // all HTML named colors
+/// parseHTMLColor("#fe85dc");                   // hex colors including alpha versions
+/// parseHTMLColor("rgba(64, 255, 128, 0.24");   // alpha
+/// parseHTMLColor("rgb(9e-1, 50%, 128");        // percentage, floating-point
+/// parseHTMLColor("hsl(120deg, 25%, 75%");      // hsv colors
+/// parseHTMLColor("gray(0.5)");                 // gray colors
+/// parseHTMLColor(" rgb ( 245 , 112 , 74 )  "); // strips whitespace
+/// ---
 ///
 ubyte[4] parseHTMLColor(const(char)[] htmlColorString)
 {
