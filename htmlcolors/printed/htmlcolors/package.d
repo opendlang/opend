@@ -15,18 +15,21 @@ import std.conv;
 pure @safe:
 
 /// Parses a HTML color and gives back a RGBA triplet.
-/// Currently only some HTML colors are supported.
 /// See_also: https://www.w3.org/TR/css-color-4/
 ///
-/// Notes:
-///    <color> = <rgb()> | <rgba()> | <hsl()> | <hsla()> |
-///              <hwb()> | <gray()> | <device-cmyk()> | <color-mod()> |
-///              <hex-color> | <named-color> | 
-///              <deprecated-system-color>
+/// Supported:
+///    Named colors like          "black"
+///    Hexadecimal colors like    "#fe85dc" including the alpha versions
+///    rgb/rgba colors like       "rgba(14, 50%, 128, 9e-1)"
+///    gray colors like           "gray(0.5)"
+///    whitespace characters like " rgb ( 245 , 112 , 74 )  "
 ///
-ubyte[4] parseHTMLColor(string s)
+ubyte[4] parseHTMLColor(const(char)[] htmlColorString)
 {
+    string s = htmlColorString.idup;
+
     // Add a terminal char (we chose zero)
+    // PERF: remove that allocation
     s ~= '\0';
     
     int index = 0;    
@@ -292,7 +295,7 @@ ubyte[4] parseHTMLColor(string s)
         }
         expectPunct(')');
     }
-    else if (parseString("hsv"))
+   /* else if (parseString("hsv"))
     {
         bool hasAlpha = parseChar('a');
         expectPunct('(');
@@ -311,7 +314,7 @@ ubyte[4] parseHTMLColor(string s)
         red = clamp0to255(hue);
         green = clamp0to255(sat);
         blue = clamp0to255(val);
-    }
+    }*/
     else
     {
         // Initiate a binary search inside the sorted named color array
@@ -386,16 +389,13 @@ ubyte[4] parseHTMLColor(string s)
     if (!parseChar('\0'))
         throw new Exception("Expected end of input at the end of color string");
 
-
     return [ red, green, blue, alpha];
-
-    // clamp and return
 }
 
 private:
 
 // 147 predefined color + "transparent"
-static immutable string[148] namedColorKeywords =
+static immutable string[147 + 1] namedColorKeywords =
 [
     "aliceblue", "antiquewhite", "aqua", "aquamarine",     "azure", "beige", "bisque", "black",
     "blanchedalmond", "blue", "blueviolet", "brown",       "burlywood", "cadetblue", "chartreuse", "chocolate",
@@ -479,7 +479,7 @@ unittest
     assert(parseHTMLColor(" gray( 100%, 50% ) ") == [255, 255, 255, 128]);
 
     // Named colors
-    assert(parseHTMLColor("transparent") == [0, 0, 0, 0]);
+    assert(parseHTMLColor("tRaNsPaREnt") == [0, 0, 0, 0]);
     assert(parseHTMLColor(" navy ") == [0, 0, 128, 255]);
     assert(parseHTMLColor("lightgoldenrodyellow") == [250, 250, 210, 255]);
     assert(doesntParse("animaginarycolorname")); // unknown named color
