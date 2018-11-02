@@ -1,8 +1,13 @@
-project('mir-random', 'd', 'c', version : '1.0.0', license: 'BSL-1.0')
+project('mir-random', 'd', version : '2.1.1', license: 'BSL-1.0')
 
-mir_algorithm_dep = dependency('mir-algorithm', fallback : ['mir-algorithm', 'mir_algorithm_dep'])
+mir_core_dep = dependency('mir-core', fallback : ['mir-core', 'mir_core_dep'])
 
-required_deps = [mir_algorithm_dep]
+required_deps = [mir_core_dep]
+
+if get_option('extended')
+    mir_algorithm_dep = dependency('mir-algorithm', fallback : ['mir-algorithm', 'mir_algorithm_dep'])
+    required_deps = [required_deps, mir_algorithm_dep]
+endif
 
 if target_machine.system() == 'linux'
     mir_linux_kernel_dep = dependency('mir-linux-kernel', fallback : ['mir-linux-kernel', 'mir_linux_kernel_dep'])
@@ -48,7 +53,7 @@ mir_random_test_exe = executable(meson.project_name() + '-test',
     mir_random_src,
     include_directories: mir_random_dir,
     d_unittest: true,
-    d_module_versions: ['mir_test'],
+    d_module_versions: ['mi_random_test'],
     link_args: '-main',
     dependencies: required_deps,
 )
