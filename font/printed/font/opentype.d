@@ -114,6 +114,108 @@ public:
         _file = file;
         _fontIndex = index;
         _wholeFileData = file._wholeFileData;
+
+        // Figure out font weight, style, and type immediately, as it is useful for font matching
+
+        _isMonospaced = false;
+
+        const(ubyte)[] os2Table = findTable(0x4F532F32 /* 'OS/2' */);
+        if (os2Table !is null)
+        {
+            // Parse weight and style from the 'OS/2' table
+            // Note: Apple documentation says that "Many fonts have inaccurate information in their 'OS/2' table."
+            // Some fonts don't have this table: https://github.com/princjef/font-finder/issues/5
+
+            skipBytes(os2Table, 4); // table version and xAvgCharWidth
+            int usWeightClass = popBE!ushort(os2Table);
+            _weight = cast(OpenTypeFontWeight)( 100 * ( (usWeightClass + 50) / 100 ) ); // round to multiple of 100
+            skipBytes(os2Table, 2 /*usWidthClass*/  + 2 /*fsType*/ + 10 * 2 /*yXXXXXXX*/ + 2 /*sFamilyClass*/);
+
+            ubyte[10] panose;
+            foreach(b; 0..10)
+                panose[b] = popBE!ubyte(os2Table);
+
+            _isMonospaced = (panose[0] == 2) && (panose[3] == 9);
+
+            skipBytes(os2Table, 4*4 /*ulUnicodeRangeN*/ + 4/*achVendID*/);
+            uint fsSelection = popBE!ushort(os2Table);
+            _style = OpenTypeFontStyle.normal;
+            if (fsSelection & 1)
+                _style = OpenTypeFontStyle.italic;
+            if (fsSelection & 512)
+                _style = OpenTypeFontStyle.oblique;
+        }
+        else
+        {
+            // No OS/2 table? parse 'head' instead (some Mac fonts). For monospace, parse 'post' table.
+            const(ubyte)[] postTable = findTable(0x706F7374 /* 'post' */);
+            if (postTable)
+            {
+                skipBytes(postTable, 4 /*version*/ + 4 /*italicAngle*/ + 2 /*underlinePosition*/ + 2 /*underlineThickness*/);
+                _isMonospaced = popBE!uint(postTable) /*isFixedPitch*/ != 0;
+            }
+
+            const(ubyte)[] headTable = findTable(0x68656164 /* 'head' */);
+            if (headTable !is null)
+            {
+                skipBytes(headTable, 4 /*version*/ + 4 /*fontRevision*/ + 4 /*checkSumAdjustment*/ + 4 /*magicNumber*/ 
+                                     + 2 /*flags*/ + 2 /*_unitsPerEm*/ + 16 /*created+modified*/+4*2/*bounding box*/ );
+                ushort macStyle = popBE!ushort(headTable);
+
+                _weight = OpenTypeFontWeight.normal;
+                if (macStyle & 1) _weight = OpenTypeFontWeight.bold;
+                _style = OpenTypeFontStyle.normal;
+                if (macStyle & 2) _style = OpenTypeFontStyle.italic;
+            }
+            else
+            {
+                // Last chance heuristics.
+                // Font weight heuristic based on family names
+                string subFamily = subFamilyName().toLower;
+                if (subFamily.canFind("thin"))
+                    _weight = OpenTypeFontWeight.thin;
+                else if (subFamily.canFind("ultra light"))
+                    _weight = OpenTypeFontWeight.thinest;
+                else if (subFamily.canFind("ultraLight"))
+                    _weight = OpenTypeFontWeight.thinest;
+                else if (subFamily.canFind("hairline"))
+                    _weight = OpenTypeFontWeight.thinest;
+                else if (subFamily.canFind("extralight"))
+                    _weight = OpenTypeFontWeight.extraLight;
+                else if (subFamily.canFind("light"))
+                    _weight = OpenTypeFontWeight.light;
+                else if (subFamily.canFind("demi bold"))
+                    _weight = OpenTypeFontWeight.semiBold;
+                else if (subFamily.canFind("semibold"))
+                    _weight = OpenTypeFontWeight.semiBold;
+                else if (subFamily.canFind("extrabold"))
+                    _weight = OpenTypeFontWeight.extraBold;
+                else if (subFamily.canFind("bold"))
+                    _weight = OpenTypeFontWeight.bold;
+                else if (subFamily.canFind("heavy"))
+                    _weight = OpenTypeFontWeight.bold;
+                else if (subFamily.canFind("medium"))
+                    _weight = OpenTypeFontWeight.medium;
+                else if (subFamily.canFind("black"))
+                    _weight = OpenTypeFontWeight.black;
+                else if (subFamily.canFind("negreta"))
+                    _weight = OpenTypeFontWeight.black;
+                else if (subFamily.canFind("regular"))
+                    _weight = OpenTypeFontWeight.normal;
+                else if (subFamily == "italic")
+                    _weight = OpenTypeFontWeight.normal;
+                else
+                    _weight = OpenTypeFontWeight.normal;
+
+                // Font style heuristic based on family names
+                if (subFamily.canFind("italic"))
+                    _style = OpenTypeFontStyle.italic;
+                else if (subFamily.canFind("oblique"))
+                    _style = OpenTypeFontStyle.oblique;
+                else
+                    _style = OpenTypeFontStyle.normal;
+            }
+        }        
     }
 
     /// Returns: a typographics family name suitable for grouping fonts per family in menus
@@ -142,63 +244,22 @@ public:
         return getName(NameID.postscriptName);
     }
 
+    /// Returns: `trye` is the font is monospaced.
     bool isMonospaced()
     {
-        return false; // TODO parse from tables
+        return _isMonospaced;
     }
 
-    /// Computes font weight information based on a subfamily heuristic.
-    // TODO: extract from tables
+    /// Returns: Font weight.
     OpenTypeFontWeight weight()
     {
-        string subFamily = subFamilyName().toLower;
-        if (subFamily.canFind("thin"))
-            return OpenTypeFontWeight.thin;
-        else if (subFamily.canFind("ultra light"))
-            return OpenTypeFontWeight.thinest;
-        else if (subFamily.canFind("ultraLight"))
-            return OpenTypeFontWeight.thinest;
-        else if (subFamily.canFind("hairline"))
-            return OpenTypeFontWeight.thinest;
-        else if (subFamily.canFind("extralight"))
-            return OpenTypeFontWeight.extraLight;
-        else if (subFamily.canFind("light"))
-            return OpenTypeFontWeight.light;
-        else if (subFamily.canFind("demi bold"))
-            return OpenTypeFontWeight.semiBold;
-        else if (subFamily.canFind("semibold"))
-            return OpenTypeFontWeight.semiBold;
-        else if (subFamily.canFind("extrabold"))
-            return OpenTypeFontWeight.extraBold;
-        else if (subFamily.canFind("bold"))
-            return OpenTypeFontWeight.bold;
-        else if (subFamily.canFind("heavy"))
-            return OpenTypeFontWeight.bold;
-        else if (subFamily.canFind("medium"))
-            return OpenTypeFontWeight.medium;
-        else if (subFamily.canFind("black"))
-            return OpenTypeFontWeight.black;
-        else if (subFamily.canFind("negreta"))
-            return OpenTypeFontWeight.black;
-        else if (subFamily.canFind("regular"))
-            return OpenTypeFontWeight.normal;
-        else if (subFamily == "italic")
-            return OpenTypeFontWeight.normal;
-        else
-        {
-            return OpenTypeFontWeight.normal;
-        }
+        return _weight;
     }
 
-    // TODO: extract from tables
+    /// Returns: Font style.
     OpenTypeFontStyle style()
     {
-        string subFamily = subFamilyName().toLower;
-        if (subFamily.canFind("italic"))
-            return OpenTypeFontStyle.italic;
-        else if (subFamily.canFind("oblique"))
-            return OpenTypeFontStyle.oblique;
-        return OpenTypeFontStyle.normal;
+        return _style;
     }
 
     /// Returns: The whole OpenType file where this font is located.
@@ -322,6 +383,10 @@ private:
     OpenTypeFile _file;
     int _fontIndex;
 
+    // Computed in constructor
+    OpenTypeFontWeight _weight;
+    OpenTypeFontStyle _style;
+    bool _isMonospaced;
 
     // <parsed-by-computeFontMetrics>
 
@@ -376,7 +441,7 @@ private:
         _boundingBox[1] = popBE!short(headTable);
         _boundingBox[2] = popBE!short(headTable);
         _boundingBox[3] = popBE!short(headTable);
-        skipBytes(headTable, 2); // macStyle TODO use it
+        skipBytes(headTable, 2); // macStyle
         skipBytes(headTable, 2); // lowestRecPPEM
         skipBytes(headTable, 2); // fontDirectionHint
         skipBytes(headTable, 2); // indexToLocFormat

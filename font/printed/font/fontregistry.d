@@ -16,6 +16,8 @@ import standardpaths;
 
 import printed.font.opentype;
 
+//debug = displayParsedFonts;
+
 /// FontRegistry register partial font information for all fonts
 /// from the system directories, plus the ones added by the user.
 /// Aggregates all fonts by family, a bit like a browser or Word does.
@@ -57,11 +59,15 @@ class FontRegistry
                 kf.weight = font.weight;
                 _knownFonts ~= kf;
 
-                import std.stdio;
-                //writefln("Family name: %s", font.familyName);
-                //writefln("SubFamily name: %s", font.subFamilyName);
-                //writefln("Weight extracted: %s", font.weight);
-                //writefln("Style: %s\n", font.style());
+                debug(displayParsedFonts)
+                {
+                    import std.stdio;
+                    writefln("Family name: %s", font.familyName);
+                    writefln("SubFamily name: %s", font.subFamilyName);
+                    writefln("Weight extracted: %s", font.weight);
+                    writefln("Style: %s", font.style());
+                    writefln("Monospace: %s\n", font.isMonospaced());
+                }
             }
         }
         catch(Exception e)
