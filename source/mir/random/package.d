@@ -24,7 +24,7 @@ Authors: Ilya Yaroshenko, Nathan Sashihara
 Copyright: Copyright, Ilya Yaroshenko 2016-.
 License:    $(HTTP www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
 Macros:
-SUBREF = $(REF_ALTTEXT $(TT $2), $2, mir, ndslice, $1)$(NBSP)
+SUBREF = $(REF_ALTTEXT $(TT $2), $2, mir, random, $1)$(NBSP)
 T2=$(TR $(TDNW $(LREF $1)) $(TD $+))
 
 +/

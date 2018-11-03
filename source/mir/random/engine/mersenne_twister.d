@@ -8,7 +8,6 @@ Authors: $(HTTP erdani.org, Andrei Alexandrescu) Ilya Yaroshenko (rework)
 module mir.random.engine.mersenne_twister;
 
 import std.traits;
-import mir.ndslice.slice : Slice, SliceKind, Contiguous;
 
 /++
 The $(LUCKY Mersenne Twister) generator.
@@ -105,7 +104,7 @@ struct MersenneTwisterEngine(UIntType, size_t w, size_t n, size_t m, size_t r,
     Note that `MersenneTwisterEngine([123])` will not result in
     the same initial state as `MersenneTwisterEngine(123)`.
     +/
-    this()(scope Slice!(const(UIntType)*) slice) @safe pure nothrow @nogc
+    this()(scope const(UIntType)[] array) @safe pure nothrow @nogc
     {
         static if (is(UIntType == uint))
         {
@@ -128,7 +127,7 @@ struct MersenneTwisterEngine(UIntType, size_t w, size_t n, size_t m, size_t r,
                 e &= max;
         }
         index = n-1;
-        if (slice.length == 0)
+        if (array.length == 0)
         {
             opCall();
             return;
@@ -136,16 +135,16 @@ struct MersenneTwisterEngine(UIntType, size_t w, size_t n, size_t m, size_t r,
 
         size_t final_mix_index = void;
 
-        if (slice.length >= n)
+        if (array.length >= n)
         {
             size_t j = 0;
             //Handle all but tail.
-            while (slice.length - j >= n - 1)
+            while (array.length - j >= n - 1)
             {
                 foreach_reverse (i, ref e; data[0 .. $-1])
                 {
                     e = (e ^ ((data[i+1] ^ (data[i+1] >> (w - 2))) * f2))
-                        + slice[j] + cast(UIntType) j;
+                        + array[j] + cast(UIntType) j;
                     static if (max != UIntType.max)
                         e &= max;
                     ++j;
@@ -154,10 +153,10 @@ struct MersenneTwisterEngine(UIntType, size_t w, size_t n, size_t m, size_t r,
             }
             //Handle tail.
             size_t i = n - 2;
-            while (j < slice.length)
+            while (j < array.length)
             {
                 data[i] = (data[i] ^ ((data[i+1] ^ (data[i+1] >> (w - 2))) * f2))
-                    + slice[j] + cast(UIntType) j;
+                    + array[j] + cast(UIntType) j;
                 static if (max != UIntType.max)
                     data[i] &= max;
                 ++j;
@@ -170,12 +169,12 @@ struct MersenneTwisterEngine(UIntType, size_t w, size_t n, size_t m, size_t r,
         {
             size_t i = n - 2;
             //Handle all but tail.
-            while (i >= slice.length)
+            while (i >= array.length)
             {
-                foreach (j; 0 .. slice.length)
+                foreach (j; 0 .. array.length)
                 {
                     data[i] = (data[i] ^ ((data[i+1] ^ (data[i+1] >> (w - 2))) * f2))
-                        + slice[j] + cast(UIntType) j;
+                        + array[j] + cast(UIntType) j;
                     static if (max != UIntType.max)
                         data[i] &= max;
                     --i;
@@ -186,7 +185,7 @@ struct MersenneTwisterEngine(UIntType, size_t w, size_t n, size_t m, size_t r,
             while (i != cast(size_t) -1)
             {
                 data[i] = (data[i] ^ ((data[i+1] ^ (data[i+1] >> (w - 2))) * f2))
-                    + slice[j] + cast(UIntType) j;
+                    + array[j] + cast(UIntType) j;
                 static if (max != UIntType.max)
                     data[i] &= max;
                 ++j;
@@ -195,7 +194,7 @@ struct MersenneTwisterEngine(UIntType, size_t w, size_t n, size_t m, size_t r,
             data[$ - 1] = data[0];
             i = n - 2;
             data[i] = (data[i] ^ ((data[i+1] ^ (data[i+1] >> (w - 2))) * f2))
-                + slice[j] + cast(UIntType) j;
+                + array[j] + cast(UIntType) j;
             static if (max != UIntType.max)
                 data[i] &= max;
             //Set the index for use by the next pass.
@@ -218,13 +217,6 @@ struct MersenneTwisterEngine(UIntType, size_t w, size_t n, size_t m, size_t r,
         }
         data[$-1] = (cast(UIntType)1) << ((UIntType.sizeof * 8) - 1); /* MSB is 1; assuring non-zero initial array */
         opCall();
-    }
-
-    /// ditto
-    this()(scope const(UIntType)[] array) @safe pure nothrow @nogc
-    {
-        import mir.ndslice.slice: sliced;
-        this(array.sliced);
     }
 
     /++

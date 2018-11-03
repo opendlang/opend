@@ -5,6 +5,8 @@ License:  $(HTTP www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
 
 Authors: Sebastian Wilzbach, Ilya Yaroshenko
 
+$(RED This module is available in the extended configuration.)
+
 The Transformed Density Rejection with Inflection Points (Flex) algorithm
 can sample from arbitrary distributions given (1) its log-density function f,
 (2) its first two derivatives and (3) a partitioning into intervals
@@ -82,10 +84,12 @@ Macros:
     A_NAME=<a name="$1"></a>
 */
 module mir.random.flex;
+
+static if (is(typeof({ import mir.ndslice.slice; })))
+{
+
 import mir.random.flex.internal.types;
-
 import mir.random.variable : DiscreteVariable, discreteVar, RandomVariable;
-
 import mir.random;
 import std.traits : isCallable, isFloatingPoint, ReturnType;
 
@@ -698,7 +702,7 @@ body
     version(Windows) {} else
     version(Flex_logging)
     {
-        import std.ndslice.topology: member;
+        import mir.ndslice.topology: member;
         auto ipsD = ips.dup;
         log("----");
 
@@ -1134,4 +1138,9 @@ version(mir_random_test) unittest
             }
         }
     }
+}
+}
+else
+{
+    version(unittest) {} else static assert(0, "mir.ndslice is required for mir.random.flex, it can be found in 'mir-algorithm' repository.");
 }

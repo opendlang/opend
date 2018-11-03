@@ -1,0 +1,33 @@
+name "mir-random"
+authors "Ilya Yaroshenko" "Sebastian Wilzbach" "Nathan Sashihara" "Andrei Alexandrescu" "Masahiro Nakagawa" "Nicholas Wilson"
+description "Dlang Random Number Generators"
+copyright "Copyright © 2016-2018, Ilya Yaroshenko (default), see also copyright per file"
+license "BSL-1.0 (default), Apache License, Version 2.0 for PCG"
+
+dependency "mir-core" version="~>0.0.6"
+dependency "mir-linux-kernel" version="~>1.0.0"  platform="linux"
+libs "advapi32" platform="windows"
+
+configuration "default" {
+	dependency "mir-algorithm" version=">=3.0.2" optional=true
+}
+
+configuration "minimal" {
+}
+
+configuration "extended" {
+	dependency "mir-algorithm" version=">=3.0.2"
+}
+
+buildType "unittest" {
+	buildOptions "unittests" "debugMode" "debugInfo"
+	versions "mir_random_test"
+}
+buildType "unittest-cov" {
+	buildOptions "unittests" "coverage" "debugMode" "debugInfo"
+	versions "mir_random_test"
+}
+buildType "unittest-release" {
+	buildOptions "unittests" "releaseMode" "optimize" "inline" "noBoundsCheck"
+	versions "mir_random_test"
+}

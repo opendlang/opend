@@ -2,11 +2,15 @@
 Authors: Ilya Yaroshenko, documentation is partially based on Phobos.
 Copyright: Copyright, Ilya Yaroshenko 2016-.
 License:  $(HTTP www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
+
+$(RED This module is available in the extended configuration.)
 +/
 module mir.random.algorithm;
 
+
+static if (is(typeof({ import mir.ndslice.slice; })))
+{
 import mir.math.common;
-import mir.ndslice.slice;
 import mir.primitives: hasLength;
 import mir.random;
 import mir.random.ndvariable: isNdRandomVariable;
@@ -14,6 +18,7 @@ import mir.random.variable: isRandomVariable;
 import std.range.primitives: isInputRange, isForwardRange;
 import std.traits;
 public import mir.random.engine;
+import mir.ndslice.slice: Slice;
 
 /++
 Allocates ndslice (vector, matrix, or tensor) and fills it with random numbers.
@@ -92,7 +97,7 @@ auto randomSlice(G, D, size_t N)(scope ref G gen, D var, size_t[N] lengths...)
     import mir.ndslice.topology: pack;
     alias T = D.Element;
     auto ret = lengths.uninitSlice!T();
-    ret.pack!1.each!(a => var(gen, a));
+    ret.pack!1.each!(a => var(gen, a.field));
     return ret;
 }
 
@@ -166,82 +171,98 @@ auto randomSlice(T, alias gen = rne, size_t N)(size_t[N] lengths...)
 /// Random sample from Normal distribution
 nothrow @safe version(mir_random_test) unittest
 {
-    import mir.random.variable: normalVar;
-    // Using default RNE:
-    auto sample = normalVar.randomSlice(10);
-    assert(sample.shape == [10]);
+    // mir.ndslice package is required for 'randomSlice', it can be found in 'mir-algorithm'
+    static if (is(typeof({ import mir.ndslice.slice; })))
+    {
+        import mir.random.variable: normalVar;
+        // Using default RNE:
+        auto sample = normalVar.randomSlice(10);
+        assert(sample.shape == [10]);
 
-    import mir.ndslice.slice: Slice;
-    assert(is(typeof(sample) == Slice!(double*)));
+        import mir.ndslice.slice: Slice;
+        assert(is(typeof(sample) == Slice!(double*)));
 
-    // Using pointer to RNE:
-    sample = threadLocalPtr!Random.randomSlice(normalVar, 15);
+        // Using pointer to RNE:
+        sample = threadLocalPtr!Random.randomSlice(normalVar, 15);
 
-    // Using local RNE:
-    auto rng = Random(12345);
-    sample = rng.randomSlice(normalVar, 15);
+        // Using local RNE:
+        auto rng = Random(12345);
+        sample = rng.randomSlice(normalVar, 15);
+    }
 }
 
 /// Random sample from uniform distribution strictly in the interval `(-1, 1)`.
 nothrow @safe version(mir_random_test) unittest
 {
-    import mir.algorithm.iteration: all;
-    import mir.math.common: fabs;
-    // Using default RNE:
-    auto sample = randomSlice!double(10);
-    assert(sample.shape == [10]);
+    // mir.ndslice package is required for 'randomSlice', it can be found in 'mir-algorithm'
+    static if (is(typeof({ import mir.ndslice.slice; })))
+    {
+        import mir.algorithm.iteration: all;
+        import mir.math.common: fabs;
+        // Using default RNE:
+        auto sample = randomSlice!double(10);
+        assert(sample.shape == [10]);
 
-    import mir.ndslice.slice: Slice;
-    assert(is(typeof(sample) == Slice!(double*)));
-    assert(sample.all!(a => a.fabs < 1));
+        import mir.ndslice.slice: Slice;
+        assert(is(typeof(sample) == Slice!(double*)));
+        assert(sample.all!(a => a.fabs < 1));
 
-    // Using pointer to RNE:
-    sample = threadLocalPtr!Random.randomSlice!double(15);
+        // Using pointer to RNE:
+        sample = threadLocalPtr!Random.randomSlice!double(15);
 
-    // Using local RNE:
-    auto rng = Random(12345);
-    sample = rng.randomSlice!double(15);
+        // Using local RNE:
+        auto rng = Random(12345);
+        sample = rng.randomSlice!double(15);
 
-    // For complex numbers:
-    auto csample = randomSlice!cdouble(10);
+        // For complex numbers:
+        auto csample = randomSlice!cdouble(10);
+    }
 }
 
 /// Random sample from 3D-sphere distribution
 nothrow @safe version(mir_random_test) unittest
 {
-    import mir.random.ndvariable: sphereVar;
-    // Using default RNE:
-    auto sample = sphereVar.randomSlice(10, 3);
-    assert(sample.shape == [10, 3]);
-    // 10 observations from R_3
+    // mir.ndslice package is required for 'randomSlice', it can be found in 'mir-algorithm'
+    static if (is(typeof({ import mir.ndslice.slice; })))
+    {
+        import mir.random.ndvariable: sphereVar;
+        // Using default RNE:
+        auto sample = sphereVar.randomSlice(10, 3);
+        assert(sample.shape == [10, 3]);
+        // 10 observations from R_3
 
-    import mir.ndslice.slice: Slice;
-    assert(is(typeof(sample) == Slice!(double*, 2)));
+        import mir.ndslice.slice: Slice;
+        assert(is(typeof(sample) == Slice!(double*, 2)));
 
-    // Using pointer to RNE:
-    sample = threadLocalPtr!Random.randomSlice(sphereVar, 15, 3);
+        // Using pointer to RNE:
+        sample = threadLocalPtr!Random.randomSlice(sphereVar, 15, 3);
 
-    // Using local RNE:
-    auto rng = Random(12345);
-    sample = rng.randomSlice(sphereVar, 15, 3);
+        // Using local RNE:
+        auto rng = Random(12345);
+        sample = rng.randomSlice(sphereVar, 15, 3);
+    }
 }
 
 /// Random binary data
 nothrow @safe version(mir_random_test) unittest
 {
-    // Using default RNE:
-    auto sample = randomSlice!ulong(15);
-    assert(sample.shape == [15]);
+    // mir.ndslice package is required for 'randomSlice', it can be found in 'mir-algorithm'
+    static if (is(typeof({ import mir.ndslice.slice; })))
+    {
+        // Using default RNE:
+        auto sample = randomSlice!ulong(15);
+        assert(sample.shape == [15]);
 
-    import mir.ndslice.slice: Slice;
-    assert(is(typeof(sample) == Slice!(ulong*)));
+        import mir.ndslice.slice: Slice;
+        assert(is(typeof(sample) == Slice!(ulong*)));
 
-    // Using pointer to RNE:
-    sample = randomSlice!ulong(threadLocalPtr!Random, 15);
+        // Using pointer to RNE:
+        sample = randomSlice!ulong(threadLocalPtr!Random, 15);
 
-    // Using local RNE:
-    auto rng = Random(12345);
-    sample = randomSlice!ulong(rng, 15);
+        // Using local RNE:
+        auto rng = Random(12345);
+        sample = randomSlice!ulong(rng, 15);
+    }
 }
 
 /++
@@ -438,45 +459,57 @@ auto sample(alias gen = rne, Range)(Range range, size_t n)
 /// Default RNE
 nothrow @safe version(mir_random_test) unittest
 {
-    import mir.ndslice.topology: iota;
+    // mir.ndslice package is required for 'iota', it can be found in 'mir-algorithm'
+    static if (is(typeof({ import mir.ndslice.slice; })))
+    {
+        import mir.ndslice.topology: iota;
 
-    auto sample = 100.iota.sample(7);
-    assert(sample.length == 7);
+        auto sample = 100.iota.sample(7);
+        assert(sample.length == 7);
+    }
 }
 
 ///
 nothrow @safe version(mir_random_test) unittest
 {
-    import mir.algorithm.iteration: equal;
-    import mir.ndslice.topology: iota;
-    import mir.random.engine.xorshift;
+    // mir.ndslice package is required for 'iota', it can be found in 'mir-algorithm'
+    static if (is(typeof({ import mir.ndslice.slice; })))
+    {
+        import mir.algorithm.iteration: equal;
+        import mir.ndslice.topology: iota;
+        import mir.random.engine.xorshift;
 
-    // Using pointer to RNE:
-    setThreadLocalSeed!Xorshift(112); //Use a known seed instead of a random seed.
-    Xorshift* gen_ptr = threadLocalPtr!Xorshift;
-    auto sample1 = gen_ptr.sample(100.iota, 7);
+        // Using pointer to RNE:
+        setThreadLocalSeed!Xorshift(112); //Use a known seed instead of a random seed.
+        Xorshift* gen_ptr = threadLocalPtr!Xorshift;
+        auto sample1 = gen_ptr.sample(100.iota, 7);
 
-    // Using alias of local RNE:
-    Xorshift gen = Xorshift(112);
-    auto sample2 = 100.iota.sample!gen(7);
+        // Using alias of local RNE:
+        Xorshift gen = Xorshift(112);
+        auto sample2 = 100.iota.sample!gen(7);
 
-    assert(sample1.equal(sample2));
+        assert(sample1.equal(sample2));
+    }
 }
 
 @nogc nothrow @safe version(mir_random_test) unittest
 {
-    import mir.algorithm.iteration: equal;
-    import mir.ndslice.topology: iota;
-    import mir.random.engine.xorshift;
-    setThreadLocalSeed!Xorshift(232);//Use a known seed instead of a random seed.
-    Xorshift* gen = threadLocalPtr!Xorshift;
+    // mir.ndslice package is required for 'iota', it can be found in 'mir-algorithm'
+    static if (is(typeof({ import mir.ndslice.slice; })))
+    {
+        import mir.algorithm.iteration: equal;
+        import mir.ndslice.topology: iota;
+        import mir.random.engine.xorshift;
+        setThreadLocalSeed!Xorshift(232);//Use a known seed instead of a random seed.
+        Xorshift* gen = threadLocalPtr!Xorshift;
 
-    assert(iota(0).equal(gen.sample(iota(0), 0)));
-    assert(iota(1).equal(gen.sample(iota(1), 1)));
-    assert(iota(2).equal(gen.sample(iota(2), 2)));
-    assert(iota(3).equal(gen.sample(iota(3), 3)));
-    assert(iota(8).equal(gen.sample(iota(8), 8)));
-    assert(iota(1000).equal(gen.sample(iota(1000), 1000)));
+        assert(iota(0).equal(gen.sample(iota(0), 0)));
+        assert(iota(1).equal(gen.sample(iota(1), 1)));
+        assert(iota(2).equal(gen.sample(iota(2), 2)));
+        assert(iota(3).equal(gen.sample(iota(3), 3)));
+        assert(iota(8).equal(gen.sample(iota(8), 8)));
+        assert(iota(1000).equal(gen.sample(iota(1000), 1000)));
+    }
 }
 
 /++
@@ -610,29 +643,37 @@ void shuffle(Iterator)(Slice!Iterator range)
 ///
 nothrow @safe version(mir_random_test) unittest
 {
-    import mir.ndslice.allocation: slice;
-    import mir.ndslice.topology: iota;
-    import mir.ndslice.sorting;
+    // mir.ndslice package is required, it can be found in 'mir-algorithm'
+    static if (is(typeof({ import mir.ndslice.slice; })))
+    {
+        import mir.ndslice.allocation: slice;
+        import mir.ndslice.topology: iota;
+        import mir.ndslice.sorting;
 
-    auto a = iota(10).slice;
+        auto a = iota(10).slice;
 
-    shuffle(a);
+        shuffle(a);
 
-    sort(a);
-    assert(a == iota(10));
+        sort(a);
+        assert(a == iota(10));
+    }
 }
 
 ///
 nothrow @safe version(mir_random_test) unittest
 {
-    import mir.ndslice.slice: sliced;
-    import mir.ndslice.sorting;
+    // mir.ndslice package is required, it can be found in 'mir-algorithm'
+    static if (is(typeof({ import mir.ndslice.slice; })))
+    {
+        import mir.ndslice.slice: sliced;
+        import mir.ndslice.sorting;
 
-    auto a = [1, 2, 3, 4];
-    a.sliced.shuffle;
+        auto a = [1, 2, 3, 4];
+        a.sliced.shuffle;
 
-    sort(a);
-    assert(a == [1, 2, 3, 4]);
+        sort(a);
+        assert(a == [1, 2, 3, 4]);
+    }
 }
 
 /++
@@ -687,16 +728,19 @@ void shuffle(Iterator)(Slice!Iterator range, size_t n)
 ///
 nothrow @safe version(mir_random_test) unittest
 {
-    import mir.ndslice.allocation: slice;
-    import mir.ndslice.topology: iota;
-    import mir.ndslice.sorting;
+    static if (is(typeof({ import mir.ndslice.slice; })))
+    {
+        import mir.ndslice.allocation: slice;
+        import mir.ndslice.topology: iota;
+        import mir.ndslice.sorting;
 
-    auto a = iota(10).slice;
+        auto a = iota(10).slice;
 
-    shuffle(a, 4);
+        shuffle(a, 4);
 
-    sort(a);
-    assert(a == iota(10));
+        sort(a);
+        assert(a == iota(10));
+    }
 }
 
 // Ensure that the demo code in README.md stays up to date.
@@ -704,24 +748,35 @@ nothrow @safe version(mir_random_test) unittest
 // README.md too!
 nothrow @safe version(mir_random_test) unittest
 {
-    import mir.random;
-    import mir.random.variable: normalVar;
-    import mir.random.algorithm: randomSlice;
+    static if (is(typeof({ import mir.ndslice.slice; })))
+    {
+        import mir.random;
+        import mir.random.variable: normalVar;
+        import mir.random.algorithm: randomSlice;
 
-    auto sample = normalVar.randomSlice(10);
+        auto sample = normalVar.randomSlice(10);
 
-    auto k = sample[$.randIndex];
+        auto k = sample[$.randIndex];
+    }
 }
 
 nothrow @safe version(mir_random_test) unittest
 {
-    import mir.random;
-    import mir.random.variable: normalVar;
-    import mir.random.algorithm: randomSlice;
+    static if (is(typeof({ import mir.ndslice.slice; })))
+    {
+        import mir.random;
+        import mir.random.variable: normalVar;
+        import mir.random.algorithm: randomSlice;
 
-    // Engines are allocated on stack or global
-    auto rng = Random(unpredictableSeed);
-    auto sample = rng.randomSlice(normalVar, 10);
+        // Engines are allocated on stack or global
+        auto rng = Random(unpredictableSeed);
+        auto sample = rng.randomSlice(normalVar, 10);
 
-    auto k = sample[rng.randIndex($)];
+        auto k = sample[rng.randIndex($)];
+    }
+}
+}
+else
+{
+    version(unittest) {} else static assert(0, "mir.ndslice is required for mir.random.algorithm, it can be found in 'mir-algorithm' repository.");
 }

@@ -1808,7 +1808,7 @@ struct DiscreteVariable(T)
     {
         if(!cumulative)
         {
-            static if (isFloatingPoint!T)
+            static if (isFloatingPoint!T && is(typeof({import mir.math.sum; })))
             {
                 import mir.math.sum;
                 Summator!(T, Summation.kb2) s = 0;

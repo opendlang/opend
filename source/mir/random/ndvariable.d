@@ -25,7 +25,6 @@ module mir.random.ndvariable;
 import mir.random;
 import std.traits;
 import mir.math.common;
-import mir.ndslice;
 
 /++
 Test if T is an n-dimensional random variable.
@@ -40,11 +39,7 @@ template isNdRandomVariable(T)
             enum isNdRandomVariable =
                 is(typeof(((T rv, Random* gen) => rv(*gen, E[].init))(T.init, null)) == void)
                 &&
-                is(typeof(((T rv, Random* gen) => rv.opCall!Random(*gen, E[].init))(T.init, null)) == void)
-                &&
-                is(typeof(((T rv, Random* gen) => rv(*gen, Slice!(E*).init))(T.init, null)) == void)
-                &&
-                is(typeof(((T rv, Random* gen) => rv.opCall!Random(*gen, Slice!(E*).init))(T.init, null)) == void);
+                is(typeof(((T rv, Random* gen) => rv.opCall!Random(*gen, E[].init))(T.init, null)) == void);
         }
         else
         {
@@ -75,36 +70,26 @@ struct SphereVariable(T)
     ///
     alias Element = T;
 
-    ///
-    void opCall(G)(scope ref G gen, scope T[] result)
-    {
-        opCall(gen, result.sliced);
-    }
-    /// ditto
-    void opCall(G)(scope G* gen, scope T[] result)
-    {
-        opCall(*gen, result.sliced);
-    }
 
     ///
-    void opCall(G, SliceKind kind)(scope ref G gen, scope Slice!(T*, 1, kind) result)
+    pragma(inline, false)
+    void opCall(G)(scope ref G gen, scope T[] result)
         if (isSaturatedRandomEngine!G)
     {
-        import mir.math.sum : Summator, Summation;
         import mir.random.variable : NormalVariable;
 
         assert(result.length);
-        Summator!(T, Summation.kbn) summator = 0;
+        T summator = 0;
         auto norm = NormalVariable!T(0, 1);
         foreach (ref e; result)
         {
             auto x = e = norm(gen);
             summator += x * x;
         }
-        result[] /= summator.sum.sqrt;
+        result[] /= summator.sqrt;
     }
     /// ditto
-    void opCall(G, SliceKind kind)(scope G* gen, scope Slice!(T*, 1, kind) result)
+    void opCall(G)(scope G* gen, scope T[] result)
         if (isSaturatedRandomEngine!G)
     {
         pragma(inline, true);
@@ -145,24 +130,16 @@ Returns: `X ~ 1` with `X[i] >= 0` and `X[0] + .. + X[$-1] = 1`
 struct SimplexVariable(T)
     if (isFloatingPoint!T)
 {
+    static assert(is(typeof({ import mir.ndslice.slice; })), "mir.ndslice package is required for 'SimplexVariable', it can be found in 'mir-algorithm'");
+
     ///
     enum isNdRandomVariable = true;
     ///
     alias Element = T;
 
     ///
+    pragma(inline, false)
     void opCall(G)(scope ref G gen, scope T[] result)
-    {
-        opCall(gen, result.sliced);
-    }
-    /// ditto
-    void opCall(G)(scope G* gen, scope T[] result)
-    {
-        opCall(*gen, result.sliced);
-    }
-
-    ///
-    void opCall(G, SliceKind kind)(scope ref G gen, scope Slice!(T*, 1, kind) result)
         if (isSaturatedRandomEngine!G)
     {
         import mir.ndslice.sorting : sort;
@@ -171,12 +148,12 @@ struct SimplexVariable(T)
         assert(result.length);
         foreach (ref e; result[0 .. $ - 1])
             e = gen.rand!T.fabs;
-        result.back = T(1);
+        result[$-1] = T(1);
         sort(result[0 .. $ - 1]);
         result[1 .. $].retro[] = result.diff.retro;
     }
     /// ditto
-    void opCall(G, SliceKind kind)(scope G* gen, scope Slice!(T*, 1, kind) result)
+    void opCall(G)(scope G* gen, scope T[] result)
         if (isSaturatedRandomEngine!G)
     {
         pragma(inline, true);
@@ -197,22 +174,30 @@ alias simplexVariable = simplexVar;
 ///
 @nogc nothrow @safe version(mir_random_test) unittest
 {
-    auto rv = simplexVar;
-    double[3] x;
-    rv(rne, x);
-    assert(x[0] >= 0 && x[1] >= 0 && x[2] >= 0);
-    assert(fabs(x[0] + x[1] + x[2] - 1) < 1e-10);
+    // mir.ndslice package is required for 'SimplexVariable', it can be found in 'mir-algorithm'
+    static if (is(typeof({ import mir.ndslice.slice; })))
+    {
+        auto rv = simplexVar;
+        double[3] x;
+        rv(rne, x);
+        assert(x[0] >= 0 && x[1] >= 0 && x[2] >= 0);
+        assert(fabs(x[0] + x[1] + x[2] - 1) < 1e-10);
+    }
 }
 
 ///
 @nogc nothrow @safe version(mir_random_test) unittest
 {
-    Random* gen = threadLocalPtr!Random;
-    SimplexVariable!double rv;
-    double[3] x;
-    rv(gen, x);
-    assert(x[0] >= 0 && x[1] >= 0 && x[2] >= 0);
-    assert(fabs(x[0] + x[1] + x[2] - 1) < 1e-10);
+    // mir.ndslice package is required for 'SimplexVariable', it can be found in 'mir-algorithm'
+    static if (is(typeof({ import mir.ndslice.slice; })))
+    {
+        Random* gen = threadLocalPtr!Random;
+        SimplexVariable!double rv;
+        double[3] x;
+        rv(gen, x);
+        assert(x[0] >= 0 && x[1] >= 0 && x[2] >= 0);
+        assert(fabs(x[0] + x[1] + x[2] - 1) < 1e-10);
+    }
 }
 
 /++
@@ -229,48 +214,33 @@ struct DirichletVariable(T)
     alias Element = T;
 
     ///
-    Slice!(const(T)*) alpha;
+    const(T)[] alpha;
 
     /++
     Params:
         alpha = concentration parameters
     Constraints: `alpha[i] > 0`
     +/
-    this()(Slice!(const(T)*) alpha)
-    {
-        this.alpha = alpha;
-    }
 
     /// ditto
     this()(const(T)[] alpha)
     {
-        this.alpha = alpha.sliced;
+        this.alpha = alpha;
     }
 
     ///
+    pragma(inline, false)
     void opCall(G)(scope ref G gen, scope T[] result)
-    {
-        opCall(gen, result.sliced);
-    }
-    /// ditto
-    void opCall(G)(scope G* gen, scope T[] result)
-    {
-        opCall(*gen, result.sliced);
-    }
-
-    ///
-    void opCall(G, SliceKind kind, Iterator)(scope ref G gen, scope Slice!(Iterator, 1, kind) result)
         if (isSaturatedRandomEngine!G)
     {
         assert(result.length == alpha.length);
-        import mir.math.sum : Summator, Summation;
-        Summator!(T, Summation.kbn) summator = 0;
+        T summator = 0;
         foreach (size_t i; 0 .. result.length)
             summator += result[i] = GammaVariable!T(alpha[i], 1)(gen);
-        result[] /= summator.sum;
+        result[] /= summator;
     }
     /// ditto
-    void opCall(G, SliceKind kind, Iterator)(scope G* gen, scope Slice!(Iterator, 1, kind) result)
+    void opCall(G)(scope G* gen, scope T[] result)
         if (isSaturatedRandomEngine!G)
     {
         pragma(inline, true);
@@ -280,13 +250,6 @@ struct DirichletVariable(T)
 
 /// ditto
 DirichletVariable!T dirichletVar(T)(in T[] alpha)
-    if (isFloatingPoint!T)
-{   
-    return typeof(return)(alpha);
-}
-
-/// ditto
-DirichletVariable!T dirichletVar(T)(Slice!(const(T)*) alpha)
     if (isFloatingPoint!T)
 {   
     return typeof(return)(alpha);
@@ -317,36 +280,39 @@ nothrow @safe version(mir_random_test) unittest
 }
 
 /++
- Compute Cholesky decomposition in place. Only accesses lower/left half of
- the matrix. Returns false if the matrix is not positive definite.
- +/
-private bool cholesky(SliceKind kind, Iterator)(scope Slice!(Iterator, 2, kind) m)
-    if(isFloatingPoint!(DeepElementType!(typeof(m))))
-{
-    assert(m.length!0 == m.length!1);
-
-    /* this is a straight-forward implementation of the Cholesky-Crout algorithm
-    from https://en.wikipedia.org/wiki/Cholesky_decomposition#Computation */
-    foreach(size_t i; 0 .. m.length)
-    {
-        auto r = m[i];
-        foreach(size_t j; 0 .. i)
-            r[j] = (r[j] - reduce!"a + b * c"(typeof(r[j])(0), r[0 .. j], m[j, 0 .. j])) / m[j, j];
-        r[i] -= reduce!"a + b * b"(typeof(r[i])(0), r[0 .. i]);
-        if (!(r[i] > 0)) // this catches nan's as well
-            return false;
-        r[i] = sqrt(r[i]);
-    }
-    return true;
-}
-
-/++
 Multivariate normal distribution.
 Beta version (has not properly tested).
 +/
 struct MultivariateNormalVariable(T)
     if(isFloatingPoint!T)
 {
+    static assert(is(typeof({ import mir.ndslice.slice; })), "mir.ndslice package is required for 'MultivariateNormalVariable', it can be found in 'mir-algorithm'");
+
+
+    /++
+    Compute Cholesky decomposition in place. Only accesses lower/left half of
+    the matrix. Returns false if the matrix is not positive definite.
+    +/
+    private static bool cholesky()(Slice!(T*, 2) m)
+    {
+        import mir.algorithm.iteration: reduce;
+        assert(m.length!0 == m.length!1);
+
+        /* this is a straight-forward implementation of the Cholesky-Crout algorithm
+        from https://en.wikipedia.org/wiki/Cholesky_decomposition#Computation */
+        foreach(size_t i; 0 .. m.length)
+        {
+            auto r = m[i];
+            foreach(size_t j; 0 .. i)
+                r[j] = (r[j] - reduce!"a + b * c"(typeof(r[j])(0), r[0 .. j], m[j, 0 .. j])) / m[j, j];
+            r[i] -= reduce!"a + b * b"(typeof(r[i])(0), r[0 .. i]);
+            if (!(r[i] > 0)) // this catches nan's as well
+                return false;
+            r[i] = sqrt(r[i]);
+        }
+        return true;
+    }
+
     ///
     enum isNdRandomVariable = true;
     ///
@@ -404,21 +370,12 @@ struct MultivariateNormalVariable(T)
     }
 
     ///
+    pragma(inline, false)
     void opCall(G)(scope ref G gen, scope T[] result)
-    {
-        opCall(gen, result.sliced);
-    }
-
-    /// ditto
-    void opCall(G)(scope G* gen, scope T[] result)
-    {
-        opCall(*gen, result.sliced);
-    }
-
-    ///
-    void opCall(G, SliceKind kind)(scope ref G gen, scope Slice!(T*, 1, kind) result)
         if (isSaturatedRandomEngine!G)
     {
+        import mir.algorithm.iteration: reduce;
+        import mir.ndslice.slice: sliced;
         assert(result.length == n);
         import mir.random.variable : NormalVariable;
         auto norm = NormalVariable!T(0, 1);
@@ -429,10 +386,10 @@ struct MultivariateNormalVariable(T)
         foreach_reverse(size_t i; 0 .. n - 1)
             result[i] = reduce!"a + b * c"(T(0), s[i, 0 .. i + 1], result[0 .. i + 1]);
         if (mu)
-            result[] += (() @trusted => mu.sliced(n))();//mu is n vector.
+            result.sliced[] +=(() @trusted => mu.sliced(n))();//mu is n vector.
     }
     /// ditto
-    void opCall(G, SliceKind kind)(scope G* gen, scope Slice!(T*, 1, kind) result)
+    void opCall(G)(scope G* gen, scope T[] result)
         if (isSaturatedRandomEngine!G)
     {
         pragma(inline, true);
@@ -440,19 +397,35 @@ struct MultivariateNormalVariable(T)
     }
 }
 
-/// ditto
-MultivariateNormalVariable!T multivariateNormalVar(T)(Slice!(const(T)*) mu, Slice!(T*, 2) sigma, bool chol = false)
-    if (isFloatingPoint!T)
-{   
-    return typeof(return)(mu, sigma, chol);
+static if (is(typeof({import mir.ndslice.slice;})))
+{
+    import mir.ndslice.slice: Slice;
+
+    /// ditto
+    MultivariateNormalVariable!T multivariateNormalVar(T)(Slice!(const(T)*) mu, Slice!(T*, 2) sigma, bool chol = false)
+    {   
+        return typeof(return)(mu, sigma, chol);
+    }
+
+    /// ditto
+    MultivariateNormalVariable!T multivariateNormalVar(T)(Slice!(T*, 2) sigma, bool chol = false)
+    {   
+        return typeof(return)(sigma, chol);
+    }
+}
+else
+{
+    auto multivariateNormalVar(S)(S sigma, bool chol = false)
+    {
+        static assert(0, "mir.ndslice package is required for 'MultivariateNormalVariable', it can be found in 'mir-algorithm'");
+    }
+
+    auto multivariateNormalVar(M, S)(M mu, S sigma, bool chol = false)
+    {
+        static assert(0, "mir.ndslice package is required for 'MultivariateNormalVariable', it can be found in 'mir-algorithm'");
+    }
 }
 
-/// ditto
-MultivariateNormalVariable!T multivariateNormalVar(T)(Slice!(T*, 2) sigma, bool chol = false)
-    if (isFloatingPoint!T)
-{   
-    return typeof(return)(sigma, chol);
-}
 
 /// ditto
 alias multivariateNormalVariable = multivariateNormalVar;
@@ -460,20 +433,30 @@ alias multivariateNormalVariable = multivariateNormalVar;
 ///
 nothrow @safe version(mir_random_test) unittest
 {
-    auto mu = [10.0, 0.0].sliced;
-    auto sigma = [2.0, -1.5, -1.5, 2.0].sliced(2,2);
-    auto rv = multivariateNormalVar(mu, sigma);
-    double[2] x;
-    rv(rne, x[]);
+    // mir.ndslice package is required for 'multivariateNormalVar', it can be found in 'mir-algorithm'
+    static if (is(typeof({ import mir.ndslice.slice; })))
+    {
+        import mir.ndslice.slice: sliced;
+        auto mu = [10.0, 0.0].sliced;
+        auto sigma = [2.0, -1.5, -1.5, 2.0].sliced(2,2);
+        auto rv = multivariateNormalVar(mu, sigma);
+        double[2] x;
+        rv(rne, x[]);
+    }
 }
 
 ///
 nothrow @safe version(mir_random_test) unittest
 {
-    Random* gen = threadLocalPtr!Random;
-    auto mu = [10.0, 0.0].sliced;
-    auto sigma = [2.0, -1.5, -1.5, 2.0].sliced(2,2);
-    auto rv = multivariateNormalVar(mu, sigma);
-    double[2] x;
-    rv(gen, x[]);
+    // mir.ndslice package is required for 'multivariateNormalVar', it can be found in 'mir-algorithm'
+    static if (is(typeof({ import mir.ndslice.slice; })))
+    {
+        import mir.ndslice.slice: sliced;
+        Random* gen = threadLocalPtr!Random;
+        auto mu = [10.0, 0.0].sliced;
+        auto sigma = [2.0, -1.5, -1.5, 2.0].sliced(2,2);
+        auto rv = multivariateNormalVar(mu, sigma);
+        double[2] x;
+        rv(gen, x[]);
+    }
 }

@@ -100,6 +100,7 @@ body
 }
 
 // test for c=1
+static if (is(typeof({ import mir.ndslice.slice; })))
 pure @safe version(mir_random_test) unittest
 {
     import std.math: approxEqual;
@@ -136,6 +137,7 @@ pure @safe version(mir_random_test) unittest
 }
 
 // test for c=-1
+static if (is(typeof({ import mir.ndslice.slice; })))
 pure @safe version(mir_random_test) unittest
 {
     import std.math: approxEqual;
@@ -174,6 +176,7 @@ pure @safe version(mir_random_test) unittest
 }
 
 // test for c=0
+static if (is(typeof({ import mir.ndslice.slice; })))
 pure @safe version(mir_random_test) unittest
 {
     import std.math: approxEqual;

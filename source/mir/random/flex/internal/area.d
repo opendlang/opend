@@ -408,6 +408,7 @@ body
 
 // example from Botts et al. (2013) (distribution 1)
 // split up into all three floating-point types
+static if (is(typeof({ import mir.ndslice.slice; })))
 @safe version(mir_random_test) unittest
 {
     import mir.ndslice.topology: pairwise;
@@ -500,6 +501,7 @@ body
     }
 }
 
+static if (is(typeof({ import mir.ndslice.slice; })))
 @safe version(mir_random_test) unittest
 {
     import mir.ndslice.topology: pairwise;
@@ -592,6 +594,7 @@ body
     }
 }
 
+static if (is(typeof({ import mir.ndslice.slice; })))
 @safe version(mir_random_test) unittest
 {
     import mir.ndslice.topology: pairwise;
@@ -698,6 +701,7 @@ body
 }
 
 // standard normal distribution
+static if (is(typeof({ import mir.ndslice.slice; })))
 @safe version(mir_random_test) unittest
 {
     import mir.ndslice.topology: pairwise;
@@ -796,6 +800,7 @@ body
 }
 
 // distribution 3
+static if (is(typeof({ import mir.ndslice.slice; })))
 @safe version(mir_random_test) unittest
 {
     import mir.ndslice.topology: pairwise;
@@ -879,6 +884,7 @@ body
 }
 
 // distribution 4
+static if (is(typeof({ import mir.ndslice.slice; })))
 @safe version(mir_random_test) unittest
 {
     import mir.ndslice.topology: pairwise;
@@ -954,6 +960,7 @@ body
 }
 
 // distribution 4 with less points
+static if (is(typeof({ import mir.ndslice.slice; })))
 @safe version(mir_random_test) unittest
 {
     import mir.ndslice.topology: pairwise;
@@ -1034,6 +1041,7 @@ body
 }
 
 // distribution 3 with other boundaries
+static if (is(typeof({ import mir.ndslice.slice; })))
 @safe version(mir_random_test) unittest
 {
     import mir.ndslice.topology: pairwise;
