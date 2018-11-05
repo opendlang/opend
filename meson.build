@@ -53,7 +53,7 @@ mir_random_test_exe = executable(meson.project_name() + '-test',
     mir_random_src,
     include_directories: mir_random_dir,
     d_unittest: true,
-    d_module_versions: ['mi_random_test'],
+    d_module_versions: ['mir_random_test'],
     link_args: '-main',
     dependencies: required_deps,
 )
