@@ -7,6 +7,11 @@ module mir.bitop;
 
 version(LDC)
     import ldc.intrinsics;
+version(GNU)
+{
+    import gcc.builtins;
+    import core.stdc.config : c_longlong;
+}
 
 import mir.math.common: fastmath;
 
@@ -62,7 +67,7 @@ enum uint bitShiftMask(T : cent) = 127;
 
 /++
 +/
-T nTrailingBitsToCount(T)(T value, T popcnt)
+T nTrailingBitsToCount(T)(in T value, in T popcnt)
     if (__traits(isUnsigned, T))
 {
     import std.traits;
@@ -92,7 +97,7 @@ unittest
 
 /++
 +/
-T nLeadingBitsToCount(T)(T value, T popcnt)
+T nLeadingBitsToCount(T)(in T value, in T popcnt)
     if (__traits(isUnsigned, T))
 {
     import std.traits;
@@ -301,11 +306,20 @@ auto bts(Field, T = typeof(Field.init[size_t.init]))(auto ref Field p, size_t bi
 }
 
 /// The 'ctpop' family of intrinsics counts the number of bits set in a value.
-T ctpop(T)(T src)
+T ctpop(T)(in T src)
     if (__traits(isUnsigned, T))
 {
     version(LDC) if (!__ctfe)
         return llvm_ctpop(src);
+    version(GNU) if (!__ctfe)
+    {
+        static if (T.sizeof == __builtin_clong.sizeof)
+            return cast(T) __builtin_popcountl(src);
+        else static if (T.sizeof == c_longlong.sizeof)
+            return cast(T) __builtin_popcountll(src);
+        else static if (T.sizeof <= uint.sizeof && T.sizeof <= __builtin_machine_int.sizeof)
+            return cast(T) __builtin_popcount(src);
+    }
     import core.bitop: popcnt;
     return cast(T) popcnt(src);
 }
@@ -314,11 +328,20 @@ T ctpop(T)(T src)
 The 'ctlz' family of intrinsic functions counts the number of leading zeros in a variable.
 Result is undefined if the argument is zero.
 +/
-T ctlz(T)(T src)
+T ctlz(T)(in T src)
     if (__traits(isUnsigned, T))
 {
     version(LDC) if (!__ctfe)
         return llvm_ctlz(src, true);
+    version(GNU) if (!__ctfe)
+    {
+        static if (T.sizeof == __builtin_clong.sizeof)
+            return cast(T) __builtin_clzl(src);
+        else static if (T.sizeof == c_longlong.sizeof)
+            return cast(T) __builtin_clzll(src);
+        else static if (T.sizeof <= uint.sizeof && T.sizeof <= __builtin_machine_int.sizeof)
+            return cast(T) __builtin_clz(src);
+    }
     import core.bitop: bsr;
     return cast(T)(T.sizeof * 8  - 1 - bsr(src));
 }
@@ -327,11 +350,20 @@ T ctlz(T)(T src)
 The 'cttz' family of intrinsic functions counts the number of trailing zeros.
 Result is undefined if the argument is zero.
 +/
-T cttz(T)(T src)
+T cttz(T)(in T src)
     if (__traits(isUnsigned, T))
 {
     version(LDC) if (!__ctfe)
         return llvm_cttz(src, true);
+    version(GNU) if (!__ctfe)
+    {
+        static if (T.sizeof == __builtin_clong.sizeof)
+            return cast(T) __builtin_ctzl(src);
+        else static if (T.sizeof == c_longlong.sizeof)
+            return cast(T) __builtin_ctzll(src);
+        else static if (T.sizeof <= uint.sizeof && T.sizeof <= __builtin_machine_int.sizeof)
+            return cast(T) __builtin_ctz(src);
+    }
     import core.bitop: bsf;
     return cast(T) bsf(src);
 }
