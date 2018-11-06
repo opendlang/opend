@@ -8,10 +8,7 @@ module mir.bitop;
 version(LDC)
     import ldc.intrinsics;
 version(GNU)
-{
     import gcc.builtins;
-    import core.stdc.config : c_longlong;
-}
 
 import mir.math.common: fastmath;
 
@@ -313,12 +310,12 @@ T ctpop(T)(in T src)
         return llvm_ctpop(src);
     version(GNU) if (!__ctfe)
     {
-        static if (T.sizeof == __builtin_clong.sizeof)
-            return cast(T) __builtin_popcountl(src);
-        else static if (T.sizeof == c_longlong.sizeof)
-            return cast(T) __builtin_popcountll(src);
-        else static if (T.sizeof <= uint.sizeof && T.sizeof <= __builtin_machine_int.sizeof)
+        static if (T.sizeof < __builtin_clong.sizeof)
             return cast(T) __builtin_popcount(src);
+        else static if (T.sizeof <= __builtin_clong.sizeof)
+            return cast(T) __builtin_popcountl(src);
+        else
+            return cast(T) __builtin_popcountll(src);
     }
     import core.bitop: popcnt;
     return cast(T) popcnt(src);
@@ -335,12 +332,12 @@ T ctlz(T)(in T src)
         return llvm_ctlz(src, true);
     version(GNU) if (!__ctfe)
     {
-        static if (T.sizeof == __builtin_clong.sizeof)
-            return cast(T) __builtin_clzl(src);
-        else static if (T.sizeof == c_longlong.sizeof)
-            return cast(T) __builtin_clzll(src);
-        else static if (T.sizeof <= uint.sizeof && T.sizeof <= __builtin_machine_int.sizeof)
+        static if (T.sizeof < __builtin_clong.sizeof)
             return cast(T) __builtin_clz(src);
+        else static if (T.sizeof <= __builtin_clong.sizeof)
+            return cast(T) __builtin_clzl(src);
+        else
+            return cast(T) __builtin_clzll(src);
     }
     import core.bitop: bsr;
     return cast(T)(T.sizeof * 8  - 1 - bsr(src));
@@ -357,12 +354,12 @@ T cttz(T)(in T src)
         return llvm_cttz(src, true);
     version(GNU) if (!__ctfe)
     {
-        static if (T.sizeof == __builtin_clong.sizeof)
-            return cast(T) __builtin_ctzl(src);
-        else static if (T.sizeof == c_longlong.sizeof)
-            return cast(T) __builtin_ctzll(src);
-        else static if (T.sizeof <= uint.sizeof && T.sizeof <= __builtin_machine_int.sizeof)
+        static if (T.sizeof <__builtin_clong.sizeof)
             return cast(T) __builtin_ctz(src);
+        else static if (T.sizeof <=__builtin_clong.sizeof)
+            return cast(T) __builtin_ctzl(src);
+        else
+            return cast(T) __builtin_ctzll(src);
     }
     import core.bitop: bsf;
     return cast(T) bsf(src);
