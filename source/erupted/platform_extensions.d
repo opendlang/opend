@@ -12,7 +12,6 @@ module erupted.platform_extensions;
 enum KHR_xlib_surface;
 enum KHR_xcb_surface;
 enum KHR_wayland_surface;
-enum KHR_mir_surface;
 enum KHR_android_surface;
 enum KHR_win32_surface;
 enum KHR_external_memory_win32;
@@ -34,7 +33,6 @@ import std.meta : AliasSeq;
 alias USE_PLATFORM_XLIB_KHR        = AliasSeq!( KHR_xlib_surface );
 alias USE_PLATFORM_XCB_KHR         = AliasSeq!( KHR_xcb_surface );
 alias USE_PLATFORM_WAYLAND_KHR     = AliasSeq!( KHR_wayland_surface );
-alias USE_PLATFORM_MIR_KHR         = AliasSeq!( KHR_mir_surface );
 alias USE_PLATFORM_ANDROID_KHR     = AliasSeq!( KHR_android_surface, ANDROID_external_memory_android_hardware_buffer );
 alias USE_PLATFORM_WIN32_KHR       = AliasSeq!( KHR_win32_surface, KHR_external_memory_win32, KHR_win32_keyed_mutex, KHR_external_semaphore_win32, KHR_external_fence_win32, NV_external_memory_win32, NV_win32_keyed_mutex );
 alias USE_PLATFORM_VI_NN           = AliasSeq!( NN_vi_surface );
@@ -85,8 +83,8 @@ mixin template Platform_Extensions( extensions... ) {
                 Window                       window;
             }
             
-            alias PFN_vkCreateXlibSurfaceKHR                                 = VkResult  function( VkInstance instance, const( VkXlibSurfaceCreateInfoKHR )* pCreateInfo, const( VkAllocationCallbacks )* pAllocator, VkSurfaceKHR* pSurface );
-            alias PFN_vkGetPhysicalDeviceXlibPresentationSupportKHR          = VkBool32  function( VkPhysicalDevice physicalDevice, uint32_t queueFamilyIndex, Display* dpy, VisualID visualID );
+            alias PFN_vkCreateXlibSurfaceKHR                             = VkResult  function( VkInstance instance, const( VkXlibSurfaceCreateInfoKHR )* pCreateInfo, const( VkAllocationCallbacks )* pAllocator, VkSurfaceKHR* pSurface );
+            alias PFN_vkGetPhysicalDeviceXlibPresentationSupportKHR      = VkBool32  function( VkPhysicalDevice physicalDevice, uint32_t queueFamilyIndex, Display* dpy, VisualID visualID );
         }
 
         // VK_KHR_xcb_surface : types and function pointer type aliases
@@ -106,8 +104,8 @@ mixin template Platform_Extensions( extensions... ) {
                 xcb_window_t                window;
             }
             
-            alias PFN_vkCreateXcbSurfaceKHR                                  = VkResult  function( VkInstance instance, const( VkXcbSurfaceCreateInfoKHR )* pCreateInfo, const( VkAllocationCallbacks )* pAllocator, VkSurfaceKHR* pSurface );
-            alias PFN_vkGetPhysicalDeviceXcbPresentationSupportKHR           = VkBool32  function( VkPhysicalDevice physicalDevice, uint32_t queueFamilyIndex, xcb_connection_t* connection, xcb_visualid_t visual_id );
+            alias PFN_vkCreateXcbSurfaceKHR                              = VkResult  function( VkInstance instance, const( VkXcbSurfaceCreateInfoKHR )* pCreateInfo, const( VkAllocationCallbacks )* pAllocator, VkSurfaceKHR* pSurface );
+            alias PFN_vkGetPhysicalDeviceXcbPresentationSupportKHR       = VkBool32  function( VkPhysicalDevice physicalDevice, uint32_t queueFamilyIndex, xcb_connection_t* connection, xcb_visualid_t visual_id );
         }
 
         // VK_KHR_wayland_surface : types and function pointer type aliases
@@ -127,29 +125,8 @@ mixin template Platform_Extensions( extensions... ) {
                 const( wl_surface )*            surface;
             }
             
-            alias PFN_vkCreateWaylandSurfaceKHR                              = VkResult  function( VkInstance instance, const( VkWaylandSurfaceCreateInfoKHR )* pCreateInfo, const( VkAllocationCallbacks )* pAllocator, VkSurfaceKHR* pSurface );
-            alias PFN_vkGetPhysicalDeviceWaylandPresentationSupportKHR       = VkBool32  function( VkPhysicalDevice physicalDevice, uint32_t queueFamilyIndex, const( wl_display )* display );
-        }
-
-        // VK_KHR_mir_surface : types and function pointer type aliases
-        else static if( __traits( isSame, extension, KHR_mir_surface )) {
-            enum VK_KHR_mir_surface = 1;
-
-            enum VK_KHR_MIR_SURFACE_SPEC_VERSION = 4;
-            enum VK_KHR_MIR_SURFACE_EXTENSION_NAME = "VK_KHR_mir_surface";
-            
-            alias VkMirSurfaceCreateFlagsKHR = VkFlags;
-            
-            struct VkMirSurfaceCreateInfoKHR {
-                VkStructureType             sType = VK_STRUCTURE_TYPE_MIR_SURFACE_CREATE_INFO_KHR;
-                const( void )*              pNext;
-                VkMirSurfaceCreateFlagsKHR  flags;
-                MirConnection*              connection;
-                MirSurface*                 mirSurface;
-            }
-            
-            alias PFN_vkCreateMirSurfaceKHR                                  = VkResult  function( VkInstance instance, const( VkMirSurfaceCreateInfoKHR )* pCreateInfo, const( VkAllocationCallbacks )* pAllocator, VkSurfaceKHR* pSurface );
-            alias PFN_vkGetPhysicalDeviceMirPresentationSupportKHR           = VkBool32  function( VkPhysicalDevice physicalDevice, uint32_t queueFamilyIndex, MirConnection* connection );
+            alias PFN_vkCreateWaylandSurfaceKHR                          = VkResult  function( VkInstance instance, const( VkWaylandSurfaceCreateInfoKHR )* pCreateInfo, const( VkAllocationCallbacks )* pAllocator, VkSurfaceKHR* pSurface );
+            alias PFN_vkGetPhysicalDeviceWaylandPresentationSupportKHR   = VkBool32  function( VkPhysicalDevice physicalDevice, uint32_t queueFamilyIndex, const( wl_display )* display );
         }
 
         // VK_KHR_android_surface : types and function pointer type aliases
@@ -168,7 +145,7 @@ mixin template Platform_Extensions( extensions... ) {
                 const( ANativeWindow )*         window;
             }
             
-            alias PFN_vkCreateAndroidSurfaceKHR                              = VkResult  function( VkInstance instance, const( VkAndroidSurfaceCreateInfoKHR )* pCreateInfo, const( VkAllocationCallbacks )* pAllocator, VkSurfaceKHR* pSurface );
+            alias PFN_vkCreateAndroidSurfaceKHR                          = VkResult  function( VkInstance instance, const( VkAndroidSurfaceCreateInfoKHR )* pCreateInfo, const( VkAllocationCallbacks )* pAllocator, VkSurfaceKHR* pSurface );
         }
 
         // VK_KHR_win32_surface : types and function pointer type aliases
@@ -188,8 +165,8 @@ mixin template Platform_Extensions( extensions... ) {
                 HWND                          hwnd;
             }
             
-            alias PFN_vkCreateWin32SurfaceKHR                                = VkResult  function( VkInstance instance, const( VkWin32SurfaceCreateInfoKHR )* pCreateInfo, const( VkAllocationCallbacks )* pAllocator, VkSurfaceKHR* pSurface );
-            alias PFN_vkGetPhysicalDeviceWin32PresentationSupportKHR         = VkBool32  function( VkPhysicalDevice physicalDevice, uint32_t queueFamilyIndex );
+            alias PFN_vkCreateWin32SurfaceKHR                            = VkResult  function( VkInstance instance, const( VkWin32SurfaceCreateInfoKHR )* pCreateInfo, const( VkAllocationCallbacks )* pAllocator, VkSurfaceKHR* pSurface );
+            alias PFN_vkGetPhysicalDeviceWin32PresentationSupportKHR     = VkBool32  function( VkPhysicalDevice physicalDevice, uint32_t queueFamilyIndex );
         }
 
         // VK_KHR_external_memory_win32 : types and function pointer type aliases
@@ -228,8 +205,8 @@ mixin template Platform_Extensions( extensions... ) {
                 VkExternalMemoryHandleTypeFlagBits  handleType;
             }
             
-            alias PFN_vkGetMemoryWin32HandleKHR                              = VkResult  function( VkDevice device, const( VkMemoryGetWin32HandleInfoKHR )* pGetWin32HandleInfo, HANDLE* pHandle );
-            alias PFN_vkGetMemoryWin32HandlePropertiesKHR                    = VkResult  function( VkDevice device, VkExternalMemoryHandleTypeFlagBits handleType, HANDLE handle, VkMemoryWin32HandlePropertiesKHR* pMemoryWin32HandleProperties );
+            alias PFN_vkGetMemoryWin32HandleKHR                          = VkResult  function( VkDevice device, const( VkMemoryGetWin32HandleInfoKHR )* pGetWin32HandleInfo, HANDLE* pHandle );
+            alias PFN_vkGetMemoryWin32HandlePropertiesKHR                = VkResult  function( VkDevice device, VkExternalMemoryHandleTypeFlagBits handleType, HANDLE handle, VkMemoryWin32HandlePropertiesKHR* pMemoryWin32HandleProperties );
         }
 
         // VK_KHR_win32_keyed_mutex : types and function pointer type aliases
@@ -294,8 +271,8 @@ mixin template Platform_Extensions( extensions... ) {
                 VkExternalSemaphoreHandleTypeFlagBits  handleType;
             }
             
-            alias PFN_vkImportSemaphoreWin32HandleKHR                        = VkResult  function( VkDevice device, const( VkImportSemaphoreWin32HandleInfoKHR )* pImportSemaphoreWin32HandleInfo );
-            alias PFN_vkGetSemaphoreWin32HandleKHR                           = VkResult  function( VkDevice device, const( VkSemaphoreGetWin32HandleInfoKHR )* pGetWin32HandleInfo, HANDLE* pHandle );
+            alias PFN_vkImportSemaphoreWin32HandleKHR                    = VkResult  function( VkDevice device, const( VkImportSemaphoreWin32HandleInfoKHR )* pImportSemaphoreWin32HandleInfo );
+            alias PFN_vkGetSemaphoreWin32HandleKHR                       = VkResult  function( VkDevice device, const( VkSemaphoreGetWin32HandleInfoKHR )* pGetWin32HandleInfo, HANDLE* pHandle );
         }
 
         // VK_KHR_external_fence_win32 : types and function pointer type aliases
@@ -330,8 +307,8 @@ mixin template Platform_Extensions( extensions... ) {
                 VkExternalFenceHandleTypeFlagBits  handleType;
             }
             
-            alias PFN_vkImportFenceWin32HandleKHR                            = VkResult  function( VkDevice device, const( VkImportFenceWin32HandleInfoKHR )* pImportFenceWin32HandleInfo );
-            alias PFN_vkGetFenceWin32HandleKHR                               = VkResult  function( VkDevice device, const( VkFenceGetWin32HandleInfoKHR )* pGetWin32HandleInfo, HANDLE* pHandle );
+            alias PFN_vkImportFenceWin32HandleKHR                        = VkResult  function( VkDevice device, const( VkImportFenceWin32HandleInfoKHR )* pImportFenceWin32HandleInfo );
+            alias PFN_vkGetFenceWin32HandleKHR                           = VkResult  function( VkDevice device, const( VkFenceGetWin32HandleInfoKHR )* pGetWin32HandleInfo, HANDLE* pHandle );
         }
 
         // VK_NV_external_memory_win32 : types and function pointer type aliases
@@ -355,7 +332,7 @@ mixin template Platform_Extensions( extensions... ) {
                 DWORD                          dwAccess;
             }
             
-            alias PFN_vkGetMemoryWin32HandleNV                               = VkResult  function( VkDevice device, VkDeviceMemory memory, VkExternalMemoryHandleTypeFlagsNV handleType, HANDLE* pHandle );
+            alias PFN_vkGetMemoryWin32HandleNV                           = VkResult  function( VkDevice device, VkDeviceMemory memory, VkExternalMemoryHandleTypeFlagsNV handleType, HANDLE* pHandle );
         }
 
         // VK_NV_win32_keyed_mutex : types and function pointer type aliases
@@ -395,7 +372,7 @@ mixin template Platform_Extensions( extensions... ) {
                 void*                     window;
             }
             
-            alias PFN_vkCreateViSurfaceNN                                    = VkResult  function( VkInstance instance, const( VkViSurfaceCreateInfoNN )* pCreateInfo, const( VkAllocationCallbacks )* pAllocator, VkSurfaceKHR* pSurface );
+            alias PFN_vkCreateViSurfaceNN                                = VkResult  function( VkInstance instance, const( VkViSurfaceCreateInfoNN )* pCreateInfo, const( VkAllocationCallbacks )* pAllocator, VkSurfaceKHR* pSurface );
         }
 
         // VK_EXT_acquire_xlib_display : types and function pointer type aliases
@@ -405,8 +382,8 @@ mixin template Platform_Extensions( extensions... ) {
             enum VK_EXT_ACQUIRE_XLIB_DISPLAY_SPEC_VERSION = 1;
             enum VK_EXT_ACQUIRE_XLIB_DISPLAY_EXTENSION_NAME = "VK_EXT_acquire_xlib_display";
             
-            alias PFN_vkAcquireXlibDisplayEXT                                = VkResult  function( VkPhysicalDevice physicalDevice, Display* dpy, VkDisplayKHR display );
-            alias PFN_vkGetRandROutputDisplayEXT                             = VkResult  function( VkPhysicalDevice physicalDevice, Display* dpy, RROutput rrOutput, VkDisplayKHR* pDisplay );
+            alias PFN_vkAcquireXlibDisplayEXT                            = VkResult  function( VkPhysicalDevice physicalDevice, Display* dpy, VkDisplayKHR display );
+            alias PFN_vkGetRandROutputDisplayEXT                         = VkResult  function( VkPhysicalDevice physicalDevice, Display* dpy, RROutput rrOutput, VkDisplayKHR* pDisplay );
         }
 
         // VK_MVK_ios_surface : types and function pointer type aliases
@@ -425,7 +402,7 @@ mixin template Platform_Extensions( extensions... ) {
                 const( void )*              pView;
             }
             
-            alias PFN_vkCreateIOSSurfaceMVK                                  = VkResult  function( VkInstance instance, const( VkIOSSurfaceCreateInfoMVK )* pCreateInfo, const( VkAllocationCallbacks )* pAllocator, VkSurfaceKHR* pSurface );
+            alias PFN_vkCreateIOSSurfaceMVK                              = VkResult  function( VkInstance instance, const( VkIOSSurfaceCreateInfoMVK )* pCreateInfo, const( VkAllocationCallbacks )* pAllocator, VkSurfaceKHR* pSurface );
         }
 
         // VK_MVK_macos_surface : types and function pointer type aliases
@@ -444,7 +421,7 @@ mixin template Platform_Extensions( extensions... ) {
                 const( void )*                pView;
             }
             
-            alias PFN_vkCreateMacOSSurfaceMVK                                = VkResult  function( VkInstance instance, const( VkMacOSSurfaceCreateInfoMVK )* pCreateInfo, const( VkAllocationCallbacks )* pAllocator, VkSurfaceKHR* pSurface );
+            alias PFN_vkCreateMacOSSurfaceMVK                            = VkResult  function( VkInstance instance, const( VkMacOSSurfaceCreateInfoMVK )* pCreateInfo, const( VkAllocationCallbacks )* pAllocator, VkSurfaceKHR* pSurface );
         }
 
         // VK_ANDROID_external_memory_android_hardware_buffer : types and function pointer type aliases
@@ -498,8 +475,8 @@ mixin template Platform_Extensions( extensions... ) {
                 uint64_t         externalFormat;
             }
             
-            alias PFN_vkGetAndroidHardwareBufferPropertiesANDROID            = VkResult  function( VkDevice device, const( AHardwareBuffer )* buffer, VkAndroidHardwareBufferPropertiesANDROID* pProperties );
-            alias PFN_vkGetMemoryAndroidHardwareBufferANDROID                = VkResult  function( VkDevice device, const( VkMemoryGetAndroidHardwareBufferInfoANDROID )* pInfo, AHardwareBuffer pBuffer );
+            alias PFN_vkGetAndroidHardwareBufferPropertiesANDROID        = VkResult  function( VkDevice device, const( AHardwareBuffer )* buffer, VkAndroidHardwareBufferPropertiesANDROID* pProperties );
+            alias PFN_vkGetMemoryAndroidHardwareBufferANDROID            = VkResult  function( VkDevice device, const( VkMemoryGetAndroidHardwareBufferInfoANDROID )* pInfo, AHardwareBuffer pBuffer );
         }
 
         // VK_FUCHSIA_imagepipe_surface : types and function pointer type aliases
@@ -518,99 +495,93 @@ mixin template Platform_Extensions( extensions... ) {
                 zx_handle_t                           imagePipeHandle;
             }
             
-            alias PFN_vkCreateImagePipeSurfaceFUCHSIA                        = VkResult  function( VkInstance instance, const( VkImagePipeSurfaceCreateInfoFUCHSIA )* pCreateInfo, const( VkAllocationCallbacks )* pAllocator, VkSurfaceKHR* pSurface );
+            alias PFN_vkCreateImagePipeSurfaceFUCHSIA                    = VkResult  function( VkInstance instance, const( VkImagePipeSurfaceCreateInfoFUCHSIA )* pCreateInfo, const( VkAllocationCallbacks )* pAllocator, VkSurfaceKHR* pSurface );
         }
 
         __gshared {
 
             // VK_KHR_xlib_surface : function pointer decelerations
             static if( __traits( isSame, extension, KHR_xlib_surface )) {
-                PFN_vkCreateXlibSurfaceKHR                                 vkCreateXlibSurfaceKHR;
-                PFN_vkGetPhysicalDeviceXlibPresentationSupportKHR          vkGetPhysicalDeviceXlibPresentationSupportKHR;
+                PFN_vkCreateXlibSurfaceKHR                             vkCreateXlibSurfaceKHR;
+                PFN_vkGetPhysicalDeviceXlibPresentationSupportKHR      vkGetPhysicalDeviceXlibPresentationSupportKHR;
             }
 
             // VK_KHR_xcb_surface : function pointer decelerations
             else static if( __traits( isSame, extension, KHR_xcb_surface )) {
-                PFN_vkCreateXcbSurfaceKHR                                  vkCreateXcbSurfaceKHR;
-                PFN_vkGetPhysicalDeviceXcbPresentationSupportKHR           vkGetPhysicalDeviceXcbPresentationSupportKHR;
+                PFN_vkCreateXcbSurfaceKHR                              vkCreateXcbSurfaceKHR;
+                PFN_vkGetPhysicalDeviceXcbPresentationSupportKHR       vkGetPhysicalDeviceXcbPresentationSupportKHR;
             }
 
             // VK_KHR_wayland_surface : function pointer decelerations
             else static if( __traits( isSame, extension, KHR_wayland_surface )) {
-                PFN_vkCreateWaylandSurfaceKHR                              vkCreateWaylandSurfaceKHR;
-                PFN_vkGetPhysicalDeviceWaylandPresentationSupportKHR       vkGetPhysicalDeviceWaylandPresentationSupportKHR;
-            }
-
-            // VK_KHR_mir_surface : function pointer decelerations
-            else static if( __traits( isSame, extension, KHR_mir_surface )) {
-                PFN_vkCreateMirSurfaceKHR                                  vkCreateMirSurfaceKHR;
-                PFN_vkGetPhysicalDeviceMirPresentationSupportKHR           vkGetPhysicalDeviceMirPresentationSupportKHR;
+                PFN_vkCreateWaylandSurfaceKHR                          vkCreateWaylandSurfaceKHR;
+                PFN_vkGetPhysicalDeviceWaylandPresentationSupportKHR   vkGetPhysicalDeviceWaylandPresentationSupportKHR;
             }
 
             // VK_KHR_android_surface : function pointer decelerations
             else static if( __traits( isSame, extension, KHR_android_surface )) {
-                PFN_vkCreateAndroidSurfaceKHR                              vkCreateAndroidSurfaceKHR;
+                PFN_vkCreateAndroidSurfaceKHR                          vkCreateAndroidSurfaceKHR;
             }
 
             // VK_KHR_win32_surface : function pointer decelerations
             else static if( __traits( isSame, extension, KHR_win32_surface )) {
-                PFN_vkCreateWin32SurfaceKHR                                vkCreateWin32SurfaceKHR;
-                PFN_vkGetPhysicalDeviceWin32PresentationSupportKHR         vkGetPhysicalDeviceWin32PresentationSupportKHR;
+                PFN_vkCreateWin32SurfaceKHR                            vkCreateWin32SurfaceKHR;
+                PFN_vkGetPhysicalDeviceWin32PresentationSupportKHR     vkGetPhysicalDeviceWin32PresentationSupportKHR;
             }
 
             // VK_KHR_external_memory_win32 : function pointer decelerations
             else static if( __traits( isSame, extension, KHR_external_memory_win32 )) {
-                PFN_vkGetMemoryWin32HandleKHR                              vkGetMemoryWin32HandleKHR;
-                PFN_vkGetMemoryWin32HandlePropertiesKHR                    vkGetMemoryWin32HandlePropertiesKHR;
+                PFN_vkGetMemoryWin32HandleKHR                          vkGetMemoryWin32HandleKHR;
+                PFN_vkGetMemoryWin32HandlePropertiesKHR                vkGetMemoryWin32HandlePropertiesKHR;
             }
 
             // VK_KHR_external_semaphore_win32 : function pointer decelerations
             else static if( __traits( isSame, extension, KHR_external_semaphore_win32 )) {
-                PFN_vkImportSemaphoreWin32HandleKHR                        vkImportSemaphoreWin32HandleKHR;
-                PFN_vkGetSemaphoreWin32HandleKHR                           vkGetSemaphoreWin32HandleKHR;
+                PFN_vkImportSemaphoreWin32HandleKHR                    vkImportSemaphoreWin32HandleKHR;
+                PFN_vkGetSemaphoreWin32HandleKHR                       vkGetSemaphoreWin32HandleKHR;
             }
 
             // VK_KHR_external_fence_win32 : function pointer decelerations
             else static if( __traits( isSame, extension, KHR_external_fence_win32 )) {
-                PFN_vkImportFenceWin32HandleKHR                            vkImportFenceWin32HandleKHR;
-                PFN_vkGetFenceWin32HandleKHR                               vkGetFenceWin32HandleKHR;
+                PFN_vkImportFenceWin32HandleKHR                        vkImportFenceWin32HandleKHR;
+                PFN_vkGetFenceWin32HandleKHR                           vkGetFenceWin32HandleKHR;
             }
 
             // VK_NV_external_memory_win32 : function pointer decelerations
             else static if( __traits( isSame, extension, NV_external_memory_win32 )) {
-                PFN_vkGetMemoryWin32HandleNV                               vkGetMemoryWin32HandleNV;
+                PFN_vkGetMemoryWin32HandleNV                           vkGetMemoryWin32HandleNV;
             }
 
             // VK_NN_vi_surface : function pointer decelerations
             else static if( __traits( isSame, extension, NN_vi_surface )) {
-                PFN_vkCreateViSurfaceNN                                    vkCreateViSurfaceNN;
+                PFN_vkCreateViSurfaceNN                                vkCreateViSurfaceNN;
             }
 
             // VK_EXT_acquire_xlib_display : function pointer decelerations
             else static if( __traits( isSame, extension, EXT_acquire_xlib_display )) {
-                PFN_vkAcquireXlibDisplayEXT                                vkAcquireXlibDisplayEXT;
-                PFN_vkGetRandROutputDisplayEXT                             vkGetRandROutputDisplayEXT;
+                PFN_vkAcquireXlibDisplayEXT                            vkAcquireXlibDisplayEXT;
+                PFN_vkGetRandROutputDisplayEXT                         vkGetRandROutputDisplayEXT;
             }
 
             // VK_MVK_ios_surface : function pointer decelerations
             else static if( __traits( isSame, extension, MVK_ios_surface )) {
-                PFN_vkCreateIOSSurfaceMVK                                  vkCreateIOSSurfaceMVK;
+                PFN_vkCreateIOSSurfaceMVK                              vkCreateIOSSurfaceMVK;
             }
 
             // VK_MVK_macos_surface : function pointer decelerations
             else static if( __traits( isSame, extension, MVK_macos_surface )) {
-                PFN_vkCreateMacOSSurfaceMVK                                vkCreateMacOSSurfaceMVK;
+                PFN_vkCreateMacOSSurfaceMVK                            vkCreateMacOSSurfaceMVK;
             }
 
             // VK_ANDROID_external_memory_android_hardware_buffer : function pointer decelerations
             else static if( __traits( isSame, extension, ANDROID_external_memory_android_hardware_buffer )) {
-                PFN_vkGetAndroidHardwareBufferPropertiesANDROID            vkGetAndroidHardwareBufferPropertiesANDROID;
-                PFN_vkGetMemoryAndroidHardwareBufferANDROID                vkGetMemoryAndroidHardwareBufferANDROID;
+                PFN_vkGetAndroidHardwareBufferPropertiesANDROID        vkGetAndroidHardwareBufferPropertiesANDROID;
+                PFN_vkGetMemoryAndroidHardwareBufferANDROID            vkGetMemoryAndroidHardwareBufferANDROID;
             }
 
             // VK_FUCHSIA_imagepipe_surface : function pointer decelerations
             else static if( __traits( isSame, extension, FUCHSIA_imagepipe_surface )) {
-                PFN_vkCreateImagePipeSurfaceFUCHSIA                        vkCreateImagePipeSurfaceFUCHSIA;
+                PFN_vkCreateImagePipeSurfaceFUCHSIA                    vkCreateImagePipeSurfaceFUCHSIA;
             }
         }
     }
@@ -642,12 +613,6 @@ mixin template Platform_Extensions( extensions... ) {
             else static if( __traits( isSame, extension, KHR_wayland_surface )) {
                 vkCreateWaylandSurfaceKHR                          = cast( PFN_vkCreateWaylandSurfaceKHR                          ) vkGetInstanceProcAddr( instance, "vkCreateWaylandSurfaceKHR" );
                 vkGetPhysicalDeviceWaylandPresentationSupportKHR   = cast( PFN_vkGetPhysicalDeviceWaylandPresentationSupportKHR   ) vkGetInstanceProcAddr( instance, "vkGetPhysicalDeviceWaylandPresentationSupportKHR" );
-            }
-
-            // VK_KHR_mir_surface : load instance level function definitions
-            else static if( __traits( isSame, extension, KHR_mir_surface )) {
-                vkCreateMirSurfaceKHR                              = cast( PFN_vkCreateMirSurfaceKHR                              ) vkGetInstanceProcAddr( instance, "vkCreateMirSurfaceKHR" );
-                vkGetPhysicalDeviceMirPresentationSupportKHR       = cast( PFN_vkGetPhysicalDeviceMirPresentationSupportKHR       ) vkGetInstanceProcAddr( instance, "vkGetPhysicalDeviceMirPresentationSupportKHR" );
             }
 
             // VK_KHR_android_surface : load instance level function definitions
@@ -702,31 +667,31 @@ mixin template Platform_Extensions( extensions... ) {
 
             // VK_KHR_external_memory_win32 : load instance based device level function definitions
             static if( __traits( isSame, extension, KHR_external_memory_win32 )) {
-                vkGetMemoryWin32HandleKHR                              = cast( PFN_vkGetMemoryWin32HandleKHR                              ) vkGetInstanceProcAddr( instance, "vkGetMemoryWin32HandleKHR" );
-                vkGetMemoryWin32HandlePropertiesKHR                    = cast( PFN_vkGetMemoryWin32HandlePropertiesKHR                    ) vkGetInstanceProcAddr( instance, "vkGetMemoryWin32HandlePropertiesKHR" );
+                vkGetMemoryWin32HandleKHR                      = cast( PFN_vkGetMemoryWin32HandleKHR                      ) vkGetInstanceProcAddr( instance, "vkGetMemoryWin32HandleKHR" );
+                vkGetMemoryWin32HandlePropertiesKHR            = cast( PFN_vkGetMemoryWin32HandlePropertiesKHR            ) vkGetInstanceProcAddr( instance, "vkGetMemoryWin32HandlePropertiesKHR" );
             }
 
             // VK_KHR_external_semaphore_win32 : load instance based device level function definitions
             else static if( __traits( isSame, extension, KHR_external_semaphore_win32 )) {
-                vkImportSemaphoreWin32HandleKHR                        = cast( PFN_vkImportSemaphoreWin32HandleKHR                        ) vkGetInstanceProcAddr( instance, "vkImportSemaphoreWin32HandleKHR" );
-                vkGetSemaphoreWin32HandleKHR                           = cast( PFN_vkGetSemaphoreWin32HandleKHR                           ) vkGetInstanceProcAddr( instance, "vkGetSemaphoreWin32HandleKHR" );
+                vkImportSemaphoreWin32HandleKHR                = cast( PFN_vkImportSemaphoreWin32HandleKHR                ) vkGetInstanceProcAddr( instance, "vkImportSemaphoreWin32HandleKHR" );
+                vkGetSemaphoreWin32HandleKHR                   = cast( PFN_vkGetSemaphoreWin32HandleKHR                   ) vkGetInstanceProcAddr( instance, "vkGetSemaphoreWin32HandleKHR" );
             }
 
             // VK_KHR_external_fence_win32 : load instance based device level function definitions
             else static if( __traits( isSame, extension, KHR_external_fence_win32 )) {
-                vkImportFenceWin32HandleKHR                            = cast( PFN_vkImportFenceWin32HandleKHR                            ) vkGetInstanceProcAddr( instance, "vkImportFenceWin32HandleKHR" );
-                vkGetFenceWin32HandleKHR                               = cast( PFN_vkGetFenceWin32HandleKHR                               ) vkGetInstanceProcAddr( instance, "vkGetFenceWin32HandleKHR" );
+                vkImportFenceWin32HandleKHR                    = cast( PFN_vkImportFenceWin32HandleKHR                    ) vkGetInstanceProcAddr( instance, "vkImportFenceWin32HandleKHR" );
+                vkGetFenceWin32HandleKHR                       = cast( PFN_vkGetFenceWin32HandleKHR                       ) vkGetInstanceProcAddr( instance, "vkGetFenceWin32HandleKHR" );
             }
 
             // VK_NV_external_memory_win32 : load instance based device level function definitions
             else static if( __traits( isSame, extension, NV_external_memory_win32 )) {
-                vkGetMemoryWin32HandleNV                               = cast( PFN_vkGetMemoryWin32HandleNV                               ) vkGetInstanceProcAddr( instance, "vkGetMemoryWin32HandleNV" );
+                vkGetMemoryWin32HandleNV                       = cast( PFN_vkGetMemoryWin32HandleNV                       ) vkGetInstanceProcAddr( instance, "vkGetMemoryWin32HandleNV" );
             }
 
             // VK_ANDROID_external_memory_android_hardware_buffer : load instance based device level function definitions
             else static if( __traits( isSame, extension, ANDROID_external_memory_android_hardware_buffer )) {
-                vkGetAndroidHardwareBufferPropertiesANDROID            = cast( PFN_vkGetAndroidHardwareBufferPropertiesANDROID            ) vkGetInstanceProcAddr( instance, "vkGetAndroidHardwareBufferPropertiesANDROID" );
-                vkGetMemoryAndroidHardwareBufferANDROID                = cast( PFN_vkGetMemoryAndroidHardwareBufferANDROID                ) vkGetInstanceProcAddr( instance, "vkGetMemoryAndroidHardwareBufferANDROID" );
+                vkGetAndroidHardwareBufferPropertiesANDROID    = cast( PFN_vkGetAndroidHardwareBufferPropertiesANDROID    ) vkGetInstanceProcAddr( instance, "vkGetAndroidHardwareBufferPropertiesANDROID" );
+                vkGetMemoryAndroidHardwareBufferANDROID        = cast( PFN_vkGetMemoryAndroidHardwareBufferANDROID        ) vkGetInstanceProcAddr( instance, "vkGetMemoryAndroidHardwareBufferANDROID" );
             }
         }
     }
@@ -744,31 +709,31 @@ mixin template Platform_Extensions( extensions... ) {
 
             // VK_KHR_external_memory_win32 : load device based device level function definitions
             static if( __traits( isSame, extension, KHR_external_memory_win32 )) {
-                vkGetMemoryWin32HandleKHR                              = cast( PFN_vkGetMemoryWin32HandleKHR                              ) vkGetDeviceProcAddr( device, "vkGetMemoryWin32HandleKHR" );
-                vkGetMemoryWin32HandlePropertiesKHR                    = cast( PFN_vkGetMemoryWin32HandlePropertiesKHR                    ) vkGetDeviceProcAddr( device, "vkGetMemoryWin32HandlePropertiesKHR" );
+                vkGetMemoryWin32HandleKHR                      = cast( PFN_vkGetMemoryWin32HandleKHR                      ) vkGetDeviceProcAddr( device, "vkGetMemoryWin32HandleKHR" );
+                vkGetMemoryWin32HandlePropertiesKHR            = cast( PFN_vkGetMemoryWin32HandlePropertiesKHR            ) vkGetDeviceProcAddr( device, "vkGetMemoryWin32HandlePropertiesKHR" );
             }
 
             // VK_KHR_external_semaphore_win32 : load device based device level function definitions
             else static if( __traits( isSame, extension, KHR_external_semaphore_win32 )) {
-                vkImportSemaphoreWin32HandleKHR                        = cast( PFN_vkImportSemaphoreWin32HandleKHR                        ) vkGetDeviceProcAddr( device, "vkImportSemaphoreWin32HandleKHR" );
-                vkGetSemaphoreWin32HandleKHR                           = cast( PFN_vkGetSemaphoreWin32HandleKHR                           ) vkGetDeviceProcAddr( device, "vkGetSemaphoreWin32HandleKHR" );
+                vkImportSemaphoreWin32HandleKHR                = cast( PFN_vkImportSemaphoreWin32HandleKHR                ) vkGetDeviceProcAddr( device, "vkImportSemaphoreWin32HandleKHR" );
+                vkGetSemaphoreWin32HandleKHR                   = cast( PFN_vkGetSemaphoreWin32HandleKHR                   ) vkGetDeviceProcAddr( device, "vkGetSemaphoreWin32HandleKHR" );
             }
 
             // VK_KHR_external_fence_win32 : load device based device level function definitions
             else static if( __traits( isSame, extension, KHR_external_fence_win32 )) {
-                vkImportFenceWin32HandleKHR                            = cast( PFN_vkImportFenceWin32HandleKHR                            ) vkGetDeviceProcAddr( device, "vkImportFenceWin32HandleKHR" );
-                vkGetFenceWin32HandleKHR                               = cast( PFN_vkGetFenceWin32HandleKHR                               ) vkGetDeviceProcAddr( device, "vkGetFenceWin32HandleKHR" );
+                vkImportFenceWin32HandleKHR                    = cast( PFN_vkImportFenceWin32HandleKHR                    ) vkGetDeviceProcAddr( device, "vkImportFenceWin32HandleKHR" );
+                vkGetFenceWin32HandleKHR                       = cast( PFN_vkGetFenceWin32HandleKHR                       ) vkGetDeviceProcAddr( device, "vkGetFenceWin32HandleKHR" );
             }
 
             // VK_NV_external_memory_win32 : load device based device level function definitions
             else static if( __traits( isSame, extension, NV_external_memory_win32 )) {
-                vkGetMemoryWin32HandleNV                               = cast( PFN_vkGetMemoryWin32HandleNV                               ) vkGetDeviceProcAddr( device, "vkGetMemoryWin32HandleNV" );
+                vkGetMemoryWin32HandleNV                       = cast( PFN_vkGetMemoryWin32HandleNV                       ) vkGetDeviceProcAddr( device, "vkGetMemoryWin32HandleNV" );
             }
 
             // VK_ANDROID_external_memory_android_hardware_buffer : load device based device level function definitions
             else static if( __traits( isSame, extension, ANDROID_external_memory_android_hardware_buffer )) {
-                vkGetAndroidHardwareBufferPropertiesANDROID            = cast( PFN_vkGetAndroidHardwareBufferPropertiesANDROID            ) vkGetDeviceProcAddr( device, "vkGetAndroidHardwareBufferPropertiesANDROID" );
-                vkGetMemoryAndroidHardwareBufferANDROID                = cast( PFN_vkGetMemoryAndroidHardwareBufferANDROID                ) vkGetDeviceProcAddr( device, "vkGetMemoryAndroidHardwareBufferANDROID" );
+                vkGetAndroidHardwareBufferPropertiesANDROID    = cast( PFN_vkGetAndroidHardwareBufferPropertiesANDROID    ) vkGetDeviceProcAddr( device, "vkGetAndroidHardwareBufferPropertiesANDROID" );
+                vkGetMemoryAndroidHardwareBufferANDROID        = cast( PFN_vkGetMemoryAndroidHardwareBufferANDROID        ) vkGetDeviceProcAddr( device, "vkGetMemoryAndroidHardwareBufferANDROID" );
             }
         }
     }
@@ -800,31 +765,31 @@ mixin template Platform_Extensions( extensions... ) {
 
                 // VK_KHR_external_memory_win32 : load dispatch device member function definitions
                 static if( __traits( isSame, extension, KHR_external_memory_win32 )) {
-                    vkGetMemoryWin32HandleKHR                              = cast( PFN_vkGetMemoryWin32HandleKHR                              ) vkGetDeviceProcAddr( device, "vkGetMemoryWin32HandleKHR" );
-                    vkGetMemoryWin32HandlePropertiesKHR                    = cast( PFN_vkGetMemoryWin32HandlePropertiesKHR                    ) vkGetDeviceProcAddr( device, "vkGetMemoryWin32HandlePropertiesKHR" );
+                    vkGetMemoryWin32HandleKHR                      = cast( PFN_vkGetMemoryWin32HandleKHR                      ) vkGetDeviceProcAddr( device, "vkGetMemoryWin32HandleKHR" );
+                    vkGetMemoryWin32HandlePropertiesKHR            = cast( PFN_vkGetMemoryWin32HandlePropertiesKHR            ) vkGetDeviceProcAddr( device, "vkGetMemoryWin32HandlePropertiesKHR" );
                 }
 
                 // VK_KHR_external_semaphore_win32 : load dispatch device member function definitions
                 else static if( __traits( isSame, extension, KHR_external_semaphore_win32 )) {
-                    vkImportSemaphoreWin32HandleKHR                        = cast( PFN_vkImportSemaphoreWin32HandleKHR                        ) vkGetDeviceProcAddr( device, "vkImportSemaphoreWin32HandleKHR" );
-                    vkGetSemaphoreWin32HandleKHR                           = cast( PFN_vkGetSemaphoreWin32HandleKHR                           ) vkGetDeviceProcAddr( device, "vkGetSemaphoreWin32HandleKHR" );
+                    vkImportSemaphoreWin32HandleKHR                = cast( PFN_vkImportSemaphoreWin32HandleKHR                ) vkGetDeviceProcAddr( device, "vkImportSemaphoreWin32HandleKHR" );
+                    vkGetSemaphoreWin32HandleKHR                   = cast( PFN_vkGetSemaphoreWin32HandleKHR                   ) vkGetDeviceProcAddr( device, "vkGetSemaphoreWin32HandleKHR" );
                 }
 
                 // VK_KHR_external_fence_win32 : load dispatch device member function definitions
                 else static if( __traits( isSame, extension, KHR_external_fence_win32 )) {
-                    vkImportFenceWin32HandleKHR                            = cast( PFN_vkImportFenceWin32HandleKHR                            ) vkGetDeviceProcAddr( device, "vkImportFenceWin32HandleKHR" );
-                    vkGetFenceWin32HandleKHR                               = cast( PFN_vkGetFenceWin32HandleKHR                               ) vkGetDeviceProcAddr( device, "vkGetFenceWin32HandleKHR" );
+                    vkImportFenceWin32HandleKHR                    = cast( PFN_vkImportFenceWin32HandleKHR                    ) vkGetDeviceProcAddr( device, "vkImportFenceWin32HandleKHR" );
+                    vkGetFenceWin32HandleKHR                       = cast( PFN_vkGetFenceWin32HandleKHR                       ) vkGetDeviceProcAddr( device, "vkGetFenceWin32HandleKHR" );
                 }
 
                 // VK_NV_external_memory_win32 : load dispatch device member function definitions
                 else static if( __traits( isSame, extension, NV_external_memory_win32 )) {
-                    vkGetMemoryWin32HandleNV                               = cast( PFN_vkGetMemoryWin32HandleNV                               ) vkGetDeviceProcAddr( device, "vkGetMemoryWin32HandleNV" );
+                    vkGetMemoryWin32HandleNV                       = cast( PFN_vkGetMemoryWin32HandleNV                       ) vkGetDeviceProcAddr( device, "vkGetMemoryWin32HandleNV" );
                 }
 
                 // VK_ANDROID_external_memory_android_hardware_buffer : load dispatch device member function definitions
                 else static if( __traits( isSame, extension, ANDROID_external_memory_android_hardware_buffer )) {
-                    vkGetAndroidHardwareBufferPropertiesANDROID            = cast( PFN_vkGetAndroidHardwareBufferPropertiesANDROID            ) vkGetDeviceProcAddr( device, "vkGetAndroidHardwareBufferPropertiesANDROID" );
-                    vkGetMemoryAndroidHardwareBufferANDROID                = cast( PFN_vkGetMemoryAndroidHardwareBufferANDROID                ) vkGetDeviceProcAddr( device, "vkGetMemoryAndroidHardwareBufferANDROID" );
+                    vkGetAndroidHardwareBufferPropertiesANDROID    = cast( PFN_vkGetAndroidHardwareBufferPropertiesANDROID    ) vkGetDeviceProcAddr( device, "vkGetAndroidHardwareBufferPropertiesANDROID" );
+                    vkGetMemoryAndroidHardwareBufferANDROID        = cast( PFN_vkGetMemoryAndroidHardwareBufferANDROID        ) vkGetDeviceProcAddr( device, "vkGetMemoryAndroidHardwareBufferANDROID" );
                 }
             }
         }
@@ -868,92 +833,86 @@ mixin template Platform_Extensions( extensions... ) {
 
             // VK_KHR_xlib_surface : dispatch device member function pointer decelerations
             static if( __traits( isSame, extension, KHR_xlib_surface )) {
-                PFN_vkCreateXlibSurfaceKHR                                 vkCreateXlibSurfaceKHR;
-                PFN_vkGetPhysicalDeviceXlibPresentationSupportKHR          vkGetPhysicalDeviceXlibPresentationSupportKHR;
+                PFN_vkCreateXlibSurfaceKHR                             vkCreateXlibSurfaceKHR;
+                PFN_vkGetPhysicalDeviceXlibPresentationSupportKHR      vkGetPhysicalDeviceXlibPresentationSupportKHR;
             }
 
             // VK_KHR_xcb_surface : dispatch device member function pointer decelerations
             else static if( __traits( isSame, extension, KHR_xcb_surface )) {
-                PFN_vkCreateXcbSurfaceKHR                                  vkCreateXcbSurfaceKHR;
-                PFN_vkGetPhysicalDeviceXcbPresentationSupportKHR           vkGetPhysicalDeviceXcbPresentationSupportKHR;
+                PFN_vkCreateXcbSurfaceKHR                              vkCreateXcbSurfaceKHR;
+                PFN_vkGetPhysicalDeviceXcbPresentationSupportKHR       vkGetPhysicalDeviceXcbPresentationSupportKHR;
             }
 
             // VK_KHR_wayland_surface : dispatch device member function pointer decelerations
             else static if( __traits( isSame, extension, KHR_wayland_surface )) {
-                PFN_vkCreateWaylandSurfaceKHR                              vkCreateWaylandSurfaceKHR;
-                PFN_vkGetPhysicalDeviceWaylandPresentationSupportKHR       vkGetPhysicalDeviceWaylandPresentationSupportKHR;
-            }
-
-            // VK_KHR_mir_surface : dispatch device member function pointer decelerations
-            else static if( __traits( isSame, extension, KHR_mir_surface )) {
-                PFN_vkCreateMirSurfaceKHR                                  vkCreateMirSurfaceKHR;
-                PFN_vkGetPhysicalDeviceMirPresentationSupportKHR           vkGetPhysicalDeviceMirPresentationSupportKHR;
+                PFN_vkCreateWaylandSurfaceKHR                          vkCreateWaylandSurfaceKHR;
+                PFN_vkGetPhysicalDeviceWaylandPresentationSupportKHR   vkGetPhysicalDeviceWaylandPresentationSupportKHR;
             }
 
             // VK_KHR_android_surface : dispatch device member function pointer decelerations
             else static if( __traits( isSame, extension, KHR_android_surface )) {
-                PFN_vkCreateAndroidSurfaceKHR                              vkCreateAndroidSurfaceKHR;
+                PFN_vkCreateAndroidSurfaceKHR                          vkCreateAndroidSurfaceKHR;
             }
 
             // VK_KHR_win32_surface : dispatch device member function pointer decelerations
             else static if( __traits( isSame, extension, KHR_win32_surface )) {
-                PFN_vkCreateWin32SurfaceKHR                                vkCreateWin32SurfaceKHR;
-                PFN_vkGetPhysicalDeviceWin32PresentationSupportKHR         vkGetPhysicalDeviceWin32PresentationSupportKHR;
+                PFN_vkCreateWin32SurfaceKHR                            vkCreateWin32SurfaceKHR;
+                PFN_vkGetPhysicalDeviceWin32PresentationSupportKHR     vkGetPhysicalDeviceWin32PresentationSupportKHR;
             }
 
             // VK_KHR_external_memory_win32 : dispatch device member function pointer decelerations
             else static if( __traits( isSame, extension, KHR_external_memory_win32 )) {
-                PFN_vkGetMemoryWin32HandleKHR                              vkGetMemoryWin32HandleKHR;
-                PFN_vkGetMemoryWin32HandlePropertiesKHR                    vkGetMemoryWin32HandlePropertiesKHR;
+                PFN_vkGetMemoryWin32HandleKHR                          vkGetMemoryWin32HandleKHR;
+                PFN_vkGetMemoryWin32HandlePropertiesKHR                vkGetMemoryWin32HandlePropertiesKHR;
             }
 
             // VK_KHR_external_semaphore_win32 : dispatch device member function pointer decelerations
             else static if( __traits( isSame, extension, KHR_external_semaphore_win32 )) {
-                PFN_vkImportSemaphoreWin32HandleKHR                        vkImportSemaphoreWin32HandleKHR;
-                PFN_vkGetSemaphoreWin32HandleKHR                           vkGetSemaphoreWin32HandleKHR;
+                PFN_vkImportSemaphoreWin32HandleKHR                    vkImportSemaphoreWin32HandleKHR;
+                PFN_vkGetSemaphoreWin32HandleKHR                       vkGetSemaphoreWin32HandleKHR;
             }
 
             // VK_KHR_external_fence_win32 : dispatch device member function pointer decelerations
             else static if( __traits( isSame, extension, KHR_external_fence_win32 )) {
-                PFN_vkImportFenceWin32HandleKHR                            vkImportFenceWin32HandleKHR;
-                PFN_vkGetFenceWin32HandleKHR                               vkGetFenceWin32HandleKHR;
+                PFN_vkImportFenceWin32HandleKHR                        vkImportFenceWin32HandleKHR;
+                PFN_vkGetFenceWin32HandleKHR                           vkGetFenceWin32HandleKHR;
             }
 
             // VK_NV_external_memory_win32 : dispatch device member function pointer decelerations
             else static if( __traits( isSame, extension, NV_external_memory_win32 )) {
-                PFN_vkGetMemoryWin32HandleNV                               vkGetMemoryWin32HandleNV;
+                PFN_vkGetMemoryWin32HandleNV                           vkGetMemoryWin32HandleNV;
             }
 
             // VK_NN_vi_surface : dispatch device member function pointer decelerations
             else static if( __traits( isSame, extension, NN_vi_surface )) {
-                PFN_vkCreateViSurfaceNN                                    vkCreateViSurfaceNN;
+                PFN_vkCreateViSurfaceNN                                vkCreateViSurfaceNN;
             }
 
             // VK_EXT_acquire_xlib_display : dispatch device member function pointer decelerations
             else static if( __traits( isSame, extension, EXT_acquire_xlib_display )) {
-                PFN_vkAcquireXlibDisplayEXT                                vkAcquireXlibDisplayEXT;
-                PFN_vkGetRandROutputDisplayEXT                             vkGetRandROutputDisplayEXT;
+                PFN_vkAcquireXlibDisplayEXT                            vkAcquireXlibDisplayEXT;
+                PFN_vkGetRandROutputDisplayEXT                         vkGetRandROutputDisplayEXT;
             }
 
             // VK_MVK_ios_surface : dispatch device member function pointer decelerations
             else static if( __traits( isSame, extension, MVK_ios_surface )) {
-                PFN_vkCreateIOSSurfaceMVK                                  vkCreateIOSSurfaceMVK;
+                PFN_vkCreateIOSSurfaceMVK                              vkCreateIOSSurfaceMVK;
             }
 
             // VK_MVK_macos_surface : dispatch device member function pointer decelerations
             else static if( __traits( isSame, extension, MVK_macos_surface )) {
-                PFN_vkCreateMacOSSurfaceMVK                                vkCreateMacOSSurfaceMVK;
+                PFN_vkCreateMacOSSurfaceMVK                            vkCreateMacOSSurfaceMVK;
             }
 
             // VK_ANDROID_external_memory_android_hardware_buffer : dispatch device member function pointer decelerations
             else static if( __traits( isSame, extension, ANDROID_external_memory_android_hardware_buffer )) {
-                PFN_vkGetAndroidHardwareBufferPropertiesANDROID            vkGetAndroidHardwareBufferPropertiesANDROID;
-                PFN_vkGetMemoryAndroidHardwareBufferANDROID                vkGetMemoryAndroidHardwareBufferANDROID;
+                PFN_vkGetAndroidHardwareBufferPropertiesANDROID        vkGetAndroidHardwareBufferPropertiesANDROID;
+                PFN_vkGetMemoryAndroidHardwareBufferANDROID            vkGetMemoryAndroidHardwareBufferANDROID;
             }
 
             // VK_FUCHSIA_imagepipe_surface : dispatch device member function pointer decelerations
             else static if( __traits( isSame, extension, FUCHSIA_imagepipe_surface )) {
-                PFN_vkCreateImagePipeSurfaceFUCHSIA                        vkCreateImagePipeSurfaceFUCHSIA;
+                PFN_vkCreateImagePipeSurfaceFUCHSIA                    vkCreateImagePipeSurfaceFUCHSIA;
             }
         }
     }
