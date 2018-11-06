@@ -217,6 +217,79 @@ version(LDC)
     ///
     T fmax(T)(in T vala, in T valb) if (isFloatingPoint!T);
 }
+else version(GNU)
+{
+    static import gcc.builtins;
+
+    // Calls GCC builtin for either float (suffix "f"), double (no suffix), or real (suffix "l").
+    private enum mixinGCCBuiltin(string fun) =
+    `static if (T.mant_dig == float.mant_dig) return gcc.builtins.__builtin_`~fun~`f(x);`~
+    ` else static if (T.mant_dig == double.mant_dig) return gcc.builtins.__builtin_`~fun~`(x);`~
+    ` else static if (T.mant_dig == real.mant_dig) return gcc.builtins.__builtin_`~fun~`l(x);`~
+    ` else static assert(0);`;
+
+    // As above but for two-argument function.
+    private enum mixinGCCBuiltin2(string fun) =
+    `static if (T.mant_dig == float.mant_dig) return gcc.builtins.__builtin_`~fun~`f(x, y);`~
+    ` else static if (T.mant_dig == double.mant_dig) return gcc.builtins.__builtin_`~fun~`(x, y);`~
+    ` else static if (T.mant_dig == real.mant_dig) return gcc.builtins.__builtin_`~fun~`l(x, y);`~
+    ` else static assert(0);`;
+
+    ///
+    T sqrt(T)(in T x) if (isFloatingPoint!T) { mixin(mixinGCCBuiltin!`sqrt`); }
+    ///
+    T sin(T)(in T x) if (isFloatingPoint!T) { mixin(mixinGCCBuiltin!`sin`); }
+    ///
+    T cos(T)(in T x) if (isFloatingPoint!T) { mixin(mixinGCCBuiltin!`cos`); }
+    ///
+    T pow(T)(in T x, in T power) if (isFloatingPoint!T) { alias y = power; mixin(mixinGCCBuiltin2!`pow`); }
+    ///
+    T powi(T)(in T x, int power) if (isFloatingPoint!T) { alias y = power; mixin(mixinGCCBuiltin2!`powi`); }
+    ///
+    T exp(T)(in T x) if (isFloatingPoint!T) { mixin(mixinGCCBuiltin!`exp`); }
+    ///
+    T log(T)(in T x) if (isFloatingPoint!T) { mixin(mixinGCCBuiltin!`log`); }
+    ///
+    T fabs(T)(in T x) if (isFloatingPoint!T) { mixin(mixinGCCBuiltin!`fabs`); }
+    ///
+    T floor(T)(in T x) if (isFloatingPoint!T) { mixin(mixinGCCBuiltin!`floor`); }
+    ///
+    T exp2(T)(in T x) if (isFloatingPoint!T) { mixin(mixinGCCBuiltin!`exp2`); }
+    ///
+    T log10(T)(in T x) if (isFloatingPoint!T) { mixin(mixinGCCBuiltin!`log10`); }
+    ///
+    T log2(T)(in T x) if (isFloatingPoint!T) { mixin(mixinGCCBuiltin!`log2`); }
+    ///
+    T ceil(T)(in T x) if (isFloatingPoint!T) { mixin(mixinGCCBuiltin!`ceil`); }
+    ///
+    T trunc(T)(in T x) if (isFloatingPoint!T) { mixin(mixinGCCBuiltin!`trunc`); }
+    ///
+    T rint(T)(in T x) if (isFloatingPoint!T) { mixin(mixinGCCBuiltin!`rint`); }
+    ///
+    T nearbyint(T)(in T x) if (isFloatingPoint!T) { mixin(mixinGCCBuiltin!`nearbyint`); }
+    ///
+    T copysign(T)(in T mag, in T sgn) if (isFloatingPoint!T) { alias y = sgn; mixin(mixinGCCBuiltin2!`copysign`); }
+    ///
+    T round(T)(in T x) if (isFloatingPoint!T) { mixin(mixinGCCBuiltin!`round`); }
+    ///
+    T fmuladd(T)(in T a, in T b, in T c) if (isFloatingPoint!T)
+    {
+        static if (T.mant_dig == float.mant_dig)
+            return gcc.builtins.__builtin_fmaf(a, b, c);
+        else static if (T.mant_dig == double.mant_dig)
+            return gcc.builtins.__builtin_fma(a, b, c);
+        else static if (T.mant_dig == real.mant_dig)
+            return gcc.builtins.__builtin_fmal(a, b, c);
+        else
+            static assert(0);
+    }
+    version(mir_test)
+    unittest { assert(fmuladd!double(2, 3, 4) == 2 * 3 + 4); }
+    ///
+    T fmin(T)(in T x, in T y) if (isFloatingPoint!T) { mixin(mixinGCCBuiltin2!`fmin`); }
+    ///
+    T fmax(T)(in T x, in T y) if (isFloatingPoint!T) { mixin(mixinGCCBuiltin2!`fmax`); }
+}
 else
 {
     static import std.math;
@@ -264,6 +337,13 @@ else
     T fmin(T)(in T x, in T y) if (isFloatingPoint!T) { return std.math.fmin(x, y); }
     ///
     T fmax(T)(in T x, in T y) if (isFloatingPoint!T) { return std.math.fmax(x, y); }
+}
+
+version (mir_test)
+@nogc nothrow pure @safe unittest
+{
+    import std.math: PI, feqrel;
+    assert(feqrel(pow(2.0L, -0.5L), cos(PI / 4)) >= real.mant_dig - 1);
 }
 
 /// Overload for cdouble, cfloat and creal
