@@ -8,5 +8,4 @@ Base software building blocks and conventions.
 
 1. generic code only
 2. no runtime dependency (betterC compatible)
-3. no iteration in algorithms (no loops at all)
-4. no complex algorithms
+3. no complex algorithms

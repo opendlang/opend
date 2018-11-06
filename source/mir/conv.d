@@ -1288,6 +1288,72 @@ pure nothrow @safe /* @nogc */ unittest
 }
 // Bulk of emplace unittests ends here
 
+/++
++/
+T[] uninitializedFillDefault(T)(T[] array) nothrow @nogc
+{
+    static if (__VERSION__ < 2083)
+    {
+        static if (is(Unqual!T == char) || is(Unqual!T == wchar))
+        {
+            import core.stdc.string : memset;
+            if (array !is null)
+                memset(array.ptr, 0xff, T.sizeof * array.length);
+            return array;
+        }
+        else
+        {
+            pragma(inline, false);
+            foreach(ref e; array)
+                emplaceInitializer(e);
+            return array;
+        }
+    }
+    else
+    {
+        static if (__traits(isZeroInit, T))
+        {
+            import core.stdc.string : memset;
+            if (array !is null)
+                memset(array.ptr, 0, T.sizeof * array.length);
+            return array;
+        }
+        else static if (is(Unqual!T == char) || is(Unqual!T == wchar))
+        {
+            import core.stdc.string : memset;
+            if (array !is null)
+                memset(array.ptr, 0xff, T.sizeof * array.length);
+            return array;
+        }
+        else
+        {
+            pragma(inline, false);
+            foreach(ref e; array)
+                emplaceInitializer(e);
+            return array;
+        }
+    }
+}
+
+///
+pure nothrow @nogc
+@system unittest
+{
+    static struct S { int x = 42; @disable this(this); }
+
+    int[5] expected = [42, 42, 42, 42, 42];
+    S[5] arr = void;
+    uninitializedFillDefault(arr);
+    assert((cast(int*) arr.ptr)[0 .. arr.length] == expected);
+}
+
+///
+@system unittest
+{
+    int[] a = [1, 2, 4];
+    uninitializedFillDefault(a);
+    assert(a == [0, 0, 0]);
+}
 
 /*
 Determines whether `T` is a class nested inside another class
