@@ -11,11 +11,11 @@ module mir.random.algorithm;
 static if (is(typeof({ import mir.ndslice.slice; })))
 {
 import mir.math.common;
-import mir.primitives: hasLength;
+import mir.primitives;
 import mir.random;
 import mir.random.ndvariable: isNdRandomVariable;
 import mir.random.variable: isRandomVariable;
-import std.range.primitives: isInputRange, isForwardRange, popFrontExactly;
+import std.range.primitives: isInputRange, isForwardRange, popFrontExactly, hasSlicing;
 import std.traits;
 public import mir.random.engine;
 import mir.ndslice.slice: Slice;
@@ -423,7 +423,7 @@ Params:
 Complexity: O(n)
 +/
 auto sample(G, Range)(G gen, Range range, size_t n)
-    if(isInputRange!Range && hasLength!Range &&
+    if(isInputRange!Range && hasLength!Range && (__traits(hasMember, Range, "popFrontExactly") || hasSlicing!Range) &&
         isSaturatedRandomEngine!G &&
         (is(G == class) || is(G == interface)))
 {
@@ -432,7 +432,7 @@ auto sample(G, Range)(G gen, Range range, size_t n)
 
 /// ditto
 auto sample(G, Range)(G* gen, Range range, size_t n)
-    if(isInputRange!Range && hasLength!Range &&
+    if(isInputRange!Range && hasLength!Range && (__traits(hasMember, Range, "popFrontExactly") || hasSlicing!Range) &&
         isSaturatedRandomEngine!G &&
         is(G == struct))
 {
@@ -441,7 +441,7 @@ auto sample(G, Range)(G* gen, Range range, size_t n)
 
 /// ditto
 auto sample(G, Range)(ref G gen, Range range, size_t n) @system
-    if(isInputRange!Range && hasLength!Range &&
+    if(isInputRange!Range && hasLength!Range && (__traits(hasMember, Range, "popFrontExactly") || hasSlicing!Range) &&
         isSaturatedRandomEngine!G &&
         is(G == struct))
 {
@@ -450,7 +450,7 @@ auto sample(G, Range)(ref G gen, Range range, size_t n) @system
 
 /// ditto
 auto sample(alias gen = rne, Range)(Range range, size_t n)
-    if(isInputRange!Range && hasLength!Range &&
+    if(isInputRange!Range && hasLength!Range && (__traits(hasMember, Range, "popFrontExactly") || hasSlicing!Range) &&
         __traits(compiles, { static assert(isSaturatedRandomEngine!(typeof(gen))); }))
 {
     return RandomSample!(Range, gen)(range, n);
@@ -516,6 +516,13 @@ nothrow @safe version(mir_random_test) unittest
 {
 	__gshared size_t[] arr = [1, 2, 3];
 	auto res = rne.sample(arr, 1);
+}
+
+@nogc nothrow version(mir_random_test) unittest
+{
+	__gshared size_t[] arr = [1, 2, 3];
+    import mir.ndslice.topology: map;
+	auto res = rne.sample(arr.map!(a => a + 1), 1);
 }
 
 /++
