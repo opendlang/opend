@@ -15,7 +15,7 @@ import mir.primitives: hasLength;
 import mir.random;
 import mir.random.ndvariable: isNdRandomVariable;
 import mir.random.variable: isRandomVariable;
-import std.range.primitives: isInputRange, isForwardRange;
+import std.range.primitives: isInputRange, isForwardRange, popFrontExactly;
 import std.traits;
 public import mir.random.engine;
 import mir.ndslice.slice: Slice;
@@ -510,6 +510,12 @@ nothrow @safe version(mir_random_test) unittest
         assert(iota(8).equal(gen.sample(iota(8), 8)));
         assert(iota(1000).equal(gen.sample(iota(1000), 1000)));
     }
+}
+
+@nogc nothrow version(mir_random_test) unittest
+{
+	__gshared size_t[] arr = [1, 2, 3];
+	auto res = rne.sample(arr, 1);
 }
 
 /++
