@@ -1355,6 +1355,42 @@ pure nothrow @nogc
     assert(a == [0, 0, 0]);
 }
 
+/++
+Destroy structs and unions usnig `__xdtor` member if any.
+Do nothing for other types.
++/
+void xdestroy(T)(scope T[] ar)
+{
+    static if ((is(T == struct) || is(T == union)) && __traits(hasMember, T, "__xdtor"))
+    {
+        static if (__traits(isSame, T, __traits(parent, ar[0].__xdtor)))
+        {
+            pragma(inline, false);
+            foreach (ref e; ar)
+                e.__xdtor();
+        }
+    }
+}
+
+///
+version(mir_test)
+nothrow @nogc unittest
+{
+    __gshared int d;
+    __gshared int c;
+    struct D { ~this() nothrow @nogc {d++;} }
+    extern(C++)
+    struct C { ~this() nothrow @nogc {c++;} }
+    C[2] carray;
+    D[2] darray;
+    carray.xdestroy;
+    darray.xdestroy;
+    assert(c == 2);
+    assert(d == 2);
+    c = 0;
+    d = 0;
+}
+
 /*
 Determines whether `T` is a class nested inside another class
 and that `T.outer` is the implicit reference to the outer class
