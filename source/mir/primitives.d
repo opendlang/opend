@@ -191,7 +191,7 @@ unittest
 }
 
 ///
-ref front(size_t dim = 0, T)(T[] ar)
+ref inout(T) front(size_t dim = 0, T)(return scope inout(T)[] ar)
     if (!dim && !is(Unqual!T[] == void[]))
 {
     assert(ar.length, "Accessing front of an empty array.");
@@ -208,7 +208,7 @@ unittest
 
 
 ///
-ref back(size_t dim = 0, T)(T[] ar)
+ref inout(T) back(size_t dim = 0, T)(return scope inout(T)[] ar)
     if (!dim && !is(Unqual!T[] == void[]))
 {
     assert(ar.length, "Accessing back of an empty array.");
@@ -224,7 +224,7 @@ unittest
 }
 
 ///
-void popFront(size_t dim = 0, T)(ref T[] ar)
+void popFront(size_t dim = 0, T)(scope ref inout(T)[] ar)
     if (!dim && !is(Unqual!T[] == void[]))
 {
     assert(ar.length, "Evaluating popFront() on an empty array.");
@@ -243,7 +243,7 @@ unittest
 }
 
 ///
-void popBack(size_t dim = 0, T)(ref T[] ar)
+void popBack(size_t dim = 0, T)(scope ref inout(T)[] ar)
     if (!dim && !is(Unqual!T[] == void[]))
 {
     assert(ar.length, "Evaluating popBack() on an empty array.");
@@ -262,7 +262,7 @@ unittest
 }
 
 ///
-size_t popFrontN(size_t dim = 0, T)(ref T[] ar, size_t n)
+size_t popFrontN(size_t dim = 0, T)(scope ref inout(T)[] ar, size_t n)
     if (!dim && !is(Unqual!T[] == void[]))
 {
     n = ar.length < n ? ar.length : n;
@@ -282,7 +282,7 @@ unittest
 }
 
 ///
-size_t popBackN(size_t dim = 0, T)(ref T[] ar, size_t n)
+size_t popBackN(size_t dim = 0, T)(scope ref inout(T)[] ar, size_t n)
     if (!dim && !is(Unqual!T[] == void[]))
 {
     n = ar.length < n ? ar.length : n;
@@ -302,7 +302,7 @@ unittest
 }
 
 ///
-void popFrontExactly(size_t dim = 0, T)(ref T[] ar, size_t n)
+void popFrontExactly(size_t dim = 0, T)(scope ref inout(T)[] ar, size_t n)
     if (!dim && !is(Unqual!T[] == void[]))
 {
     assert(ar.length >= n, "Evaluating *.popFrontExactly(n) on an array with length less then n.");
@@ -321,7 +321,7 @@ unittest
 }
 
 ///
-void popBackExactly(size_t dim = 0, T)(ref T[] ar, size_t n)
+void popBackExactly(size_t dim = 0, T)(scope ref inout(T)[] ar, size_t n)
     if (!dim && !is(Unqual!T[] == void[]))
 {
     assert(ar.length >= n, "Evaluating *.popBackExactly(n) on an array with length less then n.");
