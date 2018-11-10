@@ -122,10 +122,6 @@ alias Unref(V) = V;
 
 /++
 Returns: a $(LREF RefTuple) structure.
-
-If an argument is accessible by reference, then its pointer is stored instead.
-
-Use refTuple in combination with $(LREF unref) to make a completely value tuple.
 +/
 RefTuple!Args refTuple(Args...)(auto ref Args args)
 {
@@ -133,7 +129,7 @@ RefTuple!Args refTuple(Args...)(auto ref Args args)
 }
 
 /// Removes $(LREF Ref) shell.
-ref T unref(V : Ref!T, T)(V value)
+ref T unref(V : Ref!T, T)(scope return V value)
 {
     return *value.__ptr;
 }
@@ -148,7 +144,7 @@ Unref!(RefTuple!T) unref(V : RefTuple!T, T...)(V value)
 }
 
 /// ditto
-ref V unref(V)(return ref V value)
+ref V unref(V)(scope return ref V value)
 {
     return value;
 }
