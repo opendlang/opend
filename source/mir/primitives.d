@@ -191,7 +191,7 @@ unittest
 }
 
 ///
-ref inout(T) front(size_t dim = 0, T)(return scope inout(T)[] ar)
+ref inout(T) front(size_t dim = 0, T)(scope return inout(T)[] ar)
     if (!dim && !is(Unqual!T[] == void[]))
 {
     assert(ar.length, "Accessing front of an empty array.");
@@ -208,7 +208,7 @@ unittest
 
 
 ///
-ref inout(T) back(size_t dim = 0, T)(return scope inout(T)[] ar)
+ref inout(T) back(size_t dim = 0, T)(scope return inout(T)[] ar)
     if (!dim && !is(Unqual!T[] == void[]))
 {
     assert(ar.length, "Accessing back of an empty array.");
@@ -352,4 +352,18 @@ unittest
 {
     assert([1, 2].length!0 == 2);
     assert([1, 2].elementCount == 2);
+}
+
+///
+inout(T)[] save(T)(scope return inout(T)[] array)
+{
+    return array;
+}
+
+///
+version(mir_test)
+unittest
+{
+    auto a = [1, 2];
+    assert(a is a.save);
 }
