@@ -201,31 +201,31 @@ struct LeastSquaresLM(T)
         /++
         Returns: lower bounds if they were set or zero length vector otherwise.
         +/
-        Slice!(T*) lower() { return Slice!(T*)([_lower_ptr ? n : 0], sizediff_t[0].init, _lower_ptr); }
+        Slice!(T*) lower() { return Slice!(T*)([_lower_ptr ? n : 0], _lower_ptr); }
         /++
         Returns: upper bounds if they were set or zero length vector otherwise.
         +/
-        Slice!(T*) upper() { return Slice!(T*)([_upper_ptr ? n : 0], sizediff_t[0].init, _upper_ptr); }
+        Slice!(T*) upper() { return Slice!(T*)([_upper_ptr ? n : 0], _upper_ptr); }
         /++
         Returns: Current X vector.
         +/
-        Slice!(T*) x() { return Slice!(T*)([n], sizediff_t[0].init, _x_ptr); }
+        Slice!(T*) x() { return Slice!(T*)([n], _x_ptr); }
         /++
         Returns: The last success ΔX.
         +/
-        Slice!(T*) deltaX() { return Slice!(T*)([n], sizediff_t[0].init, _deltaX_ptr); }
+        Slice!(T*) deltaX() { return Slice!(T*)([n], _deltaX_ptr); }
         /++
         Returns: Current Y = f(X).
         +/
-        Slice!(T*) y() { return Slice!(T*)([m], sizediff_t[0].init, _y_ptr); }
+        Slice!(T*) y() { return Slice!(T*)([m], _y_ptr); }
     private:
-        Slice!(T*) mJy() { return Slice!(T*)([n], sizediff_t[0].init, _mJy_ptr); }
-        Slice!(T*) deltaXBase() { return Slice!(T*)([n], sizediff_t[0].init, _deltaXBase_ptr); }
-        Slice!(lapackint*) ipiv() { return Slice!(lapackint*)([n], sizediff_t[0].init, _ipiv_ptr); }
-        Slice!(T*) mBuffer() { return Slice!(T*)([m], sizediff_t[0].init, _mBuffer_ptr); }
-        Slice!(T*) nBuffer() { return Slice!(T*)([n], sizediff_t[0].init, _nBuffer_ptr); }
-        Slice!(T*, 2) JJ() { return Slice!(T*, 2)([n, n], sizediff_t[0].init, _JJ_ptr); }
-        Slice!(T*, 2) J() { return Slice!(T*, 2)([m, n], sizediff_t[0].init, _J_ptr); }
+        Slice!(T*) mJy() { return Slice!(T*)([n], _mJy_ptr); }
+        Slice!(T*) deltaXBase() { return Slice!(T*)([n], _deltaXBase_ptr); }
+        Slice!(lapackint*) ipiv() { return Slice!(lapackint*)([n], _ipiv_ptr); }
+        Slice!(T*) mBuffer() { return Slice!(T*)([m], _mBuffer_ptr); }
+        Slice!(T*) nBuffer() { return Slice!(T*)([n], _nBuffer_ptr); }
+        Slice!(T*, 2) JJ() { return Slice!(T*, 2)([n, n], _JJ_ptr); }
+        Slice!(T*, 2) J() { return Slice!(T*, 2)([m, n], _J_ptr); }
     }
 
     /++
