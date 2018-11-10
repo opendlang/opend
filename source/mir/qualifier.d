@@ -63,21 +63,21 @@ auto lightConst(T)(auto ref immutable T v)
 
 /// ditto
 T lightConst(T)(auto ref const T e)
-    if (isImplicitlyConvertible!(const T, T) && !__traits(hasMember, const T, "lightConst"))
+    if (!isDynamicArray!T && isImplicitlyConvertible!(const T, T) && !__traits(hasMember, const T, "lightConst"))
 {
     return e;
 }
 
 /// ditto
 T lightConst(T)(auto ref immutable T e)
-    if (isImplicitlyConvertible!(immutable T, T) && !__traits(hasMember, immutable T, "lightConst"))
+    if (!isDynamicArray!T && isImplicitlyConvertible!(immutable T, T) && !__traits(hasMember, immutable T, "lightConst"))
 {
     return e;
 }
 
 /// ditto
 T lightImmutable(T)(auto ref immutable T e)
-    if (isImplicitlyConvertible!(immutable T, T) && !__traits(hasMember, immutable T, "lightImmutable"))
+    if (!isDynamicArray!T && isImplicitlyConvertible!(immutable T, T) && !__traits(hasMember, immutable T, "lightImmutable"))
 {
     return e;
 }
