@@ -19,11 +19,6 @@ mir_random_src = [
     'source/mir/random/engine/splitmix.d',
     'source/mir/random/engine/xorshift.d',
     'source/mir/random/engine/xoshiro.d',
-    'source/mir/random/flex/internal/area.d',
-    'source/mir/random/flex/internal/calc.d',
-    'source/mir/random/flex/internal/transformations.d',
-    'source/mir/random/flex/internal/types.d',
-    'source/mir/random/flex/package.d',
     'source/mir/random/ndvariable.d',
     'source/mir/random/package.d',
     'source/mir/random/variable.d',
@@ -32,7 +27,15 @@ mir_random_src = [
 if get_option('extended')
     mir_algorithm_dep = dependency('mir-algorithm', fallback : ['mir-algorithm', 'mir_algorithm_dep'])
     required_deps = [required_deps, mir_algorithm_dep]
-    mir_random_src = [mir_random_src, 'source/mir/random/algorithm.d']
+    mir_random_src = [
+        mir_random_src,
+        'source/mir/random/algorithm.d',
+        'source/mir/random/flex/internal/area.d',
+        'source/mir/random/flex/internal/calc.d',
+        'source/mir/random/flex/internal/transformations.d',
+        'source/mir/random/flex/internal/types.d',
+        'source/mir/random/flex/package.d',
+    ]
 endif
 
 mir_random_lib = library(meson.project_name(),
