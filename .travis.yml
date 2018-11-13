@@ -18,7 +18,7 @@ matrix:
 
 script:
   - dub test --build=unittest-cov --compiler=${DC}
-  - dub build
+  - dub build --compiler=${DC}
 
 after_success:
  - bash <(curl -s https://codecov.io/bash)
