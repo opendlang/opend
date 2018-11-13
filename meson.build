@@ -28,15 +28,6 @@ mir_cpuid_dep = declare_dependency(
     dependencies: required_deps,
 )
 
-mir_cpuid_test_exe = executable(meson.project_name() + '-test',
-    mir_cpuid_src,
-    include_directories: mir_cpuid_dir,
-    d_unittest: true,
-    d_module_versions: ['mir_cpuid_test'],
-    link_args: '-main',
-    dependencies: required_deps,
-)
-
 install_subdir('source/',
     strip_directory : true,
     install_dir: 'include/d/' + meson.project_name(),
@@ -50,4 +41,17 @@ import('pkgconfig').generate(
     version: meson.project_version(),
 )
 
-test(meson.project_name() + '-test', mir_cpuid_test_exe)
+if get_option('with_test')
+
+    mir_cpuid_test_exe = executable(meson.project_name() + '-test',
+        mir_cpuid_src,
+        include_directories: mir_cpuid_dir,
+        d_unittest: true,
+        d_module_versions: ['mir_cpuid_test'],
+        link_args: '-main',
+        dependencies: required_deps,
+    )
+
+    test(meson.project_name() + '-test', mir_cpuid_test_exe)
+
+endif

@@ -49,7 +49,7 @@ script:
  - dub build --arch "$ARCH"
  - ls
  - dub --arch "$ARCH" --single report.d
- - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then meson build && cd build && ninja -j4 && ninja -j4 test -v && cd ..; fi # TODO: 32bit meson test
+ - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then meson build -D with_test=true && cd build && ninja -j4 && ninja -j4 test -v && cd ..; fi # TODO: 32bit meson test
 
 after_success:
  - bash <(curl -s https://codecov.io/bash)
