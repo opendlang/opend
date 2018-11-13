@@ -1,4 +1,4 @@
-# automem - smart pointer for D
+# automem - smart pointers for D
 
 [![Build Status](https://travis-ci.org/atilaneves/automem.png?branch=master)](https://travis-ci.org/atilaneves/automem)
 [![Build Status](https://ci.appveyor.com/api/projects/status/github/atilaneves/automem?branch=master&svg=true)](https://ci.appveyor.com/project/atilaneves/automem)
