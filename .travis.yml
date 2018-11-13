@@ -25,4 +25,4 @@ addons:
 script:
   - dub build --build=unittest -c blas
   - dub --root examples/gesv -c travis
-  # - meson build && cd build && ninja -j4 && ninja test -v && cd ..
+  # - meson build -D with_test=true && cd build && ninja -j4 && ninja test -v && cd ..
