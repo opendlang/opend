@@ -30,14 +30,6 @@ mir_core_dep = declare_dependency(
     include_directories: mir_core_dir,
 )
 
-mir_core_test_exe = executable(meson.project_name() + '-test',
-    mir_core_src,
-    include_directories: mir_core_dir,
-    d_unittest: true,
-    d_module_versions: ['mir_test'],
-    link_args: '-main',
-)
-
 install_subdir('source/',
     strip_directory : true,
     install_dir: 'include/d/' + meson.project_name(),
@@ -51,4 +43,16 @@ import('pkgconfig').generate(
     version: meson.project_version(),
 )
 
-test(meson.project_name() + '-test', mir_core_test_exe)
+if get_option('with_test')
+
+    mir_core_test_exe = executable(meson.project_name() + '-test',
+        mir_core_src,
+        include_directories: mir_core_dir,
+        d_unittest: true,
+        d_module_versions: ['mir_test'],
+        link_args: '-main',
+    )
+
+    test(meson.project_name() + '-test', mir_core_test_exe)
+
+endif

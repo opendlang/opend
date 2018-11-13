@@ -36,7 +36,7 @@ install:
 script:
  - dub test --arch "$ARCH" --build=unittest-cov
  - ./test_examples.sh
- - meson build && cd build && ninja -j4 && ninja -j4 test -v && cd .. # TODO: 32bit meson test
+ - meson build -D with_test=true && cd build && ninja -j4 && ninja -j4 test -v && cd .. # TODO: 32bit meson test
 
 after_success:
  - bash <(curl -s https://codecov.io/bash)
