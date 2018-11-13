@@ -1,1 +1,2 @@
+option('with_test', type : 'boolean', value : false)
 option('extended', type : 'boolean', value : false)
