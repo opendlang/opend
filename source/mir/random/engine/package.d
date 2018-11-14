@@ -674,46 +674,8 @@ else
 
 static if (LINUX_NR_GETRANDOM)
 {
-    private enum GET_RANDOM {
-        UNINITIALIZED,
-        NOT_AVAILABLE,
-        AVAILABLE,
-    }
-
     // getrandom was introduced in Linux 3.17
-    private __gshared GET_RANDOM hasGetRandom = GET_RANDOM.UNINITIALIZED;
-
-    import core.sys.posix.sys.utsname : utsname;
-
-    // druntime isn't properly annotated
-    private extern(C) int uname(utsname* __name) @nogc nothrow;
-
-    // checks whether the Linux kernel supports getRandom by looking at the
-    // reported version
-    private auto initHasGetRandom()() @nogc @trusted nothrow
-    {
-        import core.stdc.string : strtok;
-        import core.stdc.stdlib : atoi;
-
-        utsname uts;
-        uname(&uts);
-        char* p = uts.release.ptr;
-
-        // poor man's version check
-        auto token = strtok(p, ".");
-        int major = atoi(token);
-        if (major  > 3)
-            return true;
-
-        if (major == 3)
-        {
-            token = strtok(p, ".");
-            if (atoi(token) >= 17)
-                return true;
-        }
-
-        return false;
-    }
+    private __gshared bool getRandomFailedENOSYS = false;
 
     private extern(C) int syscall(size_t ident, size_t n, size_t arg1, size_t arg2) @nogc nothrow;
 
@@ -928,18 +890,6 @@ extern(C) void mir_random_engine_ctor() @system nothrow @nogc
         if (hProvider == 0)
             initGetRandom;
     }
-
-    version(linux)
-    {
-        static if (LINUX_NR_GETRANDOM)
-        {
-            with(GET_RANDOM)
-            {
-                if (hasGetRandom == UNINITIALIZED)
-                    hasGetRandom = initHasGetRandom ? AVAILABLE : NOT_AVAILABLE;
-            }
-        }
-    }
 }
 
 /++
@@ -1040,19 +990,19 @@ extern(C) ptrdiff_t mir_random_genRandomBlocking(scope void* ptr , size_t len) @
         arc4random_buf(ptr, len);
         return 0;
     }
-    else static if (LINUX_NR_GETRANDOM)
-    {
-        with(GET_RANDOM)
-        {
-            // Linux >= 3.17 has getRandom
-            if (hasGetRandom == AVAILABLE)
-                return genRandomImplSysBlocking(ptr, len);
-            else
-                return genRandomImplFileBlocking(ptr, len);
-        }
-    }
     else
     {
+        static if (LINUX_NR_GETRANDOM)
+        if (!getRandomFailedENOSYS) // harmless data race
+        {
+            import core.stdc.errno;
+            ptrdiff_t result = genRandomImplSysBlocking(ptr, len);
+            if (result >= 0)
+                return result;
+            if (errno != ENOSYS)
+                return result;
+            getRandomFailedENOSYS = true; // harmless data race
+        }
         return genRandomImplFileBlocking(ptr, len);
     }
 }
@@ -1126,19 +1076,19 @@ extern(C) size_t mir_random_genRandomNonBlocking(scope void* ptr, size_t len) @n
         arc4random_buf(ptr, len);
         return len;
     }
-    else static if (LINUX_NR_GETRANDOM)
-    {
-        with(GET_RANDOM)
-        {
-            // Linux >= 3.17 has getRandom
-            if (hasGetRandom == AVAILABLE)
-                return genRandomImplSysNonBlocking(ptr, len);
-            else
-                return genRandomImplFileNonBlocking(ptr, len);
-        }
-    }
     else
     {
+        static if (LINUX_NR_GETRANDOM)
+        if (!getRandomFailedENOSYS) // harmless data race
+        {
+            import core.stdc.errno;
+            ptrdiff_t result = genRandomImplSysNonBlocking(ptr, len);
+            if (result >= 0)
+                return result;
+            if (errno != ENOSYS)
+                return result;
+            getRandomFailedENOSYS = true; // harmless data race
+        }
         return genRandomImplFileNonBlocking(ptr, len);
     }
 }
