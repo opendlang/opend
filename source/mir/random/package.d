@@ -186,6 +186,30 @@ private template Iota(size_t i, size_t j)
         alias Iota = AliasSeq!(i, Iota!(i + 1, j));
 }
 
+/+
+Returns pseudo-random integer with the low `bitsWanted` bits set to
+random values and the remaining high bits all 0.
++/
+private T _randBits(T, uint bitsWanted, G)(scope ref G gen)
+if (bitsWanted >= 0 && bitsWanted <= T.sizeof * 8
+    && (is(T == uint) || is(T == ulong) || is(T == size_t)))
+{
+    static if (EngineReturnType!G.sizeof >= T.sizeof)
+        auto bits = gen();
+    else
+        auto bits = gen.rand!T;
+    static if (preferHighBits!G)
+    {
+        enum rshift = (typeof(bits).sizeof * 8) - bitsWanted;
+        return cast(T) (bits >>> rshift);
+    }
+    else
+    {
+        enum mask = (typeof(bits)(1) << bitsWanted) - 1;
+        return cast(T) (bits & typeof(bits)(mask));
+    }
+}
+
 /++
 Params:
     gen = saturated random number generator
@@ -199,14 +223,35 @@ T rand(T, G)(scope ref G gen)
         enum tiny = [EnumMembers!T] == [Iota!(EnumMembers!T.length)];
     else
         enum tiny = false;
+    enum n = [EnumMembers!T].length;
+    // If `gen` produces 32 bits or fewer at a time and we have fewer
+    // than 2^^32 elements, use a `uint` index.
+    static if (n <= uint.max && EngineReturnType!G.max <= uint.max)
+        alias IndexType = uint;
+    else
+        alias IndexType = size_t;
+
+    static if ((n & (n - 1)) == 0)
+    {
+        // Optimized case: power of 2.
+        import core.bitop : bsr;
+        enum bitsWanted = bsr(n);
+        IndexType index = _randBits!(IndexType, bitsWanted)(gen);
+    }
+    else
+    {
+        // General case.
+        IndexType index = gen.randIndex!IndexType(n);
+    }
+
     static if (tiny)
     {
-        return cast(T) gen.randIndex(EnumMembers!T.length);
+        return cast(T) index;
     }
     else
     {
         static immutable T[EnumMembers!T.length] members = [EnumMembers!T];
-        return members[gen.randIndex($)];
+        return members[index];
     }
 }
 
@@ -262,7 +307,7 @@ T rand(T)()
 {
     //Coverage. Impure because uses thread-local.
     Random* gen = threadLocalPtr!Random;
-    enum A : dchar { a, b, c }
+    enum A : dchar { a, b, c, d }
     auto e = gen.rand!A;
 }
 
