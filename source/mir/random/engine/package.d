@@ -18,8 +18,7 @@ $(TR
 
 $(LEADINGROW <a id="Entropy"></a>Entropy)
 $(TR
-    $(RROW unpredictableSeed, Seed of `size_t` using system entropy)
-    $(RROW unpredictableSeedOf, Generalization of `unpredictableSeed` for unsigned integers of different sizes)
+    $(RROW unpredictableSeed, Seed of `size_t` using system entropy. May use `unpredictableSeed!UIntType` for unsigned integers of different sizes.)
     $(RROW genRandomNonBlocking, Fills a buffer with system entropy, returning number of bytes copied or negative number on error)
     $(RROW genRandomBlocking, Fills a buffer with system entropy, possibly waiting if the system believes it has insufficient entropy. Returns 0 on success.))
 
@@ -242,20 +241,13 @@ version (D_Ddoc)
     pragma(inline, true)
     @property size_t unpredictableSeed() @trusted nothrow @nogc
     {
-        return unpredictableSeedOf!size_t;
+        return unpredictableSeed!size_t;
     }
-}
-else
-{
-    //If D_Doc saw this it would produce incorrect documentation:
-    //instead of "size_t" it would say either "uint" or "ulong"
-    //depending on the machine generating the documentation (!!!)
-    public alias unpredictableSeed = unpredictableSeedOf!size_t;
 }
 
 /// ditto
 pragma(inline, true)
-@property T unpredictableSeedOf(T)() @trusted nothrow @nogc
+@property T unpredictableSeed(T = size_t)() @trusted nothrow @nogc
     if (isUnsigned!T)
 {
     import mir.utility: _expect;
@@ -275,6 +267,29 @@ pragma(inline, true)
         seed = cast(T) fallbackSeed();
     }
     return seed;
+}
+
+// Old name of `unpredictableSeedOf!T`. Undocumented but
+// defined so existing code using mir.random won't break.
+deprecated("Use unpredictableSeed!T instead of unpredictableSeedOf!T")
+public alias unpredictableSeedOf(T) = unpredictableSeed!T;
+
+version (mir_random_test) @nogc nothrow @safe unittest
+{
+    // Check unpredictableSeed syntax works with or without parentheses.
+    auto a = unpredictableSeed;
+    auto b = unpredictableSeed!uint;
+    auto c = unpredictableSeed!ulong;
+    static assert(is(typeof(a) == size_t));
+    static assert(is(typeof(b) == uint));
+    static assert(is(typeof(c) == ulong));
+
+    auto d = unpredictableSeed();
+    auto f = unpredictableSeed!uint();
+    auto g = unpredictableSeed!ulong();
+    static assert(is(typeof(d) == size_t));
+    static assert(is(typeof(f) == uint));
+    static assert(is(typeof(g) == ulong));
 }
 
 // Is llvm_readcyclecounter supported on this platform?
@@ -439,7 +454,7 @@ static if (THREAD_LOCAL_STORAGE_AVAILABLE)
         pragma(inline, false) // Usually called only once per thread.
         private static void reseed()
         {
-            engine.__ctor(unpredictableSeedOf!(seed_t));
+            engine.__ctor(unpredictableSeed!(seed_t));
             initialized = true;
         }
     }

@@ -82,6 +82,7 @@ void main()
  - `opCall` API instead of range interface is used (similar to C++)
  - No default and copy constructors are allowed for generators.
  - `unpredictableSeed` has not state, returns `size_t`
+ - `unpredictableSeed!UIntType` overload for seeds of any unsigned type (merged to Phobos)
  - Any unsigned generators are allowed.
  - `min` property was removed. Any integer generator can normalize its minimum down to zero.
  - Mt19937: +100% performance for initialization. (merged to Phobos)
