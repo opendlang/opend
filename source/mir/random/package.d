@@ -31,21 +31,14 @@ T2=$(TR $(TDNW $(LREF $1)) $(TD $+))
 module mir.random;
 
 import std.traits;
+import mir.bitop: cttz;
+import mir.math.common: log2;
 
 public import mir.random.engine;
 
 version (LDC)
 {
-    import ldc.intrinsics: llvm_expect, log2 = llvm_log2;
-
-    private
-    pragma(inline, true)
-    T bsf(T)(T v) pure @safe nothrow @nogc
-    {
-        import ldc.intrinsics;
-        return llvm_cttz(v, true);
-    }
-
+    import ldc.intrinsics: llvm_expect;
     // LDC 1.8.0 supports llvm_expect in CTFE.
     private template _ctfeExpect(string expr, string expected)
     {
@@ -55,11 +48,13 @@ version (LDC)
             private enum _ctfeExpect = expr;
     }
 }
+else version (GNU)
+{
+    import gcc.builtins: __builtin_expect;
+    private enum _ctfeExpect(string expr, string expected) = `__builtin_expect(`~expr~`,`~expected~`)`;
+}
 else
 {
-    import std.math: log2;
-    import core.bitop: bsf;
-
     private enum _ctfeExpect(string expr, string expected) = expr;
 }
 
@@ -373,7 +368,7 @@ T rand(T, G)(scope ref G gen, sizediff_t boundExp = 0)
         enum uint EXPMASK = 0x7F80_0000;
         boundExp -= T.min_exp - 1;
         size_t exp = EXPMASK & u.asInteger;
-        exp = boundExp - (exp ? bsf(exp) - (T.mant_dig - 1) : gen.randGeometric + W);
+        exp = boundExp - (exp ? cttz(exp) - (T.mant_dig - 1) : gen.randGeometric + W);
         u.asInteger &= ~EXPMASK;
         if(cast(sizediff_t)exp < 0)
         {
@@ -397,7 +392,7 @@ T rand(T, G)(scope ref G gen, sizediff_t boundExp = 0)
         enum ulong EXPMASK = 0x7FF0_0000_0000_0000;
         boundExp -= T.min_exp - 1;
         ulong exp = EXPMASK & u.asInteger;
-        exp = ulong(boundExp) - (exp ? bsf(exp) - (T.mant_dig - 1) : gen.randGeometric + W);
+        exp = ulong(boundExp) - (exp ? cttz(exp) - (T.mant_dig - 1) : gen.randGeometric + W);
         u.asInteger &= ~EXPMASK;
         if(cast(long)exp < 0)
         {
@@ -421,7 +416,7 @@ T rand(T, G)(scope ref G gen, sizediff_t boundExp = 0)
         enum uint EXPMASK = 0x7FFF;
         boundExp -= T.min_exp - 1;
         size_t exp = EXPMASK & d;
-        exp = boundExp - (exp ? bsf(exp) : gen.randGeometric + W);
+        exp = boundExp - (exp ? cttz(exp) : gen.randGeometric + W);
         if (cast(sizediff_t)exp > 0)
             m |= ~long.max;
         else
@@ -675,7 +670,7 @@ size_t randGeometric(G)(scope ref G gen)
         alias T = R;
     for(size_t count = 0;; count += T.sizeof * 8)
         if(auto val = gen.rand!T())
-            return count + bsf(val);
+            return count + cttz(val);
 }
 
 /// ditto
@@ -725,7 +720,7 @@ T randExponential2(T, G)(scope ref G gen)
         auto exp = EXPMASK & u.asInteger;
         u.asInteger &= ~EXPMASK;
         u.asInteger ^= 0x3F000000; // 0.5
-        auto y = exp ? bsf(exp) - (T.mant_dig - 1) : gen.randGeometric + W;
+        auto y = exp ? cttz(exp) - (T.mant_dig - 1) : gen.randGeometric + W;
         auto x = u.asFloatingPoint;
     }
     else
@@ -737,7 +732,7 @@ T randExponential2(T, G)(scope ref G gen)
         auto exp = EXPMASK & u.asInteger;
         u.asInteger &= ~EXPMASK;
         u.asInteger ^= 0x3FE0000000000000; // 0.5
-        auto y = exp ? bsf(exp) - (T.mant_dig - 1) : gen.randGeometric + W;
+        auto y = exp ? cttz(exp) - (T.mant_dig - 1) : gen.randGeometric + W;
         auto x = u.asFloatingPoint;
     }
     else
