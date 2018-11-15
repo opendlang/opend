@@ -332,16 +332,25 @@ T ctlz(T)(in T src)
         return llvm_ctlz(src, true);
     version(GNU) if (!__ctfe)
     {
-        static if (T.sizeof < __builtin_clong.sizeof)
+        // Do not zero-extend when counting leading zeroes.
+        static if (T.sizeof < __builtin_clong.sizeof && T.sizeof >= uint.sizeof)
             return cast(T) __builtin_clz(src);
-        else static if (T.sizeof <= __builtin_clong.sizeof)
+        else static if (T.sizeof == __builtin_clong.sizeof)
             return cast(T) __builtin_clzl(src);
-        else
+        else static if (T.sizeof > __builtin_clong.sizeof)
             return cast(T) __builtin_clzll(src);
     }
     import core.bitop: bsr;
     return cast(T)(T.sizeof * 8  - 1 - bsr(src));
 }
+
+
+version (mir_test) @nogc nothrow pure @safe unittest
+{
+    assert(ctlz(cast(ubyte) 0b0011_1111) == 2);
+    assert(ctlz(cast(ushort) 0b0000_0001_1111_1111) == 7);
+}
+
 
 /++
 The 'cttz' family of intrinsic functions counts the number of trailing zeros.
