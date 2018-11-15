@@ -92,7 +92,7 @@ void main()
  - 64-bit Mt19937 is default for 64-bit targets
  - Permuted Congruential Generators (new)
  - SplitMix generators (new)
- - Fixed XorshiftEngine's support for non-`uint` word sizes & allow various shift directions
+ - Fixed XorshiftEngine's support for non-`uint` word sizes & allow various shift directions (merged to Phobos)
  - XorshiftStar Generators (new)
  - Xoroshiro128Plus generator (new)
  - Xoshiro256StarStar & Xoshiro128StarStar_32 generators (new)
