@@ -293,6 +293,23 @@ else version(GNU)
 else
 {
     static import std.math;
+    // Some std.math functions have appropriate return types (float,
+    // double, real) without need for a wrapper. We can alias them
+    // directly but we leave the templates afterwards for documentation
+    // purposes and so explicit template instantiation still works.
+    // The aliases will always match before the templates.
+    // Note that you cannot put any "static if" around the aliases or
+    // compilation will fail due to conflict with the templates!
+    alias sqrt = std.math.sqrt;
+    alias sin = std.math.sin;
+    alias cos = std.math.cos;
+    alias exp = std.math.exp;
+    alias fabs = std.math.fabs;
+    alias floor = std.math.floor;
+    alias exp2 = std.math.exp2;
+    alias ceil = std.math.ceil;
+    alias rint = std.math.rint;
+
     ///
     T sqrt(T)(in T x) if (isFloatingPoint!T) { return std.math.sqrt(x); }
     ///
@@ -337,6 +354,23 @@ else
     T fmin(T)(in T x, in T y) if (isFloatingPoint!T) { return std.math.fmin(x, y); }
     ///
     T fmax(T)(in T x, in T y) if (isFloatingPoint!T) { return std.math.fmax(x, y); }
+
+    version (mir_test) @nogc nothrow pure @safe unittest
+    {
+        // Check the aliases are correct.
+        static assert(is(typeof(sqrt(1.0f)) == float));
+        static assert(is(typeof(sin(1.0f)) == float));
+        static assert(is(typeof(cos(1.0f)) == float));
+        static assert(is(typeof(exp(1.0f)) == float));
+        static assert(is(typeof(fabs(1.0f)) == float));
+        static assert(is(typeof(floor(1.0f)) == float));
+        static assert(is(typeof(exp2(1.0f)) == float));
+        static assert(is(typeof(ceil(1.0f)) == float));
+        static assert(is(typeof(rint(1.0f)) == float));
+
+        auto x = sqrt!float(2.0f); // Explicit template instantiation still works.
+        auto fp = &sqrt!float; // Can still take function address.
+    }
 }
 
 version (mir_test)
