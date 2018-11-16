@@ -1290,15 +1290,14 @@ pure nothrow @safe /* @nogc */ unittest
 
 /++
 +/
-T[] uninitializedFillDefault(T)(T[] array) nothrow @nogc
+T[] uninitializedFillDefault(T)(return scope T[] array) nothrow @nogc
 {
     static if (__VERSION__ < 2083)
     {
-        static if (is(Unqual!T == char) || is(Unqual!T == wchar))
+        static if (__traits(isIntegral, T) && 0 == cast(T) (T.init + 1))
         {
             import core.stdc.string : memset;
-            if (array !is null)
-                memset(array.ptr, 0xff, T.sizeof * array.length);
+            memset(array.ptr, 0xff, T.sizeof * array.length);
             return array;
         }
         else
@@ -1314,15 +1313,13 @@ T[] uninitializedFillDefault(T)(T[] array) nothrow @nogc
         static if (__traits(isZeroInit, T))
         {
             import core.stdc.string : memset;
-            if (array !is null)
-                memset(array.ptr, 0, T.sizeof * array.length);
+            memset(array.ptr, 0, T.sizeof * array.length);
             return array;
         }
-        else static if (is(Unqual!T == char) || is(Unqual!T == wchar))
+        else static if (__traits(isIntegral, T) && 0 == cast(T) (T.init + 1))
         {
             import core.stdc.string : memset;
-            if (array !is null)
-                memset(array.ptr, 0xff, T.sizeof * array.length);
+            memset(array.ptr, 0xff, T.sizeof * array.length);
             return array;
         }
         else
