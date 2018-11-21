@@ -1,3 +1,6 @@
+#ifndef MIR_OPTIM_LM
+#define MIR_OPTIM_LM
+
 #ifdef __cplusplus
 extern "C"
 {
@@ -162,4 +165,6 @@ struct LeastSquaresLMD_S
 
 #ifdef __cplusplus
 }
+#endif
+
 #endif
