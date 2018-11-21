@@ -27,6 +27,14 @@ void main(string[] args)
             lineTo(100, 250);
             stroke();
 
+            // Draw a 50% transparent green triangle
+            fillStyle = brush("rgba(0, 255, 0, 0.5)");
+            beginPath(80, 170);
+            lineTo(180, 170);
+            lineTo(105, 240);
+            closePath();
+            fill();
+
             // Prepare text settings
             fillStyle = brush("black");
             fontFace("Arial");

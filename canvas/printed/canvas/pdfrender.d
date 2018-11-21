@@ -6,6 +6,9 @@ License:   $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost License 1.0)
 */
 module printed.canvas.pdfrender;
 
+import core.stdc.string: strlen;
+import core.stdc.stdio: snprintf;
+
 import std.string;
 import std.conv;
 import std.math;
@@ -37,6 +40,7 @@ final class PDFDocument : IRenderingContext2D
         _pageHeightMm = pageHeightMm;
 
         _pageTreeId = _pool.allocateObjectId();
+        _extGStateId = _pool.allocateObjectId();
 
         // header
         output("%PDF-1.4\n");
@@ -216,22 +220,22 @@ final class PDFDocument : IRenderingContext2D
 
     override void fillStyle(Brush brush)
     {
-        // TODO support alpha here
         ubyte[4] c = brush.toRGBAColor();
         outFloat(c[0] / 255.0f);
         outFloat(c[1] / 255.0f);
         outFloat(c[2] / 255.0f);
         output(" rg");
+        setNonStrokeAlpha(c[3]);
     }
 
     override void strokeStyle(Brush brush)
     {
-        // TODO support alpha here
         ubyte[4] c = brush.toRGBAColor();
         outFloat(c[0] / 255.0f);
         outFloat(c[1] / 255.0f);
         outFloat(c[2] / 255.0f);
         output(" RG");
+        setStrokeAlpha(c[3]);
     }
 
     // Basic shapes
@@ -325,6 +329,38 @@ private:
     // Current font style
     FontStyle _fontStyle = FontStyle.normal;
 
+
+    // <alpha support>
+
+    object_id _extGStateId;
+
+    /// Whether this opacity value is used at all in the document (stroke operations).
+    bool[256] _strokeAlpha;
+
+    /// Whether this opacity value is used at all in the document (non-stroke operations).
+    bool[256] _nonStrokeAlpha;
+
+    void setStrokeAlpha(ubyte alpha)
+    {
+        _strokeAlpha[alpha] = true;
+        char[3] gsName;
+        makeStrokeAlphaName(alpha, gsName);
+        outName(gsName[]);
+        output(" gs");
+    }
+
+    void setNonStrokeAlpha(ubyte alpha)
+    {
+        _nonStrokeAlpha[alpha] = true;
+        char[3] gsName;
+        makeNonStrokeAlphaName(alpha, gsName);
+        outName(gsName[]);
+        output(" gs");
+    }
+
+    // </alpha support>
+
+
     void finalizeOutput()
     {
         // Add every page object
@@ -346,9 +382,38 @@ private:
                             outReference(f.value);
                         }
                     outEndDict();
+
+                    // Point to extended graphics state (shared across pages)
+                    outName("ExtGState");
+                    outReference(_extGStateId);
                 outEndDict();
             endDictObject();
         }
+
+        // Generates ExtGState object with alpha graphics states
+        beginDictObject(_extGStateId);
+            foreach(alpha; 0..256)
+                if (_strokeAlpha[alpha])
+                {
+                    char[3] gs;
+                    makeStrokeAlphaName(cast(ubyte)alpha, gs);
+                    outName(gs[]);
+                    outBeginDict();
+                        outName("CA"); outFloat(alpha / 255.0f);
+                    outEndDict();
+                }
+
+            foreach(alpha; 0..256)
+                if (_nonStrokeAlpha[alpha])
+                {
+                    char[3] gs;
+                    makeNonStrokeAlphaName(cast(ubyte)alpha, gs);
+                    outName(gs[]);
+                    outBeginDict();
+                        outName("ca"); outFloat(alpha / 255.0f);
+                    outEndDict();
+                }
+        endDictObject();
 
         // Generates /Font object
         foreach(pair; _fontPDFInfos.byKeyValue())
@@ -721,7 +786,7 @@ private:
         _bytes ~= b;
     }
 
-    void output(string s)
+    void output(const(char)[] s)
     {
         _bytes ~= s.representation;
     }
@@ -817,7 +882,7 @@ private:
         output(stripNumber(format("%f", f)));
     }
 
-    void outName(string name)
+    void outName(const(char)[] name)
     {
         // no delimiter needed as '/' is a delimiter
         output('/');
@@ -1061,4 +1126,22 @@ enum float kMillimetersToPoints = 2.83465f;
 float convertMillimetersToPoints(float x) pure
 {
     return x * kMillimetersToPoints;
+}
+
+static immutable string HEX = "0123456789abcdef";
+
+// Name /S80 means a stroke alpha value of 128.0 / 255.0 
+void makeStrokeAlphaName(ubyte alpha, ref char[3] outName) pure
+{
+    outName[0] = 'S';
+    outName[1] = HEX[(alpha >> 4)];
+    outName[2] = HEX[alpha & 15];
+}
+
+// Name /T80 means a non-stroke alpha value of 128.0 / 255.0 
+void makeNonStrokeAlphaName(ubyte alpha, ref char[3] outName) pure
+{
+    outName[0] = 'T';
+    outName[1] = HEX[(alpha >> 4)];
+    outName[2] = HEX[alpha & 15];    
 }
