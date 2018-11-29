@@ -33,7 +33,7 @@ pure {
 extern( System ):
 
 // Version of corresponding c header file
-enum VK_HEADER_VERSION = 93;
+enum VK_HEADER_VERSION = 94;
 
 enum VK_NULL_HANDLE = null;
 
@@ -486,6 +486,9 @@ enum VkStructureType {
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_MEMORY_MODEL_FEATURES_KHR                   = 1000211000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PCI_BUS_INFO_PROPERTIES_EXT                        = 1000212000,
     VK_STRUCTURE_TYPE_IMAGEPIPE_SURFACE_CREATE_INFO_FUCHSIA                              = 1000214000,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_FEATURES_EXT                  = 1000218000,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_PROPERTIES_EXT                = 1000218001,
+    VK_STRUCTURE_TYPE_RENDER_PASS_FRAGMENT_DENSITY_MAP_CREATE_INFO_EXT                   = 1000218002,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SCALAR_BLOCK_LAYOUT_FEATURES_EXT                   = 1000221000,
     VK_STRUCTURE_TYPE_IMAGE_STENCIL_USAGE_CREATE_INFO_EXT                                = 1000246000,
     VK_STRUCTURE_TYPE_DEBUG_REPORT_CREATE_INFO_EXT                                       = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT,
@@ -851,6 +854,9 @@ enum VK_STRUCTURE_TYPE_QUEUE_FAMILY_CHECKPOINT_PROPERTIES_NV                    
 enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_MEMORY_MODEL_FEATURES_KHR                  = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_MEMORY_MODEL_FEATURES_KHR;
 enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PCI_BUS_INFO_PROPERTIES_EXT                       = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PCI_BUS_INFO_PROPERTIES_EXT;
 enum VK_STRUCTURE_TYPE_IMAGEPIPE_SURFACE_CREATE_INFO_FUCHSIA                             = VkStructureType.VK_STRUCTURE_TYPE_IMAGEPIPE_SURFACE_CREATE_INFO_FUCHSIA;
+enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_FEATURES_EXT                 = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_FEATURES_EXT;
+enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_PROPERTIES_EXT               = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_PROPERTIES_EXT;
+enum VK_STRUCTURE_TYPE_RENDER_PASS_FRAGMENT_DENSITY_MAP_CREATE_INFO_EXT                  = VkStructureType.VK_STRUCTURE_TYPE_RENDER_PASS_FRAGMENT_DENSITY_MAP_CREATE_INFO_EXT;
 enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SCALAR_BLOCK_LAYOUT_FEATURES_EXT                  = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SCALAR_BLOCK_LAYOUT_FEATURES_EXT;
 enum VK_STRUCTURE_TYPE_IMAGE_STENCIL_USAGE_CREATE_INFO_EXT                               = VkStructureType.VK_STRUCTURE_TYPE_IMAGE_STENCIL_USAGE_CREATE_INFO_EXT;
 enum VK_STRUCTURE_TYPE_DEBUG_REPORT_CREATE_INFO_EXT                                      = VkStructureType.VK_STRUCTURE_TYPE_DEBUG_REPORT_CREATE_INFO_EXT;
@@ -1592,6 +1598,7 @@ enum VkImageLayout {
     VK_IMAGE_LAYOUT_PRESENT_SRC_KHR                                      = 1000001002,
     VK_IMAGE_LAYOUT_SHARED_PRESENT_KHR                                   = 1000111000,
     VK_IMAGE_LAYOUT_SHADING_RATE_OPTIMAL_NV                              = 1000164003,
+    VK_IMAGE_LAYOUT_FRAGMENT_DENSITY_MAP_OPTIMAL_EXT                     = 1000218000,
     VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL_KHR       = VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL,
     VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL_KHR       = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL,
     VK_IMAGE_LAYOUT_BEGIN_RANGE                                          = VK_IMAGE_LAYOUT_UNDEFINED,
@@ -1613,6 +1620,7 @@ enum VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL          = VkIma
 enum VK_IMAGE_LAYOUT_PRESENT_SRC_KHR                                     = VkImageLayout.VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 enum VK_IMAGE_LAYOUT_SHARED_PRESENT_KHR                                  = VkImageLayout.VK_IMAGE_LAYOUT_SHARED_PRESENT_KHR;
 enum VK_IMAGE_LAYOUT_SHADING_RATE_OPTIMAL_NV                             = VkImageLayout.VK_IMAGE_LAYOUT_SHADING_RATE_OPTIMAL_NV;
+enum VK_IMAGE_LAYOUT_FRAGMENT_DENSITY_MAP_OPTIMAL_EXT                    = VkImageLayout.VK_IMAGE_LAYOUT_FRAGMENT_DENSITY_MAP_OPTIMAL_EXT;
 enum VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL_KHR      = VkImageLayout.VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL_KHR;
 enum VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL_KHR      = VkImageLayout.VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL_KHR;
 enum VK_IMAGE_LAYOUT_BEGIN_RANGE                                         = VkImageLayout.VK_IMAGE_LAYOUT_BEGIN_RANGE;
@@ -2396,6 +2404,7 @@ enum VkFormatFeatureFlagBits {
     VK_FORMAT_FEATURE_COSITED_CHROMA_SAMPLES_BIT                                                         = 0x00800000,
     VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_CUBIC_BIT_IMG                                                 = 0x00002000,
     VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_MINMAX_BIT_EXT                                                = 0x00010000,
+    VK_FORMAT_FEATURE_FRAGMENT_DENSITY_MAP_BIT_EXT                                                       = 0x01000000,
     VK_FORMAT_FEATURE_TRANSFER_SRC_BIT_KHR                                                               = VK_FORMAT_FEATURE_TRANSFER_SRC_BIT,
     VK_FORMAT_FEATURE_TRANSFER_DST_BIT_KHR                                                               = VK_FORMAT_FEATURE_TRANSFER_DST_BIT,
     VK_FORMAT_FEATURE_MIDPOINT_CHROMA_SAMPLES_BIT_KHR                                                    = VK_FORMAT_FEATURE_MIDPOINT_CHROMA_SAMPLES_BIT,
@@ -2431,6 +2440,7 @@ enum VK_FORMAT_FEATURE_DISJOINT_BIT                                             
 enum VK_FORMAT_FEATURE_COSITED_CHROMA_SAMPLES_BIT                                                        = VkFormatFeatureFlagBits.VK_FORMAT_FEATURE_COSITED_CHROMA_SAMPLES_BIT;
 enum VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_CUBIC_BIT_IMG                                                = VkFormatFeatureFlagBits.VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_CUBIC_BIT_IMG;
 enum VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_MINMAX_BIT_EXT                                               = VkFormatFeatureFlagBits.VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_MINMAX_BIT_EXT;
+enum VK_FORMAT_FEATURE_FRAGMENT_DENSITY_MAP_BIT_EXT                                                      = VkFormatFeatureFlagBits.VK_FORMAT_FEATURE_FRAGMENT_DENSITY_MAP_BIT_EXT;
 enum VK_FORMAT_FEATURE_TRANSFER_SRC_BIT_KHR                                                              = VkFormatFeatureFlagBits.VK_FORMAT_FEATURE_TRANSFER_SRC_BIT_KHR;
 enum VK_FORMAT_FEATURE_TRANSFER_DST_BIT_KHR                                                              = VkFormatFeatureFlagBits.VK_FORMAT_FEATURE_TRANSFER_DST_BIT_KHR;
 enum VK_FORMAT_FEATURE_MIDPOINT_CHROMA_SAMPLES_BIT_KHR                                                   = VkFormatFeatureFlagBits.VK_FORMAT_FEATURE_MIDPOINT_CHROMA_SAMPLES_BIT_KHR;
@@ -2453,6 +2463,7 @@ enum VkImageUsageFlagBits {
     VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT      = 0x00000040,
     VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT          = 0x00000080,
     VK_IMAGE_USAGE_SHADING_RATE_IMAGE_BIT_NV     = 0x00000100,
+    VK_IMAGE_USAGE_FRAGMENT_DENSITY_MAP_BIT_EXT  = 0x00000200,
     VK_IMAGE_USAGE_FLAG_BITS_MAX_ENUM            = 0x7FFFFFFF
 }
 enum VK_IMAGE_USAGE_TRANSFER_SRC_BIT             = VkImageUsageFlagBits.VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
@@ -2464,6 +2475,7 @@ enum VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT = VkImageUsageFlagBits.VK_IMAGE
 enum VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT     = VkImageUsageFlagBits.VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT;
 enum VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT         = VkImageUsageFlagBits.VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
 enum VK_IMAGE_USAGE_SHADING_RATE_IMAGE_BIT_NV    = VkImageUsageFlagBits.VK_IMAGE_USAGE_SHADING_RATE_IMAGE_BIT_NV;
+enum VK_IMAGE_USAGE_FRAGMENT_DENSITY_MAP_BIT_EXT = VkImageUsageFlagBits.VK_IMAGE_USAGE_FRAGMENT_DENSITY_MAP_BIT_EXT;
 enum VK_IMAGE_USAGE_FLAG_BITS_MAX_ENUM           = VkImageUsageFlagBits.VK_IMAGE_USAGE_FLAG_BITS_MAX_ENUM;
 alias VkImageUsageFlags = VkFlags;
 
@@ -2482,6 +2494,7 @@ enum VkImageCreateFlagBits {
     VK_IMAGE_CREATE_DISJOINT_BIT                                 = 0x00000200,
     VK_IMAGE_CREATE_CORNER_SAMPLED_BIT_NV                        = 0x00002000,
     VK_IMAGE_CREATE_SAMPLE_LOCATIONS_COMPATIBLE_DEPTH_BIT_EXT    = 0x00001000,
+    VK_IMAGE_CREATE_SUBSAMPLED_BIT_EXT                           = 0x00004000,
     VK_IMAGE_CREATE_SPLIT_INSTANCE_BIND_REGIONS_BIT_KHR          = VK_IMAGE_CREATE_SPLIT_INSTANCE_BIND_REGIONS_BIT,
     VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT_KHR                  = VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT,
     VK_IMAGE_CREATE_BLOCK_TEXEL_VIEW_COMPATIBLE_BIT_KHR          = VK_IMAGE_CREATE_BLOCK_TEXEL_VIEW_COMPATIBLE_BIT,
@@ -2504,6 +2517,7 @@ enum VK_IMAGE_CREATE_PROTECTED_BIT                               = VkImageCreate
 enum VK_IMAGE_CREATE_DISJOINT_BIT                                = VkImageCreateFlagBits.VK_IMAGE_CREATE_DISJOINT_BIT;
 enum VK_IMAGE_CREATE_CORNER_SAMPLED_BIT_NV                       = VkImageCreateFlagBits.VK_IMAGE_CREATE_CORNER_SAMPLED_BIT_NV;
 enum VK_IMAGE_CREATE_SAMPLE_LOCATIONS_COMPATIBLE_DEPTH_BIT_EXT   = VkImageCreateFlagBits.VK_IMAGE_CREATE_SAMPLE_LOCATIONS_COMPATIBLE_DEPTH_BIT_EXT;
+enum VK_IMAGE_CREATE_SUBSAMPLED_BIT_EXT                          = VkImageCreateFlagBits.VK_IMAGE_CREATE_SUBSAMPLED_BIT_EXT;
 enum VK_IMAGE_CREATE_SPLIT_INSTANCE_BIND_REGIONS_BIT_KHR         = VkImageCreateFlagBits.VK_IMAGE_CREATE_SPLIT_INSTANCE_BIND_REGIONS_BIT_KHR;
 enum VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT_KHR                 = VkImageCreateFlagBits.VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT_KHR;
 enum VK_IMAGE_CREATE_BLOCK_TEXEL_VIEW_COMPATIBLE_BIT_KHR         = VkImageCreateFlagBits.VK_IMAGE_CREATE_BLOCK_TEXEL_VIEW_COMPATIBLE_BIT_KHR;
@@ -2614,6 +2628,7 @@ enum VkPipelineStageFlagBits {
     VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_NV        = 0x02000000,
     VK_PIPELINE_STAGE_TASK_SHADER_BIT_NV                         = 0x00080000,
     VK_PIPELINE_STAGE_MESH_SHADER_BIT_NV                         = 0x00100000,
+    VK_PIPELINE_STAGE_FRAGMENT_DENSITY_PROCESS_BIT_EXT           = 0x00800000,
     VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM                         = 0x7FFFFFFF
 }
 enum VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT                           = VkPipelineStageFlagBits.VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
@@ -2641,6 +2656,7 @@ enum VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_NV                 = VkPipelineSta
 enum VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_NV       = VkPipelineStageFlagBits.VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_NV;
 enum VK_PIPELINE_STAGE_TASK_SHADER_BIT_NV                        = VkPipelineStageFlagBits.VK_PIPELINE_STAGE_TASK_SHADER_BIT_NV;
 enum VK_PIPELINE_STAGE_MESH_SHADER_BIT_NV                        = VkPipelineStageFlagBits.VK_PIPELINE_STAGE_MESH_SHADER_BIT_NV;
+enum VK_PIPELINE_STAGE_FRAGMENT_DENSITY_PROCESS_BIT_EXT          = VkPipelineStageFlagBits.VK_PIPELINE_STAGE_FRAGMENT_DENSITY_PROCESS_BIT_EXT;
 enum VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM                        = VkPipelineStageFlagBits.VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM;
 alias VkPipelineStageFlags = VkFlags;
 alias VkMemoryMapFlags = VkFlags;
@@ -2798,6 +2814,13 @@ enum VK_BUFFER_USAGE_RAY_TRACING_BIT_NV                          = VkBufferUsage
 enum VK_BUFFER_USAGE_FLAG_BITS_MAX_ENUM                          = VkBufferUsageFlagBits.VK_BUFFER_USAGE_FLAG_BITS_MAX_ENUM;
 alias VkBufferUsageFlags = VkFlags;
 alias VkBufferViewCreateFlags = VkFlags;
+
+enum VkImageViewCreateFlagBits {
+    VK_IMAGE_VIEW_CREATE_FRAGMENT_DENSITY_MAP_DYNAMIC_BIT_EXT    = 0x00000001,
+    VK_IMAGE_VIEW_CREATE_FLAG_BITS_MAX_ENUM                      = 0x7FFFFFFF
+}
+enum VK_IMAGE_VIEW_CREATE_FRAGMENT_DENSITY_MAP_DYNAMIC_BIT_EXT   = VkImageViewCreateFlagBits.VK_IMAGE_VIEW_CREATE_FRAGMENT_DENSITY_MAP_DYNAMIC_BIT_EXT;
+enum VK_IMAGE_VIEW_CREATE_FLAG_BITS_MAX_ENUM                     = VkImageViewCreateFlagBits.VK_IMAGE_VIEW_CREATE_FLAG_BITS_MAX_ENUM;
 alias VkImageViewCreateFlags = VkFlags;
 alias VkShaderModuleCreateFlags = VkFlags;
 alias VkPipelineCacheCreateFlags = VkFlags;
@@ -2900,6 +2923,15 @@ alias VkColorComponentFlags = VkFlags;
 alias VkPipelineDynamicStateCreateFlags = VkFlags;
 alias VkPipelineLayoutCreateFlags = VkFlags;
 alias VkShaderStageFlags = VkFlags;
+
+enum VkSamplerCreateFlagBits {
+    VK_SAMPLER_CREATE_SUBSAMPLED_BIT_EXT                         = 0x00000001,
+    VK_SAMPLER_CREATE_SUBSAMPLED_COARSE_RECONSTRUCTION_BIT_EXT   = 0x00000002,
+    VK_SAMPLER_CREATE_FLAG_BITS_MAX_ENUM                         = 0x7FFFFFFF
+}
+enum VK_SAMPLER_CREATE_SUBSAMPLED_BIT_EXT                        = VkSamplerCreateFlagBits.VK_SAMPLER_CREATE_SUBSAMPLED_BIT_EXT;
+enum VK_SAMPLER_CREATE_SUBSAMPLED_COARSE_RECONSTRUCTION_BIT_EXT  = VkSamplerCreateFlagBits.VK_SAMPLER_CREATE_SUBSAMPLED_COARSE_RECONSTRUCTION_BIT_EXT;
+enum VK_SAMPLER_CREATE_FLAG_BITS_MAX_ENUM                        = VkSamplerCreateFlagBits.VK_SAMPLER_CREATE_FLAG_BITS_MAX_ENUM;
 alias VkSamplerCreateFlags = VkFlags;
 
 enum VkDescriptorSetLayoutCreateFlagBits {
@@ -2971,6 +3003,7 @@ enum VkAccessFlagBits {
     VK_ACCESS_SHADING_RATE_IMAGE_READ_BIT_NV             = 0x00800000,
     VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_NV         = 0x00200000,
     VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_NV        = 0x00400000,
+    VK_ACCESS_FRAGMENT_DENSITY_MAP_READ_BIT_EXT          = 0x01000000,
     VK_ACCESS_FLAG_BITS_MAX_ENUM                         = 0x7FFFFFFF
 }
 enum VK_ACCESS_INDIRECT_COMMAND_READ_BIT                 = VkAccessFlagBits.VK_ACCESS_INDIRECT_COMMAND_READ_BIT;
@@ -3000,6 +3033,7 @@ enum VK_ACCESS_COLOR_ATTACHMENT_READ_NONCOHERENT_BIT_EXT = VkAccessFlagBits.VK_A
 enum VK_ACCESS_SHADING_RATE_IMAGE_READ_BIT_NV            = VkAccessFlagBits.VK_ACCESS_SHADING_RATE_IMAGE_READ_BIT_NV;
 enum VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_NV        = VkAccessFlagBits.VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_NV;
 enum VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_NV       = VkAccessFlagBits.VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_NV;
+enum VK_ACCESS_FRAGMENT_DENSITY_MAP_READ_BIT_EXT         = VkAccessFlagBits.VK_ACCESS_FRAGMENT_DENSITY_MAP_READ_BIT_EXT;
 enum VK_ACCESS_FLAG_BITS_MAX_ENUM                        = VkAccessFlagBits.VK_ACCESS_FLAG_BITS_MAX_ENUM;
 alias VkAccessFlags = VkFlags;
 
@@ -4907,7 +4941,7 @@ struct VkDescriptorUpdateTemplateEntry {
 
 struct VkDescriptorUpdateTemplateCreateInfo {
     VkStructureType                            sType = VK_STRUCTURE_TYPE_DESCRIPTOR_UPDATE_TEMPLATE_CREATE_INFO;
-    void*                                      pNext;
+    const( void )*                             pNext;
     VkDescriptorUpdateTemplateCreateFlags      flags;
     uint32_t                                   descriptorUpdateEntryCount;
     const( VkDescriptorUpdateTemplateEntry )*  pDescriptorUpdateEntries;
@@ -5180,10 +5214,12 @@ enum VK_KHR_SWAPCHAIN_EXTENSION_NAME = "VK_KHR_swapchain";
 enum VkSwapchainCreateFlagBitsKHR {
     VK_SWAPCHAIN_CREATE_SPLIT_INSTANCE_BIND_REGIONS_BIT_KHR      = 0x00000001,
     VK_SWAPCHAIN_CREATE_PROTECTED_BIT_KHR                        = 0x00000002,
+    VK_SWAPCHAIN_CREATE_MUTABLE_FORMAT_BIT_KHR                   = 0x00000004,
     VK_SWAPCHAIN_CREATE_FLAG_BITS_MAX_ENUM_KHR                   = 0x7FFFFFFF
 }
 enum VK_SWAPCHAIN_CREATE_SPLIT_INSTANCE_BIND_REGIONS_BIT_KHR     = VkSwapchainCreateFlagBitsKHR.VK_SWAPCHAIN_CREATE_SPLIT_INSTANCE_BIND_REGIONS_BIT_KHR;
 enum VK_SWAPCHAIN_CREATE_PROTECTED_BIT_KHR                       = VkSwapchainCreateFlagBitsKHR.VK_SWAPCHAIN_CREATE_PROTECTED_BIT_KHR;
+enum VK_SWAPCHAIN_CREATE_MUTABLE_FORMAT_BIT_KHR                  = VkSwapchainCreateFlagBitsKHR.VK_SWAPCHAIN_CREATE_MUTABLE_FORMAT_BIT_KHR;
 enum VK_SWAPCHAIN_CREATE_FLAG_BITS_MAX_ENUM_KHR                  = VkSwapchainCreateFlagBitsKHR.VK_SWAPCHAIN_CREATE_FLAG_BITS_MAX_ENUM_KHR;
 alias VkSwapchainCreateFlagsKHR = VkFlags;
 
@@ -6041,6 +6077,13 @@ struct VkPhysicalDeviceDriverPropertiesKHR {
     char[ VK_MAX_DRIVER_INFO_SIZE_KHR ]  driverInfo;
     VkConformanceVersionKHR              conformanceVersion;
 }
+
+
+// - VK_KHR_swapchain_mutable_format -
+enum VK_KHR_swapchain_mutable_format = 1;
+
+enum VK_KHR_SWAPCHAIN_MUTABLE_FORMAT_SPEC_VERSION = 1;
+enum VK_KHR_SWAPCHAIN_MUTABLE_FORMAT_EXTENSION_NAME = "VK_KHR_swapchain_mutable_format";
 
 
 // - VK_KHR_vulkan_memory_model -
@@ -7886,7 +7929,7 @@ enum VK_NV_ray_tracing = 1;
 
 mixin( VK_DEFINE_NON_DISPATCHABLE_HANDLE!q{VkAccelerationStructureNV} );
 
-enum VK_NV_RAY_TRACING_SPEC_VERSION = 2;
+enum VK_NV_RAY_TRACING_SPEC_VERSION = 3;
 enum VK_NV_RAY_TRACING_EXTENSION_NAME = "VK_NV_ray_tracing";
 enum VK_SHADER_UNUSED_NV = (~0U);
 
@@ -8467,6 +8510,35 @@ struct VkPhysicalDevicePCIBusInfoPropertiesEXT {
     uint8_t          pciBus;
     uint8_t          pciDevice;
     uint8_t          pciFunction;
+}
+
+
+// - VK_EXT_fragment_density_map -
+enum VK_EXT_fragment_density_map = 1;
+
+enum VK_EXT_FRAGMENT_DENSITY_MAP_SPEC_VERSION = 1;
+enum VK_EXT_FRAGMENT_DENSITY_MAP_EXTENSION_NAME = "VK_EXT_fragment_density_map";
+
+struct VkPhysicalDeviceFragmentDensityMapFeaturesEXT {
+    VkStructureType  sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_FEATURES_EXT;
+    void*            pNext;
+    VkBool32         fragmentDensityMap;
+    VkBool32         fragmentDensityMapDynamic;
+    VkBool32         fragmentDensityMapNonSubsampledImages;
+}
+
+struct VkPhysicalDeviceFragmentDensityMapPropertiesEXT {
+    VkStructureType  sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_PROPERTIES_EXT;
+    void*            pNext;
+    VkExtent2D       minFragmentDensityTexelSize;
+    VkExtent2D       maxFragmentDensityTexelSize;
+    VkBool32         fragmentDensityInvocations;
+}
+
+struct VkRenderPassFragmentDensityMapCreateInfoEXT {
+    VkStructureType        sType = VK_STRUCTURE_TYPE_RENDER_PASS_FRAGMENT_DENSITY_MAP_CREATE_INFO_EXT;
+    const( void )*         pNext;
+    VkAttachmentReference  fragmentDensityMapAttachment;
 }
 
 
