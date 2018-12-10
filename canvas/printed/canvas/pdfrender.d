@@ -105,8 +105,12 @@ final class PDFDocument : IRenderingContext2D
 
     override void fontSize(float size)
     {
-        // points to millimeters
-        _fontSize = size * 0.3527f;
+        _fontSize = convertPointsToMillimeters(size);
+    }
+
+    override void textBaseline(TextBaseline baseline)
+    {
+        _textBaseline = baseline;
     }
 
     override void fontWeight(FontWeight weight)
@@ -126,6 +130,11 @@ final class PDFDocument : IRenderingContext2D
 
         OpenTypeFont font;
         getFont(_fontFace, _fontWeight, _fontStyle, fontPDFName, fontObjectId, font);
+
+        // We need a baseline offset in millimeters
+        float textBaselineInGlyphUnits = font.getBaselineOffset(cast(FontBaseline)_textBaseline);
+        float textBaselineInMm = _fontSize * textBaselineInGlyphUnits * font.invUPM();
+        y += textBaselineInMm;
 
         // Mark the current page as using this font
         currentPage.markAsUsingThisFont(fontPDFName, fontObjectId);
@@ -318,7 +327,7 @@ private:
     bool _finished = false;
 
     // Current font size
-    float _fontSize = 11;
+    float _fontSize = convertPointsToMillimeters(11.0f);
 
     // Current font face
     string _fontFace = "Helvetica";
@@ -328,6 +337,9 @@ private:
 
     // Current font style
     FontStyle _fontStyle = FontStyle.normal;
+
+    // Current font baseline
+    TextBaseline _textBaseline = TextBaseline.alphabetic;
 
 
     // <alpha support>
@@ -1116,7 +1128,7 @@ unittest
 /// Returns: scale factor to convert from glyph space to the PDF glyph space which is fixed for the CIFFont we use.
 float scaleFactorForPDF(OpenTypeFont font)
 {
-    return 1000.0f / font.ascent();
+    return 1000.0f * font.invUPM();
 }
 
 enum float kMillimetersToPoints = 2.83465f;

@@ -115,19 +115,30 @@ interface IRenderingContext2D
     // with a matching algorithm.
     // See_also: `findBestMatchingFont`.
     
-    /// Changes font face.
+    /// Changes font face (default = Helvetica)
     void fontFace(string fontFace);
 
-    /// Changes font weight.
+    /// Changes font weight (Default = FontWeight.normal)
     void fontWeight(FontWeight fontWeight);
 
-    /// Changes font style.
+    /// Changes font style (default = FontStyle.normal)
     void fontStyle(FontStyle fontStyle);
 
-    /// Changes font size in points (1/72 inch).
+    /// Changes font size in points (default = 11pt)
     /// Warning: not millimeters.
     void fontSize(float sizeInPt);
 
+    /// Changes text baseline (default = TextBaseline.alphabetic)
+    void textBaseline(TextBaseline baseline);
+}
+
+enum TextBaseline
+{
+    top,
+    hanging,
+    middle,
+    alphabetic, // default
+    bottom
 }
 
 /// Font weight
@@ -211,4 +222,17 @@ struct Brush
         // TODO: optimize
         return format("rgba(%d,%d,%d,%f)", rgba[0], rgba[1], rgba[2], rgba[3] / 255.0f);
     }
+}
+
+
+// Utility functions
+
+float convertPointsToMillimeters(float pt) pure nothrow @nogc @safe
+{
+    return pt * 0.35277777778f;
+}
+
+float convertMillimetersToPoints(float pt) pure nothrow @nogc @safe
+{
+    return pt * 2.83464567f;
 }

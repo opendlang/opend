@@ -109,10 +109,14 @@ public:
     {
         string svgFamilyName;
         OpenTypeFont font;
-        getFont(_fontFace, _fontWeight, _fontStyle, svgFamilyName, font);        
+        getFont(_fontFace, _fontWeight, _fontStyle, svgFamilyName, font);    
+
+        // We need a baseline offset in millimeters
+        float textBaselineInGlyphUnits = font.getBaselineOffset(cast(FontBaseline)_textBaseline);
+        float textBaselineInMm = _fontSize * textBaselineInGlyphUnits * font.invUPM();
 
         output(format(`<text x="%f" y="%f" font-family="%s" font-size="%s" fill="%s">%s</text>`, 
-                      x, y, svgFamilyName, _fontSize, _currentFill, text)); 
+                      x, y + textBaselineInMm, svgFamilyName, _fontSize, _currentFill, text)); 
         // TODO escape XML sequences in text
     }
 
@@ -168,8 +172,12 @@ public:
 
     override void fontSize(float size)
     {
-        // points to millimeters
-        _fontSize = size * 0.3527f;
+        _fontSize = convertPointsToMillimeters(size);
+    }
+
+    override void textBaseline(TextBaseline baseline)
+    {
+        _textBaseline = baseline;
     }
 
     override void scale(float x, float y)
@@ -203,7 +211,7 @@ private:
     bool _finished = false;
     ubyte[] _bytes;
 
-    string _currentFill = "transparent";
+    string _currentFill = "#000";
     string _currentStroke = "#000";
     float _currentLineWidth = 1;
     int _numberOfNestedGroups = 0;
@@ -213,10 +221,11 @@ private:
 
     string _currentPath;
 
-    string _fontFace = "Arial";    
+    string _fontFace = "Helvetica";    
     FontWeight _fontWeight = FontWeight.normal;
     FontStyle _fontStyle = FontStyle.normal;
-    float _fontSize = 16;
+    float _fontSize = convertPointsToMillimeters(11.0f);
+    TextBaseline _textBaseline = TextBaseline.alphabetic;
 
     void output(ubyte b)
     {

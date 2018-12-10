@@ -45,6 +45,16 @@ enum OpenTypeFontStyle
     oblique
 }
 
+/// Should match printed.canvas `TextBaseline`
+enum FontBaseline
+{
+    top,
+    hanging,
+    middle,
+    alphabetic,
+    bottom
+}
+
 /// OpenType 1.8 file parser, for the purpose of finding all fonts in a file, their family name, their weight, etc.
 /// This OpenType file might either be:
 /// - a single font
@@ -274,6 +284,36 @@ public:
         return _boundingBox;
     }
 
+    /// Returns: Baseline offset above the normal "alphabetical" baseline.
+    ///          In glyph units.
+    float getBaselineOffset(FontBaseline baseline)
+    {
+        computeFontMetrics();
+        final switch(baseline) with (FontBaseline)
+        {
+            case top:
+                // ascent - descent should give the em square, but if it doesn't rescale to have top of em square
+                float actualUnits = _ascender - _descender;
+                return _ascender * _unitsPerEm / actualUnits;
+
+            case hanging:
+                return ascent(); // TODO: correct?
+
+            case middle:
+                // middle of em square
+                float actualUnits = _ascender - _descender;
+                return 0.5f * (_ascender + _descender) * _unitsPerEm / actualUnits;
+
+            case alphabetic: 
+                return 0; // the default "baseline"
+
+            case bottom:
+                // ascent - descent should give the em square, but if it doesn't rescale to have bottom of em square
+                float actualUnits = _ascender - _descender;
+                return _descender * _unitsPerEm / actualUnits;
+        }
+    }
+
     /// Returns: Maximum height above the baseline reached by glyphs in this font.
     ///          In glyph units.
     int ascent()
@@ -374,6 +414,19 @@ public:
     {
         return _charRanges;
     }
+
+    // The number of internal units for 1em
+    float UPM()
+    {
+        return _unitsPerEm;
+    }
+
+    // A scale factpr to convert from glyph units to em
+    float invUPM()
+    {
+        return 1.0f / _unitsPerEm;
+    }
+
 
 private:
     // need whole file since some data may be shared across fonts
