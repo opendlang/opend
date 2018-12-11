@@ -714,6 +714,14 @@ else
         return vec;
     }
 }
+unittest
+{
+    __m128 A = _mm_sqrt_ps(_mm_set1_ps(4.0f));
+    assert(A.array[0] == 2.0f);
+    assert(A.array[1] == 2.0f);
+    assert(A.array[2] == 2.0f);
+    assert(A.array[3] == 2.0f);
+}
 
 version(LDC)
 {
@@ -728,11 +736,13 @@ else
         return vec;
     }
 }
-
 unittest
 {
-    __m128 A = _mm_sqrt_ps(_mm_set1_ps(4.0f));
+    __m128 A = _mm_sqrt_ss(_mm_set1_ps(4.0f));
     assert(A.array[0] == 2.0f);
+    assert(A.array[1] == 4.0f);
+    assert(A.array[2] == 4.0f);
+    assert(A.array[3] == 4.0f);
 }
 
 void _mm_store_ps (float* mem_addr, __m128 a) pure // not safe since nothing guarantees alignment
