@@ -300,20 +300,15 @@ else
 // MMXREG: __m64 _mm_cvt_ps2pi (__m128 a)
 
 
-version(LDC)
+__m128 _mm_cvt_si2ss(__m128 v, int x) pure @safe
 {
-    pragma(LDC_intrinsic, "llvm.x86.sse2.cvtsi2sd")
-        double2 _mm_cvt_si2ss(double2, int) pure @safe;
+    v[0] = cast(float)x;
+    return v;
 }
-else
+unittest
 {
-    // TODO
-    /*
-    __m128d _mm_cvt_si2ss(__m128d, int) pure @safe
-    {
-        assert(false, "unimplemented");
-    }
-    */
+    __m128 a = _mm_cvt_si2ss(_mm_set1_ps(0.0f), 42);
+    assert(a.array == [42f, 0, 0, 0]);
 }
 
 version(LDC)

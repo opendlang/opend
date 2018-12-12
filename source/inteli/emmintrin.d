@@ -491,19 +491,10 @@ long _mm_cvtsi128_si64 (__m128i a) pure @safe
 }
 alias _mm_cvtsi128_si64x = _mm_cvtsi128_si64;
 
-version(LDC)
+__m128d _mm_cvtsi32_sd(__m128d v, int x) pure @safe
 {
-    // this LLVM intrinsics seems to still be there
-    pragma(LDC_intrinsic, "llvm.x86.sse2.cvtsi2sd")
-        double2 _mm_cvtsi32_sd(double2, int) pure @safe;
-}
-else
-{
-    __m128d _mm_cvtsi32_sd(__m128d v, int x) pure @safe
-    {
-        v[0] = cast(double)x;
-        return v;
-    }
+    v[0] = cast(double)x;
+    return v;
 }
 unittest
 {
@@ -540,18 +531,10 @@ __m128i _mm_cvtsi64_si128 (long a) pure @safe
 alias _mm_cvtsi64x_sd = _mm_cvtsi64_sd;
 alias _mm_cvtsi64x_si128 = _mm_cvtsi64_si128;
 
-version(LDC)
+double2 _mm_cvtss_sd(double2 v, float4 x) pure @safe
 {
-    pragma(LDC_intrinsic, "llvm.x86.sse2.cvtss2sd")
-        double2 _mm_cvtss_sd(double2, float4) pure @safe;
-}
-else
-{
-    double2 _mm_cvtss_sd(double2 v, float4 x) pure @safe
-    {
-        v[0] = x[0];
-        return v;
-    }
+    v[0] = x[0];
+    return v;
 }
 unittest
 {
