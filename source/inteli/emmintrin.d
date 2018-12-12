@@ -427,9 +427,25 @@ version(LDC)
 
 // TODO: alias _mm_cvtepi32_pd = __builtin_ia32_cvtdq2pd;
 
-version(LDC)
+// PERF: replace with __builtin_convertvector when available
+__m128 _mm_cvtepi32_ps(__m128i a) pure @safe
 {
-    alias _mm_cvtepi32_ps = __builtin_ia32_cvtdq2ps;
+    __m128 res;
+    res.array[0] = cast(float)a.array[0];
+    res.array[1] = cast(float)a.array[1];
+    res.array[2] = cast(float)a.array[2];
+    res.array[3] = cast(float)a.array[3];
+    return res;
+}
+unittest
+{
+    __m128 a = _mm_cvtepi32_ps(_mm_setr_epi32(-1, 0, 1, 1000));
+    assert(a.array == [-1.0f, 0.0f, 1.0f, 1000.0f]);
+}
+
+
+version(LDC) // TODO
+{
     alias _mm_cvtpd_epi32 = __builtin_ia32_cvtpd2dq;
 }
 
@@ -729,10 +745,30 @@ version(LDC)
 // MMXREG: _mm_movepi64_pi64
 // MMXREG: __m128i _mm_movpi64_epi64 (__m64 a)
 
-version(LDC)
+// PERF: unfortunately, __builtin_ia32_pmuludq128 disappeared from LDC
+// but seems there in clang
+__m128i _mm_mul_epu32(__m128i a, __m128i b) pure @safe
 {
-    alias _mm_mul_epu32 = __builtin_ia32_pmuludq128;
+    uint a0 = cast(uint)(a[0]);
+    uint a2 = cast(uint)(a[2]);
+    uint b0 = cast(uint)(b[0]);
+    uint b2 = cast(uint)(b[2]);
+    long2 r = void;
+    r.array[0] = (cast(ulong)a0) * b0;
+    r.array[1] = (cast(ulong)a2) * b2; // PERF: reuse long2 mul?
+    return cast(__m128i)r;
 }
+unittest
+{
+    __m128i A = _mm_set_epi32(-1, -10, 1, 0);
+    __m128i B = _mm_set_epi32(-1, -10, 1, 0);
+    __m128i C = _mm_mul_epu32(A, B);
+    long2 lC = cast(long2)C;
+    assert(lC.array[0] == 1);
+    assert(lC.array[1] == 1);
+}
+
+
 // TODO
 
 __m128d _mm_mul_pd(__m128d a, __m128d b) pure @safe
@@ -815,10 +851,10 @@ else
     }
 }
 unittest
-{    
+{
     __m128i A = _mm_setr_epi16(-10, 400, 0, 256, 255, 2, 1, 0);
     byte16 AA = cast(byte16) _mm_packus_epi16(A, A);
-    static immutable ubyte[16] correctResult = [0, 255, 0, 255, 255, 2, 1, 0, 
+    static immutable ubyte[16] correctResult = [0, 255, 0, 255, 255, 2, 1, 0,
                                                 0, 255, 0, 255, 255, 2, 1, 0];
     foreach(i; 0..16)
         assert(AA[i] == cast(byte)(correctResult[i]));
@@ -999,7 +1035,7 @@ unittest
 
 __m128d _mm_shuffle_pd (int imm8)(__m128d a) pure @safe
 {
-    return shufflevector!(double2, 0 + ( imm8 & 1 ), 
+    return shufflevector!(double2, 0 + ( imm8 & 1 ),
                                    2 + ( (imm8 >> 1) & 1 ))(a, a);
 }
 unittest
@@ -1008,7 +1044,7 @@ unittest
     enum int SHUFFLE = _MM_SHUFFLE2(1, 1);
     __m128d B = _mm_shuffle_pd!SHUFFLE(A);
     double[2] expectedB = [ 2.0f, 2.0f ];
-    assert(B.array == expectedB);  
+    assert(B.array == expectedB);
 }
 
 __m128i _mm_shufflehi_epi16(int imm8)(__m128i a) pure @safe
@@ -1025,7 +1061,7 @@ unittest
     enum int SHUFFLE = _MM_SHUFFLE(0, 1, 2, 3);
     short8 C = cast(short8) _mm_shufflehi_epi16!SHUFFLE(A);
     short[8] expectedC = [ 0, 1, 2, 3, 7, 6, 5, 4 ];
-    assert(C.array == expectedC);    
+    assert(C.array == expectedC);
 }
 
 __m128i _mm_shufflelo_epi16(int imm8)(__m128i a) pure @safe
@@ -1068,21 +1104,56 @@ __m128i _mm_slli_si128(ubyte imm8)(__m128i op) pure @safe
 
 version(LDC)
 {
-    __m128d _mm_sqrt_pd (__m128d a) pure @safe
+    // Disappeared with LDC 1.11
+    static if (__VERSION__ < 2081)
+        alias _mm_sqrt_pd = __builtin_ia32_sqrtpd;
+    else
     {
-        return __builtin_ia32_sqrtpd(a);
+        __m128d _mm_sqrt_pd(__m128d vec) pure @safe
+        {
+            vec.array[0] = llvm_sqrt(vec.array[0]);
+            vec.array[1] = llvm_sqrt(vec.array[1]);
+            return vec;
+        }
     }
 }
-// TODO
+else
+{
+    __m128d _mm_sqrt_pd(__m128d vec) pure @safe
+    {
+        import std.math: sqrt;
+        vec.array[0] = sqrt(vec.array[0]);
+        vec.array[1] = sqrt(vec.array[1]);
+        return vec;
+    }
+}
+
 
 version(LDC)
 {
-    __m128d _mm_sqrt_sd (__m128d a) pure @safe
+    // Disappeared with LDC 1.11
+    static if (__VERSION__ < 2081)
+        alias _mm_sqrt_sd = __builtin_ia32_sqrtsd;
+    else
     {
-        return __builtin_ia32_sqrtsd(a);
+        __m128d _mm_sqrt_sd(__m128d vec) pure @safe
+        {
+            vec.array[0] = llvm_sqrt(vec.array[0]);
+            vec.array[1] = vec.array[1];
+            return vec;
+        }
     }
 }
-// TODO
+else
+{
+    __m128d _mm_sqrt_sd(__m128d vec) pure @safe
+    {
+        import std.math: sqrt;
+        vec.array[0] = sqrt(vec.array[0]);
+        vec.array[1] = vec.array[1];
+        return vec;
+    }
+}
 
 
 version(LDC)
