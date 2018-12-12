@@ -2,7 +2,7 @@
 
 [![Travis Status](https://travis-ci.org/AuburnSounds/intel-intrinsics.svg?branch=master)](https://travis-ci.org/AuburnSounds/intel-intrinsics)
 
-The practical D SIMD solution. Use Intel intrinsics in D code.
+The practical D SIMD solution. Use Intel intrinsics in D code with a [wide range of compilers](https://github.com/AuburnSounds/intel-intrinsics/blob/master/.travis.yml).
 
 **This is a work in progress, please complain in the bugtracker.**
 
