@@ -336,19 +336,10 @@ else
 // MMXREG: __m128 _mm_cvtpu16_ps (__m64 a)
 // MMXREG: __m128 _mm_cvtpu8_ps (__m64 a)
 
-version(LDC)
+__m128 _mm_cvtsi32_ss(__m128 v, int x) pure @safe
 {
-    // this LLVM intrinsics seems to still be there
-    pragma(LDC_intrinsic, "llvm.x86.sse.cvtsi2ss")
-        float4 _mm_cvtsi32_ss(float4, int) pure @safe;
-}
-else
-{
-    __m128 _mm_cvtsi32_ss(__m128 v, int x) pure @safe
-    {
-        v[0] = cast(float)x;
-        return v;
-    }
+    v[0] = cast(float)x;
+    return v;
 }
 unittest
 {
