@@ -749,27 +749,21 @@ version(LDC)
 // but seems there in clang
 __m128i _mm_mul_epu32(__m128i a, __m128i b) pure @safe
 {
-    uint a0 = cast(uint)(a[0]);
-    uint a2 = cast(uint)(a[2]);
-    uint b0 = cast(uint)(b[0]);
-    uint b2 = cast(uint)(b[2]);
-    long2 r = void;
-    r.array[0] = (cast(ulong)a0) * b0;
-    r.array[1] = (cast(ulong)a2) * b2; // PERF: reuse long2 mul?
-    return cast(__m128i)r;
+    __m128i zero = _mm_setzero_si128();
+    long2 la = cast(long2) shufflevector!(int4, 0, 4, 2, 6)(a, zero);
+    long2 lb = cast(long2) shufflevector!(int4, 0, 4, 2, 6)(b, zero);
+    return cast(__m128i)(la * lb);
 }
 unittest
 {
-    __m128i A = _mm_set_epi32(-1, -10, 1, 0);
-    __m128i B = _mm_set_epi32(-1, -10, 1, 0);
+    __m128i A = _mm_set_epi32(0, 0xDEADBEEF, 0, 0xffffffff);
+    __m128i B = _mm_set_epi32(0, 0xCAFEBABE, 0, 0xffffffff);
     __m128i C = _mm_mul_epu32(A, B);
-    long2 lC = cast(long2)C;
-    assert(lC.array[0] == 1);
-    assert(lC.array[1] == 1);
+    long2 LC = cast(long2)C;
+    assert(LC.array[0] == 18446744065119617025uL);
+    assert(LC.array[1] == 12723420444339690338uL);
 }
 
-
-// TODO
 
 __m128d _mm_mul_pd(__m128d a, __m128d b) pure @safe
 {

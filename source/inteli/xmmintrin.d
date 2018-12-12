@@ -738,7 +738,6 @@ unittest
 
 version(LDC)
 {
-
     // Disappeared with LDC 1.11
     static if (__VERSION__ < 2081)
         alias _mm_sqrt_ss = __builtin_ia32_sqrtss;
