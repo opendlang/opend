@@ -700,11 +700,24 @@ __m128 _mm_shuffle_ps(ubyte imm)(__m128 a, __m128 b) pure @safe
 
 version(LDC)
 {
-    alias _mm_sqrt_ps = __builtin_ia32_sqrtps;
+    // Disappeared with LDC 1.11
+    static if (__VERSION__ < 2081)
+        alias _mm_sqrt_ps = __builtin_ia32_sqrtps;
+    else
+    {
+        __m128 _mm_sqrt_ps(__m128 vec) pure @safe
+        {
+            vec.array[0] = llvm_sqrt(vec.array[0]);
+            vec.array[1] = llvm_sqrt(vec.array[1]);
+            vec.array[2] = llvm_sqrt(vec.array[2]);
+            vec.array[3] = llvm_sqrt(vec.array[3]);
+            return vec;
+        }
+    }
 }
 else
 {
-     __m128 _mm_sqrt_ps(__m128 vec) pure @safe
+    __m128 _mm_sqrt_ps(__m128 vec) pure @safe
     {
         import std.math: sqrt;
         vec.array[0] = sqrt(vec.array[0]);
@@ -725,7 +738,21 @@ unittest
 
 version(LDC)
 {
-    alias _mm_sqrt_ss = __builtin_ia32_sqrtss;
+
+    // Disappeared with LDC 1.11
+    static if (__VERSION__ < 2081)
+        alias _mm_sqrt_ss = __builtin_ia32_sqrtss;
+    else
+    {
+        __m128 _mm_sqrt_ss(__m128 vec) pure @safe
+        {
+            vec.array[0] = llvm_sqrt(vec.array[0]);
+            vec.array[1] = vec.array[1];
+            vec.array[2] = vec.array[2];
+            vec.array[3] = vec.array[3];
+            return vec;
+        }
+    }
 }
 else
 {
