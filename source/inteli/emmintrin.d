@@ -741,7 +741,7 @@ __m128i _mm_mul_epu32(__m128i a, __m128i b) pure @safe
     }
     else
     {
-        // long2 mul not supported before 
+        // long2 mul not supported before LDC 1.5
         la[0] *= lb[0];
         la[1] *= lb[1];
         return cast(__m128i)(la);

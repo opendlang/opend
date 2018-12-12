@@ -44,22 +44,22 @@ Why Intel intrinsic syntax? Because it is more familiar to C++ programmers
 and there is a convenient online guide provided by Intel:
 https://software.intel.com/sites/landingpage/IntrinsicsGuide/
 
-Without this guide it's much more difficult to write sizeable SIMD code.
+Without this critical Intel documentation it's much more difficult to write SIMD code for x86.
 
 ### Future-proof
+
+`intel-intrinsics` is a set of stable SIMD intrinsic that the LDC team doesn't have the manpower to maintain.
 
 LDC SIMD intrinsics are a moving target (https://github.com/ldc-developers/ldc/issues/2019),
 and you need a layer over it if you want to be safe.
 
-We maintain that layer because we need it for our products.
-
 Because those x86 intrinsics are internally converted to IR, **they don't tie to a particular architecture**.
-So you could target ARM one day and still get some speed-up.
+So you could target ARM one day and still get comparable speed-up.
 
 
 ### Portability
 
-**For now only LDC is supported**, but in the future the same set of intrinsics will work with DMD too.
+**Write the same SIMD code for both DMD and LDC.**. 
 This is intended to be the most practical SIMD solution for D.
 Including an emulation layer for DMD 32-bit which doesn't have any SIMD capability right now.
 
