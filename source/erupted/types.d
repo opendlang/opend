@@ -33,7 +33,7 @@ pure {
 extern( System ):
 
 // Version of corresponding c header file
-enum VK_HEADER_VERSION = 94;
+enum VK_HEADER_VERSION = 95;
 
 enum VK_NULL_HANDLE = null;
 
@@ -359,6 +359,7 @@ enum VkStructureType {
     VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_CONDITIONAL_RENDERING_INFO_EXT          = 1000081000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CONDITIONAL_RENDERING_FEATURES_EXT                 = 1000081001,
     VK_STRUCTURE_TYPE_CONDITIONAL_RENDERING_BEGIN_INFO_EXT                               = 1000081002,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FLOAT16_INT8_FEATURES_KHR                          = 1000082000,
     VK_STRUCTURE_TYPE_PRESENT_REGIONS_KHR                                                = 1000084000,
     VK_STRUCTURE_TYPE_OBJECT_TABLE_CREATE_INFO_NVX                                       = 1000086000,
     VK_STRUCTURE_TYPE_INDIRECT_COMMANDS_LAYOUT_CREATE_INFO_NVX                           = 1000086001,
@@ -474,6 +475,7 @@ enum VkStructureType {
     VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_DIVISOR_STATE_CREATE_INFO_EXT                = 1000190001,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_DIVISOR_FEATURES_EXT              = 1000190002,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRIVER_PROPERTIES_KHR                              = 1000196000,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FLOAT_CONTROLS_PROPERTIES_KHR                      = 1000197000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COMPUTE_SHADER_DERIVATIVES_FEATURES_NV             = 1000201000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_FEATURES_NV                            = 1000202000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_PROPERTIES_NV                          = 1000202001,
@@ -727,6 +729,7 @@ enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PUSH_DESCRIPTOR_PROPERTIES_KHR           
 enum VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_CONDITIONAL_RENDERING_INFO_EXT         = VkStructureType.VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_CONDITIONAL_RENDERING_INFO_EXT;
 enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CONDITIONAL_RENDERING_FEATURES_EXT                = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CONDITIONAL_RENDERING_FEATURES_EXT;
 enum VK_STRUCTURE_TYPE_CONDITIONAL_RENDERING_BEGIN_INFO_EXT                              = VkStructureType.VK_STRUCTURE_TYPE_CONDITIONAL_RENDERING_BEGIN_INFO_EXT;
+enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FLOAT16_INT8_FEATURES_KHR                         = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FLOAT16_INT8_FEATURES_KHR;
 enum VK_STRUCTURE_TYPE_PRESENT_REGIONS_KHR                                               = VkStructureType.VK_STRUCTURE_TYPE_PRESENT_REGIONS_KHR;
 enum VK_STRUCTURE_TYPE_OBJECT_TABLE_CREATE_INFO_NVX                                      = VkStructureType.VK_STRUCTURE_TYPE_OBJECT_TABLE_CREATE_INFO_NVX;
 enum VK_STRUCTURE_TYPE_INDIRECT_COMMANDS_LAYOUT_CREATE_INFO_NVX                          = VkStructureType.VK_STRUCTURE_TYPE_INDIRECT_COMMANDS_LAYOUT_CREATE_INFO_NVX;
@@ -842,6 +845,7 @@ enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_DIVISOR_PROPERTIES_EXT  
 enum VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_DIVISOR_STATE_CREATE_INFO_EXT               = VkStructureType.VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_DIVISOR_STATE_CREATE_INFO_EXT;
 enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_DIVISOR_FEATURES_EXT             = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_DIVISOR_FEATURES_EXT;
 enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRIVER_PROPERTIES_KHR                             = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRIVER_PROPERTIES_KHR;
+enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FLOAT_CONTROLS_PROPERTIES_KHR                     = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FLOAT_CONTROLS_PROPERTIES_KHR;
 enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COMPUTE_SHADER_DERIVATIVES_FEATURES_NV            = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COMPUTE_SHADER_DERIVATIVES_FEATURES_NV;
 enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_FEATURES_NV                           = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_FEATURES_NV;
 enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_PROPERTIES_NV                         = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_PROPERTIES_NV;
@@ -5616,6 +5620,20 @@ struct VkPhysicalDevicePushDescriptorPropertiesKHR {
 }
 
 
+// - VK_KHR_shader_float16_int8 -
+enum VK_KHR_shader_float16_int8 = 1;
+
+enum VK_KHR_SHADER_FLOAT16_INT8_SPEC_VERSION = 1;
+enum VK_KHR_SHADER_FLOAT16_INT8_EXTENSION_NAME = "VK_KHR_shader_float16_int8";
+
+struct VkPhysicalDeviceFloat16Int8FeaturesKHR {
+    VkStructureType  sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FLOAT16_INT8_FEATURES_KHR;
+    void*            pNext;
+    VkBool32         shaderFloat16;
+    VkBool32         shaderInt8;
+}
+
+
 // - VK_KHR_16bit_storage -
 enum VK_KHR_16bit_storage = 1;
 
@@ -6076,6 +6094,35 @@ struct VkPhysicalDeviceDriverPropertiesKHR {
     char[ VK_MAX_DRIVER_NAME_SIZE_KHR ]  driverName;
     char[ VK_MAX_DRIVER_INFO_SIZE_KHR ]  driverInfo;
     VkConformanceVersionKHR              conformanceVersion;
+}
+
+
+// - VK_KHR_shader_float_controls -
+enum VK_KHR_shader_float_controls = 1;
+
+enum VK_KHR_SHADER_FLOAT_CONTROLS_SPEC_VERSION = 1;
+enum VK_KHR_SHADER_FLOAT_CONTROLS_EXTENSION_NAME = "VK_KHR_shader_float_controls";
+
+struct VkPhysicalDeviceFloatControlsPropertiesKHR {
+    VkStructureType  sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FLOAT_CONTROLS_PROPERTIES_KHR;
+    void*            pNext;
+    VkBool32         separateDenormSettings;
+    VkBool32         separateRoundingModeSettings;
+    VkBool32         shaderSignedZeroInfNanPreserveFloat16;
+    VkBool32         shaderSignedZeroInfNanPreserveFloat32;
+    VkBool32         shaderSignedZeroInfNanPreserveFloat64;
+    VkBool32         shaderDenormPreserveFloat16;
+    VkBool32         shaderDenormPreserveFloat32;
+    VkBool32         shaderDenormPreserveFloat64;
+    VkBool32         shaderDenormFlushToZeroFloat16;
+    VkBool32         shaderDenormFlushToZeroFloat32;
+    VkBool32         shaderDenormFlushToZeroFloat64;
+    VkBool32         shaderRoundingModeRTEFloat16;
+    VkBool32         shaderRoundingModeRTEFloat32;
+    VkBool32         shaderRoundingModeRTEFloat64;
+    VkBool32         shaderRoundingModeRTZFloat16;
+    VkBool32         shaderRoundingModeRTZFloat32;
+    VkBool32         shaderRoundingModeRTZFloat64;
 }
 
 
@@ -7324,11 +7371,11 @@ struct VkDebugUtilsMessengerCallbackDataEXT {
     int32_t                                    messageIdNumber;
     const( char )*                             pMessage;
     uint32_t                                   queueLabelCount;
-    VkDebugUtilsLabelEXT*                      pQueueLabels;
+    const( VkDebugUtilsLabelEXT )*             pQueueLabels;
     uint32_t                                   cmdBufLabelCount;
-    VkDebugUtilsLabelEXT*                      pCmdBufLabels;
+    const( VkDebugUtilsLabelEXT )*             pCmdBufLabels;
     uint32_t                                   objectCount;
-    VkDebugUtilsObjectNameInfoEXT*             pObjects;
+    const( VkDebugUtilsObjectNameInfoEXT )*    pObjects;
 }
 
 struct VkDebugUtilsMessengerCreateInfoEXT {
