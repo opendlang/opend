@@ -441,7 +441,7 @@ unittest
 }
 
 /// Using Jacobian finite difference approximation computed using in multiple threads.
-unittest
+version(none) unittest
 {
     import mir.ndslice.allocation: slice;
     import mir.ndslice.slice: sliced;
