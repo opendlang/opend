@@ -9,6 +9,10 @@
 
 Dlang Nonlinear Optimisers with external C API.
 
+# Konwn bugs
+
+ - Random wrong results when `taskPool` is passed.
+
 ### Algorithms
  
  - Modified Levenberg-Marquardt Algorithm (Nonlinear Least Squares).
