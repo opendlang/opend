@@ -658,6 +658,21 @@ __m128i _mm_loadu_si128 (const(__m128i)* mem_addr) pure @trusted
     return loadUnaligned!(__m128i)(cast(int*)mem_addr);
 }
 
+__m128i _mm_loadu_si32 (const(void)* mem_addr) pure @trusted
+{
+    int r = *cast(int*)(mem_addr);
+    int4 result = [0, 0, 0, 0];
+    result[0] = r;
+    return result;
+}
+unittest
+{
+    int r = 42;
+    __m128i A = _mm_loadu_si32(&r);
+    int[4] correct = [42, 0, 0, 0];
+    assert(A.array == correct);
+}
+
 version(LDC)
 {
     alias _mm_madd_epi16 = __builtin_ia32_pmaddwd128;

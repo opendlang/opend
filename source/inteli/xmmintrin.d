@@ -486,6 +486,36 @@ __m128 _mm_loadu_ps(float*p) pure @safe
     return loadUnaligned!(__m128)(p);
 }
 
+__m128i _mm_loadu_si16(const(void)* mem_addr)
+{
+    short r = *cast(short*)(mem_addr);
+    short8 result = [0, 0, 0, 0, 0, 0, 0, 0];
+    result[0] = r;
+    return cast(__m128i)result;
+}
+unittest
+{
+    short r = 13;
+    short8 A = cast(short8) _mm_loadu_si16(&r);
+    short[8] correct = [13, 0, 0, 0, 0, 0, 0, 0];
+    assert(A.array == correct);
+}
+
+__m128i _mm_loadu_si64(const(void)* mem_addr)
+{
+    long r = *cast(int*)(mem_addr);
+    long2 result = [0, 0];
+    result[0] = r;
+    return cast(__m128i)result;
+}
+unittest
+{
+    long r = 446;
+    long2 A = cast(long2) _mm_loadu_si64(&r);
+    long[2] correct = [446, 0];
+    assert(A.array == correct);
+}
+
 // MMXREG: _mm_maskmove_si64
 // MMXREG: _m_maskmovq
 
