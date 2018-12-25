@@ -370,7 +370,16 @@ version(LDC)
 }
 else
 {
-    // TODO
+    // Note: the LDC version depends on MXCSR rounding-mode, while
+    //       this one depends on possibly another.
+    int _mm_cvtss_si32 (__m128 a)
+    {
+        return cast(int)(a[0]);
+    }
+}
+unittest
+{
+    assert(1 == _mm_cvtss_si32(_mm_setr_ps(1.0f, 2.0f, 3.0f, 4.0f)));
 }
 
 version(LDC)
@@ -379,7 +388,14 @@ version(LDC)
 }
 else
 {
-    // TODO
+    long _mm_cvtss_si64 (__m128 a)
+    {
+        return cast(long)(a[0]);
+    }
+}
+unittest
+{
+    assert(1 == _mm_cvtss_si64(_mm_setr_ps(1.0f, 2.0f, 3.0f, 4.0f)));
 }
 
 // MMXREG: __m64 _mm_cvtt_ps2pi (__m128 a)
