@@ -216,19 +216,35 @@ version(LDC)
 
 version(LDC)
 {
+    // just used for "ord" intrinsics
     pragma(LDC_intrinsic, "llvm.x86.sse2.cmp.pd")
         double2 __builtin_ia32_cmppd(double2, double2, byte) pure @safe;
 }
-// TODO
 
 __m128i _mm_cmpeq_epi16 (__m128i a, __m128i b) pure @safe
 {
     return cast(__m128i) equalMask!short8(cast(short8)a, cast(short8)b);
 }
+unittest
+{
+    short8   A = [-3, -2, -1,  0,  0,  1,  2,  3];
+    short8   B = [ 4,  3,  2,  1,  0, -1, -2, -3];
+    short[8] E = [ 0,  0,  0,  0, -1,  0,  0,  0];
+    short8   R = cast(short8)(_mm_cmpeq_epi16(cast(__m128i)A, cast(__m128i)B));
+    assert(R.array == E);
+}
 
 __m128i _mm_cmpeq_epi32 (__m128i a, __m128i b) pure @safe
 {
     return equalMask!__m128i(a, b);
+}
+unittest
+{
+    int4   A = [-3, -2, -1,  0];
+    int4   B = [ 4, -2,  2,  0];
+    int[4] E = [ 0, -1,  0, -1];
+    int4   R = cast(int4)(_mm_cmpeq_epi16(A, B));
+    assert(R.array == E);
 }
 
 __m128i _mm_cmpeq_epi8 (__m128i a, __m128i b) pure @safe
@@ -239,11 +255,8 @@ unittest
 {
     __m128i A = _mm_setr_epi8(1, 2, 3, 1, 2, 1, 1, 2, 3, 2, 1, 0, 0, 1, 2, 1);
     __m128i B = _mm_setr_epi8(2, 2, 1, 2, 3, 1, 2, 3, 2, 1, 0, 0, 1, 2, 1, 1);
-
     byte16 C = cast(byte16) _mm_cmpeq_epi8(A, B);
-    static immutable byte[16] correct =
-                             [0,-1, 0, 0, 0,-1, 0, 0, 0, 0, 0,-1, 0, 0, 0, -1];
-
+    byte[16] correct =       [0,-1, 0, 0, 0,-1, 0, 0, 0, 0, 0,-1, 0, 0, 0, -1];
     __m128i D = _mm_cmpeq_epi8(A, B);
     assert(C.array == correct);
 }
@@ -251,179 +264,200 @@ unittest
 
 version(LDC)
 {
-    __m128d _mm_cmpeq_pd (__m128d a, __m128d b) pure @safe
+    __m128d _mm_cmpeq_pd (__m128d a, __m128d b) pure @safe // TODO
     {
-        return __builtin_ia32_cmppd(a, b, 0);
+        return cast(__m128d) equalMask!double2(a, b);
     }
 
-    __m128d _mm_cmpeq_sd (__m128d a, __m128d b) pure @safe
+    __m128d _mm_cmpeq_sd (__m128d a, __m128d b) pure @safe // TODO
     {
         return __builtin_ia32_cmpsd(a, b, 0);
     }
 
-    __m128d _mm_cmpge_pd (__m128d a, __m128d b) pure @safe
+    __m128d _mm_cmpge_pd (__m128d a, __m128d b) pure @safe // TODO
     {
-        return __builtin_ia32_cmppd(b, a, 2);
+        return cast(__m128d) greaterOrEqualMask!double2(a, b);
     }
 
-    __m128d _mm_cmpge_sd (__m128d a, __m128d b) pure @safe
+    __m128d _mm_cmpge_sd (__m128d a, __m128d b) pure @safe // TODO
     {
         return __builtin_ia32_cmpsd(b, a, 2);
     }
 }
-// TODO
 
 
-// TODO
-/+__m128i _mm_cmpgt_epi16 (__m128i a, __m128i b) pure @safe
+__m128i _mm_cmpgt_epi16 (__m128i a, __m128i b) pure @safe
 {
-    return cast(__m128i)( cast(short8)a > cast(short8)b );
+    return cast(__m128i)( greaterMask!short8(cast(short8)a, cast(short8)b));
+}
+unittest
+{
+    short8   A = [-3, -2, -1,  0,  0,  1,  2,  3];
+    short8   B = [ 4,  3,  2,  1,  0, -1, -2, -3];
+    short[8] E = [ 0,  0,  0,  0,  0, -1, -1, -1];
+    short8   R = cast(short8)(_mm_cmpgt_epi16(cast(__m128i)A, cast(__m128i)B));
+    assert(R.array == E);
 }
 
 __m128i _mm_cmpgt_epi32 (__m128i a, __m128i b) pure @safe
 {
-    return cast(__m128i)( cast(int4)a > cast(int4)b );
+    return cast(__m128i)( greaterMask!int4(a, b));
+}
+unittest
+{
+    int4   A = [-3,  2, -1,  0];
+    int4   B = [ 4, -2,  2,  0];
+    int[4] E = [ 0, -1,  0,  0];
+    int4   R = cast(int4)(_mm_cmpgt_epi32(A, B));
+    assert(R.array == E);
 }
 
 __m128i _mm_cmpgt_epi8 (__m128i a, __m128i b) pure @safe
 {
-    return cast(__m128i)( cast(byte16)a > cast(byte16)b );
-}+/
+    return cast(__m128i)( greaterMask!byte16(cast(byte16)a, cast(byte16)b));
+}
+unittest
+{
+    __m128i A = _mm_setr_epi8(1, 2, 3, 1, 2, 1, 1, 2, 3, 2, 1, 0, 0, 1, 2, 1);
+    __m128i B = _mm_setr_epi8(2, 2, 1, 2, 3, 1, 2, 3, 2, 1, 0, 0, 1, 2, 1, 1);
+    byte16 C = cast(byte16) _mm_cmpgt_epi8(A, B);
+    byte[16] correct =       [0, 0,-1, 0, 0, 0, 0, 0,-1,-1,-1, 0, 0, 0,-1, 0];
+    __m128i D = _mm_cmpeq_epi8(A, B);
+    assert(C.array == correct);
+}
 
 version(LDC)
 {
-    __m128d _mm_cmpgt_pd (__m128d a, __m128d b) pure @safe
+
+    __m128d _mm_cmpgt_pd (__m128d a, __m128d b) pure @safe // TODO
     {
-        return __builtin_ia32_cmppd(b, a, 1);
+        return cast(__m128d) greaterMask!double2(a, b);
     }
 
-    __m128d _mm_cmpgt_sd (__m128d a, __m128d b) pure @safe
+    __m128d _mm_cmpgt_sd (__m128d a, __m128d b) pure @safe // TODO
     {
         return __builtin_ia32_cmpsd(b, a, 1);
     }
 
-    __m128d _mm_cmple_pd (__m128d a, __m128d b) pure @safe
+    __m128d _mm_cmple_pd (__m128d a, __m128d b) pure @safe // TODO
     {
-        return __builtin_ia32_cmppd(a, b, 2);
+        return cast(__m128d) greaterOrEqualMask!double2(b, a);
     }
 
-    __m128d _mm_cmple_sd (__m128d a, __m128d b) pure @safe
+    __m128d _mm_cmple_sd (__m128d a, __m128d b) pure @safe // TODO
     {
         return __builtin_ia32_cmpsd(a, b, 2);
     }
 }
-// TODO
 
-// TODO
-/+__m128i _mm_cmplt_epi16 (__m128i a, __m128i b) pure @safe
+
+__m128i _mm_cmplt_epi16 (__m128i a, __m128i b) pure @safe
 {
-    return cast(__m128i)( cast(short8)a < cast(short8)b );
+    return _mm_cmpgt_epi16(b, a);
 }
 
 __m128i _mm_cmplt_epi32 (__m128i a, __m128i b) pure @safe
 {
-    return cast(__m128i)( cast(int4)a < cast(int4)b );
+    return _mm_cmpgt_epi32(b, a);
 }
 
 __m128i _mm_cmplt_epi8 (__m128i a, __m128i b) pure @safe
 {
-    return cast(__m128i)( cast(byte8)a < cast(byte8)b );
-}+/
+    return _mm_cmpgt_epi8(b, a);
+}
 
 version(LDC)
 {
-    __m128d _mm_cmplt_pd (__m128d a, __m128d b) pure @safe
+    __m128d _mm_cmplt_pd (__m128d a, __m128d b) pure @safe // TODO
     {
-        return __builtin_ia32_cmppd(a, b, 1);
+        return cast(__m128d) greaterMask!double2(b, a);
     }
 
-    __m128d _mm_cmplt_sd (__m128d a, __m128d b) pure @safe
+    __m128d _mm_cmplt_sd (__m128d a, __m128d b) pure @safe // TODO
     {
         return __builtin_ia32_cmpsd(a, b, 1);
     }
 
-    __m128d _mm_cmpneq_pd (__m128d a, __m128d b) pure @safe
+    __m128d _mm_cmpneq_pd (__m128d a, __m128d b) pure @safe // TODO
     {
-        return __builtin_ia32_cmppd(a, b, 4);
+        return cast(__m128d) notEqualMask!double2(a, b);
     }
 
-    __m128d _mm_cmpneq_sd (__m128d a, __m128d b) pure @safe
+    __m128d _mm_cmpneq_sd (__m128d a, __m128d b) pure @safe // TODO
     {
         return __builtin_ia32_cmpsd(a, b, 4);
     }
 
-    __m128d _mm_cmpnge_pd (__m128d a, __m128d b) pure @safe
+    __m128d _mm_cmpnge_pd (__m128d a, __m128d b) pure @safe // TODO
     {
-        return __builtin_ia32_cmppd(b, a, 6);
+        return _mm_cmplt_pd(b, a);
     }
 
-    __m128d _mm_cmpnge_sd (__m128d a, __m128d b) pure @safe
+    __m128d _mm_cmpnge_sd (__m128d a, __m128d b) pure @safe // TODO
     {
         return __builtin_ia32_cmpsd(b, a, 6);
     }
 
-    __m128d _mm_cmpngt_pd (__m128d a, __m128d b) pure @safe
+    __m128d _mm_cmpngt_pd (__m128d a, __m128d b) pure @safe // TODO
     {
-        return __builtin_ia32_cmppd(b, a, 5);
+        return _mm_cmple_pd(b, a);
     }
 
-    __m128d _mm_cmpngt_sd (__m128d a, __m128d b) pure @safe
+    __m128d _mm_cmpngt_sd (__m128d a, __m128d b) pure @safe // TODO
     {
         return __builtin_ia32_cmpsd(b, a, 5);
     }
 
-    __m128d _mm_cmpnle_pd (__m128d a, __m128d b) pure @safe
+    __m128d _mm_cmpnle_pd (__m128d a, __m128d b) pure @safe // TODO
     {
-        return __builtin_ia32_cmppd(a, b, 6);
+        return _mm_cmpgt_pd(b, a);
     }
 
-    __m128d _mm_cmpnle_sd (__m128d a, __m128d b) pure @safe
+    __m128d _mm_cmpnle_sd (__m128d a, __m128d b) pure @safe // TODO
     {
         return __builtin_ia32_cmpsd(a, b, 6);
     }
 
-    __m128d _mm_cmpnlt_pd (__m128d a, __m128d b) pure @safe
+    __m128d _mm_cmpnlt_pd (__m128d a, __m128d b) pure @safe // TODO
     {
-        return __builtin_ia32_cmppd(a, b, 5);
+        return _mm_cmpge_pd(b, a);
     }
 
-    __m128d _mm_cmpnlt_sd (__m128d a, __m128d b) pure @safe
+    __m128d _mm_cmpnlt_sd (__m128d a, __m128d b) pure @safe // TODO
     {
         return __builtin_ia32_cmpsd(a, b, 5);
     }
 
-    __m128d _mm_cmpord_pd (__m128d a, __m128d b) pure @safe
+    __m128d _mm_cmpord_pd (__m128d a, __m128d b) pure @safe // TODO
     {
         return __builtin_ia32_cmppd(a, b, 7);
     }
 
-    __m128d _mm_cmpord_sd (__m128d a, __m128d b) pure @safe
+    __m128d _mm_cmpord_sd (__m128d a, __m128d b) pure @safe // TODO
     {
         return __builtin_ia32_cmpsd(a, b, 7);
     }
 
-    __m128d _mm_cmpunord_pd (__m128d a, __m128d b) pure @safe
+    __m128d _mm_cmpunord_pd (__m128d a, __m128d b) pure @safe // TODO
     {
         return __builtin_ia32_cmppd(a, b, 3);
     }
 
-    __m128d _mm_cmpunord_sd (__m128d a, __m128d b) pure @safe
+    __m128d _mm_cmpunord_sd (__m128d a, __m128d b) pure @safe // TODO
     {
         return __builtin_ia32_cmpsd(a, b, 3);
     }
 }
-// TODO
 
 version(LDC)
 {
-    alias _mm_comieq_sd = __builtin_ia32_comisdeq;
-    alias _mm_comige_sd = __builtin_ia32_comisdge;
-    alias _mm_comigt_sd = __builtin_ia32_comisdgt;
-    alias _mm_comile_sd = __builtin_ia32_comisdle;
-    alias _mm_comilt_sd = __builtin_ia32_comisdlt;
-    alias _mm_comineq_sd = __builtin_ia32_comisdneq;
+    alias _mm_comieq_sd = __builtin_ia32_comisdeq; // TODO
+    alias _mm_comige_sd = __builtin_ia32_comisdge; // TODO
+    alias _mm_comigt_sd = __builtin_ia32_comisdgt; // TODO
+    alias _mm_comile_sd = __builtin_ia32_comisdle; // TODO
+    alias _mm_comilt_sd = __builtin_ia32_comisdlt; // TODO
+    alias _mm_comineq_sd = __builtin_ia32_comisdneq; // TODO
 }
-// TODO
 
 // TODO: alias _mm_cvtepi32_pd = __builtin_ia32_cvtdq2pd;
 
