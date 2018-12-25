@@ -16,7 +16,7 @@ else
     // The biggest differences are:
     //
     // 1. `cast` everywhere. With LDC vector types, short8 is implicitely convertible to int4
-    //   but this is sadly impossible in D.
+    //   but this is sadly impossible in D without D_SIMD (Windows 32-bit).
     //
     // 2. `vec.array` is directly writeable.
 
@@ -284,6 +284,4 @@ int _MM_SHUFFLE(int z, int y, int x, int w) pure @safe
     assert(w >= 0 && w <= 3);
     return (z<<6) | (y<<4) | (x<<2) | w;
 }
-
-
 
