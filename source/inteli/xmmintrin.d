@@ -374,7 +374,8 @@ else
     //       this one depends on possibly another.
     int _mm_cvtss_si32 (__m128 a)
     {
-        return cast(int)(a[0]);
+        import core.math: rint;
+        return cast(int)(rint(a[0]));
     }
 }
 unittest
@@ -390,7 +391,8 @@ else
 {
     long _mm_cvtss_si64 (__m128 a)
     {
-        return cast(long)(a[0]);
+        import core.math: rint;
+        return cast(long)(rint(a[0]));
     }
 }
 unittest
@@ -398,19 +400,26 @@ unittest
     assert(1 == _mm_cvtss_si64(_mm_setr_ps(1.0f, 2.0f, 3.0f, 4.0f)));
 }
 
-// MMXREG: __m64 _mm_cvtt_ps2pi (__m128 a)
 
 version(LDC)
 {
     alias _mm_cvtt_ss2si = __builtin_ia32_cvttss2si;
-    alias _mm_cvttss_si32 = _mm_cvtt_ss2si; // it's actually the same op
 }
 else
 {
-    // TODO
+    int _mm_cvtt_ss2si (__m128 a)
+    {
+        return cast(int)(a[0]);
+    }
+}
+unittest
+{
+    assert(1 == _mm_cvtt_ss2si(_mm_setr_ps(1.9f, 2.0f, 3.0f, 4.0f)));
 }
 
-// MMXREG: _mm_cvttps_pi32
+// MMXREG: __m64 _mm_cvtt_ps2pi (__m128 a)
+
+alias _mm_cvttss_si32 = _mm_cvtt_ss2si; // it's actually the same op
 
 version(LDC)
 {
@@ -418,7 +427,14 @@ version(LDC)
 }
 else
 {
-    // TODO
+    long _mm_cvttss_si64 (__m128 a)
+    {
+        return cast(long)(a[0]);
+    }
+}
+unittest
+{
+    assert(1 == _mm_cvttss_si64(_mm_setr_ps(1.9f, 2.0f, 3.0f, 4.0f)));
 }
 
 __m128 _mm_div_ps(__m128 a, __m128 b) pure @safe
