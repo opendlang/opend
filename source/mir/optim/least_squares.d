@@ -273,7 +273,7 @@ struct LeastSquaresLM(T)
     Allocates data in GC.
     +/
     pragma(inline, false)
-    auto gcAlloc()(size_t m, size_t n, bool lowerBounds = false, bool upperBounds = false) //nothrow @trusted pure
+    auto gcAlloc()(size_t m, size_t n, bool lowerBounds = false, bool upperBounds = false) nothrow @trusted pure
     {
         import mir.lapack: syev_wk;
         import mir.ndslice.allocation: uninitSlice, uninitAlignedSlice;
