@@ -535,14 +535,14 @@ unittest
 
 __m128i _mm_loadu_si64(const(void)* mem_addr)
 {
-    long r = *cast(int*)(mem_addr);
+    long r = *cast(long*)(mem_addr);
     long2 result = [0, 0];
     result[0] = r;
     return cast(__m128i)result;
 }
 unittest
 {
-    long r = 446;
+    long r = 446446446446;
     long2 A = cast(long2) _mm_loadu_si64(&r);
     long[2] correct = [446, 0];
     assert(A.array == correct);
