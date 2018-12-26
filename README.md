@@ -9,7 +9,7 @@
 
 Dlang Nonlinear Optimisers with external C API.
 
-# Konwn bugs
+### Konwn bugs
 
  - Random wrong results when `taskPool` is passed.
 
