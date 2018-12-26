@@ -414,7 +414,7 @@ void optimize(alias f, TaskPool, T)(scope ref LeastSquaresLM!T lm, TaskPool task
 }
 
 /// With Jacobian
-unittest
+@safe unittest
 {
     import mir.ndslice.allocation: slice;
     import mir.ndslice.slice: sliced;
@@ -441,7 +441,7 @@ unittest
 }
 
 /// Using Jacobian finite difference approximation computed using in multiple threads.
-version(none) unittest
+version(none) @safe unittest
 {
     import mir.ndslice.allocation: slice;
     import mir.ndslice.slice: sliced;
@@ -462,7 +462,7 @@ version(none) unittest
 }
 
 /// Rosenbrock
-unittest
+@safe unittest
 {
     import mir.algorithm.iteration: all;
     import mir.ndslice.allocation: slice;
@@ -517,7 +517,7 @@ unittest
 }
 
 ///
-unittest
+@safe unittest
 {
     import mir.blas: nrm2;
     import mir.math.common;
@@ -546,7 +546,7 @@ unittest
 }
 
 ///
-pure unittest
+@safe pure unittest
 {
     import mir.algorithm.iteration: all;
     import mir.ndslice.allocation: slice;
@@ -588,7 +588,7 @@ pure unittest
 }
 
 ///
-pure unittest
+@safe pure unittest
 {
     import mir.blas: nrm2;
     import mir.math.common: sqrt;
