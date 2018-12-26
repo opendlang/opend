@@ -22,6 +22,8 @@ private enum Error {
     squareM = "The matrix must be square"
 };
 
+@trusted pure nothrow @nogc:
+
 /// `getri` work space query.
 size_t getri_wq(T)(Slice!(T*, 2, Canonical) a)
 {
