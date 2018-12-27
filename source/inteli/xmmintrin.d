@@ -544,7 +544,7 @@ unittest
 {
     long r = 446446446446;
     long2 A = cast(long2) _mm_loadu_si64(&r);
-    long[2] correct = [446, 0];
+    long[2] correct = [446446446446, 0];
     assert(A.array == correct);
 }
 
