@@ -288,6 +288,7 @@ enum RealFormat
  * )
  */
 T nextUp(T)(const T x) @trusted pure nothrow @nogc
+    if (isFloatingPoint!T)
 {
     alias F = floatTraits!T;
     static if (F.realFormat == RealFormat.ieeeSingle)
@@ -667,6 +668,518 @@ do
     }
     assert(ieeeMean(0.5*real.min_normal*(1-4*real.epsilon),0.5*real.min_normal)
            == 0.5*real.min_normal*(1-2*real.epsilon));
+}
+
+/*********************************************************************
+ * Separate floating point value into significand and exponent.
+ *
+ * Returns:
+ *      Calculate and return $(I x) and $(I exp) such that
+ *      value =$(I x)*2$(SUPERSCRIPT exp) and
+ *      .5 $(LT)= |$(I x)| $(LT) 1.0
+ *
+ *      $(I x) has same sign as value.
+ *
+ *      $(TABLE_SV
+ *      $(TR $(TH value)           $(TH returns)         $(TH exp))
+ *      $(TR $(TD $(PLUSMN)0.0)    $(TD $(PLUSMN)0.0)    $(TD 0))
+ *      $(TR $(TD +$(INFIN))       $(TD +$(INFIN))       $(TD int.max))
+ *      $(TR $(TD -$(INFIN))       $(TD -$(INFIN))       $(TD int.min))
+ *      $(TR $(TD $(PLUSMN)$(NAN)) $(TD $(PLUSMN)$(NAN)) $(TD int.min))
+ *      )
+ */
+T frexp(T)(const T value, out int exp) @trusted pure nothrow @nogc
+if (isFloatingPoint!T)
+{
+    T vf = value;
+    ushort* vu = cast(ushort*)&vf;
+    static if (is(T == float))
+        int* vi = cast(int*)&vf;
+    else
+        long* vl = cast(long*)&vf;
+    int ex;
+    alias F = floatTraits!T;
+
+    ex = vu[F.EXPPOS_SHORT] & F.EXPMASK;
+    static if (F.realFormat == RealFormat.ieeeExtended)
+    {
+        if (ex)
+        {   // If exponent is non-zero
+            if (ex == F.EXPMASK) // infinity or NaN
+            {
+                if (*vl &  0x7FFF_FFFF_FFFF_FFFF)  // NaN
+                {
+                    *vl |= 0xC000_0000_0000_0000;  // convert NaNS to NaNQ
+                    exp = int.min;
+                }
+                else if (vu[F.EXPPOS_SHORT] & 0x8000)   // negative infinity
+                    exp = int.min;
+                else   // positive infinity
+                    exp = int.max;
+
+            }
+            else
+            {
+                exp = ex - F.EXPBIAS;
+                vu[F.EXPPOS_SHORT] = (0x8000 & vu[F.EXPPOS_SHORT]) | 0x3FFE;
+            }
+        }
+        else if (!*vl)
+        {
+            // vf is +-0.0
+            exp = 0;
+        }
+        else
+        {
+            // subnormal
+
+            vf *= F.RECIP_EPSILON;
+            ex = vu[F.EXPPOS_SHORT] & F.EXPMASK;
+            exp = ex - F.EXPBIAS - T.mant_dig + 1;
+            vu[F.EXPPOS_SHORT] = ((-1 - F.EXPMASK) & vu[F.EXPPOS_SHORT]) | 0x3FFE;
+        }
+        return vf;
+    }
+    else static if (F.realFormat == RealFormat.ieeeQuadruple)
+    {
+        if (ex)     // If exponent is non-zero
+        {
+            if (ex == F.EXPMASK)
+            {
+                // infinity or NaN
+                if (vl[MANTISSA_LSB] |
+                    (vl[MANTISSA_MSB] & 0x0000_FFFF_FFFF_FFFF))  // NaN
+                {
+                    // convert NaNS to NaNQ
+                    vl[MANTISSA_MSB] |= 0x0000_8000_0000_0000;
+                    exp = int.min;
+                }
+                else if (vu[F.EXPPOS_SHORT] & 0x8000)   // negative infinity
+                    exp = int.min;
+                else   // positive infinity
+                    exp = int.max;
+            }
+            else
+            {
+                exp = ex - F.EXPBIAS;
+                vu[F.EXPPOS_SHORT] = F.EXPBIAS | (0x8000 & vu[F.EXPPOS_SHORT]);
+            }
+        }
+        else if ((vl[MANTISSA_LSB] |
+            (vl[MANTISSA_MSB] & 0x0000_FFFF_FFFF_FFFF)) == 0)
+        {
+            // vf is +-0.0
+            exp = 0;
+        }
+        else
+        {
+            // subnormal
+            vf *= F.RECIP_EPSILON;
+            ex = vu[F.EXPPOS_SHORT] & F.EXPMASK;
+            exp = ex - F.EXPBIAS - T.mant_dig + 1;
+            vu[F.EXPPOS_SHORT] = F.EXPBIAS | (0x8000 & vu[F.EXPPOS_SHORT]);
+        }
+        return vf;
+    }
+    else static if (F.realFormat == RealFormat.ieeeDouble)
+    {
+        if (ex) // If exponent is non-zero
+        {
+            if (ex == F.EXPMASK)   // infinity or NaN
+            {
+                if (*vl == 0x7FF0_0000_0000_0000)  // positive infinity
+                {
+                    exp = int.max;
+                }
+                else if (*vl == 0xFFF0_0000_0000_0000) // negative infinity
+                    exp = int.min;
+                else
+                { // NaN
+                    *vl |= 0x0008_0000_0000_0000;  // convert NaNS to NaNQ
+                    exp = int.min;
+                }
+            }
+            else
+            {
+                exp = (ex - F.EXPBIAS) >> 4;
+                vu[F.EXPPOS_SHORT] = cast(ushort)((0x800F & vu[F.EXPPOS_SHORT]) | 0x3FE0);
+            }
+        }
+        else if (!(*vl & 0x7FFF_FFFF_FFFF_FFFF))
+        {
+            // vf is +-0.0
+            exp = 0;
+        }
+        else
+        {
+            // subnormal
+            vf *= F.RECIP_EPSILON;
+            ex = vu[F.EXPPOS_SHORT] & F.EXPMASK;
+            exp = ((ex - F.EXPBIAS) >> 4) - T.mant_dig + 1;
+            vu[F.EXPPOS_SHORT] =
+                cast(ushort)(((-1 - F.EXPMASK) & vu[F.EXPPOS_SHORT]) | 0x3FE0);
+        }
+        return vf;
+    }
+    else static if (F.realFormat == RealFormat.ieeeSingle)
+    {
+        if (ex) // If exponent is non-zero
+        {
+            if (ex == F.EXPMASK)   // infinity or NaN
+            {
+                if (*vi == 0x7F80_0000)  // positive infinity
+                {
+                    exp = int.max;
+                }
+                else if (*vi == 0xFF80_0000) // negative infinity
+                    exp = int.min;
+                else
+                { // NaN
+                    *vi |= 0x0040_0000;  // convert NaNS to NaNQ
+                    exp = int.min;
+                }
+            }
+            else
+            {
+                exp = (ex - F.EXPBIAS) >> 7;
+                vu[F.EXPPOS_SHORT] = cast(ushort)((0x807F & vu[F.EXPPOS_SHORT]) | 0x3F00);
+            }
+        }
+        else if (!(*vi & 0x7FFF_FFFF))
+        {
+            // vf is +-0.0
+            exp = 0;
+        }
+        else
+        {
+            // subnormal
+            vf *= F.RECIP_EPSILON;
+            ex = vu[F.EXPPOS_SHORT] & F.EXPMASK;
+            exp = ((ex - F.EXPBIAS) >> 7) - T.mant_dig + 1;
+            vu[F.EXPPOS_SHORT] =
+                cast(ushort)(((-1 - F.EXPMASK) & vu[F.EXPPOS_SHORT]) | 0x3F00);
+        }
+        return vf;
+    }
+    else // static if (F.realFormat == RealFormat.ibmExtended)
+    {
+        static assert(0, "frexp not implemented");
+    }
+}
+
+///
+@safe unittest
+{
+    import mir.math.common: pow;
+    import std.math: approxEqual;
+    int exp;
+    real mantissa = frexp(123.456L, exp);
+
+    assert(approxEqual(mantissa * pow(2.0L, cast(real) exp), 123.456L));
+
+    assert(frexp(-real.nan, exp) && exp == int.min);
+    assert(frexp(real.nan, exp) && exp == int.min);
+    assert(frexp(-real.infinity, exp) == -real.infinity && exp == int.min);
+    assert(frexp(real.infinity, exp) == real.infinity && exp == int.max);
+    assert(frexp(-0.0, exp) == -0.0 && exp == 0);
+    assert(frexp(0.0, exp) == 0.0 && exp == 0);
+}
+
+@safe @nogc nothrow unittest
+{
+    import mir.math.common: pow;
+    int exp;
+    real mantissa = frexp(123.456L, exp);
+
+    // check if values are equal to 19 decimal digits of precision
+    assert(feqrel(mantissa * pow(2.0L, cast(real) exp), 123.456L) >= 63);
+}
+
+@safe unittest
+{
+    import std.math: isIdentical;
+    import std.meta : AliasSeq;
+    import std.typecons : tuple, Tuple;
+
+    static foreach (T; AliasSeq!(real, double, float))
+    {{
+        Tuple!(T, T, int)[] vals =     // x,frexp,exp
+            [
+             tuple(T(0.0),  T( 0.0 ), 0),
+             tuple(T(-0.0), T( -0.0), 0),
+             tuple(T(1.0),  T( .5  ), 1),
+             tuple(T(-1.0), T( -.5 ), 1),
+             tuple(T(2.0),  T( .5  ), 2),
+             tuple(T(float.min_normal/2.0f), T(.5), -126),
+             tuple(T.infinity, T.infinity, int.max),
+             tuple(-T.infinity, -T.infinity, int.min),
+             tuple(T.nan, T.nan, int.min),
+             tuple(-T.nan, -T.nan, int.min),
+
+             // Phobos issue #16026:
+             tuple(3 * (T.min_normal * T.epsilon), T( .75), (T.min_exp - T.mant_dig) + 2)
+             ];
+
+        foreach (elem; vals)
+        {
+            T x = elem[0];
+            T e = elem[1];
+            int exp = elem[2];
+            int eptr;
+            T v = frexp(x, eptr);
+            assert(isIdentical(e, v));
+            assert(exp == eptr);
+
+        }
+
+        static if (floatTraits!(T).realFormat == RealFormat.ieeeExtended)
+        {
+            static T[3][] extendedvals = [ // x,frexp,exp
+                [0x1.a5f1c2eb3fe4efp+73L,    0x1.A5F1C2EB3FE4EFp-1L,     74],    // normal
+                [0x1.fa01712e8f0471ap-1064L, 0x1.fa01712e8f0471ap-1L, -1063],
+                [T.min_normal,      .5, -16381],
+                [T.min_normal/2.0L, .5, -16382]    // subnormal
+            ];
+            foreach (elem; extendedvals)
+            {
+                T x = elem[0];
+                T e = elem[1];
+                int exp = cast(int) elem[2];
+                int eptr;
+                T v = frexp(x, eptr);
+                assert(isIdentical(e, v));
+                assert(exp == eptr);
+
+            }
+        }
+    }}
+}
+
+@safe unittest
+{
+    import std.meta : AliasSeq;
+    void foo() {
+        static foreach (T; AliasSeq!(real, double, float))
+        {{
+            int exp;
+            const T a = 1;
+            immutable T b = 2;
+            auto c = frexp(a, exp);
+            auto d = frexp(b, exp);
+        }}
+    }
+}
+
+/*******************************************
+ * Returns: n * 2$(SUPERSCRIPT exp)
+ * See_Also: $(LERF frexp)
+ */
+T ldexp(T)(const T n, int exp) @nogc @trusted pure nothrow
+    if (isFloatingPoint!T)
+{
+    import mir.math.common: copysign;
+    import mir.core.checkedint: adds, subs;
+
+    enum norm_factor = 1 / T.epsilon;
+    T vf = n;
+    alias F = floatTraits!T;
+
+    static if (F.realFormat == RealFormat.ieeeExtended || F.realFormat == RealFormat.ieeeQuadruple || F.realFormat == RealFormat.ieeeDouble || F.realFormat == RealFormat.ieeeSingle)
+    {
+        static if (F.realFormat == RealFormat.ieeeExtended)
+        {
+            alias S = int;
+            alias U = ushort;
+            enum sig_mask = U(1) << (U.sizeof * 8 - 1);
+            enum exp_shft = 0;
+            enum man_mask = 0;
+            version (LittleEndian)
+                enum idx = 4;
+            else
+                enum idx = 0;
+        }
+        else
+        {
+            static if (F.realFormat == RealFormat.ieeeQuadruple || F.realFormat == RealFormat.ieeeDouble && double.sizeof == size_t.sizeof)
+            {
+                alias S = long;
+                alias U = ulong;
+            }
+            else
+            {
+                alias S = int;
+                alias U = uint;
+            }
+            enum sig_mask = U(1) << (U.sizeof * 8 - 1);
+            enum uint exp_shft = T.mant_dig - 1 - (T.sizeof > U.sizeof ? U.sizeof * 8 : 0);
+            enum man_mask = (U(1) << exp_shft) - 1;
+            enum idx = T.sizeof > U.sizeof ? MANTISSA_MSB : 0;
+        }
+        enum exp_mask = (U.max >> (exp_shft + 1)) << exp_shft;
+
+        auto u = (cast(U*)&vf)[idx];
+        S e = u & exp_mask;
+        if (e == 0)
+        {
+            if (u & man_mask)
+            {
+                vf *= norm_factor;
+                u = (cast(U*)&vf)[idx];
+                bool overflow;
+                exp = subs(exp, T.mant_dig - 1, overflow);
+                if (overflow)
+                    return 0;
+            }
+            else
+                goto R;
+        }
+        if (e != exp_mask)
+        {
+            e >>= exp_shft;
+            bool overflow;
+            exp = adds(exp, cast(int)e, overflow);
+            enum S rem = exp_mask >> exp_shft;
+            if (overflow || exp >= rem)
+                return copysign(T.infinity, vf);
+            if (exp > 0)
+            {
+                u = cast(U)((u & ~exp_mask) ^ (cast(typeof(U.init + 0))exp << exp_shft));
+            }
+            else
+            {
+                exp = 1 - exp;
+                static if (F.realFormat == RealFormat.ieeeExtended)
+                {
+                    version (LittleEndian)
+                        auto mp = cast(ulong*)&vf;
+                    else
+                        auto mp = cast(ulong*)((cast(ushort*)&vf) + 1);
+                    if (exp >= ulong.sizeof * 8)
+                        *mp = 0;
+                    else
+                        *mp >>>= exp;
+                    u &= sig_mask;
+                }
+                else
+                {
+                    auto m = u & man_mask;
+                    static if (F.realFormat == RealFormat.ieeeQuadruple)
+                        (cast(U*)&vf)[MANTISSA_LSB] = ((cast(U*)&vf)[MANTISSA_LSB] >> exp) ^ (m << (U.sizeof * 8 - exp));
+                    enum intPartMask = man_mask + 1;
+                    m ^= intPartMask;
+                    if (exp >= U.sizeof * 8)
+                        m = 0;
+                    else
+                        m >>>= exp;
+                    m ^= u & sig_mask;
+                    u = cast(U) m;
+                }
+            }
+            (cast(U*)&vf)[idx] = u;
+            return vf;
+        }
+    R:
+        return vf;
+    }
+    else
+    {
+        static assert(0, "ldexp not implemented");
+    }
+}
+
+///
+@nogc @safe pure nothrow unittest
+{
+    import std.meta : AliasSeq;
+    static foreach (T; AliasSeq!(float, double, real))
+    {{
+        T r = ldexp(cast(T) 3.0, cast(int) 3);
+        assert(r == 24);
+
+        T n = 3.0;
+        int exp = 3;
+        r = ldexp(n, exp);
+        assert(r == 24);
+    }}
+}
+
+@safe pure nothrow @nogc unittest
+{
+        import mir.math.common;
+    {
+        assert(ldexp(1.0, -1024) == 0x1p-1024);
+        assert(ldexp(1.0, -1022) == 0x1p-1022);
+        int x;
+        double n = frexp(0x1p-1024L, x);
+        assert(n == 0.5);
+        assert(x==-1023);
+        assert(ldexp(n, x)==0x1p-1024);
+    }
+    static if (floatTraits!(real).realFormat == RealFormat.ieeeExtended ||
+               floatTraits!(real).realFormat == RealFormat.ieeeQuadruple)
+    {
+        assert(ldexp(1.0L, -16384) == 0x1p-16384L);
+        assert(ldexp(1.0L, -16382) == 0x1p-16382L);
+        int x;
+        real n = frexp(0x1p-16384L, x);
+        assert(n == 0.5L);
+        assert(x==-16383);
+        assert(ldexp(n, x)==0x1p-16384L);
+    }
+    else static assert(false, "Floating point type real not supported");
+}
+
+/* workaround Issue 14718, float parsing depends on platform strtold
+@safe pure nothrow @nogc unittest
+{
+    assert(ldexp(1.0, -1024) == 0x1p-1024);
+    assert(ldexp(1.0, -1022) == 0x1p-1022);
+    int x;
+    double n = frexp(0x1p-1024, x);
+    assert(n == 0.5);
+    assert(x==-1023);
+    assert(ldexp(n, x)==0x1p-1024);
+}
+@safe pure nothrow @nogc unittest
+{
+    assert(ldexp(1.0f, -128) == 0x1p-128f);
+    assert(ldexp(1.0f, -126) == 0x1p-126f);
+    int x;
+    float n = frexp(0x1p-128f, x);
+    assert(n == 0.5f);
+    assert(x==-127);
+    assert(ldexp(n, x)==0x1p-128f);
+}
+*/
+
+@safe @nogc nothrow unittest
+{
+    import std.meta: AliasSeq;
+    static F[3][] vals(F) =    // value,exp,ldexp
+    [
+    [    0,    0,    0],
+    [    1,    0,    1],
+    [    -1,    0,    -1],
+    [    1,    1,    2],
+    [    123,    10,    125952],
+    [    F.max,    int.max,    F.infinity],
+    [    F.max,    -int.max,    0],
+    [    F.min_normal,    -int.max,    0],
+    ];
+    static foreach(F; AliasSeq!(double, real))
+    {{
+        int i;
+
+        for (i = 0; i < vals!F.length; i++)
+        {
+            F x = vals!F[i][0];
+            int exp = cast(int) vals!F[i][1];
+            F z = vals!F[i][2];
+            F l = ldexp(x, exp);
+
+            assert(feqrel(z, l) >= 23);
+        }
+    }}
 }
 
 package(mir):
