@@ -1,4 +1,4 @@
-project('mir-core', 'd', version : '0.0.0', license: 'BSL-1.0')
+project('mir-core', 'd', version : '0.1.0', license: 'BSL-1.0')
 
 mir_core_dir = include_directories('source/')
 
