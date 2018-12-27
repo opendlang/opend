@@ -311,20 +311,9 @@ unittest
     assert(a.array == [42f, 0, 0, 0]);
 }
 
-version(LDC)
-{
-    alias _mm_cvt_ss2si = __builtin_ia32_cvtss2si;
-}
-else
-{
-    // TODO
-    /*
-    int _mm_cvt_ss2si(__m128 v) pure @safe
-    {
-        assert(false, "unimplemented");
-    }
-    */
-}
+// Note: is just another name for _mm_cvtss_si32
+alias _mm_cvt_ss2si = _mm_cvtss_si32;
+
 
 // MMXREG: __m128 _mm_cvtpi16_ps (__m64 a)
 // MMXREG: __m128 _mm_cvtpi32_ps (__m128 a, __m64 b)
