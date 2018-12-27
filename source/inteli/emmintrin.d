@@ -388,8 +388,9 @@ version(LDC)
         return __builtin_ia32_cmpsd(a, b, 4);
     }
 
-    __m128d _mm_cmpnge_pd (__m128d a, __m128d b) pure @safe // TODO
+    __m128d _mm_cmpnge_pd (__m128d a, __m128d b) pure @safe
     {
+        // TODO Incorrect for NaN
         return _mm_cmplt_pd(b, a);
     }
 
@@ -400,6 +401,7 @@ version(LDC)
 
     __m128d _mm_cmpngt_pd (__m128d a, __m128d b) pure @safe // TODO
     {
+        // TODO: Incorrect for NaN
         return _mm_cmple_pd(b, a);
     }
 
@@ -410,6 +412,7 @@ version(LDC)
 
     __m128d _mm_cmpnle_pd (__m128d a, __m128d b) pure @safe // TODO
     {
+        // TODO: Incorrect for NaN
         return _mm_cmpgt_pd(b, a);
     }
 
@@ -420,6 +423,7 @@ version(LDC)
 
     __m128d _mm_cmpnlt_pd (__m128d a, __m128d b) pure @safe // TODO
     {
+        // TODO: Incorrect for NaN
         return _mm_cmpge_pd(b, a);
     }
 

@@ -80,7 +80,7 @@ version(LDC)
 {
     __m128 _mm_cmpeq_ps (__m128 a, __m128 b) pure @safe
     {
-        return __builtin_ia32_cmpps(a, b, 0);
+        return equalMask!float4(a, b);
     }
 
     __m128 _mm_cmpeq_ss (__m128 a, __m128 b) pure @safe
@@ -90,7 +90,7 @@ version(LDC)
 
     __m128 _mm_cmpge_ps (__m128 a, __m128 b) pure @safe
     {
-        return __builtin_ia32_cmpps(b, a, 2); // CMPLEPS reversed
+        return greaterOrEqualMask!float4(a, b);
     }
 
     __m128 _mm_cmpge_ss (__m128 a, __m128 b) pure @safe
@@ -100,7 +100,7 @@ version(LDC)
 
     __m128 _mm_cmpgt_ps (__m128 a, __m128 b) pure @safe
     {
-        return __builtin_ia32_cmpps(b, a, 1); // CMPLTPS reversed
+        return greaterMask!float4(a, b);
     }
 
     __m128 _mm_cmpgt_ss (__m128 a, __m128 b) pure @safe
@@ -110,7 +110,7 @@ version(LDC)
 
     __m128 _mm_cmple_ps (__m128 a, __m128 b) pure @safe
     {
-        return __builtin_ia32_cmpps(a, b, 2); // CMPLEPS
+        return greaterOrEqualMask!float4(b, a);
     }
 
     __m128 _mm_cmple_ss (__m128 a, __m128 b) pure @safe
@@ -120,7 +120,7 @@ version(LDC)
 
     __m128 _mm_cmplt_ps (__m128 a, __m128 b) pure @safe
     {
-        return __builtin_ia32_cmpps(a, b, 1); // CMPLTPS
+        return greaterMask!float4(b, a);
     }
 
     __m128 _mm_cmplt_ss (__m128 a, __m128 b) pure @safe
@@ -130,7 +130,7 @@ version(LDC)
 
     __m128 _mm_cmpneq_ps (__m128 a, __m128 b) pure @safe
     {
-        return __builtin_ia32_cmpps(a, b, 4); // CMPNEQPS
+        return notEqualMask!double2(a, b);
     }
 
     __m128 _mm_cmpneq_ss (__m128 a, __m128 b) pure @safe
@@ -140,7 +140,8 @@ version(LDC)
 
     __m128 _mm_cmpnge_ps (__m128 a, __m128 b) pure @safe
     {
-        return __builtin_ia32_cmpps(b, a, 6); // CMPNLEPS reversed
+        // TODO: Incorrect for NaN
+        return _mm_cmplt_ps(b, a);
     }
 
     __m128 _mm_cmpnge_ss (__m128 a, __m128 b) pure @safe
@@ -150,7 +151,8 @@ version(LDC)
 
     __m128 _mm_cmpngt_ps (__m128 a, __m128 b) pure @safe
     {
-        return __builtin_ia32_cmpps(b, a, 5); // CMPNLTPS reversed
+        // TODO: Incorrect for NaN
+        return _mm_cmple_ps(b, a);
     }
 
     __m128 _mm_cmpngt_ss (__m128 a, __m128 b) pure @safe
@@ -160,7 +162,8 @@ version(LDC)
 
     __m128 _mm_cmpnle_ps (__m128 a, __m128 b) pure @safe
     {
-        return __builtin_ia32_cmpps(a, b, 6); // CMPNLEPS
+        // TODO: Incorrect for NaN
+        return _mm_cmpgt_ps(b, a);
     }
 
     __m128 _mm_cmpnle_ss (__m128 a, __m128 b) pure @safe
@@ -170,7 +173,8 @@ version(LDC)
 
     __m128 _mm_cmpnlt_ps (__m128 a, __m128 b) pure @safe
     {
-        return __builtin_ia32_cmpps(a, b, 5); // CMPNLTPS
+        // TODO: Incorrect for NaN
+        return _mm_cmpge_ps(b, a);
     }
 
     __m128 _mm_cmpnlt_ss (__m128 a, __m128 b) pure @safe
