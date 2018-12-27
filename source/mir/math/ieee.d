@@ -891,8 +891,7 @@ if (isFloatingPoint!T)
     int exp;
     real mantissa = frexp(123.456L, exp);
 
-    // check if values are equal to 19 decimal digits of precision
-    assert(feqrel(mantissa * pow(2.0L, cast(real) exp), 123.456L) >= 63);
+    assert(mantissa * pow(2.0L, cast(real) exp) == 123.456L);
 }
 
 @safe unittest
@@ -1041,6 +1040,7 @@ T ldexp(T)(const T n, int exp) @nogc @trusted pure nothrow
             enum S rem = exp_mask >> exp_shft;
             if (overflow || exp >= rem)
                 return copysign(T.infinity, vf);
+            import std.stdio;
             if (exp > 0)
             {
                 u = cast(U)((u & ~exp_mask) ^ (cast(typeof(U.init + 0))exp << exp_shft));
@@ -1063,20 +1063,27 @@ T ldexp(T)(const T n, int exp) @nogc @trusted pure nothrow
                 else
                 {
                     auto m = u & man_mask;
-                    static if (F.realFormat == RealFormat.ieeeQuadruple)
-                        (cast(U*)&vf)[MANTISSA_LSB] = ((cast(U*)&vf)[MANTISSA_LSB] >> exp) ^ (m << (U.sizeof * 8 - exp));
-                    enum intPartMask = man_mask + 1;
-                    m ^= intPartMask;
-                    if (exp >= U.sizeof * 8)
-                        m = 0;
-                    else
+                    u &= sig_mask;
+                    if (exp < 32)
+                    {
+                        static if (T.sizeof > U.sizeof)
+                            (cast(U*)&vf)[MANTISSA_LSB] = ((cast(U*)&vf)[MANTISSA_LSB] >> exp) ^ (m << (U.sizeof * 8 - exp));
+                        enum intPartMask = man_mask + 1;
+                        m ^= intPartMask;
                         m >>>= exp;
-                    m ^= u & sig_mask;
-                    u = cast(U) m;
+                        m ^= u & sig_mask;
+                        u = cast(U) m;
+                    }
+                    else
+                    {
+                        static if (T.sizeof > U.sizeof)
+                        {
+                            (cast(U*)&vf)[MANTISSA_LSB] = 0;
+                        }
+                    }
                 }
             }
             (cast(U*)&vf)[idx] = u;
-            return vf;
         }
     R:
         return vf;
@@ -1105,7 +1112,7 @@ T ldexp(T)(const T n, int exp) @nogc @trusted pure nothrow
 
 @safe pure nothrow @nogc unittest
 {
-        import mir.math.common;
+    import mir.math.common;
     {
         assert(ldexp(1.0, -1024) == 0x1p-1024);
         assert(ldexp(1.0, -1022) == 0x1p-1022);
@@ -1126,7 +1133,6 @@ T ldexp(T)(const T n, int exp) @nogc @trusted pure nothrow
         assert(x==-16383);
         assert(ldexp(n, x)==0x1p-16384L);
     }
-    else static assert(false, "Floating point type real not supported");
 }
 
 /* workaround Issue 14718, float parsing depends on platform strtold
@@ -1176,7 +1182,6 @@ T ldexp(T)(const T n, int exp) @nogc @trusted pure nothrow
             int exp = cast(int) vals!F[i][1];
             F z = vals!F[i][2];
             F l = ldexp(x, exp);
-
             assert(feqrel(z, l) >= 23);
         }
     }}
