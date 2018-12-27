@@ -26,7 +26,7 @@
  * Source:    $(DRUNTIMESRC core/_checkedint.d)
  */
 
-module mir.core.checkedint;
+module mir.checkedint;
 
 version (LDC)
 {
