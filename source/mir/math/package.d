@@ -16,3 +16,4 @@ module mir.math;
 
 public import mir.math.common;
 public import mir.math.constant;
+public import mir.math.ieee;
