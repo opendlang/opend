@@ -978,7 +978,7 @@ T ldexp(T)(const T n, int exp) @nogc @trusted pure nothrow
     if (isFloatingPoint!T)
 {
     import mir.math.common: copysign;
-    import mir.core.checkedint: adds, subs;
+    import mir.checkedint: adds, subs;
 
     enum norm_factor = 1 / T.epsilon;
     T vf = n;
