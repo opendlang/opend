@@ -36,8 +36,7 @@
  *
  * Copyright: Copyright The D Language Foundation 2000 - 2011.
  * License:   $(HTTP www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
- * Authors:   $(HTTP digitalmars.com, Walter Bright), Don Clugston, Ilya Yaroshenko (optimization)
- * Source: $(PHOBOSSRC std/math.d)
+ * Authors:   $(HTTP digitalmars.com, Walter Bright), Don Clugston, Ilya Yaroshenko
  */
 module mir.math.ieee;
 
@@ -48,26 +47,31 @@ import mir.internal.utility: isFloatingPoint;
  */
 int signbit(T)(const T x) @nogc @trusted pure nothrow
 {
-    alias F = floatTraits!T;
-
-    static if (F.realFormat == RealFormat.ieeeSingle)
+    mixin floatTraits!T;
+    static if (realFormat == RealFormat.ieeeSingle)
     {
         return ((*cast(uint*)&x) & 0x8000_0000) != 0;
     }
     else 
-    static if (F.realFormat == RealFormat.ieeeDouble)
+    static if (realFormat == RealFormat.ieeeDouble)
     {
         return ((*cast(ulong*)&x) & 0x8000_0000_0000_0000) != 0;
     }
     else 
-    static if (F.realFormat == RealFormat.ieeeQuadruple)
+    static if (realFormat == RealFormat.ieeeQuadruple)
     {
         return ((cast(ulong*)&x)[MANTISSA_MSB] & 0x8000_0000_0000_0000) != 0;
     }
-    else
+    else static if (realFormat == RealFormat.ieeeExtended)
     {
-        return ((cast(ubyte *)&x)[F.SIGNPOS_BYTE] & 0x80) != 0;
+        version (LittleEndian)
+            auto mp = cast(ubyte*)&x + 9;
+        else
+            auto mp = cast(ubyte*)&x;
+
+        return (*mp & 0x80) != 0;
     }
+    else static assert(0, "signbit is not implemented.");
 }
 
 ///
@@ -121,22 +125,22 @@ int feqrel(T)(const T x, const T y) @trusted pure nothrow @nogc
 {
     /* Public Domain. Author: Don Clugston, 18 Aug 2005.
      */
-    alias F = floatTraits!T;
-    static if (F.realFormat == RealFormat.ieeeSingle
-            || F.realFormat == RealFormat.ieeeDouble
-            || F.realFormat == RealFormat.ieeeExtended
-            || F.realFormat == RealFormat.ieeeQuadruple)
+    mixin floatTraits!T;
+    static if (realFormat == RealFormat.ieeeSingle
+            || realFormat == RealFormat.ieeeDouble
+            || realFormat == RealFormat.ieeeExtended
+            || realFormat == RealFormat.ieeeQuadruple)
     {
         import mir.math.common: fabs;
 
         if (x == y)
-            return T.mant_dig; // ensure diff != 0, cope with INF.
+            return T.mant_dig; // ensure diff != 0, cope with IN
 
         auto diff = fabs(x - y);
 
-        ushort *pa = cast(ushort *)(&x);
-        ushort *pb = cast(ushort *)(&y);
-        ushort *pd = cast(ushort *)(&diff);
+        int a = ((cast(U*)&   x)[idx] & exp_mask) >>> exp_shft;
+        int b = ((cast(U*)&   y)[idx] & exp_mask) >>> exp_shft;
+        int d = ((cast(U*)&diff)[idx] & exp_mask) >>> exp_shft;
 
 
         // The difference in abs(exponent) between x or y and abs(x-y)
@@ -149,28 +153,24 @@ int feqrel(T)(const T x, const T y) @trusted pure nothrow @nogc
         // always 1 lower than we want, except that if bitsdiff == 0,
         // they could have 0 or 1 bits in common.
 
-        int bitsdiff = (((  (pa[F.EXPPOS_SHORT] & F.EXPMASK)
-                          + (pb[F.EXPPOS_SHORT] & F.EXPMASK)
-                          - (1 << F.EXPSHIFT)) >> 1)
-                        - (pd[F.EXPPOS_SHORT] & F.EXPMASK)) >> F.EXPSHIFT;
-        if ( (pd[F.EXPPOS_SHORT] & F.EXPMASK) == 0)
+        int bitsdiff = ((a + b - 1) >> 1) - d;
+        if (d == 0)
         {   // Difference is subnormal
             // For subnormals, we need to add the number of zeros that
             // lie at the start of diff's significand.
             // We do this by multiplying by 2^^real.mant_dig
-            diff *= F.RECIP_EPSILON;
-            return bitsdiff + T.mant_dig - ((pd[F.EXPPOS_SHORT] & F.EXPMASK) >> F.EXPSHIFT);
+            diff *= norm_factor;
+            return bitsdiff + T.mant_dig - int(((cast(U*)&diff)[idx] & exp_mask) >>> exp_shft);
         }
 
         if (bitsdiff > 0)
             return bitsdiff + 1; // add the 1 we subtracted before
 
         // Avoid out-by-1 errors when factor is almost 2.
-        if (bitsdiff == 0
-            && ((pa[F.EXPPOS_SHORT] ^ pb[F.EXPPOS_SHORT]) & F.EXPMASK) == 0)
-        {
+        if (bitsdiff == 0 && (a ^ b) == 0)
             return 1;
-        } else return 0;
+        else
+            return 0;
     }
     else
     {
@@ -247,9 +247,9 @@ int feqrel(T)(const T x, const T y) @trusted pure nothrow @nogc
 
     assert(feqrel(7.1824L, 7.1824L) == real.mant_dig);
 
-    testFeqrel!(real)();
-    testFeqrel!(double)();
     testFeqrel!(float)();
+    testFeqrel!(double)();
+    testFeqrel!(real)();
 }
 
 /++
@@ -290,8 +290,8 @@ enum RealFormat
 T nextUp(T)(const T x) @trusted pure nothrow @nogc
     if (isFloatingPoint!T)
 {
-    alias F = floatTraits!T;
-    static if (F.realFormat == RealFormat.ieeeSingle)
+    mixin floatTraits!T;
+    static if (realFormat == RealFormat.ieeeSingle)
     {
         uint s = *cast(uint*)&x;
         if ((s & 0x7F80_0000) == 0x7F80_0000)
@@ -318,7 +318,7 @@ T nextUp(T)(const T x) @trusted pure nothrow @nogc
     R:
         return *cast(T*)&s;
     }
-    else static if (F.realFormat == RealFormat.ieeeDouble)
+    else static if (realFormat == RealFormat.ieeeDouble)
     {
         ulong s = *cast(ulong*)&x;
 
@@ -345,10 +345,10 @@ T nextUp(T)(const T x) @trusted pure nothrow @nogc
     R:
         return *cast(T*)&s;
     }
-    else static if (F.realFormat == RealFormat.ieeeQuadruple)
+    else static if (realFormat == RealFormat.ieeeQuadruple)
     {
-        ushort e = F.EXPMASK & (cast(ushort *)&x)[F.EXPPOS_SHORT];
-        if (e == F.EXPMASK)
+        auto e = exp_mask & (cast(U *)&x)[idx];
+        if (e == exp_mask)
         {
             // NaN or Infinity
             if (x == -real.infinity) return -real.max;
@@ -377,35 +377,38 @@ T nextUp(T)(const T x) @trusted pure nothrow @nogc
         }
         return x;
     }
-    else static if (F.realFormat == RealFormat.ieeeExtended)
+    else static if (realFormat == RealFormat.ieeeExtended)
     {
         // For 80-bit reals, the "implied bit" is a nuisance...
-        ushort *pe = cast(ushort *)&x;
-        ulong  *ps = cast(ulong  *)&x;
+        auto pe = cast(U*)&x + idx;
+        version (LittleEndian)
+            auto ps = cast(ulong*)&x;
+        else
+            auto ps = cast(ulong*)((cast(ushort*)&x) + 1);
 
-        if ((pe[F.EXPPOS_SHORT] & F.EXPMASK) == F.EXPMASK)
+        if ((*pe & exp_mask) == exp_mask)
         {
             // First, deal with NANs and infinity
             if (x == -real.infinity) return -real.max;
             return x; // +Inf and NaN are unchanged.
         }
-        if (pe[F.EXPPOS_SHORT] & 0x8000)
+        if (*pe & 0x8000)
         {
             // Negative number -- need to decrease the significand
             --*ps;
-            // Need to mask with 0x7FFF... so subnormals are treated correctly.
+            // Need to mask with 0x7FF.. so subnormals are treated correctly.
             if ((*ps & 0x7FFF_FFFF_FFFF_FFFF) == 0x7FFF_FFFF_FFFF_FFFF)
             {
-                if (pe[F.EXPPOS_SHORT] == 0x8000)   // it was negative zero
+                if (*pe == 0x8000)   // it was negative zero
                 {
                     *ps = 1;
-                    pe[F.EXPPOS_SHORT] = 0; // smallest subnormal.
+                    *pe = 0; // smallest subnormal.
                     return x;
                 }
 
-                --pe[F.EXPPOS_SHORT];
+                --*pe;
 
-                if (pe[F.EXPPOS_SHORT] == 0x8000)
+                if (*pe == 0x8000)
                     return x; // it's become a subnormal, implied bit stays low.
 
                 *ps = 0xFFFF_FFFF_FFFF_FFFF; // set the implied bit
@@ -421,13 +424,13 @@ T nextUp(T)(const T x) @trusted pure nothrow @nogc
             if ((*ps & 0x7FFF_FFFF_FFFF_FFFF) == 0)
             {
                 // change in exponent
-                ++pe[F.EXPPOS_SHORT];
+                ++*pe;
                 *ps = 0x8000_0000_0000_0000; // set the high bit
             }
         }
         return x;
     }
-    else // static if (F.realFormat == RealFormat.ibmExtended)
+    else // static if (realFormat == RealFormat.ibmExtended)
     {
         assert(0, "nextUp not implemented");
     }
@@ -564,26 +567,33 @@ do
     // The implementation is simple: cast x and y to integers,
     // average them (avoiding overflow), and cast the result back to a floating-point number.
 
-    alias F = floatTraits!(T);
-    T u;
-    static if (F.realFormat == RealFormat.ieeeExtended)
+    mixin floatTraits!(T);
+    T u = 0;
+    static if (realFormat == RealFormat.ieeeExtended)
     {
         // There's slight additional complexity because they are actually
         // 79-bit reals...
-        ushort *ue = cast(ushort *)&u;
-        ulong *ul = cast(ulong *)&u;
-        ushort *xe = cast(ushort *)&x;
-        ulong *xl = cast(ulong *)&x;
-        ushort *ye = cast(ushort *)&y;
-        ulong *yl = cast(ulong *)&y;
+        ushort *ue = cast(ushort *)&u + idx;
+        int ye = (cast(ushort *)&y)[idx];
+        int xe = (cast(ushort *)&x)[idx];
+
+        version (LittleEndian)
+        {
+            ulong *ul = cast(ulong *)&u;
+            ulong xl = *cast(ulong *)&x;
+            ulong yl = *cast(ulong *)&y;
+        }
+        else
+        {
+            ulong *ul = cast(ulong *)(cast(short *)&u + 1);
+            ulong xl = *cast(ulong *)(cast(short *)&x + 1);
+            ulong yl = *cast(ulong *)(cast(short *)&y + 1);
+        }
 
         // Ignore the useless implicit bit. (Bonus: this prevents overflows)
-        ulong m = ((*xl) & 0x7FFF_FFFF_FFFF_FFFFL) + ((*yl) & 0x7FFF_FFFF_FFFF_FFFFL);
+        ulong m = (xl & 0x7FFF_FFFF_FFFF_FFFFL) + (yl & 0x7FFF_FFFF_FFFF_FFFFL);
 
-        // @@@ BUG? @@@
-        // Cast shouldn't be here
-        ushort e = cast(ushort) ((xe[F.EXPPOS_SHORT] & F.EXPMASK)
-                                 + (ye[F.EXPPOS_SHORT] & F.EXPMASK));
+        int e = ((xe & exp_mask) + (ye & exp_mask));
         if (m & 0x8000_0000_0000_0000L)
         {
             ++e;
@@ -600,9 +610,9 @@ do
         else
             *ul = m; // ... unless exponent is 0 (subnormal or zero).
 
-        ue[4]= e | (xe[F.EXPPOS_SHORT]& 0x8000); // restore sign bit
+        *ue = cast(ushort) (e | (xe & 0x8000)); // restore sign bit
     }
-    else static if (F.realFormat == RealFormat.ieeeQuadruple)
+    else static if (realFormat == RealFormat.ieeeQuadruple)
     {
         // This would be trivial if 'ucent' were implemented...
         ulong *ul = cast(ulong *)&u;
@@ -620,7 +630,7 @@ do
         ul[MANTISSA_MSB] = (mh >>> 1) | (xl[MANTISSA_MSB] & 0x8000_0000_0000_0000);
         ul[MANTISSA_LSB] = (ml >>> 1) | (mh & 1) << 63;
     }
-    else static if (F.realFormat == RealFormat.ieeeDouble)
+    else static if (realFormat == RealFormat.ieeeDouble)
     {
         ulong *ul = cast(ulong *)&u;
         ulong *xl = cast(ulong *)&x;
@@ -630,7 +640,7 @@ do
         m |= ((*xl) & 0x8000_0000_0000_0000L);
         *ul = m;
     }
-    else static if (F.realFormat == RealFormat.ieeeSingle)
+    else static if (realFormat == RealFormat.ieeeSingle)
     {
         uint *ul = cast(uint *)&u;
         uint *xl = cast(uint *)&x;
@@ -688,180 +698,59 @@ do
  *      $(TR $(TD $(PLUSMN)$(NAN)) $(TD $(PLUSMN)$(NAN)) $(TD int.min))
  *      )
  */
-T frexp(T)(const T value, out int exp) @trusted pure nothrow @nogc
+T frexp(T)(const T value, ref int exp) @trusted pure nothrow @nogc
 if (isFloatingPoint!T)
 {
-    T vf = value;
-    ushort* vu = cast(ushort*)&vf;
-    static if (is(T == float))
-        int* vi = cast(int*)&vf;
-    else
-        long* vl = cast(long*)&vf;
-    int ex;
-    alias F = floatTraits!T;
+    import mir.utility: _expect;
 
-    ex = vu[F.EXPPOS_SHORT] & F.EXPMASK;
-    static if (F.realFormat == RealFormat.ieeeExtended)
+    with(floatTraits!T) static if (
+        realFormat == RealFormat.ieeeExtended
+     || realFormat == RealFormat.ieeeQuadruple
+     || realFormat == RealFormat.ieeeDouble
+     || realFormat == RealFormat.ieeeSingle)
     {
-        if (ex)
-        {   // If exponent is non-zero
-            if (ex == F.EXPMASK) // infinity or NaN
-            {
-                if (*vl &  0x7FFF_FFFF_FFFF_FFFF)  // NaN
-                {
-                    *vl |= 0xC000_0000_0000_0000;  // convert NaNS to NaNQ
-                    exp = int.min;
-                }
-                else if (vu[F.EXPPOS_SHORT] & 0x8000)   // negative infinity
-                    exp = int.min;
-                else   // positive infinity
-                    exp = int.max;
-
-            }
-            else
-            {
-                exp = ex - F.EXPBIAS;
-                vu[F.EXPPOS_SHORT] = (0x8000 & vu[F.EXPPOS_SHORT]) | 0x3FFE;
-            }
-        }
-        else if (!*vl)
+        T vf = value;
+        S u = (cast(U*)&vf)[idx];
+        int e = (u & exp_mask) >>> exp_shft;
+        if (_expect(e, true)) // If exponent is non-zero
         {
-            // vf is +-0.0
-            exp = 0;
+            if (_expect(e == exp_msh, false))
+                goto R;
+            exp = e + (T.min_exp - 1);
         }
         else
         {
-            // subnormal
-
-            vf *= F.RECIP_EPSILON;
-            ex = vu[F.EXPPOS_SHORT] & F.EXPMASK;
-            exp = ex - F.EXPBIAS - T.mant_dig + 1;
-            vu[F.EXPPOS_SHORT] = ((-1 - F.EXPMASK) & vu[F.EXPPOS_SHORT]) | 0x3FFE;
-        }
-        return vf;
-    }
-    else static if (F.realFormat == RealFormat.ieeeQuadruple)
-    {
-        if (ex)     // If exponent is non-zero
-        {
-            if (ex == F.EXPMASK)
+            static if (realFormat == RealFormat.ieeeExtended)
             {
-                // infinity or NaN
-                if (vl[MANTISSA_LSB] |
-                    (vl[MANTISSA_MSB] & 0x0000_FFFF_FFFF_FFFF))  // NaN
-                {
-                    // convert NaNS to NaNQ
-                    vl[MANTISSA_MSB] |= 0x0000_8000_0000_0000;
-                    exp = int.min;
-                }
-                else if (vu[F.EXPPOS_SHORT] & 0x8000)   // negative infinity
-                    exp = int.min;
-                else   // positive infinity
-                    exp = int.max;
-            }
-            else
-            {
-                exp = ex - F.EXPBIAS;
-                vu[F.EXPPOS_SHORT] = F.EXPBIAS | (0x8000 & vu[F.EXPPOS_SHORT]);
-            }
-        }
-        else if ((vl[MANTISSA_LSB] |
-            (vl[MANTISSA_MSB] & 0x0000_FFFF_FFFF_FFFF)) == 0)
-        {
-            // vf is +-0.0
-            exp = 0;
-        }
-        else
-        {
-            // subnormal
-            vf *= F.RECIP_EPSILON;
-            ex = vu[F.EXPPOS_SHORT] & F.EXPMASK;
-            exp = ex - F.EXPBIAS - T.mant_dig + 1;
-            vu[F.EXPPOS_SHORT] = F.EXPBIAS | (0x8000 & vu[F.EXPPOS_SHORT]);
-        }
-        return vf;
-    }
-    else static if (F.realFormat == RealFormat.ieeeDouble)
-    {
-        if (ex) // If exponent is non-zero
-        {
-            if (ex == F.EXPMASK)   // infinity or NaN
-            {
-                if (*vl == 0x7FF0_0000_0000_0000)  // positive infinity
-                {
-                    exp = int.max;
-                }
-                else if (*vl == 0xFFF0_0000_0000_0000) // negative infinity
-                    exp = int.min;
+                version (LittleEndian)
+                    auto mp = cast(ulong*)&vf;
                 else
-                { // NaN
-                    *vl |= 0x0008_0000_0000_0000;  // convert NaNS to NaNQ
-                    exp = int.min;
-                }
+                    auto mp = cast(ulong*)((cast(ushort*)&vf) + 1);
+                auto m = u & man_mask | *mp;
             }
             else
             {
-                exp = (ex - F.EXPBIAS) >> 4;
-                vu[F.EXPPOS_SHORT] = cast(ushort)((0x800F & vu[F.EXPPOS_SHORT]) | 0x3FE0);
+                auto m = u & man_mask;
+                static if (T.sizeof > U.sizeof)
+                    m |= (*cast(U*)&vf)[MANTISSA_LSB];
             }
+            if (!m)
+            {
+                exp = 0;
+                goto R;
+            }
+            vf *= norm_factor;
+            u = (cast(U*)&vf)[idx];
+            e = (u & exp_mask) >>> exp_shft;
+            exp = e + (T.min_exp - T.mant_dig);
         }
-        else if (!(*vl & 0x7FFF_FFFF_FFFF_FFFF))
-        {
-            // vf is +-0.0
-            exp = 0;
-        }
-        else
-        {
-            // subnormal
-            vf *= F.RECIP_EPSILON;
-            ex = vu[F.EXPPOS_SHORT] & F.EXPMASK;
-            exp = ((ex - F.EXPBIAS) >> 4) - T.mant_dig + 1;
-            vu[F.EXPPOS_SHORT] =
-                cast(ushort)(((-1 - F.EXPMASK) & vu[F.EXPPOS_SHORT]) | 0x3FE0);
-        }
+        u &= ~exp_mask;
+        u ^= exp_nrm;
+        (cast(U*)&vf)[idx] = cast(U)u;
+    R:
         return vf;
     }
-    else static if (F.realFormat == RealFormat.ieeeSingle)
-    {
-        if (ex) // If exponent is non-zero
-        {
-            if (ex == F.EXPMASK)   // infinity or NaN
-            {
-                if (*vi == 0x7F80_0000)  // positive infinity
-                {
-                    exp = int.max;
-                }
-                else if (*vi == 0xFF80_0000) // negative infinity
-                    exp = int.min;
-                else
-                { // NaN
-                    *vi |= 0x0040_0000;  // convert NaNS to NaNQ
-                    exp = int.min;
-                }
-            }
-            else
-            {
-                exp = (ex - F.EXPBIAS) >> 7;
-                vu[F.EXPPOS_SHORT] = cast(ushort)((0x807F & vu[F.EXPPOS_SHORT]) | 0x3F00);
-            }
-        }
-        else if (!(*vi & 0x7FFF_FFFF))
-        {
-            // vf is +-0.0
-            exp = 0;
-        }
-        else
-        {
-            // subnormal
-            vf *= F.RECIP_EPSILON;
-            ex = vu[F.EXPPOS_SHORT] & F.EXPMASK;
-            exp = ((ex - F.EXPBIAS) >> 7) - T.mant_dig + 1;
-            vu[F.EXPPOS_SHORT] =
-                cast(ushort)(((-1 - F.EXPMASK) & vu[F.EXPPOS_SHORT]) | 0x3F00);
-        }
-        return vf;
-    }
-    else // static if (F.realFormat == RealFormat.ibmExtended)
+    else // static if (realFormat == RealFormat.ibmExtended)
     {
         static assert(0, "frexp not implemented");
     }
@@ -871,16 +760,18 @@ if (isFloatingPoint!T)
 @safe unittest
 {
     import mir.math.common: pow;
-    import std.math: approxEqual;
+    import std.math: approxEqual, isNaN;
     int exp;
     real mantissa = frexp(123.456L, exp);
 
     assert(approxEqual(mantissa * pow(2.0L, cast(real) exp), 123.456L));
 
-    assert(frexp(-real.nan, exp) && exp == int.min);
-    assert(frexp(real.nan, exp) && exp == int.min);
-    assert(frexp(-real.infinity, exp) == -real.infinity && exp == int.min);
-    assert(frexp(real.infinity, exp) == real.infinity && exp == int.max);
+    exp = 1234; // random number
+    assert(frexp(-real.nan, exp).isNaN && exp == 1234);
+    assert(frexp(real.nan, exp).isNaN && exp == 1234);
+    assert(frexp(-real.infinity, exp) == -real.infinity && exp == 1234);
+    assert(frexp(real.infinity, exp) == real.infinity && exp == 1234);
+
     assert(frexp(-0.0, exp) == -0.0 && exp == 0);
     assert(frexp(0.0, exp) == 0.0 && exp == 0);
 }
@@ -900,8 +791,9 @@ if (isFloatingPoint!T)
     import std.meta : AliasSeq;
     import std.typecons : tuple, Tuple;
 
-    static foreach (T; AliasSeq!(real, double, float))
+    static foreach (T; AliasSeq!(float, double, real))
     {{
+        enum randomNumber = 12345;
         Tuple!(T, T, int)[] vals =     // x,frexp,exp
             [
              tuple(T(0.0),  T( 0.0 ), 0),
@@ -910,23 +802,23 @@ if (isFloatingPoint!T)
              tuple(T(-1.0), T( -.5 ), 1),
              tuple(T(2.0),  T( .5  ), 2),
              tuple(T(float.min_normal/2.0f), T(.5), -126),
-             tuple(T.infinity, T.infinity, int.max),
-             tuple(-T.infinity, -T.infinity, int.min),
-             tuple(T.nan, T.nan, int.min),
-             tuple(-T.nan, -T.nan, int.min),
+             tuple(T.infinity, T.infinity, randomNumber),
+             tuple(-T.infinity, -T.infinity, randomNumber),
+             tuple(T.nan, T.nan, randomNumber),
+             tuple(-T.nan, -T.nan, randomNumber),
 
              // Phobos issue #16026:
              tuple(3 * (T.min_normal * T.epsilon), T( .75), (T.min_exp - T.mant_dig) + 2)
              ];
 
-        foreach (elem; vals)
+        foreach (i, elem; vals)
         {
             T x = elem[0];
             T e = elem[1];
             int exp = elem[2];
-            int eptr;
+            int eptr = randomNumber;
             T v = frexp(x, eptr);
-            assert(isIdentical(e, v));
+            assert(e == v || (e != e && v != v));
             assert(exp == eptr);
 
         }
@@ -978,77 +870,83 @@ T ldexp(T)(const T n, int exp) @nogc @trusted pure nothrow
 {
     import mir.math.common: copysign;
     import mir.checkedint: adds, subs;
-
+    import mir.utility: _expect;
     enum norm_factor = 1 / T.epsilon;
     T vf = n;
-    alias F = floatTraits!T;
+    mixin floatTraits!T;
 
-    static if (F.realFormat == RealFormat.ieeeExtended || F.realFormat == RealFormat.ieeeQuadruple || F.realFormat == RealFormat.ieeeDouble || F.realFormat == RealFormat.ieeeSingle)
+    version(LDC)
     {
-        static if (F.realFormat == RealFormat.ieeeExtended)
+        static if (realFormat == RealFormat.ieeeExtended)
         {
-            alias S = int;
-            alias U = ushort;
-            enum sig_mask = U(1) << (U.sizeof * 8 - 1);
-            enum exp_shft = 0;
-            enum man_mask = 0;
-            version (LittleEndian)
-                enum idx = 4;
-            else
-                enum idx = 0;
-        }
-        else
-        {
-            static if (F.realFormat == RealFormat.ieeeQuadruple || F.realFormat == RealFormat.ieeeDouble && double.sizeof == size_t.sizeof)
+            if (!__ctfe)
             {
-                alias S = long;
-                alias U = ulong;
+                import core.math: ldexp;
+                return ldexp(n, exp);
             }
-            else
-            {
-                alias S = int;
-                alias U = uint;
-            }
-            enum sig_mask = U(1) << (U.sizeof * 8 - 1);
-            enum uint exp_shft = T.mant_dig - 1 - (T.sizeof > U.sizeof ? U.sizeof * 8 : 0);
-            enum man_mask = (U(1) << exp_shft) - 1;
-            enum idx = T.sizeof > U.sizeof ? MANTISSA_MSB : 0;
         }
-        enum exp_mask = (U.max >> (exp_shft + 1)) << exp_shft;
+    }
 
+    static if (realFormat == RealFormat.ieeeExtended || realFormat == RealFormat.ieeeQuadruple || realFormat == RealFormat.ieeeDouble || realFormat == RealFormat.ieeeSingle)
+    {
         auto u = (cast(U*)&vf)[idx];
-        S e = u & exp_mask;
-        if (e == 0)
+        int e = (u & exp_mask) >> exp_shft;
+        if (_expect(e != exp_msh, true))
         {
-            if (u & man_mask)
+            if (_expect(e == 0, false)) // subnormals input
             {
+                bool overflow;
                 vf *= norm_factor;
                 u = (cast(U*)&vf)[idx];
-                bool overflow;
-                exp = subs(exp, T.mant_dig - 1, overflow);
-                if (overflow)
-                    return 0;
+                e = int((u & exp_mask) >> exp_shft) - (T.mant_dig - 1);
+            }
+            bool overflow;
+            exp = adds(exp, e, overflow);
+            if (_expect(overflow || exp >= exp_msh, false)) // infs
+            {
+                static if (realFormat == RealFormat.ieeeExtended)
+                {
+                    return vf * T.infinity;
+                }
+                else
+                {
+                    u &= sig_mask;
+                    u ^= exp_mask;
+                    static if (realFormat == RealFormat.ieeeExtended)
+                    {
+                        version (LittleEndian)
+                            auto mp = cast(ulong*)&vf;
+                        else
+                            auto mp = cast(ulong*)((cast(ushort*)&vf) + 1);
+                        *mp = 0;
+                    }
+                    else
+                    static if (T.sizeof > U.sizeof)
+                    {
+                        (cast(U*)&vf)[MANTISSA_LSB] = 0;
+                    }
+                }
             }
             else
-                goto R;
-        }
-        if (e != exp_mask)
-        {
-            e >>= exp_shft;
-            bool overflow;
-            exp = adds(exp, cast(int)e, overflow);
-            enum S rem = exp_mask >> exp_shft;
-            if (overflow || exp >= rem)
-                return copysign(T.infinity, vf);
-            import std.stdio;
-            if (exp > 0)
+            if (_expect(exp > 0, true)) // normal
             {
                 u = cast(U)((u & ~exp_mask) ^ (cast(typeof(U.init + 0))exp << exp_shft));
             }
-            else
+            else // subnornmal output
             {
                 exp = 1 - exp;
-                static if (F.realFormat == RealFormat.ieeeExtended)
+                static if (realFormat != RealFormat.ieeeExtended)
+                {                    
+                    auto m = u & man_mask;
+                    if (exp > T.mant_dig)
+                    {
+                        exp = T.mant_dig;
+                        static if (T.sizeof > U.sizeof)
+                            (cast(U*)&vf)[MANTISSA_LSB] = 0;
+                    }
+                }
+                u &= sig_mask;
+                static if (realFormat == RealFormat.ieeeExtended)
                 {
                     version (LittleEndian)
                         auto mp = cast(ulong*)&vf;
@@ -1058,34 +956,34 @@ T ldexp(T)(const T n, int exp) @nogc @trusted pure nothrow
                         *mp = 0;
                     else
                         *mp >>>= exp;
-                    u &= sig_mask;
                 }
                 else
                 {
-                    auto m = u & man_mask;
-                    u &= sig_mask;
-                    if (exp < 32)
+                    m ^= intPartMask;
+                    static if (T.sizeof > U.sizeof)
                     {
-                        static if (T.sizeof > U.sizeof)
+                        int exp2 = exp - U.sizeof * 8;
+                        if (exp2 < 0)
+                        {
                             (cast(U*)&vf)[MANTISSA_LSB] = ((cast(U*)&vf)[MANTISSA_LSB] >> exp) ^ (m << (U.sizeof * 8 - exp));
-                        enum intPartMask = man_mask + 1;
-                        m ^= intPartMask;
-                        m >>>= exp;
-                        m ^= u & sig_mask;
-                        u = cast(U) m;
+                            m >>>= exp;
+                            u ^= cast(U) m;
+                        }
+                        else
+                        {
+                            exp = exp2;
+                            (cast(U*)&vf)[MANTISSA_LSB] = (exp < U.sizeof * 8) ? m >> exp : 0;
+                        }
                     }
                     else
                     {
-                        static if (T.sizeof > U.sizeof)
-                        {
-                            (cast(U*)&vf)[MANTISSA_LSB] = 0;
-                        }
+                        m >>>= exp;
+                        u ^= cast(U) m;
                     }
                 }
             }
             (cast(U*)&vf)[idx] = u;
         }
-    R:
         return vf;
     }
     else
@@ -1199,133 +1097,68 @@ template floatTraits(T)
     // EXPPOS_SHORT is the index of the exponent when represented as a ushort array.
     // SIGNPOS_BYTE is the index of the sign when represented as a ubyte array.
     // RECIP_EPSILON is the value such that (smallest_subnormal) * RECIP_EPSILON == T.min_normal
-    enum T RECIP_EPSILON = (1/T.epsilon);
+    enum norm_factor = 1 / T.epsilon;
     static if (T.mant_dig == 24)
     {
-        // Single precision float
-        enum ushort EXPMASK = 0x7F80;
-        enum ushort EXPSHIFT = 7;
-        enum ushort EXPBIAS = 0x3F00;
-        enum uint EXPMASK_INT = 0x7F80_0000;
-        enum uint MANTISSAMASK_INT = 0x007F_FFFF;
         enum realFormat = RealFormat.ieeeSingle;
-        version (LittleEndian)
-        {
-            enum EXPPOS_SHORT = 1;
-            enum SIGNPOS_BYTE = 3;
-        }
-        else
-        {
-            enum EXPPOS_SHORT = 0;
-            enum SIGNPOS_BYTE = 0;
-        }
     }
     else static if (T.mant_dig == 53)
     {
         static if (T.sizeof == 8)
         {
-            // Double precision float, or real == double
-            enum ushort EXPMASK = 0x7FF0;
-            enum ushort EXPSHIFT = 4;
-            enum ushort EXPBIAS = 0x3FE0;
-            enum uint EXPMASK_INT = 0x7FF0_0000;
-            enum uint MANTISSAMASK_INT = 0x000F_FFFF; // for the MSB only
             enum realFormat = RealFormat.ieeeDouble;
-            version (LittleEndian)
-            {
-                enum EXPPOS_SHORT = 3;
-                enum SIGNPOS_BYTE = 7;
-            }
-            else
-            {
-                enum EXPPOS_SHORT = 0;
-                enum SIGNPOS_BYTE = 0;
-            }
-        }
-        else static if (T.sizeof == 12)
-        {
-            // Intel extended real80 rounded to double
-            enum ushort EXPMASK = 0x7FFF;
-            enum ushort EXPSHIFT = 0;
-            enum ushort EXPBIAS = 0x3FFE;
-            enum realFormat = RealFormat.ieeeExtended53;
-            version (LittleEndian)
-            {
-                enum EXPPOS_SHORT = 4;
-                enum SIGNPOS_BYTE = 9;
-            }
-            else
-            {
-                enum EXPPOS_SHORT = 0;
-                enum SIGNPOS_BYTE = 0;
-            }
         }
         else
             static assert(false, "No traits support for " ~ T.stringof);
     }
     else static if (T.mant_dig == 64)
     {
-        // Intel extended real80
-        enum ushort EXPMASK = 0x7FFF;
-        enum ushort EXPSHIFT = 0;
-        enum ushort EXPBIAS = 0x3FFE;
         enum realFormat = RealFormat.ieeeExtended;
-        version (LittleEndian)
-        {
-            enum EXPPOS_SHORT = 4;
-            enum SIGNPOS_BYTE = 9;
-        }
-        else
-        {
-            enum EXPPOS_SHORT = 0;
-            enum SIGNPOS_BYTE = 0;
-        }
     }
     else static if (T.mant_dig == 113)
     {
-        // Quadruple precision float
-        enum ushort EXPMASK = 0x7FFF;
-        enum ushort EXPSHIFT = 0;
-        enum ushort EXPBIAS = 0x3FFE;
         enum realFormat = RealFormat.ieeeQuadruple;
-        version (LittleEndian)
-        {
-            enum EXPPOS_SHORT = 7;
-            enum SIGNPOS_BYTE = 15;
-        }
-        else
-        {
-            enum EXPPOS_SHORT = 0;
-            enum SIGNPOS_BYTE = 0;
-        }
-    }
-    else static if (T.mant_dig == 106)
-    {
-        // IBM Extended doubledouble
-        enum ushort EXPMASK = 0x7FF0;
-        enum ushort EXPSHIFT = 4;
-        enum realFormat = RealFormat.ibmExtended;
-
-        // For IBM doubledouble the larger magnitude double comes first.
-        // It's really a double[2] and arrays don't index differently
-        // between little and big-endian targets.
-        enum DOUBLEPAIR_MSB = 0;
-        enum DOUBLEPAIR_LSB = 1;
-
-        // The exponent/sign byte is for most significant part.
-        version (LittleEndian)
-        {
-            enum EXPPOS_SHORT = 3;
-            enum SIGNPOS_BYTE = 7;
-        }
-        else
-        {
-            enum EXPPOS_SHORT = 0;
-            enum SIGNPOS_BYTE = 0;
-        }
     }
     else
         static assert(false, "No traits support for " ~ T.stringof);
+
+    static if (realFormat == RealFormat.ieeeExtended)
+    {
+        alias S = int;
+        alias U = ushort;
+        enum sig_mask = U(1) << (U.sizeof * 8 - 1);
+        enum exp_shft = 0;
+        enum man_mask = 0;
+        version (LittleEndian)
+            enum idx = 4;
+        else
+            enum idx = 0;
+    }
+    else
+    {
+        static if (realFormat == RealFormat.ieeeQuadruple || realFormat == RealFormat.ieeeDouble && double.sizeof == size_t.sizeof)
+        {
+            alias S = long;
+            alias U = ulong;
+        }
+        else
+        {
+            alias S = int;
+            alias U = uint;
+        }
+        static if (realFormat == RealFormat.ieeeQuadruple)
+            alias M = ulong;
+        else
+            alias M = U;
+        enum sig_mask = U(1) << (U.sizeof * 8 - 1);
+        enum uint exp_shft = T.mant_dig - 1 - (T.sizeof > U.sizeof ? U.sizeof * 8 : 0);
+        enum man_mask = (U(1) << exp_shft) - 1;
+        enum idx = T.sizeof > U.sizeof ? MANTISSA_MSB : 0;
+    }
+    enum exp_mask = (U.max >> (exp_shft + 1)) << exp_shft;
+    enum int exp_msh = exp_mask >> exp_shft;
+    enum intPartMask = man_mask + 1;
+    enum exp_nrm = S(exp_msh - T.max_exp - 1) << exp_shft;
 }
 
 // These apply to all floating-point types
