@@ -22,3 +22,4 @@ build/
 files
 *.lib
 mir-core-test-library
+bench_ldexp_frexp
