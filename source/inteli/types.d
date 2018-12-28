@@ -199,7 +199,7 @@ else
 
     // emulate ldc.simd cmpMask
 
-    Vec equalMask(Vec)(Vec a, Vec b) @safe
+    Vec equalMask(Vec)(Vec a, Vec b) @safe // for floats, equivalent to "oeq" comparison
     {
         alias BaseType = Vec.Base;
         alias Count = Vec.Count;
@@ -212,7 +212,7 @@ else
         return result;
     }
 
-    Vec notEqualMask(Vec)(Vec a, Vec b) @safe
+    Vec notEqualMask(Vec)(Vec a, Vec b) @safe // for floats, equivalent to "one" comparison
     {
         alias BaseType = Vec.Base;
         alias Count = Vec.Count;
@@ -225,7 +225,7 @@ else
         return result;
     }
 
-    Vec greaterMask(Vec)(Vec a, Vec b) @safe
+    Vec greaterMask(Vec)(Vec a, Vec b) @safe // for floats, equivalent to "ogt" comparison
     {
         alias BaseType = Vec.Base;
         alias Count = Vec.Count;
@@ -238,7 +238,7 @@ else
         return result;
     }
 
-    Vec greaterOrEqualMask(Vec)(Vec a, Vec b) @safe
+    Vec greaterOrEqualMask(Vec)(Vec a, Vec b) @safe // for floats, equivalent to "oge" comparison
     {
         alias BaseType = Vec.Base;
         alias Count = Vec.Count;
@@ -284,4 +284,191 @@ int _MM_SHUFFLE(int z, int y, int x, int w) pure @safe
     assert(w >= 0 && w <= 3);
     return (z<<6) | (y<<4) | (x<<2) | w;
 }
+
+
+// Note: `ldc.simd` cannot express all nuances of FP comparisons, so we
+//       need different IR generation.
+
+enum FPComparison
+{
+    false_,// no comparison, always returns false
+    oeq,   // ordered and equal
+    ogt,   // ordered and greater than
+    oge,   // ordered and greater than or equal
+    olt,   // ordered and less than
+    ole,   // ordered and less than or equal
+    one,   // ordered and not equal
+    ord,   // ordered (no nans)
+    ueq,   // unordered or equal
+    ugt,   // unordered or greater than ("nle")
+    uge,   // unordered or greater than or equal ("nlt")
+    ult,   // unordered or less than ("nge")
+    ule,   // unordered or less than or equal ("ngt")
+    une,   // unordered or not equal ("neq")
+    uno,   // unordered (either nans)
+    true_, // no comparison, always return true
+}
+
+private static immutable string[FPComparison.max+1] FPComparisonToString =
+[
+    "false",
+    "oeq",
+    "ogt",
+    "oge",
+    "olt",
+    "ole",
+    "one",
+    "ord",
+    "ueq",
+    "ugt",
+    "uge",
+    "ult",
+    "ule",
+    "une",
+    "uno",
+    "true"
+];
+
+version(LDC)
+{
+    import ldc.simd;
+
+    /// Provides packed float comparisons
+    package int4 cmpps(FPComparison comparison)(float4 a, float4 b)
+    {
+        enum ir = `
+            %cmp = fcmp `~ FPComparisonToString[comparison] ~` <4 x float> %0, %1
+            %r = sext <4 x i1> %cmp to <4 x i32>
+            ret <4 x i32> %r`;
+
+        return inlineIR!(ir, int4, float4, float4)(a, b);
+    }
+
+    /// Provides packed double comparisons
+    package long2 cmppd(FPComparison comparison)(double2 a, double2 b)
+    {
+        enum ir = `
+            %cmp = fcmp `~ FPComparisonToString[comparison] ~` <2 x double> %0, %1
+            %r = sext <2 x i1> %cmp to <2 x i64>
+            ret <2 x i64> %r`;
+
+        return inlineIR!(ir, long2, double2, double2)(a, b);
+    } 
+}
+else
+{
+    // Individual float comparison: returns -1 for true or 0 for false.
+    private bool compareFloat(T)(FPComparison comparison, T a, T b)
+    {
+        import std.math;
+        bool unordered = isNaN(a) || isNaN(b);
+        final switch(comparison) with(FPComparison)
+        {
+            case false_: return false;
+            case oeq: return a == b;
+            case ogt: return a > b;
+            case oge: return a >= b;
+            case olt: return a < b;
+            case ole: return a <= b;
+            case one: return !unordered && (a != b);
+            case ord: return !unordered; 
+            case ueq: return unordered || (a == b);
+            case ugt: return unordered || (a > b);
+            case uge: return unordered || (a >= b);
+            case ult: return unordered || (a < b);
+            case ule: return unordered || (a <= b);
+            case une: return (a != b); // NaN with != always yields true
+            case uno: return unordered;
+            case true_: return true;
+        }
+    }
+
+    /// Provides packed float comparisons
+    package int4 cmpps(FPComparison comparison)(float4 a, float4 b)
+    {
+        int4 result;
+        foreach(i; 0..4)
+        {
+            result[i] = compareFloat!(float)(comparison, a[i], b[i]) ? -1 : 0;
+        }
+        return result;
+    }
+
+    /// Provides packed double comparisons
+    package long2 cmppd(FPComparison comparison)(double2 a, double2 b)
+    {
+        long2 result;
+        foreach(i; 0..2)
+        {
+            result[i] = compareFloat!(double)(comparison, a[i], b[i]) ? -1 : 0;
+        }
+        return result;
+    }
+}
+unittest
+{
+    // Check all comparison type is working
+    float4 A = [1, 3, 5, float.nan];
+    float4 B = [2, 3, 4, 5];
+
+    int4 result_false_ = cmpps!(FPComparison.false_)(A, B);
+    int4 result_oeq = cmpps!(FPComparison.oeq)(A, B);
+    int4 result_ogt = cmpps!(FPComparison.ogt)(A, B);
+    int4 result_oge = cmpps!(FPComparison.oge)(A, B);
+    int4 result_olt = cmpps!(FPComparison.olt)(A, B);
+    int4 result_ole = cmpps!(FPComparison.ole)(A, B);
+    int4 result_one = cmpps!(FPComparison.one)(A, B);
+    int4 result_ord = cmpps!(FPComparison.ord)(A, B);
+    int4 result_ueq = cmpps!(FPComparison.ueq)(A, B);
+    int4 result_ugt = cmpps!(FPComparison.ugt)(A, B);
+    int4 result_uge = cmpps!(FPComparison.uge)(A, B);
+    int4 result_ult = cmpps!(FPComparison.ult)(A, B);
+    int4 result_ule = cmpps!(FPComparison.ule)(A, B);
+    int4 result_une = cmpps!(FPComparison.une)(A, B);
+    int4 result_uno = cmpps!(FPComparison.uno)(A, B);
+    int4 result_true_ = cmpps!(FPComparison.true_)(A, B);
+
+    static immutable int[4] correct_false_ = [ 0, 0, 0, 0];
+    static immutable int[4] correct_oeq    = [ 0,-1, 0, 0];
+    static immutable int[4] correct_ogt    = [ 0, 0,-1, 0];
+    static immutable int[4] correct_oge    = [ 0,-1,-1, 0];
+    static immutable int[4] correct_olt    = [-1, 0, 0, 0];
+    static immutable int[4] correct_ole    = [-1,-1, 0, 0];
+    static immutable int[4] correct_one    = [-1, 0,-1, 0];
+    static immutable int[4] correct_ord    = [-1,-1,-1, 0];
+    static immutable int[4] correct_ueq    = [ 0,-1, 0,-1];
+    static immutable int[4] correct_ugt    = [ 0, 0,-1,-1];
+    static immutable int[4] correct_uge    = [ 0,-1,-1,-1];
+    static immutable int[4] correct_ult    = [-1, 0, 0,-1];
+    static immutable int[4] correct_ule    = [-1,-1, 0,-1];
+    static immutable int[4] correct_une    = [-1, 0,-1,-1];
+    static immutable int[4] correct_uno    = [ 0, 0, 0,-1];
+    static immutable int[4] correct_true_  = [-1,-1,-1,-1];
+
+    assert(result_false_.array == correct_false_);
+    assert(result_oeq.array == correct_oeq);
+    assert(result_ogt.array == correct_ogt);
+    assert(result_oge.array == correct_oge);
+    assert(result_olt.array == correct_olt);
+    assert(result_ole.array == correct_ole);
+    assert(result_one.array == correct_one);
+    assert(result_ord.array == correct_ord);
+    assert(result_ueq.array == correct_ueq);
+    assert(result_ugt.array == correct_ugt);
+    assert(result_uge.array == correct_uge);
+    assert(result_ult.array == correct_ult);
+    assert(result_ule.array == correct_ule);
+    assert(result_une.array == correct_une);
+    assert(result_uno.array == correct_uno);
+    assert(result_true_.array == correct_true_);
+}
+unittest
+{
+    double2 a = [1, 3];
+    double2 b = [2, 3];
+    long2 c = cmppd!(FPComparison.ult)(a, b);
+    static immutable long[2] correct = [cast(long)(-1), 0];
+    assert(c.array == correct);
+}
+
 

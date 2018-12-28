@@ -214,12 +214,6 @@ version(LDC)
 }
 // TODO
 
-version(LDC)
-{
-    // just used for "ord" intrinsics
-    pragma(LDC_intrinsic, "llvm.x86.sse2.cmp.pd")
-        double2 __builtin_ia32_cmppd(double2, double2, byte) pure @safe;
-}
 
 __m128i _mm_cmpeq_epi16 (__m128i a, __m128i b) pure @safe
 {
@@ -262,29 +256,32 @@ unittest
 }
 
 
+
+__m128d _mm_cmpeq_pd (__m128d a, __m128d b) pure @safe
+{
+    return cast(__m128d) cmppd!(FPComparison.oeq)(a, b);
+}
+
 version(LDC)
 {
-    __m128d _mm_cmpeq_pd (__m128d a, __m128d b) pure @safe // TODO
-    {
-        return cast(__m128d) equalMask!double2(a, b);
-    }
-
     __m128d _mm_cmpeq_sd (__m128d a, __m128d b) pure @safe // TODO
     {
         return __builtin_ia32_cmpsd(a, b, 0);
     }
+}
 
-    __m128d _mm_cmpge_pd (__m128d a, __m128d b) pure @safe // TODO
-    {
-        return cast(__m128d) greaterOrEqualMask!double2(a, b);
-    }
+__m128d _mm_cmpge_pd (__m128d a, __m128d b) pure @safe
+{
+    return cast(__m128d) cmppd!(FPComparison.oge)(a, b);
+}
 
+version(LDC)
+{
     __m128d _mm_cmpge_sd (__m128d a, __m128d b) pure @safe // TODO
     {
         return __builtin_ia32_cmpsd(b, a, 2);
     }
 }
-
 
 __m128i _mm_cmpgt_epi16 (__m128i a, __m128i b) pure @safe
 {
@@ -326,30 +323,31 @@ unittest
     assert(C.array == correct);
 }
 
+__m128d _mm_cmpgt_pd (__m128d a, __m128d b) pure @safe
+{
+    return cast(__m128d) cmppd!(FPComparison.ogt)(a, b);
+}
+
 version(LDC)
 {
-
-    __m128d _mm_cmpgt_pd (__m128d a, __m128d b) pure @safe // TODO
-    {
-        return cast(__m128d) greaterMask!double2(a, b);
-    }
-
     __m128d _mm_cmpgt_sd (__m128d a, __m128d b) pure @safe // TODO
     {
         return __builtin_ia32_cmpsd(b, a, 1);
     }
+}
 
-    __m128d _mm_cmple_pd (__m128d a, __m128d b) pure @safe // TODO
-    {
-        return cast(__m128d) greaterOrEqualMask!double2(b, a);
-    }
+__m128d _mm_cmple_pd (__m128d a, __m128d b) pure @safe
+{
+    return cast(__m128d) cmppd!(FPComparison.ole)(a, b);
+}
 
+version(LDC)
+{
     __m128d _mm_cmple_sd (__m128d a, __m128d b) pure @safe // TODO
     {
         return __builtin_ia32_cmpsd(a, b, 2);
     }
 }
-
 
 __m128i _mm_cmplt_epi16 (__m128i a, __m128i b) pure @safe
 {
@@ -366,87 +364,104 @@ __m128i _mm_cmplt_epi8 (__m128i a, __m128i b) pure @safe
     return _mm_cmpgt_epi8(b, a);
 }
 
+__m128d _mm_cmplt_pd (__m128d a, __m128d b) pure @safe
+{
+    return cast(__m128d) cmppd!(FPComparison.olt)(a, b);
+}
+
 version(LDC)
 {
-    __m128d _mm_cmplt_pd (__m128d a, __m128d b) pure @safe // TODO
-    {
-        return cast(__m128d) greaterMask!double2(b, a);
-    }
-
     __m128d _mm_cmplt_sd (__m128d a, __m128d b) pure @safe // TODO
     {
         return __builtin_ia32_cmpsd(a, b, 1);
     }
+}
 
-    __m128d _mm_cmpneq_pd (__m128d a, __m128d b) pure @safe // TODO
-    {
-        return cast(__m128d) notEqualMask!double2(a, b);
-    }
+__m128d _mm_cmpneq_pd (__m128d a, __m128d b) pure @safe
+{
+    return cast(__m128d) cmppd!(FPComparison.une)(a, b);
+}
 
+version(LDC)
+{
     __m128d _mm_cmpneq_sd (__m128d a, __m128d b) pure @safe // TODO
     {
         return __builtin_ia32_cmpsd(a, b, 4);
     }
+}
 
-    __m128d _mm_cmpnge_pd (__m128d a, __m128d b) pure @safe
-    {
-        // TODO Incorrect for NaN
-        return _mm_cmplt_pd(b, a);
-    }
+__m128d _mm_cmpnge_pd (__m128d a, __m128d b) pure @safe
+{
+    return cast(__m128d) cmppd!(FPComparison.ult)(a, b);
+}
 
+version(LDC)
+{
     __m128d _mm_cmpnge_sd (__m128d a, __m128d b) pure @safe // TODO
     {
         return __builtin_ia32_cmpsd(b, a, 6);
     }
+}
 
-    __m128d _mm_cmpngt_pd (__m128d a, __m128d b) pure @safe // TODO
-    {
-        // TODO: Incorrect for NaN
-        return _mm_cmple_pd(b, a);
-    }
+__m128d _mm_cmpngt_pd (__m128d a, __m128d b) pure @safe
+{
+    return cast(__m128d) cmppd!(FPComparison.ule)(a, b);
+}
 
+version(LDC)
+{
     __m128d _mm_cmpngt_sd (__m128d a, __m128d b) pure @safe // TODO
     {
         return __builtin_ia32_cmpsd(b, a, 5);
     }
+}
 
-    __m128d _mm_cmpnle_pd (__m128d a, __m128d b) pure @safe // TODO
-    {
-        // TODO: Incorrect for NaN
-        return _mm_cmpgt_pd(b, a);
-    }
+__m128d _mm_cmpnle_pd (__m128d a, __m128d b) pure @safe
+{
+    return cast(__m128d) cmppd!(FPComparison.ugt)(a, b);
+}
 
+version(LDC)
+{
     __m128d _mm_cmpnle_sd (__m128d a, __m128d b) pure @safe // TODO
     {
         return __builtin_ia32_cmpsd(a, b, 6);
     }
+}
 
-    __m128d _mm_cmpnlt_pd (__m128d a, __m128d b) pure @safe // TODO
-    {
-        // TODO: Incorrect for NaN
-        return _mm_cmpge_pd(b, a);
-    }
+__m128d _mm_cmpnlt_pd (__m128d a, __m128d b) pure @safe
+{
+    return cast(__m128d) cmppd!(FPComparison.uge)(a, b);
+}
 
+version(LDC)
+{
     __m128d _mm_cmpnlt_sd (__m128d a, __m128d b) pure @safe // TODO
     {
         return __builtin_ia32_cmpsd(a, b, 5);
     }
+}
 
-    __m128d _mm_cmpord_pd (__m128d a, __m128d b) pure @safe // TODO
-    {
-        return __builtin_ia32_cmppd(a, b, 7);
-    }
+__m128d _mm_cmpord_pd (__m128d a, __m128d b) pure @safe // TODO
+{
+    return cast(__m128d) cmppd!(FPComparison.ord)(a, b);
+}
 
+version(LDC)
+{
     __m128d _mm_cmpord_sd (__m128d a, __m128d b) pure @safe // TODO
     {
         return __builtin_ia32_cmpsd(a, b, 7);
     }
+}
 
-    __m128d _mm_cmpunord_pd (__m128d a, __m128d b) pure @safe // TODO
-    {
-        return __builtin_ia32_cmppd(a, b, 3);
-    }
+__m128d _mm_cmpunord_pd (__m128d a, __m128d b) pure @safe // TODO
+{
+    return cast(__m128d) cmppd!(FPComparison.uno)(a, b);
+}
 
+version(LDC)
+{
     __m128d _mm_cmpunord_sd (__m128d a, __m128d b) pure @safe // TODO
     {
         return __builtin_ia32_cmpsd(a, b, 3);
