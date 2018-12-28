@@ -732,7 +732,7 @@ if (isFloatingPoint!T)
             {
                 auto m = u & man_mask;
                 static if (T.sizeof > U.sizeof)
-                    m |= (*cast(U*)&vf)[MANTISSA_LSB];
+                    m |= (cast(U*)&vf)[MANTISSA_LSB];
             }
             if (!m)
             {
