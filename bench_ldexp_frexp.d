@@ -43,6 +43,11 @@ void test(T)()
                 y[i] = ldexp(x[i], z[i]);
         },
         (){
+            import core.stdc.tgmath;
+            foreach(i; 0 .. length)
+                y[i] = ldexp(x[i], z[i]);
+        },
+        (){
             import mir.math;
             foreach(i; 0 .. length)
                 y[i] = frexp(x[i], exp_common);
@@ -52,10 +57,17 @@ void test(T)()
             foreach(i; 0 .. length)
                 y[i] = frexp(x[i], exp_common);
         },   
+        (){
+            import core.stdc.tgmath;
+            foreach(i; 0 .. length)
+                y[i] = frexp(x[i], &exp_common);
+        },
     )(100_000);
 
     writeln("---------------------------");
     writeln("++++ ", T.stringof, " ++++");
     writeln("ldexp (Phobos time / Mir time) = ", double(res[2].total!"usecs") / res[1].total!"usecs");
-    writeln("frexp (Phobos time / Mir time) = ", double(res[4].total!"usecs") / res[3].total!"usecs");
+    writeln("ldexp (  stdc time / Mir time) = ", double(res[3].total!"usecs") / res[1].total!"usecs");
+    writeln("frexp (Phobos time / Mir time) = ", double(res[5].total!"usecs") / res[4].total!"usecs");
+    writeln("frexp (  stdc time / Mir time) = ", double(res[6].total!"usecs") / res[4].total!"usecs");
 }
