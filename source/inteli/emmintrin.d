@@ -262,12 +262,9 @@ __m128d _mm_cmpeq_pd (__m128d a, __m128d b) pure @safe
     return cast(__m128d) cmppd!(FPComparison.oeq)(a, b);
 }
 
-version(LDC)
+__m128d _mm_cmpeq_sd (__m128d a, __m128d b) pure @safe
 {
-    __m128d _mm_cmpeq_sd (__m128d a, __m128d b) pure @safe // TODO
-    {
-        return __builtin_ia32_cmpsd(a, b, 0);
-    }
+    return cast(__m128d) cmpsd!(FPComparison.oeq)(a, b);
 }
 
 __m128d _mm_cmpge_pd (__m128d a, __m128d b) pure @safe
@@ -275,12 +272,9 @@ __m128d _mm_cmpge_pd (__m128d a, __m128d b) pure @safe
     return cast(__m128d) cmppd!(FPComparison.oge)(a, b);
 }
 
-version(LDC)
+__m128d _mm_cmpge_sd (__m128d a, __m128d b) pure @safe
 {
-    __m128d _mm_cmpge_sd (__m128d a, __m128d b) pure @safe // TODO
-    {
-        return __builtin_ia32_cmpsd(b, a, 2);
-    }
+    return cast(__m128d) cmpsd!(FPComparison.oge)(a, b);
 }
 
 __m128i _mm_cmpgt_epi16 (__m128i a, __m128i b) pure @safe
@@ -328,12 +322,9 @@ __m128d _mm_cmpgt_pd (__m128d a, __m128d b) pure @safe
     return cast(__m128d) cmppd!(FPComparison.ogt)(a, b);
 }
 
-version(LDC)
+__m128d _mm_cmpgt_sd (__m128d a, __m128d b) pure @safe
 {
-    __m128d _mm_cmpgt_sd (__m128d a, __m128d b) pure @safe // TODO
-    {
-        return __builtin_ia32_cmpsd(b, a, 1);
-    }
+    return cast(__m128d) cmpsd!(FPComparison.ogt)(a, b);
 }
 
 __m128d _mm_cmple_pd (__m128d a, __m128d b) pure @safe
@@ -341,12 +332,9 @@ __m128d _mm_cmple_pd (__m128d a, __m128d b) pure @safe
     return cast(__m128d) cmppd!(FPComparison.ole)(a, b);
 }
 
-version(LDC)
+__m128d _mm_cmple_sd (__m128d a, __m128d b) pure @safe
 {
-    __m128d _mm_cmple_sd (__m128d a, __m128d b) pure @safe // TODO
-    {
-        return __builtin_ia32_cmpsd(a, b, 2);
-    }
+    return cast(__m128d) cmpsd!(FPComparison.ole)(a, b);
 }
 
 __m128i _mm_cmplt_epi16 (__m128i a, __m128i b) pure @safe
@@ -369,12 +357,9 @@ __m128d _mm_cmplt_pd (__m128d a, __m128d b) pure @safe
     return cast(__m128d) cmppd!(FPComparison.olt)(a, b);
 }
 
-version(LDC)
+__m128d _mm_cmplt_sd (__m128d a, __m128d b) pure @safe
 {
-    __m128d _mm_cmplt_sd (__m128d a, __m128d b) pure @safe // TODO
-    {
-        return __builtin_ia32_cmpsd(a, b, 1);
-    }
+    return cast(__m128d) cmpsd!(FPComparison.olt)(a, b);
 }
 
 __m128d _mm_cmpneq_pd (__m128d a, __m128d b) pure @safe
@@ -382,12 +367,9 @@ __m128d _mm_cmpneq_pd (__m128d a, __m128d b) pure @safe
     return cast(__m128d) cmppd!(FPComparison.une)(a, b);
 }
 
-version(LDC)
+__m128d _mm_cmpneq_sd (__m128d a, __m128d b) pure @safe
 {
-    __m128d _mm_cmpneq_sd (__m128d a, __m128d b) pure @safe // TODO
-    {
-        return __builtin_ia32_cmpsd(a, b, 4);
-    }
+    return cast(__m128d) cmpsd!(FPComparison.une)(a, b);
 }
 
 __m128d _mm_cmpnge_pd (__m128d a, __m128d b) pure @safe
@@ -395,12 +377,9 @@ __m128d _mm_cmpnge_pd (__m128d a, __m128d b) pure @safe
     return cast(__m128d) cmppd!(FPComparison.ult)(a, b);
 }
 
-version(LDC)
+__m128d _mm_cmpnge_sd (__m128d a, __m128d b) pure @safe
 {
-    __m128d _mm_cmpnge_sd (__m128d a, __m128d b) pure @safe // TODO
-    {
-        return __builtin_ia32_cmpsd(b, a, 6);
-    }
+    return cast(__m128d) cmpsd!(FPComparison.ult)(a, b);
 }
 
 __m128d _mm_cmpngt_pd (__m128d a, __m128d b) pure @safe
@@ -408,12 +387,9 @@ __m128d _mm_cmpngt_pd (__m128d a, __m128d b) pure @safe
     return cast(__m128d) cmppd!(FPComparison.ule)(a, b);
 }
 
-version(LDC)
+__m128d _mm_cmpngt_sd (__m128d a, __m128d b) pure @safe
 {
-    __m128d _mm_cmpngt_sd (__m128d a, __m128d b) pure @safe // TODO
-    {
-        return __builtin_ia32_cmpsd(b, a, 5);
-    }
+    return cast(__m128d) cmpsd!(FPComparison.ule)(a, b);
 }
 
 __m128d _mm_cmpnle_pd (__m128d a, __m128d b) pure @safe
@@ -421,12 +397,9 @@ __m128d _mm_cmpnle_pd (__m128d a, __m128d b) pure @safe
     return cast(__m128d) cmppd!(FPComparison.ugt)(a, b);
 }
 
-version(LDC)
+__m128d _mm_cmpnle_sd (__m128d a, __m128d b) pure @safe
 {
-    __m128d _mm_cmpnle_sd (__m128d a, __m128d b) pure @safe // TODO
-    {
-        return __builtin_ia32_cmpsd(a, b, 6);
-    }
+    return cast(__m128d) cmpsd!(FPComparison.ugt)(a, b);
 }
 
 __m128d _mm_cmpnlt_pd (__m128d a, __m128d b) pure @safe
@@ -434,38 +407,29 @@ __m128d _mm_cmpnlt_pd (__m128d a, __m128d b) pure @safe
     return cast(__m128d) cmppd!(FPComparison.uge)(a, b);
 }
 
-version(LDC)
+__m128d _mm_cmpnlt_sd (__m128d a, __m128d b) pure @safe
 {
-    __m128d _mm_cmpnlt_sd (__m128d a, __m128d b) pure @safe // TODO
-    {
-        return __builtin_ia32_cmpsd(a, b, 5);
-    }
+    return cast(__m128d) cmpsd!(FPComparison.uge)(a, b);
 }
 
-__m128d _mm_cmpord_pd (__m128d a, __m128d b) pure @safe // TODO
+__m128d _mm_cmpord_pd (__m128d a, __m128d b) pure @safe
 {
     return cast(__m128d) cmppd!(FPComparison.ord)(a, b);
 }
 
-version(LDC)
+__m128d _mm_cmpord_sd (__m128d a, __m128d b) pure @safe
 {
-    __m128d _mm_cmpord_sd (__m128d a, __m128d b) pure @safe // TODO
-    {
-        return __builtin_ia32_cmpsd(a, b, 7);
-    }
+    return cast(__m128d) cmpsd!(FPComparison.ord)(a, b);
 }
 
-__m128d _mm_cmpunord_pd (__m128d a, __m128d b) pure @safe // TODO
+__m128d _mm_cmpunord_pd (__m128d a, __m128d b) pure @safe
 {
     return cast(__m128d) cmppd!(FPComparison.uno)(a, b);
 }
 
-version(LDC)
+__m128d _mm_cmpunord_sd (__m128d a, __m128d b) pure @safe
 {
-    __m128d _mm_cmpunord_sd (__m128d a, __m128d b) pure @safe // TODO
-    {
-        return __builtin_ia32_cmpsd(a, b, 3);
-    }
+    return cast(__m128d) cmpsd!(FPComparison.uno)(a, b);
 }
 
 version(LDC)
