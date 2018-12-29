@@ -40,7 +40,7 @@ build_script:
  # - sed 's/python35/python34/' -i examples/flex_plot/flex_common_pack/dub.json
 
 install:
-  - pyenv global system 3.6
+  - pyenv global system 3.7
   - pip3 install 'meson>=0.45'
   - mkdir .ntmp
   - curl -L https://github.com/ninja-build/ninja/releases/download/v1.8.2/ninja-linux.zip -o .ntmp/ninja-linux.zip
