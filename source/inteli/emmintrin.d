@@ -432,15 +432,40 @@ __m128d _mm_cmpunord_sd (__m128d a, __m128d b) pure @safe
     return cast(__m128d) cmpsd!(FPComparison.uno)(a, b);
 }
 
-version(LDC)
+
+// Note: we've reverted clang and GCC behaviour with regards to EFLAGS
+// Some such comparisons yields true for NaNs, other don't.
+
+int _mm_comieq_sd (__m128d a, __m128d b) pure @safe
 {
-    alias _mm_comieq_sd = __builtin_ia32_comisdeq; // TODO
-    alias _mm_comige_sd = __builtin_ia32_comisdge; // TODO
-    alias _mm_comigt_sd = __builtin_ia32_comisdgt; // TODO
-    alias _mm_comile_sd = __builtin_ia32_comisdle; // TODO
-    alias _mm_comilt_sd = __builtin_ia32_comisdlt; // TODO
-    alias _mm_comineq_sd = __builtin_ia32_comisdneq; // TODO
+    return comsd!(FPComparison.ueq)(a, b); // yields true for NaN, same as GCC
 }
+
+int _mm_comige_sd (__m128d a, __m128d b) pure @safe
+{
+    return comsd!(FPComparison.oge)(a, b);
+}
+
+int _mm_comigt_sd (__m128d a, __m128d b) pure @safe
+{
+    return comsd!(FPComparison.ogt)(a, b);
+}
+
+int _mm_comile_sd (__m128d a, __m128d b) pure @safe
+{
+    return comsd!(FPComparison.ule)(a, b); // yields true for NaN, same as GCC
+}
+
+int _mm_comilt_sd (__m128d a, __m128d b) pure @safe
+{
+    return comsd!(FPComparison.ult)(a, b); // yields true for NaN, same as GCC
+}
+
+int _mm_comineq_sd (__m128d a, __m128d b) pure @safe
+{
+    return comsd!(FPComparison.one)(a, b);
+}
+
 
 // TODO: alias _mm_cvtepi32_pd = __builtin_ia32_cvtdq2pd;
 
@@ -1330,14 +1355,19 @@ version(LDC)
     alias _mm_subs_epi8 = __builtin_ia32_psubsb128;
     alias _mm_subs_epu16 = __builtin_ia32_psubusw128;
     alias _mm_subs_epu8 = __builtin_ia32_psubusb128;
-
-    alias _mm_ucomieq_sd = __builtin_ia32_ucomisdeq;
-    alias _mm_ucomige_sd = __builtin_ia32_ucomisdge;
-    alias _mm_ucomigt_sd = __builtin_ia32_ucomisdgt;
-    alias _mm_ucomile_sd = __builtin_ia32_ucomisdle;
-    alias _mm_ucomilt_sd = __builtin_ia32_ucomisdlt;
-    alias _mm_ucomineq_sd = __builtin_ia32_ucomisdneq;
 }
+
+// Note: the only difference between these intrinsics is the signalling 
+//       behaviour of quiet NaNs. This is incorrect but the case where
+//       you would want to differentiate between qNaN and sNaN and then 
+//       treat them differently on purpose seems extremely rare.
+alias _mm_ucomieq_sd = _mm_comieq_sd;
+alias _mm_ucomige_sd = _mm_comige_sd;
+alias _mm_ucomigt_sd = _mm_comigt_sd;
+alias _mm_ucomile_sd = _mm_comile_sd;
+alias _mm_ucomilt_sd = _mm_comilt_sd;
+alias _mm_ucomineq_sd = _mm_comineq_sd;
+
 // TODO
 
 __m128d _mm_undefined_pd() pure @safe

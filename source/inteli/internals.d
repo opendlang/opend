@@ -129,7 +129,7 @@ private static immutable string[FPComparison.max+1] FPComparisonToString =
 
 // Individual float comparison: returns -1 for true or 0 for false.
 // Useful for DMD and testing
-private bool compareFloat(T)(FPComparison comparison, T a, T b)
+private bool compareFloat(T)(FPComparison comparison, T a, T b) pure @safe
 {
     import std.math;
     bool unordered = isNaN(a) || isNaN(b);
@@ -157,7 +157,7 @@ version(LDC)
     import ldc.simd;
 
     /// Provides packed float comparisons
-    package int4 cmpps(FPComparison comparison)(float4 a, float4 b)
+    package int4 cmpps(FPComparison comparison)(float4 a, float4 b) pure @safe
     {
         enum ir = `
             %cmp = fcmp `~ FPComparisonToString[comparison] ~` <4 x float> %0, %1
@@ -168,7 +168,7 @@ version(LDC)
     }
 
     /// Provides packed double comparisons
-    package long2 cmppd(FPComparison comparison)(double2 a, double2 b)
+    package long2 cmppd(FPComparison comparison)(double2 a, double2 b) pure @safe
     {
         enum ir = `
             %cmp = fcmp `~ FPComparisonToString[comparison] ~` <2 x double> %0, %1
@@ -183,7 +183,7 @@ version(LDC)
     /// but leads to less optimal code.
     /// PERF: try to implement it with __builtin_ia32_cmpss and immediate 0 to 7. 
     /// Not that simple.
-    package float4 cmpss(FPComparison comparison)(float4 a, float4 b)
+    package float4 cmpss(FPComparison comparison)(float4 a, float4 b) pure @safe
     {
         /*
         enum ubyte predicateNumber = FPComparisonToX86Predicate[comparison];
@@ -209,7 +209,7 @@ version(LDC)
     /// but leads to less optimal code.
     /// PERF: try to implement it with __builtin_ia32_cmpsd and immediate 0 to 7. 
     /// Not that simple.    
-    package double2 cmpsd(FPComparison comparison)(double2 a, double2 b)
+    package double2 cmpsd(FPComparison comparison)(double2 a, double2 b) pure @safe
     {
         enum ir = `
             %cmp = fcmp `~ FPComparisonToString[comparison] ~` double %0, %1
@@ -221,11 +221,33 @@ version(LDC)
         r[0] = inlineIR!(ir, double, double, double)(a[0], b[0]);
         return r;
     }
+
+    // Note: ucomss and ucomsd are left unimplemented
+    package int comss(FPComparison comparison)(float4 a, float4 b) pure @safe
+    {
+        enum ir = `
+            %cmp = fcmp `~ FPComparisonToString[comparison] ~` float %0, %1
+            %r = zext i1 %cmp to i32
+            ret i32 %r`;
+
+        return inlineIR!(ir, int, float, float)(a[0], b[0]);
+    }
+
+    // Note: ucomss and ucomsd are left unimplemented
+    package int comsd(FPComparison comparison)(double2 a, double2 b) pure @safe
+    {
+        enum ir = `
+            %cmp = fcmp `~ FPComparisonToString[comparison] ~` double %0, %1
+            %r = zext i1 %cmp to i32
+            ret i32 %r`;
+
+        return inlineIR!(ir, int, double, double)(a[0], b[0]);
+    }
 }
 else
 {
     /// Provides packed float comparisons
-    package int4 cmpps(FPComparison comparison)(float4 a, float4 b)
+    package int4 cmpps(FPComparison comparison)(float4 a, float4 b) pure @safe
     {
         int4 result;
         foreach(i; 0..4)
@@ -236,7 +258,7 @@ else
     }
 
     /// Provides packed double comparisons
-    package long2 cmppd(FPComparison comparison)(double2 a, double2 b)
+    package long2 cmppd(FPComparison comparison)(double2 a, double2 b) pure @safe
     {
         long2 result;
         foreach(i; 0..2)
@@ -247,7 +269,7 @@ else
     }
 
     /// Provides CMPSS-style comparison
-    package float4 cmpss(FPComparison comparison)(float4 a, float4 b)
+    package float4 cmpss(FPComparison comparison)(float4 a, float4 b) pure @safe
     {
         int4 result = cast(int4)a;
         result[0] = compareFloat!float(comparison, a[0], b[0]) ? -1 : 0;
@@ -255,11 +277,22 @@ else
     }
 
     /// Provides CMPSD-style comparison
-    package double2 cmpsd(FPComparison comparison)(double2 a, double2 b)
+    package double2 cmpsd(FPComparison comparison)(double2 a, double2 b) pure @safe
     {
         long2 result = cast(long2)a;
         result[0] = compareFloat!double(comparison, a[0], b[0]) ? -1 : 0;
         return cast(double2)result;
+    }
+
+    package int comss(FPComparison comparison)(float4 a, float4 b) pure @safe
+    {
+        return compareFloat!float(comparison, a[0], b[0]) ? 1 : 0;
+    }
+
+    // Note: ucomss and ucomsd are left unimplemented
+    package int comsd(FPComparison comparison)(double2 a, double2 b) pure @safe
+    {
+        return compareFloat!double(comparison, a[0], b[0]) ? 1 : 0;
     }
 }
 unittest // cmpps
@@ -321,7 +354,7 @@ unittest
     static immutable long[2] correct = [cast(long)(-1), 0];
     assert(c.array == correct);
 }
-unittest // cmpss
+unittest // cmpss and comss
 {
     import std.math: isIdentical;
 
@@ -334,6 +367,10 @@ unittest // cmpss
         assert(result[1] == A[1]);
         assert(result[2] == A[2]);
         assert(result[3] == A[3]);
+
+        // check comss
+        int comResult = comss!comparison(A, B);
+        assert( (expected != 0) == (comResult != 0) );
     }
 
     // Check all comparison type is working
@@ -370,7 +407,7 @@ unittest // cmpss
     testComparison!(FPComparison.uno)(A, B);
     testComparison!(FPComparison.uno)(A, C);
 }
-unittest // cmpsd
+unittest // cmpsd and comsd
 {
     import std.math: isIdentical;
 
@@ -381,6 +418,10 @@ unittest // cmpsd
         long expected = compareFloat!double(comparison, A[0], B[0]) ? -1 : 0;
         assert(iresult[0] == expected);
         assert(result[1] == A[1]);
+
+        // check comsd
+        int comResult = comsd!comparison(A, B);
+        assert( (expected != 0) == (comResult != 0) );
     }
 
     // Check all comparison type is working

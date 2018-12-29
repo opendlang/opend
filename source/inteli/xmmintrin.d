@@ -182,98 +182,39 @@ __m128 _mm_cmpunord_ss (__m128 a, __m128 b) pure @safe
     return cast(__m128) cmpss!(FPComparison.uno)(a, b);
 }
 
-version(LDC)
+// Note: we've reverted clang and GCC behaviour with regards to EFLAGS
+// Some such comparisons yields true for NaNs, other don't.
+
+int _mm_comieq_ss (__m128 a, __m128 b) pure @safe // comiss + sete
 {
-    alias _mm_comieq_ss = __builtin_ia32_comieq;
-}
-else
-{
-    // TODO
-    /*__m128i _mm_comieq_ss(__m128, __m128) pure @safe
-    {
-        assert(false, "unimplemented");
-    }
-    */
+    return comss!(FPComparison.ueq)(a, b); // yields true for NaN!
 }
 
-
-version(LDC)
+int _mm_comige_ss (__m128 a, __m128 b) pure @safe // comiss + setae
 {
-    alias _mm_comige_ss = __builtin_ia32_comige;
-}
-else
-{
-    // TODO
-    /*
-    __m128i _mm_comige_ss(__m128, __m128) pure @safe
-    {
-        assert(false, "unimplemented");
-    }
-    */
+    return comss!(FPComparison.oge)(a, b); 
 }
 
-
-version(LDC)
+int _mm_comigt_ss (__m128 a, __m128 b) pure @safe // comiss + seta
 {
-    alias _mm_comigt_ss = __builtin_ia32_comigt;
-}
-else
-{
-    // TODO
-    /*
-    __m128i _mm_comigt_ss(__m128, __m128) pure @safe
-    {
-        assert(false, "unimplemented");
-    }
-    */
+    return comss!(FPComparison.ogt)(a, b);
 }
 
-
-version(LDC)
+int _mm_comile_ss (__m128 a, __m128 b) pure @safe // comiss + setbe
 {
-    alias _mm_comile_ss = __builtin_ia32_comile;
-}
-else
-{
-    // TODO
-    /*
-    __m128i _mm_comile_ss(__m128, __m128) pure @safe
-    {
-        assert(false, "unimplemented");
-    }
-    */
+    return comss!(FPComparison.ule)(a, b); // yields true for NaN!
 }
 
-
-version(LDC)
+int _mm_comilt_ss (__m128 a, __m128 b) pure @safe // comiss + setb
 {
-    alias _mm_comilt_ss = __builtin_ia32_comilt;
-}
-else
-{
-    // TODO
-    /*
-    __m128i _mm_comilt_ss(__m128, __m128) pure @safe
-    {
-        assert(false, "unimplemented");
-    }
-    */
+    return comss!(FPComparison.ult)(a, b); // yields true for NaN!
 }
 
-version(LDC)
+int _mm_comineq_ss (__m128 a, __m128 b) pure @safe // comiss + setne
 {
-    alias _mm_comineq_ss = __builtin_ia32_comineq;
+    return comss!(FPComparison.one)(a, b);
 }
-else
-{
-    // TODO
-    /*
-    __m128i _mm_comineq_ss(__m128, __m128) pure @safe
-    {
-        assert(false, "unimplemented");
-    }
-    */
-}
+
 
 // MMXREG: __m128 _mm_cvt_pi2ps (__m128 a, __m64 b)
 // MMXREG: __m64 _mm_cvt_ps2pi (__m128 a)
@@ -870,41 +811,16 @@ void _MM_TRANSPOSE4_PS (ref __m128 row0, ref __m128 row1, ref __m128 row2, ref _
     row3 = _mm_movehl_ps(tmp3, tmp1);
 }
 
-version(LDC)
-{
-    alias _mm_ucomieq_ss = __builtin_ia32_ucomieq;
-}
-// TODO
-
-version(LDC)
-{
-    alias _mm_ucomige_ss = __builtin_ia32_ucomige;
-}
-// TODO
-
-version(LDC)
-{
-    alias _mm_ucomigt_ss = __builtin_ia32_ucomigt;
-}
-// TODO
-
-version(LDC)
-{
-    alias _mm_ucomile_ss = __builtin_ia32_ucomile;
-}
-// TODO
-
-version(LDC)
-{
-    alias _mm_ucomilt_ss = __builtin_ia32_ucomilt;
-}
-// TODO
-
-version(LDC)
-{
-    alias _mm_ucomineq_ss = __builtin_ia32_ucomineq;
-}
-// TODO
+// Note: the only difference between these intrinsics is the signalling 
+//       behaviour of quiet NaNs. This is incorrect but the case where
+//       you would want to differentiate between qNaN and sNaN and then 
+//       treat them differently on purpose seems extremely rare.
+alias _mm_ucomieq_ss = _mm_comieq_ss;
+alias _mm_ucomige_ss = _mm_comige_ss;
+alias _mm_ucomigt_ss = _mm_comigt_ss;
+alias _mm_ucomile_ss = _mm_comile_ss;
+alias _mm_ucomilt_ss = _mm_comilt_ss;
+alias _mm_ucomineq_ss = _mm_comineq_ss;
 
 
 __m128 _mm_undefined_ps() pure @safe
