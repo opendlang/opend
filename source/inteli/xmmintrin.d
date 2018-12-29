@@ -427,7 +427,7 @@ __m128 _mm_loadu_ps(float*p) pure @safe
     return loadUnaligned!(__m128)(p);
 }
 
-__m128i _mm_loadu_si16(const(void)* mem_addr)
+__m128i _mm_loadu_si16(const(void)* mem_addr) pure @trusted
 {
     short r = *cast(short*)(mem_addr);
     short8 result = [0, 0, 0, 0, 0, 0, 0, 0];
@@ -442,7 +442,7 @@ unittest
     assert(A.array == correct);
 }
 
-__m128i _mm_loadu_si64(const(void)* mem_addr)
+__m128i _mm_loadu_si64(const(void)* mem_addr) pure @trusted
 {
     long r = *cast(long*)(mem_addr);
     long2 result = [0, 0];
@@ -467,27 +467,85 @@ version(LDC)
 }
 else
 {
-    // TODO
+    __m128 _mm_max_ps(__m128 a, __m128 b) pure @safe
+    {
+        __m128 r;
+        r[0] = (a[0] > b[0]) ? a[0] : b[0];
+        r[1] = (a[1] > b[1]) ? a[1] : b[1];
+        r[2] = (a[2] > b[2]) ? a[2] : b[2];
+        r[3] = (a[3] > b[3]) ? a[3] : b[3];
+        return r;
+    }
+}
+unittest
+{
+    __m128 A = _mm_setr_ps(1, 2, float.nan, 4);
+    __m128 B = _mm_setr_ps(4, 1, 4, float.nan);
+    __m128 M = _mm_max_ps(A, B);
+    assert(M[0] == 4);
+    assert(M[1] == 2);
+    assert(M[2] == 4);    // in case of NaN, second operand prevails (as it seems)
+    assert(M[3] != M[3]); // in case of NaN, second operand prevails (as it seems)
 }
 
 // MMXREG: _mm_max_pu8
+
 version(LDC)
 {
     alias _mm_max_ss = __builtin_ia32_maxss;
 }
 else
 {
-    // TODO
+    __m128 _mm_max_ss(__m128 a, __m128 b) pure @safe
+    {
+        __m128 r = a;
+        r[0] = (a[0] > b[0]) ? a[0] : b[0];
+        return r;
+    }
+}
+unittest
+{
+    __m128 A = _mm_setr_ps(1, 2, 3, 4);
+    __m128 B = _mm_setr_ps(4, 1, 4, 1);
+    __m128 C = _mm_setr_ps(float.nan, 1, 4, 1);
+    __m128 M = _mm_max_ss(A, B);
+    assert(M[0] == 4);
+    assert(M[1] == 2);
+    assert(M[2] == 3);
+    assert(M[3] == 4);
+    M = _mm_max_ps(A, C); // in case of NaN, second operand prevails
+    assert(M[0] != M[0]);
+    M = _mm_max_ps(C, A); // in case of NaN, second operand prevails
+    assert(M[0] == 1);
 }
 
 // MMXREG: _mm_min_pi16
+
 version(LDC)
 {
     alias _mm_min_ps = __builtin_ia32_minps;
 }
 else
 {
-    // TODO
+    __m128 _mm_min_ps(__m128 a, __m128 b) pure @safe
+    {
+        __m128 r;
+        r[0] = (a[0] < b[0]) ? a[0] : b[0];
+        r[1] = (a[1] < b[1]) ? a[1] : b[1];
+        r[2] = (a[2] < b[2]) ? a[2] : b[2];
+        r[3] = (a[3] < b[3]) ? a[3] : b[3];
+        return r;
+    }
+}
+unittest
+{
+    __m128 A = _mm_setr_ps(1, 2, float.nan, 4);
+    __m128 B = _mm_setr_ps(4, 1, 4, float.nan);
+    __m128 M = _mm_min_ps(A, B);
+    assert(M[0] == 1);
+    assert(M[1] == 1);
+    assert(M[2] == 4);    // in case of NaN, second operand prevails (as it seems)
+    assert(M[3] != M[3]); // in case of NaN, second operand prevails (as it seems)
 }
 
 // MMXREG: _mm_min_pi8
@@ -495,6 +553,30 @@ else
 version(LDC)
 {
     alias _mm_min_ss = __builtin_ia32_minss;
+}
+else
+{
+    __m128 _mm_min_ss(__m128 a, __m128 b) pure @safe
+    {
+        __m128 r = a;
+        r[0] = (a[0] < b[0]) ? a[0] : b[0];
+        return r;
+    }
+}
+unittest
+{
+    __m128 A = _mm_setr_ps(1, 2, 3, 4);
+    __m128 B = _mm_setr_ps(4, 1, 4, 1);
+    __m128 C = _mm_setr_ps(float.nan, 1, 4, 1);
+    __m128 M = _mm_min_ss(A, B);
+    assert(M[0] == 1);
+    assert(M[1] == 2);
+    assert(M[2] == 3);
+    assert(M[3] == 4);
+    M = _mm_min_ps(A, C); // in case of NaN, second operand prevails
+    assert(M[0] != M[0]);
+    M = _mm_min_ps(C, A); // in case of NaN, second operand prevails
+    assert(M[0] == 1);
 }
 
 __m128 _mm_move_ss (__m128 a, __m128 b) pure @safe

@@ -49,12 +49,17 @@ Without this critical Intel documentation it's much more difficult to write SIMD
 ### Future-proof
 
 `intel-intrinsics` is a set of stable SIMD intrinsic that the LDC team doesn't have the manpower to maintain.
+It is mimicked on the set of similar intrinsics in GCC, clang, ICC...
 
 LDC SIMD intrinsics are a moving target (https://github.com/ldc-developers/ldc/issues/2019),
-and you need a layer over it if you want to be safe.
+and you need a layer over it if you want to be sure your code won't break.
 
-Because those x86 intrinsics are internally converted to IR, **they don't tie to a particular architecture**.
+Because those x86 intrinsics are internally converted to IR, **they often don't tie to a particular architecture**.
 So you could target ARM one day and still get comparable speed-up.
+
+However, `intel-intrinsics` does **not** guarantee the usage of one particular instruction in general. 
+It could well happen that your code end up slower, or doesn't use the instruction you though it would.
+The only guarantee is semantics, with performance being a long-term goal for the cases where codegen isn't optimal.
 
 
 ### Portability
