@@ -759,16 +759,16 @@ if (isFloatingPoint!T)
 ///
 @safe unittest
 {
-    import mir.math.common: pow;
-    import std.math: approxEqual, isNaN;
+    import mir.math.common: pow, approxEqual;
+    alias isNaN = x => x != x;
     int exp;
     real mantissa = frexp(123.456L, exp);
 
     assert(approxEqual(mantissa * pow(2.0L, cast(real) exp), 123.456L));
 
     exp = 1234; // random number
-    assert(frexp(-real.nan, exp).isNaN && exp == 1234);
-    assert(frexp(real.nan, exp).isNaN && exp == 1234);
+    assert(isNaN(frexp(-real.nan, exp)) && exp == 1234);
+    assert(isNaN(frexp(real.nan, exp)) && exp == 1234);
     assert(frexp(-real.infinity, exp) == -real.infinity && exp == 1234);
     assert(frexp(real.infinity, exp) == real.infinity && exp == 1234);
 
@@ -787,7 +787,6 @@ if (isFloatingPoint!T)
 
 @safe unittest
 {
-    import std.math: isIdentical;
     import std.meta : AliasSeq;
     import std.typecons : tuple, Tuple;
 
@@ -838,7 +837,7 @@ if (isFloatingPoint!T)
                 int exp = cast(int) elem[2];
                 int eptr;
                 T v = frexp(x, eptr);
-                assert(isIdentical(e, v));
+                assert(e == v);
                 assert(exp == eptr);
 
             }

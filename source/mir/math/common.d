@@ -376,7 +376,7 @@ else
 version (mir_test)
 @nogc nothrow pure @safe unittest
 {
-    import std.math: PI, feqrel;
+    import mir.math: PI, feqrel;
     assert(feqrel(pow(2.0L, -0.5L), cos(PI / 4)) >= real.mant_dig - 1);
 }
 
@@ -391,4 +391,39 @@ version (mir_test)
 unittest
 {
     assert(fabs(3 + 4i) == 25);
+}
+
+/++
+Computes whether two values are approximately equal, admitting a maximum
+relative difference, and a maximum absolute difference.
+Params:
+    lhs = First item to compare.
+    rhs = Second item to compare.
+    maxRelDiff = Maximum allowable difference relative to `rhs`. Defaults to `0.5 ^^ 20`.
+    maxAbsDiff = Maximum absolute difference. Defaults to `0.5 ^^ 20`.
+        
+Returns:
+    `true` if the two items are equal or approximately equal under either criterium.
++/
+bool approxEqual(T)(const T lhs, const T rhs, const T maxRelDiff = T(0x1p-20f), const T maxAbsDiff = T(0x1p-20f))
+{
+    if (rhs == lhs) // infs
+        return true;
+    auto diff = fabs(lhs - rhs);
+    if (diff <= maxAbsDiff)
+        return true;
+    diff /= fabs(rhs);
+    return diff <= maxRelDiff;
+}
+
+///
+@safe pure nothrow @nogc unittest
+{
+    assert(approxEqual(1.0, 1.0000001));
+    assert(approxEqual(1.0f, 1.0000001f));
+    assert(approxEqual(1.0L, 1.0000001L));
+
+    assert(approxEqual(10000000.0, 10000001));
+    assert(approxEqual(10000000f, 10000001f));
+    assert(!approxEqual(100000.0L, 100001L));
 }
