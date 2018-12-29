@@ -231,7 +231,7 @@ Can be used to sample from the distribution.
 ///
 version(mir_random_test) unittest
 {
-    import std.math : approxEqual;
+    import mir.math : approxEqual;
     import std.meta : AliasSeq;
     import mir.random.engine.xorshift : Xorshift;
     auto gen = Xorshift(42);
@@ -248,9 +248,9 @@ version(mir_random_test) unittest
 version(X86_64) version(mir_random_test) unittest
 {
     import std.meta : AliasSeq;
-    import std.math : approxEqual, PI;
+    import std.math : approxEqual;
     import mir.random.engine.xorshift : Xorshift;
-    import mir.math.common : exp, sqrt;
+    import mir.math : exp, sqrt, PI;
     foreach (S; AliasSeq!(float, double, real))
     {
         S sqrt2PI = sqrt(2 * PI);
@@ -299,7 +299,7 @@ version(X86_64) version(mir_random_test) unittest
 version(X86_64) version(mir_random_test) unittest
 {
     import mir.math.common;
-    import std.math : approxEqual;
+    import mir.math : approxEqual;
     import std.meta : AliasSeq;
     import mir.random.engine.xorshift : Xorshift;
     foreach (S; AliasSeq!(float, double, real))
@@ -468,7 +468,7 @@ version(X86_64) version(DigitalMars)
 version(mir_random_test) unittest
 {
     import mir.math.common;
-    import std.math : approxEqual;
+    import mir.math : approxEqual;
     import std.meta : AliasSeq;
     import mir.random.engine.xorshift : Xorshift;
     //foreach (S; AliasSeq!(double, real))
@@ -515,7 +515,7 @@ version(X86_64) version(DigitalMars)
 version(mir_random_test) unittest
 {
     import mir.math.common;
-    import std.math : approxEqual;
+    import mir.math : approxEqual;
     import std.meta : AliasSeq;
     import mir.random.engine.xorshift : Xorshift;
 
@@ -645,7 +645,7 @@ body
     import mir.ndslice.sorting : sort;
     import std.container.array: Array;
     import std.container.binaryheap: BinaryHeap;
-    import std.math: nextDown;
+    import mir.math: nextDown;
 
     alias Sum = Summator!(S, Summation.precise);
 

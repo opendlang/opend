@@ -265,7 +265,7 @@ nothrow pure @safe version(mir_random_test) unittest
 // test sin(x)
 nothrow pure @safe version(mir_random_test) unittest
 {
-    import std.math: PI;
+    import mir.math: PI;
     // due to numerical errors a small padding must be added
     // see e.g. https://gist.github.com/wilzbach/3d27d06b55821aa9795deb15d4d47679
     import mir.math.common : cos, sin;
@@ -529,8 +529,7 @@ LinearFun!S linearFun(S)(S slope, S y, S a)
 
 nothrow pure @safe version(mir_random_test) unittest
 {
-    import mir.math.common : cos;
-    import std.math : PI, approxEqual;
+    import mir.math : cos, PI, approxEqual;
     import std.meta : AliasSeq;
     foreach (S; AliasSeq!(float, double, real))
     {

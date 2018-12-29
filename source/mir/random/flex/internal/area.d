@@ -7,8 +7,8 @@ version(Flex_logging)
     import std.experimental.logger;
 }
 
-import std.math: signbit, frexp, LOG2E, isFinite;
-import mir.math.common;
+import std.math: isFinite;
+import mir.math;
 import mir.random.flex.internal.types;
 
 /*
@@ -29,7 +29,7 @@ version(unittest)
     bool fpEqual(S)(in S a, in S b) @nogc nothrow pure @safe
     if (isFloatingPoint!S)
     {
-        import std.math : feqrel;
+        import mir.math : feqrel;
         return feqrel(a, b) >= S.mant_dig - 2;
     }
 }
@@ -163,7 +163,7 @@ nothrow pure @safe version(mir_random_test) unittest
 // test undefined type
 @nogc nothrow pure @safe version(mir_random_test) unittest
 {
-    import std.math : fabs, log;
+    import mir.math : fabs, log;
     import mir.random.flex.internal.transformations : transformInterval;
     import mir.random.flex.internal.types : determineType, FunType;
     import std.meta : AliasSeq;
@@ -224,10 +224,10 @@ nothrow pure @safe version(mir_random_test) unittest
         assert(t == FunType.T4a);
         determineSqueezeAndHat(iv);
 
-        assert(approxEqual(iv.hat, res[i][0]));
+        assert(approxEqual!S(iv.hat, res[i][0]));
 
         if (std.math.isFinite(iv.squeeze.slope))
-            assert(iv.squeeze.approxEqual(res[i][1]));
+            assert(iv.squeeze.approxEqual!S(res[i][1]));
         else
             assert(std.math.isNaN(res[i][1].slope));
     }
@@ -415,7 +415,7 @@ static if (is(typeof({ import mir.ndslice.slice; })))
     import mir.functional: refTuple;
     import mir.random.flex.internal.transformations : transformInterval;
     import mir.random.flex.internal.types : determineType;
-    import std.math: approxEqual;
+    import mir.math: approxEqual;
     import std.meta : AliasSeq;
 
     alias S = float;
@@ -508,7 +508,7 @@ static if (is(typeof({ import mir.ndslice.slice; })))
     import mir.functional: refTuple;
     import mir.random.flex.internal.transformations : transformInterval;
     import mir.random.flex.internal.types : determineType;
-    import std.math: approxEqual;
+    import mir.math: approxEqual;
     import std.meta : AliasSeq;
 
     alias S = double;
@@ -668,7 +668,7 @@ static if (is(typeof({ import mir.ndslice.slice; })))
                 {
                     version(Windows)
                     {
-                        import std.math : nextDown, nextUp;
+                        import mir.math : nextDown, nextUp;
                         logf("got: %a", iv.squeezeArea);
                         logf("-- up: %a, down: %a", iv.squeezeArea.nextUp, iv.squeezeArea.nextDown);
                         logf("exp: %a", sqs[i][j]);
@@ -764,7 +764,7 @@ static if (is(typeof({ import mir.ndslice.slice; })))
 
     foreach (S; AliasSeq!(float, double, real))
     {
-        import std.math : PI;
+        import mir.math : PI;
 
         S sqrt2PI = sqrt(2 * PI);
         auto f0 = (S x) => 1 / (exp(x * x / 2) * sqrt2PI);

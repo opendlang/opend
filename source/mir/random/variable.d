@@ -50,9 +50,7 @@ module mir.random.variable;
 import mir.random;
 import std.traits;
 
-import std.math : nextDown, isFinite, LN2;
-
-import mir.math.common;
+import mir.math;
 
 private T sumSquares(T)(const T a, const T b)
 {
@@ -196,8 +194,8 @@ struct UniformVariable(T)
     this(T a, T b)
     {
         assert(a < b, "constraint: a < b");
-        assert(a.isFinite);
-        assert(b.isFinite);
+        assert(a.fabs < T.infinity);
+        assert(b.fabs < T.infinity);
         _a = a;
         _b = b;
     }
@@ -248,7 +246,7 @@ version (D_Ddoc)
 ///
 @nogc nothrow @safe version(mir_random_test) unittest
 {
-    import std.math : nextDown;
+    import mir.math : nextDown;
     auto gen = Random(unpredictableSeed);
     auto rv = uniformVar(-8.0, 10); // [-8, 10)
     static assert(isRandomVariable!(typeof(rv)));
@@ -260,7 +258,7 @@ version (D_Ddoc)
 ///
 @nogc nothrow @safe version(mir_random_test) unittest
 {
-    import std.math : nextDown;
+    import mir.math : nextDown;
     auto gen = Random(unpredictableSeed);
     auto rv = UniformVariable!double(-8, 10); // [-8, 10)
     foreach(_; 0..1000)
@@ -273,7 +271,7 @@ version (D_Ddoc)
 ///
 @nogc nothrow @safe version(mir_random_test) unittest
 {
-    import std.math : nextDown;
+    import mir.math : nextDown;
     Random* gen = threadLocalPtr!Random;
     auto rv = UniformVariable!double(-8, 10); // [-8, 10)
     auto x = rv(gen); // random variable
@@ -1434,7 +1432,7 @@ struct PoissonVariable(T)
     ///
     enum isRandomVariable = true;
 
-    import std.math : E;
+    import mir.math.constant : E;
     private T rate = 1;
     private T temp1 = 1 / E;
     T a = void, b = void;

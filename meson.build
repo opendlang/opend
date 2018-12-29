@@ -1,4 +1,4 @@
-project('mir-random', 'd', version : '2.1.1', license: 'BSL-1.0')
+project('mir-random', 'd', version : '2.2.0', license: 'BSL-1.0')
 
 mir_core_dep = dependency('mir-core', fallback : ['mir-core', 'mir_core_dep'])
 

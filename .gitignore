@@ -18,3 +18,4 @@ docs.json
 build/
 *.exe
 *.lib
+mir-random-test-default

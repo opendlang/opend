@@ -318,7 +318,7 @@ struct VitterStrides
     sizediff_t opCall(G)(scope ref G gen)
     {
         pragma(inline, false);
-        import std.math: LN2;
+        import mir.math.constant: LN2;
         import mir.random;
         size_t S;
         switch(n)

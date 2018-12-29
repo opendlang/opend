@@ -7,8 +7,7 @@ version(Flex_logging)
     import std.experimental.logger : logf;
 }
 
-import std.math: signbit, frexp, LOG2E, isFinite;
-import mir.math.common;
+import mir.math;
 
 /**
 Create a c-transformation, based on a function and it's first two derivatives
