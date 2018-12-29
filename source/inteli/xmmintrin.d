@@ -594,10 +594,28 @@ __m128 _mm_movelh_ps (__m128 a, __m128 b) pure @safe
     return shufflevector!(float4, 0, 1, 4, 5)(a, b);
 }
 
-// TODO: int _mm_movemask_pi8
+
 version(LDC)
 {
     alias _mm_movemask_ps = __builtin_ia32_movmskps;
+}
+else
+{
+    int _mm_movemask_ps (__m128 a) pure @safe
+    {
+        int4 ai = cast(int4)a;
+        int r = 0;
+        if (ai[0] < 0) r += 1;
+        if (ai[1] < 0) r += 2;
+        if (ai[2] < 0) r += 4;
+        if (ai[3] < 0) r += 8;
+        return r;
+    }
+}
+unittest
+{
+    int4 A = [-1, 0, -43, 0];
+    assert(5 == _mm_movemask_ps(cast(float4)A));
 }
 
 __m128 _mm_mul_ps(__m128 a, __m128 b) pure @safe
