@@ -33,7 +33,7 @@ pure {
 extern( System ):
 
 // Version of corresponding c header file
-enum VK_HEADER_VERSION = 95;
+enum VK_HEADER_VERSION = 96;
 
 enum VK_NULL_HANDLE = null;
 
@@ -8547,16 +8547,16 @@ struct VkCheckpointDataNV {
 // - VK_EXT_pci_bus_info -
 enum VK_EXT_pci_bus_info = 1;
 
-enum VK_EXT_PCI_BUS_INFO_SPEC_VERSION = 1;
+enum VK_EXT_PCI_BUS_INFO_SPEC_VERSION = 2;
 enum VK_EXT_PCI_BUS_INFO_EXTENSION_NAME = "VK_EXT_pci_bus_info";
 
 struct VkPhysicalDevicePCIBusInfoPropertiesEXT {
     VkStructureType  sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PCI_BUS_INFO_PROPERTIES_EXT;
     void*            pNext;
-    uint16_t         pciDomain;
-    uint8_t          pciBus;
-    uint8_t          pciDevice;
-    uint8_t          pciFunction;
+    uint32_t         pciDomain;
+    uint32_t         pciBus;
+    uint32_t         pciDevice;
+    uint32_t         pciFunction;
 }
 
 
@@ -8605,14 +8605,14 @@ struct VkPhysicalDeviceScalarBlockLayoutFeaturesEXT {
 // - VK_GOOGLE_hlsl_functionality1 -
 enum VK_GOOGLE_hlsl_functionality1 = 1;
 
-enum VK_GOOGLE_HLSL_FUNCTIONALITY1_SPEC_VERSION = 0;
+enum VK_GOOGLE_HLSL_FUNCTIONALITY1_SPEC_VERSION = 1;
 enum VK_GOOGLE_HLSL_FUNCTIONALITY1_EXTENSION_NAME = "VK_GOOGLE_hlsl_functionality1";
 
 
 // - VK_GOOGLE_decorate_string -
 enum VK_GOOGLE_decorate_string = 1;
 
-enum VK_GOOGLE_DECORATE_STRING_SPEC_VERSION = 0;
+enum VK_GOOGLE_DECORATE_STRING_SPEC_VERSION = 1;
 enum VK_GOOGLE_DECORATE_STRING_EXTENSION_NAME = "VK_GOOGLE_decorate_string";
 
 
