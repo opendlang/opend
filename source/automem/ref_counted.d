@@ -11,12 +11,17 @@ import std.typecons: Flag;
 
 alias RC = RefCounted;
 
+version (D_BetterC)
+    enum gcExists = false;
+else
+    enum gcExists = true;
+
 /**
    A reference-counted smart pointer similar to C++'s std::shared_ptr.
  */
 struct RefCounted(Type,
                   Allocator = typeof(theAllocator),
-                  Flag!"supportGC" supportGC = Flag!"supportGC".yes)
+                  Flag!"supportGC" supportGC = gcExists ? Flag!"supportGC".yes : Flag!"supportGC".no)
     if(isAllocator!Allocator)
 {
 
