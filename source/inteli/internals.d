@@ -11,6 +11,17 @@ version(LDC)
     public import ldc.simd;
     public import ldc.gccbuiltins_x86;
     public import ldc.intrinsics;
+
+    // Since LDC 1.13, using the new ldc.llvmasm.__ir variants instead of inlineIR
+    static if (__VERSION__ >= 2083)
+    {
+         import ldc.llvmasm;
+         alias LDCInlineIR = __ir_pure;
+    }
+    else
+    {
+        alias LDCInlineIR = inlineIR;
+    }
 }
 
 import inteli.types;
@@ -164,7 +175,7 @@ version(LDC)
             %r = sext <4 x i1> %cmp to <4 x i32>
             ret <4 x i32> %r`;
 
-        return inlineIR!(ir, int4, float4, float4)(a, b);
+        return LDCInlineIR!(ir, int4, float4, float4)(a, b);        
     }
 
     /// Provides packed double comparisons
@@ -175,7 +186,7 @@ version(LDC)
             %r = sext <2 x i1> %cmp to <2 x i64>
             ret <2 x i64> %r`;
 
-        return inlineIR!(ir, long2, double2, double2)(a, b);
+        return LDCInlineIR!(ir, long2, double2, double2)(a, b);
     }    
 
     /// CMPSS-style comparisons
@@ -200,7 +211,7 @@ version(LDC)
             ret float %r2`;
 
         float4 r = a;
-        r[0] = inlineIR!(ir, float, float, float)(a[0], b[0]);
+        r[0] = LDCInlineIR!(ir, float, float, float)(a[0], b[0]);
         return r;
     }
 
@@ -218,7 +229,7 @@ version(LDC)
             ret double %r2`;
 
         double2 r = a;
-        r[0] = inlineIR!(ir, double, double, double)(a[0], b[0]);
+        r[0] = LDCInlineIR!(ir, double, double, double)(a[0], b[0]);
         return r;
     }
 
@@ -230,7 +241,7 @@ version(LDC)
             %r = zext i1 %cmp to i32
             ret i32 %r`;
 
-        return inlineIR!(ir, int, float, float)(a[0], b[0]);
+        return LDCInlineIR!(ir, int, float, float)(a[0], b[0]);
     }
 
     // Note: ucomss and ucomsd are left unimplemented
@@ -241,7 +252,7 @@ version(LDC)
             %r = zext i1 %cmp to i32
             ret i32 %r`;
 
-        return inlineIR!(ir, int, double, double)(a[0], b[0]);
+        return LDCInlineIR!(ir, int, double, double)(a[0], b[0]);
     }
 }
 else
