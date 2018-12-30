@@ -708,7 +708,7 @@ version(LDC)
 __m128 _mm_set_ps (float e3, float e2, float e1, float e0) pure @trusted
 {
     float[4] result = [e0, e1, e2, e3];
-    return loadUnaligned!(float4)(result.ptr);
+    return loadUnaligned!(float4)(result.ptr);  // PERF: this sucks and makes no sense
 }
 
 alias _mm_set_ps1 = _mm_set1_ps;
@@ -718,13 +718,13 @@ alias _mm_set_ps1 = _mm_set1_ps;
 __m128 _mm_set_ss (float a) pure @trusted
 {
     float[4] result = [a, 0.0f, 0.0f, 0.0f];
-    return loadUnaligned!(float4)(result.ptr);
+    return loadUnaligned!(float4)(result.ptr);  // PERF: this sucks and makes no sense
 }
 
 __m128 _mm_set1_ps (float a) pure @trusted
 {
     float[4] result = [a, a, a, a];
-    return loadUnaligned!(float4)(result.ptr);
+    return loadUnaligned!(float4)(result.ptr); // PERF: this sucks and makes no sense
 }
 
 // TODO: _mm_setcsr
@@ -738,7 +738,7 @@ __m128 _mm_setr_ps (float e3, float e2, float e1, float e0) pure @trusted
 __m128 _mm_setzero_ps() pure @trusted
 {
     float[4] result = [0.0f, 0.0f, 0.0f, 0.0f];
-    return loadUnaligned!(float4)(result.ptr);
+    return loadUnaligned!(float4)(result.ptr); // PERF: this sucks and makes no sense
 }
 
 version(LDC)
