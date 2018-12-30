@@ -294,7 +294,17 @@ unittest
 
 version(LDC)
 {
-    alias _mm_cvtss_si64 = __builtin_ia32_cvtss2si64;
+    version(X86_64)
+        alias _mm_cvtss_si64 = __builtin_ia32_cvtss2si64;
+    else
+    {
+        // Note: __builtin_ia32_cvtss2si64 crashes LDC in 32-bit
+        long _mm_cvtss_si64 (__m128 a)
+        {
+            import core.math: rint;
+            return cast(long)(rint(a[0]));
+        }
+    }
 }
 else
 {
@@ -330,16 +340,10 @@ unittest
 
 alias _mm_cvttss_si32 = _mm_cvtt_ss2si; // it's actually the same op
 
-version(LDC)
+// Note: __builtin_ia32_cvttss2si64 crashes LDC when generating 32-bit x86 code.
+long _mm_cvttss_si64 (__m128 a)
 {
-    alias _mm_cvttss_si64 = __builtin_ia32_cvttss2si64;
-}
-else
-{
-    long _mm_cvttss_si64 (__m128 a)
-    {
-        return cast(long)(a[0]);
-    }
+    return cast(long)(a[0]); // PERF: does it generate cvttss2si?
 }
 unittest
 {
