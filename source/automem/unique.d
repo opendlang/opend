@@ -12,6 +12,10 @@ version(AutomemTesting) {
     mixin TestUtils;
 }
 
+version (D_BetterC)
+    enum gcExists = false;
+else
+    enum gcExists = true;
 
 /**
    A unique pointer similar to C++'s std::unique_ptr.
@@ -19,7 +23,7 @@ version(AutomemTesting) {
 struct Unique(
     Type,
     Allocator = typeof(theAllocator()),
-    Flag!"supportGC" supportGC = Flag!"supportGC".yes
+    Flag!"supportGC" supportGC = gcExists ? Flag!"supportGC".yes : Flag!"supportGC".no
 )
     if(isAllocator!Allocator)
 {
