@@ -606,7 +606,7 @@ Params:
     lm = Levenberg-Marquardt data structure
 See_also: $(LREF optimize)
 +/
-LMStatus optimizeImpl(alias f, alias g = null, alias tm = null, T)(scope ref LeastSquaresLM!T lm) @nogc
+LMStatus optimizeImpl(alias f, alias g = null, alias tm = null, T)(scope ref LeastSquaresLM!T lm)
 {
     auto fInst = delegate(Slice!(const(T)*) x, Slice!(T*) y)
     {
