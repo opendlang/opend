@@ -16,32 +16,12 @@ import std.traits;
 
 public import std.typecons: Flag, Yes, No;
 
-version(D_BetterC)
-{} else
+version(D_Exceptions)
 {
-    /++
+    /+
     Exception for $(LREF optimize).
     +/
-    class LeastSquaresLMException(T) : Exception
-        if (is(T == double) || is(T == float))
-    {
-        ///
-        LeastSquaresLM!T lm;
-
-        ///
-        @nogc @safe pure nothrow this(LMStatus st, ref LeastSquaresLM!T lm,  string file = __FILE__, size_t line = __LINE__, Throwable next = null)
-        {
-            this.lm = lm;
-            super(st.lmStatusString, file, line, next);
-        }
-
-        ///
-        @nogc @safe pure nothrow this(LMStatus st, ref LeastSquaresLM!T lm, Throwable next, string file = __FILE__, size_t line = __LINE__)
-        {
-            this.lm = lm;
-            super(st.lmStatusString, file, line, next);
-        }
-    }
+    private static immutable leastSquaresLMException = new Exception("LM Algorithm: failed to compute.");
 }
 
 /++
@@ -388,7 +368,7 @@ void optimize(alias f, alias g = null, alias tm = null, T)(scope ref LeastSquare
     if ((is(T == float) || is(T == double)) && __traits(compiles, optimizeImpl!(f, g, tm, T)))
 {
     if (auto err = optimizeImpl!(f, g, tm, T)(lm))
-        throw new LeastSquaresLMException!T(err, lm);
+        throw leastSquaresLMException;
 }
 
 /// ditto
@@ -410,7 +390,7 @@ void optimize(alias f, TaskPool, T)(scope ref LeastSquaresLM!T lm, TaskPool task
         }
     };
     if (auto err = optimizeImpl!(f, null, tm, T)(lm))
-        throw new LeastSquaresLMException!T(err, lm);
+        throw leastSquaresLMException;
 }
 
 /// With Jacobian
@@ -626,7 +606,7 @@ Params:
     lm = Levenberg-Marquardt data structure
 See_also: $(LREF optimize)
 +/
-LMStatus optimizeImpl(alias f, alias g = null, alias tm = null, T)(scope ref LeastSquaresLM!T lm)
+LMStatus optimizeImpl(alias f, alias g = null, alias tm = null, T)(scope ref LeastSquaresLM!T lm) @nogc
 {
     auto fInst = delegate(Slice!(const(T)*) x, Slice!(T*) y)
     {
@@ -1366,7 +1346,7 @@ uint normalizeSafety()(uint attrs)
     return attrs;
 }
 
-auto trustedAllAttr(T)(T t) @trusted
+auto trustedAllAttr(T)(scope return T t) @trusted
     if (isFunctionPointer!T || isDelegate!T)
 {
     enum attrs = (functionAttributes!T & ~FunctionAttribute.system) 
