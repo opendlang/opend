@@ -8,13 +8,13 @@ packages:
   - gcc-multilib
 
 matrix:
-    include:
-        - d: dmd-2.083.0
-        - d: dmd-2.082.1
-        - d: dmd-2.081.2
-        - d: ldc-1.12.0
-        - d: ldc-1.11.0
-        - d: ldc-1.10.0
+  include:
+    - d: dmd-2.083.0
+    - d: dmd-2.082.1
+    - d: dmd-2.081.2
+    - d: ldc-1.12.0
+    - d: ldc-1.11.0
+    - d: ldc-1.10.0
 
 script:
   - dub test --build=unittest-cov --compiler=${DC}
