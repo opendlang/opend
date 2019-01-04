@@ -410,7 +410,7 @@ void optimize(alias f, alias g = null, alias tm = null, T)(scope ref LeastSquare
     if ((is(T == float) || is(T == double)) && __traits(compiles, optimizeImpl!(f, g, tm, T)))
 {
     if (auto err = optimizeImpl!(f, g, tm, T)(lm))
-        throw leastSquaresLMExceptions[err - 1];
+        throw leastSquaresLMExceptions[err == 1 ? 0 : err + 33];
 }
 
 /// ditto
@@ -432,7 +432,7 @@ void optimize(alias f, TaskPool, T)(scope ref LeastSquaresLM!T lm, TaskPool task
         }
     };
     if (auto err = optimizeImpl!(f, null, tm, T)(lm))
-        throw leastSquaresLMExceptions[err - 1];
+        throw leastSquaresLMExceptions[err == 1 ? 0 : err + 33];
 }
 
 /// With Jacobian
