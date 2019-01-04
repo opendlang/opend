@@ -16,13 +16,55 @@ import std.traits;
 
 public import std.typecons: Flag, Yes, No;
 
+///
+enum LMStatus
+{
+    ///
+    success = 0,
+    ///
+    initialized,
+    ///
+    badBounds = -32,
+    ///
+    badGuess,
+    ///
+    badMinStepQuality,
+    ///
+    badGoodStepQuality,
+    ///
+    badStepQuality,
+    ///
+    badLambdaParams,
+    ///
+    numericError,
+}
+
 version(D_Exceptions)
 {
     /+
     Exception for $(LREF optimize).
     +/
-    private static immutable leastSquaresLMException = new Exception("LM Algorithm: failed to compute.");
+    private static immutable leastSquaresLMException_initialized = new Exception("mir-optim LM-algorithm: status is 'initialized', zero iterations");
+    private static immutable leastSquaresLMException_badBounds = new Exception("mir-optim LM-algorithm: " ~ LMStatus.badBounds.lmStatusString);
+    private static immutable leastSquaresLMException_badGuess = new Exception("mir-optim LM-algorithm: " ~ LMStatus.badGuess.lmStatusString);
+    private static immutable leastSquaresLMException_badMinStepQuality = new Exception("mir-optim LM-algorithm: " ~ LMStatus.badMinStepQuality.lmStatusString);
+    private static immutable leastSquaresLMException_badGoodStepQuality = new Exception("mir-optim LM-algorithm: " ~ LMStatus.badGoodStepQuality.lmStatusString);
+    private static immutable leastSquaresLMException_badStepQuality = new Exception("mir-optim LM-algorithm: " ~ LMStatus.badStepQuality.lmStatusString);
+    private static immutable leastSquaresLMException_badLambdaParams = new Exception("mir-optim LM-algorithm: " ~ LMStatus.badLambdaParams.lmStatusString);
+    private static immutable leastSquaresLMException_numericError = new Exception("mir-optim LM-algorithm: " ~ LMStatus.numericError.lmStatusString);
+    private static immutable leastSquaresLMExceptions = [
+        leastSquaresLMException_initialized,
+        leastSquaresLMException_badBounds,
+        leastSquaresLMException_badGuess,
+        leastSquaresLMException_badMinStepQuality,
+        leastSquaresLMException_badGoodStepQuality,
+        leastSquaresLMException_badStepQuality,
+        leastSquaresLMException_badLambdaParams,
+        leastSquaresLMException_numericError,
+    ];
 }
+
+
 
 /++
 Modified Levenberg-Marquardt parameters, data, and state.
@@ -368,7 +410,7 @@ void optimize(alias f, alias g = null, alias tm = null, T)(scope ref LeastSquare
     if ((is(T == float) || is(T == double)) && __traits(compiles, optimizeImpl!(f, g, tm, T)))
 {
     if (auto err = optimizeImpl!(f, g, tm, T)(lm))
-        throw leastSquaresLMException;
+        throw leastSquaresLMExceptions[err - 1];
 }
 
 /// ditto
@@ -390,7 +432,7 @@ void optimize(alias f, TaskPool, T)(scope ref LeastSquaresLM!T lm, TaskPool task
         }
     };
     if (auto err = optimizeImpl!(f, null, tm, T)(lm))
-        throw leastSquaresLMException;
+        throw leastSquaresLMExceptions[err - 1];
 }
 
 /// With Jacobian
@@ -666,29 +708,6 @@ LMStatus optimizeImpl(alias f, alias g = null, alias tm = null, T)(scope ref Lea
 //     Slice!(cast(SliceKind)2, [1LU], double*)) pure nothrow @nogc @safe,
 //     void delegate (
 //         Slice!(cast(SliceKind)2, [1LU], const(double)*), Slice!(cast(SliceKind)2, [2LU], double*)) pure nothrow @nogc @safe, void delegate(ulong, void*, scope void function(void*, ulong, ulong, ulong) pure nothrow @nogc @safe) pure nothrow @nogc @safe)
-
-///
-enum LMStatus
-{
-    ///
-    success = 0,
-    ///
-    initialized,
-    ///
-    badBounds = -32,
-    ///
-    badGuess,
-    ///
-    badMinStepQuality,
-    ///
-    badGoodStepQuality,
-    ///
-    badStepQuality,
-    ///
-    badLambdaParams,
-    ///
-    numericError,
-}
 
 /++
 Status string for low (extern) and middle (nothrow) levels D API.
