@@ -10,6 +10,9 @@ public import inteli.types;
 
 import inteli.internals;
 
+import core.math: fabs, sqrt;
+
+
 // SSE1
 // Note: intrinsics noted MMXREG are actually using MMX registers,
 // and were not translated. These intrinsics are for instruction
@@ -671,7 +674,7 @@ enum _MM_HINT_T0 = 1;
 enum _MM_HINT_T1 = 2;
 enum _MM_HINT_T2 = 3;
 
-// Note: locality must be compile-time
+// Note: locality must be compile-time, unlike Intel Intrinsics API
 void _mm_prefetch(int locality)(void* p) pure @safe
 {
     llvm_prefetch(p, 0, locality, 1);
@@ -684,25 +687,106 @@ version(LDC)
 {
     alias _mm_rcp_ps = __builtin_ia32_rcpps;
 }
-// TODO
+else
+{
+    __m128 _mm_rcp_ps (__m128 a) pure @safe
+    {
+        a[0] = 1.0f / a[0];
+        a[1] = 1.0f / a[1];
+        a[2] = 1.0f / a[2];
+        a[3] = 1.0f / a[3];
+        return a;
+    }
+}
 
 version(LDC)
 {
     alias _mm_rcp_ss = __builtin_ia32_rcpss;
 }
-// TODO
+else
+{
+    __m128 _mm_rcp_ss (__m128 a) pure @safe
+    {
+        a[0] = 1.0f / a[0];
+        return a;
+    }
+}
 
 version(LDC)
 {
     alias _mm_rsqrt_ps = __builtin_ia32_rsqrtps;
 }
-// TODO
+else
+{
+    __m128 _mm_rsqrt_ps (__m128 a) pure @safe
+    {
+        a[0] = 1.0f / sqrt(a[0]);
+        a[1] = 1.0f / sqrt(a[1]);
+        a[2] = 1.0f / sqrt(a[2]);
+        a[3] = 1.0f / sqrt(a[3]);
+        return a;
+    }
+}
 
 version(LDC)
 {
     alias _mm_rsqrt_ss = __builtin_ia32_rsqrtss;
 }
-// TODO
+else
+{
+    __m128 _mm_rsqrt_ss (__m128 a) pure @safe
+    {
+        a[0] = 1.0f / sqrt(a[0]);
+        return a;
+    }
+}
+
+unittest
+{
+    double maxRelativeError = 0.000245; // -72 dB
+    void testInvSqrt(float number)
+    {
+        __m128 A = _mm_set1_ps(number);
+
+        // test _mm_rcp_ps
+        __m128 B = _mm_rcp_ps(A);
+        foreach(i; 0..4)
+        {
+            double exact = 1.0f / A[i]; 
+            double ratio = cast(double)(B[i]) / cast(double)(exact);
+            assert(fabs(ratio - 1) <= maxRelativeError);
+        }
+
+        // test _mm_rcp_ss
+        {
+            B = _mm_rcp_ss(A);
+            double exact = 1.0f / A[0];
+            double ratio = cast(double)(B[0]) / cast(double)(exact);
+            assert(fabs(ratio - 1) <= maxRelativeError);
+        }
+
+        // test _mm_rsqrt_ps
+        B = _mm_rsqrt_ps(A);
+        foreach(i; 0..4)
+        {
+            double exact = 1.0f / sqrt(A[i]);
+            double ratio = cast(double)(B[i]) / cast(double)(exact);
+            assert(fabs(ratio - 1) <= maxRelativeError);
+        }
+
+        // test _mm_rsqrt_ss
+        {
+            B = _mm_rsqrt_ss(A);
+            double exact = 1.0f / sqrt(A[0]);
+            double ratio = cast(double)(B[0]) / cast(double)(exact);
+            assert(fabs(ratio - 1) <= maxRelativeError);
+        }
+    }
+
+    testInvSqrt(1.1f);
+    testInvSqrt(2.45674864151f);
+    testInvSqrt(27841456468.0f);
+}
 
 // TODO: _mm_sad_pu8
 // TODO: void _MM_SET_EXCEPTION_MASK (unsigned int a)
@@ -780,7 +864,6 @@ else
 {
     __m128 _mm_sqrt_ps(__m128 vec) pure @safe
     {
-        import std.math: sqrt;
         vec.array[0] = sqrt(vec.array[0]);
         vec.array[1] = sqrt(vec.array[1]);
         vec.array[2] = sqrt(vec.array[2]);
@@ -818,7 +901,6 @@ else
 {
     __m128 _mm_sqrt_ss(__m128 vec) pure @safe
     {
-        import std.math: sqrt;
         vec.array[0] = sqrt(vec.array[0]);
         return vec;
     }
