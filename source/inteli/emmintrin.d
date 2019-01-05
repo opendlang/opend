@@ -212,7 +212,35 @@ version(LDC)
 {
     alias _mm_clflush = __builtin_ia32_clflush;
 }
-// TODO
+else
+{
+    void _mm_clflush (const(void)* p) pure @safe
+    {
+        version(D_InlineAsm_X86)
+        {
+            asm pure nothrow @nogc @safe
+            {
+                mov EAX, p;
+                clflush [EAX];
+            }
+        }
+        else version(D_InlineAsm_X86_64)
+        {
+            asm pure nothrow @nogc @safe
+            {
+                mov RAX, p;
+                clflush [RAX];
+            }
+        }
+        else
+            static assert(false, "TODO");
+    }
+}
+unittest
+{
+    ubyte[64] cacheline;
+    _mm_clflush(cacheline.ptr);
+}
 
 
 __m128i _mm_cmpeq_epi16 (__m128i a, __m128i b) pure @safe
@@ -628,7 +656,20 @@ version(LDC)
 {
     alias _mm_lfence = __builtin_ia32_lfence;
 }
-// TODO
+else
+{
+    void _mm_lfence() pure @safe
+    {
+        asm nothrow @nogc pure @safe
+        {
+            lfence;
+        }
+    }
+}
+unittest
+{
+    _mm_lfence();
+}
 
 
 __m128d _mm_load_pd (const(double) * mem_addr) pure
@@ -731,9 +772,30 @@ version(LDC)
 
     alias _mm_max_pd = __builtin_ia32_maxpd;
     alias _mm_max_sd = __builtin_ia32_maxsd;
+}
 
+version(LDC)
+{
     alias _mm_mfence = __builtin_ia32_mfence;
+}
+else
+{
+    void _mm_mfence() pure @safe
+    {
+        asm nothrow @nogc pure @safe
+        {
+            mfence;
+        }
+    }
+}
+unittest
+{
+    _mm_mfence();
+}
 
+
+version(LDC)
+{
     pragma(LDC_intrinsic, "llvm.x86.sse2.pmins.w")
         short8 __builtin_ia32_pminsw128(short8, short8) pure @safe;
     alias _mm_min_epi16 = __builtin_ia32_pminsw128;
@@ -865,9 +927,10 @@ __m128i _mm_or_si128 (__m128i a, __m128i b) pure @safe
 
 version(LDC)
 {
-    alias _mm_packs_epi32 = __builtin_ia32_packssdw128;
-    alias _mm_packs_epi16 = __builtin_ia32_packsswb128;
+    alias _mm_packs_epi32 = __builtin_ia32_packssdw128; // TODO
+    alias _mm_packs_epi16 = __builtin_ia32_packsswb128; // TODO
 }
+
 version(LDC)
 {
     alias _mm_packus_epi16 = __builtin_ia32_packuswb128;
@@ -904,16 +967,29 @@ unittest
         assert(AA[i] == cast(byte)(correctResult[i]));
 }
 
-// TODO
 version(LDC)
 {
     alias _mm_pause = __builtin_ia32_pause;
 }
-// TODO
+else
+{
+    void _mm_pause() pure @safe
+    {
+        asm nothrow @nogc pure @safe
+        {
+            rep; nop; // F3 90 =  pause
+        }
+    }
+}
+unittest
+{
+    _mm_pause();
+}
+
 
 version(LDC)
 {
-    alias _mm_sad_epu8 = __builtin_ia32_psadbw128;
+    alias _mm_sad_epu8 = __builtin_ia32_psadbw128; // TODO
 }
 // TODO
 

@@ -837,7 +837,20 @@ version(LDC)
 {
     alias _mm_sfence = __builtin_ia32_sfence;
 }
-// TODO
+else
+{
+    void _mm_sfence() pure @safe
+    {
+        asm nothrow @nogc pure @safe
+        {
+            sfence;
+        }
+    }
+}
+unittest
+{
+    _mm_sfence();
+}
 
 // MMXREG: mm_shuffle_pi16
 
