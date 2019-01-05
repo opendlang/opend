@@ -837,9 +837,38 @@ version(LDC)
     pragma(LDC_intrinsic, "llvm.x86.sse2.pmaxu.b")
         byte16 __builtin_ia32_pmaxub128(byte16, byte16) pure @safe;
     alias _mm_max_epu8 = __builtin_ia32_pmaxub128;
+}
 
-    alias _mm_max_pd = __builtin_ia32_maxpd;
-    alias _mm_max_sd = __builtin_ia32_maxsd;
+__m128d _mm_max_pd (__m128d a, __m128d b) pure @safe
+{
+    // Generates maxpd starting with LDC 1.9
+    a[0] = (a[0] > b[0]) ? a[0] : b[0];
+    a[1] = (a[1] > b[1]) ? a[1] : b[1];
+    return a;
+}
+unittest
+{
+    __m128d A = _mm_setr_pd(4.0, 1.0);
+    __m128d B = _mm_setr_pd(1.0, 8.0);
+    __m128d M = _mm_max_pd(A, B);
+    assert(M[0] == 4.0);
+    assert(M[1] == 8.0);
+}
+
+__m128d _mm_max_sd (__m128d a, __m128d b) pure @safe
+{
+     __m128d r = a;
+    // Generates maxsd starting with LDC 1.3
+    r[0] = (a[0] > b[0]) ? a[0] : b[0];
+    return r;
+}
+unittest
+{
+    __m128d A = _mm_setr_pd(1.0, 1.0);
+    __m128d B = _mm_setr_pd(4.0, 2.0);
+    __m128d M = _mm_max_sd(A, B);
+    assert(M[0] == 4.0);
+    assert(M[1] == 1.0);
 }
 
 version(LDC)
@@ -865,17 +894,45 @@ unittest
 version(LDC)
 {
     pragma(LDC_intrinsic, "llvm.x86.sse2.pmins.w")
-        short8 __builtin_ia32_pminsw128(short8, short8) pure @safe;
-    alias _mm_min_epi16 = __builtin_ia32_pminsw128;
+        short8 __builtin_ia32_pminsw128(short8, short8) pure @safe; // TODO
+    alias _mm_min_epi16 = __builtin_ia32_pminsw128; // TODO
 
     pragma(LDC_intrinsic, "llvm.x86.sse2.pminu.b")
-        byte16 __builtin_ia32_pminub128(byte16, byte16) pure @safe;
-    alias _mm_min_epu8 = __builtin_ia32_pminub128;
-
-    alias _mm_min_pd = __builtin_ia32_minpd;
-    alias _mm_min_sd = __builtin_ia32_minsd;
+        byte16 __builtin_ia32_pminub128(byte16, byte16) pure @safe; // TODO
+    alias _mm_min_epu8 = __builtin_ia32_pminub128; // TODO
 }
-// TODO
+
+__m128d _mm_min_pd (__m128d a, __m128d b) pure @safe // TODO: NaN behaviour
+{
+    // Generates minpd starting with LDC 1.9
+    a[0] = (a[0] < b[0]) ? a[0] : b[0];
+    a[1] = (a[1] < b[1]) ? a[1] : b[1];
+    return a;
+}
+unittest
+{
+    __m128d A = _mm_setr_pd(1.0, 2.0);
+    __m128d B = _mm_setr_pd(4.0, 1.0);
+    __m128d M = _mm_min_pd(A, B);
+    assert(M[0] == 1.0);
+    assert(M[1] == 1.0);
+}
+
+__m128d _mm_min_sd (__m128d a, __m128d b) pure @safe // TODO: NaN behaviour
+{
+    // Generates minsd starting with LDC 1.3
+    __m128d r = a;
+    r[0] = (a[0] < b[0]) ? a[0] : b[0];
+    return r;
+}
+unittest
+{
+    __m128d A = _mm_setr_pd(1.0, 3.0);
+    __m128d B = _mm_setr_pd(4.0, 2.0);
+    __m128d M = _mm_min_sd(A, B);
+    assert(M[0] == 1.0);
+    assert(M[1] == 3.0);
+}
 
 __m128i _mm_move_epi64 (__m128i a) pure @safe
 {
