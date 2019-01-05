@@ -1,15 +1,13 @@
 /**
-* Copyright: Copyright Auburn Sounds 2016-2018.
+* Copyright: Copyright Auburn Sounds 2016-2019.
 * License:   $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost License 1.0)
 * Authors:   Guillaume Piolat
 */
-
 module inteli.xmmintrin;
 
 public import inteli.types;
 
 import inteli.internals;
-
 import core.math: fabs, sqrt;
 
 
@@ -284,7 +282,7 @@ else
 {
     // Note: the LDC version depends on MXCSR rounding-mode, while
     //       this one depends on possibly another.
-    int _mm_cvtss_si32 (__m128 a)
+    int _mm_cvtss_si32 (__m128 a) pure @safe
     {
         import core.math: rint;
         return cast(int)(rint(a[0]));
@@ -302,7 +300,7 @@ version(LDC)
     else
     {
         // Note: __builtin_ia32_cvtss2si64 crashes LDC in 32-bit
-        long _mm_cvtss_si64 (__m128 a)
+        long _mm_cvtss_si64 (__m128 a) pure @safe
         {
             import core.math: rint;
             return cast(long)(rint(a[0]));
@@ -311,7 +309,7 @@ version(LDC)
 }
 else
 {
-    long _mm_cvtss_si64 (__m128 a)
+    long _mm_cvtss_si64 (__m128 a) pure @safe
     {
         import core.math: rint;
         return cast(long)(rint(a[0]));
@@ -329,7 +327,7 @@ version(LDC)
 }
 else
 {
-    int _mm_cvtt_ss2si (__m128 a)
+    int _mm_cvtt_ss2si (__m128 a) pure @safe
     {
         return cast(int)(a[0]);
     }
@@ -344,9 +342,9 @@ unittest
 alias _mm_cvttss_si32 = _mm_cvtt_ss2si; // it's actually the same op
 
 // Note: __builtin_ia32_cvttss2si64 crashes LDC when generating 32-bit x86 code.
-long _mm_cvttss_si64 (__m128 a)
+long _mm_cvttss_si64 (__m128 a) pure @safe
 {
-    return cast(long)(a[0]); // PERF: does it generate cvttss2si?
+    return cast(long)(a[0]); // Generates cvttss2si as expected
 }
 unittest
 {
@@ -795,8 +793,10 @@ unittest
 
 __m128 _mm_set_ps (float e3, float e2, float e1, float e0) pure @trusted
 {
+    // Note: despite appearances, generates sensible code,
+    //       inlines correctly and is constant folded
     float[4] result = [e0, e1, e2, e3];
-    return loadUnaligned!(float4)(result.ptr);  // PERF: this sucks and makes no sense
+    return loadUnaligned!(float4)(result.ptr); 
 }
 
 alias _mm_set_ps1 = _mm_set1_ps;
@@ -805,14 +805,17 @@ alias _mm_set_ps1 = _mm_set1_ps;
 
 __m128 _mm_set_ss (float a) pure @trusted
 {
-    float[4] result = [a, 0.0f, 0.0f, 0.0f];
-    return loadUnaligned!(float4)(result.ptr);  // PERF: this sucks and makes no sense
+    __m128 r = _mm_setzero_ps();
+    r[0] = a;
+    return r;
 }
 
 __m128 _mm_set1_ps (float a) pure @trusted
 {
+    // Note: despite appearances, generates sensible code,
+    //       inlines correctly and is constant folded
     float[4] result = [a, a, a, a];
-    return loadUnaligned!(float4)(result.ptr); // PERF: this sucks and makes no sense
+    return loadUnaligned!(float4)(result.ptr);
 }
 
 // TODO: _mm_setcsr
@@ -825,8 +828,9 @@ __m128 _mm_setr_ps (float e3, float e2, float e1, float e0) pure @trusted
 
 __m128 _mm_setzero_ps() pure @trusted
 {
+    // Compiles to xorps without problems
     float[4] result = [0.0f, 0.0f, 0.0f, 0.0f];
-    return loadUnaligned!(float4)(result.ptr); // PERF: this sucks and makes no sense
+    return loadUnaligned!(float4)(result.ptr);
 }
 
 version(LDC)
