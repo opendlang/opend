@@ -10,6 +10,11 @@ public import inteli.types;
 import inteli.internals;
 import core.math: fabs, sqrt;
 
+version(D_InlineAsm_X86)
+    version = InlineX86Asm;
+else version(D_InlineAsm_X86_64)
+    version = InlineX86Asm;
+
 
 // SSE1
 // Note: intrinsics noted MMXREG are actually using MMX registers,
@@ -17,6 +22,33 @@ import core.math: fabs, sqrt;
 // introduced with SSE1, that also work on MMX registers.
 
 nothrow @nogc:
+
+
+enum int _MM_EXCEPT_INVALID    = 0x0001;
+enum int _MM_EXCEPT_DENORM     = 0x0002;
+enum int _MM_EXCEPT_DIV_ZERO   = 0x0004;
+enum int _MM_EXCEPT_OVERFLOW   = 0x0008;
+enum int _MM_EXCEPT_UNDERFLOW  = 0x0010;
+enum int _MM_EXCEPT_INEXACT    = 0x0020;
+enum int _MM_EXCEPT_MASK       = 0x003f;
+
+enum int _MM_MASK_INVALID      = 0x0080;
+enum int _MM_MASK_DENORM       = 0x0100;
+enum int _MM_MASK_DIV_ZERO     = 0x0200;
+enum int _MM_MASK_OVERFLOW     = 0x0400;
+enum int _MM_MASK_UNDERFLOW    = 0x0800;
+enum int _MM_MASK_INEXACT      = 0x1000;
+enum int _MM_MASK_MASK         = 0x1f80;
+
+enum int _MM_ROUND_NEAREST     = 0x0000;
+enum int _MM_ROUND_DOWN        = 0x2000;
+enum int _MM_ROUND_UP          = 0x4000;
+enum int _MM_ROUND_TOWARD_ZERO = 0x6000;
+enum int _MM_ROUND_MASK        = 0x6000;
+
+enum int _MM_FLUSH_ZERO_MASK   = 0x8000;
+enum int _MM_FLUSH_ZERO_ON     = 0x8000;
+enum int _MM_FLUSH_ZERO_OFF    = 0x0000;
 
 __m128 _mm_add_ps(__m128 a, __m128 b) pure @safe
 {
@@ -378,12 +410,42 @@ unittest
 
 // MMXREG: int _mm_extract_pi16 (__m64 a, int imm8)
 
-// TODO: unsigned int _MM_GET_EXCEPTION_MASK ()
-// TODO: unsigned int _MM_GET_EXCEPTION_STATE ()
-// TODO: unsigned int _MM_GET_FLUSH_ZERO_MODE ()
-// TODO: unsigned int _MM_GET_ROUNDING_MODE ()
-// TODO: stmxcsr
-// TODO: unsigned int _mm_getcsr (void)
+// TODO _mm_free
+
+uint _MM_GET_EXCEPTION_MASK() pure @safe
+{
+    return _mm_getcsr() & _MM_MASK_MASK;
+}
+
+uint _MM_GET_EXCEPTION_STATE() pure @safe
+{
+    return _mm_getcsr() & _MM_EXCEPT_MASK;
+}
+
+uint _MM_GET_FLUSH_ZERO_MODE() pure @safe
+{
+    return _mm_getcsr() & _MM_FLUSH_ZERO_MASK;
+}
+
+uint _MM_GET_ROUNDING_MODE() pure @safe
+{
+    return _mm_getcsr() & _MM_ROUND_MASK;
+}
+
+uint _mm_getcsr() pure @safe
+{
+    version (InlineX86Asm)
+    {
+        uint controlWord;
+        asm nothrow @nogc pure @safe
+        {
+            stmxcsr controlWord;
+        }
+        return controlWord;
+    }
+    else
+        static assert(0, "Not yet supported");
+}
 
 // MMXREG: __m64 _mm_insert_pi16 (__m64 a, int i, int imm8)
 
@@ -787,9 +849,21 @@ unittest
 }
 
 // TODO: _mm_sad_pu8
-// TODO: void _MM_SET_EXCEPTION_MASK (unsigned int a)
-// TODO: void _MM_SET_EXCEPTION_STATE (unsigned int a)
-// TODO: void _MM_SET_FLUSH_ZERO_MODE (unsigned int a)
+
+void _MM_SET_EXCEPTION_MASK(int _MM_MASK_xxxx) pure @safe
+{
+    _mm_setcsr((_mm_getcsr() & ~_MM_MASK_MASK) | _MM_MASK_xxxx);
+}
+
+void _MM_SET_EXCEPTION_STATE(int _MM_EXCEPT_xxxx) pure @safe
+{
+    _mm_setcsr((_mm_getcsr() & ~_MM_EXCEPT_MASK) | _MM_EXCEPT_xxxx);
+}
+
+void _MM_SET_FLUSH_ZERO_MODE(int _MM_FLUSH_xxxx) pure @safe
+{
+    _mm_setcsr((_mm_getcsr() & ~_MM_FLUSH_ZERO_MASK) | _MM_FLUSH_xxxx);
+}
 
 __m128 _mm_set_ps (float e3, float e2, float e1, float e0) pure @trusted
 {
@@ -801,7 +875,10 @@ __m128 _mm_set_ps (float e3, float e2, float e1, float e0) pure @trusted
 
 alias _mm_set_ps1 = _mm_set1_ps;
 
-// TODO: _MM_SET_ROUNDING_MODE
+void _MM_SET_ROUNDING_MODE(int _MM_ROUND_xxxx) pure @safe
+{
+    _mm_setcsr((_mm_getcsr() & ~_MM_ROUND_MASK) | _MM_ROUND_xxxx);
+}
 
 __m128 _mm_set_ss (float a) pure @trusted
 {
@@ -818,7 +895,18 @@ __m128 _mm_set1_ps (float a) pure @trusted
     return loadUnaligned!(float4)(result.ptr);
 }
 
-// TODO: _mm_setcsr
+void _mm_setcsr(uint controlWord) pure @safe
+{
+    version (InlineX86Asm)
+    {
+        asm pure nothrow @nogc @safe
+        { 
+            ldmxcsr controlWord;
+        }
+    }
+    else
+        static assert(0, "Not yet supported");
+}
 
 __m128 _mm_setr_ps (float e3, float e2, float e1, float e0) pure @trusted
 {
