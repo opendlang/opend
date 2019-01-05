@@ -881,7 +881,7 @@ unittest
     testInvSqrt(27841456468.0f);
 }
 
-// TODO: _mm_sad_pu8
+// MMXREG: _mm_sad_pu8
 
 void _MM_SET_EXCEPTION_MASK(int _MM_MASK_xxxx) pure @safe
 {
