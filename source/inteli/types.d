@@ -285,3 +285,15 @@ int _MM_SHUFFLE(int z, int y, int x, int w) pure @safe
     return (z<<6) | (y<<4) | (x<<2) | w;
 }
 
+// Note: here is how to map clang's __builtin_convertvector to LLVM IR
+// float to double => fpext
+// double to float => fptrunc
+// float to long => fptosi
+// float/double to ulong => fptoui
+// ushort to ulong => fptoui
+// short to long => sext
+// short to float => sitofp
+// ushort to float => uitofp
+// long to double => sitofp
+
+ 

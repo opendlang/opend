@@ -166,13 +166,61 @@ __m128i _mm_andnot_si128 (__m128i a, __m128i b) pure @safe
 
 version(LDC)
 {
+    // Still in LLVM, but will probably be removed
     pragma(LDC_intrinsic, "llvm.x86.sse2.pavg.w")
         short8 _mm_avg_epu16(short8, short8) pure @safe;
+}
+else
+{
+    __m128i _mm_avg_epu16 (__m128i a, __m128i b)
+    {
+        short8 sa = cast(short8)a;
+        short8 sb = cast(short8)b;
+        short8 sr = void;
+        foreach(i; 0..8)
+        {
+            sr[i] = cast(ushort)( (cast(ushort)(sa[i]) + cast(ushort)(sb[i]) + 1) >> 1 );
+        }
+        return cast(int4)sr;
+    }
+}
+unittest
+{
+    __m128i A = _mm_set1_epi16(31);
+    __m128i B = _mm_set1_epi16(64);
+    short8 avg = cast(short8)(_mm_avg_epu16(A, B));
+    foreach(i; 0..8)
+        assert(avg[i] == 48);
+}
 
+version(LDC)
+{
+    // Still in LLVM, but will probably be removed
     pragma(LDC_intrinsic, "llvm.x86.sse2.pavg.b")
         byte16 _mm_avg_epu8(byte16, byte16) pure @safe;
 }
-// TODO
+else
+{
+    __m128i _mm_avg_epu8 (__m128i a, __m128i b)
+    {
+        byte16 sa = cast(byte16)a;
+        byte16 sb = cast(byte16)b;
+        byte16 sr = void;
+        foreach(i; 0..16)
+        {
+            sr[i] = cast(ubyte)( (cast(ubyte)(sa[i]) + cast(ubyte)(sb[i]) + 1) >> 1 );
+        }
+        return cast(int4)sr;
+    }
+}
+unittest
+{
+    __m128i A = _mm_set1_epi8(31);
+    __m128i B = _mm_set1_epi8(64);
+    byte16 avg = cast(byte16)(_mm_avg_epu8(A, B));
+    foreach(i; 0..16)
+        assert(avg[i] == 48);
+}
 
 
 // TODO: __m128i _mm_bslli_si128 (__m128i a, int imm8)
