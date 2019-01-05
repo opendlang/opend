@@ -216,7 +216,7 @@ version(LDC)
             %isums = lshr <16 x i16> %isum1, < i16 1, i16 1, i16 1, i16 1, i16 1, i16 1, i16 1, i16 1, i16 1, i16 1, i16 1, i16 1, i16 1, i16 1, i16 1, i16 1>
             %r = trunc <16 x i16> %isums to <16 x i8>
             ret <16 x i8> %r`;
-        return cast(__m128i) inlineIR!(ir, byte16, byte16, byte16)(cast(byte16)a, cast(byte16)b);        
+        return cast(__m128i) LDCInlineIR!(ir, byte16, byte16, byte16)(cast(byte16)a, cast(byte16)b);        
     }
 }
 else
@@ -562,10 +562,36 @@ int _mm_comineq_sd (__m128d a, __m128d b) pure @safe
     return comsd!(FPComparison.one)(a, b);
 }
 
+version(LDC)
+{
+     __m128d _mm_cvtepi32_pd (__m128i a) pure  @safe
+    {
+        // Generates cvtdq2pd since LDC 1.0, even without optimizations
+        enum ir = `
+            %v = shufflevector <4 x i32> %0,<4 x i32> %0, <2 x i32> <i32 0, i32 1>
+            %r = sitofp <2 x i32> %v to <2 x double>
+            ret <2 x double> %r`;
+        return cast(__m128i) LDCInlineIR!(ir, __m128d, __m128i)(a);
+    }
+}
+else
+{
+    __m128d _mm_cvtepi32_pd (__m128i a) pure  @safe
+    {
+        double2 r = void;
+        r[0] = a[0];
+        r[1] = a[1];
+        return r;
+    }
+}
+unittest
+{
+    __m128d A = _mm_cvtepi32_pd(_mm_set1_epi32(54));
+    assert(A[0] == 54.0);
+    assert(A[1] == 54.0);
+}
 
-// TODO: alias _mm_cvtepi32_pd = __builtin_ia32_cvtdq2pd;
-
-// PERF: replace with __builtin_convertvector when available
+// PERF: verify the instruction generated
 __m128 _mm_cvtepi32_ps(__m128i a) pure @safe
 {
     __m128 res;
