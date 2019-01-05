@@ -8,7 +8,10 @@ module inteli.xmmintrin;
 public import inteli.types;
 
 import inteli.internals;
+
 import core.math: fabs, sqrt;
+import core.stdc.stdlib: malloc, free;
+import core.exception: onOutOfMemoryError;
 
 version(D_InlineAsm_X86)
     version = InlineX86Asm;
@@ -410,7 +413,24 @@ unittest
 
 // MMXREG: int _mm_extract_pi16 (__m64 a, int imm8)
 
-// TODO _mm_free
+/// Free aligned memory that was allocated with `_mm_malloc`.
+void _mm_free(void * mem_addr) @trusted
+{
+    // support for free(NULL)
+    if (mem_addr is null)
+        return;
+
+    // Technically we don't need to store size and alignement in the chunk, but we do in case we 
+    // have to implement _mm_realloc
+
+    size_t pointerSize = (void*).sizeof;
+    void** rawLocation = cast(void**)(cast(char*)mem_addr - size_t.sizeof);
+    size_t* alignmentLocation = cast(size_t*)(cast(char*)mem_addr - 3 * pointerSize);
+    size_t alignment = *alignmentLocation;
+    assert(alignment != 0);
+    assert(isPointerAligned(mem_addr, alignment));
+    free(*rawLocation);
+}
 
 uint _MM_GET_EXCEPTION_MASK() pure @safe
 {
@@ -522,6 +542,19 @@ unittest
     long2 A = cast(long2) _mm_loadu_si64(&r);
     long[2] correct = [446446446446, 0];
     assert(A.array == correct);
+}
+
+/// Allocate size bytes of memory, aligned to the alignment specified in align, 
+/// and return a pointer to the allocated memory. `_mm_free` should be used to free 
+/// memory that is allocated with `_mm_malloc`.
+void* _mm_malloc(size_t size, size_t alignment) @trusted
+{
+    assert(alignment != 0);
+    size_t request = requestedSize(size, alignment);
+    void* raw = malloc(request);
+    if (request > 0 && raw == null) // malloc(0) can validly return anything
+        onOutOfMemoryError();
+    return storeRawPointerPlusInfo(raw, size, alignment); // PERF: no need to store size
 }
 
 // MMXREG: _mm_maskmove_si64
@@ -1133,4 +1166,76 @@ __m128 _mm_unpacklo_ps (__m128 a, __m128 b) pure @safe
 __m128i _mm_xor_ps (__m128i a, __m128i b) pure @safe
 {
     return a ^ b;
+}
+
+
+private
+{
+    /// Returns: `true` if the pointer is suitably aligned.
+    bool isPointerAligned(void* p, size_t alignment) pure
+    {
+        assert(alignment != 0);
+        return ( cast(size_t)p & (alignment - 1) ) == 0;
+    }
+
+    /// Returns: next pointer aligned with alignment bytes.
+    void* nextAlignedPointer(void* start, size_t alignment) pure
+    {
+        return cast(void*)nextMultipleOf(cast(size_t)(start), alignment);
+    }
+
+    // Returns number of bytes to actually allocate when asking
+    // for a particular alignment
+    @nogc size_t requestedSize(size_t askedSize, size_t alignment) pure
+    {
+        enum size_t pointerSize = size_t.sizeof;
+        return askedSize + alignment - 1 + pointerSize * 3;
+    }
+
+    // Store pointer given my malloc, size and alignment
+    @nogc void* storeRawPointerPlusInfo(void* raw, size_t size, size_t alignment) pure
+    {
+        enum size_t pointerSize = size_t.sizeof;
+        char* start = cast(char*)raw + pointerSize * 3;
+        void* aligned = nextAlignedPointer(start, alignment);
+        void** rawLocation = cast(void**)(cast(char*)aligned - pointerSize);
+        *rawLocation = raw;
+        size_t* sizeLocation = cast(size_t*)(cast(char*)aligned - 2 * pointerSize);
+        *sizeLocation = size;
+        size_t* alignmentLocation = cast(size_t*)(cast(char*)aligned - 3 * pointerSize);
+        *alignmentLocation = alignment;
+        assert( isPointerAligned(aligned, alignment) );
+        return aligned;
+    }
+
+    // Returns: x, multiple of powerOfTwo, so that x >= n.
+    @nogc size_t nextMultipleOf(size_t n, size_t powerOfTwo) pure nothrow
+    {
+        // check power-of-two
+        assert( (powerOfTwo != 0) && ((powerOfTwo & (powerOfTwo - 1)) == 0));
+
+        size_t mask = ~(powerOfTwo - 1);
+        return (n + powerOfTwo - 1) & mask;
+    }
+}
+
+unittest
+{
+    assert(nextMultipleOf(0, 4) == 0);
+    assert(nextMultipleOf(1, 4) == 4);
+    assert(nextMultipleOf(2, 4) == 4);
+    assert(nextMultipleOf(3, 4) == 4);
+    assert(nextMultipleOf(4, 4) == 4);
+    assert(nextMultipleOf(5, 4) == 8);
+
+    {
+        void* p = _mm_malloc(23, 16);
+        assert(p !is null);
+        assert(((cast(size_t)p) & 0xf) == 0);
+        _mm_free(p);
+    }
+
+    void* nullAlloc = _mm_malloc(0, 32);
+    assert(nullAlloc != null);
+    _mm_free(nullAlloc);
 }
