@@ -30,13 +30,12 @@ assert(distance([0, 2, 0, 0], [0, 0, 0, 0]) == 2);
 
 ```
 
-## Who is using it?
-
-- Pixel Perfect Engine is using `intel-intrinsics` for blitting images: https://github.com/ZILtoid1991/CPUblit/blob/master/src/CPUblit/composing.d
-- Dplug is using `intel-intrinsics` for biquad processing for a 10% speed gain over equivalent assembly: https://github.com/AuburnSounds/Dplug/blob/master/dsp/dplug/dsp/iir.d#L104
-
-
 ## Why?
+
+### Capabilities
+
+Some instructions aren't accessible using `core.simd` and `ldc.simd` capabilities.
+For example: `pmaddwd` which is so important in digital video .
 
 ### Familiar syntax
 
@@ -44,7 +43,7 @@ Why Intel intrinsic syntax? Because it is more familiar to C++ programmers
 and there is a convenient online guide provided by Intel:
 https://software.intel.com/sites/landingpage/IntrinsicsGuide/
 
-Without this critical Intel documentation it's much more difficult to write SIMD code for x86.
+Without this critical Intel documentation, it's much more difficult to write SIMD code.
 
 ### Future-proof
 
@@ -59,14 +58,16 @@ So you could target ARM one day and still get comparable speed-up.
 
 However, `intel-intrinsics` does **not** guarantee the usage of one particular instruction in general. 
 It could well happen that your code end up slower, or doesn't use the instruction you though it would.
-The only guarantee is semantics, with performance being a long-term goal for the cases where codegen isn't optimal.
+The only guarantee is **semantics**, with performance being an important secundaty goal for the cases where codegen isn't optimal.
 
 
 ### Portability
 
-**Write the same SIMD code for both DMD and LDC.**. 
+The goal is:
+
+**Write the same SIMD code for both DMD and LDC. Support x86 and ARM alike.**. 
 This is intended to be the most practical SIMD solution for D.
-Including an emulation layer for DMD 32-bit which doesn't have any SIMD capability right now.
+Including an emulation layer for DMD 32-bit which doesn't have any SIMD capability on Windows.
 
 
 ### Supported instructions set
@@ -74,7 +75,7 @@ Including an emulation layer for DMD 32-bit which doesn't have any SIMD capabili
 - SSE1
 - SSE2
 
-The lack of AVX intrinsics is explained by the lack of raw speed gain with these instruction sets.
+The lack of AVX intrinsics is explained by the sheer amount of **work** needed to implement those SIMD intrinsics for all compilers.
 
 ### Important difference
 
@@ -88,4 +89,11 @@ __m128 a = cast(__m128)b; // YES, works in all D compilers
 
 ```
 
-This is because D does not allow implicit conversions, except magically in the compiler for real vector types.
+This is because D does not allow user-defined implicit conversions, except magically in the compiler for real vector types.
+
+
+## Who is using it?
+
+- Pixel Perfect Engine is using `intel-intrinsics` for blitting images: https://github.com/ZILtoid1991/CPUblit/blob/master/src/CPUblit/composing.d
+- Dplug is using `intel-intrinsics` for biquad processing for a 10% speed gain over equivalent assembly: https://github.com/AuburnSounds/Dplug/blob/master/dsp/dplug/dsp/iir.d#L104
+- Please get in touch if you use it!
