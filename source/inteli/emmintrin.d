@@ -571,7 +571,7 @@ version(LDC)
             %v = shufflevector <4 x i32> %0,<4 x i32> %0, <2 x i32> <i32 0, i32 1>
             %r = sitofp <2 x i32> %v to <2 x double>
             ret <2 x double> %r`;
-        return cast(__m128i) LDCInlineIR!(ir, __m128d, __m128i)(a);
+        return cast(__m128d) LDCInlineIR!(ir, __m128d, __m128i)(a);
     }
 }
 else
@@ -621,7 +621,34 @@ version(LDC)
     alias _mm_cvtps_epi32 = __builtin_ia32_cvtps2dq; // TODO
 }
 
-// TODO: alias _mm_cvtps_pd = __builtin_ia32_cvtps2pd;
+version(LDC)
+{
+    __m128d _mm_cvtps_pd (__m128 a) pure  @safe
+    {
+        // Generates cvtps2pd since LDC 1.0, no opt
+        enum ir = `
+            %v = shufflevector <4 x float> %0,<4 x float> %0, <2 x i32> <i32 0, i32 1>
+            %r = fpext <2 x float> %v to <2 x double>
+            ret <2 x double> %r`;
+        return cast(__m128d) LDCInlineIR!(ir, __m128d, __m128)(a);
+    }
+}
+else
+{
+     __m128d _mm_cvtps_pd (__m128 a) pure  @safe
+    {
+        double2 r = void;
+        r[0] = a[0];
+        r[1] = a[1];
+        return r;
+    }
+}
+unittest
+{
+    __m128d A = _mm_cvtps_pd(_mm_set1_ps(54.0f));
+    assert(A[0] == 54.0);
+    assert(A[1] == 54.0);
+}
 
 double _mm_cvtsd_f64 (__m128d a) pure @safe
 {
