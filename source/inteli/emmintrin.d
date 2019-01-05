@@ -166,13 +166,23 @@ __m128i _mm_andnot_si128 (__m128i a, __m128i b) pure @safe
 
 version(LDC)
 {
-    // Still in LLVM, but will probably be removed
-    pragma(LDC_intrinsic, "llvm.x86.sse2.pavg.w")
-        short8 _mm_avg_epu16(short8, short8) pure @safe;
+    __m128i _mm_avg_epu16 (__m128i a, __m128i b) pure @safe
+    {
+        // Generates pavgw even in LDC 1.0, even in -O0
+        enum ir = `
+            %ia = zext <8 x i16> %0 to <8 x i32>
+            %ib = zext <8 x i16> %1 to <8 x i32>
+            %isum = add <8 x i32> %ia, %ib
+            %isum1 = add <8 x i32> %isum, < i32 1, i32 1, i32 1, i32 1, i32 1, i32 1, i32 1, i32 1>
+            %isums = lshr <8 x i32> %isum1, < i32 1, i32 1, i32 1, i32 1, i32 1, i32 1, i32 1, i32 1>
+            %r = trunc <8 x i32> %isums to <8 x i16>
+            ret <8 x i16> %r`;
+        return cast(__m128i) LDCInlineIR!(ir, short8, short8, short8)(cast(short8)a, cast(short8)b);        
+    }
 }
 else
 {
-    __m128i _mm_avg_epu16 (__m128i a, __m128i b)
+    __m128i _mm_avg_epu16 (__m128i a, __m128i b) pure @safe
     {
         short8 sa = cast(short8)a;
         short8 sb = cast(short8)b;
@@ -195,9 +205,19 @@ unittest
 
 version(LDC)
 {
-    // Still in LLVM, but will probably be removed
-    pragma(LDC_intrinsic, "llvm.x86.sse2.pavg.b")
-        byte16 _mm_avg_epu8(byte16, byte16) pure @safe;
+    __m128i _mm_avg_epu8 (__m128i a, __m128i b) pure @safe
+    {
+        // Generates pavgb even in LDC 1.0, even in -O0
+        enum ir = `
+            %ia = zext <16 x i8> %0 to <16 x i16>
+            %ib = zext <16 x i8> %1 to <16 x i16>
+            %isum = add <16 x i16> %ia, %ib
+            %isum1 = add <16 x i16> %isum, < i16 1, i16 1, i16 1, i16 1, i16 1, i16 1, i16 1, i16 1, i16 1, i16 1, i16 1, i16 1, i16 1, i16 1, i16 1, i16 1>
+            %isums = lshr <16 x i16> %isum1, < i16 1, i16 1, i16 1, i16 1, i16 1, i16 1, i16 1, i16 1, i16 1, i16 1, i16 1, i16 1, i16 1, i16 1, i16 1, i16 1>
+            %r = trunc <16 x i16> %isums to <16 x i8>
+            ret <16 x i8> %r`;
+        return cast(__m128i) inlineIR!(ir, byte16, byte16, byte16)(cast(byte16)a, cast(byte16)b);        
+    }
 }
 else
 {
