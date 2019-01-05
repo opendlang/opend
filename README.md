@@ -57,8 +57,8 @@ Because those x86 intrinsics are internally converted to IR, **they often don't 
 So you could target ARM one day and still get comparable speed-up.
 
 However, `intel-intrinsics` does **not** guarantee the usage of one particular instruction in general. 
-It could well happen that your code end up slower, or doesn't use the instruction you though it would.
-The only guarantee is **semantics**, with performance being an important secundaty goal for the cases where codegen isn't optimal.
+
+The only guarantee is **semantics**, with performance being an important secundary goal (file a bug).
 
 
 ### Portability
