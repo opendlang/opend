@@ -9,6 +9,7 @@ public import inteli.types;
 public import inteli.xmmintrin; // SSE2 includes SSE1
 
 import inteli.internals;
+import core.math: sqrt, rint;
 
 nothrow @nogc:
 
@@ -610,12 +611,31 @@ unittest
 
 version(LDC) 
 {
-     // MAYDO: version without intrinsic?
+    // Like in clang, implemented with a magic intrinsic right now
     alias _mm_cvtpd_epi32 = __builtin_ia32_cvtpd2dq;
+
+/* Unfortunately this generates a cvttpd2dq instruction
+    __m128i _mm_cvtpd_epi32 (__m128d a) pure  @safe
+    {
+        enum ir = `
+            %i = fptosi <2 x double> %0 to <2 x i32>
+            %r = shufflevector <2 x i32> %i,<2 x i32> zeroinitializer, <4 x i32> <i32 0, i32 1, i32 2, i32 3>        
+            ret <4 x i32> %r`;
+
+        return cast(__m128i) inlineIR!(ir, __m128i, __m128d)(a);
+    } */
 }
 else
 {
-    static assert(false);
+    // Note: the LDC version depends on MXCSR rounding-mode, while
+    //       this one depends on possibly another.
+    __m128i _mm_cvtpd_epi32 (__m128d a) pure @safe
+    {
+        __m128i r = _mm_setzero_si128();
+        r[0] = cast(int)(rint(a[0]));
+        r[1] = cast(int)(rint(a[1]));
+        return r; 
+    }
 }
 unittest
 {
@@ -1420,7 +1440,6 @@ else
 {
     __m128d _mm_sqrt_pd(__m128d vec) pure @safe
     {
-        import std.math: sqrt;
         vec.array[0] = sqrt(vec.array[0]);
         vec.array[1] = sqrt(vec.array[1]);
         return vec;
@@ -1447,7 +1466,6 @@ else
 {
     __m128d _mm_sqrt_sd(__m128d vec) pure @safe
     {
-        import std.math: sqrt;
         vec.array[0] = sqrt(vec.array[0]);
         vec.array[1] = vec.array[1];
         return vec;

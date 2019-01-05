@@ -9,7 +9,7 @@ public import inteli.types;
 
 import inteli.internals;
 
-import core.math: fabs, sqrt;
+import core.math: fabs, sqrt, rint;
 import core.stdc.stdlib: malloc, free;
 import core.exception: onOutOfMemoryError;
 
@@ -319,7 +319,6 @@ else
     //       this one depends on possibly another.
     int _mm_cvtss_si32 (__m128 a) pure @safe
     {
-        import core.math: rint;
         return cast(int)(rint(a[0]));
     }
 }
@@ -337,7 +336,6 @@ version(LDC)
         // Note: __builtin_ia32_cvtss2si64 crashes LDC in 32-bit
         long _mm_cvtss_si64 (__m128 a) pure @safe
         {
-            import core.math: rint;
             return cast(long)(rint(a[0]));
         }
     }
@@ -346,7 +344,6 @@ else
 {
     long _mm_cvtss_si64 (__m128 a) pure @safe
     {
-        import core.math: rint;
         return cast(long)(rint(a[0]));
     }
 }
