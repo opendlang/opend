@@ -1092,9 +1092,26 @@ void _mm_storeu_ps(float* mem_addr, __m128 a) pure @safe
     storeUnaligned!(float4)(a, mem_addr);
 }
 
-// TODO: _mm_stream_pi, does not seem possible
-// TODO: _mm_stream_ps, does not seem possible
+// MMXREG: _mm_stream_pi, does not seem possible
 
+// BUG: can't implement non-temporal store with LDC inlineIR since !nontemporal
+// needs some IR outside this function that would say: 
+//
+//  !0 = !{ i32 1 }
+//
+// It's a LLVM IR metadata description.
+// Regardless, non-temporal moves are really dangerous for performance...
+void _mm_stream_ps (float* mem_addr, __m128 a)
+{
+    __m128* dest = cast(__m128*)mem_addr;
+    *dest = a; // it's a regular move instead
+}
+unittest
+{
+    align(16) float[4] A;
+    _mm_stream_ps(A.ptr, _mm_set1_ps(78.0f));
+    assert(A[0] == 78.0f && A[1] == 78.0f && A[2] == 78.0f && A[3] == 78.0f);
+}
 
 __m128 _mm_sub_ps(__m128 a, __m128 b) pure @safe
 {

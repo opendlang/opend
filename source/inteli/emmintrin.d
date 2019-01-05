@@ -610,7 +610,17 @@ unittest
 
 version(LDC) 
 {
-    alias _mm_cvtpd_epi32 = __builtin_ia32_cvtpd2dq; // TODO
+     // MAYDO: version without intrinsic?
+    alias _mm_cvtpd_epi32 = __builtin_ia32_cvtpd2dq;
+}
+else
+{
+    static assert(false);
+}
+unittest
+{
+    int4 A = _mm_cvtpd_epi32(_mm_set_pd(61.0, 55.0));
+    assert(A[0] == 55 && A[1] == 61 && A[2] == 0 && A[3] == 0);
 }
 
 // MMXREG: _mm_cvtpd_pi32
@@ -740,9 +750,6 @@ version(LDC)
     alias _mm_cvttsd_si64x = _mm_cvttsd_si64; // TODO
 }
 
-
-
-
 __m128d _mm_div_ps(__m128d a, __m128d b)
 {
     return a / b;
@@ -762,7 +769,7 @@ unittest
 
 int _mm_extract_epi16(int imm8)(__m128i a) pure @safe
 {
-    return shufflevector!(short8, imm8)(a);
+    return extractelement!(short8, imm8)(a);
 }
 
 __m128i _mm_insert_epi16(int imm8)(__m128i a, int i) pure @safe
@@ -1551,10 +1558,43 @@ void _mm_storeu_si128 (__m128i* mem_addr, __m128i a) pure @safe
     storeUnaligned!__m128i(a, cast(int*)mem_addr);
 }
 
-// TODO: _mm_stream_pd
-// TODO: _mm_stream_si128
-// TODO: _mm_stream_si32
-// TODO: _mm_stream_si64
+/// Store 128-bits (composed of 2 packed double-precision (64-bit) floating-point elements) 
+/// from a into memory using a non-temporal memory hint. mem_addr must be aligned on a 16-byte 
+/// boundary or a general-protection exception may be generated.
+void _mm_stream_pd (double* mem_addr, __m128d a)
+{
+    // BUG see `_mm_stream_ps` for an explanation why we don't implement non-temporal moves
+    __m128d* dest = cast(__m128d*)mem_addr;
+    *dest = a;
+}
+
+/// Store 128-bits of integer data from a into memory using a non-temporal memory hint. 
+/// mem_addr must be aligned on a 16-byte boundary or a general-protection exception 
+/// may be generated.
+void _mm_stream_si128 (__m128i* mem_addr, __m128i a)
+{
+    // BUG see `_mm_stream_ps` for an explanation why we don't implement non-temporal moves
+    __m128i* dest = cast(__m128i*)mem_addr;
+    *dest = a;
+}
+
+/// Store 32-bit integer a into memory using a non-temporal hint to minimize cache 
+/// pollution. If the cache line containing address mem_addr is already in the cache, 
+/// the cache will be updated.
+void _mm_stream_si32 (int* mem_addr, int a)
+{
+    // BUG see `_mm_stream_ps` for an explanation why we don't implement non-temporal moves
+    *mem_addr = a;
+}
+
+/// Store 64-bit integer a into memory using a non-temporal hint to minimize 
+/// cache pollution. If the cache line containing address mem_addr is already 
+/// in the cache, the cache will be updated.
+void _mm_stream_si64 (long* mem_addr, long a)
+{
+    // BUG See `_mm_stream_ps` for an explanation why we don't implement non-temporal moves
+    *mem_addr = a;
+}
 
 __m128i _mm_sub_epi16(__m128i a, __m128i b) pure @safe
 {
