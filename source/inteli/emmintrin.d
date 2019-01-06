@@ -1661,10 +1661,100 @@ unittest
 
 version(LDC)
 {
-    alias _mm_srl_epi64  = __builtin_ia32_psrlq128; // TODO
-    alias _mm_srli_epi16 = __builtin_ia32_psrlwi128; // TODO
-    alias _mm_srli_epi32 = __builtin_ia32_psrldi128; // TODO
+    alias _mm_srl_epi64  = __builtin_ia32_psrlq128;
+}
+else
+{
+    __m128i _mm_srl_epi64 (__m128i a, __m128i count) pure @safe
+    {
+        long2 r = void;
+        long2 sa = cast(long2)a;
+        long2 lc = cast(long2)count;
+        int bits = cast(int)(lc[0]);
+        foreach(i; 0..2)
+            r[i] = cast(ulong)(sa[i]) >> bits;
+        return cast(__m128i)r;
+    }
+}
+unittest
+{
+    __m128i A = _mm_setr_epi64(8, -4);
+    long2 B = cast(long2) _mm_srl_epi64(A, _mm_cvtsi32_si128(1));
+    long[2] expectedB = [ 4, 0x7FFFFFFFFFFFFFFE];
+    assert(B.array == expectedB);
+}
+
+version(LDC)
+{
+    alias _mm_srli_epi16 = __builtin_ia32_psrlwi128;
+}
+else
+{
+    __m128i _mm_srli_epi16 (__m128i a, int imm8) pure @safe
+    {
+        short8 sa = cast(short8)a;
+        short8 r = void;
+        foreach(i; 0..8)
+            r[i] = cast(short)(cast(ushort)(sa[i]) >> imm8);
+        return cast(int4)r;
+    }
+}
+unittest
+{
+    __m128i A = _mm_setr_epi16(0, 1, 2, 3, -4, -5, 6, 7);
+    short8 B = cast(short8)( _mm_srli_epi16(A, 1) );
+    short[8] expectedB = [ 0, 0, 1, 1, 0x7FFE, 0x7FFD, 3, 3 ];
+    assert(B.array == expectedB);
+}
+
+version(LDC)
+{
+    alias _mm_srli_epi32  = __builtin_ia32_psrldi128;
+}
+else
+{
+    __m128i _mm_srli_epi32 (__m128i a, int imm8) pure @safe
+    {
+        int4 r = void;
+        foreach(i; 0..4)
+            r[i] = cast(uint)(a[i]) >> imm8;
+        return r;
+    }
+}
+unittest
+{
+    __m128i A = _mm_setr_epi32(0, 2, 3, -4);
+    __m128i B = _mm_srli_epi32(A, 1);
+    int[4] expectedB = [ 0, 1, 1, 0x7FFFFFFE];
+    assert(B.array == expectedB);
+}
+
+version(LDC)
+{
     alias _mm_srli_epi64 = __builtin_ia32_psrlqi128; // TODO
+}
+
+version(LDC)
+{
+    alias _mm_srli_epi64  = __builtin_ia32_psrlqi128;
+}
+else
+{
+    __m128i _mm_srli_epi64 (__m128i a, int imm8) pure @safe
+    {
+        long2 r = void;
+        long2 sa = cast(long2)a;
+        foreach(i; 0..2)
+            r[i] = cast(ulong)(sa[i]) >> imm8;
+        return cast(__m128i)r;
+    }
+}
+unittest
+{
+    __m128i A = _mm_setr_epi64(8, -4);
+    long2 B = cast(long2) _mm_srli_epi64(A, 1);
+    long[2] expectedB = [ 4, 0x7FFFFFFFFFFFFFFE];
+    assert(B.array == expectedB);
 }
 
 __m128i _mm_srli_si128(ubyte imm8)(__m128i op) pure @safe
