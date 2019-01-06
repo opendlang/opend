@@ -243,9 +243,45 @@ unittest
         assert(avg[i] == 48);
 }
 
+// Note: unlike Intel API, shift amount is a compile-time parameter.
+__m128i _mm_bslli_si128(int bits)(__m128i a) pure @safe
+{
+    // Generates pslldq starting with LDC 1.1 -O2
+    __m128i zero = _mm_setzero_si128();
+    return cast(__m128i) 
+        shufflevector!(byte16, 16 - bits, 17 - bits, 18 - bits, 19 - bits,
+                               20 - bits, 21 - bits, 22 - bits, 23 - bits,
+                               24 - bits, 25 - bits, 26 - bits, 27 - bits,
+                               28 - bits, 29 - bits, 30 - bits, 31 - bits)
+        (cast(byte16)zero, cast(byte16)a);
+}
+unittest
+{
+    __m128i toShift = _mm_setr_epi8(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15);
+    byte[16] exact =              [0, 0, 0, 0, 0, 0, 1, 2, 3, 4,  5,  6,  7,  8,  9, 10];
+    __m128i result = _mm_bslli_si128!5(toShift);
+    assert(  (cast(byte16)result).array == exact);
+}
 
-// TODO: __m128i _mm_bslli_si128 (__m128i a, int imm8)
-// TODO: __m128i _mm_bsrli_si128 (__m128i a, int imm8)
+// Note: unlike Intel API, shift amount is a compile-time parameter.
+__m128i _mm_bsrli_si128(int bits)(__m128i a) pure @safe
+{
+    // Generates psrldq starting with LDC 1.1 -O2
+    __m128i zero = _mm_setzero_si128();
+    return  cast(__m128i) 
+        shufflevector!(byte16, 0 + bits, 1 + bits, 2 + bits, 3 + bits,
+                               4 + bits, 5 + bits, 6 + bits, 7 + bits,
+                               8 + bits, 9 + bits, 10 + bits, 11 + bits,
+                               12 + bits, 13 + bits, 14 + bits, 15 + bits)
+        (cast(byte16)a, cast(byte16)zero);
+}
+unittest
+{
+    __m128i toShift = _mm_setr_epi8(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15);
+    byte[16] exact =               [5, 6, 7, 8, 9,10,11,12,13,14, 15,  0,  0,  0,  0,  0];
+    __m128i result = _mm_bsrli_si128!5(toShift);
+    assert( (cast(byte16)result).array == exact);
+}
 
 __m128 _mm_castpd_ps (__m128d a) pure @safe
 {
