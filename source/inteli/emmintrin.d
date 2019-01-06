@@ -1567,9 +1567,51 @@ unittest
 
 version(LDC)
 {
-    alias _mm_srai_epi16 = __builtin_ia32_psrawi128; // TODO
-    alias _mm_srai_epi32 = __builtin_ia32_psradi128; // TODO
+    alias _mm_srai_epi16 = __builtin_ia32_psrawi128;
+}
+else
+{
+    __m128i _mm_srai_epi16 (__m128i a, int imm8) pure @safe
+    {
+        short8 sa = cast(short8)a;
+        short8 r = void;
+        foreach(i; 0..8)
+            r[i] = cast(short)(sa[i] >> imm8);
+        return cast(int4)r;
+    }
+}
+unittest
+{
+    __m128i A = _mm_setr_epi16(0, 1, 2, 3, -4, -5, 6, 7);
+    short8 B = cast(short8)( _mm_srai_epi16(A, 1) );
+    short[8] expectedB = [ 0, 0, 1, 1, -2, -3, 3, 3 ];
+    assert(B.array == expectedB);
+}
 
+version(LDC)
+{
+    alias _mm_srai_epi32  = __builtin_ia32_psradi128;
+}
+else
+{
+    __m128i _mm_srai_epi32 (__m128i a, int imm8) pure @safe
+    {
+        int4 r = void;
+        foreach(i; 0..4)
+            r[i] = (a[i] >> imm8);
+        return r;
+    }
+}
+unittest
+{
+    __m128i A = _mm_setr_epi32(0, 2, 3, -4);
+    __m128i B = _mm_srai_epi32(A, 1);
+    int[4] expectedB = [ 0, 1, 1, -2];
+    assert(B.array == expectedB);
+}
+
+version(LDC)
+{
     alias _mm_srl_epi16  = __builtin_ia32_psrlw128; // TODO
     alias _mm_srl_epi32  = __builtin_ia32_psrld128; // TODO
     alias _mm_srl_epi64  = __builtin_ia32_psrlq128; // TODO 
