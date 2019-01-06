@@ -762,6 +762,12 @@ __m128i _mm_cvtsi32_si128 (int a) pure @safe
     r[0] = a;
     return r;
 }
+unittest
+{
+    __m128i a = _mm_cvtsi32_si128(65);
+    assert(a.array == [65, 0, 0, 0]);
+}
+
 
 // Note: on macOS, using "llvm.x86.sse2.cvtsi642sd" was buggy
 __m128d _mm_cvtsi64_sd(__m128d v, long x) pure @safe
@@ -1511,8 +1517,56 @@ else
 
 version(LDC)
 {
-    alias _mm_sra_epi16  = __builtin_ia32_psraw128; // TODO
-    alias _mm_sra_epi32  = __builtin_ia32_psrad128; // TODO
+    alias _mm_sra_epi16 = __builtin_ia32_psraw128;
+}
+else
+{
+    __m128i _mm_sra_epi16 (__m128i a, __m128i count) pure @safe
+    {
+        short8 sa = cast(short8)a;
+        long2 lc = cast(long2)count;
+        int bits = cast(int)(lc[0]);
+        short8 r = void;
+        foreach(i; 0..8)
+            r[i] = cast(short)(sa[i] >> bits);
+        return cast(int4)r;
+    }
+}
+unittest
+{
+    __m128i A = _mm_setr_epi16(0, 1, 2, 3, -4, -5, 6, 7);
+    short8 B = cast(short8)( _mm_sra_epi16(A, _mm_cvtsi32_si128(1)) );
+    short[8] expectedB = [ 0, 0, 1, 1, -2, -3, 3, 3 ];
+    assert(B.array == expectedB);
+}
+
+version(LDC)
+{
+    alias _mm_sra_epi32  = __builtin_ia32_psrad128;
+}
+else
+{
+    __m128i _mm_sra_epi32 (__m128i a, __m128i count) pure @safe
+    {
+        int4 r = void;
+        long2 lc = cast(long2)count;
+        int bits = cast(int)(lc[0]);
+        foreach(i; 0..4)
+            r[i] = (a[i] >> bits);
+        return r;
+    }
+}
+unittest
+{
+    __m128i A = _mm_setr_epi32(0, 2, 3, -4);
+    __m128i B = _mm_sra_epi32(A, _mm_cvtsi32_si128(1));
+    int[4] expectedB = [ 0, 1, 1, -2];
+    assert(B.array == expectedB);
+}
+
+
+version(LDC)
+{
     alias _mm_srai_epi16 = __builtin_ia32_psrawi128; // TODO
     alias _mm_srai_epi32 = __builtin_ia32_psradi128; // TODO
 
