@@ -357,6 +357,9 @@ struct DispatchDevice {
         // VK_NV_device_diagnostic_checkpoints
         vkCmdSetCheckpointNV                           = cast( PFN_vkCmdSetCheckpointNV                           ) vkGetDeviceProcAddr( device, "vkCmdSetCheckpointNV" );
         vkGetQueueCheckpointDataNV                     = cast( PFN_vkGetQueueCheckpointDataNV                     ) vkGetDeviceProcAddr( device, "vkGetQueueCheckpointDataNV" );
+
+        // VK_EXT_buffer_device_address
+        vkGetBufferDeviceAddressEXT                    = cast( PFN_vkGetBufferDeviceAddressEXT                    ) vkGetDeviceProcAddr( device, "vkGetBufferDeviceAddressEXT" );
     }
 
 
@@ -666,6 +669,9 @@ struct DispatchDevice {
 
     // VK_NV_device_diagnostic_checkpoints
     void      CmdSetCheckpointNV( const( void )* pCheckpointMarker ) { vkCmdSetCheckpointNV( commandBuffer, pCheckpointMarker ); }
+
+    // VK_EXT_buffer_device_address
+    VkDeviceAddress  GetBufferDeviceAddressEXT( const( VkBufferDeviceAddressInfoEXT )* pInfo ) { return vkGetBufferDeviceAddressEXT( vkDevice, pInfo ); }
 
     // VK_KHR_device_group
     alias GetDeviceGroupPeerMemoryFeaturesKHR                = GetDeviceGroupPeerMemoryFeatures;
@@ -997,6 +1003,9 @@ struct DispatchDevice {
     // VK_NV_device_diagnostic_checkpoints
     PFN_vkCmdSetCheckpointNV                           vkCmdSetCheckpointNV;
     PFN_vkGetQueueCheckpointDataNV                     vkGetQueueCheckpointDataNV;
+
+    // VK_EXT_buffer_device_address
+    PFN_vkGetBufferDeviceAddressEXT                    vkGetBufferDeviceAddressEXT;
 
     // VK_KHR_device_group
     alias vkGetDeviceGroupPeerMemoryFeaturesKHR                = vkGetDeviceGroupPeerMemoryFeatures;

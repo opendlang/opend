@@ -389,6 +389,9 @@ extern( System ) {
     // VK_NV_device_diagnostic_checkpoints
     alias PFN_vkCmdSetCheckpointNV                               = void      function( VkCommandBuffer commandBuffer, const( void )* pCheckpointMarker );
     alias PFN_vkGetQueueCheckpointDataNV                         = void      function( VkQueue queue, uint32_t* pCheckpointDataCount, VkCheckpointDataNV* pCheckpointData );
+
+    // VK_EXT_buffer_device_address
+    alias PFN_vkGetBufferDeviceAddressEXT                        = VkDeviceAddress  function( VkDevice device, const( VkBufferDeviceAddressInfoEXT )* pInfo );
 }
 
 
@@ -769,6 +772,9 @@ __gshared {
     // VK_NV_device_diagnostic_checkpoints
     PFN_vkCmdSetCheckpointNV                               vkCmdSetCheckpointNV;
     PFN_vkGetQueueCheckpointDataNV                         vkGetQueueCheckpointDataNV;
+
+    // VK_EXT_buffer_device_address
+    PFN_vkGetBufferDeviceAddressEXT                        vkGetBufferDeviceAddressEXT;
 
     // VK_KHR_get_physical_device_properties2
     alias vkGetPhysicalDeviceFeatures2KHR                          = vkGetPhysicalDeviceFeatures2;
@@ -1232,6 +1238,9 @@ void loadDeviceLevelFunctions( VkInstance instance ) {
     // VK_NV_device_diagnostic_checkpoints
     vkCmdSetCheckpointNV                           = cast( PFN_vkCmdSetCheckpointNV                           ) vkGetInstanceProcAddr( instance, "vkCmdSetCheckpointNV" );
     vkGetQueueCheckpointDataNV                     = cast( PFN_vkGetQueueCheckpointDataNV                     ) vkGetInstanceProcAddr( instance, "vkGetQueueCheckpointDataNV" );
+
+    // VK_EXT_buffer_device_address
+    vkGetBufferDeviceAddressEXT                    = cast( PFN_vkGetBufferDeviceAddressEXT                    ) vkGetInstanceProcAddr( instance, "vkGetBufferDeviceAddressEXT" );
 }
 
 
@@ -1540,5 +1549,8 @@ void loadDeviceLevelFunctions( VkDevice device ) {
     // VK_NV_device_diagnostic_checkpoints
     vkCmdSetCheckpointNV                           = cast( PFN_vkCmdSetCheckpointNV                           ) vkGetDeviceProcAddr( device, "vkCmdSetCheckpointNV" );
     vkGetQueueCheckpointDataNV                     = cast( PFN_vkGetQueueCheckpointDataNV                     ) vkGetDeviceProcAddr( device, "vkGetQueueCheckpointDataNV" );
+
+    // VK_EXT_buffer_device_address
+    vkGetBufferDeviceAddressEXT                    = cast( PFN_vkGetBufferDeviceAddressEXT                    ) vkGetDeviceProcAddr( device, "vkGetBufferDeviceAddressEXT" );
 }
 
