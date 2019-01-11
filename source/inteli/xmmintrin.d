@@ -314,11 +314,9 @@ version(LDC)
 }
 else
 {
-    // Note: the LDC version depends on MXCSR rounding-mode, while
-    //       this one depends on possibly another.
     int _mm_cvtss_si32 (__m128 a) pure @safe
     {
-        return cast(int)(rint(a[0]));
+        return inteliRound(a[0]);
     }
 }
 unittest
@@ -335,7 +333,7 @@ version(LDC)
         // Note: __builtin_ia32_cvtss2si64 crashes LDC in 32-bit
         long _mm_cvtss_si64 (__m128 a) pure @safe
         {
-            return cast(long)(rint(a[0]));
+            return inteliRoundl(a[0]);
         }
     }
 }
@@ -343,7 +341,7 @@ else
 {
     long _mm_cvtss_si64 (__m128 a) pure @safe
     {
-        return cast(long)(rint(a[0]));
+        return inteliRoundl(a[0]);
     }
 }
 unittest

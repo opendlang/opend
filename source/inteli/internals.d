@@ -5,8 +5,11 @@
 */
 module inteli.internals;
 
+import inteli.types;
+import core.stdc.stdio;
+
 // The only math functions needed for intel-intrinsics
-public import core.math: fabs, sqrt, rint; // since they are intrinsics
+public import core.math: fabs, sqrt; // since they are intrinsics
 
 version(LDC)
 {
@@ -27,12 +30,107 @@ version(LDC)
     }
 }
 
-import inteli.types;
-import core.stdc.stdio;
+
 
 package:
 nothrow @nogc:
 
+
+//
+//  <ROUNDING>
+//
+//  Why is that there? For DMD, we cannot use rint because _MM_SET_ROUNDING_MODE
+//  doesn't change the FPU rounding mode, and isn't expected to do so.
+//  So we devised these rounding function to help having consistent rouding between 
+//  LDC and DMD. It's important that DMD uses what is in MXCST to round.
+//
+
+/// Round using the rounding mode set by _MM_SET_ROUNDING_MODE (in MXCSR)
+int inteliRound(float value) pure @safe
+{
+    version(LDC)
+    {
+        import core.math: rint;
+        return cast(int)rint(value);
+    }
+    else
+    {
+        int result;
+        asm pure nothrow @nogc @trusted
+        {
+            cvtss2si EAX, value; // converts using MXCSR
+            mov result, EAX;
+        }
+        return result;
+    }
+}
+
+///ditto
+int inteliRound(double value) pure @safe
+{
+    version(LDC)
+    {
+        import core.math: rint;
+        return cast(int)rint(value);
+    }
+    else
+    {
+        int result;
+        asm pure nothrow @nogc @trusted
+        {
+            cvtsd2si EAX, value; // converts using MXCSR
+            mov result, EAX;
+        }
+        return result;
+    }
+}
+
+///ditto
+long inteliRoundl(float value) pure @safe
+{
+    version(LDC)
+    {
+        import core.math: rndtol;
+        return cast(long)rndtol(value);
+    }
+    else
+    {
+        long result;
+        asm pure nothrow @nogc @trusted
+        {
+            movss XMM0, value;
+            cvtps2dq XMM1, XMM0; // converts using MXCSR
+            movq result, XMM1;
+        }
+        return result;
+    }
+}
+
+///ditto
+long inteliRoundl(double value) pure @safe
+{
+    version(LDC)
+    {
+        import core.math: rndtol;
+        return cast(long)rndtol(value);
+    }
+    else
+    {
+        long result;
+        asm pure nothrow @nogc @trusted
+        {
+            movsd XMM0, value;
+            cvtpd2dq XMM1, XMM0; // converts using MXCSR
+            movq result, XMM1;
+        }
+        return result;
+    }
+}
+
+
+//
+//  </ROUNDING>
+//
 
 
 // using the Intel terminology here

@@ -667,8 +667,8 @@ else
     __m128i _mm_cvtpd_epi32 (__m128d a) pure @safe
     {
         __m128i r = _mm_setzero_si128();
-        r[0] = cast(int)(rint(a[0]));
-        r[1] = cast(int)(rint(a[1]));
+        r[0] = inteliRound(a[0]);
+        r[1] = inteliRound(a[1]);
         return r; 
     }
 }
@@ -713,22 +713,37 @@ else
 {
     // Note: the LDC version depends on MXCSR rounding-mode, while
     //       this one depends on possibly another.
-    // TODO: check _mm_cvtps_epi32 and _mm_cvtpd_epi32
     __m128i _mm_cvtps_epi32 (__m128 a) pure @safe
     {
         __m128i r = void;
-        r[0] = cast(int)(rint(a[0]));
-        r[1] = cast(int)(rint(a[1]));
-        r[2] = cast(int)(rint(a[2]));
-        r[3] = cast(int)(rint(a[3]));
+        r[0] = inteliRound(a[0]);
+        r[1] = inteliRound(a[1]);
+        r[2] = inteliRound(a[2]);
+        r[3] = inteliRound(a[3]);
         return r; 
     }
 }
 unittest
 {
-    __m128i A = _mm_cvtps_epi32(_mm_setr_ps(1.0f, -2.0f, 54.0f, 45.0f));
-    assert(A.array == [1, -2, 54, 45]);
-    // TODO add rounding tests
+    uint savedRounding = _MM_GET_ROUNDING_MODE();
+
+    _MM_SET_ROUNDING_MODE(_MM_ROUND_NEAREST);
+    __m128i A = _mm_cvtps_epi32(_mm_setr_ps(1.4f, -2.1f, 53.5f, -2.9f));
+    assert(A.array == [1, -2, 54, -3]);
+
+    _MM_SET_ROUNDING_MODE(_MM_ROUND_DOWN);
+    A = _mm_cvtps_epi32(_mm_setr_ps(1.4f, -2.1f, 53.5f, -2.9f));
+    assert(A.array == [1, -3, 53, -3]);
+
+    _MM_SET_ROUNDING_MODE(_MM_ROUND_UP);
+    A = _mm_cvtps_epi32(_mm_setr_ps(1.4f, -2.1f, 53.5f, -2.9f));
+    assert(A.array == [2, -2, 54, -2]);
+
+    _MM_SET_ROUNDING_MODE(_MM_ROUND_TOWARD_ZERO);
+    A = _mm_cvtps_epi32(_mm_setr_ps(1.4f, -2.1f, 53.5f, -2.9f));
+    assert(A.array == [1, -2, 53, -2]);
+
+    _MM_SET_ROUNDING_MODE(savedRounding);
 }
 
 
