@@ -506,7 +506,7 @@ __m128 _mm_loadr_ps (const(float)* mem_addr) pure @trusted
     return shufflevector!(__m128, 3, 2, 1, 0)(a, a);
 }
 
-__m128 _mm_loadu_ps(float*p) pure @safe
+__m128 _mm_loadu_ps(const(float)*p) pure @safe
 {
     return loadUnaligned!(__m128)(p);
 }

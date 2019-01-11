@@ -946,9 +946,45 @@ unittest
 version(LDC)
 {
     alias _mm_madd_epi16 = __builtin_ia32_pmaddwd128;
+}
 
-    alias _mm_maskmoveu_si128 = __builtin_ia32_maskmovdqu;
-
+version(LDC)
+{
+    /// Conditionally store 8-bit integer elements from `a` into memory using `mask` 
+    /// (elements are not stored when the highest bit is not set in the corresponding element) 
+    /// and a non-temporal memory hint. `mem_addr` does not need to be aligned on any particular 
+    /// boundary.
+    alias _mm_maskmoveu_si128 = __builtin_ia32_maskmovdqu; // can't do it with pure IR
+}
+else
+{
+    ///ditto
+    void _mm_maskmoveu_si128 (__m128i a, __m128i mask, void* mem_addr) pure @trusted
+    {
+        byte16 b = cast(byte16)a;
+        byte16 m = cast(byte16)mask;
+        byte* dest = cast(byte*)(mem_addr);
+        foreach(j; 0..16)
+        {
+            if (m[j] & 128)
+            {
+                dest[j] = b[j];
+            }
+        }
+    }
+}
+unittest
+{
+    ubyte[16] dest =           [42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42];
+    __m128i mask = _mm_setr_epi8(0,-1, 0,-1,-1, 1,-1,-1, 0,-1,-4,-1,-1, 0,-127, 0);
+    __m128i A    = _mm_setr_epi8(0, 1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14,15);
+    _mm_maskmoveu_si128(A, mask, dest.ptr);
+    ubyte[16] correct =        [42, 1,42, 3, 4,42, 6, 7,42, 9,10,11,12,42,14,42];
+    assert(dest == correct);
+}
+    
+version(LDC)
+{
     pragma(LDC_intrinsic, "llvm.x86.sse2.pmaxs.w")
         short8 __builtin_ia32_pmaxsw128(short8, short8) pure @safe;
     alias _mm_max_epi16 = __builtin_ia32_pmaxsw128;
@@ -1351,10 +1387,10 @@ __m128i _mm_setr_epi64 (long e1, long e0) pure @trusted
     return cast(__m128i)( loadUnaligned!(long2)(result.ptr) );
 }
 
-__m128i _mm_setr_epi8 (char e15, char e14, char e13, char e12,
-                       char e11, char e10, char e9, char e8,
-                       char e7, char e6, char e5, char e4,
-                       char e3, char e2, char e1, char e0) pure @trusted
+__m128i _mm_setr_epi8 (byte e15, byte e14, byte e13, byte e12,
+                       byte e11, byte e10, byte e9,  byte e8,
+                       byte e7,  byte e6,  byte e5,  byte e4,
+                       byte e3,  byte e2,  byte e1,  byte e0) pure @trusted
 {
     byte[16] result = [e15, e14, e13, e12, e11, e10, e9, e8,
                       e7,  e6,  e5,  e4,  e3,  e2, e1, e0];
