@@ -2025,7 +2025,7 @@ __m128i _mm_unpacklo_epi16 (__m128i a, __m128i b) pure @safe
 
 __m128i _mm_unpacklo_epi32 (__m128i a, __m128i b) pure @safe
 {
-    return shufflevector!(int4, 0, 4, 1, 6)
+    return shufflevector!(int4, 0, 4, 1, 5)
                          (cast(int4)a, cast(int4)b);
 }
 
