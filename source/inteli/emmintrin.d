@@ -662,8 +662,6 @@ version(LDC)
 }
 else
 {
-    // Note: the LDC version depends on MXCSR rounding-mode, while
-    //       this one depends on possibly another.
     __m128i _mm_cvtpd_epi32 (__m128d a) pure @safe
     {
         __m128i r = _mm_setzero_si128();
@@ -711,8 +709,6 @@ version(LDC)
 }
 else
 {
-    // Note: the LDC version depends on MXCSR rounding-mode, while
-    //       this one depends on possibly another.
     __m128i _mm_cvtps_epi32 (__m128 a) pure @safe
     {
         __m128i r = void;
