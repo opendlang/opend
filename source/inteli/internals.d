@@ -5,6 +5,9 @@
 */
 module inteli.internals;
 
+// The only math functions needed for intel-intrinsics
+public import core.math: fabs, sqrt, rint; // since they are intrinsics
+
 version(LDC)
 {
     public import core.simd;
@@ -29,6 +32,8 @@ import core.stdc.stdio;
 
 package:
 nothrow @nogc:
+
+
 
 // using the Intel terminology here
 

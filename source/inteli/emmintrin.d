@@ -9,7 +9,6 @@ public import inteli.types;
 public import inteli.xmmintrin; // SSE2 includes SSE1
 
 import inteli.internals;
-import core.math: sqrt, rint;
 
 nothrow @nogc:
 
@@ -680,12 +679,58 @@ unittest
 }
 
 // MMXREG: _mm_cvtpd_pi32
+
 version(LDC)
 {
-    alias _mm_cvtpd_ps = __builtin_ia32_cvtpd2ps; // TODO
-// MMXREG: _mm_cvtpi32_pd
-    alias _mm_cvtps_epi32 = __builtin_ia32_cvtps2dq; // TODO
+    alias _mm_cvtpd_ps = __builtin_ia32_cvtpd2ps; // can't be done with IR unfortunately
 }
+else
+{
+    __m128 _mm_cvtpd_ps (__m128d a) pure @safe
+    {
+        __m128 r = void;
+        r[0] = a[0];
+        r[1] = a[1];
+        r[2] = 0;
+        r[3] = 0;
+        return r;
+    }
+}
+unittest
+{
+    __m128d A = _mm_set_pd(5.25, 4.0);
+    __m128 B = _mm_cvtpd_ps(A);
+    assert(B.array == [4.0f, 5.25f, 0, 0]);
+}
+
+// MMXREG: _mm_cvtpi32_pd
+
+version(LDC)
+{
+    alias _mm_cvtps_epi32 = __builtin_ia32_cvtps2dq;
+}
+else
+{
+    // Note: the LDC version depends on MXCSR rounding-mode, while
+    //       this one depends on possibly another.
+    // TODO: check _mm_cvtps_epi32 and _mm_cvtpd_epi32
+    __m128i _mm_cvtps_epi32 (__m128 a) pure @safe
+    {
+        __m128i r = void;
+        r[0] = cast(int)(rint(a[0]));
+        r[1] = cast(int)(rint(a[1]));
+        r[2] = cast(int)(rint(a[2]));
+        r[3] = cast(int)(rint(a[3]));
+        return r; 
+    }
+}
+unittest
+{
+    __m128i A = _mm_cvtps_epi32(_mm_setr_ps(1.0f, -2.0f, 54.0f, 45.0f));
+    assert(A.array == [1, -2, 54, 45]);
+    // TODO add rounding tests
+}
+
 
 version(LDC)
 {

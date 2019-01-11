@@ -9,7 +9,6 @@ public import inteli.types;
 
 import inteli.internals;
 
-import core.math: fabs, sqrt, rint;
 import core.stdc.stdlib: malloc, free;
 import core.exception: onOutOfMemoryError;
 
