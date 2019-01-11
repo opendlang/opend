@@ -95,14 +95,9 @@ long inteliRoundl(float value) pure @safe
     }
     else
     {
-        long result;
-        asm pure nothrow @nogc @trusted
-        {
-            movss XMM0, value;
-            cvtps2dq XMM1, XMM0; // converts using MXCSR
-            movq result, XMM1;
-        }
-        return result;
+        // Note: this is incorrect for larger numbers (more than 23-bit of mantissa)
+        // but in the case of 32-bit x86 there is no SSE2 way to convert FP to 64-bit int
+        return cast(long)inteliRound(value);
     }
 }
 
@@ -116,14 +111,9 @@ long inteliRoundl(double value) pure @safe
     }
     else
     {
-        long result;
-        asm pure nothrow @nogc @trusted
-        {
-            movsd XMM0, value;
-            cvtpd2dq XMM1, XMM0; // converts using MXCSR
-            movq result, XMM1;
-        }
-        return result;
+        // Note: this is incorrect for larger numbers (more than 23-bit of mantissa)
+        // but in the case of 32-bit x86 there is no SSE2 way to convert FP to 64-bit int
+        return cast(long)inteliRound(value);
     }
 }
 

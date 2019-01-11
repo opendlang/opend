@@ -783,10 +783,53 @@ double _mm_cvtsd_f64 (__m128d a) pure @safe
 
 version(LDC)
 {
-    alias _mm_cvtsd_si32 = __builtin_ia32_cvtsd2si; // TODO
-    alias _mm_cvtsd_si64 = __builtin_ia32_cvtsd2si64; // TODO
-    alias _mm_cvtsd_si64x = _mm_cvtsd_si64; // TODO
+    alias _mm_cvtsd_si32 = __builtin_ia32_cvtsd2si;
 }
+else
+{
+    int _mm_cvtsd_si32 (__m128d a) pure @safe
+    {
+        return inteliRound(a[0]);
+    }
+}
+unittest
+{
+    assert(4 == _mm_cvtsd_si32(_mm_set1_pd(4.0)));
+}
+
+version(LDC)
+{
+    // Unfortunately this builtin crashes in 32-bit
+    version(X86_64)
+        alias _mm_cvtsd_si64 = __builtin_ia32_cvtsd2si64;
+    else
+    {
+        long _mm_cvtsd_si64 (__m128d a) pure @safe
+        {
+            return inteliRoundl(a[0]);
+        }
+    }
+}
+else
+{
+    long _mm_cvtsd_si64 (__m128d a) pure @safe
+    {
+        return inteliRoundl(a[0]);
+    }
+}
+unittest
+{
+    assert(-4 == _mm_cvtsd_si64(_mm_set1_pd(-4.0)));
+
+    // TODO: proper MXCSR rounding for DMD
+    // It seems the only way is FPU
+    version(LDC)
+    {
+        assert(-56468486186 == _mm_cvtsd_si64(_mm_set1_pd(-56468486186.0)));
+    }
+}
+
+alias _mm_cvtsd_si64x = _mm_cvtsd_si64;
 
 version(LDC)
 {
