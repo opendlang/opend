@@ -819,6 +819,7 @@ unittest
 
     // TODO: proper MXCSR rounding for DMD
     // It seems the only way is FPU
+    // ICC is happy to loose the precision in 32-bit though
     version(LDC)
     {
         assert(-56468486186 == _mm_cvtsd_si64(_mm_set1_pd(-56468486186.0)));
@@ -827,9 +828,16 @@ unittest
 
 alias _mm_cvtsd_si64x = _mm_cvtsd_si64;
 
-version(LDC)
+__m128 _mm_cvtsd_ss (__m128 a, __m128d b) pure @safe
 {
-    alias _mm_cvtsd_ss = __builtin_ia32_cvtsd2ss; // TODO
+    // Generates cvtsd2ss since LDC 1.3 -O0
+    a[0] = b[0];
+    return a;
+}
+unittest
+{
+    __m128 R = _mm_cvtsd_ss(_mm_set1_ps(4.0f), _mm_set1_pd(3.0));
+    assert(R.array == [3.0f, 4.0f, 4.0f, 4.0f]);
 }
 
 int _mm_cvtsi128_si32 (__m128i a) pure @safe
@@ -901,11 +909,59 @@ unittest
     assert(a.array == [42.0, 0]);
 }
 
+long _mm_cvttss_si64 (__m128 a) pure @safe
+{
+    return cast(long)(a[0]); // Generates cvttss2si as expected
+}
+unittest
+{
+    assert(1 == _mm_cvttss_si64(_mm_setr_ps(1.9f, 2.0f, 3.0f, 4.0f)));
+}
+
 version(LDC)
 {
-    alias _mm_cvttpd_epi32 = __builtin_ia32_cvttpd2dq; // TODO
-    //MMXREG: _mm_cvttpd_pi32
-    alias _mm_cvttps_epi32 = __builtin_ia32_cvttps2dq; // TODO
+    alias _mm_cvttpd_epi32 = __builtin_ia32_cvttpd2dq;
+}
+else
+{
+    __m128i _mm_cvttpd_epi32 (__m128d a) pure @safe
+    {
+        // Note: doesn't generate cvttpd2dq as of LDC 1.13
+        __m128i r;
+        r[0] = cast(int)a[0];
+        r[1] = cast(int)a[1];
+        r[2] = 0;
+        r[3] = 0;
+        return r;
+    }
+}
+unittest
+{
+    __m128i R = _mm_cvttpd_epi32(_mm_setr_pd(-4.9, 45641.5f));
+    assert(R.array == [-4, 45641, 0, 0]);
+}
+
+//MMXREG: _mm_cvttpd_pi32
+
+__m128i _mm_cvttps_epi32 (__m128 a) pure @safe
+{
+    // Note: Generates cvttps2dq since LDC 1.3 -O2
+    __m128i r;
+    r[0] = cast(int)a[0];
+    r[1] = cast(int)a[1];
+    r[2] = cast(int)a[2];
+    r[3] = cast(int)a[3];
+    return r;
+}
+unittest
+{
+    __m128i R = _mm_cvttps_epi32(_mm_setr_ps(-4.9, 45641.5f, 0.0f, 1.0f));
+    assert(R.array == [-4, 45641, 0, 1]);
+}
+
+
+version(LDC)
+{   
     alias _mm_cvttsd_si32 = __builtin_ia32_cvttsd2si; // TODO
     alias _mm_cvttsd_si64 = __builtin_ia32_cvttsd2si64; // TODO
     alias _mm_cvttsd_si64x = _mm_cvttsd_si64; // TODO
