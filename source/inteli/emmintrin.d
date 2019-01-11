@@ -818,7 +818,7 @@ unittest
     assert(-4 == _mm_cvtsd_si64(_mm_set1_pd(-4.0)));
 
     // TODO: proper MXCSR rounding for DMD
-    // It seems the only way is FPU
+    // It seems the only way is FPU with save/restore of CLW
     // ICC is happy to loose the precision in 32-bit though
     version(LDC)
     {
@@ -959,13 +959,20 @@ unittest
     assert(R.array == [-4, 45641, 0, 1]);
 }
 
-
-version(LDC)
-{   
-    alias _mm_cvttsd_si32 = __builtin_ia32_cvttsd2si; // TODO
-    alias _mm_cvttsd_si64 = __builtin_ia32_cvttsd2si64; // TODO
-    alias _mm_cvttsd_si64x = _mm_cvttsd_si64; // TODO
+int _mm_cvttsd_si32 (__m128d a)
+{
+    // Generates cvttsd2si since LDC 1.3 -O0
+    return cast(int)a[0];
 }
+
+long _mm_cvttsd_si64 (__m128d a)
+{
+    // Generates cvttsd2si since LDC 1.3 -O0
+    // but in 32-bit instead, it's a long sequence that resort to FPU
+    return cast(long)a[0];
+}
+
+alias _mm_cvttsd_si64x = _mm_cvttsd_si64;
 
 __m128d _mm_div_ps(__m128d a, __m128d b)
 {
@@ -1137,6 +1144,22 @@ unittest
     ubyte[16] correct =        [42, 1,42, 3, 4,42, 6, 7,42, 9,10,11,12,42,14,42];
     assert(dest == correct);
 }
+
+__m128i _mm_max_epi16 (__m128i a, __m128i b) pure @safe
+{
+    // Same remark as with _mm_min_epi16: clang uses mystery intrinsics we don't have
+    __m128i lowerShorts = _mm_cmpgt_epi16(a, b); // ones where a should be selected, b else
+    __m128i aTob = _mm_xor_si128(a, b); // a ^ (a ^ b) == b
+    __m128i mask = _mm_and_si128(aTob, lowerShorts);
+    return _mm_xor_si128(b, mask);
+}
+unittest
+{
+    short8 R = cast(short8) _mm_max_epi16(_mm_setr_epi16(45, 1, -4, -8, 9,  7, 0,-57),
+                                          _mm_setr_epi16(-4,-8,  9,  7, 0,-57, 0,  0));
+    short[8] correct =                                  [45, 1,  9,  7, 9,  7, 0,  0];
+    assert(R.array == correct);
+}
     
 version(LDC)
 {
@@ -1200,17 +1223,27 @@ unittest
     _mm_mfence();
 }
 
-
-version(LDC)
+__m128i _mm_min_epi16 (__m128i a, __m128i b) pure @safe
 {
-    pragma(LDC_intrinsic, "llvm.x86.sse2.pmins.w")
-        short8 __builtin_ia32_pminsw128(short8, short8) pure @safe; // TODO
-    alias _mm_min_epi16 = __builtin_ia32_pminsw128; // TODO
-
-    pragma(LDC_intrinsic, "llvm.x86.sse2.pminu.b")
-        byte16 __builtin_ia32_pminub128(byte16, byte16) pure @safe; // TODO
-    alias _mm_min_epu8 = __builtin_ia32_pminub128; // TODO
+    // Note: clang uses a __builtin_ia32_pminsw128 which has disappeared from LDC LLVM (?)
+    // Implemented using masks and XOR
+    __m128i lowerShorts = _mm_cmplt_epi16(a, b); // ones where a should be selected, b else
+    __m128i aTob = _mm_xor_si128(a, b); // a ^ (a ^ b) == b
+    __m128i mask = _mm_and_si128(aTob, lowerShorts);
+    return _mm_xor_si128(b, mask);
 }
+unittest
+{
+    short8 R = cast(short8) _mm_min_epi16(_mm_setr_epi16(45, 1, -4, -8, 9,  7, 0,-57),
+                                          _mm_setr_epi16(-4,-8,  9,  7, 0,-57, 0,  0));
+    short[8] correct =  [-4,-8, -4, -8, 0,-57, 0, -57];
+    assert(R.array == correct);
+}
+
+
+    /*pragma(LDC_intrinsic, "llvm.x86.sse2.pminu.b")
+        byte16 __builtin_ia32_pminub128(byte16, byte16) pure @safe; // TODO*/
+    //alias _mm_min_epu8 = __builtin_ia32_pminub128; // TODO
 
 __m128d _mm_min_pd (__m128d a, __m128d b) pure @safe
 {
