@@ -1471,7 +1471,35 @@ __m128i _mm_or_si128 (__m128i a, __m128i b) pure @safe
 
 version(LDC)
 {
-    alias _mm_packs_epi32 = __builtin_ia32_packssdw128; // TODO
+    alias _mm_packs_epi32 = __builtin_ia32_packssdw128;
+}
+else
+{
+    __m128i _mm_packs_epi32 (__m128i a, __m128i b) pure @safe
+    {
+        short8 r;
+        r[0] = saturateSignedIntToSignedShort(a[0]);
+        r[1] = saturateSignedIntToSignedShort(a[1]);
+        r[2] = saturateSignedIntToSignedShort(a[2]);
+        r[3] = saturateSignedIntToSignedShort(a[3]);
+        r[4] = saturateSignedIntToSignedShort(b[0]);
+        r[5] = saturateSignedIntToSignedShort(b[1]);
+        r[6] = saturateSignedIntToSignedShort(b[2]);
+        r[7] = saturateSignedIntToSignedShort(b[3]);
+        return cast(__m128i)r;
+    }
+}
+unittest
+{
+    __m128i A = _mm_setr_epi32(100000, -100000, 1000, 0);
+    short8 R = cast(short8) _mm_packs_epi32(A, A);
+    short[8] correct = [32767, -32768, 1000, 0, 32767, -32768, 1000, 0];
+    assert(R.array == correct);
+}
+
+
+version(LDC)
+{
     alias _mm_packs_epi16 = __builtin_ia32_packsswb128; // TODO
 }
 
