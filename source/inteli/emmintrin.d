@@ -1497,10 +1497,31 @@ unittest
     assert(R.array == correct);
 }
 
-
 version(LDC)
 {
-    alias _mm_packs_epi16 = __builtin_ia32_packsswb128; // TODO
+    alias _mm_packs_epi16 = __builtin_ia32_packsswb128;
+}
+else
+{
+    __m128i _mm_packs_epi16 (__m128i a, __m128i b) pure @safe
+    {
+        byte16 r;
+        short8 sa = cast(short8)a;
+        short8 sb = cast(short8)b;
+        foreach(i; 0..8)
+            r[i] = saturateSignedWordToSignedByte(sa[i]);
+        foreach(i; 0..8)
+            r[i+8] = saturateSignedWordToSignedByte(sb[i]);
+        return cast(__m128i)r;
+    }
+}
+unittest
+{
+    __m128i A = _mm_setr_epi16(1000, -1000, 1000, 0, 256, -129, 254, 0);
+    byte16 R = cast(byte16) _mm_packs_epi16(A, A);
+    byte[16] correct = [127, -128, 127, 0, 127, -128, 127, 0,
+                        127, -128, 127, 0, 127, -128, 127, 0];
+    assert(R.array == correct);
 }
 
 version(LDC)
