@@ -1394,8 +1394,64 @@ unittest
 
 version(LDC)
 {
-    alias _mm_mulhi_epi16 = __builtin_ia32_pmulhw128; // TODO
-    alias _mm_mulhi_epu16 = __builtin_ia32_pmulhuw128; // TODO
+    alias _mm_mulhi_epi16 = __builtin_ia32_pmulhw128;
+}
+else
+{
+    __m128i _mm_mulhi_epi16 (__m128i a, __m128i b) pure @safe
+    {
+        short8 sa = cast(short8)a;
+        short8 sb = cast(short8)b;
+        short8 r = void;
+        r[0] = (sa[0] * sb[0]) >> 16;
+        r[1] = (sa[1] * sb[1]) >> 16;
+        r[2] = (sa[2] * sb[2]) >> 16;
+        r[3] = (sa[3] * sb[3]) >> 16;
+        r[4] = (sa[4] * sb[4]) >> 16;
+        r[5] = (sa[5] * sb[5]) >> 16;
+        r[6] = (sa[6] * sb[6]) >> 16;
+        r[7] = (sa[7] * sb[7]) >> 16;
+        return cast(__m128i)r;
+    }
+}
+unittest
+{
+    __m128i A = _mm_setr_epi16(0, -16, 2, 3, 4, 8, 16, 7);
+    __m128i B = _mm_set1_epi16(16384);
+    short8 R = cast(short8)_mm_mulhi_epi16(A, B);
+    short[8] correct = [0, -4, 0, 0, 1, 2, 4, 1];
+    assert(R.array == correct);
+}
+
+version(LDC)
+{
+    alias _mm_mulhi_epu16 = __builtin_ia32_pmulhuw128;
+}
+else
+{
+    __m128i _mm_mulhi_epu16 (__m128i a, __m128i b) pure @safe
+    {
+        short8 sa = cast(short8)a;
+        short8 sb = cast(short8)b;
+        short8 r = void;
+        r[0] = cast(short)( (cast(ushort)sa[0] * cast(ushort)sb[0]) >> 16 );
+        r[1] = cast(short)( (cast(ushort)sa[1] * cast(ushort)sb[1]) >> 16 );
+        r[2] = cast(short)( (cast(ushort)sa[2] * cast(ushort)sb[2]) >> 16 );
+        r[3] = cast(short)( (cast(ushort)sa[3] * cast(ushort)sb[3]) >> 16 );
+        r[4] = cast(short)( (cast(ushort)sa[4] * cast(ushort)sb[4]) >> 16 );
+        r[5] = cast(short)( (cast(ushort)sa[5] * cast(ushort)sb[5]) >> 16 );
+        r[6] = cast(short)( (cast(ushort)sa[6] * cast(ushort)sb[6]) >> 16 );
+        r[7] = cast(short)( (cast(ushort)sa[7] * cast(ushort)sb[7]) >> 16 );
+        return cast(__m128i)r;
+    }
+}
+unittest
+{
+    __m128i A = _mm_setr_epi16(0, -16, 2, 3, 4, 8, 16, 7);
+    __m128i B = _mm_set1_epi16(16384);
+    short8 R = cast(short8)_mm_mulhi_epu16(A, B);
+    short[8] correct = [0, 0x3FFC, 0, 0, 1, 2, 4, 1];
+    assert(R.array == correct);
 }
 
 __m128i _mm_mullo_epi16 (__m128i a, __m128i b)
