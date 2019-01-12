@@ -1745,9 +1745,80 @@ unittest
 
 version(LDC)
 {
-    alias _mm_sll_epi32 = __builtin_ia32_pslld128; // TODO
-    alias _mm_sll_epi64 = __builtin_ia32_psllq128; // TODO
-    alias _mm_sll_epi16 = __builtin_ia32_psllw128; // TODO
+    alias _mm_sll_epi32 = __builtin_ia32_pslld128;
+}
+else
+{
+    __m128i _mm_sll_epi32 (__m128i a, __m128i count) pure @safe
+    {
+        int4 r = void;
+        long2 lc = cast(long2)count;
+        int bits = cast(int)(lc[0]);
+        foreach(i; 0..4)
+            r[i] = cast(uint)(a[i]) << bits;
+        return r;
+    }
+}
+unittest
+{
+    __m128i A = _mm_setr_epi32(0, 2, 3, -4);
+    __m128i B = _mm_sll_epi32(A, _mm_cvtsi32_si128(1));
+    int[4] expectedB = [ 0, 4, 6, -8];
+    assert(B.array == expectedB);
+}
+
+version(LDC)
+{
+    alias _mm_sll_epi64  = __builtin_ia32_psllq128;
+}
+else
+{
+    __m128i _mm_sll_epi64 (__m128i a, __m128i count) pure @safe
+    {
+        long2 r = void;
+        long2 sa = cast(long2)a;
+        long2 lc = cast(long2)count;
+        int bits = cast(int)(lc[0]);
+        foreach(i; 0..2)
+            r[i] = cast(ulong)(sa[i]) << bits;
+        return cast(__m128i)r;
+    }
+}
+unittest
+{
+    __m128i A = _mm_setr_epi64(8, -4);
+    long2 B = cast(long2) _mm_sll_epi64(A, _mm_cvtsi32_si128(1));
+    long[2] expectedB = [ 16, -8];
+    assert(B.array == expectedB);
+}
+
+version(LDC)
+{
+    alias _mm_sll_epi16 = __builtin_ia32_psllw128;
+}
+else
+{
+    __m128i _mm_sll_epi16 (__m128i a, __m128i count) pure @safe
+    {
+        short8 sa = cast(short8)a;
+        long2 lc = cast(long2)count;
+        int bits = cast(int)(lc[0]);
+        short8 r = void;
+        foreach(i; 0..8)
+            r[i] = cast(short)(cast(ushort)(sa[i]) << bits);
+        return cast(int4)r;
+    }
+}
+unittest
+{
+    __m128i A = _mm_setr_epi16(0, 1, 2, 3, -4, -5, 6, 7);
+    short8 B = cast(short8)( _mm_sll_epi16(A, _mm_cvtsi32_si128(1)) );
+    short[8] expectedB =     [ 0, 2, 4, 6, -8, -10, 12, 14 ];
+    assert(B.array == expectedB);
+}
+
+version(LDC)
+{
     alias _mm_slli_epi32 = __builtin_ia32_pslldi128; // TODO
     alias _mm_slli_epi64 = __builtin_ia32_psllqi128; // TODO
     alias _mm_slli_epi16 = __builtin_ia32_psllwi128; // TODO
