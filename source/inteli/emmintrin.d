@@ -1160,16 +1160,24 @@ unittest
     short[8] correct =                                  [45, 1,  9,  7, 9,  7, 0,  0];
     assert(R.array == correct);
 }
-    
-version(LDC)
-{
-    pragma(LDC_intrinsic, "llvm.x86.sse2.pmaxs.w")
-        short8 __builtin_ia32_pmaxsw128(short8, short8) pure @safe;
-    alias _mm_max_epi16 = __builtin_ia32_pmaxsw128;
 
-    pragma(LDC_intrinsic, "llvm.x86.sse2.pmaxu.b")
-        byte16 __builtin_ia32_pmaxub128(byte16, byte16) pure @safe;
-    alias _mm_max_epu8 = __builtin_ia32_pmaxub128;
+
+// Same remark as with _mm_min_epi16: clang uses mystery intrinsics we don't have
+__m128i _mm_max_epu8 (__m128i a, __m128i b) pure @safe
+{
+    // Same remark as with _mm_min_epi16: clang uses mystery intrinsics we don't have
+    __m128i value128 = _mm_set1_epi8(-128);
+    __m128i higher = _mm_cmpgt_epi8(_mm_add_epi8(a, value128), _mm_add_epi8(b, value128)); // signed comparison
+    __m128i aTob = _mm_xor_si128(a, b); // a ^ (a ^ b) == b
+    __m128i mask = _mm_and_si128(aTob, higher);
+    return _mm_xor_si128(b, mask);
+}
+unittest
+{
+    byte16 R = cast(byte16) _mm_max_epu8(_mm_setr_epi8(45, 1, -4, -8, 9,  7, 0,-57, -4,-8,  9,  7, 0,-57, 0,  0),
+                                         _mm_setr_epi8(-4,-8,  9,  7, 0,-57, 0,  0, 45, 1, -4, -8, 9,  7, 0,-57));
+    byte[16] correct =                                [-4,-8, -4, -8, 9,-57, 0,-57, -4,-8, -4, -8, 9,-57, 0,-57];
+    assert(R.array == correct);
 }
 
 __m128d _mm_max_pd (__m128d a, __m128d b) pure @safe
@@ -1241,9 +1249,22 @@ unittest
 }
 
 
-    /*pragma(LDC_intrinsic, "llvm.x86.sse2.pminu.b")
-        byte16 __builtin_ia32_pminub128(byte16, byte16) pure @safe; // TODO*/
-    //alias _mm_min_epu8 = __builtin_ia32_pminub128; // TODO
+__m128i _mm_min_epu8 (__m128i a, __m128i b) pure @safe
+{
+    // Same remark as with _mm_min_epi16: clang uses mystery intrinsics we don't have
+    __m128i value128 = _mm_set1_epi8(-128);
+    __m128i lower = _mm_cmplt_epi8(_mm_add_epi8(a, value128), _mm_add_epi8(b, value128)); // signed comparison
+    __m128i aTob = _mm_xor_si128(a, b); // a ^ (a ^ b) == b
+    __m128i mask = _mm_and_si128(aTob, lower);
+    return _mm_xor_si128(b, mask);
+}
+unittest
+{
+    byte16 R = cast(byte16) _mm_min_epu8(_mm_setr_epi8(45, 1, -4, -8, 9,  7, 0,-57, -4,-8,  9,  7, 0,-57, 0,  0),
+                                         _mm_setr_epi8(-4,-8,  9,  7, 0,-57, 0,  0, 45, 1, -4, -8, 9,  7, 0,-57));
+    byte[16] correct =                                [45, 1,  9,  7, 0,  7, 0,  0, 45, 1,  9,  7, 0,  7, 0,  0];
+    assert(R.array == correct);
+}
 
 __m128d _mm_min_pd (__m128d a, __m128d b) pure @safe
 {
@@ -1549,7 +1570,7 @@ __m128i _mm_set1_epi64x (long a) pure @trusted
     return cast(__m128i)( loadUnaligned!(long2)(result.ptr) );
 }
 
-__m128i _mm_set1_epi8 (char a) pure @trusted
+__m128i _mm_set1_epi8 (byte a) pure @trusted
 {
     byte[16] result = [a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a];
     return cast(__m128i)( loadUnaligned!(byte16)(result.ptr) );
