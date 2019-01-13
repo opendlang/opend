@@ -16,7 +16,7 @@ configuration "minimal" {
 }
 
 configuration "extended" {
-	dependency "mir-algorithm" version="~>3.2.1"
+	dependency "mir-algorithm" version=">3.2.1 <3.4.0"
 }
 
 buildType "unittest" {
