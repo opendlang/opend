@@ -28,6 +28,13 @@
 
 module mir.checkedint;
 
+version (GNU)
+{
+    // GDC uses intrinsics for core.checkedint functions.
+    public import core.checkedint : adds, addu, subs, subu, muls, mulu, negs;
+}
+else:
+
 version (LDC)
 {
     import ldc.intrinsics;
