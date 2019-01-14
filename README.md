@@ -11,8 +11,8 @@ The practical D SIMD solution. Use Intel intrinsics in D code with a [wide range
 ```d
 
 
-import inteli.xmmintrin; // allows SSE1 intrinsics
-import inteli.emmintrin; // allows SSE2 intrinsics
+import inteli.xmmintrin; // allows SSE1 intrinsics in both DMD and LDC
+import inteli.emmintrin; // allows SSE2 intrinsics in both DMD and LDC
 
 // distance between two points in 4D
 float distance(float[4] a, float[4] b) nothrow @nogc
@@ -35,7 +35,7 @@ assert(distance([0, 2, 0, 0], [0, 0, 0, 0]) == 2);
 ### Capabilities
 
 Some instructions aren't accessible using `core.simd` and `ldc.simd` capabilities.
-For example: `pmaddwd` which is so important in digital video .
+For example: `pmaddwd` which is so important in digital video.
 
 ### Familiar syntax
 
@@ -56,16 +56,13 @@ and you need a layer over it if you want to be sure your code won't break.
 Because those x86 intrinsics are internally converted to IR, **they often don't tie to a particular architecture**.
 So you could target ARM one day and still get comparable speed-up.
 
-However, `intel-intrinsics` does **not** guarantee the usage of one particular instruction in general. 
-
-The only guarantee is **semantics**, with performance being an important secundary goal (file a bug).
 
 
 ### Portability
 
-The goal is:
+The short-term goal is:
 
-**Write the same SIMD code for both DMD and LDC. Support x86 and ARM alike.**. 
+**Write the same SIMD code for LDC GDC and DMD. Support x86 well, and ARM eventually.**. 
 This is intended to be the most practical SIMD solution for D.
 Including an emulation layer for DMD 32-bit which doesn't have any SIMD capability on Windows.
 
