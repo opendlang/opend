@@ -6,7 +6,9 @@
 module inteli.internals;
 
 import inteli.types;
-import core.stdc.stdio;
+
+version(unittest)
+    import core.stdc.stdio;
 
 // The only math functions needed for intel-intrinsics
 public import core.math: fabs, sqrt; // since they are intrinsics
@@ -235,27 +237,29 @@ unittest // test saturate operations
     assert( saturateSignedIntToUnsignedShort(-32769) == 0);
 }
 
-
-// printing vectors for implementation
-// Note: you can override `pure` within a `debug` clause
-void _mm_print_epi32(__m128i v) @trusted
+version(unittest)
 {
-    printf("%d %d %d %d\n",
-          v[0], v[1], v[2], v[3]);
-}
+    // printing vectors for implementation
+    // Note: you can override `pure` within a `debug` clause
+    void _mm_print_epi32(__m128i v) @trusted
+    {
+        printf("%d %d %d %d\n",
+              v[0], v[1], v[2], v[3]);
+    }
 
-void _mm_print_epi16(__m128i v) @trusted
-{
-    short8 C = cast(short8)v;
-    printf("%d %d %d %d %d %d %d %d\n",
-    C[0], C[1], C[2], C[3], C[4], C[5], C[6], C[7]);
-}
+    void _mm_print_epi16(__m128i v) @trusted
+    {
+        short8 C = cast(short8)v;
+        printf("%d %d %d %d %d %d %d %d\n",
+        C[0], C[1], C[2], C[3], C[4], C[5], C[6], C[7]);
+    }
 
-void _mm_print_epi8(__m128i v) @trusted
-{
-    byte16 C = cast(byte16)v;
-    printf("%d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d\n",
-    C[0], C[1], C[2], C[3], C[4], C[5], C[6], C[7], C[8], C[9], C[10], C[11], C[12], C[13], C[14], C[15]);
+    void _mm_print_epi8(__m128i v) @trusted
+    {
+        byte16 C = cast(byte16)v;
+        printf("%d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d\n",
+        C[0], C[1], C[2], C[3], C[4], C[5], C[6], C[7], C[8], C[9], C[10], C[11], C[12], C[13], C[14], C[15]);
+    }
 }
 
 
@@ -303,33 +307,34 @@ private static immutable string[FPComparison.max+1] FPComparisonToString =
 
 // Individual float comparison: returns -1 for true or 0 for false.
 // Useful for DMD and testing
-private bool compareFloat(T)(FPComparison comparison, T a, T b) pure @safe
+version (unittest)
 {
-    import std.math;
-    bool unordered = isNaN(a) || isNaN(b);
-    final switch(comparison) with(FPComparison)
+    private bool compareFloat(T)(FPComparison comparison, T a, T b) pure @safe
     {
-        case oeq: return a == b;
-        case ogt: return a > b;
-        case oge: return a >= b;
-        case olt: return a < b;
-        case ole: return a <= b;
-        case one: return !unordered && (a != b); // NaN with != always yields true
-        case ord: return !unordered; 
-        case ueq: return unordered || (a == b);
-        case ugt: return unordered || (a > b);
-        case uge: return unordered || (a >= b);
-        case ult: return unordered || (a < b);
-        case ule: return unordered || (a <= b);
-        case une: return (a != b); // NaN with != always yields true
-        case uno: return unordered;
+        import std.math;
+        bool unordered = isNaN(a) || isNaN(b);
+        final switch(comparison) with(FPComparison)
+        {
+            case oeq: return a == b;
+            case ogt: return a > b;
+            case oge: return a >= b;
+            case olt: return a < b;
+            case ole: return a <= b;
+            case one: return !unordered && (a != b); // NaN with != always yields true
+            case ord: return !unordered; 
+            case ueq: return unordered || (a == b);
+            case ugt: return unordered || (a > b);
+            case uge: return unordered || (a >= b);
+            case ult: return unordered || (a < b);
+            case ule: return unordered || (a <= b);
+            case une: return (a != b); // NaN with != always yields true
+            case uno: return unordered;
+        }
     }
 }
 
 version(LDC)
 {
-    import ldc.simd;
-
     /// Provides packed float comparisons
     package int4 cmpps(FPComparison comparison)(float4 a, float4 b) pure @safe
     {
@@ -338,7 +343,7 @@ version(LDC)
             %r = sext <4 x i1> %cmp to <4 x i32>
             ret <4 x i32> %r`;
 
-        return LDCInlineIR!(ir, int4, float4, float4)(a, b);        
+        return LDCInlineIR!(ir, int4, float4, float4)(a, b);
     }
 
     /// Provides packed double comparisons
@@ -350,7 +355,7 @@ version(LDC)
             ret <2 x i64> %r`;
 
         return LDCInlineIR!(ir, long2, double2, double2)(a, b);
-    }    
+    }
 
     /// CMPSS-style comparisons
     /// clang implement it through x86 intrinsics, it is possible with IR alone
@@ -530,8 +535,6 @@ unittest
 }
 unittest // cmpss and comss
 {
-    import std.math: isIdentical;
-
     void testComparison(FPComparison comparison)(float4 A, float4 B)
     {
         float4 result = cmpss!comparison(A, B);
@@ -583,8 +586,6 @@ unittest // cmpss and comss
 }
 unittest // cmpsd and comsd
 {
-    import std.math: isIdentical;
-
     void testComparison(FPComparison comparison)(double2 A, double2 B)
     {
         double2 result = cmpsd!comparison(A, B);
