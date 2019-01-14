@@ -819,7 +819,7 @@ unittest
 
     // TODO: proper MXCSR rounding for DMD
     // It seems the only way is FPU with save/restore of CLW
-    // ICC is happy to loose the precision in 32-bit though
+    // all C++ compilers do it: https://godbolt.org/z/tjP47y
     version(LDC)
     {
         assert(-56468486186 == _mm_cvtsd_si64(_mm_set1_pd(-56468486186.0)));
@@ -1582,7 +1582,37 @@ unittest
 
 version(LDC)
 {
-    alias _mm_sad_epu8 = __builtin_ia32_psadbw128; // TODO
+    alias _mm_sad_epu8 = __builtin_ia32_psadbw128;
+}
+else
+{
+    __m128i _mm_sad_epu8 (__m128i a, __m128i b) pure @safe
+    {
+        byte16 ab = cast(byte16)a;
+        byte16 bb = cast(byte16)b;
+        ubyte[16] t;
+        foreach(i; 0..16)
+        {
+            int diff = cast(ubyte)(ab[i]) - cast(ubyte)(bb[i]);
+            if (diff < 0) diff = -diff;
+            t[i] = cast(ubyte)(diff);
+        }
+        int4 r = _mm_setzero_si128();
+        r[0] = t[0] + t[1] + t[2] + t[3] + t[4] + t[5] + t[6] + t[7];
+        r[2] = t[8] + t[9] + t[10]+ t[11]+ t[12]+ t[13]+ t[14]+ t[15];
+        return r;
+    }
+}
+unittest
+{
+    __m128i A = _mm_setr_epi8(3, 4, 6, 8, 12, 14, 18, 20, 24, 30, 32, 38, 42, 44, 48, 54); // primes + 1
+    __m128i B = _mm_set1_epi8(1);
+    __m128i R = _mm_sad_epu8(A, B);
+    int[4] correct = [2 + 3 + 5 + 7 + 11 + 13 + 17 + 19,
+                      0,
+                      23 + 29 + 31 + 37 + 41 + 43 + 47 + 53,
+                      0];
+    assert(R.array == correct);
 }
 
 __m128i _mm_set_epi16 (short e7, short e6, short e5, short e4, short e3, short e2, short e1, short e0) pure @trusted
