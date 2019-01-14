@@ -665,8 +665,8 @@ else
     __m128i _mm_cvtpd_epi32 (__m128d a) pure @safe
     {
         __m128i r = _mm_setzero_si128();
-        r[0] = inteliRound(a[0]);
-        r[1] = inteliRound(a[1]);
+        r[0] = convertDoubleToInt32UsingMXCSR(a[0]);
+        r[1] = convertDoubleToInt32UsingMXCSR(a[1]);
         return r; 
     }
 }
@@ -712,10 +712,10 @@ else
     __m128i _mm_cvtps_epi32 (__m128 a) pure @safe
     {
         __m128i r = void;
-        r[0] = inteliRound(a[0]);
-        r[1] = inteliRound(a[1]);
-        r[2] = inteliRound(a[2]);
-        r[3] = inteliRound(a[3]);
+        r[0] = convertFloatToInt32UsingMXCSR(a[0]);
+        r[1] = convertFloatToInt32UsingMXCSR(a[1]);
+        r[2] = convertFloatToInt32UsingMXCSR(a[2]);
+        r[3] = convertFloatToInt32UsingMXCSR(a[3]);
         return r; 
     }
 }
@@ -785,7 +785,7 @@ else
 {
     int _mm_cvtsd_si32 (__m128d a) pure @safe
     {
-        return inteliRound(a[0]);
+        return convertDoubleToInt32UsingMXCSR(a[0]);
     }
 }
 unittest
@@ -802,7 +802,7 @@ version(LDC)
     {
         long _mm_cvtsd_si64 (__m128d a) pure @safe
         {
-            return inteliRoundl(a[0]);
+            return convertDoubleToInt64UsingMXCSR(a[0]);
         }
     }
 }
@@ -810,20 +810,28 @@ else
 {
     long _mm_cvtsd_si64 (__m128d a) pure @safe
     {
-        return inteliRoundl(a[0]);
+        return convertDoubleToInt64UsingMXCSR(a[0]);
     }
 }
 unittest
 {
     assert(-4 == _mm_cvtsd_si64(_mm_set1_pd(-4.0)));
 
-    // TODO: proper MXCSR rounding for DMD
-    // It seems the only way is FPU with save/restore of CLW
-    // all C++ compilers do it: https://godbolt.org/z/tjP47y
-    version(LDC)
-    {
-        assert(-56468486186 == _mm_cvtsd_si64(_mm_set1_pd(-56468486186.0)));
-    }
+    uint savedRounding = _MM_GET_ROUNDING_MODE();
+
+    _MM_SET_ROUNDING_MODE(_MM_ROUND_NEAREST);
+    assert(-56468486186 == _mm_cvtsd_si64(_mm_set1_pd(-56468486186.5)));
+
+    _MM_SET_ROUNDING_MODE(_MM_ROUND_DOWN);
+    assert(-56468486187 == _mm_cvtsd_si64(_mm_set1_pd(-56468486186.1)));
+
+    _MM_SET_ROUNDING_MODE(_MM_ROUND_UP);
+    assert(56468486187 == _mm_cvtsd_si64(_mm_set1_pd(56468486186.1)));
+
+    _MM_SET_ROUNDING_MODE(_MM_ROUND_TOWARD_ZERO);
+    assert(-56468486186 == _mm_cvtsd_si64(_mm_set1_pd(-56468486186.9)));
+
+    _MM_SET_ROUNDING_MODE(savedRounding);    
 }
 
 alias _mm_cvtsd_si64x = _mm_cvtsd_si64;

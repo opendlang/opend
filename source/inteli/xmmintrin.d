@@ -316,7 +316,7 @@ else
 {
     int _mm_cvtss_si32 (__m128 a) pure @safe
     {
-        return inteliRound(a[0]);
+        return convertFloatToInt32UsingMXCSR(a[0]);
     }
 }
 unittest
@@ -333,7 +333,7 @@ version(LDC)
         // Note: __builtin_ia32_cvtss2si64 crashes LDC in 32-bit
         long _mm_cvtss_si64 (__m128 a) pure @safe
         {
-            return inteliRoundl(a[0]);
+            return convertFloatToInt64UsingMXCSR(a[0]);
         }
     }
 }
@@ -341,12 +341,28 @@ else
 {
     long _mm_cvtss_si64 (__m128 a) pure @safe
     {
-        return inteliRoundl(a[0]);
+        return convertFloatToInt64UsingMXCSR(a[0]);
     }
 }
 unittest
 {
     assert(1 == _mm_cvtss_si64(_mm_setr_ps(1.0f, 2.0f, 3.0f, 4.0f)));
+
+    uint savedRounding = _MM_GET_ROUNDING_MODE();
+
+    _MM_SET_ROUNDING_MODE(_MM_ROUND_NEAREST);
+    assert(-86186 == _mm_cvtss_si64(_mm_set1_ps(-86186.5f)));
+
+    _MM_SET_ROUNDING_MODE(_MM_ROUND_DOWN);
+    assert(-86187 == _mm_cvtss_si64(_mm_set1_ps(-86186.1f)));
+
+    _MM_SET_ROUNDING_MODE(_MM_ROUND_UP);
+    assert(86187 == _mm_cvtss_si64(_mm_set1_ps(86186.1f)));
+
+    _MM_SET_ROUNDING_MODE(_MM_ROUND_TOWARD_ZERO);
+    assert(-86186 == _mm_cvtss_si64(_mm_set1_ps(-86186.9f)));
+
+    _MM_SET_ROUNDING_MODE(savedRounding);
 }
 
 

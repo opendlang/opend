@@ -45,76 +45,146 @@ nothrow @nogc:
 //  LDC and DMD. It's important that DMD uses what is in MXCST to round.
 //
 
-/// Round using the rounding mode set by _MM_SET_ROUNDING_MODE (in MXCSR)
-int inteliRound(float value) pure @safe
+
+int convertFloatToInt32UsingMXCSR(float value) pure @safe
 {
-    version(LDC)
+    int result;
+    asm pure nothrow @nogc @trusted
     {
-        import core.math: rint;
-        return cast(int)rint(value);
+        cvtss2si EAX, value;
+        mov result, EAX;
     }
-    else
+    return result;
+}
+
+int convertDoubleToInt32UsingMXCSR(double value) pure @safe
+{
+    int result;
+    asm pure nothrow @nogc @trusted
     {
-        int result;
-        asm pure nothrow @nogc @trusted
+        cvtsd2si EAX, value;
+        mov result, EAX;
+    }
+    return result;
+}
+
+long convertFloatToInt64UsingMXCSR(float value) pure @safe
+{
+    // 64-bit can use an SSE instruction
+    version(D_InlineAsm_X86_64)
+    {
+        long result;
+        version(LDC) // work-around for " Data definition directives inside inline asm are not supported yet."
         {
-            cvtss2si EAX, value; // converts using MXCSR
-            mov result, EAX;
+            asm pure nothrow @nogc @trusted
+            {
+                movss XMM0, value;
+                cvtss2si RAX, XMM0;
+                mov result, RAX;
+            }
+        }
+        else
+        {
+            asm pure nothrow @nogc @trusted
+            {
+                movss XMM0, value;
+                db 0xf3; db 0x48; db 0x0f; db 0x2d; db 0xc0; // cvtss2si RAX, XMM0 (DMD refuses to emit)
+                mov result, RAX;
+            }
         }
         return result;
     }
-}
+    else version(D_InlineAsm_X86)
+    {
+        // In the case of 32-bit x86 there is no SSE2 way to convert FP to 64-bit int
+        // This leads to an unfortunate FPU sequence in every C++ compiler.
+        // See: https://godbolt.org/z/vZym77
 
-///ditto
-int inteliRound(double value) pure @safe
-{
-    version(LDC)
-    {
-        import core.math: rint;
-        return cast(int)rint(value);
-    }
-    else
-    {
-        int result;
+        // Get current MXCSR rounding
+        uint sseRounding;
+        ushort savedFPUCW;
+        ushort newFPUCW;
+        long result;
         asm pure nothrow @nogc @trusted
         {
-            cvtsd2si EAX, value; // converts using MXCSR
-            mov result, EAX;
+            stmxcsr sseRounding;
+            fld value;
+            fnstcw savedFPUCW;
+            mov AX, savedFPUCW;
+            and AX, 0xf3ff;          // clear FPU rounding bits
+            movzx ECX, word ptr sseRounding;
+            and ECX, 0x6000;         // only keep SSE rounding bits
+            shr ECX, 3;
+            or AX, CX;               // make a new control word for FPU with SSE bits
+            mov newFPUCW, AX;
+            fldcw newFPUCW;
+            fistp qword ptr result;            // convert, respecting MXCSR (but not other control word things)
+            fldcw savedFPUCW;
         }
         return result;
     }
+    else
+        static assert(false);
 }
 
 ///ditto
-long inteliRoundl(float value) pure @safe
+long convertDoubleToInt64UsingMXCSR(double value) pure @safe
 {
-    version(LDC)
+    // 64-bit can use an SSE instruction
+    version(D_InlineAsm_X86_64)
     {
-        import core.math: rndtol;
-        return cast(long)rndtol(value);
+        long result;
+        version(LDC) // work-around for "Data definition directives inside inline asm are not supported yet."
+        {
+            asm pure nothrow @nogc @trusted
+            {
+                movsd XMM0, value;
+                cvtsd2si RAX, XMM0;
+                mov result, RAX;
+            }
+        }
+        else
+        {
+            asm pure nothrow @nogc @trusted
+            {
+                movsd XMM0, value;
+                db 0xf2; db 0x48; db 0x0f; db 0x2d; db 0xc0; // cvtsd2si RAX, XMM0 (DMD refuses to emit)
+                mov result, RAX;
+            }
+        }
+        return result;
     }
-    else
+    else version(D_InlineAsm_X86)
     {
-        // Note: this is incorrect for larger numbers (more than 23-bit of mantissa)
-        // but in the case of 32-bit x86 there is no SSE2 way to convert FP to 64-bit int
-        return cast(long)inteliRound(value);
-    }
-}
+        // In the case of 32-bit x86 there is no SSE2 way to convert FP to 64-bit int
+        // This leads to an unfortunate FPU sequence in every C++ compiler.
+        // See: https://godbolt.org/z/vZym77
 
-///ditto
-long inteliRoundl(double value) pure @safe
-{
-    version(LDC)
-    {
-        import core.math: rndtol;
-        return cast(long)rndtol(value);
+        // Get current MXCSR rounding
+        uint sseRounding;
+        ushort savedFPUCW;
+        ushort newFPUCW;
+        long result;
+        asm pure nothrow @nogc @trusted
+        {
+            stmxcsr sseRounding;
+            fld value;
+            fnstcw savedFPUCW;
+            mov AX, savedFPUCW;
+            and AX, 0xf3ff;
+            movzx ECX, word ptr sseRounding;
+            and ECX, 0x6000;
+            shr ECX, 3;
+            or AX, CX;
+            mov newFPUCW, AX;
+            fldcw newFPUCW;
+            fistp result;
+            fldcw savedFPUCW;
+        }
+        return result;
     }
     else
-    {
-        // Note: this is incorrect for larger numbers (more than 23-bit of mantissa)
-        // but in the case of 32-bit x86 there is no SSE2 way to convert FP to 64-bit int
-        return cast(long)inteliRound(value);
-    }
+        static assert(false);
 }
 
 
