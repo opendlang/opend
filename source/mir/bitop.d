@@ -1,7 +1,7 @@
 /++
 This module contains a collection of bit-level operations.
 
-Authors: Ilya Yaroshenko, Phobos & LDC Authors (unittests, docs, conventions).
+Authors: Ilya Yaroshenko, Phobos & LDC Authors (original Phobos unittests, docs, conventions).
 +/
 module mir.bitop;
 

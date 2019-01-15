@@ -5,7 +5,7 @@ This module has generic LLVM-oriented API compatible with all D compilers.
 
 License:   $(HTTP boost.org/LICENSE_1_0.txt, Boost License 1.0).
 Copyright: Copyright © 2016-, Ilya Yaroshenko
-Authors:   Ilya Yaroshenko
+Authors:   Ilya Yaroshenko, Phobos Team
 +/
 module mir.math.common;
 

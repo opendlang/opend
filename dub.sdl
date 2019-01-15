@@ -1,8 +1,8 @@
 name "mir-core"
 description "Base software building blocks and conventions"
 
-authors "Ilya Yaroshenko" "Phobos Team"
-copyright "Ilya Yaroshenko, Phobos Team; see also information per file."
+authors "Phobos Team (see information per file)" "Ilya Yaroshenko" 
+copyright "See information per file."
 license "BSL-1.0"
 
 buildType "unittest" {
