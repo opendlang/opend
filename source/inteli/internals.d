@@ -307,29 +307,26 @@ private static immutable string[FPComparison.max+1] FPComparisonToString =
 
 // Individual float comparison: returns -1 for true or 0 for false.
 // Useful for DMD and testing
-version (unittest)
+private bool compareFloat(T)(FPComparison comparison, T a, T b) pure @safe
 {
-    private bool compareFloat(T)(FPComparison comparison, T a, T b) pure @safe
+    import std.math;
+    bool unordered = isNaN(a) || isNaN(b);
+    final switch(comparison) with(FPComparison)
     {
-        import std.math;
-        bool unordered = isNaN(a) || isNaN(b);
-        final switch(comparison) with(FPComparison)
-        {
-            case oeq: return a == b;
-            case ogt: return a > b;
-            case oge: return a >= b;
-            case olt: return a < b;
-            case ole: return a <= b;
-            case one: return !unordered && (a != b); // NaN with != always yields true
-            case ord: return !unordered; 
-            case ueq: return unordered || (a == b);
-            case ugt: return unordered || (a > b);
-            case uge: return unordered || (a >= b);
-            case ult: return unordered || (a < b);
-            case ule: return unordered || (a <= b);
-            case une: return (a != b); // NaN with != always yields true
-            case uno: return unordered;
-        }
+        case oeq: return a == b;
+        case ogt: return a > b;
+        case oge: return a >= b;
+        case olt: return a < b;
+        case ole: return a <= b;
+        case one: return !unordered && (a != b); // NaN with != always yields true
+        case ord: return !unordered; 
+        case ueq: return unordered || (a == b);
+        case ugt: return unordered || (a > b);
+        case uge: return unordered || (a >= b);
+        case ult: return unordered || (a < b);
+        case ule: return unordered || (a <= b);
+        case une: return (a != b); // NaN with != always yields true
+        case uno: return unordered;
     }
 }
 
