@@ -21,8 +21,8 @@ float distance(float[4] a, float[4] b) nothrow @nogc
     __m128 vb = _mm_loadu_ps(b.ptr);
     __m128 diffSquared = _mm_sub_ps(va, vb);
     diffSquared = _mm_mul_ps(diffSquared, diffSquared);
-    __m128 sum = _mm_add_ps(diffSquared, _mm_srli_si128!8(diffSquared));
-    sum = _mm_add_ps(sum, _mm_srli_si128!4(sum));
+    __m128 sum = _mm_add_ps(diffSquared, _mm_srli_ps!8(diffSquared));
+    sum = _mm_add_ps(sum, _mm_srli_ps!4(sum));
     return _mm_cvtss_f32(_mm_sqrt_ss(sum));
 }
 assert(distance([0, 2, 0, 0], [0, 0, 0, 0]) == 2);

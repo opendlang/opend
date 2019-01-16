@@ -1973,15 +1973,23 @@ unittest
     assert(B.array == expectedB);
 }
 
+/// Shift `a` left by `imm8` bytes while shifting in zeros.
 __m128i _mm_slli_si128(ubyte imm8)(__m128i op) pure @safe
 {
     static if (imm8 & 0xF0)
         return _mm_setzero_si128();
     else
-        return shufflevector!(byte16,
+        return cast(__m128i) shufflevector!(byte16,
         16 - imm8, 17 - imm8, 18 - imm8, 19 - imm8, 20 - imm8, 21 - imm8, 22 - imm8, 23 - imm8,
         24 - imm8, 25 - imm8, 26 - imm8, 27 - imm8, 28 - imm8, 29 - imm8, 30 - imm8, 31 - imm8)
-        (_mm_setzero_si128(), op);
+        (cast(byte16)_mm_setzero_si128(), cast(byte16)op);
+}
+unittest
+{
+    __m128i A = _mm_setr_epi16(0, 1, 2, 3, 4, 5, 6, 7);
+    short8 R = cast(short8) _mm_slli_si128!8(A); // shift 8 bytes to the left
+    short[8] correct = [ 0, 0, 0, 0, 0, 1, 2, 3 ];
+    assert(R.array == correct);
 }
 
 version(LDC)
@@ -2273,36 +2281,42 @@ unittest
     assert(B.array == expectedB);
 }
 
-__m128i _mm_srli_si128(ubyte imm8)(__m128i op) pure @safe
+/// Shift `v` right by `bytes` bytes while shifting in zeros.
+__m128i _mm_srli_si128(ubyte bytes)(__m128i v) pure @safe
 {
-    static if (imm8 & 0xF0)
+    static if (bytes & 0xF0)
         return _mm_setzero_si128();
     else
         return cast(__m128i) shufflevector!(byte16,
-                                            imm8+0, imm8+1, imm8+2, imm8+3, imm8+4, imm8+5, imm8+6, imm8+7,
-                                            imm8+8, imm8+9, imm8+10, imm8+11, imm8+12, imm8+13, imm8+14, imm8+15)
-                                           (cast(byte16) op, cast(byte16)_mm_setzero_si128());
-}
-
-// Note: this is a bonus intrinsic
-__m128 _mm_srli_si128(ubyte imm8)(__m128 op) @safe
-{
-    return cast(__m128)_mm_srli_si128!imm8(cast(__m128i)op);
+                                            bytes+0, bytes+1, bytes+2, bytes+3, bytes+4, bytes+5, bytes+6, bytes+7,
+                                            bytes+8, bytes+9, bytes+10, bytes+11, bytes+12, bytes+13, bytes+14, bytes+15)
+                                           (cast(byte16) v, cast(byte16)_mm_setzero_si128());
 }
 unittest
 {
-    // test that cast works at all
-    __m128 A = cast(__m128) _mm_set1_epi32(0x3F800000);
-    assert(A.array == [1.0f, 1.0f, 1.0f, 1.0f]);
-
-    // test _mm_srli_si128 for __m128i
-    assert(_mm_srli_si128!4(_mm_set_epi32(4, 3, 2, 1)).array == [2, 3, 4, 0]);
-    assert(_mm_srli_si128!8(_mm_set_ps(4.0f, 3.0f, 2.0f, 1.0f)).array == [3.0f, 4.0f, 0, 0]);
+    __m128i R = _mm_srli_si128!4(_mm_set_epi32(4, 3, 2, 1));
+    int[4] correct = [2, 3, 4, 0];
+    assert(R.array == correct);
 }
 
-__m128d _mm_srli_si128(ubyte imm8)(__m128d op) pure @safe
+/// Shift `v` right by `bytes` bytes while shifting in zeros.
+/// #BONUS
+__m128 _mm_srli_ps(ubyte bytes)(__m128 v) pure @safe
 {
-    return cast(__m128d) _mm_srli_si128!imm8(cast(__m128i)op);
+    return cast(__m128)_mm_srli_si128!bytes(cast(__m128i)v);
+}
+unittest
+{    
+    __m128 R = _mm_srli_ps!8(_mm_set_ps(4.0f, 3.0f, 2.0f, 1.0f));
+    float[4] correct = [3.0f, 4.0f, 0, 0];
+    assert(R.array == correct);
+}
+
+/// Shift `v` right by `bytes` bytes while shifting in zeros.
+/// #BONUS
+__m128d _mm_srli_pd(ubyte bytes)(__m128d v) pure @safe
+{
+    return cast(__m128d) _mm_srli_si128!bytes(cast(__m128i)v);
 }
 
 void _mm_store_pd (double* mem_addr, __m128d a) pure
@@ -2546,8 +2560,8 @@ unittest
         __m128 vb = _mm_loadu_ps(b.ptr);
         __m128 diffSquared = _mm_sub_ps(va, vb);
         diffSquared = _mm_mul_ps(diffSquared, diffSquared);
-        __m128 sum = _mm_add_ps(diffSquared, _mm_srli_si128!8(diffSquared));
-        sum = _mm_add_ps(sum, _mm_srli_si128!4(sum));
+        __m128 sum = _mm_add_ps(diffSquared, _mm_srli_ps!8(diffSquared));
+        sum = _mm_add_ps(sum, _mm_srli_ps!4(sum));
         return _mm_cvtss_f32(_mm_sqrt_ss(sum));
     }
     assert(distance([0, 2, 0, 0], [0, 0, 0, 0]) == 2);
