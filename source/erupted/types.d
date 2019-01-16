@@ -33,7 +33,7 @@ pure {
 extern( System ):
 
 // Version of corresponding c header file
-enum VK_HEADER_VERSION = 97;
+enum VK_HEADER_VERSION = 98;
 
 enum VK_NULL_HANDLE = null;
 
@@ -6200,7 +6200,7 @@ enum VK_KHR_SWAPCHAIN_MUTABLE_FORMAT_EXTENSION_NAME = "VK_KHR_swapchain_mutable_
 // - VK_KHR_vulkan_memory_model -
 enum VK_KHR_vulkan_memory_model = 1;
 
-enum VK_KHR_VULKAN_MEMORY_MODEL_SPEC_VERSION = 2;
+enum VK_KHR_VULKAN_MEMORY_MODEL_SPEC_VERSION = 3;
 enum VK_KHR_VULKAN_MEMORY_MODEL_EXTENSION_NAME = "VK_KHR_vulkan_memory_model";
 
 struct VkPhysicalDeviceVulkanMemoryModelFeaturesKHR {
@@ -6208,6 +6208,7 @@ struct VkPhysicalDeviceVulkanMemoryModelFeaturesKHR {
     void*            pNext;
     VkBool32         vulkanMemoryModel;
     VkBool32         vulkanMemoryModelDeviceScope;
+    VkBool32         vulkanMemoryModelAvailabilityVisibilityChains;
 }
 
 
