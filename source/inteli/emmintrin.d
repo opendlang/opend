@@ -1783,18 +1783,19 @@ unittest
     assert(B.array == expectedB);
 }
 
-__m128d _mm_shuffle_pd (int imm8)(__m128d a) pure @safe
+__m128d _mm_shuffle_pd (int imm8)(__m128d a, __m128d b) pure @safe
 {
     return shufflevector!(double2, 0 + ( imm8 & 1 ),
-                                   2 + ( (imm8 >> 1) & 1 ))(a, a);
+                                   2 + ( (imm8 >> 1) & 1 ))(a, b);
 }
 unittest
 {
-    __m128d A = _mm_setr_pd(0.5f, 2.0f);
+    __m128d A = _mm_setr_pd(0.5, 2.0);
+    __m128d B = _mm_setr_pd(4.0, 5.0);
     enum int SHUFFLE = _MM_SHUFFLE2(1, 1);
-    __m128d B = _mm_shuffle_pd!SHUFFLE(A);
-    double[2] expectedB = [ 2.0f, 2.0f ];
-    assert(B.array == expectedB);
+    __m128d R = _mm_shuffle_pd!SHUFFLE(A, B);
+    double[2] correct = [ 2.0, 5.0 ];
+    assert(R.array == correct);
 }
 
 __m128i _mm_shufflehi_epi16(int imm8)(__m128i a) pure @safe
