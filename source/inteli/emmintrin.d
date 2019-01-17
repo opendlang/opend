@@ -627,9 +627,9 @@ unittest
     assert(A[1] == 54.0);
 }
 
-// PERF: verify the instruction generated
 __m128 _mm_cvtepi32_ps(__m128i a) pure @safe
 {
+    // Generates cvtdq2ps since LDC 1.0.0 -O1
     __m128 res;
     res.array[0] = cast(float)a.array[0];
     res.array[1] = cast(float)a.array[1];
