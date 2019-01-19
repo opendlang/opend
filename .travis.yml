@@ -13,8 +13,6 @@ matrix:
     os: linux
     env:
       secure: CgAjTZgt34q5swaFpfif9XiWSaZMWGJYlufXIO/6oNsMnS29evf0TRfrRX+owj9KdyiEbq5VI0gFeU72qbeP+9yipLFwctw0wz5gh0ZThH/Nwy60Dy9b89S/tx8qZ5f+bDc780kopw90RUQtqTGBb/ZKy6XLMqmoJmPNFZO53ykAK2QyY3zmTZbJ7a4IsLyhl441ho6FrCw59O8c2bHDCPEbeC+p0SjCAJPIvoBMlZc85ADSH00HxWMK/Y5ybSHFL61gwTQV2gfQG0/+iOqyVo/BPa+L28YICJRQz8Kx9lraeB92or9P1vseTO5AmVOsekWqj8Kztq7ovUMogtGWG9igj2B61B8ZKatFtPBDST3vgZwfTD/rNQjk7S8QMY0F1O9/RfC50QQtykr4IGfZZUWvi2Y6syXqfTTF00ZRWuVG4jWy2sTm2peN4v2x4QbaEW5YiycF0MEnHHa2TSyx2RIR8dAcZAy45dIeRlEIYjY1VXvJl325xTR6uFrTWkic9eNmYCQc0Ajo0XscQ6odeqqF2vX5dSOxGHLZfjFKh8BqGcde/efg4qn1qNLcw2sdKpDplZnWyLpaiM8RsCmyPrgTfvoT2r+fGYSgQpnHjXigc11l36R7ulR1D4XhicbeFjoavn24Qk/9e/cMIVwHxxVGF4w4kDHZhbCFVe1ZFKE=
-  - d: ldc
-    os: linux
   - d: dmd
     os: osx
 
