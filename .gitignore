@@ -11,3 +11,4 @@ __*
 *.svg
 cairoD
 docs/
+*-test-*
