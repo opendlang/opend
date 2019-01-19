@@ -174,9 +174,7 @@ auto runMCMC() {
     import std.algorithm : map;
     import std.array : array;
     import std.math : pow;
-    import std.range : iota;
-    import std.random : Random, unpredictableSeed;
-
+    import std.range : iota; import std.random : Random, unpredictableSeed; 
     // For debugging reasons, print out the current seed
     import std.stdio : writeln;
     auto seed = unpredictableSeed;
