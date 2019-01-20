@@ -51,10 +51,43 @@ unittest
     assert(R.array == correct);
 }
 
+// PERF: verify codegen for PADDSW
+__m64 _mm_adds_pi16(__m64 a, __m64 b) pure @trusted
+{
+    short[4] res;
+    short4 sa = cast(short4)a;
+    short4 sb = cast(short4)b;
+    foreach(i; 0..4)
+        res[i] = saturateSignedIntToSignedShort(sa.array[i] + sb.array[i]);
+    return *cast(__m64*)(res.ptr);
+}
+unittest
+{
+    short4 res = cast(short4) _mm_adds_pi16(_mm_set_pi16(3, 2, 1, 0),
+                                            _mm_set_pi16(3, 2, 1, 0));
+    static immutable short[4] correctResult = [0, 2, 4, 6];
+    assert(res.array == correctResult);
+}
+
+// PERF: verify codegen for PADDSB
+__m64 _mm_adds_pi8(__m64 a, __m64 b) pure @trusted
+{
+    byte[8] res;
+    byte8 sa = cast(byte8)a;
+    byte8 sb = cast(byte8)b;
+    foreach(i; 0..8)
+        res[i] = saturateSignedWordToSignedByte(sa.array[i] + sb.array[i]);
+    return *cast(__m64*)(res.ptr);
+}
+unittest
+{
+    byte8 res = cast(byte8) _mm_adds_pi8(_mm_set_pi8(7, 6, 5, 4, 3, 2, 1, 0),
+                                         _mm_set_pi8(7, 6, 5, 4, 3, 2, 1, 0));
+    static immutable byte[8] correctResult = [0, 2, 4, 6, 8, 10, 12, 14];
+    assert(res.array == correctResult);
+}
+
  /+
-__m64 _mm_adds_pi16 (__m64 a, __m64 b) TODO
-paddsb
-__m64 _mm_adds_pi8 (__m64 a, __m64 b) TODO
 paddusw
 __m64 _mm_adds_pu16 (__m64 a, __m64 b) TODO
 paddusb

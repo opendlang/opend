@@ -1778,6 +1778,12 @@ unittest
     assert(_mm_and_ps(a, b).array == [1.0f, 1, 1, 1]);
 }
 
+/// Broadcast 64-bit integer `a` to all elements of `dst`.
+__m128i _mm_set1_epi64 (__m64 a) pure @safe
+{
+    return _mm_set_epi64(a, a);
+}
+
 __m128i _mm_set1_epi64x (long a) pure @trusted
 {
     long[2] result = [a, a];
