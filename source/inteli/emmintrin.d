@@ -1030,7 +1030,7 @@ __m128i _mm_insert_epi16 (__m128i v, int i, int index) @trusted
 {
     short8 r = cast(short8)v;
     r[index] = cast(short)i;
-    return r;
+    return cast(__m128i)r;
 }
 unittest
 {
