@@ -59,7 +59,7 @@ unittest
     assert(a.array == [3.0, -4.0]);
 }
 
-// MMXREG: _mm_add_si64
+// TODO: _mm_add_si64
 
 version(LDC)
 {
@@ -690,7 +690,7 @@ unittest
     assert(A[0] == 55 && A[1] == 61 && A[2] == 0 && A[3] == 0);
 }
 
-// MMXREG: _mm_cvtpd_pi32
+// TODO: _mm_cvtpd_pi32
 
 version(LDC)
 {
@@ -715,7 +715,7 @@ unittest
     assert(B.array == [4.0f, 5.25f, 0, 0]);
 }
 
-// MMXREG: _mm_cvtpi32_pd
+// TODO: _mm_cvtpi32_pd
 
 version(LDC)
 {
@@ -788,7 +788,7 @@ unittest
 
 double _mm_cvtsd_f64 (__m128d a) pure @safe
 {
-    return extractelement!(double2, 0)(a);
+    return a[0];
 }
 
 version(LDC)
@@ -963,7 +963,7 @@ unittest
     assert(R.array == [-4, 45641, 0, 0]);
 }
 
-//MMXREG: _mm_cvttpd_pi32
+//TODO: _mm_cvttpd_pi32
 
 __m128i _mm_cvttps_epi32 (__m128 a) pure @safe
 {
@@ -1013,14 +1013,31 @@ unittest
     assert(a.array == [1.0, 4.5]);
 }
 
-int _mm_extract_epi16(int imm8)(__m128i a) pure @safe
+/// Extract a 16-bit integer from `v`, selected with `index`
+int _mm_extract_epi16(__m128i v, int index) pure @safe
 {
-    return extractelement!(short8, imm8)(a);
+    short8 r = cast(short8)v;
+    return r[index];
+}
+unittest
+{
+    __m128i A = _mm_set_epi16(7, 6, 5, 4, 3, 2, 1, 0);
+    assert(_mm_extract_epi16(A, 6) == 6);
 }
 
-__m128i _mm_insert_epi16(int imm8)(__m128i a, int i) pure @safe
+/// Copy `v`, and insert the 16-bit integer `i` at the location specified by `index`. 
+__m128i _mm_insert_epi16 (__m128i v, int i, int index) @trusted
 {
-    return insertelement!(short8, imm8)(a, i);
+    short8 r = cast(short8)v;
+    r[index] = cast(short)i;
+    return r;
+}
+unittest
+{
+    __m128i A = _mm_set_epi16(7, 6, 5, 4, 3, 2, 1, 0);
+    short8 R = cast(short8) _mm_insert_epi16(A, 42, 6);
+    short[8] correct = [0, 1, 2, 3, 4, 5, 42, 7];
+    assert(R.array == correct);
 }
 
 version(LDC)
@@ -1399,8 +1416,8 @@ unittest
 }
 
 
-// MMXREG: _mm_movepi64_pi64
-// MMXREG: __m128i _mm_movpi64_epi64 (__m64 a)
+// TODO: _mm_movepi64_pi64
+// TODO: __m128i _mm_movpi64_epi64 (__m64 a)
 
 // PERF: unfortunately, __builtin_ia32_pmuludq128 disappeared from LDC
 // but seems there in clang
@@ -1456,7 +1473,7 @@ unittest
 }
 
 
-// MMXREG: _mm_mul_su32
+// TODO: _mm_mul_su32
 
 version(LDC)
 {
@@ -2410,7 +2427,7 @@ void _mm_store_pd1 (double* mem_addr, __m128d a) pure
 
 void _mm_store_sd (double* mem_addr, __m128d a) pure @safe
 {
-    *mem_addr = extractelement!(double2, 0)(a);
+    *mem_addr = a[0];
 }
 
 void _mm_store_si128 (__m128i* mem_addr, __m128i a) pure @safe
@@ -2422,18 +2439,19 @@ alias _mm_store1_pd = _mm_store_pd1;
 
 void _mm_storeh_pd (double* mem_addr, __m128d a) pure @safe
 {
-    *mem_addr = extractelement!(double2, 1)(a);
+    *mem_addr = a[1];
 }
 
 void _mm_storel_epi64 (__m128i* mem_addr, __m128i a) pure @safe
 {
     long* dest = cast(long*)mem_addr;
-    *dest = extractelement!(long2, 0)(cast(long2)a);
+    long2 la = cast(long2)a;
+    *dest = a[0];
 }
 
 void _mm_storel_pd (double* mem_addr, __m128d a) pure @safe
 {
-    *mem_addr = extractelement!(double2, 0)(a);
+    *mem_addr = a[0];
 }
 
 void _mm_storer_pd (double* mem_addr, __m128d a) pure
@@ -2528,7 +2546,7 @@ unittest
 }
 
 
-// MMXREG: _mm_sub_si64
+// TODO: _mm_sub_si64
 
 version(LDC)
 {

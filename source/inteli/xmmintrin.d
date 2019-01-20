@@ -21,9 +21,6 @@ else version(D_InlineAsm_X86_64)
 
 
 // SSE1
-// Note: intrinsics noted MMXREG are actually using MMX registers,
-// and were not translated. These intrinsics are for instruction
-// introduced with SSE1, that also work on MMX registers.
 
 nothrow @nogc:
 
@@ -96,8 +93,8 @@ __m128i _mm_andnot_ps (__m128i a, __m128i b) pure @safe
 }
 
 
-// MMXREG: _mm_avg_pu16
-// MMXREG: _mm_avg_pu8
+// TODO: _mm_avg_pu16
+// TODO: _mm_avg_pu8
 
 __m128 _mm_cmpeq_ps (__m128 a, __m128 b) pure @safe
 {
@@ -253,8 +250,8 @@ int _mm_comineq_ss (__m128 a, __m128 b) pure @safe // comiss + setne
 }
 
 
-// MMXREG: __m128 _mm_cvt_pi2ps (__m128 a, __m64 b)
-// MMXREG: __m64 _mm_cvt_ps2pi (__m128 a)
+// TODO: __m128 _mm_cvt_pi2ps (__m128 a, __m64 b)
+// TODO: __m64 _mm_cvt_ps2pi (__m128 a)
 
 
 __m128 _mm_cvt_si2ss(__m128 v, int x) pure @safe
@@ -272,15 +269,15 @@ unittest
 alias _mm_cvt_ss2si = _mm_cvtss_si32;
 
 
-// MMXREG: __m128 _mm_cvtpi16_ps (__m64 a)
-// MMXREG: __m128 _mm_cvtpi32_ps (__m128 a, __m64 b)
-// MMXREG: __m128 _mm_cvtpi32x2_ps (__m64 a, __m64 b)
-// MMXREG: __m128 _mm_cvtpi8_ps (__m64 a)
-// MMXREG: __m64 _mm_cvtps_pi16 (__m128 a)
-// MMXREG: __m64 _mm_cvtps_pi32 (__m128 a)
-// MMXREG: __m64 _mm_cvtps_pi8 (__m128 a)
-// MMXREG: __m128 _mm_cvtpu16_ps (__m64 a)
-// MMXREG: __m128 _mm_cvtpu8_ps (__m64 a)
+// TODO: __m128 _mm_cvtpi16_ps (__m64 a)
+// TODO: __m128 _mm_cvtpi32_ps (__m128 a, __m64 b)
+// TODO: __m128 _mm_cvtpi32x2_ps (__m64 a, __m64 b)
+// TODO: __m128 _mm_cvtpi8_ps (__m64 a)
+// TODO: __m64 _mm_cvtps_pi16 (__m128 a)
+// TODO: __m64 _mm_cvtps_pi32 (__m128 a)
+// TODO: __m64 _mm_cvtps_pi8 (__m128 a)
+// TODO: __m128 _mm_cvtpu16_ps (__m64 a)
+// TODO: __m128 _mm_cvtpu8_ps (__m64 a)
 
 __m128 _mm_cvtsi32_ss(__m128 v, int x) pure @safe
 {
@@ -384,7 +381,7 @@ unittest
     assert(1 == _mm_cvtt_ss2si(_mm_setr_ps(1.9f, 2.0f, 3.0f, 4.0f)));
 }
 
-// MMXREG: __m64 _mm_cvtt_ps2pi (__m128 a)
+// TODO: __m64 _mm_cvtt_ps2pi (__m128 a)
 
 alias _mm_cvttss_si32 = _mm_cvtt_ss2si; // it's actually the same op
 
@@ -423,7 +420,7 @@ unittest
     assert(a.array == correct);
 }
 
-// MMXREG: int _mm_extract_pi16 (__m64 a, int imm8)
+// TODO: int _mm_extract_pi16 (__m64 a, int imm8)
 
 /// Free aligned memory that was allocated with `_mm_malloc`.
 void _mm_free(void * mem_addr) @trusted
@@ -479,7 +476,7 @@ uint _mm_getcsr() pure @safe
         static assert(0, "Not yet supported");
 }
 
-// MMXREG: __m64 _mm_insert_pi16 (__m64 a, int i, int imm8)
+// TODO: __m64 _mm_insert_pi16 (__m64 a, int i, int imm8)
 
 __m128 _mm_load_ps(const(float)*p) pure @trusted
 {
@@ -569,10 +566,10 @@ void* _mm_malloc(size_t size, size_t alignment) @trusted
     return storeRawPointerPlusInfo(raw, size, alignment); // PERF: no need to store size
 }
 
-// MMXREG: _mm_maskmove_si64
-// MMXREG: _m_maskmovq
+// TODO: _mm_maskmove_si64
+// TODO: _m_maskmovq
 
-// MMXREG: _mm_max_pi16
+// TODO: _mm_max_pi16
 version(LDC)
 {
     alias _mm_max_ps = __builtin_ia32_maxps;
@@ -600,7 +597,7 @@ unittest
     assert(M[3] != M[3]); // in case of NaN, second operand prevails (as it seems)
 }
 
-// MMXREG: _mm_max_pu8
+// TODO: _mm_max_pu8
 
 version(LDC)
 {
@@ -631,7 +628,7 @@ unittest
     assert(M[0] == 1);
 }
 
-// MMXREG: _mm_min_pi16
+// TODO: _mm_min_pi16
 
 version(LDC)
 {
@@ -660,7 +657,7 @@ unittest
     assert(M[3] != M[3]); // in case of NaN, second operand prevails (as it seems)
 }
 
-// MMXREG: _mm_min_pi8
+// TODO: _mm_min_pi8
 
 version(LDC)
 {
@@ -755,24 +752,24 @@ unittest
     assert(a.array == correct);
 }
 
-// MMXREG: _mm_mulhi_pu16
+// TODO: _mm_mulhi_pu16
 
 __m128 _mm_or_ps (__m128 a, __m128 b) pure @safe
 {
     return cast(__m128)(cast(__m128i)a | cast(__m128i)b);
 }
 
-// MMXREG: __m64 _m_pavgb (__m64 a, __m64 b)
-// MMXREG: __m64 _m_pavgw (__m64 a, __m64 b)
-// MMXREG: int _m_pextrw (__m64 a, int imm8)
-// MMXREG: __m64 _m_pinsrw (__m64 a, int i, int imm8)
-// MMXREG: __m64 _m_pmaxsw (__m64 a, __m64 b)
-// MMXREG: __m64 _m_pmaxub (__m64 a, __m64 b)
-// MMXREG: __m64 _m_pminsw (__m64 a, __m64 b)
-// MMXREG: __m64 _m_pminub (__m64 a, __m64 b)
-// MMXREG: int _m_pmovmskb (__m64 a)
+// TODO: __m64 _m_pavgb (__m64 a, __m64 b)
+// TODO: __m64 _m_pavgw (__m64 a, __m64 b)
+// TODO: int _m_pextrw (__m64 a, int imm8)
+// TODO: __m64 _m_pinsrw (__m64 a, int i, int imm8)
+// TODO: __m64 _m_pmaxsw (__m64 a, __m64 b)
+// TODO: __m64 _m_pmaxub (__m64 a, __m64 b)
+// TODO: __m64 _m_pminsw (__m64 a, __m64 b)
+// TODO: __m64 _m_pminub (__m64 a, __m64 b)
+// TODO: int _m_pmovmskb (__m64 a)
 
-// MMXREG: __m64 _m_pmulhuw (__m64 a, __m64 b)
+// TODO: __m64 _m_pmulhuw (__m64 a, __m64 b)
 
 enum _MM_HINT_NTA = 0;
 enum _MM_HINT_T0 = 1;
@@ -785,8 +782,8 @@ void _mm_prefetch(int locality)(void* p) pure @safe
     llvm_prefetch(p, 0, locality, 1);
 }
 
-// MMXREG: __m64 _m_psadbw (__m64 a, __m64 b)
-// MMXREG: __m64 _m_pshufw (__m64 a, int imm8)
+// TODO: __m64 _m_psadbw (__m64 a, __m64 b)
+// TODO: __m64 _m_pshufw (__m64 a, int imm8)
 
 version(LDC)
 {
@@ -893,7 +890,7 @@ unittest
     testInvSqrt(27841456468.0f);
 }
 
-// MMXREG: _mm_sad_pu8
+// TODO: _mm_sad_pu8
 
 void _MM_SET_EXCEPTION_MASK(int _MM_MASK_xxxx) pure @safe
 {
@@ -985,7 +982,7 @@ unittest
     _mm_sfence();
 }
 
-// MMXREG: mm_shuffle_pi16
+// TODO: mm_shuffle_pi16
 
 // Note: the immediate shuffle value is given at compile-time instead of runtime.
 __m128 _mm_shuffle_ps(ubyte imm)(__m128 a, __m128 b) pure @safe
@@ -1085,7 +1082,8 @@ void _mm_store1_ps (float* mem_addr, __m128 a) pure // not safe since nothing gu
 
 void _mm_storeh_pi(__m64* p, __m128 a) pure @safe
 {
-    (*p)[0] = extractelement!(long2, 1)(a);
+    long2 la = cast(long2)a;
+    (*p)[0] = la[1];
 }
 unittest
 {
@@ -1097,7 +1095,8 @@ unittest
 
 void _mm_storel_pi(__m64* p, __m128 a) pure @safe
 {
-    (*p)[0] = extractelement!(long2, 0)(a);
+    long2 la = cast(long2)a;
+    (*p)[0] = la[0];
 }
 unittest
 {
@@ -1118,7 +1117,7 @@ void _mm_storeu_ps(float* mem_addr, __m128 a) pure @safe
     storeUnaligned!(float4)(a, mem_addr);
 }
 
-// MMXREG: _mm_stream_pi, does not seem possible
+// TODO: _mm_stream_pi, does not seem possible
 
 // BUG: can't implement non-temporal store with LDC inlineIR since !nontemporal
 // needs some IR outside this function that would say: 
