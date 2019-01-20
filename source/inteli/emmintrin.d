@@ -7,7 +7,7 @@ module inteli.emmintrin;
 
 public import inteli.types;
 public import inteli.xmmintrin; // SSE2 includes SSE1
-
+import inteli.mmx;
 import inteli.internals;
 
 nothrow @nogc:
@@ -1359,7 +1359,7 @@ else
     /// Create mask from the most significant bit of each 8-bit element in `v`.
     int _mm_movemask_epi8(__m128i v) pure @safe
     {
-        byte16 ai = cast(byte16)a;
+        byte16 ai = cast(byte16)v;
         int r = 0;
         foreach(bit; 0..16)
         {
@@ -1373,10 +1373,31 @@ unittest
     assert(0x9C36 == _mm_movemask_epi8(_mm_set_epi8(-1, 0, 0, -1, -1, -1, 0, 0, 0, 0, -1, -1, 0, -1, -1, 0)));
 }
 
-/*
+version(LDC)
+{
+    /// Set each bit of mask `dst` based on the most significant bit of the corresponding 
+    /// packed double-precision (64-bit) floating-point element in `v`.
+    alias _mm_movemask_pd = __builtin_ia32_movmskpd;
+}
+else
+{
+    /// Set each bit of mask `dst` based on the most significant bit of the corresponding 
+    /// packed double-precision (64-bit) floating-point element in `v`.
+    int _mm_movemask_pd(__m128d v) pure @safe
+    {
+        long2 lv = cast(long2)v;
+        int r = 0;
+        if (lv[0] < 0) r += 1;
+        if (lv[1] < 0) r += 2;
+        return r;
+    }
+}
+unittest
+{
+    __m128d A = cast(__m128d) _mm_set_epi64x(-1, 0);
+    assert(_mm_movemask_pd(A) == 2);
+}
 
-    alias _mm_movemask_pd = __builtin_ia32_movmskpd; // TODO
-}*/
 
 // MMXREG: _mm_movepi64_pi64
 // MMXREG: __m128i _mm_movpi64_epi64 (__m64 a)
@@ -1683,6 +1704,19 @@ unittest
     __m128i A = _mm_set_epi32(3, 2, 1, 0);
     foreach(i; 0..4)
         assert(A.array[i] == i);
+}
+
+__m128i _mm_set_epi64(__m64 e1, __m64 e0) pure @trusted
+{
+    long[2] result = [e0[0], e1[0]];
+    return cast(__m128i)( loadUnaligned!(long2)(result.ptr) );
+}
+unittest
+{
+    __m128i A = _mm_set_epi64(_mm_cvtsi64_m64(1234), _mm_cvtsi64_m64(5678));
+    long2 B = cast(long2) A;
+    assert(B.array[0] == 5678);
+    assert(B.array[1] == 1234);
 }
 
 __m128i _mm_set_epi64x (long e1, long e0) pure @trusted
