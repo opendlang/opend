@@ -76,7 +76,7 @@ else
     struct long1
     {
         long[1] array;
-        mixin VectorOps!(long, long[1]);
+        mixin VectorOps!(long1, long[1]);
         enum long TrueMask = -1;
         enum long FalseMask = 0;
     }

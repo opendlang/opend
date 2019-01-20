@@ -100,11 +100,13 @@ pcmpgtd
 __m64 _mm_cmpgt_pi32 (__m64 a, __m64 b) TODO
 pcmpgtb
 __m64 _mm_cmpgt_pi8 (__m64 a, __m64 b) TODO
-movq
-__int64 _mm_cvtm64_si64 (__m64 a) TODO
-movd
-
 +/
+
+/// Copy 64-bit integer `a` to `dst`.
+long _mm_cvtm64_si64 (__m64 a) pure @safe
+{
+    return a[0];
+}
 
 /// Copy 32-bit integer `a` to the lower elements of `dst`, and zero the upper element of `dst`.
 __m64 _mm_cvtsi32_si64 (int a) pure @safe
@@ -132,9 +134,11 @@ unittest
     assert(R[0] == -1);
 }
 
-/+
-int _mm_cvtsi64_si32 (__m64 a) TODO
-+/
+/// Copy the lower 32-bit integer in `a` to `dst`.
+int _mm_cvtsi64_si32 (__m64 a) pure @safe
+{
+    return cast(int)a[0];
+}
 
 alias _m_empty = _mm_empty;
 
@@ -166,10 +170,13 @@ packsswb
 __m64 _m_packsswb (__m64 a, __m64 b) TODO
 packuswb
 __m64 _m_packuswb (__m64 a, __m64 b) TODO
-paddb
-__m64 _m_paddb (__m64 a, __m64 b) TODO
-paddd
-__m64 _m_paddd (__m64 a, __m64 b) TODO
++/
+
+
+deprecated alias _m_paddb = _mm_add_pi8;
+deprecated alias _m_paddd = _mm_add_pi32;
+
+/+
 paddsb
 __m64 _m_paddsb (__m64 a, __m64 b) TODO
 paddsw
@@ -178,12 +185,13 @@ paddusb
 __m64 _m_paddusb (__m64 a, __m64 b) TODO
 paddusw
 __m64 _m_paddusw (__m64 a, __m64 b) TODO
-paddw
-__m64 _m_paddw (__m64 a, __m64 b) TODO
-pand
-__m64 _m_pand (__m64 a, __m64 b) TODO
-pandn
-__m64 _m_pandn (__m64 a, __m64 b) TODO
++/
+
+deprecated alias _m_paddw = _mm_add_pi16;
+deprecated alias _m_pand = _mm_and_si64;
+deprecated alias _m_pandn = _mm_andnot_si64;
+
+/+
 pcmpeqb
 __m64 _m_pcmpeqb (__m64 a, __m64 b) TODO
 pcmpeqd
@@ -433,10 +441,12 @@ psubusw
 __m64 _mm_subs_pu16 (__m64 a, __m64 b) TODO
 psubusb
 __m64 _mm_subs_pu8 (__m64 a, __m64 b) TODO
-movd
-int _m_to_int (__m64 a) TODO
-movq
-__int64 _m_to_int64 (__m64 a) TODO
++/
+
+deprecated alias _m_to_int = _mm_cvtsi64_si32;
+deprecated alias _m_to_int64 = _mm_cvtm64_si64;
+
+/+
 punpcklbw
 __m64 _mm_unpackhi_pi16 (__m64 a, __m64 b) TODO
 punpckhdq
@@ -454,10 +464,8 @@ __m64 _mm_xor_si64 (__m64 a, __m64 b) TODO
 
 +/
 
+
 /+
-/* Aliases for compatibility. */
-#define _m_to_int _mm_cvtsi64_si32
-#define _m_to_int64 _mm_cvtm64_si64
 #define _m_packsswb _mm_packs_pi16
 #define _m_packssdw _mm_packs_pi32
 #define _m_packuswb _mm_packs_pu16
@@ -467,9 +475,7 @@ __m64 _mm_xor_si64 (__m64 a, __m64 b) TODO
 #define _m_punpcklbw _mm_unpacklo_pi8
 #define _m_punpcklwd _mm_unpacklo_pi16
 #define _m_punpckldq _mm_unpacklo_pi32
-#define _m_paddb _mm_add_pi8
-#define _m_paddw _mm_add_pi16
-#define _m_paddd _mm_add_pi32
+
 #define _m_paddsb _mm_adds_pi8
 #define _m_paddsw _mm_adds_pi16
 #define _m_paddusb _mm_adds_pu8
@@ -500,8 +506,6 @@ __m64 _mm_xor_si64 (__m64 a, __m64 b) TODO
 #define _m_psrldi _mm_srli_pi32
 #define _m_psrlq _mm_srl_si64
 #define _m_psrlqi _mm_srli_si64
-#define _m_pand _mm_and_si64
-#define _m_pandn _mm_andnot_si64
 #define _m_por _mm_or_si64
 #define _m_pxor _mm_xor_si64
 #define _m_pcmpeqb _mm_cmpeq_pi8
