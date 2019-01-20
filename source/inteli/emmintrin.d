@@ -1351,8 +1351,8 @@ unittest
 
 version(LDC)
 {
-    alias _mm_movemask_epi8 = __builtin_ia32_pmovmskb128;
-    alias _mm_movemask_pd = __builtin_ia32_movmskpd;
+    alias _mm_movemask_epi8 = __builtin_ia32_pmovmskb128; // TODO
+    alias _mm_movemask_pd = __builtin_ia32_movmskpd; // TODO
 }
 
 // MMXREG: _mm_movepi64_pi64
@@ -2470,9 +2470,101 @@ unittest
 version(LDC)
 {
     alias _mm_subs_epi16 = __builtin_ia32_psubsw128;
+}
+else
+{
+    __m128i _mm_subs_epi16(__m128i a, __m128i b) pure @trusted
+    {
+        short[8] res;
+        short8 sa = cast(short8)a;
+        short8 sb = cast(short8)b;
+        foreach(i; 0..8)
+            res[i] = saturateSignedIntToSignedShort(sa.array[i] - sb.array[i]);
+        return _mm_loadu_si128(cast(int4*)res.ptr);
+    }
+}
+unittest
+{
+    short8 res = cast(short8) _mm_subs_epi16(_mm_setr_epi16(32760, -32760, 5, 4, 3, 2, 1, 0),
+                                             _mm_setr_epi16(-10  ,     16, 5, 4, 3, 2, 1, 0));
+    static immutable short[8] correctResult =              [32767, -32768, 0, 0, 0, 0, 0, 0];
+    assert(res.array == correctResult);
+}
+
+version(LDC)
+{
     alias _mm_subs_epi8 = __builtin_ia32_psubsb128;
+}
+else
+{
+    __m128i _mm_subs_epi8(__m128i a, __m128i b) pure @trusted
+    {
+        byte[16] res;
+        byte16 sa = cast(byte16)a;
+        byte16 sb = cast(byte16)b;
+        foreach(i; 0..16)
+            res[i] = saturateSignedWordToSignedByte(sa.array[i] - sb.array[i]);
+        return _mm_loadu_si128(cast(int4*)res.ptr);
+    }
+}
+unittest
+{
+    byte16 res = cast(byte16) _mm_subs_epi8(_mm_setr_epi8(-128, 127, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0),
+                                            _mm_setr_epi8(  15, -14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0));
+    static immutable byte[16] correctResult            = [-128, 127,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    assert(res.array == correctResult);
+}
+
+version(LDC)
+{
     alias _mm_subs_epu16 = __builtin_ia32_psubusw128;
+}
+else
+{
+    __m128i _mm_subs_epu16(__m128i a, __m128i b) pure @trusted
+    {
+        short[8] res;
+        short8 sa = cast(short8)a;
+        short8 sb = cast(short8)b;
+        foreach(i; 0..8)
+        {
+            int sum = cast(ushort)(sa.array[i]) - cast(ushort)(sb.array[i]);
+            res[i] = saturateSignedIntToUnsignedShort(sum);
+        }
+        return _mm_loadu_si128(cast(int4*)res.ptr);
+    }
+}
+unittest
+{
+    __m128i A = _mm_setr_epi16(cast(short)65534,   0, 5, 4, 3, 2, 1, 0);
+    short8 R = cast(short8) _mm_subs_epu16(_mm_setr_epi16(cast(short)65534,  1, 5, 4, 3, 2, 1, 0),
+                                           _mm_setr_epi16(cast(short)65535, 16, 4, 4, 3, 0, 1, 0));
+    static immutable short[8] correct =                  [               0,  0, 1, 0, 0, 2, 0, 0];
+    assert(R.array == correct);
+}
+
+version(LDC)
+{
     alias _mm_subs_epu8 = __builtin_ia32_psubusb128;
+}
+else
+{
+    __m128i _mm_subs_epu8(__m128i a, __m128i b) pure @trusted
+    {
+        ubyte[16] res;
+        byte16 sa = cast(byte16)a;
+        byte16 sb = cast(byte16)b;
+        foreach(i; 0..16)
+            res[i] = saturateSignedWordToUnsignedByte(cast(ubyte)(sa.array[i]) - cast(ubyte)(sb.array[i]));
+        return _mm_loadu_si128(cast(int4*)res.ptr);
+    }
+}
+unittest
+{
+    byte16 res = cast(byte16) _mm_subs_epu8(_mm_setr_epi8(cast(byte)254, 127, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0),
+                                            _mm_setr_epi8(cast(byte)255, 120, 14, 42, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0));
+    static immutable byte[16] correctResult =            [            0,   7,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    assert(res.array == correctResult);
 }
 
 // Note: the only difference between these intrinsics is the signalling 
