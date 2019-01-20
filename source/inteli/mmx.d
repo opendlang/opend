@@ -14,6 +14,8 @@ nothrow @nogc:
 // since it just generates the right IR and cleaning-up FPU registers is up to the codegen.
 // intel-intrinsics is just semantics.
 
+
+/// Add packed 16-bit integers in `a` and `b`.
 __m64 _mm_add_pi16 (__m64 a, __m64 b)
 {
     return cast(__m64)(cast(short4)a + cast(short4)b);
@@ -25,6 +27,7 @@ unittest
     assert(R.array == correct);
 }
 
+/// Add packed 32-bit integers in `a` and `b`.
 __m64 _mm_add_pi32 (__m64 a, __m64 b)
 {
     return cast(__m64)(cast(int2)a + cast(int2)b);
@@ -36,6 +39,7 @@ unittest
     assert(R.array == correct);
 }
 
+/// Add packed 8-bit integers in `a` and `b`.
 __m64 _mm_add_pi8 (__m64 a, __m64 b)
 {
     return cast(__m64)(cast(byte8)a + cast(byte8)b);
@@ -55,10 +59,35 @@ paddusw
 __m64 _mm_adds_pu16 (__m64 a, __m64 b)
 paddusb
 __m64 _mm_adds_pu8 (__m64 a, __m64 b)
-pand
-__m64 _mm_and_si64 (__m64 a, __m64 b)
-pandn
++/
+
+/// Compute the bitwise AND of 64 bits (representing integer data) in `a` and `b`.
+__m64 _mm_and_si64 (__m64 a, __m64 b) pure @safe
+{
+    return a & b;
+}
+unittest
+{
+    __m64 A = [7];
+    __m64 B = [14];
+    __m64 R = _mm_and_si64(A, B);
+    assert(R[0] == 6);
+}
+
+/// Compute the bitwise NOT of 64 bits (representing integer data) in `a` and then AND with `b`.
 __m64 _mm_andnot_si64 (__m64 a, __m64 b)
+{
+    return (~a) & b;
+}
+unittest
+{
+    __m64 A = [7];
+    __m64 B = [14];
+    __m64 R = _mm_andnot_si64(A, B);
+    _mm_print_pi8(R);
+    assert(R[0] == 8);
+}
+/+
 pcmpeqw
 __m64 _mm_cmpeq_pi16 (__m64 a, __m64 b)
 pcmpeqd

@@ -7,9 +7,6 @@ module inteli.internals;
 
 import inteli.types;
 
-version(unittest)
-    import core.stdc.stdio;
-
 // The only math functions needed for intel-intrinsics
 public import core.math: fabs, sqrt; // since they are intrinsics
 
@@ -239,8 +236,31 @@ unittest // test saturate operations
 
 version(unittest)
 {
+    // This is just for debugging tests
+    import core.stdc.stdio: printf;
+
     // printing vectors for implementation
     // Note: you can override `pure` within a `debug` clause
+
+    void _mm_print_pi32(__m64 v) @trusted
+    {
+        int2 C = cast(int2)v;
+        printf("%d %d\n", C[0], C[1]);
+    }
+
+    void _mm_print_pi16(__m64 v) @trusted
+    {
+        short4 C = cast(short4)v;
+        printf("%d %d %d %d\n", C[0], C[1], C[2], C[3]);
+    }
+
+    void _mm_print_pi8(__m64 v) @trusted
+    {
+        byte8 C = cast(byte8)v;
+        printf("%d %d %d %d %d %d %d %d\n",
+        C[0], C[1], C[2], C[3], C[4], C[5], C[6], C[7]);
+    }
+
     void _mm_print_epi32(__m128i v) @trusted
     {
         printf("%d %d %d %d\n",
