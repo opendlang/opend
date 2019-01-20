@@ -9,6 +9,8 @@ public import inteli.types;
 
 import inteli.internals;
 
+import inteli.mmx;
+
 import core.stdc.stdlib: malloc, free;
 import core.exception: onOutOfMemoryError;
 
@@ -501,14 +503,14 @@ alias _mm_load1_ps = _mm_load_ps1;
 __m128 _mm_loadh_pi (__m128 a, const(__m64)* mem_addr) pure @safe
 {
     long2 la = cast(long2)a;
-    la[1] = *mem_addr;
+    la[1] = (*mem_addr)[0];
     return cast(__m128)la;
 }
 
 __m128 _mm_loadl_pi (__m128 a, const(__m64)* mem_addr) pure @safe
 {
     long2 la = cast(long2)a;
-    la[0] = *mem_addr;
+    la[0] = (*mem_addr)[0];
     return cast(__m128)la;
 }
 
@@ -1083,12 +1085,26 @@ void _mm_store1_ps (float* mem_addr, __m128 a) pure // not safe since nothing gu
 
 void _mm_storeh_pi(__m64* p, __m128 a) pure @safe
 {
-    *p = extractelement!(long2, 1)(a);
+    (*p)[0] = extractelement!(long2, 1)(a);
+}
+unittest
+{
+    __m64 R = _mm_setzero_si64();
+    long2 A = [13, 25];
+    _mm_storeh_pi(&R, cast(__m128)A);
+    assert(R[0] == 25);
 }
 
 void _mm_storel_pi(__m64* p, __m128 a) pure @safe
 {
-    *p = extractelement!(long2, 0)(a);
+    (*p)[0] = extractelement!(long2, 0)(a);
+}
+unittest
+{
+    __m64 R = _mm_setzero_si64();
+    long2 A = [13, 25];
+    _mm_storel_pi(&R, cast(__m128)A);
+    assert(R[0] == 13);
 }
 
 void _mm_storer_ps(float* mem_addr, __m128 a) pure // not safe since nothing guarantees alignment

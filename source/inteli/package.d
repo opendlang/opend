@@ -6,6 +6,7 @@
 module inteli; 
 
 public import inteli.types;
+public import inteli.mmx;
 public import inteli.emmintrin;
 public import inteli.xmmintrin;
 

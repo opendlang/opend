@@ -8,6 +8,14 @@ module inteli.types;
 version(LDC)
 {
     public import core.simd;
+
+    // Declare vector types that correspond to MMX types
+    // Because they are expressible in IR anyway.
+    alias Vector!(long[1])   long1;
+    alias Vector!(float[2])   float2;
+    alias Vector!(int[2])     int2;
+    alias Vector!(short[4])   short4;
+    alias Vector!(byte[8])    byte8;
 }
 else
 {
@@ -24,6 +32,63 @@ else
     @nogc:
     pure:
 
+
+    /// MMX-like SIMD types
+    struct float2
+    {
+        float[2] array;
+        mixin VectorOps!(float2, float[2]);
+
+        enum float TrueMask = allOnes();
+        enum float FalseMask = 0.0f;
+
+        private static float allOnes()
+        {
+            uint m1 = 0xffffffff;
+            return *cast(float*)(&m1);
+        }
+    }
+
+    struct byte8
+    {
+        byte[8] array;
+        mixin VectorOps!(byte8, byte[8]);
+        enum byte TrueMask = -1;
+        enum byte FalseMask = 0;
+    }
+
+    struct short4
+    {
+        short[4] array;
+        mixin VectorOps!(short4, short[4]);
+        enum short TrueMask = -1;
+        enum short FalseMask = 0;
+    }
+
+    struct int2
+    {
+        int[2] array;
+        mixin VectorOps!(int2, int[2]);
+        enum int TrueMask = -1;
+        enum int FalseMask = 0;
+    }
+
+    struct long1
+    {
+        long[1] array;
+        mixin VectorOps!(long, long[1]);
+        enum long TrueMask = -1;
+        enum long FalseMask = 0;
+    }
+
+    static assert(float2.sizeof == 8);
+    static assert(byte8.sizeof == 8);
+    static assert(short4.sizeof == 8);
+    static assert(int2.sizeof == 8);
+    static assert(long1.sizeof == 8);
+
+
+    /// SSE-like SIMD types
 
     struct float4
     {
@@ -137,11 +202,10 @@ else
             VecDest dest = void;
             // Copy
             dest.array[] = (cast(typeof(dest.array))cast(void[VectorType.sizeof])array)[];
-            // memcpy(dest.array.ptr, array.ptr, VectorType.sizeof);
             return dest;
         }
 
-        ref BaseType opIndex(size_t i) pure nothrow @safe @nogc
+        ref inout(BaseType) opIndex(size_t i) inout pure nothrow @safe @nogc
         {
             return array[i];
         }
@@ -267,7 +331,7 @@ nothrow:
 alias __m128 = float4;
 alias __m128i = int4;
 alias __m128d = double2;
-alias __m64 = long; // Note: operation using __m64 are not available.
+alias __m64 = long1; // like in Clang, __m64 is a vector of 1 long
 
 int _MM_SHUFFLE2(int x, int y) pure @safe
 {

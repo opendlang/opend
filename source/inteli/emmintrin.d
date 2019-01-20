@@ -336,8 +336,6 @@ else
                 clflush [RAX];
             }
         }
-        else
-            static assert(false, "Should implement clflush for this compiler");
     }
 }
 unittest
