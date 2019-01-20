@@ -18,22 +18,36 @@ __m64 _mm_add_pi16 (__m64 a, __m64 b)
 {
     return cast(__m64)(cast(short4)a + cast(short4)b);
 }
+unittest
+{
+    short4 R = cast(short4) _mm_add_pi16(_mm_set1_pi16(4), _mm_set1_pi16(3));
+    short[4] correct = [7, 7, 7, 7];
+    assert(R.array == correct);
+}
 
 __m64 _mm_add_pi32 (__m64 a, __m64 b)
 {
     return cast(__m64)(cast(int2)a + cast(int2)b);
+}
+unittest
+{
+    int2 R = cast(int2) _mm_add_pi32(_mm_set1_pi32(4), _mm_set1_pi32(3));
+    int[2] correct = [7, 7];
+    assert(R.array == correct);
 }
 
 __m64 _mm_add_pi8 (__m64 a, __m64 b)
 {
     return cast(__m64)(cast(byte8)a + cast(byte8)b);
 }
- 
+unittest
+{
+    byte8 R = cast(byte8) _mm_add_pi8(_mm_set1_pi8(127), _mm_set1_pi8(-128));
+    byte[8] correct = [-1, -1, -1, -1, -1, -1, -1, -1];
+    assert(R.array == correct);
+}
+
  /+
- unittest
- {
-    
- }
 __m64 _mm_adds_pi16 (__m64 a, __m64 b)
 paddsb
 __m64 _mm_adds_pi8 (__m64 a, __m64 b)
