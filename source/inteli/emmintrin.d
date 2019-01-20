@@ -1351,9 +1351,32 @@ unittest
 
 version(LDC)
 {
-    alias _mm_movemask_epi8 = __builtin_ia32_pmovmskb128; // TODO
-    alias _mm_movemask_pd = __builtin_ia32_movmskpd; // TODO
+    /// Create mask from the most significant bit of each 8-bit element in `v`.
+    alias _mm_movemask_epi8 = __builtin_ia32_pmovmskb128;
 }
+else
+{
+    /// Create mask from the most significant bit of each 8-bit element in `v`.
+    int _mm_movemask_epi8(__m128i v) pure @safe
+    {
+        byte16 ai = cast(byte16)a;
+        int r = 0;
+        foreach(bit; 0..16)
+        {
+            if (ai[bit] < 0) r += (1 << bit);
+        }
+        return r;
+    }
+}
+unittest
+{
+    assert(0x9C36 == _mm_movemask_epi8(_mm_set_epi8(-1, 0, 0, -1, -1, -1, 0, 0, 0, 0, -1, -1, 0, -1, -1, 0)));
+}
+
+/*
+
+    alias _mm_movemask_pd = __builtin_ia32_movmskpd; // TODO
+}*/
 
 // MMXREG: _mm_movepi64_pi64
 // MMXREG: __m128i _mm_movpi64_epi64 (__m64 a)
