@@ -153,20 +153,84 @@ unittest
     assert(R[0] == 8);
 }
 
-/+
-pcmpeqw
-__m64 _mm_cmpeq_pi16 (__m64 a, __m64 b) TODO
-pcmpeqd
-__m64 _mm_cmpeq_pi32 (__m64 a, __m64 b) TODO
-pcmpeqb
-__m64 _mm_cmpeq_pi8 (__m64 a, __m64 b) TODO
-pcmpgtw
-__m64 _mm_cmpgt_pi16 (__m64 a, __m64 b) TODO
-pcmpgtd
-__m64 _mm_cmpgt_pi32 (__m64 a, __m64 b) TODO
-pcmpgtb
-__m64 _mm_cmpgt_pi8 (__m64 a, __m64 b) TODO
-+/
+
+__m64 _mm_cmpeq_pi16 (__m64 a, __m64 b) pure @safe
+{
+    return cast(__m64) equalMask!short4(cast(short4)a, cast(short4)b);
+}
+unittest
+{
+    short4   A = [-3, -2, -1,  0];
+    short4   B = [ 4,  3,  2,  1];
+    short[4] E = [ 0,  0,  0,  0];
+    short4   R = cast(short4)(_mm_cmpeq_pi16(cast(__m64)A, cast(__m64)B));
+    assert(R.array == E);
+}
+
+__m64 _mm_cmpeq_pi32 (__m64 a, __m64 b) pure @safe
+{
+    return cast(__m64) equalMask!int2(cast(int2)a, cast(int2)b);
+}
+unittest
+{
+    int2   A = [-3, -2];
+    int2   B = [ 4, -2];
+    int[2] E = [ 0, -1];
+    int2   R = cast(int2)(_mm_cmpeq_pi32(cast(__m64)A, cast(__m64)B));
+    assert(R.array == E);
+}
+
+__m64 _mm_cmpeq_pi8 (__m64 a, __m64 b) pure @safe
+{
+    return cast(__m64) equalMask!byte8(cast(byte8)a, cast(byte8)b);
+}
+unittest
+{
+    __m64 A = _mm_setr_pi8(1, 2, 3, 1, 2, 1, 1, 2);
+    __m64 B = _mm_setr_pi8(2, 2, 1, 2, 3, 1, 2, 3);
+    byte8 C = cast(byte8) _mm_cmpeq_pi8(A, B);
+    byte[8] correct =     [0,-1, 0, 0, 0,-1, 0, 0];
+    assert(C.array == correct);
+}
+
+__m64 _mm_cmpgt_pi16 (__m64 a, __m64 b) pure @safe
+{
+    return cast(__m64) greaterMask!short4(cast(short4)a, cast(short4)b);
+}
+unittest
+{
+    short4   A = [-3, -2, -1,  0];
+    short4   B = [ 4,  3,  2,  1];
+    short[4] E = [ 0,  0,  0,  0];
+    short4   R = cast(short4)(_mm_cmpgt_pi16(cast(__m64)A, cast(__m64)B));
+    assert(R.array == E);
+}
+
+__m64 _mm_cmpgt_pi32 (__m64 a, __m64 b) pure @safe
+{
+    return cast(__m64) greaterMask!int2(cast(int2)a, cast(int2)b);
+}
+unittest
+{
+    int2   A = [-3,  2];
+    int2   B = [ 4, -2];
+    int[2] E = [ 0, -1];
+    int2   R = cast(int2)(_mm_cmpgt_pi32(cast(__m64)A, cast(__m64)B));
+    assert(R.array == E);
+}
+
+__m64 _mm_cmpgt_pi8 (__m64 a, __m64 b) pure @safe
+{
+    return cast(__m64) greaterMask!byte8(cast(byte8)a, cast(byte8)b);
+}
+unittest
+{
+    __m64 A = _mm_setr_pi8(1, 2, 3, 1, 2, 1, 1, 2);
+    __m64 B = _mm_setr_pi8(2, 2, 1, 2, 3, 1, 2, 3);
+    byte8 C = cast(byte8) _mm_cmpgt_pi8(A, B);
+    byte[8] correct =     [0, 0,-1, 0, 0, 0, 0, 0];
+    assert(C.array == correct);
+}
 
 /// Copy 64-bit integer `a` to `dst`.
 long _mm_cvtm64_si64 (__m64 a) pure @safe

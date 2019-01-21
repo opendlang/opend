@@ -397,11 +397,8 @@ unittest
     __m128i B = _mm_setr_epi8(2, 2, 1, 2, 3, 1, 2, 3, 2, 1, 0, 0, 1, 2, 1, 1);
     byte16 C = cast(byte16) _mm_cmpeq_epi8(A, B);
     byte[16] correct =       [0,-1, 0, 0, 0,-1, 0, 0, 0, 0, 0,-1, 0, 0, 0, -1];
-    __m128i D = _mm_cmpeq_epi8(A, B);
     assert(C.array == correct);
 }
-
-
 
 __m128d _mm_cmpeq_pd (__m128d a, __m128d b) pure @safe
 {
