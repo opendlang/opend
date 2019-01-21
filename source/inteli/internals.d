@@ -16,6 +16,7 @@ version(LDC)
     public import ldc.simd;
     public import ldc.gccbuiltins_x86;
     public import ldc.intrinsics;
+    public import ldc.llvmasm: __asm;
 
     // Since LDC 1.13, using the new ldc.llvmasm.__ir variants instead of inlineIR
     static if (__VERSION__ >= 2083)

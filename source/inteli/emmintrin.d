@@ -716,7 +716,13 @@ unittest
 
 version(LDC)
 {
-    alias _mm_cvtps_epi32 = __builtin_ia32_cvtps2dq;
+    // Disabled, since it fail with optimizations unfortunately
+    //alias _mm_cvtps_epi32 = __builtin_ia32_cvtps2dq;
+
+     __m128i _mm_cvtps_epi32 (__m128 a) pure @trusted
+    {
+        return __asm!__m128i("cvtps2dq $1,$0","=x,x",a);
+    }
 }
 else
 {
