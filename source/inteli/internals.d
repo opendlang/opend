@@ -281,6 +281,18 @@ version(unittest)
         printf("%d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d\n",
         C[0], C[1], C[2], C[3], C[4], C[5], C[6], C[7], C[8], C[9], C[10], C[11], C[12], C[13], C[14], C[15]);
     }
+
+    void _mm_print_ps(__m128 v) @trusted
+    {
+        float4 C = cast(float4)v;
+        printf("%f %f %f %f\n", C[0], C[1], C[2], C[3]);
+    }
+
+    void _mm_print_pd(__m128d v) @trusted
+    {
+        double2 C = cast(double2)v;
+        printf("%f %f\n", C[0], C[1]);
+    }    
 }
 
 
