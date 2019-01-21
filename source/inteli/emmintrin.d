@@ -35,10 +35,23 @@ __m128i _mm_add_epi8 (__m128i a, __m128i b) pure @safe
     return cast(__m128i)(cast(byte16)a + cast(byte16)b);
 }
 
-__m128d _mm_add_sd(__m128d a, __m128d b) pure @safe
+version(DigitalMars)
 {
-    a[0] += b[0];
-    return a;
+    // Work-around for https://issues.dlang.org/show_bug.cgi?id=19599
+    __m128d _mm_add_sd(__m128d a, __m128d b) pure @safe
+    {
+        pragma(inline, false);
+        a[0] = a[0] + b[0];
+        return a;
+    }
+}
+else
+{
+    __m128d _mm_add_sd(__m128d a, __m128d b) pure @safe
+    {
+        a[0] += b[0];
+        return a;
+    }
 }
 unittest
 {
@@ -1004,10 +1017,23 @@ __m128d _mm_div_ps(__m128d a, __m128d b)
     return a / b;
 }
 
-__m128d _mm_div_sd(__m128d a, __m128d b) pure @safe
+version(DigitalMars)
 {
-    a[0] /= b[0];
-    return a;
+    // Work-around for https://issues.dlang.org/show_bug.cgi?id=19599
+    __m128d _mm_div_sd(__m128d a, __m128d b) pure @safe
+    {
+        pragma(inline, false);
+        a[0] = a[0] / b[0];
+        return a;
+    }
+}
+else
+{
+    __m128d _mm_div_sd(__m128d a, __m128d b) pure @safe
+    {
+        a[0] /= b[0];
+        return a;
+    }
 }
 unittest
 {
@@ -1463,10 +1489,23 @@ unittest
     assert(a.array == [4.0, 2.25]);
 }
 
-__m128d _mm_mul_sd(__m128d a, __m128d b) pure @safe
+version(DigitalMars)
 {
-    a[0] *= b[0];
-    return a;
+    // Work-around for https://issues.dlang.org/show_bug.cgi?id=19599
+    __m128d _mm_mul_sd(__m128d a, __m128d b) pure @safe
+    {
+        pragma(inline, false);
+        a[0] = a[0] * b[0];
+        return a;
+    }  
+}
+else
+{
+    __m128d _mm_mul_sd(__m128d a, __m128d b) pure @safe
+    {
+        a[0] *= b[0];
+        return a;
+    }
 }
 unittest
 {
@@ -2536,10 +2575,23 @@ __m128d _mm_sub_pd(__m128d a, __m128d b) pure @safe
     return a - b;
 }
 
-__m128d _mm_sub_sd(__m128d a, __m128d b) pure @safe
+version(DigitalMars)
 {
-    a[0] -= b[0];
-    return a;
+    // Work-around for https://issues.dlang.org/show_bug.cgi?id=19599
+    __m128d _mm_sub_sd(__m128d a, __m128d b) pure @safe
+    {
+        pragma(inline, false);
+        a[0] = a[0] - b[0];
+        return a;
+    }
+}
+else
+{
+    __m128d _mm_sub_sd(__m128d a, __m128d b) pure @safe
+    {
+        a[0] -= b[0];
+        return a;
+    }
 }
 unittest
 {
