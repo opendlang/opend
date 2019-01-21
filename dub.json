@@ -4,5 +4,11 @@
     "copyright": "Auburn Sounds 2016-2018",
     "license": "BSL-1.0",
     "importPaths": ["source"],
-    "sourcePaths": ["source"]
+    "sourcePaths": ["source"],
+
+    "buildTypes": {
+        "unittest-release": {
+            "buildOptions": ["unittests", "optimize", "inline"]
+        }
+    }
 }

@@ -6,12 +6,14 @@ os:
 
 d:
  - ldc-beta
+ - ldc-1.13.0 
  - ldc-1.12.0
  - ldc-1.11.0
  - ldc-1.10.0
  - ldc-1.9.0
  - ldc-1.8.0
  - dmd-beta
+ - dmd-2.084.0 
  - dmd-2.083.1
  - dmd-2.082.1
  - dmd-2.081.2
@@ -27,4 +29,6 @@ matrix:
 # Note: 32-bit x86 isn't tested for Linux
 script:
   - dub test --compiler=${DC}
+  - dub test -b unittest-release --compiler=${DC}
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then dub test --compiler=${DC} -a x86 ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then dub test -b unittest-release --compiler=${DC} -a x86 ; fi
