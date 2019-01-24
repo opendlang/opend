@@ -8,6 +8,7 @@ module inteli.types;
 version(LDC)
 {
     public import core.simd;
+    public import ldc.simd;
 
     // Declare vector types that correspond to MMX types
     // Because they are expressible in IR anyway.
