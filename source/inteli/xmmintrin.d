@@ -87,9 +87,9 @@ unittest
     // Note: tested in emmintrin.d
 }
 
-__m128i _mm_andnot_ps (__m128i a, __m128i b) pure @safe
+__m128 _mm_andnot_ps (__m128 a, __m128 b) pure @safe
 {
-    return (~a) & b;
+    return cast(__m128)( (~cast(__m128i)a) & cast(__m128i)b );
 }
 
 
@@ -1205,9 +1205,9 @@ __m128 _mm_unpacklo_ps (__m128 a, __m128 b) pure @safe
     return shufflevector!(float4, 0, 4, 1, 5)(a, b);
 }
 
-__m128i _mm_xor_ps (__m128i a, __m128i b) pure @safe
+__m128 _mm_xor_ps (__m128 a, __m128 b) pure @safe
 {
-    return a ^ b;
+    return cast(__m128)(cast(__m128i)a ^ cast(__m128i)b);
 }
 
 
