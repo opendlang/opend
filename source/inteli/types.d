@@ -196,7 +196,7 @@ else
         /// We can't support implicit conversion but do support explicit casting.
         /// "Vector types of the same size can be implicitly converted among each other."
         /// Casting to another vector type is always just a raw copy.
-        VecDest opCast(VecDest)() pure nothrow @trusted @nogc
+        VecDest opCast(VecDest)() pure const nothrow @trusted @nogc
             if (VecDest.sizeof == VectorType.sizeof)
         {
             // import core.stdc.string: memcpy;
