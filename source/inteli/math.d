@@ -40,9 +40,21 @@ static immutable __m128i _psi_min_norm_pos  = [0x00800000,   0x00800000,   0x008
 static immutable __m128i _pi32_0x7f = [0x7f, 0x7f, 0x7f, 0x7f];
 
 
+/// Natural `exp` computed for the lowest 32-bit float of `v`.
+/// This is an approximation, valid up to approximately -119dB of accuracy, on the range -inf..50
+/// IMPORTANT: NaN, zero, or infinity input not supported properly. x must be > 0 and finite.
+// #BONUS
+__m128 _mm_log_ss(__m128 v)
+{
+    __m128 r = _mm_log_ps(v);
+    v[0] = r[0];
+    return v;
+}
+
 /// Natural logarithm computed for 4 simultaneous float.
-/// This is an approximation, valid up to approximately -119dB of accuracy
-/// IMPORTANT: NaN, zero, or infinity input not supported properly. x must be > 0.
+/// This is an approximation, valid up to approximately -119dB of accuracy, on the range -inf..50
+/// IMPORTANT: NaN, zero, or infinity input not supported properly. x must be > 0 and finite.
+// #BONUS
 __m128 _mm_log_ps(__m128 x)
 {
     static immutable __m128i _psi_inv_mant_mask = [~0x7f800000, ~0x7f800000, ~0x7f800000, ~0x7f800000];
@@ -108,10 +120,22 @@ __m128 _mm_log_ps(__m128 x)
     return x;
 }
 
-/// Natural exp computed for 4 simultaneous float.
+/// Natural `exp` computed for the lowest 32-bit float of `v`.
 /// This is an approximation, valid up to approximately -109dB of accuracy
 /// IMPORTANT: NaN input not supported.
-__m128 _mm_exp_ps(__m128 x) 
+// #BONUS
+__m128 _mm_exp_ss(__m128 v)
+{
+    __m128 r = _mm_exp_ps(v);
+    v[0] = r[0];
+    return v;
+}
+
+/// Natural `exp` computed for 4 simultaneous float in `x`.
+/// This is an approximation, valid up to approximately -109dB of accuracy
+/// IMPORTANT: NaN input not supported.
+// #BONUS
+__m128 _mm_exp_ps(__m128 x)
 {
     static immutable __m128 _ps_exp_hi         = [88.3762626647949f, 88.3762626647949f, 88.3762626647949f, 88.3762626647949f];
     static immutable __m128 _ps_exp_lo         = [-88.3762626647949f, -88.3762626647949f, -88.3762626647949f, -88.3762626647949f];
