@@ -9,4 +9,5 @@ public import inteli.types;
 public import inteli.mmx;
 public import inteli.emmintrin;
 public import inteli.xmmintrin;
+public import inteli.math;
 
