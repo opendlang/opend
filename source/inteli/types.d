@@ -174,7 +174,7 @@ else
         }
 
         // Binary operators
-        VectorType opBinary(string op)(VectorType other) pure nothrow @safe @nogc
+        VectorType opBinary(string op)(VectorType other) pure const nothrow @safe @nogc
         {
             VectorType res = void;
             mixin("res.array[] = array[] " ~ op ~ " other.array[];");
@@ -185,6 +185,11 @@ else
         void opAssign(ArrayType v) pure nothrow @safe @nogc
         {
             array[] = v[];
+        }
+
+        void opOpAssign(string op)(VectorType other) pure nothrow @safe @nogc
+        {
+            mixin("array[] "  ~ op ~ "= other.array[];");
         }
 
         // Assigning a dyn array
