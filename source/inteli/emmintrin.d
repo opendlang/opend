@@ -1012,7 +1012,7 @@ long _mm_cvttsd_si64 (__m128d a)
 
 alias _mm_cvttsd_si64x = _mm_cvttsd_si64;
 
-__m128d _mm_div_ps(__m128d a, __m128d b)
+__m128d _mm_div_pd(__m128d a, __m128d b) pure @safe
 {
     return a / b;
 }
