@@ -110,6 +110,13 @@ __m128 _mm_cmpge_ps (__m128 a, __m128 b) pure @safe
 {
     return cast(__m128) cmpps!(FPComparison.oge)(a, b);
 }
+unittest
+{
+    __m128i R = cast(__m128i) _mm_cmpge_ps(_mm_setr_ps(0, 1, -1, float.nan), 
+                                           _mm_setr_ps(0, 0, 0, 0));
+    int[4] correct = [-1, -1, 0, 0];
+    assert(R.array == correct);
+}
 
 __m128 _mm_cmpge_ss (__m128 a, __m128 b) pure @safe
 {
