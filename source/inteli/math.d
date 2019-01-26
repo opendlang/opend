@@ -40,22 +40,23 @@ static immutable __m128i _psi_min_norm_pos  = [0x00800000,   0x00800000,   0x008
 static immutable __m128i _pi32_0x7f = [0x7f, 0x7f, 0x7f, 0x7f];
 
 
-/// Natural `exp` computed for the lowest 32-bit float of `v`.
+nothrow @nogc:
+
+/// Natural `log` computed for a single 32-bit float.
 /// This is an approximation, valid up to approximately -119dB of accuracy, on the range -inf..50
 /// IMPORTANT: NaN, zero, or infinity input not supported properly. x must be > 0 and finite.
 // #BONUS
-__m128 _mm_log_ss(__m128 v)
+float _mm_log_ss(float v) pure @safe
 {
-    __m128 r = _mm_log_ps(v);
-    v[0] = r[0];
-    return v;
+    __m128 r = _mm_log_ps(_mm_set1_ps(v));
+    return r[0];
 }
 
 /// Natural logarithm computed for 4 simultaneous float.
 /// This is an approximation, valid up to approximately -119dB of accuracy, on the range -inf..50
 /// IMPORTANT: NaN, zero, or infinity input not supported properly. x must be > 0 and finite.
 // #BONUS
-__m128 _mm_log_ps(__m128 x)
+__m128 _mm_log_ps(__m128 x) pure @safe
 {
     static immutable __m128i _psi_inv_mant_mask = [~0x7f800000, ~0x7f800000, ~0x7f800000, ~0x7f800000];
     static immutable __m128 _ps_cephes_SQRTHF = [0.707106781186547524, 0.707106781186547524, 0.707106781186547524, 0.707106781186547524];
@@ -120,22 +121,21 @@ __m128 _mm_log_ps(__m128 x)
     return x;
 }
 
-/// Natural `exp` computed for the lowest 32-bit float of `v`.
+/// Natural `exp` computed for a single float.
 /// This is an approximation, valid up to approximately -109dB of accuracy
 /// IMPORTANT: NaN input not supported.
 // #BONUS
-__m128 _mm_exp_ss(__m128 v)
+float _mm_exp_ss(float v) pure @safe
 {
-    __m128 r = _mm_exp_ps(v);
-    v[0] = r[0];
-    return v;
+    __m128 r = _mm_exp_ps(_mm_set1_ps(v));
+    return r[0];
 }
 
 /// Natural `exp` computed for 4 simultaneous float in `x`.
 /// This is an approximation, valid up to approximately -109dB of accuracy
 /// IMPORTANT: NaN input not supported.
 // #BONUS
-__m128 _mm_exp_ps(__m128 x)
+__m128 _mm_exp_ps(__m128 x) pure @safe
 {
     static immutable __m128 _ps_exp_hi         = [88.3762626647949f, 88.3762626647949f, 88.3762626647949f, 88.3762626647949f];
     static immutable __m128 _ps_exp_lo         = [-88.3762626647949f, -88.3762626647949f, -88.3762626647949f, -88.3762626647949f];
@@ -200,23 +200,39 @@ __m128 _mm_exp_ps(__m128 x)
     return y;
 }
 
-static immutable __m128 _ps_minus_cephes_DP1 = [-0.78515625, -0.78515625, -0.78515625, -0.78515625];
-static immutable __m128 _ps_minus_cephes_DP2 = [-2.4187564849853515625e-4, -2.4187564849853515625e-4, -2.4187564849853515625e-4, -2.4187564849853515625e-4];
-static immutable __m128 _ps_minus_cephes_DP3 = [-3.77489497744594108e-8, -3.77489497744594108e-8, -3.77489497744594108e-8, -3.77489497744594108e-8];
-static immutable __m128 _ps_sincof_p0        = [-1.9515295891E-4, -1.9515295891E-4, -1.9515295891E-4, -1.9515295891E-4];
-static immutable __m128 _ps_sincof_p1        = [ 8.3321608736E-3,  8.3321608736E-3,  8.3321608736E-3,  8.3321608736E-3];
-static immutable __m128 _ps_sincof_p2        = [-1.6666654611E-1, -1.6666654611E-1, -1.6666654611E-1, -1.6666654611E-1];
-static immutable __m128 _ps_coscof_p0        = [ 2.443315711809948E-005,  2.443315711809948E-005,  2.443315711809948E-005,  2.443315711809948E-005];
-static immutable __m128 _ps_coscof_p1        = [-1.388731625493765E-003, -1.388731625493765E-003, -1.388731625493765E-003, -1.388731625493765E-003];
-static immutable __m128 _ps_coscof_p2        = [ 4.166664568298827E-002,  4.166664568298827E-002,  4.166664568298827E-002,  4.166664568298827E-002];
-static immutable __m128 _ps_cephes_FOPI      = [ 1.27323954473516,  1.27323954473516,  1.27323954473516,  1.27323954473516];
+/// Computes `base^exponent` for a single 32-bit float.
+/// This is an approximation, valid up to approximately -100dB of accuracy
+/// IMPORTANT: NaN, zero, or infinity input not supported properly. x must be > 0 and finite.
+// #BONUS
+float _mm_pow_ss(float base, float exponent) pure @safe
+{
+    __m128 r = _mm_pow_ps(_mm_set1_ps(base), _mm_set1_ps(exponent));
+    return r[0];
+}
 
+/// Computes `base^exponent`, for 4 floats at once.
+/// This is an approximation, valid up to approximately -100dB of accuracy
+/// IMPORTANT: NaN, zero, or infinity input not supported properly. x must be > 0 and finite.
+// #BONUS
+__m128 _mm_pow_ps(__m128 base, __m128 exponents) pure @safe
+{
+    return _mm_exp_ps(exponents * _mm_log_ps(base));
+}
+
+/// Computes `base^exponent`, for 4 floats at once.
+/// This is an approximation, valid up to approximately -100dB of accuracy
+/// IMPORTANT: NaN, zero, or infinity input not supported properly. x must be > 0 and finite.
+// #BONUS
+__m128 _mm_pow_ps(__m128 base, float exponent) pure @safe
+{
+    return _mm_exp_ps(_mm_set1_ps(exponent) * _mm_log_ps(base));
+}
 
 unittest
 {
     import std.math;
 
-    bool approxEquals(double groundTruth, double approx, double epsilon)
+    bool approxEquals(double groundTruth, double approx, double epsilon) pure @trusted @nogc nothrow
     {
         if (!isFinite(groundTruth))
             return true; // no need to approximate where this is NaN or infinite
@@ -234,8 +250,9 @@ unittest
 
         if ( ( abs(groundTruth / approx) - 1 ) >= epsilon)
         {
-            import std.stdio;
-            writeln(abs(groundTruth / approx) - 1 );
+            import core.stdc.stdio;
+            debug printf("approxEquals (%g, %g, %g) failed\n", groundTruth, approx, epsilon);
+            debug printf("ratio is %f\n", abs(groundTruth / approx) - 1);
         }
 
         return ( abs(groundTruth / approx) - 1 ) < epsilon;
@@ -290,5 +307,36 @@ unittest
 
         // DOESN'T PASS
         //assert(isNaN(R[3])); // log(NaN) = NaN
+    }
+
+
+    // test _mm_pow_ps
+    for (double mantissa = -1.0; mantissa < 1.0; mantissa += 0.01)
+    {
+        foreach (exponent; -8..4)
+        {
+            double powExponent = mantissa * 2.0 ^^ exponent;
+
+            for (double mantissa2 = 0.1; mantissa2 < 1.0; mantissa2 += 0.01)
+            {
+                foreach (exponent2; -4..4)
+                {
+                    double powBase = mantissa2 * 2.0 ^^ exponent2;
+                    double phobosValue = pow(powBase, powExponent);
+                    float fPhobos = phobosValue;
+                    if (!isFinite(fPhobos)) continue;
+                     __m128 v = _mm_pow_ps(_mm_set1_ps(powBase), _mm_set1_ps(powExponent));
+
+                    foreach(i; 0..4)
+                    {
+                        if (!approxEquals(phobosValue, v[i], 1e-5))
+                        {
+                            printf("%g ^^ %g\n", powBase, powExponent);
+                            assert(false);
+                        }
+                    }
+                }
+            }
+        }
     }
 }
