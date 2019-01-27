@@ -360,11 +360,11 @@ T rand(T, G)(scope ref G gen, sizediff_t boundExp = 0)
     if (isSaturatedRandomEngine!G && isFloatingPoint!T)
 {
     assert(boundExp <= T.max_exp);
-    enum W = T.sizeof * 8 - T.mant_dig - 1 - bool(T.mant_dig == 64);
     static if (T.mant_dig == float.mant_dig)
     {
+        enum W = T.sizeof * 8 - T.mant_dig;//8
         _Uab!(int,float) u = void;
-        u.asInteger = gen.rand!int;
+        u.asInteger = gen.rand!uint;
         enum uint EXPMASK = 0x7F80_0000;
         boundExp -= T.min_exp - 1;
         size_t exp = EXPMASK & u.asInteger;
@@ -387,8 +387,9 @@ T rand(T, G)(scope ref G gen, sizediff_t boundExp = 0)
     else
     static if (T.mant_dig == double.mant_dig)
     {
+        enum W = T.sizeof * 8 - T.mant_dig; //11
         _Uab!(long,double) u = void;
-        u.asInteger = gen.rand!long;
+        u.asInteger = gen.rand!ulong;
         enum ulong EXPMASK = 0x7FF0_0000_0000_0000;
         boundExp -= T.min_exp - 1;
         ulong exp = EXPMASK & u.asInteger;
@@ -411,7 +412,8 @@ T rand(T, G)(scope ref G gen, sizediff_t boundExp = 0)
     else
     static if (T.mant_dig == 64)
     {
-        auto d = gen.rand!int;
+        enum W = 15;
+        auto d = gen.rand!uint;
         auto m = gen.rand!ulong;
         enum uint EXPMASK = 0x7FFF;
         boundExp -= T.min_exp - 1;
