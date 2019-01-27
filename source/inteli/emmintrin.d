@@ -206,7 +206,7 @@ version(LDC)
             %isums = lshr <8 x i32> %isum1, < i32 1, i32 1, i32 1, i32 1, i32 1, i32 1, i32 1, i32 1>
             %r = trunc <8 x i32> %isums to <8 x i16>
             ret <8 x i16> %r`;
-        return cast(__m128i) LDCInlineIR!(ir, short8, short8, short8)(cast(short8)a, cast(short8)b);        
+        return cast(__m128i) LDCInlineIR!(ir, short8, short8, short8)(cast(short8)a, cast(short8)b);
     }
 }
 else
@@ -245,7 +245,7 @@ version(LDC)
             %isums = lshr <16 x i16> %isum1, < i16 1, i16 1, i16 1, i16 1, i16 1, i16 1, i16 1, i16 1, i16 1, i16 1, i16 1, i16 1, i16 1, i16 1, i16 1, i16 1>
             %r = trunc <16 x i16> %isums to <16 x i8>
             ret <16 x i8> %r`;
-        return cast(__m128i) LDCInlineIR!(ir, byte16, byte16, byte16)(cast(byte16)a, cast(byte16)b);        
+        return cast(__m128i) LDCInlineIR!(ir, byte16, byte16, byte16)(cast(byte16)a, cast(byte16)b);
     }
 }
 else
@@ -276,7 +276,7 @@ __m128i _mm_bslli_si128(int bits)(__m128i a) pure @safe
 {
     // Generates pslldq starting with LDC 1.1 -O2
     __m128i zero = _mm_setzero_si128();
-    return cast(__m128i) 
+    return cast(__m128i)
         shufflevector!(byte16, 16 - bits, 17 - bits, 18 - bits, 19 - bits,
                                20 - bits, 21 - bits, 22 - bits, 23 - bits,
                                24 - bits, 25 - bits, 26 - bits, 27 - bits,
@@ -296,7 +296,7 @@ __m128i _mm_bsrli_si128(int bits)(__m128i a) pure @safe
 {
     // Generates psrldq starting with LDC 1.1 -O2
     __m128i zero = _mm_setzero_si128();
-    return  cast(__m128i) 
+    return  cast(__m128i)
         shufflevector!(byte16, 0 + bits, 1 + bits, 2 + bits, 3 + bits,
                                4 + bits, 5 + bits, 6 + bits, 7 + bits,
                                8 + bits, 9 + bits, 10 + bits, 11 + bits,
@@ -668,7 +668,7 @@ unittest
 }
 
 
-version(LDC) 
+version(LDC)
 {
     // Like in clang, implemented with a magic intrinsic right now
     alias _mm_cvtpd_epi32 = __builtin_ia32_cvtpd2dq;
@@ -678,7 +678,7 @@ version(LDC)
     {
         enum ir = `
             %i = fptosi <2 x double> %0 to <2 x i32>
-            %r = shufflevector <2 x i32> %i,<2 x i32> zeroinitializer, <4 x i32> <i32 0, i32 1, i32 2, i32 3>        
+            %r = shufflevector <2 x i32> %i,<2 x i32> zeroinitializer, <4 x i32> <i32 0, i32 1, i32 2, i32 3>
             ret <4 x i32> %r`;
 
         return cast(__m128i) inlineIR!(ir, __m128i, __m128d)(a);
@@ -691,7 +691,7 @@ else
         __m128i r = _mm_setzero_si128();
         r[0] = convertDoubleToInt32UsingMXCSR(a[0]);
         r[1] = convertDoubleToInt32UsingMXCSR(a[1]);
-        return r; 
+        return r;
     }
 }
 unittest
@@ -746,7 +746,7 @@ else
         r[1] = convertFloatToInt32UsingMXCSR(a[1]);
         r[2] = convertFloatToInt32UsingMXCSR(a[2]);
         r[3] = convertFloatToInt32UsingMXCSR(a[3]);
-        return r; 
+        return r;
     }
 }
 unittest
@@ -861,7 +861,7 @@ unittest
     _MM_SET_ROUNDING_MODE(_MM_ROUND_TOWARD_ZERO);
     assert(-56468486186 == _mm_cvtsd_si64(_mm_set1_pd(-56468486186.9)));
 
-    _MM_SET_ROUNDING_MODE(savedRounding);    
+    _MM_SET_ROUNDING_MODE(savedRounding);
 }
 
 alias _mm_cvtsd_si64x = _mm_cvtsd_si64;
@@ -1022,7 +1022,7 @@ version(DigitalMars)
     // Work-around for https://issues.dlang.org/show_bug.cgi?id=19599
     __m128d _mm_div_sd(__m128d a, __m128d b) pure @safe
     {
-        pragma(inline, false);
+        asm pure nothrow @nogc @trusted { nop;}
         a[0] = a[0] / b[0];
         return a;
     }
@@ -1054,7 +1054,7 @@ unittest
     assert(_mm_extract_epi16(A, 6) == 6);
 }
 
-/// Copy `v`, and insert the 16-bit integer `i` at the location specified by `index`. 
+/// Copy `v`, and insert the 16-bit integer `i` at the location specified by `index`.
 __m128i _mm_insert_epi16 (__m128i v, int i, int index) @trusted
 {
     short8 r = cast(short8)v;
@@ -1180,9 +1180,9 @@ version(LDC)
 
 version(LDC)
 {
-    /// Conditionally store 8-bit integer elements from `a` into memory using `mask` 
-    /// (elements are not stored when the highest bit is not set in the corresponding element) 
-    /// and a non-temporal memory hint. `mem_addr` does not need to be aligned on any particular 
+    /// Conditionally store 8-bit integer elements from `a` into memory using `mask`
+    /// (elements are not stored when the highest bit is not set in the corresponding element)
+    /// and a non-temporal memory hint. `mem_addr` does not need to be aligned on any particular
     /// boundary.
     alias _mm_maskmoveu_si128 = __builtin_ia32_maskmovdqu; // can't do it with pure IR
 }
@@ -1421,13 +1421,13 @@ unittest
 
 version(LDC)
 {
-    /// Set each bit of mask `dst` based on the most significant bit of the corresponding 
+    /// Set each bit of mask `dst` based on the most significant bit of the corresponding
     /// packed double-precision (64-bit) floating-point element in `v`.
     alias _mm_movemask_pd = __builtin_ia32_movmskpd;
 }
 else
 {
-    /// Set each bit of mask `dst` based on the most significant bit of the corresponding 
+    /// Set each bit of mask `dst` based on the most significant bit of the corresponding
     /// packed double-precision (64-bit) floating-point element in `v`.
     int _mm_movemask_pd(__m128d v) pure @safe
     {
@@ -1494,10 +1494,10 @@ version(DigitalMars)
     // Work-around for https://issues.dlang.org/show_bug.cgi?id=19599
     __m128d _mm_mul_sd(__m128d a, __m128d b) pure @safe
     {
-        pragma(inline, false);
+        asm pure nothrow @nogc @trusted { nop;}
         a[0] = a[0] * b[0];
         return a;
-    }  
+    }
 }
 else
 {
@@ -2442,7 +2442,7 @@ __m128 _mm_srli_ps(ubyte bytes)(__m128 v) pure @safe
     return cast(__m128)_mm_srli_si128!bytes(cast(__m128i)v);
 }
 unittest
-{    
+{
     __m128 R = _mm_srli_ps!8(_mm_set_ps(4.0f, 3.0f, 2.0f, 1.0f));
     float[4] correct = [3.0f, 4.0f, 0, 0];
     assert(R.array == correct);
@@ -2512,8 +2512,8 @@ void _mm_storeu_si128 (__m128i* mem_addr, __m128i a) pure @safe
     storeUnaligned!__m128i(a, cast(int*)mem_addr);
 }
 
-/// Store 128-bits (composed of 2 packed double-precision (64-bit) floating-point elements) 
-/// from a into memory using a non-temporal memory hint. mem_addr must be aligned on a 16-byte 
+/// Store 128-bits (composed of 2 packed double-precision (64-bit) floating-point elements)
+/// from a into memory using a non-temporal memory hint. mem_addr must be aligned on a 16-byte
 /// boundary or a general-protection exception may be generated.
 void _mm_stream_pd (double* mem_addr, __m128d a)
 {
@@ -2522,8 +2522,8 @@ void _mm_stream_pd (double* mem_addr, __m128d a)
     *dest = a;
 }
 
-/// Store 128-bits of integer data from a into memory using a non-temporal memory hint. 
-/// mem_addr must be aligned on a 16-byte boundary or a general-protection exception 
+/// Store 128-bits of integer data from a into memory using a non-temporal memory hint.
+/// mem_addr must be aligned on a 16-byte boundary or a general-protection exception
 /// may be generated.
 void _mm_stream_si128 (__m128i* mem_addr, __m128i a)
 {
@@ -2532,8 +2532,8 @@ void _mm_stream_si128 (__m128i* mem_addr, __m128i a)
     *dest = a;
 }
 
-/// Store 32-bit integer a into memory using a non-temporal hint to minimize cache 
-/// pollution. If the cache line containing address mem_addr is already in the cache, 
+/// Store 32-bit integer a into memory using a non-temporal hint to minimize cache
+/// pollution. If the cache line containing address mem_addr is already in the cache,
 /// the cache will be updated.
 void _mm_stream_si32 (int* mem_addr, int a)
 {
@@ -2541,8 +2541,8 @@ void _mm_stream_si32 (int* mem_addr, int a)
     *mem_addr = a;
 }
 
-/// Store 64-bit integer a into memory using a non-temporal hint to minimize 
-/// cache pollution. If the cache line containing address mem_addr is already 
+/// Store 64-bit integer a into memory using a non-temporal hint to minimize
+/// cache pollution. If the cache line containing address mem_addr is already
 /// in the cache, the cache will be updated.
 void _mm_stream_si64 (long* mem_addr, long a)
 {
@@ -2580,7 +2580,7 @@ version(DigitalMars)
     // Work-around for https://issues.dlang.org/show_bug.cgi?id=19599
     __m128d _mm_sub_sd(__m128d a, __m128d b) pure @safe
     {
-        pragma(inline, false);
+        asm pure nothrow @nogc @trusted { nop;}
         a[0] = a[0] - b[0];
         return a;
     }
@@ -2703,9 +2703,9 @@ unittest
     assert(res.array == correctResult);
 }
 
-// Note: the only difference between these intrinsics is the signalling 
+// Note: the only difference between these intrinsics is the signalling
 //       behaviour of quiet NaNs. This is incorrect but the case where
-//       you would want to differentiate between qNaN and sNaN and then 
+//       you would want to differentiate between qNaN and sNaN and then
 //       treat them differently on purpose seems extremely rare.
 alias _mm_ucomieq_sd = _mm_comieq_sd;
 alias _mm_ucomige_sd = _mm_comige_sd;
