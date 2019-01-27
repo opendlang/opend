@@ -40,7 +40,7 @@ version(DigitalMars)
     // Work-around for https://issues.dlang.org/show_bug.cgi?id=19599
     __m128d _mm_add_sd(__m128d a, __m128d b) pure @safe
     {
-        pragma(inline, false);
+        asm pure nothrow @nogc @trusted { nop;}
         a[0] = a[0] + b[0];
         return a;
     }
