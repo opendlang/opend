@@ -25,6 +25,8 @@ d:
 matrix:
   allow_failures:
    - d: gdc
+   - d: dmd-2.079.1   # codegen issues with optimizations
+   - d: dmd-2.078.2   # codegen issues with optimizations
 
 # Note: 32-bit x86 isn't tested for Linux
 script:
