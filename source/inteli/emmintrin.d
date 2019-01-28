@@ -1202,7 +1202,7 @@ unittest
 {
     short8 A = [0, 1, 2, 3, -32768, -32768, 32767, 32767];
     short8 B = [0, 1, 2, 3, -32768, -32768, 32767, 32767];
-    int4 R = _mm_madd_epi16(A, B);
+    int4 R = _mm_madd_epi16(cast(__m128i)A, cast(__m128i)B);
     int[4] correct = [1, 13, -2147483648, 2*32767*32767];
     assert(R.array == correct);
 }
