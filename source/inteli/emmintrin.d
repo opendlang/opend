@@ -1175,7 +1175,36 @@ unittest
 
 version(LDC)
 {
+    /// Multiply packed signed 16-bit integers in `a` and `b`, producing intermediate 
+    /// signed 32-bit integers. Horizontally add adjacent pairs of intermediate 32-bit integers, 
+    /// and pack the results in destination.     
     alias _mm_madd_epi16 = __builtin_ia32_pmaddwd128;
+}
+else
+{
+    /// Multiply packed signed 16-bit integers in `a` and `b`, producing intermediate 
+    /// signed 32-bit integers. Horizontally add adjacent pairs of intermediate 32-bit integers, 
+    /// and pack the results in destination. 
+    __m128i _mm_madd_epi16 (__m128i a, __m128i b) pure @safe
+    {
+        short8 sa = cast(short8)a;
+        short8 sb = cast(short8)b;
+
+        int4 r;
+        foreach(i; 0..4)
+        {
+            r[i] = sa[2*i] * sb[2*i] + sa[2*i+1] * sb[2*i+1];
+        }
+        return r;
+    }
+}
+unittest
+{
+    short8 A = [0, 1, 2, 3, -32768, -32768, 32767, 32767];
+    short8 B = [0, 1, 2, 3, -32768, -32768, 32767, 32767];
+    int4 R = _mm_madd_epi16(A, B);
+    int[4] correct = [1, 13, -2147483648, 2*32767*32767];
+    assert(R.array == correct);
 }
 
 version(LDC)
