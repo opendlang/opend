@@ -280,9 +280,50 @@ void _mm_empty() pure @safe
 alias _m_from_int =  _mm_cvtsi32_si64;
 alias _m_from_int64 = _mm_cvtsi64_m64;
 
+__m64 _mm_madd_pi16 (__m64 a, __m64 b) pure @safe
+{
+    short4 sa = cast(short4)a;
+    short4 sb = cast(short4)b;
+    int2 r;
+    foreach(i; 0..2)
+    {
+        r[i] = sa[2*i] * sb[2*i] + sa[2*i+1] * sb[2*i+1];
+    }
+    return cast(__m64)r;
+}
+unittest
+{
+    short4 A = [-32768, -32768, 32767, 32767];
+    short4 B = [-32768, -32768, 32767, 32767];
+    int2 R = cast(int2) _mm_madd_pi16(cast(__m64)A, cast(__m64)B);
+    int[2] correct = [-2147483648, 2*32767*32767];
+    assert(R.array == correct);
+}
+
+deprecated alias _m_pmaddwd = _mm_madd_pi16;
+
+__m64 _mm_mulhi_pi16 (__m64 a, __m64 b) pure @safe
+{
+    short4 sa = cast(short4)a;
+    short4 sb = cast(short4)b;
+    short4 r = void;
+    r[0] = (sa[0] * sb[0]) >> 16;
+    r[1] = (sa[1] * sb[1]) >> 16;
+    r[2] = (sa[2] * sb[2]) >> 16;
+    r[3] = (sa[3] * sb[3]) >> 16;
+    return cast(__m64)r;
+}
+unittest
+{
+    __m64 A = _mm_setr_pi16(4, 8, -16, 7);
+    __m64 B = _mm_set1_pi16(16384);
+    short4 R = cast(short4)_mm_mulhi_pi16(A, B);
+    short[4] correct = [1, 2, -4, 1];
+    assert(R.array == correct);
+}
+
 /+
-__m64 _mm_madd_pi16 (__m64 a, __m64 b) TODO
-pmulhw
+
 __m64 _mm_mulhi_pi16 (__m64 a, __m64 b) TODO
 pmullw
 __m64 _mm_mullo_pi16 (__m64 a, __m64 b) TODO
@@ -617,7 +658,6 @@ __m64 _mm_xor_si64 (__m64 a, __m64 b) TODO
 #define _m_psubsw _mm_subs_pi16
 #define _m_psubusb _mm_subs_pu8
 #define _m_psubusw _mm_subs_pu16
-#define _m_pmaddwd _mm_madd_pi16
 #define _m_pmulhw _mm_mulhi_pi16
 #define _m_pmullw _mm_mullo_pi16
 #define _m_psllw _mm_sll_pi16
