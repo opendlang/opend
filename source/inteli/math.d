@@ -259,7 +259,7 @@ unittest
     }
 
     // test _mm_log_ps
-    for (double mantissa = 0.1; mantissa < 1.0; mantissa += 0.005)
+    for (double mantissa = 0.1; mantissa < 1.0; mantissa += 0.05)
     {
         foreach (exponent; -23..23)
         {
@@ -272,7 +272,7 @@ unittest
     }
 
     // test _mm_exp_ps    
-    for (double mantissa = -1.0; mantissa < 1.0; mantissa += 0.01)
+    for (double mantissa = -1.0; mantissa < 1.0; mantissa += 0.1)
     {
         foreach (exponent; -23..23)
         {
@@ -311,13 +311,13 @@ unittest
 
 
     // test _mm_pow_ps
-    for (double mantissa = -1.0; mantissa < 1.0; mantissa += 0.01)
+    for (double mantissa = -1.0; mantissa < 1.0; mantissa += 0.1)
     {
         foreach (exponent; -8..4)
         {
             double powExponent = mantissa * 2.0 ^^ exponent;
 
-            for (double mantissa2 = 0.1; mantissa2 < 1.0; mantissa2 += 0.01)
+            for (double mantissa2 = 0.1; mantissa2 < 1.0; mantissa2 += 0.1)
             {
                 foreach (exponent2; -4..4)
                 {

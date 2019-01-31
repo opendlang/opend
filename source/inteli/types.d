@@ -12,11 +12,11 @@ version(LDC)
 
     // Declare vector types that correspond to MMX types
     // Because they are expressible in IR anyway.
-    alias Vector!(long[1])   long1;
-    alias Vector!(float[2])   float2;
-    alias Vector!(int[2])     int2;
-    alias Vector!(short[4])   short4;
-    alias Vector!(byte[8])    byte8;
+    alias Vector!(long [1]) long1;
+    alias Vector!(float[2]) float2;
+    alias Vector!(int  [2]) int2;
+    alias Vector!(short[4]) short4;
+    alias Vector!(byte [8]) byte8;
 }
 else
 {

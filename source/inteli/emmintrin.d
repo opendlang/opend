@@ -1608,9 +1608,17 @@ unittest
     assert(R.array == correct);
 }
 
-__m128i _mm_mullo_epi16 (__m128i a, __m128i b)
+__m128i _mm_mullo_epi16 (__m128i a, __m128i b) pure @safe
 {
     return cast(__m128i)(cast(short8)a * cast(short8)b);
+}
+unittest
+{
+    __m128i A = _mm_setr_epi16(16384, -16, 0,      3, 4, 1, 16, 7);
+    __m128i B = _mm_set1_epi16(16384);
+    short8 R = cast(short8)_mm_mullo_epi16(A, B);
+    short[8] correct = [0, 0, 0, -16384, 0, 16384, 0, -16384];
+    assert(R.array == correct);
 }
 
 __m128d _mm_or_pd (__m128d a, __m128d b) pure @safe

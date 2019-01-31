@@ -667,3 +667,19 @@ unittest // cmpsd and comsd
 //
 //  </FLOATING-POINT COMPARISONS>
 //
+
+
+__m64 to_m64(__m128i a) pure @safe
+{
+    long2 la = cast(long2)a;
+    long1 r;
+    r[0] = la[0];
+    return r;
+}
+
+__m128i to_m128i(__m64 a) pure @safe
+{
+    long2 r = [0, 0];
+    r[0] = a[0];
+    return cast(__m128i)r;
+}
