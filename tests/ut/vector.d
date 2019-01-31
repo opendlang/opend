@@ -60,6 +60,18 @@ import test_allocator;
     vec[].shouldEqual([0, 1, 2, 3, 4, 5, 6, 11, 12]);
 }
 
+
+@("put")
+@safe unittest {
+    import std.range: iota;
+
+    auto vec = vector(0, 1, 2, 3);
+    vec.put(4);
+    vec[].shouldEqual([0, 1, 2, 3, 4]);
+    vec.put(2.iota);
+    vec[].shouldEqual([0, 1, 2, 3, 4, 0, 1]);
+}
+
 @("append")
 @safe unittest {
     auto vec1 = vector(0, 1, 2);

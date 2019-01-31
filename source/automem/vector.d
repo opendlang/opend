@@ -213,12 +213,19 @@ struct Vector(E, Allocator = typeof(theAllocator)) if(isAllocator!Allocator) {
             _elements[toSizeT(i++)] = element;
     }
 
+    // make it an output range
+
+
     /// Append to the vector
     void opOpAssign(string op)
                    (E other)
         scope
         if(op == "~")
     {
+        put(other);
+    }
+
+    void put(E other) {
         expand(length + 1);
 
         const lastIndex = (length - 1).toSizeT;
@@ -236,6 +243,10 @@ struct Vector(E, Allocator = typeof(theAllocator)) if(isAllocator!Allocator) {
         scope
         if(op == "~" && isForwardRangeOf!(R, E))
     {
+        put(range);
+    }
+
+    void put(R)(scope R range) if(isForwardRangeOf!(R, E)) {
         import std.range.primitives: walkLength, save;
 
         long index = length;
