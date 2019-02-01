@@ -2517,11 +2517,20 @@ void _mm_storeh_pd (double* mem_addr, __m128d a) pure @safe
     *mem_addr = a[1];
 }
 
+// Note: `mem_addr` doesn't have to actually be aligned, which breaks
+// expectations from the user point of view. This problem also exist in C++.
 void _mm_storel_epi64 (__m128i* mem_addr, __m128i a) pure @safe
 {
     long* dest = cast(long*)mem_addr;
     long2 la = cast(long2)a;
-    *dest = a[0];
+    *dest = la[0];
+}
+unittest
+{
+    long[3] A = [1, 2, 3];
+    _mm_storel_epi64(cast(__m128i*)(&A[1]), _mm_set_epi64x(0x1_0000_0000, 0x1_0000_0000));
+    long[3] correct = [1, 0x1_0000_0000, 3];
+    assert(A == correct);
 }
 
 void _mm_storel_pd (double* mem_addr, __m128d a) pure @safe
