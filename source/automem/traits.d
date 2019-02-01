@@ -24,8 +24,8 @@ enum isAllocator(T) = is(typeof(checkAllocator!T));
     import stdx.allocator.mallocator: Mallocator;
     import test_allocator: TestAllocator;
 
-    static assert(isAllocator!Mallocator);
-    static assert(isAllocator!TestAllocator);
+    static assert( isAllocator!Mallocator);
+    static assert( isAllocator!TestAllocator);
     static assert(!isAllocator!int);
 }
 

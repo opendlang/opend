@@ -5,7 +5,7 @@
 module automem.vector;
 
 
-import automem.traits: isAllocator, isGlobal;
+import automem.traits: isGlobal;
 import std.range.primitives: isInputRange;
 import stdx.allocator: theAllocator;
 import stdx.allocator.mallocator: Mallocator;
@@ -490,4 +490,36 @@ private auto frontNoAutoDecode(R)(R range) {
         import std.range.primitives: front;
         return range.front;
     }
+}
+
+
+void checkAllocator(T)() {
+    import stdx.allocator: dispose, shrinkArray, makeArray, expandArray;
+    import std.traits: hasMember;
+
+    static if(hasMember!(T, "instance"))
+        alias allocator = T.instance;
+    else
+        T allocator;
+
+    void[] bytes;
+    allocator.dispose(bytes);
+
+    int[] ints = allocator.makeArray!int(42);
+
+    allocator.shrinkArray(ints, size_t.init);
+    allocator.expandArray(ints, size_t.init);
+}
+enum isAllocator(T) = is(typeof(checkAllocator!T));
+
+
+@("isAllocator")
+@safe @nogc pure unittest {
+    import stdx.allocator.mallocator: Mallocator;
+    import test_allocator: TestAllocator;
+
+    static assert( isAllocator!Mallocator);
+    static assert( isAllocator!TestAllocator);
+    static assert(!isAllocator!int);
+    static assert( isAllocator!(typeof(theAllocator)));
 }

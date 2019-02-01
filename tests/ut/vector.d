@@ -483,3 +483,13 @@ private void takesScopePtr(T)(scope const(T)* ptr) {
     Vector!(int, StackFront!(1024, Mallocator)) v;
     v ~= 1;
 }
+
+
+@system unittest {
+    import stdx.allocator.showcase: mmapRegionList;
+    import stdx.allocator.mallocator: Mallocator;
+    import automem.vector: isAllocator;
+
+    auto v = vector(mmapRegionList(1024), 0, 1, 2);
+    v ~= 3;
+}
