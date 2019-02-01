@@ -91,7 +91,7 @@ __m128 a = cast(__m128)b; // YES, works in all D compilers
 
 ```
 
-This is because D does not allow user-defined implicit conversions, except magically in the compiler for real vector types.
+This is because D does not allow user-defined implicit conversions.
 
 
 ## Who is using it?
