@@ -1175,16 +1175,16 @@ unittest
 
 version(LDC)
 {
-    /// Multiply packed signed 16-bit integers in `a` and `b`, producing intermediate 
-    /// signed 32-bit integers. Horizontally add adjacent pairs of intermediate 32-bit integers, 
-    /// and pack the results in destination.     
+    /// Multiply packed signed 16-bit integers in `a` and `b`, producing intermediate
+    /// signed 32-bit integers. Horizontally add adjacent pairs of intermediate 32-bit integers,
+    /// and pack the results in destination.
     alias _mm_madd_epi16 = __builtin_ia32_pmaddwd128;
 }
 else
 {
-    /// Multiply packed signed 16-bit integers in `a` and `b`, producing intermediate 
-    /// signed 32-bit integers. Horizontally add adjacent pairs of intermediate 32-bit integers, 
-    /// and pack the results in destination. 
+    /// Multiply packed signed 16-bit integers in `a` and `b`, producing intermediate
+    /// signed 32-bit integers. Horizontally add adjacent pairs of intermediate 32-bit integers,
+    /// and pack the results in destination.
     __m128i _mm_madd_epi16 (__m128i a, __m128i b) pure @safe
     {
         short8 sa = cast(short8)a;
@@ -1692,7 +1692,7 @@ version(LDC)
 }
 else
 {
-    __m128i _mm_packus_epi16 (__m128i a, __m128i b) pure
+    __m128i _mm_packus_epi16 (__m128i a, __m128i b) pure @trusted
     {
         short8 sa = cast(short8)a;
         short8 sb = cast(short8)b;

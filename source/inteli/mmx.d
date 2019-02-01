@@ -324,17 +324,39 @@ unittest
     assert(R.array == correct);
 }
 
-/+
+__m64 _mm_packs_pi32 (__m64 a, __m64 b) pure @safe
+{
+    int4 p = cast(int4) _mm_packs_epi32(to_m128i(a), to_m128i(b));
+    int2 r;
+    r[0] = p[0];
+    r[1] = p[2];
+    return cast(__m64)r;
+}
+unittest
+{
+    __m64 A = _mm_setr_pi32(100000, -100000);
+    short4 R = cast(short4) _mm_packs_pi32(A, A);
+    short[4] correct = [32767, -32768, 32767, -32768];
+    assert(R.array == correct);
+}
 
-packssdw
-__m64 _mm_packs_pi32 (__m64 a, __m64 b) TODO
-packuswb
-__m64 _mm_packs_pu16 (__m64 a, __m64 b) TODO
-packssdw
-+/
+__m64 _mm_packs_pu16 (__m64 a, __m64 b) pure @safe
+{
+    int4 p = cast(int4) _mm_packus_epi16(to_m128i(a), to_m128i(b));
+    int2 r;
+    r[0] = p[0];
+    r[1] = p[2];
+    return cast(__m64)r;
+}
+unittest
+{
+    __m64 A = _mm_setr_pi16(256, -129, 254, 0);
+    byte8 R = cast(byte8) _mm_packs_pu16(A, A);
+    ubyte[8] correct = [255, 0, 254, 0, 255, 0, 254, 0];
+    assert(R.array == cast(byte[8])correct);
+}
 
-version(none)
-deprecated alias 
+deprecated alias
     _m_packssdw = _mm_packs_pi32,
     _m_packsswb = _mm_packs_pi16,
     _m_packuswb = _mm_packs_pu16,
@@ -389,7 +411,7 @@ deprecated alias
     _m_pxor = _mm_xor_si64;
 
 __m64 _mm_set_pi16 (short e3, short e2, short e1, short e0) pure @trusted
-{ 
+{
     short[4] arr = [e0, e1, e2, e3];
     return *cast(__m64*)(arr.ptr);
 }
@@ -401,7 +423,7 @@ unittest
 }
 
 __m64 _mm_set_pi32 (int e1, int e0) pure @trusted
-{ 
+{
     int[2] arr = [e0, e1];
     return *cast(__m64*)(arr.ptr);
 }
@@ -413,7 +435,7 @@ unittest
 }
 
 __m64 _mm_set_pi8 (char e7, char e6, char e5, char e4, char e3, char e2, char e1, char e0) pure @trusted
-{ 
+{
     byte[8] arr = [e0, e1, e2, e3, e4, e5, e6, e7];
     return *cast(__m64*)(arr.ptr);
 }
@@ -458,7 +480,7 @@ unittest
 }
 
 __m64 _mm_setr_pi16 (short e3, short e2, short e1, short e0) pure @trusted
-{ 
+{
     short[4] arr = [e3, e2, e1, e0];
     return *cast(__m64*)(arr.ptr);
 }
@@ -470,7 +492,7 @@ unittest
 }
 
 __m64 _mm_setr_pi32 (int e1, int e0) pure @trusted
-{ 
+{
     int[2] arr = [e1, e0];
     return *cast(__m64*)(arr.ptr);
 }
@@ -482,7 +504,7 @@ unittest
 }
 
 __m64 _mm_setr_pi8 (char e7, char e6, char e5, char e4, char e3, char e2, char e1, char e0) pure @trusted
-{ 
+{
     byte[8] arr = [e7, e6, e5, e4, e3, e2, e1, e0];
     return *cast(__m64*)(arr.ptr);
 }
@@ -505,41 +527,86 @@ unittest
     assert(R[0] == 0);
 }
 
+__m64 _mm_sll_pi16 (__m64 a, __m64 count) pure @safe
+{
+    return to_m64(_mm_sll_epi16(to_m128i(a), to_m128i(count)));
+}
 
-/+
-__m64 _mm_sll_pi16 (__m64 a, __m64 count) TODO
-pslld
-__m64 _mm_sll_pi32 (__m64 a, __m64 count) TODO
-psllq
-__m64 _mm_sll_si64 (__m64 a, __m64 count) TODO
-psllw
-__m64 _mm_slli_pi16 (__m64 a, int imm8) TODO
-pslld
-__m64 _mm_slli_pi32 (__m64 a, int imm8) TODO
-psllq
-__m64 _mm_slli_si64 (__m64 a, int imm8) TODO
-psraw 
-__m64 _mm_sra_pi16 (__m64 a, __m64 count) TODO
-psrad
-__m64 _mm_sra_pi32 (__m64 a, __m64 count) TODO
-psraw
-__m64 _mm_srai_pi16 (__m64 a, int imm8) TODO
-psrad
-__m64 _mm_srai_pi32 (__m64 a, int imm8) TODO
-psrlw
-__m64 _mm_srl_pi16 (__m64 a, __m64 count) TODO
-psrld
-__m64 _mm_srl_pi32 (__m64 a, __m64 count) TODO
-psrlq
-__m64 _mm_srl_si64 (__m64 a, __m64 count) TODO
-psrlw
-__m64 _mm_srli_pi16 (__m64 a, int imm8) TODO
-psrld
-__m64 _mm_srli_pi32 (__m64 a, int imm8) TODO
-psrlq
-__m64 _mm_srli_si64 (__m64 a, int imm8) TODO
-psubw
-+/
+__m64 _mm_sll_pi32 (__m64 a, __m64 count) pure @safe
+{
+    return to_m64(_mm_sll_epi32(to_m128i(a), to_m128i(count)));
+}
+
+__m64 _mm_sll_si64 (__m64 a, __m64 count) pure @safe
+{
+    return to_m64(_mm_sll_epi64(to_m128i(a), to_m128i(count)));
+}
+
+__m64 _mm_slli_pi16 (__m64 a, int imm8) pure @safe
+{
+    return to_m64(_mm_slli_epi16(to_m128i(a), imm8));
+}
+
+__m64 _mm_slli_pi32 (__m64 a, int imm8) pure @safe
+{
+    return to_m64(_mm_slli_epi32(to_m128i(a), imm8));
+}
+
+__m64 _mm_slli_si64 (__m64 a, int imm8) pure @safe
+{
+    return to_m64(_mm_slli_epi64(to_m128i(a), imm8));
+}
+
+__m64 _mm_sra_pi16 (__m64 a, __m64 count) pure @safe
+{
+    return to_m64(_mm_sra_epi16(to_m128i(a), to_m128i(count)));
+}
+
+__m64 _mm_sra_pi32 (__m64 a, __m64 count) pure @safe
+{
+    return to_m64(_mm_sra_epi32(to_m128i(a), to_m128i(count)));
+}
+
+__m64 _mm_srai_pi16 (__m64 a, int imm8) pure @safe
+{
+    return to_m64(_mm_srai_epi16(to_m128i(a), imm8));
+}
+
+__m64 _mm_srai_pi32 (__m64 a, int imm8) pure @safe
+{
+    return to_m64(_mm_srai_epi32(to_m128i(a), imm8));
+}
+
+__m64 _mm_srl_pi16 (__m64 a, __m64 count) pure @safe
+{
+    return to_m64(_mm_srl_epi16(to_m128i(a), to_m128i(count)));
+}
+
+__m64 _mm_srl_pi32 (__m64 a, __m64 count) pure @safe
+{
+    return to_m64(_mm_srl_epi32(to_m128i(a), to_m128i(count)));
+}
+
+__m64 _mm_srl_si64 (__m64 a, __m64 count) pure @safe
+{
+    return to_m64(_mm_srl_epi64(to_m128i(a), to_m128i(count)));
+}
+
+__m64 _mm_srli_pi16 (__m64 a, int imm8) pure @safe
+{
+    return to_m64(_mm_srli_epi16(to_m128i(a), imm8));
+}
+
+__m64 _mm_srli_pi32 (__m64 a, int imm8) pure @safe
+{
+    return to_m64(_mm_srli_epi32(to_m128i(a), imm8));
+}
+
+__m64 _mm_srli_si64 (__m64 a, int imm8) pure @safe
+{
+    return to_m64(_mm_srli_epi64(to_m128i(a), imm8));
+}
+
 __m64 _mm_sub_pi16 (__m64 a, __m64 b) pure @safe
 {
     return cast(__m64)(cast(short4)a - cast(short4)b);
@@ -555,34 +622,59 @@ __m64 _mm_sub_pi8 (__m64 a, __m64 b) pure @safe
     return cast(__m64)(cast(byte8)a - cast(byte8)b);
 }
 
-/+
-__m64 _mm_subs_pi16 (__m64 a, __m64 b) TODO
-psubsb
-__m64 _mm_subs_pi8 (__m64 a, __m64 b) TODO
-psubusw
-__m64 _mm_subs_pu16 (__m64 a, __m64 b) TODO
-psubusb
-__m64 _mm_subs_pu8 (__m64 a, __m64 b) TODO
-+/
+__m64 _mm_subs_pi16 (__m64 a, __m64 b) pure @safe
+{
+    return to_m64(_mm_subs_epi16(to_m128i(a), to_m128i(b)));
+}
+
+__m64 _mm_subs_pi8 (__m64 a, __m64 b) pure @safe
+{
+    return to_m64(_mm_subs_epi8(to_m128i(a), to_m128i(b)));
+}
+
+__m64 _mm_subs_pu16 (__m64 a, __m64 b) pure @safe
+{
+    return to_m64(_mm_subs_epu16(to_m128i(a), to_m128i(b)));
+}
+
+__m64 _mm_subs_pu8 (__m64 a, __m64 b) pure @safe
+{
+    return to_m64(_mm_subs_epu8(to_m128i(a), to_m128i(b)));
+}
 
 deprecated alias _m_to_int = _mm_cvtsi64_si32;
 deprecated alias _m_to_int64 = _mm_cvtm64_si64;
 
-/+
-punpcklbw
-__m64 _mm_unpackhi_pi16 (__m64 a, __m64 b) TODO
-punpckhdq
-__m64 _mm_unpackhi_pi32 (__m64 a, __m64 b) TODO
-punpckhbw
-__m64 _mm_unpackhi_pi8 (__m64 a, __m64 b) TODO
-punpcklwd
-__m64 _mm_unpacklo_pi16 (__m64 a, __m64 b) TODO
-punpckldq
-__m64 _mm_unpacklo_pi32 (__m64 a, __m64 b) TODO
-punpcklbw
-__m64 _mm_unpacklo_pi8 (__m64 a, __m64 b) TODO
-pxor
-+/
+__m64 _mm_unpackhi_pi16 (__m64 a, __m64 b) pure @safe
+{
+    return cast(__m64) shufflevector!(short4, 2, 6, 3, 7)(cast(short4)a, cast(short4)b);
+}
+
+__m64 _mm_unpackhi_pi32 (__m64 a, __m64 b) pure @safe
+{
+    return cast(__m64) shufflevector!(int2, 1, 3)(cast(int2)a, cast(int2)b);
+}
+
+__m64 _mm_unpackhi_pi8 (__m64 a, __m64 b)
+{
+    return cast(__m64) shufflevector!(byte8, 4, 12, 5, 13, 6, 14, 7, 15)(cast(byte8)a, cast(byte8)b);
+}
+
+__m64 _mm_unpacklo_pi16 (__m64 a, __m64 b)
+{
+    return cast(__m64) shufflevector!(short4, 0, 4, 1, 5)(cast(short4)a, cast(short4)b);
+}
+
+__m64 _mm_unpacklo_pi32 (__m64 a, __m64 b) pure @safe
+{
+    return cast(__m64) shufflevector!(int2, 0, 2)(cast(int2)a, cast(int2)b);
+}
+
+__m64 _mm_unpacklo_pi8 (__m64 a, __m64 b)
+{
+    return cast(__m64) shufflevector!(byte8, 0, 8, 1, 9, 2, 10, 3, 11)(cast(byte8)a, cast(byte8)b);
+}
+
 __m64 _mm_xor_si64 (__m64 a, __m64 b)
 {
     return a ^ b;
