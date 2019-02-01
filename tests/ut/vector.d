@@ -476,6 +476,7 @@ private void takesScopePtr(T)(scope const(T)* ptr) {
 }
 
 
+@("StackFront")
 @safe @nogc unittest {
     import stdx.allocator.showcase: StackFront;
     import stdx.allocator.mallocator: Mallocator;
@@ -485,11 +486,15 @@ private void takesScopePtr(T)(scope const(T)* ptr) {
 }
 
 
-@system unittest {
-    import stdx.allocator.showcase: mmapRegionList;
-    import stdx.allocator.mallocator: Mallocator;
-    import automem.vector: isAllocator;
+version(Windows) {}
+else {
+    @("mmapRegionList")
+        @system unittest {
+        import stdx.allocator.showcase: mmapRegionList;
+        import stdx.allocator.mallocator: Mallocator;
+        import automem.vector: isAllocator;
 
-    auto v = vector(mmapRegionList(1024), 0, 1, 2);
-    v ~= 3;
+        auto v = vector(mmapRegionList(1024), 0, 1, 2);
+        v ~= 3;
+    }
 }
