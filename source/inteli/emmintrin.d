@@ -1858,14 +1858,12 @@ __m128d _mm_set_sd (double a) pure @trusted
 
 __m128i _mm_set1_epi16 (short a) pure @trusted
 {
-    short[8] result = [a, a, a, a, a, a, a, a];
-    return cast(__m128i)( loadUnaligned!(short8)(result.ptr) );
+    return cast(__m128i)(short8(a));
 }
 
 __m128i _mm_set1_epi32 (int a) pure @trusted
 {
-    int[4] result = [a, a, a, a];
-    return loadUnaligned!(int4)(result.ptr);
+    return cast(__m128i)(int4(a));
 }
 unittest
 {
@@ -1882,14 +1880,12 @@ __m128i _mm_set1_epi64 (__m64 a) pure @safe
 
 __m128i _mm_set1_epi64x (long a) pure @trusted
 {
-    long[2] result = [a, a];
-    return cast(__m128i)( loadUnaligned!(long2)(result.ptr) );
+    return cast(__m128i)(long2(a));
 }
 
 __m128i _mm_set1_epi8 (byte a) pure @trusted
 {
-    byte[16] result = [a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a];
-    return cast(__m128i)( loadUnaligned!(byte16)(result.ptr) );
+    return cast(__m128i)(byte16(a));
 }
 
 alias _mm_set1_pd = _mm_set_pd1;

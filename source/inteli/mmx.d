@@ -426,8 +426,7 @@ unittest
 
 __m64 _mm_set1_pi16 (short a) pure @trusted
 {
-    short[4] arr = [a, a, a, a];
-    return *cast(__m64*)(arr.ptr);
+    return cast(__m64)(short4(a));
 }
 unittest
 {
@@ -438,8 +437,7 @@ unittest
 
 __m64 _mm_set1_pi32 (int a) pure @trusted
 {
-    int[2] arr = [a, a];
-    return *cast(__m64*)(arr.ptr);
+    return cast(__m64)(int2(a));
 }
 unittest
 {
@@ -450,8 +448,7 @@ unittest
 
 __m64 _mm_set1_pi8 (byte a) pure @trusted
 {
-    byte[8] arr = [a, a, a, a, a, a, a, a];
-    return *cast(__m64*)(arr.ptr);
+    return cast(__m64)(byte8(a));
 }
 unittest
 {

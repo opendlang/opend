@@ -31,15 +31,6 @@ module inteli.math;
 import inteli.emmintrin;
 import inteli.internals;
 
-static immutable __m128 _ps_1   = [1.0f, 1.0f, 1.0f, 1.0f];
-static immutable __m128 _ps_0p5 = [0.5f, 0.5f, 0.5f, 0.5f];
-
-/* the smallest non denormalized float number */
-static immutable __m128i _psi_min_norm_pos  = [0x00800000,   0x00800000,   0x00800000, 0x00800000];
-
-static immutable __m128i _pi32_0x7f = [0x7f, 0x7f, 0x7f, 0x7f];
-
-
 nothrow @nogc:
 
 /// Natural `log` computed for a single 32-bit float.
@@ -72,17 +63,20 @@ __m128 _mm_log_ps(__m128 x) pure @safe
     static immutable __m128 _ps_cephes_log_q1 = [-2.12194440e-4, -2.12194440e-4, -2.12194440e-4, -2.12194440e-4];
     static immutable __m128 _ps_cephes_log_q2 = [0.693359375, 0.693359375, 0.693359375, 0.693359375];
 
+    /* the smallest non denormalized float number */
+    static immutable __m128i _psi_min_norm_pos  = [0x00800000,   0x00800000,   0x00800000, 0x00800000];
+
     __m128i emm0;
     __m128 one = _ps_1;
     __m128 invalid_mask = _mm_cmple_ps(x, _mm_setzero_ps());
     x = _mm_max_ps(x, cast(__m128)_psi_min_norm_pos);  /* cut off denormalized stuff */
-    emm0 = _mm_srli_epi32(_mm_castps_si128(x), 23);
+    emm0 = _mm_srli_epi32(cast(__m128i)x, 23);
 
     /* keep only the fractional part */
     x = _mm_and_ps(x, cast(__m128)_psi_inv_mant_mask);
     x = _mm_or_ps(x, _ps_0p5);
 
-    emm0 = _mm_sub_epi32(emm0, cast(__m128i)_pi32_0x7f);
+    emm0 -= _pi32_0x7f;
     __m128 e = _mm_cvtepi32_ps(emm0);
     e += one;
     __m128 mask = _mm_cmplt_ps(x, _ps_cephes_SQRTHF);
@@ -193,10 +187,10 @@ __m128 _mm_exp_ps(__m128 x) pure @safe
 
     /* build 2^n */
     emm0 = _mm_cvttps_epi32(fx);
-    emm0 = _mm_add_epi32(emm0, cast(__m128i)_pi32_0x7f);
+    emm0 += _pi32_0x7f;
     emm0 = _mm_slli_epi32(emm0, 23);
-    __m128 pow2n = _mm_castsi128_ps(emm0);
-    y = _mm_mul_ps(y, pow2n);
+    __m128 pow2n = cast(__m128)emm0;
+    y *= pow2n;
     return y;
 }
 
@@ -340,3 +334,9 @@ unittest
         }
     }
 }
+
+private:
+
+static immutable __m128 _ps_1   = [1.0f, 1.0f, 1.0f, 1.0f];
+static immutable __m128 _ps_0p5 = [0.5f, 0.5f, 0.5f, 0.5f];
+static immutable __m128i _pi32_0x7f = [0x7f, 0x7f, 0x7f, 0x7f];

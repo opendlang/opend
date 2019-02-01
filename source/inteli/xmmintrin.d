@@ -492,8 +492,7 @@ __m128 _mm_load_ps(const(float)*p) pure @trusted
 
 __m128 _mm_load_ps1(const(float)*p) pure @trusted
 {
-    float[4] f = [ *p, *p, *p, *p ];
-    return loadUnaligned!(float4)(f.ptr);
+    return __m128(*p);
 }
 
 __m128 _mm_load_ss (const(float)* mem_addr) pure @trusted
@@ -938,10 +937,7 @@ __m128 _mm_set_ss (float a) pure @trusted
 
 __m128 _mm_set1_ps (float a) pure @trusted
 {
-    // Note: despite appearances, generates sensible code,
-    //       inlines correctly and is constant folded
-    float[4] result = [a, a, a, a];
-    return loadUnaligned!(float4)(result.ptr);
+    return __m128(a);
 }
 
 void _mm_setcsr(uint controlWord) pure @safe

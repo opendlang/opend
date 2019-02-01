@@ -198,6 +198,12 @@ else
             array[] = v[];
         }
 
+        // Broadcast constructor
+        this(BaseType x) pure nothrow @safe @nogc
+        {
+            array[] = x;
+        }
+
         /// We can't support implicit conversion but do support explicit casting.
         /// "Vector types of the same size can be implicitly converted among each other."
         /// Casting to another vector type is always just a raw copy.
@@ -355,15 +361,14 @@ int _MM_SHUFFLE(int z, int y, int x, int w) pure @safe
     return (z<<6) | (y<<4) | (x<<2) | w;
 }
 
-// Note: here is how to map clang's __builtin_convertvector to LLVM IR
-// float to double => fpext
-// double to float => fptrunc
-// float to long => fptosi
-// float/double to ulong => fptoui
-// ushort to ulong => fptoui
-// short to long => sext
-// short to float => sitofp
-// ushort to float => uitofp
-// long to double => sitofp
+// test assignment from scalar to vector type
+unittest
+{
+    float4 A = 3.0f;
+    float[4] correctA = [3.0f, 3.0f, 3.0f, 3.0f];
+    assert(A.array == correctA);
 
- 
+    int2 B = 42;
+    int[2] correctB = [42, 42];
+    assert(B.array == correctB);
+}
