@@ -67,7 +67,7 @@ auto vector(A = typeof(theAllocator), R)
 struct Vector(E, Allocator = typeof(theAllocator)) if(isAllocator!Allocator) {
 
     import automem.traits: isGlobal, isSingleton, isTheAllocator;
-    import std.traits: Unqual;
+    import std.traits: Unqual, isCopyable;
 
     alias MutE = Unqual!E;
     enum isElementMutable = !is(E == immutable) && !is(E == const);
@@ -82,7 +82,7 @@ struct Vector(E, Allocator = typeof(theAllocator)) if(isAllocator!Allocator) {
             this = range;
         }
 
-    } else {
+    } else static if(isCopyable!Allocator) {
 
         this(Allocator allocator, E[] elements...) {
             _allocator = allocator;
@@ -93,6 +93,12 @@ struct Vector(E, Allocator = typeof(theAllocator)) if(isAllocator!Allocator) {
             _allocator = allocator;
             this = range;
         }
+    } else {
+
+        this(R)(R range) if(isInputRangeOf!(R, E)) {
+            this = range;
+        }
+
     }
 
     this(this) scope {
@@ -226,6 +232,7 @@ struct Vector(E, Allocator = typeof(theAllocator)) if(isAllocator!Allocator) {
     }
 
     void put(E other) {
+
         expand(length + 1);
 
         const lastIndex = (length - 1).toSizeT;
@@ -361,7 +368,7 @@ private:
     else
         Allocator _allocator;
 
-    E[] createVector(long length) {
+    E[] createVector(long length) scope {
         import stdx.allocator: makeArray;
         return () @trusted { return _allocator.makeArray!E(length.toSizeT); }();
     }

@@ -474,3 +474,12 @@ private void consumeVec(T)(auto ref T vec) {
 private void takesScopePtr(T)(scope const(T)* ptr) {
 
 }
+
+
+@safe @nogc unittest {
+    import stdx.allocator.showcase: StackFront;
+    import stdx.allocator.mallocator: Mallocator;
+
+    Vector!(int, StackFront!(1024, Mallocator)) v;
+    v ~= 1;
+}
