@@ -10,6 +10,7 @@ public import inteli.types;
 import inteli.internals;
 
 import inteli.mmx;
+import inteli.emmintrin;
 
 import core.stdc.stdlib: malloc, free;
 import core.exception: onOutOfMemoryError;
@@ -112,7 +113,7 @@ __m128 _mm_cmpge_ps (__m128 a, __m128 b) pure @safe
 }
 unittest
 {
-    __m128i R = cast(__m128i) _mm_cmpge_ps(_mm_setr_ps(0, 1, -1, float.nan), 
+    __m128i R = cast(__m128i) _mm_cmpge_ps(_mm_setr_ps(0, 1, -1, float.nan),
                                            _mm_setr_ps(0, 0, 0, 0));
     int[4] correct = [-1, -1, 0, 0];
     assert(R.array == correct);
@@ -143,7 +144,7 @@ __m128 _mm_cmple_ss (__m128 a, __m128 b) pure @safe
     return cast(__m128) cmpss!(FPComparison.ole)(a, b);
 }
 
-__m128 _mm_cmplt_ps (__m128 a, __m128 b) pure @safe 
+__m128 _mm_cmplt_ps (__m128 a, __m128 b) pure @safe
 {
     return cast(__m128) cmpps!(FPComparison.olt)(a, b);
 }
@@ -233,7 +234,7 @@ int _mm_comieq_ss (__m128 a, __m128 b) pure @safe // comiss + sete
 
 int _mm_comige_ss (__m128 a, __m128 b) pure @safe // comiss + setae
 {
-    return comss!(FPComparison.oge)(a, b); 
+    return comss!(FPComparison.oge)(a, b);
 }
 
 int _mm_comigt_ss (__m128 a, __m128 b) pure @safe // comiss + seta
@@ -256,8 +257,8 @@ int _mm_comineq_ss (__m128 a, __m128 b) pure @safe // comiss + setne
     return comss!(FPComparison.one)(a, b);
 }
 
+alias _mm_cvt_pi2ps = _mm_cvtpi32_ps;
 
-// TODO: __m128 _mm_cvt_pi2ps (__m128 a, __m64 b)
 // TODO: __m64 _mm_cvt_ps2pi (__m128 a)
 
 
@@ -277,7 +278,22 @@ alias _mm_cvt_ss2si = _mm_cvtss_si32;
 
 
 // TODO: __m128 _mm_cvtpi16_ps (__m64 a)
-// TODO: __m128 _mm_cvtpi32_ps (__m128 a, __m64 b)
+
+__m128 _mm_cvtpi32_ps (__m128 a, __m64 b)
+{
+    __m128 fb = _mm_cvtepi32_ps(to_m128i(b));
+    a[0] = fb[0];
+    a[1] = fb[1];
+    return a;
+}
+unittest
+{
+    __m128 R = _mm_cvtpi32_ps(_mm_set1_ps(4.0f), _mm_setr_pi32(1, 2));
+    float[4] correct = [1.0f, 2.0f, 4.0f, 4.0f];
+    assert(R.array == correct);
+}
+
+
 // TODO: __m128 _mm_cvtpi32x2_ps (__m64 a, __m64 b)
 // TODO: __m128 _mm_cvtpi8_ps (__m64 a)
 // TODO: __m64 _mm_cvtps_pi16 (__m128 a)
@@ -436,7 +452,7 @@ void _mm_free(void * mem_addr) @trusted
     if (mem_addr is null)
         return;
 
-    // Technically we don't need to store size and alignement in the chunk, but we do in case we 
+    // Technically we don't need to store size and alignement in the chunk, but we do in case we
     // have to implement _mm_realloc
 
     size_t pointerSize = (void*).sizeof;
@@ -559,8 +575,8 @@ unittest
     assert(A.array == correct);
 }
 
-/// Allocate size bytes of memory, aligned to the alignment specified in align, 
-/// and return a pointer to the allocated memory. `_mm_free` should be used to free 
+/// Allocate size bytes of memory, aligned to the alignment specified in align,
+/// and return a pointer to the allocated memory. `_mm_free` should be used to free
 /// memory that is allocated with `_mm_malloc`.
 void* _mm_malloc(size_t size, size_t alignment) @trusted
 {
@@ -860,7 +876,7 @@ unittest
         __m128 B = _mm_rcp_ps(A);
         foreach(i; 0..4)
         {
-            double exact = 1.0f / A[i]; 
+            double exact = 1.0f / A[i];
             double ratio = cast(double)(B[i]) / cast(double)(exact);
             assert(fabs(ratio - 1) <= maxRelativeError);
         }
@@ -918,7 +934,7 @@ __m128 _mm_set_ps (float e3, float e2, float e1, float e0) pure @trusted
     // Note: despite appearances, generates sensible code,
     //       inlines correctly and is constant folded
     float[4] result = [e0, e1, e2, e3];
-    return loadUnaligned!(float4)(result.ptr); 
+    return loadUnaligned!(float4)(result.ptr);
 }
 
 alias _mm_set_ps1 = _mm_set1_ps;
@@ -945,7 +961,7 @@ void _mm_setcsr(uint controlWord) pure @safe
     version (InlineX86Asm)
     {
         asm pure nothrow @nogc @safe
-        { 
+        {
             ldmxcsr controlWord;
         }
     }
@@ -1123,7 +1139,7 @@ void _mm_storeu_ps(float* mem_addr, __m128 a) pure @safe
 // TODO: _mm_stream_pi, does not seem possible
 
 // BUG: can't implement non-temporal store with LDC inlineIR since !nontemporal
-// needs some IR outside this function that would say: 
+// needs some IR outside this function that would say:
 //
 //  !0 = !{ i32 1 }
 //
@@ -1180,9 +1196,9 @@ void _MM_TRANSPOSE4_PS (ref __m128 row0, ref __m128 row1, ref __m128 row2, ref _
     row3 = _mm_movehl_ps(tmp3, tmp1);
 }
 
-// Note: the only difference between these intrinsics is the signalling 
+// Note: the only difference between these intrinsics is the signalling
 //       behaviour of quiet NaNs. This is incorrect but the case where
-//       you would want to differentiate between qNaN and sNaN and then 
+//       you would want to differentiate between qNaN and sNaN and then
 //       treat them differently on purpose seems extremely rare.
 alias _mm_ucomieq_ss = _mm_comieq_ss;
 alias _mm_ucomige_ss = _mm_comige_ss;
