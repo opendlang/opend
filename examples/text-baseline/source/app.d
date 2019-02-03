@@ -1,6 +1,7 @@
 import std.stdio;
 import std.file;
 import std.math;
+import std.string;
 import std.conv;
 
 import printed.canvas;
@@ -20,21 +21,35 @@ void main(string[] args)
             lineWidth = 0.1f;
             strokeStyle = Brush("red");
 
-            foreach(int i, TextBaseline baseline; 
+            beginPath(pageWidth/2, 20);
+            lineTo(pageWidth/2, pageHeight-20);
+            stroke();
+
+            foreach(int j, TextAlign alignment; 
                     [
-                        TextBaseline.top,
-                        TextBaseline.hanging,
-                        TextBaseline.middle,
-                        TextBaseline.alphabetic,
-                        TextBaseline.bottom
+                        TextAlign.left,
+                        TextAlign.right,
+                        TextAlign.center
                     ])
             {
-                float y = i * 20 + 20;
-                textBaseline = baseline;
-                beginPath(20, y);
-                lineTo(pageWidth-20, y);
-                stroke();
-                fillText("Abcdefghijklmnop (" ~ to!string(baseline) ~ ")", 20, y);
+                foreach(int i, TextBaseline baseline; 
+                        [
+                            TextBaseline.top,
+                            TextBaseline.hanging,
+                            TextBaseline.middle,
+                            TextBaseline.alphabetic,
+                            TextBaseline.bottom
+                        ])
+                {
+                    float y = i * 15 + 20 + j * 80;
+                    textAlign = alignment;
+                    textBaseline = baseline;
+                    beginPath(20, y);
+                    lineTo(pageWidth-20, y);
+                    stroke();
+                    string text = format("Abcdefghijklmnop (align '%s', baseline '%s')", alignment, baseline);
+                    fillText(text, pageWidth*0.5f, y);
+                }
             }
         }
     }

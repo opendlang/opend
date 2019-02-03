@@ -55,6 +55,12 @@ enum FontBaseline
     bottom
 }
 
+struct OpenTypeTextMetrics
+{
+    /// The text's advance width, in glyph units.
+    float horzAdvance;
+}
+
 /// OpenType 1.8 file parser, for the purpose of finding all fonts in a file, their family name, their weight, etc.
 /// This OpenType file might either be:
 /// - a single font
@@ -427,6 +433,16 @@ public:
         return 1.0f / _unitsPerEm;
     }
 
+    /// Returns text metrics for this piece of text (single line assumed), in glyph units.
+    OpenTypeTextMetrics measureText(string text)
+    {
+        OpenTypeTextMetrics result;
+        double sum = 0;
+        foreach(dchar ch; text)
+            sum += horizontalAdvance(ch);
+        result.horzAdvance = sum;
+        return result;
+    }
 
 private:
     // need whole file since some data may be shared across fonts
