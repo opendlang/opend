@@ -128,8 +128,34 @@ interface IRenderingContext2D
     /// Warning: not millimeters.
     void fontSize(float sizeInPt);
 
+    /// Changes text alignment (default = TextAlign.start)
+    void textAlign(TextAlign alignment);
+
     /// Changes text baseline (default = TextBaseline.alphabetic)
     void textBaseline(TextBaseline baseline);
+
+    /// Returns a `TextMetrics` struct that contains information about the measured text 
+    /// (such as its width, for example).
+    TextMetrics measureText(string text);
+}
+
+enum TextAlign
+{
+    /// Align to the start edge of the text (left side in left-to-right text, right side in right-to-left text).
+    /// This is the default.
+    start,
+
+    /// Align to the end edge of the text (right side in left-to-right text, left side in right-to-left text).
+    end,
+
+    /// Align to the left.
+    left,
+
+    /// Align to the right.
+    right,
+
+    /// Align to the center.
+    center
 }
 
 enum TextBaseline
@@ -169,11 +195,13 @@ Brush brush(int r, int g, int b, int a)
 {
     return Brush(r, g, b, a);
 }
+
 ///ditto
 Brush brush(int r, int g, int b)
 {
     return Brush(r, g, b);
 }
+
 ///ditto
 Brush brush(string htmlColor)
 {
@@ -235,4 +263,12 @@ float convertPointsToMillimeters(float pt) pure nothrow @nogc @safe
 float convertMillimetersToPoints(float pt) pure nothrow @nogc @safe
 {
     return pt * 2.83464567f;
+}
+
+
+/// The `TextMetrics` interface represents the dimensions of a piece of text, 
+/// as created by the `measureText()` method.
+struct TextMetrics
+{
+    float width;
 }

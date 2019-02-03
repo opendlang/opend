@@ -105,6 +105,17 @@ public:
         output(format(`<rect x="%s" y="%s" width="%s" height="%s" stroke="%s"/>`, x, y, width, height, _currentStroke));
     }
 
+    override TextMetrics measureText(string text)
+    {
+        string svgFamilyName;
+        OpenTypeFont font;
+        getFont(_fontFace, _fontWeight, _fontStyle, svgFamilyName, font);    
+        OpenTypeTextMetrics otMetrics = font.measureText(text);
+        TextMetrics metrics;
+        metrics.width = _fontSize * otMetrics.horzAdvance * font.invUPM(); // convert to millimeters
+        return metrics;
+    }
+
     override void fillText(string text, float x, float y)
     {
         string svgFamilyName;
@@ -115,8 +126,31 @@ public:
         float textBaselineInGlyphUnits = font.getBaselineOffset(cast(FontBaseline)_textBaseline);
         float textBaselineInMm = _fontSize * textBaselineInGlyphUnits * font.invUPM();
 
-        output(format(`<text x="%f" y="%f" font-family="%s" font-size="%s" fill="%s">%s</text>`, 
-                      x, y + textBaselineInMm, svgFamilyName, _fontSize, _currentFill, text)); 
+        // Get width aka horizontal advance
+        // TODO: instead of relying on the SVG viewer, compute the right x here.
+        version(manualHorzAlign)
+        {
+            OpenTypeTextMetrics otMetrics = font.measureText(text);
+            float horzAdvanceMm = _fontSize * otMetrics.horzAdvance * font.invUPM();
+        }
+
+        string textAnchor="start";
+        final switch(_textAlign) with (TextAlign)
+        {
+            case start: // TODO bidir text
+            case left:
+                textAnchor="start";
+                break;
+            case end:
+            case right:
+                textAnchor="end";
+                break;
+            case center:
+                textAnchor="middle";
+        }
+
+        output(format(`<text x="%f" y="%f" font-family="%s" font-size="%s" fill="%s" text-anchor="%s">%s</text>`, 
+                      x, y + textBaselineInMm, svgFamilyName, _fontSize, _currentFill, textAnchor, text)); 
         // TODO escape XML sequences in text
     }
 
@@ -175,6 +209,11 @@ public:
         _fontSize = convertPointsToMillimeters(size);
     }
 
+    override void textAlign(TextAlign alignment)
+    {
+        _textAlign = alignment;
+    }
+
     override void textBaseline(TextBaseline baseline)
     {
         _textBaseline = baseline;
@@ -225,6 +264,7 @@ private:
     FontWeight _fontWeight = FontWeight.normal;
     FontStyle _fontStyle = FontStyle.normal;
     float _fontSize = convertPointsToMillimeters(11.0f);
+    TextAlign _textAlign = TextAlign.start;
     TextBaseline _textBaseline = TextBaseline.alphabetic;
 
     void output(ubyte b)

@@ -108,6 +108,11 @@ final class PDFDocument : IRenderingContext2D
         _fontSize = convertPointsToMillimeters(size);
     }
 
+    override void textAlign(TextAlign alignment)
+    {
+        _textAlign = alignment;
+    }
+
     override void textBaseline(TextBaseline baseline)
     {
         _textBaseline = baseline;
@@ -123,6 +128,18 @@ final class PDFDocument : IRenderingContext2D
         _fontStyle = style;
     }
 
+    override TextMetrics measureText(string text)
+    {
+        string fontPDFName;
+        object_id fontObjectId;
+        OpenTypeFont font;
+        getFont(_fontFace, _fontWeight, _fontStyle, fontPDFName, fontObjectId, font);
+        OpenTypeTextMetrics otMetrics = font.measureText(text);
+        TextMetrics metrics;
+        metrics.width = _fontSize * otMetrics.horzAdvance * font.invUPM(); // convert to millimeters
+        return metrics;
+    }
+
     override void fillText(string text, float x, float y)
     {
         string fontPDFName;
@@ -135,6 +152,22 @@ final class PDFDocument : IRenderingContext2D
         float textBaselineInGlyphUnits = font.getBaselineOffset(cast(FontBaseline)_textBaseline);
         float textBaselineInMm = _fontSize * textBaselineInGlyphUnits * font.invUPM();
         y += textBaselineInMm;
+
+        // Get width aka horizontal advance
+        OpenTypeTextMetrics otMetrics = font.measureText(text);
+        float horzAdvanceMm = _fontSize * otMetrics.horzAdvance * font.invUPM();
+        final switch(_textAlign) with (TextAlign)
+        {
+            case start: // TODO bidir text
+            case left:
+                break;
+            case end:
+            case right:
+                x -= horzAdvanceMm;
+                break;
+            case center:
+                x -= horzAdvanceMm * 0.5f;
+        }
 
         // Mark the current page as using this font
         currentPage.markAsUsingThisFont(fontPDFName, fontObjectId);
@@ -341,6 +374,8 @@ private:
     // Current font baseline
     TextBaseline _textBaseline = TextBaseline.alphabetic;
 
+    // Current text alignment
+    TextAlign _textAlign = TextAlign.start;
 
     // <alpha support>
 
