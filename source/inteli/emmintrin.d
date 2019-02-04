@@ -703,7 +703,17 @@ unittest
     assert(A[0] == 55 && A[1] == 61 && A[2] == 0 && A[3] == 0);
 }
 
-// TODO: _mm_cvtpd_pi32
+/// Convert packed double-precision (64-bit) floating-point elements in `v`
+//  to packed 32-bit integers
+__m64 _mm_cvtpd_pi32 (__m128d v) pure @safe
+{
+    return to_m64(_mm_cvtpd_epi32(v));
+}
+unittest
+{
+    int2 A = cast(int2) _mm_cvtpd_pi32(_mm_set_pd(61.0, 55.0));
+    assert(A[0] == 55 && A[1] == 61);
+}
 
 version(LDC)
 {
@@ -982,7 +992,19 @@ unittest
     assert(R.array == [-4, 45641, 0, 0]);
 }
 
-//TODO: _mm_cvttpd_pi32
+
+/// Convert packed double-precision (64-bit) floating-point elements in `v` 
+/// to packed 32-bit integers with truncation.
+__m64 _mm_cvttpd_pi32 (__m128d v) pure @safe
+{
+    return to_m64(_mm_cvttpd_epi32(v));
+}
+unittest
+{
+    int2 R = cast(int2) _mm_cvttpd_pi32(_mm_setr_pd(-4.9, 45641.7f));
+    int[2] correct = [-4, 45641];
+    assert(R.array == correct);
+}
 
 __m128i _mm_cvttps_epi32 (__m128 a) pure @safe
 {
