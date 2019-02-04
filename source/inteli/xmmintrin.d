@@ -93,9 +93,17 @@ __m128 _mm_andnot_ps (__m128 a, __m128 b) pure @safe
     return cast(__m128)( (~cast(__m128i)a) & cast(__m128i)b );
 }
 
+/// Average packed unsigned 16-bit integers in ``a` and `b`.
+__m64 _mm_avg_pu16 (__m64 a, __m64 b) pure @safe
+{
+    return to_m64(_mm_avg_epu16(to_m128i(a), to_m128i(b)));
+}
 
-// TODO: _mm_avg_pu16
-// TODO: _mm_avg_pu8
+/// Average packed unsigned 8-bit integers in ``a` and `b`.
+__m64 _mm_avg_pu8 (__m64 a, __m64 b) pure @safe
+{
+    return to_m64(_mm_avg_epu8(to_m128i(a), to_m128i(b)));
+}
 
 __m128 _mm_cmpeq_ps (__m128 a, __m128 b) pure @safe
 {

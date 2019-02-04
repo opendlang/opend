@@ -250,7 +250,7 @@ version(LDC)
 }
 else
 {
-    __m128i _mm_avg_epu8 (__m128i a, __m128i b)
+    __m128i _mm_avg_epu8 (__m128i a, __m128i b) pure @safe
     {
         byte16 sa = cast(byte16)a;
         byte16 sb = cast(byte16)b;
