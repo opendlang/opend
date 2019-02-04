@@ -434,7 +434,7 @@ unittest
     assert(R.array == correct);
 }
 
-__m64 _mm_set_pi8 (char e7, char e6, char e5, char e4, char e3, char e2, char e1, char e0) pure @trusted
+__m64 _mm_set_pi8 (byte e7, byte e6, byte e5, byte e4, byte e3, byte e2, byte e1, byte e0) pure @trusted
 {
     byte[8] arr = [e0, e1, e2, e3, e4, e5, e6, e7];
     return *cast(__m64*)(arr.ptr);
@@ -503,7 +503,7 @@ unittest
     assert(R.array == correct);
 }
 
-__m64 _mm_setr_pi8 (char e7, char e6, char e5, char e4, char e3, char e2, char e1, char e0) pure @trusted
+__m64 _mm_setr_pi8 (byte e7, byte e6, byte e5, byte e4, byte e3, byte e2, byte e1, byte e0) pure @trusted
 {
     byte[8] arr = [e7, e6, e5, e4, e3, e2, e1, e0];
     return *cast(__m64*)(arr.ptr);

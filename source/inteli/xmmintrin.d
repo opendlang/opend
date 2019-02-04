@@ -317,13 +317,68 @@ unittest
 }
 
 
-// TODO: __m128 _mm_cvtpi32x2_ps (__m64 a, __m64 b)
-// TODO: __m128 _mm_cvtpi8_ps (__m64 a)
+__m128 _mm_cvtpi32x2_ps (__m64 a, __m64 b) pure @safe
+{
+    long2 l;
+    l[0] = a[0];
+    l[1] = b[0];
+    return _mm_cvtepi32_ps(cast(__m128i)l);
+}
+
+__m128 _mm_cvtpi8_ps (__m64 a) pure @safe
+{
+    __m128i b = to_m128i(a); 
+
+    // Zero extend to 32-bit
+    b = _mm_unpacklo_epi8(b, _mm_setzero_si128());
+    b = _mm_unpacklo_epi16(b, _mm_setzero_si128());
+
+    // Replicate sign bit
+    b = _mm_srai_epi32(_mm_slli_epi32(b, 24), 24); // Replicate sign bit
+    return _mm_cvtepi32_ps(b);
+}
+unittest
+{
+    __m64 A = _mm_setr_pi8(-1, 2, -3, 4, 0, 0, 0, 0);
+    __m128 R = _mm_cvtpi8_ps(A);
+    float[4] correct = [-1.0f, 2.0f, -3.0f, 4.0f];
+    assert(R.array == correct);
+}
+
 // TODO: __m64 _mm_cvtps_pi16 (__m128 a)
 // TODO: __m64 _mm_cvtps_pi32 (__m128 a)
 // TODO: __m64 _mm_cvtps_pi8 (__m128 a)
-// TODO: __m128 _mm_cvtpu16_ps (__m64 a)
-// TODO: __m128 _mm_cvtpu8_ps (__m64 a)
+
+__m128 _mm_cvtpu16_ps (__m64 a) pure @safe
+{
+    __m128i ma = to_m128i(a);
+    ma = _mm_unpacklo_epi16(ma, _mm_setzero_si128()); // Zero-extend to 32-bit
+    return _mm_cvtepi32_ps(ma);
+}
+unittest
+{
+    __m64 A = _mm_setr_pi16(-1, 2, -3, 4);
+    __m128 R = _mm_cvtpu16_ps(A);
+    float[4] correct = [65535.0f, 2.0f, 65533.0f, 4.0f];
+    assert(R.array == correct);
+}
+
+__m128 _mm_cvtpu8_ps (__m64 a) pure @safe
+{
+    __m128i b = to_m128i(a); 
+
+    // Zero extend to 32-bit
+    b = _mm_unpacklo_epi8(b, _mm_setzero_si128());
+    b = _mm_unpacklo_epi16(b, _mm_setzero_si128());
+    return _mm_cvtepi32_ps(b);
+}
+unittest
+{
+    __m64 A = _mm_setr_pi8(-1, 2, -3, 4, 0, 0, 0, 0);
+    __m128 R = _mm_cvtpu8_ps(A);
+    float[4] correct = [255.0f, 2.0f, 253.0f, 4.0f];
+    assert(R.array == correct);
+}
 
 __m128 _mm_cvtsi32_ss(__m128 v, int x) pure @safe
 {
