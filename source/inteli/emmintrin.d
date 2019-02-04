@@ -738,7 +738,17 @@ unittest
     assert(B.array == [4.0f, 5.25f, 0, 0]);
 }
 
-// TODO: _mm_cvtpi32_pd
+/// Convert packed 32-bit integers in `v` to packed double-precision 
+/// (64-bit) floating-point elements.
+__m128d _mm_cvtpi32_pd (__m64 v) pure @safe
+{
+    return _mm_cvtepi32_pd(to_m128i(v));
+}
+unittest
+{
+    __m128d A = _mm_cvtpi32_pd(_mm_setr_pi32(4, -5));
+    assert(A[0] == 4.0 && A[1] == -5.0);
+}
 
 version(LDC)
 {
