@@ -1508,9 +1508,27 @@ unittest
     assert(_mm_movemask_pd(A) == 2);
 }
 
+/// Copy the lower 64-bit integer in `v`.
+__m64 _mm_movepi64_pi64 (__m128i v) pure @safe
+{
+    long2 lv = cast(long2)v;
+    return long1(lv[0]);
+}
+unittest
+{
+    __m128i A = _mm_set_epi64x(-1, -2);
+    __m64 R = _mm_movepi64_pi64(A);
+    assert(R[0] == -2);
+}
 
-// TODO: _mm_movepi64_pi64
-// TODO: __m128i _mm_movpi64_epi64 (__m64 a)
+/// Copy the 64-bit integer `a` to the lower element of dest, and zero the upper element.
+__m128i _mm_movpi64_epi64 (__m64 a) pure @safe
+{
+    long2 r;
+    r[0] = a[0];
+    r[1] = 0;
+    return cast(__m128i)r;
+}
 
 // PERF: unfortunately, __builtin_ia32_pmuludq128 disappeared from LDC
 // but seems there in clang
