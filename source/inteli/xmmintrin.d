@@ -259,8 +259,10 @@ int _mm_comineq_ss (__m128 a, __m128 b) pure @safe // comiss + setne
 
 alias _mm_cvt_pi2ps = _mm_cvtpi32_ps;
 
-// TODO: __m64 _mm_cvt_ps2pi (__m128 a)
-
+__m64 _mm_cvt_ps2pi (__m128 a) pure @safe
+{
+    return to_m64(_mm_cvtps_epi32(a));
+}
 
 __m128 _mm_cvt_si2ss(__m128 v, int x) pure @safe
 {
@@ -277,7 +279,20 @@ unittest
 alias _mm_cvt_ss2si = _mm_cvtss_si32;
 
 
-// TODO: __m128 _mm_cvtpi16_ps (__m64 a)
+__m128 _mm_cvtpi16_ps (__m64 a) pure @safe
+{
+    __m128i ma = to_m128i(a);
+    ma = _mm_unpacklo_epi16(ma, _mm_setzero_si128()); // Zero-extend to 32-bit
+    ma = _mm_srai_epi32(_mm_slli_epi32(ma, 16), 16); // Replicate sign bit
+    return _mm_cvtepi32_ps(ma);
+}
+unittest
+{
+    __m64 A = _mm_setr_pi16(-1, 2, -3, 4);
+    __m128 R = _mm_cvtpi16_ps(A);
+    float[4] correct = [-1.0f, 2.0f, -3.0f, 4.0f];
+    assert(R.array == correct);
+}
 
 __m128 _mm_cvtpi32_ps (__m128 a, __m64 b)
 {
