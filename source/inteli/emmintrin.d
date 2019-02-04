@@ -1081,19 +1081,20 @@ unittest
 int _mm_extract_epi16(__m128i v, int index) pure @safe
 {
     short8 r = cast(short8)v;
-    return r[index];
+    return cast(ushort)(r[index]);
 }
 unittest
 {
-    __m128i A = _mm_set_epi16(7, 6, 5, 4, 3, 2, 1, 0);
+    __m128i A = _mm_set_epi16(7, 6, 5, 4, 3, 2, 1, -1);
     assert(_mm_extract_epi16(A, 6) == 6);
+    assert(_mm_extract_epi16(A, 0) == 65535);
 }
 
 /// Copy `v`, and insert the 16-bit integer `i` at the location specified by `index`.
 __m128i _mm_insert_epi16 (__m128i v, int i, int index) @trusted
 {
     short8 r = cast(short8)v;
-    r[index] = cast(short)i;
+    r[index & 7] = cast(short)i;
     return cast(__m128i)r;
 }
 unittest

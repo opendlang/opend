@@ -523,7 +523,10 @@ unittest
     assert(1 == _mm_cvtt_ss2si(_mm_setr_ps(1.9f, 2.0f, 3.0f, 4.0f)));
 }
 
-// TODO: __m64 _mm_cvtt_ps2pi (__m128 a)
+__m64 _mm_cvtt_ps2pi (__m128 a) pure @safe
+{
+    return to_m64(_mm_cvttps_epi32(a));
+}
 
 alias _mm_cvttss_si32 = _mm_cvtt_ss2si; // it's actually the same op
 
@@ -562,7 +565,19 @@ unittest
     assert(a.array == correct);
 }
 
-// TODO: int _mm_extract_pi16 (__m64 a, int imm8)
+int _mm_extract_pi16 (__m64 a, int imm8)
+{
+    short4 sa = cast(short4)a;
+    return cast(ushort)(sa[imm8]);
+}
+unittest
+{
+    __m64 A = _mm_setr_pi16(-1, 6, 0, 4);
+    assert(_mm_extract_pi16(A, 0) == 65535);
+    assert(_mm_extract_pi16(A, 1) == 6);
+    assert(_mm_extract_pi16(A, 2) == 0);
+    assert(_mm_extract_pi16(A, 3) == 4);
+}
 
 /// Free aligned memory that was allocated with `_mm_malloc`.
 void _mm_free(void * mem_addr) @trusted
@@ -618,7 +633,19 @@ uint _mm_getcsr() pure @safe
         static assert(0, "Not yet supported");
 }
 
-// TODO: __m64 _mm_insert_pi16 (__m64 a, int i, int imm8)
+__m64 _mm_insert_pi16 (__m64 v, int i, int index)
+{
+    short4 r = cast(short4)v;
+    r[index & 3] = cast(short)i;
+    return cast(__m64)r;
+}
+unittest
+{
+    __m64 A = _mm_set_pi16(3, 2, 1, 0);
+    short4 R = cast(short4) _mm_insert_pi16(A, 42, 1 | 4);
+    short[4] correct = [0, 42, 2, 3];
+    assert(R.array == correct);
+}
 
 __m128 _mm_load_ps(const(float)*p) pure @trusted
 {
@@ -707,10 +734,19 @@ void* _mm_malloc(size_t size, size_t alignment) @trusted
     return storeRawPointerPlusInfo(raw, size, alignment); // PERF: no need to store size
 }
 
-// TODO: _mm_maskmove_si64
-// TODO: _m_maskmovq
+void _mm_maskmove_si64 (__m64 a, __m64 mask, char* mem_addr) @trusted
+{
+    // this works since mask is zero-extended
+    return _mm_maskmoveu_si128 (to_m128i(a), to_m128i(mask), mem_addr);
+}
 
-// TODO: _mm_max_pi16
+deprecated alias _m_maskmovq = _mm_maskmove_si64;
+
+__m64 _mm_max_pi16 (__m64 a, __m64 b) pure @safe
+{
+    return to_m64(_mm_max_epi16(to_m128i(a), to_m128i(b)));
+}
+
 version(LDC)
 {
     alias _mm_max_ps = __builtin_ia32_maxps;
@@ -738,7 +774,10 @@ unittest
     assert(M[3] != M[3]); // in case of NaN, second operand prevails (as it seems)
 }
 
-// TODO: _mm_max_pu8
+__m64 _mm_max_pu8 (__m64 a, __m64 b) pure @safe
+{
+    return to_m64(_mm_max_epu8(to_m128i(a), to_m128i(b)));
+}
 
 version(LDC)
 {
@@ -769,7 +808,10 @@ unittest
     assert(M[0] == 1);
 }
 
-// TODO: _mm_min_pi16
+__m64 _mm_min_pi16 (__m64 a, __m64 b) pure @safe
+{
+    return to_m64(_mm_min_epi16(to_m128i(a), to_m128i(b)));
+}
 
 version(LDC)
 {
@@ -798,7 +840,10 @@ unittest
     assert(M[3] != M[3]); // in case of NaN, second operand prevails (as it seems)
 }
 
-// TODO: _mm_min_pi8
+__m64 _mm_min_pu8 (__m64 a, __m64 b) pure @safe
+{
+    return to_m64(_mm_min_epu8(to_m128i(a), to_m128i(b)));
+}
 
 version(LDC)
 {
