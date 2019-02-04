@@ -345,9 +345,50 @@ unittest
     assert(R.array == correct);
 }
 
-// TODO: __m64 _mm_cvtps_pi16 (__m128 a)
-// TODO: __m64 _mm_cvtps_pi32 (__m128 a)
-// TODO: __m64 _mm_cvtps_pi8 (__m128 a)
+__m64 _mm_cvtps_pi16 (__m128 a) pure @safe
+{
+    // The C++ version of this intrinsic convert to 32-bit float, then use packssdw
+    // Which means the 16-bit integers should be saturated
+    __m128i b = _mm_cvtps_epi32(a);
+    b = _mm_packs_epi32(b, b);
+    return to_m64(b);
+}
+unittest
+{
+    __m128 A = _mm_setr_ps(-1.0f, 2.0f, -33000.0f, 70000.0f);
+    short4 R = cast(short4) _mm_cvtps_pi16(A);
+    short[4] correct = [-1, 2, -32768, 32767];
+    assert(R.array == correct);
+}
+
+__m64 _mm_cvtps_pi32 (__m128 a) pure @safe
+{
+    return to_m64(_mm_cvtps_epi32(a));
+}
+unittest
+{
+    __m128 A = _mm_setr_ps(-33000.0f, 70000.0f, -1.0f, 2.0f, );
+    int2 R = cast(int2) _mm_cvtps_pi32(A);
+    int[2] correct = [-33000, 70000];
+    assert(R.array == correct);
+}
+
+__m64 _mm_cvtps_pi8 (__m128 a) pure @safe
+{
+    // The C++ version of this intrinsic convert to 32-bit float, then use packssdw + packsswb
+    // Which means the 8-bit integers should be saturated
+    __m128i b = _mm_cvtps_epi32(a);
+    b = _mm_packs_epi32(b, _mm_setzero_si128());
+    b = _mm_packs_epi16(b, _mm_setzero_si128());
+    return to_m64(b);
+}
+unittest
+{
+    __m128 A = _mm_setr_ps(-1.0f, 2.0f, -129.0f, 128.0f);
+    byte8 R = cast(byte8) _mm_cvtps_pi8(A);
+    byte[8] correct = [-1, 2, -128, 127, 0, 0, 0, 0];
+    assert(R.array == correct);
+}
 
 __m128 _mm_cvtpu16_ps (__m64 a) pure @safe
 {
