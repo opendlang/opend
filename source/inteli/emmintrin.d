@@ -72,7 +72,10 @@ unittest
     assert(a.array == [3.0, -4.0]);
 }
 
-// TODO: _mm_add_si64
+__m64 _mm_add_si64 (__m64 a, __m64 b) pure @safe
+{
+    return a + b;
+}
 
 version(LDC)
 {
@@ -1498,8 +1501,8 @@ __m128i _mm_mul_epu32(__m128i a, __m128i b) pure @safe
 }
 unittest
 {
-    __m128i A = _mm_set_epi32(0, 0xDEADBEEF, 0, 0xffffffff);
-    __m128i B = _mm_set_epi32(0, 0xCAFEBABE, 0, 0xffffffff);
+    __m128i A = _mm_set_epi32(42, 0xDEADBEEF, 42, 0xffffffff);
+    __m128i B = _mm_set_epi32(42, 0xCAFEBABE, 42, 0xffffffff);
     __m128i C = _mm_mul_epu32(A, B);
     long2 LC = cast(long2)C;
     assert(LC.array[0] == 18446744065119617025uL);
@@ -1543,8 +1546,19 @@ unittest
     assert(a.array == [4.0, 1.5]);
 }
 
-
-// TODO: _mm_mul_su32
+/// Multiply the low unsigned 32-bit integers from `a` and `b`, 
+/// and get an unsigned 64-bit result.
+__m64 _mm_mul_su32 (__m64 a, __m64 b) pure @safe
+{
+    return to_m64(_mm_mul_epu32(to_m128i(a), to_m128i(b)));
+}
+unittest
+{
+    __m64 A = _mm_set_pi32(42, 0xDEADBEEF);
+    __m64 B = _mm_set_pi32(42, 0xCAFEBABE);
+    __m64 C = _mm_mul_su32(A, B);
+    assert(C[0] == 0xDEADBEEFuL * 0xCAFEBABEuL);
+}
 
 version(LDC)
 {
@@ -2642,8 +2656,10 @@ unittest
     assert(a.array == [0.0, -2.0]);
 }
 
-
-// TODO: _mm_sub_si64
+__m64 _mm_sub_si64 (__m64 a, __m64 b) pure @safe
+{
+    return a - b;
+}
 
 version(LDC)
 {
