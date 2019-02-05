@@ -74,7 +74,7 @@ The long-term goal is:
 
 ### Supported instructions set
 
-- MMX (WIP)
+- MMX
 - SSE1
 - SSE2
 

@@ -987,8 +987,6 @@ void _mm_prefetch(int locality)(void* p) pure @safe
     llvm_prefetch(p, 0, locality, 1);
 }
 
-
-version(none)
 deprecated alias
     _m_psadbw = _mm_sad_pu8,
     _m_pshufw = _mm_shuffle_pi16;
@@ -1190,7 +1188,21 @@ unittest
     _mm_sfence();
 }
 
-// TODO: mm_shuffle_pi16
+__m64 _mm_shuffle_pi16(int imm8)(__m64 a) pure @safe
+{
+    return cast(__m64) shufflevector!(short4, ( (imm8 >> 0) & 3 ),
+                                              ( (imm8 >> 2) & 3 ),
+                                              ( (imm8 >> 4) & 3 ),
+                                              ( (imm8 >> 6) & 3 ))(cast(short4)a, cast(short4)a);
+}
+unittest
+{
+    __m64 A = _mm_setr_pi16(0, 1, 2, 3);
+    enum int SHUFFLE = _MM_SHUFFLE(0, 1, 2, 3);
+    short4 B = cast(short4) _mm_shuffle_pi16!SHUFFLE(A);
+    short[4] expectedB = [ 3, 2, 1, 0 ];
+    assert(B.array == expectedB);
+}
 
 // Note: the immediate shuffle value is given at compile-time instead of runtime.
 __m128 _mm_shuffle_ps(ubyte imm)(__m128 a, __m128 b) pure @safe
@@ -1325,7 +1337,11 @@ void _mm_storeu_ps(float* mem_addr, __m128 a) pure @safe
     storeUnaligned!(float4)(a, mem_addr);
 }
 
-// TODO: _mm_stream_pi, does not seem possible
+void _mm_stream_pi (__m64* mem_addr, __m64 a)
+{
+    // BUG see `_mm_stream_ps` for an explanation why we don't implement non-temporal moves
+    *mem_addr = a; // it's a regular move instead
+}
 
 // BUG: can't implement non-temporal store with LDC inlineIR since !nontemporal
 // needs some IR outside this function that would say:
