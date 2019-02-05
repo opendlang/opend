@@ -889,6 +889,14 @@ __m128 _mm_movelh_ps (__m128 a, __m128 b) pure @safe
     return shufflevector!(float4, 0, 1, 4, 5)(a, b);
 }
 
+int _mm_movemask_pi8 (__m64 a) pure @safe
+{
+    return _mm_movemask_epi8(to_m128i(a));
+}
+unittest
+{
+    assert(0x9C == _mm_movemask_pi8(_mm_set_pi8(-1, 0, 0, -1, -1, -1, 0, 0)));
+}
 
 version(LDC)
 {
@@ -938,24 +946,35 @@ unittest
     assert(a.array == correct);
 }
 
-// TODO: _mm_mulhi_pu16
+__m64 _mm_mulhi_pu16 (__m64 a, __m64 b) pure @safe
+{
+    return to_m64(_mm_mulhi_epu16(to_m128i(a), to_m128i(b)));
+}
+unittest
+{
+    __m64 A = _mm_setr_pi16(0, -16, 2, 3);
+    __m64 B = _mm_set1_pi16(16384);
+    short4 R = cast(short4)_mm_mulhi_pu16(A, B);
+    short[4] correct = [0, 0x3FFC, 0, 0];
+    assert(R.array == correct);
+}
 
 __m128 _mm_or_ps (__m128 a, __m128 b) pure @safe
 {
     return cast(__m128)(cast(__m128i)a | cast(__m128i)b);
 }
 
-// TODO: __m64 _m_pavgb (__m64 a, __m64 b)
-// TODO: __m64 _m_pavgw (__m64 a, __m64 b)
-// TODO: int _m_pextrw (__m64 a, int imm8)
-// TODO: __m64 _m_pinsrw (__m64 a, int i, int imm8)
-// TODO: __m64 _m_pmaxsw (__m64 a, __m64 b)
-// TODO: __m64 _m_pmaxub (__m64 a, __m64 b)
-// TODO: __m64 _m_pminsw (__m64 a, __m64 b)
-// TODO: __m64 _m_pminub (__m64 a, __m64 b)
-// TODO: int _m_pmovmskb (__m64 a)
-
-// TODO: __m64 _m_pmulhuw (__m64 a, __m64 b)
+deprecated alias 
+    _m_pavgb = _mm_avg_pu8,
+    _m_pavgw = _mm_avg_pu16,
+    _m_pextrw = _mm_extract_pi16,
+    _m_pinsrw = _mm_insert_pi16,
+    _m_pmaxsw = _mm_max_pi16,
+    _m_pmaxub = _mm_max_pu8,
+    _m_pminsw = _mm_min_pi16,
+    _m_pminub = _mm_min_pu8,
+    _m_pmovmskb = _mm_movemask_pi8,
+    _m_pmulhuw = _mm_mulhi_pu16;
 
 enum _MM_HINT_NTA = 0;
 enum _MM_HINT_T0 = 1;
@@ -968,8 +987,11 @@ void _mm_prefetch(int locality)(void* p) pure @safe
     llvm_prefetch(p, 0, locality, 1);
 }
 
-// TODO: __m64 _m_psadbw (__m64 a, __m64 b)
-// TODO: __m64 _m_pshufw (__m64 a, int imm8)
+
+version(none)
+deprecated alias
+    _m_psadbw = _mm_sad_pu8,
+    _m_pshufw = _mm_shuffle_pi16;
 
 version(LDC)
 {
@@ -1076,7 +1098,10 @@ unittest
     testInvSqrt(27841456468.0f);
 }
 
-// TODO: _mm_sad_pu8
+__m64 _mm_sad_pu8 (__m64 a, __m64 b) pure @safe
+{
+    return to_m64(_mm_sad_epu8(to_m128i(a), to_m128i(b)));
+}
 
 void _MM_SET_EXCEPTION_MASK(int _MM_MASK_xxxx) pure @safe
 {
