@@ -270,11 +270,11 @@ final class PDFDocument : IRenderingContext2D
         outDelim();
         output('q');
 
-        float heightMm = image.naturalHeightMm;
+        float heightMm = image.printHeight;
         translate(x, y + heightMm);
 
         // Note: image has to be flipped vertically, since PDF is bottom to up
-        scale(image.naturalWidthMm(), -heightMm);
+        scale(image.printWidth(), -heightMm);
 
         outName(imageName);
         output(" Do");
@@ -506,9 +506,40 @@ private:
         foreach(pair; _imagePDFInfos.byKeyValue())
         {
             Image image = pair.key;
-            ImagePDFInfo info = pair.value;
+            ImagePDFInfo info = pair.value;            
 
-            const(ubyte)[] content = image.toPDFStreamContent();
+            bool isPNG = image.MIME == "image/png";
+            bool isJPEG = image.MIME == "image/jpeg";
+            if (!isPNG && !isJPEG)
+                throw new Exception("Unsupported image as PDF embed");
+
+            const(ubyte)[] originalEncodedData = image.encodedData();
+
+            // For JPEG, we can use the JPEG-encoded original image directly.
+            // For PNG, we need to decode it, and reencode using DEFLATE
+
+            string filter;            
+            if (isJPEG)
+                filter = "DCTDecode";
+            else if (isPNG)
+                filter = "FlateDecode";
+            else
+                assert(false);
+
+            const(ubyte)[] pdfData = originalEncodedData;  
+            if (isPNG)
+            {
+                import dplug.graphics.pngload; // because it's one of the fastest PNG decoder in D world
+                import core.stdc.stdlib: free;
+
+                // decode to RGBA
+                int width, height, origComponents;
+                int channels = 3;
+                ubyte* decoded = stbi_load_png_from_memory(originalEncodedData, width, height, origComponents, channels);
+                scope(exit) free(decoded);
+                int size = width * height * channels;
+                pdfData = compress(decoded[0..size]);                
+            }               
 
             beginObject(info.streamId);
                 outBeginDict();
@@ -518,11 +549,11 @@ private:
                     outName("Height"); outFloat(image.height());
                     outName("ColorSpace"); outName("DeviceRGB");
                     outName("BitsPerComponent"); outInteger(8);
-                    outName("Length"); outInteger(cast(int)(content.length));
-                    outName("Filter"); outName("DCTDecode");
+                    outName("Length"); outInteger(cast(int)(pdfData.length));
+                    outName("Filter"); outName(filter);
                 outEndDict();
                 outBeginStream();
-                    outputBytes(content); // TODO: PNG doesn't work like this
+                    outputBytes(pdfData);
                 outEndStream();
             endObject();
         }

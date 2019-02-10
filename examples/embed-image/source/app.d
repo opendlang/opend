@@ -17,8 +17,8 @@ void main(string[] args)
                       cast(IRenderingContext2D) svgDoc,
                       cast(IRenderingContext2D) htmlDoc,])
     {        
- //       context.drawImage(png, 10, 10);        
-        context.drawImage(jpeg, 10, 10);
+        context.drawImage(png, 10, 10);
+        context.drawImage(jpeg, 10, 20);
 
         context.fillStyle = Brush("red");
 

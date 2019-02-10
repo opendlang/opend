@@ -47,6 +47,11 @@ class Image
             throw new Exception("Only JPEG and PNG are supported for now");
     }
 
+    string MIME()
+    {
+        return _MIME;
+    }
+
     string toDataURI()
     {
         string r = "data:";
@@ -54,11 +59,6 @@ class Image
         r ~= ";charset=utf-8;base64,";
         r ~= Base64.encode(_data);
         return r;
-    }
-
-    const(ubyte)[] toPDFStreamContent()
-    {
-        return _data;
     }
 
     /// Width in pixels.
@@ -73,14 +73,14 @@ class Image
         return _height;
     }
     
-    /// Natural size in mm.
-    float naturalWidthMm()
+    /// Width when printed, in mm.
+    float printWidth()
     {
         return 1000 * _width / pixelsPerMeterX();
     }
 
-    /// Natural size in mm.
-    float naturalHeightMm()
+    /// Height when printed, in mm.
+    float printHeight()
     {
         return 1000 * _height / pixelsPerMeterY();
     }
