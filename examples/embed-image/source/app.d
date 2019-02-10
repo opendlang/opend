@@ -11,7 +11,7 @@ void main(string[] args)
     auto htmlDoc = new HTMLDocument();
 
     Image png = new Image("smiley.png");
-    Image jpeg = new Image("smiley.jpg");
+    Image jpeg = new Image("flower.jpg");
 
     foreach(context; [cast(IRenderingContext2D) pdfDoc, 
                       cast(IRenderingContext2D) svgDoc,
