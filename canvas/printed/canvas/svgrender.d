@@ -238,6 +238,12 @@ public:
         _numberOfNestedGroups++;
     }
 
+    override void drawImage(Image image, float x, float y)
+    {
+        float widthMm = (1000.0f * image.width) / image.pixelsPerMeterX();
+        float heightMm = (1000.0f * image.height) / image.pixelsPerMeterY();
+        output(format(`<image xlink:href="%s" x="%s" y="%s" width="%s" height="%s" preserveAspectRatio="none"/>`, image.toDataURI(), x, y, widthMm, heightMm));        
+    }
 
 protected:
     string getXMLHeader()
@@ -308,7 +314,7 @@ private:
     {
         float heightInMm = _pageHeightMm * _numberOfPage;
         return getXMLHeader()
-            ~ format(`<svg xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg"`
+            ~ format(`<svg xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg" xmlns:xlink= "http://www.w3.org/1999/xlink"`
                      ~` width="%smm" height="%smm" viewBox="0 0 %s %s" version="1.1">`,
                      _pageWidthMm, heightInMm, _pageWidthMm, heightInMm);
     }

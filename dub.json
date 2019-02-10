@@ -8,7 +8,9 @@
     "dependencies":
     {
         "printed:canvas": "*",
-        "printed:shaping": "*"
+        "printed:shaping": "*",
+        "printed:font": "*",
+        "printed:image": "*"
     },
 
    "subPackages": [
@@ -38,7 +40,8 @@
             "dependencies": 
             {
                 "printed:font": "*",
-                "printed:htmlcolors": "*",
+                "printed:image": "*",
+                "printed:htmlcolors": "*"
             }
         },
         {
@@ -58,6 +61,20 @@
             ],
 
             "importPaths": [ "shaping" ]
+        },
+        {
+            "name": "image",
+            "sourcePaths": 
+            [ 
+                "image/printed/image" 
+            ],
+
+            "dependencies": 
+            {
+                "binrange": "~>1.0"
+            },
+
+            "importPaths": [ "image" ]
         }
     ]
 }

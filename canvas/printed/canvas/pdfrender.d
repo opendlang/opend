@@ -258,6 +258,13 @@ final class PDFDocument : IRenderingContext2D
         output(" cm");
     }
 
+    // Images
+
+    override void drawImage(Image image, float x, float y)
+    {
+        assert(false); // TODO
+    }
+
     // Color selection
 
     override void fillStyle(Brush brush)

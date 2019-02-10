@@ -6,6 +6,8 @@ License:   $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost License 1.0)
 */
 module printed.canvas.irenderer;
 
+public import printed.image.image;
+
 /// Describes the `printed` 2D renderer.
 ///
 /// This is the law, specific implementation MUST obey this interface and 
@@ -54,6 +56,11 @@ interface IRenderingContext2D
     ///     angle The rotation angle, in radians.
     void rotate(float angle);
 
+
+    // IMAGES
+
+    /// Draws an image at the given position.
+    void drawImage(Image image, float x, float y);
 
 
     // COLOURS
@@ -272,3 +279,5 @@ struct TextMetrics
 {
     float width;
 }
+
+
