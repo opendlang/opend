@@ -31,7 +31,7 @@ class Image
         _data = data.idup;
 
         bool isPNG = _data.length >= 8 && (_data[0..8] == pngSignature);
-        bool isJPEG = (_data.length >= 2) && (_data[0] == 0xff) && (_data[1] == 0xd8);
+        bool isJPEG = (_data.length >= 2) && (_data[0] == 0xff) && (_data[1] == 0xd8); // SOI
 
         if (isPNG)
         {
@@ -701,6 +701,90 @@ private:
                         get_bits(8);
                         num_left--;
                     }
+                    break;
+
+                case M_APP0+1: // possibly EXIF data
+                    uint num_left;
+                    num_left = get_bits(16);
+
+                    if (num_left < 2)
+                        stop_decoding(JPGD_BAD_VARIABLE_MARKER);
+                    num_left -= 2;
+
+                    ubyte[] exifData = new ubyte[num_left];
+                    foreach(i; 0..num_left)
+                        exifData[i] = cast(ubyte)(get_bits(8));
+
+                    ubyte[6] exif_id;
+                    foreach(i; 0..6)
+                        exif_id[i] = popBE!ubyte(exifData);
+
+                    static immutable ubyte[6] ExifIdentifierCode = [0x45, 0x78, 0x69, 0x66, 0x00, 0x00]; // "Exif\0\0"
+                    if (exif_id == ExifIdentifierCode)
+                    {
+                        // See EXIF specification: http://www.cipa.jp/std/documents/e/DC-008-2012_E.pdf
+
+                        ubyte[] tiffFile = exifData.dup; // save exif chunk from "start of TIFF file"
+
+                        ushort byteOrder = popBE!ushort(exifData);
+                        if (byteOrder != 0x4949 && byteOrder != 0x4D4D)
+                            stop_decoding(JPGD_DECODE_ERROR);
+                        bool littleEndian = (byteOrder == 0x4949);
+                        ushort version_ = littleEndian ? popLE!ushort(exifData) : popBE!ushort(exifData);
+                        if (version_ != 42)
+                            stop_decoding(JPGD_DECODE_ERROR);
+
+                        uint offset = littleEndian ? popLE!uint(exifData) : popBE!uint(exifData);
+
+                        double resolutionX = 72;
+                        double resolutionY = 72;
+                        int unit = 2;
+
+                        // parse all IFDs
+                        while(offset != 0)
+                        {
+                            if (offset > exifData.length)
+                                stop_decoding(JPGD_DECODE_ERROR);
+                            exifData = tiffFile[offset..$];
+                            ushort numEntries = littleEndian ? popLE!ushort(exifData) : popBE!ushort(exifData);
+
+                            foreach(entry; 0..numEntries)
+                            {
+                                ushort tag = littleEndian ? popLE!ushort(exifData) : popBE!ushort(exifData);
+                                ushort type = littleEndian ? popLE!ushort(exifData) : popBE!ushort(exifData);
+                                uint count = littleEndian ? popLE!uint(exifData) : popBE!uint(exifData);
+                                uint valueOffset = littleEndian ? popLE!uint(exifData) : popBE!uint(exifData);
+
+                                if (tag == 282 || tag == 283) // XResolution  
+                                {
+                                    ubyte[] tagData = tiffFile[valueOffset..$];
+                                    double num = littleEndian ? popLE!uint(tagData) : popBE!uint(tagData);
+                                    double denom = littleEndian ? popLE!uint(tagData) : popBE!uint(tagData);
+                                    double frac = num / denom;
+                                    if (tag == 282)
+                                        resolutionX = frac;
+                                    else
+                                        resolutionY = frac;
+                                }
+
+                                if (tag == 296) // unit  
+                                    unit = valueOffset;
+                            }
+                            offset = littleEndian ? popLE!uint(exifData) : popBE!uint(exifData);
+                        }
+
+                        if (unit == 2) // inches
+                        {
+                            m_pixelsPerMeterX = convertMetersToInches(resolutionX);
+                            m_pixelsPerMeterY = convertMetersToInches(resolutionY);
+                        }
+                        else if (unit == 3)
+                        {
+                            m_pixelsPerMeterX = resolutionX * 100;
+                            m_pixelsPerMeterY = resolutionY * 100;
+                        }
+                    }
+
                     break;
 
                 case M_JPG:
