@@ -56,6 +56,11 @@ class Image
         return r;
     }
 
+    const(ubyte)[] toPDFStreamContent()
+    {
+        return _data;
+    }
+
     /// Width in pixels.
     int width()
     {
@@ -65,7 +70,19 @@ class Image
     /// Height in pixels.
     int height()
     {
-        return _width;
+        return _height;
+    }
+    
+    /// Natural size in mm.
+    float naturalWidthMm()
+    {
+        return 1000 * _width / pixelsPerMeterX();
+    }
+
+    /// Natural size in mm.
+    float naturalHeightMm()
+    {
+        return 1000 * _height / pixelsPerMeterY();
     }
 
     float pixelsPerMeterX()

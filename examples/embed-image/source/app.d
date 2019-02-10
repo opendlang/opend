@@ -11,18 +11,23 @@ void main(string[] args)
     auto htmlDoc = new HTMLDocument();
 
     Image png = new Image("smiley.png");
-    Image jpeg0 = new Image("smiley.jpg");
-    Image jpeg1 = new Image("made-by-android.jpg");
-    Image jpeg2 = new Image("made-by-photoshop.jpg");
+    Image jpeg = new Image("smiley.jpg");
 
-    foreach(context; [//cast(IRenderingContext2D) pdfDoc, 
+    foreach(context; [cast(IRenderingContext2D) pdfDoc, 
                       cast(IRenderingContext2D) svgDoc,
                       cast(IRenderingContext2D) htmlDoc,])
     {        
-        context.drawImage(png, 10, 10);        
-        context.drawImage(jpeg0, 10, 20);
-        context.drawImage(jpeg1, 10, 30);
-        context.drawImage(jpeg2, 10, 100);
+ //       context.drawImage(png, 10, 10);        
+        context.drawImage(jpeg, 10, 10);
+
+        context.fillStyle = Brush("red");
+
+        float w = context.pageWidth;
+        float h = context.pageHeight;
+        context.fillRect(0, 0, 10, 10);
+        context.fillRect(w-10, 0, 10, 10);
+        context.fillRect(0, h-10, 10, 10);
+        context.fillRect(w-10, h-10, 10, 10);
     }
 
     /// Draw the result of each specific renderer.

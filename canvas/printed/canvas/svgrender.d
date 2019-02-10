@@ -242,7 +242,8 @@ public:
     {
         float widthMm = (1000.0f * image.width) / image.pixelsPerMeterX();
         float heightMm = (1000.0f * image.height) / image.pixelsPerMeterY();
-        output(format(`<image xlink:href="%s" x="%s" y="%s" width="%s" height="%s" preserveAspectRatio="none"/>`, image.toDataURI(), x, y, widthMm, heightMm));        
+        output(format(`<image xlink:href="%s" x="%s" y="%s" width="%s" height="%s" preserveAspectRatio="none"/>`, 
+                      image.toDataURI(), x, y, widthMm, heightMm));
     }
 
 protected:

@@ -262,7 +262,29 @@ final class PDFDocument : IRenderingContext2D
 
     override void drawImage(Image image, float x, float y)
     {
-        assert(false); // TODO
+        string imageName;
+        object_id id;
+        getImage(image, imageName, id);
+
+        // save CTM
+        outDelim();
+        output('q');
+
+        float heightMm = image.naturalHeightMm;
+        translate(x, y + heightMm);
+
+        // Note: image has to be flipped vertically, since PDF is bottom to up
+        scale(image.naturalWidthMm(), -heightMm);
+
+        outName(imageName);
+        output(" Do");
+
+        // restore CTM
+        outDelim();
+        output('Q');
+
+        // Mark the current page as using this image
+        currentPage.markAsUsingThisImage(imageName, id);
     }
 
     // Color selection
@@ -425,17 +447,28 @@ private:
             outName("Parent"); outReference(_pageTreeId);
             outName("Contents"); outReference(_pageDescriptions[i].contentId);
 
-            // List all fonts used by that page
             outName("Resources");
                 outBeginDict();
+
+                    // List all fonts used by that page
                     outName("Font");
-                    outBeginDict();
-                        foreach(f; _pageDescriptions[i].fontUsed.byKeyValue)
+                        outBeginDict();
+                            foreach(f; _pageDescriptions[i].fontUsed.byKeyValue)
+                            {
+                                outName(f.key);
+                                outReference(f.value);
+                            }
+                        outEndDict();
+
+                    // List all images used by that page
+                    outName("XObject");
+                        outBeginDict();
+                        foreach(iu; _pageDescriptions[i].imageUsed.byKeyValue)
                         {
-                            outName(f.key);
-                            outReference(f.value);
+                            outName(iu.key);
+                            outReference(iu.value);
                         }
-                    outEndDict();
+                        outEndDict();
 
                     // Point to extended graphics state (shared across pages)
                     outName("ExtGState");
@@ -468,6 +501,31 @@ private:
                     outEndDict();
                 }
         endDictObject();
+
+        // Generates /Image objects
+        foreach(pair; _imagePDFInfos.byKeyValue())
+        {
+            Image image = pair.key;
+            ImagePDFInfo info = pair.value;
+
+            const(ubyte)[] content = image.toPDFStreamContent();
+
+            beginObject(info.streamId);
+                outBeginDict();
+                    outName("Type"); outName("XObject");
+                    outName("Subtype"); outName("Image");
+                    outName("Width"); outFloat(image.width());
+                    outName("Height"); outFloat(image.height());
+                    outName("ColorSpace"); outName("DeviceRGB");
+                    outName("BitsPerComponent"); outInteger(8);
+                    outName("Length"); outInteger(cast(int)(content.length));
+                    outName("Filter"); outName("DCTDecode");
+                outEndDict();
+                outBeginStream();
+                    outputBytes(content); // TODO: PNG doesn't work like this
+                outEndStream();
+            endObject();
+        }
 
         // Generates /Font object
         foreach(pair; _fontPDFInfos.byKeyValue())
@@ -668,6 +726,12 @@ private:
         object_id id;              // page id
         object_id contentId;       // content of the page id
         object_id[string] fontUsed;  // a map of font objects used in that page
+        object_id[string] imageUsed;  // a map of image objects used in that page
+
+        void markAsUsingThisImage(string imagePDFName, object_id imageObjectId)
+        {
+            imageUsed[imagePDFName] = imageObjectId;
+        }
 
         void markAsUsingThisFont(string fontPDFName, object_id fontObjectId)
         {
@@ -1027,15 +1091,45 @@ private:
         object_id _currentObject = 0;
     }
 
+    static struct ImagePDFInfo
+    {
+        string pdfName;            // "Ixx", associated name in the PDF (will be of the form /Ixx)
+        object_id streamId;
+    }
+
+    /// Associates with each open image information about
+    /// the PDF embedding of that image.
+    /// Note: they key act as reference that keeps the Image alive
+    ImagePDFInfo[Image] _imagePDFInfos;
+
+    void getImage(Image image,
+                  out string imagePdfName,
+                  out object_id imageObjectId)
+    {
+        // Is this image known already? lazily create it
+        ImagePDFInfo* pInfo = image in _imagePDFInfos;
+        if (pInfo is null)
+        {
+            // Give a PDF name, and object id for this image
+            ImagePDFInfo info;
+            info.pdfName = format("I%d", _imagePDFInfos.length);
+            info.streamId = _pool.allocateObjectId();
+            _imagePDFInfos[image] = info;
+            pInfo = image in _imagePDFInfos;
+        }
+        imagePdfName = pInfo.pdfName;
+        imageObjectId = pInfo.streamId;
+    }
+
     // Enough data to describe a font resource in a PDF
     static struct FontPDFInfo
     {
         object_id compositeFontId; // ID for the composite Type0 /Font object
-        object_id cidFontId; // ID for the CID /Font object
-        object_id descriptorId; // ID for the /FontDescriptor object
-        object_id streamId;     // ID for the file stream
-        object_id cidToGidId;   // ID for the /CIDToGIDMap stream object
-        string pdfName; // "Fxx", associated name in the PDF (will be of the form /Fxx)
+        object_id cidFontId;       // ID for the CID /Font object
+        object_id descriptorId;    // ID for the /FontDescriptor object
+        object_id streamId;        // ID for the file stream
+        object_id cidToGidId;      // ID for the /CIDToGIDMap stream object
+        string pdfName;            // "Fxx", associated name in the PDF (will be of the form /Fxx)
         string baseFont;
     }
 
