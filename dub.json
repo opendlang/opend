@@ -40,7 +40,7 @@
             "dependencies": 
             {
                 "printed:font": "*",
-                "printed:image": "*",
+                "binrange": "~>1.0",
                 "printed:htmlcolors": "*"
             }
         },
@@ -61,20 +61,6 @@
             ],
 
             "importPaths": [ "shaping" ]
-        },
-        {
-            "name": "image",
-            "sourcePaths": 
-            [ 
-                "image/printed/image" 
-            ],
-
-            "dependencies": 
-            {
-                "binrange": "~>1.0"
-            },
-
-            "importPaths": [ "image" ]
         }
     ]
 }

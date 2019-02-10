@@ -6,7 +6,7 @@ License:   $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost License 1.0)
 */
 module printed.canvas.irenderer;
 
-public import printed.image.image;
+public import printed.canvas.image;
 
 /// Describes the `printed` 2D renderer.
 ///
