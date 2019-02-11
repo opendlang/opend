@@ -10,15 +10,24 @@ void main(string[] args)
     auto svgDoc = new SVGDocument();
     auto htmlDoc = new HTMLDocument();
 
-    Image png = new Image("smiley.png");
+    Image png = new Image("dman.png");
     Image jpeg = new Image("flower.jpg");
 
     foreach(context; [cast(IRenderingContext2D) pdfDoc, 
                       cast(IRenderingContext2D) svgDoc,
                       cast(IRenderingContext2D) htmlDoc,])
     {        
-        context.drawImage(png, 10, 10);
-        context.drawImage(jpeg, 10, 20);
+        context.drawImage(jpeg, 10, 10);
+        context.drawImage(jpeg, context.pageWidth - jpeg.printWidth - 10, 10);
+
+        foreach(offset; 0..3)
+        {
+            context.save();
+            context.rotate(offset * 0.08);
+            context.drawImage(png, context.pageWidth - 10 - 30 * offset - png.printWidth, 
+                                  context.pageHeight - 10 - 30 * offset  - png.printHeight);
+            context.restore();
+        }
 
         context.fillStyle = Brush("red");
 

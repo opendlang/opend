@@ -447,6 +447,16 @@ private:
             outName("Parent"); outReference(_pageTreeId);
             outName("Contents"); outReference(_pageDescriptions[i].contentId);
 
+            // Necessary for transparent PNGs
+            {
+                outName("Group");
+                outBeginDict();
+                    outName("Type"); outName("Group");
+                    outName("S"); outName("Transparency");
+                    outName("CS"); outName("DeviceRGB");
+                outEndDict();
+            }
+
             outName("Resources");
                 outBeginDict();
 
@@ -506,7 +516,7 @@ private:
         foreach(pair; _imagePDFInfos.byKeyValue())
         {
             Image image = pair.key;
-            ImagePDFInfo info = pair.value;            
+            ImagePDFInfo info = pair.value;
 
             bool isPNG = image.MIME == "image/png";
             bool isJPEG = image.MIME == "image/jpeg";
@@ -518,7 +528,7 @@ private:
             // For JPEG, we can use the JPEG-encoded original image directly.
             // For PNG, we need to decode it, and reencode using DEFLATE
 
-            string filter;            
+            string filter;
             if (isJPEG)
                 filter = "DCTDecode";
             else if (isPNG)
@@ -526,7 +536,9 @@ private:
             else
                 assert(false);
 
-            const(ubyte)[] pdfData = originalEncodedData;  
+            const(ubyte)[] pdfData = originalEncodedData; // what content will be embeded
+            const(ubyte)[] smaskData = null; // optional smask object 
+            object_id smaskId;
             if (isPNG)
             {
                 import dplug.graphics.pngload; // because it's one of the fastest PNG decoder in D world
@@ -534,12 +546,31 @@ private:
 
                 // decode to RGBA
                 int width, height, origComponents;
-                int channels = 3;
-                ubyte* decoded = stbi_load_png_from_memory(originalEncodedData, width, height, origComponents, channels);
+                ubyte* decoded = stbi_load_png_from_memory(originalEncodedData, width, height, origComponents, 4);
+                if (origComponents != 3 && origComponents != 4)
+                    throw new Exception("Only support embed of RGB or RGBA PNG");
+
+                int size = width * height * 4;
+                ubyte[] decodedRGBA = decoded[0..size];
                 scope(exit) free(decoded);
-                int size = width * height * channels;
-                pdfData = compress(decoded[0..size]);                
-            }               
+
+                // Extract RGB data
+                ubyte[] rgbData = new ubyte[width * height * 3];
+                foreach(i; 0 .. width*height)
+                    rgbData[3*i..3*i+3] = decodedRGBA[4*i..4*i+3];
+                pdfData = compress(rgbData);
+
+                // if PNG has actual alpha information, use separate PDF image as mask
+                if (origComponents == 4)
+                {
+                    // Eventually extract alpha data to a plane, that will be in a separate PNG image
+                    ubyte[] alphaData = new ubyte[width * height];
+                    foreach(i; 0 .. width*height)
+                        alphaData[i] = decodedRGBA[4*i+3];
+                    smaskData = compress(alphaData);
+                    smaskId = _pool.allocateObjectId();  // MAYDO: allocate this on first use, detect PNG with alpha before
+                }
+            }
 
             beginObject(info.streamId);
                 outBeginDict();
@@ -551,11 +582,34 @@ private:
                     outName("BitsPerComponent"); outInteger(8);
                     outName("Length"); outInteger(cast(int)(pdfData.length));
                     outName("Filter"); outName(filter);
+                    if (smaskData) 
+                    { 
+                        outName("SMask"); outReference(smaskId);
+                    }
                 outEndDict();
                 outBeginStream();
                     outputBytes(pdfData);
                 outEndStream();
             endObject();
+
+            if (smaskData)
+            {
+                beginObject(smaskId);
+                    outBeginDict();
+                        outName("Type"); outName("XObject");
+                        outName("Subtype"); outName("Image");
+                        outName("Width"); outFloat(image.width());
+                        outName("Height"); outFloat(image.height());
+                        outName("ColorSpace"); outName("DeviceGray");
+                        outName("BitsPerComponent"); outInteger(8);
+                        outName("Length"); outInteger(cast(int)(smaskData.length));
+                        outName("Filter"); outName("FlateDecode");
+                    outEndDict();
+                    outBeginStream();
+                        outputBytes(smaskData);
+                    outEndStream();
+                endObject();
+            }
         }
 
         // Generates /Font object
