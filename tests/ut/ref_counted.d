@@ -173,7 +173,6 @@ mixin TestUtils;
     Struct.numStructs.shouldEqual(0);
 }
 
-static if (__VERSION__ >= 2079)
 @("default allocator (shared)")
 @system unittest {
     {
@@ -264,7 +263,6 @@ static if (__VERSION__ >= 2079)
     Struct.numStructs.shouldEqual(0);
 }
 
-static if (__VERSION__ >= 2079)
 @("SharedStruct")
 @system unittest {
     auto allocator = TestAllocator();
@@ -309,29 +307,27 @@ static if (__VERSION__ >= 2079)
     Struct.numStructs.shouldEqual(0);
 }
 
-static if (__VERSION__ >= 2079) {
 
-    @("threads Mallocator")
-    @system unittest {
-        import std.experimental.allocator.mallocator: Mallocator;
-        static assert(__traits(compiles, sendRefCounted!Mallocator(7)));
-    }
+@("threads Mallocator")
+@system unittest {
+    import std.experimental.allocator.mallocator: Mallocator;
+    static assert(__traits(compiles, sendRefCounted!Mallocator(7)));
+}
 
-    @("threads SafeAllocator by value")
-    @system unittest {
-        // can't even use TestAllocator because it has indirections
-        // can't pass by pointer since it's an indirection
-        auto allocator = SafeAllocator();
-        static assert(__traits(compiles, sendRefCounted!(SafeAllocator)(allocator, 7)));
-    }
+@("threads SafeAllocator by value")
+@system unittest {
+    // can't even use TestAllocator because it has indirections
+    // can't pass by pointer since it's an indirection
+    auto allocator = SafeAllocator();
+    static assert(__traits(compiles, sendRefCounted!(SafeAllocator)(allocator, 7)));
+}
 
-    @("threads SafeAllocator by shared pointer")
-    @system unittest {
-        // can't even use TestAllocator because it has indirections
-        // can't only pass by pointer if shared
-        auto allocator = shared SafeAllocator();
-        static assert(__traits(compiles, sendRefCounted!(shared SafeAllocator*)(&allocator, 7)));
-    }
+@("threads SafeAllocator by shared pointer")
+@system unittest {
+    // can't even use TestAllocator because it has indirections
+    // can't only pass by pointer if shared
+    auto allocator = shared SafeAllocator();
+    static assert(__traits(compiles, sendRefCounted!(shared SafeAllocator*)(&allocator, 7)));
 }
 
 @("Construct RefCounted from Unique")
