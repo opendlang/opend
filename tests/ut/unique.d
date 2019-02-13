@@ -42,7 +42,7 @@ mixin TestUtils;
 @("with struct and mallocator")
 @safe unittest {
 
-    import stdx.allocator.mallocator: Mallocator;
+    import std.experimental.allocator.mallocator: Mallocator;
     {
         const foo = Unique!(Struct, Mallocator)(5);
         foo.twice.shouldEqual(10);
@@ -148,7 +148,7 @@ mixin TestUtils;
 @("@nogc")
 @safe @nogc unittest {
 
-    import stdx.allocator.mallocator: Mallocator;
+    import std.experimental.allocator.mallocator: Mallocator;
 
     {
         const ptr = Unique!(NoGcStruct, Mallocator)(5);

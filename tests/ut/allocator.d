@@ -3,7 +3,7 @@ module ut.allocator;
 ///
 @system unittest
 {
-    import stdx.allocator: theAllocator, make, makeArray, dispose;
+    import std.experimental.allocator: theAllocator, make, makeArray, dispose;
 
     static int x;
     static interface I
@@ -44,8 +44,8 @@ module ut.allocator;
 ///
 @system unittest //bugzilla 15721
 {
-    import stdx.allocator: make, dispose;
-    import stdx.allocator.mallocator : Mallocator;
+    import std.experimental.allocator: make, dispose;
+    import std.experimental.allocator.mallocator : Mallocator;
 
     interface Foo {}
     class Bar: Foo {}

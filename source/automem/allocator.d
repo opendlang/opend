@@ -1,5 +1,5 @@
 /**
-   Custom versions of stdx.allocator functions (unfortunately)
+   Custom versions of std.experimental.allocator functions (unfortunately)
  */
 module automem.allocator;
 

@@ -2,7 +2,7 @@ module automem.traits;
 
 
 void checkAllocator(T)() {
-    import stdx.allocator: make, dispose;
+    import std.experimental.allocator: make, dispose;
     import std.traits: hasMember;
 
     static if(hasMember!(T, "instance"))
@@ -21,7 +21,7 @@ enum isAllocator(T) = is(typeof(checkAllocator!T));
 
 @("isAllocator")
 @safe @nogc pure unittest {
-    import stdx.allocator.mallocator: Mallocator;
+    import std.experimental.allocator.mallocator: Mallocator;
     import test_allocator: TestAllocator;
 
     static assert( isAllocator!Mallocator);
@@ -40,6 +40,6 @@ template isSingleton(Allocator) {
 }
 
 template isTheAllocator(Allocator) {
-    import stdx.allocator: theAllocator;
+    import std.experimental.allocator: theAllocator;
     enum isTheAllocator = is(Allocator == typeof(theAllocator));
 }

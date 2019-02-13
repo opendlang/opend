@@ -1,8 +1,7 @@
 {
 	"fileVersion": 1,
 	"versions": {
-		"stdx-allocator": "2.77.5",
-		"test_allocator": "0.2.5",
-		"unit-threaded": "0.7.53"
+		"test_allocator": "0.3.1",
+		"unit-threaded": "0.8.0"
 	}
 }

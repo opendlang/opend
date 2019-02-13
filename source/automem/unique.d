@@ -4,7 +4,7 @@
 module automem.unique;
 
 import automem.traits: isAllocator;
-import stdx.allocator: theAllocator;
+import std.experimental.allocator: theAllocator;
 import std.typecons: Flag;
 
 version(AutomemTesting) {
@@ -193,7 +193,7 @@ private:
 private template makeObject(Flag!"supportGC" supportGC, args...)
 {
     void makeObject(Type,A)(ref Unique!(Type, A) u) {
-        import stdx.allocator: make;
+        import std.experimental.allocator: make;
         import std.functional : forward;
         import std.traits : hasIndirections;
         import core.memory : GC;
@@ -236,7 +236,7 @@ private template makeObject(Flag!"supportGC" supportGC, args...)
 ///
 @("release")
 @system unittest {
-    import stdx.allocator: dispose;
+    import std.experimental.allocator: dispose;
     import core.exception: AssertError;
 
     try {

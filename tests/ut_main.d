@@ -14,7 +14,7 @@ mixin runTestsMain!(
 
 
 shared static this() @safe nothrow {
-    import stdx.allocator: theAllocator, allocatorObject;
-    import stdx.allocator.mallocator: Mallocator;
-    theAllocator = () @trusted { return allocatorObject(Mallocator.instance); }();
+    import std.experimental.allocator: theAllocator, allocatorObject;
+    import std.experimental.allocator.mallocator: Mallocator;
+    () @trusted { theAllocator = allocatorObject(Mallocator.instance); }();
 }

@@ -1,5 +1,5 @@
 /**
-C++-style automatic memory management smart pointers for D using `stdx.allocator`.
+C++-style automatic memory management smart pointers for D using `std.experimental.allocator`.
 
 Unlike the C++ variants, the smart pointers themselves allocate the memory for the objects they contain.
 That ensures the right allocator is used to dispose of the memory as well.
@@ -82,7 +82,7 @@ public import automem.array;
 
 // @nogc test - must explicitly use the allocator for compile-time guarantees
 @safe @nogc unittest {
-    import stdx.allocator.mallocator: Mallocator;
+    import std.experimental.allocator.mallocator: Mallocator;
 
     static struct Point {
         int x;

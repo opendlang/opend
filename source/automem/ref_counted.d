@@ -5,7 +5,7 @@ module automem.ref_counted;
 
 import automem.traits: isAllocator;
 import automem.unique: Unique;
-import stdx.allocator: theAllocator, processAllocator;
+import std.experimental.allocator: theAllocator, processAllocator;
 import std.typecons: Flag;
 
 
@@ -200,7 +200,7 @@ private:
     public ImplType* _impl; // public or alias this doesn't work
 
     void allocateImpl() {
-        import stdx.allocator: make;
+        import std.experimental.allocator: make;
         import std.traits: hasIndirections;
 
         _impl = cast(typeof(_impl))_allocator.allocate(Impl.sizeof);

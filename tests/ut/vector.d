@@ -2,7 +2,7 @@ module ut.vector;
 
 import ut;
 import automem.vector;
-import stdx.allocator.mallocator: Mallocator;
+import std.experimental.allocator.mallocator: Mallocator;
 import test_allocator;
 
 
@@ -478,8 +478,8 @@ private void takesScopePtr(T)(scope const(T)* ptr) {
 
 @("StackFront")
 @safe @nogc unittest {
-    import stdx.allocator.showcase: StackFront;
-    import stdx.allocator.mallocator: Mallocator;
+    import std.experimental.allocator.showcase: StackFront;
+    import std.experimental.allocator.mallocator: Mallocator;
 
     Vector!(int, StackFront!(1024, Mallocator)) v;
     v ~= 1;
@@ -490,8 +490,8 @@ version(Windows) {}
 else {
     @("mmapRegionList")
         @system unittest {
-        import stdx.allocator.showcase: mmapRegionList;
-        import stdx.allocator.mallocator: Mallocator;
+        import std.experimental.allocator.showcase: mmapRegionList;
+        import std.experimental.allocator.mallocator: Mallocator;
         import automem.vector: isAllocator;
 
         auto v = vector(mmapRegionList(1024), 0, 1, 2);

@@ -83,7 +83,7 @@ mixin TestUtils;
 
 @("struct test allocator one rvalue assignment mallocator")
 @safe unittest {
-    import stdx.allocator.mallocator: Mallocator;
+    import std.experimental.allocator.mallocator: Mallocator;
     {
         RefCounted!(Struct, Mallocator) ptr;
         ptr = RefCounted!(Struct, Mallocator)(5);
@@ -234,7 +234,7 @@ static if (__VERSION__ >= 2079)
 
 @("assign from T")
 @safe unittest {
-    import stdx.allocator.mallocator: Mallocator;
+    import std.experimental.allocator.mallocator: Mallocator;
 
     {
         auto a = RefCounted!(Struct, Mallocator)(3);
@@ -313,7 +313,7 @@ static if (__VERSION__ >= 2079) {
 
     @("threads Mallocator")
     @system unittest {
-        import stdx.allocator.mallocator: Mallocator;
+        import std.experimental.allocator.mallocator: Mallocator;
         static assert(__traits(compiles, sendRefCounted!Mallocator(7)));
     }
 

@@ -7,8 +7,8 @@ module automem.vector;
 
 import automem.traits: isGlobal;
 import std.range.primitives: isInputRange;
-import stdx.allocator: theAllocator;
-import stdx.allocator.mallocator: Mallocator;
+import std.experimental.allocator: theAllocator;
+import std.experimental.allocator.mallocator: Mallocator;
 
 
 alias String = StringA!(typeof(theAllocator));
@@ -115,7 +115,7 @@ struct Vector(E, Allocator = typeof(theAllocator)) if(isAllocator!Allocator) {
 
     /// Frees the memory and returns to .init
     void free() scope {
-        import stdx.allocator: dispose;
+        import std.experimental.allocator: dispose;
         () @trusted { _allocator.dispose(cast(void[]) _elements); }();
         clear;
     }
@@ -185,7 +185,7 @@ struct Vector(E, Allocator = typeof(theAllocator)) if(isAllocator!Allocator) {
 
         /// Shrink to fit the new length given. Returns if shrunk.
         bool shrink(long newLength) scope @trusted {
-            import stdx.allocator: shrinkArray;
+            import std.experimental.allocator: shrinkArray;
 
             const delta = capacity - newLength;
             const shrunk = _allocator.shrinkArray(_elements, delta.toSizeT);
@@ -369,7 +369,7 @@ private:
         Allocator _allocator;
 
     E[] createVector(long length) scope {
-        import stdx.allocator: makeArray;
+        import std.experimental.allocator: makeArray;
         return () @trusted { return _allocator.makeArray!E(length.toSizeT); }();
     }
 
@@ -386,7 +386,7 @@ private:
     }
 
     void expandMemory(long newLength) scope {
-        import stdx.allocator: expandArray;
+        import std.experimental.allocator: expandArray;
 
         if(newLength > capacity) {
             if(length == 0)
@@ -494,7 +494,7 @@ private auto frontNoAutoDecode(R)(R range) {
 
 
 void checkAllocator(T)() {
-    import stdx.allocator: dispose, shrinkArray, makeArray, expandArray;
+    import std.experimental.allocator: dispose, shrinkArray, makeArray, expandArray;
     import std.traits: hasMember;
 
     static if(hasMember!(T, "instance"))
@@ -515,7 +515,7 @@ enum isAllocator(T) = is(typeof(checkAllocator!T));
 
 @("isAllocator")
 @safe @nogc pure unittest {
-    import stdx.allocator.mallocator: Mallocator;
+    import std.experimental.allocator.mallocator: Mallocator;
     import test_allocator: TestAllocator;
 
     static assert( isAllocator!Mallocator);

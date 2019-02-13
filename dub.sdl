@@ -4,7 +4,6 @@ description "Automatic memory management"
 license "BSD 3-clause"
 targetType "library"
 targetPath "bin"
-dependency "stdx-allocator" version="~>2.77.0"
 
 
 configuration "library" {
