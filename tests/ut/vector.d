@@ -498,3 +498,12 @@ else {
         v ~= 3;
     }
 }
+
+
+
+@("2d")
+@safe unittest {
+    auto v = vector(vector(0, 0, 0), vector(1, 1, 1, 1));
+    v[0][].shouldEqual([0, 0, 0]);
+    v[1][].shouldEqual([1, 1, 1, 1]);
+}

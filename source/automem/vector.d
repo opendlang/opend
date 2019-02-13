@@ -115,8 +115,18 @@ struct Vector(E, Allocator = typeof(theAllocator)) if(isAllocator!Allocator) {
 
     /// Frees the memory and returns to .init
     void free() scope {
+        import std.traits: Unqual;
         import std.experimental.allocator: dispose;
-        () @trusted { _allocator.dispose(cast(void[]) _elements); }();
+
+        () @trusted {
+            static if(is(E == immutable))
+                auto elements = cast(Unqual!E[]) _elements;
+            else
+                alias elements = _elements;
+
+            _allocator.dispose(elements);
+        }();
+
         clear;
     }
 
