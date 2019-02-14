@@ -507,3 +507,11 @@ else {
     v[0][].shouldEqual([0, 0, 0]);
     v[1][].shouldEqual([1, 1, 1, 1]);
 }
+
+
+@("toString")
+@safe unittest {
+    import std.conv: text;
+    auto v = vector(1, 2, 3);
+    v.text.should == `[1, 2, 3]`;
+}
