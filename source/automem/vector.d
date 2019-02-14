@@ -415,23 +415,21 @@ private:
     }
 }
 
-static if (__VERSION__ >= 2082) // version identifier D_Exceptions was added in 2.082
-{
+
+static if (__VERSION__ >= 2082) { // version identifier D_Exceptions was added in 2.082
     version (D_Exceptions)
         private enum haveExceptions = true;
     else
         private enum haveExceptions = false;
-}
-else
-{
+} else {
     version (D_BetterC)
         private enum haveExceptions = false;
     else
         private enum haveExceptions = true;
 }
 
-static if (haveExceptions)
-{
+
+static if (haveExceptions) {
     private static immutable boundsException = new BoundsException("Out of bounds index");
     private enum throwBoundsException = q{throw boundsException;};
     class BoundsException: Exception {
@@ -439,11 +437,10 @@ static if (haveExceptions)
 
         mixin basicExceptionCtors;
     }
-}
-else
-{
+} else {
     private enum throwBoundsException = q{assert(0, "Out of bounds index");};
 }
+
 
 private template isInputRangeOf(R, E) {
     import std.range.primitives: isInputRange;
@@ -455,13 +452,13 @@ private template isForwardRangeOf(R, E) {
     enum isForwardRangeOf = isForwardRange!R && canAssignFrom!(R, E);
 }
 
-
 private template canAssignFrom(R, E) {
     enum canAssignFrom = is(typeof({
         import automem.vector: frontNoAutoDecode;
         E element = R.init.frontNoAutoDecode;
     }));
 }
+
 private size_t toSizeT(long length) @safe @nogc pure nothrow {
     static if(size_t.sizeof < long.sizeof)
         assert(length < cast(long) size_t.max);
