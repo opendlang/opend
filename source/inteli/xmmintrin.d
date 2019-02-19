@@ -1293,6 +1293,12 @@ void _mm_store_ss (float* mem_addr, __m128 a) pure @safe
 {
     *mem_addr = a[0];
 }
+unittest
+{
+    float a;
+    _mm_store_ss(&a, _mm_set_ps(3, 2, 1, 546));
+    assert(a == 546);
+}
 
 void _mm_store1_ps (float* mem_addr, __m128 a) pure // not safe since nothing guarantees alignment
 {
