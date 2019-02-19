@@ -481,8 +481,22 @@ private void takesScopePtr(T)(scope const(T)* ptr) {
     import std.experimental.allocator.showcase: StackFront;
     import std.experimental.allocator.mallocator: Mallocator;
 
-    Vector!(int, StackFront!(1024, Mallocator)) v;
-    v ~= 1;
+    alias Allocator = StackFront!(1024, Mallocator);
+
+    {
+        Vector!(int, Allocator) v;
+        v ~= 1;
+        {
+            int[1] expected = [1];
+            assert(v[] == expected[]);
+        }
+    }
+
+    {
+        static void fun(Allocator)(ref Allocator allocator) {
+            Vector!(int, Allocator) v;
+        }
+    }
 }
 
 
@@ -514,4 +528,18 @@ else {
     import std.conv: text;
     auto v = vector(1, 2, 3);
     v.text.should == `[1, 2, 3]`;
+}
+
+
+@("return")
+@safe unittest {
+    static auto fun() {
+        auto v = vector(1, 2, 3);
+        v ~= 4;
+        return v;
+    }
+
+    auto v = fun;
+    v ~= 5;
+    v[].shouldEqual([1, 2, 3, 4, 5]);
 }
