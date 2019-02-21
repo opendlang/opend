@@ -39,6 +39,7 @@ struct TaggedUnion(U) if (is(U == union) || is(U == struct))
 		hasElaborateCopyConstructor, hasElaborateDestructor, isCopyable;
 	import std.ascii : toUpper;
 
+	alias FieldDefinitionType = U;
 	alias FieldTypes = FieldTypeTuple!U;
 	alias fieldNames = FieldNameTuple!U;
 
@@ -47,6 +48,8 @@ struct TaggedUnion(U) if (is(U == union) || is(U == struct))
 
 	/// A type enum that identifies the type of value currently stored.
 	alias Kind = TypeEnum!U;
+
+	private alias FieldTypeByName(string name) = FieldTypes[__traits(getMember, Kind, name)];
 
 	private {
 		static if (isUnionType!(FieldTypes[0]) || __VERSION__ < 2072) {
@@ -341,12 +344,15 @@ struct TaggedAlgebraic(U) if (is(U == union) || is(U == struct))
 	import std.string : format;
 
 	/// Alias of the type used for defining the possible storage types/kinds.
-	alias Union = U;
+	deprecated alias Union = U;
+
+	/// The underlying tagged union type
+	alias UnionType = TaggedUnion!U;
 
 	private TaggedUnion!U m_union;
 
 	/// A type enum that identifies the type of value currently stored.
-	alias Kind = TaggedUnion!U.Kind;
+	alias Kind = UnionType.Kind;
 
 	/// Compatibility alias
 	deprecated("Use 'Kind' instead.") alias Type = Kind;
@@ -1149,7 +1155,7 @@ private static auto implementOp(OpKind kind, string name, T, ARGS...)(ref T self
 		enum assert_msg = "Operator "~name~" ("~kind.stringof~") can only be used on values of the following types: "~[info.fields].join(", ");
 		default: assert(false, assert_msg);
 		foreach (i, f; info.fields) {
-			alias FT = typeof(__traits(getMember, T.Union, f));
+			alias FT = T.UnionType.FieldTypeByName!f;
 			case __traits(getMember, T.Kind, f):
 				static if (NoDuplicates!(info.ReturnTypes).length == 1)
 					return info.perform(self.m_union.trustedGet!FT, args);
@@ -1361,17 +1367,17 @@ private string generateConstructors(U)()
 	// normal type constructors
 	foreach (tname; UniqueTypeFields!U)
 		ret ~= q{
-			this(typeof(U.%1$s) value)
+			this(UnionType.FieldTypeByName!"%1$s" value)
 			{
-				static if (isUnionType!(typeof(U.%1$s)))
+				static if (isUnionType!(UnionType.FieldTypeByName!"%1$s"))
 					m_union.set!(Kind.%1$s)();
 				else
 					m_union.set!(Kind.%1$s)(value);
 			}
 
-			void opAssign(typeof(U.%1$s) value)
+			void opAssign(UnionType.FieldTypeByName!"%1$s" value)
 			{
-				static if (isUnionType!(typeof(U.%1$s)))
+				static if (isUnionType!(UnionType.FieldTypeByName!"%1$s"))
 					m_union.set!(Kind.%1$s)();
 				else
 					m_union.set!(Kind.%1$s)(value);
@@ -1381,14 +1387,14 @@ private string generateConstructors(U)()
 	// type constructors with explicit type tag
 	foreach (tname; TypeTuple!(UniqueTypeFields!U, AmbiguousTypeFields!U))
 		ret ~= q{
-			this(typeof(U.%1$s) value, Kind type)
+			this(UnionType.FieldTypeByName!"%1$s" value, Kind type)
 			{
 				switch (type) {
-					default: assert(false, format("Invalid type ID for type %%s: %%s", typeof(U.%1$s).stringof, type));
+					default: assert(false, format("Invalid type ID for type %%s: %%s", UnionType.FieldTypeByName!"%1$s".stringof, type));
 					foreach (i, n; TaggedUnion!U.fieldNames) {
-						static if (is(typeof(U.%1$s) == typeof(__traits(getMember, U, n)))) {
+						static if (is(UnionType.FieldTypeByName!"%1$s" == UnionType.FieldTypes[i])) {
 							case __traits(getMember, Kind, n):
-								static if (isUnionType!(m_union.FieldTypes[i]))
+								static if (isUnionType!(UnionType.FieldTypes[i]))
 									m_union.set!(__traits(getMember, Kind, n))();
 								else m_union.set!(__traits(getMember, Kind, n))(value);
 								return;
