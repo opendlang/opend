@@ -28,7 +28,7 @@ module derelict.cuda.runtimeapi;
  */
 
 // Current API version supported by DerelictCUDA is 6.5
-enum CUDART_VERSION = 6050;
+enum CUDART_VERSION = 10000;
 
 import derelict.util.loader;
 
@@ -74,117 +74,723 @@ enum cudaHostAllocWriteCombined     = 0x04;
 enum cudaHostRegisterDefault        = 0x00;
 enum cudaHostRegisterPortable       = 0x01;
 enum cudaHostRegisterMapped         = 0x02;
+enum cudaHosatRegisterIoMemory      = 0x04;
+
 enum cudaPeerAccessDefault          = 0x00;
+
 enum cudaStreamDefault              = 0x00;
 enum cudaStreamNonBlocking          = 0x01;
+
+//#define cudaStreamLegacy                    ((cudaStream_t)0x1)
+//#define cudaStreamPerThread                 ((cudaStream_t)0x2)
+
 enum cudaEventDefault               = 0x00;
 enum cudaEventBlockingSync          = 0x01;
 enum cudaEventDisableTiming         = 0x02;
 enum cudaEventInterprocess          = 0x04;
+
 enum cudaDeviceScheduleAuto         = 0x00;
 enum cudaDeviceScheduleSpin         = 0x01;
 enum cudaDeviceScheduleYield        = 0x02;
 enum cudaDeviceScheduleBlockingSync = 0x04;
 enum cudaDeviceBlockingSync         = 0x04;
+
 enum cudaDeviceScheduleMask         = 0x07;
 enum cudaDeviceMapHost              = 0x08;
 enum cudaDeviceLmemResizeToMax      = 0x10;
 enum cudaDeviceMask                 = 0x1f;
+
 enum cudaArrayDefault               = 0x00;
 enum cudaArrayLayered               = 0x01;
 enum cudaArraySurfaceLoadStore      = 0x02;
 enum cudaArrayCubemap               = 0x04;
 enum cudaArrayTextureGather         = 0x08;
+enum cudaArrayColorAttachment       = 0x20;
+
 enum cudaIpcMemLazyEnablePeerAccess = 0x01;
+
 enum cudaMemAttachGlobal            = 0x01;
 enum cudaMemAttachHost              = 0x02;
 enum cudaMemAttachSingle            = 0x04;
 
+alias cudaCpuDeviceId               = ((int)-1);
+alias cudaInvalidDeviceId           = ((int)-2);
+
+enum cudaCooperativeLaunchMultiDeviceNoPreSync  = 0x01
+enum cudaCooperativeLaunchMultiDeviceNoPostSync = 0x02
+
+
 alias cudaError = int;
 enum : cudaError
 {
-    cudaSuccess                           =      0,
-    cudaErrorMissingConfiguration         =      1,
-    cudaErrorMemoryAllocation             =      2,
-    cudaErrorInitializationError          =      3,
-    cudaErrorLaunchFailure                =      4,
-    cudaErrorPriorLaunchFailure           =      5,
-    cudaErrorLaunchTimeout                =      6,
-    cudaErrorLaunchOutOfResources         =      7,
-    cudaErrorInvalidDeviceFunction        =      8,
-    cudaErrorInvalidConfiguration         =      9,
-    cudaErrorInvalidDevice                =     10,
-    cudaErrorInvalidValue                 =     11,
-    cudaErrorInvalidPitchValue            =     12,
-    cudaErrorInvalidSymbol                =     13,
-    cudaErrorMapBufferObjectFailed        =     14,
-    cudaErrorUnmapBufferObjectFailed      =     15,
-    cudaErrorInvalidHostPointer           =     16,
-    cudaErrorInvalidDevicePointer         =     17,
-    cudaErrorInvalidTexture               =     18,
-    cudaErrorInvalidTextureBinding        =     19,
-    cudaErrorInvalidChannelDescriptor     =     20,
-    cudaErrorInvalidMemcpyDirection       =     21,
-    cudaErrorAddressOfConstant            =     22,
-    cudaErrorTextureFetchFailed           =     23,
-    cudaErrorTextureNotBound              =     24,
-    cudaErrorSynchronizationError         =     25,
-    cudaErrorInvalidFilterSetting         =     26,
-    cudaErrorInvalidNormSetting           =     27,
-    cudaErrorMixedDeviceExecution         =     28,
-    cudaErrorCudartUnloading              =     29,
-    cudaErrorUnknown                      =     30,
-    cudaErrorNotYetImplemented            =     31,
-    cudaErrorMemoryValueTooLarge          =     32,
-    cudaErrorInvalidResourceHandle        =     33,
-    cudaErrorNotReady                     =     34,
-    cudaErrorInsufficientDriver           =     35,
-    cudaErrorSetOnActiveProcess           =     36,
-    cudaErrorInvalidSurface               =     37,
-    cudaErrorNoDevice                     =     38,
-    cudaErrorECCUncorrectable             =     39,
-    cudaErrorSharedObjectSymbolNotFound   =     40,
-    cudaErrorSharedObjectInitFailed       =     41,
-    cudaErrorUnsupportedLimit             =     42,
-    cudaErrorDuplicateVariableName        =     43,
-    cudaErrorDuplicateTextureName         =     44,
-    cudaErrorDuplicateSurfaceName         =     45,
-    cudaErrorDevicesUnavailable           =     46,
-    cudaErrorInvalidKernelImage           =     47,
-    cudaErrorNoKernelImageForDevice       =     48,
-    cudaErrorIncompatibleDriverContext    =     49,
-    cudaErrorPeerAccessAlreadyEnabled     =     50,
-    cudaErrorPeerAccessNotEnabled         =     51,
-    cudaErrorDeviceAlreadyInUse           =     54,
-    cudaErrorProfilerDisabled             =     55,
-    cudaErrorProfilerNotInitialized       =     56,
-    cudaErrorProfilerAlreadyStarted       =     57,
-    cudaErrorProfilerAlreadyStopped       =     58,
-    cudaErrorAssert                       =     59,
-    cudaErrorTooManyPeers                 =     60,
-    cudaErrorHostMemoryAlreadyRegistered  =     61,
-    cudaErrorHostMemoryNotRegistered      =     62,
-    cudaErrorOperatingSystem              =     63,
-    cudaErrorPeerAccessUnsupported        =     64,
-    cudaErrorLaunchMaxDepthExceeded       =     65,
-    cudaErrorLaunchFileScopedTex          =     66,
-    cudaErrorLaunchFileScopedSurf         =     67,
-    cudaErrorSyncDepthExceeded            =     68,
-    cudaErrorLaunchPendingCountExceeded   =     69,
-    cudaErrorNotPermitted                 =     70,
-    cudaErrorNotSupported                 =     71,
-    cudaErrorHardwareStackError           =     72,
-    cudaErrorIllegalInstruction           =     73,
-    cudaErrorMisalignedAddress            =     74,
-    cudaErrorInvalidAddressSpace          =     75,
-    cudaErrorInvalidPc                    =     76,
-    cudaErrorIllegalAddress               =     77,
-    cudaErrorInvalidPtx                   =     78,
-    cudaErrorInvalidGraphicsContext       =     79,
-    cudaErrorStartupFailure               =   0x7f,
-    cudaErrorApiFailureBase               =  10000
+  /**
+   * The API call returned with no errors. In the case of query calls, this
+   * also means that the operation being queried is complete (see
+   * ::cudaEventQuery() and ::cudaStreamQuery()).
+   */
+  cudaSuccess                           =      0,
+
+  /**
+   * The device function being invoked (usually via ::cudaLaunchKernel()) was not
+   * previously configured via the ::cudaConfigureCall() function.
+   */
+  cudaErrorMissingConfiguration         =      1,
+
+  /**
+   * The API call failed because it was unable to allocate enough memory to
+   * perform the requested operation.
+   */
+  cudaErrorMemoryAllocation             =      2,
+
+  /**
+   * The API call failed because the CUDA driver and runtime could not be
+   * initialized.
+   */
+  cudaErrorInitializationError          =      3,
+
+  /**
+   * An exception occurred on the device while executing a kernel. Common
+   * causes include dereferencing an invalid device pointer and accessing
+   * out of bounds shared memory. All existing device memory allocations
+   * are invalid. To continue using CUDA, the process must be terminated
+   * and relaunched.
+   */
+  cudaErrorLaunchFailure                =      4,
+
+  /**
+   * This indicated that a previous kernel launch failed. This was previously
+   * used for device emulation of kernel launches.
+   * \deprecated
+   * This error return is deprecated as of CUDA 3.1. Device emulation mode was
+   * removed with the CUDA 3.1 release.
+   */
+  cudaErrorPriorLaunchFailure           =      5,
+
+  /**
+   * This indicates that the device kernel took too long to execute. This can
+   * only occur if timeouts are enabled - see the device property
+   * \ref ::cudaDeviceProp::kernelExecTimeoutEnabled "kernelExecTimeoutEnabled"
+   * for more information.
+   * This leaves the process in an inconsistent state and any further CUDA work
+   * will return the same error. To continue using CUDA, the process must be terminated
+   * and relaunched.
+   */
+  cudaErrorLaunchTimeout                =      6,
+
+  /**
+   * This indicates that a launch did not occur because it did not have
+   * appropriate resources. Although this error is similar to
+   * ::cudaErrorInvalidConfiguration, this error usually indicates that the
+   * user has attempted to pass too many arguments to the device kernel, or the
+   * kernel launch specifies too many threads for the kernel's register count.
+   */
+  cudaErrorLaunchOutOfResources         =      7,
+
+  /**
+   * The requested device function does not exist or is not compiled for the
+   * proper device architecture.
+   */
+  cudaErrorInvalidDeviceFunction        =      8,
+
+  /**
+   * This indicates that a kernel launch is requesting resources that can
+   * never be satisfied by the current device. Requesting more shared memory
+   * per block than the device supports will trigger this error, as will
+   * requesting too many threads or blocks. See ::cudaDeviceProp for more
+   * device limitations.
+   */
+  cudaErrorInvalidConfiguration         =      9,
+
+  /**
+   * This indicates that the device ordinal supplied by the user does not
+   * correspond to a valid CUDA device.
+   */
+  cudaErrorInvalidDevice                =     10,
+
+  /**
+   * This indicates that one or more of the parameters passed to the API call
+   * is not within an acceptable range of values.
+   */
+  cudaErrorInvalidValue                 =     11,
+
+  /**
+   * This indicates that one or more of the pitch-related parameters passed
+   * to the API call is not within the acceptable range for pitch.
+   */
+  cudaErrorInvalidPitchValue            =     12,
+
+  /**
+   * This indicates that the symbol name/identifier passed to the API call
+   * is not a valid name or identifier.
+   */
+  cudaErrorInvalidSymbol                =     13,
+
+  /**
+   * This indicates that the buffer object could not be mapped.
+   */
+  cudaErrorMapBufferObjectFailed        =     14,
+
+  /**
+   * This indicates that the buffer object could not be unmapped.
+   */
+  cudaErrorUnmapBufferObjectFailed      =     15,
+
+  /**
+   * This indicates that at least one host pointer passed to the API call is
+   * not a valid host pointer.
+   */
+  cudaErrorInvalidHostPointer           =     16,
+
+  /**
+   * This indicates that at least one device pointer passed to the API call is
+   * not a valid device pointer.
+   */
+  cudaErrorInvalidDevicePointer         =     17,
+
+  /**
+   * This indicates that the texture passed to the API call is not a valid
+   * texture.
+   */
+  cudaErrorInvalidTexture               =     18,
+
+  /**
+   * This indicates that the texture binding is not valid. This occurs if you
+   * call ::cudaGetTextureAlignmentOffset() with an unbound texture.
+   */
+  cudaErrorInvalidTextureBinding        =     19,
+
+  /**
+   * This indicates that the channel descriptor passed to the API call is not
+   * valid. This occurs if the format is not one of the formats specified by
+   * ::cudaChannelFormatKind, or if one of the dimensions is invalid.
+   */
+  cudaErrorInvalidChannelDescriptor     =     20,
+
+  /**
+   * This indicates that the direction of the memcpy passed to the API call is
+   * not one of the types specified by ::cudaMemcpyKind.
+   */
+  cudaErrorInvalidMemcpyDirection       =     21,
+
+  /**
+   * This indicated that the user has taken the address of a constant variable,
+   * which was forbidden up until the CUDA 3.1 release.
+   * \deprecated
+   * This error return is deprecated as of CUDA 3.1. Variables in constant
+   * memory may now have their address taken by the runtime via
+   * ::cudaGetSymbolAddress().
+   */
+  cudaErrorAddressOfConstant            =     22,
+
+  /**
+   * This indicated that a texture fetch was not able to be performed.
+   * This was previously used for device emulation of texture operations.
+   * \deprecated
+   * This error return is deprecated as of CUDA 3.1. Device emulation mode was
+   * removed with the CUDA 3.1 release.
+   */
+  cudaErrorTextureFetchFailed           =     23,
+
+  /**
+   * This indicated that a texture was not bound for access.
+   * This was previously used for device emulation of texture operations.
+   * \deprecated
+   * This error return is deprecated as of CUDA 3.1. Device emulation mode was
+   * removed with the CUDA 3.1 release.
+   */
+  cudaErrorTextureNotBound              =     24,
+
+  /**
+   * This indicated that a synchronization operation had failed.
+   * This was previously used for some device emulation functions.
+   * \deprecated
+   * This error return is deprecated as of CUDA 3.1. Device emulation mode was
+   * removed with the CUDA 3.1 release.
+   */
+  cudaErrorSynchronizationError         =     25,
+
+  /**
+   * This indicates that a non-float texture was being accessed with linear
+   * filtering. This is not supported by CUDA.
+   */
+  cudaErrorInvalidFilterSetting         =     26,
+
+  /**
+   * This indicates that an attempt was made to read a non-float texture as a
+   * normalized float. This is not supported by CUDA.
+   */
+  cudaErrorInvalidNormSetting           =     27,
+
+  /**
+   * Mixing of device and device emulation code was not allowed.
+   * \deprecated
+   * This error return is deprecated as of CUDA 3.1. Device emulation mode was
+   * removed with the CUDA 3.1 release.
+   */
+  cudaErrorMixedDeviceExecution         =     28,
+
+  /**
+   * This indicates that a CUDA Runtime API call cannot be executed because
+   * it is being called during process shut down, at a point in time after
+   * CUDA driver has been unloaded.
+   */
+  cudaErrorCudartUnloading              =     29,
+
+  /**
+   * This indicates that an unknown internal error has occurred.
+   */
+  cudaErrorUnknown                      =     30,
+
+  /**
+   * This indicates that the API call is not yet implemented. Production
+   * releases of CUDA will never return this error.
+   * \deprecated
+   * This error return is deprecated as of CUDA 4.1.
+   */
+  cudaErrorNotYetImplemented            =     31,
+
+  /**
+   * This indicated that an emulated device pointer exceeded the 32-bit address
+   * range.
+   * \deprecated
+   * This error return is deprecated as of CUDA 3.1. Device emulation mode was
+   * removed with the CUDA 3.1 release.
+   */
+  cudaErrorMemoryValueTooLarge          =     32,
+
+  /**
+   * This indicates that a resource handle passed to the API call was not
+   * valid. Resource handles are opaque types like ::cudaStream_t and
+   * ::cudaEvent_t.
+   */
+  cudaErrorInvalidResourceHandle        =     33,
+
+  /**
+   * This indicates that asynchronous operations issued previously have not
+   * completed yet. This result is not actually an error, but must be indicated
+   * differently than ::cudaSuccess (which indicates completion). Calls that
+   * may return this value include ::cudaEventQuery() and ::cudaStreamQuery().
+   */
+  cudaErrorNotReady                     =     34,
+
+  /**
+   * This indicates that the installed NVIDIA CUDA driver is older than the
+   * CUDA runtime library. This is not a supported configuration. Users should
+   * install an updated NVIDIA display driver to allow the application to run.
+   */
+  cudaErrorInsufficientDriver           =     35,
+
+  /**
+   * This indicates that the user has called ::cudaSetValidDevices(),
+   * ::cudaSetDeviceFlags(), ::cudaD3D9SetDirect3DDevice(),
+   * ::cudaD3D10SetDirect3DDevice, ::cudaD3D11SetDirect3DDevice(), or
+   * ::cudaVDPAUSetVDPAUDevice() after initializing the CUDA runtime by
+   * calling non-device management operations (allocating memory and
+   * launching kernels are examples of non-device management operations).
+   * This error can also be returned if using runtime/driver
+   * interoperability and there is an existing ::CUcontext active on the
+   * host thread.
+   */
+  cudaErrorSetOnActiveProcess           =     36,
+
+  /**
+   * This indicates that the surface passed to the API call is not a valid
+   * surface.
+   */
+  cudaErrorInvalidSurface               =     37,
+
+  /**
+   * This indicates that no CUDA-capable devices were detected by the installed
+   * CUDA driver.
+   */
+  cudaErrorNoDevice                     =     38,
+
+  /**
+   * This indicates that an uncorrectable ECC error was detected during
+   * execution.
+   */
+  cudaErrorECCUncorrectable             =     39,
+
+  /**
+   * This indicates that a link to a shared object failed to resolve.
+   */
+  cudaErrorSharedObjectSymbolNotFound   =     40,
+
+  /**
+   * This indicates that initialization of a shared object failed.
+   */
+  cudaErrorSharedObjectInitFailed       =     41,
+
+  /**
+   * This indicates that the ::cudaLimit passed to the API call is not
+   * supported by the active device.
+   */
+  cudaErrorUnsupportedLimit             =     42,
+
+  /**
+   * This indicates that multiple global or constant variables (across separate
+   * CUDA source files in the application) share the same string name.
+   */
+  cudaErrorDuplicateVariableName        =     43,
+
+  /**
+   * This indicates that multiple textures (across separate CUDA source
+   * files in the application) share the same string name.
+   */
+  cudaErrorDuplicateTextureName         =     44,
+
+  /**
+   * This indicates that multiple surfaces (across separate CUDA source
+   * files in the application) share the same string name.
+   */
+  cudaErrorDuplicateSurfaceName         =     45,
+
+  /**
+   * This indicates that all CUDA devices are busy or unavailable at the current
+   * time. Devices are often busy/unavailable due to use of
+   * ::cudaComputeModeExclusive, ::cudaComputeModeProhibited or when long
+   * running CUDA kernels have filled up the GPU and are blocking new work
+   * from starting. They can also be unavailable due to memory constraints
+   * on a device that already has active CUDA work being performed.
+   */
+  cudaErrorDevicesUnavailable           =     46,
+
+  /**
+   * This indicates that the device kernel image is invalid.
+   */
+  cudaErrorInvalidKernelImage           =     47,
+
+  /**
+   * This indicates that there is no kernel image available that is suitable
+   * for the device. This can occur when a user specifies code generation
+   * options for a particular CUDA source file that do not include the
+   * corresponding device configuration.
+   */
+  cudaErrorNoKernelImageForDevice       =     48,
+
+  /**
+   * This indicates that the current context is not compatible with this
+   * the CUDA Runtime. This can only occur if you are using CUDA
+   * Runtime/Driver interoperability and have created an existing Driver
+   * context using the driver API. The Driver context may be incompatible
+   * either because the Driver context was created using an older version
+   * of the API, because the Runtime API call expects a primary driver
+   * context and the Driver context is not primary, or because the Driver
+   * context has been destroyed. Please see \ref CUDART_DRIVER "Interactions
+   * with the CUDA Driver API" for more information.
+   */
+  cudaErrorIncompatibleDriverContext    =     49,
+
+  /**
+   * This error indicates that a call to ::cudaDeviceEnablePeerAccess() is
+   * trying to re-enable peer addressing on from a context which has already
+   * had peer addressing enabled.
+   */
+  cudaErrorPeerAccessAlreadyEnabled     =     50,
+
+  /**
+   * This error indicates that ::cudaDeviceDisablePeerAccess() is trying to
+   * disable peer addressing which has not been enabled yet via
+   * ::cudaDeviceEnablePeerAccess().
+   */
+  cudaErrorPeerAccessNotEnabled         =     51,
+
+  /**
+   * This indicates that a call tried to access an exclusive-thread device that
+   * is already in use by a different thread.
+   */
+  cudaErrorDeviceAlreadyInUse           =     54,
+
+  /**
+   * This indicates profiler is not initialized for this run. This can
+   * happen when the application is running with external profiling tools
+   * like visual profiler.
+   */
+  cudaErrorProfilerDisabled             =     55,
+
+  /**
+   * \deprecated
+   * This error return is deprecated as of CUDA 5.0. It is no longer an error
+   * to attempt to enable/disable the profiling via ::cudaProfilerStart or
+   * ::cudaProfilerStop without initialization.
+   */
+  cudaErrorProfilerNotInitialized       =     56,
+
+  /**
+   * \deprecated
+   * This error return is deprecated as of CUDA 5.0. It is no longer an error
+   * to call cudaProfilerStart() when profiling is already enabled.
+   */
+  cudaErrorProfilerAlreadyStarted       =     57,
+
+  /**
+   * \deprecated
+   * This error return is deprecated as of CUDA 5.0. It is no longer an error
+   * to call cudaProfilerStop() when profiling is already disabled.
+   */
+   cudaErrorProfilerAlreadyStopped       =    58,
+
+  /**
+   * An assert triggered in device code during kernel execution. The device
+   * cannot be used again. All existing allocations are invalid. To continue
+   * using CUDA, the process must be terminated and relaunched.
+   */
+  cudaErrorAssert                        =    59,
+
+  /**
+   * This error indicates that the hardware resources required to enable
+   * peer access have been exhausted for one or more of the devices
+   * passed to ::cudaEnablePeerAccess().
+   */
+  cudaErrorTooManyPeers                 =     60,
+
+  /**
+   * This error indicates that the memory range passed to ::cudaHostRegister()
+   * has already been registered.
+   */
+  cudaErrorHostMemoryAlreadyRegistered  =     61,
+
+  /**
+   * This error indicates that the pointer passed to ::cudaHostUnregister()
+   * does not correspond to any currently registered memory region.
+   */
+  cudaErrorHostMemoryNotRegistered      =     62,
+
+  /**
+   * This error indicates that an OS call failed.
+   */
+  cudaErrorOperatingSystem              =     63,
+
+  /**
+   * This error indicates that P2P access is not supported across the given
+   * devices.
+   */
+  cudaErrorPeerAccessUnsupported        =     64,
+
+  /**
+   * This error indicates that a device runtime grid launch did not occur
+   * because the depth of the child grid would exceed the maximum supported
+   * number of nested grid launches.
+   */
+  cudaErrorLaunchMaxDepthExceeded       =     65,
+
+  /**
+   * This error indicates that a grid launch did not occur because the kernel
+   * uses file-scoped textures which are unsupported by the device runtime.
+   * Kernels launched via the device runtime only support textures created with
+   * the Texture Object API's.
+   */
+  cudaErrorLaunchFileScopedTex          =     66,
+
+  /**
+   * This error indicates that a grid launch did not occur because the kernel
+   * uses file-scoped surfaces which are unsupported by the device runtime.
+   * Kernels launched via the device runtime only support surfaces created with
+   * the Surface Object API's.
+   */
+  cudaErrorLaunchFileScopedSurf         =     67,
+
+  /**
+   * This error indicates that a call to ::cudaDeviceSynchronize made from
+   * the device runtime failed because the call was made at grid depth greater
+   * than than either the default (2 levels of grids) or user specified device
+   * limit ::cudaLimitDevRuntimeSyncDepth. To be able to synchronize on
+   * launched grids at a greater depth successfully, the maximum nested
+   * depth at which ::cudaDeviceSynchronize will be called must be specified
+   * with the ::cudaLimitDevRuntimeSyncDepth limit to the ::cudaDeviceSetLimit
+   * api before the host-side launch of a kernel using the device runtime.
+   * Keep in mind that additional levels of sync depth require the runtime
+   * to reserve large amounts of device memory that cannot be used for
+   * user allocations.
+   */
+  cudaErrorSyncDepthExceeded            =     68,
+
+  /**
+   * This error indicates that a device runtime grid launch failed because
+   * the launch would exceed the limit ::cudaLimitDevRuntimePendingLaunchCount.
+   * For this launch to proceed successfully, ::cudaDeviceSetLimit must be
+   * called to set the ::cudaLimitDevRuntimePendingLaunchCount to be higher
+   * than the upper bound of outstanding launches that can be issued to the
+   * device runtime. Keep in mind that raising the limit of pending device
+   * runtime launches will require the runtime to reserve device memory that
+   * cannot be used for user allocations.
+   */
+  cudaErrorLaunchPendingCountExceeded   =     69,
+
+  /**
+   * This error indicates the attempted operation is not permitted.
+   */
+  cudaErrorNotPermitted                 =     70,
+
+  /**
+   * This error indicates the attempted operation is not supported
+   * on the current system or device.
+   */
+  cudaErrorNotSupported                 =     71,
+
+  /**
+   * Device encountered an error in the call stack during kernel execution,
+   * possibly due to stack corruption or exceeding the stack size limit.
+   * This leaves the process in an inconsistent state and any further CUDA work
+   * will return the same error. To continue using CUDA, the process must be terminated
+   * and relaunched.
+   */
+  cudaErrorHardwareStackError           =     72,
+
+  /**
+   * The device encountered an illegal instruction during kernel execution
+   * This leaves the process in an inconsistent state and any further CUDA work
+   * will return the same error. To continue using CUDA, the process must be terminated
+   * and relaunched.
+   */
+  cudaErrorIllegalInstruction           =     73,
+
+  /**
+   * The device encountered a load or store instruction
+   * on a memory address which is not aligned.
+   * This leaves the process in an inconsistent state and any further CUDA work
+   * will return the same error. To continue using CUDA, the process must be terminated
+   * and relaunched.
+   */
+  cudaErrorMisalignedAddress            =     74,
+
+  /**
+   * While executing a kernel, the device encountered an instruction
+   * which can only operate on memory locations in certain address spaces
+   * (global, shared, or local), but was supplied a memory address not
+   * belonging to an allowed address space.
+   * This leaves the process in an inconsistent state and any further CUDA work
+   * will return the same error. To continue using CUDA, the process must be terminated
+   * and relaunched.
+   */
+  cudaErrorInvalidAddressSpace          =     75,
+
+  /**
+   * The device encountered an invalid program counter.
+   * This leaves the process in an inconsistent state and any further CUDA work
+   * will return the same error. To continue using CUDA, the process must be terminated
+   * and relaunched.
+   */
+  cudaErrorInvalidPc                    =     76,
+
+  /**
+   * The device encountered a load or store instruction on an invalid memory address.
+   * This leaves the process in an inconsistent state and any further CUDA work
+   * will return the same error. To continue using CUDA, the process must be terminated
+   * and relaunched.
+   */
+  cudaErrorIllegalAddress               =     77,
+
+  /**
+   * A PTX compilation failed. The runtime may fall back to compiling PTX if
+   * an application does not contain a suitable binary for the current device.
+   */
+  cudaErrorInvalidPtx                   =     78,
+
+  /**
+   * This indicates an error with the OpenGL or DirectX context.
+   */
+  cudaErrorInvalidGraphicsContext       =     79,
+
+  /**
+   * This indicates that an uncorrectable NVLink error was detected during the
+   * execution.
+   */
+  cudaErrorNvlinkUncorrectable          =     80,
+
+  /**
+   * This indicates that the PTX JIT compiler library was not found. The JIT Compiler
+   * library is used for PTX compilation. The runtime may fall back to compiling PTX
+   * if an application does not contain a suitable binary for the current device.
+   */
+  cudaErrorJitCompilerNotFound          =     81,
+
+  /**
+   * This error indicates that the number of blocks launched per grid for a kernel that was
+   * launched via either ::cudaLaunchCooperativeKernel or ::cudaLaunchCooperativeKernelMultiDevice
+   * exceeds the maximum number of blocks as allowed by ::cudaOccupancyMaxActiveBlocksPerMultiprocessor
+   * or ::cudaOccupancyMaxActiveBlocksPerMultiprocessorWithFlags times the number of multiprocessors
+   * as specified by the device attribute ::cudaDevAttrMultiProcessorCount.
+   */
+  cudaErrorCooperativeLaunchTooLarge    =     82,
+
+  /**
+   * This error indicates that the system is not yet ready to start any CUDA
+   * work.  To continue using CUDA, verify the system configuration is in a
+   * valid state and all required driver daemons are actively running.
+   */
+  cudaErrorSystemNotReady               =     83,
+
+  /**
+   * This indicates that a resource required by the API call is not in a
+   * valid state to perform the requested operation.
+   */
+  cudaErrorIllegalState                 =     84,
+
+  /**
+   * This indicates an internal startup failure in the CUDA runtime.
+   */
+  cudaErrorStartupFailure               =    127,
+
+  /**
+   * The operation is not permitted when the stream is capturing.
+   */
+  cudaErrorStreamCaptureUnsupported     =    900,
+
+  /**
+   * The current capture sequence on the stream has been invalidated due to
+   * a previous error.
+   */
+  cudaErrorStreamCaptureInvalidated     =    901,
+
+  /**
+   * The operation would have resulted in a merge of two independent capture
+   * sequences.
+   */
+  cudaErrorStreamCaptureMerge           =    902,
+
+  /**
+   * The capture was not initiated in this stream.
+   */
+  cudaErrorStreamCaptureUnmatched       =    903,
+
+  /**
+   * The capture sequence contains a fork that was not joined to the primary
+   * stream.
+   */
+  cudaErrorStreamCaptureUnjoined        =    904,
+
+  /**
+   * A dependency would have been created which crosses the capture sequence
+   * boundary. Only implicit in-stream ordering dependencies are allowed to
+   * cross the boundary.
+   */
+  cudaErrorStreamCaptureIsolation       =    905,
+
+  /**
+   * The operation would have resulted in a disallowed implicit dependency on
+   * a current capture sequence from cudaStreamLegacy.
+   */
+  cudaErrorStreamCaptureImplicit        =    906,
+
+  /**
+   * The operation is not permitted on an event which was last recorded in a
+   * capturing stream.
+   */
+  cudaErrorCapturedEvent                =    907,
+
+  /**
+   * Any unhandled CUDA driver error is added to this value and returned via
+   * the runtime. Production releases of CUDA should not return such errors.
+   * \deprecated
+   * This error return is deprecated as of CUDA 4.1.
+   */
+  cudaErrorApiFailureBase               =  10000
 }
 
+/**
+ * Channel format kind
+ */
 alias cudaChannelFormatKind = int;
 enum : cudaChannelFormatKind
 {
@@ -194,6 +800,9 @@ enum : cudaChannelFormatKind
     cudaChannelFormatKindNone             =   3
 }
 
+/**
+ * CUDA Channel format descriptor
+ */
 struct cudaChannelFormatDesc
 {
     int                   x;
@@ -203,6 +812,10 @@ struct cudaChannelFormatDesc
     cudaChannelFormatKind f;
 }
 
+/**
+ * CUDA array
+ */
+struct cudaArray;
 alias cudaArray_t = void*;
 alias cudaArray_const_t = const(void)*;
 alias cudaMipmappedArray_t = void*;
@@ -211,8 +824,10 @@ alias cudaMipmappedArray_const_t = const(void)*;
 alias cudaMemoryType = int;
 enum : cudaMemoryType
 {
-    cudaMemoryTypeHost   = 1,
-    cudaMemoryTypeDevice = 2
+  cudaMemoryTypeUnregistered = 0, /**< Unregistered memory */
+  cudaMemoryTypeHost         = 1, /**< Host memory */
+  cudaMemoryTypeDevice       = 2, /**< Device memory */
+  cudaMemoryTypeManaged      = 3  /**< Managed memory */
 }
 
 alias cudaMemcpyKind = int;
@@ -225,6 +840,11 @@ enum : cudaMemcpyKind
     cudaMemcpyDefault             =   4
 }
 
+/**
+ * CUDA Pitched memory pointer
+ *
+ * \sa ::make_cudaPitchedPtr
+ */
 struct cudaPitchedPtr
 {
     void   *ptr;
@@ -233,6 +853,11 @@ struct cudaPitchedPtr
     size_t  ysize;
 }
 
+/**
+ * CUDA extent
+ *
+ * \sa ::make_cudaExtent
+ */
 struct cudaExtent
 {
     size_t width;
@@ -240,6 +865,11 @@ struct cudaExtent
     size_t depth;
 }
 
+/**
+ * CUDA 3D position
+ *
+ * \sa ::make_cudaPos
+ */
 struct cudaPos
 {
     size_t x;
@@ -247,18 +877,26 @@ struct cudaPos
     size_t z;
 }
 
+/**
+ * CUDA 3D memory copying parameters
+ */
 struct cudaMemcpy3DParms
 {
     cudaArray_t     srcArray;
     cudaPos         srcPos;
     cudaPitchedPtr  srcPtr;
+
     cudaArray_t     dstArray;
     cudaPos         dstPos;
     cudaPitchedPtr  dstPtr;
+
     cudaExtent      extent;
     cudaMemcpyKind  kind;
 }
 
+/**
+ * CUDA 3D cross-device memory copying parameters
+ */
 struct cudaMemcpy3DPeerParms
 {
     cudaArray_t     srcArray;
@@ -271,6 +909,50 @@ struct cudaMemcpy3DPeerParms
     int             dstDevice;
     cudaExtent      extent;
 }
+
+/**
+ * CUDA Memset node parameters
+ */
+struct cudaMemsetParams {
+    void *dst;                              /**< Destination device pointer */
+    size_t pitch;                           /**< Pitch of destination device pointer. Unused if height is 1 */
+    uint value;                     /**< Value to be set */
+    uint elementSize;               /**< Size of each element in bytes. Must be 1, 2, or 4. */
+    size_t width;                           /**< Width in bytes, of the row */
+    size_t height;                          /**< Number of rows */
+};
+
+
+/**
+ * CUDA host function
+ * \param userData Argument value passed to the function
+ */
+extern(System) nothrow
+{
+  alias cudaHostFn_t = void function(void *userData);
+}
+
+
+/**
+ * CUDA host node parameters
+ */
+struct cudaHostNodeParams {
+    cudaHostFn_t fn;    /**< The function to call when the node executes */
+    void* userData; /**< Argument to pass to the function */
+};
+
+/**
+ * Possible stream capture statuses returned by ::cudaStreamIsCapturing
+ */
+alias cudaStreamCaptureStatus = int;
+enum : cudaStreamCaptureStatus {
+    cudaStreamCaptureStatusNone        = 0, /**< Stream is not capturing */
+    cudaStreamCaptureStatusActive      = 1, /**< Stream is actively capturing */
+    cudaStreamCaptureStatusInvalidated = 2  /**< Stream is part of a capture sequence that
+                                                   has been invalidated, but not terminated */
+};
+
+struct cudaGraphicsResource;
 
 alias cudaGraphicsRegisterFlags = int;
 enum : cudaGraphicsRegisterFlags
@@ -350,6 +1032,9 @@ enum : cudaResourceViewFormat
     cudaResViewFormatUnsignedBlockCompressed7  = 0x22
 }
 
+/**
+ * CUDA resource descriptor
+ */
 struct cudaResourceDesc
 {
     cudaResourceType resType;
@@ -389,6 +1074,9 @@ struct cudaResourceDesc
     res_st res;
 }
 
+/**
+ * CUDA resource view descriptor
+ */
 struct cudaResourceViewDesc
 {
     cudaResourceViewFormat format;
@@ -401,15 +1089,22 @@ struct cudaResourceViewDesc
     uint                   lastLayer;
 }
 
+/**
+ * CUDA pointer attributes
+ */
 struct cudaPointerAttributes
 {
     cudaMemoryType memoryType;
+    cudaMemoryType type;
     int device;
     void *devicePointer;
     void *hostPointer;
     int isManaged;
 }
 
+/**
+ * CUDA function attributes
+ */
 struct cudaFuncAttributes
 {
    size_t sharedSizeBytes;
@@ -420,8 +1115,13 @@ struct cudaFuncAttributes
    int ptxVersion;
    int binaryVersion;
    int cacheModeCA;
+   int maxDynamicSharedSizeBytes;
+   int preferredShmemCarveout;
 }
 
+/**
+ * CUDA function attributes that can be set using cudaFuncSetAttribute
+ */
 alias cudaFuncCache = int;
 enum : cudaFuncCache
 {
@@ -431,6 +1131,9 @@ enum : cudaFuncCache
     cudaFuncCachePreferEqual  = 3
 }
 
+/**
+ * CUDA shared memory configuration
+ */
 alias cudaSharedMemConfig = int;
 enum : cudaSharedMemConfig
 {
@@ -439,6 +1142,19 @@ enum : cudaSharedMemConfig
     cudaSharedMemBankSizeEightByte = 2
 }
 
+/**
+ * Shared memory carveout configurations
+ */
+alias cudaSharedCarveout = int;
+enum : cudaSharedCarveout {
+  cudaSharedmemCarveoutDefault      = -1,  /* * < no preference for shared memory or L1 (default) */
+  cudaSharedmemCarveoutMaxShared    = 100, /* * < prefer maximum available shared memory, minimum L1 cache */
+  cudaSharedmemCarveoutMaxL1        = 0    /* * < prefer maximum available L1 cache, minimum shared memory */
+}
+
+/**
+ * CUDA device compute modes
+ */
 alias cudaComputeMode = int;
 enum : cudaComputeMode
 {
@@ -449,16 +1165,49 @@ enum : cudaComputeMode
 }
 
 
+/**
+ * CUDA Limits
+ */
 alias cudaLimit = int;
 enum : cudaLimit
 {
-    cudaLimitStackSize                    = 0x00,
-    cudaLimitPrintfFifoSize               = 0x01,
-    cudaLimitMallocHeapSize               = 0x02,
-    cudaLimitDevRuntimeSyncDepth          = 0x03,
-    cudaLimitDevRuntimePendingLaunchCount = 0x04
+  cudaLimitStackSize                    = 0x00,
+  cudaLimitPrintfFifoSize               = 0x01,
+  cudaLimitMallocHeapSize               = 0x02,
+  cudaLimitDevRuntimeSyncDepth          = 0x03,
+  cudaLimitDevRuntimePendingLaunchCount = 0x04,
+  cudaLimitMaxL2FetchGranularity        = 0x05
 }
 
+/**
+ * CUDA Memory Advise values
+ */
+alias cudaMemoryAdvise = int;
+enum : cudaMemoryAdvise
+{
+  cudaMemAdviseSetReadMostly          = 1, /**< Data will mostly be read and only occassionally be written to */
+  cudaMemAdviseUnsetReadMostly        = 2, /**< Undo the effect of ::cudaMemAdviseSetReadMostly */
+  cudaMemAdviseSetPreferredLocation   = 3, /**< Set the preferred location for the data as the specified device */
+  cudaMemAdviseUnsetPreferredLocation = 4, /**< Clear the preferred location for the data */
+  cudaMemAdviseSetAccessedBy          = 5, /**< Data will be accessed by the specified device, so prevent page faults as much as possible */
+  cudaMemAdviseUnsetAccessedBy        = 6  /**< Let the Unified Memory subsystem decide on the page faulting policy for the specified device */
+}
+
+/**
+ * CUDA range attributes
+ */
+alias cudaMemRangeAttribute = int;
+enum : cudaMemRangeAttribute
+{
+  cudaMemRangeAttributeReadMostly           = 1, /**< Whether the range will mostly be read and only occassionally be written to */
+  cudaMemRangeAttributePreferredLocation    = 2, /**< The preferred location of the range */
+  cudaMemRangeAttributeAccessedBy           = 3, /**< Memory range has ::cudaMemAdviseSetAccessedBy set for specified device */
+  cudaMemRangeAttributeLastPrefetchLocation = 4  /**< The last location to which the range was prefetched */
+}
+
+/**
+ * CUDA Profiler Output modes
+ */
 alias cudaOutputMode = int;
 enum : cudaOutputMode
 {
@@ -466,224 +1215,292 @@ enum : cudaOutputMode
     cudaCSV             = 0x01
 }
 
+/**
+ * CUDA device attributes
+ */
 alias cudaDeviceAttr = int;
 enum : cudaDeviceAttr
 {
-    cudaDevAttrMaxThreadsPerBlock             = 1,
-    cudaDevAttrMaxBlockDimX                   = 2,
-    cudaDevAttrMaxBlockDimY                   = 3,
-    cudaDevAttrMaxBlockDimZ                   = 4,
-    cudaDevAttrMaxGridDimX                    = 5,
-    cudaDevAttrMaxGridDimY                    = 6,
-    cudaDevAttrMaxGridDimZ                    = 7,
-    cudaDevAttrMaxSharedMemoryPerBlock        = 8,
-    cudaDevAttrTotalConstantMemory            = 9,
-    cudaDevAttrWarpSize                       = 10,
-    cudaDevAttrMaxPitch                       = 11,
-    cudaDevAttrMaxRegistersPerBlock           = 12,
-    cudaDevAttrClockRate                      = 13,
-    cudaDevAttrTextureAlignment               = 14,
-    cudaDevAttrGpuOverlap                     = 15,
-    cudaDevAttrMultiProcessorCount            = 16,
-    cudaDevAttrKernelExecTimeout              = 17,
-    cudaDevAttrIntegrated                     = 18,
-    cudaDevAttrCanMapHostMemory               = 19,
-    cudaDevAttrComputeMode                    = 20,
-    cudaDevAttrMaxTexture1DWidth              = 21,
-    cudaDevAttrMaxTexture2DWidth              = 22,
-    cudaDevAttrMaxTexture2DHeight             = 23,
-    cudaDevAttrMaxTexture3DWidth              = 24,
-    cudaDevAttrMaxTexture3DHeight             = 25,
-    cudaDevAttrMaxTexture3DDepth              = 26,
-    cudaDevAttrMaxTexture2DLayeredWidth       = 27,
-    cudaDevAttrMaxTexture2DLayeredHeight      = 28,
-    cudaDevAttrMaxTexture2DLayeredLayers      = 29,
-    cudaDevAttrSurfaceAlignment               = 30,
-    cudaDevAttrConcurrentKernels              = 31,
-    cudaDevAttrEccEnabled                     = 32,
-    cudaDevAttrPciBusId                       = 33,
-    cudaDevAttrPciDeviceId                    = 34,
-    cudaDevAttrTccDriver                      = 35,
-    cudaDevAttrMemoryClockRate                = 36,
-    cudaDevAttrGlobalMemoryBusWidth           = 37,
-    cudaDevAttrL2CacheSize                    = 38,
-    cudaDevAttrMaxThreadsPerMultiProcessor    = 39,
-    cudaDevAttrAsyncEngineCount               = 40,
-    cudaDevAttrUnifiedAddressing              = 41,
-    cudaDevAttrMaxTexture1DLayeredWidth       = 42,
-    cudaDevAttrMaxTexture1DLayeredLayers      = 43,
-    cudaDevAttrMaxTexture2DGatherWidth        = 45,
-    cudaDevAttrMaxTexture2DGatherHeight       = 46,
-    cudaDevAttrMaxTexture3DWidthAlt           = 47,
-    cudaDevAttrMaxTexture3DHeightAlt          = 48,
-    cudaDevAttrMaxTexture3DDepthAlt           = 49,
-    cudaDevAttrPciDomainId                    = 50,
-    cudaDevAttrTexturePitchAlignment          = 51,
-    cudaDevAttrMaxTextureCubemapWidth         = 52,
-    cudaDevAttrMaxTextureCubemapLayeredWidth  = 53,
-    cudaDevAttrMaxTextureCubemapLayeredLayers = 54,
-    cudaDevAttrMaxSurface1DWidth              = 55,
-    cudaDevAttrMaxSurface2DWidth              = 56,
-    cudaDevAttrMaxSurface2DHeight             = 57,
-    cudaDevAttrMaxSurface3DWidth              = 58,
-    cudaDevAttrMaxSurface3DHeight             = 59,
-    cudaDevAttrMaxSurface3DDepth              = 60,
-    cudaDevAttrMaxSurface1DLayeredWidth       = 61,
-    cudaDevAttrMaxSurface1DLayeredLayers      = 62,
-    cudaDevAttrMaxSurface2DLayeredWidth       = 63,
-    cudaDevAttrMaxSurface2DLayeredHeight      = 64,
-    cudaDevAttrMaxSurface2DLayeredLayers      = 65,
-    cudaDevAttrMaxSurfaceCubemapWidth         = 66,
-    cudaDevAttrMaxSurfaceCubemapLayeredWidth  = 67,
-    cudaDevAttrMaxSurfaceCubemapLayeredLayers = 68,
-    cudaDevAttrMaxTexture1DLinearWidth        = 69,
-    cudaDevAttrMaxTexture2DLinearWidth        = 70,
-    cudaDevAttrMaxTexture2DLinearHeight       = 71,
-    cudaDevAttrMaxTexture2DLinearPitch        = 72,
-    cudaDevAttrMaxTexture2DMipmappedWidth     = 73,
-    cudaDevAttrMaxTexture2DMipmappedHeight    = 74,
-    cudaDevAttrComputeCapabilityMajor         = 75,
-    cudaDevAttrComputeCapabilityMinor         = 76,
-    cudaDevAttrMaxTexture1DMipmappedWidth     = 77,
-    cudaDevAttrStreamPrioritiesSupported      = 78,
-    cudaDevAttrGlobalL1CacheSupported         = 79,
-    cudaDevAttrLocalL1CacheSupported          = 80,
-    cudaDevAttrMaxSharedMemoryPerMultiprocessor = 81,
-    cudaDevAttrMaxRegistersPerMultiprocessor  = 82,
-    cudaDevAttrManagedMemory                  = 83,
-    cudaDevAttrIsMultiGpuBoard                = 84,
-    cudaDevAttrMultiGpuBoardGroupID           = 85
+  cudaDevAttrMaxThreadsPerBlock             = 1,  /**< Maximum number of threads per block */
+  cudaDevAttrMaxBlockDimX                   = 2,  /**< Maximum block dimension X */
+  cudaDevAttrMaxBlockDimY                   = 3,  /**< Maximum block dimension Y */
+  cudaDevAttrMaxBlockDimZ                   = 4,  /**< Maximum block dimension Z */
+  cudaDevAttrMaxGridDimX                    = 5,  /**< Maximum grid dimension X */
+  cudaDevAttrMaxGridDimY                    = 6,  /**< Maximum grid dimension Y */
+  cudaDevAttrMaxGridDimZ                    = 7,  /**< Maximum grid dimension Z */
+  cudaDevAttrMaxSharedMemoryPerBlock        = 8,  /**< Maximum shared memory available per block in bytes */
+  cudaDevAttrTotalConstantMemory            = 9,  /**< Memory available on device for __constant__ variables in a CUDA C kernel in bytes */
+  cudaDevAttrWarpSize                       = 10, /**< Warp size in threads */
+  cudaDevAttrMaxPitch                       = 11, /**< Maximum pitch in bytes allowed by memory copies */
+  cudaDevAttrMaxRegistersPerBlock           = 12, /**< Maximum number of 32-bit registers available per block */
+  cudaDevAttrClockRate                      = 13, /**< Peak clock frequency in kilohertz */
+  cudaDevAttrTextureAlignment               = 14, /**< Alignment requirement for textures */
+  cudaDevAttrGpuOverlap                     = 15, /**< Device can possibly copy memory and execute a kernel concurrently */
+  cudaDevAttrMultiProcessorCount            = 16, /**< Number of multiprocessors on device */
+  cudaDevAttrKernelExecTimeout              = 17, /**< Specifies whether there is a run time limit on kernels */
+  cudaDevAttrIntegrated                     = 18, /**< Device is integrated with host memory */
+  cudaDevAttrCanMapHostMemory               = 19, /**< Device can map host memory into CUDA address space */
+  cudaDevAttrComputeMode                    = 20, /**< Compute mode (See ::cudaComputeMode for details) */
+  cudaDevAttrMaxTexture1DWidth              = 21, /**< Maximum 1D texture width */
+  cudaDevAttrMaxTexture2DWidth              = 22, /**< Maximum 2D texture width */
+  cudaDevAttrMaxTexture2DHeight             = 23, /**< Maximum 2D texture height */
+  cudaDevAttrMaxTexture3DWidth              = 24, /**< Maximum 3D texture width */
+  cudaDevAttrMaxTexture3DHeight             = 25, /**< Maximum 3D texture height */
+  cudaDevAttrMaxTexture3DDepth              = 26, /**< Maximum 3D texture depth */
+  cudaDevAttrMaxTexture2DLayeredWidth       = 27, /**< Maximum 2D layered texture width */
+  cudaDevAttrMaxTexture2DLayeredHeight      = 28, /**< Maximum 2D layered texture height */
+  cudaDevAttrMaxTexture2DLayeredLayers      = 29, /**< Maximum layers in a 2D layered texture */
+  cudaDevAttrSurfaceAlignment               = 30, /**< Alignment requirement for surfaces */
+  cudaDevAttrConcurrentKernels              = 31, /**< Device can possibly execute multiple kernels concurrently */
+  cudaDevAttrEccEnabled                     = 32, /**< Device has ECC support enabled */
+  cudaDevAttrPciBusId                       = 33, /**< PCI bus ID of the device */
+  cudaDevAttrPciDeviceId                    = 34, /**< PCI device ID of the device */
+  cudaDevAttrTccDriver                      = 35, /**< Device is using TCC driver model */
+  cudaDevAttrMemoryClockRate                = 36, /**< Peak memory clock frequency in kilohertz */
+  cudaDevAttrGlobalMemoryBusWidth           = 37, /**< Global memory bus width in bits */
+  cudaDevAttrL2CacheSize                    = 38, /**< Size of L2 cache in bytes */
+  cudaDevAttrMaxThreadsPerMultiProcessor    = 39, /**< Maximum resident threads per multiprocessor */
+  cudaDevAttrAsyncEngineCount               = 40, /**< Number of asynchronous engines */
+  cudaDevAttrUnifiedAddressing              = 41, /**< Device shares a unified address space with the host */
+  cudaDevAttrMaxTexture1DLayeredWidth       = 42, /**< Maximum 1D layered texture width */
+  cudaDevAttrMaxTexture1DLayeredLayers      = 43, /**< Maximum layers in a 1D layered texture */
+  cudaDevAttrMaxTexture2DGatherWidth        = 45, /**< Maximum 2D texture width if cudaArrayTextureGather is set */
+  cudaDevAttrMaxTexture2DGatherHeight       = 46, /**< Maximum 2D texture height if cudaArrayTextureGather is set */
+  cudaDevAttrMaxTexture3DWidthAlt           = 47, /**< Alternate maximum 3D texture width */
+  cudaDevAttrMaxTexture3DHeightAlt          = 48, /**< Alternate maximum 3D texture height */
+  cudaDevAttrMaxTexture3DDepthAlt           = 49, /**< Alternate maximum 3D texture depth */
+  cudaDevAttrPciDomainId                    = 50, /**< PCI domain ID of the device */
+  cudaDevAttrTexturePitchAlignment          = 51, /**< Pitch alignment requirement for textures */
+  cudaDevAttrMaxTextureCubemapWidth         = 52, /**< Maximum cubemap texture width/height */
+  cudaDevAttrMaxTextureCubemapLayeredWidth  = 53, /**< Maximum cubemap layered texture width/height */
+  cudaDevAttrMaxTextureCubemapLayeredLayers = 54, /**< Maximum layers in a cubemap layered texture */
+  cudaDevAttrMaxSurface1DWidth              = 55, /**< Maximum 1D surface width */
+  cudaDevAttrMaxSurface2DWidth              = 56, /**< Maximum 2D surface width */
+  cudaDevAttrMaxSurface2DHeight             = 57, /**< Maximum 2D surface height */
+  cudaDevAttrMaxSurface3DWidth              = 58, /**< Maximum 3D surface width */
+  cudaDevAttrMaxSurface3DHeight             = 59, /**< Maximum 3D surface height */
+  cudaDevAttrMaxSurface3DDepth              = 60, /**< Maximum 3D surface depth */
+  cudaDevAttrMaxSurface1DLayeredWidth       = 61, /**< Maximum 1D layered surface width */
+  cudaDevAttrMaxSurface1DLayeredLayers      = 62, /**< Maximum layers in a 1D layered surface */
+  cudaDevAttrMaxSurface2DLayeredWidth       = 63, /**< Maximum 2D layered surface width */
+  cudaDevAttrMaxSurface2DLayeredHeight      = 64, /**< Maximum 2D layered surface height */
+  cudaDevAttrMaxSurface2DLayeredLayers      = 65, /**< Maximum layers in a 2D layered surface */
+  cudaDevAttrMaxSurfaceCubemapWidth         = 66, /**< Maximum cubemap surface width */
+  cudaDevAttrMaxSurfaceCubemapLayeredWidth  = 67, /**< Maximum cubemap layered surface width */
+  cudaDevAttrMaxSurfaceCubemapLayeredLayers = 68, /**< Maximum layers in a cubemap layered surface */
+  cudaDevAttrMaxTexture1DLinearWidth        = 69, /**< Maximum 1D linear texture width */
+  cudaDevAttrMaxTexture2DLinearWidth        = 70, /**< Maximum 2D linear texture width */
+  cudaDevAttrMaxTexture2DLinearHeight       = 71, /**< Maximum 2D linear texture height */
+  cudaDevAttrMaxTexture2DLinearPitch        = 72, /**< Maximum 2D linear texture pitch in bytes */
+  cudaDevAttrMaxTexture2DMipmappedWidth     = 73, /**< Maximum mipmapped 2D texture width */
+  cudaDevAttrMaxTexture2DMipmappedHeight    = 74, /**< Maximum mipmapped 2D texture height */
+  cudaDevAttrComputeCapabilityMajor         = 75, /**< Major compute capability version number */
+  cudaDevAttrComputeCapabilityMinor         = 76, /**< Minor compute capability version number */
+  cudaDevAttrMaxTexture1DMipmappedWidth     = 77, /**< Maximum mipmapped 1D texture width */
+  cudaDevAttrStreamPrioritiesSupported      = 78, /**< Device supports stream priorities */
+  cudaDevAttrGlobalL1CacheSupported         = 79, /**< Device supports caching globals in L1 */
+  cudaDevAttrLocalL1CacheSupported          = 80, /**< Device supports caching locals in L1 */
+  cudaDevAttrMaxSharedMemoryPerMultiprocessor = 81, /**< Maximum shared memory available per multiprocessor in bytes */
+  cudaDevAttrMaxRegistersPerMultiprocessor  = 82, /**< Maximum number of 32-bit registers available per multiprocessor */
+  cudaDevAttrManagedMemory                  = 83, /**< Device can allocate managed memory on this system */
+  cudaDevAttrIsMultiGpuBoard                = 84, /**< Device is on a multi-GPU board */
+  cudaDevAttrMultiGpuBoardGroupID           = 85, /**< Unique identifier for a group of devices on the same multi-GPU board */
+  cudaDevAttrHostNativeAtomicSupported      = 86, /**< Link between the device and the host supports native atomic operations */
+  cudaDevAttrSingleToDoublePrecisionPerfRatio = 87, /**< Ratio of single precision performance (in floating-point operations per second) to double precision performance */
+  cudaDevAttrPageableMemoryAccess           = 88, /**< Device supports coherently accessing pageable memory without calling cudaHostRegister on it */
+  cudaDevAttrConcurrentManagedAccess        = 89, /**< Device can coherently access managed memory concurrently with the CPU */
+  cudaDevAttrComputePreemptionSupported     = 90, /**< Device supports Compute Preemption */
+  cudaDevAttrCanUseHostPointerForRegisteredMem = 91, /**< Device can access host registered memory at the same virtual address as the CPU */
+  cudaDevAttrReserved92                     = 92,
+  cudaDevAttrReserved93                     = 93,
+  cudaDevAttrReserved94                     = 94,
+  cudaDevAttrCooperativeLaunch              = 95, /**< Device supports launching cooperative kernels via ::cudaLaunchCooperativeKernel*/
+  cudaDevAttrCooperativeMultiDeviceLaunch   = 96, /**< Device can participate in cooperative kernels launched via ::cudaLaunchCooperativeKernelMultiDevice */
+  cudaDevAttrMaxSharedMemoryPerBlockOptin   = 97, /**< The maximum optin shared memory per block. This value may vary by chip. See ::cudaFuncSetAttribute */
+  cudaDevAttrCanFlushRemoteWrites           = 98, /**< Device supports flushing of outstanding remote writes. */
+  cudaDevAttrHostRegisterSupported          = 99, /**< Device supports host memory registration via ::cudaHostRegister. */
+  cudaDevAttrPageableMemoryAccessUsesHostPageTables = 100, /**< Device accesses pageable memory via the host's page tables. */
+  cudaDevAttrDirectManagedMemAccessFromHost = 101 /**< Host can directly access managed memory on the device without migration. */
 }
 
+/**
+ * CUDA device P2P attributes
+ */
+alias cudaDeviceP2PAttr = int;
+enum : cudaDeviceP2PAttr {
+    cudaDevP2PAttrPerformanceRank              = 1, /**< A relative value indicating the performance of the link between two devices */
+    cudaDevP2PAttrAccessSupported              = 2, /**< Peer access is enabled */
+    cudaDevP2PAttrNativeAtomicSupported        = 3, /**< Native atomic operation over the link supported */
+    cudaDevP2PAttrCudaArrayAccessSupported     = 4  /**< Accessing CUDA arrays over the link supported */
+}
+
+/**
+ * CUDA UUID types
+ */
+struct CUuuid_st;
+alias cudaUUID_t = CUuuid_st;
+
+/**
+ * CUDA device properties
+ */
 struct cudaDeviceProp
 {
-    char[256]   name;
-    size_t totalGlobalMem;
-    size_t sharedMemPerBlock;
-    int    regsPerBlock;
-    int    warpSize;
-    size_t memPitch;
-    int    maxThreadsPerBlock;
-    int[3]    maxThreadsDim;
-    int[3]    maxGridSize;
-    int    clockRate;
-    size_t totalConstMem;
-    int    major;
-    int    minor;
-    size_t textureAlignment;
-    size_t texturePitchAlignment;
-    int    deviceOverlap;
-    int    multiProcessorCount;
-    int    kernelExecTimeoutEnabled;
-    int    integrated;
-    int    canMapHostMemory;
-    int    computeMode;
-    int    maxTexture1D;
-    int    maxTexture1DMipmap;
-    int    maxTexture1DLinear;
-    int[2]    maxTexture2D;
-    int[2]    maxTexture2DMipmap;
-    int[3]    maxTexture2DLinear;
-    int[2]    maxTexture2DGather;
-    int[3]    maxTexture3D;
-    int[3]    maxTexture3DAlt;
-    int    maxTextureCubemap;
-    int[2]    maxTexture1DLayered;
-    int[3]    maxTexture2DLayered;
-    int[2]    maxTextureCubemapLayered;
-    int    maxSurface1D;
-    int[2]    maxSurface2D;
-    int[3]    maxSurface3D;
-    int[2]    maxSurface1DLayered;
-    int[3]    maxSurface2DLayered;
-    int    maxSurfaceCubemap;
-    int[2]    maxSurfaceCubemapLayered;
-    size_t surfaceAlignment;
-    int    concurrentKernels;
-    int    ECCEnabled;
-    int    pciBusID;
-    int    pciDeviceID;
-    int    pciDomainID;
-    int    tccDriver;
-    int    asyncEngineCount;
-    int    unifiedAddressing;
-    int    memoryClockRate;
-    int    memoryBusWidth;
-    int    l2CacheSize;
-    int    maxThreadsPerMultiProcessor;
-    int    streamPrioritiesSupported;
-    int    globalL1CacheSupported;
-    int    localL1CacheSupported;
-    size_t sharedMemPerMultiprocessor;
-    int    regsPerMultiprocessor;
-    int    managedMemory;
-    int    isMultiGpuBoard;
-    int    multiGpuBoardGroupID;
+  char[256]    name;                  /**< ASCII string identifying device */
+  cudaUUID_t   uuid;                       /**< 16-byte unique identifier */
+  char[8]      luid;                    /**< 8-byte locally unique identifier. Value is undefined on TCC and non-Windows platforms */
+  uint         luidDeviceNodeMask;         /**< LUID device node mask. Value is undefined on TCC and non-Windows platforms */
+  size_t       totalGlobalMem;             /**< Global memory available on device in bytes */
+  size_t       sharedMemPerBlock;          /**< Shared memory available per block in bytes */
+  int          regsPerBlock;               /**< 32-bit registers available per block */
+  int          warpSize;                   /**< Warp size in threads */
+  size_t       memPitch;                   /**< Maximum pitch in bytes allowed by memory copies */
+  int          maxThreadsPerBlock;         /**< Maximum number of threads per block */
+  int[3]       maxThreadsDim;           /**< Maximum size of each dimension of a block */
+  int[3]          maxGridSize;             /**< Maximum size of each dimension of a grid */
+  int          clockRate;                  /**< Clock frequency in kilohertz */
+  size_t       totalConstMem;              /**< Constant memory available on device in bytes */
+  int          major;                      /**< Major compute capability */
+  int          minor;                      /**< Minor compute capability */
+  size_t       textureAlignment;           /**< Alignment requirement for textures */
+  size_t       texturePitchAlignment;      /**< Pitch alignment requirement for texture references bound to pitched memory */
+  int          deviceOverlap;              /**< Device can concurrently copy memory and execute a kernel. Deprecated. Use instead asyncEngineCount. */
+  int          multiProcessorCount;        /**< Number of multiprocessors on device */
+  int          kernelExecTimeoutEnabled;   /**< Specified whether there is a run time limit on kernels */
+  int          integrated;                 /**< Device is integrated as opposed to discrete */
+  int          canMapHostMemory;           /**< Device can map host memory with cudaHostAlloc/cudaHostGetDevicePointer */
+  int          computeMode;                /**< Compute mode (See ::cudaComputeMode) */
+  int          maxTexture1D;               /**< Maximum 1D texture size */
+  int          maxTexture1DMipmap;         /**< Maximum 1D mipmapped texture size */
+  int          maxTexture1DLinear;         /**< Maximum size for 1D textures bound to linear memory */
+  int[2]          maxTexture2D;            /**< Maximum 2D texture dimensions */
+  int[2]          maxTexture2DMipmap;      /**< Maximum 2D mipmapped texture dimensions */
+  int[3]          maxTexture2DLinear;      /**< Maximum dimensions (width, height, pitch) for 2D textures bound to pitched memory */
+  int[2]          maxTexture2DGather;      /**< Maximum 2D texture dimensions if texture gather operations have to be performed */
+  int[3]          maxTexture3D;            /**< Maximum 3D texture dimensions */
+  int[3]          maxTexture3DAlt;         /**< Maximum alternate 3D texture dimensions */
+  int          maxTextureCubemap;          /**< Maximum Cubemap texture dimensions */
+  int[2]          maxTexture1DLayered;     /**< Maximum 1D layered texture dimensions */
+  int[3]          maxTexture2DLayered;     /**< Maximum 2D layered texture dimensions */
+  int[2]          maxTextureCubemapLayered;/**< Maximum Cubemap layered texture dimensions */
+  int          maxSurface1D;               /**< Maximum 1D surface size */
+  int[2]          maxSurface2D;            /**< Maximum 2D surface dimensions */
+  int[3]          maxSurface3D;            /**< Maximum 3D surface dimensions */
+  int[2]          maxSurface1DLayered;     /**< Maximum 1D layered surface dimensions */
+  int[3]          maxSurface2DLayered;     /**< Maximum 2D layered surface dimensions */
+  int          maxSurfaceCubemap;          /**< Maximum Cubemap surface dimensions */
+  int[2]          maxSurfaceCubemapLayered;/**< Maximum Cubemap layered surface dimensions */
+  size_t       surfaceAlignment;           /**< Alignment requirements for surfaces */
+  int          concurrentKernels;          /**< Device can possibly execute multiple kernels concurrently */
+  int          ECCEnabled;                 /**< Device has ECC support enabled */
+  int          pciBusID;                   /**< PCI bus ID of the device */
+  int          pciDeviceID;                /**< PCI device ID of the device */
+  int          pciDomainID;                /**< PCI domain ID of the device */
+  int          tccDriver;                  /**< 1 if device is a Tesla device using TCC driver, 0 otherwise */
+  int          asyncEngineCount;           /**< Number of asynchronous engines */
+  int          unifiedAddressing;          /**< Device shares a unified address space with the host */
+  int          memoryClockRate;            /**< Peak memory clock frequency in kilohertz */
+  int          memoryBusWidth;             /**< Global memory bus width in bits */
+  int          l2CacheSize;                /**< Size of L2 cache in bytes */
+  int          maxThreadsPerMultiProcessor;/**< Maximum resident threads per multiprocessor */
+  int          streamPrioritiesSupported;  /**< Device supports stream priorities */
+  int          globalL1CacheSupported;     /**< Device supports caching globals in L1 */
+  int          localL1CacheSupported;      /**< Device supports caching locals in L1 */
+  size_t       sharedMemPerMultiprocessor; /**< Shared memory available per multiprocessor in bytes */
+  int          regsPerMultiprocessor;      /**< 32-bit registers available per multiprocessor */
+  int          managedMemory;              /**< Device supports allocating managed memory on this system */
+  int          isMultiGpuBoard;            /**< Device is on a multi-GPU board */
+  int          multiGpuBoardGroupID;       /**< Unique identifier for a group of devices on the same multi-GPU board */
+  int          hostNativeAtomicSupported;  /**< Link between the device and the host supports native atomic operations */
+  int          singleToDoublePrecisionPerfRatio; /**< Ratio of single precision performance (in floating-point operations per second) to double precision performance */
+  int          pageableMemoryAccess;       /**< Device supports coherently accessing pageable memory without calling cudaHostRegister on it */
+  int          concurrentManagedAccess;    /**< Device can coherently access managed memory concurrently with the CPU */
+  int          computePreemptionSupported; /**< Device supports Compute Preemption */
+  int          canUseHostPointerForRegisteredMem; /**< Device can access host registered memory at the same virtual address as the CPU */
+  int          cooperativeLaunch;          /**< Device supports launching cooperative kernels via ::cudaLaunchCooperativeKernel */
+  int          cooperativeMultiDeviceLaunch; /**< Device can participate in cooperative kernels launched via ::cudaLaunchCooperativeKernelMultiDevice */
+  size_t       sharedMemPerBlockOptin;     /**< Per device maximum shared memory per block usable by special opt in */
+  int          pageableMemoryAccessUsesHostPageTables; /**< Device accesses pageable memory via the host's page tables */
+  int          directManagedMemAccessFromHost; /**< Host can directly access managed memory on the device without migration. */
 }
 
 static immutable cudaDeviceProp cudaDevicePropDontCare = cudaDeviceProp(
-          "\0",
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          [0, 0, 0],
-          [0, 0, 0],
-          0,
-          0,
-          -1,
-          -1,
-          0,
-          0,
-          -1,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          [0, 0],
-          [0, 0],
-          [0, 0, 0],
-          [0, 0],
-          [0, 0, 0],
-          [0, 0, 0],
-          0,
-          [0, 0],
-          [0, 0, 0],
-          [0, 0],
-          0,
-          [0, 0],
-          [0, 0, 0],
-          [0, 0],
-          [0, 0, 0],
-          0,
-          [0, 0],
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0);
+  "\0",    /* char         name[256];               */ \
+  [0],     /* cudaUUID_t   uuid;                    */ \
+  "\0",    /* char         luid[8];                 */ \
+  0,         /* unsigned int luidDeviceNodeMask       */ \
+  0,         /* size_t       totalGlobalMem;          */ \
+  0,         /* size_t       sharedMemPerBlock;       */ \
+  0,         /* int          regsPerBlock;            */ \
+  0,         /* int          warpSize;                */ \
+  0,         /* size_t       memPitch;                */ \
+  0,         /* int          maxThreadsPerBlock;      */ \
+  [0, 0, 0], /* int          maxThreadsDim[3];        */ \
+  [0, 0, 0], /* int          maxGridSize[3];          */ \
+  0,         /* int          clockRate;               */ \
+  0,         /* size_t       totalConstMem;           */ \
+  -1,        /* int          major;                   */ \
+  -1,        /* int          minor;                   */ \
+  0,         /* size_t       textureAlignment;        */ \
+  0,         /* size_t       texturePitchAlignment    */ \
+  -1,        /* int          deviceOverlap;           */ \
+  0,         /* int          multiProcessorCount;     */ \
+  0,         /* int          kernelExecTimeoutEnabled */ \
+  0,         /* int          integrated               */ \
+  0,         /* int          canMapHostMemory         */ \
+  0,         /* int          computeMode              */ \
+  0,         /* int          maxTexture1D             */ \
+  0,         /* int          maxTexture1DMipmap       */ \
+  0,         /* int          maxTexture1DLinear       */ \
+  [0, 0],    /* int          maxTexture2D[2]          */ \
+  [0, 0],    /* int          maxTexture2DMipmap[2]    */ \
+  [0, 0, 0], /* int          maxTexture2DLinear[3]    */ \
+  [0, 0],    /* int          maxTexture2DGather[2]    */ \
+  [0, 0, 0], /* int          maxTexture3D[3]          */ \
+  [0, 0, 0], /* int          maxTexture3DAlt[3]       */ \
+  0,         /* int          maxTextureCubemap        */ \
+  [0, 0],    /* int          maxTexture1DLayered[2]   */ \
+  [0, 0, 0], /* int          maxTexture2DLayered[3]   */ \
+  [0, 0],    /* int          maxTextureCubemapLayered[2] */ \
+  0,         /* int          maxSurface1D             */ \
+  [0, 0],    /* int          maxSurface2D[2]          */ \
+  [0, 0, 0], /* int          maxSurface3D[3]          */ \
+  [0, 0],    /* int          maxSurface1DLayered[2]   */ \
+  [0, 0, 0], /* int          maxSurface2DLayered[3]   */ \
+  0,         /* int          maxSurfaceCubemap        */ \
+  [0, 0],    /* int          maxSurfaceCubemapLayered[2] */ \
+  0,         /* size_t       surfaceAlignment         */ \
+  0,         /* int          concurrentKernels        */ \
+  0,         /* int          ECCEnabled               */ \
+  0,         /* int          pciBusID                 */ \
+  0,         /* int          pciDeviceID              */ \
+  0,         /* int          pciDomainID              */ \
+  0,         /* int          tccDriver                */ \
+  0,         /* int          asyncEngineCount         */ \
+  0,         /* int          unifiedAddressing        */ \
+  0,         /* int          memoryClockRate          */ \
+  0,         /* int          memoryBusWidth           */ \
+  0,         /* int          l2CacheSize              */ \
+  0,         /* int          maxThreadsPerMultiProcessor */ \
+  0,         /* int          streamPrioritiesSupported */ \
+  0,         /* int          globalL1CacheSupported   */ \
+  0,         /* int          localL1CacheSupported    */ \
+  0,         /* size_t       sharedMemPerMultiprocessor; */ \
+  0,         /* int          regsPerMultiprocessor;   */ \
+  0,         /* int          managedMemory            */ \
+  0,         /* int          isMultiGpuBoard          */ \
+  0,         /* int          multiGpuBoardGroupID     */ \
+  0,         /* int          hostNativeAtomicSupported */ \
+  0,         /* int          singleToDoublePrecisionPerfRatio */ \
+  0,         /* int          pageableMemoryAccess     */ \
+  0,         /* int          concurrentManagedAccess  */ \
+  0,         /* int          computePreemptionSupported */ \
+  0,         /* int          canUseHostPointerForRegisteredMem */ \
+  0,         /* int          cooperativeLaunch */ \
+  0,         /* int          cooperativeMultiDeviceLaunch */ \
+  0,         /* size_t       sharedMemPerBlockOptin */ \
+  0,         /* int          pageableMemoryAccessUsesHostPageTables */ \
+  0,         /* int          directManagedMemAccessFromHost */ \
+);
 
 enum CUDA_IPC_HANDLE_SIZE = 64;
 
@@ -697,15 +1514,293 @@ struct cudaIpcMemHandle_t
     char[CUDA_IPC_HANDLE_SIZE] reserved;
 }
 
+
+/**
+ * External memory handle types
+ */
+alias cudaExternalMemoryHandleType = int;
+enum : cudaExternalMemoryHandleType {
+  /**
+   * Handle is an opaque file descriptor
+   */
+  cudaExternalMemoryHandleTypeOpaqueFd       = 1,
+  /**
+   * Handle is an opaque shared NT handle
+   */
+  cudaExternalMemoryHandleTypeOpaqueWin32    = 2,
+  /**
+   * Handle is an opaque, globally shared handle
+   */
+  cudaExternalMemoryHandleTypeOpaqueWin32Kmt = 3,
+  /**
+   * Handle is a D3D12 heap object
+   */
+  cudaExternalMemoryHandleTypeD3D12Heap      = 4,
+  /**
+   * Handle is a D3D12 committed resource
+   */
+  cudaExternalMemoryHandleTypeD3D12Resource  = 5
+}
+
+enum cudaExternalMemoryDedicated = 0x1;
+
+// TODO(naetherm): driver_types.h:1747
+struct cudaExternalMemoryHandleDesc {
+  cudaExternalMemoryHandleType type;
+
+  union handle_st {
+    int fd;
+
+    struct win32_st {
+      void * handle;
+      const void * name;
+    }
+
+    win32_st win32;
+  }
+
+  handle_st handle;
+  /**
+   * Size of the memory allocation
+   */
+  ulong size;
+  /**
+   * Flags must either be zero or ::cudaExternalMemoryDedicated
+   */
+  uint flags;
+}
+
+
+/**
+ * External memory buffer descriptor
+ */
+struct cudaExternalMemoryBufferDesc {
+    /**
+     * Offset into the memory object where the buffer's base is
+     */
+    ulong offset;
+    /**
+     * Size of the buffer
+     */
+    ulong size;
+    /**
+     * Flags reserved for future use. Must be zero.
+     */
+    uint flags;
+}
+
+/**
+ * External memory mipmap descriptor
+ */
+struct cudaExternalMemoryMipmappedArrayDesc {
+    /**
+     * Offset into the memory object where the base level of the
+     * mipmap chain is.
+     */
+    long offset;
+    /**
+     * Format of base level of the mipmap chain
+     */
+    cudaChannelFormatDesc formatDesc;
+    /**
+     * Dimensions of base level of the mipmap chain
+     */
+    cudaExtent extent;
+    /**
+     * Flags associated with CUDA mipmapped arrays.
+     * See ::cudaMallocMipmappedArray
+     */
+    uint flags;
+    /**
+     * Total number of levels in the mipmap chain
+     */
+    uint numLevels;
+}
+
+/**
+ * External semaphore handle types
+ */
+alias cudaExternalSemaphoreHandleType = int;
+enum : cudaExternalSemaphoreHandleType {
+  /**
+   * Handle is an opaque file descriptor
+   */
+  cudaExternalSemaphoreHandleTypeOpaqueFd       = 1,
+  /**
+   * Handle is an opaque shared NT handle
+   */
+  cudaExternalSemaphoreHandleTypeOpaqueWin32    = 2,
+  /**
+   * Handle is an opaque, globally shared handle
+   */
+  cudaExternalSemaphoreHandleTypeOpaqueWin32Kmt = 3,
+  /**
+   * Handle is a shared NT handle referencing a D3D12 fence object
+   */
+  cudaExternalSemaphoreHandleTypeD3D12Fence     = 4
+}
+
+
+
+/**
+ * External semaphore handle descriptor
+ */
+struct cudaExternalSemaphoreHandleDesc {
+    /**
+     * Type of the handle
+     */
+    cudaExternalSemaphoreHandleType type;
+    union handle_st {
+        /**
+         * File descriptor referencing the semaphore object. Valid
+         * when type is ::cudaExternalSemaphoreHandleTypeOpaqueFd
+         */
+        int fd;
+        /**
+         * Win32 handle referencing the semaphore object. Valid when
+         * type is one of the following:
+         * - ::cudaExternalSemaphoreHandleTypeOpaqueWin32
+         * - ::cudaExternalSemaphoreHandleTypeOpaqueWin32Kmt
+         * - ::cudaExternalSemaphoreHandleTypeD3D12Fence
+         * Exactly one of 'handle' and 'name' must be non-NULL. If
+         * type is ::cudaExternalSemaphoreHandleTypeOpaqueWin32Kmt
+         * then 'name' must be NULL.
+         */
+        struct win32_st {
+            /**
+             * Valid NT handle. Must be NULL if 'name' is non-NULL
+             */
+            void *handle;
+            /**
+             * Name of a valid synchronization primitive.
+             * Must be NULL if 'handle' is non-NULL.
+             */
+            const void *name;
+        }
+
+        win32_st win32;
+    }
+
+    handle_st handle;
+    /**
+     * Flags reserved for the future. Must be zero.
+     */
+    uint flags;
+};
+
+/**
+ * External semaphore  signal parameters
+ */
+struct cudaExternalSemaphoreSignalParams {
+    union params_st {
+        /**
+         * Parameters for fence objects
+         */
+        struct fence_st {
+            /**
+             * Value of fence to be signaled
+             */
+            ulong value;
+        }
+
+        fence_st fence;
+    }
+
+    params_st params;
+    /**
+     * Flags reserved for the future. Must be zero.
+     */
+    uint flags;
+};
+
+/**
+* External semaphore wait parameters
+*/
+struct cudaExternalSemaphoreWaitParams {
+    union params_st {
+        /**
+        * Parameters for fence objects
+        */
+        struct fence_st {
+            /**
+            * Value of fence to be waited on
+            */
+            ulong value;
+        }
+        fence_st fence;
+    }
+    params_st params;
+    /**
+    * Flags reserved for the future. Must be zero.
+    */
+    uint flags;
+};
+
 alias cudaError_t = cudaError;
 alias cudaStream_t = void*;
 alias cudaEvent_t = void*;
 alias cudaGraphicsResource_t = void*;
-
-struct CUuuid_st;
-alias cudaUUID_t = CUuuid_st;
-
 alias cudaOutputMode_t = cudaOutputMode;
+alias cudaExternalMemory_t = void*;
+alias cudaExternalSemaphore_t = void*;
+alias cudaGraph_t = void*;
+alias cudaGraphNode_t = void*;
+
+
+
+/**
+ * CUDA cooperative group scope
+ */
+alias cudaCGScope = int;
+enum : cudaCGScope {
+  cudaCGScopeInvalid   = 0, /**< Invalid cooperative group scope */
+  cudaCGScopeGrid      = 1, /**< Scope represented by a grid_group */
+  cudaCGScopeMultiGrid = 2  /**< Scope represented by a multi_grid_group */
+}
+
+/**
+ * CUDA launch parameters
+ */
+struct cudaLaunchParams {
+  void *func;          /**< Device function symbol */
+  dim3 gridDim;        /**< Grid dimentions */
+  dim3 blockDim;       /**< Block dimentions */
+  void **args;         /**< Arguments */
+  size_t sharedMem;    /**< Shared memory */
+  cudaStream_t stream; /**< Stream identifier */
+}
+
+/**
+ * CUDA GPU kernel node parameters
+ */
+struct cudaKernelNodeParams {
+  void* func;                     /**< Kernel to launch */
+  dim3 gridDim;                   /**< Grid dimensions */
+  dim3 blockDim;                  /**< Block dimensions */
+  uint sharedMemBytes;    /**< Dynamic shared-memory size per thread block in bytes */
+  void **kernelParams;            /**< Array of pointers to individual kernel arguments*/
+  void **extra;                   /**< Pointer to kernel arguments in the "extra" format */
+}
+
+/**
+* CUDA Graph node types
+*/
+alias cudaGraphNodeType = int;
+enum : cudaGraphNodeType {
+  cudaGraphNodeTypeKernel  = 0x00, /**< GPU kernel node */
+  cudaGraphNodeTypeMemcpy  = 0x01, /**< Memcpy node */
+  cudaGraphNodeTypeMemset  = 0x02, /**< Memset node */
+  cudaGraphNodeTypeHost    = 0x03, /**< Host (executable) node */
+  cudaGraphNodeTypeGraph   = 0x04, /**< Node which executes an embedded graph */
+  cudaGraphNodeTypeEmpty   = 0x05, /**< Empty (no-op) node */
+  cudaGraphNodeTypeCount
+}
+
+/**
+ * CUDA executable (launchable) graph
+ */
+struct CUgraphExec_st;
+alias cudaGraphExec_t = CUgraphExec_st*;
 
 
 // surface_types.h
