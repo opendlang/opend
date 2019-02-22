@@ -578,44 +578,80 @@ private string pascalCase(string camel_case)
 	return camel_case[0].toUpper ~ camel_case[1 .. $];
 }
 
-static if (__VERSION__ >= 2072) {
-	/** Maps a kind enumeration value to the corresponding field type.
+/** Maps a kind enumeration value to the corresponding field type.
 
-		`kind` must be a value of the `TaggedAlgebraic!T.Kind` enumeration.
-	*/
-	template TypeOf(alias kind)
-		if (is(typeof(kind) == enum))
-	{
-		static if (isInstanceOf!(UnionFieldEnum, typeof(kind))) {
-			import std.traits : FieldTypeTuple, TemplateArgsOf;
-			alias U = TemplateArgsOf!(typeof(kind));
-			alias TypeOf = FieldTypeTuple!U[kind];
-		} else {
-			alias Types = UnionKindTypes!(typeof(kind));
-			alias uda = AliasSeq!(__traits(getAttributes, kind));
-			static if (uda.length == 0) alias TypeOf = void;
-			else alias TypeOf = uda[0];
-		}
+	`kind` must be a value of the `TaggedAlgebraic!T.Kind` enumeration.
+*/
+template TypeOf(alias kind)
+	if (is(typeof(kind) == enum))
+{
+	import std.traits : FieldTypeTuple, TemplateArgsOf;
+	import std.typecons : ReplaceType;
+
+	static if (isInstanceOf!(UnionFieldEnum, typeof(kind))) {
+		alias U = TemplateArgsOf!(typeof(kind));
+		alias FT = FieldTypeTuple!U[kind];
+	} else {
+		alias U = typeof(kind);
+		alias Types = UnionKindTypes!(typeof(kind));
+		alias uda = AliasSeq!(__traits(getAttributes, kind));
+		static if (uda.length == 0) alias FT = void;
+		else alias FT = uda[0];
 	}
 
-	///
-	unittest {
-		static struct S {
-			int a;
-			string b;
-			string c;
-		}
-		alias TU = TaggedUnion!S;
+	alias TypeOf = ReplaceType!(This, U, FT);
+}
 
-		static assert(is(TypeOf!(TU.Kind.a) == int));
-		static assert(is(TypeOf!(TU.Kind.b) == string));
-		static assert(is(TypeOf!(TU.Kind.c) == string));
+///
+unittest {
+	static struct S {
+		int a;
+		string b;
+		string c;
 	}
+	alias TU = TaggedUnion!S;
+
+	static assert(is(TypeOf!(TU.Kind.a) == int));
+	static assert(is(TypeOf!(TU.Kind.b) == string));
+	static assert(is(TypeOf!(TU.Kind.c) == string));
+}
+
+unittest {
+	struct S {
+		TaggedUnion!This[] test;
+	}
+	alias TU = TaggedUnion!S;
+
+	TypeOf!(TU.Kind.test) a;
+
+	static assert(is(TypeOf!(TU.Kind.test) == TaggedUnion!S[]));
 }
 
 
 /// Convenience type that can be used for union fields that have no value (`void` is not allowed).
 struct Void {}
+
+/** Special type used as a placeholder for `U` within the definition of `U` to
+	enable self-referential types.
+
+	Note that this is recognized only if used as the first argument to a
+	template type.
+*/
+struct This { Void nothing; }
+
+///
+unittest {
+	union U {
+		TaggedUnion!This[] list;
+		int number;
+		string text;
+	}
+	alias Node = TaggedUnion!U;
+
+	auto n = Node([Node(12), Node("foo")]);
+	assert(n.isList);
+	assert(n.listValue == [Node(12), Node("foo")]);
+}
 
 private template UnionFieldEnum(U)
 {
