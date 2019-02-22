@@ -11,6 +11,7 @@ import std.algorithm.mutation : move, swap;
 import std.meta;
 import std.traits : EnumMembers, FieldNameTuple, Unqual, isInstanceOf;
 
+
 /** Implements a generic tagged union type.
 
 	This struct takes a `union` or `struct` declaration as an input and builds
@@ -325,7 +326,141 @@ unittest { // test for name clashes
 	assert(tu.getString() == "foo");
 }
 
+
+/** Dispatches the value contained on a `TaggedUnion` to a set of visitors.
+
+	A visitor can have one of three forms:
+
+	$(UL
+		$(LI function or delegate taking a single typed parameter)
+		$(LI function or delegate taking no parameters)
+		$(LI function or delegate template taking any single parameter)
+	)
+
+	....
+*/
+template visit(VISITORS...) {
+	auto visit(TU)(auto ref TU tu)
+		if (isInstanceOf!(TaggedUnion, TU))
+	{
+		final switch (tu.kind) {
+			static foreach (k; EnumMembers!(TU.Kind)) {
+				case k: {
+					static if (isUnionType!(TU.FieldTypes[k]))
+						alias T = void;
+					else alias T = TU.FieldTypes[k];
+					alias h = selectHandler!(T, VISITORS);
+					static if (is(h == void)) static assert(false, "No handler is able to take type "~T.stringof);
+					else static if (is(typeof(h) == string)) static assert(false, h);
+					else static if (is(T == void)) return h();
+					else return h(tu.get!k);
+				}
+			}
+		}
+	}
+}
+
+///
+unittest {
+	union U {
+		int number;
+		string text;
+	}
+	alias TU = TaggedUnion!U;
+
+	auto tu = TU.number(42);
+	tu.visit!(
+		(int n) { assert(n == 42); },
+		(string s) { assert(false); }
+	);
+
+	assert(tu.visit!((v) => to!int(v)) == 42);
+
+	tu.setText("43");
+
+	assert(tu.visit!((v) => to!int(v)) == 43);
+}
+
+// workaround for "template to is not defined" error in the unit test above
+// happens on DMD 2.080 and below
+private U to(U, T)(T val) {
+	static import std.conv;
+	return std.conv.to!U(val);
+}
+
+
+/** The same as `visit`, except that failure to handle types is checked at runtime.
+
+	Instead of failing to compile, `tryVisit` will throw an `Exception` if none
+	of the handlers is able to handle the value contained in `tu`.
+*/
+template tryVisit(VISITORS...) {
+	auto tryVisit(TU)(auto ref TU tu)
+		if (isInstanceOf!(TaggedUnion, TU))
+	{
+		final switch (tu.kind) {
+			static foreach (k; EnumMembers!(TU.Kind)) {
+				case k: {
+					static if (isUnionType!(TU.FieldTypes[k]))
+						alias T = void;
+					else alias T = TU.FieldTypes[k];
+					alias h = selectHandler!(T, VISITORS);
+					static if (is(h == void)) throw new Exception("Type "~T.stringof~" not handled by any visitor.");
+					else static if (is(typeof(h) == string)) static assert(false, h);
+					else static if (is(T == void)) return h();
+					else return h(tu.get!k);
+				}
+			}
+		}
+	}
+}
+
+///
+unittest {
+	import std.exception : assertThrown;
+
+	union U {
+		int number;
+		string text;
+	}
+	alias TU = TaggedUnion!U;
+
+	auto tu = TU.number(42);
+	tu.tryVisit!((int n) { assert(n == 42); });
+	assertThrown(tu.tryVisit!((string s) { assert(false); }));
+}
+
 enum isUnionType(T) = is(T == Void) || is(T == void) || is(T == typeof(null));
+
+private template selectHandler(T, VISITORS...)
+{
+	import std.traits : ParameterTypeTuple, isSomeFunction;
+
+	// TODO: error out for ambiguous handlers and handlers that don't match any type!
+
+	template impl(int i) {
+		static if (i < VISITORS.length) {
+			alias fun = VISITORS[i];
+			static if (isSomeFunction!fun) {
+				alias Params = ParameterTypeTuple!fun;
+				static if (Params.length == 0) {
+					static if (is(T == void))
+						alias impl = fun;
+					else alias impl = impl!(i+1);
+				} else static if (Params.length == 1) {
+					static if (is(T : Params[0]))
+						alias impl = fun;
+					else alias impl = impl!(i+1);
+				} else enum impl = "Visitor at index "~i.stringof~" must not take more than one parameter.";
+			} else static if (isSomeFunction!(fun!T)) {
+				static if (ParameterTypeTuple!(fun!T).length == 1)
+					alias impl = fun!T;
+				else enum impl = "Generic visitor at index "~i.stringof~" must have a single parameter.";
+			} else enum impl = "Visitor at index "~i.stringof~" (or its template instantiation with type "~T.stringof~") must be a valid function or delegate.";
+		} else alias impl = void;
+	}
+	alias selectHandler = impl!0;
+}
 
 private string pascalCase(string camel_case)
 {
