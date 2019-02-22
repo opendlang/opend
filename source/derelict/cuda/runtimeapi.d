@@ -1747,6 +1747,7 @@ alias cudaGraph_t = void*;
 alias cudaGraphNode_t = void*;
 
 
+struct dim3;
 
 /**
  * CUDA cooperative group scope
@@ -1858,58 +1859,77 @@ enum cudaTextureType1DLayered       = 0xF1;
 enum cudaTextureType2DLayered       = 0xF2;
 enum cudaTextureTypeCubemapLayered  = 0xFC;
 
+/**
+ * CUDA texture address modes
+ */
 alias cudaTextureAddressMode = int;
 enum : cudaTextureAddressMode
 {
-    cudaAddressModeWrap   = 0,
-    cudaAddressModeClamp  = 1,
-    cudaAddressModeMirror = 2,
-    cudaAddressModeBorder = 3
+  cudaAddressModeWrap   = 0,
+  cudaAddressModeClamp  = 1,
+  cudaAddressModeMirror = 2,
+  cudaAddressModeBorder = 3
 }
 
+/**
+ * CUDA texture filter modes
+ */
 alias cudaTextureFilterMode = int;
 enum : cudaTextureFilterMode
 {
-    cudaFilterModePoint  = 0,
-    cudaFilterModeLinear = 1
+  cudaFilterModePoint  = 0,
+  cudaFilterModeLinear = 1
 }
 
+/**
+ * CUDA texture read modes
+ */
 alias cudaTextureReadMode = int;
 enum : cudaTextureReadMode
 {
-    cudaReadModeElementType     = 0,
-    cudaReadModeNormalizedFloat = 1
+  cudaReadModeElementType     = 0,
+  cudaReadModeNormalizedFloat = 1
 }
 
+/**
+ * CUDA texture reference
+ */
 struct textureReference
 {
-    int                          normalized;
-    cudaTextureFilterMode   filterMode;
-    cudaTextureAddressMode[3]  addressMode;
-    cudaChannelFormatDesc channelDesc;
-    int                          sRGB;
-    uint                 maxAnisotropy;
-    cudaTextureFilterMode   mipmapFilterMode;
-    float                        mipmapLevelBias;
-    float                        minMipmapLevelClamp;
-    float                        maxMipmapLevelClamp;
-    int[15]                          __cudaReserved;
+  int                          normalized;
+  cudaTextureFilterMode   filterMode;
+  cudaTextureAddressMode[3]  addressMode;
+  cudaChannelFormatDesc channelDesc;
+  int                          sRGB;
+  uint                 maxAnisotropy;
+  cudaTextureFilterMode   mipmapFilterMode;
+  float                        mipmapLevelBias;
+  float                        minMipmapLevelClamp;
+  float                        maxMipmapLevelClamp;
+  int[15]                          __cudaReserved;
 }
 
+/**
+ * CUDA texture descriptor
+ */
 struct cudaTextureDesc
 {
-    cudaTextureAddressMode[3] addressMode;
-    cudaTextureFilterMode  filterMode;
-    cudaTextureReadMode    readMode;
-    int                         sRGB;
-    int                         normalizedCoords;
-    uint                maxAnisotropy;
-    cudaTextureFilterMode  mipmapFilterMode;
-    float                       mipmapLevelBias;
-    float                       minMipmapLevelClamp;
-    float                       maxMipmapLevelClamp;
+  cudaTextureAddressMode[3] addressMode;
+  cudaTextureFilterMode  filterMode;
+  cudaTextureReadMode    readMode;
+  int                         sRGB;
+  float[4]                       borderColor;
+  int                         normalizedCoords;
+  uint                maxAnisotropy;
+  cudaTextureFilterMode  mipmapFilterMode;
+  float                       mipmapLevelBias;
+  float                       minMipmapLevelClamp;
+  float                       maxMipmapLevelClamp;
 }
 
+/**
+ * An opaque value that represents a CUDA texture object
+ */
 alias cudaTextureObject_t = ulong;
 
 
