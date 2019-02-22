@@ -9,7 +9,7 @@ module taggedalgebraic;
 
 import std.algorithm.mutation : move, swap;
 import std.meta;
-import std.traits : Unqual, isInstanceOf;
+import std.traits : EnumMembers, FieldNameTuple, Unqual, isInstanceOf;
 
 // TODO:
 //  - distinguish between @property and non@-property methods.
@@ -33,21 +33,22 @@ import std.traits : Unqual, isInstanceOf;
 		$(LI `getFoo` - equivalent to `get!(Kind.foo)`)
 	)
 */
-struct TaggedUnion(U) if (is(U == union) || is(U == struct))
+struct TaggedUnion(U) if (is(U == union) || is(U == struct) || is(U == enum))
 {
 	import std.traits : FieldTypeTuple, FieldNameTuple, Largest,
 		hasElaborateCopyConstructor, hasElaborateDestructor, isCopyable;
 	import std.ascii : toUpper;
 
 	alias FieldDefinitionType = U;
-	alias FieldTypes = FieldTypeTuple!U;
-	alias fieldNames = FieldNameTuple!U;
+
+	/// A type enum that identifies the type of value currently stored.
+	alias Kind = UnionFieldEnum!U;
+
+	alias FieldTypes = UnionKindTypes!Kind;
+	alias fieldNames = UnionKindNames!Kind;
 
 	static assert(FieldTypes.length > 0, "The TaggedUnions's union type must have at least one field.");
 	static assert(FieldTypes.length == fieldNames.length);
-
-	/// A type enum that identifies the type of value currently stored.
-	alias Kind = TypeEnum!U;
 
 	private alias FieldTypeByName(string name) = FieldTypes[__traits(getMember, Kind, name)];
 
@@ -180,11 +181,12 @@ struct TaggedUnion(U) if (is(U == union) || is(U == struct))
 		// NOTE: using getX/setX here because using just x would be prone to
 		//       misuse (attempting to "get" a value for modification when
 		//       a different kind is set instead of assigning a new value)
-		mixin("alias get"~pascalCase(name)~" = get!(Kind."~name~");");
 		mixin("alias set"~pascalCase(name)~" = set!(Kind."~name~");");
 		mixin("@property bool is"~pascalCase(name)~"() const { return m_kind == Kind."~name~"; }");
 
 		static if (!isUnionType!(FieldTypes[i])) {
+			mixin("alias get"~pascalCase(name)~" = get!(Kind."~name~");");
+
 			mixin("static TaggedUnion "~name~"(FieldTypes["~i.stringof~"] value)"
 				~ "{ TaggedUnion tu; tu.set!(Kind."~name~")(move(value)); return tu; }");
 
@@ -292,6 +294,31 @@ struct TaggedUnion(U) if (is(U == union) || is(U == struct))
 	assert(tu.isText);
 	assert(tu.kind == TU.Kind.text);
 	assert(tu.getText() == "hello");
+}
+
+///
+@safe nothrow unittest {
+	// Enum annotations supported since DMD 2.082.0. The mixin below is
+	// necessary to keep the parser happy on older versions.
+	static if (__VERSION__ >= 2082) {
+		alias myint = int;
+		// tagged unions can be defined in terms of an annotated enum
+		mixin(q{enum E {
+			none,
+			@string text
+		}});
+
+		alias TU = TaggedUnion!E;
+		static assert(is(TU.Kind == E));
+
+		TU tu;
+		assert(tu.isNone);
+		assert(tu.kind == E.none);
+
+		tu.setText("foo");
+		assert(tu.kind == E.text);
+		assert(tu.getText == "foo");
+	}
 }
 
 unittest { // test for name clashes
@@ -813,8 +840,6 @@ static if (__VERSION__ >= 2072) unittest { // default initialization
 
 unittest
 {
-	import std.meta : AliasSeq;
-
 	union U { int[int] a; }
 
 	foreach (TA; AliasSeq!(TaggedAlgebraic!U, const(TaggedAlgebraic!U)))
@@ -951,11 +976,18 @@ static if (__VERSION__ >= 2072) {
 		`kind` must be a value of the `TaggedAlgebraic!T.Kind` enumeration.
 	*/
 	template TypeOf(alias kind)
-		if (isInstanceOf!(TypeEnum, typeof(kind)))
+		if (is(typeof(kind) == enum))
 	{
-		import std.traits : FieldTypeTuple, TemplateArgsOf;
-		alias U = TemplateArgsOf!(typeof(kind));
-		alias TypeOf = FieldTypeTuple!U[kind];
+		static if (isInstanceOf!(UnionFieldEnum, typeof(kind))) {
+			import std.traits : FieldTypeTuple, TemplateArgsOf;
+			alias U = TemplateArgsOf!(typeof(kind));
+			alias TypeOf = FieldTypeTuple!U[kind];
+		} else {
+			alias Types = UnionKindTypes!(typeof(kind));
+			alias uda = AliasSeq!(__traits(getAttributes, kind));
+			static if (uda.length == 0) alias TypeOf = void;
+			else alias TypeOf = uda[0];
+		}
 	}
 
 	///
@@ -1347,12 +1379,22 @@ private enum OpKind {
 	call
 }
 
-private template TypeEnum(U)
+private template UnionFieldEnum(U)
 {
-	import std.array : join;
-	import std.traits : FieldNameTuple;
-	mixin("enum TypeEnum { " ~ [FieldNameTuple!U].join(", ") ~ " }");
+	static if (is(U == enum)) alias UnionFieldEnum = U;
+	else {
+		import std.array : join;
+		import std.traits : FieldNameTuple;
+		mixin("enum UnionFieldEnum { " ~ [FieldNameTuple!U].join(", ") ~ " }");
+	}
 }
+
+deprecated alias TypeEnum(U) = UnionFieldEnum!U;
+
+alias UnionKindTypes(FieldEnum) = staticMap!(TypeOf, EnumMembers!FieldEnum);
+alias UnionKindNames(FieldEnum) = AliasSeq!(__traits(allMembers, FieldEnum));
+
+
 
 private string generateConstructors(U)()
 {
