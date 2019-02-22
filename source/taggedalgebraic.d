@@ -8,7 +8,7 @@
 module taggedalgebraic;
 
 import std.algorithm.mutation : move, swap;
-import std.typetuple;
+import std.meta;
 import std.traits : Unqual, isInstanceOf;
 
 // TODO:
@@ -1077,7 +1077,7 @@ private template hasOp(TA, OpKind kind, string name, ARGS...)
 {
 	import std.traits : CopyTypeQualifiers;
 	alias UQ = CopyTypeQualifiers!(TA, TA.Union);
-	enum hasOp = TypeTuple!(OpInfo!(UQ, kind, name, ARGS).fields).length > 0;
+	enum hasOp = AliasSeq!(OpInfo!(UQ, kind, name, ARGS).fields).length > 0;
 }
 
 unittest {
@@ -1252,9 +1252,9 @@ private auto performOp(U, OpKind kind, string name, T, ARGS...)(ref T value, /*a
 				static if (i < TA.FieldTypes.length) {
 					alias FT = TA.FieldTypes[i];
 					static if (is(typeof(&performOpRaw!(U, kind, name, T, FT, ARGS[1 .. $]))))
-						alias MTypesImpl = TypeTuple!(FT, MTypesImpl!(i+1));
-					else alias MTypesImpl = TypeTuple!(MTypesImpl!(i+1));
-				} else alias MTypesImpl = TypeTuple!();
+						alias MTypesImpl = AliasSeq!(FT, MTypesImpl!(i+1));
+					else alias MTypesImpl = AliasSeq!(MTypesImpl!(i+1));
+				} else alias MTypesImpl = AliasSeq!();
 			}
 			alias MTypes = NoDuplicates!(MTypesImpl!0);
 			static assert(MTypes.length > 0, "No type of the TaggedAlgebraic parameter matches any function declaration.");
@@ -1292,7 +1292,7 @@ private template OpInfo(U, OpKind kind, string name, ARGS...)
 
 	private template isOpEnabled(string field)
 	{
-		alias attribs = TypeTuple!(__traits(getAttributes, __traits(getMember, U, field)));
+		alias attribs = AliasSeq!(__traits(getAttributes, __traits(getMember, U, field)));
 		template impl(size_t i) {
 			static if (i < attribs.length) {
 				static if (is(typeof(attribs[i]) == DisableOpAttribute)) {
@@ -1309,17 +1309,17 @@ private template OpInfo(U, OpKind kind, string name, ARGS...)
 	{
 		static if (i < FieldTypes.length) {
 			static if (isOpEnabled!(fieldNames[i]) && is(typeof(&performOp!(U, kind, name, FieldTypes[i], ARGS)))) {
-				alias fieldsImpl = TypeTuple!(fieldNames[i], fieldsImpl!(i+1));
+				alias fieldsImpl = AliasSeq!(fieldNames[i], fieldsImpl!(i+1));
 			} else alias fieldsImpl = fieldsImpl!(i+1);
-		} else alias fieldsImpl = TypeTuple!();
+		} else alias fieldsImpl = AliasSeq!();
 	}
 	alias fields = fieldsImpl!0;
 
 	template ReturnTypesImpl(size_t i) {
 		static if (i < fields.length) {
 			alias FT = CopyTypeQualifiers!(U, typeof(__traits(getMember, U, fields[i])));
-			alias ReturnTypesImpl = TypeTuple!(ReturnType!(performOp!(U, kind, name, FT, ARGS)), ReturnTypesImpl!(i+1));
-		} else alias ReturnTypesImpl = TypeTuple!();
+			alias ReturnTypesImpl = AliasSeq!(ReturnType!(performOp!(U, kind, name, FT, ARGS)), ReturnTypesImpl!(i+1));
+		} else alias ReturnTypesImpl = AliasSeq!();
 	}
 	alias ReturnTypes = ReturnTypesImpl!0;
 
@@ -1385,7 +1385,7 @@ private string generateConstructors(U)()
 		}.format(tname);
 
 	// type constructors with explicit type tag
-	foreach (tname; TypeTuple!(UniqueTypeFields!U, AmbiguousTypeFields!U))
+	foreach (tname; AliasSeq!(UniqueTypeFields!U, AmbiguousTypeFields!U))
 		ret ~= q{
 			this(UnionType.FieldTypeByName!"%1$s" value, Kind type)
 			{
@@ -1417,9 +1417,9 @@ private template UniqueTypeFields(U) {
 			enum name = FieldNameTuple!U[i];
 			alias T = Types[i];
 			static if (staticIndexOf!(T, Types) == i && staticIndexOf!(T, Types[i+1 .. $]) < 0)
-				alias impl = TypeTuple!(name, impl!(i+1));
-			else alias impl = TypeTuple!(impl!(i+1));
-		} else alias impl = TypeTuple!();
+				alias impl = AliasSeq!(name, impl!(i+1));
+			else alias impl = AliasSeq!(impl!(i+1));
+		} else alias impl = AliasSeq!();
 	}
 	alias UniqueTypeFields = impl!0;
 }
@@ -1434,9 +1434,9 @@ private template AmbiguousTypeFields(U) {
 			enum name = FieldNameTuple!U[i];
 			alias T = Types[i];
 			static if (staticIndexOf!(T, Types) == i && staticIndexOf!(T, Types[i+1 .. $]) >= 0)
-				alias impl = TypeTuple!(name, impl!(i+1));
+				alias impl = AliasSeq!(name, impl!(i+1));
 			else alias impl = impl!(i+1);
-		} else alias impl = TypeTuple!();
+		} else alias impl = AliasSeq!();
 	}
 	alias AmbiguousTypeFields = impl!0;
 }
@@ -1462,9 +1462,9 @@ private template SameTypeFields(U, string field) {
 		static if (i < Types.length) {
 			enum name = FieldNameTuple!U[i];
 			static if (is(Types[i] == T))
-				alias impl = TypeTuple!(name, impl!(i+1));
-			else alias impl = TypeTuple!(impl!(i+1));
-		} else alias impl = TypeTuple!();
+				alias impl = AliasSeq!(name, impl!(i+1));
+			else alias impl = AliasSeq!(impl!(i+1));
+		} else alias impl = AliasSeq!();
 	}
 	alias SameTypeFields = impl!0;
 }
