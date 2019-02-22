@@ -47,6 +47,9 @@ private
     static assert(0, "Need to implement CUDA libNames for this operating system.");
 }
 
+alias cuuint32_t = uint;
+alias cuuint64_t = ulong;
+
 alias CUdeviceptr = size_t;
 
 alias CUdevice = int;
@@ -145,7 +148,7 @@ enum : CUstream_flags
  * Flags for ::cuStreamWaitValue32 and ::cuStreamWaitValue64
  */
 alias CUstreamWaitValue_flags = int;
-enum . CUstreamWaitValue_flags {
+enum : CUstreamWaitValue_flags {
   CU_STREAM_WAIT_VALUE_GEQ   = 0x0,   /**< Wait until (int32_t)(*addr - value) >= 0 (or int64_t for 64 bit
                                            values). Note this is a cyclic comparison which ignores wraparound.
                                            (Default behavior.) */
@@ -206,7 +209,7 @@ union CUstreamBatchMemOpParams {
         cuuint64_t value64;
     };
     uint flags;
-    CUdeviceptr alias; /**< For driver internal use. Initial value is unimportant. */
+    CUdeviceptr _alias; /**< For driver internal use. Initial value is unimportant. */
   }
   CUstreamMemOpWaitValueParams_st waitValue;
   struct CUstreamMemOpWriteValueParams_st {
@@ -217,7 +220,7 @@ union CUstreamBatchMemOpParams {
         cuuint64_t value64;
     };
     uint flags;
-    CUdeviceptr alias; /**< For driver internal use. Initial value is unimportant. */
+    CUdeviceptr _alias; /**< For driver internal use. Initial value is unimportant. */
   }
   CUstreamMemOpWriteValueParams_st writeValue;
   struct CUstreamMemOpFlushRemoteWritesParams_st {
@@ -225,7 +228,7 @@ union CUstreamBatchMemOpParams {
     uint flags;
   }
   CUstreamMemOpFlushRemoteWritesParams_st flushRemoteWrites;
-  cuuint64_t pad[6];
+  cuuint64_t[6] pad;
 }
 
 
@@ -1516,24 +1519,22 @@ enum : CUresourceViewFormat
     CU_RES_VIEW_FORMAT_UNSIGNED_BC7  = 0x22
 }
 
-struct CUDA_RESOURCE_VIEW_DESC
-{
-    CUresourceViewFormat format;
-    size_t width;
-    size_t height;
-    size_t depth;
-    uint firstMipmapLevel;
-    uint lastMipmapLevel;
-    uint firstLayer;
-    uint lastLayer;
-    uint[16] reserved;
+struct CUDA_RESOURCE_VIEW_DESC {
+  CUresourceViewFormat format;
+  size_t width;
+  size_t height;
+  size_t depth;
+  uint firstMipmapLevel;
+  uint lastMipmapLevel;
+  uint firstLayer;
+  uint lastLayer;
+  uint[16] reserved;
 }
 
 
-struct CUDA_POINTER_ATTRIBUTE_P2P_TOKENS
-{
-    ulong p2pToken;
-    uint vaSpaceToken;
+struct CUDA_POINTER_ATTRIBUTE_P2P_TOKENS {
+  ulong p2pToken;
+  uint vaSpaceToken;
 }
 
 //
@@ -1544,7 +1545,7 @@ struct CUDA_POINTER_ATTRIBUTE_P2P_TOKENS
  * Kernel launch parameters
  */
 struct CUDA_LAUNCH_PARAMS {
-  CUfunction function;         /**< Kernel to launch */
+  CUfunction _function;
   uint gridDimX;       /**< Width of grid in blocks */
   uint gridDimY;       /**< Height of grid in blocks */
   uint gridDimZ;       /**< Depth of grid in blocks */
@@ -1591,7 +1592,7 @@ enum : CUexternalMemoryHandleType {
 /**
  * Indicates that the external memory object is a dedicated resource
  */
-enum CUDA_EXTERNAL_MEMORY_DEDICATED   =  0x1
+enum CUDA_EXTERNAL_MEMORY_DEDICATED   =  0x1;
 
 /**
  * External memory handle descriptor
@@ -1642,7 +1643,7 @@ struct CUDA_EXTERNAL_MEMORY_HANDLE_DESC {
    * Flags must either be zero or ::CUDA_EXTERNAL_MEMORY_DEDICATED
    */
   uint flags;
-  uint reserved[16];
+  uint[16] reserved;
 }
 
 /**
@@ -1661,7 +1662,7 @@ struct CUDA_EXTERNAL_MEMORY_BUFFER_DESC {
    * Flags reserved for future use. Must be zero.
    */
   uint flags;
-  uint reserved[16];
+  uint[16] reserved;
 }
 
 /**
@@ -1681,7 +1682,7 @@ struct CUDA_EXTERNAL_MEMORY_MIPMAPPED_ARRAY_DESC {
    * Total number of levels in the mipmap chain
    */
   uint numLevels;
-  uint reserved[16];
+  uint[16] reserved;
 }
 
 /**
@@ -1751,7 +1752,7 @@ struct CUDA_EXTERNAL_SEMAPHORE_HANDLE_DESC {
    * Flags reserved for the future. Must be zero.
    */
   uint flags;
-  uint reserved[16];
+  uint[16] reserved;
 }
 
 /**
@@ -1762,21 +1763,21 @@ struct CUDA_EXTERNAL_SEMAPHORE_SIGNAL_PARAMS {
     /**
      * Parameters for fence objects
      */
-    struct fence {
+    struct fence_st {
       /**
        * Value of fence to be signaled
        */
       ulong value;
     }
     fence_st fence;
-    uint reserved[16];
+    uint[16] reserved;
   }
   params_st params;
   /**
    * Flags reserved for the future. Must be zero.
    */
   uint flags;
-  uint reserved[16];
+  uint[16] reserved;
 }
 
 /**
@@ -1794,14 +1795,14 @@ struct CUDA_EXTERNAL_SEMAPHORE_WAIT_PARAMS {
       ulong value;
     }
     fence_st fence;
-    uint reserved[16];
+    uint[16] reserved;
   }
   params_st params;
   /**
    * Flags reserved for the future. Must be zero.
    */
   uint flags;
-  uint reserved[16];
+  uint[16] reserved;
 }
 
 enum CUDA_COOPERATIVE_LAUNCH_MULTI_DEVICE_NO_PRE_LAUNCH_SYNC  =  0x01;
@@ -1822,12 +1823,12 @@ enum CU_LAUNCH_PARAM_BUFFER_POINTER = (cast(void*)0x01);
 enum CU_LAUNCH_PARAM_BUFFER_SIZE    = (cast(void*)0x02);
 enum CU_PARAM_TR_DEFAULT = -1;
 
-enum CU_DEVICE_CPU              =  ((CUdevice)-1)
+enum CU_DEVICE_CPU              =  (cast(CUdevice)-1);
 
 /**
  * Device that represents an invalid device
  */
-enum CU_DEVICE_INVALID          =  ((CUdevice)-2)
+enum CU_DEVICE_INVALID          =  (cast(CUdevice)-2);
 
 
 extern(System) @nogc nothrow
@@ -1841,7 +1842,7 @@ extern(System) @nogc nothrow
   alias da_cuDeviceGetCount = CUresult function(int *count);
   alias da_cuDeviceGetName = CUresult function(char *name, int len, CUdevice dev);
   alias da_cuDeviceGetUuid = CUresult function(CUuuid *uuid, CUdevice dev);
-  alias da_cuDeviceGetLuid = CUresult function(char *luid, uint *deviceNodeMask, CUdevice dev);
+  //alias da_cuDeviceGetLuid = CUresult function(char *luid, uint *deviceNodeMask, CUdevice dev);
   alias da_cuDeviceTotalMem = CUresult function(size_t *bytes, CUdevice dev);
   alias da_cuDeviceGetAttribute = CUresult function(int *pi, CUdevice_attribute attrib, CUdevice dev);
   alias da_cuDeviceGetProperties = CUresult function(CUdevprop *prop, CUdevice dev);
@@ -1859,21 +1860,21 @@ extern(System) @nogc nothrow
   alias da_cuCtxGetCurrent = CUresult function(CUcontext *pctx);
   alias da_cuCtxGetDevice = CUresult function(CUdevice *device);
   alias da_cuCtxGetFlags = CUresult function(uint *flags);
-  alias da_cuCtxSynchronize = CUresult function(void);
+  alias da_cuCtxSynchronize = CUresult function();
   alias da_cuCtxSetLimit = CUresult function(CUlimit limit, size_t value);
   alias da_cuCtxGetLimit = CUresult function(size_t *pvalue, CUlimit limit);
   alias da_cuCtxGetCacheConfig = CUresult function(CUfunc_cache *pconfig);
   alias da_cuCtxSetCacheConfig = CUresult function(CUfunc_cache config);
   alias da_cuCtxGetSharedMemConfig = CUresult function(CUsharedconfig *pConfig);
   alias da_cuCtxSetSharedMemConfig = CUresult function(CUsharedconfig config);
-  alias da_cuCtxGetApiVersion = CUresult function(CUcontext ctx, uint *version);
+  alias da_cuCtxGetApiVersion = CUresult function(CUcontext ctx, uint *pVersion);
   alias da_cuCtxGetStreamPriorityRange = CUresult function(int *leastPriority, int *greatestPriority);
   alias da_cuCtxAttach = CUresult function(CUcontext *pctx, uint flags);
   alias da_cuCtxDetach = CUresult function(CUcontext ctx);
-  alias da_cuModuleLoad = CUresult function(CUmodule *module, const char *fname);
-  alias da_cuModuleLoadData = CUresult function(CUmodule *module, const void *image);
-  alias da_cuModuleLoadDataEx = CUresult function(CUmodule *module, const void *image, uint numOptions, CUjit_option *options, void **optionValues);
-  alias da_cuModuleLoadFatBinary = CUresult function(CUmodule *module, const void *fatCubin);
+  alias da_cuModuleLoad = CUresult function(CUmodule *pModule, const char *fname);
+  alias da_cuModuleLoadData = CUresult function(CUmodule *pModule, const void *image);
+  alias da_cuModuleLoadDataEx = CUresult function(CUmodule *pModule, const void *image, uint numOptions, CUjit_option *options, void **optionValues);
+  alias da_cuModuleLoadFatBinary = CUresult function(CUmodule *pModule, const void *fatCubin);
   alias da_cuModuleUnload = CUresult function(CUmodule hmod);
   alias da_cuModuleGetFunction = CUresult function(CUfunction *hfunc, CUmodule hmod, const char *name);
   alias da_cuModuleGetGlobal = CUresult function(CUdeviceptr *dptr, size_t *bytes, CUmodule hmod, const char *name);
@@ -1928,17 +1929,17 @@ extern(System) @nogc nothrow
   alias da_cuMemcpy2DAsync = CUresult function(const CUDA_MEMCPY2D *pCopy, CUstream hStream);
   alias da_cuMemcpy3DAsync = CUresult function(const CUDA_MEMCPY3D *pCopy, CUstream hStream);
   alias da_cuMemcpy3DPeerAsync = CUresult function(const CUDA_MEMCPY3D_PEER *pCopy, CUstream hStream);
-  alias da_cuMemsetD8 = CUresult function(CUdeviceptr dstDevice, unsigned char uc, size_t N);
-  alias da_cuMemsetD16 = CUresult function(CUdeviceptr dstDevice, unsigned short us, size_t N);
+  alias da_cuMemsetD8 = CUresult function(CUdeviceptr dstDevice, dchar uc, size_t N);
+  alias da_cuMemsetD16 = CUresult function(CUdeviceptr dstDevice, ushort us, size_t N);
   alias da_cuMemsetD32 = CUresult function(CUdeviceptr dstDevice, uint ui, size_t N);
-  alias da_cuMemsetD2D8 = CUresult function(CUdeviceptr dstDevice, size_t dstPitch, unsigned char uc, size_t Width, size_t Height);
-  alias da_cuMemsetD2D16 = CUresult function(CUdeviceptr dstDevice, size_t dstPitch, unsigned short us, size_t Width, size_t Height);
+  alias da_cuMemsetD2D8 = CUresult function(CUdeviceptr dstDevice, size_t dstPitch, dchar uc, size_t Width, size_t Height);
+  alias da_cuMemsetD2D16 = CUresult function(CUdeviceptr dstDevice, size_t dstPitch, ushort us, size_t Width, size_t Height);
   alias da_cuMemsetD2D32 = CUresult function(CUdeviceptr dstDevice, size_t dstPitch, uint ui, size_t Width, size_t Height);
-  alias da_cuMemsetD8Async = CUresult function(CUdeviceptr dstDevice, unsigned char uc, size_t N, CUstream hStream);
-  alias da_cuMemsetD16Async = CUresult function(CUdeviceptr dstDevice, unsigned short us, size_t N, CUstream hStream);
+  alias da_cuMemsetD8Async = CUresult function(CUdeviceptr dstDevice, dchar uc, size_t N, CUstream hStream);
+  alias da_cuMemsetD16Async = CUresult function(CUdeviceptr dstDevice, ushort us, size_t N, CUstream hStream);
   alias da_cuMemsetD32Async = CUresult function(CUdeviceptr dstDevice, uint ui, size_t N, CUstream hStream);
-  alias da_cuMemsetD2D8Async = CUresult function(CUdeviceptr dstDevice, size_t dstPitch, unsigned char uc, size_t Width, size_t Height, CUstream hStream);
-  alias da_cuMemsetD2D16Async = CUresult function(CUdeviceptr dstDevice, size_t dstPitch, unsigned short us, size_t Width, size_t Height, CUstream hStream);
+  alias da_cuMemsetD2D8Async = CUresult function(CUdeviceptr dstDevice, size_t dstPitch, dchar uc, size_t Width, size_t Height, CUstream hStream);
+  alias da_cuMemsetD2D16Async = CUresult function(CUdeviceptr dstDevice, size_t dstPitch, ushort us, size_t Width, size_t Height, CUstream hStream);
   alias da_cuMemsetD2D32Async = CUresult function(CUdeviceptr dstDevice, size_t dstPitch, uint ui, size_t Width, size_t Height, CUstream hStream);
   alias da_cuArrayCreate = CUresult function(CUarray *pHandle, const CUDA_ARRAY_DESCRIPTOR *pAllocateArray);
   alias da_cuArrayGetDescriptor = CUresult function(CUDA_ARRAY_DESCRIPTOR *pArrayDescriptor, CUarray hArray);
@@ -1992,8 +1993,8 @@ extern(System) @nogc nothrow
   alias da_cuFuncSetAttribute = CUresult function(CUfunction hfunc, CUfunction_attribute attrib, int value);
   alias da_cuFuncSetCacheConfig = CUresult function(CUfunction hfunc, CUfunc_cache config);
   alias da_cuFuncSetSharedMemConfig = CUresult function(CUfunction hfunc, CUsharedconfig config);
-  alias da_cuLaunchKernel = CUresult function(CUfunction f,
-  alias da_cuLaunchCooperativeKernel = CUresult function(CUfunction f,
+  alias da_cuLaunchKernel = CUresult function(CUfunction f,uint gridDimX,uint gridDimY,uint gridDimZ,uint blockDimX,uint blockDimY,uint blockDimZ,uint sharedMemBytes,CUstream hStream,void **kernelParams,void **extra);
+  alias da_cuLaunchCooperativeKernel = CUresult function(CUfunction f,uint gridDimX,uint gridDimY,uint gridDimZ,uint blockDimX,uint blockDimY,uint blockDimZ,uint sharedMemBytes,CUstream hStream,void **kernelParams);
   alias da_cuLaunchCooperativeKernelMultiDevice = CUresult function(CUDA_LAUNCH_PARAMS *launchParamsList, uint numDevices, uint flags);
   alias da_cuLaunchHostFunc = CUresult function(CUstream hStream, CUhostFn fn, void *userData);
   alias da_cuFuncSetBlockShape = CUresult function(CUfunction hfunc, int x, int y, int z);
@@ -2090,59 +2091,7 @@ extern(System) @nogc nothrow
   alias da_cuGraphicsMapResources = CUresult function(uint count, CUgraphicsResource *resources, CUstream hStream);
   alias da_cuGraphicsUnmapResources = CUresult function(uint count, CUgraphicsResource *resources, CUstream hStream);
   alias da_cuGetExportTable = CUresult function(const void **ppExportTable, const CUuuid *pExportTableId);
-  alias da_cuMemHostRegister = CUresult function(void *p, size_t bytesize, uint Flags);
-  alias da_cuGraphicsResourceSetMapFlags = CUresult function(CUgraphicsResource resource, uint flags);
-  alias da_cuLinkCreate = CUresult function(uint numOptions, CUjit_option *options, void **optionValues, CUlinkState *stateOut);
-  alias da_cuLinkAddData = CUresult function(CUlinkState state, CUjitInputType type, void *data, size_t size, const char *name,
-  alias da_cuLinkAddFile = CUresult function(CUlinkState state, CUjitInputType type, const char *path,
   alias da_cuTexRefSetAddress2D_v2 = CUresult function(CUtexref hTexRef, const CUDA_ARRAY_DESCRIPTOR *desc, CUdeviceptr dptr, size_t Pitch);
-  alias da_cuDeviceTotalMem = CUresult function(uint *bytes, CUdevice dev);
-  alias da_cuCtxCreate = CUresult function(CUcontext *pctx, uint flags, CUdevice dev);
-  alias da_cuModuleGetGlobal = CUresult function(CUdeviceptr *dptr, uint *bytes, CUmodule hmod, const char *name);
-  alias da_cuMemGetInfo = CUresult function(uint *free, uint *total);
-  alias da_cuMemAlloc = CUresult function(CUdeviceptr *dptr, uint bytesize);
-  alias da_cuMemAllocPitch = CUresult function(CUdeviceptr *dptr, uint *pPitch, uint WidthInBytes, uint Height, uint ElementSizeBytes);
-  alias da_cuMemFree = CUresult function(CUdeviceptr dptr);
-  alias da_cuMemGetAddressRange = CUresult function(CUdeviceptr *pbase, uint *psize, CUdeviceptr dptr);
-  alias da_cuMemAllocHost = CUresult function(void **pp, uint bytesize);
-  alias da_cuMemHostGetDevicePointer = CUresult function(CUdeviceptr *pdptr, void *p, uint Flags);
-  alias da_cuMemcpyHtoD = CUresult function(CUdeviceptr dstDevice, const void *srcHost, uint ByteCount);
-  alias da_cuMemcpyDtoH = CUresult function(void *dstHost, CUdeviceptr srcDevice, uint ByteCount);
-  alias da_cuMemcpyDtoD = CUresult function(CUdeviceptr dstDevice, CUdeviceptr srcDevice, uint ByteCount);
-  alias da_cuMemcpyDtoA = CUresult function(CUarray dstArray, uint dstOffset, CUdeviceptr srcDevice, uint ByteCount);
-  alias da_cuMemcpyAtoD = CUresult function(CUdeviceptr dstDevice, CUarray srcArray, uint srcOffset, uint ByteCount);
-  alias da_cuMemcpyHtoA = CUresult function(CUarray dstArray, uint dstOffset, const void *srcHost, uint ByteCount);
-  alias da_cuMemcpyAtoH = CUresult function(void *dstHost, CUarray srcArray, uint srcOffset, uint ByteCount);
-  alias da_cuMemcpyAtoA = CUresult function(CUarray dstArray, uint dstOffset, CUarray srcArray, uint srcOffset, uint ByteCount);
-  alias da_cuMemcpyHtoAAsync = CUresult function(CUarray dstArray, uint dstOffset, const void *srcHost, uint ByteCount, CUstream hStream);
-  alias da_cuMemcpyAtoHAsync = CUresult function(void *dstHost, CUarray srcArray, uint srcOffset, uint ByteCount, CUstream hStream);
-  alias da_cuMemcpy2D = CUresult function(const CUDA_MEMCPY2D *pCopy);
-  alias da_cuMemcpy2DUnaligned = CUresult function(const CUDA_MEMCPY2D *pCopy);
-  alias da_cuMemcpy3D = CUresult function(const CUDA_MEMCPY3D *pCopy);
-  alias da_cuMemcpyHtoDAsync = CUresult function(CUdeviceptr dstDevice, const void *srcHost, uint ByteCount, CUstream hStream);
-  alias da_cuMemcpyDtoHAsync = CUresult function(void *dstHost, CUdeviceptr srcDevice, uint ByteCount, CUstream hStream);
-  alias da_cuMemcpyDtoDAsync = CUresult function(CUdeviceptr dstDevice, CUdeviceptr srcDevice, uint ByteCount, CUstream hStream);
-  alias da_cuMemcpy2DAsync = CUresult function(const CUDA_MEMCPY2D *pCopy, CUstream hStream);
-  alias da_cuMemcpy3DAsync = CUresult function(const CUDA_MEMCPY3D *pCopy, CUstream hStream);
-  alias da_cuMemsetD8 = CUresult function(CUdeviceptr dstDevice, unsigned char uc, uint N);
-  alias da_cuMemsetD16 = CUresult function(CUdeviceptr dstDevice, unsigned short us, uint N);
-  alias da_cuMemsetD32 = CUresult function(CUdeviceptr dstDevice, uint ui, uint N);
-  alias da_cuMemsetD2D8 = CUresult function(CUdeviceptr dstDevice, uint dstPitch, unsigned char uc, uint Width, uint Height);
-  alias da_cuMemsetD2D16 = CUresult function(CUdeviceptr dstDevice, uint dstPitch, unsigned short us, uint Width, uint Height);
-  alias da_cuMemsetD2D32 = CUresult function(CUdeviceptr dstDevice, uint dstPitch, uint ui, uint Width, uint Height);
-  alias da_cuArrayCreate = CUresult function(CUarray *pHandle, const CUDA_ARRAY_DESCRIPTOR *pAllocateArray);
-  alias da_cuArrayGetDescriptor = CUresult function(CUDA_ARRAY_DESCRIPTOR *pArrayDescriptor, CUarray hArray);
-  alias da_cuArray3DCreate = CUresult function(CUarray *pHandle, const CUDA_ARRAY3D_DESCRIPTOR *pAllocateArray);
-  alias da_cuArray3DGetDescriptor = CUresult function(CUDA_ARRAY3D_DESCRIPTOR *pArrayDescriptor, CUarray hArray);
-  alias da_cuTexRefSetAddress = CUresult function(uint *ByteOffset, CUtexref hTexRef, CUdeviceptr dptr, uint bytes);
-  alias da_cuTexRefSetAddress2D = CUresult function(CUtexref hTexRef, const CUDA_ARRAY_DESCRIPTOR *desc, CUdeviceptr dptr, uint Pitch);
-  alias da_cuTexRefGetAddress = CUresult function(CUdeviceptr *pdptr, CUtexref hTexRef);
-  alias da_cuGraphicsResourceGetMappedPointer = CUresult function(CUdeviceptr *pDevPtr, uint *pSize, CUgraphicsResource resource);
-  alias da_cuCtxDestroy = CUresult function(CUcontext ctx);
-  alias da_cuCtxPopCurrent = CUresult function(CUcontext *pctx);
-  alias da_cuCtxPushCurrent = CUresult function(CUcontext ctx);
-  alias da_cuStreamDestroy = CUresult function(CUstream hStream);
-  alias da_cuEventDestroy = CUresult function(CUevent hEvent);
 
 
 
@@ -2150,317 +2099,264 @@ extern(System) @nogc nothrow
 
 __gshared
 {
-
-  da_cuGetErrorString = cuGetErrorString;
-  da_cuGetErrorName = cuGetErrorName;
-  da_cuInit = cuInit;
-  da_cuDriverGetVersion = cuDriverGetVersion;
-  da_cuDeviceGet = cuDeviceGet;
-  da_cuDeviceGetCount = cuDeviceGetCount;
-  da_cuDeviceGetName = cuDeviceGetName;
-  da_cuDeviceGetUuid = cuDeviceGetUuid;
-  da_cuDeviceGetLuid = cuDeviceGetLuid;
-  da_cuDeviceTotalMem = cuDeviceTotalMem;
-  da_cuDeviceGetAttribute = cuDeviceGetAttribute;
-  da_cuDeviceGetProperties = cuDeviceGetProperties;
-  da_cuDeviceComputeCapability = cuDeviceComputeCapability;
-  da_cuDevicePrimaryCtxRetain = cuDevicePrimaryCtxRetain;
-  da_cuDevicePrimaryCtxRelease = cuDevicePrimaryCtxRelease;
-  da_cuDevicePrimaryCtxSetFlags = cuDevicePrimaryCtxSetFlags;
-  da_cuDevicePrimaryCtxGetState = cuDevicePrimaryCtxGetState;
-  da_cuDevicePrimaryCtxReset = cuDevicePrimaryCtxReset;
-  da_cuCtxCreate = cuCtxCreate;
-  da_cuCtxDestroy = cuCtxDestroy;
-  da_cuCtxPushCurrent = cuCtxPushCurrent;
-  da_cuCtxPopCurrent = cuCtxPopCurrent;
-  da_cuCtxSetCurrent = cuCtxSetCurrent;
-  da_cuCtxGetCurrent = cuCtxGetCurrent;
-  da_cuCtxGetDevice = cuCtxGetDevice;
-  da_cuCtxGetFlags = cuCtxGetFlags;
-  da_cuCtxSynchronize = cuCtxSynchronize;
-  da_cuCtxSetLimit = cuCtxSetLimit;
-  da_cuCtxGetLimit = cuCtxGetLimit;
-  da_cuCtxGetCacheConfig = cuCtxGetCacheConfig;
-  da_cuCtxSetCacheConfig = cuCtxSetCacheConfig;
-  da_cuCtxGetSharedMemConfig = cuCtxGetSharedMemConfig;
-  da_cuCtxSetSharedMemConfig = cuCtxSetSharedMemConfig;
-  da_cuCtxGetApiVersion = cuCtxGetApiVersion;
-  da_cuCtxGetStreamPriorityRange = cuCtxGetStreamPriorityRange;
-  da_cuCtxAttach = cuCtxAttach;
-  da_cuCtxDetach = cuCtxDetach;
-  da_cuModuleLoad = cuModuleLoad;
-  da_cuModuleLoadData = cuModuleLoadData;
-  da_cuModuleLoadDataEx = cuModuleLoadDataEx;
-  da_cuModuleLoadFatBinary = cuModuleLoadFatBinary;
-  da_cuModuleUnload = cuModuleUnload;
-  da_cuModuleGetFunction = cuModuleGetFunction;
-  da_cuModuleGetGlobal = cuModuleGetGlobal;
-  da_cuModuleGetTexRef = cuModuleGetTexRef;
-  da_cuModuleGetSurfRef = cuModuleGetSurfRef;
-  da_cuLinkCreate = cuLinkCreate;
-  da_cuLinkAddData = cuLinkAddData;
-  da_cuLinkAddFile = cuLinkAddFile;
-  da_cuLinkComplete = cuLinkComplete;
-  da_cuLinkDestroy = cuLinkDestroy;
-  da_cuMemGetInfo = cuMemGetInfo;
-  da_cuMemAlloc = cuMemAlloc;
-  da_cuMemAllocPitch = cuMemAllocPitch;
-  da_cuMemFree = cuMemFree;
-  da_cuMemGetAddressRange = cuMemGetAddressRange;
-  da_cuMemAllocHost = cuMemAllocHost;
-  da_cuMemFreeHost = cuMemFreeHost;
-  da_cuMemHostAlloc = cuMemHostAlloc;
-  da_cuMemHostGetDevicePointer = cuMemHostGetDevicePointer;
-  da_cuMemHostGetFlags = cuMemHostGetFlags;
-  da_cuMemAllocManaged = cuMemAllocManaged;
-  da_cuDeviceGetByPCIBusId = cuDeviceGetByPCIBusId;
-  da_cuDeviceGetPCIBusId = cuDeviceGetPCIBusId;
-  da_cuIpcGetEventHandle = cuIpcGetEventHandle;
-  da_cuIpcOpenEventHandle = cuIpcOpenEventHandle;
-  da_cuIpcGetMemHandle = cuIpcGetMemHandle;
-  da_cuIpcOpenMemHandle = cuIpcOpenMemHandle;
-  da_cuIpcCloseMemHandle = cuIpcCloseMemHandle;
-  da_cuMemHostRegister = cuMemHostRegister;
-  da_cuMemHostUnregister = cuMemHostUnregister;
-  da_cuMemcpy = cuMemcpy;
-  da_cuMemcpyPeer = cuMemcpyPeer;
-  da_cuMemcpyHtoD = cuMemcpyHtoD;
-  da_cuMemcpyDtoH = cuMemcpyDtoH;
-  da_cuMemcpyDtoD = cuMemcpyDtoD;
-  da_cuMemcpyDtoA = cuMemcpyDtoA;
-  da_cuMemcpyAtoD = cuMemcpyAtoD;
-  da_cuMemcpyHtoA = cuMemcpyHtoA;
-  da_cuMemcpyAtoH = cuMemcpyAtoH;
-  da_cuMemcpyAtoA = cuMemcpyAtoA;
-  da_cuMemcpy2D = cuMemcpy2D;
-  da_cuMemcpy2DUnaligned = cuMemcpy2DUnaligned;
-  da_cuMemcpy3D = cuMemcpy3D;
-  da_cuMemcpy3DPeer = cuMemcpy3DPeer;
-  da_cuMemcpyAsync = cuMemcpyAsync;
-  da_cuMemcpyPeerAsync = cuMemcpyPeerAsync;
-  da_cuMemcpyHtoDAsync = cuMemcpyHtoDAsync;
-  da_cuMemcpyDtoHAsync = cuMemcpyDtoHAsync;
-  da_cuMemcpyDtoDAsync = cuMemcpyDtoDAsync;
-  da_cuMemcpyHtoAAsync = cuMemcpyHtoAAsync;
-  da_cuMemcpyAtoHAsync = cuMemcpyAtoHAsync;
-  da_cuMemcpy2DAsync = cuMemcpy2DAsync;
-  da_cuMemcpy3DAsync = cuMemcpy3DAsync;
-  da_cuMemcpy3DPeerAsync = cuMemcpy3DPeerAsync;
-  da_cuMemsetD8 = cuMemsetD8;
-  da_cuMemsetD16 = cuMemsetD16;
-  da_cuMemsetD32 = cuMemsetD32;
-  da_cuMemsetD2D8 = cuMemsetD2D8;
-  da_cuMemsetD2D16 = cuMemsetD2D16;
-  da_cuMemsetD2D32 = cuMemsetD2D32;
-  da_cuMemsetD8Async = cuMemsetD8Async;
-  da_cuMemsetD16Async = cuMemsetD16Async;
-  da_cuMemsetD32Async = cuMemsetD32Async;
-  da_cuMemsetD2D8Async = cuMemsetD2D8Async;
-  da_cuMemsetD2D16Async = cuMemsetD2D16Async;
-  da_cuMemsetD2D32Async = cuMemsetD2D32Async;
-  da_cuArrayCreate = cuArrayCreate;
-  da_cuArrayGetDescriptor = cuArrayGetDescriptor;
-  da_cuArrayDestroy = cuArrayDestroy;
-  da_cuArray3DCreate = cuArray3DCreate;
-  da_cuArray3DGetDescriptor = cuArray3DGetDescriptor;
-  da_cuMipmappedArrayCreate = cuMipmappedArrayCreate;
-  da_cuMipmappedArrayGetLevel = cuMipmappedArrayGetLevel;
-  da_cuMipmappedArrayDestroy = cuMipmappedArrayDestroy;
-  da_cuPointerGetAttribute = cuPointerGetAttribute;
-  da_cuMemPrefetchAsync = cuMemPrefetchAsync;
-  da_cuMemAdvise = cuMemAdvise;
-  da_cuMemRangeGetAttribute = cuMemRangeGetAttribute;
-  da_cuMemRangeGetAttributes = cuMemRangeGetAttributes;
-  da_cuPointerSetAttribute = cuPointerSetAttribute;
-  da_cuPointerGetAttributes = cuPointerGetAttributes;
-  da_cuStreamCreate = cuStreamCreate;
-  da_cuStreamCreateWithPriority = cuStreamCreateWithPriority;
-  da_cuStreamGetPriority = cuStreamGetPriority;
-  da_cuStreamGetFlags = cuStreamGetFlags;
-  da_cuStreamGetCtx = cuStreamGetCtx;
-  da_cuStreamWaitEvent = cuStreamWaitEvent;
-  da_cuStreamAddCallback = cuStreamAddCallback;
-  da_cuStreamBeginCapture = cuStreamBeginCapture;
-  da_cuStreamEndCapture = cuStreamEndCapture;
-  da_cuStreamIsCapturing = cuStreamIsCapturing;
-  da_cuStreamAttachMemAsync = cuStreamAttachMemAsync;
-  da_cuStreamQuery = cuStreamQuery;
-  da_cuStreamSynchronize = cuStreamSynchronize;
-  da_cuStreamDestroy = cuStreamDestroy;
-  da_cuEventCreate = cuEventCreate;
-  da_cuEventRecord = cuEventRecord;
-  da_cuEventQuery = cuEventQuery;
-  da_cuEventSynchronize = cuEventSynchronize;
-  da_cuEventDestroy = cuEventDestroy;
-  da_cuEventElapsedTime = cuEventElapsedTime;
-  da_cuImportExternalMemory = cuImportExternalMemory;
-  da_cuExternalMemoryGetMappedBuffer = cuExternalMemoryGetMappedBuffer;
-  da_cuExternalMemoryGetMappedMipmappedArray = cuExternalMemoryGetMappedMipmappedArray;
-  da_cuDestroyExternalMemory = cuDestroyExternalMemory;
-  da_cuImportExternalSemaphore = cuImportExternalSemaphore;
-  da_cuSignalExternalSemaphoresAsync = cuSignalExternalSemaphoresAsync;
-  da_cuWaitExternalSemaphoresAsync = cuWaitExternalSemaphoresAsync;
-  da_cuDestroyExternalSemaphore = cuDestroyExternalSemaphore;
-  da_cuStreamWaitValue32 = cuStreamWaitValue32;
-  da_cuStreamWaitValue64 = cuStreamWaitValue64;
-  da_cuStreamWriteValue32 = cuStreamWriteValue32;
-  da_cuStreamWriteValue64 = cuStreamWriteValue64;
-  da_cuStreamBatchMemOp = cuStreamBatchMemOp;
-  da_cuFuncGetAttribute = cuFuncGetAttribute;
-  da_cuFuncSetAttribute = cuFuncSetAttribute;
-  da_cuFuncSetCacheConfig = cuFuncSetCacheConfig;
-  da_cuFuncSetSharedMemConfig = cuFuncSetSharedMemConfig;
-  da_cuLaunchKernel = cuLaunchKernel;
-  da_cuLaunchCooperativeKernel = cuLaunchCooperativeKernel;
-  da_cuLaunchCooperativeKernelMultiDevice = cuLaunchCooperativeKernelMultiDevice;
-  da_cuLaunchHostFunc = cuLaunchHostFunc;
-  da_cuFuncSetBlockShape = cuFuncSetBlockShape;
-  da_cuFuncSetSharedSize = cuFuncSetSharedSize;
-  da_cuParamSetSize = cuParamSetSize;
-  da_cuParamSeti = cuParamSeti;
-  da_cuParamSetf = cuParamSetf;
-  da_cuParamSetv = cuParamSetv;
-  da_cuLaunch = cuLaunch;
-  da_cuLaunchGrid = cuLaunchGrid;
-  da_cuLaunchGridAsync = cuLaunchGridAsync;
-  da_cuParamSetTexRef = cuParamSetTexRef;
-  da_cuGraphCreate = cuGraphCreate;
-  da_cuGraphAddKernelNode = cuGraphAddKernelNode;
-  da_cuGraphKernelNodeGetParams = cuGraphKernelNodeGetParams;
-  da_cuGraphKernelNodeSetParams = cuGraphKernelNodeSetParams;
-  da_cuGraphAddMemcpyNode = cuGraphAddMemcpyNode;
-  da_cuGraphMemcpyNodeGetParams = cuGraphMemcpyNodeGetParams;
-  da_cuGraphMemcpyNodeSetParams = cuGraphMemcpyNodeSetParams;
-  da_cuGraphAddMemsetNode = cuGraphAddMemsetNode;
-  da_cuGraphMemsetNodeGetParams = cuGraphMemsetNodeGetParams;
-  da_cuGraphMemsetNodeSetParams = cuGraphMemsetNodeSetParams;
-  da_cuGraphAddHostNode = cuGraphAddHostNode;
-  da_cuGraphHostNodeGetParams = cuGraphHostNodeGetParams;
-  da_cuGraphHostNodeSetParams = cuGraphHostNodeSetParams;
-  da_cuGraphAddChildGraphNode = cuGraphAddChildGraphNode;
-  da_cuGraphChildGraphNodeGetGraph = cuGraphChildGraphNodeGetGraph;
-  da_cuGraphAddEmptyNode = cuGraphAddEmptyNode;
-  da_cuGraphClone = cuGraphClone;
-  da_cuGraphNodeFindInClone = cuGraphNodeFindInClone;
-  da_cuGraphNodeGetType = cuGraphNodeGetType;
-  da_cuGraphGetNodes = cuGraphGetNodes;
-  da_cuGraphGetRootNodes = cuGraphGetRootNodes;
-  da_cuGraphGetEdges = cuGraphGetEdges;
-  da_cuGraphNodeGetDependencies = cuGraphNodeGetDependencies;
-  da_cuGraphNodeGetDependentNodes = cuGraphNodeGetDependentNodes;
-  da_cuGraphAddDependencies = cuGraphAddDependencies;
-  da_cuGraphRemoveDependencies = cuGraphRemoveDependencies;
-  da_cuGraphDestroyNode = cuGraphDestroyNode;
-  da_cuGraphInstantiate = cuGraphInstantiate;
-  da_cuGraphLaunch = cuGraphLaunch;
-  da_cuGraphExecDestroy = cuGraphExecDestroy;
-  da_cuGraphDestroy = cuGraphDestroy;
-  da_cuOccupancyMaxActiveBlocksPerMultiprocessor = cuOccupancyMaxActiveBlocksPerMultiprocessor;
-  da_cuOccupancyMaxActiveBlocksPerMultiprocessorWithFlags = cuOccupancyMaxActiveBlocksPerMultiprocessorWithFlags;
-  da_cuOccupancyMaxPotentialBlockSize = cuOccupancyMaxPotentialBlockSize;
-  da_cuOccupancyMaxPotentialBlockSizeWithFlags = cuOccupancyMaxPotentialBlockSizeWithFlags;
-  da_cuTexRefSetArray = cuTexRefSetArray;
-  da_cuTexRefSetMipmappedArray = cuTexRefSetMipmappedArray;
-  da_cuTexRefSetAddress = cuTexRefSetAddress;
-  da_cuTexRefSetAddress2D = cuTexRefSetAddress2D;
-  da_cuTexRefSetFormat = cuTexRefSetFormat;
-  da_cuTexRefSetAddressMode = cuTexRefSetAddressMode;
-  da_cuTexRefSetFilterMode = cuTexRefSetFilterMode;
-  da_cuTexRefSetMipmapFilterMode = cuTexRefSetMipmapFilterMode;
-  da_cuTexRefSetMipmapLevelBias = cuTexRefSetMipmapLevelBias;
-  da_cuTexRefSetMipmapLevelClamp = cuTexRefSetMipmapLevelClamp;
-  da_cuTexRefSetMaxAnisotropy = cuTexRefSetMaxAnisotropy;
-  da_cuTexRefSetBorderColor = cuTexRefSetBorderColor;
-  da_cuTexRefSetFlags = cuTexRefSetFlags;
-  da_cuTexRefGetAddress = cuTexRefGetAddress;
-  da_cuTexRefGetArray = cuTexRefGetArray;
-  da_cuTexRefGetMipmappedArray = cuTexRefGetMipmappedArray;
-  da_cuTexRefGetAddressMode = cuTexRefGetAddressMode;
-  da_cuTexRefGetFilterMode = cuTexRefGetFilterMode;
-  da_cuTexRefGetFormat = cuTexRefGetFormat;
-  da_cuTexRefGetMipmapFilterMode = cuTexRefGetMipmapFilterMode;
-  da_cuTexRefGetMipmapLevelBias = cuTexRefGetMipmapLevelBias;
-  da_cuTexRefGetMipmapLevelClamp = cuTexRefGetMipmapLevelClamp;
-  da_cuTexRefGetMaxAnisotropy = cuTexRefGetMaxAnisotropy;
-  da_cuTexRefGetBorderColor = cuTexRefGetBorderColor;
-  da_cuTexRefGetFlags = cuTexRefGetFlags;
-  da_cuTexRefCreate = cuTexRefCreate;
-  da_cuTexRefDestroy = cuTexRefDestroy;
-  da_cuSurfRefSetArray = cuSurfRefSetArray;
-  da_cuSurfRefGetArray = cuSurfRefGetArray;
-  da_cuTexObjectCreate = cuTexObjectCreate;
-  da_cuTexObjectDestroy = cuTexObjectDestroy;
-  da_cuTexObjectGetResourceDesc = cuTexObjectGetResourceDesc;
-  da_cuTexObjectGetTextureDesc = cuTexObjectGetTextureDesc;
-  da_cuTexObjectGetResourceViewDesc = cuTexObjectGetResourceViewDesc;
-  da_cuSurfObjectCreate = cuSurfObjectCreate;
-  da_cuSurfObjectDestroy = cuSurfObjectDestroy;
-  da_cuSurfObjectGetResourceDesc = cuSurfObjectGetResourceDesc;
-  da_cuDeviceCanAccessPeer = cuDeviceCanAccessPeer;
-  da_cuCtxEnablePeerAccess = cuCtxEnablePeerAccess;
-  da_cuCtxDisablePeerAccess = cuCtxDisablePeerAccess;
-  da_cuDeviceGetP2PAttribute = cuDeviceGetP2PAttribute;
-  da_cuGraphicsUnregisterResource = cuGraphicsUnregisterResource;
-  da_cuGraphicsSubResourceGetMappedArray = cuGraphicsSubResourceGetMappedArray;
-  da_cuGraphicsResourceGetMappedMipmappedArray = cuGraphicsResourceGetMappedMipmappedArray;
-  da_cuGraphicsResourceGetMappedPointer = cuGraphicsResourceGetMappedPointer;
-  da_cuGraphicsResourceSetMapFlags = cuGraphicsResourceSetMapFlags;
-  da_cuGraphicsMapResources = cuGraphicsMapResources;
-  da_cuGraphicsUnmapResources = cuGraphicsUnmapResources;
-  da_cuGetExportTable = cuGetExportTable;
-  da_cuMemHostRegister = cuMemHostRegister;
-  da_cuGraphicsResourceSetMapFlags = cuGraphicsResourceSetMapFlags;
-  da_cuLinkCreate = cuLinkCreate;
-  da_cuLinkAddData = cuLinkAddData;
-  da_cuLinkAddFile = cuLinkAddFile;
-  da_cuTexRefSetAddress2D_v2 = cuTexRefSetAddress2D_v2;
-  da_cuDeviceTotalMem = cuDeviceTotalMem;
-  da_cuCtxCreate = cuCtxCreate;
-  da_cuModuleGetGlobal = cuModuleGetGlobal;
-  da_cuMemGetInfo = cuMemGetInfo;
-  da_cuMemAlloc = cuMemAlloc;
-  da_cuMemAllocPitch = cuMemAllocPitch;
-  da_cuMemFree = cuMemFree;
-  da_cuMemGetAddressRange = cuMemGetAddressRange;
-  da_cuMemAllocHost = cuMemAllocHost;
-  da_cuMemHostGetDevicePointer = cuMemHostGetDevicePointer;
-  da_cuMemcpyHtoD = cuMemcpyHtoD;
-  da_cuMemcpyDtoH = cuMemcpyDtoH;
-  da_cuMemcpyDtoD = cuMemcpyDtoD;
-  da_cuMemcpyDtoA = cuMemcpyDtoA;
-  da_cuMemcpyAtoD = cuMemcpyAtoD;
-  da_cuMemcpyHtoA = cuMemcpyHtoA;
-  da_cuMemcpyAtoH = cuMemcpyAtoH;
-  da_cuMemcpyAtoA = cuMemcpyAtoA;
-  da_cuMemcpyHtoAAsync = cuMemcpyHtoAAsync;
-  da_cuMemcpyAtoHAsync = cuMemcpyAtoHAsync;
-  da_cuMemcpy2D = cuMemcpy2D;
-  da_cuMemcpy2DUnaligned = cuMemcpy2DUnaligned;
-  da_cuMemcpy3D = cuMemcpy3D;
-  da_cuMemcpyHtoDAsync = cuMemcpyHtoDAsync;
-  da_cuMemcpyDtoHAsync = cuMemcpyDtoHAsync;
-  da_cuMemcpyDtoDAsync = cuMemcpyDtoDAsync;
-  da_cuMemcpy2DAsync = cuMemcpy2DAsync;
-  da_cuMemcpy3DAsync = cuMemcpy3DAsync;
-  da_cuMemsetD8 = cuMemsetD8;
-  da_cuMemsetD16 = cuMemsetD16;
-  da_cuMemsetD32 = cuMemsetD32;
-  da_cuMemsetD2D8 = cuMemsetD2D8;
-  da_cuMemsetD2D16 = cuMemsetD2D16;
-  da_cuMemsetD2D32 = cuMemsetD2D32;
-  da_cuArrayCreate = cuArrayCreate;
-  da_cuArrayGetDescriptor = cuArrayGetDescriptor;
-  da_cuArray3DCreate = cuArray3DCreate;
-  da_cuArray3DGetDescriptor = cuArray3DGetDescriptor;
-  da_cuTexRefSetAddress = cuTexRefSetAddress;
-  da_cuTexRefSetAddress2D = cuTexRefSetAddress2D;
-  da_cuTexRefGetAddress = cuTexRefGetAddress;
-  da_cuGraphicsResourceGetMappedPointer = cuGraphicsResourceGetMappedPointer;
-  da_cuCtxDestroy = cuCtxDestroy;
-  da_cuCtxPopCurrent = cuCtxPopCurrent;
-  da_cuCtxPushCurrent = cuCtxPushCurrent;
-  da_cuStreamDestroy = cuStreamDestroy;
-  da_cuEventDestroy = cuEventDestroy;
+  da_cuGetErrorString cuGetErrorString;
+  da_cuGetErrorName cuGetErrorName;
+  da_cuInit cuInit;
+  da_cuDriverGetVersion cuDriverGetVersion;
+  da_cuDeviceGet cuDeviceGet;
+  da_cuDeviceGetCount cuDeviceGetCount;
+  da_cuDeviceGetName cuDeviceGetName;
+  da_cuDeviceGetUuid cuDeviceGetUuid;
+  //da_cuDeviceGetLuid cuDeviceGetLuid;
+  da_cuDeviceTotalMem cuDeviceTotalMem;
+  da_cuDeviceGetAttribute cuDeviceGetAttribute;
+  da_cuDeviceGetProperties cuDeviceGetProperties;
+  da_cuDeviceComputeCapability cuDeviceComputeCapability;
+  da_cuDevicePrimaryCtxRetain cuDevicePrimaryCtxRetain;
+  da_cuDevicePrimaryCtxRelease cuDevicePrimaryCtxRelease;
+  da_cuDevicePrimaryCtxSetFlags cuDevicePrimaryCtxSetFlags;
+  da_cuDevicePrimaryCtxGetState cuDevicePrimaryCtxGetState;
+  da_cuDevicePrimaryCtxReset cuDevicePrimaryCtxReset;
+  da_cuCtxCreate cuCtxCreate;
+  da_cuCtxDestroy cuCtxDestroy;
+  da_cuCtxPushCurrent cuCtxPushCurrent;
+  da_cuCtxPopCurrent cuCtxPopCurrent;
+  da_cuCtxSetCurrent cuCtxSetCurrent;
+  da_cuCtxGetCurrent cuCtxGetCurrent;
+  da_cuCtxGetDevice cuCtxGetDevice;
+  da_cuCtxGetFlags cuCtxGetFlags;
+  da_cuCtxSynchronize cuCtxSynchronize;
+  da_cuCtxSetLimit cuCtxSetLimit;
+  da_cuCtxGetLimit cuCtxGetLimit;
+  da_cuCtxGetCacheConfig cuCtxGetCacheConfig;
+  da_cuCtxSetCacheConfig cuCtxSetCacheConfig;
+  da_cuCtxGetSharedMemConfig cuCtxGetSharedMemConfig;
+  da_cuCtxSetSharedMemConfig cuCtxSetSharedMemConfig;
+  da_cuCtxGetApiVersion cuCtxGetApiVersion;
+  da_cuCtxGetStreamPriorityRange cuCtxGetStreamPriorityRange;
+  da_cuCtxAttach cuCtxAttach;
+  da_cuCtxDetach cuCtxDetach;
+  da_cuModuleLoad cuModuleLoad;
+  da_cuModuleLoadData cuModuleLoadData;
+  da_cuModuleLoadDataEx cuModuleLoadDataEx;
+  da_cuModuleLoadFatBinary cuModuleLoadFatBinary;
+  da_cuModuleUnload cuModuleUnload;
+  da_cuModuleGetFunction cuModuleGetFunction;
+  da_cuModuleGetGlobal cuModuleGetGlobal;
+  da_cuModuleGetTexRef cuModuleGetTexRef;
+  da_cuModuleGetSurfRef cuModuleGetSurfRef;
+  da_cuLinkCreate cuLinkCreate;
+  da_cuLinkAddData cuLinkAddData;
+  da_cuLinkAddFile cuLinkAddFile;
+  da_cuLinkComplete cuLinkComplete;
+  da_cuLinkDestroy cuLinkDestroy;
+  da_cuMemGetInfo cuMemGetInfo;
+  da_cuMemAlloc cuMemAlloc;
+  da_cuMemAllocPitch cuMemAllocPitch;
+  da_cuMemFree cuMemFree;
+  da_cuMemGetAddressRange cuMemGetAddressRange;
+  da_cuMemAllocHost cuMemAllocHost;
+  da_cuMemFreeHost cuMemFreeHost;
+  da_cuMemHostAlloc cuMemHostAlloc;
+  da_cuMemHostGetDevicePointer cuMemHostGetDevicePointer;
+  da_cuMemHostGetFlags cuMemHostGetFlags;
+  da_cuMemAllocManaged cuMemAllocManaged;
+  da_cuDeviceGetByPCIBusId cuDeviceGetByPCIBusId;
+  da_cuDeviceGetPCIBusId cuDeviceGetPCIBusId;
+  da_cuIpcGetEventHandle cuIpcGetEventHandle;
+  da_cuIpcOpenEventHandle cuIpcOpenEventHandle;
+  da_cuIpcGetMemHandle cuIpcGetMemHandle;
+  da_cuIpcOpenMemHandle cuIpcOpenMemHandle;
+  da_cuIpcCloseMemHandle cuIpcCloseMemHandle;
+  da_cuMemHostRegister cuMemHostRegister;
+  da_cuMemHostUnregister cuMemHostUnregister;
+  da_cuMemcpy cuMemcpy;
+  da_cuMemcpyPeer cuMemcpyPeer;
+  da_cuMemcpyHtoD cuMemcpyHtoD;
+  da_cuMemcpyDtoH cuMemcpyDtoH;
+  da_cuMemcpyDtoD cuMemcpyDtoD;
+  da_cuMemcpyDtoA cuMemcpyDtoA;
+  da_cuMemcpyAtoD cuMemcpyAtoD;
+  da_cuMemcpyHtoA cuMemcpyHtoA;
+  da_cuMemcpyAtoH cuMemcpyAtoH;
+  da_cuMemcpyAtoA cuMemcpyAtoA;
+  da_cuMemcpy2D cuMemcpy2D;
+  da_cuMemcpy2DUnaligned cuMemcpy2DUnaligned;
+  da_cuMemcpy3D cuMemcpy3D;
+  da_cuMemcpy3DPeer cuMemcpy3DPeer;
+  da_cuMemcpyAsync cuMemcpyAsync;
+  da_cuMemcpyPeerAsync cuMemcpyPeerAsync;
+  da_cuMemcpyHtoDAsync cuMemcpyHtoDAsync;
+  da_cuMemcpyDtoHAsync cuMemcpyDtoHAsync;
+  da_cuMemcpyDtoDAsync cuMemcpyDtoDAsync;
+  da_cuMemcpyHtoAAsync cuMemcpyHtoAAsync;
+  da_cuMemcpyAtoHAsync cuMemcpyAtoHAsync;
+  da_cuMemcpy2DAsync cuMemcpy2DAsync;
+  da_cuMemcpy3DAsync cuMemcpy3DAsync;
+  da_cuMemcpy3DPeerAsync cuMemcpy3DPeerAsync;
+  da_cuMemsetD8 cuMemsetD8;
+  da_cuMemsetD16 cuMemsetD16;
+  da_cuMemsetD32 cuMemsetD32;
+  da_cuMemsetD2D8 cuMemsetD2D8;
+  da_cuMemsetD2D16 cuMemsetD2D16;
+  da_cuMemsetD2D32 cuMemsetD2D32;
+  da_cuMemsetD8Async cuMemsetD8Async;
+  da_cuMemsetD16Async cuMemsetD16Async;
+  da_cuMemsetD32Async cuMemsetD32Async;
+  da_cuMemsetD2D8Async cuMemsetD2D8Async;
+  da_cuMemsetD2D16Async cuMemsetD2D16Async;
+  da_cuMemsetD2D32Async cuMemsetD2D32Async;
+  da_cuArrayCreate cuArrayCreate;
+  da_cuArrayGetDescriptor cuArrayGetDescriptor;
+  da_cuArrayDestroy cuArrayDestroy;
+  da_cuArray3DCreate cuArray3DCreate;
+  da_cuArray3DGetDescriptor cuArray3DGetDescriptor;
+  da_cuMipmappedArrayCreate cuMipmappedArrayCreate;
+  da_cuMipmappedArrayGetLevel cuMipmappedArrayGetLevel;
+  da_cuMipmappedArrayDestroy cuMipmappedArrayDestroy;
+  da_cuPointerGetAttribute cuPointerGetAttribute;
+  da_cuMemPrefetchAsync cuMemPrefetchAsync;
+  da_cuMemAdvise cuMemAdvise;
+  da_cuMemRangeGetAttribute cuMemRangeGetAttribute;
+  da_cuMemRangeGetAttributes cuMemRangeGetAttributes;
+  da_cuPointerSetAttribute cuPointerSetAttribute;
+  da_cuPointerGetAttributes cuPointerGetAttributes;
+  da_cuStreamCreate cuStreamCreate;
+  da_cuStreamCreateWithPriority cuStreamCreateWithPriority;
+  da_cuStreamGetPriority cuStreamGetPriority;
+  da_cuStreamGetFlags cuStreamGetFlags;
+  da_cuStreamGetCtx cuStreamGetCtx;
+  da_cuStreamWaitEvent cuStreamWaitEvent;
+  da_cuStreamAddCallback cuStreamAddCallback;
+  da_cuStreamBeginCapture cuStreamBeginCapture;
+  da_cuStreamEndCapture cuStreamEndCapture;
+  da_cuStreamIsCapturing cuStreamIsCapturing;
+  da_cuStreamAttachMemAsync cuStreamAttachMemAsync;
+  da_cuStreamQuery cuStreamQuery;
+  da_cuStreamSynchronize cuStreamSynchronize;
+  da_cuStreamDestroy cuStreamDestroy;
+  da_cuEventCreate cuEventCreate;
+  da_cuEventRecord cuEventRecord;
+  da_cuEventQuery cuEventQuery;
+  da_cuEventSynchronize cuEventSynchronize;
+  da_cuEventDestroy cuEventDestroy;
+  da_cuEventElapsedTime cuEventElapsedTime;
+  da_cuImportExternalMemory cuImportExternalMemory;
+  da_cuExternalMemoryGetMappedBuffer cuExternalMemoryGetMappedBuffer;
+  da_cuExternalMemoryGetMappedMipmappedArray cuExternalMemoryGetMappedMipmappedArray;
+  da_cuDestroyExternalMemory cuDestroyExternalMemory;
+  da_cuImportExternalSemaphore cuImportExternalSemaphore;
+  da_cuSignalExternalSemaphoresAsync cuSignalExternalSemaphoresAsync;
+  da_cuWaitExternalSemaphoresAsync cuWaitExternalSemaphoresAsync;
+  da_cuDestroyExternalSemaphore cuDestroyExternalSemaphore;
+  da_cuStreamWaitValue32 cuStreamWaitValue32;
+  da_cuStreamWaitValue64 cuStreamWaitValue64;
+  da_cuStreamWriteValue32 cuStreamWriteValue32;
+  da_cuStreamWriteValue64 cuStreamWriteValue64;
+  da_cuStreamBatchMemOp cuStreamBatchMemOp;
+  da_cuFuncGetAttribute cuFuncGetAttribute;
+  da_cuFuncSetAttribute cuFuncSetAttribute;
+  da_cuFuncSetCacheConfig cuFuncSetCacheConfig;
+  da_cuFuncSetSharedMemConfig cuFuncSetSharedMemConfig;
+  da_cuLaunchKernel cuLaunchKernel;
+  da_cuLaunchCooperativeKernel cuLaunchCooperativeKernel;
+  da_cuLaunchCooperativeKernelMultiDevice cuLaunchCooperativeKernelMultiDevice;
+  da_cuLaunchHostFunc cuLaunchHostFunc;
+  da_cuFuncSetBlockShape cuFuncSetBlockShape;
+  da_cuFuncSetSharedSize cuFuncSetSharedSize;
+  da_cuParamSetSize cuParamSetSize;
+  da_cuParamSeti cuParamSeti;
+  da_cuParamSetf cuParamSetf;
+  da_cuParamSetv cuParamSetv;
+  da_cuLaunch cuLaunch;
+  da_cuLaunchGrid cuLaunchGrid;
+  da_cuLaunchGridAsync cuLaunchGridAsync;
+  da_cuParamSetTexRef cuParamSetTexRef;
+  da_cuGraphCreate cuGraphCreate;
+  da_cuGraphAddKernelNode cuGraphAddKernelNode;
+  da_cuGraphKernelNodeGetParams cuGraphKernelNodeGetParams;
+  da_cuGraphKernelNodeSetParams cuGraphKernelNodeSetParams;
+  da_cuGraphAddMemcpyNode cuGraphAddMemcpyNode;
+  da_cuGraphMemcpyNodeGetParams cuGraphMemcpyNodeGetParams;
+  da_cuGraphMemcpyNodeSetParams cuGraphMemcpyNodeSetParams;
+  da_cuGraphAddMemsetNode cuGraphAddMemsetNode;
+  da_cuGraphMemsetNodeGetParams cuGraphMemsetNodeGetParams;
+  da_cuGraphMemsetNodeSetParams cuGraphMemsetNodeSetParams;
+  da_cuGraphAddHostNode cuGraphAddHostNode;
+  da_cuGraphHostNodeGetParams cuGraphHostNodeGetParams;
+  da_cuGraphHostNodeSetParams cuGraphHostNodeSetParams;
+  da_cuGraphAddChildGraphNode cuGraphAddChildGraphNode;
+  da_cuGraphChildGraphNodeGetGraph cuGraphChildGraphNodeGetGraph;
+  da_cuGraphAddEmptyNode cuGraphAddEmptyNode;
+  da_cuGraphClone cuGraphClone;
+  da_cuGraphNodeFindInClone cuGraphNodeFindInClone;
+  da_cuGraphNodeGetType cuGraphNodeGetType;
+  da_cuGraphGetNodes cuGraphGetNodes;
+  da_cuGraphGetRootNodes cuGraphGetRootNodes;
+  da_cuGraphGetEdges cuGraphGetEdges;
+  da_cuGraphNodeGetDependencies cuGraphNodeGetDependencies;
+  da_cuGraphNodeGetDependentNodes cuGraphNodeGetDependentNodes;
+  da_cuGraphAddDependencies cuGraphAddDependencies;
+  da_cuGraphRemoveDependencies cuGraphRemoveDependencies;
+  da_cuGraphDestroyNode cuGraphDestroyNode;
+  da_cuGraphInstantiate cuGraphInstantiate;
+  da_cuGraphLaunch cuGraphLaunch;
+  da_cuGraphExecDestroy cuGraphExecDestroy;
+  da_cuGraphDestroy cuGraphDestroy;
+  da_cuOccupancyMaxActiveBlocksPerMultiprocessor cuOccupancyMaxActiveBlocksPerMultiprocessor;
+  da_cuOccupancyMaxActiveBlocksPerMultiprocessorWithFlags cuOccupancyMaxActiveBlocksPerMultiprocessorWithFlags;
+  da_cuOccupancyMaxPotentialBlockSize cuOccupancyMaxPotentialBlockSize;
+  da_cuOccupancyMaxPotentialBlockSizeWithFlags cuOccupancyMaxPotentialBlockSizeWithFlags;
+  da_cuTexRefSetArray cuTexRefSetArray;
+  da_cuTexRefSetMipmappedArray cuTexRefSetMipmappedArray;
+  da_cuTexRefSetAddress cuTexRefSetAddress;
+  da_cuTexRefSetAddress2D cuTexRefSetAddress2D;
+  da_cuTexRefSetFormat cuTexRefSetFormat;
+  da_cuTexRefSetAddressMode cuTexRefSetAddressMode;
+  da_cuTexRefSetFilterMode cuTexRefSetFilterMode;
+  da_cuTexRefSetMipmapFilterMode cuTexRefSetMipmapFilterMode;
+  da_cuTexRefSetMipmapLevelBias cuTexRefSetMipmapLevelBias;
+  da_cuTexRefSetMipmapLevelClamp cuTexRefSetMipmapLevelClamp;
+  da_cuTexRefSetMaxAnisotropy cuTexRefSetMaxAnisotropy;
+  da_cuTexRefSetBorderColor cuTexRefSetBorderColor;
+  da_cuTexRefSetFlags cuTexRefSetFlags;
+  da_cuTexRefGetAddress cuTexRefGetAddress;
+  da_cuTexRefGetArray cuTexRefGetArray;
+  da_cuTexRefGetMipmappedArray cuTexRefGetMipmappedArray;
+  da_cuTexRefGetAddressMode cuTexRefGetAddressMode;
+  da_cuTexRefGetFilterMode cuTexRefGetFilterMode;
+  da_cuTexRefGetFormat cuTexRefGetFormat;
+  da_cuTexRefGetMipmapFilterMode cuTexRefGetMipmapFilterMode;
+  da_cuTexRefGetMipmapLevelBias cuTexRefGetMipmapLevelBias;
+  da_cuTexRefGetMipmapLevelClamp cuTexRefGetMipmapLevelClamp;
+  da_cuTexRefGetMaxAnisotropy cuTexRefGetMaxAnisotropy;
+  da_cuTexRefGetBorderColor cuTexRefGetBorderColor;
+  da_cuTexRefGetFlags cuTexRefGetFlags;
+  da_cuTexRefCreate cuTexRefCreate;
+  da_cuTexRefDestroy cuTexRefDestroy;
+  da_cuSurfRefSetArray cuSurfRefSetArray;
+  da_cuSurfRefGetArray cuSurfRefGetArray;
+  da_cuTexObjectCreate cuTexObjectCreate;
+  da_cuTexObjectDestroy cuTexObjectDestroy;
+  da_cuTexObjectGetResourceDesc cuTexObjectGetResourceDesc;
+  da_cuTexObjectGetTextureDesc cuTexObjectGetTextureDesc;
+  da_cuTexObjectGetResourceViewDesc cuTexObjectGetResourceViewDesc;
+  da_cuSurfObjectCreate cuSurfObjectCreate;
+  da_cuSurfObjectDestroy cuSurfObjectDestroy;
+  da_cuSurfObjectGetResourceDesc cuSurfObjectGetResourceDesc;
+  da_cuDeviceCanAccessPeer cuDeviceCanAccessPeer;
+  da_cuCtxEnablePeerAccess cuCtxEnablePeerAccess;
+  da_cuCtxDisablePeerAccess cuCtxDisablePeerAccess;
+  da_cuDeviceGetP2PAttribute cuDeviceGetP2PAttribute;
+  da_cuGraphicsUnregisterResource cuGraphicsUnregisterResource;
+  da_cuGraphicsSubResourceGetMappedArray cuGraphicsSubResourceGetMappedArray;
+  da_cuGraphicsResourceGetMappedMipmappedArray cuGraphicsResourceGetMappedMipmappedArray;
+  da_cuGraphicsResourceGetMappedPointer cuGraphicsResourceGetMappedPointer;
+  da_cuGraphicsResourceSetMapFlags cuGraphicsResourceSetMapFlags;
+  da_cuGraphicsMapResources cuGraphicsMapResources;
+  da_cuGraphicsUnmapResources cuGraphicsUnmapResources;
+  da_cuGetExportTable cuGetExportTable;
+  da_cuTexRefSetAddress2D_v2 cuTexRefSetAddress2D_v2;
 
 }
 
@@ -2483,7 +2379,7 @@ class DerelictCUDADriverLoader : SharedLibLoader
       bindFunc(cast(void**)&cuDeviceGetCount, "cuDeviceGetCount");
       bindFunc(cast(void**)&cuDeviceGetName, "cuDeviceGetName");
       bindFunc(cast(void**)&cuDeviceGetUuid, "cuDeviceGetUuid");
-      bindFunc(cast(void**)&cuDeviceGetLuid, "cuDeviceGetLuid");
+      //bindFunc(cast(void**)&cuDeviceGetLuid, "cuDeviceGetLuid");
       bindFunc(cast(void**)&cuDeviceTotalMem, "cuDeviceTotalMem");
       bindFunc(cast(void**)&cuDeviceGetAttribute, "cuDeviceGetAttribute");
       bindFunc(cast(void**)&cuDeviceGetProperties, "cuDeviceGetProperties");
@@ -2732,59 +2628,7 @@ class DerelictCUDADriverLoader : SharedLibLoader
       bindFunc(cast(void**)&cuGraphicsMapResources, "cuGraphicsMapResources");
       bindFunc(cast(void**)&cuGraphicsUnmapResources, "cuGraphicsUnmapResources");
       bindFunc(cast(void**)&cuGetExportTable, "cuGetExportTable");
-      bindFunc(cast(void**)&cuMemHostRegister, "cuMemHostRegister");
-      bindFunc(cast(void**)&cuGraphicsResourceSetMapFlags, "cuGraphicsResourceSetMapFlags");
-      bindFunc(cast(void**)&cuLinkCreate, "cuLinkCreate");
-      bindFunc(cast(void**)&cuLinkAddData, "cuLinkAddData");
-      bindFunc(cast(void**)&cuLinkAddFile, "cuLinkAddFile");
       bindFunc(cast(void**)&cuTexRefSetAddress2D_v2, "cuTexRefSetAddress2D_v2");
-      bindFunc(cast(void**)&cuDeviceTotalMem, "cuDeviceTotalMem");
-      bindFunc(cast(void**)&cuCtxCreate, "cuCtxCreate");
-      bindFunc(cast(void**)&cuModuleGetGlobal, "cuModuleGetGlobal");
-      bindFunc(cast(void**)&cuMemGetInfo, "cuMemGetInfo");
-      bindFunc(cast(void**)&cuMemAlloc, "cuMemAlloc");
-      bindFunc(cast(void**)&cuMemAllocPitch, "cuMemAllocPitch");
-      bindFunc(cast(void**)&cuMemFree, "cuMemFree");
-      bindFunc(cast(void**)&cuMemGetAddressRange, "cuMemGetAddressRange");
-      bindFunc(cast(void**)&cuMemAllocHost, "cuMemAllocHost");
-      bindFunc(cast(void**)&cuMemHostGetDevicePointer, "cuMemHostGetDevicePointer");
-      bindFunc(cast(void**)&cuMemcpyHtoD, "cuMemcpyHtoD");
-      bindFunc(cast(void**)&cuMemcpyDtoH, "cuMemcpyDtoH");
-      bindFunc(cast(void**)&cuMemcpyDtoD, "cuMemcpyDtoD");
-      bindFunc(cast(void**)&cuMemcpyDtoA, "cuMemcpyDtoA");
-      bindFunc(cast(void**)&cuMemcpyAtoD, "cuMemcpyAtoD");
-      bindFunc(cast(void**)&cuMemcpyHtoA, "cuMemcpyHtoA");
-      bindFunc(cast(void**)&cuMemcpyAtoH, "cuMemcpyAtoH");
-      bindFunc(cast(void**)&cuMemcpyAtoA, "cuMemcpyAtoA");
-      bindFunc(cast(void**)&cuMemcpyHtoAAsync, "cuMemcpyHtoAAsync");
-      bindFunc(cast(void**)&cuMemcpyAtoHAsync, "cuMemcpyAtoHAsync");
-      bindFunc(cast(void**)&cuMemcpy2D, "cuMemcpy2D");
-      bindFunc(cast(void**)&cuMemcpy2DUnaligned, "cuMemcpy2DUnaligned");
-      bindFunc(cast(void**)&cuMemcpy3D, "cuMemcpy3D");
-      bindFunc(cast(void**)&cuMemcpyHtoDAsync, "cuMemcpyHtoDAsync");
-      bindFunc(cast(void**)&cuMemcpyDtoHAsync, "cuMemcpyDtoHAsync");
-      bindFunc(cast(void**)&cuMemcpyDtoDAsync, "cuMemcpyDtoDAsync");
-      bindFunc(cast(void**)&cuMemcpy2DAsync, "cuMemcpy2DAsync");
-      bindFunc(cast(void**)&cuMemcpy3DAsync, "cuMemcpy3DAsync");
-      bindFunc(cast(void**)&cuMemsetD8, "cuMemsetD8");
-      bindFunc(cast(void**)&cuMemsetD16, "cuMemsetD16");
-      bindFunc(cast(void**)&cuMemsetD32, "cuMemsetD32");
-      bindFunc(cast(void**)&cuMemsetD2D8, "cuMemsetD2D8");
-      bindFunc(cast(void**)&cuMemsetD2D16, "cuMemsetD2D16");
-      bindFunc(cast(void**)&cuMemsetD2D32, "cuMemsetD2D32");
-      bindFunc(cast(void**)&cuArrayCreate, "cuArrayCreate");
-      bindFunc(cast(void**)&cuArrayGetDescriptor, "cuArrayGetDescriptor");
-      bindFunc(cast(void**)&cuArray3DCreate, "cuArray3DCreate");
-      bindFunc(cast(void**)&cuArray3DGetDescriptor, "cuArray3DGetDescriptor");
-      bindFunc(cast(void**)&cuTexRefSetAddress, "cuTexRefSetAddress");
-      bindFunc(cast(void**)&cuTexRefSetAddress2D, "cuTexRefSetAddress2D");
-      bindFunc(cast(void**)&cuTexRefGetAddress, "cuTexRefGetAddress");
-      bindFunc(cast(void**)&cuGraphicsResourceGetMappedPointer, "cuGraphicsResourceGetMappedPointer");
-      bindFunc(cast(void**)&cuCtxDestroy, "cuCtxDestroy");
-      bindFunc(cast(void**)&cuCtxPopCurrent, "cuCtxPopCurrent");
-      bindFunc(cast(void**)&cuCtxPushCurrent, "cuCtxPushCurrent");
-      bindFunc(cast(void**)&cuStreamDestroy, "cuStreamDestroy");
-      bindFunc(cast(void**)&cuEventDestroy, "cuEventDestroy");
     }
   }
 
