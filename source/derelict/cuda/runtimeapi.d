@@ -1813,26 +1813,38 @@ enum cudaSurfaceType1DLayered       = 0xF1;
 enum cudaSurfaceType2DLayered       = 0xF2;
 enum cudaSurfaceTypeCubemapLayered  = 0xFC;
 
+/**
+ * CUDA Surface boundary modes
+ */
 alias cudaSurfaceBoundaryMode = int;
 enum : cudaSurfaceBoundaryMode
 {
-    cudaBoundaryModeZero  = 0,
-    cudaBoundaryModeClamp = 1,
-    cudaBoundaryModeTrap  = 2
+  cudaBoundaryModeZero  = 0,
+  cudaBoundaryModeClamp = 1,
+  cudaBoundaryModeTrap  = 2
 }
 
+/**
+ * CUDA Surface format modes
+ */
 alias cudaSurfaceFormatMode = int;
 enum : cudaSurfaceFormatMode
 {
-    cudaFormatModeForced = 0,
-    cudaFormatModeAuto = 1
+  cudaFormatModeForced = 0,
+  cudaFormatModeAuto = 1
 }
 
+/**
+ * CUDA Surface reference
+ */
 struct surfaceReference
 {
-    cudaChannelFormatDesc channelDesc;
+  cudaChannelFormatDesc channelDesc;
 }
 
+/**
+ * An opaque value that represents a CUDA Surface object
+ */
 alias cudaSurfaceObject_t = ulong;
 
 
