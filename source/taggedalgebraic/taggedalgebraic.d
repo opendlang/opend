@@ -43,13 +43,15 @@ import std.traits : EnumMembers, FieldNameTuple, Unqual, isInstanceOf;
 			as the return value.)
 	)
 */
-struct TaggedAlgebraic(U) if (is(U == union) || is(U == struct))
+struct TaggedAlgebraic(U) if (is(U == union) || is(U == struct) || is(U == enum))
 {
 	import std.algorithm : among;
 	import std.string : format;
 
 	/// Alias of the type used for defining the possible storage types/kinds.
 	deprecated alias Union = U;
+
+	private alias FieldDefinitionType = U;
 
 	/// The underlying tagged union type
 	alias UnionType = TaggedUnion!U;
@@ -299,6 +301,26 @@ unittest { // std.conv integration
 	assert(TA(1, TA.Kind.e) == TA(1, TA.Kind.e));
 	assert(TA(1, TA.Kind.e) != TA(2, TA.Kind.e));
 	assert(TA(1, TA.Kind.e) != TA(1, TA.Kind.f));
+}
+
+unittest { // self-referential types
+	struct S {
+		int num;
+		TaggedAlgebraic!This[] arr;
+		TaggedAlgebraic!This[string] obj;
+	}
+	alias TA = TaggedAlgebraic!S;
+
+	auto ta = TA([
+			TA(12),
+			TA(["bar": TA(13)])
+		]);
+
+	assert(ta.kind == TA.Kind.arr);
+	assert(ta[0].kind == TA.Kind.num);
+	assert(ta[0] == 12);
+	assert(ta[1].kind == TA.Kind.obj);
+	assert(ta[1]["bar"] == 13);
 }
 
 unittest {
@@ -746,7 +768,7 @@ private struct DisableOpAttribute {
 private template hasOp(TA, OpKind kind, string name, ARGS...)
 {
 	import std.traits : CopyTypeQualifiers;
-	alias UQ = CopyTypeQualifiers!(TA, TA.Union);
+	alias UQ = CopyTypeQualifiers!(TA, TA.FieldDefinitionType);
 	enum hasOp = AliasSeq!(OpInfo!(UQ, kind, name, ARGS).fields).length > 0;
 }
 
@@ -808,7 +830,7 @@ private static auto implementOp(OpKind kind, string name, T, ARGS...)(ref T self
 	import std.array : join;
 	import std.traits : CopyTypeQualifiers;
 	import std.variant : Algebraic, Variant;
-	alias UQ = CopyTypeQualifiers!(T, T.Union);
+	alias UQ = CopyTypeQualifiers!(T, T.FieldDefinitionType);
 
 	alias info = OpInfo!(UQ, kind, name, ARGS);
 
@@ -829,8 +851,8 @@ private static auto implementOp(OpKind kind, string name, T, ARGS...)(ref T self
 			case __traits(getMember, T.Kind, f):
 				static if (NoDuplicates!(info.ReturnTypes).length == 1)
 					return info.perform(self.m_union.trustedGet!FT, args);
-				else static if (allSatisfy!(isMatchingUniqueType!(T.Union), info.ReturnTypes))
-					return TaggedAlgebraic!(T.Union)(info.perform(self.m_union.trustedGet!FT, args));
+				else static if (allSatisfy!(isMatchingUniqueType!T, info.ReturnTypes))
+					return TaggedAlgebraic!(T.FieldDefinitionType)(info.perform(self.m_union.trustedGet!FT, args));
 				else static if (allSatisfy!(isNoVariant, info.ReturnTypes)) {
 					alias Alg = Algebraic!(NoDuplicates!(info.ReturnTypes));
 					info.ReturnTypes[i] ret = info.perform(self.m_union.trustedGet!FT, args);
@@ -955,10 +977,11 @@ unittest {
 
 private template OpInfo(U, OpKind kind, string name, ARGS...)
 {
-	import std.traits : CopyTypeQualifiers, FieldTypeTuple, FieldNameTuple, ReturnType;
+	import std.traits : CopyTypeQualifiers, ReturnType;
 
-	private alias FieldTypes = FieldTypeTuple!U;
-	private alias fieldNames = FieldNameTuple!U;
+	private alias FieldKind = UnionFieldEnum!U;
+	private alias FieldTypes = UnionKindTypes!FieldKind;
+	private alias fieldNames = UnionKindNames!FieldKind;
 
 	private template isOpEnabled(string field)
 	{
@@ -987,7 +1010,7 @@ private template OpInfo(U, OpKind kind, string name, ARGS...)
 
 	template ReturnTypesImpl(size_t i) {
 		static if (i < fields.length) {
-			alias FT = CopyTypeQualifiers!(U, typeof(__traits(getMember, U, fields[i])));
+			alias FT = CopyTypeQualifiers!(U, TypeOf!(__traits(getMember, FieldKind, fields[i])));
 			alias ReturnTypesImpl = AliasSeq!(ReturnType!(performOp!(U, kind, name, FT, ARGS)), ReturnTypesImpl!(i+1));
 		} else alias ReturnTypesImpl = AliasSeq!();
 	}
@@ -1074,37 +1097,19 @@ private string generateConstructors(U)()
 }
 
 private template UniqueTypeFields(U) {
-	import std.traits : FieldTypeTuple, FieldNameTuple;
-
-	alias Types = FieldTypeTuple!U;
-
-	template impl(size_t i) {
-		static if (i < Types.length) {
-			enum name = FieldNameTuple!U[i];
-			alias T = Types[i];
-			static if (staticIndexOf!(T, Types) == i && staticIndexOf!(T, Types[i+1 .. $]) < 0)
-				alias impl = AliasSeq!(name, impl!(i+1));
-			else alias impl = AliasSeq!(impl!(i+1));
-		} else alias impl = AliasSeq!();
-	}
-	alias UniqueTypeFields = impl!0;
+	alias Enum = UnionFieldEnum!U;
+	alias Types = UnionKindTypes!Enum;
+	alias indices = UniqueTypes!Types;
+	enum toName(int i) = UnionKindNames!Enum[i];
+	alias UniqueTypeFields = staticMap!(toName, indices);
 }
 
 private template AmbiguousTypeFields(U) {
-	import std.traits : FieldTypeTuple, FieldNameTuple;
-
-	alias Types = FieldTypeTuple!U;
-
-	template impl(size_t i) {
-		static if (i < Types.length) {
-			enum name = FieldNameTuple!U[i];
-			alias T = Types[i];
-			static if (staticIndexOf!(T, Types) == i && staticIndexOf!(T, Types[i+1 .. $]) >= 0)
-				alias impl = AliasSeq!(name, impl!(i+1));
-			else alias impl = impl!(i+1);
-		} else alias impl = AliasSeq!();
-	}
-	alias AmbiguousTypeFields = impl!0;
+	alias Enum = UnionFieldEnum!U;
+	alias Types = UnionKindTypes!Enum;
+	alias indices = AmbiguousTypes!Types;
+	enum toName(int i) = UnionKindNames!Enum[i];
+	alias AmbiguousTypeFields = staticMap!(toName, indices);
 }
 
 unittest {
@@ -1118,51 +1123,38 @@ unittest {
 	static assert([AmbiguousTypeFields!U] == ["a"]);
 }
 
-private template SameTypeFields(U, string field) {
-	import std.traits : FieldTypeTuple, FieldNameTuple;
-
-	alias Types = FieldTypeTuple!U;
-
-	alias T = typeof(__traits(getMember, U, field));
-	template impl(size_t i) {
-		static if (i < Types.length) {
-			enum name = FieldNameTuple!U[i];
-			static if (is(Types[i] == T))
-				alias impl = AliasSeq!(name, impl!(i+1));
-			else alias impl = AliasSeq!(impl!(i+1));
-		} else alias impl = AliasSeq!();
-	}
-	alias SameTypeFields = impl!0;
-}
-
-private template MemberType(U) {
-	template MemberType(string name) {
-		alias MemberType = typeof(__traits(getMember, U, name));
-	}
-}
-
-private template isMatchingType(U) {
-	import std.traits : FieldTypeTuple;
-	enum isMatchingType(T) = staticIndexOf!(T, FieldTypeTuple!U) >= 0;
-}
-
-private template isMatchingUniqueType(U) {
+private template isMatchingUniqueType(TA) {
 	import std.traits : staticMap;
-	alias UniqueTypes = staticMap!(FieldTypeOf!U, UniqueTypeFields!U);
+	alias FieldTypes = UnionKindTypes!(UnionFieldEnum!(TA.FieldDefinitionType));
+	alias F(size_t i) = FieldTypes[i];
+	alias UniqueTypes = staticMap!(F, .UniqueTypes!FieldTypes);
 	template isMatchingUniqueType(T) {
-		static if (is(T : TaggedAlgebraic!U)) enum isMatchingUniqueType = true;
+		static if (is(T : TA)) enum isMatchingUniqueType = true;
 		else enum isMatchingUniqueType = staticIndexOfImplicit!(T, UniqueTypes) >= 0;
 	}
 }
 
+unittest {
+	union U {
+		int i;
+		TaggedAlgebraic!This[] array;
+	}
+	alias TA = TaggedAlgebraic!U;
+	alias pass(alias templ, T) = templ!T;
+	static assert(pass!(isMatchingUniqueType!TA, TaggedAlgebraic!U));
+	static assert(!pass!(isMatchingUniqueType!TA, string));
+	static assert(pass!(isMatchingUniqueType!TA, int));
+	static assert(pass!(isMatchingUniqueType!TA, (TaggedAlgebraic!U[])));
+}
+
 private template fieldMatchesType(U, T)
 {
-	enum fieldMatchesType(string field) = is(typeof(__traits(getMember, U, field)) == T);
+	enum fieldMatchesType(string field) = is(TypeOf!(__traits(getMember, UnionFieldEnum!U, field)) == T);
 }
 
 private template FieldTypeOf(U) {
 	template FieldTypeOf(string name) {
-		alias FieldTypeOf = typeof(__traits(getMember, U, name));
+		alias FieldTypeOf = TypeOf!(__traits(getMember, UnionFieldEnum!U, name));
 	}
 }
 
