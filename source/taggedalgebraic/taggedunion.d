@@ -339,7 +339,9 @@ unittest { // test for name clashes
 
 	....
 */
-template visit(VISITORS...) {
+template visit(VISITORS...)
+	if (VISITORS.length > 0)
+{
 	auto visit(TU)(auto ref TU tu)
 		if (isInstanceOf!(TaggedUnion, TU))
 	{
@@ -422,7 +424,9 @@ private U to(U, T)(T val) {
 	Instead of failing to compile, `tryVisit` will throw an `Exception` if none
 	of the handlers is able to handle the value contained in `tu`.
 */
-template tryVisit(VISITORS...) {
+template tryVisit(VISITORS...)
+	if (VISITORS.length > 0)
+{
 	auto tryVisit(TU)(auto ref TU tu)
 		if (isInstanceOf!(TaggedUnion, TU))
 	{
