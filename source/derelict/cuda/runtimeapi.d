@@ -37,15 +37,15 @@ private
   import derelict.util.system;
 
   static if(Derelict_OS_Windows)
-    enum libNames = "cudart32_65.dll,cudart64_65.dll";
+    enum libNames = "cudart32_100.dll,cudart64_100.dll";
   else static if (Derelict_OS_Mac)
     enum libNames = "libcudart.dylib,/usr/local/lib/libcudart.dylib";
   else static if (Derelict_OS_Linux)
   {
     version(X86)
-      enum libNames = "libcudart.so,libcudart.so.6.5,libcudart.so.7.0,/opt/cuda/lib/libcudart.so";
+      enum libNames = "libcudart.so,libcudart.so.10.0,/opt/cuda/lib/libcudart.so";
     else version(X86_64)
-      enum libNames = "libcudart.so,libcudart.so.6.5,libcudart.so.7.0,/opt/cuda/lib64/libcudart.so,/usr/lib/x86_64-linux-gnu/libcudart.so.6.5";
+      enum libNames = "libcudart.so,libcudart.so.10.0,/opt/cuda/lib64/libcudart.so,/usr/lib/x86_64-linux-gnu/libcudart.so.10.0";
     else
       static assert(0, "Need to implement CUDA libNames for this arch.");
   }
