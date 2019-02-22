@@ -1,10 +1,11 @@
 ﻿{
     "name": "derelict-cuda",
     "description": "A dynamic binding to the CUDA API.",
-    "homepage": "https://github.com/DerelictOrg/DerelictCUDA",
+    "homepage": "https://github.com/naetherm/DerelictCUDA",
     "license": "Boost",
     "authors": [
-        "Guillaume Piolat (p0nce)"
+        "Guillaume Piolat (p0nce)",
+        "Markus Naether (naetherm)"
     ],
 
     "importPaths": ["source"],

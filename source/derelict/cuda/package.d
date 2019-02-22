@@ -24,4 +24,3 @@ module derelict.cuda;
 
 public import derelict.cuda.driverapi;
 public import derelict.cuda.runtimeapi;
-
