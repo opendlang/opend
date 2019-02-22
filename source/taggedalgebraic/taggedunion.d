@@ -49,7 +49,7 @@ struct TaggedUnion(U) if (is(U == union) || is(U == struct) || is(U == enum))
 	package alias FieldTypeByName(string name) = FieldTypes[__traits(getMember, Kind, name)];
 
 	private {
-		static if (isUnionType!(FieldTypes[0]) || __VERSION__ < 2072) {
+		static if (isUnitType!(FieldTypes[0]) || __VERSION__ < 2072) {
 			void[Largest!FieldTypes.sizeof] m_data;
 		} else {
 			union Dummy {
@@ -72,8 +72,21 @@ struct TaggedUnion(U) if (is(U == union) || is(U == struct) || is(U == enum))
 		rawSwap(this, other);
 	}
 
+	static foreach (ti; UniqueTypes!FieldTypes)
+		static if (!isUnitType!(FieldTypes[ti])) {
+			this(FieldTypes[ti] value)
+			{
+				set!(cast(Kind)ti)(value);
+			}
+
+			void opAssign(FieldTypes[ti] value)
+			{
+				set!(cast(Kind)ti)(value);
+			}
+		}
+
 	// disable default construction if first type is not a null/Void type
-	static if (!isUnionType!(FieldTypes[0]) && __VERSION__ < 2072) {
+	static if (!isUnitType!(FieldTypes[0]) && __VERSION__ < 2072) {
 		@disable this();
 	}
 
@@ -180,8 +193,8 @@ struct TaggedUnion(U) if (is(U == union) || is(U == struct) || is(U == enum))
 		mixin("alias set"~pascalCase(name)~" = set!(Kind."~name~");");
 		mixin("@property bool is"~pascalCase(name)~"() const { return m_kind == Kind."~name~"; }");
 
-		static if (!isUnionType!(FieldTypes[i])) {
-			mixin("alias get"~pascalCase(name)~" = get!(Kind."~name~");");
+		static if (!isUnitType!(FieldTypes[i])) {
+			mixin("alias "~name~"Value = value!(Kind."~name~");");
 
 			mixin("static TaggedUnion "~name~"(FieldTypes["~i.stringof~"] value)"
 				~ "{ TaggedUnion tu; tu.set!(Kind."~name~")(move(value)); return tu; }");
@@ -193,7 +206,15 @@ struct TaggedUnion(U) if (is(U == union) || is(U == struct) || is(U == enum))
 
 	}
 
-	ref inout(FieldTypes[kind]) get(Kind kind)()
+	/** Accesses the contained value by reference.
+
+		The specified `kind` must equal the current value of the `this.kind`
+		property. Setting a different type must be done with `set` or `opAssign`
+		instead.
+
+		See_Also: `set`, `opAssign`
+	*/
+	@property ref inout(FieldTypes[kind]) value(Kind kind)()
 	inout {
 		if (this.kind != kind) {
 			enum msg(.string k_is) = "Attempt to get kind "~kind.stringof~" from tagged union with kind "~k_is;
@@ -208,7 +229,14 @@ struct TaggedUnion(U) if (is(U == union) || is(U == struct) || is(U == enum))
 	}
 
 
-	ref inout(T) get(T)() inout
+	/** Accesses the contained value by reference.
+
+		The specified type `T` must equal the type of the currently set value.
+		Setting a different type must be done with `set` or `opAssign` instead.
+
+		See_Also: `set`, `opAssign`
+	*/
+	@property ref inout(T) value(T)() inout
 		if (staticIndexOf!(T, FieldTypes) >= 0)
 	{
 		final switch (this.kind) {
@@ -223,8 +251,10 @@ struct TaggedUnion(U) if (is(U == union) || is(U == struct) || is(U == enum))
 		}
 	}
 
+	/** Sets a new value of the specified `kind`.
+	*/
 	ref FieldTypes[kind] set(Kind kind)(FieldTypes[kind] value)
-		if (!isUnionType!(FieldTypes[kind]))
+		if (!isUnitType!(FieldTypes[kind]))
 	{
 		if (m_kind != kind) {
 			destroy(this);
@@ -237,8 +267,10 @@ struct TaggedUnion(U) if (is(U == union) || is(U == struct) || is(U == enum))
 		return trustedGet!(FieldTypes[kind]);
 	}
 
+	/** Sets a `void` value of the specified kind.
+	*/
 	void set(Kind kind)()
-		if (isUnionType!(FieldTypes[kind]))
+		if (isUnitType!(FieldTypes[kind]))
 	{
 		if (m_kind != kind) {
 			destroy(this);
@@ -262,15 +294,15 @@ struct TaggedUnion(U) if (is(U == union) || is(U == struct) || is(U == enum))
 	assert(tu.kind == TU.Kind.count);
 	assert(tu.isCount); // qequivalent to the line above
 	assert(!tu.isText);
-	assert(tu.get!(TU.Kind.count) == int.init);
+	assert(tu.value!(TU.Kind.count) == int.init);
 
 	// set to a specific count
 	tu.setCount(42);
 	assert(tu.isCount);
-	assert(tu.getCount() == 42);
-	assert(tu.get!(TU.Kind.count) == 42);
-	assert(tu.get!int == 42); // can also get by type
-	assert(tu.getCount() == 42);
+	assert(tu.countValue == 42);
+	assert(tu.value!(TU.Kind.count) == 42);
+	assert(tu.value!int == 42); // can also get by type
+	assert(tu.countValue == 42);
 
 	// assign a new tagged algebraic value
 	tu = TU.count(43);
@@ -281,15 +313,21 @@ struct TaggedUnion(U) if (is(U == union) || is(U == struct) || is(U == enum))
 	assert(tu != TU.text("hello"));
 
 	// modify by reference
-	tu.getCount()++;
-	assert(tu.getCount() == 44);
+	tu.countValue++;
+	assert(tu.countValue == 44);
 
 	// set the second field
 	tu.setText("hello");
 	assert(!tu.isCount);
 	assert(tu.isText);
 	assert(tu.kind == TU.Kind.text);
-	assert(tu.getText() == "hello");
+	assert(tu.textValue == "hello");
+
+	// unique types can also be directly constructed
+	tu = TU(12);
+	assert(tu.countValue == 12);
+	tu = TU("foo");
+	assert(tu.textValue == "foo");
 }
 
 ///
@@ -313,7 +351,7 @@ struct TaggedUnion(U) if (is(U == union) || is(U == struct) || is(U == enum))
 
 		tu.setText("foo");
 		assert(tu.kind == E.text);
-		assert(tu.getText == "foo");
+		assert(tu.textValue == "foo");
 	}
 }
 
@@ -323,7 +361,7 @@ unittest { // test for name clashes
 	TU tu;
 	tu = TU.string("foo");
 	assert(tu.isString);
-	assert(tu.getString() == "foo");
+	assert(tu.stringValue == "foo");
 }
 
 
@@ -348,14 +386,14 @@ template visit(VISITORS...)
 		final switch (tu.kind) {
 			static foreach (k; EnumMembers!(TU.Kind)) {
 				case k: {
-					static if (isUnionType!(TU.FieldTypes[k]))
+					static if (isUnitType!(TU.FieldTypes[k]))
 						alias T = void;
 					else alias T = TU.FieldTypes[k];
 					alias h = selectHandler!(T, VISITORS);
 					static if (is(typeof(h) == typeof(null))) static assert(false, "No visitor defined for type type "~T.stringof);
 					else static if (is(typeof(h) == string)) static assert(false, h);
 					else static if (is(T == void)) return h();
-					else return h(tu.get!k);
+					else return h(tu.value!k);
 				}
 			}
 		}
@@ -433,14 +471,14 @@ template tryVisit(VISITORS...)
 		final switch (tu.kind) {
 			static foreach (k; EnumMembers!(TU.Kind)) {
 				case k: {
-					static if (isUnionType!(TU.FieldTypes[k]))
+					static if (isUnitType!(TU.FieldTypes[k]))
 						alias T = void;
 					else alias T = TU.FieldTypes[k];
 					alias h = selectHandler!(T, VISITORS);
 					static if (is(typeof(h) == typeof(null))) throw new Exception("Type "~T.stringof~" not handled by any visitor.");
 					else static if (is(typeof(h) == string)) static assert(false, h);
 					else static if (is(T == void)) return h();
-					else return h(tu.get!k);
+					else return h(tu.value!k);
 				}
 			}
 		}
@@ -462,7 +500,7 @@ unittest {
 	assertThrown(tu.tryVisit!((string s) { assert(false); }));
 }
 
-enum isUnionType(T) = is(T == Void) || is(T == void) || is(T == typeof(null));
+enum isUnitType(T) = is(T == Void) || is(T == void) || is(T == typeof(null));
 
 private template validateHandlers(TU, VISITORS...)
 {
@@ -594,6 +632,29 @@ deprecated alias TypeEnum(U) = UnionFieldEnum!U;
 private alias UnionKindTypes(FieldEnum) = staticMap!(TypeOf, EnumMembers!FieldEnum);
 private alias UnionKindNames(FieldEnum) = AliasSeq!(__traits(allMembers, FieldEnum));
 
+private template UniqueTypes(Types...) {
+	template impl(size_t i) {
+		static if (i < Types.length) {
+			alias T = Types[i];
+			static if (staticIndexOf!(T, Types) == i && staticIndexOf!(T, Types[i+1 .. $]) < 0)
+				alias impl = AliasSeq!(i, impl!(i+1));
+			else alias impl = AliasSeq!(impl!(i+1));
+		} else alias impl = AliasSeq!();
+	}
+	alias UniqueTypes = impl!0;
+}
+
+private template AmbiguousTypes(Types...) {
+	template impl(size_t i) {
+		static if (i < Types.length) {
+			alias T = Types[i];
+			static if (staticIndexOf!(T, Types) == i && staticIndexOf!(T, Types[i+1 .. $]) >= 0)
+				alias impl = AliasSeq!(i, impl!(i+1));
+			else alias impl = impl!(i+1);
+		} else alias impl = AliasSeq!();
+	}
+	alias AmbiguousTypeFields = impl!0;
+}
 
 
 package void rawEmplace(T)(void[] dst, ref T src)

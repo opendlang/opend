@@ -652,12 +652,12 @@ unittest {
 */
 ref inout(T) get(T, U)(ref inout(TaggedAlgebraic!U) ta)
 {
-	return ta.m_union.get!T;
+	return ta.m_union.value!T;
 }
 /// ditto
 inout(T) get(T, U)(inout(TaggedAlgebraic!U) ta)
 {
-	return ta.m_union.get!T;
+	return ta.m_union.value!T;
 }
 
 @nogc @safe nothrow unittest {
@@ -1035,7 +1035,7 @@ private string generateConstructors(U)()
 		ret ~= q{
 			this(UnionType.FieldTypeByName!"%1$s" value)
 			{
-				static if (isUnionType!(UnionType.FieldTypeByName!"%1$s"))
+				static if (isUnitType!(UnionType.FieldTypeByName!"%1$s"))
 					m_union.set!(Kind.%1$s)();
 				else
 					m_union.set!(Kind.%1$s)(value);
@@ -1043,7 +1043,7 @@ private string generateConstructors(U)()
 
 			void opAssign(UnionType.FieldTypeByName!"%1$s" value)
 			{
-				static if (isUnionType!(UnionType.FieldTypeByName!"%1$s"))
+				static if (isUnitType!(UnionType.FieldTypeByName!"%1$s"))
 					m_union.set!(Kind.%1$s)();
 				else
 					m_union.set!(Kind.%1$s)(value);
@@ -1060,7 +1060,7 @@ private string generateConstructors(U)()
 					foreach (i, n; TaggedUnion!U.fieldNames) {
 						static if (is(UnionType.FieldTypeByName!"%1$s" == UnionType.FieldTypes[i])) {
 							case __traits(getMember, Kind, n):
-								static if (isUnionType!(UnionType.FieldTypes[i]))
+								static if (isUnitType!(UnionType.FieldTypes[i]))
 									m_union.set!(__traits(getMember, Kind, n))();
 								else m_union.set!(__traits(getMember, Kind, n))(value);
 								return;

@@ -37,7 +37,7 @@ taggedAny = taggedFoo;
 // Default initializes to the first field
 TUnion taggedDef;
 assert(taggedDef.isCount);
-assert(taggedDef.getCount == int.init);
+assert(taggedDef.countValue == int.init);
 
 // Check type: TUnion.Kind is an enum
 assert(taggedInt.kind == TUnion.Kind.count);
@@ -53,24 +53,30 @@ assert(taggedFoo.isFoo);
 assert(taggedAny.isFoo);
 
 // Set to a different type
-taggedAny.setStr("bar");
+taggedAny.strValue("bar");
 assert(taggedAny.isStr);
-assert(taggedAny.getStr() == "bar");
+assert(taggedAny.strValue == "bar");
 
 // Modify contained value by reference
-taggedAny.getStr() = "baz";
-assert(taggedAny.getStr() == "baz");
+taggedAny.strValue = "baz";
+assert(taggedAny.strValue == "baz");
 
 // In addition to the getter, the contained value can be extracted using get!()
 // or by casting
-assert(taggedInt.get!(TUnion.Kind.count) == 5);
-assert(taggedInt.get!int == 5);
+assert(taggedInt.value!(TUnion.Kind.count) == 5);
+assert(taggedInt.value!int == 5);
 assert(cast(byte)taggedInt == 5);
 
 // Multiple kinds of the same type are supported
 taggedAny.setOffset(5);
 assert(taggedAny.isOffset);
-assert(taggedAny.isCount);
+assert(!taggedAny.isCount);
+
+// Unique types can also be set directly
+taggedAny = "foo";
+assert(taggedAny.isStr);
+taggedAny = TUnion(Foo.init);
+assert(taggedAny.isFoo);
 ```
 
 
