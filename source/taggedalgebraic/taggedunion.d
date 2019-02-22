@@ -350,7 +350,7 @@ template visit(VISITORS...) {
 						alias T = void;
 					else alias T = TU.FieldTypes[k];
 					alias h = selectHandler!(T, VISITORS);
-					static if (is(h == void)) static assert(false, "No handler is able to take type "~T.stringof);
+					static if (is(typeof(h) == typeof(null))) static assert(false, "No visitor defined for type type "~T.stringof);
 					else static if (is(typeof(h) == string)) static assert(false, h);
 					else static if (is(T == void)) return h();
 					else return h(tu.get!k);
@@ -381,6 +381,34 @@ unittest {
 	assert(tu.visit!((v) => to!int(v)) == 43);
 }
 
+unittest {
+	union U {
+		Void none;
+		int count;
+		float length;
+	}
+	TaggedUnion!U u;
+
+	//
+	static assert(is(typeof(u.visit!((int) {}, (float) {}, () {}))));
+	u.visit!((_) {}, () {});
+	static assert(is(typeof(u.visit!((_) {}, () {}))));
+	static assert(is(typeof(u.visit!((_) {}, (float) {}, () {}))));
+	static assert(is(typeof(u.visit!((float) {}, (_) {}, () {}))));
+
+	static assert(!is(typeof(u.visit!((_) {})))); // missing void handler
+	static assert(!is(typeof(u.visit!(() {})))); // missing value handler
+
+	static assert(!is(typeof(u.visit!((_) {}, () {}, (string) {})))); // invalid typed handler
+	static assert(!is(typeof(u.visit!((int) {}, (float) {}, () {}, () {})))); // duplicate void handler
+	static assert(!is(typeof(u.visit!((_) {}, () {}, (_) {})))); // duplicate generic handler
+	static assert(!is(typeof(u.visit!((int) {}, (float) {}, (float) {}, () {})))); // duplicate typed handler
+
+	// TODO: error out for superfluous generic handlers
+	//static assert(!is(typeof(u.visit!((int) {}, (float) {}, () {}, (_) {})))); // superfluous generic handler
+}
+
+
 // workaround for "template to is not defined" error in the unit test above
 // happens on DMD 2.080 and below
 private U to(U, T)(T val) {
@@ -405,7 +433,7 @@ template tryVisit(VISITORS...) {
 						alias T = void;
 					else alias T = TU.FieldTypes[k];
 					alias h = selectHandler!(T, VISITORS);
-					static if (is(h == void)) throw new Exception("Type "~T.stringof~" not handled by any visitor.");
+					static if (is(typeof(h) == typeof(null))) throw new Exception("Type "~T.stringof~" not handled by any visitor.");
 					else static if (is(typeof(h) == string)) static assert(false, h);
 					else static if (is(T == void)) return h();
 					else return h(tu.get!k);
@@ -432,34 +460,73 @@ unittest {
 
 enum isUnionType(T) = is(T == Void) || is(T == void) || is(T == typeof(null));
 
+private template validateHandlers(TU, VISITORS...)
+{
+	alias Types = TU.FieldTypes;
+
+	static foreach (int i; 0 .. VISITORS.length) {
+		static assert(anySatisfy!(matchesType!(VISITORS[i]), Types),
+			"Visitor at index "~i.stringof~" does not match any type of "~TU.stringof);
+	}
+}
+
+private template matchesType(alias fun, T)
+{
+	static if (isSomeFunction!fun) {
+		alias Params = ParameterTypeTuple!fun;
+		static if (Params.length == 0 && is(T == void)) enum matchesType = true;
+		else static if (Params.length == 1 && is(T == Params[0])) enum matchesType = true;
+		else enum matchesType = false;
+	} else static if (!is(T == void)) {
+		static if (isSomeFunction!(fun!T)) {
+			alias Parms = ParameterTypeTuple!fun;
+			static if (Params.length == 1 && is(T == Params[0])) enum matchesType = true;
+			else enum matchesType = false;
+		} else enum matchesType = false;
+	} else enum matchesType = false;
+}
+
 private template selectHandler(T, VISITORS...)
 {
 	import std.traits : ParameterTypeTuple, isSomeFunction;
 
-	// TODO: error out for ambiguous handlers and handlers that don't match any type!
-
-	template impl(int i) {
+	template typedIndex(int i, int matched_index = -1) {
 		static if (i < VISITORS.length) {
 			alias fun = VISITORS[i];
 			static if (isSomeFunction!fun) {
 				alias Params = ParameterTypeTuple!fun;
-				static if (Params.length == 0) {
-					static if (is(T == void))
-						alias impl = fun;
-					else alias impl = impl!(i+1);
-				} else static if (Params.length == 1) {
-					static if (is(T : Params[0]))
-						alias impl = fun;
-					else alias impl = impl!(i+1);
-				} else enum impl = "Visitor at index "~i.stringof~" must not take more than one parameter.";
-			} else static if (isSomeFunction!(fun!T)) {
-				static if (ParameterTypeTuple!(fun!T).length == 1)
-					alias impl = fun!T;
-				else enum impl = "Generic visitor at index "~i.stringof~" must have a single parameter.";
-			} else enum impl = "Visitor at index "~i.stringof~" (or its template instantiation with type "~T.stringof~") must be a valid function or delegate.";
-		} else alias impl = void;
+				static if (Params.length > 1) enum typedIndex = "Visitor at index "~i.stringof~" must not take more than one parameter.";
+				else static if (Params.length == 0 && is(T == void) || Params.length == 1 && is(T == Params[0])) {
+					static if (matched_index >= 0) enum typedIndex = "Vistor at index "~i.stringof~" conflicts with visitor at index "~matched_index~".";
+					else enum typedIndex = typedIndex!(i+1, i);
+				} else enum typedIndex = typedIndex!(i+1, matched_index);
+			} else enum typedIndex = typedIndex!(i+1, matched_index);
+		} else enum typedIndex = matched_index;
 	}
-	alias selectHandler = impl!0;
+
+	template genericIndex(int i, int matched_index = -1) {
+		static if (i < VISITORS.length) {
+			alias fun = VISITORS[i];
+			static if (!isSomeFunction!fun) {
+				static if (isSomeFunction!(fun!T)) {
+					static if (ParameterTypeTuple!(fun!T).length == 1) {
+						static if (matched_index >= 0) enum genericIndex = "Only one generic visitor allowed";
+						else enum genericIndex = genericIndex!(i+1, i);
+					} else enum genericIndex = "Generic visitor at index "~i.stringof~" must have a single parameter.";
+				} else enum genericIndex = "Visitor at index "~i.stringof~" (or its template instantiation with type "~T.stringof~") must be a valid function or delegate.";
+			} else enum genericIndex = genericIndex!(i+1, matched_index);
+		} else enum genericIndex = matched_index;
+	}
+
+	enum typed_index = typedIndex!0;
+	static if (is(T == void)) enum generic_index = -1;
+	else enum generic_index = genericIndex!0;
+
+	static if (is(typeof(typed_index) == string)) enum selectHandler = typed_index;
+	else static if (is(typeof(generic_index == string))) enum selectHandler = generic_index;
+	else static if (typed_index >= 0) alias selectHandler = VISITORS[typed_index];
+	else static if (generic_index >= 0) alias selectHandler = VISITORS[generic_index];
+	else enum selectHandler = null;
 }
 
 private string pascalCase(string camel_case)
