@@ -1,18 +1,22 @@
 /**
  * Algebraic data type implementation based on a tagged union.
  *
- * Copyright: Copyright 2015-2016, Sönke Ludwig.
+ * Copyright: Copyright 2015-2019, Sönke Ludwig.
  * License:   $(WEB www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
  * Authors:   Sönke Ludwig
 */
-module taggedalgebraic;
+module taggedalgebraic.taggedalgebraic;
 
-import std.typetuple;
-import std.traits : Unqual, isInstanceOf;
+public import taggedalgebraic.taggedunion;
+
+import std.algorithm.mutation : move, swap;
+import std.meta;
+import std.traits : EnumMembers, FieldNameTuple, Unqual, isInstanceOf;
 
 // TODO:
 //  - distinguish between @property and non@-property methods.
 //  - verify that static methods are handled properly
+
 
 /** Implements a generic algebraic type using an enum to identify the stored type.
 
@@ -43,40 +47,23 @@ struct TaggedAlgebraic(U) if (is(U == union) || is(U == struct))
 {
 	import std.algorithm : among;
 	import std.string : format;
-	import std.traits : FieldTypeTuple, FieldNameTuple, Largest, hasElaborateCopyConstructor, hasElaborateDestructor;
 
 	/// Alias of the type used for defining the possible storage types/kinds.
-	alias Union = U;
+	deprecated alias Union = U;
 
-	private alias FieldTypes = FieldTypeTuple!U;
-	private alias fieldNames = FieldNameTuple!U;
+	/// The underlying tagged union type
+	alias UnionType = TaggedUnion!U;
 
-	static assert(FieldTypes.length > 0, "The TaggedAlgebraic's union type must have at least one field.");
-	static assert(FieldTypes.length == fieldNames.length);
-
-
-	private {
-		static if (is(FieldTypes[0] == typeof(null)) || is(FieldTypes[0] == Void) || __VERSION__ < 2072) {
-			void[Largest!FieldTypes.sizeof] m_data;
-		} else {
-			union Dummy {
-				FieldTypes[0] initField;
-				void[Largest!FieldTypes.sizeof] data;
-				alias data this;
-			}
-			Dummy m_data = { initField: FieldTypes[0].init };
-		}
-		Kind m_kind;
-	}
+	private TaggedUnion!U m_union;
 
 	/// A type enum that identifies the type of value currently stored.
-	alias Kind = TypeEnum!U;
+	alias Kind = UnionType.Kind;
 
 	/// Compatibility alias
 	deprecated("Use 'Kind' instead.") alias Type = Kind;
 
 	/// The type ID of the currently stored value.
-	@property Kind kind() const { return m_kind; }
+	@property Kind kind() const { return m_union.kind; }
 
 	// Compatibility alias
 	deprecated("Use 'kind' instead.")
@@ -96,85 +83,10 @@ struct TaggedAlgebraic(U) if (is(U == union) || is(U == struct))
 		rawSwap(this, other);
 	}
 
-	// postblit constructor
-	static if (anySatisfy!(hasElaborateCopyConstructor, FieldTypes))
-	{
-		this(this)
-		{
-			switch (m_kind) {
-				default: break;
-				foreach (i, tname; fieldNames) {
-					alias T = typeof(__traits(getMember, U, tname));
-					static if (hasElaborateCopyConstructor!T)
-					{
-						case __traits(getMember, Kind, tname):
-							typeid(T).postblit(cast(void*)&trustedGet!tname());
-							return;
-					}
-				}
-			}
-		}
-	}
-
-	// destructor
-	static if (anySatisfy!(hasElaborateDestructor, FieldTypes))
-	{
-		~this()
-		{
-			final switch (m_kind) {
-				foreach (i, tname; fieldNames) {
-					alias T = typeof(__traits(getMember, U, tname));
-					case __traits(getMember, Kind, tname):
-						static if (hasElaborateDestructor!T) {
-							.destroy(trustedGet!tname);
-						}
-						return;
-				}
-			}
-		}
-	}
-
 	/// Enables conversion or extraction of the stored value.
-	T opCast(T)()
-	{
-		import std.conv : to;
-
-		final switch (m_kind) {
-			foreach (i, FT; FieldTypes) {
-				case __traits(getMember, Kind, fieldNames[i]):
-					static if (is(typeof(trustedGet!(fieldNames[i])) : T))
-						return trustedGet!(fieldNames[i]);
-					else static if (is(typeof(to!T(trustedGet!(fieldNames[i]))))) {
-						return to!T(trustedGet!(fieldNames[i]));
-					} else {
-						assert(false, "Cannot cast a " ~ fieldNames[i]
-								~ " value of type " ~ FT.stringof ~ " to " ~ T.stringof);
-					}
-			}
-		}
-		assert(false); // never reached
-	}
+	T opCast(T)() { return cast(T)m_union; }
 	/// ditto
-	T opCast(T)() const
-	{
-		// this method needs to be duplicated because inout doesn't work with to!()
-		import std.conv : to;
-
-		final switch (m_kind) {
-			foreach (i, FT; FieldTypes) {
-				case __traits(getMember, Kind, fieldNames[i]):
-					static if (is(typeof(trustedGet!(fieldNames[i])) : T))
-						return trustedGet!(fieldNames[i]);
-					else static if (is(typeof(to!T(trustedGet!(fieldNames[i]))))) {
-						return to!T(trustedGet!(fieldNames[i]));
-					} else {
-						assert(false, "Cannot cast a " ~ fieldNames[i]
-								~ " value of type" ~ FT.stringof ~ " to " ~ T.stringof);
-					}
-			}
-		}
-		assert(false); // never reached
-	}
+	T opCast(T)() const { return cast(T)m_union; }
 
 	/// Uses `cast(string)`/`to!string` to return a string representation of the enclosed value.
 	string toString() const { return cast(string)this; }
@@ -193,12 +105,7 @@ struct TaggedAlgebraic(U) if (is(U == union) || is(U == struct))
 		if (is(Unqual!T == TaggedAlgebraic) || hasOp!(TA, OpKind.binary, "==", T))
 	{
 		static if (is(Unqual!T == TaggedAlgebraic)) {
-			if (this.kind != other.kind) return false;
-			final switch (this.kind)
-				foreach (i, fname; fieldNames)
-					case __traits(getMember, Kind, fname):
-						return trustedGet!fname == other.trustedGet!fname;
-			assert(false); // never reached
+			return m_union == other.m_union;
 		} else return implementOp!(OpKind.binary, "==")(this, other);
 	}
 	/// Enables relational comparisons with the stored value.
@@ -219,9 +126,6 @@ struct TaggedAlgebraic(U) if (is(U == union) || is(U == struct))
 	auto opIndexAssign(this TA, ARGS...)(auto ref ARGS args) if (hasOp!(TA, OpKind.indexAssign, null, ARGS)) { return implementOp!(OpKind.indexAssign, null)(this, args); }
 	/// Enables call syntax operations on the stored value.
 	auto opCall(this TA, ARGS...)(auto ref ARGS args) if (hasOp!(TA, OpKind.call, null, ARGS)) { return implementOp!(OpKind.call, null)(this, args); }
-
-	private @trusted @property ref inout(typeof(__traits(getMember, U, f))) trustedGet(string f)() inout { return trustedGet!(inout(typeof(__traits(getMember, U, f)))); }
-	private @trusted @property ref inout(T) trustedGet(T)() inout { return *cast(inout(T)*)m_data.ptr; }
 }
 
 ///
@@ -614,8 +518,6 @@ static if (__VERSION__ >= 2072) unittest { // default initialization
 
 unittest
 {
-	import std.meta : AliasSeq;
-
 	union U { int[int] a; }
 
 	foreach (TA; AliasSeq!(TaggedAlgebraic!U, const(TaggedAlgebraic!U)))
@@ -688,7 +590,7 @@ unittest { // issue #13
 */
 bool hasType(T, U)(in ref TaggedAlgebraic!U ta)
 {
-	alias Fields = Filter!(fieldMatchesType!(U, T), ta.fieldNames);
+	alias Fields = Filter!(fieldMatchesType!(U, T), ta.m_union.fieldNames);
 	static assert(Fields.length > 0, "Type "~T.stringof~" cannot be stored in a "~(TaggedAlgebraic!U).stringof~".");
 
 	switch (ta.kind) {
@@ -746,49 +648,16 @@ unittest {
 }
 
 
-static if (__VERSION__ >= 2072) {
-	/** Maps a kind enumeration value to the corresponding field type.
-
-		`kind` must be a value of the `TaggedAlgebraic!T.Kind` enumeration.
-	*/
-	template TypeOf(alias kind)
-		if (isInstanceOf!(TypeEnum, typeof(kind)))
-	{
-		import std.traits : FieldTypeTuple, TemplateArgsOf;
-		alias U = TemplateArgsOf!(typeof(kind));
-		alias TypeOf = FieldTypeTuple!U[kind];
-	}
-
-	///
-	unittest {
-		static struct S {
-			int a;
-			string b;
-			string c;
-		}
-		alias TA = TaggedAlgebraic!S;
-
-		static assert(is(TypeOf!(TA.Kind.a) == int));
-		static assert(is(TypeOf!(TA.Kind.b) == string));
-		static assert(is(TypeOf!(TA.Kind.c) == string));
-	}
-}
-
-
 /** Gets the value stored in an algebraic type based on its data type.
 */
 ref inout(T) get(T, U)(ref inout(TaggedAlgebraic!U) ta)
 {
-	import std.format : format;
-	assert(hasType!(T, U)(ta), "Type mismatch!");
-	return ta.trustedGet!T;
+	return ta.m_union.get!T;
 }
 /// ditto
 inout(T) get(T, U)(inout(TaggedAlgebraic!U) ta)
 {
-	import std.format : format;
-	assert(hasType!(T, U)(ta), "Type mismatch!");
-	return ta.trustedGet!T;
+	return ta.m_union.get!T;
 }
 
 @nogc @safe nothrow unittest {
@@ -820,9 +689,9 @@ auto apply(alias handler, TA)(TA ta)
 	if (isInstanceOf!(TaggedAlgebraic, TA))
 {
 	final switch (ta.kind) {
-		foreach (i, fn; TA.fieldNames) {
+		foreach (i, fn; TA.m_union.fieldNames) {
 			case __traits(getMember, ta.Kind, fn):
-				return handler(get!(TA.FieldTypes[i])(ta));
+				return handler(get!(TA.m_union.FieldTypes[i])(ta));
 		}
 	}
 	static if (__VERSION__ <= 2068) assert(false);
@@ -865,10 +734,6 @@ unittest {
 	});
 }
 
-
-/// Convenience type that can be used for union fields that have no value (`void` is not allowed).
-struct Void {}
-
 /// User-defined attibute to disable `opIndex` forwarding for a particular tagged union member.
 @property auto disableIndex() { assert(__ctfe, "disableIndex must only be used as an attribute."); return DisableOpAttribute(OpKind.index, null); }
 
@@ -882,7 +747,7 @@ private template hasOp(TA, OpKind kind, string name, ARGS...)
 {
 	import std.traits : CopyTypeQualifiers;
 	alias UQ = CopyTypeQualifiers!(TA, TA.Union);
-	enum hasOp = TypeTuple!(OpInfo!(UQ, kind, name, ARGS).fields).length > 0;
+	enum hasOp = AliasSeq!(OpInfo!(UQ, kind, name, ARGS).fields).length > 0;
 }
 
 unittest {
@@ -956,26 +821,26 @@ private static auto implementOp(OpKind kind, string name, T, ARGS...)(ref T self
 	//pragma(msg, typeof(T.Union.tupleof));
 	//import std.meta : staticMap; pragma(msg, staticMap!(isMatchingUniqueType!(T.Union), info.ReturnTypes));
 
-	switch (self.m_kind) {
+	switch (self.kind) {
 		enum assert_msg = "Operator "~name~" ("~kind.stringof~") can only be used on values of the following types: "~[info.fields].join(", ");
 		default: assert(false, assert_msg);
 		foreach (i, f; info.fields) {
-			alias FT = typeof(__traits(getMember, T.Union, f));
+			alias FT = T.UnionType.FieldTypeByName!f;
 			case __traits(getMember, T.Kind, f):
 				static if (NoDuplicates!(info.ReturnTypes).length == 1)
-					return info.perform(self.trustedGet!FT, args);
+					return info.perform(self.m_union.trustedGet!FT, args);
 				else static if (allSatisfy!(isMatchingUniqueType!(T.Union), info.ReturnTypes))
-					return TaggedAlgebraic!(T.Union)(info.perform(self.trustedGet!FT, args));
+					return TaggedAlgebraic!(T.Union)(info.perform(self.m_union.trustedGet!FT, args));
 				else static if (allSatisfy!(isNoVariant, info.ReturnTypes)) {
 					alias Alg = Algebraic!(NoDuplicates!(info.ReturnTypes));
-					info.ReturnTypes[i] ret = info.perform(self.trustedGet!FT, args);
+					info.ReturnTypes[i] ret = info.perform(self.m_union.trustedGet!FT, args);
 					import std.traits : isInstanceOf;
 					return Alg(ret);
 				}
 				else static if (is(FT == Variant))
-					return info.perform(self.trustedGet!FT, args);
+					return info.perform(self.m_union.trustedGet!FT, args);
 				else
-					return Variant(info.perform(self.trustedGet!FT, args));
+					return Variant(info.perform(self.m_union.trustedGet!FT, args));
 		}
 	}
 
@@ -1057,9 +922,9 @@ private auto performOp(U, OpKind kind, string name, T, ARGS...)(ref T value, /*a
 				static if (i < TA.FieldTypes.length) {
 					alias FT = TA.FieldTypes[i];
 					static if (is(typeof(&performOpRaw!(U, kind, name, T, FT, ARGS[1 .. $]))))
-						alias MTypesImpl = TypeTuple!(FT, MTypesImpl!(i+1));
-					else alias MTypesImpl = TypeTuple!(MTypesImpl!(i+1));
-				} else alias MTypesImpl = TypeTuple!();
+						alias MTypesImpl = AliasSeq!(FT, MTypesImpl!(i+1));
+					else alias MTypesImpl = AliasSeq!(MTypesImpl!(i+1));
+				} else alias MTypesImpl = AliasSeq!();
 			}
 			alias MTypes = NoDuplicates!(MTypesImpl!0);
 			static assert(MTypes.length > 0, "No type of the TaggedAlgebraic parameter matches any function declaration.");
@@ -1097,7 +962,7 @@ private template OpInfo(U, OpKind kind, string name, ARGS...)
 
 	private template isOpEnabled(string field)
 	{
-		alias attribs = TypeTuple!(__traits(getAttributes, __traits(getMember, U, field)));
+		alias attribs = AliasSeq!(__traits(getAttributes, __traits(getMember, U, field)));
 		template impl(size_t i) {
 			static if (i < attribs.length) {
 				static if (is(typeof(attribs[i]) == DisableOpAttribute)) {
@@ -1114,17 +979,17 @@ private template OpInfo(U, OpKind kind, string name, ARGS...)
 	{
 		static if (i < FieldTypes.length) {
 			static if (isOpEnabled!(fieldNames[i]) && is(typeof(&performOp!(U, kind, name, FieldTypes[i], ARGS)))) {
-				alias fieldsImpl = TypeTuple!(fieldNames[i], fieldsImpl!(i+1));
+				alias fieldsImpl = AliasSeq!(fieldNames[i], fieldsImpl!(i+1));
 			} else alias fieldsImpl = fieldsImpl!(i+1);
-		} else alias fieldsImpl = TypeTuple!();
+		} else alias fieldsImpl = AliasSeq!();
 	}
 	alias fields = fieldsImpl!0;
 
 	template ReturnTypesImpl(size_t i) {
 		static if (i < fields.length) {
 			alias FT = CopyTypeQualifiers!(U, typeof(__traits(getMember, U, fields[i])));
-			alias ReturnTypesImpl = TypeTuple!(ReturnType!(performOp!(U, kind, name, FT, ARGS)), ReturnTypesImpl!(i+1));
-		} else alias ReturnTypesImpl = TypeTuple!();
+			alias ReturnTypesImpl = AliasSeq!(ReturnType!(performOp!(U, kind, name, FT, ARGS)), ReturnTypesImpl!(i+1));
+		} else alias ReturnTypesImpl = AliasSeq!();
 	}
 	alias ReturnTypes = ReturnTypesImpl!0;
 
@@ -1152,12 +1017,8 @@ private enum OpKind {
 	call
 }
 
-private template TypeEnum(U)
-{
-	import std.array : join;
-	import std.traits : FieldNameTuple;
-	mixin("enum TypeEnum { " ~ [FieldNameTuple!U].join(", ") ~ " }");
-}
+deprecated alias TypeEnum(U) = UnionFieldEnum!U;
+
 
 private string generateConstructors(U)()
 {
@@ -1168,49 +1029,46 @@ private string generateConstructors(U)()
 
 	string ret;
 
-	static if (__VERSION__ < 2072) {
-		// disable default construction if first type is not a null/Void type
-		static if (!is(FieldTypeTuple!U[0] == typeof(null)) && !is(FieldTypeTuple!U[0] == Void))
-		{
-			ret ~= q{
-				@disable this();
-			};
-		}
-	}
 
 	// normal type constructors
 	foreach (tname; UniqueTypeFields!U)
 		ret ~= q{
-			this(typeof(U.%s) value)
+			this(UnionType.FieldTypeByName!"%1$s" value)
 			{
-				m_data.rawEmplace(value);
-				m_kind = Kind.%s;
+				static if (isUnionType!(UnionType.FieldTypeByName!"%1$s"))
+					m_union.set!(Kind.%1$s)();
+				else
+					m_union.set!(Kind.%1$s)(value);
 			}
 
-			void opAssign(typeof(U.%s) value)
+			void opAssign(UnionType.FieldTypeByName!"%1$s" value)
 			{
-				if (m_kind != Kind.%s) {
-					// NOTE: destroy(this) doesn't work for some opDispatch-related reason
-					static if (is(typeof(&this.__xdtor)))
-						this.__xdtor();
-					m_data.rawEmplace(value);
-				} else {
-					trustedGet!"%s" = value;
-				}
-				m_kind = Kind.%s;
+				static if (isUnionType!(UnionType.FieldTypeByName!"%1$s"))
+					m_union.set!(Kind.%1$s)();
+				else
+					m_union.set!(Kind.%1$s)(value);
 			}
-		}.format(tname, tname, tname, tname, tname, tname);
+		}.format(tname);
 
 	// type constructors with explicit type tag
-	foreach (tname; TypeTuple!(UniqueTypeFields!U, AmbiguousTypeFields!U))
+	foreach (tname; AliasSeq!(UniqueTypeFields!U, AmbiguousTypeFields!U))
 		ret ~= q{
-			this(typeof(U.%s) value, Kind type)
+			this(UnionType.FieldTypeByName!"%1$s" value, Kind type)
 			{
-				assert(type.among!(%s), format("Invalid type ID for type %%s: %%s", typeof(U.%s).stringof, type));
-				m_data.rawEmplace(value);
-				m_kind = type;
+				switch (type) {
+					default: assert(false, format("Invalid type ID for type %%s: %%s", UnionType.FieldTypeByName!"%1$s".stringof, type));
+					foreach (i, n; TaggedUnion!U.fieldNames) {
+						static if (is(UnionType.FieldTypeByName!"%1$s" == UnionType.FieldTypes[i])) {
+							case __traits(getMember, Kind, n):
+								static if (isUnionType!(UnionType.FieldTypes[i]))
+									m_union.set!(__traits(getMember, Kind, n))();
+								else m_union.set!(__traits(getMember, Kind, n))(value);
+								return;
+						}
+					}
+				}
 			}
-		}.format(tname, [SameTypeFields!(U, tname)].map!(f => "Kind."~f).join(", "), tname);
+		}.format(tname);
 
 	return ret;
 }
@@ -1225,9 +1083,9 @@ private template UniqueTypeFields(U) {
 			enum name = FieldNameTuple!U[i];
 			alias T = Types[i];
 			static if (staticIndexOf!(T, Types) == i && staticIndexOf!(T, Types[i+1 .. $]) < 0)
-				alias impl = TypeTuple!(name, impl!(i+1));
-			else alias impl = TypeTuple!(impl!(i+1));
-		} else alias impl = TypeTuple!();
+				alias impl = AliasSeq!(name, impl!(i+1));
+			else alias impl = AliasSeq!(impl!(i+1));
+		} else alias impl = AliasSeq!();
 	}
 	alias UniqueTypeFields = impl!0;
 }
@@ -1242,9 +1100,9 @@ private template AmbiguousTypeFields(U) {
 			enum name = FieldNameTuple!U[i];
 			alias T = Types[i];
 			static if (staticIndexOf!(T, Types) == i && staticIndexOf!(T, Types[i+1 .. $]) >= 0)
-				alias impl = TypeTuple!(name, impl!(i+1));
+				alias impl = AliasSeq!(name, impl!(i+1));
 			else alias impl = impl!(i+1);
-		} else alias impl = TypeTuple!();
+		} else alias impl = AliasSeq!();
 	}
 	alias AmbiguousTypeFields = impl!0;
 }
@@ -1270,9 +1128,9 @@ private template SameTypeFields(U, string field) {
 		static if (i < Types.length) {
 			enum name = FieldNameTuple!U[i];
 			static if (is(Types[i] == T))
-				alias impl = TypeTuple!(name, impl!(i+1));
-			else alias impl = TypeTuple!(impl!(i+1));
-		} else alias impl = TypeTuple!();
+				alias impl = AliasSeq!(name, impl!(i+1));
+			else alias impl = AliasSeq!(impl!(i+1));
+		} else alias impl = AliasSeq!();
 	}
 	alias SameTypeFields = impl!0;
 }
@@ -1330,32 +1188,6 @@ unittest {
 private template isNoVariant(T) {
 	import std.variant : Variant;
 	enum isNoVariant = !is(T == Variant);
-}
-
-private void rawEmplace(T)(void[] dst, ref T src)
-{
-	T[] tdst = () @trusted { return cast(T[])dst[0 .. T.sizeof]; } ();
-	static if (is(T == class)) {
-		tdst[0] = src;
-	} else {
-		import std.conv : emplace;
-		emplace!T(&tdst[0]);
-		tdst[0] = src;
-	}
-}
-
-// std.algorithm.mutation.swap sometimes fails to compile due to
-// internal errors in hasElaborateAssign!T/isAssignable!T. This is probably
-// caused by cyclic dependencies. However, there is no reason to do these
-// checks in this context, so we just directly move the raw memory.
-private void rawSwap(T)(ref T a, ref T b)
-@trusted {
-	void[T.sizeof] tmp = void;
-	void[] ab = (cast(void*)&a)[0 .. T.sizeof];
-	void[] bb = (cast(void*)&b)[0 .. T.sizeof];
-	tmp[] = ab[];
-	ab[] = bb[];
-	bb[] = tmp[];
 }
 
 
