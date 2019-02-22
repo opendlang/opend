@@ -34,23 +34,23 @@ import derelict.util.loader;
 
 private
 {
-    import derelict.util.system;
+  import derelict.util.system;
 
-    static if(Derelict_OS_Windows)
-        enum libNames = "cudart32_65.dll,cudart64_65.dll";
-    else static if (Derelict_OS_Mac)
-        enum libNames = "libcudart.dylib,/usr/local/lib/libcudart.dylib";
-    else static if (Derelict_OS_Linux)
-    {
-        version(X86)
-            enum libNames = "libcudart.so,libcudart.so.6.5,libcudart.so.7.0,/opt/cuda/lib/libcudart.so";
-        else version(X86_64)
-            enum libNames = "libcudart.so,libcudart.so.6.5,libcudart.so.7.0,/opt/cuda/lib64/libcudart.so,/usr/lib/x86_64-linux-gnu/libcudart.so.6.5";
-        else
-            static assert(0, "Need to implement CUDA libNames for this arch.");
-    }
+  static if(Derelict_OS_Windows)
+    enum libNames = "cudart32_65.dll,cudart64_65.dll";
+  else static if (Derelict_OS_Mac)
+    enum libNames = "libcudart.dylib,/usr/local/lib/libcudart.dylib";
+  else static if (Derelict_OS_Linux)
+  {
+    version(X86)
+      enum libNames = "libcudart.so,libcudart.so.6.5,libcudart.so.7.0,/opt/cuda/lib/libcudart.so";
+    else version(X86_64)
+      enum libNames = "libcudart.so,libcudart.so.6.5,libcudart.so.7.0,/opt/cuda/lib64/libcudart.so,/usr/lib/x86_64-linux-gnu/libcudart.so.6.5";
     else
-        static assert(0, "Need to implement CUDA libNames for this operating system.");
+      static assert(0, "Need to implement CUDA libNames for this arch.");
+  }
+  else
+    static assert(0, "Need to implement CUDA libNames for this operating system.");
 }
 
 
@@ -59,10 +59,10 @@ private
 alias cudaRoundMode = int;
 enum : cudaRoundMode
 {
-    cudaRoundNearest,
-    cudaRoundZero,
-    cudaRoundPosInf,
-    cudaRoundMinInf
+  cudaRoundNearest,
+  cudaRoundZero,
+  cudaRoundPosInf,
+  cudaRoundMinInf
 }
 
 // driver_types.h
@@ -794,10 +794,10 @@ enum : cudaError
 alias cudaChannelFormatKind = int;
 enum : cudaChannelFormatKind
 {
-    cudaChannelFormatKindSigned           =   0,
-    cudaChannelFormatKindUnsigned         =   1,
-    cudaChannelFormatKindFloat            =   2,
-    cudaChannelFormatKindNone             =   3
+  cudaChannelFormatKindSigned           =   0,
+  cudaChannelFormatKindUnsigned         =   1,
+  cudaChannelFormatKindFloat            =   2,
+  cudaChannelFormatKindNone             =   3
 }
 
 /**
@@ -805,11 +805,11 @@ enum : cudaChannelFormatKind
  */
 struct cudaChannelFormatDesc
 {
-    int                   x;
-    int                   y;
-    int                   z;
-    int                   w;
-    cudaChannelFormatKind f;
+  int                   x;
+  int                   y;
+  int                   z;
+  int                   w;
+  cudaChannelFormatKind f;
 }
 
 /**
@@ -824,20 +824,20 @@ alias cudaMipmappedArray_const_t = const(void)*;
 alias cudaMemoryType = int;
 enum : cudaMemoryType
 {
-  cudaMemoryTypeUnregistered = 0, /**< Unregistered memory */
-  cudaMemoryTypeHost         = 1, /**< Host memory */
-  cudaMemoryTypeDevice       = 2, /**< Device memory */
-  cudaMemoryTypeManaged      = 3  /**< Managed memory */
+cudaMemoryTypeUnregistered = 0, /**< Unregistered memory */
+cudaMemoryTypeHost         = 1, /**< Host memory */
+cudaMemoryTypeDevice       = 2, /**< Device memory */
+cudaMemoryTypeManaged      = 3  /**< Managed memory */
 }
 
 alias cudaMemcpyKind = int;
 enum : cudaMemcpyKind
 {
-    cudaMemcpyHostToHost          =   0,
-    cudaMemcpyHostToDevice        =   1,
-    cudaMemcpyDeviceToHost        =   2,
-    cudaMemcpyDeviceToDevice      =   3,
-    cudaMemcpyDefault             =   4
+  cudaMemcpyHostToHost          =   0,
+  cudaMemcpyHostToDevice        =   1,
+  cudaMemcpyDeviceToHost        =   2,
+  cudaMemcpyDeviceToDevice      =   3,
+  cudaMemcpyDefault             =   4
 }
 
 /**
@@ -847,10 +847,10 @@ enum : cudaMemcpyKind
  */
 struct cudaPitchedPtr
 {
-    void   *ptr;
-    size_t  pitch;
-    size_t  xsize;
-    size_t  ysize;
+  void   *ptr;
+  size_t  pitch;
+  size_t  xsize;
+  size_t  ysize;
 }
 
 /**
@@ -860,9 +860,9 @@ struct cudaPitchedPtr
  */
 struct cudaExtent
 {
-    size_t width;
-    size_t height;
-    size_t depth;
+  size_t width;
+  size_t height;
+  size_t depth;
 }
 
 /**
@@ -872,9 +872,9 @@ struct cudaExtent
  */
 struct cudaPos
 {
-    size_t x;
-    size_t y;
-    size_t z;
+  size_t x;
+  size_t y;
+  size_t z;
 }
 
 /**
@@ -882,16 +882,16 @@ struct cudaPos
  */
 struct cudaMemcpy3DParms
 {
-    cudaArray_t     srcArray;
-    cudaPos         srcPos;
-    cudaPitchedPtr  srcPtr;
+  cudaArray_t     srcArray;
+  cudaPos         srcPos;
+  cudaPitchedPtr  srcPtr;
 
-    cudaArray_t     dstArray;
-    cudaPos         dstPos;
-    cudaPitchedPtr  dstPtr;
+  cudaArray_t     dstArray;
+  cudaPos         dstPos;
+  cudaPitchedPtr  dstPtr;
 
-    cudaExtent      extent;
-    cudaMemcpyKind  kind;
+  cudaExtent      extent;
+  cudaMemcpyKind  kind;
 }
 
 /**
@@ -899,28 +899,28 @@ struct cudaMemcpy3DParms
  */
 struct cudaMemcpy3DPeerParms
 {
-    cudaArray_t     srcArray;
-    cudaPos         srcPos;
-    cudaPitchedPtr  srcPtr;
-    int             srcDevice;
-    cudaArray_t     dstArray;
-    cudaPos         dstPos;
-    cudaPitchedPtr  dstPtr;
-    int             dstDevice;
-    cudaExtent      extent;
+  cudaArray_t     srcArray;
+  cudaPos         srcPos;
+  cudaPitchedPtr  srcPtr;
+  int             srcDevice;
+  cudaArray_t     dstArray;
+  cudaPos         dstPos;
+  cudaPitchedPtr  dstPtr;
+  int             dstDevice;
+  cudaExtent      extent;
 }
 
 /**
  * CUDA Memset node parameters
  */
 struct cudaMemsetParams {
-    void *dst;                              /**< Destination device pointer */
-    size_t pitch;                           /**< Pitch of destination device pointer. Unused if height is 1 */
-    uint value;                     /**< Value to be set */
-    uint elementSize;               /**< Size of each element in bytes. Must be 1, 2, or 4. */
-    size_t width;                           /**< Width in bytes, of the row */
-    size_t height;                          /**< Number of rows */
-};
+  void *dst;                              /**< Destination device pointer */
+  size_t pitch;                           /**< Pitch of destination device pointer. Unused if height is 1 */
+  uint value;                     /**< Value to be set */
+  uint elementSize;               /**< Size of each element in bytes. Must be 1, 2, or 4. */
+  size_t width;                           /**< Width in bytes, of the row */
+  size_t height;                          /**< Number of rows */
+}
 
 
 /**
@@ -937,99 +937,94 @@ extern(System) nothrow
  * CUDA host node parameters
  */
 struct cudaHostNodeParams {
-    cudaHostFn_t fn;    /**< The function to call when the node executes */
-    void* userData; /**< Argument to pass to the function */
-};
+  cudaHostFn_t fn;    /**< The function to call when the node executes */
+  void* userData; /**< Argument to pass to the function */
+}
 
 /**
  * Possible stream capture statuses returned by ::cudaStreamIsCapturing
  */
 alias cudaStreamCaptureStatus = int;
 enum : cudaStreamCaptureStatus {
-    cudaStreamCaptureStatusNone        = 0, /**< Stream is not capturing */
-    cudaStreamCaptureStatusActive      = 1, /**< Stream is actively capturing */
-    cudaStreamCaptureStatusInvalidated = 2  /**< Stream is part of a capture sequence that
+  cudaStreamCaptureStatusNone        = 0, /**< Stream is not capturing */
+  cudaStreamCaptureStatusActive      = 1, /**< Stream is actively capturing */
+  cudaStreamCaptureStatusInvalidated = 2  /**< Stream is part of a capture sequence that
                                                    has been invalidated, but not terminated */
-};
+}
 
 struct cudaGraphicsResource;
 
 alias cudaGraphicsRegisterFlags = int;
-enum : cudaGraphicsRegisterFlags
-{
-    cudaGraphicsRegisterFlagsNone             = 0,
-    cudaGraphicsRegisterFlagsReadOnly         = 1,
-    cudaGraphicsRegisterFlagsWriteDiscard     = 2,
-    cudaGraphicsRegisterFlagsSurfaceLoadStore = 4,
-    cudaGraphicsRegisterFlagsTextureGather    = 8
+enum : cudaGraphicsRegisterFlags{
+  cudaGraphicsRegisterFlagsNone             = 0,
+  cudaGraphicsRegisterFlagsReadOnly         = 1,
+  cudaGraphicsRegisterFlagsWriteDiscard     = 2,
+  cudaGraphicsRegisterFlagsSurfaceLoadStore = 4,
+  cudaGraphicsRegisterFlagsTextureGather    = 8
 }
 
 alias cudaGraphicsMapFlags = int;
-enum : cudaGraphicsMapFlags
-{
-    cudaGraphicsMapFlagsNone         = 0,
-    cudaGraphicsMapFlagsReadOnly     = 1,
-    cudaGraphicsMapFlagsWriteDiscard = 2
+enum : cudaGraphicsMapFlags{
+  cudaGraphicsMapFlagsNone         = 0,
+  cudaGraphicsMapFlagsReadOnly     = 1,
+  cudaGraphicsMapFlagsWriteDiscard = 2
 }
 
 alias cudaGraphicsCubeFace = int;
-enum : cudaGraphicsCubeFace
-{
-    cudaGraphicsCubeFacePositiveX = 0x00,
-    cudaGraphicsCubeFaceNegativeX = 0x01,
-    cudaGraphicsCubeFacePositiveY = 0x02,
-    cudaGraphicsCubeFaceNegativeY = 0x03,
-    cudaGraphicsCubeFacePositiveZ = 0x04,
-    cudaGraphicsCubeFaceNegativeZ = 0x05
+enum : cudaGraphicsCubeFace{
+  cudaGraphicsCubeFacePositiveX = 0x00,
+  cudaGraphicsCubeFaceNegativeX = 0x01,
+  cudaGraphicsCubeFacePositiveY = 0x02,
+  cudaGraphicsCubeFaceNegativeY = 0x03,
+  cudaGraphicsCubeFacePositiveZ = 0x04,
+  cudaGraphicsCubeFaceNegativeZ = 0x05
 }
 
 alias cudaResourceType = int;
-enum : cudaResourceType
-{
-    cudaResourceTypeArray          = 0x00,
-    cudaResourceTypeMipmappedArray = 0x01,
-    cudaResourceTypeLinear         = 0x02,
-    cudaResourceTypePitch2D        = 0x03
+enum : cudaResourceType{
+  cudaResourceTypeArray          = 0x00,
+  cudaResourceTypeMipmappedArray = 0x01,
+  cudaResourceTypeLinear         = 0x02,
+  cudaResourceTypePitch2D        = 0x03
 }
 
 alias cudaResourceViewFormat = int;
-enum : cudaResourceViewFormat
-{
-    cudaResViewFormatNone                      = 0x00,
-    cudaResViewFormatUnsignedChar1             = 0x01,
-    cudaResViewFormatUnsignedChar2             = 0x02,
-    cudaResViewFormatUnsignedChar4             = 0x03,
-    cudaResViewFormatSignedChar1               = 0x04,
-    cudaResViewFormatSignedChar2               = 0x05,
-    cudaResViewFormatSignedChar4               = 0x06,
-    cudaResViewFormatUnsignedShort1            = 0x07,
-    cudaResViewFormatUnsignedShort2            = 0x08,
-    cudaResViewFormatUnsignedShort4            = 0x09,
-    cudaResViewFormatSignedShort1              = 0x0a,
-    cudaResViewFormatSignedShort2              = 0x0b,
-    cudaResViewFormatSignedShort4              = 0x0c,
-    cudaResViewFormatUnsignedInt1              = 0x0d,
-    cudaResViewFormatUnsignedInt2              = 0x0e,
-    cudaResViewFormatUnsignedInt4              = 0x0f,
-    cudaResViewFormatSignedInt1                = 0x10,
-    cudaResViewFormatSignedInt2                = 0x11,
-    cudaResViewFormatSignedInt4                = 0x12,
-    cudaResViewFormatHalf1                     = 0x13,
-    cudaResViewFormatHalf2                     = 0x14,
-    cudaResViewFormatHalf4                     = 0x15,
-    cudaResViewFormatFloat1                    = 0x16,
-    cudaResViewFormatFloat2                    = 0x17,
-    cudaResViewFormatFloat4                    = 0x18,
-    cudaResViewFormatUnsignedBlockCompressed1  = 0x19,
-    cudaResViewFormatUnsignedBlockCompressed2  = 0x1a,
-    cudaResViewFormatUnsignedBlockCompressed3  = 0x1b,
-    cudaResViewFormatUnsignedBlockCompressed4  = 0x1c,
-    cudaResViewFormatSignedBlockCompressed4    = 0x1d,
-    cudaResViewFormatUnsignedBlockCompressed5  = 0x1e,
-    cudaResViewFormatSignedBlockCompressed5    = 0x1f,
-    cudaResViewFormatUnsignedBlockCompressed6H = 0x20,
-    cudaResViewFormatSignedBlockCompressed6H   = 0x21,
-    cudaResViewFormatUnsignedBlockCompressed7  = 0x22
+enum : cudaResourceViewFormat{
+  cudaResViewFormatNone                      = 0x00,
+  cudaResViewFormatUnsignedChar1             = 0x01,
+  cudaResViewFormatUnsignedChar2             = 0x02,
+  cudaResViewFormatUnsignedChar4             = 0x03,
+  cudaResViewFormatSignedChar1               = 0x04,
+  cudaResViewFormatSignedChar2               = 0x05,
+  cudaResViewFormatSignedChar4               = 0x06,
+  cudaResViewFormatUnsignedShort1            = 0x07,
+  cudaResViewFormatUnsignedShort2            = 0x08,
+  cudaResViewFormatUnsignedShort4            = 0x09,
+  cudaResViewFormatSignedShort1              = 0x0a,
+  cudaResViewFormatSignedShort2              = 0x0b,
+  cudaResViewFormatSignedShort4              = 0x0c,
+  cudaResViewFormatUnsignedInt1              = 0x0d,
+  cudaResViewFormatUnsignedInt2              = 0x0e,
+  cudaResViewFormatUnsignedInt4              = 0x0f,
+  cudaResViewFormatSignedInt1                = 0x10,
+  cudaResViewFormatSignedInt2                = 0x11,
+  cudaResViewFormatSignedInt4                = 0x12,
+  cudaResViewFormatHalf1                     = 0x13,
+  cudaResViewFormatHalf2                     = 0x14,
+  cudaResViewFormatHalf4                     = 0x15,
+  cudaResViewFormatFloat1                    = 0x16,
+  cudaResViewFormatFloat2                    = 0x17,
+  cudaResViewFormatFloat4                    = 0x18,
+  cudaResViewFormatUnsignedBlockCompressed1  = 0x19,
+  cudaResViewFormatUnsignedBlockCompressed2  = 0x1a,
+  cudaResViewFormatUnsignedBlockCompressed3  = 0x1b,
+  cudaResViewFormatUnsignedBlockCompressed4  = 0x1c,
+  cudaResViewFormatSignedBlockCompressed4    = 0x1d,
+  cudaResViewFormatUnsignedBlockCompressed5  = 0x1e,
+  cudaResViewFormatSignedBlockCompressed5    = 0x1f,
+  cudaResViewFormatUnsignedBlockCompressed6H = 0x20,
+  cudaResViewFormatSignedBlockCompressed6H   = 0x21,
+  cudaResViewFormatUnsignedBlockCompressed7  = 0x22
 }
 
 /**
@@ -1037,109 +1032,104 @@ enum : cudaResourceViewFormat
  */
 struct cudaResourceDesc
 {
-    cudaResourceType resType;
+  cudaResourceType resType;
 
-    union res_st
+  union res_st
+  {
+    struct array_st
     {
-        struct array_st
-        {
-            cudaArray_t array;
-        }
-        array_st array;
-
-        struct mipmap_st
-        {
-            cudaMipmappedArray_t mipmap;
-        }
-        mipmap_st mipmap;
-
-        struct linear_st
-        {
-            void *devPtr;
-            cudaChannelFormatDesc desc;
-            size_t sizeInBytes;
-        }
-        linear_st linear;
-
-        struct pitch2D_st
-        {
-            void *devPtr;
-            cudaChannelFormatDesc desc;
-            size_t width;
-            size_t height;
-            size_t pitchInBytes;
-        }
-        pitch2D_st pitch2D;
+      cudaArray_t array;
     }
-    res_st res;
+    array_st array;
+
+    struct mipmap_st
+    {
+      cudaMipmappedArray_t mipmap;
+    }
+    mipmap_st mipmap;
+
+    struct linear_st
+    {
+      void *devPtr;
+      cudaChannelFormatDesc desc;
+      size_t sizeInBytes;
+    }
+    linear_st linear;
+
+    struct pitch2D_st
+    {
+      void *devPtr;
+      cudaChannelFormatDesc desc;
+      size_t width;
+      size_t height;
+      size_t pitchInBytes;
+    }
+    pitch2D_st pitch2D;
+  }
+  res_st res;
 }
 
 /**
  * CUDA resource view descriptor
  */
-struct cudaResourceViewDesc
-{
-    cudaResourceViewFormat format;
-    size_t                 width;
-    size_t                 height;
-    size_t                 depth;
-    uint                   firstMipmapLevel;
-    uint                   lastMipmapLevel;
-    uint                   firstLayer;
-    uint                   lastLayer;
+struct cudaResourceViewDesc {
+  cudaResourceViewFormat format;
+  size_t                 width;
+  size_t                 height;
+  size_t                 depth;
+  uint                   firstMipmapLevel;
+  uint                   lastMipmapLevel;
+  uint                   firstLayer;
+  uint                   lastLayer;
 }
 
 /**
  * CUDA pointer attributes
  */
-struct cudaPointerAttributes
-{
-    cudaMemoryType memoryType;
-    cudaMemoryType type;
-    int device;
-    void *devicePointer;
-    void *hostPointer;
-    int isManaged;
+struct cudaPointerAttributes {
+  cudaMemoryType memoryType;
+  cudaMemoryType type;
+  int device;
+  void *devicePointer;
+  void *hostPointer;
+  int isManaged;
 }
 
 /**
  * CUDA function attributes
  */
-struct cudaFuncAttributes
-{
-   size_t sharedSizeBytes;
-   size_t constSizeBytes;
-   size_t localSizeBytes;
-   int maxThreadsPerBlock;
-   int numRegs;
-   int ptxVersion;
-   int binaryVersion;
-   int cacheModeCA;
-   int maxDynamicSharedSizeBytes;
-   int preferredShmemCarveout;
+struct cudaFuncAttributes {
+ size_t sharedSizeBytes;
+ size_t constSizeBytes;
+ size_t localSizeBytes;
+ int maxThreadsPerBlock;
+ int numRegs;
+ int ptxVersion;
+ int binaryVersion;
+ int cacheModeCA;
+ int maxDynamicSharedSizeBytes;
+ int preferredShmemCarveout;
 }
 
 /**
  * CUDA function attributes that can be set using cudaFuncSetAttribute
  */
 alias cudaFuncCache = int;
-enum : cudaFuncCache
-{
-    cudaFuncCachePreferNone   = 0,
-    cudaFuncCachePreferShared = 1,
-    cudaFuncCachePreferL1     = 2,
-    cudaFuncCachePreferEqual  = 3
+enum : cudaFuncCache {
+  cudaFuncCachePreferNone   = 0,
+  cudaFuncCachePreferShared = 1,
+  cudaFuncCachePreferL1     = 2,
+  cudaFuncCachePreferEqual  = 3
 }
 
 /**
  * CUDA shared memory configuration
  */
 alias cudaSharedMemConfig = int;
-enum : cudaSharedMemConfig
-{
-    cudaSharedMemBankSizeDefault   = 0,
-    cudaSharedMemBankSizeFourByte  = 1,
-    cudaSharedMemBankSizeEightByte = 2
+enum : cudaSharedMemConfig {
+  cudaSharedMemBankSizeDefault   = 0,
+  cudaSharedMemBankSizeFourByte  = 1,
+  cudaSharedMemBankSizeEightByte = 2
 }
 
 /**
@@ -1156,12 +1146,11 @@ enum : cudaSharedCarveout {
  * CUDA device compute modes
  */
 alias cudaComputeMode = int;
-enum : cudaComputeMode
-{
-    cudaComputeModeDefault          = 0,
-    cudaComputeModeExclusive        = 1,
-    cudaComputeModeProhibited       = 2,
-    cudaComputeModeExclusiveProcess = 3
+enum : cudaComputeMode {
+  cudaComputeModeDefault          = 0,
+  cudaComputeModeExclusive        = 1,
+  cudaComputeModeProhibited       = 2,
+  cudaComputeModeExclusiveProcess = 3
 }
 
 
@@ -1169,8 +1158,7 @@ enum : cudaComputeMode
  * CUDA Limits
  */
 alias cudaLimit = int;
-enum : cudaLimit
-{
+enum : cudaLimit {
   cudaLimitStackSize                    = 0x00,
   cudaLimitPrintfFifoSize               = 0x01,
   cudaLimitMallocHeapSize               = 0x02,
@@ -1183,8 +1171,7 @@ enum : cudaLimit
  * CUDA Memory Advise values
  */
 alias cudaMemoryAdvise = int;
-enum : cudaMemoryAdvise
-{
+enum : cudaMemoryAdvise {
   cudaMemAdviseSetReadMostly          = 1, /**< Data will mostly be read and only occassionally be written to */
   cudaMemAdviseUnsetReadMostly        = 2, /**< Undo the effect of ::cudaMemAdviseSetReadMostly */
   cudaMemAdviseSetPreferredLocation   = 3, /**< Set the preferred location for the data as the specified device */
@@ -1197,8 +1184,7 @@ enum : cudaMemoryAdvise
  * CUDA range attributes
  */
 alias cudaMemRangeAttribute = int;
-enum : cudaMemRangeAttribute
-{
+enum : cudaMemRangeAttribute {
   cudaMemRangeAttributeReadMostly           = 1, /**< Whether the range will mostly be read and only occassionally be written to */
   cudaMemRangeAttributePreferredLocation    = 2, /**< The preferred location of the range */
   cudaMemRangeAttributeAccessedBy           = 3, /**< Memory range has ::cudaMemAdviseSetAccessedBy set for specified device */
@@ -1209,18 +1195,16 @@ enum : cudaMemRangeAttribute
  * CUDA Profiler Output modes
  */
 alias cudaOutputMode = int;
-enum : cudaOutputMode
-{
-    cudaKeyValuePair    = 0x00,
-    cudaCSV             = 0x01
+enum : cudaOutputMode {
+  cudaKeyValuePair    = 0x00,
+  cudaCSV             = 0x01
 }
 
 /**
  * CUDA device attributes
  */
 alias cudaDeviceAttr = int;
-enum : cudaDeviceAttr
-{
+enum : cudaDeviceAttr {
   cudaDevAttrMaxThreadsPerBlock             = 1,  /**< Maximum number of threads per block */
   cudaDevAttrMaxBlockDimX                   = 2,  /**< Maximum block dimension X */
   cudaDevAttrMaxBlockDimY                   = 3,  /**< Maximum block dimension Y */
@@ -1328,10 +1312,10 @@ enum : cudaDeviceAttr
  */
 alias cudaDeviceP2PAttr = int;
 enum : cudaDeviceP2PAttr {
-    cudaDevP2PAttrPerformanceRank              = 1, /**< A relative value indicating the performance of the link between two devices */
-    cudaDevP2PAttrAccessSupported              = 2, /**< Peer access is enabled */
-    cudaDevP2PAttrNativeAtomicSupported        = 3, /**< Native atomic operation over the link supported */
-    cudaDevP2PAttrCudaArrayAccessSupported     = 4  /**< Accessing CUDA arrays over the link supported */
+  cudaDevP2PAttrPerformanceRank              = 1, /**< A relative value indicating the performance of the link between two devices */
+  cudaDevP2PAttrAccessSupported              = 2, /**< Peer access is enabled */
+  cudaDevP2PAttrNativeAtomicSupported        = 3, /**< Native atomic operation over the link supported */
+  cudaDevP2PAttrCudaArrayAccessSupported     = 4  /**< Accessing CUDA arrays over the link supported */
 }
 
 /**
@@ -1506,12 +1490,12 @@ enum CUDA_IPC_HANDLE_SIZE = 64;
 
 struct cudaIpcEventHandle_t
 {
-    char[CUDA_IPC_HANDLE_SIZE] reserved;
+  char[CUDA_IPC_HANDLE_SIZE] reserved;
 }
 
 struct cudaIpcMemHandle_t
 {
-    char[CUDA_IPC_HANDLE_SIZE] reserved;
+  char[CUDA_IPC_HANDLE_SIZE] reserved;
 }
 
 
@@ -1575,46 +1559,46 @@ struct cudaExternalMemoryHandleDesc {
  * External memory buffer descriptor
  */
 struct cudaExternalMemoryBufferDesc {
-    /**
-     * Offset into the memory object where the buffer's base is
-     */
-    ulong offset;
-    /**
-     * Size of the buffer
-     */
-    ulong size;
-    /**
-     * Flags reserved for future use. Must be zero.
-     */
-    uint flags;
+  /**
+   * Offset into the memory object where the buffer's base is
+   */
+  ulong offset;
+  /**
+   * Size of the buffer
+   */
+  ulong size;
+  /**
+   * Flags reserved for future use. Must be zero.
+   */
+  uint flags;
 }
 
 /**
  * External memory mipmap descriptor
  */
 struct cudaExternalMemoryMipmappedArrayDesc {
-    /**
-     * Offset into the memory object where the base level of the
-     * mipmap chain is.
-     */
-    long offset;
-    /**
-     * Format of base level of the mipmap chain
-     */
-    cudaChannelFormatDesc formatDesc;
-    /**
-     * Dimensions of base level of the mipmap chain
-     */
-    cudaExtent extent;
-    /**
-     * Flags associated with CUDA mipmapped arrays.
-     * See ::cudaMallocMipmappedArray
-     */
-    uint flags;
-    /**
-     * Total number of levels in the mipmap chain
-     */
-    uint numLevels;
+  /**
+   * Offset into the memory object where the base level of the
+   * mipmap chain is.
+   */
+  long offset;
+  /**
+   * Format of base level of the mipmap chain
+   */
+  cudaChannelFormatDesc formatDesc;
+  /**
+   * Dimensions of base level of the mipmap chain
+   */
+  cudaExtent extent;
+  /**
+   * Flags associated with CUDA mipmapped arrays.
+   * See ::cudaMallocMipmappedArray
+   */
+  uint flags;
+  /**
+   * Total number of levels in the mipmap chain
+   */
+  uint numLevels;
 }
 
 /**
@@ -1646,95 +1630,95 @@ enum : cudaExternalSemaphoreHandleType {
  * External semaphore handle descriptor
  */
 struct cudaExternalSemaphoreHandleDesc {
+  /**
+   * Type of the handle
+   */
+  cudaExternalSemaphoreHandleType type;
+  union handle_st {
     /**
-     * Type of the handle
+     * File descriptor referencing the semaphore object. Valid
+     * when type is ::cudaExternalSemaphoreHandleTypeOpaqueFd
      */
-    cudaExternalSemaphoreHandleType type;
-    union handle_st {
-        /**
-         * File descriptor referencing the semaphore object. Valid
-         * when type is ::cudaExternalSemaphoreHandleTypeOpaqueFd
-         */
-        int fd;
-        /**
-         * Win32 handle referencing the semaphore object. Valid when
-         * type is one of the following:
-         * - ::cudaExternalSemaphoreHandleTypeOpaqueWin32
-         * - ::cudaExternalSemaphoreHandleTypeOpaqueWin32Kmt
-         * - ::cudaExternalSemaphoreHandleTypeD3D12Fence
-         * Exactly one of 'handle' and 'name' must be non-NULL. If
-         * type is ::cudaExternalSemaphoreHandleTypeOpaqueWin32Kmt
-         * then 'name' must be NULL.
-         */
-        struct win32_st {
-            /**
-             * Valid NT handle. Must be NULL if 'name' is non-NULL
-             */
-            void *handle;
-            /**
-             * Name of a valid synchronization primitive.
-             * Must be NULL if 'handle' is non-NULL.
-             */
-            const void *name;
-        }
-
-        win32_st win32;
+    int fd;
+    /**
+     * Win32 handle referencing the semaphore object. Valid when
+     * type is one of the following:
+     * - ::cudaExternalSemaphoreHandleTypeOpaqueWin32
+     * - ::cudaExternalSemaphoreHandleTypeOpaqueWin32Kmt
+     * - ::cudaExternalSemaphoreHandleTypeD3D12Fence
+     * Exactly one of 'handle' and 'name' must be non-NULL. If
+     * type is ::cudaExternalSemaphoreHandleTypeOpaqueWin32Kmt
+     * then 'name' must be NULL.
+     */
+    struct win32_st {
+      /**
+       * Valid NT handle. Must be NULL if 'name' is non-NULL
+       */
+      void *handle;
+      /**
+       * Name of a valid synchronization primitive.
+       * Must be NULL if 'handle' is non-NULL.
+       */
+      const void *name;
     }
 
-    handle_st handle;
-    /**
-     * Flags reserved for the future. Must be zero.
-     */
-    uint flags;
-};
+    win32_st win32;
+  }
+
+  handle_st handle;
+  /**
+   * Flags reserved for the future. Must be zero.
+   */
+  uint flags;
+}
 
 /**
  * External semaphore  signal parameters
  */
 struct cudaExternalSemaphoreSignalParams {
-    union params_st {
-        /**
-         * Parameters for fence objects
-         */
-        struct fence_st {
-            /**
-             * Value of fence to be signaled
-             */
-            ulong value;
-        }
-
-        fence_st fence;
+  union params_st {
+    /**
+     * Parameters for fence objects
+     */
+    struct fence_st {
+      /**
+       * Value of fence to be signaled
+       */
+      ulong value;
     }
 
-    params_st params;
-    /**
-     * Flags reserved for the future. Must be zero.
-     */
-    uint flags;
-};
+    fence_st fence;
+  }
+
+  params_st params;
+  /**
+   * Flags reserved for the future. Must be zero.
+   */
+  uint flags;
+}
 
 /**
 * External semaphore wait parameters
 */
 struct cudaExternalSemaphoreWaitParams {
-    union params_st {
-        /**
-        * Parameters for fence objects
-        */
-        struct fence_st {
-            /**
-            * Value of fence to be waited on
-            */
-            ulong value;
-        }
-        fence_st fence;
-    }
-    params_st params;
+  union params_st {
     /**
-    * Flags reserved for the future. Must be zero.
+    * Parameters for fence objects
     */
-    uint flags;
-};
+    struct fence_st {
+      /**
+      * Value of fence to be waited on
+      */
+      ulong value;
+    }
+    fence_st fence;
+  }
+  params_st params;
+  /**
+  * Flags reserved for the future. Must be zero.
+  */
+  uint flags;
+}
 
 alias cudaError_t = cudaError;
 alias cudaStream_t = void*;
@@ -1818,8 +1802,7 @@ enum cudaSurfaceTypeCubemapLayered  = 0xFC;
  * CUDA Surface boundary modes
  */
 alias cudaSurfaceBoundaryMode = int;
-enum : cudaSurfaceBoundaryMode
-{
+enum : cudaSurfaceBoundaryMode {
   cudaBoundaryModeZero  = 0,
   cudaBoundaryModeClamp = 1,
   cudaBoundaryModeTrap  = 2
@@ -1829,8 +1812,7 @@ enum : cudaSurfaceBoundaryMode
  * CUDA Surface format modes
  */
 alias cudaSurfaceFormatMode = int;
-enum : cudaSurfaceFormatMode
-{
+enum : cudaSurfaceFormatMode {
   cudaFormatModeForced = 0,
   cudaFormatModeAuto = 1
 }
@@ -1838,8 +1820,7 @@ enum : cudaSurfaceFormatMode
 /**
  * CUDA Surface reference
  */
-struct surfaceReference
-{
+struct surfaceReference {
   cudaChannelFormatDesc channelDesc;
 }
 
@@ -1863,8 +1844,7 @@ enum cudaTextureTypeCubemapLayered  = 0xFC;
  * CUDA texture address modes
  */
 alias cudaTextureAddressMode = int;
-enum : cudaTextureAddressMode
-{
+enum : cudaTextureAddressMode {
   cudaAddressModeWrap   = 0,
   cudaAddressModeClamp  = 1,
   cudaAddressModeMirror = 2,
@@ -1875,8 +1855,7 @@ enum : cudaTextureAddressMode
  * CUDA texture filter modes
  */
 alias cudaTextureFilterMode = int;
-enum : cudaTextureFilterMode
-{
+enum : cudaTextureFilterMode {
   cudaFilterModePoint  = 0,
   cudaFilterModeLinear = 1
 }
@@ -1885,8 +1864,7 @@ enum : cudaTextureFilterMode
  * CUDA texture read modes
  */
 alias cudaTextureReadMode = int;
-enum : cudaTextureReadMode
-{
+enum : cudaTextureReadMode {
   cudaReadModeElementType     = 0,
   cudaReadModeNormalizedFloat = 1
 }
@@ -1894,8 +1872,7 @@ enum : cudaTextureReadMode
 /**
  * CUDA texture reference
  */
-struct textureReference
-{
+struct textureReference {
   int                          normalized;
   cudaTextureFilterMode   filterMode;
   cudaTextureAddressMode[3]  addressMode;
@@ -1912,8 +1889,7 @@ struct textureReference
 /**
  * CUDA texture descriptor
  */
-struct cudaTextureDesc
-{
+struct cudaTextureDesc {
   cudaTextureAddressMode[3] addressMode;
   cudaTextureFilterMode  filterMode;
   cudaTextureReadMode    readMode;
@@ -1936,24 +1912,21 @@ alias cudaTextureObject_t = ulong;
 // vector_types.h
 // only dim3 translated
 // TODO(naetherm): Are the other required as well?
-struct dim3
-{
-    uint x = 1,
-         y = 1,
-         z = 1;
-};
+struct dim3 {
+  uint x = 1,
+       y = 1,
+       z = 1;
+}
 
 
 // cuda_runtime_api.h
 
-extern(System) nothrow
-{
-    alias cudaStreamCallback_t = void function(cudaStream_t stream, cudaError_t status, void *userData);
+extern(System) nothrow {
+  alias cudaStreamCallback_t = void function(cudaStream_t stream, cudaError_t status, void *userData);
 }
 
 
-extern(System) @nogc nothrow
-{
+extern(System) @nogc nothrow {
   alias da_cudaDeviceReset = cudaError_t function(void);
   alias da_cudaDeviceSynchronize = cudaError_t function(void);
   alias da_cudaDeviceSetLimit = cudaError_t function(enum cudaLimit limit, size_t value);
