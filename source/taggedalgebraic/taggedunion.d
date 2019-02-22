@@ -653,7 +653,7 @@ unittest {
 	assert(n.listValue == [Node(12), Node("foo")]);
 }
 
-private template UnionFieldEnum(U)
+package template UnionFieldEnum(U)
 {
 	static if (is(U == enum)) alias UnionFieldEnum = U;
 	else {
@@ -665,10 +665,10 @@ private template UnionFieldEnum(U)
 
 deprecated alias TypeEnum(U) = UnionFieldEnum!U;
 
-private alias UnionKindTypes(FieldEnum) = staticMap!(TypeOf, EnumMembers!FieldEnum);
-private alias UnionKindNames(FieldEnum) = AliasSeq!(__traits(allMembers, FieldEnum));
+package alias UnionKindTypes(FieldEnum) = staticMap!(TypeOf, EnumMembers!FieldEnum);
+package alias UnionKindNames(FieldEnum) = AliasSeq!(__traits(allMembers, FieldEnum));
 
-private template UniqueTypes(Types...) {
+package template UniqueTypes(Types...) {
 	template impl(size_t i) {
 		static if (i < Types.length) {
 			alias T = Types[i];
@@ -680,7 +680,7 @@ private template UniqueTypes(Types...) {
 	alias UniqueTypes = impl!0;
 }
 
-private template AmbiguousTypes(Types...) {
+package template AmbiguousTypes(Types...) {
 	template impl(size_t i) {
 		static if (i < Types.length) {
 			alias T = Types[i];
@@ -689,7 +689,7 @@ private template AmbiguousTypes(Types...) {
 			else alias impl = impl!(i+1);
 		} else alias impl = AliasSeq!();
 	}
-	alias AmbiguousTypeFields = impl!0;
+	alias AmbiguousTypes = impl!0;
 }
 
 
