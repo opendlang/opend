@@ -203,7 +203,20 @@ struct TaggedUnion(U) if (is(U == union) || is(U == struct) || is(U == enum))
 		} else {
 			mixin("static @property TaggedUnion "~name~"() { TaggedUnion tu; tu.set!(Kind."~name~"); return tu; }");
 		}
+	}
 
+	/** Checks whether the currently stored value has a given type.
+	*/
+	@property bool hasType(T)()
+	const {
+		static assert(staticIndexOf!(T, FieldTypes) >= 0, "Type "~T.stringof~ " not part of "~FieldTypes.stringof);
+
+		final switch (this.kind) {
+			static foreach (i, n; fieldNames) {
+				case __traits(getMember, Kind, n):
+					return is(FieldTypes[i] == T);
+			}
+		}
 	}
 
 	/** Accesses the contained value by reference.
@@ -237,12 +250,13 @@ struct TaggedUnion(U) if (is(U == union) || is(U == struct) || is(U == enum))
 		See_Also: `set`, `opAssign`
 	*/
 	@property ref inout(T) value(T)() inout
-		if (staticIndexOf!(T, FieldTypes) >= 0)
 	{
+		static assert(staticIndexOf!(T, FieldTypes) >= 0, "Type "~T.stringof~ " not part of "~FieldTypes.stringof);
+
 		final switch (this.kind) {
-			static foreach (n; fieldNames) {
+			static foreach (i, n; fieldNames) {
 				case __traits(getMember, Kind, n):
-					static if (is(FieldTypes[__traits(getMember, Kind, n)] == T))
+					static if (is(FieldTypes[i] == T))
 						return trustedGet!T;
 					else assert(false, "Attempting to get type "~T.stringof
 						~ " from a TaggedUnion with type "
@@ -364,6 +378,22 @@ unittest { // test for name clashes
 	assert(tu.stringValue == "foo");
 }
 
+unittest { // test woraround for Phobos issue 19696
+	struct T {
+		struct F { int num; }
+		alias Payload = TaggedUnion!F;
+		Payload payload;
+		alias payload this;
+	}
+
+	struct U {
+		T t;
+	}
+
+	alias TU = TaggedUnion!U;
+	static assert(is(TU.FieldTypes[0] == T));
+}
+
 
 /** Dispatches the value contained on a `TaggedUnion` to a set of visitors.
 
@@ -383,6 +413,8 @@ template visit(VISITORS...)
 	auto visit(TU)(auto ref TU tu)
 		if (isInstanceOf!(TaggedUnion, TU))
 	{
+		alias val = validateHandlers!(TU, VISITORS);
+
 		final switch (tu.kind) {
 			static foreach (k; EnumMembers!(TU.Kind)) {
 				case k: {
@@ -402,23 +434,27 @@ template visit(VISITORS...)
 
 ///
 unittest {
-	union U {
-		int number;
-		string text;
+	static if (__VERSION__ >= 2081) {
+		import std.conv : to;
+
+		union U {
+			int number;
+			string text;
+		}
+		alias TU = TaggedUnion!U;
+
+		auto tu = TU.number(42);
+		tu.visit!(
+			(int n) { assert(n == 42); },
+			(string s) { assert(false); }
+		);
+
+		assert(tu.visit!((v) => to!int(v)) == 42);
+
+		tu.setText("43");
+
+		assert(tu.visit!((v) => to!int(v)) == 43);
 	}
-	alias TU = TaggedUnion!U;
-
-	auto tu = TU.number(42);
-	tu.visit!(
-		(int n) { assert(n == 42); },
-		(string s) { assert(false); }
-	);
-
-	assert(tu.visit!((v) => to!int(v)) == 42);
-
-	tu.setText("43");
-
-	assert(tu.visit!((v) => to!int(v)) == 43);
 }
 
 unittest {
@@ -431,7 +467,6 @@ unittest {
 
 	//
 	static assert(is(typeof(u.visit!((int) {}, (float) {}, () {}))));
-	u.visit!((_) {}, () {});
 	static assert(is(typeof(u.visit!((_) {}, () {}))));
 	static assert(is(typeof(u.visit!((_) {}, (float) {}, () {}))));
 	static assert(is(typeof(u.visit!((float) {}, (_) {}, () {}))));
@@ -446,14 +481,6 @@ unittest {
 
 	// TODO: error out for superfluous generic handlers
 	//static assert(!is(typeof(u.visit!((int) {}, (float) {}, () {}, (_) {})))); // superfluous generic handler
-}
-
-
-// workaround for "template to is not defined" error in the unit test above
-// happens on DMD 2.080 and below
-private U to(U, T)(T val) {
-	static import std.conv;
-	return std.conv.to!U(val);
 }
 
 
@@ -512,20 +539,23 @@ private template validateHandlers(TU, VISITORS...)
 	}
 }
 
-private template matchesType(alias fun, T)
-{
-	static if (isSomeFunction!fun) {
-		alias Params = ParameterTypeTuple!fun;
-		static if (Params.length == 0 && is(T == void)) enum matchesType = true;
-		else static if (Params.length == 1 && is(T == Params[0])) enum matchesType = true;
-		else enum matchesType = false;
-	} else static if (!is(T == void)) {
-		static if (isSomeFunction!(fun!T)) {
-			alias Parms = ParameterTypeTuple!fun;
-			static if (Params.length == 1 && is(T == Params[0])) enum matchesType = true;
+private template matchesType(alias fun) {
+	import std.traits : ParameterTypeTuple, isSomeFunction;
+
+	template matchesType(T) {
+		static if (isSomeFunction!fun) {
+			alias Params = ParameterTypeTuple!fun;
+			static if (Params.length == 0 && isUnitType!T) enum matchesType = true;
+			else static if (Params.length == 1 && is(T == Params[0])) enum matchesType = true;
 			else enum matchesType = false;
+		} else static if (!isUnitType!T) {
+			static if (isSomeFunction!(fun!T)) {
+				alias Params = ParameterTypeTuple!(fun!T);
+				static if (Params.length == 1 && is(T == Params[0])) enum matchesType = true;
+				else enum matchesType = false;
+			} else enum matchesType = false;
 		} else enum matchesType = false;
-	} else enum matchesType = false;
+	}
 }
 
 private template selectHandler(T, VISITORS...)
@@ -599,7 +629,17 @@ template TypeOf(alias kind)
 		else alias FT = uda[0];
 	}
 
-	alias TypeOf = ReplaceType!(This, U, FT);
+	// NOTE: ReplaceType has issues with certain types, such as a class
+	//       declaration like this: class C : D!C {}
+	//       For this reason, we test first if it compiles and only then use it.
+	//       It also replaces a type with the contained "alias this" type under
+	//       certain conditions, so we make a second check to see heuristically
+	//       if This is actually present in FT
+	//
+	//       Phobos issues: 19696, 19697
+	static if (is(ReplaceType!(This, U, FT)) && !is(ReplaceType!(This, void, FT)))
+		alias TypeOf = ReplaceType!(This, U, FT);
+	else alias TypeOf = FT;
 }
 
 ///
