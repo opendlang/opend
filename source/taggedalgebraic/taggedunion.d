@@ -603,7 +603,12 @@ template TypeOf(alias kind)
 		else alias FT = uda[0];
 	}
 
-	alias TypeOf = ReplaceType!(This, U, FT);
+	// NOTE: ReplaceType has issues with certain types, such as a class
+	//       declaration like this: class C : D!C {}
+	//       For this reason, we test first if it compiles and only then use it.
+	static if (is(ReplaceType!(This, U, FT)))
+		alias TypeOf = ReplaceType!(This, U, FT);
+	else alias TypeOf = FT;
 }
 
 ///
