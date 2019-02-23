@@ -434,23 +434,27 @@ template visit(VISITORS...)
 
 ///
 unittest {
-	union U {
-		int number;
-		string text;
+	static if (__VERSION__ >= 2081) {
+		import std.conv : to;
+
+		union U {
+			int number;
+			string text;
+		}
+		alias TU = TaggedUnion!U;
+
+		auto tu = TU.number(42);
+		tu.visit!(
+			(int n) { assert(n == 42); },
+			(string s) { assert(false); }
+		);
+
+		assert(tu.visit!((v) => to!int(v)) == 42);
+
+		tu.setText("43");
+
+		assert(tu.visit!((v) => to!int(v)) == 43);
 	}
-	alias TU = TaggedUnion!U;
-
-	auto tu = TU.number(42);
-	tu.visit!(
-		(int n) { assert(n == 42); },
-		(string s) { assert(false); }
-	);
-
-	assert(tu.visit!((v) => to!int(v)) == 42);
-
-	tu.setText("43");
-
-	assert(tu.visit!((v) => to!int(v)) == 43);
 }
 
 unittest {
@@ -477,14 +481,6 @@ unittest {
 
 	// TODO: error out for superfluous generic handlers
 	//static assert(!is(typeof(u.visit!((int) {}, (float) {}, () {}, (_) {})))); // superfluous generic handler
-}
-
-
-// workaround for "template to is not defined" error in the unit test above
-// happens on DMD 2.080 and below
-private U to(U, T)(T val) {
-	static import std.conv;
-	return std.conv.to!U(val);
 }
 
 
