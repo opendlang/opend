@@ -240,9 +240,9 @@ struct TaggedUnion(U) if (is(U == union) || is(U == struct) || is(U == enum))
 		if (staticIndexOf!(T, FieldTypes) >= 0)
 	{
 		final switch (this.kind) {
-			static foreach (n; fieldNames) {
+			static foreach (i, n; fieldNames) {
 				case __traits(getMember, Kind, n):
-					static if (is(FieldTypes[__traits(getMember, Kind, n)] == T))
+					static if (is(FieldTypes[i] == T))
 						return trustedGet!T;
 					else assert(false, "Attempting to get type "~T.stringof
 						~ " from a TaggedUnion with type "
@@ -383,6 +383,8 @@ template visit(VISITORS...)
 	auto visit(TU)(auto ref TU tu)
 		if (isInstanceOf!(TaggedUnion, TU))
 	{
+		alias val = validateHandlers!(TU, VISITORS);
+
 		final switch (tu.kind) {
 			static foreach (k; EnumMembers!(TU.Kind)) {
 				case k: {
@@ -431,7 +433,6 @@ unittest {
 
 	//
 	static assert(is(typeof(u.visit!((int) {}, (float) {}, () {}))));
-	u.visit!((_) {}, () {});
 	static assert(is(typeof(u.visit!((_) {}, () {}))));
 	static assert(is(typeof(u.visit!((_) {}, (float) {}, () {}))));
 	static assert(is(typeof(u.visit!((float) {}, (_) {}, () {}))));
@@ -512,20 +513,23 @@ private template validateHandlers(TU, VISITORS...)
 	}
 }
 
-private template matchesType(alias fun, T)
-{
-	static if (isSomeFunction!fun) {
-		alias Params = ParameterTypeTuple!fun;
-		static if (Params.length == 0 && is(T == void)) enum matchesType = true;
-		else static if (Params.length == 1 && is(T == Params[0])) enum matchesType = true;
-		else enum matchesType = false;
-	} else static if (!is(T == void)) {
-		static if (isSomeFunction!(fun!T)) {
-			alias Parms = ParameterTypeTuple!fun;
-			static if (Params.length == 1 && is(T == Params[0])) enum matchesType = true;
+private template matchesType(alias fun) {
+	import std.traits : ParameterTypeTuple, isSomeFunction;
+
+	template matchesType(T) {
+		static if (isSomeFunction!fun) {
+			alias Params = ParameterTypeTuple!fun;
+			static if (Params.length == 0 && isUnitType!T) enum matchesType = true;
+			else static if (Params.length == 1 && is(T == Params[0])) enum matchesType = true;
 			else enum matchesType = false;
+		} else static if (!isUnitType!T) {
+			static if (isSomeFunction!(fun!T)) {
+				alias Params = ParameterTypeTuple!(fun!T);
+				static if (Params.length == 1 && is(T == Params[0])) enum matchesType = true;
+				else enum matchesType = false;
+			} else enum matchesType = false;
 		} else enum matchesType = false;
-	} else enum matchesType = false;
+	}
 }
 
 private template selectHandler(T, VISITORS...)
