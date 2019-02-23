@@ -203,7 +203,20 @@ struct TaggedUnion(U) if (is(U == union) || is(U == struct) || is(U == enum))
 		} else {
 			mixin("static @property TaggedUnion "~name~"() { TaggedUnion tu; tu.set!(Kind."~name~"); return tu; }");
 		}
+	}
 
+	/** Checks whether the currently stored value has a given type.
+	*/
+	@property bool hasType(T)()
+	const {
+		static assert(staticIndexOf!(T, FieldTypes) >= 0, "Type "~T.stringof~ " not part of "~FieldTypes.stringof);
+
+		final switch (this.kind) {
+			static foreach (i, n; fieldNames) {
+				case __traits(getMember, Kind, n):
+					return is(FieldTypes[i] == T);
+			}
+		}
 	}
 
 	/** Accesses the contained value by reference.
@@ -237,8 +250,9 @@ struct TaggedUnion(U) if (is(U == union) || is(U == struct) || is(U == enum))
 		See_Also: `set`, `opAssign`
 	*/
 	@property ref inout(T) value(T)() inout
-		if (staticIndexOf!(T, FieldTypes) >= 0)
 	{
+		static assert(staticIndexOf!(T, FieldTypes) >= 0, "Type "~T.stringof~ " not part of "~FieldTypes.stringof);
+
 		final switch (this.kind) {
 			static foreach (i, n; fieldNames) {
 				case __traits(getMember, Kind, n):
