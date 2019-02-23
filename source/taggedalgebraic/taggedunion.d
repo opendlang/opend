@@ -378,6 +378,22 @@ unittest { // test for name clashes
 	assert(tu.stringValue == "foo");
 }
 
+unittest { // test woraround for Phobos issue 19696
+	struct T {
+		struct F { int num; }
+		alias Payload = TaggedUnion!F;
+		Payload payload;
+		alias payload this;
+	}
+
+	struct U {
+		T t;
+	}
+
+	alias TU = TaggedUnion!U;
+	static assert(is(TU.FieldTypes[0] == T));
+}
+
 
 /** Dispatches the value contained on a `TaggedUnion` to a set of visitors.
 
@@ -620,7 +636,12 @@ template TypeOf(alias kind)
 	// NOTE: ReplaceType has issues with certain types, such as a class
 	//       declaration like this: class C : D!C {}
 	//       For this reason, we test first if it compiles and only then use it.
-	static if (is(ReplaceType!(This, U, FT)))
+	//       It also replaces a type with the contained "alias this" type under
+	//       certain conditions, so we make a second check to see heuristically
+	//       if This is actually present in FT
+	//
+	//       Phobos issues: 19696, 19697
+	static if (is(ReplaceType!(This, U, FT)) && !is(ReplaceType!(This, void, FT)))
 		alias TypeOf = ReplaceType!(This, U, FT);
 	else alias TypeOf = FT;
 }
