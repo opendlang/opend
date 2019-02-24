@@ -546,11 +546,15 @@ enum isUnitType(T) = is(T == Void) || is(T == void) || is(T == typeof(null));
 
 private template validateHandlers(TU, VISITORS...)
 {
+	import std.traits : isSomeFunction;
+
 	alias Types = TU.FieldTypes;
 
 	static foreach (int i; 0 .. VISITORS.length) {
+		static assert(!is(VISITORS[i]) || isSomeFunction!(VISITORS[i]),
+			"Visitor at index "~i.stringof~" must be a function/delegate literal: "~VISITORS[i].stringof);
 		static assert(anySatisfy!(matchesType!(VISITORS[i]), Types),
-			"Visitor at index "~i.stringof~" does not match any type of "~TU.stringof);
+			"Visitor at index "~i.stringof~" does not match any type of "~TU.FieldTypes.stringof);
 	}
 }
 
