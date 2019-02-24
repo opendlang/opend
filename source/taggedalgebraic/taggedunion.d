@@ -76,12 +76,12 @@ struct TaggedUnion(U) if (is(U == union) || is(U == struct) || is(U == enum))
 		static if (!isUnitType!(FieldTypes[ti])) {
 			this(FieldTypes[ti] value)
 			{
-				set!(cast(Kind)ti)(value);
+				set!(cast(Kind)ti)(move(value));
 			}
 
 			void opAssign(FieldTypes[ti] value)
 			{
-				set!(cast(Kind)ti)(value);
+				set!(cast(Kind)ti)(move(value));
 			}
 		}
 
@@ -392,6 +392,21 @@ unittest { // test woraround for Phobos issue 19696
 
 	alias TU = TaggedUnion!U;
 	static assert(is(TU.FieldTypes[0] == T));
+}
+
+unittest { // non-copyable types
+	import std.traits : isCopyable;
+
+	struct S { @disable this(this); }
+	struct U {
+		int i;
+		S s;
+	}
+	alias TU = TaggedUnion!U;
+	static assert(!isCopyable!TU);
+
+	auto tu = TU(42);
+	tu.setS(S.init);
 }
 
 
@@ -741,7 +756,7 @@ package void rawEmplace(T)(void[] dst, ref T src)
 	} else {
 		import std.conv : emplace;
 		emplace!T(&tdst[0]);
-		tdst[0] = src;
+		rawSwap(tdst[0], src);
 	}
 }
 
