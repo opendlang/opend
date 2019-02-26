@@ -392,6 +392,9 @@ extern( System ) {
 
     // VK_EXT_buffer_device_address
     alias PFN_vkGetBufferDeviceAddressEXT                        = VkDeviceAddress  function( VkDevice device, const( VkBufferDeviceAddressInfoEXT )* pInfo );
+
+    // VK_NV_cooperative_matrix
+    alias PFN_vkGetPhysicalDeviceCooperativeMatrixPropertiesNV   = VkResult  function( VkPhysicalDevice physicalDevice, uint32_t* pPropertyCount, VkCooperativeMatrixPropertiesNV* pProperties );
 }
 
 
@@ -776,6 +779,9 @@ __gshared {
     // VK_EXT_buffer_device_address
     PFN_vkGetBufferDeviceAddressEXT                        vkGetBufferDeviceAddressEXT;
 
+    // VK_NV_cooperative_matrix
+    PFN_vkGetPhysicalDeviceCooperativeMatrixPropertiesNV   vkGetPhysicalDeviceCooperativeMatrixPropertiesNV;
+
     // VK_KHR_get_physical_device_properties2
     alias vkGetPhysicalDeviceFeatures2KHR                          = vkGetPhysicalDeviceFeatures2;
     alias vkGetPhysicalDeviceProperties2KHR                        = vkGetPhysicalDeviceProperties2;
@@ -931,6 +937,9 @@ void loadInstanceLevelFunctions( VkInstance instance ) {
 
     // VK_EXT_calibrated_timestamps
     vkGetPhysicalDeviceCalibrateableTimeDomainsEXT     = cast( PFN_vkGetPhysicalDeviceCalibrateableTimeDomainsEXT     ) vkGetInstanceProcAddr( instance, "vkGetPhysicalDeviceCalibrateableTimeDomainsEXT" );
+
+    // VK_NV_cooperative_matrix
+    vkGetPhysicalDeviceCooperativeMatrixPropertiesNV   = cast( PFN_vkGetPhysicalDeviceCooperativeMatrixPropertiesNV   ) vkGetInstanceProcAddr( instance, "vkGetPhysicalDeviceCooperativeMatrixPropertiesNV" );
 }
 
 
