@@ -441,7 +441,7 @@ auto statDensity(AES)( AES aesRange )
         // Initialize kernel with normal distribution.
         import std.math : isFinite;
         import dstats.kerneldensity : scottBandwidth, KernelDensity;
-        import dstats.random : normalPDF;
+        import dstats.distrib : normalPDF;
         auto sigma = scottBandwidth(xs);
         if (!isFinite(sigma) || sigma <= 0)
             sigma = 0.5;
@@ -538,7 +538,7 @@ auto statDensity2D(AES)( AES aesRange )
         // Calculate the kernel width (using scott thing in dstats)
         // Initialize kernel with normal distribution.
         import dstats.kerneldensity : scottBandwidth, KernelDensity;
-        import dstats.random : normalPDF;
+        import dstats.distrib : normalPDF;
         auto sigmaX = scottBandwidth(xs);
         if (!isFinite(sigmaX) || sigmaX <= 0)
             sigmaX = 1e-5;
