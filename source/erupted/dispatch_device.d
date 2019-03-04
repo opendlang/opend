@@ -256,6 +256,9 @@ struct DispatchDevice {
         vkCmdEndQueryIndexedEXT                        = cast( PFN_vkCmdEndQueryIndexedEXT                        ) vkGetDeviceProcAddr( device, "vkCmdEndQueryIndexedEXT" );
         vkCmdDrawIndirectByteCountEXT                  = cast( PFN_vkCmdDrawIndirectByteCountEXT                  ) vkGetDeviceProcAddr( device, "vkCmdDrawIndirectByteCountEXT" );
 
+        // VK_NVX_image_view_handle
+        vkGetImageViewHandleNVX                        = cast( PFN_vkGetImageViewHandleNVX                        ) vkGetDeviceProcAddr( device, "vkGetImageViewHandleNVX" );
+
         // VK_AMD_draw_indirect_count
         vkCmdDrawIndirectCountAMD                      = cast( PFN_vkCmdDrawIndirectCountAMD                      ) vkGetDeviceProcAddr( device, "vkCmdDrawIndirectCountAMD" );
         vkCmdDrawIndexedIndirectCountAMD               = cast( PFN_vkCmdDrawIndexedIndirectCountAMD               ) vkGetDeviceProcAddr( device, "vkCmdDrawIndexedIndirectCountAMD" );
@@ -571,6 +574,9 @@ struct DispatchDevice {
     void      CmdBeginQueryIndexedEXT( VkQueryPool queryPool, uint32_t query, VkQueryControlFlags flags, uint32_t index ) { vkCmdBeginQueryIndexedEXT( commandBuffer, queryPool, query, flags, index ); }
     void      CmdEndQueryIndexedEXT( VkQueryPool queryPool, uint32_t query, uint32_t index ) { vkCmdEndQueryIndexedEXT( commandBuffer, queryPool, query, index ); }
     void      CmdDrawIndirectByteCountEXT( uint32_t instanceCount, uint32_t firstInstance, VkBuffer counterBuffer, VkDeviceSize counterBufferOffset, uint32_t counterOffset, uint32_t vertexStride ) { vkCmdDrawIndirectByteCountEXT( commandBuffer, instanceCount, firstInstance, counterBuffer, counterBufferOffset, counterOffset, vertexStride ); }
+
+    // VK_NVX_image_view_handle
+    uint32_t  GetImageViewHandleNVX( const( VkImageViewHandleInfoNVX )* pInfo ) { return vkGetImageViewHandleNVX( vkDevice, pInfo ); }
 
     // VK_AMD_draw_indirect_count
     void      CmdDrawIndirectCountAMD( VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, uint32_t maxDrawCount, uint32_t stride ) { vkCmdDrawIndirectCountAMD( commandBuffer, buffer, offset, countBuffer, countBufferOffset, maxDrawCount, stride ); }
@@ -901,6 +907,9 @@ struct DispatchDevice {
     PFN_vkCmdBeginQueryIndexedEXT                      vkCmdBeginQueryIndexedEXT;
     PFN_vkCmdEndQueryIndexedEXT                        vkCmdEndQueryIndexedEXT;
     PFN_vkCmdDrawIndirectByteCountEXT                  vkCmdDrawIndirectByteCountEXT;
+
+    // VK_NVX_image_view_handle
+    PFN_vkGetImageViewHandleNVX                        vkGetImageViewHandleNVX;
 
     // VK_AMD_draw_indirect_count
     PFN_vkCmdDrawIndirectCountAMD                      vkCmdDrawIndirectCountAMD;

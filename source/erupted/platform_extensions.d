@@ -26,6 +26,7 @@ enum MVK_ios_surface;
 enum MVK_macos_surface;
 enum ANDROID_external_memory_android_hardware_buffer;
 enum FUCHSIA_imagepipe_surface;
+enum EXT_metal_surface;
 
 
 /// extensions to a specific platform are grouped in these enum sequences
@@ -40,6 +41,7 @@ alias USE_PLATFORM_XLIB_XRANDR_EXT = AliasSeq!( EXT_acquire_xlib_display );
 alias USE_PLATFORM_IOS_MVK         = AliasSeq!( MVK_ios_surface );
 alias USE_PLATFORM_MACOS_MVK       = AliasSeq!( MVK_macos_surface );
 alias USE_PLATFORM_FUCHSIA         = AliasSeq!( FUCHSIA_imagepipe_surface );
+alias USE_PLATFORM_METAL_EXT       = AliasSeq!( EXT_metal_surface );
 
 
 
@@ -498,6 +500,25 @@ mixin template Platform_Extensions( extensions... ) {
             alias PFN_vkCreateImagePipeSurfaceFUCHSIA                    = VkResult  function( VkInstance instance, const( VkImagePipeSurfaceCreateInfoFUCHSIA )* pCreateInfo, const( VkAllocationCallbacks )* pAllocator, VkSurfaceKHR* pSurface );
         }
 
+        // VK_EXT_metal_surface : types and function pointer type aliases
+        else static if( __traits( isSame, extension, EXT_metal_surface )) {
+            enum VK_EXT_metal_surface = 1;
+
+            enum VK_EXT_METAL_SURFACE_SPEC_VERSION = 1;
+            enum VK_EXT_METAL_SURFACE_EXTENSION_NAME = "VK_EXT_metal_surface";
+            
+            alias VkMetalSurfaceCreateFlagsEXT = VkFlags;
+            
+            struct VkMetalSurfaceCreateInfoEXT {
+                VkStructureType               sType = VK_STRUCTURE_TYPE_METAL_SURFACE_CREATE_INFO_EXT;
+                const( void )*                pNext;
+                VkMetalSurfaceCreateFlagsEXT  flags;
+                const( CAMetalLayer )*        pLayer;
+            }
+            
+            alias PFN_vkCreateMetalSurfaceEXT                            = VkResult  function( VkInstance instance, const( VkMetalSurfaceCreateInfoEXT )* pCreateInfo, const( VkAllocationCallbacks )* pAllocator, VkSurfaceKHR* pSurface );
+        }
+
         __gshared {
 
             // VK_KHR_xlib_surface : function pointer decelerations
@@ -583,6 +604,11 @@ mixin template Platform_Extensions( extensions... ) {
             else static if( __traits( isSame, extension, FUCHSIA_imagepipe_surface )) {
                 PFN_vkCreateImagePipeSurfaceFUCHSIA                    vkCreateImagePipeSurfaceFUCHSIA;
             }
+
+            // VK_EXT_metal_surface : function pointer decelerations
+            else static if( __traits( isSame, extension, EXT_metal_surface )) {
+                PFN_vkCreateMetalSurfaceEXT                            vkCreateMetalSurfaceEXT;
+            }
         }
     }
 
@@ -650,6 +676,11 @@ mixin template Platform_Extensions( extensions... ) {
             // VK_FUCHSIA_imagepipe_surface : load instance level function definitions
             else static if( __traits( isSame, extension, FUCHSIA_imagepipe_surface )) {
                 vkCreateImagePipeSurfaceFUCHSIA                    = cast( PFN_vkCreateImagePipeSurfaceFUCHSIA                    ) vkGetInstanceProcAddr( instance, "vkCreateImagePipeSurfaceFUCHSIA" );
+            }
+
+            // VK_EXT_metal_surface : load instance level function definitions
+            else static if( __traits( isSame, extension, EXT_metal_surface )) {
+                vkCreateMetalSurfaceEXT                            = cast( PFN_vkCreateMetalSurfaceEXT                            ) vkGetInstanceProcAddr( instance, "vkCreateMetalSurfaceEXT" );
             }
         }
     }
@@ -913,6 +944,11 @@ mixin template Platform_Extensions( extensions... ) {
             // VK_FUCHSIA_imagepipe_surface : dispatch device member function pointer decelerations
             else static if( __traits( isSame, extension, FUCHSIA_imagepipe_surface )) {
                 PFN_vkCreateImagePipeSurfaceFUCHSIA                    vkCreateImagePipeSurfaceFUCHSIA;
+            }
+
+            // VK_EXT_metal_surface : dispatch device member function pointer decelerations
+            else static if( __traits( isSame, extension, EXT_metal_surface )) {
+                PFN_vkCreateMetalSurfaceEXT                            vkCreateMetalSurfaceEXT;
             }
         }
     }

@@ -273,6 +273,9 @@ extern( System ) {
     alias PFN_vkCmdEndQueryIndexedEXT                            = void      function( VkCommandBuffer commandBuffer, VkQueryPool queryPool, uint32_t query, uint32_t index );
     alias PFN_vkCmdDrawIndirectByteCountEXT                      = void      function( VkCommandBuffer commandBuffer, uint32_t instanceCount, uint32_t firstInstance, VkBuffer counterBuffer, VkDeviceSize counterBufferOffset, uint32_t counterOffset, uint32_t vertexStride );
 
+    // VK_NVX_image_view_handle
+    alias PFN_vkGetImageViewHandleNVX                            = uint32_t  function( VkDevice device, const( VkImageViewHandleInfoNVX )* pInfo );
+
     // VK_AMD_draw_indirect_count
     alias PFN_vkCmdDrawIndirectCountAMD                          = void      function( VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, uint32_t maxDrawCount, uint32_t stride );
     alias PFN_vkCmdDrawIndexedIndirectCountAMD                   = void      function( VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, uint32_t maxDrawCount, uint32_t stride );
@@ -658,6 +661,9 @@ __gshared {
     PFN_vkCmdBeginQueryIndexedEXT                          vkCmdBeginQueryIndexedEXT;
     PFN_vkCmdEndQueryIndexedEXT                            vkCmdEndQueryIndexedEXT;
     PFN_vkCmdDrawIndirectByteCountEXT                      vkCmdDrawIndirectByteCountEXT;
+
+    // VK_NVX_image_view_handle
+    PFN_vkGetImageViewHandleNVX                            vkGetImageViewHandleNVX;
 
     // VK_AMD_draw_indirect_count
     PFN_vkCmdDrawIndirectCountAMD                          vkCmdDrawIndirectCountAMD;
@@ -1146,6 +1152,9 @@ void loadDeviceLevelFunctions( VkInstance instance ) {
     vkCmdEndQueryIndexedEXT                        = cast( PFN_vkCmdEndQueryIndexedEXT                        ) vkGetInstanceProcAddr( instance, "vkCmdEndQueryIndexedEXT" );
     vkCmdDrawIndirectByteCountEXT                  = cast( PFN_vkCmdDrawIndirectByteCountEXT                  ) vkGetInstanceProcAddr( instance, "vkCmdDrawIndirectByteCountEXT" );
 
+    // VK_NVX_image_view_handle
+    vkGetImageViewHandleNVX                        = cast( PFN_vkGetImageViewHandleNVX                        ) vkGetInstanceProcAddr( instance, "vkGetImageViewHandleNVX" );
+
     // VK_AMD_draw_indirect_count
     vkCmdDrawIndirectCountAMD                      = cast( PFN_vkCmdDrawIndirectCountAMD                      ) vkGetInstanceProcAddr( instance, "vkCmdDrawIndirectCountAMD" );
     vkCmdDrawIndexedIndirectCountAMD               = cast( PFN_vkCmdDrawIndexedIndirectCountAMD               ) vkGetInstanceProcAddr( instance, "vkCmdDrawIndexedIndirectCountAMD" );
@@ -1456,6 +1465,9 @@ void loadDeviceLevelFunctions( VkDevice device ) {
     vkCmdBeginQueryIndexedEXT                      = cast( PFN_vkCmdBeginQueryIndexedEXT                      ) vkGetDeviceProcAddr( device, "vkCmdBeginQueryIndexedEXT" );
     vkCmdEndQueryIndexedEXT                        = cast( PFN_vkCmdEndQueryIndexedEXT                        ) vkGetDeviceProcAddr( device, "vkCmdEndQueryIndexedEXT" );
     vkCmdDrawIndirectByteCountEXT                  = cast( PFN_vkCmdDrawIndirectByteCountEXT                  ) vkGetDeviceProcAddr( device, "vkCmdDrawIndirectByteCountEXT" );
+
+    // VK_NVX_image_view_handle
+    vkGetImageViewHandleNVX                        = cast( PFN_vkGetImageViewHandleNVX                        ) vkGetDeviceProcAddr( device, "vkGetImageViewHandleNVX" );
 
     // VK_AMD_draw_indirect_count
     vkCmdDrawIndirectCountAMD                      = cast( PFN_vkCmdDrawIndirectCountAMD                      ) vkGetDeviceProcAddr( device, "vkCmdDrawIndirectCountAMD" );
