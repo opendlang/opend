@@ -23,7 +23,7 @@ import std.traits : EnumMembers, FieldNameTuple, Unqual, isInstanceOf;
 	For a given field "foo", these fields are:
 
 	$(UL
-		$(LI `static foo(value)`) - returns a new tagged union with the specified value)
+		$(LI `static foo(value)` - returns a new tagged union with the specified value)
 		$(LI `isFoo` - equivalent to `kind == Kind.foo`)
 		$(LI `setFoo(value)` - equivalent to `set!(Kind.foo)(value)`)
 		$(LI `getFoo` - equivalent to `get!(Kind.foo)`)
