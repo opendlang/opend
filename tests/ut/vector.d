@@ -543,3 +543,15 @@ else {
     v ~= 5;
     v[].shouldEqual([1, 2, 3, 4, 5]);
 }
+
+
+@("noconsume")
+@safe unittest {
+    scope v = vector(1, 2, 3);
+    static void fun(R)(R range) {
+        import std.array: array;
+        assert(range.array == [1, 2, 3]);
+    }
+    fun(v[]);
+    assert(v[] == [1, 2, 3]);
+}
