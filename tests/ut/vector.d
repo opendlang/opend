@@ -627,3 +627,10 @@ else {
     const vec = vector(1, 2, 3);
     vec.range.should == [1, 2, 3];
 }
+
+
+@("range.bounds")
+@safe unittest {
+    const vec = vector(1, 2, 3, 4, 5);
+    vec.range(1, 4).should == [2, 3, 4];
+}

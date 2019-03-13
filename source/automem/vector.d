@@ -280,12 +280,17 @@ struct Vector(E, Allocator = typeof(theAllocator)) if(isAllocator!Allocator) {
         }
     }
 
-    auto range(this This)() scope return {
+    auto range(this This)(in long start = 0, long end = -1) scope return
+        in(start >= 0)
+        in(end <= length)
+        do
+    {
         import std.range.primitives: isForwardRange;
 
         static struct Range {
             private This* self;
-            private long index = 0;
+            private long index;
+            private long end;
 
             Range save() {
                 return this;
@@ -300,14 +305,21 @@ struct Vector(E, Allocator = typeof(theAllocator)) if(isAllocator!Allocator) {
             }
 
             bool empty() const {
-                return index >= self.length;
+                const comp = end == -1 ? length : end;
+                return index >= comp;
+            }
+
+            auto length() const {
+                return self.length;
             }
         }
 
         static assert(isForwardRange!Range);
 
         // FIXME - why isn't &this @safe?
-        return Range(() @trusted { return &this; }());
+        return Range(() @trusted { return &this; }(),
+                     start,
+                     end);
     }
 
     /**
