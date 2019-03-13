@@ -101,7 +101,7 @@ import test_allocator;
 }
 
 @("slice")
-@safe unittest {
+@system unittest {
     const vec = vector(0, 1, 2, 3, 4, 5);
     vec[].should == [0, 1, 2, 3, 4, 5];
     vec[1 .. 3].should == [1, 2];
@@ -111,7 +111,7 @@ import test_allocator;
 }
 
 @("opDollar")
-@safe unittest {
+@system unittest {
     auto vec = vector(0, 1, 2, 3, 4);
     vec ~= 5;
     vec ~= 6;

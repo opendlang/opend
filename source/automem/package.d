@@ -61,21 +61,21 @@ public import automem.array;
     } // ref count goes to 0 here, memory released
 
     {
-        import std.algorithm: map;
+        import std.algorithm: map, equal;
         import std.range: iota;
 
         // `vector` is also known as `array`
         auto vec = vector(Point(1, 2), Point(3, 4), Point(5, 6));
-        assert(vec[] == [Point(1, 2), Point(3, 4), Point(5, 6)]);
+        assert(equal(vec, [Point(1, 2), Point(3, 4), Point(5, 6)]));
 
         vec.length = 1;
-        assert(vec[] == [Point(1, 2)]);
+        assert(equal(vec, [Point(1, 2)]));
 
         vec ~= Point(7, 8);
-        assert(vec[] == [Point(1, 2), Point(7, 8)]);
+        assert(equal(vec, [Point(1, 2), Point(7, 8)]));
 
         vec ~= 2.iota.map!(i => Point(i + 10, i + 11));
-        assert(vec[] == [Point(1, 2), Point(7, 8), Point(10, 11), Point(11, 12)]);
+        assert(equal(vec, [Point(1, 2), Point(7, 8), Point(10, 11), Point(11, 12)]));
     } // memory for the array released here
 }
 
