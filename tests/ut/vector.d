@@ -633,4 +633,7 @@ else {
 @safe unittest {
     const vec = vector(1, 2, 3, 4, 5);
     vec.range(1, 4).should == [2, 3, 4];
+    vec.range(2, vec.length).should == [3, 4, 5];
+    vec.range(2, -1).should == [3, 4, 5];
+    vec.range(2, -2).should == [3, 4];
 }

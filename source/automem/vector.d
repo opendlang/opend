@@ -305,7 +305,7 @@ struct Vector(E, Allocator = typeof(theAllocator)) if(isAllocator!Allocator) {
             }
 
             bool empty() const {
-                const comp = end == -1 ? length : end;
+                const comp = end < 0 ? length + end + 1 : end;
                 return index >= comp;
             }
 
