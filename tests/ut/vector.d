@@ -229,7 +229,7 @@ import test_allocator;
 }
 
 
-@("Cannot escape range")
+@("escape.range")
 @safe @nogc unittest {
 
     alias Ints = typeof(Vector!(int, Mallocator).init.range());
@@ -240,6 +240,21 @@ import test_allocator;
 
     static assert(!__traits(compiles, ints1 = vec.range));
     ints2 = vec.range;  // should compile
+}
+
+
+@("escape.element")
+@safe unittest {
+
+    int i = 1;
+    int j = 2;
+
+    int* oops;
+    scope vec = vector(&i, &j);
+    int* ok;
+
+    static assert(!__traits(compiles, oops = vec[0]));
+    ok = vec[0];
 }
 
 

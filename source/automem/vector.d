@@ -206,7 +206,7 @@ struct Vector(E, Allocator = typeof(theAllocator)) if(isAllocator!Allocator) {
     }
 
     /// Access the ith element. Can throw RangeError.
-    ref inout(E) opIndex(long i) inout {
+    ref inout(E) opIndex(long i) scope return inout {
         if(i < 0 || i >= length)
             mixin(throwBoundsException);
         return _elements[i.toSizeT];
