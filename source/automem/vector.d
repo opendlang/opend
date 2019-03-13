@@ -215,7 +215,7 @@ struct Vector(E, Allocator = typeof(theAllocator)) if(isAllocator!Allocator) {
     /// Returns a new vector after appending to the given vector.
     Vector opBinary(string s, T)(auto ref T other) const if(s == "~" && is(Unqual!T == Vector)) {
         import std.range: chain;
-        return Vector(chain(this[], other[]));
+        return Vector(chain(this.range, other.range));
     }
 
     /// Assigns from a range.
