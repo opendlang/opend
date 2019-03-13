@@ -291,7 +291,7 @@ struct Vector(E, Allocator = typeof(theAllocator)) if(isAllocator!Allocator) {
                 return this;
             }
 
-            E front() {
+            auto front() {
                 return (*self)[index];
             }
 
