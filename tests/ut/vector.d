@@ -552,7 +552,7 @@ else {
 }
 
 
-@("noconsume")
+@("noconsume.range")
 @safe unittest {
     import std.algorithm: equal;
 
@@ -566,6 +566,25 @@ else {
     fun(v.range);
     assert(equal(v.range, [1, 2, 3]));
 }
+
+
+@("noconsume.foreach")
+@safe unittest {
+    scope v = vector(1, 2, 3);
+    foreach(e; v) {}
+    v.range.should == [1, 2, 3];
+}
+
+
+@("noconsume.map")
+@safe unittest {
+    import std.algorithm: map;
+
+    scope v = vector(1, 2, 3);
+    v.range.map!(a => a * 2).should == [2, 4, 6];
+    v.range.should == [1, 2, 3];
+}
+
 
 @("reserve")
 @safe unittest {
