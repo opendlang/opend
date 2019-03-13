@@ -228,14 +228,18 @@ import test_allocator;
     Vector!(int, Mallocator) vec;
 }
 
-@("Cannot escape slice")
-@safe @nogc unittest {
-    int[] ints1;
-    scope vec = vector!Mallocator(0, 1, 2, 3);
-    int[] ints2;
 
-    static assert(!__traits(compiles, ints1 = vec[]));
-    ints2 = vec[];  // should compile
+@("Cannot escape range")
+@safe @nogc unittest {
+
+    alias Ints = typeof(Vector!(int, Mallocator).init.range());
+
+    Ints ints1;
+    scope vec = vector!Mallocator(0, 1, 2, 3);
+    Ints ints2;
+
+    static assert(!__traits(compiles, ints1 = vec.range));
+    ints2 = vec.range;  // should compile
 }
 
 
@@ -451,7 +455,7 @@ private void consumeVec(T)(auto ref T vec) {
 
 @("String")
 @safe unittest {
-    foreach(c; String("oooooo"))
+    foreach(c; String("oooooo").range)
         c.should == 'o';
 }
 

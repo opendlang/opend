@@ -312,15 +312,17 @@ struct Vector(E, Allocator = typeof(theAllocator)) if(isAllocator!Allocator) {
 
     /**
        Returns a slice.
+       @system because the pointer in the slice might dangle.
      */
-    auto opSlice(this This)() scope return {
+    auto opSlice(this This)() @system scope return {
         return _elements[0 .. length.toSizeT];
     }
 
     /**
        Returns a slice.
+       @system because the pointer in the slice might dangle.
      */
-    auto opSlice(this This)(long start, long end) scope return {
+    auto opSlice(this This)(long start, long end) @system scope return {
         if(start < 0 || start >= length)
             mixin(throwBoundsException);
 
