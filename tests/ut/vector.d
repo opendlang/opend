@@ -134,11 +134,6 @@ import test_allocator;
     vector(5.iota).range.should == [0, 1, 2, 3, 4];
 }
 
-@("front")
-@safe unittest {
-    vector(1, 2, 3).front.should == 1;
-    vector(2, 3).front.should == 2;
-}
 
 @("popBack")
 @safe unittest {
@@ -158,12 +153,6 @@ import test_allocator;
     vec.empty.shouldBeTrue;
 }
 
-
-@("back")
-@safe unittest {
-    const vec = vector("foo", "bar", "baz");
-    vec.back.should ==("baz");
-}
 
 @("opSliceAssign")
 @safe unittest {
@@ -283,7 +272,7 @@ import test_allocator;
     auto vec = vector!(TestAllocator*, int)(&allocator);
 
     vec.reserve(5);
-    () @trusted { vec.shouldBeEmpty; }();
+    () @trusted { vec.empty.should == true; }();
 
     vec ~= 0;
     vec ~= 1;
@@ -408,7 +397,7 @@ private void consumeVec(T)(auto ref T vec) {
 
 @("foreach")
 @safe unittest {
-    foreach(e; vector(7, 7, 7)) {
+    foreach(e; vector(7, 7, 7).range) {
         e.should == 7;
     }
 }
@@ -420,7 +409,7 @@ private void consumeVec(T)(auto ref T vec) {
     import std.algorithm: equal;
 
     auto v = vector(0, 1, 2, 3);
-    assert(equal(v, 4.iota));
+    assert(equal(v.range, 4.iota));
 }
 
 
@@ -549,7 +538,7 @@ else {
 @safe unittest {
     import std.conv: text;
     auto v = vector(1, 2, 3);
-    v.text.should == `[1, 2, 3]`;
+    v.range.text.should == `[1, 2, 3]`;
 }
 
 
@@ -586,7 +575,7 @@ else {
 @("noconsume.foreach")
 @safe unittest {
     scope v = vector(1, 2, 3);
-    foreach(e; v) {}
+    foreach(e; v.range) {}
     v.range.should == [1, 2, 3];
 }
 

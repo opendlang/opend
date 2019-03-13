@@ -130,16 +130,6 @@ struct Vector(E, Allocator = typeof(theAllocator)) if(isAllocator!Allocator) {
         clear;
     }
 
-    /// Returns the first element
-    inout(E) front() inout {
-        return _elements[0];
-    }
-
-    /// Returns the last element
-    inout(E) back() inout {
-        return _elements[(length - 1).toSizeT];
-    }
-
     static if(isElementMutable) {
         /// Pops the front element off
         void popFront() {
