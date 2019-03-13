@@ -283,7 +283,7 @@ struct Vector(E, Allocator = typeof(theAllocator)) if(isAllocator!Allocator) {
         import std.range.primitives: isForwardRange;
 
         static struct Range {
-            private Vector* self;
+            private This* self;
             private long index = 0;
 
             Range save() {

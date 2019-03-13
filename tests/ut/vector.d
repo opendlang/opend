@@ -572,7 +572,7 @@ else {
 }
 
 
-@("range")
+@("range.reserve")
 @safe unittest {
     scope vec = vector(1, 2, 3);
     scope range = vec.range;
@@ -581,4 +581,11 @@ else {
     vec.reserve(10);
 
     range.should == [1, 2, 3];
+}
+
+
+@("range.const")
+@safe unittest {
+    const vec = vector(1, 2, 3);
+    vec.range.should == [1, 2, 3];
 }
