@@ -1,5 +1,6 @@
 module ut.vector;
 
+
 import ut;
 import automem.vector;
 import std.experimental.allocator.mallocator: Mallocator;
@@ -14,14 +15,15 @@ import test_allocator;
 
 @("vector.int")
 @safe unittest {
-    vector(1, 2, 3, 4, 5)[].shouldEqual([1, 2, 3, 4, 5]);
-    vector(2, 3, 4)[].shouldEqual([2, 3, 4]);
+    vector(1, 2, 3, 4, 5)[].should == [1, 2, 3, 4, 5];
+    vector(2, 3, 4)[].should == [2, 3, 4];
+    vector(2, 3, 4)[].should == [2, 3, 4];
 }
 
 @("vector.double")
 @safe unittest {
-    vector(33.3)[].shouldEqual([33.3]);
-    vector(22.2, 77.7)[].shouldEqual([22.2, 77.7]);
+    vector(33.3)[].should == [33.3];
+    vector(22.2, 77.7)[].should == [22.2, 77.7];
 }
 
 @("copying")
@@ -31,8 +33,8 @@ import test_allocator;
     auto vec2 = vec1;
     vec1[1] = 7;
 
-    vec1[].shouldEqual([1, 7, 3]);
-    vec2[].shouldEqual([1, 2, 3]);
+    vec1[].should == [1, 7, 3];
+    vec2[].should == [1, 2, 3];
 }
 
 @("bounds check")
@@ -51,13 +53,13 @@ import test_allocator;
     auto vec = vector(0, 1, 2, 3);
 
     vec ~= 4;
-    vec[].shouldEqual([0, 1, 2, 3, 4]);
+    vec[].should == [0, 1, 2, 3, 4];
 
     vec ~= [5, 6];
-    vec[].shouldEqual([0, 1, 2, 3, 4, 5, 6]);
+    vec[].should == [0, 1, 2, 3, 4, 5, 6];
 
     vec ~= [1, 2].map!(a => a + 10);
-    vec[].shouldEqual([0, 1, 2, 3, 4, 5, 6, 11, 12]);
+    vec[].should == [0, 1, 2, 3, 4, 5, 6, 11, 12];
 }
 
 
@@ -67,9 +69,9 @@ import test_allocator;
 
     auto vec = vector(0, 1, 2, 3);
     vec.put(4);
-    vec[].shouldEqual([0, 1, 2, 3, 4]);
+    vec[].should == [0, 1, 2, 3, 4];
     vec.put(2.iota);
-    vec[].shouldEqual([0, 1, 2, 3, 4, 0, 1]);
+    vec[].should == [0, 1, 2, 3, 4, 0, 1];
 }
 
 @("append")
@@ -78,34 +80,34 @@ import test_allocator;
     auto vec2 = vector(3, 4);
 
     auto vec3 =  vec1 ~ vec2;
-    vec3[].shouldEqual([0, 1, 2, 3, 4]);
+    vec3[].should == [0, 1, 2, 3, 4];
 
     vec1[0] = 7;
     vec2[0] = 9;
-    vec3[].shouldEqual([0, 1, 2, 3, 4]);
+    vec3[].should == [0, 1, 2, 3, 4];
 
 
     // make sure capacity is larger
     vec1 ~= 100;
     vec1.capacity.shouldBeGreaterThan(vec1.length);
-    vec1[].shouldEqual([7, 1, 2, 100]);
+    vec1[].should == [7, 1, 2, 100];
 
     vec2 ~= 200;
     vec2.capacity.shouldBeGreaterThan(vec2.length);
-    vec2[].shouldEqual([9, 4, 200]);
+    vec2[].should == [9, 4, 200];
 
-    (vec1 ~ vec2)[].shouldEqual([7, 1, 2, 100, 9, 4, 200]);
-    (vec1 ~ vector(11, 12, 13, 14, 15))[].shouldEqual([7, 1, 2, 100, 11, 12, 13, 14, 15]);
+    (vec1 ~ vec2)[].should == [7, 1, 2, 100, 9, 4, 200];
+    (vec1 ~ vector(11, 12, 13, 14, 15))[].should == [7, 1, 2, 100, 11, 12, 13, 14, 15];
 }
 
 @("slice")
 @safe unittest {
     const vec = vector(0, 1, 2, 3, 4, 5);
-    vec[][].shouldEqual([0, 1, 2, 3, 4, 5]);
-    vec[1 .. 3][].shouldEqual([1, 2]);
-    vec[1 .. 4][].shouldEqual([1, 2, 3]);
-    vec[2 .. 5][].shouldEqual([2, 3, 4]);
-    vec[1 .. $ - 1][].shouldEqual([1, 2, 3, 4]);
+    vec[][].should == [0, 1, 2, 3, 4, 5];
+    vec[1 .. 3][].should == [1, 2];
+    vec[1 .. 4][].should == [1, 2, 3];
+    vec[2 .. 5][].should == [2, 3, 4];
+    vec[1 .. $ - 1][].should == [1, 2, 3, 4];
 }
 
 @("opDollar")
@@ -115,7 +117,7 @@ import test_allocator;
     vec ~= 6;
     vec.capacity.shouldBeGreaterThan(vec.length);
 
-    vec[1 .. $ - 1][].shouldEqual([1, 2, 3, 4, 5]);
+    vec[1 .. $ - 1][].should == [1, 2, 3, 4, 5];
 }
 
 @("assign")
@@ -123,13 +125,13 @@ import test_allocator;
     import std.range: iota;
     auto vec = vector(10, 11, 12);
     vec = 5.iota;
-    vec[].shouldEqual([0, 1, 2, 3, 4]);
+    vec[].should == [0, 1, 2, 3, 4];
 }
 
 @("construct from range")
 @safe unittest {
     import std.range: iota;
-    vector(5.iota)[].shouldEqual([0, 1, 2, 3, 4]);
+    vector(5.iota)[].should == [0, 1, 2, 3, 4];
 }
 
 @("front")
@@ -142,14 +144,14 @@ import test_allocator;
 @safe unittest {
     auto vec = vector(0, 1, 2);
     vec.popBack;
-    vec[].shouldEqual([0, 1]);
+    vec[].should == [0, 1];
 }
 
 @("popFront")
 @safe unittest {
     auto vec = vector(0, 1, 2, 3, 4);
     vec.popFront;
-    vec[].shouldEqual([1, 2, 3, 4]);
+    vec[].should == [1, 2, 3, 4];
     vec.empty.shouldBeFalse;
 
     foreach(i; 0 ..  vec.length) vec.popFront;
@@ -160,7 +162,7 @@ import test_allocator;
 @("back")
 @safe unittest {
     const vec = vector("foo", "bar", "baz");
-    vec.back[].shouldEqual("baz");
+    vec.back[].should ==("baz");
 }
 
 @("opSliceAssign")
@@ -168,24 +170,24 @@ import test_allocator;
     auto vec = vector("foo", "bar", "quux", "toto");
 
     vec[] = "haha";
-    vec[].shouldEqual(["haha", "haha", "haha", "haha"]);
+    vec[].should == ["haha", "haha", "haha", "haha"];
 
     vec[1..3] = "oops";
-    vec[].shouldEqual(["haha", "oops", "oops", "haha"]);
+    vec[].should == ["haha", "oops", "oops", "haha"];
 }
 
 @("opSliceOpAssign")
 @safe unittest {
     auto vec = vector("foo", "bar", "quux", "toto");
     vec[] ~= "oops";
-    vec[].shouldEqual(["foooops", "baroops", "quuxoops", "totooops"]);
+    vec[].should == ["foooops", "baroops", "quuxoops", "totooops"];
 }
 
 @("opSliceOpAssign range")
 @safe unittest {
     auto vec = vector("foo", "bar", "quux", "toto");
     vec[1..3] ~= "oops";
-    vec[].shouldEqual(["foo", "baroops", "quuxoops", "toto"]);
+    vec[].should == ["foo", "baroops", "quuxoops", "toto"];
 }
 
 @("clear")
@@ -193,7 +195,7 @@ import test_allocator;
     auto vec = vector(0, 1, 2, 3);
     vec.clear;
     int[] empty;
-    vec[].shouldEqual(empty);
+    vec[].should ==(empty);
 }
 
 
@@ -242,7 +244,7 @@ import test_allocator;
     static TestAllocator allocator;
 
     auto vec = vector(&allocator, 0, 1, 2);
-    vec[].shouldEqual([0, 1, 2]);
+    vec[].should == [0, 1, 2];
 
     vec ~= 3;
     vec ~= 4;
@@ -251,7 +253,7 @@ import test_allocator;
     vec ~= 7;
     vec ~= 8;
 
-    vec[].shouldEqual([0, 1, 2, 3, 4, 5, 6, 7, 8]);
+    vec[].should == [0, 1, 2, 3, 4, 5, 6, 7, 8];
     allocator.numAllocations.shouldBeSmallerThan(4);
 }
 
@@ -270,11 +272,11 @@ import test_allocator;
     vec ~= 3;
     vec ~= 4;
 
-    vec[].shouldEqual([0, 1, 2, 3, 4]);
+    vec[].should == [0, 1, 2, 3, 4];
     allocator.numAllocations.should == 1;
 
     vec ~= 5;
-    vec[].shouldEqual([0, 1, 2, 3, 4, 5]);
+    vec[].should == [0, 1, 2, 3, 4, 5];
     allocator.numAllocations.should == 2;
 }
 
@@ -337,11 +339,11 @@ import test_allocator;
     vec.capacity.should == 10;
 
     vec.shrink(5);
-    vec[].shouldEqual([0, 1, 2, 3, 4]);
+    vec[].should == [0, 1, 2, 3, 4];
     vec.capacity.should == 5;
 
     vec ~= 5;
-    vec[].shouldEqual([0, 1, 2, 3, 4, 5]);
+    vec[].should == [0, 1, 2, 3, 4, 5];
     allocator.numAllocations.should == 3;
 
     vec.reserve(10);
@@ -381,7 +383,7 @@ private void consumeVec(T)(auto ref T vec) {
 @safe unittest {
     Vector!int vec;
     vec.length = 3;
-    vec[].shouldEqual([0, 0, 0]);
+    vec[].should == [0, 0, 0];
 }
 
 
@@ -416,25 +418,25 @@ private void consumeVec(T)(auto ref T vec) {
 @safe unittest {
     {
         auto vec = vector('f', 'o', 'o');
-        vec[].shouldEqual("foo");
+        vec[].should ==("foo");
         vec ~= 'b';
         vec ~= ['a', 'r'];
-        vec[].shouldEqual("foobar");
+        vec[].should ==("foobar");
         vec ~= "quux";
-        vec[].shouldEqual("foobarquux");
+        vec[].should ==("foobarquux");
     }
 
     {
         auto vec = vector("foo");
-        vec[].shouldEqual("foo");
+        vec[].should ==("foo");
         vec.popBack;
-        vec[].shouldEqual("fo");
+        vec[].should ==("fo");
     }
 
     {
         auto vec = vector("foo");
         vec ~= "bar";
-        vec[].shouldEqual("foobar");
+        vec[].should ==("foobar");
     }
 }
 
@@ -443,7 +445,7 @@ private void consumeVec(T)(auto ref T vec) {
 @safe unittest {
     Vector!(immutable int) vec;
     vec ~= 42;
-    vec[].shouldEqual([42]);
+    vec[].should == [42];
 }
 
 
@@ -460,7 +462,7 @@ private void consumeVec(T)(auto ref T vec) {
     const strz = str.stringz;
     const back = () @trusted { return fromStringz(strz); }();
     back.should == "foobar";
-    str[].shouldEqual("foobar");
+    str[].should ==("foobar");
 }
 
 
@@ -518,8 +520,8 @@ else {
 @("2d")
 @safe unittest {
     auto v = vector(vector(0, 0, 0), vector(1, 1, 1, 1));
-    v[0][].shouldEqual([0, 0, 0]);
-    v[1][].shouldEqual([1, 1, 1, 1]);
+    v[0][].should == [0, 0, 0];
+    v[1][].should == [1, 1, 1, 1];
 }
 
 
@@ -541,7 +543,7 @@ else {
 
     auto v = fun;
     v ~= 5;
-    v[].shouldEqual([1, 2, 3, 4, 5]);
+    v[].should == [1, 2, 3, 4, 5];
 }
 
 
