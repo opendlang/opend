@@ -557,3 +557,23 @@ else {
     fun(v[]);
     assert(v[] == [1, 2, 3]);
 }
+
+@("reserve")
+@safe unittest {
+    scope vec = vector(1, 2, 3);
+    vec[].should == [1, 2, 3];
+    vec.reserve(10);
+    vec[].should == [1, 2, 3];
+}
+
+
+@("range")
+@safe unittest {
+    scope vec = vector(1, 2, 3);
+    scope range = vec.range;
+
+    range.save.should == [1, 2, 3];
+    vec.reserve(10);
+
+    range.should == [1, 2, 3];
+}

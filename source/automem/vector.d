@@ -279,12 +279,46 @@ struct Vector(E, Allocator = typeof(theAllocator)) if(isAllocator!Allocator) {
         }
     }
 
-    /// Returns a slice
+    auto range(this This)() scope return {
+        import std.range.primitives: isForwardRange;
+
+        static struct Range {
+            private Vector* self;
+            private long index = 0;
+
+            Range save() {
+                return this;
+            }
+
+            E front() {
+                return (*self)[index];
+            }
+
+            void popFront() {
+                ++index;
+            }
+
+            bool empty() const {
+                return index >= self.length;
+            }
+        }
+
+        static assert(isForwardRange!Range);
+
+        // FIXME - why isn't &this @safe?
+        return Range(() @trusted { return &this; }());
+    }
+
+    /**
+       Returns a slice.
+     */
     auto opSlice(this This)() scope return {
         return _elements[0 .. length.toSizeT];
     }
 
-    /// Returns a slice
+    /**
+       Returns a slice.
+     */
     auto opSlice(this This)(long start, long end) scope return {
         if(start < 0 || start >= length)
             mixin(throwBoundsException);
