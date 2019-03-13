@@ -204,7 +204,7 @@ import test_allocator;
     import std.algorithm: equal;
     auto vec = vector!Mallocator(0, 1, 2, 3);
     int[4] exp = [0, 1, 2, 3];
-    assert(equal(vec[], exp[]));
+    assert(equal(vec.range, exp[]));
 }
 
 @("Mallocator range")
@@ -213,7 +213,7 @@ import test_allocator;
     import std.range: iota;
     auto vec = vector!Mallocator(iota(5));
     int[5] exp = [0, 1, 2, 3, 4];
-    assert(equal(vec[], exp[]));
+    assert(equal(vec.range, exp[]));
 }
 
 
@@ -235,7 +235,7 @@ import test_allocator;
     int[] ints2;
 
     static assert(!__traits(compiles, ints1 = vec[]));
-    static assert(__traits(compiles, ints2 = vec[]));
+    ints2 = vec[];  // should compile
 }
 
 
@@ -470,7 +470,7 @@ private void consumeVec(T)(auto ref T vec) {
 @safe unittest {
     const vec = vector(0, 1, 2, 3);
     takesScopePtr(vec.ptr);
-    () @trusted { vec.ptr[1].shouldEqual(1); }();
+    () @trusted { vec.ptr[1].should == 1; }();
 }
 
 private void takesScopePtr(T)(scope const(T)* ptr) {
@@ -480,6 +480,7 @@ private void takesScopePtr(T)(scope const(T)* ptr) {
 
 @("StackFront")
 @safe @nogc unittest {
+    import std.algorithm: equal;
     import std.experimental.allocator.showcase: StackFront;
     import std.experimental.allocator.mallocator: Mallocator;
 
@@ -490,7 +491,7 @@ private void takesScopePtr(T)(scope const(T)* ptr) {
         v ~= 1;
         {
             int[1] expected = [1];
-            assert(v[] == expected[]);
+            assert(equal(v.range, expected[]));
         }
     }
 
@@ -549,13 +550,17 @@ else {
 
 @("noconsume")
 @safe unittest {
+    import std.algorithm: equal;
+
     scope v = vector(1, 2, 3);
+
     static void fun(R)(R range) {
         import std.array: array;
-        assert(range.array == [1, 2, 3]);
+        assert(equal(range, [1, 2, 3]));
     }
-    fun(v[]);
-    assert(v[] == [1, 2, 3]);
+
+    fun(v.range);
+    assert(equal(v.range, [1, 2, 3]));
 }
 
 @("reserve")
