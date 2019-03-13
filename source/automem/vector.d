@@ -280,6 +280,10 @@ struct Vector(E, Allocator = typeof(theAllocator)) if(isAllocator!Allocator) {
         }
     }
 
+    /**
+       Return a forward range of the vector contents.
+       Negative `end` values work like in Python.
+     */
     auto range(this This)(in long start = 0, long end = -1) scope return
         in(start >= 0)
         in(end <= length)
