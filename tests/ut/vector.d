@@ -15,15 +15,15 @@ import test_allocator;
 
 @("vector.int")
 @safe unittest {
-    vector(1, 2, 3, 4, 5)[].should == [1, 2, 3, 4, 5];
-    vector(2, 3, 4)[].should == [2, 3, 4];
-    vector(2, 3, 4)[].should == [2, 3, 4];
+    vector(1, 2, 3, 4, 5).range.should == [1, 2, 3, 4, 5];
+    vector(2, 3, 4).range.should == [2, 3, 4];
+    vector(2, 3, 4).range.should == [2, 3, 4];
 }
 
 @("vector.double")
 @safe unittest {
-    vector(33.3)[].should == [33.3];
-    vector(22.2, 77.7)[].should == [22.2, 77.7];
+    vector(33.3).range.should == [33.3];
+    vector(22.2, 77.7).range.should == [22.2, 77.7];
 }
 
 @("copying")
@@ -33,8 +33,8 @@ import test_allocator;
     auto vec2 = vec1;
     vec1[1] = 7;
 
-    vec1[].should == [1, 7, 3];
-    vec2[].should == [1, 2, 3];
+    vec1.range.should == [1, 7, 3];
+    vec2.range.should == [1, 2, 3];
 }
 
 @("bounds check")
@@ -53,13 +53,13 @@ import test_allocator;
     auto vec = vector(0, 1, 2, 3);
 
     vec ~= 4;
-    vec[].should == [0, 1, 2, 3, 4];
+    vec.range.should == [0, 1, 2, 3, 4];
 
     vec ~= [5, 6];
-    vec[].should == [0, 1, 2, 3, 4, 5, 6];
+    vec.range.should == [0, 1, 2, 3, 4, 5, 6];
 
     vec ~= [1, 2].map!(a => a + 10);
-    vec[].should == [0, 1, 2, 3, 4, 5, 6, 11, 12];
+    vec.range.should == [0, 1, 2, 3, 4, 5, 6, 11, 12];
 }
 
 
@@ -69,9 +69,9 @@ import test_allocator;
 
     auto vec = vector(0, 1, 2, 3);
     vec.put(4);
-    vec[].should == [0, 1, 2, 3, 4];
+    vec.range.should == [0, 1, 2, 3, 4];
     vec.put(2.iota);
-    vec[].should == [0, 1, 2, 3, 4, 0, 1];
+    vec.range.should == [0, 1, 2, 3, 4, 0, 1];
 }
 
 @("append")
@@ -80,44 +80,44 @@ import test_allocator;
     auto vec2 = vector(3, 4);
 
     auto vec3 =  vec1 ~ vec2;
-    vec3[].should == [0, 1, 2, 3, 4];
+    vec3.range.should == [0, 1, 2, 3, 4];
 
     vec1[0] = 7;
     vec2[0] = 9;
-    vec3[].should == [0, 1, 2, 3, 4];
+    vec3.range.should == [0, 1, 2, 3, 4];
 
 
     // make sure capacity is larger
     vec1 ~= 100;
     vec1.capacity.shouldBeGreaterThan(vec1.length);
-    vec1[].should == [7, 1, 2, 100];
+    vec1.range.should == [7, 1, 2, 100];
 
     vec2 ~= 200;
     vec2.capacity.shouldBeGreaterThan(vec2.length);
-    vec2[].should == [9, 4, 200];
+    vec2.range.should == [9, 4, 200];
 
-    (vec1 ~ vec2)[].should == [7, 1, 2, 100, 9, 4, 200];
-    (vec1 ~ vector(11, 12, 13, 14, 15))[].should == [7, 1, 2, 100, 11, 12, 13, 14, 15];
+    (vec1 ~ vec2).range.should == [7, 1, 2, 100, 9, 4, 200];
+    (vec1 ~ vector(11, 12, 13, 14, 15)).range.should == [7, 1, 2, 100, 11, 12, 13, 14, 15];
 }
 
 @("slice")
-@safe unittest {
+@system unittest {
     const vec = vector(0, 1, 2, 3, 4, 5);
-    vec[][].should == [0, 1, 2, 3, 4, 5];
-    vec[1 .. 3][].should == [1, 2];
-    vec[1 .. 4][].should == [1, 2, 3];
-    vec[2 .. 5][].should == [2, 3, 4];
-    vec[1 .. $ - 1][].should == [1, 2, 3, 4];
+    vec[].should == [0, 1, 2, 3, 4, 5];
+    vec[1 .. 3].should == [1, 2];
+    vec[1 .. 4].should == [1, 2, 3];
+    vec[2 .. 5].should == [2, 3, 4];
+    vec[1 .. $ - 1].should == [1, 2, 3, 4];
 }
 
 @("opDollar")
-@safe unittest {
+@system unittest {
     auto vec = vector(0, 1, 2, 3, 4);
     vec ~= 5;
     vec ~= 6;
     vec.capacity.shouldBeGreaterThan(vec.length);
 
-    vec[1 .. $ - 1][].should == [1, 2, 3, 4, 5];
+    vec[1 .. $ - 1].should == [1, 2, 3, 4, 5];
 }
 
 @("assign")
@@ -125,33 +125,28 @@ import test_allocator;
     import std.range: iota;
     auto vec = vector(10, 11, 12);
     vec = 5.iota;
-    vec[].should == [0, 1, 2, 3, 4];
+    vec.range.should == [0, 1, 2, 3, 4];
 }
 
 @("construct from range")
 @safe unittest {
     import std.range: iota;
-    vector(5.iota)[].should == [0, 1, 2, 3, 4];
+    vector(5.iota).range.should == [0, 1, 2, 3, 4];
 }
 
-@("front")
-@safe unittest {
-    vector(1, 2, 3).front.should == 1;
-    vector(2, 3).front.should == 2;
-}
 
 @("popBack")
 @safe unittest {
     auto vec = vector(0, 1, 2);
     vec.popBack;
-    vec[].should == [0, 1];
+    vec.range.should == [0, 1];
 }
 
 @("popFront")
 @safe unittest {
     auto vec = vector(0, 1, 2, 3, 4);
     vec.popFront;
-    vec[].should == [1, 2, 3, 4];
+    vec.range.should == [1, 2, 3, 4];
     vec.empty.shouldBeFalse;
 
     foreach(i; 0 ..  vec.length) vec.popFront;
@@ -159,35 +154,29 @@ import test_allocator;
 }
 
 
-@("back")
-@safe unittest {
-    const vec = vector("foo", "bar", "baz");
-    vec.back[].should ==("baz");
-}
-
 @("opSliceAssign")
 @safe unittest {
     auto vec = vector("foo", "bar", "quux", "toto");
 
     vec[] = "haha";
-    vec[].should == ["haha", "haha", "haha", "haha"];
+    vec.range.should == ["haha", "haha", "haha", "haha"];
 
     vec[1..3] = "oops";
-    vec[].should == ["haha", "oops", "oops", "haha"];
+    vec.range.should == ["haha", "oops", "oops", "haha"];
 }
 
 @("opSliceOpAssign")
 @safe unittest {
     auto vec = vector("foo", "bar", "quux", "toto");
     vec[] ~= "oops";
-    vec[].should == ["foooops", "baroops", "quuxoops", "totooops"];
+    vec.range.should == ["foooops", "baroops", "quuxoops", "totooops"];
 }
 
 @("opSliceOpAssign range")
 @safe unittest {
     auto vec = vector("foo", "bar", "quux", "toto");
     vec[1..3] ~= "oops";
-    vec[].should == ["foo", "baroops", "quuxoops", "toto"];
+    vec.range.should == ["foo", "baroops", "quuxoops", "toto"];
 }
 
 @("clear")
@@ -195,7 +184,7 @@ import test_allocator;
     auto vec = vector(0, 1, 2, 3);
     vec.clear;
     int[] empty;
-    vec[].should ==(empty);
+    vec.range.should ==(empty);
 }
 
 
@@ -204,7 +193,7 @@ import test_allocator;
     import std.algorithm: equal;
     auto vec = vector!Mallocator(0, 1, 2, 3);
     int[4] exp = [0, 1, 2, 3];
-    assert(equal(vec[], exp[]));
+    assert(equal(vec.range, exp[]));
 }
 
 @("Mallocator range")
@@ -213,7 +202,7 @@ import test_allocator;
     import std.range: iota;
     auto vec = vector!Mallocator(iota(5));
     int[5] exp = [0, 1, 2, 3, 4];
-    assert(equal(vec[], exp[]));
+    assert(equal(vec.range, exp[]));
 }
 
 
@@ -228,14 +217,33 @@ import test_allocator;
     Vector!(int, Mallocator) vec;
 }
 
-@("Cannot escape slice")
-@safe @nogc unittest {
-    int[] ints1;
-    scope vec = vector!Mallocator(0, 1, 2, 3);
-    int[] ints2;
 
-    static assert(!__traits(compiles, ints1 = vec[]));
-    static assert(__traits(compiles, ints2 = vec[]));
+@("escape.range")
+@safe @nogc unittest {
+
+    alias Ints = typeof(Vector!(int, Mallocator).init.range());
+
+    Ints ints1;
+    scope vec = vector!Mallocator(0, 1, 2, 3);
+    Ints ints2;
+
+    static assert(!__traits(compiles, ints1 = vec.range));
+    ints2 = vec.range;  // should compile
+}
+
+
+@("escape.element")
+@safe unittest {
+
+    int i = 1;
+    int j = 2;
+
+    int* oops;
+    scope vec = vector(&i, &j);
+    int* ok;
+
+    static assert(!__traits(compiles, oops = vec[0]));
+    ok = vec[0];
 }
 
 
@@ -244,7 +252,7 @@ import test_allocator;
     static TestAllocator allocator;
 
     auto vec = vector(&allocator, 0, 1, 2);
-    vec[].should == [0, 1, 2];
+    vec.range.should == [0, 1, 2];
 
     vec ~= 3;
     vec ~= 4;
@@ -253,7 +261,7 @@ import test_allocator;
     vec ~= 7;
     vec ~= 8;
 
-    vec[].should == [0, 1, 2, 3, 4, 5, 6, 7, 8];
+    vec.range.should == [0, 1, 2, 3, 4, 5, 6, 7, 8];
     allocator.numAllocations.shouldBeSmallerThan(4);
 }
 
@@ -264,7 +272,7 @@ import test_allocator;
     auto vec = vector!(TestAllocator*, int)(&allocator);
 
     vec.reserve(5);
-    () @trusted { vec.shouldBeEmpty; }();
+    () @trusted { vec.empty.should == true; }();
 
     vec ~= 0;
     vec ~= 1;
@@ -272,11 +280,11 @@ import test_allocator;
     vec ~= 3;
     vec ~= 4;
 
-    vec[].should == [0, 1, 2, 3, 4];
+    vec.range.should == [0, 1, 2, 3, 4];
     allocator.numAllocations.should == 1;
 
     vec ~= 5;
-    vec[].should == [0, 1, 2, 3, 4, 5];
+    vec.range.should == [0, 1, 2, 3, 4, 5];
     allocator.numAllocations.should == 2;
 }
 
@@ -339,11 +347,11 @@ import test_allocator;
     vec.capacity.should == 10;
 
     vec.shrink(5);
-    vec[].should == [0, 1, 2, 3, 4];
+    vec.range.should == [0, 1, 2, 3, 4];
     vec.capacity.should == 5;
 
     vec ~= 5;
-    vec[].should == [0, 1, 2, 3, 4, 5];
+    vec.range.should == [0, 1, 2, 3, 4, 5];
     allocator.numAllocations.should == 3;
 
     vec.reserve(10);
@@ -383,13 +391,13 @@ private void consumeVec(T)(auto ref T vec) {
 @safe unittest {
     Vector!int vec;
     vec.length = 3;
-    vec[].should == [0, 0, 0];
+    vec.range.should == [0, 0, 0];
 }
 
 
 @("foreach")
 @safe unittest {
-    foreach(e; vector(7, 7, 7)) {
+    foreach(e; vector(7, 7, 7).range) {
         e.should == 7;
     }
 }
@@ -401,7 +409,7 @@ private void consumeVec(T)(auto ref T vec) {
     import std.algorithm: equal;
 
     auto v = vector(0, 1, 2, 3);
-    assert(equal(v, 4.iota));
+    assert(equal(v.range, 4.iota));
 }
 
 
@@ -418,25 +426,25 @@ private void consumeVec(T)(auto ref T vec) {
 @safe unittest {
     {
         auto vec = vector('f', 'o', 'o');
-        vec[].should ==("foo");
+        vec.range.should ==("foo");
         vec ~= 'b';
         vec ~= ['a', 'r'];
-        vec[].should ==("foobar");
+        vec.range.should ==("foobar");
         vec ~= "quux";
-        vec[].should ==("foobarquux");
+        vec.range.should ==("foobarquux");
     }
 
     {
         auto vec = vector("foo");
-        vec[].should ==("foo");
+        vec.range.should ==("foo");
         vec.popBack;
-        vec[].should ==("fo");
+        vec.range.should ==("fo");
     }
 
     {
         auto vec = vector("foo");
         vec ~= "bar";
-        vec[].should ==("foobar");
+        vec.range.should ==("foobar");
     }
 }
 
@@ -445,13 +453,13 @@ private void consumeVec(T)(auto ref T vec) {
 @safe unittest {
     Vector!(immutable int) vec;
     vec ~= 42;
-    vec[].should == [42];
+    vec.range.should == [42];
 }
 
 
 @("String")
 @safe unittest {
-    foreach(c; String("oooooo"))
+    foreach(c; String("oooooo").range)
         c.should == 'o';
 }
 
@@ -462,7 +470,7 @@ private void consumeVec(T)(auto ref T vec) {
     const strz = str.stringz;
     const back = () @trusted { return fromStringz(strz); }();
     back.should == "foobar";
-    str[].should ==("foobar");
+    str.range.should ==("foobar");
 }
 
 
@@ -470,7 +478,7 @@ private void consumeVec(T)(auto ref T vec) {
 @safe unittest {
     const vec = vector(0, 1, 2, 3);
     takesScopePtr(vec.ptr);
-    () @trusted { vec.ptr[1].shouldEqual(1); }();
+    () @trusted { vec.ptr[1].should == 1; }();
 }
 
 private void takesScopePtr(T)(scope const(T)* ptr) {
@@ -480,6 +488,7 @@ private void takesScopePtr(T)(scope const(T)* ptr) {
 
 @("StackFront")
 @safe @nogc unittest {
+    import std.algorithm: equal;
     import std.experimental.allocator.showcase: StackFront;
     import std.experimental.allocator.mallocator: Mallocator;
 
@@ -490,7 +499,7 @@ private void takesScopePtr(T)(scope const(T)* ptr) {
         v ~= 1;
         {
             int[1] expected = [1];
-            assert(v[] == expected[]);
+            assert(equal(v.range, expected[]));
         }
     }
 
@@ -520,8 +529,8 @@ else {
 @("2d")
 @safe unittest {
     auto v = vector(vector(0, 0, 0), vector(1, 1, 1, 1));
-    v[0][].should == [0, 0, 0];
-    v[1][].should == [1, 1, 1, 1];
+    v[0].range.should == [0, 0, 0];
+    v[1].range.should == [1, 1, 1, 1];
 }
 
 
@@ -529,7 +538,7 @@ else {
 @safe unittest {
     import std.conv: text;
     auto v = vector(1, 2, 3);
-    v.text.should == `[1, 2, 3]`;
+    v.range.text.should == `[1, 2, 3]`;
 }
 
 
@@ -543,17 +552,77 @@ else {
 
     auto v = fun;
     v ~= 5;
-    v[].should == [1, 2, 3, 4, 5];
+    v.range.should == [1, 2, 3, 4, 5];
 }
 
 
-@("noconsume")
+@("noconsume.range")
 @safe unittest {
+    import std.algorithm: equal;
+
     scope v = vector(1, 2, 3);
+
     static void fun(R)(R range) {
         import std.array: array;
-        assert(range.array == [1, 2, 3]);
+        assert(equal(range, [1, 2, 3]));
     }
-    fun(v[]);
-    assert(v[] == [1, 2, 3]);
+
+    fun(v.range);
+    assert(equal(v.range, [1, 2, 3]));
+}
+
+
+@("noconsume.foreach")
+@safe unittest {
+    scope v = vector(1, 2, 3);
+    foreach(e; v.range) {}
+    v.range.should == [1, 2, 3];
+}
+
+
+@("noconsume.map")
+@safe unittest {
+    import std.algorithm: map;
+
+    scope v = vector(1, 2, 3);
+    v.range.map!(a => a * 2).should == [2, 4, 6];
+    v.range.should == [1, 2, 3];
+}
+
+
+@("reserve")
+@safe unittest {
+    scope vec = vector(1, 2, 3);
+    vec.range.should == [1, 2, 3];
+    vec.reserve(10);
+    vec.range.should == [1, 2, 3];
+}
+
+
+@("range.reserve")
+@safe unittest {
+    scope vec = vector(1, 2, 3);
+    scope range = vec.range;
+
+    range.save.should == [1, 2, 3];
+    vec.reserve(10);
+
+    range.should == [1, 2, 3];
+}
+
+
+@("range.const")
+@safe unittest {
+    const vec = vector(1, 2, 3);
+    vec.range.should == [1, 2, 3];
+}
+
+
+@("range.bounds")
+@safe unittest {
+    const vec = vector(1, 2, 3, 4, 5);
+    vec.range(1, 4).should == [2, 3, 4];
+    vec.range(2, vec.length).should == [3, 4, 5];
+    vec.range(2, -1).should == [3, 4, 5];
+    vec.range(2, -2).should == [3, 4];
 }

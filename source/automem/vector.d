@@ -130,16 +130,6 @@ struct Vector(E, Allocator = typeof(theAllocator)) if(isAllocator!Allocator) {
         clear;
     }
 
-    /// Returns the first element
-    inout(E) front() inout {
-        return _elements[0];
-    }
-
-    /// Returns the last element
-    inout(E) back() inout {
-        return _elements[(length - 1).toSizeT];
-    }
-
     static if(isElementMutable) {
         /// Pops the front element off
         void popFront() {
@@ -206,7 +196,7 @@ struct Vector(E, Allocator = typeof(theAllocator)) if(isAllocator!Allocator) {
     }
 
     /// Access the ith element. Can throw RangeError.
-    ref inout(E) opIndex(long i) inout {
+    ref inout(E) opIndex(long i) scope return inout {
         if(i < 0 || i >= length)
             mixin(throwBoundsException);
         return _elements[i.toSizeT];
@@ -215,7 +205,8 @@ struct Vector(E, Allocator = typeof(theAllocator)) if(isAllocator!Allocator) {
     /// Returns a new vector after appending to the given vector.
     Vector opBinary(string s, T)(auto ref T other) const if(s == "~" && is(Unqual!T == Vector)) {
         import std.range: chain;
-        return Vector(chain(this[], other[]));
+        return Vector(chain(() @trusted { return this[]; }(),
+                            () @trusted { return other[]; }()));
     }
 
     /// Assigns from a range.
@@ -279,13 +270,65 @@ struct Vector(E, Allocator = typeof(theAllocator)) if(isAllocator!Allocator) {
         }
     }
 
-    /// Returns a slice
-    auto opSlice(this This)() scope return {
+    /**
+       Return a forward range of the vector contents.
+       Negative `end` values work like in Python.
+     */
+    auto range(this This)(in long start = 0, long end = -1) scope return
+        in(start >= 0)
+        in(end <= length)
+        do
+    {
+        import std.range.primitives: isForwardRange;
+
+        static struct Range {
+            private This* self;
+            private long index;
+            private long end;
+
+            Range save() {
+                return this;
+            }
+
+            auto front() {
+                return (*self)[index];
+            }
+
+            void popFront() {
+                ++index;
+            }
+
+            bool empty() const {
+                const comp = end < 0 ? length + end + 1 : end;
+                return index >= comp;
+            }
+
+            auto length() const {
+                return self.length;
+            }
+        }
+
+        static assert(isForwardRange!Range);
+
+        // FIXME - why isn't &this @safe?
+        return Range(() @trusted { return &this; }(),
+                     start,
+                     end);
+    }
+
+    /**
+       Returns a slice.
+       @system because the pointer in the slice might dangle.
+     */
+    auto opSlice(this This)() @system scope return {
         return _elements[0 .. length.toSizeT];
     }
 
-    /// Returns a slice
-    auto opSlice(this This)(long start, long end) scope return {
+    /**
+       Returns a slice.
+       @system because the pointer in the slice might dangle.
+     */
+    auto opSlice(this This)(long start, long end) @system scope return {
         if(start < 0 || start >= length)
             mixin(throwBoundsException);
 
