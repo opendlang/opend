@@ -9,7 +9,7 @@
     {
         "printed:canvas": "*",
         "printed:font": "*",
-        "printed:image": "*"
+        "printed:htmlcolors": "*"
     },
 
    "subPackages": [
