@@ -79,7 +79,20 @@ __m64 _mm_add_si64 (__m64 a, __m64 b) pure @safe
 
 version(LDC)
 {
-    alias _mm_adds_epi16 = __builtin_ia32_paddsw128;
+    static if (__VERSION__ >= 2085) // saturation x86 intrinsics disappeared in LLVM 8
+    {
+        // Generates PADDSW since LDC 1.15 -O0
+        __m128i _mm_adds_epi16(__m128i a, __m128i b) pure @trusted
+        {
+            enum prefix = `declare <8 x i16> @llvm.sadd.sat.v8i16(<8 x i16> %a, <8 x i16> %b)`;
+            enum ir = `
+                %r = call <8 x i16> @llvm.sadd.sat.v8i16( <8 x i16> %0, <8 x i16> %1)
+                ret <8 x i16> %r`;
+            return cast(__m128i) LDCInlineIREx!(prefix, ir, "", short8, short8, short8)(cast(short8)a, cast(short8)b);
+        }
+    }
+    else
+        alias _mm_adds_epi16 = __builtin_ia32_paddsw128;
 }
 else
 {
@@ -103,7 +116,20 @@ unittest
 
 version(LDC)
 {
-    alias _mm_adds_epi8 = __builtin_ia32_paddsb128;
+    static if (__VERSION__ >= 2085) // saturation x86 intrinsics disappeared in LLVM 8
+    {
+        // Generates PADDSB since LDC 1.15 -O0
+        __m128i _mm_adds_epi8(__m128i a, __m128i b) pure @trusted
+        {
+            enum prefix = `declare <16 x i8> @llvm.sadd.sat.v16i8(<16 x i8> %a, <16 x i8> %b)`;
+            enum ir = `
+                %r = call <16 x i8> @llvm.sadd.sat.v16i8( <16 x i8> %0, <16 x i8> %1)
+                ret <16 x i8> %r`;
+            return cast(__m128i) LDCInlineIREx!(prefix, ir, "", byte16, byte16, byte16)(cast(byte16)a, cast(byte16)b);
+        }
+    }
+    else
+        alias _mm_adds_epi8 = __builtin_ia32_paddsb128;
 }
 else
 {
@@ -128,7 +154,20 @@ unittest
 
 version(LDC)
 {
-    alias _mm_adds_epu8 = __builtin_ia32_paddusb128;
+    static if (__VERSION__ >= 2085) // saturation x86 intrinsics disappeared in LLVM 8
+    {
+        // Generates PADDUSB since LDC 1.15 -O0
+        __m128i _mm_adds_epu8(__m128i a, __m128i b) pure @trusted
+        {
+            enum prefix = `declare <16 x i8> @llvm.uadd.sat.v16i8(<16 x i8> %a, <16 x i8> %b)`;
+            enum ir = `
+                %r = call <16 x i8> @llvm.uadd.sat.v16i8( <16 x i8> %0, <16 x i8> %1)
+                ret <16 x i8> %r`;
+            return cast(__m128i) LDCInlineIREx!(prefix, ir, "", byte16, byte16, byte16)(cast(byte16)a, cast(byte16)b);
+        }
+    }
+    else
+        alias _mm_adds_epu8 = __builtin_ia32_paddusb128;
 }
 else
 {
@@ -145,7 +184,20 @@ else
 
 version(LDC)
 {
-    alias _mm_adds_epu16 = __builtin_ia32_paddusw128;
+    static if (__VERSION__ >= 2085) // saturation x86 intrinsics disappeared in LLVM 8
+    {
+        // Generates PADDUSW since LDC 1.15 -O0
+        __m128i _mm_adds_epu16(__m128i a, __m128i b) pure @trusted
+        {
+            enum prefix = `declare <8 x i16> @llvm.uadd.sat.v8i16(<8 x i16> %a, <8 x i16> %b)`;
+            enum ir = `
+                %r = call <8 x i16> @llvm.uadd.sat.v8i16( <8 x i16> %0, <8 x i16> %1)
+                ret <8 x i16> %r`;
+            return cast(__m128i) LDCInlineIREx!(prefix, ir, "", short8, short8, short8)(cast(short8)a, cast(short8)b);
+        }
+    }
+    else
+        alias _mm_adds_epu16 = __builtin_ia32_paddusw128;
 }
 else
 {
@@ -2714,7 +2766,20 @@ __m64 _mm_sub_si64 (__m64 a, __m64 b) pure @safe
 
 version(LDC)
 {
-    alias _mm_subs_epi16 = __builtin_ia32_psubsw128;
+    static if (__VERSION__ >= 2085) // saturation x86 intrinsics disappeared in LLVM 8
+    {
+        // Generates PSUBSW since LDC 1.15 -O0
+        __m128i _mm_subs_epi16(__m128i a, __m128i b) pure @trusted
+        {
+            enum prefix = `declare <8 x i16> @llvm.ssub.sat.v8i16(<8 x i16> %a, <8 x i16> %b)`;
+            enum ir = `
+                %r = call <8 x i16> @llvm.ssub.sat.v8i16( <8 x i16> %0, <8 x i16> %1)
+                ret <8 x i16> %r`;
+            return cast(__m128i) LDCInlineIREx!(prefix, ir, "", short8, short8, short8)(cast(short8)a, cast(short8)b);
+        }
+    }
+    else
+        alias _mm_subs_epi16 = __builtin_ia32_psubsw128;
 }
 else
 {
@@ -2738,7 +2803,20 @@ unittest
 
 version(LDC)
 {
-    alias _mm_subs_epi8 = __builtin_ia32_psubsb128;
+    static if (__VERSION__ >= 2085) // saturation x86 intrinsics disappeared in LLVM 8
+    {
+        // Generates PSUBSB since LDC 1.15 -O0
+        __m128i _mm_subs_epi8(__m128i a, __m128i b) pure @trusted
+        {
+            enum prefix = `declare <16 x i8> @llvm.ssub.sat.v16i8(<16 x i8> %a, <16 x i8> %b)`;
+            enum ir = `
+                %r = call <16 x i8> @llvm.ssub.sat.v16i8( <16 x i8> %0, <16 x i8> %1)
+                ret <16 x i8> %r`;
+            return cast(__m128i) LDCInlineIREx!(prefix, ir, "", byte16, byte16, byte16)(cast(byte16)a, cast(byte16)b);
+        }
+    }
+    else
+        alias _mm_subs_epi8 = __builtin_ia32_psubsb128;
 }
 else
 {
@@ -2762,7 +2840,20 @@ unittest
 
 version(LDC)
 {
-    alias _mm_subs_epu16 = __builtin_ia32_psubusw128;
+    static if (__VERSION__ >= 2085) // saturation x86 intrinsics disappeared in LLVM 8
+    {
+        // Generates PSUBUSW since LDC 1.15 -O0
+        __m128i _mm_subs_epu16(__m128i a, __m128i b) pure @trusted
+        {
+            enum prefix = `declare <8 x i16> @llvm.usub.sat.v8i16(<8 x i16> %a, <8 x i16> %b)`;
+            enum ir = `
+                %r = call <8 x i16> @llvm.usub.sat.v8i16( <8 x i16> %0, <8 x i16> %1)
+                ret <8 x i16> %r`;
+            return cast(__m128i) LDCInlineIREx!(prefix, ir, "", short8, short8, short8)(cast(short8)a, cast(short8)b);
+        }
+    }
+    else
+        alias _mm_subs_epu16 = __builtin_ia32_psubusw128;
 }
 else
 {
@@ -2790,7 +2881,20 @@ unittest
 
 version(LDC)
 {
-    alias _mm_subs_epu8 = __builtin_ia32_psubusb128;
+    static if (__VERSION__ >= 2085) // saturation x86 intrinsics disappeared in LLVM 8
+    {
+        // Generates PSUBUSB since LDC 1.15 -O0
+        __m128i _mm_subs_epu8(__m128i a, __m128i b) pure @trusted
+        {
+            enum prefix = `declare <16 x i8> @llvm.usub.sat.v16i8(<16 x i8> %a, <16 x i8> %b)`;
+            enum ir = `
+                %r = call <16 x i8> @llvm.usub.sat.v16i8( <16 x i8> %0, <16 x i8> %1)
+                ret <16 x i8> %r`;
+            return cast(__m128i) LDCInlineIREx!(prefix, ir, "", byte16, byte16, byte16)(cast(byte16)a, cast(byte16)b);
+        }
+    }
+    else    
+        alias _mm_subs_epu8 = __builtin_ia32_psubusb128;
 }
 else
 {

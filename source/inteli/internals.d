@@ -23,6 +23,9 @@ version(LDC)
     {
          import ldc.llvmasm;
          alias LDCInlineIR = __ir_pure;
+
+         // A version of inline IR with prefix/suffix didn't exist before LDC 1.13
+         alias LDCInlineIREx = __irEx_pure; 
     }
     else
     {
