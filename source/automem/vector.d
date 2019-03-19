@@ -115,12 +115,12 @@ struct Vector(E, Allocator = typeof(theAllocator)) if(isAllocator!Allocator) {
 
     /// Frees the memory and returns to .init
     void free() scope {
-        import std.traits: Unqual;
         import std.experimental.allocator: dispose;
 
+        // dispose is @system for theAllocator
         () @trusted {
             static if(is(E == immutable))
-                auto elements = cast(Unqual!E[]) _elements;
+                auto elements = cast(MutE[]) _elements;
             else
                 alias elements = _elements;
 
