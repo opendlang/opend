@@ -239,12 +239,15 @@ struct Vector(E, Allocator = typeof(theAllocator)) if(isAllocator!Allocator) {
         expand(length + 1);
 
         const lastIndex = (length - 1).toSizeT;
-        static if(!isElementMutable) {
+
+        static if(isElementMutable)
+            _elements[lastIndex] = other;
+        else {
             assert(_elements[lastIndex] == E.init,
                    "Assigning to non default initialised non mutable member");
-        }
 
-        () @trusted { mutableElements[lastIndex] = other; }();
+            () @trusted { mutableElements[lastIndex] = other; }();
+        }
     }
 
     /// Append to the vector from a range
@@ -256,11 +259,17 @@ struct Vector(E, Allocator = typeof(theAllocator)) if(isAllocator!Allocator) {
         put(range);
     }
 
-    void put(R)(scope R range) if(isForwardRangeOf!(R, E)) {
+    void put(R)(scope R range) if(isLengthRangeOf!(R, E)) {
         import std.range.primitives: walkLength, save;
 
         long index = length;
-        expand(length + () @trusted { return range.save.walkLength; }());
+
+        static if(hasLength!R)
+            const rangeLength = range.length;
+        else
+            const rangeLength = range.save.walkLength;
+
+        expand(length + rangeLength);
 
         foreach(element; range) {
             const safeIndex = toSizeT(index++);
@@ -268,7 +277,14 @@ struct Vector(E, Allocator = typeof(theAllocator)) if(isAllocator!Allocator) {
                 assert(_elements[safeIndex] == E.init,
                        "Assigning to non default initialised non mutable member");
             }
-            () @trusted { mutableElements[safeIndex] = element; }();
+
+            static if(isElementMutable)
+                _elements[safeIndex] = element;
+            else {
+                assert(_elements[safeIndex] == E.init,
+                       "Assigning to non default initialised non mutable member");
+                () @trusted { mutableElements[safeIndex] = element; }();
+            }
         }
     }
 
@@ -392,16 +408,19 @@ struct Vector(E, Allocator = typeof(theAllocator)) if(isAllocator!Allocator) {
     }
 
     static if(is(Unqual!E == char)) {
+
         // return a null-terminated C string
         auto stringz(this This)() return scope {
             if(capacity == length) reserve(length + 1);
 
-            static if(!isElementMutable) {
+            static if(isElementMutable) {
+                _elements[length.toSizeT] = 0;
+            } else {
                 assert(_elements[length.toSizeT] == E.init || _elements[length.toSizeT] == 0,
                        "Assigning to non default initialised non mutable member");
-            }
 
-            () @trusted { mutableElements[length.toSizeT] = 0; }();
+                () @trusted { mutableElements[length.toSizeT] = 0; }();
+            }
 
             return &_elements[0];
         }
@@ -496,6 +515,16 @@ private template isForwardRangeOf(R, E) {
     import std.range.primitives: isForwardRange;
     enum isForwardRangeOf = isForwardRange!R && canAssignFrom!(R, E);
 }
+
+
+private enum hasLength(R) = is(typeof({
+    import std.traits: isIntegral;
+    auto length = R.init.length;
+    static assert(isIntegral!(typeof(length)));
+}));
+
+
+private enum isLengthRangeOf(R, E) = isForwardRangeOf!(R, E) || hasLength!R;
 
 private template canAssignFrom(R, E) {
     enum canAssignFrom = is(typeof({
