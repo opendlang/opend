@@ -102,11 +102,16 @@ struct Vector(E, Allocator = typeof(theAllocator)) if(isAllocator!Allocator) {
     }
 
     this(this) scope {
+
         auto oldElements = _elements;
         _elements = createVector(_elements.length);
-        () @trusted {
-            cast(MutE[])(_elements)[0 .. length.toSizeT] = oldElements[0 .. length.toSizeT];
-        }();
+
+        static if(isElementMutable)
+            _elements[0 .. length.toSizeT] = oldElements[0 .. length.toSizeT];
+        else
+            () @trusted {
+                cast(MutE[])(_elements)[0 .. length.toSizeT] = oldElements[0 .. length.toSizeT];
+            }();
     }
 
     ~this() {
@@ -184,6 +189,7 @@ struct Vector(E, Allocator = typeof(theAllocator)) if(isAllocator!Allocator) {
         }
 
         /// Shrink to fit the new length given. Returns if shrunk.
+        // FIXME: shrinkArray can leave dangling pointers.
         bool shrink(long newLength) scope @trusted {
             import std.experimental.allocator: shrinkArray;
 
@@ -444,13 +450,19 @@ private:
 
     E[] createVector(long length) scope {
         import std.experimental.allocator: makeArray;
+        // theAllocator.makeArray is @system
         return () @trusted { return _allocator.makeArray!E(length.toSizeT); }();
     }
 
     void fromElements(E[] elements) {
 
         _elements = createVector(elements.length);
-        () @trusted { (cast(MutE[]) _elements)[] = elements[]; }();
+
+        static if(isElementMutable)
+            _elements[] = elements[];
+        else
+            () @trusted { (cast(MutE[]) _elements)[] = elements[]; }();
+
         _length = elements.length;
     }
 
@@ -468,6 +480,7 @@ private:
             else {
                 const newCapacity = (newLength * 3) / 2;
                 const delta = newCapacity - capacity;
+                // FIXME: expandArray could leave dangling pointers
                 () @trusted { _allocator.expandArray(mutableElements, delta.toSizeT); }();
             }
         }
