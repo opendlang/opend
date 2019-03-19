@@ -36,7 +36,7 @@ configuration "asan" {
     dflags "-fsanitize=address" platform="ldc"
 
     // unit threaded light is necessary for the tests to actually run
-    versions "AutomemTesting" "unitUnthreaded" "unitThreadedLight"
+    versions "AutomemTesting" "AutomemAsan" "unitUnthreaded" "unitThreadedLight"
 
     dependency "unit-threaded" version="*"
     dependency "test_allocator" version="*"
