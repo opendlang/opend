@@ -9,9 +9,9 @@ packages:
 
 matrix:
   include:
+    - d: dmd-2.085.0
     - d: dmd-2.084.1
     - d: dmd-2.083.1
-    - d: dmd-2.082.1
     - d: ldc-1.14.0
     - d: ldc-1.13.0
     - d: ldc-1.12.0
