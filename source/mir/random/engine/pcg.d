@@ -84,19 +84,13 @@ alias pcg128_oneseq_once_insecure = PermutedCongruentialEngine!(rxs_m_xs_forward
 /++
  + The PermutedCongruentialEngine:
  + Params:
- +  output - should be one of the above functions.
+ +  output = should be one of the above functions.
  +      Controls the output permutation of the state.
- +  stream - one of unique, none, oneseq, specific.
+ +  stream = one of unique, none, oneseq, specific.
  +      Controls the Increment of the LCG portion of the PCG.
- +      unique   - increment is cast(size_t) &RNG
- +      none     - increment is 0.
- +      oneseq   - increment is the default increment.
- +      specific - increment is runtime setable and defaults to the default (same as oneseq)
- +  output_previous
- +      if true then the pre-advance version (increasing instruction-level parallelism)
+ +  output_previous = if true then the pre-advance version (increasing instruction-level parallelism)
  +      if false then use the post-advance version (reducing register pressure)
- +  mult_
- +      optionally set the multiplier for the LCG.
+ +  mult_ = optionally set the multiplier for the LCG.
  +/
 struct PermutedCongruentialEngine(alias output,        // Output function
                                   stream_t stream,     // The stream type
@@ -436,9 +430,13 @@ mixin template specific_stream(Uint)
 /// Select the above mixin templates.
 enum stream_t
 {
+    /// Increment is cast(size_t) &RNG.
     unique,
+    /// Increment is 0.
     none,
+    /// Increment is the default increment.
     oneseq,
+    /// Increment is runtime setable and defaults to the default (same as oneseq)
     specific,
 }
 
