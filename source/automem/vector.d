@@ -79,7 +79,8 @@ struct Vector(E, Allocator = typeof(theAllocator)) if(isAllocator!Allocator) {
         }
 
         this(R)(R range) if(isInputRangeOf!(R, E)) {
-            this = range;
+            // reallocating is ok if only allocating now
+            () @trusted { this = range; }();
         }
 
     } else static if(isCopyable!Allocator) {
@@ -188,9 +189,12 @@ struct Vector(E, Allocator = typeof(theAllocator)) if(isAllocator!Allocator) {
             return shrink(length);
         }
 
-        /// Shrink to fit the new length given. Returns if shrunk.
-        // FIXME: shrinkArray can leave dangling pointers.
-        bool shrink(long newLength) scope @trusted {
+        /**
+           Shrink to fit the new length given. Returns if shrunk.
+           Cannot be made @safe due to reallocation causing pointers
+           to dangle.
+        */
+        bool shrink(long newLength) scope {
             import std.experimental.allocator: shrinkArray;
 
             const delta = capacity - newLength;
@@ -471,7 +475,9 @@ private:
         _length = newLength;
     }
 
-    void expandMemory(long newLength) scope {
+
+    // @system since reallocating can cause pointers to dangle
+    void expandMemory(long newLength) scope @system {
         import std.experimental.allocator: expandArray;
 
         if(newLength > capacity) {
@@ -480,8 +486,7 @@ private:
             else {
                 const newCapacity = (newLength * 3) / 2;
                 const delta = newCapacity - capacity;
-                // FIXME: expandArray could leave dangling pointers
-                () @trusted { _allocator.expandArray(mutableElements, delta.toSizeT); }();
+                _allocator.expandArray(mutableElements, delta.toSizeT);
             }
         }
     }

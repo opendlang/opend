@@ -29,7 +29,7 @@ import test_allocator;
 @("copying")
 @safe unittest {
     auto vec1 = vector(1, 2, 3);
-    vec1.reserve(10);
+    () @trusted { vec1.reserve(10); }();
     auto vec2 = vec1;
     vec1[1] = 7;
 
@@ -41,13 +41,13 @@ import test_allocator;
 @safe unittest {
 
     auto vec = vector(1, 2, 3);
-    vec.reserve(10);
+    () @trusted { vec.reserve(10); }();
     vec[3].shouldThrow!BoundsException;
     vec[-1].shouldThrow!BoundsException;
 }
 
 @("extend")
-@safe unittest {
+@system unittest {
     import std.algorithm: map;
 
     auto vec = vector(0, 1, 2, 3);
@@ -64,7 +64,7 @@ import test_allocator;
 
 
 @("put")
-@safe unittest {
+@system unittest {
     import std.range: iota;
 
     auto vec = vector(0, 1, 2, 3);
@@ -75,7 +75,7 @@ import test_allocator;
 }
 
 @("append")
-@safe unittest {
+@system unittest {
     auto vec1 = vector(0, 1, 2);
     auto vec2 = vector(3, 4);
 
@@ -121,7 +121,7 @@ import test_allocator;
 }
 
 @("assign")
-@safe unittest {
+@system unittest {
     import std.range: iota;
     auto vec = vector(10, 11, 12);
     vec = 5.iota;
@@ -248,7 +248,7 @@ import test_allocator;
 
 
 @("TestAllocator elements capacity")
-@safe unittest {
+@system unittest {
     static TestAllocator allocator;
 
     auto vec = vector(&allocator, 0, 1, 2);
@@ -266,7 +266,7 @@ import test_allocator;
 }
 
 @("TestAllocator reserve")
-@safe unittest {
+@system unittest {
     static TestAllocator allocator;
 
     auto vec = vector!(TestAllocator*, int)(&allocator);
@@ -289,7 +289,7 @@ import test_allocator;
 }
 
 @("TestAllocator shrink no length")
-@safe unittest {
+@system unittest {
     static TestAllocator allocator;
 
     auto vec = vector!(TestAllocator*, int)(&allocator);
@@ -309,7 +309,7 @@ import test_allocator;
 }
 
 @("TestAllocator shrink negative number")
-@safe unittest {
+@system unittest {
     static TestAllocator allocator;
 
     auto vec = vector(&allocator, 0);
@@ -324,7 +324,7 @@ import test_allocator;
 }
 
 @("TestAllocator shrink larger than capacity")
-@safe unittest {
+@system unittest {
     static TestAllocator allocator;
 
     auto vec = vector(&allocator, 0);
@@ -340,7 +340,7 @@ import test_allocator;
 
 
 @("TestAllocator shrink with length")
-@safe unittest {
+@system unittest {
     static TestAllocator allocator;
 
     auto vec = vector(&allocator, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9);
@@ -388,7 +388,7 @@ private void consumeVec(T)(auto ref T vec) {
 
 
 @("set length")
-@safe unittest {
+@system unittest {
     Vector!int vec;
     vec.length = 3;
     vec.range.should == [0, 0, 0];
@@ -423,7 +423,7 @@ private void consumeVec(T)(auto ref T vec) {
 }
 
 @("char")
-@safe unittest {
+@system unittest {
     {
         auto vec = vector('f', 'o', 'o');
         vec.range.should ==("foo");
@@ -449,8 +449,8 @@ private void consumeVec(T)(auto ref T vec) {
 }
 
 
-@("immutable")
-@safe unittest {
+@("immutable.append")
+@system unittest {
     Vector!(immutable int) vec;
     vec ~= 42;
     vec.range.should == [42];
@@ -464,7 +464,7 @@ private void consumeVec(T)(auto ref T vec) {
 }
 
 @("stringz")
-@safe unittest {
+@system unittest {
     import std.string: fromStringz;
     auto str = vector("foobar");
     const strz = str.stringz;
@@ -496,7 +496,7 @@ private void takesScopePtr(T)(scope const(T)* ptr) {
 
     {
         Vector!(int, Allocator) v;
-        v ~= 1;
+        () @trusted { v ~= 1; }();
         {
             int[1] expected = [1];
             assert(equal(v.range, expected[]));
@@ -543,7 +543,8 @@ else {
 
 
 @("return")
-@safe unittest {
+@system unittest {
+
     static auto fun() {
         auto v = vector(1, 2, 3);
         v ~= 4;
@@ -594,7 +595,7 @@ else {
 @safe unittest {
     scope vec = vector(1, 2, 3);
     vec.range.should == [1, 2, 3];
-    vec.reserve(10);
+    () @trusted { vec.reserve(10); }();
     vec.range.should == [1, 2, 3];
 }
 
@@ -605,7 +606,7 @@ else {
     scope range = vec.range;
 
     range.save.should == [1, 2, 3];
-    vec.reserve(10);
+    () @trusted { vec.reserve(10); }();
 
     range.should == [1, 2, 3];
 }
