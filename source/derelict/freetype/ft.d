@@ -195,9 +195,7 @@ class DerelictFTLoader : SharedLibLoader {
 
         bindFunc(cast(void**)&FT_Outline_Decompose, "FT_Outline_Decompose");
         bindFunc(cast(void**)&FT_Outline_New, "FT_Outline_New");
-        bindFunc(cast(void**)&FT_Outline_New_Internal, "FT_Outline_New_Internal");
         bindFunc(cast(void**)&FT_Outline_Done, "FT_Outline_Done");
-        bindFunc(cast(void**)&FT_Outline_Done_Internal, "FT_Outline_Done_Internal");
         bindFunc(cast(void**)&FT_Outline_Check, "FT_Outline_Check");
         bindFunc(cast(void**)&FT_Outline_Get_CBox, "FT_Outline_Get_CBox");
         bindFunc(cast(void**)&FT_Outline_Translate, "FT_Outline_Translate");

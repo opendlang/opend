@@ -192,9 +192,7 @@ extern(C) @nogc nothrow {
     // ftoutln.h
     alias da_FT_Outline_Decompose = FT_Error function(FT_Outline*,const(FT_Outline_Funcs)*,void*);
     alias da_FT_Outline_New = FT_Error function(FT_Library,FT_UInt,FT_Int,FT_Outline*);
-    alias da_FT_Outline_New_Internal = FT_Error function(FT_Memory,FT_UInt,FT_Int,FT_Outline*);
     alias da_FT_Outline_Done = FT_Error function(FT_Library,FT_Outline*);
-    alias da_FT_Outline_Done_Internal = FT_Error function(FT_Memory,FT_Outline*);
     alias da_FT_Outline_Check = FT_Error function(FT_Outline*);
     alias da_FT_Outline_Get_CBox = void function(const(FT_Outline)*,FT_BBox*);
     alias da_FT_Outline_Translate = void function(const(FT_Outline)*,FT_Pos,FT_Pos);
@@ -423,9 +421,7 @@ __gshared {
 
     da_FT_Outline_Decompose FT_Outline_Decompose;
     da_FT_Outline_New FT_Outline_New;
-    da_FT_Outline_New_Internal FT_Outline_New_Internal;
     da_FT_Outline_Done FT_Outline_Done;
-    da_FT_Outline_Done_Internal FT_Outline_Done_Internal;
     da_FT_Outline_Check FT_Outline_Check;
     da_FT_Outline_Get_CBox FT_Outline_Get_CBox;
     da_FT_Outline_Translate FT_Outline_Translate;
