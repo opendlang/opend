@@ -213,7 +213,9 @@ struct Vector(E, Allocator = typeof(theAllocator)) if(isAllocator!Allocator) {
     }
 
     /// Returns a new vector after appending to the given vector.
-    Vector opBinary(string s, T)(auto ref T other) const if(s == "~" && is(Unqual!T == Vector)) {
+    Vector opBinary(string s, T)(auto ref T other) const
+        if(s == "~" && is(Unqual!T == Vector))
+    {
         import std.range: chain;
         // opSlice is @system , but it's ok here because we're not
         // returning the slice but concatenating.
@@ -438,6 +440,26 @@ struct Vector(E, Allocator = typeof(theAllocator)) if(isAllocator!Allocator) {
 
     auto ptr(this This)() return scope {
         return &_elements[0];
+    }
+
+    bool opEquals(R)(R range) scope const
+        if(isInputRangeOf!(R, E))
+    {
+        import std.array: empty, popFront, front;
+
+        if(length == 0 && range.empty) return true;
+
+        foreach(i; 0 .. length) {
+            if(range.empty) return false;
+            if(range.front != this[i]) return false;
+            range.popFront;
+        }
+
+        return range.empty;
+    }
+
+    bool opEquals(OtherAllocator)(auto ref scope const(Vector!(E, OtherAllocator)) other) const {
+        return this == other.range;
     }
 
 private:

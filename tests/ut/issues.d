@@ -28,3 +28,17 @@ else {
         gVectorIntRange.length.should == 0;
     }
 }
+
+
+@("27")
+@safe unittest {
+    const str = String("foobar");
+
+    (str == "foobar").should == true;
+    (str == "barfoo").should == false;
+    (str == "quux").should == false;
+
+    (str == String("foobar")).should == true;
+    (str == String("barfoo")).should == false;
+    (str == String("quux")).should == false;
+}

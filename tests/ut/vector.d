@@ -627,3 +627,16 @@ else {
     vec.range(2, -1).should == [3, 4, 5];
     vec.range(2, -2).should == [3, 4];
 }
+
+
+@("equals")
+@safe unittest {
+    import std.range: iota, only;
+
+    const vec = vector(0, 1, 2);
+
+    (vec == 3.iota).should == true;
+    (vec == 2.iota).should == false;
+    (vec == 4.iota).should == false;
+    (vec == only(0)).should == false;
+}
