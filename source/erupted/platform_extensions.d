@@ -18,6 +18,7 @@ enum KHR_external_memory_win32;
 enum KHR_win32_keyed_mutex;
 enum KHR_external_semaphore_win32;
 enum KHR_external_fence_win32;
+enum GGP_stream_descriptor_surface;
 enum NV_external_memory_win32;
 enum NV_win32_keyed_mutex;
 enum NN_vi_surface;
@@ -25,6 +26,7 @@ enum EXT_acquire_xlib_display;
 enum MVK_ios_surface;
 enum MVK_macos_surface;
 enum ANDROID_external_memory_android_hardware_buffer;
+enum GGP_frame_token;
 enum FUCHSIA_imagepipe_surface;
 enum EXT_metal_surface;
 enum EXT_full_screen_exclusive;
@@ -37,6 +39,7 @@ alias USE_PLATFORM_XCB_KHR         = AliasSeq!( KHR_xcb_surface );
 alias USE_PLATFORM_WAYLAND_KHR     = AliasSeq!( KHR_wayland_surface );
 alias USE_PLATFORM_ANDROID_KHR     = AliasSeq!( KHR_android_surface, ANDROID_external_memory_android_hardware_buffer );
 alias USE_PLATFORM_WIN32_KHR       = AliasSeq!( KHR_win32_surface, KHR_external_memory_win32, KHR_win32_keyed_mutex, KHR_external_semaphore_win32, KHR_external_fence_win32, NV_external_memory_win32, NV_win32_keyed_mutex, EXT_full_screen_exclusive );
+alias USE_PLATFORM_GGP             = AliasSeq!( GGP_stream_descriptor_surface, GGP_frame_token );
 alias USE_PLATFORM_VI_NN           = AliasSeq!( NN_vi_surface );
 alias USE_PLATFORM_XLIB_XRANDR_EXT = AliasSeq!( EXT_acquire_xlib_display );
 alias USE_PLATFORM_IOS_MVK         = AliasSeq!( MVK_ios_surface );
@@ -314,6 +317,25 @@ mixin template Platform_Extensions( extensions... ) {
             alias PFN_vkGetFenceWin32HandleKHR                           = VkResult  function( VkDevice device, const( VkFenceGetWin32HandleInfoKHR )* pGetWin32HandleInfo, HANDLE* pHandle );
         }
 
+        // VK_GGP_stream_descriptor_surface : types and function pointer type aliases
+        else static if( __traits( isSame, extension, GGP_stream_descriptor_surface )) {
+            enum VK_GGP_stream_descriptor_surface = 1;
+
+            enum VK_GGP_STREAM_DESCRIPTOR_SURFACE_SPEC_VERSION = 1;
+            enum VK_GGP_STREAM_DESCRIPTOR_SURFACE_EXTENSION_NAME = "VK_GGP_stream_descriptor_surface";
+            
+            alias VkStreamDescriptorSurfaceCreateFlagsGGP = VkFlags;
+            
+            struct VkStreamDescriptorSurfaceCreateInfoGGP {
+                VkStructureType                          sType = VK_STRUCTURE_TYPE_STREAM_DESCRIPTOR_SURFACE_CREATE_INFO_GGP;
+                const( void )*                           pNext;
+                VkStreamDescriptorSurfaceCreateFlagsGGP  flags;
+                GgpStreamDescriptor                      streamDescriptor;
+            }
+            
+            alias PFN_vkCreateStreamDescriptorSurfaceGGP                 = VkResult  function( VkInstance instance, const( VkStreamDescriptorSurfaceCreateInfoGGP )* pCreateInfo, const( VkAllocationCallbacks )* pAllocator, VkSurfaceKHR* pSurface );
+        }
+
         // VK_NV_external_memory_win32 : types and function pointer type aliases
         else static if( __traits( isSame, extension, NV_external_memory_win32 )) {
             enum VK_NV_external_memory_win32 = 1;
@@ -482,6 +504,21 @@ mixin template Platform_Extensions( extensions... ) {
             alias PFN_vkGetMemoryAndroidHardwareBufferANDROID            = VkResult  function( VkDevice device, const( VkMemoryGetAndroidHardwareBufferInfoANDROID )* pInfo, AHardwareBuffer pBuffer );
         }
 
+        // VK_GGP_frame_token : types and function pointer type aliases
+        else static if( __traits( isSame, extension, GGP_frame_token )) {
+            enum VK_GGP_frame_token = 1;
+
+            enum VK_GGP_FRAME_TOKEN_SPEC_VERSION = 1;
+            enum VK_GGP_FRAME_TOKEN_EXTENSION_NAME = "VK_GGP_frame_token";
+            
+            struct VkPresentFrameTokenGGP {
+                VkStructureType  sType = VK_STRUCTURE_TYPE_PRESENT_FRAME_TOKEN_GGP;
+                const( void )*   pNext;
+                GgpFrameToken    frameToken;
+            }
+            
+        }
+
         // VK_FUCHSIA_imagepipe_surface : types and function pointer type aliases
         else static if( __traits( isSame, extension, FUCHSIA_imagepipe_surface )) {
             enum VK_FUCHSIA_imagepipe_surface = 1;
@@ -619,6 +656,11 @@ mixin template Platform_Extensions( extensions... ) {
                 PFN_vkGetFenceWin32HandleKHR                           vkGetFenceWin32HandleKHR;
             }
 
+            // VK_GGP_stream_descriptor_surface : function pointer decelerations
+            else static if( __traits( isSame, extension, GGP_stream_descriptor_surface )) {
+                PFN_vkCreateStreamDescriptorSurfaceGGP                 vkCreateStreamDescriptorSurfaceGGP;
+            }
+
             // VK_NV_external_memory_win32 : function pointer decelerations
             else static if( __traits( isSame, extension, NV_external_memory_win32 )) {
                 PFN_vkGetMemoryWin32HandleNV                           vkGetMemoryWin32HandleNV;
@@ -708,6 +750,11 @@ mixin template Platform_Extensions( extensions... ) {
             else static if( __traits( isSame, extension, KHR_win32_surface )) {
                 vkCreateWin32SurfaceKHR                            = cast( PFN_vkCreateWin32SurfaceKHR                            ) vkGetInstanceProcAddr( instance, "vkCreateWin32SurfaceKHR" );
                 vkGetPhysicalDeviceWin32PresentationSupportKHR     = cast( PFN_vkGetPhysicalDeviceWin32PresentationSupportKHR     ) vkGetInstanceProcAddr( instance, "vkGetPhysicalDeviceWin32PresentationSupportKHR" );
+            }
+
+            // VK_GGP_stream_descriptor_surface : load instance level function definitions
+            else static if( __traits( isSame, extension, GGP_stream_descriptor_surface )) {
+                vkCreateStreamDescriptorSurfaceGGP                 = cast( PFN_vkCreateStreamDescriptorSurfaceGGP                 ) vkGetInstanceProcAddr( instance, "vkCreateStreamDescriptorSurfaceGGP" );
             }
 
             // VK_NN_vi_surface : load instance level function definitions
@@ -994,6 +1041,11 @@ mixin template Platform_Extensions( extensions... ) {
             else static if( __traits( isSame, extension, KHR_external_fence_win32 )) {
                 PFN_vkImportFenceWin32HandleKHR                        vkImportFenceWin32HandleKHR;
                 PFN_vkGetFenceWin32HandleKHR                           vkGetFenceWin32HandleKHR;
+            }
+
+            // VK_GGP_stream_descriptor_surface : dispatch device member function pointer decelerations
+            else static if( __traits( isSame, extension, GGP_stream_descriptor_surface )) {
+                PFN_vkCreateStreamDescriptorSurfaceGGP                 vkCreateStreamDescriptorSurfaceGGP;
             }
 
             // VK_NV_external_memory_win32 : dispatch device member function pointer decelerations
