@@ -212,6 +212,9 @@ struct DispatchDevice {
         // VK_KHR_display_swapchain
         vkCreateSharedSwapchainsKHR                    = cast( PFN_vkCreateSharedSwapchainsKHR                    ) vkGetDeviceProcAddr( device, "vkCreateSharedSwapchainsKHR" );
 
+        // VK_KHR_device_group
+        vkGetDeviceGroupSurfacePresentModes2EXT        = cast( PFN_vkGetDeviceGroupSurfacePresentModes2EXT        ) vkGetDeviceProcAddr( device, "vkGetDeviceGroupSurfacePresentModes2EXT" );
+
         // VK_KHR_external_memory_fd
         vkGetMemoryFdKHR                               = cast( PFN_vkGetMemoryFdKHR                               ) vkGetDeviceProcAddr( device, "vkGetMemoryFdKHR" );
         vkGetMemoryFdPropertiesKHR                     = cast( PFN_vkGetMemoryFdPropertiesKHR                     ) vkGetDeviceProcAddr( device, "vkGetMemoryFdPropertiesKHR" );
@@ -363,6 +366,9 @@ struct DispatchDevice {
 
         // VK_EXT_buffer_device_address
         vkGetBufferDeviceAddressEXT                    = cast( PFN_vkGetBufferDeviceAddressEXT                    ) vkGetDeviceProcAddr( device, "vkGetBufferDeviceAddressEXT" );
+
+        // VK_EXT_host_query_reset
+        vkResetQueryPoolEXT                            = cast( PFN_vkResetQueryPoolEXT                            ) vkGetDeviceProcAddr( device, "vkResetQueryPoolEXT" );
     }
 
 
@@ -531,6 +537,9 @@ struct DispatchDevice {
     // VK_KHR_display_swapchain
     VkResult  CreateSharedSwapchainsKHR( uint32_t swapchainCount, const( VkSwapchainCreateInfoKHR )* pCreateInfos, VkSwapchainKHR* pSwapchains ) { return vkCreateSharedSwapchainsKHR( vkDevice, swapchainCount, pCreateInfos, pAllocator, pSwapchains ); }
 
+    // VK_KHR_device_group
+    VkResult  GetDeviceGroupSurfacePresentModes2EXT( const( VkPhysicalDeviceSurfaceInfo2KHR )* pSurfaceInfo, VkDeviceGroupPresentModeFlagsKHR* pModes ) { return vkGetDeviceGroupSurfacePresentModes2EXT( vkDevice, pSurfaceInfo, pModes ); }
+
     // VK_KHR_external_memory_fd
     VkResult  GetMemoryFdKHR( const( VkMemoryGetFdInfoKHR )* pGetFdInfo, int* pFd ) { return vkGetMemoryFdKHR( vkDevice, pGetFdInfo, pFd ); }
     VkResult  GetMemoryFdPropertiesKHR( VkExternalMemoryHandleTypeFlagBits handleType, int fd, VkMemoryFdPropertiesKHR* pMemoryFdProperties ) { return vkGetMemoryFdPropertiesKHR( vkDevice, handleType, fd, pMemoryFdProperties ); }
@@ -678,6 +687,9 @@ struct DispatchDevice {
 
     // VK_EXT_buffer_device_address
     VkDeviceAddress  GetBufferDeviceAddressEXT( const( VkBufferDeviceAddressInfoEXT )* pInfo ) { return vkGetBufferDeviceAddressEXT( vkDevice, pInfo ); }
+
+    // VK_EXT_host_query_reset
+    void      ResetQueryPoolEXT( VkQueryPool queryPool, uint32_t firstQuery, uint32_t queryCount ) { vkResetQueryPoolEXT( vkDevice, queryPool, firstQuery, queryCount ); }
 
     // VK_KHR_device_group
     alias GetDeviceGroupPeerMemoryFeaturesKHR                = GetDeviceGroupPeerMemoryFeatures;
@@ -864,6 +876,9 @@ struct DispatchDevice {
     // VK_KHR_display_swapchain
     PFN_vkCreateSharedSwapchainsKHR                    vkCreateSharedSwapchainsKHR;
 
+    // VK_KHR_device_group
+    PFN_vkGetDeviceGroupSurfacePresentModes2EXT        vkGetDeviceGroupSurfacePresentModes2EXT;
+
     // VK_KHR_external_memory_fd
     PFN_vkGetMemoryFdKHR                               vkGetMemoryFdKHR;
     PFN_vkGetMemoryFdPropertiesKHR                     vkGetMemoryFdPropertiesKHR;
@@ -1015,6 +1030,9 @@ struct DispatchDevice {
 
     // VK_EXT_buffer_device_address
     PFN_vkGetBufferDeviceAddressEXT                    vkGetBufferDeviceAddressEXT;
+
+    // VK_EXT_host_query_reset
+    PFN_vkResetQueryPoolEXT                            vkResetQueryPoolEXT;
 
     // VK_KHR_device_group
     alias vkGetDeviceGroupPeerMemoryFeaturesKHR                = vkGetDeviceGroupPeerMemoryFeatures;

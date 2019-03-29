@@ -214,6 +214,9 @@ extern( System ) {
     // VK_KHR_display_swapchain
     alias PFN_vkCreateSharedSwapchainsKHR                        = VkResult  function( VkDevice device, uint32_t swapchainCount, const( VkSwapchainCreateInfoKHR )* pCreateInfos, const( VkAllocationCallbacks )* pAllocator, VkSwapchainKHR* pSwapchains );
 
+    // VK_KHR_device_group
+    alias PFN_vkGetDeviceGroupSurfacePresentModes2EXT            = VkResult  function( VkDevice device, const( VkPhysicalDeviceSurfaceInfo2KHR )* pSurfaceInfo, VkDeviceGroupPresentModeFlagsKHR* pModes );
+
     // VK_KHR_external_memory_fd
     alias PFN_vkGetMemoryFdKHR                                   = VkResult  function( VkDevice device, const( VkMemoryGetFdInfoKHR )* pGetFdInfo, int* pFd );
     alias PFN_vkGetMemoryFdPropertiesKHR                         = VkResult  function( VkDevice device, VkExternalMemoryHandleTypeFlagBits handleType, int fd, VkMemoryFdPropertiesKHR* pMemoryFdProperties );
@@ -393,11 +396,17 @@ extern( System ) {
     alias PFN_vkCmdSetCheckpointNV                               = void      function( VkCommandBuffer commandBuffer, const( void )* pCheckpointMarker );
     alias PFN_vkGetQueueCheckpointDataNV                         = void      function( VkQueue queue, uint32_t* pCheckpointDataCount, VkCheckpointDataNV* pCheckpointData );
 
+    // VK_AMD_display_native_hdr
+    alias PFN_vkSetLocalDimmingAMD                               = void      function( VkSwapchainKHR swapChain, VkBool32 localDimmingEnable );
+
     // VK_EXT_buffer_device_address
     alias PFN_vkGetBufferDeviceAddressEXT                        = VkDeviceAddress  function( VkDevice device, const( VkBufferDeviceAddressInfoEXT )* pInfo );
 
     // VK_NV_cooperative_matrix
     alias PFN_vkGetPhysicalDeviceCooperativeMatrixPropertiesNV   = VkResult  function( VkPhysicalDevice physicalDevice, uint32_t* pPropertyCount, VkCooperativeMatrixPropertiesNV* pProperties );
+
+    // VK_EXT_host_query_reset
+    alias PFN_vkResetQueryPoolEXT                                = void      function( VkDevice device, VkQueryPool queryPool, uint32_t firstQuery, uint32_t queryCount );
 }
 
 
@@ -603,6 +612,9 @@ __gshared {
     // VK_KHR_display_swapchain
     PFN_vkCreateSharedSwapchainsKHR                        vkCreateSharedSwapchainsKHR;
 
+    // VK_KHR_device_group
+    PFN_vkGetDeviceGroupSurfacePresentModes2EXT            vkGetDeviceGroupSurfacePresentModes2EXT;
+
     // VK_KHR_external_memory_fd
     PFN_vkGetMemoryFdKHR                                   vkGetMemoryFdKHR;
     PFN_vkGetMemoryFdPropertiesKHR                         vkGetMemoryFdPropertiesKHR;
@@ -782,11 +794,17 @@ __gshared {
     PFN_vkCmdSetCheckpointNV                               vkCmdSetCheckpointNV;
     PFN_vkGetQueueCheckpointDataNV                         vkGetQueueCheckpointDataNV;
 
+    // VK_AMD_display_native_hdr
+    PFN_vkSetLocalDimmingAMD                               vkSetLocalDimmingAMD;
+
     // VK_EXT_buffer_device_address
     PFN_vkGetBufferDeviceAddressEXT                        vkGetBufferDeviceAddressEXT;
 
     // VK_NV_cooperative_matrix
     PFN_vkGetPhysicalDeviceCooperativeMatrixPropertiesNV   vkGetPhysicalDeviceCooperativeMatrixPropertiesNV;
+
+    // VK_EXT_host_query_reset
+    PFN_vkResetQueryPoolEXT                                vkResetQueryPoolEXT;
 
     // VK_KHR_get_physical_device_properties2
     alias vkGetPhysicalDeviceFeatures2KHR                          = vkGetPhysicalDeviceFeatures2;
@@ -852,6 +870,9 @@ void loadGlobalLevelFunctions( PFN_vkGetInstanceProcAddr getInstanceProcAddr ) {
 
     // VK_VERSION_1_1
     vkEnumerateInstanceVersion             = cast( PFN_vkEnumerateInstanceVersion             ) vkGetInstanceProcAddr( null, "vkEnumerateInstanceVersion" );
+
+    // VK_AMD_display_native_hdr
+    vkSetLocalDimmingAMD                   = cast( PFN_vkSetLocalDimmingAMD                   ) vkGetInstanceProcAddr( null, "vkSetLocalDimmingAMD" );
 }
 
 
@@ -1108,6 +1129,9 @@ void loadDeviceLevelFunctions( VkInstance instance ) {
     // VK_KHR_display_swapchain
     vkCreateSharedSwapchainsKHR                    = cast( PFN_vkCreateSharedSwapchainsKHR                    ) vkGetInstanceProcAddr( instance, "vkCreateSharedSwapchainsKHR" );
 
+    // VK_KHR_device_group
+    vkGetDeviceGroupSurfacePresentModes2EXT        = cast( PFN_vkGetDeviceGroupSurfacePresentModes2EXT        ) vkGetInstanceProcAddr( instance, "vkGetDeviceGroupSurfacePresentModes2EXT" );
+
     // VK_KHR_external_memory_fd
     vkGetMemoryFdKHR                               = cast( PFN_vkGetMemoryFdKHR                               ) vkGetInstanceProcAddr( instance, "vkGetMemoryFdKHR" );
     vkGetMemoryFdPropertiesKHR                     = cast( PFN_vkGetMemoryFdPropertiesKHR                     ) vkGetInstanceProcAddr( instance, "vkGetMemoryFdPropertiesKHR" );
@@ -1259,6 +1283,9 @@ void loadDeviceLevelFunctions( VkInstance instance ) {
 
     // VK_EXT_buffer_device_address
     vkGetBufferDeviceAddressEXT                    = cast( PFN_vkGetBufferDeviceAddressEXT                    ) vkGetInstanceProcAddr( instance, "vkGetBufferDeviceAddressEXT" );
+
+    // VK_EXT_host_query_reset
+    vkResetQueryPoolEXT                            = cast( PFN_vkResetQueryPoolEXT                            ) vkGetInstanceProcAddr( instance, "vkResetQueryPoolEXT" );
 }
 
 
@@ -1422,6 +1449,9 @@ void loadDeviceLevelFunctions( VkDevice device ) {
     // VK_KHR_display_swapchain
     vkCreateSharedSwapchainsKHR                    = cast( PFN_vkCreateSharedSwapchainsKHR                    ) vkGetDeviceProcAddr( device, "vkCreateSharedSwapchainsKHR" );
 
+    // VK_KHR_device_group
+    vkGetDeviceGroupSurfacePresentModes2EXT        = cast( PFN_vkGetDeviceGroupSurfacePresentModes2EXT        ) vkGetDeviceProcAddr( device, "vkGetDeviceGroupSurfacePresentModes2EXT" );
+
     // VK_KHR_external_memory_fd
     vkGetMemoryFdKHR                               = cast( PFN_vkGetMemoryFdKHR                               ) vkGetDeviceProcAddr( device, "vkGetMemoryFdKHR" );
     vkGetMemoryFdPropertiesKHR                     = cast( PFN_vkGetMemoryFdPropertiesKHR                     ) vkGetDeviceProcAddr( device, "vkGetMemoryFdPropertiesKHR" );
@@ -1573,5 +1603,8 @@ void loadDeviceLevelFunctions( VkDevice device ) {
 
     // VK_EXT_buffer_device_address
     vkGetBufferDeviceAddressEXT                    = cast( PFN_vkGetBufferDeviceAddressEXT                    ) vkGetDeviceProcAddr( device, "vkGetBufferDeviceAddressEXT" );
+
+    // VK_EXT_host_query_reset
+    vkResetQueryPoolEXT                            = cast( PFN_vkResetQueryPoolEXT                            ) vkGetDeviceProcAddr( device, "vkResetQueryPoolEXT" );
 }
 

@@ -27,6 +27,7 @@ enum MVK_macos_surface;
 enum ANDROID_external_memory_android_hardware_buffer;
 enum FUCHSIA_imagepipe_surface;
 enum EXT_metal_surface;
+enum EXT_full_screen_exclusive;
 
 
 /// extensions to a specific platform are grouped in these enum sequences
@@ -35,7 +36,7 @@ alias USE_PLATFORM_XLIB_KHR        = AliasSeq!( KHR_xlib_surface );
 alias USE_PLATFORM_XCB_KHR         = AliasSeq!( KHR_xcb_surface );
 alias USE_PLATFORM_WAYLAND_KHR     = AliasSeq!( KHR_wayland_surface );
 alias USE_PLATFORM_ANDROID_KHR     = AliasSeq!( KHR_android_surface, ANDROID_external_memory_android_hardware_buffer );
-alias USE_PLATFORM_WIN32_KHR       = AliasSeq!( KHR_win32_surface, KHR_external_memory_win32, KHR_win32_keyed_mutex, KHR_external_semaphore_win32, KHR_external_fence_win32, NV_external_memory_win32, NV_win32_keyed_mutex );
+alias USE_PLATFORM_WIN32_KHR       = AliasSeq!( KHR_win32_surface, KHR_external_memory_win32, KHR_win32_keyed_mutex, KHR_external_semaphore_win32, KHR_external_fence_win32, NV_external_memory_win32, NV_win32_keyed_mutex, EXT_full_screen_exclusive );
 alias USE_PLATFORM_VI_NN           = AliasSeq!( NN_vi_surface );
 alias USE_PLATFORM_XLIB_XRANDR_EXT = AliasSeq!( EXT_acquire_xlib_display );
 alias USE_PLATFORM_IOS_MVK         = AliasSeq!( MVK_ios_surface );
@@ -519,6 +520,56 @@ mixin template Platform_Extensions( extensions... ) {
             alias PFN_vkCreateMetalSurfaceEXT                            = VkResult  function( VkInstance instance, const( VkMetalSurfaceCreateInfoEXT )* pCreateInfo, const( VkAllocationCallbacks )* pAllocator, VkSurfaceKHR* pSurface );
         }
 
+        // VK_EXT_full_screen_exclusive : types and function pointer type aliases
+        else static if( __traits( isSame, extension, EXT_full_screen_exclusive )) {
+            enum VK_EXT_full_screen_exclusive = 1;
+
+            enum VK_EXT_FULL_SCREEN_EXCLUSIVE_SPEC_VERSION = 3;
+            enum VK_EXT_FULL_SCREEN_EXCLUSIVE_EXTENSION_NAME = "VK_EXT_full_screen_exclusive";
+            
+            enum VkFullScreenExclusiveEXT {
+                VK_FULL_SCREEN_EXCLUSIVE_DEFAULT_EXT                 = 0,
+                VK_FULL_SCREEN_EXCLUSIVE_ALLOWED_EXT                 = 1,
+                VK_FULL_SCREEN_EXCLUSIVE_DISALLOWED_EXT              = 2,
+                VK_FULL_SCREEN_EXCLUSIVE_APPLICATION_CONTROLLED_EXT  = 3,
+                VK_FULL_SCREEN_EXCLUSIVE_BEGIN_RANGE_EXT             = VK_FULL_SCREEN_EXCLUSIVE_DEFAULT_EXT,
+                VK_FULL_SCREEN_EXCLUSIVE_END_RANGE_EXT               = VK_FULL_SCREEN_EXCLUSIVE_APPLICATION_CONTROLLED_EXT,
+                VK_FULL_SCREEN_EXCLUSIVE_RANGE_SIZE_EXT              = VK_FULL_SCREEN_EXCLUSIVE_APPLICATION_CONTROLLED_EXT - VK_FULL_SCREEN_EXCLUSIVE_DEFAULT_EXT + 1,
+                VK_FULL_SCREEN_EXCLUSIVE_MAX_ENUM_EXT                = 0x7FFFFFFF
+            }
+            
+            enum VK_FULL_SCREEN_EXCLUSIVE_DEFAULT_EXT                = VkFullScreenExclusiveEXT.VK_FULL_SCREEN_EXCLUSIVE_DEFAULT_EXT;
+            enum VK_FULL_SCREEN_EXCLUSIVE_ALLOWED_EXT                = VkFullScreenExclusiveEXT.VK_FULL_SCREEN_EXCLUSIVE_ALLOWED_EXT;
+            enum VK_FULL_SCREEN_EXCLUSIVE_DISALLOWED_EXT             = VkFullScreenExclusiveEXT.VK_FULL_SCREEN_EXCLUSIVE_DISALLOWED_EXT;
+            enum VK_FULL_SCREEN_EXCLUSIVE_APPLICATION_CONTROLLED_EXT = VkFullScreenExclusiveEXT.VK_FULL_SCREEN_EXCLUSIVE_APPLICATION_CONTROLLED_EXT;
+            enum VK_FULL_SCREEN_EXCLUSIVE_BEGIN_RANGE_EXT            = VkFullScreenExclusiveEXT.VK_FULL_SCREEN_EXCLUSIVE_BEGIN_RANGE_EXT;
+            enum VK_FULL_SCREEN_EXCLUSIVE_END_RANGE_EXT              = VkFullScreenExclusiveEXT.VK_FULL_SCREEN_EXCLUSIVE_END_RANGE_EXT;
+            enum VK_FULL_SCREEN_EXCLUSIVE_RANGE_SIZE_EXT             = VkFullScreenExclusiveEXT.VK_FULL_SCREEN_EXCLUSIVE_RANGE_SIZE_EXT;
+            enum VK_FULL_SCREEN_EXCLUSIVE_MAX_ENUM_EXT               = VkFullScreenExclusiveEXT.VK_FULL_SCREEN_EXCLUSIVE_MAX_ENUM_EXT;
+            
+            struct VkSurfaceFullScreenExclusiveInfoEXT {
+                VkStructureType           sType = VK_STRUCTURE_TYPE_SURFACE_FULL_SCREEN_EXCLUSIVE_INFO_EXT;
+                void*                     pNext;
+                VkFullScreenExclusiveEXT  fullScreenExclusive;
+            }
+            
+            struct VkSurfaceCapabilitiesFullScreenExclusiveEXT {
+                VkStructureType  sType = VK_STRUCTURE_TYPE_SURFACE_CAPABILITIES_FULL_SCREEN_EXCLUSIVE_EXT;
+                void*            pNext;
+                VkBool32         fullScreenExclusiveSupported;
+            }
+            
+            struct VkSurfaceFullScreenExclusiveWin32InfoEXT {
+                VkStructureType  sType = VK_STRUCTURE_TYPE_SURFACE_FULL_SCREEN_EXCLUSIVE_WIN32_INFO_EXT;
+                const( void )*   pNext;
+                HMONITOR         hmonitor;
+            }
+            
+            alias PFN_vkGetPhysicalDeviceSurfacePresentModes2EXT         = VkResult  function( VkPhysicalDevice physicalDevice, const( VkPhysicalDeviceSurfaceInfo2KHR )* pSurfaceInfo, uint32_t* pPresentModeCount, VkPresentModeKHR* pPresentModes );
+            alias PFN_vkAcquireFullScreenExclusiveModeEXT                = VkResult  function( VkDevice device, VkSwapchainKHR swapchain );
+            alias PFN_vkReleaseFullScreenExclusiveModeEXT                = VkResult  function( VkDevice device, VkSwapchainKHR swapchain );
+        }
+
         __gshared {
 
             // VK_KHR_xlib_surface : function pointer decelerations
@@ -609,6 +660,13 @@ mixin template Platform_Extensions( extensions... ) {
             else static if( __traits( isSame, extension, EXT_metal_surface )) {
                 PFN_vkCreateMetalSurfaceEXT                            vkCreateMetalSurfaceEXT;
             }
+
+            // VK_EXT_full_screen_exclusive : function pointer decelerations
+            else static if( __traits( isSame, extension, EXT_full_screen_exclusive )) {
+                PFN_vkGetPhysicalDeviceSurfacePresentModes2EXT         vkGetPhysicalDeviceSurfacePresentModes2EXT;
+                PFN_vkAcquireFullScreenExclusiveModeEXT                vkAcquireFullScreenExclusiveModeEXT;
+                PFN_vkReleaseFullScreenExclusiveModeEXT                vkReleaseFullScreenExclusiveModeEXT;
+            }
         }
     }
 
@@ -682,6 +740,11 @@ mixin template Platform_Extensions( extensions... ) {
             else static if( __traits( isSame, extension, EXT_metal_surface )) {
                 vkCreateMetalSurfaceEXT                            = cast( PFN_vkCreateMetalSurfaceEXT                            ) vkGetInstanceProcAddr( instance, "vkCreateMetalSurfaceEXT" );
             }
+
+            // VK_EXT_full_screen_exclusive : load instance level function definitions
+            else static if( __traits( isSame, extension, EXT_full_screen_exclusive )) {
+                vkGetPhysicalDeviceSurfacePresentModes2EXT         = cast( PFN_vkGetPhysicalDeviceSurfacePresentModes2EXT         ) vkGetInstanceProcAddr( instance, "vkGetPhysicalDeviceSurfacePresentModes2EXT" );
+            }
         }
     }
 
@@ -724,6 +787,12 @@ mixin template Platform_Extensions( extensions... ) {
                 vkGetAndroidHardwareBufferPropertiesANDROID    = cast( PFN_vkGetAndroidHardwareBufferPropertiesANDROID    ) vkGetInstanceProcAddr( instance, "vkGetAndroidHardwareBufferPropertiesANDROID" );
                 vkGetMemoryAndroidHardwareBufferANDROID        = cast( PFN_vkGetMemoryAndroidHardwareBufferANDROID        ) vkGetInstanceProcAddr( instance, "vkGetMemoryAndroidHardwareBufferANDROID" );
             }
+
+            // VK_EXT_full_screen_exclusive : load instance based device level function definitions
+            else static if( __traits( isSame, extension, EXT_full_screen_exclusive )) {
+                vkAcquireFullScreenExclusiveModeEXT            = cast( PFN_vkAcquireFullScreenExclusiveModeEXT            ) vkGetInstanceProcAddr( instance, "vkAcquireFullScreenExclusiveModeEXT" );
+                vkReleaseFullScreenExclusiveModeEXT            = cast( PFN_vkReleaseFullScreenExclusiveModeEXT            ) vkGetInstanceProcAddr( instance, "vkReleaseFullScreenExclusiveModeEXT" );
+            }
         }
     }
 
@@ -765,6 +834,12 @@ mixin template Platform_Extensions( extensions... ) {
             else static if( __traits( isSame, extension, ANDROID_external_memory_android_hardware_buffer )) {
                 vkGetAndroidHardwareBufferPropertiesANDROID    = cast( PFN_vkGetAndroidHardwareBufferPropertiesANDROID    ) vkGetDeviceProcAddr( device, "vkGetAndroidHardwareBufferPropertiesANDROID" );
                 vkGetMemoryAndroidHardwareBufferANDROID        = cast( PFN_vkGetMemoryAndroidHardwareBufferANDROID        ) vkGetDeviceProcAddr( device, "vkGetMemoryAndroidHardwareBufferANDROID" );
+            }
+
+            // VK_EXT_full_screen_exclusive : load device based device level function definitions
+            else static if( __traits( isSame, extension, EXT_full_screen_exclusive )) {
+                vkAcquireFullScreenExclusiveModeEXT            = cast( PFN_vkAcquireFullScreenExclusiveModeEXT            ) vkGetDeviceProcAddr( device, "vkAcquireFullScreenExclusiveModeEXT" );
+                vkReleaseFullScreenExclusiveModeEXT            = cast( PFN_vkReleaseFullScreenExclusiveModeEXT            ) vkGetDeviceProcAddr( device, "vkReleaseFullScreenExclusiveModeEXT" );
             }
         }
     }
@@ -822,6 +897,12 @@ mixin template Platform_Extensions( extensions... ) {
                     vkGetAndroidHardwareBufferPropertiesANDROID    = cast( PFN_vkGetAndroidHardwareBufferPropertiesANDROID    ) vkGetDeviceProcAddr( device, "vkGetAndroidHardwareBufferPropertiesANDROID" );
                     vkGetMemoryAndroidHardwareBufferANDROID        = cast( PFN_vkGetMemoryAndroidHardwareBufferANDROID        ) vkGetDeviceProcAddr( device, "vkGetMemoryAndroidHardwareBufferANDROID" );
                 }
+
+                // VK_EXT_full_screen_exclusive : load dispatch device member function definitions
+                else static if( __traits( isSame, extension, EXT_full_screen_exclusive )) {
+                    vkAcquireFullScreenExclusiveModeEXT            = cast( PFN_vkAcquireFullScreenExclusiveModeEXT            ) vkGetDeviceProcAddr( device, "vkAcquireFullScreenExclusiveModeEXT" );
+                    vkReleaseFullScreenExclusiveModeEXT            = cast( PFN_vkReleaseFullScreenExclusiveModeEXT            ) vkGetDeviceProcAddr( device, "vkReleaseFullScreenExclusiveModeEXT" );
+                }
             }
         }
 
@@ -856,6 +937,12 @@ mixin template Platform_Extensions( extensions... ) {
             else static if( __traits( isSame, extension, ANDROID_external_memory_android_hardware_buffer )) {
                 VkResult  GetAndroidHardwareBufferPropertiesANDROID( const( AHardwareBuffer )* buffer, VkAndroidHardwareBufferPropertiesANDROID* pProperties ) { return vkGetAndroidHardwareBufferPropertiesANDROID( vkDevice, buffer, pProperties ); }
                 VkResult  GetMemoryAndroidHardwareBufferANDROID( const( VkMemoryGetAndroidHardwareBufferInfoANDROID )* pInfo, AHardwareBuffer pBuffer ) { return vkGetMemoryAndroidHardwareBufferANDROID( vkDevice, pInfo, pBuffer ); }
+            }
+
+            // VK_EXT_full_screen_exclusive : dispatch device convenience member functions
+            else static if( __traits( isSame, extension, EXT_full_screen_exclusive )) {
+                VkResult  AcquireFullScreenExclusiveModeEXT( VkSwapchainKHR swapchain ) { return vkAcquireFullScreenExclusiveModeEXT( vkDevice, swapchain ); }
+                VkResult  ReleaseFullScreenExclusiveModeEXT( VkSwapchainKHR swapchain ) { return vkReleaseFullScreenExclusiveModeEXT( vkDevice, swapchain ); }
             }
         }
 
@@ -949,6 +1036,13 @@ mixin template Platform_Extensions( extensions... ) {
             // VK_EXT_metal_surface : dispatch device member function pointer decelerations
             else static if( __traits( isSame, extension, EXT_metal_surface )) {
                 PFN_vkCreateMetalSurfaceEXT                            vkCreateMetalSurfaceEXT;
+            }
+
+            // VK_EXT_full_screen_exclusive : dispatch device member function pointer decelerations
+            else static if( __traits( isSame, extension, EXT_full_screen_exclusive )) {
+                PFN_vkGetPhysicalDeviceSurfacePresentModes2EXT         vkGetPhysicalDeviceSurfacePresentModes2EXT;
+                PFN_vkAcquireFullScreenExclusiveModeEXT                vkAcquireFullScreenExclusiveModeEXT;
+                PFN_vkReleaseFullScreenExclusiveModeEXT                vkReleaseFullScreenExclusiveModeEXT;
             }
         }
     }
