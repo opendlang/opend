@@ -290,9 +290,38 @@ else version(GNU)
     ///
     T fmax(T)(in T x, in T y) if (isFloatingPoint!T) { mixin(mixinGCCBuiltin2!`fmax`); }
 }
-else
+else static if (__VERSION__ >= 2082) // DMD 2.082 onward.
 {
     static import std.math;
+    static import core.stdc.math;
+
+    // Calls either std.math or cmath function for either float (suffix "f")
+    // or double (no suffix). std.math will always be used during CTFE or for
+    // arguments with greater than double precision or if the cmath function
+    // is impure.
+    private enum mixinCMath(string fun) =
+        `pragma(inline, true);
+        static if (!is(typeof(std.math.`~fun~`(0.5f)) == float)
+            && is(typeof(() pure => core.stdc.math.`~fun~`f(0.5f))))
+        if (!__ctfe)
+        {
+            static if (T.mant_dig == float.mant_dig) return core.stdc.math.`~fun~`f(x);
+            else static if (T.mant_dig == double.mant_dig) return core.stdc.math.`~fun~`(x);
+        }
+        return std.math.`~fun~`(x);`;
+
+    // As above but for two-argument function (both arguments must be floating point).
+    private enum mixinCMath2(string fun) =
+        `pragma(inline, true);
+        static if (!is(typeof(std.math.`~fun~`(0.5f, 0.5f)) == float)
+            && is(typeof(() pure => core.stdc.math.`~fun~`f(0.5f, 0.5f))))
+        if (!__ctfe)
+        {
+            static if (T.mant_dig == float.mant_dig) return core.stdc.math.`~fun~`f(x, y);
+            else static if (T.mant_dig == double.mant_dig) return core.stdc.math.`~fun~`(x, y);
+        }
+        return std.math.`~fun~`(x, y);`;
+
     // Some std.math functions have appropriate return types (float,
     // double, real) without need for a wrapper. We can alias them
     // directly but we leave the templates afterwards for documentation
@@ -304,7 +333,7 @@ else
     alias sin = std.math.sin;
     alias cos = std.math.cos;
     alias exp = std.math.exp;
-    alias fabs = std.math.fabs;
+    //alias fabs = std.math.fabs;
     alias floor = std.math.floor;
     alias exp2 = std.math.exp2;
     alias ceil = std.math.ceil;
@@ -317,13 +346,13 @@ else
     ///
     T cos(T)(in T x) if (isFloatingPoint!T) { return std.math.cos(x); }
     ///
-    T pow(T)(in T x, in T power) if (isFloatingPoint!T) { return std.math.pow(x, power); }
+    T pow(T)(in T x, in T power) if (isFloatingPoint!T) { alias y = power; mixin(mixinCMath2!`pow`); }
     ///
-    T powi(T)(in T x, int power) if (isFloatingPoint!T) { return std.math.pow(x, power); }
+    T powi(T)(in T x, int power) if (isFloatingPoint!T) { alias y = power; mixin(mixinCMath2!`pow`); }
     ///
     T exp(T)(in T x) if (isFloatingPoint!T) { return std.math.exp(x); }
     ///
-    T log(T)(in T x) if (isFloatingPoint!T) { return std.math.log(x); }
+    T log(T)(in T x) if (isFloatingPoint!T) { mixin(mixinCMath!`log`); }
     ///
     T fabs(T)(in T x) if (isFloatingPoint!T) { return std.math.fabs(x); }
     ///
@@ -331,29 +360,40 @@ else
     ///
     T exp2(T)(in T x) if (isFloatingPoint!T) { return std.math.exp2(x); }
     ///
-    T log10(T)(in T x) if (isFloatingPoint!T) { return std.math.log10(x); }
+    T log10(T)(in T x) if (isFloatingPoint!T) { mixin(mixinCMath!`log10`); }
     ///
-    T log2(T)(in T x) if (isFloatingPoint!T) { return std.math.log2(x); }
+    T log2(T)(in T x) if (isFloatingPoint!T) { mixin(mixinCMath!`log2`); }
     ///
     T ceil(T)(in T x) if (isFloatingPoint!T) { return std.math.ceil(x); }
     ///
-    T trunc(T)(in T x) if (isFloatingPoint!T) { return std.math.trunc(x); }
+    T trunc(T)(in T x) if (isFloatingPoint!T) { mixin(mixinCMath!`trunc`); }
     ///
     T rint(T)(in T x) if (isFloatingPoint!T) { return std.math.rint(x); }
     ///
-    T nearbyint(T)(in T x) if (isFloatingPoint!T) { return std.math.nearbyint(x); }
+    T nearbyint(T)(in T x) if (isFloatingPoint!T) { mixin(mixinCMath!`nearbyint`); }
     ///
-    T copysign(T)(in T mag, in T sgn) if (isFloatingPoint!T) { return std.math.copysign(mag, sgn); }
+    T copysign(T)(in T mag, in T sgn) if (isFloatingPoint!T)
+    {
+        alias x = mag;
+        alias y = sgn;
+        mixin(mixinCMath2!`copysign`);
+    }
     ///
-    T round(T)(in T x) if (isFloatingPoint!T) { return std.math.round(x); }
+    T round(T)(in T x) if (isFloatingPoint!T) { mixin(mixinCMath!`round`); }
     ///
     T fmuladd(T)(in T a, in T b, in T c) if (isFloatingPoint!T) { return a * b + c; }
     version(mir_test)
     unittest { assert(fmuladd!double(2, 3, 4) == 2 * 3 + 4); }
     ///
-    T fmin(T)(in T x, in T y) if (isFloatingPoint!T) { return std.math.fmin(x, y); }
+    T fmin(T)(in T x, in T y) if (isFloatingPoint!T)
+    {
+        version (Windows) // Linker problem?
+            return std.math.fmin(x, y);
+        else
+            mixin(mixinCMath2!`fmin`);
+    }
     ///
-    T fmax(T)(in T x, in T y) if (isFloatingPoint!T) { return std.math.fmax(x, y); }
+    T fmax(T)(in T x, in T y) if (isFloatingPoint!T) { mixin(mixinCMath2!`fmax`); }
 
     version (mir_test) @nogc nothrow pure @safe unittest
     {
@@ -370,6 +410,114 @@ else
 
         auto x = sqrt!float(2.0f); // Explicit template instantiation still works.
         auto fp = &sqrt!float; // Can still take function address.
+
+        // Test for DMD linker problem with fmin on Windows.
+        static assert(is(typeof(fmin!float(1.0f, 1.0f))));
+        static assert(is(typeof(fmax!float(1.0f, 1.0f))));
+    }
+}
+else // DMD version prior to 2.082
+{
+    static import std.math;
+    static import core.stdc.math;
+
+    // Calls either std.math or cmath function for either float (suffix "f")
+    // or double (no suffix). std.math will always be used during CTFE or for
+    // arguments with greater than double precision or if the cmath function
+    // is impure.
+    private enum mixinCMath(string fun) =
+        `pragma(inline, true);
+        static if (!is(typeof(std.math.`~fun~`(0.5f)) == float)
+            && is(typeof(() pure => core.stdc.math.`~fun~`f(0.5f))))
+        if (!__ctfe)
+        {
+            static if (T.mant_dig == float.mant_dig) return core.stdc.math.`~fun~`f(x);
+            else static if (T.mant_dig == double.mant_dig) return core.stdc.math.`~fun~`(x);
+        }
+        return std.math.`~fun~`(x);`;
+
+    // As above but for two-argument function (both arguments must be floating point).
+    private enum mixinCMath2(string fun) =
+        `pragma(inline, true);
+        static if (!is(typeof(std.math.`~fun~`(0.5f, 0.5f)) == float)
+            && is(typeof(() pure => core.stdc.math.`~fun~`f(0.5f, 0.5f))))
+        if (!__ctfe)
+        {
+            static if (T.mant_dig == float.mant_dig) return core.stdc.math.`~fun~`f(x, y);
+            else static if (T.mant_dig == double.mant_dig) return core.stdc.math.`~fun~`(x, y);
+        }
+        return std.math.`~fun~`(x, y);`;
+
+    // Some std.math functions have appropriate return types (float,
+    // double, real) without need for a wrapper.
+    alias sqrt = std.math.sqrt;
+
+    ///
+    T sqrt(T)(in T x) if (isFloatingPoint!T) { return std.math.sqrt(x); }
+    ///
+    T sin(T)(in T x) if (isFloatingPoint!T) { mixin(mixinCMath!`sin`); }
+    ///
+    T cos(T)(in T x) if (isFloatingPoint!T) { mixin(mixinCMath!`cos`); }
+    ///
+    T pow(T)(in T x, in T power) if (isFloatingPoint!T) { alias y = power; mixin(mixinCMath2!`pow`); }
+    ///
+    T powi(T)(in T x, int power) if (isFloatingPoint!T) { alias y = power; mixin(mixinCMath2!`pow`); }
+    ///
+    T exp(T)(in T x) if (isFloatingPoint!T) { mixin(mixinCMath!`exp`); }
+    ///
+    T log(T)(in T x) if (isFloatingPoint!T) { mixin(mixinCMath!`log`); }
+    ///
+    T fabs(T)(in T x) if (isFloatingPoint!T) { mixin(mixinCMath!`fabs`); }
+    ///
+    T floor(T)(in T x) if (isFloatingPoint!T) { mixin(mixinCMath!`floor`); }
+    ///
+    T exp2(T)(in T x) if (isFloatingPoint!T) { mixin(mixinCMath!`exp2`); }
+    ///
+    T log10(T)(in T x) if (isFloatingPoint!T) { mixin(mixinCMath!`log10`); }
+    ///
+    T log2(T)(in T x) if (isFloatingPoint!T) { mixin(mixinCMath!`log2`); }
+    ///
+    T ceil(T)(in T x) if (isFloatingPoint!T) { mixin(mixinCMath!`ceil`); }
+    ///
+    T trunc(T)(in T x) if (isFloatingPoint!T) { mixin(mixinCMath!`trunc`); }
+    ///
+    T rint(T)(in T x) if (isFloatingPoint!T) { mixin(mixinCMath!`rint`); }
+    ///
+    T nearbyint(T)(in T x) if (isFloatingPoint!T) { mixin(mixinCMath!`nearbyint`); }
+    ///
+    T copysign(T)(in T mag, in T sgn) if (isFloatingPoint!T)
+    {
+        alias x = mag;
+        alias y = sgn;
+        mixin(mixinCMath2!`copysign`);
+    }
+    ///
+    T round(T)(in T x) if (isFloatingPoint!T) { mixin(mixinCMath!`round`); }
+    ///
+    T fmuladd(T)(in T a, in T b, in T c) if (isFloatingPoint!T) { return a * b + c; }
+    version(mir_test)
+    unittest { assert(fmuladd!double(2, 3, 4) == 2 * 3 + 4); }
+    ///
+    T fmin(T)(in T x, in T y) if (isFloatingPoint!T)
+    {
+        version (Windows) // Linker problem?
+            return std.math.fmin(x, y);
+        else
+            mixin(mixinCMath2!`fmin`);
+    }
+    ///
+    T fmax(T)(in T x, in T y) if (isFloatingPoint!T) { mixin(mixinCMath2!`fmax`); }
+
+    version (mir_test) @nogc nothrow pure @safe unittest
+    {
+        // Check the aliases are correct.
+        static assert(is(typeof(sqrt(1.0f)) == float));
+        auto x = sqrt!float(2.0f); // Explicit template instantiation still works.
+        auto fp = &sqrt!float; // Can still take function address.
+
+        // Test for DMD linker problem with fmin on Windows.
+        static assert(is(typeof(fmin!float(1.0f, 1.0f))));
+        static assert(is(typeof(fmax!float(1.0f, 1.0f))));
     }
 }
 
