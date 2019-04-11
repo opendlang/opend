@@ -364,6 +364,9 @@ struct DispatchDevice {
         vkCmdSetCheckpointNV                           = cast( PFN_vkCmdSetCheckpointNV                           ) vkGetDeviceProcAddr( device, "vkCmdSetCheckpointNV" );
         vkGetQueueCheckpointDataNV                     = cast( PFN_vkGetQueueCheckpointDataNV                     ) vkGetDeviceProcAddr( device, "vkGetQueueCheckpointDataNV" );
 
+        // VK_AMD_display_native_hdr
+        vkSetLocalDimmingAMD                           = cast( PFN_vkSetLocalDimmingAMD                           ) vkGetDeviceProcAddr( device, "vkSetLocalDimmingAMD" );
+
         // VK_EXT_buffer_device_address
         vkGetBufferDeviceAddressEXT                    = cast( PFN_vkGetBufferDeviceAddressEXT                    ) vkGetDeviceProcAddr( device, "vkGetBufferDeviceAddressEXT" );
 
@@ -684,6 +687,9 @@ struct DispatchDevice {
 
     // VK_NV_device_diagnostic_checkpoints
     void      CmdSetCheckpointNV( const( void )* pCheckpointMarker ) { vkCmdSetCheckpointNV( commandBuffer, pCheckpointMarker ); }
+
+    // VK_AMD_display_native_hdr
+    void      SetLocalDimmingAMD( VkSwapchainKHR swapChain, VkBool32 localDimmingEnable ) { vkSetLocalDimmingAMD( vkDevice, swapChain, localDimmingEnable ); }
 
     // VK_EXT_buffer_device_address
     VkDeviceAddress  GetBufferDeviceAddressEXT( const( VkBufferDeviceAddressInfoEXT )* pInfo ) { return vkGetBufferDeviceAddressEXT( vkDevice, pInfo ); }
@@ -1027,6 +1033,9 @@ struct DispatchDevice {
     // VK_NV_device_diagnostic_checkpoints
     PFN_vkCmdSetCheckpointNV                           vkCmdSetCheckpointNV;
     PFN_vkGetQueueCheckpointDataNV                     vkGetQueueCheckpointDataNV;
+
+    // VK_AMD_display_native_hdr
+    PFN_vkSetLocalDimmingAMD                           vkSetLocalDimmingAMD;
 
     // VK_EXT_buffer_device_address
     PFN_vkGetBufferDeviceAddressEXT                    vkGetBufferDeviceAddressEXT;

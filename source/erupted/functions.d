@@ -397,7 +397,7 @@ extern( System ) {
     alias PFN_vkGetQueueCheckpointDataNV                         = void      function( VkQueue queue, uint32_t* pCheckpointDataCount, VkCheckpointDataNV* pCheckpointData );
 
     // VK_AMD_display_native_hdr
-    alias PFN_vkSetLocalDimmingAMD                               = void      function( VkSwapchainKHR swapChain, VkBool32 localDimmingEnable );
+    alias PFN_vkSetLocalDimmingAMD                               = void      function( VkDevice device, VkSwapchainKHR swapChain, VkBool32 localDimmingEnable );
 
     // VK_EXT_buffer_device_address
     alias PFN_vkGetBufferDeviceAddressEXT                        = VkDeviceAddress  function( VkDevice device, const( VkBufferDeviceAddressInfoEXT )* pInfo );
@@ -870,9 +870,6 @@ void loadGlobalLevelFunctions( PFN_vkGetInstanceProcAddr getInstanceProcAddr ) {
 
     // VK_VERSION_1_1
     vkEnumerateInstanceVersion             = cast( PFN_vkEnumerateInstanceVersion             ) vkGetInstanceProcAddr( null, "vkEnumerateInstanceVersion" );
-
-    // VK_AMD_display_native_hdr
-    vkSetLocalDimmingAMD                   = cast( PFN_vkSetLocalDimmingAMD                   ) vkGetInstanceProcAddr( null, "vkSetLocalDimmingAMD" );
 }
 
 
@@ -1281,6 +1278,9 @@ void loadDeviceLevelFunctions( VkInstance instance ) {
     vkCmdSetCheckpointNV                           = cast( PFN_vkCmdSetCheckpointNV                           ) vkGetInstanceProcAddr( instance, "vkCmdSetCheckpointNV" );
     vkGetQueueCheckpointDataNV                     = cast( PFN_vkGetQueueCheckpointDataNV                     ) vkGetInstanceProcAddr( instance, "vkGetQueueCheckpointDataNV" );
 
+    // VK_AMD_display_native_hdr
+    vkSetLocalDimmingAMD                           = cast( PFN_vkSetLocalDimmingAMD                           ) vkGetInstanceProcAddr( instance, "vkSetLocalDimmingAMD" );
+
     // VK_EXT_buffer_device_address
     vkGetBufferDeviceAddressEXT                    = cast( PFN_vkGetBufferDeviceAddressEXT                    ) vkGetInstanceProcAddr( instance, "vkGetBufferDeviceAddressEXT" );
 
@@ -1600,6 +1600,9 @@ void loadDeviceLevelFunctions( VkDevice device ) {
     // VK_NV_device_diagnostic_checkpoints
     vkCmdSetCheckpointNV                           = cast( PFN_vkCmdSetCheckpointNV                           ) vkGetDeviceProcAddr( device, "vkCmdSetCheckpointNV" );
     vkGetQueueCheckpointDataNV                     = cast( PFN_vkGetQueueCheckpointDataNV                     ) vkGetDeviceProcAddr( device, "vkGetQueueCheckpointDataNV" );
+
+    // VK_AMD_display_native_hdr
+    vkSetLocalDimmingAMD                           = cast( PFN_vkSetLocalDimmingAMD                           ) vkGetDeviceProcAddr( device, "vkSetLocalDimmingAMD" );
 
     // VK_EXT_buffer_device_address
     vkGetBufferDeviceAddressEXT                    = cast( PFN_vkGetBufferDeviceAddressEXT                    ) vkGetDeviceProcAddr( device, "vkGetBufferDeviceAddressEXT" );
