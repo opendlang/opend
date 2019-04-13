@@ -17,7 +17,6 @@ mir_core_src = [
     'source/mir/primitives.d',
     'source/mir/qualifier.d',
     'source/mir/utility.d',
-    'source/std/backdoor.d',
 ]
 
 mir_core_lib = library(meson.project_name(),
