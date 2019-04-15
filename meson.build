@@ -1,4 +1,4 @@
-project('mir-core', 'd', version : '0.1.0', license: 'BSL-1.0')
+project('mir-core', 'd', version : '0.3.0', license: 'BSL-1.0')
 
 mir_core_dir = include_directories('source/')
 
@@ -36,12 +36,9 @@ install_subdir('source/',
     install_dir: 'include/d/' + meson.project_name(),
 )
 
-import('pkgconfig').generate(
-    name: meson.project_name(),
+import('pkgconfig').generate(mir_core_lib,
     description: 'Mir Core - Base software building blocks and conventions.',
     subdirs: 'd/' + meson.project_name(),
-    libraries: [mir_core_lib],
-    version: meson.project_version(),
 )
 
 if get_option('with_test')
