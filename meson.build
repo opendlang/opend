@@ -44,12 +44,9 @@ install_subdir('source/',
     install_dir: 'include/d/' + meson.project_name(),
 )
 
-import('pkgconfig').generate(
-    name: meson.project_name(),
+import('pkgconfig').generate(mir_lapack_lib,
     description: 'ndslice API for LAPACK',
     subdirs: 'd/' + meson.project_name(),
-    libraries: [mir_lapack_lib],
-    version: meson.project_version(),
 )
 
 if get_option('with_test')
