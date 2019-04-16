@@ -53,7 +53,7 @@ assert(taggedFoo.isFoo);
 assert(taggedAny.isFoo);
 
 // Set to a different type
-taggedAny.strValue("bar");
+taggedAny.setStr("bar");
 assert(taggedAny.isStr);
 assert(taggedAny.strValue == "bar");
 
