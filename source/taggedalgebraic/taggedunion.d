@@ -29,7 +29,8 @@ import std.traits : EnumMembers, FieldNameTuple, Unqual, isInstanceOf;
 		$(LI `getFoo` - equivalent to `get!(Kind.foo)`)
 	)
 */
-struct TaggedUnion(U) if (is(U == union) || is(U == struct) || is(U == enum))
+template TaggedUnion(U) if (is(U == union) || is(U == struct) || is(U == enum)) {
+align(commonAlignment!(UnionKindTypes!(UnionFieldEnum!U))) struct TaggedUnion
 {
 	import std.traits : FieldTypeTuple, FieldNameTuple, Largest,
 		hasElaborateCopyConstructor, hasElaborateDestructor, isCopyable;
@@ -294,6 +295,7 @@ struct TaggedUnion(U) if (is(U == union) || is(U == struct) || is(U == enum))
 
 	package @trusted @property ref inout(T) trustedGet(T)() inout { return *cast(inout(T)*)m_data.ptr; }
 }
+}
 
 ///
 @safe nothrow unittest {
@@ -407,6 +409,33 @@ unittest { // non-copyable types
 
 	auto tu = TU(42);
 	tu.setS(S.init);
+}
+
+unittest { // alignment
+	union S1 { int v; }
+	union S2 { ulong v; }
+	union S3 { void* v; }
+
+	// sanity check for the actual checks - this may differ on non-x86 architectures
+	static assert(S1.alignof == 4);
+	static assert(S2.alignof == 8);
+	version (D_LP64) static assert(S3.alignof == 8);
+	else static assert(S3.alignof == 4);
+
+	// test external struct alignment
+	static assert(TaggedUnion!S1.alignof == 4);
+	static assert(TaggedUnion!S2.alignof == 8);
+	version (D_LP64) static assert(TaggedUnion!S3.alignof == 8);
+	else static assert(TaggedUnion!S3.alignof == 4);
+
+	// test internal struct alignment
+	TaggedUnion!S1 s1;
+	assert((cast(ubyte*)&s1.vValue() - cast(ubyte*)&s1) % 4 == 0);
+	TaggedUnion!S1 s2;
+	assert((cast(ubyte*)&s2.vValue() - cast(ubyte*)&s2) % 8 == 0);
+	TaggedUnion!S1 s3;
+	version (D_LP64) assert((cast(ubyte*)&s3.vValue() - cast(ubyte*)&s3) % 8 == 0);
+	else assert((cast(ubyte*)&s3.vValue() - cast(ubyte*)&s3) % 4 == 0);
 }
 
 
@@ -751,6 +780,16 @@ package template AmbiguousTypes(Types...) {
 	alias AmbiguousTypes = impl!0;
 }
 
+/// Computes the minimum alignment necessary to align all types correctly
+private size_t commonAlignment(TYPES...)()
+{
+	import std.numeric : gcd;
+
+	size_t ret = 1;
+	foreach (T; TYPES)
+		ret = (T.alignof * ret) / gcd(T.alignof, ret);
+	return ret;
+}
 
 package void rawEmplace(T)(void[] dst, ref T src)
 {
