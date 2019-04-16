@@ -791,6 +791,21 @@ private size_t commonAlignment(TYPES...)()
 	return ret;
 }
 
+unittest {
+	align(2) struct S1 { ubyte x; }
+	align(4) struct S2 { ubyte x; }
+	align(8) struct S3 { ubyte x; }
+
+	static if (__VERSION__ > 2076) { // DMD 2.076 ignores the alignment
+		assert(commonAlignment!S1 == 2);
+		assert(commonAlignment!S2 == 4);
+		assert(commonAlignment!S3 == 8);
+		assert(commonAlignment!(S1, S3) == 8);
+		assert(commonAlignment!(S1, S2, S3) == 8);
+		assert(commonAlignment!(S2, S2, S1) == 4);
+	}
+}
+
 package void rawEmplace(T)(void[] dst, ref T src)
 {
 	T[] tdst = () @trusted { return cast(T[])dst[0 .. T.sizeof]; } ();
