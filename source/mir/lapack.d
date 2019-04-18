@@ -1264,16 +1264,16 @@ size_t orgqr(T)(
     )
 in
 {
-    assert(a.length!1 >= 0); //n>=0
-    assert(a.length!0 >= a.length!1); //m>=n
+    assert(a.length!0 >= 0); //n>=0
+    assert(a.length!1 >= a.length!0); //m>=n
     assert(tau.length >= 0); //k>=0
-    assert(a.length!1 >= tau.length); //n>=k
-    assert(work.length >= a.length!1); //lwork>=n
+    assert(a.length!0 >= tau.length); //n>=k
+    assert(work.length >= a.length!0); //lwork>=n
 }
 do
 {
-    lapackint m = cast(lapackint) a.length!0;
-    lapackint n = cast(lapackint) a.length!1;
+    lapackint m = cast(lapackint) a.length!1;
+    lapackint n = cast(lapackint) a.length!0;
     lapackint k = cast(lapackint) tau.length;
     lapackint lda = cast(lapackint) a._stride.max(1);
     lapackint lwork = cast(lapackint) work.length;
@@ -1301,16 +1301,16 @@ size_t ungqr(T)(
     )
 in
 {
-    assert(a.length!1 >= 0); //n>=0
-    assert(a.length!0 >= a.length!1); //m>=n
+    assert(a.length!0 >= 0); //n>=0
+    assert(a.length!1 >= a.length!0); //m>=n
     assert(tau.length >= 0); //k>=0
-    assert(a.length!1 >= tau.length); //n>=k
-    assert(work.length >= a.length!1); //lwork>=n
+    assert(a.length!0 >= tau.length); //n>=k
+    assert(work.length >= a.length!0); //lwork>=n
 }
 do
 {
-    lapackint m = cast(lapackint) a.length!0;
-    lapackint n = cast(lapackint) a.length!1;
+    lapackint m = cast(lapackint) a.length!1;
+    lapackint n = cast(lapackint) a.length!0;
     lapackint k = cast(lapackint) tau.length;
     lapackint lda = cast(lapackint) a._stride.max(1);
     lapackint lwork = cast(lapackint) work.length;
