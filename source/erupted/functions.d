@@ -279,10 +279,6 @@ extern( System ) {
     // VK_NVX_image_view_handle
     alias PFN_vkGetImageViewHandleNVX                            = uint32_t  function( VkDevice device, const( VkImageViewHandleInfoNVX )* pInfo );
 
-    // VK_AMD_draw_indirect_count
-    alias PFN_vkCmdDrawIndirectCountAMD                          = void      function( VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, uint32_t maxDrawCount, uint32_t stride );
-    alias PFN_vkCmdDrawIndexedIndirectCountAMD                   = void      function( VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, uint32_t maxDrawCount, uint32_t stride );
-
     // VK_AMD_shader_info
     alias PFN_vkGetShaderInfoAMD                                 = VkResult  function( VkDevice device, VkPipeline pipeline, VkShaderStageFlagBits shaderStage, VkShaderInfoTypeAMD infoType, size_t* pInfoSize, void* pInfo );
 
@@ -404,6 +400,9 @@ extern( System ) {
 
     // VK_NV_cooperative_matrix
     alias PFN_vkGetPhysicalDeviceCooperativeMatrixPropertiesNV   = VkResult  function( VkPhysicalDevice physicalDevice, uint32_t* pPropertyCount, VkCooperativeMatrixPropertiesNV* pProperties );
+
+    // VK_EXT_headless_surface
+    alias PFN_vkCreateHeadlessSurfaceEXT                         = VkResult  function( VkInstance instance, const( VkHeadlessSurfaceCreateInfoEXT )* pCreateInfo, const( VkAllocationCallbacks )* pAllocator, VkSurfaceKHR* pSurface );
 
     // VK_EXT_host_query_reset
     alias PFN_vkResetQueryPoolEXT                                = void      function( VkDevice device, VkQueryPool queryPool, uint32_t firstQuery, uint32_t queryCount );
@@ -677,10 +676,6 @@ __gshared {
     // VK_NVX_image_view_handle
     PFN_vkGetImageViewHandleNVX                            vkGetImageViewHandleNVX;
 
-    // VK_AMD_draw_indirect_count
-    PFN_vkCmdDrawIndirectCountAMD                          vkCmdDrawIndirectCountAMD;
-    PFN_vkCmdDrawIndexedIndirectCountAMD                   vkCmdDrawIndexedIndirectCountAMD;
-
     // VK_AMD_shader_info
     PFN_vkGetShaderInfoAMD                                 vkGetShaderInfoAMD;
 
@@ -803,6 +798,9 @@ __gshared {
     // VK_NV_cooperative_matrix
     PFN_vkGetPhysicalDeviceCooperativeMatrixPropertiesNV   vkGetPhysicalDeviceCooperativeMatrixPropertiesNV;
 
+    // VK_EXT_headless_surface
+    PFN_vkCreateHeadlessSurfaceEXT                         vkCreateHeadlessSurfaceEXT;
+
     // VK_EXT_host_query_reset
     PFN_vkResetQueryPoolEXT                                vkResetQueryPoolEXT;
 
@@ -855,6 +853,10 @@ __gshared {
 
     // VK_KHR_maintenance3
     alias vkGetDescriptorSetLayoutSupportKHR                       = vkGetDescriptorSetLayoutSupport;
+
+    // VK_AMD_draw_indirect_count
+    alias vkCmdDrawIndirectCountAMD                                = vkCmdDrawIndirectCountKHR;
+    alias vkCmdDrawIndexedIndirectCountAMD                         = vkCmdDrawIndexedIndirectCountKHR;
 }
 
 
@@ -964,6 +966,9 @@ void loadInstanceLevelFunctions( VkInstance instance ) {
 
     // VK_NV_cooperative_matrix
     vkGetPhysicalDeviceCooperativeMatrixPropertiesNV   = cast( PFN_vkGetPhysicalDeviceCooperativeMatrixPropertiesNV   ) vkGetInstanceProcAddr( instance, "vkGetPhysicalDeviceCooperativeMatrixPropertiesNV" );
+
+    // VK_EXT_headless_surface
+    vkCreateHeadlessSurfaceEXT                         = cast( PFN_vkCreateHeadlessSurfaceEXT                         ) vkGetInstanceProcAddr( instance, "vkCreateHeadlessSurfaceEXT" );
 }
 
 
@@ -1175,10 +1180,6 @@ void loadDeviceLevelFunctions( VkInstance instance ) {
 
     // VK_NVX_image_view_handle
     vkGetImageViewHandleNVX                        = cast( PFN_vkGetImageViewHandleNVX                        ) vkGetInstanceProcAddr( instance, "vkGetImageViewHandleNVX" );
-
-    // VK_AMD_draw_indirect_count
-    vkCmdDrawIndirectCountAMD                      = cast( PFN_vkCmdDrawIndirectCountAMD                      ) vkGetInstanceProcAddr( instance, "vkCmdDrawIndirectCountAMD" );
-    vkCmdDrawIndexedIndirectCountAMD               = cast( PFN_vkCmdDrawIndexedIndirectCountAMD               ) vkGetInstanceProcAddr( instance, "vkCmdDrawIndexedIndirectCountAMD" );
 
     // VK_AMD_shader_info
     vkGetShaderInfoAMD                             = cast( PFN_vkGetShaderInfoAMD                             ) vkGetInstanceProcAddr( instance, "vkGetShaderInfoAMD" );
@@ -1498,10 +1499,6 @@ void loadDeviceLevelFunctions( VkDevice device ) {
 
     // VK_NVX_image_view_handle
     vkGetImageViewHandleNVX                        = cast( PFN_vkGetImageViewHandleNVX                        ) vkGetDeviceProcAddr( device, "vkGetImageViewHandleNVX" );
-
-    // VK_AMD_draw_indirect_count
-    vkCmdDrawIndirectCountAMD                      = cast( PFN_vkCmdDrawIndirectCountAMD                      ) vkGetDeviceProcAddr( device, "vkCmdDrawIndirectCountAMD" );
-    vkCmdDrawIndexedIndirectCountAMD               = cast( PFN_vkCmdDrawIndexedIndirectCountAMD               ) vkGetDeviceProcAddr( device, "vkCmdDrawIndexedIndirectCountAMD" );
 
     // VK_AMD_shader_info
     vkGetShaderInfoAMD                             = cast( PFN_vkGetShaderInfoAMD                             ) vkGetDeviceProcAddr( device, "vkGetShaderInfoAMD" );

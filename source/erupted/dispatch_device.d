@@ -262,10 +262,6 @@ struct DispatchDevice {
         // VK_NVX_image_view_handle
         vkGetImageViewHandleNVX                        = cast( PFN_vkGetImageViewHandleNVX                        ) vkGetDeviceProcAddr( device, "vkGetImageViewHandleNVX" );
 
-        // VK_AMD_draw_indirect_count
-        vkCmdDrawIndirectCountAMD                      = cast( PFN_vkCmdDrawIndirectCountAMD                      ) vkGetDeviceProcAddr( device, "vkCmdDrawIndirectCountAMD" );
-        vkCmdDrawIndexedIndirectCountAMD               = cast( PFN_vkCmdDrawIndexedIndirectCountAMD               ) vkGetDeviceProcAddr( device, "vkCmdDrawIndexedIndirectCountAMD" );
-
         // VK_AMD_shader_info
         vkGetShaderInfoAMD                             = cast( PFN_vkGetShaderInfoAMD                             ) vkGetDeviceProcAddr( device, "vkGetShaderInfoAMD" );
 
@@ -590,10 +586,6 @@ struct DispatchDevice {
     // VK_NVX_image_view_handle
     uint32_t  GetImageViewHandleNVX( const( VkImageViewHandleInfoNVX )* pInfo ) { return vkGetImageViewHandleNVX( vkDevice, pInfo ); }
 
-    // VK_AMD_draw_indirect_count
-    void      CmdDrawIndirectCountAMD( VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, uint32_t maxDrawCount, uint32_t stride ) { vkCmdDrawIndirectCountAMD( commandBuffer, buffer, offset, countBuffer, countBufferOffset, maxDrawCount, stride ); }
-    void      CmdDrawIndexedIndirectCountAMD( VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, uint32_t maxDrawCount, uint32_t stride ) { vkCmdDrawIndexedIndirectCountAMD( commandBuffer, buffer, offset, countBuffer, countBufferOffset, maxDrawCount, stride ); }
-
     // VK_AMD_shader_info
     VkResult  GetShaderInfoAMD( VkPipeline pipeline, VkShaderStageFlagBits shaderStage, VkShaderInfoTypeAMD infoType, size_t* pInfoSize, void* pInfo ) { return vkGetShaderInfoAMD( vkDevice, pipeline, shaderStage, infoType, pInfoSize, pInfo ); }
 
@@ -725,6 +717,10 @@ struct DispatchDevice {
 
     // VK_KHR_maintenance3
     alias GetDescriptorSetLayoutSupportKHR                   = GetDescriptorSetLayoutSupport;
+
+    // VK_AMD_draw_indirect_count
+    alias CmdDrawIndirectCountAMD                            = CmdDrawIndirectCountKHR;
+    alias CmdDrawIndexedIndirectCountAMD                     = CmdDrawIndexedIndirectCountKHR;
 
 
     /// member function pointer decelerations
@@ -932,10 +928,6 @@ struct DispatchDevice {
     // VK_NVX_image_view_handle
     PFN_vkGetImageViewHandleNVX                        vkGetImageViewHandleNVX;
 
-    // VK_AMD_draw_indirect_count
-    PFN_vkCmdDrawIndirectCountAMD                      vkCmdDrawIndirectCountAMD;
-    PFN_vkCmdDrawIndexedIndirectCountAMD               vkCmdDrawIndexedIndirectCountAMD;
-
     // VK_AMD_shader_info
     PFN_vkGetShaderInfoAMD                             vkGetShaderInfoAMD;
 
@@ -1071,5 +1063,9 @@ struct DispatchDevice {
 
     // VK_KHR_maintenance3
     alias vkGetDescriptorSetLayoutSupportKHR                   = vkGetDescriptorSetLayoutSupport;
+
+    // VK_AMD_draw_indirect_count
+    alias vkCmdDrawIndirectCountAMD                            = vkCmdDrawIndirectCountKHR;
+    alias vkCmdDrawIndexedIndirectCountAMD                     = vkCmdDrawIndexedIndirectCountKHR;
 }
 
