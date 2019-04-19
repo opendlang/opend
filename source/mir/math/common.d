@@ -387,13 +387,29 @@ else static if (__VERSION__ >= 2082) // DMD 2.082 onward.
     ///
     T fmin(T)(in T x, in T y) if (isFloatingPoint!T)
     {
-        version (Windows) // Linker problem?
-            return std.math.fmin(x, y);
+        version (Windows) // https://issues.dlang.org/show_bug.cgi?id=19798
+        {
+            version (CRuntime_Microsoft)
+                mixin(mixinCMath2!`fmin`);
+            else
+                return std.math.fmin(x, y);
+        }
         else
             mixin(mixinCMath2!`fmin`);
     }
     ///
-    T fmax(T)(in T x, in T y) if (isFloatingPoint!T) { mixin(mixinCMath2!`fmax`); }
+    T fmax(T)(in T x, in T y) if (isFloatingPoint!T)
+    {
+        version (Windows) // https://issues.dlang.org/show_bug.cgi?id=19798
+        {
+            version (CRuntime_Microsoft)
+                mixin(mixinCMath2!`fmax`);
+            else
+                return std.math.fmax(x, y);
+        }
+        else
+            mixin(mixinCMath2!`fmax`);
+    }
 
     version (mir_test) @nogc nothrow pure @safe unittest
     {
@@ -500,13 +516,29 @@ else // DMD version prior to 2.082
     ///
     T fmin(T)(in T x, in T y) if (isFloatingPoint!T)
     {
-        version (Windows) // Linker problem?
-            return std.math.fmin(x, y);
+        version (Windows) // https://issues.dlang.org/show_bug.cgi?id=19798
+        {
+            version (CRuntime_Microsoft)
+                mixin(mixinCMath2!`fmin`);
+            else
+                return std.math.fmin(x, y);
+        }
         else
             mixin(mixinCMath2!`fmin`);
     }
     ///
-    T fmax(T)(in T x, in T y) if (isFloatingPoint!T) { mixin(mixinCMath2!`fmax`); }
+    T fmax(T)(in T x, in T y) if (isFloatingPoint!T)
+    {
+        version (Windows) // https://issues.dlang.org/show_bug.cgi?id=19798
+        {
+            version (CRuntime_Microsoft)
+                mixin(mixinCMath2!`fmax`);
+            else
+                return std.math.fmax(x, y);
+        }
+        else
+            mixin(mixinCMath2!`fmax`);
+    }
 
     version (mir_test) @nogc nothrow pure @safe unittest
     {
