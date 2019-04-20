@@ -752,9 +752,17 @@ size_t geqrs(T)(
     Slice!(T*) tau,
     Slice!(T*) work
     )
+in
 {
-    lapackint m = cast(lapackint) a.length!0;
-    lapackint n = cast(lapackint) a.length!1;
+    assert(a.length!0 >= 0); //n>=0
+    assert(a.length!1 >= a.length!0); //m>=n
+    assert(b.length >= 0);
+    assert(work.length >= b.length);
+}
+body
+{
+    lapackint m = cast(lapackint) a.length!1;
+    lapackint n = cast(lapackint) a.length!0;
     lapackint nrhs = cast(lapackint) b.length;
     lapackint lda = cast(lapackint) a._stride.max(1);
     lapackint ldb = cast(lapackint) b._stride.max(1);
