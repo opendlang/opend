@@ -616,9 +616,18 @@ size_t geqrf(T)(
     Slice!(T*) tau,
     Slice!(T*) work
     )
+in
 {
-    lapackint m = cast(lapackint) a.length!0;
-    lapackint n = cast(lapackint) a.length!1;
+    assert(a.length!0 >= 0); //n>=0
+    assert(a.length!1 >= a.length!0); //m>=n
+    assert(tau.length >= 0); //k>=0
+    assert(a.length!0 >= tau.length); //n>=k
+    assert(work.length >= a.length!0); //lwork>=n
+}
+do
+{
+    lapackint m = cast(lapackint) a.length!1;
+    lapackint n = cast(lapackint) a.length!0;
     lapackint lda = cast(lapackint) a._stride.max(1);
     lapackint lwork = cast(lapackint) work.length;
     lapackint info = void;
