@@ -24,6 +24,12 @@ template LightScopeOf(T)
         static if (__traits(hasMember, T, "lightScope"))
             alias LightScopeOf = typeof(T.init.lightScope());
         else
+        static if (is(T == immutable))
+            alias LightScopeOf = LightImmutableOf!T;
+        else
+        static if (is(T == const))
+            alias LightScopeOf = LightConstOf!T;
+        else
             alias LightScopeOf = T;
     }
 }
@@ -73,7 +79,13 @@ auto ref lightScope(T)(auto ref return T v)
 auto ref lightScope(T)(auto return ref T v)
     if (is(T : P*, P) || !__traits(hasMember, T, "lightScope"))
 {
-    return v;
+    static if (is(T == immutable))
+        return v.lightImmutable;
+    else
+    static if (is(T == const))
+        return v.lightConst;
+    else
+        return v;
 }
 
 ///
@@ -157,5 +169,5 @@ auto lightConst(T)(immutable(T)* e)
 ///
 auto trustedImmutable(T)(auto ref const T e) @trusted
 {
-    return lightImmutable(cast(immutable) e);
+    return lightImmutable(*cast(immutable) &e);
 }
