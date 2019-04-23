@@ -92,7 +92,7 @@ auto ref lightScope(T)(auto return ref T v)
 auto lightImmutable(T)(auto ref immutable T v)
     if (!is(T : P*, P) && __traits(hasMember, immutable T, "lightImmutable"))
 {
-    return lightImmutable(v);
+    return v.lightImmutable;
 }
 
 /// ditto
