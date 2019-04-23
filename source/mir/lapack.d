@@ -18,18 +18,16 @@ static import lapack;
 
 public import lapack: lapackint;
 
-//enum for errors.
-private enum Error {
-    squareM = "The matrix must be square"
-};
-
 @trusted pure nothrow @nogc:
 
 /// `getri` work space query.
 size_t getri_wq(T)(Slice!(T*, 2, Canonical) a)
+in
 {
-	assert(a.length!0 == a.length!1, "getri: a must be a square matrix.");
-
+    assert(a.length!0 == a.length!1, "getri: The input 'a' must be a square matrix.");
+}
+do
+{
 	lapackint n = cast(lapackint) a.length;
 	lapackint lda = cast(lapackint) a._stride.max(1);
 	T work = void;
@@ -56,11 +54,14 @@ size_t getri(T)(
 	Slice!(lapackint*) ipiv,
 	Slice!(T*) work,
 	)
+in
 {
-	assert(a.length!0 == a.length!1, "getri: a must be a square matrix.");
-	assert(ipiv.length == a.length);
-	assert(work.length);
-
+	assert(a.length!0 == a.length!1, "getri: The input 'a' must be a square matrix.");
+	assert(ipiv.length == a.length!0, "getri: The length of 'ipiv' must be equal to the number of rows of 'a'.");
+	assert(work.length, "getri: work must have a non-zero length.");
+}
+do
+{
 	lapackint n = cast(lapackint) a.length;
 	lapackint lda = cast(lapackint) a._stride.max(1);
 	lapackint lwork = cast(lapackint) work.length;
@@ -85,9 +86,12 @@ size_t getrf(T)(
 	Slice!(T*, 2, Canonical) a,
 	Slice!(lapackint*) ipiv,
 	)
+in
 {
-	assert(ipiv.length == min(a.length!0, a.length!1));
-
+    assert(ipiv.length == min(a.length!0, a.length!1), "getrf: The length of 'ipiv' must equal the smaller of 'a''s dimensions");
+}
+do
+{
 	lapackint m = cast(lapackint) a.length!1;
 	lapackint n = cast(lapackint) a.length!0;
 	lapackint lda = cast(lapackint) a._stride.max(1);
@@ -115,9 +119,12 @@ template sptrf(T)
 		Slice!(StairsIterator!(T*, "+")) ap,
 		Slice!(lapackint*) ipiv,
 		)
+    in
+    {
+		assert(ipiv.length == ap.length, "sptrf: The length of 'ipiv' must be equal to the length 'ap'.");
+    }
+    do
 	{
-		assert(ipiv.length == ap.length);
-
 		char uplo = 'U';
 		lapackint n = cast(lapackint) ap.length;
 		lapackint info = void;
@@ -133,9 +140,12 @@ template sptrf(T)
 		Slice!(StairsIterator!(T*, "-")) ap,
 		Slice!(lapackint*) ipiv,
 		)
+    in
+    {
+		assert(ipiv.length == ap.length, "sptrf: The length of 'ipiv' must be equal to the length 'ap'.");
+    }
+    do
 	{
-		assert(ipiv.length == ap.length);
-
 		char uplo = 'L';
 		lapackint n = cast(lapackint) ap.length;
 		lapackint info = void;
@@ -159,11 +169,14 @@ size_t gesv(T)(
 	Slice!(lapackint*) ipiv,
 	Slice!(T*, 2, Canonical) b,
 	)
+in
 {
-	assert(a.length!0 == a.length!1, "gesv: a must be a square matrix.");
-	assert(ipiv.length == a.length);
-	assert(b.length!1 == a.length);
-
+	assert(a.length!0 == a.length!1, "gesv: The input 'a' must be a square matrix.");
+	assert(ipiv.length == a.length!0, "gesv: The length of 'ipiv' must be equal to the number of rows of 'a'.");
+	assert(b.length!1 == a.length!0, "gesv: The number of columns of 'b' must equal the number of rows of 'a'");
+}
+do
+{
 	lapackint n = cast(lapackint) a.length;
 	lapackint nrhs = cast(lapackint) b.length;
 	lapackint lda = cast(lapackint) a._stride.max(1);
@@ -189,9 +202,12 @@ size_t gelsd_wq(T)(
 	ref size_t liwork,
 	)
 	if(!isComplex!T)
+in
 {
-	assert(b.length!1 == a.length!1);
-
+    assert(b.length!1 == a.length!1, "gelsd_wq: The number of columns of 'b' must equal the number of columns of 'a'");
+}
+do
+{
 	lapackint m = cast(lapackint) a.length!1;
 	lapackint n = cast(lapackint) a.length!0;
 	lapackint nrhs = cast(lapackint) b.length;
@@ -220,9 +236,12 @@ size_t gelsd_wq(T)(
 	ref size_t liwork,
 	)
 	if(isComplex!T)
+in
 {
-	assert(b.length!1 == a.length!1);
-
+    assert(b.length!1 == a.length!1, "gelsd_wq: The number of columns of 'b' must equal the number of columns of 'a'");
+}
+do
+{
 	lapackint m = cast(lapackint) a.length!1;
 	lapackint n = cast(lapackint) a.length!0;
 	lapackint nrhs = cast(lapackint) b.length;
@@ -263,10 +282,13 @@ size_t gelsd(T)(
 	Slice!(lapackint*) iwork,
 	)
 	if(!isComplex!T)
+in
 {
-	assert(b.length!1 == a.length!1);
-	assert(s.length == min(a.length!0, a.length!1));
-
+	assert(b.length!1 == a.length!1, "gelsd: The number of columns of 'b' must equal the number of columns of 'a'");
+	assert(s.length == min(a.length!0, a.length!1), "gelsd: The length of 's' must equal the smaller of the dimensions of 'a'");
+}
+do
+{
 	lapackint m = cast(lapackint) a.length!1;
 	lapackint n = cast(lapackint) a.length!0;
 	lapackint nrhs = cast(lapackint) b.length;
@@ -295,10 +317,13 @@ size_t gelsd(T)(
 	Slice!(lapackint*) iwork,
 	)
 	if(isComplex!T)
+in
 {
-	assert(b.length!1 == a.length!1);
-	assert(s.length == min(a.length!0, a.length!1));
-
+	assert(b.length!1 == a.length!1, "gelsd: The number of columns of 'b' must equal the number of columns of 'a'");
+	assert(s.length == min(a.length!0, a.length!1), "gelsd: The length of 's' must equal the smaller of the dimensions of 'a'");
+}
+do
+{
 	lapackint m = cast(lapackint) a.length!1;
 	lapackint n = cast(lapackint) a.length!0;
 	lapackint nrhs = cast(lapackint) b.length;
@@ -533,10 +558,13 @@ template spev(T)
 		Slice!(T*, 2, Canonical) z,
 		Slice!(T*) work,
 		)
+    in
+    {
+		assert(work.length == 3 * ap.length, "spev: The length of 'work' must equal three times the length of 'ap'.");
+		assert(w.length == ap.length, "spev: The length of 'w' must equal the length of 'ap'.");
+    }
+    do
 	{
-		assert(work.length == 3 * ap.length);
-		assert(w.length == ap.length);
-
 		char uplo = 'U';
 		lapackint n = cast(lapackint) ap.length;
 		lapackint ldz = cast(lapackint) z._stride.max(1);
@@ -556,10 +584,13 @@ template spev(T)
 		Slice!(T*, 2, Canonical) z,
 		Slice!(T*) work,
 		)
+    in
+    {
+		assert(work.length == 3 * ap.length, "spev: The length of 'work' must equal three times the length of 'ap'.");
+		assert(w.length == ap.length, "spev: The length of 'w' must equal the length of 'ap'.");
+    }
+    do
 	{
-		assert(work.length == 3 * ap.length);
-		assert(w.length == ap.length);
-
 		char uplo = 'L';
 		lapackint n = cast(lapackint) ap.length;
 		lapackint ldz = cast(lapackint) z._stride.max(1);
@@ -585,8 +616,12 @@ size_t sytrf(T)(
     Slice!(lapackint*) ipiv,
     Slice!(T*) work,
     )
+in
 {
-    assert(a.length!0 == a.length!1, Error.squareM);
+    assert(a.length!0 == a.length!1, "sytrf: The input 'a' must be a square matrix.");
+}
+do
+{
     lapackint info = void;
     lapackint n = cast(lapackint) a.length;
     lapackint lda = cast(lapackint) a._stride.max(1);
@@ -618,11 +653,16 @@ size_t geqrf(T)(
     )
 in
 {
-    assert(a.length!0 >= 0); //n>=0
-    assert(a.length!1 >= a.length!0); //m>=n
-    assert(tau.length >= 0); //k>=0
-    assert(a.length!0 >= tau.length); //n>=k
-    assert(work.length >= a.length!0); //lwork>=n
+    assert(a.length!0 >= 0, "geqrf: The number of columns of 'a' must be " ~ 
+        "greater than or equal to zero."); //n>=0
+    assert(a.length!1 >= a.length!0, "geqrf: The number of columns of 'a' " ~ 
+        "must be greater than or equal to the number of its rows."); //m>=n
+    assert(tau.length >= 0, "geqrf: The input 'tau' must have length greater " ~ 
+        "than or equal to zero."); //k>=0
+    assert(a.length!0 >= tau.length, "geqrf: The number of columns of 'a' " ~ 
+        "must be greater than or equal to the length of 'tau'."); //n>=k
+    assert(work.length >= a.length!0, "geqrf: The length of 'work' must be " ~ 
+        "greater than or equal to the number of rows of 'a'."); //lwork>=n
 }
 do
 {
@@ -655,10 +695,13 @@ size_t getrs(T)(
     Slice!(T*, 2, Canonical) b,
     Slice!(lapackint*) ipiv,
     )
+in
 {
-    assert(a.length!0 == a.length!1, Error.squareM);
-    assert(ipiv.length == a.length, "size of ipiv must be equal to the number of rows a");
-
+    assert(a.length!0 == a.length!1, "getrs: The input 'a' must be a square matrix.");
+    assert(ipiv.length == a.length!0, "getrs: The length of 'ipiv' must be equal to the number of rows of 'a'.");
+}
+do
+{
     lapackint n = cast(lapackint) a.length;
     lapackint nrhs = cast(lapackint) b.length;
     lapackint lda = cast(lapackint) a._stride.max(1);
@@ -687,9 +730,12 @@ size_t potrs(T)(
     Slice!(T*, 2, Canonical) a,
     Slice!(T*, 2, Canonical) b,
     )
+in
 {
-    assert(a.length!0 == a.length!1, Error.squareM);
-
+    assert(a.length!0 == a.length!1, "potrs: The input 'a' must be a square matrix.");
+}
+do
+{
     lapackint n = cast(lapackint) a.length;
     lapackint nrhs = cast(lapackint) b.length;
     lapackint lda = cast(lapackint) a._stride.max(1);
@@ -720,9 +766,12 @@ size_t sytrs2(T)(
     Slice!(T*) work,
     char uplo,
     )
+in
 {
-    assert(a.length!0 == a.length!1, Error.squareM);
-
+    assert(a.length!0 == a.length!1, "sytrs2: The input 'a' must be a square matrix.");
+}
+do
+{
     lapackint n = cast(lapackint) a.length;
     lapackint nrhs = cast(lapackint) b.length;
     lapackint lda = cast(lapackint) a._stride.max(1);
@@ -754,10 +803,16 @@ size_t geqrs(T)(
     )
 in
 {
-    assert(a.length!0 >= 0); //n>=0
-    assert(a.length!1 >= a.length!0); //m>=n
-    assert(b.length >= 0);
-    assert(work.length >= b.length);
+    assert(a.length!0 >= 0, "geqrs: The number of columns of 'a' must be " ~ 
+        "greater than or equal to zero."); //n>=0
+    assert(a.length!1 >= a.length!0, "geqrs: The number of columns of 'a' " ~ 
+        "must be greater than or equal to the number of its rows."); //m>=n
+    assert(tau.length >= 0, "geqrs: The input 'tau' must have length greater " ~ 
+        "than or equal to zero."); //k>=0
+    assert(a.length!0 >= tau.length, "geqrs: The number of columns of 'a' " ~ 
+        "must be greater than or equal to the length of 'tau'."); //n>=k
+    assert(work.length >= a.length!0, "geqrs: The length of 'work' must be " ~ 
+        "greater than or equal to the number of rows of 'a'."); //lwork>=n
 }
 body
 {
@@ -791,10 +846,13 @@ size_t sysv_rook_wk(T)(
 	Slice!(T*, 2, Canonical) a,
 	Slice!(T*, 2, Canonical) b,
 	) 
+in
 {
-	assert(a.length!0 == a.length!1, "sysv: a must be a square matrix.");
-	assert(b.length!1 == a.length);
-
+	assert(a.length!0 == a.length!1, "sysv_rook_wk: The input 'a' must be a square matrix.");
+	assert(b.length!1 == a.length!0, "sysv_rook_wk: The number of columns of 'b' must equal the number of rows of 'a'.");
+}
+do
+{
 	lapackint n = cast(lapackint) a.length;
 	lapackint nrhs = cast(lapackint) b.length;
 	lapackint lda = cast(lapackint) a._stride.max(1);
@@ -824,11 +882,14 @@ size_t sysv_rook(T)(
 	Slice!(T*, 2, Canonical) b,
 	Slice!(T*) work,
 	)
+in
 {
-	assert(a.length!0 == a.length!1, "sysv: a must be a square matrix.");
-	assert(ipiv.length == a.length);
-	assert(b.length!1 == a.length);
-
+	assert(a.length!0 == a.length!1, "sysv_rook: The input 'a' must be a square matrix.");
+	assert(ipiv.length == a.length!0, "sysv_rook: The length of 'ipiv' must be equal to the number of rows of 'a'");
+	assert(b.length!1 == a.length!0, "sysv_rook: The number of columns of 'b' must equal the number of rows of 'a'.");
+}
+do
+{
 	lapackint n = cast(lapackint) a.length;
 	lapackint nrhs = cast(lapackint) b.length;
 	lapackint lda = cast(lapackint) a._stride.max(1);
@@ -856,11 +917,14 @@ size_t syev_wk(T)(
 	char uplo,
 	Slice!(T*, 2, Canonical) a,
 	Slice!(T*) w,
-	) 
+	)
+in
 {
-	assert(a.length!0 == a.length!1, "sysv: a must be a square matrix.");
-	assert(w.length == a.length);
-
+	assert(a.length!0 == a.length!1, "syev_wk: The input 'a' must be a square matrix.");
+	assert(w.length == a.length!0, "syev_wk: The length of 'w' must equal the number of rows of 'a'.");
+}
+do
+{
 	lapackint n = cast(lapackint) a.length;
 	lapackint lda = cast(lapackint) a._stride.max(1);
 	T work = void;
@@ -886,10 +950,13 @@ size_t syev(T)(
 	Slice!(T*) w,
 	Slice!(T*) work,
 	)
+in
 {
-	assert(a.length!0 == a.length!1, "sysv: a must be a square matrix.");
-	assert(w.length == a.length);
-
+	assert(a.length!0 == a.length!1, "syev: The input 'a' must be a square matrix.");
+	assert(w.length == a.length!0, "syev: The length of 'w' must equal the number of rows of 'a'.");
+}
+do
+{
 	lapackint n = cast(lapackint) a.length;
 	lapackint lda = cast(lapackint) a._stride.max(1);
 	lapackint lwork = cast(lapackint) work.length;
@@ -913,11 +980,14 @@ size_t syev_2stage_wk(T)(
 	char uplo,
 	Slice!(T*, 2, Canonical) a,
 	Slice!(T*) w,
-	) 
+	)
+in
 {
-	assert(a.length!0 == a.length!1, "sysv: a must be a square matrix.");
-	assert(w.length == a.length);
-
+	assert(a.length!0 == a.length!1, "syev_2stage_wk: The input 'a' must be a square matrix.");
+	assert(w.length == a.length, "syev_2stage_wk: The length of 'w' must equal the number of rows of 'a'.");
+}
+do
+{
 	lapackint n = cast(lapackint) a.length;
 	lapackint lda = cast(lapackint) a._stride.max(1);
 	T work = void;
@@ -944,10 +1014,13 @@ size_t syev_2stage(T)(
 	Slice!(T*) w,
 	Slice!(T*) work,
 	)
+in
 {
-	assert(a.length!0 == a.length!1, "sysv: a must be a square matrix.");
-	assert(w.length == a.length);
-
+	assert(a.length!0 == a.length!1, "syev_2stage: The input 'a' must be a square matrix.");
+	assert(w.length == a.length, "syev_2stage: The length of 'w' must equal the number of rows of 'a'.");
+}
+do
+{
 	lapackint n = cast(lapackint) a.length;
 	lapackint lda = cast(lapackint) a._stride.max(1);
 	lapackint lwork = cast(lapackint) work.length;
@@ -971,9 +1044,12 @@ size_t potrf(T)(
        char uplo,
        Slice!(T*, 2, Canonical) a,
        )
+in
 {
-    assert(a.length!0 == a.length!1, "potrf: a must be a square matrix.");
-    
+    assert(a.length!0 == a.length!1, "potrf: The input 'a' must be a square matrix.");
+}
+do
+{
     lapackint n = cast(lapackint) a.length;
     lapackint lda = cast(lapackint) a._stride.max(1);
     lapackint info = void;
@@ -1026,10 +1102,13 @@ template sptri(T)
 		Slice!(lapackint*) ipiv,
 		Slice!(T*) work
 		)
+    in
+    {
+		assert(ipiv.length == ap.length, "sptri: The length of 'ipiv' must be equal to the length of 'ap'.");
+		assert(work.length == ap.length, "sptri: The length of 'work' must be equal to the length of 'ap'.");
+    }
+    do
 	{
-		assert(ipiv.length == ap.length);
-		assert(work.length == ap.length);
-
 		lapackint n = cast(lapackint) ap.length;
 		lapackint info = void;
 
@@ -1046,10 +1125,13 @@ template sptri(T)
 		Slice!(lapackint*) ipiv,
 		Slice!(T*) work
 		)
+    in
+    {
+		assert(ipiv.length == ap.length, "sptri: The length of 'ipiv' must be equal to the length of 'ap'.");
+		assert(work.length == ap.length, "sptri: The length of 'work' must be equal to the length of 'ap'.");
+    }
+    do
 	{
-		assert(ipiv.length == ap.length);
-		assert(work.length == ap.length);
-
 		lapackint n = cast(lapackint) ap.length;
 		lapackint info = void;
 
@@ -1074,9 +1156,12 @@ size_t potri(T)(
     char uplo,
 	Slice!(T*, 2, Canonical) a,
 	)
+in
 {
-	assert(a.length!0 == a.length!1, "potri: a must be a square matrix.");
-
+    assert(a.length!0 == a.length!1, "potri: The input 'a' must be a square matrix.");
+}
+do
+{
 	lapackint n = cast(lapackint) a.length;
 	lapackint lda = cast(lapackint) a._stride.max(1);
 	lapackint info = void;
@@ -1143,9 +1228,12 @@ size_t trtri(T)(
     char diag,
 	Slice!(T*, 2, Canonical) a,
 	)
+in
 {
-	assert(a.length!0 == a.length!1, "trtri: a must be a square matrix.");
-
+    assert(a.length!0 == a.length!1, "trtri: The input 'a' must be a square matrix.");
+}
+do
+{
 	lapackint n = cast(lapackint) a.length;
 	lapackint lda = cast(lapackint) a._stride.max(1);
 	lapackint info = void;
@@ -1281,11 +1369,16 @@ size_t orgqr(T)(
     )
 in
 {
-    assert(a.length!0 >= 0); //n>=0
-    assert(a.length!1 >= a.length!0); //m>=n
-    assert(tau.length >= 0); //k>=0
-    assert(a.length!0 >= tau.length); //n>=k
-    assert(work.length >= a.length!0); //lwork>=n
+    assert(a.length!0 >= 0, "orgqr: The number of columns of 'a' must be " ~ 
+        "greater than or equal to zero."); //n>=0
+    assert(a.length!1 >= a.length!0, "orgqr: The number of columns of 'a' " ~ 
+        "must be greater than or equal to the number of its rows."); //m>=n
+    assert(tau.length >= 0, "orgqr: The input 'tau' must have length greater " ~ 
+        "than or equal to zero."); //k>=0
+    assert(a.length!0 >= tau.length, "orgqr: The number of columns of 'a' " ~ 
+        "must be greater than or equal to the length of 'tau'."); //n>=k
+    assert(work.length >= a.length!0, "orgqr: The length of 'work' must be " ~ 
+        "greater than or equal to the number of rows of 'a'."); //lwork>=n
 }
 do
 {
@@ -1318,11 +1411,16 @@ size_t ungqr(T)(
     )
 in
 {
-    assert(a.length!0 >= 0); //n>=0
-    assert(a.length!1 >= a.length!0); //m>=n
-    assert(tau.length >= 0); //k>=0
-    assert(a.length!0 >= tau.length); //n>=k
-    assert(work.length >= a.length!0); //lwork>=n
+    assert(a.length!0 >= 0, "ungqr: The number of columns of 'a' must be " ~ 
+        "greater than or equal to zero."); //n>=0
+    assert(a.length!1 >= a.length!0, "ungqr: The number of columns of 'a' " ~ 
+        "must be greater than or equal to the number of its rows."); //m>=n
+    assert(tau.length >= 0, "ungqr: The input 'tau' must have length greater " ~ 
+        "than or equal to zero."); //k>=0
+    assert(a.length!0 >= tau.length, "ungqr: The number of columns of 'a' " ~ 
+        "must be greater than or equal to the length of 'tau'."); //n>=k
+    assert(work.length >= a.length!0, "ungqr: The length of 'work' must be " ~ 
+        "greater than or equal to the number of rows of 'a'."); //lwork>=n
 }
 do
 {
