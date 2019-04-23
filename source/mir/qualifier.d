@@ -80,10 +80,10 @@ auto ref lightScope(T)(auto return ref T v)
     if (is(T : P*, P) || !__traits(hasMember, T, "lightScope"))
 {
     static if (is(T == immutable))
-        return v.lightImmutable;
+        return lightImmutable(v);
     else
     static if (is(T == const))
-        return v.lightConst;
+        return lightConst(v);
     else
         return v;
 }
@@ -92,7 +92,7 @@ auto ref lightScope(T)(auto return ref T v)
 auto lightImmutable(T)(auto ref immutable T v)
     if (!is(T : P*, P) && __traits(hasMember, immutable T, "lightImmutable"))
 {
-    return v.lightImmutable;
+    return lightImmutable(v);
 }
 
 /// ditto
