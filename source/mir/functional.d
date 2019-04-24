@@ -77,8 +77,19 @@ struct Ref(T)
     ///
     T* __ptr;
     ///
-    ref T __value() @property { return *__ptr; }
+    ref inout(T) __value() inout @property { return *__ptr; }
+    ///
     alias __value this;
+    ///
+    bool opEquals(scope Ref!T rhs) const scope
+    {
+        return __value == rhs.__value;
+    }
+    ///
+    size_t toHash() const
+    {
+        return hashOf(__value);
+    }
 }
 
 /// Creates $(LREF Ref) wrapper.
