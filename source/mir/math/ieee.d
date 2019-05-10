@@ -535,34 +535,51 @@ T nextDown(T)(const T x) @safe pure nothrow @nogc
     assert(nextDown(f)==1.0);
 }
 
-/** 
- * Return the value that lies halfway between x and y on the IEEE number line.
- *
- * Formally, the result is the arithmetic mean of the binary significands of x
- * and y, multiplied by the geometric mean of the binary exponents of x and y.
- * x and y must have the same sign, and must not be NaN.
- * Note: this function is useful for ensuring O(log n) behaviour in algorithms
- * involving a 'binary chop'.
- *
- * Special cases:
- * If x and y are within a factor of 2, (ie, feqrel(x, y) > 0), the return value
- * is the arithmetic mean (x + y) / 2.
- * If x and y are even powers of 2, the return value is the geometric mean,
- *   ieeeMean(x, y) = sqrt(x * y).
- *
- */
-T ieeeMean(T)(const T x, const T y)  @trusted pure nothrow @nogc
+/++
+Return the value that lies halfway between x and y on the IEEE number line.
+
+Formally, the result is the arithmetic mean of the binary significands of x
+and y, multiplied by the geometric mean of the binary exponents of x and y.
+x and y must not be NaN.
+Note: this function is useful for ensuring O(log n) behaviour in algorithms
+involving a 'binary chop'.
+
+Params:
+    xx = x value
+    yy = y value
+
+Special cases:
+If x and y not null and have opposite sign bits, then `copysign(T(0), y)` is returned.
+If x and y are within a factor of 2 and have the same sign, (ie, feqrel(x, y) > 0), the return value
+is the arithmetic mean (x + y) / 2.
+If x and y are even powers of 2 and have the same sign, the return value is the geometric mean,
+ieeeMean(x, y) = sgn(x) * sqrt(fabs(x * y)).
++/
+T ieeeMean(T)(const T xx, const T yy) @trusted pure nothrow @nogc
 in
 {
-    // both x and y must have the same sign, and must not be NaN.
-    assert(signbit(x) == signbit(y));
-    assert(x == x && y == y);
+    assert(xx == xx && yy == yy);
 }
 do
 {
-    // Runtime behaviour for contract violation:
-    // If signs are opposite, or one is a NaN, return 0.
-    if (!((x >= 0 && y >= 0) || (x <= 0 && y <= 0))) return 0.0;
+    import mir.math.common: copysign;
+    T x = xx;
+    T y = yy;
+
+    if (x == 0)
+    {
+        x = copysign(T(0), y);
+    }
+    else
+    if (y == 0)
+    {
+        y = copysign(T(0), x);
+    }
+    else
+    if (signbit(x) != signbit(y))
+    {
+        return copysign(T(0), y);
+    }
 
     // The implementation is simple: cast x and y to integers,
     // average them (avoiding overflow), and cast the result back to a floating-point number.
