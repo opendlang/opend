@@ -577,7 +577,7 @@ CpuInfo _cpuid()(uint eax, uint ecx = 0)
 nothrow @nogc @property:
 
 align(4)
-private __gshared immutable char[12][21] _vendors =
+private __gshared immutable char[12][22] _vendors =
 [
     "GenuineIntel",
     "AuthenticAMD",
@@ -588,6 +588,7 @@ private __gshared immutable char[12][21] _vendors =
     "AMDisbetter!",
     "CentaurHauls",
     "CyrixInstead",
+    "HygonGenuine",
     "GenuineTMx86",
     "Geode by NSC",
     "NexGenDriven",
@@ -666,6 +667,8 @@ enum VendorIndex
     centaur,
     /// Cyrix
     cyrix,
+    /// Hygon CPU (AMD like)
+    hygon,
     /// Transmeta
     transmeta,
     /// National Semiconductor

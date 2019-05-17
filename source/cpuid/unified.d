@@ -130,7 +130,8 @@ void mir_cpuid_init()
     }
     if (vendorIndex == VendorIndex.amd || 
         vendorIndex == VendorIndex.amd_old || 
-        vendorIndex == VendorIndex.centaur)
+        vendorIndex == VendorIndex.centaur || 
+        vendorIndex == VendorIndex.hygon)
     {
         // Caches and TLB
         if(maxExtendedLeaf >= 0x8000_0005)
