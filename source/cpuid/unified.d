@@ -89,28 +89,13 @@ export
 nothrow @nogc
 extern(C):
 
-version(D_BetterC)
-{
-    pragma(crt_constructor)
-    void crt_mir_cpuid_init()
-    {
-        mir_cpuid_init();
-    }
-}
-else
-{
-    shared static this()
-    {
-        mir_cpuid_init();
-    }
-}
-
 /++
 Initialize basic CPU information including basic architecture.
 It is safe to call this function multiple times.
 It calls appropriate basic initialization for each module (`cpuid_x86_any_init` for X86 machines).
 +/
 version(X86_Any)
+pragma(crt_constructor)
 void mir_cpuid_init()
 {
     static if (__VERSION__ >= 2068)
@@ -328,6 +313,7 @@ void mir_cpuid_init()
     }
 }
 else
+pragma(crt_constructor)
 void mir_cpuid_init()
 {
     _cpus._mut = 1;
