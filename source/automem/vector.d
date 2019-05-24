@@ -421,8 +421,11 @@ struct Vector(E, Allocator = typeof(theAllocator)) if(isAllocator!Allocator) {
 
     static if(is(Unqual!E == char)) {
 
-        // return a null-terminated C string
-        auto stringz(this This)() return scope {
+        /**
+           Return a null-terminated C string
+           @system since appending is not @safe.
+         */
+        auto stringz(this This)() return scope @system {
             if(capacity == length) reserve(length + 1);
 
             static if(isElementMutable) {

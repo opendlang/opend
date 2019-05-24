@@ -464,10 +464,10 @@ private void consumeVec(T)(auto ref T vec) {
 }
 
 @("stringz")
-@system unittest {
+@safe unittest {
     import std.string: fromStringz;
     auto str = vector("foobar");
-    const strz = str.stringz;
+    const strz = () @trusted { return str.stringz; }();
     const back = () @trusted { return fromStringz(strz); }();
     back.should == "foobar";
     str.range.should ==("foobar");
