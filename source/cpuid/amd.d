@@ -159,7 +159,7 @@ union LeafExt6Information
                 uint, "L2DTlb2and4MAssoc", 31 - 28 + 1,
             ));
 
-            /// ECD
+            /// ECX
             mixin(bitfields!(
                 uint, "L2LineSize", 7 - 0 + 1,
                 uint, "L2LinesPerTag", 11 - 8 + 1,
@@ -174,6 +174,78 @@ union LeafExt6Information
                 uint, "L3Assoc", 15 - 12 + 1,
                 uint, "", 17 - 16 + 1,
                 uint, "L3Size", 31 - 18 + 1,
+            ));
+        }
+    }
+}
+
+/++
+Long Mode Address Size Identifiers.
+
+Extended Feature Extensions ID EBX.
+
+Size Identifiers.
+
+Specification: AMD
++/
+union LeafExt8Information
+{
+    /// CPUID payload
+    CpuInfo info;
+
+    ///
+    struct
+    {
+        import mir.bitmanip: bitfields;
+
+        version(D_Ddoc)
+        {
+        const @trusted @property pure nothrow @nogc:
+            ///  Maximum physical byte address size in bits
+            uint L2ITlb4KSize();
+            /// Maximum linear byte address size in bits
+            uint PhysAddrSize();
+            /// Maximum guest physical byte address size in bits
+            uint GuestPhysAddrSize();
+            ///  Clear Zero Instruction
+            uint CLZERO();
+            /// Instructions retired count support
+            uint IRPerf();
+            uint XSaveErPtr();
+            /// Number of threads in the package - 1
+            uint NC();
+            /// The number of bits in the initial value that indicate thread ID within a package.
+            uint ApicIdCoreIdSize();
+            /// performance time-stamp counter size
+            uint PerfTscSize();
+        }
+        else
+        {
+            @trusted @property pure nothrow @nogc:
+
+            /// EAX
+            mixin(bitfields!(
+                uint, "L2ITlb4KSize", 7 - 0  + 1,
+                uint, "PhysAddrSize", 15 - 8 + 1,
+                uint, "GuestPhysAddrSize", 23 - 16 + 1,
+                uint, "", 31 - 24 + 1,
+            ));
+
+            /// EBX
+            mixin(bitfields!(
+                uint, "CLZERO", 1,
+                uint, "IRPerf", 1,
+                uint, "XSaveErPtr", 1,
+                uint, "", 31 - 3 + 1,
+            ));
+
+            /// ECX
+            mixin(bitfields!(
+                uint, "NC", 7 - 0 + 1,
+                uint, "", 11 - 8 + 1,
+                uint, "ApicIdCoreIdSize", 15 - 12 + 1,
+                uint, "PerfTscSize", 17 - 16 + 1,
+                uint, "", 31 - 18 + 1,
             ));
         }
     }

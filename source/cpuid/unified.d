@@ -108,10 +108,11 @@ void mir_cpuid_init()
     static import cpuid.intel;
     static import cpuid.amd;
 
+    /// for old CPUs
+    _threads._mut = _cores._mut = maxLogicalProcessors;
     if(htt)
     {
-        /// for old CPUs
-        _threads._mut = _cores._mut = maxLogicalProcessors;
+        _threads._mut *= 2;
     }
     if (vendorIndex == VendorIndex.amd || 
         vendorIndex == VendorIndex.amd_old || 
@@ -189,6 +190,12 @@ void mir_cpuid_init()
                     _uCache._mut[_uCache_length].line = cast(typeof(Cache.line)) leafExt6.L3LineSize;
                     _uCache._mut[_uCache_length].associative = leafExt6.L3Assoc.decodeL2or3Assoc!CacheAssoc;
                     _uCache_length._mut++;
+                }
+
+                if(maxExtendedLeaf >= 0x8000_0008)
+                {
+                    auto leafExt8 = cpuid.amd.LeafExt8Information(_cpuid(0x8000_0008));
+                    _threads._mut = leafExt8.NC + 1;
                 }
             }
         }
