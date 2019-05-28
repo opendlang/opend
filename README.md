@@ -82,3 +82,5 @@ dub build --compiler=ldmd2 --build-mode=singleFile --parallel
  - [ ] Add information about ARM target and ARM vendors.
  - [x] Test a lot of different CPUs.
  - [ ] Extend testing infrastructure.
+ - [ ] CPU(package) count identification.
+ - [ ] Per CPU(package) CPUID information.
