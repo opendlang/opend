@@ -198,7 +198,6 @@ private:
     public ImplType* _impl; // public or alias this doesn't work
 
     void allocateImpl() {
-        import std.experimental.allocator: make;
         import std.traits: hasIndirections;
 
         _impl = cast(typeof(_impl)) _allocator.allocate(Impl.sizeof);
