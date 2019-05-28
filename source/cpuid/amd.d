@@ -211,6 +211,7 @@ union LeafExt8Information
             uint CLZERO();
             /// Instructions retired count support
             uint IRPerf();
+            ///
             uint XSaveErPtr();
             /// Number of threads in the package - 1
             uint NC();
@@ -233,9 +234,9 @@ union LeafExt8Information
 
             /// EBX
             mixin(bitfields!(
-                uint, "CLZERO", 1,
-                uint, "IRPerf", 1,
-                uint, "XSaveErPtr", 1,
+                bool, "CLZERO", 1,
+                bool, "IRPerf", 1,
+                bool, "XSaveErPtr", 1,
                 uint, "", 31 - 3 + 1,
             ));
 
@@ -246,6 +247,55 @@ union LeafExt8Information
                 uint, "ApicIdCoreIdSize", 15 - 12 + 1,
                 uint, "PerfTscSize", 17 - 16 + 1,
                 uint, "", 31 - 18 + 1,
+            ));
+        }
+    }
+}
+
+/++
+Extended APIC ID.
+
+Core Identifiers.
+
+Node Identifiers.
+
+Specification: AMD
++/
+union LeafExt1EInformation
+{
+    /// CPUID payload
+    CpuInfo info;
+
+    ///
+    struct
+    {
+        import mir.bitmanip: bitfields;
+        // EAX
+        /// Extended APIC ID
+        uint ExtendedApicId;
+        // EBX
+        ushort __reserved__EBX;
+        /// The number of threads per core is ThreadsPerCore+1.
+        ubyte ThreadsPerCore;
+        /// Core ID
+        ubyte CoreId;
+        version(D_Ddoc)
+        {
+        const @trusted @property pure nothrow @nogc:
+            ///  Node per processor.
+            uint NodesPerProcessor();
+            /// Node ID
+            uint NodeId();
+        }
+        else
+        {
+        @trusted @property pure nothrow @nogc:
+
+            /// ECX
+            mixin(bitfields!(
+                uint, "", 31 - 11 + 1,
+                uint, "NodesPerProcessor", 10 - 8 + 1,
+                uint, "NodeId", 7 - 0 + 1,
             ));
         }
     }

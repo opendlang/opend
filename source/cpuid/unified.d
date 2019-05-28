@@ -109,11 +109,12 @@ void mir_cpuid_init()
     static import cpuid.amd;
 
     /// for old CPUs
-    _threads._mut = _cores._mut = maxLogicalProcessors;
     if(htt)
     {
-        _threads._mut *= 2;
+        _threads._mut = _cores._mut = maxLogicalProcessors;
+        _cores._mut /= 2;
     }
+
     if (vendorIndex == VendorIndex.amd || 
         vendorIndex == VendorIndex.amd_old || 
         vendorIndex == VendorIndex.centaur || 
@@ -196,6 +197,12 @@ void mir_cpuid_init()
                 {
                     auto leafExt8 = cpuid.amd.LeafExt8Information(_cpuid(0x8000_0008));
                     _threads._mut = leafExt8.NC + 1;
+
+                    if (maxExtendedLeaf >= 0x8000_001E)
+                    {
+                        auto leafExt1E = cpuid.amd.LeafExt1EInformation(_cpuid(0x8000_001E));
+                        _cores._mut = _threads / (leafExt1E.ThreadsPerCore + 1);
+                    }
                 }
             }
         }
