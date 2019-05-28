@@ -144,6 +144,11 @@ private:
 
     static struct Impl {
 
+        static if(is(Type == shared))
+            shared size_t _count;
+        else
+            size_t _count;
+
         static if(is(Type == class)) {
 
             align ((void*).alignof)
@@ -152,10 +157,6 @@ private:
         } else
             Type _object;
 
-        static if(is(Type == shared))
-            shared size_t _count;
-        else
-            size_t _count;
 
         static if (is(Type == class)) {
             inout(Type) _get() inout {
