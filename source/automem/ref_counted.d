@@ -50,7 +50,8 @@ struct RefCounted(Type,
 
     static if(isGlobal)
         /**
-            Factory method so can construct with zero args.
+            Factory method to enable construction of structs despite
+            structs not being able to have a constructor with no arguments.
         */
         static typeof(this) construct(Args...)(auto ref Args args) {
             static if (Args.length != 0)

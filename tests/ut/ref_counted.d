@@ -425,3 +425,31 @@ unittest {
     Y y2;
     y2 = y1;
 }
+
+
+@("number of allocations")
+@safe unittest {
+    static TestAllocator allocator;
+    allocator.numAllocations.should == 0;
+
+    auto ptr1 = RefCounted!(Struct, TestAllocator*)(&allocator, 77);
+    allocator.numAllocations.should == 1;
+    {
+        auto ptr2 = ptr1;
+        allocator.numAllocations.should == 1;
+
+        {
+            auto ptr = ptr2;
+            allocator.numAllocations.should == 1;
+        }
+
+        auto produce(int i) {
+            return typeof(ptr1)(&allocator, i);
+        }
+
+        ptr1 = produce(99);
+        allocator.numAllocations.should == 2;
+    }
+
+    allocator.numAllocations.should == 2;
+}
