@@ -6,11 +6,11 @@ import std.traits : isStaticArray;
 // druntime, to allow for destruction attribute inference
 
 void destruct(T)(T obj) if (is(T == class)) {
-    (cast(_finalizeType!T)&rt_finalize)(cast(void*)obj);
+    (cast(_finalizeType!T) &rt_finalize)(cast(void*) obj);
 }
 
 void destruct(T)(T obj) if (is(T == interface)) {
-    destruct(cast(Object)obj);
+    destruct(cast(Object) obj);
 }
 
 void destruct(T)(ref T obj) if (is(T == struct)) {

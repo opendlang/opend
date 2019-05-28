@@ -72,8 +72,6 @@ struct RefCounted(Type,
 
     ///
     this(this) {
-        // assert(_impl !is null, "Postblit ctor with null impl");
-        // inc;
         if(_impl !is null) inc;
     }
 
@@ -160,11 +158,11 @@ private:
 
         static if (is(Type == class)) {
             inout(Type) _get() inout {
-                return cast(inout(Type))&_rawMemory[0];
+                return cast(inout(Type)) &_rawMemory[0];
             }
 
             inout(shared(Type)) _get() inout shared {
-                return cast(inout(shared(Type)))&_rawMemory[0];
+                return cast(inout(shared(Type))) &_rawMemory[0];
             }
         } else {
             ref inout(Type) _get() inout {
@@ -203,8 +201,8 @@ private:
         import std.experimental.allocator: make;
         import std.traits: hasIndirections;
 
-        _impl = cast(typeof(_impl))_allocator.allocate(Impl.sizeof);
-        _impl._count= 1;
+        _impl = cast(typeof(_impl)) _allocator.allocate(Impl.sizeof);
+        _impl._count = 1;
 
         static if (is(Type == class)) {
             // class representation:
@@ -247,7 +245,7 @@ private:
             } else static if (supportGC && hasIndirections!Type) {
                 () @trusted { GC.removeRange(cast(void*) &_impl._object); }();
             }
-            auto mem = () @trusted { return cast(void*)_impl; }();
+            auto mem = () @trusted { return cast(void*) _impl; }();
             () @trusted { _allocator.deallocate(mem[0 .. Impl.sizeof]); }();
         }
     }
@@ -258,7 +256,6 @@ private:
             _impl._count.atomicOp!"+="(1);
         } else
             ++_impl._count;
-
     }
 
     void dec() {
