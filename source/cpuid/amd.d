@@ -274,11 +274,11 @@ union LeafExt1EInformation
         /// Extended APIC ID
         uint ExtendedApicId;
         // EBX
-        ushort __reserved__EBX;
-        /// The number of threads per core is ThreadsPerCore+1.
-        ubyte ThreadsPerCore;
         /// Core ID
         ubyte CoreId;
+        /// The number of threads per core is ThreadsPerCore+1.
+        ubyte ThreadsPerCore;
+        ushort __reserved__EBX;
         version(D_Ddoc)
         {
         const @trusted @property pure nothrow @nogc:
