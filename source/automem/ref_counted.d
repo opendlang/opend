@@ -246,8 +246,8 @@ private:
             } else static if (supportGC && hasIndirections!Type) {
                 () @trusted { GC.removeRange(cast(void*) &_impl._object); }();
             }
-            auto mem = () @trusted { return cast(void*) _impl; }();
-            () @trusted { _allocator.deallocate(mem[0 .. Impl.sizeof]); }();
+            auto memSlice = () @trusted { return (cast(void*) _impl)[0 .. Impl.sizeof]; }();
+            () @trusted { _allocator.deallocate(memSlice); }();
         }
     }
 
