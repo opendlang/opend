@@ -389,6 +389,17 @@ extern( System ) {
     alias PFN_vkCmdSetCheckpointNV                                              = void      function( VkCommandBuffer commandBuffer, const( void )* pCheckpointMarker );
     alias PFN_vkGetQueueCheckpointDataNV                                        = void      function( VkQueue queue, uint32_t* pCheckpointDataCount, VkCheckpointDataNV* pCheckpointData );
 
+    // VK_INTEL_performance_query
+    alias PFN_vkInitializePerformanceApiINTEL                                   = VkResult  function( VkDevice device, const( VkInitializePerformanceApiInfoINTEL )* pInitializeInfo );
+    alias PFN_vkUninitializePerformanceApiINTEL                                 = void      function( VkDevice device );
+    alias PFN_vkCmdSetPerformanceMarkerINTEL                                    = VkResult  function( VkCommandBuffer commandBuffer, const( VkPerformanceMarkerInfoINTEL )* pMarkerInfo );
+    alias PFN_vkCmdSetPerformanceStreamMarkerINTEL                              = VkResult  function( VkCommandBuffer commandBuffer, const( VkPerformanceStreamMarkerInfoINTEL )* pMarkerInfo );
+    alias PFN_vkCmdSetPerformanceOverrideINTEL                                  = VkResult  function( VkCommandBuffer commandBuffer, const( VkPerformanceOverrideInfoINTEL )* pOverrideInfo );
+    alias PFN_vkAcquirePerformanceConfigurationINTEL                            = VkResult  function( VkDevice device, const( VkPerformanceConfigurationAcquireInfoINTEL )* pAcquireInfo, VkPerformanceConfigurationINTEL* pConfiguration );
+    alias PFN_vkReleasePerformanceConfigurationINTEL                            = VkResult  function( VkDevice device, VkPerformanceConfigurationINTEL configuration );
+    alias PFN_vkQueueSetPerformanceConfigurationINTEL                           = VkResult  function( VkQueue queue, VkPerformanceConfigurationINTEL configuration );
+    alias PFN_vkGetPerformanceParameterINTEL                                    = VkResult  function( VkDevice device, VkPerformanceParameterTypeINTEL parameter, VkPerformanceValueINTEL* pValue );
+
     // VK_AMD_display_native_hdr
     alias PFN_vkSetLocalDimmingAMD                                              = void      function( VkDevice device, VkSwapchainKHR swapChain, VkBool32 localDimmingEnable );
 
@@ -785,6 +796,17 @@ __gshared {
     // VK_NV_device_diagnostic_checkpoints
     PFN_vkCmdSetCheckpointNV                                              vkCmdSetCheckpointNV;
     PFN_vkGetQueueCheckpointDataNV                                        vkGetQueueCheckpointDataNV;
+
+    // VK_INTEL_performance_query
+    PFN_vkInitializePerformanceApiINTEL                                   vkInitializePerformanceApiINTEL;
+    PFN_vkUninitializePerformanceApiINTEL                                 vkUninitializePerformanceApiINTEL;
+    PFN_vkCmdSetPerformanceMarkerINTEL                                    vkCmdSetPerformanceMarkerINTEL;
+    PFN_vkCmdSetPerformanceStreamMarkerINTEL                              vkCmdSetPerformanceStreamMarkerINTEL;
+    PFN_vkCmdSetPerformanceOverrideINTEL                                  vkCmdSetPerformanceOverrideINTEL;
+    PFN_vkAcquirePerformanceConfigurationINTEL                            vkAcquirePerformanceConfigurationINTEL;
+    PFN_vkReleasePerformanceConfigurationINTEL                            vkReleasePerformanceConfigurationINTEL;
+    PFN_vkQueueSetPerformanceConfigurationINTEL                           vkQueueSetPerformanceConfigurationINTEL;
+    PFN_vkGetPerformanceParameterINTEL                                    vkGetPerformanceParameterINTEL;
 
     // VK_AMD_display_native_hdr
     PFN_vkSetLocalDimmingAMD                                              vkSetLocalDimmingAMD;
@@ -1279,6 +1301,17 @@ void loadDeviceLevelFunctions( VkInstance instance ) {
     vkCmdSetCheckpointNV                           = cast( PFN_vkCmdSetCheckpointNV                           ) vkGetInstanceProcAddr( instance, "vkCmdSetCheckpointNV" );
     vkGetQueueCheckpointDataNV                     = cast( PFN_vkGetQueueCheckpointDataNV                     ) vkGetInstanceProcAddr( instance, "vkGetQueueCheckpointDataNV" );
 
+    // VK_INTEL_performance_query
+    vkInitializePerformanceApiINTEL                = cast( PFN_vkInitializePerformanceApiINTEL                ) vkGetInstanceProcAddr( instance, "vkInitializePerformanceApiINTEL" );
+    vkUninitializePerformanceApiINTEL              = cast( PFN_vkUninitializePerformanceApiINTEL              ) vkGetInstanceProcAddr( instance, "vkUninitializePerformanceApiINTEL" );
+    vkCmdSetPerformanceMarkerINTEL                 = cast( PFN_vkCmdSetPerformanceMarkerINTEL                 ) vkGetInstanceProcAddr( instance, "vkCmdSetPerformanceMarkerINTEL" );
+    vkCmdSetPerformanceStreamMarkerINTEL           = cast( PFN_vkCmdSetPerformanceStreamMarkerINTEL           ) vkGetInstanceProcAddr( instance, "vkCmdSetPerformanceStreamMarkerINTEL" );
+    vkCmdSetPerformanceOverrideINTEL               = cast( PFN_vkCmdSetPerformanceOverrideINTEL               ) vkGetInstanceProcAddr( instance, "vkCmdSetPerformanceOverrideINTEL" );
+    vkAcquirePerformanceConfigurationINTEL         = cast( PFN_vkAcquirePerformanceConfigurationINTEL         ) vkGetInstanceProcAddr( instance, "vkAcquirePerformanceConfigurationINTEL" );
+    vkReleasePerformanceConfigurationINTEL         = cast( PFN_vkReleasePerformanceConfigurationINTEL         ) vkGetInstanceProcAddr( instance, "vkReleasePerformanceConfigurationINTEL" );
+    vkQueueSetPerformanceConfigurationINTEL        = cast( PFN_vkQueueSetPerformanceConfigurationINTEL        ) vkGetInstanceProcAddr( instance, "vkQueueSetPerformanceConfigurationINTEL" );
+    vkGetPerformanceParameterINTEL                 = cast( PFN_vkGetPerformanceParameterINTEL                 ) vkGetInstanceProcAddr( instance, "vkGetPerformanceParameterINTEL" );
+
     // VK_AMD_display_native_hdr
     vkSetLocalDimmingAMD                           = cast( PFN_vkSetLocalDimmingAMD                           ) vkGetInstanceProcAddr( instance, "vkSetLocalDimmingAMD" );
 
@@ -1594,6 +1627,17 @@ void loadDeviceLevelFunctions( VkDevice device ) {
     // VK_NV_device_diagnostic_checkpoints
     vkCmdSetCheckpointNV                           = cast( PFN_vkCmdSetCheckpointNV                           ) vkGetDeviceProcAddr( device, "vkCmdSetCheckpointNV" );
     vkGetQueueCheckpointDataNV                     = cast( PFN_vkGetQueueCheckpointDataNV                     ) vkGetDeviceProcAddr( device, "vkGetQueueCheckpointDataNV" );
+
+    // VK_INTEL_performance_query
+    vkInitializePerformanceApiINTEL                = cast( PFN_vkInitializePerformanceApiINTEL                ) vkGetDeviceProcAddr( device, "vkInitializePerformanceApiINTEL" );
+    vkUninitializePerformanceApiINTEL              = cast( PFN_vkUninitializePerformanceApiINTEL              ) vkGetDeviceProcAddr( device, "vkUninitializePerformanceApiINTEL" );
+    vkCmdSetPerformanceMarkerINTEL                 = cast( PFN_vkCmdSetPerformanceMarkerINTEL                 ) vkGetDeviceProcAddr( device, "vkCmdSetPerformanceMarkerINTEL" );
+    vkCmdSetPerformanceStreamMarkerINTEL           = cast( PFN_vkCmdSetPerformanceStreamMarkerINTEL           ) vkGetDeviceProcAddr( device, "vkCmdSetPerformanceStreamMarkerINTEL" );
+    vkCmdSetPerformanceOverrideINTEL               = cast( PFN_vkCmdSetPerformanceOverrideINTEL               ) vkGetDeviceProcAddr( device, "vkCmdSetPerformanceOverrideINTEL" );
+    vkAcquirePerformanceConfigurationINTEL         = cast( PFN_vkAcquirePerformanceConfigurationINTEL         ) vkGetDeviceProcAddr( device, "vkAcquirePerformanceConfigurationINTEL" );
+    vkReleasePerformanceConfigurationINTEL         = cast( PFN_vkReleasePerformanceConfigurationINTEL         ) vkGetDeviceProcAddr( device, "vkReleasePerformanceConfigurationINTEL" );
+    vkQueueSetPerformanceConfigurationINTEL        = cast( PFN_vkQueueSetPerformanceConfigurationINTEL        ) vkGetDeviceProcAddr( device, "vkQueueSetPerformanceConfigurationINTEL" );
+    vkGetPerformanceParameterINTEL                 = cast( PFN_vkGetPerformanceParameterINTEL                 ) vkGetDeviceProcAddr( device, "vkGetPerformanceParameterINTEL" );
 
     // VK_AMD_display_native_hdr
     vkSetLocalDimmingAMD                           = cast( PFN_vkSetLocalDimmingAMD                           ) vkGetDeviceProcAddr( device, "vkSetLocalDimmingAMD" );
