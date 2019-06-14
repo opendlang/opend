@@ -5,7 +5,7 @@
 [![Coverage](https://codecov.io/gh/atilaneves/automem/branch/master/graph/badge.svg)](https://codecov.io/gh/atilaneves/automem)
 [![Open on run.dlang.io](https://img.shields.io/badge/run.dlang.io-open-blue.svg)](https://run.dlang.io/is/P3yCpG)
 
-## C++-style automatic memory management smart pointers for D using `stdx.allocator`.
+## C++-style automatic memory management smart pointers for D using `std.experimental.allocator`.
 
 Unlike the C++ variants, the smart pointers themselves allocate the memory for the objects they contain.
 That ensures the right allocator is used to dispose of the memory as well.
