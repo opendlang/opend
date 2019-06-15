@@ -257,7 +257,7 @@ struct ObsEnt(T...) {
 
 // Whether we can use StackTreeAA, or whether we have to use a regular AA for
 // entropy.
-private template NeedsHeap(T) {
+package template NeedsHeap(T) {
     static if(!hasIndirections!(ForeachType!(T))) {
         enum bool NeedsHeap = false;
     } else static if(isArray!(T)) {
