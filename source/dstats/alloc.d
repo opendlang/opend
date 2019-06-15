@@ -60,7 +60,14 @@ void appendDelOld(T, U)(ref T[] to, U from)
 if(Appends!(T, U)) {
     auto old = to;
     to ~= from;
-    if (old.ptr !is to.ptr && old.ptr !is null) delete old;
+    if (old.ptr !is to.ptr && old.ptr !is null)
+    {
+        import core.memory;
+        static if (__traits(isPOD, T))
+            GC.free(old.ptr);
+        else
+            __delete(old);
+    }
 }
 
 unittest {
