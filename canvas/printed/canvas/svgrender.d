@@ -102,7 +102,7 @@ public:
 
     override void strokeRect(float x, float y, float width, float height)
     {
-        output(format(`<rect x="%s" y="%s" width="%s" height="%s" stroke="%s"/>`, x, y, width, height, _currentStroke));
+        output(format(`<rect x="%s" y="%s" width="%s" height="%s" stroke="%s" fill="none"/>`, x, y, width, height, _currentStroke));
     }
 
     override TextMetrics measureText(string text)
