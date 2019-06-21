@@ -33,7 +33,7 @@ pure {
 extern( System ):
 
 // Version of corresponding c header file
-enum VK_HEADER_VERSION = 110;
+enum VK_HEADER_VERSION = 111;
 
 enum VK_NULL_HANDLE = null;
 
@@ -6591,7 +6591,7 @@ enum VK_EXT_DEPTH_RANGE_UNRESTRICTED_EXTENSION_NAME = "VK_EXT_depth_range_unrest
 // - VK_IMG_filter_cubic -
 enum VK_IMG_filter_cubic = 1;
 
-enum VK_IMG_FILTER_CUBIC_SPEC_VERSION = 1;
+enum VK_IMG_FILTER_CUBIC_SPEC_VERSION = 2;
 enum VK_IMG_FILTER_CUBIC_EXTENSION_NAME = "VK_IMG_filter_cubic";
 
 
