@@ -11,7 +11,6 @@ Source:     $(PHOBOSSRC std/experimental/_normint.d)
 module std.experimental.normint;
 
 import std.traits : isIntegral, isSigned, isUnsigned, isFloatingPoint, Unsigned;
-static import std.algorithm;
 
 @safe pure nothrow @nogc:
 
@@ -33,6 +32,7 @@ Params: $(D_INLINECODE I) = $(D_INLINECODE (u)byte), $(D_INLINECODE (u)short), $
 struct NormalizedInt(I) if (isNormalizedIntegralType!I)
 {
 @safe:
+    static import std.algorithm.comparison;
 
     string toString() const
     {
@@ -42,6 +42,7 @@ struct NormalizedInt(I) if (isNormalizedIntegralType!I)
 
 pure nothrow @nogc:
 
+    /** The actual value */
     I value;
 
     /** Integral storage type. */
@@ -82,9 +83,9 @@ pure nothrow @nogc:
     NormalizedInt!I opBinary(string op)(NormalizedInt!I rh) const if (op == "+" || op == "-")
     {
         auto r = mixin("cast(WorkInt!I)value " ~ op ~ " rh.value");
-        r = std.algorithm.min(r, max);
+        r = std.algorithm.comparison.min(r, max);
         static if (op == "-")
-            r = std.algorithm.max(r, min);
+            r = std.algorithm.comparison.max(r, min);
         return NormalizedInt!I(cast(I)r);
     }
 
@@ -112,8 +113,8 @@ pure nothrow @nogc:
             double b = rh.value;
             static if (isSigned!I)
             {
-                a = std.algorithm.max(a, cast(double)min);
-                b = std.algorithm.max(b, cast(double)min);
+                a = std.algorithm.comparison.max(a, cast(double)min);
+                b = std.algorithm.comparison.max(b, cast(double)min);
             }
             double r = a * b * (1.0/max);
             return NormalizedInt!I(cast(I)r);
@@ -125,8 +126,8 @@ pure nothrow @nogc:
             double b = rh.value * (1.0/max);
             static if (isSigned!I)
             {
-                a = std.algorithm.max(a, -1.0);
-                b = std.algorithm.max(b, -1.0);
+                a = std.algorithm.comparison.max(a, -1.0);
+                b = std.algorithm.comparison.max(b, -1.0);
             }
             double r = a^^b * double(max);
             if (isUnsigned!I || r >= 0)
@@ -145,7 +146,7 @@ pure nothrow @nogc:
     /** Binary operators. */
     NormalizedInt!I opBinary(string op, T)(T rh) const if (isNormalizedIntegralType!T && op == "*")
     {
-        return NormalizedInt!I(cast(I)std.algorithm.clamp(cast(WorkInt!I)value * rh, min, max));
+        return NormalizedInt!I(cast(I)std.algorithm.comparison.clamp(cast(WorkInt!I)value * rh, min, max));
     }
 
     /** Binary operators. */
@@ -426,7 +427,7 @@ F normBitsToFloat(size_t bits, bool signed, F = float)(uint v) pure nothrow @nog
         return v ? F(-1.0) : F(0.0);
     else
     {
-        import std.algorithm : max;
+        import std.algorithm.comparison : max;
         return max((cast(int)(v << (32 - bits)) >> (32 - bits)) / F(BitsSMax!bits), F(-1));
     }
 }
