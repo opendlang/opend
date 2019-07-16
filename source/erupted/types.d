@@ -33,7 +33,7 @@ pure {
 extern( System ):
 
 // Version of corresponding c header file
-enum VK_HEADER_VERSION = 113;
+enum VK_HEADER_VERSION = 114;
 
 enum VK_NULL_HANDLE = null;
 
@@ -391,6 +391,10 @@ enum VkStructureType {
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_CLIP_ENABLE_FEATURES_EXT                     = 1000102000,
     VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_DEPTH_CLIP_STATE_CREATE_INFO_EXT            = 1000102001,
     VK_STRUCTURE_TYPE_HDR_METADATA_EXT                                                   = 1000105000,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGELESS_FRAMEBUFFER_FEATURES_KHR                 = 1000108000,
+    VK_STRUCTURE_TYPE_FRAMEBUFFER_ATTACHMENTS_CREATE_INFO_KHR                            = 1000108001,
+    VK_STRUCTURE_TYPE_FRAMEBUFFER_ATTACHMENT_IMAGE_INFO_KHR                              = 1000108002,
+    VK_STRUCTURE_TYPE_RENDER_PASS_ATTACHMENT_BEGIN_INFO_KHR                              = 1000108003,
     VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2_KHR                                       = 1000109000,
     VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2_KHR                                         = 1000109001,
     VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_2_KHR                                          = 1000109002,
@@ -814,6 +818,10 @@ enum VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_CONSERVATIVE_STATE_CREATE_INFO_EXT
 enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_CLIP_ENABLE_FEATURES_EXT                    = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_CLIP_ENABLE_FEATURES_EXT;
 enum VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_DEPTH_CLIP_STATE_CREATE_INFO_EXT           = VkStructureType.VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_DEPTH_CLIP_STATE_CREATE_INFO_EXT;
 enum VK_STRUCTURE_TYPE_HDR_METADATA_EXT                                                  = VkStructureType.VK_STRUCTURE_TYPE_HDR_METADATA_EXT;
+enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGELESS_FRAMEBUFFER_FEATURES_KHR                = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGELESS_FRAMEBUFFER_FEATURES_KHR;
+enum VK_STRUCTURE_TYPE_FRAMEBUFFER_ATTACHMENTS_CREATE_INFO_KHR                           = VkStructureType.VK_STRUCTURE_TYPE_FRAMEBUFFER_ATTACHMENTS_CREATE_INFO_KHR;
+enum VK_STRUCTURE_TYPE_FRAMEBUFFER_ATTACHMENT_IMAGE_INFO_KHR                             = VkStructureType.VK_STRUCTURE_TYPE_FRAMEBUFFER_ATTACHMENT_IMAGE_INFO_KHR;
+enum VK_STRUCTURE_TYPE_RENDER_PASS_ATTACHMENT_BEGIN_INFO_KHR                             = VkStructureType.VK_STRUCTURE_TYPE_RENDER_PASS_ATTACHMENT_BEGIN_INFO_KHR;
 enum VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2_KHR                                      = VkStructureType.VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2_KHR;
 enum VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2_KHR                                        = VkStructureType.VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2_KHR;
 enum VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_2_KHR                                         = VkStructureType.VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_2_KHR;
@@ -3140,6 +3148,14 @@ enum VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT_EXT = VkDescriptorPoolCreat
 enum VK_DESCRIPTOR_POOL_CREATE_FLAG_BITS_MAX_ENUM        = VkDescriptorPoolCreateFlagBits.VK_DESCRIPTOR_POOL_CREATE_FLAG_BITS_MAX_ENUM;
 alias VkDescriptorPoolCreateFlags = VkFlags;
 alias VkDescriptorPoolResetFlags = VkFlags;
+
+enum VkFramebufferCreateFlagBits {
+    VK_FRAMEBUFFER_CREATE_IMAGELESS_BIT_KHR      = 0x00000001,
+    VK_FRAMEBUFFER_CREATE_FLAG_BITS_MAX_ENUM     = 0x7FFFFFFF
+}
+
+enum VK_FRAMEBUFFER_CREATE_IMAGELESS_BIT_KHR     = VkFramebufferCreateFlagBits.VK_FRAMEBUFFER_CREATE_IMAGELESS_BIT_KHR;
+enum VK_FRAMEBUFFER_CREATE_FLAG_BITS_MAX_ENUM    = VkFramebufferCreateFlagBits.VK_FRAMEBUFFER_CREATE_FLAG_BITS_MAX_ENUM;
 alias VkFramebufferCreateFlags = VkFlags;
 alias VkRenderPassCreateFlags = VkFlags;
 
@@ -5903,6 +5919,45 @@ alias VkDescriptorUpdateTemplateCreateFlagsKHR = VkDescriptorUpdateTemplateCreat
 
 alias VkDescriptorUpdateTemplateEntryKHR = VkDescriptorUpdateTemplateEntry;
 alias VkDescriptorUpdateTemplateCreateInfoKHR = VkDescriptorUpdateTemplateCreateInfo;
+
+
+// - VK_KHR_imageless_framebuffer -
+enum VK_KHR_imageless_framebuffer = 1;
+
+enum VK_KHR_IMAGELESS_FRAMEBUFFER_SPEC_VERSION = 1;
+enum VK_KHR_IMAGELESS_FRAMEBUFFER_EXTENSION_NAME = "VK_KHR_imageless_framebuffer";
+
+struct VkPhysicalDeviceImagelessFramebufferFeaturesKHR {
+    VkStructureType  sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGELESS_FRAMEBUFFER_FEATURES_KHR;
+    void*            pNext;
+    VkBool32         imagelessFramebuffer;
+}
+
+struct VkFramebufferAttachmentImageInfoKHR {
+    VkStructureType     sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_ATTACHMENT_IMAGE_INFO_KHR;
+    const( void )*      pNext;
+    VkImageCreateFlags  flags;
+    VkImageUsageFlags   usage;
+    uint32_t            width;
+    uint32_t            height;
+    uint32_t            layerCount;
+    uint32_t            viewFormatCount;
+    const( VkFormat )*  pViewFormats;
+}
+
+struct VkFramebufferAttachmentsCreateInfoKHR {
+    VkStructureType                                sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_ATTACHMENTS_CREATE_INFO_KHR;
+    const( void )*                                 pNext;
+    uint32_t                                       attachmentImageInfoCount;
+    const( VkFramebufferAttachmentImageInfoKHR )*  pAttachmentImageInfos;
+}
+
+struct VkRenderPassAttachmentBeginInfoKHR {
+    VkStructureType        sType = VK_STRUCTURE_TYPE_RENDER_PASS_ATTACHMENT_BEGIN_INFO_KHR;
+    const( void )*         pNext;
+    uint32_t               attachmentCount;
+    const( VkImageView )*  pAttachments;
+}
 
 
 // - VK_KHR_create_renderpass2 -
