@@ -415,6 +415,9 @@ extern( System ) {
     // VK_EXT_headless_surface
     alias PFN_vkCreateHeadlessSurfaceEXT                                        = VkResult  function( VkInstance instance, const( VkHeadlessSurfaceCreateInfoEXT )* pCreateInfo, const( VkAllocationCallbacks )* pAllocator, VkSurfaceKHR* pSurface );
 
+    // VK_EXT_line_rasterization
+    alias PFN_vkCmdSetLineStippleEXT                                            = void      function( VkCommandBuffer commandBuffer, uint32_t lineStippleFactor, uint16_t lineStipplePattern );
+
     // VK_EXT_host_query_reset
     alias PFN_vkResetQueryPoolEXT                                               = void      function( VkDevice device, VkQueryPool queryPool, uint32_t firstQuery, uint32_t queryCount );
 }
@@ -822,6 +825,9 @@ __gshared {
 
     // VK_EXT_headless_surface
     PFN_vkCreateHeadlessSurfaceEXT                                        vkCreateHeadlessSurfaceEXT;
+
+    // VK_EXT_line_rasterization
+    PFN_vkCmdSetLineStippleEXT                                            vkCmdSetLineStippleEXT;
 
     // VK_EXT_host_query_reset
     PFN_vkResetQueryPoolEXT                                               vkResetQueryPoolEXT;
@@ -1318,6 +1324,9 @@ void loadDeviceLevelFunctions( VkInstance instance ) {
     // VK_EXT_buffer_device_address
     vkGetBufferDeviceAddressEXT                    = cast( PFN_vkGetBufferDeviceAddressEXT                    ) vkGetInstanceProcAddr( instance, "vkGetBufferDeviceAddressEXT" );
 
+    // VK_EXT_line_rasterization
+    vkCmdSetLineStippleEXT                         = cast( PFN_vkCmdSetLineStippleEXT                         ) vkGetInstanceProcAddr( instance, "vkCmdSetLineStippleEXT" );
+
     // VK_EXT_host_query_reset
     vkResetQueryPoolEXT                            = cast( PFN_vkResetQueryPoolEXT                            ) vkGetInstanceProcAddr( instance, "vkResetQueryPoolEXT" );
 }
@@ -1644,6 +1653,9 @@ void loadDeviceLevelFunctions( VkDevice device ) {
 
     // VK_EXT_buffer_device_address
     vkGetBufferDeviceAddressEXT                    = cast( PFN_vkGetBufferDeviceAddressEXT                    ) vkGetDeviceProcAddr( device, "vkGetBufferDeviceAddressEXT" );
+
+    // VK_EXT_line_rasterization
+    vkCmdSetLineStippleEXT                         = cast( PFN_vkCmdSetLineStippleEXT                         ) vkGetDeviceProcAddr( device, "vkCmdSetLineStippleEXT" );
 
     // VK_EXT_host_query_reset
     vkResetQueryPoolEXT                            = cast( PFN_vkResetQueryPoolEXT                            ) vkGetDeviceProcAddr( device, "vkResetQueryPoolEXT" );
