@@ -33,7 +33,7 @@ pure {
 extern( System ):
 
 // Version of corresponding c header file
-enum VK_HEADER_VERSION = 115;
+enum VK_HEADER_VERSION = 116;
 
 enum VK_NULL_HANDLE = null;
 
@@ -524,6 +524,8 @@ enum VkStructureType {
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_PROPERTIES_EXT                = 1000218001,
     VK_STRUCTURE_TYPE_RENDER_PASS_FRAGMENT_DENSITY_MAP_CREATE_INFO_EXT                   = 1000218002,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SCALAR_BLOCK_LAYOUT_FEATURES_EXT                   = 1000221000,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_SIZE_CONTROL_PROPERTIES_EXT               = 1000225000,
+    VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_REQUIRED_SUBGROUP_SIZE_CREATE_INFO_EXT       = 1000225001,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_BUDGET_PROPERTIES_EXT                       = 1000237000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_PRIORITY_FEATURES_EXT                       = 1000238000,
     VK_STRUCTURE_TYPE_MEMORY_PRIORITY_ALLOCATE_INFO_EXT                                  = 1000238001,
@@ -952,6 +954,8 @@ enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_FEATURES_EXT        
 enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_PROPERTIES_EXT               = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_PROPERTIES_EXT;
 enum VK_STRUCTURE_TYPE_RENDER_PASS_FRAGMENT_DENSITY_MAP_CREATE_INFO_EXT                  = VkStructureType.VK_STRUCTURE_TYPE_RENDER_PASS_FRAGMENT_DENSITY_MAP_CREATE_INFO_EXT;
 enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SCALAR_BLOCK_LAYOUT_FEATURES_EXT                  = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SCALAR_BLOCK_LAYOUT_FEATURES_EXT;
+enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_SIZE_CONTROL_PROPERTIES_EXT              = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_SIZE_CONTROL_PROPERTIES_EXT;
+enum VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_REQUIRED_SUBGROUP_SIZE_CREATE_INFO_EXT      = VkStructureType.VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_REQUIRED_SUBGROUP_SIZE_CREATE_INFO_EXT;
 enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_BUDGET_PROPERTIES_EXT                      = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_BUDGET_PROPERTIES_EXT;
 enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_PRIORITY_FEATURES_EXT                      = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_PRIORITY_FEATURES_EXT;
 enum VK_STRUCTURE_TYPE_MEMORY_PRIORITY_ALLOCATE_INFO_EXT                                 = VkStructureType.VK_STRUCTURE_TYPE_MEMORY_PRIORITY_ALLOCATE_INFO_EXT;
@@ -3036,6 +3040,16 @@ enum VK_PIPELINE_CREATE_VIEW_INDEX_FROM_DEVICE_INDEX_BIT_KHR     = VkPipelineCre
 enum VK_PIPELINE_CREATE_DISPATCH_BASE_KHR                        = VkPipelineCreateFlagBits.VK_PIPELINE_CREATE_DISPATCH_BASE_KHR;
 enum VK_PIPELINE_CREATE_FLAG_BITS_MAX_ENUM                       = VkPipelineCreateFlagBits.VK_PIPELINE_CREATE_FLAG_BITS_MAX_ENUM;
 alias VkPipelineCreateFlags = VkFlags;
+
+enum VkPipelineShaderStageCreateFlagBits {
+    VK_PIPELINE_SHADER_STAGE_CREATE_ALLOW_VARYING_SUBGROUP_SIZE_BIT_EXT  = 0x00000001,
+    VK_PIPELINE_SHADER_STAGE_CREATE_REQUIRE_FULL_SUBGROUPS_BIT_EXT       = 0x00000002,
+    VK_PIPELINE_SHADER_STAGE_CREATE_FLAG_BITS_MAX_ENUM                   = 0x7FFFFFFF
+}
+
+enum VK_PIPELINE_SHADER_STAGE_CREATE_ALLOW_VARYING_SUBGROUP_SIZE_BIT_EXT = VkPipelineShaderStageCreateFlagBits.VK_PIPELINE_SHADER_STAGE_CREATE_ALLOW_VARYING_SUBGROUP_SIZE_BIT_EXT;
+enum VK_PIPELINE_SHADER_STAGE_CREATE_REQUIRE_FULL_SUBGROUPS_BIT_EXT      = VkPipelineShaderStageCreateFlagBits.VK_PIPELINE_SHADER_STAGE_CREATE_REQUIRE_FULL_SUBGROUPS_BIT_EXT;
+enum VK_PIPELINE_SHADER_STAGE_CREATE_FLAG_BITS_MAX_ENUM                  = VkPipelineShaderStageCreateFlagBits.VK_PIPELINE_SHADER_STAGE_CREATE_FLAG_BITS_MAX_ENUM;
 alias VkPipelineShaderStageCreateFlags = VkFlags;
 
 enum VkShaderStageFlagBits {
@@ -6386,29 +6400,47 @@ struct VkPhysicalDeviceDriverPropertiesKHR {
 // - VK_KHR_shader_float_controls -
 enum VK_KHR_shader_float_controls = 1;
 
-enum VK_KHR_SHADER_FLOAT_CONTROLS_SPEC_VERSION = 1;
+enum VK_KHR_SHADER_FLOAT_CONTROLS_SPEC_VERSION = 2;
 enum VK_KHR_SHADER_FLOAT_CONTROLS_EXTENSION_NAME = "VK_KHR_shader_float_controls";
 
+enum VkShaderFloatControlsIndependenceKHR {
+    VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_32_BIT_ONLY_KHR        = 0,
+    VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_ALL_KHR                = 1,
+    VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_NONE_KHR               = 2,
+    VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_BEGIN_RANGE_KHR        = VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_32_BIT_ONLY_KHR,
+    VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_END_RANGE_KHR          = VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_NONE_KHR,
+    VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_RANGE_SIZE_KHR         = VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_NONE_KHR - VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_32_BIT_ONLY_KHR + 1,
+    VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_MAX_ENUM_KHR           = 0x7FFFFFFF
+}
+
+enum VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_32_BIT_ONLY_KHR       = VkShaderFloatControlsIndependenceKHR.VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_32_BIT_ONLY_KHR;
+enum VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_ALL_KHR               = VkShaderFloatControlsIndependenceKHR.VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_ALL_KHR;
+enum VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_NONE_KHR              = VkShaderFloatControlsIndependenceKHR.VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_NONE_KHR;
+enum VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_BEGIN_RANGE_KHR       = VkShaderFloatControlsIndependenceKHR.VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_BEGIN_RANGE_KHR;
+enum VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_END_RANGE_KHR         = VkShaderFloatControlsIndependenceKHR.VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_END_RANGE_KHR;
+enum VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_RANGE_SIZE_KHR        = VkShaderFloatControlsIndependenceKHR.VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_RANGE_SIZE_KHR;
+enum VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_MAX_ENUM_KHR          = VkShaderFloatControlsIndependenceKHR.VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_MAX_ENUM_KHR;
+
 struct VkPhysicalDeviceFloatControlsPropertiesKHR {
-    VkStructureType  sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FLOAT_CONTROLS_PROPERTIES_KHR;
-    void*            pNext;
-    VkBool32         separateDenormSettings;
-    VkBool32         separateRoundingModeSettings;
-    VkBool32         shaderSignedZeroInfNanPreserveFloat16;
-    VkBool32         shaderSignedZeroInfNanPreserveFloat32;
-    VkBool32         shaderSignedZeroInfNanPreserveFloat64;
-    VkBool32         shaderDenormPreserveFloat16;
-    VkBool32         shaderDenormPreserveFloat32;
-    VkBool32         shaderDenormPreserveFloat64;
-    VkBool32         shaderDenormFlushToZeroFloat16;
-    VkBool32         shaderDenormFlushToZeroFloat32;
-    VkBool32         shaderDenormFlushToZeroFloat64;
-    VkBool32         shaderRoundingModeRTEFloat16;
-    VkBool32         shaderRoundingModeRTEFloat32;
-    VkBool32         shaderRoundingModeRTEFloat64;
-    VkBool32         shaderRoundingModeRTZFloat16;
-    VkBool32         shaderRoundingModeRTZFloat32;
-    VkBool32         shaderRoundingModeRTZFloat64;
+    VkStructureType                       sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FLOAT_CONTROLS_PROPERTIES_KHR;
+    void*                                 pNext;
+    VkShaderFloatControlsIndependenceKHR  denormBehaviorIndependence;
+    VkShaderFloatControlsIndependenceKHR  roundingModeIndependence;
+    VkBool32                              shaderSignedZeroInfNanPreserveFloat16;
+    VkBool32                              shaderSignedZeroInfNanPreserveFloat32;
+    VkBool32                              shaderSignedZeroInfNanPreserveFloat64;
+    VkBool32                              shaderDenormPreserveFloat16;
+    VkBool32                              shaderDenormPreserveFloat32;
+    VkBool32                              shaderDenormPreserveFloat64;
+    VkBool32                              shaderDenormFlushToZeroFloat16;
+    VkBool32                              shaderDenormFlushToZeroFloat32;
+    VkBool32                              shaderDenormFlushToZeroFloat64;
+    VkBool32                              shaderRoundingModeRTEFloat16;
+    VkBool32                              shaderRoundingModeRTEFloat32;
+    VkBool32                              shaderRoundingModeRTEFloat64;
+    VkBool32                              shaderRoundingModeRTZFloat16;
+    VkBool32                              shaderRoundingModeRTZFloat32;
+    VkBool32                              shaderRoundingModeRTZFloat64;
 }
 
 
@@ -9291,6 +9323,28 @@ enum VK_GOOGLE_decorate_string = 1;
 
 enum VK_GOOGLE_DECORATE_STRING_SPEC_VERSION = 1;
 enum VK_GOOGLE_DECORATE_STRING_EXTENSION_NAME = "VK_GOOGLE_decorate_string";
+
+
+// - VK_EXT_subgroup_size_control -
+enum VK_EXT_subgroup_size_control = 1;
+
+enum VK_EXT_SUBGROUP_SIZE_CONTROL_SPEC_VERSION = 1;
+enum VK_EXT_SUBGROUP_SIZE_CONTROL_EXTENSION_NAME = "VK_EXT_subgroup_size_control";
+
+struct VkPhysicalDeviceSubgroupSizeControlPropertiesEXT {
+    VkStructureType     sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_SIZE_CONTROL_PROPERTIES_EXT;
+    void*               pNext;
+    uint32_t            minSubgroupSize;
+    uint32_t            maxSubgroupSize;
+    uint32_t            maxComputeWorkgroupSubgroups;
+    VkShaderStageFlags  requiredSubgroupSizeStages;
+}
+
+struct VkPipelineShaderStageRequiredSubgroupSizeCreateInfoEXT {
+    VkStructureType  sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_REQUIRED_SUBGROUP_SIZE_CREATE_INFO_EXT;
+    void*            pNext;
+    uint32_t         requiredSubgroupSize;
+}
 
 
 // - VK_EXT_memory_budget -
