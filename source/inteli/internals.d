@@ -10,7 +10,17 @@ import inteli.types;
 // The only math functions needed for intel-intrinsics
 public import core.math: fabs, sqrt; // since they are intrinsics
 
-version(LDC)
+
+version(GNU)
+{
+    // GDC support uses extended inline assembly:
+    //   https://gcc.gnu.org/onlinedocs/gcc/Extended-Asm.html        (general information and hints)
+    //   https://gcc.gnu.org/onlinedocs/gcc/Simple-Constraints.html  (binding variables to registers)
+    //   https://gcc.gnu.org/onlinedocs/gcc/Machine-Constraints.html (x86 specific register short names)
+
+    public import core.simd;
+}
+else version(LDC)
 {
     public import core.simd;
     public import ldc.simd;
@@ -52,10 +62,20 @@ nothrow @nogc:
 int convertFloatToInt32UsingMXCSR(float value) pure @safe
 {
     int result;
-    asm pure nothrow @nogc @trusted
+    version(GNU)
     {
-        cvtss2si EAX, value;
-        mov result, EAX;
+        asm pure nothrow @nogc @trusted
+        {
+            "cvtss2si %1, %0\n": "=r"(result) : "x" (value);
+        }
+    }
+    else
+    {        
+        asm pure nothrow @nogc @trusted
+        {
+            cvtss2si EAX, value;
+            mov result, EAX;
+        }
     }
     return result;
 }
@@ -63,10 +83,20 @@ int convertFloatToInt32UsingMXCSR(float value) pure @safe
 int convertDoubleToInt32UsingMXCSR(double value) pure @safe
 {
     int result;
-    asm pure nothrow @nogc @trusted
+    version(GNU)
     {
-        cvtsd2si EAX, value;
-        mov result, EAX;
+        asm pure nothrow @nogc @trusted
+        {
+            "cvtsd2si %1, %0\n": "=r"(result) : "x" (value);
+        }
+    }
+    else
+    {        
+        asm pure nothrow @nogc @trusted
+        {
+            cvtsd2si EAX, value;
+            mov result, EAX;
+        }
     }
     return result;
 }
@@ -125,6 +155,11 @@ long convertFloatToInt64UsingMXCSR(float value) pure @safe
             fldcw savedFPUCW;
         }
         return result;
+    }
+    else version(GNU)
+    {
+        // TODO: this is a bug, as it won't use MXCSR in 32-bit so will round incorrectly
+        return cast(long)value;
     }
     else
         static assert(false);
@@ -185,6 +220,11 @@ long convertDoubleToInt64UsingMXCSR(double value) pure @safe
             fldcw savedFPUCW;
         }
         return result;
+    }
+    else version(GNU)
+    {
+        // TODO: this is a bug, as it won't use MXCSR in 32-bit so will round incorrectly
+        return cast(long)value;
     }
     else
         static assert(false);
