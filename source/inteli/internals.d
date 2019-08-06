@@ -19,6 +19,23 @@ version(GNU)
     //   https://gcc.gnu.org/onlinedocs/gcc/Machine-Constraints.html (x86 specific register short names)
 
     public import core.simd;
+
+    // NOTE: These intrinsics are not available in every i386 and x86_64 CPU.
+    // For more info: https://gcc.gnu.org/onlinedocs/gcc-4.9.2/gcc/X86-Built-in-Functions.html 
+    package(inteli) import gcc.builtins;
+
+    version (X86)
+    {
+        package(inteli) enum GDC_X86 = true;
+    }
+    else version (X86_64)
+    {
+        package(inteli) enum GDC_X86 = true;
+    }
+    else
+    {
+        package(inteli) enum GDC_X86 = false;
+    }
 }
 else version(LDC)
 {
@@ -41,6 +58,12 @@ else version(LDC)
     {
         alias LDCInlineIR = inlineIR;
     }
+    
+    package(inteli) enum GDC_X86 = false;
+}
+else
+{
+    package(inteli) enum GDC_X86 = false;
 }
 
 
