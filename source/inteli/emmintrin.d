@@ -12,6 +12,19 @@ import inteli.internals;
 
 nothrow @nogc:
 
+version (GDC)
+{
+    version (X86)
+    {
+        version = GDC_X86;
+    }
+
+    version (X86_64)
+    {
+        version = GDC_X86;
+    }
+}
+
 // SSE2 instructions
 // https://software.intel.com/sites/landingpage/IntrinsicsGuide/#techs=SSE2
 
@@ -43,6 +56,17 @@ version(DigitalMars)
         asm pure nothrow @nogc @trusted { nop;}
         a[0] = a[0] + b[0];
         return a;
+    }
+}
+else version (GDC_X86)
+{
+    __m128d _mm_add_sd(__m128d a, __m128d b) pure @safe
+    {
+        // TODO(stefanos): These intrinsics are _not_ available in every i386 and x86_64 cpu.
+        // We should somehow be able to check that the architecture that we're compiling to supports it (e.g.
+        // the user has set the -msse2 flag).
+        import gcc.builtins : __builtin_ia32_addsd; 
+        return __builtin_ia32_addsd(a, b);
     }
 }
 else
