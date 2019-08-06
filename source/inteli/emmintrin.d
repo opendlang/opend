@@ -47,10 +47,20 @@ version(DigitalMars)
 }
 else
 {
-    __m128d _mm_add_sd(__m128d a, __m128d b) pure @safe
+    static if (GDC_X86)
     {
-        a[0] += b[0];
-        return a;
+        __m128d _mm_add_sd (__m128d a, __m128d b) pure @safe
+        {
+            return __builtin_ia32_addsd(a, b);
+        }
+    }
+    else
+    {
+        __m128d _mm_add_sd(__m128d a, __m128d b) pure @safe
+        {
+            a[0] += b[0];
+            return a;
+        }
     }
 }
 unittest
@@ -266,16 +276,26 @@ version(LDC)
 }
 else
 {
-    __m128i _mm_avg_epu16 (__m128i a, __m128i b) pure @safe
+    static if (GDC_X86)
     {
-        short8 sa = cast(short8)a;
-        short8 sb = cast(short8)b;
-        short8 sr = void;
-        foreach(i; 0..8)
+        __m128i _mm_avg_epu16 (__m128i a, __m128i b) pure @safe
         {
-            sr[i] = cast(ushort)( (cast(ushort)(sa[i]) + cast(ushort)(sb[i]) + 1) >> 1 );
+            return __builtin_ia32_pavgw(a, b);
         }
-        return cast(int4)sr;
+    }
+    else
+    {
+        __m128i _mm_avg_epu16 (__m128i a, __m128i b) pure @safe
+        {
+            short8 sa = cast(short8)a;
+            short8 sb = cast(short8)b;
+            short8 sr = void;
+            foreach(i; 0..8)
+            {
+                sr[i] = cast(ushort)( (cast(ushort)(sa[i]) + cast(ushort)(sb[i]) + 1) >> 1 );
+            }
+            return cast(int4)sr;
+        }
     }
 }
 unittest
@@ -305,16 +325,27 @@ version(LDC)
 }
 else
 {
-    __m128i _mm_avg_epu8 (__m128i a, __m128i b) pure @safe
+
+    static if (GDC_X86)
     {
-        byte16 sa = cast(byte16)a;
-        byte16 sb = cast(byte16)b;
-        byte16 sr = void;
-        foreach(i; 0..16)
+        __m128i _mm_avg_epu8 (__m128i a, __m128i b) pure @safe
         {
-            sr[i] = cast(ubyte)( (cast(ubyte)(sa[i]) + cast(ubyte)(sb[i]) + 1) >> 1 );
+            return __builtin_ia32_pavgb(a, b);
         }
-        return cast(int4)sr;
+    }
+    else
+    {
+        __m128i _mm_avg_epu8 (__m128i a, __m128i b) pure @safe
+        {
+            byte16 sa = cast(byte16)a;
+            byte16 sb = cast(byte16)b;
+            byte16 sr = void;
+            foreach(i; 0..16)
+            {
+                sr[i] = cast(ubyte)( (cast(ubyte)(sa[i]) + cast(ubyte)(sb[i]) + 1) >> 1 );
+            }
+            return cast(int4)sr;
+        }
     }
 }
 unittest
@@ -429,9 +460,19 @@ unittest
 }
 
 
-__m128i _mm_cmpeq_epi16 (__m128i a, __m128i b) pure @safe
+static if (GDC_X86)
 {
-    return cast(__m128i) equalMask!short8(cast(short8)a, cast(short8)b);
+    __m128i _mm_cmpeq_epi16 (__m128i a, __m128i b) pure @safe
+    {
+        return __builtin_ia32_pcmpeqw128(a, b); 
+    }
+}
+else
+{
+    __m128i _mm_cmpeq_epi16 (__m128i a, __m128i b) pure @safe
+    {
+        return cast(__m128i) equalMask!short8(cast(short8)a, cast(short8)b);
+    }
 }
 unittest
 {
@@ -444,7 +485,14 @@ unittest
 
 __m128i _mm_cmpeq_epi32 (__m128i a, __m128i b) pure @safe
 {
-    return equalMask!__m128i(a, b);
+    static if (GDC_X86)
+    {
+        return __builtin_ia32_pcmpeqd128(a, b);
+    }
+    else
+    {
+        return equalMask!__m128i(a, b);
+    }
 }
 unittest
 {
@@ -457,7 +505,14 @@ unittest
 
 __m128i _mm_cmpeq_epi8 (__m128i a, __m128i b) pure @safe
 {
-    return cast(__m128i) equalMask!byte16(cast(byte16)a, cast(byte16)b);
+    static if (GDC_X86)
+    {
+        return __builtin_ia32_pcmpeqb128(a, b); 
+    }
+    else
+    {
+        return cast(__m128i) equalMask!byte16(cast(byte16)a, cast(byte16)b);
+    }
 }
 unittest
 {
@@ -470,27 +525,62 @@ unittest
 
 __m128d _mm_cmpeq_pd (__m128d a, __m128d b) pure @safe
 {
-    return cast(__m128d) cmppd!(FPComparison.oeq)(a, b);
+    static if (GDC_X86)
+    {
+        return __builtin_ia32_cmpeqpd(a, b);
+    }
+    else
+    {
+        return cast(__m128d) cmppd!(FPComparison.oeq)(a, b);
+    }
 }
 
 __m128d _mm_cmpeq_sd (__m128d a, __m128d b) pure @safe
 {
-    return cast(__m128d) cmpsd!(FPComparison.oeq)(a, b);
+    static if (GDC_X86)
+    {
+        return __builtin_ia32_cmpeqsd(a, b);
+    }
+    else
+    {
+        return cast(__m128d) cmpsd!(FPComparison.oeq)(a, b);
+    }
 }
 
 __m128d _mm_cmpge_pd (__m128d a, __m128d b) pure @safe
 {
-    return cast(__m128d) cmppd!(FPComparison.oge)(a, b);
+    static if (GDC_X86)
+    {
+        return __builtin_ia32_cmpgepd(a, b);
+    }
+    else
+    {
+        return cast(__m128d) cmppd!(FPComparison.oge)(a, b);
+    }
 }
 
 __m128d _mm_cmpge_sd (__m128d a, __m128d b) pure @safe
 {
+    /* Normally:
+    static if (GDC_X86)
+    {
+        return __builtin_ia32_cmpgesd(a, b);
+    }
+    But this builtin does not exist for some reason.
+    */
     return cast(__m128d) cmpsd!(FPComparison.oge)(a, b);
 }
 
 __m128i _mm_cmpgt_epi16 (__m128i a, __m128i b) pure @safe
 {
-    return cast(__m128i)( greaterMask!short8(cast(short8)a, cast(short8)b));
+    static if (GDC_X86)
+    {
+        return __builtin_ia32_pcmpgtw(a, b); 
+    }
+    else
+    {
+        return cast(__m128i)( greaterMask!short8(cast(short8)a, cast(short8)b));
+    }
 }
 unittest
 {
@@ -503,7 +593,14 @@ unittest
 
 __m128i _mm_cmpgt_epi32 (__m128i a, __m128i b) pure @safe
 {
-    return cast(__m128i)( greaterMask!int4(a, b));
+    static if (GDC_X86)
+    {
+        return __builtin_ia32_pcmpgtd(a, b); 
+    }
+    else
+    {
+        return cast(__m128i)( greaterMask!int4(a, b));
+    }
 }
 unittest
 {
@@ -516,7 +613,14 @@ unittest
 
 __m128i _mm_cmpgt_epi8 (__m128i a, __m128i b) pure @safe
 {
-    return cast(__m128i)( greaterMask!byte16(cast(byte16)a, cast(byte16)b));
+    static if (GDC_X86)
+    {
+        return __builtin_ia32_pcmpgtb(a, b); 
+    }
+    else
+    {
+        return cast(__m128i)( greaterMask!byte16(cast(byte16)a, cast(byte16)b));
+    }
 }
 unittest
 {
@@ -530,22 +634,50 @@ unittest
 
 __m128d _mm_cmpgt_pd (__m128d a, __m128d b) pure @safe
 {
-    return cast(__m128d) cmppd!(FPComparison.ogt)(a, b);
+    static if (GDC_X86)
+    {
+        return __builtin_ia32_cmpgtpd(a, b); 
+    }
+    else
+    {
+        return cast(__m128d) cmppd!(FPComparison.ogt)(a, b);
+    }
 }
 
 __m128d _mm_cmpgt_sd (__m128d a, __m128d b) pure @safe
 {
+    /* Normally:
+    static if (GDC_X86)
+    {
+        return __builtin_ia32_cmpgtsd(a, b); 
+    }
+    But this builtin does not exist for some reason.
+    */
     return cast(__m128d) cmpsd!(FPComparison.ogt)(a, b);
 }
 
 __m128d _mm_cmple_pd (__m128d a, __m128d b) pure @safe
 {
-    return cast(__m128d) cmppd!(FPComparison.ole)(a, b);
+    static if (GDC_X86)
+    {
+        return __builtin_ia32_cmplepd(a, b); 
+    }
+    else
+    {
+        return cast(__m128d) cmppd!(FPComparison.ole)(a, b);
+    }
 }
 
 __m128d _mm_cmple_sd (__m128d a, __m128d b) pure @safe
 {
-    return cast(__m128d) cmpsd!(FPComparison.ole)(a, b);
+    static if (GDC_X86)
+    {
+        return __builtin_ia32_cmplesd(a, b); 
+    }
+    else
+    {
+        return cast(__m128d) cmpsd!(FPComparison.ole)(a, b);
+    }
 }
 
 __m128i _mm_cmplt_epi16 (__m128i a, __m128i b) pure @safe
@@ -565,27 +697,62 @@ __m128i _mm_cmplt_epi8 (__m128i a, __m128i b) pure @safe
 
 __m128d _mm_cmplt_pd (__m128d a, __m128d b) pure @safe
 {
-    return cast(__m128d) cmppd!(FPComparison.olt)(a, b);
+    static if (GDC_X86)
+    {
+        return __builtin_ia32_cmpltpd(a, b); 
+    }
+    else
+    {
+        return cast(__m128d) cmppd!(FPComparison.olt)(a, b);
+    }
 }
 
 __m128d _mm_cmplt_sd (__m128d a, __m128d b) pure @safe
 {
-    return cast(__m128d) cmpsd!(FPComparison.olt)(a, b);
+    static if (GDC_X86)
+    {
+        return __builtin_ia32_cmpltsd(a, b); 
+    }
+    else
+    {
+        return cast(__m128d) cmpsd!(FPComparison.olt)(a, b);
+    }
 }
 
 __m128d _mm_cmpneq_pd (__m128d a, __m128d b) pure @safe
 {
-    return cast(__m128d) cmppd!(FPComparison.une)(a, b);
+    static if (GDC_X86)
+    {
+        return __builtin_ia32_cmpneqpd(a, b); 
+    }
+    else
+    {
+        return cast(__m128d) cmppd!(FPComparison.une)(a, b);
+    }
 }
 
 __m128d _mm_cmpneq_sd (__m128d a, __m128d b) pure @safe
 {
-    return cast(__m128d) cmpsd!(FPComparison.une)(a, b);
+    static if (GDC_X86)
+    {
+        return __builtin_ia32_cmpneqsd(a, b); 
+    }
+    else
+    {
+        return cast(__m128d) cmpsd!(FPComparison.une)(a, b);
+    }
 }
 
 __m128d _mm_cmpnge_pd (__m128d a, __m128d b) pure @safe
 {
-    return cast(__m128d) cmppd!(FPComparison.ult)(a, b);
+    static if (GDC_X86)
+    {
+        return __builtin_ia32_cmpngepd(a, b); 
+    }
+    else
+    {
+        return cast(__m128d) cmppd!(FPComparison.ult)(a, b);
+    }
 }
 
 __m128d _mm_cmpnge_sd (__m128d a, __m128d b) pure @safe
@@ -620,27 +787,62 @@ __m128d _mm_cmpnlt_pd (__m128d a, __m128d b) pure @safe
 
 __m128d _mm_cmpnlt_sd (__m128d a, __m128d b) pure @safe
 {
-    return cast(__m128d) cmpsd!(FPComparison.uge)(a, b);
+    static if (GDC_X86)
+    {
+        return __builtin_ia32_cmpnltsd(a, b);
+    }
+    else
+    {
+        return cast(__m128d) cmpsd!(FPComparison.uge)(a, b);
+    }
 }
 
 __m128d _mm_cmpord_pd (__m128d a, __m128d b) pure @safe
 {
-    return cast(__m128d) cmppd!(FPComparison.ord)(a, b);
+    static if (GDC_X86)
+    {
+        return __builtin_ia32_cmpordpd(a, b);
+    }
+    else
+    {
+        return cast(__m128d) cmppd!(FPComparison.ord)(a, b);
+    }
 }
 
 __m128d _mm_cmpord_sd (__m128d a, __m128d b) pure @safe
 {
-    return cast(__m128d) cmpsd!(FPComparison.ord)(a, b);
+    static if (GDC_X86)
+    {
+        return __builtin_ia32_cmpordsd(a, b);
+    }
+    else
+    {
+        return cast(__m128d) cmpsd!(FPComparison.ord)(a, b);
+    }
 }
 
 __m128d _mm_cmpunord_pd (__m128d a, __m128d b) pure @safe
 {
-    return cast(__m128d) cmppd!(FPComparison.uno)(a, b);
+    static if (GDC_X86)
+    {
+        return __builtin_ia32_cmpunordpd(a, b);
+    }
+    else
+    {
+        return cast(__m128d) cmppd!(FPComparison.uno)(a, b);
+    }
 }
 
 __m128d _mm_cmpunord_sd (__m128d a, __m128d b) pure @safe
 {
-    return cast(__m128d) cmpsd!(FPComparison.uno)(a, b);
+    static if (GDC_X86)
+    {
+        return __builtin_ia32_cmpunordsd(a, b);
+    }
+    else
+    {
+        return cast(__m128d) cmpsd!(FPComparison.uno)(a, b);
+    }
 }
 
 
@@ -649,32 +851,74 @@ __m128d _mm_cmpunord_sd (__m128d a, __m128d b) pure @safe
 
 int _mm_comieq_sd (__m128d a, __m128d b) pure @safe
 {
-    return comsd!(FPComparison.ueq)(a, b); // yields true for NaN, same as GCC
+    static if (GDC_X86)
+    {
+        return __builtin_ia32_comieq(a, b);
+    }
+    else
+    {
+        return comsd!(FPComparison.ueq)(a, b); // yields true for NaN, same as GCC
+    }
 }
 
 int _mm_comige_sd (__m128d a, __m128d b) pure @safe
 {
-    return comsd!(FPComparison.oge)(a, b);
+    static if (GDC_X86)
+    {
+        return __builtin_ia32_comige(a, b);
+    }
+    else
+    {
+        return comsd!(FPComparison.oge)(a, b);
+    }
 }
 
 int _mm_comigt_sd (__m128d a, __m128d b) pure @safe
 {
-    return comsd!(FPComparison.ogt)(a, b);
+    static if (GDC_X86)
+    {
+        return __builtin_ia32_comigt(a, b);
+    }
+    else
+    {
+        return comsd!(FPComparison.ogt)(a, b);
+    }
 }
 
 int _mm_comile_sd (__m128d a, __m128d b) pure @safe
 {
-    return comsd!(FPComparison.ule)(a, b); // yields true for NaN, same as GCC
+    static if (GDC_X86)
+    {
+        return __builtin_ia32_comile(a, b);
+    }
+    else
+    {
+        return comsd!(FPComparison.ule)(a, b); // yields true for NaN, same as GCC
+    }
 }
 
 int _mm_comilt_sd (__m128d a, __m128d b) pure @safe
 {
-    return comsd!(FPComparison.ult)(a, b); // yields true for NaN, same as GCC
+    static if (GDC_X86)
+    {
+        return __builtin_ia32_comilt(a, b);
+    }
+    else
+    {
+        return comsd!(FPComparison.ult)(a, b); // yields true for NaN, same as GCC
+    }
 }
 
 int _mm_comineq_sd (__m128d a, __m128d b) pure @safe
 {
-    return comsd!(FPComparison.one)(a, b);
+    static if (GDC_X86)
+    {
+        return __builtin_ia32_comineq(a, b);
+    }
+    else
+    {
+        return comsd!(FPComparison.one)(a, b);
+    }
 }
 
 version(LDC)
@@ -691,12 +935,23 @@ version(LDC)
 }
 else
 {
-    __m128d _mm_cvtepi32_pd (__m128i a) pure  @safe
+    static if (GDC_X86)
     {
-        double2 r = void;
-        r[0] = a[0];
-        r[1] = a[1];
-        return r;
+
+        __m128d _mm_cvtepi32_pd (__m128i a) pure  @safe
+        {
+            return __builtin_ia32_cvtdq2pd(a); 
+        }
+    }
+    else
+    {
+        __m128d _mm_cvtepi32_pd (__m128i a) pure  @safe
+        {
+            double2 r = void;
+            r[0] = a[0];
+            r[1] = a[1];
+            return r;
+        }
     }
 }
 unittest
