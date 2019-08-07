@@ -49,10 +49,7 @@ else
 {
     static if (GDC_X86)
     {
-        __m128d _mm_add_sd (__m128d a, __m128d b) pure @safe
-        {
-            return __builtin_ia32_addsd(a, b);
-        }
+        alias _mm_add_sd = __builtin_ia32_addsd;
     }
     else
     {
@@ -278,10 +275,7 @@ else
 {
     static if (GDC_X86)
     {
-        __m128i _mm_avg_epu16 (__m128i a, __m128i b) pure @safe
-        {
-            return __builtin_ia32_pavgw(a, b);
-        }
+        alias __mm_avg_epu16 = __builtin_ia32_pavgw;
     }
     else
     {
@@ -328,10 +322,7 @@ else
 
     static if (GDC_X86)
     {
-        __m128i _mm_avg_epu8 (__m128i a, __m128i b) pure @safe
-        {
-            return __builtin_ia32_pavgb(a, b);
-        }
+        alias __mm_avg_epu8 = __builtin_ia32_pavgb;
     }
     else
     {
@@ -462,10 +453,7 @@ unittest
 
 static if (GDC_X86)
 {
-    __m128i _mm_cmpeq_epi16 (__m128i a, __m128i b) pure @safe
-    {
-        return __builtin_ia32_pcmpeqw128(a, b); 
-    }
+    alias _mm_cmpeq_epi16 = __builtin_ia32_pcmpeqw128;
 }
 else
 {
@@ -561,14 +549,15 @@ __m128d _mm_cmpge_pd (__m128d a, __m128d b) pure @safe
 
 __m128d _mm_cmpge_sd (__m128d a, __m128d b) pure @safe
 {
-    /* Normally:
+    // Note: There is no __builtin_ia32_cmpgesd builtin.
     static if (GDC_X86)
     {
-        return __builtin_ia32_cmpgesd(a, b);
+        return __builtin_ia32_cmpnltsd(b, a);
     }
-    But this builtin does not exist for some reason.
-    */
-    return cast(__m128d) cmpsd!(FPComparison.oge)(a, b);
+    else
+    {
+        return cast(__m128d) cmpsd!(FPComparison.oge)(a, b);
+    }
 }
 
 __m128i _mm_cmpgt_epi16 (__m128i a, __m128i b) pure @safe
@@ -646,14 +635,15 @@ __m128d _mm_cmpgt_pd (__m128d a, __m128d b) pure @safe
 
 __m128d _mm_cmpgt_sd (__m128d a, __m128d b) pure @safe
 {
-    /* Normally:
+    // Note: There is no __builtin_ia32_cmpgtsd builtin.
     static if (GDC_X86)
     {
-        return __builtin_ia32_cmpgtsd(a, b); 
+        return __builtin_ia32_cmpnlesd(b, a);
     }
-    But this builtin does not exist for some reason.
-    */
-    return cast(__m128d) cmpsd!(FPComparison.ogt)(a, b);
+    else
+    {
+        return cast(__m128d) cmpsd!(FPComparison.ogt)(a, b);
+    }
 }
 
 __m128d _mm_cmple_pd (__m128d a, __m128d b) pure @safe
@@ -757,32 +747,76 @@ __m128d _mm_cmpnge_pd (__m128d a, __m128d b) pure @safe
 
 __m128d _mm_cmpnge_sd (__m128d a, __m128d b) pure @safe
 {
-    return cast(__m128d) cmpsd!(FPComparison.ult)(a, b);
+    // Note: There is no __builtin_ia32_cmpngesd builtin.
+    static if (GDC_X86)
+    {
+        return __builtin_ia32_cmpltsd(b, a); 
+    }
+    else
+    {
+        return cast(__m128d) cmpsd!(FPComparison.ult)(a, b);
+    }
 }
 
 __m128d _mm_cmpngt_pd (__m128d a, __m128d b) pure @safe
 {
-    return cast(__m128d) cmppd!(FPComparison.ule)(a, b);
+    static if (GDC_X86)
+    {
+        return __builtin_ia32_cmpngtpd(a, b);
+    }
+    else
+    {
+        return cast(__m128d) cmppd!(FPComparison.ule)(a, b);
+    }
 }
 
 __m128d _mm_cmpngt_sd (__m128d a, __m128d b) pure @safe
 {
-    return cast(__m128d) cmpsd!(FPComparison.ule)(a, b);
+    // Note: There is no __builtin_ia32_cmpngtsd builtin.
+    static if (GDC_X86)
+    {
+        return __builtin_ia32_cmplesd(b, a);
+    }
+    else
+    {
+        return cast(__m128d) cmpsd!(FPComparison.ule)(a, b);
+    }
 }
 
 __m128d _mm_cmpnle_pd (__m128d a, __m128d b) pure @safe
 {
-    return cast(__m128d) cmppd!(FPComparison.ugt)(a, b);
+    static if (GDC_X86)
+    {
+        return __builtin_ia32_cmpnlepd(a, b);
+    }
+    else
+    {
+        return cast(__m128d) cmppd!(FPComparison.ugt)(a, b);
+    }
 }
 
 __m128d _mm_cmpnle_sd (__m128d a, __m128d b) pure @safe
 {
-    return cast(__m128d) cmpsd!(FPComparison.ugt)(a, b);
+    static if (GDC_X86)
+    {
+        return __builtin_ia32_cmpnlesd(a, b);
+    }
+    else
+    {
+        return cast(__m128d) cmpsd!(FPComparison.ugt)(a, b);
+    }
 }
 
 __m128d _mm_cmpnlt_pd (__m128d a, __m128d b) pure @safe
 {
-    return cast(__m128d) cmppd!(FPComparison.uge)(a, b);
+    static if (GDC_X86)
+    {
+        return __builtin_ia32_cmpnltpd(a, b);
+    }
+    else
+    {
+        return cast(__m128d) cmppd!(FPComparison.uge)(a, b);
+    }
 }
 
 __m128d _mm_cmpnlt_sd (__m128d a, __m128d b) pure @safe
@@ -996,12 +1030,19 @@ version(LDC)
 }
 else
 {
-    __m128i _mm_cvtpd_epi32 (__m128d a) pure @safe
+    static if (GDC_X86)
     {
-        __m128i r = _mm_setzero_si128();
-        r[0] = convertDoubleToInt32UsingMXCSR(a[0]);
-        r[1] = convertDoubleToInt32UsingMXCSR(a[1]);
-        return r;
+        alias _mm_cvtpd_epi32 = __builtin_ia32_cvtpd2dq;
+    }
+    else
+    {
+        __m128i _mm_cvtpd_epi32 (__m128d a) pure @safe
+        {
+            __m128i r = _mm_setzero_si128();
+            r[0] = convertDoubleToInt32UsingMXCSR(a[0]);
+            r[1] = convertDoubleToInt32UsingMXCSR(a[1]);
+            return r;
+        }
     }
 }
 unittest
@@ -1028,14 +1069,21 @@ version(LDC)
 }
 else
 {
-    __m128 _mm_cvtpd_ps (__m128d a) pure @safe
+    static if (GDC_X86)
     {
-        __m128 r = void;
-        r[0] = a[0];
-        r[1] = a[1];
-        r[2] = 0;
-        r[3] = 0;
-        return r;
+        alias _mm_cvtpd_ps = __builtin_ia32_cvtpd2ps; // can't be done with IR unfortunately
+    }
+    else
+    {
+         __m128 _mm_cvtpd_ps (__m128d a) pure @safe
+        {
+            __m128 r = void;
+            r[0] = a[0];
+            r[1] = a[1];
+            r[2] = 0;
+            r[3] = 0;
+            return r;
+        }    
     }
 }
 unittest
@@ -1069,14 +1117,21 @@ version(LDC)
 }
 else
 {
-    __m128i _mm_cvtps_epi32 (__m128 a) pure @safe
+    static if (GDC_X86)
     {
-        __m128i r = void;
-        r[0] = convertFloatToInt32UsingMXCSR(a[0]);
-        r[1] = convertFloatToInt32UsingMXCSR(a[1]);
-        r[2] = convertFloatToInt32UsingMXCSR(a[2]);
-        r[3] = convertFloatToInt32UsingMXCSR(a[3]);
-        return r;
+        alias _mm_cvtps_epi32 = __builtin_ia32_cvtps2dq;
+    }
+    else
+    {
+        __m128i _mm_cvtps_epi32 (__m128 a) pure @safe
+        {
+            __m128i r = void;
+            r[0] = convertFloatToInt32UsingMXCSR(a[0]);
+            r[1] = convertFloatToInt32UsingMXCSR(a[1]);
+            r[2] = convertFloatToInt32UsingMXCSR(a[2]);
+            r[3] = convertFloatToInt32UsingMXCSR(a[3]);
+            return r;
+        }
     }
 }
 unittest
@@ -1117,12 +1172,19 @@ version(LDC)
 }
 else
 {
-     __m128d _mm_cvtps_pd (__m128 a) pure  @safe
+    static if (GDC_X86)
     {
-        double2 r = void;
-        r[0] = a[0];
-        r[1] = a[1];
-        return r;
+        alias _mm_cvtps_pd = __builtin_ia32_cvtps2pd;
+    }
+    else
+    {
+        __m128d _mm_cvtps_pd (__m128 a) pure  @safe
+        {
+            double2 r = void;
+            r[0] = a[0];
+            r[1] = a[1];
+            return r;
+        }
     }
 }
 unittest
@@ -1134,7 +1196,7 @@ unittest
 
 double _mm_cvtsd_f64 (__m128d a) pure @safe
 {
-    return a[0];
+    return a.array[0];
 }
 
 version(LDC)
@@ -1143,9 +1205,16 @@ version(LDC)
 }
 else
 {
-    int _mm_cvtsd_si32 (__m128d a) pure @safe
+    static if (GDC_X86)
     {
-        return convertDoubleToInt32UsingMXCSR(a[0]);
+        alias _mm_cvtsd_si32 = __builtin_ia32_cvtsd2si;
+    }
+    else
+    {
+        int _mm_cvtsd_si32 (__m128d a) pure @safe
+        {
+            return convertDoubleToInt32UsingMXCSR(a[0]);
+        }
     }
 }
 unittest
@@ -1168,9 +1237,16 @@ version(LDC)
 }
 else
 {
-    long _mm_cvtsd_si64 (__m128d a) pure @safe
+    static if (GDC_X86)
     {
-        return convertDoubleToInt64UsingMXCSR(a[0]);
+        alias _mm_cvtsd_si64 = __builtin_ia32_cvtsd2si64;
+    }
+    else
+    {
+        long _mm_cvtsd_si64 (__m128d a) pure @safe
+        {
+            return convertDoubleToInt64UsingMXCSR(a[0]);
+        }
     }
 }
 unittest
@@ -1198,9 +1274,16 @@ alias _mm_cvtsd_si64x = _mm_cvtsd_si64;
 
 __m128 _mm_cvtsd_ss (__m128 a, __m128d b) pure @safe
 {
-    // Generates cvtsd2ss since LDC 1.3 -O0
-    a[0] = b[0];
-    return a;
+    static if (GDC_X86)
+    {
+        return __builtin_ia32_cvtsd2ss(a, b); 
+    }
+    else
+    {
+        // Generates cvtsd2ss since LDC 1.3 -O0
+        a[0] = b[0];
+        return a;
+    }
 }
 unittest
 {
@@ -1210,19 +1293,19 @@ unittest
 
 int _mm_cvtsi128_si32 (__m128i a) pure @safe
 {
-    return a[0];
+    return a.array[0];
 }
 
 long _mm_cvtsi128_si64 (__m128i a) pure @safe
 {
     long2 la = cast(long2)a;
-    return la[0];
+    return la.array[0];
 }
 alias _mm_cvtsi128_si64x = _mm_cvtsi128_si64;
 
 __m128d _mm_cvtsi32_sd(__m128d v, int x) pure @safe
 {
-    v[0] = cast(double)x;
+    v.array[0] = cast(double)x;
     return v;
 }
 unittest
@@ -1234,7 +1317,7 @@ unittest
 __m128i _mm_cvtsi32_si128 (int a) pure @safe
 {
     int4 r = [0, 0, 0, 0];
-    r[0] = a;
+    r.array[0] = a;
     return r;
 }
 unittest
@@ -1247,7 +1330,7 @@ unittest
 // Note: on macOS, using "llvm.x86.sse2.cvtsi642sd" was buggy
 __m128d _mm_cvtsi64_sd(__m128d v, long x) pure @safe
 {
-    v[0] = cast(double)x;
+    v.array[0] = cast(double)x;
     return v;
 }
 unittest
@@ -1259,7 +1342,7 @@ unittest
 __m128i _mm_cvtsi64_si128 (long a) pure @safe
 {
     long2 r = [0, 0];
-    r[0] = a;
+    r.array[0] = a;
     return cast(__m128i)(r);
 }
 
@@ -1268,7 +1351,7 @@ alias _mm_cvtsi64x_si128 = _mm_cvtsi64_si128;
 
 double2 _mm_cvtss_sd(double2 v, float4 x) pure @safe
 {
-    v[0] = x[0];
+    v.array[0] = x.array[0];
     return v;
 }
 unittest
@@ -1279,7 +1362,7 @@ unittest
 
 long _mm_cvttss_si64 (__m128 a) pure @safe
 {
-    return cast(long)(a[0]); // Generates cvttss2si as expected
+    return cast(long)(a.array[0]); // Generates cvttss2si as expected
 }
 unittest
 {
@@ -1292,15 +1375,22 @@ version(LDC)
 }
 else
 {
-    __m128i _mm_cvttpd_epi32 (__m128d a) pure @safe
+    static if (GDC_X86)
     {
-        // Note: doesn't generate cvttpd2dq as of LDC 1.13
-        __m128i r;
-        r[0] = cast(int)a[0];
-        r[1] = cast(int)a[1];
-        r[2] = 0;
-        r[3] = 0;
-        return r;
+        alias _mm_cvttpd_epi32 = __builtin_ia32_cvttpd2dq;
+    }
+    else
+    {
+        __m128i _mm_cvttpd_epi32 (__m128d a) pure @safe
+        {
+            // Note: doesn't generate cvttpd2dq as of LDC 1.13
+            __m128i r;
+            r.array[0] = cast(int)a.array[0];
+            r.array[1] = cast(int)a.array[1];
+            r.array[2] = 0;
+            r.array[3] = 0;
+            return r;
+        }
     }
 }
 unittest
@@ -1327,10 +1417,10 @@ __m128i _mm_cvttps_epi32 (__m128 a) pure @safe
 {
     // Note: Generates cvttps2dq since LDC 1.3 -O2
     __m128i r;
-    r[0] = cast(int)a[0];
-    r[1] = cast(int)a[1];
-    r[2] = cast(int)a[2];
-    r[3] = cast(int)a[3];
+    r.array[0] = cast(int)a.array[0];
+    r.array[1] = cast(int)a.array[1];
+    r.array[2] = cast(int)a.array[2];
+    r.array[3] = cast(int)a.array[3];
     return r;
 }
 unittest
@@ -1342,14 +1432,14 @@ unittest
 int _mm_cvttsd_si32 (__m128d a)
 {
     // Generates cvttsd2si since LDC 1.3 -O0
-    return cast(int)a[0];
+    return cast(int)a.array[0];
 }
 
 long _mm_cvttsd_si64 (__m128d a)
 {
     // Generates cvttsd2si since LDC 1.3 -O0
     // but in 32-bit instead, it's a long sequence that resort to FPU
-    return cast(long)a[0];
+    return cast(long)a.array[0];
 }
 
 alias _mm_cvttsd_si64x = _mm_cvttsd_si64;
@@ -1365,7 +1455,7 @@ version(DigitalMars)
     __m128d _mm_div_sd(__m128d a, __m128d b) pure @safe
     {
         asm pure nothrow @nogc @trusted { nop;}
-        a[0] = a[0] / b[0];
+        a.array[0] = a.array[0] / b.array[0];
         return a;
     }
 }
@@ -1373,7 +1463,7 @@ else
 {
     __m128d _mm_div_sd(__m128d a, __m128d b) pure @safe
     {
-        a[0] /= b[0];
+        a.array[0] /= b.array[0];
         return a;
     }
 }
@@ -1388,7 +1478,7 @@ unittest
 int _mm_extract_epi16(__m128i v, int index) pure @safe
 {
     short8 r = cast(short8)v;
-    return cast(ushort)(r[index]);
+    return cast(ushort)(r.array[index]);
 }
 unittest
 {
@@ -1401,7 +1491,7 @@ unittest
 __m128i _mm_insert_epi16 (__m128i v, int i, int index) @trusted
 {
     short8 r = cast(short8)v;
-    r[index & 7] = cast(short)i;
+    r.array[index & 7] = cast(short)i;
     return cast(__m128i)r;
 }
 unittest
@@ -1447,7 +1537,7 @@ __m128d _mm_load_pd1 (const(double)* mem_addr) pure
 __m128d _mm_load_sd (const(double)* mem_addr) pure @safe
 {
     double2 r = [0, 0];
-    r[0] = *mem_addr;
+    r.array[0] = *mem_addr;
     return r;
 }
 unittest
@@ -1466,7 +1556,7 @@ alias _mm_load1_pd = _mm_load_pd1;
 
 __m128d _mm_loadh_pd (__m128d a, const(double)* mem_addr) pure @safe
 {
-    a[1] = *mem_addr;
+    a.array[1] = *mem_addr;
     return a;
 }
 
@@ -1475,13 +1565,13 @@ __m128i _mm_loadl_epi64 (const(__m128i)* mem_addr) pure @safe
 {
     auto pLong = cast(const(long)*)mem_addr;
     long2 r = [0, 0];
-    r[0] = *pLong;
+    r.array[0] = *pLong;
     return cast(__m128i)(r);
 }
 
 __m128d _mm_loadl_pd (__m128d a, const(double)* mem_addr) pure @safe
 {
-    a[0] = *mem_addr;
+    a.array[0] = *mem_addr;
     return a;
 }
 
@@ -1493,12 +1583,26 @@ __m128d _mm_loadr_pd (const(double)* mem_addr) pure @trusted
 
 __m128d _mm_loadu_pd (const(double)* mem_addr) pure @safe
 {
-    return loadUnaligned!(double2)(mem_addr);
+    static if (GDC_X86)
+    {
+        return __builtin_ia32_loadupd(mem_addr); 
+    }
+    else
+    {
+        return loadUnaligned!(double2)(mem_addr);
+    }
 }
 
 __m128i _mm_loadu_si128 (const(__m128i)* mem_addr) pure @trusted
 {
-    return loadUnaligned!(__m128i)(cast(int*)mem_addr);
+    static if (GDC_X86)
+    {
+        return __builtin_ia32_loaddqu(mem_addr);
+    }
+    else
+    {
+        return loadUnaligned!(__m128i)(cast(int*)mem_addr);
+    }
 }
 
 __m128i _mm_loadu_si32 (const(void)* mem_addr) pure @trusted
