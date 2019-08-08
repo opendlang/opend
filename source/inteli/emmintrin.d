@@ -1687,7 +1687,11 @@ else
 {
     static if (GDC_X86)
     {
-        alias _mm_maskmoveu_si128 = __builtin_ia32_maskmovdqu;
+        ///ditto
+        void _mm_maskmoveu_si128 (__m128i a, __m128i mask, void* mem_addr) pure @trusted
+        {
+            return __builtin_ia32_maskmovdqu(cast(ubyte16)a, cast(ubyte16)mask, cast(char*)mem_addr);
+        }
     }
     else
     {
