@@ -289,7 +289,7 @@ else
 {
     static if (GDC_X86)
     {
-        alias __mm_avg_epu16 = __builtin_ia32_pavgw;
+        alias _mm_avg_epu16 = __builtin_ia32_pavgw;
     }
     else
     {
@@ -2306,6 +2306,7 @@ else
 {
     static if (GDC_X86)
     {
+        alias _mm_packus_epi16 = __builtin_ia32_packuswb128;
     }
     else
     {
