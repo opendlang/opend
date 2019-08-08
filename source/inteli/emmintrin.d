@@ -159,7 +159,7 @@ else
             byte16 sa = cast(byte16)a;
             byte16 sb = cast(byte16)b;
             foreach(i; 0..16)
-                res.array[i] = saturateSignedWordToSignedByte(sa.array[i] + sb.array[i]);
+                res[i] = saturateSignedWordToSignedByte(sa[i] + sb[i]);
             return _mm_loadu_si128(cast(int4*)res.ptr);
         }
     }
@@ -2377,8 +2377,8 @@ else
                 t[i] = cast(ubyte)(diff);
             }
             int4 r = _mm_setzero_si128();
-            r.array[0] = t.array[0] + t.array[1] + t.array[2] + t.array[3] + t.array[4] + t.array[5] + t.array[6] + t.array[7];
-            r.array[2] = t.array[8] + t.array[9] + t.array[10]+ t.array[11]+ t.array[12]+ t.array[13]+ t.array[14]+ t.array[15];
+            r.array[0] = t[0] + t[1] + t[2] + t[3] + t[4] + t[5] + t[6] + t[7];
+            r.array[2] = t[8] + t[9] + t[10]+ t[11]+ t[12]+ t[13]+ t[14]+ t[15];
             return r;
         }
     }
@@ -3422,7 +3422,7 @@ else
             short8 sa = cast(short8)a;
             short8 sb = cast(short8)b;
             foreach(i; 0..8)
-                res.array[i] = saturateSignedIntToSignedShort(sa.array[i] - sb.array[i]);
+                res[i] = saturateSignedIntToSignedShort(sa.array[i] - sb.array[i]);
             return _mm_loadu_si128(cast(int4*)res.ptr);
         }
     }
@@ -3466,7 +3466,7 @@ else
             byte16 sa = cast(byte16)a;
             byte16 sb = cast(byte16)b;
             foreach(i; 0..16)
-                res.array[i] = saturateSignedWordToSignedByte(sa.array[i] - sb.array[i]);
+                res[i] = saturateSignedWordToSignedByte(sa.array[i] - sb.array[i]);
             return _mm_loadu_si128(cast(int4*)res.ptr);
         }
     }
@@ -3512,7 +3512,7 @@ else
             foreach(i; 0..8)
             {
                 int sum = cast(ushort)(sa.array[i]) - cast(ushort)(sb.array[i]);
-                res.array[i] = saturateSignedIntToUnsignedShort(sum);
+                res[i] = saturateSignedIntToUnsignedShort(sum);
             }
             return _mm_loadu_si128(cast(int4*)res.ptr);
         }
@@ -3558,7 +3558,7 @@ else
             byte16 sa = cast(byte16)a;
             byte16 sb = cast(byte16)b;
             foreach(i; 0..16)
-                res.array[i] = saturateSignedWordToUnsignedByte(cast(ubyte)(sa.array[i]) - cast(ubyte)(sb.array[i]));
+                res[i] = saturateSignedWordToUnsignedByte(cast(ubyte)(sa.array[i]) - cast(ubyte)(sb.array[i]));
             return _mm_loadu_si128(cast(int4*)res.ptr);
         }
     }
