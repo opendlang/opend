@@ -103,14 +103,21 @@ version(LDC)
 }
 else
 {
-    __m128i _mm_adds_epi16(__m128i a, __m128i b) pure @trusted
+    static if (GDC_X86)
     {
-        short[8] res;
-        short8 sa = cast(short8)a;
-        short8 sb = cast(short8)b;
-        foreach(i; 0..8)
-            res[i] = saturateSignedIntToSignedShort(sa.array[i] + sb.array[i]);
-        return _mm_loadu_si128(cast(int4*)res.ptr);
+        alias _mm_adds_epi16 = __builtin_ia32_paddsw128;
+    }
+    else
+    {
+        __m128i _mm_adds_epi16(__m128i a, __m128i b) pure @trusted
+        {
+            short[8] res;
+            short8 sa = cast(short8)a;
+            short8 sb = cast(short8)b;
+            foreach(i; 0..8)
+                res[i] = saturateSignedIntToSignedShort(sa.array[i] + sb.array[i]);
+            return _mm_loadu_si128(cast(int4*)res.ptr);
+        }
     }
 }
 unittest
@@ -140,14 +147,21 @@ version(LDC)
 }
 else
 {
-    __m128i _mm_adds_epi8(__m128i a, __m128i b) pure @trusted
+    static if (GDC_X86)
     {
-        byte[16] res;
-        byte16 sa = cast(byte16)a;
-        byte16 sb = cast(byte16)b;
-        foreach(i; 0..16)
-            res[i] = saturateSignedWordToSignedByte(sa.array[i] + sb.array[i]);
-        return _mm_loadu_si128(cast(int4*)res.ptr);
+        alias _mm_adds_epi8 = __builtin_ia32_paddsb128;
+    }
+    else
+    {
+        __m128i _mm_adds_epi8(__m128i a, __m128i b) pure @trusted
+        {
+            byte[16] res;
+            byte16 sa = cast(byte16)a;
+            byte16 sb = cast(byte16)b;
+            foreach(i; 0..16)
+                res[i] = saturateSignedWordToSignedByte(sa[i] + sb[i]);
+            return _mm_loadu_si128(cast(int4*)res.ptr);
+        }
     }
 }
 unittest
@@ -997,13 +1011,20 @@ unittest
 
 __m128 _mm_cvtepi32_ps(__m128i a) pure @safe
 {
-    // Generates cvtdq2ps since LDC 1.0.0 -O1
-    __m128 res;
-    res.array[0] = cast(float)a.array[0];
-    res.array[1] = cast(float)a.array[1];
-    res.array[2] = cast(float)a.array[2];
-    res.array[3] = cast(float)a.array[3];
-    return res;
+    static if (GDC_X86)
+    {
+        return __builtin_ia32_cvtdq2ps(a);
+    }
+    else
+    {
+        // Generates cvtdq2ps since LDC 1.0.0 -O1
+        __m128 res;
+        res.array[0] = cast(float)a.array[0];
+        res.array[1] = cast(float)a.array[1];
+        res.array[2] = cast(float)a.array[2];
+        res.array[3] = cast(float)a.array[3];
+        return res;
+    }
 }
 unittest
 {
@@ -1597,7 +1618,7 @@ __m128i _mm_loadu_si128 (const(__m128i)* mem_addr) pure @trusted
 {
     static if (GDC_X86)
     {
-        return __builtin_ia32_loaddqu(mem_addr);
+        return __builtin_ia32_loaddqu(cast(const(char*))mem_addr);
     }
     else
     {
@@ -1609,7 +1630,7 @@ __m128i _mm_loadu_si32 (const(void)* mem_addr) pure @trusted
 {
     int r = *cast(int*)(mem_addr);
     int4 result = [0, 0, 0, 0];
-    result[0] = r;
+    result.array[0] = r;
     return result;
 }
 unittest
@@ -1640,7 +1661,7 @@ else
         int4 r;
         foreach(i; 0..4)
         {
-            r[i] = sa[2*i] * sb[2*i] + sa[2*i+1] * sb[2*i+1];
+            r.array[i] = sa.array[2*i] * sb.array[2*i] + sa.array[2*i+1] * sb.array[2*i+1];
         }
         return r;
     }
@@ -1664,17 +1685,24 @@ version(LDC)
 }
 else
 {
-    ///ditto
-    void _mm_maskmoveu_si128 (__m128i a, __m128i mask, void* mem_addr) pure @trusted
+    static if (GDC_X86)
     {
-        byte16 b = cast(byte16)a;
-        byte16 m = cast(byte16)mask;
-        byte* dest = cast(byte*)(mem_addr);
-        foreach(j; 0..16)
+        alias _mm_maskmoveu_si128 = __builtin_ia32_maskmovdqu;
+    }
+    else
+    {
+        ///ditto
+        void _mm_maskmoveu_si128 (__m128i a, __m128i mask, void* mem_addr) pure @trusted
         {
-            if (m[j] & 128)
+            byte16 b = cast(byte16)a;
+            byte16 m = cast(byte16)mask;
+            byte* dest = cast(byte*)(mem_addr);
+            foreach(j; 0..16)
             {
-                dest[j] = b[j];
+                if (m.array[j] & 128)
+                {
+                    dest[j] = b.array[j];
+                }
             }
         }
     }
@@ -1726,34 +1754,48 @@ unittest
 
 __m128d _mm_max_pd (__m128d a, __m128d b) pure @safe
 {
-    // Generates maxpd starting with LDC 1.9
-    a[0] = (a[0] > b[0]) ? a[0] : b[0];
-    a[1] = (a[1] > b[1]) ? a[1] : b[1];
-    return a;
+    static if (GDC_X86)
+    {
+        return __builtin_ia32_maxpd(a, b);
+    }
+    else
+    {
+        // Generates maxpd starting with LDC 1.9
+        a[0] = (a[0] > b[0]) ? a[0] : b[0];
+        a[1] = (a[1] > b[1]) ? a[1] : b[1];
+        return a;
+    }
 }
 unittest
 {
     __m128d A = _mm_setr_pd(4.0, 1.0);
     __m128d B = _mm_setr_pd(1.0, 8.0);
     __m128d M = _mm_max_pd(A, B);
-    assert(M[0] == 4.0);
-    assert(M[1] == 8.0);
+    assert(M.array[0] == 4.0);
+    assert(M.array[1] == 8.0);
 }
 
 __m128d _mm_max_sd (__m128d a, __m128d b) pure @safe
 {
-     __m128d r = a;
-    // Generates maxsd starting with LDC 1.3
-    r[0] = (a[0] > b[0]) ? a[0] : b[0];
-    return r;
+    static if (GDC_X86)
+    {
+        return __builtin_ia32_maxsd(a, b);
+    }
+    else
+    {
+         __m128d r = a;
+        // Generates maxsd starting with LDC 1.3
+        r.array[0] = (a.array[0] > b.array[0]) ? a.array[0] : b.array[0];
+        return r;
+    }
 }
 unittest
 {
     __m128d A = _mm_setr_pd(1.0, 1.0);
     __m128d B = _mm_setr_pd(4.0, 2.0);
     __m128d M = _mm_max_sd(A, B);
-    assert(M[0] == 4.0);
-    assert(M[1] == 1.0);
+    assert(M.array[0] == 4.0);
+    assert(M.array[1] == 1.0);
 }
 
 version(LDC)
@@ -1812,42 +1854,63 @@ unittest
 
 __m128d _mm_min_pd (__m128d a, __m128d b) pure @safe
 {
-    // Generates minpd starting with LDC 1.9
-    a[0] = (a[0] < b[0]) ? a[0] : b[0];
-    a[1] = (a[1] < b[1]) ? a[1] : b[1];
-    return a;
+    static if (GDC_X86)
+    {
+        return __builtin_ia32_minpd(a, b);
+    }
+    else
+    {
+        // Generates minpd starting with LDC 1.9
+        a.array[0] = (a.array[0] < b.array[0]) ? a.array[0] : b.array[0];
+        a.array[1] = (a.array[1] < b.array[1]) ? a.array[1] : b.array[1];
+        return a;
+    }
 }
 unittest
 {
     __m128d A = _mm_setr_pd(1.0, 2.0);
     __m128d B = _mm_setr_pd(4.0, 1.0);
     __m128d M = _mm_min_pd(A, B);
-    assert(M[0] == 1.0);
-    assert(M[1] == 1.0);
+    assert(M.array[0] == 1.0);
+    assert(M.array[1] == 1.0);
 }
 
 __m128d _mm_min_sd (__m128d a, __m128d b) pure @safe
 {
-    // Generates minsd starting with LDC 1.3
-    __m128d r = a;
-    r[0] = (a[0] < b[0]) ? a[0] : b[0];
-    return r;
+    static if (GDC_X86)
+    {
+        return __builtin_ia32_minsd(a, b);
+    }
+    else
+    {
+        // Generates minsd starting with LDC 1.3
+        __m128d r = a;
+        r.array[0] = (a.array[0] < b.array[0]) ? a.array[0] : b.array[0];
+        return r;
+    }
 }
 unittest
 {
     __m128d A = _mm_setr_pd(1.0, 3.0);
     __m128d B = _mm_setr_pd(4.0, 2.0);
     __m128d M = _mm_min_sd(A, B);
-    assert(M[0] == 1.0);
-    assert(M[1] == 3.0);
+    assert(M.array[0] == 1.0);
+    assert(M.array[1] == 3.0);
 }
 
 __m128i _mm_move_epi64 (__m128i a) pure @safe
 {
-    long2 result = [ 0, 0 ];
-    long2 la = cast(long2) a;
-    result[0] = la[0];
-    return cast(__m128i)(result);
+    static if (GDC_X86)
+    {
+        return __builtin_ia32_movq128(a);
+    }
+    else
+    {
+        long2 result = [ 0, 0 ];
+        long2 la = cast(long2) a;
+        result.array[0] = la.array[0];
+        return cast(__m128i)(result);
+    }
 }
 unittest
 {
@@ -1859,8 +1922,15 @@ unittest
 
 __m128d _mm_move_sd (__m128d a, __m128d b) pure @safe
 {
-    b[1] = a[1];
-    return b;
+    static if (GDC_X86)
+    {
+        return __builtin_ia32_movsd(a, b); 
+    }
+    else
+    {
+        b.array[1] = a.array[1];
+        return b;
+    }
 }
 unittest
 {
@@ -1878,16 +1948,24 @@ version(LDC)
 }
 else
 {
-    /// Create mask from the most significant bit of each 8-bit element in `v`.
-    int _mm_movemask_epi8(__m128i v) pure @safe
+    static if (GDC_X86)
     {
-        byte16 ai = cast(byte16)v;
-        int r = 0;
-        foreach(bit; 0..16)
+        /// Create mask from the most significant bit of each 8-bit element in `v`.
+        alias _mm_movemask_epi8 = __builtin_ia32_pmovmskb128;
+    }
+    else
+    {
+        /// Create mask from the most significant bit of each 8-bit element in `v`.
+        int _mm_movemask_epi8(__m128i v) pure @safe
         {
-            if (ai[bit] < 0) r += (1 << bit);
+            byte16 ai = cast(byte16)v;
+            int r = 0;
+            foreach(bit; 0..16)
+            {
+                if (ai.array[bit] < 0) r += (1 << bit);
+            }
+            return r;
         }
-        return r;
     }
 }
 unittest
@@ -1903,15 +1981,24 @@ version(LDC)
 }
 else
 {
-    /// Set each bit of mask `dst` based on the most significant bit of the corresponding
-    /// packed double-precision (64-bit) floating-point element in `v`.
-    int _mm_movemask_pd(__m128d v) pure @safe
+    static if (GDC_X86)
     {
-        long2 lv = cast(long2)v;
-        int r = 0;
-        if (lv[0] < 0) r += 1;
-        if (lv[1] < 0) r += 2;
-        return r;
+        /// Set each bit of mask `dst` based on the most significant bit of the corresponding
+        /// packed double-precision (64-bit) floating-point element in `v`.
+        alias _mm_movemask_pd = __builtin_ia32_movmskpd;
+    }
+    else
+    {
+        /// Set each bit of mask `dst` based on the most significant bit of the corresponding
+        /// packed double-precision (64-bit) floating-point element in `v`.
+        int _mm_movemask_pd(__m128d v) pure @safe
+        {
+            long2 lv = cast(long2)v;
+            int r = 0;
+            if (lv.array[0] < 0) r += 1;
+            if (lv.array[1] < 0) r += 2;
+            return r;
+        }
     }
 }
 unittest
@@ -1924,41 +2011,48 @@ unittest
 __m64 _mm_movepi64_pi64 (__m128i v) pure @safe
 {
     long2 lv = cast(long2)v;
-    return long1(lv[0]);
+    return long1(lv.array[0]);
 }
 unittest
 {
     __m128i A = _mm_set_epi64x(-1, -2);
     __m64 R = _mm_movepi64_pi64(A);
-    assert(R[0] == -2);
+    assert(R.array[0] == -2);
 }
 
 /// Copy the 64-bit integer `a` to the lower element of dest, and zero the upper element.
 __m128i _mm_movpi64_epi64 (__m64 a) pure @safe
 {
     long2 r;
-    r[0] = a[0];
-    r[1] = 0;
+    r.array[0] = a.array[0];
+    r.array[1] = 0;
     return cast(__m128i)r;
 }
 
-// PERF: unfortunately, __builtin_ia32_pmuludq128 disappeared from LDC
-// but seems there in clang
-__m128i _mm_mul_epu32(__m128i a, __m128i b) pure @safe
+static if (GDC_X86)
 {
-    __m128i zero = _mm_setzero_si128();
-    long2 la = cast(long2) shufflevector!(int4, 0, 4, 2, 6)(a, zero);
-    long2 lb = cast(long2) shufflevector!(int4, 0, 4, 2, 6)(b, zero);
-    static if (__VERSION__ >= 2076)
+    alias _mm_mul_epu32 = __builtin_ia32_pmuldq128;
+}
+else
+{
+    // PERF: unfortunately, __builtin_ia32_pmuludq128 disappeared from LDC
+    // but seems there in clang
+    __m128i _mm_mul_epu32 (__m128i a, __m128i b) pure @safe
     {
-        return cast(__m128i)(la * lb);
-    }
-    else
-    {
-        // long2 mul not supported before LDC 1.5
-        la[0] *= lb[0];
-        la[1] *= lb[1];
-        return cast(__m128i)(la);
+        __m128i zero = _mm_setzero_si128();
+        long2 la = cast(long2) shufflevector!(int4, 0, 4, 2, 6)(a, zero);
+        long2 lb = cast(long2) shufflevector!(int4, 0, 4, 2, 6)(b, zero);
+        static if (__VERSION__ >= 2076)
+        {
+            return cast(__m128i)(la * lb);
+        }
+        else
+        {
+            // long2 mul not supported before LDC 1.5
+            la.array[0] *= lb.array[0];
+            la.array[1] *= lb.array[1];
+            return cast(__m128i)(la);
+        }
     }
 }
 unittest
@@ -1989,16 +2083,23 @@ version(DigitalMars)
     __m128d _mm_mul_sd(__m128d a, __m128d b) pure @safe
     {
         asm pure nothrow @nogc @trusted { nop;}
-        a[0] = a[0] * b[0];
+        a.array[0] = a.array[0] * b.array[0];
         return a;
     }
 }
 else
 {
-    __m128d _mm_mul_sd(__m128d a, __m128d b) pure @safe
+    static if (GDC_X86)
     {
-        a[0] *= b[0];
-        return a;
+        alias _mm_mul_sd = __builtin_ia32_mulsd;
+    }
+    else
+    {
+        __m128d _mm_mul_sd(__m128d a, __m128d b) pure @safe
+        {
+            a.array[0] *= b.array[0];
+            return a;
+        }
     }
 }
 unittest
@@ -2019,7 +2120,7 @@ unittest
     __m64 A = _mm_set_pi32(42, 0xDEADBEEF);
     __m64 B = _mm_set_pi32(42, 0xCAFEBABE);
     __m64 C = _mm_mul_su32(A, B);
-    assert(C[0] == 0xDEADBEEFuL * 0xCAFEBABEuL);
+    assert(C.array[0] == 0xDEADBEEFuL * 0xCAFEBABEuL);
 }
 
 version(LDC)
@@ -2028,20 +2129,27 @@ version(LDC)
 }
 else
 {
-    __m128i _mm_mulhi_epi16 (__m128i a, __m128i b) pure @safe
+    static if (GDC_X86)
     {
-        short8 sa = cast(short8)a;
-        short8 sb = cast(short8)b;
-        short8 r = void;
-        r[0] = (sa[0] * sb[0]) >> 16;
-        r[1] = (sa[1] * sb[1]) >> 16;
-        r[2] = (sa[2] * sb[2]) >> 16;
-        r[3] = (sa[3] * sb[3]) >> 16;
-        r[4] = (sa[4] * sb[4]) >> 16;
-        r[5] = (sa[5] * sb[5]) >> 16;
-        r[6] = (sa[6] * sb[6]) >> 16;
-        r[7] = (sa[7] * sb[7]) >> 16;
-        return cast(__m128i)r;
+        alias _mm_mulhi_epi16 = __builtin_ia32_pmulhw128;
+    }
+    else
+    {
+        __m128i _mm_mulhi_epi16 (__m128i a, __m128i b) pure @safe
+        {
+            short8 sa = cast(short8)a;
+            short8 sb = cast(short8)b;
+            short8 r = void;
+            r.array[0] = (sa.array[0] * sb.array[0]) >> 16;
+            r.array[1] = (sa.array[1] * sb.array[1]) >> 16;
+            r.array[2] = (sa.array[2] * sb.array[2]) >> 16;
+            r.array[3] = (sa.array[3] * sb.array[3]) >> 16;
+            r.array[4] = (sa.array[4] * sb.array[4]) >> 16;
+            r.array[5] = (sa.array[5] * sb.array[5]) >> 16;
+            r.array[6] = (sa.array[6] * sb.array[6]) >> 16;
+            r.array[7] = (sa.array[7] * sb.array[7]) >> 16;
+            return cast(__m128i)r;
+        }
     }
 }
 unittest
@@ -2059,20 +2167,27 @@ version(LDC)
 }
 else
 {
-    __m128i _mm_mulhi_epu16 (__m128i a, __m128i b) pure @safe
+    static if (GDC_X86)
     {
-        short8 sa = cast(short8)a;
-        short8 sb = cast(short8)b;
-        short8 r = void;
-        r[0] = cast(short)( (cast(ushort)sa[0] * cast(ushort)sb[0]) >> 16 );
-        r[1] = cast(short)( (cast(ushort)sa[1] * cast(ushort)sb[1]) >> 16 );
-        r[2] = cast(short)( (cast(ushort)sa[2] * cast(ushort)sb[2]) >> 16 );
-        r[3] = cast(short)( (cast(ushort)sa[3] * cast(ushort)sb[3]) >> 16 );
-        r[4] = cast(short)( (cast(ushort)sa[4] * cast(ushort)sb[4]) >> 16 );
-        r[5] = cast(short)( (cast(ushort)sa[5] * cast(ushort)sb[5]) >> 16 );
-        r[6] = cast(short)( (cast(ushort)sa[6] * cast(ushort)sb[6]) >> 16 );
-        r[7] = cast(short)( (cast(ushort)sa[7] * cast(ushort)sb[7]) >> 16 );
-        return cast(__m128i)r;
+        alias _mm_mulhi_epu16 = __builtin_ia32_pmulhuw128;
+    }
+    else
+    {
+        __m128i _mm_mulhi_epu16 (__m128i a, __m128i b) pure @safe
+        {
+            short8 sa = cast(short8)a;
+            short8 sb = cast(short8)b;
+            short8 r = void;
+            r.array[0] = cast(short)( (cast(ushort)sa.array[0] * cast(ushort)sb.array[0]) >> 16 );
+            r.array[1] = cast(short)( (cast(ushort)sa.array[1] * cast(ushort)sb.array[1]) >> 16 );
+            r.array[2] = cast(short)( (cast(ushort)sa.array[2] * cast(ushort)sb.array[2]) >> 16 );
+            r.array[3] = cast(short)( (cast(ushort)sa.array[3] * cast(ushort)sb.array[3]) >> 16 );
+            r.array[4] = cast(short)( (cast(ushort)sa.array[4] * cast(ushort)sb.array[4]) >> 16 );
+            r.array[5] = cast(short)( (cast(ushort)sa.array[5] * cast(ushort)sb.array[5]) >> 16 );
+            r.array[6] = cast(short)( (cast(ushort)sa.array[6] * cast(ushort)sb.array[6]) >> 16 );
+            r.array[7] = cast(short)( (cast(ushort)sa.array[7] * cast(ushort)sb.array[7]) >> 16 );
+            return cast(__m128i)r;
+        }
     }
 }
 unittest
@@ -2113,18 +2228,25 @@ version(LDC)
 }
 else
 {
-    __m128i _mm_packs_epi32 (__m128i a, __m128i b) pure @safe
+    static if (GDC_X86)
     {
-        short8 r;
-        r[0] = saturateSignedIntToSignedShort(a[0]);
-        r[1] = saturateSignedIntToSignedShort(a[1]);
-        r[2] = saturateSignedIntToSignedShort(a[2]);
-        r[3] = saturateSignedIntToSignedShort(a[3]);
-        r[4] = saturateSignedIntToSignedShort(b[0]);
-        r[5] = saturateSignedIntToSignedShort(b[1]);
-        r[6] = saturateSignedIntToSignedShort(b[2]);
-        r[7] = saturateSignedIntToSignedShort(b[3]);
-        return cast(__m128i)r;
+        alias _mm_packs_epi32 = __builtin_ia32_packssdw128;
+    }
+    else
+    {
+        __m128i _mm_packs_epi32 (__m128i a, __m128i b) pure @safe
+        {
+            short8 r;
+            r.array[0] = saturateSignedIntToSignedShort(a.array[0]);
+            r.array[1] = saturateSignedIntToSignedShort(a.array[1]);
+            r.array[2] = saturateSignedIntToSignedShort(a.array[2]);
+            r.array[3] = saturateSignedIntToSignedShort(a.array[3]);
+            r.array[4] = saturateSignedIntToSignedShort(b.array[0]);
+            r.array[5] = saturateSignedIntToSignedShort(b.array[1]);
+            r.array[6] = saturateSignedIntToSignedShort(b.array[2]);
+            r.array[7] = saturateSignedIntToSignedShort(b.array[3]);
+            return cast(__m128i)r;
+        }
     }
 }
 unittest
@@ -2141,16 +2263,23 @@ version(LDC)
 }
 else
 {
-    __m128i _mm_packs_epi16 (__m128i a, __m128i b) pure @safe
+    static if (GDC_X86)
     {
-        byte16 r;
-        short8 sa = cast(short8)a;
-        short8 sb = cast(short8)b;
-        foreach(i; 0..8)
-            r[i] = saturateSignedWordToSignedByte(sa[i]);
-        foreach(i; 0..8)
-            r[i+8] = saturateSignedWordToSignedByte(sb[i]);
-        return cast(__m128i)r;
+        alias _mm_packs_epi16 = __builtin_ia32_packsswb128;
+    }
+    else
+    {
+        __m128i _mm_packs_epi16 (__m128i a, __m128i b) pure @safe
+        {
+            byte16 r;
+            short8 sa = cast(short8)a;
+            short8 sb = cast(short8)b;
+            foreach(i; 0..8)
+                r.array[i] = saturateSignedWordToSignedByte(sa.array[i]);
+            foreach(i; 0..8)
+                r.array[i+8] = saturateSignedWordToSignedByte(sb.array[i]);
+            return cast(__m128i)r;
+        }
     }
 }
 unittest
@@ -2168,24 +2297,30 @@ version(LDC)
 }
 else
 {
-    __m128i _mm_packus_epi16 (__m128i a, __m128i b) pure @trusted
+    static if (GDC_X86)
     {
-        short8 sa = cast(short8)a;
-        short8 sb = cast(short8)b;
-        ubyte[16] result = void;
-        for (int i = 0; i < 8; ++i)
+    }
+    else
+    {
+        __m128i _mm_packus_epi16 (__m128i a, __m128i b) pure @trusted
         {
-            short s = sa[i];
-            if (s < 0) s = 0;
-            if (s > 255) s = 255;
-            result[i] = cast(ubyte)s;
+            short8 sa = cast(short8)a;
+            short8 sb = cast(short8)b;
+            ubyte[16] result = void;
+            for (int i = 0; i < 8; ++i)
+            {
+                short s = sa[i];
+                if (s < 0) s = 0;
+                if (s > 255) s = 255;
+                result[i] = cast(ubyte)s;
 
-            s = sb[i];
-            if (s < 0) s = 0;
-            if (s > 255) s = 255;
-            result[i+8] = cast(ubyte)s;
+                s = sb[i];
+                if (s < 0) s = 0;
+                if (s > 255) s = 255;
+                result[i+8] = cast(ubyte)s;
+            }
+            return cast(__m128i) loadUnaligned!(byte16)(cast(byte*)result.ptr);
         }
-        return cast(__m128i) loadUnaligned!(byte16)(cast(byte*)result.ptr);
     }
 }
 unittest
@@ -2224,21 +2359,28 @@ version(LDC)
 }
 else
 {
-    __m128i _mm_sad_epu8 (__m128i a, __m128i b) pure @safe
+    static if (GDC_X86)
     {
-        byte16 ab = cast(byte16)a;
-        byte16 bb = cast(byte16)b;
-        ubyte[16] t;
-        foreach(i; 0..16)
+        alias _mm_sad_epu8 = __builtin_ia32_psadbw128;
+    }
+    else
+    {
+        __m128i _mm_sad_epu8 (__m128i a, __m128i b) pure @safe
         {
-            int diff = cast(ubyte)(ab[i]) - cast(ubyte)(bb[i]);
-            if (diff < 0) diff = -diff;
-            t[i] = cast(ubyte)(diff);
+            byte16 ab = cast(byte16)a;
+            byte16 bb = cast(byte16)b;
+            ubyte[16] t;
+            foreach(i; 0..16)
+            {
+                int diff = cast(ubyte)(ab.array[i]) - cast(ubyte)(bb.array[i]);
+                if (diff < 0) diff = -diff;
+                t[i] = cast(ubyte)(diff);
+            }
+            int4 r = _mm_setzero_si128();
+            r.array[0] = t[0] + t[1] + t[2] + t[3] + t[4] + t[5] + t[6] + t[7];
+            r.array[2] = t[8] + t[9] + t[10]+ t[11]+ t[12]+ t[13]+ t[14]+ t[15];
+            return r;
         }
-        int4 r = _mm_setzero_si128();
-        r[0] = t[0] + t[1] + t[2] + t[3] + t[4] + t[5] + t[6] + t[7];
-        r[2] = t[8] + t[9] + t[10]+ t[11]+ t[12]+ t[13]+ t[14]+ t[15];
-        return r;
     }
 }
 unittest
@@ -2280,7 +2422,7 @@ unittest
 
 __m128i _mm_set_epi64(__m64 e1, __m64 e0) pure @trusted
 {
-    long[2] result = [e0[0], e1[0]];
+    long[2] result = [e0.array[0], e1.array[0]];
     return cast(__m128i)( loadUnaligned!(long2)(result.ptr) );
 }
 unittest
@@ -2482,14 +2624,21 @@ version(LDC)
 }
 else
 {
-    __m128i _mm_sll_epi32 (__m128i a, __m128i count) pure @safe
+    static if (GDC_X86)
     {
-        int4 r = void;
-        long2 lc = cast(long2)count;
-        int bits = cast(int)(lc[0]);
-        foreach(i; 0..4)
-            r[i] = cast(uint)(a[i]) << bits;
-        return r;
+        alias _mm_sll_epi32 = __builtin_ia32_pslld128;
+    }
+    else
+    {
+        __m128i _mm_sll_epi32 (__m128i a, __m128i count) pure @safe
+        {
+            int4 r = void;
+            long2 lc = cast(long2)count;
+            int bits = cast(int)(lc.array[0]);
+            foreach(i; 0..4)
+                r[i] = cast(uint)(a[i]) << bits;
+            return r;
+        }
     }
 }
 unittest
@@ -2506,15 +2655,22 @@ version(LDC)
 }
 else
 {
-    __m128i _mm_sll_epi64 (__m128i a, __m128i count) pure @safe
+    static if (GDC_X86)
     {
-        long2 r = void;
-        long2 sa = cast(long2)a;
-        long2 lc = cast(long2)count;
-        int bits = cast(int)(lc[0]);
-        foreach(i; 0..2)
-            r[i] = cast(ulong)(sa[i]) << bits;
-        return cast(__m128i)r;
+        alias _mm_sll_epi64  = __builtin_ia32_psllq128;
+    }
+    else
+    {
+        __m128i _mm_sll_epi64 (__m128i a, __m128i count) pure @safe
+        {
+            long2 r = void;
+            long2 sa = cast(long2)a;
+            long2 lc = cast(long2)count;
+            int bits = cast(int)(lc.array[0]);
+            foreach(i; 0..2)
+                r.array[i] = cast(ulong)(sa.array[i]) << bits;
+            return cast(__m128i)r;
+        }
     }
 }
 unittest
@@ -2531,15 +2687,22 @@ version(LDC)
 }
 else
 {
-    __m128i _mm_sll_epi16 (__m128i a, __m128i count) pure @safe
+    static if (GDC_X86)
     {
-        short8 sa = cast(short8)a;
-        long2 lc = cast(long2)count;
-        int bits = cast(int)(lc[0]);
-        short8 r = void;
-        foreach(i; 0..8)
-            r[i] = cast(short)(cast(ushort)(sa[i]) << bits);
-        return cast(int4)r;
+        alias _mm_sll_epi16 = __builtin_ia32_psllw128;
+    }
+    else
+    {
+        __m128i _mm_sll_epi16 (__m128i a, __m128i count) pure @safe
+        {
+            short8 sa = cast(short8)a;
+            long2 lc = cast(long2)count;
+            int bits = cast(int)(lc.array[0]);
+            short8 r = void;
+            foreach(i; 0..8)
+                r.array[i] = cast(short)(cast(ushort)(sa.array[i]) << bits);
+            return cast(int4)r;
+        }
     }
 }
 unittest
@@ -2556,12 +2719,19 @@ version(LDC)
 }
 else
 {
-    __m128i _mm_slli_epi32 (__m128i a, int imm8) pure @safe
+    static if (GDC_X86)
     {
-        int4 r = void;
-        foreach(i; 0..4)
-            r[i] = cast(uint)(a[i]) << imm8;
-        return r;
+        alias _mm_slli_epi32 = __builtin_ia32_pslldi128;
+    }
+    else
+    {
+        __m128i _mm_slli_epi32 (__m128i a, int imm8) pure @safe
+        {
+            int4 r = void;
+            foreach(i; 0..4)
+                r.array[i] = cast(uint)(a.array[i]) << imm8;
+            return r;
+        }
     }
 }
 unittest
@@ -2578,13 +2748,20 @@ version(LDC)
 }
 else
 {
-    __m128i _mm_slli_epi64 (__m128i a, int imm8) pure @safe
+    static if (GDC_X86)
     {
-        long2 r = void;
-        long2 sa = cast(long2)a;
-        foreach(i; 0..2)
-            r[i] = cast(ulong)(sa[i]) << imm8;
-        return cast(__m128i)r;
+        alias _mm_slli_epi64  = __builtin_ia32_psllqi128;
+    }
+    else
+    {
+        __m128i _mm_slli_epi64 (__m128i a, int imm8) pure @safe
+        {
+            long2 r = void;
+            long2 sa = cast(long2)a;
+            foreach(i; 0..2)
+                r.array[i] = cast(ulong)(sa.array[i]) << imm8;
+            return cast(__m128i)r;
+        }
     }
 }
 unittest
@@ -2601,13 +2778,20 @@ version(LDC)
 }
 else
 {
-    __m128i _mm_slli_epi16 (__m128i a, int imm8) pure @safe
+    static if (GDC_X86)
     {
-        short8 sa = cast(short8)a;
-        short8 r = void;
-        foreach(i; 0..8)
-            r[i] = cast(short)(cast(ushort)(sa[i]) << imm8);
-        return cast(int4)r;
+        alias _mm_slli_epi16 = __builtin_ia32_psllwi128;
+    }
+    else
+    {
+        __m128i _mm_slli_epi16 (__m128i a, int imm8) pure @safe
+        {
+            short8 sa = cast(short8)a;
+            short8 r = void;
+            foreach(i; 0..8)
+                r.array[i] = cast(short)(cast(ushort)(sa.array[i]) << imm8);
+            return cast(int4)r;
+        }
     }
 }
 unittest
@@ -2654,11 +2838,18 @@ version(LDC)
 }
 else
 {
-    __m128d _mm_sqrt_pd(__m128d vec) pure @safe
+    static if (GDC_X86)
     {
-        vec.array[0] = sqrt(vec.array[0]);
-        vec.array[1] = sqrt(vec.array[1]);
-        return vec;
+        alias _mm_sqrt_pd = __builtin_ia32_sqrtpd;
+    }
+    else
+    {
+        __m128d _mm_sqrt_pd(__m128d vec) pure @safe
+        {
+            vec.array[0] = sqrt(vec.array[0]);
+            vec.array[1] = sqrt(vec.array[1]);
+            return vec;
+        }
     }
 }
 
@@ -2680,11 +2871,18 @@ version(LDC)
 }
 else
 {
-    __m128d _mm_sqrt_sd(__m128d vec) pure @safe
+    static if (GDC_X86)
     {
-        vec.array[0] = sqrt(vec.array[0]);
-        vec.array[1] = vec.array[1];
-        return vec;
+        alias _mm_sqrt_sd = __builtin_ia32_sqrtsd;
+    }
+    else
+    {
+        __m128d _mm_sqrt_sd(__m128d vec) pure @safe
+        {
+            vec.array[0] = sqrt(vec.array[0]);
+            vec.array[1] = vec.array[1];
+            return vec;
+        }
     }
 }
 
@@ -2695,15 +2893,22 @@ version(LDC)
 }
 else
 {
-    __m128i _mm_sra_epi16 (__m128i a, __m128i count) pure @safe
+    static if (GDC_X86)
     {
-        short8 sa = cast(short8)a;
-        long2 lc = cast(long2)count;
-        int bits = cast(int)(lc[0]);
-        short8 r = void;
-        foreach(i; 0..8)
-            r[i] = cast(short)(sa[i] >> bits);
-        return cast(int4)r;
+        alias _mm_sra_epi16 = __builtin_ia32_psraw128;
+    }
+    else
+    {
+        __m128i _mm_sra_epi16 (__m128i a, __m128i count) pure @safe
+        {
+            short8 sa = cast(short8)a;
+            long2 lc = cast(long2)count;
+            int bits = cast(int)(lc.array[0]);
+            short8 r = void;
+            foreach(i; 0..8)
+                r.array[i] = cast(short)(sa.array[i] >> bits);
+            return cast(int4)r;
+        }
     }
 }
 unittest
@@ -2720,14 +2925,21 @@ version(LDC)
 }
 else
 {
-    __m128i _mm_sra_epi32 (__m128i a, __m128i count) pure @safe
+    static if (GDC_X86)
     {
-        int4 r = void;
-        long2 lc = cast(long2)count;
-        int bits = cast(int)(lc[0]);
-        foreach(i; 0..4)
-            r[i] = (a[i] >> bits);
-        return r;
+        alias _mm_sra_epi32  = __builtin_ia32_psrad128;
+    }
+    else
+    {
+        __m128i _mm_sra_epi32 (__m128i a, __m128i count) pure @safe
+        {
+            int4 r = void;
+            long2 lc = cast(long2)count;
+            int bits = cast(int)(lc.array[0]);
+            foreach(i; 0..4)
+                r.array[i] = (a.array[i] >> bits);
+            return r;
+        }
     }
 }
 unittest
@@ -2745,13 +2957,20 @@ version(LDC)
 }
 else
 {
-    __m128i _mm_srai_epi16 (__m128i a, int imm8) pure @safe
+    static if (GDC_X86)
     {
-        short8 sa = cast(short8)a;
-        short8 r = void;
-        foreach(i; 0..8)
-            r[i] = cast(short)(sa[i] >> imm8);
-        return cast(int4)r;
+        alias _mm_srai_epi16 = __builtin_ia32_psrawi128;
+    }
+    else
+    {
+        __m128i _mm_srai_epi16 (__m128i a, int imm8) pure @safe
+        {
+            short8 sa = cast(short8)a;
+            short8 r = void;
+            foreach(i; 0..8)
+                r.array[i] = cast(short)(sa.array[i] >> imm8);
+            return cast(int4)r;
+        }
     }
 }
 unittest
@@ -2768,12 +2987,19 @@ version(LDC)
 }
 else
 {
-    __m128i _mm_srai_epi32 (__m128i a, int imm8) pure @safe
+    static if (GDC_X86)
     {
-        int4 r = void;
-        foreach(i; 0..4)
-            r[i] = (a[i] >> imm8);
-        return r;
+        alias _mm_srai_epi32  = __builtin_ia32_psradi128;
+    }
+    else
+    {
+        __m128i _mm_srai_epi32 (__m128i a, int imm8) pure @safe
+        {
+            int4 r = void;
+            foreach(i; 0..4)
+                r.array[i] = (a.array[i] >> imm8);
+            return r;
+        }
     }
 }
 unittest
@@ -2790,15 +3016,22 @@ version(LDC)
 }
 else
 {
-    __m128i _mm_srl_epi16 (__m128i a, __m128i count) pure @safe
+    static if (GDC_X86)
     {
-        short8 sa = cast(short8)a;
-        long2 lc = cast(long2)count;
-        int bits = cast(int)(lc[0]);
-        short8 r = void;
-        foreach(i; 0..8)
-            r[i] = cast(short)(cast(ushort)(sa[i]) >> bits);
-        return cast(int4)r;
+        alias _mm_srl_epi16 = __builtin_ia32_psrlw128;
+    }
+    else
+    {
+        __m128i _mm_srl_epi16 (__m128i a, __m128i count) pure @safe
+        {
+            short8 sa = cast(short8)a;
+            long2 lc = cast(long2)count;
+            int bits = cast(int)(lc.array[0]);
+            short8 r = void;
+            foreach(i; 0..8)
+                r.array[i] = cast(short)(cast(ushort)(sa.array[i]) >> bits);
+            return cast(int4)r;
+        }
     }
 }
 unittest
@@ -2815,14 +3048,21 @@ version(LDC)
 }
 else
 {
-    __m128i _mm_srl_epi32 (__m128i a, __m128i count) pure @safe
+    static if (GDC_X86)
     {
-        int4 r = void;
-        long2 lc = cast(long2)count;
-        int bits = cast(int)(lc[0]);
-        foreach(i; 0..4)
-            r[i] = cast(uint)(a[i]) >> bits;
-        return r;
+        alias _mm_srl_epi32  = __builtin_ia32_psrld128;
+    }
+    else
+    {
+        __m128i _mm_srl_epi32 (__m128i a, __m128i count) pure @safe
+        {
+            int4 r = void;
+            long2 lc = cast(long2)count;
+            int bits = cast(int)(lc.array[0]);
+            foreach(i; 0..4)
+                r.array[i] = cast(uint)(a.array[i]) >> bits;
+            return r;
+        }
     }
 }
 unittest
@@ -2839,15 +3079,22 @@ version(LDC)
 }
 else
 {
-    __m128i _mm_srl_epi64 (__m128i a, __m128i count) pure @safe
+    static if (GDC_X86)
     {
-        long2 r = void;
-        long2 sa = cast(long2)a;
-        long2 lc = cast(long2)count;
-        int bits = cast(int)(lc[0]);
-        foreach(i; 0..2)
-            r[i] = cast(ulong)(sa[i]) >> bits;
-        return cast(__m128i)r;
+        alias _mm_srl_epi64  = __builtin_ia32_psrlq128;
+    }
+    else
+    {
+        __m128i _mm_srl_epi64 (__m128i a, __m128i count) pure @safe
+        {
+            long2 r = void;
+            long2 sa = cast(long2)a;
+            long2 lc = cast(long2)count;
+            int bits = cast(int)(lc.array[0]);
+            foreach(i; 0..2)
+                r.array[i] = cast(ulong)(sa.array[i]) >> bits;
+            return cast(__m128i)r;
+        }
     }
 }
 unittest
@@ -2864,13 +3111,20 @@ version(LDC)
 }
 else
 {
-    __m128i _mm_srli_epi16 (__m128i a, int imm8) pure @safe
+    static if (GDC_X86)
     {
-        short8 sa = cast(short8)a;
-        short8 r = void;
-        foreach(i; 0..8)
-            r[i] = cast(short)(cast(ushort)(sa[i]) >> imm8);
-        return cast(int4)r;
+        alias _mm_srli_epi16 = __builtin_ia32_psrlwi128;
+    }
+    else
+    {
+        __m128i _mm_srli_epi16 (__m128i a, int imm8) pure @safe
+        {
+            short8 sa = cast(short8)a;
+            short8 r = void;
+            foreach(i; 0..8)
+                r.array[i] = cast(short)(cast(ushort)(sa.array[i]) >> imm8);
+            return cast(int4)r;
+        }
     }
 }
 unittest
@@ -2887,12 +3141,19 @@ version(LDC)
 }
 else
 {
-    __m128i _mm_srli_epi32 (__m128i a, int imm8) pure @safe
+    static if (GDC_X86)
     {
-        int4 r = void;
-        foreach(i; 0..4)
-            r[i] = cast(uint)(a[i]) >> imm8;
-        return r;
+        alias _mm_srli_epi32  = __builtin_ia32_psrldi128;
+    }
+    else
+    {
+        __m128i _mm_srli_epi32 (__m128i a, int imm8) pure @safe
+        {
+            int4 r = void;
+            foreach(i; 0..4)
+                r.array[i] = cast(uint)(a.array[i]) >> imm8;
+            return r;
+        }
     }
 }
 unittest
@@ -2909,13 +3170,20 @@ version(LDC)
 }
 else
 {
-    __m128i _mm_srli_epi64 (__m128i a, int imm8) pure @safe
+    static if (GDC_X86)
     {
-        long2 r = void;
-        long2 sa = cast(long2)a;
-        foreach(i; 0..2)
-            r[i] = cast(ulong)(sa[i]) >> imm8;
-        return cast(__m128i)r;
+        alias _mm_srli_epi64  = __builtin_ia32_psrlqi128;
+    }
+    else
+    {
+        __m128i _mm_srli_epi64 (__m128i a, int imm8) pure @safe
+        {
+            long2 r = void;
+            long2 sa = cast(long2)a;
+            foreach(i; 0..2)
+                r.array[i] = cast(ulong)(sa.array[i]) >> imm8;
+            return cast(__m128i)r;
+        }
     }
 }
 unittest
@@ -2978,7 +3246,7 @@ void _mm_store_pd1 (double* mem_addr, __m128d a) pure
 
 void _mm_store_sd (double* mem_addr, __m128d a) pure @safe
 {
-    *mem_addr = a[0];
+    *mem_addr = a.array[0];
 }
 
 void _mm_store_si128 (__m128i* mem_addr, __m128i a) pure @safe
@@ -2990,7 +3258,7 @@ alias _mm_store1_pd = _mm_store_pd1;
 
 void _mm_storeh_pd (double* mem_addr, __m128d a) pure @safe
 {
-    *mem_addr = a[1];
+    *mem_addr = a.array[1];
 }
 
 // Note: `mem_addr` doesn't have to actually be aligned, which breaks
@@ -2999,7 +3267,7 @@ void _mm_storel_epi64 (__m128i* mem_addr, __m128i a) pure @safe
 {
     long* dest = cast(long*)mem_addr;
     long2 la = cast(long2)a;
-    *dest = la[0];
+    *dest = la.array[0];
 }
 unittest
 {
@@ -3011,7 +3279,7 @@ unittest
 
 void _mm_storel_pd (double* mem_addr, __m128d a) pure @safe
 {
-    *mem_addr = a[0];
+    *mem_addr = a.array[0];
 }
 
 void _mm_storer_pd (double* mem_addr, __m128d a) pure
@@ -3107,7 +3375,7 @@ else
 {
     __m128d _mm_sub_sd(__m128d a, __m128d b) pure @safe
     {
-        a[0] -= b[0];
+        a.array[0] -= b.array[0];
         return a;
     }
 }
@@ -3142,14 +3410,21 @@ version(LDC)
 }
 else
 {
-    __m128i _mm_subs_epi16(__m128i a, __m128i b) pure @trusted
+    static if (GDC_X86)
     {
-        short[8] res;
-        short8 sa = cast(short8)a;
-        short8 sb = cast(short8)b;
-        foreach(i; 0..8)
-            res[i] = saturateSignedIntToSignedShort(sa.array[i] - sb.array[i]);
-        return _mm_loadu_si128(cast(int4*)res.ptr);
+        alias _mm_subs_epi16 = __builtin_ia32_psubsw128;
+    }
+    else
+    {
+        __m128i _mm_subs_epi16(__m128i a, __m128i b) pure @trusted
+        {
+            short[8] res;
+            short8 sa = cast(short8)a;
+            short8 sb = cast(short8)b;
+            foreach(i; 0..8)
+                res[i] = saturateSignedIntToSignedShort(sa.array[i] - sb.array[i]);
+            return _mm_loadu_si128(cast(int4*)res.ptr);
+        }
     }
 }
 unittest
@@ -3179,14 +3454,21 @@ version(LDC)
 }
 else
 {
-    __m128i _mm_subs_epi8(__m128i a, __m128i b) pure @trusted
+    static if (GDC_X86)
     {
-        byte[16] res;
-        byte16 sa = cast(byte16)a;
-        byte16 sb = cast(byte16)b;
-        foreach(i; 0..16)
-            res[i] = saturateSignedWordToSignedByte(sa.array[i] - sb.array[i]);
-        return _mm_loadu_si128(cast(int4*)res.ptr);
+        alias _mm_subs_epi8 = __builtin_ia32_psubsb128;
+    }
+    else
+    {
+        __m128i _mm_subs_epi8(__m128i a, __m128i b) pure @trusted
+        {
+            byte[16] res;
+            byte16 sa = cast(byte16)a;
+            byte16 sb = cast(byte16)b;
+            foreach(i; 0..16)
+                res[i] = saturateSignedWordToSignedByte(sa.array[i] - sb.array[i]);
+            return _mm_loadu_si128(cast(int4*)res.ptr);
+        }
     }
 }
 unittest
@@ -3216,17 +3498,24 @@ version(LDC)
 }
 else
 {
-    __m128i _mm_subs_epu16(__m128i a, __m128i b) pure @trusted
+    static if (GDC_X86)
     {
-        short[8] res;
-        short8 sa = cast(short8)a;
-        short8 sb = cast(short8)b;
-        foreach(i; 0..8)
+            alias _mm_subs_epu16 = __builtin_ia32_psubusw128;
+    }
+    else
+    {
+        __m128i _mm_subs_epu16(__m128i a, __m128i b) pure @trusted
         {
-            int sum = cast(ushort)(sa.array[i]) - cast(ushort)(sb.array[i]);
-            res[i] = saturateSignedIntToUnsignedShort(sum);
+            short[8] res;
+            short8 sa = cast(short8)a;
+            short8 sb = cast(short8)b;
+            foreach(i; 0..8)
+            {
+                int sum = cast(ushort)(sa.array[i]) - cast(ushort)(sb.array[i]);
+                res[i] = saturateSignedIntToUnsignedShort(sum);
+            }
+            return _mm_loadu_si128(cast(int4*)res.ptr);
         }
-        return _mm_loadu_si128(cast(int4*)res.ptr);
     }
 }
 unittest
@@ -3257,14 +3546,21 @@ version(LDC)
 }
 else
 {
-    __m128i _mm_subs_epu8(__m128i a, __m128i b) pure @trusted
+    static if (GDC_X86)
     {
-        ubyte[16] res;
-        byte16 sa = cast(byte16)a;
-        byte16 sb = cast(byte16)b;
-        foreach(i; 0..16)
-            res[i] = saturateSignedWordToUnsignedByte(cast(ubyte)(sa.array[i]) - cast(ubyte)(sb.array[i]));
-        return _mm_loadu_si128(cast(int4*)res.ptr);
+            alias _mm_subs_epu8 = __builtin_ia32_psubusb128;
+    }
+    else
+    {
+        __m128i _mm_subs_epu8(__m128i a, __m128i b) pure @trusted
+        {
+            ubyte[16] res;
+            byte16 sa = cast(byte16)a;
+            byte16 sb = cast(byte16)b;
+            foreach(i; 0..16)
+                res[i] = saturateSignedWordToUnsignedByte(cast(ubyte)(sa.array[i]) - cast(ubyte)(sb.array[i]));
+            return _mm_loadu_si128(cast(int4*)res.ptr);
+        }
     }
 }
 unittest
