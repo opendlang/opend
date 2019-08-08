@@ -312,7 +312,7 @@ unittest
     __m128i B = _mm_set1_epi16(64);
     short8 avg = cast(short8)(_mm_avg_epu16(A, B));
     foreach(i; 0..8)
-        assert(avg[i] == 48);
+        assert(avg.array[i] == 48);
 }
 
 version(LDC)
@@ -336,7 +336,7 @@ else
 
     static if (GDC_X86)
     {
-        alias __mm_avg_epu8 = __builtin_ia32_pavgb;
+        alias _mm_avg_epu8 = __builtin_ia32_pavgb;
     }
     else
     {
@@ -359,7 +359,7 @@ unittest
     __m128i B = _mm_set1_epi8(64);
     byte16 avg = cast(byte16)(_mm_avg_epu8(A, B));
     foreach(i; 0..16)
-        assert(avg[i] == 48);
+        assert(avg.index[i] == 48);
 }
 
 // Note: unlike Intel API, shift amount is a compile-time parameter.
@@ -1005,8 +1005,8 @@ else
 unittest
 {
     __m128d A = _mm_cvtepi32_pd(_mm_set1_epi32(54));
-    assert(A[0] == 54.0);
-    assert(A[1] == 54.0);
+    assert(A.array[0] == 54.0);
+    assert(A.array[1] == 54.0);
 }
 
 __m128 _mm_cvtepi32_ps(__m128i a) pure @safe
@@ -1069,7 +1069,7 @@ else
 unittest
 {
     int4 A = _mm_cvtpd_epi32(_mm_set_pd(61.0, 55.0));
-    assert(A[0] == 55 && A[1] == 61 && A[2] == 0 && A[3] == 0);
+    assert(A.array[0] == 55 && A.array[1] == 61 && A.array[2] == 0 && A.array[3] == 0);
 }
 
 /// Convert packed double-precision (64-bit) floating-point elements in `v`
@@ -1081,7 +1081,7 @@ __m64 _mm_cvtpd_pi32 (__m128d v) pure @safe
 unittest
 {
     int2 A = cast(int2) _mm_cvtpd_pi32(_mm_set_pd(61.0, 55.0));
-    assert(A[0] == 55 && A[1] == 61);
+    assert(A.array[0] == 55 && A.array[1] == 61);
 }
 
 version(LDC)
@@ -1123,7 +1123,7 @@ __m128d _mm_cvtpi32_pd (__m64 v) pure @safe
 unittest
 {
     __m128d A = _mm_cvtpi32_pd(_mm_setr_pi32(4, -5));
-    assert(A[0] == 4.0 && A[1] == -5.0);
+    assert(A.array[0] == 4.0 && A.array[1] == -5.0);
 }
 
 version(LDC)
@@ -1211,8 +1211,8 @@ else
 unittest
 {
     __m128d A = _mm_cvtps_pd(_mm_set1_ps(54.0f));
-    assert(A[0] == 54.0);
-    assert(A[1] == 54.0);
+    assert(A.array[0] == 54.0);
+    assert(A.array[1] == 54.0);
 }
 
 double _mm_cvtsd_f64 (__m128d a) pure @safe
@@ -1804,11 +1804,18 @@ version(LDC)
 }
 else
 {
-    void _mm_mfence() pure @safe
+    static if (GDC_X86)
     {
-        asm nothrow @nogc pure @safe
+        alias _mm_mfence = __builtin_ia32_mfence;
+    }
+    else
+    {
+        void _mm_mfence() pure @safe
         {
-            mfence;
+            asm nothrow @nogc pure @safe
+            {
+                mfence;
+            }
         }
     }
 }
@@ -2330,7 +2337,7 @@ unittest
     static immutable ubyte[16] correctResult = [0, 255, 0, 255, 255, 2, 1, 0,
                                                 0, 255, 0, 255, 255, 2, 1, 0];
     foreach(i; 0..16)
-        assert(AA[i] == cast(byte)(correctResult[i]));
+        assert(AA.array[i] == cast(byte)(correctResult[i]));
 }
 
 version(LDC)
@@ -2339,11 +2346,18 @@ version(LDC)
 }
 else
 {
-    void _mm_pause() pure @safe
+    static if (GDC_X86)
     {
-        asm nothrow @nogc pure @safe
+        alias _mm_pause = __builtin_ia32_pause;
+    }
+    else
+    {
+        void _mm_pause() pure @safe
         {
-            rep; nop; // F3 90 =  pause
+            asm nothrow @nogc pure @safe
+            {
+                rep; nop; // F3 90 =  pause
+            }
         }
     }
 }
