@@ -38,3 +38,5 @@ matrix:
 script:
   - dub test --compiler=${DC}
   - dub test -b unittest-release --compiler=${DC}
+  - dub test -b unittest-inst --compiler=${DC}
+  - dub test -b unittest-release-inst --compiler=${DC}
