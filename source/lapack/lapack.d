@@ -947,10 +947,10 @@ void zhgeqz_(ref char job, ref char compq, ref char compz, ref lapackint n, lapa
 
 /// Computes specified right and/or left eigenvectors of an upper
 /// Hessenberg matrix by inverse iteration.
-void shsein_(ref char side, ref char eigsrc, ref char initv, lapackint *select, ref lapackint n, float *h, ref lapackint ldh, float *wr, float *wi, float *vl, ref lapackint ldvl, float *vr, ref lapackint ldvr, lapackint *mm, ref lapackint m, float *work, lapackint *ifaill, lapackint *ifailr, ref lapackint info);
-void dhsein_(ref char side, ref char eigsrc, ref char initv, lapackint *select, ref lapackint n, double *h, ref lapackint ldh, double *wr, double *wi, double *vl, ref lapackint ldvl, double *vr, ref lapackint ldvr, lapackint *mm, ref lapackint m, double *work, lapackint *ifaill, lapackint *ifailr, ref lapackint info);
-void chsein_(ref char side, ref char eigsrc, ref char initv, lapackint *select, ref lapackint n, _cfloat *h, ref lapackint ldh, _cfloat *w, _cfloat *vl, ref lapackint ldvl, _cfloat *vr, ref lapackint ldvr, lapackint *mm, ref lapackint m, _cfloat *work, float *rwork, lapackint *ifaill, lapackint *ifailr, ref lapackint info);
-void zhsein_(ref char side, ref char eigsrc, ref char initv, lapackint *select, ref lapackint n, _cdouble *h, ref lapackint ldh, _cdouble *w, _cdouble *vl, ref lapackint ldvl, _cdouble *vr, ref lapackint ldvr, lapackint *mm, ref lapackint m, _cdouble *work, double *rwork, lapackint *ifaill, lapackint *ifailr, ref lapackint info);
+void shsein_(ref char side, ref char eigsrc, ref char initv, lapackint *select, ref lapackint n, float *h, ref lapackint ldh, float *wr, float *wi, float *vl, ref lapackint ldvl, float *vr, ref lapackint ldvr, ref lapackint mm, ref lapackint m, float *work, lapackint *ifaill, lapackint *ifailr, ref lapackint info);
+void dhsein_(ref char side, ref char eigsrc, ref char initv, lapackint *select, ref lapackint n, double *h, ref lapackint ldh, double *wr, double *wi, double *vl, ref lapackint ldvl, double *vr, ref lapackint ldvr, ref lapackint mm, ref lapackint m, double *work, lapackint *ifaill, lapackint *ifailr, ref lapackint info);
+void chsein_(ref char side, ref char eigsrc, ref char initv, lapackint *select, ref lapackint n, _cfloat *h, ref lapackint ldh, _cfloat *w, _cfloat *vl, ref lapackint ldvl, _cfloat *vr, ref lapackint ldvr, ref lapackint mm, ref lapackint m, _cfloat *work, float *rwork, lapackint *ifaill, lapackint *ifailr, ref lapackint info);
+void zhsein_(ref char side, ref char eigsrc, ref char initv, lapackint *select, ref lapackint n, _cdouble *h, ref lapackint ldh, _cdouble *w, _cdouble *vl, ref lapackint ldvl, _cdouble *vr, ref lapackint ldvr, ref lapackint mm, ref lapackint m, _cdouble *work, double *rwork, lapackint *ifaill, lapackint *ifailr, ref lapackint info);
 
 /// Computes the eigenvalues and Schur factorization of an upper
 /// Hessenberg matrix, using the multishift QR algorithm.
@@ -1593,10 +1593,10 @@ void ztbtrs_(ref char uplo, ref char trans, ref char diag, ref lapackint n, lapa
 
 /// Computes some or all of the right and/or left generalized eigenvectors
 /// of a pair of upper triangular matrices.
-void stgevc_(ref char side, ref char howmny, lapackint *select, ref lapackint n, float *a, ref lapackint lda, float *b, ref lapackint ldb, float *vl, ref lapackint ldvl, float *vr, ref lapackint ldvr, lapackint *mm, ref lapackint m, float *work, ref lapackint info);
-void dtgevc_(ref char side, ref char howmny, lapackint *select, ref lapackint n, double *a, ref lapackint lda, double *b, ref lapackint ldb, double *vl, ref lapackint ldvl, double *vr, ref lapackint ldvr, lapackint *mm, ref lapackint m, double *work, ref lapackint info);
-void ctgevc_(ref char side, ref char howmny, lapackint *select, ref lapackint n, _cfloat *a, ref lapackint lda, _cfloat *b, ref lapackint ldb, _cfloat *vl, ref lapackint ldvl, _cfloat *vr, ref lapackint ldvr, lapackint *mm, ref lapackint m, _cfloat *work, float *rwork, ref lapackint info);
-void ztgevc_(ref char side, ref char howmny, lapackint *select, ref lapackint n, _cdouble *a, ref lapackint lda, _cdouble *b, ref lapackint ldb, _cdouble *vl, ref lapackint ldvl, _cdouble *vr, ref lapackint ldvr, lapackint *mm, ref lapackint m, _cdouble *work, double *rwork, ref lapackint info);
+void stgevc_(ref char side, ref char howmny, lapackint *select, ref lapackint n, float *a, ref lapackint lda, float *b, ref lapackint ldb, float *vl, ref lapackint ldvl, float *vr, ref lapackint ldvr, ref lapackint mm, ref lapackint m, float *work, ref lapackint info);
+void dtgevc_(ref char side, ref char howmny, lapackint *select, ref lapackint n, double *a, ref lapackint lda, double *b, ref lapackint ldb, double *vl, ref lapackint ldvl, double *vr, ref lapackint ldvr, ref lapackint mm, ref lapackint m, double *work, ref lapackint info);
+void ctgevc_(ref char side, ref char howmny, lapackint *select, ref lapackint n, _cfloat *a, ref lapackint lda, _cfloat *b, ref lapackint ldb, _cfloat *vl, ref lapackint ldvl, _cfloat *vr, ref lapackint ldvr, ref lapackint mm, ref lapackint m, _cfloat *work, float *rwork, ref lapackint info);
+void ztgevc_(ref char side, ref char howmny, lapackint *select, ref lapackint n, _cdouble *a, ref lapackint lda, _cdouble *b, ref lapackint ldb, _cdouble *vl, ref lapackint ldvl, _cdouble *vr, ref lapackint ldvr, ref lapackint mm, ref lapackint m, _cdouble *work, double *rwork, ref lapackint info);
 
 /// Reorders the generalized real Schur decomposition of a real
 /// matrix pair (A,B) using an orthogonal equivalence transformation
@@ -1626,10 +1626,10 @@ void ztgsja_(ref char jobu, ref char jobv, ref char jobq, ref lapackint m, ref l
 /// Estimates reciprocal condition numbers for specified
 /// eigenvalues and/or eigenvectors of a matrix pair (A, B) in
 /// generalized real Schur canonical form, as returned by SGGES.
-void stgsna_(ref char job, ref char howmny, lapackint *select, ref lapackint n, float *a, ref lapackint lda, float *b, ref lapackint ldb, float *vl, ref lapackint ldvl, float *vr, ref lapackint ldvr, float *s, float *dif, lapackint *mm, ref lapackint m, float *work, ref lapackint lwork, lapackint *iwork, ref lapackint info);
-void dtgsna_(ref char job, ref char howmny, lapackint *select, ref lapackint n, double *a, ref lapackint lda, double *b, ref lapackint ldb, double *vl, ref lapackint ldvl, double *vr, ref lapackint ldvr, double *s, double *dif, lapackint *mm, ref lapackint m, double *work, ref lapackint lwork, lapackint *iwork, ref lapackint info);
-void ctgsna_(ref char job, ref char howmny, lapackint *select, ref lapackint n, _cfloat *a, ref lapackint lda, _cfloat *b, ref lapackint ldb, _cfloat *vl, ref lapackint ldvl, _cfloat *vr, ref lapackint ldvr, float *s, float *dif, lapackint *mm, ref lapackint m, _cfloat *work, ref lapackint lwork, lapackint *iwork, ref lapackint info);
-void ztgsna_(ref char job, ref char howmny, lapackint *select, ref lapackint n, _cdouble *a, ref lapackint lda, _cdouble *b, ref lapackint ldb, _cdouble *vl, ref lapackint ldvl, _cdouble *vr, ref lapackint ldvr, double *s, double *dif, lapackint *mm, ref lapackint m, _cdouble *work, ref lapackint lwork, lapackint *iwork, ref lapackint info);
+void stgsna_(ref char job, ref char howmny, lapackint *select, ref lapackint n, float *a, ref lapackint lda, float *b, ref lapackint ldb, float *vl, ref lapackint ldvl, float *vr, ref lapackint ldvr, float *s, float *dif, ref lapackint mm, ref lapackint m, float *work, ref lapackint lwork, lapackint *iwork, ref lapackint info);
+void dtgsna_(ref char job, ref char howmny, lapackint *select, ref lapackint n, double *a, ref lapackint lda, double *b, ref lapackint ldb, double *vl, ref lapackint ldvl, double *vr, ref lapackint ldvr, double *s, double *dif, ref lapackint mm, ref lapackint m, double *work, ref lapackint lwork, lapackint *iwork, ref lapackint info);
+void ctgsna_(ref char job, ref char howmny, lapackint *select, ref lapackint n, _cfloat *a, ref lapackint lda, _cfloat *b, ref lapackint ldb, _cfloat *vl, ref lapackint ldvl, _cfloat *vr, ref lapackint ldvr, float *s, float *dif, ref lapackint mm, ref lapackint m, _cfloat *work, ref lapackint lwork, lapackint *iwork, ref lapackint info);
+void ztgsna_(ref char job, ref char howmny, lapackint *select, ref lapackint n, _cdouble *a, ref lapackint lda, _cdouble *b, ref lapackint ldb, _cdouble *vl, ref lapackint ldvl, _cdouble *vr, ref lapackint ldvr, double *s, double *dif, ref lapackint mm, ref lapackint m, _cdouble *work, ref lapackint lwork, lapackint *iwork, ref lapackint info);
 
 /// Solves the generalized Sylvester equation.
 void stgsyl_(ref char trans, lapackint *ijob, ref lapackint m, ref lapackint n, float *a, ref lapackint lda, float *b, ref lapackint ldb, float *c, ref lapackint ldc, float *d, ref lapackint ldd, float *e, ref lapackint lde, float *f, ref lapackint ldf, float *scale, float *dif, float *work, ref lapackint lwork, lapackint *iwork, ref lapackint info);
@@ -1674,10 +1674,10 @@ void ztrcon_(ref char norm, ref char uplo, ref char diag, ref lapackint n, _cdou
 
 /// Computes some or all of the right and/or left eigenvectors of
 /// an upper quasi-triangular matrix.
-void strevc_(ref char side, ref char howmny, lapackint *select, ref lapackint n, float *t, ref lapackint ldt, float *vl, ref lapackint ldvl, float *vr, ref lapackint ldvr, lapackint *mm, ref lapackint m, float *work, ref lapackint info);
-void dtrevc_(ref char side, ref char howmny, lapackint *select, ref lapackint n, double *t, ref lapackint ldt, double *vl, ref lapackint ldvl, double *vr, ref lapackint ldvr, lapackint *mm, ref lapackint m, double *work, ref lapackint info);
-void ctrevc_(ref char side, ref char howmny, lapackint *select, ref lapackint n, _cfloat *t, ref lapackint ldt, _cfloat *vl, ref lapackint ldvl, _cfloat *vr, ref lapackint ldvr, lapackint *mm, ref lapackint m, _cfloat *work, float *rwork, ref lapackint info);
-void ztrevc_(ref char side, ref char howmny, lapackint *select, ref lapackint n, _cdouble *t, ref lapackint ldt, _cdouble *vl, ref lapackint ldvl, _cdouble *vr, ref lapackint ldvr, lapackint *mm, ref lapackint m, _cdouble *work, double *rwork, ref lapackint info);
+void strevc_(ref char side, ref char howmny, lapackint *select, ref lapackint n, float *t, ref lapackint ldt, float *vl, ref lapackint ldvl, float *vr, ref lapackint ldvr, ref lapackint mm, ref lapackint m, float *work, ref lapackint info);
+void dtrevc_(ref char side, ref char howmny, lapackint *select, ref lapackint n, double *t, ref lapackint ldt, double *vl, ref lapackint ldvl, double *vr, ref lapackint ldvr, ref lapackint mm, ref lapackint m, double *work, ref lapackint info);
+void ctrevc_(ref char side, ref char howmny, lapackint *select, ref lapackint n, _cfloat *t, ref lapackint ldt, _cfloat *vl, ref lapackint ldvl, _cfloat *vr, ref lapackint ldvr, ref lapackint mm, ref lapackint m, _cfloat *work, float *rwork, ref lapackint info);
+void ztrevc_(ref char side, ref char howmny, lapackint *select, ref lapackint n, _cdouble *t, ref lapackint ldt, _cdouble *vl, ref lapackint ldvl, _cdouble *vr, ref lapackint ldvr, ref lapackint mm, ref lapackint m, _cdouble *work, double *rwork, ref lapackint info);
 
 /// Reorders the Schur factorization of a matrix by an orthogonal
 /// similarity transformation.
@@ -1707,10 +1707,10 @@ void ztrsen_(ref char job, ref char compq, lapackint *select, ref lapackint n, _
 /// Estimates the reciprocal condition numbers (sensitivities)
 /// of selected eigenvalues and eigenvectors of an upper
 /// quasi-triangular matrix.
-void strsna_(ref char job, ref char howmny, lapackint *select, ref lapackint n, float *t, ref lapackint ldt, float *vl, ref lapackint ldvl, float *vr, ref lapackint ldvr, float *s, float *sep, lapackint *mm, ref lapackint m, float *work, ref lapackint ldwork, lapackint *iwork, ref lapackint info);
-void dtrsna_(ref char job, ref char howmny, lapackint *select, ref lapackint n, double *t, ref lapackint ldt, double *vl, ref lapackint ldvl, double *vr, ref lapackint ldvr, double *s, double *sep, lapackint *mm, ref lapackint m, double *work, ref lapackint ldwork, lapackint *iwork, ref lapackint info);
-void ctrsna_(ref char job, ref char howmny, lapackint *select, ref lapackint n, _cfloat *t, ref lapackint ldt, _cfloat *vl, ref lapackint ldvl, _cfloat *vr, ref lapackint ldvr, float *s, float *sep, lapackint *mm, ref lapackint m, _cfloat *work, ref lapackint ldwork, float *rwork, ref lapackint info);
-void ztrsna_(ref char job, ref char howmny, lapackint *select, ref lapackint n, _cdouble *t, ref lapackint ldt, _cdouble *vl, ref lapackint ldvl, _cdouble *vr, ref lapackint ldvr, double *s, double *sep, lapackint *mm, ref lapackint m, _cdouble *work, ref lapackint ldwork, double *rwork, ref lapackint info);
+void strsna_(ref char job, ref char howmny, lapackint *select, ref lapackint n, float *t, ref lapackint ldt, float *vl, ref lapackint ldvl, float *vr, ref lapackint ldvr, float *s, float *sep, ref lapackint mm, ref lapackint m, float *work, ref lapackint ldwork, lapackint *iwork, ref lapackint info);
+void dtrsna_(ref char job, ref char howmny, lapackint *select, ref lapackint n, double *t, ref lapackint ldt, double *vl, ref lapackint ldvl, double *vr, ref lapackint ldvr, double *s, double *sep, ref lapackint mm, ref lapackint m, double *work, ref lapackint ldwork, lapackint *iwork, ref lapackint info);
+void ctrsna_(ref char job, ref char howmny, lapackint *select, ref lapackint n, _cfloat *t, ref lapackint ldt, _cfloat *vl, ref lapackint ldvl, _cfloat *vr, ref lapackint ldvr, float *s, float *sep, ref lapackint mm, ref lapackint m, _cfloat *work, ref lapackint ldwork, float *rwork, ref lapackint info);
+void ztrsna_(ref char job, ref char howmny, lapackint *select, ref lapackint n, _cdouble *t, ref lapackint ldt, _cdouble *vl, ref lapackint ldvl, _cdouble *vr, ref lapackint ldvr, double *s, double *sep, ref lapackint mm, ref lapackint m, _cdouble *work, ref lapackint ldwork, double *rwork, ref lapackint info);
 
 /// Solves the Sylvester matrix equation A X +/- X B=C where A
 /// and B are upper quasi-triangular, and may be transposed.
