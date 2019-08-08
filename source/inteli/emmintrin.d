@@ -359,7 +359,7 @@ unittest
     __m128i B = _mm_set1_epi8(64);
     byte16 avg = cast(byte16)(_mm_avg_epu8(A, B));
     foreach(i; 0..16)
-        assert(avg.index[i] == 48);
+        assert(avg.array[i] == 48);
 }
 
 // Note: unlike Intel API, shift amount is a compile-time parameter.
