@@ -7,8 +7,16 @@
     "sourcePaths": ["source"],
 
     "buildTypes": {
+        "unittest-inst": {
+            "buildOptions": ["debugMode", "debugInfo"],
+            "dflags-ldc": ["-mattr=+sse3"]
+        },
         "unittest-release": {
             "buildOptions": ["unittests", "optimize", "inline"]
+        },
+        "unittest-release-inst": {
+            "buildOptions": ["unittests", "optimize", "inline"],
+            "dflags-ldc": ["-mattr=+sse3"]
         }
     }
 }
