@@ -4,7 +4,7 @@ authors "Ilya Yaroshenko"
 copyright "Copyright © 2017-2018, Symmetry Investments & Kaleidic Associates"
 license "BSL-1.0"
 
-dependency "lapack" version="~>0.0.6"
+dependency "lapack" version="~>0.1.0"
 dependency "mir-blas" version=">=1.1.3 <2.0.0"
 
 configuration "library" {
