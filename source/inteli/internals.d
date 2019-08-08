@@ -311,19 +311,19 @@ version(unittest)
 
     void _mm_print_pi32(__m64 v) @trusted
     {
-        int2 C = cast(int2)v;
+        int[2] C = (cast(int2)v).array;
         printf("%d %d\n", C[0], C[1]);
     }
 
     void _mm_print_pi16(__m64 v) @trusted
     {
-        short4 C = cast(short4)v;
+        short[4] C = (cast(short4)v).array;
         printf("%d %d %d %d\n", C[0], C[1], C[2], C[3]);
     }
 
     void _mm_print_pi8(__m64 v) @trusted
     {
-        byte8 C = cast(byte8)v;
+        byte[8] C = (cast(byte8)v).array;
         printf("%d %d %d %d %d %d %d %d\n",
         C[0], C[1], C[2], C[3], C[4], C[5], C[6], C[7]);
     }
@@ -331,32 +331,32 @@ version(unittest)
     void _mm_print_epi32(__m128i v) @trusted
     {
         printf("%d %d %d %d\n",
-              v[0], v[1], v[2], v[3]);
+              v.array[0], v.array[1], v.array[2], v.array[3]);
     }
 
     void _mm_print_epi16(__m128i v) @trusted
     {
-        short8 C = cast(short8)v;
+        short[8] C = (cast(short8)v).array;
         printf("%d %d %d %d %d %d %d %d\n",
         C[0], C[1], C[2], C[3], C[4], C[5], C[6], C[7]);
     }
 
     void _mm_print_epi8(__m128i v) @trusted
     {
-        byte16 C = cast(byte16)v;
+        byte[16] C = (cast(byte16)v).array;
         printf("%d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d\n",
         C[0], C[1], C[2], C[3], C[4], C[5], C[6], C[7], C[8], C[9], C[10], C[11], C[12], C[13], C[14], C[15]);
     }
 
     void _mm_print_ps(__m128 v) @trusted
     {
-        float4 C = cast(float4)v;
+        float[4] C = (cast(float4)v).array;
         printf("%f %f %f %f\n", C[0], C[1], C[2], C[3]);
     }
 
     void _mm_print_pd(__m128d v) @trusted
     {
-        double2 C = cast(double2)v;
+        double[2] C = (cast(double2)v).array;
         printf("%f %f\n", C[0], C[1]);
     }    
 }
@@ -527,7 +527,7 @@ else
         int4 result;
         foreach(i; 0..4)
         {
-            result[i] = compareFloat!float(comparison, a[i], b[i]) ? -1 : 0;
+            result.array[i] = compareFloat!float(comparison, a.array[i], b.array[i]) ? -1 : 0;
         }
         return result;
     }
@@ -538,7 +538,7 @@ else
         long2 result;
         foreach(i; 0..2)
         {
-            result[i] = compareFloat!double(comparison, a[i], b[i]) ? -1 : 0;
+            result.array[i] = compareFloat!double(comparison, a.array[i], b.array[i]) ? -1 : 0;
         }
         return result;
     }
@@ -547,7 +547,7 @@ else
     package float4 cmpss(FPComparison comparison)(float4 a, float4 b) pure @safe
     {
         int4 result = cast(int4)a;
-        result[0] = compareFloat!float(comparison, a[0], b[0]) ? -1 : 0;
+        result.array[0] = compareFloat!float(comparison, a.array[0], b.array[0]) ? -1 : 0;
         return cast(float4)result;
     }
 
@@ -555,19 +555,19 @@ else
     package double2 cmpsd(FPComparison comparison)(double2 a, double2 b) pure @safe
     {
         long2 result = cast(long2)a;
-        result[0] = compareFloat!double(comparison, a[0], b[0]) ? -1 : 0;
+        result.array[0] = compareFloat!double(comparison, a.array[0], b.array[0]) ? -1 : 0;
         return cast(double2)result;
     }
 
     package int comss(FPComparison comparison)(float4 a, float4 b) pure @safe
     {
-        return compareFloat!float(comparison, a[0], b[0]) ? 1 : 0;
+        return compareFloat!float(comparison, a.array[0], b.array[0]) ? 1 : 0;
     }
 
     // Note: ucomss and ucomsd are left unimplemented
     package int comsd(FPComparison comparison)(double2 a, double2 b) pure @safe
     {
-        return compareFloat!double(comparison, a[0], b[0]) ? 1 : 0;
+        return compareFloat!double(comparison, a.array[0], b.array[0]) ? 1 : 0;
     }
 }
 unittest // cmpps
@@ -635,11 +635,11 @@ unittest // cmpss and comss
     {
         float4 result = cmpss!comparison(A, B);
         int4 iresult = cast(int4)result;
-        int expected = compareFloat!float(comparison, A[0], B[0]) ? -1 : 0;
-        assert(iresult[0] == expected);
-        assert(result[1] == A[1]);
-        assert(result[2] == A[2]);
-        assert(result[3] == A[3]);
+        int expected = compareFloat!float(comparison, A.array[0], B.array[0]) ? -1 : 0;
+        assert(iresult.array[0] == expected);
+        assert(result.array[1] == A.array[1]);
+        assert(result.array[2] == A.array[2]);
+        assert(result.array[3] == A.array[3]);
 
         // check comss
         int comResult = comss!comparison(A, B);
@@ -686,9 +686,9 @@ unittest // cmpsd and comsd
     {
         double2 result = cmpsd!comparison(A, B);
         long2 iresult = cast(long2)result;
-        long expected = compareFloat!double(comparison, A[0], B[0]) ? -1 : 0;
-        assert(iresult[0] == expected);
-        assert(result[1] == A[1]);
+        long expected = compareFloat!double(comparison, A.array[0], B.array[0]) ? -1 : 0;
+        assert(iresult.array[0] == expected);
+        assert(result.array[1] == A.array[1]);
 
         // check comsd
         int comResult = comsd!comparison(A, B);
@@ -739,13 +739,13 @@ __m64 to_m64(__m128i a) pure @safe
 {
     long2 la = cast(long2)a;
     long1 r;
-    r[0] = la[0];
+    r.array[0] = la.array[0];
     return r;
 }
 
 __m128i to_m128i(__m64 a) pure @safe
 {
     long2 r = [0, 0];
-    r[0] = a[0];
+    r.array[0] = a.array[0];
     return cast(__m128i)r;
 }
