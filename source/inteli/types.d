@@ -8,6 +8,7 @@ module inteli.types;
 version(GNU)
 {
     public import core.simd;
+    import gcc.builtins;
 
     // Declare vector types that correspond to MMX types
     // Because they are expressible in IR anyway.
@@ -16,6 +17,102 @@ version(GNU)
     alias Vector!(int  [2]) int2;
     alias Vector!(short[4]) short4;
     alias Vector!(byte [8]) byte8;
+
+
+    Vec loadUnaligned(Vec)(const(float)* pvec) @trusted if (is(Vec == float4))
+    {
+        return __builtin_ia32_loadups(pvec);
+    }
+
+    Vec loadUnaligned(Vec)(const(double)* pvec) @trusted if (is(Vec == double2))
+    {
+        return __builtin_ia32_loadupd(pvec);
+    }
+
+    Vec loadUnaligned(Vec)(const(byte)* pvec)  @trusted if (is(Vec == byte16))
+    {
+        return cast(Vec) __builtin_ia32_loaddqu(cast(const(char*)) pvec);
+    }
+
+    Vec loadUnaligned(Vec)(const(short)* pvec)  @trusted if (is(Vec == short8))
+    {
+        return cast(Vec) __builtin_ia32_loaddqu(cast(const(char*)) pvec);
+    }
+
+    Vec loadUnaligned(Vec)(const(int)* pvec)  @trusted if (is(Vec == int4))
+    {
+        return cast(Vec) __builtin_ia32_loaddqu(cast(const(char*)) pvec);
+    }
+
+    Vec loadUnaligned(Vec)(const(long)* pvec)  @trusted if (is(Vec == long2))
+    {
+        return cast(Vec) __builtin_ia32_loaddqu(cast(const(char*)) pvec);
+    }
+
+    void storeUnaligned(Vec)(Vec v, float* pvec) @trusted if (is(Vec == float4))
+    {
+        __builtin_ia32_storeups(pvec, v);
+    }
+
+    void storeUnaligned(Vec)(Vec v, double* pvec) @trusted if (is(Vec == double2))
+    {
+        __builtin_ia32_storeupd(pvec, v);
+    }
+
+    void storeUnaligned(Vec)(Vec v, byte* pvec) @trusted if (is(Vec == byte16))
+    {
+        __builtin_ia32_storedqu(cast(char*)pvec, v);
+    }
+
+    void storeUnaligned(Vec)(Vec v, short* pvec) @trusted if (is(Vec == short8))
+    {
+        __builtin_ia32_storedqu(cast(char*)pvec, v);
+    }
+
+    void storeUnaligned(Vec)(Vec v, int* pvec) @trusted if (is(Vec == int4))
+    {
+        __builtin_ia32_storedqu(cast(char*)pvec, v);
+    }
+
+    void storeUnaligned(Vec)(Vec v, long* pvec) @trusted if (is(Vec == long2))
+    {
+        __builtin_ia32_storedqu(cast(char*)pvec, v);
+    }
+
+    private template VecCount(Vec)
+    {
+        static if (is(Vec == byte16))
+            enum VecCount = 16;
+        else static if (is(Vec == short8) || is(Vec == byte8))
+            enum VecCount = 8;
+        else static if (is(Vec == int4) || is(Vec == float4))
+            enum VecCount = 4;
+        else static if (is(Vec == int2) || is(Vec == float2) || is(Vec == double2) || is(Vec == long2))
+            enum VecCount = 2;
+        else static if (is(Vec == long1))
+            enum VecCount = 1;
+        else
+            static assert(false);
+    }
+
+    // TODO: for performance, replace that anywhere possible
+    Vec shufflevector(Vec, mask...)(Vec a, Vec b) @safe
+    {
+        enum Count = VecCount!Vec;
+        static assert(mask.length == Count);
+
+        Vec r = void;
+        foreach(int i, m; mask)
+        {
+            static assert (m < Count * 2);
+            int ind = cast(int)m;
+            if (ind < Count)
+                r.array[i] = a.array[ind];
+            else
+                r.array[i] = b.array[ind - Count];
+        }
+        return r;
+    }
 }
 else version(LDC)
 {
@@ -261,8 +358,8 @@ else
         return *cast(Vec*)(pvec);
     }
 
-     // Note: can't be @safe with this signature
-    void storeUnaligned(Vec)(Vec v, Vec.Base* pvec, ) @trusted
+    // Note: can't be @safe with this signature
+    void storeUnaligned(Vec)(Vec v, Vec.Base* pvec) @trusted
     {
         *cast(Vec*)(pvec) = v;
     }
