@@ -40,7 +40,7 @@ nothrow @nogc:
 float _mm_log_ss(float v) pure @safe
 {
     __m128 r = _mm_log_ps(_mm_set1_ps(v));
-    return r[0];
+    return r.array[0];
 }
 
 /// Natural logarithm computed for 4 simultaneous float.
@@ -76,7 +76,7 @@ __m128 _mm_log_ps(__m128 x) pure @safe
     x = _mm_and_ps(x, cast(__m128)_psi_inv_mant_mask);
     x = _mm_or_ps(x, _ps_0p5);
 
-    emm0 -= _pi32_0x7f;
+    emm0 = _mm_sub_epi32(emm0, _pi32_0x7f);
     __m128 e = _mm_cvtepi32_ps(emm0);
     e += one;
     __m128 mask = _mm_cmplt_ps(x, _ps_cephes_SQRTHF);
@@ -86,31 +86,31 @@ __m128 _mm_log_ps(__m128 x) pure @safe
     x += tmp;
     __m128 z = x * x;
     __m128 y = _ps_cephes_log_p0;
-    y *= x;
-    y += _ps_cephes_log_p1;
-    y *= x;
-    y += _ps_cephes_log_p2;
-    y *= x;
-    y += _ps_cephes_log_p3;
-    y *= x;
-    y += _ps_cephes_log_p4;
-    y *= x;
-    y += _ps_cephes_log_p5;
-    y *= x;
-    y += _ps_cephes_log_p6;
-    y *= x;
-    y += _ps_cephes_log_p7;
-    y *= x;
-    y += _ps_cephes_log_p8;
-    y *= x;
-    y *= z;
-    tmp = e * _ps_cephes_log_q1;
-    y += tmp;
-    tmp = z * _ps_0p5;
-    y = y - tmp;
-    tmp = e * _ps_cephes_log_q2;
-    x += y;
-    x += tmp;
+    y = _mm_mul_ps(y, x);
+    y = _mm_add_ps(y, _ps_cephes_log_p1);
+    y = _mm_mul_ps(y, x);
+    y = _mm_add_ps(y, _ps_cephes_log_p2);
+    y = _mm_mul_ps(y, x);
+    y = _mm_add_ps(y, _ps_cephes_log_p3);
+    y = _mm_mul_ps(y, x);
+    y = _mm_add_ps(y, _ps_cephes_log_p4);
+    y = _mm_mul_ps(y, x);
+    y = _mm_add_ps(y, _ps_cephes_log_p5);
+    y = _mm_mul_ps(y, x);
+    y = _mm_add_ps(y, _ps_cephes_log_p6);
+    y = _mm_mul_ps(y, x);
+    y = _mm_add_ps(y, _ps_cephes_log_p7);
+    y = _mm_mul_ps(y, x);
+    y = _mm_add_ps(y, _ps_cephes_log_p8);
+    y = _mm_mul_ps(y, x);
+    y = _mm_mul_ps(y, z);
+    tmp = _mm_mul_ps(e, _ps_cephes_log_q1);
+    y = _mm_add_ps(y, tmp);
+    tmp = _mm_mul_ps(z, _ps_0p5);
+    y = _mm_sub_ps(y, tmp);
+    tmp = _mm_mul_ps(e, _ps_cephes_log_q2);
+    x = _mm_add_ps(x, y);
+    x = _mm_add_ps(x, tmp);
     x = _mm_or_ps(x, invalid_mask); // negative arg will be NAN
     return x;
 }
@@ -122,7 +122,7 @@ __m128 _mm_log_ps(__m128 x) pure @safe
 float _mm_exp_ss(float v) pure @safe
 {
     __m128 r = _mm_exp_ps(_mm_set1_ps(v));
-    return r[0];
+    return r.array[0];
 }
 
 /// Natural `exp` computed for 4 simultaneous float in `x`.
@@ -151,43 +151,44 @@ __m128 _mm_exp_ps(__m128 x) pure @safe
     x = _mm_max_ps(x, _ps_exp_lo);
 
     /* express exp(x) as exp(g + n*log(2)) */
-    fx = x * _ps_cephes_LOG2EF;
-    fx += _ps_0p5;
+    fx = _mm_mul_ps(x, _ps_cephes_LOG2EF);
+    fx = _mm_add_ps(fx, _ps_0p5);
 
     /* how to perform a floorf with SSE: just below */
     emm0 = _mm_cvttps_epi32(fx);
     tmp  = _mm_cvtepi32_ps(emm0);
 
     /* if greater, substract 1 */
-    __m128 mask = _mm_cmpgt_ps(tmp, fx);    
+    __m128 mask = _mm_cmpgt_ps(tmp, fx);
     mask = _mm_and_ps(mask, one);
     fx = tmp - mask;
 
-    tmp = fx * _ps_cephes_exp_C1;
-    __m128 z = fx * _ps_cephes_exp_C2;
+    tmp = _mm_mul_ps(fx, _ps_cephes_exp_C1);
+    __m128 z = _mm_mul_ps(fx, _ps_cephes_exp_C2);
     x -= tmp;
     x -= z;
 
     z = x * x;
 
     __m128 y = _ps_cephes_exp_p0;
-    y *= x;
-    y += _ps_cephes_exp_p1;
-    y *= x;
-    y += _ps_cephes_exp_p2;
-    y *= x;
-    y += _ps_cephes_exp_p3;
-    y *= x;
-    y += _ps_cephes_exp_p4;
-    y *= x;
-    y += _ps_cephes_exp_p5;
-    y *= z;
-    y += x;
+    y = _mm_mul_ps(y, x);
+    y = _mm_add_ps(y, _ps_cephes_exp_p1);
+    y = _mm_mul_ps(y, x);
+    y = _mm_add_ps(y, _ps_cephes_exp_p2);
+    y = _mm_mul_ps(y, x);
+    y = _mm_add_ps(y, _ps_cephes_exp_p3);
+    y = _mm_mul_ps(y, x);
+    y = _mm_add_ps(y, _ps_cephes_exp_p4);
+    y = _mm_mul_ps(y, x);
+    y = _mm_add_ps(y, _ps_cephes_exp_p5);
+    y = _mm_mul_ps(y, z);
+    y = _mm_add_ps(y, x);
     y += one;
 
     /* build 2^n */
     emm0 = _mm_cvttps_epi32(fx);
-    emm0 += _pi32_0x7f;
+
+    emm0 = _mm_add_epi32(emm0, _pi32_0x7f);
     emm0 = _mm_slli_epi32(emm0, 23);
     __m128 pow2n = cast(__m128)emm0;
     y *= pow2n;
@@ -201,7 +202,7 @@ __m128 _mm_exp_ps(__m128 x) pure @safe
 float _mm_pow_ss(float base, float exponent) pure @safe
 {
     __m128 r = _mm_pow_ps(_mm_set1_ps(base), _mm_set1_ps(exponent));
-    return r[0];
+    return r.array[0];
 }
 
 /// Computes `base^exponent`, for 4 floats at once.
@@ -261,7 +262,7 @@ unittest
             double phobosValue = log(x);
             __m128 v = _mm_log_ps(_mm_set1_ps(x));
             foreach(i; 0..4)
-                assert(approxEquals(phobosValue, v[i], 1.1e-6));
+                assert(approxEquals(phobosValue, v.array[i], 1.1e-6));
         }
     }
 
@@ -278,7 +279,7 @@ unittest
             double phobosValue = exp(x);
             __m128 v = _mm_exp_ps(_mm_set1_ps(x));
             foreach(i; 0..4)
-               assert(approxEquals(phobosValue, v[i], 3.4e-6));
+               assert(approxEquals(phobosValue, v.array[i], 3.4e-6));
         }
     }
 
@@ -297,7 +298,7 @@ unittest
       //  assert(isInfinity(R[0]) && R[0] < 0); // log(+0.0f) = -infinity
       // DOESN'T PASS
       //  assert(isInfinity(R[1]) && R[1] < 0); // log(-0.0f) = -infinity
-        assert(isNaN(R[2])); // log(negative number) = NaN
+        assert(isNaN(R.array[2])); // log(negative number) = NaN
 
         // DOESN'T PASS
         //assert(isNaN(R[3])); // log(NaN) = NaN
@@ -323,7 +324,7 @@ unittest
 
                     foreach(i; 0..4)
                     {
-                        if (!approxEquals(phobosValue, v[i], 1e-5))
+                        if (!approxEquals(phobosValue, v.array[i], 1e-5))
                         {
                             printf("%g ^^ %g\n", powBase, powExponent);
                             assert(false);
