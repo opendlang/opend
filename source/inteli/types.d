@@ -18,25 +18,35 @@ version(GNU)
     alias Vector!(short[4]) short4;
     alias Vector!(byte [8]) byte8;
 
-    Vec loadUnaligned(Vec)(const(float)* pvec) @trusted if (is(Vec == float4))
+    float4 loadUnaligned(Vec)(const(float)* pvec) @trusted if (is(Vec == float4))
     {
         return __builtin_ia32_loadups(pvec);
     }
 
-    Vec loadUnaligned(Vec)(const(double)* pvec) @trusted if (is(Vec == double2))
+    double2 loadUnaligned(Vec)(const(double)* pvec) @trusted if (is(Vec == double2))
     {
         return __builtin_ia32_loadupd(pvec);
     }
 
-    Vec loadUnaligned(Vec, T)(const T* pvec)  @trusted
-        if ((is(Vec == byte16) && is(T == byte)) ||
-            (is(Vec == short8) && is(T == short)) ||
-            (is(Vec == int4) && is(T == int)) ||
-            (is(Vec == long2) && is(T == long)))
+    byte16 loadUnaligned(Vec)(const(byte)* pvec) @trusted if (is(Vec == byte16))
     {
-         return cast(Vec) __builtin_ia32_loaddqu(cast(const(char*)) pvec);
+        return cast(byte16) __builtin_ia32_loaddqu(cast(const(char)*) pvec);
     }
 
+    short8 loadUnaligned(Vec)(const(short)* pvec) @trusted if (is(Vec == short8))
+    {
+        return cast(short8) __builtin_ia32_loaddqu(cast(const(char)*) pvec);
+    }
+
+    int4 loadUnaligned(Vec)(const(int)* pvec) @trusted if (is(Vec == int4))
+    {
+        return cast(int4) __builtin_ia32_loaddqu(cast(const(char)*) pvec);
+    }
+
+    long2 loadUnaligned(Vec)(const(long)* pvec) @trusted if (is(Vec == long2))
+    {
+        return cast(long2) __builtin_ia32_loaddqu(cast(const(char)*) pvec);
+    }
 
     void storeUnaligned(Vec)(Vec v, float* pvec) @trusted if (is(Vec == float4))
     {
@@ -48,30 +58,30 @@ version(GNU)
         __builtin_ia32_storeupd(pvec, v);
     }
 
-    Vec storeUnaligned(Vec, T)(const T* pvec)  @trusted
-        if ((is(Vec == byte16) && is(T == byte)) ||
-            (is(Vec == short8) && is(T == short)) ||
-            (is(Vec == int4) && is(T == int)) ||
-            (is(Vec == long2) && is(T == long)))
+    void storeUnaligned(Vec)(Vec v, byte* pvec) @trusted if (is(Vec == byte16))
     {
         __builtin_ia32_storedqu(cast(char*)pvec, v);
     }
 
-
-    private template VecCount(Vec)
-        if(is(Vec == byte16) ||
-           is(Vec == short8) ||
-           is(Vec == int4) ||
-           is(Vec == int2) || is(Vec == float2) || is(Vec == double2) || is(Vec == long2) ||
-           is(Vec == long1))
+    void storeUnaligned(Vec)(Vec v, short* pvec) @trusted if (is(Vec == short8))
     {
-        enum VecCount = Vec.array.length;
+        __builtin_ia32_storedqu(cast(char*)pvec, v);
     }
 
-    // TODO: for performance, replace that anywhere possible
+    void storeUnaligned(Vec)(Vec v, int* pvec) @trusted if (is(Vec == int4))
+    {
+        __builtin_ia32_storedqu(cast(char*)pvec, v);
+    }
+
+    void storeUnaligned(Vec)(Vec v, long* pvec) @trusted if (is(Vec == long2))
+    {
+        __builtin_ia32_storedqu(cast(char*)pvec, v);
+    }
+
+    // TODO: for performance, replace that anywhere possible by a GDC intrinsic
     Vec shufflevector(Vec, mask...)(Vec a, Vec b) @safe
     {
-        enum Count = VecCount!Vec;
+        enum Count = Vec.array.length;
         static assert(mask.length == Count);
 
         Vec r = void;
