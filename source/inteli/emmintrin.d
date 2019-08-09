@@ -365,14 +365,21 @@ unittest
 // Note: unlike Intel API, shift amount is a compile-time parameter.
 __m128i _mm_bslli_si128(int bits)(__m128i a) pure @safe
 {
-    // Generates pslldq starting with LDC 1.1 -O2
-    __m128i zero = _mm_setzero_si128();
-    return cast(__m128i)
-        shufflevector!(byte16, 16 - bits, 17 - bits, 18 - bits, 19 - bits,
-                               20 - bits, 21 - bits, 22 - bits, 23 - bits,
-                               24 - bits, 25 - bits, 26 - bits, 27 - bits,
-                               28 - bits, 29 - bits, 30 - bits, 31 - bits)
-        (cast(byte16)zero, cast(byte16)a);
+    static if (GDC_X86)
+    {
+        return __builtin_ia32_pslldqi128(a, bits);
+    }
+    else
+    {
+        // Generates pslldq starting with LDC 1.1 -O2
+        __m128i zero = _mm_setzero_si128();
+        return cast(__m128i)
+            shufflevector!(byte16, 16 - bits, 17 - bits, 18 - bits, 19 - bits,
+                                   20 - bits, 21 - bits, 22 - bits, 23 - bits,
+                                   24 - bits, 25 - bits, 26 - bits, 27 - bits,
+                                   28 - bits, 29 - bits, 30 - bits, 31 - bits)
+            (cast(byte16)zero, cast(byte16)a);
+    }
 }
 unittest
 {
@@ -385,14 +392,21 @@ unittest
 // Note: unlike Intel API, shift amount is a compile-time parameter.
 __m128i _mm_bsrli_si128(int bits)(__m128i a) pure @safe
 {
-    // Generates psrldq starting with LDC 1.1 -O2
-    __m128i zero = _mm_setzero_si128();
-    return  cast(__m128i)
-        shufflevector!(byte16, 0 + bits, 1 + bits, 2 + bits, 3 + bits,
-                               4 + bits, 5 + bits, 6 + bits, 7 + bits,
-                               8 + bits, 9 + bits, 10 + bits, 11 + bits,
-                               12 + bits, 13 + bits, 14 + bits, 15 + bits)
-        (cast(byte16)a, cast(byte16)zero);
+    static if (GDC_X86)
+    {
+        return __builtin_ia32_psrldqi128(a, bits);
+    }
+    else
+    {
+        // Generates psrldq starting with LDC 1.1 -O2
+        __m128i zero = _mm_setzero_si128();
+        return  cast(__m128i)
+            shufflevector!(byte16, 0 + bits, 1 + bits, 2 + bits, 3 + bits,
+                                   4 + bits, 5 + bits, 6 + bits, 7 + bits,
+                                   8 + bits, 9 + bits, 10 + bits, 11 + bits,
+                                   12 + bits, 13 + bits, 14 + bits, 15 + bits)
+            (cast(byte16)a, cast(byte16)zero);
+    }
 }
 unittest
 {
@@ -2575,10 +2589,17 @@ __m128i _mm_setzero_si128() pure @trusted
 
 __m128i _mm_shuffle_epi32(int imm8)(__m128i a) pure @safe
 {
-    return shufflevector!(int4, (imm8 >> 0) & 3,
-                                (imm8 >> 2) & 3,
-                                (imm8 >> 4) & 3,
-                                (imm8 >> 6) & 3)(a, a);
+    static if (GDC_X86)
+    {
+        return __builtin_ia32_pshufd(a, imm8);
+    }
+    else
+    {
+        return shufflevector!(int4, (imm8 >> 0) & 3,
+                                    (imm8 >> 2) & 3,
+                                    (imm8 >> 4) & 3,
+                                    (imm8 >> 6) & 3)(a, a);
+    }
 }
 unittest
 {
@@ -2591,8 +2612,15 @@ unittest
 
 __m128d _mm_shuffle_pd (int imm8)(__m128d a, __m128d b) pure @safe
 {
-    return shufflevector!(double2, 0 + ( imm8 & 1 ),
-                                   2 + ( (imm8 >> 1) & 1 ))(a, b);
+    static if (GDC_X86)
+    {
+        __builtin_ia32_shufpd(a, b, imm8);
+    }
+    else
+    {
+        return shufflevector!(double2, 0 + ( imm8 & 1 ),
+                                       2 + ( (imm8 >> 1) & 1 ))(a, b);
+    }
 }
 unittest
 {
@@ -2606,11 +2634,18 @@ unittest
 
 __m128i _mm_shufflehi_epi16(int imm8)(__m128i a) pure @safe
 {
-    return cast(__m128i) shufflevector!(short8, 0, 1, 2, 3,
-                                      4 + ( (imm8 >> 0) & 3 ),
-                                      4 + ( (imm8 >> 2) & 3 ),
-                                      4 + ( (imm8 >> 4) & 3 ),
-                                      4 + ( (imm8 >> 6) & 3 ))(cast(short8)a, cast(short8)a);
+    static if (GDC_X86)
+    {
+        return __builtin_ia32_pshufhw(a, imm8);
+    }
+    else
+    {
+        return cast(__m128i) shufflevector!(short8, 0, 1, 2, 3,
+                                          4 + ( (imm8 >> 0) & 3 ),
+                                          4 + ( (imm8 >> 2) & 3 ),
+                                          4 + ( (imm8 >> 4) & 3 ),
+                                          4 + ( (imm8 >> 6) & 3 ))(cast(short8)a, cast(short8)a);
+    }
 }
 unittest
 {
@@ -2623,10 +2658,17 @@ unittest
 
 __m128i _mm_shufflelo_epi16(int imm8)(__m128i a) pure @safe
 {
-    return cast(__m128i) shufflevector!(short8, ( (imm8 >> 0) & 3 ),
-                                                ( (imm8 >> 2) & 3 ),
-                                                ( (imm8 >> 4) & 3 ),
-                                                ( (imm8 >> 6) & 3 ), 4, 5, 6, 7)(cast(short8)a, cast(short8)a);
+    static if (GDC_X86)
+    {
+        return __builtin_ia32_pshuflw(a, imm8);
+    }
+    else
+    {
+        return cast(__m128i) shufflevector!(short8, ( (imm8 >> 0) & 3 ),
+                                                    ( (imm8 >> 2) & 3 ),
+                                                    ( (imm8 >> 4) & 3 ),
+                                                    ( (imm8 >> 6) & 3 ), 4, 5, 6, 7)(cast(short8)a, cast(short8)a);
+    }
 }
 unittest
 {
@@ -2825,12 +2867,24 @@ unittest
 __m128i _mm_slli_si128(ubyte imm8)(__m128i op) pure @safe
 {
     static if (imm8 & 0xF0)
+    {
         return _mm_setzero_si128();
+    }
     else
-        return cast(__m128i) shufflevector!(byte16,
-        16 - imm8, 17 - imm8, 18 - imm8, 19 - imm8, 20 - imm8, 21 - imm8, 22 - imm8, 23 - imm8,
-        24 - imm8, 25 - imm8, 26 - imm8, 27 - imm8, 28 - imm8, 29 - imm8, 30 - imm8, 31 - imm8)
-        (cast(byte16)_mm_setzero_si128(), cast(byte16)op);
+    {
+        static if (GDC_X86)
+        {
+            return __builtin_ia32_pslldqi128(op, imm8); 
+        }
+        else
+        {
+            return cast(__m128i) shufflevector!(byte16,
+            16 - imm8, 17 - imm8, 18 - imm8, 19 - imm8, 20 - imm8, 21 - imm8,
+            22 - imm8, 23 - imm8, 24 - imm8, 25 - imm8, 26 - imm8, 27 - imm8,
+            28 - imm8, 29 - imm8, 30 - imm8, 31 - imm8)
+            (cast(byte16)_mm_setzero_si128(), cast(byte16)op);
+        }
+    }
 }
 unittest
 {
@@ -3213,6 +3267,14 @@ unittest
     assert(B.array == expectedB);
 }
 
+static if (GDC_X86)
+{
+    /// Shift `v` right by `bytes` bytes while shifting in zeros.
+    alias _mm_srli_si128 = __builtin_ia32_psrldqi128;
+}
+else
+{
+
 /// Shift `v` right by `bytes` bytes while shifting in zeros.
 __m128i _mm_srli_si128(ubyte bytes)(__m128i v) pure @safe
 {
@@ -3224,6 +3286,9 @@ __m128i _mm_srli_si128(ubyte bytes)(__m128i v) pure @safe
                                             bytes+8, bytes+9, bytes+10, bytes+11, bytes+12, bytes+13, bytes+14, bytes+15)
                                            (cast(byte16) v, cast(byte16)_mm_setzero_si128());
 }
+
+}
+
 unittest
 {
     __m128i R = _mm_srli_si128!4(_mm_set_epi32(4, 3, 2, 1));
@@ -3614,60 +3679,130 @@ __m128i _mm_undefined_si128() pure @safe
 
 __m128i _mm_unpackhi_epi16 (__m128i a, __m128i b) pure @safe
 {
-    return cast(__m128i) shufflevector!(short8, 4, 12, 5, 13, 6, 14, 7, 15)
-                                       (cast(short8)a, cast(short8)b);
+    static if (GDC_X86)
+    {
+        return __builtin_ia32_punpckhwd(a, b);
+    }
+    else
+    {
+        return cast(__m128i) shufflevector!(short8, 4, 12, 5, 13, 6, 14, 7, 15)
+                                           (cast(short8)a, cast(short8)b);
+    }
 }
 
 __m128i _mm_unpackhi_epi32 (__m128i a, __m128i b) pure @safe
 {
-    return shufflevector!(int4, 2, 6, 3, 7)(cast(int4)a, cast(int4)b);
+    static if (GDC_X86)
+    {
+        return __builtin_ia32_punpckhdq(a, b);
+    }
+    else
+    {
+        return shufflevector!(int4, 2, 6, 3, 7)(cast(int4)a, cast(int4)b);
+    }
 }
 
 __m128i _mm_unpackhi_epi64 (__m128i a, __m128i b) pure @safe
 {
-    return cast(__m128i) shufflevector!(long2, 1, 3)(cast(long2)a, cast(long2)b);
+    static if (GDC_X86)
+    {
+        return __builtin_ia32_punpckhqdq128(a, b);
+    }
+    else
+    {
+        return cast(__m128i) shufflevector!(long2, 1, 3)(cast(long2)a, cast(long2)b);
+    }
 }
 
 __m128i _mm_unpackhi_epi8 (__m128i a, __m128i b) pure @safe
 {
-    return cast(__m128i)shufflevector!(byte16, 8,  24,  9, 25, 10, 26, 11, 27,
-                                               12, 28, 13, 29, 14, 30, 15, 31)
-                                               (cast(byte16)a, cast(byte16)b);
+    static if (GDC_X86)
+    {
+        return __builtin_ia32_punpckhbw(a, b);
+    }
+    else
+    {
+        return cast(__m128i)shufflevector!(byte16, 8,  24,  9, 25, 10, 26, 11, 27,
+                                                   12, 28, 13, 29, 14, 30, 15, 31)
+                                                   (cast(byte16)a, cast(byte16)b);
+    }
 }
 
 __m128d _mm_unpackhi_pd (__m128d a, __m128d b) pure @safe
 {
-    return shufflevector!(__m128d, 1, 3)(a, b);
+    static if (GDC_X86)
+    {
+        return __builtin_ia32_unpckhpd(a, b);
+    }
+    else
+    {
+        return shufflevector!(__m128d, 1, 3)(a, b);
+    }
 }
 
 __m128i _mm_unpacklo_epi16 (__m128i a, __m128i b) pure @safe
 {
-    return cast(__m128i) shufflevector!(short8, 0, 8, 1, 9, 2, 10, 3, 11)
-                                       (cast(short8)a, cast(short8)b);
+    static if (GDC_X86)
+    {
+        return __builtin_ia32_punpcklwd(a, b);
+    }
+    else
+    {
+        return cast(__m128i) shufflevector!(short8, 0, 8, 1, 9, 2, 10, 3, 11)
+                                           (cast(short8)a, cast(short8)b);
+    }
 }
 
 __m128i _mm_unpacklo_epi32 (__m128i a, __m128i b) pure @safe
 {
-    return shufflevector!(int4, 0, 4, 1, 5)
-                         (cast(int4)a, cast(int4)b);
+    static if (GDC_X86)
+    {
+        return __builtin_ia32_punpckldq(a, b);
+    }
+    else
+    {
+        return shufflevector!(int4, 0, 4, 1, 5)
+                             (cast(int4)a, cast(int4)b);
+    }
 }
 
 __m128i _mm_unpacklo_epi64 (__m128i a, __m128i b) pure @safe
 {
-    return cast(__m128i) shufflevector!(long2, 0, 2)
-                                       (cast(long2)a, cast(long2)b);
+    static if (GDC_X86)
+    {
+        return __builtin_ia32_punpcklqdq128(a, b);
+    }
+    else
+    {
+        return cast(__m128i) shufflevector!(long2, 0, 2)
+                                           (cast(long2)a, cast(long2)b);
+    }
 }
 
 __m128i _mm_unpacklo_epi8 (__m128i a, __m128i b) pure @safe
 {
-    return cast(__m128i) shufflevector!(byte16, 0, 16, 1, 17, 2, 18, 3, 19,
-                                                4, 20, 5, 21, 6, 22, 7, 23)
-                                       (cast(byte16)a, cast(byte16)b);
+    static if (GDC_X86)
+    {
+        return __builtin_ia32_punpcklbw(a, b);
+    }
+    else
+    {
+        return cast(__m128i) shufflevector!(byte16, 0, 16, 1, 17, 2, 18, 3, 19,
+                                                    4, 20, 5, 21, 6, 22, 7, 23)
+                                           (cast(byte16)a, cast(byte16)b);
+    }
 }
 
 __m128d _mm_unpacklo_pd (__m128d a, __m128d b) pure @safe
 {
-    return shufflevector!(__m128d, 0, 2)(a, b);
+    static if (GDC_X86)
+    {
+        return __builtin_ia32_unpcklpd(a, b);
+    }
+    else
+    {
+        return shufflevector!(__m128d, 0, 2)(a, b);
+    }
 }
 
 __m128d _mm_xor_pd (__m128d a, __m128d b) pure @safe
