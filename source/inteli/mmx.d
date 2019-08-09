@@ -120,7 +120,7 @@ unittest
     __m64 A = [7];
     __m64 B = [14];
     __m64 R = _mm_and_si64(A, B);
-    assert(R[0] == 6);
+    assert(R.array[0] == 6);
 }
 
 /// Compute the bitwise NOT of 64 bits (representing integer data) in `a` and then AND with `b`.
@@ -133,13 +133,20 @@ unittest
     __m64 A = [7];
     __m64 B = [14];
     __m64 R = _mm_andnot_si64(A, B);
-    assert(R[0] == 8);
+    assert(R.array[0] == 8);
 }
 
 
 __m64 _mm_cmpeq_pi16 (__m64 a, __m64 b) pure @safe
 {
-    return cast(__m64) equalMask!short4(cast(short4)a, cast(short4)b);
+    static if (GDC_X86)
+    {
+        return cast(__m64) __builtin_ia32_pcmpeqw(cast(short4)a, cast(short4)b);        
+    }
+    else
+    {
+        return cast(__m64) equalMask!short4(cast(short4)a, cast(short4)b);
+    }
 }
 unittest
 {
@@ -152,7 +159,14 @@ unittest
 
 __m64 _mm_cmpeq_pi32 (__m64 a, __m64 b) pure @safe
 {
-    return cast(__m64) equalMask!int2(cast(int2)a, cast(int2)b);
+    static if (GDC_X86)
+    {        
+        return cast(__m64) __builtin_ia32_pcmpeqd(cast(int2)a, cast(int2)b);
+    }
+    else
+    {
+        return cast(__m64) equalMask!int2(cast(int2)a, cast(int2)b);
+    }
 }
 unittest
 {
@@ -165,7 +179,14 @@ unittest
 
 __m64 _mm_cmpeq_pi8 (__m64 a, __m64 b) pure @safe
 {
-    return cast(__m64) equalMask!byte8(cast(byte8)a, cast(byte8)b);
+    static if (GDC_X86)
+    {        
+        return cast(__m64) __builtin_ia32_pcmpeqb(cast(byte8)a, cast(byte8)b);
+    }
+    else
+    {
+        return cast(__m64) equalMask!byte8(cast(byte8)a, cast(byte8)b);
+    }
 }
 unittest
 {
@@ -178,7 +199,14 @@ unittest
 
 __m64 _mm_cmpgt_pi16 (__m64 a, __m64 b) pure @safe
 {
-    return cast(__m64) greaterMask!short4(cast(short4)a, cast(short4)b);
+    static if (GDC_X86)
+    { 
+        return cast(__m64) __builtin_ia32_pcmpgtw (cast(short4)a, cast(short4)b);
+    }
+    else
+    {
+        return cast(__m64) greaterMask!short4(cast(short4)a, cast(short4)b);
+    }
 }
 unittest
 {
@@ -191,7 +219,14 @@ unittest
 
 __m64 _mm_cmpgt_pi32 (__m64 a, __m64 b) pure @safe
 {
-    return cast(__m64) greaterMask!int2(cast(int2)a, cast(int2)b);
+    static if (GDC_X86)
+    {
+        return cast(__m64) __builtin_ia32_pcmpgtw (cast(short4)a, cast(short4)b);
+    }
+    else
+    {
+        return cast(__m64) greaterMask!int2(cast(int2)a, cast(int2)b);
+    }
 }
 unittest
 {
@@ -204,7 +239,14 @@ unittest
 
 __m64 _mm_cmpgt_pi8 (__m64 a, __m64 b) pure @safe
 {
-    return cast(__m64) greaterMask!byte8(cast(byte8)a, cast(byte8)b);
+    static if (GDC_X86)
+    {
+        return cast(__m64) __builtin_ia32_pcmpgtb (cast(byte8)a, cast(byte8)b);
+    }
+    else
+    {
+        return cast(__m64) greaterMask!byte8(cast(byte8)a, cast(byte8)b);
+    }
 }
 unittest
 {
@@ -218,40 +260,40 @@ unittest
 /// Copy 64-bit integer `a` to `dst`.
 long _mm_cvtm64_si64 (__m64 a) pure @safe
 {
-    return a[0];
+    return a.array[0];
 }
 
 /// Copy 32-bit integer `a` to the lower elements of `dst`, and zero the upper element of `dst`.
 __m64 _mm_cvtsi32_si64 (int a) pure @safe
 {
     __m64 r = void;
-    r[0] = a;
+    r.array[0] = a;
     return r;
 }
 unittest
 {
     __m64 R = _mm_cvtsi32_si64(-1);
-    assert(R[0] == -1);
+    assert(R.array[0] == -1);
 }
 
 /// Copy 64-bit integer `a` to `dst`.
 __m64 _mm_cvtsi64_m64 (long a) pure @safe
 {
     __m64 r = void;
-    r[0] = a;
+    r.array[0] = a;
     return r;
 }
 unittest
 {
     __m64 R = _mm_cvtsi64_m64(-1);
-    assert(R[0] == -1);
+    assert(R.array[0] == -1);
 }
 
 /// Copy the lower 32-bit integer in `a` to `dst`.
 int _mm_cvtsi64_si32 (__m64 a) pure @safe
 {
     int2 r = cast(int2)a;
-    return r[0];
+    return r.array[0];
 }
 
 alias _m_empty = _mm_empty;
@@ -312,8 +354,8 @@ __m64 _mm_packs_pi16 (__m64 a, __m64 b) pure @safe
 {
     int4 p = cast(int4) _mm_packs_epi16(to_m128i(a), to_m128i(b));
     int2 r;
-    r[0] = p[0];
-    r[1] = p[2];
+    r.array[0] = p.array[0];
+    r.array[1] = p.array[2];
     return cast(__m64)r;
 }
 unittest
@@ -328,8 +370,8 @@ __m64 _mm_packs_pi32 (__m64 a, __m64 b) pure @safe
 {
     int4 p = cast(int4) _mm_packs_epi32(to_m128i(a), to_m128i(b));
     int2 r;
-    r[0] = p[0];
-    r[1] = p[2];
+    r.array[0] = p.array[0];
+    r.array[1] = p.array[2];
     return cast(__m64)r;
 }
 unittest
@@ -344,8 +386,8 @@ __m64 _mm_packs_pu16 (__m64 a, __m64 b) pure @safe
 {
     int4 p = cast(int4) _mm_packus_epi16(to_m128i(a), to_m128i(b));
     int2 r;
-    r[0] = p[0];
-    r[1] = p[2];
+    r.array[0] = p.array[0];
+    r.array[1] = p.array[2];
     return cast(__m64)r;
 }
 unittest
@@ -518,13 +560,13 @@ unittest
 __m64 _mm_setzero_si64 () pure @trusted
 {
     __m64 r;
-    r[0] = 0;
+    r.array[0] = 0;
     return r;
 }
 unittest
 {
     __m64 R = _mm_setzero_si64();
-    assert(R[0] == 0);
+    assert(R.array[0] == 0);
 }
 
 __m64 _mm_sll_pi16 (__m64 a, __m64 count) pure @safe
