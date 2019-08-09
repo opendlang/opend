@@ -289,7 +289,7 @@ else
 {
     static if (GDC_X86)
     {
-        alias _mm_avg_epu16 = __builtin_ia32_pavgw;
+        alias _mm_avg_epu16 = __builtin_ia32_pavgw128;
     }
     else
     {
@@ -336,7 +336,7 @@ else
 
     static if (GDC_X86)
     {
-        alias _mm_avg_epu8 = __builtin_ia32_pavgb;
+        alias _mm_avg_epu8 = __builtin_ia32_pavgb128;
     }
     else
     {
@@ -363,21 +363,21 @@ unittest
 }
 
 // Note: unlike Intel API, shift amount is a compile-time parameter.
-__m128i _mm_bslli_si128(int bits)(__m128i a) pure @safe
+__m128i _mm_bslli_si128(int bytes)(__m128i a) pure @safe
 {
     static if (GDC_X86)
     {
-        return __builtin_ia32_pslldqi128(a, bits);
+        return __builtin_ia32_pslldqi128(a, cast(ubyte)(bytes * 8));
     }
     else
     {
         // Generates pslldq starting with LDC 1.1 -O2
         __m128i zero = _mm_setzero_si128();
         return cast(__m128i)
-            shufflevector!(byte16, 16 - bits, 17 - bits, 18 - bits, 19 - bits,
-                                   20 - bits, 21 - bits, 22 - bits, 23 - bits,
-                                   24 - bits, 25 - bits, 26 - bits, 27 - bits,
-                                   28 - bits, 29 - bits, 30 - bits, 31 - bits)
+            shufflevector!(byte16, 16 - bytes, 17 - bytes, 18 - bytes, 19 - bytes,
+                                   20 - bytes, 21 - bytes, 22 - bytes, 23 - bytes,
+                                   24 - bytes, 25 - bytes, 26 - bytes, 27 - bytes,
+                                   28 - bytes, 29 - bytes, 30 - bytes, 31 - bytes)
             (cast(byte16)zero, cast(byte16)a);
     }
 }
@@ -390,21 +390,21 @@ unittest
 }
 
 // Note: unlike Intel API, shift amount is a compile-time parameter.
-__m128i _mm_bsrli_si128(int bits)(__m128i a) pure @safe
+__m128i _mm_bsrli_si128(int bytes)(__m128i a) pure @safe
 {
     static if (GDC_X86)
     {
-        return __builtin_ia32_psrldqi128(a, bits);
+        return __builtin_ia32_psrldqi128(a, cast(ubyte)(bytes * 8));
     }
     else
     {
         // Generates psrldq starting with LDC 1.1 -O2
         __m128i zero = _mm_setzero_si128();
         return  cast(__m128i)
-            shufflevector!(byte16, 0 + bits, 1 + bits, 2 + bits, 3 + bits,
-                                   4 + bits, 5 + bits, 6 + bits, 7 + bits,
-                                   8 + bits, 9 + bits, 10 + bits, 11 + bits,
-                                   12 + bits, 13 + bits, 14 + bits, 15 + bits)
+            shufflevector!(byte16, 0 + bytes, 1 + bytes, 2 + bytes, 3 + bytes,
+                                   4 + bytes, 5 + bytes, 6 + bytes, 7 + bytes,
+                                   8 + bytes, 9 + bytes, 10 + bytes, 11 + bytes,
+                                   12 + bytes, 13 + bytes, 14 + bytes, 15 + bytes)
             (cast(byte16)a, cast(byte16)zero);
     }
 }
@@ -592,7 +592,7 @@ __m128i _mm_cmpgt_epi16 (__m128i a, __m128i b) pure @safe
 {
     static if (GDC_X86)
     {
-        return __builtin_ia32_pcmpgtw(a, b); 
+        return __builtin_ia32_pcmpgtw128(a, b); 
     }
     else
     {
@@ -612,7 +612,7 @@ __m128i _mm_cmpgt_epi32 (__m128i a, __m128i b) pure @safe
 {
     static if (GDC_X86)
     {
-        return __builtin_ia32_pcmpgtd(a, b); 
+        return __builtin_ia32_pcmpgtd128(a, b); 
     }
     else
     {
@@ -632,7 +632,7 @@ __m128i _mm_cmpgt_epi8 (__m128i a, __m128i b) pure @safe
 {
     static if (GDC_X86)
     {
-        return __builtin_ia32_pcmpgtb(a, b); 
+        return __builtin_ia32_pcmpgtb128(a, b); 
     }
     else
     {
@@ -1537,7 +1537,11 @@ unittest
     assert(R.array == correct);
 }
 
-version(LDC)
+static if (GDC_X86)
+{
+    alias _mm_lfence = __builtin_ia32_lfence;
+}
+else version(LDC)
 {
     alias _mm_lfence = __builtin_ia32_lfence;
 }
@@ -2054,30 +2058,24 @@ __m128i _mm_movpi64_epi64 (__m64 a) pure @safe
     return cast(__m128i)r;
 }
 
-static if (GDC_X86)
+// PERF: unfortunately, __builtin_ia32_pmuludq128 disappeared from LDC
+// and is SSE4.1 in GDC
+// but seems there in clang
+__m128i _mm_mul_epu32 (__m128i a, __m128i b) pure @safe
 {
-    alias _mm_mul_epu32 = __builtin_ia32_pmuldq128;
-}
-else
-{
-    // PERF: unfortunately, __builtin_ia32_pmuludq128 disappeared from LDC
-    // but seems there in clang
-    __m128i _mm_mul_epu32 (__m128i a, __m128i b) pure @safe
+    __m128i zero = _mm_setzero_si128();
+    long2 la = cast(long2) shufflevector!(int4, 0, 4, 2, 6)(a, zero);
+    long2 lb = cast(long2) shufflevector!(int4, 0, 4, 2, 6)(b, zero);
+    static if (__VERSION__ >= 2076)
     {
-        __m128i zero = _mm_setzero_si128();
-        long2 la = cast(long2) shufflevector!(int4, 0, 4, 2, 6)(a, zero);
-        long2 lb = cast(long2) shufflevector!(int4, 0, 4, 2, 6)(b, zero);
-        static if (__VERSION__ >= 2076)
-        {
-            return cast(__m128i)(la * lb);
-        }
-        else
-        {
-            // long2 mul not supported before LDC 1.5
-            la.array[0] *= lb.array[0];
-            la.array[1] *= lb.array[1];
-            return cast(__m128i)(la);
-        }
+        return cast(__m128i)(la * lb);
+    }
+    else
+    {
+        // long2 mul not supported before LDC 1.5
+        la.array[0] *= lb.array[0];
+        la.array[1] *= lb.array[1];
+        return cast(__m128i)(la);
     }
 }
 unittest
@@ -3278,7 +3276,7 @@ __m128i _mm_srli_si128(ubyte bytes)(__m128i v) pure @safe
     {
         static if (GDC_X86)
         {
-            return __builtin_ia32_psrldqi128(v, bytes);
+            return cast(__m128i) __builtin_ia32_psrldqi128(v, cast(ubyte)(bytes * 8));
         }
         else
         {
@@ -3683,7 +3681,7 @@ __m128i _mm_unpackhi_epi16 (__m128i a, __m128i b) pure @safe
 {
     static if (GDC_X86)
     {
-        return __builtin_ia32_punpckhwd(a, b);
+        return __builtin_ia32_punpckhwd128(a, b);
     }
     else
     {
@@ -3696,7 +3694,7 @@ __m128i _mm_unpackhi_epi32 (__m128i a, __m128i b) pure @safe
 {
     static if (GDC_X86)
     {
-        return __builtin_ia32_punpckhdq(a, b);
+        return __builtin_ia32_punpckhdq128(a, b);
     }
     else
     {
@@ -3720,7 +3718,7 @@ __m128i _mm_unpackhi_epi8 (__m128i a, __m128i b) pure @safe
 {
     static if (GDC_X86)
     {
-        return __builtin_ia32_punpckhbw(a, b);
+        return __builtin_ia32_punpckhbw128(a, b);
     }
     else
     {
@@ -3746,7 +3744,7 @@ __m128i _mm_unpacklo_epi16 (__m128i a, __m128i b) pure @safe
 {
     static if (GDC_X86)
     {
-        return __builtin_ia32_punpcklwd(a, b);
+        return __builtin_ia32_punpcklwd128(a, b);
     }
     else
     {
@@ -3759,7 +3757,7 @@ __m128i _mm_unpacklo_epi32 (__m128i a, __m128i b) pure @safe
 {
     static if (GDC_X86)
     {
-        return __builtin_ia32_punpckldq(a, b);
+        return __builtin_ia32_punpckldq128(a, b);
     }
     else
     {
@@ -3785,7 +3783,7 @@ __m128i _mm_unpacklo_epi8 (__m128i a, __m128i b) pure @safe
 {
     static if (GDC_X86)
     {
-        return __builtin_ia32_punpcklbw(a, b);
+        return __builtin_ia32_punpcklbw128(a, b);
     }
     else
     {
