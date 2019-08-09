@@ -1,5 +1,5 @@
 /**
-* Copyright: Copyright Auburn Sounds 2016-2018.
+* Copyright: Copyright Auburn Sounds 2016-2018, Stefanos Baziotis 2019.
 * License:   $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost License 1.0)
 * Authors:   Guillaume Piolat
 */
@@ -18,7 +18,6 @@ version(GNU)
     alias Vector!(short[4]) short4;
     alias Vector!(byte [8]) byte8;
 
-
     Vec loadUnaligned(Vec)(const(float)* pvec) @trusted if (is(Vec == float4))
     {
         return __builtin_ia32_loadups(pvec);
@@ -29,25 +28,15 @@ version(GNU)
         return __builtin_ia32_loadupd(pvec);
     }
 
-    Vec loadUnaligned(Vec)(const(byte)* pvec)  @trusted if (is(Vec == byte16))
+    Vec loadUnaligned(Vec, T)(const T* pvec)  @trusted
+        if ((is(Vec == byte16) && is(T == byte)) ||
+            (is(Vec == short8) && is(T == short)) ||
+            (is(Vec == int4) && is(T == int)) ||
+            (is(Vec == long2) && is(T == long)))
     {
-        return cast(Vec) __builtin_ia32_loaddqu(cast(const(char*)) pvec);
+         return cast(Vec) __builtin_ia32_loaddqu(cast(const(char*)) pvec);
     }
 
-    Vec loadUnaligned(Vec)(const(short)* pvec)  @trusted if (is(Vec == short8))
-    {
-        return cast(Vec) __builtin_ia32_loaddqu(cast(const(char*)) pvec);
-    }
-
-    Vec loadUnaligned(Vec)(const(int)* pvec)  @trusted if (is(Vec == int4))
-    {
-        return cast(Vec) __builtin_ia32_loaddqu(cast(const(char*)) pvec);
-    }
-
-    Vec loadUnaligned(Vec)(const(long)* pvec)  @trusted if (is(Vec == long2))
-    {
-        return cast(Vec) __builtin_ia32_loaddqu(cast(const(char*)) pvec);
-    }
 
     void storeUnaligned(Vec)(Vec v, float* pvec) @trusted if (is(Vec == float4))
     {
@@ -59,40 +48,24 @@ version(GNU)
         __builtin_ia32_storeupd(pvec, v);
     }
 
-    void storeUnaligned(Vec)(Vec v, byte* pvec) @trusted if (is(Vec == byte16))
+    Vec storeUnaligned(Vec, T)(const T* pvec)  @trusted
+        if ((is(Vec == byte16) && is(T == byte)) ||
+            (is(Vec == short8) && is(T == short)) ||
+            (is(Vec == int4) && is(T == int)) ||
+            (is(Vec == long2) && is(T == long)))
     {
         __builtin_ia32_storedqu(cast(char*)pvec, v);
     }
 
-    void storeUnaligned(Vec)(Vec v, short* pvec) @trusted if (is(Vec == short8))
-    {
-        __builtin_ia32_storedqu(cast(char*)pvec, v);
-    }
-
-    void storeUnaligned(Vec)(Vec v, int* pvec) @trusted if (is(Vec == int4))
-    {
-        __builtin_ia32_storedqu(cast(char*)pvec, v);
-    }
-
-    void storeUnaligned(Vec)(Vec v, long* pvec) @trusted if (is(Vec == long2))
-    {
-        __builtin_ia32_storedqu(cast(char*)pvec, v);
-    }
 
     private template VecCount(Vec)
+        if(is(Vec == byte16) ||
+           is(Vec == short8) ||
+           is(Vec == int4) ||
+           is(Vec == int2) || is(Vec == float2) || is(Vec == double2) || is(Vec == long2) ||
+           is(Vec == long1))
     {
-        static if (is(Vec == byte16))
-            enum VecCount = 16;
-        else static if (is(Vec == short8) || is(Vec == byte8))
-            enum VecCount = 8;
-        else static if (is(Vec == int4) || is(Vec == float4))
-            enum VecCount = 4;
-        else static if (is(Vec == int2) || is(Vec == float2) || is(Vec == double2) || is(Vec == long2))
-            enum VecCount = 2;
-        else static if (is(Vec == long1))
-            enum VecCount = 1;
-        else
-            static assert(false);
+        enum VecCount = Vec.array.length;
     }
 
     // TODO: for performance, replace that anywhere possible
