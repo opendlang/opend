@@ -69,8 +69,13 @@ unittest
 
 __m128 _mm_add_ss(__m128 a, __m128 b) pure @safe
 {
-    a[0] += b[0];
-    return a;
+    static if (GDC_X86)
+        return __builtin_ia32_addss(a, b);
+    else
+    {
+        a[0] += b[0];
+        return a;
+    }
 }
 unittest
 {
@@ -274,7 +279,7 @@ __m64 _mm_cvt_ps2pi (__m128 a) pure @safe
 
 __m128 _mm_cvt_si2ss(__m128 v, int x) pure @safe
 {
-    v[0] = cast(float)x;
+    v.array[0] = cast(float)x;
     return v;
 }
 unittest
@@ -305,8 +310,8 @@ unittest
 __m128 _mm_cvtpi32_ps (__m128 a, __m64 b)
 {
     __m128 fb = _mm_cvtepi32_ps(to_m128i(b));
-    a[0] = fb[0];
-    a[1] = fb[1];
+    a.array[0] = fb.array[0];
+    a.array[1] = fb.array[1];
     return a;
 }
 unittest
@@ -320,8 +325,8 @@ unittest
 __m128 _mm_cvtpi32x2_ps (__m64 a, __m64 b) pure @safe
 {
     long2 l;
-    l[0] = a[0];
-    l[1] = b[0];
+    l.array[0] = a.array[0];
+    l.array[1] = b.array[0];
     return _mm_cvtepi32_ps(cast(__m128i)l);
 }
 
@@ -423,7 +428,7 @@ unittest
 
 __m128 _mm_cvtsi32_ss(__m128 v, int x) pure @safe
 {
-    v[0] = cast(float)x;
+    v.array[0] = cast(float)x;
     return v;
 }
 unittest
@@ -435,7 +440,7 @@ unittest
 // Note: on macOS, using "llvm.x86.sse.cvtsi642ss" was buggy
 __m128 _mm_cvtsi64_ss(__m128 v, long x) pure @safe
 {
-    v[0] = cast(float)x;
+    v.array[0] = cast(float)x;
     return v;
 }
 unittest
@@ -446,7 +451,7 @@ unittest
 
 float _mm_cvtss_f32(__m128 a) pure @safe
 {
-    return a[0];
+    return a.array[0];
 }
 
 version(LDC)
@@ -457,7 +462,7 @@ else
 {
     int _mm_cvtss_si32 (__m128 a) pure @safe
     {
-        return convertFloatToInt32UsingMXCSR(a[0]);
+        return convertFloatToInt32UsingMXCSR(a.array[0]);
     }
 }
 unittest
@@ -474,7 +479,7 @@ version(LDC)
         // Note: __builtin_ia32_cvtss2si64 crashes LDC in 32-bit
         long _mm_cvtss_si64 (__m128 a) pure @safe
         {
-            return convertFloatToInt64UsingMXCSR(a[0]);
+            return convertFloatToInt64UsingMXCSR(a.array[0]);
         }
     }
 }
@@ -482,7 +487,7 @@ else
 {
     long _mm_cvtss_si64 (__m128 a) pure @safe
     {
-        return convertFloatToInt64UsingMXCSR(a[0]);
+        return convertFloatToInt64UsingMXCSR(a.array[0]);
     }
 }
 unittest
@@ -515,7 +520,7 @@ else
 {
     int _mm_cvtt_ss2si (__m128 a) pure @safe
     {
-        return cast(int)(a[0]);
+        return cast(int)(a.array[0]);
     }
 }
 unittest
@@ -533,7 +538,7 @@ alias _mm_cvttss_si32 = _mm_cvtt_ss2si; // it's actually the same op
 // Note: __builtin_ia32_cvttss2si64 crashes LDC when generating 32-bit x86 code.
 long _mm_cvttss_si64 (__m128 a) pure @safe
 {
-    return cast(long)(a[0]); // Generates cvttss2si as expected
+    return cast(long)(a.array[0]); // Generates cvttss2si as expected
 }
 unittest
 {
@@ -554,8 +559,13 @@ unittest
 
 __m128 _mm_div_ss(__m128 a, __m128 b) pure @safe
 {
-    a[0] /= b[0];
-    return a;
+    static if (GDC_X86)
+        return __builtin_ia32_divss(a, b);
+    else
+    {
+        a[0] /= b[0];
+        return a;
+    }
 }
 unittest
 {
@@ -568,7 +578,7 @@ unittest
 int _mm_extract_pi16 (__m64 a, int imm8)
 {
     short4 sa = cast(short4)a;
-    return cast(ushort)(sa[imm8]);
+    return cast(ushort)(sa.array[imm8]);
 }
 unittest
 {
@@ -620,7 +630,11 @@ uint _MM_GET_ROUNDING_MODE() pure @safe
 
 uint _mm_getcsr() pure @safe
 {
-    version (InlineX86Asm)
+    static if (GDC_X86)
+    {
+        return __builtin_ia32_stmxcsr();
+    }
+    else version (InlineX86Asm)
     {
         uint controlWord;
         asm nothrow @nogc pure @safe
@@ -636,7 +650,7 @@ uint _mm_getcsr() pure @safe
 __m64 _mm_insert_pi16 (__m64 v, int i, int index)
 {
     short4 r = cast(short4)v;
-    r[index & 3] = cast(short)i;
+    r.array[index & 3] = cast(short)i;
     return cast(__m64)r;
 }
 unittest
@@ -668,14 +682,14 @@ alias _mm_load1_ps = _mm_load_ps1;
 __m128 _mm_loadh_pi (__m128 a, const(__m64)* mem_addr) pure @safe
 {
     long2 la = cast(long2)a;
-    la[1] = (*mem_addr)[0];
+    la.array[1] = (*mem_addr).array[0];
     return cast(__m128)la;
 }
 
 __m128 _mm_loadl_pi (__m128 a, const(__m64)* mem_addr) pure @safe
 {
     long2 la = cast(long2)a;
-    la[0] = (*mem_addr)[0];
+    la.array[0] = (*mem_addr).array[0];
     return cast(__m128)la;
 }
 
@@ -695,7 +709,7 @@ __m128i _mm_loadu_si16(const(void)* mem_addr) pure @trusted
 {
     short r = *cast(short*)(mem_addr);
     short8 result = [0, 0, 0, 0, 0, 0, 0, 0];
-    result[0] = r;
+    result.array[0] = r;
     return cast(__m128i)result;
 }
 unittest
@@ -710,7 +724,7 @@ __m128i _mm_loadu_si64(const(void)* mem_addr) pure @trusted
 {
     long r = *cast(long*)(mem_addr);
     long2 result = [0, 0];
-    result[0] = r;
+    result.array[0] = r;
     return cast(__m128i)result;
 }
 unittest
@@ -747,7 +761,11 @@ __m64 _mm_max_pi16 (__m64 a, __m64 b) pure @safe
     return to_m64(_mm_max_epi16(to_m128i(a), to_m128i(b)));
 }
 
-version(LDC)
+static if (GDC_X86)
+{
+    alias _mm_max_ps = __builtin_ia32_maxps;
+}
+else version(LDC)
 {
     alias _mm_max_ps = __builtin_ia32_maxps;
 }
@@ -768,10 +786,10 @@ unittest
     __m128 A = _mm_setr_ps(1, 2, float.nan, 4);
     __m128 B = _mm_setr_ps(4, 1, 4, float.nan);
     __m128 M = _mm_max_ps(A, B);
-    assert(M[0] == 4);
-    assert(M[1] == 2);
-    assert(M[2] == 4);    // in case of NaN, second operand prevails (as it seems)
-    assert(M[3] != M[3]); // in case of NaN, second operand prevails (as it seems)
+    assert(M.array[0] == 4);
+    assert(M.array[1] == 2);
+    assert(M.array[2] == 4);    // in case of NaN, second operand prevails (as it seems)
+    assert(M.array[3] != M.array[3]); // in case of NaN, second operand prevails (as it seems)
 }
 
 __m64 _mm_max_pu8 (__m64 a, __m64 b) pure @safe
@@ -779,7 +797,11 @@ __m64 _mm_max_pu8 (__m64 a, __m64 b) pure @safe
     return to_m64(_mm_max_epu8(to_m128i(a), to_m128i(b)));
 }
 
-version(LDC)
+static if (GDC_X86)
+{
+    alias _mm_max_ss = __builtin_ia32_maxss;
+}
+else version(LDC)
 {
     alias _mm_max_ss = __builtin_ia32_maxss;
 }
@@ -798,14 +820,14 @@ unittest
     __m128 B = _mm_setr_ps(4, 1, 4, 1);
     __m128 C = _mm_setr_ps(float.nan, 1, 4, 1);
     __m128 M = _mm_max_ss(A, B);
-    assert(M[0] == 4);
-    assert(M[1] == 2);
-    assert(M[2] == 3);
-    assert(M[3] == 4);
+    assert(M.array[0] == 4);
+    assert(M.array[1] == 2);
+    assert(M.array[2] == 3);
+    assert(M.array[3] == 4);
     M = _mm_max_ps(A, C); // in case of NaN, second operand prevails
-    assert(M[0] != M[0]);
+    assert(M.array[0] != M.array[0]);
     M = _mm_max_ps(C, A); // in case of NaN, second operand prevails
-    assert(M[0] == 1);
+    assert(M.array[0] == 1);
 }
 
 __m64 _mm_min_pi16 (__m64 a, __m64 b) pure @safe
@@ -813,7 +835,11 @@ __m64 _mm_min_pi16 (__m64 a, __m64 b) pure @safe
     return to_m64(_mm_min_epi16(to_m128i(a), to_m128i(b)));
 }
 
-version(LDC)
+static if (GDC_X86)
+{
+    alias _mm_min_ps = __builtin_ia32_minps;
+}
+else version(LDC)
 {
     alias _mm_min_ps = __builtin_ia32_minps;
 }
@@ -834,10 +860,10 @@ unittest
     __m128 A = _mm_setr_ps(1, 2, float.nan, 4);
     __m128 B = _mm_setr_ps(4, 1, 4, float.nan);
     __m128 M = _mm_min_ps(A, B);
-    assert(M[0] == 1);
-    assert(M[1] == 1);
-    assert(M[2] == 4);    // in case of NaN, second operand prevails (as it seems)
-    assert(M[3] != M[3]); // in case of NaN, second operand prevails (as it seems)
+    assert(M.array[0] == 1);
+    assert(M.array[1] == 1);
+    assert(M.array[2] == 4);    // in case of NaN, second operand prevails (as it seems)
+    assert(M.array[3] != M.array[3]); // in case of NaN, second operand prevails (as it seems)
 }
 
 __m64 _mm_min_pu8 (__m64 a, __m64 b) pure @safe
@@ -845,7 +871,11 @@ __m64 _mm_min_pu8 (__m64 a, __m64 b) pure @safe
     return to_m64(_mm_min_epu8(to_m128i(a), to_m128i(b)));
 }
 
-version(LDC)
+static if (GDC_X86)
+{
+    alias _mm_min_ss = __builtin_ia32_minss;
+}
+else version(LDC)
 {
     alias _mm_min_ss = __builtin_ia32_minss;
 }
@@ -864,14 +894,14 @@ unittest
     __m128 B = _mm_setr_ps(4, 1, 4, 1);
     __m128 C = _mm_setr_ps(float.nan, 1, 4, 1);
     __m128 M = _mm_min_ss(A, B);
-    assert(M[0] == 1);
-    assert(M[1] == 2);
-    assert(M[2] == 3);
-    assert(M[3] == 4);
+    assert(M.array[0] == 1);
+    assert(M.array[1] == 2);
+    assert(M.array[2] == 3);
+    assert(M.array[3] == 4);
     M = _mm_min_ps(A, C); // in case of NaN, second operand prevails
-    assert(M[0] != M[0]);
+    assert(M.array[0] != M.array[0]);
     M = _mm_min_ps(C, A); // in case of NaN, second operand prevails
-    assert(M[0] == 1);
+    assert(M.array[0] == 1);
 }
 
 __m128 _mm_move_ss (__m128 a, __m128 b) pure @safe
@@ -898,7 +928,11 @@ unittest
     assert(0x9C == _mm_movemask_pi8(_mm_set_pi8(-1, 0, 0, -1, -1, -1, 0, 0)));
 }
 
-version(LDC)
+static if (GDC_X86)
+{
+    alias _mm_movemask_ps = __builtin_ia32_movmskps;
+}
+else version(LDC)
 {
     alias _mm_movemask_ps = __builtin_ia32_movmskps;
 }
@@ -935,8 +969,13 @@ unittest
 
 __m128 _mm_mul_ss(__m128 a, __m128 b) pure @safe
 {
-    a[0] *= b[0];
-    return a;
+    static if (GDC_X86)
+        return __builtin_ia32_mulss(a, b);
+    else
+    {
+        a[0] *= b[0];
+        return a;
+    }
 }
 unittest
 {
@@ -991,7 +1030,11 @@ deprecated alias
     _m_psadbw = _mm_sad_pu8,
     _m_pshufw = _mm_shuffle_pi16;
 
-version(LDC)
+static if (GDC_X86)
+{
+    alias _mm_rcp_ps = __builtin_ia32_rcpps;
+}
+else version(LDC)
 {
     alias _mm_rcp_ps = __builtin_ia32_rcpps;
 }
@@ -1007,7 +1050,11 @@ else
     }
 }
 
-version(LDC)
+static if (GDC_X86)
+{
+    alias _mm_rcp_ss = __builtin_ia32_rcpss;
+}
+else version(LDC)
 {
     alias _mm_rcp_ss = __builtin_ia32_rcpss;
 }
@@ -1020,7 +1067,11 @@ else
     }
 }
 
-version(LDC)
+static if (GDC_X86)
+{
+    alias _mm_rsqrt_ps = __builtin_ia32_rsqrtps;
+}
+else version(LDC)
 {
     alias _mm_rsqrt_ps = __builtin_ia32_rsqrtps;
 }
@@ -1036,7 +1087,11 @@ else
     }
 }
 
-version(LDC)
+static if (GDC_X86)
+{
+    alias _mm_rsqrt_ss = __builtin_ia32_rsqrtss;
+}
+else version(LDC)
 {
     alias _mm_rsqrt_ss = __builtin_ia32_rsqrtss;
 }
@@ -1052,7 +1107,7 @@ else
 unittest
 {
     double maxRelativeError = 0.000245; // -72 dB
-    void testInvSqrt(float number)
+    void testInvSqrt(float number) nothrow @nogc
     {
         __m128 A = _mm_set1_ps(number);
 
@@ -1060,16 +1115,16 @@ unittest
         __m128 B = _mm_rcp_ps(A);
         foreach(i; 0..4)
         {
-            double exact = 1.0f / A[i];
-            double ratio = cast(double)(B[i]) / cast(double)(exact);
+            double exact = 1.0f / A.array[i];
+            double ratio = cast(double)(B.array[i]) / cast(double)(exact);
             assert(fabs(ratio - 1) <= maxRelativeError);
         }
 
         // test _mm_rcp_ss
         {
             B = _mm_rcp_ss(A);
-            double exact = 1.0f / A[0];
-            double ratio = cast(double)(B[0]) / cast(double)(exact);
+            double exact = 1.0f / A.array[0];
+            double ratio = cast(double)(B.array[0]) / cast(double)(exact);
             assert(fabs(ratio - 1) <= maxRelativeError);
         }
 
@@ -1077,16 +1132,16 @@ unittest
         B = _mm_rsqrt_ps(A);
         foreach(i; 0..4)
         {
-            double exact = 1.0f / sqrt(A[i]);
-            double ratio = cast(double)(B[i]) / cast(double)(exact);
+            double exact = 1.0f / sqrt(A.array[i]);
+            double ratio = cast(double)(B.array[i]) / cast(double)(exact);
             assert(fabs(ratio - 1) <= maxRelativeError);
         }
 
         // test _mm_rsqrt_ss
         {
             B = _mm_rsqrt_ss(A);
-            double exact = 1.0f / sqrt(A[0]);
-            double ratio = cast(double)(B[0]) / cast(double)(exact);
+            double exact = 1.0f / sqrt(A.array[0]);
+            double ratio = cast(double)(B.array[0]) / cast(double)(exact);
             assert(fabs(ratio - 1) <= maxRelativeError);
         }
     }
@@ -1134,7 +1189,7 @@ void _MM_SET_ROUNDING_MODE(int _MM_ROUND_xxxx) pure @safe
 __m128 _mm_set_ss (float a) pure @trusted
 {
     __m128 r = _mm_setzero_ps();
-    r[0] = a;
+    r.array[0] = a;
     return r;
 }
 
@@ -1145,7 +1200,9 @@ __m128 _mm_set1_ps (float a) pure @trusted
 
 void _mm_setcsr(uint controlWord) pure @safe
 {
-    version (InlineX86Asm)
+    static if (GDC_X86)
+        __builtin_ia32_ldmxcsr(controlWord);
+    else version (InlineX86Asm)
     {
         asm pure nothrow @nogc @safe
         {
@@ -1169,7 +1226,11 @@ __m128 _mm_setzero_ps() pure @trusted
     return loadUnaligned!(float4)(result.ptr);
 }
 
-version(LDC)
+static if (GDC_X86)
+{
+    alias _mm_sfence = __builtin_ia32_sfence;
+}
+else version(LDC)
 {
     alias _mm_sfence = __builtin_ia32_sfence;
 }
@@ -1291,7 +1352,7 @@ alias _mm_store_ps1 = _mm_store1_ps;
 
 void _mm_store_ss (float* mem_addr, __m128 a) pure @safe
 {
-    *mem_addr = a[0];
+    *mem_addr = a.array[0];
 }
 unittest
 {
@@ -1309,27 +1370,27 @@ void _mm_store1_ps (float* mem_addr, __m128 a) pure // not safe since nothing gu
 void _mm_storeh_pi(__m64* p, __m128 a) pure @safe
 {
     long2 la = cast(long2)a;
-    (*p)[0] = la[1];
+    (*p).array[0] = la.array[1];
 }
 unittest
 {
     __m64 R = _mm_setzero_si64();
     long2 A = [13, 25];
     _mm_storeh_pi(&R, cast(__m128)A);
-    assert(R[0] == 25);
+    assert(R.array[0] == 25);
 }
 
 void _mm_storel_pi(__m64* p, __m128 a) pure @safe
 {
     long2 la = cast(long2)a;
-    (*p)[0] = la[0];
+    (*p).array[0] = la.array[0];
 }
 unittest
 {
     __m64 R = _mm_setzero_si64();
     long2 A = [13, 25];
     _mm_storel_pi(&R, cast(__m128)A);
-    assert(R[0] == 13);
+    assert(R.array[0] == 13);
 }
 
 void _mm_storer_ps(float* mem_addr, __m128 a) pure // not safe since nothing guarantees alignment
@@ -1382,8 +1443,13 @@ unittest
 
 __m128 _mm_sub_ss(__m128 a, __m128 b) pure @safe
 {
-    a[0] -= b[0];
-    return a;
+    static if (GDC_X86)
+        return __builtin_ia32_subss(a, b);
+    else
+    {
+        a[0] -= b[0];
+        return a;
+    }
 }
 unittest
 {
