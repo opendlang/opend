@@ -2614,7 +2614,7 @@ __m128d _mm_shuffle_pd (int imm8)(__m128d a, __m128d b) pure @safe
 {
     static if (GDC_X86)
     {
-        __builtin_ia32_shufpd(a, b, imm8);
+        return __builtin_ia32_shufpd(a, b, imm8);
     }
     else
     {
@@ -3267,25 +3267,27 @@ unittest
     assert(B.array == expectedB);
 }
 
-static if (GDC_X86)
-{
-    /// Shift `v` right by `bytes` bytes while shifting in zeros.
-    alias _mm_srli_si128 = __builtin_ia32_psrldqi128;
-}
-else
-{
-
 /// Shift `v` right by `bytes` bytes while shifting in zeros.
 __m128i _mm_srli_si128(ubyte bytes)(__m128i v) pure @safe
 {
     static if (bytes & 0xF0)
+    {
         return _mm_setzero_si128();
+    }
     else
-        return cast(__m128i) shufflevector!(byte16,
-                                            bytes+0, bytes+1, bytes+2, bytes+3, bytes+4, bytes+5, bytes+6, bytes+7,
-                                            bytes+8, bytes+9, bytes+10, bytes+11, bytes+12, bytes+13, bytes+14, bytes+15)
-                                           (cast(byte16) v, cast(byte16)_mm_setzero_si128());
-}
+    {
+        static if (GDC_X86)
+        {
+            return __builtin_ia32_psrldqi128(v, bytes);
+        }
+        else
+        {
+            return cast(__m128i) shufflevector!(byte16,
+                                                bytes+0, bytes+1, bytes+2, bytes+3, bytes+4, bytes+5, bytes+6, bytes+7,
+                                                bytes+8, bytes+9, bytes+10, bytes+11, bytes+12, bytes+13, bytes+14, bytes+15)
+                                               (cast(byte16) v, cast(byte16)_mm_setzero_si128());
+        }
+    }
 
 }
 
