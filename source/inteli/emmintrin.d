@@ -362,25 +362,9 @@ unittest
         assert(avg.array[i] == 48);
 }
 
-// Note: unlike Intel API, shift amount is a compile-time parameter.
-__m128i _mm_bslli_si128(int bytes)(__m128i a) pure @safe
-{
-    static if (GDC_X86)
-    {
-        return __builtin_ia32_pslldqi128(a, cast(ubyte)(bytes * 8));
-    }
-    else
-    {
-        // Generates pslldq starting with LDC 1.1 -O2
-        __m128i zero = _mm_setzero_si128();
-        return cast(__m128i)
-            shufflevector!(byte16, 16 - bytes, 17 - bytes, 18 - bytes, 19 - bytes,
-                                   20 - bytes, 21 - bytes, 22 - bytes, 23 - bytes,
-                                   24 - bytes, 25 - bytes, 26 - bytes, 27 - bytes,
-                                   28 - bytes, 29 - bytes, 30 - bytes, 31 - bytes)
-            (cast(byte16)zero, cast(byte16)a);
-    }
-}
+
+alias _mm_bslli_si128 = _mm_slli_si128;
+
 unittest
 {
     __m128i toShift = _mm_setr_epi8(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15);
@@ -389,25 +373,8 @@ unittest
     assert(  (cast(byte16)result).array == exact);
 }
 
-// Note: unlike Intel API, shift amount is a compile-time parameter.
-__m128i _mm_bsrli_si128(int bytes)(__m128i a) pure @safe
-{
-    static if (GDC_X86)
-    {
-        return __builtin_ia32_psrldqi128(a, cast(ubyte)(bytes * 8));
-    }
-    else
-    {
-        // Generates psrldq starting with LDC 1.1 -O2
-        __m128i zero = _mm_setzero_si128();
-        return  cast(__m128i)
-            shufflevector!(byte16, 0 + bytes, 1 + bytes, 2 + bytes, 3 + bytes,
-                                   4 + bytes, 5 + bytes, 6 + bytes, 7 + bytes,
-                                   8 + bytes, 9 + bytes, 10 + bytes, 11 + bytes,
-                                   12 + bytes, 13 + bytes, 14 + bytes, 15 + bytes)
-            (cast(byte16)a, cast(byte16)zero);
-    }
-}
+alias _mm_bsrli_si128 = _mm_srli_si128;
+
 unittest
 {
     __m128i toShift = _mm_setr_epi8(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15);
@@ -2875,10 +2842,11 @@ unittest
     assert(B.array == expectedB);
 }
 
-/// Shift `a` left by `imm8` bytes while shifting in zeros.
-__m128i _mm_slli_si128(ubyte imm8)(__m128i op) pure @safe
+
+/// Shift `a` left by `bytes` bytes while shifting in zeros.
+__m128i _mm_slli_si128(ubyte bytes)(__m128i op) pure @safe
 {
-    static if (imm8 & 0xF0)
+    static if (bytes & 0xF0)
     {
         return _mm_setzero_si128();
     }
@@ -2886,14 +2854,14 @@ __m128i _mm_slli_si128(ubyte imm8)(__m128i op) pure @safe
     {
         static if (GDC_X86)
         {
-            return __builtin_ia32_pslldqi128(op, imm8); 
+            return __builtin_ia32_pslldqi128(op, cast(ubyte)(bytes * 8)); 
         }
         else
         {
             return cast(__m128i) shufflevector!(byte16,
-            16 - imm8, 17 - imm8, 18 - imm8, 19 - imm8, 20 - imm8, 21 - imm8,
-            22 - imm8, 23 - imm8, 24 - imm8, 25 - imm8, 26 - imm8, 27 - imm8,
-            28 - imm8, 29 - imm8, 30 - imm8, 31 - imm8)
+            16 - bytes, 17 - bytes, 18 - bytes, 19 - bytes, 20 - bytes, 21 - bytes,
+            22 - bytes, 23 - bytes, 24 - bytes, 25 - bytes, 26 - bytes, 27 - bytes,
+            28 - bytes, 29 - bytes, 30 - bytes, 31 - bytes)
             (cast(byte16)_mm_setzero_si128(), cast(byte16)op);
         }
     }
