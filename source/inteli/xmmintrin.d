@@ -277,9 +277,9 @@ __m64 _mm_cvt_ps2pi (__m128 a) pure @safe
     return to_m64(_mm_cvtps_epi32(a));
 }
 
-__m128 _mm_cvt_si2ss(__m128 v, int x) pure @safe
+__m128 _mm_cvt_si2ss(__m128 v, int x) pure @trusted
 {
-    v.array[0] = cast(float)x;
+    v.ptr[0] = cast(float)x;
     return v;
 }
 unittest
@@ -307,11 +307,11 @@ unittest
     assert(R.array == correct);
 }
 
-__m128 _mm_cvtpi32_ps (__m128 a, __m64 b)
+__m128 _mm_cvtpi32_ps (__m128 a, __m64 b) pure @trusted
 {
     __m128 fb = _mm_cvtepi32_ps(to_m128i(b));
-    a.array[0] = fb.array[0];
-    a.array[1] = fb.array[1];
+    a.ptr[0] = fb.array[0];
+    a.ptr[1] = fb.array[1];
     return a;
 }
 unittest
@@ -322,11 +322,11 @@ unittest
 }
 
 
-__m128 _mm_cvtpi32x2_ps (__m64 a, __m64 b) pure @safe
+__m128 _mm_cvtpi32x2_ps (__m64 a, __m64 b) pure @trusted
 {
     long2 l;
-    l.array[0] = a.array[0];
-    l.array[1] = b.array[0];
+    l.ptr[0] = a.array[0];
+    l.ptr[1] = b.array[0];
     return _mm_cvtepi32_ps(cast(__m128i)l);
 }
 
@@ -426,9 +426,9 @@ unittest
     assert(R.array == correct);
 }
 
-__m128 _mm_cvtsi32_ss(__m128 v, int x) pure @safe
+__m128 _mm_cvtsi32_ss(__m128 v, int x) pure @trusted
 {
-    v.array[0] = cast(float)x;
+    v.ptr[0] = cast(float)x;
     return v;
 }
 unittest
@@ -438,9 +438,9 @@ unittest
 }
 
 // Note: on macOS, using "llvm.x86.sse.cvtsi642ss" was buggy
-__m128 _mm_cvtsi64_ss(__m128 v, long x) pure @safe
+__m128 _mm_cvtsi64_ss(__m128 v, long x) pure @trusted
 {
-    v.array[0] = cast(float)x;
+    v.ptr[0] = cast(float)x;
     return v;
 }
 unittest
@@ -647,10 +647,10 @@ uint _mm_getcsr() pure @safe
         static assert(0, "Not yet supported");
 }
 
-__m64 _mm_insert_pi16 (__m64 v, int i, int index)
+__m64 _mm_insert_pi16 (__m64 v, int i, int index) pure @trusted
 {
     short4 r = cast(short4)v;
-    r.array[index & 3] = cast(short)i;
+    r.ptr[index & 3] = cast(short)i;
     return cast(__m64)r;
 }
 unittest
@@ -679,17 +679,17 @@ __m128 _mm_load_ss (const(float)* mem_addr) pure @trusted
 
 alias _mm_load1_ps = _mm_load_ps1;
 
-__m128 _mm_loadh_pi (__m128 a, const(__m64)* mem_addr) pure @safe
+__m128 _mm_loadh_pi (__m128 a, const(__m64)* mem_addr) pure @trusted
 {
     long2 la = cast(long2)a;
-    la.array[1] = (*mem_addr).array[0];
+    la.ptr[1] = (*mem_addr).array[0];
     return cast(__m128)la;
 }
 
-__m128 _mm_loadl_pi (__m128 a, const(__m64)* mem_addr) pure @safe
+__m128 _mm_loadl_pi (__m128 a, const(__m64)* mem_addr) pure @trusted
 {
     long2 la = cast(long2)a;
-    la.array[0] = (*mem_addr).array[0];
+    la.ptr[0] = (*mem_addr).array[0];
     return cast(__m128)la;
 }
 
@@ -709,7 +709,7 @@ __m128i _mm_loadu_si16(const(void)* mem_addr) pure @trusted
 {
     short r = *cast(short*)(mem_addr);
     short8 result = [0, 0, 0, 0, 0, 0, 0, 0];
-    result.array[0] = r;
+    result.ptr[0] = r;
     return cast(__m128i)result;
 }
 unittest
@@ -724,7 +724,7 @@ __m128i _mm_loadu_si64(const(void)* mem_addr) pure @trusted
 {
     long r = *cast(long*)(mem_addr);
     long2 result = [0, 0];
-    result.array[0] = r;
+    result.ptr[0] = r;
     return cast(__m128i)result;
 }
 unittest
@@ -1189,14 +1189,27 @@ void _MM_SET_ROUNDING_MODE(int _MM_ROUND_xxxx) pure @safe
 __m128 _mm_set_ss (float a) pure @trusted
 {
     __m128 r = _mm_setzero_ps();
-    r.array[0] = a;
+    r.ptr[0] = a;
     return r;
+}
+unittest
+{
+    float[4] correct = [42.0f, 0.0f, 0.0f, 0.0f];
+    __m128 A = _mm_set_ss(42.0f);
+    assert(A.array == correct);
 }
 
 __m128 _mm_set1_ps (float a) pure @trusted
 {
     return __m128(a);
 }
+unittest
+{
+    float[4] correct = [42.0f, 42.0f, 42.0f, 42.0f];
+    __m128 A = _mm_set1_ps(42.0f);
+    assert(A.array == correct);
+}
+
 
 void _mm_setcsr(uint controlWord) pure @safe
 {
@@ -1271,7 +1284,11 @@ __m128 _mm_shuffle_ps(ubyte imm)(__m128 a, __m128 b) pure @safe
     return shufflevector!(__m128, imm & 3, (imm>>2) & 3, 4 + ((imm>>4) & 3), 4 + ((imm>>6) & 3) )(a, b);
 }
 
-version(LDC)
+static if (GDC_X86)
+{
+    alias _mm_sqrt_ps = __builtin_ia32_sqrtps;
+}
+else version(LDC)
 {
     // Disappeared with LDC 1.11
     static if (__VERSION__ < 2081)
@@ -1290,12 +1307,12 @@ version(LDC)
 }
 else
 {
-    __m128 _mm_sqrt_ps(__m128 vec) pure @safe
+    __m128 _mm_sqrt_ps(__m128 vec) pure @trusted
     {
-        vec.array[0] = sqrt(vec.array[0]);
-        vec.array[1] = sqrt(vec.array[1]);
-        vec.array[2] = sqrt(vec.array[2]);
-        vec.array[3] = sqrt(vec.array[3]);
+        vec.ptr[0] = sqrt(vec.array[0]);
+        vec.ptr[1] = sqrt(vec.array[1]);
+        vec.ptr[2] = sqrt(vec.array[2]);
+        vec.ptr[3] = sqrt(vec.array[3]);
         return vec;
     }
 }
@@ -1308,7 +1325,11 @@ unittest
     assert(A.array[3] == 2.0f);
 }
 
-version(LDC)
+static if (GDC_X86)
+{
+    alias _mm_sqrt_ps = __builtin_ia32_sqrtss;
+}
+else version(LDC)
 {
     // Disappeared with LDC 1.11
     static if (__VERSION__ < 2081)
@@ -1327,9 +1348,9 @@ version(LDC)
 }
 else
 {
-    __m128 _mm_sqrt_ss(__m128 vec) pure @safe
+    __m128 _mm_sqrt_ss(__m128 vec) pure @trusted
     {
-        vec.array[0] = sqrt(vec.array[0]);
+        vec.ptr[0] = sqrt(vec.array[0]);
         return vec;
     }
 }
@@ -1367,10 +1388,10 @@ void _mm_store1_ps (float* mem_addr, __m128 a) pure // not safe since nothing gu
     *aligned = shufflevector!(__m128, 0, 0, 0, 0)(a, a);
 }
 
-void _mm_storeh_pi(__m64* p, __m128 a) pure @safe
+void _mm_storeh_pi(__m64* p, __m128 a) pure @trusted
 {
     long2 la = cast(long2)a;
-    (*p).array[0] = la.array[1];
+    (*p).ptr[0] = la.array[1];
 }
 unittest
 {
@@ -1380,10 +1401,10 @@ unittest
     assert(R.array[0] == 25);
 }
 
-void _mm_storel_pi(__m64* p, __m128 a) pure @safe
+void _mm_storel_pi(__m64* p, __m128 a) pure @trusted
 {
     long2 la = cast(long2)a;
-    (*p).array[0] = la.array[0];
+    (*p).ptr[0] = la.array[0];
 }
 unittest
 {
