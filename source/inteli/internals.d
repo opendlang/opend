@@ -735,17 +735,17 @@ unittest // cmpsd and comsd
 //
 
 
-__m64 to_m64(__m128i a) pure @safe
+__m64 to_m64(__m128i a) pure @trusted
 {
     long2 la = cast(long2)a;
     long1 r;
-    r.array[0] = la.array[0];
+    r.ptr[0] = la.array[0];
     return r;
 }
 
-__m128i to_m128i(__m64 a) pure @safe
+__m128i to_m128i(__m64 a) pure @trusted
 {
     long2 r = [0, 0];
-    r.array[0] = a.array[0];
+    r.ptr[0] = a.array[0];
     return cast(__m128i)r;
 }

@@ -264,10 +264,10 @@ long _mm_cvtm64_si64 (__m64 a) pure @safe
 }
 
 /// Copy 32-bit integer `a` to the lower elements of `dst`, and zero the upper element of `dst`.
-__m64 _mm_cvtsi32_si64 (int a) pure @safe
+__m64 _mm_cvtsi32_si64 (int a) pure @trusted
 {
     __m64 r = void;
-    r.array[0] = a;
+    r.ptr[0] = a;
     return r;
 }
 unittest
@@ -277,10 +277,10 @@ unittest
 }
 
 /// Copy 64-bit integer `a` to `dst`.
-__m64 _mm_cvtsi64_m64 (long a) pure @safe
+__m64 _mm_cvtsi64_m64 (long a) pure @trusted
 {
     __m64 r = void;
-    r.array[0] = a;
+    r.ptr[0] = a;
     return r;
 }
 unittest
@@ -350,12 +350,12 @@ __m64 _mm_or_si64 (__m64 a, __m64 b) pure @safe
     return a | b;
 }
 
-__m64 _mm_packs_pi16 (__m64 a, __m64 b) pure @safe
+__m64 _mm_packs_pi16 (__m64 a, __m64 b) pure @trusted
 {
     int4 p = cast(int4) _mm_packs_epi16(to_m128i(a), to_m128i(b));
     int2 r;
-    r.array[0] = p.array[0];
-    r.array[1] = p.array[2];
+    r.ptr[0] = p.array[0];
+    r.ptr[1] = p.array[2];
     return cast(__m64)r;
 }
 unittest
@@ -366,12 +366,12 @@ unittest
     assert(R.array == correct);
 }
 
-__m64 _mm_packs_pi32 (__m64 a, __m64 b) pure @safe
+__m64 _mm_packs_pi32 (__m64 a, __m64 b) pure @trusted
 {
     int4 p = cast(int4) _mm_packs_epi32(to_m128i(a), to_m128i(b));
     int2 r;
-    r.array[0] = p.array[0];
-    r.array[1] = p.array[2];
+    r.ptr[0] = p.array[0];
+    r.ptr[1] = p.array[2];
     return cast(__m64)r;
 }
 unittest
@@ -382,12 +382,12 @@ unittest
     assert(R.array == correct);
 }
 
-__m64 _mm_packs_pu16 (__m64 a, __m64 b) pure @safe
+__m64 _mm_packs_pu16 (__m64 a, __m64 b) pure @trusted
 {
     int4 p = cast(int4) _mm_packus_epi16(to_m128i(a), to_m128i(b));
     int2 r;
-    r.array[0] = p.array[0];
-    r.array[1] = p.array[2];
+    r.ptr[0] = p.array[0];
+    r.ptr[1] = p.array[2];
     return cast(__m64)r;
 }
 unittest
@@ -560,7 +560,7 @@ unittest
 __m64 _mm_setzero_si64 () pure @trusted
 {
     __m64 r;
-    r.array[0] = 0;
+    r.ptr[0] = 0;
     return r;
 }
 unittest

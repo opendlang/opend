@@ -1338,9 +1338,9 @@ long _mm_cvtsi128_si64 (__m128i a) pure @safe
 }
 alias _mm_cvtsi128_si64x = _mm_cvtsi128_si64;
 
-__m128d _mm_cvtsi32_sd(__m128d v, int x) pure @safe
+__m128d _mm_cvtsi32_sd(__m128d v, int x) pure @trusted
 {
-    v.array[0] = cast(double)x;
+    v.ptr[0] = cast(double)x;
     return v;
 }
 unittest
@@ -1349,10 +1349,10 @@ unittest
     assert(a.array == [42.0, 0]);
 }
 
-__m128i _mm_cvtsi32_si128 (int a) pure @safe
+__m128i _mm_cvtsi32_si128 (int a) pure @trusted
 {
     int4 r = [0, 0, 0, 0];
-    r.array[0] = a;
+    r.ptr[0] = a;
     return r;
 }
 unittest
@@ -1363,9 +1363,9 @@ unittest
 
 
 // Note: on macOS, using "llvm.x86.sse2.cvtsi642sd" was buggy
-__m128d _mm_cvtsi64_sd(__m128d v, long x) pure @safe
+__m128d _mm_cvtsi64_sd(__m128d v, long x) pure @trusted
 {
-    v.array[0] = cast(double)x;
+    v.ptr[0] = cast(double)x;
     return v;
 }
 unittest
@@ -1374,19 +1374,19 @@ unittest
     assert(a.array == [42.0, 0]);
 }
 
-__m128i _mm_cvtsi64_si128 (long a) pure @safe
+__m128i _mm_cvtsi64_si128 (long a) pure @trusted
 {
     long2 r = [0, 0];
-    r.array[0] = a;
+    r.ptr[0] = a;
     return cast(__m128i)(r);
 }
 
 alias _mm_cvtsi64x_sd = _mm_cvtsi64_sd;
 alias _mm_cvtsi64x_si128 = _mm_cvtsi64_si128;
 
-double2 _mm_cvtss_sd(double2 v, float4 x) pure @safe
+double2 _mm_cvtss_sd(double2 v, float4 x) pure @trusted
 {
-    v.array[0] = x.array[0];
+    v.ptr[0] = x.array[0];
     return v;
 }
 unittest
@@ -1448,14 +1448,14 @@ unittest
     assert(R.array == correct);
 }
 
-__m128i _mm_cvttps_epi32 (__m128 a) pure @safe
+__m128i _mm_cvttps_epi32 (__m128 a) pure @trusted
 {
     // Note: Generates cvttps2dq since LDC 1.3 -O2
     __m128i r;
-    r.array[0] = cast(int)a.array[0];
-    r.array[1] = cast(int)a.array[1];
-    r.array[2] = cast(int)a.array[2];
-    r.array[3] = cast(int)a.array[3];
+    r.ptr[0] = cast(int)a.array[0];
+    r.ptr[1] = cast(int)a.array[1];
+    r.ptr[2] = cast(int)a.array[2];
+    r.ptr[3] = cast(int)a.array[3];
     return r;
 }
 unittest
@@ -1484,7 +1484,14 @@ __m128d _mm_div_pd(__m128d a, __m128d b) pure @safe
     return a / b;
 }
 
-version(DigitalMars)
+static if (GDC_X86)
+{
+    __m128d _mm_div_sd(__m128d a, __m128d b) pure @trusted
+    {
+        return __builtin_ia32_divsd(a, b);
+    }
+}
+else version(DigitalMars)
 {
     // Work-around for https://issues.dlang.org/show_bug.cgi?id=19599
     __m128d _mm_div_sd(__m128d a, __m128d b) pure @safe
@@ -1526,7 +1533,7 @@ unittest
 __m128i _mm_insert_epi16 (__m128i v, int i, int index) @trusted
 {
     short8 r = cast(short8)v;
-    r.array[index & 7] = cast(short)i;
+    r.ptr[index & 7] = cast(short)i;
     return cast(__m128i)r;
 }
 unittest
@@ -1573,10 +1580,10 @@ __m128d _mm_load_pd1 (const(double)* mem_addr) pure
     return loadUnaligned!(double2)(&arr[0]);
 }
 
-__m128d _mm_load_sd (const(double)* mem_addr) pure @safe
+__m128d _mm_load_sd (const(double)* mem_addr) pure @trusted
 {
     double2 r = [0, 0];
-    r.array[0] = *mem_addr;
+    r.ptr[0] = *mem_addr;
     return r;
 }
 unittest
@@ -1593,24 +1600,24 @@ __m128i _mm_load_si128 (const(__m128i)* mem_addr) pure @trusted
 
 alias _mm_load1_pd = _mm_load_pd1;
 
-__m128d _mm_loadh_pd (__m128d a, const(double)* mem_addr) pure @safe
+__m128d _mm_loadh_pd (__m128d a, const(double)* mem_addr) pure @trusted
 {
-    a.array[1] = *mem_addr;
+    a.ptr[1] = *mem_addr;
     return a;
 }
 
 // Note: strange signature since the memory doesn't have to aligned
-__m128i _mm_loadl_epi64 (const(__m128i)* mem_addr) pure @safe
+__m128i _mm_loadl_epi64 (const(__m128i)* mem_addr) pure @trusted
 {
     auto pLong = cast(const(long)*)mem_addr;
     long2 r = [0, 0];
-    r.array[0] = *pLong;
+    r.ptr[0] = *pLong;
     return cast(__m128i)(r);
 }
 
-__m128d _mm_loadl_pd (__m128d a, const(double)* mem_addr) pure @safe
+__m128d _mm_loadl_pd (__m128d a, const(double)* mem_addr) pure @trusted
 {
-    a.array[0] = *mem_addr;
+    a.ptr[0] = *mem_addr;
     return a;
 }
 
@@ -1648,7 +1655,7 @@ __m128i _mm_loadu_si32 (const(void)* mem_addr) pure @trusted
 {
     int r = *cast(int*)(mem_addr);
     int4 result = [0, 0, 0, 0];
-    result.array[0] = r;
+    result.ptr[0] = r;
     return result;
 }
 unittest
@@ -1659,7 +1666,14 @@ unittest
     assert(A.array == correct);
 }
 
-version(LDC)
+static if (GDC_X86)
+{
+    /// Multiply packed signed 16-bit integers in `a` and `b`, producing intermediate
+    /// signed 32-bit integers. Horizontally add adjacent pairs of intermediate 32-bit integers,
+    /// and pack the results in destination.
+    alias _mm_madd_epi16 = __builtin_ia32_pmaddwd128;
+}
+else version(LDC)
 {
     /// Multiply packed signed 16-bit integers in `a` and `b`, producing intermediate
     /// signed 32-bit integers. Horizontally add adjacent pairs of intermediate 32-bit integers,
@@ -2050,18 +2064,18 @@ unittest
 }
 
 /// Copy the 64-bit integer `a` to the lower element of dest, and zero the upper element.
-__m128i _mm_movpi64_epi64 (__m64 a) pure @safe
+__m128i _mm_movpi64_epi64 (__m64 a) pure @trusted
 {
     long2 r;
-    r.array[0] = a.array[0];
-    r.array[1] = 0;
+    r.ptr[0] = a.array[0];
+    r.ptr[1] = 0;
     return cast(__m128i)r;
 }
 
 // PERF: unfortunately, __builtin_ia32_pmuludq128 disappeared from LDC
 // and is SSE4.1 in GDC
 // but seems there in clang
-__m128i _mm_mul_epu32 (__m128i a, __m128i b) pure @safe
+__m128i _mm_mul_epu32 (__m128i a, __m128i b) pure @trusted
 {
     __m128i zero = _mm_setzero_si128();
     long2 la = cast(long2) shufflevector!(int4, 0, 4, 2, 6)(a, zero);
@@ -2073,8 +2087,8 @@ __m128i _mm_mul_epu32 (__m128i a, __m128i b) pure @safe
     else
     {
         // long2 mul not supported before LDC 1.5
-        la.array[0] *= lb.array[0];
-        la.array[1] *= lb.array[1];
+        la.ptr[0] *= lb.array[0];
+        la.ptr[1] *= lb.array[1];
         return cast(__m128i)(la);
     }
 }
@@ -3455,6 +3469,10 @@ version(DigitalMars)
         return a;
     }
 }
+else static if (GDC_X86)
+{
+    alias _mm_sub_sd = __builtin_ia32_subsd;
+}
 else
 {
     __m128d _mm_sub_sd(__m128d a, __m128d b) pure @safe
@@ -3584,7 +3602,7 @@ else
 {
     static if (GDC_X86)
     {
-            alias _mm_subs_epu16 = __builtin_ia32_psubusw128;
+        alias _mm_subs_epu16 = __builtin_ia32_psubusw128;
     }
     else
     {
@@ -3632,7 +3650,7 @@ else
 {
     static if (GDC_X86)
     {
-            alias _mm_subs_epu8 = __builtin_ia32_psubusb128;
+        alias _mm_subs_epu8 = __builtin_ia32_psubusb128;
     }
     else
     {
