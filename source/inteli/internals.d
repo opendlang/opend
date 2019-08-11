@@ -522,40 +522,40 @@ version(LDC)
 else
 {
     /// Provides packed float comparisons
-    package int4 cmpps(FPComparison comparison)(float4 a, float4 b) pure @safe
+    package int4 cmpps(FPComparison comparison)(float4 a, float4 b) pure @trusted
     {
         int4 result;
         foreach(i; 0..4)
         {
-            result.array[i] = compareFloat!float(comparison, a.array[i], b.array[i]) ? -1 : 0;
+            result.ptr[i] = compareFloat!float(comparison, a.array[i], b.array[i]) ? -1 : 0;
         }
         return result;
     }
 
     /// Provides packed double comparisons
-    package long2 cmppd(FPComparison comparison)(double2 a, double2 b) pure @safe
+    package long2 cmppd(FPComparison comparison)(double2 a, double2 b) pure @trusted
     {
         long2 result;
         foreach(i; 0..2)
         {
-            result.array[i] = compareFloat!double(comparison, a.array[i], b.array[i]) ? -1 : 0;
+            result.ptr[i] = compareFloat!double(comparison, a.array[i], b.array[i]) ? -1 : 0;
         }
         return result;
     }
 
     /// Provides CMPSS-style comparison
-    package float4 cmpss(FPComparison comparison)(float4 a, float4 b) pure @safe
+    package float4 cmpss(FPComparison comparison)(float4 a, float4 b) pure @trusted
     {
         int4 result = cast(int4)a;
-        result.array[0] = compareFloat!float(comparison, a.array[0], b.array[0]) ? -1 : 0;
+        result.ptr[0] = compareFloat!float(comparison, a.array[0], b.array[0]) ? -1 : 0;
         return cast(float4)result;
     }
 
     /// Provides CMPSD-style comparison
-    package double2 cmpsd(FPComparison comparison)(double2 a, double2 b) pure @safe
+    package double2 cmpsd(FPComparison comparison)(double2 a, double2 b) pure @trusted
     {
         long2 result = cast(long2)a;
-        result.array[0] = compareFloat!double(comparison, a.array[0], b.array[0]) ? -1 : 0;
+        result.ptr[0] = compareFloat!double(comparison, a.array[0], b.array[0]) ? -1 : 0;
         return cast(double2)result;
     }
 
