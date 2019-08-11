@@ -238,8 +238,18 @@ __m128d _mm_loaddup_pd (const(double)* mem_addr) pure @safe
 }
 unittest
 {
-    double a = 7.5;
-    assert(_mm_loaddup_pd(&a).array == _mm_set_pd(7.5, 7.5).array);
+    version(LDC)
+    {
+        double a = 7.5;
+        assert(_mm_loaddup_pd(&a) == _mm_set_pd(7.5, 7.5));
+    }
+    else
+    {
+        double a = 7.5;
+        // For some reason, this line breaks with LDC, but not when isolated!
+        // was not reported yet.
+        assert(_mm_loaddup_pd(&a).array == _mm_set_pd(7.5, 7.5).array);
+    }
 }
 
 __m128d _mm_movedup_pd (__m128d a) pure @safe
