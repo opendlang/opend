@@ -9,10 +9,10 @@ Use Intel intrinsics in D code with a [wide range of compilers](https://github.c
 
 ```d
 
-import inteli.mmintrin;  // allows MMX intrinsics
-import inteli.xmmintrin; // allows SSE1 intrinsics
-import inteli.emmintrin; // allows SSE2 intrinsics
-import inteli.pmmintrin; // allows SSE3 intrinsics
+import inteli.mmx;       // allow MMX intrinsics
+import inteli.xmmintrin; // allow SSE1 intrinsics
+import inteli.emmintrin; // allow SSE2 intrinsics
+import inteli.pmmintrin; // allow SSE3 intrinsics
 
 // distance between two points in 4D
 float distance(float[4] a, float[4] b) nothrow @nogc
