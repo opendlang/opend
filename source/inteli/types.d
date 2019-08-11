@@ -79,7 +79,7 @@ version(GNU)
     }
 
     // TODO: for performance, replace that anywhere possible by a GDC intrinsic
-    Vec shufflevector(Vec, mask...)(Vec a, Vec b) @safe
+    Vec shufflevector(Vec, mask...)(Vec a, Vec b) @trusted
     {
         enum Count = Vec.array.length;
         static assert(mask.length == Count);
@@ -90,9 +90,9 @@ version(GNU)
             static assert (m < Count * 2);
             int ind = cast(int)m;
             if (ind < Count)
-                r.array[i] = a.array[ind];
+                r.ptr[i] = a.array[ind];
             else
-                r.array[i] = b.array[ind - Count];
+                r.ptr[i] = b.array[ind - Count];
         }
         return r;
     }
@@ -256,6 +256,11 @@ else
     {
         enum Count = N;
         alias Base = BaseType;
+
+        BaseType* ptr() pure nothrow @nogc
+        {
+            return array.ptr;
+        }
 
         // Unary operators
         VectorType opUnary(string op)() pure nothrow @safe @nogc
