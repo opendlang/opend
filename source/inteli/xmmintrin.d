@@ -1327,7 +1327,7 @@ unittest
 
 static if (GDC_X86)
 {
-    alias _mm_sqrt_ps = __builtin_ia32_sqrtss;
+    alias _mm_sqrt_ss = __builtin_ia32_sqrtss;
 }
 else version(LDC)
 {
