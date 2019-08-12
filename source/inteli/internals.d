@@ -22,19 +22,21 @@ version(GNU)
 
     // NOTE: These intrinsics are not available in every i386 and x86_64 CPU.
     // For more info: https://gcc.gnu.org/onlinedocs/gcc-4.9.2/gcc/X86-Built-in-Functions.html 
-    package(inteli) import gcc.builtins;
+    public import gcc.builtins;
 
     version (X86)
     {
-        package(inteli) enum GDC_X86 = true;
+        enum GDC_X86 = true;
     }
     else version (X86_64)
     {
-        package(inteli) enum GDC_X86 = true;
+        enum GDC_X86 = true;
     }
     else
     {
-        package(inteli) enum GDC_X86 = false;
+        // Note: non-x86 GDC is unsupported for now. It would need to adapt all
+        // generic code to work with GDC even when GDC_X86 is false.
+        enum GDC_X86 = false;
     }
 }
 else version(LDC)
@@ -139,6 +141,12 @@ long convertFloatToInt64UsingMXCSR(float value) pure @safe
                 mov result, RAX;
             }
         }
+        else static if (GDC_X86)
+        {
+            __m128 A;
+            A.ptr[0] = value;
+            return __builtin_ia32_cvtss2si64 (A);
+        }
         else
         {
             asm pure nothrow @nogc @trusted
@@ -228,6 +236,12 @@ long convertDoubleToInt64UsingMXCSR(double value) pure @safe
                 cvtsd2si RAX, XMM0;
                 mov result, RAX;
             }
+        }
+        else static if (GDC_X86)
+        {
+            __m128d A;
+            A.ptr[0] = value;
+            return __builtin_ia32_cvtsd2si64 (A);
         }
         else
         {
