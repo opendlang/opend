@@ -183,7 +183,7 @@ long convertFloatToInt64UsingMXCSR(float value) pure @safe
     }
     else static if (GDC_X86)
     {
-        version(x86_64) // 64-bit can just use the right instruction
+        version(X86_64) // 64-bit can just use the right instruction
         {
             __m128 A;
             A.ptr[0] = value;
@@ -283,7 +283,7 @@ long convertDoubleToInt64UsingMXCSR(double value) pure @safe
     }
     else static if (GDC_X86)
     {
-        version(x86_64)
+        version(X86_64)
         {
             __m128d A;
             A.ptr[0] = value;
