@@ -141,12 +141,6 @@ long convertFloatToInt64UsingMXCSR(float value) pure @safe
                 mov result, RAX;
             }
         }
-        else static if (GDC_X86)
-        {
-            __m128 A;
-            A.ptr[0] = value;
-            return __builtin_ia32_cvtss2si64 (A);
-        }
         else
         {
             asm pure nothrow @nogc @trusted
@@ -189,31 +183,41 @@ long convertFloatToInt64UsingMXCSR(float value) pure @safe
     }
     else static if (GDC_X86)
     {
-        uint sseRounding;
-        ushort savedFPUCW;
-        ushort newFPUCW;
-        long result;
-        asm pure nothrow @nogc @trusted
+        version(x86_64) // 64-bit can just use the right instruction
         {
-            "stmxcsr %1;\n" ~
-            "fld %2;\n" ~
-            "fnstcw %3;\n" ~
-            "movw %3, %%ax;\n" ~
-            "andw $0xf3ff, %%ax;\n" ~
-            "movzwl %1, %%ecx;\n" ~
-            "andl $0x6000, %%ecx;\n" ~
-            "shrl $3, %%ecx;\n" ~
-            "orw %%cx, %%ax\n" ~
-            "movw %%ax, %4;\n" ~
-            "fldcw %4;\n" ~
-            "fistpll %0;\n" ~
-            "fldcw %3;\n" 
-              : "=m"(result)    // %0
-              : "m" (sseRounding),
-                "f" (value),
-                "m" (savedFPUCW),
-                "m" (newFPUCW) 
-              : "eax", "ecx", "st";
+            __m128 A;
+            A.ptr[0] = value;
+            return __builtin_ia32_cvtss2si64 (A);
+        }
+        else
+        {
+            // This is untested!
+            uint sseRounding;
+            ushort savedFPUCW;
+            ushort newFPUCW;
+            long result;
+            asm pure nothrow @nogc @trusted
+            {
+                "stmxcsr %1;\n" ~
+                "fld %2;\n" ~
+                "fnstcw %3;\n" ~
+                "movw %3, %%ax;\n" ~
+                "andw $0xf3ff, %%ax;\n" ~
+                "movzwl %1, %%ecx;\n" ~
+                "andl $0x6000, %%ecx;\n" ~
+                "shrl $3, %%ecx;\n" ~
+                "orw %%cx, %%ax\n" ~
+                "movw %%ax, %4;\n" ~
+                "fldcw %4;\n" ~
+                "fistpll %0;\n" ~
+                "fldcw %3;\n" 
+                  : "=m"(result)    // %0
+                  : "m" (sseRounding),
+                    "f" (value),
+                    "m" (savedFPUCW),
+                    "m" (newFPUCW) 
+                  : "eax", "ecx", "st";
+            }
         }
         return result;
     }
@@ -236,12 +240,6 @@ long convertDoubleToInt64UsingMXCSR(double value) pure @safe
                 cvtsd2si RAX, XMM0;
                 mov result, RAX;
             }
-        }
-        else static if (GDC_X86)
-        {
-            __m128d A;
-            A.ptr[0] = value;
-            return __builtin_ia32_cvtsd2si64 (A);
         }
         else
         {
@@ -285,33 +283,43 @@ long convertDoubleToInt64UsingMXCSR(double value) pure @safe
     }
     else static if (GDC_X86)
     {
-        uint sseRounding;
-        ushort savedFPUCW;
-        ushort newFPUCW;
-        long result;
-        asm pure nothrow @nogc @trusted
+        version(x86_64)
         {
-            "stmxcsr %1;\n" ~
-            "fld %2;\n" ~
-            "fnstcw %3;\n" ~
-            "movw %3, %%ax;\n" ~
-            "andw $0xf3ff, %%ax;\n" ~
-            "movzwl %1, %%ecx;\n" ~
-            "andl $0x6000, %%ecx;\n" ~
-            "shrl $3, %%ecx;\n" ~
-            "orw %%cx, %%ax\n" ~
-            "movw %%ax, %4;\n" ~
-            "fldcw %4;\n" ~
-            "fistpll %0;\n" ~
-            "fldcw %3;\n"         
-              : "=m"(result)    // %0
-              : "m" (sseRounding),
-                "t" (value),
-                "m" (savedFPUCW),
-                "m" (newFPUCW) 
-              : "eax", "ecx", "st";
+            __m128d A;
+            A.ptr[0] = value;
+            return __builtin_ia32_cvtsd2si64 (A);
         }
-        return result;
+        else
+        {
+            // This is untested!
+            uint sseRounding;
+            ushort savedFPUCW;
+            ushort newFPUCW;
+            long result;
+            asm pure nothrow @nogc @trusted
+            {
+                "stmxcsr %1;\n" ~
+                "fld %2;\n" ~
+                "fnstcw %3;\n" ~
+                "movw %3, %%ax;\n" ~
+                "andw $0xf3ff, %%ax;\n" ~
+                "movzwl %1, %%ecx;\n" ~
+                "andl $0x6000, %%ecx;\n" ~
+                "shrl $3, %%ecx;\n" ~
+                "orw %%cx, %%ax\n" ~
+                "movw %%ax, %4;\n" ~
+                "fldcw %4;\n" ~
+                "fistpll %0;\n" ~
+                "fldcw %3;\n"         
+                  : "=m"(result)    // %0
+                  : "m" (sseRounding),
+                    "t" (value),
+                    "m" (savedFPUCW),
+                    "m" (newFPUCW) 
+                  : "eax", "ecx", "st";
+            }
+            return result;
+        }
     }
     else
         static assert(false);
