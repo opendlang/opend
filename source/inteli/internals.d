@@ -218,8 +218,8 @@ long convertFloatToInt64UsingMXCSR(float value) pure @safe
                     "m" (newFPUCW) 
                   : "eax", "ecx", "st";
             }
-        }
-        return result;
+            return result;
+        }        
     }
     else
         static assert(false);
