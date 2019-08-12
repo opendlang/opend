@@ -20,12 +20,12 @@ nothrow @nogc:
 
 /// Alternatively add and subtract packed double-precision (64-bit) 
 /// floating-point elements in `a` to/from packed elements in `b`.
-__m128d _mm_addsub_pd (__m128d a, __m128d b) pure @safe
+__m128d _mm_addsub_pd (__m128d a, __m128d b) pure @trusted
 {
     // Note: generates addsubpd since LDC 1.3.0 with -O1
-    // PERF: for GDC, detect SSE3 and use the relevant builtin
-    a.array[0] = a.array[0] - b.array[0];
-    a.array[1] = a.array[1] + b.array[1];
+    // PERF: for GDC, detect SSE3 and use the relevant builtin, because it doesn't generates addsubpd
+    a.ptr[0] = a.array[0] - b.array[0];
+    a.ptr[1] = a.array[1] + b.array[1];
     return a;
 }
 unittest
@@ -37,14 +37,14 @@ unittest
 
 /// Alternatively add and subtract packed single-precision (32-bit) 
 /// floating-point elements in `a` to/from packed elements in `b`.
-float4 _mm_addsub_ps (float4 a, float4 b) pure @safe
+float4 _mm_addsub_ps (float4 a, float4 b) pure @trusted
 {
     // Note: generates addsubps since LDC 1.3.0 with -O1
     // PERF: for GDC, detect SSE3 and use the relevant builtin
-    a.array[0] -= b.array[0];
-    a.array[1] += b.array[1];
-    a.array[2] -= b.array[2];
-    a.array[3] += b.array[3];    
+    a.ptr[0] -= b.array[0];
+    a.ptr[1] += b.array[1];
+    a.ptr[2] -= b.array[2];
+    a.ptr[3] += b.array[3];
     return a;
 }
 unittest
@@ -75,15 +75,14 @@ version(LDC)
 }
 else
 {
-    // PERF: for GDC, detect SSE3 and use the relevant builtin
-
     /// Horizontally add adjacent pairs of double-precision (64-bit) 
     /// floating-point elements in `a` and `b`.
-    __m128d _mm_hadd_pd (__m128d a, __m128d b) pure @safe
+    __m128d _mm_hadd_pd (__m128d a, __m128d b) pure @trusted
     {
+        // On GDC this generates haddpd with -O1
         __m128d res;
-        res.array[0] = a.array[1] + a.array[0];
-        res.array[1] = b.array[1] + b.array[0];
+        res.ptr[0] = a.array[1] + a.array[0];
+        res.ptr[1] = b.array[1] + b.array[0];
         return res;
     }
 }
@@ -121,13 +120,13 @@ else
 
     /// Horizontally add adjacent pairs of single-precision (32-bit) 
     /// floating-point elements in `a` and `b`.
-    __m128 _mm_hadd_ps (__m128 a, __m128 b) pure @safe
+    __m128 _mm_hadd_ps (__m128 a, __m128 b) pure @trusted
     {
         __m128 res;
-        res.array[0] = a.array[1] + a.array[0];
-        res.array[1] = a.array[3] + a.array[2];
-        res.array[2] = b.array[1] + b.array[0];
-        res.array[3] = b.array[3] + b.array[2];
+        res.ptr[0] = a.array[1] + a.array[0];
+        res.ptr[1] = a.array[3] + a.array[2];
+        res.ptr[2] = b.array[1] + b.array[0];
+        res.ptr[3] = b.array[3] + b.array[2];
         return res;
     }
 }
@@ -161,13 +160,12 @@ else
 {
     /// Horizontally subtract adjacent pairs of double-precision (64-bit) 
     /// floating-point elements in `a` and `b`.
-    // PERF: for GDC, detect SSE3 and use the relevant builtin
-
-    __m128d _mm_hsub_pd (__m128d a, __m128d b) pure @safe
+    __m128d _mm_hsub_pd (__m128d a, __m128d b) pure @trusted
     {
+        // On GDC this generates hsubpd with -O1
         __m128d res;
-        res.array[0] = a.array[0] - a.array[1];
-        res.array[1] = b.array[0] - b.array[1];
+        res.ptr[0] = a.array[0] - a.array[1];
+        res.ptr[1] = b.array[0] - b.array[1];
         return res;
     }
 }
@@ -203,14 +201,14 @@ else
 {
     /// Horizontally subtract adjacent pairs of single-precision (32-bit) 
     /// floating-point elements in `a` and `b`.
-    __m128 _mm_hsub_ps (__m128 a, __m128 b) pure @safe
+    __m128 _mm_hsub_ps (__m128 a, __m128 b) pure @trusted
     {
-        // PERF: GDC probably doesn't generate the right instruction
+        // PERF: GDC doesn't generate the right instruction, do something
         __m128 res;
-        res.array[0] = a.array[0] - a.array[1];
-        res.array[1] = a.array[2] - a.array[3];
-        res.array[2] = b.array[0] - b.array[1];
-        res.array[3] = b.array[2] - b.array[3];
+        res.ptr[0] = a.array[0] - a.array[1];
+        res.ptr[1] = a.array[2] - a.array[3];
+        res.ptr[2] = b.array[0] - b.array[1];
+        res.ptr[3] = b.array[2] - b.array[3];
         return res;
     }
 }
@@ -227,13 +225,14 @@ unittest
 alias _mm_lddqu_si128 = _mm_loadu_si128;
 
 
-__m128d _mm_loaddup_pd (const(double)* mem_addr) pure @safe
+__m128d _mm_loaddup_pd (const(double)* mem_addr) pure @trusted
 {
     // Note: generates movddup since LDC 1.3 with -O1 -mattr=+sse3
+    // Same for GDC with -O1
     double value = *mem_addr;
     __m128d res;
-    res.array[0] = value;
-    res.array[1] = value;
+    res.ptr[0] = value;
+    res.ptr[1] = value;
     return res;
 }
 unittest
@@ -252,11 +251,11 @@ unittest
     }
 }
 
-__m128d _mm_movedup_pd (__m128d a) pure @safe
+__m128d _mm_movedup_pd (__m128d a) pure @trusted
 {
     // Note: generates movddup since LDC 1.3 with -O1 -mattr=+sse3
-    // PERF: GDC probably doesn't generate it
-    a.array[1] = a.array[0];
+    // Something efficient with -01 for GDC
+    a.ptr[1] = a.array[0];
     return a;
 }
 unittest
@@ -266,21 +265,21 @@ unittest
 }
 
 /// Duplicate odd-indexed single-precision (32-bit) floating-point elements from `a`.
-__m128 _mm_movehdup_ps (__m128 a) pure @safe
+__m128 _mm_movehdup_ps (__m128 a) pure @trusted
 {
     // Generates movshdup since LDC 1.3 with -O1 -mattr=+sse3
-    // PERF: GDC probably doesn't generate it
-    a.array[0] = a.array[1];
-    a.array[2] = a.array[3];
+    // PERF but GDC never generates it
+    a.ptr[0] = a.array[1];
+    a.ptr[2] = a.array[3];
     return a;
 }
 
 /// Duplicate even-indexed single-precision (32-bit) floating-point elements from `a`.
-__m128 _mm_moveldup_ps (__m128 a) pure @safe
+__m128 _mm_moveldup_ps (__m128 a) pure @trusted
 {
     // Generates movsldup since LDC 1.3 with -O1 -mattr=+sse3
-    // PERF: GDC probably doesn't generate it
-    a.array[1] = a.array[0];
-    a.array[3] = a.array[2];
+    // PERF but GDC never generates it
+    a.ptr[1] = a.array[0];
+    a.ptr[3] = a.array[2];
     return a;
 }
