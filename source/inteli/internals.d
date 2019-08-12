@@ -179,10 +179,35 @@ long convertFloatToInt64UsingMXCSR(float value) pure @safe
         }
         return result;
     }
-    else version(GNU)
+    else static if (GDC_X86)
     {
-        // TODO: this is a bug, as it won't use MXCSR in 32-bit so will round incorrectly
-        return cast(long)value;
+        uint sseRounding;
+        ushort savedFPUCW;
+        ushort newFPUCW;
+        long result;
+        asm pure nothrow @nogc @trusted
+        {
+            "stmxcsr %1;\n" ~
+            "fld %2;\n" ~
+            "fnstcw %3;\n" ~
+            "movw %3, %%ax;\n" ~
+            "andw $0xf3ff, %%ax;\n" ~
+            "movzwl %1, %%ecx;\n" ~
+            "andl $0x6000, %%ecx;\n" ~
+            "shrl $3, %%ecx;\n" ~
+            "orw %%cx, %%ax\n" ~
+            "movw %%ax, %4;\n" ~
+            "fldcw %4;\n" ~
+            "fistpll %0;\n" ~
+            "fldcw %3;\n" 
+              : "=m"(result)    // %0
+              : "m" (sseRounding),
+                "f" (value),
+                "m" (savedFPUCW),
+                "m" (newFPUCW) 
+              : "eax", "ecx", "st";
+        }
+        return result;
     }
     else
         static assert(false);
@@ -244,10 +269,35 @@ long convertDoubleToInt64UsingMXCSR(double value) pure @safe
         }
         return result;
     }
-    else version(GNU)
+    else static if (GDC_X86)
     {
-        // TODO: this is a bug, as it won't use MXCSR in 32-bit so will round incorrectly
-        return cast(long)value;
+        uint sseRounding;
+        ushort savedFPUCW;
+        ushort newFPUCW;
+        long result;
+        asm pure nothrow @nogc @trusted
+        {
+            "stmxcsr %1;\n" ~
+            "fld %2;\n" ~
+            "fnstcw %3;\n" ~
+            "movw %3, %%ax;\n" ~
+            "andw $0xf3ff, %%ax;\n" ~
+            "movzwl %1, %%ecx;\n" ~
+            "andl $0x6000, %%ecx;\n" ~
+            "shrl $3, %%ecx;\n" ~
+            "orw %%cx, %%ax\n" ~
+            "movw %%ax, %4;\n" ~
+            "fldcw %4;\n" ~
+            "fistpll %0;\n" ~
+            "fldcw %3;\n"         
+              : "=m"(result)    // %0
+              : "m" (sseRounding),
+                "t" (value),
+                "m" (savedFPUCW),
+                "m" (newFPUCW) 
+              : "eax", "ecx", "st";
+        }
+        return result;
     }
     else
         static assert(false);
