@@ -1239,16 +1239,9 @@ version(LDC)
 }
 else
 {
-    static if (GDC_X86)
+    long _mm_cvtsd_si64 (__m128d a) pure @safe
     {
-        alias _mm_cvtsd_si64 = __builtin_ia32_cvtsd2si64;
-    }
-    else
-    {
-        long _mm_cvtsd_si64 (__m128d a) pure @safe
-        {
-            return convertDoubleToInt64UsingMXCSR(a[0]);
-        }
+        return convertDoubleToInt64UsingMXCSR(a.array[0]);
     }
 }
 unittest
