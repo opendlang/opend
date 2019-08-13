@@ -1,5 +1,9 @@
 language: d
 
+before_install:
+  - sudo apt-get update
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install -y gcc-multilib ; fi
+
 os:
   - osx
   - linux
