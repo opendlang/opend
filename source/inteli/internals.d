@@ -8,7 +8,8 @@ module inteli.internals;
 import inteli.types;
 
 // The only math functions needed for intel-intrinsics
-public import core.math: fabs, sqrt; // since they are intrinsics
+public import core.math: sqrt; // since it's an intrinsics
+public import std.math: abs; // `fabs` is broken with GCC 4.9.2 on Linux 64-bit
 
 
 version(GNU)

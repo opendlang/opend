@@ -1117,7 +1117,7 @@ unittest
         {
             double exact = 1.0f / A.array[i];
             double ratio = cast(double)(B.array[i]) / cast(double)(exact);
-            assert(fabs(ratio - 1) <= maxRelativeError);
+            assert(abs(ratio - 1) <= maxRelativeError);
         }
 
         // test _mm_rcp_ss
@@ -1125,7 +1125,7 @@ unittest
             B = _mm_rcp_ss(A);
             double exact = 1.0f / A.array[0];
             double ratio = cast(double)(B.array[0]) / cast(double)(exact);
-            assert(fabs(ratio - 1) <= maxRelativeError);
+            assert(abs(ratio - 1) <= maxRelativeError);
         }
 
         // test _mm_rsqrt_ps
@@ -1134,7 +1134,7 @@ unittest
         {
             double exact = 1.0f / sqrt(A.array[i]);
             double ratio = cast(double)(B.array[i]) / cast(double)(exact);
-            assert(fabs(ratio - 1) <= maxRelativeError);
+            assert(abs(ratio - 1) <= maxRelativeError);
         }
 
         // test _mm_rsqrt_ss
@@ -1142,7 +1142,7 @@ unittest
             B = _mm_rsqrt_ss(A);
             double exact = 1.0f / sqrt(A.array[0]);
             double ratio = cast(double)(B.array[0]) / cast(double)(exact);
-            assert(fabs(ratio - 1) <= maxRelativeError);
+            assert(abs(ratio - 1) <= maxRelativeError);
         }
     }
 
