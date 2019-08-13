@@ -42,3 +42,7 @@ script:
   - dub test -b unittest-release --compiler=${DC}
   - dub test -b unittest-inst --compiler=${DC}
   - dub test -b unittest-release-inst --compiler=${DC}
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then dub test --compiler=${DC} -a x86 ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then dub test -b unittest-release --compiler=${DC} -a x86 ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then dub test -b unittest-inst --compiler=${DC} -a x86 ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then dub test -b unittest-release-inst --compiler=${DC} -a x86 ; fi  
