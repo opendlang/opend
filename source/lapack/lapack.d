@@ -757,17 +757,17 @@ void zgbtrs_(ref char trans, ref lapackint n, ref lapackint kl, ref lapackint ku
 
 /// Transforms eigenvectors of a balanced matrix to those of the
 /// original matrix supplied to SGEBAL.
-void sgebak_(ref char job, ref char side, ref lapackint n, lapackint *ilo, lapackint *ihi, float *scale, ref lapackint m, float *v, ref lapackint ldv, ref lapackint info);
-void dgebak_(ref char job, ref char side, ref lapackint n, lapackint *ilo, lapackint *ihi, double *scale, ref lapackint m, double *v, ref lapackint ldv, ref lapackint info);
-void cgebak_(ref char job, ref char side, ref lapackint n, lapackint *ilo, lapackint *ihi, float *scale, ref lapackint m, _cfloat *v, ref lapackint ldv, ref lapackint info);
-void zgebak_(ref char job, ref char side, ref lapackint n, lapackint *ilo, lapackint *ihi, double *scale, ref lapackint m, _cdouble *v, ref lapackint ldv, ref lapackint info);
+void sgebak_(ref char job, ref char side, ref lapackint n, ref const lapackint ilo, ref const lapackint ihi, float *scale, ref lapackint m, float *v, ref lapackint ldv, ref lapackint info);
+void dgebak_(ref char job, ref char side, ref lapackint n, ref const lapackint ilo, ref const lapackint ihi, double *scale, ref lapackint m, double *v, ref lapackint ldv, ref lapackint info);
+void cgebak_(ref char job, ref char side, ref lapackint n, ref const lapackint ilo, ref const lapackint ihi, float *scale, ref lapackint m, _cfloat *v, ref lapackint ldv, ref lapackint info);
+void zgebak_(ref char job, ref char side, ref lapackint n, ref const lapackint ilo, ref const lapackint ihi, double *scale, ref lapackint m, _cdouble *v, ref lapackint ldv, ref lapackint info);
 
 /// Balances a general matrix in order to improve the accuracy
 /// of computed eigenvalues.
-void sgebal_(ref char job, ref lapackint n, float *a, ref lapackint lda, lapackint *ilo, lapackint *ihi, float *scale, ref lapackint info);
-void dgebal_(ref char job, ref lapackint n, double *a, ref lapackint lda, lapackint *ilo, lapackint *ihi, double *scale, ref lapackint info);
-void cgebal_(ref char job, ref lapackint n, _cfloat *a, ref lapackint lda, lapackint *ilo, lapackint *ihi, float *scale, ref lapackint info);
-void zgebal_(ref char job, ref lapackint n, _cdouble *a, ref lapackint lda, lapackint *ilo, lapackint *ihi, double *scale, ref lapackint info);
+void sgebal_(ref char job, ref lapackint n, float *a, ref lapackint lda, ref lapackint ilo, ref lapackint ihi, float *scale, ref lapackint info);
+void dgebal_(ref char job, ref lapackint n, double *a, ref lapackint lda, ref lapackint ilo, ref lapackint ihi, double *scale, ref lapackint info);
+void cgebal_(ref char job, ref lapackint n, _cfloat *a, ref lapackint lda, ref lapackint ilo, ref lapackint ihi, float *scale, ref lapackint info);
+void zgebal_(ref char job, ref lapackint n, _cdouble *a, ref lapackint lda, ref lapackint ilo, ref lapackint ihi, double *scale, ref lapackint info);
 
 /// Reduces a general rectangular matrix to real bidiagonal form
 /// by an orthogonal transformation.
@@ -793,10 +793,10 @@ void zgeequ_(ref lapackint m, ref lapackint n, _cdouble *a, ref lapackint lda, d
 
 /// Reduces a general matrix to upper Hessenberg form by an
 /// orthogonal similarity transformation.
-void sgehrd_(ref lapackint n, lapackint *ilo, lapackint *ihi, float *a, ref lapackint lda, float *tau, float *work, ref lapackint lwork, ref lapackint info);
-void dgehrd_(ref lapackint n, lapackint *ilo, lapackint *ihi, double *a, ref lapackint lda, double *tau, double *work, ref lapackint lwork, ref lapackint info);
-void cgehrd_(ref lapackint n, lapackint *ilo, lapackint *ihi, _cfloat *a, ref lapackint lda, _cfloat *tau, _cfloat *work, ref lapackint lwork, ref lapackint info);
-void zgehrd_(ref lapackint n, lapackint *ilo, lapackint *ihi, _cdouble *a, ref lapackint lda, _cdouble *tau, _cdouble *work, ref lapackint lwork, ref lapackint info);
+void sgehrd_(ref lapackint n, const ref lapackint ilo, const ref lapackint ihi, float *a, ref lapackint lda, float *tau, float *work, ref lapackint lwork, ref lapackint info);
+void dgehrd_(ref lapackint n, const ref lapackint ilo, const ref lapackint ihi, double *a, ref lapackint lda, double *tau, double *work, ref lapackint lwork, ref lapackint info);
+void cgehrd_(ref lapackint n, const ref lapackint ilo, const ref lapackint ihi, _cfloat *a, ref lapackint lda, _cfloat *tau, _cfloat *work, ref lapackint lwork, ref lapackint info);
+void zgehrd_(ref lapackint n, const ref lapackint ilo, const ref lapackint ihi, _cdouble *a, ref lapackint lda, _cdouble *tau, _cdouble *work, ref lapackint lwork, ref lapackint info);
 
 /// Computes an LQ factorization of a general rectangular matrix.
 void sgelqf_(ref lapackint m, ref lapackint n, float *a, ref lapackint lda, float *tau, float *work, ref lapackint lwork, ref lapackint info);
@@ -940,10 +940,10 @@ void zgttrs_(ref char trans, ref lapackint n, ref lapackint nrhs, _cdouble *dl, 
 /// Implements a single-/double-shift version of the QZ method for
 /// finding the generalized eigenvalues of the equation 
 /// det(A - w(i) B) = 0
-void shgeqz_(ref char job, ref char compq, ref char compz, ref lapackint n, lapackint *ilo, lapackint *ihi, float *a, ref lapackint lda, float *b, ref lapackint ldb, float *alphar, float *alphai, float *betav, float *q, ref lapackint ldq, float *z, ref lapackint ldz, float *work, ref lapackint lwork, ref lapackint info);
-void dhgeqz_(ref char job, ref char compq, ref char compz, ref lapackint n, lapackint *ilo, lapackint *ihi, double *a, ref lapackint lda, double *b, ref lapackint ldb, double *alphar, double *alphai, double *betav, double *q, ref lapackint ldq, double *z, ref lapackint ldz, double *work, ref lapackint lwork, ref lapackint info);
-void chgeqz_(ref char job, ref char compq, ref char compz, ref lapackint n, lapackint *ilo, lapackint *ihi, _cfloat *a, ref lapackint lda, _cfloat *b, ref lapackint ldb, _cfloat *alphav, _cfloat *betav, _cfloat *q, ref lapackint ldq, _cfloat *z, ref lapackint ldz, _cfloat *work, ref lapackint lwork, float *rwork, ref lapackint info);
-void zhgeqz_(ref char job, ref char compq, ref char compz, ref lapackint n, lapackint *ilo, lapackint *ihi, _cdouble *a, ref lapackint lda, _cdouble *b, ref lapackint ldb, _cdouble *alphav, _cdouble *betav, _cdouble *q, ref lapackint ldq, _cdouble *z, ref lapackint ldz, _cdouble *work, ref lapackint lwork, double *rwork, ref lapackint info);
+void shgeqz_(ref char job, ref char compq, ref char compz, ref lapackint n, const ref lapackint ilo, const ref lapackint ihi, float *a, ref lapackint lda, float *b, ref lapackint ldb, float *alphar, float *alphai, float *betav, float *q, ref lapackint ldq, float *z, ref lapackint ldz, float *work, ref lapackint lwork, ref lapackint info);
+void dhgeqz_(ref char job, ref char compq, ref char compz, ref lapackint n, const ref lapackint ilo, const ref lapackint ihi, double *a, ref lapackint lda, double *b, ref lapackint ldb, double *alphar, double *alphai, double *betav, double *q, ref lapackint ldq, double *z, ref lapackint ldz, double *work, ref lapackint lwork, ref lapackint info);
+void chgeqz_(ref char job, ref char compq, ref char compz, ref lapackint n, const ref lapackint ilo, const ref lapackint ihi, _cfloat *a, ref lapackint lda, _cfloat *b, ref lapackint ldb, _cfloat *alphav, _cfloat *betav, _cfloat *q, ref lapackint ldq, _cfloat *z, ref lapackint ldz, _cfloat *work, ref lapackint lwork, float *rwork, ref lapackint info);
+void zhgeqz_(ref char job, ref char compq, ref char compz, ref lapackint n, const ref lapackint ilo, const ref lapackint ihi, _cdouble *a, ref lapackint lda, _cdouble *b, ref lapackint ldb, _cdouble *alphav, _cdouble *betav, _cdouble *q, ref lapackint ldq, _cdouble *z, ref lapackint ldz, _cdouble *work, ref lapackint lwork, double *rwork, ref lapackint info);
 
 /// Computes specified right and/or left eigenvectors of an upper
 /// Hessenberg matrix by inverse iteration.
@@ -954,10 +954,10 @@ void zhsein_(ref char side, ref char eigsrc, ref char initv, lapackint *select, 
 
 /// Computes the eigenvalues and Schur factorization of an upper
 /// Hessenberg matrix, using the multishift QR algorithm.
-void shseqr_(ref char job, ref char compz, ref lapackint n, lapackint *ilo, lapackint *ihi, float *h, ref lapackint ldh, float *wr, float *wi, float *z, ref lapackint ldz, float *work, ref lapackint lwork, ref lapackint info);
-void dhseqr_(ref char job, ref char compz, ref lapackint n, lapackint *ilo, lapackint *ihi, double *h, ref lapackint ldh, double *wr, double *wi, double *z, ref lapackint ldz, double *work, ref lapackint lwork, ref lapackint info);
-void chseqr_(ref char job, ref char compz, ref lapackint n, lapackint *ilo, lapackint *ihi, _cfloat *h, ref lapackint ldh, _cfloat *w, _cfloat *z, ref lapackint ldz, _cfloat *work, ref lapackint lwork, ref lapackint info);
-void zhseqr_(ref char job, ref char compz, ref lapackint n, lapackint *ilo, lapackint *ihi, _cdouble *h, ref lapackint ldh, _cdouble *w, _cdouble *z, ref lapackint ldz, _cdouble *work, ref lapackint lwork, ref lapackint info);
+void shseqr_(ref char job, ref char compz, ref lapackint n, ref const lapackint ilo, ref const lapackint ihi, float *h, ref lapackint ldh, float *wr, float *wi, float *z, ref lapackint ldz, float *work, ref lapackint lwork, ref lapackint info);
+void dhseqr_(ref char job, ref char compz, ref lapackint n, ref const lapackint ilo, ref const lapackint ihi, double *h, ref lapackint ldh, double *wr, double *wi, double *z, ref lapackint ldz, double *work, ref lapackint lwork, ref lapackint info);
+void chseqr_(ref char job, ref char compz, ref lapackint n, ref const lapackint ilo, ref const lapackint ihi, _cfloat *h, ref lapackint ldh, _cfloat *w, _cfloat *z, ref lapackint ldz, _cfloat *work, ref lapackint lwork, ref lapackint info);
+void zhseqr_(ref char job, ref char compz, ref lapackint n, ref const lapackint ilo, ref const lapackint ihi, _cdouble *h, ref lapackint ldh, _cdouble *w, _cdouble *z, ref lapackint ldz, _cdouble *work, ref lapackint lwork, ref lapackint info);
 
 /// Generates the orthogonal transformation matrix from
 /// a reduction to tridiagonal form determined by SSPTRD.
@@ -1060,13 +1060,13 @@ void zunmbr_(ref char vect, ref char side, ref char trans, ref lapackint m, ref 
 
 /// Multiplies a general matrix by the orthogonal transformation
 /// matrix from a reduction to Hessenberg form determined by SGEHRD.
-void sormhr_(ref char side, ref char trans, ref lapackint m, ref lapackint n, lapackint *ilo, lapackint *ihi, float *a, ref lapackint lda, float *tau, float *c, ref lapackint ldc, float *work, ref lapackint lwork, ref lapackint info);
-void dormhr_(ref char side, ref char trans, ref lapackint m, ref lapackint n, lapackint *ilo, lapackint *ihi, double *a, ref lapackint lda, double *tau, double *c, ref lapackint ldc, double *work, ref lapackint lwork, ref lapackint info);
+void sormhr_(ref char side, ref char trans, ref lapackint m, ref lapackint n, const ref lapackint ilo, const ref lapackint ihi, float *a, ref lapackint lda, float *tau, float *c, ref lapackint ldc, float *work, ref lapackint lwork, ref lapackint info);
+void dormhr_(ref char side, ref char trans, ref lapackint m, ref lapackint n, const ref lapackint ilo, const ref lapackint ihi, double *a, ref lapackint lda, double *tau, double *c, ref lapackint ldc, double *work, ref lapackint lwork, ref lapackint info);
 
 /// Multiplies a general matrix by the unitary transformation
 /// matrix from a reduction to Hessenberg form determined by CGEHRD.
-void cunmhr_(ref char side, ref char trans, ref lapackint m, ref lapackint n, lapackint *ilo, lapackint *ihi, _cfloat *a, ref lapackint lda, _cfloat *tau, _cfloat *c, ref lapackint ldc, _cfloat *work, ref lapackint lwork, ref lapackint info);
-void zunmhr_(ref char side, ref char trans, ref lapackint m, ref lapackint n, lapackint *ilo, lapackint *ihi, _cdouble *a, ref lapackint lda, _cdouble *tau, _cdouble *c, ref lapackint ldc, _cdouble *work, ref lapackint lwork, ref lapackint info);
+void cunmhr_(ref char side, ref char trans, ref lapackint m, ref lapackint n, const ref lapackint ilo, const ref lapackint ihi, _cfloat *a, ref lapackint lda, _cfloat *tau, _cfloat *c, ref lapackint ldc, _cfloat *work, ref lapackint lwork, ref lapackint info);
+void zunmhr_(ref char side, ref char trans, ref lapackint m, ref lapackint n, const ref lapackint ilo, const ref lapackint ihi, _cdouble *a, ref lapackint lda, _cdouble *tau, _cdouble *c, ref lapackint ldc, _cdouble *work, ref lapackint lwork, ref lapackint info);
 
 /// Multiplies a general matrix by the orthogonal matrix
 /// from an LQ factorization determined by SGELQF.
