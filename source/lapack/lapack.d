@@ -673,17 +673,17 @@ void zggesx_(ref char jobvsl, ref char jobvsr, ref char sort, FCB_ZGGESX_DELCTG 
 /// a general matrix,  with preliminary balancing of the matrix,
 /// and computes reciprocal condition numbers for the eigenvalues
 /// and right eigenvectors.
-void sgeevx_(ref char balanc, ref char jobvl, ref char jobvr, ref char sense, ref lapackint n, float *a, ref lapackint lda, float *wr, float *wi, float *vl, ref lapackint ldvl, float *vr, ref lapackint ldvr, lapackint *ilo, lapackint *ihi, float *scale, float *abnrm, ref float rconde, ref float rcondv, float *work, ref lapackint lwork, lapackint *iwork, ref lapackint info);
-void dgeevx_(ref char balanc, ref char jobvl, ref char jobvr, ref char sense, ref lapackint n, double *a, ref lapackint lda, double *wr, double *wi, double *vl, ref lapackint ldvl, double *vr, ref lapackint ldvr, lapackint *ilo, lapackint *ihi, double *scale, double *abnrm, ref double rconde, ref double rcondv, double *work, ref lapackint lwork, lapackint *iwork, ref lapackint info);
-void cgeevx_(ref char balanc, ref char jobvl, ref char jobvr, ref char sense, ref lapackint n, _cfloat *a, ref lapackint lda, _cfloat *w, _cfloat *vl, ref lapackint ldvl, _cfloat *vr, ref lapackint ldvr, lapackint *ilo, lapackint *ihi, float *scale, float *abnrm, ref float rconde, ref float rcondv, _cfloat *work, ref lapackint lwork, float *rwork, ref lapackint info);
-void zgeevx_(ref char balanc, ref char jobvl, ref char jobvr, ref char sense, ref lapackint n, _cdouble *a, ref lapackint lda, _cdouble *w, _cdouble *vl, ref lapackint ldvl, _cdouble *vr, ref lapackint ldvr, lapackint *ilo, lapackint *ihi, double *scale, double *abnrm, ref double rconde, ref double rcondv, _cdouble *work, ref lapackint lwork, double *rwork, ref lapackint info);
+void sgeevx_(ref char balanc, ref char jobvl, ref char jobvr, ref char sense, ref lapackint n, float *a, ref lapackint lda, float *wr, float *wi, float *vl, ref lapackint ldvl, float *vr, ref lapackint ldvr, ref lapackint ilo, ref lapackint ihi, float *scale, ref float abnrm, ref float rconde, ref float rcondv, float *work, ref lapackint lwork, lapackint *iwork, ref lapackint info);
+void dgeevx_(ref char balanc, ref char jobvl, ref char jobvr, ref char sense, ref lapackint n, double *a, ref lapackint lda, double *wr, double *wi, double *vl, ref lapackint ldvl, double *vr, ref lapackint ldvr, ref lapackint ilo, ref lapackint ihi, double *scale, ref double abnrm, ref double rconde, ref double rcondv, double *work, ref lapackint lwork, lapackint *iwork, ref lapackint info);
+void cgeevx_(ref char balanc, ref char jobvl, ref char jobvr, ref char sense, ref lapackint n, _cfloat *a, ref lapackint lda, _cfloat *w, _cfloat *vl, ref lapackint ldvl, _cfloat *vr, ref lapackint ldvr, ref lapackint ilo, ref lapackint ihi, float *scale, ref float abnrm, ref float rconde, ref float rcondv, _cfloat *work, ref lapackint lwork, float *rwork, ref lapackint info);
+void zgeevx_(ref char balanc, ref char jobvl, ref char jobvr, ref char sense, ref lapackint n, _cdouble *a, ref lapackint lda, _cdouble *w, _cdouble *vl, ref lapackint ldvl, _cdouble *vr, ref lapackint ldvr, ref lapackint ilo, ref lapackint ihi, double *scale, ref double abnrm, ref double rconde, ref double rcondv, _cdouble *work, ref lapackint lwork, double *rwork, ref lapackint info);
 
 /// Computes the generalized eigenvalues, and optionally, the left
 /// and/or right generalized eigenvectors.
-void sggevx_(ref char balanc, ref char jobvl, ref char jobvr, ref char sense, ref lapackint n, float *a, ref lapackint lda, float *b, ref lapackint ldb, float *alphar, float *alphai, float *betav, float *vl, ref lapackint ldvl, float *vr, ref lapackint ldvr, lapackint *ilo, lapackint *ihi, float *lscale, float *rscale, float *abnrm, float *bbnrm, ref float rconde, ref float rcondv, float *work, ref lapackint lwork, lapackint *iwork, lapackint *bwork, ref lapackint info);
-void dggevx_(ref char balanc, ref char jobvl, ref char jobvr, ref char sense, ref lapackint n, double *a, ref lapackint lda, double *b, ref lapackint ldb, double *alphar, double *alphai, double *betav, double *vl, ref lapackint ldvl, double *vr, ref lapackint ldvr, lapackint *ilo, lapackint *ihi, double *lscale, double *rscale, double *abnrm, double *bbnrm, ref double rconde, ref double rcondv, double *work, ref lapackint lwork, lapackint *iwork, lapackint *bwork, ref lapackint info);
-void cggevx_(ref char balanc, ref char jobvl, ref char jobvr, ref char sense, ref lapackint n, _cfloat *a, ref lapackint lda, _cfloat *b, ref lapackint ldb, _cfloat *alphav, _cfloat *betav, _cfloat *vl, ref lapackint ldvl, _cfloat *vr, ref lapackint ldvr, lapackint *ilo, lapackint *ihi, float *lscale, float *rscale, float *abnrm, float *bbnrm, ref float rconde, ref float rcondv, _cfloat *work, ref lapackint lwork, float *rwork, lapackint *iwork, lapackint *bwork, ref lapackint info);
-void zggevx_(ref char balanc, ref char jobvl, ref char jobvr, ref char sense, ref lapackint n, _cdouble *a, ref lapackint lda, _cdouble *b, ref lapackint ldb, _cdouble *alphav, _cdouble *betav, _cdouble *vl, ref lapackint ldvl, _cdouble *vr, ref lapackint ldvr, lapackint *ilo, lapackint *ihi, double *lscale, double *rscale, double *abnrm, double *bbnrm, ref double rconde, ref double rcondv, _cdouble *work, ref lapackint lwork, double *rwork, lapackint *iwork, lapackint *bwork, ref lapackint info);
+void sggevx_(ref char balanc, ref char jobvl, ref char jobvr, ref char sense, ref lapackint n, float *a, ref lapackint lda, float *b, ref lapackint ldb, float *alphar, float *alphai, float *betav, float *vl, ref lapackint ldvl, float *vr, ref lapackint ldvr, ref lapackint ilo, ref lapackint ihi, float *lscale, float *rscale, ref float abnrm, ref float bbnrm, ref float rconde, ref float rcondv, float *work, ref lapackint lwork, lapackint *iwork, lapackint *bwork, ref lapackint info);
+void dggevx_(ref char balanc, ref char jobvl, ref char jobvr, ref char sense, ref lapackint n, double *a, ref lapackint lda, double *b, ref lapackint ldb, double *alphar, double *alphai, double *betav, double *vl, ref lapackint ldvl, double *vr, ref lapackint ldvr, ref lapackint ilo, ref lapackint ihi, double *lscale, double *rscale, ref double abnrm, ref double bbnrm, ref double rconde, ref double rcondv, double *work, ref lapackint lwork, lapackint *iwork, lapackint *bwork, ref lapackint info);
+void cggevx_(ref char balanc, ref char jobvl, ref char jobvr, ref char sense, ref lapackint n, _cfloat *a, ref lapackint lda, _cfloat *b, ref lapackint ldb, _cfloat *alphav, _cfloat *betav, _cfloat *vl, ref lapackint ldvl, _cfloat *vr, ref lapackint ldvr, ref lapackint ilo, ref lapackint ihi, float *lscale, float *rscale, ref float abnrm, ref float bbnrm, ref float rconde, ref float rcondv, _cfloat *work, ref lapackint lwork, float *rwork, lapackint *iwork, lapackint *bwork, ref lapackint info);
+void zggevx_(ref char balanc, ref char jobvl, ref char jobvr, ref char sense, ref lapackint n, _cdouble *a, ref lapackint lda, _cdouble *b, ref lapackint ldb, _cdouble *alphav, _cdouble *betav, _cdouble *vl, ref lapackint ldvl, _cdouble *vr, ref lapackint ldvr, ref lapackint ilo, ref lapackint ihi, double *lscale, double *rscale, ref double abnrm, ref double bbnrm, ref double rconde, ref double rcondv, _cdouble *work, ref lapackint lwork, double *rwork, lapackint *iwork, lapackint *bwork, ref lapackint info);
 
 
 
@@ -868,24 +868,24 @@ void zgetrs_(ref char trans, ref lapackint n, ref lapackint nrhs, _cdouble *a, r
 /// Forms the right or left eigenvectors of the generalized eigenvalue
 /// problem by backward transformation on the computed eigenvectors of
 /// the balanced pair of matrices output by SGGBAL.
-void sggbak_(ref char job, ref char side, ref lapackint n, lapackint *ilo, lapackint *ihi, float *lscale, float *rscale, ref lapackint m, float *v, ref lapackint ldv, ref lapackint info);
-void dggbak_(ref char job, ref char side, ref lapackint n, lapackint *ilo, lapackint *ihi, double *lscale, double *rscale, ref lapackint m, double *v, ref lapackint ldv, ref lapackint info);
-void cggbak_(ref char job, ref char side, ref lapackint n, lapackint *ilo, lapackint *ihi, float *lscale, float *rscale, ref lapackint m, _cfloat *v, ref lapackint ldv, ref lapackint info);
-void zggbak_(ref char job, ref char side, ref lapackint n, lapackint *ilo, lapackint *ihi, double *lscale, double *rscale, ref lapackint m, _cdouble *v, ref lapackint ldv, ref lapackint info);
+void sggbak_(ref char job, ref char side, ref lapackint n, ref const lapackint ilo, ref const lapackint ihi, float *lscale, float *rscale, ref lapackint m, float *v, ref lapackint ldv, ref lapackint info);
+void dggbak_(ref char job, ref char side, ref lapackint n, ref const lapackint ilo, ref const lapackint ihi, double *lscale, double *rscale, ref lapackint m, double *v, ref lapackint ldv, ref lapackint info);
+void cggbak_(ref char job, ref char side, ref lapackint n, ref const lapackint ilo, ref const lapackint ihi, float *lscale, float *rscale, ref lapackint m, _cfloat *v, ref lapackint ldv, ref lapackint info);
+void zggbak_(ref char job, ref char side, ref lapackint n, ref const lapackint ilo, ref const lapackint ihi, double *lscale, double *rscale, ref lapackint m, _cdouble *v, ref lapackint ldv, ref lapackint info);
 
 /// Balances a pair of general real matrices for the generalized
 /// eigenvalue problem A x = lambda B x.
-void sggbal_(ref char job, ref lapackint n, float *a, ref lapackint lda, float *b, ref lapackint ldb, lapackint *ilo, lapackint *ihi, float *lscale, float *rscale, float *work, ref lapackint info);
-void dggbal_(ref char job, ref lapackint n, double *a, ref lapackint lda, double *b, ref lapackint ldb, lapackint *ilo, lapackint *ihi, double *lscale, double *rscale, double *work, ref lapackint info);
-void cggbal_(ref char job, ref lapackint n, _cfloat *a, ref lapackint lda, _cfloat *b, ref lapackint ldb, lapackint *ilo, lapackint *ihi, float *lscale, float *rscale, float *work, ref lapackint info);
-void zggbal_(ref char job, ref lapackint n, _cdouble *a, ref lapackint lda, _cdouble *b, ref lapackint ldb, lapackint *ilo, lapackint *ihi, double *lscale, double *rscale, double *work, ref lapackint info);
+void sggbal_(ref char job, ref lapackint n, float *a, ref lapackint lda, float *b, ref lapackint ldb, ref lapackint ilo, ref lapackint ihi, float *lscale, float *rscale, float *work, ref lapackint info);
+void dggbal_(ref char job, ref lapackint n, double *a, ref lapackint lda, double *b, ref lapackint ldb, ref lapackint ilo, ref lapackint ihi, double *lscale, double *rscale, double *work, ref lapackint info);
+void cggbal_(ref char job, ref lapackint n, _cfloat *a, ref lapackint lda, _cfloat *b, ref lapackint ldb, ref lapackint ilo, ref lapackint ihi, float *lscale, float *rscale, float *work, ref lapackint info);
+void zggbal_(ref char job, ref lapackint n, _cdouble *a, ref lapackint lda, _cdouble *b, ref lapackint ldb, ref lapackint ilo, ref lapackint ihi, double *lscale, double *rscale, double *work, ref lapackint info);
 
 /// Reduces a pair of real matrices to generalized upper
 /// Hessenberg form using orthogonal transformations 
-void sgghrd_(ref char compq, ref char compz, ref lapackint n, lapackint *ilo, lapackint *ihi, float *a, ref lapackint lda, float *b, ref lapackint ldb, float *q, ref lapackint ldq, float *z, ref lapackint ldz, ref lapackint info);
-void dgghrd_(ref char compq, ref char compz, ref lapackint n, lapackint *ilo, lapackint *ihi, double *a, ref lapackint lda, double *b, ref lapackint ldb, double *q, ref lapackint ldq, double *z, ref lapackint ldz, ref lapackint info);
-void cgghrd_(ref char compq, ref char compz, ref lapackint n, lapackint *ilo, lapackint *ihi, _cfloat *a, ref lapackint lda, _cfloat *b, ref lapackint ldb, _cfloat *q, ref lapackint ldq, _cfloat *z, ref lapackint ldz, ref lapackint info);
-void zgghrd_(ref char compq, ref char compz, ref lapackint n, lapackint *ilo, lapackint *ihi, _cdouble *a, ref lapackint lda, _cdouble *b, ref lapackint ldb, _cdouble *q, ref lapackint ldq, _cdouble *z, ref lapackint ldz, ref lapackint info);
+void sgghrd_(ref char compq, ref char compz, ref lapackint n, ref const lapackint ilo, ref const lapackint ihi, float *a, ref lapackint lda, float *b, ref lapackint ldb, float *q, ref lapackint ldq, float *z, ref lapackint ldz, ref lapackint info);
+void dgghrd_(ref char compq, ref char compz, ref lapackint n, ref const lapackint ilo, ref const lapackint ihi, double *a, ref lapackint lda, double *b, ref lapackint ldb, double *q, ref lapackint ldq, double *z, ref lapackint ldz, ref lapackint info);
+void cgghrd_(ref char compq, ref char compz, ref lapackint n, ref const lapackint ilo, ref const lapackint ihi, _cfloat *a, ref lapackint lda, _cfloat *b, ref lapackint ldb, _cfloat *q, ref lapackint ldq, _cfloat *z, ref lapackint ldz, ref lapackint info);
+void zgghrd_(ref char compq, ref char compz, ref lapackint n, ref const lapackint ilo, ref const lapackint ihi, _cdouble *a, ref lapackint lda, _cdouble *b, ref lapackint ldb, _cdouble *q, ref lapackint ldq, _cdouble *z, ref lapackint ldz, ref lapackint info);
 
 /// Computes a generalized QR factorization of a pair of matrices. 
 void sggqrf_(ref lapackint n, ref lapackint m, ref lapackint p, float *a, ref lapackint lda, float *taua, float *b, ref lapackint ldb, float *taub, float *work, ref lapackint lwork, ref lapackint info);
@@ -988,13 +988,13 @@ void zungbr_(ref char vect, ref lapackint m, ref lapackint n, ref lapackint k, _
 
 /// Generates the orthogonal transformation matrix from
 /// a reduction to Hessenberg form determined by SGEHRD.
-void sorghr_(ref lapackint n, lapackint *ilo, lapackint *ihi, float *a, ref lapackint lda, float *tau, float *work, ref lapackint lwork, ref lapackint info);
-void dorghr_(ref lapackint n, lapackint *ilo, lapackint *ihi, double *a, ref lapackint lda, double *tau, double *work, ref lapackint lwork, ref lapackint info);
+void sorghr_(ref lapackint n, ref const lapackint ilo, ref const lapackint ihi, float *a, ref lapackint lda, float *tau, float *work, ref lapackint lwork, ref lapackint info);
+void dorghr_(ref lapackint n, ref const lapackint ilo, ref const lapackint ihi, double *a, ref lapackint lda, double *tau, double *work, ref lapackint lwork, ref lapackint info);
 
 /// Generates the unitary transformation matrix from
 /// a reduction to Hessenberg form determined by CGEHRD.
-void cunghr_(ref lapackint n, lapackint *ilo, lapackint *ihi, _cfloat *a, ref lapackint lda, _cfloat *tau, _cfloat *work, ref lapackint lwork, ref lapackint info);
-void zunghr_(ref lapackint n, lapackint *ilo, lapackint *ihi, _cdouble *a, ref lapackint lda, _cdouble *tau, _cdouble *work, ref lapackint lwork, ref lapackint info);
+void cunghr_(ref lapackint n, ref const lapackint ilo, ref const lapackint ihi, _cfloat *a, ref lapackint lda, _cfloat *tau, _cfloat *work, ref lapackint lwork, ref lapackint info);
+void zunghr_(ref lapackint n, ref const lapackint ilo, ref const lapackint ihi, _cdouble *a, ref lapackint lda, _cdouble *tau, _cdouble *work, ref lapackint lwork, ref lapackint info);
 
 /// Generates all or part of the orthogonal matrix Q from
 /// an LQ factorization determined by SGELQF.
