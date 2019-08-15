@@ -184,10 +184,10 @@ void zgels_(ref char trans, ref lapackint m, ref lapackint n, ref lapackint nrhs
 /// solution of an under-determined system, using a divide and conquer
 /// method, where A is a general rectangular matrix of full rank,
 /// using a QR or LQ factorization of A.
-void sgelsd_(ref lapackint m, ref lapackint n, ref lapackint nrhs, float *a, ref lapackint lda, float *b, ref lapackint ldb, float *s, ref float rcond, ref lapackint rank, float *work, ref lapackint lwork, lapackint *iwork, ref lapackint info);
-void dgelsd_(ref lapackint m, ref lapackint n, ref lapackint nrhs, double *a, ref lapackint lda, double *b, ref lapackint ldb, double *s, ref double rcond, ref lapackint rank, double *work, ref lapackint lwork, lapackint *iwork, ref lapackint info);
-void cgelsd_(ref lapackint m, ref lapackint n, ref lapackint nrhs, _cfloat *a, ref lapackint lda, _cfloat *b, ref lapackint ldb, float *s, ref float rcond, ref lapackint rank, _cfloat *work, ref lapackint lwork, float *rwork, lapackint *iwork, ref lapackint info);
-void zgelsd_(ref lapackint m, ref lapackint n, ref lapackint nrhs, _cdouble *a, ref lapackint lda, _cdouble *b, ref lapackint ldb, double *s, ref double rcond, ref lapackint rank, _cdouble *work, ref lapackint lwork, double *rwork, lapackint *iwork, ref lapackint info);
+void sgelsd_(ref lapackint m, ref lapackint n, ref lapackint nrhs, float *a, ref lapackint lda, float *b, ref lapackint ldb, float *s, ref const float rcond, ref lapackint rank, float *work, ref lapackint lwork, lapackint *iwork, ref lapackint info);
+void dgelsd_(ref lapackint m, ref lapackint n, ref lapackint nrhs, double *a, ref lapackint lda, double *b, ref lapackint ldb, double *s, ref const double rcond, ref lapackint rank, double *work, ref lapackint lwork, lapackint *iwork, ref lapackint info);
+void cgelsd_(ref lapackint m, ref lapackint n, ref lapackint nrhs, _cfloat *a, ref lapackint lda, _cfloat *b, ref lapackint ldb, float *s, ref const float rcond, ref lapackint rank, _cfloat *work, ref lapackint lwork, float *rwork, lapackint *iwork, ref lapackint info);
+void zgelsd_(ref lapackint m, ref lapackint n, ref lapackint nrhs, _cdouble *a, ref lapackint lda, _cdouble *b, ref lapackint ldb, double *s, ref const double rcond, ref lapackint rank, _cdouble *work, ref lapackint lwork, double *rwork, lapackint *iwork, ref lapackint info);
 
 /// Solves the LSE (Constrained Linear Least Squares Problem) using
 /// the GRQ (Generalized RQ) factorization
