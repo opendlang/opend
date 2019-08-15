@@ -1488,8 +1488,8 @@ size_t gehrd(T)(
     Slice!(T*, 2, Canonical) a,
     Slice!(T*) tau,
     Slice!(T*) work,
-    lapackint* ilo,
-    lapackint* ihi
+    lapackint ilo,
+    lapackint ihi
 )
 in
 {
@@ -1520,18 +1520,16 @@ size_t hsein(T)(
     char side,
     char eigsrc,
     char initv,
-    lapackint* select, //actually a logical bitset stored in here
+    ref lapackint select, //actually a logical bitset stored in here
     Slice!(T*, 2, Canonical) h,
     Slice!(T*) wr,
     Slice!(T*) wi,
     Slice!(T*, 2, Canonical) vl,
     Slice!(T*, 2, Canonical) vr,
-    lapackint* m,
+    ref lapackint m,
     Slice!(T*) work,
-    lapackint* ifaill,
-    lapackint* ifailr,
-    lapackint* ilo,
-    lapackint* ihi,
+    ref lapackint ifaill,
+    ref lapackint ifailr,
 )
     if (!isComplex!T)
 in
@@ -1576,12 +1574,12 @@ do
     lapackint ldvl = cast(lapackint) vl._stride.max(1);
     lapackint ldvr = cast(lapackint) vr._stride.max(1);
     //need to seperate these methods then probably provide a wrap which does this as that's the easiest way without bloating the base methods
-    lapack.hsein_(side, eigsrc, initv, select, n, h.iterator, ldh, wr.iterator, wi.iterator, vl.iterator, ldvl, vr.iterator, ldvr, mm, *m, work.iterator, ifaill, ifailr, info);
+    lapack.hsein_(side, eigsrc, initv, select, n, h.iterator, ldh, wr.iterator, wi.iterator, vl.iterator, ldvl, vr.iterator, ldvr, mm, m, work.iterator, ifaill, ifailr, info);
     assert(info >= 0);
     ///if any of ifaill or ifailr entries are non-zero then that has failed to converge.
     ///ifail?[i] = j > 0 if the eigenvector stored in the i-th column of v?, coresponding to the jth eigenvalue, fails to converge.
-    assert(*ifaill == 0);
-    assert(*ifailr == 0);
+    assert(ifaill == 0);
+    assert(ifailr == 0);
     return info;
 }
 
@@ -1589,7 +1587,7 @@ size_t hsein(T, realT)(
     char side,
     char eigsrc,
     char initv,
-    lapackint* select, //actually a logical bitset stored in here
+    lapackint select, //actually a logical bitset stored in here
     Slice!(T*, 2, Canonical) h,
     Slice!(T*) w,
     Slice!(T*, 2, Canonical) vl,
@@ -1597,10 +1595,8 @@ size_t hsein(T, realT)(
     lapackint* m,
     Slice!(T*) work,
     Slice!(realT*) rwork,
-    lapackint* ifaill,
-    lapackint* ifailr,
-    lapackint* ilo,
-    lapackint* ihi,
+    lapackint ifaill,
+    lapackint ifailr,
 )
     if (isComplex!T && is(realType!T == realT))
 in
@@ -1642,8 +1638,8 @@ do {
     assert(info >= 0);
     ///if any of ifaill or ifailr entries are non-zero then that has failed to converge.
     ///ifail?[i] = j > 0 if the eigenvector stored in the i-th column of v?, coresponding to the jth eigenvalue, fails to converge.
-    assert(*ifaill == 0);
-    assert(*ifailr == 0);
+    assert(ifaill == 0);
+    assert(ifailr == 0);
     return info;
 }
 
@@ -1666,8 +1662,8 @@ size_t unmhr(T)(
     Slice!(T*) tau,
     Slice!(T*, 2, Canonical) c,
     Slice!(T*) work,
-    lapackint* ilo,
-    lapackint* ihi
+    lapackint ilo,
+    lapackint ihi
 )
 in
 {
@@ -1725,8 +1721,8 @@ size_t hseqr(T)(
     Slice!(T*) w,
     Slice!(T*, 2, Canonical) z,
     Slice!(T*) work,
-    lapackint* ilo,
-    lapackint* ihi
+    lapackint ilo,
+    lapackint ihi
 )
     if (isComplex!T)
 in
@@ -1760,8 +1756,8 @@ size_t hseqr(T)(
     Slice!(T*) wi,
     Slice!(T*, 2, Canonical) z,
     Slice!(T*) work,
-    lapackint* ilo,
-    lapackint* ihi
+    lapackint ilo,
+    lapackint ihi
 )
     if (!isComplex!T)
 in
@@ -1801,7 +1797,7 @@ size_t trevc(T)(char side,
     Slice!(T*, 2, Canonical) t,
     Slice!(T*, 2, Canonical) vl,
     Slice!(T*, 2, Canonical) vr,
-    lapackint* m,
+    lapackint m,
     Slice!(T*) work
 )
 do
@@ -1814,10 +1810,10 @@ do
     //select should be lapack_logical
     lapackint info;
     static if(!isComplex!T){
-        lapack.trevc_(side, howmany, &select, n, t.iterator, ldt, vl.iterator, ldvl, vr.iterator, ldvr, mm, *m, work.iterator, info);
+        lapack.trevc_(side, howmany, select, n, t.iterator, ldt, vl.iterator, ldvl, vr.iterator, ldvr, mm, m, work.iterator, info);
     }
     else {
-        lapack.trevc_(side, howmany, &select, n, t.iterator, ldt, vl.iterator, ldvl, vr.iterator, ldvr, mm, *m, work.iterator, null, info);
+        lapack.trevc_(side, howmany, select, n, t.iterator, ldt, vl.iterator, ldvl, vr.iterator, ldvr, mm, m, work.iterator, null, info);
     }
     assert(info >= 0);
     return cast(size_t)info;
@@ -1838,8 +1834,8 @@ alias complexType(T : isComplex!T) = T;
 
 size_t gebal(T, realT)(char job,
     Slice!(T*, 2, Canonical) a,
-    lapackint* ilo,
-    lapackint* ihi,
+    lapackint ilo,
+    lapackint ihi,
     Slice!(realT*) scale
 )
     if (!isComplex!T || (isComplex!T && is(realType!T == realT)))
@@ -1863,8 +1859,8 @@ unittest
 size_t gebak(T, realT)(
     char job,
     char side,
-    lapackint* ilo,
-    lapackint* ihi,
+    lapackint ilo,
+    lapackint ihi,
     Slice!(realT*) scale,
     Slice!(T*, 2, Canonical) v
 )
