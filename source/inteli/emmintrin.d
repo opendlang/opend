@@ -2466,11 +2466,23 @@ __m128d _mm_set_pd (double e1, double e0) pure @trusted
     double[2] result = [e0, e1];
     return loadUnaligned!(double2)(result.ptr);
 }
+unittest
+{
+    __m128d A = _mm_set_pd(61.0, 55.0);
+    double[2] correct = [55.0, 61.0];
+    assert(A.array == correct);
+}
 
 __m128d _mm_set_pd1 (double a) pure @trusted
 {
     double[2] result = [a, a];
     return loadUnaligned!(double2)(result.ptr);
+}
+unittest
+{
+    __m128d A = _mm_set_pd1(61.0);
+    double[2] correct = [61.0, 61.0];
+    assert(A.array == correct);
 }
 
 __m128d _mm_set_sd (double a) pure @trusted
@@ -2545,6 +2557,12 @@ __m128d _mm_setr_pd (double e1, double e0) pure @trusted
 {
     double[2] result = [e1, e0];
     return loadUnaligned!(double2)(result.ptr);
+}
+unittest
+{
+    __m128d A = _mm_setr_pd(61.0, 55.0);
+    double[2] correct = [61.0, 55.0];
+    assert(A.array == correct);
 }
 
 __m128d _mm_setzero_pd () pure @trusted
