@@ -1178,6 +1178,16 @@ __m128 _mm_set_ps (float e3, float e2, float e1, float e0) pure @trusted
     float[4] result = [e0, e1, e2, e3];
     return loadUnaligned!(float4)(result.ptr);
 }
+unittest
+{
+    __m128 A = _mm_set_ps(3, 2, 1, 546);
+    float[4] correct = [546.0f, 1.0f, 2.0f, 3.0f];
+    assert(A.array == correct);
+    assert(A.array[0] == 546.0f);
+    assert(A.array[1] == 1.0f);
+    assert(A.array[2] == 2.0f);
+    assert(A.array[3] == 3.0f);
+}
 
 alias _mm_set_ps1 = _mm_set1_ps;
 
@@ -1230,6 +1240,16 @@ __m128 _mm_setr_ps (float e3, float e2, float e1, float e0) pure @trusted
 {
     float[4] result = [e3, e2, e1, e0];
     return loadUnaligned!(float4)(result.ptr);
+}
+unittest
+{
+    __m128 A = _mm_setr_ps(3, 2, 1, 546);
+    float[4] correct = [3.0f, 2.0f, 1.0f, 546.0f];
+    assert(A.array == correct);
+    assert(A.array[0] == 3.0f);
+    assert(A.array[1] == 2.0f);
+    assert(A.array[2] == 1.0f);
+    assert(A.array[3] == 546.0f);
 }
 
 __m128 _mm_setzero_ps() pure @trusted
