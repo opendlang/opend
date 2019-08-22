@@ -253,6 +253,11 @@ extern( System ) {
     alias PFN_vkCmdDrawIndirectCountKHR                                         = void      function( VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, uint32_t maxDrawCount, uint32_t stride );
     alias PFN_vkCmdDrawIndexedIndirectCountKHR                                  = void      function( VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, uint32_t maxDrawCount, uint32_t stride );
 
+    // VK_KHR_pipeline_executable_properties
+    alias PFN_vkGetPipelineExecutablePropertiesKHR                              = VkResult  function( VkDevice device, const( VkPipelineInfoKHR )* pPipelineInfo, uint32_t* pExecutableCount, VkPipelineExecutablePropertiesKHR* pProperties );
+    alias PFN_vkGetPipelineExecutableStatisticsKHR                              = VkResult  function( VkDevice device, const( VkPipelineExecutableInfoKHR )* pExecutableInfo, uint32_t* pStatisticCount, VkPipelineExecutableStatisticKHR* pStatistics );
+    alias PFN_vkGetPipelineExecutableInternalRepresentationsKHR                 = VkResult  function( VkDevice device, const( VkPipelineExecutableInfoKHR )* pExecutableInfo, uint32_t* pInternalRepresentationCount, VkPipelineExecutableInternalRepresentationKHR* pInternalRepresentations );
+
     // VK_EXT_debug_report
     alias PFN_vkCreateDebugReportCallbackEXT                                    = VkResult  function( VkInstance instance, const( VkDebugReportCallbackCreateInfoEXT )* pCreateInfo, const( VkAllocationCallbacks )* pAllocator, VkDebugReportCallbackEXT* pCallback );
     alias PFN_vkDestroyDebugReportCallbackEXT                                   = void      function( VkInstance instance, VkDebugReportCallbackEXT callback, const( VkAllocationCallbacks )* pAllocator );
@@ -664,6 +669,11 @@ __gshared {
     PFN_vkCmdDrawIndirectCountKHR                                         vkCmdDrawIndirectCountKHR;
     PFN_vkCmdDrawIndexedIndirectCountKHR                                  vkCmdDrawIndexedIndirectCountKHR;
 
+    // VK_KHR_pipeline_executable_properties
+    PFN_vkGetPipelineExecutablePropertiesKHR                              vkGetPipelineExecutablePropertiesKHR;
+    PFN_vkGetPipelineExecutableStatisticsKHR                              vkGetPipelineExecutableStatisticsKHR;
+    PFN_vkGetPipelineExecutableInternalRepresentationsKHR                 vkGetPipelineExecutableInternalRepresentationsKHR;
+
     // VK_EXT_debug_report
     PFN_vkCreateDebugReportCallbackEXT                                    vkCreateDebugReportCallbackEXT;
     PFN_vkDestroyDebugReportCallbackEXT                                   vkDestroyDebugReportCallbackEXT;
@@ -1010,325 +1020,330 @@ void loadDeviceLevelFunctions( VkInstance instance ) {
     assert( vkGetInstanceProcAddr !is null, "Function pointer vkGetInstanceProcAddr is null!\nCall loadGlobalLevelFunctions -> loadDeviceLevelFunctions( instance )" );
 
     // VK_VERSION_1_0
-    vkDestroyDevice                                = cast( PFN_vkDestroyDevice                                ) vkGetInstanceProcAddr( instance, "vkDestroyDevice" );
-    vkGetDeviceQueue                               = cast( PFN_vkGetDeviceQueue                               ) vkGetInstanceProcAddr( instance, "vkGetDeviceQueue" );
-    vkQueueSubmit                                  = cast( PFN_vkQueueSubmit                                  ) vkGetInstanceProcAddr( instance, "vkQueueSubmit" );
-    vkQueueWaitIdle                                = cast( PFN_vkQueueWaitIdle                                ) vkGetInstanceProcAddr( instance, "vkQueueWaitIdle" );
-    vkDeviceWaitIdle                               = cast( PFN_vkDeviceWaitIdle                               ) vkGetInstanceProcAddr( instance, "vkDeviceWaitIdle" );
-    vkAllocateMemory                               = cast( PFN_vkAllocateMemory                               ) vkGetInstanceProcAddr( instance, "vkAllocateMemory" );
-    vkFreeMemory                                   = cast( PFN_vkFreeMemory                                   ) vkGetInstanceProcAddr( instance, "vkFreeMemory" );
-    vkMapMemory                                    = cast( PFN_vkMapMemory                                    ) vkGetInstanceProcAddr( instance, "vkMapMemory" );
-    vkUnmapMemory                                  = cast( PFN_vkUnmapMemory                                  ) vkGetInstanceProcAddr( instance, "vkUnmapMemory" );
-    vkFlushMappedMemoryRanges                      = cast( PFN_vkFlushMappedMemoryRanges                      ) vkGetInstanceProcAddr( instance, "vkFlushMappedMemoryRanges" );
-    vkInvalidateMappedMemoryRanges                 = cast( PFN_vkInvalidateMappedMemoryRanges                 ) vkGetInstanceProcAddr( instance, "vkInvalidateMappedMemoryRanges" );
-    vkGetDeviceMemoryCommitment                    = cast( PFN_vkGetDeviceMemoryCommitment                    ) vkGetInstanceProcAddr( instance, "vkGetDeviceMemoryCommitment" );
-    vkBindBufferMemory                             = cast( PFN_vkBindBufferMemory                             ) vkGetInstanceProcAddr( instance, "vkBindBufferMemory" );
-    vkBindImageMemory                              = cast( PFN_vkBindImageMemory                              ) vkGetInstanceProcAddr( instance, "vkBindImageMemory" );
-    vkGetBufferMemoryRequirements                  = cast( PFN_vkGetBufferMemoryRequirements                  ) vkGetInstanceProcAddr( instance, "vkGetBufferMemoryRequirements" );
-    vkGetImageMemoryRequirements                   = cast( PFN_vkGetImageMemoryRequirements                   ) vkGetInstanceProcAddr( instance, "vkGetImageMemoryRequirements" );
-    vkGetImageSparseMemoryRequirements             = cast( PFN_vkGetImageSparseMemoryRequirements             ) vkGetInstanceProcAddr( instance, "vkGetImageSparseMemoryRequirements" );
-    vkQueueBindSparse                              = cast( PFN_vkQueueBindSparse                              ) vkGetInstanceProcAddr( instance, "vkQueueBindSparse" );
-    vkCreateFence                                  = cast( PFN_vkCreateFence                                  ) vkGetInstanceProcAddr( instance, "vkCreateFence" );
-    vkDestroyFence                                 = cast( PFN_vkDestroyFence                                 ) vkGetInstanceProcAddr( instance, "vkDestroyFence" );
-    vkResetFences                                  = cast( PFN_vkResetFences                                  ) vkGetInstanceProcAddr( instance, "vkResetFences" );
-    vkGetFenceStatus                               = cast( PFN_vkGetFenceStatus                               ) vkGetInstanceProcAddr( instance, "vkGetFenceStatus" );
-    vkWaitForFences                                = cast( PFN_vkWaitForFences                                ) vkGetInstanceProcAddr( instance, "vkWaitForFences" );
-    vkCreateSemaphore                              = cast( PFN_vkCreateSemaphore                              ) vkGetInstanceProcAddr( instance, "vkCreateSemaphore" );
-    vkDestroySemaphore                             = cast( PFN_vkDestroySemaphore                             ) vkGetInstanceProcAddr( instance, "vkDestroySemaphore" );
-    vkCreateEvent                                  = cast( PFN_vkCreateEvent                                  ) vkGetInstanceProcAddr( instance, "vkCreateEvent" );
-    vkDestroyEvent                                 = cast( PFN_vkDestroyEvent                                 ) vkGetInstanceProcAddr( instance, "vkDestroyEvent" );
-    vkGetEventStatus                               = cast( PFN_vkGetEventStatus                               ) vkGetInstanceProcAddr( instance, "vkGetEventStatus" );
-    vkSetEvent                                     = cast( PFN_vkSetEvent                                     ) vkGetInstanceProcAddr( instance, "vkSetEvent" );
-    vkResetEvent                                   = cast( PFN_vkResetEvent                                   ) vkGetInstanceProcAddr( instance, "vkResetEvent" );
-    vkCreateQueryPool                              = cast( PFN_vkCreateQueryPool                              ) vkGetInstanceProcAddr( instance, "vkCreateQueryPool" );
-    vkDestroyQueryPool                             = cast( PFN_vkDestroyQueryPool                             ) vkGetInstanceProcAddr( instance, "vkDestroyQueryPool" );
-    vkGetQueryPoolResults                          = cast( PFN_vkGetQueryPoolResults                          ) vkGetInstanceProcAddr( instance, "vkGetQueryPoolResults" );
-    vkCreateBuffer                                 = cast( PFN_vkCreateBuffer                                 ) vkGetInstanceProcAddr( instance, "vkCreateBuffer" );
-    vkDestroyBuffer                                = cast( PFN_vkDestroyBuffer                                ) vkGetInstanceProcAddr( instance, "vkDestroyBuffer" );
-    vkCreateBufferView                             = cast( PFN_vkCreateBufferView                             ) vkGetInstanceProcAddr( instance, "vkCreateBufferView" );
-    vkDestroyBufferView                            = cast( PFN_vkDestroyBufferView                            ) vkGetInstanceProcAddr( instance, "vkDestroyBufferView" );
-    vkCreateImage                                  = cast( PFN_vkCreateImage                                  ) vkGetInstanceProcAddr( instance, "vkCreateImage" );
-    vkDestroyImage                                 = cast( PFN_vkDestroyImage                                 ) vkGetInstanceProcAddr( instance, "vkDestroyImage" );
-    vkGetImageSubresourceLayout                    = cast( PFN_vkGetImageSubresourceLayout                    ) vkGetInstanceProcAddr( instance, "vkGetImageSubresourceLayout" );
-    vkCreateImageView                              = cast( PFN_vkCreateImageView                              ) vkGetInstanceProcAddr( instance, "vkCreateImageView" );
-    vkDestroyImageView                             = cast( PFN_vkDestroyImageView                             ) vkGetInstanceProcAddr( instance, "vkDestroyImageView" );
-    vkCreateShaderModule                           = cast( PFN_vkCreateShaderModule                           ) vkGetInstanceProcAddr( instance, "vkCreateShaderModule" );
-    vkDestroyShaderModule                          = cast( PFN_vkDestroyShaderModule                          ) vkGetInstanceProcAddr( instance, "vkDestroyShaderModule" );
-    vkCreatePipelineCache                          = cast( PFN_vkCreatePipelineCache                          ) vkGetInstanceProcAddr( instance, "vkCreatePipelineCache" );
-    vkDestroyPipelineCache                         = cast( PFN_vkDestroyPipelineCache                         ) vkGetInstanceProcAddr( instance, "vkDestroyPipelineCache" );
-    vkGetPipelineCacheData                         = cast( PFN_vkGetPipelineCacheData                         ) vkGetInstanceProcAddr( instance, "vkGetPipelineCacheData" );
-    vkMergePipelineCaches                          = cast( PFN_vkMergePipelineCaches                          ) vkGetInstanceProcAddr( instance, "vkMergePipelineCaches" );
-    vkCreateGraphicsPipelines                      = cast( PFN_vkCreateGraphicsPipelines                      ) vkGetInstanceProcAddr( instance, "vkCreateGraphicsPipelines" );
-    vkCreateComputePipelines                       = cast( PFN_vkCreateComputePipelines                       ) vkGetInstanceProcAddr( instance, "vkCreateComputePipelines" );
-    vkDestroyPipeline                              = cast( PFN_vkDestroyPipeline                              ) vkGetInstanceProcAddr( instance, "vkDestroyPipeline" );
-    vkCreatePipelineLayout                         = cast( PFN_vkCreatePipelineLayout                         ) vkGetInstanceProcAddr( instance, "vkCreatePipelineLayout" );
-    vkDestroyPipelineLayout                        = cast( PFN_vkDestroyPipelineLayout                        ) vkGetInstanceProcAddr( instance, "vkDestroyPipelineLayout" );
-    vkCreateSampler                                = cast( PFN_vkCreateSampler                                ) vkGetInstanceProcAddr( instance, "vkCreateSampler" );
-    vkDestroySampler                               = cast( PFN_vkDestroySampler                               ) vkGetInstanceProcAddr( instance, "vkDestroySampler" );
-    vkCreateDescriptorSetLayout                    = cast( PFN_vkCreateDescriptorSetLayout                    ) vkGetInstanceProcAddr( instance, "vkCreateDescriptorSetLayout" );
-    vkDestroyDescriptorSetLayout                   = cast( PFN_vkDestroyDescriptorSetLayout                   ) vkGetInstanceProcAddr( instance, "vkDestroyDescriptorSetLayout" );
-    vkCreateDescriptorPool                         = cast( PFN_vkCreateDescriptorPool                         ) vkGetInstanceProcAddr( instance, "vkCreateDescriptorPool" );
-    vkDestroyDescriptorPool                        = cast( PFN_vkDestroyDescriptorPool                        ) vkGetInstanceProcAddr( instance, "vkDestroyDescriptorPool" );
-    vkResetDescriptorPool                          = cast( PFN_vkResetDescriptorPool                          ) vkGetInstanceProcAddr( instance, "vkResetDescriptorPool" );
-    vkAllocateDescriptorSets                       = cast( PFN_vkAllocateDescriptorSets                       ) vkGetInstanceProcAddr( instance, "vkAllocateDescriptorSets" );
-    vkFreeDescriptorSets                           = cast( PFN_vkFreeDescriptorSets                           ) vkGetInstanceProcAddr( instance, "vkFreeDescriptorSets" );
-    vkUpdateDescriptorSets                         = cast( PFN_vkUpdateDescriptorSets                         ) vkGetInstanceProcAddr( instance, "vkUpdateDescriptorSets" );
-    vkCreateFramebuffer                            = cast( PFN_vkCreateFramebuffer                            ) vkGetInstanceProcAddr( instance, "vkCreateFramebuffer" );
-    vkDestroyFramebuffer                           = cast( PFN_vkDestroyFramebuffer                           ) vkGetInstanceProcAddr( instance, "vkDestroyFramebuffer" );
-    vkCreateRenderPass                             = cast( PFN_vkCreateRenderPass                             ) vkGetInstanceProcAddr( instance, "vkCreateRenderPass" );
-    vkDestroyRenderPass                            = cast( PFN_vkDestroyRenderPass                            ) vkGetInstanceProcAddr( instance, "vkDestroyRenderPass" );
-    vkGetRenderAreaGranularity                     = cast( PFN_vkGetRenderAreaGranularity                     ) vkGetInstanceProcAddr( instance, "vkGetRenderAreaGranularity" );
-    vkCreateCommandPool                            = cast( PFN_vkCreateCommandPool                            ) vkGetInstanceProcAddr( instance, "vkCreateCommandPool" );
-    vkDestroyCommandPool                           = cast( PFN_vkDestroyCommandPool                           ) vkGetInstanceProcAddr( instance, "vkDestroyCommandPool" );
-    vkResetCommandPool                             = cast( PFN_vkResetCommandPool                             ) vkGetInstanceProcAddr( instance, "vkResetCommandPool" );
-    vkAllocateCommandBuffers                       = cast( PFN_vkAllocateCommandBuffers                       ) vkGetInstanceProcAddr( instance, "vkAllocateCommandBuffers" );
-    vkFreeCommandBuffers                           = cast( PFN_vkFreeCommandBuffers                           ) vkGetInstanceProcAddr( instance, "vkFreeCommandBuffers" );
-    vkBeginCommandBuffer                           = cast( PFN_vkBeginCommandBuffer                           ) vkGetInstanceProcAddr( instance, "vkBeginCommandBuffer" );
-    vkEndCommandBuffer                             = cast( PFN_vkEndCommandBuffer                             ) vkGetInstanceProcAddr( instance, "vkEndCommandBuffer" );
-    vkResetCommandBuffer                           = cast( PFN_vkResetCommandBuffer                           ) vkGetInstanceProcAddr( instance, "vkResetCommandBuffer" );
-    vkCmdBindPipeline                              = cast( PFN_vkCmdBindPipeline                              ) vkGetInstanceProcAddr( instance, "vkCmdBindPipeline" );
-    vkCmdSetViewport                               = cast( PFN_vkCmdSetViewport                               ) vkGetInstanceProcAddr( instance, "vkCmdSetViewport" );
-    vkCmdSetScissor                                = cast( PFN_vkCmdSetScissor                                ) vkGetInstanceProcAddr( instance, "vkCmdSetScissor" );
-    vkCmdSetLineWidth                              = cast( PFN_vkCmdSetLineWidth                              ) vkGetInstanceProcAddr( instance, "vkCmdSetLineWidth" );
-    vkCmdSetDepthBias                              = cast( PFN_vkCmdSetDepthBias                              ) vkGetInstanceProcAddr( instance, "vkCmdSetDepthBias" );
-    vkCmdSetBlendConstants                         = cast( PFN_vkCmdSetBlendConstants                         ) vkGetInstanceProcAddr( instance, "vkCmdSetBlendConstants" );
-    vkCmdSetDepthBounds                            = cast( PFN_vkCmdSetDepthBounds                            ) vkGetInstanceProcAddr( instance, "vkCmdSetDepthBounds" );
-    vkCmdSetStencilCompareMask                     = cast( PFN_vkCmdSetStencilCompareMask                     ) vkGetInstanceProcAddr( instance, "vkCmdSetStencilCompareMask" );
-    vkCmdSetStencilWriteMask                       = cast( PFN_vkCmdSetStencilWriteMask                       ) vkGetInstanceProcAddr( instance, "vkCmdSetStencilWriteMask" );
-    vkCmdSetStencilReference                       = cast( PFN_vkCmdSetStencilReference                       ) vkGetInstanceProcAddr( instance, "vkCmdSetStencilReference" );
-    vkCmdBindDescriptorSets                        = cast( PFN_vkCmdBindDescriptorSets                        ) vkGetInstanceProcAddr( instance, "vkCmdBindDescriptorSets" );
-    vkCmdBindIndexBuffer                           = cast( PFN_vkCmdBindIndexBuffer                           ) vkGetInstanceProcAddr( instance, "vkCmdBindIndexBuffer" );
-    vkCmdBindVertexBuffers                         = cast( PFN_vkCmdBindVertexBuffers                         ) vkGetInstanceProcAddr( instance, "vkCmdBindVertexBuffers" );
-    vkCmdDraw                                      = cast( PFN_vkCmdDraw                                      ) vkGetInstanceProcAddr( instance, "vkCmdDraw" );
-    vkCmdDrawIndexed                               = cast( PFN_vkCmdDrawIndexed                               ) vkGetInstanceProcAddr( instance, "vkCmdDrawIndexed" );
-    vkCmdDrawIndirect                              = cast( PFN_vkCmdDrawIndirect                              ) vkGetInstanceProcAddr( instance, "vkCmdDrawIndirect" );
-    vkCmdDrawIndexedIndirect                       = cast( PFN_vkCmdDrawIndexedIndirect                       ) vkGetInstanceProcAddr( instance, "vkCmdDrawIndexedIndirect" );
-    vkCmdDispatch                                  = cast( PFN_vkCmdDispatch                                  ) vkGetInstanceProcAddr( instance, "vkCmdDispatch" );
-    vkCmdDispatchIndirect                          = cast( PFN_vkCmdDispatchIndirect                          ) vkGetInstanceProcAddr( instance, "vkCmdDispatchIndirect" );
-    vkCmdCopyBuffer                                = cast( PFN_vkCmdCopyBuffer                                ) vkGetInstanceProcAddr( instance, "vkCmdCopyBuffer" );
-    vkCmdCopyImage                                 = cast( PFN_vkCmdCopyImage                                 ) vkGetInstanceProcAddr( instance, "vkCmdCopyImage" );
-    vkCmdBlitImage                                 = cast( PFN_vkCmdBlitImage                                 ) vkGetInstanceProcAddr( instance, "vkCmdBlitImage" );
-    vkCmdCopyBufferToImage                         = cast( PFN_vkCmdCopyBufferToImage                         ) vkGetInstanceProcAddr( instance, "vkCmdCopyBufferToImage" );
-    vkCmdCopyImageToBuffer                         = cast( PFN_vkCmdCopyImageToBuffer                         ) vkGetInstanceProcAddr( instance, "vkCmdCopyImageToBuffer" );
-    vkCmdUpdateBuffer                              = cast( PFN_vkCmdUpdateBuffer                              ) vkGetInstanceProcAddr( instance, "vkCmdUpdateBuffer" );
-    vkCmdFillBuffer                                = cast( PFN_vkCmdFillBuffer                                ) vkGetInstanceProcAddr( instance, "vkCmdFillBuffer" );
-    vkCmdClearColorImage                           = cast( PFN_vkCmdClearColorImage                           ) vkGetInstanceProcAddr( instance, "vkCmdClearColorImage" );
-    vkCmdClearDepthStencilImage                    = cast( PFN_vkCmdClearDepthStencilImage                    ) vkGetInstanceProcAddr( instance, "vkCmdClearDepthStencilImage" );
-    vkCmdClearAttachments                          = cast( PFN_vkCmdClearAttachments                          ) vkGetInstanceProcAddr( instance, "vkCmdClearAttachments" );
-    vkCmdResolveImage                              = cast( PFN_vkCmdResolveImage                              ) vkGetInstanceProcAddr( instance, "vkCmdResolveImage" );
-    vkCmdSetEvent                                  = cast( PFN_vkCmdSetEvent                                  ) vkGetInstanceProcAddr( instance, "vkCmdSetEvent" );
-    vkCmdResetEvent                                = cast( PFN_vkCmdResetEvent                                ) vkGetInstanceProcAddr( instance, "vkCmdResetEvent" );
-    vkCmdWaitEvents                                = cast( PFN_vkCmdWaitEvents                                ) vkGetInstanceProcAddr( instance, "vkCmdWaitEvents" );
-    vkCmdPipelineBarrier                           = cast( PFN_vkCmdPipelineBarrier                           ) vkGetInstanceProcAddr( instance, "vkCmdPipelineBarrier" );
-    vkCmdBeginQuery                                = cast( PFN_vkCmdBeginQuery                                ) vkGetInstanceProcAddr( instance, "vkCmdBeginQuery" );
-    vkCmdEndQuery                                  = cast( PFN_vkCmdEndQuery                                  ) vkGetInstanceProcAddr( instance, "vkCmdEndQuery" );
-    vkCmdResetQueryPool                            = cast( PFN_vkCmdResetQueryPool                            ) vkGetInstanceProcAddr( instance, "vkCmdResetQueryPool" );
-    vkCmdWriteTimestamp                            = cast( PFN_vkCmdWriteTimestamp                            ) vkGetInstanceProcAddr( instance, "vkCmdWriteTimestamp" );
-    vkCmdCopyQueryPoolResults                      = cast( PFN_vkCmdCopyQueryPoolResults                      ) vkGetInstanceProcAddr( instance, "vkCmdCopyQueryPoolResults" );
-    vkCmdPushConstants                             = cast( PFN_vkCmdPushConstants                             ) vkGetInstanceProcAddr( instance, "vkCmdPushConstants" );
-    vkCmdBeginRenderPass                           = cast( PFN_vkCmdBeginRenderPass                           ) vkGetInstanceProcAddr( instance, "vkCmdBeginRenderPass" );
-    vkCmdNextSubpass                               = cast( PFN_vkCmdNextSubpass                               ) vkGetInstanceProcAddr( instance, "vkCmdNextSubpass" );
-    vkCmdEndRenderPass                             = cast( PFN_vkCmdEndRenderPass                             ) vkGetInstanceProcAddr( instance, "vkCmdEndRenderPass" );
-    vkCmdExecuteCommands                           = cast( PFN_vkCmdExecuteCommands                           ) vkGetInstanceProcAddr( instance, "vkCmdExecuteCommands" );
+    vkDestroyDevice                                   = cast( PFN_vkDestroyDevice                                   ) vkGetInstanceProcAddr( instance, "vkDestroyDevice" );
+    vkGetDeviceQueue                                  = cast( PFN_vkGetDeviceQueue                                  ) vkGetInstanceProcAddr( instance, "vkGetDeviceQueue" );
+    vkQueueSubmit                                     = cast( PFN_vkQueueSubmit                                     ) vkGetInstanceProcAddr( instance, "vkQueueSubmit" );
+    vkQueueWaitIdle                                   = cast( PFN_vkQueueWaitIdle                                   ) vkGetInstanceProcAddr( instance, "vkQueueWaitIdle" );
+    vkDeviceWaitIdle                                  = cast( PFN_vkDeviceWaitIdle                                  ) vkGetInstanceProcAddr( instance, "vkDeviceWaitIdle" );
+    vkAllocateMemory                                  = cast( PFN_vkAllocateMemory                                  ) vkGetInstanceProcAddr( instance, "vkAllocateMemory" );
+    vkFreeMemory                                      = cast( PFN_vkFreeMemory                                      ) vkGetInstanceProcAddr( instance, "vkFreeMemory" );
+    vkMapMemory                                       = cast( PFN_vkMapMemory                                       ) vkGetInstanceProcAddr( instance, "vkMapMemory" );
+    vkUnmapMemory                                     = cast( PFN_vkUnmapMemory                                     ) vkGetInstanceProcAddr( instance, "vkUnmapMemory" );
+    vkFlushMappedMemoryRanges                         = cast( PFN_vkFlushMappedMemoryRanges                         ) vkGetInstanceProcAddr( instance, "vkFlushMappedMemoryRanges" );
+    vkInvalidateMappedMemoryRanges                    = cast( PFN_vkInvalidateMappedMemoryRanges                    ) vkGetInstanceProcAddr( instance, "vkInvalidateMappedMemoryRanges" );
+    vkGetDeviceMemoryCommitment                       = cast( PFN_vkGetDeviceMemoryCommitment                       ) vkGetInstanceProcAddr( instance, "vkGetDeviceMemoryCommitment" );
+    vkBindBufferMemory                                = cast( PFN_vkBindBufferMemory                                ) vkGetInstanceProcAddr( instance, "vkBindBufferMemory" );
+    vkBindImageMemory                                 = cast( PFN_vkBindImageMemory                                 ) vkGetInstanceProcAddr( instance, "vkBindImageMemory" );
+    vkGetBufferMemoryRequirements                     = cast( PFN_vkGetBufferMemoryRequirements                     ) vkGetInstanceProcAddr( instance, "vkGetBufferMemoryRequirements" );
+    vkGetImageMemoryRequirements                      = cast( PFN_vkGetImageMemoryRequirements                      ) vkGetInstanceProcAddr( instance, "vkGetImageMemoryRequirements" );
+    vkGetImageSparseMemoryRequirements                = cast( PFN_vkGetImageSparseMemoryRequirements                ) vkGetInstanceProcAddr( instance, "vkGetImageSparseMemoryRequirements" );
+    vkQueueBindSparse                                 = cast( PFN_vkQueueBindSparse                                 ) vkGetInstanceProcAddr( instance, "vkQueueBindSparse" );
+    vkCreateFence                                     = cast( PFN_vkCreateFence                                     ) vkGetInstanceProcAddr( instance, "vkCreateFence" );
+    vkDestroyFence                                    = cast( PFN_vkDestroyFence                                    ) vkGetInstanceProcAddr( instance, "vkDestroyFence" );
+    vkResetFences                                     = cast( PFN_vkResetFences                                     ) vkGetInstanceProcAddr( instance, "vkResetFences" );
+    vkGetFenceStatus                                  = cast( PFN_vkGetFenceStatus                                  ) vkGetInstanceProcAddr( instance, "vkGetFenceStatus" );
+    vkWaitForFences                                   = cast( PFN_vkWaitForFences                                   ) vkGetInstanceProcAddr( instance, "vkWaitForFences" );
+    vkCreateSemaphore                                 = cast( PFN_vkCreateSemaphore                                 ) vkGetInstanceProcAddr( instance, "vkCreateSemaphore" );
+    vkDestroySemaphore                                = cast( PFN_vkDestroySemaphore                                ) vkGetInstanceProcAddr( instance, "vkDestroySemaphore" );
+    vkCreateEvent                                     = cast( PFN_vkCreateEvent                                     ) vkGetInstanceProcAddr( instance, "vkCreateEvent" );
+    vkDestroyEvent                                    = cast( PFN_vkDestroyEvent                                    ) vkGetInstanceProcAddr( instance, "vkDestroyEvent" );
+    vkGetEventStatus                                  = cast( PFN_vkGetEventStatus                                  ) vkGetInstanceProcAddr( instance, "vkGetEventStatus" );
+    vkSetEvent                                        = cast( PFN_vkSetEvent                                        ) vkGetInstanceProcAddr( instance, "vkSetEvent" );
+    vkResetEvent                                      = cast( PFN_vkResetEvent                                      ) vkGetInstanceProcAddr( instance, "vkResetEvent" );
+    vkCreateQueryPool                                 = cast( PFN_vkCreateQueryPool                                 ) vkGetInstanceProcAddr( instance, "vkCreateQueryPool" );
+    vkDestroyQueryPool                                = cast( PFN_vkDestroyQueryPool                                ) vkGetInstanceProcAddr( instance, "vkDestroyQueryPool" );
+    vkGetQueryPoolResults                             = cast( PFN_vkGetQueryPoolResults                             ) vkGetInstanceProcAddr( instance, "vkGetQueryPoolResults" );
+    vkCreateBuffer                                    = cast( PFN_vkCreateBuffer                                    ) vkGetInstanceProcAddr( instance, "vkCreateBuffer" );
+    vkDestroyBuffer                                   = cast( PFN_vkDestroyBuffer                                   ) vkGetInstanceProcAddr( instance, "vkDestroyBuffer" );
+    vkCreateBufferView                                = cast( PFN_vkCreateBufferView                                ) vkGetInstanceProcAddr( instance, "vkCreateBufferView" );
+    vkDestroyBufferView                               = cast( PFN_vkDestroyBufferView                               ) vkGetInstanceProcAddr( instance, "vkDestroyBufferView" );
+    vkCreateImage                                     = cast( PFN_vkCreateImage                                     ) vkGetInstanceProcAddr( instance, "vkCreateImage" );
+    vkDestroyImage                                    = cast( PFN_vkDestroyImage                                    ) vkGetInstanceProcAddr( instance, "vkDestroyImage" );
+    vkGetImageSubresourceLayout                       = cast( PFN_vkGetImageSubresourceLayout                       ) vkGetInstanceProcAddr( instance, "vkGetImageSubresourceLayout" );
+    vkCreateImageView                                 = cast( PFN_vkCreateImageView                                 ) vkGetInstanceProcAddr( instance, "vkCreateImageView" );
+    vkDestroyImageView                                = cast( PFN_vkDestroyImageView                                ) vkGetInstanceProcAddr( instance, "vkDestroyImageView" );
+    vkCreateShaderModule                              = cast( PFN_vkCreateShaderModule                              ) vkGetInstanceProcAddr( instance, "vkCreateShaderModule" );
+    vkDestroyShaderModule                             = cast( PFN_vkDestroyShaderModule                             ) vkGetInstanceProcAddr( instance, "vkDestroyShaderModule" );
+    vkCreatePipelineCache                             = cast( PFN_vkCreatePipelineCache                             ) vkGetInstanceProcAddr( instance, "vkCreatePipelineCache" );
+    vkDestroyPipelineCache                            = cast( PFN_vkDestroyPipelineCache                            ) vkGetInstanceProcAddr( instance, "vkDestroyPipelineCache" );
+    vkGetPipelineCacheData                            = cast( PFN_vkGetPipelineCacheData                            ) vkGetInstanceProcAddr( instance, "vkGetPipelineCacheData" );
+    vkMergePipelineCaches                             = cast( PFN_vkMergePipelineCaches                             ) vkGetInstanceProcAddr( instance, "vkMergePipelineCaches" );
+    vkCreateGraphicsPipelines                         = cast( PFN_vkCreateGraphicsPipelines                         ) vkGetInstanceProcAddr( instance, "vkCreateGraphicsPipelines" );
+    vkCreateComputePipelines                          = cast( PFN_vkCreateComputePipelines                          ) vkGetInstanceProcAddr( instance, "vkCreateComputePipelines" );
+    vkDestroyPipeline                                 = cast( PFN_vkDestroyPipeline                                 ) vkGetInstanceProcAddr( instance, "vkDestroyPipeline" );
+    vkCreatePipelineLayout                            = cast( PFN_vkCreatePipelineLayout                            ) vkGetInstanceProcAddr( instance, "vkCreatePipelineLayout" );
+    vkDestroyPipelineLayout                           = cast( PFN_vkDestroyPipelineLayout                           ) vkGetInstanceProcAddr( instance, "vkDestroyPipelineLayout" );
+    vkCreateSampler                                   = cast( PFN_vkCreateSampler                                   ) vkGetInstanceProcAddr( instance, "vkCreateSampler" );
+    vkDestroySampler                                  = cast( PFN_vkDestroySampler                                  ) vkGetInstanceProcAddr( instance, "vkDestroySampler" );
+    vkCreateDescriptorSetLayout                       = cast( PFN_vkCreateDescriptorSetLayout                       ) vkGetInstanceProcAddr( instance, "vkCreateDescriptorSetLayout" );
+    vkDestroyDescriptorSetLayout                      = cast( PFN_vkDestroyDescriptorSetLayout                      ) vkGetInstanceProcAddr( instance, "vkDestroyDescriptorSetLayout" );
+    vkCreateDescriptorPool                            = cast( PFN_vkCreateDescriptorPool                            ) vkGetInstanceProcAddr( instance, "vkCreateDescriptorPool" );
+    vkDestroyDescriptorPool                           = cast( PFN_vkDestroyDescriptorPool                           ) vkGetInstanceProcAddr( instance, "vkDestroyDescriptorPool" );
+    vkResetDescriptorPool                             = cast( PFN_vkResetDescriptorPool                             ) vkGetInstanceProcAddr( instance, "vkResetDescriptorPool" );
+    vkAllocateDescriptorSets                          = cast( PFN_vkAllocateDescriptorSets                          ) vkGetInstanceProcAddr( instance, "vkAllocateDescriptorSets" );
+    vkFreeDescriptorSets                              = cast( PFN_vkFreeDescriptorSets                              ) vkGetInstanceProcAddr( instance, "vkFreeDescriptorSets" );
+    vkUpdateDescriptorSets                            = cast( PFN_vkUpdateDescriptorSets                            ) vkGetInstanceProcAddr( instance, "vkUpdateDescriptorSets" );
+    vkCreateFramebuffer                               = cast( PFN_vkCreateFramebuffer                               ) vkGetInstanceProcAddr( instance, "vkCreateFramebuffer" );
+    vkDestroyFramebuffer                              = cast( PFN_vkDestroyFramebuffer                              ) vkGetInstanceProcAddr( instance, "vkDestroyFramebuffer" );
+    vkCreateRenderPass                                = cast( PFN_vkCreateRenderPass                                ) vkGetInstanceProcAddr( instance, "vkCreateRenderPass" );
+    vkDestroyRenderPass                               = cast( PFN_vkDestroyRenderPass                               ) vkGetInstanceProcAddr( instance, "vkDestroyRenderPass" );
+    vkGetRenderAreaGranularity                        = cast( PFN_vkGetRenderAreaGranularity                        ) vkGetInstanceProcAddr( instance, "vkGetRenderAreaGranularity" );
+    vkCreateCommandPool                               = cast( PFN_vkCreateCommandPool                               ) vkGetInstanceProcAddr( instance, "vkCreateCommandPool" );
+    vkDestroyCommandPool                              = cast( PFN_vkDestroyCommandPool                              ) vkGetInstanceProcAddr( instance, "vkDestroyCommandPool" );
+    vkResetCommandPool                                = cast( PFN_vkResetCommandPool                                ) vkGetInstanceProcAddr( instance, "vkResetCommandPool" );
+    vkAllocateCommandBuffers                          = cast( PFN_vkAllocateCommandBuffers                          ) vkGetInstanceProcAddr( instance, "vkAllocateCommandBuffers" );
+    vkFreeCommandBuffers                              = cast( PFN_vkFreeCommandBuffers                              ) vkGetInstanceProcAddr( instance, "vkFreeCommandBuffers" );
+    vkBeginCommandBuffer                              = cast( PFN_vkBeginCommandBuffer                              ) vkGetInstanceProcAddr( instance, "vkBeginCommandBuffer" );
+    vkEndCommandBuffer                                = cast( PFN_vkEndCommandBuffer                                ) vkGetInstanceProcAddr( instance, "vkEndCommandBuffer" );
+    vkResetCommandBuffer                              = cast( PFN_vkResetCommandBuffer                              ) vkGetInstanceProcAddr( instance, "vkResetCommandBuffer" );
+    vkCmdBindPipeline                                 = cast( PFN_vkCmdBindPipeline                                 ) vkGetInstanceProcAddr( instance, "vkCmdBindPipeline" );
+    vkCmdSetViewport                                  = cast( PFN_vkCmdSetViewport                                  ) vkGetInstanceProcAddr( instance, "vkCmdSetViewport" );
+    vkCmdSetScissor                                   = cast( PFN_vkCmdSetScissor                                   ) vkGetInstanceProcAddr( instance, "vkCmdSetScissor" );
+    vkCmdSetLineWidth                                 = cast( PFN_vkCmdSetLineWidth                                 ) vkGetInstanceProcAddr( instance, "vkCmdSetLineWidth" );
+    vkCmdSetDepthBias                                 = cast( PFN_vkCmdSetDepthBias                                 ) vkGetInstanceProcAddr( instance, "vkCmdSetDepthBias" );
+    vkCmdSetBlendConstants                            = cast( PFN_vkCmdSetBlendConstants                            ) vkGetInstanceProcAddr( instance, "vkCmdSetBlendConstants" );
+    vkCmdSetDepthBounds                               = cast( PFN_vkCmdSetDepthBounds                               ) vkGetInstanceProcAddr( instance, "vkCmdSetDepthBounds" );
+    vkCmdSetStencilCompareMask                        = cast( PFN_vkCmdSetStencilCompareMask                        ) vkGetInstanceProcAddr( instance, "vkCmdSetStencilCompareMask" );
+    vkCmdSetStencilWriteMask                          = cast( PFN_vkCmdSetStencilWriteMask                          ) vkGetInstanceProcAddr( instance, "vkCmdSetStencilWriteMask" );
+    vkCmdSetStencilReference                          = cast( PFN_vkCmdSetStencilReference                          ) vkGetInstanceProcAddr( instance, "vkCmdSetStencilReference" );
+    vkCmdBindDescriptorSets                           = cast( PFN_vkCmdBindDescriptorSets                           ) vkGetInstanceProcAddr( instance, "vkCmdBindDescriptorSets" );
+    vkCmdBindIndexBuffer                              = cast( PFN_vkCmdBindIndexBuffer                              ) vkGetInstanceProcAddr( instance, "vkCmdBindIndexBuffer" );
+    vkCmdBindVertexBuffers                            = cast( PFN_vkCmdBindVertexBuffers                            ) vkGetInstanceProcAddr( instance, "vkCmdBindVertexBuffers" );
+    vkCmdDraw                                         = cast( PFN_vkCmdDraw                                         ) vkGetInstanceProcAddr( instance, "vkCmdDraw" );
+    vkCmdDrawIndexed                                  = cast( PFN_vkCmdDrawIndexed                                  ) vkGetInstanceProcAddr( instance, "vkCmdDrawIndexed" );
+    vkCmdDrawIndirect                                 = cast( PFN_vkCmdDrawIndirect                                 ) vkGetInstanceProcAddr( instance, "vkCmdDrawIndirect" );
+    vkCmdDrawIndexedIndirect                          = cast( PFN_vkCmdDrawIndexedIndirect                          ) vkGetInstanceProcAddr( instance, "vkCmdDrawIndexedIndirect" );
+    vkCmdDispatch                                     = cast( PFN_vkCmdDispatch                                     ) vkGetInstanceProcAddr( instance, "vkCmdDispatch" );
+    vkCmdDispatchIndirect                             = cast( PFN_vkCmdDispatchIndirect                             ) vkGetInstanceProcAddr( instance, "vkCmdDispatchIndirect" );
+    vkCmdCopyBuffer                                   = cast( PFN_vkCmdCopyBuffer                                   ) vkGetInstanceProcAddr( instance, "vkCmdCopyBuffer" );
+    vkCmdCopyImage                                    = cast( PFN_vkCmdCopyImage                                    ) vkGetInstanceProcAddr( instance, "vkCmdCopyImage" );
+    vkCmdBlitImage                                    = cast( PFN_vkCmdBlitImage                                    ) vkGetInstanceProcAddr( instance, "vkCmdBlitImage" );
+    vkCmdCopyBufferToImage                            = cast( PFN_vkCmdCopyBufferToImage                            ) vkGetInstanceProcAddr( instance, "vkCmdCopyBufferToImage" );
+    vkCmdCopyImageToBuffer                            = cast( PFN_vkCmdCopyImageToBuffer                            ) vkGetInstanceProcAddr( instance, "vkCmdCopyImageToBuffer" );
+    vkCmdUpdateBuffer                                 = cast( PFN_vkCmdUpdateBuffer                                 ) vkGetInstanceProcAddr( instance, "vkCmdUpdateBuffer" );
+    vkCmdFillBuffer                                   = cast( PFN_vkCmdFillBuffer                                   ) vkGetInstanceProcAddr( instance, "vkCmdFillBuffer" );
+    vkCmdClearColorImage                              = cast( PFN_vkCmdClearColorImage                              ) vkGetInstanceProcAddr( instance, "vkCmdClearColorImage" );
+    vkCmdClearDepthStencilImage                       = cast( PFN_vkCmdClearDepthStencilImage                       ) vkGetInstanceProcAddr( instance, "vkCmdClearDepthStencilImage" );
+    vkCmdClearAttachments                             = cast( PFN_vkCmdClearAttachments                             ) vkGetInstanceProcAddr( instance, "vkCmdClearAttachments" );
+    vkCmdResolveImage                                 = cast( PFN_vkCmdResolveImage                                 ) vkGetInstanceProcAddr( instance, "vkCmdResolveImage" );
+    vkCmdSetEvent                                     = cast( PFN_vkCmdSetEvent                                     ) vkGetInstanceProcAddr( instance, "vkCmdSetEvent" );
+    vkCmdResetEvent                                   = cast( PFN_vkCmdResetEvent                                   ) vkGetInstanceProcAddr( instance, "vkCmdResetEvent" );
+    vkCmdWaitEvents                                   = cast( PFN_vkCmdWaitEvents                                   ) vkGetInstanceProcAddr( instance, "vkCmdWaitEvents" );
+    vkCmdPipelineBarrier                              = cast( PFN_vkCmdPipelineBarrier                              ) vkGetInstanceProcAddr( instance, "vkCmdPipelineBarrier" );
+    vkCmdBeginQuery                                   = cast( PFN_vkCmdBeginQuery                                   ) vkGetInstanceProcAddr( instance, "vkCmdBeginQuery" );
+    vkCmdEndQuery                                     = cast( PFN_vkCmdEndQuery                                     ) vkGetInstanceProcAddr( instance, "vkCmdEndQuery" );
+    vkCmdResetQueryPool                               = cast( PFN_vkCmdResetQueryPool                               ) vkGetInstanceProcAddr( instance, "vkCmdResetQueryPool" );
+    vkCmdWriteTimestamp                               = cast( PFN_vkCmdWriteTimestamp                               ) vkGetInstanceProcAddr( instance, "vkCmdWriteTimestamp" );
+    vkCmdCopyQueryPoolResults                         = cast( PFN_vkCmdCopyQueryPoolResults                         ) vkGetInstanceProcAddr( instance, "vkCmdCopyQueryPoolResults" );
+    vkCmdPushConstants                                = cast( PFN_vkCmdPushConstants                                ) vkGetInstanceProcAddr( instance, "vkCmdPushConstants" );
+    vkCmdBeginRenderPass                              = cast( PFN_vkCmdBeginRenderPass                              ) vkGetInstanceProcAddr( instance, "vkCmdBeginRenderPass" );
+    vkCmdNextSubpass                                  = cast( PFN_vkCmdNextSubpass                                  ) vkGetInstanceProcAddr( instance, "vkCmdNextSubpass" );
+    vkCmdEndRenderPass                                = cast( PFN_vkCmdEndRenderPass                                ) vkGetInstanceProcAddr( instance, "vkCmdEndRenderPass" );
+    vkCmdExecuteCommands                              = cast( PFN_vkCmdExecuteCommands                              ) vkGetInstanceProcAddr( instance, "vkCmdExecuteCommands" );
 
     // VK_VERSION_1_1
-    vkBindBufferMemory2                            = cast( PFN_vkBindBufferMemory2                            ) vkGetInstanceProcAddr( instance, "vkBindBufferMemory2" );
-    vkBindImageMemory2                             = cast( PFN_vkBindImageMemory2                             ) vkGetInstanceProcAddr( instance, "vkBindImageMemory2" );
-    vkGetDeviceGroupPeerMemoryFeatures             = cast( PFN_vkGetDeviceGroupPeerMemoryFeatures             ) vkGetInstanceProcAddr( instance, "vkGetDeviceGroupPeerMemoryFeatures" );
-    vkCmdSetDeviceMask                             = cast( PFN_vkCmdSetDeviceMask                             ) vkGetInstanceProcAddr( instance, "vkCmdSetDeviceMask" );
-    vkCmdDispatchBase                              = cast( PFN_vkCmdDispatchBase                              ) vkGetInstanceProcAddr( instance, "vkCmdDispatchBase" );
-    vkGetImageMemoryRequirements2                  = cast( PFN_vkGetImageMemoryRequirements2                  ) vkGetInstanceProcAddr( instance, "vkGetImageMemoryRequirements2" );
-    vkGetBufferMemoryRequirements2                 = cast( PFN_vkGetBufferMemoryRequirements2                 ) vkGetInstanceProcAddr( instance, "vkGetBufferMemoryRequirements2" );
-    vkGetImageSparseMemoryRequirements2            = cast( PFN_vkGetImageSparseMemoryRequirements2            ) vkGetInstanceProcAddr( instance, "vkGetImageSparseMemoryRequirements2" );
-    vkTrimCommandPool                              = cast( PFN_vkTrimCommandPool                              ) vkGetInstanceProcAddr( instance, "vkTrimCommandPool" );
-    vkGetDeviceQueue2                              = cast( PFN_vkGetDeviceQueue2                              ) vkGetInstanceProcAddr( instance, "vkGetDeviceQueue2" );
-    vkCreateSamplerYcbcrConversion                 = cast( PFN_vkCreateSamplerYcbcrConversion                 ) vkGetInstanceProcAddr( instance, "vkCreateSamplerYcbcrConversion" );
-    vkDestroySamplerYcbcrConversion                = cast( PFN_vkDestroySamplerYcbcrConversion                ) vkGetInstanceProcAddr( instance, "vkDestroySamplerYcbcrConversion" );
-    vkCreateDescriptorUpdateTemplate               = cast( PFN_vkCreateDescriptorUpdateTemplate               ) vkGetInstanceProcAddr( instance, "vkCreateDescriptorUpdateTemplate" );
-    vkDestroyDescriptorUpdateTemplate              = cast( PFN_vkDestroyDescriptorUpdateTemplate              ) vkGetInstanceProcAddr( instance, "vkDestroyDescriptorUpdateTemplate" );
-    vkUpdateDescriptorSetWithTemplate              = cast( PFN_vkUpdateDescriptorSetWithTemplate              ) vkGetInstanceProcAddr( instance, "vkUpdateDescriptorSetWithTemplate" );
-    vkGetDescriptorSetLayoutSupport                = cast( PFN_vkGetDescriptorSetLayoutSupport                ) vkGetInstanceProcAddr( instance, "vkGetDescriptorSetLayoutSupport" );
+    vkBindBufferMemory2                               = cast( PFN_vkBindBufferMemory2                               ) vkGetInstanceProcAddr( instance, "vkBindBufferMemory2" );
+    vkBindImageMemory2                                = cast( PFN_vkBindImageMemory2                                ) vkGetInstanceProcAddr( instance, "vkBindImageMemory2" );
+    vkGetDeviceGroupPeerMemoryFeatures                = cast( PFN_vkGetDeviceGroupPeerMemoryFeatures                ) vkGetInstanceProcAddr( instance, "vkGetDeviceGroupPeerMemoryFeatures" );
+    vkCmdSetDeviceMask                                = cast( PFN_vkCmdSetDeviceMask                                ) vkGetInstanceProcAddr( instance, "vkCmdSetDeviceMask" );
+    vkCmdDispatchBase                                 = cast( PFN_vkCmdDispatchBase                                 ) vkGetInstanceProcAddr( instance, "vkCmdDispatchBase" );
+    vkGetImageMemoryRequirements2                     = cast( PFN_vkGetImageMemoryRequirements2                     ) vkGetInstanceProcAddr( instance, "vkGetImageMemoryRequirements2" );
+    vkGetBufferMemoryRequirements2                    = cast( PFN_vkGetBufferMemoryRequirements2                    ) vkGetInstanceProcAddr( instance, "vkGetBufferMemoryRequirements2" );
+    vkGetImageSparseMemoryRequirements2               = cast( PFN_vkGetImageSparseMemoryRequirements2               ) vkGetInstanceProcAddr( instance, "vkGetImageSparseMemoryRequirements2" );
+    vkTrimCommandPool                                 = cast( PFN_vkTrimCommandPool                                 ) vkGetInstanceProcAddr( instance, "vkTrimCommandPool" );
+    vkGetDeviceQueue2                                 = cast( PFN_vkGetDeviceQueue2                                 ) vkGetInstanceProcAddr( instance, "vkGetDeviceQueue2" );
+    vkCreateSamplerYcbcrConversion                    = cast( PFN_vkCreateSamplerYcbcrConversion                    ) vkGetInstanceProcAddr( instance, "vkCreateSamplerYcbcrConversion" );
+    vkDestroySamplerYcbcrConversion                   = cast( PFN_vkDestroySamplerYcbcrConversion                   ) vkGetInstanceProcAddr( instance, "vkDestroySamplerYcbcrConversion" );
+    vkCreateDescriptorUpdateTemplate                  = cast( PFN_vkCreateDescriptorUpdateTemplate                  ) vkGetInstanceProcAddr( instance, "vkCreateDescriptorUpdateTemplate" );
+    vkDestroyDescriptorUpdateTemplate                 = cast( PFN_vkDestroyDescriptorUpdateTemplate                 ) vkGetInstanceProcAddr( instance, "vkDestroyDescriptorUpdateTemplate" );
+    vkUpdateDescriptorSetWithTemplate                 = cast( PFN_vkUpdateDescriptorSetWithTemplate                 ) vkGetInstanceProcAddr( instance, "vkUpdateDescriptorSetWithTemplate" );
+    vkGetDescriptorSetLayoutSupport                   = cast( PFN_vkGetDescriptorSetLayoutSupport                   ) vkGetInstanceProcAddr( instance, "vkGetDescriptorSetLayoutSupport" );
 
     // VK_KHR_swapchain
-    vkCreateSwapchainKHR                           = cast( PFN_vkCreateSwapchainKHR                           ) vkGetInstanceProcAddr( instance, "vkCreateSwapchainKHR" );
-    vkDestroySwapchainKHR                          = cast( PFN_vkDestroySwapchainKHR                          ) vkGetInstanceProcAddr( instance, "vkDestroySwapchainKHR" );
-    vkGetSwapchainImagesKHR                        = cast( PFN_vkGetSwapchainImagesKHR                        ) vkGetInstanceProcAddr( instance, "vkGetSwapchainImagesKHR" );
-    vkAcquireNextImageKHR                          = cast( PFN_vkAcquireNextImageKHR                          ) vkGetInstanceProcAddr( instance, "vkAcquireNextImageKHR" );
-    vkQueuePresentKHR                              = cast( PFN_vkQueuePresentKHR                              ) vkGetInstanceProcAddr( instance, "vkQueuePresentKHR" );
-    vkGetDeviceGroupPresentCapabilitiesKHR         = cast( PFN_vkGetDeviceGroupPresentCapabilitiesKHR         ) vkGetInstanceProcAddr( instance, "vkGetDeviceGroupPresentCapabilitiesKHR" );
-    vkGetDeviceGroupSurfacePresentModesKHR         = cast( PFN_vkGetDeviceGroupSurfacePresentModesKHR         ) vkGetInstanceProcAddr( instance, "vkGetDeviceGroupSurfacePresentModesKHR" );
-    vkAcquireNextImage2KHR                         = cast( PFN_vkAcquireNextImage2KHR                         ) vkGetInstanceProcAddr( instance, "vkAcquireNextImage2KHR" );
+    vkCreateSwapchainKHR                              = cast( PFN_vkCreateSwapchainKHR                              ) vkGetInstanceProcAddr( instance, "vkCreateSwapchainKHR" );
+    vkDestroySwapchainKHR                             = cast( PFN_vkDestroySwapchainKHR                             ) vkGetInstanceProcAddr( instance, "vkDestroySwapchainKHR" );
+    vkGetSwapchainImagesKHR                           = cast( PFN_vkGetSwapchainImagesKHR                           ) vkGetInstanceProcAddr( instance, "vkGetSwapchainImagesKHR" );
+    vkAcquireNextImageKHR                             = cast( PFN_vkAcquireNextImageKHR                             ) vkGetInstanceProcAddr( instance, "vkAcquireNextImageKHR" );
+    vkQueuePresentKHR                                 = cast( PFN_vkQueuePresentKHR                                 ) vkGetInstanceProcAddr( instance, "vkQueuePresentKHR" );
+    vkGetDeviceGroupPresentCapabilitiesKHR            = cast( PFN_vkGetDeviceGroupPresentCapabilitiesKHR            ) vkGetInstanceProcAddr( instance, "vkGetDeviceGroupPresentCapabilitiesKHR" );
+    vkGetDeviceGroupSurfacePresentModesKHR            = cast( PFN_vkGetDeviceGroupSurfacePresentModesKHR            ) vkGetInstanceProcAddr( instance, "vkGetDeviceGroupSurfacePresentModesKHR" );
+    vkAcquireNextImage2KHR                            = cast( PFN_vkAcquireNextImage2KHR                            ) vkGetInstanceProcAddr( instance, "vkAcquireNextImage2KHR" );
 
     // VK_KHR_display_swapchain
-    vkCreateSharedSwapchainsKHR                    = cast( PFN_vkCreateSharedSwapchainsKHR                    ) vkGetInstanceProcAddr( instance, "vkCreateSharedSwapchainsKHR" );
+    vkCreateSharedSwapchainsKHR                       = cast( PFN_vkCreateSharedSwapchainsKHR                       ) vkGetInstanceProcAddr( instance, "vkCreateSharedSwapchainsKHR" );
 
     // VK_KHR_external_memory_fd
-    vkGetMemoryFdKHR                               = cast( PFN_vkGetMemoryFdKHR                               ) vkGetInstanceProcAddr( instance, "vkGetMemoryFdKHR" );
-    vkGetMemoryFdPropertiesKHR                     = cast( PFN_vkGetMemoryFdPropertiesKHR                     ) vkGetInstanceProcAddr( instance, "vkGetMemoryFdPropertiesKHR" );
+    vkGetMemoryFdKHR                                  = cast( PFN_vkGetMemoryFdKHR                                  ) vkGetInstanceProcAddr( instance, "vkGetMemoryFdKHR" );
+    vkGetMemoryFdPropertiesKHR                        = cast( PFN_vkGetMemoryFdPropertiesKHR                        ) vkGetInstanceProcAddr( instance, "vkGetMemoryFdPropertiesKHR" );
 
     // VK_KHR_external_semaphore_fd
-    vkImportSemaphoreFdKHR                         = cast( PFN_vkImportSemaphoreFdKHR                         ) vkGetInstanceProcAddr( instance, "vkImportSemaphoreFdKHR" );
-    vkGetSemaphoreFdKHR                            = cast( PFN_vkGetSemaphoreFdKHR                            ) vkGetInstanceProcAddr( instance, "vkGetSemaphoreFdKHR" );
+    vkImportSemaphoreFdKHR                            = cast( PFN_vkImportSemaphoreFdKHR                            ) vkGetInstanceProcAddr( instance, "vkImportSemaphoreFdKHR" );
+    vkGetSemaphoreFdKHR                               = cast( PFN_vkGetSemaphoreFdKHR                               ) vkGetInstanceProcAddr( instance, "vkGetSemaphoreFdKHR" );
 
     // VK_KHR_push_descriptor
-    vkCmdPushDescriptorSetKHR                      = cast( PFN_vkCmdPushDescriptorSetKHR                      ) vkGetInstanceProcAddr( instance, "vkCmdPushDescriptorSetKHR" );
-    vkCmdPushDescriptorSetWithTemplateKHR          = cast( PFN_vkCmdPushDescriptorSetWithTemplateKHR          ) vkGetInstanceProcAddr( instance, "vkCmdPushDescriptorSetWithTemplateKHR" );
+    vkCmdPushDescriptorSetKHR                         = cast( PFN_vkCmdPushDescriptorSetKHR                         ) vkGetInstanceProcAddr( instance, "vkCmdPushDescriptorSetKHR" );
+    vkCmdPushDescriptorSetWithTemplateKHR             = cast( PFN_vkCmdPushDescriptorSetWithTemplateKHR             ) vkGetInstanceProcAddr( instance, "vkCmdPushDescriptorSetWithTemplateKHR" );
 
     // VK_KHR_create_renderpass2
-    vkCreateRenderPass2KHR                         = cast( PFN_vkCreateRenderPass2KHR                         ) vkGetInstanceProcAddr( instance, "vkCreateRenderPass2KHR" );
-    vkCmdBeginRenderPass2KHR                       = cast( PFN_vkCmdBeginRenderPass2KHR                       ) vkGetInstanceProcAddr( instance, "vkCmdBeginRenderPass2KHR" );
-    vkCmdNextSubpass2KHR                           = cast( PFN_vkCmdNextSubpass2KHR                           ) vkGetInstanceProcAddr( instance, "vkCmdNextSubpass2KHR" );
-    vkCmdEndRenderPass2KHR                         = cast( PFN_vkCmdEndRenderPass2KHR                         ) vkGetInstanceProcAddr( instance, "vkCmdEndRenderPass2KHR" );
+    vkCreateRenderPass2KHR                            = cast( PFN_vkCreateRenderPass2KHR                            ) vkGetInstanceProcAddr( instance, "vkCreateRenderPass2KHR" );
+    vkCmdBeginRenderPass2KHR                          = cast( PFN_vkCmdBeginRenderPass2KHR                          ) vkGetInstanceProcAddr( instance, "vkCmdBeginRenderPass2KHR" );
+    vkCmdNextSubpass2KHR                              = cast( PFN_vkCmdNextSubpass2KHR                              ) vkGetInstanceProcAddr( instance, "vkCmdNextSubpass2KHR" );
+    vkCmdEndRenderPass2KHR                            = cast( PFN_vkCmdEndRenderPass2KHR                            ) vkGetInstanceProcAddr( instance, "vkCmdEndRenderPass2KHR" );
 
     // VK_KHR_shared_presentable_image
-    vkGetSwapchainStatusKHR                        = cast( PFN_vkGetSwapchainStatusKHR                        ) vkGetInstanceProcAddr( instance, "vkGetSwapchainStatusKHR" );
+    vkGetSwapchainStatusKHR                           = cast( PFN_vkGetSwapchainStatusKHR                           ) vkGetInstanceProcAddr( instance, "vkGetSwapchainStatusKHR" );
 
     // VK_KHR_external_fence_fd
-    vkImportFenceFdKHR                             = cast( PFN_vkImportFenceFdKHR                             ) vkGetInstanceProcAddr( instance, "vkImportFenceFdKHR" );
-    vkGetFenceFdKHR                                = cast( PFN_vkGetFenceFdKHR                                ) vkGetInstanceProcAddr( instance, "vkGetFenceFdKHR" );
+    vkImportFenceFdKHR                                = cast( PFN_vkImportFenceFdKHR                                ) vkGetInstanceProcAddr( instance, "vkImportFenceFdKHR" );
+    vkGetFenceFdKHR                                   = cast( PFN_vkGetFenceFdKHR                                   ) vkGetInstanceProcAddr( instance, "vkGetFenceFdKHR" );
 
     // VK_KHR_draw_indirect_count
-    vkCmdDrawIndirectCountKHR                      = cast( PFN_vkCmdDrawIndirectCountKHR                      ) vkGetInstanceProcAddr( instance, "vkCmdDrawIndirectCountKHR" );
-    vkCmdDrawIndexedIndirectCountKHR               = cast( PFN_vkCmdDrawIndexedIndirectCountKHR               ) vkGetInstanceProcAddr( instance, "vkCmdDrawIndexedIndirectCountKHR" );
+    vkCmdDrawIndirectCountKHR                         = cast( PFN_vkCmdDrawIndirectCountKHR                         ) vkGetInstanceProcAddr( instance, "vkCmdDrawIndirectCountKHR" );
+    vkCmdDrawIndexedIndirectCountKHR                  = cast( PFN_vkCmdDrawIndexedIndirectCountKHR                  ) vkGetInstanceProcAddr( instance, "vkCmdDrawIndexedIndirectCountKHR" );
+
+    // VK_KHR_pipeline_executable_properties
+    vkGetPipelineExecutablePropertiesKHR              = cast( PFN_vkGetPipelineExecutablePropertiesKHR              ) vkGetInstanceProcAddr( instance, "vkGetPipelineExecutablePropertiesKHR" );
+    vkGetPipelineExecutableStatisticsKHR              = cast( PFN_vkGetPipelineExecutableStatisticsKHR              ) vkGetInstanceProcAddr( instance, "vkGetPipelineExecutableStatisticsKHR" );
+    vkGetPipelineExecutableInternalRepresentationsKHR = cast( PFN_vkGetPipelineExecutableInternalRepresentationsKHR ) vkGetInstanceProcAddr( instance, "vkGetPipelineExecutableInternalRepresentationsKHR" );
 
     // VK_EXT_debug_marker
-    vkDebugMarkerSetObjectTagEXT                   = cast( PFN_vkDebugMarkerSetObjectTagEXT                   ) vkGetInstanceProcAddr( instance, "vkDebugMarkerSetObjectTagEXT" );
-    vkDebugMarkerSetObjectNameEXT                  = cast( PFN_vkDebugMarkerSetObjectNameEXT                  ) vkGetInstanceProcAddr( instance, "vkDebugMarkerSetObjectNameEXT" );
-    vkCmdDebugMarkerBeginEXT                       = cast( PFN_vkCmdDebugMarkerBeginEXT                       ) vkGetInstanceProcAddr( instance, "vkCmdDebugMarkerBeginEXT" );
-    vkCmdDebugMarkerEndEXT                         = cast( PFN_vkCmdDebugMarkerEndEXT                         ) vkGetInstanceProcAddr( instance, "vkCmdDebugMarkerEndEXT" );
-    vkCmdDebugMarkerInsertEXT                      = cast( PFN_vkCmdDebugMarkerInsertEXT                      ) vkGetInstanceProcAddr( instance, "vkCmdDebugMarkerInsertEXT" );
+    vkDebugMarkerSetObjectTagEXT                      = cast( PFN_vkDebugMarkerSetObjectTagEXT                      ) vkGetInstanceProcAddr( instance, "vkDebugMarkerSetObjectTagEXT" );
+    vkDebugMarkerSetObjectNameEXT                     = cast( PFN_vkDebugMarkerSetObjectNameEXT                     ) vkGetInstanceProcAddr( instance, "vkDebugMarkerSetObjectNameEXT" );
+    vkCmdDebugMarkerBeginEXT                          = cast( PFN_vkCmdDebugMarkerBeginEXT                          ) vkGetInstanceProcAddr( instance, "vkCmdDebugMarkerBeginEXT" );
+    vkCmdDebugMarkerEndEXT                            = cast( PFN_vkCmdDebugMarkerEndEXT                            ) vkGetInstanceProcAddr( instance, "vkCmdDebugMarkerEndEXT" );
+    vkCmdDebugMarkerInsertEXT                         = cast( PFN_vkCmdDebugMarkerInsertEXT                         ) vkGetInstanceProcAddr( instance, "vkCmdDebugMarkerInsertEXT" );
 
     // VK_EXT_transform_feedback
-    vkCmdBindTransformFeedbackBuffersEXT           = cast( PFN_vkCmdBindTransformFeedbackBuffersEXT           ) vkGetInstanceProcAddr( instance, "vkCmdBindTransformFeedbackBuffersEXT" );
-    vkCmdBeginTransformFeedbackEXT                 = cast( PFN_vkCmdBeginTransformFeedbackEXT                 ) vkGetInstanceProcAddr( instance, "vkCmdBeginTransformFeedbackEXT" );
-    vkCmdEndTransformFeedbackEXT                   = cast( PFN_vkCmdEndTransformFeedbackEXT                   ) vkGetInstanceProcAddr( instance, "vkCmdEndTransformFeedbackEXT" );
-    vkCmdBeginQueryIndexedEXT                      = cast( PFN_vkCmdBeginQueryIndexedEXT                      ) vkGetInstanceProcAddr( instance, "vkCmdBeginQueryIndexedEXT" );
-    vkCmdEndQueryIndexedEXT                        = cast( PFN_vkCmdEndQueryIndexedEXT                        ) vkGetInstanceProcAddr( instance, "vkCmdEndQueryIndexedEXT" );
-    vkCmdDrawIndirectByteCountEXT                  = cast( PFN_vkCmdDrawIndirectByteCountEXT                  ) vkGetInstanceProcAddr( instance, "vkCmdDrawIndirectByteCountEXT" );
+    vkCmdBindTransformFeedbackBuffersEXT              = cast( PFN_vkCmdBindTransformFeedbackBuffersEXT              ) vkGetInstanceProcAddr( instance, "vkCmdBindTransformFeedbackBuffersEXT" );
+    vkCmdBeginTransformFeedbackEXT                    = cast( PFN_vkCmdBeginTransformFeedbackEXT                    ) vkGetInstanceProcAddr( instance, "vkCmdBeginTransformFeedbackEXT" );
+    vkCmdEndTransformFeedbackEXT                      = cast( PFN_vkCmdEndTransformFeedbackEXT                      ) vkGetInstanceProcAddr( instance, "vkCmdEndTransformFeedbackEXT" );
+    vkCmdBeginQueryIndexedEXT                         = cast( PFN_vkCmdBeginQueryIndexedEXT                         ) vkGetInstanceProcAddr( instance, "vkCmdBeginQueryIndexedEXT" );
+    vkCmdEndQueryIndexedEXT                           = cast( PFN_vkCmdEndQueryIndexedEXT                           ) vkGetInstanceProcAddr( instance, "vkCmdEndQueryIndexedEXT" );
+    vkCmdDrawIndirectByteCountEXT                     = cast( PFN_vkCmdDrawIndirectByteCountEXT                     ) vkGetInstanceProcAddr( instance, "vkCmdDrawIndirectByteCountEXT" );
 
     // VK_NVX_image_view_handle
-    vkGetImageViewHandleNVX                        = cast( PFN_vkGetImageViewHandleNVX                        ) vkGetInstanceProcAddr( instance, "vkGetImageViewHandleNVX" );
+    vkGetImageViewHandleNVX                           = cast( PFN_vkGetImageViewHandleNVX                           ) vkGetInstanceProcAddr( instance, "vkGetImageViewHandleNVX" );
 
     // VK_AMD_shader_info
-    vkGetShaderInfoAMD                             = cast( PFN_vkGetShaderInfoAMD                             ) vkGetInstanceProcAddr( instance, "vkGetShaderInfoAMD" );
+    vkGetShaderInfoAMD                                = cast( PFN_vkGetShaderInfoAMD                                ) vkGetInstanceProcAddr( instance, "vkGetShaderInfoAMD" );
 
     // VK_EXT_conditional_rendering
-    vkCmdBeginConditionalRenderingEXT              = cast( PFN_vkCmdBeginConditionalRenderingEXT              ) vkGetInstanceProcAddr( instance, "vkCmdBeginConditionalRenderingEXT" );
-    vkCmdEndConditionalRenderingEXT                = cast( PFN_vkCmdEndConditionalRenderingEXT                ) vkGetInstanceProcAddr( instance, "vkCmdEndConditionalRenderingEXT" );
+    vkCmdBeginConditionalRenderingEXT                 = cast( PFN_vkCmdBeginConditionalRenderingEXT                 ) vkGetInstanceProcAddr( instance, "vkCmdBeginConditionalRenderingEXT" );
+    vkCmdEndConditionalRenderingEXT                   = cast( PFN_vkCmdEndConditionalRenderingEXT                   ) vkGetInstanceProcAddr( instance, "vkCmdEndConditionalRenderingEXT" );
 
     // VK_NVX_device_generated_commands
-    vkCmdProcessCommandsNVX                        = cast( PFN_vkCmdProcessCommandsNVX                        ) vkGetInstanceProcAddr( instance, "vkCmdProcessCommandsNVX" );
-    vkCmdReserveSpaceForCommandsNVX                = cast( PFN_vkCmdReserveSpaceForCommandsNVX                ) vkGetInstanceProcAddr( instance, "vkCmdReserveSpaceForCommandsNVX" );
-    vkCreateIndirectCommandsLayoutNVX              = cast( PFN_vkCreateIndirectCommandsLayoutNVX              ) vkGetInstanceProcAddr( instance, "vkCreateIndirectCommandsLayoutNVX" );
-    vkDestroyIndirectCommandsLayoutNVX             = cast( PFN_vkDestroyIndirectCommandsLayoutNVX             ) vkGetInstanceProcAddr( instance, "vkDestroyIndirectCommandsLayoutNVX" );
-    vkCreateObjectTableNVX                         = cast( PFN_vkCreateObjectTableNVX                         ) vkGetInstanceProcAddr( instance, "vkCreateObjectTableNVX" );
-    vkDestroyObjectTableNVX                        = cast( PFN_vkDestroyObjectTableNVX                        ) vkGetInstanceProcAddr( instance, "vkDestroyObjectTableNVX" );
-    vkRegisterObjectsNVX                           = cast( PFN_vkRegisterObjectsNVX                           ) vkGetInstanceProcAddr( instance, "vkRegisterObjectsNVX" );
-    vkUnregisterObjectsNVX                         = cast( PFN_vkUnregisterObjectsNVX                         ) vkGetInstanceProcAddr( instance, "vkUnregisterObjectsNVX" );
+    vkCmdProcessCommandsNVX                           = cast( PFN_vkCmdProcessCommandsNVX                           ) vkGetInstanceProcAddr( instance, "vkCmdProcessCommandsNVX" );
+    vkCmdReserveSpaceForCommandsNVX                   = cast( PFN_vkCmdReserveSpaceForCommandsNVX                   ) vkGetInstanceProcAddr( instance, "vkCmdReserveSpaceForCommandsNVX" );
+    vkCreateIndirectCommandsLayoutNVX                 = cast( PFN_vkCreateIndirectCommandsLayoutNVX                 ) vkGetInstanceProcAddr( instance, "vkCreateIndirectCommandsLayoutNVX" );
+    vkDestroyIndirectCommandsLayoutNVX                = cast( PFN_vkDestroyIndirectCommandsLayoutNVX                ) vkGetInstanceProcAddr( instance, "vkDestroyIndirectCommandsLayoutNVX" );
+    vkCreateObjectTableNVX                            = cast( PFN_vkCreateObjectTableNVX                            ) vkGetInstanceProcAddr( instance, "vkCreateObjectTableNVX" );
+    vkDestroyObjectTableNVX                           = cast( PFN_vkDestroyObjectTableNVX                           ) vkGetInstanceProcAddr( instance, "vkDestroyObjectTableNVX" );
+    vkRegisterObjectsNVX                              = cast( PFN_vkRegisterObjectsNVX                              ) vkGetInstanceProcAddr( instance, "vkRegisterObjectsNVX" );
+    vkUnregisterObjectsNVX                            = cast( PFN_vkUnregisterObjectsNVX                            ) vkGetInstanceProcAddr( instance, "vkUnregisterObjectsNVX" );
 
     // VK_NV_clip_space_w_scaling
-    vkCmdSetViewportWScalingNV                     = cast( PFN_vkCmdSetViewportWScalingNV                     ) vkGetInstanceProcAddr( instance, "vkCmdSetViewportWScalingNV" );
+    vkCmdSetViewportWScalingNV                        = cast( PFN_vkCmdSetViewportWScalingNV                        ) vkGetInstanceProcAddr( instance, "vkCmdSetViewportWScalingNV" );
 
     // VK_EXT_display_control
-    vkDisplayPowerControlEXT                       = cast( PFN_vkDisplayPowerControlEXT                       ) vkGetInstanceProcAddr( instance, "vkDisplayPowerControlEXT" );
-    vkRegisterDeviceEventEXT                       = cast( PFN_vkRegisterDeviceEventEXT                       ) vkGetInstanceProcAddr( instance, "vkRegisterDeviceEventEXT" );
-    vkRegisterDisplayEventEXT                      = cast( PFN_vkRegisterDisplayEventEXT                      ) vkGetInstanceProcAddr( instance, "vkRegisterDisplayEventEXT" );
-    vkGetSwapchainCounterEXT                       = cast( PFN_vkGetSwapchainCounterEXT                       ) vkGetInstanceProcAddr( instance, "vkGetSwapchainCounterEXT" );
+    vkDisplayPowerControlEXT                          = cast( PFN_vkDisplayPowerControlEXT                          ) vkGetInstanceProcAddr( instance, "vkDisplayPowerControlEXT" );
+    vkRegisterDeviceEventEXT                          = cast( PFN_vkRegisterDeviceEventEXT                          ) vkGetInstanceProcAddr( instance, "vkRegisterDeviceEventEXT" );
+    vkRegisterDisplayEventEXT                         = cast( PFN_vkRegisterDisplayEventEXT                         ) vkGetInstanceProcAddr( instance, "vkRegisterDisplayEventEXT" );
+    vkGetSwapchainCounterEXT                          = cast( PFN_vkGetSwapchainCounterEXT                          ) vkGetInstanceProcAddr( instance, "vkGetSwapchainCounterEXT" );
 
     // VK_GOOGLE_display_timing
-    vkGetRefreshCycleDurationGOOGLE                = cast( PFN_vkGetRefreshCycleDurationGOOGLE                ) vkGetInstanceProcAddr( instance, "vkGetRefreshCycleDurationGOOGLE" );
-    vkGetPastPresentationTimingGOOGLE              = cast( PFN_vkGetPastPresentationTimingGOOGLE              ) vkGetInstanceProcAddr( instance, "vkGetPastPresentationTimingGOOGLE" );
+    vkGetRefreshCycleDurationGOOGLE                   = cast( PFN_vkGetRefreshCycleDurationGOOGLE                   ) vkGetInstanceProcAddr( instance, "vkGetRefreshCycleDurationGOOGLE" );
+    vkGetPastPresentationTimingGOOGLE                 = cast( PFN_vkGetPastPresentationTimingGOOGLE                 ) vkGetInstanceProcAddr( instance, "vkGetPastPresentationTimingGOOGLE" );
 
     // VK_EXT_discard_rectangles
-    vkCmdSetDiscardRectangleEXT                    = cast( PFN_vkCmdSetDiscardRectangleEXT                    ) vkGetInstanceProcAddr( instance, "vkCmdSetDiscardRectangleEXT" );
+    vkCmdSetDiscardRectangleEXT                       = cast( PFN_vkCmdSetDiscardRectangleEXT                       ) vkGetInstanceProcAddr( instance, "vkCmdSetDiscardRectangleEXT" );
 
     // VK_EXT_hdr_metadata
-    vkSetHdrMetadataEXT                            = cast( PFN_vkSetHdrMetadataEXT                            ) vkGetInstanceProcAddr( instance, "vkSetHdrMetadataEXT" );
+    vkSetHdrMetadataEXT                               = cast( PFN_vkSetHdrMetadataEXT                               ) vkGetInstanceProcAddr( instance, "vkSetHdrMetadataEXT" );
 
     // VK_EXT_debug_utils
-    vkSetDebugUtilsObjectNameEXT                   = cast( PFN_vkSetDebugUtilsObjectNameEXT                   ) vkGetInstanceProcAddr( instance, "vkSetDebugUtilsObjectNameEXT" );
-    vkSetDebugUtilsObjectTagEXT                    = cast( PFN_vkSetDebugUtilsObjectTagEXT                    ) vkGetInstanceProcAddr( instance, "vkSetDebugUtilsObjectTagEXT" );
-    vkQueueBeginDebugUtilsLabelEXT                 = cast( PFN_vkQueueBeginDebugUtilsLabelEXT                 ) vkGetInstanceProcAddr( instance, "vkQueueBeginDebugUtilsLabelEXT" );
-    vkQueueEndDebugUtilsLabelEXT                   = cast( PFN_vkQueueEndDebugUtilsLabelEXT                   ) vkGetInstanceProcAddr( instance, "vkQueueEndDebugUtilsLabelEXT" );
-    vkQueueInsertDebugUtilsLabelEXT                = cast( PFN_vkQueueInsertDebugUtilsLabelEXT                ) vkGetInstanceProcAddr( instance, "vkQueueInsertDebugUtilsLabelEXT" );
-    vkCmdBeginDebugUtilsLabelEXT                   = cast( PFN_vkCmdBeginDebugUtilsLabelEXT                   ) vkGetInstanceProcAddr( instance, "vkCmdBeginDebugUtilsLabelEXT" );
-    vkCmdEndDebugUtilsLabelEXT                     = cast( PFN_vkCmdEndDebugUtilsLabelEXT                     ) vkGetInstanceProcAddr( instance, "vkCmdEndDebugUtilsLabelEXT" );
-    vkCmdInsertDebugUtilsLabelEXT                  = cast( PFN_vkCmdInsertDebugUtilsLabelEXT                  ) vkGetInstanceProcAddr( instance, "vkCmdInsertDebugUtilsLabelEXT" );
+    vkSetDebugUtilsObjectNameEXT                      = cast( PFN_vkSetDebugUtilsObjectNameEXT                      ) vkGetInstanceProcAddr( instance, "vkSetDebugUtilsObjectNameEXT" );
+    vkSetDebugUtilsObjectTagEXT                       = cast( PFN_vkSetDebugUtilsObjectTagEXT                       ) vkGetInstanceProcAddr( instance, "vkSetDebugUtilsObjectTagEXT" );
+    vkQueueBeginDebugUtilsLabelEXT                    = cast( PFN_vkQueueBeginDebugUtilsLabelEXT                    ) vkGetInstanceProcAddr( instance, "vkQueueBeginDebugUtilsLabelEXT" );
+    vkQueueEndDebugUtilsLabelEXT                      = cast( PFN_vkQueueEndDebugUtilsLabelEXT                      ) vkGetInstanceProcAddr( instance, "vkQueueEndDebugUtilsLabelEXT" );
+    vkQueueInsertDebugUtilsLabelEXT                   = cast( PFN_vkQueueInsertDebugUtilsLabelEXT                   ) vkGetInstanceProcAddr( instance, "vkQueueInsertDebugUtilsLabelEXT" );
+    vkCmdBeginDebugUtilsLabelEXT                      = cast( PFN_vkCmdBeginDebugUtilsLabelEXT                      ) vkGetInstanceProcAddr( instance, "vkCmdBeginDebugUtilsLabelEXT" );
+    vkCmdEndDebugUtilsLabelEXT                        = cast( PFN_vkCmdEndDebugUtilsLabelEXT                        ) vkGetInstanceProcAddr( instance, "vkCmdEndDebugUtilsLabelEXT" );
+    vkCmdInsertDebugUtilsLabelEXT                     = cast( PFN_vkCmdInsertDebugUtilsLabelEXT                     ) vkGetInstanceProcAddr( instance, "vkCmdInsertDebugUtilsLabelEXT" );
 
     // VK_EXT_sample_locations
-    vkCmdSetSampleLocationsEXT                     = cast( PFN_vkCmdSetSampleLocationsEXT                     ) vkGetInstanceProcAddr( instance, "vkCmdSetSampleLocationsEXT" );
+    vkCmdSetSampleLocationsEXT                        = cast( PFN_vkCmdSetSampleLocationsEXT                        ) vkGetInstanceProcAddr( instance, "vkCmdSetSampleLocationsEXT" );
 
     // VK_EXT_image_drm_format_modifier
-    vkGetImageDrmFormatModifierPropertiesEXT       = cast( PFN_vkGetImageDrmFormatModifierPropertiesEXT       ) vkGetInstanceProcAddr( instance, "vkGetImageDrmFormatModifierPropertiesEXT" );
+    vkGetImageDrmFormatModifierPropertiesEXT          = cast( PFN_vkGetImageDrmFormatModifierPropertiesEXT          ) vkGetInstanceProcAddr( instance, "vkGetImageDrmFormatModifierPropertiesEXT" );
 
     // VK_EXT_validation_cache
-    vkCreateValidationCacheEXT                     = cast( PFN_vkCreateValidationCacheEXT                     ) vkGetInstanceProcAddr( instance, "vkCreateValidationCacheEXT" );
-    vkDestroyValidationCacheEXT                    = cast( PFN_vkDestroyValidationCacheEXT                    ) vkGetInstanceProcAddr( instance, "vkDestroyValidationCacheEXT" );
-    vkMergeValidationCachesEXT                     = cast( PFN_vkMergeValidationCachesEXT                     ) vkGetInstanceProcAddr( instance, "vkMergeValidationCachesEXT" );
-    vkGetValidationCacheDataEXT                    = cast( PFN_vkGetValidationCacheDataEXT                    ) vkGetInstanceProcAddr( instance, "vkGetValidationCacheDataEXT" );
+    vkCreateValidationCacheEXT                        = cast( PFN_vkCreateValidationCacheEXT                        ) vkGetInstanceProcAddr( instance, "vkCreateValidationCacheEXT" );
+    vkDestroyValidationCacheEXT                       = cast( PFN_vkDestroyValidationCacheEXT                       ) vkGetInstanceProcAddr( instance, "vkDestroyValidationCacheEXT" );
+    vkMergeValidationCachesEXT                        = cast( PFN_vkMergeValidationCachesEXT                        ) vkGetInstanceProcAddr( instance, "vkMergeValidationCachesEXT" );
+    vkGetValidationCacheDataEXT                       = cast( PFN_vkGetValidationCacheDataEXT                       ) vkGetInstanceProcAddr( instance, "vkGetValidationCacheDataEXT" );
 
     // VK_NV_shading_rate_image
-    vkCmdBindShadingRateImageNV                    = cast( PFN_vkCmdBindShadingRateImageNV                    ) vkGetInstanceProcAddr( instance, "vkCmdBindShadingRateImageNV" );
-    vkCmdSetViewportShadingRatePaletteNV           = cast( PFN_vkCmdSetViewportShadingRatePaletteNV           ) vkGetInstanceProcAddr( instance, "vkCmdSetViewportShadingRatePaletteNV" );
-    vkCmdSetCoarseSampleOrderNV                    = cast( PFN_vkCmdSetCoarseSampleOrderNV                    ) vkGetInstanceProcAddr( instance, "vkCmdSetCoarseSampleOrderNV" );
+    vkCmdBindShadingRateImageNV                       = cast( PFN_vkCmdBindShadingRateImageNV                       ) vkGetInstanceProcAddr( instance, "vkCmdBindShadingRateImageNV" );
+    vkCmdSetViewportShadingRatePaletteNV              = cast( PFN_vkCmdSetViewportShadingRatePaletteNV              ) vkGetInstanceProcAddr( instance, "vkCmdSetViewportShadingRatePaletteNV" );
+    vkCmdSetCoarseSampleOrderNV                       = cast( PFN_vkCmdSetCoarseSampleOrderNV                       ) vkGetInstanceProcAddr( instance, "vkCmdSetCoarseSampleOrderNV" );
 
     // VK_NV_ray_tracing
-    vkCreateAccelerationStructureNV                = cast( PFN_vkCreateAccelerationStructureNV                ) vkGetInstanceProcAddr( instance, "vkCreateAccelerationStructureNV" );
-    vkDestroyAccelerationStructureNV               = cast( PFN_vkDestroyAccelerationStructureNV               ) vkGetInstanceProcAddr( instance, "vkDestroyAccelerationStructureNV" );
-    vkGetAccelerationStructureMemoryRequirementsNV = cast( PFN_vkGetAccelerationStructureMemoryRequirementsNV ) vkGetInstanceProcAddr( instance, "vkGetAccelerationStructureMemoryRequirementsNV" );
-    vkBindAccelerationStructureMemoryNV            = cast( PFN_vkBindAccelerationStructureMemoryNV            ) vkGetInstanceProcAddr( instance, "vkBindAccelerationStructureMemoryNV" );
-    vkCmdBuildAccelerationStructureNV              = cast( PFN_vkCmdBuildAccelerationStructureNV              ) vkGetInstanceProcAddr( instance, "vkCmdBuildAccelerationStructureNV" );
-    vkCmdCopyAccelerationStructureNV               = cast( PFN_vkCmdCopyAccelerationStructureNV               ) vkGetInstanceProcAddr( instance, "vkCmdCopyAccelerationStructureNV" );
-    vkCmdTraceRaysNV                               = cast( PFN_vkCmdTraceRaysNV                               ) vkGetInstanceProcAddr( instance, "vkCmdTraceRaysNV" );
-    vkCreateRayTracingPipelinesNV                  = cast( PFN_vkCreateRayTracingPipelinesNV                  ) vkGetInstanceProcAddr( instance, "vkCreateRayTracingPipelinesNV" );
-    vkGetRayTracingShaderGroupHandlesNV            = cast( PFN_vkGetRayTracingShaderGroupHandlesNV            ) vkGetInstanceProcAddr( instance, "vkGetRayTracingShaderGroupHandlesNV" );
-    vkGetAccelerationStructureHandleNV             = cast( PFN_vkGetAccelerationStructureHandleNV             ) vkGetInstanceProcAddr( instance, "vkGetAccelerationStructureHandleNV" );
-    vkCmdWriteAccelerationStructuresPropertiesNV   = cast( PFN_vkCmdWriteAccelerationStructuresPropertiesNV   ) vkGetInstanceProcAddr( instance, "vkCmdWriteAccelerationStructuresPropertiesNV" );
-    vkCompileDeferredNV                            = cast( PFN_vkCompileDeferredNV                            ) vkGetInstanceProcAddr( instance, "vkCompileDeferredNV" );
+    vkCreateAccelerationStructureNV                   = cast( PFN_vkCreateAccelerationStructureNV                   ) vkGetInstanceProcAddr( instance, "vkCreateAccelerationStructureNV" );
+    vkDestroyAccelerationStructureNV                  = cast( PFN_vkDestroyAccelerationStructureNV                  ) vkGetInstanceProcAddr( instance, "vkDestroyAccelerationStructureNV" );
+    vkGetAccelerationStructureMemoryRequirementsNV    = cast( PFN_vkGetAccelerationStructureMemoryRequirementsNV    ) vkGetInstanceProcAddr( instance, "vkGetAccelerationStructureMemoryRequirementsNV" );
+    vkBindAccelerationStructureMemoryNV               = cast( PFN_vkBindAccelerationStructureMemoryNV               ) vkGetInstanceProcAddr( instance, "vkBindAccelerationStructureMemoryNV" );
+    vkCmdBuildAccelerationStructureNV                 = cast( PFN_vkCmdBuildAccelerationStructureNV                 ) vkGetInstanceProcAddr( instance, "vkCmdBuildAccelerationStructureNV" );
+    vkCmdCopyAccelerationStructureNV                  = cast( PFN_vkCmdCopyAccelerationStructureNV                  ) vkGetInstanceProcAddr( instance, "vkCmdCopyAccelerationStructureNV" );
+    vkCmdTraceRaysNV                                  = cast( PFN_vkCmdTraceRaysNV                                  ) vkGetInstanceProcAddr( instance, "vkCmdTraceRaysNV" );
+    vkCreateRayTracingPipelinesNV                     = cast( PFN_vkCreateRayTracingPipelinesNV                     ) vkGetInstanceProcAddr( instance, "vkCreateRayTracingPipelinesNV" );
+    vkGetRayTracingShaderGroupHandlesNV               = cast( PFN_vkGetRayTracingShaderGroupHandlesNV               ) vkGetInstanceProcAddr( instance, "vkGetRayTracingShaderGroupHandlesNV" );
+    vkGetAccelerationStructureHandleNV                = cast( PFN_vkGetAccelerationStructureHandleNV                ) vkGetInstanceProcAddr( instance, "vkGetAccelerationStructureHandleNV" );
+    vkCmdWriteAccelerationStructuresPropertiesNV      = cast( PFN_vkCmdWriteAccelerationStructuresPropertiesNV      ) vkGetInstanceProcAddr( instance, "vkCmdWriteAccelerationStructuresPropertiesNV" );
+    vkCompileDeferredNV                               = cast( PFN_vkCompileDeferredNV                               ) vkGetInstanceProcAddr( instance, "vkCompileDeferredNV" );
 
     // VK_EXT_external_memory_host
-    vkGetMemoryHostPointerPropertiesEXT            = cast( PFN_vkGetMemoryHostPointerPropertiesEXT            ) vkGetInstanceProcAddr( instance, "vkGetMemoryHostPointerPropertiesEXT" );
+    vkGetMemoryHostPointerPropertiesEXT               = cast( PFN_vkGetMemoryHostPointerPropertiesEXT               ) vkGetInstanceProcAddr( instance, "vkGetMemoryHostPointerPropertiesEXT" );
 
     // VK_AMD_buffer_marker
-    vkCmdWriteBufferMarkerAMD                      = cast( PFN_vkCmdWriteBufferMarkerAMD                      ) vkGetInstanceProcAddr( instance, "vkCmdWriteBufferMarkerAMD" );
+    vkCmdWriteBufferMarkerAMD                         = cast( PFN_vkCmdWriteBufferMarkerAMD                         ) vkGetInstanceProcAddr( instance, "vkCmdWriteBufferMarkerAMD" );
 
     // VK_EXT_calibrated_timestamps
-    vkGetCalibratedTimestampsEXT                   = cast( PFN_vkGetCalibratedTimestampsEXT                   ) vkGetInstanceProcAddr( instance, "vkGetCalibratedTimestampsEXT" );
+    vkGetCalibratedTimestampsEXT                      = cast( PFN_vkGetCalibratedTimestampsEXT                      ) vkGetInstanceProcAddr( instance, "vkGetCalibratedTimestampsEXT" );
 
     // VK_NV_mesh_shader
-    vkCmdDrawMeshTasksNV                           = cast( PFN_vkCmdDrawMeshTasksNV                           ) vkGetInstanceProcAddr( instance, "vkCmdDrawMeshTasksNV" );
-    vkCmdDrawMeshTasksIndirectNV                   = cast( PFN_vkCmdDrawMeshTasksIndirectNV                   ) vkGetInstanceProcAddr( instance, "vkCmdDrawMeshTasksIndirectNV" );
-    vkCmdDrawMeshTasksIndirectCountNV              = cast( PFN_vkCmdDrawMeshTasksIndirectCountNV              ) vkGetInstanceProcAddr( instance, "vkCmdDrawMeshTasksIndirectCountNV" );
+    vkCmdDrawMeshTasksNV                              = cast( PFN_vkCmdDrawMeshTasksNV                              ) vkGetInstanceProcAddr( instance, "vkCmdDrawMeshTasksNV" );
+    vkCmdDrawMeshTasksIndirectNV                      = cast( PFN_vkCmdDrawMeshTasksIndirectNV                      ) vkGetInstanceProcAddr( instance, "vkCmdDrawMeshTasksIndirectNV" );
+    vkCmdDrawMeshTasksIndirectCountNV                 = cast( PFN_vkCmdDrawMeshTasksIndirectCountNV                 ) vkGetInstanceProcAddr( instance, "vkCmdDrawMeshTasksIndirectCountNV" );
 
     // VK_NV_scissor_exclusive
-    vkCmdSetExclusiveScissorNV                     = cast( PFN_vkCmdSetExclusiveScissorNV                     ) vkGetInstanceProcAddr( instance, "vkCmdSetExclusiveScissorNV" );
+    vkCmdSetExclusiveScissorNV                        = cast( PFN_vkCmdSetExclusiveScissorNV                        ) vkGetInstanceProcAddr( instance, "vkCmdSetExclusiveScissorNV" );
 
     // VK_NV_device_diagnostic_checkpoints
-    vkCmdSetCheckpointNV                           = cast( PFN_vkCmdSetCheckpointNV                           ) vkGetInstanceProcAddr( instance, "vkCmdSetCheckpointNV" );
-    vkGetQueueCheckpointDataNV                     = cast( PFN_vkGetQueueCheckpointDataNV                     ) vkGetInstanceProcAddr( instance, "vkGetQueueCheckpointDataNV" );
+    vkCmdSetCheckpointNV                              = cast( PFN_vkCmdSetCheckpointNV                              ) vkGetInstanceProcAddr( instance, "vkCmdSetCheckpointNV" );
+    vkGetQueueCheckpointDataNV                        = cast( PFN_vkGetQueueCheckpointDataNV                        ) vkGetInstanceProcAddr( instance, "vkGetQueueCheckpointDataNV" );
 
     // VK_INTEL_performance_query
-    vkInitializePerformanceApiINTEL                = cast( PFN_vkInitializePerformanceApiINTEL                ) vkGetInstanceProcAddr( instance, "vkInitializePerformanceApiINTEL" );
-    vkUninitializePerformanceApiINTEL              = cast( PFN_vkUninitializePerformanceApiINTEL              ) vkGetInstanceProcAddr( instance, "vkUninitializePerformanceApiINTEL" );
-    vkCmdSetPerformanceMarkerINTEL                 = cast( PFN_vkCmdSetPerformanceMarkerINTEL                 ) vkGetInstanceProcAddr( instance, "vkCmdSetPerformanceMarkerINTEL" );
-    vkCmdSetPerformanceStreamMarkerINTEL           = cast( PFN_vkCmdSetPerformanceStreamMarkerINTEL           ) vkGetInstanceProcAddr( instance, "vkCmdSetPerformanceStreamMarkerINTEL" );
-    vkCmdSetPerformanceOverrideINTEL               = cast( PFN_vkCmdSetPerformanceOverrideINTEL               ) vkGetInstanceProcAddr( instance, "vkCmdSetPerformanceOverrideINTEL" );
-    vkAcquirePerformanceConfigurationINTEL         = cast( PFN_vkAcquirePerformanceConfigurationINTEL         ) vkGetInstanceProcAddr( instance, "vkAcquirePerformanceConfigurationINTEL" );
-    vkReleasePerformanceConfigurationINTEL         = cast( PFN_vkReleasePerformanceConfigurationINTEL         ) vkGetInstanceProcAddr( instance, "vkReleasePerformanceConfigurationINTEL" );
-    vkQueueSetPerformanceConfigurationINTEL        = cast( PFN_vkQueueSetPerformanceConfigurationINTEL        ) vkGetInstanceProcAddr( instance, "vkQueueSetPerformanceConfigurationINTEL" );
-    vkGetPerformanceParameterINTEL                 = cast( PFN_vkGetPerformanceParameterINTEL                 ) vkGetInstanceProcAddr( instance, "vkGetPerformanceParameterINTEL" );
+    vkInitializePerformanceApiINTEL                   = cast( PFN_vkInitializePerformanceApiINTEL                   ) vkGetInstanceProcAddr( instance, "vkInitializePerformanceApiINTEL" );
+    vkUninitializePerformanceApiINTEL                 = cast( PFN_vkUninitializePerformanceApiINTEL                 ) vkGetInstanceProcAddr( instance, "vkUninitializePerformanceApiINTEL" );
+    vkCmdSetPerformanceMarkerINTEL                    = cast( PFN_vkCmdSetPerformanceMarkerINTEL                    ) vkGetInstanceProcAddr( instance, "vkCmdSetPerformanceMarkerINTEL" );
+    vkCmdSetPerformanceStreamMarkerINTEL              = cast( PFN_vkCmdSetPerformanceStreamMarkerINTEL              ) vkGetInstanceProcAddr( instance, "vkCmdSetPerformanceStreamMarkerINTEL" );
+    vkCmdSetPerformanceOverrideINTEL                  = cast( PFN_vkCmdSetPerformanceOverrideINTEL                  ) vkGetInstanceProcAddr( instance, "vkCmdSetPerformanceOverrideINTEL" );
+    vkAcquirePerformanceConfigurationINTEL            = cast( PFN_vkAcquirePerformanceConfigurationINTEL            ) vkGetInstanceProcAddr( instance, "vkAcquirePerformanceConfigurationINTEL" );
+    vkReleasePerformanceConfigurationINTEL            = cast( PFN_vkReleasePerformanceConfigurationINTEL            ) vkGetInstanceProcAddr( instance, "vkReleasePerformanceConfigurationINTEL" );
+    vkQueueSetPerformanceConfigurationINTEL           = cast( PFN_vkQueueSetPerformanceConfigurationINTEL           ) vkGetInstanceProcAddr( instance, "vkQueueSetPerformanceConfigurationINTEL" );
+    vkGetPerformanceParameterINTEL                    = cast( PFN_vkGetPerformanceParameterINTEL                    ) vkGetInstanceProcAddr( instance, "vkGetPerformanceParameterINTEL" );
 
     // VK_AMD_display_native_hdr
-    vkSetLocalDimmingAMD                           = cast( PFN_vkSetLocalDimmingAMD                           ) vkGetInstanceProcAddr( instance, "vkSetLocalDimmingAMD" );
+    vkSetLocalDimmingAMD                              = cast( PFN_vkSetLocalDimmingAMD                              ) vkGetInstanceProcAddr( instance, "vkSetLocalDimmingAMD" );
 
     // VK_EXT_buffer_device_address
-    vkGetBufferDeviceAddressEXT                    = cast( PFN_vkGetBufferDeviceAddressEXT                    ) vkGetInstanceProcAddr( instance, "vkGetBufferDeviceAddressEXT" );
+    vkGetBufferDeviceAddressEXT                       = cast( PFN_vkGetBufferDeviceAddressEXT                       ) vkGetInstanceProcAddr( instance, "vkGetBufferDeviceAddressEXT" );
 
     // VK_EXT_line_rasterization
-    vkCmdSetLineStippleEXT                         = cast( PFN_vkCmdSetLineStippleEXT                         ) vkGetInstanceProcAddr( instance, "vkCmdSetLineStippleEXT" );
+    vkCmdSetLineStippleEXT                            = cast( PFN_vkCmdSetLineStippleEXT                            ) vkGetInstanceProcAddr( instance, "vkCmdSetLineStippleEXT" );
 
     // VK_EXT_host_query_reset
-    vkResetQueryPoolEXT                            = cast( PFN_vkResetQueryPoolEXT                            ) vkGetInstanceProcAddr( instance, "vkResetQueryPoolEXT" );
+    vkResetQueryPoolEXT                               = cast( PFN_vkResetQueryPoolEXT                               ) vkGetInstanceProcAddr( instance, "vkResetQueryPoolEXT" );
 }
 
 
@@ -1340,324 +1355,329 @@ void loadDeviceLevelFunctions( VkDevice device ) {
     assert( vkGetDeviceProcAddr !is null, "Function pointer vkGetDeviceProcAddr is null!\nCall loadGlobalLevelFunctions -> loadInstanceLevelFunctions -> loadDeviceLevelFunctions( device )" );
 
     // VK_VERSION_1_0
-    vkDestroyDevice                                = cast( PFN_vkDestroyDevice                                ) vkGetDeviceProcAddr( device, "vkDestroyDevice" );
-    vkGetDeviceQueue                               = cast( PFN_vkGetDeviceQueue                               ) vkGetDeviceProcAddr( device, "vkGetDeviceQueue" );
-    vkQueueSubmit                                  = cast( PFN_vkQueueSubmit                                  ) vkGetDeviceProcAddr( device, "vkQueueSubmit" );
-    vkQueueWaitIdle                                = cast( PFN_vkQueueWaitIdle                                ) vkGetDeviceProcAddr( device, "vkQueueWaitIdle" );
-    vkDeviceWaitIdle                               = cast( PFN_vkDeviceWaitIdle                               ) vkGetDeviceProcAddr( device, "vkDeviceWaitIdle" );
-    vkAllocateMemory                               = cast( PFN_vkAllocateMemory                               ) vkGetDeviceProcAddr( device, "vkAllocateMemory" );
-    vkFreeMemory                                   = cast( PFN_vkFreeMemory                                   ) vkGetDeviceProcAddr( device, "vkFreeMemory" );
-    vkMapMemory                                    = cast( PFN_vkMapMemory                                    ) vkGetDeviceProcAddr( device, "vkMapMemory" );
-    vkUnmapMemory                                  = cast( PFN_vkUnmapMemory                                  ) vkGetDeviceProcAddr( device, "vkUnmapMemory" );
-    vkFlushMappedMemoryRanges                      = cast( PFN_vkFlushMappedMemoryRanges                      ) vkGetDeviceProcAddr( device, "vkFlushMappedMemoryRanges" );
-    vkInvalidateMappedMemoryRanges                 = cast( PFN_vkInvalidateMappedMemoryRanges                 ) vkGetDeviceProcAddr( device, "vkInvalidateMappedMemoryRanges" );
-    vkGetDeviceMemoryCommitment                    = cast( PFN_vkGetDeviceMemoryCommitment                    ) vkGetDeviceProcAddr( device, "vkGetDeviceMemoryCommitment" );
-    vkBindBufferMemory                             = cast( PFN_vkBindBufferMemory                             ) vkGetDeviceProcAddr( device, "vkBindBufferMemory" );
-    vkBindImageMemory                              = cast( PFN_vkBindImageMemory                              ) vkGetDeviceProcAddr( device, "vkBindImageMemory" );
-    vkGetBufferMemoryRequirements                  = cast( PFN_vkGetBufferMemoryRequirements                  ) vkGetDeviceProcAddr( device, "vkGetBufferMemoryRequirements" );
-    vkGetImageMemoryRequirements                   = cast( PFN_vkGetImageMemoryRequirements                   ) vkGetDeviceProcAddr( device, "vkGetImageMemoryRequirements" );
-    vkGetImageSparseMemoryRequirements             = cast( PFN_vkGetImageSparseMemoryRequirements             ) vkGetDeviceProcAddr( device, "vkGetImageSparseMemoryRequirements" );
-    vkQueueBindSparse                              = cast( PFN_vkQueueBindSparse                              ) vkGetDeviceProcAddr( device, "vkQueueBindSparse" );
-    vkCreateFence                                  = cast( PFN_vkCreateFence                                  ) vkGetDeviceProcAddr( device, "vkCreateFence" );
-    vkDestroyFence                                 = cast( PFN_vkDestroyFence                                 ) vkGetDeviceProcAddr( device, "vkDestroyFence" );
-    vkResetFences                                  = cast( PFN_vkResetFences                                  ) vkGetDeviceProcAddr( device, "vkResetFences" );
-    vkGetFenceStatus                               = cast( PFN_vkGetFenceStatus                               ) vkGetDeviceProcAddr( device, "vkGetFenceStatus" );
-    vkWaitForFences                                = cast( PFN_vkWaitForFences                                ) vkGetDeviceProcAddr( device, "vkWaitForFences" );
-    vkCreateSemaphore                              = cast( PFN_vkCreateSemaphore                              ) vkGetDeviceProcAddr( device, "vkCreateSemaphore" );
-    vkDestroySemaphore                             = cast( PFN_vkDestroySemaphore                             ) vkGetDeviceProcAddr( device, "vkDestroySemaphore" );
-    vkCreateEvent                                  = cast( PFN_vkCreateEvent                                  ) vkGetDeviceProcAddr( device, "vkCreateEvent" );
-    vkDestroyEvent                                 = cast( PFN_vkDestroyEvent                                 ) vkGetDeviceProcAddr( device, "vkDestroyEvent" );
-    vkGetEventStatus                               = cast( PFN_vkGetEventStatus                               ) vkGetDeviceProcAddr( device, "vkGetEventStatus" );
-    vkSetEvent                                     = cast( PFN_vkSetEvent                                     ) vkGetDeviceProcAddr( device, "vkSetEvent" );
-    vkResetEvent                                   = cast( PFN_vkResetEvent                                   ) vkGetDeviceProcAddr( device, "vkResetEvent" );
-    vkCreateQueryPool                              = cast( PFN_vkCreateQueryPool                              ) vkGetDeviceProcAddr( device, "vkCreateQueryPool" );
-    vkDestroyQueryPool                             = cast( PFN_vkDestroyQueryPool                             ) vkGetDeviceProcAddr( device, "vkDestroyQueryPool" );
-    vkGetQueryPoolResults                          = cast( PFN_vkGetQueryPoolResults                          ) vkGetDeviceProcAddr( device, "vkGetQueryPoolResults" );
-    vkCreateBuffer                                 = cast( PFN_vkCreateBuffer                                 ) vkGetDeviceProcAddr( device, "vkCreateBuffer" );
-    vkDestroyBuffer                                = cast( PFN_vkDestroyBuffer                                ) vkGetDeviceProcAddr( device, "vkDestroyBuffer" );
-    vkCreateBufferView                             = cast( PFN_vkCreateBufferView                             ) vkGetDeviceProcAddr( device, "vkCreateBufferView" );
-    vkDestroyBufferView                            = cast( PFN_vkDestroyBufferView                            ) vkGetDeviceProcAddr( device, "vkDestroyBufferView" );
-    vkCreateImage                                  = cast( PFN_vkCreateImage                                  ) vkGetDeviceProcAddr( device, "vkCreateImage" );
-    vkDestroyImage                                 = cast( PFN_vkDestroyImage                                 ) vkGetDeviceProcAddr( device, "vkDestroyImage" );
-    vkGetImageSubresourceLayout                    = cast( PFN_vkGetImageSubresourceLayout                    ) vkGetDeviceProcAddr( device, "vkGetImageSubresourceLayout" );
-    vkCreateImageView                              = cast( PFN_vkCreateImageView                              ) vkGetDeviceProcAddr( device, "vkCreateImageView" );
-    vkDestroyImageView                             = cast( PFN_vkDestroyImageView                             ) vkGetDeviceProcAddr( device, "vkDestroyImageView" );
-    vkCreateShaderModule                           = cast( PFN_vkCreateShaderModule                           ) vkGetDeviceProcAddr( device, "vkCreateShaderModule" );
-    vkDestroyShaderModule                          = cast( PFN_vkDestroyShaderModule                          ) vkGetDeviceProcAddr( device, "vkDestroyShaderModule" );
-    vkCreatePipelineCache                          = cast( PFN_vkCreatePipelineCache                          ) vkGetDeviceProcAddr( device, "vkCreatePipelineCache" );
-    vkDestroyPipelineCache                         = cast( PFN_vkDestroyPipelineCache                         ) vkGetDeviceProcAddr( device, "vkDestroyPipelineCache" );
-    vkGetPipelineCacheData                         = cast( PFN_vkGetPipelineCacheData                         ) vkGetDeviceProcAddr( device, "vkGetPipelineCacheData" );
-    vkMergePipelineCaches                          = cast( PFN_vkMergePipelineCaches                          ) vkGetDeviceProcAddr( device, "vkMergePipelineCaches" );
-    vkCreateGraphicsPipelines                      = cast( PFN_vkCreateGraphicsPipelines                      ) vkGetDeviceProcAddr( device, "vkCreateGraphicsPipelines" );
-    vkCreateComputePipelines                       = cast( PFN_vkCreateComputePipelines                       ) vkGetDeviceProcAddr( device, "vkCreateComputePipelines" );
-    vkDestroyPipeline                              = cast( PFN_vkDestroyPipeline                              ) vkGetDeviceProcAddr( device, "vkDestroyPipeline" );
-    vkCreatePipelineLayout                         = cast( PFN_vkCreatePipelineLayout                         ) vkGetDeviceProcAddr( device, "vkCreatePipelineLayout" );
-    vkDestroyPipelineLayout                        = cast( PFN_vkDestroyPipelineLayout                        ) vkGetDeviceProcAddr( device, "vkDestroyPipelineLayout" );
-    vkCreateSampler                                = cast( PFN_vkCreateSampler                                ) vkGetDeviceProcAddr( device, "vkCreateSampler" );
-    vkDestroySampler                               = cast( PFN_vkDestroySampler                               ) vkGetDeviceProcAddr( device, "vkDestroySampler" );
-    vkCreateDescriptorSetLayout                    = cast( PFN_vkCreateDescriptorSetLayout                    ) vkGetDeviceProcAddr( device, "vkCreateDescriptorSetLayout" );
-    vkDestroyDescriptorSetLayout                   = cast( PFN_vkDestroyDescriptorSetLayout                   ) vkGetDeviceProcAddr( device, "vkDestroyDescriptorSetLayout" );
-    vkCreateDescriptorPool                         = cast( PFN_vkCreateDescriptorPool                         ) vkGetDeviceProcAddr( device, "vkCreateDescriptorPool" );
-    vkDestroyDescriptorPool                        = cast( PFN_vkDestroyDescriptorPool                        ) vkGetDeviceProcAddr( device, "vkDestroyDescriptorPool" );
-    vkResetDescriptorPool                          = cast( PFN_vkResetDescriptorPool                          ) vkGetDeviceProcAddr( device, "vkResetDescriptorPool" );
-    vkAllocateDescriptorSets                       = cast( PFN_vkAllocateDescriptorSets                       ) vkGetDeviceProcAddr( device, "vkAllocateDescriptorSets" );
-    vkFreeDescriptorSets                           = cast( PFN_vkFreeDescriptorSets                           ) vkGetDeviceProcAddr( device, "vkFreeDescriptorSets" );
-    vkUpdateDescriptorSets                         = cast( PFN_vkUpdateDescriptorSets                         ) vkGetDeviceProcAddr( device, "vkUpdateDescriptorSets" );
-    vkCreateFramebuffer                            = cast( PFN_vkCreateFramebuffer                            ) vkGetDeviceProcAddr( device, "vkCreateFramebuffer" );
-    vkDestroyFramebuffer                           = cast( PFN_vkDestroyFramebuffer                           ) vkGetDeviceProcAddr( device, "vkDestroyFramebuffer" );
-    vkCreateRenderPass                             = cast( PFN_vkCreateRenderPass                             ) vkGetDeviceProcAddr( device, "vkCreateRenderPass" );
-    vkDestroyRenderPass                            = cast( PFN_vkDestroyRenderPass                            ) vkGetDeviceProcAddr( device, "vkDestroyRenderPass" );
-    vkGetRenderAreaGranularity                     = cast( PFN_vkGetRenderAreaGranularity                     ) vkGetDeviceProcAddr( device, "vkGetRenderAreaGranularity" );
-    vkCreateCommandPool                            = cast( PFN_vkCreateCommandPool                            ) vkGetDeviceProcAddr( device, "vkCreateCommandPool" );
-    vkDestroyCommandPool                           = cast( PFN_vkDestroyCommandPool                           ) vkGetDeviceProcAddr( device, "vkDestroyCommandPool" );
-    vkResetCommandPool                             = cast( PFN_vkResetCommandPool                             ) vkGetDeviceProcAddr( device, "vkResetCommandPool" );
-    vkAllocateCommandBuffers                       = cast( PFN_vkAllocateCommandBuffers                       ) vkGetDeviceProcAddr( device, "vkAllocateCommandBuffers" );
-    vkFreeCommandBuffers                           = cast( PFN_vkFreeCommandBuffers                           ) vkGetDeviceProcAddr( device, "vkFreeCommandBuffers" );
-    vkBeginCommandBuffer                           = cast( PFN_vkBeginCommandBuffer                           ) vkGetDeviceProcAddr( device, "vkBeginCommandBuffer" );
-    vkEndCommandBuffer                             = cast( PFN_vkEndCommandBuffer                             ) vkGetDeviceProcAddr( device, "vkEndCommandBuffer" );
-    vkResetCommandBuffer                           = cast( PFN_vkResetCommandBuffer                           ) vkGetDeviceProcAddr( device, "vkResetCommandBuffer" );
-    vkCmdBindPipeline                              = cast( PFN_vkCmdBindPipeline                              ) vkGetDeviceProcAddr( device, "vkCmdBindPipeline" );
-    vkCmdSetViewport                               = cast( PFN_vkCmdSetViewport                               ) vkGetDeviceProcAddr( device, "vkCmdSetViewport" );
-    vkCmdSetScissor                                = cast( PFN_vkCmdSetScissor                                ) vkGetDeviceProcAddr( device, "vkCmdSetScissor" );
-    vkCmdSetLineWidth                              = cast( PFN_vkCmdSetLineWidth                              ) vkGetDeviceProcAddr( device, "vkCmdSetLineWidth" );
-    vkCmdSetDepthBias                              = cast( PFN_vkCmdSetDepthBias                              ) vkGetDeviceProcAddr( device, "vkCmdSetDepthBias" );
-    vkCmdSetBlendConstants                         = cast( PFN_vkCmdSetBlendConstants                         ) vkGetDeviceProcAddr( device, "vkCmdSetBlendConstants" );
-    vkCmdSetDepthBounds                            = cast( PFN_vkCmdSetDepthBounds                            ) vkGetDeviceProcAddr( device, "vkCmdSetDepthBounds" );
-    vkCmdSetStencilCompareMask                     = cast( PFN_vkCmdSetStencilCompareMask                     ) vkGetDeviceProcAddr( device, "vkCmdSetStencilCompareMask" );
-    vkCmdSetStencilWriteMask                       = cast( PFN_vkCmdSetStencilWriteMask                       ) vkGetDeviceProcAddr( device, "vkCmdSetStencilWriteMask" );
-    vkCmdSetStencilReference                       = cast( PFN_vkCmdSetStencilReference                       ) vkGetDeviceProcAddr( device, "vkCmdSetStencilReference" );
-    vkCmdBindDescriptorSets                        = cast( PFN_vkCmdBindDescriptorSets                        ) vkGetDeviceProcAddr( device, "vkCmdBindDescriptorSets" );
-    vkCmdBindIndexBuffer                           = cast( PFN_vkCmdBindIndexBuffer                           ) vkGetDeviceProcAddr( device, "vkCmdBindIndexBuffer" );
-    vkCmdBindVertexBuffers                         = cast( PFN_vkCmdBindVertexBuffers                         ) vkGetDeviceProcAddr( device, "vkCmdBindVertexBuffers" );
-    vkCmdDraw                                      = cast( PFN_vkCmdDraw                                      ) vkGetDeviceProcAddr( device, "vkCmdDraw" );
-    vkCmdDrawIndexed                               = cast( PFN_vkCmdDrawIndexed                               ) vkGetDeviceProcAddr( device, "vkCmdDrawIndexed" );
-    vkCmdDrawIndirect                              = cast( PFN_vkCmdDrawIndirect                              ) vkGetDeviceProcAddr( device, "vkCmdDrawIndirect" );
-    vkCmdDrawIndexedIndirect                       = cast( PFN_vkCmdDrawIndexedIndirect                       ) vkGetDeviceProcAddr( device, "vkCmdDrawIndexedIndirect" );
-    vkCmdDispatch                                  = cast( PFN_vkCmdDispatch                                  ) vkGetDeviceProcAddr( device, "vkCmdDispatch" );
-    vkCmdDispatchIndirect                          = cast( PFN_vkCmdDispatchIndirect                          ) vkGetDeviceProcAddr( device, "vkCmdDispatchIndirect" );
-    vkCmdCopyBuffer                                = cast( PFN_vkCmdCopyBuffer                                ) vkGetDeviceProcAddr( device, "vkCmdCopyBuffer" );
-    vkCmdCopyImage                                 = cast( PFN_vkCmdCopyImage                                 ) vkGetDeviceProcAddr( device, "vkCmdCopyImage" );
-    vkCmdBlitImage                                 = cast( PFN_vkCmdBlitImage                                 ) vkGetDeviceProcAddr( device, "vkCmdBlitImage" );
-    vkCmdCopyBufferToImage                         = cast( PFN_vkCmdCopyBufferToImage                         ) vkGetDeviceProcAddr( device, "vkCmdCopyBufferToImage" );
-    vkCmdCopyImageToBuffer                         = cast( PFN_vkCmdCopyImageToBuffer                         ) vkGetDeviceProcAddr( device, "vkCmdCopyImageToBuffer" );
-    vkCmdUpdateBuffer                              = cast( PFN_vkCmdUpdateBuffer                              ) vkGetDeviceProcAddr( device, "vkCmdUpdateBuffer" );
-    vkCmdFillBuffer                                = cast( PFN_vkCmdFillBuffer                                ) vkGetDeviceProcAddr( device, "vkCmdFillBuffer" );
-    vkCmdClearColorImage                           = cast( PFN_vkCmdClearColorImage                           ) vkGetDeviceProcAddr( device, "vkCmdClearColorImage" );
-    vkCmdClearDepthStencilImage                    = cast( PFN_vkCmdClearDepthStencilImage                    ) vkGetDeviceProcAddr( device, "vkCmdClearDepthStencilImage" );
-    vkCmdClearAttachments                          = cast( PFN_vkCmdClearAttachments                          ) vkGetDeviceProcAddr( device, "vkCmdClearAttachments" );
-    vkCmdResolveImage                              = cast( PFN_vkCmdResolveImage                              ) vkGetDeviceProcAddr( device, "vkCmdResolveImage" );
-    vkCmdSetEvent                                  = cast( PFN_vkCmdSetEvent                                  ) vkGetDeviceProcAddr( device, "vkCmdSetEvent" );
-    vkCmdResetEvent                                = cast( PFN_vkCmdResetEvent                                ) vkGetDeviceProcAddr( device, "vkCmdResetEvent" );
-    vkCmdWaitEvents                                = cast( PFN_vkCmdWaitEvents                                ) vkGetDeviceProcAddr( device, "vkCmdWaitEvents" );
-    vkCmdPipelineBarrier                           = cast( PFN_vkCmdPipelineBarrier                           ) vkGetDeviceProcAddr( device, "vkCmdPipelineBarrier" );
-    vkCmdBeginQuery                                = cast( PFN_vkCmdBeginQuery                                ) vkGetDeviceProcAddr( device, "vkCmdBeginQuery" );
-    vkCmdEndQuery                                  = cast( PFN_vkCmdEndQuery                                  ) vkGetDeviceProcAddr( device, "vkCmdEndQuery" );
-    vkCmdResetQueryPool                            = cast( PFN_vkCmdResetQueryPool                            ) vkGetDeviceProcAddr( device, "vkCmdResetQueryPool" );
-    vkCmdWriteTimestamp                            = cast( PFN_vkCmdWriteTimestamp                            ) vkGetDeviceProcAddr( device, "vkCmdWriteTimestamp" );
-    vkCmdCopyQueryPoolResults                      = cast( PFN_vkCmdCopyQueryPoolResults                      ) vkGetDeviceProcAddr( device, "vkCmdCopyQueryPoolResults" );
-    vkCmdPushConstants                             = cast( PFN_vkCmdPushConstants                             ) vkGetDeviceProcAddr( device, "vkCmdPushConstants" );
-    vkCmdBeginRenderPass                           = cast( PFN_vkCmdBeginRenderPass                           ) vkGetDeviceProcAddr( device, "vkCmdBeginRenderPass" );
-    vkCmdNextSubpass                               = cast( PFN_vkCmdNextSubpass                               ) vkGetDeviceProcAddr( device, "vkCmdNextSubpass" );
-    vkCmdEndRenderPass                             = cast( PFN_vkCmdEndRenderPass                             ) vkGetDeviceProcAddr( device, "vkCmdEndRenderPass" );
-    vkCmdExecuteCommands                           = cast( PFN_vkCmdExecuteCommands                           ) vkGetDeviceProcAddr( device, "vkCmdExecuteCommands" );
+    vkDestroyDevice                                   = cast( PFN_vkDestroyDevice                                   ) vkGetDeviceProcAddr( device, "vkDestroyDevice" );
+    vkGetDeviceQueue                                  = cast( PFN_vkGetDeviceQueue                                  ) vkGetDeviceProcAddr( device, "vkGetDeviceQueue" );
+    vkQueueSubmit                                     = cast( PFN_vkQueueSubmit                                     ) vkGetDeviceProcAddr( device, "vkQueueSubmit" );
+    vkQueueWaitIdle                                   = cast( PFN_vkQueueWaitIdle                                   ) vkGetDeviceProcAddr( device, "vkQueueWaitIdle" );
+    vkDeviceWaitIdle                                  = cast( PFN_vkDeviceWaitIdle                                  ) vkGetDeviceProcAddr( device, "vkDeviceWaitIdle" );
+    vkAllocateMemory                                  = cast( PFN_vkAllocateMemory                                  ) vkGetDeviceProcAddr( device, "vkAllocateMemory" );
+    vkFreeMemory                                      = cast( PFN_vkFreeMemory                                      ) vkGetDeviceProcAddr( device, "vkFreeMemory" );
+    vkMapMemory                                       = cast( PFN_vkMapMemory                                       ) vkGetDeviceProcAddr( device, "vkMapMemory" );
+    vkUnmapMemory                                     = cast( PFN_vkUnmapMemory                                     ) vkGetDeviceProcAddr( device, "vkUnmapMemory" );
+    vkFlushMappedMemoryRanges                         = cast( PFN_vkFlushMappedMemoryRanges                         ) vkGetDeviceProcAddr( device, "vkFlushMappedMemoryRanges" );
+    vkInvalidateMappedMemoryRanges                    = cast( PFN_vkInvalidateMappedMemoryRanges                    ) vkGetDeviceProcAddr( device, "vkInvalidateMappedMemoryRanges" );
+    vkGetDeviceMemoryCommitment                       = cast( PFN_vkGetDeviceMemoryCommitment                       ) vkGetDeviceProcAddr( device, "vkGetDeviceMemoryCommitment" );
+    vkBindBufferMemory                                = cast( PFN_vkBindBufferMemory                                ) vkGetDeviceProcAddr( device, "vkBindBufferMemory" );
+    vkBindImageMemory                                 = cast( PFN_vkBindImageMemory                                 ) vkGetDeviceProcAddr( device, "vkBindImageMemory" );
+    vkGetBufferMemoryRequirements                     = cast( PFN_vkGetBufferMemoryRequirements                     ) vkGetDeviceProcAddr( device, "vkGetBufferMemoryRequirements" );
+    vkGetImageMemoryRequirements                      = cast( PFN_vkGetImageMemoryRequirements                      ) vkGetDeviceProcAddr( device, "vkGetImageMemoryRequirements" );
+    vkGetImageSparseMemoryRequirements                = cast( PFN_vkGetImageSparseMemoryRequirements                ) vkGetDeviceProcAddr( device, "vkGetImageSparseMemoryRequirements" );
+    vkQueueBindSparse                                 = cast( PFN_vkQueueBindSparse                                 ) vkGetDeviceProcAddr( device, "vkQueueBindSparse" );
+    vkCreateFence                                     = cast( PFN_vkCreateFence                                     ) vkGetDeviceProcAddr( device, "vkCreateFence" );
+    vkDestroyFence                                    = cast( PFN_vkDestroyFence                                    ) vkGetDeviceProcAddr( device, "vkDestroyFence" );
+    vkResetFences                                     = cast( PFN_vkResetFences                                     ) vkGetDeviceProcAddr( device, "vkResetFences" );
+    vkGetFenceStatus                                  = cast( PFN_vkGetFenceStatus                                  ) vkGetDeviceProcAddr( device, "vkGetFenceStatus" );
+    vkWaitForFences                                   = cast( PFN_vkWaitForFences                                   ) vkGetDeviceProcAddr( device, "vkWaitForFences" );
+    vkCreateSemaphore                                 = cast( PFN_vkCreateSemaphore                                 ) vkGetDeviceProcAddr( device, "vkCreateSemaphore" );
+    vkDestroySemaphore                                = cast( PFN_vkDestroySemaphore                                ) vkGetDeviceProcAddr( device, "vkDestroySemaphore" );
+    vkCreateEvent                                     = cast( PFN_vkCreateEvent                                     ) vkGetDeviceProcAddr( device, "vkCreateEvent" );
+    vkDestroyEvent                                    = cast( PFN_vkDestroyEvent                                    ) vkGetDeviceProcAddr( device, "vkDestroyEvent" );
+    vkGetEventStatus                                  = cast( PFN_vkGetEventStatus                                  ) vkGetDeviceProcAddr( device, "vkGetEventStatus" );
+    vkSetEvent                                        = cast( PFN_vkSetEvent                                        ) vkGetDeviceProcAddr( device, "vkSetEvent" );
+    vkResetEvent                                      = cast( PFN_vkResetEvent                                      ) vkGetDeviceProcAddr( device, "vkResetEvent" );
+    vkCreateQueryPool                                 = cast( PFN_vkCreateQueryPool                                 ) vkGetDeviceProcAddr( device, "vkCreateQueryPool" );
+    vkDestroyQueryPool                                = cast( PFN_vkDestroyQueryPool                                ) vkGetDeviceProcAddr( device, "vkDestroyQueryPool" );
+    vkGetQueryPoolResults                             = cast( PFN_vkGetQueryPoolResults                             ) vkGetDeviceProcAddr( device, "vkGetQueryPoolResults" );
+    vkCreateBuffer                                    = cast( PFN_vkCreateBuffer                                    ) vkGetDeviceProcAddr( device, "vkCreateBuffer" );
+    vkDestroyBuffer                                   = cast( PFN_vkDestroyBuffer                                   ) vkGetDeviceProcAddr( device, "vkDestroyBuffer" );
+    vkCreateBufferView                                = cast( PFN_vkCreateBufferView                                ) vkGetDeviceProcAddr( device, "vkCreateBufferView" );
+    vkDestroyBufferView                               = cast( PFN_vkDestroyBufferView                               ) vkGetDeviceProcAddr( device, "vkDestroyBufferView" );
+    vkCreateImage                                     = cast( PFN_vkCreateImage                                     ) vkGetDeviceProcAddr( device, "vkCreateImage" );
+    vkDestroyImage                                    = cast( PFN_vkDestroyImage                                    ) vkGetDeviceProcAddr( device, "vkDestroyImage" );
+    vkGetImageSubresourceLayout                       = cast( PFN_vkGetImageSubresourceLayout                       ) vkGetDeviceProcAddr( device, "vkGetImageSubresourceLayout" );
+    vkCreateImageView                                 = cast( PFN_vkCreateImageView                                 ) vkGetDeviceProcAddr( device, "vkCreateImageView" );
+    vkDestroyImageView                                = cast( PFN_vkDestroyImageView                                ) vkGetDeviceProcAddr( device, "vkDestroyImageView" );
+    vkCreateShaderModule                              = cast( PFN_vkCreateShaderModule                              ) vkGetDeviceProcAddr( device, "vkCreateShaderModule" );
+    vkDestroyShaderModule                             = cast( PFN_vkDestroyShaderModule                             ) vkGetDeviceProcAddr( device, "vkDestroyShaderModule" );
+    vkCreatePipelineCache                             = cast( PFN_vkCreatePipelineCache                             ) vkGetDeviceProcAddr( device, "vkCreatePipelineCache" );
+    vkDestroyPipelineCache                            = cast( PFN_vkDestroyPipelineCache                            ) vkGetDeviceProcAddr( device, "vkDestroyPipelineCache" );
+    vkGetPipelineCacheData                            = cast( PFN_vkGetPipelineCacheData                            ) vkGetDeviceProcAddr( device, "vkGetPipelineCacheData" );
+    vkMergePipelineCaches                             = cast( PFN_vkMergePipelineCaches                             ) vkGetDeviceProcAddr( device, "vkMergePipelineCaches" );
+    vkCreateGraphicsPipelines                         = cast( PFN_vkCreateGraphicsPipelines                         ) vkGetDeviceProcAddr( device, "vkCreateGraphicsPipelines" );
+    vkCreateComputePipelines                          = cast( PFN_vkCreateComputePipelines                          ) vkGetDeviceProcAddr( device, "vkCreateComputePipelines" );
+    vkDestroyPipeline                                 = cast( PFN_vkDestroyPipeline                                 ) vkGetDeviceProcAddr( device, "vkDestroyPipeline" );
+    vkCreatePipelineLayout                            = cast( PFN_vkCreatePipelineLayout                            ) vkGetDeviceProcAddr( device, "vkCreatePipelineLayout" );
+    vkDestroyPipelineLayout                           = cast( PFN_vkDestroyPipelineLayout                           ) vkGetDeviceProcAddr( device, "vkDestroyPipelineLayout" );
+    vkCreateSampler                                   = cast( PFN_vkCreateSampler                                   ) vkGetDeviceProcAddr( device, "vkCreateSampler" );
+    vkDestroySampler                                  = cast( PFN_vkDestroySampler                                  ) vkGetDeviceProcAddr( device, "vkDestroySampler" );
+    vkCreateDescriptorSetLayout                       = cast( PFN_vkCreateDescriptorSetLayout                       ) vkGetDeviceProcAddr( device, "vkCreateDescriptorSetLayout" );
+    vkDestroyDescriptorSetLayout                      = cast( PFN_vkDestroyDescriptorSetLayout                      ) vkGetDeviceProcAddr( device, "vkDestroyDescriptorSetLayout" );
+    vkCreateDescriptorPool                            = cast( PFN_vkCreateDescriptorPool                            ) vkGetDeviceProcAddr( device, "vkCreateDescriptorPool" );
+    vkDestroyDescriptorPool                           = cast( PFN_vkDestroyDescriptorPool                           ) vkGetDeviceProcAddr( device, "vkDestroyDescriptorPool" );
+    vkResetDescriptorPool                             = cast( PFN_vkResetDescriptorPool                             ) vkGetDeviceProcAddr( device, "vkResetDescriptorPool" );
+    vkAllocateDescriptorSets                          = cast( PFN_vkAllocateDescriptorSets                          ) vkGetDeviceProcAddr( device, "vkAllocateDescriptorSets" );
+    vkFreeDescriptorSets                              = cast( PFN_vkFreeDescriptorSets                              ) vkGetDeviceProcAddr( device, "vkFreeDescriptorSets" );
+    vkUpdateDescriptorSets                            = cast( PFN_vkUpdateDescriptorSets                            ) vkGetDeviceProcAddr( device, "vkUpdateDescriptorSets" );
+    vkCreateFramebuffer                               = cast( PFN_vkCreateFramebuffer                               ) vkGetDeviceProcAddr( device, "vkCreateFramebuffer" );
+    vkDestroyFramebuffer                              = cast( PFN_vkDestroyFramebuffer                              ) vkGetDeviceProcAddr( device, "vkDestroyFramebuffer" );
+    vkCreateRenderPass                                = cast( PFN_vkCreateRenderPass                                ) vkGetDeviceProcAddr( device, "vkCreateRenderPass" );
+    vkDestroyRenderPass                               = cast( PFN_vkDestroyRenderPass                               ) vkGetDeviceProcAddr( device, "vkDestroyRenderPass" );
+    vkGetRenderAreaGranularity                        = cast( PFN_vkGetRenderAreaGranularity                        ) vkGetDeviceProcAddr( device, "vkGetRenderAreaGranularity" );
+    vkCreateCommandPool                               = cast( PFN_vkCreateCommandPool                               ) vkGetDeviceProcAddr( device, "vkCreateCommandPool" );
+    vkDestroyCommandPool                              = cast( PFN_vkDestroyCommandPool                              ) vkGetDeviceProcAddr( device, "vkDestroyCommandPool" );
+    vkResetCommandPool                                = cast( PFN_vkResetCommandPool                                ) vkGetDeviceProcAddr( device, "vkResetCommandPool" );
+    vkAllocateCommandBuffers                          = cast( PFN_vkAllocateCommandBuffers                          ) vkGetDeviceProcAddr( device, "vkAllocateCommandBuffers" );
+    vkFreeCommandBuffers                              = cast( PFN_vkFreeCommandBuffers                              ) vkGetDeviceProcAddr( device, "vkFreeCommandBuffers" );
+    vkBeginCommandBuffer                              = cast( PFN_vkBeginCommandBuffer                              ) vkGetDeviceProcAddr( device, "vkBeginCommandBuffer" );
+    vkEndCommandBuffer                                = cast( PFN_vkEndCommandBuffer                                ) vkGetDeviceProcAddr( device, "vkEndCommandBuffer" );
+    vkResetCommandBuffer                              = cast( PFN_vkResetCommandBuffer                              ) vkGetDeviceProcAddr( device, "vkResetCommandBuffer" );
+    vkCmdBindPipeline                                 = cast( PFN_vkCmdBindPipeline                                 ) vkGetDeviceProcAddr( device, "vkCmdBindPipeline" );
+    vkCmdSetViewport                                  = cast( PFN_vkCmdSetViewport                                  ) vkGetDeviceProcAddr( device, "vkCmdSetViewport" );
+    vkCmdSetScissor                                   = cast( PFN_vkCmdSetScissor                                   ) vkGetDeviceProcAddr( device, "vkCmdSetScissor" );
+    vkCmdSetLineWidth                                 = cast( PFN_vkCmdSetLineWidth                                 ) vkGetDeviceProcAddr( device, "vkCmdSetLineWidth" );
+    vkCmdSetDepthBias                                 = cast( PFN_vkCmdSetDepthBias                                 ) vkGetDeviceProcAddr( device, "vkCmdSetDepthBias" );
+    vkCmdSetBlendConstants                            = cast( PFN_vkCmdSetBlendConstants                            ) vkGetDeviceProcAddr( device, "vkCmdSetBlendConstants" );
+    vkCmdSetDepthBounds                               = cast( PFN_vkCmdSetDepthBounds                               ) vkGetDeviceProcAddr( device, "vkCmdSetDepthBounds" );
+    vkCmdSetStencilCompareMask                        = cast( PFN_vkCmdSetStencilCompareMask                        ) vkGetDeviceProcAddr( device, "vkCmdSetStencilCompareMask" );
+    vkCmdSetStencilWriteMask                          = cast( PFN_vkCmdSetStencilWriteMask                          ) vkGetDeviceProcAddr( device, "vkCmdSetStencilWriteMask" );
+    vkCmdSetStencilReference                          = cast( PFN_vkCmdSetStencilReference                          ) vkGetDeviceProcAddr( device, "vkCmdSetStencilReference" );
+    vkCmdBindDescriptorSets                           = cast( PFN_vkCmdBindDescriptorSets                           ) vkGetDeviceProcAddr( device, "vkCmdBindDescriptorSets" );
+    vkCmdBindIndexBuffer                              = cast( PFN_vkCmdBindIndexBuffer                              ) vkGetDeviceProcAddr( device, "vkCmdBindIndexBuffer" );
+    vkCmdBindVertexBuffers                            = cast( PFN_vkCmdBindVertexBuffers                            ) vkGetDeviceProcAddr( device, "vkCmdBindVertexBuffers" );
+    vkCmdDraw                                         = cast( PFN_vkCmdDraw                                         ) vkGetDeviceProcAddr( device, "vkCmdDraw" );
+    vkCmdDrawIndexed                                  = cast( PFN_vkCmdDrawIndexed                                  ) vkGetDeviceProcAddr( device, "vkCmdDrawIndexed" );
+    vkCmdDrawIndirect                                 = cast( PFN_vkCmdDrawIndirect                                 ) vkGetDeviceProcAddr( device, "vkCmdDrawIndirect" );
+    vkCmdDrawIndexedIndirect                          = cast( PFN_vkCmdDrawIndexedIndirect                          ) vkGetDeviceProcAddr( device, "vkCmdDrawIndexedIndirect" );
+    vkCmdDispatch                                     = cast( PFN_vkCmdDispatch                                     ) vkGetDeviceProcAddr( device, "vkCmdDispatch" );
+    vkCmdDispatchIndirect                             = cast( PFN_vkCmdDispatchIndirect                             ) vkGetDeviceProcAddr( device, "vkCmdDispatchIndirect" );
+    vkCmdCopyBuffer                                   = cast( PFN_vkCmdCopyBuffer                                   ) vkGetDeviceProcAddr( device, "vkCmdCopyBuffer" );
+    vkCmdCopyImage                                    = cast( PFN_vkCmdCopyImage                                    ) vkGetDeviceProcAddr( device, "vkCmdCopyImage" );
+    vkCmdBlitImage                                    = cast( PFN_vkCmdBlitImage                                    ) vkGetDeviceProcAddr( device, "vkCmdBlitImage" );
+    vkCmdCopyBufferToImage                            = cast( PFN_vkCmdCopyBufferToImage                            ) vkGetDeviceProcAddr( device, "vkCmdCopyBufferToImage" );
+    vkCmdCopyImageToBuffer                            = cast( PFN_vkCmdCopyImageToBuffer                            ) vkGetDeviceProcAddr( device, "vkCmdCopyImageToBuffer" );
+    vkCmdUpdateBuffer                                 = cast( PFN_vkCmdUpdateBuffer                                 ) vkGetDeviceProcAddr( device, "vkCmdUpdateBuffer" );
+    vkCmdFillBuffer                                   = cast( PFN_vkCmdFillBuffer                                   ) vkGetDeviceProcAddr( device, "vkCmdFillBuffer" );
+    vkCmdClearColorImage                              = cast( PFN_vkCmdClearColorImage                              ) vkGetDeviceProcAddr( device, "vkCmdClearColorImage" );
+    vkCmdClearDepthStencilImage                       = cast( PFN_vkCmdClearDepthStencilImage                       ) vkGetDeviceProcAddr( device, "vkCmdClearDepthStencilImage" );
+    vkCmdClearAttachments                             = cast( PFN_vkCmdClearAttachments                             ) vkGetDeviceProcAddr( device, "vkCmdClearAttachments" );
+    vkCmdResolveImage                                 = cast( PFN_vkCmdResolveImage                                 ) vkGetDeviceProcAddr( device, "vkCmdResolveImage" );
+    vkCmdSetEvent                                     = cast( PFN_vkCmdSetEvent                                     ) vkGetDeviceProcAddr( device, "vkCmdSetEvent" );
+    vkCmdResetEvent                                   = cast( PFN_vkCmdResetEvent                                   ) vkGetDeviceProcAddr( device, "vkCmdResetEvent" );
+    vkCmdWaitEvents                                   = cast( PFN_vkCmdWaitEvents                                   ) vkGetDeviceProcAddr( device, "vkCmdWaitEvents" );
+    vkCmdPipelineBarrier                              = cast( PFN_vkCmdPipelineBarrier                              ) vkGetDeviceProcAddr( device, "vkCmdPipelineBarrier" );
+    vkCmdBeginQuery                                   = cast( PFN_vkCmdBeginQuery                                   ) vkGetDeviceProcAddr( device, "vkCmdBeginQuery" );
+    vkCmdEndQuery                                     = cast( PFN_vkCmdEndQuery                                     ) vkGetDeviceProcAddr( device, "vkCmdEndQuery" );
+    vkCmdResetQueryPool                               = cast( PFN_vkCmdResetQueryPool                               ) vkGetDeviceProcAddr( device, "vkCmdResetQueryPool" );
+    vkCmdWriteTimestamp                               = cast( PFN_vkCmdWriteTimestamp                               ) vkGetDeviceProcAddr( device, "vkCmdWriteTimestamp" );
+    vkCmdCopyQueryPoolResults                         = cast( PFN_vkCmdCopyQueryPoolResults                         ) vkGetDeviceProcAddr( device, "vkCmdCopyQueryPoolResults" );
+    vkCmdPushConstants                                = cast( PFN_vkCmdPushConstants                                ) vkGetDeviceProcAddr( device, "vkCmdPushConstants" );
+    vkCmdBeginRenderPass                              = cast( PFN_vkCmdBeginRenderPass                              ) vkGetDeviceProcAddr( device, "vkCmdBeginRenderPass" );
+    vkCmdNextSubpass                                  = cast( PFN_vkCmdNextSubpass                                  ) vkGetDeviceProcAddr( device, "vkCmdNextSubpass" );
+    vkCmdEndRenderPass                                = cast( PFN_vkCmdEndRenderPass                                ) vkGetDeviceProcAddr( device, "vkCmdEndRenderPass" );
+    vkCmdExecuteCommands                              = cast( PFN_vkCmdExecuteCommands                              ) vkGetDeviceProcAddr( device, "vkCmdExecuteCommands" );
 
     // VK_VERSION_1_1
-    vkBindBufferMemory2                            = cast( PFN_vkBindBufferMemory2                            ) vkGetDeviceProcAddr( device, "vkBindBufferMemory2" );
-    vkBindImageMemory2                             = cast( PFN_vkBindImageMemory2                             ) vkGetDeviceProcAddr( device, "vkBindImageMemory2" );
-    vkGetDeviceGroupPeerMemoryFeatures             = cast( PFN_vkGetDeviceGroupPeerMemoryFeatures             ) vkGetDeviceProcAddr( device, "vkGetDeviceGroupPeerMemoryFeatures" );
-    vkCmdSetDeviceMask                             = cast( PFN_vkCmdSetDeviceMask                             ) vkGetDeviceProcAddr( device, "vkCmdSetDeviceMask" );
-    vkCmdDispatchBase                              = cast( PFN_vkCmdDispatchBase                              ) vkGetDeviceProcAddr( device, "vkCmdDispatchBase" );
-    vkGetImageMemoryRequirements2                  = cast( PFN_vkGetImageMemoryRequirements2                  ) vkGetDeviceProcAddr( device, "vkGetImageMemoryRequirements2" );
-    vkGetBufferMemoryRequirements2                 = cast( PFN_vkGetBufferMemoryRequirements2                 ) vkGetDeviceProcAddr( device, "vkGetBufferMemoryRequirements2" );
-    vkGetImageSparseMemoryRequirements2            = cast( PFN_vkGetImageSparseMemoryRequirements2            ) vkGetDeviceProcAddr( device, "vkGetImageSparseMemoryRequirements2" );
-    vkTrimCommandPool                              = cast( PFN_vkTrimCommandPool                              ) vkGetDeviceProcAddr( device, "vkTrimCommandPool" );
-    vkGetDeviceQueue2                              = cast( PFN_vkGetDeviceQueue2                              ) vkGetDeviceProcAddr( device, "vkGetDeviceQueue2" );
-    vkCreateSamplerYcbcrConversion                 = cast( PFN_vkCreateSamplerYcbcrConversion                 ) vkGetDeviceProcAddr( device, "vkCreateSamplerYcbcrConversion" );
-    vkDestroySamplerYcbcrConversion                = cast( PFN_vkDestroySamplerYcbcrConversion                ) vkGetDeviceProcAddr( device, "vkDestroySamplerYcbcrConversion" );
-    vkCreateDescriptorUpdateTemplate               = cast( PFN_vkCreateDescriptorUpdateTemplate               ) vkGetDeviceProcAddr( device, "vkCreateDescriptorUpdateTemplate" );
-    vkDestroyDescriptorUpdateTemplate              = cast( PFN_vkDestroyDescriptorUpdateTemplate              ) vkGetDeviceProcAddr( device, "vkDestroyDescriptorUpdateTemplate" );
-    vkUpdateDescriptorSetWithTemplate              = cast( PFN_vkUpdateDescriptorSetWithTemplate              ) vkGetDeviceProcAddr( device, "vkUpdateDescriptorSetWithTemplate" );
-    vkGetDescriptorSetLayoutSupport                = cast( PFN_vkGetDescriptorSetLayoutSupport                ) vkGetDeviceProcAddr( device, "vkGetDescriptorSetLayoutSupport" );
+    vkBindBufferMemory2                               = cast( PFN_vkBindBufferMemory2                               ) vkGetDeviceProcAddr( device, "vkBindBufferMemory2" );
+    vkBindImageMemory2                                = cast( PFN_vkBindImageMemory2                                ) vkGetDeviceProcAddr( device, "vkBindImageMemory2" );
+    vkGetDeviceGroupPeerMemoryFeatures                = cast( PFN_vkGetDeviceGroupPeerMemoryFeatures                ) vkGetDeviceProcAddr( device, "vkGetDeviceGroupPeerMemoryFeatures" );
+    vkCmdSetDeviceMask                                = cast( PFN_vkCmdSetDeviceMask                                ) vkGetDeviceProcAddr( device, "vkCmdSetDeviceMask" );
+    vkCmdDispatchBase                                 = cast( PFN_vkCmdDispatchBase                                 ) vkGetDeviceProcAddr( device, "vkCmdDispatchBase" );
+    vkGetImageMemoryRequirements2                     = cast( PFN_vkGetImageMemoryRequirements2                     ) vkGetDeviceProcAddr( device, "vkGetImageMemoryRequirements2" );
+    vkGetBufferMemoryRequirements2                    = cast( PFN_vkGetBufferMemoryRequirements2                    ) vkGetDeviceProcAddr( device, "vkGetBufferMemoryRequirements2" );
+    vkGetImageSparseMemoryRequirements2               = cast( PFN_vkGetImageSparseMemoryRequirements2               ) vkGetDeviceProcAddr( device, "vkGetImageSparseMemoryRequirements2" );
+    vkTrimCommandPool                                 = cast( PFN_vkTrimCommandPool                                 ) vkGetDeviceProcAddr( device, "vkTrimCommandPool" );
+    vkGetDeviceQueue2                                 = cast( PFN_vkGetDeviceQueue2                                 ) vkGetDeviceProcAddr( device, "vkGetDeviceQueue2" );
+    vkCreateSamplerYcbcrConversion                    = cast( PFN_vkCreateSamplerYcbcrConversion                    ) vkGetDeviceProcAddr( device, "vkCreateSamplerYcbcrConversion" );
+    vkDestroySamplerYcbcrConversion                   = cast( PFN_vkDestroySamplerYcbcrConversion                   ) vkGetDeviceProcAddr( device, "vkDestroySamplerYcbcrConversion" );
+    vkCreateDescriptorUpdateTemplate                  = cast( PFN_vkCreateDescriptorUpdateTemplate                  ) vkGetDeviceProcAddr( device, "vkCreateDescriptorUpdateTemplate" );
+    vkDestroyDescriptorUpdateTemplate                 = cast( PFN_vkDestroyDescriptorUpdateTemplate                 ) vkGetDeviceProcAddr( device, "vkDestroyDescriptorUpdateTemplate" );
+    vkUpdateDescriptorSetWithTemplate                 = cast( PFN_vkUpdateDescriptorSetWithTemplate                 ) vkGetDeviceProcAddr( device, "vkUpdateDescriptorSetWithTemplate" );
+    vkGetDescriptorSetLayoutSupport                   = cast( PFN_vkGetDescriptorSetLayoutSupport                   ) vkGetDeviceProcAddr( device, "vkGetDescriptorSetLayoutSupport" );
 
     // VK_KHR_swapchain
-    vkCreateSwapchainKHR                           = cast( PFN_vkCreateSwapchainKHR                           ) vkGetDeviceProcAddr( device, "vkCreateSwapchainKHR" );
-    vkDestroySwapchainKHR                          = cast( PFN_vkDestroySwapchainKHR                          ) vkGetDeviceProcAddr( device, "vkDestroySwapchainKHR" );
-    vkGetSwapchainImagesKHR                        = cast( PFN_vkGetSwapchainImagesKHR                        ) vkGetDeviceProcAddr( device, "vkGetSwapchainImagesKHR" );
-    vkAcquireNextImageKHR                          = cast( PFN_vkAcquireNextImageKHR                          ) vkGetDeviceProcAddr( device, "vkAcquireNextImageKHR" );
-    vkQueuePresentKHR                              = cast( PFN_vkQueuePresentKHR                              ) vkGetDeviceProcAddr( device, "vkQueuePresentKHR" );
-    vkGetDeviceGroupPresentCapabilitiesKHR         = cast( PFN_vkGetDeviceGroupPresentCapabilitiesKHR         ) vkGetDeviceProcAddr( device, "vkGetDeviceGroupPresentCapabilitiesKHR" );
-    vkGetDeviceGroupSurfacePresentModesKHR         = cast( PFN_vkGetDeviceGroupSurfacePresentModesKHR         ) vkGetDeviceProcAddr( device, "vkGetDeviceGroupSurfacePresentModesKHR" );
-    vkAcquireNextImage2KHR                         = cast( PFN_vkAcquireNextImage2KHR                         ) vkGetDeviceProcAddr( device, "vkAcquireNextImage2KHR" );
+    vkCreateSwapchainKHR                              = cast( PFN_vkCreateSwapchainKHR                              ) vkGetDeviceProcAddr( device, "vkCreateSwapchainKHR" );
+    vkDestroySwapchainKHR                             = cast( PFN_vkDestroySwapchainKHR                             ) vkGetDeviceProcAddr( device, "vkDestroySwapchainKHR" );
+    vkGetSwapchainImagesKHR                           = cast( PFN_vkGetSwapchainImagesKHR                           ) vkGetDeviceProcAddr( device, "vkGetSwapchainImagesKHR" );
+    vkAcquireNextImageKHR                             = cast( PFN_vkAcquireNextImageKHR                             ) vkGetDeviceProcAddr( device, "vkAcquireNextImageKHR" );
+    vkQueuePresentKHR                                 = cast( PFN_vkQueuePresentKHR                                 ) vkGetDeviceProcAddr( device, "vkQueuePresentKHR" );
+    vkGetDeviceGroupPresentCapabilitiesKHR            = cast( PFN_vkGetDeviceGroupPresentCapabilitiesKHR            ) vkGetDeviceProcAddr( device, "vkGetDeviceGroupPresentCapabilitiesKHR" );
+    vkGetDeviceGroupSurfacePresentModesKHR            = cast( PFN_vkGetDeviceGroupSurfacePresentModesKHR            ) vkGetDeviceProcAddr( device, "vkGetDeviceGroupSurfacePresentModesKHR" );
+    vkAcquireNextImage2KHR                            = cast( PFN_vkAcquireNextImage2KHR                            ) vkGetDeviceProcAddr( device, "vkAcquireNextImage2KHR" );
 
     // VK_KHR_display_swapchain
-    vkCreateSharedSwapchainsKHR                    = cast( PFN_vkCreateSharedSwapchainsKHR                    ) vkGetDeviceProcAddr( device, "vkCreateSharedSwapchainsKHR" );
+    vkCreateSharedSwapchainsKHR                       = cast( PFN_vkCreateSharedSwapchainsKHR                       ) vkGetDeviceProcAddr( device, "vkCreateSharedSwapchainsKHR" );
 
     // VK_KHR_external_memory_fd
-    vkGetMemoryFdKHR                               = cast( PFN_vkGetMemoryFdKHR                               ) vkGetDeviceProcAddr( device, "vkGetMemoryFdKHR" );
-    vkGetMemoryFdPropertiesKHR                     = cast( PFN_vkGetMemoryFdPropertiesKHR                     ) vkGetDeviceProcAddr( device, "vkGetMemoryFdPropertiesKHR" );
+    vkGetMemoryFdKHR                                  = cast( PFN_vkGetMemoryFdKHR                                  ) vkGetDeviceProcAddr( device, "vkGetMemoryFdKHR" );
+    vkGetMemoryFdPropertiesKHR                        = cast( PFN_vkGetMemoryFdPropertiesKHR                        ) vkGetDeviceProcAddr( device, "vkGetMemoryFdPropertiesKHR" );
 
     // VK_KHR_external_semaphore_fd
-    vkImportSemaphoreFdKHR                         = cast( PFN_vkImportSemaphoreFdKHR                         ) vkGetDeviceProcAddr( device, "vkImportSemaphoreFdKHR" );
-    vkGetSemaphoreFdKHR                            = cast( PFN_vkGetSemaphoreFdKHR                            ) vkGetDeviceProcAddr( device, "vkGetSemaphoreFdKHR" );
+    vkImportSemaphoreFdKHR                            = cast( PFN_vkImportSemaphoreFdKHR                            ) vkGetDeviceProcAddr( device, "vkImportSemaphoreFdKHR" );
+    vkGetSemaphoreFdKHR                               = cast( PFN_vkGetSemaphoreFdKHR                               ) vkGetDeviceProcAddr( device, "vkGetSemaphoreFdKHR" );
 
     // VK_KHR_push_descriptor
-    vkCmdPushDescriptorSetKHR                      = cast( PFN_vkCmdPushDescriptorSetKHR                      ) vkGetDeviceProcAddr( device, "vkCmdPushDescriptorSetKHR" );
-    vkCmdPushDescriptorSetWithTemplateKHR          = cast( PFN_vkCmdPushDescriptorSetWithTemplateKHR          ) vkGetDeviceProcAddr( device, "vkCmdPushDescriptorSetWithTemplateKHR" );
+    vkCmdPushDescriptorSetKHR                         = cast( PFN_vkCmdPushDescriptorSetKHR                         ) vkGetDeviceProcAddr( device, "vkCmdPushDescriptorSetKHR" );
+    vkCmdPushDescriptorSetWithTemplateKHR             = cast( PFN_vkCmdPushDescriptorSetWithTemplateKHR             ) vkGetDeviceProcAddr( device, "vkCmdPushDescriptorSetWithTemplateKHR" );
 
     // VK_KHR_create_renderpass2
-    vkCreateRenderPass2KHR                         = cast( PFN_vkCreateRenderPass2KHR                         ) vkGetDeviceProcAddr( device, "vkCreateRenderPass2KHR" );
-    vkCmdBeginRenderPass2KHR                       = cast( PFN_vkCmdBeginRenderPass2KHR                       ) vkGetDeviceProcAddr( device, "vkCmdBeginRenderPass2KHR" );
-    vkCmdNextSubpass2KHR                           = cast( PFN_vkCmdNextSubpass2KHR                           ) vkGetDeviceProcAddr( device, "vkCmdNextSubpass2KHR" );
-    vkCmdEndRenderPass2KHR                         = cast( PFN_vkCmdEndRenderPass2KHR                         ) vkGetDeviceProcAddr( device, "vkCmdEndRenderPass2KHR" );
+    vkCreateRenderPass2KHR                            = cast( PFN_vkCreateRenderPass2KHR                            ) vkGetDeviceProcAddr( device, "vkCreateRenderPass2KHR" );
+    vkCmdBeginRenderPass2KHR                          = cast( PFN_vkCmdBeginRenderPass2KHR                          ) vkGetDeviceProcAddr( device, "vkCmdBeginRenderPass2KHR" );
+    vkCmdNextSubpass2KHR                              = cast( PFN_vkCmdNextSubpass2KHR                              ) vkGetDeviceProcAddr( device, "vkCmdNextSubpass2KHR" );
+    vkCmdEndRenderPass2KHR                            = cast( PFN_vkCmdEndRenderPass2KHR                            ) vkGetDeviceProcAddr( device, "vkCmdEndRenderPass2KHR" );
 
     // VK_KHR_shared_presentable_image
-    vkGetSwapchainStatusKHR                        = cast( PFN_vkGetSwapchainStatusKHR                        ) vkGetDeviceProcAddr( device, "vkGetSwapchainStatusKHR" );
+    vkGetSwapchainStatusKHR                           = cast( PFN_vkGetSwapchainStatusKHR                           ) vkGetDeviceProcAddr( device, "vkGetSwapchainStatusKHR" );
 
     // VK_KHR_external_fence_fd
-    vkImportFenceFdKHR                             = cast( PFN_vkImportFenceFdKHR                             ) vkGetDeviceProcAddr( device, "vkImportFenceFdKHR" );
-    vkGetFenceFdKHR                                = cast( PFN_vkGetFenceFdKHR                                ) vkGetDeviceProcAddr( device, "vkGetFenceFdKHR" );
+    vkImportFenceFdKHR                                = cast( PFN_vkImportFenceFdKHR                                ) vkGetDeviceProcAddr( device, "vkImportFenceFdKHR" );
+    vkGetFenceFdKHR                                   = cast( PFN_vkGetFenceFdKHR                                   ) vkGetDeviceProcAddr( device, "vkGetFenceFdKHR" );
 
     // VK_KHR_draw_indirect_count
-    vkCmdDrawIndirectCountKHR                      = cast( PFN_vkCmdDrawIndirectCountKHR                      ) vkGetDeviceProcAddr( device, "vkCmdDrawIndirectCountKHR" );
-    vkCmdDrawIndexedIndirectCountKHR               = cast( PFN_vkCmdDrawIndexedIndirectCountKHR               ) vkGetDeviceProcAddr( device, "vkCmdDrawIndexedIndirectCountKHR" );
+    vkCmdDrawIndirectCountKHR                         = cast( PFN_vkCmdDrawIndirectCountKHR                         ) vkGetDeviceProcAddr( device, "vkCmdDrawIndirectCountKHR" );
+    vkCmdDrawIndexedIndirectCountKHR                  = cast( PFN_vkCmdDrawIndexedIndirectCountKHR                  ) vkGetDeviceProcAddr( device, "vkCmdDrawIndexedIndirectCountKHR" );
+
+    // VK_KHR_pipeline_executable_properties
+    vkGetPipelineExecutablePropertiesKHR              = cast( PFN_vkGetPipelineExecutablePropertiesKHR              ) vkGetDeviceProcAddr( device, "vkGetPipelineExecutablePropertiesKHR" );
+    vkGetPipelineExecutableStatisticsKHR              = cast( PFN_vkGetPipelineExecutableStatisticsKHR              ) vkGetDeviceProcAddr( device, "vkGetPipelineExecutableStatisticsKHR" );
+    vkGetPipelineExecutableInternalRepresentationsKHR = cast( PFN_vkGetPipelineExecutableInternalRepresentationsKHR ) vkGetDeviceProcAddr( device, "vkGetPipelineExecutableInternalRepresentationsKHR" );
 
     // VK_EXT_debug_marker
-    vkDebugMarkerSetObjectTagEXT                   = cast( PFN_vkDebugMarkerSetObjectTagEXT                   ) vkGetDeviceProcAddr( device, "vkDebugMarkerSetObjectTagEXT" );
-    vkDebugMarkerSetObjectNameEXT                  = cast( PFN_vkDebugMarkerSetObjectNameEXT                  ) vkGetDeviceProcAddr( device, "vkDebugMarkerSetObjectNameEXT" );
-    vkCmdDebugMarkerBeginEXT                       = cast( PFN_vkCmdDebugMarkerBeginEXT                       ) vkGetDeviceProcAddr( device, "vkCmdDebugMarkerBeginEXT" );
-    vkCmdDebugMarkerEndEXT                         = cast( PFN_vkCmdDebugMarkerEndEXT                         ) vkGetDeviceProcAddr( device, "vkCmdDebugMarkerEndEXT" );
-    vkCmdDebugMarkerInsertEXT                      = cast( PFN_vkCmdDebugMarkerInsertEXT                      ) vkGetDeviceProcAddr( device, "vkCmdDebugMarkerInsertEXT" );
+    vkDebugMarkerSetObjectTagEXT                      = cast( PFN_vkDebugMarkerSetObjectTagEXT                      ) vkGetDeviceProcAddr( device, "vkDebugMarkerSetObjectTagEXT" );
+    vkDebugMarkerSetObjectNameEXT                     = cast( PFN_vkDebugMarkerSetObjectNameEXT                     ) vkGetDeviceProcAddr( device, "vkDebugMarkerSetObjectNameEXT" );
+    vkCmdDebugMarkerBeginEXT                          = cast( PFN_vkCmdDebugMarkerBeginEXT                          ) vkGetDeviceProcAddr( device, "vkCmdDebugMarkerBeginEXT" );
+    vkCmdDebugMarkerEndEXT                            = cast( PFN_vkCmdDebugMarkerEndEXT                            ) vkGetDeviceProcAddr( device, "vkCmdDebugMarkerEndEXT" );
+    vkCmdDebugMarkerInsertEXT                         = cast( PFN_vkCmdDebugMarkerInsertEXT                         ) vkGetDeviceProcAddr( device, "vkCmdDebugMarkerInsertEXT" );
 
     // VK_EXT_transform_feedback
-    vkCmdBindTransformFeedbackBuffersEXT           = cast( PFN_vkCmdBindTransformFeedbackBuffersEXT           ) vkGetDeviceProcAddr( device, "vkCmdBindTransformFeedbackBuffersEXT" );
-    vkCmdBeginTransformFeedbackEXT                 = cast( PFN_vkCmdBeginTransformFeedbackEXT                 ) vkGetDeviceProcAddr( device, "vkCmdBeginTransformFeedbackEXT" );
-    vkCmdEndTransformFeedbackEXT                   = cast( PFN_vkCmdEndTransformFeedbackEXT                   ) vkGetDeviceProcAddr( device, "vkCmdEndTransformFeedbackEXT" );
-    vkCmdBeginQueryIndexedEXT                      = cast( PFN_vkCmdBeginQueryIndexedEXT                      ) vkGetDeviceProcAddr( device, "vkCmdBeginQueryIndexedEXT" );
-    vkCmdEndQueryIndexedEXT                        = cast( PFN_vkCmdEndQueryIndexedEXT                        ) vkGetDeviceProcAddr( device, "vkCmdEndQueryIndexedEXT" );
-    vkCmdDrawIndirectByteCountEXT                  = cast( PFN_vkCmdDrawIndirectByteCountEXT                  ) vkGetDeviceProcAddr( device, "vkCmdDrawIndirectByteCountEXT" );
+    vkCmdBindTransformFeedbackBuffersEXT              = cast( PFN_vkCmdBindTransformFeedbackBuffersEXT              ) vkGetDeviceProcAddr( device, "vkCmdBindTransformFeedbackBuffersEXT" );
+    vkCmdBeginTransformFeedbackEXT                    = cast( PFN_vkCmdBeginTransformFeedbackEXT                    ) vkGetDeviceProcAddr( device, "vkCmdBeginTransformFeedbackEXT" );
+    vkCmdEndTransformFeedbackEXT                      = cast( PFN_vkCmdEndTransformFeedbackEXT                      ) vkGetDeviceProcAddr( device, "vkCmdEndTransformFeedbackEXT" );
+    vkCmdBeginQueryIndexedEXT                         = cast( PFN_vkCmdBeginQueryIndexedEXT                         ) vkGetDeviceProcAddr( device, "vkCmdBeginQueryIndexedEXT" );
+    vkCmdEndQueryIndexedEXT                           = cast( PFN_vkCmdEndQueryIndexedEXT                           ) vkGetDeviceProcAddr( device, "vkCmdEndQueryIndexedEXT" );
+    vkCmdDrawIndirectByteCountEXT                     = cast( PFN_vkCmdDrawIndirectByteCountEXT                     ) vkGetDeviceProcAddr( device, "vkCmdDrawIndirectByteCountEXT" );
 
     // VK_NVX_image_view_handle
-    vkGetImageViewHandleNVX                        = cast( PFN_vkGetImageViewHandleNVX                        ) vkGetDeviceProcAddr( device, "vkGetImageViewHandleNVX" );
+    vkGetImageViewHandleNVX                           = cast( PFN_vkGetImageViewHandleNVX                           ) vkGetDeviceProcAddr( device, "vkGetImageViewHandleNVX" );
 
     // VK_AMD_shader_info
-    vkGetShaderInfoAMD                             = cast( PFN_vkGetShaderInfoAMD                             ) vkGetDeviceProcAddr( device, "vkGetShaderInfoAMD" );
+    vkGetShaderInfoAMD                                = cast( PFN_vkGetShaderInfoAMD                                ) vkGetDeviceProcAddr( device, "vkGetShaderInfoAMD" );
 
     // VK_EXT_conditional_rendering
-    vkCmdBeginConditionalRenderingEXT              = cast( PFN_vkCmdBeginConditionalRenderingEXT              ) vkGetDeviceProcAddr( device, "vkCmdBeginConditionalRenderingEXT" );
-    vkCmdEndConditionalRenderingEXT                = cast( PFN_vkCmdEndConditionalRenderingEXT                ) vkGetDeviceProcAddr( device, "vkCmdEndConditionalRenderingEXT" );
+    vkCmdBeginConditionalRenderingEXT                 = cast( PFN_vkCmdBeginConditionalRenderingEXT                 ) vkGetDeviceProcAddr( device, "vkCmdBeginConditionalRenderingEXT" );
+    vkCmdEndConditionalRenderingEXT                   = cast( PFN_vkCmdEndConditionalRenderingEXT                   ) vkGetDeviceProcAddr( device, "vkCmdEndConditionalRenderingEXT" );
 
     // VK_NVX_device_generated_commands
-    vkCmdProcessCommandsNVX                        = cast( PFN_vkCmdProcessCommandsNVX                        ) vkGetDeviceProcAddr( device, "vkCmdProcessCommandsNVX" );
-    vkCmdReserveSpaceForCommandsNVX                = cast( PFN_vkCmdReserveSpaceForCommandsNVX                ) vkGetDeviceProcAddr( device, "vkCmdReserveSpaceForCommandsNVX" );
-    vkCreateIndirectCommandsLayoutNVX              = cast( PFN_vkCreateIndirectCommandsLayoutNVX              ) vkGetDeviceProcAddr( device, "vkCreateIndirectCommandsLayoutNVX" );
-    vkDestroyIndirectCommandsLayoutNVX             = cast( PFN_vkDestroyIndirectCommandsLayoutNVX             ) vkGetDeviceProcAddr( device, "vkDestroyIndirectCommandsLayoutNVX" );
-    vkCreateObjectTableNVX                         = cast( PFN_vkCreateObjectTableNVX                         ) vkGetDeviceProcAddr( device, "vkCreateObjectTableNVX" );
-    vkDestroyObjectTableNVX                        = cast( PFN_vkDestroyObjectTableNVX                        ) vkGetDeviceProcAddr( device, "vkDestroyObjectTableNVX" );
-    vkRegisterObjectsNVX                           = cast( PFN_vkRegisterObjectsNVX                           ) vkGetDeviceProcAddr( device, "vkRegisterObjectsNVX" );
-    vkUnregisterObjectsNVX                         = cast( PFN_vkUnregisterObjectsNVX                         ) vkGetDeviceProcAddr( device, "vkUnregisterObjectsNVX" );
+    vkCmdProcessCommandsNVX                           = cast( PFN_vkCmdProcessCommandsNVX                           ) vkGetDeviceProcAddr( device, "vkCmdProcessCommandsNVX" );
+    vkCmdReserveSpaceForCommandsNVX                   = cast( PFN_vkCmdReserveSpaceForCommandsNVX                   ) vkGetDeviceProcAddr( device, "vkCmdReserveSpaceForCommandsNVX" );
+    vkCreateIndirectCommandsLayoutNVX                 = cast( PFN_vkCreateIndirectCommandsLayoutNVX                 ) vkGetDeviceProcAddr( device, "vkCreateIndirectCommandsLayoutNVX" );
+    vkDestroyIndirectCommandsLayoutNVX                = cast( PFN_vkDestroyIndirectCommandsLayoutNVX                ) vkGetDeviceProcAddr( device, "vkDestroyIndirectCommandsLayoutNVX" );
+    vkCreateObjectTableNVX                            = cast( PFN_vkCreateObjectTableNVX                            ) vkGetDeviceProcAddr( device, "vkCreateObjectTableNVX" );
+    vkDestroyObjectTableNVX                           = cast( PFN_vkDestroyObjectTableNVX                           ) vkGetDeviceProcAddr( device, "vkDestroyObjectTableNVX" );
+    vkRegisterObjectsNVX                              = cast( PFN_vkRegisterObjectsNVX                              ) vkGetDeviceProcAddr( device, "vkRegisterObjectsNVX" );
+    vkUnregisterObjectsNVX                            = cast( PFN_vkUnregisterObjectsNVX                            ) vkGetDeviceProcAddr( device, "vkUnregisterObjectsNVX" );
 
     // VK_NV_clip_space_w_scaling
-    vkCmdSetViewportWScalingNV                     = cast( PFN_vkCmdSetViewportWScalingNV                     ) vkGetDeviceProcAddr( device, "vkCmdSetViewportWScalingNV" );
+    vkCmdSetViewportWScalingNV                        = cast( PFN_vkCmdSetViewportWScalingNV                        ) vkGetDeviceProcAddr( device, "vkCmdSetViewportWScalingNV" );
 
     // VK_EXT_display_control
-    vkDisplayPowerControlEXT                       = cast( PFN_vkDisplayPowerControlEXT                       ) vkGetDeviceProcAddr( device, "vkDisplayPowerControlEXT" );
-    vkRegisterDeviceEventEXT                       = cast( PFN_vkRegisterDeviceEventEXT                       ) vkGetDeviceProcAddr( device, "vkRegisterDeviceEventEXT" );
-    vkRegisterDisplayEventEXT                      = cast( PFN_vkRegisterDisplayEventEXT                      ) vkGetDeviceProcAddr( device, "vkRegisterDisplayEventEXT" );
-    vkGetSwapchainCounterEXT                       = cast( PFN_vkGetSwapchainCounterEXT                       ) vkGetDeviceProcAddr( device, "vkGetSwapchainCounterEXT" );
+    vkDisplayPowerControlEXT                          = cast( PFN_vkDisplayPowerControlEXT                          ) vkGetDeviceProcAddr( device, "vkDisplayPowerControlEXT" );
+    vkRegisterDeviceEventEXT                          = cast( PFN_vkRegisterDeviceEventEXT                          ) vkGetDeviceProcAddr( device, "vkRegisterDeviceEventEXT" );
+    vkRegisterDisplayEventEXT                         = cast( PFN_vkRegisterDisplayEventEXT                         ) vkGetDeviceProcAddr( device, "vkRegisterDisplayEventEXT" );
+    vkGetSwapchainCounterEXT                          = cast( PFN_vkGetSwapchainCounterEXT                          ) vkGetDeviceProcAddr( device, "vkGetSwapchainCounterEXT" );
 
     // VK_GOOGLE_display_timing
-    vkGetRefreshCycleDurationGOOGLE                = cast( PFN_vkGetRefreshCycleDurationGOOGLE                ) vkGetDeviceProcAddr( device, "vkGetRefreshCycleDurationGOOGLE" );
-    vkGetPastPresentationTimingGOOGLE              = cast( PFN_vkGetPastPresentationTimingGOOGLE              ) vkGetDeviceProcAddr( device, "vkGetPastPresentationTimingGOOGLE" );
+    vkGetRefreshCycleDurationGOOGLE                   = cast( PFN_vkGetRefreshCycleDurationGOOGLE                   ) vkGetDeviceProcAddr( device, "vkGetRefreshCycleDurationGOOGLE" );
+    vkGetPastPresentationTimingGOOGLE                 = cast( PFN_vkGetPastPresentationTimingGOOGLE                 ) vkGetDeviceProcAddr( device, "vkGetPastPresentationTimingGOOGLE" );
 
     // VK_EXT_discard_rectangles
-    vkCmdSetDiscardRectangleEXT                    = cast( PFN_vkCmdSetDiscardRectangleEXT                    ) vkGetDeviceProcAddr( device, "vkCmdSetDiscardRectangleEXT" );
+    vkCmdSetDiscardRectangleEXT                       = cast( PFN_vkCmdSetDiscardRectangleEXT                       ) vkGetDeviceProcAddr( device, "vkCmdSetDiscardRectangleEXT" );
 
     // VK_EXT_hdr_metadata
-    vkSetHdrMetadataEXT                            = cast( PFN_vkSetHdrMetadataEXT                            ) vkGetDeviceProcAddr( device, "vkSetHdrMetadataEXT" );
+    vkSetHdrMetadataEXT                               = cast( PFN_vkSetHdrMetadataEXT                               ) vkGetDeviceProcAddr( device, "vkSetHdrMetadataEXT" );
 
     // VK_EXT_debug_utils
-    vkSetDebugUtilsObjectNameEXT                   = cast( PFN_vkSetDebugUtilsObjectNameEXT                   ) vkGetDeviceProcAddr( device, "vkSetDebugUtilsObjectNameEXT" );
-    vkSetDebugUtilsObjectTagEXT                    = cast( PFN_vkSetDebugUtilsObjectTagEXT                    ) vkGetDeviceProcAddr( device, "vkSetDebugUtilsObjectTagEXT" );
-    vkQueueBeginDebugUtilsLabelEXT                 = cast( PFN_vkQueueBeginDebugUtilsLabelEXT                 ) vkGetDeviceProcAddr( device, "vkQueueBeginDebugUtilsLabelEXT" );
-    vkQueueEndDebugUtilsLabelEXT                   = cast( PFN_vkQueueEndDebugUtilsLabelEXT                   ) vkGetDeviceProcAddr( device, "vkQueueEndDebugUtilsLabelEXT" );
-    vkQueueInsertDebugUtilsLabelEXT                = cast( PFN_vkQueueInsertDebugUtilsLabelEXT                ) vkGetDeviceProcAddr( device, "vkQueueInsertDebugUtilsLabelEXT" );
-    vkCmdBeginDebugUtilsLabelEXT                   = cast( PFN_vkCmdBeginDebugUtilsLabelEXT                   ) vkGetDeviceProcAddr( device, "vkCmdBeginDebugUtilsLabelEXT" );
-    vkCmdEndDebugUtilsLabelEXT                     = cast( PFN_vkCmdEndDebugUtilsLabelEXT                     ) vkGetDeviceProcAddr( device, "vkCmdEndDebugUtilsLabelEXT" );
-    vkCmdInsertDebugUtilsLabelEXT                  = cast( PFN_vkCmdInsertDebugUtilsLabelEXT                  ) vkGetDeviceProcAddr( device, "vkCmdInsertDebugUtilsLabelEXT" );
+    vkSetDebugUtilsObjectNameEXT                      = cast( PFN_vkSetDebugUtilsObjectNameEXT                      ) vkGetDeviceProcAddr( device, "vkSetDebugUtilsObjectNameEXT" );
+    vkSetDebugUtilsObjectTagEXT                       = cast( PFN_vkSetDebugUtilsObjectTagEXT                       ) vkGetDeviceProcAddr( device, "vkSetDebugUtilsObjectTagEXT" );
+    vkQueueBeginDebugUtilsLabelEXT                    = cast( PFN_vkQueueBeginDebugUtilsLabelEXT                    ) vkGetDeviceProcAddr( device, "vkQueueBeginDebugUtilsLabelEXT" );
+    vkQueueEndDebugUtilsLabelEXT                      = cast( PFN_vkQueueEndDebugUtilsLabelEXT                      ) vkGetDeviceProcAddr( device, "vkQueueEndDebugUtilsLabelEXT" );
+    vkQueueInsertDebugUtilsLabelEXT                   = cast( PFN_vkQueueInsertDebugUtilsLabelEXT                   ) vkGetDeviceProcAddr( device, "vkQueueInsertDebugUtilsLabelEXT" );
+    vkCmdBeginDebugUtilsLabelEXT                      = cast( PFN_vkCmdBeginDebugUtilsLabelEXT                      ) vkGetDeviceProcAddr( device, "vkCmdBeginDebugUtilsLabelEXT" );
+    vkCmdEndDebugUtilsLabelEXT                        = cast( PFN_vkCmdEndDebugUtilsLabelEXT                        ) vkGetDeviceProcAddr( device, "vkCmdEndDebugUtilsLabelEXT" );
+    vkCmdInsertDebugUtilsLabelEXT                     = cast( PFN_vkCmdInsertDebugUtilsLabelEXT                     ) vkGetDeviceProcAddr( device, "vkCmdInsertDebugUtilsLabelEXT" );
 
     // VK_EXT_sample_locations
-    vkCmdSetSampleLocationsEXT                     = cast( PFN_vkCmdSetSampleLocationsEXT                     ) vkGetDeviceProcAddr( device, "vkCmdSetSampleLocationsEXT" );
+    vkCmdSetSampleLocationsEXT                        = cast( PFN_vkCmdSetSampleLocationsEXT                        ) vkGetDeviceProcAddr( device, "vkCmdSetSampleLocationsEXT" );
 
     // VK_EXT_image_drm_format_modifier
-    vkGetImageDrmFormatModifierPropertiesEXT       = cast( PFN_vkGetImageDrmFormatModifierPropertiesEXT       ) vkGetDeviceProcAddr( device, "vkGetImageDrmFormatModifierPropertiesEXT" );
+    vkGetImageDrmFormatModifierPropertiesEXT          = cast( PFN_vkGetImageDrmFormatModifierPropertiesEXT          ) vkGetDeviceProcAddr( device, "vkGetImageDrmFormatModifierPropertiesEXT" );
 
     // VK_EXT_validation_cache
-    vkCreateValidationCacheEXT                     = cast( PFN_vkCreateValidationCacheEXT                     ) vkGetDeviceProcAddr( device, "vkCreateValidationCacheEXT" );
-    vkDestroyValidationCacheEXT                    = cast( PFN_vkDestroyValidationCacheEXT                    ) vkGetDeviceProcAddr( device, "vkDestroyValidationCacheEXT" );
-    vkMergeValidationCachesEXT                     = cast( PFN_vkMergeValidationCachesEXT                     ) vkGetDeviceProcAddr( device, "vkMergeValidationCachesEXT" );
-    vkGetValidationCacheDataEXT                    = cast( PFN_vkGetValidationCacheDataEXT                    ) vkGetDeviceProcAddr( device, "vkGetValidationCacheDataEXT" );
+    vkCreateValidationCacheEXT                        = cast( PFN_vkCreateValidationCacheEXT                        ) vkGetDeviceProcAddr( device, "vkCreateValidationCacheEXT" );
+    vkDestroyValidationCacheEXT                       = cast( PFN_vkDestroyValidationCacheEXT                       ) vkGetDeviceProcAddr( device, "vkDestroyValidationCacheEXT" );
+    vkMergeValidationCachesEXT                        = cast( PFN_vkMergeValidationCachesEXT                        ) vkGetDeviceProcAddr( device, "vkMergeValidationCachesEXT" );
+    vkGetValidationCacheDataEXT                       = cast( PFN_vkGetValidationCacheDataEXT                       ) vkGetDeviceProcAddr( device, "vkGetValidationCacheDataEXT" );
 
     // VK_NV_shading_rate_image
-    vkCmdBindShadingRateImageNV                    = cast( PFN_vkCmdBindShadingRateImageNV                    ) vkGetDeviceProcAddr( device, "vkCmdBindShadingRateImageNV" );
-    vkCmdSetViewportShadingRatePaletteNV           = cast( PFN_vkCmdSetViewportShadingRatePaletteNV           ) vkGetDeviceProcAddr( device, "vkCmdSetViewportShadingRatePaletteNV" );
-    vkCmdSetCoarseSampleOrderNV                    = cast( PFN_vkCmdSetCoarseSampleOrderNV                    ) vkGetDeviceProcAddr( device, "vkCmdSetCoarseSampleOrderNV" );
+    vkCmdBindShadingRateImageNV                       = cast( PFN_vkCmdBindShadingRateImageNV                       ) vkGetDeviceProcAddr( device, "vkCmdBindShadingRateImageNV" );
+    vkCmdSetViewportShadingRatePaletteNV              = cast( PFN_vkCmdSetViewportShadingRatePaletteNV              ) vkGetDeviceProcAddr( device, "vkCmdSetViewportShadingRatePaletteNV" );
+    vkCmdSetCoarseSampleOrderNV                       = cast( PFN_vkCmdSetCoarseSampleOrderNV                       ) vkGetDeviceProcAddr( device, "vkCmdSetCoarseSampleOrderNV" );
 
     // VK_NV_ray_tracing
-    vkCreateAccelerationStructureNV                = cast( PFN_vkCreateAccelerationStructureNV                ) vkGetDeviceProcAddr( device, "vkCreateAccelerationStructureNV" );
-    vkDestroyAccelerationStructureNV               = cast( PFN_vkDestroyAccelerationStructureNV               ) vkGetDeviceProcAddr( device, "vkDestroyAccelerationStructureNV" );
-    vkGetAccelerationStructureMemoryRequirementsNV = cast( PFN_vkGetAccelerationStructureMemoryRequirementsNV ) vkGetDeviceProcAddr( device, "vkGetAccelerationStructureMemoryRequirementsNV" );
-    vkBindAccelerationStructureMemoryNV            = cast( PFN_vkBindAccelerationStructureMemoryNV            ) vkGetDeviceProcAddr( device, "vkBindAccelerationStructureMemoryNV" );
-    vkCmdBuildAccelerationStructureNV              = cast( PFN_vkCmdBuildAccelerationStructureNV              ) vkGetDeviceProcAddr( device, "vkCmdBuildAccelerationStructureNV" );
-    vkCmdCopyAccelerationStructureNV               = cast( PFN_vkCmdCopyAccelerationStructureNV               ) vkGetDeviceProcAddr( device, "vkCmdCopyAccelerationStructureNV" );
-    vkCmdTraceRaysNV                               = cast( PFN_vkCmdTraceRaysNV                               ) vkGetDeviceProcAddr( device, "vkCmdTraceRaysNV" );
-    vkCreateRayTracingPipelinesNV                  = cast( PFN_vkCreateRayTracingPipelinesNV                  ) vkGetDeviceProcAddr( device, "vkCreateRayTracingPipelinesNV" );
-    vkGetRayTracingShaderGroupHandlesNV            = cast( PFN_vkGetRayTracingShaderGroupHandlesNV            ) vkGetDeviceProcAddr( device, "vkGetRayTracingShaderGroupHandlesNV" );
-    vkGetAccelerationStructureHandleNV             = cast( PFN_vkGetAccelerationStructureHandleNV             ) vkGetDeviceProcAddr( device, "vkGetAccelerationStructureHandleNV" );
-    vkCmdWriteAccelerationStructuresPropertiesNV   = cast( PFN_vkCmdWriteAccelerationStructuresPropertiesNV   ) vkGetDeviceProcAddr( device, "vkCmdWriteAccelerationStructuresPropertiesNV" );
-    vkCompileDeferredNV                            = cast( PFN_vkCompileDeferredNV                            ) vkGetDeviceProcAddr( device, "vkCompileDeferredNV" );
+    vkCreateAccelerationStructureNV                   = cast( PFN_vkCreateAccelerationStructureNV                   ) vkGetDeviceProcAddr( device, "vkCreateAccelerationStructureNV" );
+    vkDestroyAccelerationStructureNV                  = cast( PFN_vkDestroyAccelerationStructureNV                  ) vkGetDeviceProcAddr( device, "vkDestroyAccelerationStructureNV" );
+    vkGetAccelerationStructureMemoryRequirementsNV    = cast( PFN_vkGetAccelerationStructureMemoryRequirementsNV    ) vkGetDeviceProcAddr( device, "vkGetAccelerationStructureMemoryRequirementsNV" );
+    vkBindAccelerationStructureMemoryNV               = cast( PFN_vkBindAccelerationStructureMemoryNV               ) vkGetDeviceProcAddr( device, "vkBindAccelerationStructureMemoryNV" );
+    vkCmdBuildAccelerationStructureNV                 = cast( PFN_vkCmdBuildAccelerationStructureNV                 ) vkGetDeviceProcAddr( device, "vkCmdBuildAccelerationStructureNV" );
+    vkCmdCopyAccelerationStructureNV                  = cast( PFN_vkCmdCopyAccelerationStructureNV                  ) vkGetDeviceProcAddr( device, "vkCmdCopyAccelerationStructureNV" );
+    vkCmdTraceRaysNV                                  = cast( PFN_vkCmdTraceRaysNV                                  ) vkGetDeviceProcAddr( device, "vkCmdTraceRaysNV" );
+    vkCreateRayTracingPipelinesNV                     = cast( PFN_vkCreateRayTracingPipelinesNV                     ) vkGetDeviceProcAddr( device, "vkCreateRayTracingPipelinesNV" );
+    vkGetRayTracingShaderGroupHandlesNV               = cast( PFN_vkGetRayTracingShaderGroupHandlesNV               ) vkGetDeviceProcAddr( device, "vkGetRayTracingShaderGroupHandlesNV" );
+    vkGetAccelerationStructureHandleNV                = cast( PFN_vkGetAccelerationStructureHandleNV                ) vkGetDeviceProcAddr( device, "vkGetAccelerationStructureHandleNV" );
+    vkCmdWriteAccelerationStructuresPropertiesNV      = cast( PFN_vkCmdWriteAccelerationStructuresPropertiesNV      ) vkGetDeviceProcAddr( device, "vkCmdWriteAccelerationStructuresPropertiesNV" );
+    vkCompileDeferredNV                               = cast( PFN_vkCompileDeferredNV                               ) vkGetDeviceProcAddr( device, "vkCompileDeferredNV" );
 
     // VK_EXT_external_memory_host
-    vkGetMemoryHostPointerPropertiesEXT            = cast( PFN_vkGetMemoryHostPointerPropertiesEXT            ) vkGetDeviceProcAddr( device, "vkGetMemoryHostPointerPropertiesEXT" );
+    vkGetMemoryHostPointerPropertiesEXT               = cast( PFN_vkGetMemoryHostPointerPropertiesEXT               ) vkGetDeviceProcAddr( device, "vkGetMemoryHostPointerPropertiesEXT" );
 
     // VK_AMD_buffer_marker
-    vkCmdWriteBufferMarkerAMD                      = cast( PFN_vkCmdWriteBufferMarkerAMD                      ) vkGetDeviceProcAddr( device, "vkCmdWriteBufferMarkerAMD" );
+    vkCmdWriteBufferMarkerAMD                         = cast( PFN_vkCmdWriteBufferMarkerAMD                         ) vkGetDeviceProcAddr( device, "vkCmdWriteBufferMarkerAMD" );
 
     // VK_EXT_calibrated_timestamps
-    vkGetCalibratedTimestampsEXT                   = cast( PFN_vkGetCalibratedTimestampsEXT                   ) vkGetDeviceProcAddr( device, "vkGetCalibratedTimestampsEXT" );
+    vkGetCalibratedTimestampsEXT                      = cast( PFN_vkGetCalibratedTimestampsEXT                      ) vkGetDeviceProcAddr( device, "vkGetCalibratedTimestampsEXT" );
 
     // VK_NV_mesh_shader
-    vkCmdDrawMeshTasksNV                           = cast( PFN_vkCmdDrawMeshTasksNV                           ) vkGetDeviceProcAddr( device, "vkCmdDrawMeshTasksNV" );
-    vkCmdDrawMeshTasksIndirectNV                   = cast( PFN_vkCmdDrawMeshTasksIndirectNV                   ) vkGetDeviceProcAddr( device, "vkCmdDrawMeshTasksIndirectNV" );
-    vkCmdDrawMeshTasksIndirectCountNV              = cast( PFN_vkCmdDrawMeshTasksIndirectCountNV              ) vkGetDeviceProcAddr( device, "vkCmdDrawMeshTasksIndirectCountNV" );
+    vkCmdDrawMeshTasksNV                              = cast( PFN_vkCmdDrawMeshTasksNV                              ) vkGetDeviceProcAddr( device, "vkCmdDrawMeshTasksNV" );
+    vkCmdDrawMeshTasksIndirectNV                      = cast( PFN_vkCmdDrawMeshTasksIndirectNV                      ) vkGetDeviceProcAddr( device, "vkCmdDrawMeshTasksIndirectNV" );
+    vkCmdDrawMeshTasksIndirectCountNV                 = cast( PFN_vkCmdDrawMeshTasksIndirectCountNV                 ) vkGetDeviceProcAddr( device, "vkCmdDrawMeshTasksIndirectCountNV" );
 
     // VK_NV_scissor_exclusive
-    vkCmdSetExclusiveScissorNV                     = cast( PFN_vkCmdSetExclusiveScissorNV                     ) vkGetDeviceProcAddr( device, "vkCmdSetExclusiveScissorNV" );
+    vkCmdSetExclusiveScissorNV                        = cast( PFN_vkCmdSetExclusiveScissorNV                        ) vkGetDeviceProcAddr( device, "vkCmdSetExclusiveScissorNV" );
 
     // VK_NV_device_diagnostic_checkpoints
-    vkCmdSetCheckpointNV                           = cast( PFN_vkCmdSetCheckpointNV                           ) vkGetDeviceProcAddr( device, "vkCmdSetCheckpointNV" );
-    vkGetQueueCheckpointDataNV                     = cast( PFN_vkGetQueueCheckpointDataNV                     ) vkGetDeviceProcAddr( device, "vkGetQueueCheckpointDataNV" );
+    vkCmdSetCheckpointNV                              = cast( PFN_vkCmdSetCheckpointNV                              ) vkGetDeviceProcAddr( device, "vkCmdSetCheckpointNV" );
+    vkGetQueueCheckpointDataNV                        = cast( PFN_vkGetQueueCheckpointDataNV                        ) vkGetDeviceProcAddr( device, "vkGetQueueCheckpointDataNV" );
 
     // VK_INTEL_performance_query
-    vkInitializePerformanceApiINTEL                = cast( PFN_vkInitializePerformanceApiINTEL                ) vkGetDeviceProcAddr( device, "vkInitializePerformanceApiINTEL" );
-    vkUninitializePerformanceApiINTEL              = cast( PFN_vkUninitializePerformanceApiINTEL              ) vkGetDeviceProcAddr( device, "vkUninitializePerformanceApiINTEL" );
-    vkCmdSetPerformanceMarkerINTEL                 = cast( PFN_vkCmdSetPerformanceMarkerINTEL                 ) vkGetDeviceProcAddr( device, "vkCmdSetPerformanceMarkerINTEL" );
-    vkCmdSetPerformanceStreamMarkerINTEL           = cast( PFN_vkCmdSetPerformanceStreamMarkerINTEL           ) vkGetDeviceProcAddr( device, "vkCmdSetPerformanceStreamMarkerINTEL" );
-    vkCmdSetPerformanceOverrideINTEL               = cast( PFN_vkCmdSetPerformanceOverrideINTEL               ) vkGetDeviceProcAddr( device, "vkCmdSetPerformanceOverrideINTEL" );
-    vkAcquirePerformanceConfigurationINTEL         = cast( PFN_vkAcquirePerformanceConfigurationINTEL         ) vkGetDeviceProcAddr( device, "vkAcquirePerformanceConfigurationINTEL" );
-    vkReleasePerformanceConfigurationINTEL         = cast( PFN_vkReleasePerformanceConfigurationINTEL         ) vkGetDeviceProcAddr( device, "vkReleasePerformanceConfigurationINTEL" );
-    vkQueueSetPerformanceConfigurationINTEL        = cast( PFN_vkQueueSetPerformanceConfigurationINTEL        ) vkGetDeviceProcAddr( device, "vkQueueSetPerformanceConfigurationINTEL" );
-    vkGetPerformanceParameterINTEL                 = cast( PFN_vkGetPerformanceParameterINTEL                 ) vkGetDeviceProcAddr( device, "vkGetPerformanceParameterINTEL" );
+    vkInitializePerformanceApiINTEL                   = cast( PFN_vkInitializePerformanceApiINTEL                   ) vkGetDeviceProcAddr( device, "vkInitializePerformanceApiINTEL" );
+    vkUninitializePerformanceApiINTEL                 = cast( PFN_vkUninitializePerformanceApiINTEL                 ) vkGetDeviceProcAddr( device, "vkUninitializePerformanceApiINTEL" );
+    vkCmdSetPerformanceMarkerINTEL                    = cast( PFN_vkCmdSetPerformanceMarkerINTEL                    ) vkGetDeviceProcAddr( device, "vkCmdSetPerformanceMarkerINTEL" );
+    vkCmdSetPerformanceStreamMarkerINTEL              = cast( PFN_vkCmdSetPerformanceStreamMarkerINTEL              ) vkGetDeviceProcAddr( device, "vkCmdSetPerformanceStreamMarkerINTEL" );
+    vkCmdSetPerformanceOverrideINTEL                  = cast( PFN_vkCmdSetPerformanceOverrideINTEL                  ) vkGetDeviceProcAddr( device, "vkCmdSetPerformanceOverrideINTEL" );
+    vkAcquirePerformanceConfigurationINTEL            = cast( PFN_vkAcquirePerformanceConfigurationINTEL            ) vkGetDeviceProcAddr( device, "vkAcquirePerformanceConfigurationINTEL" );
+    vkReleasePerformanceConfigurationINTEL            = cast( PFN_vkReleasePerformanceConfigurationINTEL            ) vkGetDeviceProcAddr( device, "vkReleasePerformanceConfigurationINTEL" );
+    vkQueueSetPerformanceConfigurationINTEL           = cast( PFN_vkQueueSetPerformanceConfigurationINTEL           ) vkGetDeviceProcAddr( device, "vkQueueSetPerformanceConfigurationINTEL" );
+    vkGetPerformanceParameterINTEL                    = cast( PFN_vkGetPerformanceParameterINTEL                    ) vkGetDeviceProcAddr( device, "vkGetPerformanceParameterINTEL" );
 
     // VK_AMD_display_native_hdr
-    vkSetLocalDimmingAMD                           = cast( PFN_vkSetLocalDimmingAMD                           ) vkGetDeviceProcAddr( device, "vkSetLocalDimmingAMD" );
+    vkSetLocalDimmingAMD                              = cast( PFN_vkSetLocalDimmingAMD                              ) vkGetDeviceProcAddr( device, "vkSetLocalDimmingAMD" );
 
     // VK_EXT_buffer_device_address
-    vkGetBufferDeviceAddressEXT                    = cast( PFN_vkGetBufferDeviceAddressEXT                    ) vkGetDeviceProcAddr( device, "vkGetBufferDeviceAddressEXT" );
+    vkGetBufferDeviceAddressEXT                       = cast( PFN_vkGetBufferDeviceAddressEXT                       ) vkGetDeviceProcAddr( device, "vkGetBufferDeviceAddressEXT" );
 
     // VK_EXT_line_rasterization
-    vkCmdSetLineStippleEXT                         = cast( PFN_vkCmdSetLineStippleEXT                         ) vkGetDeviceProcAddr( device, "vkCmdSetLineStippleEXT" );
+    vkCmdSetLineStippleEXT                            = cast( PFN_vkCmdSetLineStippleEXT                            ) vkGetDeviceProcAddr( device, "vkCmdSetLineStippleEXT" );
 
     // VK_EXT_host_query_reset
-    vkResetQueryPoolEXT                            = cast( PFN_vkResetQueryPoolEXT                            ) vkGetDeviceProcAddr( device, "vkResetQueryPoolEXT" );
+    vkResetQueryPoolEXT                               = cast( PFN_vkResetQueryPoolEXT                               ) vkGetDeviceProcAddr( device, "vkResetQueryPoolEXT" );
 }
 

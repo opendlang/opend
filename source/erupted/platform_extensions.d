@@ -810,38 +810,38 @@ mixin template Platform_Extensions( extensions... ) {
 
             // VK_KHR_external_memory_win32 : load instance based device level function definitions
             static if( __traits( isSame, extension, KHR_external_memory_win32 )) {
-                vkGetMemoryWin32HandleKHR                      = cast( PFN_vkGetMemoryWin32HandleKHR                      ) vkGetInstanceProcAddr( instance, "vkGetMemoryWin32HandleKHR" );
-                vkGetMemoryWin32HandlePropertiesKHR            = cast( PFN_vkGetMemoryWin32HandlePropertiesKHR            ) vkGetInstanceProcAddr( instance, "vkGetMemoryWin32HandlePropertiesKHR" );
+                vkGetMemoryWin32HandleKHR                         = cast( PFN_vkGetMemoryWin32HandleKHR                         ) vkGetInstanceProcAddr( instance, "vkGetMemoryWin32HandleKHR" );
+                vkGetMemoryWin32HandlePropertiesKHR               = cast( PFN_vkGetMemoryWin32HandlePropertiesKHR               ) vkGetInstanceProcAddr( instance, "vkGetMemoryWin32HandlePropertiesKHR" );
             }
 
             // VK_KHR_external_semaphore_win32 : load instance based device level function definitions
             else static if( __traits( isSame, extension, KHR_external_semaphore_win32 )) {
-                vkImportSemaphoreWin32HandleKHR                = cast( PFN_vkImportSemaphoreWin32HandleKHR                ) vkGetInstanceProcAddr( instance, "vkImportSemaphoreWin32HandleKHR" );
-                vkGetSemaphoreWin32HandleKHR                   = cast( PFN_vkGetSemaphoreWin32HandleKHR                   ) vkGetInstanceProcAddr( instance, "vkGetSemaphoreWin32HandleKHR" );
+                vkImportSemaphoreWin32HandleKHR                   = cast( PFN_vkImportSemaphoreWin32HandleKHR                   ) vkGetInstanceProcAddr( instance, "vkImportSemaphoreWin32HandleKHR" );
+                vkGetSemaphoreWin32HandleKHR                      = cast( PFN_vkGetSemaphoreWin32HandleKHR                      ) vkGetInstanceProcAddr( instance, "vkGetSemaphoreWin32HandleKHR" );
             }
 
             // VK_KHR_external_fence_win32 : load instance based device level function definitions
             else static if( __traits( isSame, extension, KHR_external_fence_win32 )) {
-                vkImportFenceWin32HandleKHR                    = cast( PFN_vkImportFenceWin32HandleKHR                    ) vkGetInstanceProcAddr( instance, "vkImportFenceWin32HandleKHR" );
-                vkGetFenceWin32HandleKHR                       = cast( PFN_vkGetFenceWin32HandleKHR                       ) vkGetInstanceProcAddr( instance, "vkGetFenceWin32HandleKHR" );
+                vkImportFenceWin32HandleKHR                       = cast( PFN_vkImportFenceWin32HandleKHR                       ) vkGetInstanceProcAddr( instance, "vkImportFenceWin32HandleKHR" );
+                vkGetFenceWin32HandleKHR                          = cast( PFN_vkGetFenceWin32HandleKHR                          ) vkGetInstanceProcAddr( instance, "vkGetFenceWin32HandleKHR" );
             }
 
             // VK_NV_external_memory_win32 : load instance based device level function definitions
             else static if( __traits( isSame, extension, NV_external_memory_win32 )) {
-                vkGetMemoryWin32HandleNV                       = cast( PFN_vkGetMemoryWin32HandleNV                       ) vkGetInstanceProcAddr( instance, "vkGetMemoryWin32HandleNV" );
+                vkGetMemoryWin32HandleNV                          = cast( PFN_vkGetMemoryWin32HandleNV                          ) vkGetInstanceProcAddr( instance, "vkGetMemoryWin32HandleNV" );
             }
 
             // VK_ANDROID_external_memory_android_hardware_buffer : load instance based device level function definitions
             else static if( __traits( isSame, extension, ANDROID_external_memory_android_hardware_buffer )) {
-                vkGetAndroidHardwareBufferPropertiesANDROID    = cast( PFN_vkGetAndroidHardwareBufferPropertiesANDROID    ) vkGetInstanceProcAddr( instance, "vkGetAndroidHardwareBufferPropertiesANDROID" );
-                vkGetMemoryAndroidHardwareBufferANDROID        = cast( PFN_vkGetMemoryAndroidHardwareBufferANDROID        ) vkGetInstanceProcAddr( instance, "vkGetMemoryAndroidHardwareBufferANDROID" );
+                vkGetAndroidHardwareBufferPropertiesANDROID       = cast( PFN_vkGetAndroidHardwareBufferPropertiesANDROID       ) vkGetInstanceProcAddr( instance, "vkGetAndroidHardwareBufferPropertiesANDROID" );
+                vkGetMemoryAndroidHardwareBufferANDROID           = cast( PFN_vkGetMemoryAndroidHardwareBufferANDROID           ) vkGetInstanceProcAddr( instance, "vkGetMemoryAndroidHardwareBufferANDROID" );
             }
 
             // VK_EXT_full_screen_exclusive : load instance based device level function definitions
             else static if( __traits( isSame, extension, EXT_full_screen_exclusive )) {
-                vkAcquireFullScreenExclusiveModeEXT            = cast( PFN_vkAcquireFullScreenExclusiveModeEXT            ) vkGetInstanceProcAddr( instance, "vkAcquireFullScreenExclusiveModeEXT" );
-                vkReleaseFullScreenExclusiveModeEXT            = cast( PFN_vkReleaseFullScreenExclusiveModeEXT            ) vkGetInstanceProcAddr( instance, "vkReleaseFullScreenExclusiveModeEXT" );
-                vkGetDeviceGroupSurfacePresentModes2EXT        = cast( PFN_vkGetDeviceGroupSurfacePresentModes2EXT        ) vkGetInstanceProcAddr( instance, "vkGetDeviceGroupSurfacePresentModes2EXT" );
+                vkAcquireFullScreenExclusiveModeEXT               = cast( PFN_vkAcquireFullScreenExclusiveModeEXT               ) vkGetInstanceProcAddr( instance, "vkAcquireFullScreenExclusiveModeEXT" );
+                vkReleaseFullScreenExclusiveModeEXT               = cast( PFN_vkReleaseFullScreenExclusiveModeEXT               ) vkGetInstanceProcAddr( instance, "vkReleaseFullScreenExclusiveModeEXT" );
+                vkGetDeviceGroupSurfacePresentModes2EXT           = cast( PFN_vkGetDeviceGroupSurfacePresentModes2EXT           ) vkGetInstanceProcAddr( instance, "vkGetDeviceGroupSurfacePresentModes2EXT" );
             }
         }
     }
@@ -859,38 +859,38 @@ mixin template Platform_Extensions( extensions... ) {
 
             // VK_KHR_external_memory_win32 : load device based device level function definitions
             static if( __traits( isSame, extension, KHR_external_memory_win32 )) {
-                vkGetMemoryWin32HandleKHR                      = cast( PFN_vkGetMemoryWin32HandleKHR                      ) vkGetDeviceProcAddr( device, "vkGetMemoryWin32HandleKHR" );
-                vkGetMemoryWin32HandlePropertiesKHR            = cast( PFN_vkGetMemoryWin32HandlePropertiesKHR            ) vkGetDeviceProcAddr( device, "vkGetMemoryWin32HandlePropertiesKHR" );
+                vkGetMemoryWin32HandleKHR                         = cast( PFN_vkGetMemoryWin32HandleKHR                         ) vkGetDeviceProcAddr( device, "vkGetMemoryWin32HandleKHR" );
+                vkGetMemoryWin32HandlePropertiesKHR               = cast( PFN_vkGetMemoryWin32HandlePropertiesKHR               ) vkGetDeviceProcAddr( device, "vkGetMemoryWin32HandlePropertiesKHR" );
             }
 
             // VK_KHR_external_semaphore_win32 : load device based device level function definitions
             else static if( __traits( isSame, extension, KHR_external_semaphore_win32 )) {
-                vkImportSemaphoreWin32HandleKHR                = cast( PFN_vkImportSemaphoreWin32HandleKHR                ) vkGetDeviceProcAddr( device, "vkImportSemaphoreWin32HandleKHR" );
-                vkGetSemaphoreWin32HandleKHR                   = cast( PFN_vkGetSemaphoreWin32HandleKHR                   ) vkGetDeviceProcAddr( device, "vkGetSemaphoreWin32HandleKHR" );
+                vkImportSemaphoreWin32HandleKHR                   = cast( PFN_vkImportSemaphoreWin32HandleKHR                   ) vkGetDeviceProcAddr( device, "vkImportSemaphoreWin32HandleKHR" );
+                vkGetSemaphoreWin32HandleKHR                      = cast( PFN_vkGetSemaphoreWin32HandleKHR                      ) vkGetDeviceProcAddr( device, "vkGetSemaphoreWin32HandleKHR" );
             }
 
             // VK_KHR_external_fence_win32 : load device based device level function definitions
             else static if( __traits( isSame, extension, KHR_external_fence_win32 )) {
-                vkImportFenceWin32HandleKHR                    = cast( PFN_vkImportFenceWin32HandleKHR                    ) vkGetDeviceProcAddr( device, "vkImportFenceWin32HandleKHR" );
-                vkGetFenceWin32HandleKHR                       = cast( PFN_vkGetFenceWin32HandleKHR                       ) vkGetDeviceProcAddr( device, "vkGetFenceWin32HandleKHR" );
+                vkImportFenceWin32HandleKHR                       = cast( PFN_vkImportFenceWin32HandleKHR                       ) vkGetDeviceProcAddr( device, "vkImportFenceWin32HandleKHR" );
+                vkGetFenceWin32HandleKHR                          = cast( PFN_vkGetFenceWin32HandleKHR                          ) vkGetDeviceProcAddr( device, "vkGetFenceWin32HandleKHR" );
             }
 
             // VK_NV_external_memory_win32 : load device based device level function definitions
             else static if( __traits( isSame, extension, NV_external_memory_win32 )) {
-                vkGetMemoryWin32HandleNV                       = cast( PFN_vkGetMemoryWin32HandleNV                       ) vkGetDeviceProcAddr( device, "vkGetMemoryWin32HandleNV" );
+                vkGetMemoryWin32HandleNV                          = cast( PFN_vkGetMemoryWin32HandleNV                          ) vkGetDeviceProcAddr( device, "vkGetMemoryWin32HandleNV" );
             }
 
             // VK_ANDROID_external_memory_android_hardware_buffer : load device based device level function definitions
             else static if( __traits( isSame, extension, ANDROID_external_memory_android_hardware_buffer )) {
-                vkGetAndroidHardwareBufferPropertiesANDROID    = cast( PFN_vkGetAndroidHardwareBufferPropertiesANDROID    ) vkGetDeviceProcAddr( device, "vkGetAndroidHardwareBufferPropertiesANDROID" );
-                vkGetMemoryAndroidHardwareBufferANDROID        = cast( PFN_vkGetMemoryAndroidHardwareBufferANDROID        ) vkGetDeviceProcAddr( device, "vkGetMemoryAndroidHardwareBufferANDROID" );
+                vkGetAndroidHardwareBufferPropertiesANDROID       = cast( PFN_vkGetAndroidHardwareBufferPropertiesANDROID       ) vkGetDeviceProcAddr( device, "vkGetAndroidHardwareBufferPropertiesANDROID" );
+                vkGetMemoryAndroidHardwareBufferANDROID           = cast( PFN_vkGetMemoryAndroidHardwareBufferANDROID           ) vkGetDeviceProcAddr( device, "vkGetMemoryAndroidHardwareBufferANDROID" );
             }
 
             // VK_EXT_full_screen_exclusive : load device based device level function definitions
             else static if( __traits( isSame, extension, EXT_full_screen_exclusive )) {
-                vkAcquireFullScreenExclusiveModeEXT            = cast( PFN_vkAcquireFullScreenExclusiveModeEXT            ) vkGetDeviceProcAddr( device, "vkAcquireFullScreenExclusiveModeEXT" );
-                vkReleaseFullScreenExclusiveModeEXT            = cast( PFN_vkReleaseFullScreenExclusiveModeEXT            ) vkGetDeviceProcAddr( device, "vkReleaseFullScreenExclusiveModeEXT" );
-                vkGetDeviceGroupSurfacePresentModes2EXT        = cast( PFN_vkGetDeviceGroupSurfacePresentModes2EXT        ) vkGetDeviceProcAddr( device, "vkGetDeviceGroupSurfacePresentModes2EXT" );
+                vkAcquireFullScreenExclusiveModeEXT               = cast( PFN_vkAcquireFullScreenExclusiveModeEXT               ) vkGetDeviceProcAddr( device, "vkAcquireFullScreenExclusiveModeEXT" );
+                vkReleaseFullScreenExclusiveModeEXT               = cast( PFN_vkReleaseFullScreenExclusiveModeEXT               ) vkGetDeviceProcAddr( device, "vkReleaseFullScreenExclusiveModeEXT" );
+                vkGetDeviceGroupSurfacePresentModes2EXT           = cast( PFN_vkGetDeviceGroupSurfacePresentModes2EXT           ) vkGetDeviceProcAddr( device, "vkGetDeviceGroupSurfacePresentModes2EXT" );
             }
         }
     }
@@ -922,38 +922,38 @@ mixin template Platform_Extensions( extensions... ) {
 
                 // VK_KHR_external_memory_win32 : load dispatch device member function definitions
                 static if( __traits( isSame, extension, KHR_external_memory_win32 )) {
-                    vkGetMemoryWin32HandleKHR                      = cast( PFN_vkGetMemoryWin32HandleKHR                      ) vkGetDeviceProcAddr( device, "vkGetMemoryWin32HandleKHR" );
-                    vkGetMemoryWin32HandlePropertiesKHR            = cast( PFN_vkGetMemoryWin32HandlePropertiesKHR            ) vkGetDeviceProcAddr( device, "vkGetMemoryWin32HandlePropertiesKHR" );
+                    vkGetMemoryWin32HandleKHR                         = cast( PFN_vkGetMemoryWin32HandleKHR                         ) vkGetDeviceProcAddr( device, "vkGetMemoryWin32HandleKHR" );
+                    vkGetMemoryWin32HandlePropertiesKHR               = cast( PFN_vkGetMemoryWin32HandlePropertiesKHR               ) vkGetDeviceProcAddr( device, "vkGetMemoryWin32HandlePropertiesKHR" );
                 }
 
                 // VK_KHR_external_semaphore_win32 : load dispatch device member function definitions
                 else static if( __traits( isSame, extension, KHR_external_semaphore_win32 )) {
-                    vkImportSemaphoreWin32HandleKHR                = cast( PFN_vkImportSemaphoreWin32HandleKHR                ) vkGetDeviceProcAddr( device, "vkImportSemaphoreWin32HandleKHR" );
-                    vkGetSemaphoreWin32HandleKHR                   = cast( PFN_vkGetSemaphoreWin32HandleKHR                   ) vkGetDeviceProcAddr( device, "vkGetSemaphoreWin32HandleKHR" );
+                    vkImportSemaphoreWin32HandleKHR                   = cast( PFN_vkImportSemaphoreWin32HandleKHR                   ) vkGetDeviceProcAddr( device, "vkImportSemaphoreWin32HandleKHR" );
+                    vkGetSemaphoreWin32HandleKHR                      = cast( PFN_vkGetSemaphoreWin32HandleKHR                      ) vkGetDeviceProcAddr( device, "vkGetSemaphoreWin32HandleKHR" );
                 }
 
                 // VK_KHR_external_fence_win32 : load dispatch device member function definitions
                 else static if( __traits( isSame, extension, KHR_external_fence_win32 )) {
-                    vkImportFenceWin32HandleKHR                    = cast( PFN_vkImportFenceWin32HandleKHR                    ) vkGetDeviceProcAddr( device, "vkImportFenceWin32HandleKHR" );
-                    vkGetFenceWin32HandleKHR                       = cast( PFN_vkGetFenceWin32HandleKHR                       ) vkGetDeviceProcAddr( device, "vkGetFenceWin32HandleKHR" );
+                    vkImportFenceWin32HandleKHR                       = cast( PFN_vkImportFenceWin32HandleKHR                       ) vkGetDeviceProcAddr( device, "vkImportFenceWin32HandleKHR" );
+                    vkGetFenceWin32HandleKHR                          = cast( PFN_vkGetFenceWin32HandleKHR                          ) vkGetDeviceProcAddr( device, "vkGetFenceWin32HandleKHR" );
                 }
 
                 // VK_NV_external_memory_win32 : load dispatch device member function definitions
                 else static if( __traits( isSame, extension, NV_external_memory_win32 )) {
-                    vkGetMemoryWin32HandleNV                       = cast( PFN_vkGetMemoryWin32HandleNV                       ) vkGetDeviceProcAddr( device, "vkGetMemoryWin32HandleNV" );
+                    vkGetMemoryWin32HandleNV                          = cast( PFN_vkGetMemoryWin32HandleNV                          ) vkGetDeviceProcAddr( device, "vkGetMemoryWin32HandleNV" );
                 }
 
                 // VK_ANDROID_external_memory_android_hardware_buffer : load dispatch device member function definitions
                 else static if( __traits( isSame, extension, ANDROID_external_memory_android_hardware_buffer )) {
-                    vkGetAndroidHardwareBufferPropertiesANDROID    = cast( PFN_vkGetAndroidHardwareBufferPropertiesANDROID    ) vkGetDeviceProcAddr( device, "vkGetAndroidHardwareBufferPropertiesANDROID" );
-                    vkGetMemoryAndroidHardwareBufferANDROID        = cast( PFN_vkGetMemoryAndroidHardwareBufferANDROID        ) vkGetDeviceProcAddr( device, "vkGetMemoryAndroidHardwareBufferANDROID" );
+                    vkGetAndroidHardwareBufferPropertiesANDROID       = cast( PFN_vkGetAndroidHardwareBufferPropertiesANDROID       ) vkGetDeviceProcAddr( device, "vkGetAndroidHardwareBufferPropertiesANDROID" );
+                    vkGetMemoryAndroidHardwareBufferANDROID           = cast( PFN_vkGetMemoryAndroidHardwareBufferANDROID           ) vkGetDeviceProcAddr( device, "vkGetMemoryAndroidHardwareBufferANDROID" );
                 }
 
                 // VK_EXT_full_screen_exclusive : load dispatch device member function definitions
                 else static if( __traits( isSame, extension, EXT_full_screen_exclusive )) {
-                    vkAcquireFullScreenExclusiveModeEXT            = cast( PFN_vkAcquireFullScreenExclusiveModeEXT            ) vkGetDeviceProcAddr( device, "vkAcquireFullScreenExclusiveModeEXT" );
-                    vkReleaseFullScreenExclusiveModeEXT            = cast( PFN_vkReleaseFullScreenExclusiveModeEXT            ) vkGetDeviceProcAddr( device, "vkReleaseFullScreenExclusiveModeEXT" );
-                    vkGetDeviceGroupSurfacePresentModes2EXT        = cast( PFN_vkGetDeviceGroupSurfacePresentModes2EXT        ) vkGetDeviceProcAddr( device, "vkGetDeviceGroupSurfacePresentModes2EXT" );
+                    vkAcquireFullScreenExclusiveModeEXT               = cast( PFN_vkAcquireFullScreenExclusiveModeEXT               ) vkGetDeviceProcAddr( device, "vkAcquireFullScreenExclusiveModeEXT" );
+                    vkReleaseFullScreenExclusiveModeEXT               = cast( PFN_vkReleaseFullScreenExclusiveModeEXT               ) vkGetDeviceProcAddr( device, "vkReleaseFullScreenExclusiveModeEXT" );
+                    vkGetDeviceGroupSurfacePresentModes2EXT           = cast( PFN_vkGetDeviceGroupSurfacePresentModes2EXT           ) vkGetDeviceProcAddr( device, "vkGetDeviceGroupSurfacePresentModes2EXT" );
                 }
             }
         }
