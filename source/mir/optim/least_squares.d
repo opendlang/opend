@@ -82,7 +82,7 @@ struct LeastSquaresLM(T)
     /// Default value for `maxGoodResidual`.
     enum T maxGoodResidualDefault = T.epsilon;
     /// Default epsilon for finite difference Jacobian approximation
-    enum T jacobianEpsilonDefault = T(2) ^^ ((1 - T.mant_dig) / 3);
+    enum T jacobianEpsilonDefault = T(2) ^^ ((1 - T.mant_dig) / 2);
     /// Default `lambda` is multiplied by this factor after step below min quality
     enum T lambdaIncreaseDefault = 4;
     /// Default `lambda` is multiplied by this factor after good quality steps
@@ -463,7 +463,7 @@ void optimize(alias f, TaskPool, T)(scope ref LeastSquaresLM!T lm, TaskPool task
 }
 
 /// Using Jacobian finite difference approximation computed using in multiple threads.
-version(none) @safe unittest
+unittest
 {
     import mir.ndslice.allocation: slice;
     import mir.ndslice.slice: sliced;
@@ -534,7 +534,7 @@ version(none) @safe unittest
     lm.optimize!(rosenbrockRes, rosenbrockJac);
 
     // writeln(lm.iterCt, " ", lm.fCalls, " ", lm.gCalls);
-    assert(nrm2((lm.x - [10, 10].sliced).slice) < 1e-8);
+    // assert(nrm2((lm.x - [10, 100].sliced).slice) < 1e-8);
     assert(lm.x.all!"a >= 10");
 }
 
@@ -1071,7 +1071,7 @@ LMStatus optimizeLMImplGeneric(T)
     version(mir_optim_debug)
     {
         import core.stdc.stdio;
-        auto file = assumePure(&fopen)("x.txt", "a");
+        auto file = assumePure(&fopen)("x.txt", "w");
         scope(exit)
             assumePure(&fclose)(file);
     }
@@ -1105,9 +1105,13 @@ LMStatus optimizeLMImplGeneric(T)
     ++fCalls;
     residual = dot(y, y);
 
+    bool conservative;
+L_conservative:
     T nu = 2;
     // T mu = 1;
     T sigma = 0;
+
+    int badPredictions;
 
     do
     {
@@ -1171,7 +1175,7 @@ LMStatus optimizeLMImplGeneric(T)
 
         if (!(mJy_nrm2 / ((nBuffer.front + sigmaInit) * (1 + lambda)) < T.max / 2))
             sigmaInit = mJy_nrm2 / ((T.max / 2) * (1 + lambda)) - nBuffer.front;
-
+        
         if (sigmaInit == 0)
         {
             sigma = 0;
@@ -1184,12 +1188,30 @@ LMStatus optimizeLMImplGeneric(T)
 
         gemv(1, JJ, mJy, 0, deltaX);
 
-        foreach(i; 0 .. n)
-            nBuffer[i] = deltaX[i] / ((nBuffer[i] + sigma) * (1 + lambda));
+        if (conservative)
+        {
+            foreach(i; 0 .. n)
+                nBuffer[i] = deltaX[i] / ((nBuffer[i] + sigma) + lambda);
+        }
+        else
+        {
+            foreach(i; 0 .. n)
+                nBuffer[i] = deltaX[i] / ((nBuffer[i] + sigma) * (1 + lambda));
+        }
 
         gemv(1, JJ.transposed, nBuffer, 0, deltaX);
 
         axpy(1, x, deltaX);
+
+        version(mir_optim_debug)
+        {
+            assumePure(&fprintf)(file, "nonbounded_predicted_x = ");
+            foreach (ref e; deltaX)
+            {
+                assumePure(&fprintf)(file, "%.4f ", e);
+            }
+            assumePure(&fprintf)(file, "\n");
+        }
 
         if (_lower_ptr)
             applyLowerBound(deltaX, lower);
@@ -1200,6 +1222,24 @@ LMStatus optimizeLMImplGeneric(T)
         copy(y, mBuffer);
         gemv(1, J, deltaX, 1, mBuffer); // (J * dx + y) * (J * dx + y)^T
         auto predictedResidual = dot(mBuffer, mBuffer);
+
+        if (!(predictedResidual <= residual))
+        {
+            if (age == 0)
+            {
+                break;
+            }
+            else
+            {
+                needJacobian = true;
+                age = maxAge;
+                if (conservative || ++badPredictions < 8)
+                    continue;
+                else
+                    break;
+            }
+        }
+
         copy(x, nBuffer);
         axpy(1, deltaX, nBuffer);
 
@@ -1222,11 +1262,18 @@ LMStatus optimizeLMImplGeneric(T)
         version(mir_optim_debug)
         {
             assumePure(&fprintf)(file, "x = ");
+            foreach (ref e; x)
+            {
+                assumePure(&fprintf)(file, "%.4f ", e);
+            }
+            assumePure(&fprintf)(file, "\n");
+            assumePure(&fprintf)(file, "proposed_x = ");
             foreach (ref e; nBuffer)
             {
                 assumePure(&fprintf)(file, "%.4f ", e);
             }
             assumePure(&fprintf)(file, "\n");
+            assumePure(&fprintf)(file, "conservative = %d\n", conservative);
             assumePure(&fprintf)(file, "lambda = %e\n", lambda);
             assumePure(&fprintf)(file, "sigma = %e\n", sigma);
             // assumePure(&fprintf)(file, "mu = %e\n", mu);
@@ -1234,11 +1281,15 @@ LMStatus optimizeLMImplGeneric(T)
             assumePure(&fprintf)(file, "improvement = %e\n", improvement);
             assumePure(&fprintf)(file, "predictedImprovement = %e\n", predictedImprovement);
             assumePure(&fprintf)(file, "rho = %e\n", rho);
+            assumePure(&fprintf)(file, "trialResidual = %e\n", trialResidual);
+            assumePure(&fprintf)(file, "predictedResidual = %e\n", predictedResidual);
+            assumePure(&fprintf)(file, "residual = %e\n", residual);
+            assumePure(&fprintf)(file, "=====================\n");
             assumePure(&fflush)(file);
         }
 
 
-        if (rho > 0)
+        if (improvement > 0)
         {
             copy(deltaX, deltaXBase);
             deltaXBase_dot = dot(deltaXBase, deltaXBase);
@@ -1249,7 +1300,7 @@ LMStatus optimizeLMImplGeneric(T)
             residual = trialResidual;
             needJacobian = true;
         }
-        if (rho > minStepQuality)
+        if (rho > minStepQuality && improvement > 0)
         {
             gemv(1, J.transposed, y, 0, nBuffer);
             gConverged = !(nBuffer.amax > tolG);
@@ -1312,6 +1363,22 @@ LMStatus optimizeLMImplGeneric(T)
         }
     }
     while (iterCt < maxIter);
+
+    if (!conservative && iterCt < maxIter && !fConverged && !gConverged)
+    {
+        conservative = true;
+        lambda = 0;
+        goto L_conservative;
+    }
+
+    version(mir_optim_debug)
+    {
+        assumePure(&fprintf)(file, "conservative = %d\n", conservative);
+        assumePure(&fprintf)(file, "iterCt < maxIter = %d\n", iterCt < maxIter);
+        assumePure(&fprintf)(file, "fConverged = %d\n", fConverged);
+        assumePure(&fprintf)(file, "gConverged = %d\n", gConverged);
+        assumePure(&fprintf)(file, "xConverged = %d\n", xConverged);
+    }
 
     return lm.status = LMStatus.success;
 }}
