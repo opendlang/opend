@@ -85,6 +85,8 @@ struct Ref(T)
     {
         return __value == rhs.__value;
     }
+
+    static if (__traits(hasMember, T, "toHash") || __traits(isScalar, T))
     ///
     size_t toHash() const
     {
