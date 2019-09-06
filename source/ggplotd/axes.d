@@ -22,6 +22,8 @@ struct Axis
 
     /// Label of the axis
     string label;
+	/// How to rotate the axis
+	double labelAngle = 0.0;
 
     /// Minimum value of the axis
     double min;
@@ -467,3 +469,22 @@ mixin( xy( q{auto axisShow( bool show )
     return func;
 }} ) );
 
+
+// Set the angle of an axis label
+mixin( xy( q{auto axisLabelAngle( double angle ) 
+{ 
+    AxisFunction func = ( Axis axis ) { axis.labelAngle = angle; return axis; }; 
+    return func;
+}} ) );
+
+///
+unittest
+{
+    XAxis xax;
+    auto xf = xaxisLabelAngle( 90.0 );
+    assertEqual( xf(xax).labelAngle, 90.0 );
+
+    YAxis yax;
+    auto yf = yaxisLabelAngle( 45.0 );
+    assertEqual( yf(yax).labelAngle, 45.0 );
+}
