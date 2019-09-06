@@ -352,7 +352,8 @@ unittest
     import std.range : iota;
 
     import ggplotd.aes : aes;
-    import ggplotd.axes : xaxisLabel, yaxisLabel, xaxisOffset, yaxisOffset, xaxisRange, yaxisRange;
+    import ggplotd.axes : xaxisLabel, yaxisLabel, xaxisOffset, yaxisOffset, 
+		   xaxisRange, yaxisRange, xaxisLabelAngle;
     import ggplotd.geom : geomLine;
     import ggplotd.ggplotd : GGPlotD, putIn, Margins, title;
     import ggplotd.stat : statFunction;
@@ -363,7 +364,9 @@ unittest
         .putIn(GGPlotD());
 
     // Setting range and label for xaxis
-    gg.put( xaxisRange( 0, 8 ) ).put( xaxisLabel( "My xlabel" ) );
+    gg.put( xaxisRange( 0, 8 ) )
+		.put( xaxisLabel( "My xlabel" ) )
+		.put( xaxisLabelAngle( 1.57 ) );
     // Setting range and label for yaxis
     gg.put( yaxisRange( 0, 2.0 ) ).put( yaxisLabel( "My ylabel" ) );
 

@@ -534,7 +534,8 @@ deprecated alias geomHist3D = geomHist2D;
 
 /// Draw axis, first and last location are start/finish
 /// others are ticks (perpendicular)
-auto geomAxis(AES)(AES aesRaw, double tickLength, string label)
+auto geomAxis(AES)(AES aesRaw, double tickLength, string label, 
+		double labelAngle)
 {
     import std.algorithm : find;
     import std.array : array;
@@ -585,8 +586,8 @@ auto geomAxis(AES)(AES aesRaw, double tickLength, string label)
     auto xm = xs[0] + 0.5*(xs[$-1]-xs[0]) - 4.0*direction[1];
     auto ym = ys[0] + 0.5*(ys[$-1]-ys[0]) - 4.0*direction[0];
     auto aesM = Aes!(double[], "x", double[], "y", string[], "label", 
-        double[], "angle", bool[], "mask", bool[], "scale")( [xm], [ym], [label], 
-            langles, [false], [false]);
+        double[], "angle", bool[], "mask", bool[], "scale", 
+		)( [xm], [ym], [label], langles, [false], [false]);
 
     import std.algorithm : map;
     import std.range : zip;
@@ -595,8 +596,8 @@ auto geomAxis(AES)(AES aesRaw, double tickLength, string label)
         .chain( 
           lxs.zip(lys, lbls, langles)
             .map!((a) => 
-                aes!("x", "y", "label", "angle", "mask", "size", "scale")
-                    (a[0], a[1], a[2], a[3], false, aesRaw.front.size, false ))
+                aes!("x", "y", "label", "labelAngle", "angle", "mask", "size", "scale")
+                    (a[0], a[1], a[2], a[3], labelAngle, false, aesRaw.front.size, false ))
             .geomLabel
         )
         .chain( geomLabel(aesM) );
@@ -673,7 +674,11 @@ template geomLabel(AES)
                         .toCairoRGBA
                 );
  
+				auto labelAngle = tup.fieldWithDefault!("labelAngle")(0.0);
+				writeln(labelAngle);
+                context.rotate(labelAngle);
                 context.showText(tup.label);
+                context.rotate(-labelAngle);
                 context.restore();
                 return context;
             };

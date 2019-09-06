@@ -337,10 +337,12 @@ struct GGPlotD
         auto gR = chain(
                 geomAxis(aesX, 
                     bounds.height.tickLength(height - currentMargins.bottom - currentMargins.top, 
-                        defaultScaling(width), defaultScaling(height)), xaxis.label), 
+                        defaultScaling(width), defaultScaling(height)),
+						xaxis.label, xaxis.labelAngle), 
                 geomAxis(aesY, 
                     bounds.width.tickLength(width - currentMargins.left - currentMargins.right, 
-                        defaultScaling(width), defaultScaling(height)), yaxis.label), 
+                        defaultScaling(width), defaultScaling(height)),
+						yaxis.label, yaxis.labelAngle), 
             );
         auto plotMargins = Margins(currentMargins);
         if (!legends.empty)
