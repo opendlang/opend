@@ -473,18 +473,24 @@ mixin( xy( q{auto axisShow( bool show )
 // Set the angle of an axis label
 mixin( xy( q{auto axisLabelAngle( double angle ) 
 { 
-    AxisFunction func = ( Axis axis ) { axis.labelAngle = angle; return axis; }; 
+	import std.math : PI;
+    AxisFunction func = ( Axis axis ) { 
+		axis.labelAngle = angle * PI / 180.0; return axis; 
+	}; 
     return func;
 }} ) );
 
 ///
 unittest
 {
+    import std.stdio : writeln;
+	import std.math : approxEqual;
     XAxis xax;
     auto xf = xaxisLabelAngle( 90.0 );
-    assertEqual( xf(xax).labelAngle, 90.0 );
+	writeln(xf(xax).labelAngle);
+	assert(approxEqual(xf(xax).labelAngle, 1.5708));
 
     YAxis yax;
     auto yf = yaxisLabelAngle( 45.0 );
-    assertEqual( yf(yax).labelAngle, 45.0 );
+	assert(approxEqual(xf(xax).labelAngle, 1.5708));
 }

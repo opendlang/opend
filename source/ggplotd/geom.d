@@ -675,7 +675,6 @@ template geomLabel(AES)
                 );
  
 				auto labelAngle = tup.fieldWithDefault!("labelAngle")(0.0);
-				writeln(labelAngle);
                 context.rotate(labelAngle);
                 context.showText(tup.label);
                 context.rotate(-labelAngle);
