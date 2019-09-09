@@ -3763,7 +3763,7 @@ __m128i _mm_unpacklo_epi32 (__m128i a, __m128i b) pure @safe
     }
 }
 
-__m128i _mm_unpacklo_epi64 (__m128i a, __m128i b) pure @safe
+__m128i _mm_unpacklo_epi64 (__m128i a, __m128i b) pure @trusted
 {
     static if (GDC_X86)
     {
@@ -3771,10 +3771,23 @@ __m128i _mm_unpacklo_epi64 (__m128i a, __m128i b) pure @safe
     }
     else
     {
-        return cast(__m128i) shufflevector!(long2, 0, 2)
-                                           (cast(long2)a, cast(long2)b);
+        long2 lA = cast(long2)a;
+        long2 lB = cast(long2)b;
+        long2 R;
+        R.ptr[0] = lA.array[0];
+        R.ptr[1] = lB.array[0];
+        return cast(__m128i)R;        
     }
 }
+unittest // Issue #36
+{
+    __m128i A = _mm_setr_epi64(0x22222222_22222222, 0x33333333_33333333);
+    __m128i B = _mm_setr_epi64(0x44444444_44444444, 0x55555555_55555555);
+    long2 C = cast(long2)(_mm_unpacklo_epi64(A, B));
+    long[2] correct = [0x22222222_22222222, 0x44444444_44444444];
+    assert(C.array == correct);
+}
+
 
 __m128i _mm_unpacklo_epi8 (__m128i a, __m128i b) pure @safe
 {
