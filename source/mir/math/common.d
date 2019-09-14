@@ -607,3 +607,31 @@ bool approxEqual(T)(const T lhs, const T rhs, const T maxRelDiff = T(0x1p-20f), 
     assert(approxEqual(10000000f, 10000001f));
     assert(!approxEqual(100000.0L, 100001L));
 }
+
+/// ditto
+bool approxEqual(T : cfloat)(const T lhs, const T rhs, float maxRelDiff = 0x1p-20f, float maxAbsDiff = 0x1p-20f)
+{
+    return approxEqual(lhs.re, rhs.re, maxRelDiff, maxAbsDiff)
+        && approxEqual(lhs.im, rhs.im, maxRelDiff, maxAbsDiff);
+}
+
+/// ditto
+bool approxEqual(T : cdouble)(const T lhs, const T rhs, double maxRelDiff = 0x1p-20f, double maxAbsDiff = 0x1p-20f)
+{
+    return approxEqual(lhs.re, rhs.re, maxRelDiff, maxAbsDiff)
+        && approxEqual(lhs.im, rhs.im, maxRelDiff, maxAbsDiff);
+}
+
+/// ditto
+bool approxEqual(T : creal)(const T lhs, const T rhs, real maxRelDiff = 0x1p-20f, real maxAbsDiff = 0x1p-20f)
+{
+    return approxEqual(lhs.re, rhs.re, maxRelDiff, maxAbsDiff)
+        && approxEqual(lhs.im, rhs.im, maxRelDiff, maxAbsDiff);
+}
+
+/// Complex types works as `approxEqual(l.re, r.re) && approxEqual(l.im, r.im)`
+@safe pure nothrow @nogc unittest
+{
+    assert(approxEqual(1.0 + 1i, 1.0000001 + 1.0000001i));
+    assert(!approxEqual(100000.0L + 0i, 100001L + 0i));
+}
