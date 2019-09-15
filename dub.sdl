@@ -4,7 +4,7 @@ description "Dlang Random Number Generators"
 copyright "Copyright © 2016-2018, Ilya Yaroshenko (default), see also copyright per file"
 license "BSL-1.0 (default), Apache License, Version 2.0 for PCG"
 
-dependency "mir-core" version=">=0.2.0 <0.4.0"
+dependency "mir-core" version=">=0.2.0 <1.1.0"
 dependency "mir-linux-kernel" version="~>1.0.0"  platform="linux"
 libs "advapi32" platform="windows"
 
