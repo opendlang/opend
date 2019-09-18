@@ -364,7 +364,7 @@ mixin template Platform_Extensions( extensions... ) {
         else static if( __traits( isSame, extension, NV_win32_keyed_mutex )) {
             enum VK_NV_win32_keyed_mutex = 1;
 
-            enum VK_NV_WIN32_KEYED_MUTEX_SPEC_VERSION = 1;
+            enum VK_NV_WIN32_KEYED_MUTEX_SPEC_VERSION = 2;
             enum VK_NV_WIN32_KEYED_MUTEX_EXTENSION_NAME = "VK_NV_win32_keyed_mutex";
             
             struct VkWin32KeyedMutexAcquireReleaseInfoNV {
@@ -561,7 +561,7 @@ mixin template Platform_Extensions( extensions... ) {
         else static if( __traits( isSame, extension, EXT_full_screen_exclusive )) {
             enum VK_EXT_full_screen_exclusive = 1;
 
-            enum VK_EXT_FULL_SCREEN_EXCLUSIVE_SPEC_VERSION = 3;
+            enum VK_EXT_FULL_SCREEN_EXCLUSIVE_SPEC_VERSION = 4;
             enum VK_EXT_FULL_SCREEN_EXCLUSIVE_EXTENSION_NAME = "VK_EXT_full_screen_exclusive";
             
             enum VkFullScreenExclusiveEXT {

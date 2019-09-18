@@ -33,7 +33,7 @@ pure {
 extern( System ):
 
 // Version of corresponding c header file
-enum VK_HEADER_VERSION = 120;
+enum VK_HEADER_VERSION = 121;
 
 enum VK_NULL_HANDLE = null;
 
@@ -530,6 +530,7 @@ enum VkStructureType {
     VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_REQUIRED_SUBGROUP_SIZE_CREATE_INFO_EXT       = 1000225001,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_SIZE_CONTROL_FEATURES_EXT                 = 1000225002,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_PROPERTIES_2_AMD                       = 1000227000,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COHERENT_MEMORY_FEATURES_AMD                       = 1000229000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_BUDGET_PROPERTIES_EXT                       = 1000237000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_PRIORITY_FEATURES_EXT                       = 1000238000,
     VK_STRUCTURE_TYPE_MEMORY_PRIORITY_ALLOCATE_INFO_EXT                                  = 1000238001,
@@ -974,6 +975,7 @@ enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_SIZE_CONTROL_PROPERTIES_EXT     
 enum VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_REQUIRED_SUBGROUP_SIZE_CREATE_INFO_EXT      = VkStructureType.VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_REQUIRED_SUBGROUP_SIZE_CREATE_INFO_EXT;
 enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_SIZE_CONTROL_FEATURES_EXT                = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_SIZE_CONTROL_FEATURES_EXT;
 enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_PROPERTIES_2_AMD                      = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_PROPERTIES_2_AMD;
+enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COHERENT_MEMORY_FEATURES_AMD                      = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COHERENT_MEMORY_FEATURES_AMD;
 enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_BUDGET_PROPERTIES_EXT                      = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_BUDGET_PROPERTIES_EXT;
 enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_PRIORITY_FEATURES_EXT                      = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_PRIORITY_FEATURES_EXT;
 enum VK_STRUCTURE_TYPE_MEMORY_PRIORITY_ALLOCATE_INFO_EXT                                 = VkStructureType.VK_STRUCTURE_TYPE_MEMORY_PRIORITY_ALLOCATE_INFO_EXT;
@@ -2312,6 +2314,7 @@ enum VkSamplerAddressMode {
     VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE                = 2,
     VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER              = 3,
     VK_SAMPLER_ADDRESS_MODE_MIRROR_CLAMP_TO_EDGE         = 4,
+    VK_SAMPLER_ADDRESS_MODE_MIRROR_CLAMP_TO_EDGE_KHR     = VK_SAMPLER_ADDRESS_MODE_MIRROR_CLAMP_TO_EDGE,
     VK_SAMPLER_ADDRESS_MODE_BEGIN_RANGE                  = VK_SAMPLER_ADDRESS_MODE_REPEAT,
     VK_SAMPLER_ADDRESS_MODE_END_RANGE                    = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,
     VK_SAMPLER_ADDRESS_MODE_RANGE_SIZE                   = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER - VK_SAMPLER_ADDRESS_MODE_REPEAT + 1,
@@ -2323,6 +2326,7 @@ enum VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT             = VkSamplerAddressMode.
 enum VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE               = VkSamplerAddressMode.VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
 enum VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER             = VkSamplerAddressMode.VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
 enum VK_SAMPLER_ADDRESS_MODE_MIRROR_CLAMP_TO_EDGE        = VkSamplerAddressMode.VK_SAMPLER_ADDRESS_MODE_MIRROR_CLAMP_TO_EDGE;
+enum VK_SAMPLER_ADDRESS_MODE_MIRROR_CLAMP_TO_EDGE_KHR    = VkSamplerAddressMode.VK_SAMPLER_ADDRESS_MODE_MIRROR_CLAMP_TO_EDGE_KHR;
 enum VK_SAMPLER_ADDRESS_MODE_BEGIN_RANGE                 = VkSamplerAddressMode.VK_SAMPLER_ADDRESS_MODE_BEGIN_RANGE;
 enum VK_SAMPLER_ADDRESS_MODE_END_RANGE                   = VkSamplerAddressMode.VK_SAMPLER_ADDRESS_MODE_END_RANGE;
 enum VK_SAMPLER_ADDRESS_MODE_RANGE_SIZE                  = VkSamplerAddressMode.VK_SAMPLER_ADDRESS_MODE_RANGE_SIZE;
@@ -2806,6 +2810,8 @@ enum VkMemoryPropertyFlagBits {
     VK_MEMORY_PROPERTY_HOST_CACHED_BIT           = 0x00000008,
     VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT      = 0x00000010,
     VK_MEMORY_PROPERTY_PROTECTED_BIT             = 0x00000020,
+    VK_MEMORY_PROPERTY_DEVICE_COHERENT_BIT_AMD   = 0x00000040,
+    VK_MEMORY_PROPERTY_DEVICE_UNCACHED_BIT_AMD   = 0x00000080,
     VK_MEMORY_PROPERTY_FLAG_BITS_MAX_ENUM        = 0x7FFFFFFF
 }
 
@@ -2815,6 +2821,8 @@ enum VK_MEMORY_PROPERTY_HOST_COHERENT_BIT        = VkMemoryPropertyFlagBits.VK_M
 enum VK_MEMORY_PROPERTY_HOST_CACHED_BIT          = VkMemoryPropertyFlagBits.VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
 enum VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT     = VkMemoryPropertyFlagBits.VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT;
 enum VK_MEMORY_PROPERTY_PROTECTED_BIT            = VkMemoryPropertyFlagBits.VK_MEMORY_PROPERTY_PROTECTED_BIT;
+enum VK_MEMORY_PROPERTY_DEVICE_COHERENT_BIT_AMD  = VkMemoryPropertyFlagBits.VK_MEMORY_PROPERTY_DEVICE_COHERENT_BIT_AMD;
+enum VK_MEMORY_PROPERTY_DEVICE_UNCACHED_BIT_AMD  = VkMemoryPropertyFlagBits.VK_MEMORY_PROPERTY_DEVICE_UNCACHED_BIT_AMD;
 enum VK_MEMORY_PROPERTY_FLAG_BITS_MAX_ENUM       = VkMemoryPropertyFlagBits.VK_MEMORY_PROPERTY_FLAG_BITS_MAX_ENUM;
 alias VkMemoryPropertyFlags = VkFlags;
 
@@ -5655,7 +5663,7 @@ enum VK_KHR_display = 1;
 mixin( VK_DEFINE_NON_DISPATCHABLE_HANDLE!q{VkDisplayKHR} );
 mixin( VK_DEFINE_NON_DISPATCHABLE_HANDLE!q{VkDisplayModeKHR} );
 
-enum VK_KHR_DISPLAY_SPEC_VERSION = 21;
+enum VK_KHR_DISPLAY_SPEC_VERSION = 23;
 enum VK_KHR_DISPLAY_EXTENSION_NAME = "VK_KHR_display";
 
 enum VkDisplayPlaneAlphaFlagBitsKHR {
@@ -5736,7 +5744,7 @@ struct VkDisplaySurfaceCreateInfoKHR {
 // - VK_KHR_display_swapchain -
 enum VK_KHR_display_swapchain = 1;
 
-enum VK_KHR_DISPLAY_SWAPCHAIN_SPEC_VERSION = 9;
+enum VK_KHR_DISPLAY_SWAPCHAIN_SPEC_VERSION = 10;
 enum VK_KHR_DISPLAY_SWAPCHAIN_EXTENSION_NAME = "VK_KHR_display_swapchain";
 
 struct VkDisplayPresentInfoKHR {
@@ -5751,7 +5759,7 @@ struct VkDisplayPresentInfoKHR {
 // - VK_KHR_sampler_mirror_clamp_to_edge -
 enum VK_KHR_sampler_mirror_clamp_to_edge = 1;
 
-enum VK_KHR_SAMPLER_MIRROR_CLAMP_TO_EDGE_SPEC_VERSION = 1;
+enum VK_KHR_SAMPLER_MIRROR_CLAMP_TO_EDGE_SPEC_VERSION = 3;
 enum VK_KHR_SAMPLER_MIRROR_CLAMP_TO_EDGE_EXTENSION_NAME = "VK_KHR_sampler_mirror_clamp_to_edge";
 
 
@@ -5769,7 +5777,7 @@ alias VkPhysicalDeviceMultiviewPropertiesKHR = VkPhysicalDeviceMultiviewProperti
 // - VK_KHR_get_physical_device_properties2 -
 enum VK_KHR_get_physical_device_properties2 = 1;
 
-enum VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_SPEC_VERSION = 1;
+enum VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_SPEC_VERSION = 2;
 enum VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME = "VK_KHR_get_physical_device_properties2";
 
 alias VkPhysicalDeviceFeatures2KHR = VkPhysicalDeviceFeatures2;
@@ -5786,7 +5794,7 @@ alias VkPhysicalDeviceSparseImageFormatInfo2KHR = VkPhysicalDeviceSparseImageFor
 // - VK_KHR_device_group -
 enum VK_KHR_device_group = 1;
 
-enum VK_KHR_DEVICE_GROUP_SPEC_VERSION = 3;
+enum VK_KHR_DEVICE_GROUP_SPEC_VERSION = 4;
 enum VK_KHR_DEVICE_GROUP_EXTENSION_NAME = "VK_KHR_device_group";
 
 alias VkPeerMemoryFeatureFlagsKHR = VkPeerMemoryFeatureFlags;
@@ -6347,7 +6355,7 @@ alias VkSamplerYcbcrConversionKHR = VkSamplerYcbcrConversion;
 alias VkSamplerYcbcrModelConversionKHR = VkSamplerYcbcrModelConversion;
 alias VkSamplerYcbcrRangeKHR = VkSamplerYcbcrRange;
 alias VkChromaLocationKHR = VkChromaLocation;
-enum VK_KHR_SAMPLER_YCBCR_CONVERSION_SPEC_VERSION = 1;
+enum VK_KHR_SAMPLER_YCBCR_CONVERSION_SPEC_VERSION = 14;
 enum VK_KHR_SAMPLER_YCBCR_CONVERSION_EXTENSION_NAME = "VK_KHR_sampler_ycbcr_conversion";
 
 alias VkSamplerYcbcrConversionCreateInfoKHR = VkSamplerYcbcrConversionCreateInfo;
@@ -7016,7 +7024,7 @@ struct VkImageViewHandleInfoNVX {
 // - VK_AMD_draw_indirect_count -
 enum VK_AMD_draw_indirect_count = 1;
 
-enum VK_AMD_DRAW_INDIRECT_COUNT_SPEC_VERSION = 1;
+enum VK_AMD_DRAW_INDIRECT_COUNT_SPEC_VERSION = 2;
 enum VK_AMD_DRAW_INDIRECT_COUNT_EXTENSION_NAME = "VK_AMD_draw_indirect_count";
 
 
@@ -7264,7 +7272,7 @@ struct VkPhysicalDeviceASTCDecodeFeaturesEXT {
 // - VK_EXT_conditional_rendering -
 enum VK_EXT_conditional_rendering = 1;
 
-enum VK_EXT_CONDITIONAL_RENDERING_SPEC_VERSION = 1;
+enum VK_EXT_CONDITIONAL_RENDERING_SPEC_VERSION = 2;
 enum VK_EXT_CONDITIONAL_RENDERING_EXTENSION_NAME = "VK_EXT_conditional_rendering";
 
 enum VkConditionalRenderingFlagBitsEXT {
@@ -7871,7 +7879,7 @@ enum VK_EXT_SWAPCHAIN_COLOR_SPACE_EXTENSION_NAME = "VK_EXT_swapchain_colorspace"
 // - VK_EXT_hdr_metadata -
 enum VK_EXT_hdr_metadata = 1;
 
-enum VK_EXT_HDR_METADATA_SPEC_VERSION = 1;
+enum VK_EXT_HDR_METADATA_SPEC_VERSION = 2;
 enum VK_EXT_HDR_METADATA_EXTENSION_NAME = "VK_EXT_hdr_metadata";
 
 struct VkXYColorEXT {
@@ -8008,7 +8016,7 @@ struct VkDebugUtilsMessengerCreateInfoEXT {
 // - VK_EXT_sampler_filter_minmax -
 enum VK_EXT_sampler_filter_minmax = 1;
 
-enum VK_EXT_SAMPLER_FILTER_MINMAX_SPEC_VERSION = 1;
+enum VK_EXT_SAMPLER_FILTER_MINMAX_SPEC_VERSION = 2;
 enum VK_EXT_SAMPLER_FILTER_MINMAX_EXTENSION_NAME = "VK_EXT_sampler_filter_minmax";
 
 enum VkSamplerReductionModeEXT {
@@ -8870,7 +8878,7 @@ struct VkPhysicalDeviceRayTracingPropertiesNV {
 // - VK_NV_representative_fragment_test -
 enum VK_NV_representative_fragment_test = 1;
 
-enum VK_NV_REPRESENTATIVE_FRAGMENT_TEST_SPEC_VERSION = 1;
+enum VK_NV_REPRESENTATIVE_FRAGMENT_TEST_SPEC_VERSION = 2;
 enum VK_NV_REPRESENTATIVE_FRAGMENT_TEST_EXTENSION_NAME = "VK_NV_representative_fragment_test";
 
 struct VkPhysicalDeviceRepresentativeFragmentTestFeaturesNV {
@@ -9028,7 +9036,7 @@ struct VkCalibratedTimestampInfoEXT {
 // - VK_AMD_shader_core_properties -
 enum VK_AMD_shader_core_properties = 1;
 
-enum VK_AMD_SHADER_CORE_PROPERTIES_SPEC_VERSION = 1;
+enum VK_AMD_SHADER_CORE_PROPERTIES_SPEC_VERSION = 2;
 enum VK_AMD_SHADER_CORE_PROPERTIES_EXTENSION_NAME = "VK_AMD_shader_core_properties";
 
 struct VkPhysicalDeviceShaderCorePropertiesAMD {
@@ -9221,7 +9229,7 @@ struct VkPhysicalDeviceFragmentShaderBarycentricFeaturesNV {
 // - VK_NV_shader_image_footprint -
 enum VK_NV_shader_image_footprint = 1;
 
-enum VK_NV_SHADER_IMAGE_FOOTPRINT_SPEC_VERSION = 1;
+enum VK_NV_SHADER_IMAGE_FOOTPRINT_SPEC_VERSION = 2;
 enum VK_NV_SHADER_IMAGE_FOOTPRINT_EXTENSION_NAME = "VK_NV_shader_image_footprint";
 
 struct VkPhysicalDeviceShaderImageFootprintFeaturesNV {
@@ -9564,6 +9572,19 @@ struct VkPhysicalDeviceShaderCoreProperties2AMD {
     void*                           pNext;
     VkShaderCorePropertiesFlagsAMD  shaderCoreFeatures;
     uint32_t                        activeComputeUnitCount;
+}
+
+
+// - VK_AMD_device_coherent_memory -
+enum VK_AMD_device_coherent_memory = 1;
+
+enum VK_AMD_DEVICE_COHERENT_MEMORY_SPEC_VERSION = 1;
+enum VK_AMD_DEVICE_COHERENT_MEMORY_EXTENSION_NAME = "VK_AMD_device_coherent_memory";
+
+struct VkPhysicalDeviceCoherentMemoryFeaturesAMD {
+    VkStructureType  sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COHERENT_MEMORY_FEATURES_AMD;
+    void*            pNext;
+    VkBool32         deviceCoherentMemory;
 }
 
 
