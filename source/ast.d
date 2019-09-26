@@ -31,9 +31,6 @@ public:
 
     /// Renders HTML and return a UTF-8 string
     abstract string renderHTML();
-
-    /// Renders CommonMark and return a UTF-8 string
-    abstract string renderCommonMark();
 }
 
 class NodeText : Node
@@ -47,11 +44,6 @@ class NodeText : Node
     override string renderHTML()
     {
         // TODO: escape HTML
-        return _text;
-    }
-
-    override string renderCommonMark()
-    {
         return _text;
     }
 
@@ -73,10 +65,6 @@ class NodeParagraph : Node
         return "<p>" ~ _wrapped.renderHTML() ~ "</p>";
     }
 
-    override string renderCommonMark()
-    {
-        return _wrapped.renderCommonMark() ~ "\n\n";
-    }
 private:
     Node _wrapped;
 }
@@ -95,10 +83,6 @@ class NodeItalic : Node
         return "<em>" ~ _wrapped.renderHTML() ~ "</em>";
     }
 
-    override string renderCommonMark()
-    {
-        return "_" ~ _wrapped.renderCommonMark() ~ "_";
-    }
 private:
     Node _wrapped;
 }
@@ -115,11 +99,6 @@ class NodeBold : Node
     {
         // TODO: escape HTML
         return "<strong>" ~ _wrapped.renderHTML() ~ "</strong>";
-    }
-
-    override string renderCommonMark()
-    {
-        return "**" ~ _wrapped.renderCommonMark() ~ "**";
     }
 
 private:
