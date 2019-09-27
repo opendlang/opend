@@ -24,6 +24,9 @@
  */
 module commonmarkd.md4c;
 
+import core.stdc.stdlib: malloc, free, realloc, qsort, bsearch;
+import core.stdc.string: memcpy, memset, memcmp, memmove;
+
 alias MD_CHAR = char;
 alias MD_SIZE = uint;
 alias MD_OFFSET = uint;
@@ -129,7 +132,7 @@ enum : MD_TEXTTYPE
     /* Normal text. */
     MD_TEXT_NORMAL = 0,
 
-    /* NULL character. CommonMark requires replacing NULL character with
+    /* null character. CommonMark requires replacing null character with
      * the replacement char U+FFFD, so this allows caller to do that easily. */
     MD_TEXT_NULLCHAR,
 
@@ -219,7 +222,7 @@ struct MD_BLOCK_UL_DETAIL
 /* Detailed info for MD_BLOCK_OL. */
 struct MD_BLOCK_OL_DETAIL 
 {
-    unsigned start;         /* Start index of the ordered list. */
+    uint start;             /* Start index of the ordered list. */
     int is_tight;           /* Non-zero if tight list, zero if loose. */
     MD_CHAR mark_delimiter; /* Character delimiting the item marks in MarkDown source, e.g. '.' or ')' */
 }
@@ -337,7 +340,7 @@ struct MD_PARSER
 
     int function(MD_TEXTTYPE /*type*/, const(MD_CHAR)* /*text*/, MD_SIZE /*size*/, void* /*userdata*/) text;
 
-    /* Debug callback. Optional (may be NULL).
+    /* Debug callback. Optional (may be null).
      *
      * If provided and something goes wrong, this function gets called.
      * This is intended for debugging and problem diagnosis for developers;
@@ -346,7 +349,7 @@ struct MD_PARSER
      */
     void function(const(char)* /*msg*/, void* /*userdata*/) debug_log;
 
-    /* Reserved. Set to NULL.
+    /* Reserved. Set to null.
      */
     void function() syntax;
 }
@@ -370,7 +373,7 @@ enum FALSE = 0;
 /* These are omnipresent so lets save some typing. */
 alias CHAR = MD_CHAR;
 alias SZ = MD_SIZE;
-alias OFF = MD_CHAR;
+alias OFF = MD_OFFSET;
 
 /* During analyzes of inline marks, we need to manage some "mark chains",
  * of (yet unresolved) openers. This structure holds start/end of the chain.
@@ -381,6 +384,9 @@ struct MD_MARKCHAIN
     int head;   /* Index of first mark in the chain, or -1 if empty. */
     int tail;   /* Index of last mark in the chain, or -1 if empty. */
 }
+
+enum OPENERS_CHAIN_FIRST = 2;
+enum OPENERS_CHAIN_LAST = 11;
 
 /* Context propagated through all the parsing. */
 struct MD_CTX 
@@ -413,25 +419,22 @@ struct MD_CTX
     int n_marks;
     int alloc_marks;
 
-    char[256] mark_char_map;
+    ubyte[256] mark_char_map;
     /* For resolving of inline spans. */
     MD_MARKCHAIN[12] mark_chains;
 
-    ref MD_MARKCHAIN PTR_CHAIN() { return mark_chains[0]; }
-    ref MD_MARKCHAIN TABLECELLBOUNDARIES() { return mark_chains[1]; }
-    ref MD_MARKCHAIN ASTERISK_OPENERS_extraword_mod3_0() { return mark_chains[2]; }
-    ref MD_MARKCHAIN ASTERISK_OPENERS_extraword_mod3_1() { return mark_chains[3]; }
-    ref MD_MARKCHAIN ASTERISK_OPENERS_extraword_mod3_2() { return mark_chains[4]; }
-    ref MD_MARKCHAIN ASTERISK_OPENERS_intraword_mod3_0() { return mark_chains[5]; }     
-    ref MD_MARKCHAIN ASTERISK_OPENERS_intraword_mod3_1() { return mark_chains[6]; }    
-    ref MD_MARKCHAIN ASTERISK_OPENERS_intraword_mod3_2() { return mark_chains[7]; }
-    ref MD_MARKCHAIN UNDERSCORE_OPENERS() { return mark_chains[8]; }
-    ref MD_MARKCHAIN TILDE_OPENERS() { return mark_chains[9]; }
-    ref MD_MARKCHAIN BRACKET_OPENERS() { return mark_chains[10]; }
-    ref MD_MARKCHAIN DOLLAR_OPENERS() { return mark_chains[11]; }
-
-    enum OPENERS_CHAIN_FIRST = 2;
-    enum OPENERS_CHAIN_LAST = 11;
+    MD_MARKCHAIN* PTR_CHAIN() { return &mark_chains[0]; }
+    MD_MARKCHAIN* TABLECELLBOUNDARIES() { return &mark_chains[1]; }
+    MD_MARKCHAIN* ASTERISK_OPENERS_extraword_mod3_0() { return &mark_chains[2]; }
+    MD_MARKCHAIN* ASTERISK_OPENERS_extraword_mod3_1() { return &mark_chains[3]; }
+    MD_MARKCHAIN* ASTERISK_OPENERS_extraword_mod3_2() { return &mark_chains[4]; }
+    MD_MARKCHAIN* ASTERISK_OPENERS_intraword_mod3_0() { return &mark_chains[5]; }
+    MD_MARKCHAIN* ASTERISK_OPENERS_intraword_mod3_1() { return &mark_chains[6]; }
+    MD_MARKCHAIN* ASTERISK_OPENERS_intraword_mod3_2() { return &mark_chains[7]; }
+    MD_MARKCHAIN* UNDERSCORE_OPENERS() { return &mark_chains[8]; }
+    MD_MARKCHAIN* TILDE_OPENERS() { return &mark_chains[9]; }
+    MD_MARKCHAIN* BRACKET_OPENERS() { return &mark_chains[10]; }
+    MD_MARKCHAIN* DOLLAR_OPENERS() { return &mark_chains[11]; }
 
     int n_table_cell_boundaries;
 
@@ -474,7 +477,7 @@ struct MD_CTX
     void MD_LOG(const(char)* msg)
     {
         if(parser.debug_log != null)
-            parser.debug_log((msg), ctx.userdata);
+            parser.debug_log(msg, userdata);
     }
 
     /* Character accessors. */
@@ -489,8 +492,8 @@ struct MD_CTX
     }
 
     bool ISANYOF(OFF off, const(CHAR)* palette) { return ISANYOF_(CH(off), palette); }
-    bool ISANYOF2(OFF off, ch1, ch2)      { return ISANYOF2_(CH(off), ch1, ch2); }
-    bool ISANYOF3(OFF off, ch1, ch2, ch3) { return ISANYOF3_(CH(off), ch1, ch2, ch3); }
+    bool ISANYOF2(OFF off, CHAR ch1, CHAR ch2)      { return ISANYOF2_(CH(off), ch1, ch2); }
+    bool ISANYOF3(OFF off, CHAR ch1, CHAR ch2, CHAR ch3) { return ISANYOF3_(CH(off), ch1, ch2, ch3); }
     bool ISASCII(OFF off)                 { return ISASCII_(CH(off)); }
     bool ISBLANK(OFF off)                 { return ISBLANK_(CH(off)); }
     bool ISNEWLINE(OFF off)               { return ISNEWLINE_(CH(off)); }
@@ -526,24 +529,24 @@ struct MD_LINE_ANALYSIS
     short type_;
     ushort data_;
 
-    MD_LINETYPE type()
+    MD_LINETYPE type() const
     {
         return type_;
     }
 
     void type(MD_LINETYPE value)
     {
-        return type_ = cast(short)value;
+        type_ = cast(short)value;
     }
 
-    int data()
+    int data() const
     {
         return type_;
     }
 
     void data(uint value)
     {
-        return data_ = cast(ushort)value;
+        data_ = cast(ushort)value;
     }
 
     OFF beg;
@@ -654,7 +657,7 @@ pure
     }                    
 }
 
-const(CHAR)* md_strchr(const(CHAR)* str, CHAR ch)
+const(CHAR)* md_strchr(const(CHAR)* str, CHAR ch) pure
 {
     OFF i;
     for(i = 0; str[i] != '\0'; i++) {
@@ -684,7 +687,7 @@ int md_ascii_case_eq(const(CHAR)* s1, const(CHAR)* s2, SZ n)
 
 int md_ascii_eq(const(CHAR)* s1, const(CHAR)* s2, SZ n)
 {
-    return memcmp(s1, s2, n * sizeof(CHAR)) == 0;
+    return memcmp(s1, s2, n * CHAR.sizeof) == 0;
 }
 
 int md_text_with_null_replacement(MD_CTX* ctx, MD_TEXTTYPE type, const(CHAR)* str, SZ size)
@@ -722,7 +725,7 @@ int MD_TEMP_BUFFER(MD_CTX* ctx, SZ sz)
     {
         CHAR* new_buffer;
         SZ new_size = ((sz) + (sz) / 2 + 128) & ~127;
-        new_buffer = realloc(ctx.buffer, new_size);
+        new_buffer = cast(CHAR*) realloc(ctx.buffer, new_size);
         if (new_buffer == null) 
         {
             ctx.MD_LOG("realloc() failed.");
@@ -736,7 +739,7 @@ int MD_TEMP_BUFFER(MD_CTX* ctx, SZ sz)
 
 int MD_ENTER_BLOCK(MD_CTX* ctx, MD_BLOCKTYPE type, void* arg)
 {
-    ret = ctx.parser.enter_block(type, arg, ctx.userdata);
+    int ret = ctx.parser.enter_block(type, arg, ctx.userdata);
     if(ret != 0)
     {
         ctx.MD_LOG("Aborted from enter_block() callback.");
@@ -747,7 +750,7 @@ int MD_ENTER_BLOCK(MD_CTX* ctx, MD_BLOCKTYPE type, void* arg)
 
 int MD_LEAVE_BLOCK(MD_CTX* ctx, MD_BLOCKTYPE type, void* arg)
 {
-    ret = ctx.parser.leave_block(type, arg, ctx.userdata);
+    int ret = ctx.parser.leave_block(type, arg, ctx.userdata);
     if(ret != 0)
     {
         ctx.MD_LOG("Aborted from leave_block() callback.");
@@ -758,7 +761,7 @@ int MD_LEAVE_BLOCK(MD_CTX* ctx, MD_BLOCKTYPE type, void* arg)
 
 int MD_ENTER_SPAN(MD_CTX* ctx, MD_SPANTYPE type, void* arg)
 {
-    ret = ctx.parser.enter_span(type, arg, ctx.userdata);
+    int ret = ctx.parser.enter_span(type, arg, ctx.userdata);
     if(ret != 0)
     {
         ctx.MD_LOG("Aborted from enter_span() callback.");
@@ -769,7 +772,7 @@ int MD_ENTER_SPAN(MD_CTX* ctx, MD_SPANTYPE type, void* arg)
 
 int MD_LEAVE_SPAN(MD_CTX* ctx, MD_SPANTYPE type, void* arg)
 {
-    ret = ctx.parser.leave_span(type, arg, ctx.userdata);
+    int ret = ctx.parser.leave_span(type, arg, ctx.userdata);
     if(ret != 0)
     {
         ctx.MD_LOG("Aborted from leave_span() callback.");
@@ -792,11 +795,11 @@ int MD_TEXT(MD_CTX* ctx, MD_TEXTTYPE type, const(MD_CHAR)* str, MD_SIZE size)
     return 0;
 }
 
-int MD_TEXT_INSECURE(MD_CTX* ctx, const(MD_CHAR)* str, MD_SIZE size)
+int MD_TEXT_INSECURE(MD_CTX* ctx, MD_TEXTTYPE type, const(MD_CHAR)* str, MD_SIZE size)
 {
     if(size > 0) 
     {
-        ret = md_text_with_null_replacement(ctx, type, str, size);
+        int ret = md_text_with_null_replacement(ctx, type, str, size);
         if(ret != 0) 
         {
             ctx.MD_LOG("Aborted from text() callback.");
@@ -850,7 +853,7 @@ int md_unicode_bsearch__(uint codepoint, const(uint)* map, size_t map_size)
     return -1;
 }
 
-int md_is_unicode_whitespace__(uint codepoint)
+bool md_is_unicode_whitespace__(uint codepoint)
 {
     /* Unicode "Zs" category.
      * (generated by scripts/build_whitespace_map.py) */
@@ -862,12 +865,12 @@ int md_is_unicode_whitespace__(uint codepoint)
     /* The ASCII ones are the most frequently used ones, also CommonMark
      * specification requests few more in this range. */
     if(codepoint <= 0x7f)
-        return ISWHITESPACE_(codepoint);
+        return ISWHITESPACE_(cast(CHAR)codepoint);
 
-    return (md_unicode_bsearch__(codepoint, WHITESPACE_MAP, WHITESPACE_MAP.length) >= 0);
+    return (md_unicode_bsearch__(codepoint, WHITESPACE_MAP.ptr, WHITESPACE_MAP.length) >= 0);
 }
 
-int md_is_unicode_punct__(uint codepoint)
+bool md_is_unicode_punct__(uint codepoint)
 {
     /* Unicode "Pc", "Pd", "Pe", "Pf", "Pi", "Po", "Ps" categories.
      * (generated by scripts/build_punct_map.py) */
@@ -908,316 +911,281 @@ int md_is_unicode_punct__(uint codepoint)
     /* The ASCII ones are the most frequently used ones, also CommonMark
      * specification requests few more in this range. */
     if(codepoint <= 0x7f)
-        return ISPUNCT_(codepoint);
+        return ISPUNCT_(cast(CHAR)codepoint);
 
-    return (md_unicode_bsearch__(codepoint, PUNCT_MAP, PUNCT_MAP.length) >= 0);
+    return (md_unicode_bsearch__(codepoint, PUNCT_MAP.ptr, PUNCT_MAP.length) >= 0);
 }
 
-    static void
-    md_get_unicode_fold_info(unsigned codepoint, MD_UNICODE_FOLD_INFO* info)
+void md_get_unicode_fold_info(uint codepoint, MD_UNICODE_FOLD_INFO* info)
+{
+    /* Unicode "Pc", "Pd", "Pe", "Pf", "Pi", "Po", "Ps" categories.
+     * (generated by scripts/build_punct_map.py) */
+    static immutable uint[] FOLD_MAP_1 =
+    [
+        0x0041 | 0x40000000, 0x005a | 0x80000000, 0x00b5, 0x00c0 | 0x40000000, 0x00d6 | 0x80000000, 0x00d8 | 0x40000000, 0x00de | 0x80000000, 0x0100 | 0x40000000, 0x012e | 0x80000000, 0x0132 | 0x40000000, 0x0136 | 0x80000000,
+        0x0139 | 0x40000000, 0x0147 | 0x80000000, 0x014a | 0x40000000, 0x0176 | 0x80000000, 0x0178, 0x0179 | 0x40000000, 0x017d | 0x80000000, 0x017f, 0x0181, 0x0182,
+        0x0186, 0x0187, 0x0189, 0x018b, 0x018e, 0x018f, 0x0190, 0x0191, 0x0193,
+        0x0194, 0x0196, 0x0197, 0x0198, 0x019c, 0x019d, 0x019f, 0x01a0 | 0x40000000, 0x01a4 | 0x80000000, 0x01a6,
+        0x01a7, 0x01a9, 0x01ac, 0x01ae, 0x01af, 0x01b1, 0x01b3, 0x01b7, 0x01b8,
+        0x01bc, 0x01c4, 0x01c5, 0x01c7, 0x01c8, 0x01ca, 0x01cb | 0x40000000, 0x01db | 0x80000000, 0x01de | 0x40000000, 0x01ee | 0x80000000,
+        0x01f1, 0x01f2, 0x01f6, 0x01f7, 0x01f8 | 0x40000000, 0x021e | 0x80000000, 0x0220, 0x0222 | 0x40000000, 0x0232 | 0x80000000, 0x023a,
+        0x023b, 0x023d, 0x023e, 0x0241, 0x0243, 0x0244, 0x0245, 0x0246 | 0x40000000, 0x024e | 0x80000000, 0x0345,
+        0x0370, 0x0376, 0x037f, 0x0386, 0x0388 | 0x40000000, 0x038a | 0x80000000, 0x038c, 0x038e, 0x0391 | 0x40000000, 0x03a1 | 0x80000000,
+        0x03a3 | 0x40000000, 0x03ab | 0x80000000, 0x03c2, 0x03cf, 0x03d0, 0x03d1, 0x03d5, 0x03d6, 0x03d8 | 0x40000000, 0x03ee | 0x80000000,
+        0x03f0, 0x03f1, 0x03f4, 0x03f5, 0x03f7, 0x03f9, 0x03fa, 0x03fd | 0x40000000, 0x03ff | 0x80000000,
+        0x0400 | 0x40000000, 0x040f | 0x80000000, 0x0410 | 0x40000000, 0x042f | 0x80000000, 0x0460 | 0x40000000, 0x0480 | 0x80000000, 0x048a | 0x40000000, 0x04be | 0x80000000, 0x04c0, 0x04c1 | 0x40000000, 0x04cd | 0x80000000,
+        0x04d0 | 0x40000000, 0x052e | 0x80000000, 0x0531 | 0x40000000, 0x0556 | 0x80000000, 0x10a0 | 0x40000000, 0x10c5 | 0x80000000, 0x10c7, 0x10cd, 0x13f8 | 0x40000000, 0x13fd | 0x80000000, 0x1c80,
+        0x1c81, 0x1c82, 0x1c83, 0x1c85, 0x1c86, 0x1c87, 0x1c88, 0x1c90 | 0x40000000, 0x1cba | 0x80000000,
+        0x1cbd | 0x40000000, 0x1cbf | 0x80000000, 0x1e00 | 0x40000000, 0x1e94 | 0x80000000, 0x1e9b, 0x1ea0 | 0x40000000, 0x1efe | 0x80000000, 0x1f08 | 0x40000000, 0x1f0f | 0x80000000, 0x1f18 | 0x40000000, 0x1f1d | 0x80000000,
+        0x1f28 | 0x40000000, 0x1f2f | 0x80000000, 0x1f38 | 0x40000000, 0x1f3f | 0x80000000, 0x1f48 | 0x40000000, 0x1f4d | 0x80000000, 0x1f59, 0x1f5b, 0x1f5d, 0x1f5f,
+        0x1f68 | 0x40000000, 0x1f6f | 0x80000000, 0x1fb8, 0x1fba, 0x1fbe, 0x1fc8 | 0x40000000, 0x1fcb | 0x80000000, 0x1fd8, 0x1fda, 0x1fe8,
+        0x1fea, 0x1fec, 0x1ff8, 0x1ffa, 0x2126, 0x212a, 0x212b, 0x2132, 0x2160 | 0x40000000, 0x216f | 0x80000000,
+        0x2183, 0x24b6 | 0x40000000, 0x24cf | 0x80000000, 0x2c00 | 0x40000000, 0x2c2e | 0x80000000, 0x2c60, 0x2c62, 0x2c63, 0x2c64,
+        0x2c67 | 0x40000000, 0x2c6b | 0x80000000, 0x2c6d, 0x2c6e, 0x2c6f, 0x2c70, 0x2c72, 0x2c75, 0x2c7e,
+        0x2c80 | 0x40000000, 0x2ce2 | 0x80000000, 0x2ceb, 0x2cf2, 0xa640 | 0x40000000, 0xa66c | 0x80000000, 0xa680 | 0x40000000, 0xa69a | 0x80000000, 0xa722 | 0x40000000, 0xa72e | 0x80000000,
+        0xa732 | 0x40000000, 0xa76e | 0x80000000, 0xa779, 0xa77d, 0xa77e | 0x40000000, 0xa786 | 0x80000000, 0xa78b, 0xa78d, 0xa790,
+        0xa796 | 0x40000000, 0xa7a8 | 0x80000000, 0xa7aa, 0xa7ab, 0xa7ac, 0xa7ad, 0xa7ae, 0xa7b0, 0xa7b1, 0xa7b2,
+        0xa7b3, 0xa7b4 | 0x40000000, 0xa7be | 0x80000000, 0xa7c2, 0xa7c4, 0xa7c5, 0xa7c6, 0xab70 | 0x40000000, 0xabbf | 0x80000000,
+        0xff21 | 0x40000000, 0xff3a | 0x80000000, 0x10400 | 0x40000000, 0x10427 | 0x80000000, 0x104b0 | 0x40000000, 0x104d3 | 0x80000000, 0x10c80 | 0x40000000, 0x10cb2 | 0x80000000, 0x118a0 | 0x40000000, 0x118bf | 0x80000000,
+        0x16e40 | 0x40000000, 0x16e5f | 0x80000000, 0x1e900 | 0x40000000, 0x1e921 | 0x80000000
+    ];
+
+    static immutable uint[] FOLD_MAP_1_DATA =
+    [
+        0x0061, 0x007a, 0x03bc, 0x00e0, 0x00f6, 0x00f8, 0x00fe, 0x0101, 0x012f, 0x0133, 0x0137, 0x013a, 0x0148,
+        0x014b, 0x0177, 0x00ff, 0x017a, 0x017e, 0x0073, 0x0253, 0x0183, 0x0254, 0x0188, 0x0256, 0x018c, 0x01dd,
+        0x0259, 0x025b, 0x0192, 0x0260, 0x0263, 0x0269, 0x0268, 0x0199, 0x026f, 0x0272, 0x0275, 0x01a1, 0x01a5,
+        0x0280, 0x01a8, 0x0283, 0x01ad, 0x0288, 0x01b0, 0x028a, 0x01b4, 0x0292, 0x01b9, 0x01bd, 0x01c6, 0x01c6,
+        0x01c9, 0x01c9, 0x01cc, 0x01cc, 0x01dc, 0x01df, 0x01ef, 0x01f3, 0x01f3, 0x0195, 0x01bf, 0x01f9, 0x021f,
+        0x019e, 0x0223, 0x0233, 0x2c65, 0x023c, 0x019a, 0x2c66, 0x0242, 0x0180, 0x0289, 0x028c, 0x0247, 0x024f,
+        0x03b9, 0x0371, 0x0377, 0x03f3, 0x03ac, 0x03ad, 0x03af, 0x03cc, 0x03cd, 0x03b1, 0x03c1, 0x03c3, 0x03cb,
+        0x03c3, 0x03d7, 0x03b2, 0x03b8, 0x03c6, 0x03c0, 0x03d9, 0x03ef, 0x03ba, 0x03c1, 0x03b8, 0x03b5, 0x03f8,
+        0x03f2, 0x03fb, 0x037b, 0x037d, 0x0450, 0x045f, 0x0430, 0x044f, 0x0461, 0x0481, 0x048b, 0x04bf, 0x04cf,
+        0x04c2, 0x04ce, 0x04d1, 0x052f, 0x0561, 0x0586, 0x2d00, 0x2d25, 0x2d27, 0x2d2d, 0x13f0, 0x13f5, 0x0432,
+        0x0434, 0x043e, 0x0441, 0x0442, 0x044a, 0x0463, 0xa64b, 0x10d0, 0x10fa, 0x10fd, 0x10ff, 0x1e01, 0x1e95,
+        0x1e61, 0x1ea1, 0x1eff, 0x1f00, 0x1f07, 0x1f10, 0x1f15, 0x1f20, 0x1f27, 0x1f30, 0x1f37, 0x1f40, 0x1f45,
+        0x1f51, 0x1f53, 0x1f55, 0x1f57, 0x1f60, 0x1f67, 0x1fb0, 0x1f70, 0x03b9, 0x1f72, 0x1f75, 0x1fd0, 0x1f76,
+        0x1fe0, 0x1f7a, 0x1fe5, 0x1f78, 0x1f7c, 0x03c9, 0x006b, 0x00e5, 0x214e, 0x2170, 0x217f, 0x2184, 0x24d0,
+        0x24e9, 0x2c30, 0x2c5e, 0x2c61, 0x026b, 0x1d7d, 0x027d, 0x2c68, 0x2c6c, 0x0251, 0x0271, 0x0250, 0x0252,
+        0x2c73, 0x2c76, 0x023f, 0x2c81, 0x2ce3, 0x2cec, 0x2cf3, 0xa641, 0xa66d, 0xa681, 0xa69b, 0xa723, 0xa72f,
+        0xa733, 0xa76f, 0xa77a, 0x1d79, 0xa77f, 0xa787, 0xa78c, 0x0265, 0xa791, 0xa797, 0xa7a9, 0x0266, 0x025c,
+        0x0261, 0x026c, 0x026a, 0x029e, 0x0287, 0x029d, 0xab53, 0xa7b5, 0xa7bf, 0xa7c3, 0xa794, 0x0282, 0x1d8e,
+        0x13a0, 0x13ef, 0xff41, 0xff5a, 0x10428, 0x1044f, 0x104d8, 0x104fb, 0x10cc0, 0x10cf2, 0x118c0, 0x118df,
+        0x16e60, 0x16e7f, 0x1e922, 0x1e943
+    ];
+
+    static immutable uint[] FOLD_MAP_2 =
+    [
+        0x00df, 0x0130, 0x0149, 0x01f0, 0x0587, 0x1e96, 0x1e97, 0x1e98, 0x1e99,
+        0x1e9a, 0x1e9e, 0x1f50, 0x1f80 | 0x40000000, 0x1f87 | 0x80000000, 0x1f88 | 0x40000000, 0x1f8f | 0x80000000, 0x1f90 | 0x40000000, 0x1f97 | 0x80000000, 0x1f98 | 0x40000000, 0x1f9f | 0x80000000,
+        0x1fa0 | 0x40000000, 0x1fa7 | 0x80000000, 0x1fa8 | 0x40000000, 0x1faf | 0x80000000, 0x1fb2, 0x1fb3, 0x1fb4, 0x1fb6, 0x1fbc, 0x1fc2,
+        0x1fc3, 0x1fc4, 0x1fc6, 0x1fcc, 0x1fd6, 0x1fe4, 0x1fe6, 0x1ff2, 0x1ff3,
+        0x1ff4, 0x1ff6, 0x1ffc, 0xfb00, 0xfb01, 0xfb02, 0xfb05, 0xfb06, 0xfb13,
+        0xfb14, 0xfb15, 0xfb16, 0xfb17
+    ];
+
+    static immutable uint[] FOLD_MAP_2_DATA =
+    [
+        0x0073,0x0073, 0x0069,0x0307, 0x02bc,0x006e, 0x006a,0x030c, 0x0565,0x0582, 0x0068,0x0331, 0x0074,0x0308,
+        0x0077,0x030a, 0x0079,0x030a, 0x0061,0x02be, 0x0073,0x0073, 0x03c5,0x0313, 0x1f00,0x03b9, 0x1f07,0x03b9,
+        0x1f00,0x03b9, 0x1f07,0x03b9, 0x1f20,0x03b9, 0x1f27,0x03b9, 0x1f20,0x03b9, 0x1f27,0x03b9, 0x1f60,0x03b9,
+        0x1f67,0x03b9, 0x1f60,0x03b9, 0x1f67,0x03b9, 0x1f70,0x03b9, 0x03b1,0x03b9, 0x03ac,0x03b9, 0x03b1,0x0342,
+        0x03b1,0x03b9, 0x1f74,0x03b9, 0x03b7,0x03b9, 0x03ae,0x03b9, 0x03b7,0x0342, 0x03b7,0x03b9, 0x03b9,0x0342,
+        0x03c1,0x0313, 0x03c5,0x0342, 0x1f7c,0x03b9, 0x03c9,0x03b9, 0x03ce,0x03b9, 0x03c9,0x0342, 0x03c9,0x03b9,
+        0x0066,0x0066, 0x0066,0x0069, 0x0066,0x006c, 0x0073,0x0074, 0x0073,0x0074, 0x0574,0x0576, 0x0574,0x0565,
+        0x0574,0x056b, 0x057e,0x0576, 0x0574,0x056d
+    ];
+
+    static immutable uint[] FOLD_MAP_3 = 
+    [
+        0x0390, 0x03b0, 0x1f52, 0x1f54, 0x1f56, 0x1fb7, 0x1fc7, 0x1fd2, 0x1fd3,
+        0x1fd7, 0x1fe2, 0x1fe3, 0x1fe7, 0x1ff7, 0xfb03, 0xfb04
+    ];
+
+    static immutable uint[] FOLD_MAP_3_DATA = 
+    [
+        0x03b9,0x0308,0x0301, 0x03c5,0x0308,0x0301, 0x03c5,0x0313,0x0300, 0x03c5,0x0313,0x0301,
+        0x03c5,0x0313,0x0342, 0x03b1,0x0342,0x03b9, 0x03b7,0x0342,0x03b9, 0x03b9,0x0308,0x0300,
+        0x03b9,0x0308,0x0301, 0x03b9,0x0308,0x0342, 0x03c5,0x0308,0x0300, 0x03c5,0x0308,0x0301,
+        0x03c5,0x0308,0x0342, 0x03c9,0x0342,0x03b9, 0x0066,0x0066,0x0069, 0x0066,0x0066,0x006c
+    ];
+
+    static struct FOLD_MAP
     {
-//#define R(cp_min, cp_max)   ((cp_min) | 0x40000000), ((cp_max) | 0x80000000)
-//#define S(cp)               (cp)
-        /* Unicode "Pc", "Pd", "Pe", "Pf", "Pi", "Po", "Ps" categories.
-         * (generated by scripts/build_punct_map.py) */
-        static immutable uint[] FOLD_MAP_1 =
-        [
-            0x0041 | 0x40000000, 0x005a | 0x80000000, 0x00b5, 0x00c0 | 0x40000000, 0x00d6 | 0x80000000, 0x00d8 | 0x40000000, 0x00de | 0x80000000, 0x0100 | 0x40000000, 0x012e | 0x80000000, 0x0132 | 0x40000000, 0x0136 | 0x80000000,
-            0x0139 | 0x40000000, 0x0147 | 0x80000000, 0x014a | 0x40000000, 0x0176 | 0x80000000, 0x0178, 0x0179 | 0x40000000, 0x017d | 0x80000000, 0x017f, 0x0181, 0x0182,
-            0x0186, 0x0187, 0x0189, 0x018b, 0x018e, 0x018f, 0x0190, 0x0191, 0x0193,
-            0x0194, 0x0196, 0x0197, 0x0198, 0x019c, 0x019d, 0x019f, 0x01a0 | 0x40000000, 0x01a4 | 0x80000000, 0x01a6,
-            0x01a7, 0x01a9, 0x01ac, 0x01ae, 0x01af, 0x01b1, 0x01b3, 0x01b7, 0x01b8,
-            0x01bc, 0x01c4, 0x01c5, 0x01c7, 0x01c8, 0x01ca, 0x01cb | 0x40000000, 0x01db | 0x80000000, 0x01de | 0x40000000, 0x01ee | 0x80000000,
-            0x01f1, 0x01f2, 0x01f6, 0x01f7, 0x01f8 | 0x40000000, 0x021e | 0x80000000, 0x0220, 0x0222 | 0x40000000, 0x0232 | 0x80000000, 0x023a,
-            0x023b, 0x023d, 0x023e, 0x0241, 0x0243, 0x0244, 0x0245, 0x0246 | 0x40000000, 0x024e | 0x80000000, 0x0345,
-            0x0370, 0x0376, 0x037f, 0x0386, 0x0388 | 0x40000000, 0x038a | 0x80000000, 0x038c, 0x038e, 0x0391 | 0x40000000, 0x03a1 | 0x80000000,
-            0x03a3 | 0x40000000, 0x03ab | 0x80000000, 0x03c2, 0x03cf, 0x03d0, 0x03d1, 0x03d5, 0x03d6, 0x03d8 | 0x40000000, 0x03ee | 0x80000000,
-            0x03f0, 0x03f1, 0x03f4, 0x03f5, 0x03f7, 0x03f9, 0x03fa, 0x03fd | 0x40000000, 0x03ff | 0x80000000,
-            0x0400 | 0x40000000, 0x040f | 0x80000000, 0x0410 | 0x40000000, 0x042f | 0x80000000, 0x0460 | 0x40000000, 0x0480 | 0x80000000, 0x048a | 0x40000000, 0x04be | 0x80000000, 0x04c0, 0x04c1 | 0x40000000, 0x04cd | 0x80000000,
-            0x04d0 | 0x40000000, 0x052e | 0x80000000, 0x0531 | 0x40000000, 0x0556 | 0x80000000, 0x10a0 | 0x40000000, 0x10c5 | 0x80000000, 0x10c7, 0x10cd, 0x13f8 | 0x40000000, 0x13fd | 0x80000000, 0x1c80,
-            0x1c81, 0x1c82, 0x1c83, 0x1c85, 0x1c86, 0x1c87, 0x1c88, 0x1c90 | 0x40000000, 0x1cba | 0x80000000,
-            0x1cbd | 0x40000000, 0x1cbf | 0x80000000, 0x1e00 | 0x40000000, 0x1e94 | 0x80000000, 0x1e9b, 0x1ea0 | 0x40000000, 0x1efe | 0x80000000, 0x1f08 | 0x40000000, 0x1f0f | 0x80000000, 0x1f18 | 0x40000000, 0x1f1d | 0x80000000,
-            0x1f28 | 0x40000000, 0x1f2f | 0x80000000, 0x1f38 | 0x40000000, 0x1f3f | 0x80000000, 0x1f48 | 0x40000000, 0x1f4d | 0x80000000, 0x1f59, 0x1f5b, 0x1f5d, 0x1f5f,
-            0x1f68 | 0x40000000, 0x1f6f | 0x80000000, 0x1fb8, 0x1fba, 0x1fbe, 0x1fc8 | 0x40000000, 0x1fcb | 0x80000000, 0x1fd8, 0x1fda, 0x1fe8,
-            0x1fea, 0x1fec, 0x1ff8, 0x1ffa, 0x2126, 0x212a, 0x212b, 0x2132, 0x2160 | 0x40000000, 0x216f | 0x80000000,
-            0x2183, 0x24b6 | 0x40000000, 0x24cf | 0x80000000, 0x2c00 | 0x40000000, 0x2c2e | 0x80000000, 0x2c60, 0x2c62, 0x2c63, 0x2c64,
-            0x2c67 | 0x40000000, 0x2c6b | 0x80000000, 0x2c6d, 0x2c6e, 0x2c6f, 0x2c70, 0x2c72, 0x2c75, 0x2c7e,
-            0x2c80 | 0x40000000, 0x2ce2 | 0x80000000, 0x2ceb, 0x2cf2, 0xa640 | 0x40000000, 0xa66c | 0x80000000, 0xa680 | 0x40000000, 0xa69a | 0x80000000, 0xa722 | 0x40000000, 0xa72e | 0x80000000,
-            0xa732 | 0x40000000, 0xa76e | 0x80000000, 0xa779, 0xa77d, 0xa77e | 0x40000000, 0xa786 | 0x80000000, 0xa78b, 0xa78d, 0xa790,
-            0xa796 | 0x40000000, 0xa7a8 | 0x80000000, 0xa7aa, 0xa7ab, 0xa7ac, 0xa7ad, 0xa7ae, 0xa7b0, 0xa7b1, 0xa7b2,
-            0xa7b3, 0xa7b4 | 0x40000000, 0xa7be | 0x80000000, 0xa7c2, 0xa7c4, 0xa7c5, 0xa7c6, 0xab70 | 0x40000000, 0xabbf | 0x80000000,
-            0xff21 | 0x40000000, 0xff3a | 0x80000000, 0x10400 | 0x40000000, 0x10427 | 0x80000000, 0x104b0 | 0x40000000, 0x104d3 | 0x80000000, 0x10c80 | 0x40000000, 0x10cb2 | 0x80000000, 0x118a0 | 0x40000000, 0x118bf | 0x80000000,
-            0x16e40 | 0x40000000, 0x16e5f | 0x80000000, 0x1e900 | 0x40000000, 0x1e921 | 0x80000000
-        ];
+        const(uint)* map;
+        const(uint)* data;
+        size_t map_size;
+        int n_codepoints;
+    }
 
-        static immutable uint[] FOLD_MAP_1_DATA =
-        [
-            0x0061, 0x007a, 0x03bc, 0x00e0, 0x00f6, 0x00f8, 0x00fe, 0x0101, 0x012f, 0x0133, 0x0137, 0x013a, 0x0148,
-            0x014b, 0x0177, 0x00ff, 0x017a, 0x017e, 0x0073, 0x0253, 0x0183, 0x0254, 0x0188, 0x0256, 0x018c, 0x01dd,
-            0x0259, 0x025b, 0x0192, 0x0260, 0x0263, 0x0269, 0x0268, 0x0199, 0x026f, 0x0272, 0x0275, 0x01a1, 0x01a5,
-            0x0280, 0x01a8, 0x0283, 0x01ad, 0x0288, 0x01b0, 0x028a, 0x01b4, 0x0292, 0x01b9, 0x01bd, 0x01c6, 0x01c6,
-            0x01c9, 0x01c9, 0x01cc, 0x01cc, 0x01dc, 0x01df, 0x01ef, 0x01f3, 0x01f3, 0x0195, 0x01bf, 0x01f9, 0x021f,
-            0x019e, 0x0223, 0x0233, 0x2c65, 0x023c, 0x019a, 0x2c66, 0x0242, 0x0180, 0x0289, 0x028c, 0x0247, 0x024f,
-            0x03b9, 0x0371, 0x0377, 0x03f3, 0x03ac, 0x03ad, 0x03af, 0x03cc, 0x03cd, 0x03b1, 0x03c1, 0x03c3, 0x03cb,
-            0x03c3, 0x03d7, 0x03b2, 0x03b8, 0x03c6, 0x03c0, 0x03d9, 0x03ef, 0x03ba, 0x03c1, 0x03b8, 0x03b5, 0x03f8,
-            0x03f2, 0x03fb, 0x037b, 0x037d, 0x0450, 0x045f, 0x0430, 0x044f, 0x0461, 0x0481, 0x048b, 0x04bf, 0x04cf,
-            0x04c2, 0x04ce, 0x04d1, 0x052f, 0x0561, 0x0586, 0x2d00, 0x2d25, 0x2d27, 0x2d2d, 0x13f0, 0x13f5, 0x0432,
-            0x0434, 0x043e, 0x0441, 0x0442, 0x044a, 0x0463, 0xa64b, 0x10d0, 0x10fa, 0x10fd, 0x10ff, 0x1e01, 0x1e95,
-            0x1e61, 0x1ea1, 0x1eff, 0x1f00, 0x1f07, 0x1f10, 0x1f15, 0x1f20, 0x1f27, 0x1f30, 0x1f37, 0x1f40, 0x1f45,
-            0x1f51, 0x1f53, 0x1f55, 0x1f57, 0x1f60, 0x1f67, 0x1fb0, 0x1f70, 0x03b9, 0x1f72, 0x1f75, 0x1fd0, 0x1f76,
-            0x1fe0, 0x1f7a, 0x1fe5, 0x1f78, 0x1f7c, 0x03c9, 0x006b, 0x00e5, 0x214e, 0x2170, 0x217f, 0x2184, 0x24d0,
-            0x24e9, 0x2c30, 0x2c5e, 0x2c61, 0x026b, 0x1d7d, 0x027d, 0x2c68, 0x2c6c, 0x0251, 0x0271, 0x0250, 0x0252,
-            0x2c73, 0x2c76, 0x023f, 0x2c81, 0x2ce3, 0x2cec, 0x2cf3, 0xa641, 0xa66d, 0xa681, 0xa69b, 0xa723, 0xa72f,
-            0xa733, 0xa76f, 0xa77a, 0x1d79, 0xa77f, 0xa787, 0xa78c, 0x0265, 0xa791, 0xa797, 0xa7a9, 0x0266, 0x025c,
-            0x0261, 0x026c, 0x026a, 0x029e, 0x0287, 0x029d, 0xab53, 0xa7b5, 0xa7bf, 0xa7c3, 0xa794, 0x0282, 0x1d8e,
-            0x13a0, 0x13ef, 0xff41, 0xff5a, 0x10428, 0x1044f, 0x104d8, 0x104fb, 0x10cc0, 0x10cf2, 0x118c0, 0x118df,
-            0x16e60, 0x16e7f, 0x1e922, 0x1e943
-        ];
+    /*static immutable*/ FOLD_MAP[3] FOLD_MAP_LIST = 
+    [
+        FOLD_MAP(FOLD_MAP_1.ptr, FOLD_MAP_1_DATA.ptr, FOLD_MAP_1.length, 1),
+        FOLD_MAP(FOLD_MAP_2.ptr, FOLD_MAP_2_DATA.ptr, FOLD_MAP_2.length, 2),
+        FOLD_MAP(FOLD_MAP_3.ptr, FOLD_MAP_3_DATA.ptr, FOLD_MAP_3.length, 3),
+    ];
+    
+    int i;
 
-        static immutable uint[] FOLD_MAP_2 =
-        [
-            0x00df, 0x0130, 0x0149, 0x01f0, 0x0587, 0x1e96, 0x1e97, 0x1e98, 0x1e99,
-            0x1e9a, 0x1e9e, 0x1f50, 0x1f80 | 0x40000000, 0x1f87 | 0x80000000, 0x1f88 | 0x40000000, 0x1f8f | 0x80000000, 0x1f90 | 0x40000000, 0x1f97 | 0x80000000, 0x1f98 | 0x40000000, 0x1f9f | 0x80000000,
-            0x1fa0 | 0x40000000, 0x1fa7 | 0x80000000, 0x1fa8 | 0x40000000, 0x1faf | 0x80000000, 0x1fb2, 0x1fb3, 0x1fb4, 0x1fb6, 0x1fbc, 0x1fc2,
-            0x1fc3, 0x1fc4, 0x1fc6, 0x1fcc, 0x1fd6, 0x1fe4, 0x1fe6, 0x1ff2, 0x1ff3,
-            0x1ff4, 0x1ff6, 0x1ffc, 0xfb00, 0xfb01, 0xfb02, 0xfb05, 0xfb06, 0xfb13,
-            0xfb14, 0xfb15, 0xfb16, 0xfb17
-        ];
-
-        static immutable uint[] FOLD_MAP_2_DATA =
-        [
-            0x0073,0x0073, 0x0069,0x0307, 0x02bc,0x006e, 0x006a,0x030c, 0x0565,0x0582, 0x0068,0x0331, 0x0074,0x0308,
-            0x0077,0x030a, 0x0079,0x030a, 0x0061,0x02be, 0x0073,0x0073, 0x03c5,0x0313, 0x1f00,0x03b9, 0x1f07,0x03b9,
-            0x1f00,0x03b9, 0x1f07,0x03b9, 0x1f20,0x03b9, 0x1f27,0x03b9, 0x1f20,0x03b9, 0x1f27,0x03b9, 0x1f60,0x03b9,
-            0x1f67,0x03b9, 0x1f60,0x03b9, 0x1f67,0x03b9, 0x1f70,0x03b9, 0x03b1,0x03b9, 0x03ac,0x03b9, 0x03b1,0x0342,
-            0x03b1,0x03b9, 0x1f74,0x03b9, 0x03b7,0x03b9, 0x03ae,0x03b9, 0x03b7,0x0342, 0x03b7,0x03b9, 0x03b9,0x0342,
-            0x03c1,0x0313, 0x03c5,0x0342, 0x1f7c,0x03b9, 0x03c9,0x03b9, 0x03ce,0x03b9, 0x03c9,0x0342, 0x03c9,0x03b9,
-            0x0066,0x0066, 0x0066,0x0069, 0x0066,0x006c, 0x0073,0x0074, 0x0073,0x0074, 0x0574,0x0576, 0x0574,0x0565,
-            0x0574,0x056b, 0x057e,0x0576, 0x0574,0x056d
-        ];
-
-        static immutable uint[] FOLD_MAP_3 = 
-        [
-            0x0390, 0x03b0, 0x1f52, 0x1f54, 0x1f56, 0x1fb7, 0x1fc7, 0x1fd2, 0x1fd3,
-            0x1fd7, 0x1fe2, 0x1fe3, 0x1fe7, 0x1ff7, 0xfb03, 0xfb04
-        ];
-
-        static immutable uint[] FOLD_MAP_3_DATA = 
-        [
-            0x03b9,0x0308,0x0301, 0x03c5,0x0308,0x0301, 0x03c5,0x0313,0x0300, 0x03c5,0x0313,0x0301,
-            0x03c5,0x0313,0x0342, 0x03b1,0x0342,0x03b9, 0x03b7,0x0342,0x03b9, 0x03b9,0x0308,0x0300,
-            0x03b9,0x0308,0x0301, 0x03b9,0x0308,0x0342, 0x03c5,0x0308,0x0300, 0x03c5,0x0308,0x0301,
-            0x03c5,0x0308,0x0342, 0x03c9,0x0342,0x03b9, 0x0066,0x0066,0x0069, 0x0066,0x0066,0x006c
-        ];
-        
-        static const struct {
-            const unsigned* map;
-            const unsigned* data;
-            size_t map_size;
-            int n_codepoints;
-        } FOLD_MAP_LIST[] = {
-            { FOLD_MAP_1, FOLD_MAP_1_DATA, FOLD_MAP_1.length, 1 },
-            { FOLD_MAP_2, FOLD_MAP_2_DATA, FOLD_MAP_2.length, 2 },
-            { FOLD_MAP_3, FOLD_MAP_3_DATA, FOLD_MAP_3.length, 3 }
-        };
-
-        int i;
-
-        /* Fast path for ASCII characters. */
-        if(codepoint <= 0x7f) {
-            info.codepoints[0] = codepoint;
-            if(ISUPPER_(codepoint))
-                info.codepoints[0] += 'a' - 'A';
-            info.n_codepoints = 1;
-            return;
-        }
-
-        /* Try to locate the codepoint in any of the maps. */
-        for(i = 0; i < cast(int) (FOLD_MAP_LIST.length); i++) {
-            int index;
-
-            index = md_unicode_bsearch__(codepoint, FOLD_MAP_LIST[i].map, FOLD_MAP_LIST[i].map_size);
-            if(index >= 0) {
-                /* Found the mapping. */
-                int n_codepoints = FOLD_MAP_LIST[i].n_codepoints;
-                const unsigned* map = FOLD_MAP_LIST[i].map;
-                const unsigned* codepoints = FOLD_MAP_LIST[i].data + (index * n_codepoints);
-
-                memcpy(info.codepoints, codepoints, sizeof(unsigned) * n_codepoints);
-                info.n_codepoints = n_codepoints;
-
-                if(FOLD_MAP_LIST[i].map[index] != codepoint) {
-                    /* The found mapping maps whole range of codepoints,
-                     * i.e. we have to offset info.codepoints[0] accordingly. */
-                    if((map[index] & 0x00ffffff)+1 == codepoints[0]) {
-                        /* Alternating type of the range. */
-                        info.codepoints[0] = codepoint + ((codepoint & 0x1) == (map[index] & 0x1) ? 1 : 0);
-                    } else {
-                        /* Range to range kind of mapping. */
-                        info.codepoints[0] += (codepoint - (map[index] & 0x00ffffff));
-                    }
-                }
-
-                return;
-            }
-        }
-
-        /* No mapping found. Map the codepoint to itself. */
+    /* Fast path for ASCII characters. */
+    if(codepoint <= 0x7f) {
         info.codepoints[0] = codepoint;
-        info.n_codepoints = 1;
-    }
-#endif
-
-
-#if defined MD4C_USE_UTF16
-    #define IS_UTF16_SURROGATE_HI(word)     (((WORD)(word) & 0xfc00) == 0xd800)
-    #define IS_UTF16_SURROGATE_LO(word)     (((WORD)(word) & 0xfc00) == 0xdc00)
-    #define UTF16_DECODE_SURROGATE(hi, lo)  (0x10000 + ((((unsigned)(hi) & 0x3ff) << 10) | (((unsigned)(lo) & 0x3ff) << 0)))
-
-    static unsigned
-    md_decode_utf16le__(const(CHAR)* str, SZ str_size, SZ* p_size)
-    {
-        if(IS_UTF16_SURROGATE_HI(str[0])) {
-            if(1 < str_size && IS_UTF16_SURROGATE_LO(str[1])) {
-                if(p_size != NULL)
-                    *p_size = 2;
-                return UTF16_DECODE_SURROGATE(str[0], str[1]);
-            }
-        }
-
-        if(p_size != NULL)
-            *p_size = 1;
-        return str[0];
-    }
-
-    static unsigned
-    md_decode_utf16le_before__(MD_CTX* ctx, OFF off)
-    {
-        if(off > 2 && IS_UTF16_SURROGATE_HI(ctx.CH(off-2)) && IS_UTF16_SURROGATE_LO(ctx.CH(off-1)))
-            return UTF16_DECODE_SURROGATE(ctx.CH(off-2), ctx.CH(off-1));
-
-        return ctx.CH(off);
-    }
-
-    /* No whitespace uses surrogates, so no decoding needed here. */
-    #define ISUNICODEWHITESPACE_(codepoint) md_is_unicode_whitespace__(codepoint)
-    #define ISUNICODEWHITESPACE(off)        md_is_unicode_whitespace__(ctx.CH(off))
-    #define ISUNICODEWHITESPACEBEFORE(off)  md_is_unicode_whitespace__(ctx.CH((off)-1))
-
-    #define ISUNICODEPUNCT(off)             md_is_unicode_punct__(md_decode_utf16le__(ctx.STR(off), ctx.size - (off), NULL))
-    #define ISUNICODEPUNCTBEFORE(off)       md_is_unicode_punct__(md_decode_utf16le_before__(ctx, off))
-
-    static int
-    md_decode_unicode(const(CHAR)* str, OFF off, SZ str_size, SZ* p_char_size)
-    {
-        return md_decode_utf16le__(str+off, str_size-off, p_char_size);
-    }
-#elif defined MD4C_USE_UTF8
-    #define IS_UTF8_LEAD1(byte)     ((unsigned char)(byte) <= 0x7f)
-    #define IS_UTF8_LEAD2(byte)     (((unsigned char)(byte) & 0xe0) == 0xc0)
-    #define IS_UTF8_LEAD3(byte)     (((unsigned char)(byte) & 0xf0) == 0xe0)
-    #define IS_UTF8_LEAD4(byte)     (((unsigned char)(byte) & 0xf8) == 0xf0)
-    #define IS_UTF8_TAIL(byte)      (((unsigned char)(byte) & 0xc0) == 0x80)
-
-    static unsigned
-    md_decode_utf8__(const(CHAR)* str, SZ str_size, SZ* p_size)
-    {
-        if(!IS_UTF8_LEAD1(str[0])) {
-            if(IS_UTF8_LEAD2(str[0])) {
-                if(1 < str_size && IS_UTF8_TAIL(str[1])) {
-                    if(p_size != NULL)
-                        *p_size = 2;
-
-                    return (((unsigned int)str[0] & 0x1f) << 6) |
-                           (((unsigned int)str[1] & 0x3f) << 0);
-                }
-            } else if(IS_UTF8_LEAD3(str[0])) {
-                if(2 < str_size && IS_UTF8_TAIL(str[1]) && IS_UTF8_TAIL(str[2])) {
-                    if(p_size != NULL)
-                        *p_size = 3;
-
-                    return (((unsigned int)str[0] & 0x0f) << 12) |
-                           (((unsigned int)str[1] & 0x3f) << 6) |
-                           (((unsigned int)str[2] & 0x3f) << 0);
-                }
-            } else if(IS_UTF8_LEAD4(str[0])) {
-                if(3 < str_size && IS_UTF8_TAIL(str[1]) && IS_UTF8_TAIL(str[2]) && IS_UTF8_TAIL(str[3])) {
-                    if(p_size != NULL)
-                        *p_size = 4;
-
-                    return (((unsigned int)str[0] & 0x07) << 18) |
-                           (((unsigned int)str[1] & 0x3f) << 12) |
-                           (((unsigned int)str[2] & 0x3f) << 6) |
-                           (((unsigned int)str[3] & 0x3f) << 0);
-                }
-            }
-        }
-
-        if(p_size != NULL)
-            *p_size = 1;
-        return (unsigned) str[0];
-    }
-
-    static unsigned
-    md_decode_utf8_before__(MD_CTX* ctx, OFF off)
-    {
-        if(!IS_UTF8_LEAD1(ctx.CH(off-1))) {
-            if(off > 1 && IS_UTF8_LEAD2(ctx.CH(off-2)) && IS_UTF8_TAIL(ctx.CH(off-1)))
-                return (((unsigned int)ctx.CH(off-2) & 0x1f) << 6) |
-                       (((unsigned int)ctx.CH(off-1) & 0x3f) << 0);
-
-            if(off > 2 && IS_UTF8_LEAD3(ctx.CH(off-3)) && IS_UTF8_TAIL(ctx.CH(off-2)) && IS_UTF8_TAIL(ctx.CH(off-1)))
-                return (((unsigned int)ctx.CH(off-3) & 0x0f) << 12) |
-                       (((unsigned int)ctx.CH(off-2) & 0x3f) << 6) |
-                       (((unsigned int)ctx.CH(off-1) & 0x3f) << 0);
-
-            if(off > 3 && IS_UTF8_LEAD4(ctx.CH(off-4)) && IS_UTF8_TAIL(ctx.CH(off-3)) && IS_UTF8_TAIL(ctx.CH(off-2)) && IS_UTF8_TAIL(ctx.CH(off-1)))
-                return (((unsigned int)ctx.CH(off-4) & 0x07) << 18) |
-                       (((unsigned int)ctx.CH(off-3) & 0x3f) << 12) |
-                       (((unsigned int)ctx.CH(off-2) & 0x3f) << 6) |
-                       (((unsigned int)ctx.CH(off-1) & 0x3f) << 0);
-        }
-
-        return (unsigned) ctx.CH(off-1);
-    }
-
-    #define ISUNICODEWHITESPACE_(codepoint) md_is_unicode_whitespace__(codepoint)
-    #define ISUNICODEWHITESPACE(off)        md_is_unicode_whitespace__(md_decode_utf8__(ctx.STR(off), ctx.size - (off), NULL))
-    #define ISUNICODEWHITESPACEBEFORE(off)  md_is_unicode_whitespace__(md_decode_utf8_before__(ctx, off))
-
-    #define ISUNICODEPUNCT(off)             md_is_unicode_punct__(md_decode_utf8__(ctx.STR(off), ctx.size - (off), NULL))
-    #define ISUNICODEPUNCTBEFORE(off)       md_is_unicode_punct__(md_decode_utf8_before__(ctx, off))
-
-    static unsigned
-    md_decode_unicode(const(CHAR)* str, OFF off, SZ str_size, SZ* p_char_size)
-    {
-        return md_decode_utf8__(str+off, str_size-off, p_char_size);
-    }
-#else
-    #define ISUNICODEWHITESPACE_(codepoint) ISWHITESPACE_(codepoint)
-    #define ISUNICODEWHITESPACE(off)        ctx.ISWHITESPACE(off)
-    #define ISUNICODEWHITESPACEBEFORE(off)  ctx.ISWHITESPACE((off)-1)
-
-    #define ISUNICODEPUNCT(off)             ctx.ISPUNCT(off)
-    #define ISUNICODEPUNCTBEFORE(off)       ctx.ISPUNCT((off)-1)
-
-    static void
-    md_get_unicode_fold_info(unsigned codepoint, MD_UNICODE_FOLD_INFO* info)
-    {
-        info.codepoints[0] = codepoint;
-        if(ISUPPER_(codepoint))
+        if(ISUPPER_(cast(CHAR)codepoint))
             info.codepoints[0] += 'a' - 'A';
         info.n_codepoints = 1;
+        return;
     }
 
-    static unsigned
-    md_decode_unicode(const(CHAR)* str, OFF off, SZ str_size, SZ* p_size)
-    {
+    /* Try to locate the codepoint in any of the maps. */
+    for(i = 0; i < cast(int) (FOLD_MAP_LIST.length); i++) {
+        int index;
+
+        index = md_unicode_bsearch__(codepoint, FOLD_MAP_LIST[i].map, FOLD_MAP_LIST[i].map_size);
+        if(index >= 0) {
+            /* Found the mapping. */
+            int n_codepoints = FOLD_MAP_LIST[i].n_codepoints;
+            const uint* map = FOLD_MAP_LIST[i].map;
+            const uint* codepoints = FOLD_MAP_LIST[i].data + (index * n_codepoints);
+
+            memcpy(info.codepoints.ptr, codepoints, uint.sizeof * n_codepoints);
+            info.n_codepoints = n_codepoints;
+
+            if(FOLD_MAP_LIST[i].map[index] != codepoint) {
+                /* The found mapping maps whole range of codepoints,
+                 * i.e. we have to offset info.codepoints[0] accordingly. */
+                if((map[index] & 0x00ffffff)+1 == codepoints[0]) {
+                    /* Alternating type of the range. */
+                    info.codepoints[0] = codepoint + ((codepoint & 0x1) == (map[index] & 0x1) ? 1 : 0);
+                } else {
+                    /* Range to range kind of mapping. */
+                    info.codepoints[0] += (codepoint - (map[index] & 0x00ffffff));
+                }
+            }
+
+            return;
+        }
+    }
+
+    /* No mapping found. Map the codepoint to itself. */
+    info.codepoints[0] = codepoint;
+    info.n_codepoints = 1;
+}
+
+
+bool IS_UTF8_LEAD1(CHAR ch)
+{
+    return cast(ubyte)(ch) <= 0x7f;
+}
+
+bool IS_UTF8_LEAD2(CHAR ch)
+{
+    return (cast(ubyte)(ch) & 0xe0) == 0xc0;
+}
+
+bool IS_UTF8_LEAD3(CHAR ch)
+{
+    return (cast(ubyte)(ch) & 0xf0) == 0xe0;
+}
+
+bool IS_UTF8_LEAD4(CHAR ch)
+{
+    return (cast(ubyte)(ch) & 0xf8) == 0xf0;
+}
+
+bool IS_UTF8_TAIL(CHAR ch)
+{
+    return  (cast(ubyte)(ch) & 0xc0) == 0x80;
+}
+
+uint md_decode_utf8__(const(CHAR)* str, SZ str_size, SZ* p_size)
+{
+    if(!IS_UTF8_LEAD1(str[0])) {
+        if(IS_UTF8_LEAD2(str[0])) {
+            if(1 < str_size && IS_UTF8_TAIL(str[1])) {
+                if(p_size != null)
+                    *p_size = 2;
+
+                return ((cast(uint)str[0] & 0x1f) << 6) |
+                       ((cast(uint)str[1] & 0x3f) << 0);
+            }
+        } else if(IS_UTF8_LEAD3(str[0])) {
+            if(2 < str_size && IS_UTF8_TAIL(str[1]) && IS_UTF8_TAIL(str[2])) {
+                if(p_size != null)
+                    *p_size = 3;
+
+                return ((cast(uint)str[0] & 0x0f) << 12) |
+                       ((cast(uint)str[1] & 0x3f) << 6) |
+                       ((cast(uint)str[2] & 0x3f) << 0);
+            }
+        } else if(IS_UTF8_LEAD4(str[0])) {
+            if(3 < str_size && IS_UTF8_TAIL(str[1]) && IS_UTF8_TAIL(str[2]) && IS_UTF8_TAIL(str[3])) {
+                if(p_size != null)
+                    *p_size = 4;
+
+                return ((cast(uint)str[0] & 0x07) << 18) |
+                       ((cast(uint)str[1] & 0x3f) << 12) |
+                       ((cast(uint)str[2] & 0x3f) << 6) |
+                       ((cast(uint)str[3] & 0x3f) << 0);
+            }
+        }
+    }
+
+    if(p_size != null)
         *p_size = 1;
-        return (unsigned) str[off];
-    }
-#endif
+    return cast(uint) str[0];
+}
 
+uint md_decode_utf8_before__(MD_CTX* ctx, OFF off)
+{
+    if(!IS_UTF8_LEAD1(ctx.CH(off-1))) {
+        if(off > 1 && IS_UTF8_LEAD2(ctx.CH(off-2)) && IS_UTF8_TAIL(ctx.CH(off-1)))
+            return ((cast(uint)ctx.CH(off-2) & 0x1f) << 6) |
+                   ((cast(uint)ctx.CH(off-1) & 0x3f) << 0);
+
+        if(off > 2 && IS_UTF8_LEAD3(ctx.CH(off-3)) && IS_UTF8_TAIL(ctx.CH(off-2)) && IS_UTF8_TAIL(ctx.CH(off-1)))
+            return ((cast(uint)ctx.CH(off-3) & 0x0f) << 12) |
+                   ((cast(uint)ctx.CH(off-2) & 0x3f) << 6) |
+                   ((cast(uint)ctx.CH(off-1) & 0x3f) << 0);
+
+        if(off > 3 && IS_UTF8_LEAD4(ctx.CH(off-4)) && IS_UTF8_TAIL(ctx.CH(off-3)) && IS_UTF8_TAIL(ctx.CH(off-2)) && IS_UTF8_TAIL(ctx.CH(off-1)))
+            return ((cast(uint)ctx.CH(off-4) & 0x07) << 18) |
+                   ((cast(uint)ctx.CH(off-3) & 0x3f) << 12) |
+                   ((cast(uint)ctx.CH(off-2) & 0x3f) << 6) |
+                   ((cast(uint)ctx.CH(off-1) & 0x3f) << 0);
+    }
+
+    return cast(uint) ctx.CH(off-1);
+}
+
+bool ISUNICODEWHITESPACE_(uint codepoint)
+{
+    return md_is_unicode_whitespace__(codepoint);
+}
+
+bool ISUNICODEWHITESPACE(MD_CTX* ctx, OFF off)
+{
+    return md_is_unicode_whitespace__(md_decode_utf8__(ctx.STR(off), ctx.size - (off), null));
+}
+
+bool ISUNICODEWHITESPACEBEFORE(MD_CTX* ctx, OFF off)
+{
+    return md_is_unicode_whitespace__(md_decode_utf8_before__(ctx, off));
+}
+
+bool ISUNICODEPUNCT(MD_CTX* ctx, OFF off)
+{
+    return md_is_unicode_punct__(md_decode_utf8__(ctx.STR(off), ctx.size - (off), null));
+}
+
+bool ISUNICODEPUNCTBEFORE(MD_CTX* ctx, OFF off)
+{
+    return md_is_unicode_punct__(md_decode_utf8_before__(ctx, off));
+}
+
+uint md_decode_unicode(const(CHAR)* str, OFF off, SZ str_size, SZ* p_char_size)
+{
+    return md_decode_utf8__(str+off, str_size-off, p_char_size);
+}
 
 /*************************************
  ***  Helper string manipulations  ***
@@ -1230,9 +1198,8 @@ int md_is_unicode_punct__(uint codepoint)
  * (Given the output is always shorter then input, (end - beg) is good idea
  * what the caller should allocate.)
  */
-static void
-md_merge_lines(MD_CTX* ctx, OFF beg, OFF end, const MD_LINE* lines, int n_lines,
-               CHAR line_break_replacement_char, CHAR* buffer, SZ* p_size)
+void md_merge_lines(MD_CTX* ctx, OFF beg, OFF end, const(MD_LINE)* lines, int n_lines,
+                    CHAR line_break_replacement_char, CHAR* buffer, SZ* p_size)
 {
     CHAR* ptr = buffer;
     int line_index = 0;
@@ -1251,7 +1218,7 @@ md_merge_lines(MD_CTX* ctx, OFF beg, OFF end, const MD_LINE* lines, int n_lines,
         }
 
         if(off >= end) {
-            *p_size = ptr - buffer;
+            *p_size = cast(uint)(ptr - buffer);
             return;
         }
 
@@ -1265,14 +1232,13 @@ md_merge_lines(MD_CTX* ctx, OFF beg, OFF end, const MD_LINE* lines, int n_lines,
 
 /* Wrapper of md_merge_lines() which allocates new buffer for the output string.
  */
-static int
-md_merge_lines_alloc(MD_CTX* ctx, OFF beg, OFF end, const MD_LINE* lines, int n_lines,
-                    CHAR line_break_replacement_char, CHAR** p_str, SZ* p_size)
+int md_merge_lines_alloc(MD_CTX* ctx, OFF beg, OFF end, const(MD_LINE)* lines, int n_lines,
+                         CHAR line_break_replacement_char, const(CHAR)** p_str, SZ* p_size)
 {
     CHAR* buffer;
 
-    buffer = (CHAR*) malloc(sizeof(CHAR) * (end - beg));
-    if(buffer == NULL) {
+    buffer = cast(CHAR*) malloc(CHAR.sizeof * (end - beg));
+    if(buffer == null) {
         ctx.MD_LOG("malloc() failed.");
         return -1;
     }
@@ -1284,11 +1250,10 @@ md_merge_lines_alloc(MD_CTX* ctx, OFF beg, OFF end, const MD_LINE* lines, int n_
     return 0;
 }
 
-static OFF
-md_skip_unicode_whitespace(const(CHAR)* label, OFF off, SZ size)
+OFF md_skip_unicode_whitespace(const(CHAR)* label, OFF off, SZ size)
 {
     SZ char_size;
-    unsigned codepoint;
+    uint codepoint;
 
     while(off < size) {
         codepoint = md_decode_unicode(label, off, size, &char_size);
@@ -1312,8 +1277,7 @@ md_skip_unicode_whitespace(const(CHAR)* label, OFF off, SZ size)
  * in that case the whole tag has to live on a single line. We distinguish this
  * by n_lines == 0.
  */
-static int
-md_is_html_tag(MD_CTX* ctx, const MD_LINE* lines, int n_lines, OFF beg, OFF max_end, OFF* p_end)
+int md_is_html_tag(MD_CTX* ctx, const(MD_LINE)* lines, int n_lines, OFF beg, OFF max_end, OFF* p_end)
 {
     int attr_state;
     OFF off = beg;
@@ -1541,16 +1505,15 @@ md_is_html_declaration(MD_CTX* ctx, const MD_LINE* lines, int n_lines, OFF beg, 
 static int
 md_is_html_cdata(MD_CTX* ctx, const MD_LINE* lines, int n_lines, OFF beg, OFF max_end, OFF* p_end)
 {
-    static const CHAR open_str[] = "<![CDATA[";
-    static const SZ open_size = open_str.length - 1;
+    string open_str = "<![CDATA[";
 
     OFF off = beg;
 
-    if(off + open_size >= lines[0].end)
+    if(off + open_str.length >= lines[0].end)
         return FALSE;
-    if(memcmp(ctx.STR(off), open_str, open_size) != 0)
+    if(memcmp(ctx.STR(off), open_str.ptr, open_str.length) != 0)
         return FALSE;
-    off += open_size;
+    off += open_str.length;
 
     if(lines[n_lines-1].end < max_end)
         max_end = lines[n_lines-1].end - 2;
@@ -1644,7 +1607,7 @@ md_is_entity_str(MD_CTX* ctx, const(CHAR)* text, OFF beg, OFF max_end, OFF* p_en
     else
         is_contents = md_is_named_entity_contents(ctx, text, off, max_end, &off);
 
-    if(is_contents  &&  off < max_end  &&  text[off] == _T(';')) {
+    if(is_contents  &&  off < max_end  &&  text[off] == ';') {
         *p_end = off+1;
         return TRUE;
     } else {
@@ -1663,23 +1626,22 @@ md_is_entity(MD_CTX* ctx, OFF beg, OFF max_end, OFF* p_end)
  ***  Attribute Management  ***
  ******************************/
 
-typedef struct MD_ATTRIBUTE_BUILD_tag MD_ATTRIBUTE_BUILD;
-struct MD_ATTRIBUTE_BUILD_tag {
-    CHAR* text;
-    MD_TEXTTYPE* substr_types;
-    OFF* substr_offsets;
-    int substr_count;
-    int substr_alloc;
-    MD_TEXTTYPE trivial_types[1];
-    OFF trivial_offsets[2];
-};
+struct MD_ATTRIBUTE_BUILD 
+{
+    CHAR* text = null;
+    MD_TEXTTYPE* substr_types = null;
+    OFF* substr_offsets = null;
+    int substr_count = 0;
+    int substr_alloc = 0;
+    MD_TEXTTYPE[1] trivial_types = [0];
+    OFF[2] trivial_offsets = [0, 0];
+}
 
 
-#define MD_BUILD_ATTR_NO_ESCAPES    0x0001
+enum MD_BUILD_ATTR_NO_ESCAPES = 0x0001;
 
-static int
-md_build_attr_append_substr(MD_CTX* ctx, MD_ATTRIBUTE_BUILD* build,
-                            MD_TEXTTYPE type, OFF off)
+int md_build_attr_append_substr(MD_CTX* ctx, MD_ATTRIBUTE_BUILD* build,
+                                MD_TEXTTYPE type, OFF off)
 {
     if(build.substr_count >= build.substr_alloc) {
         MD_TEXTTYPE* new_substr_types;
@@ -1687,16 +1649,16 @@ md_build_attr_append_substr(MD_CTX* ctx, MD_ATTRIBUTE_BUILD* build,
 
         build.substr_alloc = (build.substr_alloc == 0 ? 8 : build.substr_alloc * 2);
 
-        new_substr_types = (MD_TEXTTYPE*) realloc(build.substr_types,
-                                    build.substr_alloc * sizeof(MD_TEXTTYPE));
-        if(new_substr_types == NULL) {
+        new_substr_types = cast(MD_TEXTTYPE*) realloc(build.substr_types,
+                                    build.substr_alloc * MD_TEXTTYPE.sizeof);
+        if(new_substr_types == null) {
             ctx.MD_LOG("realloc() failed.");
             return -1;
         }
         /* Note +1 to reserve space for final offset (== raw_size). */
-        new_substr_offsets = (OFF*) realloc(build.substr_offsets,
-                                    (build.substr_alloc+1) * sizeof(OFF));
-        if(new_substr_offsets == NULL) {
+        new_substr_offsets = cast(OFF*) realloc(build.substr_offsets,
+                                    (build.substr_alloc+1) * OFF.sizeof);
+        if(new_substr_offsets == null) {
             ctx.MD_LOG("realloc() failed.");
             free(new_substr_types);
             return -1;
@@ -1712,8 +1674,7 @@ md_build_attr_append_substr(MD_CTX* ctx, MD_ATTRIBUTE_BUILD* build,
     return 0;
 }
 
-static void
-md_free_attribute(MD_CTX* ctx, MD_ATTRIBUTE_BUILD* build)
+void md_free_attribute(MD_CTX* ctx, MD_ATTRIBUTE_BUILD* build)
 {
     if(build.substr_alloc > 0) {
         free(build.text);
@@ -1722,30 +1683,29 @@ md_free_attribute(MD_CTX* ctx, MD_ATTRIBUTE_BUILD* build)
     }
 }
 
-static int
-md_build_attribute(MD_CTX* ctx, const(CHAR)* raw_text, SZ raw_size,
-                   unsigned flags, MD_ATTRIBUTE* attr, MD_ATTRIBUTE_BUILD* build)
+int md_build_attribute(MD_CTX* ctx, const(CHAR)* raw_text, SZ raw_size,
+                       uint flags, MD_ATTRIBUTE* attr, MD_ATTRIBUTE_BUILD* build)
 {
     OFF raw_off, off;
     int is_trivial;
     int ret = 0;
 
-    memset(build, 0, sizeof(MD_ATTRIBUTE_BUILD));
+    memset(build, 0, MD_ATTRIBUTE_BUILD.sizeof);
 
     /* If there is no backslash and no ampersand, build trivial attribute
      * without any malloc(). */
     is_trivial = TRUE;
     for(raw_off = 0; raw_off < raw_size; raw_off++) {
-        if(ISANYOF3_(raw_text[raw_off], _T('\\'), '&', '\0')) {
+        if(ISANYOF3_(raw_text[raw_off], '\\', '&', '\0')) {
             is_trivial = FALSE;
             break;
         }
     }
 
     if(is_trivial) {
-        build.text = (CHAR*) (raw_size ? raw_text : NULL);
-        build.substr_types = build.trivial_types;
-        build.substr_offsets = build.trivial_offsets;
+        build.text = cast(CHAR*) (raw_size ? raw_text : null);
+        build.substr_types = build.trivial_types.ptr;
+        build.substr_offsets = build.trivial_offsets.ptr;
         build.substr_count = 1;
         build.substr_alloc = 0;
         build.trivial_types[0] = MD_TEXT_NORMAL;
@@ -1753,8 +1713,8 @@ md_build_attribute(MD_CTX* ctx, const(CHAR)* raw_text, SZ raw_size,
         build.trivial_offsets[1] = raw_size;
         off = raw_size;
     } else {
-        build.text = (CHAR*) malloc(raw_size * sizeof(CHAR));
-        if(build.text == NULL) {
+        build.text = cast(CHAR*) malloc(raw_size * CHAR.sizeof);
+        if(build.text == null) {
             ctx.MD_LOG("malloc() failed.");
             goto abort;
         }
@@ -1817,14 +1777,13 @@ abort:
  ***  Dictionary of Reference Definitions  ***
  *********************************************/
 
-#define MD_FNV1A_BASE       2166136261
-#define MD_FNV1A_PRIME      16777619
+enum MD_FNV1A_BASE =  2166136261;
+enum MD_FNV1A_PRIME = 16777619;
 
-static unsigned
-md_fnv1a(unsigned base, const void* data, size_t n)
+uint md_fnv1a(uint base, const(void)* data, size_t n)
 {
-    const unsigned char* buf = (const unsigned char*) data;
-    unsigned hash = base;
+    const(ubyte)* buf = cast(const(ubyte)*) data;
+    uint hash = base;
     size_t i;
 
     for(i = 0; i < n; i++) {
@@ -1838,12 +1797,12 @@ md_fnv1a(unsigned base, const void* data, size_t n)
 
 struct MD_REF_DEF
 {
-    CHAR* label;
-    CHAR* title;
-    unsigned hash;
-    SZ label_size                   : 24;
-    unsigned label_needs_free       :  1;
-    unsigned title_needs_free       :  1;
+    const(CHAR)* label;
+    const(CHAR)* title;
+    uint hash;
+    SZ label_size;
+    bool label_needs_free;
+    bool title_needs_free;
     SZ title_size;
     OFF dest_beg;
     OFF dest_end;
@@ -1853,12 +1812,11 @@ struct MD_REF_DEF
  * folding. This complicates computing a hash of it as well as direct comparison
  * of two labels. */
 
-static unsigned
-md_link_label_hash(const(CHAR)* label, SZ size)
+uint md_link_label_hash(const(CHAR)* label, SZ size)
 {
-    unsigned hash = MD_FNV1A_BASE;
+    uint hash = MD_FNV1A_BASE;
     OFF off;
-    unsigned codepoint;
+    uint codepoint;
     int is_whitespace = FALSE;
 
     off = md_skip_unicode_whitespace(label, 0, size);
@@ -1870,13 +1828,13 @@ md_link_label_hash(const(CHAR)* label, SZ size)
 
         if(is_whitespace) {
             codepoint = ' ';
-            hash = md_fnv1a(hash, &codepoint, sizeof(unsigned));
+            hash = md_fnv1a(hash, &codepoint, uint.sizeof);
             off = md_skip_unicode_whitespace(label, off, size);
         } else {
             MD_UNICODE_FOLD_INFO fold_info;
 
             md_get_unicode_fold_info(codepoint, &fold_info);
-            hash = md_fnv1a(hash, fold_info.codepoints, fold_info.n_codepoints * sizeof(unsigned));
+            hash = md_fnv1a(hash, fold_info.codepoints.ptr, fold_info.n_codepoints * uint.sizeof);
             off += char_size;
         }
     }
@@ -1884,11 +1842,10 @@ md_link_label_hash(const(CHAR)* label, SZ size)
     return hash;
 }
 
-static OFF
-md_link_label_cmp_load_fold_info(const(CHAR)* label, OFF off, SZ size,
-                                 MD_UNICODE_FOLD_INFO* fold_info)
+OFF md_link_label_cmp_load_fold_info(const(CHAR)* label, OFF off, SZ size,
+                                     MD_UNICODE_FOLD_INFO* fold_info)
 {
-    unsigned codepoint;
+    uint codepoint;
     SZ char_size;
 
     if(off >= size) {
@@ -1958,18 +1915,17 @@ md_link_label_cmp(const(CHAR)* a_label, SZ a_size, const(CHAR)* b_label, SZ b_si
     return 0;
 }
 
-typedef struct MD_REF_DEF_LIST_tag MD_REF_DEF_LIST;
-struct MD_REF_DEF_LIST_tag {
+struct MD_REF_DEF_LIST 
+{
     int n_ref_defs;
     int alloc_ref_defs;
-    MD_REF_DEF* ref_defs[];  /* Valid items always  point into ctx.ref_defs[] */
-};
+    MD_REF_DEF** ref_defs;  /* Valid items always  point into ctx.ref_defs[] */
+}
 
-static int
-md_ref_def_cmp(const void* a, const void* b)
+extern(C) int md_ref_def_cmp(const(void)* a, const void* b)
 {
-    const MD_REF_DEF* a_ref = *(const MD_REF_DEF**)a;
-    const MD_REF_DEF* b_ref = *(const MD_REF_DEF**)b;
+    const(MD_REF_DEF)* a_ref = *cast(const(MD_REF_DEF*)*)a;
+    const(MD_REF_DEF)* b_ref = *cast(const(MD_REF_DEF*)*)b;
 
     if(a_ref.hash < b_ref.hash)
         return -1;
@@ -1979,8 +1935,7 @@ md_ref_def_cmp(const void* a, const void* b)
         return md_link_label_cmp(a_ref.label, a_ref.label_size, b_ref.label, b_ref.label_size);
 }
 
-static int
-md_ref_def_cmp_stable(const void* a, const void* b)
+extern(C) int md_ref_def_cmp_stable(const(void)* a, const(void)* b)
 {
     int cmp;
 
@@ -1988,8 +1943,8 @@ md_ref_def_cmp_stable(const void* a, const void* b)
 
     /* Ensure stability of the sorting. */
     if(cmp == 0) {
-        const MD_REF_DEF* a_ref = *(const MD_REF_DEF**)a;
-        const MD_REF_DEF* b_ref = *(const MD_REF_DEF**)b;
+        const(MD_REF_DEF)* a_ref = *cast(const(MD_REF_DEF*)*)a;
+        const(MD_REF_DEF)* b_ref = *cast(const(MD_REF_DEF*)*)b;
 
         if(a_ref < b_ref)
             cmp = -1;
@@ -2002,8 +1957,7 @@ md_ref_def_cmp_stable(const void* a, const void* b)
     return cmp;
 }
 
-static int
-md_build_ref_def_hashtable(MD_CTX* ctx)
+int md_build_ref_def_hashtable(MD_CTX* ctx)
 {
     int i, j;
 
@@ -2011,15 +1965,15 @@ md_build_ref_def_hashtable(MD_CTX* ctx)
         return 0;
 
     ctx.ref_def_hashtable_size = (ctx.n_ref_defs * 5) / 4;
-    ctx.ref_def_hashtable = malloc(ctx.ref_def_hashtable_size * sizeof(void*));
-    if(ctx.ref_def_hashtable == NULL) {
+    ctx.ref_def_hashtable = cast(void**) malloc(ctx.ref_def_hashtable_size * (void*).sizeof);
+    if(ctx.ref_def_hashtable == null) {
         ctx.MD_LOG("malloc() failed.");
         goto abort;
     }
-    memset(ctx.ref_def_hashtable, 0, ctx.ref_def_hashtable_size * sizeof(void*));
+    memset(ctx.ref_def_hashtable, 0, ctx.ref_def_hashtable_size * (void*).sizeof);
 
     /* Each member of ctx.ref_def_hashtable[] can be:
-     *  -- NULL,
+     *  -- null,
      *  -- pointer to the MD_REF_DEF in ctx.ref_defs[], or
      *  -- pointer to a MD_REF_DEF_LIST, which holds multiple pointers to
      *     such MD_REF_DEFs.
@@ -2032,16 +1986,16 @@ md_build_ref_def_hashtable(MD_CTX* ctx)
         def.hash = md_link_label_hash(def.label, def.label_size);
         bucket = ctx.ref_def_hashtable[def.hash % ctx.ref_def_hashtable_size];
 
-        if(bucket == NULL) {
+        if(bucket == null) {
             ctx.ref_def_hashtable[def.hash % ctx.ref_def_hashtable_size] = def;
             continue;
         }
 
-        if(ctx.ref_defs <= (MD_REF_DEF*) bucket  &&  (MD_REF_DEF*) bucket < ctx.ref_defs + ctx.n_ref_defs) {
+        if(ctx.ref_defs <= cast(MD_REF_DEF*) bucket  &&  cast(MD_REF_DEF*) bucket < ctx.ref_defs + ctx.n_ref_defs) {
             /* The bucket already contains one ref. def. Lets see whether it
              * is the same label (ref. def. duplicate) or different one
              * (hash conflict). */
-            MD_REF_DEF* old_def = (MD_REF_DEF*) bucket;
+            MD_REF_DEF* old_def = cast(MD_REF_DEF*) bucket;
 
             if(md_link_label_cmp(def.label, def.label_size, old_def.label, old_def.label_size) == 0) {
                 /* Ignore this ref. def. */
@@ -2049,8 +2003,8 @@ md_build_ref_def_hashtable(MD_CTX* ctx)
             }
 
             /* Make the bucket capable of holding more ref. defs. */
-            list = (MD_REF_DEF_LIST*) malloc(sizeof(MD_REF_DEF_LIST) + 4 * sizeof(MD_REF_DEF));
-            if(list == NULL) {
+            list = cast(MD_REF_DEF_LIST*) malloc(MD_REF_DEF_LIST.sizeof + 4 * MD_REF_DEF.sizeof);
+            if(list == null) {
                 ctx.MD_LOG("malloc() failed.");
                 goto abort;
             }
@@ -2063,11 +2017,11 @@ md_build_ref_def_hashtable(MD_CTX* ctx)
         }
 
         /* Append the def to the bucket list. */
-        list = (MD_REF_DEF_LIST*) bucket;
+        list = cast(MD_REF_DEF_LIST*) bucket;
         if(list.n_ref_defs >= list.alloc_ref_defs) {
-            MD_REF_DEF_LIST* list_tmp = (MD_REF_DEF_LIST*) realloc(list,
-                        sizeof(MD_REF_DEF_LIST) + 2 * list.alloc_ref_defs * sizeof(MD_REF_DEF));
-            if(list_tmp == NULL) {
+            MD_REF_DEF_LIST* list_tmp = cast(MD_REF_DEF_LIST*) realloc(list,
+                        MD_REF_DEF_LIST.sizeof + 2 * list.alloc_ref_defs * MD_REF_DEF.sizeof);
+            if(list_tmp == null) {
                 ctx.MD_LOG("realloc() failed.");
                 goto abort;
             }
@@ -2085,13 +2039,13 @@ md_build_ref_def_hashtable(MD_CTX* ctx)
         void* bucket = ctx.ref_def_hashtable[i];
         MD_REF_DEF_LIST* list;
 
-        if(bucket == NULL)
+        if(bucket == null)
             continue;
-        if(ctx.ref_defs <= (MD_REF_DEF*) bucket  &&  (MD_REF_DEF*) bucket < ctx.ref_defs + ctx.n_ref_defs)
+        if(ctx.ref_defs <= cast(MD_REF_DEF*) bucket  && cast(MD_REF_DEF*) bucket < ctx.ref_defs + ctx.n_ref_defs)
             continue;
 
-        list = (MD_REF_DEF_LIST*) bucket;
-        qsort(list.ref_defs, list.n_ref_defs, sizeof(MD_REF_DEF*), md_ref_def_cmp_stable);
+        list = cast(MD_REF_DEF_LIST*) bucket;
+        qsort(list.ref_defs, list.n_ref_defs, (MD_REF_DEF*).sizeof, &md_ref_def_cmp_stable);
 
         /* Disable duplicates. */
         for(j = 1; j < list.n_ref_defs; j++) {
@@ -2109,14 +2063,14 @@ abort:
 static void
 md_free_ref_def_hashtable(MD_CTX* ctx)
 {
-    if(ctx.ref_def_hashtable != NULL) {
+    if(ctx.ref_def_hashtable != null) {
         int i;
 
         for(i = 0; i < ctx.ref_def_hashtable_size; i++) {
             void* bucket = ctx.ref_def_hashtable[i];
-            if(bucket == NULL)
+            if(bucket == null)
                 continue;
-            if(ctx.ref_defs <= (MD_REF_DEF*) bucket  &&  (MD_REF_DEF*) bucket < ctx.ref_defs + ctx.n_ref_defs)
+            if(ctx.ref_defs <= cast(MD_REF_DEF*) bucket  && cast(MD_REF_DEF*) bucket < ctx.ref_defs + ctx.n_ref_defs)
                 continue;
             free(bucket);
         }
@@ -2125,43 +2079,42 @@ md_free_ref_def_hashtable(MD_CTX* ctx)
     }
 }
 
-static const MD_REF_DEF*
-md_lookup_ref_def(MD_CTX* ctx, const(CHAR)* label, SZ label_size)
+const(MD_REF_DEF)* md_lookup_ref_def(MD_CTX* ctx, const(CHAR)* label, SZ label_size)
 {
-    unsigned hash;
+    uint hash;
     void* bucket;
 
     if(ctx.ref_def_hashtable_size == 0)
-        return NULL;
+        return null;
 
     hash = md_link_label_hash(label, label_size);
     bucket = ctx.ref_def_hashtable[hash % ctx.ref_def_hashtable_size];
 
-    if(bucket == NULL) {
-        return NULL;
-    } else if(ctx.ref_defs <= (MD_REF_DEF*) bucket  &&  (MD_REF_DEF*) bucket < ctx.ref_defs + ctx.n_ref_defs) {
-        const MD_REF_DEF* def = (MD_REF_DEF*) bucket;
+    if(bucket == null) {
+        return null;
+    } else if(ctx.ref_defs <= cast(MD_REF_DEF*) bucket  &&  cast(MD_REF_DEF*) bucket < ctx.ref_defs + ctx.n_ref_defs) {
+        const MD_REF_DEF* def = cast(MD_REF_DEF*) bucket;
 
         if(md_link_label_cmp(def.label, def.label_size, label, label_size) == 0)
             return def;
         else
-            return NULL;
+            return null;
     } else {
-        MD_REF_DEF_LIST* list = (MD_REF_DEF_LIST*) bucket;
+        MD_REF_DEF_LIST* list = cast(MD_REF_DEF_LIST*) bucket;
         MD_REF_DEF key_buf;
         const MD_REF_DEF* key = &key_buf;
-        const MD_REF_DEF** ret;
+        const(MD_REF_DEF*)* ret;
 
-        key_buf.label = (CHAR*) label;
+        key_buf.label = cast(CHAR*) label;
         key_buf.label_size = label_size;
         key_buf.hash = md_link_label_hash(key_buf.label, key_buf.label_size);
 
-        ret = (const MD_REF_DEF**) bsearch(&key, list.ref_defs,
-                    list.n_ref_defs, sizeof(MD_REF_DEF*), md_ref_def_cmp);
-        if(ret != NULL)
+        ret = cast(const(MD_REF_DEF*)*) bsearch(&key, list.ref_defs,
+                    list.n_ref_defs, (MD_REF_DEF*).sizeof, &md_ref_def_cmp);
+        if(ret != null)
             return *ret;
         else
-            return NULL;
+            return null;
     }
 }
 
@@ -2174,15 +2127,15 @@ md_lookup_ref_def(MD_CTX* ctx, const(CHAR)* label, SZ label_size)
  * as reference definitions and links share some helper parser functions.
  */
 
-typedef struct MD_LINK_ATTR_tag MD_LINK_ATTR;
-struct MD_LINK_ATTR_tag {
+struct MD_LINK_ATTR
+{
     OFF dest_beg;
     OFF dest_end;
 
-    CHAR* title;
+    const(CHAR)* title;
     SZ title_size;
-    int title_needs_free;
-};
+    bool title_needs_free;
+}
 
 
 static int
@@ -2226,7 +2179,7 @@ md_is_link_label(MD_CTX* ctx, const MD_LINE* lines, int n_lines, OFF beg,
                     return FALSE;
                 }
             } else {
-                unsigned codepoint;
+                uint codepoint;
                 SZ char_size;
 
                 codepoint = md_decode_unicode(ctx.text, off, ctx.size, &char_size);
@@ -2410,16 +2363,15 @@ md_is_link_title(MD_CTX* ctx, const MD_LINE* lines, int n_lines, OFF beg,
  *
  * Returns -1 in case of an error (out of memory).
  */
-static int
-md_is_link_reference_definition(MD_CTX* ctx, const MD_LINE* lines, int n_lines)
+int md_is_link_reference_definition(MD_CTX* ctx, const(MD_LINE)* lines, int n_lines)
 {
     OFF label_contents_beg;
     OFF label_contents_end;
     int label_contents_line_index = -1;
     int label_is_multiline;
-    CHAR* label;
+    const(CHAR)* label;
     SZ label_size;
-    int label_needs_free = FALSE;
+    bool label_needs_free = false;
     OFF dest_contents_beg;
     OFF dest_contents_end;
     OFF title_contents_beg;
@@ -2483,15 +2435,15 @@ md_is_link_reference_definition(MD_CTX* ctx, const MD_LINE* lines, int n_lines)
 
     /* Construct label. */
     if(!label_is_multiline) {
-        label = (CHAR*) ctx.STR(label_contents_beg);
+        label = cast(CHAR*) ctx.STR(label_contents_beg);
         label_size = label_contents_end - label_contents_beg;
-        label_needs_free = FALSE;
+        label_needs_free = false;
     } else {
         ret = (md_merge_lines_alloc(ctx, label_contents_beg, label_contents_end,
                     lines + label_contents_line_index, n_lines - label_contents_line_index,
                     ' ', &label, &label_size));
         if (ret < 0) goto abort;
-        label_needs_free = TRUE;
+        label_needs_free = true;
     }
 
     /* Store the reference definition. */
@@ -2499,8 +2451,8 @@ md_is_link_reference_definition(MD_CTX* ctx, const MD_LINE* lines, int n_lines)
         MD_REF_DEF* new_defs;
 
         ctx.alloc_ref_defs = (ctx.alloc_ref_defs > 0 ? ctx.alloc_ref_defs * 2 : 16);
-        new_defs = (MD_REF_DEF*) realloc(ctx.ref_defs, ctx.alloc_ref_defs * sizeof(MD_REF_DEF));
-        if(new_defs == NULL) {
+        new_defs = cast(MD_REF_DEF*) realloc(ctx.ref_defs, ctx.alloc_ref_defs * MD_REF_DEF.sizeof);
+        if(new_defs == null) {
             ctx.MD_LOG("realloc() failed.");
             ret = -1;
             goto abort;
@@ -2510,7 +2462,7 @@ md_is_link_reference_definition(MD_CTX* ctx, const MD_LINE* lines, int n_lines)
     }
 
     def = &ctx.ref_defs[ctx.n_ref_defs];
-    memset(def, 0, sizeof(MD_REF_DEF));
+    memset(def, 0, MD_REF_DEF.sizeof);
 
     def.label = label;
     def.label_size = label_size;
@@ -2520,17 +2472,17 @@ md_is_link_reference_definition(MD_CTX* ctx, const MD_LINE* lines, int n_lines)
     def.dest_end = dest_contents_end;
 
     if(title_contents_beg >= title_contents_end) {
-        def.title = NULL;
+        def.title = null;
         def.title_size = 0;
     } else if(!title_is_multiline) {
-        def.title = (CHAR*) ctx.STR(title_contents_beg);
+        def.title = cast(CHAR*) ctx.STR(title_contents_beg);
         def.title_size = title_contents_end - title_contents_beg;
     } else {
         ret = (md_merge_lines_alloc(ctx, title_contents_beg, title_contents_end,
                     lines + title_contents_line_index, n_lines - title_contents_line_index,
                     '\n', &def.title, &def.title_size));
         if (ret < 0) goto abort;
-        def.title_needs_free = TRUE;
+        def.title_needs_free = true;
     }
 
     /* Success. */
@@ -2540,18 +2492,18 @@ md_is_link_reference_definition(MD_CTX* ctx, const MD_LINE* lines, int n_lines)
 abort:
     /* Failure. */
     if(label_needs_free)
-        free(label);
+        free(cast(void*)label); // Note: const_cast here
     return -1;
 }
 
 static int
-md_is_link_reference(MD_CTX* ctx, const MD_LINE* lines, int n_lines,
+md_is_link_reference(MD_CTX* ctx, const(MD_LINE)* lines, int n_lines,
                      OFF beg, OFF end, MD_LINK_ATTR* attr)
 {
-    const MD_REF_DEF* def;
-    const MD_LINE* beg_line;
-    const MD_LINE* end_line;
-    CHAR* label;
+    const(MD_REF_DEF)* def;
+    const(MD_LINE)* beg_line;
+    const(MD_LINE)* end_line;
+    const(CHAR)* label;
     SZ label_size;
     int ret;
 
@@ -2574,26 +2526,26 @@ md_is_link_reference(MD_CTX* ctx, const MD_LINE* lines, int n_lines,
 
     if(beg_line != end_line) {
         ret = (md_merge_lines_alloc(ctx, beg, end, beg_line,
-                 n_lines - (beg_line - lines), _T(' '), &label, &label_size));
+            cast(int)(n_lines - (beg_line - lines)), ' ', &label, &label_size));
         if (ret < 0) goto abort;
     } else {
-        label = (CHAR*) ctx.STR(beg);
+        label = cast(CHAR*) ctx.STR(beg);
         label_size = end - beg;
     }
 
     def = md_lookup_ref_def(ctx, label, label_size);
-    if(def != NULL) {
+    if(def != null) {
         attr.dest_beg = def.dest_beg;
         attr.dest_end = def.dest_end;
         attr.title = def.title;
         attr.title_size = def.title_size;
-        attr.title_needs_free = FALSE;
+        attr.title_needs_free = false;
     }
 
     if(beg_line != end_line)
-        free(label);
+        free(cast(void*)label); // Note: const_cast here
 
-    ret = (def != NULL);
+    ret = (def != null);
 
 abort:
     return ret;
@@ -2632,9 +2584,9 @@ md_is_inline_link_spec(MD_CTX* ctx, const MD_LINE* lines, int n_lines,
     if(off < ctx.size  &&  ctx.CH(off) == ')') {
         attr.dest_beg = off;
         attr.dest_end = off;
-        attr.title = NULL;
+        attr.title = null;
         attr.title_size = 0;
-        attr.title_needs_free = FALSE;
+        attr.title_needs_free = false;
         off++;
         *p_end = off;
         return TRUE;
@@ -2675,19 +2627,19 @@ md_is_inline_link_spec(MD_CTX* ctx, const MD_LINE* lines, int n_lines,
     off++;
 
     if(title_contents_beg >= title_contents_end) {
-        attr.title = NULL;
+        attr.title = null;
         attr.title_size = 0;
-        attr.title_needs_free = FALSE;
+        attr.title_needs_free = false;
     } else if(!title_is_multiline) {
-        attr.title = (CHAR*) ctx.STR(title_contents_beg);
+        attr.title = cast(CHAR*) ctx.STR(title_contents_beg); // Note: const_cast here!
         attr.title_size = title_contents_end - title_contents_beg;
-        attr.title_needs_free = FALSE;
+        attr.title_needs_free = false;
     } else {
         ret = (md_merge_lines_alloc(ctx, title_contents_beg, title_contents_end,
                     lines + title_contents_line_index, n_lines - title_contents_line_index,
                     '\n', &attr.title, &attr.title_size));
         if (ret < 0) goto abort;
-        attr.title_needs_free = TRUE;
+        attr.title_needs_free = true;
     }
 
     *p_end = off;
@@ -2697,8 +2649,7 @@ abort:
     return ret;
 }
 
-static void
-md_free_ref_defs(MD_CTX* ctx)
+void md_free_ref_defs(MD_CTX* ctx)
 {
     int i;
 
@@ -2706,9 +2657,9 @@ md_free_ref_defs(MD_CTX* ctx)
         MD_REF_DEF* def = &ctx.ref_defs[i];
 
         if(def.label_needs_free)
-            free(def.label);
+            free(cast(void*)def.label); // Note: const_cast here
         if(def.title_needs_free)
-            free(def.title);
+            free(cast(void*)def.title); // Note: const_cast here
     }
 
     free(ctx.ref_defs);
@@ -2755,7 +2706,7 @@ md_free_ref_defs(MD_CTX* ctx)
 /* The mark structure.
  *
  * '\\': Maybe escape sequence.
- * '\0': NULL char.
+ * '\0': null char.
  *  '*': Maybe (strong) emphasis start/end.
  *  '_': Maybe (strong) emphasis start/end.
  *  '~': Maybe strikethrough start/end (needs MD_FLAG_STRIKETHROUGH).
@@ -2795,66 +2746,63 @@ struct MD_MARK {
     int prev;
     int next;
     CHAR ch;
-    unsigned char flags;
+    ubyte flags;
 };
 
 /* Mark flags (these apply to ALL mark types). */
-#define MD_MARK_POTENTIAL_OPENER            0x01  /* Maybe opener. */
-#define MD_MARK_POTENTIAL_CLOSER            0x02  /* Maybe closer. */
-#define MD_MARK_OPENER                      0x04  /* Definitely opener. */
-#define MD_MARK_CLOSER                      0x08  /* Definitely closer. */
-#define MD_MARK_RESOLVED                    0x10  /* Resolved in any definite way. */
+enum MD_MARK_POTENTIAL_OPENER            = 0x01;  /* Maybe opener. */
+enum MD_MARK_POTENTIAL_CLOSER            = 0x02;  /* Maybe closer. */
+enum MD_MARK_OPENER                      = 0x04;  /* Definitely opener. */
+enum MD_MARK_CLOSER                      = 0x08;  /* Definitely closer. */
+enum MD_MARK_RESOLVED                    = 0x10;  /* Resolved in any definite way. */
 
 /* Mark flags specific for various mark types (so they can share bits). */
-#define MD_MARK_EMPH_INTRAWORD              0x20  /* Helper for the "rule of 3". */
-#define MD_MARK_EMPH_MOD3_0                 0x40
-#define MD_MARK_EMPH_MOD3_1                 0x80
-#define MD_MARK_EMPH_MOD3_2                 (0x40 | 0x80)
-#define MD_MARK_EMPH_MOD3_MASK              (0x40 | 0x80)
-#define MD_MARK_AUTOLINK                    0x20  /* Distinguisher for '<', '>'. */
-#define MD_MARK_VALIDPERMISSIVEAUTOLINK     0x20  /* For permissive autolinks. */
+enum MD_MARK_EMPH_INTRAWORD              = 0x20;  /* Helper for the "rule of 3". */
+enum MD_MARK_EMPH_MOD3_0                 = 0x40;
+enum MD_MARK_EMPH_MOD3_1                 = 0x80;
+enum MD_MARK_EMPH_MOD3_2                 = (0x40 | 0x80);
+enum MD_MARK_EMPH_MOD3_MASK              = (0x40 | 0x80);
+enum MD_MARK_AUTOLINK                    = 0x20;  /* Distinguisher for '<', '>'. */
+enum MD_MARK_VALIDPERMISSIVEAUTOLINK     = 0x20;  /* For permissive autolinks. */
 
-static MD_MARKCHAIN*
-md_asterisk_chain(MD_CTX* ctx, unsigned flags)
+MD_MARKCHAIN* md_asterisk_chain(MD_CTX* ctx, uint flags)
 {
-    switch(flags & (MD_MARK_EMPH_INTRAWORD | MD_MARK_EMPH_MOD3_MASK)) {
-        case MD_MARK_EMPH_INTRAWORD | MD_MARK_EMPH_MOD3_0:  return &ctx.ASTERISK_OPENERS_intraword_mod3_0;
-        case MD_MARK_EMPH_INTRAWORD | MD_MARK_EMPH_MOD3_1:  return &ctx.ASTERISK_OPENERS_intraword_mod3_1;
-        case MD_MARK_EMPH_INTRAWORD | MD_MARK_EMPH_MOD3_2:  return &ctx.ASTERISK_OPENERS_intraword_mod3_2;
-        case MD_MARK_EMPH_MOD3_0:                           return &ctx.ASTERISK_OPENERS_extraword_mod3_0;
-        case MD_MARK_EMPH_MOD3_1:                           return &ctx.ASTERISK_OPENERS_extraword_mod3_1;
-        case MD_MARK_EMPH_MOD3_2:                           return &ctx.ASTERISK_OPENERS_extraword_mod3_2;
+    switch(flags & (MD_MARK_EMPH_INTRAWORD | MD_MARK_EMPH_MOD3_MASK)) 
+    {
+        case MD_MARK_EMPH_INTRAWORD | MD_MARK_EMPH_MOD3_0:  return ctx.ASTERISK_OPENERS_intraword_mod3_0;
+        case MD_MARK_EMPH_INTRAWORD | MD_MARK_EMPH_MOD3_1:  return ctx.ASTERISK_OPENERS_intraword_mod3_1;
+        case MD_MARK_EMPH_INTRAWORD | MD_MARK_EMPH_MOD3_2:  return ctx.ASTERISK_OPENERS_intraword_mod3_2;
+        case MD_MARK_EMPH_MOD3_0:                           return ctx.ASTERISK_OPENERS_extraword_mod3_0;
+        case MD_MARK_EMPH_MOD3_1:                           return ctx.ASTERISK_OPENERS_extraword_mod3_1;
+        case MD_MARK_EMPH_MOD3_2:                           return ctx.ASTERISK_OPENERS_extraword_mod3_2;
         default:                                            assert(false);
     }
-    return NULL;
 }
 
-static MD_MARKCHAIN*
-md_mark_chain(MD_CTX* ctx, int mark_index)
+MD_MARKCHAIN* md_mark_chain(MD_CTX* ctx, int mark_index)
 {
     MD_MARK* mark = &ctx.marks[mark_index];
 
     switch(mark.ch) {
         case '*':   return md_asterisk_chain(ctx, mark.flags);
-        case '_':   return &ctx.UNDERSCORE_OPENERS;
-        case '~':   return &ctx.TILDE_OPENERS;
-        case '[':   return &ctx.BRACKET_OPENERS;
-        case '|':   return &ctx.TABLECELLBOUNDARIES;
-        default:        return NULL;
+        case '_':   return ctx.UNDERSCORE_OPENERS;
+        case '~':   return ctx.TILDE_OPENERS;
+        case '[':   return ctx.BRACKET_OPENERS;
+        case '|':   return ctx.TABLECELLBOUNDARIES;
+        default:        return null;
     }
 }
 
-static MD_MARK*
-md_push_mark(MD_CTX* ctx)
+MD_MARK* md_push_mark(MD_CTX* ctx)
 {
     if(ctx.n_marks >= ctx.alloc_marks) {
         MD_MARK* new_marks;
 
         ctx.alloc_marks = (ctx.alloc_marks > 0 ? ctx.alloc_marks * 2 : 64);
-        new_marks = realloc(ctx.marks, ctx.alloc_marks * sizeof(MD_MARK));
-        if(new_marks == NULL) {
+        new_marks = cast(MD_MARK*) realloc(ctx.marks, ctx.alloc_marks * MD_MARK.sizeof);
+        if(new_marks == null) {
             ctx.MD_LOG("realloc() failed.");
-            return NULL;
+            return null;
         }
 
         ctx.marks = new_marks;
@@ -2863,26 +2811,30 @@ md_push_mark(MD_CTX* ctx)
     return &ctx.marks[ctx.n_marks++];
 }
 
-#define PUSH_MARK_()                                                    \
-        do {                                                            \
-            mark = md_push_mark(ctx);                                   \
-            if(mark == NULL) {                                          \
-                ret = -1;                                               \
-                goto abort;                                             \
-            }                                                           \
-        } while(0)
+int PUSH_MARK_(MD_CTX* ctx, MD_MARK** mark)
+{
+    *mark = md_push_mark(ctx);
+    if(*mark == null) 
+    {
+        return -1;
+    }
+    return 0;
+}
 
-#define PUSH_MARK(ch_, beg_, end_, flags_)                              \
-        do {                                                            \
-            PUSH_MARK_();                                               \
-            mark.beg = (beg_);                                         \
-            mark.end = (end_);                                         \
-            mark.prev = -1;                                            \
-            mark.next = -1;                                            \
-            mark.ch = (char)(ch_);                                     \
-            mark.flags = (flags_);                                     \
-        } while(0)
+int PUSH_MARK(MD_CTX* ctx, MD_MARK** mark, CHAR ch_, OFF beg_, OFF end_, int flags_)
+{
+    int ret = PUSH_MARK_(ctx, mark);
+    if (ret != 0)
+        return ret;
 
+    (*mark).beg = (beg_);
+    (*mark).end = (end_);
+    (*mark).prev = -1;
+    (*mark).next = -1;
+    (*mark).ch = cast(char)(ch_);
+    (*mark).flags = cast(ubyte)flags_;
+    return 0;
+}
 
 static void
 md_mark_chain_append(MD_CTX* ctx, MD_MARKCHAIN* chain, int mark_index)
@@ -2899,15 +2851,14 @@ md_mark_chain_append(MD_CTX* ctx, MD_MARKCHAIN* chain, int mark_index)
 /* Sometimes, we need to store a pointer into the mark. It is quite rare
  * so we do not bother to make MD_MARK use union, and it can only happen
  * for dummy marks. */
-static void
-md_mark_store_ptr(MD_CTX* ctx, int mark_index, void* ptr)
+void md_mark_store_ptr(MD_CTX* ctx, int mark_index, const(void)* ptr)
 {
     MD_MARK* mark = &ctx.marks[mark_index];
     assert(mark.ch == 'D');
 
     /* Check only members beg and end are misused for this. */
-    assert(sizeof(void*) <= 2 * sizeof(OFF));
-    memcpy(mark, &ptr, sizeof(void*));
+    assert((void*).sizeof <= 2 * OFF.sizeof);
+    memcpy(mark, &ptr, (void*).sizeof);
 }
 
 static void*
@@ -2916,7 +2867,7 @@ md_mark_get_ptr(MD_CTX* ctx, int mark_index)
     void* ptr;
     MD_MARK* mark = &ctx.marks[mark_index];
     assert(mark.ch == 'D');
-    memcpy(&ptr, mark, sizeof(void*));
+    memcpy(&ptr, mark, (void*).sizeof);
     return ptr;
 }
 
@@ -2927,7 +2878,7 @@ md_resolve_range(MD_CTX* ctx, MD_MARKCHAIN* chain, int opener_index, int closer_
     MD_MARK* closer = &ctx.marks[closer_index];
 
     /* Remove opener from the list of openers. */
-    if(chain != NULL) {
+    if(chain != null) {
         if(opener.prev >= 0)
             ctx.marks[opener.prev].next = opener.next;
         else
@@ -2947,8 +2898,8 @@ md_resolve_range(MD_CTX* ctx, MD_MARKCHAIN* chain, int opener_index, int closer_
 }
 
 
-#define MD_ROLLBACK_ALL         0
-#define MD_ROLLBACK_CROSSING    1
+enum MD_ROLLBACK_ALL         = 0;
+enum MD_ROLLBACK_CROSSING    = 1;
 
 /* In the range ctx.marks[opener_index] ... [closer_index], undo some or all
  * resolvings accordingly to these rules:
@@ -3002,7 +2953,7 @@ md_rollback(MD_CTX* ctx, int opener_index, int closer_index, int how)
 
                 mark_opener.flags &= ~(MD_MARK_OPENER | MD_MARK_CLOSER | MD_MARK_RESOLVED);
                 chain = md_mark_chain(ctx, opener_index);
-                if(chain != NULL) {
+                if(chain != null) {
                     md_mark_chain_append(ctx, chain, mark_opener_index);
                     discard_flag = 1;
                 }
@@ -3022,6 +2973,7 @@ md_rollback(MD_CTX* ctx, int opener_index, int closer_index, int how)
                     mark_index = mark.prev;
                     break;
                 }
+                goto default;
                 /* Pass through. */
             default:
                 mark_index--;
@@ -3030,10 +2982,9 @@ md_rollback(MD_CTX* ctx, int opener_index, int closer_index, int how)
     }
 }
 
-static void
-md_build_mark_char_map(MD_CTX* ctx)
+void md_build_mark_char_map(MD_CTX* ctx)
 {
-    memset(ctx.mark_char_map, 0, sizeof(ctx.mark_char_map));
+    memset(ctx.mark_char_map.ptr, 0, ctx.mark_char_map.length);
 
     ctx.mark_char_map['\\'] = 1;
     ctx.mark_char_map['*'] = 1;
@@ -3069,8 +3020,8 @@ md_build_mark_char_map(MD_CTX* ctx)
     if(ctx.parser.flags & MD_FLAG_COLLAPSEWHITESPACE) {
         int i;
 
-        for(i = 0; i < (int) sizeof(ctx.mark_char_map); i++) {
-            if(ISWHITESPACE_(i))
+        for(i = 0; i < cast(int) (ctx.mark_char_map).sizeof; i++) {
+            if(ISWHITESPACE_(cast(CHAR)i))
                 ctx.mark_char_map[i] = 1;
         }
     }
@@ -3079,14 +3030,13 @@ md_build_mark_char_map(MD_CTX* ctx)
 /* We limit code span marks to lower then 32 backticks. This solves the
  * pathologic case of too many openers, each of different length: Their
  * resolving would be then O(n^2). */
-#define CODESPAN_MARK_MAXLEN    32
+enum CODESPAN_MARK_MAXLEN    = 32;
 
-static int
-md_is_code_span(MD_CTX* ctx, const MD_LINE* lines, int n_lines, OFF beg,
-                OFF* p_opener_beg, OFF* p_opener_end,
-                OFF* p_closer_beg, OFF* p_closer_end,
-                OFF last_potential_closers[CODESPAN_MARK_MAXLEN],
-                int* p_reached_paragraph_end)
+int md_is_code_span(MD_CTX* ctx, const(MD_LINE)* lines, int n_lines, OFF beg,
+                    OFF* p_opener_beg, OFF* p_opener_end,
+                    OFF* p_closer_beg, OFF* p_closer_end,
+                    OFF* last_potential_closers,
+                    int* p_reached_paragraph_end)
 {
     OFF opener_beg = beg;
     OFF opener_end;
@@ -3305,37 +3255,38 @@ md_is_autolink(MD_CTX* ctx, OFF beg, OFF max_end, OFF* p_end, int* p_missing_mai
     return FALSE;
 }
 
-static int
-md_collect_marks(MD_CTX* ctx, const MD_LINE* lines, int n_lines, int table_mode)
+/* For 8-bit encodings, mark_char_map[] covers all 256 elements. */
+bool IS_MARK_CHAR(MD_CTX* ctx, OFF off)
+{
+    return (ctx.mark_char_map[cast(ubyte) ctx.CH(off)]) != 0;
+}
+
+int md_collect_marks(MD_CTX* ctx, const(MD_LINE)* lines, int n_lines, int table_mode)
 {
     int i;
     int ret = 0;
     MD_MARK* mark;
-    OFF codespan_last_potential_closers[CODESPAN_MARK_MAXLEN] = { 0 };
+    OFF[CODESPAN_MARK_MAXLEN] codespan_last_potential_closers = 
+    [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ];
+
     int codespan_scanned_till_paragraph_end = FALSE;
 
-    for(i = 0; i < n_lines; i++) {
-        const MD_LINE* line = &lines[i];
+    for(i = 0; i < n_lines; i++) 
+    {
+        const(MD_LINE)* line = &lines[i];
         OFF off = line.beg;
         OFF line_end = line.end;
 
-        while(TRUE) {
+        while(true) 
+        {
             CHAR ch;
 
-#ifdef MD4C_USE_UTF16
-    /* For UTF-16, mark_char_map[] covers only ASCII. */
-    #define IS_MARK_CHAR(off)   ((ctx.CH(off) < ctx.mark_char_map.length)  &&  \
-                                (ctx.mark_char_map[(unsigned char) ctx.CH(off)]))
-#else
-    /* For 8-bit encodings, mark_char_map[] covers all 256 elements. */
-    #define IS_MARK_CHAR(off)   (ctx.mark_char_map[(unsigned char) ctx.CH(off)])
-#endif
-
             /* Optimization: Use some loop unrolling. */
-            while(off + 3 < line_end  &&  !IS_MARK_CHAR(off+0)  &&  !IS_MARK_CHAR(off+1)
-                                      &&  !IS_MARK_CHAR(off+2)  &&  !IS_MARK_CHAR(off+3))
+            while(off + 3 < line_end  &&  !IS_MARK_CHAR(ctx, off+0)  &&  !IS_MARK_CHAR(ctx, off+1)
+                                      &&  !IS_MARK_CHAR(ctx, off+2)  &&  !IS_MARK_CHAR(ctx, off+3))
                 off += 4;
-            while(off < line_end  &&  !IS_MARK_CHAR(off+0))
+            while(off < line_end  &&  !IS_MARK_CHAR(ctx, off+0))
                 off++;
 
             if(off >= line_end)
@@ -3349,7 +3300,10 @@ md_collect_marks(MD_CTX* ctx, const MD_LINE* lines, int n_lines, int table_mode)
             if(ch == '\\'  &&  off+1 < ctx.size  &&  (ctx.ISPUNCT(off+1) || ctx.ISNEWLINE(off+1))) {
                 /* Hard-break cannot be on the last line of the block. */
                 if(!ctx.ISNEWLINE(off+1)  ||  i+1 < n_lines)
-                    PUSH_MARK(ch, off, off+2, MD_MARK_RESOLVED);
+                {
+                    ret = PUSH_MARK(ctx, &mark, ch, off, off+2, MD_MARK_RESOLVED);
+                    if (ret != 0) goto abort;
+                }
                 off += 2;
                 continue;
             }
@@ -3363,16 +3317,16 @@ md_collect_marks(MD_CTX* ctx, const MD_LINE* lines, int n_lines, int table_mode)
                 while(tmp < line_end  &&  ctx.CH(tmp) == ch)
                     tmp++;
 
-                if(off == line.beg  ||  ISUNICODEWHITESPACEBEFORE(off))
+                if(off == line.beg  ||  ctx.ISUNICODEWHITESPACEBEFORE(off))
                     left_level = 0;
-                else if(ISUNICODEPUNCTBEFORE(off))
+                else if(ctx.ISUNICODEPUNCTBEFORE(off))
                     left_level = 1;
                 else
                     left_level = 2;
 
-                if(tmp == line_end  ||  ISUNICODEWHITESPACE(tmp))
+                if(tmp == line_end  ||  ctx.ISUNICODEWHITESPACE(tmp))
                     right_level = 0;
-                else if(ISUNICODEPUNCT(tmp))
+                else if(ctx.ISUNICODEPUNCT(tmp))
                     right_level = 1;
                 else
                     right_level = 2;
@@ -3384,7 +3338,7 @@ md_collect_marks(MD_CTX* ctx, const MD_LINE* lines, int n_lines, int table_mode)
                 }
 
                 if(left_level != 0  ||  right_level != 0) {
-                    unsigned flags = 0;
+                    uint flags = 0;
 
                     if(left_level > 0  &&  left_level >= right_level)
                         flags |= MD_MARK_POTENTIAL_CLOSER;
@@ -3397,13 +3351,16 @@ md_collect_marks(MD_CTX* ctx, const MD_LINE* lines, int n_lines, int table_mode)
                      * size of the mark (modulo three), before we potentially
                      * split the mark when being later resolved partially by some
                      * shorter closer. */
-                    switch((tmp - off) % 3) {
+                    switch((tmp - off) % 3) 
+                    {
                         case 0: flags |= MD_MARK_EMPH_MOD3_0; break;
                         case 1: flags |= MD_MARK_EMPH_MOD3_1; break;
                         case 2: flags |= MD_MARK_EMPH_MOD3_2; break;
+                        default: break;
                     }
 
-                    PUSH_MARK(ch, off, tmp, flags);
+                    ret = PUSH_MARK(ctx, &mark, ch, off, tmp, flags);
+                    if (ret != 0) goto abort;
 
                     /* During resolving, multiple asterisks may have to be
                      * split into independent span start/ends. Consider e.g.
@@ -3411,7 +3368,8 @@ md_collect_marks(MD_CTX* ctx, const MD_LINE* lines, int n_lines, int table_mode)
                      * marks to have enough space for that. */
                     off++;
                     while(off < tmp) {
-                        PUSH_MARK('D', off, off, 0);
+                        ret = PUSH_MARK(ctx,  &mark, 'D', off, off, 0);
+                        if (ret != 0) goto abort;
                         off++;
                     }
                     continue;
@@ -3429,11 +3387,13 @@ md_collect_marks(MD_CTX* ctx, const MD_LINE* lines, int n_lines, int table_mode)
 
                 is_code_span = md_is_code_span(ctx, lines + i, n_lines - i, off,
                                     &opener_beg, &opener_end, &closer_beg, &closer_end,
-                                    codespan_last_potential_closers,
+                                    codespan_last_potential_closers.ptr,
                                     &codespan_scanned_till_paragraph_end);
                 if(is_code_span) {
-                    PUSH_MARK('`', opener_beg, opener_end, MD_MARK_OPENER | MD_MARK_RESOLVED);
-                    PUSH_MARK('`', closer_beg, closer_end, MD_MARK_CLOSER | MD_MARK_RESOLVED);
+                    ret = PUSH_MARK(ctx, &mark, '`', opener_beg, opener_end, MD_MARK_OPENER | MD_MARK_RESOLVED);
+                    if (ret != 0) goto abort;
+                    ret = PUSH_MARK(ctx, &mark, '`', closer_beg, closer_end, MD_MARK_CLOSER | MD_MARK_RESOLVED);
+                    if (ret != 0) goto abort;
                     ctx.marks[ctx.n_marks-2].next = ctx.n_marks-1;
                     ctx.marks[ctx.n_marks-1].prev = ctx.n_marks-2;
 
@@ -3454,7 +3414,8 @@ md_collect_marks(MD_CTX* ctx, const MD_LINE* lines, int n_lines, int table_mode)
 
             /* A potential entity start. */
             if(ch == '&') {
-                PUSH_MARK(ch, off, off+1, MD_MARK_POTENTIAL_OPENER);
+                ret = PUSH_MARK(ctx,  &mark, ch, off, off+1, MD_MARK_POTENTIAL_OPENER);
+                if (ret != 0) goto abort;
                 off++;
                 continue;
             }
@@ -3463,7 +3424,10 @@ md_collect_marks(MD_CTX* ctx, const MD_LINE* lines, int n_lines, int table_mode)
             if(ch == ';') {
                 /* We surely cannot be entity unless the previous mark is '&'. */
                 if(ctx.n_marks > 0  &&  ctx.marks[ctx.n_marks-1].ch == '&')
-                    PUSH_MARK(ch, off, off+1, MD_MARK_POTENTIAL_CLOSER);
+                {
+                    ret = PUSH_MARK(ctx, &mark, ch, off, off+1, MD_MARK_POTENTIAL_CLOSER);
+                    if (ret != 0) goto abort;
+                }
 
                 off++;
                 continue;
@@ -3485,8 +3449,10 @@ md_collect_marks(MD_CTX* ctx, const MD_LINE* lines, int n_lines, int table_mode)
                     is_html = md_is_html_any(ctx, lines + i, n_lines - i, off,
                                     lines[n_lines-1].end, &html_end);
                     if(is_html) {
-                        PUSH_MARK('<', off, off, MD_MARK_OPENER | MD_MARK_RESOLVED);
-                        PUSH_MARK('>', html_end, html_end, MD_MARK_CLOSER | MD_MARK_RESOLVED);
+                        ret = PUSH_MARK(ctx, &mark, '<', off, off, MD_MARK_OPENER | MD_MARK_RESOLVED);
+                        if (ret != 0) goto abort;
+                        ret = PUSH_MARK(ctx, &mark, '>', html_end, html_end, MD_MARK_CLOSER | MD_MARK_RESOLVED);
+                        if (ret != 0) goto abort;
                         ctx.marks[ctx.n_marks-2].next = ctx.n_marks-1;
                         ctx.marks[ctx.n_marks-1].prev = ctx.n_marks-2;
                         off = html_end;
@@ -3504,10 +3470,12 @@ md_collect_marks(MD_CTX* ctx, const MD_LINE* lines, int n_lines, int table_mode)
                 is_autolink = md_is_autolink(ctx, off, lines[n_lines-1].end,
                                     &autolink_end, &missing_mailto);
                 if(is_autolink) {
-                    PUSH_MARK((missing_mailto ? '@' : '<'), off, off+1,
-                                MD_MARK_OPENER | MD_MARK_RESOLVED | MD_MARK_AUTOLINK);
-                    PUSH_MARK('>', autolink_end-1, autolink_end,
-                                MD_MARK_CLOSER | MD_MARK_RESOLVED | MD_MARK_AUTOLINK);
+                    ret = PUSH_MARK(ctx, &mark, (missing_mailto ? '@' : '<'), off, off+1,
+                                    MD_MARK_OPENER | MD_MARK_RESOLVED | MD_MARK_AUTOLINK);
+                    if (ret != 0) goto abort;
+                    ret = PUSH_MARK(ctx, &mark, '>', autolink_end-1, autolink_end,
+                                    MD_MARK_CLOSER | MD_MARK_RESOLVED | MD_MARK_AUTOLINK);
+                    if (ret != 0) goto abort;
                     ctx.marks[ctx.n_marks-2].next = ctx.n_marks-1;
                     ctx.marks[ctx.n_marks-1].prev = ctx.n_marks-2;
                     off = autolink_end;
@@ -3521,16 +3489,20 @@ md_collect_marks(MD_CTX* ctx, const MD_LINE* lines, int n_lines, int table_mode)
             /* A potential link or its part. */
             if(ch == '['  ||  (ch == '!' && off+1 < line_end && ctx.CH(off+1) == '[')) {
                 OFF tmp = (ch == '[' ? off+1 : off+2);
-                PUSH_MARK(ch, off, tmp, MD_MARK_POTENTIAL_OPENER);
+                ret = PUSH_MARK(ctx, &mark, ch, off, tmp, MD_MARK_POTENTIAL_OPENER);
+                if (ret != 0) goto abort;
                 off = tmp;
                 /* Two dummies to make enough place for data we need if it is
                  * a link. */
-                PUSH_MARK('D', off, off, 0);
-                PUSH_MARK('D', off, off, 0);
+                ret = PUSH_MARK(ctx, &mark, 'D', off, off, 0);
+                if (ret != 0) goto abort;
+                ret = PUSH_MARK(ctx, &mark, 'D', off, off, 0);
+                if (ret != 0) goto abort;
                 continue;
             }
             if(ch == ']') {
-                PUSH_MARK(ch, off, off+1, MD_MARK_POTENTIAL_CLOSER);
+                ret = PUSH_MARK(ctx, &mark, ch, off, off+1, MD_MARK_POTENTIAL_CLOSER);
+                if (ret != 0) goto abort;
                 off++;
                 continue;
             }
@@ -3540,9 +3512,11 @@ md_collect_marks(MD_CTX* ctx, const MD_LINE* lines, int n_lines, int table_mode)
                 if(line.beg + 1 <= off  &&  ctx.ISALNUM(off-1)  &&
                     off + 3 < line.end  &&  ctx.ISALNUM(off+1))
                 {
-                    PUSH_MARK(ch, off, off+1, MD_MARK_POTENTIAL_OPENER);
+                    ret = PUSH_MARK(ctx, &mark, ch, off, off+1, MD_MARK_POTENTIAL_OPENER);
+                    if (ret != 0) goto abort;
                     /* Push a dummy as a reserve for a closer. */
-                    PUSH_MARK('D', off, off, 0);
+                    ret = PUSH_MARK(ctx, &mark, 'D', off, off, 0);
+                    if (ret != 0) goto abort;
                 }
 
                 off++;
@@ -3550,18 +3524,23 @@ md_collect_marks(MD_CTX* ctx, const MD_LINE* lines, int n_lines, int table_mode)
             }
 
             /* A potential permissive URL autolink. */
-            if(ch == ':') {
-                static struct {
+            if(ch == ':') 
+            {
+                static struct Scheme
+                {
                     const(CHAR)* scheme;
                     SZ scheme_size;
                     const(CHAR)* suffix;
                     SZ suffix_size;
-                } scheme_map[] = {
-                    /* In the order from the most frequently used, arguably. */
-                    { "http", 4,    "//", 2 },
-                    { "https", 5,   "//", 2 },
-                    { "ftp", 3,     "//", 2 }
-                };
+                }
+
+                static immutable Scheme[] scheme_map =
+                [
+                    Scheme("http", 4,    "//", 2),
+                    Scheme("https", 5,    "//", 2),
+                    Scheme("ftp", 3,    "//", 2)
+                ];
+
                 int scheme_index;
 
                 for(scheme_index = 0; scheme_index < cast(int) (scheme_map.length); scheme_index++) {
@@ -3574,9 +3553,11 @@ md_collect_marks(MD_CTX* ctx, const MD_LINE* lines, int n_lines, int table_mode)
                         (line.beg + scheme_size == off || ctx.ISWHITESPACE(off-scheme_size-1) || ctx.ISANYOF(off-scheme_size-1, "*_~(["))  &&
                         off + 1 + suffix_size < line.end  &&  md_ascii_eq(ctx.STR(off+1), suffix, suffix_size))
                     {
-                        PUSH_MARK(ch, off-scheme_size, off+1+suffix_size, MD_MARK_POTENTIAL_OPENER);
+                        ret = PUSH_MARK(ctx, &mark, ch, off-scheme_size, off+1+suffix_size, MD_MARK_POTENTIAL_OPENER);
+                        if (ret != 0) goto abort;
                         /* Push a dummy as a reserve for a closer. */
-                        PUSH_MARK('D', off, off, 0);
+                        ret = PUSH_MARK(ctx, &mark, 'D', off, off, 0);
+                        if (ret != 0) goto abort;
                         off += 1 + suffix_size;
                         continue;
                     }
@@ -3592,9 +3573,11 @@ md_collect_marks(MD_CTX* ctx, const MD_LINE* lines, int n_lines, int table_mode)
                     (line.beg + 3 == off || ctx.ISWHITESPACE(off-4) || ctx.ISANYOF(off-4, "*_~(["))  &&
                     off + 1 < line_end)
                 {
-                    PUSH_MARK(ch, off-3, off+1, MD_MARK_POTENTIAL_OPENER);
+                    ret = PUSH_MARK(ctx, &mark, ch, off-3, off+1, MD_MARK_POTENTIAL_OPENER);
+                    if (ret != 0) goto abort;
                     /* Push a dummy as a reserve for a closer. */
-                    PUSH_MARK('D', off, off, 0);
+                    ret = PUSH_MARK(ctx, &mark, 'D', off, off, 0);
+                    if (ret != 0) goto abort;
                     off++;
                     continue;
                 }
@@ -3605,7 +3588,8 @@ md_collect_marks(MD_CTX* ctx, const MD_LINE* lines, int n_lines, int table_mode)
 
             /* A potential table cell boundary. */
             if(table_mode  &&  ch == '|') {
-                PUSH_MARK(ch, off, off+1, 0);
+                ret = PUSH_MARK(ctx, &mark, ch, off, off+1, 0);
+                if (ret != 0) goto abort;
                 off++;
                 continue;
             }
@@ -3617,7 +3601,8 @@ md_collect_marks(MD_CTX* ctx, const MD_LINE* lines, int n_lines, int table_mode)
                 while(tmp < line_end  &&  ctx.CH(tmp) == '~')
                     tmp++;
 
-                PUSH_MARK(ch, off, tmp, MD_MARK_POTENTIAL_OPENER | MD_MARK_POTENTIAL_CLOSER);
+                ret = PUSH_MARK(ctx, &mark, ch, off, tmp, MD_MARK_POTENTIAL_OPENER | MD_MARK_POTENTIAL_CLOSER);
+                if (ret != 0) goto abort;
                 off = tmp;
                 continue;
             }
@@ -3628,11 +3613,14 @@ md_collect_marks(MD_CTX* ctx, const MD_LINE* lines, int n_lines, int table_mode)
                  * where two dollar signs signify a display equation. */
                 OFF tmp = off+1;
 
-                while(tmp < line_end && ctx.CH(tmp) == _T('$'))
+                while(tmp < line_end && ctx.CH(tmp) == '$')
                     tmp++;
 
                 if (tmp - off <= 2)
-                    PUSH_MARK(ch, off, tmp, MD_MARK_POTENTIAL_OPENER | MD_MARK_POTENTIAL_CLOSER);
+                {
+                    ret = PUSH_MARK(ctx, &mark, ch, off, tmp, MD_MARK_POTENTIAL_OPENER | MD_MARK_POTENTIAL_CLOSER);
+                    if (ret != 0) goto abort;
+                }
                 off = tmp;
                 continue;
             }
@@ -3645,15 +3633,19 @@ md_collect_marks(MD_CTX* ctx, const MD_LINE* lines, int n_lines, int table_mode)
                     tmp++;
 
                 if(tmp - off > 1  ||  ch != ' ')
-                    PUSH_MARK(ch, off, tmp, MD_MARK_RESOLVED);
+                {
+                    ret = PUSH_MARK(ctx, &mark, ch, off, tmp, MD_MARK_RESOLVED);
+                    if (ret != 0) goto abort;
+                }
 
                 off = tmp;
                 continue;
             }
 
-            /* NULL character. */
+            /* null character. */
             if(ch == '\0') {
-                PUSH_MARK(ch, off, off+1, MD_MARK_RESOLVED);
+                ret = PUSH_MARK(ctx, &mark, ch, off, off+1, MD_MARK_RESOLVED);
+                if (ret != 0) goto abort;
                 off++;
                 continue;
             }
@@ -3664,7 +3656,8 @@ md_collect_marks(MD_CTX* ctx, const MD_LINE* lines, int n_lines, int table_mode)
 
     /* Add a dummy mark at the end of the mark vector to simplify
      * process_inlines(). */
-    PUSH_MARK(127, ctx.size, ctx.size, MD_MARK_RESOLVED);
+    ret = PUSH_MARK(ctx, &mark, 127, ctx.size, ctx.size, MD_MARK_RESOLVED);
+    if (ret != 0) goto abort;
 
 abort:
     return ret;
@@ -3689,7 +3682,7 @@ md_analyze_bracket(MD_CTX* ctx, int mark_index)
     MD_MARK* mark = &ctx.marks[mark_index];
 
     if(mark.flags & MD_MARK_POTENTIAL_OPENER) {
-        md_mark_chain_append(ctx, &ctx.BRACKET_OPENERS, mark_index);
+        md_mark_chain_append(ctx, ctx.BRACKET_OPENERS, mark_index);
         return;
     }
 
@@ -3746,8 +3739,8 @@ md_resolve_links(MD_CTX* ctx, const MD_LINE* lines, int n_lines)
             next_opener = &ctx.marks[next_index];
             next_closer = &ctx.marks[next_opener.next];
         } else {
-            next_opener = NULL;
-            next_closer = NULL;
+            next_opener = null;
+            next_closer = null;
         }
 
         /* If nested ("[ [ ] ]"), we need to make sure that:
@@ -3765,7 +3758,7 @@ md_resolve_links(MD_CTX* ctx, const MD_LINE* lines, int n_lines)
             continue;
         }
 
-        if(next_opener != NULL  &&  next_opener.beg == closer.end) {
+        if(next_opener != null  &&  next_opener.beg == closer.end) {
             if(next_closer.beg > closer.end + 1) {
                 /* Might be full reference link. */
                 is_link = md_is_link_reference(ctx, lines, n_lines, next_opener.beg, next_closer.end, &attr);
@@ -3784,7 +3777,7 @@ md_resolve_links(MD_CTX* ctx, const MD_LINE* lines, int n_lines)
         } else {
             if(closer.end < ctx.size  &&  ctx.CH(closer.end) == '(') {
                 /* Might be inline link. */
-                OFF inline_link_end = UINT_MAX;
+                OFF inline_link_end = uint.max;
 
                 is_link = md_is_inline_link_spec(ctx, lines, n_lines, closer.end, &inline_link_end, &attr);
                 if(is_link < 0)
@@ -3804,7 +3797,7 @@ md_resolve_links(MD_CTX* ctx, const MD_LINE* lines, int n_lines)
                             if(ctx.marks[mark.next].beg >= inline_link_end) {
                                 /* Cancel the link status. */
                                 if(attr.title_needs_free)
-                                    free(attr.title);
+                                    free(cast(void*)(attr.title));
                                 is_link = FALSE;
                                 break;
                             }
@@ -3844,7 +3837,7 @@ md_resolve_links(MD_CTX* ctx, const MD_LINE* lines, int n_lines)
             assert(ctx.marks[opener_index+2].ch == 'D');
             md_mark_store_ptr(ctx, opener_index+2, attr.title);
             if(attr.title_needs_free)
-                md_mark_chain_append(ctx, &ctx.PTR_CHAIN, opener_index+2);
+                md_mark_chain_append(ctx, ctx.PTR_CHAIN, opener_index+2);
             ctx.marks[opener_index+2].prev = attr.title_size;
 
             if(opener.ch == '[') {
@@ -3889,7 +3882,7 @@ md_analyze_entity(MD_CTX* ctx, int mark_index)
     if(md_is_entity(ctx, opener.beg, closer.end, &off)) {
         assert(off == closer.end);
 
-        md_resolve_range(ctx, NULL, mark_index, mark_index+1);
+        md_resolve_range(ctx, null, mark_index, mark_index+1);
         opener.end = closer.end;
     }
 }
@@ -3900,7 +3893,7 @@ md_analyze_table_cell_boundary(MD_CTX* ctx, int mark_index)
     MD_MARK* mark = &ctx.marks[mark_index];
     mark.flags |= MD_MARK_RESOLVED;
 
-    md_mark_chain_append(ctx, &ctx.TABLECELLBOUNDARIES, mark_index);
+    md_mark_chain_append(ctx, ctx.TABLECELLBOUNDARIES, mark_index);
     ctx.n_table_cell_boundaries++;
 }
 
@@ -3918,7 +3911,7 @@ md_split_emph_mark(MD_CTX* ctx, int mark_index, SZ n)
     assert(mark.end - mark.beg > n);
     assert(dummy.ch == 'D');
 
-    memcpy(dummy, mark, sizeof(MD_MARK));
+    memcpy(dummy, mark, MD_MARK.sizeof);
     mark.end -= n;
     dummy.beg = mark.end;
 
@@ -3933,34 +3926,34 @@ md_analyze_emph(MD_CTX* ctx, int mark_index)
 
     /* If we can be a closer, try to resolve with the preceding opener. */
     if(mark.flags & MD_MARK_POTENTIAL_CLOSER) {
-        MD_MARK* opener = NULL;
+        MD_MARK* opener = null;
         int opener_index;
 
         if(mark.ch == '*') {
-            MD_MARKCHAIN* opener_chains[6];
+            MD_MARKCHAIN*[6] opener_chains;
             int i, n_opener_chains;
-            unsigned flags = mark.flags;
+            uint flags = mark.flags;
 
             /* Apply "rule of three". (This is why we break asterisk opener
              * marks into multiple chains.) */
             n_opener_chains = 0;
-            opener_chains[n_opener_chains++] = &ctx.ASTERISK_OPENERS_intraword_mod3_0;
+            opener_chains[n_opener_chains++] = ctx.ASTERISK_OPENERS_intraword_mod3_0;
             if((flags & MD_MARK_EMPH_MOD3_MASK) != MD_MARK_EMPH_MOD3_2)
-                opener_chains[n_opener_chains++] = &ctx.ASTERISK_OPENERS_intraword_mod3_1;
+                opener_chains[n_opener_chains++] = ctx.ASTERISK_OPENERS_intraword_mod3_1;
             if((flags & MD_MARK_EMPH_MOD3_MASK) != MD_MARK_EMPH_MOD3_1)
-                opener_chains[n_opener_chains++] = &ctx.ASTERISK_OPENERS_intraword_mod3_2;
-            opener_chains[n_opener_chains++] = &ctx.ASTERISK_OPENERS_extraword_mod3_0;
+                opener_chains[n_opener_chains++] = ctx.ASTERISK_OPENERS_intraword_mod3_2;
+            opener_chains[n_opener_chains++] = ctx.ASTERISK_OPENERS_extraword_mod3_0;
             if(!(flags & MD_MARK_EMPH_INTRAWORD)  ||  (flags & MD_MARK_EMPH_MOD3_MASK) != MD_MARK_EMPH_MOD3_2)
-                opener_chains[n_opener_chains++] = &ctx.ASTERISK_OPENERS_extraword_mod3_1;
+                opener_chains[n_opener_chains++] = ctx.ASTERISK_OPENERS_extraword_mod3_1;
             if(!(flags & MD_MARK_EMPH_INTRAWORD)  ||  (flags & MD_MARK_EMPH_MOD3_MASK) != MD_MARK_EMPH_MOD3_1)
-                opener_chains[n_opener_chains++] = &ctx.ASTERISK_OPENERS_extraword_mod3_2;
+                opener_chains[n_opener_chains++] = ctx.ASTERISK_OPENERS_extraword_mod3_2;
 
             /* Opener is the most recent mark from the allowed chains. */
             for(i = 0; i < n_opener_chains; i++) {
                 if(opener_chains[i].tail >= 0) {
                     int tmp_index = opener_chains[i].tail;
                     MD_MARK* tmp_mark = &ctx.marks[tmp_index];
-                    if(opener == NULL  ||  tmp_mark.end > opener.end) {
+                    if(opener == null  ||  tmp_mark.end > opener.end) {
                         opener_index = tmp_index;
                         opener = tmp_mark;
                     }
@@ -3975,7 +3968,7 @@ md_analyze_emph(MD_CTX* ctx, int mark_index)
         }
 
         /* Resolve, if we have found matching opener. */
-        if(opener != NULL) {
+        if(opener != null) {
             SZ opener_size = opener.end - opener.beg;
             SZ closer_size = mark.end - mark.beg;
 
@@ -4009,10 +4002,10 @@ md_analyze_tilde(MD_CTX* ctx, int mark_index)
         int opener_index = ctx.TILDE_OPENERS.head;
 
         md_rollback(ctx, opener_index, mark_index, MD_ROLLBACK_CROSSING);
-        md_resolve_range(ctx, &ctx.TILDE_OPENERS, opener_index, mark_index);
+        md_resolve_range(ctx, ctx.TILDE_OPENERS, opener_index, mark_index);
     } else {
         /* We can only be opener. */
-        md_mark_chain_append(ctx, &ctx.TILDE_OPENERS, mark_index);
+        md_mark_chain_append(ctx, ctx.TILDE_OPENERS, mark_index);
     }
 }
 
@@ -4035,14 +4028,14 @@ md_analyze_dollar(MD_CTX* ctx, int mark_index)
         md_rollback(ctx, opener_index, mark_index, MD_ROLLBACK_ALL);
         if (open.end - open.beg == close.end - close.beg) {
             /* We are the matching closer */
-            md_resolve_range(ctx, &ctx.DOLLAR_OPENERS, opener_index, mark_index);
+            md_resolve_range(ctx, ctx.DOLLAR_OPENERS, opener_index, mark_index);
         } else {
             /* We don't match the opener, so discard old opener and insert as opener */
-            md_mark_chain_append(ctx, &ctx.DOLLAR_OPENERS, mark_index);
+            md_mark_chain_append(ctx, ctx.DOLLAR_OPENERS, mark_index);
         }
     } else {
         /* No unmatched openers, so we are opener */
-        md_mark_chain_append(ctx, &ctx.DOLLAR_OPENERS, mark_index);
+        md_mark_chain_append(ctx, ctx.DOLLAR_OPENERS, mark_index);
     }
 }
 
@@ -4113,7 +4106,7 @@ md_analyze_permissive_url_autolink(MD_CTX* ctx, int mark_index)
     closer.ch = opener.ch;
     closer.beg = off;
     closer.end = off;
-    md_resolve_range(ctx, NULL, mark_index, closer_index);
+    md_resolve_range(ctx, null, mark_index, closer_index);
 }
 
 /* The permissive autolinks do not have to be enclosed in '<' '>' but we
@@ -4162,7 +4155,7 @@ md_analyze_permissive_email_autolink(MD_CTX* ctx, int mark_index)
     closer.ch = opener.ch;
     closer.beg = end;
     closer.end = end;
-    md_resolve_range(ctx, NULL, mark_index, closer_index);
+    md_resolve_range(ctx, null, mark_index, closer_index);
 }
 
 static void
@@ -4205,6 +4198,7 @@ md_analyze_marks(MD_CTX* ctx, const MD_LINE* lines, int n_lines,
             case '.':   /* Pass through. */
             case ':':   md_analyze_permissive_url_autolink(ctx, i); break;
             case '@':   md_analyze_permissive_email_autolink(ctx, i); break;
+            default:    break;
         }
 
         i++;
@@ -4286,14 +4280,14 @@ md_enter_leave_span_a(MD_CTX* ctx, int enter, MD_SPANTYPE type,
                       const(CHAR)* dest, SZ dest_size, int prohibit_escapes_in_dest,
                       const(CHAR)* title, SZ title_size)
 {
-    MD_ATTRIBUTE_BUILD href_build = { 0 };
-    MD_ATTRIBUTE_BUILD title_build = { 0 };
+    MD_ATTRIBUTE_BUILD href_build = MD_ATTRIBUTE_BUILD.init;
+    MD_ATTRIBUTE_BUILD title_build = MD_ATTRIBUTE_BUILD.init;
     MD_SPAN_A_DETAIL det;
     int ret = 0;
 
     /* Note we here rely on fact that MD_SPAN_A_DETAIL and
      * MD_SPAN_IMG_DETAIL are binary-compatible. */
-    memset(&det, 0, sizeof(MD_SPAN_A_DETAIL));
+    memset(&det, 0, MD_SPAN_A_DETAIL.sizeof);
     ret = (md_build_attribute(ctx, dest, dest_size,
                     (prohibit_escapes_in_dest ? MD_BUILD_ATTR_NO_ESCAPES : 0),
                     &det.href, &href_build));
@@ -4303,13 +4297,13 @@ md_enter_leave_span_a(MD_CTX* ctx, int enter, MD_SPANTYPE type,
 
     if(enter)
     {
-        err = MD_ENTER_SPAN(ctx, type, &det);
-        if (err != 0) goto abort;
+        ret = MD_ENTER_SPAN(ctx, type, &det);
+        if (ret != 0) goto abort;
     }
     else
     {
-        err = MD_LEAVE_SPAN(ctx, type, &det);
-        if (err != 0) goto abort;
+        ret = MD_LEAVE_SPAN(ctx, type, &det);
+        if (ret != 0) goto abort;
     }
 
 abort:
@@ -4323,8 +4317,8 @@ static int
 md_process_inlines(MD_CTX* ctx, const MD_LINE* lines, int n_lines)
 {
     MD_TEXTTYPE text_type;
-    const MD_LINE* line = lines;
-    MD_MARK* prev_mark = NULL;
+    const(MD_LINE)* line = lines;
+    MD_MARK* prev_mark = null;
     MD_MARK* mark;
     OFF off = lines[0].beg;
     OFF end = lines[n_lines-1].end;
@@ -4345,8 +4339,8 @@ md_process_inlines(MD_CTX* ctx, const MD_LINE* lines, int n_lines)
         /* Process the text up to the next mark or end-of-line. */
         OFF tmp = (line.end < mark.beg ? line.end : mark.beg);
         if(tmp > off) {
-            err = MD_TEXT(ctx, text_type, ctx.STR(off), tmp - off);
-            if (err != 0) goto abort;
+            ret = MD_TEXT(ctx, text_type, ctx.STR(off), tmp - off);
+            if (ret != 0) goto abort;
             off = tmp;
         }
 
@@ -4358,24 +4352,24 @@ md_process_inlines(MD_CTX* ctx, const MD_LINE* lines, int n_lines)
                         enforce_hardbreak = 1;
                     else
                     {
-                        err = MD_TEXT(ctx, text_type, ctx.STR(mark.beg+1), 1);
-                        if (err != 0) goto abort;
+                        ret = MD_TEXT(ctx, text_type, ctx.STR(mark.beg+1), 1);
+                        if (ret != 0) goto abort;
                     }
                     break;
 
                 case ' ':       /* Non-trivial space. */
-                    err = MD_TEXT(ctx, text_type, " ", 1);
-                    if (err != 0) goto abort;
+                    ret = MD_TEXT(ctx, text_type, " ", 1);
+                    if (ret != 0) goto abort;
                     break;
 
                 case '`':       /* Code span. */
                     if(mark.flags & MD_MARK_OPENER) {
-                        err = MD_ENTER_SPAN(ctx, MD_SPAN_CODE, NULL);
-                        if (err != 0) goto abort;
+                        ret = MD_ENTER_SPAN(ctx, MD_SPAN_CODE, null);
+                        if (ret != 0) goto abort;
                         text_type = MD_TEXT_CODE;
                     } else {
-                        err = MD_LEAVE_SPAN(ctx, MD_SPAN_CODE, NULL);
-                        if (err != 0) goto abort;
+                        ret = MD_LEAVE_SPAN(ctx, MD_SPAN_CODE, null);
+                        if (ret != 0) goto abort;
                         text_type = MD_TEXT_NORMAL;
                     }
                     break;
@@ -4384,24 +4378,24 @@ md_process_inlines(MD_CTX* ctx, const MD_LINE* lines, int n_lines)
                 case '*':       /* Emphasis, strong emphasis. */
                     if(mark.flags & MD_MARK_OPENER) {
                         if((mark.end - off) % 2) {
-                            err = MD_ENTER_SPAN(ctx, MD_SPAN_EM, NULL);
-                            if (err != 0) goto abort;
+                            ret = MD_ENTER_SPAN(ctx, MD_SPAN_EM, null);
+                            if (ret != 0) goto abort;
                             off++;
                         }
                         while(off + 1 < mark.end) {
-                            err = MD_ENTER_SPAN(ctx, MD_SPAN_STRONG, NULL);
-                            if (err != 0) goto abort;
+                            ret = MD_ENTER_SPAN(ctx, MD_SPAN_STRONG, null);
+                            if (ret != 0) goto abort;
                             off += 2;
                         }
                     } else {
                         while(off + 1 < mark.end) {
-                            err = MD_LEAVE_SPAN(ctx, MD_SPAN_STRONG, NULL);
-                            if (err != 0) goto abort;
+                            ret = MD_LEAVE_SPAN(ctx, MD_SPAN_STRONG, null);
+                            if (ret != 0) goto abort;
                             off += 2;
                         }
                         if((mark.end - off) % 2) {
-                            err = MD_LEAVE_SPAN(ctx, MD_SPAN_EM, NULL);
-                            if (err != 0) goto abort;
+                            ret = MD_LEAVE_SPAN(ctx, MD_SPAN_EM, null);
+                            if (ret != 0) goto abort;
                             off++;
                         }
                     }
@@ -4410,24 +4404,24 @@ md_process_inlines(MD_CTX* ctx, const MD_LINE* lines, int n_lines)
                 case '~':
                     if(mark.flags & MD_MARK_OPENER)
                     {
-                        err = MD_ENTER_SPAN(ctx, MD_SPAN_DEL, NULL);
-                        if (err != 0) goto abort;
+                        ret = MD_ENTER_SPAN(ctx, MD_SPAN_DEL, null);
+                        if (ret != 0) goto abort;
                     }
                     else
                     {
-                        err = MD_LEAVE_SPAN(ctx, MD_SPAN_DEL, NULL);
-                        if (err != 0) goto abort;
+                        ret = MD_LEAVE_SPAN(ctx, MD_SPAN_DEL, null);
+                        if (ret != 0) goto abort;
                     }
                     break;
 
                 case '$':
                     if(mark.flags & MD_MARK_OPENER) {
-                        err = MD_ENTER_SPAN(ctx, (mark.end - off) % 2 ? MD_SPAN_LATEXMATH : MD_SPAN_LATEXMATH_DISPLAY, NULL);
-                        if (err != 0) goto abort;
+                        ret = MD_ENTER_SPAN(ctx, (mark.end - off) % 2 ? MD_SPAN_LATEXMATH : MD_SPAN_LATEXMATH_DISPLAY, null);
+                        if (ret != 0) goto abort;
                         text_type = MD_TEXT_LATEXMATH;
                     } else {
-                        err = MD_LEAVE_SPAN(ctx, (mark.end - off) % 2 ? MD_SPAN_LATEXMATH : MD_SPAN_LATEXMATH_DISPLAY, NULL);
-                        if (err != 0) goto abort;
+                        ret = MD_LEAVE_SPAN(ctx, (mark.end - off) % 2 ? MD_SPAN_LATEXMATH : MD_SPAN_LATEXMATH_DISPLAY, null);
+                        if (ret != 0) goto abort;
                         text_type = MD_TEXT_NORMAL;
                     }
                     break;
@@ -4443,10 +4437,10 @@ md_process_inlines(MD_CTX* ctx, const MD_LINE* lines, int n_lines)
                     assert(dest_mark.ch == 'D');
                     assert(title_mark.ch == 'D');
 
-                    ret = (md_enter_leave_span_a(ctx, (mark.ch != ']'),
+                    ret = (md_enter_leave_span_a(ctx, (mark.ch != ']') ? 1 : 0,
                                 (opener.ch == '!' ? MD_SPAN_IMG : MD_SPAN_A),
                                 ctx.STR(dest_mark.beg), dest_mark.end - dest_mark.beg, FALSE,
-                                md_mark_get_ptr(ctx, title_mark - ctx.marks), title_mark.prev));
+                                cast(char*) md_mark_get_ptr(ctx, cast(int)(title_mark - ctx.marks)), title_mark.prev));
                     if (ret < 0) goto abort;
 
                     /* link/image closer may span multiple lines. */
@@ -4469,6 +4463,7 @@ md_process_inlines(MD_CTX* ctx, const MD_LINE* lines, int n_lines)
                         break;
                     }
                     /* Pass through, if auto-link. */
+                    goto case '.';
 
                 case '@':       /* Permissive e-mail autolink. */
                 case ':':       /* Permissive URL autolink. */
@@ -4490,36 +4485,39 @@ md_process_inlines(MD_CTX* ctx, const MD_LINE* lines, int n_lines)
 
                     if(opener.ch == '@' || opener.ch == '.') {
                         dest_size += 7;
-                        ret = MD_TEMP_BUFFER(ctx, dest_size * sizeof(CHAR));
+                        ret = MD_TEMP_BUFFER(ctx, dest_size * CHAR.sizeof);
                         if (ret < 0) goto abort;
                         memcpy(ctx.buffer,
-                                (opener.ch == '@' ? "mailto:" : "http://"),
-                                7 * sizeof(CHAR));
-                        memcpy(ctx.buffer + 7, dest, (dest_size-7) * sizeof(CHAR));
+                                (opener.ch == '@' ? "mailto:" : "http://").ptr,
+                                7 * CHAR.sizeof);
+                        memcpy(ctx.buffer + 7, dest, (dest_size-7) * CHAR.sizeof);
                         dest = ctx.buffer;
                     }
 
                     if(closer.flags & MD_MARK_VALIDPERMISSIVEAUTOLINK)
                     {
                         ret = (md_enter_leave_span_a(ctx, (mark.flags & MD_MARK_OPENER),
-                                    MD_SPAN_A, dest, dest_size, TRUE, NULL, 0));
+                                    MD_SPAN_A, dest, dest_size, TRUE, null, 0));
                         if (ret < 0) goto abort;
                     }
                     break;
                 }
 
                 case '&':       /* Entity. */
-                    err = MD_TEXT(ctx, MD_TEXT_ENTITY, ctx.STR(mark.beg), mark.end - mark.beg);
-                    if (err != 0) goto abort;
+                    ret = MD_TEXT(ctx, MD_TEXT_ENTITY, ctx.STR(mark.beg), mark.end - mark.beg);
+                    if (ret != 0) goto abort;
                     break;
 
                 case '\0':
-                    err = MD_TEXT(ctx, MD_TEXT_NULLCHAR, "", 1);
-                    if (err != 0) goto abort;
+                    ret = MD_TEXT(ctx, MD_TEXT_NULLCHAR, "", 1);
+                    if (ret != 0) goto abort;
                     break;
 
                 case 127:
                     goto abort;
+
+                default:
+                    break;
             }
 
             off = mark.end;
@@ -4538,43 +4536,43 @@ md_process_inlines(MD_CTX* ctx, const MD_LINE* lines, int n_lines)
                 break;
 
             if(text_type == MD_TEXT_CODE || text_type == MD_TEXT_LATEXMATH) {
-                OFF tmp;
+                OFF tmp2;
 
-                assert(prev_mark != NULL);
+                assert(prev_mark != null);
                 assert(ISANYOF2_(prev_mark.ch, '`', '$')  &&  (prev_mark.flags & MD_MARK_OPENER));
                 assert(ISANYOF2_(mark.ch, '`', '$')  &&  (mark.flags & MD_MARK_CLOSER));
 
                 /* Inside a code span, trailing line whitespace has to be
                  * outputted. */
-                tmp = off;
+                tmp2 = off;
                 while(off < ctx.size  &&  ctx.ISBLANK(off))
                     off++;
-                if(off > tmp)
+                if(off > tmp2)
                 {
-                    err = MD_TEXT(ctx, text_type, ctx.STR(tmp), off-tmp);
-                    if (err != 0) goto abort;
+                    ret = MD_TEXT(ctx, text_type, ctx.STR(tmp2), off-tmp2);
+                    if (ret != 0) goto abort;
                 }
 
                 /* and new lines are transformed into single spaces. */
                 if(prev_mark.end < off  &&  off < mark.beg)
                 {
-                    err = MD_TEXT(ctx, text_type, " ", 1);
-                    if (err != 0) goto abort;
+                    ret = MD_TEXT(ctx, text_type, " ", 1);
+                    if (ret != 0) goto abort;
                 }
             } else if(text_type == MD_TEXT_HTML) {
                 /* Inside raw HTML, we output the new line verbatim, including
                  * any trailing spaces. */
-                OFF tmp = off;
+                OFF tmp2 = off;
 
-                while(tmp < end  &&  ctx.ISBLANK(tmp))
-                    tmp++;
-                if(tmp > off)
+                while(tmp2 < end  &&  ctx.ISBLANK(tmp2))
+                    tmp2++;
+                if(tmp2 > off)
                 {
-                    err = MD_TEXT(ctx, MD_TEXT_HTML, ctx.STR(off), tmp - off);
-                    if (err != 0) goto abort;
+                    ret = MD_TEXT(ctx, MD_TEXT_HTML, ctx.STR(off), tmp2 - off);
+                    if (ret != 0) goto abort;
                 }
-                err = MD_TEXT(ctx, MD_TEXT_HTML, "\n", 1);
-                if (err != 0) goto abort;
+                ret = MD_TEXT(ctx, MD_TEXT_HTML, "\n", 1);
+                if (ret != 0) goto abort;
             } else {
                 /* Output soft or hard line break. */
                 MD_TEXTTYPE break_type = MD_TEXT_SOFTBR;
@@ -4586,8 +4584,8 @@ md_process_inlines(MD_CTX* ctx, const MD_LINE* lines, int n_lines)
                         break_type = MD_TEXT_BR;
                 }
 
-                err = MD_TEXT(ctx, break_type, "\n", 1);
-                if (err != 0) goto abort;
+                ret = MD_TEXT(ctx, break_type, "\n", 1);
+                if (ret != 0) goto abort;
             }
 
             /* Move to the next line. */
@@ -4609,7 +4607,13 @@ abort:
 
 void md_analyze_table_alignment(MD_CTX* ctx, OFF beg, OFF end, MD_ALIGN* align_, int n_align)
 {
-    static const MD_ALIGN align_map[] = { MD_ALIGN_DEFAULT, MD_ALIGN_LEFT, MD_ALIGN_RIGHT, MD_ALIGN_CENTER };
+    static immutable MD_ALIGN[] align_map = 
+    [ 
+        MD_ALIGN_DEFAULT, 
+        MD_ALIGN_LEFT, 
+        MD_ALIGN_RIGHT, 
+        MD_ALIGN_CENTER 
+    ];
     OFF off = beg;
 
     while(n_align > 0) {
@@ -4631,11 +4635,7 @@ void md_analyze_table_alignment(MD_CTX* ctx, OFF beg, OFF end, MD_ALIGN* align_,
 
 }
 
-/* Forward declaration. */
-static int md_process_normal_block_contents(MD_CTX* ctx, const MD_LINE* lines, int n_lines);
-
-static int
-md_process_table_cell(MD_CTX* ctx, MD_BLOCKTYPE cell_type, MD_ALIGN align_, OFF beg, OFF end)
+int md_process_table_cell(MD_CTX* ctx, MD_BLOCKTYPE cell_type, MD_ALIGN align_, OFF beg, OFF end)
 {
     MD_LINE line;
     MD_BLOCK_TD_DETAIL det;
@@ -4661,12 +4661,11 @@ abort:
     return ret;
 }
 
-static int
-md_process_table_row(MD_CTX* ctx, MD_BLOCKTYPE cell_type, OFF beg, OFF end,
-                     const MD_ALIGN* align_, int col_count)
+int md_process_table_row(MD_CTX* ctx, MD_BLOCKTYPE cell_type, OFF beg, OFF end,
+                         const MD_ALIGN* align_, int col_count)
 {
     MD_LINE line;
-    OFF* pipe_offs = NULL;
+    OFF* pipe_offs = null;
     int i, j, n;
     int ret = 0;
 
@@ -4681,8 +4680,8 @@ md_process_table_row(MD_CTX* ctx, MD_BLOCKTYPE cell_type, OFF beg, OFF end,
     /* We have to remember the cell boundaries in local buffer because
      * ctx.marks[] shall be reused during cell contents processing. */
     n = ctx.n_table_cell_boundaries;
-    pipe_offs = (OFF*) malloc(n * sizeof(OFF));
-    if(pipe_offs == NULL) {
+    pipe_offs = cast(OFF*) malloc(n * OFF.sizeof);
+    if(pipe_offs == null) {
         ctx.MD_LOG("malloc() failed.");
         ret = -1;
         goto abort;
@@ -4693,7 +4692,7 @@ md_process_table_row(MD_CTX* ctx, MD_BLOCKTYPE cell_type, OFF beg, OFF end,
     }
 
     /* Process cells. */
-    ret = MD_ENTER_BLOCK(ctx, MD_BLOCK_TR, NULL);
+    ret = MD_ENTER_BLOCK(ctx, MD_BLOCK_TR, null);
     if (ret != 0) goto abort;
 
     j = 0;
@@ -4720,7 +4719,7 @@ md_process_table_row(MD_CTX* ctx, MD_BLOCKTYPE cell_type, OFF beg, OFF end,
         if (ret < 0) goto abort;
     }
 
-    ret = MD_LEAVE_BLOCK(ctx, MD_BLOCK_TR, NULL);
+    ret = MD_LEAVE_BLOCK(ctx, MD_BLOCK_TR, null);
     if (ret != 0) goto abort;
 
 abort:
@@ -4735,8 +4734,7 @@ abort:
     return ret;
 }
 
-static int
-md_process_table_block_contents(MD_CTX* ctx, int col_count, const MD_LINE* lines, int n_lines)
+int md_process_table_block_contents(MD_CTX* ctx, int col_count, const MD_LINE* lines, int n_lines)
 {
     MD_ALIGN* align_;
     int i;
@@ -4746,8 +4744,8 @@ md_process_table_block_contents(MD_CTX* ctx, int col_count, const MD_LINE* lines
      * with the underlines. */
     assert(n_lines >= 2);
 
-    align_ = malloc(col_count * sizeof(MD_ALIGN));
-    if(align_ == NULL) {
+    align_ = cast(MD_ALIGN*) malloc(col_count * MD_ALIGN.sizeof);
+    if(align_ == null) {
         ctx.MD_LOG("malloc() failed.");
         ret = -1;
         goto abort;
@@ -4755,22 +4753,22 @@ md_process_table_block_contents(MD_CTX* ctx, int col_count, const MD_LINE* lines
 
     md_analyze_table_alignment(ctx, lines[1].beg, lines[1].end, align_, col_count);
 
-    ret = MD_ENTER_BLOCK(ctx, MD_BLOCK_THEAD, NULL);
+    ret = MD_ENTER_BLOCK(ctx, MD_BLOCK_THEAD, null);
     if (ret != 0) goto abort;
     ret = (md_process_table_row(ctx, MD_BLOCK_TH,
                         lines[0].beg, lines[0].end, align_, col_count));
     if (ret < 0) goto abort;
-    ret = MD_LEAVE_BLOCK(ctx, MD_BLOCK_THEAD, NULL);
+    ret = MD_LEAVE_BLOCK(ctx, MD_BLOCK_THEAD, null);
     if (ret != 0) goto abort;
 
-    ret = MD_ENTER_BLOCK(ctx, MD_BLOCK_TBODY, NULL);
+    ret = MD_ENTER_BLOCK(ctx, MD_BLOCK_TBODY, null);
     if (ret != 0) goto abort;
     for(i = 2; i < n_lines; i++) {
         ret = (md_process_table_row(ctx, MD_BLOCK_TD,
-                        lines[i].beg, lines[i].end, align_map, col_count));
+                        lines[i].beg, lines[i].end, align_, col_count));
         if (ret < 0) goto abort;
     }
-    ret = MD_LEAVE_BLOCK(ctx, MD_BLOCK_TBODY, NULL);
+    ret = MD_LEAVE_BLOCK(ctx, MD_BLOCK_TBODY, null);
     if (ret != 0) goto abort;
 
 abort:
@@ -4778,8 +4776,7 @@ abort:
     return ret;
 }
 
-static int
-md_is_table_row(MD_CTX* ctx, OFF beg, OFF* p_end)
+int md_is_table_row(MD_CTX* ctx, OFF beg, OFF* p_end)
 {
     MD_LINE line;
     int i;
@@ -4796,7 +4793,7 @@ md_is_table_row(MD_CTX* ctx, OFF beg, OFF* p_end)
     if (ret < 0) goto abort;
 
     if(ctx.TABLECELLBOUNDARIES.head >= 0) {
-        if(p_end != NULL)
+        if(p_end != null)
             *p_end = line.end;
         ret = TRUE;
     }
@@ -4816,44 +4813,63 @@ abort:
  ***  Processing Block  ***
  **************************/
 
-#define MD_BLOCK_CONTAINER_OPENER   0x01
-#define MD_BLOCK_CONTAINER_CLOSER   0x02
-#define MD_BLOCK_CONTAINER          (MD_BLOCK_CONTAINER_OPENER | MD_BLOCK_CONTAINER_CLOSER)
-#define MD_BLOCK_LOOSE_LIST         0x04
-#define MD_BLOCK_SETEXT_HEADER      0x08
+enum MD_BLOCK_CONTAINER_OPENER   = 0x01;
+enum MD_BLOCK_CONTAINER_CLOSER   = 0x02;
+enum MD_BLOCK_CONTAINER          = (MD_BLOCK_CONTAINER_OPENER | MD_BLOCK_CONTAINER_CLOSER);
+enum MD_BLOCK_LOOSE_LIST         = 0x04;
+enum MD_BLOCK_SETEXT_HEADER      = 0x08;
 
-struct MD_BLOCK {
-    MD_BLOCKTYPE type  :  8;
-    unsigned flags     :  8;
+struct MD_BLOCK 
+{
+    ubyte type_;
+    ubyte flags_;
+    ushort data_;
+
+    MD_BLOCKTYPE type() const { return type_; }
+    void type(MD_BLOCKTYPE value) { type_ = cast(ubyte)value; }
+
+    uint flags() const { return flags_; }
+    void flags(uint value) { flags_ = cast(ubyte)value; }
 
     /* MD_BLOCK_H:      Header level (1 - 6)
      * MD_BLOCK_CODE:   Non-zero if fenced, zero if indented.
      * MD_BLOCK_LI:     Task mark character (0 if not task list item, 'x', 'X' or ' ').
      * MD_BLOCK_TABLE:  Column count (as determined by the table underline).
      */
-    unsigned data      : 16;
+    uint data() const { return data_; }
+    void data(uint value) { data_ = cast(ubyte)value; }
 
     /* Leaf blocks:     Count of lines (MD_LINE or MD_VERBATIMLINE) on the block.
      * MD_BLOCK_LI:     Task mark offset in the input doc.
      * MD_BLOCK_OL:     Start item number.
      */
-    unsigned n_lines;
-};
+    uint n_lines;
+}
 
-struct MD_CONTAINER {
+static assert(MD_BLOCK.sizeof == 8);
+
+struct MD_CONTAINER 
+{
     CHAR ch;
-    unsigned is_loose    : 8;
-    unsigned is_task     : 8;
-    unsigned start;
-    unsigned mark_indent;
-    unsigned contents_indent;
+    
+    ubyte is_loose_;
+    ubyte is_task_;
+
+    uint is_loose() { return is_loose_; }
+    void is_loose(uint value) { is_loose_ = cast(ubyte)value; }
+
+    uint is_task() { return is_task_; }
+    void is_task(uint value) { is_task_ = cast(ubyte)value; }
+
+    uint start;
+    uint mark_indent;
+    uint contents_indent;
     OFF block_byte_off;
     OFF task_mark_off;
-};
+}
 
 
-static int
-md_process_normal_block_contents(MD_CTX* ctx, const MD_LINE* lines, int n_lines)
+int md_process_normal_block_contents(MD_CTX* ctx, const MD_LINE* lines, int n_lines)
 {
     int i;
     int ret;
@@ -4873,11 +4889,9 @@ abort:
     return ret;
 }
 
-static int
-md_process_verbatim_block_contents(MD_CTX* ctx, MD_TEXTTYPE text_type, const MD_VERBATIMLINE* lines, int n_lines)
+int md_process_verbatim_block_contents(MD_CTX* ctx, MD_TEXTTYPE text_type, const MD_VERBATIMLINE* lines, int n_lines)
 {
-    static const CHAR indent_chunk_str[] = "                ";
-    static const SZ indent_chunk_size = (indent_chunk_str.length) - 1;
+    static immutable string indent_chunk_str = "                ";
 
     int i;
     int ret = 0;
@@ -4890,14 +4904,14 @@ md_process_verbatim_block_contents(MD_CTX* ctx, MD_TEXTTYPE text_type, const MD_
 
         /* Output code indentation. */
         while(indent > cast(int)(indent_chunk_str.length)) {
-            err = MD_TEXT(ctx, text_type, indent_chunk_str, indent_chunk_size);
-            if (err != 0) goto abort;
+            ret = MD_TEXT(ctx, text_type, indent_chunk_str.ptr, cast(SZ)(indent_chunk_str.length));
+            if (ret != 0) goto abort;
             indent -= indent_chunk_str.length;
         }
         if(indent > 0)
         {
-            err = MD_TEXT(ctx, text_type, indent_chunk_str, indent);
-            if (err != 0) goto abort;
+            ret = MD_TEXT(ctx, text_type, indent_chunk_str.ptr, indent);
+            if (ret != 0) goto abort;
         }
 
         /* Output the code line itself. */
@@ -4905,8 +4919,8 @@ md_process_verbatim_block_contents(MD_CTX* ctx, MD_TEXTTYPE text_type, const MD_
         if (ret != 0) goto abort;
 
         /* Enforce end-of-line. */
-        err = MD_TEXT(ctx, text_type, "\n", 1);
-        if (err != 0) goto abort;
+        ret = MD_TEXT(ctx, text_type, "\n", 1);
+        if (ret != 0) goto abort;
     }
 
 abort:
@@ -4914,7 +4928,7 @@ abort:
 }
 
 static int
-md_process_code_block_contents(MD_CTX* ctx, int is_fenced, const MD_VERBATIMLINE* lines, int n_lines)
+md_process_code_block_contents(MD_CTX* ctx, int is_fenced, const(MD_VERBATIMLINE)* lines, int n_lines)
 {
     if(is_fenced) {
         /* Skip the first line in case of fenced code: It is the fence.
@@ -4942,7 +4956,7 @@ static int
 md_setup_fenced_code_detail(MD_CTX* ctx, const MD_BLOCK* block, MD_BLOCK_CODE_DETAIL* det,
                             MD_ATTRIBUTE_BUILD* info_build, MD_ATTRIBUTE_BUILD* lang_build)
 {
-    const MD_VERBATIMLINE* fence_line = (const MD_VERBATIMLINE*)(block + 1);
+    const(MD_VERBATIMLINE)* fence_line = cast(const(MD_VERBATIMLINE)*)(block + 1);
     OFF beg = fence_line.beg;
     OFF end = fence_line.end;
     OFF lang_end;
@@ -4980,24 +4994,27 @@ abort:
 static int
 md_process_leaf_block(MD_CTX* ctx, const MD_BLOCK* block)
 {
-    union {
+    static union HeaderOrCode 
+    {
         MD_BLOCK_H_DETAIL header;
         MD_BLOCK_CODE_DETAIL code;
-    } det;
+    } 
+    HeaderOrCode det;
     MD_ATTRIBUTE_BUILD info_build;
     MD_ATTRIBUTE_BUILD lang_build;
     int is_in_tight_list;
     int clean_fence_code_detail = FALSE;
     int ret = 0;
 
-    memset(&det, 0, sizeof(det));
+    memset(&det, 0, det.sizeof);
 
     if(ctx.n_containers == 0)
         is_in_tight_list = FALSE;
     else
         is_in_tight_list = !ctx.containers[ctx.n_containers-1].is_loose;
 
-    switch(block.type) {
+    switch(block.type) 
+    {
         case MD_BLOCK_H:
             det.header.level = block.data;
             break;
@@ -5005,7 +5022,7 @@ md_process_leaf_block(MD_CTX* ctx, const MD_BLOCK* block)
         case MD_BLOCK_CODE:
             /* For fenced code block, we may need to set the info string. */
             if(block.data != 0) {
-                memset(&det.code, 0, sizeof(MD_BLOCK_CODE_DETAIL));
+                memset(&det.code, 0, MD_BLOCK_CODE_DETAIL.sizeof);
                 clean_fence_code_detail = TRUE;
                 ret = (md_setup_fenced_code_detail(ctx, block, &det.code, &info_build, &lang_build));
                 if (ret < 0) goto abort;
@@ -5019,7 +5036,7 @@ md_process_leaf_block(MD_CTX* ctx, const MD_BLOCK* block)
 
     if(!is_in_tight_list  ||  block.type != MD_BLOCK_P)
     {
-        ret = MD_ENTER_BLOCK(ctx, block.type, (void*) &det);
+        ret = MD_ENTER_BLOCK(ctx, block.type, cast(void*) &det);
         if (ret != 0) goto abort;
     }
 
@@ -5031,32 +5048,32 @@ md_process_leaf_block(MD_CTX* ctx, const MD_BLOCK* block)
 
         case MD_BLOCK_CODE:
             ret = (md_process_code_block_contents(ctx, (block.data != 0),
-                            (const MD_VERBATIMLINE*)(block + 1), block.n_lines));
+                            cast(const(MD_VERBATIMLINE)*)(block + 1), block.n_lines));
             if (ret < 0) goto abort;
             break;
 
         case MD_BLOCK_HTML:
             ret = (md_process_verbatim_block_contents(ctx, MD_TEXT_HTML,
-                            (const MD_VERBATIMLINE*)(block + 1), block.n_lines));
+                            cast(const(MD_VERBATIMLINE)*)(block + 1), block.n_lines));
             if (ret < 0) goto abort;
             break;
 
         case MD_BLOCK_TABLE:
             ret = (md_process_table_block_contents(ctx, block.data,
-                            (const MD_LINE*)(block + 1), block.n_lines));
+                            cast(const(MD_LINE)*)(block + 1), block.n_lines));
             if (ret < 0) goto abort;
             break;
 
         default:
             ret = (md_process_normal_block_contents(ctx,
-                            (const MD_LINE*)(block + 1), block.n_lines));
+                            cast(const(MD_LINE)*)(block + 1), block.n_lines));
             if (ret < 0) goto abort;
             break;
     }
 
     if(!is_in_tight_list  ||  block.type != MD_BLOCK_P)
     {
-        ret = MD_LEAVE_BLOCK(ctx, block.type, (void*) &det);
+        ret = MD_LEAVE_BLOCK(ctx, block.type, cast(void*) &det);
         if (ret != 0) goto abort;
     }
 
@@ -5068,8 +5085,7 @@ abort:
     return ret;
 }
 
-static int
-md_process_all_blocks(MD_CTX* ctx)
+int md_process_all_blocks(MD_CTX* ctx)
 {
     int byte_off = 0;
     int ret = 0;
@@ -5081,29 +5097,32 @@ md_process_all_blocks(MD_CTX* ctx)
     ctx.n_containers = 0;
 
     while(byte_off < ctx.n_block_bytes) {
-        MD_BLOCK* block = (MD_BLOCK*)((char*)ctx.block_bytes + byte_off);
-        union {
+        MD_BLOCK* block = cast(MD_BLOCK*)(cast(char*)ctx.block_bytes + byte_off);
+        static union Det 
+        {
             MD_BLOCK_UL_DETAIL ul;
             MD_BLOCK_OL_DETAIL ol;
             MD_BLOCK_LI_DETAIL li;
-        } det;
+        } 
+
+        Det det;
 
         switch(block.type) {
             case MD_BLOCK_UL:
                 det.ul.is_tight = (block.flags & MD_BLOCK_LOOSE_LIST) ? FALSE : TRUE;
-                det.ul.mark = (CHAR) block.data;
+                det.ul.mark = cast(CHAR) block.data;
                 break;
 
             case MD_BLOCK_OL:
                 det.ol.start = block.n_lines;
                 det.ol.is_tight =  (block.flags & MD_BLOCK_LOOSE_LIST) ? FALSE : TRUE;
-                det.ol.mark_delimiter = (CHAR) block.data;
+                det.ol.mark_delimiter = cast(CHAR) block.data;
                 break;
 
             case MD_BLOCK_LI:
                 det.li.is_task = (block.data != 0);
-                det.li.task_mark = (CHAR) block.data;
-                det.li.task_mark_offset = (OFF) block.n_lines;
+                det.li.task_mark = cast(CHAR) block.data;
+                det.li.task_mark_offset = cast(OFF) block.n_lines;
                 break;
 
             default:
@@ -5140,12 +5159,12 @@ md_process_all_blocks(MD_CTX* ctx)
             if (ret < 0) goto abort;
 
             if(block.type == MD_BLOCK_CODE || block.type == MD_BLOCK_HTML)
-                byte_off += block.n_lines * sizeof(MD_VERBATIMLINE);
+                byte_off += block.n_lines * MD_VERBATIMLINE.sizeof;
             else
-                byte_off += block.n_lines * sizeof(MD_LINE);
+                byte_off += block.n_lines * MD_LINE.sizeof;
         }
 
-        byte_off += sizeof(MD_BLOCK);
+        byte_off += MD_BLOCK.sizeof;
     }
 
     ctx.n_block_bytes = 0;
@@ -5169,21 +5188,21 @@ md_push_block_bytes(MD_CTX* ctx, int n_bytes)
 
         ctx.alloc_block_bytes = (ctx.alloc_block_bytes > 0 ? ctx.alloc_block_bytes * 2 : 512);
         new_block_bytes = realloc(ctx.block_bytes, ctx.alloc_block_bytes);
-        if(new_block_bytes == NULL) {
+        if(new_block_bytes == null) {
             ctx.MD_LOG("realloc() failed.");
-            return NULL;
+            return null;
         }
 
         /* Fix the .current_block after the reallocation. */
-        if(ctx.current_block != NULL) {
-            OFF off_current_block = (char*) ctx.current_block - (char*) ctx.block_bytes;
-            ctx.current_block = (MD_BLOCK*) ((char*) new_block_bytes + off_current_block);
+        if(ctx.current_block != null) {
+            OFF off_current_block = cast(uint)( cast(char*) ctx.current_block - cast(char*) ctx.block_bytes );
+            ctx.current_block = cast(MD_BLOCK*) (cast(char*) new_block_bytes + off_current_block);
         }
 
         ctx.block_bytes = new_block_bytes;
     }
 
-    ptr = (char*)ctx.block_bytes + ctx.n_block_bytes;
+    ptr = cast(char*)ctx.block_bytes + ctx.n_block_bytes;
     ctx.n_block_bytes += n_bytes;
     return ptr;
 }
@@ -5193,10 +5212,10 @@ md_start_new_block(MD_CTX* ctx, const MD_LINE_ANALYSIS* line)
 {
     MD_BLOCK* block;
 
-    assert(ctx.current_block == NULL);
+    assert(ctx.current_block == null);
 
-    block = (MD_BLOCK*) md_push_block_bytes(ctx, sizeof(MD_BLOCK));
-    if(block == NULL)
+    block = cast(MD_BLOCK*) md_push_block_bytes(ctx, MD_BLOCK.sizeof);
+    if(block == null)
         return -1;
 
     switch(line.type) {
@@ -5243,10 +5262,9 @@ md_start_new_block(MD_CTX* ctx, const MD_LINE_ANALYSIS* line)
  * (Reference definitions can only be at start of it as they cannot break
  * a paragraph.)
  */
-static int
-md_consume_link_reference_definitions(MD_CTX* ctx)
+int md_consume_link_reference_definitions(MD_CTX* ctx)
 {
-    MD_LINE* lines = (MD_LINE*) (ctx.current_block + 1);
+    MD_LINE* lines = cast(MD_LINE*) (ctx.current_block + 1);
     int n_lines = ctx.current_block.n_lines;
     int n = 0;
 
@@ -5274,14 +5292,14 @@ md_consume_link_reference_definitions(MD_CTX* ctx)
     if(n > 0) {
         if(n == n_lines) {
             /* Remove complete block. */
-            ctx.n_block_bytes -= n * sizeof(MD_LINE);
-            ctx.n_block_bytes -= sizeof(MD_BLOCK);
-            ctx.current_block = NULL;
+            ctx.n_block_bytes -= n * MD_LINE.sizeof;
+            ctx.n_block_bytes -= MD_BLOCK.sizeof;
+            ctx.current_block = null;
         } else {
             /* Remove just some initial lines from the block. */
-            memmove(lines, lines + n, (n_lines - n) * sizeof(MD_LINE));
+            memmove(lines, lines + n, (n_lines - n) * MD_LINE.sizeof);
             ctx.current_block.n_lines -= n;
-            ctx.n_block_bytes -= n * sizeof(MD_LINE);
+            ctx.n_block_bytes -= n * MD_LINE.sizeof;
         }
     }
 
@@ -5293,7 +5311,7 @@ md_end_current_block(MD_CTX* ctx)
 {
     int ret = 0;
 
-    if(ctx.current_block == NULL)
+    if(ctx.current_block == null)
         return ret;
 
     /* Check whether there is a reference definition. (We do this here instead
@@ -5302,11 +5320,11 @@ md_end_current_block(MD_CTX* ctx)
     if(ctx.current_block.type == MD_BLOCK_P  ||
        (ctx.current_block.type == MD_BLOCK_H  &&  (ctx.current_block.flags & MD_BLOCK_SETEXT_HEADER)))
     {
-        MD_LINE* lines = (MD_LINE*) (ctx.current_block + 1);
+        MD_LINE* lines = cast(MD_LINE*) (ctx.current_block + 1);
         if(ctx.CH(lines[0].beg) == '[') {
             ret = (md_consume_link_reference_definitions(ctx));
             if (ret < 0) goto abort;
-            if(ctx.current_block == NULL)
+            if(ctx.current_block == null)
                 return ret;
         }
     }
@@ -5317,7 +5335,7 @@ md_end_current_block(MD_CTX* ctx)
         if(n_lines > 1) {
             /* Get rid of the underline. */
             ctx.current_block.n_lines--;
-            ctx.n_block_bytes -= sizeof(MD_LINE);
+            ctx.n_block_bytes -= MD_LINE.sizeof;
         } else {
             /* Only the underline has left after eating the ref. defs.
              * Keep the line as beginning of a new ordinary paragraph. */
@@ -5327,7 +5345,7 @@ md_end_current_block(MD_CTX* ctx)
     }
 
     /* Mark we are not building any block anymore. */
-    ctx.current_block = NULL;
+    ctx.current_block = null;
 
 abort:
     return ret;
@@ -5336,13 +5354,13 @@ abort:
 static int
 md_add_line_into_current_block(MD_CTX* ctx, const MD_LINE_ANALYSIS* analysis)
 {
-    assert(ctx.current_block != NULL);
+    assert(ctx.current_block != null);
 
     if(ctx.current_block.type == MD_BLOCK_CODE || ctx.current_block.type == MD_BLOCK_HTML) {
         MD_VERBATIMLINE* line;
 
-        line = (MD_VERBATIMLINE*) md_push_block_bytes(ctx, sizeof(MD_VERBATIMLINE));
-        if(line == NULL)
+        line = cast(MD_VERBATIMLINE*) md_push_block_bytes(ctx, MD_VERBATIMLINE.sizeof);
+        if(line == null)
             return -1;
 
         line.indent = analysis.indent;
@@ -5351,8 +5369,8 @@ md_add_line_into_current_block(MD_CTX* ctx, const MD_LINE_ANALYSIS* analysis)
     } else {
         MD_LINE* line;
 
-        line = (MD_LINE*) md_push_block_bytes(ctx, sizeof(MD_LINE));
-        if(line == NULL)
+        line = cast(MD_LINE*) md_push_block_bytes(ctx, MD_LINE.sizeof);
+        if(line == null)
             return -1;
 
         line.beg = analysis.beg;
@@ -5364,8 +5382,8 @@ md_add_line_into_current_block(MD_CTX* ctx, const MD_LINE_ANALYSIS* analysis)
 }
 
 static int
-md_push_container_bytes(MD_CTX* ctx, MD_BLOCKTYPE type, unsigned start,
-                        unsigned data, unsigned flags)
+md_push_container_bytes(MD_CTX* ctx, MD_BLOCKTYPE type, uint start,
+                        uint data, uint flags)
 {
     MD_BLOCK* block;
     int ret = 0;
@@ -5373,8 +5391,8 @@ md_push_container_bytes(MD_CTX* ctx, MD_BLOCKTYPE type, unsigned start,
     ret = (md_end_current_block(ctx));
     if (ret < 0) goto abort;
 
-    block = (MD_BLOCK*) md_push_block_bytes(ctx, sizeof(MD_BLOCK));
-    if(block == NULL)
+    block = cast(MD_BLOCK*) md_push_block_bytes(ctx, MD_BLOCK.sizeof);
+    if(block == null)
         return -1;
 
     block.type = type;
@@ -5420,7 +5438,7 @@ md_is_hr_line(MD_CTX* ctx, OFF beg, OFF* p_end, OFF* p_killer)
 }
 
 static int
-md_is_atxheader_line(MD_CTX* ctx, OFF beg, OFF* p_beg, OFF* p_end, unsigned* p_level)
+md_is_atxheader_line(MD_CTX* ctx, OFF beg, OFF* p_beg, OFF* p_end, uint* p_level)
 {
     int n;
     OFF off = beg + 1;
@@ -5445,7 +5463,7 @@ md_is_atxheader_line(MD_CTX* ctx, OFF beg, OFF* p_beg, OFF* p_end, unsigned* p_l
 }
 
 static int
-md_is_setext_underline(MD_CTX* ctx, OFF beg, OFF* p_end, unsigned* p_level)
+md_is_setext_underline(MD_CTX* ctx, OFF beg, OFF* p_end, uint* p_level)
 {
     OFF off = beg + 1;
 
@@ -5465,12 +5483,11 @@ md_is_setext_underline(MD_CTX* ctx, OFF beg, OFF* p_end, unsigned* p_level)
     return TRUE;
 }
 
-static int
-md_is_table_underline(MD_CTX* ctx, OFF beg, OFF* p_end, unsigned* p_col_count)
+int md_is_table_underline(MD_CTX* ctx, OFF beg, OFF* p_end, uint* p_col_count)
 {
     OFF off = beg;
     int found_pipe = FALSE;
-    unsigned col_count = 0;
+    uint col_count = 0;
 
     if(off < ctx.size  &&  ctx.CH(off) == '|') {
         found_pipe = TRUE;
@@ -5564,7 +5581,7 @@ md_is_closing_code_fence(MD_CTX* ctx, CHAR ch, OFF beg, OFF* p_end)
     while(off < ctx.size  &&  ctx.CH(off) == ch)
         off++;
     if(off - beg < ctx.code_fence_length)
-        goto out;
+        goto out_;
 
     /* Optionally, space(s) can follow */
     while(off < ctx.size  &&  ctx.CH(off) == ' ')
@@ -5572,11 +5589,11 @@ md_is_closing_code_fence(MD_CTX* ctx, CHAR ch, OFF beg, OFF* p_end)
 
     /* But nothing more is allowed on the line. */
     if(off < ctx.size  &&  !ctx.ISNEWLINE(off))
-        goto out;
+        goto out_;
 
     ret = TRUE;
 
-out:
+out_:
     /* Note we set *p_end even on failure: If we are not closing fence, caller
      * would eat the line anyway without any parsing. */
     *p_end = off;
@@ -5586,56 +5603,70 @@ out:
 /* Returns type of the raw HTML block, or FALSE if it is not HTML block.
  * (Refer to CommonMark specification for details about the types.)
  */
-static int
-md_is_html_block_start_condition(MD_CTX* ctx, OFF beg)
+int md_is_html_block_start_condition(MD_CTX* ctx, OFF beg)
 {
-    typedef struct TAG_tag TAG;
-    struct TAG_tag {
-        const(CHAR)* name;
-        unsigned len    : 8;
-    };
-
     /* Type 6 is started by a long list of allowed tags. We use two-level
      * tree to speed-up the search. */
-#ifdef X
-    #undef X
-#endif
-#define X(name)     { _T(name), sizeof(name)-1 }
-#define Xend        { NULL, 0 }
-    static const TAG t1[] = { X("script"), X("pre"), X("style"), Xend };
 
-    static const TAG a6[] = { X("address"), X("article"), X("aside"), Xend };
-    static const TAG b6[] = { X("base"), X("basefont"), X("blockquote"), X("body"), Xend };
-    static const TAG c6[] = { X("caption"), X("center"), X("col"), X("colgroup"), Xend };
-    static const TAG d6[] = { X("dd"), X("details"), X("dialog"), X("dir"),
-                              X("div"), X("dl"), X("dt"), Xend };
-    static const TAG f6[] = { X("fieldset"), X("figcaption"), X("figure"), X("footer"),
-                              X("form"), X("frame"), X("frameset"), Xend };
-    static const TAG h6[] = { X("h1"), X("head"), X("header"), X("hr"), X("html"), Xend };
-    static const TAG i6[] = { X("iframe"), Xend };
-    static const TAG l6[] = { X("legend"), X("li"), X("link"), Xend };
-    static const TAG m6[] = { X("main"), X("menu"), X("menuitem"), Xend };
-    static const TAG n6[] = { X("nav"), X("noframes"), Xend };
-    static const TAG o6[] = { X("ol"), X("optgroup"), X("option"), Xend };
-    static const TAG p6[] = { X("p"), X("param"), Xend };
-    static const TAG s6[] = { X("section"), X("source"), X("summary"), Xend };
-    static const TAG t6[] = { X("table"), X("tbody"), X("td"), X("tfoot"), X("th"),
-                              X("thead"), X("title"), X("tr"), X("track"), Xend };
-    static const TAG u6[] = { X("ul"), Xend };
-    static const TAG xx[] = { Xend };
-#undef X
+    static immutable string Xend = null;
+    static immutable string[] t1 = [ "script", "pre", "style", Xend ];
+    static immutable string[] a6 = [ "address", "article", "aside", Xend ];
+    static immutable string[] b6 = [ "base", "basefont", "blockquote", "body", Xend ];
+    static immutable string[] c6 = [ "caption", "center", "col", "colgroup", Xend ];
+    static immutable string[] d6 = [ "dd", "details", "dialog", "dir",
+                                     "div", "dl", "dt", Xend ];
+    static immutable string[] f6 = [ "fieldset", "figcaption", "figure", "footer",
+                                     "form", "frame", "frameset", Xend ];
+    static immutable string[] h6 = [ "h1", "head", "header", "hr", "html", Xend ];
+    static immutable string[] i6 = [ "iframe", Xend ];
+    static immutable string[] l6 = [ "legend", "li", "link", Xend ];
+    static immutable string[] m6 = [ "main", "menu", "menuitem", Xend ];
+    static immutable string[] n6 = [ "nav", "noframes", Xend ];
+    static immutable string[] o6 = [ "ol", "optgroup", "option", Xend ];
+    static immutable string[] p6 = [ "p", "param", Xend ];
+    static immutable string[] s6 = [ "section", "source", "summary", Xend ];
+    static immutable string[] t6 = [ "table", "tbody", "td", "tfoot", "th",
+                                     "thead", "title", "tr", "track", Xend ];
+    static immutable string[] u6 = [ "ul", Xend ];
+    static immutable string[] xx = [ Xend ];
 
-    static const TAG* map6[26] = {
-        a6, b6, c6, d6, xx, f6, xx, h6, i6, xx, xx, l6, m6,
-        n6, o6, p6, xx, xx, s6, t6, u6, xx, xx, xx, xx, xx
-    };
+    immutable(string)*[26] map6;
+    map6[0] = a6.ptr;
+    map6[1] = b6.ptr;
+    map6[2] = c6.ptr;
+    map6[3] = d6.ptr;
+    map6[4] = xx.ptr;
+    map6[5] = f6.ptr;
+    map6[6] = xx.ptr;
+    map6[7] = h6.ptr;
+    map6[8] = i6.ptr;
+    map6[9] = xx.ptr;
+    map6[0] = xx.ptr;
+    map6[1] = l6.ptr;
+    map6[2] = m6.ptr;
+    map6[3] = n6.ptr;
+    map6[4] = o6.ptr;
+    map6[5] = p6.ptr;
+    map6[6] = xx.ptr;
+    map6[7] = xx.ptr;
+    map6[8] = s6.ptr;
+    map6[9] = t6.ptr;
+    map6[0] = u6.ptr;
+    map6[1] = xx.ptr;
+    map6[2] = xx.ptr;
+    map6[3] = xx.ptr;
+    map6[4] = xx.ptr;
+    map6[5] = xx.ptr;
+
     OFF off = beg + 1;
     int i;
 
     /* Check for type 1: <script, <pre, or <style */
-    for(i = 0; t1[i].name != NULL; i++) {
-        if(off + t1[i].len <= ctx.size) {
-            if(md_ascii_case_eq(ctx.STR(off), t1[i].name, t1[i].len))
+    for(i = 0; t1[i].ptr != null; i++) 
+    {
+        if(off + t1[i].length <= ctx.size) 
+        {
+            if(md_ascii_case_eq(ctx.STR(off), t1[i].ptr, cast(uint)(t1[i].length)))
                 return 1;
         }
     }
@@ -5656,7 +5687,7 @@ md_is_html_block_start_condition(MD_CTX* ctx, OFF beg)
 
         /* Check for type 5: <![CDATA[ */
         if(off + 8 < ctx.size) {
-            if(md_ascii_eq(ctx.STR(off), "![CDATA[", 8 * sizeof(CHAR)))
+            if(md_ascii_eq(ctx.STR(off), "![CDATA[", 8 * CHAR.sizeof))
                 return 5;
         }
     }
@@ -5664,7 +5695,7 @@ md_is_html_block_start_condition(MD_CTX* ctx, OFF beg)
     /* Check for type 6: Many possible starting tags listed above. */
     if(off + 1 < ctx.size  &&  (ctx.ISALPHA(off) || (ctx.CH(off) == '/' && ctx.ISALPHA(off+1)))) {
         int slot;
-        const TAG* tags;
+        const(string)* tags;
 
         if(ctx.CH(off) == '/')
             off++;
@@ -5672,10 +5703,10 @@ md_is_html_block_start_condition(MD_CTX* ctx, OFF beg)
         slot = (ctx.ISUPPER(off) ? ctx.CH(off) - 'A' : ctx.CH(off) - 'a');
         tags = map6[slot];
 
-        for(i = 0; tags[i].name != NULL; i++) {
-            if(off + tags[i].len <= ctx.size) {
-                if(md_ascii_case_eq(ctx.STR(off), tags[i].name, tags[i].len)) {
-                    OFF tmp = off + tags[i].len;
+        for(i = 0; tags[i].ptr != null; i++) {
+            if(off + tags[i].length <= ctx.size) {
+                if(md_ascii_case_eq(ctx.STR(off), tags[i].ptr, cast(uint) tags[i].length)) {
+                    OFF tmp = cast(uint)(off + tags[i].length);
                     if(tmp >= ctx.size)
                         return 6;
                     if(ctx.ISBLANK(tmp) || ctx.ISNEWLINE(tmp) || ctx.CH(tmp) == '>')
@@ -5692,7 +5723,7 @@ md_is_html_block_start_condition(MD_CTX* ctx, OFF beg)
     if(off + 1 < ctx.size) {
         OFF end;
 
-        if(md_is_html_tag(ctx, NULL, 0, beg, ctx.size, &end)) {
+        if(md_is_html_tag(ctx, null, 0, beg, ctx.size, &end)) {
             /* Only optional whitespace and new line may follow. */
             while(end < ctx.size  &&  ctx.ISWHITESPACE(end))
                 end++;
@@ -5713,7 +5744,7 @@ md_line_contains(MD_CTX* ctx, OFF beg, const(CHAR)* what, SZ what_len, OFF* p_en
     for(i = beg; i + what_len < ctx.size; i++) {
         if(ctx.ISNEWLINE(i))
             break;
-        if(memcmp(ctx.STR(i), what, what_len * sizeof(CHAR)) == 0) {
+        if(memcmp(ctx.STR(i), what, what_len * CHAR.sizeof) == 0) {
             *p_end = i + what_len;
             return TRUE;
         }
@@ -5728,8 +5759,7 @@ md_line_contains(MD_CTX* ctx, OFF beg, const(CHAR)* what, SZ what_len, OFF* p_en
  * Note it fills p_end even when it is not end condition as the caller
  * does not need to analyze contents of a raw HTML block.
  */
-static int
-md_is_html_block_end_condition(MD_CTX* ctx, OFF beg, OFF* p_end)
+int md_is_html_block_end_condition(MD_CTX* ctx, OFF beg, OFF* p_end)
 {
     switch(ctx.html_block_type) {
         case 1:
@@ -5780,7 +5810,6 @@ md_is_html_block_end_condition(MD_CTX* ctx, OFF beg, OFF* p_end)
         default:
             assert(false);
     }
-    return FALSE;
 }
 
 
@@ -5806,8 +5835,8 @@ md_push_container(MD_CTX* ctx, const MD_CONTAINER* container)
         MD_CONTAINER* new_containers;
 
         ctx.alloc_containers = (ctx.alloc_containers > 0 ? ctx.alloc_containers * 2 : 16);
-        new_containers = realloc(ctx.containers, ctx.alloc_containers * sizeof(MD_CONTAINER));
-        if(new_containers == NULL) {
+        new_containers = cast(MD_CONTAINER*) realloc(ctx.containers, ctx.alloc_containers * MD_CONTAINER.sizeof);
+        if (new_containers == null) {
             ctx.MD_LOG("realloc() failed.");
             return -1;
         }
@@ -5815,12 +5844,12 @@ md_push_container(MD_CTX* ctx, const MD_CONTAINER* container)
         ctx.containers = new_containers;
     }
 
-    memcpy(&ctx.containers[ctx.n_containers++], container, sizeof(MD_CONTAINER));
+    memcpy(&ctx.containers[ctx.n_containers++], container, MD_CONTAINER.sizeof);
     return 0;
 }
 
 static int
-md_enter_child_containers(MD_CTX* ctx, int n_children, unsigned data)
+md_enter_child_containers(MD_CTX* ctx, int n_children, uint data)
 {
     int i;
     int ret = 0;
@@ -5834,6 +5863,7 @@ md_enter_child_containers(MD_CTX* ctx, int n_children, unsigned data)
             case '.':
                 is_ordered_list = TRUE;
                 /* Pass through */
+                goto case '-';
 
             case '-':
             case '+':
@@ -5882,6 +5912,7 @@ md_leave_child_containers(MD_CTX* ctx, int n_keep)
             case '.':
                 is_ordered_list = TRUE;
                 /* Pass through */
+                goto case '-';
 
             case '-':
             case '+':
@@ -5914,7 +5945,7 @@ abort:
 }
 
 static int
-md_is_container_mark(MD_CTX* ctx, unsigned indent, OFF beg, OFF* p_end, MD_CONTAINER* p_container)
+md_is_container_mark(MD_CTX* ctx, uint indent, OFF beg, OFF* p_end, MD_CONTAINER* p_container)
 {
     OFF off = beg;
     OFF max_end;
@@ -5967,11 +5998,10 @@ md_is_container_mark(MD_CTX* ctx, unsigned indent, OFF beg, OFF* p_end, MD_CONTA
     return FALSE;
 }
 
-static unsigned
-md_line_indentation(MD_CTX* ctx, unsigned total_indent, OFF beg, OFF* p_end)
+uint md_line_indentation(MD_CTX* ctx, uint total_indent, OFF beg, OFF* p_end)
 {
     OFF off = beg;
-    unsigned indent = total_indent;
+    uint indent = total_indent;
 
     while(off < ctx.size  &&  ctx.ISBLANK(off)) {
         if(ctx.CH(off) == '\t')
@@ -5989,11 +6019,10 @@ static const MD_LINE_ANALYSIS md_dummy_blank_line = { MD_LINE_BLANK, 0 };
 
 /* Analyze type of the line and find some its properties. This serves as a
  * main input for determining type and boundaries of a block. */
-static int
-md_analyze_line(MD_CTX* ctx, OFF beg, OFF* p_end,
-                const MD_LINE_ANALYSIS* pivot_line, MD_LINE_ANALYSIS* line)
+int md_analyze_line(MD_CTX* ctx, OFF beg, OFF* p_end,
+                    const(MD_LINE_ANALYSIS)* pivot_line, MD_LINE_ANALYSIS* line)
 {
-    unsigned total_indent = 0;
+    uint total_indent = 0;
     int n_parents = 0;
     int n_brothers = 0;
     int n_children = 0;
@@ -6121,11 +6150,11 @@ md_analyze_line(MD_CTX* ctx, OFF beg, OFF* p_end,
                  * which would be part of this list item actually ends the list
                  * because "a list item can begin with at most one blank line."
                  */
-                if(n_parents > 0  &&  ctx.containers[n_parents-1].ch != _T('>')  &&
-                   n_brothers + n_children == 0  &&  ctx.current_block == NULL  &&
-                   ctx.n_block_bytes > (int) sizeof(MD_BLOCK))
+                if(n_parents > 0  &&  ctx.containers[n_parents-1].ch != '>'  &&
+                   n_brothers + n_children == 0  &&  ctx.current_block == null  &&
+                   ctx.n_block_bytes > cast(int) MD_BLOCK.sizeof)
                 {
-                    MD_BLOCK* top_block = (MD_BLOCK*) ((char*)ctx.block_bytes + ctx.n_block_bytes - sizeof(MD_BLOCK));
+                    MD_BLOCK* top_block = cast(MD_BLOCK*) (cast(char*)ctx.block_bytes + ctx.n_block_bytes - MD_BLOCK.sizeof);
                     if(top_block.type == MD_BLOCK_LI)
                         ctx.last_list_item_starts_with_two_blank_lines = TRUE;
                 }
@@ -6137,11 +6166,11 @@ md_analyze_line(MD_CTX* ctx, OFF beg, OFF* p_end,
              * belonging to such list item, then interrupt the list. */
             ctx.last_line_has_list_loosening_effect = FALSE;
             if(ctx.last_list_item_starts_with_two_blank_lines) {
-                if(n_parents > 0  &&  ctx.containers[n_parents-1].ch != _T('>')  &&
-                   n_brothers + n_children == 0  &&  ctx.current_block == NULL  &&
-                   ctx.n_block_bytes > (int) sizeof(MD_BLOCK))
+                if(n_parents > 0  &&  ctx.containers[n_parents-1].ch != '>'  &&
+                   n_brothers + n_children == 0  &&  ctx.current_block == null  &&
+                   ctx.n_block_bytes > cast(int) MD_BLOCK.sizeof)
                 {
-                    MD_BLOCK* top_block = (MD_BLOCK*) ((char*)ctx.block_bytes + ctx.n_block_bytes - sizeof(MD_BLOCK));
+                    MD_BLOCK* top_block = cast(MD_BLOCK*) (cast(char*)ctx.block_bytes + ctx.n_block_bytes - MD_BLOCK.sizeof);
                     if(top_block.type == MD_BLOCK_LI)
                         n_parents--;
                 }
@@ -6155,7 +6184,7 @@ md_analyze_line(MD_CTX* ctx, OFF beg, OFF* p_end,
             &&  (ctx.CH(off) == '=' || ctx.CH(off) == '-')
             &&  (n_parents == ctx.n_containers))
         {
-            unsigned level;
+            uint level;
 
             if(md_is_setext_underline(ctx, off, &off, &level)) {
                 line.type = MD_LINE_SETEXTUNDERLINE;
@@ -6277,7 +6306,7 @@ md_analyze_line(MD_CTX* ctx, OFF beg, OFF* p_end,
 
         /* Check for ATX header. */
         if(line.indent < ctx.code_indent_offset  &&  ctx.CH(off) == '#') {
-            unsigned level;
+            uint level;
 
             if(md_is_atxheader_line(ctx, off, &line.beg, &off, &level)) {
                 line.type = MD_LINE_ATXHEADER;
@@ -6321,11 +6350,11 @@ md_analyze_line(MD_CTX* ctx, OFF beg, OFF* p_end,
            (ctx.CH(off) == '|' || ctx.CH(off) == '-' || ctx.CH(off) == ':')  &&
            n_parents == ctx.n_containers)
         {
-            unsigned col_count;
+            uint col_count;
 
-            if(ctx.current_block != NULL  &&  ctx.current_block.n_lines == 1  &&
+            if(ctx.current_block != null  &&  ctx.current_block.n_lines == 1  &&
                 md_is_table_underline(ctx, off, &off, &col_count)  &&
-                md_is_table_row(ctx, pivot_line.beg, NULL))
+                md_is_table_row(ctx, pivot_line.beg, null))
             {
                 line.data = col_count;
                 line.type = MD_LINE_TABLEUNDERLINE;
@@ -6411,8 +6440,8 @@ md_analyze_line(MD_CTX* ctx, OFF beg, OFF* p_end,
     if(prev_line_has_list_loosening_effect  &&  line.type != MD_LINE_BLANK  &&  n_parents + n_brothers > 0) {
         MD_CONTAINER* c = &ctx.containers[n_parents + n_brothers - 1];
         if(c.ch != '>') {
-            MD_BLOCK* block = (MD_BLOCK*) (((char*)ctx.block_bytes) + c.block_byte_off);
-            block.flags |= MD_BLOCK_LOOSE_LIST;
+            MD_BLOCK* block = cast(MD_BLOCK*) ((cast(char*)ctx.block_bytes) + c.block_byte_off);
+            block.flags = block.flags | MD_BLOCK_LOOSE_LIST;
         }
     }
 
@@ -6450,10 +6479,9 @@ abort:
     return ret;
 }
 
-static int
-md_process_line(MD_CTX* ctx, const MD_LINE_ANALYSIS** p_pivot_line, MD_LINE_ANALYSIS* line)
+int md_process_line(MD_CTX* ctx, const(MD_LINE_ANALYSIS)** p_pivot_line, MD_LINE_ANALYSIS* line)
 {
-    const MD_LINE_ANALYSIS* pivot_line = *p_pivot_line;
+    const(MD_LINE_ANALYSIS)* pivot_line = *p_pivot_line;
     int ret = 0;
 
     /* Blank line ends current leaf block. */
@@ -6482,15 +6510,15 @@ md_process_line(MD_CTX* ctx, const MD_LINE_ANALYSIS** p_pivot_line, MD_LINE_ANAL
 
     /* MD_LINE_SETEXTUNDERLINE changes meaning of the current block and ends it. */
     if(line.type == MD_LINE_SETEXTUNDERLINE) {
-        assert(ctx.current_block != NULL);
+        assert(ctx.current_block != null);
         ctx.current_block.type = MD_BLOCK_H;
         ctx.current_block.data = line.data;
-        ctx.current_block.flags |= MD_BLOCK_SETEXT_HEADER;
+        ctx.current_block.flags = ctx.current_block.flags | MD_BLOCK_SETEXT_HEADER;
         ret = (md_add_line_into_current_block(ctx, line));
         if (ret < 0) goto abort;
         ret = (md_end_current_block(ctx));
         if (ret < 0) goto abort;
-        if(ctx.current_block == NULL) {
+        if(ctx.current_block == null) {
             *p_pivot_line = &md_dummy_blank_line;
         } else {
             /* This happens if we have consumed all the body as link ref. defs.
@@ -6503,12 +6531,12 @@ md_process_line(MD_CTX* ctx, const MD_LINE_ANALYSIS** p_pivot_line, MD_LINE_ANAL
 
     /* MD_LINE_TABLEUNDERLINE changes meaning of the current block. */
     if(line.type == MD_LINE_TABLEUNDERLINE) {
-        assert(ctx.current_block != NULL);
+        assert(ctx.current_block != null);
         assert(ctx.current_block.n_lines == 1);
         ctx.current_block.type = MD_BLOCK_TABLE;
         ctx.current_block.data = line.data;
         assert(pivot_line != &md_dummy_blank_line);
-        ((MD_LINE_ANALYSIS*)pivot_line).type = MD_LINE_TABLE;
+        (cast(MD_LINE_ANALYSIS*)pivot_line).type = MD_LINE_TABLE;
         ret = (md_add_line_into_current_block(ctx, line));
         if (ret < 0) goto abort;
         return 0;
@@ -6522,7 +6550,7 @@ md_process_line(MD_CTX* ctx, const MD_LINE_ANALYSIS** p_pivot_line, MD_LINE_ANAL
     }
 
     /* The current line may start a new block. */
-    if(ctx.current_block == NULL) {
+    if(ctx.current_block == null) {
         ret = (md_start_new_block(ctx, line));
         if (ret < 0) goto abort;
         *p_pivot_line = line;
@@ -6536,16 +6564,15 @@ abort:
     return ret;
 }
 
-static int
-md_process_doc(MD_CTX *ctx)
+int md_process_doc(MD_CTX *ctx)
 {
-    const MD_LINE_ANALYSIS* pivot_line = &md_dummy_blank_line;
-    MD_LINE_ANALYSIS line_buf[2];
+    const(MD_LINE_ANALYSIS)* pivot_line = &md_dummy_blank_line;
+    MD_LINE_ANALYSIS[2] line_buf;
     MD_LINE_ANALYSIS* line = &line_buf[0];
     OFF off = 0;
     int ret = 0;
 
-    ret = MD_ENTER_BLOCK(ctx, MD_BLOCK_DOC, NULL);
+    ret = MD_ENTER_BLOCK(ctx, MD_BLOCK_DOC, null);
     if (ret != 0) goto abort;
 
     while(off < ctx.size) {
@@ -6569,7 +6596,7 @@ md_process_doc(MD_CTX *ctx)
     ret = (md_process_all_blocks(ctx));
     if (ret < 0) goto abort;
 
-    ret = MD_LEAVE_BLOCK(ctx, MD_BLOCK_DOC, NULL);
+    ret = MD_LEAVE_BLOCK(ctx, MD_BLOCK_DOC, null);
     if (ret != 0) goto abort;
 
 abort:
@@ -6579,19 +6606,19 @@ abort:
     {
         char[256] buffer;
         sprintf(buffer, "Alloced %u bytes for block buffer.",
-                    (unsigned)(ctx.alloc_block_bytes));
+                    cast(uint)(ctx.alloc_block_bytes));
         ctx.MD_LOG(buffer);
 
         sprintf(buffer, "Alloced %u bytes for containers buffer.",
-                    (unsigned)(ctx.alloc_containers * sizeof(MD_CONTAINER)));
+                    cast(uint)(ctx.alloc_containers * MD_CONTAINER.sizeof));
         ctx.MD_LOG(buffer);
 
         sprintf(buffer, "Alloced %u bytes for marks buffer.",
-                    (unsigned)(ctx.alloc_marks * sizeof(MD_MARK)));
+                    cast(uint)(ctx.alloc_marks * MD_MARK.sizeof));
         ctx.MD_LOG(buffer);
 
         sprintf(buffer, "Alloced %u bytes for aux. buffer.",
-                    (unsigned)(ctx.alloc_buffer * sizeof(MD_CHAR)));
+                    cast(uint)(ctx.alloc_buffer * MD_CHAR.sizeof));
         ctx.MD_LOG(buffer);
     }
 
@@ -6620,18 +6647,18 @@ int md_parse(const MD_CHAR* text, MD_SIZE size, const MD_PARSER* parser, void* u
     int ret;
 
     if(parser.abi_version != 0) {
-        if(parser.debug_log != NULL)
+        if(parser.debug_log != null)
             parser.debug_log("Unsupported abi_version.", userdata);
         return -1;
     }
 
     /* Setup context structure. */
-    memset(&ctx, 0, sizeof(MD_CTX));
+    memset(&ctx, 0, MD_CTX.sizeof);
     ctx.text = text;
     ctx.size = size;
-    memcpy(&ctx.parser, parser, sizeof(MD_PARSER));
+    memcpy(&ctx.parser, parser, MD_PARSER.sizeof);
     ctx.userdata = userdata;
-    ctx.code_indent_offset = (ctx.parser.flags & MD_FLAG_NOINDENTEDCODEBLOCKS) ? (OFF)(-1) : 4;
+    ctx.code_indent_offset = (ctx.parser.flags & MD_FLAG_NOINDENTEDCODEBLOCKS) ? cast(OFF)(-1) : 4;
     md_build_mark_char_map(&ctx);
     ctx.doc_ends_with_newline = (size > 0  &&  ISNEWLINE_(text[size-1]));
 
