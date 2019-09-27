@@ -24,8 +24,9 @@
  */
 module commonmarkd.md4c;
 
-import core.stdc.stdlib: malloc, free, realloc, qsort, bsearch;
-import core.stdc.string: memcpy, memset, memcmp, memmove;
+import core.stdc.stdlib;
+import core.stdc.string;
+import core.stdc.stdio;
 
 alias MD_CHAR = char;
 alias MD_SIZE = uint;
@@ -6683,3 +6684,2671 @@ int md_parse(const MD_CHAR* text, MD_SIZE size, const MD_PARSER* parser, void* u
 
     return ret;
 }
+
+//
+// HTML ENTITIES
+//
+
+/* Most entities are formed by single Unicode codepoint, few by two codepoints.
+ * Single-codepoint entities have codepoints[1] set to zero. */
+struct entity 
+{
+    const(char)* name;
+    uint[2] codepoints;
+}
+
+/* The table is generated from https://html.spec.whatwg.org/entities.json */
+static immutable entity[] entity_table = 
+[
+    entity( "&AElig;", [ 198, 0 ] ),
+    entity( "&AMP;", [ 38, 0 ] ),
+    entity( "&Aacute;", [ 193, 0 ] ),
+    entity( "&Abreve;", [ 258, 0 ] ),
+    entity( "&Acirc;", [ 194, 0 ] ),
+    entity( "&Acy;", [ 1040, 0 ] ),
+    entity( "&Afr;", [ 120068, 0 ] ),
+    entity( "&Agrave;", [ 192, 0 ] ),
+    entity( "&Alpha;", [ 913, 0 ] ),
+    entity( "&Amacr;", [ 256, 0 ] ),
+    entity( "&And;", [ 10835, 0 ] ),
+    entity( "&Aogon;", [ 260, 0 ] ),
+    entity( "&Aopf;", [ 120120, 0 ] ),
+    entity( "&ApplyFunction;", [ 8289, 0 ] ),
+    entity( "&Aring;", [ 197, 0 ] ),
+    entity( "&Ascr;", [ 119964, 0 ] ),
+    entity( "&Assign;", [ 8788, 0 ] ),
+    entity( "&Atilde;", [ 195, 0 ] ),
+    entity( "&Auml;", [ 196, 0 ] ),
+    entity( "&Backslash;", [ 8726, 0 ] ),
+    entity( "&Barv;", [ 10983, 0 ] ),
+    entity( "&Barwed;", [ 8966, 0 ] ),
+    entity( "&Bcy;", [ 1041, 0 ] ),
+    entity( "&Because;", [ 8757, 0 ] ),
+    entity( "&Bernoullis;", [ 8492, 0 ] ),
+    entity( "&Beta;", [ 914, 0 ] ),
+    entity( "&Bfr;", [ 120069, 0 ] ),
+    entity( "&Bopf;", [ 120121, 0 ] ),
+    entity( "&Breve;", [ 728, 0 ] ),
+    entity( "&Bscr;", [ 8492, 0 ] ),
+    entity( "&Bumpeq;", [ 8782, 0 ] ),
+    entity( "&CHcy;", [ 1063, 0 ] ),
+    entity( "&COPY;", [ 169, 0 ] ),
+    entity( "&Cacute;", [ 262, 0 ] ),
+    entity( "&Cap;", [ 8914, 0 ] ),
+    entity( "&CapitalDifferentialD;", [ 8517, 0 ] ),
+    entity( "&Cayleys;", [ 8493, 0 ] ),
+    entity( "&Ccaron;", [ 268, 0 ] ),
+    entity( "&Ccedil;", [ 199, 0 ] ),
+    entity( "&Ccirc;", [ 264, 0 ] ),
+    entity( "&Cconint;", [ 8752, 0 ] ),
+    entity( "&Cdot;", [ 266, 0 ] ),
+    entity( "&Cedilla;", [ 184, 0 ] ),
+    entity( "&CenterDot;", [ 183, 0 ] ),
+    entity( "&Cfr;", [ 8493, 0 ] ),
+    entity( "&Chi;", [ 935, 0 ] ),
+    entity( "&CircleDot;", [ 8857, 0 ] ),
+    entity( "&CircleMinus;", [ 8854, 0 ] ),
+    entity( "&CirclePlus;", [ 8853, 0 ] ),
+    entity( "&CircleTimes;", [ 8855, 0 ] ),
+    entity( "&ClockwiseContourIntegral;", [ 8754, 0 ] ),
+    entity( "&CloseCurlyDoubleQuote;", [ 8221, 0 ] ),
+    entity( "&CloseCurlyQuote;", [ 8217, 0 ] ),
+    entity( "&Colon;", [ 8759, 0 ] ),
+    entity( "&Colone;", [ 10868, 0 ] ),
+    entity( "&Congruent;", [ 8801, 0 ] ),
+    entity( "&Conint;", [ 8751, 0 ] ),
+    entity( "&ContourIntegral;", [ 8750, 0 ] ),
+    entity( "&Copf;", [ 8450, 0 ] ),
+    entity( "&Coproduct;", [ 8720, 0 ] ),
+    entity( "&CounterClockwiseContourIntegral;", [ 8755, 0 ] ),
+    entity( "&Cross;", [ 10799, 0 ] ),
+    entity( "&Cscr;", [ 119966, 0 ] ),
+    entity( "&Cup;", [ 8915, 0 ] ),
+    entity( "&CupCap;", [ 8781, 0 ] ),
+    entity( "&DD;", [ 8517, 0 ] ),
+    entity( "&DDotrahd;", [ 10513, 0 ] ),
+    entity( "&DJcy;", [ 1026, 0 ] ),
+    entity( "&DScy;", [ 1029, 0 ] ),
+    entity( "&DZcy;", [ 1039, 0 ] ),
+    entity( "&Dagger;", [ 8225, 0 ] ),
+    entity( "&Darr;", [ 8609, 0 ] ),
+    entity( "&Dashv;", [ 10980, 0 ] ),
+    entity( "&Dcaron;", [ 270, 0 ] ),
+    entity( "&Dcy;", [ 1044, 0 ] ),
+    entity( "&Del;", [ 8711, 0 ] ),
+    entity( "&Delta;", [ 916, 0 ] ),
+    entity( "&Dfr;", [ 120071, 0 ] ),
+    entity( "&DiacriticalAcute;", [ 180, 0 ] ),
+    entity( "&DiacriticalDot;", [ 729, 0 ] ),
+    entity( "&DiacriticalDoubleAcute;", [ 733, 0 ] ),
+    entity( "&DiacriticalGrave;", [ 96, 0 ] ),
+    entity( "&DiacriticalTilde;", [ 732, 0 ] ),
+    entity( "&Diamond;", [ 8900, 0 ] ),
+    entity( "&DifferentialD;", [ 8518, 0 ] ),
+    entity( "&Dopf;", [ 120123, 0 ] ),
+    entity( "&Dot;", [ 168, 0 ] ),
+    entity( "&DotDot;", [ 8412, 0 ] ),
+    entity( "&DotEqual;", [ 8784, 0 ] ),
+    entity( "&DoubleContourIntegral;", [ 8751, 0 ] ),
+    entity( "&DoubleDot;", [ 168, 0 ] ),
+    entity( "&DoubleDownArrow;", [ 8659, 0 ] ),
+    entity( "&DoubleLeftArrow;", [ 8656, 0 ] ),
+    entity( "&DoubleLeftRightArrow;", [ 8660, 0 ] ),
+    entity( "&DoubleLeftTee;", [ 10980, 0 ] ),
+    entity( "&DoubleLongLeftArrow;", [ 10232, 0 ] ),
+    entity( "&DoubleLongLeftRightArrow;", [ 10234, 0 ] ),
+    entity( "&DoubleLongRightArrow;", [ 10233, 0 ] ),
+    entity( "&DoubleRightArrow;", [ 8658, 0 ] ),
+    entity( "&DoubleRightTee;", [ 8872, 0 ] ),
+    entity( "&DoubleUpArrow;", [ 8657, 0 ] ),
+    entity( "&DoubleUpDownArrow;", [ 8661, 0 ] ),
+    entity( "&DoubleVerticalBar;", [ 8741, 0 ] ),
+    entity( "&DownArrow;", [ 8595, 0 ] ),
+    entity( "&DownArrowBar;", [ 10515, 0 ] ),
+    entity( "&DownArrowUpArrow;", [ 8693, 0 ] ),
+    entity( "&DownBreve;", [ 785, 0 ] ),
+    entity( "&DownLeftRightVector;", [ 10576, 0 ] ),
+    entity( "&DownLeftTeeVector;", [ 10590, 0 ] ),
+    entity( "&DownLeftVector;", [ 8637, 0 ] ),
+    entity( "&DownLeftVectorBar;", [ 10582, 0 ] ),
+    entity( "&DownRightTeeVector;", [ 10591, 0 ] ),
+    entity( "&DownRightVector;", [ 8641, 0 ] ),
+    entity( "&DownRightVectorBar;", [ 10583, 0 ] ),
+    entity( "&DownTee;", [ 8868, 0 ] ),
+    entity( "&DownTeeArrow;", [ 8615, 0 ] ),
+    entity( "&Downarrow;", [ 8659, 0 ] ),
+    entity( "&Dscr;", [ 119967, 0 ] ),
+    entity( "&Dstrok;", [ 272, 0 ] ),
+    entity( "&ENG;", [ 330, 0 ] ),
+    entity( "&ETH;", [ 208, 0 ] ),
+    entity( "&Eacute;", [ 201, 0 ] ),
+    entity( "&Ecaron;", [ 282, 0 ] ),
+    entity( "&Ecirc;", [ 202, 0 ] ),
+    entity( "&Ecy;", [ 1069, 0 ] ),
+    entity( "&Edot;", [ 278, 0 ] ),
+    entity( "&Efr;", [ 120072, 0 ] ),
+    entity( "&Egrave;", [ 200, 0 ] ),
+    entity( "&Element;", [ 8712, 0 ] ),
+    entity( "&Emacr;", [ 274, 0 ] ),
+    entity( "&EmptySmallSquare;", [ 9723, 0 ] ),
+    entity( "&EmptyVerySmallSquare;", [ 9643, 0 ] ),
+    entity( "&Eogon;", [ 280, 0 ] ),
+    entity( "&Eopf;", [ 120124, 0 ] ),
+    entity( "&Epsilon;", [ 917, 0 ] ),
+    entity( "&Equal;", [ 10869, 0 ] ),
+    entity( "&EqualTilde;", [ 8770, 0 ] ),
+    entity( "&Equilibrium;", [ 8652, 0 ] ),
+    entity( "&Escr;", [ 8496, 0 ] ),
+    entity( "&Esim;", [ 10867, 0 ] ),
+    entity( "&Eta;", [ 919, 0 ] ),
+    entity( "&Euml;", [ 203, 0 ] ),
+    entity( "&Exists;", [ 8707, 0 ] ),
+    entity( "&ExponentialE;", [ 8519, 0 ] ),
+    entity( "&Fcy;", [ 1060, 0 ] ),
+    entity( "&Ffr;", [ 120073, 0 ] ),
+    entity( "&FilledSmallSquare;", [ 9724, 0 ] ),
+    entity( "&FilledVerySmallSquare;", [ 9642, 0 ] ),
+    entity( "&Fopf;", [ 120125, 0 ] ),
+    entity( "&ForAll;", [ 8704, 0 ] ),
+    entity( "&Fouriertrf;", [ 8497, 0 ] ),
+    entity( "&Fscr;", [ 8497, 0 ] ),
+    entity( "&GJcy;", [ 1027, 0 ] ),
+    entity( "&GT;", [ 62, 0 ] ),
+    entity( "&Gamma;", [ 915, 0 ] ),
+    entity( "&Gammad;", [ 988, 0 ] ),
+    entity( "&Gbreve;", [ 286, 0 ] ),
+    entity( "&Gcedil;", [ 290, 0 ] ),
+    entity( "&Gcirc;", [ 284, 0 ] ),
+    entity( "&Gcy;", [ 1043, 0 ] ),
+    entity( "&Gdot;", [ 288, 0 ] ),
+    entity( "&Gfr;", [ 120074, 0 ] ),
+    entity( "&Gg;", [ 8921, 0 ] ),
+    entity( "&Gopf;", [ 120126, 0 ] ),
+    entity( "&GreaterEqual;", [ 8805, 0 ] ),
+    entity( "&GreaterEqualLess;", [ 8923, 0 ] ),
+    entity( "&GreaterFullEqual;", [ 8807, 0 ] ),
+    entity( "&GreaterGreater;", [ 10914, 0 ] ),
+    entity( "&GreaterLess;", [ 8823, 0 ] ),
+    entity( "&GreaterSlantEqual;", [ 10878, 0 ] ),
+    entity( "&GreaterTilde;", [ 8819, 0 ] ),
+    entity( "&Gscr;", [ 119970, 0 ] ),
+    entity( "&Gt;", [ 8811, 0 ] ),
+    entity( "&HARDcy;", [ 1066, 0 ] ),
+    entity( "&Hacek;", [ 711, 0 ] ),
+    entity( "&Hat;", [ 94, 0 ] ),
+    entity( "&Hcirc;", [ 292, 0 ] ),
+    entity( "&Hfr;", [ 8460, 0 ] ),
+    entity( "&HilbertSpace;", [ 8459, 0 ] ),
+    entity( "&Hopf;", [ 8461, 0 ] ),
+    entity( "&HorizontalLine;", [ 9472, 0 ] ),
+    entity( "&Hscr;", [ 8459, 0 ] ),
+    entity( "&Hstrok;", [ 294, 0 ] ),
+    entity( "&HumpDownHump;", [ 8782, 0 ] ),
+    entity( "&HumpEqual;", [ 8783, 0 ] ),
+    entity( "&IEcy;", [ 1045, 0 ] ),
+    entity( "&IJlig;", [ 306, 0 ] ),
+    entity( "&IOcy;", [ 1025, 0 ] ),
+    entity( "&Iacute;", [ 205, 0 ] ),
+    entity( "&Icirc;", [ 206, 0 ] ),
+    entity( "&Icy;", [ 1048, 0 ] ),
+    entity( "&Idot;", [ 304, 0 ] ),
+    entity( "&Ifr;", [ 8465, 0 ] ),
+    entity( "&Igrave;", [ 204, 0 ] ),
+    entity( "&Im;", [ 8465, 0 ] ),
+    entity( "&Imacr;", [ 298, 0 ] ),
+    entity( "&ImaginaryI;", [ 8520, 0 ] ),
+    entity( "&Implies;", [ 8658, 0 ] ),
+    entity( "&Int;", [ 8748, 0 ] ),
+    entity( "&Integral;", [ 8747, 0 ] ),
+    entity( "&Intersection;", [ 8898, 0 ] ),
+    entity( "&InvisibleComma;", [ 8291, 0 ] ),
+    entity( "&InvisibleTimes;", [ 8290, 0 ] ),
+    entity( "&Iogon;", [ 302, 0 ] ),
+    entity( "&Iopf;", [ 120128, 0 ] ),
+    entity( "&Iota;", [ 921, 0 ] ),
+    entity( "&Iscr;", [ 8464, 0 ] ),
+    entity( "&Itilde;", [ 296, 0 ] ),
+    entity( "&Iukcy;", [ 1030, 0 ] ),
+    entity( "&Iuml;", [ 207, 0 ] ),
+    entity( "&Jcirc;", [ 308, 0 ] ),
+    entity( "&Jcy;", [ 1049, 0 ] ),
+    entity( "&Jfr;", [ 120077, 0 ] ),
+    entity( "&Jopf;", [ 120129, 0 ] ),
+    entity( "&Jscr;", [ 119973, 0 ] ),
+    entity( "&Jsercy;", [ 1032, 0 ] ),
+    entity( "&Jukcy;", [ 1028, 0 ] ),
+    entity( "&KHcy;", [ 1061, 0 ] ),
+    entity( "&KJcy;", [ 1036, 0 ] ),
+    entity( "&Kappa;", [ 922, 0 ] ),
+    entity( "&Kcedil;", [ 310, 0 ] ),
+    entity( "&Kcy;", [ 1050, 0 ] ),
+    entity( "&Kfr;", [ 120078, 0 ] ),
+    entity( "&Kopf;", [ 120130, 0 ] ),
+    entity( "&Kscr;", [ 119974, 0 ] ),
+    entity( "&LJcy;", [ 1033, 0 ] ),
+    entity( "&LT;", [ 60, 0 ] ),
+    entity( "&Lacute;", [ 313, 0 ] ),
+    entity( "&Lambda;", [ 923, 0 ] ),
+    entity( "&Lang;", [ 10218, 0 ] ),
+    entity( "&Laplacetrf;", [ 8466, 0 ] ),
+    entity( "&Larr;", [ 8606, 0 ] ),
+    entity( "&Lcaron;", [ 317, 0 ] ),
+    entity( "&Lcedil;", [ 315, 0 ] ),
+    entity( "&Lcy;", [ 1051, 0 ] ),
+    entity( "&LeftAngleBracket;", [ 10216, 0 ] ),
+    entity( "&LeftArrow;", [ 8592, 0 ] ),
+    entity( "&LeftArrowBar;", [ 8676, 0 ] ),
+    entity( "&LeftArrowRightArrow;", [ 8646, 0 ] ),
+    entity( "&LeftCeiling;", [ 8968, 0 ] ),
+    entity( "&LeftDoubleBracket;", [ 10214, 0 ] ),
+    entity( "&LeftDownTeeVector;", [ 10593, 0 ] ),
+    entity( "&LeftDownVector;", [ 8643, 0 ] ),
+    entity( "&LeftDownVectorBar;", [ 10585, 0 ] ),
+    entity( "&LeftFloor;", [ 8970, 0 ] ),
+    entity( "&LeftRightArrow;", [ 8596, 0 ] ),
+    entity( "&LeftRightVector;", [ 10574, 0 ] ),
+    entity( "&LeftTee;", [ 8867, 0 ] ),
+    entity( "&LeftTeeArrow;", [ 8612, 0 ] ),
+    entity( "&LeftTeeVector;", [ 10586, 0 ] ),
+    entity( "&LeftTriangle;", [ 8882, 0 ] ),
+    entity( "&LeftTriangleBar;", [ 10703, 0 ] ),
+    entity( "&LeftTriangleEqual;", [ 8884, 0 ] ),
+    entity( "&LeftUpDownVector;", [ 10577, 0 ] ),
+    entity( "&LeftUpTeeVector;", [ 10592, 0 ] ),
+    entity( "&LeftUpVector;", [ 8639, 0 ] ),
+    entity( "&LeftUpVectorBar;", [ 10584, 0 ] ),
+    entity( "&LeftVector;", [ 8636, 0 ] ),
+    entity( "&LeftVectorBar;", [ 10578, 0 ] ),
+    entity( "&Leftarrow;", [ 8656, 0 ] ),
+    entity( "&Leftrightarrow;", [ 8660, 0 ] ),
+    entity( "&LessEqualGreater;", [ 8922, 0 ] ),
+    entity( "&LessFullEqual;", [ 8806, 0 ] ),
+    entity( "&LessGreater;", [ 8822, 0 ] ),
+    entity( "&LessLess;", [ 10913, 0 ] ),
+    entity( "&LessSlantEqual;", [ 10877, 0 ] ),
+    entity( "&LessTilde;", [ 8818, 0 ] ),
+    entity( "&Lfr;", [ 120079, 0 ] ),
+    entity( "&Ll;", [ 8920, 0 ] ),
+    entity( "&Lleftarrow;", [ 8666, 0 ] ),
+    entity( "&Lmidot;", [ 319, 0 ] ),
+    entity( "&LongLeftArrow;", [ 10229, 0 ] ),
+    entity( "&LongLeftRightArrow;", [ 10231, 0 ] ),
+    entity( "&LongRightArrow;", [ 10230, 0 ] ),
+    entity( "&Longleftarrow;", [ 10232, 0 ] ),
+    entity( "&Longleftrightarrow;", [ 10234, 0 ] ),
+    entity( "&Longrightarrow;", [ 10233, 0 ] ),
+    entity( "&Lopf;", [ 120131, 0 ] ),
+    entity( "&LowerLeftArrow;", [ 8601, 0 ] ),
+    entity( "&LowerRightArrow;", [ 8600, 0 ] ),
+    entity( "&Lscr;", [ 8466, 0 ] ),
+    entity( "&Lsh;", [ 8624, 0 ] ),
+    entity( "&Lstrok;", [ 321, 0 ] ),
+    entity( "&Lt;", [ 8810, 0 ] ),
+    entity( "&Map;", [ 10501, 0 ] ),
+    entity( "&Mcy;", [ 1052, 0 ] ),
+    entity( "&MediumSpace;", [ 8287, 0 ] ),
+    entity( "&Mellintrf;", [ 8499, 0 ] ),
+    entity( "&Mfr;", [ 120080, 0 ] ),
+    entity( "&MinusPlus;", [ 8723, 0 ] ),
+    entity( "&Mopf;", [ 120132, 0 ] ),
+    entity( "&Mscr;", [ 8499, 0 ] ),
+    entity( "&Mu;", [ 924, 0 ] ),
+    entity( "&NJcy;", [ 1034, 0 ] ),
+    entity( "&Nacute;", [ 323, 0 ] ),
+    entity( "&Ncaron;", [ 327, 0 ] ),
+    entity( "&Ncedil;", [ 325, 0 ] ),
+    entity( "&Ncy;", [ 1053, 0 ] ),
+    entity( "&NegativeMediumSpace;", [ 8203, 0 ] ),
+    entity( "&NegativeThickSpace;", [ 8203, 0 ] ),
+    entity( "&NegativeThinSpace;", [ 8203, 0 ] ),
+    entity( "&NegativeVeryThinSpace;", [ 8203, 0 ] ),
+    entity( "&NestedGreaterGreater;", [ 8811, 0 ] ),
+    entity( "&NestedLessLess;", [ 8810, 0 ] ),
+    entity( "&NewLine;", [ 10, 0 ] ),
+    entity( "&Nfr;", [ 120081, 0 ] ),
+    entity( "&NoBreak;", [ 8288, 0 ] ),
+    entity( "&NonBreakingSpace;", [ 160, 0 ] ),
+    entity( "&Nopf;", [ 8469, 0 ] ),
+    entity( "&Not;", [ 10988, 0 ] ),
+    entity( "&NotCongruent;", [ 8802, 0 ] ),
+    entity( "&NotCupCap;", [ 8813, 0 ] ),
+    entity( "&NotDoubleVerticalBar;", [ 8742, 0 ] ),
+    entity( "&NotElement;", [ 8713, 0 ] ),
+    entity( "&NotEqual;", [ 8800, 0 ] ),
+    entity( "&NotEqualTilde;", [ 8770, 824 ] ),
+    entity( "&NotExists;", [ 8708, 0 ] ),
+    entity( "&NotGreater;", [ 8815, 0 ] ),
+    entity( "&NotGreaterEqual;", [ 8817, 0 ] ),
+    entity( "&NotGreaterFullEqual;", [ 8807, 824 ] ),
+    entity( "&NotGreaterGreater;", [ 8811, 824 ] ),
+    entity( "&NotGreaterLess;", [ 8825, 0 ] ),
+    entity( "&NotGreaterSlantEqual;", [ 10878, 824 ] ),
+    entity( "&NotGreaterTilde;", [ 8821, 0 ] ),
+    entity( "&NotHumpDownHump;", [ 8782, 824 ] ),
+    entity( "&NotHumpEqual;", [ 8783, 824 ] ),
+    entity( "&NotLeftTriangle;", [ 8938, 0 ] ),
+    entity( "&NotLeftTriangleBar;", [ 10703, 824 ] ),
+    entity( "&NotLeftTriangleEqual;", [ 8940, 0 ] ),
+    entity( "&NotLess;", [ 8814, 0 ] ),
+    entity( "&NotLessEqual;", [ 8816, 0 ] ),
+    entity( "&NotLessGreater;", [ 8824, 0 ] ),
+    entity( "&NotLessLess;", [ 8810, 824 ] ),
+    entity( "&NotLessSlantEqual;", [ 10877, 824 ] ),
+    entity( "&NotLessTilde;", [ 8820, 0 ] ),
+    entity( "&NotNestedGreaterGreater;", [ 10914, 824 ] ),
+    entity( "&NotNestedLessLess;", [ 10913, 824 ] ),
+    entity( "&NotPrecedes;", [ 8832, 0 ] ),
+    entity( "&NotPrecedesEqual;", [ 10927, 824 ] ),
+    entity( "&NotPrecedesSlantEqual;", [ 8928, 0 ] ),
+    entity( "&NotReverseElement;", [ 8716, 0 ] ),
+    entity( "&NotRightTriangle;", [ 8939, 0 ] ),
+    entity( "&NotRightTriangleBar;", [ 10704, 824 ] ),
+    entity( "&NotRightTriangleEqual;", [ 8941, 0 ] ),
+    entity( "&NotSquareSubset;", [ 8847, 824 ] ),
+    entity( "&NotSquareSubsetEqual;", [ 8930, 0 ] ),
+    entity( "&NotSquareSuperset;", [ 8848, 824 ] ),
+    entity( "&NotSquareSupersetEqual;", [ 8931, 0 ] ),
+    entity( "&NotSubset;", [ 8834, 8402 ] ),
+    entity( "&NotSubsetEqual;", [ 8840, 0 ] ),
+    entity( "&NotSucceeds;", [ 8833, 0 ] ),
+    entity( "&NotSucceedsEqual;", [ 10928, 824 ] ),
+    entity( "&NotSucceedsSlantEqual;", [ 8929, 0 ] ),
+    entity( "&NotSucceedsTilde;", [ 8831, 824 ] ),
+    entity( "&NotSuperset;", [ 8835, 8402 ] ),
+    entity( "&NotSupersetEqual;", [ 8841, 0 ] ),
+    entity( "&NotTilde;", [ 8769, 0 ] ),
+    entity( "&NotTildeEqual;", [ 8772, 0 ] ),
+    entity( "&NotTildeFullEqual;", [ 8775, 0 ] ),
+    entity( "&NotTildeTilde;", [ 8777, 0 ] ),
+    entity( "&NotVerticalBar;", [ 8740, 0 ] ),
+    entity( "&Nscr;", [ 119977, 0 ] ),
+    entity( "&Ntilde;", [ 209, 0 ] ),
+    entity( "&Nu;", [ 925, 0 ] ),
+    entity( "&OElig;", [ 338, 0 ] ),
+    entity( "&Oacute;", [ 211, 0 ] ),
+    entity( "&Ocirc;", [ 212, 0 ] ),
+    entity( "&Ocy;", [ 1054, 0 ] ),
+    entity( "&Odblac;", [ 336, 0 ] ),
+    entity( "&Ofr;", [ 120082, 0 ] ),
+    entity( "&Ograve;", [ 210, 0 ] ),
+    entity( "&Omacr;", [ 332, 0 ] ),
+    entity( "&Omega;", [ 937, 0 ] ),
+    entity( "&Omicron;", [ 927, 0 ] ),
+    entity( "&Oopf;", [ 120134, 0 ] ),
+    entity( "&OpenCurlyDoubleQuote;", [ 8220, 0 ] ),
+    entity( "&OpenCurlyQuote;", [ 8216, 0 ] ),
+    entity( "&Or;", [ 10836, 0 ] ),
+    entity( "&Oscr;", [ 119978, 0 ] ),
+    entity( "&Oslash;", [ 216, 0 ] ),
+    entity( "&Otilde;", [ 213, 0 ] ),
+    entity( "&Otimes;", [ 10807, 0 ] ),
+    entity( "&Ouml;", [ 214, 0 ] ),
+    entity( "&OverBar;", [ 8254, 0 ] ),
+    entity( "&OverBrace;", [ 9182, 0 ] ),
+    entity( "&OverBracket;", [ 9140, 0 ] ),
+    entity( "&OverParenthesis;", [ 9180, 0 ] ),
+    entity( "&PartialD;", [ 8706, 0 ] ),
+    entity( "&Pcy;", [ 1055, 0 ] ),
+    entity( "&Pfr;", [ 120083, 0 ] ),
+    entity( "&Phi;", [ 934, 0 ] ),
+    entity( "&Pi;", [ 928, 0 ] ),
+    entity( "&PlusMinus;", [ 177, 0 ] ),
+    entity( "&Poincareplane;", [ 8460, 0 ] ),
+    entity( "&Popf;", [ 8473, 0 ] ),
+    entity( "&Pr;", [ 10939, 0 ] ),
+    entity( "&Precedes;", [ 8826, 0 ] ),
+    entity( "&PrecedesEqual;", [ 10927, 0 ] ),
+    entity( "&PrecedesSlantEqual;", [ 8828, 0 ] ),
+    entity( "&PrecedesTilde;", [ 8830, 0 ] ),
+    entity( "&Prime;", [ 8243, 0 ] ),
+    entity( "&Product;", [ 8719, 0 ] ),
+    entity( "&Proportion;", [ 8759, 0 ] ),
+    entity( "&Proportional;", [ 8733, 0 ] ),
+    entity( "&Pscr;", [ 119979, 0 ] ),
+    entity( "&Psi;", [ 936, 0 ] ),
+    entity( "&QUOT;", [ 34, 0 ] ),
+    entity( "&Qfr;", [ 120084, 0 ] ),
+    entity( "&Qopf;", [ 8474, 0 ] ),
+    entity( "&Qscr;", [ 119980, 0 ] ),
+    entity( "&RBarr;", [ 10512, 0 ] ),
+    entity( "&REG;", [ 174, 0 ] ),
+    entity( "&Racute;", [ 340, 0 ] ),
+    entity( "&Rang;", [ 10219, 0 ] ),
+    entity( "&Rarr;", [ 8608, 0 ] ),
+    entity( "&Rarrtl;", [ 10518, 0 ] ),
+    entity( "&Rcaron;", [ 344, 0 ] ),
+    entity( "&Rcedil;", [ 342, 0 ] ),
+    entity( "&Rcy;", [ 1056, 0 ] ),
+    entity( "&Re;", [ 8476, 0 ] ),
+    entity( "&ReverseElement;", [ 8715, 0 ] ),
+    entity( "&ReverseEquilibrium;", [ 8651, 0 ] ),
+    entity( "&ReverseUpEquilibrium;", [ 10607, 0 ] ),
+    entity( "&Rfr;", [ 8476, 0 ] ),
+    entity( "&Rho;", [ 929, 0 ] ),
+    entity( "&RightAngleBracket;", [ 10217, 0 ] ),
+    entity( "&RightArrow;", [ 8594, 0 ] ),
+    entity( "&RightArrowBar;", [ 8677, 0 ] ),
+    entity( "&RightArrowLeftArrow;", [ 8644, 0 ] ),
+    entity( "&RightCeiling;", [ 8969, 0 ] ),
+    entity( "&RightDoubleBracket;", [ 10215, 0 ] ),
+    entity( "&RightDownTeeVector;", [ 10589, 0 ] ),
+    entity( "&RightDownVector;", [ 8642, 0 ] ),
+    entity( "&RightDownVectorBar;", [ 10581, 0 ] ),
+    entity( "&RightFloor;", [ 8971, 0 ] ),
+    entity( "&RightTee;", [ 8866, 0 ] ),
+    entity( "&RightTeeArrow;", [ 8614, 0 ] ),
+    entity( "&RightTeeVector;", [ 10587, 0 ] ),
+    entity( "&RightTriangle;", [ 8883, 0 ] ),
+    entity( "&RightTriangleBar;", [ 10704, 0 ] ),
+    entity( "&RightTriangleEqual;", [ 8885, 0 ] ),
+    entity( "&RightUpDownVector;", [ 10575, 0 ] ),
+    entity( "&RightUpTeeVector;", [ 10588, 0 ] ),
+    entity( "&RightUpVector;", [ 8638, 0 ] ),
+    entity( "&RightUpVectorBar;", [ 10580, 0 ] ),
+    entity( "&RightVector;", [ 8640, 0 ] ),
+    entity( "&RightVectorBar;", [ 10579, 0 ] ),
+    entity( "&Rightarrow;", [ 8658, 0 ] ),
+    entity( "&Ropf;", [ 8477, 0 ] ),
+    entity( "&RoundImplies;", [ 10608, 0 ] ),
+    entity( "&Rrightarrow;", [ 8667, 0 ] ),
+    entity( "&Rscr;", [ 8475, 0 ] ),
+    entity( "&Rsh;", [ 8625, 0 ] ),
+    entity( "&RuleDelayed;", [ 10740, 0 ] ),
+    entity( "&SHCHcy;", [ 1065, 0 ] ),
+    entity( "&SHcy;", [ 1064, 0 ] ),
+    entity( "&SOFTcy;", [ 1068, 0 ] ),
+    entity( "&Sacute;", [ 346, 0 ] ),
+    entity( "&Sc;", [ 10940, 0 ] ),
+    entity( "&Scaron;", [ 352, 0 ] ),
+    entity( "&Scedil;", [ 350, 0 ] ),
+    entity( "&Scirc;", [ 348, 0 ] ),
+    entity( "&Scy;", [ 1057, 0 ] ),
+    entity( "&Sfr;", [ 120086, 0 ] ),
+    entity( "&ShortDownArrow;", [ 8595, 0 ] ),
+    entity( "&ShortLeftArrow;", [ 8592, 0 ] ),
+    entity( "&ShortRightArrow;", [ 8594, 0 ] ),
+    entity( "&ShortUpArrow;", [ 8593, 0 ] ),
+    entity( "&Sigma;", [ 931, 0 ] ),
+    entity( "&SmallCircle;", [ 8728, 0 ] ),
+    entity( "&Sopf;", [ 120138, 0 ] ),
+    entity( "&Sqrt;", [ 8730, 0 ] ),
+    entity( "&Square;", [ 9633, 0 ] ),
+    entity( "&SquareIntersection;", [ 8851, 0 ] ),
+    entity( "&SquareSubset;", [ 8847, 0 ] ),
+    entity( "&SquareSubsetEqual;", [ 8849, 0 ] ),
+    entity( "&SquareSuperset;", [ 8848, 0 ] ),
+    entity( "&SquareSupersetEqual;", [ 8850, 0 ] ),
+    entity( "&SquareUnion;", [ 8852, 0 ] ),
+    entity( "&Sscr;", [ 119982, 0 ] ),
+    entity( "&Star;", [ 8902, 0 ] ),
+    entity( "&Sub;", [ 8912, 0 ] ),
+    entity( "&Subset;", [ 8912, 0 ] ),
+    entity( "&SubsetEqual;", [ 8838, 0 ] ),
+    entity( "&Succeeds;", [ 8827, 0 ] ),
+    entity( "&SucceedsEqual;", [ 10928, 0 ] ),
+    entity( "&SucceedsSlantEqual;", [ 8829, 0 ] ),
+    entity( "&SucceedsTilde;", [ 8831, 0 ] ),
+    entity( "&SuchThat;", [ 8715, 0 ] ),
+    entity( "&Sum;", [ 8721, 0 ] ),
+    entity( "&Sup;", [ 8913, 0 ] ),
+    entity( "&Superset;", [ 8835, 0 ] ),
+    entity( "&SupersetEqual;", [ 8839, 0 ] ),
+    entity( "&Supset;", [ 8913, 0 ] ),
+    entity( "&THORN;", [ 222, 0 ] ),
+    entity( "&TRADE;", [ 8482, 0 ] ),
+    entity( "&TSHcy;", [ 1035, 0 ] ),
+    entity( "&TScy;", [ 1062, 0 ] ),
+    entity( "&Tab;", [ 9, 0 ] ),
+    entity( "&Tau;", [ 932, 0 ] ),
+    entity( "&Tcaron;", [ 356, 0 ] ),
+    entity( "&Tcedil;", [ 354, 0 ] ),
+    entity( "&Tcy;", [ 1058, 0 ] ),
+    entity( "&Tfr;", [ 120087, 0 ] ),
+    entity( "&Therefore;", [ 8756, 0 ] ),
+    entity( "&Theta;", [ 920, 0 ] ),
+    entity( "&ThickSpace;", [ 8287, 8202 ] ),
+    entity( "&ThinSpace;", [ 8201, 0 ] ),
+    entity( "&Tilde;", [ 8764, 0 ] ),
+    entity( "&TildeEqual;", [ 8771, 0 ] ),
+    entity( "&TildeFullEqual;", [ 8773, 0 ] ),
+    entity( "&TildeTilde;", [ 8776, 0 ] ),
+    entity( "&Topf;", [ 120139, 0 ] ),
+    entity( "&TripleDot;", [ 8411, 0 ] ),
+    entity( "&Tscr;", [ 119983, 0 ] ),
+    entity( "&Tstrok;", [ 358, 0 ] ),
+    entity( "&Uacute;", [ 218, 0 ] ),
+    entity( "&Uarr;", [ 8607, 0 ] ),
+    entity( "&Uarrocir;", [ 10569, 0 ] ),
+    entity( "&Ubrcy;", [ 1038, 0 ] ),
+    entity( "&Ubreve;", [ 364, 0 ] ),
+    entity( "&Ucirc;", [ 219, 0 ] ),
+    entity( "&Ucy;", [ 1059, 0 ] ),
+    entity( "&Udblac;", [ 368, 0 ] ),
+    entity( "&Ufr;", [ 120088, 0 ] ),
+    entity( "&Ugrave;", [ 217, 0 ] ),
+    entity( "&Umacr;", [ 362, 0 ] ),
+    entity( "&UnderBar;", [ 95, 0 ] ),
+    entity( "&UnderBrace;", [ 9183, 0 ] ),
+    entity( "&UnderBracket;", [ 9141, 0 ] ),
+    entity( "&UnderParenthesis;", [ 9181, 0 ] ),
+    entity( "&Union;", [ 8899, 0 ] ),
+    entity( "&UnionPlus;", [ 8846, 0 ] ),
+    entity( "&Uogon;", [ 370, 0 ] ),
+    entity( "&Uopf;", [ 120140, 0 ] ),
+    entity( "&UpArrow;", [ 8593, 0 ] ),
+    entity( "&UpArrowBar;", [ 10514, 0 ] ),
+    entity( "&UpArrowDownArrow;", [ 8645, 0 ] ),
+    entity( "&UpDownArrow;", [ 8597, 0 ] ),
+    entity( "&UpEquilibrium;", [ 10606, 0 ] ),
+    entity( "&UpTee;", [ 8869, 0 ] ),
+    entity( "&UpTeeArrow;", [ 8613, 0 ] ),
+    entity( "&Uparrow;", [ 8657, 0 ] ),
+    entity( "&Updownarrow;", [ 8661, 0 ] ),
+    entity( "&UpperLeftArrow;", [ 8598, 0 ] ),
+    entity( "&UpperRightArrow;", [ 8599, 0 ] ),
+    entity( "&Upsi;", [ 978, 0 ] ),
+    entity( "&Upsilon;", [ 933, 0 ] ),
+    entity( "&Uring;", [ 366, 0 ] ),
+    entity( "&Uscr;", [ 119984, 0 ] ),
+    entity( "&Utilde;", [ 360, 0 ] ),
+    entity( "&Uuml;", [ 220, 0 ] ),
+    entity( "&VDash;", [ 8875, 0 ] ),
+    entity( "&Vbar;", [ 10987, 0 ] ),
+    entity( "&Vcy;", [ 1042, 0 ] ),
+    entity( "&Vdash;", [ 8873, 0 ] ),
+    entity( "&Vdashl;", [ 10982, 0 ] ),
+    entity( "&Vee;", [ 8897, 0 ] ),
+    entity( "&Verbar;", [ 8214, 0 ] ),
+    entity( "&Vert;", [ 8214, 0 ] ),
+    entity( "&VerticalBar;", [ 8739, 0 ] ),
+    entity( "&VerticalLine;", [ 124, 0 ] ),
+    entity( "&VerticalSeparator;", [ 10072, 0 ] ),
+    entity( "&VerticalTilde;", [ 8768, 0 ] ),
+    entity( "&VeryThinSpace;", [ 8202, 0 ] ),
+    entity( "&Vfr;", [ 120089, 0 ] ),
+    entity( "&Vopf;", [ 120141, 0 ] ),
+    entity( "&Vscr;", [ 119985, 0 ] ),
+    entity( "&Vvdash;", [ 8874, 0 ] ),
+    entity( "&Wcirc;", [ 372, 0 ] ),
+    entity( "&Wedge;", [ 8896, 0 ] ),
+    entity( "&Wfr;", [ 120090, 0 ] ),
+    entity( "&Wopf;", [ 120142, 0 ] ),
+    entity( "&Wscr;", [ 119986, 0 ] ),
+    entity( "&Xfr;", [ 120091, 0 ] ),
+    entity( "&Xi;", [ 926, 0 ] ),
+    entity( "&Xopf;", [ 120143, 0 ] ),
+    entity( "&Xscr;", [ 119987, 0 ] ),
+    entity( "&YAcy;", [ 1071, 0 ] ),
+    entity( "&YIcy;", [ 1031, 0 ] ),
+    entity( "&YUcy;", [ 1070, 0 ] ),
+    entity( "&Yacute;", [ 221, 0 ] ),
+    entity( "&Ycirc;", [ 374, 0 ] ),
+    entity( "&Ycy;", [ 1067, 0 ] ),
+    entity( "&Yfr;", [ 120092, 0 ] ),
+    entity( "&Yopf;", [ 120144, 0 ] ),
+    entity( "&Yscr;", [ 119988, 0 ] ),
+    entity( "&Yuml;", [ 376, 0 ] ),
+    entity( "&ZHcy;", [ 1046, 0 ] ),
+    entity( "&Zacute;", [ 377, 0 ] ),
+    entity( "&Zcaron;", [ 381, 0 ] ),
+    entity( "&Zcy;", [ 1047, 0 ] ),
+    entity( "&Zdot;", [ 379, 0 ] ),
+    entity( "&ZeroWidthSpace;", [ 8203, 0 ] ),
+    entity( "&Zeta;", [ 918, 0 ] ),
+    entity( "&Zfr;", [ 8488, 0 ] ),
+    entity( "&Zopf;", [ 8484, 0 ] ),
+    entity( "&Zscr;", [ 119989, 0 ] ),
+    entity( "&aacute;", [ 225, 0 ] ),
+    entity( "&abreve;", [ 259, 0 ] ),
+    entity( "&ac;", [ 8766, 0 ] ),
+    entity( "&acE;", [ 8766, 819 ] ),
+    entity( "&acd;", [ 8767, 0 ] ),
+    entity( "&acirc;", [ 226, 0 ] ),
+    entity( "&acute;", [ 180, 0 ] ),
+    entity( "&acy;", [ 1072, 0 ] ),
+    entity( "&aelig;", [ 230, 0 ] ),
+    entity( "&af;", [ 8289, 0 ] ),
+    entity( "&afr;", [ 120094, 0 ] ),
+    entity( "&agrave;", [ 224, 0 ] ),
+    entity( "&alefsym;", [ 8501, 0 ] ),
+    entity( "&aleph;", [ 8501, 0 ] ),
+    entity( "&alpha;", [ 945, 0 ] ),
+    entity( "&amacr;", [ 257, 0 ] ),
+    entity( "&amalg;", [ 10815, 0 ] ),
+    entity( "&amp;", [ 38, 0 ] ),
+    entity( "&and;", [ 8743, 0 ] ),
+    entity( "&andand;", [ 10837, 0 ] ),
+    entity( "&andd;", [ 10844, 0 ] ),
+    entity( "&andslope;", [ 10840, 0 ] ),
+    entity( "&andv;", [ 10842, 0 ] ),
+    entity( "&ang;", [ 8736, 0 ] ),
+    entity( "&ange;", [ 10660, 0 ] ),
+    entity( "&angle;", [ 8736, 0 ] ),
+    entity( "&angmsd;", [ 8737, 0 ] ),
+    entity( "&angmsdaa;", [ 10664, 0 ] ),
+    entity( "&angmsdab;", [ 10665, 0 ] ),
+    entity( "&angmsdac;", [ 10666, 0 ] ),
+    entity( "&angmsdad;", [ 10667, 0 ] ),
+    entity( "&angmsdae;", [ 10668, 0 ] ),
+    entity( "&angmsdaf;", [ 10669, 0 ] ),
+    entity( "&angmsdag;", [ 10670, 0 ] ),
+    entity( "&angmsdah;", [ 10671, 0 ] ),
+    entity( "&angrt;", [ 8735, 0 ] ),
+    entity( "&angrtvb;", [ 8894, 0 ] ),
+    entity( "&angrtvbd;", [ 10653, 0 ] ),
+    entity( "&angsph;", [ 8738, 0 ] ),
+    entity( "&angst;", [ 197, 0 ] ),
+    entity( "&angzarr;", [ 9084, 0 ] ),
+    entity( "&aogon;", [ 261, 0 ] ),
+    entity( "&aopf;", [ 120146, 0 ] ),
+    entity( "&ap;", [ 8776, 0 ] ),
+    entity( "&apE;", [ 10864, 0 ] ),
+    entity( "&apacir;", [ 10863, 0 ] ),
+    entity( "&ape;", [ 8778, 0 ] ),
+    entity( "&apid;", [ 8779, 0 ] ),
+    entity( "&apos;", [ 39, 0 ] ),
+    entity( "&approx;", [ 8776, 0 ] ),
+    entity( "&approxeq;", [ 8778, 0 ] ),
+    entity( "&aring;", [ 229, 0 ] ),
+    entity( "&ascr;", [ 119990, 0 ] ),
+    entity( "&ast;", [ 42, 0 ] ),
+    entity( "&asymp;", [ 8776, 0 ] ),
+    entity( "&asympeq;", [ 8781, 0 ] ),
+    entity( "&atilde;", [ 227, 0 ] ),
+    entity( "&auml;", [ 228, 0 ] ),
+    entity( "&awconint;", [ 8755, 0 ] ),
+    entity( "&awint;", [ 10769, 0 ] ),
+    entity( "&bNot;", [ 10989, 0 ] ),
+    entity( "&backcong;", [ 8780, 0 ] ),
+    entity( "&backepsilon;", [ 1014, 0 ] ),
+    entity( "&backprime;", [ 8245, 0 ] ),
+    entity( "&backsim;", [ 8765, 0 ] ),
+    entity( "&backsimeq;", [ 8909, 0 ] ),
+    entity( "&barvee;", [ 8893, 0 ] ),
+    entity( "&barwed;", [ 8965, 0 ] ),
+    entity( "&barwedge;", [ 8965, 0 ] ),
+    entity( "&bbrk;", [ 9141, 0 ] ),
+    entity( "&bbrktbrk;", [ 9142, 0 ] ),
+    entity( "&bcong;", [ 8780, 0 ] ),
+    entity( "&bcy;", [ 1073, 0 ] ),
+    entity( "&bdquo;", [ 8222, 0 ] ),
+    entity( "&becaus;", [ 8757, 0 ] ),
+    entity( "&because;", [ 8757, 0 ] ),
+    entity( "&bemptyv;", [ 10672, 0 ] ),
+    entity( "&bepsi;", [ 1014, 0 ] ),
+    entity( "&bernou;", [ 8492, 0 ] ),
+    entity( "&beta;", [ 946, 0 ] ),
+    entity( "&beth;", [ 8502, 0 ] ),
+    entity( "&between;", [ 8812, 0 ] ),
+    entity( "&bfr;", [ 120095, 0 ] ),
+    entity( "&bigcap;", [ 8898, 0 ] ),
+    entity( "&bigcirc;", [ 9711, 0 ] ),
+    entity( "&bigcup;", [ 8899, 0 ] ),
+    entity( "&bigodot;", [ 10752, 0 ] ),
+    entity( "&bigoplus;", [ 10753, 0 ] ),
+    entity( "&bigotimes;", [ 10754, 0 ] ),
+    entity( "&bigsqcup;", [ 10758, 0 ] ),
+    entity( "&bigstar;", [ 9733, 0 ] ),
+    entity( "&bigtriangledown;", [ 9661, 0 ] ),
+    entity( "&bigtriangleup;", [ 9651, 0 ] ),
+    entity( "&biguplus;", [ 10756, 0 ] ),
+    entity( "&bigvee;", [ 8897, 0 ] ),
+    entity( "&bigwedge;", [ 8896, 0 ] ),
+    entity( "&bkarow;", [ 10509, 0 ] ),
+    entity( "&blacklozenge;", [ 10731, 0 ] ),
+    entity( "&blacksquare;", [ 9642, 0 ] ),
+    entity( "&blacktriangle;", [ 9652, 0 ] ),
+    entity( "&blacktriangledown;", [ 9662, 0 ] ),
+    entity( "&blacktriangleleft;", [ 9666, 0 ] ),
+    entity( "&blacktriangleright;", [ 9656, 0 ] ),
+    entity( "&blank;", [ 9251, 0 ] ),
+    entity( "&blk12;", [ 9618, 0 ] ),
+    entity( "&blk14;", [ 9617, 0 ] ),
+    entity( "&blk34;", [ 9619, 0 ] ),
+    entity( "&block;", [ 9608, 0 ] ),
+    entity( "&bne;", [ 61, 8421 ] ),
+    entity( "&bnequiv;", [ 8801, 8421 ] ),
+    entity( "&bnot;", [ 8976, 0 ] ),
+    entity( "&bopf;", [ 120147, 0 ] ),
+    entity( "&bot;", [ 8869, 0 ] ),
+    entity( "&bottom;", [ 8869, 0 ] ),
+    entity( "&bowtie;", [ 8904, 0 ] ),
+    entity( "&boxDL;", [ 9559, 0 ] ),
+    entity( "&boxDR;", [ 9556, 0 ] ),
+    entity( "&boxDl;", [ 9558, 0 ] ),
+    entity( "&boxDr;", [ 9555, 0 ] ),
+    entity( "&boxH;", [ 9552, 0 ] ),
+    entity( "&boxHD;", [ 9574, 0 ] ),
+    entity( "&boxHU;", [ 9577, 0 ] ),
+    entity( "&boxHd;", [ 9572, 0 ] ),
+    entity( "&boxHu;", [ 9575, 0 ] ),
+    entity( "&boxUL;", [ 9565, 0 ] ),
+    entity( "&boxUR;", [ 9562, 0 ] ),
+    entity( "&boxUl;", [ 9564, 0 ] ),
+    entity( "&boxUr;", [ 9561, 0 ] ),
+    entity( "&boxV;", [ 9553, 0 ] ),
+    entity( "&boxVH;", [ 9580, 0 ] ),
+    entity( "&boxVL;", [ 9571, 0 ] ),
+    entity( "&boxVR;", [ 9568, 0 ] ),
+    entity( "&boxVh;", [ 9579, 0 ] ),
+    entity( "&boxVl;", [ 9570, 0 ] ),
+    entity( "&boxVr;", [ 9567, 0 ] ),
+    entity( "&boxbox;", [ 10697, 0 ] ),
+    entity( "&boxdL;", [ 9557, 0 ] ),
+    entity( "&boxdR;", [ 9554, 0 ] ),
+    entity( "&boxdl;", [ 9488, 0 ] ),
+    entity( "&boxdr;", [ 9484, 0 ] ),
+    entity( "&boxh;", [ 9472, 0 ] ),
+    entity( "&boxhD;", [ 9573, 0 ] ),
+    entity( "&boxhU;", [ 9576, 0 ] ),
+    entity( "&boxhd;", [ 9516, 0 ] ),
+    entity( "&boxhu;", [ 9524, 0 ] ),
+    entity( "&boxminus;", [ 8863, 0 ] ),
+    entity( "&boxplus;", [ 8862, 0 ] ),
+    entity( "&boxtimes;", [ 8864, 0 ] ),
+    entity( "&boxuL;", [ 9563, 0 ] ),
+    entity( "&boxuR;", [ 9560, 0 ] ),
+    entity( "&boxul;", [ 9496, 0 ] ),
+    entity( "&boxur;", [ 9492, 0 ] ),
+    entity( "&boxv;", [ 9474, 0 ] ),
+    entity( "&boxvH;", [ 9578, 0 ] ),
+    entity( "&boxvL;", [ 9569, 0 ] ),
+    entity( "&boxvR;", [ 9566, 0 ] ),
+    entity( "&boxvh;", [ 9532, 0 ] ),
+    entity( "&boxvl;", [ 9508, 0 ] ),
+    entity( "&boxvr;", [ 9500, 0 ] ),
+    entity( "&bprime;", [ 8245, 0 ] ),
+    entity( "&breve;", [ 728, 0 ] ),
+    entity( "&brvbar;", [ 166, 0 ] ),
+    entity( "&bscr;", [ 119991, 0 ] ),
+    entity( "&bsemi;", [ 8271, 0 ] ),
+    entity( "&bsim;", [ 8765, 0 ] ),
+    entity( "&bsime;", [ 8909, 0 ] ),
+    entity( "&bsol;", [ 92, 0 ] ),
+    entity( "&bsolb;", [ 10693, 0 ] ),
+    entity( "&bsolhsub;", [ 10184, 0 ] ),
+    entity( "&bull;", [ 8226, 0 ] ),
+    entity( "&bullet;", [ 8226, 0 ] ),
+    entity( "&bump;", [ 8782, 0 ] ),
+    entity( "&bumpE;", [ 10926, 0 ] ),
+    entity( "&bumpe;", [ 8783, 0 ] ),
+    entity( "&bumpeq;", [ 8783, 0 ] ),
+    entity( "&cacute;", [ 263, 0 ] ),
+    entity( "&cap;", [ 8745, 0 ] ),
+    entity( "&capand;", [ 10820, 0 ] ),
+    entity( "&capbrcup;", [ 10825, 0 ] ),
+    entity( "&capcap;", [ 10827, 0 ] ),
+    entity( "&capcup;", [ 10823, 0 ] ),
+    entity( "&capdot;", [ 10816, 0 ] ),
+    entity( "&caps;", [ 8745, 65024 ] ),
+    entity( "&caret;", [ 8257, 0 ] ),
+    entity( "&caron;", [ 711, 0 ] ),
+    entity( "&ccaps;", [ 10829, 0 ] ),
+    entity( "&ccaron;", [ 269, 0 ] ),
+    entity( "&ccedil;", [ 231, 0 ] ),
+    entity( "&ccirc;", [ 265, 0 ] ),
+    entity( "&ccups;", [ 10828, 0 ] ),
+    entity( "&ccupssm;", [ 10832, 0 ] ),
+    entity( "&cdot;", [ 267, 0 ] ),
+    entity( "&cedil;", [ 184, 0 ] ),
+    entity( "&cemptyv;", [ 10674, 0 ] ),
+    entity( "&cent;", [ 162, 0 ] ),
+    entity( "&centerdot;", [ 183, 0 ] ),
+    entity( "&cfr;", [ 120096, 0 ] ),
+    entity( "&chcy;", [ 1095, 0 ] ),
+    entity( "&check;", [ 10003, 0 ] ),
+    entity( "&checkmark;", [ 10003, 0 ] ),
+    entity( "&chi;", [ 967, 0 ] ),
+    entity( "&cir;", [ 9675, 0 ] ),
+    entity( "&cirE;", [ 10691, 0 ] ),
+    entity( "&circ;", [ 710, 0 ] ),
+    entity( "&circeq;", [ 8791, 0 ] ),
+    entity( "&circlearrowleft;", [ 8634, 0 ] ),
+    entity( "&circlearrowright;", [ 8635, 0 ] ),
+    entity( "&circledR;", [ 174, 0 ] ),
+    entity( "&circledS;", [ 9416, 0 ] ),
+    entity( "&circledast;", [ 8859, 0 ] ),
+    entity( "&circledcirc;", [ 8858, 0 ] ),
+    entity( "&circleddash;", [ 8861, 0 ] ),
+    entity( "&cire;", [ 8791, 0 ] ),
+    entity( "&cirfnint;", [ 10768, 0 ] ),
+    entity( "&cirmid;", [ 10991, 0 ] ),
+    entity( "&cirscir;", [ 10690, 0 ] ),
+    entity( "&clubs;", [ 9827, 0 ] ),
+    entity( "&clubsuit;", [ 9827, 0 ] ),
+    entity( "&colon;", [ 58, 0 ] ),
+    entity( "&colone;", [ 8788, 0 ] ),
+    entity( "&coloneq;", [ 8788, 0 ] ),
+    entity( "&comma;", [ 44, 0 ] ),
+    entity( "&commat;", [ 64, 0 ] ),
+    entity( "&comp;", [ 8705, 0 ] ),
+    entity( "&compfn;", [ 8728, 0 ] ),
+    entity( "&complement;", [ 8705, 0 ] ),
+    entity( "&complexes;", [ 8450, 0 ] ),
+    entity( "&cong;", [ 8773, 0 ] ),
+    entity( "&congdot;", [ 10861, 0 ] ),
+    entity( "&conint;", [ 8750, 0 ] ),
+    entity( "&copf;", [ 120148, 0 ] ),
+    entity( "&coprod;", [ 8720, 0 ] ),
+    entity( "&copy;", [ 169, 0 ] ),
+    entity( "&copysr;", [ 8471, 0 ] ),
+    entity( "&crarr;", [ 8629, 0 ] ),
+    entity( "&cross;", [ 10007, 0 ] ),
+    entity( "&cscr;", [ 119992, 0 ] ),
+    entity( "&csub;", [ 10959, 0 ] ),
+    entity( "&csube;", [ 10961, 0 ] ),
+    entity( "&csup;", [ 10960, 0 ] ),
+    entity( "&csupe;", [ 10962, 0 ] ),
+    entity( "&ctdot;", [ 8943, 0 ] ),
+    entity( "&cudarrl;", [ 10552, 0 ] ),
+    entity( "&cudarrr;", [ 10549, 0 ] ),
+    entity( "&cuepr;", [ 8926, 0 ] ),
+    entity( "&cuesc;", [ 8927, 0 ] ),
+    entity( "&cularr;", [ 8630, 0 ] ),
+    entity( "&cularrp;", [ 10557, 0 ] ),
+    entity( "&cup;", [ 8746, 0 ] ),
+    entity( "&cupbrcap;", [ 10824, 0 ] ),
+    entity( "&cupcap;", [ 10822, 0 ] ),
+    entity( "&cupcup;", [ 10826, 0 ] ),
+    entity( "&cupdot;", [ 8845, 0 ] ),
+    entity( "&cupor;", [ 10821, 0 ] ),
+    entity( "&cups;", [ 8746, 65024 ] ),
+    entity( "&curarr;", [ 8631, 0 ] ),
+    entity( "&curarrm;", [ 10556, 0 ] ),
+    entity( "&curlyeqprec;", [ 8926, 0 ] ),
+    entity( "&curlyeqsucc;", [ 8927, 0 ] ),
+    entity( "&curlyvee;", [ 8910, 0 ] ),
+    entity( "&curlywedge;", [ 8911, 0 ] ),
+    entity( "&curren;", [ 164, 0 ] ),
+    entity( "&curvearrowleft;", [ 8630, 0 ] ),
+    entity( "&curvearrowright;", [ 8631, 0 ] ),
+    entity( "&cuvee;", [ 8910, 0 ] ),
+    entity( "&cuwed;", [ 8911, 0 ] ),
+    entity( "&cwconint;", [ 8754, 0 ] ),
+    entity( "&cwint;", [ 8753, 0 ] ),
+    entity( "&cylcty;", [ 9005, 0 ] ),
+    entity( "&dArr;", [ 8659, 0 ] ),
+    entity( "&dHar;", [ 10597, 0 ] ),
+    entity( "&dagger;", [ 8224, 0 ] ),
+    entity( "&daleth;", [ 8504, 0 ] ),
+    entity( "&darr;", [ 8595, 0 ] ),
+    entity( "&dash;", [ 8208, 0 ] ),
+    entity( "&dashv;", [ 8867, 0 ] ),
+    entity( "&dbkarow;", [ 10511, 0 ] ),
+    entity( "&dblac;", [ 733, 0 ] ),
+    entity( "&dcaron;", [ 271, 0 ] ),
+    entity( "&dcy;", [ 1076, 0 ] ),
+    entity( "&dd;", [ 8518, 0 ] ),
+    entity( "&ddagger;", [ 8225, 0 ] ),
+    entity( "&ddarr;", [ 8650, 0 ] ),
+    entity( "&ddotseq;", [ 10871, 0 ] ),
+    entity( "&deg;", [ 176, 0 ] ),
+    entity( "&delta;", [ 948, 0 ] ),
+    entity( "&demptyv;", [ 10673, 0 ] ),
+    entity( "&dfisht;", [ 10623, 0 ] ),
+    entity( "&dfr;", [ 120097, 0 ] ),
+    entity( "&dharl;", [ 8643, 0 ] ),
+    entity( "&dharr;", [ 8642, 0 ] ),
+    entity( "&diam;", [ 8900, 0 ] ),
+    entity( "&diamond;", [ 8900, 0 ] ),
+    entity( "&diamondsuit;", [ 9830, 0 ] ),
+    entity( "&diams;", [ 9830, 0 ] ),
+    entity( "&die;", [ 168, 0 ] ),
+    entity( "&digamma;", [ 989, 0 ] ),
+    entity( "&disin;", [ 8946, 0 ] ),
+    entity( "&div;", [ 247, 0 ] ),
+    entity( "&divide;", [ 247, 0 ] ),
+    entity( "&divideontimes;", [ 8903, 0 ] ),
+    entity( "&divonx;", [ 8903, 0 ] ),
+    entity( "&djcy;", [ 1106, 0 ] ),
+    entity( "&dlcorn;", [ 8990, 0 ] ),
+    entity( "&dlcrop;", [ 8973, 0 ] ),
+    entity( "&dollar;", [ 36, 0 ] ),
+    entity( "&dopf;", [ 120149, 0 ] ),
+    entity( "&dot;", [ 729, 0 ] ),
+    entity( "&doteq;", [ 8784, 0 ] ),
+    entity( "&doteqdot;", [ 8785, 0 ] ),
+    entity( "&dotminus;", [ 8760, 0 ] ),
+    entity( "&dotplus;", [ 8724, 0 ] ),
+    entity( "&dotsquare;", [ 8865, 0 ] ),
+    entity( "&doublebarwedge;", [ 8966, 0 ] ),
+    entity( "&downarrow;", [ 8595, 0 ] ),
+    entity( "&downdownarrows;", [ 8650, 0 ] ),
+    entity( "&downharpoonleft;", [ 8643, 0 ] ),
+    entity( "&downharpoonright;", [ 8642, 0 ] ),
+    entity( "&drbkarow;", [ 10512, 0 ] ),
+    entity( "&drcorn;", [ 8991, 0 ] ),
+    entity( "&drcrop;", [ 8972, 0 ] ),
+    entity( "&dscr;", [ 119993, 0 ] ),
+    entity( "&dscy;", [ 1109, 0 ] ),
+    entity( "&dsol;", [ 10742, 0 ] ),
+    entity( "&dstrok;", [ 273, 0 ] ),
+    entity( "&dtdot;", [ 8945, 0 ] ),
+    entity( "&dtri;", [ 9663, 0 ] ),
+    entity( "&dtrif;", [ 9662, 0 ] ),
+    entity( "&duarr;", [ 8693, 0 ] ),
+    entity( "&duhar;", [ 10607, 0 ] ),
+    entity( "&dwangle;", [ 10662, 0 ] ),
+    entity( "&dzcy;", [ 1119, 0 ] ),
+    entity( "&dzigrarr;", [ 10239, 0 ] ),
+    entity( "&eDDot;", [ 10871, 0 ] ),
+    entity( "&eDot;", [ 8785, 0 ] ),
+    entity( "&eacute;", [ 233, 0 ] ),
+    entity( "&easter;", [ 10862, 0 ] ),
+    entity( "&ecaron;", [ 283, 0 ] ),
+    entity( "&ecir;", [ 8790, 0 ] ),
+    entity( "&ecirc;", [ 234, 0 ] ),
+    entity( "&ecolon;", [ 8789, 0 ] ),
+    entity( "&ecy;", [ 1101, 0 ] ),
+    entity( "&edot;", [ 279, 0 ] ),
+    entity( "&ee;", [ 8519, 0 ] ),
+    entity( "&efDot;", [ 8786, 0 ] ),
+    entity( "&efr;", [ 120098, 0 ] ),
+    entity( "&eg;", [ 10906, 0 ] ),
+    entity( "&egrave;", [ 232, 0 ] ),
+    entity( "&egs;", [ 10902, 0 ] ),
+    entity( "&egsdot;", [ 10904, 0 ] ),
+    entity( "&el;", [ 10905, 0 ] ),
+    entity( "&elinters;", [ 9191, 0 ] ),
+    entity( "&ell;", [ 8467, 0 ] ),
+    entity( "&els;", [ 10901, 0 ] ),
+    entity( "&elsdot;", [ 10903, 0 ] ),
+    entity( "&emacr;", [ 275, 0 ] ),
+    entity( "&empty;", [ 8709, 0 ] ),
+    entity( "&emptyset;", [ 8709, 0 ] ),
+    entity( "&emptyv;", [ 8709, 0 ] ),
+    entity( "&emsp13;", [ 8196, 0 ] ),
+    entity( "&emsp14;", [ 8197, 0 ] ),
+    entity( "&emsp;", [ 8195, 0 ] ),
+    entity( "&eng;", [ 331, 0 ] ),
+    entity( "&ensp;", [ 8194, 0 ] ),
+    entity( "&eogon;", [ 281, 0 ] ),
+    entity( "&eopf;", [ 120150, 0 ] ),
+    entity( "&epar;", [ 8917, 0 ] ),
+    entity( "&eparsl;", [ 10723, 0 ] ),
+    entity( "&eplus;", [ 10865, 0 ] ),
+    entity( "&epsi;", [ 949, 0 ] ),
+    entity( "&epsilon;", [ 949, 0 ] ),
+    entity( "&epsiv;", [ 1013, 0 ] ),
+    entity( "&eqcirc;", [ 8790, 0 ] ),
+    entity( "&eqcolon;", [ 8789, 0 ] ),
+    entity( "&eqsim;", [ 8770, 0 ] ),
+    entity( "&eqslantgtr;", [ 10902, 0 ] ),
+    entity( "&eqslantless;", [ 10901, 0 ] ),
+    entity( "&equals;", [ 61, 0 ] ),
+    entity( "&equest;", [ 8799, 0 ] ),
+    entity( "&equiv;", [ 8801, 0 ] ),
+    entity( "&equivDD;", [ 10872, 0 ] ),
+    entity( "&eqvparsl;", [ 10725, 0 ] ),
+    entity( "&erDot;", [ 8787, 0 ] ),
+    entity( "&erarr;", [ 10609, 0 ] ),
+    entity( "&escr;", [ 8495, 0 ] ),
+    entity( "&esdot;", [ 8784, 0 ] ),
+    entity( "&esim;", [ 8770, 0 ] ),
+    entity( "&eta;", [ 951, 0 ] ),
+    entity( "&eth;", [ 240, 0 ] ),
+    entity( "&euml;", [ 235, 0 ] ),
+    entity( "&euro;", [ 8364, 0 ] ),
+    entity( "&excl;", [ 33, 0 ] ),
+    entity( "&exist;", [ 8707, 0 ] ),
+    entity( "&expectation;", [ 8496, 0 ] ),
+    entity( "&exponentiale;", [ 8519, 0 ] ),
+    entity( "&fallingdotseq;", [ 8786, 0 ] ),
+    entity( "&fcy;", [ 1092, 0 ] ),
+    entity( "&female;", [ 9792, 0 ] ),
+    entity( "&ffilig;", [ 64259, 0 ] ),
+    entity( "&fflig;", [ 64256, 0 ] ),
+    entity( "&ffllig;", [ 64260, 0 ] ),
+    entity( "&ffr;", [ 120099, 0 ] ),
+    entity( "&filig;", [ 64257, 0 ] ),
+    entity( "&fjlig;", [ 102, 106 ] ),
+    entity( "&flat;", [ 9837, 0 ] ),
+    entity( "&fllig;", [ 64258, 0 ] ),
+    entity( "&fltns;", [ 9649, 0 ] ),
+    entity( "&fnof;", [ 402, 0 ] ),
+    entity( "&fopf;", [ 120151, 0 ] ),
+    entity( "&forall;", [ 8704, 0 ] ),
+    entity( "&fork;", [ 8916, 0 ] ),
+    entity( "&forkv;", [ 10969, 0 ] ),
+    entity( "&fpartint;", [ 10765, 0 ] ),
+    entity( "&frac12", [ 189, 0 ] ),
+    entity( "&frac12;", [ 189, 0 ] ),
+    entity( "&frac13;", [ 8531, 0 ] ),
+    entity( "&frac14",  [ 188, 0 ] ),
+    entity( "&frac14;", [ 188, 0 ] ),
+    entity( "&frac15;", [ 8533, 0 ] ),
+    entity( "&frac16;", [ 8537, 0 ] ),
+    entity( "&frac18;", [ 8539, 0 ] ),
+    entity( "&frac23;", [ 8532, 0 ] ),
+    entity( "&frac25;", [ 8534, 0 ] ),
+    entity( "&frac34",  [ 190, 0 ] ),
+    entity( "&frac34;", [ 190, 0 ] ),
+    entity( "&frac35;", [ 8535, 0 ] ),
+    entity( "&frac38;", [ 8540, 0 ] ),
+    entity( "&frac45;", [ 8536, 0 ] ),
+    entity( "&frac56;", [ 8538, 0 ] ),
+    entity( "&frac58;", [ 8541, 0 ] ),
+    entity( "&frac78;", [ 8542, 0 ] ),
+    entity( "&frasl;", [ 8260, 0 ] ),
+    entity( "&frown;", [ 8994, 0 ] ),
+    entity( "&fscr;", [ 119995, 0 ] ),
+    entity( "&gE;", [ 8807, 0 ] ),
+    entity( "&gEl;", [ 10892, 0 ] ),
+    entity( "&gacute;", [ 501, 0 ] ),
+    entity( "&gamma;", [ 947, 0 ] ),
+    entity( "&gammad;", [ 989, 0 ] ),
+    entity( "&gap;", [ 10886, 0 ] ),
+    entity( "&gbreve;", [ 287, 0 ] ),
+    entity( "&gcirc;", [ 285, 0 ] ),
+    entity( "&gcy;", [ 1075, 0 ] ),
+    entity( "&gdot;", [ 289, 0 ] ),
+    entity( "&ge;", [ 8805, 0 ] ),
+    entity( "&gel;", [ 8923, 0 ] ),
+    entity( "&geq;", [ 8805, 0 ] ),
+    entity( "&geqq;", [ 8807, 0 ] ),
+    entity( "&geqslant;", [ 10878, 0 ] ),
+    entity( "&ges;", [ 10878, 0 ] ),
+    entity( "&gescc;", [ 10921, 0 ] ),
+    entity( "&gesdot;", [ 10880, 0 ] ),
+    entity( "&gesdoto;", [ 10882, 0 ] ),
+    entity( "&gesdotol;", [ 10884, 0 ] ),
+    entity( "&gesl;", [ 8923, 65024 ] ),
+    entity( "&gesles;", [ 10900, 0 ] ),
+    entity( "&gfr;", [ 120100, 0 ] ),
+    entity( "&gg;", [ 8811, 0 ] ),
+    entity( "&ggg;", [ 8921, 0 ] ),
+    entity( "&gimel;", [ 8503, 0 ] ),
+    entity( "&gjcy;", [ 1107, 0 ] ),
+    entity( "&gl;", [ 8823, 0 ] ),
+    entity( "&glE;", [ 10898, 0 ] ),
+    entity( "&gla;", [ 10917, 0 ] ),
+    entity( "&glj;", [ 10916, 0 ] ),
+    entity( "&gnE;", [ 8809, 0 ] ),
+    entity( "&gnap;", [ 10890, 0 ] ),
+    entity( "&gnapprox;", [ 10890, 0 ] ),
+    entity( "&gne;", [ 10888, 0 ] ),
+    entity( "&gneq;", [ 10888, 0 ] ),
+    entity( "&gneqq;", [ 8809, 0 ] ),
+    entity( "&gnsim;", [ 8935, 0 ] ),
+    entity( "&gopf;", [ 120152, 0 ] ),
+    entity( "&grave;", [ 96, 0 ] ),
+    entity( "&gscr;", [ 8458, 0 ] ),
+    entity( "&gsim;", [ 8819, 0 ] ),
+    entity( "&gsime;", [ 10894, 0 ] ),
+    entity( "&gsiml;", [ 10896, 0 ] ),
+    entity( "&gt;", [ 62, 0 ] ),
+    entity( "&gtcc;", [ 10919, 0 ] ),
+    entity( "&gtcir;", [ 10874, 0 ] ),
+    entity( "&gtdot;", [ 8919, 0 ] ),
+    entity( "&gtlPar;", [ 10645, 0 ] ),
+    entity( "&gtquest;", [ 10876, 0 ] ),
+    entity( "&gtrapprox;", [ 10886, 0 ] ),
+    entity( "&gtrarr;", [ 10616, 0 ] ),
+    entity( "&gtrdot;", [ 8919, 0 ] ),
+    entity( "&gtreqless;", [ 8923, 0 ] ),
+    entity( "&gtreqqless;", [ 10892, 0 ] ),
+    entity( "&gtrless;", [ 8823, 0 ] ),
+    entity( "&gtrsim;", [ 8819, 0 ] ),
+    entity( "&gvertneqq;", [ 8809, 65024 ] ),
+    entity( "&gvnE;", [ 8809, 65024 ] ),
+    entity( "&hArr;", [ 8660, 0 ] ),
+    entity( "&hairsp;", [ 8202, 0 ] ),
+    entity( "&half;", [ 189, 0 ] ),
+    entity( "&hamilt;", [ 8459, 0 ] ),
+    entity( "&hardcy;", [ 1098, 0 ] ),
+    entity( "&harr;", [ 8596, 0 ] ),
+    entity( "&harrcir;", [ 10568, 0 ] ),
+    entity( "&harrw;", [ 8621, 0 ] ),
+    entity( "&hbar;", [ 8463, 0 ] ),
+    entity( "&hcirc;", [ 293, 0 ] ),
+    entity( "&hearts;", [ 9829, 0 ] ),
+    entity( "&heartsuit;", [ 9829, 0 ] ),
+    entity( "&hellip;", [ 8230, 0 ] ),
+    entity( "&hercon;", [ 8889, 0 ] ),
+    entity( "&hfr;", [ 120101, 0 ] ),
+    entity( "&hksearow;", [ 10533, 0 ] ),
+    entity( "&hkswarow;", [ 10534, 0 ] ),
+    entity( "&hoarr;", [ 8703, 0 ] ),
+    entity( "&homtht;", [ 8763, 0 ] ),
+    entity( "&hookleftarrow;", [ 8617, 0 ] ),
+    entity( "&hookrightarrow;", [ 8618, 0 ] ),
+    entity( "&hopf;", [ 120153, 0 ] ),
+    entity( "&horbar;", [ 8213, 0 ] ),
+    entity( "&hscr;", [ 119997, 0 ] ),
+    entity( "&hslash;", [ 8463, 0 ] ),
+    entity( "&hstrok;", [ 295, 0 ] ),
+    entity( "&hybull;", [ 8259, 0 ] ),
+    entity( "&hyphen;", [ 8208, 0 ] ),
+    entity( "&iacute;", [ 237, 0 ] ),
+    entity( "&ic;", [ 8291, 0 ] ),
+    entity( "&icirc;", [ 238, 0 ] ),
+    entity( "&icy;", [ 1080, 0 ] ),
+    entity( "&iecy;", [ 1077, 0 ] ),
+    entity( "&iexcl;", [ 161, 0 ] ),
+    entity( "&iff;", [ 8660, 0 ] ),
+    entity( "&ifr;", [ 120102, 0 ] ),
+    entity( "&igrave;", [ 236, 0 ] ),
+    entity( "&ii;", [ 8520, 0 ] ),
+    entity( "&iiiint;", [ 10764, 0 ] ),
+    entity( "&iiint;", [ 8749, 0 ] ),
+    entity( "&iinfin;", [ 10716, 0 ] ),
+    entity( "&iiota;", [ 8489, 0 ] ),
+    entity( "&ijlig;", [ 307, 0 ] ),
+    entity( "&imacr;", [ 299, 0 ] ),
+    entity( "&image;", [ 8465, 0 ] ),
+    entity( "&imagline;", [ 8464, 0 ] ),
+    entity( "&imagpart;", [ 8465, 0 ] ),
+    entity( "&imath;", [ 305, 0 ] ),
+    entity( "&imof;", [ 8887, 0 ] ),
+    entity( "&imped;", [ 437, 0 ] ),
+    entity( "&in;", [ 8712, 0 ] ),
+    entity( "&incare;", [ 8453, 0 ] ),
+    entity( "&infin;", [ 8734, 0 ] ),
+    entity( "&infintie;", [ 10717, 0 ] ),
+    entity( "&inodot;", [ 305, 0 ] ),
+    entity( "&int;", [ 8747, 0 ] ),
+    entity( "&intcal;", [ 8890, 0 ] ),
+    entity( "&integers;", [ 8484, 0 ] ),
+    entity( "&intercal;", [ 8890, 0 ] ),
+    entity( "&intlarhk;", [ 10775, 0 ] ),
+    entity( "&intprod;", [ 10812, 0 ] ),
+    entity( "&iocy;", [ 1105, 0 ] ),
+    entity( "&iogon;", [ 303, 0 ] ),
+    entity( "&iopf;", [ 120154, 0 ] ),
+    entity( "&iota;", [ 953, 0 ] ),
+    entity( "&iprod;", [ 10812, 0 ] ),
+    entity( "&iquest;", [ 191, 0 ] ),
+    entity( "&iscr;", [ 119998, 0 ] ),
+    entity( "&isin;", [ 8712, 0 ] ),
+    entity( "&isinE;", [ 8953, 0 ] ),
+    entity( "&isindot;", [ 8949, 0 ] ),
+    entity( "&isins;", [ 8948, 0 ] ),
+    entity( "&isinsv;", [ 8947, 0 ] ),
+    entity( "&isinv;", [ 8712, 0 ] ),
+    entity( "&it;", [ 8290, 0 ] ),
+    entity( "&itilde;", [ 297, 0 ] ),
+    entity( "&iukcy;", [ 1110, 0 ] ),
+    entity( "&iuml;", [ 239, 0 ] ),
+    entity( "&jcirc;", [ 309, 0 ] ),
+    entity( "&jcy;", [ 1081, 0 ] ),
+    entity( "&jfr;", [ 120103, 0 ] ),
+    entity( "&jmath;", [ 567, 0 ] ),
+    entity( "&jopf;", [ 120155, 0 ] ),
+    entity( "&jscr;", [ 119999, 0 ] ),
+    entity( "&jsercy;", [ 1112, 0 ] ),
+    entity( "&jukcy;", [ 1108, 0 ] ),
+    entity( "&kappa;", [ 954, 0 ] ),
+    entity( "&kappav;", [ 1008, 0 ] ),
+    entity( "&kcedil;", [ 311, 0 ] ),
+    entity( "&kcy;", [ 1082, 0 ] ),
+    entity( "&kfr;", [ 120104, 0 ] ),
+    entity( "&kgreen;", [ 312, 0 ] ),
+    entity( "&khcy;", [ 1093, 0 ] ),
+    entity( "&kjcy;", [ 1116, 0 ] ),
+    entity( "&kopf;", [ 120156, 0 ] ),
+    entity( "&kscr;", [ 120000, 0 ] ),
+    entity( "&lAarr;", [ 8666, 0 ] ),
+    entity( "&lArr;", [ 8656, 0 ] ),
+    entity( "&lAtail;", [ 10523, 0 ] ),
+    entity( "&lBarr;", [ 10510, 0 ] ),
+    entity( "&lE;", [ 8806, 0 ] ),
+    entity( "&lEg;", [ 10891, 0 ] ),
+    entity( "&lHar;", [ 10594, 0 ] ),
+    entity( "&lacute;", [ 314, 0 ] ),
+    entity( "&laemptyv;", [ 10676, 0 ] ),
+    entity( "&lagran;", [ 8466, 0 ] ),
+    entity( "&lambda;", [ 955, 0 ] ),
+    entity( "&lang;", [ 10216, 0 ] ),
+    entity( "&langd;", [ 10641, 0 ] ),
+    entity( "&langle;", [ 10216, 0 ] ),
+    entity( "&lap;", [ 10885, 0 ] ),
+    entity( "&laquo;", [ 171, 0 ] ),
+    entity( "&larr;", [ 8592, 0 ] ),
+    entity( "&larrb;", [ 8676, 0 ] ),
+    entity( "&larrbfs;", [ 10527, 0 ] ),
+    entity( "&larrfs;", [ 10525, 0 ] ),
+    entity( "&larrhk;", [ 8617, 0 ] ),
+    entity( "&larrlp;", [ 8619, 0 ] ),
+    entity( "&larrpl;", [ 10553, 0 ] ),
+    entity( "&larrsim;", [ 10611, 0 ] ),
+    entity( "&larrtl;", [ 8610, 0 ] ),
+    entity( "&lat;", [ 10923, 0 ] ),
+    entity( "&latail;", [ 10521, 0 ] ),
+    entity( "&late;", [ 10925, 0 ] ),
+    entity( "&lates;", [ 10925, 65024 ] ),
+    entity( "&lbarr;", [ 10508, 0 ] ),
+    entity( "&lbbrk;", [ 10098, 0 ] ),
+    entity( "&lbrace;", [ 123, 0 ] ),
+    entity( "&lbrack;", [ 91, 0 ] ),
+    entity( "&lbrke;", [ 10635, 0 ] ),
+    entity( "&lbrksld;", [ 10639, 0 ] ),
+    entity( "&lbrkslu;", [ 10637, 0 ] ),
+    entity( "&lcaron;", [ 318, 0 ] ),
+    entity( "&lcedil;", [ 316, 0 ] ),
+    entity( "&lceil;", [ 8968, 0 ] ),
+    entity( "&lcub;", [ 123, 0 ] ),
+    entity( "&lcy;", [ 1083, 0 ] ),
+    entity( "&ldca;", [ 10550, 0 ] ),
+    entity( "&ldquo;", [ 8220, 0 ] ),
+    entity( "&ldquor;", [ 8222, 0 ] ),
+    entity( "&ldrdhar;", [ 10599, 0 ] ),
+    entity( "&ldrushar;", [ 10571, 0 ] ),
+    entity( "&ldsh;", [ 8626, 0 ] ),
+    entity( "&le;", [ 8804, 0 ] ),
+    entity( "&leftarrow;", [ 8592, 0 ] ),
+    entity( "&leftarrowtail;", [ 8610, 0 ] ),
+    entity( "&leftharpoondown;", [ 8637, 0 ] ),
+    entity( "&leftharpoonup;", [ 8636, 0 ] ),
+    entity( "&leftleftarrows;", [ 8647, 0 ] ),
+    entity( "&leftrightarrow;", [ 8596, 0 ] ),
+    entity( "&leftrightarrows;", [ 8646, 0 ] ),
+    entity( "&leftrightharpoons;", [ 8651, 0 ] ),
+    entity( "&leftrightsquigarrow;", [ 8621, 0 ] ),
+    entity( "&leftthreetimes;", [ 8907, 0 ] ),
+    entity( "&leg;", [ 8922, 0 ] ),
+    entity( "&leq;", [ 8804, 0 ] ),
+    entity( "&leqq;", [ 8806, 0 ] ),
+    entity( "&leqslant;", [ 10877, 0 ] ),
+    entity( "&les;", [ 10877, 0 ] ),
+    entity( "&lescc;", [ 10920, 0 ] ),
+    entity( "&lesdot;", [ 10879, 0 ] ),
+    entity( "&lesdoto;", [ 10881, 0 ] ),
+    entity( "&lesdotor;", [ 10883, 0 ] ),
+    entity( "&lesg;", [ 8922, 65024 ] ),
+    entity( "&lesges;", [ 10899, 0 ] ),
+    entity( "&lessapprox;", [ 10885, 0 ] ),
+    entity( "&lessdot;", [ 8918, 0 ] ),
+    entity( "&lesseqgtr;", [ 8922, 0 ] ),
+    entity( "&lesseqqgtr;", [ 10891, 0 ] ),
+    entity( "&lessgtr;", [ 8822, 0 ] ),
+    entity( "&lesssim;", [ 8818, 0 ] ),
+    entity( "&lfisht;", [ 10620, 0 ] ),
+    entity( "&lfloor;", [ 8970, 0 ] ),
+    entity( "&lfr;", [ 120105, 0 ] ),
+    entity( "&lg;", [ 8822, 0 ] ),
+    entity( "&lgE;", [ 10897, 0 ] ),
+    entity( "&lhard;", [ 8637, 0 ] ),
+    entity( "&lharu;", [ 8636, 0 ] ),
+    entity( "&lharul;", [ 10602, 0 ] ),
+    entity( "&lhblk;", [ 9604, 0 ] ),
+    entity( "&ljcy;", [ 1113, 0 ] ),
+    entity( "&ll;", [ 8810, 0 ] ),
+    entity( "&llarr;", [ 8647, 0 ] ),
+    entity( "&llcorner;", [ 8990, 0 ] ),
+    entity( "&llhard;", [ 10603, 0 ] ),
+    entity( "&lltri;", [ 9722, 0 ] ),
+    entity( "&lmidot;", [ 320, 0 ] ),
+    entity( "&lmoust;", [ 9136, 0 ] ),
+    entity( "&lmoustache;", [ 9136, 0 ] ),
+    entity( "&lnE;", [ 8808, 0 ] ),
+    entity( "&lnap;", [ 10889, 0 ] ),
+    entity( "&lnapprox;", [ 10889, 0 ] ),
+    entity( "&lne;", [ 10887, 0 ] ),
+    entity( "&lneq;", [ 10887, 0 ] ),
+    entity( "&lneqq;", [ 8808, 0 ] ),
+    entity( "&lnsim;", [ 8934, 0 ] ),
+    entity( "&loang;", [ 10220, 0 ] ),
+    entity( "&loarr;", [ 8701, 0 ] ),
+    entity( "&lobrk;", [ 10214, 0 ] ),
+    entity( "&longleftarrow;", [ 10229, 0 ] ),
+    entity( "&longleftrightarrow;", [ 10231, 0 ] ),
+    entity( "&longmapsto;", [ 10236, 0 ] ),
+    entity( "&longrightarrow;", [ 10230, 0 ] ),
+    entity( "&looparrowleft;", [ 8619, 0 ] ),
+    entity( "&looparrowright;", [ 8620, 0 ] ),
+    entity( "&lopar;", [ 10629, 0 ] ),
+    entity( "&lopf;", [ 120157, 0 ] ),
+    entity( "&loplus;", [ 10797, 0 ] ),
+    entity( "&lotimes;", [ 10804, 0 ] ),
+    entity( "&lowast;", [ 8727, 0 ] ),
+    entity( "&lowbar;", [ 95, 0 ] ),
+    entity( "&loz;", [ 9674, 0 ] ),
+    entity( "&lozenge;", [ 9674, 0 ] ),
+    entity( "&lozf;", [ 10731, 0 ] ),
+    entity( "&lpar;", [ 40, 0 ] ),
+    entity( "&lparlt;", [ 10643, 0 ] ),
+    entity( "&lrarr;", [ 8646, 0 ] ),
+    entity( "&lrcorner;", [ 8991, 0 ] ),
+    entity( "&lrhar;", [ 8651, 0 ] ),
+    entity( "&lrhard;", [ 10605, 0 ] ),
+    entity( "&lrm;", [ 8206, 0 ] ),
+    entity( "&lrtri;", [ 8895, 0 ] ),
+    entity( "&lsaquo;", [ 8249, 0 ] ),
+    entity( "&lscr;", [ 120001, 0 ] ),
+    entity( "&lsh;", [ 8624, 0 ] ),
+    entity( "&lsim;", [ 8818, 0 ] ),
+    entity( "&lsime;", [ 10893, 0 ] ),
+    entity( "&lsimg;", [ 10895, 0 ] ),
+    entity( "&lsqb;", [ 91, 0 ] ),
+    entity( "&lsquo;", [ 8216, 0 ] ),
+    entity( "&lsquor;", [ 8218, 0 ] ),
+    entity( "&lstrok;", [ 322, 0 ] ),
+    entity( "&lt;", [ 60, 0 ] ),
+    entity( "&ltcc;", [ 10918, 0 ] ),
+    entity( "&ltcir;", [ 10873, 0 ] ),
+    entity( "&ltdot;", [ 8918, 0 ] ),
+    entity( "&lthree;", [ 8907, 0 ] ),
+    entity( "&ltimes;", [ 8905, 0 ] ),
+    entity( "&ltlarr;", [ 10614, 0 ] ),
+    entity( "&ltquest;", [ 10875, 0 ] ),
+    entity( "&ltrPar;", [ 10646, 0 ] ),
+    entity( "&ltri;", [ 9667, 0 ] ),
+    entity( "&ltrie;", [ 8884, 0 ] ),
+    entity( "&ltrif;", [ 9666, 0 ] ),
+    entity( "&lurdshar;", [ 10570, 0 ] ),
+    entity( "&luruhar;", [ 10598, 0 ] ),
+    entity( "&lvertneqq;", [ 8808, 65024 ] ),
+    entity( "&lvnE;", [ 8808, 65024 ] ),
+    entity( "&mDDot;", [ 8762, 0 ] ),
+    entity( "&macr;", [ 175, 0 ] ),
+    entity( "&male;", [ 9794, 0 ] ),
+    entity( "&malt;", [ 10016, 0 ] ),
+    entity( "&maltese;", [ 10016, 0 ] ),
+    entity( "&map;", [ 8614, 0 ] ),
+    entity( "&mapsto;", [ 8614, 0 ] ),
+    entity( "&mapstodown;", [ 8615, 0 ] ),
+    entity( "&mapstoleft;", [ 8612, 0 ] ),
+    entity( "&mapstoup;", [ 8613, 0 ] ),
+    entity( "&marker;", [ 9646, 0 ] ),
+    entity( "&mcomma;", [ 10793, 0 ] ),
+    entity( "&mcy;", [ 1084, 0 ] ),
+    entity( "&mdash;", [ 8212, 0 ] ),
+    entity( "&measuredangle;", [ 8737, 0 ] ),
+    entity( "&mfr;", [ 120106, 0 ] ),
+    entity( "&mho;", [ 8487, 0 ] ),
+    entity( "&micro;", [ 181, 0 ] ),
+    entity( "&mid;", [ 8739, 0 ] ),
+    entity( "&midast;", [ 42, 0 ] ),
+    entity( "&midcir;", [ 10992, 0 ] ),
+    entity( "&middot;", [ 183, 0 ] ),
+    entity( "&minus;", [ 8722, 0 ] ),
+    entity( "&minusb;", [ 8863, 0 ] ),
+    entity( "&minusd;", [ 8760, 0 ] ),
+    entity( "&minusdu;", [ 10794, 0 ] ),
+    entity( "&mlcp;", [ 10971, 0 ] ),
+    entity( "&mldr;", [ 8230, 0 ] ),
+    entity( "&mnplus;", [ 8723, 0 ] ),
+    entity( "&models;", [ 8871, 0 ] ),
+    entity( "&mopf;", [ 120158, 0 ] ),
+    entity( "&mp;", [ 8723, 0 ] ),
+    entity( "&mscr;", [ 120002, 0 ] ),
+    entity( "&mstpos;", [ 8766, 0 ] ),
+    entity( "&mu;", [ 956, 0 ] ),
+    entity( "&multimap;", [ 8888, 0 ] ),
+    entity( "&mumap;", [ 8888, 0 ] ),
+    entity( "&nGg;", [ 8921, 824 ] ),
+    entity( "&nGt;", [ 8811, 8402 ] ),
+    entity( "&nGtv;", [ 8811, 824 ] ),
+    entity( "&nLeftarrow;", [ 8653, 0 ] ),
+    entity( "&nLeftrightarrow;", [ 8654, 0 ] ),
+    entity( "&nLl;", [ 8920, 824 ] ),
+    entity( "&nLt;", [ 8810, 8402 ] ),
+    entity( "&nLtv;", [ 8810, 824 ] ),
+    entity( "&nRightarrow;", [ 8655, 0 ] ),
+    entity( "&nVDash;", [ 8879, 0 ] ),
+    entity( "&nVdash;", [ 8878, 0 ] ),
+    entity( "&nabla;", [ 8711, 0 ] ),
+    entity( "&nacute;", [ 324, 0 ] ),
+    entity( "&nang;", [ 8736, 8402 ] ),
+    entity( "&nap;", [ 8777, 0 ] ),
+    entity( "&napE;", [ 10864, 824 ] ),
+    entity( "&napid;", [ 8779, 824 ] ),
+    entity( "&napos;", [ 329, 0 ] ),
+    entity( "&napprox;", [ 8777, 0 ] ),
+    entity( "&natur;", [ 9838, 0 ] ),
+    entity( "&natural;", [ 9838, 0 ] ),
+    entity( "&naturals;", [ 8469, 0 ] ),
+    entity( "&nbsp;", [ 160, 0 ] ),
+    entity( "&nbump;", [ 8782, 824 ] ),
+    entity( "&nbumpe;", [ 8783, 824 ] ),
+    entity( "&ncap;", [ 10819, 0 ] ),
+    entity( "&ncaron;", [ 328, 0 ] ),
+    entity( "&ncedil;", [ 326, 0 ] ),
+    entity( "&ncong;", [ 8775, 0 ] ),
+    entity( "&ncongdot;", [ 10861, 824 ] ),
+    entity( "&ncup;", [ 10818, 0 ] ),
+    entity( "&ncy;", [ 1085, 0 ] ),
+    entity( "&ndash;", [ 8211, 0 ] ),
+    entity( "&ne;", [ 8800, 0 ] ),
+    entity( "&neArr;", [ 8663, 0 ] ),
+    entity( "&nearhk;", [ 10532, 0 ] ),
+    entity( "&nearr;", [ 8599, 0 ] ),
+    entity( "&nearrow;", [ 8599, 0 ] ),
+    entity( "&nedot;", [ 8784, 824 ] ),
+    entity( "&nequiv;", [ 8802, 0 ] ),
+    entity( "&nesear;", [ 10536, 0 ] ),
+    entity( "&nesim;", [ 8770, 824 ] ),
+    entity( "&nexist;", [ 8708, 0 ] ),
+    entity( "&nexists;", [ 8708, 0 ] ),
+    entity( "&nfr;", [ 120107, 0 ] ),
+    entity( "&ngE;", [ 8807, 824 ] ),
+    entity( "&nge;", [ 8817, 0 ] ),
+    entity( "&ngeq;", [ 8817, 0 ] ),
+    entity( "&ngeqq;", [ 8807, 824 ] ),
+    entity( "&ngeqslant;", [ 10878, 824 ] ),
+    entity( "&nges;", [ 10878, 824 ] ),
+    entity( "&ngsim;", [ 8821, 0 ] ),
+    entity( "&ngt;", [ 8815, 0 ] ),
+    entity( "&ngtr;", [ 8815, 0 ] ),
+    entity( "&nhArr;", [ 8654, 0 ] ),
+    entity( "&nharr;", [ 8622, 0 ] ),
+    entity( "&nhpar;", [ 10994, 0 ] ),
+    entity( "&ni;", [ 8715, 0 ] ),
+    entity( "&nis;", [ 8956, 0 ] ),
+    entity( "&nisd;", [ 8954, 0 ] ),
+    entity( "&niv;", [ 8715, 0 ] ),
+    entity( "&njcy;", [ 1114, 0 ] ),
+    entity( "&nlArr;", [ 8653, 0 ] ),
+    entity( "&nlE;", [ 8806, 824 ] ),
+    entity( "&nlarr;", [ 8602, 0 ] ),
+    entity( "&nldr;", [ 8229, 0 ] ),
+    entity( "&nle;", [ 8816, 0 ] ),
+    entity( "&nleftarrow;", [ 8602, 0 ] ),
+    entity( "&nleftrightarrow;", [ 8622, 0 ] ),
+    entity( "&nleq;", [ 8816, 0 ] ),
+    entity( "&nleqq;", [ 8806, 824 ] ),
+    entity( "&nleqslant;", [ 10877, 824 ] ),
+    entity( "&nles;", [ 10877, 824 ] ),
+    entity( "&nless;", [ 8814, 0 ] ),
+    entity( "&nlsim;", [ 8820, 0 ] ),
+    entity( "&nlt;", [ 8814, 0 ] ),
+    entity( "&nltri;", [ 8938, 0 ] ),
+    entity( "&nltrie;", [ 8940, 0 ] ),
+    entity( "&nmid;", [ 8740, 0 ] ),
+    entity( "&nopf;", [ 120159, 0 ] ),
+    entity( "&not;", [ 172, 0 ] ),
+    entity( "&notin;", [ 8713, 0 ] ),
+    entity( "&notinE;", [ 8953, 824 ] ),
+    entity( "&notindot;", [ 8949, 824 ] ),
+    entity( "&notinva;", [ 8713, 0 ] ),
+    entity( "&notinvb;", [ 8951, 0 ] ),
+    entity( "&notinvc;", [ 8950, 0 ] ),
+    entity( "&notni;", [ 8716, 0 ] ),
+    entity( "&notniva;", [ 8716, 0 ] ),
+    entity( "&notnivb;", [ 8958, 0 ] ),
+    entity( "&notnivc;", [ 8957, 0 ] ),
+    entity( "&npar;", [ 8742, 0 ] ),
+    entity( "&nparallel;", [ 8742, 0 ] ),
+    entity( "&nparsl;", [ 11005, 8421 ] ),
+    entity( "&npart;", [ 8706, 824 ] ),
+    entity( "&npolint;", [ 10772, 0 ] ),
+    entity( "&npr;", [ 8832, 0 ] ),
+    entity( "&nprcue;", [ 8928, 0 ] ),
+    entity( "&npre;", [ 10927, 824 ] ),
+    entity( "&nprec;", [ 8832, 0 ] ),
+    entity( "&npreceq;", [ 10927, 824 ] ),
+    entity( "&nrArr;", [ 8655, 0 ] ),
+    entity( "&nrarr;", [ 8603, 0 ] ),
+    entity( "&nrarrc;", [ 10547, 824 ] ),
+    entity( "&nrarrw;", [ 8605, 824 ] ),
+    entity( "&nrightarrow;", [ 8603, 0 ] ),
+    entity( "&nrtri;", [ 8939, 0 ] ),
+    entity( "&nrtrie;", [ 8941, 0 ] ),
+    entity( "&nsc;", [ 8833, 0 ] ),
+    entity( "&nsccue;", [ 8929, 0 ] ),
+    entity( "&nsce;", [ 10928, 824 ] ),
+    entity( "&nscr;", [ 120003, 0 ] ),
+    entity( "&nshortmid;", [ 8740, 0 ] ),
+    entity( "&nshortparallel;", [ 8742, 0 ] ),
+    entity( "&nsim;", [ 8769, 0 ] ),
+    entity( "&nsime;", [ 8772, 0 ] ),
+    entity( "&nsimeq;", [ 8772, 0 ] ),
+    entity( "&nsmid;", [ 8740, 0 ] ),
+    entity( "&nspar;", [ 8742, 0 ] ),
+    entity( "&nsqsube;", [ 8930, 0 ] ),
+    entity( "&nsqsupe;", [ 8931, 0 ] ),
+    entity( "&nsub;", [ 8836, 0 ] ),
+    entity( "&nsubE;", [ 10949, 824 ] ),
+    entity( "&nsube;", [ 8840, 0 ] ),
+    entity( "&nsubset;", [ 8834, 8402 ] ),
+    entity( "&nsubseteq;", [ 8840, 0 ] ),
+    entity( "&nsubseteqq;", [ 10949, 824 ] ),
+    entity( "&nsucc;", [ 8833, 0 ] ),
+    entity( "&nsucceq;", [ 10928, 824 ] ),
+    entity( "&nsup;", [ 8837, 0 ] ),
+    entity( "&nsupE;", [ 10950, 824 ] ),
+    entity( "&nsupe;", [ 8841, 0 ] ),
+    entity( "&nsupset;", [ 8835, 8402 ] ),
+    entity( "&nsupseteq;", [ 8841, 0 ] ),
+    entity( "&nsupseteqq;", [ 10950, 824 ] ),
+    entity( "&ntgl;", [ 8825, 0 ] ),
+    entity( "&ntilde;", [ 241, 0 ] ),
+    entity( "&ntlg;", [ 8824, 0 ] ),
+    entity( "&ntriangleleft;", [ 8938, 0 ] ),
+    entity( "&ntrianglelefteq;", [ 8940, 0 ] ),
+    entity( "&ntriangleright;", [ 8939, 0 ] ),
+    entity( "&ntrianglerighteq;", [ 8941, 0 ] ),
+    entity( "&nu;", [ 957, 0 ] ),
+    entity( "&num;", [ 35, 0 ] ),
+    entity( "&numero;", [ 8470, 0 ] ),
+    entity( "&numsp;", [ 8199, 0 ] ),
+    entity( "&nvDash;", [ 8877, 0 ] ),
+    entity( "&nvHarr;", [ 10500, 0 ] ),
+    entity( "&nvap;", [ 8781, 8402 ] ),
+    entity( "&nvdash;", [ 8876, 0 ] ),
+    entity( "&nvge;", [ 8805, 8402 ] ),
+    entity( "&nvgt;", [ 62, 8402 ] ),
+    entity( "&nvinfin;", [ 10718, 0 ] ),
+    entity( "&nvlArr;", [ 10498, 0 ] ),
+    entity( "&nvle;", [ 8804, 8402 ] ),
+    entity( "&nvlt;", [ 60, 8402 ] ),
+    entity( "&nvltrie;", [ 8884, 8402 ] ),
+    entity( "&nvrArr;", [ 10499, 0 ] ),
+    entity( "&nvrtrie;", [ 8885, 8402 ] ),
+    entity( "&nvsim;", [ 8764, 8402 ] ),
+    entity( "&nwArr;", [ 8662, 0 ] ),
+    entity( "&nwarhk;", [ 10531, 0 ] ),
+    entity( "&nwarr;", [ 8598, 0 ] ),
+    entity( "&nwarrow;", [ 8598, 0 ] ),
+    entity( "&nwnear;", [ 10535, 0 ] ),
+    entity( "&oS;", [ 9416, 0 ] ),
+    entity( "&oacute;", [ 243, 0 ] ),
+    entity( "&oast;", [ 8859, 0 ] ),
+    entity( "&ocir;", [ 8858, 0 ] ),
+    entity( "&ocirc;", [ 244, 0 ] ),
+    entity( "&ocy;", [ 1086, 0 ] ),
+    entity( "&odash;", [ 8861, 0 ] ),
+    entity( "&odblac;", [ 337, 0 ] ),
+    entity( "&odiv;", [ 10808, 0 ] ),
+    entity( "&odot;", [ 8857, 0 ] ),
+    entity( "&odsold;", [ 10684, 0 ] ),
+    entity( "&oelig;", [ 339, 0 ] ),
+    entity( "&ofcir;", [ 10687, 0 ] ),
+    entity( "&ofr;", [ 120108, 0 ] ),
+    entity( "&ogon;", [ 731, 0 ] ),
+    entity( "&ograve;", [ 242, 0 ] ),
+    entity( "&ogt;", [ 10689, 0 ] ),
+    entity( "&ohbar;", [ 10677, 0 ] ),
+    entity( "&ohm;", [ 937, 0 ] ),
+    entity( "&oint;", [ 8750, 0 ] ),
+    entity( "&olarr;", [ 8634, 0 ] ),
+    entity( "&olcir;", [ 10686, 0 ] ),
+    entity( "&olcross;", [ 10683, 0 ] ),
+    entity( "&oline;", [ 8254, 0 ] ),
+    entity( "&olt;", [ 10688, 0 ] ),
+    entity( "&omacr;", [ 333, 0 ] ),
+    entity( "&omega;", [ 969, 0 ] ),
+    entity( "&omicron;", [ 959, 0 ] ),
+    entity( "&omid;", [ 10678, 0 ] ),
+    entity( "&ominus;", [ 8854, 0 ] ),
+    entity( "&oopf;", [ 120160, 0 ] ),
+    entity( "&opar;", [ 10679, 0 ] ),
+    entity( "&operp;", [ 10681, 0 ] ),
+    entity( "&oplus;", [ 8853, 0 ] ),
+    entity( "&or;", [ 8744, 0 ] ),
+    entity( "&orarr;", [ 8635, 0 ] ),
+    entity( "&ord;", [ 10845, 0 ] ),
+    entity( "&order;", [ 8500, 0 ] ),
+    entity( "&orderof;", [ 8500, 0 ] ),
+    entity( "&ordf;", [ 170, 0 ] ),
+    entity( "&ordm;", [ 186, 0 ] ),
+    entity( "&origof;", [ 8886, 0 ] ),
+    entity( "&oror;", [ 10838, 0 ] ),
+    entity( "&orslope;", [ 10839, 0 ] ),
+    entity( "&orv;", [ 10843, 0 ] ),
+    entity( "&oscr;", [ 8500, 0 ] ),
+    entity( "&oslash;", [ 248, 0 ] ),
+    entity( "&osol;", [ 8856, 0 ] ),
+    entity( "&otilde;", [ 245, 0 ] ),
+    entity( "&otimes;", [ 8855, 0 ] ),
+    entity( "&otimesas;", [ 10806, 0 ] ),
+    entity( "&ouml;", [ 246, 0 ] ),
+    entity( "&ovbar;", [ 9021, 0 ] ),
+    entity( "&par;", [ 8741, 0 ] ),
+    entity( "&para;", [ 182, 0 ] ),
+    entity( "&parallel;", [ 8741, 0 ] ),
+    entity( "&parsim;", [ 10995, 0 ] ),
+    entity( "&parsl;", [ 11005, 0 ] ),
+    entity( "&part;", [ 8706, 0 ] ),
+    entity( "&pcy;", [ 1087, 0 ] ),
+    entity( "&percnt;", [ 37, 0 ] ),
+    entity( "&period;", [ 46, 0 ] ),
+    entity( "&permil;", [ 8240, 0 ] ),
+    entity( "&perp;", [ 8869, 0 ] ),
+    entity( "&pertenk;", [ 8241, 0 ] ),
+    entity( "&pfr;", [ 120109, 0 ] ),
+    entity( "&phi;", [ 966, 0 ] ),
+    entity( "&phiv;", [ 981, 0 ] ),
+    entity( "&phmmat;", [ 8499, 0 ] ),
+    entity( "&phone;", [ 9742, 0 ] ),
+    entity( "&pi;", [ 960, 0 ] ),
+    entity( "&pitchfork;", [ 8916, 0 ] ),
+    entity( "&piv;", [ 982, 0 ] ),
+    entity( "&planck;", [ 8463, 0 ] ),
+    entity( "&planckh;", [ 8462, 0 ] ),
+    entity( "&plankv;", [ 8463, 0 ] ),
+    entity( "&plus;", [ 43, 0 ] ),
+    entity( "&plusacir;", [ 10787, 0 ] ),
+    entity( "&plusb;", [ 8862, 0 ] ),
+    entity( "&pluscir;", [ 10786, 0 ] ),
+    entity( "&plusdo;", [ 8724, 0 ] ),
+    entity( "&plusdu;", [ 10789, 0 ] ),
+    entity( "&pluse;", [ 10866, 0 ] ),
+    entity( "&plusmn;", [ 177, 0 ] ),
+    entity( "&plussim;", [ 10790, 0 ] ),
+    entity( "&plustwo;", [ 10791, 0 ] ),
+    entity( "&pm;", [ 177, 0 ] ),
+    entity( "&pointint;", [ 10773, 0 ] ),
+    entity( "&popf;", [ 120161, 0 ] ),
+    entity( "&pound;", [ 163, 0 ] ),
+    entity( "&pr;", [ 8826, 0 ] ),
+    entity( "&prE;", [ 10931, 0 ] ),
+    entity( "&prap;", [ 10935, 0 ] ),
+    entity( "&prcue;", [ 8828, 0 ] ),
+    entity( "&pre;", [ 10927, 0 ] ),
+    entity( "&prec;", [ 8826, 0 ] ),
+    entity( "&precapprox;", [ 10935, 0 ] ),
+    entity( "&preccurlyeq;", [ 8828, 0 ] ),
+    entity( "&preceq;", [ 10927, 0 ] ),
+    entity( "&precnapprox;", [ 10937, 0 ] ),
+    entity( "&precneqq;", [ 10933, 0 ] ),
+    entity( "&precnsim;", [ 8936, 0 ] ),
+    entity( "&precsim;", [ 8830, 0 ] ),
+    entity( "&prime;", [ 8242, 0 ] ),
+    entity( "&primes;", [ 8473, 0 ] ),
+    entity( "&prnE;", [ 10933, 0 ] ),
+    entity( "&prnap;", [ 10937, 0 ] ),
+    entity( "&prnsim;", [ 8936, 0 ] ),
+    entity( "&prod;", [ 8719, 0 ] ),
+    entity( "&profalar;", [ 9006, 0 ] ),
+    entity( "&profline;", [ 8978, 0 ] ),
+    entity( "&profsurf;", [ 8979, 0 ] ),
+    entity( "&prop;", [ 8733, 0 ] ),
+    entity( "&propto;", [ 8733, 0 ] ),
+    entity( "&prsim;", [ 8830, 0 ] ),
+    entity( "&prurel;", [ 8880, 0 ] ),
+    entity( "&pscr;", [ 120005, 0 ] ),
+    entity( "&psi;", [ 968, 0 ] ),
+    entity( "&puncsp;", [ 8200, 0 ] ),
+    entity( "&qfr;", [ 120110, 0 ] ),
+    entity( "&qint;", [ 10764, 0 ] ),
+    entity( "&qopf;", [ 120162, 0 ] ),
+    entity( "&qprime;", [ 8279, 0 ] ),
+    entity( "&qscr;", [ 120006, 0 ] ),
+    entity( "&quaternions;", [ 8461, 0 ] ),
+    entity( "&quatint;", [ 10774, 0 ] ),
+    entity( "&quest;", [ 63, 0 ] ),
+    entity( "&questeq;", [ 8799, 0 ] ),
+    entity( "&quot;", [ 34, 0 ] ),
+    entity( "&rAarr;", [ 8667, 0 ] ),
+    entity( "&rArr;", [ 8658, 0 ] ),
+    entity( "&rAtail;", [ 10524, 0 ] ),
+    entity( "&rBarr;", [ 10511, 0 ] ),
+    entity( "&rHar;", [ 10596, 0 ] ),
+    entity( "&race;", [ 8765, 817 ] ),
+    entity( "&racute;", [ 341, 0 ] ),
+    entity( "&radic;", [ 8730, 0 ] ),
+    entity( "&raemptyv;", [ 10675, 0 ] ),
+    entity( "&rang;", [ 10217, 0 ] ),
+    entity( "&rangd;", [ 10642, 0 ] ),
+    entity( "&range;", [ 10661, 0 ] ),
+    entity( "&rangle;", [ 10217, 0 ] ),
+    entity( "&raquo;", [ 187, 0 ] ),
+    entity( "&rarr;", [ 8594, 0 ] ),
+    entity( "&rarrap;", [ 10613, 0 ] ),
+    entity( "&rarrb;", [ 8677, 0 ] ),
+    entity( "&rarrbfs;", [ 10528, 0 ] ),
+    entity( "&rarrc;", [ 10547, 0 ] ),
+    entity( "&rarrfs;", [ 10526, 0 ] ),
+    entity( "&rarrhk;", [ 8618, 0 ] ),
+    entity( "&rarrlp;", [ 8620, 0 ] ),
+    entity( "&rarrpl;", [ 10565, 0 ] ),
+    entity( "&rarrsim;", [ 10612, 0 ] ),
+    entity( "&rarrtl;", [ 8611, 0 ] ),
+    entity( "&rarrw;", [ 8605, 0 ] ),
+    entity( "&ratail;", [ 10522, 0 ] ),
+    entity( "&ratio;", [ 8758, 0 ] ),
+    entity( "&rationals;", [ 8474, 0 ] ),
+    entity( "&rbarr;", [ 10509, 0 ] ),
+    entity( "&rbbrk;", [ 10099, 0 ] ),
+    entity( "&rbrace;", [ 125, 0 ] ),
+    entity( "&rbrack;", [ 93, 0 ] ),
+    entity( "&rbrke;", [ 10636, 0 ] ),
+    entity( "&rbrksld;", [ 10638, 0 ] ),
+    entity( "&rbrkslu;", [ 10640, 0 ] ),
+    entity( "&rcaron;", [ 345, 0 ] ),
+    entity( "&rcedil;", [ 343, 0 ] ),
+    entity( "&rceil;", [ 8969, 0 ] ),
+    entity( "&rcub;", [ 125, 0 ] ),
+    entity( "&rcy;", [ 1088, 0 ] ),
+    entity( "&rdca;", [ 10551, 0 ] ),
+    entity( "&rdldhar;", [ 10601, 0 ] ),
+    entity( "&rdquo;", [ 8221, 0 ] ),
+    entity( "&rdquor;", [ 8221, 0 ] ),
+    entity( "&rdsh;", [ 8627, 0 ] ),
+    entity( "&real;", [ 8476, 0 ] ),
+    entity( "&realine;", [ 8475, 0 ] ),
+    entity( "&realpart;", [ 8476, 0 ] ),
+    entity( "&reals;", [ 8477, 0 ] ),
+    entity( "&rect;", [ 9645, 0 ] ),
+    entity( "&reg;", [ 174, 0 ] ),
+    entity( "&rfisht;", [ 10621, 0 ] ),
+    entity( "&rfloor;", [ 8971, 0 ] ),
+    entity( "&rfr;", [ 120111, 0 ] ),
+    entity( "&rhard;", [ 8641, 0 ] ),
+    entity( "&rharu;", [ 8640, 0 ] ),
+    entity( "&rharul;", [ 10604, 0 ] ),
+    entity( "&rho;", [ 961, 0 ] ),
+    entity( "&rhov;", [ 1009, 0 ] ),
+    entity( "&rightarrow;", [ 8594, 0 ] ),
+    entity( "&rightarrowtail;", [ 8611, 0 ] ),
+    entity( "&rightharpoondown;", [ 8641, 0 ] ),
+    entity( "&rightharpoonup;", [ 8640, 0 ] ),
+    entity( "&rightleftarrows;", [ 8644, 0 ] ),
+    entity( "&rightleftharpoons;", [ 8652, 0 ] ),
+    entity( "&rightrightarrows;", [ 8649, 0 ] ),
+    entity( "&rightsquigarrow;", [ 8605, 0 ] ),
+    entity( "&rightthreetimes;", [ 8908, 0 ] ),
+    entity( "&ring;", [ 730, 0 ] ),
+    entity( "&risingdotseq;", [ 8787, 0 ] ),
+    entity( "&rlarr;", [ 8644, 0 ] ),
+    entity( "&rlhar;", [ 8652, 0 ] ),
+    entity( "&rlm;", [ 8207, 0 ] ),
+    entity( "&rmoust;", [ 9137, 0 ] ),
+    entity( "&rmoustache;", [ 9137, 0 ] ),
+    entity( "&rnmid;", [ 10990, 0 ] ),
+    entity( "&roang;", [ 10221, 0 ] ),
+    entity( "&roarr;", [ 8702, 0 ] ),
+    entity( "&robrk;", [ 10215, 0 ] ),
+    entity( "&ropar;", [ 10630, 0 ] ),
+    entity( "&ropf;", [ 120163, 0 ] ),
+    entity( "&roplus;", [ 10798, 0 ] ),
+    entity( "&rotimes;", [ 10805, 0 ] ),
+    entity( "&rpar;", [ 41, 0 ] ),
+    entity( "&rpargt;", [ 10644, 0 ] ),
+    entity( "&rppolint;", [ 10770, 0 ] ),
+    entity( "&rrarr;", [ 8649, 0 ] ),
+    entity( "&rsaquo;", [ 8250, 0 ] ),
+    entity( "&rscr;", [ 120007, 0 ] ),
+    entity( "&rsh;", [ 8625, 0 ] ),
+    entity( "&rsqb;", [ 93, 0 ] ),
+    entity( "&rsquo;", [ 8217, 0 ] ),
+    entity( "&rsquor;", [ 8217, 0 ] ),
+    entity( "&rthree;", [ 8908, 0 ] ),
+    entity( "&rtimes;", [ 8906, 0 ] ),
+    entity( "&rtri;", [ 9657, 0 ] ),
+    entity( "&rtrie;", [ 8885, 0 ] ),
+    entity( "&rtrif;", [ 9656, 0 ] ),
+    entity( "&rtriltri;", [ 10702, 0 ] ),
+    entity( "&ruluhar;", [ 10600, 0 ] ),
+    entity( "&rx;", [ 8478, 0 ] ),
+    entity( "&sacute;", [ 347, 0 ] ),
+    entity( "&sbquo;", [ 8218, 0 ] ),
+    entity( "&sc;", [ 8827, 0 ] ),
+    entity( "&scE;", [ 10932, 0 ] ),
+    entity( "&scap;", [ 10936, 0 ] ),
+    entity( "&scaron;", [ 353, 0 ] ),
+    entity( "&sccue;", [ 8829, 0 ] ),
+    entity( "&sce;", [ 10928, 0 ] ),
+    entity( "&scedil;", [ 351, 0 ] ),
+    entity( "&scirc;", [ 349, 0 ] ),
+    entity( "&scnE;", [ 10934, 0 ] ),
+    entity( "&scnap;", [ 10938, 0 ] ),
+    entity( "&scnsim;", [ 8937, 0 ] ),
+    entity( "&scpolint;", [ 10771, 0 ] ),
+    entity( "&scsim;", [ 8831, 0 ] ),
+    entity( "&scy;", [ 1089, 0 ] ),
+    entity( "&sdot;", [ 8901, 0 ] ),
+    entity( "&sdotb;", [ 8865, 0 ] ),
+    entity( "&sdote;", [ 10854, 0 ] ),
+    entity( "&seArr;", [ 8664, 0 ] ),
+    entity( "&searhk;", [ 10533, 0 ] ),
+    entity( "&searr;", [ 8600, 0 ] ),
+    entity( "&searrow;", [ 8600, 0 ] ),
+    entity( "&sect;", [ 167, 0 ] ),
+    entity( "&semi;", [ 59, 0 ] ),
+    entity( "&seswar;", [ 10537, 0 ] ),
+    entity( "&setminus;", [ 8726, 0 ] ),
+    entity( "&setmn;", [ 8726, 0 ] ),
+    entity( "&sext;", [ 10038, 0 ] ),
+    entity( "&sfr;", [ 120112, 0 ] ),
+    entity( "&sfrown;", [ 8994, 0 ] ),
+    entity( "&sharp;", [ 9839, 0 ] ),
+    entity( "&shchcy;", [ 1097, 0 ] ),
+    entity( "&shcy;", [ 1096, 0 ] ),
+    entity( "&shortmid;", [ 8739, 0 ] ),
+    entity( "&shortparallel;", [ 8741, 0 ] ),
+    entity( "&shy;", [ 173, 0 ] ),
+    entity( "&sigma;", [ 963, 0 ] ),
+    entity( "&sigmaf;", [ 962, 0 ] ),
+    entity( "&sigmav;", [ 962, 0 ] ),
+    entity( "&sim;", [ 8764, 0 ] ),
+    entity( "&simdot;", [ 10858, 0 ] ),
+    entity( "&sime;", [ 8771, 0 ] ),
+    entity( "&simeq;", [ 8771, 0 ] ),
+    entity( "&simg;", [ 10910, 0 ] ),
+    entity( "&simgE;", [ 10912, 0 ] ),
+    entity( "&siml;", [ 10909, 0 ] ),
+    entity( "&simlE;", [ 10911, 0 ] ),
+    entity( "&simne;", [ 8774, 0 ] ),
+    entity( "&simplus;", [ 10788, 0 ] ),
+    entity( "&simrarr;", [ 10610, 0 ] ),
+    entity( "&slarr;", [ 8592, 0 ] ),
+    entity( "&smallsetminus;", [ 8726, 0 ] ),
+    entity( "&smashp;", [ 10803, 0 ] ),
+    entity( "&smeparsl;", [ 10724, 0 ] ),
+    entity( "&smid;", [ 8739, 0 ] ),
+    entity( "&smile;", [ 8995, 0 ] ),
+    entity( "&smt;", [ 10922, 0 ] ),
+    entity( "&smte;", [ 10924, 0 ] ),
+    entity( "&smtes;", [ 10924, 65024 ] ),
+    entity( "&softcy;", [ 1100, 0 ] ),
+    entity( "&sol;", [ 47, 0 ] ),
+    entity( "&solb;", [ 10692, 0 ] ),
+    entity( "&solbar;", [ 9023, 0 ] ),
+    entity( "&sopf;", [ 120164, 0 ] ),
+    entity( "&spades;", [ 9824, 0 ] ),
+    entity( "&spadesuit;", [ 9824, 0 ] ),
+    entity( "&spar;", [ 8741, 0 ] ),
+    entity( "&sqcap;", [ 8851, 0 ] ),
+    entity( "&sqcaps;", [ 8851, 65024 ] ),
+    entity( "&sqcup;", [ 8852, 0 ] ),
+    entity( "&sqcups;", [ 8852, 65024 ] ),
+    entity( "&sqsub;", [ 8847, 0 ] ),
+    entity( "&sqsube;", [ 8849, 0 ] ),
+    entity( "&sqsubset;", [ 8847, 0 ] ),
+    entity( "&sqsubseteq;", [ 8849, 0 ] ),
+    entity( "&sqsup;", [ 8848, 0 ] ),
+    entity( "&sqsupe;", [ 8850, 0 ] ),
+    entity( "&sqsupset;", [ 8848, 0 ] ),
+    entity( "&sqsupseteq;", [ 8850, 0 ] ),
+    entity( "&squ;", [ 9633, 0 ] ),
+    entity( "&square;", [ 9633, 0 ] ),
+    entity( "&squarf;", [ 9642, 0 ] ),
+    entity( "&squf;", [ 9642, 0 ] ),
+    entity( "&srarr;", [ 8594, 0 ] ),
+    entity( "&sscr;", [ 120008, 0 ] ),
+    entity( "&ssetmn;", [ 8726, 0 ] ),
+    entity( "&ssmile;", [ 8995, 0 ] ),
+    entity( "&sstarf;", [ 8902, 0 ] ),
+    entity( "&star;", [ 9734, 0 ] ),
+    entity( "&starf;", [ 9733, 0 ] ),
+    entity( "&straightepsilon;", [ 1013, 0 ] ),
+    entity( "&straightphi;", [ 981, 0 ] ),
+    entity( "&strns;", [ 175, 0 ] ),
+    entity( "&sub;", [ 8834, 0 ] ),
+    entity( "&subE;", [ 10949, 0 ] ),
+    entity( "&subdot;", [ 10941, 0 ] ),
+    entity( "&sube;", [ 8838, 0 ] ),
+    entity( "&subedot;", [ 10947, 0 ] ),
+    entity( "&submult;", [ 10945, 0 ] ),
+    entity( "&subnE;", [ 10955, 0 ] ),
+    entity( "&subne;", [ 8842, 0 ] ),
+    entity( "&subplus;", [ 10943, 0 ] ),
+    entity( "&subrarr;", [ 10617, 0 ] ),
+    entity( "&subset;", [ 8834, 0 ] ),
+    entity( "&subseteq;", [ 8838, 0 ] ),
+    entity( "&subseteqq;", [ 10949, 0 ] ),
+    entity( "&subsetneq;", [ 8842, 0 ] ),
+    entity( "&subsetneqq;", [ 10955, 0 ] ),
+    entity( "&subsim;", [ 10951, 0 ] ),
+    entity( "&subsub;", [ 10965, 0 ] ),
+    entity( "&subsup;", [ 10963, 0 ] ),
+    entity( "&succ;", [ 8827, 0 ] ),
+    entity( "&succapprox;", [ 10936, 0 ] ),
+    entity( "&succcurlyeq;", [ 8829, 0 ] ),
+    entity( "&succeq;", [ 10928, 0 ] ),
+    entity( "&succnapprox;", [ 10938, 0 ] ),
+    entity( "&succneqq;", [ 10934, 0 ] ),
+    entity( "&succnsim;", [ 8937, 0 ] ),
+    entity( "&succsim;", [ 8831, 0 ] ),
+    entity( "&sum;", [ 8721, 0 ] ),
+    entity( "&sung;", [ 9834, 0 ] ),
+    entity( "&sup1",  [185, 0 ] ),
+    entity( "&sup1;", [ 185, 0 ] ),
+    entity( "&sup2",  [178, 0 ] ),
+    entity( "&sup2;", [ 178, 0 ] ),
+    entity( "&sup3",  [179, 0 ] ),
+    entity( "&sup3;", [ 179, 0 ] ),
+    entity( "&sup;", [ 8835, 0 ] ),
+    entity( "&supE;", [ 10950, 0 ] ),
+    entity( "&supdot;", [ 10942, 0 ] ),
+    entity( "&supdsub;", [ 10968, 0 ] ),
+    entity( "&supe;", [ 8839, 0 ] ),
+    entity( "&supedot;", [ 10948, 0 ] ),
+    entity( "&suphsol;", [ 10185, 0 ] ),
+    entity( "&suphsub;", [ 10967, 0 ] ),
+    entity( "&suplarr;", [ 10619, 0 ] ),
+    entity( "&supmult;", [ 10946, 0 ] ),
+    entity( "&supnE;", [ 10956, 0 ] ),
+    entity( "&supne;", [ 8843, 0 ] ),
+    entity( "&supplus;", [ 10944, 0 ] ),
+    entity( "&supset;", [ 8835, 0 ] ),
+    entity( "&supseteq;", [ 8839, 0 ] ),
+    entity( "&supseteqq;", [ 10950, 0 ] ),
+    entity( "&supsetneq;", [ 8843, 0 ] ),
+    entity( "&supsetneqq;", [ 10956, 0 ] ),
+    entity( "&supsim;", [ 10952, 0 ] ),
+    entity( "&supsub;", [ 10964, 0 ] ),
+    entity( "&supsup;", [ 10966, 0 ] ),
+    entity( "&swArr;", [ 8665, 0 ] ),
+    entity( "&swarhk;", [ 10534, 0 ] ),
+    entity( "&swarr;", [ 8601, 0 ] ),
+    entity( "&swarrow;", [ 8601, 0 ] ),
+    entity( "&swnwar;", [ 10538, 0 ] ),
+    entity( "&szlig;", [ 223, 0 ] ),
+    entity( "&target;", [ 8982, 0 ] ),
+    entity( "&tau;", [ 964, 0 ] ),
+    entity( "&tbrk;", [ 9140, 0 ] ),
+    entity( "&tcaron;", [ 357, 0 ] ),
+    entity( "&tcedil;", [ 355, 0 ] ),
+    entity( "&tcy;", [ 1090, 0 ] ),
+    entity( "&tdot;", [ 8411, 0 ] ),
+    entity( "&telrec;", [ 8981, 0 ] ),
+    entity( "&tfr;", [ 120113, 0 ] ),
+    entity( "&there4;", [ 8756, 0 ] ),
+    entity( "&therefore;", [ 8756, 0 ] ),
+    entity( "&theta;", [ 952, 0 ] ),
+    entity( "&thetasym;", [ 977, 0 ] ),
+    entity( "&thetav;", [ 977, 0 ] ),
+    entity( "&thickapprox;", [ 8776, 0 ] ),
+    entity( "&thicksim;", [ 8764, 0 ] ),
+    entity( "&thinsp;", [ 8201, 0 ] ),
+    entity( "&thkap;", [ 8776, 0 ] ),
+    entity( "&thksim;", [ 8764, 0 ] ),
+    entity( "&thorn;", [ 254, 0 ] ),
+    entity( "&tilde;", [ 732, 0 ] ),
+    entity( "&times;", [ 215, 0 ] ),
+    entity( "&timesb;", [ 8864, 0 ] ),
+    entity( "&timesbar;", [ 10801, 0 ] ),
+    entity( "&timesd;", [ 10800, 0 ] ),
+    entity( "&tint;", [ 8749, 0 ] ),
+    entity( "&toea;", [ 10536, 0 ] ),
+    entity( "&top;", [ 8868, 0 ] ),
+    entity( "&topbot;", [ 9014, 0 ] ),
+    entity( "&topcir;", [ 10993, 0 ] ),
+    entity( "&topf;", [ 120165, 0 ] ),
+    entity( "&topfork;", [ 10970, 0 ] ),
+    entity( "&tosa;", [ 10537, 0 ] ),
+    entity( "&tprime;", [ 8244, 0 ] ),
+    entity( "&trade;", [ 8482, 0 ] ),
+    entity( "&triangle;", [ 9653, 0 ] ),
+    entity( "&triangledown;", [ 9663, 0 ] ),
+    entity( "&triangleleft;", [ 9667, 0 ] ),
+    entity( "&trianglelefteq;", [ 8884, 0 ] ),
+    entity( "&triangleq;", [ 8796, 0 ] ),
+    entity( "&triangleright;", [ 9657, 0 ] ),
+    entity( "&trianglerighteq;", [ 8885, 0 ] ),
+    entity( "&tridot;", [ 9708, 0 ] ),
+    entity( "&trie;", [ 8796, 0 ] ),
+    entity( "&triminus;", [ 10810, 0 ] ),
+    entity( "&triplus;", [ 10809, 0 ] ),
+    entity( "&trisb;", [ 10701, 0 ] ),
+    entity( "&tritime;", [ 10811, 0 ] ),
+    entity( "&trpezium;", [ 9186, 0 ] ),
+    entity( "&tscr;", [ 120009, 0 ] ),
+    entity( "&tscy;", [ 1094, 0 ] ),
+    entity( "&tshcy;", [ 1115, 0 ] ),
+    entity( "&tstrok;", [ 359, 0 ] ),
+    entity( "&twixt;", [ 8812, 0 ] ),
+    entity( "&twoheadleftarrow;", [ 8606, 0 ] ),
+    entity( "&twoheadrightarrow;", [ 8608, 0 ] ),
+    entity( "&uArr;", [ 8657, 0 ] ),
+    entity( "&uHar;", [ 10595, 0 ] ),
+    entity( "&uacute;", [ 250, 0 ] ),
+    entity( "&uarr;", [ 8593, 0 ] ),
+    entity( "&ubrcy;", [ 1118, 0 ] ),
+    entity( "&ubreve;", [ 365, 0 ] ),
+    entity( "&ucirc;", [ 251, 0 ] ),
+    entity( "&ucy;", [ 1091, 0 ] ),
+    entity( "&udarr;", [ 8645, 0 ] ),
+    entity( "&udblac;", [ 369, 0 ] ),
+    entity( "&udhar;", [ 10606, 0 ] ),
+    entity( "&ufisht;", [ 10622, 0 ] ),
+    entity( "&ufr;", [ 120114, 0 ] ),
+    entity( "&ugrave;", [ 249, 0 ] ),
+    entity( "&uharl;", [ 8639, 0 ] ),
+    entity( "&uharr;", [ 8638, 0 ] ),
+    entity( "&uhblk;", [ 9600, 0 ] ),
+    entity( "&ulcorn;", [ 8988, 0 ] ),
+    entity( "&ulcorner;", [ 8988, 0 ] ),
+    entity( "&ulcrop;", [ 8975, 0 ] ),
+    entity( "&ultri;", [ 9720, 0 ] ),
+    entity( "&umacr;", [ 363, 0 ] ),
+    entity( "&uml;", [ 168, 0 ] ),
+    entity( "&uogon;", [ 371, 0 ] ),
+    entity( "&uopf;", [ 120166, 0 ] ),
+    entity( "&uparrow;", [ 8593, 0 ] ),
+    entity( "&updownarrow;", [ 8597, 0 ] ),
+    entity( "&upharpoonleft;", [ 8639, 0 ] ),
+    entity( "&upharpoonright;", [ 8638, 0 ] ),
+    entity( "&uplus;", [ 8846, 0 ] ),
+    entity( "&upsi;", [ 965, 0 ] ),
+    entity( "&upsih;", [ 978, 0 ] ),
+    entity( "&upsilon;", [ 965, 0 ] ),
+    entity( "&upuparrows;", [ 8648, 0 ] ),
+    entity( "&urcorn;", [ 8989, 0 ] ),
+    entity( "&urcorner;", [ 8989, 0 ] ),
+    entity( "&urcrop;", [ 8974, 0 ] ),
+    entity( "&uring;", [ 367, 0 ] ),
+    entity( "&urtri;", [ 9721, 0 ] ),
+    entity( "&uscr;", [ 120010, 0 ] ),
+    entity( "&utdot;", [ 8944, 0 ] ),
+    entity( "&utilde;", [ 361, 0 ] ),
+    entity( "&utri;", [ 9653, 0 ] ),
+    entity( "&utrif;", [ 9652, 0 ] ),
+    entity( "&uuarr;", [ 8648, 0 ] ),
+    entity( "&uuml;", [ 252, 0 ] ),
+    entity( "&uwangle;", [ 10663, 0 ] ),
+    entity( "&vArr;", [ 8661, 0 ] ),
+    entity( "&vBar;", [ 10984, 0 ] ),
+    entity( "&vBarv;", [ 10985, 0 ] ),
+    entity( "&vDash;", [ 8872, 0 ] ),
+    entity( "&vangrt;", [ 10652, 0 ] ),
+    entity( "&varepsilon;", [ 1013, 0 ] ),
+    entity( "&varkappa;", [ 1008, 0 ] ),
+    entity( "&varnothing;", [ 8709, 0 ] ),
+    entity( "&varphi;", [ 981, 0 ] ),
+    entity( "&varpi;", [ 982, 0 ] ),
+    entity( "&varpropto;", [ 8733, 0 ] ),
+    entity( "&varr;", [ 8597, 0 ] ),
+    entity( "&varrho;", [ 1009, 0 ] ),
+    entity( "&varsigma;", [ 962, 0 ] ),
+    entity( "&varsubsetneq;", [ 8842, 65024 ] ),
+    entity( "&varsubsetneqq;", [ 10955, 65024 ] ),
+    entity( "&varsupsetneq;", [ 8843, 65024 ] ),
+    entity( "&varsupsetneqq;", [ 10956, 65024 ] ),
+    entity( "&vartheta;", [ 977, 0 ] ),
+    entity( "&vartriangleleft;", [ 8882, 0 ] ),
+    entity( "&vartriangleright;", [ 8883, 0 ] ),
+    entity( "&vcy;", [ 1074, 0 ] ),
+    entity( "&vdash;", [ 8866, 0 ] ),
+    entity( "&vee;", [ 8744, 0 ] ),
+    entity( "&veebar;", [ 8891, 0 ] ),
+    entity( "&veeeq;", [ 8794, 0 ] ),
+    entity( "&vellip;", [ 8942, 0 ] ),
+    entity( "&verbar;", [ 124, 0 ] ),
+    entity( "&vert;", [ 124, 0 ] ),
+    entity( "&vfr;", [ 120115, 0 ] ),
+    entity( "&vltri;", [ 8882, 0 ] ),
+    entity( "&vnsub;", [ 8834, 8402 ] ),
+    entity( "&vnsup;", [ 8835, 8402 ] ),
+    entity( "&vopf;", [ 120167, 0 ] ),
+    entity( "&vprop;", [ 8733, 0 ] ),
+    entity( "&vrtri;", [ 8883, 0 ] ),
+    entity( "&vscr;", [ 120011, 0 ] ),
+    entity( "&vsubnE;", [ 10955, 65024 ] ),
+    entity( "&vsubne;", [ 8842, 65024 ] ),
+    entity( "&vsupnE;", [ 10956, 65024 ] ),
+    entity( "&vsupne;", [ 8843, 65024 ] ),
+    entity( "&vzigzag;", [ 10650, 0 ] ),
+    entity( "&wcirc;", [ 373, 0 ] ),
+    entity( "&wedbar;", [ 10847, 0 ] ),
+    entity( "&wedge;", [ 8743, 0 ] ),
+    entity( "&wedgeq;", [ 8793, 0 ] ),
+    entity( "&weierp;", [ 8472, 0 ] ),
+    entity( "&wfr;", [ 120116, 0 ] ),
+    entity( "&wopf;", [ 120168, 0 ] ),
+    entity( "&wp;", [ 8472, 0 ] ),
+    entity( "&wr;", [ 8768, 0 ] ),
+    entity( "&wreath;", [ 8768, 0 ] ),
+    entity( "&wscr;", [ 120012, 0 ] ),
+    entity( "&xcap;", [ 8898, 0 ] ),
+    entity( "&xcirc;", [ 9711, 0 ] ),
+    entity( "&xcup;", [ 8899, 0 ] ),
+    entity( "&xdtri;", [ 9661, 0 ] ),
+    entity( "&xfr;", [ 120117, 0 ] ),
+    entity( "&xhArr;", [ 10234, 0 ] ),
+    entity( "&xharr;", [ 10231, 0 ] ),
+    entity( "&xi;", [ 958, 0 ] ),
+    entity( "&xlArr;", [ 10232, 0 ] ),
+    entity( "&xlarr;", [ 10229, 0 ] ),
+    entity( "&xmap;", [ 10236, 0 ] ),
+    entity( "&xnis;", [ 8955, 0 ] ),
+    entity( "&xodot;", [ 10752, 0 ] ),
+    entity( "&xopf;", [ 120169, 0 ] ),
+    entity( "&xoplus;", [ 10753, 0 ] ),
+    entity( "&xotime;", [ 10754, 0 ] ),
+    entity( "&xrArr;", [ 10233, 0 ] ),
+    entity( "&xrarr;", [ 10230, 0 ] ),
+    entity( "&xscr;", [ 120013, 0 ] ),
+    entity( "&xsqcup;", [ 10758, 0 ] ),
+    entity( "&xuplus;", [ 10756, 0 ] ),
+    entity( "&xutri;", [ 9651, 0 ] ),
+    entity( "&xvee;", [ 8897, 0 ] ),
+    entity( "&xwedge;", [ 8896, 0 ] ),
+    entity( "&yacute;", [ 253, 0 ] ),
+    entity( "&yacy;", [ 1103, 0 ] ),
+    entity( "&ycirc;", [ 375, 0 ] ),
+    entity( "&ycy;", [ 1099, 0 ] ),
+    entity( "&yen;", [ 165, 0 ] ),
+    entity( "&yfr;", [ 120118, 0 ] ),
+    entity( "&yicy;", [ 1111, 0 ] ),
+    entity( "&yopf;", [ 120170, 0 ] ),
+    entity( "&yscr;", [ 120014, 0 ] ),
+    entity( "&yucy;", [ 1102, 0 ] ),
+    entity( "&yuml;", [ 255, 0 ] ),
+    entity( "&zacute;", [ 378, 0 ] ),
+    entity( "&zcaron;", [ 382, 0 ] ),
+    entity( "&zcy;", [ 1079, 0 ] ),
+    entity( "&zdot;", [ 380, 0 ] ),
+    entity( "&zeetrf;", [ 8488, 0 ] ),
+    entity( "&zeta;", [ 950, 0 ] ),
+    entity( "&zfr;", [ 120119, 0 ] ),
+    entity( "&zhcy;", [ 1078, 0 ] ),
+    entity( "&zigrarr;", [ 8669, 0 ] ),
+    entity( "&zopf;", [ 120171, 0 ] ),
+    entity( "&zscr;", [ 120015, 0 ] ),
+    entity( "&zwj;", [ 8205, 0 ] ),
+    entity( "&zwnj;", [ 8204, 0 ] ),
+];
+
+
+struct entity_key 
+{
+    const(char)* name;
+    size_t name_size;
+}
+
+extern(C) int entity_cmp(const(void)* p_key, const(void)* p_entity)
+{
+    entity_key* key = cast(entity_key*) p_key;
+    entity* ent = cast(entity*) p_entity;
+    return strncmp(key.name, ent.name, key.name_size);
+}
+
+const(entity)* entity_lookup(const(char)* name, size_t name_size)
+{
+    entity_key key = entity_key(name, name_size);
+    const(void)* result = bsearch(&key, cast(const(void)*)entity_table.ptr, entity_table.length, entity.sizeof, &entity_cmp);
+    return cast(const(entity)*)result;
+}
+
+//
+// HTML RENDERING
+//
+
+/* If set, debug output from md_parse() is sent to stderr. */
+enum MD_RENDER_FLAG_DEBUG = 0x0001;
+enum MD_RENDER_FLAG_VERBATIM_ENTITIES = 0x0002;
+
+
+struct MD_RENDER_HTML 
+{
+    void function(const(MD_CHAR)*, MD_SIZE, void*) process_output;
+    void* userdata;
+    uint flags;
+    int image_nesting_level;
+    char[256] escape_map;
+}
+
+
+/*****************************************
+ ***  HTML rendering helper functions  ***
+ *****************************************/
+
+/*
+#define ISDIGIT(ch)     
+#define ISLOWER(ch)     
+#define ISUPPER(ch)     
+*/
+bool ISALNUM_HTML(CHAR ch)
+{
+    return ('a' <= ch && ch <= 'z') || ('A' <= ch && ch <= 'Z') || ('0' <= ch && ch <= '9');
+}
+
+void render_text(MD_RENDER_HTML* r, const(MD_CHAR)* text, MD_SIZE size)
+{
+    r.process_output(text, size, r.userdata);
+}
+
+void RENDER_LITERAL(MD_RENDER_HTML* r, const(MD_CHAR)* literal)
+{
+    render_text(r, literal, cast(uint) strlen(literal));
+}
+
+/* Some characters need to be escaped in normal HTML text. */
+bool HTML_NEED_ESCAPE(MD_RENDER_HTML* r, CHAR ch)
+{
+    return (r.escape_map[cast(ubyte)(ch)] != 0);
+}
+
+void render_html_escaped(MD_RENDER_HTML* r, const MD_CHAR* data, MD_SIZE size)
+{
+    MD_OFFSET beg = 0;
+    MD_OFFSET off = 0;    
+
+    while(1) {
+        /* Optimization: Use some loop unrolling. */
+        while(off + 3 < size  &&  !HTML_NEED_ESCAPE(r, data[off+0])  &&  !HTML_NEED_ESCAPE(r, data[off+1])
+                              &&  !HTML_NEED_ESCAPE(r, data[off+2])  &&  !HTML_NEED_ESCAPE(r, data[off+3]))
+            off += 4;
+        while(off < size  &&  !HTML_NEED_ESCAPE(r, data[off]))
+            off++;
+
+        if(off > beg)
+            render_text(r, data + beg, off - beg);
+
+        if(off < size) {
+            switch(data[off]) {
+                case '&':   RENDER_LITERAL(r, "&amp;"); break;
+                case '<':   RENDER_LITERAL(r, "&lt;"); break;
+                case '>':   RENDER_LITERAL(r, "&gt;"); break;
+                case '"':   RENDER_LITERAL(r, "&quot;"); break;
+                default: break;
+            }
+            off++;
+        } else {
+            break;
+        }
+        beg = off;
+    }
+}
+
+
+bool URL_NEED_ESCAPE(CHAR ch)
+{
+    return (!ISALNUM_HTML(ch) && strchr("-_.+!*'(),%#@?=;:/,+$", ch) == null);
+}
+
+void render_url_escaped(MD_RENDER_HTML* r, const MD_CHAR* data, MD_SIZE size)
+{
+    static immutable(MD_CHAR)[] hex_chars = "0123456789ABCDEF";
+    MD_OFFSET beg = 0;
+    MD_OFFSET off = 0;
+
+    while(1) {
+        while(off < size  &&  !URL_NEED_ESCAPE(data[off]))
+            off++;
+        if(off > beg)
+            render_text(r, data + beg, off - beg);
+
+        if(off < size) {
+            char[3] hex;
+
+            switch(data[off]) {
+                case '&':   RENDER_LITERAL(r, "&amp;"); break;
+                case '\'':  RENDER_LITERAL(r, "&#x27;"); break;
+                default:
+                    hex[0] = '%';
+                    hex[1] = hex_chars[(cast(uint)data[off] >> 4) & 0xf];
+                    hex[2] = hex_chars[(cast(uint)data[off] >> 0) & 0xf];
+                    render_text(r, hex.ptr, 3);
+                    break;
+            }
+            off++;
+        } else {
+            break;
+        }
+
+        beg = off;
+    }
+}
+
+uint hex_val(char ch)
+{
+    if('0' <= ch && ch <= '9')
+        return ch - '0';
+    if('A' <= ch && ch <= 'Z')
+        return ch - 'A' + 10;
+    else
+        return ch - 'a' + 10;
+}
+
+void render_utf8_codepoint(MD_RENDER_HTML* r, uint codepoint,
+                          void function(MD_RENDER_HTML*, const(MD_CHAR)*, MD_SIZE) fn_append)
+{
+    static immutable(MD_CHAR)[] utf8_replacement_char = [ 0xef, 0xbf, 0xbd ];
+
+    char[4] utf8;
+    size_t n;
+
+    if(codepoint <= 0x7f) {
+        n = 1;
+        utf8[0] = cast(ubyte) codepoint;
+    } else if(codepoint <= 0x7ff) {
+        n = 2;
+        utf8[0] = 0xc0 | ((codepoint >>  6) & 0x1f);
+        utf8[1] = 0x80 + ((codepoint >>  0) & 0x3f);
+    } else if(codepoint <= 0xffff) {
+        n = 3;
+        utf8[0] = 0xe0 | ((codepoint >> 12) & 0xf);
+        utf8[1] = 0x80 + ((codepoint >>  6) & 0x3f);
+        utf8[2] = 0x80 + ((codepoint >>  0) & 0x3f);
+    } else {
+        n = 4;
+        utf8[0] = 0xf0 | ((codepoint >> 18) & 0x7);
+        utf8[1] = 0x80 + ((codepoint >> 12) & 0x3f);
+        utf8[2] = 0x80 + ((codepoint >>  6) & 0x3f);
+        utf8[3] = 0x80 + ((codepoint >>  0) & 0x3f);
+    }
+
+    if(0 < codepoint  &&  codepoint <= 0x10ffff)
+        fn_append(r, utf8.ptr, cast(uint)n);
+    else
+        fn_append(r, utf8_replacement_char.ptr, 3);
+}
+
+/* Translate entity to its UTF-8 equivalent, or output the verbatim one
+ * if such entity is unknown (or if the translation is disabled). */
+void render_entity(MD_RENDER_HTML* r, const(MD_CHAR)* text, MD_SIZE size,
+                   void function(MD_RENDER_HTML*, const(MD_CHAR)*, MD_SIZE) fn_append)
+{
+    if(r.flags & MD_RENDER_FLAG_VERBATIM_ENTITIES) {
+        fn_append(r, text, size);
+        return;
+    }
+
+    /* We assume UTF-8 output is what is desired. */
+    if(size > 3 && text[1] == '#') {
+        uint codepoint = 0;
+
+        if(text[2] == 'x' || text[2] == 'X') {
+            /* Hexadecimal entity (e.g. "&#x1234abcd;")). */
+            MD_SIZE i;
+            for(i = 3; i < size-1; i++)
+                codepoint = 16 * codepoint + hex_val(text[i]);
+        } else {
+            /* Decimal entity (e.g. "&1234;") */
+            MD_SIZE i;
+            for(i = 2; i < size-1; i++)
+                codepoint = 10 * codepoint + (text[i] - '0');
+        }
+
+        render_utf8_codepoint(r, codepoint, fn_append);
+        return;
+    } else {
+        /* Named entity (e.g. "&nbsp;"). */
+        const(entity)* ent;
+
+        ent = entity_lookup(text, size);
+        if(ent != null) {
+            render_utf8_codepoint(r, ent.codepoints[0], fn_append);
+            if(ent.codepoints[1])
+                render_utf8_codepoint(r, ent.codepoints[1], fn_append);
+            return;
+        }
+    }
+
+    fn_append(r, text, size);
+}
+
+void render_attribute(MD_RENDER_HTML* r, const MD_ATTRIBUTE* attr,
+                      void function(MD_RENDER_HTML*, const(MD_CHAR)*, MD_SIZE) fn_append)
+{
+    int i;
+
+    for(i = 0; attr.substr_offsets[i] < attr.size; i++) {
+        MD_TEXTTYPE type = attr.substr_types[i];
+        MD_OFFSET off = attr.substr_offsets[i];
+        MD_SIZE size = attr.substr_offsets[i+1] - off;
+        const MD_CHAR* text = attr.text + off;
+
+        switch(type) {
+            case MD_TEXT_NULLCHAR:  render_utf8_codepoint(r, 0x0000, &render_text); break;
+            case MD_TEXT_ENTITY:    render_entity(r, text, size, fn_append); break;
+            default:                fn_append(r, text, size); break;
+        }
+    }
+}
+
+
+void render_open_ol_block(MD_RENDER_HTML* r, const(MD_BLOCK_OL_DETAIL)* det)
+{
+    char[64] buf;
+
+    if(det.start == 1) {
+        RENDER_LITERAL(r, "<ol>\n");
+        return;
+    }
+
+    snprintf(buf.ptr, buf.length, "<ol start=\"%u\">\n", det.start);
+    RENDER_LITERAL(r, buf.ptr);
+}
+
+void render_open_li_block(MD_RENDER_HTML* r, const(MD_BLOCK_LI_DETAIL)* det)
+{
+    if(det.is_task) {
+        RENDER_LITERAL(r, "<li class=\"task-list-item\">" ~
+                          "<input type=\"checkbox\" class=\"task-list-item-checkbox\" disabled");
+        if(det.task_mark == 'x' || det.task_mark == 'X')
+            RENDER_LITERAL(r, " checked");
+        RENDER_LITERAL(r, ">");
+    } else {
+        RENDER_LITERAL(r, "<li>");
+    }
+}
+
+void render_open_code_block(MD_RENDER_HTML* r, const(MD_BLOCK_CODE_DETAIL)* det)
+{
+    RENDER_LITERAL(r, "<pre><code");
+
+    /* If known, output the HTML 5 attribute class="language-LANGNAME". */
+    if(det.lang.text != null) {
+        RENDER_LITERAL(r, " class=\"language-");
+        render_attribute(r, &det.lang, &render_html_escaped);
+        RENDER_LITERAL(r, "\"");
+    }
+
+    RENDER_LITERAL(r, ">");
+}
+
+void render_open_td_block(MD_RENDER_HTML* r, const(MD_CHAR)* cell_type, const(MD_BLOCK_TD_DETAIL)* det)
+{
+    RENDER_LITERAL(r, "<");
+    RENDER_LITERAL(r, cell_type);
+
+    switch(det.align_) 
+    {
+        case MD_ALIGN_LEFT:     RENDER_LITERAL(r, " align=\"left\">"); break;
+        case MD_ALIGN_CENTER:   RENDER_LITERAL(r, " align=\"center\">"); break;
+        case MD_ALIGN_RIGHT:    RENDER_LITERAL(r, " align=\"right\">"); break;
+        default:                RENDER_LITERAL(r, ">"); break;
+    }
+}
+
+void render_open_a_span(MD_RENDER_HTML* r, const(MD_SPAN_A_DETAIL)* det)
+{
+    RENDER_LITERAL(r, "<a href=\"");
+    render_attribute(r, &det.href, &render_url_escaped);
+
+    if(det.title.text != null) {
+        RENDER_LITERAL(r, "\" title=\"");
+        render_attribute(r, &det.title, &render_html_escaped);
+    }
+
+    RENDER_LITERAL(r, "\">");
+}
+
+void render_open_img_span(MD_RENDER_HTML* r, const(MD_SPAN_IMG_DETAIL)* det)
+{
+    RENDER_LITERAL(r, "<img src=\"");
+    render_attribute(r, &det.src, &render_url_escaped);
+
+    RENDER_LITERAL(r, "\" alt=\"");
+
+    r.image_nesting_level++;
+}
+
+void render_close_img_span(MD_RENDER_HTML* r, const(MD_SPAN_IMG_DETAIL)* det)
+{
+    if(det.title.text != null) {
+        RENDER_LITERAL(r, "\" title=\"");
+        render_attribute(r, &det.title, &render_html_escaped);
+    }
+    RENDER_LITERAL(r, "\">");
+    r.image_nesting_level--;
+}
+
+
+/**************************************
+ ***  HTML renderer implementation  ***
+ **************************************/
+
+int enter_block_callback(MD_BLOCKTYPE type, void* detail, void* userdata)
+{
+    static immutable(MD_CHAR)*[6] head = [ "<h1>", "<h2>", "<h3>", "<h4>", "<h5>", "<h6>" ];
+    MD_RENDER_HTML* r = cast(MD_RENDER_HTML*) userdata;
+
+    switch(type) 
+    {
+        case MD_BLOCK_DOC:      /* noop */ break;
+        case MD_BLOCK_QUOTE:    RENDER_LITERAL(r, "<blockquote>\n"); break;
+        case MD_BLOCK_UL:       RENDER_LITERAL(r, "<ul>\n"); break;
+        case MD_BLOCK_OL:       render_open_ol_block(r, cast(const(MD_BLOCK_OL_DETAIL)*)detail); break;
+        case MD_BLOCK_LI:       render_open_li_block(r, cast(const(MD_BLOCK_LI_DETAIL)*)detail); break;
+        case MD_BLOCK_HR:       RENDER_LITERAL(r, "<hr>\n"); break;
+        case MD_BLOCK_H:        RENDER_LITERAL(r, head[(cast(MD_BLOCK_H_DETAIL*)detail).level - 1]); break;
+        case MD_BLOCK_CODE:     render_open_code_block(r, cast(const(MD_BLOCK_CODE_DETAIL)*) detail); break;
+        case MD_BLOCK_HTML:     /* noop */ break;
+        case MD_BLOCK_P:        RENDER_LITERAL(r, "<p>"); break;
+        case MD_BLOCK_TABLE:    RENDER_LITERAL(r, "<table>\n"); break;
+        case MD_BLOCK_THEAD:    RENDER_LITERAL(r, "<thead>\n"); break;
+        case MD_BLOCK_TBODY:    RENDER_LITERAL(r, "<tbody>\n"); break;
+        case MD_BLOCK_TR:       RENDER_LITERAL(r, "<tr>\n"); break;
+        case MD_BLOCK_TH:       render_open_td_block(r, "th", cast(MD_BLOCK_TD_DETAIL*)detail); break;
+        case MD_BLOCK_TD:       render_open_td_block(r, "td", cast(MD_BLOCK_TD_DETAIL*)detail); break;
+        default: assert(false);
+    }
+
+    return 0;
+}
+
+int leave_block_callback(MD_BLOCKTYPE type, void* detail, void* userdata)
+{
+    static immutable(MD_CHAR)*[6] head = [ "</h1>\n", "</h2>\n", "</h3>\n", "</h4>\n", "</h5>\n", "</h6>\n" ];
+    MD_RENDER_HTML* r = cast(MD_RENDER_HTML*) userdata;
+
+    switch(type) {
+        case MD_BLOCK_DOC:      /*noop*/ break;
+        case MD_BLOCK_QUOTE:    RENDER_LITERAL(r, "</blockquote>\n"); break;
+        case MD_BLOCK_UL:       RENDER_LITERAL(r, "</ul>\n"); break;
+        case MD_BLOCK_OL:       RENDER_LITERAL(r, "</ol>\n"); break;
+        case MD_BLOCK_LI:       RENDER_LITERAL(r, "</li>\n"); break;
+        case MD_BLOCK_HR:       /*noop*/ break;
+        case MD_BLOCK_H:        RENDER_LITERAL(r, head[(cast(MD_BLOCK_H_DETAIL*)detail).level - 1]); break;
+        case MD_BLOCK_CODE:     RENDER_LITERAL(r, "</code></pre>\n"); break;
+        case MD_BLOCK_HTML:     /* noop */ break;
+        case MD_BLOCK_P:        RENDER_LITERAL(r, "</p>\n"); break;
+        case MD_BLOCK_TABLE:    RENDER_LITERAL(r, "</table>\n"); break;
+        case MD_BLOCK_THEAD:    RENDER_LITERAL(r, "</thead>\n"); break;
+        case MD_BLOCK_TBODY:    RENDER_LITERAL(r, "</tbody>\n"); break;
+        case MD_BLOCK_TR:       RENDER_LITERAL(r, "</tr>\n"); break;
+        case MD_BLOCK_TH:       RENDER_LITERAL(r, "</th>\n"); break;
+        case MD_BLOCK_TD:       RENDER_LITERAL(r, "</td>\n"); break;
+        default: assert(false);
+    }
+
+    return 0;
+}
+
+int enter_span_callback(MD_SPANTYPE type, void* detail, void* userdata)
+{
+    MD_RENDER_HTML* r = cast(MD_RENDER_HTML*) userdata;
+
+    if(r.image_nesting_level > 0) {
+        /* We are inside an image, i.e. rendering the ALT attribute of
+         * <IMG> tag. */
+        return 0;
+    }
+
+    switch(type) {
+        case MD_SPAN_EM:                RENDER_LITERAL(r, "<em>"); break;
+        case MD_SPAN_STRONG:            RENDER_LITERAL(r, "<strong>"); break;
+        case MD_SPAN_A:                 render_open_a_span(r, cast(MD_SPAN_A_DETAIL*) detail); break;
+        case MD_SPAN_IMG:               render_open_img_span(r, cast(MD_SPAN_IMG_DETAIL*) detail); break;
+        case MD_SPAN_CODE:              RENDER_LITERAL(r, "<code>"); break;
+        case MD_SPAN_DEL:               RENDER_LITERAL(r, "<del>"); break;
+        case MD_SPAN_LATEXMATH:         RENDER_LITERAL(r, "<equation>"); break;
+        case MD_SPAN_LATEXMATH_DISPLAY: RENDER_LITERAL(r, "<equation type=\"display\">"); break;
+        default: assert(false);
+    }
+
+    return 0;
+}
+
+int leave_span_callback(MD_SPANTYPE type, void* detail, void* userdata)
+{
+    MD_RENDER_HTML* r = cast(MD_RENDER_HTML*) userdata;
+
+    if(r.image_nesting_level > 0) {
+        /* We are inside an image, i.e. rendering the ALT attribute of
+         * <IMG> tag. */
+        if(r.image_nesting_level == 1  &&  type == MD_SPAN_IMG)
+            render_close_img_span(r, cast(MD_SPAN_IMG_DETAIL*) detail);
+        return 0;
+    }
+
+    switch(type) {
+        case MD_SPAN_EM:                RENDER_LITERAL(r, "</em>"); break;
+        case MD_SPAN_STRONG:            RENDER_LITERAL(r, "</strong>"); break;
+        case MD_SPAN_A:                 RENDER_LITERAL(r, "</a>"); break;
+        case MD_SPAN_IMG:               /*noop, handled above*/ break;
+        case MD_SPAN_CODE:              RENDER_LITERAL(r, "</code>"); break;
+        case MD_SPAN_DEL:               RENDER_LITERAL(r, "</del>"); break;
+        case MD_SPAN_LATEXMATH:         /*fall through*/
+        case MD_SPAN_LATEXMATH_DISPLAY: RENDER_LITERAL(r, "</equation>"); break;
+        default: assert(false);
+    }
+
+    return 0;
+}
+
+int text_callback(MD_TEXTTYPE type, const(MD_CHAR)* text, MD_SIZE size, void* userdata)
+{
+    MD_RENDER_HTML* r = cast(MD_RENDER_HTML*) userdata;
+
+    switch(type) {
+        case MD_TEXT_NULLCHAR:  render_utf8_codepoint(r, 0x0000, &render_text); break;
+        case MD_TEXT_BR:        RENDER_LITERAL(r, (r.image_nesting_level == 0 ? "<br>\n" : " ")); break;
+        case MD_TEXT_SOFTBR:    RENDER_LITERAL(r, (r.image_nesting_level == 0 ? "\n" : " ")); break;
+        case MD_TEXT_HTML:      render_text(r, text, size); break;
+        case MD_TEXT_ENTITY:    render_entity(r, text, size, &render_html_escaped); break;
+        default:                render_html_escaped(r, text, size); break;
+    }
+
+    return 0;
+}
+
+static void
+debug_log_callback(const char* msg, void* userdata)
+{
+    MD_RENDER_HTML* r = cast(MD_RENDER_HTML*) userdata;
+    if(r.flags & MD_RENDER_FLAG_DEBUG)
+        fprintf(stderr, "MD4C: %s\n", msg);
+}
+
+
+/* Render Markdown into HTML.
+ *
+ * Note only contents of <body> tag is generated. Caller must generate
+ * HTML header/footer manually before/after calling md_render_html().
+ *
+ * Params input and input_size specify the Markdown input.
+ * Callback process_output() gets called with chunks of HTML output.
+ * (Typical implementation may just output the bytes to file or append to
+ * some buffer).
+ * Param userdata is just propagated back to process_output() callback.
+ * Param parser_flags are flags from md4c.h propagated to md_parse().
+ * Param render_flags is bitmask of MD_RENDER_FLAG_xxxx.
+ *
+ * Returns -1 on error (if md_parse() fails.)
+ * Returns 0 on success.
+ */
+int md_render_html(const(MD_CHAR)* input, MD_SIZE input_size,
+                   void function(const(MD_CHAR)*, MD_SIZE, void*) process_output,
+                   void* userdata, uint parser_flags, uint renderer_flags)
+{
+    MD_RENDER_HTML render = MD_RENDER_HTML(process_output, userdata, renderer_flags, 0);
+    render.escape_map[] = '\x00';
+
+    MD_PARSER parser = MD_PARSER(
+        0,
+        parser_flags,
+        &enter_block_callback,
+        &leave_block_callback,
+        &enter_span_callback,
+        &leave_span_callback,
+        &text_callback,
+        &debug_log_callback,
+        null
+    );
+
+    render.escape_map['"'] = 1;
+    render.escape_map['&'] = 1;
+    render.escape_map['<'] = 1;
+    render.escape_map['>'] = 1;
+
+    return md_parse(input, input_size, &parser, cast(void*) &render);
+}
+

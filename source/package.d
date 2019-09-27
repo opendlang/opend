@@ -1,6 +1,35 @@
 module commonmarkd;
 
-import commonmarkd.parser;
+/// Parses CommonMark input, returns HTML.
+/// The only public function of the package!
+string convertCommonMarkToHTML(const(char)[] input)
+{
+    import commonmarkd.md4c;
+
+    static struct GrowableBuffer
+    {
+        string data;
+
+        void append(const(char)[] suffix)
+        {
+            data ~= suffix;
+        }
+        
+        static void appendCallback(const(char)* chars, uint size, void* userData)
+        {
+            GrowableBuffer* gb = cast(GrowableBuffer*) userData;
+            gb.append(chars[0..size]);
+        }
+    }
+
+    GrowableBuffer gb;
+
+    int ret = md_render_html(input.ptr, 
+                             cast(uint) input.length,
+                             &GrowableBuffer.appendCallback,
+                             &gb, 0, 0);
+    return gb.data;
+}
 
 // Execute the CommonMark specification test suite
 unittest
