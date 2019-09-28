@@ -4953,9 +4953,8 @@ md_process_code_block_contents(MD_CTX* ctx, int is_fenced, const(MD_VERBATIMLINE
     return md_process_verbatim_block_contents(ctx, MD_TEXT_CODE, lines, n_lines);
 }
 
-static int
-md_setup_fenced_code_detail(MD_CTX* ctx, const MD_BLOCK* block, MD_BLOCK_CODE_DETAIL* det,
-                            MD_ATTRIBUTE_BUILD* info_build, MD_ATTRIBUTE_BUILD* lang_build)
+int md_setup_fenced_code_detail(MD_CTX* ctx, const(MD_BLOCK)* block, MD_BLOCK_CODE_DETAIL* det,
+                                MD_ATTRIBUTE_BUILD* info_build, MD_ATTRIBUTE_BUILD* lang_build)
 {
     const(MD_VERBATIMLINE)* fence_line = cast(const(MD_VERBATIMLINE)*)(block + 1);
     OFF beg = fence_line.beg;
@@ -5642,22 +5641,22 @@ int md_is_html_block_start_condition(MD_CTX* ctx, OFF beg)
     map6[7] = h6.ptr;
     map6[8] = i6.ptr;
     map6[9] = xx.ptr;
-    map6[0] = xx.ptr;
-    map6[1] = l6.ptr;
-    map6[2] = m6.ptr;
-    map6[3] = n6.ptr;
-    map6[4] = o6.ptr;
-    map6[5] = p6.ptr;
-    map6[6] = xx.ptr;
-    map6[7] = xx.ptr;
-    map6[8] = s6.ptr;
-    map6[9] = t6.ptr;
-    map6[0] = u6.ptr;
-    map6[1] = xx.ptr;
-    map6[2] = xx.ptr;
-    map6[3] = xx.ptr;
-    map6[4] = xx.ptr;
-    map6[5] = xx.ptr;
+    map6[10] = xx.ptr;
+    map6[11] = l6.ptr;
+    map6[12] = m6.ptr;
+    map6[13] = n6.ptr;
+    map6[14] = o6.ptr;
+    map6[15] = p6.ptr;
+    map6[16] = xx.ptr;
+    map6[17] = xx.ptr;
+    map6[18] = s6.ptr;
+    map6[19] = t6.ptr;
+    map6[20] = u6.ptr;
+    map6[21] = xx.ptr;
+    map6[22] = xx.ptr;
+    map6[23] = xx.ptr;
+    map6[24] = xx.ptr;
+    map6[25] = xx.ptr;
 
     OFF off = beg + 1;
     int i;
@@ -8860,6 +8859,7 @@ const(entity)* entity_lookup(const(char)* name, size_t name_size)
 
 /* If set, debug output from md_parse() is sent to stderr. */
 enum MD_RENDER_FLAG_DEBUG = 0x0001;
+
 enum MD_RENDER_FLAG_VERBATIM_ENTITIES = 0x0002;
 
 
@@ -9187,7 +9187,7 @@ int enter_block_callback(MD_BLOCKTYPE type, void* detail, void* userdata)
         case MD_BLOCK_UL:       RENDER_LITERAL(r, "<ul>\n"); break;
         case MD_BLOCK_OL:       render_open_ol_block(r, cast(const(MD_BLOCK_OL_DETAIL)*)detail); break;
         case MD_BLOCK_LI:       render_open_li_block(r, cast(const(MD_BLOCK_LI_DETAIL)*)detail); break;
-        case MD_BLOCK_HR:       RENDER_LITERAL(r, "<hr>\n"); break;
+        case MD_BLOCK_HR:       RENDER_LITERAL(r, "<hr />\n"); break;
         case MD_BLOCK_H:        RENDER_LITERAL(r, head[(cast(MD_BLOCK_H_DETAIL*)detail).level - 1]); break;
         case MD_BLOCK_CODE:     render_open_code_block(r, cast(const(MD_BLOCK_CODE_DETAIL)*) detail); break;
         case MD_BLOCK_HTML:     /* noop */ break;
@@ -9290,7 +9290,7 @@ int text_callback(MD_TEXTTYPE type, const(MD_CHAR)* text, MD_SIZE size, void* us
 
     switch(type) {
         case MD_TEXT_NULLCHAR:  render_utf8_codepoint(r, 0x0000, &render_text); break;
-        case MD_TEXT_BR:        RENDER_LITERAL(r, (r.image_nesting_level == 0 ? "<br>\n" : " ")); break;
+        case MD_TEXT_BR:        RENDER_LITERAL(r, (r.image_nesting_level == 0 ? "<br />\n" : " ")); break;
         case MD_TEXT_SOFTBR:    RENDER_LITERAL(r, (r.image_nesting_level == 0 ? "\n" : " ")); break;
         case MD_TEXT_HTML:      render_text(r, text, size); break;
         case MD_TEXT_ENTITY:    render_entity(r, text, size, &render_html_escaped); break;
@@ -9300,8 +9300,7 @@ int text_callback(MD_TEXTTYPE type, const(MD_CHAR)* text, MD_SIZE size, void* us
     return 0;
 }
 
-static void
-debug_log_callback(const char* msg, void* userdata)
+void debug_log_callback(const(char)* msg, void* userdata)
 {
     MD_RENDER_HTML* r = cast(MD_RENDER_HTML*) userdata;
     if(r.flags & MD_RENDER_FLAG_DEBUG)
