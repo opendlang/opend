@@ -1,3 +1,4 @@
 {
-    "name": "commonmark-d"
+    "name": "commonmark-d",
+    "comment-targetType": "executable"
 }

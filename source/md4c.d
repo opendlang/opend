@@ -542,7 +542,7 @@ struct MD_LINE_ANALYSIS
 
     int data() const
     {
-        return type_;
+        return data_;
     }
 
     void data(uint value)
@@ -5810,7 +5810,7 @@ int md_is_html_block_end_condition(MD_CTX* ctx, OFF beg, OFF* p_end)
         }
 
         case 2:
-            return (md_line_contains(ctx, beg, "-.", 3, p_end) ? 2 : FALSE);
+            return (md_line_contains(ctx, beg, "-->", 3, p_end) ? 2 : FALSE);
 
         case 3:
             return (md_line_contains(ctx, beg, "?>", 2, p_end) ? 3 : FALSE);

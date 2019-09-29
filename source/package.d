@@ -32,9 +32,6 @@ enum MarkdownFlag : int
     dialectGitHub              = (permissiveAutoLinks | tablesExtension | enableStrikeThrough | enableTaskLists),
 }
 
-//debug = debugOutput;
-
-
 /// Parses CommonMark input, returns HTML.
 /// The only public function of the package!
 string convertCommonMarkToHTML(const(char)[] input, MarkdownFlag flags = MarkdownFlag.dialectCommonMark)
@@ -59,10 +56,8 @@ string convertCommonMarkToHTML(const(char)[] input, MarkdownFlag flags = Markdow
 
     GrowableBuffer gb;
 
-    debug(debugOutput)
-        int renderFlags = MD_RENDER_FLAG_DEBUG;
-    else
-        int renderFlags = 0;
+    //int renderFlags = MD_RENDER_FLAG_DEBUG;
+    int renderFlags = 0;
 
     int ret = md_render_html(input.ptr, 
                              cast(uint) input.length,
@@ -73,6 +68,7 @@ string convertCommonMarkToHTML(const(char)[] input, MarkdownFlag flags = Markdow
 
 // Execute the CommonMark specification test suite
 unittest
+//void main()
 {
     import std.file;
     import std.json;
@@ -111,6 +107,10 @@ unittest
         // on which system CommonMark test suite has been generated.
         html = html.replace("\r\n", "\n");
         expectedHTML = expectedHTML.replace("\r\n", "\n");
+
+        // Poor attempt at HTML normalization
+        html = html.replace("\n", "");
+        expectedHTML = expectedHTML.replace("\n", "");
 
         if ( html == expectedHTML )
         {
