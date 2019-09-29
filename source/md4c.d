@@ -1920,7 +1920,27 @@ struct MD_REF_DEF_LIST
 {
     int n_ref_defs;
     int alloc_ref_defs;
-    MD_REF_DEF** ref_defs;  /* Valid items always  point into ctx.ref_defs[] */
+
+    /* Valid items always point into ctx.ref_defs[] */
+    MD_REF_DEF* ref_defs_space; // Starting here, a list of pointer at the end of the struct
+
+    // To allocate a MD_REF_DEF_LIST
+    static size_t SIZEOF(int numDefRefs)
+    {
+        return 8 + (MD_REF_DEF*).sizeof * numDefRefs;
+    }
+
+    // Returns: a slice of ref defs embedded at the end of the struct
+    static MD_REF_DEF*[] refDefs(MD_REF_DEF_LIST* list)
+    {
+        return (&(list.ref_defs_space))[0..list.n_ref_defs];
+    }
+
+    ref MD_REF_DEF* ref_defs_nth(size_t index)
+    {
+        MD_REF_DEF** base = &ref_defs_space;
+        return base[index];
+    }
 }
 
 extern(C) int md_ref_def_cmp(const(void)* a, const void* b)
@@ -2004,13 +2024,13 @@ int md_build_ref_def_hashtable(MD_CTX* ctx)
             }
 
             /* Make the bucket capable of holding more ref. defs. */
-            list = cast(MD_REF_DEF_LIST*) malloc(MD_REF_DEF_LIST.sizeof + 4 * MD_REF_DEF.sizeof);
+            list = cast(MD_REF_DEF_LIST*) malloc(MD_REF_DEF_LIST.SIZEOF(4));
             if(list == null) {
                 ctx.MD_LOG("malloc() failed.");
                 goto abort;
             }
-            list.ref_defs[0] = old_def;
-            list.ref_defs[1] = def;
+            list.ref_defs_nth(0) = old_def;
+            list.ref_defs_nth(1) = def;
             list.n_ref_defs = 2;
             list.alloc_ref_defs = 4;
             ctx.ref_def_hashtable[def.hash % ctx.ref_def_hashtable_size] = list;
@@ -2020,8 +2040,7 @@ int md_build_ref_def_hashtable(MD_CTX* ctx)
         /* Append the def to the bucket list. */
         list = cast(MD_REF_DEF_LIST*) bucket;
         if(list.n_ref_defs >= list.alloc_ref_defs) {
-            MD_REF_DEF_LIST* list_tmp = cast(MD_REF_DEF_LIST*) realloc(list,
-                        MD_REF_DEF_LIST.sizeof + 2 * list.alloc_ref_defs * MD_REF_DEF.sizeof);
+            MD_REF_DEF_LIST* list_tmp = cast(MD_REF_DEF_LIST*) realloc(list, MD_REF_DEF_LIST.SIZEOF( 2 * list.alloc_ref_defs ));
             if(list_tmp == null) {
                 ctx.MD_LOG("realloc() failed.");
                 goto abort;
@@ -2031,7 +2050,7 @@ int md_build_ref_def_hashtable(MD_CTX* ctx)
             ctx.ref_def_hashtable[def.hash % ctx.ref_def_hashtable_size] = list;
         }
 
-        list.ref_defs[list.n_ref_defs] = def;
+        list.ref_defs_nth(list.n_ref_defs) = def;
         list.n_ref_defs++;
     }
 
@@ -2046,12 +2065,12 @@ int md_build_ref_def_hashtable(MD_CTX* ctx)
             continue;
 
         list = cast(MD_REF_DEF_LIST*) bucket;
-        qsort(list.ref_defs, list.n_ref_defs, (MD_REF_DEF*).sizeof, &md_ref_def_cmp_stable);
+        qsort(MD_REF_DEF_LIST.refDefs(list).ptr, list.n_ref_defs, (MD_REF_DEF*).sizeof, &md_ref_def_cmp_stable);
 
         /* Disable duplicates. */
         for(j = 1; j < list.n_ref_defs; j++) {
-            if(md_ref_def_cmp(&list.ref_defs[j-1], &list.ref_defs[j]) == 0)
-                list.ref_defs[j] = list.ref_defs[j-1];
+            if(md_ref_def_cmp(&list.ref_defs_nth(j-1), &list.ref_defs_nth(j)) == 0)
+                list.ref_defs_nth(j) = list.ref_defs_nth(j-1);
         }
     }
 
@@ -2110,7 +2129,7 @@ const(MD_REF_DEF)* md_lookup_ref_def(MD_CTX* ctx, const(CHAR)* label, SZ label_s
         key_buf.label_size = label_size;
         key_buf.hash = md_link_label_hash(key_buf.label, key_buf.label_size);
 
-        ret = cast(const(MD_REF_DEF*)*) bsearch(&key, list.ref_defs,
+        ret = cast(const(MD_REF_DEF*)*) bsearch(&key, MD_REF_DEF_LIST.refDefs(list).ptr,
                     list.n_ref_defs, (MD_REF_DEF*).sizeof, &md_ref_def_cmp);
         if(ret != null)
             return *ret;
