@@ -9185,7 +9185,7 @@ void render_close_img_span(MD_RENDER_HTML* r, const(MD_SPAN_IMG_DETAIL)* det)
         RENDER_LITERAL(r, "\" title=\"");
         render_attribute(r, &det.title, &render_html_escaped);
     }
-    RENDER_LITERAL(r, "\">");
+    RENDER_LITERAL(r, "\" />");
     r.image_nesting_level--;
 }
 

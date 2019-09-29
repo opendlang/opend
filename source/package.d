@@ -77,6 +77,7 @@ unittest
     import std.file;
     import std.json;
     import std.stdio;
+    import std.string;
 
     const(char)[] json = cast(char[]) std.file.read("spec-tests.json");
     JSONValue root = parseJSON(json);
@@ -95,8 +96,6 @@ unittest
         string expectedHTML = test["html"].str;
         long example = test["example"].integer;
 
-        writef("Test %d: ", example);
-
         string html;
         try
         {
@@ -107,9 +106,14 @@ unittest
             html = t.msg;
         }
 
+        // Note: It seems Markdown spec says nothing about what line endings should get generated.
+        // So we replace every \r\n by just \n before comparison, else it create bugs depending
+        // on which system CommonMark test suite has been generated.
+        html = html.replace("\r\n", "\n");
+        expectedHTML = expectedHTML.replace("\r\n", "\n");
+
         if ( html == expectedHTML )
         {
-            writeln("PASS");
             numPASS++;
         }
         else
@@ -117,7 +121,7 @@ unittest
             long start_line = test["start_line"].integer; 
             long end_line = test["end_line"].integer;
             string section = test["section"].str;
-
+            writef("Test %d: ", example);
             writefln("FAIL\n***Markdown:\n\n%s\n\n*** Expected (length %s):\n\n%s\n\n*** Got instead (length %s):\n\n%s\n\nSee specifications lines %d-%d section %s", 
                       markdown, expectedHTML.length, expectedHTML, html.length, html, start_line, end_line, section);
             numFAIL++;
