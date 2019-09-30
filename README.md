@@ -26,13 +26,11 @@ string html = convertMarkdownToHTML(markdown, MarkdownFlag.noHTML);
 
 ## Compile speed
 
-In debug builds, `commonmark-d` is compiled 3x faster than alternatives.
+In debug builds, `commonmark-d` compiles **3x** faster than `dmarkdown` and **40x** faster than `hunt-markdown`.
+
 
 Timing debug build of various Markdown parsers in D:
 ```
-
-
-
 commonmark-d:
 $ time /mnt/c/d/ldc2-1.17.0-windows-multilib/bin/dub.exe -f
 real    0m1.144s
@@ -54,12 +52,10 @@ sys     0m0.016s
 
 ## Runtime speed
 
-At runtime `commonmark-d` is 2x faster than dmarkdown and 15x faster than hunt-markdown (see Benchmark below).
-
-It also builds faster than both.
+`commonmark-d` is **2x** faster than `dmarkdown` and **15x** faster than `hunt-markdown` (see Benchmark below).
 
 
-## Speed Benchmark
+### Benchmark
 
 commonmark-d is benched against dmarkdown and hunt-markdown, on a selection of Markdown blog posts.
 Using LDC 1.0.17, dub -b release-nobounds --combined -a x86_64 ---
@@ -164,6 +160,9 @@ time hunt-markdown = 1204 us, HTML length = 3680
 time commonmark-d  = 65 us, HTML length = 3680
 
 ```
+
+You can reproduce the results in the `bench/` directory.
+
 
 ## Changes versus original parser
 
