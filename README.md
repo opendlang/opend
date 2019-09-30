@@ -52,18 +52,16 @@ sys     0m0.016s
 
 ## Runtime speed
 
-`commonmark-d` is **2x** faster than `dmarkdown` and **15x** faster than `hunt-markdown` (see Benchmark below).
+`commonmark-d` is **2x** faster than `dmarkdown` and **15x** faster than `hunt-markdown` at parsing (see Benchmark below).
 
 
 ### Benchmark
 
-commonmark-d is benched against dmarkdown and hunt-markdown, on a selection of Markdown blog posts.
-Using LDC 1.0.17, dub -b release-nobounds --combined -a x86_64 ---
+Here `commonmark-d` is benched against `dmarkdown` and `hunt-markdown` on a selection of Markdown blog posts.
+Using LDC 1.0.17, `dub -b release-nobounds --combined -a x86_64`.
 
 Output:
-
 ```
-
 *** Parsing file content\2015-04-07_Auburn Sounds website is now live!.md
 time dmarkdown     = 108 us, HTML length = 620
 time hunt-markdown = 1057 us, HTML length = 522
@@ -158,10 +156,9 @@ time commonmark-d  = 130 us, HTML length = 7940
 time dmarkdown     = 131 us, HTML length = 3951
 time hunt-markdown = 1204 us, HTML length = 3680
 time commonmark-d  = 65 us, HTML length = 3680
-
 ```
 
-You can reproduce the results in the `bench/` directory.
+Results can be reproduced with the benchmark tool in the `bench/` directory.
 
 
 ## Changes versus original parser
