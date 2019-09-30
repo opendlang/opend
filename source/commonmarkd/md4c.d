@@ -29,6 +29,9 @@ import core.stdc.stdlib;
 import core.stdc.string;
 import core.stdc.stdio;
 
+nothrow:
+@nogc:
+
 alias MD_CHAR = char;
 alias MD_SIZE = uint;
 alias MD_OFFSET = uint;
@@ -312,6 +315,8 @@ struct MD_SPAN_IMG_DETAIL
  */
 struct MD_PARSER 
 {
+nothrow:
+@nogc:
     /* Reserved. Set to zero.
      */
     uint abi_version;
@@ -393,6 +398,9 @@ enum OPENERS_CHAIN_LAST = 11;
 /* Context propagated through all the parsing. */
 struct MD_CTX 
 {
+nothrow:
+@nogc:
+
     /* Immutable stuff (parameters of md_parse()). */
     const(CHAR)* text;
     SZ size;
@@ -528,6 +536,8 @@ enum : MD_LINETYPE
 
 struct MD_LINE_ANALYSIS 
 {
+nothrow:
+@nogc:
     short type_;
     ushort data_;
 
@@ -1919,6 +1929,9 @@ md_link_label_cmp(const(CHAR)* a_label, SZ a_size, const(CHAR)* b_label, SZ b_si
 
 struct MD_REF_DEF_LIST 
 {
+nothrow:
+@nogc:
+
     int n_ref_defs;
     int alloc_ref_defs;
 
@@ -4842,6 +4855,8 @@ enum MD_BLOCK_SETEXT_HEADER      = 0x08;
 
 struct MD_BLOCK 
 {
+nothrow:
+@nogc:
     ubyte type_;
     ubyte flags_;
     ushort data_;
@@ -4871,6 +4886,9 @@ static assert(MD_BLOCK.sizeof == 8);
 
 struct MD_CONTAINER 
 {
+nothrow:
+@nogc:
+
     CHAR ch;
     
     ubyte is_loose_;
@@ -8885,7 +8903,7 @@ enum MD_RENDER_FLAG_VERBATIM_ENTITIES = 0x0002;
 
 struct MD_RENDER_HTML 
 {
-    void function(const(MD_CHAR)*, MD_SIZE, void*) process_output;
+    void function(const(MD_CHAR)*, MD_SIZE, void*) nothrow @nogc process_output;
     void* userdata;
     uint flags;
     int image_nesting_level;
@@ -9005,8 +9023,10 @@ uint hex_val(char ch)
         return ch - 'a' + 10;
 }
 
+alias appendFunc = nothrow @nogc void function(MD_RENDER_HTML*, const(MD_CHAR)*, MD_SIZE);
+
 void render_utf8_codepoint(MD_RENDER_HTML* r, uint codepoint,
-                          void function(MD_RENDER_HTML*, const(MD_CHAR)*, MD_SIZE) fn_append)
+                           appendFunc fn_append)
 {
     static immutable(MD_CHAR)[] utf8_replacement_char = [ 0xef, 0xbf, 0xbd ];
 
@@ -9042,7 +9062,7 @@ void render_utf8_codepoint(MD_RENDER_HTML* r, uint codepoint,
 /* Translate entity to its UTF-8 equivalent, or output the verbatim one
  * if such entity is unknown (or if the translation is disabled). */
 void render_entity(MD_RENDER_HTML* r, const(MD_CHAR)* text, MD_SIZE size,
-                   void function(MD_RENDER_HTML*, const(MD_CHAR)*, MD_SIZE) fn_append)
+                   appendFunc fn_append)
 {
     if(r.flags & MD_RENDER_FLAG_VERBATIM_ENTITIES) {
         fn_append(r, text, size);
@@ -9084,7 +9104,7 @@ void render_entity(MD_RENDER_HTML* r, const(MD_CHAR)* text, MD_SIZE size,
 }
 
 void render_attribute(MD_RENDER_HTML* r, const MD_ATTRIBUTE* attr,
-                      void function(MD_RENDER_HTML*, const(MD_CHAR)*, MD_SIZE) fn_append)
+                      appendFunc fn_append)
 {
     int i;
 
@@ -9345,7 +9365,7 @@ void debug_log_callback(const(char)* msg, void* userdata)
  * Returns 0 on success.
  */
 int md_render_html(const(MD_CHAR)* input, MD_SIZE input_size,
-                   void function(const(MD_CHAR)*, MD_SIZE, void*) process_output,
+                   void function(const(MD_CHAR)*, MD_SIZE, void*) nothrow @nogc process_output,
                    void* userdata, uint parser_flags, uint renderer_flags)
 {
     MD_RENDER_HTML render = MD_RENDER_HTML(process_output, userdata, renderer_flags, 0);

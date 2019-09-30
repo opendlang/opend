@@ -1,23 +1,23 @@
 module commonmarkd;
 
-
+/// Options for Markdown parsing.
 enum MarkdownFlag : int
 {
-     collapseWhitespace       = 0x0001,  /* Collapse non-trivial whitespace into single ' ' */
-     permissiveATXHeaders     = 0x0002,  /* Do not require space in ATX headers ( ###header ) */
-     permissiveURLAutoLinks   = 0x0004,  /* Recognize URLs as autolinks even without '<', '>' */
-     permissiveEmailAutoLinks = 0x0008,  /* Recognize e-mails as autolinks even without '<', '>' and 'mailto:' */
-     noIndentedCodeBlocks     = 0x0010,  /* Disable indented code blocks. (Only fenced code works.) */
-     noHTMLBlocks             = 0x0020,  /* Disable raw HTML blocks. */
-     noHTMLSpans              = 0x0040,  /* Disable raw HTML (inline). */
-     tablesExtension          = 0x0100,  /* Enable tables extension. */
-     enableStrikeThrough      = 0x0200,  /* Enable strikethrough extension. */
-     permissiveWWWAutoLinks   = 0x0400,  /* Enable WWW autolinks (even without any scheme prefix, if they begin with 'www.') */
-     enableTaskLists          = 0x0800,  /* Enable task list extension. */
-     latexMathSpans           = 0x1000,  /* Enable $ and $$ containing LaTeX equations. */
+     collapseWhitespace       = 0x0001,  /** Collapse non-trivial whitespace into single ' ' */
+     permissiveATXHeaders     = 0x0002,  /** Do not require space in ATX headers ( ###header ) */
+     permissiveURLAutoLinks   = 0x0004,  /** Recognize URLs as autolinks even without '<', '>' */
+     permissiveEmailAutoLinks = 0x0008,  /** Recognize e-mails as autolinks even without '<', '>' and 'mailto:' */
+     noIndentedCodeBlocks     = 0x0010,  /** Disable indented code blocks. (Only fenced code works.) */
+     noHTMLBlocks             = 0x0020,  /** Disable raw HTML blocks. */
+     noHTMLSpans              = 0x0040,  /** Disable raw HTML (inline). */
+     tablesExtension          = 0x0100,  /** Enable tables extension. */
+     enableStrikeThrough      = 0x0200,  /** Enable strikethrough extension. */
+     permissiveWWWAutoLinks   = 0x0400,  /** Enable WWW autolinks (even without any scheme prefix, if they begin with 'www.') */
+     enableTaskLists          = 0x0800,  /** Enable task list extension. */
+     latexMathSpans           = 0x1000,  /** Enable $ and $$ containing LaTeX equations. */
 
-     permissiveAutoLinks      = permissiveEmailAutoLinks | permissiveURLAutoLinks | permissiveWWWAutoLinks,
-     noHTML                   = noHTMLBlocks | noHTMLSpans,
+     permissiveAutoLinks      = permissiveEmailAutoLinks | permissiveURLAutoLinks | permissiveWWWAutoLinks, /** Recognize e-mails, URL and WWW links */
+     noHTML                   = noHTMLBlocks | noHTMLSpans, /** Disable raw HTML. */
 
     /* Convenient sets of flags corresponding to well-known Markdown dialects.
      *
@@ -28,25 +28,60 @@ enum MarkdownFlag : int
      * ABI compatibility note: Meaning of these can change in time as new
      * extensions, bringing the dialect closer to the original, are implemented.
      */
-    dialectCommonMark          = 0,
-    dialectGitHub              = (permissiveAutoLinks | tablesExtension | enableStrikeThrough | enableTaskLists),
+    dialectCommonMark          = 0, /** CommonMark */
+    dialectGitHub              = (permissiveAutoLinks | tablesExtension | enableStrikeThrough | enableTaskLists), /** Github Flavoured Markdown */
 }
 
-/// Parses CommonMark input, returns HTML.
-/// The only public function of the package!
-string convertCommonMarkToHTML(const(char)[] input, MarkdownFlag flags = MarkdownFlag.dialectCommonMark)
+deprecated("Use convertMarkdownToHTML instead") alias convertCommonMarkToHTML = convertMarkdownToHTML;
+
+/// Parses a Markdown input, returns HTML. `flags` set the particular Markdown dialect that is used.
+string convertMarkdownToHTML(const(char)[] input, MarkdownFlag flags = MarkdownFlag.dialectCommonMark)
 {
     import commonmarkd.md4c;
+    import core.stdc.stdlib;
 
     static struct GrowableBuffer
     {
-        string data;
+    nothrow:
+    @nogc:
+        char* buf = null;
+        size_t size = 0;
+        size_t allocated = 0;
+
+        void ensureSize(size_t atLeastthisSize)
+        {
+            if (atLeastthisSize > allocated)
+            {
+                allocated = 2 * allocated + atLeastthisSize + 1; // TODO: enhancing this estimation probably beneficial to performance
+                buf = cast(char*) realloc(buf, allocated);
+            }
+
+        }
+
+        ~this()
+        {
+            if (buf)
+            {
+                free(buf);
+                buf = null;
+                size = 0;
+                allocated = 0;
+            }
+        }
 
         void append(const(char)[] suffix)
         {
-            data ~= suffix;
+            size_t L = suffix.length;
+            ensureSize(size + L);            
+            buf[size..size+L] = suffix[0..L];
+            size += L;
         }
-        
+
+        const(char)[] getData()
+        {
+            return buf[0..size];
+        }
+
         static void appendCallback(const(char)* chars, uint size, void* userData)
         {
             GrowableBuffer* gb = cast(GrowableBuffer*) userData;
@@ -55,6 +90,7 @@ string convertCommonMarkToHTML(const(char)[] input, MarkdownFlag flags = Markdow
     }
 
     GrowableBuffer gb;
+    gb.ensureSize(input.length); // TODO: enhancing this estimation probably beneficial to performance
 
     //int renderFlags = MD_RENDER_FLAG_DEBUG;
     int renderFlags = 0;
@@ -63,7 +99,7 @@ string convertCommonMarkToHTML(const(char)[] input, MarkdownFlag flags = Markdow
                              cast(uint) input.length,
                              &GrowableBuffer.appendCallback,
                              &gb, flags, renderFlags);
-    return gb.data;
+    return gb.getData.idup; // Note: this is the only GC-using stuff
 }
 
 // Execute the CommonMark specification test suite
@@ -95,7 +131,7 @@ unittest
         string html;
         try
         {
-            html = convertCommonMarkToHTML(markdown, MarkdownFlag.dialectCommonMark);
+            html = convertMarkdownToHTML(markdown, MarkdownFlag.dialectCommonMark);
         }
         catch(Throwable t)
         {
