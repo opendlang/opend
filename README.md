@@ -16,7 +16,6 @@ string html = convertMarkdownToHTML(markdown);
 string html = convertMarkdownToHTML(markdown, MarkdownFlag.dialectGitHub);
 
 // Parse CommonMark without HTML support, generate HTML
-import commonmarkd;
 string html = convertMarkdownToHTML(markdown, MarkdownFlag.noHTML);
 
 
