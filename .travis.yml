@@ -12,8 +12,8 @@ matrix:
     - d: dmd-2.088.0
     - d: dmd-2.087.1
     - d: dmd-2.086.0
-    # - d: ldc-1.17.0
-    # - d: ldc-1.16.0
+    - d: ldc-1.17.0
+    - d: ldc-1.16.0
     - d: ldc-1.15.0
 
 script:
