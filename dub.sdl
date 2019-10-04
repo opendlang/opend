@@ -9,6 +9,7 @@ targetPath "bin"
 configuration "library" {
 }
 
+
 configuration "unittest" {
     targetType "executable"
     targetName "ut"
@@ -24,6 +25,7 @@ configuration "unittest" {
     dependency "test_allocator" version="*"
 }
 
+
 configuration "asan" {
     targetType "executable"
     targetName "asan"
@@ -32,7 +34,8 @@ configuration "asan" {
     sourcePaths "tests"
     mainSourceFile "tests/ut_main.d"
 
-    dflags "-dip25" "-dip1000" "-dip1008"
+    # -dip1008 causes asan issues with malloc
+    dflags "-dip25" "-dip1000"
     dflags "-fsanitize=address" platform="ldc"
 
     // unit threaded light is necessary for the tests to actually run
@@ -41,6 +44,7 @@ configuration "asan" {
     dependency "unit-threaded" version="*"
     dependency "test_allocator" version="*"
 }
+
 
 configuration "utl" {
     targetType "executable"
