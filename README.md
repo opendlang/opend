@@ -76,14 +76,14 @@ The long-term goal is:
 ### Supported instructions set
 
 
-|       | DMD          | LDC                    | GDC          |
-|-------|--------------|------------------------|--------------|
-| MMX   | Yes but slow | Yes                    | No           |
-| SSE   | Yes but slow | Yes                    | No           |
-| SSE2  | Yes but slow | Yes                    | Yes          |
-| SSE3  | Yes but slow | Yes (use -mattr=+sse3) | Yes but slow |
-| SSSE3 | No           | No                     | No           |
-| ...   | No           | No                     | No           |
+|       | DMD          | LDC                    | GDC                  |
+|-------|--------------|------------------------|----------------------|
+| MMX   | Yes but slow | Yes                    | Yes (slow in 32-bit) |
+| SSE   | Yes but slow | Yes                    | Yes (slow in 32-bit) |
+| SSE2  | Yes but slow | Yes                    | Yes (slow in 32-bit) |
+| SSE3  | Yes but slow | Yes (use -mattr=+sse3) | Yes but slow         |
+| SSSE3 | No           | No                     | No                   |
+| ...   | No           | No                     | No                   |
 
 
 ### Important difference
