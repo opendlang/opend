@@ -139,7 +139,7 @@ unittest
 
 __m64 _mm_cmpeq_pi16 (__m64 a, __m64 b) pure @safe
 {
-    static if (GDC_X86)
+    static if (GDC_with_MMX)
     {
         return cast(__m64) __builtin_ia32_pcmpeqw(cast(short4)a, cast(short4)b);        
     }
@@ -159,7 +159,7 @@ unittest
 
 __m64 _mm_cmpeq_pi32 (__m64 a, __m64 b) pure @safe
 {
-    static if (GDC_X86)
+    static if (GDC_with_MMX)
     {        
         return cast(__m64) __builtin_ia32_pcmpeqd(cast(int2)a, cast(int2)b);
     }
@@ -179,7 +179,7 @@ unittest
 
 __m64 _mm_cmpeq_pi8 (__m64 a, __m64 b) pure @safe
 {
-    static if (GDC_X86)
+    static if (GDC_with_MMX)
     {        
         return cast(__m64) __builtin_ia32_pcmpeqb(cast(byte8)a, cast(byte8)b);
     }
@@ -199,7 +199,7 @@ unittest
 
 __m64 _mm_cmpgt_pi16 (__m64 a, __m64 b) pure @safe
 {
-    static if (GDC_X86)
+    static if (GDC_with_MMX)
     { 
         return cast(__m64) __builtin_ia32_pcmpgtw (cast(short4)a, cast(short4)b);
     }
@@ -219,7 +219,7 @@ unittest
 
 __m64 _mm_cmpgt_pi32 (__m64 a, __m64 b) pure @safe
 {
-    static if (GDC_X86)
+    static if (GDC_with_MMX)
     {
         return cast(__m64) __builtin_ia32_pcmpgtw (cast(short4)a, cast(short4)b);
     }
@@ -239,7 +239,7 @@ unittest
 
 __m64 _mm_cmpgt_pi8 (__m64 a, __m64 b) pure @safe
 {
-    static if (GDC_X86)
+    static if (GDC_with_MMX)
     {
         return cast(__m64) __builtin_ia32_pcmpgtb (cast(byte8)a, cast(byte8)b);
     }

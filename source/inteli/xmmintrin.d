@@ -69,7 +69,7 @@ unittest
 
 __m128 _mm_add_ss(__m128 a, __m128 b) pure @safe
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE)
         return __builtin_ia32_addss(a, b);
     else
     {
@@ -559,7 +559,7 @@ unittest
 
 __m128 _mm_div_ss(__m128 a, __m128 b) pure @safe
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE)
         return __builtin_ia32_divss(a, b);
     else
     {
@@ -630,9 +630,26 @@ uint _MM_GET_ROUNDING_MODE() pure @safe
 
 uint _mm_getcsr() pure @safe
 {
-    static if (GDC_X86)
+    version(GNU)
     {
-        return __builtin_ia32_stmxcsr();
+        static if (GDC_with_SSE)
+        {
+            return __builtin_ia32_stmxcsr();
+        }
+        else version(X86)
+        {
+            uint sseRounding = 0;
+            asm pure nothrow @nogc @trusted
+            {
+                "stmxcsr %0;\n" 
+                  : "=m" (sseRounding)
+                  : 
+                  : ;
+            }
+            return sseRounding;
+        }
+        else
+            static assert(false);
     }
     else version (InlineX86Asm)
     {
@@ -645,6 +662,10 @@ uint _mm_getcsr() pure @safe
     }
     else
         static assert(0, "Not yet supported");
+}
+unittest
+{
+    uint csr = _mm_getcsr();
 }
 
 __m64 _mm_insert_pi16 (__m64 v, int i, int index) pure @trusted
@@ -761,7 +782,7 @@ __m64 _mm_max_pi16 (__m64 a, __m64 b) pure @safe
     return to_m64(_mm_max_epi16(to_m128i(a), to_m128i(b)));
 }
 
-static if (GDC_X86)
+static if (GDC_with_SSE)
 {
     alias _mm_max_ps = __builtin_ia32_maxps;
 }
@@ -797,7 +818,7 @@ __m64 _mm_max_pu8 (__m64 a, __m64 b) pure @safe
     return to_m64(_mm_max_epu8(to_m128i(a), to_m128i(b)));
 }
 
-static if (GDC_X86)
+static if (GDC_with_SSE)
 {
     alias _mm_max_ss = __builtin_ia32_maxss;
 }
@@ -835,7 +856,7 @@ __m64 _mm_min_pi16 (__m64 a, __m64 b) pure @safe
     return to_m64(_mm_min_epi16(to_m128i(a), to_m128i(b)));
 }
 
-static if (GDC_X86)
+static if (GDC_with_SSE)
 {
     alias _mm_min_ps = __builtin_ia32_minps;
 }
@@ -871,7 +892,7 @@ __m64 _mm_min_pu8 (__m64 a, __m64 b) pure @safe
     return to_m64(_mm_min_epu8(to_m128i(a), to_m128i(b)));
 }
 
-static if (GDC_X86)
+static if (GDC_with_SSE)
 {
     alias _mm_min_ss = __builtin_ia32_minss;
 }
@@ -928,7 +949,7 @@ unittest
     assert(0x9C == _mm_movemask_pi8(_mm_set_pi8(-1, 0, 0, -1, -1, -1, 0, 0)));
 }
 
-static if (GDC_X86)
+static if (GDC_with_SSE)
 {
     alias _mm_movemask_ps = __builtin_ia32_movmskps;
 }
@@ -969,7 +990,7 @@ unittest
 
 __m128 _mm_mul_ss(__m128 a, __m128 b) pure @safe
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE)
         return __builtin_ia32_mulss(a, b);
     else
     {
@@ -1030,7 +1051,7 @@ deprecated alias
     _m_psadbw = _mm_sad_pu8,
     _m_pshufw = _mm_shuffle_pi16;
 
-static if (GDC_X86)
+static if (GDC_with_SSE)
 {
     alias _mm_rcp_ps = __builtin_ia32_rcpps;
 }
@@ -1050,7 +1071,7 @@ else
     }
 }
 
-static if (GDC_X86)
+static if (GDC_with_SSE)
 {
     alias _mm_rcp_ss = __builtin_ia32_rcpss;
 }
@@ -1067,7 +1088,7 @@ else
     }
 }
 
-static if (GDC_X86)
+static if (GDC_with_SSE)
 {
     alias _mm_rsqrt_ps = __builtin_ia32_rsqrtps;
 }
@@ -1087,7 +1108,7 @@ else
     }
 }
 
-static if (GDC_X86)
+static if (GDC_with_SSE)
 {
     alias _mm_rsqrt_ss = __builtin_ia32_rsqrtss;
 }
@@ -1223,8 +1244,23 @@ unittest
 
 void _mm_setcsr(uint controlWord) pure @safe
 {
-    static if (GDC_X86)
-        __builtin_ia32_ldmxcsr(controlWord);
+    version(GNU)
+    {
+        static if (GDC_with_SSE)
+        {
+            __builtin_ia32_ldmxcsr(controlWord);
+        }
+        else version(X86)
+        {
+            asm pure nothrow @nogc @trusted
+            {
+                "ldmxcsr %0;\n" 
+                  : 
+                  : "m" (controlWord)
+                  : ;
+            }
+        }
+    }
     else version (InlineX86Asm)
     {
         asm pure nothrow @nogc @safe
@@ -1234,6 +1270,10 @@ void _mm_setcsr(uint controlWord) pure @safe
     }
     else
         static assert(0, "Not yet supported");
+}
+unittest
+{
+    _mm_setcsr(_mm_getcsr());
 }
 
 __m128 _mm_setr_ps (float e3, float e2, float e1, float e0) pure @trusted
@@ -1259,15 +1299,30 @@ __m128 _mm_setzero_ps() pure @trusted
     return loadUnaligned!(float4)(result.ptr);
 }
 
-static if (GDC_X86)
+version(GNU)
 {
-    alias _mm_sfence = __builtin_ia32_sfence;
+    void _mm_sfence() pure @trusted
+    {
+        static if (GDC_with_SSE)
+        {
+            __builtin_ia32_sfence();
+        }
+        else version(X86)
+        {
+            asm pure nothrow @nogc @trusted
+            {
+                "sfence;\n" : : : ;
+            }
+        }
+        else
+            static assert(false);
+        }
 }
 else version(LDC)
 {
     alias _mm_sfence = __builtin_ia32_sfence;
 }
-else
+else version(InlineX86Asm)
 {
     void _mm_sfence() pure @safe
     {
@@ -1277,6 +1332,8 @@ else
         }
     }
 }
+else
+    static assert(false);
 unittest
 {
     _mm_sfence();
@@ -1304,7 +1361,7 @@ __m128 _mm_shuffle_ps(ubyte imm)(__m128 a, __m128 b) pure @safe
     return shufflevector!(__m128, imm & 3, (imm>>2) & 3, 4 + ((imm>>4) & 3), 4 + ((imm>>6) & 3) )(a, b);
 }
 
-static if (GDC_X86)
+static if (GDC_with_SSE)
 {
     alias _mm_sqrt_ps = __builtin_ia32_sqrtps;
 }
@@ -1345,7 +1402,7 @@ unittest
     assert(A.array[3] == 2.0f);
 }
 
-static if (GDC_X86)
+static if (GDC_with_SSE)
 {
     alias _mm_sqrt_ss = __builtin_ia32_sqrtss;
 }
@@ -1484,7 +1541,7 @@ unittest
 
 __m128 _mm_sub_ss(__m128 a, __m128 b) pure @safe
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE)
         return __builtin_ia32_subss(a, b);
     else
     {

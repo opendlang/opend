@@ -12,6 +12,11 @@ import inteli.internals;
 
 nothrow @nogc:
 
+version(D_InlineAsm_X86)
+    version = InlineX86Asm;
+else version(D_InlineAsm_X86_64)
+    version = InlineX86Asm;
+
 // SSE2 instructions
 // https://software.intel.com/sites/landingpage/IntrinsicsGuide/#techs=SSE2
 
@@ -35,7 +40,11 @@ __m128i _mm_add_epi8 (__m128i a, __m128i b) pure @safe
     return cast(__m128i)(cast(byte16)a + cast(byte16)b);
 }
 
-version(DigitalMars)
+static if (GDC_with_SSE2)
+{
+    alias _mm_add_sd = __builtin_ia32_addsd;
+}
+else version(DigitalMars)
 {
     // Work-around for https://issues.dlang.org/show_bug.cgi?id=19599
     __m128d _mm_add_sd(__m128d a, __m128d b) pure @safe
@@ -47,17 +56,10 @@ version(DigitalMars)
 }
 else
 {
-    static if (GDC_X86)
+    __m128d _mm_add_sd(__m128d a, __m128d b) pure @safe
     {
-        alias _mm_add_sd = __builtin_ia32_addsd;
-    }
-    else
-    {
-        __m128d _mm_add_sd(__m128d a, __m128d b) pure @safe
-        {
-            a[0] += b[0];
-            return a;
-        }
+        a[0] += b[0];
+        return a;
     }
 }
 unittest
@@ -84,7 +86,11 @@ __m64 _mm_add_si64 (__m64 a, __m64 b) pure @safe
     return a + b;
 }
 
-version(LDC)
+static if (GDC_with_SSE2)
+{
+    alias _mm_adds_epi16 = __builtin_ia32_paddsw128;
+}
+else version(LDC)
 {
     static if (__VERSION__ >= 2085) // saturation x86 intrinsics disappeared in LLVM 8
     {
@@ -102,22 +108,15 @@ version(LDC)
         alias _mm_adds_epi16 = __builtin_ia32_paddsw128;
 }
 else
-{
-    static if (GDC_X86)
+{    
+    __m128i _mm_adds_epi16(__m128i a, __m128i b) pure @trusted
     {
-        alias _mm_adds_epi16 = __builtin_ia32_paddsw128;
-    }
-    else
-    {
-        __m128i _mm_adds_epi16(__m128i a, __m128i b) pure @trusted
-        {
-            short[8] res;
-            short8 sa = cast(short8)a;
-            short8 sb = cast(short8)b;
-            foreach(i; 0..8)
-                res[i] = saturateSignedIntToSignedShort(sa.array[i] + sb.array[i]);
-            return _mm_loadu_si128(cast(int4*)res.ptr);
-        }
+        short[8] res;
+        short8 sa = cast(short8)a;
+        short8 sb = cast(short8)b;
+        foreach(i; 0..8)
+            res[i] = saturateSignedIntToSignedShort(sa.array[i] + sb.array[i]);
+        return _mm_loadu_si128(cast(int4*)res.ptr);
     }
 }
 unittest
@@ -128,7 +127,11 @@ unittest
     assert(res.array == correctResult);
 }
 
-version(LDC)
+static if (GDC_with_SSE2)
+{
+    alias _mm_adds_epi8 = __builtin_ia32_paddsb128;
+}
+else version(LDC)
 {
     static if (__VERSION__ >= 2085) // saturation x86 intrinsics disappeared in LLVM 8
     {
@@ -147,21 +150,14 @@ version(LDC)
 }
 else
 {
-    static if (GDC_X86)
+    __m128i _mm_adds_epi8(__m128i a, __m128i b) pure @trusted
     {
-        alias _mm_adds_epi8 = __builtin_ia32_paddsb128;
-    }
-    else
-    {
-        __m128i _mm_adds_epi8(__m128i a, __m128i b) pure @trusted
-        {
-            byte[16] res;
-            byte16 sa = cast(byte16)a;
-            byte16 sb = cast(byte16)b;
-            foreach(i; 0..16)
-                res[i] = saturateSignedWordToSignedByte(sa[i] + sb[i]);
-            return _mm_loadu_si128(cast(int4*)res.ptr);
-        }
+        byte[16] res;
+        byte16 sa = cast(byte16)a;
+        byte16 sb = cast(byte16)b;
+        foreach(i; 0..16)
+            res[i] = saturateSignedWordToSignedByte(sa[i] + sb[i]);
+        return _mm_loadu_si128(cast(int4*)res.ptr);
     }
 }
 unittest
@@ -269,7 +265,11 @@ unittest
     assert(R.array == correct);
 }
 
-version(LDC)
+static if (GDC_with_SSE2)
+{
+    alias _mm_avg_epu16 = __builtin_ia32_pavgw128;
+}
+else version(LDC)
 {
     __m128i _mm_avg_epu16 (__m128i a, __m128i b) pure @safe
     {
@@ -287,23 +287,16 @@ version(LDC)
 }
 else
 {
-    static if (GDC_X86)
+    __m128i _mm_avg_epu16 (__m128i a, __m128i b) pure @safe
     {
-        alias _mm_avg_epu16 = __builtin_ia32_pavgw128;
-    }
-    else
-    {
-        __m128i _mm_avg_epu16 (__m128i a, __m128i b) pure @safe
+        short8 sa = cast(short8)a;
+        short8 sb = cast(short8)b;
+        short8 sr = void;
+        foreach(i; 0..8)
         {
-            short8 sa = cast(short8)a;
-            short8 sb = cast(short8)b;
-            short8 sr = void;
-            foreach(i; 0..8)
-            {
-                sr[i] = cast(ushort)( (cast(ushort)(sa[i]) + cast(ushort)(sb[i]) + 1) >> 1 );
-            }
-            return cast(int4)sr;
+            sr[i] = cast(ushort)( (cast(ushort)(sa[i]) + cast(ushort)(sb[i]) + 1) >> 1 );
         }
+        return cast(int4)sr;
     }
 }
 unittest
@@ -315,7 +308,11 @@ unittest
         assert(avg.array[i] == 48);
 }
 
-version(LDC)
+static if (GDC_with_SSE2)
+{
+    alias _mm_avg_epu8 = __builtin_ia32_pavgb128;
+}
+else version(LDC)
 {
     __m128i _mm_avg_epu8 (__m128i a, __m128i b) pure @safe
     {
@@ -333,24 +330,16 @@ version(LDC)
 }
 else
 {
-
-    static if (GDC_X86)
+    __m128i _mm_avg_epu8 (__m128i a, __m128i b) pure @safe
     {
-        alias _mm_avg_epu8 = __builtin_ia32_pavgb128;
-    }
-    else
-    {
-        __m128i _mm_avg_epu8 (__m128i a, __m128i b) pure @safe
+        byte16 sa = cast(byte16)a;
+        byte16 sb = cast(byte16)b;
+        byte16 sr = void;
+        foreach(i; 0..16)
         {
-            byte16 sa = cast(byte16)a;
-            byte16 sb = cast(byte16)b;
-            byte16 sr = void;
-            foreach(i; 0..16)
-            {
-                sr[i] = cast(ubyte)( (cast(ubyte)(sa[i]) + cast(ubyte)(sb[i]) + 1) >> 1 );
-            }
-            return cast(int4)sr;
+            sr[i] = cast(ubyte)( (cast(ubyte)(sa[i]) + cast(ubyte)(sb[i]) + 1) >> 1 );
         }
+        return cast(int4)sr;
     }
 }
 unittest
@@ -413,7 +402,14 @@ __m128 _mm_castsi128_ps (__m128i a) pure @safe
     return cast(__m128)a;
 }
 
-version(LDC)
+static if (GDC_with_SSE2)
+{
+    void _mm_clflush (const(void)* p) pure @safe
+    {
+        return __builtin_ia32_clflush(p);
+    }
+}
+else version(LDC)
 {
     alias _mm_clflush = __builtin_ia32_clflush;
 }
@@ -437,6 +433,11 @@ else
                 clflush [RAX];
             }
         }
+        else 
+        {
+            // Do nothing. Invalidating cacheline does
+            // not affect correctness.            
+        }
     }
 }
 unittest
@@ -445,8 +446,7 @@ unittest
     _mm_clflush(cacheline.ptr);
 }
 
-
-static if (GDC_X86)
+static if (GDC_with_SSE2)
 {
     alias _mm_cmpeq_epi16 = __builtin_ia32_pcmpeqw128;
 }
@@ -468,7 +468,7 @@ unittest
 
 __m128i _mm_cmpeq_epi32 (__m128i a, __m128i b) pure @safe
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         return __builtin_ia32_pcmpeqd128(a, b);
     }
@@ -488,7 +488,7 @@ unittest
 
 __m128i _mm_cmpeq_epi8 (__m128i a, __m128i b) pure @safe
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         return __builtin_ia32_pcmpeqb128(a, b); 
     }
@@ -508,7 +508,7 @@ unittest
 
 __m128d _mm_cmpeq_pd (__m128d a, __m128d b) pure @safe
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         return __builtin_ia32_cmpeqpd(a, b);
     }
@@ -520,7 +520,7 @@ __m128d _mm_cmpeq_pd (__m128d a, __m128d b) pure @safe
 
 __m128d _mm_cmpeq_sd (__m128d a, __m128d b) pure @safe
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         return __builtin_ia32_cmpeqsd(a, b);
     }
@@ -532,7 +532,7 @@ __m128d _mm_cmpeq_sd (__m128d a, __m128d b) pure @safe
 
 __m128d _mm_cmpge_pd (__m128d a, __m128d b) pure @safe
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         return __builtin_ia32_cmpgepd(a, b);
     }
@@ -545,7 +545,7 @@ __m128d _mm_cmpge_pd (__m128d a, __m128d b) pure @safe
 __m128d _mm_cmpge_sd (__m128d a, __m128d b) pure @safe
 {
     // Note: There is no __builtin_ia32_cmpgesd builtin.
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         return __builtin_ia32_cmpnltsd(b, a);
     }
@@ -557,7 +557,7 @@ __m128d _mm_cmpge_sd (__m128d a, __m128d b) pure @safe
 
 __m128i _mm_cmpgt_epi16 (__m128i a, __m128i b) pure @safe
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         return __builtin_ia32_pcmpgtw128(a, b); 
     }
@@ -577,7 +577,7 @@ unittest
 
 __m128i _mm_cmpgt_epi32 (__m128i a, __m128i b) pure @safe
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         return __builtin_ia32_pcmpgtd128(a, b); 
     }
@@ -597,7 +597,7 @@ unittest
 
 __m128i _mm_cmpgt_epi8 (__m128i a, __m128i b) pure @safe
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         return __builtin_ia32_pcmpgtb128(a, b); 
     }
@@ -618,7 +618,7 @@ unittest
 
 __m128d _mm_cmpgt_pd (__m128d a, __m128d b) pure @safe
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         return __builtin_ia32_cmpgtpd(a, b); 
     }
@@ -631,7 +631,7 @@ __m128d _mm_cmpgt_pd (__m128d a, __m128d b) pure @safe
 __m128d _mm_cmpgt_sd (__m128d a, __m128d b) pure @safe
 {
     // Note: There is no __builtin_ia32_cmpgtsd builtin.
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         return __builtin_ia32_cmpnlesd(b, a);
     }
@@ -643,7 +643,7 @@ __m128d _mm_cmpgt_sd (__m128d a, __m128d b) pure @safe
 
 __m128d _mm_cmple_pd (__m128d a, __m128d b) pure @safe
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         return __builtin_ia32_cmplepd(a, b); 
     }
@@ -655,7 +655,7 @@ __m128d _mm_cmple_pd (__m128d a, __m128d b) pure @safe
 
 __m128d _mm_cmple_sd (__m128d a, __m128d b) pure @safe
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         return __builtin_ia32_cmplesd(a, b); 
     }
@@ -682,7 +682,7 @@ __m128i _mm_cmplt_epi8 (__m128i a, __m128i b) pure @safe
 
 __m128d _mm_cmplt_pd (__m128d a, __m128d b) pure @safe
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         return __builtin_ia32_cmpltpd(a, b); 
     }
@@ -694,7 +694,7 @@ __m128d _mm_cmplt_pd (__m128d a, __m128d b) pure @safe
 
 __m128d _mm_cmplt_sd (__m128d a, __m128d b) pure @safe
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         return __builtin_ia32_cmpltsd(a, b); 
     }
@@ -706,7 +706,7 @@ __m128d _mm_cmplt_sd (__m128d a, __m128d b) pure @safe
 
 __m128d _mm_cmpneq_pd (__m128d a, __m128d b) pure @safe
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         return __builtin_ia32_cmpneqpd(a, b); 
     }
@@ -718,7 +718,7 @@ __m128d _mm_cmpneq_pd (__m128d a, __m128d b) pure @safe
 
 __m128d _mm_cmpneq_sd (__m128d a, __m128d b) pure @safe
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         return __builtin_ia32_cmpneqsd(a, b); 
     }
@@ -730,7 +730,7 @@ __m128d _mm_cmpneq_sd (__m128d a, __m128d b) pure @safe
 
 __m128d _mm_cmpnge_pd (__m128d a, __m128d b) pure @safe
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         return __builtin_ia32_cmpngepd(a, b); 
     }
@@ -743,7 +743,7 @@ __m128d _mm_cmpnge_pd (__m128d a, __m128d b) pure @safe
 __m128d _mm_cmpnge_sd (__m128d a, __m128d b) pure @safe
 {
     // Note: There is no __builtin_ia32_cmpngesd builtin.
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         return __builtin_ia32_cmpltsd(b, a); 
     }
@@ -755,7 +755,7 @@ __m128d _mm_cmpnge_sd (__m128d a, __m128d b) pure @safe
 
 __m128d _mm_cmpngt_pd (__m128d a, __m128d b) pure @safe
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         return __builtin_ia32_cmpngtpd(a, b);
     }
@@ -768,7 +768,7 @@ __m128d _mm_cmpngt_pd (__m128d a, __m128d b) pure @safe
 __m128d _mm_cmpngt_sd (__m128d a, __m128d b) pure @safe
 {
     // Note: There is no __builtin_ia32_cmpngtsd builtin.
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         return __builtin_ia32_cmplesd(b, a);
     }
@@ -780,7 +780,7 @@ __m128d _mm_cmpngt_sd (__m128d a, __m128d b) pure @safe
 
 __m128d _mm_cmpnle_pd (__m128d a, __m128d b) pure @safe
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         return __builtin_ia32_cmpnlepd(a, b);
     }
@@ -792,7 +792,7 @@ __m128d _mm_cmpnle_pd (__m128d a, __m128d b) pure @safe
 
 __m128d _mm_cmpnle_sd (__m128d a, __m128d b) pure @safe
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         return __builtin_ia32_cmpnlesd(a, b);
     }
@@ -804,7 +804,7 @@ __m128d _mm_cmpnle_sd (__m128d a, __m128d b) pure @safe
 
 __m128d _mm_cmpnlt_pd (__m128d a, __m128d b) pure @safe
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         return __builtin_ia32_cmpnltpd(a, b);
     }
@@ -816,7 +816,7 @@ __m128d _mm_cmpnlt_pd (__m128d a, __m128d b) pure @safe
 
 __m128d _mm_cmpnlt_sd (__m128d a, __m128d b) pure @safe
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         return __builtin_ia32_cmpnltsd(a, b);
     }
@@ -828,7 +828,7 @@ __m128d _mm_cmpnlt_sd (__m128d a, __m128d b) pure @safe
 
 __m128d _mm_cmpord_pd (__m128d a, __m128d b) pure @safe
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         return __builtin_ia32_cmpordpd(a, b);
     }
@@ -840,7 +840,7 @@ __m128d _mm_cmpord_pd (__m128d a, __m128d b) pure @safe
 
 __m128d _mm_cmpord_sd (__m128d a, __m128d b) pure @safe
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         return __builtin_ia32_cmpordsd(a, b);
     }
@@ -852,7 +852,7 @@ __m128d _mm_cmpord_sd (__m128d a, __m128d b) pure @safe
 
 __m128d _mm_cmpunord_pd (__m128d a, __m128d b) pure @safe
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         return __builtin_ia32_cmpunordpd(a, b);
     }
@@ -864,7 +864,7 @@ __m128d _mm_cmpunord_pd (__m128d a, __m128d b) pure @safe
 
 __m128d _mm_cmpunord_sd (__m128d a, __m128d b) pure @safe
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         return __builtin_ia32_cmpunordsd(a, b);
     }
@@ -880,7 +880,7 @@ __m128d _mm_cmpunord_sd (__m128d a, __m128d b) pure @safe
 
 int _mm_comieq_sd (__m128d a, __m128d b) pure @safe
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         return __builtin_ia32_comieq(a, b);
     }
@@ -892,7 +892,7 @@ int _mm_comieq_sd (__m128d a, __m128d b) pure @safe
 
 int _mm_comige_sd (__m128d a, __m128d b) pure @safe
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         return __builtin_ia32_comige(a, b);
     }
@@ -904,7 +904,7 @@ int _mm_comige_sd (__m128d a, __m128d b) pure @safe
 
 int _mm_comigt_sd (__m128d a, __m128d b) pure @safe
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         return __builtin_ia32_comigt(a, b);
     }
@@ -916,7 +916,7 @@ int _mm_comigt_sd (__m128d a, __m128d b) pure @safe
 
 int _mm_comile_sd (__m128d a, __m128d b) pure @safe
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         return __builtin_ia32_comile(a, b);
     }
@@ -928,7 +928,7 @@ int _mm_comile_sd (__m128d a, __m128d b) pure @safe
 
 int _mm_comilt_sd (__m128d a, __m128d b) pure @safe
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         return __builtin_ia32_comilt(a, b);
     }
@@ -940,7 +940,7 @@ int _mm_comilt_sd (__m128d a, __m128d b) pure @safe
 
 int _mm_comineq_sd (__m128d a, __m128d b) pure @safe
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         return __builtin_ia32_comineq(a, b);
     }
@@ -964,7 +964,7 @@ version(LDC)
 }
 else
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
 
         __m128d _mm_cvtepi32_pd (__m128i a) pure  @safe
@@ -992,7 +992,7 @@ unittest
 
 __m128 _mm_cvtepi32_ps(__m128i a) pure @safe
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         return __builtin_ia32_cvtdq2ps(a);
     }
@@ -1032,7 +1032,7 @@ version(LDC)
 }
 else
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         alias _mm_cvtpd_epi32 = __builtin_ia32_cvtpd2dq;
     }
@@ -1071,7 +1071,7 @@ version(LDC)
 }
 else
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         alias _mm_cvtpd_ps = __builtin_ia32_cvtpd2ps; // can't be done with IR unfortunately
     }
@@ -1119,7 +1119,7 @@ version(LDC)
 }
 else
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         alias _mm_cvtps_epi32 = __builtin_ia32_cvtps2dq;
     }
@@ -1174,7 +1174,7 @@ version(LDC)
 }
 else
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         alias _mm_cvtps_pd = __builtin_ia32_cvtps2pd;
     }
@@ -1207,7 +1207,7 @@ version(LDC)
 }
 else
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         alias _mm_cvtsd_si32 = __builtin_ia32_cvtsd2si;
     }
@@ -1269,7 +1269,7 @@ alias _mm_cvtsd_si64x = _mm_cvtsd_si64;
 
 __m128 _mm_cvtsd_ss (__m128 a, __m128d b) pure @safe
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         return __builtin_ia32_cvtsd2ss(a, b); 
     }
@@ -1370,7 +1370,7 @@ version(LDC)
 }
 else
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         alias _mm_cvttpd_epi32 = __builtin_ia32_cvttpd2dq;
     }
@@ -1444,7 +1444,7 @@ __m128d _mm_div_pd(__m128d a, __m128d b) pure @safe
     return a / b;
 }
 
-static if (GDC_X86)
+static if (GDC_with_SSE2)
 {
     __m128d _mm_div_sd(__m128d a, __m128d b) pure @trusted
     {
@@ -1504,15 +1504,30 @@ unittest
     assert(R.array == correct);
 }
 
-static if (GDC_X86)
+version(GNU)
 {
-    alias _mm_lfence = __builtin_ia32_lfence;
+    void _mm_lfence() pure @trusted
+    {
+        static if (GDC_with_SSE2)
+        {
+            __builtin_ia32_lfence();
+        }
+        else version(X86)
+        {
+            asm pure nothrow @nogc @trusted
+            {
+                "lfence;\n" : : : ;
+            }
+        }
+        else
+            static assert(false);
+    }
 }
 else version(LDC)
 {
     alias _mm_lfence = __builtin_ia32_lfence;
 }
-else
+else version(InlineX86Asm)
 {
     void _mm_lfence() pure @safe
     {
@@ -1522,6 +1537,8 @@ else
         }
     }
 }
+else
+    static assert(false);
 unittest
 {
     _mm_lfence();
@@ -1589,7 +1606,7 @@ __m128d _mm_loadr_pd (const(double)* mem_addr) pure @trusted
 
 __m128d _mm_loadu_pd (const(double)* mem_addr) pure @safe
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         return __builtin_ia32_loadupd(mem_addr); 
     }
@@ -1601,7 +1618,7 @@ __m128d _mm_loadu_pd (const(double)* mem_addr) pure @safe
 
 __m128i _mm_loadu_si128 (const(__m128i)* mem_addr) pure @trusted
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         return __builtin_ia32_loaddqu(cast(const(char*))mem_addr);
     }
@@ -1626,7 +1643,7 @@ unittest
     assert(A.array == correct);
 }
 
-static if (GDC_X86)
+static if (GDC_with_SSE2)
 {
     /// Multiply packed signed 16-bit integers in `a` and `b`, producing intermediate
     /// signed 32-bit integers. Horizontally add adjacent pairs of intermediate 32-bit integers,
@@ -1677,7 +1694,7 @@ version(LDC)
 }
 else
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         ///ditto
         void _mm_maskmoveu_si128 (__m128i a, __m128i mask, void* mem_addr) pure @trusted
@@ -1750,7 +1767,7 @@ unittest
 
 __m128d _mm_max_pd (__m128d a, __m128d b) pure @safe
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         return __builtin_ia32_maxpd(a, b);
     }
@@ -1773,7 +1790,7 @@ unittest
 
 __m128d _mm_max_sd (__m128d a, __m128d b) pure @safe
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         return __builtin_ia32_maxsd(a, b);
     }
@@ -1794,27 +1811,41 @@ unittest
     assert(M.array[1] == 1.0);
 }
 
-version(LDC)
+version(GNU)
+{
+    void _mm_mfence() pure @trusted
+    {
+        static if (GDC_with_SSE2)
+        {
+            __builtin_ia32_mfence();
+        }
+        else version(X86)
+        {
+            asm pure nothrow @nogc @trusted
+            {
+                "mfence;\n" : : : ;
+            }
+        }
+        else
+            static assert(false);
+    }
+}
+else version(LDC)
 {
     alias _mm_mfence = __builtin_ia32_mfence;
 }
-else
+else version(InlineX86Asm)
 {
-    static if (GDC_X86)
+    void _mm_mfence() pure @safe
     {
-        alias _mm_mfence = __builtin_ia32_mfence;
-    }
-    else
-    {
-        void _mm_mfence() pure @safe
+        asm nothrow @nogc pure @safe
         {
-            asm nothrow @nogc pure @safe
-            {
-                mfence;
-            }
+            mfence;
         }
     }
 }
+else
+    static assert(false);
 unittest
 {
     _mm_mfence();
@@ -1857,7 +1888,7 @@ unittest
 
 __m128d _mm_min_pd (__m128d a, __m128d b) pure @safe
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         return __builtin_ia32_minpd(a, b);
     }
@@ -1880,7 +1911,7 @@ unittest
 
 __m128d _mm_min_sd (__m128d a, __m128d b) pure @safe
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         return __builtin_ia32_minsd(a, b);
     }
@@ -1903,7 +1934,7 @@ unittest
 
 __m128i _mm_move_epi64 (__m128i a) pure @safe
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         return __builtin_ia32_movq128(a);
     }
@@ -1925,7 +1956,7 @@ unittest
 
 __m128d _mm_move_sd (__m128d a, __m128d b) pure @safe
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         return __builtin_ia32_movsd(a, b); 
     }
@@ -1951,7 +1982,7 @@ version(LDC)
 }
 else
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         /// Create mask from the most significant bit of each 8-bit element in `v`.
         alias _mm_movemask_epi8 = __builtin_ia32_pmovmskb128;
@@ -1984,7 +2015,7 @@ version(LDC)
 }
 else
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         /// Set each bit of mask `dst` based on the most significant bit of the corresponding
         /// packed double-precision (64-bit) floating-point element in `v`.
@@ -2086,7 +2117,7 @@ version(DigitalMars)
 }
 else
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         alias _mm_mul_sd = __builtin_ia32_mulsd;
     }
@@ -2126,7 +2157,7 @@ version(LDC)
 }
 else
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         alias _mm_mulhi_epi16 = __builtin_ia32_pmulhw128;
     }
@@ -2164,7 +2195,7 @@ version(LDC)
 }
 else
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         alias _mm_mulhi_epu16 = __builtin_ia32_pmulhuw128;
     }
@@ -2225,7 +2256,7 @@ version(LDC)
 }
 else
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         alias _mm_packs_epi32 = __builtin_ia32_packssdw128;
     }
@@ -2260,7 +2291,7 @@ version(LDC)
 }
 else
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         alias _mm_packs_epi16 = __builtin_ia32_packsswb128;
     }
@@ -2294,7 +2325,7 @@ version(LDC)
 }
 else
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         alias _mm_packus_epi16 = __builtin_ia32_packuswb128;
     }
@@ -2331,27 +2362,42 @@ unittest
         assert(AA.array[i] == cast(byte)(correctResult[i]));
 }
 
-version(LDC)
+
+version(GNU)
+{
+    void _mm_pause() pure @trusted
+    {
+        static if (GDC_with_SSE2)
+        {
+            __builtin_ia32_pause();
+        }
+        else version(X86)
+        {
+            asm pure nothrow @nogc @trusted
+            {
+                "pause;\n" : : : ;
+            }
+        }
+        else
+            static assert(false);
+    }
+}
+else version(LDC)
 {
     alias _mm_pause = __builtin_ia32_pause;
 }
-else
+else version(InlineX86Asm)
 {
-    static if (GDC_X86)
+    void _mm_pause() pure @safe
     {
-        alias _mm_pause = __builtin_ia32_pause;
-    }
-    else
-    {
-        void _mm_pause() pure @safe
+        asm nothrow @nogc pure @safe
         {
-            asm nothrow @nogc pure @safe
-            {
-                rep; nop; // F3 90 =  pause
-            }
+            rep; nop; // F3 90 =  pause
         }
     }
 }
+else
+    static assert(false);
 unittest
 {
     _mm_pause();
@@ -2364,7 +2410,7 @@ version(LDC)
 }
 else
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         alias _mm_sad_epu8 = __builtin_ia32_psadbw128;
     }
@@ -2579,7 +2625,7 @@ __m128i _mm_setzero_si128() pure @trusted
 
 __m128i _mm_shuffle_epi32(int imm8)(__m128i a) pure @safe
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         return __builtin_ia32_pshufd(a, imm8);
     }
@@ -2602,7 +2648,7 @@ unittest
 
 __m128d _mm_shuffle_pd (int imm8)(__m128d a, __m128d b) pure @safe
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         return __builtin_ia32_shufpd(a, b, imm8);
     }
@@ -2624,7 +2670,7 @@ unittest
 
 __m128i _mm_shufflehi_epi16(int imm8)(__m128i a) pure @safe
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         return __builtin_ia32_pshufhw(a, imm8);
     }
@@ -2648,7 +2694,7 @@ unittest
 
 __m128i _mm_shufflelo_epi16(int imm8)(__m128i a) pure @safe
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         return __builtin_ia32_pshuflw(a, imm8);
     }
@@ -2675,7 +2721,7 @@ version(LDC)
 }
 else
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         alias _mm_sll_epi32 = __builtin_ia32_pslld128;
     }
@@ -2706,7 +2752,7 @@ version(LDC)
 }
 else
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         alias _mm_sll_epi64  = __builtin_ia32_psllq128;
     }
@@ -2738,7 +2784,7 @@ version(LDC)
 }
 else
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         alias _mm_sll_epi16 = __builtin_ia32_psllw128;
     }
@@ -2770,7 +2816,7 @@ version(LDC)
 }
 else
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         alias _mm_slli_epi32 = __builtin_ia32_pslldi128;
     }
@@ -2799,7 +2845,7 @@ version(LDC)
 }
 else
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         alias _mm_slli_epi64  = __builtin_ia32_psllqi128;
     }
@@ -2829,7 +2875,7 @@ version(LDC)
 }
 else
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         alias _mm_slli_epi16 = __builtin_ia32_psllwi128;
     }
@@ -2863,7 +2909,7 @@ __m128i _mm_slli_si128(ubyte bytes)(__m128i op) pure @safe
     }
     else
     {
-        static if (GDC_X86)
+        static if (GDC_with_SSE2)
         {
             return __builtin_ia32_pslldqi128(op, cast(ubyte)(bytes * 8)); 
         }
@@ -2902,7 +2948,7 @@ version(LDC)
 }
 else
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         alias _mm_sqrt_pd = __builtin_ia32_sqrtpd;
     }
@@ -2935,7 +2981,7 @@ version(LDC)
 }
 else
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         alias _mm_sqrt_sd = __builtin_ia32_sqrtsd;
     }
@@ -2957,7 +3003,7 @@ version(LDC)
 }
 else
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         alias _mm_sra_epi16 = __builtin_ia32_psraw128;
     }
@@ -2989,7 +3035,7 @@ version(LDC)
 }
 else
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         alias _mm_sra_epi32  = __builtin_ia32_psrad128;
     }
@@ -3021,7 +3067,7 @@ version(LDC)
 }
 else
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         alias _mm_srai_epi16 = __builtin_ia32_psrawi128;
     }
@@ -3051,7 +3097,7 @@ version(LDC)
 }
 else
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         alias _mm_srai_epi32  = __builtin_ia32_psradi128;
     }
@@ -3080,7 +3126,7 @@ version(LDC)
 }
 else
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         alias _mm_srl_epi16 = __builtin_ia32_psrlw128;
     }
@@ -3112,7 +3158,7 @@ version(LDC)
 }
 else
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         alias _mm_srl_epi32  = __builtin_ia32_psrld128;
     }
@@ -3143,7 +3189,7 @@ version(LDC)
 }
 else
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         alias _mm_srl_epi64  = __builtin_ia32_psrlq128;
     }
@@ -3175,7 +3221,7 @@ version(LDC)
 }
 else
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         alias _mm_srli_epi16 = __builtin_ia32_psrlwi128;
     }
@@ -3205,7 +3251,7 @@ version(LDC)
 }
 else
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         alias _mm_srli_epi32  = __builtin_ia32_psrldi128;
     }
@@ -3234,7 +3280,7 @@ version(LDC)
 }
 else
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         alias _mm_srli_epi64  = __builtin_ia32_psrlqi128;
     }
@@ -3267,7 +3313,7 @@ __m128i _mm_srli_si128(ubyte bytes)(__m128i v) pure @safe
     }
     else
     {
-        static if (GDC_X86)
+        static if (GDC_with_SSE2)
         {
             return cast(__m128i) __builtin_ia32_psrldqi128(v, cast(ubyte)(bytes * 8));
         }
@@ -3448,7 +3494,7 @@ version(DigitalMars)
         return a;
     }
 }
-else static if (GDC_X86)
+else static if (GDC_with_SSE2)
 {
     alias _mm_sub_sd = __builtin_ia32_subsd;
 }
@@ -3491,7 +3537,7 @@ version(LDC)
 }
 else
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         alias _mm_subs_epi16 = __builtin_ia32_psubsw128;
     }
@@ -3535,7 +3581,7 @@ version(LDC)
 }
 else
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         alias _mm_subs_epi8 = __builtin_ia32_psubsb128;
     }
@@ -3579,7 +3625,7 @@ version(LDC)
 }
 else
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         alias _mm_subs_epu16 = __builtin_ia32_psubusw128;
     }
@@ -3627,7 +3673,7 @@ version(LDC)
 }
 else
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         alias _mm_subs_epu8 = __builtin_ia32_psubusb128;
     }
@@ -3676,7 +3722,7 @@ __m128i _mm_undefined_si128() pure @safe
 
 __m128i _mm_unpackhi_epi16 (__m128i a, __m128i b) pure @safe
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         return __builtin_ia32_punpckhwd128(a, b);
     }
@@ -3689,7 +3735,7 @@ __m128i _mm_unpackhi_epi16 (__m128i a, __m128i b) pure @safe
 
 __m128i _mm_unpackhi_epi32 (__m128i a, __m128i b) pure @safe
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         return __builtin_ia32_punpckhdq128(a, b);
     }
@@ -3701,7 +3747,7 @@ __m128i _mm_unpackhi_epi32 (__m128i a, __m128i b) pure @safe
 
 __m128i _mm_unpackhi_epi64 (__m128i a, __m128i b) pure @trusted
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         return __builtin_ia32_punpckhqdq128(a, b);
     }
@@ -3724,7 +3770,7 @@ unittest // Issue #36
 
 __m128i _mm_unpackhi_epi8 (__m128i a, __m128i b) pure @safe
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         return __builtin_ia32_punpckhbw128(a, b);
     }
@@ -3738,7 +3784,7 @@ __m128i _mm_unpackhi_epi8 (__m128i a, __m128i b) pure @safe
 
 __m128d _mm_unpackhi_pd (__m128d a, __m128d b) pure @safe
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         return __builtin_ia32_unpckhpd(a, b);
     }
@@ -3750,7 +3796,7 @@ __m128d _mm_unpackhi_pd (__m128d a, __m128d b) pure @safe
 
 __m128i _mm_unpacklo_epi16 (__m128i a, __m128i b) pure @safe
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         return __builtin_ia32_punpcklwd128(a, b);
     }
@@ -3763,7 +3809,7 @@ __m128i _mm_unpacklo_epi16 (__m128i a, __m128i b) pure @safe
 
 __m128i _mm_unpacklo_epi32 (__m128i a, __m128i b) pure @safe
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         return __builtin_ia32_punpckldq128(a, b);
     }
@@ -3776,7 +3822,7 @@ __m128i _mm_unpacklo_epi32 (__m128i a, __m128i b) pure @safe
 
 __m128i _mm_unpacklo_epi64 (__m128i a, __m128i b) pure @trusted
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         return __builtin_ia32_punpcklqdq128(a, b);
     }
@@ -3802,7 +3848,7 @@ unittest // Issue #36
 
 __m128i _mm_unpacklo_epi8 (__m128i a, __m128i b) pure @safe
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         return __builtin_ia32_punpcklbw128(a, b);
     }
@@ -3816,7 +3862,7 @@ __m128i _mm_unpacklo_epi8 (__m128i a, __m128i b) pure @safe
 
 __m128d _mm_unpacklo_pd (__m128d a, __m128d b) pure @safe
 {
-    static if (GDC_X86)
+    static if (GDC_with_SSE2)
     {
         return __builtin_ia32_unpcklpd(a, b);
     }

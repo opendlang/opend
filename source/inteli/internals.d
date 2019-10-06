@@ -14,30 +14,42 @@ public import std.math: abs; // `fabs` is broken with GCC 4.9.2 on Linux 64-bit
 
 version(GNU)
 {
-    // GDC support uses extended inline assembly:
-    //   https://gcc.gnu.org/onlinedocs/gcc/Extended-Asm.html        (general information and hints)
-    //   https://gcc.gnu.org/onlinedocs/gcc/Simple-Constraints.html  (binding variables to registers)
-    //   https://gcc.gnu.org/onlinedocs/gcc/Machine-Constraints.html (x86 specific register short names)
-
-    public import core.simd;
-
-    // NOTE: These intrinsics are not available in every i386 and x86_64 CPU.
-    // For more info: https://gcc.gnu.org/onlinedocs/gcc-4.9.2/gcc/X86-Built-in-Functions.html 
-    public import gcc.builtins;
-
     version (X86)
     {
-        enum GDC_X86 = true;
+        // For 32-bit x86, disable vector extensions with GDC. 
+        // It just doesn't work well.
+        enum GDC_with_x86 = true;
+        enum GDC_with_MMX = false;
+        enum GDC_with_SSE = false;
+        enum GDC_with_SSE2 = false;
+        enum GDC_with_SSE3 = false;
     }
     else version (X86_64)
     {
-        enum GDC_X86 = true;
+        // GDC support uses extended inline assembly:
+        //   https://gcc.gnu.org/onlinedocs/gcc/Extended-Asm.html        (general information and hints)
+        //   https://gcc.gnu.org/onlinedocs/gcc/Simple-Constraints.html  (binding variables to registers)
+        //   https://gcc.gnu.org/onlinedocs/gcc/Machine-Constraints.html (x86 specific register short names)
+
+        public import core.simd;
+
+        // NOTE: These intrinsics are not available in every i386 and x86_64 CPU.
+        // For more info: https://gcc.gnu.org/onlinedocs/gcc-4.9.2/gcc/X86-Built-in-Functions.html 
+        public import gcc.builtins;
+                
+        enum GDC_with_x86 = true;
+        enum GDC_with_MMX = true; // We don't have a way to detect that at CT, but we assume it's there
+        enum GDC_with_SSE = true; // We don't have a way to detect that at CT, but we assume it's there
+        enum GDC_with_SSE2 = true; // We don't have a way to detect that at CT, but we assume it's there
+        enum GDC_with_SSE3 = false; // TODO: we don't have a way to detect that at CT
     }
     else
     {
-        // Note: non-x86 GDC is unsupported for now. It would need to adapt all
-        // generic code to work with GDC even when GDC_X86 is false.
-        enum GDC_X86 = false;
+        enum GDC_with_x86 = false;
+        enum GDC_with_MMX = false;
+        enum GDC_with_SSE = false;
+        enum GDC_with_SSE2 = false;
+        enum GDC_with_SSE3 = false;
     }
 }
 else version(LDC)
@@ -62,13 +74,30 @@ else version(LDC)
         alias LDCInlineIR = inlineIR;
     }
     
-    package(inteli) enum GDC_X86 = false;
+    package(inteli)
+    {
+        enum GDC_with_x86 = false;
+        enum GDC_with_MMX = false;
+        enum GDC_with_SSE = false;
+        enum GDC_with_SSE2 = false;
+        enum GDC_with_SSE3 = false;
+    }
+}
+else version(DigitalMars)
+{
+    package(inteli)
+    {
+        enum GDC_with_x86 = false;
+        enum GDC_with_MMX = false;
+        enum GDC_with_SSE = false;
+        enum GDC_with_SSE2 = false;
+        enum GDC_with_SSE3 = false;
+    }
 }
 else
 {
-    package(inteli) enum GDC_X86 = false;
+    static assert(false, "Unknown compiler");
 }
-
 
 
 package:
@@ -182,15 +211,16 @@ long convertFloatToInt64UsingMXCSR(float value) pure @safe
         }
         return result;
     }
-    else static if (GDC_X86)
+    else static if (GDC_with_x86)
     {
         version(X86_64) // 64-bit can just use the right instruction
         {
+            static assert(GDC_with_SSE);
             __m128 A;
             A.ptr[0] = value;
             return __builtin_ia32_cvtss2si64 (A);
         }
-        else
+        else version(X86) // 32-bit
         {
             // This is untested!
             uint sseRounding;
@@ -220,7 +250,9 @@ long convertFloatToInt64UsingMXCSR(float value) pure @safe
                   : "eax", "ecx", "st";
             }
             return result;
-        }        
+        }
+        else
+            static assert(false);
     }
     else
         static assert(false);
@@ -282,10 +314,11 @@ long convertDoubleToInt64UsingMXCSR(double value) pure @safe
         }
         return result;
     }
-    else static if (GDC_X86)
+    else static if (GDC_with_x86)
     {
         version(X86_64)
         {
+            static assert(GDC_with_SSE2);
             __m128d A;
             A.ptr[0] = value;
             return __builtin_ia32_cvtsd2si64 (A);

@@ -7,94 +7,103 @@ module inteli.types;
 
 version(GNU)
 {
-    public import core.simd;
-    import gcc.builtins;
-
-    // Declare vector types that correspond to MMX types
-    // Because they are expressible in IR anyway.
-    alias Vector!(long [1]) long1;
-    alias Vector!(float[2]) float2;
-    alias Vector!(int  [2]) int2;
-    alias Vector!(short[4]) short4;
-    alias Vector!(byte [8]) byte8;
-
-    float4 loadUnaligned(Vec)(const(float)* pvec) @trusted if (is(Vec == float4))
+    version(X86_64)
     {
-        return __builtin_ia32_loadups(pvec);
-    }
+        enum CoreSimdIsEmulated = false;
 
-    double2 loadUnaligned(Vec)(const(double)* pvec) @trusted if (is(Vec == double2))
-    {
-        return __builtin_ia32_loadupd(pvec);
-    }
+        public import core.simd;
+        import gcc.builtins;
 
-    byte16 loadUnaligned(Vec)(const(byte)* pvec) @trusted if (is(Vec == byte16))
-    {
-        return cast(byte16) __builtin_ia32_loaddqu(cast(const(char)*) pvec);
-    }
+        // Declare vector types that correspond to MMX types
+        // Because they are expressible in IR anyway.
+        alias Vector!(long [1]) long1;
+        alias Vector!(float[2]) float2;
+        alias Vector!(int  [2]) int2;
+        alias Vector!(short[4]) short4;
+        alias Vector!(byte [8]) byte8;
 
-    short8 loadUnaligned(Vec)(const(short)* pvec) @trusted if (is(Vec == short8))
-    {
-        return cast(short8) __builtin_ia32_loaddqu(cast(const(char)*) pvec);
-    }
-
-    int4 loadUnaligned(Vec)(const(int)* pvec) @trusted if (is(Vec == int4))
-    {
-        return cast(int4) __builtin_ia32_loaddqu(cast(const(char)*) pvec);
-    }
-
-    long2 loadUnaligned(Vec)(const(long)* pvec) @trusted if (is(Vec == long2))
-    {
-        return cast(long2) __builtin_ia32_loaddqu(cast(const(char)*) pvec);
-    }
-
-    void storeUnaligned(Vec)(Vec v, float* pvec) @trusted if (is(Vec == float4))
-    {
-        __builtin_ia32_storeups(pvec, v);
-    }
-
-    void storeUnaligned(Vec)(Vec v, double* pvec) @trusted if (is(Vec == double2))
-    {
-        __builtin_ia32_storeupd(pvec, v);
-    }
-
-    void storeUnaligned(Vec)(Vec v, byte* pvec) @trusted if (is(Vec == byte16))
-    {
-        __builtin_ia32_storedqu(cast(char*)pvec, v);
-    }
-
-    void storeUnaligned(Vec)(Vec v, short* pvec) @trusted if (is(Vec == short8))
-    {
-        __builtin_ia32_storedqu(cast(char*)pvec, v);
-    }
-
-    void storeUnaligned(Vec)(Vec v, int* pvec) @trusted if (is(Vec == int4))
-    {
-        __builtin_ia32_storedqu(cast(char*)pvec, v);
-    }
-
-    void storeUnaligned(Vec)(Vec v, long* pvec) @trusted if (is(Vec == long2))
-    {
-        __builtin_ia32_storedqu(cast(char*)pvec, v);
-    }
-
-    // TODO: for performance, replace that anywhere possible by a GDC intrinsic
-    Vec shufflevector(Vec, mask...)(Vec a, Vec b) @trusted
-    {
-        enum Count = Vec.array.length;
-        static assert(mask.length == Count);
-
-        Vec r = void;
-        foreach(int i, m; mask)
+        float4 loadUnaligned(Vec)(const(float)* pvec) @trusted if (is(Vec == float4))
         {
-            static assert (m < Count * 2);
-            int ind = cast(int)m;
-            if (ind < Count)
-                r.ptr[i] = a.array[ind];
-            else
-                r.ptr[i] = b.array[ind - Count];
+            return __builtin_ia32_loadups(pvec);
         }
-        return r;
+
+        double2 loadUnaligned(Vec)(const(double)* pvec) @trusted if (is(Vec == double2))
+        {
+            return __builtin_ia32_loadupd(pvec);
+        }
+
+        byte16 loadUnaligned(Vec)(const(byte)* pvec) @trusted if (is(Vec == byte16))
+        {
+            return cast(byte16) __builtin_ia32_loaddqu(cast(const(char)*) pvec);
+        }
+
+        short8 loadUnaligned(Vec)(const(short)* pvec) @trusted if (is(Vec == short8))
+        {
+            return cast(short8) __builtin_ia32_loaddqu(cast(const(char)*) pvec);
+        }
+
+        int4 loadUnaligned(Vec)(const(int)* pvec) @trusted if (is(Vec == int4))
+        {
+            return cast(int4) __builtin_ia32_loaddqu(cast(const(char)*) pvec);
+        }
+
+        long2 loadUnaligned(Vec)(const(long)* pvec) @trusted if (is(Vec == long2))
+        {
+            return cast(long2) __builtin_ia32_loaddqu(cast(const(char)*) pvec);
+        }
+
+        void storeUnaligned(Vec)(Vec v, float* pvec) @trusted if (is(Vec == float4))
+        {
+            __builtin_ia32_storeups(pvec, v);
+        }
+
+        void storeUnaligned(Vec)(Vec v, double* pvec) @trusted if (is(Vec == double2))
+        {
+            __builtin_ia32_storeupd(pvec, v);
+        }
+
+        void storeUnaligned(Vec)(Vec v, byte* pvec) @trusted if (is(Vec == byte16))
+        {
+            __builtin_ia32_storedqu(cast(char*)pvec, v);
+        }
+
+        void storeUnaligned(Vec)(Vec v, short* pvec) @trusted if (is(Vec == short8))
+        {
+            __builtin_ia32_storedqu(cast(char*)pvec, v);
+        }
+
+        void storeUnaligned(Vec)(Vec v, int* pvec) @trusted if (is(Vec == int4))
+        {
+            __builtin_ia32_storedqu(cast(char*)pvec, v);
+        }
+
+        void storeUnaligned(Vec)(Vec v, long* pvec) @trusted if (is(Vec == long2))
+        {
+            __builtin_ia32_storedqu(cast(char*)pvec, v);
+        }
+
+        // TODO: for performance, replace that anywhere possible by a GDC intrinsic
+        Vec shufflevector(Vec, mask...)(Vec a, Vec b) @trusted
+        {
+            enum Count = Vec.array.length;
+            static assert(mask.length == Count);
+
+            Vec r = void;
+            foreach(int i, m; mask)
+            {
+                static assert (m < Count * 2);
+                int ind = cast(int)m;
+                if (ind < Count)
+                    r.ptr[i] = a.array[ind];
+                else
+                    r.ptr[i] = b.array[ind - Count];
+            }
+            return r;
+        }
+    }
+    else
+    {
+        enum CoreSimdIsEmulated = true;
     }
 }
 else version(LDC)
@@ -109,8 +118,15 @@ else version(LDC)
     alias Vector!(int  [2]) int2;
     alias Vector!(short[4]) short4;
     alias Vector!(byte [8]) byte8;
+
+    enum CoreSimdIsEmulated = false;
 }
-else
+else version(DigitalMars)
+{
+    enum CoreSimdIsEmulated = true; // TODO: use core.simd with DMD when D_SIMD is defined
+}
+
+static if (CoreSimdIsEmulated)
 {
     // This is a LDC SIMD emulation layer, for use with other D compilers.
     // The goal is to be very similar in precision.
