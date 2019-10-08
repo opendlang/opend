@@ -78,10 +78,10 @@ The long-term goal is:
 
 |       | DMD          | LDC                    | GDC                  |
 |-------|--------------|------------------------|----------------------|
-| MMX   | Yes but slow | Yes                    | Yes (slow in 32-bit) |
-| SSE   | Yes but slow | Yes                    | Yes (slow in 32-bit) |
-| SSE2  | Yes but slow | Yes                    | Yes (slow in 32-bit) |
-| SSE3  | Yes but slow | Yes (use -mattr=+sse3) | Yes but slow         |
+| MMX   | Yes but slow ([#16](https://github.com/AuburnSounds/intel-intrinsics/issues/16)) | Yes                    | Yes (slow in 32-bit) |
+| SSE   | Yes but slow  ([#16](https://github.com/AuburnSounds/intel-intrinsics/issues/16)) | Yes                    | Yes (slow in 32-bit) |
+| SSE2  | Yes but slow  ([#16](https://github.com/AuburnSounds/intel-intrinsics/issues/16)) | Yes                    | Yes (slow in 32-bit) |
+| SSE3  | Yes but slow  ([#16](https://github.com/AuburnSounds/intel-intrinsics/issues/16)) | Yes (use -mattr=+sse3) | Yes but slow ([#39](https://github.com/AuburnSounds/intel-intrinsics/issues/39))  |
 | SSSE3 | No           | No                     | No                   |
 | ...   | No           | No                     | No                   |
 
