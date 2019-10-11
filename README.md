@@ -150,5 +150,5 @@ Compiler support
 
 The library is tested to work on the following compilers:
 
-- DMD 2.076.1 up to 2.084.1
-- LDC 1.6.0 up to 1.14.0
+- DMD 2.076.1 up to 2.088.0
+- LDC 1.6.0 up to 1.17.0
