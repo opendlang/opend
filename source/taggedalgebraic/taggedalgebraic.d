@@ -98,10 +98,16 @@ struct TaggedAlgebraic(U) if (is(U == union) || is(U == struct) || is(U == enum)
 	//       combination, so that we can actually decide what to do for each
 	//       case.
 
-	/// Enables the invocation of methods of the stored value.
-	auto ref opDispatch(string name, this TA, ARGS...)(auto ref ARGS args) if (hasOp!(TA, OpKind.method, name, ARGS)) { return implementOp!(OpKind.method, name)(this, args); }
-	/// Enables accessing properties/fields of the stored value.
-	@property auto ref opDispatch(string name, this TA, ARGS...)(auto ref ARGS args) if (hasOp!(TA, OpKind.field, name, ARGS) && !hasOp!(TA, OpKind.method, name, ARGS)) { return implementOp!(OpKind.field, name)(this, args); }
+	/// Enables the access to methods and propeties/fields of the stored value.
+	template opDispatch(string name)
+		if (hasAnyMember!(TaggedAlgebraic, name))
+	{
+		/// Enables the invocation of methods of the stored value.
+		auto ref opDispatch(this TA, ARGS...)(auto ref ARGS args) if (hasOp!(TA, OpKind.method, name, ARGS)) { return implementOp!(OpKind.method, name)(this, args); }
+		/// Enables accessing properties/fields of the stored value.
+		@property auto ref opDispatch(this TA, ARGS...)(auto ref ARGS args) if (hasOp!(TA, OpKind.field, name, ARGS) && !hasOp!(TA, OpKind.method, name, ARGS)) { return implementOp!(OpKind.field, name)(this, args); }
+	}
+
 	/// Enables equality comparison with the stored value.
 	auto ref opEquals(T, this TA)(auto ref T other)
 		if (is(Unqual!T == TaggedAlgebraic) || hasOp!(TA, OpKind.binary, "==", T))
@@ -764,6 +770,38 @@ private struct DisableOpAttribute {
 	string name;
 }
 
+private template hasAnyMember(TA, string name)
+{
+	import std.traits : isAggregateType;
+
+	alias Types = TA.UnionType.FieldTypes;
+
+	template impl(size_t i) {
+		static if (i >= Types.length) enum impl = false;
+		else static if (!isAggregateType!(Types[i])) enum impl = impl!(i+1);
+		else static if (__traits(hasMember, Types[i], name))
+			enum impl = true;
+		else enum impl = impl!(i+1);
+	}
+
+	alias hasAnyMember = impl!0;
+}
+
+unittest {
+	import std.range.primitives : isOutputRange;
+	import std.typecons : Rebindable;
+
+	struct S { int a, b; void foo() {}}
+	interface I { void bar() immutable; }
+	static union U { int x; S s; Rebindable!(const(I)) i; }
+	alias TA = TaggedAlgebraic!U;
+	static assert(hasAnyMember!(TA, "a"));
+	static assert(hasAnyMember!(TA, "b"));
+	static assert(hasAnyMember!(TA, "foo"));
+	static assert(hasAnyMember!(TA, "bar"));
+	static assert(!hasAnyMember!(TA, "put"));
+	static assert(!isOutputRange!(TA, int));
+}
 
 private template hasOp(TA, OpKind kind, string name, ARGS...)
 {
@@ -796,6 +834,7 @@ unittest {
 	static assert(!hasOp!(TA, OpKind.method, "m"));
 	static assert(!hasOp!(const(TA), OpKind.binary, "+=", int));
 	static assert(!hasOp!(const(TA), OpKind.method, "m", int));
+	static assert(!hasOp!(TA, OpKind.method, "put", int));
 }
 
 unittest {
