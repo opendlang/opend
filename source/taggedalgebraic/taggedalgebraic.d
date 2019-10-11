@@ -99,11 +99,11 @@ struct TaggedAlgebraic(U) if (is(U == union) || is(U == struct) || is(U == enum)
 	//       case.
 
 	/// Enables the invocation of methods of the stored value.
-	auto opDispatch(string name, this TA, ARGS...)(auto ref ARGS args) if (hasOp!(TA, OpKind.method, name, ARGS)) { return implementOp!(OpKind.method, name)(this, args); }
+	auto ref opDispatch(string name, this TA, ARGS...)(auto ref ARGS args) if (hasOp!(TA, OpKind.method, name, ARGS)) { return implementOp!(OpKind.method, name)(this, args); }
 	/// Enables accessing properties/fields of the stored value.
-	@property auto opDispatch(string name, this TA, ARGS...)(auto ref ARGS args) if (hasOp!(TA, OpKind.field, name, ARGS) && !hasOp!(TA, OpKind.method, name, ARGS)) { return implementOp!(OpKind.field, name)(this, args); }
+	@property auto ref opDispatch(string name, this TA, ARGS...)(auto ref ARGS args) if (hasOp!(TA, OpKind.field, name, ARGS) && !hasOp!(TA, OpKind.method, name, ARGS)) { return implementOp!(OpKind.field, name)(this, args); }
 	/// Enables equality comparison with the stored value.
-	auto opEquals(T, this TA)(auto ref T other)
+	auto ref opEquals(T, this TA)(auto ref T other)
 		if (is(Unqual!T == TaggedAlgebraic) || hasOp!(TA, OpKind.binary, "==", T))
 	{
 		static if (is(Unqual!T == TaggedAlgebraic)) {
@@ -111,23 +111,23 @@ struct TaggedAlgebraic(U) if (is(U == union) || is(U == struct) || is(U == enum)
 		} else return implementOp!(OpKind.binary, "==")(this, other);
 	}
 	/// Enables relational comparisons with the stored value.
-	auto opCmp(T, this TA)(auto ref T other) if (hasOp!(TA, OpKind.binary, "<", T)) { assert(false, "TODO!"); }
+	auto ref opCmp(T, this TA)(auto ref T other) if (hasOp!(TA, OpKind.binary, "<", T)) { assert(false, "TODO!"); }
 	/// Enables the use of unary operators with the stored value.
-	auto opUnary(string op, this TA)() if (hasOp!(TA, OpKind.unary, op)) { return implementOp!(OpKind.unary, op)(this); }
+	auto ref opUnary(string op, this TA)() if (hasOp!(TA, OpKind.unary, op)) { return implementOp!(OpKind.unary, op)(this); }
 	/// Enables the use of binary operators with the stored value.
-	auto opBinary(string op, T, this TA)(auto ref T other) if (hasOp!(TA, OpKind.binary, op, T)) { return implementOp!(OpKind.binary, op)(this, other); }
+	auto ref opBinary(string op, T, this TA)(auto ref T other) if (hasOp!(TA, OpKind.binary, op, T)) { return implementOp!(OpKind.binary, op)(this, other); }
 	/// Enables the use of binary operators with the stored value.
-	auto opBinaryRight(string op, T, this TA)(auto ref T other) if (hasOp!(TA, OpKind.binaryRight, op, T) && !isInstanceOf!(TaggedAlgebraic, T)) { return implementOp!(OpKind.binaryRight, op)(this, other); }
+	auto ref opBinaryRight(string op, T, this TA)(auto ref T other) if (hasOp!(TA, OpKind.binaryRight, op, T) && !isInstanceOf!(TaggedAlgebraic, T)) { return implementOp!(OpKind.binaryRight, op)(this, other); }
 	/// ditto
-	auto opBinaryRight(string op, T, this TA)(auto ref T other) if (hasOp!(TA, OpKind.binaryRight, op, T) && isInstanceOf!(TaggedAlgebraic, T) && !hasOp!(T, OpKind.opBinary, op, TA)) { return implementOp!(OpKind.binaryRight, op)(this, other); }
+	auto ref opBinaryRight(string op, T, this TA)(auto ref T other) if (hasOp!(TA, OpKind.binaryRight, op, T) && isInstanceOf!(TaggedAlgebraic, T) && !hasOp!(T, OpKind.opBinary, op, TA)) { return implementOp!(OpKind.binaryRight, op)(this, other); }
 	/// Enables operator assignments on the stored value.
-	auto opOpAssign(string op, T, this TA)(auto ref T other) if (hasOp!(TA, OpKind.binary, op~"=", T)) { return implementOp!(OpKind.binary, op~"=")(this, other); }
+	auto ref opOpAssign(string op, T, this TA)(auto ref T other) if (hasOp!(TA, OpKind.binary, op~"=", T)) { return implementOp!(OpKind.binary, op~"=")(this, other); }
 	/// Enables indexing operations on the stored value.
-	auto opIndex(this TA, ARGS...)(auto ref ARGS args) if (hasOp!(TA, OpKind.index, null, ARGS)) { return implementOp!(OpKind.index, null)(this, args); }
+	auto ref opIndex(this TA, ARGS...)(auto ref ARGS args) if (hasOp!(TA, OpKind.index, null, ARGS)) { return implementOp!(OpKind.index, null)(this, args); }
 	/// Enables index assignments on the stored value.
-	auto opIndexAssign(this TA, ARGS...)(auto ref ARGS args) if (hasOp!(TA, OpKind.indexAssign, null, ARGS)) { return implementOp!(OpKind.indexAssign, null)(this, args); }
+	auto ref opIndexAssign(this TA, ARGS...)(auto ref ARGS args) if (hasOp!(TA, OpKind.indexAssign, null, ARGS)) { return implementOp!(OpKind.indexAssign, null)(this, args); }
 	/// Enables call syntax operations on the stored value.
-	auto opCall(this TA, ARGS...)(auto ref ARGS args) if (hasOp!(TA, OpKind.call, null, ARGS)) { return implementOp!(OpKind.call, null)(this, args); }
+	auto ref opCall(this TA, ARGS...)(auto ref ARGS args) if (hasOp!(TA, OpKind.call, null, ARGS)) { return implementOp!(OpKind.call, null)(this, args); }
 }
 
 ///
@@ -825,7 +825,20 @@ unittest { // "in" operator
 	assert(*("foo" in ta) == "bar");
 }
 
-private static auto implementOp(OpKind kind, string name, T, ARGS...)(ref T self, auto ref ARGS args)
+unittest { // issue #15 - by-ref return values
+	static struct S {
+		int x;
+		ref int getx() { return x; }
+	}
+	static union U { S s; }
+	alias TA = TaggedAlgebraic!U;
+	auto ta = TA(S(10));
+	assert(ta.x == 10);
+	ta.getx() = 11;
+	assert(ta.x == 11);
+}
+
+private static auto ref implementOp(OpKind kind, string name, T, ARGS...)(ref T self, auto ref ARGS args)
 {
 	import std.array : join;
 	import std.traits : CopyTypeQualifiers;
@@ -911,7 +924,7 @@ unittest { // opIndex on recursive TA with closed return value set using @disabl
 }
 
 
-private auto performOpRaw(U, OpKind kind, string name, T, ARGS...)(ref T value, /*auto ref*/ ARGS args)
+private auto ref performOpRaw(U, OpKind kind, string name, T, ARGS...)(ref T value, /*auto ref*/ ARGS args)
 {
 	static if (kind == OpKind.binary) return mixin("value "~name~" args[0]");
 	else static if (kind == OpKind.binaryRight) return mixin("args[0] "~name~" value");
@@ -932,7 +945,7 @@ unittest {
 }
 
 
-private auto performOp(U, OpKind kind, string name, T, ARGS...)(ref T value, /*auto ref*/ ARGS args)
+private auto ref performOp(U, OpKind kind, string name, T, ARGS...)(ref T value, /*auto ref*/ ARGS args)
 {
 	import std.traits : isInstanceOf;
 	static if (ARGS.length > 0 && isInstanceOf!(TaggedAlgebraic, ARGS[0])) {
@@ -1016,7 +1029,7 @@ private template OpInfo(U, OpKind kind, string name, ARGS...)
 	}
 	alias ReturnTypes = ReturnTypesImpl!0;
 
-	static auto perform(T)(ref T value, auto ref ARGS args) { return performOp!(U, kind, name)(value, args); }
+	static auto ref perform(T)(ref T value, auto ref ARGS args) { return performOp!(U, kind, name)(value, args); }
 }
 
 private template ImplicitUnqual(T) {
