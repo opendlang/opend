@@ -5,6 +5,10 @@ Implementation of a generic `TaggedUnion` type along with a `TaggedAlgebraic` ty
 
 [![Build Status](https://travis-ci.org/s-ludwig/taggedalgebraic.svg?branch=master)](https://travis-ci.org/s-ludwig/taggedalgebraic) [![codecov](https://codecov.io/gh/s-ludwig/taggedalgebraic/branch/master/graph/badge.svg)](https://codecov.io/gh/s-ludwig/taggedalgebraic)
 
+API Documentation:
+ - [`taggedalgebraic`](https://vibed.org/api/taggedalgebraic.taggedalgebraic/)
+ - [`taggedunion`](https://vibed.org/api/taggedalgebraic.taggedunion/)
+
 
 Usage of `TaggedUnion`
 ----------------------
