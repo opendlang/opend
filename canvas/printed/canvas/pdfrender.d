@@ -1082,7 +1082,9 @@ private:
     void outFloat(float f)
     {
         outDelim();
-        output(stripNumber(format("%f", f)));
+        char[] fstr = format("%f", f).dup;
+        replaceCommaPerDot(fstr);
+        output(stripNumber(fstr));
     }
 
     void outName(const(char)[] name)
@@ -1287,12 +1289,29 @@ private:
 
 private:
 
+void replaceCommaPerDot(char[] s)
+{
+    foreach(ref char ch; s)
+    {
+        if (ch == ',')
+        {
+            ch = '.';
+            break;
+        }
+    }
+}
+unittest
+{
+    char[] s = "1,5".dup;
+    replaceCommaPerDot(s);
+    assert(s == "1.5");
+}
 
 // Strip number of non-significant characters.
 // "1.10000" => "1.1"
 // "1.00000" => "1"
 // "4"       => "4"
-string stripNumber(string s)
+const(char)[] stripNumber(const(char)[] s)
 {
     assert(s.length > 0);
 
@@ -1304,10 +1323,10 @@ string stripNumber(string s)
     // if there is a dot, remove all trailing zeroes
     // ".45000" => ".45"
     int positionOfDot = -1;
-    foreach(int i, char c; s)
+    foreach(size_t i, char c; s)
     {
         if (c == '.')
-            positionOfDot = i;
+            positionOfDot = cast(int)i;
     }
     if (positionOfDot != -1)
     {
