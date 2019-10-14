@@ -33,7 +33,7 @@ pure {
 extern( System ):
 
 // Version of corresponding c header file
-enum VK_HEADER_VERSION = 123;
+enum VK_HEADER_VERSION = 124;
 
 enum VK_NULL_HANDLE = null;
 
@@ -488,6 +488,7 @@ enum VkStructureType {
     VK_STRUCTURE_TYPE_MEMORY_HOST_POINTER_PROPERTIES_EXT                                 = 1000178001,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_HOST_PROPERTIES_EXT                = 1000178002,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_INT64_FEATURES_KHR                   = 1000180000,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CLOCK_FEATURES_KHR                          = 1000181000,
     VK_STRUCTURE_TYPE_PIPELINE_COMPILER_CONTROL_CREATE_INFO_AMD                          = 1000183000,
     VK_STRUCTURE_TYPE_CALIBRATED_TIMESTAMP_INFO_EXT                                      = 1000184000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_PROPERTIES_AMD                         = 1000185000,
@@ -510,6 +511,12 @@ enum VkStructureType {
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXCLUSIVE_SCISSOR_FEATURES_NV                      = 1000205002,
     VK_STRUCTURE_TYPE_CHECKPOINT_DATA_NV                                                 = 1000206000,
     VK_STRUCTURE_TYPE_QUEUE_FAMILY_CHECKPOINT_PROPERTIES_NV                              = 1000206001,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES_KHR                    = 1000207000,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_PROPERTIES_KHR                  = 1000207001,
+    VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO_KHR                                     = 1000207002,
+    VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO_KHR                                 = 1000207003,
+    VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO_KHR                                            = 1000207004,
+    VK_STRUCTURE_TYPE_SEMAPHORE_SIGNAL_INFO_KHR                                          = 1000207005,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_INTEGER_FUNCTIONS_2_FEATURES_INTEL          = 1000209000,
     VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO_INTEL                                       = 1000210000,
     VK_STRUCTURE_TYPE_INITIALIZE_PERFORMANCE_API_INFO_INTEL                              = 1000210001,
@@ -934,6 +941,7 @@ enum VK_STRUCTURE_TYPE_IMPORT_MEMORY_HOST_POINTER_INFO_EXT                      
 enum VK_STRUCTURE_TYPE_MEMORY_HOST_POINTER_PROPERTIES_EXT                                = VkStructureType.VK_STRUCTURE_TYPE_MEMORY_HOST_POINTER_PROPERTIES_EXT;
 enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_HOST_PROPERTIES_EXT               = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_HOST_PROPERTIES_EXT;
 enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_INT64_FEATURES_KHR                  = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_INT64_FEATURES_KHR;
+enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CLOCK_FEATURES_KHR                         = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CLOCK_FEATURES_KHR;
 enum VK_STRUCTURE_TYPE_PIPELINE_COMPILER_CONTROL_CREATE_INFO_AMD                         = VkStructureType.VK_STRUCTURE_TYPE_PIPELINE_COMPILER_CONTROL_CREATE_INFO_AMD;
 enum VK_STRUCTURE_TYPE_CALIBRATED_TIMESTAMP_INFO_EXT                                     = VkStructureType.VK_STRUCTURE_TYPE_CALIBRATED_TIMESTAMP_INFO_EXT;
 enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_PROPERTIES_AMD                        = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_PROPERTIES_AMD;
@@ -956,6 +964,12 @@ enum VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_EXCLUSIVE_SCISSOR_STATE_CREATE_INFO_NV 
 enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXCLUSIVE_SCISSOR_FEATURES_NV                     = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXCLUSIVE_SCISSOR_FEATURES_NV;
 enum VK_STRUCTURE_TYPE_CHECKPOINT_DATA_NV                                                = VkStructureType.VK_STRUCTURE_TYPE_CHECKPOINT_DATA_NV;
 enum VK_STRUCTURE_TYPE_QUEUE_FAMILY_CHECKPOINT_PROPERTIES_NV                             = VkStructureType.VK_STRUCTURE_TYPE_QUEUE_FAMILY_CHECKPOINT_PROPERTIES_NV;
+enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES_KHR                   = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES_KHR;
+enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_PROPERTIES_KHR                 = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_PROPERTIES_KHR;
+enum VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO_KHR                                    = VkStructureType.VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO_KHR;
+enum VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO_KHR                                = VkStructureType.VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO_KHR;
+enum VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO_KHR                                           = VkStructureType.VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO_KHR;
+enum VK_STRUCTURE_TYPE_SEMAPHORE_SIGNAL_INFO_KHR                                         = VkStructureType.VK_STRUCTURE_TYPE_SEMAPHORE_SIGNAL_INFO_KHR;
 enum VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_INTEGER_FUNCTIONS_2_FEATURES_INTEL         = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_INTEGER_FUNCTIONS_2_FEATURES_INTEL;
 enum VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO_INTEL                                      = VkStructureType.VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO_INTEL;
 enum VK_STRUCTURE_TYPE_INITIALIZE_PERFORMANCE_API_INFO_INTEL                             = VkStructureType.VK_STRUCTURE_TYPE_INITIALIZE_PERFORMANCE_API_INFO_INTEL;
@@ -6437,6 +6451,20 @@ struct VkPhysicalDeviceShaderAtomicInt64FeaturesKHR {
 }
 
 
+// - VK_KHR_shader_clock -
+enum VK_KHR_shader_clock = 1;
+
+enum VK_KHR_SHADER_CLOCK_SPEC_VERSION = 1;
+enum VK_KHR_SHADER_CLOCK_EXTENSION_NAME = "VK_KHR_shader_clock";
+
+struct VkPhysicalDeviceShaderClockFeaturesKHR {
+    VkStructureType  sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CLOCK_FEATURES_KHR;
+    void*            pNext;
+    VkBool32         shaderSubgroupClock;
+    VkBool32         shaderDeviceClock;
+}
+
+
 // - VK_KHR_driver_properties -
 enum VK_KHR_driver_properties = 1;
 
@@ -6591,6 +6619,82 @@ enum VK_KHR_swapchain_mutable_format = 1;
 
 enum VK_KHR_SWAPCHAIN_MUTABLE_FORMAT_SPEC_VERSION = 1;
 enum VK_KHR_SWAPCHAIN_MUTABLE_FORMAT_EXTENSION_NAME = "VK_KHR_swapchain_mutable_format";
+
+
+// - VK_KHR_timeline_semaphore -
+enum VK_KHR_timeline_semaphore = 1;
+
+enum VK_KHR_TIMELINE_SEMAPHORE_SPEC_VERSION = 2;
+enum VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME = "VK_KHR_timeline_semaphore";
+
+enum VkSemaphoreTypeKHR {
+    VK_SEMAPHORE_TYPE_BINARY_KHR         = 0,
+    VK_SEMAPHORE_TYPE_TIMELINE_KHR       = 1,
+    VK_SEMAPHORE_TYPE_BEGIN_RANGE_KHR    = VK_SEMAPHORE_TYPE_BINARY_KHR,
+    VK_SEMAPHORE_TYPE_END_RANGE_KHR      = VK_SEMAPHORE_TYPE_TIMELINE_KHR,
+    VK_SEMAPHORE_TYPE_RANGE_SIZE_KHR     = VK_SEMAPHORE_TYPE_TIMELINE_KHR - VK_SEMAPHORE_TYPE_BINARY_KHR + 1,
+    VK_SEMAPHORE_TYPE_MAX_ENUM_KHR       = 0x7FFFFFFF
+}
+
+enum VK_SEMAPHORE_TYPE_BINARY_KHR        = VkSemaphoreTypeKHR.VK_SEMAPHORE_TYPE_BINARY_KHR;
+enum VK_SEMAPHORE_TYPE_TIMELINE_KHR      = VkSemaphoreTypeKHR.VK_SEMAPHORE_TYPE_TIMELINE_KHR;
+enum VK_SEMAPHORE_TYPE_BEGIN_RANGE_KHR   = VkSemaphoreTypeKHR.VK_SEMAPHORE_TYPE_BEGIN_RANGE_KHR;
+enum VK_SEMAPHORE_TYPE_END_RANGE_KHR     = VkSemaphoreTypeKHR.VK_SEMAPHORE_TYPE_END_RANGE_KHR;
+enum VK_SEMAPHORE_TYPE_RANGE_SIZE_KHR    = VkSemaphoreTypeKHR.VK_SEMAPHORE_TYPE_RANGE_SIZE_KHR;
+enum VK_SEMAPHORE_TYPE_MAX_ENUM_KHR      = VkSemaphoreTypeKHR.VK_SEMAPHORE_TYPE_MAX_ENUM_KHR;
+
+enum VkSemaphoreWaitFlagBitsKHR {
+    VK_SEMAPHORE_WAIT_ANY_BIT_KHR                = 0x00000001,
+    VK_SEMAPHORE_WAIT_FLAG_BITS_MAX_ENUM_KHR     = 0x7FFFFFFF
+}
+
+enum VK_SEMAPHORE_WAIT_ANY_BIT_KHR               = VkSemaphoreWaitFlagBitsKHR.VK_SEMAPHORE_WAIT_ANY_BIT_KHR;
+enum VK_SEMAPHORE_WAIT_FLAG_BITS_MAX_ENUM_KHR    = VkSemaphoreWaitFlagBitsKHR.VK_SEMAPHORE_WAIT_FLAG_BITS_MAX_ENUM_KHR;
+alias VkSemaphoreWaitFlagsKHR = VkFlags;
+
+struct VkPhysicalDeviceTimelineSemaphoreFeaturesKHR {
+    VkStructureType  sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES_KHR;
+    void*            pNext;
+    VkBool32         timelineSemaphore;
+}
+
+struct VkPhysicalDeviceTimelineSemaphorePropertiesKHR {
+    VkStructureType  sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_PROPERTIES_KHR;
+    void*            pNext;
+    uint64_t         maxTimelineSemaphoreValueDifference;
+}
+
+struct VkSemaphoreTypeCreateInfoKHR {
+    VkStructureType     sType = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO_KHR;
+    const( void )*      pNext;
+    VkSemaphoreTypeKHR  semaphoreType;
+    uint64_t            initialValue;
+}
+
+struct VkTimelineSemaphoreSubmitInfoKHR {
+    VkStructureType     sType = VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO_KHR;
+    const( void )*      pNext;
+    uint32_t            waitSemaphoreValueCount;
+    const( uint64_t )*  pWaitSemaphoreValues;
+    uint32_t            signalSemaphoreValueCount;
+    const( uint64_t )*  pSignalSemaphoreValues;
+}
+
+struct VkSemaphoreWaitInfoKHR {
+    VkStructureType          sType = VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO_KHR;
+    const( void )*           pNext;
+    VkSemaphoreWaitFlagsKHR  flags;
+    uint32_t                 semaphoreCount;
+    const( VkSemaphore )*    pSemaphores;
+    const( uint64_t )*       pValues;
+}
+
+struct VkSemaphoreSignalInfoKHR {
+    VkStructureType  sType = VK_STRUCTURE_TYPE_SEMAPHORE_SIGNAL_INFO_KHR;
+    const( void )*   pNext;
+    VkSemaphore      semaphore;
+    uint64_t         value;
+}
 
 
 // - VK_KHR_vulkan_memory_model -

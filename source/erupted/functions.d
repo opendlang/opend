@@ -253,6 +253,11 @@ extern( System ) {
     alias PFN_vkCmdDrawIndirectCountKHR                                         = void      function( VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, uint32_t maxDrawCount, uint32_t stride );
     alias PFN_vkCmdDrawIndexedIndirectCountKHR                                  = void      function( VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, uint32_t maxDrawCount, uint32_t stride );
 
+    // VK_KHR_timeline_semaphore
+    alias PFN_vkGetSemaphoreCounterValueKHR                                     = VkResult  function( VkDevice device, VkSemaphore semaphore, uint64_t* pValue );
+    alias PFN_vkWaitSemaphoresKHR                                               = VkResult  function( VkDevice device, const( VkSemaphoreWaitInfoKHR )* pWaitInfo, uint64_t timeout );
+    alias PFN_vkSignalSemaphoreKHR                                              = VkResult  function( VkDevice device, const( VkSemaphoreSignalInfoKHR )* pSignalInfo );
+
     // VK_KHR_pipeline_executable_properties
     alias PFN_vkGetPipelineExecutablePropertiesKHR                              = VkResult  function( VkDevice device, const( VkPipelineInfoKHR )* pPipelineInfo, uint32_t* pExecutableCount, VkPipelineExecutablePropertiesKHR* pProperties );
     alias PFN_vkGetPipelineExecutableStatisticsKHR                              = VkResult  function( VkDevice device, const( VkPipelineExecutableInfoKHR )* pExecutableInfo, uint32_t* pStatisticCount, VkPipelineExecutableStatisticKHR* pStatistics );
@@ -668,6 +673,11 @@ __gshared {
     // VK_KHR_draw_indirect_count
     PFN_vkCmdDrawIndirectCountKHR                                         vkCmdDrawIndirectCountKHR;
     PFN_vkCmdDrawIndexedIndirectCountKHR                                  vkCmdDrawIndexedIndirectCountKHR;
+
+    // VK_KHR_timeline_semaphore
+    PFN_vkGetSemaphoreCounterValueKHR                                     vkGetSemaphoreCounterValueKHR;
+    PFN_vkWaitSemaphoresKHR                                               vkWaitSemaphoresKHR;
+    PFN_vkSignalSemaphoreKHR                                              vkSignalSemaphoreKHR;
 
     // VK_KHR_pipeline_executable_properties
     PFN_vkGetPipelineExecutablePropertiesKHR                              vkGetPipelineExecutablePropertiesKHR;
@@ -1201,6 +1211,11 @@ void loadDeviceLevelFunctions( VkInstance instance ) {
     vkCmdDrawIndirectCountKHR                         = cast( PFN_vkCmdDrawIndirectCountKHR                         ) vkGetInstanceProcAddr( instance, "vkCmdDrawIndirectCountKHR" );
     vkCmdDrawIndexedIndirectCountKHR                  = cast( PFN_vkCmdDrawIndexedIndirectCountKHR                  ) vkGetInstanceProcAddr( instance, "vkCmdDrawIndexedIndirectCountKHR" );
 
+    // VK_KHR_timeline_semaphore
+    vkGetSemaphoreCounterValueKHR                     = cast( PFN_vkGetSemaphoreCounterValueKHR                     ) vkGetInstanceProcAddr( instance, "vkGetSemaphoreCounterValueKHR" );
+    vkWaitSemaphoresKHR                               = cast( PFN_vkWaitSemaphoresKHR                               ) vkGetInstanceProcAddr( instance, "vkWaitSemaphoresKHR" );
+    vkSignalSemaphoreKHR                              = cast( PFN_vkSignalSemaphoreKHR                              ) vkGetInstanceProcAddr( instance, "vkSignalSemaphoreKHR" );
+
     // VK_KHR_pipeline_executable_properties
     vkGetPipelineExecutablePropertiesKHR              = cast( PFN_vkGetPipelineExecutablePropertiesKHR              ) vkGetInstanceProcAddr( instance, "vkGetPipelineExecutablePropertiesKHR" );
     vkGetPipelineExecutableStatisticsKHR              = cast( PFN_vkGetPipelineExecutableStatisticsKHR              ) vkGetInstanceProcAddr( instance, "vkGetPipelineExecutableStatisticsKHR" );
@@ -1535,6 +1550,11 @@ void loadDeviceLevelFunctions( VkDevice device ) {
     // VK_KHR_draw_indirect_count
     vkCmdDrawIndirectCountKHR                         = cast( PFN_vkCmdDrawIndirectCountKHR                         ) vkGetDeviceProcAddr( device, "vkCmdDrawIndirectCountKHR" );
     vkCmdDrawIndexedIndirectCountKHR                  = cast( PFN_vkCmdDrawIndexedIndirectCountKHR                  ) vkGetDeviceProcAddr( device, "vkCmdDrawIndexedIndirectCountKHR" );
+
+    // VK_KHR_timeline_semaphore
+    vkGetSemaphoreCounterValueKHR                     = cast( PFN_vkGetSemaphoreCounterValueKHR                     ) vkGetDeviceProcAddr( device, "vkGetSemaphoreCounterValueKHR" );
+    vkWaitSemaphoresKHR                               = cast( PFN_vkWaitSemaphoresKHR                               ) vkGetDeviceProcAddr( device, "vkWaitSemaphoresKHR" );
+    vkSignalSemaphoreKHR                              = cast( PFN_vkSignalSemaphoreKHR                              ) vkGetDeviceProcAddr( device, "vkSignalSemaphoreKHR" );
 
     // VK_KHR_pipeline_executable_properties
     vkGetPipelineExecutablePropertiesKHR              = cast( PFN_vkGetPipelineExecutablePropertiesKHR              ) vkGetDeviceProcAddr( device, "vkGetPipelineExecutablePropertiesKHR" );

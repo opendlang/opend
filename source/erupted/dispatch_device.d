@@ -241,6 +241,11 @@ struct DispatchDevice {
         vkCmdDrawIndirectCountKHR                         = cast( PFN_vkCmdDrawIndirectCountKHR                         ) vkGetDeviceProcAddr( device, "vkCmdDrawIndirectCountKHR" );
         vkCmdDrawIndexedIndirectCountKHR                  = cast( PFN_vkCmdDrawIndexedIndirectCountKHR                  ) vkGetDeviceProcAddr( device, "vkCmdDrawIndexedIndirectCountKHR" );
 
+        // VK_KHR_timeline_semaphore
+        vkGetSemaphoreCounterValueKHR                     = cast( PFN_vkGetSemaphoreCounterValueKHR                     ) vkGetDeviceProcAddr( device, "vkGetSemaphoreCounterValueKHR" );
+        vkWaitSemaphoresKHR                               = cast( PFN_vkWaitSemaphoresKHR                               ) vkGetDeviceProcAddr( device, "vkWaitSemaphoresKHR" );
+        vkSignalSemaphoreKHR                              = cast( PFN_vkSignalSemaphoreKHR                              ) vkGetDeviceProcAddr( device, "vkSignalSemaphoreKHR" );
+
         // VK_KHR_pipeline_executable_properties
         vkGetPipelineExecutablePropertiesKHR              = cast( PFN_vkGetPipelineExecutablePropertiesKHR              ) vkGetDeviceProcAddr( device, "vkGetPipelineExecutablePropertiesKHR" );
         vkGetPipelineExecutableStatisticsKHR              = cast( PFN_vkGetPipelineExecutableStatisticsKHR              ) vkGetDeviceProcAddr( device, "vkGetPipelineExecutableStatisticsKHR" );
@@ -580,6 +585,11 @@ struct DispatchDevice {
     // VK_KHR_draw_indirect_count
     void      CmdDrawIndirectCountKHR( VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, uint32_t maxDrawCount, uint32_t stride ) { vkCmdDrawIndirectCountKHR( commandBuffer, buffer, offset, countBuffer, countBufferOffset, maxDrawCount, stride ); }
     void      CmdDrawIndexedIndirectCountKHR( VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, uint32_t maxDrawCount, uint32_t stride ) { vkCmdDrawIndexedIndirectCountKHR( commandBuffer, buffer, offset, countBuffer, countBufferOffset, maxDrawCount, stride ); }
+
+    // VK_KHR_timeline_semaphore
+    VkResult  GetSemaphoreCounterValueKHR( VkSemaphore semaphore, uint64_t* pValue ) { return vkGetSemaphoreCounterValueKHR( vkDevice, semaphore, pValue ); }
+    VkResult  WaitSemaphoresKHR( const( VkSemaphoreWaitInfoKHR )* pWaitInfo, uint64_t timeout ) { return vkWaitSemaphoresKHR( vkDevice, pWaitInfo, timeout ); }
+    VkResult  SignalSemaphoreKHR( const( VkSemaphoreSignalInfoKHR )* pSignalInfo ) { return vkSignalSemaphoreKHR( vkDevice, pSignalInfo ); }
 
     // VK_KHR_pipeline_executable_properties
     VkResult  GetPipelineExecutablePropertiesKHR( const( VkPipelineInfoKHR )* pPipelineInfo, uint32_t* pExecutableCount, VkPipelineExecutablePropertiesKHR* pProperties ) { return vkGetPipelineExecutablePropertiesKHR( vkDevice, pPipelineInfo, pExecutableCount, pProperties ); }
@@ -937,6 +947,11 @@ struct DispatchDevice {
     // VK_KHR_draw_indirect_count
     PFN_vkCmdDrawIndirectCountKHR                         vkCmdDrawIndirectCountKHR;
     PFN_vkCmdDrawIndexedIndirectCountKHR                  vkCmdDrawIndexedIndirectCountKHR;
+
+    // VK_KHR_timeline_semaphore
+    PFN_vkGetSemaphoreCounterValueKHR                     vkGetSemaphoreCounterValueKHR;
+    PFN_vkWaitSemaphoresKHR                               vkWaitSemaphoresKHR;
+    PFN_vkSignalSemaphoreKHR                              vkSignalSemaphoreKHR;
 
     // VK_KHR_pipeline_executable_properties
     PFN_vkGetPipelineExecutablePropertiesKHR              vkGetPipelineExecutablePropertiesKHR;
