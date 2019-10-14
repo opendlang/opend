@@ -33,7 +33,7 @@ pure {
 extern( System ):
 
 // Version of corresponding c header file
-enum VK_HEADER_VERSION = 124;
+enum VK_HEADER_VERSION = 125;
 
 enum VK_NULL_HANDLE = null;
 
@@ -6710,6 +6710,13 @@ struct VkPhysicalDeviceVulkanMemoryModelFeaturesKHR {
     VkBool32         vulkanMemoryModelDeviceScope;
     VkBool32         vulkanMemoryModelAvailabilityVisibilityChains;
 }
+
+
+// - VK_KHR_spirv_1_4 -
+enum VK_KHR_spirv_1_4 = 1;
+
+enum VK_KHR_SPIRV_1_4_SPEC_VERSION = 1;
+enum VK_KHR_SPIRV_1_4_EXTENSION_NAME = "VK_KHR_spirv_1_4";
 
 
 // - VK_KHR_surface_protected_capabilities -
