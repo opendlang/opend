@@ -215,8 +215,6 @@ mixin TestUtils;
 @("assign to rvalue")
 @system unittest {
 
-    import std.algorithm: move;
-
     {
         auto allocator = TestAllocator();
 
