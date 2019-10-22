@@ -67,7 +67,7 @@ template isUnique(T) {
 
 ///
 @("isUnique")
-@safe @nogc pure unittest {
+@safe unittest {
     import automem.unique: Unique;
 
     static struct Point {
@@ -104,7 +104,7 @@ template UniqueType(T)
 
 ///
 @("Get the base type of a Unique type")
-@safe @nogc pure unittest {
+@safe unittest {
     import automem.unique: Unique;
 
     static struct Point {
@@ -139,7 +139,7 @@ template isRefCounted(T) {
 
 ///
 @("isRefCounted")
-@safe @nogc pure unittest {
+@safe unittest {
     import automem.ref_counted: RefCounted;
     
     static struct Point {
@@ -176,7 +176,7 @@ template RefCountedType(T)
 
 ///
 @("Get the base type of a RefCounted type")
-@safe @nogc pure unittest {
+@safe unittest {
     import automem.ref_counted: RefCounted;
 
     static struct Point {
