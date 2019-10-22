@@ -1,6 +1,5 @@
 module automem.traits;
 
-import std.typecons: Flag;
 
 void checkAllocator(T)() {
     import std.experimental.allocator: make, dispose;
@@ -50,8 +49,9 @@ template isTheAllocator(Allocator) {
  */
 template isUnique(T) {
     import automem.unique: Unique;
+    import std.typecons: Flag;
 
-	static if (is(T == Unique!(Type, Allocator, supportsGC), 
+    static if (is(T == Unique!(Type, Allocator, supportsGC), 
                   Type, Allocator, Flag!"supportGC" supportsGC))
     {
         static if (isAllocator!Allocator)
@@ -75,11 +75,11 @@ template isUnique(T) {
         int y;
     }
 
-	auto u = Unique!Point(2, 3);
-	static assert(isUnique!(typeof(u)));
+    auto u = Unique!Point(2, 3);
+    static assert(isUnique!(typeof(u)));
 
     auto p = Point(2, 3);
-	static assert(!isUnique!(typeof(p)));
+    static assert(!isUnique!(typeof(p)));
 }
 
 /**
@@ -88,8 +88,10 @@ template isUnique(T) {
 template UniqueType(T)
 {
     import automem.unique: Unique;
-
+    
     static if (isUnique!T) {
+        import std.typecons: Flag;
+
         static if (is(T == Unique!(Type, Allocator, supportsGC), 
                       Type, Allocator, Flag!"supportGC" supportsGC))
             alias UniqueType = Type;
@@ -110,8 +112,8 @@ template UniqueType(T)
         int y;
     }
 
-	auto u = Unique!Point(2, 3);
-	static assert(is(Point == UniqueType!(typeof(u))));
+    auto u = Unique!Point(2, 3);
+    static assert(is(Point == UniqueType!(typeof(u))));
 }
 
 /**
@@ -119,8 +121,9 @@ template UniqueType(T)
  */
 template isRefCounted(T) {
     import automem.ref_counted: RefCounted;
+    import std.typecons: Flag;
 
-	static if (is(T == RefCounted!(Type, Allocator, supportsGC), 
+    static if (is(T == RefCounted!(Type, Allocator, supportsGC), 
                   Type, Allocator, Flag!"supportGC" supportsGC))
     {
         static if (isAllocator!Allocator)
@@ -144,8 +147,8 @@ template isRefCounted(T) {
         int y;
     }
 
-	auto s = RefCountedType!Point(2, 3);
-	static assert(isRefCounted!(typeof(s)));
+    auto s = RefCountedType!Point(2, 3);
+    static assert(isRefCounted!(typeof(s)));
 
     auto p = Point(2, 3);
     static assert(!isRefCounted!(typeof(p)));
@@ -157,8 +160,10 @@ template isRefCounted(T) {
 template RefCountedType(T)
 {
     import automem.ref_counted: RefCounted;
-
+    
     static if (isRefCounted!T) {
+        import std.typecons: Flag;
+
         static if (is(T == RefCounted!(Type, Allocator, supportsGC), 
                       Type, Allocator, Flag!"supportGC" supportsGC))
             alias RefCountedType = Type;
@@ -179,6 +184,6 @@ template RefCountedType(T)
         int y;
     }
 
-	auto s = RefCounted!Point(2, 3);
-	static assert(is(Point == RefCountedType!(typeof(s))));
+    auto s = RefCounted!Point(2, 3);
+    static assert(is(Point == RefCountedType!(typeof(s))));
 }
