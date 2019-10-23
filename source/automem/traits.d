@@ -43,3 +43,103 @@ template isTheAllocator(Allocator) {
     import std.experimental.allocator: theAllocator;
     enum isTheAllocator = is(Allocator == typeof(theAllocator));
 }
+
+/**
+   Determines if a type is Unique.
+ */
+template isUnique(T) {
+    import automem.unique: Unique;
+    import std.traits: TemplateOf;
+    enum isUnique = __traits(isSame, TemplateOf!T, Unique);
+}
+
+///
+@("isUnique")
+@safe unittest {
+    import automem.unique: Unique;
+
+    static struct Point {
+        int x;
+        int y;
+    }
+
+    auto u = Unique!Point(2, 3);
+    static assert(isUnique!(typeof(u)));
+
+    auto p = Point(2, 3);
+    static assert(!isUnique!(typeof(p)));
+}
+
+/**
+   The base type of a `Unique` pointer.
+ */
+template UniqueType(T)
+{
+    import automem.unique: Unique;
+    static assert(isUnique!T);
+    alias UniqueType = T.Type;
+}
+
+///
+@("Get the base type of a Unique type")
+@safe unittest {
+    import automem.unique: Unique;
+
+    static struct Point {
+        int x;
+        int y;
+    }
+
+    auto u = Unique!Point(2, 3);
+    static assert(is(Point == UniqueType!(typeof(u))));
+}
+
+/**
+   Determines if a type is RefCounted.
+ */
+template isRefCounted(T) {
+    import automem.ref_counted: RefCounted;
+    import std.traits: TemplateOf;
+    enum isRefCounted = __traits(isSame, TemplateOf!T, RefCounted);
+}
+
+///
+@("isRefCounted")
+@safe unittest {
+    import automem.ref_counted: RefCounted;
+    
+    static struct Point {
+        int x;
+        int y;
+    }
+
+    auto s = RefCounted!Point(2, 3);
+    static assert(isRefCounted!(typeof(s)));
+
+    auto p = Point(2, 3);
+    static assert(!isRefCounted!(typeof(p)));
+}
+
+/**
+   The base type of a `RefCounted` pointer.
+ */
+template RefCountedType(T)
+{
+    import automem.ref_counted: RefCounted;
+    static assert(isRefCounted!T);
+    alias RefCountedType = T.Type;
+}
+
+///
+@("Get the base type of a RefCounted type")
+@safe unittest {
+    import automem.ref_counted: RefCounted;
+
+    static struct Point {
+        int x;
+        int y;
+    }
+
+    auto s = RefCounted!Point(2, 3);
+    static assert(is(Point == RefCountedType!(typeof(s))));
+}
