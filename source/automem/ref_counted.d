@@ -19,7 +19,7 @@ else
 /**
    A reference-counted smart pointer similar to C++'s std::shared_ptr.
  */
-struct RefCounted(Type,
+struct RefCounted(RefCountedType,
                   Allocator = typeof(theAllocator),
                   Flag!"supportGC" supportGC = gcExists ? Flag!"supportGC".yes : Flag!"supportGC".no)
     if(isAllocator!Allocator)
@@ -30,6 +30,8 @@ struct RefCounted(Type,
     enum isSingleton = hasMember!(Allocator, "instance");
     enum isTheAllocator = is(Allocator == typeof(theAllocator));
     enum isGlobal = isSingleton || isTheAllocator;
+    
+    alias Type = RefCountedType;
 
     static if(isGlobal)
         /**

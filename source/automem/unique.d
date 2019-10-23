@@ -21,7 +21,7 @@ else
    A unique pointer similar to C++'s std::unique_ptr.
  */
 struct Unique(
-    Type,
+    UniqueType,
     Allocator = typeof(theAllocator()),
     Flag!"supportGC" supportGC = gcExists ? Flag!"supportGC".yes : Flag!"supportGC".no
 )
@@ -34,6 +34,8 @@ struct Unique(
     enum isSingleton = hasMember!(Allocator, "instance");
     enum isTheAllocator = is(Allocator == typeof(theAllocator));
     enum isGlobal = isSingleton || isTheAllocator;
+
+    alias Type = UniqueType;
 
     static if(is(Type == class))
         alias Pointer = Type;
