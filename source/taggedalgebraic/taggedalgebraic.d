@@ -613,6 +613,17 @@ unittest { // issue #13
 	assert(ta.foo() == "foo");
 }
 
+unittest
+{
+	static union U { int[] a; }
+	TaggedAlgebraic!U ta;
+	ta = [1,2,3];
+	assert(ta.length == 3);
+	ta.length = 4;
+	//assert(ta.length == 4); //FIXME
+	assert(ta.opDispatch!"sizeof" == (int[]).sizeof);
+}
+
 
 /** Tests if the algebraic type stores a value of a certain data type.
 */
@@ -778,10 +789,14 @@ private template hasAnyMember(TA, string name)
 
 	template impl(size_t i) {
 		static if (i >= Types.length) enum impl = false;
-		else static if (!isAggregateType!(Types[i])) enum impl = impl!(i+1);
-		else static if (__traits(hasMember, Types[i], name))
-			enum impl = true;
-		else enum impl = impl!(i+1);
+		else {
+			alias T = Types[i];
+			static if (__traits(hasMember, T, name)
+				// work around https://issues.dlang.org/show_bug.cgi?id=20316
+				|| (is(T : Q[], Q) && (name == "length" || name == "ptr" || name == "capacity")))
+				enum impl = true;
+			else enum impl = impl!(i+1);
+		}
 	}
 
 	alias hasAnyMember = impl!0;
@@ -793,12 +808,16 @@ unittest {
 
 	struct S { int a, b; void foo() {}}
 	interface I { void bar() immutable; }
-	static union U { int x; S s; Rebindable!(const(I)) i; }
+	static union U { int x; S s; Rebindable!(const(I)) i; int[] a; }
 	alias TA = TaggedAlgebraic!U;
 	static assert(hasAnyMember!(TA, "a"));
 	static assert(hasAnyMember!(TA, "b"));
 	static assert(hasAnyMember!(TA, "foo"));
 	static assert(hasAnyMember!(TA, "bar"));
+	static assert(hasAnyMember!(TA, "length"));
+	static assert(hasAnyMember!(TA, "ptr"));
+	static assert(hasAnyMember!(TA, "capacity"));
+	static assert(hasAnyMember!(TA, "sizeof"));
 	static assert(!hasAnyMember!(TA, "put"));
 	static assert(!isOutputRange!(TA, int));
 }
