@@ -621,6 +621,7 @@ unittest
 	assert(ta.length == 3);
 	ta.length = 4;
 	//assert(ta.length == 4); //FIXME
+	assert(ta.opDispatch!"sizeof" == (int[]).sizeof);
 }
 
 
@@ -816,6 +817,7 @@ unittest {
 	static assert(hasAnyMember!(TA, "length"));
 	static assert(hasAnyMember!(TA, "ptr"));
 	static assert(hasAnyMember!(TA, "capacity"));
+	static assert(hasAnyMember!(TA, "sizeof"));
 	static assert(!hasAnyMember!(TA, "put"));
 	static assert(!isOutputRange!(TA, int));
 }
