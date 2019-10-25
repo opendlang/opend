@@ -146,6 +146,32 @@ mixin template TestUtils() {
         }
     }
 
+    private class SharedClass {
+        int i;
+        static int numClasss = 0;
+
+        this(int i) @safe nothrow shared {
+            this.i = i;
+
+            ++numClasss;
+            try () @trusted {
+                    _writelnUt("SharedClass normal ctor ", this, ", i=", i, ", N=", numClasss);
+                }();
+            catch(Exception ex) {}
+        }
+
+        ~this() @safe nothrow {
+            --numClasss;
+            try () @trusted { _writelnUt("SharedClass dtor ", this, ", i=", i, ", N=", numClasss); }();
+            catch(Exception ex) {}
+        }
+
+        int twice() @safe pure const nothrow shared {
+            return i * 2;
+        }
+    }
+
+
     private struct SafeAllocator {
 
         import std.experimental.allocator.mallocator: Mallocator;

@@ -30,7 +30,7 @@ struct RefCounted(RefCountedType,
     enum isSingleton = hasMember!(Allocator, "instance");
     enum isTheAllocator = is(Allocator == typeof(theAllocator));
     enum isGlobal = isSingleton || isTheAllocator;
-    
+
     alias Type = RefCountedType;
 
     static if(isGlobal)
@@ -161,6 +161,7 @@ private:
 
 
         static if (is(Type == class)) {
+
             inout(Type) _get() inout {
                 return cast(inout(Type)) &_rawMemory[0];
             }
@@ -214,16 +215,29 @@ private:
             // []    interfaces
             // T...  members
             import core.memory: GC;
-            if (supportGC && !(typeid(Type).m_flags & TypeInfo_Class.ClassFlags.noPointers))
+
+            // TypeInfo_Shared has no
+            static if(is(Type == shared)) {
+                auto flags() {
+                    return (cast(TypeInfo_Class) typeid(Type).base).m_flags;
+                }
+            } else {
+                auto flags() {
+                    return typeid(Type).m_flags;
+                }
+            }
+
+
+            if (supportGC && !(flags & TypeInfo_Class.ClassFlags.noPointers))
                 // members have pointers: we have to watch the monitor
                 // and all members; skip the classInfoPtr
-                GC.addRange(&_impl._rawMemory[(void*).sizeof],
+                GC.addRange(cast(void*) &_impl._rawMemory[(void*).sizeof],
                         __traits(classInstanceSize, Type) - (void*).sizeof);
             else
                 // representation doesn't have pointers, just watch the
                 // monitor pointer; skip the classInfoPtr
                 // need to watch the monitor pointer even if supportGC is false.
-                GC.addRange(&_impl._rawMemory[(void*).sizeof], (void*).sizeof);
+                GC.addRange(cast(void*) &_impl._rawMemory[(void*).sizeof], (void*).sizeof);
         } else static if (supportGC && hasIndirections!Type) {
             import core.memory: GC;
             GC.addRange(cast(void*) &_impl._object, Type.sizeof);
@@ -244,7 +258,7 @@ private:
             () @trusted { destruct(_impl._get); }();
             static if (is(Type == class)) {
                 // need to watch the monitor pointer even if supportGC is false.
-                () @trusted { GC.removeRange(&_impl._rawMemory[(void*).sizeof]); }();
+                () @trusted { GC.removeRange(cast(void*) &_impl._rawMemory[(void*).sizeof]); }();
             } else static if (supportGC && hasIndirections!Type) {
                 () @trusted { GC.removeRange(cast(void*) &_impl._object); }();
             }
@@ -276,11 +290,12 @@ private template makeObject(args...)
     void makeObject(Type, A)(ref RefCounted!(Type, A) rc) @trusted {
         import std.conv: emplace;
         import std.functional : forward;
+        import std.traits: Unqual;
 
         rc.allocateImpl;
 
         static if(is(Type == class))
-            emplace!Type(rc._impl._rawMemory, forward!args);
+            emplace!Type(cast(void[]) rc._impl._rawMemory[], forward!args);
         else
             emplace(&rc._impl._object, forward!args);
     }

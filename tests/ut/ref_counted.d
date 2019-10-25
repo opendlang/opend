@@ -174,7 +174,7 @@ mixin TestUtils;
     Struct.numStructs.shouldEqual(0);
 }
 
-@("default allocator (shared)")
+@("default.struct.shared")
 @system unittest {
     {
         auto ptr = RefCounted!(shared SharedStruct)(5);
@@ -182,6 +182,17 @@ mixin TestUtils;
     }
     SharedStruct.numStructs.shouldEqual(0);
 }
+
+
+@("default.class.shared")
+@system unittest {
+    {
+        auto ptr = RefCounted!(shared SharedClass)(5);
+        SharedClass.numClasss.shouldEqual(1);
+    }
+    SharedClass.numClasss.shouldEqual(0);
+}
+
 
 @("deref")
 @system unittest {
