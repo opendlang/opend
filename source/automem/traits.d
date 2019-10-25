@@ -73,11 +73,11 @@ template isUnique(T) {
 /**
    The base type of a `Unique` pointer.
  */
-template UniqueType(T)
+template UniqueTarget(T)
 {
     import automem.unique: Unique;
     static assert(isUnique!T);
-    alias UniqueType = T.Type;
+    alias UniqueTarget = T.Type;
 }
 
 ///
@@ -91,7 +91,7 @@ template UniqueType(T)
     }
 
     auto u = Unique!Point(2, 3);
-    static assert(is(Point == UniqueType!(typeof(u))));
+    static assert(is(Point == UniqueTarget!(typeof(u))));
 }
 
 /**
@@ -123,11 +123,11 @@ template isRefCounted(T) {
 /**
    The base type of a `RefCounted` pointer.
  */
-template RefCountedType(T)
+template RefCountedTarget(T)
 {
     import automem.ref_counted: RefCounted;
     static assert(isRefCounted!T);
-    alias RefCountedType = T.Type;
+    alias RefCountedTarget = T.Type;
 }
 
 ///
@@ -141,5 +141,5 @@ template RefCountedType(T)
     }
 
     auto s = RefCounted!Point(2, 3);
-    static assert(is(Point == RefCountedType!(typeof(s))));
+    static assert(is(Point == RefCountedTarget!(typeof(s))));
 }
