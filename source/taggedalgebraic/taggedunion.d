@@ -9,6 +9,7 @@ module taggedalgebraic.taggedunion;
 
 import std.algorithm.mutation : move, swap;
 import std.meta;
+import std.range : isOutputRange;
 import std.traits : EnumMembers, FieldNameTuple, Unqual, isInstanceOf;
 
 
@@ -292,6 +293,46 @@ align(commonAlignment!(UnionKindTypes!(UnionFieldEnum!U))) struct TaggedUnion
 		}
 		m_kind = kind;
 	}
+
+	/** Converts the contained value to a string.
+
+		The format output by this method is "(kind: value)", where "kind" is
+		the enum name of the currently stored type and "value" is the string
+		representation of the stored value.
+	*/
+	void toString(W)(ref W w) const
+		if (isOutputRange!(W, char))
+	{
+		import std.range.primitives : put;
+		toString(s => put(w, s));
+	}
+	/// ditto
+	void toString(scope void delegate(const(char)[]) sink)
+	const {
+		import std.conv : text;
+		import std.format : FormatSpec, formatValue;
+
+		final switch (m_kind) {
+			foreach (i, v; EnumMembers!Kind) {
+				case v:
+					enum vstr = text(v);
+					static if (isUnitType!(FieldTypes[i])) sink(vstr);
+					else {
+						// NOTE: using formatValue instead of formattedWrite
+						//       because formattedWrite does not work for
+						//       non-copyable types
+						enum prefix = "(" ~ vstr ~ ": ";
+						enum suffix = ")";
+						sink(prefix);
+						FormatSpec!char spec;
+						sink.formatValue(value!v, spec);
+						sink(suffix);
+					}
+					break;
+			}
+		}
+	}
+
 
 	package @trusted @property ref inout(T) trustedGet(T)() inout { return *cast(inout(T)*)m_data.ptr; }
 }
