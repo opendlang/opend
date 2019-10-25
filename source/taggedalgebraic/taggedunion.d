@@ -479,6 +479,23 @@ unittest { // alignment
 	else assert((cast(ubyte*)&s3.vValue() - cast(ubyte*)&s3) % 4 == 0);
 }
 
+unittest { // toString
+	import std.conv : to;
+
+	static struct NoCopy {
+		@disable this(this);
+		string toString() const { return "foo"; }
+	}
+
+	union U { Void empty; int i; NoCopy noCopy; }
+	TaggedUnion!U val;
+	assert(val.to!string == "empty");
+	val.setI(42);
+	assert(val.to!string == "(i: 42)");
+	val.setNoCopy(NoCopy.init);
+	assert(val.to!string == "(noCopy: foo)");
+}
+
 
 /** Dispatches the value contained on a `TaggedUnion` to a set of visitors.
 
