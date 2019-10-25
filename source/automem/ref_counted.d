@@ -200,7 +200,7 @@ private:
     else
         alias ImplType = Impl;
 
-    public ImplType* _impl; // public or alias this doesn't work
+    public ImplType* _impl; // has to be public or alias this doesn't work
 
     void allocateImpl() {
         import std.traits: hasIndirections;
