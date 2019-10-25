@@ -9,6 +9,7 @@ module taggedalgebraic.taggedunion;
 
 import std.algorithm.mutation : move, swap;
 import std.meta;
+import std.range : isOutputRange;
 import std.traits : EnumMembers, FieldNameTuple, Unqual, isInstanceOf;
 
 
@@ -293,6 +294,46 @@ align(commonAlignment!(UnionKindTypes!(UnionFieldEnum!U))) struct TaggedUnion
 		m_kind = kind;
 	}
 
+	/** Converts the contained value to a string.
+
+		The format output by this method is "(kind: value)", where "kind" is
+		the enum name of the currently stored type and "value" is the string
+		representation of the stored value.
+	*/
+	void toString(W)(ref W w) const
+		if (isOutputRange!(W, char))
+	{
+		import std.range.primitives : put;
+		toString(s => put(w, s));
+	}
+	/// ditto
+	void toString(scope void delegate(const(char)[]) sink)
+	const {
+		import std.conv : text;
+		import std.format : FormatSpec, formatValue;
+
+		final switch (m_kind) {
+			foreach (i, v; EnumMembers!Kind) {
+				case v:
+					enum vstr = text(v);
+					static if (isUnitType!(FieldTypes[i])) sink(vstr);
+					else {
+						// NOTE: using formatValue instead of formattedWrite
+						//       because formattedWrite does not work for
+						//       non-copyable types
+						enum prefix = "(" ~ vstr ~ ": ";
+						enum suffix = ")";
+						sink(prefix);
+						FormatSpec!char spec;
+						sink.formatValue(value!v, spec);
+						sink(suffix);
+					}
+					break;
+			}
+		}
+	}
+
+
 	package @trusted @property ref inout(T) trustedGet(T)() inout { return *cast(inout(T)*)m_data.ptr; }
 }
 }
@@ -436,6 +477,23 @@ unittest { // alignment
 	TaggedUnion!S1 s3;
 	version (D_LP64) assert((cast(ubyte*)&s3.vValue() - cast(ubyte*)&s3) % 8 == 0);
 	else assert((cast(ubyte*)&s3.vValue() - cast(ubyte*)&s3) % 4 == 0);
+}
+
+unittest { // toString
+	import std.conv : to;
+
+	static struct NoCopy {
+		@disable this(this);
+		string toString() const { return "foo"; }
+	}
+
+	union U { Void empty; int i; NoCopy noCopy; }
+	TaggedUnion!U val;
+	assert(val.to!string == "empty");
+	val.setI(42);
+	assert(val.to!string == "(i: 42)");
+	val.setNoCopy(NoCopy.init);
+	assert(val.to!string == "(noCopy: foo)");
 }
 
 
