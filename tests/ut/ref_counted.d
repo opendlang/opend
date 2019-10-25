@@ -9,6 +9,7 @@ mixin TestUtils;
 @("struct test allocator no copies")
 @system unittest {
     auto allocator = TestAllocator();
+    Struct.numStructs.should == 0;
     {
         auto ptr = RefCounted!(Struct, TestAllocator*)(&allocator, 5);
         Struct.numStructs.shouldEqual(1);
