@@ -71,30 +71,6 @@ template isUnique(T) {
 }
 
 /**
-   The base type of a `Unique` pointer.
- */
-template UniqueType(T)
-{
-    import automem.unique: Unique;
-    static assert(isUnique!T);
-    alias UniqueType = T.Type;
-}
-
-///
-@("Get the base type of a Unique type")
-@safe unittest {
-    import automem.unique: Unique;
-
-    static struct Point {
-        int x;
-        int y;
-    }
-
-    auto u = Unique!Point(2, 3);
-    static assert(is(Point == UniqueType!(typeof(u))));
-}
-
-/**
    Determines if a type is RefCounted.
  */
 template isRefCounted(T) {
@@ -120,19 +96,20 @@ template isRefCounted(T) {
     static assert(!isRefCounted!(typeof(p)));
 }
 
+
 /**
-   The base type of a `RefCounted` pointer.
+   The target of a `Unique` or `RefCounted` pointer.
  */
-template RefCountedType(T)
+template PointerTarget(T)
+    if (isUnique!T || isRefCounted!T)
 {
-    import automem.ref_counted: RefCounted;
-    static assert(isRefCounted!T);
-    alias RefCountedType = T.Type;
+    alias PointerTarget = T.Type;
 }
 
 ///
-@("Get the base type of a RefCounted type")
+@("Get the target of a Unique or RefCounter pointer")
 @safe unittest {
+    import automem.unique: Unique;
     import automem.ref_counted: RefCounted;
 
     static struct Point {
@@ -140,6 +117,9 @@ template RefCountedType(T)
         int y;
     }
 
+    auto u = Unique!Point(2, 3);
+    static assert(is(Point == PointerTarget!(typeof(u))));
+
     auto s = RefCounted!Point(2, 3);
-    static assert(is(Point == RefCountedType!(typeof(s))));
+    static assert(is(Point == PointerTarget!(typeof(s))));
 }
