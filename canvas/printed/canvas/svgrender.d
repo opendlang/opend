@@ -97,12 +97,14 @@ public:
 
     override void fillRect(float x, float y, float width, float height)
     {
-        output(format(`<rect x="%s" y="%s" width="%s" height="%s" fill="%s"/>`, x, y, width, height, _currentFill));
+        output(format(`<rect x="%s" y="%s" width="%s" height="%s" fill="%s"/>`, 
+                      convertFloatToText(x), convertFloatToText(y), convertFloatToText(width), convertFloatToText(height), _currentFill));
     }
 
     override void strokeRect(float x, float y, float width, float height)
     {
-        output(format(`<rect x="%s" y="%s" width="%s" height="%s" stroke="%s" fill="none"/>`, x, y, width, height, _currentStroke));
+        output(format(`<rect x="%s" y="%s" width="%s" height="%s" stroke="%s" fill="none"/>`, 
+                      convertFloatToText(x), convertFloatToText(y), convertFloatToText(width), convertFloatToText(height), _currentStroke));
     }
 
     override TextMetrics measureText(string text)
@@ -149,14 +151,14 @@ public:
                 textAnchor="middle";
         }
 
-        output(format(`<text x="%f" y="%f" font-family="%s" font-size="%s" fill="%s" text-anchor="%s">%s</text>`, 
-                      x, y + textBaselineInMm, svgFamilyName, _fontSize, _currentFill, textAnchor, text)); 
+        output(format(`<text x="%s" y="%s" font-family="%s" font-size="%s" fill="%s" text-anchor="%s">%s</text>`, 
+                      convertFloatToText(x), convertFloatToText(y + textBaselineInMm), svgFamilyName, convertFloatToText(_fontSize), _currentFill, textAnchor, text)); 
         // TODO escape XML sequences in text
     }
 
     override void beginPath(float x, float y)
     {
-        _currentPath = format("M%s %s", x, y);
+        _currentPath = format("M%s %s", convertFloatToText(x), convertFloatToText(y));
     }
 
     override void lineWidth(float width)
@@ -166,7 +168,7 @@ public:
 
     override void lineTo(float dx, float dy)
     {
-        _currentPath ~= format(" L%s %s", dx, dy);
+        _currentPath ~= format(" L%s %s", convertFloatToText(dx), convertFloatToText(dy));
     }
 
     override void fill()
@@ -176,12 +178,12 @@ public:
 
     override void stroke()
     {
-        output(format(`<path d="%s" stroke="%s" stroke-width="%s"/>`, _currentPath, _currentStroke, _currentLineWidth));
+        output(format(`<path d="%s" stroke="%s" stroke-width="%s"/>`, _currentPath, _currentStroke, convertFloatToText(_currentLineWidth)));
     }
 
     override void fillAndStroke()
     {
-        output(format(`<path d="%s" fill="%s" stroke="%s" stroke-width="%s"/>`, _currentPath, _currentFill, _currentStroke, _currentLineWidth));
+        output(format(`<path d="%s" fill="%s" stroke="%s" stroke-width="%s"/>`, _currentPath, _currentFill, _currentStroke, convertFloatToText(_currentLineWidth)));
     }
 
     override void closePath()
@@ -221,20 +223,20 @@ public:
 
     override void scale(float x, float y)
     {
-        output(format(`<g transform="scale(%s %s)">`, x, y));
+        output(format(`<g transform="scale(%s %s)">`, convertFloatToText(x), convertFloatToText(y)));
         _numberOfNestedGroups++;
     }
 
     override void translate(float dx, float dy)
     {
-        output(format(`<g transform="translate(%s %s)">`, dx, dy));
+        output(format(`<g transform="translate(%s %s)">`, convertFloatToText(dx), convertFloatToText(dy)));
         _numberOfNestedGroups++;
     }
 
     override void rotate(float angle)
     {
         float angleInDegrees = (angle * 180) / PI;
-        output(format(`<g transform="rotate(%s)">`, angleInDegrees));
+        output(format(`<g transform="rotate(%s)">`, convertFloatToText(angleInDegrees)));
         _numberOfNestedGroups++;
     }
 
@@ -243,7 +245,7 @@ public:
         float widthMm = (1000.0f * image.width) / image.pixelsPerMeterX();
         float heightMm = (1000.0f * image.height) / image.pixelsPerMeterY();
         output(format(`<image xlink:href="%s" x="%s" y="%s" width="%s" height="%s" preserveAspectRatio="none"/>`, 
-                      image.toDataURI(), x, y, widthMm, heightMm));
+                      image.toDataURI(), convertFloatToText(x), convertFloatToText(y), convertFloatToText(widthMm), convertFloatToText(heightMm)));
     }
 
 protected:
@@ -296,7 +298,7 @@ private:
 
     void beginPage()
     {        
-        output(format(`<g transform="translate(0,%s)">`, _pageHeightMm * (_numberOfPage-1)));
+        output(format(`<g transform="translate(0,%s)">`, convertFloatToText(_pageHeightMm * (_numberOfPage-1))));
         _numberOfNestedGroups = 1;
     }
 
@@ -317,7 +319,7 @@ private:
         return getXMLHeader()
             ~ format(`<svg xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg" xmlns:xlink= "http://www.w3.org/1999/xlink"`
                      ~` width="%smm" height="%smm" viewBox="0 0 %s %s" version="1.1">`,
-                     _pageWidthMm, heightInMm, _pageWidthMm, heightInMm);
+                     convertFloatToText(_pageWidthMm), convertFloatToText(heightInMm), convertFloatToText(_pageWidthMm), convertFloatToText(heightInMm));
     }
 
     static struct FontSVGInfo
@@ -390,4 +392,75 @@ private:
 
         svgFamilyName = info.svgFamilyName;
     }
+}
+
+private:
+
+const(char)[] convertFloatToText(float f)
+{
+    char[] fstr = format("%f", f).dup;
+    replaceCommaPerDot(fstr);
+    return stripNumber(fstr);
+}
+
+const(char)[] stripNumber(const(char)[] s)
+{
+    assert(s.length > 0);
+
+    // Remove leading +
+    // "+0.4" => "0.4"
+    if (s[0] == '+')
+        s = s[1..$];
+
+    // if there is a dot, remove all trailing zeroes
+    // ".45000" => ".45"
+    int positionOfDot = -1;
+    foreach(size_t i, char c; s)
+    {
+        if (c == '.')
+            positionOfDot = cast(int)i;
+    }
+    if (positionOfDot != -1)
+    {
+        for (size_t i = s.length - 1; i > positionOfDot ; --i)
+        {
+            bool isZero = (s[i] == '0');
+            if (isZero)
+                s = s[0..$-1]; // drop last char
+            else
+                break;
+        }
+    }
+
+    // if the final character is a dot, drop it
+    if (s.length >= 2 && s[$-1] == '.')
+        s = s[0..$-1];
+
+    // Remove useless zero
+    // "-0.1" => "-.1"
+    // "0.1" => ".1"
+    if (s.length >= 2 && s[0..2] == "0.")
+        s = "." ~ s[2..$]; // TODO: this allocates
+    else if (s.length >= 3 && s[0..3] == "-0.")
+        s = "-." ~ s[3..$]; // TODO: this allocates
+
+    return s;
+}
+
+void replaceCommaPerDot(char[] s)
+{
+    foreach(ref char ch; s)
+    {
+        if (ch == ',')
+        {
+            ch = '.';
+            break;
+        }
+    }
+}
+unittest
+{
+    char[] s = "1,5".dup;
+    replaceCommaPerDot(s);
+    assert(s == "1.5");
 }

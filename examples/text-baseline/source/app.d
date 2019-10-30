@@ -25,14 +25,14 @@ void main(string[] args)
             lineTo(pageWidth/2, pageHeight-20);
             stroke();
 
-            foreach(int j, TextAlign alignment; 
+            foreach(size_t j, TextAlign alignment; 
                     [
                         TextAlign.left,
                         TextAlign.right,
                         TextAlign.center
                     ])
             {
-                foreach(int i, TextBaseline baseline; 
+                foreach(size_t i, TextBaseline baseline; 
                         [
                             TextBaseline.top,
                             TextBaseline.hanging,
@@ -41,7 +41,7 @@ void main(string[] args)
                             TextBaseline.bottom
                         ])
                 {
-                    float y = i * 15 + 20 + j * 80;
+                    float y = cast(int)i * 15 + 20 + cast(int)j * 80;
                     textAlign = alignment;
                     textBaseline = baseline;
                     beginPath(20, y);
