@@ -99,6 +99,7 @@ enum
     CL_PLATFORM_NAME                            = 0x0902,
     CL_PLATFORM_VENDOR                          = 0x0903,
     CL_PLATFORM_EXTENSIONS                      = 0x0904,
+    CL_PLATFORM_HOST_TIMER_RESOLUTION           = 0x0905,
 }
 
 // cl_device_type - bitfield
@@ -206,6 +207,9 @@ enum
     CL_DEVICE_PREFERRED_PLATFORM_ATOMIC_ALIGNMENT = 0x1058,
     CL_DEVICE_PREFERRED_GLOBAL_ATOMIC_ALIGNMENT = 0x1059,
     CL_DEVICE_PREFERRED_LOCAL_ATOMIC_ALIGNMENT  = 0x105A,
+    CL_DEVICE_IL_VERSION                        = 0x105B,
+    CL_DEVICE_MAX_NUM_SUB_GROUPS                = 0x105C,
+    CL_DEVICE_SUB_GROUP_INDEPENDENT_FORWARD_PROGRESS = 0x105D,
 }
 
 // cl_device_fp_config
@@ -304,6 +308,7 @@ enum
     CL_QUEUE_REFERENCE_COUNT                    = 0x1092,
     CL_QUEUE_PROPERTIES                         = 0x1093,
     CL_QUEUE_SIZE                               = 0x1094,
+    CL_QUEUE_DEVICE_DEFAULT                     = 0x1095,
 }
 
 // cl_mem_flags and cl_svm_mem_flags - bitfield
@@ -375,6 +380,7 @@ enum
     CL_HALF_FLOAT                               = 0x10DD,
     CL_FLOAT                                    = 0x10DE,
     CL_UNORM_INT24                              = 0x10DF,
+    CL_UNORM_INT_101010_2                       = 0x10E0,
 }
 
 // cl_mem_object_type
@@ -520,6 +526,8 @@ enum
     CL_KERNEL_CONTEXT                           = 0x1193,
     CL_KERNEL_PROGRAM                           = 0x1194,
     CL_KERNEL_ATTRIBUTES                        = 0x1195,
+    CL_KERNEL_MAX_NUM_SUB_GROUPS                = 0x11B9,
+    CL_KERNEL_COMPILE_NUM_SUB_GROUPS            = 0x11BA,
 }
 
 // cl_kernel_arg_info
@@ -569,6 +577,14 @@ enum
     CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE= 0x11B3,
     CL_KERNEL_PRIVATE_MEM_SIZE                  = 0x11B4,
     CL_KERNEL_GLOBAL_WORK_SIZE                  = 0x11B5,
+}
+
+// cl_kernel_sub_group_info
+enum
+{
+    CL_KERNEL_MAX_SUB_GROUP_SIZE_FOR_NDRANGE    = 0x2033,
+    CL_KERNEL_SUB_GROUP_COUNT_FOR_NDRANGE       = 0x2034,
+    CL_KERNEL_LOCAL_SIZE_FOR_SUB_GROUP_COUNT    = 0x11B8,
 }
 
 // cl_kernel_exec_info
