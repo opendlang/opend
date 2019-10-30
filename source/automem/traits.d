@@ -123,3 +123,68 @@ template PointerTarget(T)
     auto s = RefCounted!Point(2, 3);
     static assert(is(Point == PointerTarget!(typeof(s))));
 }
+
+/**
+   Determines if a type `U` is a PointerTarget of `T`
+ */
+template isPointerTargetOf(T, U)
+    if (isUnique!T || isRefCounted!T)
+{
+    enum bool isPointerTargetOf = is(PointerTarget!T == U);
+}
+
+///
+@("isPointerTargetOf")
+unittest {
+    import automem.unique: Unique;
+    import automem.ref_counted: RefCounted;
+
+    static struct Point {
+        int x;
+        int y;
+    }
+
+    auto u = Unique!Point(2, 3);
+    static assert(isPointerTargetOf!(typeof(u), Point));
+
+    auto s = RefCounted!Point(2, 3);
+    static assert(isPointerTargetOf!(typeof(s), Point));
+}
+
+///
+@("Mix Unique and RefCounted pointers")
+unittest {
+	import std.math : approxEqual;
+    import automem.unique: Unique;
+    import automem.ref_counted: RefCounted;
+
+    static struct Point {
+        int x;
+        int y;
+    }
+
+    static double distance(T, U)(auto ref T p1, auto ref U p2)
+        if (isPointerTargetOf!(T, Point) && 
+            isPointerTargetOf!(U, Point))
+    {
+        import std.conv : to;
+        import std.math : sqrt, pow;
+        return((pow(p1.x - p2.x, 2) + pow(p1.y - p2.y, 2)).to!double.sqrt);
+    }
+
+    int x1 = 2;
+    int y1 = 3;
+    int x2 = x1 + 3;
+    int y2 = y1 + 4;
+
+    auto u_p1 = Unique!Point(x1, y1);
+    auto u_p2 = Unique!Point(x2, y2);
+    assert(approxEqual(distance(u_p1, u_p2), 5.0));
+
+    auto rc_p1 = RefCounted!Point(x1, y1);
+    auto rc_p2 = RefCounted!Point(x2, y2);
+    assert(approxEqual(distance(rc_p1, rc_p2), 5.0));
+
+    assert(approxEqual(distance(u_p1, rc_p2), 5.0));
+    assert(approxEqual(distance(rc_p1, u_p2), 5.0));
+}
