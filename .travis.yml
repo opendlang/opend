@@ -61,10 +61,12 @@ d:
 matrix:
   allow_failures:
    - os: osx
-     d:
-      - gdc
-      - ldc-1.2.0
-      - ldc-1.3.0
-      - ldc-1.4.0
+     d: gdc
+   - os: osx
+     d: ldc-1.2.0
+   - os: osx
+     d: ldc-1.3.0
+   - os: osx
+     d: ldc-1.4.0
    - d: dmd-beta
    - d: ldc-beta
