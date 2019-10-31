@@ -124,35 +124,8 @@ template PointerTarget(T)
     static assert(is(Point == PointerTarget!(typeof(s))));
 }
 
-/**
-   Determines if a type `U` is a PointerTarget of `T`
- */
-template isPointerTargetOf(T, U)
-    if (isUnique!T || isRefCounted!T)
-{
-    enum bool isPointerTargetOf = is(PointerTarget!T == U);
-}
-
 ///
-@("isPointerTargetOf")
-unittest {
-    import automem.unique: Unique;
-    import automem.ref_counted: RefCounted;
-
-    static struct Point {
-        int x;
-        int y;
-    }
-
-    auto u = Unique!Point(2, 3);
-    static assert(isPointerTargetOf!(typeof(u), Point));
-
-    auto s = RefCounted!Point(2, 3);
-    static assert(isPointerTargetOf!(typeof(s), Point));
-}
-
-///
-@("Mix Unique and RefCounted pointers")
+@("Mixing Unique and RefCounted pointers")
 unittest {
 	import std.math : approxEqual;
     import automem.unique: Unique;
@@ -164,8 +137,8 @@ unittest {
     }
 
     static double distance(T, U)(auto ref T p1, auto ref U p2)
-        if (isPointerTargetOf!(T, Point) && 
-            isPointerTargetOf!(U, Point))
+        if (is(PointerTarget!T == Point) && 
+            is(PointerTarget!U == Point))
     {
         import std.conv : to;
         import std.math : sqrt, pow;
