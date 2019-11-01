@@ -75,15 +75,22 @@ align(commonAlignment!(UnionKindTypes!(UnionFieldEnum!U))) struct TaggedUnion
 	}
 
 	static foreach (ti; UniqueTypes!FieldTypes)
-		static if (!isUnitType!(FieldTypes[ti])) {
+		static if(!is(FieldTypes[ti] == void))
+		{
 			this(FieldTypes[ti] value)
 			{
-				set!(cast(Kind)ti)(move(value));
+				static if (isUnitType!(FieldTypes[ti]))
+					set!(cast(Kind)ti)();
+				else
+					set!(cast(Kind)ti)(move(value));
 			}
 
 			void opAssign(FieldTypes[ti] value)
 			{
-				set!(cast(Kind)ti)(move(value));
+				static if (isUnitType!(FieldTypes[ti]))
+					set!(cast(Kind)ti)();
+				else
+					set!(cast(Kind)ti)(move(value));
 			}
 		}
 
@@ -496,6 +503,14 @@ unittest { // toString
 	assert(val.to!string == "(noCopy: foo)");
 }
 
+unittest { // null members should be assignable
+	union U { int i; typeof(null) Null; }
+	TaggedUnion!U val;
+	val = null;
+	assert(val.kind == val.Kind.Null);
+	val = TaggedUnion!U(null);
+	assert(val.kind == val.Kind.Null);
+}
 
 /** Dispatches the value contained on a `TaggedUnion` to a set of visitors.
 
