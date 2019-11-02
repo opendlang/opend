@@ -10,6 +10,7 @@
 	"description": "containers library",
 	"license": "BSL-1",
 	"name": "ikod-containers",
+	"targetType": "library",
 	"configurations": [
 		{
 			"name": "unittest",
