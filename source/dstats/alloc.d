@@ -366,7 +366,7 @@ public:
     }
 
     ///
-    V* opIn_r(K key) {
+    V* opBinaryRight(string op : "in")(K key) {
         hash_t hash = getHash(key);
 
         if(rNext[hash] == usedSentinel) {
@@ -740,7 +740,7 @@ public:
     }
 
     ///
-    bool opIn_r(K key) {
+    bool opBinaryRight(string op : "in")(K key) {
         hash_t hash = getHash(key);
 
         if(rNext[hash] == usedSentinel) {
@@ -1304,13 +1304,13 @@ public:
      * present.  U is expected to be the type of the key that this tree is
      * sorted on.*/
     T find(U)(U whatToFind) {
-        T* ptr = dstatsEnforce( opIn_r!(U)(whatToFind),
+        T* ptr = dstatsEnforce(whatToFind in this,
             "Item not found:  " ~ to!string(whatToFind));
         return *ptr;
     }
 
     /**Find an element and return a pointer to it, or null if not present.*/
-    T* opIn_r(U)(U whatToFind) {
+    T* opBinaryRight(string op : "in", U)(U whatToFind) {
         auto ret = findImpl!(U)(whatToFind, head);
         if(ret is null) {
             return null;
@@ -1521,7 +1521,7 @@ struct StackTreeAA(K, V) {
     }
 
     ///
-    V* opIn_r(K key) {
+    V* opBinaryRight(string op : "in")(K key) {
         auto nodePtr = key in tree;
         if(nodePtr is null) {
             return null;

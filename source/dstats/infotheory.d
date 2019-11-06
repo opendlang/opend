@@ -214,7 +214,7 @@ struct ObsEnt(T...) {
 
         // Then there's indirection involved.  We can't just do all our
         // comparison and hashing operations bitwise.
-        hash_t toHash() {
+        hash_t toHash() const nothrow @trusted {
             hash_t sum = 0;
             foreach(i, elem; this.tupleof) {
                 sum *= 11;
