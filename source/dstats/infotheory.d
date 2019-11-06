@@ -762,23 +762,26 @@ struct DenseInfoTheory {
 }
 
 unittest {
+    alias ae = approxEqual;
     auto dense = DenseInfoTheory(3);
     auto a = [0, 1, 2, 0, 1, 2, 0, 1, 2, 0, 1, 2];
     auto b = [1, 2, 2, 2, 0, 0, 1, 1, 1, 1, 0, 0];
     auto c = [1, 1, 1, 1, 2, 2, 2, 2, 0, 0, 0, 0];
 
+    // need some approxEquals in here because some methods do floating
+    // point ops in hash-dependent orders
+
     assert(entropy(a) == dense.entropy(a));
     assert(entropy(b) == dense.entropy(b));
     assert(entropy(c) == dense.entropy(c));
-    assert(entropy(joint(a, c)) == dense.entropy(joint(c, a)));
-    assert(entropy(joint(a, b)) == dense.entropy(joint(a, b)));
+    assert(ae(entropy(joint(a, c)), dense.entropy(joint(c, a))));
+    assert(ae(entropy(joint(a, b)), dense.entropy(joint(a, b))));
     assert(entropy(joint(c, b)) == dense.entropy(joint(c, b)));
 
     assert(condEntropy(a, c) == dense.condEntropy(a, c));
-    assert(condEntropy(a, b) == dense.condEntropy(a, b));
+    assert(ae(condEntropy(a, b), dense.condEntropy(a, b)));
     assert(condEntropy(c, b) == dense.condEntropy(c, b));
 
-    alias approxEqual ae;
     assert(ae(mutualInfo(a, c), dense.mutualInfo(c, a)));
     assert(ae(mutualInfo(a, b), dense.mutualInfo(a, b)));
     assert(ae(mutualInfo(c, b), dense.mutualInfo(c, b)));
