@@ -7,6 +7,7 @@ os:
 language: d
 
 d:
+ - dmd-2.089.0
  - dmd-2.088.1
  - dmd-2.087.1
  - dmd-2.086.1
