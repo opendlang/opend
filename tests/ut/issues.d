@@ -44,6 +44,23 @@ else {
 }
 
 
+@("37")
+@safe unittest {
+
+    static struct S {
+        int front;
+        void popFront() { ++front; }
+        @property bool empty() { return front >= 10; }
+    }
+
+    auto rc = RefCounted!S(0);
+    foreach(i; *rc) {}
+
+    auto un = Unique!S(0);
+    foreach(i; *un) {}
+}
+
+
 @("38")
 @safe unittest {
 
