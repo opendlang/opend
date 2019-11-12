@@ -162,19 +162,32 @@ private:
 
         static if (is(Type == class)) {
 
-            inout(Type) _get() inout {
+            inout(Type) _get() inout
+                in(&this !is null)
+                do
+            {
                 return cast(inout(Type)) &_rawMemory[0];
             }
 
-            inout(shared(Type)) _get() inout shared {
+            inout(shared(Type)) _get() inout shared
+                in(&this !is null)
+                do
+            {
                 return cast(inout(shared(Type))) &_rawMemory[0];
             }
-        } else {
-            ref inout(Type) _get() inout {
+        } else {  // struct
+
+            ref inout(Type) _get() inout
+                in(&this !is null)
+                do
+            {
                 return _object;
             }
 
-            ref inout(shared(Type)) _get() inout shared {
+            ref inout(shared(Type)) _get() inout shared
+                in(&this !is null)
+                do
+            {
                 return _object;
             }
         }

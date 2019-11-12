@@ -42,3 +42,17 @@ else {
     (str == String("barfoo")).should == false;
     (str == String("quux")).should == false;
 }
+
+
+@("38")
+@safe unittest {
+
+    import core.exception: AssertError;
+
+    static struct S {
+        int front = 0;
+    }
+
+    auto rc = RefCounted!S();
+    rc.front.shouldThrow!AssertError;
+}
