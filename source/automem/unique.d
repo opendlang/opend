@@ -192,6 +192,42 @@ private:
     }
 }
 
+
+///
+@("Construct Unique using global allocator for struct with zero-args ctor")
+@system unittest {
+    struct S {
+        private ulong zeroArgsCtorTest = 3;
+    }
+    auto s = Unique!S.construct();
+    static assert(is(typeof(s) == Unique!S));
+    assert(s._object !is null);
+    assert(s.zeroArgsCtorTest == 3);
+}
+
+
+///
+@("release")
+@system unittest {
+    import std.experimental.allocator: dispose;
+    import core.exception: AssertError;
+
+    try {
+        auto allocator = TestAllocator();
+        auto ptr = Unique!(Struct, TestAllocator*)(&allocator, 42);
+        ptr.release;
+        assert(Struct.numStructs == 1);
+    } catch(AssertError e) { // TestAllocator should throw due to memory leak
+        version(unitThreadedLight) {}
+        else
+            "Memory leak in TestAllocator".should.be in e.msg;
+        return;
+    }
+
+    assert(0); // should throw above
+}
+
+
 private template makeObject(Flag!"supportGC" supportGC, args...)
 {
     void makeObject(Type,A)(ref Unique!(Type, A) u) {
@@ -219,36 +255,4 @@ private template makeObject(Flag!"supportGC" supportGC, args...)
             }();
         }
     }
-}
-
-
-///
-@("Construct Unique using global allocator for struct with zero-args ctor")
-@system unittest {
-    struct S {
-        private ulong zeroArgsCtorTest = 3;
-    }
-    auto s = Unique!S.construct();
-    static assert(is(typeof(s) == Unique!S));
-    assert(s._object !is null);
-    assert(s.zeroArgsCtorTest == 3);
-}
-
-
-///
-@("release")
-@system unittest {
-    import std.experimental.allocator: dispose;
-    import core.exception: AssertError;
-
-    try {
-        auto allocator = TestAllocator();
-        auto ptr = Unique!(Struct, TestAllocator*)(&allocator, 42);
-        ptr.release;
-        Struct.numStructs.shouldEqual(0);
-    } catch(AssertError _) { // TestAllocator should throw due to memory leak
-        return;
-    }
-
-    assert(0); // should throw above
 }
