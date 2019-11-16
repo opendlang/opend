@@ -1387,16 +1387,16 @@ pragma(inline, false)
 void applyLowerBound(T)(Slice!(T*) x, Slice!(const(T)*) bound)
 {
     import mir.math.common: fmax;
-    import mir.algorithm.iteration: each;
-    each!((ref x, y) { x = x.fmax(y); } )(x, bound);
+    foreach (i; 0 .. x.length)
+        x[i] = x[i].fmax(bound[i]);
 }
 
 pragma(inline, false)
 void applyUpperBound(T)(Slice!(T*) x, Slice!(const(T)*) bound)
 {
     import mir.math.common: fmin;
-    import mir.algorithm.iteration: each;
-    each!((ref x, y) { x = x.fmin(y); } )(x, bound);
+    foreach (i; 0 .. x.length)
+        x[i] = x[i].fmin(bound[i]);
 }
 
 pragma(inline, false)
