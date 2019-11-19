@@ -19,3 +19,4 @@ build/
 *.exe
 *.lib
 mir-random-test-default
+subprojects/mir-core
