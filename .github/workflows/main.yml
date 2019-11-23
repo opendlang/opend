@@ -6,7 +6,7 @@ jobs:
   test:
     strategy:
       matrix:
-        os: [macOS-latest]
+        os: [macOS-latest,ubuntu-latest]
         dc: [dmd-latest, ldc-latest]
     runs-on: ${{ matrix.os }}
 
