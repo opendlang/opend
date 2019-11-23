@@ -175,7 +175,10 @@ struct HashMap(K, V, Allocator = Mallocator, bool GCRangesAllowed = true) {
     this(this) {
         auto obuckets = _buckets;
         _buckets = BucketStorage(_buckets_num);
-        copy(obuckets.bs, _buckets.bs);
+        if (obuckets !is null)
+        {
+            copy(obuckets.bs, _buckets.bs);
+        }
     }
 
     void opAssign(ref typeof(this) rhs) {
