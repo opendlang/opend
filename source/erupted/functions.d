@@ -239,6 +239,12 @@ extern( System ) {
     alias PFN_vkImportFenceFdKHR                                                = VkResult  function( VkDevice device, const( VkImportFenceFdInfoKHR )* pImportFenceFdInfo );
     alias PFN_vkGetFenceFdKHR                                                   = VkResult  function( VkDevice device, const( VkFenceGetFdInfoKHR )* pGetFdInfo, int* pFd );
 
+    // VK_KHR_performance_query
+    alias PFN_vkEnumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR   = VkResult  function( VkPhysicalDevice physicalDevice, uint32_t queueFamilyIndex, uint32_t* pCounterCount, VkPerformanceCounterKHR* pCounters, VkPerformanceCounterDescriptionKHR* pCounterDescriptions );
+    alias PFN_vkGetPhysicalDeviceQueueFamilyPerformanceQueryPassesKHR           = void      function( VkPhysicalDevice physicalDevice, const( VkQueryPoolPerformanceCreateInfoKHR )* pPerformanceQueryCreateInfo, uint32_t* pNumPasses );
+    alias PFN_vkAcquireProfilingLockKHR                                         = VkResult  function( VkDevice device, const( VkAcquireProfilingLockInfoKHR )* pInfo );
+    alias PFN_vkReleaseProfilingLockKHR                                         = void      function( VkDevice device );
+
     // VK_KHR_get_surface_capabilities2
     alias PFN_vkGetPhysicalDeviceSurfaceCapabilities2KHR                        = VkResult  function( VkPhysicalDevice physicalDevice, const( VkPhysicalDeviceSurfaceInfo2KHR )* pSurfaceInfo, VkSurfaceCapabilities2KHR* pSurfaceCapabilities );
     alias PFN_vkGetPhysicalDeviceSurfaceFormats2KHR                             = VkResult  function( VkPhysicalDevice physicalDevice, const( VkPhysicalDeviceSurfaceInfo2KHR )* pSurfaceInfo, uint32_t* pSurfaceFormatCount, VkSurfaceFormat2KHR* pSurfaceFormats );
@@ -660,6 +666,12 @@ __gshared {
     PFN_vkImportFenceFdKHR                                                vkImportFenceFdKHR;
     PFN_vkGetFenceFdKHR                                                   vkGetFenceFdKHR;
 
+    // VK_KHR_performance_query
+    PFN_vkEnumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR   vkEnumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR;
+    PFN_vkGetPhysicalDeviceQueueFamilyPerformanceQueryPassesKHR           vkGetPhysicalDeviceQueueFamilyPerformanceQueryPassesKHR;
+    PFN_vkAcquireProfilingLockKHR                                         vkAcquireProfilingLockKHR;
+    PFN_vkReleaseProfilingLockKHR                                         vkReleaseProfilingLockKHR;
+
     // VK_KHR_get_surface_capabilities2
     PFN_vkGetPhysicalDeviceSurfaceCapabilities2KHR                        vkGetPhysicalDeviceSurfaceCapabilities2KHR;
     PFN_vkGetPhysicalDeviceSurfaceFormats2KHR                             vkGetPhysicalDeviceSurfaceFormats2KHR;
@@ -974,6 +986,10 @@ void loadInstanceLevelFunctions( VkInstance instance ) {
     vkGetDisplayPlaneCapabilitiesKHR                                  = cast( PFN_vkGetDisplayPlaneCapabilitiesKHR                                  ) vkGetInstanceProcAddr( instance, "vkGetDisplayPlaneCapabilitiesKHR" );
     vkCreateDisplayPlaneSurfaceKHR                                    = cast( PFN_vkCreateDisplayPlaneSurfaceKHR                                    ) vkGetInstanceProcAddr( instance, "vkCreateDisplayPlaneSurfaceKHR" );
 
+    // VK_KHR_performance_query
+    vkEnumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR   = cast( PFN_vkEnumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR   ) vkGetInstanceProcAddr( instance, "vkEnumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR" );
+    vkGetPhysicalDeviceQueueFamilyPerformanceQueryPassesKHR           = cast( PFN_vkGetPhysicalDeviceQueueFamilyPerformanceQueryPassesKHR           ) vkGetInstanceProcAddr( instance, "vkGetPhysicalDeviceQueueFamilyPerformanceQueryPassesKHR" );
+
     // VK_KHR_get_surface_capabilities2
     vkGetPhysicalDeviceSurfaceCapabilities2KHR                        = cast( PFN_vkGetPhysicalDeviceSurfaceCapabilities2KHR                        ) vkGetInstanceProcAddr( instance, "vkGetPhysicalDeviceSurfaceCapabilities2KHR" );
     vkGetPhysicalDeviceSurfaceFormats2KHR                             = cast( PFN_vkGetPhysicalDeviceSurfaceFormats2KHR                             ) vkGetInstanceProcAddr( instance, "vkGetPhysicalDeviceSurfaceFormats2KHR" );
@@ -1206,6 +1222,10 @@ void loadDeviceLevelFunctions( VkInstance instance ) {
     // VK_KHR_external_fence_fd
     vkImportFenceFdKHR                                = cast( PFN_vkImportFenceFdKHR                                ) vkGetInstanceProcAddr( instance, "vkImportFenceFdKHR" );
     vkGetFenceFdKHR                                   = cast( PFN_vkGetFenceFdKHR                                   ) vkGetInstanceProcAddr( instance, "vkGetFenceFdKHR" );
+
+    // VK_KHR_performance_query
+    vkAcquireProfilingLockKHR                         = cast( PFN_vkAcquireProfilingLockKHR                         ) vkGetInstanceProcAddr( instance, "vkAcquireProfilingLockKHR" );
+    vkReleaseProfilingLockKHR                         = cast( PFN_vkReleaseProfilingLockKHR                         ) vkGetInstanceProcAddr( instance, "vkReleaseProfilingLockKHR" );
 
     // VK_KHR_draw_indirect_count
     vkCmdDrawIndirectCountKHR                         = cast( PFN_vkCmdDrawIndirectCountKHR                         ) vkGetInstanceProcAddr( instance, "vkCmdDrawIndirectCountKHR" );
@@ -1546,6 +1566,10 @@ void loadDeviceLevelFunctions( VkDevice device ) {
     // VK_KHR_external_fence_fd
     vkImportFenceFdKHR                                = cast( PFN_vkImportFenceFdKHR                                ) vkGetDeviceProcAddr( device, "vkImportFenceFdKHR" );
     vkGetFenceFdKHR                                   = cast( PFN_vkGetFenceFdKHR                                   ) vkGetDeviceProcAddr( device, "vkGetFenceFdKHR" );
+
+    // VK_KHR_performance_query
+    vkAcquireProfilingLockKHR                         = cast( PFN_vkAcquireProfilingLockKHR                         ) vkGetDeviceProcAddr( device, "vkAcquireProfilingLockKHR" );
+    vkReleaseProfilingLockKHR                         = cast( PFN_vkReleaseProfilingLockKHR                         ) vkGetDeviceProcAddr( device, "vkReleaseProfilingLockKHR" );
 
     // VK_KHR_draw_indirect_count
     vkCmdDrawIndirectCountKHR                         = cast( PFN_vkCmdDrawIndirectCountKHR                         ) vkGetDeviceProcAddr( device, "vkCmdDrawIndirectCountKHR" );

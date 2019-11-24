@@ -237,6 +237,10 @@ struct DispatchDevice {
         vkImportFenceFdKHR                                = cast( PFN_vkImportFenceFdKHR                                ) vkGetDeviceProcAddr( device, "vkImportFenceFdKHR" );
         vkGetFenceFdKHR                                   = cast( PFN_vkGetFenceFdKHR                                   ) vkGetDeviceProcAddr( device, "vkGetFenceFdKHR" );
 
+        // VK_KHR_performance_query
+        vkAcquireProfilingLockKHR                         = cast( PFN_vkAcquireProfilingLockKHR                         ) vkGetDeviceProcAddr( device, "vkAcquireProfilingLockKHR" );
+        vkReleaseProfilingLockKHR                         = cast( PFN_vkReleaseProfilingLockKHR                         ) vkGetDeviceProcAddr( device, "vkReleaseProfilingLockKHR" );
+
         // VK_KHR_draw_indirect_count
         vkCmdDrawIndirectCountKHR                         = cast( PFN_vkCmdDrawIndirectCountKHR                         ) vkGetDeviceProcAddr( device, "vkCmdDrawIndirectCountKHR" );
         vkCmdDrawIndexedIndirectCountKHR                  = cast( PFN_vkCmdDrawIndexedIndirectCountKHR                  ) vkGetDeviceProcAddr( device, "vkCmdDrawIndexedIndirectCountKHR" );
@@ -581,6 +585,10 @@ struct DispatchDevice {
     // VK_KHR_external_fence_fd
     VkResult  ImportFenceFdKHR( const( VkImportFenceFdInfoKHR )* pImportFenceFdInfo ) { return vkImportFenceFdKHR( vkDevice, pImportFenceFdInfo ); }
     VkResult  GetFenceFdKHR( const( VkFenceGetFdInfoKHR )* pGetFdInfo, int* pFd ) { return vkGetFenceFdKHR( vkDevice, pGetFdInfo, pFd ); }
+
+    // VK_KHR_performance_query
+    VkResult  AcquireProfilingLockKHR( const( VkAcquireProfilingLockInfoKHR )* pInfo ) { return vkAcquireProfilingLockKHR( vkDevice, pInfo ); }
+    void      ReleaseProfilingLockKHR() { vkReleaseProfilingLockKHR( vkDevice ); }
 
     // VK_KHR_draw_indirect_count
     void      CmdDrawIndirectCountKHR( VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, uint32_t maxDrawCount, uint32_t stride ) { vkCmdDrawIndirectCountKHR( commandBuffer, buffer, offset, countBuffer, countBufferOffset, maxDrawCount, stride ); }
@@ -943,6 +951,10 @@ struct DispatchDevice {
     // VK_KHR_external_fence_fd
     PFN_vkImportFenceFdKHR                                vkImportFenceFdKHR;
     PFN_vkGetFenceFdKHR                                   vkGetFenceFdKHR;
+
+    // VK_KHR_performance_query
+    PFN_vkAcquireProfilingLockKHR                         vkAcquireProfilingLockKHR;
+    PFN_vkReleaseProfilingLockKHR                         vkReleaseProfilingLockKHR;
 
     // VK_KHR_draw_indirect_count
     PFN_vkCmdDrawIndirectCountKHR                         vkCmdDrawIndirectCountKHR;
