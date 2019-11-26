@@ -264,6 +264,11 @@ extern( System ) {
     alias PFN_vkWaitSemaphoresKHR                                               = VkResult  function( VkDevice device, const( VkSemaphoreWaitInfoKHR )* pWaitInfo, uint64_t timeout );
     alias PFN_vkSignalSemaphoreKHR                                              = VkResult  function( VkDevice device, const( VkSemaphoreSignalInfoKHR )* pSignalInfo );
 
+    // VK_KHR_buffer_device_address
+    alias PFN_vkGetBufferDeviceAddressKHR                                       = VkDeviceAddress  function( VkDevice device, const( VkBufferDeviceAddressInfoKHR )* pInfo );
+    alias PFN_vkGetBufferOpaqueCaptureAddressKHR                                = uint64_t  function( VkDevice device, const( VkBufferDeviceAddressInfoKHR )* pInfo );
+    alias PFN_vkGetDeviceMemoryOpaqueCaptureAddressKHR                          = uint64_t  function( VkDevice device, const( VkDeviceMemoryOpaqueCaptureAddressInfoKHR )* pInfo );
+
     // VK_KHR_pipeline_executable_properties
     alias PFN_vkGetPipelineExecutablePropertiesKHR                              = VkResult  function( VkDevice device, const( VkPipelineInfoKHR )* pPipelineInfo, uint32_t* pExecutableCount, VkPipelineExecutablePropertiesKHR* pProperties );
     alias PFN_vkGetPipelineExecutableStatisticsKHR                              = VkResult  function( VkDevice device, const( VkPipelineExecutableInfoKHR )* pExecutableInfo, uint32_t* pStatisticCount, VkPipelineExecutableStatisticKHR* pStatistics );
@@ -418,9 +423,6 @@ extern( System ) {
 
     // VK_AMD_display_native_hdr
     alias PFN_vkSetLocalDimmingAMD                                              = void      function( VkDevice device, VkSwapchainKHR swapChain, VkBool32 localDimmingEnable );
-
-    // VK_EXT_buffer_device_address
-    alias PFN_vkGetBufferDeviceAddressEXT                                       = VkDeviceAddress  function( VkDevice device, const( VkBufferDeviceAddressInfoEXT )* pInfo );
 
     // VK_NV_cooperative_matrix
     alias PFN_vkGetPhysicalDeviceCooperativeMatrixPropertiesNV                  = VkResult  function( VkPhysicalDevice physicalDevice, uint32_t* pPropertyCount, VkCooperativeMatrixPropertiesNV* pProperties );
@@ -691,6 +693,11 @@ __gshared {
     PFN_vkWaitSemaphoresKHR                                               vkWaitSemaphoresKHR;
     PFN_vkSignalSemaphoreKHR                                              vkSignalSemaphoreKHR;
 
+    // VK_KHR_buffer_device_address
+    PFN_vkGetBufferDeviceAddressKHR                                       vkGetBufferDeviceAddressKHR;
+    PFN_vkGetBufferOpaqueCaptureAddressKHR                                vkGetBufferOpaqueCaptureAddressKHR;
+    PFN_vkGetDeviceMemoryOpaqueCaptureAddressKHR                          vkGetDeviceMemoryOpaqueCaptureAddressKHR;
+
     // VK_KHR_pipeline_executable_properties
     PFN_vkGetPipelineExecutablePropertiesKHR                              vkGetPipelineExecutablePropertiesKHR;
     PFN_vkGetPipelineExecutableStatisticsKHR                              vkGetPipelineExecutableStatisticsKHR;
@@ -846,9 +853,6 @@ __gshared {
     // VK_AMD_display_native_hdr
     PFN_vkSetLocalDimmingAMD                                              vkSetLocalDimmingAMD;
 
-    // VK_EXT_buffer_device_address
-    PFN_vkGetBufferDeviceAddressEXT                                       vkGetBufferDeviceAddressEXT;
-
     // VK_NV_cooperative_matrix
     PFN_vkGetPhysicalDeviceCooperativeMatrixPropertiesNV                  vkGetPhysicalDeviceCooperativeMatrixPropertiesNV;
 
@@ -917,6 +921,9 @@ __gshared {
     // VK_AMD_draw_indirect_count
     alias vkCmdDrawIndirectCountAMD                                               = vkCmdDrawIndirectCountKHR;
     alias vkCmdDrawIndexedIndirectCountAMD                                        = vkCmdDrawIndexedIndirectCountKHR;
+
+    // VK_EXT_buffer_device_address
+    alias vkGetBufferDeviceAddressEXT                                             = vkGetBufferDeviceAddressKHR;
 }
 
 
@@ -1236,6 +1243,11 @@ void loadDeviceLevelFunctions( VkInstance instance ) {
     vkWaitSemaphoresKHR                               = cast( PFN_vkWaitSemaphoresKHR                               ) vkGetInstanceProcAddr( instance, "vkWaitSemaphoresKHR" );
     vkSignalSemaphoreKHR                              = cast( PFN_vkSignalSemaphoreKHR                              ) vkGetInstanceProcAddr( instance, "vkSignalSemaphoreKHR" );
 
+    // VK_KHR_buffer_device_address
+    vkGetBufferDeviceAddressKHR                       = cast( PFN_vkGetBufferDeviceAddressKHR                       ) vkGetInstanceProcAddr( instance, "vkGetBufferDeviceAddressKHR" );
+    vkGetBufferOpaqueCaptureAddressKHR                = cast( PFN_vkGetBufferOpaqueCaptureAddressKHR                ) vkGetInstanceProcAddr( instance, "vkGetBufferOpaqueCaptureAddressKHR" );
+    vkGetDeviceMemoryOpaqueCaptureAddressKHR          = cast( PFN_vkGetDeviceMemoryOpaqueCaptureAddressKHR          ) vkGetInstanceProcAddr( instance, "vkGetDeviceMemoryOpaqueCaptureAddressKHR" );
+
     // VK_KHR_pipeline_executable_properties
     vkGetPipelineExecutablePropertiesKHR              = cast( PFN_vkGetPipelineExecutablePropertiesKHR              ) vkGetInstanceProcAddr( instance, "vkGetPipelineExecutablePropertiesKHR" );
     vkGetPipelineExecutableStatisticsKHR              = cast( PFN_vkGetPipelineExecutableStatisticsKHR              ) vkGetInstanceProcAddr( instance, "vkGetPipelineExecutableStatisticsKHR" );
@@ -1370,9 +1382,6 @@ void loadDeviceLevelFunctions( VkInstance instance ) {
 
     // VK_AMD_display_native_hdr
     vkSetLocalDimmingAMD                              = cast( PFN_vkSetLocalDimmingAMD                              ) vkGetInstanceProcAddr( instance, "vkSetLocalDimmingAMD" );
-
-    // VK_EXT_buffer_device_address
-    vkGetBufferDeviceAddressEXT                       = cast( PFN_vkGetBufferDeviceAddressEXT                       ) vkGetInstanceProcAddr( instance, "vkGetBufferDeviceAddressEXT" );
 
     // VK_EXT_line_rasterization
     vkCmdSetLineStippleEXT                            = cast( PFN_vkCmdSetLineStippleEXT                            ) vkGetInstanceProcAddr( instance, "vkCmdSetLineStippleEXT" );
@@ -1580,6 +1589,11 @@ void loadDeviceLevelFunctions( VkDevice device ) {
     vkWaitSemaphoresKHR                               = cast( PFN_vkWaitSemaphoresKHR                               ) vkGetDeviceProcAddr( device, "vkWaitSemaphoresKHR" );
     vkSignalSemaphoreKHR                              = cast( PFN_vkSignalSemaphoreKHR                              ) vkGetDeviceProcAddr( device, "vkSignalSemaphoreKHR" );
 
+    // VK_KHR_buffer_device_address
+    vkGetBufferDeviceAddressKHR                       = cast( PFN_vkGetBufferDeviceAddressKHR                       ) vkGetDeviceProcAddr( device, "vkGetBufferDeviceAddressKHR" );
+    vkGetBufferOpaqueCaptureAddressKHR                = cast( PFN_vkGetBufferOpaqueCaptureAddressKHR                ) vkGetDeviceProcAddr( device, "vkGetBufferOpaqueCaptureAddressKHR" );
+    vkGetDeviceMemoryOpaqueCaptureAddressKHR          = cast( PFN_vkGetDeviceMemoryOpaqueCaptureAddressKHR          ) vkGetDeviceProcAddr( device, "vkGetDeviceMemoryOpaqueCaptureAddressKHR" );
+
     // VK_KHR_pipeline_executable_properties
     vkGetPipelineExecutablePropertiesKHR              = cast( PFN_vkGetPipelineExecutablePropertiesKHR              ) vkGetDeviceProcAddr( device, "vkGetPipelineExecutablePropertiesKHR" );
     vkGetPipelineExecutableStatisticsKHR              = cast( PFN_vkGetPipelineExecutableStatisticsKHR              ) vkGetDeviceProcAddr( device, "vkGetPipelineExecutableStatisticsKHR" );
@@ -1714,9 +1728,6 @@ void loadDeviceLevelFunctions( VkDevice device ) {
 
     // VK_AMD_display_native_hdr
     vkSetLocalDimmingAMD                              = cast( PFN_vkSetLocalDimmingAMD                              ) vkGetDeviceProcAddr( device, "vkSetLocalDimmingAMD" );
-
-    // VK_EXT_buffer_device_address
-    vkGetBufferDeviceAddressEXT                       = cast( PFN_vkGetBufferDeviceAddressEXT                       ) vkGetDeviceProcAddr( device, "vkGetBufferDeviceAddressEXT" );
 
     // VK_EXT_line_rasterization
     vkCmdSetLineStippleEXT                            = cast( PFN_vkCmdSetLineStippleEXT                            ) vkGetDeviceProcAddr( device, "vkCmdSetLineStippleEXT" );
