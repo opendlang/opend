@@ -781,6 +781,30 @@ private struct DisableOpAttribute {
 	string name;
 }
 
+/// User-defined attribute to enable only safe calls on the given member(s).
+enum safeOnly;
+///
+@safe unittest
+{
+	union Fields
+	{
+		int intval;
+		@safeOnly int *ptr;
+	}
+
+	// only safe operations allowed on pointer field
+	@safe void test() {
+		TaggedAlgebraic!Fields x = 1;
+		x += 5; // only applies to intval
+		auto p = new int(5);
+		x = p;
+		*x += 5; // safe pointer ops allowed
+		assert(*p == 10);
+	}
+
+	test();
+}
+
 private template hasAnyMember(TA, string name)
 {
 	import std.traits : isAggregateType;
@@ -854,6 +878,11 @@ unittest {
 	static assert(!hasOp!(const(TA), OpKind.binary, "+=", int));
 	static assert(!hasOp!(const(TA), OpKind.method, "m", int));
 	static assert(!hasOp!(TA, OpKind.method, "put", int));
+
+	static union U2 { int *i; }
+	alias TA2 = TaggedAlgebraic!U2;
+
+	static assert(hasOp!(TA2, OpKind.unary, "*"));
 }
 
 unittest {
@@ -981,12 +1010,63 @@ unittest { // opIndex on recursive TA with closed return value set using @disabl
 	assert(implementOp!(OpKind.index, null)(s.payload, 0) == "foo");
 }
 
+unittest { // test safeOnly
+	static struct S
+	{
+		int foo() @system { return 1; }
+	}
+
+	static struct T
+	{
+		string foo() @safe { return "hi"; }
+	}
+
+	union GoodU {
+		int x;
+		@safeOnly int *ptr;
+		@safeOnly S s;
+		T t;
+	}
+
+	union BadU {
+		int x;
+		int *ptr;
+		S s;
+		T t;
+	}
+
+	union MixedU {
+		int x;
+		@safeOnly int *ptr;
+		S s;
+		T t;
+	}
+
+	TaggedAlgebraic!GoodU allsafe;
+	TaggedAlgebraic!BadU nosafe;
+	TaggedAlgebraic!MixedU somesafe;
+	import std.variant : Algebraic;
+	static assert(is(typeof(allsafe += 1)));
+	static assert(is(typeof(allsafe.foo()) == string));
+	static assert(is(typeof(nosafe += 1)));
+	static assert(is(typeof(nosafe.foo()) == Algebraic!(int, string)));
+	static assert(is(typeof(somesafe += 1)));
+	static assert(is(typeof(somesafe.foo()) == Algebraic!(int, string)));
+
+	static assert( is(typeof( () @safe => allsafe += 1)));
+	static assert( is(typeof( () @safe => allsafe.foo())));
+	static assert(!is(typeof( () @safe => nosafe += 1)));
+	static assert(!is(typeof( () @safe => nosafe.foo())));
+	static assert( is(typeof( () @safe => somesafe += 1)));
+	static assert(!is(typeof( () @safe => somesafe.foo())));
+}
+
 
 private auto ref performOpRaw(U, OpKind kind, string name, T, ARGS...)(ref T value, /*auto ref*/ ARGS args)
 {
 	static if (kind == OpKind.binary) return mixin("value "~name~" args[0]");
 	else static if (kind == OpKind.binaryRight) return mixin("args[0] "~name~" value");
-	else static if (kind == OpKind.unary) return mixin("name "~value);
+	else static if (kind == OpKind.unary) return mixin(name~" value");
 	else static if (kind == OpKind.method) return __traits(getMember, value, name)(args);
 	else static if (kind == OpKind.field) return __traits(getMember, value, name);
 	else static if (kind == OpKind.index) return value[args];
@@ -1045,6 +1125,14 @@ unittest {
 	{ int v = 1; assert(performOp!(U, OpKind.binary, "+")(v, TaggedAlgebraic!U(3)) == 4); }
 }
 
+private template canPerform(U, bool doSafe, OpKind kind, string name, T, ARGS...)
+{
+	static if(doSafe)
+		@safe auto ref doIt()(ref T t, ARGS args) { return performOp!(U, kind, name, T, ARGS)(t, args); }
+	else
+		auto ref doIt()(ref T t, ARGS args) { return performOp!(U, kind, name, T, ARGS)(t, args); }
+	enum canPerform = is(typeof(&doIt!()));
+}
 
 private template OpInfo(U, OpKind kind, string name, ARGS...)
 {
@@ -1069,10 +1157,23 @@ private template OpInfo(U, OpKind kind, string name, ARGS...)
 		enum isOpEnabled = impl!0;
 	}
 
+	private template isSafeOpRequired(string field)
+	{
+		alias attribs = AliasSeq!(__traits(getAttributes, __traits(getMember, U, field)));
+		template impl(size_t i) {
+			static if (i < attribs.length) {
+				static if (__traits(isSame, attribs[i], safeOnly))
+					enum impl = true;
+				else enum impl = impl!(i+1);
+			} else enum impl = false;
+		}
+		enum isSafeOpRequired = impl!0;
+	}
+
 	template fieldsImpl(size_t i)
 	{
 		static if (i < FieldTypes.length) {
-			static if (isOpEnabled!(fieldNames[i]) && is(typeof(&performOp!(U, kind, name, FieldTypes[i], ARGS)))) {
+			static if (isOpEnabled!(fieldNames[i]) && canPerform!(U, isSafeOpRequired!(fieldNames[i]), kind, name, FieldTypes[i], ARGS)) {
 				alias fieldsImpl = AliasSeq!(fieldNames[i], fieldsImpl!(i+1));
 			} else alias fieldsImpl = fieldsImpl!(i+1);
 		} else alias fieldsImpl = AliasSeq!();
