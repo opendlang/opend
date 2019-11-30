@@ -713,6 +713,31 @@ inout(T) get(T, U)(inout(TaggedAlgebraic!U) ta)
 	assert(ta.get!float == 1.0);
 }
 
+/** Gets the value stored in an algebraic type based on its kind.
+*/
+ref get(alias kind, U)(ref inout(TaggedAlgebraic!U) ta) if (is(typeof(kind) == typeof(ta).Kind))
+{
+	return ta.m_union.value!kind;
+}
+/// ditto
+auto get(alias kind, U)(inout(TaggedAlgebraic!U) ta) if (is(typeof(kind) == typeof(ta).Kind))
+{
+	return ta.m_union.value!kind;
+}
+
+@nogc @safe nothrow unittest {
+	struct Fields {
+		int a;
+		float b;
+	}
+	alias TA = TaggedAlgebraic!Fields;
+	auto ta = TA(1);
+	assert(ta.get!(TA.Kind.a) == 1);
+	ta.get!(TA.Kind.a) = 2;
+	assert(ta.get!(TA.Kind.a) == 2);
+	ta = TA(1.0);
+	assert(ta.get!(TA.Kind.b) == 1.0);
+}
 
 /** Calls a the given callback with the static type of the contained value.
 
