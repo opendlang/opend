@@ -691,7 +691,9 @@ unittest {
 */
 ref inout(T) get(T, U)(ref inout(TaggedAlgebraic!U) ta)
 {
-	return ta.m_union.value!T;
+	static if (is(T == TaggedUnion!U))
+		return ta.m_union;
+	else return ta.m_union.value!T;
 }
 /// ditto
 inout(T) get(T, U)(inout(TaggedAlgebraic!U) ta)
@@ -796,86 +798,6 @@ unittest {
 	"baz".apply!((v) {
 		assert(v == "baz");
 	});
-}
-
-/** Forwards visit functionality from taggedunion.
-
-	A visitor can have one of three forms:
-
-	$(UL
-		$(LI function or delegate taking a single typed parameter)
-		$(LI function or delegate taking no parameters)
-		$(LI function or delegate template taking any single parameter)
-	)
-
-	....
-*/
-template visit(VISITORS...)
-	if (VISITORS.length > 0)
-{
-	auto visit(U)(auto ref TaggedAlgebraic!U ta)
-	{
-		return taggedalgebraic.taggedunion.visit!VISITORS(ta.m_union);
-	}
-}
-
-unittest {
-	// repeat test from TaggedUnion
-	union U {
-		Void none;
-		int count;
-		float length;
-	}
-	TaggedAlgebraic!U u;
-
-	//
-	static assert(is(typeof(u.visit!((int) {}, (float) {}, () {}))));
-	static assert(is(typeof(u.visit!((_) {}, () {}))));
-	static assert(is(typeof(u.visit!((_) {}, (float) {}, () {}))));
-	static assert(is(typeof(u.visit!((float) {}, (_) {}, () {}))));
-
-	static assert(!is(typeof(u.visit!((_) {})))); // missing void handler
-	static assert(!is(typeof(u.visit!(() {})))); // missing value handler
-
-	static assert(!is(typeof(u.visit!((_) {}, () {}, (string) {})))); // invalid typed handler
-	static assert(!is(typeof(u.visit!((int) {}, (float) {}, () {}, () {})))); // duplicate void handler
-	static assert(!is(typeof(u.visit!((_) {}, () {}, (_) {})))); // duplicate generic handler
-	static assert(!is(typeof(u.visit!((int) {}, (float) {}, (float) {}, () {})))); // duplicate typed handler
-
-	// TODO: error out for superfluous generic handlers
-	//static assert(!is(typeof(u.visit!((int) {}, (float) {}, () {}, (_) {})))); // superfluous generic handler
-}
-
-/** Forwards tryVisit functionality from taggedunion.
-
-    The same as `visit`, except that failure to handle types is checked at runtime.
-
-	Instead of failing to compile, `tryVisit` will throw an `Exception` if none
-	of the handlers is able to handle the value contained in `ta`.
-*/
-template tryVisit(VISITORS...)
-	if (VISITORS.length > 0)
-{
-	auto tryVisit(U)(auto ref TaggedAlgebraic!U ta)
-	{
-		return taggedalgebraic.taggedunion.tryVisit!VISITORS(ta.m_union);
-	}
-}
-
-
-// repeat from TaggedUnion
-unittest {
-	import std.exception : assertThrown;
-
-	union U {
-		int number;
-		string text;
-	}
-	alias TA = TaggedAlgebraic!U;
-
-	auto ta = TA(42);
-	ta.tryVisit!((int n) { assert(n == 42); });
-	assertThrown(ta.tryVisit!((string s) { assert(false); }));
 }
 
 
