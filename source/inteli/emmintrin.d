@@ -12,10 +12,6 @@ import inteli.internals;
 
 nothrow @nogc:
 
-version(D_InlineAsm_X86)
-    version = InlineX86Asm;
-else version(D_InlineAsm_X86_64)
-    version = InlineX86Asm;
 
 // SSE2 instructions
 // https://software.intel.com/sites/landingpage/IntrinsicsGuide/#techs=SSE2
@@ -1527,7 +1523,7 @@ else version(LDC)
 {
     alias _mm_lfence = __builtin_ia32_lfence;
 }
-else version(InlineX86Asm)
+else static if (DMD_with_asm)
 {
     void _mm_lfence() pure @safe
     {
@@ -1598,10 +1594,13 @@ __m128d _mm_loadl_pd (__m128d a, const(double)* mem_addr) pure @trusted
     return a;
 }
 
-__m128d _mm_loadr_pd (const(double)* mem_addr) pure @trusted
+__m128d _mm_loadr_pd2 (const(double)* mem_addr) pure @trusted
 {
-    __m128d a = _mm_load_pd(mem_addr);
-    return shufflevector!(__m128d, 1, 0)(a, a);
+    __m128d a = *cast(__m128d*)(mem_addr);
+    __m128d r;
+    r.ptr[0] = a.array[1];
+    r.ptr[1] = a.array[0];
+    return r;
 }
 
 __m128d _mm_loadu_pd (const(double)* mem_addr) pure @safe
@@ -1834,7 +1833,7 @@ else version(LDC)
 {
     alias _mm_mfence = __builtin_ia32_mfence;
 }
-else version(InlineX86Asm)
+else static if (DMD_with_asm)
 {
     void _mm_mfence() pure @safe
     {
@@ -2386,7 +2385,7 @@ else version(LDC)
 {
     alias _mm_pause = __builtin_ia32_pause;
 }
-else version(InlineX86Asm)
+else static if (DMD_with_asm)
 {
     void _mm_pause() pure @safe
     {
@@ -2913,6 +2912,15 @@ __m128i _mm_slli_si128(ubyte bytes)(__m128i op) pure @safe
         {
             return __builtin_ia32_pslldqi128(op, cast(ubyte)(bytes * 8)); 
         }
+        /*else version(DigitalMars)
+        {
+            asm pure nothrow @nogc @trusted
+            {
+                movupd XMM0, op;
+                pslldq XMM0, bytes;
+                movupd op, XMM0;
+            }
+        }*/
         else
         {
             return cast(__m128i) shufflevector!(byte16,
@@ -3355,16 +3363,19 @@ __m128d _mm_srli_pd(ubyte bytes)(__m128d v) pure @safe
     return cast(__m128d) _mm_srli_si128!bytes(cast(__m128i)v);
 }
 
-void _mm_store_pd (double* mem_addr, __m128d a) pure
+void _mm_store_pd (double* mem_addr, __m128d a) pure @trusted
 {
     __m128d* aligned = cast(__m128d*)mem_addr;
     *aligned = a;
 }
 
-void _mm_store_pd1 (double* mem_addr, __m128d a) pure
+void _mm_store_pd1 (double* mem_addr, __m128d a) pure @trusted
 {
     __m128d* aligned = cast(__m128d*)mem_addr;
-    *aligned = shufflevector!(double2, 0, 0)(a, a);
+    __m128d r;
+    r.ptr[0] = a.array[0];
+    r.ptr[1] = a.array[0];
+    *aligned = r;
 }
 
 void _mm_store_sd (double* mem_addr, __m128d a) pure @safe

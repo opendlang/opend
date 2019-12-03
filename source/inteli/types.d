@@ -368,7 +368,6 @@ static if (CoreSimdIsEmulated)
         *cast(Vec*)(pvec) = v;
     }
 
-
     Vec shufflevector(Vec, mask...)(Vec a, Vec b) @safe
     {
         static assert(mask.length == Vec.Count);

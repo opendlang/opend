@@ -694,8 +694,12 @@ __m128 _mm_load_ps1(const(float)*p) pure @trusted
 
 __m128 _mm_load_ss (const(float)* mem_addr) pure @trusted
 {
-    float[4] f = [ *mem_addr, 0.0f, 0.0f, 0.0f ];
-    return loadUnaligned!(float4)(f.ptr);
+    __m128 r;
+    r.ptr[0] = *mem_addr;
+    r.ptr[1] = 0;
+    r.ptr[2] = 0;
+    r.ptr[3] = 0;
+    return r;
 }
 
 alias _mm_load1_ps = _mm_load_ps1;
@@ -718,7 +722,12 @@ __m128 _mm_loadr_ps (const(float)* mem_addr) pure @trusted
 {
     __m128* aligned = cast(__m128*)mem_addr;
     __m128 a = *aligned;
-    return shufflevector!(__m128, 3, 2, 1, 0)(a, a);
+    __m128 r;
+    r.ptr[0] = a.array[3];
+    r.ptr[1] = a.array[2];
+    r.ptr[2] = a.array[1];
+    r.ptr[3] = a.array[0];
+    return r;
 }
 
 __m128 _mm_loadu_ps(const(float)*p) pure @safe
@@ -925,19 +934,24 @@ unittest
     assert(M.array[0] == 1);
 }
 
-__m128 _mm_move_ss (__m128 a, __m128 b) pure @safe
+__m128 _mm_move_ss (__m128 a, __m128 b) pure @trusted
 {
-    return shufflevector!(__m128, 4, 1, 2, 3)(a, b);
+    a.ptr[0] = b.array[0];
+    return a;
 }
 
-__m128 _mm_movehl_ps (__m128 a, __m128 b) pure @safe
+__m128 _mm_movehl_ps (__m128 a, __m128 b) pure @trusted
 {
-    return shufflevector!(float4, 2, 3, 6, 7)(a, b);
+    b.ptr[0] = a.array[2];
+    b.ptr[1] = a.array[3];
+    return b;
 }
 
-__m128 _mm_movelh_ps (__m128 a, __m128 b) pure @safe
+__m128 _mm_movelh_ps (__m128 a, __m128 b) pure @trusted
 {
-    return shufflevector!(float4, 0, 1, 4, 5)(a, b);
+    a.ptr[2] = b.array[0];
+    a.ptr[3] = b.array[1];
+    return a;
 }
 
 int _mm_movemask_pi8 (__m64 a) pure @safe
@@ -1322,7 +1336,7 @@ else version(LDC)
 {
     alias _mm_sfence = __builtin_ia32_sfence;
 }
-else version(InlineX86Asm)
+else static if (DMD_with_asm)
 {
     void _mm_sfence() pure @safe
     {
@@ -1459,10 +1473,15 @@ unittest
     assert(a == 546);
 }
 
-void _mm_store1_ps (float* mem_addr, __m128 a) pure // not safe since nothing guarantees alignment
+void _mm_store1_ps(float* mem_addr, __m128 a) pure @trusted // not safe since nothing guarantees alignment
 {
     __m128* aligned = cast(__m128*)mem_addr;
-    *aligned = shufflevector!(__m128, 0, 0, 0, 0)(a, a);
+    __m128 r;
+    r.ptr[0] = a.array[0];
+    r.ptr[1] = a.array[0];
+    r.ptr[2] = a.array[0];
+    r.ptr[3] = a.array[0];
+    *aligned = r;
 }
 
 void _mm_storeh_pi(__m64* p, __m128 a) pure @trusted
@@ -1491,10 +1510,15 @@ unittest
     assert(R.array[0] == 13);
 }
 
-void _mm_storer_ps(float* mem_addr, __m128 a) pure // not safe since nothing guarantees alignment
+void _mm_storer_ps(float* mem_addr, __m128 a) pure @trusted // not safe since nothing guarantees alignment
 {
     __m128* aligned = cast(__m128*)mem_addr;
-    *aligned = shufflevector!(__m128, 3, 2, 1, 0)(a, a);
+    __m128 r;
+    r.ptr[0] = a.array[3];
+    r.ptr[1] = a.array[2];
+    r.ptr[2] = a.array[1];
+    r.ptr[3] = a.array[0];
+    *aligned = r;
 }
 
 void _mm_storeu_ps(float* mem_addr, __m128 a) pure @safe
@@ -1589,14 +1613,24 @@ __m128 _mm_undefined_ps() pure @safe
     return undef;
 }
 
-__m128 _mm_unpackhi_ps (__m128 a, __m128 b) pure @safe
+__m128 _mm_unpackhi_ps (__m128 a, __m128 b) pure @trusted
 {
-    return shufflevector!(float4, 2, 6, 3, 7)(a, b);
+    __m128 r;
+    r.ptr[0] = a.array[2];
+    r.ptr[1] = b.array[2];
+    r.ptr[2] = a.array[3];
+    r.ptr[3] = b.array[3];
+    return r;
 }
 
-__m128 _mm_unpacklo_ps (__m128 a, __m128 b) pure @safe
+__m128 _mm_unpacklo_ps (__m128 a, __m128 b) pure @trusted
 {
-    return shufflevector!(float4, 0, 4, 1, 5)(a, b);
+    __m128 r;
+    r.ptr[0] = a.array[0];
+    r.ptr[1] = b.array[0];
+    r.ptr[2] = a.array[1];
+    r.ptr[3] = b.array[1];
+    return r;
 }
 
 __m128 _mm_xor_ps (__m128 a, __m128 b) pure @safe

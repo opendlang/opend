@@ -99,6 +99,18 @@ else
     static assert(false, "Unknown compiler");
 }
 
+version(DigitalMars)
+{
+    version(D_InlineAsm_X86)
+        enum DMD_with_asm = true;
+    else version(D_InlineAsm_X86_64)
+        enum DMD_with_asm = true;
+    else
+        enum DMD_with_asm = false;
+}
+else
+    enum DMD_with_asm = false;
+
 
 package:
 nothrow @nogc:
