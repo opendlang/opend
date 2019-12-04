@@ -353,9 +353,9 @@ alias _mm_bslli_si128 = _mm_slli_si128;
 unittest
 {
     __m128i toShift = _mm_setr_epi8(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15);
-    byte[16] exact =              [0, 0, 0, 0, 0, 0, 1, 2, 3, 4,  5,  6,  7,  8,  9, 10];
+    byte[16] exact =               [0, 0, 0, 0, 0, 0, 1, 2, 3, 4,  5,  6,  7,  8,  9, 10];
     __m128i result = _mm_bslli_si128!5(toShift);
-    assert(  (cast(byte16)result).array == exact);
+    assert( (cast(byte16)result).array == exact);
 }
 
 alias _mm_bsrli_si128 = _mm_srli_si128;
@@ -2718,23 +2718,35 @@ version(LDC)
 {
     alias _mm_sll_epi32 = __builtin_ia32_pslld128;
 }
+else static if (GDC_with_SSE2)
+{
+    alias _mm_sll_epi32 = __builtin_ia32_pslld128;
+}
+else static if (DMD_with_32bit_asm)
+{
+    __m128i _mm_sll_epi32 (__m128i a, __m128i count) pure @safe
+    {
+        asm pure nothrow @nogc @trusted
+        {
+            movdqu XMM0, a;
+            movdqu XMM1, count;
+            pslld XMM0, XMM1;
+            movdqu a, XMM0;
+        }
+        return a;
+    }
+}
 else
 {
-    static if (GDC_with_SSE2)
+
+    __m128i _mm_sll_epi32 (__m128i a, __m128i count) pure @safe
     {
-        alias _mm_sll_epi32 = __builtin_ia32_pslld128;
-    }
-    else
-    {
-        __m128i _mm_sll_epi32 (__m128i a, __m128i count) pure @safe
-        {
-            int4 r = void;
-            long2 lc = cast(long2)count;
-            int bits = cast(int)(lc.array[0]);
-            foreach(i; 0..4)
-                r[i] = cast(uint)(a[i]) << bits;
-            return r;
-        }
+        int4 r = void;
+        long2 lc = cast(long2)count;
+        int bits = cast(int)(lc.array[0]);
+        foreach(i; 0..4)
+            r[i] = cast(uint)(a[i]) << bits;
+        return r;
     }
 }
 unittest
@@ -2749,24 +2761,35 @@ version(LDC)
 {
     alias _mm_sll_epi64  = __builtin_ia32_psllq128;
 }
+else static if (GDC_with_SSE2)
+{
+    alias _mm_sll_epi64  = __builtin_ia32_psllq128;
+}
+else static if (DMD_with_32bit_asm)
+{
+    __m128i _mm_sll_epi64 (__m128i a, __m128i count) pure @safe
+    {
+        asm pure nothrow @nogc @trusted
+        {
+            movdqu XMM0, a;
+            movdqu XMM1, count;
+            psllq XMM0, XMM1;
+            movdqu a, XMM0;
+        }
+        return a;
+    }
+}
 else
 {
-    static if (GDC_with_SSE2)
+    __m128i _mm_sll_epi64 (__m128i a, __m128i count) pure @safe
     {
-        alias _mm_sll_epi64  = __builtin_ia32_psllq128;
-    }
-    else
-    {
-        __m128i _mm_sll_epi64 (__m128i a, __m128i count) pure @safe
-        {
-            long2 r = void;
-            long2 sa = cast(long2)a;
-            long2 lc = cast(long2)count;
-            int bits = cast(int)(lc.array[0]);
-            foreach(i; 0..2)
-                r.array[i] = cast(ulong)(sa.array[i]) << bits;
-            return cast(__m128i)r;
-        }
+        long2 r = void;
+        long2 sa = cast(long2)a;
+        long2 lc = cast(long2)count;
+        int bits = cast(int)(lc.array[0]);
+        foreach(i; 0..2)
+            r.array[i] = cast(ulong)(sa.array[i]) << bits;
+        return cast(__m128i)r;
     }
 }
 unittest
@@ -2900,7 +2923,7 @@ unittest
 
 
 /// Shift `a` left by `bytes` bytes while shifting in zeros.
-__m128i _mm_slli_si128(ubyte bytes)(__m128i op) pure @safe
+__m128i _mm_slli_si128(ubyte bytes)(__m128i op) pure @trusted
 {
     static if (bytes & 0xF0)
     {
@@ -2910,17 +2933,31 @@ __m128i _mm_slli_si128(ubyte bytes)(__m128i op) pure @safe
     {
         static if (GDC_with_SSE2)
         {
-            return __builtin_ia32_pslldqi128(op, cast(ubyte)(bytes * 8)); 
+            return __builtin_ia32_i128(op, cast(ubyte)(bytes * 8)); 
         }
-        /*else version(DigitalMars)
+        else version(DigitalMars)
         {
-            asm pure nothrow @nogc @trusted
+            version(D_InlineAsm_X86)
             {
-                movupd XMM0, op;
-                pslldq XMM0, bytes;
-                movupd op, XMM0;
+                asm pure nothrow @nogc @trusted // somehow doesn't work for x86_64
+                {
+                    movdqu XMM0, op;
+                    pslldq XMM0, bytes;
+                    movdqu op, XMM0;
+                }
+                return op;
             }
-        }*/
+            else
+            {
+                byte16 A = cast(byte16)op;
+                byte16 R;
+                for (int n = 15; n >= bytes; --n)
+                    R.ptr[n] = A.array[n-bytes];
+                for (int n = bytes-1; n >= 0; --n)
+                    R.ptr[n] = 0;
+                return cast(__m128i)R;
+            }
+        }
         else
         {
             return cast(__m128i) shufflevector!(byte16,

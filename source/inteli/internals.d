@@ -107,9 +107,19 @@ version(DigitalMars)
         enum DMD_with_asm = true;
     else
         enum DMD_with_asm = false;
+
+    version(D_InlineAsm_X86)
+        enum DMD_with_32bit_asm = DMD_with_asm; // sometimes you want a 32-bit DMD only solution
+    else
+        enum DMD_with_32bit_asm = false;
 }
 else
+{
     enum DMD_with_asm = false;
+    enum DMD_with_32bit_asm = false;
+}
+
+
 
 
 package:
