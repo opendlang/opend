@@ -2570,7 +2570,8 @@ __m128i _mm_set1_epi8 (byte a) pure @trusted
 
 alias _mm_set1_pd = _mm_set_pd1;
 
-__m128i _mm_setr_epi16 (short e7, short e6, short e5, short e4, short e3, short e2, short e1, short e0) pure @trusted
+__m128i _mm_setr_epi16 (short e7, short e6, short e5, short e4, 
+                        short e3, short e2, short e1, short e0) pure @trusted
 {
     short[8] result = [e7, e6, e5, e4, e3, e2, e1, e0];
     return cast(__m128i)( loadUnaligned!(short8)(result.ptr) );
@@ -2804,24 +2805,35 @@ version(LDC)
 {
     alias _mm_sll_epi16 = __builtin_ia32_psllw128;
 }
+else static if (GDC_with_SSE2)
+{
+    alias _mm_sll_epi16 = __builtin_ia32_psllw128;
+}
+else static if (DMD_with_32bit_asm)
+{
+    __m128i _mm_sll_epi16 (__m128i a, __m128i count) pure @trusted
+    {
+        asm pure nothrow @nogc
+        {
+            movdqu XMM0, a;
+            movdqu XMM1, count;
+            psllw XMM0, XMM1;
+            movdqu a, XMM0;
+        }
+        return a;
+    }
+}
 else
 {
-    static if (GDC_with_SSE2)
+    __m128i _mm_sll_epi16 (__m128i a, __m128i count) pure @trusted
     {
-        alias _mm_sll_epi16 = __builtin_ia32_psllw128;
-    }
-    else
-    {
-        __m128i _mm_sll_epi16 (__m128i a, __m128i count) pure @safe
-        {
-            short8 sa = cast(short8)a;
-            long2 lc = cast(long2)count;
-            int bits = cast(int)(lc.array[0]);
-            short8 r = void;
-            foreach(i; 0..8)
-                r.array[i] = cast(short)(cast(ushort)(sa.array[i]) << bits);
-            return cast(int4)r;
-        }
+        short8 sa = cast(short8)a;
+        long2 lc = cast(long2)count;
+        int bits = cast(int)(lc.array[0]);
+        short8 r = void;
+        foreach(i; 0..8)
+            r.ptr[i] = cast(short)(cast(ushort)(sa.array[i]) << bits);
+        return cast(int4)r;
     }
 }
 unittest
@@ -3362,6 +3374,16 @@ __m128i _mm_srli_si128(ubyte bytes)(__m128i v) pure @safe
         {
             return cast(__m128i) __builtin_ia32_psrldqi128(v, cast(ubyte)(bytes * 8));
         }
+        else static if (DMD_with_32bit_asm)
+        {
+            asm pure nothrow @nogc @trusted
+            {
+                movdqu XMM0, v;
+                psrldq XMM0, bytes;
+                movdqu v, XMM0;
+            }
+            return v;
+        }
         else
         {
             return cast(__m128i) shufflevector!(byte16,
@@ -3774,11 +3796,30 @@ __m128i _mm_unpackhi_epi16 (__m128i a, __m128i b) pure @safe
     {
         return __builtin_ia32_punpckhwd128(a, b);
     }
+    else static if (DMD_with_32bit_asm)
+    {
+        asm pure nothrow @nogc @trusted
+        {
+            movdqu XMM0, a;
+            movdqu XMM1, b;
+            punpckhwd XMM0, XMM1;
+            movdqu a, XMM0;
+        }
+        return a;
+    }
     else
     {
         return cast(__m128i) shufflevector!(short8, 4, 12, 5, 13, 6, 14, 7, 15)
                                            (cast(short8)a, cast(short8)b);
     }
+}
+unittest
+{
+    __m128i A = _mm_setr_epi16(4,   5,  6,  7,  8,  9, 10, 11);
+    __m128i B = _mm_setr_epi16(12, 13, 14, 15, 16, 17, 18, 19);
+    short8 C = cast(short8)(_mm_unpackhi_epi16(A, B));
+    short[8] correct = [8, 16, 9, 17, 10, 18, 11, 19];
+    assert(C.array == correct);
 }
 
 __m128i _mm_unpackhi_epi32 (__m128i a, __m128i b) pure @safe
