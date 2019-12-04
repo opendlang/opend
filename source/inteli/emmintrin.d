@@ -3863,6 +3863,17 @@ __m128i _mm_unpackhi_epi8 (__m128i a, __m128i b) pure @safe
     {
         return __builtin_ia32_punpckhbw128(a, b);
     }
+    else static if (DMD_with_32bit_asm)
+    {
+        asm pure nothrow @nogc @trusted
+        {
+            movdqu XMM0, a;
+            movdqu XMM1, b;
+            punpckhbw XMM0, XMM1;
+            movdqu a, XMM0;
+        }
+        return a;
+    }
     else
     {
         return cast(__m128i)shufflevector!(byte16, 8,  24,  9, 25, 10, 26, 11, 27,
@@ -3888,6 +3899,17 @@ __m128i _mm_unpacklo_epi16 (__m128i a, __m128i b) pure @safe
     static if (GDC_with_SSE2)
     {
         return __builtin_ia32_punpcklwd128(a, b);
+    }
+    else static if (DMD_with_32bit_asm)
+    {
+        asm pure nothrow @nogc @trusted
+        {
+            movdqu XMM0, a;
+            movdqu XMM1, b;
+            punpcklwd XMM0, XMM1;
+            movdqu a, XMM0;
+        }
+        return a;
     }
     else
     {
@@ -3922,7 +3944,7 @@ __m128i _mm_unpacklo_epi64 (__m128i a, __m128i b) pure @trusted
         long2 R;
         R.ptr[0] = lA.array[0];
         R.ptr[1] = lB.array[0];
-        return cast(__m128i)R;        
+        return cast(__m128i)R;
     }
 }
 unittest // Issue #36
@@ -3940,6 +3962,17 @@ __m128i _mm_unpacklo_epi8 (__m128i a, __m128i b) pure @safe
     static if (GDC_with_SSE2)
     {
         return __builtin_ia32_punpcklbw128(a, b);
+    }
+    else static if (DMD_with_32bit_asm)
+    {
+        asm pure nothrow @nogc @trusted
+        {
+            movdqu XMM0, a;
+            movdqu XMM1, b;
+            punpcklbw XMM0, XMM1;
+            movdqu a, XMM0;
+        }
+        return a;
     }
     else
     {

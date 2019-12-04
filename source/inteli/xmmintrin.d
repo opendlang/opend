@@ -1246,7 +1246,12 @@ unittest
 
 __m128 _mm_set1_ps (float a) pure @trusted
 {
-    return __m128(a);
+    __m128 r = void;
+    r.ptr[0] = a;
+    r.ptr[1] = a;
+    r.ptr[2] = a;
+    r.ptr[3] = a;
+    return r;
 }
 unittest
 {
