@@ -206,6 +206,16 @@ struct HashMap(K, V, Allocator = Mallocator, bool GCRangesAllowed = true) {
         return "[%s]".format(pairs.map!(p => "%s:%s".format(p.key, p.value)).array.join(", "));
     }
 
+    string dump()
+    {
+        import std.array;
+        string[] str;
+        for(int i=0; i<_buckets_num;i++)
+        {
+            str ~= "[%5.5d][0x%16.16x][%s][%s]".format(i, _buckets.bs[i].hash, _buckets.bs[i].key, _buckets.bs[i].value);
+        }
+        return str.join("\n");
+    }
     invariant {
         assert(_allocated >= 0 && _deleted >= 0 && _empty >= 0);
         assert(_allocated + _deleted + _empty == _buckets_num);
@@ -668,22 +678,13 @@ struct HashMap(K, V, Allocator = Mallocator, bool GCRangesAllowed = true) {
         // leave table in inconsistent state.
         //
         if (h < ALLOCATED_HASH) {
+            bucket.value = v;
+            bucket.key = k;
             final switch (h) {
             case EMPTY_HASH:
-                bucket.value = v;
-                bucket.key = k;
                 _empty--;
                 break;
             case DELETED_HASH:
-                auto p = (placement_index - 1) & _mask;
-                while (_buckets.bs[p].hash == DELETED_HASH && p != placement_index) {
-                    _buckets.bs[p].hash = EMPTY_HASH;
-                    _empty++;
-                    _deleted--;
-                    p = --p & _mask;
-                }
-                bucket.value = v;
-                bucket.key = k;
                 _deleted--;
                 break;
             }
@@ -729,12 +730,14 @@ struct HashMap(K, V, Allocator = Mallocator, bool GCRangesAllowed = true) {
         // if next bucket is EMPTY, then we can convert all DELETED buckets down staring from current to EMPTY buckets
         if (_buckets.bs[next_index].hash == EMPTY_HASH) {
             _empty++;
+            debug (cachetools) safe_tracef("mark index %s empty(%d is empty hash)", lookup_index, next_index);
             _buckets.bs[lookup_index].hash = EMPTY_HASH;
             auto free_index = (lookup_index - 1) & _mask;
             while (free_index != lookup_index) {
                 if (_buckets.bs[free_index].hash != DELETED_HASH) {
                     break;
                 }
+                debug (cachetools) safe_tracef("mark index %s empty", free_index);
                 _buckets.bs[free_index].hash = EMPTY_HASH;
                 _deleted--;
                 _empty++;
@@ -743,6 +746,7 @@ struct HashMap(K, V, Allocator = Mallocator, bool GCRangesAllowed = true) {
             assert(free_index != lookup_index, "table full of deleted buckets?");
         }
         else {
+            debug (cachetools) safe_tracef("mark index %s deleted", lookup_index);
             _buckets.bs[lookup_index].hash = DELETED_HASH;
             _deleted++;
         }

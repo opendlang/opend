@@ -16,6 +16,7 @@
 			"name": "unittest",
 			"targetType": "executable",
 			"versions": ["TestingContainers"],
+			"debugVersions": ["cachetools"],
 			"preBuildCommands": [
 			  "dub run --compiler=$$DC unit-threaded -c gen_ut_main -- -f bin/ut.d"
 			],

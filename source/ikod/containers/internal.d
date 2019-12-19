@@ -28,9 +28,10 @@ debug(cachetools) @safe @nogc nothrow
 {
     void safe_tracef(A...)(string f, scope A args, string file = __FILE__, int line = __LINE__) @safe @nogc nothrow
     {
+        import core.thread;
         debug (cachetools) try
         {
-            () @trusted @nogc {tracef("%s:%d " ~ f, file, line, args);}();
+            () @trusted @nogc {tracef("[%x] %s:%d " ~ f, Thread.getThis().id(), file, line, args);}();
         }
         catch(Exception e)
         {
