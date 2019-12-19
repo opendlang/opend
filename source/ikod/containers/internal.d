@@ -26,15 +26,28 @@ import std.experimental.logger;
 
 debug(cachetools) @safe @nogc nothrow
 {
-    void safe_tracef(A...)(string f, scope A args, string file = __FILE__, int line = __LINE__) @safe @nogc nothrow
+    package void safe_tracef(A...)(string f, scope A args, string file = __FILE__, int line = __LINE__) @safe @nogc nothrow
     {
-        import core.thread;
-        debug (cachetools) try
+        bool osx,ldc;
+        version(OSX)
         {
-            () @trusted @nogc {tracef("[%x] %s:%d " ~ f, Thread.getThis().id(), file, line, args);}();
+            osx = true;
         }
-        catch(Exception e)
+        version(LDC)
         {
+            ldc = true;
+        }
+        if (!osx || !ldc)
+        {
+            // this can fail on pair ldc2/osx, see https://github.com/ldc-developers/ldc/issues/3240
+            import core.thread;
+            debug (cachetools) try
+            {
+                () @trusted @nogc {tracef("[%x] %s:%d " ~ f, Thread.getThis().id(), file, line, args);}();
+            }
+            catch(Exception e)
+            {
+            }
         }
     }    
 }
