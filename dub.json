@@ -13,6 +13,9 @@
 	"targetType": "library",
 	"configurations": [
 		{
+			"name": "std"
+		},
+		{
 			"name": "unittest",
 			"targetType": "executable",
 			"versions": ["TestingContainers"],
