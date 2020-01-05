@@ -424,6 +424,9 @@ extern( System ) {
     // VK_AMD_display_native_hdr
     alias PFN_vkSetLocalDimmingAMD                                              = void      function( VkDevice device, VkSwapchainKHR swapChain, VkBool32 localDimmingEnable );
 
+    // VK_EXT_tooling_info
+    alias PFN_vkGetPhysicalDeviceToolPropertiesEXT                              = VkResult  function( VkPhysicalDevice physicalDevice, uint32_t* pToolCount, VkPhysicalDeviceToolPropertiesEXT* pToolProperties );
+
     // VK_NV_cooperative_matrix
     alias PFN_vkGetPhysicalDeviceCooperativeMatrixPropertiesNV                  = VkResult  function( VkPhysicalDevice physicalDevice, uint32_t* pPropertyCount, VkCooperativeMatrixPropertiesNV* pProperties );
 
@@ -853,6 +856,9 @@ __gshared {
     // VK_AMD_display_native_hdr
     PFN_vkSetLocalDimmingAMD                                              vkSetLocalDimmingAMD;
 
+    // VK_EXT_tooling_info
+    PFN_vkGetPhysicalDeviceToolPropertiesEXT                              vkGetPhysicalDeviceToolPropertiesEXT;
+
     // VK_NV_cooperative_matrix
     PFN_vkGetPhysicalDeviceCooperativeMatrixPropertiesNV                  vkGetPhysicalDeviceCooperativeMatrixPropertiesNV;
 
@@ -1034,6 +1040,9 @@ void loadInstanceLevelFunctions( VkInstance instance ) {
 
     // VK_EXT_calibrated_timestamps
     vkGetPhysicalDeviceCalibrateableTimeDomainsEXT                    = cast( PFN_vkGetPhysicalDeviceCalibrateableTimeDomainsEXT                    ) vkGetInstanceProcAddr( instance, "vkGetPhysicalDeviceCalibrateableTimeDomainsEXT" );
+
+    // VK_EXT_tooling_info
+    vkGetPhysicalDeviceToolPropertiesEXT                              = cast( PFN_vkGetPhysicalDeviceToolPropertiesEXT                              ) vkGetInstanceProcAddr( instance, "vkGetPhysicalDeviceToolPropertiesEXT" );
 
     // VK_NV_cooperative_matrix
     vkGetPhysicalDeviceCooperativeMatrixPropertiesNV                  = cast( PFN_vkGetPhysicalDeviceCooperativeMatrixPropertiesNV                  ) vkGetInstanceProcAddr( instance, "vkGetPhysicalDeviceCooperativeMatrixPropertiesNV" );
