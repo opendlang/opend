@@ -493,7 +493,7 @@ struct MultivariateNormalVariable(T)
         auto s = (() @trusted => sigma.sliced(n, n))();//sigma is n x n matrix.
         foreach(ref e; result)
             e = norm(gen);
-        foreach_reverse(size_t i; 0 .. n - 1)
+        foreach_reverse(size_t i; 0 .. n)
             result[i] = reduce!"a + b * c"(T(0), s[i, 0 .. i + 1], result[0 .. i + 1]);
         if (mu)
             result.sliced[] +=(() @trusted => mu.sliced(n))();//mu is n vector.
