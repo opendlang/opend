@@ -943,7 +943,7 @@ unittest { // "in" operator
 unittest { // issue #15 - by-ref return values
 	static struct S {
 		int x;
-		ref int getx() { return x; }
+		ref int getx() return { return x; }
 	}
 	static union U { S s; }
 	alias TA = TaggedAlgebraic!U;
