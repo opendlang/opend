@@ -5,7 +5,7 @@
     "license": "BSL-1.0",
     "libs-posix": ["dl","util"],
     "dependencies": {
-        "pyd": "~>0.9.8",
+        "pyd": "~>0.13.0",
         "mir-random": {
             "path": "../../.."
         }

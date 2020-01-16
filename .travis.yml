@@ -1,27 +1,25 @@
-sudo: false
 os:
  - linux
 # Temporarily disable osx builds in Travis CI because of very long wait times
 # - osx
 language: d
 d:
- - ldc
- - dmd
- - ldc-beta
- - dmd-nightly
- - dmd-beta
+ - ldc,dub
+ - dmd,dub
+ - ldc-beta,dub
+ - dmd-nightly,dub
+ - dmd-beta,dub
 packages:
   - pkg-config
 env:
  - ARCH="x86_64"
 matrix:
   include:
-    - {os: linux, d: ldc, env: ARCH="x86", addons: {apt: {packages: [[gcc-multilib]]}}}
-    - {os: linux, d: dmd, env: ARCH="x86", addons: {apt: {packages: [[gcc-multilib]]}}}
+    - {os: linux, d: ldc,dub, env: ARCH="x86", addons: {apt: {packages: [[gcc-multilib]]}}}
+    - {os: linux, d: dmd,dub, env: ARCH="x86", addons: {apt: {packages: [[gcc-multilib]]}}}
   allow_failures:
-    - {d: dmd-nightly}
-    - {d: ldc-beta}
-    - {d: gdc}
+    - {d: dmd-nightly,dub}
+    - {d: ldc-beta,dub}
 branches:
   only:
     - master
