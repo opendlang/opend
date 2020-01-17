@@ -2945,7 +2945,7 @@ __m128i _mm_slli_si128(ubyte bytes)(__m128i op) pure @trusted
     {
         static if (GDC_with_SSE2)
         {
-            return __builtin_ia32_i128(op, cast(ubyte)(bytes * 8)); 
+            return __builtin_ia32_pslldqi128(op, cast(ubyte)(bytes * 8)); 
         }
         else version(DigitalMars)
         {
