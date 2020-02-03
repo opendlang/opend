@@ -403,7 +403,7 @@ struct MultivariateNormalVariable(T)
     Compute Cholesky decomposition in place. Only accesses lower/left half of
     the matrix. Returns false if the matrix is not positive definite.
     +/
-    private static bool cholesky()(Slice!(T*, 2) m)
+    static bool cholesky()(Slice!(T*, 2) m)
     {
         import mir.algorithm.iteration: reduce;
         assert(m.length!0 == m.length!1);
