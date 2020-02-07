@@ -655,6 +655,13 @@ __m64 _mm_sll_si64 (__m64 a, __m64 bits) pure @safe
 {
     return to_m64(_mm_sll_epi64(to_m128i(a), to_m128i(bits)));
 }
+unittest
+{
+    __m64 A = _mm_cvtsi64_m64(-1);
+    long1 R = cast(long1)( _mm_sll_si64(A, _mm_cvtsi64_m64(1)) );
+    long[1] correct = [ -2 ];
+    assert(R.array == correct);
+}
 
 /// Shift packed 16-bit integers in `a` left by `bits` while shifting in zeros.
 __m64 _mm_slli_pi16 (__m64 a, int bits) pure @safe
@@ -686,6 +693,13 @@ unittest
 __m64 _mm_slli_si64 (__m64 a, int bits) pure @safe
 {
     return to_m64(_mm_slli_epi64(to_m128i(a), bits));
+}
+unittest
+{
+    __m64 A = _mm_cvtsi64_m64(-1);
+    long1 R = cast(long1)( _mm_slli_si64(A, 1) );
+    long[1] correct = [ -2 ];
+    assert(R.array == correct);
 }
 
 /// Shift packed 16-bit integers in `a` right by `bits` while shifting in sign bits.
@@ -771,6 +785,13 @@ __m64 _mm_srl_si64 (__m64 a, __m64 bits) pure @safe
 {
     return to_m64(_mm_srl_epi64(to_m128i(a), to_m128i(bits)));
 }
+unittest
+{
+    __m64 A = _mm_cvtsi64_m64(-1);
+    long1 R = cast(long1)( _mm_srl_si64(A, _mm_cvtsi64_m64(1)) );
+    long[1] correct = [ 0x7fff_ffff_ffff_ffff ];
+    assert(R.array == correct);
+}
 
 /// Shift packed 16-bit integers in `a` right by `bits` while shifting in zeros.
 __m64 _mm_srli_pi16 (__m64 a, int bits) pure @safe
@@ -803,11 +824,25 @@ __m64 _mm_srli_si64 (__m64 a, int bits) pure @safe
 {
     return to_m64(_mm_srli_epi64(to_m128i(a), bits));
 }
+unittest
+{
+    __m64 A = _mm_cvtsi64_m64(-1);
+    long1 R = cast(long1)( _mm_srli_si64(A, 1) );
+    long[1] correct = [ 0x7fff_ffff_ffff_ffff ];
+    assert(R.array == correct);
+}
 
 /// Subtract packed 16-bit integers in `b` from packed 16-bit integers in `a`.
 __m64 _mm_sub_pi16 (__m64 a, __m64 b) pure @safe
 {
     return cast(__m64)(cast(short4)a - cast(short4)b);
+}
+unittest
+{
+    short4 R = cast(short4) _mm_sub_pi16(_mm_setr_pi16(cast(short)65534,  1, 5, -32768),
+                                         _mm_setr_pi16(cast(short)65535, 16, 4, 4));
+    static immutable short[4] correct =                            [ -1,-15, 1, 32764];
+    assert(R.array == correct);
 }
 
 /// Subtract packed 32-bit integers in `b` from packed 32-bit integers in `a`.
@@ -815,11 +850,25 @@ __m64 _mm_sub_pi32 (__m64 a, __m64 b) pure @safe
 {
     return cast(__m64)(cast(int2)a - cast(int2)b);
 }
+unittest
+{
+    int2 R = cast(int2) _mm_sub_pi32(_mm_setr_pi32( 10,   4),
+                                     _mm_setr_pi32( 15, -70));
+    static immutable int[2] correct =             [ -5,  74];
+    assert(R.array == correct);
+}
 
 /// Subtract packed 8-bit integers in `b` from packed 8-bit integers in `a`.
 __m64 _mm_sub_pi8 (__m64 a, __m64 b) pure @safe
 {
     return cast(__m64)(cast(byte8)a - cast(byte8)b);
+}
+unittest
+{
+    byte8 R = cast(byte8) _mm_sub_pi8(_mm_setr_pi8(cast(byte)254, 127, 13, 12, 11, 10, 9, -128),
+                                      _mm_setr_pi8(cast(byte)255, 120, 14, 42, 11, 10, 9, 8));
+    static immutable byte[8] correct =                 [      -1,   7, -1,-30,  0,  0, 0, 120 ];
+    assert(R.array == correct);
 }
 
 /// Subtract packed 16-bit integers in `b` from packed 16-bit integers in `a` using saturation.
@@ -827,11 +876,25 @@ __m64 _mm_subs_pi16 (__m64 a, __m64 b) pure @safe
 {
     return to_m64(_mm_subs_epi16(to_m128i(a), to_m128i(b)));
 }
+unittest
+{
+    short4 R = cast(short4) _mm_subs_pi16(_mm_setr_pi16(cast(short)65534,  1, 5, -32768),
+                                          _mm_setr_pi16(cast(short)65535, 16, 4, 4));
+    static immutable short[4] correct =                             [ -1,-15, 1, -32768];
+    assert(R.array == correct);
+}
 
 /// Subtract packed 8-bit integers in `b` from packed 8-bit integers in `a` using saturation.
 __m64 _mm_subs_pi8 (__m64 a, __m64 b) pure @safe
 {
     return to_m64(_mm_subs_epi8(to_m128i(a), to_m128i(b)));
+}
+unittest
+{
+    byte8 R = cast(byte8) _mm_subs_pi8(_mm_setr_pi8(cast(byte)254, 127, 13, 12, 11, 10, 9, -128),
+                                       _mm_setr_pi8(cast(byte)255, 120, 14, 42, 11, 10, 9, 8));
+    static immutable byte[8] correct =                 [       -1,   7, -1,-30,  0,  0, 0, -128 ];
+    assert(R.array == correct);
 }
 
 /// Subtract packed unsigned 16-bit integers in `b` from packed unsigned 16-bit integers in `a` 
@@ -840,12 +903,26 @@ __m64 _mm_subs_pu16 (__m64 a, __m64 b) pure @safe
 {
     return to_m64(_mm_subs_epu16(to_m128i(a), to_m128i(b)));
 }
+unittest
+{
+    short4 R = cast(short4) _mm_subs_pu16(_mm_setr_pi16(cast(short)65534,  1, 5, 4),
+                                          _mm_setr_pi16(cast(short)65535, 16, 4, 4));
+    static immutable short[4] correct =                              [ 0,  0, 1, 0];
+    assert(R.array == correct);
+}
 
 /// Subtract packed unsigned 8-bit integers in `b` from packed unsigned 8-bit integers in `a` 
 /// using saturation.
 __m64 _mm_subs_pu8 (__m64 a, __m64 b) pure @safe
 {
     return to_m64(_mm_subs_epu8(to_m128i(a), to_m128i(b)));
+}
+unittest
+{
+    byte8 R = cast(byte8) _mm_subs_pu8(_mm_setr_pi8(cast(byte)254, 127, 13, 12, 11, 10, 9, 8),
+                                       _mm_setr_pi8(cast(byte)255, 120, 14, 42, 11, 10, 9, 8));
+    static immutable byte[8] correct =                 [        0,   7,  0,  0,  0,  0, 0, 0, ];
+    assert(R.array == correct);
 }
 
 deprecated alias _m_to_int = _mm_cvtsi64_si32;

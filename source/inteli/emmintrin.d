@@ -3729,7 +3729,6 @@ else
 }
 unittest
 {
-    __m128i A = _mm_setr_epi16(cast(short)65534,   0, 5, 4, 3, 2, 1, 0);
     short8 R = cast(short8) _mm_subs_epu16(_mm_setr_epi16(cast(short)65534,  1, 5, 4, 3, 2, 1, 0),
                                            _mm_setr_epi16(cast(short)65535, 16, 4, 4, 3, 0, 1, 0));
     static immutable short[8] correct =                  [               0,  0, 1, 0, 0, 2, 0, 0];
