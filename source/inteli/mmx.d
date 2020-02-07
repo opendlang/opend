@@ -961,6 +961,7 @@ unittest
 __m64 _mm_unpackhi_pi32 (__m64 a, __m64 b) pure @trusted
 {
     // Generate punpckldq as far back as LDC 1.0.0 -O1
+    // (Yes, LLVM does generate punpckldq to reuse SSE2 instructions)
     int2 ia = cast(int2)a;
     int2 ib = cast(int2)b;
     int2 r;
@@ -1014,9 +1015,15 @@ unittest
 }
 
 /// Unpack and interleave 32-bit integers from the low half of `a` and `b`.
-__m64 _mm_unpacklo_pi32 (__m64 a, __m64 b) pure @safe
+__m64 _mm_unpacklo_pi32 (__m64 a, __m64 b) pure @trusted
 {
-    return cast(__m64) shufflevector!(int2, 0, 2)(cast(int2)a, cast(int2)b);
+    // Generate punpckldq as far back as LDC 1.0.0 -O1
+    int2 ia = cast(int2)a;
+    int2 ib = cast(int2)b;
+    int2 r;
+    r.ptr[0] = ia.array[0];
+    r.ptr[1] = ib.array[0];
+    return cast(__m64)r;
 }
 unittest
 {
