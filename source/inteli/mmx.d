@@ -300,8 +300,8 @@ __m64 _mm_cvtsi64_m64 (long a) pure @trusted
 }
 unittest
 {
-    __m64 R = _mm_cvtsi64_m64(-1);
-    assert(R.array[0] == -1);
+    __m64 R = _mm_cvtsi64_m64(0x123456789A);
+    assert(R.array[0] == 0x123456789A);
 }
 
 /// Get the lower 32-bit integer in `a`.
@@ -324,6 +324,7 @@ unittest
 void _mm_empty() pure @safe
 {
     // do nothing, see comment on top of file
+    // TODO: not sure for GDC, do something?
 }
 
 ///ditto
@@ -628,6 +629,13 @@ __m64 _mm_sll_pi16 (__m64 a, __m64 bits) pure @safe
 {
     return to_m64(_mm_sll_epi16(to_m128i(a), to_m128i(bits)));
 }
+unittest
+{
+    __m64 A = _mm_setr_pi16(-4, -5, 6, 7);
+    short4 B = cast(short4)( _mm_sll_pi16(A, _mm_cvtsi64_m64(1)) );
+    short[4] correct = [ -8, -10, 12, 14 ];
+    assert(B.array == correct);
+}
 
 /// Shift packed 32-bit integers in `a` left by `bits` while shifting in zeros.
 __m64 _mm_sll_pi32 (__m64 a, __m64 bits) pure @safe
@@ -645,6 +653,13 @@ __m64 _mm_sll_si64 (__m64 a, __m64 bits) pure @safe
 __m64 _mm_slli_pi16 (__m64 a, int bits) pure @safe
 {
     return to_m64(_mm_slli_epi16(to_m128i(a), bits));
+}
+unittest
+{
+    __m64 A = _mm_setr_pi16(-4, -5, 6, 7);
+    short4 B = cast(short4)( _mm_slli_pi16(A, 1) );
+    short[4] correct = [ -8, -10, 12, 14 ];
+    assert(B.array == correct);
 }
 
 /// Shift packed 32-bit integers in `a` left by `bits` while shifting in zeros.
@@ -664,6 +679,13 @@ __m64 _mm_sra_pi16 (__m64 a, __m64 bits) pure @safe
 {
     return to_m64(_mm_sra_epi16(to_m128i(a), to_m128i(bits)));
 }
+unittest
+{
+    __m64 A = _mm_setr_pi16(-4, -5, 6, 7);
+    short4 B = cast(short4)( _mm_sra_pi16(A, _mm_cvtsi64_m64(1)) );
+    short[4] correct = [ -2, -3, 3, 3 ];
+    assert(B.array == correct);
+}
 
 /// Shift packed 32-bit integers in `a` right by `bits` while shifting in sign bits.
 __m64 _mm_sra_pi32 (__m64 a, __m64 bits) pure @safe
@@ -676,6 +698,13 @@ __m64 _mm_srai_pi16 (__m64 a, int bits) pure @safe
 {
     return to_m64(_mm_srai_epi16(to_m128i(a), bits));
 }
+unittest
+{
+    __m64 A = _mm_setr_pi16(-4, -5, 6, 7);
+    short4 B = cast(short4)( _mm_srai_pi16(A, 1) );
+    short[4] correct = [ -2, -3, 3, 3 ];
+    assert(B.array == correct);
+}
 
 /// Shift packed 32-bit integers in `a` right by `bits` while shifting in sign bits.
 __m64 _mm_srai_pi32 (__m64 a, int bits) pure @safe
@@ -687,6 +716,13 @@ __m64 _mm_srai_pi32 (__m64 a, int bits) pure @safe
 __m64 _mm_srl_pi16 (__m64 a, __m64 bits) pure @safe
 {
     return to_m64(_mm_srl_epi16(to_m128i(a), to_m128i(bits)));
+}
+unittest
+{
+    __m64 A = _mm_setr_pi16(-4, -5, 6, 7);
+    short4 B = cast(short4)( _mm_srl_pi16(A, _mm_cvtsi64_m64(1)) );
+    short[4] correct = [ 0x7ffe, 0x7ffd, 3, 3 ];
+    assert(B.array == correct);
 }
 
 /// Shift packed 32-bit integers in `a` right by `bits` while shifting in zeros.
@@ -705,6 +741,13 @@ __m64 _mm_srl_si64 (__m64 a, __m64 bits) pure @safe
 __m64 _mm_srli_pi16 (__m64 a, int bits) pure @safe
 {
     return to_m64(_mm_srli_epi16(to_m128i(a), bits));
+}
+unittest
+{
+    __m64 A = _mm_setr_pi16(-4, -5, 6, 7);
+    short4 B = cast(short4)( _mm_srli_pi16(A, 1) );
+    short[4] correct = [ 0x7ffe, 0x7ffd, 3, 3 ];
+    assert(B.array == correct);
 }
 
 /// Shift packed 32-bit integers in `a` right by `bits` while shifting in zeros.
