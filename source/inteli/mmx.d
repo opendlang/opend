@@ -642,6 +642,13 @@ __m64 _mm_sll_pi32 (__m64 a, __m64 bits) pure @safe
 {
     return to_m64(_mm_sll_epi32(to_m128i(a), to_m128i(bits)));
 }
+unittest
+{
+    __m64 A = _mm_setr_pi32(-4, 5);
+    int2 B = cast(int2)( _mm_sll_pi32(A, _mm_cvtsi64_m64(1)) );
+    int[2] correct = [ -8, 10 ];
+    assert(B.array == correct);
+}
 
 /// Shift 64-bit integer `a` left by `bits` while shifting in zeros.
 __m64 _mm_sll_si64 (__m64 a, __m64 bits) pure @safe
@@ -666,6 +673,13 @@ unittest
 __m64 _mm_slli_pi32 (__m64 a, int bits) pure @safe
 {
     return to_m64(_mm_slli_epi32(to_m128i(a), bits));
+}
+unittest
+{
+    __m64 A = _mm_setr_pi32(-4, 5);
+    int2 B = cast(int2)( _mm_slli_pi32(A, 1) );
+    int[2] correct = [ -8, 10 ];
+    assert(B.array == correct);
 }
 
 /// Shift 64-bit integer `a` left by `bits` while shifting in zeros.
@@ -692,6 +706,13 @@ __m64 _mm_sra_pi32 (__m64 a, __m64 bits) pure @safe
 {
     return to_m64(_mm_sra_epi32(to_m128i(a), to_m128i(bits)));
 }
+unittest
+{
+    __m64 A = _mm_setr_pi32(-4, 5);
+    int2 B = cast(int2)( _mm_sra_pi32(A, _mm_cvtsi64_m64(1)) );
+    int[2] correct = [ -2, 2 ];
+    assert(B.array == correct);
+}
 
 /// Shift packed 16-bit integers in `a` right by `bits` while shifting in sign bits.
 __m64 _mm_srai_pi16 (__m64 a, int bits) pure @safe
@@ -711,6 +732,13 @@ __m64 _mm_srai_pi32 (__m64 a, int bits) pure @safe
 {
     return to_m64(_mm_srai_epi32(to_m128i(a), bits));
 }
+unittest
+{
+    __m64 A = _mm_setr_pi32(-4, 5);
+    int2 B = cast(int2)( _mm_srai_pi32(A, 1) );
+    int[2] correct = [ -2, 2 ];
+    assert(B.array == correct);
+}
 
 /// Shift packed 16-bit integers in `a` right by `bits` while shifting in zeros.
 __m64 _mm_srl_pi16 (__m64 a, __m64 bits) pure @safe
@@ -729,6 +757,13 @@ unittest
 __m64 _mm_srl_pi32 (__m64 a, __m64 bits) pure @safe
 {
     return to_m64(_mm_srl_epi32(to_m128i(a), to_m128i(bits)));
+}
+unittest
+{
+    __m64 A = _mm_setr_pi32(-4, 5);
+    int2 B = cast(int2)( _mm_srl_pi32(A, _mm_cvtsi64_m64(1)) );
+    int[2] correct = [ 0x7ffffffe, 2 ];
+    assert(B.array == correct);
 }
 
 /// Shift 64-bit integer `a` right by `bits` while shifting in zeros.
@@ -754,6 +789,13 @@ unittest
 __m64 _mm_srli_pi32 (__m64 a, int bits) pure @safe
 {
     return to_m64(_mm_srli_epi32(to_m128i(a), bits));
+}
+unittest
+{
+    __m64 A = _mm_setr_pi32(-4, 5);
+    int2 B = cast(int2)( _mm_srli_pi32(A, 1) );
+    int[2] correct = [ 0x7ffffffe, 2 ];
+    assert(B.array == correct);
 }
 
 /// Shift 64-bit integer `a` right by `bits` while shifting in zeros.
