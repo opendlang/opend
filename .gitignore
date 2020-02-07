@@ -22,3 +22,9 @@ docs/
 
 # Code coverage
 *.lst
+mir-integral-test-library
+build
+doc
+docs
+subprojects/*/
+mir-integral-test-test_travis
