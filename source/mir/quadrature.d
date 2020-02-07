@@ -8,6 +8,13 @@ import mir.math.constant: PI, LN2;
 
 @safe pure nothrow:
 
+version(LDC){} else
+@nogc extern(C)
+{
+    double lgamma(double);
+    double tgamma(double);
+}
+
 /++
 Gauss-Hermite Quadrature
 
@@ -105,8 +112,8 @@ do {
         return 0;
     auto s = alpha + beta;
     auto d = beta - alpha;
-    import core.stdc.tgmath: lgamma;
-    auto mu0 = exp(T(LN2) * (s + 1) + (lgamma(alpha + 1) + lgamma(beta + 1) - lgamma(s + 2)));
+    version (LDC) import core.stdc.math: lgamma;
+    auto mu0 = exp(double(LN2) * (s + 1) + (lgamma(double(alpha + 1)) + lgamma(double(beta + 1)) - lgamma(double(s + 2))));
     x[0] = d / (s + 2);
     const sd = s * d;
     foreach (i; 1 .. x.length)
@@ -179,8 +186,9 @@ in {
         assert(work.length >= x.length ^^ 2);
 }
 do {
-    import core.stdc.tgmath: tgamma;
-    auto mu0 = tgamma(alpha + 1);
+
+    version (LDC) import core.stdc.math: tgamma;
+    auto mu0 = tgamma(double(alpha + 1));
     foreach (i; 0 .. x.length)
     {
         x[i] = 2 * i + (1 + alpha);
