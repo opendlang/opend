@@ -2,6 +2,9 @@
 * Copyright: Copyright Auburn Sounds 2019.
 * License:   $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost License 1.0)
 * Authors:   Guillaume Piolat
+* Macros:
+*      GUIDE = https://software.intel.com/sites/landingpage/IntrinsicsGuide/#text=$0
+*
 */
 module inteli.mmx;
 
@@ -136,7 +139,7 @@ unittest
     assert(R.array[0] == 8);
 }
 
-
+/// Compare packed 16-bit integers in `a` and `b` for equality.
 __m64 _mm_cmpeq_pi16 (__m64 a, __m64 b) pure @safe
 {
     static if (GDC_with_MMX)
@@ -157,6 +160,7 @@ unittest
     assert(R.array == E);
 }
 
+/// Compare packed 32-bit integers in `a` and `b` for equality.
 __m64 _mm_cmpeq_pi32 (__m64 a, __m64 b) pure @safe
 {
     static if (GDC_with_MMX)
@@ -177,6 +181,7 @@ unittest
     assert(R.array == E);
 }
 
+/// Compare packed 8-bit integers in `a` and `b` for equality,
 __m64 _mm_cmpeq_pi8 (__m64 a, __m64 b) pure @safe
 {
     static if (GDC_with_MMX)
@@ -197,6 +202,7 @@ unittest
     assert(C.array == correct);
 }
 
+/// Compare packed 16-bit integers in `a` and `b` for greater-than.
 __m64 _mm_cmpgt_pi16 (__m64 a, __m64 b) pure @safe
 {
     static if (GDC_with_MMX)
@@ -217,6 +223,7 @@ unittest
     assert(R.array == E);
 }
 
+/// Compare packed 32-bit integers in `a` and `b` for greater-than.
 __m64 _mm_cmpgt_pi32 (__m64 a, __m64 b) pure @safe
 {
     static if (GDC_with_MMX)
@@ -237,6 +244,7 @@ unittest
     assert(R.array == E);
 }
 
+/// Compare packed 8-bit integers in `a` and `b` for greater-than.
 __m64 _mm_cmpgt_pi8 (__m64 a, __m64 b) pure @safe
 {
     static if (GDC_with_MMX)
@@ -260,7 +268,14 @@ unittest
 /// Copy 64-bit integer `a` to `dst`.
 long _mm_cvtm64_si64 (__m64 a) pure @safe
 {
+    long1 la = cast(long1)a;
     return a.array[0];
+}
+unittest
+{
+    __m64 A = _mm_setr_pi32(2, 1);
+    long1 lA = cast(long1)A;
+    assert(A.array[0] == 0x100000002);
 }
 
 /// Copy 32-bit integer `a` to the lower elements of `dst`, and zero the upper element of `dst`.
@@ -289,23 +304,36 @@ unittest
     assert(R.array[0] == -1);
 }
 
-/// Copy the lower 32-bit integer in `a` to `dst`.
+/// Get the lower 32-bit integer in `a`.
 int _mm_cvtsi64_si32 (__m64 a) pure @safe
 {
     int2 r = cast(int2)a;
     return r.array[0];
 }
+unittest
+{
+    __m64 A = _mm_setr_pi32(-6, 5);
+    int R = _mm_cvtsi64_si32(A);
+    assert(R == -6);
+}
 
-alias _m_empty = _mm_empty;
-
+/// Empty the MMX state, which marks the x87 FPU registers as available for 
+/// use by x87 instructions. 
+/// This instruction is supposed to be used at the end of all MMX technology procedures.
+/// This is useless when using `intel-intrinsics`, at least with LDC and DMD.
 void _mm_empty() pure @safe
 {
     // do nothing, see comment on top of file
 }
 
+///ditto
+alias _m_empty = _mm_empty;
+
 alias _m_from_int =  _mm_cvtsi32_si64;
 alias _m_from_int64 = _mm_cvtsi64_m64;
 
+/// Multiply packed 16-bit integers in `a` and `b`, producing intermediate 32-bit integers. 
+/// Horizontally add adjacent pairs of intermediate 32-bit integers
 __m64 _mm_madd_pi16 (__m64 a, __m64 b) pure @safe
 {
     return to_m64(_mm_madd_epi16(to_m128i(a), to_m128i(b)));
@@ -319,6 +347,8 @@ unittest
     assert(R.array == correct);
 }
 
+/// Multiply the packed 16-bit integers in `a` and `b`, producing intermediate 32-bit integers, 
+/// and store the high 16 bits of the intermediate integers.
 __m64 _mm_mulhi_pi16 (__m64 a, __m64 b) pure @safe
 {
     return to_m64(_mm_mulhi_epi16(to_m128i(a), to_m128i(b)));
@@ -332,6 +362,8 @@ unittest
     assert(R.array == correct);
 }
 
+/// Multiply the packed 16-bit integers in `a` and `b`, producing intermediate 32-bit integers, 
+/// and store the low 16 bits of the intermediate integers.
 __m64 _mm_mullo_pi16 (__m64 a, __m64 b) pure @safe
 {
     return to_m64(_mm_mullo_epi16(to_m128i(a), to_m128i(b)));
@@ -345,11 +377,21 @@ unittest
     assert(R.array == correct);
 }
 
+/// Compute the bitwise OR of 64 bits in `a` and `b`.
 __m64 _mm_or_si64 (__m64 a, __m64 b) pure @safe
 {
     return a | b;
 }
+unittest
+{
+    __m64 A = _mm_setr_pi16(255, 1, -1, 0);
+    __m64 B = _mm_set1_pi16(15);
+    short4 R = cast(short4)_mm_or_si64(A, B);
+    short[4] correct =     [255, 15, -1, 15];
+    assert(R.array == correct);
+}
 
+/// Convert packed 16-bit integers from `a` and `b` to packed 8-bit integers using signed saturation.
 __m64 _mm_packs_pi16 (__m64 a, __m64 b) pure @trusted
 {
     int4 p = cast(int4) _mm_packs_epi16(to_m128i(a), to_m128i(b));
@@ -366,6 +408,7 @@ unittest
     assert(R.array == correct);
 }
 
+/// Convert packed 32-bit integers from `a` and `b` to packed 16-bit integers using signed saturation.
 __m64 _mm_packs_pi32 (__m64 a, __m64 b) pure @trusted
 {
     int4 p = cast(int4) _mm_packs_epi32(to_m128i(a), to_m128i(b));
@@ -382,6 +425,7 @@ unittest
     assert(R.array == correct);
 }
 
+/// Convert packed 16-bit integers from `a` and `b` to packed 8-bit integers using unsigned saturation.
 __m64 _mm_packs_pu16 (__m64 a, __m64 b) pure @trusted
 {
     int4 p = cast(int4) _mm_packus_epi16(to_m128i(a), to_m128i(b));
@@ -452,6 +496,7 @@ deprecated alias
     _m_punpcklwd = _mm_unpacklo_pi16,
     _m_pxor = _mm_xor_si64;
 
+/// Set packed 16-bit integers with the supplied values.
 __m64 _mm_set_pi16 (short e3, short e2, short e1, short e0) pure @trusted
 {
     short[4] arr = [e0, e1, e2, e3];
@@ -464,6 +509,7 @@ unittest
     assert(R.array == correct);
 }
 
+/// Set packed 32-bit integers with the supplied values.
 __m64 _mm_set_pi32 (int e1, int e0) pure @trusted
 {
     int[2] arr = [e0, e1];
@@ -476,6 +522,7 @@ unittest
     assert(R.array == correct);
 }
 
+/// Set packed 8-bit integers with the supplied values.
 __m64 _mm_set_pi8 (byte e7, byte e6, byte e5, byte e4, byte e3, byte e2, byte e1, byte e0) pure @trusted
 {
     byte[8] arr = [e0, e1, e2, e3, e4, e5, e6, e7];
@@ -488,6 +535,7 @@ unittest
     assert(R.array == correct);
 }
 
+/// Broadcast 16-bit integer `a` to all elements.
 __m64 _mm_set1_pi16 (short a) pure @trusted
 {
     return cast(__m64)(short4(a));
@@ -499,6 +547,7 @@ unittest
     assert(R.array == correct);
 }
 
+/// Broadcast 32-bit integer `a` to all elements.
 __m64 _mm_set1_pi32 (int a) pure @trusted
 {
     return cast(__m64)(int2(a));
@@ -510,6 +559,7 @@ unittest
     assert(R.array == correct);
 }
 
+/// Broadcast 8-bit integer `a` to all elements.
 __m64 _mm_set1_pi8 (byte a) pure @trusted
 {
     return cast(__m64)(byte8(a));
@@ -521,6 +571,7 @@ unittest
     assert(R.array == correct);
 }
 
+/// Set packed 16-bit integers with the supplied values in reverse order.
 __m64 _mm_setr_pi16 (short e3, short e2, short e1, short e0) pure @trusted
 {
     short[4] arr = [e3, e2, e1, e0];
@@ -533,6 +584,7 @@ unittest
     assert(R.array == correct);
 }
 
+/// Set packed 32-bit integers with the supplied values in reverse order.
 __m64 _mm_setr_pi32 (int e1, int e0) pure @trusted
 {
     int[2] arr = [e1, e0];
@@ -545,6 +597,7 @@ unittest
     assert(R.array == correct);
 }
 
+/// Set packed 8-bit integers with the supplied values in reverse order.
 __m64 _mm_setr_pi8 (byte e7, byte e6, byte e5, byte e4, byte e3, byte e2, byte e1, byte e0) pure @trusted
 {
     byte[8] arr = [e7, e6, e5, e4, e3, e2, e1, e0];
@@ -557,6 +610,7 @@ unittest
     assert(R.array == correct);
 }
 
+/// Return vector of type `__m64` with all elements set to zero.
 __m64 _mm_setzero_si64 () pure @trusted
 {
     __m64 r;
@@ -569,116 +623,141 @@ unittest
     assert(R.array[0] == 0);
 }
 
-__m64 _mm_sll_pi16 (__m64 a, __m64 count) pure @safe
+/// Shift packed 16-bit integers in `a` left by `bits` while shifting in zeros.
+__m64 _mm_sll_pi16 (__m64 a, __m64 bits) pure @safe
 {
-    return to_m64(_mm_sll_epi16(to_m128i(a), to_m128i(count)));
+    return to_m64(_mm_sll_epi16(to_m128i(a), to_m128i(bits)));
 }
 
-__m64 _mm_sll_pi32 (__m64 a, __m64 count) pure @safe
+/// Shift packed 32-bit integers in `a` left by `bits` while shifting in zeros.
+__m64 _mm_sll_pi32 (__m64 a, __m64 bits) pure @safe
 {
-    return to_m64(_mm_sll_epi32(to_m128i(a), to_m128i(count)));
+    return to_m64(_mm_sll_epi32(to_m128i(a), to_m128i(bits)));
 }
 
-__m64 _mm_sll_si64 (__m64 a, __m64 count) pure @safe
+/// Shift 64-bit integer `a` left by `bits` while shifting in zeros.
+__m64 _mm_sll_si64 (__m64 a, __m64 bits) pure @safe
 {
-    return to_m64(_mm_sll_epi64(to_m128i(a), to_m128i(count)));
+    return to_m64(_mm_sll_epi64(to_m128i(a), to_m128i(bits)));
 }
 
-__m64 _mm_slli_pi16 (__m64 a, int imm8) pure @safe
+/// Shift packed 16-bit integers in `a` left by `bits` while shifting in zeros.
+__m64 _mm_slli_pi16 (__m64 a, int bits) pure @safe
 {
-    return to_m64(_mm_slli_epi16(to_m128i(a), imm8));
+    return to_m64(_mm_slli_epi16(to_m128i(a), bits));
 }
 
-__m64 _mm_slli_pi32 (__m64 a, int imm8) pure @safe
+/// Shift packed 32-bit integers in `a` left by `bits` while shifting in zeros.
+__m64 _mm_slli_pi32 (__m64 a, int bits) pure @safe
 {
-    return to_m64(_mm_slli_epi32(to_m128i(a), imm8));
+    return to_m64(_mm_slli_epi32(to_m128i(a), bits));
 }
 
-__m64 _mm_slli_si64 (__m64 a, int imm8) pure @safe
+/// Shift 64-bit integer `a` left by `bits` while shifting in zeros.
+__m64 _mm_slli_si64 (__m64 a, int bits) pure @safe
 {
-    return to_m64(_mm_slli_epi64(to_m128i(a), imm8));
+    return to_m64(_mm_slli_epi64(to_m128i(a), bits));
 }
 
-__m64 _mm_sra_pi16 (__m64 a, __m64 count) pure @safe
+/// Shift packed 16-bit integers in `a` right by `bits` while shifting in sign bits.
+__m64 _mm_sra_pi16 (__m64 a, __m64 bits) pure @safe
 {
-    return to_m64(_mm_sra_epi16(to_m128i(a), to_m128i(count)));
+    return to_m64(_mm_sra_epi16(to_m128i(a), to_m128i(bits)));
 }
 
-__m64 _mm_sra_pi32 (__m64 a, __m64 count) pure @safe
+/// Shift packed 32-bit integers in `a` right by `bits` while shifting in sign bits.
+__m64 _mm_sra_pi32 (__m64 a, __m64 bits) pure @safe
 {
-    return to_m64(_mm_sra_epi32(to_m128i(a), to_m128i(count)));
+    return to_m64(_mm_sra_epi32(to_m128i(a), to_m128i(bits)));
 }
 
-__m64 _mm_srai_pi16 (__m64 a, int imm8) pure @safe
+/// Shift packed 16-bit integers in `a` right by `bits` while shifting in sign bits.
+__m64 _mm_srai_pi16 (__m64 a, int bits) pure @safe
 {
-    return to_m64(_mm_srai_epi16(to_m128i(a), imm8));
+    return to_m64(_mm_srai_epi16(to_m128i(a), bits));
 }
 
-__m64 _mm_srai_pi32 (__m64 a, int imm8) pure @safe
+/// Shift packed 32-bit integers in `a` right by `bits` while shifting in sign bits.
+__m64 _mm_srai_pi32 (__m64 a, int bits) pure @safe
 {
-    return to_m64(_mm_srai_epi32(to_m128i(a), imm8));
+    return to_m64(_mm_srai_epi32(to_m128i(a), bits));
 }
 
-__m64 _mm_srl_pi16 (__m64 a, __m64 count) pure @safe
+/// Shift packed 16-bit integers in `a` right by `bits` while shifting in zeros.
+__m64 _mm_srl_pi16 (__m64 a, __m64 bits) pure @safe
 {
-    return to_m64(_mm_srl_epi16(to_m128i(a), to_m128i(count)));
+    return to_m64(_mm_srl_epi16(to_m128i(a), to_m128i(bits)));
 }
 
-__m64 _mm_srl_pi32 (__m64 a, __m64 count) pure @safe
+/// Shift packed 32-bit integers in `a` right by `bits` while shifting in zeros.
+__m64 _mm_srl_pi32 (__m64 a, __m64 bits) pure @safe
 {
-    return to_m64(_mm_srl_epi32(to_m128i(a), to_m128i(count)));
+    return to_m64(_mm_srl_epi32(to_m128i(a), to_m128i(bits)));
 }
 
-__m64 _mm_srl_si64 (__m64 a, __m64 count) pure @safe
+/// Shift 64-bit integer `a` right by `bits` while shifting in zeros.
+__m64 _mm_srl_si64 (__m64 a, __m64 bits) pure @safe
 {
-    return to_m64(_mm_srl_epi64(to_m128i(a), to_m128i(count)));
+    return to_m64(_mm_srl_epi64(to_m128i(a), to_m128i(bits)));
 }
 
-__m64 _mm_srli_pi16 (__m64 a, int imm8) pure @safe
+/// Shift packed 16-bit integers in `a` right by `bits` while shifting in zeros.
+__m64 _mm_srli_pi16 (__m64 a, int bits) pure @safe
 {
-    return to_m64(_mm_srli_epi16(to_m128i(a), imm8));
+    return to_m64(_mm_srli_epi16(to_m128i(a), bits));
 }
 
-__m64 _mm_srli_pi32 (__m64 a, int imm8) pure @safe
+/// Shift packed 32-bit integers in `a` right by `bits` while shifting in zeros.
+__m64 _mm_srli_pi32 (__m64 a, int bits) pure @safe
 {
-    return to_m64(_mm_srli_epi32(to_m128i(a), imm8));
+    return to_m64(_mm_srli_epi32(to_m128i(a), bits));
 }
 
-__m64 _mm_srli_si64 (__m64 a, int imm8) pure @safe
+/// Shift 64-bit integer `a` right by `bits` while shifting in zeros.
+__m64 _mm_srli_si64 (__m64 a, int bits) pure @safe
 {
-    return to_m64(_mm_srli_epi64(to_m128i(a), imm8));
+    return to_m64(_mm_srli_epi64(to_m128i(a), bits));
 }
 
+/// Subtract packed 16-bit integers in `b` from packed 16-bit integers in `a`.
 __m64 _mm_sub_pi16 (__m64 a, __m64 b) pure @safe
 {
     return cast(__m64)(cast(short4)a - cast(short4)b);
 }
 
+/// Subtract packed 32-bit integers in `b` from packed 32-bit integers in `a`.
 __m64 _mm_sub_pi32 (__m64 a, __m64 b) pure @safe
 {
     return cast(__m64)(cast(int2)a - cast(int2)b);
 }
 
+/// Subtract packed 8-bit integers in `b` from packed 8-bit integers in `a`.
 __m64 _mm_sub_pi8 (__m64 a, __m64 b) pure @safe
 {
     return cast(__m64)(cast(byte8)a - cast(byte8)b);
 }
 
+/// Subtract packed 16-bit integers in `b` from packed 16-bit integers in `a` using saturation.
 __m64 _mm_subs_pi16 (__m64 a, __m64 b) pure @safe
 {
     return to_m64(_mm_subs_epi16(to_m128i(a), to_m128i(b)));
 }
 
+/// Subtract packed 8-bit integers in `b` from packed 8-bit integers in `a` using saturation.
 __m64 _mm_subs_pi8 (__m64 a, __m64 b) pure @safe
 {
     return to_m64(_mm_subs_epi8(to_m128i(a), to_m128i(b)));
 }
 
+/// Subtract packed unsigned 16-bit integers in `b` from packed unsigned 16-bit integers in `a` 
+/// using saturation.
 __m64 _mm_subs_pu16 (__m64 a, __m64 b) pure @safe
 {
     return to_m64(_mm_subs_epu16(to_m128i(a), to_m128i(b)));
 }
 
+/// Subtract packed unsigned 8-bit integers in `b` from packed unsigned 8-bit integers in `a` 
+/// using saturation.
 __m64 _mm_subs_pu8 (__m64 a, __m64 b) pure @safe
 {
     return to_m64(_mm_subs_epu8(to_m128i(a), to_m128i(b)));
@@ -687,38 +766,101 @@ __m64 _mm_subs_pu8 (__m64 a, __m64 b) pure @safe
 deprecated alias _m_to_int = _mm_cvtsi64_si32;
 deprecated alias _m_to_int64 = _mm_cvtm64_si64;
 
+/// Unpack and interleave 16-bit integers from the high half of `a` and `b`.
 __m64 _mm_unpackhi_pi16 (__m64 a, __m64 b) pure @safe
 {
     return cast(__m64) shufflevector!(short4, 2, 6, 3, 7)(cast(short4)a, cast(short4)b);
 }
+unittest
+{
+    __m64 A = _mm_setr_pi16(4, 8, -16, 7);
+    __m64 B = _mm_setr_pi16(5, 9,  -3, 10);
+    short4 R = cast(short4) _mm_unpackhi_pi16(A, B);
+    short[4] correct = [-16, -3, 7, 10];
+    assert(R.array == correct);
+}
 
+/// Unpack and interleave 32-bit integers from the high half of `a` and `b`.
 __m64 _mm_unpackhi_pi32 (__m64 a, __m64 b) pure @safe
 {
     return cast(__m64) shufflevector!(int2, 1, 3)(cast(int2)a, cast(int2)b);
 }
+unittest
+{
+    __m64 A = _mm_setr_pi32(4, 8);
+    __m64 B = _mm_setr_pi32(5, 9);
+    int2 R = cast(int2) _mm_unpackhi_pi32(A, B);
+    int[2] correct = [8, 9];
+    assert(R.array == correct);
+}
 
+/// Unpack and interleave 8-bit integers from the high half of `a` and `b`.
 __m64 _mm_unpackhi_pi8 (__m64 a, __m64 b)
 {
     return cast(__m64) shufflevector!(byte8, 4, 12, 5, 13, 6, 14, 7, 15)(cast(byte8)a, cast(byte8)b);
 }
+unittest
+{
+    __m64 A = _mm_setr_pi8( 1,  2,  3,  4,  5,  6,  7,  8);
+    __m64 B = _mm_setr_pi8(-1, -2, -3, -4, -5, -6, -7, -8);
+    byte8 R = cast(byte8) _mm_unpackhi_pi8(A, B);
+    byte[8] correct = [5, -5, 6, -6, 7, -7, 8, -8];
+    assert(R.array == correct);
+}
 
+/// Unpack and interleave 16-bit integers from the low half of `a` and `b`.
 __m64 _mm_unpacklo_pi16 (__m64 a, __m64 b)
 {
     return cast(__m64) shufflevector!(short4, 0, 4, 1, 5)(cast(short4)a, cast(short4)b);
 }
+unittest
+{
+    __m64 A = _mm_setr_pi16(4, 8, -16, 7);
+    __m64 B = _mm_setr_pi16(5, 9,  -3, 10);
+    short4 R = cast(short4) _mm_unpacklo_pi16(A, B);
+    short[4] correct = [4, 5, 8, 9];
+    assert(R.array == correct);
+}
 
+/// Unpack and interleave 32-bit integers from the low half of `a` and `b`.
 __m64 _mm_unpacklo_pi32 (__m64 a, __m64 b) pure @safe
 {
     return cast(__m64) shufflevector!(int2, 0, 2)(cast(int2)a, cast(int2)b);
 }
+unittest
+{
+    __m64 A = _mm_setr_pi32(4, 8);
+    __m64 B = _mm_setr_pi32(5, 9);
+    int2 R = cast(int2) _mm_unpacklo_pi32(A, B);
+    int[2] correct = [4, 5];
+    assert(R.array == correct);
+}
 
+/// Unpack and interleave 8-bit integers from the low half of `a` and `b`.
 __m64 _mm_unpacklo_pi8 (__m64 a, __m64 b)
 {
     return cast(__m64) shufflevector!(byte8, 0, 8, 1, 9, 2, 10, 3, 11)(cast(byte8)a, cast(byte8)b);
 }
+unittest
+{
+    __m64 A = _mm_setr_pi8( 1,  2,  3,  4,  5,  6,  7,  8);
+    __m64 B = _mm_setr_pi8(-1, -2, -3, -4, -5, -6, -7, -8);
+    byte8 R = cast(byte8) _mm_unpacklo_pi8(A, B);
+    byte[8] correct = [1, -1, 2, -2, 3, -3, 4, -4];
+    assert(R.array == correct);
+}
 
+/// Compute the bitwise XOR of 64 bits (representing integer data) in `a` and `b`.
 __m64 _mm_xor_si64 (__m64 a, __m64 b)
 {
     return a ^ b;
+}
+unittest
+{
+    __m64 A = _mm_setr_pi16(255, 1, -1, 0);
+    __m64 B = _mm_set1_pi16(15);
+    short4 R = cast(short4)_mm_xor_si64(A, B);
+    short[4] correct =     [240, 14, -16, 15];
+    assert(R.array == correct);
 }
 
