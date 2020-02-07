@@ -2062,14 +2062,26 @@ __m128i _mm_movpi64_epi64 (__m64 a) pure @trusted
     return cast(__m128i)r;
 }
 
-// PERF: unfortunately, __builtin_ia32_pmuludq128 disappeared from LDC
-// and is SSE4.1 in GDC
-// but seems there in clang
+// Note: generates pmuludq in LDC with -O1
 __m128i _mm_mul_epu32 (__m128i a, __m128i b) pure @trusted
 {
     __m128i zero = _mm_setzero_si128();
-    long2 la = cast(long2) shufflevector!(int4, 0, 4, 2, 6)(a, zero);
-    long2 lb = cast(long2) shufflevector!(int4, 0, 4, 2, 6)(b, zero);
+
+    static if (__VERSION__ >= 2088)
+    {
+        // Need LLVM9 to avoid this shufflevector
+        long2 la, lb;
+        la.ptr[0] = cast(uint)a.array[0];
+        la.ptr[1] = cast(uint)a.array[2];
+        lb.ptr[0] = cast(uint)b.array[0];
+        lb.ptr[1] = cast(uint)b.array[2];
+    }
+    else
+    {
+        long2 la = cast(long2) shufflevector!(int4, 0, 4, 2, 6)(a, zero);
+        long2 lb = cast(long2) shufflevector!(int4, 0, 4, 2, 6)(b, zero);
+    }
+
     static if (__VERSION__ >= 2076)
     {
         return cast(__m128i)(la * lb);
