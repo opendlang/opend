@@ -929,9 +929,24 @@ deprecated alias _m_to_int = _mm_cvtsi64_si32;
 deprecated alias _m_to_int64 = _mm_cvtm64_si64;
 
 /// Unpack and interleave 16-bit integers from the high half of `a` and `b`.
-__m64 _mm_unpackhi_pi16 (__m64 a, __m64 b) pure @safe
-{
-    return cast(__m64) shufflevector!(short4, 2, 6, 3, 7)(cast(short4)a, cast(short4)b);
+__m64 _mm_unpackhi_pi16 (__m64 a, __m64 b) pure @trusted
+{   
+    version(LDC)
+    {
+        // avoiding this shufflevector leads to bad performance on LDC
+        return cast(__m64) shufflevector!(short4, 2, 6, 3, 7)(cast(short4)a, cast(short4)b);
+    }
+    else
+    {
+        short4 ia = cast(short4)a;
+        short4 ib = cast(short4)b;
+        short4 r;
+        r.ptr[0] = ia.array[2];
+        r.ptr[1] = ib.array[2];
+        r.ptr[2] = ia.array[3];
+        r.ptr[3] = ib.array[3];
+        return cast(__m64)r;
+    }
 }
 unittest
 {
@@ -943,9 +958,15 @@ unittest
 }
 
 /// Unpack and interleave 32-bit integers from the high half of `a` and `b`.
-__m64 _mm_unpackhi_pi32 (__m64 a, __m64 b) pure @safe
+__m64 _mm_unpackhi_pi32 (__m64 a, __m64 b) pure @trusted
 {
-    return cast(__m64) shufflevector!(int2, 1, 3)(cast(int2)a, cast(int2)b);
+    // Generate punpckldq as far back as LDC 1.0.0 -O1
+    int2 ia = cast(int2)a;
+    int2 ib = cast(int2)b;
+    int2 r;
+    r.ptr[0] = ia.array[1];
+    r.ptr[1] = ib.array[1];
+    return cast(__m64)r;
 }
 unittest
 {
@@ -973,7 +994,15 @@ unittest
 /// Unpack and interleave 16-bit integers from the low half of `a` and `b`.
 __m64 _mm_unpacklo_pi16 (__m64 a, __m64 b)
 {
-    return cast(__m64) shufflevector!(short4, 0, 4, 1, 5)(cast(short4)a, cast(short4)b);
+    // Generates punpcklwd since LDC 1.0.0 -01
+    short4 ia = cast(short4)a;
+    short4 ib = cast(short4)b;
+    short4 r;
+    r.ptr[0] = ia.array[0];
+    r.ptr[1] = ib.array[0];
+    r.ptr[2] = ia.array[1];
+    r.ptr[3] = ib.array[1];
+    return cast(__m64)r;
 }
 unittest
 {
