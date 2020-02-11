@@ -16,24 +16,56 @@ nothrow @nogc:
 // SSE2 instructions
 // https://software.intel.com/sites/landingpage/IntrinsicsGuide/#techs=SSE2
 
+/// Add packed 16-bit integers in `a` and `b`.
 __m128i _mm_add_epi16 (__m128i a, __m128i b) pure @safe
 {
     return cast(__m128i)(cast(short8)a + cast(short8)b);
 }
+unittest
+{
+    __m128i A = _mm_setr_epi16(4, 8, 13, -7, -1, 0, 9, 77);
+    short8 R = cast(short8) _mm_add_epi16(A, A);
+    short[8] correct = [8, 16, 26, -14, -2, 0, 18, 154];
+    assert(R.array == correct);
+}
 
+/// Add packed 32-bit integers in `a` and `b`.
 __m128i _mm_add_epi32 (__m128i a, __m128i b) pure @safe
 {
     return cast(__m128i)(cast(int4)a + cast(int4)b);
 }
+unittest
+{
+    __m128i A = _mm_setr_epi32( -7, -1, 0, 9);
+    int4 R = _mm_add_epi32(A, A);
+    int[4] correct = [ -14, -2, 0, 18 ];
+    assert(R.array == correct);
+}
 
+/// Add packed 64-bit integers in `a` and `b`.
 __m128i _mm_add_epi64 (__m128i a, __m128i b) pure @safe
 {
     return cast(__m128i)(cast(long2)a + cast(long2)b);
 }
+unittest
+{
+    __m128i A = _mm_setr_epi64(-1, 0x8000_0000_0000_0000);
+    long2 R = cast(long2) _mm_add_epi64(A, A);
+    long[2] correct = [ -2, 0 ];
+    assert(R.array == correct);
+}
 
+/// Add packed 8-bit integers in `a` and `b`.
 __m128i _mm_add_epi8 (__m128i a, __m128i b) pure @safe
 {
     return cast(__m128i)(cast(byte16)a + cast(byte16)b);
+}
+unittest
+{
+    __m128i A = _mm_setr_epi8(4, 8, 13, -7, -1, 0, 9, 77, 4, 8, 13, -7, -1, 0, 9, 78);
+    byte16 R = cast(byte16) _mm_add_epi8(A, A);
+    byte[16] correct = [8, 16, 26, -14, -2, 0, 18, -102, 8, 16, 26, -14, -2, 0, 18, -100];
+    assert(R.array == correct);
 }
 
 static if (GDC_with_SSE2)

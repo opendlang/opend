@@ -437,6 +437,12 @@ version(unittest)
     // printing vectors for implementation
     // Note: you can override `pure` within a `debug` clause
 
+    void _mm_print_pi64(__m64 v) @trusted
+    {
+        long1 vl = cast(long1)v;
+        printf("%lld\n", vl.array[0]);
+    }
+
     void _mm_print_pi32(__m64 v) @trusted
     {
         int[2] C = (cast(int2)v).array;
@@ -456,11 +462,17 @@ version(unittest)
         C[0], C[1], C[2], C[3], C[4], C[5], C[6], C[7]);
     }
 
+    void _mm_print_epi64(__m128i v) @trusted
+    {
+        long2 vl = cast(long2)v;
+        printf("%lld %lld\n", vl.array[0], vl.array[1]);
+    }
+
     void _mm_print_epi32(__m128i v) @trusted
     {
         printf("%d %d %d %d\n",
               v.array[0], v.array[1], v.array[2], v.array[3]);
-    }
+    }  
 
     void _mm_print_epi16(__m128i v) @trusted
     {
