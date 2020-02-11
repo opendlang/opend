@@ -68,23 +68,23 @@ unittest
     assert(R.array == correct);
 }
 
-static if (GDC_with_SSE2)
+/// Add the lower double-precision (64-bit) floating-point element 
+/// in `a` and `b`, store the result in the lower element of dst, 
+/// and copy the upper element from `a` to the upper element of destination. 
+__m128d _mm_add_sd(__m128d a, __m128d b) pure @safe
 {
-    alias _mm_add_sd = __builtin_ia32_addsd;
-}
-else version(DigitalMars)
-{
-    // Work-around for https://issues.dlang.org/show_bug.cgi?id=19599
-    __m128d _mm_add_sd(__m128d a, __m128d b) pure @safe
+    static if (GDC_with_SSE2)
     {
+        return __builtin_ia32_addsd(a, b);
+    }
+    else version(DigitalMars)
+    {
+        // Work-around for https://issues.dlang.org/show_bug.cgi?id=19599
         asm pure nothrow @nogc @trusted { nop;}
         a[0] = a[0] + b[0];
         return a;
     }
-}
-else
-{
-    __m128d _mm_add_sd(__m128d a, __m128d b) pure @safe
+    else
     {
         a[0] += b[0];
         return a;
@@ -97,7 +97,7 @@ unittest
     assert(a.array == [3.0, -2.0]);
 }
 
-
+/// Add packed double-precision (64-bit) floating-point elements in `a` and `b`.
 __m128d _mm_add_pd (__m128d a, __m128d b) pure @safe
 {
     return a + b;
@@ -109,35 +109,34 @@ unittest
     assert(a.array == [3.0, -4.0]);
 }
 
+/// Add 64-bit integers `a` and `b`.
 __m64 _mm_add_si64 (__m64 a, __m64 b) pure @safe
 {
     return a + b;
 }
 
-static if (GDC_with_SSE2)
+/// Add packed 16-bit integers in `a` and `b` using saturation.
+__m128i _mm_adds_epi16(__m128i a, __m128i b) pure @trusted
 {
-    alias _mm_adds_epi16 = __builtin_ia32_paddsw128;
-}
-else version(LDC)
-{
-    static if (__VERSION__ >= 2085) // saturation x86 intrinsics disappeared in LLVM 8
+    static if (GDC_with_SSE2)
     {
-        // Generates PADDSW since LDC 1.15 -O0
-        __m128i _mm_adds_epi16(__m128i a, __m128i b) pure @trusted
+        return __builtin_ia32_paddsw128(a, b);
+    }
+    else version(LDC)
+    {
+        static if (__VERSION__ >= 2085) // saturation x86 intrinsics disappeared in LLVM 8
         {
+            // Generates PADDSW since LDC 1.15 -O0
             enum prefix = `declare <8 x i16> @llvm.sadd.sat.v8i16(<8 x i16> %a, <8 x i16> %b)`;
             enum ir = `
                 %r = call <8 x i16> @llvm.sadd.sat.v8i16( <8 x i16> %0, <8 x i16> %1)
                 ret <8 x i16> %r`;
             return cast(__m128i) LDCInlineIREx!(prefix, ir, "", short8, short8, short8)(cast(short8)a, cast(short8)b);
         }
+        else
+            return __builtin_ia32_paddsw128(a, b);
     }
     else
-        alias _mm_adds_epi16 = __builtin_ia32_paddsw128;
-}
-else
-{    
-    __m128i _mm_adds_epi16(__m128i a, __m128i b) pure @trusted
     {
         short[8] res;
         short8 sa = cast(short8)a;
@@ -155,30 +154,28 @@ unittest
     assert(res.array == correctResult);
 }
 
-static if (GDC_with_SSE2)
+/// Add packed 8-bit signed integers in `a` and `b` using saturation.
+__m128i _mm_adds_epi8(__m128i a, __m128i b) pure @trusted
 {
-    alias _mm_adds_epi8 = __builtin_ia32_paddsb128;
-}
-else version(LDC)
-{
-    static if (__VERSION__ >= 2085) // saturation x86 intrinsics disappeared in LLVM 8
+    static if (GDC_with_SSE2)
     {
-        // Generates PADDSB since LDC 1.15 -O0
-        __m128i _mm_adds_epi8(__m128i a, __m128i b) pure @trusted
+        return __builtin_ia32_paddsb128(a, b);
+    }
+    else version(LDC)
+    {
+        static if (__VERSION__ >= 2085) // saturation x86 intrinsics disappeared in LLVM 8
         {
+            // Generates PADDSB since LDC 1.15 -O0
             enum prefix = `declare <16 x i8> @llvm.sadd.sat.v16i8(<16 x i8> %a, <16 x i8> %b)`;
             enum ir = `
                 %r = call <16 x i8> @llvm.sadd.sat.v16i8( <16 x i8> %0, <16 x i8> %1)
                 ret <16 x i8> %r`;
             return cast(__m128i) LDCInlineIREx!(prefix, ir, "", byte16, byte16, byte16)(cast(byte16)a, cast(byte16)b);
         }
+        else
+            return __builtin_ia32_paddsb128(a, b);
     }
     else
-        alias _mm_adds_epi8 = __builtin_ia32_paddsb128;
-}
-else
-{
-    __m128i _mm_adds_epi8(__m128i a, __m128i b) pure @trusted
     {
         byte[16] res;
         byte16 sa = cast(byte16)a;
@@ -197,26 +194,24 @@ unittest
     assert(res.array == correctResult);
 }
 
-version(LDC)
+/// Add packed 8-bit unsigned integers in `a` and `b` using saturation.
+__m128i _mm_adds_epu8(__m128i a, __m128i b) pure @trusted
 {
-    static if (__VERSION__ >= 2085) // saturation x86 intrinsics disappeared in LLVM 8
+    version(LDC)
     {
-        // Generates PADDUSB since LDC 1.15 -O0
-        __m128i _mm_adds_epu8(__m128i a, __m128i b) pure @trusted
+        static if (__VERSION__ >= 2085) // saturation x86 intrinsics disappeared in LLVM 8
         {
+            // Generates PADDUSB since LDC 1.15 -O0
             enum prefix = `declare <16 x i8> @llvm.uadd.sat.v16i8(<16 x i8> %a, <16 x i8> %b)`;
             enum ir = `
                 %r = call <16 x i8> @llvm.uadd.sat.v16i8( <16 x i8> %0, <16 x i8> %1)
                 ret <16 x i8> %r`;
             return cast(__m128i) LDCInlineIREx!(prefix, ir, "", byte16, byte16, byte16)(cast(byte16)a, cast(byte16)b);
         }
+        else
+            alias _mm_adds_epu8 = __builtin_ia32_paddusb128;
     }
     else
-        alias _mm_adds_epu8 = __builtin_ia32_paddusb128;
-}
-else
-{
-    __m128i _mm_adds_epu8(__m128i a, __m128i b) pure @trusted
     {
         ubyte[16] res;
         byte16 sa = cast(byte16)a;
@@ -226,27 +221,32 @@ else
         return _mm_loadu_si128(cast(int4*)res.ptr);
     }
 }
-
-version(LDC)
+unittest
 {
-    static if (__VERSION__ >= 2085) // saturation x86 intrinsics disappeared in LLVM 8
+    byte16 res = cast(byte16) _mm_adds_epu8(_mm_set_epi8(7, 6, 5, 4, 3, 2, cast(byte)255, 0, 7, 6, 5, 4, 3, 2, cast(byte)255, 0),
+                                            _mm_set_epi8(7, 6, 5, 4, 3, 2, 1, 0, 7, 6, 5, 4, 3, 2, 1, 0));
+    static immutable byte[16] correctResult = [0, cast(byte)255, 4, 6, 8, 10, 12, 14, 0, cast(byte)255, 4, 6, 8, 10, 12, 14];
+    assert(res.array == correctResult);
+}
+
+/// Add packed unsigned 16-bit integers in `a` and `b` using saturation.
+__m128i _mm_adds_epu16(__m128i a, __m128i b) pure @trusted
+{
+    version(LDC)
     {
-        // Generates PADDUSW since LDC 1.15 -O0
-        __m128i _mm_adds_epu16(__m128i a, __m128i b) pure @trusted
+        static if (__VERSION__ >= 2085) // saturation x86 intrinsics disappeared in LLVM 8
         {
+            // Generates PADDUSW since LDC 1.15 -O0
             enum prefix = `declare <8 x i16> @llvm.uadd.sat.v8i16(<8 x i16> %a, <8 x i16> %b)`;
             enum ir = `
                 %r = call <8 x i16> @llvm.uadd.sat.v8i16( <8 x i16> %0, <8 x i16> %1)
                 ret <8 x i16> %r`;
             return cast(__m128i) LDCInlineIREx!(prefix, ir, "", short8, short8, short8)(cast(short8)a, cast(short8)b);
         }
+        else
+            return __builtin_ia32_paddusw128(a, b);
     }
     else
-        alias _mm_adds_epu16 = __builtin_ia32_paddusw128;
-}
-else
-{
-    __m128i _mm_adds_epu16(__m128i a, __m128i b) pure @trusted
     {
         ushort[8] res;
         short8 sa = cast(short8)a;
@@ -255,6 +255,13 @@ else
             res[i] = saturateSignedIntToUnsignedShort(cast(ushort)(sa.array[i]) + cast(ushort)(sb.array[i]));
         return _mm_loadu_si128(cast(int4*)res.ptr);
     }
+}
+unittest
+{
+    short8 res = cast(short8) _mm_adds_epu16(_mm_set_epi16(3, 2, cast(short)65535, 0, 3, 2, cast(short)65535, 0),
+                                             _mm_set_epi16(3, 2, 1, 0, 3, 2, 1, 0));
+    static immutable short[8] correctResult = [0, cast(short)65535, 4, 6, 0, cast(short)65535, 4, 6];
+    assert(res.array == correctResult);
 }
 
 __m128d _mm_and_pd (__m128d a, __m128d b) pure @safe
