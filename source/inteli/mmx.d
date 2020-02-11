@@ -981,7 +981,25 @@ unittest
 /// Unpack and interleave 8-bit integers from the high half of `a` and `b`.
 __m64 _mm_unpackhi_pi8 (__m64 a, __m64 b)
 {
-    return cast(__m64) shufflevector!(byte8, 4, 12, 5, 13, 6, 14, 7, 15)(cast(byte8)a, cast(byte8)b);
+    version(LDC)
+    {
+        return cast(__m64) shufflevector!(byte8, 4, 12, 5, 13, 6, 14, 7, 15)(cast(byte8)a, cast(byte8)b);
+    }
+    else
+    {
+        byte8 ia = cast(byte8)a;
+        byte8 ib = cast(byte8)b;
+        byte8 r;
+        r.ptr[0] = ia.array[4];
+        r.ptr[1] = ib.array[4];
+        r.ptr[2] = ia.array[5];
+        r.ptr[3] = ib.array[5];
+        r.ptr[4] = ia.array[6];
+        r.ptr[5] = ib.array[6];
+        r.ptr[6] = ia.array[7];
+        r.ptr[7] = ib.array[7];
+        return cast(__m64)r;
+    }
 }
 unittest
 {
@@ -1037,7 +1055,25 @@ unittest
 /// Unpack and interleave 8-bit integers from the low half of `a` and `b`.
 __m64 _mm_unpacklo_pi8 (__m64 a, __m64 b)
 {
-    return cast(__m64) shufflevector!(byte8, 0, 8, 1, 9, 2, 10, 3, 11)(cast(byte8)a, cast(byte8)b);
+    version(LDC)
+    {
+        return cast(__m64) shufflevector!(byte8, 0, 8, 1, 9, 2, 10, 3, 11)(cast(byte8)a, cast(byte8)b);
+    }
+    else
+    {
+        byte8 ia = cast(byte8)a;
+        byte8 ib = cast(byte8)b;
+        byte8 r;
+        r.ptr[0] = ia.array[0];
+        r.ptr[1] = ib.array[0];
+        r.ptr[2] = ia.array[1];
+        r.ptr[3] = ib.array[1];
+        r.ptr[4] = ia.array[2];
+        r.ptr[5] = ib.array[2];
+        r.ptr[6] = ia.array[3];
+        r.ptr[7] = ib.array[3];
+        return cast(__m64)r;
+    }
 }
 unittest
 {
