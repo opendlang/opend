@@ -277,7 +277,7 @@ unittest
     long correct = (*cast(long*)(&a)) & (*cast(long*)(&b));
     __m128d A = _mm_set_pd(a, b);
     __m128d B = _mm_set_pd(b, a);
-    long2 R = cast(long2)( _mm_and_si128(A, B) );
+    long2 R = cast(long2)( _mm_and_pd(A, B) );
     assert(R.array[0] == correct);
     assert(R.array[1] == correct);
 }
