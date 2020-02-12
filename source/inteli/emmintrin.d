@@ -209,7 +209,7 @@ __m128i _mm_adds_epu8(__m128i a, __m128i b) pure @trusted
             return cast(__m128i) LDCInlineIREx!(prefix, ir, "", byte16, byte16, byte16)(cast(byte16)a, cast(byte16)b);
         }
         else
-            alias _mm_adds_epu8 = __builtin_ia32_paddusb128;
+            return __builtin_ia32_paddusb128(a, b);
     }
     else
     {
