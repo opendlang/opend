@@ -264,11 +264,25 @@ unittest
     assert(res.array == correctResult);
 }
 
+/// Compute the bitwise AND of packed double-precision (64-bit) 
+/// floating-point elements in `a` and `b`.
 __m128d _mm_and_pd (__m128d a, __m128d b) pure @safe
 {
     return cast(__m128d)( cast(__m128i)a & cast(__m128i)b );
 }
+unittest
+{
+    double a = 4.32;
+    double b = -78.99;
+    long correct = (*cast(long*)(&a)) & (*cast(long*)(&b));
+    __m128d A = _mm_set_pd(a, b);
+    __m128d B = _mm_set_pd(b, a);
+    long2 R = cast(long2)( _mm_and_si128(A, B) );
+    assert(R.array[0] == correct);
+    assert(R.array[1] == correct);
+}
 
+/// Compute the bitwise AND of 128 bits (representing integer data) in `a` and `b`.
 __m128i _mm_and_si128 (__m128i a, __m128i b) pure @safe
 {
     return a & b;
