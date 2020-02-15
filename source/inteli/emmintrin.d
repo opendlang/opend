@@ -268,7 +268,7 @@ unittest
 /// floating-point elements in `a` and `b`.
 __m128d _mm_and_pd (__m128d a, __m128d b) pure @safe
 {
-    return cast(__m128d)( cast(__m128i)a & cast(__m128i)b );
+    return cast(__m128d)( cast(long2)a & cast(long2)b );
 }
 unittest
 {
@@ -296,11 +296,27 @@ unittest
     assert(R.array == correct);
 }
 
+/// Compute the bitwise NOT of packed double-precision (64-bit) 
+/// floating-point elements in `a` and then AND with `b`.
 __m128d _mm_andnot_pd (__m128d a, __m128d b) pure @safe
 {
-    return cast(__m128d)( (~cast(__m128i)a) & cast(__m128i)b );
+    return cast(__m128d)( ~(cast(long2)a) & cast(long2)b);
+}
+unittest
+{
+    double a = 4.32;
+    double b = -78.99;
+    long correct  = (~*cast(long*)(&a)) & ( *cast(long*)(&b));
+    long correct2 = ( *cast(long*)(&a)) & (~*cast(long*)(&b));
+    __m128d A = _mm_setr_pd(a, b);
+    __m128d B = _mm_setr_pd(b, a);
+    long2 R = cast(long2)( _mm_andnot_pd(A, B) );
+    assert(R.array[0] == correct);
+    assert(R.array[1] == correct2);
 }
 
+/// Compute the bitwise NOT of 128 bits (representing integer data) 
+/// in `a` and then AND with `b`.
 __m128i _mm_andnot_si128 (__m128i a, __m128i b) pure @safe
 {
     return (~a) & b;
@@ -314,13 +330,14 @@ unittest
     assert(R.array == correct);
 }
 
-static if (GDC_with_SSE2)
+/// Average packed unsigned 16-bit integers in `a` and `b`.
+__m128i _mm_avg_epu16 (__m128i a, __m128i b) pure @trusted
 {
-    alias _mm_avg_epu16 = __builtin_ia32_pavgw128;
-}
-else version(LDC)
-{
-    __m128i _mm_avg_epu16 (__m128i a, __m128i b) pure @safe
+    static if (GDC_with_SSE2)
+    {
+        return __builtin_ia32_pavgw128(a, b);
+    }
+    else version(LDC)
     {
         // Generates pavgw even in LDC 1.0, even in -O0
         enum ir = `
@@ -333,17 +350,14 @@ else version(LDC)
             ret <8 x i16> %r`;
         return cast(__m128i) LDCInlineIR!(ir, short8, short8, short8)(cast(short8)a, cast(short8)b);
     }
-}
-else
-{
-    __m128i _mm_avg_epu16 (__m128i a, __m128i b) pure @safe
+    else
     {
         short8 sa = cast(short8)a;
         short8 sb = cast(short8)b;
         short8 sr = void;
         foreach(i; 0..8)
         {
-            sr[i] = cast(ushort)( (cast(ushort)(sa[i]) + cast(ushort)(sb[i]) + 1) >> 1 );
+            sr.ptr[i] = cast(ushort)( (cast(ushort)(sa.array[i]) + cast(ushort)(sb.array[i]) + 1) >> 1 );
         }
         return cast(int4)sr;
     }
@@ -357,13 +371,14 @@ unittest
         assert(avg.array[i] == 48);
 }
 
-static if (GDC_with_SSE2)
+/// Average packed unsigned 8-bit integers in `a` and `b`.
+__m128i _mm_avg_epu8 (__m128i a, __m128i b) pure @trusted
 {
-    alias _mm_avg_epu8 = __builtin_ia32_pavgb128;
-}
-else version(LDC)
-{
-    __m128i _mm_avg_epu8 (__m128i a, __m128i b) pure @safe
+    static if (GDC_with_SSE2)
+    {
+        return __builtin_ia32_pavgb128(a, b);
+    }
+    else version(LDC)
     {
         // Generates pavgb even in LDC 1.0, even in -O0
         enum ir = `
@@ -376,10 +391,7 @@ else version(LDC)
             ret <16 x i8> %r`;
         return cast(__m128i) LDCInlineIR!(ir, byte16, byte16, byte16)(cast(byte16)a, cast(byte16)b);
     }
-}
-else
-{
-    __m128i _mm_avg_epu8 (__m128i a, __m128i b) pure @safe
+    else
     {
         byte16 sa = cast(byte16)a;
         byte16 sb = cast(byte16)b;
@@ -400,9 +412,8 @@ unittest
         assert(avg.array[i] == 48);
 }
 
-
+/// Shift `a` left by `bytes` bytes while shifting in zeros.
 alias _mm_bslli_si128 = _mm_slli_si128;
-
 unittest
 {
     __m128i toShift = _mm_setr_epi8(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15);
@@ -411,8 +422,8 @@ unittest
     assert( (cast(byte16)result).array == exact);
 }
 
+/// Shift `v` right by `bytes` bytes while shifting in zeros.
 alias _mm_bsrli_si128 = _mm_srli_si128;
-
 unittest
 {
     __m128i toShift = _mm_setr_epi8(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15);
@@ -421,31 +432,43 @@ unittest
     assert( (cast(byte16)result).array == exact);
 }
 
+/// Cast vector of type `__m128d` to type `__m128`. 
+/// Note: Also possible with a regular `cast(__m128)(a)`.
 __m128 _mm_castpd_ps (__m128d a) pure @safe
 {
     return cast(__m128)a;
 }
 
+/// Cast vector of type `__m128d` to type `__m128i`. 
+/// Note: Also possible with a regular `cast(__m128i)(a)`.
 __m128i _mm_castpd_si128 (__m128d a) pure @safe
 {
     return cast(__m128i)a;
 }
 
+/// Cast vector of type `__m128` to type `__m128d`. 
+/// Note: Also possible with a regular `cast(__m128d)(a)`.
 __m128d _mm_castps_pd (__m128 a) pure @safe
 {
     return cast(__m128d)a;
 }
 
+/// Cast vector of type `__m128` to type `__m128i`. 
+/// Note: Also possible with a regular `cast(__m128i)(a)`.
 __m128i _mm_castps_si128 (__m128 a) pure @safe
 {
     return cast(__m128i)a;
 }
 
+/// Cast vector of type `__m128i` to type `__m128d`. 
+/// Note: Also possible with a regular `cast(__m128d)(a)`.
 __m128d _mm_castsi128_pd (__m128i a) pure @safe
 {
     return cast(__m128d)a;
 }
 
+/// Cast vector of type `__m128i` to type `__m128`. 
+/// Note: Also possible with a regular `cast(__m128)(a)`.
 __m128 _mm_castsi128_ps (__m128i a) pure @safe
 {
     return cast(__m128)a;
