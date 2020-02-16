@@ -338,11 +338,11 @@ struct GGPlotD
                 geomAxis(aesX, 
                     bounds.height.tickLength(height - currentMargins.bottom - currentMargins.top, 
                         defaultScaling(width), defaultScaling(height)),
-						xaxis.label, xaxis.labelAngle), 
+						xaxis.label, xaxis.textAngle), 
                 geomAxis(aesY, 
                     bounds.width.tickLength(width - currentMargins.left - currentMargins.right, 
                         defaultScaling(width), defaultScaling(height)),
-						yaxis.label, yaxis.labelAngle), 
+						yaxis.label, yaxis.textAngle), 
             );
         auto plotMargins = Margins(currentMargins);
         if (!legends.empty)
@@ -949,4 +949,34 @@ unittest
     gg.put( geomTriangle( aes3 ) );
  
     gg.save( "shapes2.png", 300, 300 );
+}
+
+unittest
+{
+    import std.typecons;
+
+    void testTwoClassPlot(Tuple!(int, string)[] data, string fileName, string titleName) {
+        import ggplotd.aes : aes;
+        import ggplotd.geom;
+        import ggplotd.ggplotd : putIn, GGPlotD, title, Margins;
+        import ggplotd.legend: discreteLegend;
+        import std.algorithm: map;
+        auto gg = data
+            .map!(a => aes!("x", "colour", "fill")(a[0], a[1], 0.45))
+            .geomHist
+            .putIn(GGPlotD().put(title(titleName)));
+        gg.put(discreteLegend);
+        gg.save(fileName~".svg");
+    }
+
+    import std.array;
+    import std.range : chain, zip, repeat;
+    import std.random : uniform;
+    import std.range : generate, take;
+    auto class1 = generate!(() => uniform(0, 20)).take(1000).array;
+    auto class2 = generate!(() => uniform(0, 20)).take(1000).array;
+    auto class12 = class1.chain(class2);
+    auto class12Labels = "A".repeat(class1.length).chain("B".repeat(class2.length));
+    auto plotData = class12.zip(class12Labels).array;
+    testTwoClassPlot(plotData, "issue_63", "Fake data");
 }

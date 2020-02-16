@@ -535,7 +535,7 @@ deprecated alias geomHist3D = geomHist2D;
 /// Draw axis, first and last location are start/finish
 /// others are ticks (perpendicular)
 auto geomAxis(AES)(AES aesRaw, double tickLength, string label, 
-		double labelAngle)
+		double textAngle)
 {
     import std.algorithm : find;
     import std.array : array;
@@ -594,10 +594,10 @@ auto geomAxis(AES)(AES aesRaw, double tickLength, string label,
     return xs.zip(ys).map!((a) => aes!("x", "y", "mask", "scale")
         (a[0], a[1], false, false)).geomLine()
         .chain( 
-          lxs.zip(lys, lbls, langles)
+          lxs.zip(lys, lbls)
             .map!((a) => 
-                aes!("x", "y", "label", "labelAngle", "angle", "mask", "size", "scale")
-                    (a[0], a[1], a[2], a[3], labelAngle, false, aesRaw.front.size, false ))
+                aes!("x", "y", "label", "angle", "mask", "size", "scale")
+                    (a[0], a[1], a[2], textAngle, false, aesRaw.front.size, false ))
             .geomLabel
         )
         .chain( geomLabel(aesM) );
@@ -674,10 +674,7 @@ template geomLabel(AES)
                         .toCairoRGBA
                 );
  
-				auto labelAngle = tup.fieldWithDefault!("labelAngle")(0.0);
-                context.rotate(labelAngle);
                 context.showText(tup.label);
-                context.rotate(-labelAngle);
                 context.restore();
                 return context;
             };
