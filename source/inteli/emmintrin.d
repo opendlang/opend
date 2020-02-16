@@ -474,42 +474,38 @@ __m128 _mm_castsi128_ps (__m128i a) pure @safe
     return cast(__m128)a;
 }
 
-static if (GDC_with_SSE2)
+/// Invalidate and flush the cache line that contains `p` 
+/// from all levels of the cache hierarchy.
+void _mm_clflush (const(void)* p) @trusted
 {
-    void _mm_clflush (const(void)* p) pure @safe
+    static if (GDC_with_SSE2)
     {
-        return __builtin_ia32_clflush(p);
+        __builtin_ia32_clflush(p);
     }
-}
-else version(LDC)
-{
-    alias _mm_clflush = __builtin_ia32_clflush;
-}
-else
-{
-    void _mm_clflush (const(void)* p) pure @safe
+    else version(LDC)
     {
-        version(D_InlineAsm_X86)
+        __builtin_ia32_clflush(cast(void*)p);
+    }
+    else version(D_InlineAsm_X86)
+    {
+        asm pure nothrow @nogc @safe
         {
-            asm pure nothrow @nogc @safe
-            {
-                mov EAX, p;
-                clflush [EAX];
-            }
+            mov EAX, p;
+            clflush [EAX];
         }
-        else version(D_InlineAsm_X86_64)
+    }
+    else version(D_InlineAsm_X86_64)
+    {
+        asm pure nothrow @nogc @safe
         {
-            asm pure nothrow @nogc @safe
-            {
-                mov RAX, p;
-                clflush [RAX];
-            }
+            mov RAX, p;
+            clflush [RAX];
         }
-        else 
-        {
-            // Do nothing. Invalidating cacheline does
-            // not affect correctness.            
-        }
+    }
+    else 
+    {
+        // Do nothing. Invalidating cacheline does
+        // not affect correctness.            
     }
 }
 unittest
@@ -518,13 +514,14 @@ unittest
     _mm_clflush(cacheline.ptr);
 }
 
-static if (GDC_with_SSE2)
+/// Compare packed 16-bit integers in `a` and `b` for equality.
+__m128i _mm_cmpeq_epi16 (__m128i a, __m128i b) pure @safe
 {
-    alias _mm_cmpeq_epi16 = __builtin_ia32_pcmpeqw128;
-}
-else
-{
-    __m128i _mm_cmpeq_epi16 (__m128i a, __m128i b) pure @safe
+    static if (GDC_with_SSE2)
+    {
+        return __builtin_ia32_pcmpeqw128(a, b);
+    }
+    else
     {
         return cast(__m128i) equalMask!short8(cast(short8)a, cast(short8)b);
     }
@@ -538,6 +535,7 @@ unittest
     assert(R.array == E);
 }
 
+/// Compare packed 32-bit integers in `a` and `b` for equality.
 __m128i _mm_cmpeq_epi32 (__m128i a, __m128i b) pure @safe
 {
     static if (GDC_with_SSE2)
@@ -558,6 +556,7 @@ unittest
     assert(R.array == E);
 }
 
+/// Compare packed 8-bit integers in `a` and `b` for equality.
 __m128i _mm_cmpeq_epi8 (__m128i a, __m128i b) pure @safe
 {
     static if (GDC_with_SSE2)
@@ -578,6 +577,8 @@ unittest
     assert(C.array == correct);
 }
 
+/// Compare packed double-precision (64-bit) floating-point elements 
+/// in `a` and `b` for equality.
 __m128d _mm_cmpeq_pd (__m128d a, __m128d b) pure @safe
 {
     static if (GDC_with_SSE2)
@@ -590,6 +591,9 @@ __m128d _mm_cmpeq_pd (__m128d a, __m128d b) pure @safe
     }
 }
 
+/// Compare the lower double-precision (64-bit) floating-point elements
+/// in `a` and `b` for equality, store the result in the lower element,
+/// and copy the upper element from `a`.
 __m128d _mm_cmpeq_sd (__m128d a, __m128d b) pure @safe
 {
     static if (GDC_with_SSE2)
@@ -602,6 +606,8 @@ __m128d _mm_cmpeq_sd (__m128d a, __m128d b) pure @safe
     }
 }
 
+/// Compare packed double-precision (64-bit) floating-point elements 
+/// in `a` and `b` for greater-than-or-equal.
 __m128d _mm_cmpge_pd (__m128d a, __m128d b) pure @safe
 {
     static if (GDC_with_SSE2)
@@ -614,6 +620,9 @@ __m128d _mm_cmpge_pd (__m128d a, __m128d b) pure @safe
     }
 }
 
+/// Compare the lower double-precision (64-bit) floating-point elements 
+/// in `a` and `b` for greater-than-or-equal, store the result in the 
+/// lower element, and copy the upper element from `a`.
 __m128d _mm_cmpge_sd (__m128d a, __m128d b) pure @safe
 {
     // Note: There is no __builtin_ia32_cmpgesd builtin.
@@ -627,6 +636,7 @@ __m128d _mm_cmpge_sd (__m128d a, __m128d b) pure @safe
     }
 }
 
+/// Compare packed 16-bit integers in `a` and `b` for greater-than.
 __m128i _mm_cmpgt_epi16 (__m128i a, __m128i b) pure @safe
 {
     static if (GDC_with_SSE2)
@@ -647,6 +657,7 @@ unittest
     assert(R.array == E);
 }
 
+/// Compare packed 32-bit integers in `a` and `b` for greater-than.
 __m128i _mm_cmpgt_epi32 (__m128i a, __m128i b) pure @safe
 {
     static if (GDC_with_SSE2)
@@ -667,6 +678,7 @@ unittest
     assert(R.array == E);
 }
 
+/// Compare packed 8-bit integers in `a` and `b` for greater-than.
 __m128i _mm_cmpgt_epi8 (__m128i a, __m128i b) pure @safe
 {
     static if (GDC_with_SSE2)
@@ -688,6 +700,8 @@ unittest
     assert(C.array == correct);
 }
 
+/// Compare packed double-precision (64-bit) floating-point elements 
+/// in `a` and `b` for greater-than.
 __m128d _mm_cmpgt_pd (__m128d a, __m128d b) pure @safe
 {
     static if (GDC_with_SSE2)
@@ -700,6 +714,9 @@ __m128d _mm_cmpgt_pd (__m128d a, __m128d b) pure @safe
     }
 }
 
+/// Compare the lower double-precision (64-bit) floating-point elements 
+/// in `a` and `b` for greater-than, store the result in the lower element,
+/// and copy the upper element from `a`.
 __m128d _mm_cmpgt_sd (__m128d a, __m128d b) pure @safe
 {
     // Note: There is no __builtin_ia32_cmpgtsd builtin.
@@ -713,6 +730,8 @@ __m128d _mm_cmpgt_sd (__m128d a, __m128d b) pure @safe
     }
 }
 
+/// Compare packed double-precision (64-bit) floating-point elements 
+/// in `a` and `b` for less-than-or-equal.
 __m128d _mm_cmple_pd (__m128d a, __m128d b) pure @safe
 {
     static if (GDC_with_SSE2)
@@ -725,6 +744,9 @@ __m128d _mm_cmple_pd (__m128d a, __m128d b) pure @safe
     }
 }
 
+/// Compare the lower double-precision (64-bit) floating-point elements 
+/// in `a` and `b` for less-than-or-equal, store the result in the 
+/// lower element, and copy the upper element from `a`.
 __m128d _mm_cmple_sd (__m128d a, __m128d b) pure @safe
 {
     static if (GDC_with_SSE2)
@@ -737,21 +759,26 @@ __m128d _mm_cmple_sd (__m128d a, __m128d b) pure @safe
     }
 }
 
+/// Compare packed 16-bit integers in `a` and `b` for less-than.
 __m128i _mm_cmplt_epi16 (__m128i a, __m128i b) pure @safe
 {
     return _mm_cmpgt_epi16(b, a);
 }
 
+/// Compare packed 32-bit integers in `a` and `b` for less-than.
 __m128i _mm_cmplt_epi32 (__m128i a, __m128i b) pure @safe
 {
     return _mm_cmpgt_epi32(b, a);
 }
 
+/// Compare packed 8-bit integers in `a` and `b` for less-than.
 __m128i _mm_cmplt_epi8 (__m128i a, __m128i b) pure @safe
 {
     return _mm_cmpgt_epi8(b, a);
 }
 
+/// Compare packed double-precision (64-bit) floating-point elements
+/// in `a` and `b` for less-than.
 __m128d _mm_cmplt_pd (__m128d a, __m128d b) pure @safe
 {
     static if (GDC_with_SSE2)
@@ -764,6 +791,9 @@ __m128d _mm_cmplt_pd (__m128d a, __m128d b) pure @safe
     }
 }
 
+/// Compare the lower double-precision (64-bit) floating-point elements
+/// in `a` and `b` for less-than, store the result in the lower 
+/// element, and copy the upper element from `a`.
 __m128d _mm_cmplt_sd (__m128d a, __m128d b) pure @safe
 {
     static if (GDC_with_SSE2)
@@ -776,6 +806,8 @@ __m128d _mm_cmplt_sd (__m128d a, __m128d b) pure @safe
     }
 }
 
+/// Compare packed double-precision (64-bit) floating-point elements
+/// in `a` and `b` for not-equal.
 __m128d _mm_cmpneq_pd (__m128d a, __m128d b) pure @safe
 {
     static if (GDC_with_SSE2)
@@ -788,6 +820,9 @@ __m128d _mm_cmpneq_pd (__m128d a, __m128d b) pure @safe
     }
 }
 
+/// Compare the lower double-precision (64-bit) floating-point elements
+/// in `a` and `b` for not-equal, store the result in the lower 
+/// element, and copy the upper element from `a`.
 __m128d _mm_cmpneq_sd (__m128d a, __m128d b) pure @safe
 {
     static if (GDC_with_SSE2)
@@ -800,6 +835,8 @@ __m128d _mm_cmpneq_sd (__m128d a, __m128d b) pure @safe
     }
 }
 
+/// Compare packed double-precision (64-bit) floating-point elements 
+/// in `a` and `b` for not-greater-than-or-equal.
 __m128d _mm_cmpnge_pd (__m128d a, __m128d b) pure @safe
 {
     static if (GDC_with_SSE2)
@@ -812,6 +849,9 @@ __m128d _mm_cmpnge_pd (__m128d a, __m128d b) pure @safe
     }
 }
 
+/// Compare the lower double-precision (64-bit) floating-point elements 
+/// in `a` and `b` for not-greater-than-or-equal, store the result in 
+/// the lower element, and copy the upper element from `a`.
 __m128d _mm_cmpnge_sd (__m128d a, __m128d b) pure @safe
 {
     // Note: There is no __builtin_ia32_cmpngesd builtin.
@@ -825,6 +865,8 @@ __m128d _mm_cmpnge_sd (__m128d a, __m128d b) pure @safe
     }
 }
 
+/// Compare packed double-precision (64-bit) floating-point elements 
+/// in `a` and `b` for not-greater-than.
 __m128d _mm_cmpngt_pd (__m128d a, __m128d b) pure @safe
 {
     static if (GDC_with_SSE2)
@@ -837,6 +879,9 @@ __m128d _mm_cmpngt_pd (__m128d a, __m128d b) pure @safe
     }
 }
 
+/// Compare the lower double-precision (64-bit) floating-point elements 
+/// in `a` and `b` for not-greater-than, store the result in the 
+/// lower element, and copy the upper element from `a`.
 __m128d _mm_cmpngt_sd (__m128d a, __m128d b) pure @safe
 {
     // Note: There is no __builtin_ia32_cmpngtsd builtin.
@@ -850,6 +895,8 @@ __m128d _mm_cmpngt_sd (__m128d a, __m128d b) pure @safe
     }
 }
 
+/// Compare packed double-precision (64-bit) floating-point elements 
+/// in `a` and `b` for not-less-than-or-equal.
 __m128d _mm_cmpnle_pd (__m128d a, __m128d b) pure @safe
 {
     static if (GDC_with_SSE2)
@@ -862,6 +909,9 @@ __m128d _mm_cmpnle_pd (__m128d a, __m128d b) pure @safe
     }
 }
 
+/// Compare the lower double-precision (64-bit) floating-point elements 
+/// in `a` and `b` for not-less-than-or-equal, store the result in the 
+/// lower element, and copy the upper element from `a`.
 __m128d _mm_cmpnle_sd (__m128d a, __m128d b) pure @safe
 {
     static if (GDC_with_SSE2)
@@ -873,7 +923,9 @@ __m128d _mm_cmpnle_sd (__m128d a, __m128d b) pure @safe
         return cast(__m128d) cmpsd!(FPComparison.ugt)(a, b);
     }
 }
-
+ 
+/// Compare packed double-precision (64-bit) floating-point elements 
+/// in `a` and `b` for not-less-than.
 __m128d _mm_cmpnlt_pd (__m128d a, __m128d b) pure @safe
 {
     static if (GDC_with_SSE2)
@@ -886,6 +938,9 @@ __m128d _mm_cmpnlt_pd (__m128d a, __m128d b) pure @safe
     }
 }
 
+/// Compare the lower double-precision (64-bit) floating-point elements 
+/// in `a` and `b` for not-less-than, store the result in the lower 
+/// element, and copy the upper element from `a`.
 __m128d _mm_cmpnlt_sd (__m128d a, __m128d b) pure @safe
 {
     static if (GDC_with_SSE2)
@@ -898,6 +953,8 @@ __m128d _mm_cmpnlt_sd (__m128d a, __m128d b) pure @safe
     }
 }
 
+/// Compare packed double-precision (64-bit) floating-point elements 
+/// in `a` and `b` to see if neither is NaN.
 __m128d _mm_cmpord_pd (__m128d a, __m128d b) pure @safe
 {
     static if (GDC_with_SSE2)
@@ -910,6 +967,9 @@ __m128d _mm_cmpord_pd (__m128d a, __m128d b) pure @safe
     }
 }
 
+/// Compare the lower double-precision (64-bit) floating-point elements 
+/// in `a` and `b` to see if neither is NaN, store the result in the 
+/// lower element, and copy the upper element from `a` to the upper element.
 __m128d _mm_cmpord_sd (__m128d a, __m128d b) pure @safe
 {
     static if (GDC_with_SSE2)
@@ -922,6 +982,8 @@ __m128d _mm_cmpord_sd (__m128d a, __m128d b) pure @safe
     }
 }
 
+/// Compare packed double-precision (64-bit) floating-point elements 
+/// in `a` and `b` to see if either is NaN.
 __m128d _mm_cmpunord_pd (__m128d a, __m128d b) pure @safe
 {
     static if (GDC_with_SSE2)
@@ -934,6 +996,9 @@ __m128d _mm_cmpunord_pd (__m128d a, __m128d b) pure @safe
     }
 }
 
+/// Compare the lower double-precision (64-bit) floating-point elements 
+/// in `a` and `b` to see if either is NaN, store the result in the lower 
+/// element, and copy the upper element from `a` to the upper element.
 __m128d _mm_cmpunord_sd (__m128d a, __m128d b) pure @safe
 {
     static if (GDC_with_SSE2)
@@ -950,6 +1015,8 @@ __m128d _mm_cmpunord_sd (__m128d a, __m128d b) pure @safe
 // Note: we've reverted clang and GCC behaviour with regards to EFLAGS
 // Some such comparisons yields true for NaNs, other don't.
 
+/// Compare the lower double-precision (64-bit) floating-point element 
+/// in `a` and `b` for equality, and return the boolean result (0 or 1).
 int _mm_comieq_sd (__m128d a, __m128d b) pure @safe
 {
     static if (GDC_with_SSE2)
@@ -962,6 +1029,9 @@ int _mm_comieq_sd (__m128d a, __m128d b) pure @safe
     }
 }
 
+/// Compare the lower double-precision (64-bit) floating-point element 
+/// in `a` and `b` for greater-than-or-equal, and return the boolean 
+/// result (0 or 1).
 int _mm_comige_sd (__m128d a, __m128d b) pure @safe
 {
     static if (GDC_with_SSE2)
@@ -974,6 +1044,8 @@ int _mm_comige_sd (__m128d a, __m128d b) pure @safe
     }
 }
 
+/// Compare the lower double-precision (64-bit) floating-point element 
+/// in `a` and `b` for greater-than, and return the boolean result (0 or 1).
 int _mm_comigt_sd (__m128d a, __m128d b) pure @safe
 {
     static if (GDC_with_SSE2)
@@ -986,6 +1058,8 @@ int _mm_comigt_sd (__m128d a, __m128d b) pure @safe
     }
 }
 
+/// Compare the lower double-precision (64-bit) floating-point element 
+/// in `a` and `b` for less-than-or-equal.
 int _mm_comile_sd (__m128d a, __m128d b) pure @safe
 {
     static if (GDC_with_SSE2)
@@ -998,6 +1072,8 @@ int _mm_comile_sd (__m128d a, __m128d b) pure @safe
     }
 }
 
+/// Compare the lower double-precision (64-bit) floating-point element 
+/// in `a` and `b` for less-than, and return the boolean result (0 or 1).
 int _mm_comilt_sd (__m128d a, __m128d b) pure @safe
 {
     static if (GDC_with_SSE2)
@@ -1010,6 +1086,8 @@ int _mm_comilt_sd (__m128d a, __m128d b) pure @safe
     }
 }
 
+/// Compare the lower double-precision (64-bit) floating-point element
+/// in `a` and `b` for not-equal, and return the boolean result (0 or 1).
 int _mm_comineq_sd (__m128d a, __m128d b) pure @safe
 {
     static if (GDC_with_SSE2)
@@ -1022,9 +1100,11 @@ int _mm_comineq_sd (__m128d a, __m128d b) pure @safe
     }
 }
 
-version(LDC)
+/// Convert packed 32-bit integers in `a` to packed double-precision (64-bit)
+/// floating-point elements.
+ __m128d _mm_cvtepi32_pd (__m128i a) pure @trusted
 {
-     __m128d _mm_cvtepi32_pd (__m128i a) pure  @safe
+    version(LDC)
     {
         // Generates cvtdq2pd since LDC 1.0, even without optimizations
         enum ir = `
@@ -1033,26 +1113,16 @@ version(LDC)
             ret <2 x double> %r`;
         return cast(__m128d) LDCInlineIR!(ir, __m128d, __m128i)(a);
     }
-}
-else
-{
-    static if (GDC_with_SSE2)
+    else static if (GDC_with_SSE2)
     {
-
-        __m128d _mm_cvtepi32_pd (__m128i a) pure  @safe
-        {
-            return __builtin_ia32_cvtdq2pd(a); 
-        }
+        return __builtin_ia32_cvtdq2pd(a);
     }
     else
     {
-        __m128d _mm_cvtepi32_pd (__m128i a) pure  @safe
-        {
-            double2 r = void;
-            r[0] = a[0];
-            r[1] = a[1];
-            return r;
-        }
+        double2 r = void;
+        r.ptr[0] = a.array[0];
+        r.ptr[1] = a.array[1];
+        return r;
     }
 }
 unittest
