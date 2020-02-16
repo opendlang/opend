@@ -22,8 +22,7 @@ struct Axis
 
     /// Label of the axis
     string label;
-	/// How to rotate the axis
-	double labelAngle = 0.0;
+    double textAngle = 0.0;
 
     /// Minimum value of the axis
     double min;
@@ -45,6 +44,7 @@ struct Axis
 struct XAxis {
     /// The general Axis struct
     Axis axis;
+    double textAngle = 0.0;
     alias axis this;
 }
 
@@ -52,6 +52,7 @@ struct XAxis {
 struct YAxis {
     /// The general Axis struct
     Axis axis;
+    double textAngle = -1.5708;
     alias axis this;
 }
 
@@ -469,28 +470,27 @@ mixin( xy( q{auto axisShow( bool show )
     return func;
 }} ) );
 
-
 // Set the angle of an axis label
-mixin( xy( q{auto axisLabelAngle( double angle ) 
+mixin( xy( q{auto axisTextAngle( double angle ) 
 { 
-	import std.math : PI;
-    AxisFunction func = ( Axis axis ) { 
-		axis.labelAngle = angle * PI / 180.0; return axis; 
-	}; 
+    import std.math : PI;
+    AxisFunction func = ( Axis axis ) {
+        axis.textAngle = angle * PI / 180.0;
+        return axis; 
+    }; 
     return func;
 }} ) );
 
 ///
-unittest
-{
-    import std.stdio : writeln;
-	import std.math : approxEqual;
-    XAxis xax;
-    auto xf = xaxisLabelAngle( 90.0 );
-	writeln(xf(xax).labelAngle);
-	assert(approxEqual(xf(xax).labelAngle, 1.5708));
+unittest {
+  import std.stdio : writeln;
+  import std.math : approxEqual;
+  XAxis xax;
+  auto xf = xaxisTextAngle(90.0);
+  writeln(xf(xax).textAngle);
+  assert(approxEqual(xf(xax).textAngle, 1.5708));
 
-    YAxis yax;
-    auto yf = yaxisLabelAngle( 45.0 );
-	assert(approxEqual(xf(xax).labelAngle, 1.5708));
+  YAxis yax;
+  auto yf = yaxisTextAngle(45.0);
+  assert(approxEqual(xf(xax).textAngle, 1.5708));
 }

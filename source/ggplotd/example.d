@@ -353,7 +353,7 @@ unittest
 
     import ggplotd.aes : aes;
     import ggplotd.axes : xaxisLabel, yaxisLabel, xaxisOffset, yaxisOffset, 
-		   xaxisRange, yaxisRange, xaxisLabelAngle;
+		   xaxisRange, yaxisRange, xaxisTextAngle;
     import ggplotd.geom : geomLine;
     import ggplotd.ggplotd : GGPlotD, putIn, Margins, title;
     import ggplotd.stat : statFunction;
@@ -366,7 +366,7 @@ unittest
     // Setting range and label for xaxis
     gg.put( xaxisRange( 0, 8 ) )
 		.put( xaxisLabel( "My xlabel" ) )
-		.put( xaxisLabelAngle( 90 ) );
+		.put( xaxisTextAngle( 90 ) );
     // Setting range and label for yaxis
     gg.put( yaxisRange( 0, 2.0 ) ).put( yaxisLabel( "My ylabel" ) );
 
