@@ -1132,7 +1132,9 @@ unittest
     assert(A.array[1] == 54.0);
 }
 
-__m128 _mm_cvtepi32_ps(__m128i a) pure @safe
+/// Convert packed 32-bit integers in `a` to packed single-precision (32-bit) 
+/// floating-point elements.
+__m128 _mm_cvtepi32_ps(__m128i a) pure @trusted
 {
     static if (GDC_with_SSE2)
     {
@@ -1142,10 +1144,10 @@ __m128 _mm_cvtepi32_ps(__m128i a) pure @safe
     {
         // Generates cvtdq2ps since LDC 1.0.0 -O1
         __m128 res;
-        res.array[0] = cast(float)a.array[0];
-        res.array[1] = cast(float)a.array[1];
-        res.array[2] = cast(float)a.array[2];
-        res.array[3] = cast(float)a.array[3];
+        res.ptr[0] = cast(float)a.array[0];
+        res.ptr[1] = cast(float)a.array[1];
+        res.ptr[2] = cast(float)a.array[2];
+        res.ptr[3] = cast(float)a.array[3];
         return res;
     }
 }
@@ -1155,38 +1157,36 @@ unittest
     assert(a.array == [-1.0f, 0.0f, 1.0f, 1000.0f]);
 }
 
-
-version(LDC)
+/// Convert packed double-precision (64-bit) floating-point elements 
+/// in `a` to packed 32-bit integers.
+__m128i _mm_cvtpd_epi32 (__m128d a) pure @trusted
 {
-    // Like in clang, implemented with a magic intrinsic right now
-    alias _mm_cvtpd_epi32 = __builtin_ia32_cvtpd2dq;
-
-/* Unfortunately this generates a cvttpd2dq instruction
-    __m128i _mm_cvtpd_epi32 (__m128d a) pure  @safe
+    version(LDC)
     {
-        enum ir = `
-            %i = fptosi <2 x double> %0 to <2 x i32>
-            %r = shufflevector <2 x i32> %i,<2 x i32> zeroinitializer, <4 x i32> <i32 0, i32 1, i32 2, i32 3>
-            ret <4 x i32> %r`;
+        // Like in clang, implemented with a magic intrinsic right now
+        return __builtin_ia32_cvtpd2dq(a);
 
-        return cast(__m128i) inlineIR!(ir, __m128i, __m128d)(a);
-    } */
-}
-else
-{
-    static if (GDC_with_SSE2)
+    /* Unfortunately this generates a cvttpd2dq instruction
+        __m128i _mm_cvtpd_epi32 (__m128d a) pure  @safe
+        {
+            enum ir = `
+                %i = fptosi <2 x double> %0 to <2 x i32>
+                %r = shufflevector <2 x i32> %i,<2 x i32> zeroinitializer, <4 x i32> <i32 0, i32 1, i32 2, i32 3>
+                ret <4 x i32> %r`;
+
+            return cast(__m128i) inlineIR!(ir, __m128i, __m128d)(a);
+        } */
+    }
+    else static if (GDC_with_SSE2)
     {
-        alias _mm_cvtpd_epi32 = __builtin_ia32_cvtpd2dq;
+        return __builtin_ia32_cvtpd2dq(a);
     }
     else
     {
-        __m128i _mm_cvtpd_epi32 (__m128d a) pure @safe
-        {
-            __m128i r = _mm_setzero_si128();
-            r[0] = convertDoubleToInt32UsingMXCSR(a[0]);
-            r[1] = convertDoubleToInt32UsingMXCSR(a[1]);
-            return r;
-        }
+        __m128i r = _mm_setzero_si128();
+        r.ptr[0] = convertDoubleToInt32UsingMXCSR(a.array[0]);
+        r.ptr[1] = convertDoubleToInt32UsingMXCSR(a.array[1]);
+        return r;
     }
 }
 unittest
@@ -1196,7 +1196,7 @@ unittest
 }
 
 /// Convert packed double-precision (64-bit) floating-point elements in `v`
-//  to packed 32-bit integers
+/// to packed 32-bit integers
 __m64 _mm_cvtpd_pi32 (__m128d v) pure @safe
 {
     return to_m64(_mm_cvtpd_epi32(v));
@@ -1207,27 +1207,26 @@ unittest
     assert(A.array[0] == 55 && A.array[1] == 61);
 }
 
-version(LDC)
+/// Convert packed double-precision (64-bit) floating-point elements 
+/// in `a` to packed single-precision (32-bit) floating-point elements.
+__m128 _mm_cvtpd_ps (__m128d a) pure @trusted
 {
-    alias _mm_cvtpd_ps = __builtin_ia32_cvtpd2ps; // can't be done with IR unfortunately
-}
-else
-{
-    static if (GDC_with_SSE2)
+    version(LDC)
     {
-        alias _mm_cvtpd_ps = __builtin_ia32_cvtpd2ps; // can't be done with IR unfortunately
+        return __builtin_ia32_cvtpd2ps(a); // can't be done with IR unfortunately
+    }
+    else static if (GDC_with_SSE2)
+    {
+        return __builtin_ia32_cvtpd2ps(a);
     }
     else
-    {
-         __m128 _mm_cvtpd_ps (__m128d a) pure @safe
-        {
-            __m128 r = void;
-            r[0] = a[0];
-            r[1] = a[1];
-            r[2] = 0;
-            r[3] = 0;
-            return r;
-        }    
+    { 
+        __m128 r = void;
+        r.ptr[0] = a.array[0];
+        r.ptr[1] = a.array[1];
+        r.ptr[2] = 0;
+        r.ptr[3] = 0;
+        return r;
     }
 }
 unittest
@@ -1249,33 +1248,28 @@ unittest
     assert(A.array[0] == 4.0 && A.array[1] == -5.0);
 }
 
-version(LDC)
+/// Convert packed single-precision (32-bit) floating-point elements 
+/// in `a` to packed 32-bit integers,
+__m128i _mm_cvtps_epi32 (__m128 a) pure @trusted
 {
-    // Disabled, since it fail with optimizations unfortunately
-    //alias _mm_cvtps_epi32 = __builtin_ia32_cvtps2dq;
-
-     __m128i _mm_cvtps_epi32 (__m128 a) pure @trusted
+    version(LDC)
     {
+        // Disabled, since it fail with optimizations unfortunately
+        //alias _mm_cvtps_epi32 = __builtin_ia32_cvtps2dq;
         return __asm!__m128i("cvtps2dq $1,$0","=x,x",a);
     }
-}
-else
-{
-    static if (GDC_with_SSE2)
+    else static if (GDC_with_SSE2)
     {
         alias _mm_cvtps_epi32 = __builtin_ia32_cvtps2dq;
     }
     else
     {
-        __m128i _mm_cvtps_epi32 (__m128 a) pure @safe
-        {
-            __m128i r = void;
-            r[0] = convertFloatToInt32UsingMXCSR(a[0]);
-            r[1] = convertFloatToInt32UsingMXCSR(a[1]);
-            r[2] = convertFloatToInt32UsingMXCSR(a[2]);
-            r[3] = convertFloatToInt32UsingMXCSR(a[3]);
-            return r;
-        }
+        __m128i r = void;
+        r.ptr[0] = convertFloatToInt32UsingMXCSR(a.array[0]);
+        r.ptr[1] = convertFloatToInt32UsingMXCSR(a.array[1]);
+        r.ptr[2] = convertFloatToInt32UsingMXCSR(a.array[2]);
+        r.ptr[3] = convertFloatToInt32UsingMXCSR(a.array[3]);
+        return r;
     }
 }
 unittest
@@ -1301,34 +1295,29 @@ unittest
     _MM_SET_ROUNDING_MODE(savedRounding);
 }
 
-
-version(LDC)
+/// Convert packed single-precision (32-bit) floating-point elements 
+/// in `a` to packed double-precision (64-bit) floating-point elements.
+__m128d _mm_cvtps_pd (__m128 a) pure @trusted
 {
-    __m128d _mm_cvtps_pd (__m128 a) pure  @safe
+    version(LDC)
     {
-        // Generates cvtps2pd since LDC 1.0, no opt
+        // Generates cvtps2pd since LDC 1.0 -O0
         enum ir = `
             %v = shufflevector <4 x float> %0,<4 x float> %0, <2 x i32> <i32 0, i32 1>
             %r = fpext <2 x float> %v to <2 x double>
             ret <2 x double> %r`;
         return cast(__m128d) LDCInlineIR!(ir, __m128d, __m128)(a);
     }
-}
-else
-{
-    static if (GDC_with_SSE2)
+    else static if (GDC_with_SSE2)
     {
-        alias _mm_cvtps_pd = __builtin_ia32_cvtps2pd;
+        return __builtin_ia32_cvtps2pd(a);
     }
     else
     {
-        __m128d _mm_cvtps_pd (__m128 a) pure  @safe
-        {
-            double2 r = void;
-            r[0] = a[0];
-            r[1] = a[1];
-            return r;
-        }
+        double2 r = void;
+        r.ptr[0] = a.array[0];
+        r.ptr[1] = a.array[1];
+        return r;
     }
 }
 unittest
@@ -1338,27 +1327,27 @@ unittest
     assert(A.array[1] == 54.0);
 }
 
+/// Copy the lower double-precision (64-bit) floating-point element of `a`.
 double _mm_cvtsd_f64 (__m128d a) pure @safe
 {
     return a.array[0];
 }
 
-version(LDC)
+/// Convert the lower double-precision (64-bit) floating-point element
+/// in `a` to a 32-bit integer.
+int _mm_cvtsd_si32 (__m128d a) pure @safe
 {
-    alias _mm_cvtsd_si32 = __builtin_ia32_cvtsd2si;
-}
-else
-{
-    static if (GDC_with_SSE2)
+    version(LDC)
     {
-        alias _mm_cvtsd_si32 = __builtin_ia32_cvtsd2si;
+        return __builtin_ia32_cvtsd2si(a);
+    }
+    else static if (GDC_with_SSE2)
+    {
+        return __builtin_ia32_cvtsd2si(a);
     }
     else
     {
-        int _mm_cvtsd_si32 (__m128d a) pure @safe
-        {
-            return convertDoubleToInt32UsingMXCSR(a[0]);
-        }
+        return convertDoubleToInt32UsingMXCSR(a[0]);
     }
 }
 unittest
