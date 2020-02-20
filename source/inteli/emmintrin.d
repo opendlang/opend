@@ -1260,7 +1260,7 @@ __m128i _mm_cvtps_epi32 (__m128 a) pure @trusted
     }
     else static if (GDC_with_SSE2)
     {
-        alias _mm_cvtps_epi32 = __builtin_ia32_cvtps2dq;
+        return __builtin_ia32_cvtps2dq(a);
     }
     else
     {
