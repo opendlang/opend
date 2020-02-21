@@ -22,3 +22,5 @@ enum real SQRT1_2 =    SQRT2 / 2;                             /++ $(SQRT)$(HALF)
 Exponent of minus Euler–Mascheroni constant.
 +/
 enum real ExpMEuler = 0x0.8fbbcf07f2e5f2c56894d7014c3086p0;
+enum real GoldenRatio = 0x1.9e3779b97f4a7c15f39cc0605cedc8341082276bf3a27251f86c6a11d0c18p+0L; /++ Golden Ratio = (1 + sqrt(5)) / 2 = 1.6180339... ++/
+enum real GoldenRatioInverseSquared = 0x0.61c8864680b583ea0c633f9fa31237cbef7dd8940c5d8dae079395ee2f3e71p+0L; /++ Golden Ratio ^ -2 = 0.381966... ++/
