@@ -39,6 +39,7 @@ align(commonAlignment!(UnionKindTypes!(UnionFieldEnum!U))) struct TaggedUnion
 {
 	import std.traits : FieldTypeTuple, FieldNameTuple, Largest,
 		hasElaborateCopyConstructor, hasElaborateDestructor, isCopyable;
+	import std.meta : templateOr;
 	import std.ascii : toUpper;
 
 	alias FieldDefinitionType = U;
@@ -104,7 +105,7 @@ align(commonAlignment!(UnionKindTypes!(UnionFieldEnum!U))) struct TaggedUnion
 	}
 
 	// postblit constructor
-	static if (!allSatisfy!(isCopyable, FieldTypes)) {
+	static if (!allSatisfy!(templateOr!(isCopyable, isUnitType), FieldTypes)) {
 		@disable this(this);
 	} else static if (anySatisfy!(hasElaborateCopyConstructor, FieldTypes)) {
 		this(this)
