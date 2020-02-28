@@ -49,6 +49,8 @@ private enum isRef(T) = is(T : Ref!T0, T0);
 
 import mir.math.common: optmath;
 
+public import core.lifetime : forward;
+
 @optmath:
 
 /++
@@ -614,107 +616,6 @@ version(mir_test) unittest
     assert(pipe!(split, map!(to!(int)))("1 2 3").equal([1, 2, 3]));
 }
 
-/++
-Forwards function arguments with saving ref-ness.
-+/
-template forward(args...)
-{
-    static if (args.length)
-    {
-        alias arg = args[0];
-        static if (__traits(isRef, arg))
-            alias fwd = arg;
-        else
-            @optmath @property fwd()()
-            {
-                static if (is(typeof(arg) == struct))
-                {
-                    import std.algorithm.mutation : move;
-                    return arg.move;
-                }
-                else
-                    return arg;
-            }
-        alias forward = AliasSeq!(fwd, forward!(args[1..$]));
-    }
-    else
-        alias forward = AliasSeq!();
-}
-
-///
-@safe version(mir_test) unittest
-{
-    class C
-    {
-        static int foo(int n) { return 1; }
-        static int foo(ref int n) { return 2; }
-    }
-    int bar()(auto ref int x) { return C.foo(forward!x); }
-
-    assert(bar(1) == 1);
-    int i;
-    assert(bar(i) == 2);
-}
-
-///
-@safe version(mir_test) unittest
-{
-    void foo(int n, ref string s) { s = null; foreach (i; 0..n) s ~= "Hello"; }
-
-    // forwards all arguments which are bound to parameter tuple
-    void bar(Args...)(auto ref Args args) { return foo(forward!args); }
-
-    // forwards all arguments with swapping order
-    void baz(Args...)(auto ref Args args) { return foo(forward!args[$/2..$], forward!args[0..$/2]); }
-
-    string s;
-    bar(1, s);
-    assert(s == "Hello");
-    baz(s, 2);
-    assert(s == "HelloHello");
-}
-
-@safe version(mir_test) unittest
-{
-    auto foo(TL...)(auto ref TL args)
-    {
-        string result = "";
-        foreach (i, _; args)
-        {
-            result ~= __traits(isRef, args[i]) ? "L" : "R";
-        }
-        return result;
-    }
-
-    string bar(TL...)(auto ref TL args)
-    {
-        return foo(forward!args);
-    }
-    string baz(TL...)(auto ref TL args)
-    {
-        int x;
-        return foo(forward!args[3], forward!args[2], 1, forward!args[1], forward!args[0], x);
-    }
-
-    struct S {}
-    S makeS(){ return S(); }
-    int n;
-    string s;
-    assert(bar(S(), makeS(), n, s) == "RRLL");
-    assert(baz(S(), makeS(), n, s) == "LLRRRL");
-}
-
-@safe version(mir_test) unittest
-{
-    ref int foo(return ref int a) { return a; }
-    ref int bar(Args)(auto ref Args args)
-    {
-        return foo(forward!args);
-    }
-    static assert(!__traits(compiles, { auto x1 = bar(3); })); // case of NG
-    int value = 3;
-    auto x2 = bar(value); // case of OK
-}
 
 struct AliasCall(T, string methodName, TemplateArgs...)
 {
