@@ -1,28 +1,29 @@
 module main;
 
 import std.stdio;
-import minimp3;
-import waved;
+import audioformats;
 
 /// Usage: mp3decode source.mp3 output.wav
 void main(string[] args)
 {
+	if (args.length != 3)
+		throw new Exception("usage: mp3decode input.mp3 output.wav");
     AudioStream input, output;
 
     input.openFromFile(args[1]);
 
-    float sampleRate = input.getSampleRate();
-    int channels = input.getChannels();
+    float sampleRate = input.getSamplerate();
+    int channels = input.getNumChannels();
     long length = input.getLengthInFrames();
 
-    float[] buf = new float[1024 * input.getChannels()];
+    float[] buf = new float[1024 * channels];
 
-    output.openToFile(args[1], AudioFileFormat.wav, sampleRate, numChannels);
+    output.openToFile(args[2], AudioFileFormat.wav, sampleRate, channels);
 
     // Chunked encore/decode
     int read;
-    while(read = input.readSamplesFloat(buf.ptr, buf.length) )
+    while(0 != ( read = input.readSamplesFloat(buf) ) )
     {
-    	output.writeSamplesFloat(buf.ptr, read);
+    	output.writeSamplesFloat(buf[0..read]);
     }
 }

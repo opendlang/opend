@@ -2,8 +2,8 @@
 /// All operations are blocking, and should possibly be done in a thread.
 module audioformats;
 
-import dplug.core.nogc;
-private import audioformats.stream;
+public import dplug.core.nogc: mallocNew, destroyFree;
+public import audioformats.stream;
 
 // <PUBLIC API>
 
@@ -110,6 +110,11 @@ int audiostreamReadSamplesFloat(AudioStreamHandle stream, float* outData, int fr
 {
     return ( cast(AudioStream*)stream ).readSamplesFloat(outData, frames);
 }
+///ditto
+int audiostreamReadSamplesFloat(AudioStreamHandle stream, float[] outData) nothrow @nogc
+{
+    return ( cast(AudioStream*)stream ).readSamplesFloat(outData);
+}
 
 // </READING_API>
 
@@ -178,6 +183,11 @@ AudioStreamHandle audiostreamOpenToMemory(ubyte* data,
 int audiostreamWriteSamplesFloat(AudioStreamHandle stream, float* inData, int frames) nothrow @nogc
 {
     return ( cast(AudioStream*)stream ).writeSamplesFloat(inData, frames);
+}
+///ditto
+int audiostreamWriteSamplesFloat(AudioStreamHandle stream, float[] inData) nothrow @nogc
+{
+    return ( cast(AudioStream*)stream ).writeSamplesFloat(inData);
 }
 
 /// Flush to disk all written samples, if any. 

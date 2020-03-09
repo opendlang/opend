@@ -85,6 +85,11 @@ nothrow:
         // TODO
         return 0;
     }
+    ///ditto
+    int readSamplesFloat(float[] outData)
+    {
+        return readSamplesFloat(outData.ptr, cast(int)outData.length);
+    }
 
     /// Write interleaved float samples.
     /// `inData` must have enough data for `frames` * `channels` samples.
@@ -92,6 +97,11 @@ nothrow:
     {
         // TODO
         return 0;
+    }
+    ///ditto
+    int writeSamplesFloat(float[] inData)
+    {
+        return writeSamplesFloat(inData.ptr, cast(int)inData.length);
     }
 
     void flush()
