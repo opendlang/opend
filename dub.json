@@ -1,0 +1,23 @@
+{
+    "name": "audio-formats",
+    "description": "Streaming decoding support for popular audio formats.",
+    "license": "LGPL-2.1",
+
+    "dependencies": 
+    {
+        "dplug:core": "~>9.0"
+    },
+
+    "configurations": [
+        {
+            "name": "all-formats",
+            "versions": ["decodeWAV", "decodeMP3"]
+        },
+        {
+            "name": "no-lgpl",
+            "versions": ["decodeWAV"]
+        },
+    ]
+}
+
+        
