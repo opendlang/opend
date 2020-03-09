@@ -2,6 +2,8 @@
 /// All operations are blocking, and should possibly be done in a thread.
 module audioformats;
 
+import dplug.core.nogc;
+private import audioformats.stream;
 
 // <PUBLIC API>
 
@@ -13,10 +15,12 @@ enum AudioFileFormat
     unknown
 }
 
-/// Opaque stream type.
-alias AudioStream = void*;
+/// Opaque stream type. A `null` AudioStream is invalid and should never occur.
+alias AudioStreamHandle = void*;
 
-
+/// The length of things you shouldn't query a length about:
+///    - files that are being written
+///    - audio files you don't know the extent
 enum audiostreamUnknownLength = -1;
 
 /// Information about a stream.
@@ -39,36 +43,34 @@ struct AudioStreamInfo
 
 
 /// Returns: Information about this stream.
-AudioStreamInfo audiostreamGetInfo(AudioStream stream) nothrow @nogc
+AudioStreamInfo audiostreamGetInfo(AudioStreamHandle stream) nothrow @nogc
 {
-    AudioStreamInfo info;
-    return info;
-    // TODO
+    return ( cast(AudioStream*)stream ).getInfo();
 }
 
 /// Returns: File format of this stream.
-AudioFileFormat audiostreamGetFormat(AudioStream stream) nothrow @nogc
+AudioFileFormat audiostreamGetFormat(AudioStreamHandle stream) nothrow @nogc
 {
-    return audiostreamGetInfo(stream).format;
+    return ( cast(AudioStream*)stream ).getFormat();
 }
 
 /// Returns: File format of this stream.
-int audiostreamGetNumChannels(AudioStream stream) nothrow @nogc
+int audiostreamGetNumChannels(AudioStreamHandle stream) nothrow @nogc
 {
-    return audiostreamGetInfo(stream).channels;
+    return ( cast(AudioStream*)stream ).getNumChannels();
 }
 
 /// Returns: Length of this stream in frames.
 /// Note: may return `audiostreamUnknownLength` if the length is unknown.
-long audiostreamGetLengthInFrames(AudioStream stream) nothrow @nogc
+long audiostreamGetLengthInFrames(AudioStreamHandle stream) nothrow @nogc
 {
-    return audiostreamGetInfo(stream).lengthInFrames;
+    return ( cast(AudioStream*)stream ).getLengthInFrames();
 }
 
 /// Returns: Sample-rate of this stream in Hz.
-float audiostreamGetSamplerate(AudioStream stream) nothrow @nogc
+float audiostreamGetSamplerate(AudioStreamHandle stream) nothrow @nogc
 {
-    return audiostreamGetInfo(stream).sampleRate;
+    return ( cast(AudioStream*)stream ).getSamplerate();
 }
 
 
@@ -82,10 +84,11 @@ float audiostreamGetSamplerate(AudioStream stream) nothrow @nogc
 ///     path An UTF-8 path to the sound file.
 ///
 /// Note: throws a manually allocated exception in case of error. Free it with `dplug.core.destroyFree`.
-AudioStream audiostreamOpenFromFile(const(char)[] path) nothrow @nogc
+AudioStreamHandle audiostreamOpenFromFile(const(char)[] path) nothrow @nogc
 {
-    // TODO
-    return null;
+    AudioStream* s = mallocNew!AudioStream();
+    s.openFromFile(path);
+    return s;
 }
 
 /// Opens an audio stream that decodes from memory.
@@ -94,18 +97,18 @@ AudioStream audiostreamOpenFromFile(const(char)[] path) nothrow @nogc
 /// Note: throws a manually allocated exception in case of error. Free it with `dplug.core.destroyFree`.
 ///
 /// Params: path An UTF-8 path to the sound file.
-AudioStream audiostreamOpenFromMemory(const(ubyte)* data, int length) nothrow @nogc
+AudioStreamHandle audiostreamOpenFromMemory(const(ubyte)* data, int length) nothrow @nogc
 {
-    return null;
-    // TODO
+    AudioStream* s = mallocNew!AudioStream();
+    s.openFromMemory(data, length);
+    return s;
 }
 
 /// Read interleaved float samples.
 /// `outData` must have enought room for `frames` * `channels` decoded samples.
-int audiostreamReadSamplesFloat(AudioStream stream, float* outData, int frames) nothrow @nogc
+int audiostreamReadSamplesFloat(AudioStreamHandle stream, float* outData, int frames) nothrow @nogc
 {
-    // TODO
-    return 0;
+    return ( cast(AudioStream*)stream ).readSamplesFloat(outData, frames);
 }
 
 // </READING_API>
@@ -122,18 +125,19 @@ int audiostreamReadSamplesFloat(AudioStream stream, float* outData, int frames) 
 ///     path An UTF-8 path to the sound file.
 ///     sampleRate Sample rate of this audio stream. This samplerate might be rounded up to the nearest integer number.
 ///     numChannels Number of channels of this audio stream.
-AudioStream audiostreamOpenToFile(const(char)[] path, 
-                                  AudioFileFormat format,
-                                  float sampleRate, 
-                                  int numChannels) nothrow @nogc
+AudioStreamHandle audiostreamOpenToFile(const(char)[] path, 
+                                        AudioFileFormat format,
+                                        float sampleRate, 
+                                        int numChannels) nothrow @nogc
 {
-    // TODO
-    return null;
+    AudioStream* s = mallocNew!AudioStream();
+    s.openToFile(path, format, sampleRate, numChannels);
+    return s;
 }
 
 /// Opens an audio stream that writes to a dynamically growable output buffer.
 /// This stream will be opened for writing only.
-/// Access to the internal buffer after 
+/// Access to the internal buffer after encoding with `audiostreamFinalizeAndGetEncodedResult`.
 /// Destroy this stream with `closeAudioStream`.
 /// Note: throws a manually allocated exception in case of error. Free it with `dplug.core.destroyFree`.
 ///
@@ -141,13 +145,13 @@ AudioStream audiostreamOpenToFile(const(char)[] path,
 ///     path An UTF-8 path to the sound file.
 ///     sampleRate Sample rate of this audio stream. This samplerate might be rounded up to the nearest integer number.
 ///     numChannels Number of channels of this audio stream.
-AudioStream audiostreamOpenToBuffer(ubyte* data, 
-                                    AudioFileFormat format,
-                                    float sampleRate, 
-                                    int numChannels) nothrow @nogc
+AudioStreamHandle audiostreamOpenToBuffer(AudioFileFormat format,
+                                          float sampleRate, 
+                                          int numChannels) nothrow @nogc
 {
-    // TODO
-    return null;
+    AudioStream* s = mallocNew!AudioStream();
+    s.openToBuffer(format, sampleRate, numChannels);
+    return s;
 }
 
 /// Opens an audio stream that writes to a pre-defined area in memory of `maxLength` bytes.
@@ -159,11 +163,11 @@ AudioStream audiostreamOpenToBuffer(ubyte* data,
 ///     path An UTF-8 path to the sound file.
 ///     sampleRate Sample rate of this audio stream. This samplerate might be rounded up to the nearest integer number.
 ///     numChannels Number of channels of this audio stream.
-AudioStream audiostreamOpenToMemory(ubyte* data, 
-                                    size_t maxLength,
-                                    AudioFileFormat format,
-                                    float sampleRate, 
-                                    int numChannels) nothrow @nogc
+AudioStreamHandle audiostreamOpenToMemory(ubyte* data, 
+                                         size_t maxLength,
+                                         AudioFileFormat format,
+                                         float sampleRate, 
+                                         int numChannels) nothrow @nogc
 {
     // TODO
     return null;
@@ -171,46 +175,35 @@ AudioStream audiostreamOpenToMemory(ubyte* data,
 
 /// Write interleaved float samples.
 /// `inData` must have enough data for `frames` * `channels` samples.
-void audiostreamWriteSamplesFloat(AudioStream stream, float* inData, int frames) nothrow @nogc
+int audiostreamWriteSamplesFloat(AudioStreamHandle stream, float* inData, int frames) nothrow @nogc
 {
-    // TODO
+    return ( cast(AudioStream*)stream ).writeSamplesFloat(inData, frames);
 }
 
 /// Flush to disk all written samples, if any. 
 /// hence the result is available.
 /// Automatically done by `audiostreamClose`.
-void audiostreamFlush(AudioStream stream) nothrow @nogc
+void audiostreamFlush(AudioStreamHandle stream) nothrow @nogc
 {
-    // TODO
+    return ( cast(AudioStream*)stream ).flush();
 }
 
 /// Finalize the encoding and give access to an internal buffer that holds the whole result.
-/// This buffer will have a length given by `audiostreamGetLengthInFrames`.
+/// This buffer will have a byte length given by `audiostreamGetLengthInFrames` x channels.
 /// Only works if the stream was open with `audiostreamOpenToBuffer`.
-void audiostreamFinalizeAndGetEncodedResult(AudioStream stream) nothrow @nogc
+const(ubyte)[] audiostreamFinalizeAndGetEncodedResult(AudioStreamHandle stream) nothrow @nogc
 {
-    // TODO
+    return ( cast(AudioStream*)stream ).finalizeAndGetEncodedResult();
 }
 
 
 // </WRITING_API>
 
-void audiostreamClose(AudioStream stream) nothrow @nogc
+void audiostreamClose(AudioStreamHandle stream) nothrow @nogc
 {
-    audiostreamFlush(stream);
-    // TODO
+    destroyFree( cast(AudioStream*)stream );
 }
 
-
-/*
-/// Main resource object.
-class AudioStream
-{
-nothrow:
-@nogc:
-
-
-}*/
 
 
 // </PUBLIC API>

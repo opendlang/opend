@@ -1,0 +1,12 @@
+{
+    "name": "mp3decode",
+    "description": "Decode input to a WAV.",
+    "license": "LGPL-2.1",
+
+    "dependencies": 
+    {
+        "audio-formats": { "path": "../.." }
+    }
+}
+
+        
