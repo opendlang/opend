@@ -1,6 +1,6 @@
+/// Libray for sound file decoding and encoding.
+/// All operations are blocking, and should possibly be done in a thread.
 module audioformats;
-
-import dplug.core;
 
 
 // <PUBLIC API>
@@ -77,9 +77,11 @@ float audiostreamGetSamplerate(AudioStream stream) nothrow @nogc
 /// Opens an audio stream that decodes from a file.
 /// This stream will be opened for reading only.
 /// Destroy this stream with `closeAudioStream`.
-/// Note: throws a manually allocated exception in case of error. Free it with `dplug.core.destroyFree`.
 ///
-/// Params: path An UTF-8 path to the sound file.
+/// Params: 
+///     path An UTF-8 path to the sound file.
+///
+/// Note: throws a manually allocated exception in case of error. Free it with `dplug.core.destroyFree`.
 AudioStream audiostreamOpenFromFile(const(char)[] path) nothrow @nogc
 {
     // TODO
@@ -129,7 +131,26 @@ AudioStream audiostreamOpenToFile(const(char)[] path,
     return null;
 }
 
-/// Opens an audio stream that writes to file.
+/// Opens an audio stream that writes to a dynamically growable output buffer.
+/// This stream will be opened for writing only.
+/// Access to the internal buffer after 
+/// Destroy this stream with `closeAudioStream`.
+/// Note: throws a manually allocated exception in case of error. Free it with `dplug.core.destroyFree`.
+///
+/// Params: 
+///     path An UTF-8 path to the sound file.
+///     sampleRate Sample rate of this audio stream. This samplerate might be rounded up to the nearest integer number.
+///     numChannels Number of channels of this audio stream.
+AudioStream audiostreamOpenToBuffer(ubyte* data, 
+                                    AudioFileFormat format,
+                                    float sampleRate, 
+                                    int numChannels) nothrow @nogc
+{
+    // TODO
+    return null;
+}
+
+/// Opens an audio stream that writes to a pre-defined area in memory of `maxLength` bytes.
 /// This stream will be opened for writing only.
 /// Destroy this stream with `closeAudioStream`.
 /// Note: throws a manually allocated exception in case of error. Free it with `dplug.core.destroyFree`.
@@ -142,7 +163,7 @@ AudioStream audiostreamOpenToMemory(ubyte* data,
                                     size_t maxLength,
                                     AudioFileFormat format,
                                     float sampleRate, 
-                                    int numChannels)
+                                    int numChannels) nothrow @nogc
 {
     // TODO
     return null;
@@ -150,7 +171,23 @@ AudioStream audiostreamOpenToMemory(ubyte* data,
 
 /// Write interleaved float samples.
 /// `inData` must have enough data for `frames` * `channels` samples.
-void audiostreamWriteSamplesFloat(AudioStream stream, float* inData, int frames)
+void audiostreamWriteSamplesFloat(AudioStream stream, float* inData, int frames) nothrow @nogc
+{
+    // TODO
+}
+
+/// Flush to disk all written samples, if any. 
+/// hence the result is available.
+/// Automatically done by `audiostreamClose`.
+void audiostreamFlush(AudioStream stream) nothrow @nogc
+{
+    // TODO
+}
+
+/// Finalize the encoding and give access to an internal buffer that holds the whole result.
+/// This buffer will have a length given by `audiostreamGetLengthInFrames`.
+/// Only works if the stream was open with `audiostreamOpenToBuffer`.
+void audiostreamFinalizeAndGetEncodedResult(AudioStream stream) nothrow @nogc
 {
     // TODO
 }
@@ -158,10 +195,9 @@ void audiostreamWriteSamplesFloat(AudioStream stream, float* inData, int frames)
 
 // </WRITING_API>
 
-
-
-void audiostreamClose(AudioStream stream)
+void audiostreamClose(AudioStream stream) nothrow @nogc
 {
+    audiostreamFlush(stream);
     // TODO
 }
 
