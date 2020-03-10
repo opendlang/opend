@@ -84,7 +84,7 @@ float audiostreamGetSamplerate(AudioStreamHandle stream) nothrow @nogc
 ///     path An UTF-8 path to the sound file.
 ///
 /// Note: throws a manually allocated exception in case of error. Free it with `dplug.core.destroyFree`.
-AudioStreamHandle audiostreamOpenFromFile(const(char)[] path) nothrow @nogc
+AudioStreamHandle audiostreamOpenFromFile(const(char)[] path) @nogc
 {
     AudioStream* s = mallocNew!AudioStream();
     s.openFromFile(path);
@@ -97,7 +97,7 @@ AudioStreamHandle audiostreamOpenFromFile(const(char)[] path) nothrow @nogc
 /// Note: throws a manually allocated exception in case of error. Free it with `dplug.core.destroyFree`.
 ///
 /// Params: path An UTF-8 path to the sound file.
-AudioStreamHandle audiostreamOpenFromMemory(const(ubyte)* data, int length) nothrow @nogc
+AudioStreamHandle audiostreamOpenFromMemory(const(ubyte)* data, int length) @nogc
 {
     AudioStream* s = mallocNew!AudioStream();
     s.openFromMemory(data, length);
@@ -106,12 +106,12 @@ AudioStreamHandle audiostreamOpenFromMemory(const(ubyte)* data, int length) noth
 
 /// Read interleaved float samples.
 /// `outData` must have enought room for `frames` * `channels` decoded samples.
-int audiostreamReadSamplesFloat(AudioStreamHandle stream, float* outData, int frames) nothrow @nogc
+int audiostreamReadSamplesFloat(AudioStreamHandle stream, float* outData, int frames) @nogc
 {
     return ( cast(AudioStream*)stream ).readSamplesFloat(outData, frames);
 }
 ///ditto
-int audiostreamReadSamplesFloat(AudioStreamHandle stream, float[] outData) nothrow @nogc
+int audiostreamReadSamplesFloat(AudioStreamHandle stream, float[] outData) @nogc
 {
     return ( cast(AudioStream*)stream ).readSamplesFloat(outData);
 }
@@ -133,7 +133,7 @@ int audiostreamReadSamplesFloat(AudioStreamHandle stream, float[] outData) nothr
 AudioStreamHandle audiostreamOpenToFile(const(char)[] path, 
                                         AudioFileFormat format,
                                         float sampleRate, 
-                                        int numChannels) nothrow @nogc
+                                        int numChannels) @nogc
 {
     AudioStream* s = mallocNew!AudioStream();
     s.openToFile(path, format, sampleRate, numChannels);
@@ -152,7 +152,7 @@ AudioStreamHandle audiostreamOpenToFile(const(char)[] path,
 ///     numChannels Number of channels of this audio stream.
 AudioStreamHandle audiostreamOpenToBuffer(AudioFileFormat format,
                                           float sampleRate, 
-                                          int numChannels) nothrow @nogc
+                                          int numChannels) @nogc
 {
     AudioStream* s = mallocNew!AudioStream();
     s.openToBuffer(format, sampleRate, numChannels);
