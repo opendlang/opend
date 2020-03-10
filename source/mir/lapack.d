@@ -20,6 +20,18 @@ public import lapack: lapackint;
 
 @trusted pure nothrow @nogc:
 
+///
+lapackint ilaenv()(lapackint ispec, scope const(char)* name, scope const(char)* opts, lapackint n1, lapackint n2, lapackint n3, lapackint n4)
+{
+    return ilaenv_(ispec, name, opts, n1, n2, n3, n4);
+}
+
+///
+lapackint ilaenv2stage()(lapackint ispec, scope const(char)* name, scope const(char)* opts, lapackint n1, lapackint n2, lapackint n3, lapackint n4)
+{
+    return ilaenv2stage_(ispec, name, opts, n1, n2, n3, n4);
+}
+
 /// `getri` work space query.
 size_t getri_wq(T)(Slice!(T*, 2, Canonical) a)
 in
@@ -832,7 +844,8 @@ do
     return info;
 }
 
-version(none) unittest
+version(none)
+unittest
 {
     alias s = geqrs!float;
     alias d = geqrs!double;
@@ -1967,4 +1980,229 @@ unittest
     alias b = steqr!double;
     alias c = steqr!cfloat;
     alias d = steqr!cdouble;
+}
+
+
+///
+@trusted
+size_t sytrs_3(T)(
+    char uplo,
+    Slice!(const(T)*, 2, Canonical) a,
+    Slice!(const(T)*) e,
+    Slice!(const(lapackint)*) ipiv,
+    Slice!(T*, 2, Canonical) b,
+    )
+in
+{
+    assert(a.length!0 == a.length!1, "sytrs_3: 'a' must be a square matrix.");
+    assert(e.length == a.length, "sytrs_3: 'e' must have the same length as 'a'.");
+    assert(b.length!1 == a.length, "sytrs_3: 'b.length!1' must must be equal to 'a.length'.");
+}
+do
+{
+    lapackint n = cast(lapackint) a.length;
+    lapackint nrhs = cast(lapackint) b.length;
+    lapackint lda = cast(lapackint) a._stride.max(1);
+    lapackint ldb = cast(lapackint) b._stride.max(1);
+    lapackint info = void;
+// ref char uplo, ref lapackint n, ref lapackint nrhs, float *a, ref lapackint lda, float* e, lapackint *ipiv, float *b, ref lapackint ldb, ref lapackint info
+    lapack.sytrs_3_(uplo, n, nrhs, a.iterator, lda, e.iterator, ipiv.iterator, b.iterator, ldb, info);
+    assert(info >= 0);
+    return info;
+}
+
+version(none)
+unittest
+{
+    alias s = sytrs_3!float;
+    alias d = sytrs_3!double;
+    alias c = sytrs_3!cfloat;
+    alias z = sytrs_3!cdouble;
+}
+
+///
+@trusted
+size_t sytrf_rk(T)(
+    char uplo,
+    Slice!(T*, 2, Canonical) a,
+    Slice!(T*) e,
+    Slice!(lapackint*) ipiv,
+    Slice!(T*) work,
+    )
+in
+{
+    assert(a.length!0 == a.length!1, "sytrf_rk: 'a' must be a square matrix.");
+    assert(e.length == a.length, "sytrf_rk: 'e' must have the same length as 'a'.");
+}
+do
+{
+    lapackint info = void;
+    lapackint n = cast(lapackint) a.length;
+    lapackint lda = cast(lapackint) a._stride.max(1);
+    lapackint lwork = cast(lapackint) work.length;
+    lapack.sytrf_rk_(uplo, n, a.iterator, lda, e.iterator, ipiv.iterator, work.iterator, lwork, info);
+    assert(info >= 0);
+    return info;
+}
+
+version(none)
+unittest
+{
+    alias s = sytrf_rk!float;
+    alias d = sytrf_rk!double;
+    alias c = sytrf_rk!cfloat;
+    alias z = sytrf_rk!cdouble;
+}
+
+
+///
+size_t sytrf_rk_wk(T)(
+    char uplo,
+    Slice!(T*, 2, Canonical) a,
+    )
+in
+{
+    assert(a.length!0 == a.length!1, "sytrf_rk_wk: 'a' must be a square matrix.");
+}
+do
+{
+
+    lapackint info = void;
+    lapackint n = cast(lapackint) a.length;
+    lapackint lda = cast(lapackint) a._stride.max(1);
+    lapackint lwork = -1;
+    lapackint info = void;
+    T e = void;
+    T work = void;
+    lapackint ipiv = void;
+
+    lapack.sytrf_rk_(uplo, n, a.iterator, lda, &e, &ipiv, &work, lwork, info);
+
+    return cast(size_t) work;
+}
+
+version(none)
+unittest
+{
+    alias s = sytrf_rk!float;
+    alias d = sytrf_rk!double;
+}
+
+///
+template posvx(T)
+    if (is(T == double) || is(T == float))
+{
+    @trusted
+    size_t posvx(
+        char fact,
+        char uplo,
+        Slice!(T*, 2, Canonical) a,
+        Slice!(T*, 2, Canonical) af,
+        char equed,
+        Slice!(T*) s,
+        Slice!(T*, 2, Canonical) b,
+        Slice!(T*, 2, Canonical) x,
+        out T rcond,
+        Slice!(T*) ferr,
+        Slice!(T*) berr,
+        Slice!(T*) work,
+        Slice!(lapackint*) iwork,
+    )
+    in {
+        assert(fact == 'F' || fact == 'N' || fact == 'E');
+        assert(uplo == 'U' || uplo == 'L');
+        auto n = a.length!0;
+        auto nrhs = x.length;
+        assert(a.length!1 == n);
+        assert(af.length!0 == n);
+        assert(af.length!1 == n);
+        assert(x.length!1 == n);
+        assert(b.length!1 == n);
+        assert(b.length!0 == nrhs);
+        assert(ferr.length == nrhs);
+        assert(berr.length == nrhs);
+        assert(work.length == n * 3);
+        assert(iwork.length == n);
+    }
+    do {
+        lapackint n = cast(lapackint) a.length!0;
+        lapackint nrhs = cast(lapackint) x.length;
+        lapackint lda = cast(lapackint) a._stride.max(1);
+        lapackint ldaf = cast(lapackint) af._stride.max(1);
+        lapackint ldx = cast(lapackint) x._stride.max(1);
+        lapackint ldb = cast(lapackint) b._stride.max(1);
+        lapackint info = void;
+        lapack.posvx_(fact, uplo, n, nrhs, a._iterator, lda, af._iterator, ldaf, equed, s._iterator, b._iterator, ldb, x._iterator, ldx, rcond, ferr._iterator, berr._iterator, work._iterator, iwork._iterator, info);
+        assert(info >= 0);
+        return info;
+    }
+
+    @trusted
+    size_t posvx(
+        char fact,
+        char uplo,
+        Slice!(T*, 2, Canonical) a,
+        Slice!(T*, 2, Canonical) af,
+        char equed,
+        Slice!(T*) s,
+        Slice!(T*) b,
+        Slice!(T*) x,
+        out T rcond,
+        out T ferr,
+        out T berr,
+        Slice!(T*) work,
+        Slice!(lapackint*) iwork,
+    )
+    in {
+        assert(fact == 'F' || fact == 'N' || fact == 'E');
+        assert(uplo == 'U' || uplo == 'L');
+        auto n = a.length!0;
+        assert(a.length!1 == n);
+        assert(af.length!0 == n);
+        assert(af.length!1 == n);
+        assert(x.length == n);
+        assert(b.length == n);
+        assert(work.length == n * 3);
+        assert(iwork.length == n);
+    }
+    do {
+        import mir.ndslice.topology: canonical;
+        return posvx(fact, uplo, a, af, equed, s, b.sliced(1, b.length).canonical, x.sliced(1, x.length).canonical, rcond, sliced(&ferr, 1), sliced(&berr, 1), work, iwork);
+    }
+}
+
+version(none)
+unittest
+{
+    alias s = posvx!float;
+    alias d = posvx!double;
+}
+
+///
+size_t sytrf_wk(T)(
+    char uplo,
+    Slice!(T*, 2, Canonical) a,
+    )
+in
+{
+    assert(a.length!0 == a.length!1, "sytrf_wk: 'a' must be a square matrix.");
+}
+do
+{
+    lapackint n = cast(lapackint) a.length;
+    lapackint lda = cast(lapackint) a._stride.max(1);
+    lapackint lwork = -1;
+    lapackint info = void;
+    T work = void;
+    lapackint ipiv = void;
+
+    lapack.sytrf_(uplo, n, a.iterator, lda, &ipiv, &work, lwork, info);
+
+    return cast(size_t) work;
+}
+
+unittest
+{
+    alias s = sytrf_wk!float;
+    alias d = sytrf_wk!double;
 }

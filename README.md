@@ -25,8 +25,11 @@ See [wiki: Link with CBLAS & LAPACK](https://github.com/libmir/mir-lapack/wiki/L
  - getrs
  - hsein
  - hseqr
+ - ilaenv
+ - ilaenv2stage
  - orgqr
  - ormqr
+ - posvx
  - potrf
  - potri
  - potrs
@@ -40,6 +43,8 @@ See [wiki: Link with CBLAS & LAPACK](https://github.com/libmir/mir-lapack/wiki/L
  - syev_2stage
  - sysv_rook
  - sytrf
+ - sytrf_rk
+ - sytrs_3
  - sytrs2
  - tptri
  - trevc
