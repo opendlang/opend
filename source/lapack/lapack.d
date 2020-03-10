@@ -1540,6 +1540,13 @@ void dsytrf_(ref char uplo, ref lapackint n, double *a, ref lapackint lda, lapac
 void csytrf_(ref char uplo, ref lapackint n, _cfloat *a, ref lapackint lda, lapackint *ipiv, _cfloat *work, ref lapackint lwork, ref lapackint info);
 void zsytrf_(ref char uplo, ref lapackint n, _cdouble *a, ref lapackint lda, lapackint *ipiv, _cdouble *work, ref lapackint lwork, ref lapackint info);
 
+/// Computes the factorization of a real symmetric-indefinite matrix,
+/// using the diagonal pivoting method.
+void ssytrf_rk_(ref const char uplo, ref const lapackint n, float *a, ref const lapackint lda, float* e, lapackint *ipiv, float *work, ref lapackint lwork, ref lapackint info);
+void dsytrf_rk_(ref const char uplo, ref const lapackint n, double *a, ref const lapackint lda, double* e, lapackint *ipiv, double *work, ref lapackint lwork, ref lapackint info);
+void csytrf_rk_(ref const char uplo, ref const lapackint n, _cfloat *a, ref const lapackint lda, _cfloat* e, lapackint *ipiv, _cfloat *work, ref lapackint lwork, ref lapackint info);
+void zsytrf_rk_(ref const char uplo, ref const lapackint n, _cdouble *a, ref const lapackint lda, _cdouble* e, lapackint *ipiv, _cdouble *work, ref lapackint lwork, ref lapackint info);
+
 /// Computes the factorization of a complex Hermitian-indefinite matrix,
 /// using the diagonal pivoting method.
 void chetrf_(ref char uplo, ref lapackint n, _cfloat *a, ref lapackint lda, lapackint *ipiv, _cfloat *work, ref lapackint lwork, ref lapackint info);
@@ -1563,6 +1570,13 @@ void ssytrs_(ref char uplo, ref lapackint n, ref lapackint nrhs, float *a, ref l
 void dsytrs_(ref char uplo, ref lapackint n, ref lapackint nrhs, double *a, ref lapackint lda, lapackint *ipiv, double *b, ref lapackint ldb, ref lapackint info);
 void csytrs_(ref char uplo, ref lapackint n, ref lapackint nrhs, _cfloat *a, ref lapackint lda, lapackint *ipiv, _cfloat *b, ref lapackint ldb, ref lapackint info);
 void zsytrs_(ref char uplo, ref lapackint n, ref lapackint nrhs, _cdouble *a, ref lapackint lda, lapackint *ipiv, _cdouble *b, ref lapackint ldb, ref lapackint info);
+
+/// Solves a real symmetric indefinite system of linear equations AX=B,
+/// using the factorization computed by SSPTRF_RK.
+void ssytrs_3_(ref const char uplo, ref const lapackint n, ref const lapackint nrhs, const(float) *a, ref const lapackint lda, const(float)* e, const(lapackint)* ipiv, float* b, ref const lapackint ldb, ref lapackint info);
+void dsytrs_3_(ref const char uplo, ref const lapackint n, ref const lapackint nrhs, const(double) *a, ref const lapackint lda, const(double)* e, const(lapackint)* ipiv, double* b, ref const lapackint ldb, ref lapackint info);
+void csytrs_3_(ref const char uplo, ref const lapackint n, ref const lapackint nrhs, const(_cfloat) *a, ref const lapackint lda, const(_cfloat)* e, const(lapackint)* ipiv, _cfloat* b, ref const lapackint ldb, ref lapackint info);
+void zsytrs_3_(ref const char uplo, ref const lapackint n, ref const lapackint nrhs, const(_cdouble) *a, ref const lapackint lda, const(_cdouble)* e, const(lapackint)* ipiv, _cdouble* b, ref const lapackint ldb, ref lapackint info);
 
 /// Solves a complex Hermitian indefinite system of linear equations AX=B,
 /// using the factorization computed by CHPTRF.
@@ -1771,9 +1785,11 @@ void zgeqrs_(ref lapackint m, ref lapackint n, ref lapackint nrhs, _cdouble *a, 
 //------------------------------------
 
 ///
-lapackint ilaenv_(ref lapackint ispec, char* name, char* opts, ref lapackint n1, ref lapackint n2, ref lapackint n3, ref lapackint n4);
+lapackint ilaenv_(ref const lapackint ispec, scope const(char)* name, scope const(char)* opts, ref const lapackint n1, ref const lapackint n2, ref const lapackint n3, ref const lapackint n4);
 ///
-void ilaenvset_(ref lapackint ispec, char* name, char* opts, ref lapackint n1, ref lapackint n2, ref lapackint n3, ref lapackint n4, ref lapackint nvalue, ref lapackint info);
+lapackint ilaenv2stage_(ref const lapackint ispec, scope const(char)* name, scope const(char)* opts, ref const lapackint n1, ref const lapackint n2, ref const lapackint n3, ref const lapackint n4);
+///
+void ilaenvset_(ref const lapackint ispec, scope const(char)* name, scope const(char)* opts, ref const lapackint n1, ref const lapackint n2, ref const lapackint n3, ref const lapackint n4, ref const lapackint nvalue, ref lapackint info);
 
 ///
 float slamch_(char* cmach);
