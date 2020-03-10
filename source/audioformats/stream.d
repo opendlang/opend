@@ -3,6 +3,7 @@ module audioformats.stream;
 import core.stdc.stdio;
 
 import dplug.core.nogc;
+
 import audioformats: AudioStreamInfo, AudioFileFormat;
 
 /// An AudioStream is a pointer to a dynamically allocated `Stream`.
@@ -10,19 +11,20 @@ public struct AudioStream
 {
 public: // This is also part of the public API
 
+
+    /// Opens an audio stream that decodes from a file.
+    /// This stream will be opened for reading only.
+    ///
+    /// Params: 
+    ///     path An UTF-8 path to the sound file.
+    ///
+    /// Note: throws a manually allocated exception in case of error. Free it with `dplug.core.destroyFree`.
     void openFromFile(const(char)[] path) @nogc
     {
         cleanUp();
 
         fileContext = mallocNew!FileContext();
-
-        CString strZ = CString(path);
-        fileContext.file = fopen(strZ.storage, "rb".ptr);
-
-        // finds the size of the file
-        fseek(fileContext.file, 0, SEEK_END);
-        fileContext.fileSize = ftell(fileContext.file);
-        fseek(fileContext.file, 0, SEEK_SET);
+        fileContext.initialize(path, false);
 
         io.seek          = &file_seek;
         io.tell          = &file_tell;
@@ -30,46 +32,70 @@ public: // This is also part of the public API
         io.read          = &file_read;
         io.write         = null;
 
-        // TODO
-        //startDecoding();
+        startDecoding();
     }
 
+    /// Opens an audio stream that decodes from memory.
+    /// This stream will be opened for reading only.
+    /// Note: throws a manually allocated exception in case of error. Free it with `dplug.core.destroyFree`.
+    ///
+    /// Params: path An UTF-8 path to the sound file.
     void openFromMemory(const(ubyte)* data, int length) @nogc
     {     
         cleanUp();
-        // TODO
-        assert(false);
+
+        memoryContext = mallocNew!MemoryContext();
+
+
+        io.seek          = &memory_seek;
+        io.tell          = &memory_tell;
+        io.getFileLength = &memory_getFileLength;
+        io.read          = &memory_read;
+        io.write         = null;
+
+        startDecoding();
     }
 
+    /// Opens an audio stream that writes to file.
+    /// This stream will be opened for writing only.
+    /// Note: throws a manually allocated exception in case of error. Free it with `dplug.core.destroyFree`.
+    ///
+    /// Params: 
+    ///     path An UTF-8 path to the sound file.
+    ///     format Audio file format to generate.
+    ///     sampleRate Sample rate of this audio stream. This samplerate might be rounded up to the nearest integer number.
+    ///     numChannels Number of channels of this audio stream.
     void openToFile(const(char)[] path, AudioFileFormat format, float sampleRate, int numChannels) @nogc
     {
         cleanUp();
         
         fileContext = mallocNew!FileContext();
+        fileContext.initialize(path, true);
 
-        CString strZ = CString(path);
-        fileContext.file = fopen(strZ.storage, "rb".ptr);
-
-        // finds the size of the file
-        fseek(fileContext.file, 0, SEEK_END);
-        fileContext.fileSize = ftell(fileContext.file);
-        fseek(fileContext.file, 0, SEEK_SET);
-
-        io.seek          = null; //&file_seek;
-        io.tell          = null; //&file_tell;
+        io.seek          = &file_seek;
+        io.tell          = &file_tell;
         io.getFileLength = null;
         io.read          = null;
         io.write         = &file_write;
 
-        // TODO
-        assert(false);
+        startEncoding(format, sampleRate, numChannels);
     }
 
+    /// Opens an audio stream that writes to a dynamically growable output buffer.
+    /// This stream will be opened for writing only.
+    /// Access to the internal buffer after encoding with `finalizeAndGetEncodedResult`.
+    /// Note: throws a manually allocated exception in case of error. Free it with `dplug.core.destroyFree`.
+    ///
+    /// Params: 
+    ///     path An UTF-8 path to the sound file.
+    ///     format Audio file format to generate.
+    ///     sampleRate Sample rate of this audio stream. This samplerate might be rounded up to the nearest integer number.
+    ///     numChannels Number of channels of this audio stream.
     void openToBuffer(AudioFileFormat format, float sampleRate, int numChannels) @nogc
     {
         cleanUp();
         // TODO
-        assert(false);
+        startEncoding(format, sampleRate, numChannels);
     }
 
     ~this() @nogc
@@ -88,6 +114,13 @@ public: // This is also part of the public API
                     throw mallocNew!Exception("Closing of audio file errored");            
             }
             destroyFree(fileContext);
+            fileContext = null;
+        }
+
+        if (memoryContext !is null)
+        {
+            // TODO destroy buffer if any            
+            destroyFree(memoryContext);
         }
     }
 
@@ -166,10 +199,29 @@ public: // This is also part of the public API
         return null; // TODO
     }
 
+
 private:
     IOCallbacks io;
     FileContext* fileContext;
     MemoryContext* memoryContext;
+
+    bool isOpenedForWriting() nothrow @nogc
+    {
+        // Note: 
+        //  * when opened for reading, I/O operations given are: seek/tell/getFileLength/read.
+        //  * when opened for writing, I/O operations given are: seek/tell/write.
+        return io.read is null;
+    }
+
+    void startDecoding() @nogc
+    {
+        // TODO: detect format, instantiate decoder, and start decoding
+    }
+
+    void startEncoding(AudioFileFormat format, float sampleRate, int numChannels) @nogc
+    {
+        // TODO: check format, instantiate encoder, and start encoding
+    }
 }
 
 private: // not meant to be imported at all
@@ -208,6 +260,18 @@ static struct FileContext // this is what is passed to I/O when used in file mod
 
     // Size of the file in bytes, only used when reading/writing a file.
     long fileSize;
+
+    // Initialize this context
+    void initialize(const(char)[] path, bool forWrite) @nogc
+    {
+        CString strZ = CString(path);
+        file = fopen(strZ.storage, forWrite ? "wb".ptr : "rb".ptr);
+
+        // finds the size of the file
+        fseek(file, 0, SEEK_END);
+        fileSize = ftell(file);
+        fseek(file, 0, SEEK_SET);
+    }
 }
 
 long file_tell(void* userData) nothrow @nogc
@@ -249,6 +313,59 @@ int file_write(void* inData, int bytes, void* userData) nothrow @nogc
 struct MemoryContext
 {
     bool bufferIsOwned;
-    ubyte[] buffer;
-    //Vec!ubyte appendBuffer;
+    bool bufferCanGrow; // can only be true if `bufferIsOwned`is true.
+
+    // Buffer
+    ubyte* buffer;
+
+    size_t size;     // current buffer size
+    size_t cursor;   // where we are in the buffer
+    size_t capacity; // max buffer size before realloc
+}
+
+long memory_tell(void* userData) nothrow @nogc
+{
+    MemoryContext* context = cast(MemoryContext*)userData;
+    return cast(long)(context.cursor);
+}
+
+void memory_seek(long offset, void* userData) nothrow @nogc
+{
+    MemoryContext* context = cast(MemoryContext*)userData;
+    if (offset >= context.size) // can't seek past end of buffer, stick to the end so that read return 0 byte
+        offset = context.size;
+    context.cursor = cast(size_t)offset; // Note: memory streams larger than 2gb not supported
+}
+
+long memory_getFileLength(void* userData) nothrow @nogc
+{
+    MemoryContext* context = cast(MemoryContext*)userData;
+    return cast(long)(context.size);
+}
+
+int memory_read(void* outData, int bytes, void* userData) nothrow @nogc
+{
+    MemoryContext* context = cast(MemoryContext*)userData;
+    size_t cursor = context.cursor;
+    size_t size = context.size;
+    size_t available = size - cursor;
+    if (bytes < available)
+    {
+        outData[0..bytes] = context.buffer[cursor..cursor + bytes];
+        context.cursor += bytes;
+        return bytes;
+    }
+    else
+    {
+        outData[0..available] = context.buffer[cursor..cursor + available];
+        context.cursor = context.size;
+        return cast(int)available;
+    }
+}
+
+int memory_write(void* inData, int bytes, void* userData) nothrow @nogc
+{
+    FileContext* context = cast(FileContext*)userData;
+    size_t bytesWritten = fwrite(inData, 1, bytes, context.file);
+    return cast(int)bytesWritten;
 }

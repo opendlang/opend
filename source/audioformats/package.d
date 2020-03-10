@@ -128,6 +128,7 @@ int audiostreamReadSamplesFloat(AudioStreamHandle stream, float[] outData) @nogc
 ///
 /// Params: 
 ///     path An UTF-8 path to the sound file.
+///     format Audio file format to generate.
 ///     sampleRate Sample rate of this audio stream. This samplerate might be rounded up to the nearest integer number.
 ///     numChannels Number of channels of this audio stream.
 AudioStreamHandle audiostreamOpenToFile(const(char)[] path, 
@@ -148,6 +149,7 @@ AudioStreamHandle audiostreamOpenToFile(const(char)[] path,
 ///
 /// Params: 
 ///     path An UTF-8 path to the sound file.
+///     format Audio file format to generate.
 ///     sampleRate Sample rate of this audio stream. This samplerate might be rounded up to the nearest integer number.
 ///     numChannels Number of channels of this audio stream.
 AudioStreamHandle audiostreamOpenToBuffer(AudioFileFormat format,
