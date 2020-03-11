@@ -2,11 +2,12 @@ module audioformats.stream;
 
 import core.stdc.stdio;
 import core.stdc.string;
+import core.stdc.stdlib: free;
 
 import dplug.core.nogc;
 import dplug.core.vec;
 
-import audioformats: AudioStreamInfo, AudioFileFormat;
+import audioformats: AudioFileFormat;
 
 version(decodeMP3)
 {
@@ -54,13 +55,13 @@ public: // This is also part of the public API
     /// This stream will be opened for reading only.
     /// Note: throws a manually allocated exception in case of error. Free it with `dplug.core.destroyFree`.
     ///
-    /// Params: path An UTF-8 path to the sound file.
-    void openFromMemory(const(ubyte)* data, int length) @nogc
-    {     
+    /// Params: inputData The whole file to decode.
+    void openFromMemory(const(ubyte)[] inputData) @nogc
+    {
         cleanUp();
 
         memoryContext = mallocNew!MemoryContext();
-        // TODO fill memory context
+        memoryContext.initializeWithConstantInput(inputData.ptr, inputData.length);
 
         userData = memoryContext;
 
@@ -190,17 +191,6 @@ public: // This is also part of the public API
         }
     }
 
-    /// Returns: Information about this stream.
-    AudioStreamInfo getInfo() nothrow @nogc
-    {
-        AudioStreamInfo info;
-        info.sampleRate = getSamplerate();
-        info.format = getFormat();
-        info.channels = getNumChannels();
-        info.format = getFormat();
-        return info;
-    }
-
     /// Returns: File format of this stream.
     AudioFileFormat getFormat() nothrow @nogc
     {
@@ -314,6 +304,8 @@ public: // This is also part of the public API
         return writeSamplesFloat(inData.ptr, cast(int)inData.length);
     }
 
+    /// Call `fflush()` on written samples, if any. 
+    /// Automatically done by `audiostreamClose`.
     void flush() nothrow @nogc
     {
         // TODO
@@ -493,11 +485,35 @@ struct MemoryContext
     bool bufferCanGrow; // can only be true if `bufferIsOwned`is true.
 
     // Buffer
-    ubyte* buffer;
+    ubyte* buffer = null;
 
     size_t size;     // current buffer size
     size_t cursor;   // where we are in the buffer
     size_t capacity; // max buffer size before realloc
+
+    void initializeWithConstantInput(const(ubyte)* data, size_t length) nothrow @nogc
+    {
+        // Make a copy of the input buffer, since it could be temporary.
+        bufferIsOwned = true;
+        bufferCanGrow = false;
+
+        buffer = mallocDup(data[0..length]).ptr; // Note: the copied slice is made mutable.
+        size = length;
+        cursor = 0;
+        capacity = length;
+    }
+
+    ~this()
+    {
+        if (bufferIsOwned)
+        {
+            if (buffer !is null)
+            {
+                free(buffer);
+                buffer = null;
+            }
+        }
+    }
 }
 
 long memory_tell(void* userData) nothrow @nogc

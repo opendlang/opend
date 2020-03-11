@@ -15,33 +15,20 @@ enum AudioFileFormat
     unknown
 }
 
+/// Returns: String representation of an `AudioFileFormat`.
+string convertAudioFileFormatToString(AudioFileFormat fmt)
+{
+    final switch(fmt) with (AudioFileFormat)
+    {
+        case wav:     return "wav";
+        case mp3:     return "mp3";
+        case unknown: return "unknown";
+    }
+}
+
 /// Opaque stream type. A `null` AudioStream is invalid and should never occur.
 alias AudioStreamHandle = void*;
 
-/// Information about a stream.
-struct AudioStreamInfo
-{
-    /// Sampling rate
-    float sampleRate;
-
-    /// Number of channels.
-    int channels;
-
-    /// Length in frames. A frames is `channels` samples.
-    /// A length of `audiostreamUnknownLength` is a special value that means
-    /// the length is unknown, or even infinite.
-    long lengthInFrames;
-
-    /// Format of the encoded audio.
-    AudioFileFormat format;
-}
-
-
-/// Returns: Information about this stream.
-AudioStreamInfo audiostreamGetInfo(AudioStreamHandle stream) nothrow @nogc
-{
-    return ( cast(AudioStream*)stream ).getInfo();
-}
 
 /// Returns: File format of this stream.
 AudioFileFormat audiostreamGetFormat(AudioStreamHandle stream) nothrow @nogc
@@ -91,11 +78,11 @@ AudioStreamHandle audiostreamOpenFromFile(const(char)[] path) @nogc
 /// Destroy this stream with `closeAudioStream`.
 /// Note: throws a manually allocated exception in case of error. Free it with `dplug.core.destroyFree`.
 ///
-/// Params: path An UTF-8 path to the sound file.
-AudioStreamHandle audiostreamOpenFromMemory(const(ubyte)* data, int length) @nogc
+/// Params: inputData The whole file to decode.
+AudioStreamHandle audiostreamOpenFromMemory(const(ubyte)[] inputData) @nogc
 {
     AudioStream* s = mallocNew!AudioStream();
-    s.openFromMemory(data, length);
+    s.openFromMemory(inputData);
     return s;
 }
 
@@ -189,8 +176,7 @@ int audiostreamWriteSamplesFloat(AudioStreamHandle stream, float[] inData) nothr
     return ( cast(AudioStream*)stream ).writeSamplesFloat(inData);
 }
 
-/// Flush to disk all written samples, if any. 
-/// hence the result is available.
+/// Call `fflush()` on written samples, if any. 
 /// Automatically done by `audiostreamClose`.
 void audiostreamFlush(AudioStreamHandle stream) nothrow @nogc
 {
