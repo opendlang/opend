@@ -9,10 +9,8 @@ import dplug.core.vec;
 
 import audioformats: AudioFileFormat;
 
-version(decodeMP3)
-{
-    import audioformats.minimp3;
-}
+version(decodeMP3) import audioformats.minimp3;
+version(decodeWAV) import audioformats.wav;
 
 
 /// The length of things you shouldn't query a length about:
@@ -155,6 +153,16 @@ public: // This is also part of the public API
             if (_mp3Decoder !is null)
             {
                 destroyFree(_mp3Decoder);
+                _mp3Decoder = null;
+            }
+        }
+
+        version(decodeWAV)
+        {
+            if (_wavDecoder !is null)
+            {
+                destroyFree(_wavDecoder);
+                _wavDecoder = null;
             }
         }
 
@@ -278,7 +286,15 @@ public: // This is also part of the public API
                 }
             }
             case AudioFileFormat.wav:
-                assert(false);
+                version(decodeWAV)
+                {
+                    assert(_wavDecoder !is null);
+                    return 0;
+                }
+                else
+                {
+                    assert(false, "no support for MP3 decoding");
+                }
 
             case AudioFileFormat.unknown:
                 // One shouldn't ever get there, since in this case
@@ -339,6 +355,10 @@ private:
         MP3Decoder _mp3Decoder;
         Vec!float _readBuffer;
     }
+    version(decodeWAV)
+    {
+        WAVDecoder _wavDecoder;
+    }
 
     bool isOpenedForWriting() nothrow @nogc
     {
@@ -393,12 +413,9 @@ private:
     }
 }
 
-private: // not meant to be imported at all
+package:
 
-
-
-// Internal object for audio-formats
-
+// decoders eventually know about these
 
 nothrow @nogc
 {
@@ -409,7 +426,6 @@ nothrow @nogc
     alias ioWriteCallback         = int  function(void* inData, int bytes, void* userData); // returns number of written bytes
 }
 
-
 struct IOCallbacks
 {
     ioSeekCallback seek;
@@ -417,7 +433,18 @@ struct IOCallbacks
     ioGetFileLengthCallback getFileLength;
     ioReadCallback read;
     ioWriteCallback write;
+
+
 }
+
+private: // not meant to be imported at all
+
+
+
+// Internal object for audio-formats
+
+
+
 
 // File callbacks
 // The file callbacks are using the C stdlib.

@@ -56,7 +56,10 @@ struct MP3Info
     ubyte channels;
     ulong samples;
 
-    @property bool valid () const pure nothrow @safe @nogc { return (sampleRate != 0); }
+    bool valid () const pure nothrow @safe @nogc 
+    { 
+        return (sampleRate != 0); 
+    }
 }
 
 
