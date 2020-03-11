@@ -18,13 +18,13 @@ void main(string[] args)
 
     float[] buf = new float[1024 * channels];
 
-    output.openToFile(args[2], AudioFileFormat.wav, sampleRate, channels);
+  //  output.openToFile(args[2], AudioFileFormat.wav, sampleRate, channels);
 
     // Chunked encore/decode
     int read;
     do
     {
         read = input.readSamplesFloat(buf);
-        output.writeSamplesFloat(buf[0..read]);
+     //   output.writeSamplesFloat(buf[0..read]);
     } while(read > 0);
 }

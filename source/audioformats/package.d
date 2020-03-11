@@ -18,11 +18,6 @@ enum AudioFileFormat
 /// Opaque stream type. A `null` AudioStream is invalid and should never occur.
 alias AudioStreamHandle = void*;
 
-/// The length of things you shouldn't query a length about:
-///    - files that are being written
-///    - audio files you don't know the extent
-enum audiostreamUnknownLength = -1;
-
 /// Information about a stream.
 struct AudioStreamInfo
 {
@@ -141,14 +136,13 @@ AudioStreamHandle audiostreamOpenToFile(const(char)[] path,
     return s;
 }
 
-/// Opens an audio stream that writes to a dynamically growable output buffer.
+/// Opens an audio stream that writes to a dynamically growable internal buffer.
 /// This stream will be opened for writing only.
 /// Access to the internal buffer after encoding with `audiostreamFinalizeAndGetEncodedResult`.
 /// Destroy this stream with `closeAudioStream`.
 /// Note: throws a manually allocated exception in case of error. Free it with `dplug.core.destroyFree`.
 ///
 /// Params: 
-///     path An UTF-8 path to the sound file.
 ///     format Audio file format to generate.
 ///     sampleRate Sample rate of this audio stream. This samplerate might be rounded up to the nearest integer number.
 ///     numChannels Number of channels of this audio stream.
@@ -167,17 +161,20 @@ AudioStreamHandle audiostreamOpenToBuffer(AudioFileFormat format,
 /// Note: throws a manually allocated exception in case of error. Free it with `dplug.core.destroyFree`.
 ///
 /// Params: 
-///     path An UTF-8 path to the sound file.
+///     data Pointer to output memory.
+///     size_t maxLength.
+///     format Audio file format to generate.
 ///     sampleRate Sample rate of this audio stream. This samplerate might be rounded up to the nearest integer number.
 ///     numChannels Number of channels of this audio stream.
 AudioStreamHandle audiostreamOpenToMemory(ubyte* data, 
-                                         size_t maxLength,
-                                         AudioFileFormat format,
-                                         float sampleRate, 
-                                         int numChannels) nothrow @nogc
+                                          size_t maxLength,
+                                          AudioFileFormat format,
+                                          float sampleRate, 
+                                          int numChannels) @nogc
 {
-    // TODO
-    return null;
+    AudioStream* s = mallocNew!AudioStream();
+    s.openToMemory(data, maxLength, format, sampleRate, numChannels);
+    return s;
 }
 
 /// Write interleaved float samples.

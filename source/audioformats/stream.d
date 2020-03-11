@@ -1,10 +1,23 @@
 module audioformats.stream;
 
 import core.stdc.stdio;
+import core.stdc.string;
 
 import dplug.core.nogc;
+import dplug.core.vec;
 
 import audioformats: AudioStreamInfo, AudioFileFormat;
+
+version(decodeMP3)
+{
+    import audioformats.minimp3;
+}
+
+
+/// The length of things you shouldn't query a length about:
+///    - files that are being written
+///    - audio files you don't know the extent
+enum audiostreamUnknownLength = -1;
 
 /// An AudioStream is a pointer to a dynamically allocated `Stream`.
 public struct AudioStream
@@ -25,12 +38,14 @@ public: // This is also part of the public API
 
         fileContext = mallocNew!FileContext();
         fileContext.initialize(path, false);
+        userData = fileContext;
 
-        io.seek          = &file_seek;
-        io.tell          = &file_tell;
-        io.getFileLength = &file_getFileLength;
-        io.read          = &file_read;
-        io.write         = null;
+        _io = mallocNew!IOCallbacks();
+        _io.seek          = &file_seek;
+        _io.tell          = &file_tell;
+        _io.getFileLength = &file_getFileLength;
+        _io.read          = &file_read;
+        _io.write         = null;
 
         startDecoding();
     }
@@ -45,13 +60,16 @@ public: // This is also part of the public API
         cleanUp();
 
         memoryContext = mallocNew!MemoryContext();
+        // TODO fill memory context
 
+        userData = memoryContext;
 
-        io.seek          = &memory_seek;
-        io.tell          = &memory_tell;
-        io.getFileLength = &memory_getFileLength;
-        io.read          = &memory_read;
-        io.write         = null;
+        _io = mallocNew!IOCallbacks();
+        _io.seek          = &memory_seek;
+        _io.tell          = &memory_tell;
+        _io.getFileLength = &memory_getFileLength;
+        _io.read          = &memory_read;
+        _io.write         = null;
 
         startDecoding();
     }
@@ -72,11 +90,12 @@ public: // This is also part of the public API
         fileContext = mallocNew!FileContext();
         fileContext.initialize(path, true);
 
-        io.seek          = &file_seek;
-        io.tell          = &file_tell;
-        io.getFileLength = null;
-        io.read          = null;
-        io.write         = &file_write;
+        _io = mallocNew!IOCallbacks();
+        _io.seek          = &file_seek;
+        _io.tell          = &file_tell;
+        _io.getFileLength = null;
+        _io.read          = null;
+        _io.write         = &file_write;
 
         startEncoding(format, sampleRate, numChannels);
     }
@@ -87,7 +106,6 @@ public: // This is also part of the public API
     /// Note: throws a manually allocated exception in case of error. Free it with `dplug.core.destroyFree`.
     ///
     /// Params: 
-    ///     path An UTF-8 path to the sound file.
     ///     format Audio file format to generate.
     ///     sampleRate Sample rate of this audio stream. This samplerate might be rounded up to the nearest integer number.
     ///     numChannels Number of channels of this audio stream.
@@ -95,7 +113,33 @@ public: // This is also part of the public API
     {
         cleanUp();
         // TODO
+
         startEncoding(format, sampleRate, numChannels);
+        assert(false);
+    }
+
+    /// Opens an audio stream that writes to a pre-defined area in memory of `maxLength` bytes.
+    /// This stream will be opened for writing only.
+    /// Destroy this stream with `closeAudioStream`.
+    /// Note: throws a manually allocated exception in case of error. Free it with `dplug.core.destroyFree`.
+    ///
+    /// Params: 
+    ///     data Pointer to output memory.
+    ///     size_t maxLength.
+    ///     format Audio file format to generate.
+    ///     sampleRate Sample rate of this audio stream. This samplerate might be rounded up to the nearest integer number.
+    ///     numChannels Number of channels of this audio stream.
+    void openToMemory(ubyte* data, 
+                      size_t maxLength,
+                      AudioFileFormat format,
+                      float sampleRate, 
+                      int numChannels) @nogc
+    {
+        cleanUp();
+        // TODO
+
+        startEncoding(format, sampleRate, numChannels);
+        assert(false);
     }
 
     ~this() @nogc
@@ -105,6 +149,20 @@ public: // This is also part of the public API
 
     void cleanUp() @nogc
     {
+        version(decodeMP3)
+        {
+            if (_mp3Decoder !is null)
+            {
+                destroyFree(_mp3Decoder);
+            }
+        }
+
+        if (_decoderContext)
+        {
+            destroyFree(_decoderContext);
+            _decoderContext = null;
+        }
+
         if (fileContext !is null)
         {
             if (fileContext.file !is null)
@@ -119,8 +177,16 @@ public: // This is also part of the public API
 
         if (memoryContext !is null)
         {
-            // TODO destroy buffer if any            
+            // TODO destroy buffer if any and owned
             destroyFree(memoryContext);
+            memoryContext = null;
+        }
+
+        if (_io !is null)
+        {
+            // TODO destroy buffer if any and owned
+            destroyFree(_io);
+            _io = null;
         }
     }
 
@@ -138,37 +204,97 @@ public: // This is also part of the public API
     /// Returns: File format of this stream.
     AudioFileFormat getFormat() nothrow @nogc
     {
-        return AudioFileFormat.wav; //TODO
+        return _format;
     }
 
     /// Returns: File format of this stream.
     int getNumChannels() nothrow @nogc
     {
-        //return _channels; TODO
-        return 2;
+        return _numChannels;
     }
 
     /// Returns: Length of this stream in frames.
     /// Note: may return `audiostreamUnknownLength` if the length is unknown.
     long getLengthInFrames() nothrow @nogc
     {
-        // TODO
-        return 0;
+        return _lengthInFrames;
     }
 
     /// Returns: Sample-rate of this stream in Hz.
     float getSamplerate() nothrow @nogc
     {
-        // TODO
-        return 44100.0f;
+        return _sampleRate;
     }
 
     /// Read interleaved float samples.
-    /// `outData` must have enought room for `frames` * `channels` decoded samples.
+    /// `outData` must have enough room for `frames` * `channels` decoded samples.
     int readSamplesFloat(float* outData, int frames) @nogc
     {
-        // TODO
-        return 0;
+        final switch(_format)
+        {
+            case AudioFileFormat.mp3:
+            {
+                version(decodeMP3)
+                {
+                    assert(_mp3Decoder !is null);
+
+                    if (!_mp3Decoder.valid)
+                        return 0;
+
+                    // Ensure the read buffer is filled with at least `frames` interleaved frames.
+
+                    int samplesNeeded = frames * _numChannels;
+
+                    // Decode MP3 frame until we have `frames` samples or the file is terminated.
+                    int read = 0;
+                    while ( _mp3Decoder.valid && ( read < samplesNeeded ) ) 
+                    {
+                        int numDecoded = cast(int)(_mp3Decoder.frameSamples.length);
+                        size_t initialLength = _readBuffer.length();
+                        _readBuffer.resize(initialLength + numDecoded);
+                        float invShortMax = 1.0 / cast(float)(short.max);
+                        // Convert to float
+                        // TODO is this correct?
+                        foreach(n; 0..numDecoded)
+                        {
+                            import core.stdc.stdio;
+                            _readBuffer[initialLength + n] = _mp3Decoder.frameSamples[n] * invShortMax;
+                        }
+                        read += numDecoded;
+                        _mp3Decoder.decodeNextFrame(&mp3ReadDelegate);
+                    }
+
+                    if (read >= samplesNeeded)
+                    {
+                        outData[0..samplesNeeded] = _readBuffer[0..samplesNeeded];
+                        int remaining = read - samplesNeeded;
+                        if (remaining > 0)
+                            memmove(_readBuffer.ptr, &_readBuffer[samplesNeeded], float.sizeof * remaining);
+                        _readBuffer.resize(remaining); // Note: Vec should keep that capacity and not free the memory.
+                        return frames;
+                    }
+                    else
+                    {
+                        // How many sample can we produce?
+                        int completeSamples = read / _numChannels;
+                        outData[0..completeSamples] = _readBuffer[0..completeSamples];
+                        _readBuffer.resize(0);
+                        return completeSamples;
+                    }
+                }
+                else
+                {
+                    assert(false, "no support for MP3 decoding");
+                }
+            }
+            case AudioFileFormat.wav:
+                assert(false);
+
+            case AudioFileFormat.unknown:
+                // One shouldn't ever get there, since in this case
+                // opening has failed.
+                assert(false);
+        }
     }
     ///ditto
     int readSamplesFloat(float[] outData) @nogc
@@ -180,8 +306,7 @@ public: // This is also part of the public API
     /// `inData` must have enough data for `frames` * `channels` samples.
     int writeSamplesFloat(float* inData, int frames) nothrow @nogc
     {
-        // TODO
-        return 0;
+        assert(false);
     }
     ///ditto
     int writeSamplesFloat(float[] inData) nothrow @nogc
@@ -201,20 +326,72 @@ public: // This is also part of the public API
 
 
 private:
-    IOCallbacks io;
+    IOCallbacks* _io;
+
+    // This type of context is a closure to remember where the data is.
+    void* userData; // is equal to either fileContext or memoryContext
     FileContext* fileContext;
     MemoryContext* memoryContext;
+
+    // This type of context is a closure to remember where _io and user Data is.
+    DecoderContext* _decoderContext;
+
+    AudioFileFormat _format;
+    float _sampleRate; 
+    int _numChannels;
+    long _lengthInFrames;
+
+    // Decoders
+    version(decodeMP3)
+    {
+        MP3Decoder _mp3Decoder;
+        Vec!float _readBuffer;
+    }
 
     bool isOpenedForWriting() nothrow @nogc
     {
         // Note: 
         //  * when opened for reading, I/O operations given are: seek/tell/getFileLength/read.
         //  * when opened for writing, I/O operations given are: seek/tell/write.
-        return io.read is null;
+        return _io.read is null;
     }
 
     void startDecoding() @nogc
     {
+        // Create a decoder context
+        _decoderContext = mallocNew!DecoderContext;
+        _decoderContext.userDataIO = userData;
+        _decoderContext.callbacks = _io;
+
+        version(decodeMP3)
+        {
+            // Check if it's a MP3.
+            // minimp3 need a delegate
+
+            _io.seek(0, userData);
+            
+            MP3Info info = mp3Scan(&mp3ReadDelegate, _decoderContext);
+       
+            if (info.valid)
+            {
+                // MP3 detected
+                _format = AudioFileFormat.mp3;
+                _sampleRate = info.sampleRate;
+                _numChannels = info.channels;
+                _lengthInFrames = info.samples;
+
+                _io.seek(0, userData);
+                _mp3Decoder = mallocNew!MP3Decoder(&mp3ReadDelegate, _decoderContext);
+
+                _readBuffer = makeVec!float();
+
+                if (!_mp3Decoder.valid) 
+                    throw mallocNew!Exception("invalid MP3 file");
+
+                return;
+            }
+        }
+
         // TODO: detect format, instantiate decoder, and start decoding
     }
 
@@ -253,7 +430,7 @@ struct IOCallbacks
 // File callbacks
 // The file callbacks are using the C stdlib.
 
-static struct FileContext // this is what is passed to I/O when used in file mode
+struct FileContext // this is what is passed to I/O when used in file mode
 {
     // Used when streaming of writing a file
     FILE* file = null;
@@ -368,4 +545,24 @@ int memory_write(void* inData, int bytes, void* userData) nothrow @nogc
     FileContext* context = cast(FileContext*)userData;
     size_t bytesWritten = fwrite(inData, 1, bytes, context.file);
     return cast(int)bytesWritten;
+}
+
+
+// Decoder context
+struct DecoderContext
+{
+    void* userDataIO;
+    IOCallbacks* callbacks;
+}
+
+
+static int mp3ReadDelegate(void[] buf, void* userDataDecoder) @nogc nothrow
+{
+    DecoderContext* context = cast(DecoderContext*) userDataDecoder;
+
+    // read bytes into the buffer, return number of bytes read or 0 for EOF, -1 on error
+    // will never be called with empty buffer, or buffer more than 128KB
+
+    int bytes = context.callbacks.read(buf.ptr, cast(int)(buf.length), context.userDataIO);
+    return bytes;
 }
