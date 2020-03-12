@@ -1,217 +1,213 @@
+/// Supports Microsoft WAV audio file format.
 module audioformats.wav;
 
-import audioformats: IOCallbacks;
+import dplug.core.nogc;
+import audioformats.io;
 
-struct WAVInfo
-{
-    uint sampleRate = 0;
-    int channels;
-    long samples;
-
-    bool valid() const pure nothrow @safe @nogc { return (sampleRate != 0); }
-}
 
 /// Use both for scanning and decoding
 final class WAVDecoder
 {
 public:
-nothrow:
 @nogc:
-    this(IOCallbacks* io, void* userData)
+    this(IOCallbacks* io, void* userData) nothrow
     {
         _io = io;
         _userData = userData;
     }
 
-    // After scan, we know _sampleRate, _lengthInFrames, and _channels
-    // and also where the data sits in the WAV file.
+    // After scan, we know _sampleRate, _lengthInFrames, and _channels, and can call `readSamples`
     void scan()
     {
+        // check RIFF header
+        {
+            uint chunkId, chunkSize;
+            _io.readRIFFChunkHeader(_userData, chunkId, chunkSize);
+            if (chunkId != RIFFChunkId!"RIFF")
+                throw mallocNew!Exception("Expected RIFF chunk.");
 
+            if (chunkSize < 4)
+                throw mallocNew!Exception("RIFF chunk is too small to contain a format.");
+
+            if (_io.read_uint_BE(_userData) !=  RIFFChunkId!"WAVE")
+                throw mallocNew!Exception("Expected WAVE format.");
+        }
+
+        bool foundFmt = false;
+        bool foundData = false;
+
+        int byteRate;
+        int blockAlign;
+        int bitsPerSample;
+
+        while (!_io.nothingToReadAnymore(_userData))
+        {
+            // Some corrupted WAV files in the wild finish with one
+            // extra 0 byte after an AFAn chunk, very odd
+            if (_io.remainingBytesToRead(_userData) == 1)
+            {
+                if (_io.peek_ubyte(_userData) == 0)
+                    break;
+            }
+
+            // Question: is there any reason to parse the whole WAV file? This prevents streaming.
+
+            uint chunkId, chunkSize;
+            _io.readRIFFChunkHeader(_userData, chunkId, chunkSize); 
+            if (chunkId == RIFFChunkId!"fmt ")
+            {
+                if (foundFmt)
+                    throw mallocNew!Exception("Found several 'fmt ' chunks in RIFF file.");
+
+                foundFmt = true;
+
+                if (chunkSize < 16)
+                    throw mallocNew!Exception("Expected at least 16 bytes in 'fmt ' chunk."); // found in real-world for the moment: 16 or 40 bytes
+
+                _audioFormat = _io.read_ushort_LE(_userData);
+                if (_audioFormat == WAVE_FORMAT_EXTENSIBLE)
+                    throw mallocNew!Exception("No support for format WAVE_FORMAT_EXTENSIBLE yet."); // Reference: http://msdn.microsoft.com/en-us/windows/hardware/gg463006.aspx
+
+                if (_audioFormat != LinearPCM && _audioFormat != FloatingPointIEEE)
+                    throw mallocNew!Exception("Unsupported audio format, only PCM and IEEE float are supported.");
+
+                _channels = _io.read_ushort_LE(_userData);
+
+                _sampleRate = _io.read_uint_LE(_userData);
+                if (_sampleRate <= 0)
+                    throw mallocNew!Exception("Unsupported sample-rate."); // we do not support sample-rate higher than 2^31hz
+
+                uint bytesPerSec = _io.read_uint_LE(_userData);
+                int bytesPerFrame = _io.read_ushort_LE(_userData);
+                bitsPerSample = _io.read_ushort_LE(_userData);
+
+                if (bitsPerSample != 8 && bitsPerSample != 16 && bitsPerSample != 24 && bitsPerSample != 32) 
+                    throw mallocNew!Exception("Unsupported bitdepth");
+
+                if (bytesPerFrame != (bitsPerSample / 8) * _channels)
+                    throw mallocNew!Exception("Invalid bytes-per-second, data might be corrupted.");
+
+                _io.skip(chunkSize - 16, _userData);
+            }
+            else if (chunkId == RIFFChunkId!"data")
+            {
+                if (foundData)
+                    throw mallocNew!Exception("Found several 'data' chunks in RIFF file.");
+
+                if (!foundFmt)
+                    throw mallocNew!Exception("'fmt ' chunk expected before the 'data' chunk.");
+
+                _bytePerSample = bitsPerSample / 8;
+                uint frameSize = _channels * _bytePerSample;
+                if (chunkSize % frameSize != 0)
+                    throw mallocNew!Exception("Remaining bytes in 'data' chunk, inconsistent with audio data type.");
+
+                uint numFrames = chunkSize / frameSize;
+                
+                _lengthInFrames = numFrames;
+
+                _samplesOffsetInFile = _io.tell(_userData);
+
+                _io.skip(chunkSize, _userData); // skip, will read later
+                foundData = true;
+            }
+            else
+            {
+                // ignore unknown chunks
+                _io.skip(chunkSize, _userData);
+            }
+        }
+
+        if (!foundFmt)
+            throw mallocNew!Exception("'fmt ' chunk not found.");
+
+        if (!foundData)
+            throw mallocNew!Exception("'data' chunk not found.");
+
+        // Get ready to decode
+        _io.seek(_samplesOffsetInFile, _userData);
+    }
+
+    // read interleaved samples
+    // `outData` should have enough room for frames * _channels
+
+    void readSamples(float* outData, int frames)
+    {
+        uint numSamples = frames * _channels;
+
+        if (_audioFormat == FloatingPointIEEE)
+        {
+            if (_bytePerSample == 4)
+            {
+                for (uint i = 0; i < numSamples; ++i)
+                    outData[i] = _io.read_float_LE(_userData);
+            }
+            else if (_bytePerSample == 8)
+            {
+                for (uint i = 0; i < numSamples; ++i)
+                    outData[i] = _io.read_double_LE(_userData);
+            }
+            else
+                throw mallocNew!Exception("Unsupported bit-depth for floating point data, should be 32 or 64.");
+        }
+        else if (_audioFormat == LinearPCM)
+        {
+            if (_bytePerSample == 1)
+            {
+                for (uint i = 0; i < numSamples; ++i)
+                {
+                    ubyte b = _io.read_ubyte(_userData);
+                    outData[i] = (b - 128) / 127.0;
+                }
+            }
+            else if (_bytePerSample == 2)
+            {
+                for (uint i = 0; i < numSamples; ++i)
+                {
+                    int s = _io.read_ushort_LE(_userData);
+                    outData[i] = s / 32767.0;
+                }
+            }
+            else if (_bytePerSample == 3)
+            {
+                for (uint i = 0; i < numSamples; ++i)
+                {
+                    int s = _io.read_24bits_LE(_userData);
+                    outData[i] = s / 8388607.0;
+                }
+            }
+            else if (_bytePerSample == 4)
+            {
+                for (uint i = 0; i < numSamples; ++i)
+                {
+                    int s = _io.read_uint_LE(_userData);
+                    outData[i] = s / 2147483648.0;
+                }
+            }
+            else
+                throw mallocNew!Exception("Unsupported bit-depth for integer PCM data, should be 8, 16, 24 or 32 bits.");
+        }
+        else
+            assert(false); // should have been handled earlier, crash
     }
 
 package:
     int _sampleRate;
     int _channels;
-    int _lengthInFrames;
+    int _audioFormat;
+    int _bytePerSample;
+    long _samplesOffsetInFile;
+    uint _lengthInFrames;
 
 private:
     void* _userData;
     IOCallbacks* _io;
 }
 
-WAVInfo wavScan(IOCallbacks* io, void* userData) nothrow @nogc
-{
-    WAVInfo info;
 
-    // check RIFF header
-    {
-        uint chunkId, chunkSize;
-        io.readRIFFChunkHeader(userData, chunkId, chunkSize);
-        if (chunkId != RIFFChunkId!"RIFF")
-            throw new WavedException("Expected RIFF chunk.");
+private:
 
-        if (chunkSize < 4)
-            throw new WavedException("RIFF chunk is too small to contain a format.");
-
-        if (popBE!uint(input) !=  RIFFChunkId!"WAVE")
-            throw new WavedException("Expected WAVE format.");
-    }    
-
-    bool foundFmt = false;
-    bool foundData = false;
-
-
-    int audioFormat;
-    int numChannels;
-    int sampleRate;
-    int byteRate;
-    int blockAlign;
-    int bitsPerSample;
-
-    Sound result;
-    // while chunk is not
-    while (!input.empty)
-    {
-        // Some corrupted WAV files in the wild finish with one
-        // extra 0 byte after an AFAn chunk, very odd
-        static if (hasLength!R)
-        {
-            if (input.length == 1 && input.front() == 0)
-                break;
-        }
-
-        uint chunkId, chunkSize;
-        getRIFFChunkHeader(input, chunkId, chunkSize); 
-        if (chunkId == RIFFChunkId!"fmt ")
-        {
-            if (foundFmt)
-                throw new WavedException("Found several 'fmt ' chunks in RIFF file.");
-
-            foundFmt = true;
-
-            if (chunkSize < 16)
-                throw new WavedException("Expected at least 16 bytes in 'fmt ' chunk."); // found in real-world for the moment: 16 or 40 bytes
-
-            audioFormat = popLE!ushort(input);
-            if (audioFormat == WAVE_FORMAT_EXTENSIBLE)
-                throw new WavedException("No support for format WAVE_FORMAT_EXTENSIBLE yet."); // Reference: http://msdn.microsoft.com/en-us/windows/hardware/gg463006.aspx
-
-            if (audioFormat != LinearPCM && audioFormat != FloatingPointIEEE)
-                throw new WavedException(format("Unsupported audio format %s, only PCM and IEEE float are supported.", audioFormat));
-
-            numChannels = popLE!ushort(input);
-
-            sampleRate = popLE!uint(input);
-            if (sampleRate <= 0)
-                throw new WavedException(format("Unsupported sample-rate %s.", cast(uint)sampleRate)); // we do not support sample-rate higher than 2^31hz
-
-            uint bytesPerSec = popLE!uint(input);
-            int bytesPerFrame = popLE!ushort(input);
-            bitsPerSample = popLE!ushort(input);
-
-            if (bitsPerSample != 8 && bitsPerSample != 16 && bitsPerSample != 24 && bitsPerSample != 32) 
-                throw new WavedException(format("Unsupported bitdepth %s.", cast(uint)bitsPerSample));
-
-            if (bytesPerFrame != (bitsPerSample / 8) * numChannels)
-                throw new WavedException("Invalid bytes-per-second, data might be corrupted.");
-
-            skipBytes(input, chunkSize - 16);
-        }
-        else if (chunkId == RIFFChunkId!"data")
-        {
-            if (foundData)
-                throw new WavedException("Found several 'data' chunks in RIFF file.");
-
-            if (!foundFmt)
-                throw new WavedException("'fmt ' chunk expected before the 'data' chunk.");
-
-            int bytePerSample = bitsPerSample / 8;
-            uint frameSize = numChannels * bytePerSample;
-            if (chunkSize % frameSize != 0)
-                throw new WavedException("Remaining bytes in 'data' chunk, inconsistent with audio data type.");
-
-            uint numFrames = chunkSize / frameSize;
-            uint numSamples = numFrames * numChannels;
-
-            result.samples.length = numSamples;
-
-            if (audioFormat == FloatingPointIEEE)
-            {
-                if (bytePerSample == 4)
-                {
-                    for (uint i = 0; i < numSamples; ++i)
-                        result.samples[i] = popFloatLE(input);
-                }
-                else if (bytePerSample == 8)
-                {
-                    for (uint i = 0; i < numSamples; ++i)
-                        result.samples[i] = popDoubleLE(input);
-                }
-                else
-                    throw new WavedException("Unsupported bit-depth for floating point data, should be 32 or 64.");
-            }
-            else if (audioFormat == LinearPCM)
-            {
-                if (bytePerSample == 1)
-                {
-                    for (uint i = 0; i < numSamples; ++i)
-                    {
-                        ubyte b = popUbyte(input);
-                        result.samples[i] = (b - 128) / 127.0;
-                    }
-                }
-                else if (bytePerSample == 2)
-                {
-                    for (uint i = 0; i < numSamples; ++i)
-                    {
-                        int s = popLE!short(input);
-                        result.samples[i] = s / 32767.0;
-                    }
-                }
-                else if (bytePerSample == 3)
-                {
-                    for (uint i = 0; i < numSamples; ++i)
-                    {
-                        int s = pop24bitsLE!R(input);
-                        result.samples[i] = s / 8388607.0;
-                    }
-                }
-                else if (bytePerSample == 4)
-                {
-                    for (uint i = 0; i < numSamples; ++i)
-                    {
-                        int s = popLE!int(input);
-                        result.samples[i] = s / 2147483648.0;
-                    }
-                }
-                else
-                    throw new WavedException("Unsupported bit-depth for integer PCM data, should be 8, 16, 24 or 32 bits.");
-            }
-            else
-                assert(false); // should have been handled earlier, crash
-
-            foundData = true;
-        }
-        else
-        {
-            // ignore unrecognized chunks
-            skipBytes(input, chunkSize);
-        }
-    }
-
-    if (!foundFmt)
-        throw new WavedException("'fmt ' chunk not found.");
-
-    if (!foundData)
-        throw new WavedException("'data' chunk not found.");
-
-
-    result.channels = numChannels;
-    result.sampleRate = sampleRate;
-
-    return result;
-
-
-    return info;
-}
+// wFormatTag
+immutable int LinearPCM = 0x0001;
+immutable int FloatingPointIEEE = 0x0003;
+immutable int WAVE_FORMAT_EXTENSIBLE = 0xFFFE;

@@ -8,6 +8,7 @@ import dplug.core.nogc;
 import dplug.core.vec;
 
 import audioformats: AudioFileFormat;
+import audioformats.io;
 
 version(decodeMP3) import audioformats.minimp3;
 version(decodeWAV) import audioformats.wav;
@@ -45,6 +46,7 @@ public: // This is also part of the public API
         _io.getFileLength = &file_getFileLength;
         _io.read          = &file_read;
         _io.write         = null;
+        _io.skip          = &file_skip;
 
         startDecoding();
     }
@@ -69,6 +71,7 @@ public: // This is also part of the public API
         _io.getFileLength = &memory_getFileLength;
         _io.read          = &memory_read;
         _io.write         = null;
+        _io.skip          = &memory_skip;
 
         startDecoding();
     }
@@ -95,6 +98,7 @@ public: // This is also part of the public API
         _io.getFileLength = null;
         _io.read          = null;
         _io.write         = &file_write;
+        _io.skip          = null;
 
         startEncoding(format, sampleRate, numChannels);
     }
@@ -404,7 +408,31 @@ private:
             }
         }
 
-        // TODO: detect format, instantiate decoder, and start decoding
+        version(decodeWAV)
+        {
+            // Check if it's a WAV.
+
+            _io.seek(0, userData);
+
+            try
+            {
+                _wavDecoder = mallocNew!WAVDecoder(_io, userData);
+                _wavDecoder.scan();
+
+                // WAV detected
+                _format = AudioFileFormat.wav;
+                _sampleRate = _wavDecoder._sampleRate;
+                _numChannels = _wavDecoder._channels;
+                _lengthInFrames = _wavDecoder._lengthInFrames;
+                return;
+            }
+            catch(Exception e)
+            {
+                // not a WAV
+                destroyFree(e);
+            }
+            destroyFree(_wavDecoder);
+        }
     }
 
     void startEncoding(AudioFileFormat format, float sampleRate, int numChannels) @nogc
@@ -415,27 +443,6 @@ private:
 
 package:
 
-// decoders eventually know about these
-
-nothrow @nogc
-{
-    alias ioSeekCallback          = void function(long offset, void* userData);
-    alias ioTellCallback          = long function(void* userData);  
-    alias ioGetFileLengthCallback = long function(void* userData);
-    alias ioReadCallback          = int  function(void* outData, int bytes, void* userData); // returns number of read bytes
-    alias ioWriteCallback         = int  function(void* inData, int bytes, void* userData); // returns number of written bytes
-}
-
-struct IOCallbacks
-{
-    ioSeekCallback seek;
-    ioTellCallback tell;
-    ioGetFileLengthCallback getFileLength;
-    ioReadCallback read;
-    ioWriteCallback write;
-
-
-}
 
 private: // not meant to be imported at all
 
@@ -501,6 +508,12 @@ int file_write(void* inData, int bytes, void* userData) nothrow @nogc
     FileContext* context = cast(FileContext*)userData;
     size_t bytesWritten = fwrite(inData, 1, bytes, context.file);
     return cast(int)bytesWritten;
+}
+
+bool file_skip(int bytes, void* userData) nothrow @nogc
+{
+    FileContext* context = cast(FileContext*)userData;
+    return (0 == fseek(context.file, bytes, SEEK_CUR));
 }
 
 // Memory read callback
@@ -588,6 +601,13 @@ int memory_write(void* inData, int bytes, void* userData) nothrow @nogc
     FileContext* context = cast(FileContext*)userData;
     size_t bytesWritten = fwrite(inData, 1, bytes, context.file);
     return cast(int)bytesWritten;
+}
+
+bool memory_skip(int bytes, void* userData) nothrow @nogc
+{
+    MemoryContext* context = cast(MemoryContext*)userData;
+    context.cursor += bytes;
+    return context.cursor <= context.size;
 }
 
 
