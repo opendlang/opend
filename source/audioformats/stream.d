@@ -379,6 +379,32 @@ private:
         _decoderContext.userDataIO = userData;
         _decoderContext.callbacks = _io;
 
+        version(decodeWAV)
+        {
+            // Check if it's a WAV.
+
+            _io.seek(0, userData);
+
+            try
+            {
+                _wavDecoder = mallocNew!WAVDecoder(_io, userData);
+                _wavDecoder.scan();
+
+                // WAV detected
+                _format = AudioFileFormat.wav;
+                _sampleRate = _wavDecoder._sampleRate;
+                _numChannels = _wavDecoder._channels;
+                _lengthInFrames = _wavDecoder._lengthInFrames;
+                return;
+            }
+            catch(Exception e)
+            {
+                // not a WAV
+                destroyFree(e);
+            }
+            destroyFree(_wavDecoder);
+        }
+
         version(decodeMP3)
         {
             // Check if it's a MP3.
@@ -408,31 +434,7 @@ private:
             }
         }
 
-        version(decodeWAV)
-        {
-            // Check if it's a WAV.
-
-            _io.seek(0, userData);
-
-            try
-            {
-                _wavDecoder = mallocNew!WAVDecoder(_io, userData);
-                _wavDecoder.scan();
-
-                // WAV detected
-                _format = AudioFileFormat.wav;
-                _sampleRate = _wavDecoder._sampleRate;
-                _numChannels = _wavDecoder._channels;
-                _lengthInFrames = _wavDecoder._lengthInFrames;
-                return;
-            }
-            catch(Exception e)
-            {
-                // not a WAV
-                destroyFree(e);
-            }
-            destroyFree(_wavDecoder);
-        }
+       
     }
 
     void startEncoding(AudioFileFormat format, float sampleRate, int numChannels) @nogc

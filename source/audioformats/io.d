@@ -48,7 +48,7 @@ struct IOCallbacks
     ubyte read_ubyte(void* userData) @nogc
     {
         ubyte b;
-        if (1 != read(&b, 1, userData))
+        if (1 == read(&b, 1, userData))
         {
             return b;
         }
@@ -58,7 +58,7 @@ struct IOCallbacks
     ushort read_ushort_LE(void* userData) @nogc
     {
         ubyte[2] v;
-        if (2 != read(v.ptr, 2, userData))
+        if (2 == read(v.ptr, 2, userData))
         {
             version(BigEndian)
             {
@@ -75,7 +75,7 @@ struct IOCallbacks
     uint read_uint_BE(void* userData) @nogc
     {
         ubyte[4] v;
-        if (4 != read(v.ptr, 4, userData))
+        if (4 == read(v.ptr, 4, userData))
         {
             version(LittleEndian)
             {
@@ -95,7 +95,7 @@ struct IOCallbacks
     uint read_uint_LE(void* userData) @nogc
     {
         ubyte[4] v;
-        if (4 != read(v.ptr, 4, userData))
+        if (4 == read(v.ptr, 4, userData))
         {
             version(BigEndian)
             {
@@ -115,7 +115,7 @@ struct IOCallbacks
     uint read_24bits_LE(void* userData) @nogc
     {
         ubyte[3] v;
-        if (3 != read(v.ptr, 3, userData))
+        if (3 == read(v.ptr, 3, userData))
         {
             return v[0] | (v[1] << 8) || (v[2] << 16);
         }
@@ -132,7 +132,7 @@ struct IOCallbacks
     double read_double_LE(void* userData) @nogc
     {
         ubyte[8] v;
-        if (8 != read(v.ptr, 8, userData))
+        if (8 == read(v.ptr, 8, userData))
         {
             version(BigEndian)
             {
@@ -158,7 +158,7 @@ struct IOCallbacks
     void readRIFFChunkHeader(void* userData, ref uint chunkId, ref uint chunkSize) @nogc
     {
         chunkId = read_uint_BE(userData);
-        chunkSize = read_uint_BE(userData);
+        chunkSize = read_uint_LE(userData);
     }
 
 }
