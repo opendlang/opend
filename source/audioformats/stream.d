@@ -91,10 +91,11 @@ public: // This is also part of the public API
         
         fileContext = mallocNew!FileContext();
         fileContext.initialize(path, true);
+        userData = fileContext;
 
         _io = mallocNew!IOCallbacks();
-        _io.seek          = &file_seek;
-        _io.tell          = &file_tell;
+        _io.seek          = null;//&file_seek;
+        _io.tell          = null;//&file_tell;
         _io.getFileLength = null;
         _io.read          = null;
         _io.write         = &file_write;
@@ -115,10 +116,20 @@ public: // This is also part of the public API
     void openToBuffer(AudioFileFormat format, float sampleRate, int numChannels) @nogc
     {
         cleanUp();
-        // TODO
+
+        memoryContext = mallocNew!MemoryContext();
+        memoryContext.initializeWithInternalGrowableBuffer();
+        userData = memoryContext;
+
+        _io = mallocNew!IOCallbacks();
+        _io.seek          = null;//&memory_seek;
+        _io.tell          = null;//&memory_tell;
+        _io.getFileLength = null;
+        _io.read          = null;
+        _io.write         = &memory_write_append;
+        _io.skip          = null;
 
         startEncoding(format, sampleRate, numChannels);
-        assert(false);
     }
 
     /// Opens an audio stream that writes to a pre-defined area in memory of `maxLength` bytes.
@@ -139,10 +150,20 @@ public: // This is also part of the public API
                       int numChannels) @nogc
     {
         cleanUp();
-        // TODO
+
+        memoryContext = mallocNew!MemoryContext();
+        memoryContext.initializeWithExternalOutputBuffer(data, maxLength);
+        userData = memoryContext;
+
+        _io = mallocNew!IOCallbacks();
+        _io.seek          = null;//&memory_seek;
+        _io.tell          = null;//&memory_tell;
+        _io.getFileLength = null;
+        _io.read          = null;
+        _io.write         = &memory_write_limited;
+        _io.skip          = null;
 
         startEncoding(format, sampleRate, numChannels);
-        assert(false);
     }
 
     ~this() @nogc
@@ -167,6 +188,15 @@ public: // This is also part of the public API
             {
                 destroyFree(_wavDecoder);
                 _wavDecoder = null;
+            }
+        }
+
+        version(encodeWAV)
+        {
+            if (_wavEncoder !is null)
+            {
+                destroyFree(_wavEncoder);
+                _wavEncoder = null;
             }
         }
 
@@ -364,6 +394,12 @@ private:
         WAVDecoder _wavDecoder;
     }
 
+    // Encoder
+    version(encodeWAV)
+    {
+        WAVEncoder _wavEncoder;
+    }
+
     bool isOpenedForWriting() nothrow @nogc
     {
         // Note: 
@@ -432,14 +468,24 @@ private:
 
                 return;
             }
-        }
-
-       
+        }       
     }
 
     void startEncoding(AudioFileFormat format, float sampleRate, int numChannels) @nogc
-    {
-        // TODO: check format, instantiate encoder, and start encoding
+    { 
+        _format = format;
+        _sampleRate = sampleRate;
+        _numChannels = numChannels;
+
+        final switch(format) with (AudioFileFormat)
+        {
+            case mp3:
+                throw mallocNew!Exception("unsupported encoding format: MP3");
+            case wav:
+            {
+                _wavEncoder = mallocNew!WAVEncoder(_io, userData);
+            }
+        }        
     }
 }
 
@@ -524,7 +570,6 @@ bool file_skip(int bytes, void* userData) nothrow @nogc
 struct MemoryContext
 {
     bool bufferIsOwned;
-    bool bufferCanGrow; // can only be true if `bufferIsOwned`is true.
 
     // Buffer
     ubyte* buffer = null;
@@ -537,12 +582,29 @@ struct MemoryContext
     {
         // Make a copy of the input buffer, since it could be temporary.
         bufferIsOwned = true;
-        bufferCanGrow = false;
 
         buffer = mallocDup(data[0..length]).ptr; // Note: the copied slice is made mutable.
         size = length;
         cursor = 0;
         capacity = length;
+    }
+
+    void initializeWithExternalOutputBuffer(ubyte* data, size_t length) nothrow @nogc
+    {
+        bufferIsOwned = false;
+        buffer = data;
+        size = length;
+        cursor = 0;
+        capacity = length;
+    }
+
+    void initializeWithInternalGrowableBuffer() nothrow @nogc
+    {
+        bufferIsOwned = true;
+        buffer = null;
+        size = 0;
+        cursor = 0;
+        capacity = 0;
     }
 
     ~this()
@@ -598,11 +660,44 @@ int memory_read(void* outData, int bytes, void* userData) nothrow @nogc
     }
 }
 
-int memory_write(void* inData, int bytes, void* userData) nothrow @nogc
+int memory_write_limited(void* inData, int bytes, void* userData) nothrow @nogc
 {
-    FileContext* context = cast(FileContext*)userData;
-    size_t bytesWritten = fwrite(inData, 1, bytes, context.file);
-    return cast(int)bytesWritten;
+    MemoryContext* context = cast(MemoryContext*)userData;
+    size_t cursor = context.cursor;
+    size_t size = context.size;
+    size_t available = size - cursor;
+    ubyte* buffer = context.buffer;
+    ubyte* source = cast(ubyte*) inData;
+
+    if (cursor + bytes > available)
+    {
+        bytes = cast(int)(available - cursor);       
+    }
+
+    buffer[cursor..(cursor + bytes)] = source[0..bytes];
+    context.size += bytes;
+    context.cursor += bytes;
+    return bytes;
+}
+
+int memory_write_append(void* inData, int bytes, void* userData) nothrow @nogc
+{
+    MemoryContext* context = cast(MemoryContext*)userData;
+    size_t cursor = context.cursor;
+    size_t size = context.size;
+    size_t available = size - cursor;
+    ubyte* buffer = context.buffer;
+    ubyte* source = cast(ubyte*) inData;
+
+    if (cursor + bytes > available)
+    {
+        bytes = cast(int)(available - cursor); // TODO: allocate buffer
+    }
+
+    buffer[cursor..(cursor + bytes)] = source[0..bytes];
+    context.size += bytes;
+    context.cursor += bytes;
+    return bytes;
 }
 
 bool memory_skip(int bytes, void* userData) nothrow @nogc

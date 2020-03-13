@@ -204,6 +204,22 @@ private:
     IOCallbacks* _io;
 }
 
+/// Use both for scanning and decoding
+final class WAVEncoder
+{
+public:
+@nogc:
+    this(IOCallbacks* io, void* userData, int sampleRate, int numChannels) nothrow
+    {
+        _io = io;
+        _userData = userData;
+    }
+
+private:
+    void* _userData;
+    IOCallbacks* _io;
+}
+
 
 private:
 

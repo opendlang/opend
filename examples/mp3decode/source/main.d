@@ -16,7 +16,7 @@ void main(string[] args)
 
     AudioStream input, output;
 
-    //input.openFromFile(args[1]);
+    input.openFromFile(args[1]);
 
     ubyte[] inputData = cast(ubyte[])( read( inputPath ) );
     input.openFromMemory(inputData);
@@ -34,14 +34,14 @@ void main(string[] args)
 
     float[] buf = new float[1024 * channels];
 
-  //  output.openToFile(outputPath, AudioFileFormat.wav, sampleRate, channels);
+    output.openToFile(outputPath, AudioFileFormat.wav, sampleRate, channels);
 
     // Chunked encore/decode
     int samplesRead;
     do
     {
         samplesRead = input.readSamplesFloat(buf);
-     //   output.writeSamplesFloat(buf[0..read]);
+        output.writeSamplesFloat(buf[0..samplesRead]);
     } while(samplesRead > 0);
 
     writefln("=> %s samples decoded and written to %s", lengthFrames, outputPath);
