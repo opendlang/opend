@@ -2,7 +2,7 @@ module audioformats.stream;
 
 import core.stdc.stdio;
 import core.stdc.string;
-import core.stdc.stdlib: free;
+import core.stdc.stdlib: realloc, free;
 
 import dplug.core.nogc;
 import dplug.core.vec;
@@ -94,8 +94,8 @@ public: // This is also part of the public API
         userData = fileContext;
 
         _io = mallocNew!IOCallbacks();
-        _io.seek          = null;//&file_seek;
-        _io.tell          = null;//&file_tell;
+        _io.seek          = &file_seek;
+        _io.tell          = &file_tell;
         _io.getFileLength = null;
         _io.read          = null;
         _io.write         = &file_write;
@@ -122,8 +122,8 @@ public: // This is also part of the public API
         userData = memoryContext;
 
         _io = mallocNew!IOCallbacks();
-        _io.seek          = null;//&memory_seek;
-        _io.tell          = null;//&memory_tell;
+        _io.seek          = &memory_seek;
+        _io.tell          = &memory_tell;
         _io.getFileLength = null;
         _io.read          = null;
         _io.write         = &memory_write_append;
@@ -156,8 +156,8 @@ public: // This is also part of the public API
         userData = memoryContext;
 
         _io = mallocNew!IOCallbacks();
-        _io.seek          = null;//&memory_seek;
-        _io.tell          = null;//&memory_tell;
+        _io.seek          = &memory_seek;
+        _io.tell          = &memory_tell;
         _io.getFileLength = null;
         _io.read          = null;
         _io.write         = &memory_write_limited;
@@ -173,6 +173,9 @@ public: // This is also part of the public API
 
     void cleanUp() @nogc
     {
+        // Write the last needed bytes if needed
+        finalizeEncoding();
+
         version(decodeMP3)
         {
             if (_mp3Decoder !is null)
@@ -361,11 +364,15 @@ public: // This is also part of the public API
         // TODO
     }
 
-    const(ubyte)[] finalizeAndGetEncodedResult() nothrow @nogc
+    // Finalize encoding and get internal buffer.
+    const(ubyte)[] finalizeAndGetEncodedResult() @nogc
     {
-        return null; // TODO
-    }
+        // only callable while appending, else it's a programming error
+        assert( (memoryContext !is null) && (_io.write == &memory_write_append) );
 
+        finalizeEncoding(); 
+        return memoryContext.buffer[0..memoryContext.size];
+    }
 
 private:
     IOCallbacks* _io;
@@ -480,17 +487,40 @@ private:
         final switch(format) with (AudioFileFormat)
         {
             case mp3:
-                throw mallocNew!Exception("unsupported encoding format: MP3");
+                throw mallocNew!Exception("Unsupported encoding format: MP3");
             case wav:
             {
-                _wavEncoder = mallocNew!WAVEncoder(_io, userData);
+                // Note: fractional sample rates not supported by WAV, signal an integer one
+                int isampleRate = cast(int)(sampleRate + 0.5f);
+                _wavEncoder = mallocNew!WAVEncoder(_io, userData, isampleRate, numChannels );
+                break;
             }
+            case unknown:
+                throw mallocNew!Exception("Can't encode using 'unknown' coding");
         }        
     }
+
+    void finalizeEncoding() @nogc 
+    {
+        if (_io.write !is null)
+        {
+            _io.write = null;
+            final switch(_format) with (AudioFileFormat)
+            {
+                case mp3:
+                    assert(false);
+                case wav:
+                    { 
+                        _wavEncoder.finalizeEncoding();
+                        break;
+                    }
+                case unknown:
+                    assert(false);
+            }
+        }
+    }
+
 }
-
-package:
-
 
 private: // not meant to be imported at all
 
@@ -691,7 +721,14 @@ int memory_write_append(void* inData, int bytes, void* userData) nothrow @nogc
 
     if (cursor + bytes > available)
     {
-        bytes = cast(int)(available - cursor); // TODO: allocate buffer
+        size_t oldSize = context.capacity;
+        size_t newSize = cursor + bytes;
+        if (newSize < oldSize * 2 + 1) 
+            newSize = oldSize * 2 + 1;
+        buffer = cast(ubyte*) realloc(buffer, newSize);
+        context.capacity = newSize;
+
+        assert( cursor + bytes <= available );
     }
 
     buffer[cursor..(cursor + bytes)] = source[0..bytes];

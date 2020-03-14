@@ -25,6 +25,8 @@ struct IOCallbacks
 
     // Now, some helpers for binary parsing based on these callbacks
 
+    // <reading>
+
     bool nothingToReadAnymore(void* userData) @nogc
     {
         return remainingBytesToRead(userData) <= 0;
@@ -161,6 +163,75 @@ struct IOCallbacks
         chunkSize = read_uint_LE(userData);
     }
 
+      // </reading>
+
+    // <writing>
+
+    string writeFailureMessage = "write failure";
+
+    void write_uint_BE(void* userData, uint value) @nogc
+    {
+        ubyte[4] v;
+        *cast(uint*)(v.ptr) = value;
+        version(LittleEndian)
+        {
+            ubyte v0 = v[0];
+            v[0] = v[3];
+            v[3] = v0;
+            ubyte v1 = v[1];
+            v[1] = v[2];
+            v[2] = v1;
+        }
+
+        if (4 != write(v.ptr, 4, userData))
+            throw mallocNew!Exception(writeFailureMessage);
+    }
+
+    void write_float_LE(void* userData, float value) @nogc
+    {
+        write_uint_LE(userData, *cast(uint*)(&value));
+    }
+
+    void write_uint_LE(void* userData, uint value) @nogc
+    {
+        ubyte[4] v;
+        *cast(uint*)(v.ptr) = value;
+        version(BigEndian)
+        {
+            ubyte v0 = v[0];
+            v[0] = v[3];
+            v[3] = v0;
+            ubyte v1 = v[1];
+            v[1] = v[2];
+            v[2] = v1;
+        }
+
+        if (4 != write(v.ptr, 4, userData))
+            throw mallocNew!Exception(writeFailureMessage);
+    }
+
+    void write_ushort_LE(void* userData, uint value) @nogc
+    {
+        ubyte[2] v;
+        *cast(uint*)(v.ptr) = value;
+        version(BigEndian)
+        {
+            ubyte v0 = v[0];
+            v[0] = v[1];
+            v[1] = v0;
+        }
+
+        if (2 != write(v.ptr, 2, userData))
+            throw mallocNew!Exception(writeFailureMessage);
+    }
+
+    void writeRIFFChunkHeader(void* userData, uint chunkId, uint chunkSize) @nogc
+    {
+        write_uint_BE(userData, chunkId);
+        write_uint_LE(userData, chunkSize);
+    }
+
+    // </writing>
 }
 
 

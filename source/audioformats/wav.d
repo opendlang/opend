@@ -130,7 +130,6 @@ public:
 
     // read interleaved samples
     // `outData` should have enough room for frames * _channels
-
     void readSamples(float* outData, int frames)
     {
         uint numSamples = frames * _channels;
@@ -209,15 +208,78 @@ final class WAVEncoder
 {
 public:
 @nogc:
-    this(IOCallbacks* io, void* userData, int sampleRate, int numChannels) nothrow
+    this(IOCallbacks* io, void* userData, int sampleRate, int numChannels)
     {
         _io = io;
         _userData = userData;
+        _channels = numChannels;
+
+        // Avoids a number of edge cases.
+        if (_channels < 0 || _channels > 1024)
+            throw mallocNew!Exception("Can't save a WAV with this numnber of channels.");
+
+        // RIFF header
+        // its size will be overwritten at finalizing
+        _riffLengthOffset = _io.tell(_userData) + 4;
+        _io.writeRIFFChunkHeader(_userData, RIFFChunkId!"RIFF", 0);
+        _io.write_uint_BE(_userData, RIFFChunkId!"WAVE");
+
+        // 'fmt ' sub-chunk
+        _io.writeRIFFChunkHeader(_userData, RIFFChunkId!"fmt ", 0x10);
+        _io.write_ushort_LE(_userData, FloatingPointIEEE);
+        _io.write_ushort_LE(_userData, cast(ushort)(_channels));
+        _io.write_uint_LE(_userData, sampleRate);
+
+        size_t bytesPerSec = sampleRate * _channels * float.sizeof;
+        _io.write_uint_LE(_userData,  cast(uint)(bytesPerSec));
+
+        int bytesPerFrame = cast(int)(_channels * float.sizeof);
+        _io.write_ushort_LE(_userData, cast(ushort)bytesPerFrame);
+
+        _io.write_ushort_LE(_userData, 32);
+
+        // data sub-chunk
+        _dataLengthOffset = _io.tell(_userData) + 4;
+        _io.writeRIFFChunkHeader(_userData, RIFFChunkId!"data", 0); // write 0 but temporarily, this will be overwritten at finalizing
+        _writtenFrames = 0;
+    }
+
+    // read interleaved samples
+    // `inSamples` should have enough room for frames * _channels
+    void writeSamples(float* inSamples, int frames)
+    {
+        int samples = frames * _channels;
+        for (int n = 0; n < samples; ++n)
+        {
+            _io.write_float_LE(_userData, inSamples[n]);
+        }
+        _writtenFrames += frames;
+    }
+
+    void finalizeEncoding() 
+    {
+        size_t bytesOfData = float.sizeof * _channels * _writtenFrames;
+
+        // write final number of samples for the 'RIFF' chunk
+        {
+            uint riffLength = cast(uint)( 4 + (4 + 4 + 16) + (4 + 4 + bytesOfData) );
+            _io.seek(_riffLengthOffset, _userData);
+            _io.write_uint_LE(_userData, riffLength);
+        }
+
+        // write final number of samples for the 'data' chunk
+        {
+            _io.seek(_dataLengthOffset, _userData);
+            _io.write_uint_LE(_userData, cast(uint)bytesOfData );
+        }
     }
 
 private:
     void* _userData;
     IOCallbacks* _io;
+    int _channels;
+    int _writtenFrames;
+    long _riffLengthOffset, _dataLengthOffset;
 }
 
 

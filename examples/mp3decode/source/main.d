@@ -18,9 +18,6 @@ void main(string[] args)
 
     input.openFromFile(args[1]);
 
-    ubyte[] inputData = cast(ubyte[])( read( inputPath ) );
-    input.openFromMemory(inputData);
-
     float sampleRate = input.getSamplerate();
     int channels = input.getNumChannels();
     long lengthFrames = input.getLengthInFrames();
@@ -43,6 +40,8 @@ void main(string[] args)
         samplesRead = input.readSamplesFloat(buf);
         output.writeSamplesFloat(buf[0..samplesRead]);
     } while(samplesRead > 0);
+
+    output.destroy();
 
     writefln("=> %s samples decoded and written to %s", lengthFrames, outputPath);
 }

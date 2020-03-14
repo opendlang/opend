@@ -186,7 +186,7 @@ void audiostreamFlush(AudioStreamHandle stream) nothrow @nogc
 /// Finalize the encoding and give access to an internal buffer that holds the whole result.
 /// This buffer will have a byte length given by `audiostreamGetLengthInFrames` x channels.
 /// Only works if the stream was open with `audiostreamOpenToBuffer`.
-const(ubyte)[] audiostreamFinalizeAndGetEncodedResult(AudioStreamHandle stream) nothrow @nogc
+const(ubyte)[] audiostreamFinalizeAndGetEncodedResult(AudioStreamHandle stream) @nogc
 {
     return ( cast(AudioStream*)stream ).finalizeAndGetEncodedResult();
 }
