@@ -179,7 +179,7 @@ public: // This is also part of the public API
     void cleanUp() @nogc
     {
         // Write the last needed bytes if needed
-        finalizeEncoding();
+        finalizeEncodingIfNeeded();
 
         version(decodeMP3)
         {
@@ -336,7 +336,8 @@ public: // This is also part of the public API
                 version(decodeWAV)
                 {
                     assert(_wavDecoder !is null);
-                    return 0;
+                    int readFrames = _wavDecoder.readSamples(outData, frames); 
+                    return readFrames; // TODO return real number of read frames
                 }
                 else
                 {
@@ -352,7 +353,8 @@ public: // This is also part of the public API
     ///ditto
     int readSamplesFloat(float[] outData) @nogc
     {
-        return readSamplesFloat(outData.ptr, cast(int)outData.length);
+        assert( (outData.length % _numChannels) == 0);
+        return readSamplesFloat(outData.ptr, cast(int)(outData.length / _numChannels) );
     }
 
     /// Write interleaved float samples.
@@ -388,7 +390,8 @@ public: // This is also part of the public API
     ///ditto
     int writeSamplesFloat(float[] inData) nothrow @nogc
     {
-        return writeSamplesFloat(inData.ptr, cast(int)inData.length);
+        assert( (inData.length % _numChannels) == 0);
+        return writeSamplesFloat(inData.ptr, cast(int)(inData.length / _numChannels));
     }
 
     /// Call `fflush()` on written samples, if any. 
@@ -404,9 +407,9 @@ public: // This is also part of the public API
     /// however the stream is considered complete and valid for storage.
     void finalizeEncoding() @nogc 
     {
+        // If you crash here, it's because `finalizeEncoding` has been called twice.
         assert( _io && (_io.write !is null) );
 
-        _io.write = null; // prevents further encodings
         final switch(_format) with (AudioFileFormat)
         {
             case mp3:
@@ -418,7 +421,8 @@ public: // This is also part of the public API
                 }
             case unknown:
                 assert(false);
-        }      
+        }
+        _io.write = null; // prevents further encodings
     }
 
     // Finalize encoding and get internal buffer.

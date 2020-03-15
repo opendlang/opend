@@ -130,64 +130,75 @@ public:
 
     // read interleaved samples
     // `outData` should have enough room for frames * _channels
-    void readSamples(float* outData, int frames)
+    // Returs: Frames actually read.
+    int readSamples(float* outData, int frames) nothrow
     {
         uint numSamples = frames * _channels;
 
-        if (_audioFormat == FloatingPointIEEE)
+        uint n = 0;
+
+        try
         {
-            if (_bytePerSample == 4)
+            if (_audioFormat == FloatingPointIEEE)
             {
-                for (uint i = 0; i < numSamples; ++i)
-                    outData[i] = _io.read_float_LE(_userData);
+                if (_bytePerSample == 4)
+                {
+                    for (n = 0; n < numSamples; ++n)
+                        outData[n] = _io.read_float_LE(_userData);
+                }
+                else if (_bytePerSample == 8)
+                {
+                    for (n = 0; n < numSamples; ++n)
+                        outData[n] = _io.read_double_LE(_userData);
+                }
+                else
+                    throw mallocNew!Exception("Unsupported bit-depth for floating point data, should be 32 or 64.");
             }
-            else if (_bytePerSample == 8)
+            else if (_audioFormat == LinearPCM)
             {
-                for (uint i = 0; i < numSamples; ++i)
-                    outData[i] = _io.read_double_LE(_userData);
+                if (_bytePerSample == 1)
+                {
+                    for (n = 0; n < numSamples; ++n)
+                    {
+                        ubyte b = _io.read_ubyte(_userData);
+                        outData[n] = (b - 128) / 127.0;
+                    }
+                }
+                else if (_bytePerSample == 2)
+                {
+                    for (n = 0; n < numSamples; ++n)
+                    {
+                        int s = _io.read_ushort_LE(_userData);
+                        outData[n] = s / 32767.0;
+                    }
+                }
+                else if (_bytePerSample == 3)
+                {
+                    for (n = 0; n < numSamples; ++n)
+                    {
+                        int s = _io.read_24bits_LE(_userData);
+                        outData[n] = s / 8388607.0;
+                    }
+                }
+                else if (_bytePerSample == 4)
+                {
+                    for (n = 0; n < numSamples; ++n)
+                    {
+                        int s = _io.read_uint_LE(_userData);
+                        outData[n] = s / 2147483648.0;
+                    }
+                }
+                else
+                    throw mallocNew!Exception("Unsupported bit-depth for integer PCM data, should be 8, 16, 24 or 32 bits.");
             }
             else
-                throw mallocNew!Exception("Unsupported bit-depth for floating point data, should be 32 or 64.");
+                assert(false); // should have been handled earlier, crash
         }
-        else if (_audioFormat == LinearPCM)
+        catch(Exception e)
         {
-            if (_bytePerSample == 1)
-            {
-                for (uint i = 0; i < numSamples; ++i)
-                {
-                    ubyte b = _io.read_ubyte(_userData);
-                    outData[i] = (b - 128) / 127.0;
-                }
-            }
-            else if (_bytePerSample == 2)
-            {
-                for (uint i = 0; i < numSamples; ++i)
-                {
-                    int s = _io.read_ushort_LE(_userData);
-                    outData[i] = s / 32767.0;
-                }
-            }
-            else if (_bytePerSample == 3)
-            {
-                for (uint i = 0; i < numSamples; ++i)
-                {
-                    int s = _io.read_24bits_LE(_userData);
-                    outData[i] = s / 8388607.0;
-                }
-            }
-            else if (_bytePerSample == 4)
-            {
-                for (uint i = 0; i < numSamples; ++i)
-                {
-                    int s = _io.read_uint_LE(_userData);
-                    outData[i] = s / 2147483648.0;
-                }
-            }
-            else
-                throw mallocNew!Exception("Unsupported bit-depth for integer PCM data, should be 8, 16, 24 or 32 bits.");
+            destroyFree(e);
         }
-        else
-            assert(false); // should have been handled earlier, crash
+        return n;
     }
 
 package:
