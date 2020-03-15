@@ -246,14 +246,23 @@ public:
 
     // read interleaved samples
     // `inSamples` should have enough room for frames * _channels
-    void writeSamples(float* inSamples, int frames)
+    int writeSamples(float* inSamples, int frames) nothrow
     {
-        int samples = frames * _channels;
-        for (int n = 0; n < samples; ++n)
+        int n = 0;
+        try
         {
-            _io.write_float_LE(_userData, inSamples[n]);
+            int samples = frames * _channels;
+            for ( ; n < samples; ++n)
+            {
+                _io.write_float_LE(_userData, inSamples[n]);
+            }
+            _writtenFrames += frames;
         }
-        _writtenFrames += frames;
+        catch(Exception e)
+        {
+            destroyFree(e);
+        }
+        return n;
     }
 
     void finalizeEncoding() 

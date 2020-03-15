@@ -47,6 +47,7 @@ public: // This is also part of the public API
         _io.read          = &file_read;
         _io.write         = null;
         _io.skip          = &file_skip;
+        _io.flush         = null;
 
         startDecoding();
     }
@@ -72,6 +73,7 @@ public: // This is also part of the public API
         _io.read          = &memory_read;
         _io.write         = null;
         _io.skip          = &memory_skip;
+        _io.flush         = null;
 
         startDecoding();
     }
@@ -100,6 +102,7 @@ public: // This is also part of the public API
         _io.read          = null;
         _io.write         = &file_write;
         _io.skip          = null;
+        _io.flush         = &file_flush;
 
         startEncoding(format, sampleRate, numChannels);
     }
@@ -128,6 +131,7 @@ public: // This is also part of the public API
         _io.read          = null;
         _io.write         = &memory_write_append;
         _io.skip          = null;
+        _io.flush         = &memory_flush;
 
         startEncoding(format, sampleRate, numChannels);
     }
@@ -162,6 +166,7 @@ public: // This is also part of the public API
         _io.read          = null;
         _io.write         = &memory_write_limited;
         _io.skip          = null;
+        _io.flush         = &memory_flush;
 
         startEncoding(format, sampleRate, numChannels);
     }
@@ -265,6 +270,11 @@ public: // This is also part of the public API
     /// `outData` must have enough room for `frames` * `channels` decoded samples.
     int readSamplesFloat(float* outData, int frames) @nogc
     {
+        // If you fail here, you are using this `AudioStream` for decoding:
+        // - after it has been destroyed,
+        // - or it was created for encoding instead 
+        assert(_io && _io.read !is null);
+
         final switch(_format)
         {
             case AudioFileFormat.mp3:
@@ -349,7 +359,31 @@ public: // This is also part of the public API
     /// `inData` must have enough data for `frames` * `channels` samples.
     int writeSamplesFloat(float* inData, int frames) nothrow @nogc
     {
-        assert(false);
+        // If you fail here, you are using this `AudioStream` for encoding:
+        // - after it has been destroyed,
+        // - or after encoding has been finalized with 
+        // - or it was created for encoding instead 
+        assert(_io && _io.write !is null);
+
+        final switch(_format)
+        {
+            case AudioFileFormat.mp3:
+            case AudioFileFormat.unknown:
+            {
+                assert(false); // shouldn't have arrived here, as MP3 encoding isn't supported
+            }
+            case AudioFileFormat.wav:
+            {
+                version(encodeWAV)
+                {
+                    return _wavEncoder.writeSamples(inData, frames);
+                }
+                else
+                {
+                    assert(false, "no support for WAV encoding");
+                }
+            }
+        }
     }
     ///ditto
     int writeSamplesFloat(float[] inData) nothrow @nogc
@@ -359,18 +393,42 @@ public: // This is also part of the public API
 
     /// Call `fflush()` on written samples, if any. 
     /// Automatically done by `audiostreamClose`.
+    /// It is only useful for streamable output formats, that want to flush things to disk.
     void flush() nothrow @nogc
     {
-        // TODO
+        assert( _io && (_io.write !is null) );
+        _io.flush(userData);
+    }
+    
+    /// Finalize encoding. After finalization, further writes are not possible anymore
+    /// however the stream is considered complete and valid for storage.
+    void finalizeEncoding() @nogc 
+    {
+        assert( _io && (_io.write !is null) );
+
+        _io.write = null; // prevents further encodings
+        final switch(_format) with (AudioFileFormat)
+        {
+            case mp3:
+                assert(false);
+            case wav:
+                { 
+                    _wavEncoder.finalizeEncoding();
+                    break;
+                }
+            case unknown:
+                assert(false);
+        }      
     }
 
     // Finalize encoding and get internal buffer.
+    // This can be called multiple times, in which cases the stream is finalized only the first time.
     const(ubyte)[] finalizeAndGetEncodedResult() @nogc
     {
         // only callable while appending, else it's a programming error
-        assert( (memoryContext !is null) && (_io.write == &memory_write_append) );
+        assert( (memoryContext !is null) && ( memoryContext.bufferCanGrow ) );
 
-        finalizeEncoding(); 
+        finalizeEncodingIfNeeded(); 
         return memoryContext.buffer[0..memoryContext.size];
     }
 
@@ -412,7 +470,7 @@ private:
         // Note: 
         //  * when opened for reading, I/O operations given are: seek/tell/getFileLength/read.
         //  * when opened for writing, I/O operations given are: seek/tell/write.
-        return _io.read is null;
+        return (_io !is null) && (_io.read is null);
     }
 
     void startDecoding() @nogc
@@ -498,28 +556,15 @@ private:
             case unknown:
                 throw mallocNew!Exception("Can't encode using 'unknown' coding");
         }        
-    }
+    }   
 
-    void finalizeEncoding() @nogc 
+    void finalizeEncodingIfNeeded() @nogc
     {
-        if (_io.write !is null)
+        if (_io && (_io.write !is null)) // if we have been encoding something
         {
-            _io.write = null;
-            final switch(_format) with (AudioFileFormat)
-            {
-                case mp3:
-                    assert(false);
-                case wav:
-                    { 
-                        _wavEncoder.finalizeEncoding();
-                        break;
-                    }
-                case unknown:
-                    assert(false);
-            }
+            finalizeEncoding();            
         }
     }
-
 }
 
 private: // not meant to be imported at all
@@ -594,12 +639,19 @@ bool file_skip(int bytes, void* userData) nothrow @nogc
     return (0 == fseek(context.file, bytes, SEEK_CUR));
 }
 
+bool file_flush(void* userData) nothrow @nogc
+{
+    FileContext* context = cast(FileContext*)userData;
+    return ( fflush(context.file) == 0 );
+}
+
 // Memory read callback
 // Using the read buffer instead
 
 struct MemoryContext
 {
     bool bufferIsOwned;
+    bool bufferCanGrow;
 
     // Buffer
     ubyte* buffer = null;
@@ -612,6 +664,7 @@ struct MemoryContext
     {
         // Make a copy of the input buffer, since it could be temporary.
         bufferIsOwned = true;
+        bufferCanGrow = false;
 
         buffer = mallocDup(data[0..length]).ptr; // Note: the copied slice is made mutable.
         size = length;
@@ -622,8 +675,9 @@ struct MemoryContext
     void initializeWithExternalOutputBuffer(ubyte* data, size_t length) nothrow @nogc
     {
         bufferIsOwned = false;
+        bufferCanGrow = false;
         buffer = data;
-        size = length;
+        size = 0;
         cursor = 0;
         capacity = length;
     }
@@ -631,6 +685,7 @@ struct MemoryContext
     void initializeWithInternalGrowableBuffer() nothrow @nogc
     {
         bufferIsOwned = true;
+        bufferCanGrow = true;
         buffer = null;
         size = 0;
         cursor = 0;
@@ -742,6 +797,12 @@ bool memory_skip(int bytes, void* userData) nothrow @nogc
     MemoryContext* context = cast(MemoryContext*)userData;
     context.cursor += bytes;
     return context.cursor <= context.size;
+}
+
+bool memory_flush(void* userData) nothrow @nogc
+{
+    // do nothing, no flushign to do for memory
+    return true;
 }
 
 

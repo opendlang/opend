@@ -11,6 +11,7 @@ nothrow @nogc
     alias ioReadCallback          = int  function(void* outData, int bytes, void* userData); // returns number of read bytes
     alias ioWriteCallback         = int  function(void* inData, int bytes,  void* userData); // returns number of written bytes
     alias ioSkipCallback          = bool function(int bytes,                void* userData);
+    alias ioFlushCallback         = bool function(                          void* userData);
 }
 
 struct IOCallbacks
@@ -21,6 +22,7 @@ struct IOCallbacks
     ioReadCallback read;
     ioWriteCallback write;
     ioSkipCallback skip;
+    ioFlushCallback flush;
 
 
     // Now, some helpers for binary parsing based on these callbacks
@@ -163,7 +165,7 @@ struct IOCallbacks
         chunkSize = read_uint_LE(userData);
     }
 
-      // </reading>
+    // </reading>
 
     // <writing>
 
