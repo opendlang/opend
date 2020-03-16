@@ -337,7 +337,7 @@ public: // This is also part of the public API
                 {
                     assert(_wavDecoder !is null);
                     int readFrames = _wavDecoder.readSamples(outData, frames); 
-                    return readFrames; // TODO return real number of read frames
+                    return readFrames;
                 }
                 else
                 {

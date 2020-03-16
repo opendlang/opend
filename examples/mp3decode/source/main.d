@@ -34,14 +34,16 @@ void main(string[] args)
     output.openToFile(outputPath, AudioFileFormat.wav, sampleRate, channels);
 
     // Chunked encode/decode
+    int totalFrames = 0;
     int framesRead;
     do
     {
         framesRead = input.readSamplesFloat(buf);
         output.writeSamplesFloat(buf[0..framesRead*channels]);
+        totalFrames += framesRead;
     } while(framesRead > 0);
 
     output.destroy();
 
-    writefln("=> %s samples decoded and written to %s", lengthFrames, outputPath);
+    writefln("=> %s frames decoded and written to %s", totalFrames, outputPath);
 }

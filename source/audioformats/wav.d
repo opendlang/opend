@@ -168,7 +168,7 @@ public:
                 {
                     for (n = 0; n < numSamples; ++n)
                     {
-                        int s = _io.read_ushort_LE(_userData);
+                        short s = _io.read_ushort_LE(_userData);
                         outData[n] = s / 32767.0;
                     }
                 }
@@ -177,6 +177,8 @@ public:
                     for (n = 0; n < numSamples; ++n)
                     {
                         int s = _io.read_24bits_LE(_userData);
+                        // duplicate sign bit
+                        s = (s << 8) >> 8;
                         outData[n] = s / 8388607.0;
                     }
                 }
@@ -198,7 +200,9 @@ public:
         {
             destroyFree(e);
         }
-        return n;
+
+        // Return number of integer samples read
+        return n / _channels;
     }
 
 package:
