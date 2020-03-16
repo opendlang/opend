@@ -33,7 +33,7 @@ pure {
 extern( System ):
 
 // Version of corresponding c header file
-enum VK_HEADER_VERSION = 132;
+enum VK_HEADER_VERSION = 133;
 
 enum VK_NULL_HANDLE = null;
 
@@ -7659,6 +7659,13 @@ struct VkPipelineExecutableInternalRepresentationKHR {
     size_t                           dataSize;
     void*                            pData;
 }
+
+
+// - VK_KHR_shader_non_semantic_info -
+enum VK_KHR_shader_non_semantic_info = 1;
+
+enum VK_KHR_SHADER_NON_SEMANTIC_INFO_SPEC_VERSION = 1;
+enum VK_KHR_SHADER_NON_SEMANTIC_INFO_EXTENSION_NAME = "VK_KHR_shader_non_semantic_info";
 
 
 // - VK_EXT_debug_report -
