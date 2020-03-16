@@ -930,7 +930,7 @@ __gshared {
 
     // VK_AMD_draw_indirect_count
     alias vkCmdDrawIndirectCountAMD                                               = vkCmdDrawIndirectCount;
-    alias vkCmdDrawIndexedIndirectCountAMD                                        = vkCmdDrawIndexedIndirectCountKHR;
+    alias vkCmdDrawIndexedIndirectCountAMD                                        = vkCmdDrawIndexedIndirectCount;
 
     // VK_EXT_buffer_device_address
     alias vkGetBufferDeviceAddressEXT                                             = vkGetBufferDeviceAddress;

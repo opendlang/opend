@@ -777,7 +777,7 @@ struct DispatchDevice {
 
     // VK_AMD_draw_indirect_count
     alias CmdDrawIndirectCountAMD                               = CmdDrawIndirectCount;
-    alias CmdDrawIndexedIndirectCountAMD                        = CmdDrawIndexedIndirectCountKHR;
+    alias CmdDrawIndexedIndirectCountAMD                        = CmdDrawIndexedIndirectCount;
 
     // VK_EXT_buffer_device_address
     alias GetBufferDeviceAddressEXT                             = GetBufferDeviceAddress;
@@ -1168,7 +1168,7 @@ struct DispatchDevice {
 
     // VK_AMD_draw_indirect_count
     alias vkCmdDrawIndirectCountAMD                               = vkCmdDrawIndirectCount;
-    alias vkCmdDrawIndexedIndirectCountAMD                        = vkCmdDrawIndexedIndirectCountKHR;
+    alias vkCmdDrawIndexedIndirectCountAMD                        = vkCmdDrawIndexedIndirectCount;
 
     // VK_EXT_buffer_device_address
     alias vkGetBufferDeviceAddressEXT                             = vkGetBufferDeviceAddress;

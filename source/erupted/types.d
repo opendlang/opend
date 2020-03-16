@@ -33,7 +33,7 @@ pure {
 extern( System ):
 
 // Version of corresponding c header file
-enum VK_HEADER_VERSION = 131;
+enum VK_HEADER_VERSION = 132;
 
 enum VK_NULL_HANDLE = null;
 
@@ -2770,15 +2770,17 @@ enum VkVendorId {
     VK_VENDOR_ID_VIV             = 0x10001,
     VK_VENDOR_ID_VSI             = 0x10002,
     VK_VENDOR_ID_KAZAN           = 0x10003,
+    VK_VENDOR_ID_CODEPLAY        = 0x10004,
     VK_VENDOR_ID_BEGIN_RANGE     = VK_VENDOR_ID_VIV,
-    VK_VENDOR_ID_END_RANGE       = VK_VENDOR_ID_KAZAN,
-    VK_VENDOR_ID_RANGE_SIZE      = VK_VENDOR_ID_KAZAN - VK_VENDOR_ID_VIV + 1,
+    VK_VENDOR_ID_END_RANGE       = VK_VENDOR_ID_CODEPLAY,
+    VK_VENDOR_ID_RANGE_SIZE      = VK_VENDOR_ID_CODEPLAY - VK_VENDOR_ID_VIV + 1,
     VK_VENDOR_ID_MAX_ENUM        = 0x7FFFFFFF
 }
 
 enum VK_VENDOR_ID_VIV            = VkVendorId.VK_VENDOR_ID_VIV;
 enum VK_VENDOR_ID_VSI            = VkVendorId.VK_VENDOR_ID_VSI;
 enum VK_VENDOR_ID_KAZAN          = VkVendorId.VK_VENDOR_ID_KAZAN;
+enum VK_VENDOR_ID_CODEPLAY       = VkVendorId.VK_VENDOR_ID_CODEPLAY;
 enum VK_VENDOR_ID_BEGIN_RANGE    = VkVendorId.VK_VENDOR_ID_BEGIN_RANGE;
 enum VK_VENDOR_ID_END_RANGE      = VkVendorId.VK_VENDOR_ID_END_RANGE;
 enum VK_VENDOR_ID_RANGE_SIZE     = VkVendorId.VK_VENDOR_ID_RANGE_SIZE;
