@@ -11,12 +11,12 @@
     "configurations": [
         {
             "name": "all-formats",
-            "versions": ["decodeWAV", "decodeMP3",
+            "versions": ["decodeWAV", "decodeMP3", "decodeFLAC",
                          "encodeWAV"]
         },
         {
             "name": "no-lgpl",
-            "versions": ["decodeWAV",
+            "versions": ["decodeWAV",              "decodeFLAC",
                          "encodeWAV"]
         }
     ]
