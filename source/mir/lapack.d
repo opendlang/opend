@@ -42,9 +42,9 @@ do
 {
     lapackint n = cast(lapackint) a.length;
     lapackint lda = cast(lapackint) a._stride.max(1);
-    T work = void;
+    T work;
     lapackint lwork = -1;
-    lapackint info = void;
+    lapackint info;
 
     lapack.getri_(n, null, lda, null, &work, lwork, info);
 
@@ -77,7 +77,7 @@ do
     lapackint n = cast(lapackint) a.length;
     lapackint lda = cast(lapackint) a._stride.max(1);
     lapackint lwork = cast(lapackint) work.length;
-    lapackint info = void;
+    lapackint info;
 
     lapack.getri_(n, a.iterator, lda, ipiv.iterator, work.iterator, lwork, info);
 
@@ -107,7 +107,7 @@ do
     lapackint m = cast(lapackint) a.length!1;
     lapackint n = cast(lapackint) a.length!0;
     lapackint lda = cast(lapackint) a._stride.max(1);
-    lapackint info = void;
+    lapackint info;
 
     lapack.getrf_(m, n, a.iterator, lda, ipiv.iterator, info);
 
@@ -139,7 +139,7 @@ template sptrf(T)
     {
         char uplo = 'U';
         lapackint n = cast(lapackint) ap.length;
-        lapackint info = void;
+        lapackint info;
 
         lapack.sptrf_(uplo, n, &ap[0][0], ipiv.iterator, info);
 
@@ -160,7 +160,7 @@ template sptrf(T)
     {
         char uplo = 'L';
         lapackint n = cast(lapackint) ap.length;
-        lapackint info = void;
+        lapackint info;
 
         lapack.sptrf_(uplo, n, &ap[0][0], ipiv.iterator, info);
 
@@ -193,7 +193,7 @@ do
     lapackint nrhs = cast(lapackint) b.length;
     lapackint lda = cast(lapackint) a._stride.max(1);
     lapackint ldb = cast(lapackint) b._stride.max(1);
-    lapackint info = void;
+    lapackint info;
 
     lapack.gesv_(n, nrhs, a.iterator, lda, ipiv.iterator, b.iterator, ldb, info);
 
@@ -225,12 +225,12 @@ do
     lapackint nrhs = cast(lapackint) b.length;
     lapackint lda = cast(lapackint) a._stride.max(1);
     lapackint ldb = cast(lapackint) b._stride.max(1);
-    T rcond = void;
-    lapackint rank = void;
-    T work = void;
+    T rcond;
+    lapackint rank;
+    T work;
     lapackint lwork = -1;
-    lapackint iwork = void;
-    lapackint info = void;
+    lapackint iwork;
+    lapackint info;
 
     lapack.gelsd_(m, n, nrhs, a.iterator, lda, b.iterator, ldb, null, rcond, rank, &work, lwork, &iwork, info);
 
@@ -259,13 +259,13 @@ do
     lapackint nrhs = cast(lapackint) b.length;
     lapackint lda = cast(lapackint) a._stride.max(1);
     lapackint ldb = cast(lapackint) b._stride.max(1);
-    realType!T rcond = void;
-    lapackint rank = void;
-    T work = void;
+    realType!T rcond;
+    lapackint rank;
+    T work;
     lapackint lwork = -1;
-    realType!T rwork = void;
-    lapackint iwork = void;
-    lapackint info = void;
+    realType!T rwork;
+    lapackint iwork;
+    lapackint info;
 
     lapack.gelsd_(m, n, nrhs, a.iterator, lda, b.iterator, ldb, null, rcond, rank, &work, lwork, &rwork, &iwork, info);
     
@@ -306,9 +306,9 @@ do
     lapackint nrhs = cast(lapackint) b.length;
     lapackint lda = cast(lapackint) a._stride.max(1);
     lapackint ldb = cast(lapackint) b._stride.max(1);
-    lapackint rank_ = void;
+    lapackint rank_;
     lapackint lwork = cast(lapackint) work.length;
-    lapackint info = void;
+    lapackint info;
 
     lapack.gelsd_(m, n, nrhs, a.iterator, lda, b.iterator, ldb, s.iterator, rcond, rank_, work.iterator, lwork, iwork.iterator, info);
 
@@ -341,9 +341,9 @@ do
     lapackint nrhs = cast(lapackint) b.length;
     lapackint lda = cast(lapackint) a._stride.max(1);
     lapackint ldb = cast(lapackint) b._stride.max(1);
-    lapackint rank_ = void;
+    lapackint rank_;
     lapackint lwork = cast(lapackint) work.length;
-    lapackint info = void;
+    lapackint info;
 
     lapack.gelsd_(m, n, nrhs, a.iterator, lda, b.iterator, ldb, s.iterator, rcond, rank_, work.iterator, lwork, rwork.iterator, iwork.iterator, info);
 
@@ -373,9 +373,9 @@ size_t gesdd_wq(T)(
     lapackint lda = cast(lapackint) a._stride.max(1);
     lapackint ldu = cast(lapackint) u._stride.max(1);
     lapackint ldvt = cast(lapackint) vt._stride.max(1);
-    T work = void;
+    T work;
     lapackint lwork = -1;
-    lapackint info = void;
+    lapackint info;
 
     static if(!isComplex!T)
     {
@@ -416,7 +416,7 @@ size_t gesdd(T)(
     lapackint ldu = cast(lapackint) u._stride.max(1);
     lapackint ldvt = cast(lapackint) vt._stride.max(1);
     lapackint lwork = cast(lapackint) work.length;
-    lapackint info = void;
+    lapackint info;
 
     lapack.gesdd_(jobz, m, n, a.iterator, lda, s.iterator, u.iterator, ldu, vt.iterator, ldvt, work.iterator, lwork, iwork.iterator, info);
 
@@ -443,7 +443,7 @@ size_t gesdd(T)(
     lapackint ldu = cast(lapackint) u._stride.max(1);
     lapackint ldvt = cast(lapackint) vt._stride.max(1);
     lapackint lwork = cast(lapackint) work.length;
-    lapackint info = void;
+    lapackint info;
 
     lapack.gesdd_(jobz, m, n, a.iterator, lda, s.iterator, u.iterator, ldu, vt.iterator, ldvt, work.iterator, lwork, rwork.iterator, iwork.iterator, info);
 
@@ -473,9 +473,9 @@ size_t gesvd_wq(T)(
     lapackint lda = cast(lapackint) a._stride.max(1);
     lapackint ldu = cast(lapackint) u._stride.max(1);
     lapackint ldvt = cast(lapackint) vt._stride.max(1);
-    T work = void;
+    T work;
     lapackint lwork = -1;
-    lapackint info = void;
+    lapackint info;
 
     static if(!isComplex!T)
     {
@@ -516,7 +516,7 @@ size_t gesvd(T)(
     lapackint ldu = cast(lapackint) u._stride.max(1);
     lapackint ldvt = cast(lapackint) vt._stride.max(1);
     lapackint lwork = cast(lapackint) work.length;
-    lapackint info = void;
+    lapackint info;
 
     lapack.gesvd_(jobu, jobvt, m, n, a.iterator, lda, s.iterator, u.iterator, ldu, vt.iterator, ldvt, work.iterator, lwork, info);
 
@@ -543,7 +543,7 @@ size_t gesvd(T)(
     lapackint ldu = cast(lapackint) u._stride.max(1);
     lapackint ldvt = cast(lapackint) vt._stride.max(1);
     lapackint lwork = cast(lapackint) work.length;
-    lapackint info = void;
+    lapackint info;
 
     lapack.gesvd_(jobu, jobvt, m, n, a.iterator, lda, s.iterator, u.iterator, ldu, vt.iterator, ldvt, work.iterator, lwork, rwork.iterator, info);
 
@@ -580,7 +580,7 @@ template spev(T)
         char uplo = 'U';
         lapackint n = cast(lapackint) ap.length;
         lapackint ldz = cast(lapackint) z._stride.max(1);
-        lapackint info = void;
+        lapackint info;
 
         lapack.spev_(jobz, uplo, n, &ap[0][0], w.iterator, z.iterator, ldz, work.iterator, info);
 
@@ -606,7 +606,7 @@ template spev(T)
         char uplo = 'L';
         lapackint n = cast(lapackint) ap.length;
         lapackint ldz = cast(lapackint) z._stride.max(1);
-        lapackint info = void;
+        lapackint info;
 
         lapack.spev_(jobz, uplo, n, &ap[0][0], w.iterator, z.iterator, ldz, work.iterator, info);
 
@@ -634,7 +634,7 @@ in
 }
 do
 {
-    lapackint info = void;
+    lapackint info;
     lapackint n = cast(lapackint) a.length;
     lapackint lda = cast(lapackint) a._stride.max(1);
     lapackint lwork = cast(lapackint) work.length;
@@ -682,7 +682,7 @@ do
     lapackint n = cast(lapackint) a.length!0;
     lapackint lda = cast(lapackint) a._stride.max(1);
     lapackint lwork = cast(lapackint) work.length;
-    lapackint info = void;
+    lapackint info;
 
     lapack.geqrf_(m, n, a.iterator, lda, tau.iterator, work.iterator, lwork, info);
 
@@ -718,7 +718,7 @@ do
     lapackint nrhs = cast(lapackint) b.length;
     lapackint lda = cast(lapackint) a._stride.max(1);
     lapackint ldb = cast(lapackint) b._stride.max(1);
-    lapackint info = void;
+    lapackint info;
 
     lapack.getrs_(trans, n, nrhs, a.iterator, lda, ipiv.iterator, b.iterator, ldb, info);
 
@@ -752,7 +752,7 @@ do
     lapackint nrhs = cast(lapackint) b.length;
     lapackint lda = cast(lapackint) a._stride.max(1);
     lapackint ldb = cast(lapackint) b._stride.max(1);
-    lapackint info = void;
+    lapackint info;
 
     lapack.potrs_(uplo, n, nrhs, a.iterator, lda, b.iterator, ldb, info);
 
@@ -788,7 +788,7 @@ do
     lapackint nrhs = cast(lapackint) b.length;
     lapackint lda = cast(lapackint) a._stride.max(1);
     lapackint ldb = cast(lapackint) b._stride.max(1);
-    lapackint info = void;
+    lapackint info;
 
     lapack.sytrs2_(uplo, n, nrhs, a.iterator, lda, ipiv.iterator, b.iterator, ldb, work.iterator, info);
 
@@ -834,7 +834,7 @@ do
     lapackint lda = cast(lapackint) a._stride.max(1);
     lapackint ldb = cast(lapackint) b._stride.max(1);
     lapackint lwork = cast(lapackint) work.length;
-    lapackint info = void;
+    lapackint info;
 
     lapack.geqrs_(m, n, nrhs, a.iterator, lda, tau.iterator, b.iterator, ldb, work.iterator, lwork, info);
 
@@ -870,9 +870,9 @@ do
     lapackint nrhs = cast(lapackint) b.length;
     lapackint lda = cast(lapackint) a._stride.max(1);
     lapackint ldb = cast(lapackint) b._stride.max(1);
-    T work = void;
+    T work;
     lapackint lwork = -1;
-    lapackint info = void;
+    lapackint info;
 
     lapack.sysv_rook_(uplo, n, nrhs, a._iterator, lda, null, b._iterator, ldb, &work, lwork, info);
 
@@ -908,7 +908,7 @@ do
     lapackint lda = cast(lapackint) a._stride.max(1);
     lapackint ldb = cast(lapackint) b._stride.max(1);
     lapackint lwork = cast(lapackint) work.length;
-    lapackint info = void;
+    lapackint info;
 
     lapack.sysv_rook_(uplo, n, nrhs, a._iterator, lda, ipiv._iterator, b._iterator, ldb, work._iterator, lwork, info);
 
@@ -940,9 +940,9 @@ do
 {
     lapackint n = cast(lapackint) a.length;
     lapackint lda = cast(lapackint) a._stride.max(1);
-    T work = void;
+    T work;
     lapackint lwork = -1;
-    lapackint info = void;
+    lapackint info;
 
     lapack.syev_(jobz, uplo, n, a._iterator, lda, w._iterator, &work, lwork, info);
 
@@ -973,7 +973,7 @@ do
     lapackint n = cast(lapackint) a.length;
     lapackint lda = cast(lapackint) a._stride.max(1);
     lapackint lwork = cast(lapackint) work.length;
-    lapackint info = void;
+    lapackint info;
 
     lapack.syev_(jobz, uplo, n, a._iterator, lda, w._iterator, work._iterator, lwork, info);
 
@@ -1003,9 +1003,9 @@ do
 {
     lapackint n = cast(lapackint) a.length;
     lapackint lda = cast(lapackint) a._stride.max(1);
-    T work = void;
+    T work;
     lapackint lwork = -1;
-    lapackint info = void;
+    lapackint info;
 
     lapack.syev_2stage_(jobz, uplo, n, a._iterator, lda, w._iterator, &work, lwork, info);
 
@@ -1037,7 +1037,7 @@ do
     lapackint n = cast(lapackint) a.length;
     lapackint lda = cast(lapackint) a._stride.max(1);
     lapackint lwork = cast(lapackint) work.length;
-    lapackint info = void;
+    lapackint info;
 
     lapack.syev_2stage_(jobz, uplo, n, a._iterator, lda, w._iterator, work._iterator, lwork, info);
 
@@ -1065,7 +1065,7 @@ do
 {
     lapackint n = cast(lapackint) a.length;
     lapackint lda = cast(lapackint) a._stride.max(1);
-    lapackint info = void;
+    lapackint info;
     
     lapack.potrf_(uplo, n, a.iterator, lda, info);
     
@@ -1089,7 +1089,7 @@ size_t pptrf(T)(
     )
 {
     lapackint n = cast(lapackint) ap.length;
-    lapackint info = void;
+    lapackint info;
     
     lapack.pptrf_(uplo, n, ap.iterator, info);
     
@@ -1123,7 +1123,7 @@ template sptri(T)
     do
     {
         lapackint n = cast(lapackint) ap.length;
-        lapackint info = void;
+        lapackint info;
 
         char uplo = 'U';
         lapack.sptri_(uplo, n, &ap[0][0], ipiv.iterator, work.iterator, info);
@@ -1146,7 +1146,7 @@ template sptri(T)
     do
     {
         lapackint n = cast(lapackint) ap.length;
-        lapackint info = void;
+        lapackint info;
 
         char uplo = 'L';
         lapack.sptri_(uplo, n, &ap[0][0], ipiv.iterator, work.iterator, info);
@@ -1177,7 +1177,7 @@ do
 {
     lapackint n = cast(lapackint) a.length;
     lapackint lda = cast(lapackint) a._stride.max(1);
-    lapackint info = void;
+    lapackint info;
 
     lapack.potri_(uplo, n, a.iterator, lda, info);
 
@@ -1202,7 +1202,7 @@ template pptri(T)
         )
     {
         lapackint n = cast(lapackint) ap.length;
-        lapackint info = void;
+        lapackint info;
 
         char uplo = 'U';
         lapack.pptri_(uplo, n, &ap[0][0], info);
@@ -1217,7 +1217,7 @@ template pptri(T)
         )
     {
         lapackint n = cast(lapackint) ap.length;
-        lapackint info = void;
+        lapackint info;
 
         char uplo = 'L';
         lapack.pptri_(uplo, n, &ap[0][0], info);
@@ -1249,7 +1249,7 @@ do
 {
     lapackint n = cast(lapackint) a.length;
     lapackint lda = cast(lapackint) a._stride.max(1);
-    lapackint info = void;
+    lapackint info;
 
     lapack.trtri_(uplo, diag, n, a.iterator, lda, info);
 
@@ -1275,7 +1275,7 @@ template tptri(T)
         )
     {
         lapackint n = cast(lapackint) ap.length;
-        lapackint info = void;
+        lapackint info;
 
         char uplo = 'U';
         lapack.tptri_(uplo, diag, n, &ap[0][0], info);
@@ -1291,7 +1291,7 @@ template tptri(T)
         )
     {
         lapackint n = cast(lapackint) ap.length;
-        lapackint info = void;
+        lapackint info;
 
         char uplo = 'L';
         lapack.tptri_(uplo, diag, n, &ap[0][0], info);
@@ -1326,7 +1326,7 @@ size_t ormqr(T)(
     lapackint lda = cast(lapackint) a._stride.max(1);
     lapackint ldc = cast(lapackint) c._stride.max(1);
     lapackint lwork = cast(lapackint) work.length;
-    lapackint info = void;
+    lapackint info;
 
     lapack.ormqr_(side, trans, m, n, k, a.iterator, lda, tau.iterator, c.iterator, ldc, work.iterator, lwork, info);
 
@@ -1358,7 +1358,7 @@ size_t unmqr(T)(
     lapackint lda = cast(lapackint) a._stride.max(1);
     lapackint ldc = cast(lapackint) c._stride.max(1);
     lapackint lwork = cast(lapackint) work.length;
-    lapackint info = void;
+    lapackint info;
 
     lapack.unmqr_(side, trans, m, n, k, a.iterator, lda, tau.iterator, c.iterator, ldc, work.iterator, lwork, info);
 
@@ -1400,7 +1400,7 @@ do
     lapackint k = cast(lapackint) tau.length;
     lapackint lda = cast(lapackint) a._stride.max(1);
     lapackint lwork = cast(lapackint) work.length;
-    lapackint info = void;
+    lapackint info;
 
     lapack.orgqr_(m, n, k, a.iterator, lda, tau.iterator, work.iterator, lwork, info);
 
@@ -1435,7 +1435,7 @@ do
     lapackint k = cast(lapackint) tau.length;
     lapackint lda = cast(lapackint) a._stride.max(1);
     lapackint lwork = cast(lapackint) work.length;
-    lapackint info = void;
+    lapackint info;
 
     lapack.ungqr_(m, n, k, a.iterator, lda, tau.iterator, work.iterator, lwork, info);
 
@@ -1472,7 +1472,7 @@ do
     lapackint k = cast(lapackint) tau.length;
     lapackint lda = cast(lapackint) a._stride.max(1);
     lapackint lwork = cast(lapackint) work.length;
-    lapackint info = void;
+    lapackint info;
     static if (isComplex!T){
         lapack.ungqr_(m, n, k, a.iterator, lda, tau.iterator, work.iterator, lwork, info);
     }
@@ -1515,7 +1515,7 @@ do
     lapackint n = cast(lapackint) a.length!0;
     lapackint lda = cast(lapackint) a._stride.max(1);
     lapackint lwork = cast(lapackint) work.length;
-    lapackint info = void;    
+    lapackint info;    
     lapack.gehrd_(n, ilo, ihi, a.iterator, lda, tau.iterator, work.iterator, lwork, info);
     ///if info == 0: successful exit.
     ///if info < 0: if info == -i, the i-th argument had an illegal value.
@@ -1645,7 +1645,7 @@ do {
     lapackint ldvl = cast(lapackint) vl._stride.max(1);
     lapackint ldvr = cast(lapackint) vr._stride.max(1);
     lapackint mm = cast(lapackint) vl.length!1;
-    lapackint info = void;
+    lapackint info;
     //could compute mm and m from vl and/or vr and T
     lapack.hsein_(side, eigsrc, initv, select, n, h.iterator, ldh, w.iterator, vl.iterator, ldvl, vr.iterator, ldvr, mm, *m, work.iterator, rwork.iterator, ifaill, ifailr, info);
     assert(info >= 0);
@@ -1706,7 +1706,7 @@ do
     lapackint lda = cast(lapackint) a._stride.max(1);
     lapackint ldc = cast(lapackint) c._stride.max(1);
     lapackint lwork = cast(lapackint) work.length;
-    lapackint info = void;
+    lapackint info;
     static if (!isComplex!T){
         lapack.ormhr_(side, trans, m, n, ilo, ihi, a.iterator, lda, tau.iterator, c.iterator, ldc, work.iterator, lwork, info);
     }
@@ -1859,7 +1859,7 @@ size_t gebal(T, realT)(char job,
 {
     lapackint n = cast(lapackint) a.length!0;
     lapackint lda = cast(lapackint) a._stride.max(1);
-    lapackint info = void;
+    lapackint info;
     lapack.gebal_(job, n, a.iterator, lda, ilo, ihi, scale.iterator, info);
     assert(info >= 0);
     return cast(size_t)info;
@@ -1887,7 +1887,7 @@ size_t gebak(T, realT)(
     lapackint n = cast(lapackint) scale.length!0;
     lapackint m = cast(lapackint) v.length!1;//num evects
     lapackint ldv = cast(lapackint) v._stride.max(1);
-    lapackint info = void;
+    lapackint info;
     lapack.gebak_(job, side, n, ilo, ihi, scale.iterator, m, v.iterator, ldv, info);
     assert(info >= 0);
     return cast(size_t)info;
@@ -1918,7 +1918,7 @@ size_t geev(T, realT)(
     lapackint lda = cast(lapackint) a._stride.max(1);
     lapackint ldvr = cast(lapackint) vr._stride.max(1);
     lapackint ldvl = cast(lapackint) vl._stride.max(1);
-    lapackint info = void;
+    lapackint info;
     lapackint lwork = cast(lapackint)work.length!0;
     lapack.geev_(jobvl, jobvr, n, a.iterator, lda, w.iterator, vl.iterator, ldvl, vr.iterator, ldvr, work.iterator, lwork, rwork.iterator, info);
     assert(info >= 0);
@@ -1942,7 +1942,7 @@ size_t geev(T)(
     lapackint lda = cast(lapackint) a._stride.max(1);
     lapackint ldvr = cast(lapackint) vr._stride.max(1);
     lapackint ldvl = cast(lapackint) vl._stride.max(1);
-    lapackint info = void;
+    lapackint info;
     lapackint lwork = cast(lapackint)work.length!0;
     lapack.geev_(jobvl, jobvr, n, a.iterator, lda, wr.iterator, wi.iterator, vl.iterator, ldvl, vr.iterator, ldvr, work.iterator, lwork, info);
     assert(info >= 0);
@@ -1967,7 +1967,7 @@ in {
 do {
     lapackint n = cast(lapackint) d.length;
     lapackint ldz = cast(lapackint) z._stride.max(1);
-    lapackint info = void;
+    lapackint info;
 
     lapack.steqr_(compz, n, d.iterator, e.iterator, z.iterator, ldz, work.iterator, info);
     assert(info >= 0);
@@ -2004,7 +2004,7 @@ do
     lapackint nrhs = cast(lapackint) b.length;
     lapackint lda = cast(lapackint) a._stride.max(1);
     lapackint ldb = cast(lapackint) b._stride.max(1);
-    lapackint info = void;
+    lapackint info;
 // ref char uplo, ref lapackint n, ref lapackint nrhs, float *a, ref lapackint lda, float* e, lapackint *ipiv, float *b, ref lapackint ldb, ref lapackint info
     lapack.sytrs_3_(uplo, n, nrhs, a.iterator, lda, e.iterator, ipiv.iterator, b.iterator, ldb, info);
     assert(info >= 0);
@@ -2036,7 +2036,7 @@ in
 }
 do
 {
-    lapackint info = void;
+    lapackint info;
     lapackint n = cast(lapackint) a.length;
     lapackint lda = cast(lapackint) a._stride.max(1);
     lapackint lwork = cast(lapackint) work.length;
@@ -2067,14 +2067,14 @@ in
 do
 {
 
-    lapackint info = void;
+    lapackint info;
     lapackint n = cast(lapackint) a.length;
     lapackint lda = cast(lapackint) a._stride.max(1);
     lapackint lwork = -1;
-    lapackint info = void;
-    T e = void;
-    T work = void;
-    lapackint ipiv = void;
+    lapackint info;
+    T e;
+    T work;
+    lapackint ipiv;
 
     lapack.sytrf_rk_(uplo, n, a.iterator, lda, &e, &ipiv, &work, lwork, info);
 
@@ -2131,7 +2131,7 @@ template posvx(T)
         lapackint ldaf = cast(lapackint) af._stride.max(1);
         lapackint ldx = cast(lapackint) x._stride.max(1);
         lapackint ldb = cast(lapackint) b._stride.max(1);
-        lapackint info = void;
+        lapackint info;
         lapack.posvx_(fact, uplo, n, nrhs, a._iterator, lda, af._iterator, ldaf, equed, s._iterator, b._iterator, ldb, x._iterator, ldx, rcond, ferr._iterator, berr._iterator, work._iterator, iwork._iterator, info);
         assert(info >= 0);
         return info;
@@ -2192,9 +2192,9 @@ do
     lapackint n = cast(lapackint) a.length;
     lapackint lda = cast(lapackint) a._stride.max(1);
     lapackint lwork = -1;
-    lapackint info = void;
-    T work = void;
-    lapackint ipiv = void;
+    lapackint info;
+    T work;
+    lapackint ipiv;
 
     lapack.sytrf_(uplo, n, a.iterator, lda, &ipiv, &work, lwork, info);
 
