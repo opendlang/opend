@@ -103,7 +103,6 @@ public:
                     throw mallocNew!Exception("Remaining bytes in 'data' chunk, inconsistent with audio data type.");
 
                 uint numFrames = chunkSize / frameSize;
-                
                 _lengthInFrames = numFrames;
 
                 _samplesOffsetInFile = _io.tell(_userData);
@@ -126,14 +125,24 @@ public:
 
         // Get ready to decode
         _io.seek(_samplesOffsetInFile, _userData);
+        _framePosition = 0; // seek to start
     }
 
     // read interleaved samples
     // `outData` should have enough room for frames * _channels
     // Returs: Frames actually read.
-    int readSamples(float* outData, int frames) nothrow
+    int readSamples(float* outData, int maxFrames) nothrow
     {
-        uint numSamples = frames * _channels;
+        assert(_framePosition <= _lengthInFrames);
+        int available = _lengthInFrames - _framePosition;
+
+        // How much frames can we decode?
+        int frames = maxFrames;
+        if (frames > available)
+            frames = available;
+        _framePosition += frames;
+
+        int numSamples = frames * _channels;
 
         uint n = 0;
 
@@ -198,11 +207,12 @@ public:
         }
         catch(Exception e)
         {
-            destroyFree(e);
+            destroyFree(e); // well this is really unexpected, since no read should fail in this loop
+            return 0;
         }
 
         // Return number of integer samples read
-        return n / _channels;
+        return frames;
     }
 
 package:
@@ -212,6 +222,7 @@ package:
     int _bytePerSample;
     long _samplesOffsetInFile;
     uint _lengthInFrames;
+    uint _framePosition;
 
 private:
     void* _userData;
