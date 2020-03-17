@@ -1,6 +1,6 @@
 {
-    "name": "mp3decode",
-    "description": "Decode input to a WAV.",
+    "name": "transcode",
+    "description": "Decode MP3/WAV input, output a WAV.",
     "license": "LGPL-2.1",
 
     "dependencies": 
