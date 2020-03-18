@@ -8,8 +8,8 @@ It is a replacement for the `wave-d` package but with more formats, `nothrow @no
 
 # API
 
-See `examples/transode/main.d`.
-
+See `examples/transcode/main.d`:
+https://github.com/AuburnSounds/audio-formats/blob/master/examples/transcode/source/main.d
 
 # File format support
 
