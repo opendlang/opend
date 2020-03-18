@@ -15,7 +15,6 @@
 //
 // D translation by Ketmar // Invisible Vector
 module audioformats.drflac;
-//import iv.alice;
 
 nothrow @nogc:
 version(decodeFLAC):

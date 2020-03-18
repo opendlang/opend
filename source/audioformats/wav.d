@@ -1,4 +1,9 @@
-/// Supports Microsoft WAV audio file format.
+/**
+Supports Microsoft WAV audio file format.
+
+Copyright: Guillaume Piolat 2015-2020.
+License:   $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost License 1.0)
+*/
 module audioformats.wav;
 
 import dplug.core.nogc;

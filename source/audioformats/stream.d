@@ -1,3 +1,9 @@
+/**
+Audio decoder and encoder abstraction. This delegates to format-specific encoders/decoders.
+
+Copyright: Guillaume Piolats 2020.
+License:   $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost License 1.0)
+*/
 module audioformats.stream;
 
 import core.stdc.stdio;
@@ -13,6 +19,10 @@ version(decodeMP3)  import audioformats.minimp3;
 version(decodeFLAC) import audioformats.drflac; 
 version(decodeWAV)  import audioformats.wav;
 
+/// Libray for sound file decoding and encoding.
+/// All operations are blocking, and should not be done in a real-time audio thread.
+/// (besides, you would also need resampling for playback).
+/// Also not thread-safe, synchronization in on yours.
 
 /// Format of audio files.
 enum AudioFileFormat

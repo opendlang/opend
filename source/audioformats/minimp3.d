@@ -24,6 +24,8 @@
  */
 module audioformats.minimp3;
 
+version(decodeMP3):
+
 /* code sample:
 
 */

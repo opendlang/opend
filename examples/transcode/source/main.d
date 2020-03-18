@@ -9,7 +9,7 @@ import audioformats;
 void main(string[] args)
 {
     if (args.length != 3)
-        throw new Exception("usage: mp3decode input.mp3 output.wav");
+        throw new Exception("usage: mp3decode input.{mp3|wav|flac} output.wav");
 
     string inputPath = args[1];
     string outputPath = args[2];
@@ -45,5 +45,5 @@ void main(string[] args)
 
     output.destroy();
 
-    writefln("=> %s frames decoded and written to %s", totalFrames, outputPath);
+    writefln("=> %s frames decoded and encoded to %s", totalFrames, outputPath);
 }
