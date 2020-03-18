@@ -5,13 +5,13 @@ import dplug.core.nogc;
 
 nothrow @nogc
 {
-    alias ioSeekCallback          = void function(long offset,              void* userData);
-    alias ioTellCallback          = long function(                          void* userData);  
-    alias ioGetFileLengthCallback = long function(                          void* userData);
-    alias ioReadCallback          = int  function(void* outData, int bytes, void* userData); // returns number of read bytes
-    alias ioWriteCallback         = int  function(void* inData, int bytes,  void* userData); // returns number of written bytes
-    alias ioSkipCallback          = bool function(int bytes,                void* userData);
-    alias ioFlushCallback         = bool function(                          void* userData);
+    alias ioSeekCallback          = void function(long offset, bool relative, void* userData);
+    alias ioTellCallback          = long function(                            void* userData);  
+    alias ioGetFileLengthCallback = long function(                            void* userData);
+    alias ioReadCallback          = int  function(void* outData, int bytes,   void* userData); // returns number of read bytes
+    alias ioWriteCallback         = int  function(void* inData, int bytes,    void* userData); // returns number of written bytes
+    alias ioSkipCallback          = bool function(int bytes,                  void* userData);
+    alias ioFlushCallback         = bool function(                            void* userData);
 }
 
 struct IOCallbacks
@@ -45,7 +45,7 @@ struct IOCallbacks
     ubyte peek_ubyte(void* userData) @nogc
     {
         ubyte b = read_ubyte(userData);
-        seek(tell(userData) - 1, userData);
+        seek(tell(userData) - 1, false, userData);
         return b;
     }
 

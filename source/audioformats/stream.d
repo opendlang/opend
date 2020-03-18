@@ -7,11 +7,33 @@ import core.stdc.stdlib: realloc, free;
 import dplug.core.nogc;
 import dplug.core.vec;
 
-import audioformats: AudioFileFormat;
 import audioformats.io;
 
-version(decodeMP3) import audioformats.minimp3;
-version(decodeWAV) import audioformats.wav;
+version(decodeMP3)  import audioformats.minimp3;
+version(decodeFLAC) import audioformats.drflac; 
+version(decodeWAV)  import audioformats.wav;
+
+
+/// Format of audio files.
+enum AudioFileFormat
+{
+    wav,  /// WAVE format
+    mp3,  /// MP3  format
+    flac, /// FLAC foramt
+    unknown
+}
+
+/// Returns: String representation of an `AudioFileFormat`.
+string convertAudioFileFormatToString(AudioFileFormat fmt)
+{
+    final switch(fmt) with (AudioFileFormat)
+    {
+        case wav:     return "wav";
+        case mp3:     return "mp3";
+        case flac:    return "flac";
+        case unknown: return "unknown";
+    }
+}
 
 
 /// The length of things you shouldn't query a length about:
@@ -190,6 +212,15 @@ public: // This is also part of the public API
             }
         }
 
+        version(decodeFLAC)
+        {
+            if (_flacDecoder !is null)
+            {
+                drflac_close(_flacDecoder);
+                _flacDecoder = null;
+            }
+        }
+
         version(decodeWAV)
         {
             if (_wavDecoder !is null)
@@ -277,6 +308,29 @@ public: // This is also part of the public API
 
         final switch(_format)
         {
+            case AudioFileFormat.flac:
+            {
+                version(decodeFLAC)
+                {
+                    assert(_flacDecoder !is null);
+
+                    int* integerData = cast(int*)outData;
+                    int samples = cast(int) drflac_read_s32(_flacDecoder, frames, integerData);
+
+                    // "Samples are always output as interleaved signed 32-bit PCM."
+                    // Convert to float with type-punning. Note that this looses some precision.
+                    double factor = 1.0 / int.max;
+                    foreach(n; 0..samples)
+                    {
+                        outData[n] = integerData[n]  * factor;
+                    }  
+                    return samples / _numChannels;
+                }
+                else
+                {
+                    assert(false); // Impossible
+                }
+            }
             case AudioFileFormat.mp3:
             {
                 version(decodeMP3)
@@ -329,7 +383,7 @@ public: // This is also part of the public API
                 }
                 else
                 {
-                    assert(false, "no support for MP3 decoding");
+                    assert(false); // Impossible
                 }
             }
             case AudioFileFormat.wav:
@@ -341,7 +395,7 @@ public: // This is also part of the public API
                 }
                 else
                 {
-                    assert(false, "no support for MP3 decoding");
+                    assert(false); // Impossible
                 }
 
             case AudioFileFormat.unknown:
@@ -370,9 +424,10 @@ public: // This is also part of the public API
         final switch(_format)
         {
             case AudioFileFormat.mp3:
+            case AudioFileFormat.flac:
             case AudioFileFormat.unknown:
             {
-                assert(false); // shouldn't have arrived here, as MP3 encoding isn't supported
+                assert(false); // Shouldn't have arrived here, such encoding aren't supported.
             }
             case AudioFileFormat.wav:
             {
@@ -413,7 +468,8 @@ public: // This is also part of the public API
         final switch(_format) with (AudioFileFormat)
         {
             case mp3:
-                assert(false);
+            case flac:
+                assert(false); // unsupported output encoding
             case wav:
                 { 
                     _wavEncoder.finalizeEncoding();
@@ -458,6 +514,10 @@ private:
         MP3Decoder _mp3Decoder;
         Vec!float _readBuffer;
     }
+    version(decodeFLAC)
+    {
+        drflac* _flacDecoder;
+    }
     version(decodeWAV)
     {
         WAVDecoder _wavDecoder;
@@ -484,11 +544,32 @@ private:
         _decoderContext.userDataIO = userData;
         _decoderContext.callbacks = _io;
 
+        version(decodeFLAC)
+        {
+            _io.seek(0, false, userData);
+            
+            // Is it a FLAC?
+            {
+                drflac_read_proc onRead = &flac_read;
+                drflac_seek_proc onSeek = &flac_seek;
+                void* pUserData = _decoderContext;
+                _flacDecoder = drflac_open (onRead, onSeek, _decoderContext);
+                if (_flacDecoder !is null)
+                {
+                    _format = AudioFileFormat.flac;
+                    _sampleRate = _flacDecoder.sampleRate;
+                    _numChannels = _flacDecoder.channels;
+                    _lengthInFrames = _flacDecoder.totalSampleCount / _numChannels;
+                    return;
+                }
+            }
+        }
+
         version(decodeWAV)
         {
             // Check if it's a WAV.
 
-            _io.seek(0, userData);
+            _io.seek(0, false, userData);
 
             try
             {
@@ -515,7 +596,7 @@ private:
             // Check if it's a MP3.
             // minimp3 need a delegate
 
-            _io.seek(0, userData);
+            _io.seek(0, false, userData);
             
             MP3Info info = mp3Scan(&mp3ReadDelegate, _decoderContext);
        
@@ -527,7 +608,7 @@ private:
                 _numChannels = info.channels;
                 _lengthInFrames = info.samples;
 
-                _io.seek(0, userData);
+                _io.seek(0, false, userData);
                 _mp3Decoder = mallocNew!MP3Decoder(&mp3ReadDelegate, _decoderContext);
 
                 _readBuffer = makeVec!float();
@@ -550,6 +631,8 @@ private:
         {
             case mp3:
                 throw mallocNew!Exception("Unsupported encoding format: MP3");
+            case flac:
+                throw mallocNew!Exception("Unsupported encoding format: FLAC");
             case wav:
             {
                 // Note: fractional sample rates not supported by WAV, signal an integer one
@@ -610,11 +693,11 @@ long file_tell(void* userData) nothrow @nogc
     return ftell(context.file);
 }
 
-void file_seek(long offset, void* userData) nothrow @nogc
+void file_seek(long offset, bool relative, void* userData) nothrow @nogc
 {
     FileContext* context = cast(FileContext*)userData;
     assert(offset <= int.max);
-    fseek(context.file, cast(int)offset, SEEK_SET); // Limitations: file larger than 2gb not supported
+    fseek(context.file, cast(int)offset, relative ? SEEK_CUR : SEEK_SET); // Limitations: file larger than 2gb not supported
 }
 
 long file_getFileLength(void* userData) nothrow @nogc
@@ -715,9 +798,10 @@ long memory_tell(void* userData) nothrow @nogc
     return cast(long)(context.cursor);
 }
 
-void memory_seek(long offset, void* userData) nothrow @nogc
+void memory_seek(long offset, bool relative, void* userData) nothrow @nogc
 {
-    MemoryContext* context = cast(MemoryContext*)userData;
+    MemoryContext* context = cast(MemoryContext*)userData;    
+    if (relative) offset += context.cursor;
     if (offset >= context.size) // can't seek past end of buffer, stick to the end so that read return 0 byte
         offset = context.size;
     context.cursor = cast(size_t)offset; // Note: memory streams larger than 2gb not supported
@@ -817,7 +901,7 @@ struct DecoderContext
     IOCallbacks* callbacks;
 }
 
-
+// MP3 decoder read callback
 static int mp3ReadDelegate(void[] buf, void* userDataDecoder) @nogc nothrow
 {
     DecoderContext* context = cast(DecoderContext*) userDataDecoder;
@@ -827,4 +911,27 @@ static int mp3ReadDelegate(void[] buf, void* userDataDecoder) @nogc nothrow
 
     int bytes = context.callbacks.read(buf.ptr, cast(int)(buf.length), context.userDataIO);
     return bytes;
+}
+
+
+// FLAC decoder read callbacks
+
+size_t flac_read(void* pUserData, void* pBufferOut, size_t bytesToRead) @nogc nothrow
+{
+    DecoderContext* context = cast(DecoderContext*) pUserData;
+    return context.callbacks.read(pBufferOut, cast(int)(bytesToRead), context.userDataIO);
+}
+
+bool flac_seek(void* pUserData, int offset, drflac_seek_origin origin) @nogc nothrow
+{
+    DecoderContext* context = cast(DecoderContext*) pUserData;
+    if (origin == drflac_seek_origin_start)
+    {
+        context.callbacks.seek(offset, false, context.userDataIO);
+    }
+    else if (origin == drflac_seek_origin_current)
+    {
+        context.callbacks.seek(offset, true, context.userDataIO);
+    }
+    return true;
 }

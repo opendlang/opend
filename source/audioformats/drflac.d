@@ -18,6 +18,7 @@ module audioformats.drflac;
 //import iv.alice;
 
 nothrow @nogc:
+version(decodeFLAC):
 
 
 // USAGE
@@ -276,7 +277,7 @@ struct drflac_metadata {
 // bytesToRead [in]  The number of bytes to read.
 //
 // Returns the number of bytes actually read.
-alias drflac_read_proc = size_t delegate (void* pUserData, void* pBufferOut, size_t bytesToRead);
+alias drflac_read_proc = size_t function (void* pUserData, void* pBufferOut, size_t bytesToRead);
 
 // Callback for when data needs to be seeked.
 //
@@ -288,7 +289,7 @@ alias drflac_read_proc = size_t delegate (void* pUserData, void* pBufferOut, siz
 //
 // The offset will never be negative. Whether or not it is relative to the beginning or current position is determined
 // by the "origin" parameter which will be either drflac_seek_origin_start or drflac_seek_origin_current.
-alias drflac_seek_proc = bool delegate (void* pUserData, int offset, drflac_seek_origin origin);
+alias drflac_seek_proc = bool function (void* pUserData, int offset, drflac_seek_origin origin);
 
 // Callback for when a metadata block is read.
 //
@@ -2630,7 +2631,6 @@ void drflac__init_from_info (drflac* pFlac, drflac_init_info* pInit) {
 drflac* drflac_open_with_metadata_private_xx (drflac_init_info* init, scope drflac_meta_proc onMeta, void* pUserDataMD, bool stdio) {
   import core.stdc.stdlib : malloc, free;
   import core.stdc.string : memset;
-  import std.functional : toDelegate;
 
   size_t allocationSize = (drflac).sizeof;
   allocationSize += init.maxBlockSize*init.channels*(int).sizeof;
@@ -2658,8 +2658,8 @@ drflac* drflac_open_with_metadata_private_xx (drflac_init_info* init, scope drfl
     oggbs.bytesRemainingInPage = 0;
 
     // The Ogg bistream needs to be layered on top of the original bitstream.
-    pFlac.bs.rs.onReadCB = toDelegate(&drflac__on_read_ogg);
-    pFlac.bs.rs.onSeekCB = toDelegate(&drflac__on_seek_ogg);
+    pFlac.bs.rs.onReadCB = &drflac__on_read_ogg;
+    pFlac.bs.rs.onSeekCB = &drflac__on_seek_ogg;
     pFlac.bs.rs.pUserData = cast(void*)oggbs;
   }
 //#endif
@@ -2720,12 +2720,12 @@ void drflac__close_file_handle (drflac_file file) {
 }
 
 public drflac* drflac_open_file (const(char)[] filename) {
-  import std.functional : toDelegate;
+  
 
   drflac_file file = drflac__open_file_handle(filename);
   if (file is null) return null;
 
-  drflac* pFlac = drflac_open(toDelegate(&drflac__on_read_stdio), toDelegate(&drflac__on_seek_stdio), cast(void*)file);
+  drflac* pFlac = drflac_open(&drflac__on_read_stdio, &drflac__on_seek_stdio, cast(void*)file);
   if (pFlac is null) {
     drflac__close_file_handle(file);
     return null;
@@ -2736,12 +2736,11 @@ public drflac* drflac_open_file (const(char)[] filename) {
 }
 
 public drflac* drflac_open_file_with_metadata (const(char)[] filename, scope drflac_meta_proc onMeta, void* pUserData=null) {
-  import std.functional : toDelegate;
 
   drflac_file file = drflac__open_file_handle(filename);
   if (file is null) return null;
 
-  drflac* pFlac = drflac_open_with_metadata_private(toDelegate(&drflac__on_read_stdio), toDelegate(&drflac__on_seek_stdio), onMeta, cast(void*)file, pUserData, true);
+  drflac* pFlac = drflac_open_with_metadata_private(&drflac__on_read_stdio, &drflac__on_seek_stdio, onMeta, cast(void*)file, pUserData, true);
   if (pFlac is null) {
     drflac__close_file_handle(file);
     return pFlac;
@@ -2755,7 +2754,6 @@ public drflac* drflac_open_file_with_metadata (const(char)[] filename, scope drf
 
 static if (DrFlacHasVFS) {
   public drflac* drflac_open_file (VFile fl, scope drflac_meta_proc onMeta=null) {
-    import std.functional : toDelegate;
 
     drflac* pFlac;
     if (onMeta !is null) {
@@ -2812,14 +2810,13 @@ bool drflac__on_seek_memory (void* pUserData, int offset, drflac_seek_origin ori
 }
 
 public drflac* drflac_open_memory (const(void)* data, size_t dataSize) {
-  import std.functional : toDelegate;
 
   drflac__memory_stream memoryStream;
   memoryStream.data = cast(const(ubyte)*)data;
   memoryStream.dataSize = dataSize;
   memoryStream.currentReadPos = 0;
 
-  drflac* pFlac = drflac_open(toDelegate(&drflac__on_read_memory), toDelegate(&drflac__on_seek_memory), &memoryStream);
+  drflac* pFlac = drflac_open(&drflac__on_read_memory, &drflac__on_seek_memory, &memoryStream);
   if (pFlac is null) return null;
 
   pFlac.memoryStream = memoryStream;
@@ -2840,14 +2837,13 @@ public drflac* drflac_open_memory (const(void)* data, size_t dataSize) {
 }
 
 public drflac* drflac_open_memory_with_metadata (const(void)* data, size_t dataSize, scope drflac_meta_proc onMeta, void* pUserData) {
-  import std.functional : toDelegate;
 
   drflac__memory_stream memoryStream;
   memoryStream.data = cast(const(ubyte)*)data;
   memoryStream.dataSize = dataSize;
   memoryStream.currentReadPos = 0;
 
-  drflac* pFlac = drflac_open_with_metadata_private(toDelegate(&drflac__on_read_memory), toDelegate(&drflac__on_seek_memory), onMeta, &memoryStream, pUserData, false);
+  drflac* pFlac = drflac_open_with_metadata_private(&drflac__on_read_memory, &drflac__on_seek_memory, onMeta, &memoryStream, pUserData, false);
   if (pFlac is null) return null;
 
   pFlac.memoryStream = memoryStream;
