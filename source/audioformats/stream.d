@@ -16,8 +16,11 @@ import dplug.core.vec;
 import audioformats.io;
 
 version(decodeMP3)  import audioformats.minimp3;
-version(decodeFLAC) import audioformats.drflac; 
-version(decodeWAV)  import audioformats.wav;
+version(decodeFLAC) import audioformats.drflac;
+version(decodeOGG) import audioformats.vorbis;
+
+version(decodeWAV) import audioformats.wav;
+else version(encodeWAV) import audioformats.wav;
 
 /// Libray for sound file decoding and encoding.
 /// All operations are blocking, and should not be done in a real-time audio thread.
@@ -29,7 +32,8 @@ enum AudioFileFormat
 {
     wav,  /// WAVE format
     mp3,  /// MP3  format
-    flac, /// FLAC foramt
+    flac, /// FLAC format
+    ogg,  /// OGG format
     unknown
 }
 
@@ -41,6 +45,7 @@ string convertAudioFileFormatToString(AudioFileFormat fmt)
         case wav:     return "wav";
         case mp3:     return "mp3";
         case flac:    return "flac";
+        case ogg:    return "ogg";
         case unknown: return "unknown";
     }
 }
@@ -231,6 +236,15 @@ public: // This is also part of the public API
             }
         }
 
+        version(decodeOGG)
+        {
+            if (_oggDecoder !is null)
+            {
+                destroyFree(_oggDecoder);
+                _oggDecoder = null;
+            }
+        }
+
         version(decodeWAV)
         {
             if (_wavDecoder !is null)
@@ -269,14 +283,13 @@ public: // This is also part of the public API
 
         if (memoryContext !is null)
         {
-            // TODO destroy buffer if any and owned
+            // TODO destroy buffer if any is owned
             destroyFree(memoryContext);
             memoryContext = null;
         }
 
         if (_io !is null)
         {
-            // TODO destroy buffer if any and owned
             destroyFree(_io);
             _io = null;
         }
@@ -341,6 +354,13 @@ public: // This is also part of the public API
                     assert(false); // Impossible
                 }
             }
+            
+            case AudioFileFormat.ogg:
+            {
+                // TODO
+                assert(false);
+            }
+
             case AudioFileFormat.mp3:
             {
                 version(decodeMP3)
@@ -362,8 +382,8 @@ public: // This is also part of the public API
                         size_t initialLength = _readBuffer.length();
                         _readBuffer.resize(initialLength + numDecoded);
                         float invShortMax = 1.0 / cast(float)(short.max);
-                        // Convert to float
-                        // TODO is this correct?
+
+                        // TODO is this the correct conversion factor?
                         foreach(n; 0..numDecoded)
                         {
                             import core.stdc.stdio;
@@ -435,6 +455,7 @@ public: // This is also part of the public API
         {
             case AudioFileFormat.mp3:
             case AudioFileFormat.flac:
+            case AudioFileFormat.ogg:
             case AudioFileFormat.unknown:
             {
                 assert(false); // Shouldn't have arrived here, such encoding aren't supported.
@@ -460,8 +481,7 @@ public: // This is also part of the public API
     }
 
     /// Call `fflush()` on written samples, if any. 
-    /// Automatically done by `audiostreamClose`.
-    /// It is only useful for streamable output formats, that want to flush things to disk.
+    /// It is only useful for streamable output formats, that may want to flush things to disk.
     void flush() nothrow @nogc
     {
         assert( _io && (_io.write !is null) );
@@ -479,6 +499,7 @@ public: // This is also part of the public API
         {
             case mp3:
             case flac:
+            case ogg:
                 assert(false); // unsupported output encoding
             case wav:
                 { 
@@ -528,6 +549,10 @@ private:
     {
         drflac* _flacDecoder;
     }
+    version(decodeOGG)
+    {
+        VorbisDecoder _oggDecoder;
+    }
     version(decodeWAV)
     {
         WAVDecoder _wavDecoder;
@@ -543,7 +568,7 @@ private:
     {
         // Note: 
         //  * when opened for reading, I/O operations given are: seek/tell/getFileLength/read.
-        //  * when opened for writing, I/O operations given are: seek/tell/write.
+        //  * when opened for writing, I/O operations given are: seek/tell/write/flush.
         return (_io !is null) && (_io.read is null);
     }
 
@@ -643,6 +668,8 @@ private:
                 throw mallocNew!Exception("Unsupported encoding format: MP3");
             case flac:
                 throw mallocNew!Exception("Unsupported encoding format: FLAC");
+            case ogg:
+                throw mallocNew!Exception("Unsupported encoding format: OGG");
             case wav:
             {
                 // Note: fractional sample rates not supported by WAV, signal an integer one
