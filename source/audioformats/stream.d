@@ -238,8 +238,12 @@ public: // This is also part of the public API
 
         version(decodeOGG)
         {
-            stb_vorbis_close(_oggDecoder);
-            _oggDecoder = null;
+            if (_oggDecoder !is null)
+            {
+                stb_vorbis_close(_oggDecoder);
+                _oggDecoder = null;
+            }
+            _oggBuffer.reallocBuffer(0);
         }
 
         version(decodeWAV)
@@ -354,8 +358,15 @@ public: // This is also part of the public API
             
             case AudioFileFormat.ogg:
             {
-                // TODO
-                assert(false);
+                version(decodeOGG)
+                {
+                    assert(_oggDecoder !is null);
+                    return stb_vorbis_get_samples_float_interleaved(_oggDecoder, _numChannels, outData, frames);
+                }
+                else
+                {
+                    assert(false); // Impossible
+                }
             }
 
             case AudioFileFormat.mp3:
@@ -548,6 +559,7 @@ private:
     }
     version(decodeOGG)
     {
+        ubyte[] _oggBuffer; // all allocations from the ogg decoder
         stb_vorbis* _oggDecoder;
     }
     version(decodeWAV)
@@ -621,6 +633,7 @@ private:
                 destroyFree(e);
             }
             destroyFree(_wavDecoder);
+            _wavDecoder = null;
         }
 
         version(decodeOGG)
@@ -629,8 +642,14 @@ private:
             
             // Is it an OGG?
             {
+                //"In my test files the maximal-size usage is ~150KB", so let's take a bit more
+                _oggBuffer.reallocBuffer(200 * 1024); 
+                stb_vorbis_alloc alloc;
+                alloc.alloc_buffer = cast(char*)(_oggBuffer.ptr);
+                alloc.alloc_buffer_length_in_bytes = cast(int)(_oggBuffer.length);
+
                 int error;
-                _oggDecoder = stb_vorbis_open_audioformats(_io, userData, &error, null);
+                _oggDecoder = stb_vorbis_open_audioformats(_io, userData, &error, &alloc);
                 if (_oggDecoder !is null)
                 {
                     _format = AudioFileFormat.ogg;
@@ -669,7 +688,14 @@ private:
 
                 return;
             }
-        }       
+        }
+
+        _format = AudioFileFormat.unknown;
+        _sampleRate = float.nan;
+        _numChannels = 0;
+        _lengthInFrames = -1;
+
+        throw mallocNew!Exception("unrecognized encoding");
     }
 
     void startEncoding(AudioFileFormat format, float sampleRate, int numChannels) @nogc
