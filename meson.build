@@ -1,4 +1,4 @@
-project('mir-optim', 'd', 'c', version : '1.0.0', license: 'BSL-1.0')
+project('mir-optim', 'd', version : '1.0.0', license: 'BSL-1.0')
 
 cblas_d_dep = dependency('cblas-d', fallback : ['cblas', 'cblas_dep'])
 lapack_d_dep = dependency('lapack-d', fallback : ['lapack', 'lapack_dep'])
@@ -6,7 +6,7 @@ mir_algorithm_dep = dependency('mir-algorithm', fallback : ['mir-algorithm', 'mi
 mir_blas_dep = dependency('mir-blas', fallback : ['mir-blas', 'mir_blas_dep'])
 mir_core_dep = dependency('mir-core', fallback : ['mir-core', 'mir_core_dep'])
 mir_lapack_dep = dependency('mir-lapack', fallback : ['mir-lapack', 'mir_lapack_dep'])
-mir_random_dep = dependency('mir-random', fallback : ['mir-random', 'mir_random_dep'])
+mir_random_dep = dependency('mir-random', fallback : ['mir-random', 'mir_random_dep'], default_options : ['extended=true'])
 
 required_deps = [
     cblas_d_dep,
@@ -23,10 +23,11 @@ if target_machine.system() == 'linux'
     required_deps = [required_deps, mir_linux_kernel_dep]
 endif
 
-mir_optim_dir = include_directories('source/', 'include/')
+mir_optim_dir = include_directories('source/')
 
 mir_optim_src = [
     'source/mir/optim/least_squares.d',
+    'source/mir/optim/boxcqp.d',
 ]
 
 mir_optim_lib = library(meson.project_name(),
@@ -41,11 +42,6 @@ mir_optim_dep = declare_dependency(
     link_with: [mir_optim_lib],
     include_directories: mir_optim_dir,
     dependencies: required_deps,
-)
-
-install_subdir('include/',
-    strip_directory :true,
-    install_dir: 'include/',
 )
 
 install_subdir('source/',
@@ -64,7 +60,7 @@ if get_option('with_test')
         mir_optim_src,
         include_directories: mir_optim_dir,
         d_unittest: true,
-        d_module_versions: ['mir_test'],
+        d_module_versions: ['mir_optim_test'],
         link_args: '-main',
         dependencies: required_deps,
     )
