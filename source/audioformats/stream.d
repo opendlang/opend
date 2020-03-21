@@ -238,11 +238,8 @@ public: // This is also part of the public API
 
         version(decodeOGG)
         {
-            if (_oggDecoder !is null)
-            {
-                destroyFree(_oggDecoder);
-                _oggDecoder = null;
-            }
+            stb_vorbis_close(_oggDecoder);
+            _oggDecoder = null;
         }
 
         version(decodeWAV)
@@ -551,7 +548,7 @@ private:
     }
     version(decodeOGG)
     {
-        VorbisDecoder _oggDecoder;
+        stb_vorbis* _oggDecoder;
     }
     version(decodeWAV)
     {
@@ -626,6 +623,25 @@ private:
             destroyFree(_wavDecoder);
         }
 
+        version(decodeOGG)
+        {
+            _io.seek(0, false, userData);
+            
+            // Is it an OGG?
+            {
+                int error;
+                _oggDecoder = stb_vorbis_open_audioformats(_io, userData, &error, null);
+                if (_oggDecoder !is null)
+                {
+                    _format = AudioFileFormat.ogg;
+                    _sampleRate = _oggDecoder.sample_rate;
+                    _numChannels = _oggDecoder.channels;
+                    _lengthInFrames = stb_vorbis_stream_length_in_samples(_oggDecoder);
+                    return;
+                }
+            }
+        }
+
         version(decodeMP3)
         {
             // Check if it's a MP3.
@@ -686,7 +702,7 @@ private:
     {
         if (_io && (_io.write !is null)) // if we have been encoding something
         {
-            finalizeEncoding();            
+            finalizeEncoding();
         }
     }
 }

@@ -5,11 +5,10 @@ import std.file;
 
 import audioformats;
 
-/// Usage: mp3decode source.mp3 output.wav
 void main(string[] args)
 {
     if (args.length != 3)
-        throw new Exception("usage: mp3decode input.{mp3|wav|flac} output.wav");
+        throw new Exception("usage: transcode input.{mp3|wav|flac|ogg} output.wav");
 
     string inputPath = args[1];
     string outputPath = args[2];
