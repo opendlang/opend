@@ -504,13 +504,9 @@ int error(vorb *f, STBVorbisError e)
 // alloca(); otherwise, provide a temp buffer and it will
 // allocate out of those.
 
-void* temp_alloc(stb_vorbis* f, size_t size)
+void* temp_alloc(stb_vorbis* f, size_t sz)
 {
-    return (f.alloc.alloc_buffer ? setup_temp_malloc(f,cast(int)size) : alloca(size));
-}
-
-void temp_free(stb_vorbis* f, void* p) 
-{
+    return malloc(sz);
 }
 
 int temp_alloc_save(stb_vorbis* f)
@@ -526,8 +522,8 @@ void temp_alloc_restore(stb_vorbis* f, int p)
 
 void* temp_block_array(stb_vorbis* f, int count, int size)
 {
-   int array_size_required = count * (cast(int)( (void *).sizeof ) + size);
-   return make_block_array( temp_alloc(f, array_size_required), count, size);
+    int array_size_required = count * (cast(int)( (void *).sizeof ) + size);
+    return make_block_array( temp_alloc(f, array_size_required), count, size);
 }
 
 
@@ -546,21 +542,12 @@ void *make_block_array(void *mem, int count, int size)
 
 void *setup_malloc(vorb *f, size_t sz)
 {
-   sz = (sz+7) & ~7; // round up to nearest 8 for alignment of future allocs.
-   f.setup_memory_required += sz;
-   if (f.alloc.alloc_buffer) {
-      void *p = cast(char *) f.alloc.alloc_buffer + f.setup_offset;
-      if (f.setup_offset + sz > f.temp_offset) return null;
-      f.setup_offset += sz;
-      return p;
-   }
-   return sz ? malloc(sz) : null;
+     return sz ? malloc(sz) : null;
 }
 
 void setup_free(vorb *f, void *p)
 {
-   if (f.alloc.alloc_buffer) return; // do nothing; setup mem is a stack
-   free(p);
+     free(p);
 }
 
 void *setup_temp_malloc(vorb *f, size_t sz)
@@ -570,13 +557,7 @@ void *setup_temp_malloc(vorb *f, size_t sz)
 
 void *setup_temp_malloc(vorb *f, int sz)
 {
-   sz = (sz+7) & ~7; // round up to nearest 8 for alignment of future allocs.
-   if (f.alloc.alloc_buffer) {
-      if (f.temp_offset - sz < f.setup_offset) return null;
-      f.temp_offset -= sz;
-      return cast(char *) f.alloc.alloc_buffer + f.temp_offset;
-   }
-   return malloc(sz);
+    return sz ? malloc(sz) : null; // do not use temp buffer in setup, as it leads to crashes
 }
 
 void setup_temp_free(vorb *f, void *p, size_t sz)
@@ -586,11 +567,7 @@ void setup_temp_free(vorb *f, void *p, size_t sz)
 
 void setup_temp_free(vorb *f, void *p, int sz)
 {
-   if (f.alloc.alloc_buffer) {
-      f.temp_offset += (sz+3)&~3;
-      return;
-   }
-   free(p);
+    free(p);
 }
 
 enum CRC32_POLY = 0x04c11db7;   // from spec
@@ -1714,7 +1691,6 @@ void decode_residue(vorb *f, float** residue_buffers, int ch, int n, int rn, uin
       }
    }
   done:
-   temp_free(f,part_classdata);
    temp_alloc_restore(f,temp_alloc_point);
 }
 
@@ -2241,7 +2217,6 @@ static void inverse_mdct(float *buffer, int n, vorb *f, int blocktype)
       }
    }
 
-   temp_free(f,buf2);
    temp_alloc_restore(f,save_point);
 }
 
