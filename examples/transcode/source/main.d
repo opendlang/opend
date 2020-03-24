@@ -8,7 +8,7 @@ import audioformats;
 void main(string[] args)
 {
     if (args.length != 3)
-        throw new Exception("usage: transcode input.{mp3|wav|flac|ogg} output.wav");
+        throw new Exception("usage: transcode input.{mp3|wav|flac|ogg|opus} output.wav");
 
     string inputPath = args[1];
     string outputPath = args[2];

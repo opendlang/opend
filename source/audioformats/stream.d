@@ -17,7 +17,8 @@ import audioformats.io;
 
 version(decodeMP3)  import audioformats.minimp3;
 version(decodeFLAC) import audioformats.drflac;
-version(decodeOGG) import audioformats.vorbis;
+version(decodeOGG)  import audioformats.vorbis;
+version(decodeOPUS) import audioformats.dopus;
 
 version(decodeWAV) import audioformats.wav;
 else version(encodeWAV) import audioformats.wav;
@@ -33,7 +34,8 @@ enum AudioFileFormat
     wav,  /// WAVE format
     mp3,  /// MP3  format
     flac, /// FLAC format
-    ogg,  /// OGG format
+    ogg,  /// OGG  format
+    opus, /// Opus format
     unknown
 }
 
@@ -45,7 +47,8 @@ string convertAudioFileFormatToString(AudioFileFormat fmt)
         case wav:     return "wav";
         case mp3:     return "mp3";
         case flac:    return "flac";
-        case ogg:    return "ogg";
+        case ogg:     return "ogg";
+        case opus:    return "opus";
         case unknown: return "unknown";
     }
 }
@@ -246,6 +249,16 @@ public: // This is also part of the public API
             _oggBuffer.reallocBuffer(0);
         }
 
+        version(decodeOPUS)
+        {
+            if (_opusDecoder !is null)
+            {
+                opusClose(_opusDecoder);
+                _opusDecoder = null;
+            }
+            _opusBuffer = null;
+        }
+
         version(decodeWAV)
         {
             if (_wavDecoder !is null)
@@ -332,6 +345,53 @@ public: // This is also part of the public API
 
         final switch(_format)
         {
+            case AudioFileFormat.opus:
+            {
+                version(decodeOPUS)
+                {
+                    try
+                    {
+                        int decoded = 0;
+                        while (decoded < frames)
+                        {
+                            // Is there any sample left in _opusBuffer?
+                            // If not decode some frames.
+                            if (_opusBuffer is null || _opusBuffer.length == 0)
+                            {
+                                _opusBuffer = _opusDecoder.readFrame();
+                                if (_opusBuffer is null)
+                                    break;
+                            }
+
+                            int samplesInBuffer = cast(int) _opusBuffer.length;
+                            int framesInBuffer  = samplesInBuffer / _numChannels;
+                            if (framesInBuffer == 0)
+                                break;
+
+                            // Frames to pull are min( frames left to decode, frames available)
+                            int framesToDecode = frames - decoded;
+                            int framesToUse = framesToDecode < framesInBuffer ? framesToDecode : framesInBuffer;
+                            assert(framesToUse != 0);
+
+                            int samplesToUse = framesToUse * _numChannels;
+                            int outOffset = decoded*_numChannels;
+                            for (int n = 0; n < samplesToUse; ++n)
+                            {
+                                outData[outOffset + n] = _opusBuffer[n] / 32767.0f;
+                            }
+                            _opusBuffer = _opusBuffer[samplesToUse..$]; // reduce size of intermediate buffer
+                            decoded += framesToUse;
+                        }
+                            return decoded;
+                    }
+                    catch(Exception e)
+                    {
+                        destroyFree(e);
+                        return 0; // decoding might fail, in which case return zero samples
+                    }
+                }
+            }
+
             case AudioFileFormat.flac:
             {
                 version(decodeFLAC)
@@ -464,6 +524,7 @@ public: // This is also part of the public API
             case AudioFileFormat.mp3:
             case AudioFileFormat.flac:
             case AudioFileFormat.ogg:
+            case AudioFileFormat.opus:
             case AudioFileFormat.unknown:
             {
                 assert(false); // Shouldn't have arrived here, such encoding aren't supported.
@@ -508,6 +569,7 @@ public: // This is also part of the public API
             case mp3:
             case flac:
             case ogg:
+            case opus:
                 assert(false); // unsupported output encoding
             case wav:
                 { 
@@ -566,6 +628,11 @@ private:
     {
         WAVDecoder _wavDecoder;
     }
+    version(decodeOPUS)
+    {
+        OpusFile _opusDecoder;
+        short[] _opusBuffer;
+    }
 
     // Encoder
     version(encodeWAV)
@@ -587,6 +654,25 @@ private:
         _decoderContext = mallocNew!DecoderContext;
         _decoderContext.userDataIO = userData;
         _decoderContext.callbacks = _io;
+
+        version(decodeOPUS)
+        {
+            try
+            {
+                _opusDecoder = opusOpen(_io, userData);
+                assert(_opusDecoder !is null);
+                _format = AudioFileFormat.opus;
+                _sampleRate = _opusDecoder.rate; // Note: Opus file are always 48Khz
+                _numChannels = _opusDecoder.channels();
+                _lengthInFrames = _opusDecoder.smpduration();
+                return;
+            }
+            catch(Exception e)
+            {
+                destroyFree(e);
+            }
+            _opusDecoder = null;
+        }
 
         version(decodeFLAC)
         {
@@ -712,6 +798,8 @@ private:
                 throw mallocNew!Exception("Unsupported encoding format: FLAC");
             case ogg:
                 throw mallocNew!Exception("Unsupported encoding format: OGG");
+            case opus:
+                throw mallocNew!Exception("Unsupported encoding format: Opus");
             case wav:
             {
                 // Note: fractional sample rates not supported by WAV, signal an integer one
@@ -738,8 +826,6 @@ private: // not meant to be imported at all
 
 
 // Internal object for audio-formats
-
-
 
 
 // File callbacks

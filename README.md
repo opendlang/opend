@@ -1,7 +1,7 @@
 # audio-formats
 Audio format loading for D.
 
-Can decode WAV / MP3 / FLAC from a file or memory.
+Can decode WAV / MP3 / FLAC / OPUS / OGG from a file or memory.
 Can encode WAV to a file or to memory.
 
 It is a replacement for the `wave-d` package but with more formats, `nothrow @nogc` and chunk support.
@@ -18,6 +18,8 @@ https://github.com/AuburnSounds/audio-formats/blob/master/examples/transcode/sou
 | WAV   | Yes        | Yes      |
 | MP3   | Yes (LGPL) | No       |
 | FLAC  | Yes        | No       |
+| OPUS  | Yes        | No       |
+| OGG   | Broken     | No       |
 
 **All of this wouldn't be possible without the hard work of Ketmar.** This library is merely a repackaging.
 
@@ -25,5 +27,11 @@ https://github.com/AuburnSounds/audio-formats/blob/master/examples/transcode/sou
 # License
 
 - LGPL v2.1 with MP3 decoding.
+- LGPL v2.1 with OPUS decoding.
 - Boost license otherwise.
 (use DUB subconfigurations) to choose.
+
+
+# Bugs
+
+- OGG decoding doesn't work, the sound is unusable.
