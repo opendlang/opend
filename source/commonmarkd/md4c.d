@@ -25,12 +25,27 @@
  */
 module commonmarkd.md4c;
 
-import core.stdc.stdlib;
 import core.stdc.string;
 import core.stdc.stdio;
+import core.stdc.stdlib: malloc, realloc, free;
 
 nothrow:
 @nogc:
+
+// Compatibility with older DMDFE
+static if (__VERSION__ < 2079)
+{
+    import core.stdc.stdlib: _compare_fp_t;
+    // Provide @nogc nothrow bsearch and qsort for older compilers
+    extern (C):
+    @system:
+    inout(void)* bsearch(scope const void* key, scope inout(void)* base, size_t nmemb, size_t size, _compare_fp_t compar);
+    void    qsort(scope void* base, size_t nmemb, size_t size, _compare_fp_t compar);
+}
+else
+{
+    import core.stdc.stdlib: qsort, bsearch;
+}
 
 alias MD_CHAR = char;
 alias MD_SIZE = uint;
@@ -1957,7 +1972,7 @@ nothrow:
     }
 }
 
-extern(C) int md_ref_def_cmp(const(void)* a, const void* b)
+extern(C) int md_ref_def_cmp(scope const(void)* a, scope const void* b)
 {
     const(MD_REF_DEF)* a_ref = *cast(const(MD_REF_DEF*)*)a;
     const(MD_REF_DEF)* b_ref = *cast(const(MD_REF_DEF*)*)b;
@@ -1970,7 +1985,7 @@ extern(C) int md_ref_def_cmp(const(void)* a, const void* b)
         return md_link_label_cmp(a_ref.label, a_ref.label_size, b_ref.label, b_ref.label_size);
 }
 
-extern(C) int md_ref_def_cmp_stable(const(void)* a, const(void)* b)
+extern(C) int md_ref_def_cmp_stable(scope const(void)* a, scope const(void)* b)
 {
     int cmp;
 
@@ -8877,7 +8892,7 @@ struct entity_key
     size_t name_size;
 }
 
-extern(C) int entity_cmp(const(void)* p_key, const(void)* p_entity)
+extern(C) int entity_cmp(scope const(void)* p_key, scope const(void)* p_entity)
 {
     entity_key* key = cast(entity_key*) p_key;
     entity* ent = cast(entity*) p_entity;
