@@ -139,7 +139,7 @@ struct TaggedAlgebraic(U) if (is(U == union) || is(U == struct) || is(U == enum)
 ///
 @safe unittest
 {
-	import taggedalgebraic;
+	import taggedalgebraic.taggedalgebraic;
 
 	struct Foo {
 		string name;
