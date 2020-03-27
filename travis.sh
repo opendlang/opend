@@ -9,5 +9,7 @@ if [ ! -z "${COVERAGE:-}" ]; then
     wget https://codecov.io/bash -O codecov.sh
     bash codecov.sh
 else
-	dub test
+    dub test
+    meson build
+    ninja -C build
 fi
