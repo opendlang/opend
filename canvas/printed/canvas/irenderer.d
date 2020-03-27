@@ -277,7 +277,8 @@ float convertMillimetersToPoints(float pt) pure nothrow @nogc @safe
 /// as created by the `measureText()` method.
 struct TextMetrics
 {
-    float width;
+    float width;   /// Suggested horizontal advance to the next block of text.
+    float lineGap; /// Suggested offset to the next line, baseline to baseline.
 }
 
 

@@ -343,7 +343,7 @@ public:
     int lineGap()
     {
         computeFontMetrics();
-        return _lineGap;
+        return _ascender - _descender + _lineGap;
     }
 
     /// Returns: 'A' height.

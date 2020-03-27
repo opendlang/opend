@@ -137,6 +137,7 @@ final class PDFDocument : IRenderingContext2D
         OpenTypeTextMetrics otMetrics = font.measureText(text);
         TextMetrics metrics;
         metrics.width = _fontSize * otMetrics.horzAdvance * font.invUPM(); // convert to millimeters
+        metrics.lineGap = _fontSize * font.lineGap() * font.invUPM();
         return metrics;
     }
 
