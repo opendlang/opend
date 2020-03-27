@@ -44,6 +44,8 @@ import test_allocator;
     () @trusted { vec.reserve(10); }();
     vec[3].shouldThrow!BoundsException;
     vec[-1].shouldThrow!BoundsException;
+    () @trusted { vec[0 .. 4].shouldThrow!BoundsException; }();
+    () @trusted { vec[0.. 3]; }(); // shouldn't throw (see #45)
 }
 
 @("extend")
@@ -108,6 +110,7 @@ import test_allocator;
     vec[1 .. 4].should == [1, 2, 3];
     vec[2 .. 5].should == [2, 3, 4];
     vec[1 .. $ - 1].should == [1, 2, 3, 4];
+    vec[0 .. 6].should == [0, 1, 2, 3, 4, 5];
 }
 
 @("opDollar")
