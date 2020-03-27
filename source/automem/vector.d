@@ -362,7 +362,7 @@ struct Vector(E, Allocator = typeof(theAllocator)) if(isAllocator!Allocator) {
         if(start < 0 || start >= length)
             mixin(throwBoundsException);
 
-        if(end < 0 || end >= length)
+        if(end < 0 || end > length)
             mixin(throwBoundsException);
 
         return _elements[start.toSizeT .. end.toSizeT];
