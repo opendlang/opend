@@ -21,3 +21,5 @@ _build_dir_/
 *.lib
 mir-random-test-default
 subprojects/*/
+docgen
+.DS_Store
