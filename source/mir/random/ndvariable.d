@@ -111,6 +111,9 @@ alias sphereVariable = sphereVar;
 /// Generate random points on a circle
 @nogc nothrow @safe version(mir_random_test) unittest
 {
+    import mir.random.engine;
+    import mir.math.common: fabs;
+
     double[2] x;
     sphereVar()(rne, x);
     assert(fabs(x[0] * x[0] + x[1] * x[1] - 1) < 1e-10);
@@ -118,6 +121,8 @@ alias sphereVariable = sphereVar;
 
 @nogc nothrow @safe version(mir_random_test) unittest
 {
+    import mir.math.common: fabs;
+
     Random* gen = threadLocalPtr!Random;
     double[2] x;
     sphereVar()(gen, x);
@@ -178,6 +183,7 @@ alias simplexVariable = simplexVar;
     // mir.ndslice package is required for 'SimplexVariable', it can be found in 'mir-algorithm'
     static if (is(typeof({ import mir.ndslice.slice; })))
     {
+        import mir.random.engine;
         auto rv = simplexVar;
         double[3] x;
         rv(rne, x);
@@ -189,9 +195,13 @@ alias simplexVariable = simplexVar;
 ///
 @nogc nothrow @safe version(mir_random_test) unittest
 {
+    import mir.math.common: fabs;
+
     // mir.ndslice package is required for 'SimplexVariable', it can be found in 'mir-algorithm'
     static if (is(typeof({ import mir.ndslice.slice; })))
     {
+        import mir.ndslice.slice;
+
         Random* gen = threadLocalPtr!Random;
         SimplexVariable!double rv;
         double[3] x;
@@ -262,6 +272,9 @@ alias dirichletVariable = dirichletVar;
 ///
 nothrow @safe version(mir_random_test) unittest
 {
+    import mir.random.engine;
+    import mir.math.common: fabs;
+
     auto rv = dirichletVar([1.0, 5.7, 0.3]);
     double[3] x;
     rv(rne, x);
@@ -272,6 +285,9 @@ nothrow @safe version(mir_random_test) unittest
 ///
 nothrow @safe version(mir_random_test) unittest
 {
+    import mir.random.engine;
+    import mir.math.common: fabs;
+
     Random* gen = threadLocalPtr!Random;
     auto rv = DirichletVariable!double([1.0, 5.7, 0.3]);
     double[3] x;
@@ -370,6 +386,7 @@ alias multinomialVariable = multinomialVar;
 /// Tests if sample returned is of correct size.
 nothrow @safe version(mir_random_test) unittest
 {
+    import mir.random.engine;
     size_t s = 10000;
     double[6] p =[1/6., 1/6., 1/6., 1/6., 1/6., 1/6.]; // probs must add up to one
     auto rv = multinomialVar(s, p);
@@ -380,6 +397,8 @@ nothrow @safe version(mir_random_test) unittest
 
 nothrow @safe version(mir_random_test) unittest
 {
+    import mir.random.engine;
+
     Random* gen = threadLocalPtr!Random;
     size_t s = 1000;
     double[3] p = [0.1, 0.5, 0.4];
@@ -546,6 +565,7 @@ nothrow @safe version(mir_random_test) unittest
     // mir.ndslice package is required for 'multivariateNormalVar', it can be found in 'mir-algorithm'
     static if (is(typeof({ import mir.ndslice.slice; })))
     {
+        import mir.random.engine;
         import mir.ndslice.slice: sliced;
         auto mu = [10.0, 0.0].sliced;
         auto sigma = [2.0, -1.5, -1.5, 2.0].sliced(2,2);
@@ -562,6 +582,8 @@ nothrow @safe version(mir_random_test) unittest
     static if (is(typeof({ import mir.ndslice.slice; })))
     {
         import mir.ndslice.slice: sliced;
+        import mir.random.engine;
+
         Random* gen = threadLocalPtr!Random;
         auto mu = [10.0, 0.0].sliced;
         auto sigma = [2.0, -1.5, -1.5, 2.0].sliced(2,2);

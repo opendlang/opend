@@ -613,6 +613,7 @@ static if (THREAD_LOCAL_STORAGE_AVAILABLE)
     @nogc nothrow @system version(mir_random_test) unittest
     {
         import mir.random;
+
         alias rnd = threadLocal!Random;
 
         setThreadLocalSeed!Random(123);

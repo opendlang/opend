@@ -1892,6 +1892,8 @@ nothrow @safe version(mir_random_test) unittest
 /// Cumulative
 nothrow @safe version(mir_random_test) unittest
 {
+    import mir.random.engine;
+
     auto gen = Random(unpredictableSeed);
 
     auto cumulative = [10.0, 30, 40, 90, 120];

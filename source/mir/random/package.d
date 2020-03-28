@@ -614,6 +614,7 @@ T randIndex(T)(T m)
 ///
 @nogc nothrow pure @safe version(mir_random_test) unittest
 {
+    import mir.random;
     import mir.random.engine.xorshift;
     auto gen = Xorshift(1);
     auto s = gen.randIndex!uint(100);
