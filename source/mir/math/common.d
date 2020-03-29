@@ -29,7 +29,7 @@ version(LDC)
     alias fmamath = AliasSeq!(ldc.attributes.llvmFastMathFlag("contract"));
 
     /++
-    Functions attribute, an alias for `AliasSeq!(llvmAttr("unsafe-fp-math", "false"), llvmFastMathFlag("fast"))`.
+    Functions attribute, an alias for `AliasSeq!(llvmFastMathFlag("fast"))`.
     
     It is similar to $(LREF fastmath), but does not allow unsafe-fp-math.
     This flag does NOT force LDC to use the reciprocal of an argument rather than perform division.
@@ -41,7 +41,7 @@ version(LDC)
     alias optmath = AliasSeq!(ldc.attributes.llvmFastMathFlag("fast"));
 
     /++
-    Functions attribute, an alias for `ldc.attributes.fastmath = AliasSeq!(llvmAttr("unsafe-fp-math", "true"), llvmFastMathFlag("fast"))` .
+    Functions attribute, an alias for `ldc.attributes.fastmath` .
     
     $(UL
 
