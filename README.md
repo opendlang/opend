@@ -34,7 +34,7 @@ This package also can be used as workaround for [core.cpuid Issue 16028](https:/
 
 ## Documentation
 
-See http://docs.cpuid.dlang.io .
+http://mir-cpuid.libmir.org
 
 ## Testing
 
