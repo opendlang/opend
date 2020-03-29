@@ -70,7 +70,7 @@ range primitives for arrays with multi-dimensional like API support)
 Copyright: Copyright © 2020-, Ilya Yaroshenko.
 
 Macros:
-        TITLE=ASDF
-        WIKI=ASDF
+        TITLE=Mir Core
+        WIKI=Mir Core
         DDOC_BLANKLINE=
         _=

@@ -80,7 +80,7 @@ import('pkgconfig').generate(this_lib,
     subdirs: 'd/' + meson.project_name(),
 )
 
-asdf_dep = this_dep
-asdf_lib = this_lib
+mir_core_dep = this_dep
+mir_core_lib = this_lib
 
 test_subdirs = []
