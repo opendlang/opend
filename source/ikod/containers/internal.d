@@ -24,9 +24,9 @@ template StoredType(T)
 
 import std.experimental.logger;
 
-debug(cachetools) @safe @nogc nothrow
+debug(cachetools) @safe @nogc
 {
-    package void safe_tracef(A...)(string f, scope A args, string file = __FILE__, int line = __LINE__) @safe @nogc nothrow
+    package void safe_tracef(A...)(string f, scope A args, string file = __FILE__, int line = __LINE__) @safe @nogc
     {
         bool osx,ldc;
         version(OSX)
@@ -47,6 +47,7 @@ debug(cachetools) @safe @nogc nothrow
             }
             catch(Exception e)
             {
+                () @trusted @nogc nothrow {try{errorf("[%x] %s:%d Exception: %s", Thread.getThis().id(), file, line, e);}catch{}}();
             }
         }
     }    

@@ -195,18 +195,19 @@ struct CompressedList(T, Allocator = Mallocator, bool GCRangesAllowed = true)
         Page*   _pages_first, _pages_last;
         ulong   _length;
 
-        Page*   _freelist;
-        int     _freelist_len;
-        enum    _freelist_len_max = 100;
+        static  Page*   _freelist;
+        static int     _freelist_len;
+        static enum    _freelist_len_max = 100;
     }
     this(this) {
         auto r = range();
-        _pages_first = _pages_last = _freelist = null;
+        _pages_first = _pages_last =null;
         _length = 0;
-        _freelist_len = 0;
         foreach(e; r) {
             insertBack(e);
         }
+        _freelist = null;
+        _freelist_len = 0;
     }
     private void move_to_freelist(Page* page) @safe @nogc {
         if ( _freelist_len >= _freelist_len_max )
@@ -267,20 +268,23 @@ struct CompressedList(T, Allocator = Mallocator, bool GCRangesAllowed = true)
             }();
             page = next;
         }
-        page = _freelist;
-        while(page)
-        {
-            next = page._nextPage;
-            () @trusted {
-                static if ( UseGCRanges!(Allocator, T, GCRangesAllowed) ) {
-                    GC.removeRange(page);
-                }
-                dispose(allocator, page);
-            }();
-            page = next;
-        }
-        _length = _freelist_len = 0;
-        _pages_first = _pages_last = _freelist = null;
+        // page = _freelist;
+        // while(page)
+        // {
+        //     next = page._nextPage;
+        //     () @trusted {
+        //         static if ( UseGCRanges!(Allocator, T, GCRangesAllowed) ) {
+        //             GC.removeRange(page);
+        //         }
+        //         dispose(allocator, page);
+        //     }();
+        //     page = next;
+        // }
+        _length = 0;
+        _pages_first = _pages_last = null;
+
+        // _freelist_len = 0;
+        // _freelist = null;
     }
 
     /// Is list empty?
@@ -378,7 +382,7 @@ struct CompressedList(T, Allocator = Mallocator, bool GCRangesAllowed = true)
         }
         _length--;
         Page* page = _pages_first;
-        debug(cachetools) safe_tracef("popfront: page before: %s", *page);
+        //debug(cachetools) safe_tracef("popfront: page before: %s", *page);
         assert(page !is null);
         with (page) {
             assert(_count>0);
@@ -433,9 +437,6 @@ struct CompressedList(T, Allocator = Mallocator, bool GCRangesAllowed = true)
         assert(index < NodesPerPage);
         Node nn = Node(v, -1, page._firstNode);
         move(nn, page._nodes[index]);
-        // page._nodes[index].v = v;
-        // page._nodes[index].p = -1;
-        // page._nodes[index].n = page._firstNode;
         if (page._count == 0)
         {
             page._firstNode = page._lastNode = cast(ubyte)index;
@@ -449,7 +450,7 @@ struct CompressedList(T, Allocator = Mallocator, bool GCRangesAllowed = true)
         }
         page._count++;
         assert(page._count == countBusy(page._freeMap));
-        debug(cachetools) safe_tracef("page: %s", *page);
+        debug(cachetools) safe_tracef("page after insert front: %s", *page);
         return;
     }
 
@@ -462,7 +463,7 @@ struct CompressedList(T, Allocator = Mallocator, bool GCRangesAllowed = true)
         Page* p = _pages_last;
         assert( p !is null);
         assert( p._count > 0 );
-        debug(cachetools) safe_tracef("page: %s", *p);
+        //debug(cachetools) safe_tracef("page: %s", *p);
         with(p)
         {
             return _nodes[_lastNode].v;
@@ -531,9 +532,6 @@ struct CompressedList(T, Allocator = Mallocator, bool GCRangesAllowed = true)
         assert(index < NodesPerPage);
         Node nn = Node(v, page._lastNode, -1);
         move(nn, page._nodes[index]);
-        // page._nodes[index].v = v;
-        // page._nodes[index].n = -1;
-        // page._nodes[index].p = page._lastNode;
         if (page._count == 0)
         {
             page._firstNode = page._lastNode = cast(ubyte)index;
@@ -547,7 +545,7 @@ struct CompressedList(T, Allocator = Mallocator, bool GCRangesAllowed = true)
         }
         page._count++;
         assert(page._count == countBusy(page._freeMap));
-        debug(cachetools) safe_tracef("page: %s", *page);
+        //debug(cachetools) safe_tracef("page: %s", *page);
         return;
     }
 }

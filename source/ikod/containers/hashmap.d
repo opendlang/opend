@@ -787,7 +787,7 @@ struct HashMap(K, V, Allocator = Mallocator, bool GCRangesAllowed = true) {
             _buckets = BucketStorage.init;
         }
 
-        this(BucketStorage _b) {
+        this(ref BucketStorage _b) {
             if ( _b !is null ) {
                 _buckets_num = _b.bs.length;
                 _buckets = BucketStorage(_buckets_num);
