@@ -1,9 +1,6 @@
-project('mir-lapack', 'd', 'c', version : '1.0.0', license: 'BSL-1.0')
+project('mir-lapack', 'd', 'c', version: '1.2.5', license: 'BSL-1.0')
 
-cblas_d_dep = dependency('cblas-d', fallback : ['cblas', 'cblas_dep'])
-lapack_d_dep = dependency('lapack-d', fallback : ['lapack', 'lapack_dep'])
-mir_algorithm_dep = dependency('mir-algorithm', fallback : ['mir-algorithm', 'mir_algorithm_dep'])
-mir_blas_dep = dependency('mir-blas', fallback : ['mir-blas', 'mir_blas_dep'])
+description = 'Mir LAPACK - ndslice wrapper for LAPACK'
 
 cc = meson.get_compiler('c')
 lapack_deps = []
@@ -11,55 +8,72 @@ if not cc.find_library('openblas', required : false).found()
     lapack_deps = [cc.find_library('lapack')]
 endif
 
-required_deps = [
-    cblas_d_dep,
-    lapack_d_dep,
-    lapack_deps,
-    mir_algorithm_dep,
-    mir_blas_dep,
+subprojects = ['cblas-d', 'lapack-d', 'mir-core', 'mir-algorithm', 'mir-blas']
+
+has_cpp_headers = false
+
+sources_list = [
+    'mir/lapack',
 ]
 
-mir_lapack_dir = include_directories('source/')
+sources = []
+foreach s : sources_list
+    sources += 'source/' + s + '.d'
+endforeach
 
-mir_lapack_src = [
-    'source/mir/lapack.d',
-]
+add_project_arguments([
+    '-preview=dip1008',
+    '-lowmem',
+], language: 'd')
 
-mir_lapack_lib = library(meson.project_name(),
-    mir_lapack_src,
-    include_directories: mir_lapack_dir,
+required_deps = lapack_deps
+
+foreach p : subprojects 
+    required_deps += dependency(p, fallback : [p, 'this_dep'])
+endforeach
+
+directories = ['source']
+
+if has_cpp_headers
+    directories += 'include'
+endif
+
+directories = include_directories(directories)
+
+this_lib = library(meson.project_name(),
+    sources,
+    include_directories: directories,
     install: true,
     version: meson.project_version(),
     dependencies: required_deps,
 )
 
-mir_lapack_dep = declare_dependency(
-    link_with: [mir_lapack_lib],
-    include_directories: mir_lapack_dir,
+this_dep = declare_dependency(
+    link_with: [this_lib],
+    include_directories: directories,
     dependencies: required_deps,
 )
+
+test_versions = []
+
+if has_cpp_headers
+    install_subdir('include/',
+        strip_directory :true,
+        install_dir: 'include/',
+    )
+endif
 
 install_subdir('source/',
     strip_directory : true,
     install_dir: 'include/d/' + meson.project_name(),
 )
 
-import('pkgconfig').generate(mir_lapack_lib,
-    description: 'ndslice API for LAPACK',
+import('pkgconfig').generate(this_lib,
+    description: description,
     subdirs: 'd/' + meson.project_name(),
 )
 
-if get_option('with_test')
+mir_lapack_dep = this_dep
+mir_lapack_lib = this_lib
 
-    mir_lapack_test_exe = executable(meson.project_name() + '-test',
-        mir_lapack_src,
-        include_directories: mir_lapack_dir,
-        d_unittest: true,
-        d_module_versions: ['mir_test'],
-        link_args: '-main',
-        dependencies: required_deps,
-    )
-
-    test(meson.project_name() + '-test', mir_lapack_test_exe)
-
-endif
+test_subdirs = ['examples/gesv']

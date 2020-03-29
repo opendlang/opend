@@ -21,3 +21,5 @@ examples/gesv/gesv
 *.dll
 build/
 *.exe
+_build_dir_
+subprojects/*/

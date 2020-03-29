@@ -1,7 +1,10 @@
 /++
 Low level ndslice wrapper for LAPACK.
 
-Attention: LAPACK and this module has column major API.
+$(RED Attention: LAPACK and this module has column major API.)
+ndslice rows corresponds to LAPACK columns.
+
+Functions with `*_wq` suffix are wrappers for workspace queries.
 
 Authors: Ilya Yaroshenko
 Copyright:  Copyright © 2017, Symmetry Investments & Kaleidic Associates

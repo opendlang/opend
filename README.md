@@ -10,49 +10,7 @@ See [wiki: Link with CBLAS & LAPACK](https://github.com/libmir/mir-lapack/wiki/L
 
 ## Wrapped API
 
- - gebak
- - gebal
- - geev
- - gehrd
- - gelsd
- - geqrf
- - geqrs
- - gesdd
- - gesv
- - gesvd
- - getrf
- - getri
- - getrs
- - hsein
- - hseqr
- - ilaenv
- - ilaenv2stage
- - orgqr
- - ormqr
- - posvx
- - potrf
- - potri
- - potrs
- - pptrf
- - pptri
- - spev
- - sptrf
- - sptri
- - steqr
- - syev
- - syev_2stage
- - sysv_rook
- - sytrf
- - sytrf_rk
- - sytrs_3
- - sytrs2
- - tptri
- - trevc
- - trtri
- - unghr
- - ungqr
- - unmhr
- - unmqr
+http://mir-lapack.libmir.org
 
 ---------------
 
