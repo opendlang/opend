@@ -2,7 +2,7 @@
 Low level ndslice wrapper for LAPACK.
 
 $(RED Attention: LAPACK and this module has column major API.)
-ndslice rows corresponds to LAPACK columns.
+ndslice rows correspond to LAPACK columns.
 
 Functions with `*_wq` suffix are wrappers for workspace queries.
 
