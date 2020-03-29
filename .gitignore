@@ -30,3 +30,4 @@ mir-cpuid-test-library
 cpuid-report.exe
 mir-cpuid-test-library.exe
 mir-cpuid.lib
+subprojects/*/
