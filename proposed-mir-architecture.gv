@@ -5,10 +5,8 @@ digraph G {
   "mir" [color=lightblue]
   "mir-algorithm" [color=lightblue]
   "mir-image" [color=lightblue]
-  "mir-runtime" [color=lightblue]
   "mir-color" [color=lightblue]
   "mir-core" [color=lightblue]
-  "mir-core" -> "mir-runtime"
   "mir-core" -> "mir-color"
   "mir-core" -> "mir"
   "mir-image" -> "mir-cv"
@@ -17,8 +15,8 @@ digraph G {
   "mir" -> "mir-algorithm"
   "mir-algorithm" -> "mir-image"
   "mir-algorithm" -> "mir-model"
-  "mir-runtime" -> "mir-algorithm"
-  "mir-runtime" -> "mir-optim"
+  "mir-core" -> "mir-algorithm"
+  "mir-core" -> "mir-optim"
   "mir-core" -> "mir-cpuid"
   "mir-core" -> "mir-random"
   "cblas" -> "mir-blas"
@@ -29,9 +27,9 @@ digraph G {
   "mir-color" -> "mir-image"
   "mir" -> "mir-compute"
   "mir-lapack" -> "mir-optim"
-  "mir-runtime" -> "mir-json"
+  "mir-algorithm" -> "mir-json"
   "mir-optim" -> "mir-model"
   "mir" -> "mir-sparse"
-  "mir-runtime" -> "mir-sparse"
+  "mir-algorithm" -> "mir-sparse"
   "mir-sparse" -> "mir-model"
 }
