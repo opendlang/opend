@@ -33,10 +33,6 @@ $(BOOKTABLE ,
         $(TDNW $(LINK2 cpuid_common.html, cpuid.common))
         $(TD Auxiliary data types and functions)
     )
-    $(TR
-        $(TDNW $(LINK2 cpuid_report.html, cpuid.report))
-        $(TD Text information generators)
-    )
 )
 
 Macros:
