@@ -1,8 +1,8 @@
-project('lapack', 'd', version : '0.0.4', license: 'BSL-1.0')
+project('lapack', 'd', version : '0.4.1', license: 'BSL-1.0')
 
 lapack_dir = include_directories('source/')
 
-lapack_dep = declare_dependency(
+this_dep = declare_dependency(
     include_directories: lapack_dir,
 )
 
@@ -17,3 +17,5 @@ import('pkgconfig').generate(
     subdirs: 'd/' + meson.project_name(),
     version: meson.project_version(),
 )
+
+lapack_dep = this_dep
