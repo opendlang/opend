@@ -12,7 +12,7 @@ $(BOOKTABLE ,
     )
     $(TR
         $(TDNW $(MREF mir,optim,boxcqp))
-        $(TD High Bound Constrained Convex Quadratic Problem Solver)
+        $(TD Bound Constrained Convex Quadratic Problem Solver)
     )
     $(TR
         $(TDNW $(MREF mir,optim,least_squares))
