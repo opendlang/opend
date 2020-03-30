@@ -1,60 +1,85 @@
-project('mir-integral', 'd', 'c', version : '1.0.0', license: 'BSL-1.0')
+project('mir-integral', 'd', version : '1.0.2', license: 'BSL-1.0')
 
-cblas_d_dep = dependency('cblas-d', fallback : ['cblas', 'cblas_dep'])
-lapack_d_dep = dependency('lapack-d', fallback : ['lapack', 'lapack_dep'])
-mir_lapack_dep = dependency('mir-lapack', fallback : ['mir-lapack', 'mir_lapack_dep'])
-mir_algorithm_dep = dependency('mir-algorithm', fallback : ['mir-algorithm', 'mir_algorithm_dep'])
-mir_blas_dep = dependency('mir-blas', fallback : ['mir-blas', 'mir_blas_dep'])
+description = 'Mir Integral - Numerical Integration Routines'
 
-required_deps = [
-    cblas_d_dep,
-    lapack_d_dep,
-    mir_algorithm_dep,
-    mir_blas_dep,
-    mir_lapack_dep,
+subprojects = [
+    'cblas-d',
+    'lapack-d',
+    'mir-algorithm',
+    'mir-blas',
+    'mir-core',
+    'mir-lapack',
+    'mir-random',
 ]
 
-mir_integral_dir = include_directories('source/')
+if target_machine.system() == 'linux'
+    subprojects += 'mir-linux-kernel'
+endif
 
-mir_integral_src = [
-    'source/mir/quadrature.d',
+has_cpp_headers = false
+
+sources_list = [
+    'mir/quadrature',
 ]
 
-mir_integral_lib = library(meson.project_name(),
-    mir_integral_src,
-    include_directories: mir_integral_dir,
+sources = []
+foreach s : sources_list
+    sources += 'source/' + s + '.d'
+endforeach
+
+add_project_arguments([
+    '-preview=dip1008',
+    '-lowmem',
+], language: 'd')
+
+required_deps = []
+
+foreach p : subprojects 
+    required_deps += dependency(p, fallback : [p, p.underscorify() + '_dep'])
+endforeach
+
+directories = ['source']
+
+if has_cpp_headers
+    directories += 'include'
+endif
+
+directories = include_directories(directories)
+
+this_lib = library(meson.project_name(),
+    sources,
+    include_directories: directories,
     install: true,
     version: meson.project_version(),
     dependencies: required_deps,
 )
 
-mir_integral_dep = declare_dependency(
-    link_with: [mir_integral_lib],
-    include_directories: mir_integral_dir,
+this_dep = declare_dependency(
+    link_with: [this_lib],
+    include_directories: directories,
     dependencies: required_deps,
 )
+
+test_versions = []
+
+if has_cpp_headers
+    install_subdir('include/',
+        strip_directory :true,
+        install_dir: 'include/',
+    )
+endif
 
 install_subdir('source/',
     strip_directory : true,
     install_dir: 'include/d/' + meson.project_name(),
 )
 
-import('pkgconfig').generate(mir_integral_lib,
-    description: 'Integration Routines',
+import('pkgconfig').generate(this_lib,
+    description: description,
     subdirs: 'd/' + meson.project_name(),
 )
 
-if get_option('with_test')
+mir_integral_dep = this_dep
+mir_integral_lib = this_lib
 
-    mir_lapack_test_exe = executable(meson.project_name() + '-test',
-        mir_integral_src,
-        include_directories: mir_integral_dir,
-        d_unittest: true,
-        d_module_versions: ['mir_test'],
-        link_args: '-main',
-        dependencies: required_deps,
-    )
-
-    test(meson.project_name() + '-test', mir_lapack_test_exe)
-
-endif
+test_subdirs = []
