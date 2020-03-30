@@ -510,7 +510,7 @@ LeastSquaresResult!T optimizeLeastSquares(alias f, alias g = null, alias tm = nu
     auto n = x.length;
     import mir.ndslice.allocation: rcslice;
     auto work = rcslice!T(mir_least_squares_work_length(m, n));
-    auto iwork = rcslice!lapackint(mir_least_sqaures_iwork_length(m, n));
+    auto iwork = rcslice!lapackint(mir_least_squares_iwork_length(m, n));
     auto workS = work.lightScope;
     auto iworkS = iwork.lightScope;
     return optimizeLeastSquares!T(settings, m, x, l, u, workS, iworkS, fInst.trustedAllAttr, gInst.trustedAllAttr, tmInst.trustedAllAttr);
@@ -646,7 +646,7 @@ extern(C) @safe nothrow @nogc
     /++
     +/
     @safe pure nothrow @nogc
-    size_t mir_least_sqaures_iwork_length(size_t m, size_t n)
+    size_t mir_least_squares_iwork_length(size_t m, size_t n)
     {
         import mir.utility: max;
         import mir.optim.boxcqp: mir_box_qp_iwork_length;
