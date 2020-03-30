@@ -25,7 +25,6 @@ Params:
 
 Returns: 0 on success, `xSTEQR` LAPACK code on numerical error.
 
-See_also: $(LREF gaussQuadratureWork);
 +/
 size_t gaussHermiteQuadrature(T)(
     scope T[] x,
@@ -92,7 +91,6 @@ Params:
 
 Returns: 0 on success, `xSTEQR` LAPACK code on numerical error.
 
-See_also: $(LREF gaussQuadratureWork);
 +/
 size_t gaussJacobiQuadrature(T)(
     scope T[] x,
@@ -172,7 +170,6 @@ Params:
 
 Returns: 0 on success, `xSTEQR` LAPACK code on numerical error.
 
-See_also: $(LREF gaussQuadratureWork);
 +/
 size_t gaussLaguerreQuadrature(T)(
     scope T[] x,
@@ -241,7 +238,6 @@ Params:
 
 Returns: 0 on success, `xSTEQR` LAPACK code on numerical error.
 
-See_also: $(LREF gaussQuadratureWork);
 +/
 size_t gaussLegendreQuadrature(T)(
     scope T[] x,
