@@ -1,70 +1,86 @@
-project('mir-optim', 'd', version : '1.0.0', license: 'BSL-1.0')
+project('mir-optim', 'd', version: '2.0.0', license: 'BSL-1.0')
 
-cblas_d_dep = dependency('cblas-d', fallback : ['cblas', 'cblas_dep'])
-lapack_d_dep = dependency('lapack-d', fallback : ['lapack', 'lapack_dep'])
-mir_algorithm_dep = dependency('mir-algorithm', fallback : ['mir-algorithm', 'mir_algorithm_dep'])
-mir_blas_dep = dependency('mir-blas', fallback : ['mir-blas', 'mir_blas_dep'])
-mir_core_dep = dependency('mir-core', fallback : ['mir-core', 'mir_core_dep'])
-mir_lapack_dep = dependency('mir-lapack', fallback : ['mir-lapack', 'mir_lapack_dep'])
-mir_random_dep = dependency('mir-random', fallback : ['mir-random', 'mir_random_dep'], default_options : ['extended=true'])
+description = 'Mir Optim - Nonlinear Optimisers'
 
-required_deps = [
-    cblas_d_dep,
-    lapack_d_dep,
-    mir_algorithm_dep,
-    mir_blas_dep,
-    mir_core_dep,
-    mir_lapack_dep,
-    mir_random_dep,
+subprojects = [
+    'cblas-d',
+    'lapack-d',
+    'mir-algorithm',
+    'mir-blas',
+    'mir-core',
+    'mir-lapack',
+    'mir-random',
 ]
 
 if target_machine.system() == 'linux'
-    mir_linux_kernel_dep = dependency('mir-linux-kernel', fallback : ['mir-linux-kernel', 'mir_linux_kernel_dep'])
-    required_deps = [required_deps, mir_linux_kernel_dep]
+    subprojects += 'mir-linux-kernel'
 endif
 
-mir_optim_dir = include_directories('source/')
+has_cpp_headers = false
 
-mir_optim_src = [
-    'source/mir/optim/least_squares.d',
-    'source/mir/optim/boxcqp.d',
+sources_list = [
+    'mir/optim/boxcqp',
+    'mir/optim/least_squares',
 ]
 
-mir_optim_lib = library(meson.project_name(),
-    mir_optim_src,
-    include_directories: mir_optim_dir,
+sources = []
+foreach s : sources_list
+    sources += 'source/' + s + '.d'
+endforeach
+
+add_project_arguments([
+    '-preview=dip1008',
+    '-lowmem',
+], language: 'd')
+
+required_deps = []
+
+foreach p : subprojects 
+    required_deps += dependency(p, fallback : [p, 'this_dep'])
+endforeach
+
+directories = ['source']
+
+if has_cpp_headers
+    directories += 'include'
+endif
+
+directories = include_directories(directories)
+
+this_lib = library(meson.project_name(),
+    sources,
+    include_directories: directories,
     install: true,
     version: meson.project_version(),
     dependencies: required_deps,
 )
 
-mir_optim_dep = declare_dependency(
-    link_with: [mir_optim_lib],
-    include_directories: mir_optim_dir,
+this_dep = declare_dependency(
+    link_with: [this_lib],
+    include_directories: directories,
     dependencies: required_deps,
 )
+
+test_versions = ['mir_optim_test']
+
+if has_cpp_headers
+    install_subdir('include/',
+        strip_directory :true,
+        install_dir: 'include/',
+    )
+endif
 
 install_subdir('source/',
     strip_directory : true,
     install_dir: 'include/d/' + meson.project_name(),
 )
 
-import('pkgconfig').generate(mir_optim_lib,
-    description: 'Optimisation Framework',
+import('pkgconfig').generate(this_lib,
+    description: description,
     subdirs: 'd/' + meson.project_name(),
 )
 
-if get_option('with_test')
+mir_optim_dep = this_dep
+mir_optim_lib = this_lib
 
-    mir_optim_test_exe = executable(meson.project_name() + '-test',
-        mir_optim_src,
-        include_directories: mir_optim_dir,
-        d_unittest: true,
-        d_module_versions: ['mir_optim_test'],
-        link_args: '-main',
-        dependencies: required_deps,
-    )
-
-    test(meson.project_name() + '-test', mir_optim_test_exe)
-
-endif
+test_subdirs = []

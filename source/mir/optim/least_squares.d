@@ -278,7 +278,7 @@ version(mir_optim_test)
 {
     import mir.algorithm.iteration: all;
     import mir.ndslice.allocation: slice;
-    import mir.ndslice.slice: sliced;
+    import mir.ndslice.slice: Slice, sliced;
     import mir.blas: nrm2;
 
     LeastSquaresSettings!double settings;
@@ -450,6 +450,10 @@ Params:
     g = `m × n` Jacobian (optional)
     tm = thread manager for finite difference jacobian approximation in case of g is null (optional)
     settings = Levenberg-Marquardt data structure
+    m = length (dimension) of `y = f(x)`
+    x = initial (in) and final (out) X value
+    l = lower X bound
+    u = upper X bound
 See_also: $(LREF optimize)
 +/
 LeastSquaresResult!T optimizeLeastSquares(alias f, alias g = null, alias tm = null, T)(
@@ -575,9 +579,15 @@ alias LeastSquaresThreadManager = void delegate(
 Low level `extern(D)` instatiation.
 Params:
     settings = Levenberg-Marquardt data structure
+    m = length (dimension) of `y = f(x)`
+    x = initial (in) and final (out) X value
+    l = lower X bound
+    u = upper X bound
     f = `n -> m` function
     g = `m × n` Jacobian (optional)
     tm = thread manager for finite difference jacobian approximation in case of g is null (optional)
+    work = floating point workspace length of at least $(LREF mir_least_squares_work_length)
+    iwork = floating point workspace length of at least $(LREF mir_least_squares_iwork_length)
 +/
 pragma(inline, false)
 LeastSquaresResult!double optimizeLeastSquaresD
@@ -674,6 +684,19 @@ extern(C) @safe nothrow @nogc
         gContext = context for the Jacobian (optional)
         g = `m × n` Jacobian (optional)
         tm = thread manager for finite difference jacobian approximation in case of g is null (optional)
+        m = length (dimension) of `y = f(x)`
+        n = length (dimension) of X
+        x = initial (in) and final (out) X value
+        l = lower X bound
+        u = upper X bound
+        f = `n -> m` function
+        fContext = `f` context
+        g = `m × n` Jacobian (optional)
+        gContext = `g` context
+        tm = thread manager for finite difference jacobian approximation in case of g is null (optional)
+        tmContext = `tm` context
+        work = floating point workspace length of at least $(LREF mir_least_squares_work_length)
+        iwork = floating point workspace length of at least $(LREF mir_least_squares_iwork_length)
     +/
     extern(C)
     pragma(inline, false)

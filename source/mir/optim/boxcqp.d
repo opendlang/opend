@@ -1,15 +1,10 @@
 /++
 $(H1 Bound Constrained Convex Quadratic Problem Solver)
 
-Paper: $(HTTP www.cse.uoi.gr/tech_reports/publications/boxcqp.pdf,
-    BOXCQP: AN ALGORITHM FOR BOUND CONSTRAINED CONVEX QUADRATIC PROBLEMS)
+Paper: $(HTTP www.cse.uoi.gr/tech_reports/publications/boxcqp.pdf, BOXCQP: AN ALGORITHM FOR BOUND CONSTRAINED CONVEX QUADRATIC PROBLEMS)
 
 Copyright: Copyright © 2020, Symmetry Investments & Kaleidic Associates Advisory Limited
 Authors:   Ilya Yaroshenko
-
-Macros:
-NDSLICE = $(REF_ALTTEXT $(TT $2), $2, mir, ndslice, $1)$(NBSP)
-T2=$(TR $(TDNW $(LREF $1)) $(TD $+))
 +/
 module mir.optim.boxcqp;
 
@@ -81,8 +76,8 @@ Solves:
 Params:
     P = Positive-definite Matrix, NxN
     q = Linear component, N
-    l = Lower bounds in [-inf, +inf), N
-    u = Upper bounds in (-inf, +inf], N
+    l = Lower bounds in `[-inf, +inf$(RPAREN)`, N
+    u = Upper bounds in `$(LPAREN)-inf, +inf]`, N
     x = solutoin, N
     settings = Iteration settings (optional)
 +/
@@ -115,8 +110,8 @@ Params:
         The upper triangular part (and diagonal) of the matrix is used for temporary data and then can be resotored.
         Matrix diagonal is always restored.
     q = Linear component, N
-    l = Lower bounds in [-inf, +inf), N
-    u = Upper bounds in (-inf, +inf], N
+    l = Lower bounds in `[-inf, +inf$(RPAREN)`, N
+    u = Upper bounds in `$(LPAREN)-inf, +inf]`, N
     x = solutoin, N
     unconstrainedSolution = 
     work = workspace, $(LREF mir_box_qp_work_length)(N)
@@ -388,6 +383,8 @@ version(mir_optim_test)
 unittest
 {
     import mir.ndslice;
+    import mir.algorithm.iteration;
+    import mir.math.common;
 
     auto P = [
         [ 2.0, -1, 0],
@@ -401,7 +398,7 @@ unittest
     auto x = slice!double(q.length);
 
     solveBoxQP(P, q, l, u, x);
-    assert(x == [-0.5, 2, 1]);
+    assert(x.equal!approxEqual([-0.5, 2, 1]));
 }
 
 package(mir) void applyBounds(T)(Slice!(T*) x, Slice!(const(T)*) l, Slice!(const(T)*) u)

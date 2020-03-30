@@ -26,3 +26,5 @@ build/mir-random/
 *.dll
 x.txt
 subprojects/*/
+web
+docgen

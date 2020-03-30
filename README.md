@@ -13,7 +13,7 @@ Dlang BetterC Nonlinear Optimisers.
  - Modified Levenberg-Marquardt Algorithm (Nonlinear Least Squares).
  - Boxed Constrained Quadratic Problem Solver
 
-See also [online documentation](https://mir-optim.dpldocs.info/mir.html) (deprecated?).
+See also [online documentation](http://mir-optim.libmir.org).
 
 ### Features
 
