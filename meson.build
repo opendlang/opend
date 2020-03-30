@@ -1,6 +1,6 @@
 project('mir-optim', 'd', version: '2.0.0', license: 'BSL-1.0')
 
-description = 'Mir Optim - Nonlinear Optimisers'
+description = 'Mir Optim - Nonlinear Optimizers'
 
 subprojects = [
     'cblas-d',

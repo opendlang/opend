@@ -1,6 +1,6 @@
 Ddoc
 
-$(H1 Dlang BetterC Nonlinear Optimisers)
+$(H1 Dlang BetterC Nonlinear Optimizers)
 
 $(P The following table is a quick reference guide for which Mir Optim modules to
 use for a given category of functionality.)

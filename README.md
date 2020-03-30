@@ -6,7 +6,7 @@
 
 # mir-optim
 
-Dlang BetterC Nonlinear Optimisers.
+Dlang BetterC Nonlinear Optimizers.
 
 ### Algorithms
  
