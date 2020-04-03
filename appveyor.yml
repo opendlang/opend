@@ -2,10 +2,10 @@ platform: x64
 environment:
  matrix:
   - DC: dmd
-    DVersion: 2.089.0
+    DVersion: 2.091.0
     arch: x64
   - DC: dmd
-    DVersion: 2.089.0
+    DVersion: 2.091.0
     arch: x86
 
 skip_tags: true
