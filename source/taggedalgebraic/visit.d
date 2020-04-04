@@ -217,13 +217,23 @@ private template matchesType(alias fun) {
 			else static if (Params.length == 1 && is(T == Params[0])) enum matchesType = true;
 			else enum matchesType = false;
 		} else static if (!isUnitType!T) {
-			static if (isSomeFunction!(fun!T)) {
+			static if (__traits(compiles, fun!T) && isSomeFunction!(fun!T)) {
 				alias Params = ParameterTypeTuple!(fun!T);
 				static if (Params.length == 1 && is(T == Params[0])) enum matchesType = true;
 				else enum matchesType = false;
 			} else enum matchesType = false;
 		} else enum matchesType = false;
 	}
+}
+
+unittest {
+	class C {}
+	alias mt1 = matchesType!((C c) => true);
+	alias mt2 = matchesType!((c) { static assert(!is(typeof(c) == C)); });
+	static assert(mt1!C);
+	static assert(!mt1!int);
+	static assert(mt2!int);
+	static assert(!mt2!C);
 }
 
 private template selectHandler(T, VISITORS...)
