@@ -128,6 +128,21 @@ unittest {
 	//static assert(!is(typeof(u.visit!((int) {}, (float) {}, () {}, (_) {})))); // superfluous generic handler
 }
 
+unittest {
+	// make sure that the generic handler is not instantiated with types for
+	// which it doesn't compile
+	class C {}
+	union U { int i; C c; }
+	TaggedUnion!U u;
+	u.visit!(
+		(C c) => c !is null,
+		(v) {
+			static assert(is(typeof(v) == int));
+			return v != 0;
+		}
+	);
+}
+
 
 /** The same as `visit`, except that failure to handle types is checked at runtime.
 
@@ -258,7 +273,7 @@ private template selectHandler(T, VISITORS...)
 		static if (i < VISITORS.length) {
 			alias fun = VISITORS[i];
 			static if (!isSomeFunction!fun) {
-				static if (isSomeFunction!(fun!T)) {
+				static if (__traits(compiles, fun!T) && isSomeFunction!(fun!T)) {
 					static if (ParameterTypeTuple!(fun!T).length == 1) {
 						static if (matched_index >= 0) enum genericIndex = "Only one generic visitor allowed";
 						else enum genericIndex = genericIndex!(i+1, i);
