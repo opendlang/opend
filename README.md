@@ -3,7 +3,7 @@ TaggedAlgebraic
 
 Implementation of a generic `TaggedUnion` type along with a `TaggedAlgebraic` type that forwards all methods and operators of the contained types using dynamic dispatch.
 
-[![Build Status](https://travis-ci.org/s-ludwig/taggedalgebraic.svg?branch=master)](https://travis-ci.org/s-ludwig/taggedalgebraic) [![codecov](https://codecov.io/gh/s-ludwig/taggedalgebraic/branch/master/graph/badge.svg)](https://codecov.io/gh/s-ludwig/taggedalgebraic)
+[![Build Status](https://travis-ci.com/s-ludwig/taggedalgebraic.svg?branch=master)](https://travis-ci.com/s-ludwig/taggedalgebraic) [![codecov](https://codecov.io/gh/s-ludwig/taggedalgebraic/branch/master/graph/badge.svg)](https://codecov.io/gh/s-ludwig/taggedalgebraic)
 
 API Documentation:
  - [`taggedalgebraic`](https://vibed.org/api/taggedalgebraic.taggedalgebraic/)
