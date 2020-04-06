@@ -18,10 +18,16 @@ https://github.com/AuburnSounds/audio-formats/blob/master/examples/transcode/sou
 | WAV   | Yes        | Yes      |
 | MP3   | Yes (LGPL) | No       |
 | FLAC  | Yes        | No       |
-| OPUS  | Yes        | No       |
+| OPUS  | Yes (LGPL) | No       |
 | OGG   | Broken     | No       |
 
-**All of this wouldn't be possible without the hard work of Ketmar.** This library is merely a repackaging.
+
+**All of this wouldn't be possible without the hard work of Ketmar and Zoadian.** 
+
+
+# References
+
+- https://github.com/Zoadian/mp3decoder
 
 
 # License

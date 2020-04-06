@@ -15,6 +15,8 @@ import core.stdc.string;
 
 import audioformats.minimp3_new;
 
+nothrow:
+@nogc:
 
 enum MP3D_SEEK_TO_BYTE =   0;
 enum MP3D_SEEK_TO_SAMPLE = 1;
@@ -60,7 +62,7 @@ alias MP3D_READ_CB = size_t function(void *buf, size_t size, void *user_data);
 alias MP3D_SEEK_CB = int function(uint64_t position, void *user_data);
 
 
- struct mp3dec_io_t
+struct mp3dec_io_t
 {
     MP3D_READ_CB read;
     void *read_data;
@@ -886,7 +888,7 @@ size_t mp3dec_ex_read(mp3dec_ex_t *dec, mp3d_sample_t *buf, size_t samples)
 }
 
 
-static void mp3dec_close_file(mp3dec_map_info_t *map_info)
+void mp3dec_close_file(mp3dec_map_info_t *map_info)
 {
     if (map_info.buffer)
         free(cast(void *)map_info.buffer);
@@ -894,21 +896,21 @@ static void mp3dec_close_file(mp3dec_map_info_t *map_info)
     map_info.size = 0;
 }
 
-static int mp3dec_detect_mapinfo(mp3dec_map_info_t *map_info)
+int mp3dec_detect_mapinfo(mp3dec_map_info_t *map_info)
 {
     int ret = mp3dec_detect_buf(map_info.buffer, map_info.size);
     mp3dec_close_file(map_info);
     return ret;
 }
 
-static int mp3dec_load_mapinfo(mp3dec_t *dec, mp3dec_map_info_t *map_info, mp3dec_file_info_t *info, MP3D_PROGRESS_CB progress_cb, void *user_data)
+int mp3dec_load_mapinfo(mp3dec_t *dec, mp3dec_map_info_t *map_info, mp3dec_file_info_t *info, MP3D_PROGRESS_CB progress_cb, void *user_data)
 {
     int ret = mp3dec_load_buf(dec, map_info.buffer, map_info.size, info, progress_cb, user_data);
     mp3dec_close_file(map_info);
     return ret;
 }
 
-static int mp3dec_iterate_mapinfo(mp3dec_map_info_t *map_info, MP3D_ITERATE_CB callback, void *user_data)
+int mp3dec_iterate_mapinfo(mp3dec_map_info_t *map_info, MP3D_ITERATE_CB callback, void *user_data)
 {
     int ret = mp3dec_iterate_buf(map_info.buffer, map_info.size, callback, user_data);
     mp3dec_close_file(map_info);
@@ -954,4 +956,5 @@ void mp3dec_ex_close(mp3dec_ex_t *dec)
         free(dec.index.frames);
     memset(dec, 0, (*dec).sizeof);
 }
+
 

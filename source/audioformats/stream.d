@@ -8,7 +8,7 @@ module audioformats.stream;
 
 import core.stdc.stdio;
 import core.stdc.string;
-import core.stdc.stdlib: realloc, free;
+import core.stdc.stdlib: malloc, realloc, free;
 
 import dplug.core.nogc;
 import dplug.core.vec;
@@ -19,7 +19,7 @@ version = MP3DecoderIsLGPL;
 
 version(MP3DecoderIsLGPL)
 {
-    version(decodeMP3)  import audioformats.minimp3;
+    version(decodeMP3) import audioformats.minimp3;
 }
 else
 {
@@ -232,10 +232,27 @@ public: // This is also part of the public API
 
         version(decodeMP3)
         {
-            if (_mp3Decoder !is null)
+            version(MP3DecoderIsLGPL)
             {
-                destroyFree(_mp3Decoder);
-                _mp3Decoder = null;
+                if (_mp3Decoder !is null)
+                {
+                    destroyFree(_mp3Decoder);
+                    _mp3Decoder = null;
+                }
+            }
+            else
+            {
+                if (_mp3DecoderNew !is null)
+                {
+                    mp3dec_ex_close(_mp3DecoderNew);
+                    free(_mp3DecoderNew);
+                    _mp3DecoderNew = null;
+                }
+                if (_mp3io !is null)
+                {
+                    free(_mp3io);
+                    _mp3io = null;
+                }
             }
         }
 
@@ -442,50 +459,66 @@ public: // This is also part of the public API
             {
                 version(decodeMP3)
                 {
-                    assert(_mp3Decoder !is null);
-
-                    if (!_mp3Decoder.valid)
-                        return 0;
-
-                    // Ensure the read buffer is filled with at least `frames` interleaved frames.
-
-                    int samplesNeeded = frames * _numChannels;
-
-                    // Decode MP3 frame until we have `frames` samples or the file is terminated.
-                    int read = 0;
-                    while ( _mp3Decoder.valid && ( read < samplesNeeded ) ) 
+                    version(MP3DecoderIsLGPL)
                     {
-                        int numDecoded = cast(int)(_mp3Decoder.frameSamples.length);
-                        size_t initialLength = _readBuffer.length();
-                        _readBuffer.resize(initialLength + numDecoded);
-                        float invShortMax = 1.0 / cast(float)(short.max);
+                        assert(_mp3Decoder !is null);
 
-                        // TODO is this the correct conversion factor?
-                        foreach(n; 0..numDecoded)
+                        if (!_mp3Decoder.valid)
+                            return 0;
+
+                        // Ensure the read buffer is filled with at least `frames` interleaved frames.
+
+                        int samplesNeeded = frames * _numChannels;
+
+                        // Decode MP3 frame until we have `frames` samples or the file is terminated.
+                        int read = 0;
+                        while ( _mp3Decoder.valid && ( read < samplesNeeded ) ) 
                         {
-                            import core.stdc.stdio;
-                            _readBuffer[initialLength + n] = _mp3Decoder.frameSamples[n] * invShortMax;
-                        }
-                        read += numDecoded;
-                        _mp3Decoder.decodeNextFrame(&mp3ReadDelegate);
-                    }
+                            int numDecoded = cast(int)(_mp3Decoder.frameSamples.length);
+                            size_t initialLength = _readBuffer.length();
+                            _readBuffer.resize(initialLength + numDecoded);
+                            float invShortMax = 1.0 / cast(float)(short.max);
 
-                    if (read >= samplesNeeded)
-                    {
-                        outData[0..samplesNeeded] = _readBuffer[0..samplesNeeded];
-                        int remaining = read - samplesNeeded;
-                        if (remaining > 0)
-                            memmove(_readBuffer.ptr, &_readBuffer[samplesNeeded], float.sizeof * remaining);
-                        _readBuffer.resize(remaining); // Note: Vec should keep that capacity and not free the memory.
-                        return frames;
+                            // TODO is this the correct conversion factor?
+                            foreach(n; 0..numDecoded)
+                            {
+                                import core.stdc.stdio;
+                                _readBuffer[initialLength + n] = _mp3Decoder.frameSamples[n] * invShortMax;
+                            }
+                            read += numDecoded;
+                            _mp3Decoder.decodeNextFrame(&mp3ReadDelegate);
+                        }
+
+                        if (read >= samplesNeeded)
+                        {
+                            outData[0..samplesNeeded] = _readBuffer[0..samplesNeeded];
+                            int remaining = read - samplesNeeded;
+                            if (remaining > 0)
+                                memmove(_readBuffer.ptr, &_readBuffer[samplesNeeded], float.sizeof * remaining);
+                            _readBuffer.resize(remaining); // Note: Vec should keep that capacity and not free the memory.
+                            return frames;
+                        }
+                        else
+                        {
+                            // How many sample can we produce?
+                            int completeSamples = read / _numChannels;
+                            outData[0..completeSamples] = _readBuffer[0..completeSamples];
+                            _readBuffer.resize(0);
+                            return completeSamples;
+                        }
                     }
                     else
                     {
-                        // How many sample can we produce?
-                        int completeSamples = read / _numChannels;
-                        outData[0..completeSamples] = _readBuffer[0..completeSamples];
-                        _readBuffer.resize(0);
-                        return completeSamples;
+                        assert(_mp3DecoderNew !is null);
+
+                        int samplesNeeded = frames * _numChannels;
+                        int result = cast(int) mp3dec_ex_read(_mp3DecoderNew, outData, samplesNeeded);
+                        if (result < 0) // error
+                            return 0;
+
+                        // else result = samples_requested - samples_read;
+                        int samplesRead = samplesNeeded - cast(int)result;
+                        return samplesRead / _numChannels;
                     }
                 }
                 else
@@ -628,8 +661,8 @@ private:
         }
         else
         {
-            
-
+            mp3dec_ex_t* _mp3DecoderNew; // allocated on heap since it's a 16kb object
+            mp3dec_io_t* _mp3io;
         }
     }
     version(decodeFLAC)
@@ -767,29 +800,72 @@ private:
         version(decodeMP3)
         {
             // Check if it's a MP3.
-            // minimp3 need a delegate
-
             _io.seek(0, false, userData);
-            
-            MP3Info info = mp3Scan(&mp3ReadDelegate, _decoderContext);
-       
-            if (info.valid)
+            version(MP3DecoderIsLGPL)
             {
-                // MP3 detected
-                _format = AudioFileFormat.mp3;
-                _sampleRate = info.sampleRate;
-                _numChannels = info.channels;
-                _lengthInFrames = info.samples;
+                // minimp3 need a delegate
 
+                MP3Info info = mp3Scan(&mp3ReadDelegate, _decoderContext);
+
+                if (info.valid)
+                {
+                    // MP3 detected
+                    _format = AudioFileFormat.mp3;
+                    _sampleRate = info.sampleRate;
+                    _numChannels = info.channels;
+                    _lengthInFrames = info.samples;
+
+                    _io.seek(0, false, userData);
+                    _mp3Decoder = mallocNew!MP3Decoder(&mp3ReadDelegate, _decoderContext);
+
+                    _readBuffer = makeVec!float();
+
+                    if (!_mp3Decoder.valid) 
+                        throw mallocNew!Exception("invalid MP3 file");
+
+                    return;
+                }
+            }
+            else
+            {
                 _io.seek(0, false, userData);
-                _mp3Decoder = mallocNew!MP3Decoder(&mp3ReadDelegate, _decoderContext);
 
-                _readBuffer = makeVec!float();
+                ubyte* scratchBuffer = cast(ubyte*) malloc(MINIMP3_BUF_SIZE);
+                scope(exit) free(scratchBuffer);
 
-                if (!_mp3Decoder.valid) 
-                    throw mallocNew!Exception("invalid MP3 file");
+                _mp3io = cast(mp3dec_io_t*) malloc(mp3dec_io_t.sizeof);
+                _mp3io.read      = &mp3_io_read;
+                _mp3io.read_data = _decoderContext;
+                _mp3io.seek      = &mp3_io_seek;
+                _mp3io.seek_data = _decoderContext;
 
-                return;
+                if ( mp3dec_detect_cb(_mp3io, scratchBuffer, MINIMP3_BUF_SIZE*2) == 0 )
+                {
+                    // This is a MP3. Try to open a stream.
+
+                    // Allocate a mp3dec_ex_t object
+                    _mp3DecoderNew = cast(mp3dec_ex_t*) malloc(mp3dec_ex_t.sizeof);
+
+                    int result = mp3dec_ex_open_cb(_mp3DecoderNew, _mp3io, MP3D_SEEK_TO_SAMPLE);
+
+                    if (0 == result)
+                    {
+                        // MP3 detected
+                        // but it seems we need to iterate all frames to know the length...
+                        _format = AudioFileFormat.mp3;
+                        _sampleRate = 44100; // ??? how to do
+                        _numChannels = 2; // ??? same
+                        _lengthInFrames = -1;
+                        return;
+                    }
+                    else
+                    {
+                        free(_mp3DecoderNew);
+                        _mp3DecoderNew = null;
+                        free(_mp3io);
+                        _mp3io = null;
+                    }
+                }
             }
         }
 
@@ -1116,4 +1192,19 @@ bool flac_seek(void* pUserData, int offset, drflac_seek_origin origin) @nogc not
         context.callbacks.seek(offset, true, context.userDataIO);
     }
     return true;
+}
+
+// MP3 decoder read callbacks
+
+size_t mp3_io_read(void *buf, size_t size, void *user_data) @nogc nothrow
+{
+    DecoderContext* context = cast(DecoderContext*) user_data;
+    return context.callbacks.read(buf, cast(int)(size), context.userDataIO);
+}
+
+int mp3_io_seek(ulong position, void *user_data) @nogc nothrow
+{
+    DecoderContext* context = cast(DecoderContext*) user_data;
+    context.callbacks.seek(position, false, context.userDataIO);
+    return 0; // doesn't detect seeking errors
 }
