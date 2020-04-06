@@ -15,7 +15,7 @@ import dplug.core.vec;
 
 import audioformats.io;
 
-version = MP3DecoderIsLGPL; 
+//version = MP3DecoderIsLGPL; 
 
 version(MP3DecoderIsLGPL)
 {
@@ -515,10 +515,7 @@ public: // This is also part of the public API
                         int result = cast(int) mp3dec_ex_read(_mp3DecoderNew, outData, samplesNeeded);
                         if (result < 0) // error
                             return 0;
-
-                        // else result = samples_requested - samples_read;
-                        int samplesRead = samplesNeeded - cast(int)result;
-                        return samplesRead / _numChannels;
+                        return result / _numChannels;
                     }
                 }
                 else
@@ -853,9 +850,9 @@ private:
                         // MP3 detected
                         // but it seems we need to iterate all frames to know the length...
                         _format = AudioFileFormat.mp3;
-                        _sampleRate = 44100; // ??? how to do
-                        _numChannels = 2; // ??? same
-                        _lengthInFrames = -1;
+                        _sampleRate = _mp3DecoderNew.info.hz;
+                        _numChannels = _mp3DecoderNew.info.channels;
+                        _lengthInFrames = _mp3DecoderNew.samples / _numChannels;
                         return;
                     }
                     else
