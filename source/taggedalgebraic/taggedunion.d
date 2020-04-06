@@ -87,7 +87,7 @@ align(commonAlignment!(UnionKindTypes!(UnionFieldEnum!U))) struct TaggedUnion
 				static if (isUnitType!(FieldTypes[ti]))
 					set!(cast(Kind)ti)();
 				else
-					set!(cast(Kind)ti)(move(value));
+					set!(cast(Kind)ti)(.move(value));
 			}
 
 			void opAssign(FieldTypes[ti] value)
@@ -95,7 +95,7 @@ align(commonAlignment!(UnionKindTypes!(UnionFieldEnum!U))) struct TaggedUnion
 				static if (isUnitType!(FieldTypes[ti]))
 					set!(cast(Kind)ti)();
 				else
-					set!(cast(Kind)ti)(move(value));
+					set!(cast(Kind)ti)(.move(value));
 			}
 		}
 
@@ -211,7 +211,7 @@ align(commonAlignment!(UnionKindTypes!(UnionFieldEnum!U))) struct TaggedUnion
 			mixin("alias "~name~"Value = value!(Kind."~name~");");
 
 			mixin("static TaggedUnion "~name~"(FieldTypes["~i.stringof~"] value)"
-				~ "{ TaggedUnion tu; tu.set!(Kind."~name~")(move(value)); return tu; }");
+				~ "{ TaggedUnion tu; tu.set!(Kind."~name~")(.move(value)); return tu; }");
 
 			// TODO: define assignment operator for unique types
 		} else {
@@ -517,6 +517,11 @@ unittest { // null members should be assignable
 	assert(val.kind == val.Kind.Null);
 }
 
+unittest { // make sure field names don't conflict with function names
+	union U { int to; int move; int swap; }
+	TaggedUnion!U val;
+	val.setMove(1);
+}
 
 enum isUnitType(T) = is(T == Void) || is(T == void) || is(T == typeof(null));
 
