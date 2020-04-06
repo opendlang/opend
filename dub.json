@@ -16,7 +16,7 @@
         },
         {
             "name": "boost",
-            "versions": ["decodeWAV",              "decodeFLAC", "decodeOGG",
+            "versions": ["decodeWAV", "decodeMP3", "decodeFLAC", "decodeOGG",
                          "encodeWAV"]
         }
     ]

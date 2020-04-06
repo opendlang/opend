@@ -13,7 +13,7 @@ module audioformats.minimp3_ex;
 import core.stdc.stdlib;
 import core.stdc.string;
 
-import audioformats.minimp3_new;
+import audioformats.minimp3;
 
 nothrow:
 @nogc:

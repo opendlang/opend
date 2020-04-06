@@ -15,16 +15,7 @@ import dplug.core.vec;
 
 import audioformats.io;
 
-//version = MP3DecoderIsLGPL; 
-
-version(MP3DecoderIsLGPL)
-{
-    version(decodeMP3) import audioformats.minimp3;
-}
-else
-{
-    version(decodeMP3) import audioformats.minimp3_ex;
-}
+version(decodeMP3) import audioformats.minimp3_ex;
 version(decodeFLAC) import audioformats.drflac;
 version(decodeOGG)  import audioformats.vorbis;
 version(decodeOPUS) import audioformats.dopus;
@@ -232,27 +223,16 @@ public: // This is also part of the public API
 
         version(decodeMP3)
         {
-            version(MP3DecoderIsLGPL)
+            if (_mp3DecoderNew !is null)
             {
-                if (_mp3Decoder !is null)
-                {
-                    destroyFree(_mp3Decoder);
-                    _mp3Decoder = null;
-                }
+                mp3dec_ex_close(_mp3DecoderNew);
+                free(_mp3DecoderNew);
+                _mp3DecoderNew = null;
             }
-            else
+            if (_mp3io !is null)
             {
-                if (_mp3DecoderNew !is null)
-                {
-                    mp3dec_ex_close(_mp3DecoderNew);
-                    free(_mp3DecoderNew);
-                    _mp3DecoderNew = null;
-                }
-                if (_mp3io !is null)
-                {
-                    free(_mp3io);
-                    _mp3io = null;
-                }
+                free(_mp3io);
+                _mp3io = null;
             }
         }
 
@@ -459,64 +439,13 @@ public: // This is also part of the public API
             {
                 version(decodeMP3)
                 {
-                    version(MP3DecoderIsLGPL)
-                    {
-                        assert(_mp3Decoder !is null);
+                    assert(_mp3DecoderNew !is null);
 
-                        if (!_mp3Decoder.valid)
-                            return 0;
-
-                        // Ensure the read buffer is filled with at least `frames` interleaved frames.
-
-                        int samplesNeeded = frames * _numChannels;
-
-                        // Decode MP3 frame until we have `frames` samples or the file is terminated.
-                        int read = 0;
-                        while ( _mp3Decoder.valid && ( read < samplesNeeded ) ) 
-                        {
-                            int numDecoded = cast(int)(_mp3Decoder.frameSamples.length);
-                            size_t initialLength = _readBuffer.length();
-                            _readBuffer.resize(initialLength + numDecoded);
-                            float invShortMax = 1.0 / cast(float)(short.max);
-
-                            // TODO is this the correct conversion factor?
-                            foreach(n; 0..numDecoded)
-                            {
-                                import core.stdc.stdio;
-                                _readBuffer[initialLength + n] = _mp3Decoder.frameSamples[n] * invShortMax;
-                            }
-                            read += numDecoded;
-                            _mp3Decoder.decodeNextFrame(&mp3ReadDelegate);
-                        }
-
-                        if (read >= samplesNeeded)
-                        {
-                            outData[0..samplesNeeded] = _readBuffer[0..samplesNeeded];
-                            int remaining = read - samplesNeeded;
-                            if (remaining > 0)
-                                memmove(_readBuffer.ptr, &_readBuffer[samplesNeeded], float.sizeof * remaining);
-                            _readBuffer.resize(remaining); // Note: Vec should keep that capacity and not free the memory.
-                            return frames;
-                        }
-                        else
-                        {
-                            // How many sample can we produce?
-                            int completeSamples = read / _numChannels;
-                            outData[0..completeSamples] = _readBuffer[0..completeSamples];
-                            _readBuffer.resize(0);
-                            return completeSamples;
-                        }
-                    }
-                    else
-                    {
-                        assert(_mp3DecoderNew !is null);
-
-                        int samplesNeeded = frames * _numChannels;
-                        int result = cast(int) mp3dec_ex_read(_mp3DecoderNew, outData, samplesNeeded);
-                        if (result < 0) // error
-                            return 0;
-                        return result / _numChannels;
-                    }
+                    int samplesNeeded = frames * _numChannels;
+                    int result = cast(int) mp3dec_ex_read(_mp3DecoderNew, outData, samplesNeeded);
+                    if (result < 0) // error
+                        return 0;
+                    return result / _numChannels;
                 }
                 else
                 {
@@ -651,16 +580,8 @@ private:
     // Decoders
     version(decodeMP3)
     {
-        version(MP3DecoderIsLGPL)
-        {
-            MP3Decoder _mp3Decoder;
-            Vec!float _readBuffer;
-        }
-        else
-        {
-            mp3dec_ex_t* _mp3DecoderNew; // allocated on heap since it's a 16kb object
-            mp3dec_io_t* _mp3io;
-        }
+        mp3dec_ex_t* _mp3DecoderNew; // allocated on heap since it's a 16kb object
+        mp3dec_io_t* _mp3io;
     }
     version(decodeFLAC)
     {

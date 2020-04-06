@@ -16,13 +16,13 @@ https://github.com/AuburnSounds/audio-formats/blob/master/examples/transcode/sou
 |       | Decoding   | Encoding |
 |-------|------------|----------|
 | WAV   | Yes        | Yes      |
-| MP3   | Yes (LGPL) | No       |
+| MP3   | Yes        | No       |
 | FLAC  | Yes        | No       |
 | OPUS  | Yes (LGPL) | No       |
 | OGG   | Broken     | No       |
 
 
-**All of this wouldn't be possible without the hard work of Ketmar and Zoadian.** 
+**All of this wouldn't be possible without the hard work of Ketmar.** 
 
 
 # References
@@ -32,10 +32,9 @@ https://github.com/AuburnSounds/audio-formats/blob/master/examples/transcode/sou
 
 # License
 
-- LGPL v2.1 with MP3 decoding.
-- LGPL v2.1 with OPUS decoding.
 - Boost license otherwise.
-(use DUB subconfigurations) to choose.
+- LGPL v2.1 with OPUS decoding.
+(use DUB subconfigurations) to choose, defaukt is boost.
 
 
 # Bugs
