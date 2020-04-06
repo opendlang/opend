@@ -15,7 +15,16 @@ import dplug.core.vec;
 
 import audioformats.io;
 
-version(decodeMP3)  import audioformats.minimp3;
+version = MP3DecoderIsLGPL; 
+
+version(MP3DecoderIsLGPL)
+{
+    version(decodeMP3)  import audioformats.minimp3;
+}
+else
+{
+    version(decodeMP3) import audioformats.minimp3_ex;
+}
 version(decodeFLAC) import audioformats.drflac;
 version(decodeOGG)  import audioformats.vorbis;
 version(decodeOPUS) import audioformats.dopus;
@@ -612,8 +621,16 @@ private:
     // Decoders
     version(decodeMP3)
     {
-        MP3Decoder _mp3Decoder;
-        Vec!float _readBuffer;
+        version(MP3DecoderIsLGPL)
+        {
+            MP3Decoder _mp3Decoder;
+            Vec!float _readBuffer;
+        }
+        else
+        {
+            
+
+        }
     }
     version(decodeFLAC)
     {

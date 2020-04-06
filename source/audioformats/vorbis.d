@@ -560,9 +560,9 @@ void *setup_temp_malloc(vorb *f, int sz)
     return sz ? malloc(sz) : null; // do not use temp buffer in setup, as it leads to crashes
 }
 
-void setup_temp_free(vorb *f, void *p, size_t sz)
+void setup_temp_free(vorb *f, void *p, ulong sz)
 {
-    return setup_temp_free(f, p, cast(int)sz);
+    free(p);
 }
 
 void setup_temp_free(vorb *f, void *p, int sz)
