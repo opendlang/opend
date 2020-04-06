@@ -10,13 +10,13 @@
 
     "configurations": [
         {
-            "name": "lgpl",
-            "versions": ["decodeWAV", "decodeMP3", "decodeFLAC", "decodeOGG", "decodeOPUS",
+            "name": "boost",
+            "versions": ["decodeWAV", "decodeMP3", "decodeFLAC", "decodeOGG",
                          "encodeWAV"]
         },
         {
-            "name": "boost",
-            "versions": ["decodeWAV", "decodeMP3", "decodeFLAC", "decodeOGG",
+            "name": "lgpl",
+            "versions": ["decodeWAV", "decodeMP3", "decodeFLAC", "decodeOGG", "decodeOPUS",
                          "encodeWAV"]
         }
     ]
