@@ -28,7 +28,7 @@ if ( !UseToHashMethod!T )
 {
     static if ( isNumeric!T ) {
         enum m = 0x5bd1e995;
-        hash_t h = v;
+        hash_t h = cast(hash_t)v;
         h ^= h >> 13;
         h *= m;
         h ^= h >> 15;

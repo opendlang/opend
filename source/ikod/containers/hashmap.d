@@ -769,7 +769,7 @@ struct HashMap(K, V, Allocator = Mallocator, bool GCRangesAllowed = true) {
 
     private struct _kvRange {
         int             _pos;
-        ulong           _buckets_num;
+        size_t           _buckets_num;
         BucketStorage   _buckets;
         this(this) {
             if (_buckets_num) {
