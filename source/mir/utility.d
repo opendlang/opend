@@ -242,7 +242,7 @@ ExtMulResult!U extMul(U)(in U a, in U b) @nogc nothrow pure @safe
 {
     static if (is(U == ulong))
         alias H = uint;
-    else
+    else // ucent
         alias H = ulong;
 
     enum hbc = H.sizeof * 8;
@@ -277,7 +277,10 @@ ExtMulResult!U extMul(U)(in U a, in U b) @nogc nothrow pure @safe
                     %agg1 = insertvalue [2 x i64] undef, i64 %l, 0
                     %agg2 = insertvalue [2 x i64] %agg1, i64 %h, 1
                     ret [2 x i64] %agg2`, ulong[2])(a, b);
-                    return ExtMulResult!U(r[0], r[1]);
+                    version (LittleEndian)
+                        return ExtMulResult!U(r[0], r[1]);
+                    else
+                        return ExtMulResult!U(r[1], r[0]);
                 }
                 else
                 static if (false)
@@ -292,7 +295,10 @@ ExtMulResult!U extMul(U)(in U a, in U b) @nogc nothrow pure @safe
                     %agg1 = insertvalue [2 x i128] undef, i128 %l, 0
                     %agg2 = insertvalue [2 x i128] %agg1, i128 %h, 1
                     ret [2 x i128] %agg2`, ucent[2])(a, b);
-                    return ExtMulResult!U(r[0], r[1]);
+                    version (LittleEndian)
+                        return ExtMulResult!U(r[0], r[1]);
+                    else
+                        return ExtMulResult!U(r[1], r[0]);
                 }
             }
             else
