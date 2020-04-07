@@ -1,0 +1,21 @@
+language: d
+
+arch:
+  - amd64
+  - arm64
+  - x86
+d:
+  - dmd
+  - ldc
+os:
+  - linux
+
+install:
+  - mkdir .ntmp && curl -L https://github.com/ninja-build/ninja/releases/download/v1.8.2/ninja-linux.zip -o .ntmp/ninja-linux.zip
+  - unzip .ntmp/ninja-linux.zip -d .ntmp
+
+before_script:
+  - export PATH=$PATH:$PWD/.ntmp
+
+script:
+    - dub test
