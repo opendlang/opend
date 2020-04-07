@@ -2,7 +2,6 @@ language: d
 
 arch:
   - amd64
-  - arm64
   - x86
 d:
   - dmd
