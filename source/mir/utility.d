@@ -204,14 +204,26 @@ version(mir_test) unittest
 
 /++
 Return type for $(LREF extMul);
+
+The payload order of `low` and `high` parts depends on the endianness.
 +/
 struct ExtMulResult(I)
     if (isIntegral!I)
 {
-    /// Lower I.sizeof * 8 bits
-    I low;
-    /// Higher I.sizeof * 8 bits
-    I high;
+    version (LittleEndian)
+    {
+        /// Lower I.sizeof * 8 bits
+        I low;
+        /// Higher I.sizeof * 8 bits
+        I high;
+    }
+    else
+    {
+        /// Higher I.sizeof * 8 bits
+        I high;
+        /// Lower I.sizeof * 8 bits
+        I low;
+    }
 }
 
 /++
@@ -315,7 +327,10 @@ ExtMulResult!U extMul(U)(in U a, in U b) @nogc nothrow pure @safe
         U lo = p0 + (p1 << hbc) + (p2 << hbc);
         U hi = p3 + (p1 >>> hbc) + (p2 >>> hbc) + cy;
 
-        return typeof(return)(lo, hi);
+        version(LittleEndian)
+            return typeof(return)(lo, hi);
+        else
+            return typeof(return)(hi, lo);
     }
 }
 
