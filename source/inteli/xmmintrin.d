@@ -1050,15 +1050,116 @@ deprecated alias
     _m_pmovmskb = _mm_movemask_pi8,
     _m_pmulhuw = _mm_mulhi_pu16;
 
-enum _MM_HINT_NTA = 0;
-enum _MM_HINT_T0 = 1;
-enum _MM_HINT_T1 = 2;
-enum _MM_HINT_T2 = 3;
+enum _MM_HINT_T0  = 3; ///
+enum _MM_HINT_T1  = 2; ///
+enum _MM_HINT_T2  = 1; ///
+enum _MM_HINT_NTA = 0; ///
 
-// Note: locality must be compile-time, unlike Intel Intrinsics API
-void _mm_prefetch(int locality)(void* p) pure @safe
+/// Fetch the line of data from memory that contains address `p` to a location in the 
+/// cache heirarchy specified by the locality hint i.
+///
+/// Warning: `locality` is a compile-time parameter, unlike in Intel Intrinsics API.
+void _mm_prefetch(int locality)(const(void)* p) pure @trusted
 {
-    llvm_prefetch(p, 0, locality, 1);
+    static if (GDC_with_SSE)
+    {
+        return __builtin_prefetch(p, (locality & 0x4) >> 2, locality & 0x3);
+    }
+    else version(LDC)
+    {
+        // const_cast here. `llvm_prefetch` wants a mutable pointer
+        llvm_prefetch( cast(void*)p, 0, locality, 1);
+    }
+    else version(D_InlineAsm_X86_64)
+    {
+        static if (locality == _MM_HINT_NTA)
+        {
+            asm pure nothrow @nogc @trusted
+            {
+                mov RAX, p;
+                prefetchnta [RAX];
+            }
+        }
+        else static if (locality == _MM_HINT_T0)
+        {
+            asm pure nothrow @nogc @trusted
+            {
+                mov RAX, p;
+                prefetcht0 [RAX];
+            }
+        }
+        else static if (locality == _MM_HINT_T1)
+        {
+            asm pure nothrow @nogc @trusted
+            {
+                mov RAX, p;
+                prefetcht1 [RAX];
+            }
+        }
+        else static if (locality == _MM_HINT_T2)
+        {
+            asm pure nothrow @nogc @trusted
+            {
+                mov RAX, p;
+                prefetcht2 [RAX];
+            }
+        }
+        else
+            assert(false); // invalid locality hint
+    }
+    else version(D_InlineAsm_X86)
+    {
+        static if (locality == _MM_HINT_NTA)
+        {
+            asm pure nothrow @nogc @trusted
+            {
+                mov EAX, p;
+                prefetchnta [EAX];
+            }
+        }
+        else static if (locality == _MM_HINT_T0)
+        {
+            asm pure nothrow @nogc @trusted
+            {
+                mov EAX, p;
+                prefetcht0 [EAX];
+            }
+        }
+        else static if (locality == _MM_HINT_T1)
+        {
+            asm pure nothrow @nogc @trusted
+            {
+                mov EAX, p;
+                prefetcht1 [EAX];
+            }
+        }
+        else static if (locality == _MM_HINT_T2)
+        {
+            asm pure nothrow @nogc @trusted
+            {
+                mov EAX, p;
+                prefetcht2 [EAX];
+            }
+        }
+        else 
+            assert(false); // invalid locality hint
+    }
+    else
+    {
+        // Generic version: do nothing. From bitter experience, 
+        // it's unlikely you get ANY speed-up with manual prefetching.
+        // Prefetching or not doesn't change program behaviour.
+    }
+}
+unittest
+{
+    // From Intel documentation:
+    // "The amount of data prefetched is also processor implementation-dependent. It will, however, be a minimum of 32 bytes."
+    ubyte[256] cacheline; // though it seems it cannot generate GP fault
+    _mm_prefetch!_MM_HINT_T0(cacheline.ptr); 
+    _mm_prefetch!_MM_HINT_T1(cacheline.ptr); 
+    _mm_prefetch!_MM_HINT_T2(cacheline.ptr); 
+    _mm_prefetch!_MM_HINT_NTA(cacheline.ptr); 
 }
 
 deprecated alias
