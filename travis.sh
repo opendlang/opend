@@ -10,6 +10,6 @@ if [ ! -z "${COVERAGE:-}" ]; then
     bash codecov.sh
 else
     dub test
-    meson build
-    ninja -C build
+
+    meson build && ninja -C build || echo Warning: Meson build failed!
 fi
