@@ -1055,8 +1055,17 @@ enum _MM_HINT_T1  = 2; ///
 enum _MM_HINT_T2  = 1; ///
 enum _MM_HINT_NTA = 0; ///
 
+
+// Starting with LLVM 10, it seems llvm.prefetch has changed its name.
+// Was reported at: https://github.com/ldc-developers/ldc/issues/3397
+static if (__VERSION__ >= 2091) 
+{
+    pragma(LDC_intrinsic, "llvm.prefetch.p0i8") // was "llvm.prefetch"
+        void llvm_prefetch_fixed(void* ptr, uint rw, uint locality, uint cachetype) pure @safe;
+}
+
 /// Fetch the line of data from memory that contains address `p` to a location in the 
-/// cache heirarchy specified by the locality hint i.
+/// cache hierarchy specified by the locality hint i.
 ///
 /// Warning: `locality` is a compile-time parameter, unlike in Intel Intrinsics API.
 void _mm_prefetch(int locality)(const(void)* p) pure @trusted
@@ -1067,8 +1076,16 @@ void _mm_prefetch(int locality)(const(void)* p) pure @trusted
     }
     else version(LDC)
     {
-        // const_cast here. `llvm_prefetch` wants a mutable pointer
-        llvm_prefetch( cast(void*)p, 0, locality, 1);
+        static if (__VERSION__ >= 2091)
+        {
+            // const_cast here. `llvm_prefetch` wants a mutable pointer
+            llvm_prefetch_fixed( cast(void*)p, 0, locality, 1);
+        }
+        else
+        {
+            // const_cast here. `llvm_prefetch` wants a mutable pointer
+            llvm_prefetch( cast(void*)p, 0, locality, 1);
+        }
     }
     else version(D_InlineAsm_X86_64)
     {
