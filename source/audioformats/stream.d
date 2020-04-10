@@ -832,6 +832,10 @@ private:
     }
 }
 
+// AudioStream should be able to go on a smallish 32-bit stack,
+// and malloc the rest on the heap when needed.
+static assert(AudioStream.sizeof <= 256); 
+
 private: // not meant to be imported at all
 
 
