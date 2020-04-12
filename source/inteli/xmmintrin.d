@@ -1056,12 +1056,15 @@ enum _MM_HINT_T2  = 1; ///
 enum _MM_HINT_NTA = 0; ///
 
 
-// Starting with LLVM 10, it seems llvm.prefetch has changed its name.
-// Was reported at: https://github.com/ldc-developers/ldc/issues/3397
-static if (__VERSION__ >= 2091) 
+version(LDC)
 {
-    pragma(LDC_intrinsic, "llvm.prefetch.p0i8") // was "llvm.prefetch"
-        void llvm_prefetch_fixed(void* ptr, uint rw, uint locality, uint cachetype) pure @safe;
+    // Starting with LLVM 10, it seems llvm.prefetch has changed its name.
+    // Was reported at: https://github.com/ldc-developers/ldc/issues/3397
+    static if (__VERSION__ >= 2091) 
+    {
+        pragma(LDC_intrinsic, "llvm.prefetch.p0i8") // was "llvm.prefetch"
+            void llvm_prefetch_fixed(void* ptr, uint rw, uint locality, uint cachetype) pure @safe;
+    }
 }
 
 /// Fetch the line of data from memory that contains address `p` to a location in the 
