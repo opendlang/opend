@@ -134,7 +134,7 @@ struct HSx(HSxType type_, ComponentType_ = float, RGBColorSpace colorSpace_ = RG
         static if (!isFloatingPoint!ComponentType_)
             return h * (360/(ComponentType_.max + 1.0));
         else
-            return (h < 0 ? 1 - h%1 : h%1) * 360;
+            return (h < 0 ? 1 + h%1 : h%1) * 360;
     }
     /** Set hue angle in degrees. */
     @property void degrees(double angle)
@@ -151,7 +151,7 @@ struct HSx(HSxType type_, ComponentType_ = float, RGBColorSpace colorSpace_ = RG
         static if (!isFloatingPoint!ComponentType_)
             return h * ((PI*2)/(ComponentType_.max + 1.0));
         else
-            return (h < 0 ? 1 - h%1 : h%1) * (PI*2);
+            return (h < 0 ? 1 + h%1 : h%1) * (PI*2);
     }
     /** Set hue angle in radians. */
     @property void radians(double angle)
