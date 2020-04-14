@@ -121,7 +121,7 @@ struct IOCallbacks
         ubyte[3] v;
         if (3 == read(v.ptr, 3, userData))
         {
-            return v[0] | (v[1] << 8) || (v[2] << 16);
+            return v[0] | (v[1] << 8) | (v[2] << 16);
         }
         else
             throw mallocNew!Exception("expected 24-bit int");
