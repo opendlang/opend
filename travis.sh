@@ -11,7 +11,7 @@ if [ ! -z "${COVERAGE:-}" ]; then
 else
     dub test
 
-    if [ "x$TEST_MESON" = "xtrue" ] && ! [ "x$TRAVIS_COMPILER" = "xdmd"  && $(dmd --version | head -n1) = "DMD64 D Compiler v2.085.1"]; then
+    if [ "x$TEST_MESON" = "xtrue" ] && [ "x$(dmd --version | head -n1)" != "xDMD64 D Compiler v2.085.1" ]; then
         meson build && ninja -C build
     fi
 fi
