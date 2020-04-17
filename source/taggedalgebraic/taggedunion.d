@@ -207,8 +207,17 @@ align(commonAlignment!(UnionKindTypes!(UnionFieldEnum!U))) struct TaggedUnion
 		mixin("alias set"~pascalCase(name)~" = set!(Kind."~name~");");
 		mixin("@property bool is"~pascalCase(name)~"() const { return m_kind == Kind."~name~"; }");
 
+		static if (name[$-1] == '_') {
+			mixin("alias set"~pascalCase(name[0 .. $-1])~" = set!(Kind."~name~");");
+			mixin("@property bool is"~pascalCase(name[0 .. $-1])~"() const { return m_kind == Kind."~name~"; }");
+		}
+
 		static if (!isUnitType!(FieldTypes[i])) {
 			mixin("alias "~name~"Value = value!(Kind."~name~");");
+
+			// remove trailing underscore from names like "int_"
+			static if (name[$-1] == '_')
+				mixin("alias "~name[0 .. $-1]~"Value = value!(Kind."~name~");");
 
 			mixin("static TaggedUnion "~name~"(FieldTypes["~i.stringof~"] value)"
 				~ "{ TaggedUnion tu; tu.set!(Kind."~name~")(.move(value)); return tu; }");
@@ -521,6 +530,22 @@ unittest { // make sure field names don't conflict with function names
 	union U { int to; int move; int swap; }
 	TaggedUnion!U val;
 	val.setMove(1);
+}
+
+unittest { // support trailing underscores properly
+	union U {
+		int int_;
+	}
+	TaggedUnion!U val;
+
+	val = TaggedUnion!U.int_(10);
+	assert(val.int_Value == 10);
+	assert(val.intValue == 10);
+	assert(val.isInt_);
+	assert(val.isInt);
+	val.setInt_(20);
+	val.setInt(20);
+	assert(val.intValue == 20);
 }
 
 enum isUnitType(T) = is(T == Void) || is(T == void) || is(T == typeof(null));
