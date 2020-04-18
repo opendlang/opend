@@ -52,7 +52,7 @@ C vs D API
 
 * named enums in D are not global but they are forwarded into global scope. Hence e.g. `VkResult.VK_SUCCESS` and `VK_SUCCESS` can both be used
 * all structures have their `sType` field set to the appropriate value upon initialization; explicit initialization is not needed
-* `VkPipelineShaderStageCreateInfo.module` has been renamed to `VkPipelineShaderStageCreateInfo._module`, since `module` is a D keyword
+* struct members which are d keywords ( so far `module`, `scope`, `version` ) are renamed to their title case counterparts ( `Module`, `Scope`, `Version` ) and additional alias have been added ( `_module`, `module_`, `_scope`, `scope_` , `_version`, `version_` )
 
 
 
@@ -101,13 +101,22 @@ mixin Platform_Extensions!USE_PLATFORM_XLIB_KHR;        // mixin all xlib relate
 ```
 The template publicly imports `erupted.types` and `erupted.functions`. This is necessary as some functions from the latter module are overwritten/extended to also load related Vulkan extension functions.  `DispatchDevice` from module `erupted.dispatch_device` is also extended/overwritten with the corresponding extension functions. If you would include both, your module and `erupted.functions` in another module, `loadInstanceLevelFunctions`, `loadDeviceLevelFunctions` and `DispatchDevice` would collide.
 
-Module `erupted.platform_extensions` defines enums corresponding to extension names, and alias sequences corresponding to C Vulkan platform protection `#define` definitions. In both cases the `VK_` prefix has been dropped. Since vulkan 1.1 all feature names (core 1.0, 1.1 and extensions) are #define(d) to 1. This is reflected in ErupteD with `enum feature_name = 1;` and these enums would collide with those defined in module `Platform_Extensions`. Hence the dropped prefixes. Alias sequences of feature names have their prefix droped as well, this is not necessary but might change in future as well. The template accepts combinations of any each enum and alias sequence in any order.
+Module `erupted.platform_extensions` defines enums corresponding to extension names, and alias sequences corresponding to C Vulkan platform protection `#define` definitions. In both cases the `VK_` prefix has been dropped. Since vulkan 1.1 all feature names (core 1.0, 1.1 and extensions) are #define(d) to 1. This is reflected in ErupteD with `enum feature_name = 1;` and these enums would collide with those defined in module `Platform_Extensions`. Hence the dropped prefixes. Alias sequences of feature names have their prefix dropped as well, this is not necessary but might change in future. The template accepts combinations of any each enum and alias sequence in any order.
 
 You'll find example modules in `examples/platform` for wayland, xcb and xlib. Copy the whole module or its content into your project and possibly edit its name and imported platform module. On windows `core.sys.windows.windows` from druntime is publicly imported, no need for any other dependency. As of writing windows is also the only platform with multiple extensions in place of `USE_PLATFORM_WIN32_KHR` alias sequence/macro, which are all instantiated.  If you figure out which dependencies are available for other platform extensions, please notify me through an issue or send me a PR.
 
 Reasoning for the redesign:
 Platform extensions work with types, and possibly functions, defined in platform specific C headers like `windows.h` or `X11/Xlib.h`. Most important use case of these extensions is arguably platform surface mechanics. The third party library `glfw3` is a solid way to deal with Vulkan platform surfaces in a platform agnostic way. However, by design, `glfw3` does not support surface unrelated platform extensions (e.g. `VK_KHR_external_memory_win32`).<br/>
 The only official platform API (as in being part of the dlang standard lib/runtime) is the windows API, but luckily ports of other platform APIs do exist in the dub registry. However, ErupteD should not rely on unofficial dependencies, as they may brake or become deprecated. Furthermore, specifying several different platform dependencies in `dub.sdl` or `dub.json` does pollute the local dub cache with foreign platform projects, even if they are not usable on the current platform (e.g. `xlib-d` on windows platform).
+
+
+
+Beta Extensions
+---------------
+Beta Extensins were introduced in vulkan v1.2.135 with the first three of them being `KHR_deferred_host_operations`, `KHR_pipeline_library`, `KHR_ray_tracing`. They are marked with the special token `VK_ENABLE_BETA_EXTENSIONS` and are curiously treated as platform extensions (see [vk.xml](https://github.com/KhronosGroup/Vulkan-Docs/blob/master/xml/vk.xml)). This means that, if you want to use them, you need to follow the same steps as detailed in [Platform Extensions](https://github.com/ParticlePeter/ErupteD#platform-extensions), mixing them in individually or all of them at once, e.g.:
+```
+mixin Platform_Extensions!ENABLE_BETA_EXTENSIONS;       // mixin all beta extensions
+```
 
 
 

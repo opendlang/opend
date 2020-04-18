@@ -280,16 +280,6 @@ struct DispatchDevice {
         vkCmdBeginConditionalRenderingEXT                 = cast( PFN_vkCmdBeginConditionalRenderingEXT                 ) vkGetDeviceProcAddr( device, "vkCmdBeginConditionalRenderingEXT" );
         vkCmdEndConditionalRenderingEXT                   = cast( PFN_vkCmdEndConditionalRenderingEXT                   ) vkGetDeviceProcAddr( device, "vkCmdEndConditionalRenderingEXT" );
 
-        // VK_NVX_device_generated_commands
-        vkCmdProcessCommandsNVX                           = cast( PFN_vkCmdProcessCommandsNVX                           ) vkGetDeviceProcAddr( device, "vkCmdProcessCommandsNVX" );
-        vkCmdReserveSpaceForCommandsNVX                   = cast( PFN_vkCmdReserveSpaceForCommandsNVX                   ) vkGetDeviceProcAddr( device, "vkCmdReserveSpaceForCommandsNVX" );
-        vkCreateIndirectCommandsLayoutNVX                 = cast( PFN_vkCreateIndirectCommandsLayoutNVX                 ) vkGetDeviceProcAddr( device, "vkCreateIndirectCommandsLayoutNVX" );
-        vkDestroyIndirectCommandsLayoutNVX                = cast( PFN_vkDestroyIndirectCommandsLayoutNVX                ) vkGetDeviceProcAddr( device, "vkDestroyIndirectCommandsLayoutNVX" );
-        vkCreateObjectTableNVX                            = cast( PFN_vkCreateObjectTableNVX                            ) vkGetDeviceProcAddr( device, "vkCreateObjectTableNVX" );
-        vkDestroyObjectTableNVX                           = cast( PFN_vkDestroyObjectTableNVX                           ) vkGetDeviceProcAddr( device, "vkDestroyObjectTableNVX" );
-        vkRegisterObjectsNVX                              = cast( PFN_vkRegisterObjectsNVX                              ) vkGetDeviceProcAddr( device, "vkRegisterObjectsNVX" );
-        vkUnregisterObjectsNVX                            = cast( PFN_vkUnregisterObjectsNVX                            ) vkGetDeviceProcAddr( device, "vkUnregisterObjectsNVX" );
-
         // VK_NV_clip_space_w_scaling
         vkCmdSetViewportWScalingNV                        = cast( PFN_vkCmdSetViewportWScalingNV                        ) vkGetDeviceProcAddr( device, "vkCmdSetViewportWScalingNV" );
 
@@ -338,16 +328,16 @@ struct DispatchDevice {
 
         // VK_NV_ray_tracing
         vkCreateAccelerationStructureNV                   = cast( PFN_vkCreateAccelerationStructureNV                   ) vkGetDeviceProcAddr( device, "vkCreateAccelerationStructureNV" );
-        vkDestroyAccelerationStructureNV                  = cast( PFN_vkDestroyAccelerationStructureNV                  ) vkGetDeviceProcAddr( device, "vkDestroyAccelerationStructureNV" );
+        vkDestroyAccelerationStructureKHR                 = cast( PFN_vkDestroyAccelerationStructureKHR                 ) vkGetDeviceProcAddr( device, "vkDestroyAccelerationStructureKHR" );
         vkGetAccelerationStructureMemoryRequirementsNV    = cast( PFN_vkGetAccelerationStructureMemoryRequirementsNV    ) vkGetDeviceProcAddr( device, "vkGetAccelerationStructureMemoryRequirementsNV" );
-        vkBindAccelerationStructureMemoryNV               = cast( PFN_vkBindAccelerationStructureMemoryNV               ) vkGetDeviceProcAddr( device, "vkBindAccelerationStructureMemoryNV" );
+        vkBindAccelerationStructureMemoryKHR              = cast( PFN_vkBindAccelerationStructureMemoryKHR              ) vkGetDeviceProcAddr( device, "vkBindAccelerationStructureMemoryKHR" );
         vkCmdBuildAccelerationStructureNV                 = cast( PFN_vkCmdBuildAccelerationStructureNV                 ) vkGetDeviceProcAddr( device, "vkCmdBuildAccelerationStructureNV" );
         vkCmdCopyAccelerationStructureNV                  = cast( PFN_vkCmdCopyAccelerationStructureNV                  ) vkGetDeviceProcAddr( device, "vkCmdCopyAccelerationStructureNV" );
         vkCmdTraceRaysNV                                  = cast( PFN_vkCmdTraceRaysNV                                  ) vkGetDeviceProcAddr( device, "vkCmdTraceRaysNV" );
         vkCreateRayTracingPipelinesNV                     = cast( PFN_vkCreateRayTracingPipelinesNV                     ) vkGetDeviceProcAddr( device, "vkCreateRayTracingPipelinesNV" );
-        vkGetRayTracingShaderGroupHandlesNV               = cast( PFN_vkGetRayTracingShaderGroupHandlesNV               ) vkGetDeviceProcAddr( device, "vkGetRayTracingShaderGroupHandlesNV" );
+        vkGetRayTracingShaderGroupHandlesKHR              = cast( PFN_vkGetRayTracingShaderGroupHandlesKHR              ) vkGetDeviceProcAddr( device, "vkGetRayTracingShaderGroupHandlesKHR" );
         vkGetAccelerationStructureHandleNV                = cast( PFN_vkGetAccelerationStructureHandleNV                ) vkGetDeviceProcAddr( device, "vkGetAccelerationStructureHandleNV" );
-        vkCmdWriteAccelerationStructuresPropertiesNV      = cast( PFN_vkCmdWriteAccelerationStructuresPropertiesNV      ) vkGetDeviceProcAddr( device, "vkCmdWriteAccelerationStructuresPropertiesNV" );
+        vkCmdWriteAccelerationStructuresPropertiesKHR     = cast( PFN_vkCmdWriteAccelerationStructuresPropertiesKHR     ) vkGetDeviceProcAddr( device, "vkCmdWriteAccelerationStructuresPropertiesKHR" );
         vkCompileDeferredNV                               = cast( PFN_vkCompileDeferredNV                               ) vkGetDeviceProcAddr( device, "vkCompileDeferredNV" );
 
         // VK_EXT_external_memory_host
@@ -387,6 +377,14 @@ struct DispatchDevice {
 
         // VK_EXT_line_rasterization
         vkCmdSetLineStippleEXT                            = cast( PFN_vkCmdSetLineStippleEXT                            ) vkGetDeviceProcAddr( device, "vkCmdSetLineStippleEXT" );
+
+        // VK_NV_device_generated_commands
+        vkGetGeneratedCommandsMemoryRequirementsNV        = cast( PFN_vkGetGeneratedCommandsMemoryRequirementsNV        ) vkGetDeviceProcAddr( device, "vkGetGeneratedCommandsMemoryRequirementsNV" );
+        vkCmdPreprocessGeneratedCommandsNV                = cast( PFN_vkCmdPreprocessGeneratedCommandsNV                ) vkGetDeviceProcAddr( device, "vkCmdPreprocessGeneratedCommandsNV" );
+        vkCmdExecuteGeneratedCommandsNV                   = cast( PFN_vkCmdExecuteGeneratedCommandsNV                   ) vkGetDeviceProcAddr( device, "vkCmdExecuteGeneratedCommandsNV" );
+        vkCmdBindPipelineShaderGroupNV                    = cast( PFN_vkCmdBindPipelineShaderGroupNV                    ) vkGetDeviceProcAddr( device, "vkCmdBindPipelineShaderGroupNV" );
+        vkCreateIndirectCommandsLayoutNV                  = cast( PFN_vkCreateIndirectCommandsLayoutNV                  ) vkGetDeviceProcAddr( device, "vkCreateIndirectCommandsLayoutNV" );
+        vkDestroyIndirectCommandsLayoutNV                 = cast( PFN_vkDestroyIndirectCommandsLayoutNV                 ) vkGetDeviceProcAddr( device, "vkDestroyIndirectCommandsLayoutNV" );
     }
 
 
@@ -623,16 +621,6 @@ struct DispatchDevice {
     void      CmdBeginConditionalRenderingEXT( const( VkConditionalRenderingBeginInfoEXT )* pConditionalRenderingBegin ) { vkCmdBeginConditionalRenderingEXT( commandBuffer, pConditionalRenderingBegin ); }
     void      CmdEndConditionalRenderingEXT() { vkCmdEndConditionalRenderingEXT( commandBuffer ); }
 
-    // VK_NVX_device_generated_commands
-    void      CmdProcessCommandsNVX( const( VkCmdProcessCommandsInfoNVX )* pProcessCommandsInfo ) { vkCmdProcessCommandsNVX( commandBuffer, pProcessCommandsInfo ); }
-    void      CmdReserveSpaceForCommandsNVX( const( VkCmdReserveSpaceForCommandsInfoNVX )* pReserveSpaceInfo ) { vkCmdReserveSpaceForCommandsNVX( commandBuffer, pReserveSpaceInfo ); }
-    VkResult  CreateIndirectCommandsLayoutNVX( const( VkIndirectCommandsLayoutCreateInfoNVX )* pCreateInfo, VkIndirectCommandsLayoutNVX* pIndirectCommandsLayout ) { return vkCreateIndirectCommandsLayoutNVX( vkDevice, pCreateInfo, pAllocator, pIndirectCommandsLayout ); }
-    void      DestroyIndirectCommandsLayoutNVX( VkIndirectCommandsLayoutNVX indirectCommandsLayout ) { vkDestroyIndirectCommandsLayoutNVX( vkDevice, indirectCommandsLayout, pAllocator ); }
-    VkResult  CreateObjectTableNVX( const( VkObjectTableCreateInfoNVX )* pCreateInfo, VkObjectTableNVX* pObjectTable ) { return vkCreateObjectTableNVX( vkDevice, pCreateInfo, pAllocator, pObjectTable ); }
-    void      DestroyObjectTableNVX( VkObjectTableNVX objectTable ) { vkDestroyObjectTableNVX( vkDevice, objectTable, pAllocator ); }
-    VkResult  RegisterObjectsNVX( VkObjectTableNVX objectTable, uint32_t objectCount, const( VkObjectTableEntryNVX* )* ppObjectTableEntries, const( uint32_t )* pObjectIndices ) { return vkRegisterObjectsNVX( vkDevice, objectTable, objectCount, ppObjectTableEntries, pObjectIndices ); }
-    VkResult  UnregisterObjectsNVX( VkObjectTableNVX objectTable, uint32_t objectCount, const( VkObjectEntryTypeNVX )* pObjectEntryTypes, const( uint32_t )* pObjectIndices ) { return vkUnregisterObjectsNVX( vkDevice, objectTable, objectCount, pObjectEntryTypes, pObjectIndices ); }
-
     // VK_NV_clip_space_w_scaling
     void      CmdSetViewportWScalingNV( uint32_t firstViewport, uint32_t viewportCount, const( VkViewportWScalingNV )* pViewportWScalings ) { vkCmdSetViewportWScalingNV( commandBuffer, firstViewport, viewportCount, pViewportWScalings ); }
 
@@ -678,16 +666,16 @@ struct DispatchDevice {
 
     // VK_NV_ray_tracing
     VkResult  CreateAccelerationStructureNV( const( VkAccelerationStructureCreateInfoNV )* pCreateInfo, VkAccelerationStructureNV* pAccelerationStructure ) { return vkCreateAccelerationStructureNV( vkDevice, pCreateInfo, pAllocator, pAccelerationStructure ); }
-    void      DestroyAccelerationStructureNV( VkAccelerationStructureNV accelerationStructure ) { vkDestroyAccelerationStructureNV( vkDevice, accelerationStructure, pAllocator ); }
+    void      DestroyAccelerationStructureKHR( VkAccelerationStructureKHR accelerationStructure ) { vkDestroyAccelerationStructureKHR( vkDevice, accelerationStructure, pAllocator ); }
     void      GetAccelerationStructureMemoryRequirementsNV( const( VkAccelerationStructureMemoryRequirementsInfoNV )* pInfo, VkMemoryRequirements2KHR* pMemoryRequirements ) { vkGetAccelerationStructureMemoryRequirementsNV( vkDevice, pInfo, pMemoryRequirements ); }
-    VkResult  BindAccelerationStructureMemoryNV( uint32_t bindInfoCount, const( VkBindAccelerationStructureMemoryInfoNV )* pBindInfos ) { return vkBindAccelerationStructureMemoryNV( vkDevice, bindInfoCount, pBindInfos ); }
-    void      CmdBuildAccelerationStructureNV( const( VkAccelerationStructureInfoNV )* pInfo, VkBuffer instanceData, VkDeviceSize instanceOffset, VkBool32 update, VkAccelerationStructureNV dst, VkAccelerationStructureNV src, VkBuffer scratch, VkDeviceSize scratchOffset ) { vkCmdBuildAccelerationStructureNV( commandBuffer, pInfo, instanceData, instanceOffset, update, dst, src, scratch, scratchOffset ); }
-    void      CmdCopyAccelerationStructureNV( VkAccelerationStructureNV dst, VkAccelerationStructureNV src, VkCopyAccelerationStructureModeNV mode ) { vkCmdCopyAccelerationStructureNV( commandBuffer, dst, src, mode ); }
+    VkResult  BindAccelerationStructureMemoryKHR( uint32_t bindInfoCount, const( VkBindAccelerationStructureMemoryInfoKHR )* pBindInfos ) { return vkBindAccelerationStructureMemoryKHR( vkDevice, bindInfoCount, pBindInfos ); }
+    void      CmdBuildAccelerationStructureNV( const( VkAccelerationStructureInfoNV )* pInfo, VkBuffer instanceData, VkDeviceSize instanceOffset, VkBool32 update, VkAccelerationStructureKHR dst, VkAccelerationStructureKHR src, VkBuffer scratch, VkDeviceSize scratchOffset ) { vkCmdBuildAccelerationStructureNV( commandBuffer, pInfo, instanceData, instanceOffset, update, dst, src, scratch, scratchOffset ); }
+    void      CmdCopyAccelerationStructureNV( VkAccelerationStructureKHR dst, VkAccelerationStructureKHR src, VkCopyAccelerationStructureModeKHR mode ) { vkCmdCopyAccelerationStructureNV( commandBuffer, dst, src, mode ); }
     void      CmdTraceRaysNV( VkBuffer raygenShaderBindingTableBuffer, VkDeviceSize raygenShaderBindingOffset, VkBuffer missShaderBindingTableBuffer, VkDeviceSize missShaderBindingOffset, VkDeviceSize missShaderBindingStride, VkBuffer hitShaderBindingTableBuffer, VkDeviceSize hitShaderBindingOffset, VkDeviceSize hitShaderBindingStride, VkBuffer callableShaderBindingTableBuffer, VkDeviceSize callableShaderBindingOffset, VkDeviceSize callableShaderBindingStride, uint32_t width, uint32_t height, uint32_t depth ) { vkCmdTraceRaysNV( commandBuffer, raygenShaderBindingTableBuffer, raygenShaderBindingOffset, missShaderBindingTableBuffer, missShaderBindingOffset, missShaderBindingStride, hitShaderBindingTableBuffer, hitShaderBindingOffset, hitShaderBindingStride, callableShaderBindingTableBuffer, callableShaderBindingOffset, callableShaderBindingStride, width, height, depth ); }
     VkResult  CreateRayTracingPipelinesNV( VkPipelineCache pipelineCache, uint32_t createInfoCount, const( VkRayTracingPipelineCreateInfoNV )* pCreateInfos, VkPipeline* pPipelines ) { return vkCreateRayTracingPipelinesNV( vkDevice, pipelineCache, createInfoCount, pCreateInfos, pAllocator, pPipelines ); }
-    VkResult  GetRayTracingShaderGroupHandlesNV( VkPipeline pipeline, uint32_t firstGroup, uint32_t groupCount, size_t dataSize, void* pData ) { return vkGetRayTracingShaderGroupHandlesNV( vkDevice, pipeline, firstGroup, groupCount, dataSize, pData ); }
-    VkResult  GetAccelerationStructureHandleNV( VkAccelerationStructureNV accelerationStructure, size_t dataSize, void* pData ) { return vkGetAccelerationStructureHandleNV( vkDevice, accelerationStructure, dataSize, pData ); }
-    void      CmdWriteAccelerationStructuresPropertiesNV( uint32_t accelerationStructureCount, const( VkAccelerationStructureNV )* pAccelerationStructures, VkQueryType queryType, VkQueryPool queryPool, uint32_t firstQuery ) { vkCmdWriteAccelerationStructuresPropertiesNV( commandBuffer, accelerationStructureCount, pAccelerationStructures, queryType, queryPool, firstQuery ); }
+    VkResult  GetRayTracingShaderGroupHandlesKHR( VkPipeline pipeline, uint32_t firstGroup, uint32_t groupCount, size_t dataSize, void* pData ) { return vkGetRayTracingShaderGroupHandlesKHR( vkDevice, pipeline, firstGroup, groupCount, dataSize, pData ); }
+    VkResult  GetAccelerationStructureHandleNV( VkAccelerationStructureKHR accelerationStructure, size_t dataSize, void* pData ) { return vkGetAccelerationStructureHandleNV( vkDevice, accelerationStructure, dataSize, pData ); }
+    void      CmdWriteAccelerationStructuresPropertiesKHR( uint32_t accelerationStructureCount, const( VkAccelerationStructureKHR )* pAccelerationStructures, VkQueryType queryType, VkQueryPool queryPool, uint32_t firstQuery ) { vkCmdWriteAccelerationStructuresPropertiesKHR( commandBuffer, accelerationStructureCount, pAccelerationStructures, queryType, queryPool, firstQuery ); }
     VkResult  CompileDeferredNV( VkPipeline pipeline, uint32_t shader ) { return vkCompileDeferredNV( vkDevice, pipeline, shader ); }
 
     // VK_EXT_external_memory_host
@@ -725,6 +713,14 @@ struct DispatchDevice {
 
     // VK_EXT_line_rasterization
     void      CmdSetLineStippleEXT( uint32_t lineStippleFactor, uint16_t lineStipplePattern ) { vkCmdSetLineStippleEXT( commandBuffer, lineStippleFactor, lineStipplePattern ); }
+
+    // VK_NV_device_generated_commands
+    void      GetGeneratedCommandsMemoryRequirementsNV( const( VkGeneratedCommandsMemoryRequirementsInfoNV )* pInfo, VkMemoryRequirements2* pMemoryRequirements ) { vkGetGeneratedCommandsMemoryRequirementsNV( vkDevice, pInfo, pMemoryRequirements ); }
+    void      CmdPreprocessGeneratedCommandsNV( const( VkGeneratedCommandsInfoNV )* pGeneratedCommandsInfo ) { vkCmdPreprocessGeneratedCommandsNV( commandBuffer, pGeneratedCommandsInfo ); }
+    void      CmdExecuteGeneratedCommandsNV( VkBool32 isPreprocessed, const( VkGeneratedCommandsInfoNV )* pGeneratedCommandsInfo ) { vkCmdExecuteGeneratedCommandsNV( commandBuffer, isPreprocessed, pGeneratedCommandsInfo ); }
+    void      CmdBindPipelineShaderGroupNV( VkPipelineBindPoint pipelineBindPoint, VkPipeline pipeline, uint32_t groupIndex ) { vkCmdBindPipelineShaderGroupNV( commandBuffer, pipelineBindPoint, pipeline, groupIndex ); }
+    VkResult  CreateIndirectCommandsLayoutNV( const( VkIndirectCommandsLayoutCreateInfoNV )* pCreateInfo, VkIndirectCommandsLayoutNV* pIndirectCommandsLayout ) { return vkCreateIndirectCommandsLayoutNV( vkDevice, pCreateInfo, pAllocator, pIndirectCommandsLayout ); }
+    void      DestroyIndirectCommandsLayoutNV( VkIndirectCommandsLayoutNV indirectCommandsLayout ) { vkDestroyIndirectCommandsLayoutNV( vkDevice, indirectCommandsLayout, pAllocator ); }
 
     // VK_KHR_device_group
     alias GetDeviceGroupPeerMemoryFeaturesKHR                   = GetDeviceGroupPeerMemoryFeatures;
@@ -778,6 +774,12 @@ struct DispatchDevice {
     // VK_AMD_draw_indirect_count
     alias CmdDrawIndirectCountAMD                               = CmdDrawIndirectCount;
     alias CmdDrawIndexedIndirectCountAMD                        = CmdDrawIndexedIndirectCount;
+
+    // VK_NV_ray_tracing
+    alias DestroyAccelerationStructureNV                        = DestroyAccelerationStructureKHR;
+    alias BindAccelerationStructureMemoryNV                     = BindAccelerationStructureMemoryKHR;
+    alias GetRayTracingShaderGroupHandlesNV                     = GetRayTracingShaderGroupHandlesKHR;
+    alias CmdWriteAccelerationStructuresPropertiesNV            = CmdWriteAccelerationStructuresPropertiesKHR;
 
     // VK_EXT_buffer_device_address
     alias GetBufferDeviceAddressEXT                             = GetBufferDeviceAddress;
@@ -1009,16 +1011,6 @@ struct DispatchDevice {
     PFN_vkCmdBeginConditionalRenderingEXT                 vkCmdBeginConditionalRenderingEXT;
     PFN_vkCmdEndConditionalRenderingEXT                   vkCmdEndConditionalRenderingEXT;
 
-    // VK_NVX_device_generated_commands
-    PFN_vkCmdProcessCommandsNVX                           vkCmdProcessCommandsNVX;
-    PFN_vkCmdReserveSpaceForCommandsNVX                   vkCmdReserveSpaceForCommandsNVX;
-    PFN_vkCreateIndirectCommandsLayoutNVX                 vkCreateIndirectCommandsLayoutNVX;
-    PFN_vkDestroyIndirectCommandsLayoutNVX                vkDestroyIndirectCommandsLayoutNVX;
-    PFN_vkCreateObjectTableNVX                            vkCreateObjectTableNVX;
-    PFN_vkDestroyObjectTableNVX                           vkDestroyObjectTableNVX;
-    PFN_vkRegisterObjectsNVX                              vkRegisterObjectsNVX;
-    PFN_vkUnregisterObjectsNVX                            vkUnregisterObjectsNVX;
-
     // VK_NV_clip_space_w_scaling
     PFN_vkCmdSetViewportWScalingNV                        vkCmdSetViewportWScalingNV;
 
@@ -1067,16 +1059,16 @@ struct DispatchDevice {
 
     // VK_NV_ray_tracing
     PFN_vkCreateAccelerationStructureNV                   vkCreateAccelerationStructureNV;
-    PFN_vkDestroyAccelerationStructureNV                  vkDestroyAccelerationStructureNV;
+    PFN_vkDestroyAccelerationStructureKHR                 vkDestroyAccelerationStructureKHR;
     PFN_vkGetAccelerationStructureMemoryRequirementsNV    vkGetAccelerationStructureMemoryRequirementsNV;
-    PFN_vkBindAccelerationStructureMemoryNV               vkBindAccelerationStructureMemoryNV;
+    PFN_vkBindAccelerationStructureMemoryKHR              vkBindAccelerationStructureMemoryKHR;
     PFN_vkCmdBuildAccelerationStructureNV                 vkCmdBuildAccelerationStructureNV;
     PFN_vkCmdCopyAccelerationStructureNV                  vkCmdCopyAccelerationStructureNV;
     PFN_vkCmdTraceRaysNV                                  vkCmdTraceRaysNV;
     PFN_vkCreateRayTracingPipelinesNV                     vkCreateRayTracingPipelinesNV;
-    PFN_vkGetRayTracingShaderGroupHandlesNV               vkGetRayTracingShaderGroupHandlesNV;
+    PFN_vkGetRayTracingShaderGroupHandlesKHR              vkGetRayTracingShaderGroupHandlesKHR;
     PFN_vkGetAccelerationStructureHandleNV                vkGetAccelerationStructureHandleNV;
-    PFN_vkCmdWriteAccelerationStructuresPropertiesNV      vkCmdWriteAccelerationStructuresPropertiesNV;
+    PFN_vkCmdWriteAccelerationStructuresPropertiesKHR     vkCmdWriteAccelerationStructuresPropertiesKHR;
     PFN_vkCompileDeferredNV                               vkCompileDeferredNV;
 
     // VK_EXT_external_memory_host
@@ -1116,6 +1108,14 @@ struct DispatchDevice {
 
     // VK_EXT_line_rasterization
     PFN_vkCmdSetLineStippleEXT                            vkCmdSetLineStippleEXT;
+
+    // VK_NV_device_generated_commands
+    PFN_vkGetGeneratedCommandsMemoryRequirementsNV        vkGetGeneratedCommandsMemoryRequirementsNV;
+    PFN_vkCmdPreprocessGeneratedCommandsNV                vkCmdPreprocessGeneratedCommandsNV;
+    PFN_vkCmdExecuteGeneratedCommandsNV                   vkCmdExecuteGeneratedCommandsNV;
+    PFN_vkCmdBindPipelineShaderGroupNV                    vkCmdBindPipelineShaderGroupNV;
+    PFN_vkCreateIndirectCommandsLayoutNV                  vkCreateIndirectCommandsLayoutNV;
+    PFN_vkDestroyIndirectCommandsLayoutNV                 vkDestroyIndirectCommandsLayoutNV;
 
     // VK_KHR_device_group
     alias vkGetDeviceGroupPeerMemoryFeaturesKHR                   = vkGetDeviceGroupPeerMemoryFeatures;
@@ -1169,6 +1169,12 @@ struct DispatchDevice {
     // VK_AMD_draw_indirect_count
     alias vkCmdDrawIndirectCountAMD                               = vkCmdDrawIndirectCount;
     alias vkCmdDrawIndexedIndirectCountAMD                        = vkCmdDrawIndexedIndirectCount;
+
+    // VK_NV_ray_tracing
+    alias vkDestroyAccelerationStructureNV                        = vkDestroyAccelerationStructureKHR;
+    alias vkBindAccelerationStructureMemoryNV                     = vkBindAccelerationStructureMemoryKHR;
+    alias vkGetRayTracingShaderGroupHandlesNV                     = vkGetRayTracingShaderGroupHandlesKHR;
+    alias vkCmdWriteAccelerationStructuresPropertiesNV            = vkCmdWriteAccelerationStructuresPropertiesKHR;
 
     // VK_EXT_buffer_device_address
     alias vkGetBufferDeviceAddressEXT                             = vkGetBufferDeviceAddress;
