@@ -272,6 +272,7 @@ struct DispatchDevice {
 
         // VK_NVX_image_view_handle
         vkGetImageViewHandleNVX                           = cast( PFN_vkGetImageViewHandleNVX                           ) vkGetDeviceProcAddr( device, "vkGetImageViewHandleNVX" );
+        vkGetImageViewAddressNVX                          = cast( PFN_vkGetImageViewAddressNVX                          ) vkGetDeviceProcAddr( device, "vkGetImageViewAddressNVX" );
 
         // VK_AMD_shader_info
         vkGetShaderInfoAMD                                = cast( PFN_vkGetShaderInfoAMD                                ) vkGetDeviceProcAddr( device, "vkGetShaderInfoAMD" );
@@ -613,6 +614,7 @@ struct DispatchDevice {
 
     // VK_NVX_image_view_handle
     uint32_t  GetImageViewHandleNVX( const( VkImageViewHandleInfoNVX )* pInfo ) { return vkGetImageViewHandleNVX( vkDevice, pInfo ); }
+    VkResult  GetImageViewAddressNVX( VkImageView imageView, VkImageViewAddressPropertiesNVX* pProperties ) { return vkGetImageViewAddressNVX( vkDevice, imageView, pProperties ); }
 
     // VK_AMD_shader_info
     VkResult  GetShaderInfoAMD( VkPipeline pipeline, VkShaderStageFlagBits shaderStage, VkShaderInfoTypeAMD infoType, size_t* pInfoSize, void* pInfo ) { return vkGetShaderInfoAMD( vkDevice, pipeline, shaderStage, infoType, pInfoSize, pInfo ); }
@@ -1003,6 +1005,7 @@ struct DispatchDevice {
 
     // VK_NVX_image_view_handle
     PFN_vkGetImageViewHandleNVX                           vkGetImageViewHandleNVX;
+    PFN_vkGetImageViewAddressNVX                          vkGetImageViewAddressNVX;
 
     // VK_AMD_shader_info
     PFN_vkGetShaderInfoAMD                                vkGetShaderInfoAMD;

@@ -291,6 +291,7 @@ extern( System ) {
 
     // VK_NVX_image_view_handle
     alias PFN_vkGetImageViewHandleNVX                                           = uint32_t  function( VkDevice device, const( VkImageViewHandleInfoNVX )* pInfo );
+    alias PFN_vkGetImageViewAddressNVX                                          = VkResult  function( VkDevice device, VkImageView imageView, VkImageViewAddressPropertiesNVX* pProperties );
 
     // VK_AMD_shader_info
     alias PFN_vkGetShaderInfoAMD                                                = VkResult  function( VkDevice device, VkPipeline pipeline, VkShaderStageFlagBits shaderStage, VkShaderInfoTypeAMD infoType, size_t* pInfoSize, void* pInfo );
@@ -712,6 +713,7 @@ __gshared {
 
     // VK_NVX_image_view_handle
     PFN_vkGetImageViewHandleNVX                                           vkGetImageViewHandleNVX;
+    PFN_vkGetImageViewAddressNVX                                          vkGetImageViewAddressNVX;
 
     // VK_AMD_shader_info
     PFN_vkGetShaderInfoAMD                                                vkGetShaderInfoAMD;
@@ -1278,6 +1280,7 @@ void loadDeviceLevelFunctions( VkInstance instance ) {
 
     // VK_NVX_image_view_handle
     vkGetImageViewHandleNVX                           = cast( PFN_vkGetImageViewHandleNVX                           ) vkGetInstanceProcAddr( instance, "vkGetImageViewHandleNVX" );
+    vkGetImageViewAddressNVX                          = cast( PFN_vkGetImageViewAddressNVX                          ) vkGetInstanceProcAddr( instance, "vkGetImageViewAddressNVX" );
 
     // VK_AMD_shader_info
     vkGetShaderInfoAMD                                = cast( PFN_vkGetShaderInfoAMD                                ) vkGetInstanceProcAddr( instance, "vkGetShaderInfoAMD" );
@@ -1614,6 +1617,7 @@ void loadDeviceLevelFunctions( VkDevice device ) {
 
     // VK_NVX_image_view_handle
     vkGetImageViewHandleNVX                           = cast( PFN_vkGetImageViewHandleNVX                           ) vkGetDeviceProcAddr( device, "vkGetImageViewHandleNVX" );
+    vkGetImageViewAddressNVX                          = cast( PFN_vkGetImageViewAddressNVX                          ) vkGetDeviceProcAddr( device, "vkGetImageViewAddressNVX" );
 
     // VK_AMD_shader_info
     vkGetShaderInfoAMD                                = cast( PFN_vkGetShaderInfoAMD                                ) vkGetDeviceProcAddr( device, "vkGetShaderInfoAMD" );
