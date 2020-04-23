@@ -138,7 +138,7 @@ size_t elementCount(Range)(scope const auto ref Range range) @property
 {
     static if (__traits(hasMember, Range, "elementCount"))
     {
-        return range;
+        return range.elementCount;
     }
     else
     {
