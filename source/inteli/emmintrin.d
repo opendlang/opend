@@ -115,7 +115,7 @@ __m64 _mm_add_si64 (__m64 a, __m64 b) pure @safe
     return a + b;
 }
 
-/// Add packed 16-bit integers in `a` and `b` using saturation.
+/// Add packed 16-bit integers in `a` and `b` using signed saturation.
 __m128i _mm_adds_epi16(__m128i a, __m128i b) pure @trusted
 {
     static if (GDC_with_SSE2)
@@ -154,7 +154,7 @@ unittest
     assert(res.array == correctResult);
 }
 
-/// Add packed 8-bit signed integers in `a` and `b` using saturation.
+/// Add packed 8-bit signed integers in `a` and `b` using signed saturation.
 __m128i _mm_adds_epi8(__m128i a, __m128i b) pure @trusted
 {
     static if (GDC_with_SSE2)
@@ -194,7 +194,7 @@ unittest
     assert(res.array == correctResult);
 }
 
-/// Add packed 8-bit unsigned integers in `a` and `b` using saturation.
+/// Add packed 8-bit unsigned integers in `a` and `b` using unsigned saturation.
 __m128i _mm_adds_epu8(__m128i a, __m128i b) pure @trusted
 {
     version(LDC)
@@ -229,7 +229,7 @@ unittest
     assert(res.array == correctResult);
 }
 
-/// Add packed unsigned 16-bit integers in `a` and `b` using saturation.
+/// Add packed unsigned 16-bit integers in `a` and `b` using unsigned saturation.
 __m128i _mm_adds_epu16(__m128i a, __m128i b) pure @trusted
 {
     version(LDC)
@@ -3740,6 +3740,7 @@ version(LDC)
     static if (__VERSION__ >= 2085) // saturation x86 intrinsics disappeared in LLVM 8
     {
         // Generates PSUBSW since LDC 1.15 -O0
+        /// Add packed 16-bit signed integers in `a` and `b` using signed saturation.
         __m128i _mm_subs_epi16(__m128i a, __m128i b) pure @trusted
         {
             enum prefix = `declare <8 x i16> @llvm.ssub.sat.v8i16(<8 x i16> %a, <8 x i16> %b)`;
@@ -3760,6 +3761,7 @@ else
     }
     else
     {
+        /// Add packed 16-bit signed integers in `a` and `b` using signed saturation.
         __m128i _mm_subs_epi16(__m128i a, __m128i b) pure @trusted
         {
             short[8] res;
@@ -3784,6 +3786,7 @@ version(LDC)
     static if (__VERSION__ >= 2085) // saturation x86 intrinsics disappeared in LLVM 8
     {
         // Generates PSUBSB since LDC 1.15 -O0
+        /// Add packed 8-bit signed integers in `a` and `b` using signed saturation.
         __m128i _mm_subs_epi8(__m128i a, __m128i b) pure @trusted
         {
             enum prefix = `declare <16 x i8> @llvm.ssub.sat.v16i8(<16 x i8> %a, <16 x i8> %b)`;
@@ -3804,6 +3807,7 @@ else
     }
     else
     {
+        /// Add packed 8-bit signed integers in `a` and `b` using signed saturation.
         __m128i _mm_subs_epi8(__m128i a, __m128i b) pure @trusted
         {
             byte[16] res;
@@ -3828,6 +3832,7 @@ version(LDC)
     static if (__VERSION__ >= 2085) // saturation x86 intrinsics disappeared in LLVM 8
     {
         // Generates PSUBUSW since LDC 1.15 -O0
+        /// Add packed 16-bit unsigned integers in `a` and `b` using unsigned saturation.
         __m128i _mm_subs_epu16(__m128i a, __m128i b) pure @trusted
         {
             enum prefix = `declare <8 x i16> @llvm.usub.sat.v8i16(<8 x i16> %a, <8 x i16> %b)`;
@@ -3848,6 +3853,7 @@ else
     }
     else
     {
+        /// Add packed 16-bit unsigned integers in `a` and `b` using unsigned saturation.
         __m128i _mm_subs_epu16(__m128i a, __m128i b) pure @trusted
         {
             short[8] res;
@@ -3875,6 +3881,7 @@ version(LDC)
     static if (__VERSION__ >= 2085) // saturation x86 intrinsics disappeared in LLVM 8
     {
         // Generates PSUBUSB since LDC 1.15 -O0
+        /// Add packed 8-bit unsigned integers in `a` and `b` using unsigned saturation.
         __m128i _mm_subs_epu8(__m128i a, __m128i b) pure @trusted
         {
             enum prefix = `declare <16 x i8> @llvm.usub.sat.v16i8(<16 x i8> %a, <16 x i8> %b)`;
@@ -3895,6 +3902,7 @@ else
     }
     else
     {
+        /// Add packed 8-bit unsigned integers in `a` and `b` using unsigned saturation.
         __m128i _mm_subs_epu8(__m128i a, __m128i b) pure @trusted
         {
             ubyte[16] res;
