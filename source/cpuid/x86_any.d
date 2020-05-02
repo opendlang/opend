@@ -385,79 +385,110 @@ union Leaf7Information
         version(D_Ddoc)
         {
         const:
-             /// Supports RDFSBASE/RDGSBASE/WRFSBASE/WRGSBASE if 1.
-             bool fsgsbase();
-             ///MSR is supported if 1.
-             bool ia32_tsc_adjust();
-             /// Supports Intel® Software Guard Extensions (Intel® SGX Extensions) if 1.
-             bool sgx();
-             /// Bit Manipulation Instruction Set 1
-             bool bmi1();
-             /// Transactional Synchronization Extensions
-             bool hle();
-             /// Advanced Vector Extensions 2
-             bool avx2();
-             /// x87 FPU Data Pointer updated only on x87 exceptions if 1.
-             bool fdp_excptn_only();
-             /// Supports Supervisor-Mode Execution Prevention if 1.
-             bool smep();
-             /// Bit Manipulation Instruction Set 2
-             bool bmi2();
-             /// Enhanced REP MOVSB/STOSB if 1.
-             bool supports();
-             /// If 1, supports INVPCID instruction for system software that manages process-context identifiers.
-             bool invpcid();
-             /// Transactional Synchronization Extensions
-             bool rtm();
-             /// Supports Intel® Resource Director Technology (Intel® RDT) Monitoring capability if 1.
-             bool rdt_m();
-             ///FPU CS and FPU DS values if 1.
-             bool deprecates();
-             /// Supports Intel® Memory Protection Extensions if 1.
-             bool mpx();
-             /// Supports Intel® Resource Director Technology (Intel® RDT) Allocation capability if 1.
-             bool rdt_a();
-             /// AVX-512 Foundation
-             bool avx512f();
-             /// AVX-512 Doubleword and Quadword Instructions
-             bool avx512dq();
-             /// RDSEED instruction
-             bool rdseed();
-             /// Intel ADX (Multi-Precision Add-Carry Instruction Extensions)
-             bool adx();
-             /// Supports Supervisor-Mode Access Prevention (and the CLAC/STAC instructions) if 1.
-             bool smap();
-             /// AVX-512 Integer Fused Multiply-Add Instructions
-             bool avx512ifma();
-             /// PCOMMIT instruction
-             bool pcommit();
-             /// CLFLUSHOPT instruction
-             bool clflushopt();
-             /// CLWB instruction
-             bool clwb();
-             /// Intel Processor Trace.
-             bool intel_pt();
-             /// AVX-512 Prefetch Instructions
-             bool avx512pf();
-             /// AVX-512 Exponential and Reciprocal Instructions
-             bool avx512er();
-             /// AVX-512 Conflict Detection Instructions
-             bool avx512cd();
-             /// supports Intel® Secure Hash Algorithm Extens
-             bool sha();
-             /// AVX-512 Byte and Word Instructions
-             bool avx512bw();
-             /// AVX-512 Vector Length Extensions
-             bool avx512vl();
-             /// PREFETCHWT1 instruction
-             bool prefetchwt1();
-             /// AVX-512 Vector Bit Manipulation Instructions
-             bool avx512vbmi();
-             /// Memory Protection Keys for User-mode pages
-             bool pku();
-             /// PKU enabled by OS
-             bool ospke();
-
+            /// Supports RDFSBASE/RDGSBASE/WRFSBASE/WRGSBASE if 1.
+            bool fsgsbase();
+            ///MSR is supported if 1.
+            bool ia32_tsc_adjust();
+            /// Supports Intel® Software Guard Extensions (Intel® SGX Extensions) if 1.
+            bool sgx();
+            /// Bit Manipulation Instruction Set 1
+            bool bmi1();
+            /// Transactional Synchronization Extensions
+            bool hle();
+            /// Advanced Vector Extensions 2
+            bool avx2();
+            /// x87 FPU Data Pointer updated only on x87 exceptions if 1.
+            bool fdp_excptn_only();
+            /// Supports Supervisor-Mode Execution Prevention if 1.
+            bool smep();
+            /// Bit Manipulation Instruction Set 2
+            bool bmi2();
+            /// Enhanced REP MOVSB/STOSB if 1.
+            bool supports();
+            /// If 1, supports INVPCID instruction for system software that manages process-context identifiers.
+            bool invpcid();
+            /// Transactional Synchronization Extensions
+            bool rtm();
+            /// Supports Intel® Resource Director Technology (Intel® RDT) Monitoring capability if 1.
+            bool rdt_m();
+            ///FPU CS and FPU DS values if 1.
+            bool deprecates();
+            /// Supports Intel® Memory Protection Extensions if 1.
+            bool mpx();
+            /// Supports Intel® Resource Director Technology (Intel® RDT) Allocation capability if 1.
+            bool rdt_a();
+            /// AVX-512 Foundation
+            bool avx512f();
+            /// AVX-512 Doubleword and Quadword Instructions
+            bool avx512dq();
+            /// RDSEED instruction
+            bool rdseed();
+            /// Intel ADX (Multi-Precision Add-Carry Instruction Extensions)
+            bool adx();
+            /// Supports Supervisor-Mode Access Prevention (and the CLAC/STAC instructions) if 1.
+            bool smap();
+            /// AVX-512 Integer Fused Multiply-Add Instructions
+            bool avx512ifma();
+            /// PCOMMIT instruction
+            bool pcommit();
+            /// CLFLUSHOPT instruction
+            bool clflushopt();
+            /// CLWB instruction
+            bool clwb();
+            /// Intel Processor Trace.
+            bool intel_pt();
+            /// AVX-512 Prefetch Instructions
+            bool avx512pf();
+            /// AVX-512 Exponential and Reciprocal Instructions
+            bool avx512er();
+            /// AVX-512 Conflict Detection Instructions
+            bool avx512cd();
+            /// supports Intel® Secure Hash Algorithm Extens
+            bool sha();
+            /// AVX-512 Byte and Word Instructions
+            bool avx512bw();
+            /// AVX-512 Vector Length Extensions
+            bool avx512vl();
+            /// PREFETCHWT1 instruction
+            bool prefetchwt1();
+            /// AVX-512 Vector Bit Manipulation Instructions
+            bool avx512vbmi();
+            /// Supports user-mode instruction prevention if 1
+            bool umip();
+            /// Memory Protection Keys for User-mode pages
+            bool pku();
+            /// If 1, OS has set CR4.PKE to enable protection keys (and the RDPKRU/WRPKRU instructions).
+            bool ospke();
+            ///
+            bool waitpkg();
+            ///
+            bool avx512vbmi2();
+            /// Supports CET shadow stack features if 1.
+            bool cet_ss();
+            ///
+            bool gfni();
+            ///
+            bool vaes();
+            ///
+            bool vpclmulqdq();
+            ///
+            bool avx512vnni();
+            ///
+            bool avx512bitalg();
+            ///
+            bool avx512vpopcntdq();
+            /// The value of MAWAU used by the BNDLDX and BNDSTX instructions in 64-bit mode.
+            uint mawau();
+            /// RDPID and IA32_TSC_AUX are available if 1.
+            bool rdpid();
+            /// Supports cache line demote if 1.
+            bool cldemote();
+            /// Supports MOVDIRI if 1.
+            bool movdiri();
+            /// Supports MOVDIR64B if 1.
+            bool movdir64b();
+            /// Supports SGX Launch Configuration if 1.
+            bool sgx_lc();
         }
         else
         {
@@ -498,10 +529,30 @@ union Leaf7Information
             mixin(bitfields!(
                 bool, "prefetchwt1", 1, /// PREFETCHWT1 instruction
                 bool, "avx512vbmi", 1, /// AVX-512 Vector Bit Manipulation Instructions
-                bool, "", 1, ///
+                bool, "umip", 1, /// Supports user-mode instruction prevention if 1
                 bool, "pku", 1, /// Memory Protection Keys for User-mode pages
-                bool, "ospke", 1, /// PKU enabled by OS
-                bool, "", 27, ///
+                bool, "ospke", 1, // If 1, OS has set CR4.PKE to enable protection keys (and the RDPKRU/WRPKRU instructions).
+                bool, "waitpkg", 1, ///
+                bool, "avx512vbmi2", 1, ///
+                bool, "cet_ss", 1, /// Supports CET shadow stack features if 1.
+                bool, "gfni", 1, ///
+                bool, "vaes", 1, ///
+                bool, "vpclmulqdq", 1, ///
+                bool, "avx512vnni", 1, ///
+                bool, "avx512bitalg", 1, ///
+                bool, "", 1,
+                bool, "avx512vpopcntdq", 1, ///
+                uint, "", 16 - 15 + 1,
+                uint, "mawau", 21 - 17 + 1, /// The value of MAWAU used by the BNDLDX and BNDSTX instructions in 64-bit mode.
+                bool, "rdpid", 1, /// RDPID and IA32_TSC_AUX are available if 1.
+                uint, "", 24 - 23 + 1,
+                bool, "cldemote", 1, /// Supports cache line demote if 1.
+                bool, "", 1,
+                bool, "movdiri", 1, /// Supports MOVDIRI if 1.
+                bool, "movdir64b", 1, /// Supports MOVDIR64B if 1.
+                bool, "", 1,
+                bool, "sgx_lc", 1, /// Supports SGX Launch Configuration if 1.
+                bool, "", 1,
             ));
         }
     }
@@ -973,7 +1024,39 @@ bool avx512vl()() { return leaf7Information.avx512vl; }
 bool prefetchwt1()() { return leaf7Information.prefetchwt1; }
 /// AVX-512 Vector Bit Manipulation Instructions
 bool avx512vbmi()() { return leaf7Information.avx512vbmi; }
+/// Supports user-mode instruction prevention if 1
+bool umip()() { return leaf7Information.umip; }
 /// Memory Protection Keys for User-mode pages
 bool pku()() { return leaf7Information.pku; }
-/// PKU enabled by OS
+/// If 1, OS has set CR4.PKE to enable protection keys (and the RDPKRU/WRPKRU instructions).
 bool ospke()() { return leaf7Information.ospke; }
+///
+bool waitpkg()() { return leaf7Information.waitpkg; }
+///
+bool avx512vbmi2()() { return leaf7Information.avx512vbmi2; }
+/// Supports CET shadow stack features if 1.
+bool cet_ss()() { return leaf7Information.cet_ss; }
+///
+bool gfni()() { return leaf7Information.gfni; }
+///
+bool vaes()() { return leaf7Information.vaes; }
+///
+bool vpclmulqdq()() { return leaf7Information.vpclmulqdq; }
+///
+bool avx512vnni()() { return leaf7Information.avx512vnni; }
+///
+bool avx512bitalg()() { return leaf7Information.avx512bitalg; }
+///
+bool avx512vpopcntdq()() { return leaf7Information.avx512vpopcntdq; }
+/// The value of MAWAU used by the BNDLDX and BNDSTX instructions in 64-bit mode.
+uint mawau()() { return leaf7Information.mawau; }
+/// RDPID and IA32_TSC_AUX are available if 1.
+bool rdpid();
+/// Supports cache line demote if 1.
+bool cldemote()() { return leaf7Information.cldemote; }
+/// Supports MOVDIRI if 1.
+bool movdiri()() { return leaf7Information.movdiri; }
+/// Supports MOVDIR64B if 1.
+bool movdir64b()() { return leaf7Information.movdir64b; }
+/// Supports SGX Launch Configuration if 1.
+bool sgx_lc()() { return leaf7Information.sgx_lc; }
