@@ -1,80 +1,22 @@
+
 # intel-intrinsics
 
 [![Travis Status](https://travis-ci.org/AuburnSounds/intel-intrinsics.svg?branch=master)](https://travis-ci.org/AuburnSounds/intel-intrinsics)
 
-Use Intel intrinsics in D code with a [wide range of compilers](https://github.com/AuburnSounds/intel-intrinsics/blob/master/.travis.yml).
+The DUB package `intel-intrinsics` implements Intel intrinsics for D.
 
+`intel-intrinsics` lets you use x86 SIMD in D with support for LDC / DMD / GDC with a single syntax and API.
 
-## Usage
-
-```d
-
-import inteli.mmx;       // allow MMX intrinsics
-import inteli.xmmintrin; // allow SSE1 intrinsics
-import inteli.emmintrin; // allow SSE2 intrinsics
-import inteli.pmmintrin; // allow SSE3 intrinsics
-
-// distance between two points in 4D
-float distance(float[4] a, float[4] b) nothrow @nogc
+```json
+"dependencies":
 {
-    __m128 va = _mm_loadu_ps(a.ptr);
-    __m128 vb = _mm_loadu_ps(b.ptr);
-    
-    // core.simd is publicly imported, or emulated if need be.
-    // One can use arithmetic operators / indexing on SIMD types.
-    __m128 diffSquared = va - vb;
-    diffSquared = _mm_mul_ps(diffSquared, diffSquared);
-    __m128 sum = _mm_add_ps(diffSquared, _mm_srli_ps!8(diffSquared));
-    sum += _mm_srli_ps!4(sum); 
-
-    return _mm_cvtss_f32(_mm_sqrt_ss(sum));
+    "intel-intrinsics": "~>1.0"
 }
-assert(distance([0, 2, 0, 0], [0, 0, 0, 0]) == 2);
-
-
 ```
 
-## Why?
+## Features
 
-### Capabilities
-
-Some instructions aren't accessible using `core.simd` and `ldc.simd` capabilities.
-For example: `pmaddwd` which is so important in digital video.
-In this case one need to generate the right IR, or use the right LLVM intrinsic call.
-
-### Familiar syntax
-
-Intel intrinsic syntax is more familiar to C++ programmers
-and there is a convenient online guide provided by Intel:
-https://software.intel.com/sites/landingpage/IntrinsicsGuide/
-
-Without this critical Intel documentation, it's much more difficult to write sizeable SIMD code.
-
-In `intel-intrinsics` it is extended with indexing and arithmetic operators, for convenience.
-
-
-### Future-proof
-
-`intel-intrinsics` is a set of stable SIMD intrinsic that compiler teams don't have the manpower to maintain.
-It is mimicked on the set of similar intrinsics in GCC, clang, ICC...
-
-LDC SIMD builtins are a moving target (https://github.com/ldc-developers/ldc/issues/2019),
-and you need a layer over it if you want to be sure your code won't break.
-_(The reason is that as things become expressible in IR only in LLVM, x86 builtins get removed)._
-
-
-### Portability
-
-Because D code or LLVM IR is portable, one goal of `intel-intrinsics` is to be one day platform-independent. 
-One could target ARM one day and still get comparable speed-up.
-
-The long-term goal is:
-
-**Write the same SIMD code for LDC, GDC, and DMD. Support x86 well, and ARM eventually. Get top speed.**. 
-
-
-### Supported instructions set
-
+### SIMD intrinsics with `_mm_` prefix
 
 |       | DMD          | LDC                    | GDC                  |
 |-------|--------------|------------------------|----------------------|
@@ -85,10 +27,87 @@ The long-term goal is:
 | SSSE3 | No           | No                     | No                   |
 | ...   | No           | No                     | No                   |
 
+The intrinsics implemented follow the syntax and semantics at: https://software.intel.com/sites/landingpage/IntrinsicsGuide/
 
-### Important difference
+The philosophy (and guarantee) of `intel-intrinsics` is:
+ - When using LDC, `intel-intrinsics` should generate optimal code else it's a bug.
+ - **No promise that the exact instruction is generated**, because it's not always the fastest thing to do.
+ - Guarantee that the **semantics** of the intrinsic is preserved, above all other consideration.
 
-Every implicit conversion of similarly-sized vectors should be done with a `cast` instead.
+### SIMD types
+
+`intel-intrinsics` define the following types whatever the compiler:
+
+`long1`, `float2`, `int2`, `short4`, `byte8`, `float4`, `int4`, `double2`
+
+though most of the time you would deal with
+```d
+alias __m128 = float4; 
+alias __m128i = int4; // and you can rely on __m128i being int4
+alias __m128d = double2;
+alias __m64 = long1;
+```
+
+### Vector Operators for all
+
+`intel-intrinsics` implements Vector Operators for compilers that don't have `__vector` support (DMD with 32-bit x86 target).
+
+**Example:**
+```d
+__m128 add_4x_floats(__m128 a, __m128 b)
+{
+    return a + b;
+}
+```
+is the same as:
+```d
+__m128 add_4x_floats(__m128 a, __m128 b)
+{
+    return _mm_add_ps(a, b);
+}
+```
+
+[See available operators...](https://dlang.org/spec/simd.html#vector_op_intrinsics)
+
+
+### Individual element access
+
+It is recommended to do it in that way for maximum portability:
+```d
+__m128i A;
+
+// recommended portable way to set a single SIMD element
+A.ptr[0] = 42; 
+
+// recommended portable way to get a single SIMD element
+int elem = A.array[0];
+```
+
+## Why `intel-intrinsics`?
+
+- **Portability** 
+  It just works the same for DMD, LDC, and GDC.
+
+- **Capabilities**
+  Some instructions just aren't accessible using `core.simd` and `ldc.simd` capabilities. For example: `pmaddwd` which is so important in digital video. Some instructions need an almost exact sequence of LLVM IR to get generated. `ldc.intrinsics` is a moving target and you need a layer on top of it.
+  
+- **Familiarity**
+  Intel intrinsic syntax is more familiar to C and C++ programmers. 
+The Intel intrinsics names  aren't good, but they are known identifiers.
+The problem with introducing new names is that you need hundreds of new identifiers.
+
+- **Documentation**
+There is a convenient online guide provided by Intel:
+https://software.intel.com/sites/landingpage/IntrinsicsGuide/
+Without this Intel documentation, it's much more difficult to write sizeable SIMD code.
+
+
+
+
+
+### Notable difference vs C/C++ or `core.simd`
+
+When using `intel-intrinsics`, every implicit conversion of similarly-sized vectors should be done with a `cast` instead.
 
 ```d
 __m128i b = _mm_set1_epi32(42);
@@ -97,11 +116,21 @@ __m128 a = cast(__m128)b; // YES, works in all D compilers
 
 ```
 
-This is because D does not allow user-defined implicit conversions, and `core.simd` might be emulated (DMD).
+This is because D does not allow user-defined implicit conversions, and `core.simd` might be emulated (DMD). Use this `cast`, or your code won't work in every D compiler variation.
 
 
-## Who is using it?
+### Who is using it?
 
-- Auburn Sounds demonstrated 3.5x speed-up for some loops in the talk: [intel-intrinsics: Not intrinsically about intrinsics](https://www.youtube.com/watch?v=cmswsx1_BUQ).
-- Pixel Perfect Engine is using `intel-intrinsics` for blitting images: https://github.com/ZILtoid1991/CPUblit/blob/master/src/CPUblit/composing.d
-- Please get in touch to get on that list!
+- `dg2d` is a very fast [2D renderer](https://github.com/cerjones/dg2d)
+- [Auburn Sounds](https://www.auburnsounds.com/) audio products
+- [Cut Through Recordings](https://www.cutthroughrecordings.com/) audio products
+
+
+### Video introduction
+
+In this DConf 2019 talk, Auburn Sounds:
+- introduces how `intel-intrinsics`came to be, 
+- demonstrates a 3.5x speed-up for some particular loops,
+- reminds that normal D code can be really fast and intrinsics might harm performance
+
+[See the talk: intel-intrinsics: Not intrinsically about intrinsics](https://www.youtube.com/watch?v=cmswsx1_BUQ)
