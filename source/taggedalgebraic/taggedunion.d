@@ -325,11 +325,6 @@ align(commonAlignment!(UnionKindTypes!(UnionFieldEnum!U))) struct TaggedUnion
 		if (isOutputRange!(W, char))
 	{
 		import std.range.primitives : put;
-		toString(s => put(w, s));
-	}
-	/// ditto
-	void toString(scope void delegate(const(char)[]) sink)
-	const {
 		import std.conv : text;
 		import std.format : FormatSpec, formatValue;
 
@@ -337,23 +332,22 @@ align(commonAlignment!(UnionKindTypes!(UnionFieldEnum!U))) struct TaggedUnion
 			foreach (i, v; EnumMembers!Kind) {
 				case v:
 					enum vstr = text(v);
-					static if (isUnitType!(FieldTypes[i])) sink(vstr);
+					static if (isUnitType!(FieldTypes[i])) put(w, vstr);
 					else {
 						// NOTE: using formatValue instead of formattedWrite
 						//       because formattedWrite does not work for
 						//       non-copyable types
 						enum prefix = "(" ~ vstr ~ ": ";
 						enum suffix = ")";
-						sink(prefix);
+						put(w, prefix);
 						FormatSpec!char spec;
-						sink.formatValue(value!v, spec);
-						sink(suffix);
+						formatValue(w, value!v, spec);
+						put(w, suffix);
 					}
 					break;
 			}
 		}
 	}
-
 
 	package @trusted @property ref inout(T) trustedGet(T)() inout { return *cast(inout(T)*)m_data.ptr; }
 }
