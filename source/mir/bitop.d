@@ -344,13 +344,34 @@ T ctlz(T)(in T src)
     return cast(T)(T.sizeof * 8  - 1 - bsr(src));
 }
 
-
+///
 version (mir_test) @nogc nothrow pure @safe unittest
 {
     assert(ctlz(cast(ubyte) 0b0011_1111) == 2);
     assert(ctlz(cast(ushort) 0b0000_0001_1111_1111) == 7);
 }
 
+/++
+The 'ctlzp' family of intrinsic functions counts the number of leading zeros in a variable.
+Result is properly defined if the argument is zero.
++/
+T ctlzp(T)(in T src)
+    if (__traits(isUnsigned, T))
+{
+    version(LDC) if (!__ctfe)
+        return llvm_ctlz(src, false);
+    return src ? ctlz(src) : T.sizeof * 8;
+}
+
+///
+version (mir_test) @nogc nothrow pure @safe unittest
+{
+    assert(ctlzp(cast(ubyte) 0b0000_0000) == 8);
+    assert(ctlzp(cast(ubyte) 0b0011_1111) == 2);
+    assert(ctlzp(cast(ushort) 0b0000_0001_1111_1111) == 7);
+    assert(ctlzp(cast(ushort) 0) == 16);
+    assert(ctlzp(cast(ulong) 0) == 64);
+}
 
 /++
 The 'cttz' family of intrinsic functions counts the number of trailing zeros.
@@ -372,4 +393,33 @@ T cttz(T)(in T src)
     }
     import core.bitop: bsf;
     return cast(T) bsf(src);
+}
+
+///
+version (mir_test) @nogc nothrow pure @safe unittest
+{
+    assert(cttzp(cast(ubyte) 0b11111100) == 2);
+    assert(cttzp(cast(ushort) 0b1111111110000000) == 7);
+}
+
+/++
+The 'cttz' family of intrinsic functions counts the number of trailing zeros.
+Result is properly defined if the argument is zero.
++/
+T cttzp(T)(in T src)
+    if (__traits(isUnsigned, T))
+{
+    version(LDC) if (!__ctfe)
+        return llvm_cttz(src, false);
+    return src ? cttz(src) : T.sizeof * 8;
+}
+
+///
+version (mir_test) @nogc nothrow pure @safe unittest
+{
+    assert(cttzp(cast(ubyte) 0b0000_0000) == 8);
+    assert(cttzp(cast(ubyte) 0b11111100) == 2);
+    assert(cttzp(cast(ushort) 0b1111111110000000) == 7);
+    assert(cttzp(cast(ushort) 0) == 16);
+    assert(cttzp(cast(ulong) 0) == 64);
 }
