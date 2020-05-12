@@ -1,6 +1,6 @@
 project('taggedalgebraic', 'd',
     meson_version: '>=0.50',
-    version: '0.11.12'
+    version: '0.11.14'
 )
 
 project_soversion      = '0'
