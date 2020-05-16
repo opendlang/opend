@@ -18,7 +18,7 @@ private import std.experimental.allocator.mallocator : Mallocator;
 private import std.experimental.allocator.gc_allocator;
 
 private import ikod.containers.internal;
-private import ikod.containers.hash;
+public  import ikod.containers.hash;
 
 class KeyNotFound : Exception {
     this(string msg = "key not found") @safe {

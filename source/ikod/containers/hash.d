@@ -17,13 +17,13 @@ bool UseToHashMethod(T)() {
     })));
 }
 
-hash_t hash_function(T)(T v) /* @safe @nogc inherited from toHash method */
+public hash_t hash_function(T)(T v) /* @safe @nogc inherited from toHash method */
 if ( UseToHashMethod!T )
 {
     return v.toHash();
 }
 
-hash_t hash_function(T)(in T v) @nogc @trusted
+public hash_t hash_function(T)(in T v) @nogc @trusted
 if ( !UseToHashMethod!T )
 {
     static if ( isNumeric!T ) {
