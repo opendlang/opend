@@ -396,3 +396,61 @@ version(LDC) {} else version(D_InlineAsm_X86_64)
     assert(c.high == 0x30_da_d1_42_95_4a_50_78);
     assert(c.low == 0x27_9b_4b_b4_9e_fe_0f_60);
 }
+
+// draft
+// https://www.codeproject.com/Tips/785014/UInt-Division-Modulus
+private ulong divmod128by64(const ulong u1, const ulong u0, ulong v, out ulong r)
+{
+    const ulong b = 1L << 32;
+    ulong un1, un0, vn1, vn0, q1, q0, un32, un21, un10, rhat, left, right;
+
+    import mir.bitop;
+
+    auto s = ctlz(v);
+    v <<= s;
+    vn1 = v >> 32;
+    vn0 = v & 0xffffffff;
+
+    un32 = (u1 << s) | (u0 >> (64 - s));
+    un10 = u0 << s;
+
+    un1 = un10 >> 32;
+    un0 = un10 & 0xffffffff;
+
+    q1 = un32 / vn1;
+    rhat = un32 % vn1;
+
+    left = q1 * vn0;
+    right = (rhat << 32) + un1;
+
+    while ((q1 >= b) || (left > right))
+    {
+        --q1;
+        rhat += vn1;
+        if (rhat >= b)
+            break;
+        left -= vn0;
+        right = (rhat << 32) | un1;
+    }
+
+    un21 = (un32 << 32) + (un1 - (q1 * v));
+
+    q0 = un21 / vn1;
+    rhat = un21 % vn1;
+
+    left = q0 * vn0;
+    right = (rhat << 32) | un0;
+
+    while ((q0 >= b) || (left > right))
+    {
+        --q0;
+        rhat += vn1;
+        if (rhat >= b)
+            break;
+        left -= vn0;
+        right = (rhat << 32) | un0;
+    }
+
+    r = ((un21 << 32) + (un0 - (q0 * v))) >> s;
+    return (q1 << 32) | q0;
+}
