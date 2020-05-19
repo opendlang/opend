@@ -208,7 +208,7 @@ Return type for $(LREF extMul);
 The payload order of `low` and `high` parts depends on the endianness.
 +/
 struct ExtMulResult(I)
-    if (isIntegral!I)
+    if (isUnsigned!I)
 {
     version (LittleEndian)
     {
@@ -224,6 +224,18 @@ struct ExtMulResult(I)
         /// Lower I.sizeof * 8 bits
         I low;
     }
+
+    T opCast(T : ulong)()
+    {
+        static if (is(I == ulong))
+        {
+            return cast(T)low;
+        }
+        else
+        {
+            return cast(T)(low | (ulong(high) << (I.sizeof * 8)));
+        }
+    }
 }
 
 /++
@@ -237,8 +249,8 @@ Returns:
 Optimization:
     Algorithm is optimized for LDC (LLVM IR, any target) and for DMD (X86_64).
 +/
-ExtMulResult!U extMul(U)(in U a, in U b) @nogc nothrow pure @safe
-    if(isUnsigned!U && U.sizeof >= ulong.sizeof)
+ExtMulResult!U extMul(U)(in U a, in U b) @nogc nothrow pure @trusted
+    if(isUnsigned!U)
 {
     static if (is(U == ulong))
         alias H = uint;
@@ -247,10 +259,31 @@ ExtMulResult!U extMul(U)(in U a, in U b) @nogc nothrow pure @safe
 
     enum hbc = H.sizeof * 8;
 
+    static if (U.sizeof < 4)
+    {
+        auto ret = uint(a) * b;
+        version (LittleEndian)
+            return typeof(return)(cast(U) ret, cast(U)(ret >>> (U.sizeof * 8)));
+        else
+            return typeof(return)(cast(U)(ret >>> (U.sizeof * 8)), cast(U) ret);
+    }
+    else
+    static if (is(U == uint))
+    {
+        auto ret = ulong(a) * b;
+        version (LittleEndian)
+            return typeof(return)(cast(uint) ret, cast(uint)(ret >>> 32));
+        else
+            return typeof(return)(cast(uint)(ret >>> 32), cast(uint) ret);
+    }
+    else
     static if (is(U == ulong) && __traits(compiles, ucent.init))
     {
         auto ret = ucent(a) * b;
-        return typeof(return)(cast(ulong) ret, cast(ulong)(ret >>> 64));
+        version (LittleEndian)
+            return typeof(return)(cast(ulong) ret, cast(ulong)(ret >>> 64));
+        else
+            return typeof(return)(cast(ulong)(ret >>> 64), cast(ulong) ret);
     }
     else
     {
@@ -340,7 +373,7 @@ ExtMulResult!U extMul(U)(in U a, in U b) @nogc nothrow pure @safe
     }
 }
 
-///
+/// 64bit x 64bit -> 128bit
 unittest
 {
     immutable a = 0x93_8d_28_00_0f_50_a5_56;
@@ -349,6 +382,30 @@ unittest
     assert(extMul(a, b) == c); // Fast runtime algorithm
     static assert(c.high == 0x30_da_d1_42_95_4a_50_78);
     static assert(c.low == 0x27_9b_4b_b4_9e_fe_0f_60);
+}
+
+/// 32bit x 32bit -> 64bit
+unittest
+{
+    immutable a = 0x0f_50_a5_56;
+    immutable b = 0xcc_a5_97_10;
+    static assert(cast(ulong)extMul(a, b) == ulong(a) * b);
+}
+
+///
+unittest
+{
+    immutable ushort a = 0xa5_56;
+    immutable ushort b = 0x97_10;
+    static assert(cast(uint)extMul(a, b) == a * b);
+}
+
+///
+unittest
+{
+    immutable ubyte a = 0x56;
+    immutable ubyte b = 0x10;
+    static assert(cast(ushort)extMul(a, b) == a * b);
 }
 
 version(D_InlineAsm_X86_64)
