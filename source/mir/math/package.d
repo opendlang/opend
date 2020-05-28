@@ -4,6 +4,7 @@ $(BOOKTABLE $(H2 ,Math modules),
 $(TR $(TH Module) $(TH Math kind))
 $(T2M common, Common math functions)
 $(T2M constant, Constants)
+$(T2M ieee, Basic IEEE-754 numerical functions)
 )
 Macros:
 SUBREF = $(REF_ALTTEXT $(TT $2), $2, mir, math, $1)$(NBSP)
