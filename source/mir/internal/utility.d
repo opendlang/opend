@@ -28,19 +28,17 @@ template realType(C)
 }
 
 ///
-enum isComplex(C : creal) = true;
-/// ditto
-enum isComplex(C : cdouble) = true;
-/// ditto
-enum isComplex(C : cfloat) = true;
-/// ditto
-enum isComplex(C) = false;
+template isComplex(C)
+{
+    import std.traits: Unqual;
+    alias U = Unqual!C;
+    enum isComplex = is(C == cdouble) || is(C == cfloat) || is(C == creal);
+}
 
 ///
-enum isFloatingPoint(C : real) = true;
-/// ditto
-enum isFloatingPoint(C : double) = true;
-/// ditto
-enum isFloatingPoint(C : float) = true;
-/// ditto
-enum isFloatingPoint(C) = false;
+template isFloatingPoint(C)
+{
+    import std.traits: Unqual;
+    alias U = Unqual!C;
+    enum isFloatingPoint = is(C == double) || is(C == float) || is(C == real);
+}
