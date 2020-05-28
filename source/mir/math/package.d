@@ -1,6 +1,6 @@
 /++
 $(H1 Math Functionality)
-$(BOOKTABLE $(H2 ,Math modules),
+$(BOOKTABLE $(H2 Math modules),
 $(TR $(TH Module) $(TH Math kind))
 $(T2M common, Common math functions)
 $(T2M constant, Constants)
