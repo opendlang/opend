@@ -891,6 +891,12 @@ T ldexp(T)(const T n, int exp) @nogc @trusted pure nothrow
     T vf = n;
     mixin floatTraits!T;
 
+    if (__ctfe)
+    {
+        import core.math: ldexp;
+        return ldexp(n, exp);
+    }
+
     version(LDC)
     {
         static if (realFormat == RealFormat.ieeeExtended)
