@@ -710,15 +710,59 @@ do
  *      $(TABLE_SV
  *      $(TR $(TH value)           $(TH returns)         $(TH exp))
  *      $(TR $(TD $(PLUSMN)0.0)    $(TD $(PLUSMN)0.0)    $(TD 0))
- *      $(TR $(TD +$(INFIN))       $(TD +$(INFIN))       $(TD int.max))
- *      $(TR $(TD -$(INFIN))       $(TD -$(INFIN))       $(TD int.min))
- *      $(TR $(TD $(PLUSMN)$(NAN)) $(TD $(PLUSMN)$(NAN)) $(TD int.min))
+ *      $(TR $(TD +$(INFIN))       $(TD +$(INFIN))       $(TD unchenged))
+ *      $(TR $(TD -$(INFIN))       $(TD -$(INFIN))       $(TD unchenged))
+ *      $(TR $(TD $(PLUSMN)$(NAN)) $(TD $(PLUSMN)$(NAN)) $(TD unchenged))
  *      )
  */
 T frexp(T)(const T value, ref int exp) @trusted pure nothrow @nogc
 if (isFloatingPoint!T)
 {
     import mir.utility: _expect;
+    import mir.math.common: fabs;
+
+    if (__ctfe)
+    {
+        // Handle special cases.
+        if (value == 0) { exp = 0; return value; }
+        if (value != value || fabs(value) == T.infinity) { return value; }
+        // Handle ordinary cases.
+        // In CTFE there is no performance advantage for having separate
+        // paths for different floating point types.
+        T absValue = value < 0 ? -value : value;
+        int expCount;
+        static if (T.mant_dig > double.mant_dig)
+        {
+            for (; absValue >= 0x1.0p+1024L; absValue *= 0x1.0p-1024L)
+                expCount += 1024;
+            for (; absValue < 0x1.0p-1021L; absValue *= 0x1.0p+1021L)
+                expCount -= 1021;
+        }
+        const double dval = cast(double) absValue;
+        int dexp = cast(int) (((*cast(const long*) &dval) >>> 52) & 0x7FF) + double.min_exp - 2;
+        dexp++;
+        expCount += dexp;
+        absValue *= 2.0 ^^ -dexp;
+        // If the original value was subnormal or if it was a real
+        // then absValue can still be outside the [0.5, 1.0) range.
+        if (absValue < 0.5)
+        {
+            assert(T.mant_dig > double.mant_dig || -T.min_normal < value && value < T.min_normal);
+            do
+            {
+                absValue += absValue;
+                expCount--;
+            } while (absValue < 0.5);
+        }
+        else
+        {
+            assert(absValue < 1 || T.mant_dig > double.mant_dig);
+            for (; absValue >= 1; absValue *= T(0.5))
+                expCount++;
+        }
+        exp = expCount;
+        return value < 0 ? -absValue : absValue;
+    }
 
     with(floatTraits!T) static if (
         realFormat == RealFormat.ieeeExtended
@@ -734,6 +778,12 @@ if (isFloatingPoint!T)
             if (_expect(e == exp_msh, false))
                 goto R;
             exp = e + (T.min_exp - 1);
+        P:
+            u &= ~exp_mask;
+            u ^= exp_nrm;
+            (cast(U*)&vf)[idx] = cast(U)u;
+        R:
+            return vf;
         }
         else
         {
@@ -760,12 +810,8 @@ if (isFloatingPoint!T)
             u = (cast(U*)&vf)[idx];
             e = (u & exp_mask) >>> exp_shft;
             exp = e + (T.min_exp - T.mant_dig);
+            goto P;
         }
-        u &= ~exp_mask;
-        u ^= exp_nrm;
-        (cast(U*)&vf)[idx] = cast(U)u;
-    R:
-        return vf;
     }
     else // static if (realFormat == RealFormat.ibmExtended)
     {
@@ -783,14 +829,16 @@ if (isFloatingPoint!T)
 
     assert(approxEqual(mantissa * pow(2.0L, cast(real) exp), 123.456L));
 
+    // special cases, zero
+    assert(frexp(-0.0, exp) == -0.0 && exp == 0);
+    assert(frexp(0.0, exp) == 0.0 && exp == 0);
+
+    // special cases, NaNs and INFs
     exp = 1234; // random number
     assert(isNaN(frexp(-real.nan, exp)) && exp == 1234);
     assert(isNaN(frexp(real.nan, exp)) && exp == 1234);
     assert(frexp(-real.infinity, exp) == -real.infinity && exp == 1234);
     assert(frexp(real.infinity, exp) == real.infinity && exp == 1234);
-
-    assert(frexp(-0.0, exp) == -0.0 && exp == 0);
-    assert(frexp(0.0, exp) == 0.0 && exp == 0);
 }
 
 @safe @nogc nothrow unittest
