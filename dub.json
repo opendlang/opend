@@ -4,8 +4,8 @@
 	],
 	"copyright": "Copyright © 2019, Igor Khasilev",
 	"dependencies": {
-		"unit-threaded": "~>0",
-		"automem": "~>0"
+		"unit-threaded": "~>0.10",
+		"automem": "~>0.6"
 	},
 	"description": "containers library",
 	"license": "BSL-1",
@@ -24,7 +24,7 @@
 			  "dub run --compiler=$$DC unit-threaded -c gen_ut_main -- -f bin/ut.d"
 			],
 			"dependencies": {
-			  "unit-threaded": "~>0"
+			  "unit-threaded": ">=0.0.0"
 			},
 			"excludedSourceFiles": [
 			  "source/app.d"

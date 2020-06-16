@@ -199,15 +199,14 @@ struct CompressedList(T, Allocator = Mallocator, bool GCRangesAllowed = true)
         static int     _freelist_len;
         static enum    _freelist_len_max = 100;
     }
-    this(this) {
+    this(this) @safe
+    {
         auto r = range();
         _pages_first = _pages_last =null;
         _length = 0;
         foreach(e; r) {
             insertBack(e);
         }
-        _freelist = null;
-        _freelist_len = 0;
     }
     private void move_to_freelist(Page* page) @safe @nogc {
         if ( _freelist_len >= _freelist_len_max )
@@ -260,31 +259,12 @@ struct CompressedList(T, Allocator = Mallocator, bool GCRangesAllowed = true)
         while(page)
         {
             next = page._nextPage;
-            () @trusted {
-                static if ( UseGCRanges!(Allocator, T, GCRangesAllowed) ) {
-                    GC.removeRange(page);
-                }
-                dispose(allocator, page);
-            }();
+            *page = Page();
+            move_to_freelist(page);
             page = next;
         }
-        // page = _freelist;
-        // while(page)
-        // {
-        //     next = page._nextPage;
-        //     () @trusted {
-        //         static if ( UseGCRanges!(Allocator, T, GCRangesAllowed) ) {
-        //             GC.removeRange(page);
-        //         }
-        //         dispose(allocator, page);
-        //     }();
-        //     page = next;
-        // }
         _length = 0;
         _pages_first = _pages_last = null;
-
-        // _freelist_len = 0;
-        // _freelist = null;
     }
 
     /// Is list empty?
