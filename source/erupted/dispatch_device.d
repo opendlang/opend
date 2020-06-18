@@ -386,6 +386,12 @@ struct DispatchDevice {
         vkCmdBindPipelineShaderGroupNV                    = cast( PFN_vkCmdBindPipelineShaderGroupNV                    ) vkGetDeviceProcAddr( device, "vkCmdBindPipelineShaderGroupNV" );
         vkCreateIndirectCommandsLayoutNV                  = cast( PFN_vkCreateIndirectCommandsLayoutNV                  ) vkGetDeviceProcAddr( device, "vkCreateIndirectCommandsLayoutNV" );
         vkDestroyIndirectCommandsLayoutNV                 = cast( PFN_vkDestroyIndirectCommandsLayoutNV                 ) vkGetDeviceProcAddr( device, "vkDestroyIndirectCommandsLayoutNV" );
+
+        // VK_EXT_private_data
+        vkCreatePrivateDataSlotEXT                        = cast( PFN_vkCreatePrivateDataSlotEXT                        ) vkGetDeviceProcAddr( device, "vkCreatePrivateDataSlotEXT" );
+        vkDestroyPrivateDataSlotEXT                       = cast( PFN_vkDestroyPrivateDataSlotEXT                       ) vkGetDeviceProcAddr( device, "vkDestroyPrivateDataSlotEXT" );
+        vkSetPrivateDataEXT                               = cast( PFN_vkSetPrivateDataEXT                               ) vkGetDeviceProcAddr( device, "vkSetPrivateDataEXT" );
+        vkGetPrivateDataEXT                               = cast( PFN_vkGetPrivateDataEXT                               ) vkGetDeviceProcAddr( device, "vkGetPrivateDataEXT" );
     }
 
 
@@ -723,6 +729,12 @@ struct DispatchDevice {
     void      CmdBindPipelineShaderGroupNV( VkPipelineBindPoint pipelineBindPoint, VkPipeline pipeline, uint32_t groupIndex ) { vkCmdBindPipelineShaderGroupNV( commandBuffer, pipelineBindPoint, pipeline, groupIndex ); }
     VkResult  CreateIndirectCommandsLayoutNV( const( VkIndirectCommandsLayoutCreateInfoNV )* pCreateInfo, VkIndirectCommandsLayoutNV* pIndirectCommandsLayout ) { return vkCreateIndirectCommandsLayoutNV( vkDevice, pCreateInfo, pAllocator, pIndirectCommandsLayout ); }
     void      DestroyIndirectCommandsLayoutNV( VkIndirectCommandsLayoutNV indirectCommandsLayout ) { vkDestroyIndirectCommandsLayoutNV( vkDevice, indirectCommandsLayout, pAllocator ); }
+
+    // VK_EXT_private_data
+    VkResult  CreatePrivateDataSlotEXT( const( VkPrivateDataSlotCreateInfoEXT )* pCreateInfo, VkPrivateDataSlotEXT* pPrivateDataSlot ) { return vkCreatePrivateDataSlotEXT( vkDevice, pCreateInfo, pAllocator, pPrivateDataSlot ); }
+    void      DestroyPrivateDataSlotEXT( VkPrivateDataSlotEXT privateDataSlot ) { vkDestroyPrivateDataSlotEXT( vkDevice, privateDataSlot, pAllocator ); }
+    VkResult  SetPrivateDataEXT( VkObjectType objectType, uint64_t objectHandle, VkPrivateDataSlotEXT privateDataSlot, uint64_t data ) { return vkSetPrivateDataEXT( vkDevice, objectType, objectHandle, privateDataSlot, data ); }
+    void      GetPrivateDataEXT( VkObjectType objectType, uint64_t objectHandle, VkPrivateDataSlotEXT privateDataSlot, uint64_t* pData ) { vkGetPrivateDataEXT( vkDevice, objectType, objectHandle, privateDataSlot, pData ); }
 
     // VK_KHR_device_group
     alias GetDeviceGroupPeerMemoryFeaturesKHR                   = GetDeviceGroupPeerMemoryFeatures;
@@ -1119,6 +1131,12 @@ struct DispatchDevice {
     PFN_vkCmdBindPipelineShaderGroupNV                    vkCmdBindPipelineShaderGroupNV;
     PFN_vkCreateIndirectCommandsLayoutNV                  vkCreateIndirectCommandsLayoutNV;
     PFN_vkDestroyIndirectCommandsLayoutNV                 vkDestroyIndirectCommandsLayoutNV;
+
+    // VK_EXT_private_data
+    PFN_vkCreatePrivateDataSlotEXT                        vkCreatePrivateDataSlotEXT;
+    PFN_vkDestroyPrivateDataSlotEXT                       vkDestroyPrivateDataSlotEXT;
+    PFN_vkSetPrivateDataEXT                               vkSetPrivateDataEXT;
+    PFN_vkGetPrivateDataEXT                               vkGetPrivateDataEXT;
 
     // VK_KHR_device_group
     alias vkGetDeviceGroupPeerMemoryFeaturesKHR                   = vkGetDeviceGroupPeerMemoryFeatures;

@@ -431,6 +431,12 @@ extern( System ) {
     alias PFN_vkCmdBindPipelineShaderGroupNV                                    = void      function( VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipeline pipeline, uint32_t groupIndex );
     alias PFN_vkCreateIndirectCommandsLayoutNV                                  = VkResult  function( VkDevice device, const( VkIndirectCommandsLayoutCreateInfoNV )* pCreateInfo, const( VkAllocationCallbacks )* pAllocator, VkIndirectCommandsLayoutNV* pIndirectCommandsLayout );
     alias PFN_vkDestroyIndirectCommandsLayoutNV                                 = void      function( VkDevice device, VkIndirectCommandsLayoutNV indirectCommandsLayout, const( VkAllocationCallbacks )* pAllocator );
+
+    // VK_EXT_private_data
+    alias PFN_vkCreatePrivateDataSlotEXT                                        = VkResult  function( VkDevice device, const( VkPrivateDataSlotCreateInfoEXT )* pCreateInfo, const( VkAllocationCallbacks )* pAllocator, VkPrivateDataSlotEXT* pPrivateDataSlot );
+    alias PFN_vkDestroyPrivateDataSlotEXT                                       = void      function( VkDevice device, VkPrivateDataSlotEXT privateDataSlot, const( VkAllocationCallbacks )* pAllocator );
+    alias PFN_vkSetPrivateDataEXT                                               = VkResult  function( VkDevice device, VkObjectType objectType, uint64_t objectHandle, VkPrivateDataSlotEXT privateDataSlot, uint64_t data );
+    alias PFN_vkGetPrivateDataEXT                                               = void      function( VkDevice device, VkObjectType objectType, uint64_t objectHandle, VkPrivateDataSlotEXT privateDataSlot, uint64_t* pData );
 }
 
 
@@ -853,6 +859,12 @@ __gshared {
     PFN_vkCmdBindPipelineShaderGroupNV                                    vkCmdBindPipelineShaderGroupNV;
     PFN_vkCreateIndirectCommandsLayoutNV                                  vkCreateIndirectCommandsLayoutNV;
     PFN_vkDestroyIndirectCommandsLayoutNV                                 vkDestroyIndirectCommandsLayoutNV;
+
+    // VK_EXT_private_data
+    PFN_vkCreatePrivateDataSlotEXT                                        vkCreatePrivateDataSlotEXT;
+    PFN_vkDestroyPrivateDataSlotEXT                                       vkDestroyPrivateDataSlotEXT;
+    PFN_vkSetPrivateDataEXT                                               vkSetPrivateDataEXT;
+    PFN_vkGetPrivateDataEXT                                               vkGetPrivateDataEXT;
 
     // VK_KHR_get_physical_device_properties2
     alias vkGetPhysicalDeviceFeatures2KHR                                         = vkGetPhysicalDeviceFeatures2;
@@ -1394,6 +1406,12 @@ void loadDeviceLevelFunctions( VkInstance instance ) {
     vkCmdBindPipelineShaderGroupNV                    = cast( PFN_vkCmdBindPipelineShaderGroupNV                    ) vkGetInstanceProcAddr( instance, "vkCmdBindPipelineShaderGroupNV" );
     vkCreateIndirectCommandsLayoutNV                  = cast( PFN_vkCreateIndirectCommandsLayoutNV                  ) vkGetInstanceProcAddr( instance, "vkCreateIndirectCommandsLayoutNV" );
     vkDestroyIndirectCommandsLayoutNV                 = cast( PFN_vkDestroyIndirectCommandsLayoutNV                 ) vkGetInstanceProcAddr( instance, "vkDestroyIndirectCommandsLayoutNV" );
+
+    // VK_EXT_private_data
+    vkCreatePrivateDataSlotEXT                        = cast( PFN_vkCreatePrivateDataSlotEXT                        ) vkGetInstanceProcAddr( instance, "vkCreatePrivateDataSlotEXT" );
+    vkDestroyPrivateDataSlotEXT                       = cast( PFN_vkDestroyPrivateDataSlotEXT                       ) vkGetInstanceProcAddr( instance, "vkDestroyPrivateDataSlotEXT" );
+    vkSetPrivateDataEXT                               = cast( PFN_vkSetPrivateDataEXT                               ) vkGetInstanceProcAddr( instance, "vkSetPrivateDataEXT" );
+    vkGetPrivateDataEXT                               = cast( PFN_vkGetPrivateDataEXT                               ) vkGetInstanceProcAddr( instance, "vkGetPrivateDataEXT" );
 }
 
 
@@ -1731,5 +1749,11 @@ void loadDeviceLevelFunctions( VkDevice device ) {
     vkCmdBindPipelineShaderGroupNV                    = cast( PFN_vkCmdBindPipelineShaderGroupNV                    ) vkGetDeviceProcAddr( device, "vkCmdBindPipelineShaderGroupNV" );
     vkCreateIndirectCommandsLayoutNV                  = cast( PFN_vkCreateIndirectCommandsLayoutNV                  ) vkGetDeviceProcAddr( device, "vkCreateIndirectCommandsLayoutNV" );
     vkDestroyIndirectCommandsLayoutNV                 = cast( PFN_vkDestroyIndirectCommandsLayoutNV                 ) vkGetDeviceProcAddr( device, "vkDestroyIndirectCommandsLayoutNV" );
+
+    // VK_EXT_private_data
+    vkCreatePrivateDataSlotEXT                        = cast( PFN_vkCreatePrivateDataSlotEXT                        ) vkGetDeviceProcAddr( device, "vkCreatePrivateDataSlotEXT" );
+    vkDestroyPrivateDataSlotEXT                       = cast( PFN_vkDestroyPrivateDataSlotEXT                       ) vkGetDeviceProcAddr( device, "vkDestroyPrivateDataSlotEXT" );
+    vkSetPrivateDataEXT                               = cast( PFN_vkSetPrivateDataEXT                               ) vkGetDeviceProcAddr( device, "vkSetPrivateDataEXT" );
+    vkGetPrivateDataEXT                               = cast( PFN_vkGetPrivateDataEXT                               ) vkGetDeviceProcAddr( device, "vkGetPrivateDataEXT" );
 }
 
