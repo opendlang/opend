@@ -329,7 +329,7 @@ mixin template Platform_Extensions( extensions... ) {
 
             mixin( VK_DEFINE_NON_DISPATCHABLE_HANDLE!q{VkDeferredOperationKHR} );
             
-            enum VK_KHR_DEFERRED_HOST_OPERATIONS_SPEC_VERSION = 2;
+            enum VK_KHR_DEFERRED_HOST_OPERATIONS_SPEC_VERSION = 3;
             enum VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME = "VK_KHR_deferred_host_operations";
             
             struct VkDeferredOperationInfoKHR {
