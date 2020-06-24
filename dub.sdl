@@ -18,7 +18,7 @@ configuration "unittest" {
     sourcePaths "tests"
     mainSourceFile "tests/ut_main.d"
 
-    dflags "-dip25" "-dip1000" "-dip1008"
+    dflags "-preview=dip25" "-preview=dip1000" "-preview=dip1008"
     versions "AutomemTesting"
 
     dependency "unit-threaded" version="*"
@@ -34,8 +34,8 @@ configuration "asan" {
     sourcePaths "tests"
     mainSourceFile "tests/ut_main.d"
 
-    # -dip1008 causes asan issues with malloc
-    dflags "-dip25" "-dip1000"
+    # -preview=dip1008 causes asan issues with malloc
+    dflags "-preview=dip25" "-preview=dip1000"
     dflags "-fsanitize=address" platform="ldc"
 
     // unit threaded light is necessary for the tests to actually run
@@ -53,7 +53,7 @@ configuration "utl" {
     importPaths "tests"
     sourcePaths "tests"
 
-    dflags "-dip25" "-dip1000" "-dip1008"
+    dflags "-preview=dip25" "-preview=dip1000" "-preview=dip1008"
 
     versions "AutomemTesting" "unitThreadedLight"
 

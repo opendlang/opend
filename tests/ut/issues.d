@@ -73,3 +73,36 @@ else {
     auto rc = RefCounted!S();
     rc.front.shouldThrow!AssertError;
 }
+
+
+version(unitThreadedLight) {}
+else {
+    @HiddenTest
+    @("51")
+    @system unittest {
+
+        import std.experimental.allocator: allocatorObject;
+        import std.experimental.allocator.mallocator: Mallocator;
+
+        static interface Interface {
+            void hello();
+            string test();
+        }
+
+        static class Oops: Interface {
+            private ubyte[] _buffer;
+            override void hello() {}
+            override string test() { return "foo"; }
+            this() { _buffer.length = 1024 * 1024; }
+            ~this() {}
+
+            static Oops opCall() {
+                import std.experimental.allocator: theAllocator, make;
+                return theAllocator.make!Oops;
+            }
+        }
+
+        Vector!Interface interfaces;
+        foreach(i; 0 .. 12) interfaces ~= Oops();
+    }
+}
