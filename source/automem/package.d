@@ -6,8 +6,7 @@ That ensures the right allocator is used to dispose of the memory as well.
 
 Allocators are template arguments instead of using `theAllocator` so
 that these smart pointers can be used in `@nogc` code. However, they
-will default to `typeof(theAllocator)` for simplicity. The examples
-above will be explicit.
+will default to `typeof(theAllocator)` for simplicity.
 
 Another reason to have to pass in the type of allocator is to decide how it is to
 be stored. Stateless allocators can be "stored" by value and imply zero-cost `Unique` pointers.
