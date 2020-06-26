@@ -14,7 +14,7 @@ alias visit = taggedalgebraic.visit.visit;
 import std.algorithm.mutation : move, swap;
 import std.meta;
 import std.range : isOutputRange;
-import std.traits : EnumMembers, FieldNameTuple, Unqual, isInstanceOf;
+import std.traits : EnumMembers, FieldNameTuple, Unqual, hasUDA, isInstanceOf;
 
 
 /** Implements a generic tagged union type.
@@ -117,7 +117,12 @@ align(commonAlignment!(UnionKindTypes!(UnionFieldEnum!U))) struct TaggedUnion
 					static if (hasElaborateCopyConstructor!T)
 					{
 						case __traits(getMember, Kind, tname):
-							typeid(T).postblit(cast(void*)&trustedGet!T());
+							static if (hasUDA!(U, typeof(forceNothrowPostblit()))) {
+								try typeid(T).postblit(cast(void*)&trustedGet!T());
+								catch (Exception e) assert(false, e.msg);
+							} else {
+								typeid(T).postblit(cast(void*)&trustedGet!T());
+							}
 							return;
 					}
 				}
@@ -541,6 +546,32 @@ unittest { // support trailing underscores properly
 	val.setInt(20);
 	assert(val.intValue == 20);
 }
+
+
+@property auto forceNothrowPostblit()
+{
+	if (!__ctfe) assert(false, "@forceNothrowPostblit must only be used as a UDA.");
+	static struct R {}
+	return R.init;
+}
+
+nothrow unittest {
+	static struct S {
+		this(this) nothrow {}
+	}
+
+	@forceNothrowPostblit
+	struct U {
+		S s;
+	}
+
+	alias TU = TaggedUnion!U;
+
+	TU tu, tv;
+	tu = S.init;
+	tv = tu;
+}
+
 
 enum isUnitType(T) = is(T == Void) || is(T == void) || is(T == typeof(null));
 
