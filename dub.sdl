@@ -5,22 +5,21 @@ authors "Ilya Yaroshenko" "John Michael Hall"
 copyright "Copyright © 2016 - 2019, Ilya Yaroshenko; see also information per file."
 license "BSL-1.0"
 
-dependency "mir-core" version=">=1.1.7"
-dependency "mir-algorithm" version=">=3.9.2"
+dependency "mir-algorithm" version=">=3.9.3"
 
 buildType "unittest" {
-	buildOptions "unittests" "debugMode" "debugInfo"
+    buildOptions "unittests" "debugMode" "debugInfo"
     versions "mir_test"
     dflags "-lowmem"
 }
 buildType "unittest-cov" {
-	buildOptions "unittests" "coverage" "debugMode" "debugInfo"
-	versions "mir_test"
+    buildOptions "unittests" "coverage" "debugMode" "debugInfo"
+    versions "mir_test"
     dflags "-lowmem"
 }
 buildType "unittest-release" {
-	buildOptions "unittests" "releaseMode" "optimize" "inline" "noBoundsCheck"
-	versions "mir_test"
+    buildOptions "unittests" "releaseMode" "optimize" "inline" "noBoundsCheck"
+    versions "mir_test"
     dflags "-lowmem"
 }
 
