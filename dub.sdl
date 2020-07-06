@@ -1,0 +1,40 @@
+name "mir-stat"
+description "Dlang Statistical Package"
+
+authors "Ilya Yaroshenko" "John Michael Hall"
+copyright "Copyright © 2016 - 2019, Ilya Yaroshenko; see also information per file."
+license "BSL-1.0"
+
+dependency "mir-core" version=">=1.1.7"
+dependency "mir-algorithm" version=">=3.9.2"
+
+buildType "unittest" {
+	buildOptions "unittests" "debugMode" "debugInfo"
+    versions "mir_test"
+    dflags "-lowmem"
+}
+buildType "unittest-cov" {
+	buildOptions "unittests" "coverage" "debugMode" "debugInfo"
+	versions "mir_test"
+    dflags "-lowmem"
+}
+buildType "unittest-release" {
+	buildOptions "unittests" "releaseMode" "optimize" "inline" "noBoundsCheck"
+	versions "mir_test"
+    dflags "-lowmem"
+}
+
+configuration "default" {
+}
+
+configuration "secure" {
+    versions "mir_secure_memory"
+}
+
+configuration "dip1008" {
+    dflags "-preview=dip1008"
+}
+
+configuration "dips" {
+    dflags "-preview=dip1000" "-preview=dip1008"
+}
