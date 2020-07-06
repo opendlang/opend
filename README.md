@@ -13,6 +13,8 @@ Advanced Random Number Generators
 
 Documentation - http://mir-random.libmir.org/
 
+This library is for general-purpose random number generation. Do not use it for cryptography or secret generation.
+
 ### Example (3 seconds)
 ```d
 void main()
