@@ -1,24 +1,37 @@
-# Compiled Object files
-*.o
-*.obj
-
-# Compiled Dynamic libraries
-*.so
-*.dylib
-*.dll
-
-# Compiled Static libraries
 *.a
-*.lib
-
-# Executables
-*.exe
-
-# DUB
-.dub
-docs.json
-__dummy.html
-docs/
-
-# Code coverage
+*.log
 *.lst
+*.o
+*.pdf
+*.s
+*.exe
+*.sublime-project
+*.sublime-workspace
+.dub
+.generated
+.vscode
+__*
+dub.selections.json
+mir-algorithm
+mir-algorithm-test-library
+mir-internal
+web
+.DS_*
+docs
+*.html
+docs.json
+out/
+/tests_extractor.d
+build/
+files
+mir-algorithm.lib
+mir-algorithm-test-default
+mir-algorithm-test-dips
+subprojects/mir-core
+mir-core
+mir-algorithm-test-dip1008
+test
+test.d
+docgen
+_build_dir_
+.VSCodeCounter

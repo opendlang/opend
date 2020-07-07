@@ -1,0 +1,24 @@
+name "mir-stat"
+description "Dlang Statistical Package"
+
+authors "John Michael Hall" "Ilya Yaroshenko"
+copyright "Copyright © 2020, Mir State Authors."
+license "BSL-1.0"
+
+dependency "mir-algorithm" version=">=3.9.3"
+
+buildType "unittest" {
+    buildOptions "unittests" "debugMode" "debugInfo"
+    versions "mir_stat_test"
+    dflags "-lowmem"
+}
+buildType "unittest-cov" {
+    buildOptions "unittests" "coverage" "debugMode" "debugInfo"
+    versions "mir_stat_test"
+    dflags "-lowmem"
+}
+buildType "unittest-release" {
+    buildOptions "unittests" "releaseMode" "optimize" "inline" "noBoundsCheck"
+    versions "mir_stat_test"
+    dflags "-lowmem"
+}
