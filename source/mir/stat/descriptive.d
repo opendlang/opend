@@ -23,7 +23,929 @@ public import mir.math.stat: gmean, GMeanAccumulator, hmean, mean,
 import mir.internal.utility: isFloatingPoint;
 import mir.math.common: fmamath;
 import mir.math.sum: Summation, Summator, ResolveSummationType;
+import mir.ndslice.slice: Slice;
 import std.traits: isMutable;
+
+/++
+Algorithms used to calculate the quantile of an input `x` at probability `p`.
+
+These algorithms match the same provided in R's (as of version 3.6.2) `quantile`
+function. In turn, these were discussed in Hyndman and Fan (1996). 
+
+All sample quantiles are defined as weighted averages of consecutive order
+statistics. For each QuantileAlgo, the sample quantile is given by (using R's
+1-based indexing notation):
+
+-------
+(1 - gamma) * x_{j} + gamma * x_{j + 1}
+-------
+
+where x_{j} is the `j`th order statistic. `gamma` is a function of
+`j = floor(np + m)` and `g = np + m - j` where `n` is the sample size, `p` is
+the probability, and `m` is a constant determined by the quantile type.
+
+$(BOOKTABLE $(H4 Discontinuous sample quantile),
+$(TR $(TH Type) $(TH m) $(TH gamma))
+$(T2 Type1, 0, 0 if `g = 0` and 1 otherwise.)
+$(T2 Type2, 0, 0.5 if `g = 0` and 1 otherwise.)
+$(T2 Type3, -0.5, 0 if `g = 0` and `j` is even and 1 otherwise.)
+
+$(H4 Continuous sample quantile),
+$(TR $(TH Type) $(TH m) $(TH gamma))
+$(T2 Type4, 0, `gamma = g`)
+$(T2 Type5, 0.5, `gamma = g`)
+$(T2 Type6, `p`, `gamma = g`)
+$(T2 Type7, `1 - p`, `gamma = g`)
+$(T2 Type8, `(p + 1) / 3`, `gamma = g`)
+$(T2 Type9, `p / 4 + 3 / 8`, `gamma = g`)
+
+References:
+    Hyndman, R. J. and Fan, Y. (1996) Sample quantiles in statistical packages, American Statistician 50, 361--365. 10.2307/2684934.
+
+See_also: 
+    $(LINK2 https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/quantile, quantile)
++/
+enum QuantileAlgo {
+    /++
+    $(H4 Discontinuous sample quantile)
+
+    Inverse of empirical distribution function.
+    +/
+    Type1,
+    /++
+    Similar to Type1, but averages at discontinuities.
+    +/
+    Type2,
+    /++
+    SAS definition: nearest even order statistic.
+    +/
+    Type3,
+    /++
+    $(H4 Continuous sample quantile)
+
+    Linear interpolation of the empirical cdf.
+    +/
+    Type4,
+    /++
+    A piece-wise linear function hwere the knots are the values midway through
+    the steps of the empirical cdf. Popular amongst hydrologists.
+    +/
+    Type5,
+    /++
+    Used by Minitab and by SPSS.
+    +/
+    Type6,
+    /++
+    This is used by S and is the default for R.
+    +/
+    Type7,
+    /++
+    The resulting quantile estimates are approximately median-unbiased
+    regardless of the distribution of the input. Preferred by Hyndman and Fan
+    (1996).
+    +/
+    Type8,
+    /++
+    The resulting quantile estimates are approximately unbiased for the expected
+    order statistics of the input is normally distributed.
+    +/
+    Type9
+}
+
+package template quantileType(T, QuantileAlgo quantileAlgo)
+{
+    static if (quantileAlgo == QuantileAlgo.Type1 ||
+               quantileAlgo == QuantileAlgo.Type3)
+    {
+        import mir.math.sum: elementType;
+
+        alias quantileType = elementType!T;
+    }
+    else
+    {
+        import mir.math.stat: meanType;
+
+        alias quantileType = meanType!T;
+    }
+}
+
+version(mir_stat_test)
+@safe pure nothrow @nogc
+unittest
+{
+    static assert(is(quantileType!(int[], QuantileAlgo.Type1) == int));
+    static assert(is(quantileType!(double[], QuantileAlgo.Type1) == double));
+    static assert(is(quantileType!(float[], QuantileAlgo.Type1) == float));
+    static assert(is(quantileType!(cfloat[], QuantileAlgo.Type1) == cfloat));
+
+    static assert(is(quantileType!(int[], QuantileAlgo.Type2) == double));
+    static assert(is(quantileType!(double[], QuantileAlgo.Type2) == double));
+    static assert(is(quantileType!(float[], QuantileAlgo.Type2) == float));
+    static assert(is(quantileType!(cfloat[], QuantileAlgo.Type2) == cfloat));
+
+    static assert(is(quantileType!(int[], QuantileAlgo.Type3) == int));
+    static assert(is(quantileType!(double[], QuantileAlgo.Type3) == double));
+    static assert(is(quantileType!(float[], QuantileAlgo.Type3) == float));
+    static assert(is(quantileType!(cfloat[], QuantileAlgo.Type3) == cfloat));
+
+    static assert(is(quantileType!(int[], QuantileAlgo.Type4) == double));
+    static assert(is(quantileType!(double[], QuantileAlgo.Type4) == double));
+    static assert(is(quantileType!(float[], QuantileAlgo.Type4) == float));
+    static assert(is(quantileType!(cfloat[], QuantileAlgo.Type4) == cfloat));
+
+    static assert(is(quantileType!(int[], QuantileAlgo.Type5) == double));
+    static assert(is(quantileType!(double[], QuantileAlgo.Type5) == double));
+    static assert(is(quantileType!(float[], QuantileAlgo.Type5) == float));
+    static assert(is(quantileType!(cfloat[], QuantileAlgo.Type5) == cfloat));
+
+    static assert(is(quantileType!(int[], QuantileAlgo.Type6) == double));
+    static assert(is(quantileType!(double[], QuantileAlgo.Type6) == double));
+    static assert(is(quantileType!(float[], QuantileAlgo.Type6) == float));
+    static assert(is(quantileType!(cfloat[], QuantileAlgo.Type6) == cfloat));
+
+    static assert(is(quantileType!(int[], QuantileAlgo.Type7) == double));
+    static assert(is(quantileType!(double[], QuantileAlgo.Type7) == double));
+    static assert(is(quantileType!(float[], QuantileAlgo.Type7) == float));
+    static assert(is(quantileType!(cfloat[], QuantileAlgo.Type7) == cfloat));
+
+    static assert(is(quantileType!(int[], QuantileAlgo.Type8) == double));
+    static assert(is(quantileType!(double[], QuantileAlgo.Type8) == double));
+    static assert(is(quantileType!(float[], QuantileAlgo.Type8) == float));
+    static assert(is(quantileType!(cfloat[], QuantileAlgo.Type8) == cfloat));
+
+    static assert(is(quantileType!(int[], QuantileAlgo.Type9) == double));
+    static assert(is(quantileType!(double[], QuantileAlgo.Type9) == double));
+    static assert(is(quantileType!(float[], QuantileAlgo.Type9) == float));
+    static assert(is(quantileType!(cfloat[], QuantileAlgo.Type9) == cfloat));
+}
+
+version(mir_stat_test)
+@safe pure nothrow @nogc
+unittest
+{
+    static struct Foo {
+        float x;
+        alias x this;
+    }
+    
+    static struct Bar {
+        cfloat x;
+        alias x this;
+    }
+
+    static assert(is(quantileType!(Foo[], QuantileAlgo.Type7) == float));
+    static assert(is(quantileType!(Bar[], QuantileAlgo.Type7) == cfloat));
+
+    static assert(is(quantileType!(Foo[], QuantileAlgo.Type1) == Foo));
+    static assert(is(quantileType!(Foo[], QuantileAlgo.Type3) == Foo));
+}
+
+/++
+Computes the quantile(s) of the input, given one or more probabilities `p`.
+
+By default, if `p` is a $(SUBREF slice, Slice), built-in dynamic array, or type
+with `asSlice`, then the output type is a reference-counted copy of the input. A
+run-time parameter is provided to instead overwrite the input in-place.
+
+For all `QuantileAlgo` except `QuantileAlgo.Type1` and `QuantileAlgo.Type3`,
+by default, if `F` is not floating point type or complex type, then the result
+will have a `double` type if `F` is implicitly convertible to a floating point 
+type or have a `cdouble` type if `F` is implicitly convertible to a complex type.
+
+For `QuantileAlgo.Type1` and `QuantileAlgo.Type3`, the return type is the
+$(SUBREF sum, elementType) of the input. 
+
+Params:
+    F = controls type of output
+    quantileAlgo = algorithm for calculating quantile (default: `QuantileAlgo.Type7`)
+    allowModifySlice = controls whether the input is modified in place, default is false
+Returns:
+    The quantile of all the elements in the input at probability `p`. 
+
+See_also: 
+    $(SUBREF stat, median),
+    $(SUBREF sum, partitionAt)
+    $(SUBREF sum, elementType)
++/
+template quantile(F, 
+                  QuantileAlgo quantileAlgo = QuantileAlgo.Type7, 
+                  bool allowModifySlice = false)
+    if (isFloatingPoint!F || (quantileAlgo == QuantileAlgo.Type1 || 
+                              quantileAlgo == QuantileAlgo.Type3))
+{
+    import mir.math.sum: elementType;
+    import mir.ndslice.slice: Slice, SliceKind, sliced, hasAsSlice;
+    import mir.ndslice.topology: flattened;
+    import std.traits: Unqual;
+
+    /++
+    Params:
+        slice = slice
+        p = probability
+    +/
+    quantileType!(F, quantileAlgo) quantile(Iterator, size_t N, SliceKind kind, G)
+            (Slice!(Iterator, N, kind) slice, G p)
+        if (isFloatingPoint!(Unqual!G))
+    {
+        import mir.ndslice.slice: IteratorOf;
+        import std.traits: Unqual;
+
+        alias FF = typeof(return);
+        static if (!allowModifySlice) {
+            import mir.ndslice.allocation: rcslice;
+            import mir.ndslice.topology: as;
+
+            auto view = slice.lightScope;
+            auto val = view.as!(Unqual!(slice.DeepElement)).rcslice;
+            auto temp = val.lightScope.flattened;
+        } else {
+            auto temp = slice.flattened;
+        }
+        return quantileImpl!(FF, quantileAlgo, IteratorOf!(typeof(temp)), Unqual!G)(temp, p);
+    }
+
+    /++
+    Params:
+        slice = slice
+        p = probability slice
+        allowModifyProbability = if true, then can modify p, default is false
+    +/
+    auto quantile(IteratorA, size_t N, SliceKind kindA, IteratorB, SliceKind kindB)
+            (Slice!(IteratorA, N, kindA) slice, 
+             Slice!(IteratorB, 1, kindB) p,
+             bool allowModifyProbability = false)
+        if (isFloatingPoint!(elementType!(Slice!(IteratorB))))
+    {
+        import mir.ndslice.slice: IteratorOf;
+
+        alias G = elementType!(Slice!(IteratorB));
+        alias FF = quantileType!(F, quantileAlgo);
+
+        static if (!allowModifySlice) {
+            import mir.ndslice.allocation: rcslice;
+            import mir.ndslice.topology: as;
+
+            auto view = slice.lightScope;
+            auto val = view.as!(Unqual!(slice.DeepElement)).rcslice;
+            auto temp = val.lightScope.flattened;
+        } else {
+            auto temp = slice.flattened;
+        }
+
+        if (allowModifyProbability) {
+            foreach(ref e; p) {
+                e = quantileImpl!(FF, quantileAlgo, IteratorOf!(typeof(temp)), G)(temp, e);
+            }
+            return p;
+        } else {
+            auto view_p = p.lightScope;
+            auto val_p = view_p.as!G.rcslice;
+            auto temp_p = val_p.lightScope.flattened;
+            foreach(ref e; temp_p) {
+                e = quantileImpl!(FF, quantileAlgo, IteratorOf!(typeof(temp)), G)(temp, e);
+            }
+            return temp_p;
+        }
+    }
+
+    /// ditto
+    auto quantile(Iterator, size_t N, SliceKind kind)(
+        Slice!(Iterator, N, kind) slice, scope const F[] p...)
+        if (isFloatingPoint!(elementType!(F[])))
+    {
+        import mir.ndslice.slice: IteratorOf;
+
+        alias G = elementType!(F[]);
+        alias FF = quantileType!(F, quantileAlgo);
+
+        static if (!allowModifySlice) {
+            import mir.ndslice.allocation: rcslice;
+            import mir.ndslice.topology: as;
+
+            auto view = slice.lightScope;
+            auto val = view.as!(Unqual!(slice.DeepElement)).rcslice;
+            auto temp = val.lightScope.flattened;
+        } else {
+            auto temp = slice.flattened;
+        }
+
+        auto val_p = p.rcslice!G;
+        auto temp_p = val_p.lightScope.flattened;
+        foreach(ref e; temp_p) {
+            e = quantileImpl!(FF, quantileAlgo, IteratorOf!(typeof(temp)), G)(temp, e);
+        }
+        return temp_p;
+    }
+
+    /// ditto
+    auto quantile(T, G)(T[] array, G p)
+        if (isFloatingPoint!(Unqual!G))
+    {
+        return quantile(array.sliced, p);
+    }
+
+    /// ditto
+    auto quantile(T, U)(T[] array, U[] p, bool allowModifyProbability = false)
+        if (isFloatingPoint!U)
+    {
+        return quantile(array.sliced, p.sliced, allowModifyProbability);
+    }
+
+    /// ditto
+    auto quantile(T, G)(T withAsSlice, G p)
+        if (hasAsSlice!T && isFloatingPoint!(Unqual!G))
+    {
+        return quantile(withAsSlice.asSlice, p);
+    }
+
+    /// ditto
+    auto quantile(T, U)(T withAsSlice, U p, bool allowModifyProbability = false)
+        if (hasAsSlice!T && hasAsSlice!U)
+    {
+        return quantile(withAsSlice.asSlice, p.asSlice, allowModifyProbability);
+    }
+}
+
+///
+template quantile(QuantileAlgo quantileAlgo = QuantileAlgo.Type7, 
+                  bool allowModifySlice = false)
+{
+    import mir.math.sum: elementType;
+    import mir.ndslice.slice: Slice, SliceKind, hasAsSlice;
+    import std.traits: Unqual;
+
+    /++
+    Params:
+        slice = slice
+        p = probability
+    +/
+    quantileType!(Slice!(Iterator), quantileAlgo) quantile(Iterator, size_t N, SliceKind kind, G)
+            (Slice!(Iterator, N, kind) slice, G p)
+        if (isFloatingPoint!(Unqual!G))
+    {
+        alias F = typeof(return);
+
+        return .quantile!(F, quantileAlgo, allowModifySlice)(slice, p);
+    }
+
+    /++
+    Params:
+        slice = slice
+        p = probability slice
+        allowModifyProbability = if true, then can modify p, default is false
+    +/
+    auto quantile(IteratorA, size_t N, SliceKind kindA, IteratorB, SliceKind kindB)
+            (Slice!(IteratorA, N, kindA) slice, 
+             Slice!(IteratorB, 1, kindB) p,
+             bool allowModifyProbability = false)
+        if (isFloatingPoint!(elementType!(Slice!(IteratorB))))
+    {
+        alias F = quantileType!(Slice!(IteratorA), quantileAlgo);
+
+        return .quantile!(F, quantileAlgo, allowModifySlice)(slice, p, allowModifyProbability);
+    }
+
+    /// ditto
+    auto quantile(Iterator, size_t N, SliceKind kind, G)(
+        Slice!(Iterator, N, kind) slice, scope G[] p...)
+        if (isFloatingPoint!(elementType!(G[])))
+    {
+        alias F = quantileType!(Slice!(Iterator), quantileAlgo);
+
+        return .quantile!(F, quantileAlgo, allowModifySlice)(slice, p);
+    }
+
+    /// ditto
+    auto quantile(T, G)(T[] array, G p)
+        if (isFloatingPoint!(Unqual!G))
+    {
+        alias F = quantileType!(T[], quantileAlgo);
+        return .quantile!(F, quantileAlgo, allowModifySlice)(array, p);
+    }
+
+    /// ditto
+    auto quantile(T, G)(T[] array, G[] p, bool allowModifyProbability = false)
+        if (isFloatingPoint!(Unqual!G))
+    {
+        alias F = quantileType!(T[], quantileAlgo);
+        return .quantile!(F, quantileAlgo, allowModifySlice)(array, p, allowModifyProbability);
+    }
+
+    /// ditto
+    auto quantile(T, G)(T withAsSlice, G p)
+        if (hasAsSlice!T && isFloatingoint!(Unqual!G))
+    {
+        alias F = quantileType!(T[], quantileAlgo);
+        return .quantile!(F, quantileAlgo, allowModifySlice)(withAsSlice, p);
+    }
+
+    /// ditto
+    auto quantile(T, U)(T withAsSlice, U p, bool allowModifyProbability = false)
+        if (hasAsSlice!T && hasAsSlice!U)
+    {
+        alias F = quantileType!(T[], quantileAlgo);
+        return .quantile!(F, quantileAlgo, allowModifySlice)(withAsSlice, p, allowModifyProbability);
+    }
+}
+
+/// ditto
+template quantile(F, string quantileAlgo, bool allowModifySlice = false)
+{
+    mixin("alias quantile = .quantile!(F, QuantileAlgo." ~ quantileAlgo ~ ", allowModifySlice);");
+}
+
+/// ditto
+template quantile(string quantileAlgo, bool allowModifySlice = false)
+{
+    mixin("alias quantile = .quantile!(QuantileAlgo." ~ quantileAlgo ~ ", allowModifySlice);");
+}
+
+@fmamath private @safe pure nothrow @nogc
+auto quantileImpl(F, QuantileAlgo quantileAlgo, Iterator, G)(Slice!Iterator slice, G p)
+    if ((isFloatingPoint!F || (quantileAlgo == QuantileAlgo.Type1 || 
+                               quantileAlgo == QuantileAlgo.Type3)) &&
+        isFloatingPoint!G)
+{
+    assert(p >= 0 && p <= 1, "quantileImpl: p must be between 0 and 1");
+    size_t n = slice.elementCount;
+    assert(n > 1, "quantileImpl: slice.elementCount must be greater than 1");
+
+    import mir.math.common: floor;
+    import mir.ndslice.sorting: partitionAt;
+    import std.traits: Unqual;
+
+    alias GG = Unqual!G;
+
+    GG m;
+
+    static if (quantileAlgo == QuantileAlgo.Type1) {
+        m = 0;
+    } else static if (quantileAlgo == QuantileAlgo.Type2) {
+        m = 0;
+    } else static if (quantileAlgo == QuantileAlgo.Type3) {
+        m = -0.5;
+    } else static if (quantileAlgo == QuantileAlgo.Type4) {
+        m = 0;
+    } else static if (quantileAlgo == QuantileAlgo.Type5) {
+        m = 0.5;
+    } else static if (quantileAlgo == QuantileAlgo.Type6) {
+        m = p;
+    } else static if (quantileAlgo == QuantileAlgo.Type7) {
+        m = 1 - p;
+    } else static if (quantileAlgo == QuantileAlgo.Type8) {
+        m = (p + 1) / 3;
+    } else static if (quantileAlgo == QuantileAlgo.Type9) {
+        m = p / 4 + cast(GG) 3 / 8;
+    }
+
+    GG g = n * p + m - 1; //note: 0-based, not 1-based indexing
+
+    GG pre_j = floor(g);
+    GG pre_j_1 = pre_j + 1;
+    size_t j;
+    if (pre_j >= (n - 1)) { //note: 0-based, not 1-based indexing
+        j = n - 1;
+    } else if (pre_j < 0) {
+        j = 0;
+    } else {
+        j = cast(size_t) pre_j;
+    }
+
+    size_t j_1;
+    if (pre_j_1 >= (n - 1)) { //note: 0-based, not 1-based indexing
+        j_1 = n - 1;
+    } else if (pre_j_1 < 0) {
+        j_1 = 0;
+    } else {
+        j_1 = cast(size_t) pre_j_1;
+    }
+
+    g -= j;
+    GG gamma;
+
+    static if (quantileAlgo == QuantileAlgo.Type1) {
+        if (g == 0) {
+            gamma = 0;
+        } else {
+            gamma = 1;
+        }
+    } else static if (quantileAlgo == QuantileAlgo.Type2) {
+        if (g == 0) {
+            gamma = 0.5;
+        } else {
+            gamma = 1;
+        }
+    } else static if (quantileAlgo == QuantileAlgo.Type3) {
+        if (g == 0 && (j + 1) % 2 == 0) { //need to adjust because 0-based indexing
+            gamma = 0;
+        } else {
+            gamma = 1;
+        }
+    } else {
+        gamma = g;
+    }
+
+    if (gamma == 0) {
+        partitionAt(slice, j);
+        return cast(F) slice[j];
+    } else if (gamma == 1) {
+        partitionAt(slice, j_1);
+        return cast(F) slice[j_1];
+    } else if (j != j_1) {
+        partitionAt(slice, j_1);
+        partitionAt(slice[0 .. j_1], j);
+        return cast(F) ((1 - gamma) * slice[j] + gamma * slice[j_1]);
+    } else {
+        partitionAt(slice, j);
+        return cast(F) slice[j];
+    }
+}
+
+/// Simple example
+version(mir_stat_test)
+@safe pure nothrow
+unittest 
+{
+    import mir.algorithm.iteration: all;
+    import mir.math.common: approxEqual;
+    import mir.ndslice.slice: sliced;
+
+    auto x = [3.0, 1.0, 4.0, 2.0, 0.0].sliced;
+              
+    assert(x.quantile(0.5).approxEqual(2.0));
+
+    auto qtile = [0.25, 0.75].sliced;
+
+    assert(x.quantile(qtile).all!approxEqual([1.0, 3.0]));
+    assert(x.quantile(0.25, 0.75).all!approxEqual([1.0, 3.0]));
+}
+
+//no change in x by default
+version(mir_stat_test)
+@safe pure nothrow
+unittest 
+{
+    import mir.algorithm.iteration: all;
+    import mir.math.common: approxEqual;
+    import mir.ndslice.slice: sliced;
+
+    auto x = [3.0, 1.0, 4.0, 2.0, 0.0].sliced;
+    auto x_copy = x.dup;
+    auto result = x.quantile(0.5);
+
+    assert(result.approxEqual(2.0));
+    assert(x.all!approxEqual(x_copy));
+}
+
+/// Modify probability in place
+version(mir_stat_test)
+@safe pure nothrow
+unittest 
+{
+    import mir.algorithm.iteration: all;
+    import mir.math.common: approxEqual;
+    import mir.ndslice.slice: sliced;
+
+    auto x = [3.0, 1.0, 4.0, 2.0, 0.0].sliced;
+
+    auto qtile = [0.25, 0.75].sliced;
+    auto qtile_copy = qtile.dup;
+
+    x.quantile(qtile, true);
+    assert(qtile.all!approxEqual([1.0, 3.0]));
+    assert(!qtile.all!approxEqual(qtile_copy));
+}
+
+/// Quantile of vector
+version(mir_stat_test)
+@safe pure nothrow
+unittest 
+{
+    import mir.algorithm.iteration: all;
+    import mir.math.common: approxEqual;
+    import mir.ndslice.slice: sliced;
+
+    auto x = [1.0, 9.8, 0.2, 8.5, 5.8, 3.5, 4.5, 8.2, 5.2, 5.2,
+              2.5, 1.8, 2.2, 3.8, 5.2, 9.2, 6.2, 9.2, 9.2, 8.5].sliced;
+
+    assert(x.quantile(0.5).approxEqual(5.20));
+
+    auto qtile = [0.25, 0.75].sliced;
+
+    assert(x.quantile(qtile).all!approxEqual([3.250, 8.500]));
+}
+
+/// Quantile of matrix
+version(mir_stat_test)
+@safe pure
+unittest 
+{
+    import mir.algorithm.iteration: all;
+    import mir.math.common: approxEqual;
+    import mir.ndslice.fuse: fuse;
+    import mir.ndslice.slice: sliced;
+
+    auto x = [
+        [1.0, 9.8, 0.2, 8.5, 5.8, 3.5, 4.5, 8.2, 5.2, 5.2],
+        [2.5, 1.8, 2.2, 3.8, 5.2, 9.2, 6.2, 9.2, 9.2, 8.5]
+    ].fuse;
+
+    assert(x.quantile(0.5).approxEqual(5.20));
+
+    auto qtile = [0.25, 0.75].sliced;
+
+    assert(x.quantile(qtile).all!approxEqual([3.250, 8.500]));
+}
+
+/// Row quantile of matrix
+version(mir_stat_test)
+@safe pure
+unittest
+{
+    import mir.algorithm.iteration: all;
+    import mir.math.common: approxEqual;
+    import mir.ndslice.fuse: fuse;
+    import mir.ndslice.slice: sliced;
+    import mir.ndslice.topology: alongDim, byDim, map, flattened;
+
+    auto x = [
+        [1.0, 9.8, 0.2, 8.5, 5.8, 3.5, 4.5, 8.2, 5.2, 5.2],
+        [2.5, 1.8, 2.2, 3.8, 5.2, 9.2, 6.2, 9.2, 9.2, 8.5]
+    ].fuse;
+
+    auto result0 = [5.200, 5.700];
+
+    // Use byDim or alongDim with map to compute median of row/column.
+    assert(x.byDim!0.map!(a => a.quantile(0.5)).all!approxEqual(result0));
+    assert(x.alongDim!1.map!(a => a.quantile(0.5)).all!approxEqual(result0));
+    
+    auto qtile = [0.25, 0.75].sliced;
+    auto result1 = [[3.750, 7.600], [2.825, 9.025]];
+
+    // Need to ensure that probability is not over-written
+    assert(x.byDim!0.map!(a => a.quantile(qtile, false)).all!(all!approxEqual)(result1));
+}
+
+/// Allow modification of input
+version(mir_stat_test)
+@safe pure nothrow
+unittest 
+{
+    import mir.algorithm.iteration: all;
+    import mir.math.common: approxEqual;
+    import mir.ndslice.slice: sliced;
+
+    auto x = [3.0, 1.0, 4.0, 2.0, 0.0].sliced;
+    auto x_copy = x.dup;
+
+    auto result = x.quantile!(QuantileAlgo.Type7, true)(0.5);
+    assert(!x.all!approxEqual(x_copy));
+}
+
+/// Force disable modification of probability
+version(mir_stat_test)
+@safe pure nothrow
+unittest 
+{
+    import mir.algorithm.iteration: all;
+    import mir.math.common: approxEqual;
+    import mir.ndslice.slice: sliced;
+
+    auto x = [3.0, 1.0, 4.0, 2.0, 0.0].sliced;
+
+    auto qtile = [0.25, 0.75].sliced;
+    auto qtile_copy = qtile.dup;
+
+    auto result = x.quantile(qtile, false);
+    assert(result.all!approxEqual([1.0, 3.0]));
+    assert(qtile.all!approxEqual(qtile_copy));
+}
+
+/// Can also set algorithm type
+version(mir_stat_test)
+@safe pure nothrow
+unittest
+{
+    import mir.math.common: approxEqual;
+    import mir.ndslice.slice: sliced;
+
+    auto x = [1.0, 9.8, 0.2, 8.5, 5.8, 3.5, 4.5, 8.2, 5.2, 5.2,
+              2.5, 1.8, 2.2, 3.8, 5.2, 9.2, 6.2, 9.2, 9.2, 8.5].sliced;
+
+    assert(x.quantile!"Type1"(0.5).approxEqual(5.20));
+    assert(x.quantile!"Type2"(0.5).approxEqual(5.20));
+    assert(x.quantile!"Type3"(0.5).approxEqual(5.20));
+    assert(x.quantile!"Type4"(0.5).approxEqual(5.20));
+    assert(x.quantile!"Type5"(0.5).approxEqual(5.20));
+    assert(x.quantile!"Type6"(0.5).approxEqual(5.20));
+    assert(x.quantile!"Type7"(0.5).approxEqual(5.20));
+    assert(x.quantile!"Type8"(0.5).approxEqual(5.20));
+    assert(x.quantile!"Type9"(0.5).approxEqual(5.20));
+}
+
+/// Can also set algorithm or output type
+version(mir_stat_test)
+@safe pure nothrow
+unittest
+{
+    import mir.ndslice.slice: sliced;
+
+    auto a = [1, 1e100, 1, -1e100].sliced;
+
+    auto x = a * 10_000;
+
+    auto result0 = x.quantile!float(0.5);
+    assert(result0 == 10_000f);
+    static assert(is(typeof(result0) == float));
+
+    auto result1 = x.quantile!(float, "Type8")(0.5);
+    assert(result1 == 10_000f);
+    static assert(is(typeof(result1) == float));
+}
+
+/// Support for integral and user-defined types for Type 1 & 3
+version(mir_stat_test)
+@safe pure nothrow
+unittest
+{
+    import mir.ndslice.slice: sliced;
+    import mir.ndslice.topology: repeat;
+
+    auto x = uint.max.repeat(3);
+    assert(x.quantile!(uint, "Type1")(0.5) == uint.max);
+    assert(x.quantile!(uint, "Type3")(0.5) == uint.max);
+
+    static struct Foo {
+        float x;
+        alias x this;
+    }
+
+    Foo[] foo = [Foo(1f), Foo(2f), Foo(3f)];
+    assert(foo.quantile!"Type1"(0.5) == 2f);
+    assert(foo.quantile!"Type3"(0.5) == 2f);
+}
+
+/// Compute quantile along specified dimention of tensors
+version(mir_stat_test)
+@safe pure
+unittest
+{
+    import mir.algorithm.iteration: all;
+    import mir.math.common: approxEqual;
+    import mir.ndslice.fuse: fuse;
+    import mir.ndslice.topology: as, iota, alongDim, map, repeat;
+
+    auto x = [
+        [0.0, 1, 3],
+        [4.0, 5, 7]
+    ].fuse;
+
+    assert(x.quantile(0.5).approxEqual(3.5));
+
+    auto m0 = [2.0, 3.0, 5.0];
+    assert(x.alongDim!0.map!(a => a.quantile(0.5)).all!approxEqual(m0));
+    assert(x.alongDim!(-2).map!(a => a.quantile(0.5)).all!approxEqual(m0));
+
+    auto m1 = [1.0, 5.0];
+    assert(x.alongDim!1.map!(a => a.quantile(0.5)).all!approxEqual(m1));
+    assert(x.alongDim!(-1).map!(a => a.quantile(0.5)).all!approxEqual(m1));
+
+    assert(iota(2, 3, 4, 5).as!double.alongDim!0.map!(a => a.quantile(0.5)).all!approxEqual(iota([3, 4, 5], 3 * 4 * 5 / 2)));
+}
+
+/// Support for array
+version(mir_stat_test)
+@safe pure nothrow
+unittest 
+{
+    import mir.algorithm.iteration: all;
+    import mir.math.common: approxEqual;
+
+    double[] x = [3.0, 1.0, 4.0, 2.0, 0.0];
+              
+    assert(x.quantile(0.5).approxEqual(2.0));
+
+    double[] qtile = [0.25, 0.75];
+
+    assert(x.quantile(qtile).all!approxEqual([1.0, 3.0]));
+}
+
+//@nogc test
+version(mir_stat_test)
+@safe pure nothrow @nogc
+unittest 
+{
+    import mir.algorithm.iteration: all;
+    import mir.math.common: approxEqual;
+    import mir.ndslice.slice: sliced;
+
+    static immutable x = [1.0, 9.8, 0.2, 8.5, 5.8, 3.5, 4.5, 8.2, 5.2, 5.2,
+                          2.5, 1.8, 2.2, 3.8, 5.2, 9.2, 6.2, 9.2, 9.2, 8.5];
+
+    assert(x.sliced.quantile(0.5).approxEqual(5.20));
+
+    static immutable qtile = [0.25, 0.75];
+
+    assert(x.sliced.quantile(qtile).all!approxEqual([3.250, 8.500]));
+}
+
+//x.length = 20, qtile at tenths
+version(mir_stat_test)
+@safe pure nothrow
+unittest 
+{
+    import mir.algorithm.iteration: all;
+    import mir.math.common: approxEqual;
+    import mir.ndslice.slice: sliced;
+
+    auto x = [1.0, 9.8, 0.2, 8.5, 5.8, 3.5, 4.5, 8.2, 5.2, 5.2,
+              2.5, 1.8, 2.2, 3.8, 5.2, 9.2, 6.2, 9.2, 9.2, 8.5].sliced;
+    auto qtile = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0].sliced;
+
+    assert(x.quantile!"Type1"(qtile.dup).all!approxEqual([0.2, 1.0, 2.2, 3.5, 4.5, 5.2, 5.8, 8.2, 8.5, 9.2, 9.8]));
+    assert(x.quantile!"Type2"(qtile.dup).all!approxEqual([0.2, 1.4, 2.35, 3.65, 4.85, 5.2, 6.0, 8.35, 8.85, 9.2, 9.8]));   
+    assert(x.quantile!"Type3"(qtile.dup).all!approxEqual([0.2, 1.0, 2.2, 3.5, 4.5, 5.2, 5.8, 8.2, 8.5, 9.2, 9.8]));
+    assert(x.quantile!"Type4"(qtile.dup).all!approxEqual([0.2, 1.0, 2.2, 3.5, 4.5, 5.2, 5.8, 8.2, 8.5, 9.2, 9.8]));
+    assert(x.quantile!"Type5"(qtile.dup).all!approxEqual([0.20, 1.40, 2.35, 3.65, 4.85, 5.20, 6.00, 8.35, 8.85, 9.20, 9.80]));
+    assert(x.quantile!"Type6"(qtile.dup).all!approxEqual([0.20, 1.08, 2.26, 3.59, 4.78, 5.20, 6.04, 8.41, 9.06, 9.20, 9.80]));
+    assert(x.quantile!"Type7"(qtile.dup).all!approxEqual([0.20, 1.72, 2.44, 3.71, 4.92, 5.20, 5.96, 8.29, 8.64, 9.20, 9.80]));
+    assert(x.quantile!"Type8"(qtile.dup).all!approxEqual([0.200000, 1.293333, 2.320000, 3.630000, 4.826667, 5.200000, 6.013333, 8.370000, 8.920000, 9.200000, 9.800000]));
+    assert(x.quantile!"Type9"(qtile.dup).all!approxEqual([0.2000, 1.3200, 2.3275, 3.6350, 4.8325, 5.2000, 6.0100, 8.3650, 8.9025, 9.200, 9.800]));
+}
+
+//x.length = 20, qtile at 5s
+version(mir_stat_test)
+@safe pure nothrow
+unittest 
+{
+    import mir.algorithm.iteration: all;
+    import mir.math.common: approxEqual;
+    import mir.ndslice.slice: sliced;
+
+    auto x = [1.0, 9.8, 0.2, 8.5, 5.8, 3.5, 4.5, 8.2, 5.2, 5.2,
+              2.5, 1.8, 2.2, 3.8, 5.2, 9.2, 6.2, 9.2, 9.2, 8.5].sliced;
+    auto qtile = [0.05, 0.15, 0.25, 0.35, 0.45, 0.55, 0.65, 0.75, 0.85, 0.95].sliced;
+
+    assert(x.quantile!"Type1"(qtile.dup).all!approxEqual([0.2, 1.8, 2.5, 3.8, 5.2, 5.2, 6.2, 8.5, 9.2, 9.2]));
+    assert(x.quantile!"Type2"(qtile.dup).all!approxEqual([0.60, 2.00, 3.00, 4.15, 5.20, 5.50, 7.20, 8.50, 9.20, 9.50]));   
+    assert(x.quantile!"Type3"(qtile.dup).all!approxEqual([0.2, 1.8, 2.5, 3.8, 5.2, 5.2, 6.2, 8.5, 9.2, 9.2]));
+    assert(x.quantile!"Type4"(qtile.dup).all!approxEqual([0.2, 1.8, 2.5, 3.8, 5.2, 5.2, 6.2, 8.5, 9.2, 9.2]));
+    assert(x.quantile!"Type5"(qtile.dup).all!approxEqual([0.60, 2.00, 3.00, 4.15, 5.20, 5.50, 7.20, 8.50, 9.20, 9.50]));
+    assert(x.quantile!"Type6"(qtile.dup).all!approxEqual([0.240, 1.860, 2.750, 4.045, 5.200, 5.530, 7.500, 8.500, 9.200, 9.770]));
+    assert(x.quantile!"Type7"(qtile.dup).all!approxEqual([0.960, 2.140, 3.250, 4.255, 5.200, 5.470, 6.900, 8.500, 9.200, 9.230]));
+    assert(x.quantile!"Type8"(qtile.dup).all!approxEqual([0.480000, 1.953333, 2.916667, 4.115000, 5.200000, 5.510000, 7.300000, 8.500000, 9.200000, 9.590000]));
+    assert(x.quantile!"Type9"(qtile.dup).all!approxEqual([0.51000, 1.96500, 2.93750, 4.12375, 5.20000, 5.50750, 7.27500, 8.50000, 9.20000, 9.56750]));
+}
+
+//x.length = 21, qtile at tenths
+version(mir_stat_test)
+@safe pure nothrow
+unittest 
+{
+    import mir.algorithm.iteration: all;
+    import mir.math.common: approxEqual;
+    import mir.ndslice.slice: sliced;
+
+    auto x = [ 1.0, 9.3, 0.2, 8.1, 5.5, 3.3, 4.3, 7.9, 5.0, 5.0, 
+              10.0, 2.4, 1.7, 2.1, 3.6, 5.0, 8.8, 9.8, 6.0, 8.8, 
+               8.8].sliced;
+    auto qtile = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0].sliced;
+
+    assert(x.quantile!"Type1"(qtile.dup).all!approxEqual([0.2, 1.7, 2.4, 3.6, 5.0, 5.0, 6.0, 8.1, 8.8, 9.3, 10.0]));
+    assert(x.quantile!"Type2"(qtile.dup).all!approxEqual([0.2, 1.7, 2.4, 3.6, 5.0, 5.0, 6.0, 8.1, 8.8, 9.3, 10.0]));   
+    assert(x.quantile!"Type3"(qtile.dup).all!approxEqual([0.2, 1.0, 2.1, 3.3, 4.3, 5.0, 6.0, 8.1, 8.8, 9.3, 10.0]));
+    assert(x.quantile!"Type4"(qtile.dup).all!approxEqual([0.20, 1.07, 2.16, 3.39, 4.58, 5.00, 5.80, 8.04, 8.80, 9.25, 10.00]));
+    assert(x.quantile!"Type5"(qtile.dup).all!approxEqual([0.20, 1.42, 2.31, 3.54, 4.93, 5.00, 6.19, 8.24, 8.80, 9.50, 10.00]));
+    assert(x.quantile!"Type6"(qtile.dup).all!approxEqual([0.20, 1.14, 2.22, 3.48, 4.86, 5.00, 6.38, 8.38, 8.80, 9.70, 10.00]));
+    assert(x.quantile!"Type7"(qtile.dup).all!approxEqual([0.2, 1.7, 2.4, 3.6, 5.0, 5.0, 6.0, 8.1, 8.8, 9.3, 10.0]));
+    assert(x.quantile!"Type8"(qtile.dup).all!approxEqual([0.200000, 1.326667, 2.280000, 3.520000, 4.906667, 5.000000, 6.253333, 8.286667, 8.800000, 9.566667, 10.000000]));
+    assert(x.quantile!"Type9"(qtile.dup).all!approxEqual([0.2000, 1.3500, 2.2875, 3.5250, 4.9125, 5.0000, 6.2375, 8.2750, 8.8000, 9.5500, 10.0000]));
+}
+
+//x.length = 21, qtile at 5s
+version(mir_stat_test)
+@safe pure nothrow
+unittest 
+{
+    import mir.algorithm.iteration: all;
+    import mir.math.common: approxEqual;
+    import mir.ndslice.slice: sliced;
+
+    auto x = [ 1.0, 9.3, 0.2, 8.1, 5.5, 3.3, 4.3, 7.9, 5.0, 5.0, 
+              10.0, 2.4, 1.7, 2.1, 3.6, 5.0, 8.8, 9.8, 6.0, 8.8, 
+               8.8].sliced;
+    auto qtile = [0.05, 0.15, 0.25, 0.35, 0.45, 0.55, 0.65, 0.75, 0.85, 0.95].sliced;
+    
+    assert(x.quantile!"Type1"(qtile.dup).all!approxEqual([1.0, 2.1, 3.3, 4.3, 5.0, 5.5, 7.9, 8.8, 8.8, 9.8]));
+    assert(x.quantile!"Type2"(qtile.dup).all!approxEqual([1.0, 2.1, 3.3, 4.3, 5.0, 5.5, 7.9, 8.8, 8.8, 9.8]));   
+    assert(x.quantile!"Type3"(qtile.dup).all!approxEqual([0.2, 1.7, 2.4, 3.6, 5.0, 5.5, 7.9, 8.8, 8.8, 9.8]));
+    assert(x.quantile!"Type4"(qtile.dup).all!approxEqual([0.240, 1.760, 2.625, 3.845, 5.000, 5.275, 7.235, 8.625, 8.800, 9.775]));
+    assert(x.quantile!"Type5"(qtile.dup).all!approxEqual([0.640, 1.960, 3.075, 4.195, 5.000, 5.525, 7.930, 8.800, 8.975, 9.890]));
+    assert(x.quantile!"Type6"(qtile.dup).all!approxEqual([0.28, 1.82, 2.85, 4.09, 5.00, 5.55, 7.96, 8.80, 9.15, 9.98]));
+    assert(x.quantile!"Type7"(qtile.dup).all!approxEqual([1.0, 2.1, 3.3, 4.3, 5.0, 5.5, 7.9, 8.8, 8.8, 9.8]));
+    assert(x.quantile!"Type8"(qtile.dup).all!approxEqual([0.520000, 1.913333, 3.000000, 4.160000, 5.000000, 5.533333, 7.940000, 8.800000, 9.033333, 9.920000]));
+    assert(x.quantile!"Type9"(qtile.dup).all!approxEqual([0.55000, 1.92500, 3.01875, 4.16875, 5.00000, 5.53125, 7.93750, 8.80000, 9.01875, 9.91250]));
+}
 
 /++
 Calculates the dispersion of the input.
