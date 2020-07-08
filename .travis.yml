@@ -9,10 +9,8 @@ packages:
 
 matrix:
   include:
-    - d: dmd-2.091.0
-    - d: dmd-2.088.1
+    - d: dmd-2.092.1
     - d: ldc-1.20.1
-    - d: ldc-1.17.0
 
 script:
   - dub test --build=unittest-cov --compiler=${DC} -c asan
