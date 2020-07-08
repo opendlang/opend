@@ -10,6 +10,7 @@ Copyright: 2020 Mir Stat Authors.
 Macros:
 SUBREF = $(REF_ALTTEXT $(TT $2), $2, mir, stat, $1)$(NBSP)
 MATHREF = $(REF_ALTTEXT $(TT $2), $2, mir, math, $1)$(NBSP)
+NDSLICEREF = $(REF_ALTTEXT $(TT $2), $2, mir, ndslice, $1)$(NBSP)
 T2=$(TR $(TDNW $(LREF $1)) $(TD $+))
 T4=$(TR $(TDNW $(LREF $1)) $(TD $2) $(TD $3) $(TD $4))
 +/
@@ -46,18 +47,18 @@ the probability, and `m` is a constant determined by the quantile type.
 
 $(BOOKTABLE $(H4 Discontinuous sample quantile),
 $(TR $(TH Type) $(TH m) $(TH gamma))
-$(T2 Type1, 0, 0 if `g = 0` and 1 otherwise.)
-$(T2 Type2, 0, 0.5 if `g = 0` and 1 otherwise.)
-$(T2 Type3, -0.5, 0 if `g = 0` and `j` is even and 1 otherwise.)
+$(T2 type1, 0, 0 if `g = 0` and 1 otherwise.)
+$(T2 type2, 0, 0.5 if `g = 0` and 1 otherwise.)
+$(T2 type3, -0.5, 0 if `g = 0` and `j` is even and 1 otherwise.)
 
 $(H4 Continuous sample quantile),
 $(TR $(TH Type) $(TH m) $(TH gamma))
-$(T2 Type4, 0, `gamma = g`)
-$(T2 Type5, 0.5, `gamma = g`)
-$(T2 Type6, `p`, `gamma = g`)
-$(T2 Type7, `1 - p`, `gamma = g`)
-$(T2 Type8, `(p + 1) / 3`, `gamma = g`)
-$(T2 Type9, `p / 4 + 3 / 8`, `gamma = g`)
+$(T2 type4, 0, `gamma = g`)
+$(T2 type5, 0.5, `gamma = g`)
+$(T2 type6, `p`, `gamma = g`)
+$(T2 type7, `1 - p`, `gamma = g`)
+$(T2 type8, `(p + 1) / 3`, `gamma = g`)
+$(T2 type9, `p / 4 + 3 / 8`, `gamma = g`)
 
 References:
     Hyndman, R. J. and Fan, Y. (1996) Sample quantiles in statistical packages, American Statistician 50, 361--365. 10.2307/2684934.
@@ -71,51 +72,51 @@ enum QuantileAlgo {
 
     Inverse of empirical distribution function.
     +/
-    Type1,
+    type1,
     /++
-    Similar to Type1, but averages at discontinuities.
+    Similar to type1, but averages at discontinuities.
     +/
-    Type2,
+    type2,
     /++
     SAS definition: nearest even order statistic.
     +/
-    Type3,
+    type3,
     /++
     $(H4 Continuous sample quantile)
 
     Linear interpolation of the empirical cdf.
     +/
-    Type4,
+    type4,
     /++
     A piece-wise linear function hwere the knots are the values midway through
     the steps of the empirical cdf. Popular amongst hydrologists.
     +/
-    Type5,
+    type5,
     /++
     Used by Minitab and by SPSS.
     +/
-    Type6,
+    type6,
     /++
     This is used by S and is the default for R.
     +/
-    Type7,
+    type7,
     /++
     The resulting quantile estimates are approximately median-unbiased
     regardless of the distribution of the input. Preferred by Hyndman and Fan
     (1996).
     +/
-    Type8,
+    type8,
     /++
     The resulting quantile estimates are approximately unbiased for the expected
     order statistics of the input is normally distributed.
     +/
-    Type9
+    type9
 }
 
 package template quantileType(T, QuantileAlgo quantileAlgo)
 {
-    static if (quantileAlgo == QuantileAlgo.Type1 ||
-               quantileAlgo == QuantileAlgo.Type3)
+    static if (quantileAlgo == QuantileAlgo.type1 ||
+               quantileAlgo == QuantileAlgo.type3)
     {
         import mir.math.sum: elementType;
 
@@ -133,50 +134,50 @@ version(mir_stat_test)
 @safe pure nothrow @nogc
 unittest
 {
-    static assert(is(quantileType!(int[], QuantileAlgo.Type1) == int));
-    static assert(is(quantileType!(double[], QuantileAlgo.Type1) == double));
-    static assert(is(quantileType!(float[], QuantileAlgo.Type1) == float));
-    static assert(is(quantileType!(cfloat[], QuantileAlgo.Type1) == cfloat));
+    static assert(is(quantileType!(int[], QuantileAlgo.type1) == int));
+    static assert(is(quantileType!(double[], QuantileAlgo.type1) == double));
+    static assert(is(quantileType!(float[], QuantileAlgo.type1) == float));
+    static assert(is(quantileType!(cfloat[], QuantileAlgo.type1) == cfloat));
 
-    static assert(is(quantileType!(int[], QuantileAlgo.Type2) == double));
-    static assert(is(quantileType!(double[], QuantileAlgo.Type2) == double));
-    static assert(is(quantileType!(float[], QuantileAlgo.Type2) == float));
-    static assert(is(quantileType!(cfloat[], QuantileAlgo.Type2) == cfloat));
+    static assert(is(quantileType!(int[], QuantileAlgo.type2) == double));
+    static assert(is(quantileType!(double[], QuantileAlgo.type2) == double));
+    static assert(is(quantileType!(float[], QuantileAlgo.type2) == float));
+    static assert(is(quantileType!(cfloat[], QuantileAlgo.type2) == cfloat));
 
-    static assert(is(quantileType!(int[], QuantileAlgo.Type3) == int));
-    static assert(is(quantileType!(double[], QuantileAlgo.Type3) == double));
-    static assert(is(quantileType!(float[], QuantileAlgo.Type3) == float));
-    static assert(is(quantileType!(cfloat[], QuantileAlgo.Type3) == cfloat));
+    static assert(is(quantileType!(int[], QuantileAlgo.type3) == int));
+    static assert(is(quantileType!(double[], QuantileAlgo.type3) == double));
+    static assert(is(quantileType!(float[], QuantileAlgo.type3) == float));
+    static assert(is(quantileType!(cfloat[], QuantileAlgo.type3) == cfloat));
 
-    static assert(is(quantileType!(int[], QuantileAlgo.Type4) == double));
-    static assert(is(quantileType!(double[], QuantileAlgo.Type4) == double));
-    static assert(is(quantileType!(float[], QuantileAlgo.Type4) == float));
-    static assert(is(quantileType!(cfloat[], QuantileAlgo.Type4) == cfloat));
+    static assert(is(quantileType!(int[], QuantileAlgo.type4) == double));
+    static assert(is(quantileType!(double[], QuantileAlgo.type4) == double));
+    static assert(is(quantileType!(float[], QuantileAlgo.type4) == float));
+    static assert(is(quantileType!(cfloat[], QuantileAlgo.type4) == cfloat));
 
-    static assert(is(quantileType!(int[], QuantileAlgo.Type5) == double));
-    static assert(is(quantileType!(double[], QuantileAlgo.Type5) == double));
-    static assert(is(quantileType!(float[], QuantileAlgo.Type5) == float));
-    static assert(is(quantileType!(cfloat[], QuantileAlgo.Type5) == cfloat));
+    static assert(is(quantileType!(int[], QuantileAlgo.type5) == double));
+    static assert(is(quantileType!(double[], QuantileAlgo.type5) == double));
+    static assert(is(quantileType!(float[], QuantileAlgo.type5) == float));
+    static assert(is(quantileType!(cfloat[], QuantileAlgo.type5) == cfloat));
 
-    static assert(is(quantileType!(int[], QuantileAlgo.Type6) == double));
-    static assert(is(quantileType!(double[], QuantileAlgo.Type6) == double));
-    static assert(is(quantileType!(float[], QuantileAlgo.Type6) == float));
-    static assert(is(quantileType!(cfloat[], QuantileAlgo.Type6) == cfloat));
+    static assert(is(quantileType!(int[], QuantileAlgo.type6) == double));
+    static assert(is(quantileType!(double[], QuantileAlgo.type6) == double));
+    static assert(is(quantileType!(float[], QuantileAlgo.type6) == float));
+    static assert(is(quantileType!(cfloat[], QuantileAlgo.type6) == cfloat));
 
-    static assert(is(quantileType!(int[], QuantileAlgo.Type7) == double));
-    static assert(is(quantileType!(double[], QuantileAlgo.Type7) == double));
-    static assert(is(quantileType!(float[], QuantileAlgo.Type7) == float));
-    static assert(is(quantileType!(cfloat[], QuantileAlgo.Type7) == cfloat));
+    static assert(is(quantileType!(int[], QuantileAlgo.type7) == double));
+    static assert(is(quantileType!(double[], QuantileAlgo.type7) == double));
+    static assert(is(quantileType!(float[], QuantileAlgo.type7) == float));
+    static assert(is(quantileType!(cfloat[], QuantileAlgo.type7) == cfloat));
 
-    static assert(is(quantileType!(int[], QuantileAlgo.Type8) == double));
-    static assert(is(quantileType!(double[], QuantileAlgo.Type8) == double));
-    static assert(is(quantileType!(float[], QuantileAlgo.Type8) == float));
-    static assert(is(quantileType!(cfloat[], QuantileAlgo.Type8) == cfloat));
+    static assert(is(quantileType!(int[], QuantileAlgo.type8) == double));
+    static assert(is(quantileType!(double[], QuantileAlgo.type8) == double));
+    static assert(is(quantileType!(float[], QuantileAlgo.type8) == float));
+    static assert(is(quantileType!(cfloat[], QuantileAlgo.type8) == cfloat));
 
-    static assert(is(quantileType!(int[], QuantileAlgo.Type9) == double));
-    static assert(is(quantileType!(double[], QuantileAlgo.Type9) == double));
-    static assert(is(quantileType!(float[], QuantileAlgo.Type9) == float));
-    static assert(is(quantileType!(cfloat[], QuantileAlgo.Type9) == cfloat));
+    static assert(is(quantileType!(int[], QuantileAlgo.type9) == double));
+    static assert(is(quantileType!(double[], QuantileAlgo.type9) == double));
+    static assert(is(quantileType!(float[], QuantileAlgo.type9) == float));
+    static assert(is(quantileType!(cfloat[], QuantileAlgo.type9) == cfloat));
 }
 
 version(mir_stat_test)
@@ -193,45 +194,45 @@ unittest
         alias x this;
     }
 
-    static assert(is(quantileType!(Foo[], QuantileAlgo.Type7) == float));
-    static assert(is(quantileType!(Bar[], QuantileAlgo.Type7) == cfloat));
+    static assert(is(quantileType!(Foo[], QuantileAlgo.type7) == float));
+    static assert(is(quantileType!(Bar[], QuantileAlgo.type7) == cfloat));
 
-    static assert(is(quantileType!(Foo[], QuantileAlgo.Type1) == Foo));
-    static assert(is(quantileType!(Foo[], QuantileAlgo.Type3) == Foo));
+    static assert(is(quantileType!(Foo[], QuantileAlgo.type1) == Foo));
+    static assert(is(quantileType!(Foo[], QuantileAlgo.type3) == Foo));
 }
 
 /++
 Computes the quantile(s) of the input, given one or more probabilities `p`.
 
-By default, if `p` is a $(SUBREF slice, Slice), built-in dynamic array, or type
+By default, if `p` is a $(NDSLICEREF slice, Slice), built-in dynamic array, or type
 with `asSlice`, then the output type is a reference-counted copy of the input. A
 run-time parameter is provided to instead overwrite the input in-place.
 
-For all `QuantileAlgo` except `QuantileAlgo.Type1` and `QuantileAlgo.Type3`,
+For all `QuantileAlgo` except `QuantileAlgo.type1` and `QuantileAlgo.type3`,
 by default, if `F` is not floating point type or complex type, then the result
 will have a `double` type if `F` is implicitly convertible to a floating point 
 type or have a `cdouble` type if `F` is implicitly convertible to a complex type.
 
-For `QuantileAlgo.Type1` and `QuantileAlgo.Type3`, the return type is the
-$(SUBREF sum, elementType) of the input. 
+For `QuantileAlgo.type1` and `QuantileAlgo.type3`, the return type is the
+$(MATHREF sum, elementType) of the input. 
 
 Params:
     F = controls type of output
-    quantileAlgo = algorithm for calculating quantile (default: `QuantileAlgo.Type7`)
+    quantileAlgo = algorithm for calculating quantile (default: `QuantileAlgo.type7`)
     allowModifySlice = controls whether the input is modified in place, default is false
 Returns:
     The quantile of all the elements in the input at probability `p`. 
 
 See_also: 
-    $(SUBREF stat, median),
-    $(SUBREF sum, partitionAt)
-    $(SUBREF sum, elementType)
+    $(MATHREF stat, median),
+    $(MATHREF sum, partitionAt)
+    $(MATHREF sum, elementType)
 +/
 template quantile(F, 
-                  QuantileAlgo quantileAlgo = QuantileAlgo.Type7, 
+                  QuantileAlgo quantileAlgo = QuantileAlgo.type7, 
                   bool allowModifySlice = false)
-    if (isFloatingPoint!F || (quantileAlgo == QuantileAlgo.Type1 || 
-                              quantileAlgo == QuantileAlgo.Type3))
+    if (isFloatingPoint!F || (quantileAlgo == QuantileAlgo.type1 || 
+                              quantileAlgo == QuantileAlgo.type3))
 {
     import mir.math.sum: elementType;
     import mir.ndslice.slice: Slice, SliceKind, sliced, hasAsSlice;
@@ -367,7 +368,7 @@ template quantile(F,
 }
 
 ///
-template quantile(QuantileAlgo quantileAlgo = QuantileAlgo.Type7, 
+template quantile(QuantileAlgo quantileAlgo = QuantileAlgo.type7, 
                   bool allowModifySlice = false)
 {
     import mir.math.sum: elementType;
@@ -462,8 +463,8 @@ template quantile(string quantileAlgo, bool allowModifySlice = false)
 
 @fmamath private @safe pure nothrow @nogc
 auto quantileImpl(F, QuantileAlgo quantileAlgo, Iterator, G)(Slice!Iterator slice, G p)
-    if ((isFloatingPoint!F || (quantileAlgo == QuantileAlgo.Type1 || 
-                               quantileAlgo == QuantileAlgo.Type3)) &&
+    if ((isFloatingPoint!F || (quantileAlgo == QuantileAlgo.type1 || 
+                               quantileAlgo == QuantileAlgo.type3)) &&
         isFloatingPoint!G)
 {
     assert(p >= 0 && p <= 1, "quantileImpl: p must be between 0 and 1");
@@ -478,23 +479,23 @@ auto quantileImpl(F, QuantileAlgo quantileAlgo, Iterator, G)(Slice!Iterator slic
 
     GG m;
 
-    static if (quantileAlgo == QuantileAlgo.Type1) {
+    static if (quantileAlgo == QuantileAlgo.type1) {
         m = 0;
-    } else static if (quantileAlgo == QuantileAlgo.Type2) {
+    } else static if (quantileAlgo == QuantileAlgo.type2) {
         m = 0;
-    } else static if (quantileAlgo == QuantileAlgo.Type3) {
+    } else static if (quantileAlgo == QuantileAlgo.type3) {
         m = -0.5;
-    } else static if (quantileAlgo == QuantileAlgo.Type4) {
+    } else static if (quantileAlgo == QuantileAlgo.type4) {
         m = 0;
-    } else static if (quantileAlgo == QuantileAlgo.Type5) {
+    } else static if (quantileAlgo == QuantileAlgo.type5) {
         m = 0.5;
-    } else static if (quantileAlgo == QuantileAlgo.Type6) {
+    } else static if (quantileAlgo == QuantileAlgo.type6) {
         m = p;
-    } else static if (quantileAlgo == QuantileAlgo.Type7) {
+    } else static if (quantileAlgo == QuantileAlgo.type7) {
         m = 1 - p;
-    } else static if (quantileAlgo == QuantileAlgo.Type8) {
+    } else static if (quantileAlgo == QuantileAlgo.type8) {
         m = (p + 1) / 3;
-    } else static if (quantileAlgo == QuantileAlgo.Type9) {
+    } else static if (quantileAlgo == QuantileAlgo.type9) {
         m = p / 4 + cast(GG) 3 / 8;
     }
 
@@ -523,19 +524,19 @@ auto quantileImpl(F, QuantileAlgo quantileAlgo, Iterator, G)(Slice!Iterator slic
     g -= j;
     GG gamma;
 
-    static if (quantileAlgo == QuantileAlgo.Type1) {
+    static if (quantileAlgo == QuantileAlgo.type1) {
         if (g == 0) {
             gamma = 0;
         } else {
             gamma = 1;
         }
-    } else static if (quantileAlgo == QuantileAlgo.Type2) {
+    } else static if (quantileAlgo == QuantileAlgo.type2) {
         if (g == 0) {
             gamma = 0.5;
         } else {
             gamma = 1;
         }
-    } else static if (quantileAlgo == QuantileAlgo.Type3) {
+    } else static if (quantileAlgo == QuantileAlgo.type3) {
         if (g == 0 && (j + 1) % 2 == 0) { //need to adjust because 0-based indexing
             gamma = 0;
         } else {
@@ -698,7 +699,7 @@ unittest
     auto x = [3.0, 1.0, 4.0, 2.0, 0.0].sliced;
     auto x_copy = x.dup;
 
-    auto result = x.quantile!(QuantileAlgo.Type7, true)(0.5);
+    auto result = x.quantile!(QuantileAlgo.type7, true)(0.5);
     assert(!x.all!approxEqual(x_copy));
 }
 
@@ -732,15 +733,15 @@ unittest
     auto x = [1.0, 9.8, 0.2, 8.5, 5.8, 3.5, 4.5, 8.2, 5.2, 5.2,
               2.5, 1.8, 2.2, 3.8, 5.2, 9.2, 6.2, 9.2, 9.2, 8.5].sliced;
 
-    assert(x.quantile!"Type1"(0.5).approxEqual(5.20));
-    assert(x.quantile!"Type2"(0.5).approxEqual(5.20));
-    assert(x.quantile!"Type3"(0.5).approxEqual(5.20));
-    assert(x.quantile!"Type4"(0.5).approxEqual(5.20));
-    assert(x.quantile!"Type5"(0.5).approxEqual(5.20));
-    assert(x.quantile!"Type6"(0.5).approxEqual(5.20));
-    assert(x.quantile!"Type7"(0.5).approxEqual(5.20));
-    assert(x.quantile!"Type8"(0.5).approxEqual(5.20));
-    assert(x.quantile!"Type9"(0.5).approxEqual(5.20));
+    assert(x.quantile!"type1"(0.5).approxEqual(5.20));
+    assert(x.quantile!"type2"(0.5).approxEqual(5.20));
+    assert(x.quantile!"type3"(0.5).approxEqual(5.20));
+    assert(x.quantile!"type4"(0.5).approxEqual(5.20));
+    assert(x.quantile!"type5"(0.5).approxEqual(5.20));
+    assert(x.quantile!"type6"(0.5).approxEqual(5.20));
+    assert(x.quantile!"type7"(0.5).approxEqual(5.20));
+    assert(x.quantile!"type8"(0.5).approxEqual(5.20));
+    assert(x.quantile!"type9"(0.5).approxEqual(5.20));
 }
 
 /// Can also set algorithm or output type
@@ -758,12 +759,12 @@ unittest
     assert(result0 == 10_000f);
     static assert(is(typeof(result0) == float));
 
-    auto result1 = x.quantile!(float, "Type8")(0.5);
+    auto result1 = x.quantile!(float, "type8")(0.5);
     assert(result1 == 10_000f);
     static assert(is(typeof(result1) == float));
 }
 
-/// Support for integral and user-defined types for Type 1 & 3
+/// Support for integral and user-defined types for type 1 & 3
 version(mir_stat_test)
 @safe pure nothrow
 unittest
@@ -772,8 +773,8 @@ unittest
     import mir.ndslice.topology: repeat;
 
     auto x = uint.max.repeat(3);
-    assert(x.quantile!(uint, "Type1")(0.5) == uint.max);
-    assert(x.quantile!(uint, "Type3")(0.5) == uint.max);
+    assert(x.quantile!(uint, "type1")(0.5) == uint.max);
+    assert(x.quantile!(uint, "type3")(0.5) == uint.max);
 
     static struct Foo {
         float x;
@@ -781,8 +782,8 @@ unittest
     }
 
     Foo[] foo = [Foo(1f), Foo(2f), Foo(3f)];
-    assert(foo.quantile!"Type1"(0.5) == 2f);
-    assert(foo.quantile!"Type3"(0.5) == 2f);
+    assert(foo.quantile!"type1"(0.5) == 2f);
+    assert(foo.quantile!"type3"(0.5) == 2f);
 }
 
 /// Compute quantile along specified dimention of tensors
@@ -862,15 +863,15 @@ unittest
               2.5, 1.8, 2.2, 3.8, 5.2, 9.2, 6.2, 9.2, 9.2, 8.5].sliced;
     auto qtile = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0].sliced;
 
-    assert(x.quantile!"Type1"(qtile.dup).all!approxEqual([0.2, 1.0, 2.2, 3.5, 4.5, 5.2, 5.8, 8.2, 8.5, 9.2, 9.8]));
-    assert(x.quantile!"Type2"(qtile.dup).all!approxEqual([0.2, 1.4, 2.35, 3.65, 4.85, 5.2, 6.0, 8.35, 8.85, 9.2, 9.8]));   
-    assert(x.quantile!"Type3"(qtile.dup).all!approxEqual([0.2, 1.0, 2.2, 3.5, 4.5, 5.2, 5.8, 8.2, 8.5, 9.2, 9.8]));
-    assert(x.quantile!"Type4"(qtile.dup).all!approxEqual([0.2, 1.0, 2.2, 3.5, 4.5, 5.2, 5.8, 8.2, 8.5, 9.2, 9.8]));
-    assert(x.quantile!"Type5"(qtile.dup).all!approxEqual([0.20, 1.40, 2.35, 3.65, 4.85, 5.20, 6.00, 8.35, 8.85, 9.20, 9.80]));
-    assert(x.quantile!"Type6"(qtile.dup).all!approxEqual([0.20, 1.08, 2.26, 3.59, 4.78, 5.20, 6.04, 8.41, 9.06, 9.20, 9.80]));
-    assert(x.quantile!"Type7"(qtile.dup).all!approxEqual([0.20, 1.72, 2.44, 3.71, 4.92, 5.20, 5.96, 8.29, 8.64, 9.20, 9.80]));
-    assert(x.quantile!"Type8"(qtile.dup).all!approxEqual([0.200000, 1.293333, 2.320000, 3.630000, 4.826667, 5.200000, 6.013333, 8.370000, 8.920000, 9.200000, 9.800000]));
-    assert(x.quantile!"Type9"(qtile.dup).all!approxEqual([0.2000, 1.3200, 2.3275, 3.6350, 4.8325, 5.2000, 6.0100, 8.3650, 8.9025, 9.200, 9.800]));
+    assert(x.quantile!"type1"(qtile.dup).all!approxEqual([0.2, 1.0, 2.2, 3.5, 4.5, 5.2, 5.8, 8.2, 8.5, 9.2, 9.8]));
+    assert(x.quantile!"type2"(qtile.dup).all!approxEqual([0.2, 1.4, 2.35, 3.65, 4.85, 5.2, 6.0, 8.35, 8.85, 9.2, 9.8]));   
+    assert(x.quantile!"type3"(qtile.dup).all!approxEqual([0.2, 1.0, 2.2, 3.5, 4.5, 5.2, 5.8, 8.2, 8.5, 9.2, 9.8]));
+    assert(x.quantile!"type4"(qtile.dup).all!approxEqual([0.2, 1.0, 2.2, 3.5, 4.5, 5.2, 5.8, 8.2, 8.5, 9.2, 9.8]));
+    assert(x.quantile!"type5"(qtile.dup).all!approxEqual([0.20, 1.40, 2.35, 3.65, 4.85, 5.20, 6.00, 8.35, 8.85, 9.20, 9.80]));
+    assert(x.quantile!"type6"(qtile.dup).all!approxEqual([0.20, 1.08, 2.26, 3.59, 4.78, 5.20, 6.04, 8.41, 9.06, 9.20, 9.80]));
+    assert(x.quantile!"type7"(qtile.dup).all!approxEqual([0.20, 1.72, 2.44, 3.71, 4.92, 5.20, 5.96, 8.29, 8.64, 9.20, 9.80]));
+    assert(x.quantile!"type8"(qtile.dup).all!approxEqual([0.200000, 1.293333, 2.320000, 3.630000, 4.826667, 5.200000, 6.013333, 8.370000, 8.920000, 9.200000, 9.800000]));
+    assert(x.quantile!"type9"(qtile.dup).all!approxEqual([0.2000, 1.3200, 2.3275, 3.6350, 4.8325, 5.2000, 6.0100, 8.3650, 8.9025, 9.200, 9.800]));
 }
 
 //x.length = 20, qtile at 5s
@@ -886,15 +887,15 @@ unittest
               2.5, 1.8, 2.2, 3.8, 5.2, 9.2, 6.2, 9.2, 9.2, 8.5].sliced;
     auto qtile = [0.05, 0.15, 0.25, 0.35, 0.45, 0.55, 0.65, 0.75, 0.85, 0.95].sliced;
 
-    assert(x.quantile!"Type1"(qtile.dup).all!approxEqual([0.2, 1.8, 2.5, 3.8, 5.2, 5.2, 6.2, 8.5, 9.2, 9.2]));
-    assert(x.quantile!"Type2"(qtile.dup).all!approxEqual([0.60, 2.00, 3.00, 4.15, 5.20, 5.50, 7.20, 8.50, 9.20, 9.50]));   
-    assert(x.quantile!"Type3"(qtile.dup).all!approxEqual([0.2, 1.8, 2.5, 3.8, 5.2, 5.2, 6.2, 8.5, 9.2, 9.2]));
-    assert(x.quantile!"Type4"(qtile.dup).all!approxEqual([0.2, 1.8, 2.5, 3.8, 5.2, 5.2, 6.2, 8.5, 9.2, 9.2]));
-    assert(x.quantile!"Type5"(qtile.dup).all!approxEqual([0.60, 2.00, 3.00, 4.15, 5.20, 5.50, 7.20, 8.50, 9.20, 9.50]));
-    assert(x.quantile!"Type6"(qtile.dup).all!approxEqual([0.240, 1.860, 2.750, 4.045, 5.200, 5.530, 7.500, 8.500, 9.200, 9.770]));
-    assert(x.quantile!"Type7"(qtile.dup).all!approxEqual([0.960, 2.140, 3.250, 4.255, 5.200, 5.470, 6.900, 8.500, 9.200, 9.230]));
-    assert(x.quantile!"Type8"(qtile.dup).all!approxEqual([0.480000, 1.953333, 2.916667, 4.115000, 5.200000, 5.510000, 7.300000, 8.500000, 9.200000, 9.590000]));
-    assert(x.quantile!"Type9"(qtile.dup).all!approxEqual([0.51000, 1.96500, 2.93750, 4.12375, 5.20000, 5.50750, 7.27500, 8.50000, 9.20000, 9.56750]));
+    assert(x.quantile!"type1"(qtile.dup).all!approxEqual([0.2, 1.8, 2.5, 3.8, 5.2, 5.2, 6.2, 8.5, 9.2, 9.2]));
+    assert(x.quantile!"type2"(qtile.dup).all!approxEqual([0.60, 2.00, 3.00, 4.15, 5.20, 5.50, 7.20, 8.50, 9.20, 9.50]));   
+    assert(x.quantile!"type3"(qtile.dup).all!approxEqual([0.2, 1.8, 2.5, 3.8, 5.2, 5.2, 6.2, 8.5, 9.2, 9.2]));
+    assert(x.quantile!"type4"(qtile.dup).all!approxEqual([0.2, 1.8, 2.5, 3.8, 5.2, 5.2, 6.2, 8.5, 9.2, 9.2]));
+    assert(x.quantile!"type5"(qtile.dup).all!approxEqual([0.60, 2.00, 3.00, 4.15, 5.20, 5.50, 7.20, 8.50, 9.20, 9.50]));
+    assert(x.quantile!"type6"(qtile.dup).all!approxEqual([0.240, 1.860, 2.750, 4.045, 5.200, 5.530, 7.500, 8.500, 9.200, 9.770]));
+    assert(x.quantile!"type7"(qtile.dup).all!approxEqual([0.960, 2.140, 3.250, 4.255, 5.200, 5.470, 6.900, 8.500, 9.200, 9.230]));
+    assert(x.quantile!"type8"(qtile.dup).all!approxEqual([0.480000, 1.953333, 2.916667, 4.115000, 5.200000, 5.510000, 7.300000, 8.500000, 9.200000, 9.590000]));
+    assert(x.quantile!"type9"(qtile.dup).all!approxEqual([0.51000, 1.96500, 2.93750, 4.12375, 5.20000, 5.50750, 7.27500, 8.50000, 9.20000, 9.56750]));
 }
 
 //x.length = 21, qtile at tenths
@@ -911,15 +912,15 @@ unittest
                8.8].sliced;
     auto qtile = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0].sliced;
 
-    assert(x.quantile!"Type1"(qtile.dup).all!approxEqual([0.2, 1.7, 2.4, 3.6, 5.0, 5.0, 6.0, 8.1, 8.8, 9.3, 10.0]));
-    assert(x.quantile!"Type2"(qtile.dup).all!approxEqual([0.2, 1.7, 2.4, 3.6, 5.0, 5.0, 6.0, 8.1, 8.8, 9.3, 10.0]));   
-    assert(x.quantile!"Type3"(qtile.dup).all!approxEqual([0.2, 1.0, 2.1, 3.3, 4.3, 5.0, 6.0, 8.1, 8.8, 9.3, 10.0]));
-    assert(x.quantile!"Type4"(qtile.dup).all!approxEqual([0.20, 1.07, 2.16, 3.39, 4.58, 5.00, 5.80, 8.04, 8.80, 9.25, 10.00]));
-    assert(x.quantile!"Type5"(qtile.dup).all!approxEqual([0.20, 1.42, 2.31, 3.54, 4.93, 5.00, 6.19, 8.24, 8.80, 9.50, 10.00]));
-    assert(x.quantile!"Type6"(qtile.dup).all!approxEqual([0.20, 1.14, 2.22, 3.48, 4.86, 5.00, 6.38, 8.38, 8.80, 9.70, 10.00]));
-    assert(x.quantile!"Type7"(qtile.dup).all!approxEqual([0.2, 1.7, 2.4, 3.6, 5.0, 5.0, 6.0, 8.1, 8.8, 9.3, 10.0]));
-    assert(x.quantile!"Type8"(qtile.dup).all!approxEqual([0.200000, 1.326667, 2.280000, 3.520000, 4.906667, 5.000000, 6.253333, 8.286667, 8.800000, 9.566667, 10.000000]));
-    assert(x.quantile!"Type9"(qtile.dup).all!approxEqual([0.2000, 1.3500, 2.2875, 3.5250, 4.9125, 5.0000, 6.2375, 8.2750, 8.8000, 9.5500, 10.0000]));
+    assert(x.quantile!"type1"(qtile.dup).all!approxEqual([0.2, 1.7, 2.4, 3.6, 5.0, 5.0, 6.0, 8.1, 8.8, 9.3, 10.0]));
+    assert(x.quantile!"type2"(qtile.dup).all!approxEqual([0.2, 1.7, 2.4, 3.6, 5.0, 5.0, 6.0, 8.1, 8.8, 9.3, 10.0]));   
+    assert(x.quantile!"type3"(qtile.dup).all!approxEqual([0.2, 1.0, 2.1, 3.3, 4.3, 5.0, 6.0, 8.1, 8.8, 9.3, 10.0]));
+    assert(x.quantile!"type4"(qtile.dup).all!approxEqual([0.20, 1.07, 2.16, 3.39, 4.58, 5.00, 5.80, 8.04, 8.80, 9.25, 10.00]));
+    assert(x.quantile!"type5"(qtile.dup).all!approxEqual([0.20, 1.42, 2.31, 3.54, 4.93, 5.00, 6.19, 8.24, 8.80, 9.50, 10.00]));
+    assert(x.quantile!"type6"(qtile.dup).all!approxEqual([0.20, 1.14, 2.22, 3.48, 4.86, 5.00, 6.38, 8.38, 8.80, 9.70, 10.00]));
+    assert(x.quantile!"type7"(qtile.dup).all!approxEqual([0.2, 1.7, 2.4, 3.6, 5.0, 5.0, 6.0, 8.1, 8.8, 9.3, 10.0]));
+    assert(x.quantile!"type8"(qtile.dup).all!approxEqual([0.200000, 1.326667, 2.280000, 3.520000, 4.906667, 5.000000, 6.253333, 8.286667, 8.800000, 9.566667, 10.000000]));
+    assert(x.quantile!"type9"(qtile.dup).all!approxEqual([0.2000, 1.3500, 2.2875, 3.5250, 4.9125, 5.0000, 6.2375, 8.2750, 8.8000, 9.5500, 10.0000]));
 }
 
 //x.length = 21, qtile at 5s
@@ -936,15 +937,15 @@ unittest
                8.8].sliced;
     auto qtile = [0.05, 0.15, 0.25, 0.35, 0.45, 0.55, 0.65, 0.75, 0.85, 0.95].sliced;
     
-    assert(x.quantile!"Type1"(qtile.dup).all!approxEqual([1.0, 2.1, 3.3, 4.3, 5.0, 5.5, 7.9, 8.8, 8.8, 9.8]));
-    assert(x.quantile!"Type2"(qtile.dup).all!approxEqual([1.0, 2.1, 3.3, 4.3, 5.0, 5.5, 7.9, 8.8, 8.8, 9.8]));   
-    assert(x.quantile!"Type3"(qtile.dup).all!approxEqual([0.2, 1.7, 2.4, 3.6, 5.0, 5.5, 7.9, 8.8, 8.8, 9.8]));
-    assert(x.quantile!"Type4"(qtile.dup).all!approxEqual([0.240, 1.760, 2.625, 3.845, 5.000, 5.275, 7.235, 8.625, 8.800, 9.775]));
-    assert(x.quantile!"Type5"(qtile.dup).all!approxEqual([0.640, 1.960, 3.075, 4.195, 5.000, 5.525, 7.930, 8.800, 8.975, 9.890]));
-    assert(x.quantile!"Type6"(qtile.dup).all!approxEqual([0.28, 1.82, 2.85, 4.09, 5.00, 5.55, 7.96, 8.80, 9.15, 9.98]));
-    assert(x.quantile!"Type7"(qtile.dup).all!approxEqual([1.0, 2.1, 3.3, 4.3, 5.0, 5.5, 7.9, 8.8, 8.8, 9.8]));
-    assert(x.quantile!"Type8"(qtile.dup).all!approxEqual([0.520000, 1.913333, 3.000000, 4.160000, 5.000000, 5.533333, 7.940000, 8.800000, 9.033333, 9.920000]));
-    assert(x.quantile!"Type9"(qtile.dup).all!approxEqual([0.55000, 1.92500, 3.01875, 4.16875, 5.00000, 5.53125, 7.93750, 8.80000, 9.01875, 9.91250]));
+    assert(x.quantile!"type1"(qtile.dup).all!approxEqual([1.0, 2.1, 3.3, 4.3, 5.0, 5.5, 7.9, 8.8, 8.8, 9.8]));
+    assert(x.quantile!"type2"(qtile.dup).all!approxEqual([1.0, 2.1, 3.3, 4.3, 5.0, 5.5, 7.9, 8.8, 8.8, 9.8]));   
+    assert(x.quantile!"type3"(qtile.dup).all!approxEqual([0.2, 1.7, 2.4, 3.6, 5.0, 5.5, 7.9, 8.8, 8.8, 9.8]));
+    assert(x.quantile!"type4"(qtile.dup).all!approxEqual([0.240, 1.760, 2.625, 3.845, 5.000, 5.275, 7.235, 8.625, 8.800, 9.775]));
+    assert(x.quantile!"type5"(qtile.dup).all!approxEqual([0.640, 1.960, 3.075, 4.195, 5.000, 5.525, 7.930, 8.800, 8.975, 9.890]));
+    assert(x.quantile!"type6"(qtile.dup).all!approxEqual([0.28, 1.82, 2.85, 4.09, 5.00, 5.55, 7.96, 8.80, 9.15, 9.98]));
+    assert(x.quantile!"type7"(qtile.dup).all!approxEqual([1.0, 2.1, 3.3, 4.3, 5.0, 5.5, 7.9, 8.8, 8.8, 9.8]));
+    assert(x.quantile!"type8"(qtile.dup).all!approxEqual([0.520000, 1.913333, 3.000000, 4.160000, 5.000000, 5.533333, 7.940000, 8.800000, 9.033333, 9.920000]));
+    assert(x.quantile!"type9"(qtile.dup).all!approxEqual([0.55000, 1.92500, 3.01875, 4.16875, 5.00000, 5.53125, 7.93750, 8.80000, 9.01875, 9.91250]));
 }
 
 /++
