@@ -237,6 +237,28 @@ unittest
     assert(x.sweep!(a => g!3.5(a), "+").all!approxEqual([4.5, 5.5, 6.5, 7.5, 8.5, 9.5]));
 }
 
+// Sweep withAsSlice
+version(mir_stat_test)
+@safe pure nothrow @nogc
+unittest
+{
+    import mir.algorithm.iteration: all;
+    import mir.math.common: approxEqual;
+    import mir.rc.array: RCArray;
+
+    static double f(T)(T x) {
+        return 3.5;
+    }
+
+    auto x = RCArray!double(6);
+    foreach(i, ref e; x)
+        e = i + 1;
+
+    assert(x.sweep!(f, "-").all!approxEqual([-2.5, -1.5, -0.5, 0.5, 1.5, 2.5]));
+    assert(x.sweep!"-"(3.5).all!approxEqual([-2.5, -1.5, -0.5, 0.5, 1.5, 2.5]));
+    assert(x.sweep!(f, "+").all!approxEqual([4.5, 5.5, 6.5, 7.5, 8.5, 9.5]));
+}
+
 /++
 Scales the input.
 By default, the input is first centered using the mean of the input. A custom
@@ -434,6 +456,23 @@ unittest
     assert(x.scale!(mean!"kbn", standardDeviation!("online", "kbn")).all!approxEqual(result));
     assert(x.scale!(mean!"kb2", standardDeviation!("online", "kb2")).all!approxEqual(result));
     assert(x.scale!(mean!"precise", standardDeviation!("online", "precise")).all!approxEqual(result));
+}
+
+// Scale withAsSlice
+version(mir_stat_test)
+@safe pure nothrow @nogc
+unittest
+{
+    import mir.algorithm.iteration: all;
+    import mir.math.common: approxEqual;
+    import mir.rc.array: RCArray;
+
+    auto x = RCArray!double(6);
+    foreach(i, ref e; x)
+        e = i + 1;
+
+    assert(x.scale.all!approxEqual([-1.336306, -0.801784, -0.267261, 0.267261, 0.801784, 1.336306]));
+    assert(x.scale(3.5, 1.87083).all!approxEqual([-1.336306, -0.801784, -0.267261, 0.267261, 0.801784, 1.336306]));
 }
 
 /++
@@ -636,4 +675,21 @@ unittest
 
     auto y = [uint.max, uint.max / 2, uint.max / 3].sliced;
     assert(y.zscore!ulong.all!approxEqual([1.120897, -0.320256, -0.800641]));
+}
+
+// zscore withAsSlice
+version(mir_stat_test)
+@safe pure nothrow @nogc
+unittest
+{
+    import mir.algorithm.iteration: all;
+    import mir.math.common: approxEqual;
+    import mir.rc.array: RCArray;
+
+    auto x = RCArray!double(6);
+    foreach(i, ref e; x)
+        e = i + 1;
+
+    assert(x.zscore.all!approxEqual([-1.336306, -0.801784, -0.267261, 0.267261, 0.801784, 1.336306]));
+    assert(x.zscore(true).all!approxEqual([-1.46385, -0.87831, -0.29277, 0.29277, 0.87831, 1.46385]));
 }
