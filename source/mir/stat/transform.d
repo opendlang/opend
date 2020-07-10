@@ -20,9 +20,9 @@ module mir.stat.transform;
 public import mir.math.stat: center;
 
 import mir.math.common: fmamath;
-import mir.math.stat: VarianceAlgo;
+import mir.math.stat: mean, standardDeviation, VarianceAlgo;
 import mir.math.sum: Summation;
-import mir.ndslice.slice: Slice, SliceKind;
+import mir.ndslice.slice: Slice, SliceKind, hasAsSlice;
 
 /++
 For each `e` of the input, applies `e op m` where `m` is the result of `fun` and
@@ -110,7 +110,7 @@ template sweep(string op)
 }
 
 /// Sweep vector
-version(mir_test)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -129,7 +129,7 @@ unittest
 }
 
 /// Sweep dynamic array
-version(mir_test)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -147,7 +147,7 @@ unittest
 }
 
 /// Sweep matrix
-version(mir_test)
+version(mir_stat_test)
 @safe pure
 unittest
 {
@@ -180,7 +180,7 @@ unittest
 }
 
 /// Column sweep matrix
-version(mir_test)
+version(mir_stat_test)
 @safe pure
 unittest
 {
@@ -214,7 +214,7 @@ unittest
 }
 
 /// Can also pass arguments to sweep function
-version(mir_test)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -328,12 +328,13 @@ Params:
 }
 
 /// Scale vector
-version(mir_test)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
     import mir.algorithm.iteration: all;
     import mir.math.common: approxEqual;
+    import mir.math.stat: gmean, hmean, median;
     import mir.ndslice.slice: sliced;
 
     auto x = [1.0, 2, 3, 4, 5, 6].sliced;
@@ -354,7 +355,7 @@ unittest
 }
 
 /// Scale dynamic array
-version(mir_test)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -367,7 +368,7 @@ unittest
 }
 
 /// Scale matrix
-version(mir_test)
+version(mir_stat_test)
 @safe pure
 unittest
 {
@@ -385,7 +386,7 @@ unittest
 }
 
 /// Column scale matrix
-version(mir_test)
+version(mir_stat_test)
 @safe pure
 unittest
 {
@@ -415,7 +416,7 @@ unittest
 }
 
 /// Can also pass arguments to `mean` and `standardDeviation` functions used by scale
-version(mir_test)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -462,6 +463,8 @@ template zscore(F,
     {
         import core.lifetime: move;
         import mir.math.common: sqrt;
+        import mir.math.stat: meanType, VarianceAccumulator;
+        import mir.math.sum: ResolveSummationType;
 
         alias G = meanType!F;
         alias T = typeof(slice);
@@ -493,6 +496,8 @@ template zscore(F,
 template zscore(VarianceAlgo varianceAlgo = VarianceAlgo.online,
                 Summation summation = Summation.appropriate)
 {
+    import mir.math.stat: meanType;
+
     /// ditto
     @fmamath auto zscore(Iterator, size_t N, SliceKind kind)(
         Slice!(Iterator, N, kind) slice, 
@@ -532,7 +537,7 @@ template zscore(string varianceAlgo, string summation = "appropriate")
 }
 
 /// zscore vector
-version(mir_test)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -547,7 +552,7 @@ unittest
 }
 
 /// zscore dynamic array
-version(mir_test)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
@@ -560,7 +565,7 @@ unittest
 }
 
 /// zscore matrix
-version(mir_test)
+version(mir_stat_test)
 @safe pure
 unittest
 {
@@ -578,7 +583,7 @@ unittest
 }
 
 /// Column zscore matrix
-version(mir_test)
+version(mir_stat_test)
 @safe pure
 unittest
 {
@@ -608,7 +613,7 @@ unittest
 }
 
 /// Can control how `mean` and `standardDeviation` are calculated and output type
-version(mir_test)
+version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
