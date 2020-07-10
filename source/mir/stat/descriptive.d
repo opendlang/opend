@@ -17,14 +17,14 @@ T4=$(TR $(TDNW $(LREF $1)) $(TD $2) $(TD $3) $(TD $4))
 
 module mir.stat.descriptive;
 
-public import mir.math.stat: gmean, GMeanAccumulator, hmean, mean,
+public import mir.math.stat: gmean, GMeanAccumulator, hmean, mean, meanType,
     MeanAccumulator, median, standardDeviation, variance, VarianceAccumulator,
     VarianceAlgo, stdevType;
 
 import mir.internal.utility: isFloatingPoint;
 import mir.math.common: fmamath;
 import mir.math.sum: Summation, Summator, ResolveSummationType;
-import mir.ndslice.slice: Slice;
+import mir.ndslice.slice: Slice, SliceKind, hasAsSlice;
 import std.traits: isMutable;
 
 /++
@@ -946,6 +946,155 @@ unittest
     assert(x.quantile!"type7"(qtile.dup).all!approxEqual([1.0, 2.1, 3.3, 4.3, 5.0, 5.5, 7.9, 8.8, 8.8, 9.8]));
     assert(x.quantile!"type8"(qtile.dup).all!approxEqual([0.520000, 1.913333, 3.000000, 4.160000, 5.000000, 5.533333, 7.940000, 8.800000, 9.033333, 9.920000]));
     assert(x.quantile!"type9"(qtile.dup).all!approxEqual([0.55000, 1.92500, 3.01875, 4.16875, 5.00000, 5.53125, 7.93750, 8.80000, 9.01875, 9.91250]));
+}
+
+/++
+Calculates the median absolute deviation about the median of the input.
+
+By default, if `F` is not floating point type, then the result will have a
+`double` type if `F` is implicitly convertible to a floating point type.
+
+Params:
+    F = output type
+Returns:
+    The median absolute deviation of the input
++/
+template medianAbsoluteDeviation(F)
+{
+    import mir.ndslice.slice: hasAsSlice;
+
+    /++
+    Params:
+        slice = slice
+    +/
+    @fmamath meanType!F medianAbsoluteDeviation(Iterator, size_t N, SliceKind kind)(
+            Slice!(Iterator, N, kind) slice)
+    {
+        import core.lifetime: move;
+        import mir.math.common: fabs;
+        import mir.math.stat: center, median;
+        import mir.ndslice.topology: map;
+
+        alias G = typeof(return);
+        static assert(isFloatingPoint!G, "medianAbsoluteDeviation: output type must be floating point");
+        return slice.move.center!(median!G).map!fabs.median!G;
+    }
+}
+
+/// ditto
+@fmamath meanType!(Slice!(Iterator, N, kind))
+    medianAbsoluteDeviation(Iterator, size_t N, SliceKind kind)(
+        Slice!(Iterator, N, kind) slice)
+{
+    import core.lifetime: move;
+
+    alias F = typeof(return);
+    return medianAbsoluteDeviation!F(slice.move);
+}
+
+/// ditto
+@fmamath meanType!(T[]) medianAbsoluteDeviation(T)(scope const T[] ar...)
+{
+    import mir.ndslice.slice: sliced;
+
+    alias G = typeof(return);
+    return medianAbsoluteDeviation!G(ar.sliced);
+}
+
+/// ditto
+@fmamath auto medianAbsoluteDeviation(T)(T withAsSlice)
+    if (hasAsSlice!T)
+{
+    return medianAbsoluteDeviation(withAsSlice.asSlice);
+}
+
+/// Simple example
+version(mir_stat_test)
+@safe pure nothrow
+unittest
+{
+    import mir.math.common: approxEqual;
+    import mir.ndslice.slice: sliced;
+
+    auto x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
+              2.0, 7.5, 5.0, 1.0, 1.5, 0.0].sliced;
+
+    assert(x.medianAbsoluteDeviation.approxEqual(1.25));
+}
+
+/// Median Absolute Deviation of vector
+version(mir_stat_test)
+@safe pure nothrow
+unittest
+{
+    import mir.math.common: approxEqual;
+    import mir.ndslice.slice: sliced;
+
+    auto x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
+              2.0, 7.5, 5.0, 1.0, 1.5, 0.0].sliced;
+
+    assert(x.medianAbsoluteDeviation.approxEqual(1.25));
+}
+
+/// Median Absolute Deviation of matrix
+version(mir_stat_test)
+@safe pure
+unittest
+{
+    import mir.math.common: approxEqual;
+    import mir.ndslice.fuse: fuse;
+
+    auto x = [
+        [0.0, 1.0, 1.5, 2.0, 3.5, 4.25],
+        [2.0, 7.5, 5.0, 1.0, 1.5, 0.0]
+    ].fuse;
+
+    assert(x.medianAbsoluteDeviation.approxEqual(1.25));
+}
+
+/// Median Absolute Deviation of dynamic array
+version(mir_stat_test)
+@safe pure nothrow
+unittest
+{
+    import mir.math.common: approxEqual;
+
+    auto x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
+              2.0, 7.5, 5.0, 1.0, 1.5, 0.0];
+
+    assert(x.medianAbsoluteDeviation.approxEqual(1.25));
+}
+
+// @nogc test
+version(mir_stat_test)
+@safe pure nothrow @nogc
+unittest
+{
+    import mir.math.common: approxEqual;
+    import mir.ndslice.slice: sliced;
+
+    static immutable x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
+                          2.0, 7.5, 5.0, 1.0, 1.5, 0.0];
+
+    assert(x.sliced.medianAbsoluteDeviation.approxEqual(1.25));
+}
+
+// withAsSlice test
+version(mir_stat_test)
+@safe pure nothrow @nogc
+unittest
+{
+    import mir.math.common: approxEqual;
+    import mir.rc.array: RCArray;
+
+    static immutable a = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
+                          2.0, 7.5, 5.0, 1.0, 1.5, 0.0];
+
+    auto x = RCArray!double(12);
+    foreach(i, ref e; x)
+        e = a[i];
+
+    assert(a.medianAbsoluteDeviation.approxEqual(1.25));
 }
 
 /++
