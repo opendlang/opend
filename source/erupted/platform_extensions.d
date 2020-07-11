@@ -32,6 +32,7 @@ enum GGP_frame_token;
 enum FUCHSIA_imagepipe_surface;
 enum EXT_metal_surface;
 enum EXT_full_screen_exclusive;
+enum EXT_directfb_surface;
 enum KHR_ray_tracing;
 
 
@@ -50,6 +51,7 @@ alias USE_PLATFORM_IOS_MVK         = AliasSeq!( MVK_ios_surface );
 alias USE_PLATFORM_MACOS_MVK       = AliasSeq!( MVK_macos_surface );
 alias USE_PLATFORM_FUCHSIA         = AliasSeq!( FUCHSIA_imagepipe_surface );
 alias USE_PLATFORM_METAL_EXT       = AliasSeq!( EXT_metal_surface );
+alias USE_PLATFORM_DIRECTFB_EXT    = AliasSeq!( EXT_directfb_surface );
 
 
 
@@ -656,6 +658,27 @@ mixin template Platform_Extensions( extensions... ) {
             alias PFN_vkGetDeviceGroupSurfacePresentModes2EXT                           = VkResult  function( VkDevice device, const( VkPhysicalDeviceSurfaceInfo2KHR )* pSurfaceInfo, VkDeviceGroupPresentModeFlagsKHR* pModes );
         }
 
+        // VK_EXT_directfb_surface : types and function pointer type aliases
+        else static if( __traits( isSame, extension, EXT_directfb_surface )) {
+            enum VK_EXT_directfb_surface = 1;
+
+            enum VK_EXT_DIRECTFB_SURFACE_SPEC_VERSION = 1;
+            enum VK_EXT_DIRECTFB_SURFACE_EXTENSION_NAME = "VK_EXT_directfb_surface";
+            
+            alias VkDirectFBSurfaceCreateFlagsEXT = VkFlags;
+            
+            struct VkDirectFBSurfaceCreateInfoEXT {
+                VkStructureType                  sType = VK_STRUCTURE_TYPE_DIRECTFB_SURFACE_CREATE_INFO_EXT;
+                const( void )*                   pNext;
+                VkDirectFBSurfaceCreateFlagsEXT  flags;
+                IDirectFB*                       dfb;
+                IDirectFBSurface*                surface;
+            }
+            
+            alias PFN_vkCreateDirectFBSurfaceEXT                                        = VkResult  function( VkInstance instance, const( VkDirectFBSurfaceCreateInfoEXT )* pCreateInfo, const( VkAllocationCallbacks )* pAllocator, VkSurfaceKHR* pSurface );
+            alias PFN_vkGetPhysicalDeviceDirectFBPresentationSupportEXT                 = VkBool32  function( VkPhysicalDevice physicalDevice, uint32_t queueFamilyIndex, IDirectFB* dfb );
+        }
+
         // VK_KHR_ray_tracing : types and function pointer type aliases
         else static if( __traits( isSame, extension, KHR_ray_tracing )) {
             enum VK_KHR_ray_tracing = 1;
@@ -1026,6 +1049,12 @@ mixin template Platform_Extensions( extensions... ) {
                 PFN_vkGetDeviceGroupSurfacePresentModes2EXT                           vkGetDeviceGroupSurfacePresentModes2EXT;
             }
 
+            // VK_EXT_directfb_surface : function pointer decelerations
+            else static if( __traits( isSame, extension, EXT_directfb_surface )) {
+                PFN_vkCreateDirectFBSurfaceEXT                                        vkCreateDirectFBSurfaceEXT;
+                PFN_vkGetPhysicalDeviceDirectFBPresentationSupportEXT                 vkGetPhysicalDeviceDirectFBPresentationSupportEXT;
+            }
+
             // VK_KHR_ray_tracing : function pointer decelerations
             else static if( __traits( isSame, extension, KHR_ray_tracing )) {
                 PFN_vkCreateAccelerationStructureKHR                                  vkCreateAccelerationStructureKHR;
@@ -1129,6 +1158,12 @@ mixin template Platform_Extensions( extensions... ) {
             // VK_EXT_full_screen_exclusive : load instance level function definitions
             else static if( __traits( isSame, extension, EXT_full_screen_exclusive )) {
                 vkGetPhysicalDeviceSurfacePresentModes2EXT                        = cast( PFN_vkGetPhysicalDeviceSurfacePresentModes2EXT                        ) vkGetInstanceProcAddr( instance, "vkGetPhysicalDeviceSurfacePresentModes2EXT" );
+            }
+
+            // VK_EXT_directfb_surface : load instance level function definitions
+            else static if( __traits( isSame, extension, EXT_directfb_surface )) {
+                vkCreateDirectFBSurfaceEXT                                        = cast( PFN_vkCreateDirectFBSurfaceEXT                                        ) vkGetInstanceProcAddr( instance, "vkCreateDirectFBSurfaceEXT" );
+                vkGetPhysicalDeviceDirectFBPresentationSupportEXT                 = cast( PFN_vkGetPhysicalDeviceDirectFBPresentationSupportEXT                 ) vkGetInstanceProcAddr( instance, "vkGetPhysicalDeviceDirectFBPresentationSupportEXT" );
             }
         }
     }
@@ -1571,6 +1606,12 @@ mixin template Platform_Extensions( extensions... ) {
                 PFN_vkAcquireFullScreenExclusiveModeEXT                               vkAcquireFullScreenExclusiveModeEXT;
                 PFN_vkReleaseFullScreenExclusiveModeEXT                               vkReleaseFullScreenExclusiveModeEXT;
                 PFN_vkGetDeviceGroupSurfacePresentModes2EXT                           vkGetDeviceGroupSurfacePresentModes2EXT;
+            }
+
+            // VK_EXT_directfb_surface : dispatch device member function pointer decelerations
+            else static if( __traits( isSame, extension, EXT_directfb_surface )) {
+                PFN_vkCreateDirectFBSurfaceEXT                                        vkCreateDirectFBSurfaceEXT;
+                PFN_vkGetPhysicalDeviceDirectFBPresentationSupportEXT                 vkGetPhysicalDeviceDirectFBPresentationSupportEXT;
             }
 
             // VK_KHR_ray_tracing : dispatch device member function pointer decelerations
