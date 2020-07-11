@@ -424,6 +424,20 @@ extern( System ) {
     // VK_EXT_line_rasterization
     alias PFN_vkCmdSetLineStippleEXT                                            = void      function( VkCommandBuffer commandBuffer, uint32_t lineStippleFactor, uint16_t lineStipplePattern );
 
+    // VK_EXT_extended_dynamic_state
+    alias PFN_vkCmdSetCullModeEXT                                               = void      function( VkCommandBuffer commandBuffer, VkCullModeFlags cullMode );
+    alias PFN_vkCmdSetFrontFaceEXT                                              = void      function( VkCommandBuffer commandBuffer, VkFrontFace frontFace );
+    alias PFN_vkCmdSetPrimitiveTopologyEXT                                      = void      function( VkCommandBuffer commandBuffer, VkPrimitiveTopology primitiveTopology );
+    alias PFN_vkCmdSetViewportWithCountEXT                                      = void      function( VkCommandBuffer commandBuffer, uint32_t viewportCount, const( VkViewport )* pViewports );
+    alias PFN_vkCmdSetScissorWithCountEXT                                       = void      function( VkCommandBuffer commandBuffer, uint32_t scissorCount, const( VkRect2D )* pScissors );
+    alias PFN_vkCmdBindVertexBuffers2EXT                                        = void      function( VkCommandBuffer commandBuffer, uint32_t firstBinding, uint32_t bindingCount, const( VkBuffer )* pBuffers, const( VkDeviceSize )* pOffsets, const( VkDeviceSize )* pSizes, const( VkDeviceSize )* pStrides );
+    alias PFN_vkCmdSetDepthTestEnableEXT                                        = void      function( VkCommandBuffer commandBuffer, VkBool32 depthTestEnable );
+    alias PFN_vkCmdSetDepthWriteEnableEXT                                       = void      function( VkCommandBuffer commandBuffer, VkBool32 depthWriteEnable );
+    alias PFN_vkCmdSetDepthCompareOpEXT                                         = void      function( VkCommandBuffer commandBuffer, VkCompareOp depthCompareOp );
+    alias PFN_vkCmdSetDepthBoundsTestEnableEXT                                  = void      function( VkCommandBuffer commandBuffer, VkBool32 depthBoundsTestEnable );
+    alias PFN_vkCmdSetStencilTestEnableEXT                                      = void      function( VkCommandBuffer commandBuffer, VkBool32 stencilTestEnable );
+    alias PFN_vkCmdSetStencilOpEXT                                              = void      function( VkCommandBuffer commandBuffer, VkStencilFaceFlags faceMask, VkStencilOp failOp, VkStencilOp passOp, VkStencilOp depthFailOp, VkCompareOp compareOp );
+
     // VK_NV_device_generated_commands
     alias PFN_vkGetGeneratedCommandsMemoryRequirementsNV                        = void      function( VkDevice device, const( VkGeneratedCommandsMemoryRequirementsInfoNV )* pInfo, VkMemoryRequirements2* pMemoryRequirements );
     alias PFN_vkCmdPreprocessGeneratedCommandsNV                                = void      function( VkCommandBuffer commandBuffer, const( VkGeneratedCommandsInfoNV )* pGeneratedCommandsInfo );
@@ -851,6 +865,20 @@ __gshared {
 
     // VK_EXT_line_rasterization
     PFN_vkCmdSetLineStippleEXT                                            vkCmdSetLineStippleEXT;
+
+    // VK_EXT_extended_dynamic_state
+    PFN_vkCmdSetCullModeEXT                                               vkCmdSetCullModeEXT;
+    PFN_vkCmdSetFrontFaceEXT                                              vkCmdSetFrontFaceEXT;
+    PFN_vkCmdSetPrimitiveTopologyEXT                                      vkCmdSetPrimitiveTopologyEXT;
+    PFN_vkCmdSetViewportWithCountEXT                                      vkCmdSetViewportWithCountEXT;
+    PFN_vkCmdSetScissorWithCountEXT                                       vkCmdSetScissorWithCountEXT;
+    PFN_vkCmdBindVertexBuffers2EXT                                        vkCmdBindVertexBuffers2EXT;
+    PFN_vkCmdSetDepthTestEnableEXT                                        vkCmdSetDepthTestEnableEXT;
+    PFN_vkCmdSetDepthWriteEnableEXT                                       vkCmdSetDepthWriteEnableEXT;
+    PFN_vkCmdSetDepthCompareOpEXT                                         vkCmdSetDepthCompareOpEXT;
+    PFN_vkCmdSetDepthBoundsTestEnableEXT                                  vkCmdSetDepthBoundsTestEnableEXT;
+    PFN_vkCmdSetStencilTestEnableEXT                                      vkCmdSetStencilTestEnableEXT;
+    PFN_vkCmdSetStencilOpEXT                                              vkCmdSetStencilOpEXT;
 
     // VK_NV_device_generated_commands
     PFN_vkGetGeneratedCommandsMemoryRequirementsNV                        vkGetGeneratedCommandsMemoryRequirementsNV;
@@ -1399,6 +1427,20 @@ void loadDeviceLevelFunctions( VkInstance instance ) {
     // VK_EXT_line_rasterization
     vkCmdSetLineStippleEXT                            = cast( PFN_vkCmdSetLineStippleEXT                            ) vkGetInstanceProcAddr( instance, "vkCmdSetLineStippleEXT" );
 
+    // VK_EXT_extended_dynamic_state
+    vkCmdSetCullModeEXT                               = cast( PFN_vkCmdSetCullModeEXT                               ) vkGetInstanceProcAddr( instance, "vkCmdSetCullModeEXT" );
+    vkCmdSetFrontFaceEXT                              = cast( PFN_vkCmdSetFrontFaceEXT                              ) vkGetInstanceProcAddr( instance, "vkCmdSetFrontFaceEXT" );
+    vkCmdSetPrimitiveTopologyEXT                      = cast( PFN_vkCmdSetPrimitiveTopologyEXT                      ) vkGetInstanceProcAddr( instance, "vkCmdSetPrimitiveTopologyEXT" );
+    vkCmdSetViewportWithCountEXT                      = cast( PFN_vkCmdSetViewportWithCountEXT                      ) vkGetInstanceProcAddr( instance, "vkCmdSetViewportWithCountEXT" );
+    vkCmdSetScissorWithCountEXT                       = cast( PFN_vkCmdSetScissorWithCountEXT                       ) vkGetInstanceProcAddr( instance, "vkCmdSetScissorWithCountEXT" );
+    vkCmdBindVertexBuffers2EXT                        = cast( PFN_vkCmdBindVertexBuffers2EXT                        ) vkGetInstanceProcAddr( instance, "vkCmdBindVertexBuffers2EXT" );
+    vkCmdSetDepthTestEnableEXT                        = cast( PFN_vkCmdSetDepthTestEnableEXT                        ) vkGetInstanceProcAddr( instance, "vkCmdSetDepthTestEnableEXT" );
+    vkCmdSetDepthWriteEnableEXT                       = cast( PFN_vkCmdSetDepthWriteEnableEXT                       ) vkGetInstanceProcAddr( instance, "vkCmdSetDepthWriteEnableEXT" );
+    vkCmdSetDepthCompareOpEXT                         = cast( PFN_vkCmdSetDepthCompareOpEXT                         ) vkGetInstanceProcAddr( instance, "vkCmdSetDepthCompareOpEXT" );
+    vkCmdSetDepthBoundsTestEnableEXT                  = cast( PFN_vkCmdSetDepthBoundsTestEnableEXT                  ) vkGetInstanceProcAddr( instance, "vkCmdSetDepthBoundsTestEnableEXT" );
+    vkCmdSetStencilTestEnableEXT                      = cast( PFN_vkCmdSetStencilTestEnableEXT                      ) vkGetInstanceProcAddr( instance, "vkCmdSetStencilTestEnableEXT" );
+    vkCmdSetStencilOpEXT                              = cast( PFN_vkCmdSetStencilOpEXT                              ) vkGetInstanceProcAddr( instance, "vkCmdSetStencilOpEXT" );
+
     // VK_NV_device_generated_commands
     vkGetGeneratedCommandsMemoryRequirementsNV        = cast( PFN_vkGetGeneratedCommandsMemoryRequirementsNV        ) vkGetInstanceProcAddr( instance, "vkGetGeneratedCommandsMemoryRequirementsNV" );
     vkCmdPreprocessGeneratedCommandsNV                = cast( PFN_vkCmdPreprocessGeneratedCommandsNV                ) vkGetInstanceProcAddr( instance, "vkCmdPreprocessGeneratedCommandsNV" );
@@ -1741,6 +1783,20 @@ void loadDeviceLevelFunctions( VkDevice device ) {
 
     // VK_EXT_line_rasterization
     vkCmdSetLineStippleEXT                            = cast( PFN_vkCmdSetLineStippleEXT                            ) vkGetDeviceProcAddr( device, "vkCmdSetLineStippleEXT" );
+
+    // VK_EXT_extended_dynamic_state
+    vkCmdSetCullModeEXT                               = cast( PFN_vkCmdSetCullModeEXT                               ) vkGetDeviceProcAddr( device, "vkCmdSetCullModeEXT" );
+    vkCmdSetFrontFaceEXT                              = cast( PFN_vkCmdSetFrontFaceEXT                              ) vkGetDeviceProcAddr( device, "vkCmdSetFrontFaceEXT" );
+    vkCmdSetPrimitiveTopologyEXT                      = cast( PFN_vkCmdSetPrimitiveTopologyEXT                      ) vkGetDeviceProcAddr( device, "vkCmdSetPrimitiveTopologyEXT" );
+    vkCmdSetViewportWithCountEXT                      = cast( PFN_vkCmdSetViewportWithCountEXT                      ) vkGetDeviceProcAddr( device, "vkCmdSetViewportWithCountEXT" );
+    vkCmdSetScissorWithCountEXT                       = cast( PFN_vkCmdSetScissorWithCountEXT                       ) vkGetDeviceProcAddr( device, "vkCmdSetScissorWithCountEXT" );
+    vkCmdBindVertexBuffers2EXT                        = cast( PFN_vkCmdBindVertexBuffers2EXT                        ) vkGetDeviceProcAddr( device, "vkCmdBindVertexBuffers2EXT" );
+    vkCmdSetDepthTestEnableEXT                        = cast( PFN_vkCmdSetDepthTestEnableEXT                        ) vkGetDeviceProcAddr( device, "vkCmdSetDepthTestEnableEXT" );
+    vkCmdSetDepthWriteEnableEXT                       = cast( PFN_vkCmdSetDepthWriteEnableEXT                       ) vkGetDeviceProcAddr( device, "vkCmdSetDepthWriteEnableEXT" );
+    vkCmdSetDepthCompareOpEXT                         = cast( PFN_vkCmdSetDepthCompareOpEXT                         ) vkGetDeviceProcAddr( device, "vkCmdSetDepthCompareOpEXT" );
+    vkCmdSetDepthBoundsTestEnableEXT                  = cast( PFN_vkCmdSetDepthBoundsTestEnableEXT                  ) vkGetDeviceProcAddr( device, "vkCmdSetDepthBoundsTestEnableEXT" );
+    vkCmdSetStencilTestEnableEXT                      = cast( PFN_vkCmdSetStencilTestEnableEXT                      ) vkGetDeviceProcAddr( device, "vkCmdSetStencilTestEnableEXT" );
+    vkCmdSetStencilOpEXT                              = cast( PFN_vkCmdSetStencilOpEXT                              ) vkGetDeviceProcAddr( device, "vkCmdSetStencilOpEXT" );
 
     // VK_NV_device_generated_commands
     vkGetGeneratedCommandsMemoryRequirementsNV        = cast( PFN_vkGetGeneratedCommandsMemoryRequirementsNV        ) vkGetDeviceProcAddr( device, "vkGetGeneratedCommandsMemoryRequirementsNV" );
