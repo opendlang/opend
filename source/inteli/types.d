@@ -273,7 +273,7 @@ static if (CoreSimdIsEmulated)
         enum Count = N;
         alias Base = BaseType;
 
-        BaseType* ptr() pure nothrow @nogc
+        BaseType* ptr() return pure nothrow @nogc
         {
             return array.ptr;
         }
