@@ -230,7 +230,8 @@ See_also:
 +/
 template quantile(F, 
                   QuantileAlgo quantileAlgo = QuantileAlgo.type7, 
-                  bool allowModifySlice = false)
+                  bool allowModifySlice = false,
+                  bool allowModifyProbability = false)
     if (isFloatingPoint!F || (quantileAlgo == QuantileAlgo.type1 || 
                               quantileAlgo == QuantileAlgo.type3))
 {
@@ -269,12 +270,10 @@ template quantile(F,
     Params:
         slice = slice
         p = probability slice
-        allowModifyProbability = if true, then can modify p, default is false
     +/
     auto quantile(IteratorA, size_t N, SliceKind kindA, IteratorB, SliceKind kindB)
             (Slice!(IteratorA, N, kindA) slice, 
-             Slice!(IteratorB, 1, kindB) p,
-             bool allowModifyProbability = false)
+             Slice!(IteratorB, 1, kindB) p)
         if (isFloatingPoint!(elementType!(Slice!(IteratorB))))
     {
         import mir.ndslice.slice: IteratorOf;
@@ -293,7 +292,7 @@ template quantile(F,
             auto temp = slice.flattened;
         }
 
-        if (allowModifyProbability) {
+        static if (allowModifyProbability) {
             foreach(ref e; p) {
                 e = quantileImpl!(FF, quantileAlgo, IteratorOf!(typeof(temp)), G)(temp, e);
             }
@@ -346,10 +345,10 @@ template quantile(F,
     }
 
     /// ditto
-    auto quantile(T, U)(T[] array, U[] p, bool allowModifyProbability = false)
+    auto quantile(T, U)(T[] array, U[] p)
         if (isFloatingPoint!U)
     {
-        return quantile(array.sliced, p.sliced, allowModifyProbability);
+        return quantile(array.sliced, p.sliced);
     }
 
     /// ditto
@@ -360,16 +359,17 @@ template quantile(F,
     }
 
     /// ditto
-    auto quantile(T, U)(T withAsSlice, U p, bool allowModifyProbability = false)
+    auto quantile(T, U)(T withAsSlice, U p)
         if (hasAsSlice!T && hasAsSlice!U)
     {
-        return quantile(withAsSlice.asSlice, p.asSlice, allowModifyProbability);
+        return quantile(withAsSlice.asSlice, p.asSlice);
     }
 }
 
 ///
 template quantile(QuantileAlgo quantileAlgo = QuantileAlgo.type7, 
-                  bool allowModifySlice = false)
+                  bool allowModifySlice = false,
+                  bool allowModifyProbability = false)
 {
     import mir.math.sum: elementType;
     import mir.ndslice.slice: Slice, SliceKind, hasAsSlice;
@@ -386,24 +386,17 @@ template quantile(QuantileAlgo quantileAlgo = QuantileAlgo.type7,
     {
         alias F = typeof(return);
 
-        return .quantile!(F, quantileAlgo, allowModifySlice)(slice, p);
+        return .quantile!(F, quantileAlgo, allowModifySlice, allowModifyProbability)(slice, p);
     }
 
-    /++
-    Params:
-        slice = slice
-        p = probability slice
-        allowModifyProbability = if true, then can modify p, default is false
-    +/
+    /// ditto
     auto quantile(IteratorA, size_t N, SliceKind kindA, IteratorB, SliceKind kindB)
             (Slice!(IteratorA, N, kindA) slice, 
-             Slice!(IteratorB, 1, kindB) p,
-             bool allowModifyProbability = false)
+             Slice!(IteratorB, 1, kindB) p)
         if (isFloatingPoint!(elementType!(Slice!(IteratorB))))
     {
         alias F = quantileType!(Slice!(IteratorA), quantileAlgo);
-
-        return .quantile!(F, quantileAlgo, allowModifySlice)(slice, p, allowModifyProbability);
+        return .quantile!(F, quantileAlgo, allowModifySlice, allowModifyProbability)(slice, p);
     }
 
     /// ditto
@@ -412,8 +405,7 @@ template quantile(QuantileAlgo quantileAlgo = QuantileAlgo.type7,
         if (isFloatingPoint!(elementType!(G[])))
     {
         alias F = quantileType!(Slice!(Iterator), quantileAlgo);
-
-        return .quantile!(F, quantileAlgo, allowModifySlice)(slice, p);
+        return .quantile!(F, quantileAlgo, allowModifySlice, allowModifyProbability)(slice, p);
     }
 
     /// ditto
@@ -421,44 +413,48 @@ template quantile(QuantileAlgo quantileAlgo = QuantileAlgo.type7,
         if (isFloatingPoint!(Unqual!G))
     {
         alias F = quantileType!(T[], quantileAlgo);
-        return .quantile!(F, quantileAlgo, allowModifySlice)(array, p);
+        return .quantile!(F, quantileAlgo, allowModifySlice, allowModifyProbability)(array, p);
     }
 
     /// ditto
-    auto quantile(T, G)(T[] array, G[] p, bool allowModifyProbability = false)
+    auto quantile(T, G)(T[] array, G[] p)
         if (isFloatingPoint!(Unqual!G))
     {
         alias F = quantileType!(T[], quantileAlgo);
-        return .quantile!(F, quantileAlgo, allowModifySlice)(array, p, allowModifyProbability);
+        return .quantile!(F, quantileAlgo, allowModifySlice, allowModifyProbability)(array, p);
     }
 
     /// ditto
     auto quantile(T, G)(T withAsSlice, G p)
-        if (hasAsSlice!T && isFloatingoint!(Unqual!G))
+        if (hasAsSlice!T && isFloatingPoint!(Unqual!G))
     {
-        alias F = quantileType!(T[], quantileAlgo);
-        return .quantile!(F, quantileAlgo, allowModifySlice)(withAsSlice, p);
+        alias F = quantileType!(typeof(withAsSlice.asSlice), quantileAlgo);
+        return .quantile!(F, quantileAlgo, allowModifySlice, allowModifyProbability)(withAsSlice, p);
     }
 
     /// ditto
-    auto quantile(T, U)(T withAsSlice, U p, bool allowModifyProbability = false)
+    auto quantile(T, U)(T withAsSlice, U p)
         if (hasAsSlice!T && hasAsSlice!U)
     {
-        alias F = quantileType!(T[], quantileAlgo);
-        return .quantile!(F, quantileAlgo, allowModifySlice)(withAsSlice, p, allowModifyProbability);
+        alias F = quantileType!(typeof(withAsSlice.asSlice), quantileAlgo);
+        return .quantile!(F, quantileAlgo, allowModifySlice, allowModifyProbability)(withAsSlice, p);
     }
 }
 
 /// ditto
-template quantile(F, string quantileAlgo, bool allowModifySlice = false)
+template quantile(F, string quantileAlgo,
+                  bool allowModifySlice = false,
+                  bool allowModifyProbability = false)
 {
-    mixin("alias quantile = .quantile!(F, QuantileAlgo." ~ quantileAlgo ~ ", allowModifySlice);");
+    mixin("alias quantile = .quantile!(F, QuantileAlgo." ~ quantileAlgo ~ ", allowModifySlice, allowModifyProbability);");
 }
 
 /// ditto
-template quantile(string quantileAlgo, bool allowModifySlice = false)
+template quantile(string quantileAlgo,
+                  bool allowModifySlice = false,
+                  bool allowModifyProbability = false)
 {
-    mixin("alias quantile = .quantile!(QuantileAlgo." ~ quantileAlgo ~ ", allowModifySlice);");
+    mixin("alias quantile = .quantile!(QuantileAlgo." ~ quantileAlgo ~ ", allowModifySlice, allowModifyProbability);");
 }
 
 @fmamath private @safe pure nothrow @nogc
@@ -612,7 +608,7 @@ unittest
     auto qtile = [0.25, 0.75].sliced;
     auto qtile_copy = qtile.dup;
 
-    x.quantile(qtile, true);
+    x.quantile!("type7", false, true)(qtile);
     assert(qtile.all!approxEqual([1.0, 3.0]));
     assert(!qtile.all!approxEqual(qtile_copy));
 }
@@ -683,8 +679,7 @@ unittest
     auto qtile = [0.25, 0.75].sliced;
     auto result1 = [[3.750, 7.600], [2.825, 9.025]];
 
-    // Need to ensure that probability is not over-written
-    assert(x.byDim!0.map!(a => a.quantile(qtile, false)).all!(all!approxEqual)(result1));
+    assert(x.byDim!0.map!(a => a.quantile(qtile)).all!(all!approxEqual)(result1));
 }
 
 /// Allow modification of input
@@ -703,7 +698,7 @@ unittest
     assert(!x.all!approxEqual(x_copy));
 }
 
-/// Force disable modification of probability
+/// Double-check probability is not modified
 version(mir_stat_test)
 @safe pure nothrow
 unittest 
@@ -717,7 +712,7 @@ unittest
     auto qtile = [0.25, 0.75].sliced;
     auto qtile_copy = qtile.dup;
 
-    auto result = x.quantile(qtile, false);
+    auto result = x.quantile!("type7", false, false)(qtile);
     assert(result.all!approxEqual([1.0, 3.0]));
     assert(qtile.all!approxEqual(qtile_copy));
 }
@@ -848,6 +843,31 @@ unittest
     static immutable qtile = [0.25, 0.75];
 
     assert(x.sliced.quantile(qtile).all!approxEqual([3.250, 8.500]));
+}
+
+// withAsSlice test
+version(mir_stat_test)
+@safe pure nothrow @nogc
+unittest
+{
+    import mir.algorithm.iteration: all;
+    import mir.math.common: approxEqual;
+    import mir.rc.array: RCArray;
+
+    static immutable a = [1.0, 9.8, 0.2, 8.5, 5.8, 3.5, 4.5, 8.2, 5.2, 5.2,
+                          2.5, 1.8, 2.2, 3.8, 5.2, 9.2, 6.2, 9.2, 9.2, 8.5];
+
+    auto x = RCArray!double(20);
+    foreach(i, ref e; x)
+        e = a[i];
+
+    assert(x.quantile(0.5).approxEqual(5.20));
+
+    auto qtile = RCArray!double(2);
+    qtile[0] = 0.25;
+    qtile[1] = 0.75;
+
+    assert(x.quantile(qtile).all!approxEqual([3.250, 8.500]));
 }
 
 //x.length = 20, qtile at tenths
