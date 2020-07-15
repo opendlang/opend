@@ -433,18 +433,18 @@ nothrow:
     /* For resolving of inline spans. */
     MD_MARKCHAIN[12] mark_chains;
 
-    MD_MARKCHAIN* PTR_CHAIN() { return &mark_chains[0]; }
-    MD_MARKCHAIN* TABLECELLBOUNDARIES() { return &mark_chains[1]; }
-    MD_MARKCHAIN* ASTERISK_OPENERS_extraword_mod3_0() { return &mark_chains[2]; }
-    MD_MARKCHAIN* ASTERISK_OPENERS_extraword_mod3_1() { return &mark_chains[3]; }
-    MD_MARKCHAIN* ASTERISK_OPENERS_extraword_mod3_2() { return &mark_chains[4]; }
-    MD_MARKCHAIN* ASTERISK_OPENERS_intraword_mod3_0() { return &mark_chains[5]; }
-    MD_MARKCHAIN* ASTERISK_OPENERS_intraword_mod3_1() { return &mark_chains[6]; }
-    MD_MARKCHAIN* ASTERISK_OPENERS_intraword_mod3_2() { return &mark_chains[7]; }
-    MD_MARKCHAIN* UNDERSCORE_OPENERS() { return &mark_chains[8]; }
-    MD_MARKCHAIN* TILDE_OPENERS() { return &mark_chains[9]; }
-    MD_MARKCHAIN* BRACKET_OPENERS() { return &mark_chains[10]; }
-    MD_MARKCHAIN* DOLLAR_OPENERS() { return &mark_chains[11]; }
+    MD_MARKCHAIN* PTR_CHAIN() return { return &mark_chains[0]; }
+    MD_MARKCHAIN* TABLECELLBOUNDARIES() return { return &mark_chains[1]; }
+    MD_MARKCHAIN* ASTERISK_OPENERS_extraword_mod3_0() return { return &mark_chains[2]; }
+    MD_MARKCHAIN* ASTERISK_OPENERS_extraword_mod3_1() return { return &mark_chains[3]; }
+    MD_MARKCHAIN* ASTERISK_OPENERS_extraword_mod3_2() return { return &mark_chains[4]; }
+    MD_MARKCHAIN* ASTERISK_OPENERS_intraword_mod3_0() return { return &mark_chains[5]; }
+    MD_MARKCHAIN* ASTERISK_OPENERS_intraword_mod3_1() return { return &mark_chains[6]; }
+    MD_MARKCHAIN* ASTERISK_OPENERS_intraword_mod3_2() return { return &mark_chains[7]; }
+    MD_MARKCHAIN* UNDERSCORE_OPENERS() return { return &mark_chains[8]; }
+    MD_MARKCHAIN* TILDE_OPENERS() return { return &mark_chains[9]; }
+    MD_MARKCHAIN* BRACKET_OPENERS() return { return &mark_chains[10]; }
+    MD_MARKCHAIN* DOLLAR_OPENERS() return { return &mark_chains[11]; }
 
     int n_table_cell_boundaries;
 
