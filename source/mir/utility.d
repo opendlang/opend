@@ -9,7 +9,7 @@ $(T2 min, Minimum value.)
 $(T2 max, Maximum value.)
 )
 
-Copyright: Andrei Alexandrescu 2008-2016, Ilya Yaroshenko 2016-.
+Copyright: Ilya Yaroshenko 2016-,  Andrei Alexandrescu 2008-2016 (Original Phobos code)
 License: $(HTTP boost.org/LICENSE_1_0.txt, Boost License 1.0).
 Authors: Ilya Yaroshenko, $(HTTP erdani.com, Andrei Alexandrescu) (original std.* modules), 
 Macros:
