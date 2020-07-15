@@ -113,8 +113,10 @@ unittest
 
     const(char)[] json = cast(char[]) std.file.read("spec-tests.json");
     JSONValue root = parseJSON(json);
-    assert(root.type() == JSONType.array);
 
+    static if (__VERSION__ >= 2082) 
+        assert(root.type() == JSONType.array);
+    
     JSONValue[] tests = root.array;
 
     writefln("%s tests parsed.", tests.length);
