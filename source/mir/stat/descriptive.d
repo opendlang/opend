@@ -4162,7 +4162,7 @@ template entropy(F, Summation summation = Summation.appropriate)
         entropyAccumulator.put(r.move);
         return entropyAccumulator.entropy;
     }
-    
+
     /++
     Params:
         ar = values
@@ -4192,7 +4192,7 @@ template entropy(Summation summation = Summation.appropriate)
         alias F = typeof(return);
         return .entropy!(F, summation)(r.move);
     }
-    
+
     /++
     Params:
         ar = values
@@ -4246,7 +4246,7 @@ unittest
     assert(x.entropy.approxEqual(-2.327497));
 }
 
-/// Mean of matrix
+/// Entropy of matrix
 version(mir_stat_test)
 @safe pure
 unittest
@@ -4261,7 +4261,7 @@ unittest
     assert(x.entropy.approxEqual(-2.327497));
 }
 
-/// Column mean of matrix
+/// Column entropy of matrix
 version(mir_stat_test)
 @safe pure
 unittest
@@ -4370,7 +4370,7 @@ unittest
 
 // @nogc test
 version(mir_stat_test)
-@safe pure nothrow @nogc
+@safe pure @nogc nothrow
 unittest
 {
     import mir.math.common: approxEqual;
@@ -4382,4 +4382,317 @@ unittest
 
     assert(x.sliced.entropy.approxEqual(-2.327497));
     assert(x.sliced.entropy!float.approxEqual(-2.327497));
+}
+
+/++
+Calculates the coefficient of variation of the input.
+
+The coefficient of variation is calculated by dividing either the population or
+sample (default) standard deviation by the mean of the input. According to
+wikipedia, "the coefficient of variation should be computed computed for data
+measured on a ratio scale, that is, scales that have a meaningful zero and hence
+allow for relative comparison of two measurements." In addition, for "small- and
+moderately-sized datasets", the coefficient of variation is biased, even when
+using the sample standard deviation.
+
+By default, if `F` is not floating point type, then the result will have a
+`double` type if `F` is implicitly convertible to a floating point type.
+
+Params:
+    F = controls type of output
+    varianceAlgo = algorithm for calculating variance (default: VarianceAlgo.online)
+    summation: algorithm for calculating sums (default: Summation.appropriate)
+
+Returns:
+    The coefficient of varition of the input, must be floating point type
+    
+See Also:
+    $(WEB en.wikipedia.org/wiki/Coefficient_of_variation, Coefficient of variation).
++/
+template coefficientOfVariation(
+    F, 
+    VarianceAlgo varianceAlgo = VarianceAlgo.online, 
+    Summation summation = Summation.appropriate)
+{
+    import mir.math.common: sqrt;
+    import mir.math.sum: ResolveSummationType;
+    import std.traits: isIterable;
+
+    /++
+    Params:
+        r = range, must be finite iterable
+        isPopulation = true if population variance, false if sample variance (default)
+    +/
+    @fmamath stdevType!F coefficientOfVariation(Range)(Range r, bool isPopulation = false)
+        if (isIterable!Range)
+    {
+        import core.lifetime: move;
+
+        alias G = typeof(return);
+        auto varianceAccumulator = VarianceAccumulator!(G, varianceAlgo, ResolveSummationType!(summation, Range, G))(r.move);
+        assert(varianceAccumulator.mean!G > 0, "coefficientOfVariation: mean must be larger than zero");
+        return varianceAccumulator.variance!G(isPopulation).sqrt / varianceAccumulator.mean!G;
+    }
+
+    /++
+    Params:
+        ar = values
+    +/
+    @fmamath stdevType!F coefficientOfVariation(scope const F[] ar...)
+    {
+        alias G = typeof(return);
+        auto varianceAccumulator = VarianceAccumulator!(G, varianceAlgo, ResolveSummationType!(summation, const(G)[], G))(ar);
+        assert(varianceAccumulator.mean!G > 0, "coefficientOfVariation: mean must be larger than zero");
+        return varianceAccumulator.variance!G(false).sqrt / varianceAccumulator.mean!G;
+    }
+}
+
+/// ditto
+template coefficientOfVariation(
+    VarianceAlgo varianceAlgo = VarianceAlgo.online, 
+    Summation summation = Summation.appropriate)
+{
+    import std.traits: isIterable;
+
+    /++
+    Params:
+        r = range, must be finite iterable
+        isPopulation = true if population variance, false if sample variance (default)
+    +/
+    @fmamath stdevType!Range coefficientOfVariation(Range)(Range r, bool isPopulation = false)
+        if(isIterable!Range)
+    {
+        import core.lifetime: move;
+
+        alias F = typeof(return);
+        return .coefficientOfVariation!(F, varianceAlgo, summation)(r.move, isPopulation);
+    }
+
+    /++
+    Params:
+        ar = values
+    +/
+    @fmamath stdevType!T coefficientOfVariation(T)(scope const T[] ar...)
+    {
+        alias F = typeof(return);
+        return .coefficientOfVariation!(F, varianceAlgo, summation)(ar);
+    }
+}
+
+///
+template coefficientOfVariation(F, string varianceAlgo, string summation = "appropriate")
+{
+    mixin("alias coefficientOfVariation = .coefficientOfVariation!(F, VarianceAlgo." ~ varianceAlgo ~ ", Summation." ~ summation ~ ");");
+}
+
+/// ditto
+template coefficientOfVariation(string varianceAlgo, string summation = "appropriate")
+{
+    mixin("alias coefficientOfVariation = .coefficientOfVariation!(VarianceAlgo." ~ varianceAlgo ~ ", Summation." ~ summation ~ ");");
+}
+
+///
+version(mir_stat_test)
+@safe pure nothrow
+unittest
+{
+    import mir.math.common: approxEqual;
+    import mir.ndslice.slice: sliced;
+
+    assert(coefficientOfVariation([1.0, 2, 3]).approxEqual(1.0 / 2.0));
+    assert(coefficientOfVariation([1.0, 2, 3], true).approxEqual(0.816497 / 2.0));
+
+    assert(coefficientOfVariation!float([0, 1, 2, 3, 4, 5].sliced(3, 2)).approxEqual(1.870829 / 2.5));
+
+    static assert(is(typeof(coefficientOfVariation!float([1, 2, 3])) == float));
+}
+
+/// Coefficient of variation of vector
+version(mir_stat_test)
+@safe pure nothrow
+unittest
+{
+    import mir.math.common: approxEqual;
+    import mir.ndslice.slice: sliced;
+
+    auto x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
+              2.0, 7.5, 5.0, 1.0, 1.5, 0.0].sliced;
+
+    assert(x.coefficientOfVariation.approxEqual(2.231299 / 2.437500));
+}
+
+/// Coefficient of variation of matrix
+version(mir_stat_test)
+@safe pure
+unittest
+{
+    import mir.math.common: approxEqual;
+    import mir.ndslice.fuse: fuse;
+
+    auto x = [
+        [0.0, 1.0, 1.5, 2.0, 3.5, 4.25],
+        [2.0, 7.5, 5.0, 1.0, 1.5, 0.0]
+    ].fuse;
+
+    assert(x.coefficientOfVariation.approxEqual(2.231299 / 2.437500));
+}
+
+/// Can also set algorithm type
+version(mir_stat_test)
+@safe pure nothrow
+unittest
+{
+    import mir.math.common: approxEqual;
+    import mir.ndslice.slice: sliced;
+
+    auto a = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
+              2.0, 7.5, 5.0, 1.0, 1.5, 0.0].sliced;
+
+    auto x = a + 1_000_000_000;
+
+    auto y = x.coefficientOfVariation;
+    assert(y.approxEqual(2.231299 / 1_000_000_002.437500));
+
+    // The naive variance algorithm is numerically unstable in this case, but
+    // the difference is small as coefficientOfVariation is a ratio
+    auto z0 = x.coefficientOfVariation!"naive";
+    assert(!z0.approxEqual(y, 0x1p-20f, 0x1p-30f));
+
+    // But the two-pass algorithm provides a consistent answer
+    auto z1 = x.coefficientOfVariation!"twoPass";
+    assert(z1.approxEqual(y));
+}
+
+/// Can also set algorithm or output type
+version(mir_stat_test)
+//@safe pure nothrow
+unittest
+{
+    import mir.math.common: approxEqual;
+    import mir.ndslice.slice: sliced;
+
+    // Set population standard deviation, standardDeviation algorithm, sum algorithm or output type
+
+    auto a = [1.0, 1e100, 1, -1e100].sliced;
+    auto x = a * 10_000;
+
+    bool populationTrue = true;
+
+    /++
+    For this case, failing to use a summation algorithm results in an assert
+    error because the mean is zero due to floating point precision issues.
+    +/
+    //assert(x.coefficientOfVariation!("online").approxEqual(8.164966e103 / 0.0));
+
+    /++
+    Due to Floating Point precision, when centering `x`, subtracting the mean 
+    from the second and fourth numbers has no effect. Further, after centering 
+    and squaring `x`, the first and third numbers in the slice have precision 
+    too low to be included in the centered sum of squares. 
+    +/
+    assert(x.coefficientOfVariation!("online", "kbn").approxEqual(8.164966e103 / 5000.0));
+    assert(x.coefficientOfVariation!("online", "kb2").approxEqual(8.164966e103 / 5000.0));
+    assert(x.coefficientOfVariation!("online", "precise").approxEqual(8.164966e103 / 5000.0));
+    assert(x.coefficientOfVariation!(double, "online", "precise").approxEqual(8.164966e103 / 5000.0));
+    assert(x.coefficientOfVariation!(double, "online", "precise")(populationTrue).approxEqual(7.071068e103 / 5000.0));
+
+
+    auto y = [uint.max - 2, uint.max - 1, uint.max].sliced;
+    auto z = y.coefficientOfVariation!ulong;
+    assert(z == (1.0 / (cast(double) uint.max - 1)));
+    static assert(is(typeof(z) == double));
+    assert(y.coefficientOfVariation!(ulong, "online") == (1.0 / (cast(double) uint.max - 1)));
+}
+
+/++
+For integral slices, pass output type as template parameter to ensure output
+type is correct.
++/
+version(mir_stat_test)
+@safe pure nothrow
+unittest
+{
+    import mir.math.common: approxEqual;
+    import mir.ndslice.slice: sliced;
+
+    auto x = [0, 1, 1, 2, 4, 4,
+              2, 7, 5, 1, 2, 0].sliced;
+
+    auto y = x.coefficientOfVariation;
+    assert(y.approxEqual(2.151462f / 2.416667));
+    static assert(is(typeof(y) == double));
+
+    assert(x.coefficientOfVariation!float.approxEqual(2.151462f / 2.416667));
+}
+
+/++
+coefficientOfVariation works for other user-defined types (provided they
+can be converted to a floating point)
++/
+version(mir_stat_test)
+@safe pure nothrow
+unittest
+{
+    import mir.math.common: approxEqual;
+    import mir.ndslice.slice: sliced;
+    
+    static struct Foo {
+        float x;
+        alias x this;
+    }
+    
+    Foo[] foo = [Foo(1f), Foo(2f), Foo(3f)];
+    assert(foo.coefficientOfVariation.approxEqual(1f / 2f));
+}
+
+/// Arbitrary coefficientOfVariation
+version(mir_stat_test)
+@safe pure nothrow @nogc
+unittest
+{
+    import mir.math.common: approxEqual;
+
+    assert(coefficientOfVariation(1.0, 2, 3).approxEqual(1.0 / 2.0));
+    assert(coefficientOfVariation!float(1, 2, 3).approxEqual(1f / 2f));
+}
+
+// Dynamic array / UFCS
+version(mir_stat_test)
+@safe pure nothrow
+unittest
+{
+    import mir.math.common: approxEqual;
+
+    assert(coefficientOfVariation([1.0, 2, 3, 4]).approxEqual(1.290994 / 2.50));
+    assert([1.0, 2, 3, 4].coefficientOfVariation.approxEqual(1.290994 / 2.50));
+}
+
+// Check type of alongDim result
+version(mir_stat_test)
+@safe pure nothrow
+unittest
+{
+    import mir.algorithm.iteration: all;
+    import mir.math.common: approxEqual;
+    import mir.ndslice.topology: iota, alongDim, map;
+
+    auto x = iota([2, 2], 1);
+    auto y = x.alongDim!1.map!coefficientOfVariation;
+    assert(y.all!approxEqual([0.707107 / 1.50, 0.707107 / 3.50]));
+    static assert(is(meanType!(typeof(y)) == double));
+}
+
+// @nogc test
+version(mir_stat_test)
+@safe pure @nogc nothrow
+unittest
+{
+    import mir.math.common: approxEqual;
+    import mir.ndslice.slice: sliced;
+
+    static immutable x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
+                          2.0, 7.5, 5.0, 1.0, 1.5, 0.0];
+
+    assert(x.sliced.coefficientOfVariation.approxEqual(2.231299 / 2.437500));
+    assert(x.sliced.coefficientOfVariation!float.approxEqual(2.231299 / 2.437500));
 }
