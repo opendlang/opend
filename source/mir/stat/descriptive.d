@@ -998,7 +998,11 @@ template interquartileRange(F, QuantileAlgo quantileAlgo = QuantileAlgo.type7,
                             bool allowModifySlice = false)
 {
     import mir.ndslice.slice: Slice, SliceKind;
-
+    
+    /++
+    Params:
+        slice = slice
+    +/
     @fmamath quantileType!(F, quantileAlgo) interquartileRange(
         Iterator, size_t N, SliceKind kind)(
             Slice!(Iterator, N, kind) slice)
@@ -1009,7 +1013,11 @@ template interquartileRange(F, QuantileAlgo quantileAlgo = QuantileAlgo.type7,
         auto lo_hi = quantile!(FF, quantileAlgo, allowModifySlice, false)(slice.move, cast(FF) 0.25, cast(FF) 0.75);
         return lo_hi[1] - lo_hi[0];
     }
-
+    
+    /++
+    Params:
+        array = array
+    +/
     @fmamath quantileType!(F[], quantileAlgo) interquartileRange(scope F[] array...)
     {
         import mir.ndslice.slice: sliced;
@@ -1018,6 +1026,10 @@ template interquartileRange(F, QuantileAlgo quantileAlgo = QuantileAlgo.type7,
         return .interquartileRange!(FF, quantileAlgo, allowModifySlice)(array.sliced);
     }
     
+    /++
+    Params:
+        withAsSlice = withAsSlice
+    +/
     @fmamath auto interquartileRange(T)(T withAsSlice)
         if (hasAsSlice!T)
     {
@@ -1025,11 +1037,13 @@ template interquartileRange(F, QuantileAlgo quantileAlgo = QuantileAlgo.type7,
     }
 }
 
+/// ditto
 template interquartileRange(QuantileAlgo quantileAlgo = QuantileAlgo.type7,
                             bool allowModifySlice = false)
 {
     import mir.ndslice.slice: Slice, SliceKind;
 
+    /// ditto
     @fmamath quantileType!(Slice!(Iterator), quantileAlgo)
         interquartileRange(Iterator, size_t N, SliceKind kind)(
             Slice!(Iterator, N, kind) slice)
@@ -1040,6 +1054,7 @@ template interquartileRange(QuantileAlgo quantileAlgo = QuantileAlgo.type7,
         return .interquartileRange!(F, quantileAlgo, allowModifySlice)(slice.move);
     }
 
+    /// ditto
     @fmamath quantileType!(T[], quantileAlgo)
         interquartileRange(T)(scope T[] array...)
     {
@@ -1049,6 +1064,7 @@ template interquartileRange(QuantileAlgo quantileAlgo = QuantileAlgo.type7,
         return .interquartileRange!(F, quantileAlgo, allowModifySlice)(array);
     }
 
+    /// ditto
     @fmamath auto interquartileRange(T)(T withAsSlice)
         if (hasAsSlice!T)
     {
