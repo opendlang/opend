@@ -997,7 +997,7 @@ template medianAbsoluteDeviation(F)
 
         alias G = typeof(return);
         static assert(isFloatingPoint!G, "medianAbsoluteDeviation: output type must be floating point");
-        return slice.move.center!(median!G).map!fabs.median!G;
+        return slice.move.center!(median!(G, false)).map!fabs.median!(G, false);
     }
 }
 
