@@ -3727,6 +3727,7 @@ unittest
     assert(y.kurtosis!"assumeZeroMean"(true, true).approxEqual(3.171904));
 }
 
+///
 struct EntropyAccumulator(T, Summation summation)
 {
     import mir.math.func.xlogy;
@@ -3767,13 +3768,13 @@ struct EntropyAccumulator(T, Summation summation)
     }
     
     ///
-    void put(F = T)(EntropyAccumulator!(F, summation) e)
+    void put(U)(EntropyAccumulator!(U, summation) e)
     {
-        summator.put(cast(F) e.summator);
+        summator.put(e.summator.sum);
     }
 }
 
-///
+/// test basic functionality
 version(mir_stat_test)
 @safe pure nothrow
 unittest
@@ -3788,6 +3789,7 @@ unittest
     assert(x.entropy.approxEqual(-1.279854));
 }
 
+// test floats
 version(mir_stat_test)
 @safe pure nothrow
 unittest
@@ -3802,30 +3804,29 @@ unittest
     assert(x.entropy.approxEqual(-1.279854));
 }
 
+// test put EntropyAccumulator
 version(mir_stat_test)
 @safe pure nothrow
 unittest
 {
     import mir.math.common: approxEqual;
+    import mir.ndslice.slice: sliced;
 
-    double[] a = [1.0, 2, 3,  4,  5,  6];
-    double[] b = [7.0, 8, 9, 10, 11, 12];
+    auto a = [1.0, 2, 3,  4,  5,  6].sliced;
+    auto b = [7.0, 8, 9, 10, 11, 12].sliced;
     
-    double[] x;
-    double[] y;
-    x[] = a[] / 78.0;
-    y[] = b[] / 78.0;
+    auto x = a / 78.0;
+    auto y = b / 78.0;
     
     EntropyAccumulator!(double, Summation.pairwise) m0;
     m0.put(x);
-    //assert(m0.entropy.approxEqual(-0.800844));
+    assert(m0.entropy.approxEqual(-0.800844));
     EntropyAccumulator!(double, Summation.pairwise) m1;
     m1.put(y);
-    //assert(m1.entropy.approxEqual(-1.526653));
+    assert(m1.entropy.approxEqual(-1.526653));
     m0.put(m1);
-    //assert(m0.entropy.approxEqual(-2.327497));
+    assert(m0.entropy.approxEqual(-2.327497));
 }
-
 
 ///
 package(mir)
@@ -3883,6 +3884,7 @@ template entropy(F, Summation summation = Summation.appropriate)
     }
 }
 
+///
 template entropy(Summation summation = Summation.appropriate)
 {
     import core.lifetime: move;
