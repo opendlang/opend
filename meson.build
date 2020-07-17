@@ -5,6 +5,7 @@ description = 'Dlang Statistical Package'
 subprojects = ['mir-core', 'mir-algorithm']
 
 sources_list = [
+    'mir/math/func/xlogy',
     'mir/stat/descriptive',
     'mir/stat/package',
     'mir/stat/transform',
