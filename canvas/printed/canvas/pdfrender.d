@@ -173,16 +173,7 @@ final class PDFDocument : IRenderingContext2D
         // Mark the current page as using this font
         currentPage.markAsUsingThisFont(fontPDFName, fontObjectId);
 
-        // being text object
-        outDelim();
-        output("BT");
 
-        outName(fontPDFName);
-        outFloat(_fontSize);
-        output(" Tf");
-        outFloat(x);
-        outFloat(-y); // inverted else text is not positionned rightly
-        output(" Td");
 
         // save CTM
         outDelim();
@@ -191,16 +182,28 @@ final class PDFDocument : IRenderingContext2D
         // Note: text has to be flipped vertically since we have flipped PDF coordinates vertically
         scale(1, -1);
 
-        outStringForDisplay(text);
-        output(" Tj");
-
-        // restore CTM
+        // begin text object
         outDelim();
-        output('Q');
+        output("BT");
+
+            outName(fontPDFName);
+            outFloat(_fontSize);
+            output(" Tf");
+
+            outFloat(x);
+            outFloat(-y); // inverted else text is not positionned rightly
+            output(" Td");
+
+            outStringForDisplay(text);
+            output(" Tj");
 
         // end text object
         outDelim();
         output("ET");
+
+        // restore CTM
+        outDelim();
+        output('Q'); 
     }
 
     // State stack
