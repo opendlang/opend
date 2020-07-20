@@ -276,14 +276,14 @@ template quantile(F,
              Slice!(IteratorB, 1, kindB) p)
         if (isFloatingPoint!(elementType!(Slice!(IteratorB))))
     {
+        import mir.ndslice.allocation: rcslice;
         import mir.ndslice.slice: IteratorOf;
+        import mir.ndslice.topology: as;
 
         alias G = elementType!(Slice!(IteratorB));
         alias FF = quantileType!(F, quantileAlgo);
 
         static if (!allowModifySlice) {
-            import mir.ndslice.allocation: rcslice;
-            import mir.ndslice.topology: as;
 
             auto view = slice.lightScope;
             auto val = view.as!(Unqual!(slice.DeepElement)).rcslice;
@@ -313,6 +313,7 @@ template quantile(F,
         Slice!(Iterator, N, kind) slice, scope const F[] p...)
         if (isFloatingPoint!(elementType!(F[])))
     {
+        import mir.ndslice.allocation: rcslice;
         import mir.ndslice.slice: IteratorOf;
 
         alias G = elementType!(F[]);
@@ -338,15 +339,16 @@ template quantile(F,
     }
 
     /// ditto
-    auto quantile(T, G)(T[] array, G p)
+    quantileType!(F, quantileAlgo) quantile(G)(F[] array, G p)
         if (isFloatingPoint!(Unqual!G))
     {
-        return quantile(array.sliced, p);
+        alias FF = typeof(return);
+        return .quantile!(FF, quantileAlgo, allowModifySlice)(array.sliced, p);
     }
 
     /// ditto
-    auto quantile(T, U)(T[] array, U[] p)
-        if (isFloatingPoint!U)
+    auto quantile(G)(F[] array, G[] p)
+        if (isFloatingPoint!(Unqual!G))
     {
         return quantile(array.sliced, p.sliced);
     }
@@ -966,6 +968,296 @@ unittest
     assert(x.quantile!"type7"(qtile.dup).all!approxEqual([1.0, 2.1, 3.3, 4.3, 5.0, 5.5, 7.9, 8.8, 8.8, 9.8]));
     assert(x.quantile!"type8"(qtile.dup).all!approxEqual([0.520000, 1.913333, 3.000000, 4.160000, 5.000000, 5.533333, 7.940000, 8.800000, 9.033333, 9.920000]));
     assert(x.quantile!"type9"(qtile.dup).all!approxEqual([0.55000, 1.92500, 3.01875, 4.16875, 5.00000, 5.53125, 7.93750, 8.80000, 9.01875, 9.91250]));
+}
+
+/++
+Computes the interquartile range of the input.
+
+This function computes the result using $(LREF quantile), i.e.
+`result = quantile(x, 0.75) - quantile(x, 0.25)`.
+
+For all `QuantileAlgo` except `QuantileAlgo.type1` and `QuantileAlgo.type3`,
+by default, if `F` is not floating point type or complex type, then the result
+will have a `double` type if `F` is implicitly convertible to a floating point 
+type or have a `cdouble` type if `F` is implicitly convertible to a complex type.
+
+For `QuantileAlgo.type1` and `QuantileAlgo.type3`, the return type is the
+$(MATHREF sum, elementType) of the input. 
+
+Params:
+    F = controls type of output
+    quantileAlgo = algorithm for calculating quantile (default: `QuantileAlgo.type7`)
+    allowModifySlice = controls whether the input is modified in place, default is false
+Returns:
+    The interquartile range of the input. 
+
+See_also: 
+    $(LREF quantile)
++/
+template interquartileRange(F, QuantileAlgo quantileAlgo = QuantileAlgo.type7,
+                            bool allowModifySlice = false)
+{
+    import mir.ndslice.slice: Slice, SliceKind;
+    
+    /++
+    Params:
+        slice = slice
+    +/
+    @fmamath quantileType!(F, quantileAlgo) interquartileRange(
+        Iterator, size_t N, SliceKind kind)(
+            Slice!(Iterator, N, kind) slice)
+    {
+        import core.lifetime: move;
+
+        alias FF = typeof(return);
+        auto lo_hi = quantile!(FF, quantileAlgo, allowModifySlice, false)(slice.move, cast(FF) 0.25, cast(FF) 0.75);
+        return lo_hi[1] - lo_hi[0];
+    }
+    
+    /++
+    Params:
+        array = array
+    +/
+    @fmamath quantileType!(F[], quantileAlgo) interquartileRange(scope F[] array...)
+    {
+        import mir.ndslice.slice: sliced;
+
+        alias FF = typeof(return);
+        return .interquartileRange!(FF, quantileAlgo, allowModifySlice)(array.sliced);
+    }
+    
+    /++
+    Params:
+        withAsSlice = withAsSlice
+    +/
+    @fmamath auto interquartileRange(T)(T withAsSlice)
+        if (hasAsSlice!T)
+    {
+        return interquartileRange(withAsSlice.asSlice);
+    }
+}
+
+/// ditto
+template interquartileRange(QuantileAlgo quantileAlgo = QuantileAlgo.type7,
+                            bool allowModifySlice = false)
+{
+    import mir.ndslice.slice: Slice, SliceKind;
+
+    /// ditto
+    @fmamath quantileType!(Slice!(Iterator), quantileAlgo)
+        interquartileRange(Iterator, size_t N, SliceKind kind)(
+            Slice!(Iterator, N, kind) slice)
+    {
+        import core.lifetime: move;
+
+        alias F = typeof(return);
+        return .interquartileRange!(F, quantileAlgo, allowModifySlice)(slice.move);
+    }
+
+    /// ditto
+    @fmamath quantileType!(T[], quantileAlgo)
+        interquartileRange(T)(scope T[] array...)
+    {
+        import core.lifetime: move;
+
+        alias F = typeof(return);
+        return .interquartileRange!(F, quantileAlgo, allowModifySlice)(array);
+    }
+
+    /// ditto
+    @fmamath auto interquartileRange(T)(T withAsSlice)
+        if (hasAsSlice!T)
+    {
+        alias F = quantileType!(typeof(withAsSlice.asSlice), quantileAlgo);
+        return .interquartileRange!(F, quantileAlgo, allowModifySlice)(withAsSlice.asSlice);
+    }
+}
+
+/// ditto
+template interquartileRange(F, string quantileAlgo, bool allowModifySlice = false)
+{
+    mixin("alias interquartileRange = .interquartileRange!(F, QuantileAlgo." ~ quantileAlgo ~ ", allowModifySlice);");
+}
+
+/// ditto
+template interquartileRange(string quantileAlgo, bool allowModifySlice = false)
+{
+    mixin("alias interquartileRange = .interquartileRange!(QuantileAlgo." ~ quantileAlgo ~ ", allowModifySlice);");
+}
+
+/// Simple example
+version(mir_stat_test)
+@safe pure nothrow
+unittest 
+{
+    import mir.math.common: approxEqual;
+    import mir.ndslice.slice: sliced;
+
+    auto x = [3.0, 1.0, 4.0, 2.0, 0.0].sliced;
+
+    assert(x.interquartileRange.approxEqual(2.0));
+}
+
+//no change in x by default
+version(mir_stat_test)
+@safe pure nothrow
+unittest 
+{
+    import mir.algorithm.iteration: all;
+    import mir.math.common: approxEqual;
+    import mir.ndslice.slice: sliced;
+
+    auto x = [3.0, 1.0, 4.0, 2.0, 0.0].sliced;
+    auto x_copy = x.dup;
+    auto result = x.interquartileRange;
+
+    assert(x.all!approxEqual(x_copy));
+}
+
+/// Interquartile Range of vector
+version(mir_stat_test)
+@safe pure nothrow
+unittest 
+{
+    import mir.math.common: approxEqual;
+    import mir.ndslice.slice: sliced;
+
+    auto x = [1.0, 9.8, 0.2, 8.5, 5.8, 3.5, 4.5, 8.2, 5.2, 5.2,
+              2.5, 1.8, 2.2, 3.8, 5.2, 9.2, 6.2, 9.2, 9.2, 8.5].sliced;
+
+    assert(x.interquartileRange.approxEqual(5.25));
+}
+
+/// Interquartile Range of matrix
+version(mir_stat_test)
+@safe pure
+unittest 
+{
+    import mir.math.common: approxEqual;
+    import mir.ndslice.fuse: fuse;
+    import mir.ndslice.slice: sliced;
+
+    auto x = [
+        [1.0, 9.8, 0.2, 8.5, 5.8, 3.5, 4.5, 8.2, 5.2, 5.2],
+        [2.5, 1.8, 2.2, 3.8, 5.2, 9.2, 6.2, 9.2, 9.2, 8.5]
+    ].fuse;
+
+    assert(x.interquartileRange.approxEqual(5.25));
+}
+
+/// Allow modification of input
+version(mir_stat_test)
+@safe pure nothrow
+unittest 
+{
+    import mir.algorithm.iteration: all;
+    import mir.math.common: approxEqual;
+    import mir.ndslice.slice: sliced;
+
+    auto x = [3.0, 1.0, 4.0, 2.0, 0.0].sliced;
+    auto x_copy = x.dup;
+
+    auto result = x.interquartileRange!(QuantileAlgo.type7, true);
+    assert(!x.all!approxEqual(x_copy));
+}
+
+/// Can also set algorithm type
+version(mir_stat_test)
+@safe pure nothrow
+unittest
+{
+    import mir.math.common: approxEqual;
+    import mir.ndslice.slice: sliced;
+
+    auto x = [1.0, 9.8, 0.2, 8.5, 5.8, 3.5, 4.5, 8.2, 5.2, 5.2,
+              2.5, 1.8, 2.2, 3.8, 5.2, 9.2, 6.2, 9.2, 9.2, 8.5].sliced;
+
+    assert(x.interquartileRange!"type1".approxEqual(6.0));
+    assert(x.interquartileRange!"type2".approxEqual(5.5));
+    assert(x.interquartileRange!"type3".approxEqual(6.0));
+    assert(x.interquartileRange!"type4".approxEqual(6.0));
+    assert(x.interquartileRange!"type5".approxEqual(5.5));
+    assert(x.interquartileRange!"type6".approxEqual(5.75));
+    assert(x.interquartileRange!"type7".approxEqual(5.25));
+    assert(x.interquartileRange!"type8".approxEqual(5.583333));
+    assert(x.interquartileRange!"type9".approxEqual(5.5625));
+}
+
+/// Can also set algorithm or output type
+version(mir_stat_test)
+@safe pure nothrow
+unittest
+{
+    import mir.math.common: approxEqual;
+    import mir.ndslice.slice: sliced;
+
+    auto a = [1, 1e34, 1, -1e34, 0].sliced;
+
+    auto x = a * 10_000;
+
+    auto result0 = x.interquartileRange!float;
+    assert(result0.approxEqual(10_000));
+    static assert(is(typeof(result0) == float));
+
+    auto result1 = x.interquartileRange!(float, "type8");
+    assert(result1.approxEqual(6.666667e37));
+    static assert(is(typeof(result1) == float));
+}
+
+/// Support for array
+version(mir_stat_test)
+@safe pure nothrow
+unittest 
+{
+    import mir.math.common: approxEqual;
+
+    double[] x = [3.0, 1.0, 4.0, 2.0, 0.0];
+              
+    assert(x.interquartileRange.approxEqual(2.0));
+}
+
+// withAsSlice test
+version(mir_stat_test)
+@safe pure nothrow @nogc
+unittest
+{
+    import mir.algorithm.iteration: all;
+    import mir.math.common: approxEqual;
+    import mir.rc.array: RCArray;
+
+    static immutable a = [1.0, 9.8, 0.2, 8.5, 5.8, 3.5, 4.5, 8.2, 5.2, 5.2,
+                          2.5, 1.8, 2.2, 3.8, 5.2, 9.2, 6.2, 9.2, 9.2, 8.5];
+
+    auto x = RCArray!double(20);
+    foreach(i, ref e; x)
+        e = a[i];
+
+    assert(x.interquartileRange.approxEqual(5.25));
+    assert(x.interquartileRange!double.approxEqual(5.25));
+}
+
+// Arbitrary test
+version(mir_stat_test)
+@safe pure nothrow
+unittest 
+{
+    import mir.math.common: approxEqual;
+
+    assert(interquartileRange(3.0, 1.0, 4.0, 2.0, 0.0).approxEqual(2.0));
+}
+
+// @nogc test
+version(mir_stat_test)
+@safe pure nothrow @nogc
+unittest 
+{
+    import mir.math.common: approxEqual;
+    import mir.ndslice.slice: sliced;
+
+    static immutable x = [1.0, 9.8, 0.2, 8.5, 5.8, 3.5, 4.5, 8.2, 5.2, 5.2,
+                          2.5, 1.8, 2.2, 3.8, 5.2, 9.2, 6.2, 9.2, 9.2, 8.5];
+
+    assert(x.sliced.interquartileRange.approxEqual(5.25));
 }
 
 /++
