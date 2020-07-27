@@ -4698,7 +4698,7 @@ unittest
 }
 
 ///
-struct RawMomentAccumulator(T, size_t N, Summation summation)
+struct MomentAccumulator(T, size_t N, Summation summation)
     if (N > 0 && isMutable!T)
 {
     import std.traits: isIterable;
@@ -4740,8 +4740,66 @@ struct RawMomentAccumulator(T, size_t N, Summation summation)
         {
             foreach(x; r)
             {
-                count++;
-                summator.put(x.powi(N));
+                put(x);
+            }
+        }
+    }
+
+    ///
+    void put(Range)(Range r, T m)
+        if (isIterable!Range)
+    {
+        import mir.math.func.powi: powi;
+        import mir.primitives: hasShape;
+
+        static if (hasShape!Range)
+        {
+            import core.lifetime: move;
+            import mir.ndslice.internal: LeftOp;
+            import mir.ndslice.topology: vmap, map;
+            import mir.primitives: elementCount;
+
+            count += r.elementCount;
+            summator.put(r.move.
+                    vmap(LeftOp!("-", T)(m)).
+                    map!(a => a.powi(N))
+                );
+        }
+        else
+        {
+            foreach(x; r)
+            {
+                put(x, m);
+            }
+        }
+    }
+
+    ///
+    void put(Range)(Range r, T m, T s)
+        if (isIterable!Range)
+    {
+        import mir.math.func.powi: powi;
+        import mir.primitives: hasShape;
+
+        static if (hasShape!Range)
+        {
+            import core.lifetime: move;
+            import mir.ndslice.internal: LeftOp;
+            import mir.ndslice.topology: vmap, map;
+            import mir.primitives: elementCount;
+
+            count += r.elementCount;
+            summator.put(r.move.
+                    vmap(LeftOp!("-", T)(m)).
+                    vmap(LeftOp!("/", T)(s)).
+                    map!(a => a.powi(N))
+                );
+        }
+        else
+        {
+            foreach(x; r)
+            {
+                put(x, m, s);
             }
         }
     }
@@ -4756,7 +4814,25 @@ struct RawMomentAccumulator(T, size_t N, Summation summation)
     }
 
     ///
-    void put()(RawMomentAccumulator!(T, N, summation) m)
+    void put()(T x, T m)
+    {
+        import mir.math.func.powi;
+
+        count++;
+        summator.put((x - m).powi(N));
+    }
+
+    ///
+    void put()(T x, T m, T s)
+    {
+        import mir.math.func.powi;
+
+        count++;
+        summator.put(((x - m) / s).powi(N));
+    }
+
+    ///
+    void put()(MomentAccumulator!(T, N, summation) m)
     {
         count += m.count;
         summator.put(m.summator.sum);
@@ -4771,9 +4847,37 @@ struct RawMomentAccumulator(T, size_t N, Summation summation)
     }
 
     ///
+    this(Range)(Range r, T m)
+        if (isIterable!Range)
+    {
+        import core.lifetime: move;
+        this.put(r.move, m);
+    }
+
+    ///
+    this(Range)(Range r, T m, T s)
+        if (isIterable!Range)
+    {
+        import core.lifetime: move;
+        this.put(r.move, m, s);
+    }
+
+    ///
     this()(T x)
     {
         this.put(x);
+    }
+
+    ///
+    this()(T x, T m)
+    {
+        this.put(x, m);
+    }
+
+    ///
+    this()(T x, T m, T s)
+    {
+        this.put(x, m, s);
     }
 }
 
@@ -4790,7 +4894,7 @@ unittest
               2.0, 7.5, 5.0, 1.0, 1.5, 0.0].sliced;
     auto x = a.center;
 
-    RawMomentAccumulator!(double, 2, Summation.naive) v;
+    MomentAccumulator!(double, 2, Summation.naive) v;
     v.put(x);
 
     assert(v.moment.approxEqual(54.76562 / 12));
@@ -4799,7 +4903,7 @@ unittest
     assert(v.moment.approxEqual(70.76562 / 13));
 }
 
-// test putting accumulator
+// Raw Moment: test putting accumulator
 version(mir_stat_test)
 @safe pure nothrow
 unittest
@@ -4814,17 +4918,17 @@ unittest
     auto x = b[0 .. 6];
     auto y = b[6 .. $];
 
-    RawMomentAccumulator!(double, 2, Summation.naive) v;
+    MomentAccumulator!(double, 2, Summation.naive) v;
     v.put(x);
     assert(v.moment.approxEqual(13.492188 / 6));
 
-    RawMomentAccumulator!(double, 2, Summation.naive) w;
+    MomentAccumulator!(double, 2, Summation.naive) w;
     w.put(y);
     v.put(w);
     assert(v.moment.approxEqual(54.76562 / 12));
 }
 
-// test complex
+// Raw Moment: test complex
 version(mir_stat_test)
 @safe pure nothrow
 unittest
@@ -4836,9 +4940,179 @@ unittest
     auto a = [1.0 + 3i, 2, 3].sliced;
     auto x = a.center;
 
-    RawMomentAccumulator!(cdouble, 2, Summation.naive) v;
+    MomentAccumulator!(cdouble, 2, Summation.naive) v;
     v.put(x);
     assert(v.moment.approxEqual((-4.0 - 6i) / 3));
+}
+
+/// Central moment
+version(mir_stat_test)
+@safe pure nothrow
+unittest
+{
+    import mir.math.common: approxEqual;
+    import mir.math.stat: center;
+    import mir.ndslice.slice: sliced;
+
+    auto x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
+              2.0, 7.5, 5.0, 1.0, 1.5, 0.0].sliced;
+
+    MomentAccumulator!(double, 2, Summation.naive) v;
+    auto m = mean(x);
+    v.put(x, m);
+    assert(v.moment.approxEqual(54.76562 / 12));
+}
+
+// Central moment: dynamic array test
+version(mir_stat_test)
+@safe pure nothrow
+unittest
+{
+    import mir.math.common: approxEqual;
+    import mir.rc.array: RCArray;
+
+    double[] x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
+                  2.0, 7.5, 5.0, 1.0, 1.5, 0.0];
+
+    MomentAccumulator!(double, 2, Summation.naive) v;
+    auto m = mean(x);
+    v.put(x, m);
+    assert(v.sumOfPower.approxEqual(54.76562));
+}
+
+// Central moment: withAsSlice test
+version(mir_stat_test)
+@safe pure nothrow @nogc
+unittest
+{
+    import mir.math.common: approxEqual;
+    import mir.rc.array: RCArray;
+
+    static immutable a = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
+                          2.0, 7.5, 5.0, 1.0, 1.5, 0.0];
+
+    auto x = RCArray!double(12);
+    foreach(i, ref e; x)
+        e = a[i];
+
+    MomentAccumulator!(double, 2, Summation.naive) v;
+    auto m = mean(x);
+    v.put(x, m);
+    assert(v.sumOfPower.approxEqual(54.76562));
+}
+
+// Central moment: Test N == 1
+version(mir_stat_test)
+@safe pure nothrow
+unittest
+{
+    import mir.math.common: approxEqual;
+    import mir.math.stat: center;
+    import mir.ndslice.slice: sliced;
+
+    auto x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
+              2.0, 7.5, 5.0, 1.0, 1.5, 0.0].sliced;
+
+    MomentAccumulator!(double, 1, Summation.naive) v;
+    auto m = mean(x);
+    v.put(x, m);
+    assert(v.moment.approxEqual(0.0 / 12));
+    assert(v.count == 12);
+}
+
+/// Standardized moment with scaled calculation
+version(mir_stat_test)
+@safe pure nothrow
+unittest
+{
+    import mir.math.common: approxEqual, sqrt;
+    import mir.math.stat: center;
+    import mir.ndslice.slice: sliced;
+
+    auto x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
+              2.0, 7.5, 5.0, 1.0, 1.5, 0.0].sliced;
+
+    auto u = VarianceAccumulator!(double, VarianceAlgo.twoPass, Summation.naive)(x);
+    MomentAccumulator!(double, 3, Summation.naive) v;
+    v.put(x, u.mean, u.variance(true).sqrt);
+    //assert(v.moment.approxEqual(12.000999 / 12));
+    assert(v.count == 12);
+}
+
+// standardized moment: dynamic array test
+version(mir_stat_test)
+@safe pure nothrow
+unittest
+{
+    import mir.math.common: approxEqual, sqrt;
+    import mir.rc.array: RCArray;
+
+    double[] x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
+                  2.0, 7.5, 5.0, 1.0, 1.5, 0.0];
+
+    auto u = VarianceAccumulator!(double, VarianceAlgo.twoPass, Summation.naive)(x);
+    MomentAccumulator!(double, 3, Summation.naive) v;
+    v.put(x, u.mean, u.variance(true).sqrt);
+    assert(v.sumOfPower.approxEqual(12.000999));
+}
+
+// standardized moment: withAsSlice test
+version(mir_stat_test)
+@safe pure nothrow @nogc
+unittest
+{
+    import mir.math.common: approxEqual, sqrt;
+    import mir.rc.array: RCArray;
+
+    static immutable a = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
+                          2.0, 7.5, 5.0, 1.0, 1.5, 0.0];
+
+    auto x = RCArray!double(12);
+    foreach(i, ref e; x)
+        e = a[i];
+
+    auto u = VarianceAccumulator!(double, VarianceAlgo.twoPass, Summation.naive)(x);
+    MomentAccumulator!(double, 3, Summation.naive) v;
+    v.put(x, u.mean, u.variance(true).sqrt);
+    assert(v.sumOfPower.approxEqual(12.000999));
+}
+
+// standardized moment: Test N == 2
+version(mir_stat_test)
+@safe pure nothrow
+unittest
+{
+    import mir.math.common: approxEqual, sqrt;
+    import mir.math.stat: center;
+    import mir.ndslice.slice: sliced;
+
+    auto x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
+              2.0, 7.5, 5.0, 1.0, 1.5, 0.0].sliced;
+
+    auto u = VarianceAccumulator!(double, VarianceAlgo.twoPass, Summation.naive)(x);
+    MomentAccumulator!(double, 2, Summation.naive) v;
+    v.put(x, u.mean, u.variance(true).sqrt);
+    assert(v.moment.approxEqual(1.0));
+    assert(v.count == 12);
+}
+
+// standardized moment: Test N == 1
+version(mir_stat_test)
+@safe pure nothrow
+unittest
+{
+    import mir.math.common: approxEqual, sqrt;
+    import mir.math.stat: center;
+    import mir.ndslice.slice: sliced;
+
+    auto x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
+              2.0, 7.5, 5.0, 1.0, 1.5, 0.0].sliced;
+
+    auto u = VarianceAccumulator!(double, VarianceAlgo.twoPass, Summation.naive)(x);
+    MomentAccumulator!(double, 1, Summation.naive) v;
+    v.put(x, u.mean, u.variance(true).sqrt);
+    assert(v.moment.approxEqual(0.0));
+    assert(v.count == 12);
 }
 
 /++
@@ -4857,6 +5131,7 @@ Returns:
     The n-th raw moment of the input, must be floating point or complex type
 +/
 template rawMoment(F, size_t N, Summation summation = Summation.appropriate)
+    if (N > 0)
 {
     import mir.math.sum: ResolveSummationType;
     import std.traits: isIterable;
@@ -4871,9 +5146,9 @@ template rawMoment(F, size_t N, Summation summation = Summation.appropriate)
         import core.lifetime: move;
         
         alias G = typeof(return);
-        RawMomentAccumulator!(G, N, ResolveSummationType!(summation, Range, G)) rawMomentAccumulator;
-        rawMomentAccumulator.put(r.move);
-        return rawMomentAccumulator.moment;
+        MomentAccumulator!(G, N, ResolveSummationType!(summation, Range, G)) momentAccumulator;
+        momentAccumulator.put(r.move);
+        return momentAccumulator.moment;
     }
 
     /++
@@ -4883,14 +5158,15 @@ template rawMoment(F, size_t N, Summation summation = Summation.appropriate)
     @fmamath meanType!F rawMoment(scope const F[] ar...)
     {
         alias G = typeof(return);
-        RawMomentAccumulator!(G, N, ResolveSummationType!(summation, const(G)[], G)) rawMomentAccumulator;
-        rawMomentAccumulator.put(ar);
-        return rawMomentAccumulator.moment;
+        MomentAccumulator!(G, N, ResolveSummationType!(summation, const(G)[], G)) momentAccumulator;
+        momentAccumulator.put(ar);
+        return momentAccumulator.moment;
     }
 }
 
 /// ditto
 template rawMoment(size_t N, Summation summation = Summation.appropriate)
+    if (N > 0)
 {
     import std.traits: isIterable;
 
@@ -4920,12 +5196,14 @@ template rawMoment(size_t N, Summation summation = Summation.appropriate)
 
 /// ditto
 template rawMoment(F, size_t N, string summation)
+    if (N > 0)
 {
     mixin("alias rawMoment = .rawMoment!(F, N, Summation." ~ summation ~ ");");
 }
 
 /// ditto
 template rawMoment(size_t N, string summation)
+    if (N > 0)
 {
     mixin("alias rawMoment = .rawMoment!(N, Summation." ~ summation ~ ");");
 }
@@ -5064,158 +5342,8 @@ unittest
     assert(x.sliced.rawMoment!2.approxEqual(126.062500 / 12));
 }
 
-///
-struct CentralMomentAccumulator(T, size_t N, Summation summation)
-    if (N > 0)
-{
-    import std.traits: isIterable;
-
-    static if (N > 1) {
-        ///
-        Summator!(T, summation) summator;
-
-        ///
-        MeanAccumulator!(T, summation) meanAccumulator;
-
-        ///
-        size_t count() const @safe @property pure nothrow @nogc
-        {
-            return meanAccumulator.count;
-        }
-    } else {
-        ///
-        size_t count;
-    }
-
-    ///
-    T mean(F = T)() const @safe @property pure nothrow @nogc
-        if (N > 1)
-    {
-        return cast(F) meanAccumulator.mean;
-    }
-
-
-    ///
-    F moment(F = T)() const @safe @property pure nothrow @nogc
-    {
-        static if (N > 1) {
-            return (cast(F) summator.sum) / (cast(F) count);
-        } else {
-            return cast(F) 0;
-        }
-    }
-
-    ///
-    F centeredSumOfPower(F = T)() const @safe @property pure nothrow @nogc
-    {
-        static if (N > 1) {
-            return cast(F) summator.sum;
-        } else {
-            return cast(F) 0;
-        }
-    }
-
-    ///
-    this(Iterator, size_t M, SliceKind kind)(
-         Slice!(Iterator, M, kind) slice)
-    {
-        static if (N > 1) {
-            import core.lifetime: move;
-            import mir.math.func.powi;
-            import mir.ndslice.internal: LeftOp;
-            import mir.ndslice.topology: vmap, map;
-
-            meanAccumulator.put(slice.lightScope);
-            summator.put(slice.move.vmap(LeftOp!("-", T)(meanAccumulator.mean)).map!(a => a.powi(N)));
-        } else {
-            count += slice.elementCount;
-        }
-    }
-
-    ///
-    this(U)(U[] array)
-    {
-        import mir.ndslice.slice: sliced;
-        this(array.sliced);
-    }
-
-    ///
-    this(U)(U withAsSlice)
-        if (hasAsSlice!U)
-    {
-        this(withAsSlice.asSlice);
-    }
-}
-
-/// Central moment
-version(mir_stat_test)
-@safe pure nothrow
-unittest
-{
-    import mir.math.common: approxEqual;
-    import mir.math.stat: center;
-    import mir.ndslice.slice: sliced;
-
-    auto x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
-              2.0, 7.5, 5.0, 1.0, 1.5, 0.0].sliced;
-
-    auto v = CentralMomentAccumulator!(double, 2, Summation.naive)(x);
-    assert(v.moment.approxEqual(54.76562 / 12));
-}
-
-// dynamic array test
-version(mir_stat_test)
-@safe pure nothrow
-unittest
-{
-    import mir.math.common: approxEqual;
-    import mir.rc.array: RCArray;
-
-    double[] x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
-                  2.0, 7.5, 5.0, 1.0, 1.5, 0.0];
-
-    auto v = CentralMomentAccumulator!(double, 2, Summation.naive)(x);
-    assert(v.centeredSumOfPower.approxEqual(54.76562));
-}
-
-// withAsSlice test
-version(mir_stat_test)
-@safe pure nothrow @nogc
-unittest
-{
-    import mir.math.common: approxEqual;
-    import mir.rc.array: RCArray;
-
-    static immutable a = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
-                          2.0, 7.5, 5.0, 1.0, 1.5, 0.0];
-
-    auto x = RCArray!double(12);
-    foreach(i, ref e; x)
-        e = a[i];
-
-    auto v = CentralMomentAccumulator!(double, 2, Summation.naive)(x);
-    assert(v.centeredSumOfPower.approxEqual(54.76562));
-}
-
-// Test N == 1
-version(mir_stat_test)
-@safe pure nothrow
-unittest
-{
-    import mir.math.common: approxEqual;
-    import mir.math.stat: center;
-    import mir.ndslice.slice: sliced;
-
-    auto x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
-              2.0, 7.5, 5.0, 1.0, 1.5, 0.0].sliced;
-
-    auto v = CentralMomentAccumulator!(double, 1, Summation.naive)(x);
-    assert(v.moment.approxEqual(0.0 / 12));
-    assert(v.count == 12);
-}
-
 /++
-Calculates the n-th central moment of the input
+Calculates the n-th central moment of the input.
 
 By default, if `F` is not floating point type or complex type, then the result
 will have a `double` type if `F` is implicitly convertible to a floating point 
@@ -5230,6 +5358,7 @@ Returns:
     The n-th central moment of the input, must be floating point or complex type
 +/
 template centralMoment(F, size_t N, Summation summation = Summation.appropriate)
+    if (N > 0)
 {
     import mir.math.sum: ResolveSummationType;
     import std.traits: isIterable;
@@ -5242,10 +5371,17 @@ template centralMoment(F, size_t N, Summation summation = Summation.appropriate)
         if (isIterable!Range)
     {
         import core.lifetime: move;
-        
+
         alias G = typeof(return);
-        auto centralMomentAccumulator = CentralMomentAccumulator!(G, N, ResolveSummationType!(summation, Range, G))(r.move);
-        return centralMomentAccumulator.moment;
+        static if (N > 1) {
+            MeanAccumulator!(G, ResolveSummationType!(summation, Range, G)) meanAccumulator;
+            MomentAccumulator!(G, N, ResolveSummationType!(summation, Range, G)) momentAccumulator;
+            meanAccumulator.put(r.lightScope);
+            momentAccumulator.put(r.move, meanAccumulator.mean);
+            return momentAccumulator.moment;
+        } else {
+            return cast(G) 0.0;
+        }
     }
 
     /++
@@ -5255,13 +5391,21 @@ template centralMoment(F, size_t N, Summation summation = Summation.appropriate)
     @fmamath meanType!F centralMoment(scope const F[] ar...)
     {
         alias G = typeof(return);
-        auto centralMomentAccumulator = CentralMomentAccumulator!(G, N, ResolveSummationType!(summation, const(G)[], G))(ar);
-        return centralMomentAccumulator.moment;
+        static if (N > 1) {
+            MeanAccumulator!(G, ResolveSummationType!(summation, const(G)[], G)) meanAccumulator;
+            MomentAccumulator!(G, N, ResolveSummationType!(summation, const(G)[], G)) momentAccumulator;
+            meanAccumulator.put(ar);
+            momentAccumulator.put(ar, meanAccumulator.mean);
+            return momentAccumulator.moment;
+        } else {
+            return cast(G) 0.0;
+        }
     }
 }
 
 /// ditto
 template centralMoment(size_t N, Summation summation = Summation.appropriate)
+    if (N > 0)
 {
     import std.traits: isIterable;
 
@@ -5291,12 +5435,14 @@ template centralMoment(size_t N, Summation summation = Summation.appropriate)
 
 /// ditto
 template centralMoment(F, size_t N, string summation)
+    if (N > 0)
 {
     mixin("alias centralMoment = .centralMoment!(F, N, Summation." ~ summation ~ ");");
 }
 
 /// ditto
 template centralMoment(size_t N, string summation)
+    if (N > 0)
 {
     mixin("alias centralMoment = .centralMoment!(N, Summation." ~ summation ~ ");");
 }
@@ -5431,6 +5577,20 @@ unittest
     assert(x.sliced.centralMoment!2.approxEqual(54.765625 / 12));
 }
 
+// test special casing
+version(mir_stat_test)
+@safe pure nothrow
+unittest
+{
+    import mir.math.common: approxEqual;
+    import mir.ndslice.slice: sliced;
+
+    auto x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
+              2.0, 7.5, 5.0, 1.0, 1.5, 0.0].sliced;
+
+    assert(x.centralMoment!1.approxEqual(0.0 / 12));
+}
+
 ///
 enum StandardizedMomentAlgo
 {
@@ -5441,335 +5601,8 @@ enum StandardizedMomentAlgo
     centered
 }
 
-///
-struct StandardizedMomentAccumulator(T, size_t N, StandardizedMomentAlgo standardMomentAlgo, VarianceAlgo varianceAlgo, Summation summation)
-    if (N > 0 && standardMomentAlgo == StandardizedMomentAlgo.scaled)
-{
-    static if (N > 2) {
-        ///
-        Summator!(T, summation) summator;
-
-        ///
-        VarianceAccumulator!(T, varianceAlgo, summation) varianceAccumulator;
-
-        ///
-        size_t count() @safe @property pure nothrow @nogc
-        {
-            return varianceAccumulator.count;
-        }
-    } else {
-        ///
-        size_t count;
-    }
-
-    ///
-    F moment(F = T)() @safe @property pure nothrow @nogc
-    {
-        static if (N > 2) {
-            return (cast(F) summator.sum) / (cast(F) count);
-        } else static if (N == 2) {
-            return cast(F) 1;
-        } else static if (N == 1) {
-            return cast(F) 0;
-        }
-    }
-
-    ///
-    F scaledSumOfPower(F = T)() const @safe @property pure nothrow @nogc
-        if (N > 2)
-    {
-        return cast(F) summator.sum;
-    }
-
-    ///
-    this(Iterator, size_t M, SliceKind kind)(Slice!(Iterator, M, kind) slice)
-    {
-        static if (N > 2) {
-            import core.lifetime: move;
-            import mir.math.common: sqrt;
-            import mir.math.func.powi;
-            import mir.ndslice.topology: vmap, map;
-            import mir.ndslice.internal: LeftOp;
-
-            varianceAccumulator = VarianceAccumulator!(T, varianceAlgo, summation)(slice.lightScope);
-
-            assert(varianceAccumulator.variance(true) > 0, "StandardizedMomentAccumulator.this: varianceAccumulator.variance(true) must be greater zero");
-
-            summator.put(slice.move.
-                vmap(LeftOp!("-", T)(varianceAccumulator.mean)).
-                vmap(LeftOp!("/", T)(varianceAccumulator.variance(true).sqrt)).
-                map!(a => a.powi(N)));
-        } else {
-            count += slice.elementCount;
-        }
-    }
-
-    ///
-    this(U)(U[] array)
-    {
-        import mir.ndslice.slice: sliced;
-        this(array.sliced);
-    }
-
-    ///
-    this(U)(U withAsSlice)
-        if (hasAsSlice!U)
-    {
-        this(withAsSlice.asSlice);
-    }
-}
-
-/// Standardized moment with scaled calculation
-version(mir_stat_test)
-@safe pure nothrow
-unittest
-{
-    import mir.math.common: approxEqual;
-    import mir.math.stat: center;
-    import mir.ndslice.slice: sliced;
-
-    auto x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
-              2.0, 7.5, 5.0, 1.0, 1.5, 0.0].sliced;
-
-    auto v = StandardizedMomentAccumulator!(double, 3, StandardizedMomentAlgo.scaled, VarianceAlgo.twoPass, Summation.naive)(x);
-    assert(v.moment.approxEqual(12.000999 / 12));
-    assert(v.count == 12);
-}
-
-// dynamic array test
-version(mir_stat_test)
-@safe pure nothrow
-unittest
-{
-    import mir.math.common: approxEqual;
-    import mir.rc.array: RCArray;
-
-    double[] x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
-                  2.0, 7.5, 5.0, 1.0, 1.5, 0.0];
-
-    auto v = StandardizedMomentAccumulator!(double, 3, StandardizedMomentAlgo.scaled, VarianceAlgo.twoPass, Summation.naive)(x);
-    assert(v.scaledSumOfPower.approxEqual(12.000999));
-}
-
-// withAsSlice test
-version(mir_stat_test)
-@safe pure nothrow @nogc
-unittest
-{
-    import mir.math.common: approxEqual;
-    import mir.rc.array: RCArray;
-
-    static immutable a = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
-                          2.0, 7.5, 5.0, 1.0, 1.5, 0.0];
-
-    auto x = RCArray!double(12);
-    foreach(i, ref e; x)
-        e = a[i];
-
-    auto v = StandardizedMomentAccumulator!(double, 3, StandardizedMomentAlgo.scaled, VarianceAlgo.twoPass, Summation.naive)(x);
-    assert(v.scaledSumOfPower.approxEqual(12.000999));
-}
-
-// Test N == 2
-version(mir_stat_test)
-@safe pure nothrow
-unittest
-{
-    import mir.math.common: approxEqual;
-    import mir.math.stat: center;
-    import mir.ndslice.slice: sliced;
-
-    auto x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
-              2.0, 7.5, 5.0, 1.0, 1.5, 0.0].sliced;
-
-    auto v = StandardizedMomentAccumulator!(double, 2, StandardizedMomentAlgo.scaled, VarianceAlgo.twoPass, Summation.naive)(x);
-    assert(v.moment.approxEqual(1.0));
-    assert(v.count == 12);
-}
-
-// Test N == 1
-version(mir_stat_test)
-@safe pure nothrow
-unittest
-{
-    import mir.math.common: approxEqual;
-    import mir.math.stat: center;
-    import mir.ndslice.slice: sliced;
-
-    auto x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
-              2.0, 7.5, 5.0, 1.0, 1.5, 0.0].sliced;
-
-    auto v = StandardizedMomentAccumulator!(double, 1, StandardizedMomentAlgo.scaled, VarianceAlgo.twoPass, Summation.naive)(x);
-    assert(v.moment.approxEqual(0.0));
-    assert(v.count == 12);
-}
-
-///
-struct StandardizedMomentAccumulator(T, size_t N, StandardizedMomentAlgo standardMomentAlgo, VarianceAlgo varianceAlgo, Summation summation)
-    if (N > 0 && standardMomentAlgo == StandardizedMomentAlgo.centered)
-{
-    static if (N > 2) {
-        ///
-        Summator!(T, summation) summator;
-
-        ///
-        VarianceAccumulator!(T, varianceAlgo, summation) varianceAccumulator;
-
-        ///
-        size_t count() @safe @property pure nothrow @nogc
-        {
-            return varianceAccumulator.count;
-        }
-    } else {
-        ///
-        size_t count;
-    }
-
-    ///
-    F moment(F = T)() @safe @property pure nothrow @nogc
-    {
-        static if (N > 2) {
-            import mir.math.common: sqrt;
-            import mir.math.func.powi;
-
-            return ((cast(F) summator.sum) / (cast(F) varianceAccumulator.count)) / varianceAccumulator.variance!F(true).sqrt.powi(N);
-        } else static if (N == 2) {
-            return cast(F) 1;
-        } else static if (N == 1) {
-            return cast(F) 0;
-        }
-    }
-
-    ///
-    F centeredSumOfPower(F = T)() const @safe @property pure nothrow @nogc
-        if (N > 2)
-    {
-        return cast(F) summator.sum;
-    }
-
-    ///
-    this(Iterator, size_t M, SliceKind kind)(Slice!(Iterator, M, kind) slice)
-    {
-        static if (N > 2) {
-            import core.lifetime: move;
-            import mir.math.common: sqrt;
-            import mir.math.func.powi;
-            import mir.ndslice.topology: vmap, map;
-            import mir.ndslice.internal: LeftOp;
-
-            varianceAccumulator = VarianceAccumulator!(T, varianceAlgo, summation)(slice.lightScope);
-
-            assert(varianceAccumulator.variance(true) > 0, "StandardizedMomentAccumulator.this: varianceAccumulator.variance must be greater zero");
-
-            summator.put(slice.move.
-                vmap(LeftOp!("-", T)(varianceAccumulator.mean)).
-                map!(a => a.powi(N)));
-        } else {
-            count += slice.elementCount;
-        }
-    }
-
-    ///
-    this(U)(U[] array)
-    {
-        import mir.ndslice.slice: sliced;
-        this(array.sliced);
-    }
-
-    ///
-    this(U)(U withAsSlice)
-        if (hasAsSlice!U)
-    {
-        this(withAsSlice.asSlice);
-    }
-}
-
-/// Standardized moment with centered calculation
-version(mir_stat_test)
-@safe pure nothrow
-unittest
-{
-    import mir.math.common: approxEqual, pow;
-    import mir.ndslice.slice: sliced;
-
-    auto x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
-              2.0, 7.5, 5.0, 1.0, 1.5, 0.0].sliced;
-
-    auto v = StandardizedMomentAccumulator!(double, 3, StandardizedMomentAlgo.centered, VarianceAlgo.twoPass, Summation.naive)(x);
-    assert(v.moment.approxEqual((117.005859 / 12) / pow(54.765625 / 12, 1.5)));
-    assert(v.count == 12);
-}
-
-// dynamic array test
-version(mir_stat_test)
-@safe pure nothrow
-unittest
-{
-    import mir.math.common: approxEqual;
-    import mir.rc.array: RCArray;
-
-    double[] x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
-                  2.0, 7.5, 5.0, 1.0, 1.5, 0.0];
-
-    auto v = StandardizedMomentAccumulator!(double, 3, StandardizedMomentAlgo.centered, VarianceAlgo.twoPass, Summation.naive)(x);
-    assert(v.centeredSumOfPower.approxEqual(117.005859));
-    assert(v.varianceAccumulator.variance(true).approxEqual(54.765625 / 12));
-}
-
-// withAsSlice test
-version(mir_stat_test)
-@safe pure nothrow @nogc
-unittest
-{
-    import mir.math.common: approxEqual;
-    import mir.rc.array: RCArray;
-
-    static immutable a = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
-                          2.0, 7.5, 5.0, 1.0, 1.5, 0.0];
-
-    auto x = RCArray!double(12);
-    foreach(i, ref e; x)
-        e = a[i];
-
-    auto v = StandardizedMomentAccumulator!(double, 3, StandardizedMomentAlgo.centered, VarianceAlgo.twoPass, Summation.naive)(x);
-    assert(v.centeredSumOfPower.approxEqual(117.005859));
-    assert(v.varianceAccumulator.variance(true).approxEqual(54.765625 / 12));
-}
-
-// Test N == 2
-version(mir_stat_test)
-@safe pure nothrow
-unittest
-{
-    import mir.math.common: approxEqual;
-    import mir.ndslice.slice: sliced;
-
-    auto x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
-              2.0, 7.5, 5.0, 1.0, 1.5, 0.0].sliced;
-
-    auto v = StandardizedMomentAccumulator!(double, 2, StandardizedMomentAlgo.centered, VarianceAlgo.twoPass, Summation.naive)(x);
-    assert(v.moment.approxEqual(1.0));
-    assert(v.count == 12);
-}
-
-// Test N == 1
-version(mir_stat_test)
-@safe pure nothrow
-unittest
-{
-    import mir.math.common: approxEqual;
-    import mir.ndslice.slice: sliced;
-
-    auto x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
-              2.0, 7.5, 5.0, 1.0, 1.5, 0.0].sliced;
-
-    auto v = StandardizedMomentAccumulator!(double, 1, StandardizedMomentAlgo.centered, VarianceAlgo.twoPass, Summation.naive)(x);
-    assert(v.moment.approxEqual(0.0));
-    assert(v.count == 12);
-}
-
 /++
-Calculates the n-th standardized moment of the input
+Calculates the n-th standardized moment of the input.
 
 By default, if `F` is not floating point type or complex type, then the result
 will have a `double` type if `F` is implicitly convertible to a floating point 
@@ -5787,6 +5620,7 @@ template standardizedMoment(F, size_t N,
                             StandardizedMomentAlgo standardizedMomentAlgo = StandardizedMomentAlgo.scaled,
                             VarianceAlgo varianceAlgo = VarianceAlgo.twoPass,
                             Summation summation = Summation.appropriate)
+    if (N > 0)
 {
     import mir.math.sum: ResolveSummationType;
     import std.traits: isIterable;
@@ -5801,8 +5635,25 @@ template standardizedMoment(F, size_t N,
         import core.lifetime: move;
         
         alias G = typeof(return);
-        auto standardizedMomentAccumulator = StandardizedMomentAccumulator!(G, N, standardizedMomentAlgo, varianceAlgo, ResolveSummationType!(summation, Range, G))(r.move);
-        return standardizedMomentAccumulator.moment;
+        static if (N > 2) {
+            auto varianceAccumulator = VarianceAccumulator!(G, varianceAlgo, ResolveSummationType!(summation, Range, G))(r.lightScope);
+            MomentAccumulator!(G, N, ResolveSummationType!(summation, Range, G)) momentAccumulator;
+            static if (standardizedMomentAlgo == StandardizedMomentAlgo.scaled) {
+                import mir.math.common: sqrt;
+
+                momentAccumulator.put(r.move, varianceAccumulator.mean, varianceAccumulator.variance(true).sqrt);
+                return momentAccumulator.moment;
+            } else static if (standardizedMomentAlgo == StandardizedMomentAlgo.centered) {
+                import mir.math.common: pow;
+
+                momentAccumulator.put(r.move, varianceAccumulator.mean);
+                return momentAccumulator.moment / pow(varianceAccumulator.variance(true), N / 2);
+            }
+        } else static if (N == 2) {
+            return cast(G) 1.0;
+        } else static if (N == 1) {
+            return cast(G) 0.0;
+        }
     }
 
     /++
@@ -5812,8 +5663,25 @@ template standardizedMoment(F, size_t N,
     @fmamath stdevType!F standardizedMoment(scope const F[] ar...)
     {
         alias G = typeof(return);
-        auto standardizedMomentAccumulator = StandardizedMomentAccumulator!(G, N, standardizedMomentAlgo, varianceAlgo, ResolveSummationType!(summation, const(G)[], G))(ar);
-        return standardizedMomentAccumulator.moment;
+        static if (N > 2) {
+            auto varianceAccumulator = VarianceAccumulator!(G, varianceAlgo, ResolveSummationType!(summation, const(G)[], G))(ar);
+            MomentAccumulator!(G, N, ResolveSummationType!(summation, const(G)[], G)) momentAccumulator;
+            static if (standardizedMomentAlgo == StandardizedMomentAlgo.scaled) {
+                import mir.math.common: sqrt;
+
+                momentAccumulator.put(ar, varianceAccumulator.mean, varianceAccumulator.variance(true).sqrt);
+                return momentAccumulator.moment;
+            } else static if (standardizedMomentAlgo == StandardizedMomentAlgo.centered) {
+                import mir.math.common: pow;
+
+                momentAccumulator.put(ar, varianceAccumulator.mean);
+                return momentAccumulator.moment / pow(varianceAccumulator.variance(true), N / 2);
+            }
+        } else static if (N == 2) {
+            return cast(G) 1.0;
+        } else static if (N == 1) {
+            return cast(G) 0.0;
+        }
     }
 }
 
@@ -5822,6 +5690,7 @@ template standardizedMoment(size_t N,
                             StandardizedMomentAlgo standardizedMomentAlgo = StandardizedMomentAlgo.scaled,
                             VarianceAlgo varianceAlgo = VarianceAlgo.twoPass,
                             Summation summation = Summation.appropriate)
+    if (N > 0)
 {
     import std.traits: isIterable;
 
@@ -5851,12 +5720,14 @@ template standardizedMoment(size_t N,
 
 /// ditto
 template standardizedMoment(F, size_t N, string standardizedMomentAlgo, string varianceAlgo = "twoPass", string summation = "appropriate")
+    if (N > 0)
 {
     mixin("alias standardizedMoment = .standardizedMoment!(F, N, StandardizedMomentAlgo." ~ standardizedMomentAlgo ~ ", VarianceAlgo." ~ varianceAlgo ~ ", Summation." ~ summation ~ ");");
 }
 
 /// ditto
 template standardizedMoment(size_t N, string standardizedMomentAlgo, string varianceAlgo = "twoPass", string summation = "appropriate")
+    if (N > 0)
 {
     mixin("alias standardizedMoment = .standardizedMoment!(N, StandardizedMomentAlgo." ~ standardizedMomentAlgo ~ ", VarianceAlgo." ~ varianceAlgo ~ ", Summation." ~ summation ~ ");");
 }
@@ -6000,6 +5871,7 @@ unittest
 
     assert(standardizedMoment!3(1.0, 2, 3).approxEqual(0.0 / 3));
     assert(standardizedMoment!(float, 3)(1, 2, 3).approxEqual(0f / 3));
+    assert(standardizedMoment!(float, 3, "centered")(1, 2, 3).approxEqual(0f / 3));
 }
 
 // dynamic array test
@@ -6024,6 +5896,20 @@ unittest
                           2.0, 7.5, 5.0, 1.0, 1.5, 0.0];
 
     assert(x.sliced.standardizedMoment!3.approxEqual(12.000999 / 12));
+}
+
+// test special casing
+version(mir_stat_test)
+@safe pure nothrow
+unittest
+{
+    import mir.math.common: approxEqual;
+    import mir.ndslice.slice: sliced;
+
+    auto x = [0.0, 1.0, 1.5, 2.0, 3.5, 4.25,
+              2.0, 7.5, 5.0, 1.0, 1.5, 0.0].sliced;
+
+    assert(x.standardizedMoment!1.approxEqual(0.0 / 12));
 }
 
 ///
