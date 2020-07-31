@@ -33,10 +33,53 @@ template to(T)
             return T(args);
         else
         static if (A.length == 1)
-            return cast(T) args[0];
+        {
+            static if (is(typeof(cast(T) args[0])))
+                return cast(T) args[0];
+            else
+            static if (is(A[0] : const(char)[]) && !is(T : const(char)[]) && is(T == enum))
+            {
+                S: switch (args[0])
+                {
+                    static foreach(member; __traits(allMembers, T))
+                    {
+                        case member:
+                            return __traits(getMember, T, member);
+                    }
+                default:
+                    static immutable msg = "Can not convert string to the enum " ~ T.stringof;
+                    version (D_Exceptions)
+                    {
+                        static immutable Exception exc = new Exception(msg);
+                        throw exc;
+                    }
+                    else
+                    {
+                        assert(0, msg);
+                    }
+                }
+            }
+            else
+                static assert(0);
+        }
         else
             static assert(0);
     }
+}
+
+///
+version(mir_test)
+@safe pure @nogc
+unittest
+{
+    enum Foo
+    {
+        A,
+        B,
+        C,
+    }
+
+    assert(to!Foo("B") == Foo.B);
 }
 
 /++
@@ -107,6 +150,7 @@ T[] uninitializedFillDefault(T)(return scope T[] array) nothrow @nogc
 }
 
 ///
+version(mir_test)
 pure nothrow @nogc
 @system unittest
 {
@@ -119,6 +163,7 @@ pure nothrow @nogc
 }
 
 ///
+version(mir_test)
 @system unittest
 {
     int[] a = [1, 2, 4];
