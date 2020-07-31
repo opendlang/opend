@@ -4760,10 +4760,21 @@ struct MomentAccumulator(T, size_t N, Summation summation)
             import mir.primitives: elementCount;
 
             count += r.elementCount;
-            summator.put(r.move.
-                    vmap(LeftOp!("-", T)(m)).
-                    map!(a => a.powi(N))
-                );
+            static if (N == 1)
+            {
+                summator.put(r.move.
+                        vmap(LeftOp!("-", T)(m))
+                    );
+            } else static if (N == 2) {
+                summator.put(r.move.
+                        vmap(LeftOp!("-", T)(m)).map!(a => a * a)
+                    );
+            } else {
+                summator.put(r.move.
+                        vmap(LeftOp!("-", T)(m)).
+                        map!(a => a.powi(N))
+                    );
+            }
         }
         else
         {
@@ -4789,11 +4800,26 @@ struct MomentAccumulator(T, size_t N, Summation summation)
             import mir.primitives: elementCount;
 
             count += r.elementCount;
-            summator.put(r.move.
-                    vmap(LeftOp!("-", T)(m)).
-                    vmap(LeftOp!("/", T)(s)).
-                    map!(a => a.powi(N))
-                );
+            static if (N == 1)
+            {
+                summator.put(r.move.
+                        vmap(LeftOp!("-", T)(m)).
+                        vmap(LeftOp!("/", T)(s))
+                    );
+            } else static if (N == 2) {
+                summator.put(r.move.
+                        vmap(LeftOp!("-", T)(m)).
+                        vmap(LeftOp!("/", T)(s)).
+                        map!(a => a * a)
+                    );
+            } else {
+                summator.put(r.move.
+                        vmap(LeftOp!("-", T)(m)).
+                        vmap(LeftOp!("/", T)(s)).
+                        map!(a => a.powi(N))
+                    );
+            }
+
         }
         else
         {
@@ -4811,24 +4837,6 @@ struct MomentAccumulator(T, size_t N, Summation summation)
 
         count++;
         summator.put(x.powi(N));
-    }
-
-    ///
-    void put()(T x, T m)
-    {
-        import mir.math.func.powi;
-
-        count++;
-        summator.put((x - m).powi(N));
-    }
-
-    ///
-    void put()(T x, T m, T s)
-    {
-        import mir.math.func.powi;
-
-        count++;
-        summator.put(((x - m) / s).powi(N));
     }
 
     ///
