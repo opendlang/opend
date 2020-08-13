@@ -20,6 +20,7 @@ sources_list = [
     'mir/math/package',
     'mir/primitives',
     'mir/qualifier',
+    'mir/reflection',
     'mir/utility',
 ]
 

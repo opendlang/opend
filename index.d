@@ -10,6 +10,7 @@ $(BOOKTABLE ,
         $(TH Modules)
         $(TH Description)
     )
+    $(TR $(TDNW $(MREF mir,reflection)) $(TD Compile time reflection utilities ))
     $(TR
         $(TDNW $(MREF mir,bitmanip))
         $(TD Bit-level manipulation facilities)
