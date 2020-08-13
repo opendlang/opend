@@ -31,7 +31,7 @@ enum bool hasLength(R) = is(typeof(
 }));
 
 ///
-@safe version(mir_test) unittest
+@safe version(mir_core_test) unittest
 {
     static assert(hasLength!(char[]));
     static assert(hasLength!(int[]));
@@ -57,7 +57,7 @@ enum bool hasShape(R) = is(typeof(
 }));
 
 ///
-@safe version(mir_test) unittest
+@safe version(mir_core_test) unittest
 {
     static assert(hasShape!(char[]));
     static assert(hasShape!(int[]));
@@ -86,7 +86,7 @@ auto shape(Range)(scope const auto ref Range range) @property
 }
 
 ///
-version(mir_test) unittest
+version(mir_core_test) unittest
 {
     static assert([2, 2, 2].shape == [3]);
 }
@@ -183,7 +183,7 @@ bool empty(size_t dim = 0, T)(scope const T[] ar)
 }
 
 ///
-version(mir_test)
+version(mir_core_test)
 unittest
 {
    assert((int[]).init.empty);
@@ -199,7 +199,7 @@ ref inout(T) front(size_t dim = 0, T)(scope return inout(T)[] ar)
 }
 
 ///
-version(mir_test)
+version(mir_core_test)
 unittest
 {
    assert(*&[3, 4].front == 3); // access be ref
@@ -216,7 +216,7 @@ ref inout(T) back(size_t dim = 0, T)(scope return inout(T)[] ar)
 }
 
 ///
-version(mir_test)
+version(mir_core_test)
 unittest
 {
    assert(*&[3, 4].back == 4); // access be ref
@@ -232,7 +232,7 @@ void popFront(size_t dim = 0, T)(scope ref inout(T)[] ar)
 }
 
 ///
-version(mir_test)
+version(mir_core_test)
 unittest
 {
     auto ar = [3, 4];
@@ -251,7 +251,7 @@ void popBack(size_t dim = 0, T)(scope ref inout(T)[] ar)
 }
 
 ///
-version(mir_test)
+version(mir_core_test)
 unittest
 {
     auto ar = [3, 4];
@@ -271,7 +271,7 @@ size_t popFrontN(size_t dim = 0, T)(scope ref inout(T)[] ar, size_t n)
 }
 
 ///
-version(mir_test)
+version(mir_core_test)
 unittest
 {
     auto ar = [3, 4];
@@ -291,7 +291,7 @@ size_t popBackN(size_t dim = 0, T)(scope ref inout(T)[] ar, size_t n)
 }
 
 ///
-version(mir_test)
+version(mir_core_test)
 unittest
 {
     auto ar = [3, 4];
@@ -310,7 +310,7 @@ void popFrontExactly(size_t dim = 0, T)(scope ref inout(T)[] ar, size_t n)
 }
 
 ///
-version(mir_test)
+version(mir_core_test)
 unittest
 {
     auto ar = [3, 4, 5];
@@ -329,7 +329,7 @@ void popBackExactly(size_t dim = 0, T)(scope ref inout(T)[] ar, size_t n)
 }
 
 ///
-version(mir_test)
+version(mir_core_test)
 unittest
 {
     auto ar = [3, 4, 5];
@@ -347,7 +347,7 @@ size_t length(size_t d : 0, T)(in T[] array)
 }
 
 ///
-version(mir_test)
+version(mir_core_test)
 unittest
 {
     assert([1, 2].length!0 == 2);
@@ -361,7 +361,7 @@ inout(T)[] save(T)(scope return inout(T)[] array)
 }
 
 ///
-version(mir_test)
+version(mir_core_test)
 unittest
 {
     auto a = [1, 2];

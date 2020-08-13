@@ -218,7 +218,7 @@ template adjoin(fun...) if (fun.length && fun.length <= 26)
 }
 
 ///
-@safe version(mir_test) unittest
+@safe version(mir_core_test) unittest
 {
     static bool f1(int a) { return a != 0; }
     static int f2(int a) { return a / 2; }
@@ -227,7 +227,7 @@ template adjoin(fun...) if (fun.length && fun.length <= 26)
     assert(x.a == true && x.b == 2);
 }
 
-@safe version(mir_test) unittest
+@safe version(mir_core_test) unittest
 {
     static bool F1(int a) { return a != 0; }
     auto x1 = adjoin!(F1)(5);
@@ -253,7 +253,7 @@ template adjoin(fun...) if (fun.length && fun.length <= 26)
 }
 
 //@safe
-version(mir_test) unittest
+version(mir_core_test) unittest
 {
     alias funs = staticMap!(naryFun, "a", "a * 2", "a * 3", "a * a", "-a");
     alias afun = adjoin!funs;
@@ -336,7 +336,7 @@ template naryFun(alias fun)
 }
 
 ///
-@safe version(mir_test) unittest
+@safe version(mir_core_test) unittest
 {
     // Strings are compiled into functions:
     alias isEven = naryFun!("(a & 1) == 0");
@@ -344,7 +344,7 @@ template naryFun(alias fun)
 }
 
 ///
-@safe version(mir_test) unittest
+@safe version(mir_core_test) unittest
 {
     alias less = naryFun!("a < b");
     assert(less(1, 2) && !less(2, 1));
@@ -353,25 +353,25 @@ template naryFun(alias fun)
 }
 
 /// `naryFun` accepts up to 26 arguments.
-@safe version(mir_test) unittest
+@safe version(mir_core_test) unittest
 {
     assert(naryFun!("a * b + c")(2, 3, 4) == 10);
 }
 
 /// `naryFun` can return by reference.
-version(mir_test) unittest
+version(mir_core_test) unittest
 {
     int a;
     assert(&naryFun!("a")(a) == &a);
 }
 
 /// `args` parameter tuple
-version(mir_test) unittest
+version(mir_core_test) unittest
 {
     assert(naryFun!("args[0] + args[1]")(2, 3) == 5);
 }
 
-@safe version(mir_test) unittest
+@safe version(mir_core_test) unittest
 {
     static int f1(int a) { return a + 1; }
     static assert(is(typeof(naryFun!(f1)(1)) == int));
@@ -412,7 +412,7 @@ version(mir_test) unittest
     static assert(!is(typeof(naryFun!FuncObj)));
 }
 
-@safe version(mir_test) unittest
+@safe version(mir_core_test) unittest
 {
     static int f1(int a, string b) { return a + 1; }
     static assert(is(typeof(naryFun!(f1)(1, "2")) == int));
@@ -462,28 +462,28 @@ template reverseArgs(alias fun)
 }
 
 ///
-@safe version(mir_test) unittest
+@safe version(mir_core_test) unittest
 {
     int abc(int a, int b, int c) { return a * b + c; }
     alias cba = reverseArgs!abc;
     assert(abc(91, 17, 32) == cba(32, 17, 91));
 }
 
-@safe version(mir_test) unittest
+@safe version(mir_core_test) unittest
 {
     int a(int a) { return a * 2; }
     alias _a = reverseArgs!a;
     assert(a(2) == _a(2));
 }
 
-@safe version(mir_test) unittest
+@safe version(mir_core_test) unittest
 {
     int b() { return 4; }
     alias _b = reverseArgs!b;
     assert(b() == _b());
 }
 
-@safe version(mir_test) unittest
+@safe version(mir_core_test) unittest
 {
     alias gt = reverseArgs!(naryFun!("a < b"));
     assert(gt(2, 1) && !gt(1, 1));
@@ -511,7 +511,7 @@ template not(alias pred)
 }
 
 ///
-@safe version(mir_test) unittest
+@safe version(mir_core_test) unittest
 {
     import std.algorithm.searching : find;
     import std.uni : isWhite;
@@ -519,7 +519,7 @@ template not(alias pred)
     assert(find!(not!isWhite)(a) == "Hello, world!");
 }
 
-@safe version(mir_test) unittest
+@safe version(mir_core_test) unittest
 {
     assert(not!"a != 5"(5));
     assert(not!"a != b"(5, 5));
@@ -580,20 +580,20 @@ template pipe(fun...)
 }
 
 ///
-@safe version(mir_test) unittest
+@safe version(mir_core_test) unittest
 {
     assert(pipe!("a + b", a => a * 10)(2, 3) == 50);
 }
 
 /// `pipe` can return by reference.
-version(mir_test) unittest
+version(mir_core_test) unittest
 {
     int a;
     assert(&pipe!("a", "a")(a) == &a);
 }
 
 /// Template bloat reduction
-version(mir_test) unittest
+version(mir_core_test) unittest
 {
     enum  a = "a * 2";
     alias b = e => e + 2;
@@ -604,7 +604,7 @@ version(mir_test) unittest
     static assert(__traits(isSame, p0, p1));
 }
 
-@safe version(mir_test) unittest
+@safe version(mir_core_test) unittest
 {
     import std.algorithm.comparison : equal;
     import std.algorithm.iteration : map;
@@ -674,7 +674,7 @@ template aliasCall(string methodName, TemplateArgs...)
 }
 
 ///
-@safe pure nothrow version(mir_test) unittest
+@safe pure nothrow version(mir_core_test) unittest
 {
     static struct S
     {

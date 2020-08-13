@@ -68,7 +68,7 @@ template to(T)
 }
 
 ///
-version(mir_test)
+version(mir_core_test)
 @safe pure @nogc
 unittest
 {
@@ -150,7 +150,7 @@ T[] uninitializedFillDefault(T)(return scope T[] array) nothrow @nogc
 }
 
 ///
-version(mir_test)
+version(mir_core_test)
 pure nothrow @nogc
 @system unittest
 {
@@ -163,7 +163,7 @@ pure nothrow @nogc
 }
 
 ///
-version(mir_test)
+version(mir_core_test)
 @system unittest
 {
     int[] a = [1, 2, 4];
@@ -189,7 +189,7 @@ void xdestroy(T)(scope T[] ar)
 }
 
 ///
-version(mir_test)
+version(mir_core_test)
 nothrow @nogc unittest
 {
     __gshared int d;

@@ -111,7 +111,7 @@ auto min(T...)(T args)
     }
 }
 
-@safe version(mir_test) unittest
+@safe version(mir_core_test) unittest
 {
     int a = 5;
     short b = 6;
@@ -128,7 +128,7 @@ auto min(T...)(T args)
 `min` is not defined for arguments of mixed signedness because of security reasons.
 Please unify type or use a Phobos analog.
 +/
-version(mir_test) unittest
+version(mir_core_test) unittest
 {
     int a = -10;
     uint b = 10;
@@ -178,7 +178,7 @@ auto max(T...)(T args)
 }
 
 ///
-@safe version(mir_test) unittest
+@safe version(mir_core_test) unittest
 {
     int a = 5;
     short b = 6;
@@ -195,7 +195,7 @@ auto max(T...)(T args)
 `max` is not defined for arguments of mixed signedness because of security reasons.
 Please unify type or use a Phobos analog.
 +/
-version(mir_test) unittest
+version(mir_core_test) unittest
 {
     int a = -10;
     uint b = 10;
@@ -435,7 +435,7 @@ version(D_InlineAsm_X86_64)
 }
 
 version(LDC) {} else version(D_InlineAsm_X86_64)
-@nogc nothrow pure @safe version(mir_test) unittest
+@nogc nothrow pure @safe version(mir_core_test) unittest
 {
     immutable a = 0x93_8d_28_00_0f_50_a5_56;
     immutable b = 0x54_c3_2f_e8_cc_a5_97_10;

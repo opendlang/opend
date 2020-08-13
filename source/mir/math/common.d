@@ -283,7 +283,7 @@ else version(GNU)
         else
             static assert(0);
     }
-    version(mir_test)
+    version(mir_core_test)
     unittest { assert(fmuladd!double(2, 3, 4) == 2 * 3 + 4); }
     ///
     T fmin(T)(in T x, in T y) if (isFloatingPoint!T) { mixin(mixinGCCBuiltin2!`fmin`); }
@@ -382,7 +382,7 @@ else static if (__VERSION__ >= 2082) // DMD 2.082 onward.
     T round(T)(in T x) if (isFloatingPoint!T) { mixin(mixinCMath!`round`); }
     ///
     T fmuladd(T)(in T a, in T b, in T c) if (isFloatingPoint!T) { return a * b + c; }
-    version(mir_test)
+    version(mir_core_test)
     unittest { assert(fmuladd!double(2, 3, 4) == 2 * 3 + 4); }
     ///
     T fmin(T)(in T x, in T y) if (isFloatingPoint!T)
@@ -411,7 +411,7 @@ else static if (__VERSION__ >= 2082) // DMD 2.082 onward.
             mixin(mixinCMath2!`fmax`);
     }
 
-    version (mir_test) @nogc nothrow pure @safe unittest
+    version (mir_core_test) @nogc nothrow pure @safe unittest
     {
         // Check the aliases are correct.
         static assert(is(typeof(sqrt(1.0f)) == float));
@@ -511,7 +511,7 @@ else // DMD version prior to 2.082
     T round(T)(in T x) if (isFloatingPoint!T) { mixin(mixinCMath!`round`); }
     ///
     T fmuladd(T)(in T a, in T b, in T c) if (isFloatingPoint!T) { return a * b + c; }
-    version(mir_test)
+    version(mir_core_test)
     unittest { assert(fmuladd!double(2, 3, 4) == 2 * 3 + 4); }
     ///
     T fmin(T)(in T x, in T y) if (isFloatingPoint!T)
@@ -540,7 +540,7 @@ else // DMD version prior to 2.082
             mixin(mixinCMath2!`fmax`);
     }
 
-    version (mir_test) @nogc nothrow pure @safe unittest
+    version (mir_core_test) @nogc nothrow pure @safe unittest
     {
         // Check the aliases are correct.
         static assert(is(typeof(sqrt(1.0f)) == float));
@@ -553,7 +553,7 @@ else // DMD version prior to 2.082
     }
 }
 
-version (mir_test)
+version (mir_core_test)
 @nogc nothrow pure @safe unittest
 {
     import mir.math: PI, feqrel;

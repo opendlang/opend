@@ -7,5 +7,5 @@ license "BSL-1.0"
 
 buildType "unittest" {
 	buildOptions "unittests" "debugMode" "debugInfo"
-    versions "mir_test"
+    versions "mir_core_test"
 }
