@@ -627,7 +627,7 @@ unittest
 
 /** Tests if the algebraic type stores a value of a certain data type.
 */
-bool hasType(T, U)(in ref TaggedAlgebraic!U ta)
+bool hasType(T, U)(const scope ref TaggedAlgebraic!U ta)
 {
 	alias Fields = Filter!(fieldMatchesType!(U, T), ta.m_union.fieldNames);
 	static assert(Fields.length > 0, "Type "~T.stringof~" cannot be stored in a "~(TaggedAlgebraic!U).stringof~".");
@@ -641,7 +641,7 @@ bool hasType(T, U)(in ref TaggedAlgebraic!U ta)
 	assert(false); // never reached
 }
 /// ditto
-bool hasType(T, U)(in TaggedAlgebraic!U ta)
+bool hasType(T, U)(const scope TaggedAlgebraic!U ta)
 {
 	return hasType!(T, U)(ta);
 }
