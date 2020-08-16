@@ -9,6 +9,8 @@ private import std.experimental.logger;
 private import std.format;
 private import std.algorithm;
 
+
+
 private import ikod.containers.internal;
 
 private byte useFreePosition(ubyte[] m) @safe @nogc nothrow
@@ -236,8 +238,9 @@ struct CompressedList(T, Allocator = Mallocator, bool GCRangesAllowed = true)
                     GC.addRange(&page._nodes[0], Node.sizeof * NodesPerPage);
                 }();
             }
-            _freelist = page;
-            _freelist_len = 1;
+            page._nextPage = page._prevPage = null;
+            page._firstNode = page._lastNode = -1;
+            return page;
         }
         Page* p = _freelist;
         _freelist = p._nextPage;
@@ -250,6 +253,19 @@ struct CompressedList(T, Allocator = Mallocator, bool GCRangesAllowed = true)
 
     ~this() @safe {
         clear();
+        while(_freelist)
+        {
+            assert(_freelist_len>0);
+            auto next = _freelist._nextPage;
+            () @trusted {
+                static if ( UseGCRanges!(Allocator,T, GCRangesAllowed) ) {
+                    GC.removeRange(&_freelist._nodes[0]);
+                }
+                dispose(allocator, _freelist);
+            }();
+            _freelist_len--;
+            _freelist = next;
+        }
     }
 
     /// remove anything from list
