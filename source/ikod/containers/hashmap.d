@@ -771,17 +771,6 @@ struct HashMap(K, V, Allocator = Mallocator, bool GCRangesAllowed = true) {
         int             _pos;
         size_t           _buckets_num;
         BucketStorage   _buckets;
-        this(this) {
-            if (_buckets_num) {
-                auto _new_buckets = BucketStorage(_buckets_num);
-                copy(_buckets.bs, _new_buckets.bs);
-                _buckets = _new_buckets;
-                _pos = 0;
-                while (_pos < _buckets_num && _buckets.bs[_pos].hash < ALLOCATED_HASH) {
-                    _pos++;
-                }
-            }
-        }
 
         ~this() {
             _buckets = BucketStorage.init;
