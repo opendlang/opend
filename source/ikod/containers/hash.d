@@ -26,7 +26,11 @@ if ( UseToHashMethod!T )
 public hash_t hash_function(T)(in T v) @nogc @trusted
 if ( !UseToHashMethod!T )
 {
-    static if ( isNumeric!T ) {
+    static if (is(T==int) || is(T==uint) || is(T==byte) || is(T==ubyte))
+    {
+        return v;
+    }
+    else static if ( isNumeric!T ) {
         enum m = 0x5bd1e995;
         hash_t h = cast(hash_t)v;
         h ^= h >> 13;
