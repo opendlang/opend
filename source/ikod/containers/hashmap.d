@@ -835,8 +835,8 @@ struct HashMap(K, V, Allocator = Mallocator, bool GCRangesAllowed = true) {
     foreach (word; words) {
         counter[word] = counter.getOrAdd(word, 0) + 1;
     }
-    //assert(counter.capacity ==  32*4/5 - counter.length);
     assert(!counter.fetch("world").ok);
+    assert(counter.fetch("hello").value == 1);
     assert(counter["hello"] == 1);
     assert(counter["should"] == 2);
     assert(counter.contains("hello"));
@@ -1804,7 +1804,7 @@ unittest {
         hashMap0[i] = i;
     }
 
-    hashMap1 = hashMap0;
+    hashMap1 = hashMap0; // behave as value
     hashMap0.clear();
     assert(hashMap0.length == 0);
     hashMap0[1] = 1;
