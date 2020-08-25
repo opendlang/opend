@@ -122,6 +122,7 @@ struct HashMap(K, V, Allocator = Mallocator, bool GCRangesAllowed = true) {
         private struct _BucketStorage {
 
             _Bucket[] bs;
+            bool      cow_required;
 
             this(this) {
                 auto newbs = makeArray!(_Bucket)(allocator, bs.length);
@@ -662,6 +663,13 @@ struct HashMap(K, V, Allocator = Mallocator, bool GCRangesAllowed = true) {
             doResize(_grow_factor * _buckets_num);
         }
 
+        if (_buckets.cow_required)
+        {
+            auto new_bs = BucketStorage(_buckets_num);
+            copy(_buckets.bs, new_bs.bs);
+            _buckets = new_bs;
+        }
+
         immutable computed_hash = hash_function(k) & HASH_MASK;
         immutable start_index = computed_hash & _mask;
         immutable placement_index = findUpdateIndex(start_index, computed_hash, k);
@@ -711,6 +719,13 @@ struct HashMap(K, V, Allocator = Mallocator, bool GCRangesAllowed = true) {
 
         if (_buckets_num == 0) {
             return false;
+        }
+
+        if (_buckets.cow_required)
+        {
+            auto new_bs = BucketStorage(_buckets_num);
+            copy(_buckets.bs, new_bs.bs);
+            _buckets = new_bs;
         }
 
         debug (cachetools)
@@ -777,10 +792,11 @@ struct HashMap(K, V, Allocator = Mallocator, bool GCRangesAllowed = true) {
         }
 
         this(ref BucketStorage _b) {
-            if ( _b !is null ) {
+            if ( _b !is null )
+            {
+                _b.cow_required = true;
+                _buckets = _b;
                 _buckets_num = _b.bs.length;
-                _buckets = BucketStorage(_buckets_num);
-                copy(_b.bs, _buckets.bs);
                 _pos = 0;
                 while (_pos < _buckets_num && _buckets.bs[_pos].hash < ALLOCATED_HASH) {
                     _pos++;
@@ -2067,4 +2083,24 @@ unittest {
     map2.clear;
     assertThrown!Exception(map2[1] = fcc1);
     assert(map2.length == 0);
+}
+
+@("L" ~ to!string(__LINE__) ~ ".iterator correctness after resize")
+@safe
+unittest
+{
+    import std.range, std.algorithm;
+    HashMap!(int, int) m;
+    iota(16).each!(i => m[2*i] = 2*i);
+    assert(m.length == 16);
+    int removed;
+    foreach(k; m.byKey)
+    {
+        removed += m.remove(k) ? 1 : 0;
+        m[k+1] = k+1;
+        m[32+k] = 32 + k;
+    }
+    assert(removed == 16);
+    assert(m.length == 32);
+    iota(16).all!(i => !m.contains(i));
 }
