@@ -4,7 +4,7 @@
 ## HashMap ##
 
 Main differences from language AA:
-1. HashMap is value(not reference), so any `assign` copy all data. If you need performance - use reference or pointer.
+1. HashMap itself is value(not reference), so any `assign` from one map to another copy all data. If you need performance - use reference or pointer.
 1. HashMap have no "in" operator.
 1. Any `get` get method returns value stored in table, and never - pointer. This is safe. AA can return pointer as it allocates on each insertion.
 
