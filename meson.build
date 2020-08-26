@@ -6,6 +6,7 @@ subprojects = ['mir-core', 'mir-algorithm']
 
 sources_list = [
     'mir/math/func/xlogy',
+    'mir/math/func/powi',
     'mir/stat/descriptive',
     'mir/stat/package',
     'mir/stat/transform',
