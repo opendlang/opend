@@ -461,7 +461,7 @@ mixin template Platform_Extensions( extensions... ) {
         else static if( __traits( isSame, extension, MVK_ios_surface )) {
             enum VK_MVK_ios_surface = 1;
 
-            enum VK_MVK_IOS_SURFACE_SPEC_VERSION = 2;
+            enum VK_MVK_IOS_SURFACE_SPEC_VERSION = 3;
             enum VK_MVK_IOS_SURFACE_EXTENSION_NAME = "VK_MVK_ios_surface";
             
             alias VkIOSSurfaceCreateFlagsMVK = VkFlags;
@@ -480,7 +480,7 @@ mixin template Platform_Extensions( extensions... ) {
         else static if( __traits( isSame, extension, MVK_macos_surface )) {
             enum VK_MVK_macos_surface = 1;
 
-            enum VK_MVK_MACOS_SURFACE_SPEC_VERSION = 2;
+            enum VK_MVK_MACOS_SURFACE_SPEC_VERSION = 3;
             enum VK_MVK_MACOS_SURFACE_EXTENSION_NAME = "VK_MVK_macos_surface";
             
             alias VkMacOSSurfaceCreateFlagsMVK = VkFlags;
