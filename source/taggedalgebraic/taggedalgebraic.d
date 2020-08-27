@@ -108,6 +108,13 @@ struct TaggedAlgebraic(U) if (is(U == union) || is(U == struct) || is(U == enum)
 		@property auto ref opDispatch(this TA, ARGS...)(auto ref ARGS args) if (hasOp!(TA, OpKind.field, name, ARGS) && !hasOp!(TA, OpKind.method, name, ARGS)) { return implementOp!(OpKind.field, name)(this, args); }
 	}
 
+	static if (is(typeof(m_union.toHash()))) {
+		size_t toHash()
+		const @safe nothrow {
+			return m_union.toHash();
+		}
+	}
+
 	/// Enables equality comparison with the stored value.
 	auto ref opEquals(T, this TA)(auto ref T other)
 		if (is(Unqual!T == TaggedAlgebraic) || hasOp!(TA, OpKind.binary, "==", T))
@@ -1389,4 +1396,18 @@ unittest {
 
 	auto ta = TA(12);
 	static assert(!is(typeof(ta.put(12))));
+}
+
+@safe nothrow unittest {
+	struct TU { int i; string s; }
+	alias TA = TaggedAlgebraic!TU;
+
+	static assert(is(typeof(TA.init.toHash()) == size_t));
+
+	int[TA] aa;
+	aa[TA(1)] = 1;
+	aa[TA("foo")] = 2;
+
+	assert(aa[TA(1)] == 1);
+	assert(aa[TA("foo")] == 2);
 }
