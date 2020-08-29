@@ -96,23 +96,26 @@ unittest
 }
 
 /// Attribute to rename methods, types and functions
-template ReflectMeta(string target)
+template ReflectMeta(string target, string[] fields)
 {
     ///
     struct ReflectMeta(Args...)
     {
         ///
         Args args;
+        static foreach(i, field; fields)
+            mixin(`alias ` ~ field ~` = args[` ~ i.stringof ~`];`);
     }
 }
 
 /// ditto
-template reflectMeta(string target = null)
+template reflectMeta(string target, string[] fields)
 {
     ///
     auto reflectMeta(Args...)(Args args)
+        if (args.length <= fields.length)
     {
-        alias TargetMeta = ReflectMeta!target;
+        alias TargetMeta = ReflectMeta!(target, fields);
         return TargetMeta!Args(args);
     }
 }
@@ -125,18 +128,17 @@ unittest
 
     struct S
     {
-        @reflectMeta(E.A)
         int a;
-        @reflectMeta!"c++"(E.C)
+        @reflectMeta!("c++", ["type"])(E.C)
         int b;
     }
 
     import std.traits: hasUDA;
 
-    alias UniMeta = ReflectMeta!null;
-    alias CppMeta = ReflectMeta!"c++";
+    alias CppMeta = ReflectMeta!("c++", ["type"]);
 
-    static assert(hasUDA!(S.a, UniMeta!E(E.A)));
+    static assert(CppMeta!E(E.C).type == E.C);
+    static assert(!hasUDA!(S.a, CppMeta!E(E.A)));
     static assert(hasUDA!(S.b, CppMeta!E(E.C)));
 }
 
