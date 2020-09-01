@@ -202,6 +202,26 @@ align(commonAlignment!(UnionKindTypes!(UnionFieldEnum!U))) struct TaggedUnion
 		assert(false); // never reached
 	}
 
+	static if (allSatisfy!(isHashable, FieldTypes))
+	{
+		/// Enables using a tagged union value as an associative array key.
+		size_t toHash()
+		const @safe nothrow {
+			size_t ret;
+			final switch (m_kind) {
+				foreach (i, tname; fieldNames) {
+					alias T = FieldTypes[i];
+					case __traits(getMember, Kind, tname):
+						static if (!isUnitType!T) {
+							ret = hashOf(trustedGet!T);
+						}
+						break;
+				}
+			}
+			return ret ^ (m_kind * 0xBA7A57E3);
+		}
+	}
+
 	/// The type ID of the currently stored value.
 	@property Kind kind() const { return m_kind; }
 
@@ -547,6 +567,20 @@ unittest { // support trailing underscores properly
 	assert(val.intValue == 20);
 }
 
+@safe nothrow unittest {
+	static struct S { int i; string s; }
+	alias TU = TaggedUnion!S;
+
+	static assert(is(typeof(TU.init.toHash()) == size_t));
+
+	int[TU] aa;
+	aa[TU(1)] = 1;
+	aa[TU("foo")] = 2;
+
+	assert(aa[TU(1)] == 1);
+	assert(aa[TU("foo")] == 2);
+}
+
 
 @property auto forceNothrowPostblit()
 {
@@ -731,6 +765,14 @@ unittest {
 		assert(commonAlignment!(S1, S2, S3) == 8);
 		assert(commonAlignment!(S2, S2, S1) == 4);
 	}
+}
+
+private template isHashable(T)
+{
+	static if (isUnitType!T) enum isHashable = true;
+	else static if (__traits(compiles, (ref const(T) val) @safe nothrow => hashOf(val)))
+		enum isHashable = true;
+	else enum isHashable = false;
 }
 
 package void rawEmplace(T)(void[] dst, ref T src)
