@@ -9,7 +9,7 @@
 /**
 Test at and near extrema.
 */
-void test(S, F)(in ref F test)
+void test(S, F)(in F test)
 {
     import std.math : pow;
     import std.conv : to;

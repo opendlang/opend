@@ -15,7 +15,7 @@ See_Also:
     $(LINK2 http://www.wolframalpha.com/input/?i=PDF%5BArcsineDistribution%5B0,+1%5D%5D,
     Wolfram Alpha)
 */
-void test(S, F)(in ref F test)
+void test(S, F)(in F test)
 {
     import std.math : log, pow, PI, sqrt;
     auto f0 = (S x) => cast(S) (-S(0.5) * log(-(x-1) * x) - log(PI));

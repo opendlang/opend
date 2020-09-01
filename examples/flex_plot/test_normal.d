@@ -12,7 +12,7 @@ Normal distribution.
 See_Also:
     $(LINK2 https://en.wikipedia.org/wiki/Normal_distribution, Wikipedia)
 */
-void test(S, F)(in ref F test)
+void test(S, F)(in F test)
 {
     import std.math : exp, log, PI, sqrt;
     S[] points = [-S.infinity, -1.5, 0, 1.5, S.infinity];

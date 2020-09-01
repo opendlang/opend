@@ -9,7 +9,7 @@
 /**
 Test different values for c.
 */
-void test(S, F)(in ref F test)
+void test(S, F)(in F test)
 {
     import std.math : pow;
     auto f0 = (S x) => -2 * pow(x, 4)  + 4 * x * x;

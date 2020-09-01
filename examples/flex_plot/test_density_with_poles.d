@@ -9,7 +9,7 @@
 /**
 Test density with pole.
 */
-void test(S, F)(in ref F test)
+void test(S, F)(in F test)
 {
     import std.math : abs, log;
     auto f0 = (S x) => - cast(S) log(abs(x)) * S(0.5);

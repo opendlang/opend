@@ -15,7 +15,7 @@ See_Also:
     $(LINK2 http://www.wolframalpha.com/input/?i=PDF%5BGammaDistribution%5B2,+5%5D%5D,
     Wolfram Alpha)
 */
-void test(S, F)(in ref F test)
+void test(S, F)(in F test)
 {
     import std.math : log, pow;
     auto f0 = (S x) => cast(S) log(30 * (1 - x).pow(x));

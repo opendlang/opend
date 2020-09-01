@@ -10,7 +10,7 @@
 /**
 Test whether density vanishes at boundaries.
 */
-void test(S, F)(in ref F test)
+void test(S, F)(in F test)
 {
     import std.math : log, pow;
     import std.conv : to;

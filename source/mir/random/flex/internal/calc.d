@@ -23,7 +23,7 @@ References:
     Hormann, W., J. Leydold, and G. Derflinger.
     "Automatic Nonuniform Random Number Generation." (2004): Formula 4.23
 */
-auto arcmean(S)(in ref Interval!S iv)
+auto arcmean(S)(const scope ref Interval!S iv)
 {
     import std.math: atan, tan;
     // Use at least double precision trigonometric functions.

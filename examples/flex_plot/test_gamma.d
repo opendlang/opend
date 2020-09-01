@@ -14,7 +14,7 @@ See_Also:
     $(LINK2 http://www.wolframalpha.com/input/?i=PDF%5BGammaDistribution%5B4,+3%5D%5D,
     Wolfram Alpha)
 */
-void test(S, F)(in ref F test)
+void test(S, F)(in F test)
 {
     import std.math : log, pow, PI, sqrt;
     enum one_div_3 = S(1) / 3;

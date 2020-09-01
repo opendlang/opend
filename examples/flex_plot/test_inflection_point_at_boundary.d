@@ -9,7 +9,7 @@
 /**
 Test with inflection point at boundary.
 */
-void test(S, F)(in ref F test)
+void test(S, F)(in F test)
 {
     import std.math : pow;
     auto f0 = (S x) => -pow(x, 4) + 6 * x * x;
