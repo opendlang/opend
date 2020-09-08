@@ -695,18 +695,19 @@ private template FieldsAndPropertiesImpl(T)
 {
     alias isProperty = ApplyLeft!(.isProperty, T);
     alias isField = ApplyLeft!(.isField, T);
+    alias isMember = templateOr!(isField, isProperty);
     static if (__traits(getAliasThis, T).length)
     {
         T* aggregate;
         alias baseMembers = FieldsAndPropertiesImpl!(typeof(__traits(getMember, aggregate, __traits(getAliasThis, T))));
         alias members = Erase!(__traits(getAliasThis, T)[0], __traits(allMembers, T));
-        alias FieldsAndPropertiesImpl = AliasSeq!(baseMembers, Filter!(isField, members), Filter!(isProperty, members));
+        alias FieldsAndPropertiesImpl = AliasSeq!(baseMembers, Filter!(isMember, members));
         
     }
     else
     {
         alias members = __traits(allMembers, T);
-        alias FieldsAndPropertiesImpl = AliasSeq!(Filter!(isField, members), Filter!(isProperty, members));
+        alias FieldsAndPropertiesImpl = AliasSeq!(Filter!(isMember, members));
     }
 }
 
